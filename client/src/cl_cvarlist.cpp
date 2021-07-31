@@ -152,11 +152,11 @@ CVAR_RANGE(			con_buffersize, "1024", "Size of console scroll-back buffer",
 CVAR(				con_coloredmessages, "1", "Activates colored messages in printed messages",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				message_showpickups, "1", "Show item pickup messages.",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR(message_showpickups, "1", "Show item pickup messages on the message line.",
+     CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				message_showobituaries, "1", "Show player death messages.",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR(message_showobituaries, "0", "Show player death messages on the message line.",
+     CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE_FUNC_DECL(msg0color, "6", "Color used for Pickup messages.",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 22.0f)
@@ -212,9 +212,13 @@ CVAR(				cl_connectalert, "1", "Plays a sound when a player joins",
 CVAR(				cl_disconnectalert, "1", "Plays a sound when a player quits",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR_RANGE			(cl_chatsounds, "1", "Plays a sound when a chat message appears (0 = never, 1 = always, " \
+					"2 = only teamchat)", 
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+
 CVAR_RANGE(			cl_switchweapon, "1", "Switch upon weapon pickup (0 = never, 1 = always, " \
-					"2 = use weapon preferences)",
-					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+					"2 = use weapon preferences, 3 = use PWO but holding fire cancels it)",
+					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 
 CVAR_RANGE(			cl_weaponpref_fst, "0", "Weapon preference level for fists",
 					CVARTYPE_BYTE, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 8.0f)
@@ -290,8 +294,8 @@ CVAR_RANGE (sv_teamsinplay, "2", "Teams that are enabled", CVARTYPE_BYTE, CVAR_S
 
 CVAR(cl_downloadsites,
      "https://static.allfearthesentinel.net/wads/ https://doomshack.org/wads/ "
-     "http://grandpachuck.org/files/wads/ http://ts.chaosunleashed.net/ "
-     "https://wads.doomleague.org/ http://files.funcrusher.net/wads/",
+     "http://grandpachuck.org/files/wads/ https://wads.doomleague.org/ "
+     "http://files.funcrusher.net/wads/",
      "A list of websites to download WAD files from.  These websites are used if the "
      "server doesn't provide any websites to download files from, or the file can't be "
      "found on any of their sites.  The list of sites is separated by spaces.  These "
@@ -440,6 +444,10 @@ CVAR(			idmypos, "0", "Shows current player position on map",
 
 // Heads up display
 // ----------------
+CVAR(hud_bigfont, "0",
+     "Use BIGFONT for certain HUD items - intended as a stopgap feature for streamers",
+     CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(			hud_crosshairdim, "0", "Crosshair transparency",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
@@ -451,9 +459,6 @@ CVAR_FUNC_DECL(	hud_crosshaircolor, "ff ff ff", "Crosshair color",
 
 CVAR(			hud_crosshairhealth, "1", "Color of crosshair represents health level",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-
-CVAR_RANGE(		hud_fullhudtype, "1","Fullscreen HUD to display:\n// 0: ZDoom HUD\n// 1: New Odamex HUD",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR_RANGE(		hud_gamemsgtype, "2", "Game message type",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 2.0f)
@@ -476,6 +481,12 @@ CVAR_RANGE(		hud_targetcount, "2", "Number of players to reveal",
 CVAR(			hud_targetnames, "1", "Show names of players you're aiming at",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(hud_targethealth_debug, "0",
+     "Show health of friendly players you're aiming at - this feature has known "
+     "shortcomings with inaccurate health values and will be fixed in a future version "
+     "of Odamex, enable at your peril",
+     CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(			hud_timer, "1", "Show the HUD timer:\n// 0: No Timer\n// 1: Count-down Timer\n// 2: Count-up timer",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -494,6 +505,8 @@ CVAR(			hud_show_scoreboard_ondeath, "1", "Show the scoreboard on death.",
 CVAR(hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
 CVAR(hud_demoprotos, "0", "Debug protocol messages while demo is paused.", CVARTYPE_BOOL,
+     CVAR_CLIENTARCHIVE)
+CVAR(hud_feedobits, "1", "Show obituaries in the event feed.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
 
 #ifdef _XBOX
@@ -543,6 +556,8 @@ CVAR(			snd_crossover, "0", "Stereo switch",	CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 CVAR_RANGE_FUNC_DECL(snd_samplerate, "44100", "Audio samplerate",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 22050.0f, 192000.0f)
 
+// [AM] If you bump the maximum, change the NUM_CHANNELS define to match,
+//      otherwise many things will break.
 CVAR_RANGE_FUNC_DECL(snd_channels, "32", "Number of channels for sound effects",
                      CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 4.0f,
                      32.0f)
@@ -668,8 +683,9 @@ CVAR_FUNC_DECL(	vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
 CVAR(			vid_autoadjust, "1", "Force fullscreen resolution to the closest available video mode.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			vid_displayfps, "0", "Display frames per second",
-				CVARTYPE_BOOL, CVAR_NULL)
+CVAR_RANGE(vid_displayfps, "0",
+           "Display frames per second.\n1: Full Graph.\n2: Just FPS Counter.",
+           CVARTYPE_BYTE, CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
 CVAR(			vid_ticker, "0", "Vanilla Doom frames per second indicator",
 				CVARTYPE_BOOL, CVAR_NULL)

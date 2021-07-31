@@ -89,7 +89,6 @@ msecnode_t* sector_list = NULL;		// phares 3/16/98
 // [SL] 2012-03-07 - Sectors that can change floor/ceiling height
 std::set<short>	movable_sectors;
 
-EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_fixweaponimpacts)
 EXTERN_CVAR (co_boomphys)				// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_zdoomphys)
@@ -142,7 +141,7 @@ BOOL PIT_StompThing (AActor *thing)
 		return true;
 	}
 
-	if (co_realactorheight)
+	if (P_AllowPassover())
 	{
 		// [RH] Z-Check
 		if (tmz > thing->z + thing->height)
@@ -526,10 +525,10 @@ static BOOL PIT_CheckThing (AActor *thing)
 		return true;
 	}
 
-	if (co_realactorheight)
+	if (P_AllowPassover())
 		BlockingMobj = thing;
 
-	if (co_realactorheight && (tmthing->flags2 & MF2_PASSMOBJ))
+	if (P_AllowPassover() && (tmthing->flags2 & MF2_PASSMOBJ))
 	{
 		// check if a mobj passed over/under another object
 		if (tmthing->z >= thing->z + thing->height || tmthing->z + tmthing->height <= thing->z)
@@ -544,7 +543,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 		tmthing->flags &= ~MF_SKULLFLY;
 		tmthing->momx = tmthing->momy = tmthing->momz = 0;
 		P_SetMobjState (tmthing, tmthing->info->spawnstate);
-		if (co_realactorheight)
+		if (P_AllowPassover())
 			BlockingMobj = NULL;
 		return false;			// stop moving
 	}
@@ -610,7 +609,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 		// [SL] Work-around the additional height added to players
 		// in P_CheckPosition. Don't let players grab items above
 		// their real height!
-		if (!co_realactorheight || !tmthing->player ||
+		if (!P_AllowPassover() || !tmthing->player ||
 			thing->z < tmthing->z + tmthing->height - 24*FRACUNIT)
 			P_TouchSpecialThing (thing, tmthing);	// can remove thing
 	}
@@ -799,7 +798,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 
 	BlockingMobj = NULL;
 
-	if (co_realactorheight && !spectator)
+	if (P_AllowPassover() && !spectator)
 	{
 		if (thing->player)	// [RH] Fake taller height to catch stepping up into things.
 			thing->height += 24*FRACUNIT;
@@ -888,7 +887,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 			if (!P_BlockLinesIterator (bx,by,PIT_CheckLine))
 				return false;
 
-	if (co_realactorheight)
+	if (P_AllowPassover())
 		return (BlockingMobj = thingblocker) == NULL;
 
 	return true;
@@ -1040,7 +1039,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 			return false;
 		}
 
-		if (!co_realactorheight || !(tmthing->flags2 & MF2_PASSMOBJ))
+		if (!P_AllowPassover() || !(tmthing->flags2 & MF2_PASSMOBJ))
 			return false;
 	}
 
@@ -1089,7 +1088,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 				P_CheckPushLines(thing);
 				return false;
 			}
-			else if (co_realactorheight && testz < tmfloorz)
+			else if (P_AllowPassover() && testz < tmfloorz)
 			{
 				// [RH] Check to make sure there's nothing in the way for the step up
 				fixed_t savedz = thing->z;
@@ -1148,7 +1147,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 			int side = P_PointOnLineSide (thing->x, thing->y, ld);
 			int oldside = P_PointOnLineSide (oldx, oldy, ld);
 			if (side != oldside && ld->special)
-				P_CrossSpecialLine (ld-lines, oldside, thing);
+				P_CrossSpecialLine (ld-lines, oldside, thing, false);
 		}
 	}
 
@@ -1323,7 +1322,7 @@ BOOL P_ThingHeightClip (AActor* thing)
 	bool onfloor = (thing->z <= thing->floorz);
 
 	AActor *underthing = P_CheckOnmobj(thing);
-	bool onthing = co_realactorheight && underthing && underthing->z < thing->z;
+	bool onthing = P_AllowPassover() && underthing && underthing->z < thing->z;
 
 	// calculate new floorz/ceilingz, etc
 	P_CheckPosition (thing, thing->x, thing->y);
@@ -2633,7 +2632,7 @@ BOOL PTR_UseTraverse (intercept_t *in)
 
 	int side = (P_PointOnLineSide (usething->x, usething->y, in->d.line) == 1);
 
-    P_UseSpecialLine (usething, in->d.line, side);
+    P_UseSpecialLine (usething, in->d.line, side, false);
 
 	//WAS can't use more than one special line in a row
 	//jff 3/21/98 NOW multiple use allowed with enabling line flag
@@ -2964,7 +2963,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 		P_SetMobjState (thing, S_GIBS);
 
 		// [Nes] - Classic demo compatability: Ghost monster bug.
-		if ((demoplayback || demorecording)) {
+		if ((demoplayback)) {
 			thing->height = 0;
 			thing->radius = 0;
 		}

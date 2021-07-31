@@ -77,7 +77,7 @@ odaproto::svc::PlayerInfo SVC_PlayerInfo(player_t& player)
 	msg.mutable_player()->set_weaponowned(packedweapons);
 
 	uint32_t packedcards = PackBoolArray(player.cards, NUMCARDS);
-	msg.mutable_player()->set_cards(packedweapons);
+	msg.mutable_player()->set_cards(packedcards);
 
 	msg.mutable_player()->set_backpack(player.backpack);
 
@@ -98,6 +98,9 @@ odaproto::svc::PlayerInfo SVC_PlayerInfo(player_t& player)
 	{
 		msg.mutable_player()->add_powers(player.powers[i]);
 	}
+
+	if (!player.spectator)
+		msg.mutable_player()->set_cheats(player.cheats);
 
 	return msg;
 }
@@ -395,10 +398,11 @@ odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time)
 	msg.set_team(player.userinfo.team);
 	msg.set_gender(player.userinfo.gender);
 
-	for (size_t i = 0; i < ARRAY_LENGTH(player.userinfo.color); i++)
-	{
-		msg.mutable_color()->Add(player.userinfo.color[i]);
-	}
+	// [AM] Alpha is always 255.
+	odaproto::Color* color = msg.mutable_color();
+	color->set_r(player.userinfo.color[1]);
+	color->set_g(player.userinfo.color[2]);
+	color->set_b(player.userinfo.color[3]);
 
 	msg.set_join_time(time);
 
@@ -507,6 +511,8 @@ odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, AActor* inflictor
 	msg.set_inflictorid(inflictor ? inflictor->netid : 0);
 	msg.set_health_damage(health);
 	msg.set_armor_damage(armor);
+	msg.mutable_player()->set_health(player.health);
+	msg.mutable_player()->set_armorpoints(player.armorpoints);
 
 	return msg;
 }
@@ -639,6 +645,12 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(player_t& player, byte flags)
 		msg.set_secretcount(player.secretcount);
 		msg.set_totalpoints(player.totalpoints);
 		msg.set_totaldeaths(player.totaldeaths);
+	}
+
+	if (flags & SVC_PM_CHEATS)
+	{
+		if (!player.spectator)
+			msg.set_cheats(player.cheats);
 	}
 
 	return msg;
@@ -907,6 +919,9 @@ odaproto::svc::PlayerState SVC_PlayerState(player_t& player)
 	{
 		pl->add_powers(player.powers[i]);
 	}
+
+	if (!player.spectator)
+		pl->set_cheats(player.cheats);
 
 	return msg;
 }
@@ -1460,6 +1475,21 @@ odaproto::svc::MaplistIndex SVC_MaplistIndex(const byte count, const size_t this
 			msg.set_this_index(this_index);
 		}
 	}
+
+	return msg;
+}
+
+odaproto::svc::Toast SVC_Toast(const toast_t& toast)
+{
+	odaproto::svc::Toast msg;
+
+	msg.set_flags(toast.flags);
+	msg.set_left(toast.left);
+	msg.set_right(toast.right);
+	msg.set_icon(toast.icon);
+	msg.set_pid_highlight(toast.pid_highlight);
+	msg.set_left_plus(toast.left_plus);
+	msg.set_right_plus(toast.right_plus);
 
 	return msg;
 }

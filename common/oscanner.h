@@ -35,13 +35,15 @@ struct OScannerConfig
 
 class OScanner
 {
-	OScannerConfig _config;
-	const char* _scriptStart;
-	const char* _scriptEnd;
-	const char* _position;
-	int _lineNumber;
-	std::string _token;
-	bool _unScan;
+	OScannerConfig m_config;
+	const char* m_scriptStart;
+	const char* m_scriptEnd;
+	const char* m_position;
+	int m_lineNumber;
+	std::string m_token;
+	bool m_unScan;
+	bool m_removeEscapeCharacter;
+	bool m_isQuotedString;
 
 	bool checkPair(char a, char b);
 	void skipWhitespace();
@@ -54,17 +56,32 @@ class OScanner
 
   public:
 	OScanner(const OScannerConfig& config)
-	    : _config(config), _scriptStart(NULL), _scriptEnd(NULL), _position(NULL),
-	      _lineNumber(0), _token(""), _unScan(false){};
+	    : m_config(config), m_scriptStart(NULL), m_scriptEnd(NULL), m_position(NULL),
+	      m_lineNumber(0), m_token(""), m_unScan(false), m_removeEscapeCharacter(false),
+	      m_isQuotedString(false)
+	{
+	}
 
 	static OScanner openBuffer(const OScannerConfig& config, const char* start,
 	                           const char* end);
+
 	bool scan();
+	void mustScan();
+	void mustScanInt();
+	void mustScanFloat();
+	void mustScanBool();
 	void unScan();
+
 	std::string getToken() const;
+	int getTokenInt() const;
+	float getTokenFloat() const;
+	bool getTokenBool() const;
+
+	bool isQuotedString() const;
 	void assertTokenIs(const char* string) const;
 	bool compareToken(const char* string) const;
-	void error(const char* message);
+	bool compareTokenNoCase(const char* string) const;
+	void error(const char* message) const;
 };
 
 #endif // __OSCANNER_H__

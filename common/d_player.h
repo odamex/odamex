@@ -96,22 +96,15 @@ typedef enum
 //
 typedef enum
 {
-	// No clipping, walk through barriers.
-	CF_NOCLIP			= 1,
-	// No damage, no health loss.
-	CF_GODMODE			= 2,
-	// Not really a cheat, just a debug aid.
-	CF_NOMOMENTUM		= 4,
-	// [RH] Monsters don't target
-	CF_NOTARGET			= 8,
-	// [RH] Flying player
-	CF_FLY				= 16,
-	// [RH] Put camera behind player
-	CF_CHASECAM			= 32,
-	// [RH] Don't let the player move
-	CF_FROZEN			= 64,
-	// [RH] Stick camera in player's head if he moves
-	CF_REVERTPLEASE		= 128
+	CF_NOCLIP =			(1 << 0), // No clipping, walk through barriers.
+	CF_GODMODE =		(1 << 1), // No damage, no health loss.
+	CF_NOMOMENTUM =		(1 << 2), // Not really a cheat, just a debug aid.
+	CF_NOTARGET =		(1 << 3), // [RH] Monsters don't target
+	CF_FLY =			(1 << 4), // [RH] Flying player
+	CF_CHASECAM =		(1 << 5), // [RH] Put camera behind player
+	CF_FROZEN =			(1 << 6), // [RH] Don't let the player move
+	CF_REVERTPLEASE =	(1 << 7), // [RH] Stick camera in player's head if he moves
+	CF_BUDDHA =			(1 << 8), // [Ch0wW] Buddha Cheatcode
 } cheat_t;
 
 #define MAX_PLAYER_SEE_MOBJ	0x7F
@@ -205,7 +198,7 @@ public:
 
 	// Bit flags, for cheats and debug.
     // See cheat_t, above.
-	int			cheats;
+	uint32_t cheats;
 
 	// Refired shots are less accurate.
 	short		refire;
@@ -299,8 +292,7 @@ public:
 
 		// protocol version supported by the client
 		short		version;
-		short		majorversion;	// GhostlyDeath -- Major
-		short		minorversion;	// GhostlyDeath -- Minor
+		int			packedversion;
 
 		// for reliable protocol
 		oldPacket_t oldpackets[256];
@@ -339,8 +331,7 @@ public:
 			// GhostlyDeath -- Initialize to Zero
 			memset(&address, 0, sizeof(netadr_t));
 			version = 0;
-			majorversion = 0;
-			minorversion = 0;
+			packedversion = 0;
 			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
 			{
 				oldpackets[i].sequence = -1;
@@ -371,8 +362,7 @@ public:
 			netbuf(other.netbuf),
 			reliablebuf(other.reliablebuf),
 			version(other.version),
-			majorversion(other.majorversion),
-			minorversion(other.minorversion),
+			packedversion(other.packedversion),
 			sequence(other.sequence),
 			last_sequence(other.last_sequence),
 			packetnum(other.packetnum),

@@ -172,11 +172,11 @@ file_version::file_version(const char *uid, const char *id, const char *pp, int 
 }
 
 /**
- * @brief Return true if ODAMEX_NO_GIT_VERSION is set.
+ * @brief Return true we have the bare minimum git information
  */
 static bool NoGitVersion()
 {
-#ifdef ODAMEX_NO_GITVER
+#if defined(ODAMEX_NO_GITVER) || !defined(GIT_SHORT_HASH) || !defined(GIT_REV_COUNT)
 	return true;
 #else
 	return false;
@@ -240,36 +240,46 @@ const char* GitShortHash()
  */
 const char* NiceVersionDetails()
 {
-#ifdef NDEBUG
+	static std::string version;
+	static bool tried = false;
+
+	if (tried)
+	{
+		return version.c_str();
+	}
+	tried = true;
+
+	// Debug builds get a special callout.
+#if !defined(_DEBUG)
 	const char* debug = "";
 #else
 	const char* debug = ", Debug Build";
 #endif
 
-	static std::string version;
-	if (version.empty())
+	// We ignore this branch prefix.
+	const char RELEASE_PREFIX[] = "release";
+
+	if (NoGitVersion())
 	{
-		if (NoGitVersion())
+		// Without a git version, the only useful info we know is if
+		// this is a debug build.
+		if (debug[0] != '\0')
 		{
-			// Without a git version, the only useful info we know is if
-			// this is a debug build.
-			if (debug[0] != '\0')
-			{
-				version = "Debug Build";
-			}
-		}
-		else if (!strcmp(GitBranch(), "stable"))
-		{
-			// Master branch is omitted.
-			StrFormat(version, "g%s-%s%s", GitShortHash(), GitRevCount(), debug);
-		}
-		else
-		{
-			// Other branches are written in.
-			StrFormat(version, "%s, g%s-%s%s", GitBranch(), GitShortHash(), GitRevCount(),
-			          debug);
+			version = "Debug Build";
 		}
 	}
+	else if (!strncmp(GitBranch(), "release", ARRAY_LENGTH(RELEASE_PREFIX) - 1))
+	{
+		// "Release" branch is omitted.
+		StrFormat(version, "g%s-%s%s", GitShortHash(), GitRevCount(), debug);
+	}
+	else
+	{
+		// Other branches are written in.
+		StrFormat(version, "%s, g%s-%s%s", GitBranch(), GitShortHash(), GitRevCount(),
+		          debug);
+	}
+
 	return version.c_str();
 }
 
@@ -280,17 +290,27 @@ const char* NiceVersionDetails()
 const char* NiceVersion()
 {
 	static std::string version;
-	if (version.empty())
+	static bool tried = false;
+
+	if (tried)
 	{
-		if (NoGitVersion())
-		{
-			version = DOTVERSIONSTR;
-		}
-		else
-		{
-			StrFormat(version, "%s (%s)", DOTVERSIONSTR, NiceVersionDetails());
-		}
+		return version.c_str();
 	}
+	tried = true;
+
+	// Get the version details.
+	const char* details = NiceVersionDetails();
+	if (details[0] == '\0')
+	{
+		// No version details, no parenthesis.
+		version = DOTVERSIONSTR;
+	}
+	else
+	{
+		// Put details in parens.
+		StrFormat(version, "%s (%s)", DOTVERSIONSTR, details);
+	}
+
 	return version.c_str();
 }
 

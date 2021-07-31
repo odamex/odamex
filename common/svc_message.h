@@ -37,6 +37,7 @@
 #include "actor.h"
 #include "c_maplist.h"
 #include "c_vote.h"
+#include "com_misc.h"
 #include "d_player.h"
 #include "g_level.h"
 #include "g_levelstate.h"
@@ -149,6 +150,7 @@ odaproto::svc::MaplistUpdate SVC_MaplistUpdate(const maplist_status_t status,
                                                const maplist_qrows_t* maplist);
 odaproto::svc::MaplistIndex SVC_MaplistIndex(const byte count, const size_t this_index,
                                              const size_t next_index);
+odaproto::svc::Toast SVC_Toast(const toast_t& toast);
 odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player);
 
 #endif // __SVCMESSAGE_H__

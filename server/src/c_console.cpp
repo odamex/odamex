@@ -138,11 +138,6 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 		}
 	}
 
-	if (LOG.is_open()) {
-		LOG << str;
-		LOG.flush();
-	}
-
 	return PrintString(printlevel, str.c_str());
 }
 

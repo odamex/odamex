@@ -679,6 +679,9 @@ const OString MUSIC_ULTIMA = "MUSIC_ULTIMA";
 const OString MUSIC_READ_M = "MUSIC_READ_M";
 const OString MUSIC_DM2TTL = "MUSIC_DM2TTL";
 const OString MUSIC_DM2INT = "MUSIC_DM2INT";
+const OString TXT_BUDDHAON = "TXT_BUDDHAON";
+const OString TXT_BUDDHAOFF = "TXT_BUDDHAOFF";
+
 
 // Contains every original string in its proper order.
 const OString* const stringIndexes[STRING_INDEXES_LENGTH] = {
@@ -1335,4 +1338,6 @@ const OString* const stringIndexes[STRING_INDEXES_LENGTH] = {
     &MUSIC_READ_M,
     &MUSIC_DM2TTL,
     &MUSIC_DM2INT,
+    &TXT_BUDDHAON,
+    &TXT_BUDDHAOFF,
 };

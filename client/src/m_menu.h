@@ -86,7 +86,7 @@ void M_RefreshModesList ();
 typedef enum {
 	whitetext,
 	redtext,
-	bricktext,
+	yellowtext,
 	more,
 	slider,
 	redslider,
@@ -211,5 +211,11 @@ extern short	 itemOn;
 extern oldmenu_t *currentMenu;
 
 size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length);
+
+#define MAX_EPISODES	8
+
+extern oldmenuitem_t EpisodeMenu[MAX_EPISODES];
+extern char EpisodeMaps[MAX_EPISODES][8];
+extern oldmenu_t EpiDef;
 
 #endif

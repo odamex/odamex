@@ -37,6 +37,7 @@
 #include "g_gametype.h"
 #include "m_wdlstats.h"
 #include "svc_message.h"
+#include "com_misc.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -60,6 +61,9 @@ EXTERN_CVAR(co_zdoomsound)
 EXTERN_CVAR(co_globalsound)
 EXTERN_CVAR(g_lives)
 
+// sapientlion - experimental
+EXTERN_CVAR(sv_weapondrop)
+
 int MeansOfDeath;
 
 // a weapon is found with two clip loads,
@@ -69,7 +73,6 @@ int clipammo[NUMAMMO] = {10, 4, 20, 1};
 
 void AM_Stop(void);
 void SV_SpawnMobj(AActor *mobj);
-void ClientObituary(AActor *self, AActor *inflictor, AActor *attacker);
 void SV_UpdateFrags(player_t &player);
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
 void SV_TouchSpecial(AActor *special, player_t *player);
@@ -276,7 +279,7 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 	// We were down to zero,
 	// so select a new weapon.
 	// Preferences are not user selectable.
-	if (player->userinfo.switchweapon != WPSW_NEVER || demoplayback || demorecording)
+	if (player->userinfo.switchweapon != WPSW_NEVER || demoplayback)
 	{
 		switch (ammotype)
 		{
@@ -1032,6 +1035,294 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 }
 
 //
+// [RH]
+// ClientObituary: Show a message when a player dies
+//
+static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
+{
+	char gendermessage[1024];
+
+	if (!self || !self->player)
+		return;
+
+	// Don't print obituaries after the end of a round
+	if (!G_CanShowObituary() || gamestate != GS_LEVEL)
+		return;
+
+	int gender = self->player->userinfo.gender;
+
+	// Treat voodoo dolls as unknown deaths
+	if (inflictor && inflictor->player == self->player)
+		MeansOfDeath = MOD_UNKNOWN;
+
+	if (G_IsCoopGame())
+		MeansOfDeath |= MOD_FRIENDLY_FIRE;
+
+	if (G_IsTeamGame() && attacker && attacker->player &&
+	    self->player->userinfo.team == attacker->player->userinfo.team)
+		MeansOfDeath |= MOD_FRIENDLY_FIRE;
+
+	bool friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
+	int mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
+	const char* message = NULL;
+	OString messagename;
+
+	switch (mod)
+	{
+	case MOD_SUICIDE:
+		messagename = OB_SUICIDE;
+		break;
+	case MOD_FALLING:
+		messagename = OB_FALLING;
+		break;
+	case MOD_CRUSH:
+		messagename = OB_CRUSH;
+		break;
+	case MOD_EXIT:
+		messagename = OB_EXIT;
+		break;
+	case MOD_WATER:
+		messagename = OB_WATER;
+		break;
+	case MOD_SLIME:
+		messagename = OB_SLIME;
+		break;
+	case MOD_LAVA:
+		messagename = OB_LAVA;
+		break;
+	case MOD_BARREL:
+		messagename = OB_BARREL;
+		break;
+	case MOD_SPLASH:
+		messagename = OB_SPLASH;
+		break;
+	}
+
+	if (!messagename.empty())
+		message = GStrings(messagename);
+
+	if (attacker && message == NULL)
+	{
+		if (attacker == self)
+		{
+			switch (mod)
+			{
+			case MOD_R_SPLASH:
+				messagename = OB_R_SPLASH;
+				break;
+			case MOD_ROCKET:
+				messagename = OB_ROCKET;
+				break;
+			default:
+				messagename = OB_KILLEDSELF;
+				break;
+			}
+			message = GStrings(messagename);
+		}
+		else if (!attacker->player)
+		{
+			if (mod == MOD_HIT)
+			{
+				switch (attacker->type)
+				{
+				case MT_UNDEAD:
+					messagename = OB_UNDEADHIT;
+					break;
+				case MT_TROOP:
+					messagename = OB_IMPHIT;
+					break;
+				case MT_HEAD:
+					messagename = OB_CACOHIT;
+					break;
+				case MT_SERGEANT:
+					messagename = OB_DEMONHIT;
+					break;
+				case MT_SHADOWS:
+					messagename = OB_SPECTREHIT;
+					break;
+				case MT_BRUISER:
+					messagename = OB_BARONHIT;
+					break;
+				case MT_KNIGHT:
+					messagename = OB_KNIGHTHIT;
+					break;
+				default:
+					break;
+				}
+			}
+			else
+			{
+				switch (attacker->type)
+				{
+				case MT_POSSESSED:
+					messagename = OB_ZOMBIE;
+					break;
+				case MT_SHOTGUY:
+					messagename = OB_SHOTGUY;
+					break;
+				case MT_VILE:
+					messagename = OB_VILE;
+					break;
+				case MT_UNDEAD:
+					messagename = OB_UNDEAD;
+					break;
+				case MT_FATSO:
+					messagename = OB_FATSO;
+					break;
+				case MT_CHAINGUY:
+					messagename = OB_CHAINGUY;
+					break;
+				case MT_SKULL:
+					messagename = OB_SKULL;
+					break;
+				case MT_TROOP:
+					messagename = OB_IMP;
+					break;
+				case MT_HEAD:
+					messagename = OB_CACO;
+					break;
+				case MT_BRUISER:
+					messagename = OB_BARON;
+					break;
+				case MT_KNIGHT:
+					messagename = OB_KNIGHT;
+					break;
+				case MT_SPIDER:
+					messagename = OB_SPIDER;
+					break;
+				case MT_BABY:
+					messagename = OB_BABY;
+					break;
+				case MT_CYBORG:
+					messagename = OB_CYBORG;
+					break;
+				case MT_WOLFSS:
+					messagename = OB_WOLFSS;
+					break;
+				default:
+					break;
+				}
+			}
+
+			if (!messagename.empty())
+				message = GStrings(messagename);
+		}
+	}
+
+	if (message)
+	{
+		SexMessage(message, gendermessage, gender, self->player->userinfo.netname.c_str(),
+		           self->player->userinfo.netname.c_str());
+		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+
+		toast_t toast;
+		toast.flags = toast_t::ICON | toast_t::RIGHT;
+		if (G_IsTeamGame())
+		{
+			toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
+		}
+		toast.icon = mod;
+		toast.right += self->player->userinfo.netname;
+		COM_PushToast(toast);
+		return;
+	}
+
+	if (attacker && attacker->player)
+	{
+		if (friendly)
+		{
+			gender = attacker->player->userinfo.gender;
+			messagename =
+			    GStrings.getIndex(GStrings.toIndex(OB_FRIENDLY1) + (P_Random() & 3));
+			message = messagename.c_str();
+		}
+		else
+		{
+			switch (mod)
+			{
+			case MOD_FIST:
+				messagename = OB_MPFIST;
+				break;
+			case MOD_CHAINSAW:
+				messagename = OB_MPCHAINSAW;
+				break;
+			case MOD_PISTOL:
+				messagename = OB_MPPISTOL;
+				break;
+			case MOD_SHOTGUN:
+				messagename = OB_MPSHOTGUN;
+				break;
+			case MOD_SSHOTGUN:
+				messagename = OB_MPSSHOTGUN;
+				break;
+			case MOD_CHAINGUN:
+				messagename = OB_MPCHAINGUN;
+				break;
+			case MOD_ROCKET:
+				messagename = OB_MPROCKET;
+				break;
+			case MOD_R_SPLASH:
+				messagename = OB_MPR_SPLASH;
+				break;
+			case MOD_PLASMARIFLE:
+				messagename = OB_MPPLASMARIFLE;
+				break;
+			case MOD_BFG_BOOM:
+				messagename = OB_MPBFG_BOOM;
+				break;
+			case MOD_BFG_SPLASH:
+				messagename = OB_MPBFG_SPLASH;
+				break;
+			case MOD_TELEFRAG:
+				messagename = OB_MPTELEFRAG;
+				break;
+			case MOD_RAILGUN:
+				messagename = OB_RAILGUN;
+				break;
+			}
+
+			if (!messagename.empty())
+				message = GStrings(messagename);
+		}
+	}
+
+	if (message && attacker && attacker->player)
+	{
+		SexMessage(message, gendermessage, gender, self->player->userinfo.netname.c_str(),
+		           attacker->player->userinfo.netname.c_str());
+		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+
+		toast_t toast;
+		toast.flags = toast_t::LEFT | toast_t::ICON | toast_t::RIGHT;
+		if (G_IsTeamGame())
+		{
+			toast.left += GetTeamInfo(attacker->player->userinfo.team)->ToastColor;
+			toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
+		}
+		toast.left += attacker->player->userinfo.netname;
+		toast.icon = mod;
+		toast.right += self->player->userinfo.netname;
+		COM_PushToast(toast);
+		return;
+	}
+
+	SexMessage(GStrings(OB_DEFAULT), gendermessage, gender,
+	           self->player->userinfo.netname.c_str(),
+	           self->player->userinfo.netname.c_str());
+	SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+
+	toast_t toast;
+	toast.flags = toast_t::ICON | toast_t::RIGHT;
+	if (G_IsTeamGame())
+	{
+		toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
+	}
+	toast.icon = mod;
+	toast.right += self->player->userinfo.netname;
+	COM_PushToast(toast);
+}
+
+//
 // P_KillMobj
 //
 void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill)
@@ -1238,8 +1529,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	// [RH] Death messages
 	// Nes - Server now broadcasts obituaries.
 	// [CG] Since this is a stub, no worries anymore.
-	if (target->player && level.time && multiplayer &&
-        !demoplayback && !joinkill)
+	if (target->player && ::level.time && !::clientside && !::demoplayback && !joinkill)
 	{
 		ClientObituary(target, inflictor, source);
 	}
@@ -1290,6 +1580,58 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
             item = MT_CHAINGUN;
             break;
 
+		//
+		// sapientlion - if player killed themselves or were killed by the other
+		// player(s), spawn a weapon (which they were helding moments before death) on
+		// top of their remains.
+		//
+		// TODO add current ammo.
+		//
+	    case MT_PLAYER:
+
+			if(sv_weapondrop)
+			{
+			    switch (target->player->readyweapon)
+			    {
+			    case wp_pistol:
+				    item = MT_CLIP;
+				    break;
+
+			    case wp_shotgun:
+				    item = MT_SHOTGUN;
+				    break;
+
+			    case wp_chaingun:
+				    item = MT_CHAINGUN;
+				    break;
+
+			    case wp_missile:
+				    item = MT_MISC27; // Rocket launcher.
+				    break;
+
+			    case wp_plasma:
+				    item = MT_MISC28; // Plasma gun.
+				    break;
+
+			    case wp_bfg:
+				    item = MT_BFG;
+				    break;
+
+			    case wp_chainsaw:
+				    item = MT_MISC26; // Chainsaw.
+				    break;
+
+			    case wp_supershotgun:
+				    item = MT_SUPERSHOTGUN;
+				    break;
+
+			    default:
+				    return;
+			    }
+		    }
+
+			break;
+
         default:
             return;
 	}
@@ -1324,18 +1666,14 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 {
     unsigned	ang;
 	int 		saved = 0;
-	player_t*   splayer = NULL; // shorthand for source->player
-	player_t*   tplayer = NULL; // shorthand for target->player
+	player_t*   player = NULL; // shorthand for target->player
 
 	if (!serverside)
     {
 		return;
     }
 
-    if (source)
-        splayer = source->player;
-
-    tplayer = target->player;
+    player = target->player;
 
 	if (!(target->flags & MF_SHOOTABLE))
     {
@@ -1343,7 +1681,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
     }
 
 	// GhostlyDeath -- Spectators can't get hurt!
-	if (tplayer && tplayer->spectator)
+	if (player && player->spectator)
     {
 		return;
     }
@@ -1357,10 +1695,10 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 	TeamInfo* teamInfo = NULL;
 	bool targethasflag = false;
-	if (tplayer)
+	if (player)
 	{
-		teamInfo = GetTeamInfo(tplayer->userinfo.team);
-		targethasflag = &idplayer(teamInfo->FlagData.flagger) == tplayer;
+		teamInfo = GetTeamInfo(player->userinfo.team);
+		targethasflag = &idplayer(teamInfo->FlagData.flagger) == player;
 	}
 
 	if (target->flags & MF_SKULLFLY)
@@ -1368,22 +1706,22 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		target->momx = target->momy = target->momz = 0;
 	}
 
-	if (tplayer && sv_skill == sk_baby)
+	if (player && sv_skill == sk_baby)
     {
 		damage >>= 1;	// take half damage in trainer mode
     }
 
 	// [AM] Weapon and monster damage scaling.
-	if (source && splayer && target)
+	if (source && source->player && target)
 		damage *= sv_weapondamage;
-	else if (source && target && tplayer)
+	else if (source && target && player)
 		damage *= sv_monsterdamage;
 
 	// Some close combat weapons should not
 	// inflict thrust and push the victim out of reach,
 	// thus kick away unless using the chainsaw.
 	if (inflictor && !(target->flags & MF_NOCLIP) &&
-        (!source || !splayer || splayer->readyweapon != wp_chainsaw))
+	    (!source || !source->player || source->player->readyweapon != wp_chainsaw))
 	{
 		unsigned int ang = P_PointToAngle(inflictor->x, inflictor->y, target->x, target->y);
 
@@ -1405,7 +1743,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	}
 
 	// player specific
-	if (tplayer)
+	if (player)
 	{
 		// end of game hell hack
 		if (sv_gametype == GM_COOP || sv_allowexit)
@@ -1420,54 +1758,62 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		// Below certain threshold,
 		// ignore damage in GOD mode, or with INVUL power.
 		if (damage < 1000 &&
-			((tplayer->cheats & CF_GODMODE) ||
-				tplayer->powers[pw_invulnerability]))
+		    ((player->cheats & CF_GODMODE) || player->powers[pw_invulnerability]))
 		{
 			return;
 		}
 
 		// [AM] No damage with sv_friendlyfire (was armor-only)
-		if (!sv_friendlyfire && source && splayer && target != source &&
+		if (!sv_friendlyfire && source && source->player && target != source &&
 			mod != MOD_TELEFRAG)
 		{
-			if (G_IsCoopGame() ||
-				(G_IsTeamGame() &&
-					tplayer->userinfo.team == splayer->userinfo.team))
+			if (G_IsCoopGame() || 
+				(G_IsTeamGame() && player->userinfo.team == source->player->userinfo.team))
 			{
 				damage = 0;
 			}
 		}
 
 		int armorDamage = 0;
-		if (tplayer->armortype && !(flags & DMG_NO_ARMOR))
+		if (player->armortype && !(flags & DMG_NO_ARMOR))
 		{
-			if (tplayer->armortype == deh.GreenAC)
+			if (player->armortype == deh.GreenAC)
 				armorDamage = damage / 3;
 			else
 				armorDamage = damage / 2;
 
-			if (tplayer->armorpoints <= armorDamage)
+			if (player->armorpoints <= armorDamage)
 			{
 				// armor is used up
-				armorDamage = tplayer->armorpoints;
-				tplayer->armortype = 0;
+				armorDamage = player->armorpoints;
+				player->armortype = 0;
 			}
-			tplayer->armorpoints -= armorDamage;
+			player->armorpoints -= armorDamage;
 			damage -= armorDamage;
 		}
 
-		tplayer->health -= damage;		// mirror mobj health here for Dave
+		player->health -= damage; // mirror mobj health here for Dave
+		target->health -= damage; // Do the same.
 
-		if (tplayer->health <= 0)
-			tplayer->health = 0;
+		if (player->health <= 0)
+		{
+			if (player->cheats & CF_BUDDHA && damage < 10000)
+			{
+				player->mo->health = player->health = target->health = 1;
+			}
+			else
+			{
+				player->health = 0;
+			} 
+		}
 
-		tplayer->attacker = source ? source->ptr() : AActor::AActorPtr();
-		tplayer->damagecount += damage;	// add damage after armor / invuln
+		player->attacker = source ? source->ptr() : AActor::AActorPtr();
+		player->damagecount += damage; // add damage after armor / invuln
 
-		if (tplayer->damagecount > 100)
-			tplayer->damagecount = 100;	// teleport stomp does 10k points...
+		if (player->damagecount > 100)
+			player->damagecount = 100; // teleport stomp does 10k points...
 
-		SV_SendDamagePlayer(tplayer, inflictor, damage, armorDamage);
+		SV_SendDamagePlayer(player, inflictor, damage, armorDamage);
 
 		// WDL damage events - they have to be up here to ensure we know how
 		// much armor is subtracted.
@@ -1495,47 +1841,47 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod);
 		}
+	} else
+	{
+		// [RH] Only if not immune
+		if (!(target->flags2 & (MF2_INVULNERABLE | MF2_DORMANT)))
+			target->health -= damage;		// do the damage to monsters.
 	}
 
-	// do the damage
-	// [RH] Only if not immune
-	if (!(target->flags2 & (MF2_INVULNERABLE | MF2_DORMANT)))
+	if (target->health <= 0)
 	{
-		target->health -= damage;
-		if (target->health <= 0)
-		{
-			P_KillMobj(source, target, inflictor, false);
+		P_KillMobj(source, target, inflictor, false);
 
-			// WDL damage events.
-			if (source == NULL && targethasflag)
-			{
-				int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
+		// WDL damage events.
+		if (source == NULL && targethasflag)
+		{
+			int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
 				M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, 0, 0, emod);
 			}
-			else if (source == NULL)
-			{
-				int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
-				M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, emod);
-			}
-			else if (targethasflag)
-				M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
-			else
-				M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
-			return;
+		else if (source == NULL)
+		{
+			int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
+			M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, emod);
 		}
+		else if (targethasflag)
+			M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
+		else
+			M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
+
+		return;
 	}
 
     if (!(target->flags2 & MF2_DORMANT))
 	{
 		int pain = P_Random();
 
-		if (!tplayer)
+		if (!player)
 		{
 			SV_SendDamageMobj(target, pain);
 		}
 		if (pain < target->info->painchance &&
 		    !(target->flags & MF_SKULLFLY) &&
-			!(tplayer && !damage))
+		    !(player && !damage))
 		{
 			target->flags |= MF_JUSTHIT;	// fight back!
 			P_SetMobjState(target, target->info->painstate);

@@ -154,121 +154,6 @@ static bool BackedUpData = false;
 static const char *OrgSprNames[NUMSPRITES];
 static actionf_p1 OrgActionPtrs[NUMSTATES];
 
-// Sound equivalences. When a patch tries to change a sound,
-// use these sound names.
-static const char *SoundMap[] = {
-	NULL,
-	"weapons/pistol",
-	"weapons/shotgf",
-	"weapons/shotgr",
-	"weapons/sshotf",
-	"weapons/sshoto",
-	"weapons/sshotc",
-	"weapons/sshotl",
-	"weapons/plasmaf",
-	"weapons/bfgf",
-	"weapons/sawup",
-	"weapons/sawidle",
-	"weapons/sawfull",
-	"weapons/sawhit",
-	"weapons/rocklf",
-	"weapons/bfgx",
-	"imp/attack",
-	"imp/shotx",
-	"plats/pt1_strt",
-	"plats/pt1_stop",
-	"doors/dr1_open",
-	"doors/dr1_clos",
-	"plats/pt1_mid",
-	"switches/normbutn",
-	"switches/exitbutn",
-	"*pain100_1",
-	"demon/pain",
-	"grunt/pain",
-	"vile/pain",
-	"fatso/pain",
-	"pain/pain",
-	"misc/gibbed",
-	"misc/i_pkup",
-	"misc/w_pkup",
-	"*land1",
-	"misc/teleport",
-	"grunt/sight1",
-	"grunt/sight2",
-	"grunt/sight3",
-	"imp/sight1",
-	"imp/sight2",
-	"demon/sight",
-	"caco/sight",
-	"baron/sight",
-	"cyber/sight",
-	"spider/sight",
-	"baby/sight",
-	"knight/sight",
-	"vile/sight",
-	"fatso/sight",
-	"pain/sight",
-	"skull/melee",
-	"demon/melee",
-	"skeleton/melee",
-	"vile/start",
-	"imp/melee",
-	"skeleton/swing",
-	"*death1",
-	"*xdeath1",
-	"grunt/death1",
-	"grunt/death2",
-	"grunt/death3",
-	"imp/death1",
-	"imp/death2",
-	"demon/death",
-	"caco/death",
-	"misc/unused",
-	"baron/death",
-	"cyber/death",
-	"spider/death",
-	"baby/death",
-	"vile/death",
-	"knight/death",
-	"pain/death",
-	"skeleton/death",
-	"grunt/active",
-	"imp/active",
-	"demon/active",
-	"baby/active",
-	"baby/walk",
-	"vile/active",
-	"*grunt1",
-	"world/barrelx",
-	"*fist",
-	"cyber/hoof",
-	"spider/walk",
-	"weapons/chngun",
-	"misc/chat2",
-	"doors/dr2_open",
-	"doors/dr2_clos",
-	"misc/spawn",
-	"vile/firecrkl",
-	"vile/firestrt",
-	"misc/p_pkup",
-	"brain/spit",
-	"brain/cube",
-	"brain/sight",
-	"brain/pain",
-	"brain/death",
-	"fatso/attack",
-	"gatso/death",
-	"wolfss/sight",
-	"wolfss/death",
-	"keen/pain",
-	"keen/death",
-	"skeleton/active",
-	"skeleton/sight",
-	"skeleton/attack",
-	"misc/chat",
-	"misc/teamchat"
-};
-
 // Functions used in a .bex [CODEPTR] chunk
 void A_FireRailgun(AActor *);
 void A_FireRailgunLeft(AActor *);
@@ -464,72 +349,6 @@ struct Key {
 	ptrdiff_t offset;
 };
 
-// Massive bunches of cheat shit
-//	to keep it from being easy to figure them out.
-// Yeah, right...
-unsigned char	cheat_mus_seq[] =
-{
-	0xb2, 0x26, 0xb6, 0xae, 0xea, 1, 0, 0, 0xff // idmus
-};
-
-unsigned char	cheat_choppers_seq[] =
-{
-	0xb2, 0x26, 0xe2, 0x32, 0xf6, 0x2a, 0x2a, 0xa6, 0x6a, 0xea, 0xff // id...
-};
-
-unsigned char	cheat_god_seq[] =
-{
-	0xb2, 0x26, 0x26, 0xaa, 0x26, 0xff	// iddqd
-};
-
-unsigned char	cheat_ammo_seq[] =
-{
-	0xb2, 0x26, 0xf2, 0x66, 0xa2, 0xff	// idkfa
-};
-
-unsigned char	cheat_ammonokey_seq[] =
-{
-	0xb2, 0x26, 0x66, 0xa2, 0xff		// idfa
-};
-
-// Smashing Pumpkins Into Small Piles Of Putrid Debris.
-unsigned char	cheat_noclip_seq[] =
-{
-	0xb2, 0x26, 0xea, 0x2a, 0xb2,		// idspispopd
-	0xea, 0x2a, 0xf6, 0x2a, 0x26, 0xff
-};
-
-//
-unsigned char	cheat_commercial_noclip_seq[] =
-{
-	0xb2, 0x26, 0xe2, 0x36, 0xb2, 0x2a, 0xff	// idclip
-};
-
-unsigned char	cheat_powerup_seq[7][10] =
-{
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6e, 0xff }, 	// beholdv
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xea, 0xff }, 	// beholds
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xb2, 0xff }, 	// beholdi
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6a, 0xff }, 	// beholdr
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xa2, 0xff }, 	// beholda
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x36, 0xff }, 	// beholdl
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xff }			// behold
-};
-
-unsigned char cheat_clev_seq[] =
-{
-	0xb2, 0x26, 0xe2, 0x36, 0xa6, 0x6e, 1, 0, 0, 0xff	// idclev
-};
-
-
-// my position cheat
-unsigned char cheat_mypos_seq[] =
-{
-	0xb2, 0x26, 0xb6, 0xba, 0x2a, 0xf6, 0xea, 0xff		// idmypos
-};
-
-unsigned char cheat_amap_seq[] = { 0xb2, 0x26, 0x26, 0x2e, 0xff };
-
 static int PatchThing (int);
 static int PatchSound (int);
 static int PatchFrame (int);
@@ -576,7 +395,6 @@ static const struct {
 static int HandleMode (const char *mode, int num);
 static BOOL HandleKey (const struct Key *keys, void *structure, const char *key, int value, const int structsize = 0);
 static void BackupData (void);
-static void ChangeCheat (char *newcheat, byte *cheatseq, BOOL needsval);
 static BOOL ReadChars (char **stuff, int size);
 static char *igets (void);
 static int GetLine (void);
@@ -691,22 +509,6 @@ void D_UndoDehPatch()
 	memcpy(clipammo, backupClipAmmo, sizeof(clipammo));
 	memcpy(maxammo, backupMaxAmmo, sizeof(maxammo));
 	deh = backupDeh;
-}
-
-static void ChangeCheat (char *newcheat, byte *cheatseq, BOOL needsval)
-{
-	while (*cheatseq != 0xff && *cheatseq != 1 && *newcheat) {
-		*cheatseq++ = SCRAMBLE(*newcheat);
-		newcheat++;
-	}
-
-	if (needsval) {
-		*cheatseq++ = 1;
-		*cheatseq++ = 0;
-		*cheatseq++ = 0;
-	}
-
-	*cheatseq = 0xff;
 }
 
 static BOOL ReadChars (char **stuff, int size)
@@ -1317,46 +1119,16 @@ static int PatchPointer (int ptrNum)
 	return result;
 }
 
-static int PatchCheats (int dummy)
+static int PatchCheats(int dummy)
 {
-	static const struct {
-		const char *name;
-		byte *cheatseq;
-		BOOL needsval;
-	} keys[] = {
-		{ "Change music",		cheat_mus_seq,				 true },
-		{ "Chainsaw",			cheat_choppers_seq,			 false },
-		{ "God mode",			cheat_god_seq,				 false },
-		{ "Ammo & Keys",		cheat_ammo_seq,				 false },
-		{ "Ammo",				cheat_ammonokey_seq,		 false },
-		{ "No Clipping 1",		cheat_noclip_seq,			 false },
-		{ "No Clipping 2",		cheat_commercial_noclip_seq, false },
-		{ "Invincibility",		cheat_powerup_seq[0],		 false },
-		{ "Berserk",			cheat_powerup_seq[1],		 false },
-		{ "Invisibility",		cheat_powerup_seq[2],		 false },
-		{ "Radiation Suit",		cheat_powerup_seq[3],		 false },
-		{ "Auto-map",			cheat_powerup_seq[4],		 false },
-		{ "Lite-Amp Goggles",	cheat_powerup_seq[5],		 false },
-		{ "BEHOLD menu",		cheat_powerup_seq[6],		 false },
-		{ "Level Warp",			cheat_clev_seq,				 true },
-		{ "Player Position",	cheat_mypos_seq,			 false },
-		{ "Map cheat",			cheat_amap_seq,				 false },
-		{ NULL, NULL, false}
-	};
 	int result;
 
-	DPrintf ("Cheats\n");
+	DPrintf("[DEHacked] Cheats support is depreciated. Ignoring these lines...\n");
 
-	while ((result = GetLine ()) == 1) {
-		int i = 0;
-		while (keys[i].name && stricmp (keys[i].name, Line1))
-			i++;
+	// Fake our work (don't do anything !)
+	while ((result = GetLine()) == 1)
+	{ }
 
-		if (!keys[i].name)
-			DPrintf ("Unknown cheat %s.\n", Line2);
-		else
-			ChangeCheat (Line2, keys[i].cheatseq, keys[i].needsval);
-	}
 	return result;
 }
 
@@ -1596,7 +1368,8 @@ static int PatchText (int oldSize)
 		goto donewithtext;
 
 	// Search through music names.
-	if (oldSize < 7)
+	// [AM] Disabled because it relies on an extern wadlevelinfos
+	/*if (oldSize < 7)
 	{		// Music names are never >6 chars
 		char musname[9];
 		snprintf(musname, ARRAY_LENGTH(musname), "D_%s", oldStr);
@@ -1610,7 +1383,7 @@ static int PatchText (int oldSize)
 				uppercopy(level.music, musname);
 			}
 		}
-	}
+	}*/
 
 	if (good)
 		goto donewithtext;

@@ -27,12 +27,12 @@
 #include <stdlib.h>
 #include <list>
 
+#include "i_sdl.h"
 #include "win32inc.h"
 
 #include "doomstat.h"
 #include "m_argv.h"
 #include "i_input.h"
-#include "i_sdlinput.h"
 #include "i_video.h"
 #include "d_main.h"
 #include "c_bind.h"
@@ -45,6 +45,12 @@
 	#include "i_xbox.h"
 #elif __SWITCH__
 	#include "nx_io.h"
+#endif
+
+#if defined(SDL12)
+#include "i_input_sdl12.h"
+#elif defined(SDL20)
+#include "i_input_sdl20.h"
 #endif
 
 #ifdef _WIN32

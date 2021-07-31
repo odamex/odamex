@@ -169,6 +169,7 @@ EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
 
 EXTERN_CVAR (hud_revealsecrets)
+EXTERN_CVAR(debug_disconnect)
 
 static argb_t enemycolor, teamcolor;
 
@@ -363,7 +364,13 @@ void CL_ResyncWorldIndex()
 	world_index_accum = 0.0f;
 }
 
-void CL_QuitNetGame(const netQuitReason_e reason)
+void Host_EndGame(const char *msg)
+{
+    Printf("%s", msg);
+	CL_QuitNetGame(NQ_SILENT);
+}
+
+void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line)
 {
 	if(connected)
 	{
@@ -420,9 +427,6 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 	if (netdemo.isPlaying())
 		netdemo.stopPlaying();
 
-	if (demorecording)
-		G_CleanupDemo();	// Cleanup in case of a vanilla demo
-
 	demoplayback = false;
 
 	// Reset the palette to default
@@ -432,7 +436,7 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 
 	switch (reason)
 	{
-	default: // Also NQ_NONE
+	default: // Also NQ_SILENT
 		break;
 	case NQ_DISCONNECT:
 		Printf("Disconnected from server\n");
@@ -444,6 +448,9 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 		Printf("Disconnected from server: Unrecoverable protocol error\n");
 		break;
 	}
+
+	if (::debug_disconnect)
+		Printf("  (%s:%d)\n", file, line);
 }
 
 
@@ -729,7 +736,7 @@ BEGIN_COMMAND (connect)
 	C_FullConsole();
 	gamestate = GS_CONNECTING;
 
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	if (argc > 1)
 	{
@@ -766,7 +773,7 @@ END_COMMAND (connect)
 
 BEGIN_COMMAND (disconnect)
 {
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 }
 END_COMMAND (disconnect)
 
@@ -1228,7 +1235,7 @@ BEGIN_COMMAND(netplay)
  		G_CheckDemoStatus();	// cleans up vanilla demo or single player game
 	}
 
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 	connected = false;
 
 	std::string filename = argv[1];
@@ -1447,7 +1454,7 @@ void CL_RequestConnectInfo(void)
 	{
 		connecttimeout = 140;
 
-		Printf(PRINT_HIGH, "connecting to %s\n", NET_AdrToString(serveraddr));
+		Printf(PRINT_HIGH, "Connecting to %s...\n", NET_AdrToString(serveraddr));
 
 		SZ_Clear(&net_buffer);
 		MSG_WriteLong(&net_buffer, LAUNCHER_CHALLENGE);
@@ -1526,7 +1533,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 	// Disconnect from the server before we start the download.
 	Printf(PRINT_HIGH, "Need to download \"%s\", disconnecting from server...\n",
 	       missing_file.getBasename().c_str());
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	// Start the download.
 	CL_StartDownload(downloadsites, missing_file, DL_RECONNECT);
@@ -1554,9 +1561,8 @@ bool CL_PrepareConnect()
 	std::string server_map = MSG_ReadString();
 	byte server_wads = MSG_ReadByte();
 
-	Printf(PRINT_HIGH, "\n");
-	Printf(PRINT_HIGH, "> Server: %s\n", server_host.c_str());
-	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
+	Printf("Found server at %s.\n\n", NET_AdrToString(::serveraddr));
+	Printf("> Hostname: %s\n", server_host.c_str());
 
 	std::vector<std::string> newwadnames;
 	newwadnames.reserve(server_wads);
@@ -1613,10 +1619,9 @@ bool CL_PrepareConnect()
 		}
 	}
 
+	Printf("> Map: %s\n", server_map.c_str());
+
 	version = MSG_ReadShort();
-
-	Printf(PRINT_HIGH, "> Server protocol version: %i\n", version);
-
 	if(version > VERSION)
 		version = VERSION;
 	if(version < 62)
@@ -1678,8 +1683,6 @@ bool CL_PrepareConnect()
 		return false;
 	}
 
-    Printf(PRINT_HIGH, "\n");
-
 	// DEH/BEX Patch files
 	size_t patch_count = MSG_ReadByte();
 
@@ -1701,7 +1704,8 @@ bool CL_PrepareConnect()
 		Printf("> %s\n", file.getBasename().c_str());
 	}
 
-    // TODO: Allow deh/bex file downloads
+	// TODO: Allow deh/bex file downloads
+	Printf("\n");
 	bool ok = D_DoomWadReboot(newwadfiles, newpatchfiles);
 	if (!ok && missingfiles.empty())
 	{
@@ -1742,8 +1746,12 @@ bool CL_Connect()
 
 	memset(packetseq, -1, sizeof(packetseq));
 
+	// [AM] This needs to go out ASAP so the server can start sending us
+	//      messages.
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
+	NET_SendPacket(::net_buffer, ::serveraddr);
+	Printf("Requesting server state...\n");
 
 	compressor.reset();
 
@@ -1839,7 +1847,7 @@ void CL_TryToConnect(DWORD server_token)
 	{
 		connecttimeout = 140; // 140 tics = 4 seconds
 
-		Printf("challenging %s\n", NET_AdrToString(serveraddr));
+		Printf("Joining server...\n");
 
 		SZ_Clear(&net_buffer);
 		MSG_WriteLong(&net_buffer, PROTO_CHALLENGE); // send challenge
@@ -1868,8 +1876,6 @@ void CL_TryToConnect(DWORD server_token)
 
 	connecttimeout--;
 }
-
-EXTERN_CVAR (show_messages)
 
 //
 // CL_PlayerJustTeleported
@@ -2120,6 +2126,27 @@ void CL_PlayerTimes()
 			it->GameTime++;
 	}
 }
+
+//
+// CL_SendCheat
+//
+void CL_SendCheat(int cheats)
+{
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, 0);
+	MSG_WriteShort(&net_buffer, cheats);
+}
+
+//
+// CL_SendCheat
+//
+void CL_SendGiveCheat(const char* item)
+{
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, 1);
+	MSG_WriteString(&net_buffer, item);
+}
+
 
 void PickupMessage (AActor *toucher, const char *message)
 {
@@ -2417,6 +2444,9 @@ void CL_SimulateWorld()
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
-void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType) {}
+void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
+                        const LineActivationType activationType, const bool bossaction)
+{
+}
 
 VERSION_CONTROL (cl_main_cpp, "$Id$")

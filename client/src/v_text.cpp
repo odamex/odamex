@@ -44,10 +44,15 @@ EXTERN_CVAR(msg4color)
 
 EXTERN_CVAR(hud_scaletext)
 
-patch_t* hu_font[HU_FONTSIZE];
+OGlobalFont hu_font;
 
-static patch_t* hu_bigfont[HU_FONTSIZE];
-static patch_t* hu_smallfont[HU_FONTSIZE];
+static lumpHandle_t hu_bigfont[HU_FONTSIZE];
+static lumpHandle_t hu_smallfont[HU_FONTSIZE];
+static lumpHandle_t hu_digfont[HU_FONTSIZE];
+
+static int hu_bigfont_height;
+static int hu_smallfont_height;
+static int hu_digfont_height;
 
 byte *ConChars;
 extern byte *Ranges;
@@ -73,9 +78,9 @@ void V_TextInit()
 		// Some letters of this font are missing.
 		int num = W_CheckNumForName(buffer.c_str());
 		if (num != -1)
-			::hu_bigfont[i] = W_CachePatch(buffer.c_str(), PU_STATIC);
+			::hu_bigfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
 		else
-			::hu_bigfont[i] = (patch_t*)W_CacheLumpNum(W_GetNumForName("TNT1A0", ns_sprites), PU_STATIC);
+			::hu_bigfont[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
 	}
 
 	// Normal doom chat/message font, starts at index 33.
@@ -84,8 +89,45 @@ void V_TextInit()
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
 		StrFormat(buffer, smallfont, j++ - sub);
-		::hu_smallfont[i] = W_CachePatch(buffer.c_str(), PU_STATIC);
+		::hu_smallfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
 	}
+
+	const char* digfont = "DIG%02d";
+	const char* digfont_literal = "DIG%c";
+
+	// BOOM "Dig" font, way more complicated than it needed to be.  Letters
+	// and numbers are themselves, other characters are their ASCII values.
+	j = HU_FONTSTART;
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		if ((j >= '0' && j <= '9') || (j >= 'A' && j <= 'Z'))
+		{
+			StrFormat(buffer, digfont_literal, j++);
+		}
+		else
+		{
+			StrFormat(buffer, digfont, j++);
+		}
+
+		// Some letters of this font might be missing.
+		int num = W_CheckNumForName(buffer.c_str());
+		if (num != -1)
+		{
+			::hu_digfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+		}
+		else
+		{
+			::hu_digfont[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
+		}
+	}
+
+	// Font heights.
+	::hu_bigfont_height =
+	    W_ResolvePatchHandle(::hu_bigfont['M' - HU_FONTSTART])->height();
+	::hu_smallfont_height =
+	    W_ResolvePatchHandle(::hu_smallfont['M' - HU_FONTSTART])->height();
+	::hu_digfont_height =
+	    W_ResolvePatchHandle(::hu_digfont['M' - HU_FONTSTART])->height();
 
 	// Default font is SMALLFONT.
 	V_SetFont("SMALLFONT");
@@ -98,10 +140,9 @@ void V_TextShutdown()
 {
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		::hu_font[i] = NULL;
-
-		Z_Discard(&::hu_bigfont[i]);
-		Z_Discard(&::hu_smallfont[i]);
+		::hu_bigfont[i].clear();
+		::hu_smallfont[i].clear();
+		::hu_digfont[i].clear();
 	}
 }
 
@@ -112,10 +153,12 @@ void V_TextShutdown()
  */
 void V_SetFont(const char* fontname)
 {
-	if (stricmp(fontname, "BIGFONT") == 0)
-		memcpy(::hu_font, ::hu_bigfont, sizeof(::hu_bigfont));
-	else if (stricmp(fontname, "SMALLFONT") == 0)
-		memcpy(::hu_font, ::hu_smallfont, sizeof(::hu_smallfont));
+	if (!stricmp(fontname, "BIGFONT"))
+		::hu_font.setFont(::hu_bigfont, ::hu_bigfont_height);
+	else if (!stricmp(fontname, "SMALLFONT"))
+		::hu_font.setFont(::hu_smallfont, ::hu_smallfont_height);
+	else if (!stricmp(fontname, "DIGFONT"))
+		::hu_font.setFont(::hu_digfont, ::hu_digfont_height);
 }
 
 int V_TextScaleXAmount()
@@ -308,7 +351,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 							const byte *string, int scalex, int scaley) const
 {
-	if (::hu_font[0] == NULL)
+	if (::hu_font[0].empty())
 		return;
 
 	if (normalcolor < 0 || normalcolor > NUM_TEXT_COLORS)
@@ -337,7 +380,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 		if (str[0] == '\n')
 		{
 			cx = x;
-			cy += 9 * scalex;
+			cy += V_LineHeight() * scalex;
 			str++;
 			continue;
 		}
@@ -351,13 +394,13 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 			continue;
 		}
 
-		int w = hu_font[c]->width() * scalex;
+		patch_t* ch = W_ResolvePatchHandle(hu_font[c]);
+
+		int w = ch->width() * scalex;
 		if (cx + w > I_GetSurfaceWidth())
 			break;
 
-        DrawSWrapper(drawer, hu_font[c], cx, cy,
-                        hu_font[c]->width() * scalex,
-                        hu_font[c]->height() * scaley);
+        DrawSWrapper(drawer, ch, cx, cy, ch->width() * scalex, ch->height() * scaley);
 
 		cx += w;
 	}
@@ -369,7 +412,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 int V_StringWidth(const byte* str)
 {
 	// Default width without a font loaded is 8.
-	if (::hu_font[0] == NULL)
+	if (::hu_font[0].empty())
 		return 8;
 
 	int width = 0;
@@ -387,7 +430,7 @@ int V_StringWidth(const byte* str)
 		if (c < 0 || c >= HU_FONTSIZE)
 			width += 4;
 		else
-			width += hu_font[c]->width();
+			width += W_ResolvePatchHandle(hu_font[c])->width();
 	}
 
 	return width;
@@ -396,10 +439,10 @@ int V_StringWidth(const byte* str)
 int V_StringHeight(const char* str)
 {
 	// Default width without a font loaded is 8.
-	if (::hu_font[0] == NULL)
+	if (::hu_font[0].empty())
 		return 8;
 
-	int lineheight = 9; // [AM] Hardcoded in the text drawer.
+	int lineheight = V_LineHeight();
 	int height = lineheight;
 
 	while (str[0] != '\0')
@@ -441,9 +484,14 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 	line->width = V_StringWidth(line->string);
 }
 
+int V_LineHeight()
+{
+	return ::hu_font.lineHeight();
+}
+
 brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 {
-	if (::hu_font[0] == NULL)
+	if (::hu_font[0].empty())
 		return NULL;
 
 	brokenlines_t lines[128];	// Support up to 128 lines (should be plenty)
@@ -484,7 +532,7 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 		if (c < HU_FONTSTART || c >= HU_FONTSTART + HU_FONTSIZE)
 			nw = 4;
 		else
-			nw = hu_font[c - HU_FONTSTART]->width();
+			nw = W_ResolvePatchHandle(hu_font[c - HU_FONTSTART])->width();
 
 		if (w + nw > maxwidth || c == '\n')
 		{

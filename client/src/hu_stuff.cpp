@@ -68,7 +68,6 @@ DCanvas *odacanvas = NULL;
 extern DCanvas *screen;
 extern byte *Ranges;
 
-EXTERN_CVAR(hud_fullhudtype)
 EXTERN_CVAR(hud_scaletext)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_timelimit)
@@ -113,7 +112,7 @@ void HU_Init();
 void HU_Drawer();
 BOOL HU_Responder(event_t *ev);
 
-patch_t* sbline;
+lumpHandle_t sbline;
 
 void HU_DrawScores (player_t *plyr);
 void HU_ConsoleScores (player_t *plyr);
@@ -201,7 +200,7 @@ void HU_Init()
 	V_TextInit();
 
 	// Load the status bar line
-	sbline = W_CachePatch("SBLINE", PU_STATIC);
+	::sbline = W_CachePatchHandle("SBLINE", PU_STATIC);
 
 	HU_InitCrosshair();
 }
@@ -214,7 +213,7 @@ void HU_Init()
 //
 void STACK_ARGS HU_Shutdown()
 {
-	Z_Discard(&::sbline);
+	::sbline.clear();
 
 	V_TextShutdown();
 }
@@ -230,6 +229,8 @@ void HU_Ticker()
 	// verify the chat mode status is valid
 	if (ConsoleState != c_up || menuactive || (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION))
 		HU_UnsetChatMode();
+
+	hud::ToastTicker();
 }
 
 void HU_ReleaseKeyStates()
@@ -411,7 +412,7 @@ static void HU_DrawCrosshair()
 static void HU_DrawChatPrompt()
 {
 	// Don't draw the chat prompt without a valid font.
-	if (::hu_font[0] == NULL)
+	if (::hu_font[0].empty())
 		return;
 
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
@@ -450,7 +451,7 @@ static void HU_DrawChatPrompt()
 		prompt = "Say: ";
 
 	int promptwidth = V_StringWidth(prompt) * scaledxfac;
-	int x = hu_font['_' - HU_FONTSTART]->width() * scaledxfac * 2 + promptwidth;
+	int x = W_ResolvePatchHandle(hu_font['_' - HU_FONTSTART])->width() * scaledxfac * 2 + promptwidth;
 
 	// figure out if the text is wider than the screen->
 	// if so, only draw the right-most portion of it.
@@ -461,7 +462,7 @@ static void HU_DrawChatPrompt()
 		if (c < 0 || c >= HU_FONTSIZE)
 			x += 4 * scaledxfac;
 		else
-			x += hu_font[c]->width() * scaledxfac;
+			x += W_ResolvePatchHandle(hu_font[c])->width() * scaledxfac;
 	}
 
 	if (i >= 0)
@@ -491,16 +492,16 @@ void HU_Drawer()
 	{
 		bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
 
+		hud::DrawToasts();
+
 		if ((viewactive && !R_StatusBarVisible()) || spechud)
 		{
 			if (screenblocks < 12)
 			{
 				if (spechud)
 					hud::SpectatorHUD();
-				else if (hud_fullhudtype >= 1)
-					hud::OdamexHUD();
 				else
-					hud::ZDoomHUD();
+					hud::OdamexHUD();
 			}
 		}
 		else
@@ -844,10 +845,10 @@ void drawHeader(player_t *player, int y)
 
 	// Line
 	for (short xi = -236 + 1;xi < 236;xi += 2) {
-		hud::DrawTranslatedPatch(xi, y + yOffset + 8, hud_scalescoreboard,
-		                         hud::X_CENTER, hud::Y_MIDDLE,
-		                         hud::X_CENTER, hud::Y_TOP,
-		                         sbline, Ranges + CR_GREY * 256, true);
+		hud::DrawTranslatedPatch(xi, y + yOffset + 8, hud_scalescoreboard, hud::X_CENTER,
+		                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP,
+		                         W_ResolvePatchHandle(sbline), Ranges + CR_GREY * 256,
+		                         true);
 	}
 }
 
@@ -910,11 +911,11 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 	              "PING", CR_GREY, true);
 
 	// Line
+	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 	for (short xi = -236 + 1;xi < 236;xi += 2) {
-		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard,
-		                         hud::X_CENTER, hud::Y_MIDDLE,
-		                         hud::X_CENTER, hud::Y_TOP,
-		                         sbline, Ranges + CR_GREY * 256, true);
+		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard, hud::X_CENTER,
+		                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP, pSBLine,
+		                         Ranges + CR_GREY * 256, true);
 	}
 
 	// Ingame Players
@@ -1063,16 +1064,15 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 
 		color = V_GetTextColor(GetTeamInfo((team_t)i)->TextColor.c_str());
 
+		patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 		for (short xi = xOffset; xi < xOffset + 232; xi += 2)
 		{
 			hud::DrawTranslatedPatch(xi, yOffset + y + 8, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_LEFT, hud::Y_TOP,
-				sbline, Ranges + color * 256, true);
+			                         hud::X_CENTER, hud::Y_MIDDLE, hud::X_LEFT,
+			                         hud::Y_TOP, pSBLine, Ranges + color * 256, true);
 			hud::DrawTranslatedPatch(xi, yOffset + y + 19, hud_scalescoreboard,
-				hud::X_CENTER, hud::Y_MIDDLE,
-				hud::X_LEFT, hud::Y_TOP,
-				sbline, Ranges + color * 256, true);
+			                         hud::X_CENTER, hud::Y_MIDDLE, hud::X_LEFT,
+			                         hud::Y_TOP, pSBLine, Ranges + color * 256, true);
 		}
 
 		// Team Info
@@ -1201,11 +1201,11 @@ void drawSpectators(player_t *player, int y, byte extra_rows) {
 	static short tx[3] = {-236, -79, 78};
 
 	// Line
+	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 	for (short xi = -236 + 1;xi < 236;xi += 2) {
-		hud::DrawTranslatedPatch(xi, y, hud_scalescoreboard,
-		                         hud::X_CENTER, hud::Y_MIDDLE,
-		                         hud::X_CENTER, hud::Y_TOP,
-		                         sbline, Ranges + CR_GREY * 256, true);
+		hud::DrawTranslatedPatch(xi, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+		                         hud::X_CENTER, hud::Y_TOP, pSBLine,
+		                         Ranges + CR_GREY * 256, true);
 	}
 
 	byte specs = hud::CountSpectators();
@@ -1368,11 +1368,11 @@ void drawLowHeader(player_t *player, int y) {
 	              str.c_str(), CR_GOLD, true);
 
 	// Line
+	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 	for (short xi = -146 + 1;xi < 146;xi += 2) {
-		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard,
-		                         hud::X_CENTER, hud::Y_MIDDLE,
-		                         hud::X_CENTER, hud::Y_TOP,
-		                         sbline, Ranges + CR_GREY * 256, true);
+		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard, hud::X_CENTER,
+		                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP, pSBLine,
+		                         Ranges + CR_GREY * 256, true);
 	}
 }
 
@@ -1433,11 +1433,11 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	              "PNG", CR_GREY, true);
 
 	// Line
+	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 	for (short xi = -146 + 1;xi < 146;xi += 2) {
-		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard,
-		                         hud::X_CENTER, hud::Y_MIDDLE,
-		                         hud::X_CENTER, hud::Y_TOP,
-		                         sbline, Ranges + CR_GREY * 256, true);
+		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard, hud::X_CENTER,
+		                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP, pSBLine,
+		                         Ranges + CR_GREY * 256, true);
 	}
 
 	// Ingame Players
@@ -1559,20 +1559,19 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 
 	int yOffset = 8;
 
+	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
 		color = V_GetTextColor(GetTeamInfo((team_t)i)->TextColor.c_str());
 
 		for (short xi = -146 + 1;xi < 146;xi += 2)
 		{
-			hud::DrawTranslatedPatch(xi, y + yOffset, hud_scalescoreboard,
-			                         hud::X_CENTER, hud::Y_MIDDLE,
-			                         hud::X_CENTER, hud::Y_TOP,
-			                         sbline, Ranges + color * 256, true);
+			hud::DrawTranslatedPatch(xi, y + yOffset, hud_scalescoreboard, hud::X_CENTER,
+			                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP, pSBLine,
+			                         Ranges + color * 256, true);
 			hud::DrawTranslatedPatch(xi, y + yOffset + 11, hud_scalescoreboard,
-			                         hud::X_CENTER, hud::Y_MIDDLE,
-			                         hud::X_CENTER, hud::Y_TOP,
-			                         sbline, Ranges + color * 256, true);
+			                         hud::X_CENTER, hud::Y_MIDDLE, hud::X_CENTER,
+			                         hud::Y_TOP, pSBLine, Ranges + color * 256, true);
 		}
 
 		// Team Info
@@ -1724,11 +1723,11 @@ void drawLowSpectators(player_t *player, int y, byte extra_rows) {
 	static short tx[2] = {-146, 1};
 
 	// Line
+	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 	for (short xi = -146 + 1;xi < 146;xi += 2) {
-		hud::DrawTranslatedPatch(xi, y, hud_scalescoreboard,
-		                         hud::X_CENTER, hud::Y_MIDDLE,
-		                         hud::X_CENTER, hud::Y_TOP,
-		                         sbline, Ranges + CR_GREY * 256, true);
+		hud::DrawTranslatedPatch(xi, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+		                         hud::X_CENTER, hud::Y_TOP, pSBLine,
+		                         Ranges + CR_GREY * 256, true);
 	}
 
 	byte specs = hud::CountSpectators();
@@ -1995,9 +1994,9 @@ void HU_ConsoleScores(player_t *player)
 							itplayer->GameTime / 60);
 
 					if (itplayer == player)
-						Printf_Bold(str);
+						Printf_Bold("%s", str);
 					else
-						Printf(PRINT_HIGH, str);
+						Printf("%s", str);
 				}
 			}
 		}
@@ -2052,9 +2051,9 @@ void HU_ConsoleScores(player_t *player)
 							itplayer->GameTime / 60);
 
 					if (itplayer == player)
-						Printf_Bold(str);
+						Printf_Bold("%s", str);
 					else
-						Printf(PRINT_HIGH, str);
+						Printf("%s", str);
 				}
 			}
 		}
@@ -2096,9 +2095,9 @@ void HU_ConsoleScores(player_t *player)
 					itplayer->GameTime / 60);
 
 			if (itplayer == player)
-				Printf_Bold(str);
+				Printf_Bold("%s", str);
 			else
-				Printf(PRINT_HIGH, str);
+				Printf("%s", str);
 		}
 
 	}
@@ -2124,9 +2123,9 @@ void HU_ConsoleScores(player_t *player)
 					itplayer->GameTime / 60);
 
 			if (itplayer == player)
-				Printf_Bold(str);
+				Printf_Bold("%s", str);
 			else
-				Printf(PRINT_HIGH, str);
+				Printf("%s", str);
 		}
 	}
 
@@ -2142,9 +2141,9 @@ void HU_ConsoleScores(player_t *player)
 			const player_t* itplayer = *it;
 			sprintf(str, "%-15s\n", itplayer->userinfo.netname.c_str());
 			if (itplayer == player)
-				Printf_Bold(str);
+				Printf_Bold("%s", str);
 			else
-				Printf(PRINT_HIGH, str);
+				Printf("%s", str);
 		}
 	}
 

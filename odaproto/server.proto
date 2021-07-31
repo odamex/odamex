@@ -124,7 +124,7 @@ message UserInfo
 	string netname = 2;
 	int32 team = 3;
 	int32 gender = 4;
-	repeated int32 color = 5;
+	Color color = 5;
 	sint64 join_time = 6;
 }
 
@@ -149,6 +149,7 @@ message DamagePlayer
 	int32 health_damage = 2;
 	int32 armor_damage = 3;
 	int32 inflictorid = 4;
+	Player player = 5;
 }
 
 // svc_killmobj
@@ -201,6 +202,9 @@ message PlayerMembers
 	int32 secretcount = 11;
 	int32 totalpoints = 12;
 	int32 totaldeaths = 13;
+
+	// Ch0wW: Include Cheats...
+	uint32 cheats = 14;
 }
 
 // svc_teammembers
@@ -218,6 +222,7 @@ message ActivateLine
 	uint32 activator_netid = 2;
 	int32 side = 3;
 	int32 activation_type = 4;
+	bool bossaction = 5;
 }
 
 // svc_movingsector
@@ -633,6 +638,18 @@ message MaplistIndex
 	int32 count = 1;
 	int32 next_index = 2;
 	int32 this_index = 3;
+}
+
+// svc_toast
+message Toast
+{
+	uint32 flags = 1;
+	string left = 2;
+	string right = 3;
+	sint32 icon = 4;
+	sint32 pid_highlight = 5;
+	string left_plus = 6;
+	string right_plus = 7;
 }
 
 // svc_netdemocap

@@ -63,6 +63,15 @@
 lumpinfo_t*		lumpinfo;
 size_t			numlumps;
 
+// Generation of handle.
+// Takes up the first three bits of the handle id.  Starts at 1, increments
+// every time we unload the current set of WAD files, and eventually wraps
+// around from 7 to 1.  We skip 0 so a handle id of 0 can be considered NULL
+// and part of no generation.
+size_t handleGen = 1;
+const size_t HANDLE_GEN_MASK = BIT_MASK(0, 2);
+const size_t HANDLE_GEN_BITS = 3;
+
 void**			lumpcache;
 
 static unsigned	stdisk_lumpnum;
@@ -510,6 +519,35 @@ void W_InitMultipleFiles(const OResFiles& files)
 	stdisk_lumpnum = W_GetNumForName("STDISK");
 }
 
+/**
+ * @brief Return a handle for a given lump.
+ */
+lumpHandle_t W_LumpToHandle(const unsigned lump)
+{
+	lumpHandle_t rvo;
+	size_t id = static_cast<size_t>(lump) << HANDLE_GEN_BITS;
+	rvo.id = id | ::handleGen;
+	return rvo;
+}
+
+/**
+ * @brief Return a lump for a given handle, or -1 if the handle is invalid.
+ */
+int W_HandleToLump(const lumpHandle_t handle)
+{
+	size_t gen = handle.id & HANDLE_GEN_MASK;
+	if (gen != ::handleGen)
+	{
+		return -1;
+	}
+	const unsigned lump = handle.id >> HANDLE_GEN_BITS;
+	if (lump >= ::numlumps)
+	{
+		return -1;
+	}
+	return lump;
+}
+
 //
 // W_CheckNumForName
 // Returns -1 if name not found.
@@ -566,6 +604,19 @@ int W_GetNumForName(const char* name, int namespc)
 	return i;
 }
 
+/**
+ * @brief Return the name of a lump number.
+ * 
+ * @detail You likely only need this for debugging, since a name can be
+ *         ambiguous.
+ */
+std::string W_LumpName(unsigned lump)
+{
+	if (lump >= ::numlumps)
+		I_Error("%s: %i >= numlumps", __FUNCTION__, lump);
+
+	return std::string(::lumpinfo[lump].name, ARRAY_LENGTH(::lumpinfo[lump].name));
+}
 
 //
 // W_LumpLength
@@ -662,7 +713,7 @@ void W_GetLumpName (char *to, unsigned  lump)
 //
 // W_CacheLumpNum
 //
-void* W_CacheLumpNum(unsigned int lump, int tag)
+void* W_CacheLumpNum(unsigned int lump, const zoneTag_e tag)
 {
 	if ((unsigned)lump >= numlumps)
 		I_Error ("W_CacheLumpNum: %i >= numlumps",lump);
@@ -693,13 +744,13 @@ void* W_CacheLumpNum(unsigned int lump, int tag)
 //
 // W_CacheLumpName
 //
-void* W_CacheLumpName(const char* name, int tag)
+void* W_CacheLumpName(const char* name, const zoneTag_e tag)
 {
 	return W_CacheLumpNum (W_GetNumForName(name), tag);
 }
 
 size_t R_CalculateNewPatchSize(patch_t *patch, size_t length);
-void R_ConvertPatch(patch_t *rawpatch, patch_t *newpatch);
+void R_ConvertPatch(patch_t* rawpatch, patch_t* newpatch, const unsigned int lumpnum);
 
 //
 // W_CachePatch
@@ -708,7 +759,7 @@ void R_ConvertPatch(patch_t *rawpatch, patch_t *newpatch);
 // patch from the standard Doom format of posts with 1-byte lengths and offsets
 // to a new format for posts that uses 2-byte lengths and offsets.
 //
-patch_t* W_CachePatch(unsigned lumpnum, int tag)
+patch_t* W_CachePatch(unsigned lumpnum, const zoneTag_e tag)
 {
 	if (lumpnum >= numlumps)
 		I_Error ("W_CachePatch: %u >= numlumps", lumpnum);
@@ -730,7 +781,7 @@ patch_t* W_CachePatch(unsigned lumpnum, int tag)
 			patch_t *newpatch = (patch_t*)lumpcache[lumpnum];
 			*((unsigned char*)lumpcache[lumpnum] + newlumplen) = 0;
 
-			R_ConvertPatch(newpatch, rawpatch);
+			R_ConvertPatch(newpatch, rawpatch, lumpnum);
 		}
 		else
 		{
@@ -752,10 +803,43 @@ patch_t* W_CachePatch(unsigned lumpnum, int tag)
 	return (patch_t*)lumpcache[lumpnum];
 }
 
-patch_t* W_CachePatch(const char* name, int tag)
+patch_t* W_CachePatch(const char* name, const zoneTag_e tag)
 {
 	return W_CachePatch(W_GetNumForName(name), tag);
 	// denis - todo - would be good to replace non-existant patches with a default '404' patch
+}
+
+/**
+ * @brief Cache a patch by lump number and return a handle to it.
+ */
+lumpHandle_t W_CachePatchHandle(const int lumpNum, const zoneTag_e tag)
+{
+	W_CachePatch(lumpNum, tag);
+	return W_LumpToHandle(lumpNum);
+}
+
+/**
+ * @brief Cache a patch by name and namespace and return a handle to it.
+ */
+lumpHandle_t W_CachePatchHandle(const char* name, const zoneTag_e tag, const int ns)
+{
+	return W_CachePatchHandle(W_GetNumForName(name, ns), tag);
+}
+
+/**
+ * @brief Resolve a handle into a patch_t, or an empty patch if the
+ *        lump was missing or from a previous generation.
+ */
+patch_t* W_ResolvePatchHandle(const lumpHandle_t lump)
+{
+	int lumpnum = W_HandleToLump(lump);
+	if (lumpnum == -1)
+	{
+		static patch_t empty;
+		memset(&empty, 0, sizeof(patch_t));
+		return &empty;
+	}
+	return static_cast<patch_t*>(lumpcache[lumpnum]);
 }
 
 //
@@ -805,6 +889,13 @@ void W_Close ()
 			handles.push_back(lump_p->handle);
 		}
 		lump_p++;
+	}
+
+	::handleGen = (::handleGen + 1) & HANDLE_GEN_MASK;
+	if (::handleGen == 0)
+	{
+		// 0 is reserved for the NULL handle.
+		::handleGen += 1;
 	}
 }
 

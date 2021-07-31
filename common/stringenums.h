@@ -680,8 +680,11 @@ extern const OString MUSIC_ULTIMA;
 extern const OString MUSIC_READ_M;
 extern const OString MUSIC_DM2TTL;
 extern const OString MUSIC_DM2INT;
+extern const OString TXT_BUDDHAON;
+extern const OString TXT_BUDDHAOFF;
 
-#define STRING_INDEXES_LENGTH 653
+
+#define STRING_INDEXES_LENGTH 655
 
 extern const OString* const stringIndexes[STRING_INDEXES_LENGTH];
 

@@ -49,13 +49,14 @@ extern bool predicting;
 
 enum netQuitReason_e
 {
-	NQ_NONE,       // Don't print a message.
+	NQ_SILENT,     // Don't print a message.
 	NQ_DISCONNECT, // Generic message for "typical" forced disconnects initiated by the client.
 	NQ_ABORT,      // Connection attempt was aborted
 	NQ_PROTO,      // Encountered something unexpected in the protocol
 };
 
-void CL_QuitNetGame(const netQuitReason_e reason = NQ_NONE);
+#define CL_QuitNetGame(reason) CL_QuitNetGame2(reason, __FILE__, __LINE__)
+void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line);
 void CL_Reconnect();
 void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);
@@ -68,6 +69,9 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictWorld(void);
 void CL_SendUserInfo(void);
 bool CL_Connect();
+
+void CL_SendCheat(int cheats);
+void CL_SendGiveCheat(const char* item);
 
 void CL_DisplayTics();
 void CL_RunTics();

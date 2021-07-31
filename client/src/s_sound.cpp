@@ -305,7 +305,7 @@ void S_Start (void)
 	mus_paused = 0;
 
 	// [RH] This is a lot simpler now.
-	S_ChangeMusic (std::string(level.music, 8), true);
+	S_ChangeMusic (std::string(level.music.c_str(), 8), true);
 }
 
 
@@ -377,7 +377,7 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 			return i;
 
 	// Find a channel with lower priority
-	for (size_t i = numChannels - 1; i >= 0; i--)
+	for (size_t i = numChannels - 1; i-- > 0;)
 		if (S_CompareChannels(tempchan, Channel[i]))
 			return i;
 
@@ -401,9 +401,6 @@ static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
 	static const fixed_t MIN_SND_DIST = 1 * FRACUNIT;
 	int approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
 
-	if (S_UseMap8Volume())
-		approx_dist = MIN(approx_dist, MAX_SND_DIST);
-
 	if (approx_dist > MAX_SND_DIST)
 	{
 		*vol = 0;
@@ -417,10 +414,8 @@ static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
 	else
 	{
 		float attenuation = float(SoundCurve[approx_dist >> FRACBITS]) / 128.0f;
-		if (S_UseMap8Volume())
-			*vol = 1.0f + (snd_sfxvolume - 1.0f) * attenuation;
-		else
-			*vol = snd_sfxvolume * attenuation;
+		
+		*vol = snd_sfxvolume * attenuation;
 
 		// angle of source to listener
 		angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
@@ -475,10 +470,14 @@ static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
 	{
 		float attenuation = FIXED2FLOAT(
 		    FixedDiv(S_CLIPPING_DIST - approx_dist, S_CLIPPING_DIST - S_CLOSE_DIST));
-		if (S_UseMap8Volume())
-			*vol = 1.0f + (snd_sfxvolume - 1.0f) * attenuation;
-		else
-			*vol = snd_sfxvolume * attenuation;
+
+		// HACKY STUFF: We want to leave the attenuation, but not to make everything LOUDER.
+		// On MAP 8, Doom makes a minimum volume of sounds which is 15/128 (0.192).
+		// We then set that value as the strict minimum for those maps.
+		if (S_UseMap8Volume() && attenuation < 0.192)
+			attenuation = 0.192;
+
+		*vol = snd_sfxvolume * attenuation;
 
 		// angle of source to listener
 		angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
@@ -1332,8 +1331,7 @@ void S_ParseSndInfo (void)
 					sndinfo = COM_Parse (sndinfo);
 					if (info.mapname[0])
 					{
-						strncpy (info.music, com_token, 9); // denis - todo -string limit?
-						std::transform(info.music, info.music + strlen(info.music), info.music, toupper);
+						info.music = com_token; // denis - todo -string limit?
 					}
 				} else {
 					Printf (PRINT_WARNING, "Unknown SNDINFO command %s\n", com_token);

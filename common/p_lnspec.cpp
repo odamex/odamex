@@ -286,6 +286,35 @@ FUNC(LS_Generic_Door)
 	return EV_DoDoor (type, ln, it, arg0, SPEED(arg1), OCTICS(arg3), (card_t)arg4);
 }
 
+FUNC(LS_Thing_Stop)
+// Thing_Stop (tid)
+{
+	AActor * target;
+
+	if (arg0 != 0)
+	{
+		FActorIterator iterator (arg0);
+
+		while ((target = iterator.Next()))
+		{
+			target->momx = target->momy = target->momz = 0;
+			if (target->player != NULL)
+				target->momx = target->momy = 0;
+			
+			return true;
+		}
+	}
+	else if (it)
+	{
+		it->momx = it->momy = it->momz = 0;
+		if (it->player != NULL)
+			it->momx = it->momy = 0;
+
+		return true;
+	}
+	return false;
+}
+
 FUNC(LS_Floor_LowerByValue)
 // Floor_LowerByValue (tag, speed, height)
 {
@@ -797,7 +826,7 @@ FUNC(LS_Teleport_NewMap)
 
 		if (it && (info.levelnum != 0 && CheckIfExitIsGood(it)))
 		{
-			strncpy(level.nextmap, info.mapname, 8);
+			level.nextmap = info.mapname;
 			G_ExitLevel(arg1, 1);
 			return true;
 		}
@@ -829,10 +858,12 @@ FUNC(LS_Teleport_NoStop)
 }
 
 FUNC(LS_Teleport_NoFog)
-// Teleport_NoFog (tid)
+// Teleport_NoFog (tid, useangle, tag, keepheight)
 {
-	if(!it) return false;
-	return EV_SilentTeleport (arg0, ln, TeleportSide, it);
+	if(!it)
+		return false;
+
+	return EV_SilentTeleport(arg0, arg1, arg2, arg3, ln, TeleportSide, it);
 }
 
 FUNC(LS_Teleport_EndGame)
@@ -840,7 +871,7 @@ FUNC(LS_Teleport_EndGame)
 {
 	if (!TeleportSide && it && CheckIfExitIsGood (it))
 	{
-		strncpy (level.nextmap, "EndGameC", 8);
+		level.nextmap = "EndGameC";
 		G_ExitLevel (0, 1);
 		return true;
 	}
@@ -1054,9 +1085,9 @@ FUNC(LS_ACS_Execute)
 	level_pwad_info_t& info = levels.findByNum(arg1);
 
 	if (arg1 == 0 || !info.exists())
-		return P_StartScript(it, ln, arg0, ::level.mapname, TeleportSide, arg2, arg3, arg4, 0);
+		return P_StartScript(it, ln, arg0, ::level.mapname.c_str(), TeleportSide, arg2, arg3, arg4, 0);
 
-	return P_StartScript(it, ln, arg0, info.mapname, TeleportSide, arg2, arg3, arg4, 0);
+	return P_StartScript(it, ln, arg0, info.mapname.c_str(), TeleportSide, arg2, arg3, arg4, 0);
 }
 
 FUNC(LS_ACS_ExecuteAlways)
@@ -1069,9 +1100,9 @@ FUNC(LS_ACS_ExecuteAlways)
 	level_pwad_info_t& info = levels.findByNum(arg1);
 
 	if (arg1 == 0 || !info.exists())
-		return P_StartScript(it, ln, arg0, ::level.mapname, TeleportSide, arg2, arg3, arg4, 1);
+		return P_StartScript(it, ln, arg0, ::level.mapname.c_str(), TeleportSide, arg2, arg3, arg4, 1);
 
-	return P_StartScript(it, ln, arg0, info.mapname, TeleportSide, arg2, arg3, arg4, 1);
+	return P_StartScript(it, ln, arg0, info.mapname.c_str(), TeleportSide, arg2, arg3, arg4, 1);
 }
 
 FUNC(LS_ACS_LockedExecute)
@@ -1096,9 +1127,9 @@ FUNC(LS_ACS_Suspend)
 	level_pwad_info_t& info = levels.findByNum(arg1);
 
 	if (arg1 == 0 || !info.exists())
-		P_SuspendScript(arg0, ::level.mapname);
+		P_SuspendScript(arg0, ::level.mapname.c_str());
 	else
-		P_SuspendScript(arg0, info.mapname);
+		P_SuspendScript(arg0, info.mapname.c_str());
 
 	return true;
 }
@@ -1112,9 +1143,9 @@ FUNC(LS_ACS_Terminate)
 	level_pwad_info_t& info = getLevelInfos().findByNum(arg1);
 
 	if (arg1 == 0 || !info.exists())
-		P_TerminateScript(arg0, ::level.mapname);
+		P_TerminateScript(arg0, ::level.mapname.c_str());
 	else
-		P_TerminateScript(arg0, info.mapname);
+		P_TerminateScript(arg0, info.mapname.c_str());
 
 	return true;
 }
@@ -1790,7 +1821,7 @@ lnSpecFunc LineSpecials[256] =
 	LS_NOP,		// 16
 	LS_NOP,		// 17
 	LS_NOP,		// 18
-	LS_NOP,		// 19
+	LS_Thing_Stop,		// 19
 	LS_Floor_LowerByValue,
 	LS_Floor_LowerToLowest,
 	LS_Floor_LowerToNearest,
@@ -2049,7 +2080,7 @@ BOOL CheckIfExitIsGood (AActor *self)
         if (!sv_allowexit)
         {
 			if (sv_fragexitswitch && serverside)
-				P_DamageMobj(self, NULL, NULL, 10000, MOD_SUICIDE);
+				P_DamageMobj(self, NULL, NULL, 10000, MOD_EXIT);
 
 			return false;
 		}

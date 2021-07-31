@@ -124,6 +124,10 @@
  */
 #define SVC_PM_SCORE BIT(3)
 
+/**
+ * @brief svc_playermembers: Cheats & flags.
+ */
+#define SVC_PM_CHEATS BIT(4)
 
 extern int   localport;
 extern int   msg_badread;
@@ -204,6 +208,7 @@ enum svc_t
 	svc_maplist,           // [AM] - Return a maplist status.
 	svc_maplist_update,    // [AM] - Send the entire maplist to the client in chunks.
 	svc_maplist_index,     // [AM] - Send the current and next map index to the client.
+	svc_toast,
 	svc_netdemocap = 100,  // netdemos - NullPoint
 	svc_netdemostop = 101, // netdemos - NullPoint
 	svc_netdemoloadsnap = 102, // netdemos - NullPoint
@@ -243,8 +248,7 @@ enum clc_t
 	clc_spectate,       // denis
 	clc_wantwad,        // denis - name, hash
 	clc_kill,           // denis - suicide
-	clc_cheat,          // denis - god, pumpkins, etc
-	clc_cheatpulse,     // Russell - one off cheats (idkfa, idfa etc)
+	clc_cheat,          // denis - handle cheat codes.
 	clc_callvote,       // [AM] - Calling a vote
 	clc_maplist,        // [AM] - Maplist status request.
 	clc_maplist_update, // [AM] - Request the entire maplist from the server.

@@ -66,6 +66,7 @@ EXTERN_CVAR(cl_autorecord_ctf)
 EXTERN_CVAR(cl_autorecord_deathmatch)
 EXTERN_CVAR(cl_autorecord_duel)
 EXTERN_CVAR(cl_autorecord_teamdm)
+EXTERN_CVAR(cl_chatsounds)
 EXTERN_CVAR(cl_connectalert)
 EXTERN_CVAR(cl_disconnectalert)
 EXTERN_CVAR(cl_netdemoname)
@@ -117,9 +118,9 @@ static void UnpackBoolArray(bool* bools, size_t count, uint32_t in)
  * @brief Common code for activating a line.
  */
 static void ActivateLine(AActor* mo, line_s* line, byte side,
-                         LineActivationType activationType, byte special = 0,
-                         int arg0 = 0, int arg1 = 0, int arg2 = 0, int arg3 = 0,
-                         int arg4 = 0)
+                         LineActivationType activationType, const bool bossaction,
+                         byte special = 0, int arg0 = 0, int arg1 = 0, int arg2 = 0,
+                         int arg3 = 0, int arg4 = 0)
 {
 	// [SL] 2012-03-07 - If this is a player teleporting, add this player to
 	// the set of recently teleported players.  This is used to flush past
@@ -146,11 +147,11 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 	{
 	case LineCross:
 		if (line)
-			P_CrossSpecialLine(line - lines, side, mo);
+			P_CrossSpecialLine(line - lines, side, mo, bossaction);
 		break;
 	case LineUse:
 		if (line)
-			P_UseSpecialLine(mo, line, side);
+			P_UseSpecialLine(mo, line, side, bossaction);
 		break;
 	case LineShoot:
 		if (line)
@@ -193,7 +194,7 @@ static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 	}
 
 	Printf("%s", msg->message().c_str());
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 }
 
 /**
@@ -251,6 +252,9 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 			p.powers[i] = 0;
 		}
 	}
+
+	if (!p.spectator)
+		p.cheats = msg->player().cheats();
 }
 
 /**
@@ -635,6 +639,8 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
 	::forcenetdemosplit = false;
 
+	//am_cheating = 0;
+
 	if (splitnetdemo)
 		netdemo.stopRecording();
 
@@ -808,13 +814,10 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 	if (p->userinfo.gender < 0 || p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
 
-	for (size_t i = 0; i < p->userinfo.color[i]; i++)
-	{
-		if (i < msg->color_size())
-			p->userinfo.color[i] = msg->color().Get(i);
-		else
-			p->userinfo.color[i] = 0;
-	}
+	p->userinfo.color[0] = 255;
+	p->userinfo.color[1] = msg->color().r();
+	p->userinfo.color[2] = msg->color().g();
+	p->userinfo.color[3] = msg->color().b();
 
 	p->GameTime = msg->join_time();
 
@@ -1032,6 +1035,8 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	uint32_t attackerid = msg->inflictorid();
 	int healthDamage = msg->health_damage();
 	int armorDamage = msg->armor_damage();
+	int health = msg->player().health();
+	int armorpoints = msg->player().armorpoints();
 
 	AActor* actor = P_FindThingById(netid);
 	AActor* attacker = P_FindThingById(attackerid);
@@ -1040,15 +1045,23 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 		return;
 
 	player_t* p = actor->player;
-	p->health -= healthDamage;
+	p->health = MIN(p->health, health);
+	p->armorpoints = MIN(p->armorpoints, armorpoints);
 	p->mo->health = p->health;
-	p->armorpoints -= armorDamage;
 
 	if (attacker != NULL)
 		p->attacker = attacker->ptr();
 
 	if (p->health < 0)
-		p->health = 0;
+	{
+		if (p->cheats & CF_BUDDHA)
+		{
+			p->health = 1;
+			p->mo->health = 1;
+		}
+		else 
+			p->health = 0;
+	}
 	if (p->armorpoints < 0)
 		p->armorpoints = 0;
 
@@ -1075,7 +1088,7 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	uint32_t tgtid = msg->target().netid();
 	uint32_t infid = msg->inflictor_netid();
 	int health = msg->health();
-	::MeansOfDeath = msg->mod();
+	//::MeansOfDeath = msg->mod();
 	bool joinkill = msg->joinkill();
 	int lives = msg->lives();
 
@@ -1206,12 +1219,8 @@ static void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 //
 static void CL_Print(const odaproto::svc::Print* msg)
 {
-	printlevel_t level = static_cast<printlevel_t>(msg->level());
-	std::string str = msg->message();
-
-	// Protect against out of bounds print levels.
-	if (level < 0 || level >= PRINT_MAXPRINT)
-		return;
+	byte level = msg->level();
+	const char* str = msg->message().c_str();
 
 	// Disallow getting NORCON messages
 	if (level == PRINT_NORCON)
@@ -1219,18 +1228,18 @@ static void CL_Print(const odaproto::svc::Print* msg)
 
 	// TODO : Clientchat moved, remove that but PRINT_SERVERCHAT
 	if (level == PRINT_CHAT)
-		Printf(level, "%s*%s", TEXTCOLOR_ESCAPE, str.c_str());
+		Printf(level, "%s*%s", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_TEAMCHAT)
-		Printf(level, "%s!%s", TEXTCOLOR_ESCAPE, str.c_str());
+		Printf(level, "%s!%s", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
-		Printf(level, "%s%s", TEXTCOLOR_YELLOW, str.c_str());
+		Printf(level, "%s%s", TEXTCOLOR_YELLOW, str);
 	else
-		Printf(level, "%s", str.c_str());
+		Printf(level, "%s", str);
 
-	if (::show_messages)
+	if (show_messages)
 	{
 		if (level == PRINT_CHAT || level == PRINT_SERVERCHAT)
-			S_Sound(CHAN_INTERFACE, ::gameinfo.chatSound, 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 		else if (level == PRINT_TEAMCHAT)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
@@ -1270,6 +1279,12 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		p.totalpoints = msg->totalpoints();
 		p.totaldeaths = msg->totaldeaths();
 	}
+
+	if (flags & SVC_PM_CHEATS)
+	{
+		if (!p.spectator)
+			p.cheats = msg->cheats();
+	}
 }
 
 //
@@ -1297,11 +1312,12 @@ static void CL_ActivateLine(const odaproto::svc::ActivateLine* msg)
 	byte side = msg->side();
 	LineActivationType activationType =
 	    static_cast<LineActivationType>(msg->activation_type());
+	const bool bossaction = msg->bossaction();
 
 	if (!::lines || linenum >= ::numlines || linenum < 0)
 		return;
 
-	ActivateLine(mo, &::lines[linenum], side, activationType);
+	ActivateLine(mo, &::lines[linenum], side, activationType, bossaction);
 }
 
 //
@@ -1587,72 +1603,56 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
  */
 static void CL_Say(const odaproto::svc::Say* msg)
 {
-	bool message_visibility = msg->visibility();
+	byte message_visibility = msg->visibility();
 	byte player_id = msg->pid();
-	std::string message = msg->message();
+	const char* message = msg->message().c_str();
 
 	bool filtermessage = false;
 
 	player_t& player = idplayer(player_id);
 
 	if (!validplayer(player))
-	{
 		return;
-	}
 
 	bool spectator = player.spectator || player.playerstate == PST_DOWNLOAD;
 
 	if (consoleplayer().id != player.id)
 	{
-		if (spectator && ::mute_spectators)
-		{
+		if (spectator && mute_spectators)
 			filtermessage = true;
-		}
 
-		if (::mute_enemies && !spectator &&
+		if (mute_enemies && !spectator &&
 		    (G_IsFFAGame() ||
 		     (G_IsTeamGame() && player.userinfo.team != consoleplayer().userinfo.team)))
-		{
 			filtermessage = true;
-		}
 	}
 
 	const char* name = player.userinfo.netname.c_str();
+	printlevel_t publicmsg = filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT;
+	printlevel_t publicteammsg = filtermessage ? PRINT_FILTERCHAT : PRINT_TEAMCHAT;
 
 	if (message_visibility == 0)
 	{
-		if (strnicmp(message.c_str(), "/me ", 4) == 0)
-		{
-			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "* %s %s\n", name,
-			       message.substr(4, message.length() - 4).c_str());
-		}
+		if (strnicmp(message, "/me ", 4) == 0)
+			Printf(publicmsg, "* %s %s\n", name, &message[4]);
 		else
-		{
-			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "%s: %s\n", name,
-			       message.c_str());
-		}
+			Printf(publicmsg, "%s: %s\n", name, message);
 
-		if (::show_messages && !filtermessage)
+		if (show_messages && !filtermessage)
 		{
-			S_Sound(CHAN_INTERFACE, ::gameinfo.chatSound, 1, ATTN_NONE);
+			if (cl_chatsounds == 1)
+				S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
 		}
 	}
 	else if (message_visibility == 1)
 	{
-		if (strnicmp(message.c_str(), "/me ", 4) == 0)
-		{
-			Printf(PRINT_TEAMCHAT, "* %s %s\n", name,
-			       message.substr(4, message.length() - 4).c_str());
-		}
+		if (strnicmp(message, "/me ", 4) == 0)
+			Printf(publicteammsg, "* %s %s\n", name, &message[4]);
 		else
-		{
-			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message.c_str());
-		}
+			Printf(publicteammsg, "%s: %s\n", name, message);
 
-		if (::show_messages)
-		{
+		if (show_messages && cl_chatsounds && !filtermessage)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
-		}
 	}
 }
 
@@ -1824,7 +1824,7 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 	std::string buf;
 	StrFormat(buf, "%s%s %sfound a secret!\n", TEXTCOLOR_YELLOW,
 	          player.userinfo.netname.c_str(), TEXTCOLOR_NORMAL);
-	Printf(buf.c_str());
+	Printf("%s", buf.c_str());
 
 	if (::hud_revealsecrets == 1)
 		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
@@ -1999,6 +1999,8 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		}
 	}
 
+	uint32_t cheats = msg->player().cheats();
+
 	player_t& player = idplayer(id);
 	if (!validplayer(player) || !player.mo)
 		return;
@@ -2025,6 +2027,9 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		player.powers[i] = powerups[i];
+
+	if (!player.spectator)
+		player.cheats = cheats;
 }
 
 /**
@@ -2288,7 +2293,8 @@ static void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial* msg)
 	if (linenum != -1)
 		line = &::lines[linenum];
 
-	ActivateLine(activator, line, 0, LineACS, special, arg0, arg1, arg2, arg3, arg4);
+	ActivateLine(activator, line, 0, LineACS, false, special, arg0, arg1, arg2, arg3,
+	             arg4);
 }
 
 static void CL_ExecuteACSSpecial(const odaproto::svc::ExecuteACSSpecial* msg)
@@ -2568,6 +2574,20 @@ static void CL_MaplistIndex(const odaproto::svc::MaplistIndex* msg)
 	}
 }
 
+static void CL_Toast(const odaproto::svc::Toast* msg)
+{
+	toast_t toast;
+	toast.flags = msg->flags();
+	toast.left = msg->left();
+	toast.right = msg->right();
+	toast.icon = msg->icon();
+	toast.pid_highlight = msg->pid_highlight();
+	toast.left_plus = msg->left_plus();
+	toast.right_plus = msg->right_plus();
+
+	COM_PushToast(toast);
+}
+
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 {
 	player_t* clientPlayer = &consoleplayer();
@@ -2800,6 +2820,7 @@ parseError_e CL_ParseCommand()
 		SV_MSG(svc_maplist, CL_Maplist, odaproto::svc::Maplist);
 		SV_MSG(svc_maplist_update, CL_MaplistUpdate, odaproto::svc::MaplistUpdate);
 		SV_MSG(svc_maplist_index, CL_MaplistIndex, odaproto::svc::MaplistIndex);
+		SV_MSG(svc_toast, CL_Toast, odaproto::svc::Toast);
 		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);

@@ -26,6 +26,7 @@
 #define __GI_H__
 
 #include "doomtype.h"
+#include "olumpname.h"
 
 #define GI_MAPxx				0x00000001
 #define GI_PAGESARERAW			0x00000002
@@ -54,16 +55,16 @@ typedef struct
 typedef struct
 {
 	int flags;
-	char titlePage[8];
+	OLumpName titlePage;
 	char creditPage1[8];
 	char creditPage2[8];
-	char titleMusic[8];
+	OLumpName titleMusic;
 	float titleTime;
 	float advisoryTime;
 	float pageTime;
 	char chatSound[16];
-	char finaleMusic[8];
-	char finaleFlat[8];
+	OLumpName finaleMusic;
+	OLumpName finaleFlat;
 	char finalePage1[8];
 	char finalePage2[8];
 	char finalePage3[8];

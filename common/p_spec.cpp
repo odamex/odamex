@@ -52,7 +52,7 @@
 #include "p_unlag.h"
 
 #include "s_sound.h"
-#include "sc_man.h"
+#include "oscanner.h"
 
 // State.
 #include "r_state.h"
@@ -354,12 +354,12 @@ static size_t	maxanims;
 #define CARRYFACTOR ((fixed_t)(FRACUNIT*.09375))
 
 // killough 3/7/98: Initialize generalized scrolling
-static void P_SpawnScrollers(void);
+static void P_SpawnScrollers();
 
-static void P_SpawnFriction(void);		// phares 3/16/98
-static void P_SpawnPushers(void);		// phares 3/20/98
+static void P_SpawnFriction();		// phares 3/16/98
+static void P_SpawnPushers();		// phares 3/20/98
 
-static void ParseAnim (byte istex);
+static void ParseAnim(OScanner &os, byte istex);
 
 //
 //		Animating line specials
@@ -380,58 +380,63 @@ static void P_InitAnimDefs ()
 
 	while ((lump = W_FindLump ("ANIMDEFS", lump)) != -1)
 	{
-		SC_OpenLumpNum (lump, "ANIMDEFS");
+		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 
-		while (SC_GetString ())
+		OScannerConfig config = {
+		    "ANIMDEFS", // lumpName
+		    false,      // semiComments
+		    true,       // cComments
+		};
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+
+		while (os.scan())
 		{
-			if (SC_Compare ("flat"))
+			if (os.compareToken("flat"))
 			{
-				ParseAnim (false);
+				ParseAnim(os, false);
 			}
-			else if (SC_Compare ("texture"))
+			else if (os.compareToken("texture"))
 			{
-				ParseAnim (true);
+				ParseAnim(os, true);
 			}
-			else if (SC_Compare ("switch"))   // Don't support switchdef yet...
+			else if (os.compareToken("switch"))   // Don't support switchdef yet...
 			{
-				//P_ProcessSwitchDef ();
-//				SC_ScriptError("switchdef not supported.");
+				//P_ProcessSwitchDef();
+				//os.error("switchdef not supported.");
 			}
-			else if (SC_Compare ("warp"))
+			else if (os.compareToken("warp"))
 			{
-				SC_MustGetString ();
-				if (SC_Compare ("flat"))
+				os.mustScan();
+				if (os.compareToken("flat"))
 				{
-					SC_MustGetString ();
-					flatwarp[R_FlatNumForName (sc_String)] = true;
+					os.mustScan();
+					flatwarp[R_FlatNumForName(os.getToken().c_str())] = true;
 				}
-				else if (SC_Compare ("texture"))
+				else if (os.compareToken("texture"))
 				{
 					// TODO: Make texture warping work with wall textures
-					SC_MustGetString ();
-					R_TextureNumForName (sc_String);
+					os.mustScan();
+					R_TextureNumForName(os.getToken().c_str());
 				}
 				else
 				{
-					SC_ScriptError (NULL, NULL);
+					os.error("Unknown error reading in ANIMDEFS");
 				}
 			}
 		}
-		SC_Close ();
 	}
 }
 
-static void ParseAnim (byte istex)
+static void ParseAnim(OScanner &os, byte istex)
 {
 	anim_t sink;
 	short picnum;
 	anim_t *place;
 	byte min, max;
-	int frame;
 
-	SC_MustGetString ();
-	picnum = istex ? R_CheckTextureNumForName (sc_String)
-		: W_CheckNumForName (sc_String, ns_flats) - firstflat;
+	os.mustScan();
+	picnum = istex ? R_CheckTextureNumForName(os.getToken().c_str())
+		: W_CheckNumForName(os.getToken().c_str(), ns_flats) - firstflat;
 
 	if (picnum == -1)
 	{ // Base pic is not present, so skip this definition
@@ -451,8 +456,8 @@ static void ParseAnim (byte istex)
 			lastanim++;
 			if (lastanim > anims + maxanims)
 			{
-				size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
-				anims = (anim_t *)Realloc (anims, newmax*sizeof(*anims));
+				const size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
+				anims = static_cast<anim_t*>(Realloc(anims, newmax * sizeof(*anims)));
 				place = anims + maxanims;
 				lastanim = place + 1;
 				maxanims = newmax;
@@ -473,9 +478,9 @@ static void ParseAnim (byte istex)
 	memset (place->speedmin, 1, MAX_ANIM_FRAMES * sizeof(*place->speedmin));
 	memset (place->speedmax, 1, MAX_ANIM_FRAMES * sizeof(*place->speedmax));
 
-	while (SC_GetString ())
+	while (os.scan())
 	{
-		/*if (SC_Compare ("allowdecals"))
+		/*if (os.compareToken("allowdecals"))
 		{
 			if (istex && picnum >= 0)
 			{
@@ -483,41 +488,39 @@ static void ParseAnim (byte istex)
 			}
 			continue;
 		}
-		else*/ if (!SC_Compare ("pic"))
+		else*/ if (!os.compareToken("pic"))
 		{
-			SC_UnGet ();
+			os.unScan();
 			break;
 		}
 
 		if (place->numframes == MAX_ANIM_FRAMES)
 		{
-			SC_ScriptError ("Animation has too many frames");
+			os.error("Animation has too many frames");
 		}
 
 		min = max = 1;	// Shut up, GCC
 
-		SC_MustGetNumber ();
-		frame = sc_Number;
-		SC_MustGetString ();
-		if (SC_Compare ("tics"))
+		os.mustScanInt();
+		const int frame = os.getTokenInt();
+		os.mustScan();
+		if (os.compareToken("tics"))
 		{
-			SC_MustGetNumber ();
-			if (sc_Number < 0)
-				sc_Number = 0;
-			else if (sc_Number > 255)
-				sc_Number = 255;
-			min = max = sc_Number;
+			os.mustScanInt();
+			min = max = clamp(os.getTokenInt(), 0, 255);
 		}
-		else if (SC_Compare ("rand"))
+		else if (os.compareToken("rand"))
 		{
-			SC_MustGetNumber ();
-			min = sc_Number >= 0 ? sc_Number : 0;
-			SC_MustGetNumber ();
-			max = sc_Number <= 255 ? sc_Number : 255;
+			os.mustScanInt();
+			int num = os.getTokenInt();
+			min = num >= 0 ? num : 0;
+			os.mustScanInt();
+			num = os.getTokenInt();
+			max = num <= 255 ? num : 255;
 		}
 		else
 		{
-			SC_ScriptError ("Must specify a duration for animation frame");
+			os.error("Must specify a duration for animation frame");
 		}
 
 		place->speedmin[place->numframes] = min;
@@ -528,7 +531,7 @@ static void ParseAnim (byte istex)
 
 	if (place->numframes < 2)
 	{
-		SC_ScriptError ("Animation needs at least 2 frames");
+		os.error("Animation needs at least 2 frames");
 	}
 
 	place->countdown = place->speedmin[0];
@@ -1003,16 +1006,15 @@ fixed_t P_FindShortestTextureAround (sector_t *sec)
 
 	for (i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided (sec, i))
+		if (sec->lines[i]->flags & ML_TWOSIDED)
 		{
-			side = getSide (sec, i, 0);
-			if (side->bottomtexture >= 0)
-				if (textureheight[side->bottomtexture] < minsize)
-					minsize = textureheight[side->bottomtexture];
-			side = getSide (sec, i, 1);
-			if (side->bottomtexture >= 0)
-				if (textureheight[side->bottomtexture] < minsize)
-					minsize = textureheight[side->bottomtexture];
+			side = &sides[(sec->lines[i])->sidenum[0]];
+			if (side->bottomtexture >= 0 && textureheight[side->bottomtexture] < minsize)
+				minsize = textureheight[side->bottomtexture];
+
+			side = &sides[(sec->lines[i])->sidenum[1]];
+			if (side->bottomtexture >= 0 && textureheight[side->bottomtexture] < minsize)
+				minsize = textureheight[side->bottomtexture];
 		}
 	}
 	return minsize;
@@ -1038,16 +1040,15 @@ fixed_t P_FindShortestUpperAround (sector_t *sec)
 
 	for (i = 0; i < sec->linecount; i++)
 	{
-		if (twoSided (sec, i))
+		if (sec->lines[i]->flags & ML_TWOSIDED)
 		{
-			side = getSide (sec,i,0);
-			if (side->toptexture >= 0)
-				if (textureheight[side->toptexture] < minsize)
-					minsize = textureheight[side->toptexture];
-			side = getSide (sec,i,1);
-			if (side->toptexture >= 0)
-				if (textureheight[side->toptexture] < minsize)
-					minsize = textureheight[side->toptexture];
+			side = &sides[(sec->lines[i])->sidenum[0]];
+			if (side->toptexture >= 0 && textureheight[side->toptexture] < minsize)
+				minsize = textureheight[side->toptexture];
+
+			side = &sides[(sec->lines[i])->sidenum[1]];
+			if (side->toptexture >= 0 && textureheight[side->toptexture] < minsize)
+				minsize = textureheight[side->toptexture];
 		}
 	}
 	return minsize;
@@ -1282,7 +1283,8 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain);
-void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType);
+void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
+                        const LineActivationType activationType, const bool bossaction);
 
 //
 // EVENTS
@@ -1316,14 +1318,14 @@ void P_HandleSpecialRepeat(line_t* line)
 // Called every time a thing origin is about
 //  to cross a line with a non 0 special.
 //
-void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
+void P_CrossSpecialLine(int	linenum, int side, AActor* thing, bool bossaction)
 {
     line_t*	line = &lines[linenum];
 
-	if (!P_CanActivateSpecials(thing, line))
+	if (!bossaction && !P_CanActivateSpecials(thing, line))
 		return;
 
-	if(thing)
+	if(!bossaction && thing)
 	{
 		//	Triggers that other things can activate
 		if (!thing->player && thing->type != MT_AVATAR)
@@ -1341,10 +1343,10 @@ void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 				case MT_TROOPSHOT:
 				case MT_HEADSHOT:
 				case MT_BRUISERSHOT:
-					return;
-					break;
+				return;
 
-				default: break;
+				default:
+				break;
 			}
 
             // This breaks the ability for the eyes to activate the silent teleporter lines
@@ -1410,7 +1412,7 @@ void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 			}
 		}
 	}
-
+	
 	TeleportSide = side;
 
 	LineSpecials[line->special] (line, thing, line->args[0],
@@ -1419,7 +1421,7 @@ void P_CrossSpecialLine(int	linenum, int side, AActor*	thing)
 
 	P_HandleSpecialRepeat(line);
 
-	OnActivatedLine(line, thing, side, LineCross);
+	SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
 }
 
 //
@@ -1452,7 +1454,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	P_HandleSpecialRepeat(line);
 
-	OnActivatedLine(line, thing, 0, LineShoot);
+	SV_OnActivatedLine(line, thing, 0, LineShoot, false);
 
 	if(serverside)
 	{
@@ -1467,9 +1469,9 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 // Called when a thing uses a special line.
 // Only the front sides of lines are usable.
 //
-bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
+bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 {
-	if (!P_CanActivateSpecials(thing, line))
+	if (!bossaction && !P_CanActivateSpecials(thing, line))
 		return false;
 
 	// Err...
@@ -1485,11 +1487,10 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
 
 		default:
 			return false;
-			break;
 		}
 	}
 
-	if(thing)
+	if(!bossaction && thing)
 	{
 		if ((GET_SPAC(line->flags) != SPAC_USE) &&
 			(GET_SPAC(line->flags) != SPAC_PUSH) &&
@@ -1515,7 +1516,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
 				return false;
 		}
 	}
-
+	
     TeleportSide = side;
 
 	if(LineSpecials[line->special] (line, thing, line->args[0],
@@ -1524,7 +1525,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side)
 	{
 		P_HandleSpecialRepeat(line);
 
-		OnActivatedLine(line, thing, side, LineUse);
+		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
 
 		if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
 		{
@@ -1585,7 +1586,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 	{
 		P_HandleSpecialRepeat(line);
 
-		OnActivatedLine(line, thing, side, LinePush);
+		SV_OnActivatedLine(line, thing, side, LinePush, false);
 
 		if(serverside)
 		{

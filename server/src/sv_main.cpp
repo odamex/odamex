@@ -69,6 +69,7 @@
 #include "p_lnspec.h"
 #include "m_wdlstats.h"
 #include "svc_message.h"
+#include "m_cheat.h"
 
 #include <algorithm>
 #include <sstream>
@@ -76,7 +77,7 @@
 
 #include "server.pb.h"
 
-extern void G_DeferedInitNew (char *mapname);
+extern void G_DeferedInitNew (const char *mapname);
 extern level_locals_t level;
 
 // Unnatural Level Progression.  True if we've used 'map' or another command
@@ -119,6 +120,7 @@ EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_winnerstays)
+EXTERN_CVAR(debug_disconnect)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -523,6 +525,7 @@ Players::iterator SV_GetFreeClient(void)
 	}
 
 	players.push_back(player_t());
+	players.back().playerstate = PST_CONTACT;
 
 	// generate player id
 	std::set<byte>::iterator id = free_player_ids.begin();
@@ -1037,11 +1040,9 @@ void SV_CheckTeam (player_t &player)
 //
 team_t SV_GoodTeam (void)
 {
-	int teamcount = NUMTEAMS;
-	if (sv_gametype != GM_CTF && sv_teamsinplay >= 0 &&
-	    sv_teamsinplay <= NUMTEAMS)
-		teamcount = sv_teamsinplay;
+	int teamcount = sv_teamsinplay;
 
+	// Unsure how this can be triggered?
 	if (teamcount == 0)
 	{
 		I_Error ("Teamplay is set and no teams are enabled!\n");
@@ -1594,8 +1595,7 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 
 		StrFormat(VersionStr, "%d.%d.%d", cl_major, cl_minor, cl_patch);
 
-		cl->majorversion = cl_major;
-		cl->minorversion = cl_minor;
+		cl->packedversion = GameVer;
 
 		// Major and minor versions must be identical, client is allowed
 		// to have a newer patch.
@@ -1847,53 +1847,43 @@ void SV_ConnectClient()
 	// send consoleplayer number
 	MSG_WriteSVC(&cl->reliablebuf, SVC_ConsolePlayer(*player, cl->digest));
 	SV_SendPacket(*player);
+}
+
+void SV_ConnectClient2(player_t& player)
+{
+	client_t* cl = &player.client;
+
+	// [AM] FIXME: I don't know if it's safe to set players as PST_ENTER
+	//             this early.
+	player.playerstate = PST_LIVE;
 
 	// [Toke] send server settings
-	SendServerSettings(*player);
+	SendServerSettings(player);
 
 	cl->displaydisconnect = true;
 
 	cl->download.name = "";
 	cl->download.md5 = "";
-	if (connection_type == 1)
-	{
-		player->playerstate = PST_DOWNLOAD;
-		player->spectator = true;
-		SV_BroadcastUserInfo(*player);
-		SV_BroadcastPrintf(PRINT_HIGH, "%s has connected. (downloading)\n", player->userinfo.netname.c_str());
 
-		// send the client the scores and list of other clients
-		SV_ClientFullUpdate(*player);
-
-		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
-		{
-			// [SL] 2011-07-30 - clients should consider downloaders as spectators
-			MSG_WriteSVC(&pit->client.reliablebuf,
-			             SVC_PlayerMembers(*player, SVC_PM_SPECTATOR));
-		}
-
-		return;
-	}
-
-	SV_BroadcastUserInfo(*player);
+	SV_BroadcastUserInfo(player);
 
 	// Newly connected players get ENTER state.
-	P_ClearPlayerScores(*player, SCORES_CLEAR_ALL);
-	player->playerstate = PST_ENTER;
+	P_ClearPlayerScores(player, SCORES_CLEAR_ALL);
+	player.playerstate = PST_ENTER;
 
 	if (!step_mode)
 	{
-		player->spectator = true;
+		player.spectator = true;
 		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 		{
 			MSG_WriteSVC(&pit->client.reliablebuf,
-			             SVC_PlayerMembers(*player, SVC_PM_SPECTATOR));
+			             SVC_PlayerMembers(player, SVC_PM_SPECTATOR));
 		}
 	}
 
 	// Send a map name
-	MSG_WriteSVC(&player->client.reliablebuf,
-	             SVC_LoadMap(::wadfiles, ::patchfiles, level.mapname, level.time));
+	MSG_WriteSVC(&player.client.reliablebuf,
+	             SVC_LoadMap(::wadfiles, ::patchfiles, level.mapname.c_str(), level.time));
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
@@ -1901,20 +1891,22 @@ void SV_ConnectClient()
 		MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::ExitLevel());
 	}
 
-	G_DoReborn(*player);
-	SV_ClientFullUpdate(*player);
+	G_DoReborn(player);
+	SV_ClientFullUpdate(player);
 
-	SV_BroadcastPrintf("%s has connected.\n", player->userinfo.netname.c_str());
+	SV_BroadcastPrintf("%s has connected.\n", player.userinfo.netname.c_str());
 
 	// tell others clients about it
 	for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 	{
-		MSG_WriteSVC(&pit->client.reliablebuf, SVC_ConnectClient(*player));
+		MSG_WriteSVC(&pit->client.reliablebuf, SVC_ConnectClient(player));
 	}
 
-	SV_SendPlayerQueuePositions(player, true); // Notify this player of other player's queue positions
+	// Notify this player of other player's queue positions
+	SV_SendPlayerQueuePositions(&player, true); 
+
 	// Send out the server's MOTD.
-	SV_MidPrint((char*)sv_motd.cstring(), player, 6);
+	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
 }
 
 //
@@ -1992,7 +1984,7 @@ void SV_DisconnectClient(player_t &who)
 // SV_DropClient
 // Called when the player is leaving the server unwillingly.
 //
-void SV_DropClient(player_t &who)
+void SV_DropClient2(player_t &who, const char* file, const int line)
 {
 	client_t *cl = &who.client;
 
@@ -2001,6 +1993,9 @@ void SV_DropClient(player_t &who)
 	SV_SendPacket(who);
 
 	SV_DisconnectClient(who);
+
+	if (::debug_disconnect)
+		Printf("  (%s:%d)\n", file, line);
 }
 
 //
@@ -2392,6 +2387,36 @@ void STACK_ARGS SV_BroadcastPrintf(const char* fmt, ...)
 	va_end(argptr);
 
 	SV_BroadcastPrintf(PRINT_NORCON, "%s", string);
+}
+
+void STACK_ARGS SV_BroadcastPrintfButPlayer(int printlevel, int player_id, const char* format, ...)
+{
+	va_list argptr;
+	std::string string;
+	client_t* cl;
+
+	va_start(argptr, format);
+	VStrFormat(string, format, argptr);
+	va_end(argptr);
+
+	Printf(printlevel, "%s", string.c_str()); // print to the console
+
+	// Hacky code to display messages as normal ones to clients
+	if (printlevel == PRINT_NORCON)
+		printlevel = PRINT_HIGH;
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		cl = &(it->client);
+
+		client_t* excluded_client = &idplayer(player_id).client;
+
+		if (cl == excluded_client)
+			continue;
+
+		MSG_WriteSVC(&cl->reliablebuf,
+		             SVC_Print(static_cast<printlevel_t>(printlevel), string));
+	}
 }
 
 // GhostlyDeath -- same as above but ONLY for spectators
@@ -2984,7 +3009,9 @@ void SV_SendPackets()
 	Players::iterator it = begin;
 	do
 	{
-		SV_SendPacket(*it);
+		// [AM] Don't send packets to players who haven't acked packet 0
+		if (it->playerstate != PST_CONTACT)
+			SV_SendPacket(*it);
 
 		++it;
 		if (it == players.end())
@@ -3751,86 +3778,44 @@ void SV_Suicide(player_t &player)
 //
 void SV_Cheat(player_t &player)
 {
-	byte cheats = MSG_ReadByte();
+	byte cheatType = MSG_ReadByte();
+	
+	if (cheatType == 0)
+	{
+		unsigned int cheat = MSG_ReadShort();
 
-	if(!sv_allowcheats)
-		return;
+		if (!CHEAT_AreCheatsEnabled())
+			return;
 
-	player.cheats = cheats;
-}
+		int oldCheats = player.cheats;
+		CHEAT_DoCheat(&player, cheat);
 
-void SV_CheatPulse(player_t &player)
-{
-    byte cheats = MSG_ReadByte();
-    int i;
+		if (player.cheats != oldCheats)
+		{
+			for (Players::iterator it = players.begin(); it != players.end(); ++it)
+			{
+				client_t* cl = &it->client;
+				SV_SendPlayerStateUpdate(cl, &player);
+			}
+		}
 
-    if (!sv_allowcheats)
-    {
-        if (cheats == 3)
-            MSG_ReadByte();
+	}
+	else if (cheatType == 1)
+	{
+		const char* wantcmd = MSG_ReadString();
 
-        return;
-    }
+		if (!CHEAT_AreCheatsEnabled())
+			return;
 
-    if (cheats == 1)
-    {
-        player.armorpoints = deh.FAArmor;
-        player.armortype = deh.FAAC;
+		CHEAT_GiveTo(&player, wantcmd);
 
-        weapontype_t pendweap = player.pendingweapon;
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		{
+			client_t* cl = &it->client;
+			SV_SendPlayerStateUpdate(cl, &player);
+		}
 
-        for (i = 0; i<NUMWEAPONS; i++)
-            P_GiveWeapon (&player, (weapontype_t)i, false);
-
-        player.pendingweapon = pendweap;
-
-        for (i=0; i<NUMAMMO; i++)
-            player.ammo[i] = player.maxammo[i];
-
-        return;
-    }
-
-    if (cheats == 2)
-    {
-        player.armorpoints = deh.KFAArmor;
-        player.armortype = deh.KFAAC;
-
-        weapontype_t pendweap = player.pendingweapon;
-
-        for (i = 0; i<NUMWEAPONS; i++)
-            P_GiveWeapon (&player, (weapontype_t)i, false);
-
-        player.pendingweapon = pendweap;
-
-        for (i=0; i<NUMAMMO; i++)
-            player.ammo[i] = player.maxammo[i];
-
-        for (i=0; i<NUMCARDS; i++)
-            player.cards[i] = true;
-
-        return;
-    }
-
-    if (cheats == 3)
-    {
-        byte power = MSG_ReadByte();
-
-        if (!player.powers[power])
-            P_GivePower(&player, power);
-        else if (power != pw_strength)
-            player.powers[power] = 1;
-        else
-            player.powers[power] = 0;
-
-        return;
-    }
-
-    if (cheats == 4)
-    {
-        player.weaponowned[wp_chainsaw] = true;
-
-        return;
-    }
+	}
 }
 
 void SV_WantWad(player_t &player)
@@ -4029,10 +4014,6 @@ void SV_ParseCommands(player_t &player)
 		case clc_cheat:
 			SV_Cheat(player);
 			break;
-
-        case clc_cheatpulse:
-            SV_CheatPulse(player);
-            break;
 
 		case clc_abort:
 			Printf("Client abort.\n");
@@ -4263,7 +4244,7 @@ void SV_RunTics()
 		// to copy the mapname parameter to level.mapname, which is undefined
 		// behavior.
 		char mapname[9];
-		strncpy(mapname, level.mapname, 8);
+		strncpy(mapname, level.mapname.c_str(), 8);
 		mapname[8] = 0;
 
 		G_InitNew(mapname);
@@ -4474,7 +4455,8 @@ void OnChangedSwitchTexture (line_t *line, int useAgain)
 	}
 }
 
-void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType activationType)
+void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
+                        const LineActivationType activationType, const bool bossaction)
 {
 	if (P_LineSpecialMovesSector(line->special))
 		return;
@@ -4488,262 +4470,6 @@ void OnActivatedLine (line_t *line, AActor *mo, int side, LineActivationType act
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_ActivateLine(line, mo, side, activationType));
 	}
-}
-
-// [RH]
-// ClientObituary: Show a message when a player dies
-//
-void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
-{
-	char gendermessage[1024];
-
-	if (!self || !self->player)
-		return;
-
-	// Don't print obituaries after the end of a round
-	if (!G_CanShowObituary() || gamestate != GS_LEVEL)
-		return;
-
-	int gender = self->player->userinfo.gender;
-
-	// Treat voodoo dolls as unknown deaths
-	if (inflictor && inflictor->player == self->player)
-		MeansOfDeath = MOD_UNKNOWN;
-
-	if (G_IsCoopGame())
-		MeansOfDeath |= MOD_FRIENDLY_FIRE;
-
-	if (G_IsTeamGame() &&
-		attacker && attacker->player &&
-		self->player->userinfo.team == attacker->player->userinfo.team)
-		MeansOfDeath |= MOD_FRIENDLY_FIRE;
-
-	bool friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
-	int mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
-	const char* message = NULL;
-	OString messagename;
-
-	switch (mod)
-	{
-	case MOD_SUICIDE:
-		messagename = OB_SUICIDE;
-		break;
-	case MOD_FALLING:
-		messagename = OB_FALLING;
-		break;
-	case MOD_CRUSH:
-		messagename = OB_CRUSH;
-		break;
-	case MOD_EXIT:
-		messagename = OB_EXIT;
-		break;
-	case MOD_WATER:
-		messagename = OB_WATER;
-		break;
-	case MOD_SLIME:
-		messagename = OB_SLIME;
-		break;
-	case MOD_LAVA:
-		messagename = OB_LAVA;
-		break;
-	case MOD_BARREL:
-		messagename = OB_BARREL;
-		break;
-	case MOD_SPLASH:
-		messagename = OB_SPLASH;
-		break;
-	}
-
-	if (!messagename.empty())
-		message = GStrings(messagename);
-
-	if (attacker && message == NULL)
-	{
-		if (attacker == self)
-		{
-			switch (mod)
-			{
-			case MOD_R_SPLASH:
-				messagename = OB_R_SPLASH;
-				break;
-			case MOD_ROCKET:
-				messagename = OB_ROCKET;
-				break;
-			default:
-				messagename = OB_KILLEDSELF;
-				break;
-			}
-			message = GStrings(messagename);
-		}
-		else if (!attacker->player)
-		{
-			if (mod == MOD_HIT)
-			{
-				switch (attacker->type)
-				{
-					case MT_UNDEAD:
-						messagename = OB_UNDEADHIT;
-						break;
-					case MT_TROOP:
-						messagename = OB_IMPHIT;
-						break;
-					case MT_HEAD:
-						messagename = OB_CACOHIT;
-						break;
-					case MT_SERGEANT:
-						messagename = OB_DEMONHIT;
-						break;
-					case MT_SHADOWS:
-						messagename = OB_SPECTREHIT;
-						break;
-					case MT_BRUISER:
-						messagename = OB_BARONHIT;
-						break;
-					case MT_KNIGHT:
-						messagename = OB_KNIGHTHIT;
-						break;
-					default:
-						break;
-				}
-			}
-			else
-			{
-				switch (attacker->type)
-				{
-				case MT_POSSESSED:
-					messagename = OB_ZOMBIE;
-					break;
-				case MT_SHOTGUY:
-					messagename = OB_SHOTGUY;
-					break;
-				case MT_VILE:
-					messagename = OB_VILE;
-					break;
-				case MT_UNDEAD:
-					messagename = OB_UNDEAD;
-					break;
-				case MT_FATSO:
-					messagename = OB_FATSO;
-					break;
-				case MT_CHAINGUY:
-					messagename = OB_CHAINGUY;
-					break;
-				case MT_SKULL:
-					messagename = OB_SKULL;
-					break;
-				case MT_TROOP:
-					messagename = OB_IMP;
-					break;
-				case MT_HEAD:
-					messagename = OB_CACO;
-					break;
-				case MT_BRUISER:
-					messagename = OB_BARON;
-					break;
-				case MT_KNIGHT:
-					messagename = OB_KNIGHT;
-					break;
-				case MT_SPIDER:
-					messagename = OB_SPIDER;
-					break;
-				case MT_BABY:
-					messagename = OB_BABY;
-					break;
-				case MT_CYBORG:
-					messagename = OB_CYBORG;
-					break;
-				case MT_WOLFSS:
-					messagename = OB_WOLFSS;
-					break;
-				default:
-					break;
-				}
-			}
-
-			if (!messagename.empty())
-				message = GStrings(messagename);
-		}
-	}
-
-	if (message)
-	{
-		SexMessage(message, gendermessage, gender,
-				self->player->userinfo.netname.c_str(), self->player->userinfo.netname.c_str());
-		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
-		return;
-	}
-
-	if (attacker && attacker->player)
-	{
-		if (friendly)
-		{
-			gender = attacker->player->userinfo.gender;
-			messagename = GStrings.getIndex(GStrings.toIndex(OB_FRIENDLY1) + (P_Random() & 3));
-			message = messagename.c_str();
-		}
-		else
-		{
-			switch (mod)
-			{
-			case MOD_FIST:
-				messagename = OB_MPFIST;
-				break;
-			case MOD_CHAINSAW:
-				messagename = OB_MPCHAINSAW;
-				break;
-			case MOD_PISTOL:
-				messagename = OB_MPPISTOL;
-				break;
-			case MOD_SHOTGUN:
-				messagename = OB_MPSHOTGUN;
-				break;
-			case MOD_SSHOTGUN:
-				messagename = OB_MPSSHOTGUN;
-				break;
-			case MOD_CHAINGUN:
-				messagename = OB_MPCHAINGUN;
-				break;
-			case MOD_ROCKET:
-				messagename = OB_MPROCKET;
-				break;
-			case MOD_R_SPLASH:
-				messagename = OB_MPR_SPLASH;
-				break;
-			case MOD_PLASMARIFLE:
-				messagename = OB_MPPLASMARIFLE;
-				break;
-			case MOD_BFG_BOOM:
-				messagename = OB_MPBFG_BOOM;
-				break;
-			case MOD_BFG_SPLASH:
-				messagename = OB_MPBFG_SPLASH;
-				break;
-			case MOD_TELEFRAG:
-				messagename = OB_MPTELEFRAG;
-				break;
-			case MOD_RAILGUN:
-				messagename = OB_RAILGUN;
-				break;
-			}
-
-			if (!messagename.empty())
-				message = GStrings(messagename);
-		}
-
-
-	}
-
-	if (message && attacker && attacker->player)
-	{
-		SexMessage(message, gendermessage, gender,
-				self->player->userinfo.netname.c_str(), attacker->player->userinfo.netname.c_str());
-		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
-		return;
-	}
-
-	SexMessage(GStrings(OB_DEFAULT), gendermessage, gender,
-			self->player->userinfo.netname.c_str(), self->player->userinfo.netname.c_str());
-	SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 }
 
 void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage)

@@ -455,14 +455,15 @@ bool NetDemo::startRecording(const std::string &filename)
 		capture(&tempbuf);
 		writeMessages();
 
-		// Record any additional messages (usually a full update if auto-recording))
-		capture(&net_message);
-		writeMessages();
-		
 		SZ_Clear(&tempbuf);
 		MSG_WriteSVC(&tempbuf, odaproto::svc::NetDemoLoadSnap());
 		capture(&tempbuf);
 		writeMessages();
+
+		// Record any additional messages (usually a full update if auto-recording))
+		// Do not write this message immediately because it needs to be written after
+		// the map snapshot.
+		capture(&net_message);
 	}
 
 	return true;
@@ -603,9 +604,9 @@ bool NetDemo::stopRecording()
 	// write any remaining messages that have been captured
 	writeMessages();
 
-	// write the end-of-demo marker
-	byte marker = svc_netdemostop;
-	writeChunk(&marker, sizeof(marker), NetDemo::msg_packet);
+	// write the end-of-demo marker - header + size
+	byte stopdata[2] = {svc_netdemostop, 0};
+	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::msg_packet);
 
 	// write the number of the last gametic in the recording
 	header.ending_gametic = gametic;
@@ -659,7 +660,7 @@ bool NetDemo::stopPlaying()
 {
 	state = NetDemo::st_stopped;
 	SZ_Clear(&net_message);
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	if (demofp)
 	{
@@ -972,7 +973,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	}
 	MSG_WriteByte	(netbuffer, playersingame);
 	MSG_WriteByte	(netbuffer, 0);				// sv_maxclients
-	MSG_WriteString	(netbuffer, level.mapname);
+	MSG_WriteString	(netbuffer, level.mapname.c_str());
 
 	// names of all the wadfiles on the server	
 	size_t numwads = wadfiles.size();
@@ -1115,7 +1116,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteSVC(netbuffer, SVC_PlayerMembers(consoleplayer(), SVC_PM_SPECTATOR));
 
 	// Server sends wads & map name
-	MSG_WriteSVC(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname, level.time));
+	MSG_WriteSVC(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname.c_str(), level.time));
 
 	// Server spawns the player
 	MSG_WriteSVC(netbuffer, SVC_SpawnPlayer(consoleplayer()));
@@ -1424,7 +1425,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	}
 
 	// write map info
-	arc << level.mapname;
+	arc << level.mapname.c_str();
 	arc << (BYTE)(gamestate == GS_INTERMISSION);
 
 	G_SerializeSnapshots(arc);
