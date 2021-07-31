@@ -2108,6 +2108,100 @@ bool P_CheckMissileSpawn (AActor* th)
 	return true;
 }
 
+
+// Returns 1 if 'source' needs to turn clockwise, or 0 if 'source' needs
+// to turn counter clockwise.  'delta' is set to the amount 'source'
+// needs to turn.
+int P_FaceMobj(AActor* source, AActor* target, angle_t* delta)
+{
+	angle_t diff;
+	angle_t angle1;
+	angle_t angle2;
+
+	angle1 = source->angle;
+	angle2 = R_PointToAngle2(source->x, source->y, target->x, target->y);
+	if (angle2 > angle1)
+	{
+		diff = angle2 - angle1;
+		if (diff > ANG180)
+		{
+			*delta = ANG360 - diff;
+			return (0);
+		}
+		else
+		{
+			*delta = diff;
+			return (1);
+		}
+	}
+	else
+	{
+		diff = angle1 - angle2;
+		if (diff > ANG180)
+		{
+			*delta = ANG360 - diff;
+			return (1);
+		}
+		else
+		{
+			*delta = diff;
+			return (0);
+		}
+	}
+}
+
+bool P_SeekerMissile(AActor* actor, AActor* seekTarget, angle_t thresh, angle_t turnMax, bool seekcenter)
+{
+	int dir;
+	int dist;
+	angle_t delta;
+	angle_t angle;
+	AActor* target;
+
+	target = seekTarget->ptr();
+	if (target == NULL)
+	{
+		return (false);
+	}
+	if (!(target->flags & MF_SHOOTABLE))
+	{ // Target died
+		seekTarget = NULL;
+		return (false);
+	}
+	dir = P_FaceMobj(actor, target, &delta);
+	if (delta > thresh)
+	{
+		delta >>= 1;
+		if (delta > turnMax)
+		{
+			delta = turnMax;
+		}
+	}
+	if (dir)
+	{ // Turn clockwise
+		actor->angle += delta;
+	}
+	else
+	{ // Turn counter clockwise
+		actor->angle -= delta;
+	}
+	angle = actor->angle >> ANGLETOFINESHIFT;
+	actor->momx = FixedMul(actor->info->speed, finecosine[angle]);
+	actor->momy = FixedMul(actor->info->speed, finesine[angle]);
+	if (actor->z + actor->height < target->z || target->z + target->height < actor->z ||
+	    seekcenter)
+	{ // Need to seek vertically
+		dist = P_AproxDistance(target->x - actor->x, target->y - actor->y);
+		dist = dist / actor->info->speed;
+		if (dist < 1)
+		{
+			dist = 1;
+		}
+		actor->momz = (target->z + (seekcenter ? target->height / 2 : 0) - actor->z) / dist;
+	}
+	return (true);
+}
+
 //
 // P_SpawnMissile
 //

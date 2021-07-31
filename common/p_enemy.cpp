@@ -172,6 +172,20 @@ void P_NoiseAlert (AActor *target, AActor *emmiter)
 }
 
 
+//
+// P_CheckRange
+//
+
+static bool P_CheckRange(AActor* actor, fixed_t range)
+{
+	AActor* pl = actor->target;
+
+	return // killough 7/18/98: friendly monsters don't attack other friends
+	    pl && !(actor->flags & pl->flags & MF_FRIEND) &&
+	    P_AproxDistance(pl->x - actor->x, pl->y - actor->y) < range &&
+	    P_CheckSight(actor, actor->target) &&
+	        pl->z <= actor->z + actor->height && actor->z <= pl->z + pl->height;
+}
 
 
 //
@@ -1882,6 +1896,162 @@ void A_MonsterProjectile(AActor* actor)
 	// always set the 'tracer' field, so this pointer
 	// can be used to fire seeker missiles at will.
 	mo->tracer = actor->target;
+}
+
+//
+// A_MonsterBulletAttack
+// A parameterized monster bullet attack.
+//   args[0]: Horizontal spread (degrees, in fixed point)
+//   args[1]: Vertical spread (degrees, in fixed point)
+//   args[2]: Number of bullets to fire; if not set, defaults to 1
+//   args[3]: Base damage of attack (e.g. for 3d5, customize the 3); if not set, defaults
+//   to 3 args[4]: Attack damage modulus (e.g. for 3d5, customize the 5); if not set,
+//   defaults to 5
+//
+
+void A_MonsterBulletAttack(AActor* actor)
+{
+	int hspread, vspread, numbullets, damagebase, damagemod;
+	int aimslope, i, damage, angle, slope;
+
+	if (!actor->target)
+		return;
+
+	hspread = actor->state->args[0];
+	vspread = actor->state->args[1];
+	numbullets = actor->state->args[2];
+	damagebase = actor->state->args[3];
+	damagemod = actor->state->args[4];
+
+	A_FaceTarget(actor);
+	S_Sound(actor, CHAN_WEAPON, actor->info->attacksound, 1, ATTN_NORM);
+
+	aimslope = P_AimLineAttack(actor, actor->angle, MISSILERANGE);
+
+	for (i = 0; i < numbullets; i++)
+	{
+		damage = (P_Random() % damagemod + 1) * damagebase;
+		angle = (int)actor->angle + P_RandomHitscanAngle(hspread);
+		slope = aimslope + P_RandomHitscanSlope(vspread);
+
+		P_LineAttack(actor, angle, MISSILERANGE, slope, damage);
+	}
+}
+
+//
+// A_MonsterMeleeAttack
+// A parameterized monster melee attack.
+//   args[0]: Base damage of attack (e.g. for 3d8, customize the 3); if not set, defaults
+//   to 3 args[1]: Attack damage modulus (e.g. for 3d8, customize the 8); if not set,
+//   defaults to 8 args[2]: Sound to play if attack hits args[3]: Range (fixed point); if
+//   not set, defaults to monster's melee range
+//
+void A_MonsterMeleeAttack(AActor* actor)
+{
+	int damagebase, damagemod, hitsound, range;
+	int damage;
+
+	if (!actor->target)
+		return;
+
+	damagebase = actor->state->args[0];
+	damagemod = actor->state->args[1];
+	hitsound = actor->state->args[2];
+	range = actor->state->args[3];
+
+	if (range == 0)
+		range = actor->info->meleerange;
+
+	range += actor->target->info->radius - 20 * FRACUNIT;
+
+	A_FaceTarget(actor);
+	if (!P_CheckRange(actor, range))
+		return;
+
+	S_Sound(actor, CHAN_WEAPON, SoundMap[hitsound], 1, ATTN_NORM);
+
+	damage = (P_Random() % damagemod + 1) * damagebase;
+	P_DamageMobj(actor->target, actor, actor, damage);
+}
+
+//
+// A_RadiusDamage
+// A parameterized version of A_Explode. Friggin' finally. :P
+//   args[0]: Damage (int)
+//   args[1]: Radius (also int; no real need for fractional precision here)
+//
+void A_RadiusDamage(AActor* actor)
+{
+	if (!actor->state)
+		return;
+
+	P_RadiusAttack(actor, actor->target, actor->state->args[0], actor->state->args[1], true, MOD_UNKNOWN);
+}
+
+//
+// A_NoiseAlert
+// Alerts nearby monsters (via sound) to the calling actor's target's presence.
+//
+void A_NoiseAlert(AActor* actor)
+{
+	if (!actor->target)
+		return;
+
+	P_NoiseAlert(actor->target, actor);
+}
+
+//
+// A_HealChase
+// A parameterized version of A_VileChase.
+//   args[0]: State to jump to on the calling actor when resurrecting a corpse
+//   args[1]: Sound to play when resurrecting a corpse
+//
+void A_HealChase(AActor* actor)
+{
+	int state, sound;
+
+	if (!actor)
+		return;
+
+	state = actor->state->args[0];
+	sound = actor->state->args[1];
+
+	// CH0WW ToDo ------- P_HealCorpse isn't made, will be done later on. ---------
+	//if (!P_HealCorpse(actor, actor->info->radius, state, sound))	
+		A_Chase(actor);
+}
+
+//
+// A_SeekTracer
+// A parameterized seeker missile function.
+//   args[0]: direct-homing threshold angle (degrees, in fixed point)
+//   args[1]: maximum turn angle (degrees, in fixed point)
+//
+void A_SeekTracer(AActor* actor)
+{
+	angle_t threshold, maxturnangle;
+
+	if (!actor)
+		return;
+
+	threshold = FixedToAngle(actor->state->args[0]);
+	maxturnangle = FixedToAngle(actor->state->args[1]);
+
+	P_SeekerMissile(actor, actor->tracer, threshold, maxturnangle, true);
+}
+
+
+//
+// A_ClearTracer
+// Clear current tracer (seek target).
+//
+void A_ClearTracer(AActor* actor)
+{
+	if (!actor)
+		return;
+
+	actor->tracer = AActor::AActorPtr();
+	;
 }
 
 void A_Stop(AActor* actor)

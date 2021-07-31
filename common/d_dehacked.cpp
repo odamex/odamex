@@ -742,7 +742,7 @@ static int PatchThing (int thingy)
 		const char *Name;
 	} ;
 
-	flagsystem_t bitnames[] = {
+	flagsystem_t bitnames[73] = {
 		{ 0, 0, "SPECIAL"},
 		{ 1, 0, "SOLID"},
 		{ 2, 0, "SHOOTABLE"},
@@ -824,7 +824,7 @@ static int PatchThing (int thingy)
 	};
 
 	// MBF21 Bitname system
-	flagsystem_t mbf_bitnames[] = {
+	flagsystem_t mbf_bitnames[19] = {
 	    {0, 1, "LOGRAV"},
 		{1, 3, "SHORTMRANGE"},
 		{2, 3, "DMGIGNORED"},

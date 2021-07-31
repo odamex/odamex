@@ -127,5 +127,8 @@ bool P_VisibleToPlayers(AActor *mo);
 int P_ThingInfoHeight(mobjinfo_t *mi);
 void SpawnFlag(mapthing2_t* mthing, team_t flag);
 
+// From MBF
+bool P_SeekerMissile(AActor* actor, AActor* seekTarget, angle_t thresh, angle_t turnMax, bool seekcenter);
+
 #endif
 
