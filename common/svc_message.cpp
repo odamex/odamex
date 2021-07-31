@@ -255,32 +255,90 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 {
 	odaproto::svc::SpawnMobj msg;
 
-	odaproto::Actor* actor = msg.mutable_actor();
-	odaproto::Vec3* pos = actor->mutable_pos();
-	odaproto::Vec3* mom = actor->mutable_mom();
+	odaproto::Actor* base = msg.mutable_baseline();
+	odaproto::Vec3* bpos = base->mutable_pos();
+	odaproto::Vec3* bmom = base->mutable_mom();
 
-	uint32_t flags = 0;
+	odaproto::Actor* cur = msg.mutable_current();
+	odaproto::Vec3* apos = cur->mutable_pos();
+	odaproto::Vec3* amom = cur->mutable_mom();
+
+	uint32_t spawnFlags = 0;
 
 	// Contents of the baseline
 
-	pos->set_x(mo->baseline.pos.x);
-	pos->set_y(mo->baseline.pos.y);
-	pos->set_z(mo->baseline.pos.z);
-	mom->set_x(mo->baseline.mom.x);
-	mom->set_y(mo->baseline.mom.y);
-	mom->set_z(mo->baseline.mom.z);
-	actor->set_angle(mo->baseline.angle);
-	actor->set_targetid(mo->baseline.targetid);
-	actor->set_tracerid(mo->baseline.tracerid);
-	actor->set_movecount(mo->baseline.movecount);
-	actor->set_movedir(mo->baseline.movedir);
-	actor->set_rndindex(mo->baseline.rndindex);
+	bpos->set_x(mo->baseline.pos.x);
+	bpos->set_y(mo->baseline.pos.y);
+	bpos->set_z(mo->baseline.pos.z);
+	bmom->set_x(mo->baseline.mom.x);
+	bmom->set_y(mo->baseline.mom.y);
+	bmom->set_z(mo->baseline.mom.z);
+	base->set_angle(mo->baseline.angle);
+	base->set_targetid(mo->baseline.targetid);
+	base->set_tracerid(mo->baseline.tracerid);
+	base->set_movecount(mo->baseline.movecount);
+	base->set_movedir(mo->baseline.movedir);
+	base->set_rndindex(mo->baseline.rndindex);
 
-	actor->set_type(mo->type);
-	actor->set_netid(mo->netid);
+	// Current location could be different than the baseline
+
+	uint32_t bflags = P_GetMobjBaselineFlags(*mo);
+	msg.set_baseline_flags(bflags);
+
+	if (bflags & baseline_t::POSX)
+	{
+		apos->set_x(mo->x);
+	}
+	if (bflags & baseline_t::POSY)
+	{
+		apos->set_y(mo->y);
+	}
+	if (bflags & baseline_t::POSZ)
+	{
+		apos->set_z(mo->z);
+	}
+	if (bflags & baseline_t::ANGLE)
+	{
+		cur->set_angle(mo->angle);
+	}
+	if (bflags & baseline_t::MOVEDIR)
+	{
+		cur->set_movedir(mo->movedir);
+	}
+	if (bflags & baseline_t::MOVECOUNT)
+	{
+		cur->set_movecount(mo->movecount);
+	}
+	if (bflags & baseline_t::RNDINDEX)
+	{
+		cur->set_rndindex(mo->rndindex);
+	}
+	if (bflags & baseline_t::TARGET)
+	{
+		cur->set_targetid(mo->target ? mo->target->netid : 0);
+	}
+	if (bflags & baseline_t::TRACER)
+	{
+		cur->set_tracerid(mo->tracer ? mo->tracer->netid : 0);
+	}
+	if (bflags & baseline_t::MOMX)
+	{
+		amom->set_x(mo->momx);
+	}
+	if (bflags & baseline_t::MOMY)
+	{
+		amom->set_y(mo->momy);
+	}
+	if (bflags & baseline_t::MOMZ)
+	{
+		amom->set_z(mo->momz);
+	}
+
+	cur->set_type(mo->type);
+	cur->set_netid(mo->netid);
 
 	// denis - sending state fixes monster ghosts appearing under doors
-	actor->set_statenum(mo->state - states); 
+	cur->set_statenum(mo->state - states); 
 
 	if (mo->type == MT_FOUNTAIN)
 	{
@@ -300,20 +358,20 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 	}
 	else if (mo->flags & MF_AMBUSH || mo->flags & MF_DROPPED)
 	{
-		flags |= SVC_SM_FLAGS;
-		actor->set_flags(mo->flags);
+		spawnFlags |= SVC_SM_FLAGS;
+		cur->set_flags(mo->flags);
 	}
 
 	// animating corpses
 	if ((mo->flags & MF_CORPSE) && mo->state - states != S_GIBS)
 	{
 		// This sets off some additional logic on the client.
-		flags |= SVC_SM_CORPSE;
-		actor->set_frame(mo->frame);
-		actor->set_tics(mo->tics);
+		spawnFlags |= SVC_SM_CORPSE;
+		cur->set_frame(mo->frame);
+		cur->set_tics(mo->tics);
 	}
 
-	msg.set_flags(flags);
+	msg.set_spawn_flags(spawnFlags);
 
 	return msg;
 }

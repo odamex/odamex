@@ -444,29 +444,29 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	baseline_t base;
 	{
-		const odaproto::Vec3& pos = msg->actor().pos();
+		const odaproto::Vec3& pos = msg->baseline().pos();
 		base.pos.x = pos.x();
 		base.pos.y = pos.y();
 		base.pos.z = pos.z();
 	}
 	{
-		const odaproto::Vec3& mom = msg->actor().mom();
+		const odaproto::Vec3& mom = msg->baseline().mom();
 		base.mom.x = mom.x();
 		base.mom.y = mom.y();
 		base.mom.z = mom.z();
 	}
-	base.angle = msg->actor().angle();
-	base.targetid = msg->actor().targetid();
-	base.tracerid = msg->actor().tracerid();
-	base.movecount = msg->actor().movecount();
-	base.movedir = msg->actor().movedir();
-	base.rndindex = msg->actor().rndindex();
+	base.angle = msg->baseline().angle();
+	base.targetid = msg->baseline().targetid();
+	base.tracerid = msg->baseline().tracerid();
+	base.movecount = msg->baseline().movecount();
+	base.movedir = msg->baseline().movedir();
+	base.rndindex = msg->baseline().rndindex();
 
 	// Read other fields
 
-	uint32_t netid = msg->actor().netid();
-	mobjtype_t type = static_cast<mobjtype_t>(msg->actor().type());
-	statenum_t state = static_cast<statenum_t>(msg->actor().statenum());
+	uint32_t netid = msg->current().netid();
+	mobjtype_t type = static_cast<mobjtype_t>(msg->current().type());
+	statenum_t state = static_cast<statenum_t>(msg->current().statenum());
 
 	if (type < MT_PLAYER || type >= NUMMOBJTYPES)
 		return;
@@ -478,13 +478,45 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	P_SetThingId(mo, netid);
 
-	// Assign baseline data to spawned mobj
+	// Assign baseline/current data to spawned mobj
 
-	mo->momx = base.mom.x;
-	mo->momy = base.mom.y;
-	mo->momz = base.mom.z;
-	mo->angle = base.angle;
-	AActor* target = P_FindThingById(base.targetid);
+	const uint32_t bflags = msg->baseline_flags();
+
+	if (bflags & baseline_t::POSX)
+		mo->x = msg->current().pos().x();
+
+	if (bflags & baseline_t::POSY)
+		mo->y = msg->current().pos().y();
+
+	if (bflags & baseline_t::POSZ)
+		mo->z = msg->current().pos().z();
+
+	if (bflags & baseline_t::MOMX)
+		mo->momx = msg->current().mom().x();
+	else
+		mo->momx = base.mom.x;
+
+	if (bflags & baseline_t::MOMY)
+		mo->momy = msg->current().mom().y();
+	else
+		mo->momy = base.mom.y;
+
+	if (bflags & baseline_t::MOMZ)
+		mo->momz = msg->current().mom().z();
+	else
+		mo->momz = base.mom.z;
+
+	if (bflags & baseline_t::ANGLE)
+		mo->angle = msg->current().angle();
+	else
+		mo->angle = base.angle;
+
+	AActor* target = NULL;
+	if (bflags & baseline_t::TARGET)
+		target = P_FindThingById(msg->current().targetid());
+	else
+		target = P_FindThingById(base.targetid);
+
 	if (target)
 	{
 		mo->target = target->ptr();
@@ -493,7 +525,13 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	{
 		mo->target = AActor::AActorPtr();
 	}
-	AActor* tracer = P_FindThingById(base.tracerid);
+
+	AActor* tracer = NULL;
+	if (bflags & baseline_t::TRACER)
+		tracer = P_FindThingById(msg->current().tracerid());
+	else
+		tracer = P_FindThingById(base.tracerid);
+
 	if (tracer)
 	{
 		mo->tracer = tracer->ptr();
@@ -502,9 +540,21 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	{
 		mo->tracer = AActor::AActorPtr();
 	}
-	mo->movecount = base.movecount;
-	mo->movedir = base.movedir;
-	mo->rndindex = base.rndindex;
+
+	if (bflags & baseline_t::MOVECOUNT)
+		mo->movecount = msg->current().movecount();
+	else
+		mo->movecount = base.movecount;
+
+	if (bflags & baseline_t::MOVEDIR)
+		mo->movedir = msg->current().movedir();
+	else
+		mo->movedir = base.movedir;
+
+	if (bflags & baseline_t::RNDINDEX)
+		mo->rndindex = msg->current().rndindex();
+	else
+		mo->rndindex = base.rndindex;
 
 	// denis - puff hack
 	if (mo->type == MT_PUFF)
@@ -557,15 +607,15 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->height = msg->args().Get(1) << FRACBITS;
 	}
 
-	if (msg->flags() & SVC_SM_FLAGS)
+	if (msg->spawn_flags() & SVC_SM_FLAGS)
 	{
-		mo->flags = msg->actor().flags();
+		mo->flags = msg->current().flags();
 	}
 
-	if (msg->flags() & SVC_SM_CORPSE)
+	if (msg->spawn_flags() & SVC_SM_CORPSE)
 	{
-		int frame = msg->actor().frame();
-		int tics = msg->actor().tics();
+		int frame = msg->current().frame();
+		int tics = msg->current().tics();
 
 		if (tics == 0xFF)
 			tics = -1;
