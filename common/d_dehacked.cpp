@@ -738,7 +738,7 @@ static int PatchThing (int thingy)
 	size_t thingNum = thingy;
 
 	// flags can be specified by name (a .bex extension):
-	static const struct flagsystem_t
+	static struct flagsystem_t
 	{
 		short Bit;
 		short WhichFlags;
