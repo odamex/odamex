@@ -41,6 +41,7 @@
 #include "hu_stuff.h"
 #include "v_palette.h"
 #include "c_dispatch.h"
+#include "v_text.h"
 #include "gi.h"
 
 void WI_unloadData(void);
@@ -456,7 +457,32 @@ static int WI_DrawName (const char *str, int x, int y)
 	return (5*(p->height()-p->topoffset()))/4;
 }
 
+static int WI_DrawSmallName(const char* str, int x, int y)
+{
+	int lump;
+	patch_t* p = NULL;
+	char charname[9];
 
+	while (*str)
+	{
+		sprintf(charname, "STCFN%.3d", HU_FONTSTART + (toupper(*str) - 32) - 1);
+		lump = W_CheckNumForName(charname);
+		if (lump != -1)
+		{
+			p = W_CachePatch(lump);
+			screen->DrawPatchClean(p, x, y);
+			x += p->width() - 1;
+		}
+		else
+		{
+			x += 12;
+		}
+		str++;
+	}
+
+	p = W_CachePatch("FONTB39");
+	return (5 * (p->height() - p->topoffset())) / 4;
+}
 
 //Draws "<Levelname> Finished!"
 void WI_drawLF (void)
@@ -1149,7 +1175,16 @@ void WI_drawNetgameStats(void)
 		if (i == me)
 			screen->DrawPatchClean(pStar, x - pP->width(), y);
 
+		// Display player names online!
+		if (!demoplayback)
+		{
+			std::string str;
+			StrFormat(str, "%s", it->userinfo.netname);			
+			WI_DrawSmallName(str.c_str(), x+10, y+24);
+		}
+
 		x += NG_SPACINGX;
+
 		WI_drawPercent (cnt_kills_c[i], x-pwidth, y+10, wbs->maxkills);	x += NG_SPACINGX;
 		WI_drawPercent (cnt_items_c[i], x-pwidth, y+10, wbs->maxitems);	x += NG_SPACINGX;
 		WI_drawPercent (cnt_secret_c[i], x-pwidth, y+10, wbs->maxsecret); x += NG_SPACINGX;
@@ -1157,7 +1192,7 @@ void WI_drawNetgameStats(void)
 		if (dofrags)
 			WI_drawNum(cnt_frags_c[i], x, y+10, -1);
 
-		y += WI_SPACINGY;
+		y += WI_SPACINGY+4;
 		nbPlayers++;
 	}
 }
@@ -1651,7 +1686,9 @@ void WI_Drawer (void)
 			if (multiplayer)
 			{
 				if (demoplayback)
+				{
 					WI_drawNetgameStats();
+				}
 				else
 				{
 					if (sv_gametype == 0 && !wi_newintermission && P_NumPlayersInGame() < 5)
