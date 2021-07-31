@@ -1643,25 +1643,28 @@ void A_FatAttack3 (AActor *actor)
 
 void A_Mushroom(AActor* actor)
 {
-	int n = actor->damage;
+	int n = actor->info->damage;
 
-	A_Explode(actor); // First make normal explosion
+	// Mushroom parameters are part of code pointer's state
+	fixed_t misc1 = actor->state->misc1 ? actor->state->misc1 : FRACUNIT * 4;
+	fixed_t misc2 = actor->state->misc2 ? actor->state->misc2 : FRACUNIT / 2;
 
-	// Now launch mushroom cloud
-	for (int i = -n; i <= n; i += 8)
+	A_Explode(actor); // make normal explosion
+
+	for (int i = -n; i <= n; i += 8) // launch mushroom cloud
 	{
 		for (int j = -n; j <= n; j += 8)
 		{
 			AActor* target = new AActor(actor->x, actor->y, actor->z, MT_UNKNOWNTHING);
 			target->x += i << FRACBITS; // Aim in many directions from source
 			target->y += j << FRACBITS;
-			target->z += P_AproxDistance(i, j) << (FRACBITS + 2);   // Aim up fairly high
+			target->z += P_AproxDistance(i, j) * misc1;     // Aim fairly high
 			AActor* mo = P_SpawnMissile(actor, target, MT_FATSHOT); // Launch fireball
 			if (mo != NULL)
 			{
-				mo->momx >>= 1;
-				mo->momy >>= 1; // Slow it down a bit
-				mo->momz >>= 1;
+				mo->momx = FixedMul(mo->momx, misc2);
+				mo->momy = FixedMul(mo->momy, misc2); // Slow down a bit
+				mo->momz = FixedMul(mo->momz, misc2);
 				mo->flags &= ~MF_NOGRAVITY; // Make debris fall under gravity
 			}
 			target->Destroy();
