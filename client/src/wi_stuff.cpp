@@ -1179,7 +1179,7 @@ void WI_drawNetgameStats(void)
 		if (!demoplayback)
 		{
 			std::string str;
-			StrFormat(str, "%s", it->userinfo.netname);			
+			StrFormat(str, "%s", it->userinfo.netname.c_str());			
 			WI_DrawSmallName(str.c_str(), x+10, y+24);
 		}
 
