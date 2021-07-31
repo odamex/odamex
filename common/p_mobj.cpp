@@ -2007,6 +2007,9 @@ bool P_CheckMissileSpawn (AActor* th)
 
 	// killough 3/15/98: no dropoff (really = don't care for missiles)
 
+	// [AM] Set the baseline before we send it to clients.
+	P_SetMobjBaseline(*th);
+
 	// [SL] 2011-06-02 - If a missile explodes immediatley upon firing,
 	// make sure we spawn the missile first, send it to all clients immediately
 	// instead of queueing it, then explode it.
