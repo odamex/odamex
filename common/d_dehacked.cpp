@@ -730,9 +730,6 @@ static int PatchThing (int thingy)
 		                             // MBF flags: TOUCHY is remapped to flags6, FRIEND is
 		                             // turned into FRIENDLY, and finally BOUNCES is
 		                             // replaced by bouncetypes with the BOUNCES_MBF bit.
-		MF_TOUCHY = 0x10000000,  // killough 11/98: dies when solids touch it
-		MF_BOUNCES = 0x20000000, // killough 7/11/98: for beta BFG fireballs
-		MF_FRIEND = 0x40000000,  // killough 7/18/98: friendly monsters
 	};
 
 	size_t thingNum = thingy;
@@ -1022,26 +1019,22 @@ static int PatchThing (int thingy)
 
 							if (tempval & MF2_LOGRAV)
 							{
-								value[1] |= MF2_LOGRAV;
-								vchanged[1] = true;
+								info->flags2 |= MF2_LOGRAV;
 							}
 								
 							if (tempval & MF2_BOSS)
 							{
-								value[1] |= MF2_BOSS;
-								vchanged[1] = true;
+								info->flags2 |= MF2_BOSS;
 							}
 								
 							if (tempval & MF2_NODMGTHRUST)
 							{
-								value[1] |= MF2_NODMGTHRUST;
-								vchanged[1] = true;
+								info->flags2 |= MF2_NODMGTHRUST;
 							}
 								
 							if (tempval & MF2_RIP)
 							{
-								value[1] |= MF2_RIP;
-								vchanged[1] = true;
+								info->flags2 |= MF2_RIP;
 							}
 							
 							value[3] |= atoi(strval);
@@ -1064,10 +1057,6 @@ static int PatchThing (int thingy)
 							if (i == ARRAY_LENGTH(mbf_bitnames))
 								DPrintf("Unknown bit mnemonic %s\n", strval);
 						}
-					}
-					if (vchanged[1])
-					{
-						info->flags2 |= value[1];	// unsure since there might be a flags2 value existing... 
 					}
 					if (vchanged[3])
 					{
@@ -1309,56 +1298,64 @@ static int PatchFrame (int frameNum)
 		size_t val = atoi(Line2);
 		int linelen = strlen(Line1);
 
-		if (linelen == 10)
+		if (HandleKey(keys, info, Line1, val, sizeof(*info)))
 		{
-			if (stricmp(Line1, "MBF21 Bits") == 0)
+			if (linelen == 10)
 			{
-				int value = 0;
-				bool vchanged = false;
-				char* strval;
-
-				for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
-				     strval = NULL)
+				if (stricmp(Line1, "MBF21 Bits") == 0)
 				{
-					if (IsNum(strval))
-					{
-						// Force the top 4 bits to 0 so that the user is forced
-						// to use the mnemonics to change them.
+					int value = 0;
+					bool vchanged = false;
+					char* strval;
 
-						// I have no idea why everyone insists on using strtol here
-						// even though it fails dismally if a value is parsed where
-						// the highest bit it set. Do people really use negative
-						// values here? Let's better be safe and check both.
-						value |= atoi(strval);
-						vchanged = true;
-					}
-					else
+					for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
+					     strval = NULL)
 					{
-						size_t i;
-
-						for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+						if (IsNum(strval))
 						{
-							if (!stricmp(strval, bitnames[i].Name))
-							{
-								vchanged = true;
-								value |= 1 << (bitnames[i].Bit);
-								break;
-							}
-						}
+							// Force the top 4 bits to 0 so that the user is forced
+							// to use the mnemonics to change them.
 
-						if (i == ARRAY_LENGTH(bitnames))
-							DPrintf("Unknown bit mnemonic %s\n", strval);
+							// I have no idea why everyone insists on using strtol here
+							// even though it fails dismally if a value is parsed where
+							// the highest bit it set. Do people really use negative
+							// values here? Let's better be safe and check both.
+							value |= atoi(strval);
+							vchanged = true;
+						}
+						else
+						{
+							size_t i;
+
+							for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+							{
+								if (!stricmp(strval, bitnames[i].Name))
+								{
+									vchanged = true;
+									value |= 1 << (bitnames[i].Bit);
+									break;
+								}
+							}
+
+							if (i == ARRAY_LENGTH(bitnames))
+								DPrintf("Unknown bit mnemonic %s\n", strval);
+						}
 					}
-				}
-				if (vchanged)
-				{
-					info->flags = value; // Weapon Flags
+					if (vchanged)
+					{
+						info->flags = value; // Weapon Flags
+					}
 				}
 			}
+			else
+				PrintUnknown(Line1, "Frame", frameNum);
 		}
-		else if (HandleKey(keys, info, Line1, atoi(Line2), sizeof(*info)))
-			PrintUnknown(Line1, "Frame", frameNum);
+			
 	}
+
+	Printf("FRAME %d: Duration: %d, Next: %d, SprNum: %d(%s), SprSub: %d\n",
+	       frameNum, info->tics,
+	       info->nextstate, info->sprite, sprnames[info->sprite], info->frame);
 
 	return result;
 }
@@ -1466,56 +1463,59 @@ static int PatchWeapon (int weapNum)
 		size_t val = atoi(Line2);
 		int linelen = strlen(Line1);
 
-		if (linelen == 10)
+		if (HandleKey(keys, info, Line1, val, sizeof(*info)))
 		{
-			if (stricmp(Line1, "MBF21 Bits") == 0)
+			if (linelen == 10)
 			{
-				int value = 0;
-				bool vchanged = false;
-				char* strval;
-
-				for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
-				     strval = NULL)
+				if (stricmp(Line1, "MBF21 Bits") == 0)
 				{
-					if (IsNum(strval))
-					{
-						// Force the top 4 bits to 0 so that the user is forced
-						// to use the mnemonics to change them.
+					int value = 0;
+					bool vchanged = false;
+					char* strval;
 
-						// I have no idea why everyone insists on using strtol here
-						// even though it fails dismally if a value is parsed where
-						// the highest bit it set. Do people really use negative
-						// values here? Let's better be safe and check both.
-						value |= atoi(strval);
-						vchanged = true;
-					}
-					else
+					for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
+					     strval = NULL)
 					{
-						size_t i;
-
-						for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+						if (IsNum(strval))
 						{
-							if (!stricmp(strval, bitnames[i].Name))
-							{
-								vchanged = true;
-								value |= 1 << (bitnames[i].Bit);
-								break;
-							}
-						}
+							// Force the top 4 bits to 0 so that the user is forced
+							// to use the mnemonics to change them.
 
-						if (i == ARRAY_LENGTH(bitnames))
-							DPrintf("Unknown bit mnemonic %s\n", strval);
+							// I have no idea why everyone insists on using strtol here
+							// even though it fails dismally if a value is parsed where
+							// the highest bit it set. Do people really use negative
+							// values here? Let's better be safe and check both.
+							value |= atoi(strval);
+							vchanged = true;
+						}
+						else
+						{
+							size_t i;
+
+							for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+							{
+								if (!stricmp(strval, bitnames[i].Name))
+								{
+									vchanged = true;
+									value |= 1 << (bitnames[i].Bit);
+									break;
+								}
+							}
+
+							if (i == ARRAY_LENGTH(bitnames))
+								DPrintf("Unknown bit mnemonic %s\n", strval);
+						}
 					}
-				}
-				if (vchanged)
-				{
-					info->flags = value; // Weapon Flags
+					if (vchanged)
+					{
+						info->flags = value; // Weapon Flags
+					}
 				}
 			}
-		}
-		else if (HandleKey(keys, info, Line1, val, sizeof(*info)))
-		{
-			PrintUnknown(Line1, "Weapon", weapNum);
+			else
+			{
+				PrintUnknown(Line1, "Weapon", weapNum);
+			}
 		}
 
 	}
