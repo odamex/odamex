@@ -797,7 +797,7 @@ FUNC(LS_Teleport_NewMap)
 
 		if (it && (info.levelnum != 0 && CheckIfExitIsGood(it)))
 		{
-			strncpy(level.nextmap, info.mapname, 8);
+			level.nextmap = info.mapname;
 			G_ExitLevel(arg1, 1);
 			return true;
 		}
@@ -842,7 +842,7 @@ FUNC(LS_Teleport_EndGame)
 {
 	if (!TeleportSide && it && CheckIfExitIsGood (it))
 	{
-		strncpy (level.nextmap, "EndGameC", 8);
+		level.nextmap = "EndGameC";
 		G_ExitLevel (0, 1);
 		return true;
 	}
@@ -1056,9 +1056,9 @@ FUNC(LS_ACS_Execute)
 	level_pwad_info_t& info = levels.findByNum(arg1);
 
 	if (arg1 == 0 || !info.exists())
-		return P_StartScript(it, ln, arg0, ::level.mapname, TeleportSide, arg2, arg3, arg4, 0);
+		return P_StartScript(it, ln, arg0, ::level.mapname.c_str(), TeleportSide, arg2, arg3, arg4, 0);
 
-	return P_StartScript(it, ln, arg0, info.mapname, TeleportSide, arg2, arg3, arg4, 0);
+	return P_StartScript(it, ln, arg0, info.mapname.c_str(), TeleportSide, arg2, arg3, arg4, 0);
 }
 
 FUNC(LS_ACS_ExecuteAlways)
@@ -1071,9 +1071,9 @@ FUNC(LS_ACS_ExecuteAlways)
 	level_pwad_info_t& info = levels.findByNum(arg1);
 
 	if (arg1 == 0 || !info.exists())
-		return P_StartScript(it, ln, arg0, ::level.mapname, TeleportSide, arg2, arg3, arg4, 1);
+		return P_StartScript(it, ln, arg0, ::level.mapname.c_str(), TeleportSide, arg2, arg3, arg4, 1);
 
-	return P_StartScript(it, ln, arg0, info.mapname, TeleportSide, arg2, arg3, arg4, 1);
+	return P_StartScript(it, ln, arg0, info.mapname.c_str(), TeleportSide, arg2, arg3, arg4, 1);
 }
 
 FUNC(LS_ACS_LockedExecute)
@@ -1098,9 +1098,9 @@ FUNC(LS_ACS_Suspend)
 	level_pwad_info_t& info = levels.findByNum(arg1);
 
 	if (arg1 == 0 || !info.exists())
-		P_SuspendScript(arg0, ::level.mapname);
+		P_SuspendScript(arg0, ::level.mapname.c_str());
 	else
-		P_SuspendScript(arg0, info.mapname);
+		P_SuspendScript(arg0, info.mapname.c_str());
 
 	return true;
 }
@@ -1114,9 +1114,9 @@ FUNC(LS_ACS_Terminate)
 	level_pwad_info_t& info = getLevelInfos().findByNum(arg1);
 
 	if (arg1 == 0 || !info.exists())
-		P_TerminateScript(arg0, ::level.mapname);
+		P_TerminateScript(arg0, ::level.mapname.c_str());
 	else
-		P_TerminateScript(arg0, info.mapname);
+		P_TerminateScript(arg0, info.mapname.c_str());
 
 	return true;
 }
@@ -2051,7 +2051,7 @@ BOOL CheckIfExitIsGood (AActor *self)
         if (!sv_allowexit)
         {
 			if (sv_fragexitswitch && serverside)
-				P_DamageMobj(self, NULL, NULL, 10000, MOD_SUICIDE);
+				P_DamageMobj(self, NULL, NULL, 10000, MOD_EXIT);
 
 			return false;
 		}

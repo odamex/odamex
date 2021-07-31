@@ -93,7 +93,7 @@ void CMD_MapVoteErrback(const std::string &error) {
 	Printf(PRINT_HIGH, "callvote failed: %s\n", error.c_str());
 }
 
-void CMD_MapVoteCallback(const query_result_t &result) {
+void CMD_MapVoteCallback(const maplist_qrows_t &result) {
 	if (result.empty()) {
 		CMD_MapVoteErrback("No maps were found that match your requested map.");
 		return;
@@ -118,7 +118,7 @@ void CMD_RandmapVoteErrback(const std::string &error) {
 	Printf(PRINT_HIGH, "callvote failed: %s\n", error.c_str());
 }
 
-void CMD_RandmapVoteCallback(const query_result_t &result) {
+void CMD_RandmapVoteCallback(const maplist_qrows_t &result) {
 	if (result.empty()) {
 		CMD_MapVoteErrback("Maplist is empty.");
 		return;
@@ -266,17 +266,3 @@ BEGIN_COMMAND(vote_no)
 	MSG_WriteString(&net_buffer, "no");
 }
 END_COMMAND(vote_no)
-
-void CL_VoteUpdate(void) {
-	vote_state_t vote_state;
-	vote_state.result = (vote_result_t)MSG_ReadByte();
-	vote_state.votestring = MSG_ReadString();
-	vote_state.countdown = MSG_ReadShort();
-	vote_state.yes = MSG_ReadByte();
-	vote_state.yes_needed = MSG_ReadByte();
-	vote_state.no = MSG_ReadByte();
-	vote_state.no_needed = MSG_ReadByte();
-	vote_state.abs = MSG_ReadByte();
-
-	VoteState::instance().set(vote_state);
-}

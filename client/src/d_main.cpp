@@ -83,6 +83,7 @@
 #include "stats.h"
 #include "p_ctf.h"
 #include "cl_main.h"
+#include "g_mapinfo.h"
 #include "sc_man.h"
 
 #include "w_ident.h"
@@ -368,7 +369,7 @@ void D_DoomLoop (void)
 			// [AM] In case an error is caused by a console command.
 			C_ClearCommand();
 
-			CL_QuitNetGame();
+			CL_QuitNetGame(NQ_SILENT);
 
 			G_ClearSnapshots();
 
@@ -459,9 +460,9 @@ void D_DoAdvanceDemo (void)
                 pagetic = 170;
 
             gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.titlePage;
+            pagename = gameinfo.titlePage.c_str();
             
-            currentmusic = gameinfo.titleMusic;
+            currentmusic = gameinfo.titleMusic.c_str();
 
             S_StartMusic(currentmusic.c_str());
 
@@ -489,8 +490,8 @@ void D_DoAdvanceDemo (void)
 					pagetic = TICRATE * 11;
 				else
 					pagetic = 170;
-                pagename = gameinfo.titlePage;
-                currentmusic = gameinfo.titleMusic;
+                pagename = gameinfo.titlePage.c_str();
+                currentmusic = gameinfo.titleMusic.c_str();
                 
                 S_StartMusic(currentmusic.c_str());
             }
@@ -563,7 +564,7 @@ void STACK_ARGS D_Close()
 //
 void D_StartTitle (void)
 {
-	// CL_QuitNetGame();
+	// CL_QuitNetGame(NQ_SILENT);
 
 	gameaction = ga_nothing;
 	demosequence = -1;
@@ -624,19 +625,6 @@ void D_Init()
 
 	HU_Init();
 
-	LevelInfos& levels = getLevelInfos();
-	if (levels.size() == 0)
-	{
-		levels.addDefaults();
-	}
-
-	ClusterInfos& clusters = getClusterInfos();
-	if (clusters.size() == 0)
-	{
-		clusters.addDefaults();
-	}
-
-	G_SetLevelStrings();
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();

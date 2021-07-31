@@ -32,10 +32,12 @@
 // [RH] The only parameter used is mapname, so I removed playermask and skill.
 //		On September 1, 1998, I added the position to indicate which set
 //		of single-player start spots should be spawned in the level.
-void P_SetupLevel (char *mapname, int position);
+void P_SetupLevel (const char *mapname, int position);
 
 // Called by startup code.
 void P_Init (void);
+
+void P_TranslateLineDef(line_t* ld, maplinedef_t* mld);
 
 #endif
 

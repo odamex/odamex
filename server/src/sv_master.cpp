@@ -213,7 +213,7 @@ bool SV_RemoveMaster(const char *masterip)
 void SV_UpdateMasterServer(masterserver &m)
 {
 		SZ_Clear(&ml_message);
-		MSG_WriteLong(&ml_message, CHALLENGE);
+		MSG_WriteLong(&ml_message, MSG_CHALLENGE);
 
 		// send out actual port, because NAT may present an incorrect port to the master
 		if(sv_natport)

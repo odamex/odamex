@@ -144,6 +144,8 @@ OBinding DefaultNetDemoBindings[] =
 	{"uparrow", "netprevmap"},
 	{"downarrow", "netnextmap"},
 	{"space", "netpause"},
+	{"pgup", "netprotoup"},
+	{"pgdn", "netprotodown"},
 	{ NULL, NULL }
 };
 

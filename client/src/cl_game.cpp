@@ -904,7 +904,7 @@ void G_Ticker (void)
 
 			if (gamestate != GS_STARTUP)
 			{
-				level.music[0] = '\0';
+				level.music.clear();
 				S_Start();
 				SN_StopAllSequences();
 				R_ExitLevel();
@@ -948,7 +948,8 @@ void G_Ticker (void)
 			last_received = gametic;
 			noservermsgs = false;
 
-			CL_ReadPacketHeader();
+			if (!CL_ReadPacketHeader())
+				continue;
 
 			if (netdemo.isRecording())
 				netdemo.capture(&net_message);
@@ -988,7 +989,7 @@ void G_Ticker (void)
 
 			int type = MSG_ReadLong();
 
-			if(type == CHALLENGE)
+			if(type == MSG_CHALLENGE)
 			{
 				CL_PrepareConnect();
 			}
@@ -1501,7 +1502,7 @@ void G_DoLoadGame (void)
 
 	Printf (PRINT_HIGH, "Loading savegame '%s'...\n", savename);
 
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	FArchive arc (savefile);
 
@@ -1600,7 +1601,7 @@ void G_DoSaveGame()
 
 	fwrite (description, SAVESTRINGSIZE, 1, stdfile);
 	fwrite (SAVESIG, 16, 1, stdfile);
-	fwrite (level.mapname, 8, 1, stdfile);
+	fwrite (level.mapname.c_str(), 8, 1, stdfile);
 
 	FLZOFile savefile (stdfile, FFile::EWriting, true);
 	FArchive arc (savefile);
@@ -1753,7 +1754,7 @@ END_COMMAND(streamdemo)
 void G_DoPlayDemo(bool justStreamInput)
 {
 	if (!justStreamInput)
-		CL_QuitNetGame();
+		CL_QuitNetGame(NQ_SILENT);
 
 	gameaction = ga_nothing;
 	int bytelen;

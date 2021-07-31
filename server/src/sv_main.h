@@ -32,8 +32,6 @@
 #include "i_net.h"
 #include "g_gametype.h"
 
-static const int MaxPacketSize = 600;
-
 #include <json/json.h>
 
 extern bool keysfound[NUMCARDS];
@@ -54,6 +52,7 @@ void SV_SendReconnectSignal();
 void SV_ExitLevel();
 void SV_DrawScores();
 
+void SV_ServerSettingChange();
 bool SV_IsPlayerAllowedToSee(player_t &pl, AActor *mobj);
 
 void STACK_ARGS SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);
@@ -90,10 +89,10 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int t);
 void SV_MidPrint (const char *msg, player_t *p, int msgtime=0);
 
 extern std::vector<std::string> wadnames;
-void MSG_WriteMarker (buf_t *b, svc_t c);
 
+void SV_SendPlayerInfo(player_t& player);
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
-void SV_SendDamagePlayer(player_t *player, int healthDamage, int armorDamage);
+void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
 // Tells clients to remove an actor from the world as it doesn't exist anymore
 void SV_SendDestroyActor(AActor *mo);
@@ -128,9 +127,8 @@ void SV_UpdateMonsterRespawnCount();
 void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, int arg0,
                                int arg1, int arg2, int arg3, int arg4);
 void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
-                          bool playerOnly, int arg0 = -1, int arg1 = -1, int arg2 = -1,
-                          int arg3 = -1, int arg4 = -1, int arg5 = -1, int arg6 = -1,
-                          int arg7 = -1, int arg8 = -1);
+                          bool playerOnly,
+                          const std::vector<int>& args = std::vector<int>());
 
 bool CompareQueuePosition(const player_t* p1, const player_t* p2);
 

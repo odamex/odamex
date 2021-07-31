@@ -258,7 +258,7 @@ std::string M_ExpandTokens(const std::string &str)
 				}
 				break;
 			case 'm':
-				buffer << level.mapname;
+				buffer << level.mapname.c_str();
 				break;
 			case 'r':
 				buffer << "g" << GitShortHash();

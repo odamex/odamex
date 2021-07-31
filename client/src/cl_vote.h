@@ -26,18 +26,6 @@
 #include "c_vote.h"
 #include "doomtype.h"
 
-// A struct to pass around voting state
-typedef struct {
-	vote_result_t result;
-	std::string votestring;
-	short countdown;
-	byte yes;
-	byte yes_needed;
-	byte no;
-	byte no_needed;
-	byte abs;
-} vote_state_t;
-
 // A class to actually deal with keeping track of voting state and ensuring
 // that the proper variables are set.
 class VoteState {
@@ -58,7 +46,5 @@ public:
 	void set(const vote_state_t &vote_state);
 	bool get(vote_state_t &vote_state);
 };
-
-void CL_VoteUpdate(void);
 
 #endif
