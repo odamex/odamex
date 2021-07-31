@@ -82,7 +82,10 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 //		mobj = new AActor(player.mo->x, player.mo->y, ONFLOORZ, MT_PLAYER);
 //	else
 //		mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
-	mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
+
+	//[RK] If level flag for z-height spawning isn't set then, spawn the player on floor
+	mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS,
+		(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing->z << FRACBITS : ONFLOORZ), MT_PLAYER);
 
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.
