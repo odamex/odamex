@@ -172,6 +172,7 @@ fixed_t P_AproxDistance2 (AActor *mo, fixed_t x, fixed_t y);
 fixed_t P_AproxDistance2 (AActor *a, AActor *b);
 
 bool P_ActorInFOV(AActor* origin, AActor* mo , float f, fixed_t dist);
+AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance);
 
 int 	P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line);
@@ -475,6 +476,8 @@ BOOL PO_Busy (int polyobj);
 //
 #include "p_spec.h"
 
+
+bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov);
 
 #endif	// __P_LOCAL__
 

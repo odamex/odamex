@@ -939,5 +939,26 @@ bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost)
 		return P_CheckSightEdgesDoom(t1, t2, radius_boost);
 }
 
+
+//
+// P_CheckFov
+// Returns true if t2 is within t1's field of view.
+// Not directly related to P_CheckSight, but often
+// used in tandem.
+//
+// Adapted from Eternity, so big thanks to Quasar
+//
+bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov)
+{
+	angle_t angle, minang, maxang;
+
+	angle = R_PointToAngle2(t1->x, t1->y, t2->x, t2->y);
+	minang = t1->angle - fov / 2;
+	maxang = t1->angle + fov / 2;
+
+	return ((minang > maxang) ? angle >= minang || angle <= maxang
+	                          : angle >= minang && angle <= maxang);
+}
+
 VERSION_CONTROL (p_sight_cpp, "$Id$")
 

@@ -2040,6 +2040,25 @@ void A_SeekTracer(AActor* actor)
 	P_SeekerMissile(actor, actor->tracer, threshold, maxturnangle, true);
 }
 
+//
+// A_FindTracer
+// Search for a valid tracer (seek target), if the calling actor doesn't already have one.
+//   args[0]: field-of-view to search in (degrees, in fixed point); if zero, will search
+//   in all directions args[1]: distance to search (map blocks, i.e. 128 units)
+//
+void A_FindTracer(AActor* actor)
+{
+	angle_t fov;
+	int dist;
+
+	if (!actor || actor->tracer)
+		return;
+
+	fov = FixedToAngle(actor->state->args[0]);
+	dist = (actor->state->args[1]);
+
+	actor->tracer = P_RoughTargetSearch(actor, fov, dist)->ptr();
+}
 
 //
 // A_ClearTracer
@@ -2051,7 +2070,186 @@ void A_ClearTracer(AActor* actor)
 		return;
 
 	actor->tracer = AActor::AActorPtr();
-	;
+}
+
+//
+// A_JumpIfHealthBelow
+// Jumps to a state if caller's health is below the specified threshold.
+//   args[0]: State to jump to
+//   args[1]: Health threshold
+//
+void A_JumpIfHealthBelow(AActor* actor)
+{
+	int state, health;
+
+	if (!actor)
+		return;
+
+	state = actor->state->args[0];
+	health = actor->state->args[1];
+
+	if (actor->health < health)
+		P_SetMobjState(actor, (statenum_t)state);
+}
+
+//
+// A_JumpIfTargetInSight
+// Jumps to a state if caller's target is in line-of-sight.
+//   args[0]: State to jump to
+//   args[1]: Field-of-view to check (degrees, in fixed point); if zero, will check in all
+//   directions
+//
+void A_JumpIfTargetInSight(AActor* actor)
+{
+	int state;
+	angle_t fov;
+
+	if (!actor || !actor->target)
+		return;
+
+	state = (actor->state->args[0]);
+	fov = FixedToAngle(actor->state->args[1]);
+
+	// Check FOV first since it's faster
+	if (fov > 0 && !P_CheckFov(actor, actor->target, fov))
+		return;
+
+	if (P_CheckSight(actor, actor->target))
+		P_SetMobjState(actor, (statenum_t)state);
+}
+
+
+//
+// A_JumpIfTargetCloser
+// Jumps to a state if caller's target is closer than the specified distance.
+//   args[0]: State to jump to
+//   args[1]: Distance threshold
+//
+void A_JumpIfTargetCloser(AActor* actor)
+{
+	int state, distance;
+
+	if (!actor || !actor->target)
+		return;
+
+	state = actor->state->args[0];
+	distance = actor->state->args[1];
+
+	if (distance >
+	    P_AproxDistance(actor->x - actor->target->x, actor->y - actor->target->y))
+		P_SetMobjState(actor, (statenum_t)state);
+}
+
+//
+// A_JumpIfTracerInSight
+// Jumps to a state if caller's tracer (seek target) is in line-of-sight.
+//   args[0]: State to jump to
+//   args[1]: Field-of-view to check (degrees, in fixed point); if zero, will check in all
+//   directions
+//
+void A_JumpIfTracerInSight(AActor* actor)
+{
+	angle_t fov;
+	int state;
+
+	if (!actor || !actor->tracer)
+		return;
+
+	state = (actor->state->args[0]);
+	fov = FixedToAngle(actor->state->args[1]);
+
+	// Check FOV first since it's faster
+	if (fov > 0 && !P_CheckFov(actor, actor->tracer, fov))
+		return;
+
+	if (P_CheckSight(actor, actor->tracer))
+		P_SetMobjState(actor, (statenum_t)state);
+}
+
+//
+// A_JumpIfTracerCloser
+// Jumps to a state if caller's tracer (seek target) is closer than the specified
+// distance.
+//   args[0]: State to jump to
+//   args[1]: Distance threshold (fixed point)
+//
+void A_JumpIfTracerCloser(AActor* actor)
+{
+	int state, distance;
+
+	if (!actor || !actor->tracer)
+		return;
+
+	state = actor->state->args[0];
+	distance = actor->state->args[1];
+
+	if (distance >
+	    P_AproxDistance(actor->x - actor->tracer->x, actor->y - actor->tracer->y))
+		P_SetMobjState(actor, (statenum_t)state);
+}
+
+//
+// A_JumpIfFlagsSet
+// Jumps to a state if caller has the specified thing flags set.
+//   args[0]: State to jump to
+//   args[1]: Standard Flag(s) to check
+//   args[2]: MBF21 Flag(s) to check
+//
+void A_JumpIfFlagsSet(AActor* actor)
+{
+	int state;
+	int flags, flags2;
+
+	if (!actor)
+		return;
+
+	state = actor->state->args[0];
+	flags = actor->state->args[1];
+	flags2 = actor->state->args[2];
+
+	if ((actor->flags & flags) == flags && (actor->flags2 & flags2) == flags2)
+		P_SetMobjState(actor, (statenum_t)state);
+}
+
+
+//
+// A_AddFlags
+// Adds the specified thing flags to the caller.
+//   args[0]: Standard Flag(s) to add
+//   args[1]: MBF21 Flag(s) to add
+//
+void A_AddFlags(AActor* actor)
+{
+	int flags, flags2;
+
+	if (!actor)
+		return;
+
+	flags = actor->state->args[0];
+	flags2 = actor->state->args[1];
+
+	actor->flags |= flags;
+	actor->flags2 |= flags2;
+}
+
+//
+// A_RemoveFlags
+// Removes the specified thing flags from the caller.
+//   args[0]: Flag(s) to remove
+//   args[1]: MBF21 Flag(s) to remove
+//
+void A_RemoveFlags(AActor* actor)
+{
+	int flags, flags2;
+
+	if (!actor)
+		return;
+
+	flags = actor->state->args[0];
+	flags2 = actor->state->args[1];
+
+	actor->flags &= ~flags;
+	actor->flags2 &= ~flags2;
 }
 
 void A_Stop(AActor* actor)

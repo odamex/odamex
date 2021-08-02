@@ -256,7 +256,23 @@ void A_RandomJump(AActor*);
 void A_LineEffect(AActor*);
 void A_BetaSkullAttack(AActor* actor);
 void A_SpawnObject(AActor*);
-
+void A_MonsterProjectile(AActor* actor);
+void A_MonsterBulletAttack(AActor* actor);
+void A_MonsterMeleeAttack(AActor* actor);
+void A_RadiusDamage(AActor* actor);
+void A_NoiseAlert(AActor* actor);
+void A_HealChase(AActor* actor);
+void A_SeekTracer(AActor* actor);
+void A_FindTracer(AActor* actor);
+void A_ClearTracer(AActor* actor);
+void A_JumpIfHealthBelow(AActor* actor);
+void A_JumpIfTargetInSight(AActor* actor);
+void A_JumpIfTargetCloser(AActor* actor);
+void A_JumpIfTracerInSight(AActor* actor);
+void A_JumpIfTracerCloser(AActor* actor);
+void A_JumpIfFlagsSet(AActor* actor);
+void A_AddFlags(AActor* actor);
+void A_RemoveFlags(AActor* actor);
 
 struct CodePtr {
 	const char *name;
@@ -346,16 +362,36 @@ static const struct CodePtr CodePtrs[] = {
 	{ "BrainExplode",	A_BrainExplode },
 	{ "Detonate",		A_Detonate },       // killough 8/9/98
 	{ "Mushroom",		A_Mushroom },       // killough 10/98
-	{ "Die",		A_Die },            // killough 11/98
-	{ "Spawn",		A_Spawn },          // killough 11/98
-	{ "Turn",		A_Turn },           // killough 11/98
-	{ "Face",		A_Face },           // killough 11/98
+	{ "Die",			A_Die },            // killough 11/98
+	{ "Spawn",			A_Spawn },          // killough 11/98
+	{ "Turn",			A_Turn },           // killough 11/98
+	{ "Face",			A_Face },           // killough 11/98
 	{ "Scratch",		A_Scratch },        // killough 11/98
 	{ "PlaySound",		A_PlaySound },      // killough 11/98
 	{ "RandomJump",		A_RandomJump },     // killough 11/98
 	{ "LineEffect",		A_LineEffect },     // killough 11/98
     { "BetaSkullAttack", A_BetaSkullAttack},
-	{"A_SpawnObject", A_SpawnObject},
+
+	// MBF21 Pointers
+	{ "SpawnObject",	A_SpawnObject},
+	{ "MonsterProjectile",	A_MonsterProjectile},
+    { "MonsterBulletAttack", A_MonsterBulletAttack},
+    { "MonsterMeleeAttack", A_MonsterMeleeAttack},
+    { "RadiusDamage", A_RadiusDamage},
+    { "NoiseAlert", A_NoiseAlert},
+    { "HealChase", A_HealChase},
+    { "SeekTracer", A_SeekTracer},
+    { "FindTracer", A_FindTracer},
+    { "ClearTracer", A_ClearTracer},
+    { "JumpIfHealthBelow", A_JumpIfHealthBelow},
+    { "JumpIfTargetInSight", A_JumpIfTargetInSight},
+    { "JumpIfTargetCloser", A_JumpIfTargetCloser},
+    { "JumpIfTracerInSight", A_JumpIfTracerInSight},
+    { "JumpIfTracerCloser", A_JumpIfTracerCloser},
+    { "JumpIfFlagsSet", A_JumpIfFlagsSet},
+    { "AddFlags", A_AddFlags},
+    { "RemoveFlags", A_RemoveFlags},
+
 	{ NULL, NULL }
 };
 
