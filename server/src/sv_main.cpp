@@ -4756,15 +4756,34 @@ void SV_RunTics()
 		// [SL] Ordinarily we should call G_DeferedInitNew but this is called
 		// at the end of a gametic and the level reset should take place now
 		// rather than at the start of the next gametic.
+		maplist_entry_t lobby_entry;
+		lobby_entry = Maplist::instance().get_lobbymap();
 
-		// [SL] create a copy of level.mapname because G_InitNew uses strncpy
-		// to copy the mapname parameter to level.mapname, which is undefined
-		// behavior.
-		char mapname[9];
-		strncpy(mapname, level.mapname, 8);
-		mapname[8] = 0;
+		if (lobby_entry.map != "")
+		{
 
-		G_InitNew(mapname);
+			std::string wadstr;
+			for (size_t i = 0; i < lobby_entry.wads.size(); i++)
+			{
+				if (i != 0)
+				{
+					wadstr += " ";
+				}
+				wadstr += C_QuoteString(lobby_entry.wads.at(i));
+			}
+			G_LoadWadString(wadstr, lobby_entry.map);
+		}
+		else
+		{
+			// [SL] create a copy of level.mapname because G_InitNew uses strncpy
+			// to copy the mapname parameter to level.mapname, which is undefined
+			// behavior.
+			char mapname[9];
+			strncpy(mapname, level.mapname, 8);
+			mapname[8] = 0;
+
+			G_InitNew(mapname);
+		}
 	}
 	last_player_count = players.size();
 }

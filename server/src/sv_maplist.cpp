@@ -461,6 +461,19 @@ void Maplist::clear_timeout(const int index) {
 	this->timeout.erase(index);
 }
 
+
+// LOBBY FUNCS
+// Return the current map index.
+maplist_entry_t Maplist::get_lobbymap()
+{
+	return this->lobbymap;
+}
+
+void Maplist::set_lobbymap(maplist_entry_t map)
+{
+	this->lobbymap = map;
+}
+
 //////// COMMANDS TO CLIENT ////////
 
 // Clue the client in on if the maplist is outdated or not and if they're
@@ -833,3 +846,38 @@ BEGIN_COMMAND (randmap) {
 		Printf(PRINT_HIGH, "%s\n", error.c_str());
 	}
 } END_COMMAND (randmap)
+
+
+// LOBBY FUNCTIONS
+
+BEGIN_COMMAND(setlobby)
+{
+	if (argc < 2)
+	{
+		Printf(PRINT_HIGH, "Usage: setlobby <map lump> [wad name] [...]\n");
+		Printf(PRINT_HIGH,
+		       "There can only be one map with the lobby.\n");
+		return;
+	}
+
+	std::vector<std::string> arguments = VectorArgs(argc, argv);
+
+	// Grab the map lump.
+	maplist_entry_t maplist_entry;
+	maplist_entry.map = arguments[0];
+
+	// If we specified any WAD files, grab them too.
+	if (arguments.size() > 1)
+	{
+		maplist_entry.wads.resize(arguments.size() - 1);
+		std::copy(arguments.begin() + 1, arguments.end(), maplist_entry.wads.begin());
+	}
+
+	Maplist::instance().set_lobbymap(maplist_entry);
+
+	// Successfully warn the server a map has been added.
+	Printf(PRINT_HIGH, "Setting %s as the Lobby map (WAD%s : %s)", arguments[0].c_str(),
+	       (arguments.size() > 2) ? "s" : "",
+	       JoinStrings(maplist_entry.wads, " ").c_str());
+}
+END_COMMAND(setlobby)
