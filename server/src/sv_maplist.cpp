@@ -850,7 +850,7 @@ BEGIN_COMMAND (randmap) {
 
 // LOBBY FUNCTIONS
 
-BEGIN_COMMAND(setlobby)
+BEGIN_COMMAND(setlobbymap)
 {
 	if (argc < 2)
 	{
@@ -880,4 +880,4 @@ BEGIN_COMMAND(setlobby)
 	       (arguments.size() > 2) ? "s" : "",
 	       JoinStrings(maplist_entry.wads, " ").c_str());
 }
-END_COMMAND(setlobby)
+END_COMMAND(setlobbymap)
