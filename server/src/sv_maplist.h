@@ -80,6 +80,8 @@ public:
 	// Lobby
 	void set_lobbymap(maplist_entry_t map);
 	maplist_entry_t get_lobbymap();
+	void clear_lobbymap();
+	bool lobbyempty();
 };
 
 void SV_Maplist(player_t &player);

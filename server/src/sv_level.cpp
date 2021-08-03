@@ -195,9 +195,8 @@ void G_ChangeMap() {
 		maplist_entry_t lobby_entry;
 		lobby_entry = Maplist::instance().get_lobbymap();
 
-		if (lobby_entry.map != "")
+		if (!Maplist::instance().lobbyempty())
 		{
-
 			std::string wadstr;
 			for (size_t i = 0; i < lobby_entry.wads.size(); i++)
 			{

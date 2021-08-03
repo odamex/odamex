@@ -474,6 +474,19 @@ void Maplist::set_lobbymap(maplist_entry_t map)
 	this->lobbymap = map;
 }
 
+void Maplist::clear_lobbymap()
+{
+	maplist_entry_t maplist_empty;
+	this->lobbymap = maplist_empty;
+}
+
+bool Maplist::lobbyempty()
+{
+	if (this->lobbymap.map != "")
+		return false;
+	return true;
+}
+
 //////// COMMANDS TO CLIENT ////////
 
 // Clue the client in on if the maplist is outdated or not and if they're
@@ -876,8 +889,15 @@ BEGIN_COMMAND(setlobbymap)
 	Maplist::instance().set_lobbymap(maplist_entry);
 
 	// Successfully warn the server a map has been added.
-	Printf(PRINT_HIGH, "Setting %s as the Lobby map (WAD%s : %s)", arguments[0].c_str(),
+	Printf(PRINT_HIGH, "Setting %s as the Lobby map (WAD%s : %s)\n", arguments[0].c_str(),
 	       (arguments.size() > 2) ? "s" : "",
 	       JoinStrings(maplist_entry.wads, " ").c_str());
 }
 END_COMMAND(setlobbymap)
+
+BEGIN_COMMAND(clearlobbymap)
+{
+	Maplist::instance().clear_lobbymap();
+	Printf("Lobby map cleared.\n");
+}
+END_COMMAND(clearlobbymap)

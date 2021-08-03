@@ -4759,7 +4759,7 @@ void SV_RunTics()
 		maplist_entry_t lobby_entry;
 		lobby_entry = Maplist::instance().get_lobbymap();
 
-		if (lobby_entry.map != "")
+		if (!Maplist::instance().lobbyempty())
 		{
 
 			std::string wadstr;
