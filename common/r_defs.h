@@ -465,27 +465,58 @@ typedef struct node_s node_t;
 
 
 // posts are runs of non masked source pixels
-struct post_s
+struct post_t
 {
-	byte		topdelta;		// -1 is the last post in a column
-	byte		length; 		// length data bytes follows
+	byte topdelta; // -1 is the last post in a column
+	byte length;   // length data bytes follows
+
+	uint32_t size() const
+	{
+		return length + 3;
+	}
+	byte* data() const
+	{
+		return (byte*)(this) + 3;
+	}
+	post_t* next() const
+	{
+		return (post_t*)((byte*)this + length + 4);
+	}
+	bool end() const
+	{
+		return topdelta == 0xFF;
+	}
 };
-typedef struct post_s post_t;
 
 // column_t is a list of 0 or more post_t, (byte)-1 terminated
 typedef post_t	column_t;
 
-struct tallpost_s
+struct tallpost_t
 {
-	unsigned short		topdelta;
-	unsigned short		length;
-	
-	byte *data() const { return (byte*)(this) + 4; }
-	tallpost_s *next() const { return (tallpost_s*)((byte*)(this) + 4 + length); }
-	bool end() const { return topdelta == 0xFFFF; }
-	void writeend() { topdelta = 0xFFFF; }
+	unsigned short topdelta;
+	unsigned short length;
+
+	uint32_t size() const
+	{
+		return length + 4;
+	}
+	byte* data() const
+	{
+		return (byte*)(this) + 4;
+	}
+	tallpost_t* next() const
+	{
+		return (tallpost_t*)((byte*)(this) + 4 + length);
+	}
+	bool end() const
+	{
+		return topdelta == 0xFFFF;
+	}
+	void writeend()
+	{
+		topdelta = 0xFFFF;
+	}
 };
-typedef struct tallpost_s tallpost_t;
 
 //
 // OTHER TYPES
@@ -529,14 +560,41 @@ private:
 	short			_topoffset;		// pixels below the origin
 
 public:
-
-	short width() const { return LESHORT(_width); }
-	short height() const { return LESHORT(_height); }
-	short leftoffset() const { return LESHORT(_leftoffset); }
-	short topoffset() const { return LESHORT(_topoffset); }
-
 	int columnofs[8]; // only [width] used
 	// the [0] is &columnofs[width]
+
+	short width() const
+	{
+		return LESHORT(_width);
+	}
+	short height() const
+	{
+		return LESHORT(_height);
+	}
+	short leftoffset() const
+	{
+		return LESHORT(_leftoffset);
+	}
+	short topoffset() const
+	{
+		return LESHORT(_topoffset);
+	}
+	uint32_t* ofs() const
+	{
+		return (uint32_t*)((byte*)this + 8);
+	}
+	uint32_t datastart() const
+	{
+		return 8 + 4 * width();
+	}
+	post_t* post(const uint32_t ofs)
+	{
+		return (post_t*)((byte*)this + ofs);
+	}
+	tallpost_t* tallpost(const uint32_t ofs)
+	{
+		return (tallpost_t*)((byte*)this + ofs);
+	}
 };
 typedef struct patch_s patch_t;
 
