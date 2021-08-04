@@ -470,18 +470,47 @@ struct post_t
 	byte topdelta; // -1 is the last post in a column
 	byte length;   // length data bytes follows
 
+	/**
+	 * @brief Return the post's absolute topdelta accounting for tall
+	 *        patches, which treat topdelta as relative.
+	 * 
+	 * @param lastAbs Last absolute topdelta.
+	 */
+	int abs(const int lastAbs) const
+	{
+		if (topdelta <= lastAbs)
+			return lastAbs + topdelta;
+		else
+			return topdelta;
+	}
+
+	/**
+	 * @brief Size of the post, including header.
+	 */
 	uint32_t size() const
 	{
 		return length + 3;
 	}
+	
+	/**
+	 * @brief Return a pointer to post data.
+	 */
 	byte* data() const
 	{
 		return (byte*)(this) + 3;
 	}
+
+	/**
+	 * @brief Return a pointer to the next post in the column.
+	 */
 	post_t* next() const
 	{
 		return (post_t*)((byte*)this + length + 4);
 	}
+
+	/**
+	 * @brief Check if the post ends the column.
+	 */
 	bool end() const
 	{
 		return topdelta == 0xFF;

@@ -162,10 +162,7 @@ void R_ConvertPatch(patch_t* newpatch, patch_t* rawpatch, const unsigned int lum
 		{
 			// handle DeePsea tall patches where topdelta is treated as a relative
 			// offset instead of an absolute offset
-			if (rawpost->topdelta <= abs_offset)
-				abs_offset += rawpost->topdelta;
-			else
-				abs_offset = rawpost->topdelta;
+			abs_offset = rawpost->abs(abs_offset);
 
 			// watch for column overruns
 			int length = rawpost->length;
