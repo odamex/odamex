@@ -152,6 +152,9 @@ void R_ConvertPatch(patch_t* newpatch, patch_t* rawpatch, const unsigned int lum
 
 	for (int i = 0; i < rawpatch->width(); i++)
 	{
+		int newpost_top = -1;
+		int newpost_len = 0;
+
 		int abs_offset = 0;
 
 		newpostofs[i] = LELONG(curofs); // write the new offset for this column
@@ -163,6 +166,8 @@ void R_ConvertPatch(patch_t* newpatch, patch_t* rawpatch, const unsigned int lum
 			// handle DeePsea tall patches where topdelta is treated as a relative
 			// offset instead of an absolute offset
 			abs_offset = rawpost->abs(abs_offset);
+			if (newpost_top == -1)
+				newpost_top = abs_offset;
 
 			// watch for column overruns
 			int length = rawpost->length;
@@ -176,14 +181,24 @@ void R_ConvertPatch(patch_t* newpatch, patch_t* rawpatch, const unsigned int lum
 			}
 
 			// copy the pixels in the post
-			memcpy(newpost->data(), rawpost->data(), length);
+			memcpy(newpost->data() + newpost_len, rawpost->data(), length);
+			newpost_len += length;
 
-			newpost->topdelta = abs_offset;
-			newpost->length = length;
+			// Should we finish the post?
+			if (rawpost->next()->end() ||
+			    abs_offset + length != rawpost->next()->abs(abs_offset))
+			{
+				newpost->topdelta = newpost_top;
+				newpost->length = newpost_len;
 
-			curofs += newpost->size();
+				curofs += newpost->size();
+				newpost = newpost->next();
+
+				newpost_top = -1;
+				newpost_len = 0;
+			}
+
 			rawpost = rawpost->next();
-			newpost = newpost->next();
 		}
 
 		newpost->writeend();
