@@ -1026,6 +1026,7 @@ BEGIN_COMMAND(mapinfo)
 	flags += (info.flags & LEVEL_STARTLIGHTNING ? " STARTLIGHTNING" : "");
 	flags += (info.flags & LEVEL_FILTERSTARTS ? " FILTERSTARTS" : "");
 	flags += (info.flags & LEVEL_LOBBYSPECIAL ? " LOBBYSPECIAL" : "");
+	flags += (info.flags & LEVEL_USEPLAYERSTARTZ ? " USEPLAYERSTARTZ" : "");
 	flags += (info.flags & LEVEL_DEFINEDINMAPINFO ? " DEFINEDINMAPINFO" : "");
 	flags += (info.flags & LEVEL_CHANGEMAPCHEAT ? " CHANGEMAPCHEAT" : "");
 	flags += (info.flags & LEVEL_VISITED ? " VISITED" : "");

@@ -221,14 +221,31 @@ void MustGet<OLumpName>(OScanner& os)
 
 static bool IsIdentifier(const OScanner& os)
 {
-	std::string tok = os.getToken();
-	for (size_t i = 0; i < tok.size(); i++)
+	// [A-Za-z_]+[A-Za-z0-9_]*
+
+	if (os.getToken().empty())
+		return false;
+
+	const std::string token = os.getToken();
+	for (std::string::const_iterator it = token.begin(); it != token.end(); ++it)
 	{
-		const char ch = tok[i];
-		if (!(ch == '_' || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')))
+		const char& ch = *it;
+		if (ch == '_')
+			continue;
+
+		if (ch >= 'A' && ch <= 'Z')
+			continue;
+
+		if (ch >= 'a' && ch <= 'z')
+			continue;
+
+		if (it != os.getToken().begin())
 		{
-			return false;
+			if (ch >= '0' && ch <= '9')
+				continue;
 		}
+
+		return false;
 	}
 
 	return true;
