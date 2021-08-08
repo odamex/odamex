@@ -28,6 +28,8 @@
 #include "w_ident.h"
 #include "w_wad.h"
 
+const char* ODAMEX_USERAGENT = "Odamex/" DOTVERSIONSTR;
+
 // // Common callbacks // //
 
 //
@@ -159,6 +161,7 @@ bool OTransferCheck::start()
 	curl_easy_setopt(m_curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(m_curl, CURLOPT_CONNECTTIMEOUT, 5L);
 	curl_easy_setopt(m_curl, CURLOPT_HEADERFUNCTION, curlHeader);
+	curl_easy_setopt(m_curl, CURLOPT_USERAGENT, ::ODAMEX_USERAGENT);
 	// curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L);
 	// curl_easy_setopt(m_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
 	curl_easy_setopt(m_curl, CURLOPT_NOBODY, 1L);
@@ -319,6 +322,7 @@ bool OTransfer::start()
 	curl_easy_setopt(m_curl, CURLOPT_PROGRESSFUNCTION, OTransfer::curlProgress);
 	curl_easy_setopt(m_curl, CURLOPT_PROGRESSDATA, this);
 	curl_easy_setopt(m_curl, CURLOPT_HEADERFUNCTION, curlHeader);
+	curl_easy_setopt(m_curl, CURLOPT_USERAGENT, ::ODAMEX_USERAGENT);
 	// curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L);
 	// curl_easy_setopt(m_curl, CURLOPT_DEBUGFUNCTION, curlDebug);
 	curl_multi_add_handle(m_curlm, m_curl);
