@@ -284,10 +284,9 @@ int main(int argc, char *argv[])
 	catch (CDoomError &error)
 	{
 		if (LOG.is_open())
-        {
-            LOG << error.GetMsg() << std::endl;
-            LOG << std::endl;
-        }
+		{
+			LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
+		}
 
 		I_ErrorMessageBox(error.GetMsg().c_str());
 
