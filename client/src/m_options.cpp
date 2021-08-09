@@ -448,8 +448,8 @@ void M_ResetMouseValues()
 
 static menuitem_t MouseItems[] =
 {
-	{ slider,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.25},	{2.5},		{0.1},		{NULL}},
-	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.25},	{2.5},		{0.1},		{NULL}},
+	{ slider,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.05},	{2.5},		{0.05},		{NULL}},
+	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.05},	{2.5},		{0.05},		{NULL}},
 
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ discrete,	"Always FreeLook"				, {&cl_mouselook},		{2.0},	{0.0},		{0.0},		{OnOff}},
