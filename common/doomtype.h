@@ -63,12 +63,7 @@
 	#endif
 
 	typedef unsigned char byte;
-#endif
-
-#ifdef __cplusplus
-	typedef bool dboolean;
-#else
-	typedef enum {false, true} dboolean;
+    typedef unsigned int uint;
 #endif
 
 #if defined(_MSC_VER) || defined(__WATCOMC__)

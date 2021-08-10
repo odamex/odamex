@@ -120,9 +120,11 @@ public:
 	forceinline int getValue() const
 	{
 		// [SL] quickly convert the table value (-1 or 1) into (-pitch or pitch).
+		// [AM] Replaced with a multiply that returns accurate results.  Hopefully
+		//      we can find a way to improve upon an imul someday.
 		int pitch = R_GetRenderingSurface()->getPitchInPixels();
 		int value = table[pos];
-		return (pitch ^ value) + value;
+		return pitch * value;
 	}
 
 private:
