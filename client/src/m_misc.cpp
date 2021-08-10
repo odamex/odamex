@@ -154,10 +154,10 @@ void M_LoadDefaults(void)
 	AddCommandString(cmd);
 	cvar_defflags = 0;
 
+	bool updated = false;
+
 	if (::configver <= 90)
 	{
-		bool updated = false;
-
 		// Convert old default that had ts.chaosunleashed.net.  It's either
 		// dead or so intermittent that it slows down WAD downloading.
 
@@ -171,10 +171,25 @@ void M_LoadDefaults(void)
 			updated = true;
 			cl_downloadsites.RestoreDefault();
 		}
-
-		if (updated)
-			Printf("%s: Updating old defaults.\n", __FUNCTION__);
 	}
+	else if (::configver > 90 && ::configver <= 93)
+	{
+		// Add new defaults - dogsoft and doomshack's upload dir.
+
+		const char* cl_download_old =
+		    "https://static.allfearthesentinel.net/wads/ https://doomshack.org/wads/ "
+		    "http://grandpachuck.org/files/wads/ https://wads.doomleague.org/ "
+		    "http://files.funcrusher.net/wads/";
+
+		if (!strcmp(::cl_downloadsites.cstring(), cl_download_old))
+		{
+			updated = true;
+			::cl_downloadsites.RestoreDefault();
+		}
+	}
+
+	if (updated)
+		Printf("%s: Updating old defaults.\n", __FUNCTION__);
 
 	AddCommandString("alias ? help");	
 
