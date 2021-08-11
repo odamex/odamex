@@ -226,6 +226,10 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 
 		mobjinfo_t& info = ::mobjinfo[recipe.type];
 
+		// Small monster spawns have to spawn small monsters.
+		if (sit->type == TTYPE_HORDE_SMALLMONSTER && info.radius > (32 * FRACUNIT))
+			continue;
+
 		// Flying spawns have to spawn flying monsters.
 		const bool isFlying = info.flags & (MF_NOGRAVITY | MF_FLOAT);
 		if (sit->type == TTYPE_HORDE_FLYING && !isFlying)
@@ -236,14 +240,14 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 		// - Not be flying.
 		// - Not be a boss monster for this wave.
 		// - Be skinny enough to fit in a 64x64 square.
-		if (sit->type == TTYPE_HORDE_SNIPER &&
+		if (sit->type == TTYPE_HORDE_SMALLSNIPER &&
 		    (info.missilestate == S_NULL || isFlying || recipe.isBoss ||
 		     info.radius > (32 * FRACUNIT)))
 			continue;
 
 		// Big snipers are similar, but they get to fit
 		// into a 128x128 square.
-		if (sit->type == TTYPE_HORDE_BIGSNIPER &&
+		if (sit->type == TTYPE_HORDE_SNIPER &&
 		    (info.missilestate == S_NULL || isFlying || recipe.isBoss ||
 		     info.radius > (64 * FRACUNIT)))
 			continue;
@@ -256,8 +260,8 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 		//      easy to exploit.
 
 		float score = 1.0f;
-		if (sit->type == TTYPE_HORDE_FLYING || sit->type == TTYPE_HORDE_SNIPER ||
-		    sit->type == TTYPE_HORDE_BIGSNIPER)
+		if (sit->type == TTYPE_HORDE_FLYING || sit->type == TTYPE_HORDE_SMALLSNIPER ||
+		    sit->type == TTYPE_HORDE_SNIPER)
 			score = 0.75f;
 
 		weight.score = score;
@@ -329,7 +333,7 @@ AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe)
 	// bosses must fit in a 256x256 square, everything else must fit in a 128x128 square.
 	const int rad = ::mobjinfo[recipe.type].radius >> FRACBITS;
 	int maxGroupSize = 4;
-	if (spawn.type == TTYPE_HORDE_SNIPER || spawn.type == TTYPE_HORDE_BIGSNIPER ||
+	if (spawn.type == TTYPE_HORDE_SMALLSNIPER || spawn.type == TTYPE_HORDE_SNIPER ||
 	    (spawn.type == TTYPE_HORDE_BOSS && rad * 2 > 128) || rad * 2 > 64)
 	{
 		// We can only fit one monster per spawn point.

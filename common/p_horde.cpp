@@ -157,10 +157,10 @@ class HordeState
 		m_bosses.clear();
 		m_bossRecipe.clear();
 	}
-	
+
 	/**
 	 * @brief Force a wave with a partial name match.
-	 * 
+	 *
 	 * @param name Partial name to match against.
 	 * @return True if the wave was forced, otherwise false.
 	 */
@@ -520,7 +520,7 @@ bool P_IsHordeMode()
 
 bool P_IsHordeThing(const int type)
 {
-	return type >= TTYPE_HORDE_ITEM && type <= TTYPE_HORDE_POWERUP;
+	return type >= TTYPE_HORDE_SMALLMONSTER && type <= TTYPE_HORDE_POWERUP;
 }
 
 const hordeDefine_t::weapons_t& P_HordeWeapons()

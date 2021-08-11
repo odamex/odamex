@@ -26,12 +26,13 @@
 #include "actor.h"
 #include "p_hordedefine.h"
 
+#define TTYPE_HORDE_SMALLMONSTER (5300)
 #define TTYPE_HORDE_ITEM (5301)
 #define TTYPE_HORDE_MONSTER (5302)
 #define TTYPE_HORDE_BOSS (5303)
 #define TTYPE_HORDE_FLYING (5304)
-#define TTYPE_HORDE_SNIPER (5305)
-#define TTYPE_HORDE_BIGSNIPER (5306)
+#define TTYPE_HORDE_SMALLSNIPER (5305)
+#define TTYPE_HORDE_SNIPER (5306)
 #define TTYPE_HORDE_POWERUP (5307)
 
 static inline const char* HordeThingStr(const int ttype)
@@ -46,9 +47,9 @@ static inline const char* HordeThingStr(const int ttype)
 		return "Boss";
 	case TTYPE_HORDE_FLYING:
 		return "Flying";
-	case TTYPE_HORDE_SNIPER:
+	case TTYPE_HORDE_SMALLSNIPER:
 		return "Sniper";
-	case TTYPE_HORDE_BIGSNIPER:
+	case TTYPE_HORDE_SNIPER:
 		return "Big Sniper";
 	case TTYPE_HORDE_POWERUP:
 		return "Powerup";
