@@ -2341,6 +2341,78 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 
 //
+// P_SpawnPlayerMissile
+// Tries to aim at a nearby monster
+//
+void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, fixed_t pitch, fixed_t xyofs, fixed_t zofs)
+{
+	if (!serverside)
+		return;
+
+	fixed_t slope;
+	fixed_t pitchslope =
+	    finetangent[FINEANGLES / 4 - (source->pitch >> ANGLETOFINESHIFT)];
+
+	// see which target is to be aimed at
+	angle_t an = source->angle;
+
+	// [AM] Refactored autoaim into a single function.
+	if (co_fineautoaim)
+		slope = P_AutoAimLineAttack(source, an, 1 << 26, 10, 16 * 64 * FRACUNIT);
+	else
+		slope = P_AutoAimLineAttack(source, an, 1 << 26, 1, 16 * 64 * FRACUNIT);
+
+	if (!linetarget)
+		an = source->angle + angle;
+
+	// If a target was not found, or one was found, but outside the
+	// player's autoaim range, use the actor's pitch for the slope.
+	if (sv_freelook &&
+	    (!linetarget ||     // target not found, or:
+	     (source->player && // target found but outside of player's autoaim range
+	      abs(slope - pitchslope) >= source->player->userinfo.aimdist)))
+	{
+		an = source->angle;
+		slope = pitchslope;
+	}
+
+	AActor* th = new AActor(source->x, source->y, source->z + 4 * 8 * FRACUNIT, type);
+
+	if (th->info->seesound)
+		S_Sound(th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
+
+	th->target = source->ptr();
+	th->angle = an + (angle_t)((angle << 16) / 360);
+	
+
+	if (co_zdoomphys)
+	{
+		v3float_t velocity;
+		float speed = FIXED2FLOAT(P_GetActorSpeed(th));
+
+		velocity.x = FIXED2FLOAT(finecosine[an >> ANGLETOFINESHIFT]);
+		velocity.y = FIXED2FLOAT(finesine[an >> ANGLETOFINESHIFT]);
+		velocity.z = FIXED2FLOAT(slope);
+
+		M_NormalizeVec3f(&velocity, &velocity);
+
+		th->momx = FLOAT2FIXED(velocity.x * speed);
+		th->momy = FLOAT2FIXED(velocity.y * speed);
+		th->momz = FLOAT2FIXED(velocity.z * speed);
+	}
+	else
+	{
+		fixed_t speed = P_GetActorSpeed(th);
+
+		th->momx = FixedMul(speed, finecosine[an >> ANGLETOFINESHIFT]);
+		th->momy = FixedMul(speed, finesine[an >> ANGLETOFINESHIFT]);
+		th->momz = FixedMul(speed, slope);
+	}
+
+	P_CheckMissileSpawn(th);
+}
+
+//
 // P_RespawnSpecials
 //
 void P_RespawnSpecials (void)

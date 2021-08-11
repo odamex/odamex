@@ -255,6 +255,8 @@ void A_PlaySound(AActor*);
 void A_RandomJump(AActor*);
 void A_LineEffect(AActor*);
 void A_BetaSkullAttack(AActor* actor);
+
+// MBF21
 void A_SpawnObject(AActor*);
 void A_MonsterProjectile(AActor* actor);
 void A_MonsterBulletAttack(AActor* actor);
@@ -273,6 +275,17 @@ void A_JumpIfTracerCloser(AActor* actor);
 void A_JumpIfFlagsSet(AActor* actor);
 void A_AddFlags(AActor* actor);
 void A_RemoveFlags(AActor* actor);
+// MBF21 Weapons
+void A_ConsumeAmmo(AActor* mo);
+void A_CheckAmmo(AActor* mo);
+void A_WeaponJump(AActor* mo);
+void A_WeaponProjectile(AActor* mo);
+void A_WeaponBulletAttack(AActor* actor);
+void A_WeaponMeleeAttack(AActor* actor); 
+void A_WeaponAlert(AActor* actor);
+void A_WeaponSound(AActor* actor);
+void A_RefireTo(AActor* mo);
+void A_GunFlashTo(AActor* mo);
 
 struct CodePtr {
 	const char *name;
@@ -391,6 +404,18 @@ static const struct CodePtr CodePtrs[] = {
     { "JumpIfFlagsSet", A_JumpIfFlagsSet},
     { "AddFlags", A_AddFlags},
     { "RemoveFlags", A_RemoveFlags},
+	// MBF21 Weapon Pointers
+	{ "ConsumeAmmo", A_ConsumeAmmo},
+	{ "CheckAmmo", A_CheckAmmo},
+	{ "WeaponJump", A_WeaponJump},
+	{ "WeaponProjectile", A_WeaponProjectile},
+	{ "WeaponBulletAttack", A_WeaponBulletAttack},
+	{ "WeaponMeleeAttack", A_WeaponMeleeAttack},
+	{ "WeaponSound", A_WeaponSound},
+	{ "WeaponAlert", A_WeaponAlert},
+	{ "RefireTo", A_RefireTo},
+	{ "GunFlashTo", A_GunFlashTo},
+
 
 	{ NULL, NULL }
 };
@@ -771,7 +796,7 @@ static int PatchThing (int thingy)
 	size_t thingNum = thingy;
 
 	// flags can be specified by name (a .bex extension):
-	static struct flagsystem_t
+	struct flagsystem_t
 	{
 		short Bit;
 		short WhichFlags;
