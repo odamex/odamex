@@ -658,10 +658,11 @@ message HordeInfo
 	int32 state = 1;
 	int32 wave = 2;
 	int32 wave_time = 3;
-	uint64 define_id = 4;
-	int32 spawned_health = 5;
-	int32 killed_health = 6;
-	int32 wave_start_health = 7;
+	int32 boss_time = 4;
+	uint64 define_id = 5;
+	int32 spawned_health = 6;
+	int32 killed_health = 7;
+	int32 wave_start_health = 8;
 }
 
 // svc_netdemocap

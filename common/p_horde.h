@@ -25,11 +25,12 @@
 
 #include "actor.h"
 #include "doomdata.h"
+#include "g_level.h"
 #include "p_hordedefine.h"
 
 enum hordeState_e
 {
-	HS_STARTING, // Handles initialization at the start of rounds.
+	HS_STARTING, // Calm before the wave starts proper.
 	HS_PRESSURE, // Spawns monsters.
 	HS_RELAX,    // Doesn't spawn monsters.
 	HS_WANTBOSS, // Drop everything and try and spawn a boss.
@@ -40,6 +41,7 @@ struct hordeInfo_t
 	hordeState_e state;
 	int wave;
 	int waveTime;
+	int bossTime;
 	uint64_t defineID;
 	int spawnedHealth;
 	int killedHealth;
@@ -53,6 +55,14 @@ struct hordeInfo_t
 	{
 		return killedHealth - waveStartHealth;
 	}
+	bool hasBoss() const
+	{
+		return waveTime != bossTime;
+	}
+	int bossTic() const
+	{
+		return ::level.time - bossTime;
+	}
 	bool equals(const hordeInfo_t& info) const
 	{
 		if (state != info.state)
@@ -60,6 +70,8 @@ struct hordeInfo_t
 		if (wave != info.wave)
 			return false;
 		if (waveTime != info.waveTime)
+			return false;
+		if (bossTime != info.bossTime)
 			return false;
 		if (defineID != info.defineID)
 			return false;

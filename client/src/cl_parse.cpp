@@ -2564,6 +2564,7 @@ static void CL_HordeInfo(const odaproto::svc::HordeInfo* msg)
 	info.state = static_cast<hordeState_e>(msg->state());
 	info.wave = msg->wave();
 	info.waveTime = msg->wave_time();
+	info.bossTime = msg->boss_time();
 	info.defineID = msg->define_id();
 	info.spawnedHealth = msg->spawned_health();
 	info.killedHealth = msg->killed_health();

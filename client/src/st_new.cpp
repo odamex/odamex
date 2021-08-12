@@ -1031,22 +1031,33 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	const hordeInfo_t& info = P_HordeInfo();
 	const hordeDefine_t& define = G_HordeDefine(info.defineID);
 
-	if (::g_horde_waves.asInt() != 0)
+	int tics = 0;
+	if (info.hasBoss())
 	{
-		StrFormat(lines.first,
-		          "Wave " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "of " TEXTCOLOR_YELLOW
-		          "%d",
-		          info.wave, ::g_horde_waves.asInt());
+		const char* cool = (gametic % 4) / 2 == 0 ? TEXTCOLOR_YELLOW : TEXTCOLOR_WHITE;
+		StrFormat(lines.first, "%s!! %sWARNING: NO REFUGE %s!!", cool, TEXTCOLOR_RED, cool);
+		lines.second = "Defeat the boss to win the wave";
+		tics = info.bossTic();
 	}
 	else
 	{
-		StrFormat(lines.first, "Wave " TEXTCOLOR_YELLOW "%d", info.wave);
+		if (::g_horde_waves.asInt() != 0)
+		{
+			StrFormat(lines.first,
+			          "Wave " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "of " TEXTCOLOR_YELLOW
+			          "%d",
+			          info.wave, ::g_horde_waves.asInt());
+		}
+		else
+		{
+			StrFormat(lines.first, "Wave " TEXTCOLOR_YELLOW "%d", info.wave);
+		}
+
+		StrFormat(lines.second, "\"%s\"", define.name.c_str());
+		tics = ::level.time - info.waveTime;
 	}
 
-	StrFormat(lines.second, "\"%s\"", define.name.c_str());
-
 	// Only render the wave message if it's less than 2 seconds in.
-	int tics = ::level.time - info.waveTime;
 	if (tics < TICRATE * 2)
 	{
 		lines.lucent = 1.0f;

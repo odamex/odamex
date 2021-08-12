@@ -104,12 +104,14 @@ class HordeState
 	hordeState_e m_state;
 	int m_wave;
 	int m_waveTime;
+	int m_bossTime; // If == waveTime, boss not spawned.
 	size_t m_defineID;
 	int m_spawnedHealth;
 	int m_killedHealth;
 	int m_waveStartHealth;
 	AActors m_bosses;
 	hordeRecipe_t m_bossRecipe;
+	int m_nextSpawn;
 	int m_nextPowerup;
 
 	/**
@@ -118,6 +120,13 @@ class HordeState
 	void setState(const hordeState_e state)
 	{
 		m_state = state;
+
+		if (m_state == HS_WANTBOSS)
+		{
+			// Do the boss intro fanfare.
+			SV_BroadcastPrintf("The floor trembles as the boss of the wave arrives.\n");
+			m_bossTime = ::level.time;
+		}
 	}
 
   public:
@@ -129,12 +138,14 @@ class HordeState
 		setState(HS_STARTING);
 		m_wave = 1;
 		m_waveTime = ::level.time;
+		m_bossTime = ::level.time;
 		m_defineID = P_HordePickDefine(m_wave, ::g_horde_waves);
 		m_spawnedHealth = 0;
 		m_killedHealth = 0;
 		m_waveStartHealth = 0;
 		m_bosses.clear();
 		m_bossRecipe.clear();
+		m_nextSpawn = ::level.time;
 		m_nextPowerup = ::level.time + (30 * TICRATE);
 	}
 
@@ -152,6 +163,7 @@ class HordeState
 		setState(HS_STARTING);
 		m_wave += 1;
 		m_waveTime = ::level.time;
+		m_bossTime = ::level.time;
 		m_defineID = P_HordePickDefine(m_wave, ::g_horde_waves);
 		m_waveStartHealth = m_killedHealth;
 		m_bosses.clear();
@@ -172,6 +184,7 @@ class HordeState
 
 		setState(HS_STARTING);
 		m_waveTime = ::level.time;
+		m_bossTime = ::level.time;
 		m_defineID = defineID;
 		m_waveStartHealth = m_killedHealth;
 		m_bosses.clear();
@@ -204,6 +217,7 @@ class HordeState
 		info.state = m_state;
 		info.wave = m_wave;
 		info.waveTime = m_waveTime;
+		info.bossTime = m_bossTime;
 		info.defineID = m_defineID;
 		info.spawnedHealth = m_spawnedHealth;
 		info.killedHealth = m_killedHealth;
@@ -219,6 +233,7 @@ class HordeState
 		m_state = info.state;
 		m_wave = info.wave;
 		m_waveTime = info.waveTime;
+		m_bossTime = info.bossTime;
 		m_defineID = info.defineID;
 		m_spawnedHealth = info.spawnedHealth;
 		m_killedHealth = info.killedHealth;
@@ -240,14 +255,14 @@ class HordeState
 		return m_defineID;
 	}
 
-	void preTick();
+	void changeState();
 	void tick();
 } g_HordeDirector;
 
 /**
  * @brief Run functionality that decides if we need to switch states.
  */
-void HordeState::preTick()
+void HordeState::changeState()
 {
 	const hordeDefine_t& define = G_HordeDefine(m_defineID);
 
@@ -257,47 +272,44 @@ void HordeState::preTick()
 	switch (m_state)
 	{
 	case HS_STARTING: {
-		SV_BroadcastPrintf("Wave %d has begun: \"%s\".\n", m_wave, define.name.c_str());
-
-		// Do anything that we would need to do upon starting any wave.
-		m_bosses.clear();
-		setState(HS_PRESSURE);
-		// fallthrough
+		if (::level.time > m_waveTime + (3 * TICRATE))
+		{
+			// We've given enough of a head-start.
+			setState(HS_PRESSURE);
+		}
+		return;
 	}
 	case HS_PRESSURE: {
 		if (m_killedHealth > goalHealth && m_bosses.empty())
 		{
+			// We reached the goal, spawn the boss.
 			setState(HS_WANTBOSS);
-			return;
 		}
 		else if (aliveHealth > define.maxTotalHealth())
 		{
+			// There's enough monsters in the level, back off.
 			setState(HS_RELAX);
-			return;
 		}
 		return;
 	}
 	case HS_RELAX: {
 		if (m_killedHealth > goalHealth && m_bosses.empty())
 		{
+			// We reached the goal, spawn the boss.
 			setState(HS_WANTBOSS);
-			return;
 		}
 		else if (aliveHealth < define.minTotalHealth())
 		{
+			// There's not enough monsters in the level, add more.
 			setState(HS_PRESSURE);
-			return;
 		}
 		return;
 	case HS_WANTBOSS: {
 		if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
 		{
-			SV_BroadcastPrintf("The floor trembles as the boss of the wave arrives.\n");
-
 			// Doesn't matter which state we enter, but we're more likely
 			// to be in the relax state after spawning a big hunk of HP.
 			setState(HS_RELAX);
-			return;
 		}
 		return;
 	}
@@ -349,85 +361,89 @@ void HordeState::tick()
 		}
 	}
 
-	// Should we spawn a monster?
-	switch (m_state)
+	if (::level.time > m_nextSpawn)
 	{
-	case HS_PRESSURE: {
-		const int pressureHealth =
-		    P_RandomInt(define.maxGroupHealth - define.minGroupHealth) +
-		    define.minGroupHealth;
+		// Determine our next spawn time.
+		const int offset = P_RandomInt(5) + 1;
+		m_nextSpawn = ::level.time + (offset * TICRATE);
 
-		// Pick a recipe for some monsters.
-		hordeRecipe_t recipe;
-		const bool ok = P_HordeSpawnRecipe(recipe, define, false);
-		if (!ok)
+		// Should we spawn a monster?
+		switch (m_state)
 		{
-			Printf("%s: No recipe for non-boss monster.\n", __FUNCTION__);
-			return;
-		}
+		case HS_PRESSURE: {
+			const int pressureHealth =
+			    P_RandomInt(define.maxGroupHealth - define.minGroupHealth) +
+			    define.minGroupHealth;
 
-		// Choose a spawn point.
-		hordeSpawn_t* spawn = P_HordeSpawnPoint(recipe);
-		if (spawn == NULL)
-		{
-			Printf("%s: No spawn candidate for %s.\n", __FUNCTION__,
-			       ::mobjinfo[recipe.type].name);
-			return;
-		}
-
-		const int hp = ::mobjinfo[recipe.type].spawnhealth * recipe.count;
-		DPrintf("Spawning %d %s (%d hp) at a %s spawn\n", recipe.count,
-		        ::mobjinfo[recipe.type].name, hp, HordeThingStr(spawn->type));
-
-		AActors mobjs = P_HordeSpawn(*spawn, recipe);
-		ActivateMonsters(mobjs);
-		break;
-	}
-	case HS_RELAX: {
-		// Pick a monster that the player can't see right now and teleport
-		// them close to the player.
-		break;
-	}
-	case HS_WANTBOSS: {
-		// Do we already have bosses spawned?
-		if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
-			break;
-
-		hordeRecipe_t recipe;
-		if (!m_bossRecipe.isValid())
-		{
-			// Pick a recipe for the boss.
-			const bool ok = P_HordeSpawnRecipe(recipe, define, true);
+			// Pick a recipe for some monsters.
+			hordeRecipe_t recipe;
+			const bool ok = P_HordeSpawnRecipe(recipe, define, false);
 			if (!ok)
 			{
-				Printf("%s: No recipe for boss monster.\n", __FUNCTION__);
+				Printf("%s: No recipe for non-boss monster.\n", __FUNCTION__);
+				return;
+			}
+
+			// Choose a spawn point.
+			hordeSpawn_t* spawn = P_HordeSpawnPoint(recipe);
+			if (spawn == NULL)
+			{
+				Printf("%s: No spawn candidate for %s.\n", __FUNCTION__,
+				       ::mobjinfo[recipe.type].name);
+				return;
+			}
+
+			const int hp = ::mobjinfo[recipe.type].spawnhealth * recipe.count;
+			DPrintf("Spawning %d %s (%d hp) at a %s spawn\n", recipe.count,
+			        ::mobjinfo[recipe.type].name, hp, HordeThingStr(spawn->type));
+
+			AActors mobjs = P_HordeSpawn(*spawn, recipe);
+			ActivateMonsters(mobjs);
+			break;
+		}
+		case HS_RELAX:
+			break;
+		case HS_WANTBOSS: {
+			// Do we already have bosses spawned?
+			if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
+				break;
+
+			hordeRecipe_t recipe;
+			if (!m_bossRecipe.isValid())
+			{
+				// Pick a recipe for the boss.
+				const bool ok = P_HordeSpawnRecipe(recipe, define, true);
+				if (!ok)
+				{
+					Printf("%s: No recipe for boss monster.\n", __FUNCTION__);
+					break;
+				}
+
+				// Save for later - in case we need to spawn twice.
+				m_bossRecipe = recipe;
+			}
+			else
+			{
+				// Adjust the count based on how many bosses we've spawned.
+				recipe = m_bossRecipe;
+				recipe.count = m_bossRecipe.count - m_bosses.size();
+			}
+
+			// Spawn a boss if we don't have one.
+			hordeSpawn_t* spawn = P_HordeSpawnPoint(recipe);
+			if (spawn == NULL)
+			{
+				Printf("%s: No spawn candidate for %s.\n", __FUNCTION__,
+				       ::mobjinfo[recipe.type].name);
 				break;
 			}
 
-			// Save for later - in case we need to spawn twice.
-			m_bossRecipe = recipe;
-		}
-		else
-		{
-			// Adjust the count based on how many bosses we've spawned.
-			recipe = m_bossRecipe;
-			recipe.count = m_bossRecipe.count - m_bosses.size();
-		}
-
-		// Spawn a boss if we don't have one.
-		hordeSpawn_t* spawn = P_HordeSpawnPoint(recipe);
-		if (spawn == NULL)
-		{
-			Printf("%s: No spawn candidate for %s.\n", __FUNCTION__,
-			       ::mobjinfo[recipe.type].name);
+			AActors mobjs = P_HordeSpawn(*spawn, recipe);
+			m_bosses.insert(m_bosses.end(), mobjs.begin(), mobjs.end());
+			ActivateMonsters(mobjs);
 			break;
 		}
-
-		AActors mobjs = P_HordeSpawn(*spawn, recipe);
-		m_bosses.insert(m_bosses.end(), mobjs.begin(), mobjs.end());
-		ActivateMonsters(mobjs);
-		break;
-	}
+		}
 	}
 
 	// Always try to spawn an item.
@@ -505,12 +521,12 @@ void P_RunHordeTics()
 	if (targets.count == 0)
 		return;
 
-	// Only run logic once a second.
-	if (!P_AtInterval(TICRATE))
-		return;
+	// We can always change state.
+	::g_HordeDirector.changeState();
 
-	::g_HordeDirector.preTick();
-	::g_HordeDirector.tick();
+	// The directory is only run once a second.
+	if (P_AtInterval(TICRATE))
+		::g_HordeDirector.tick();
 }
 
 bool P_IsHordeMode()
