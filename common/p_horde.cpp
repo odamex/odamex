@@ -28,6 +28,7 @@
 #include "doomstat.h"
 #include "g_gametype.h"
 #include "g_horde.h"
+#include "i_net.h"
 #include "m_random.h"
 #include "p_hordespawn.h"
 #include "p_local.h"
@@ -351,6 +352,9 @@ void HordeState::tick()
 						SV_BroadcastPrintf("%s gets a new lease on life.\n",
 						                   (*it)->userinfo.netname.c_str());
 						MSG_WriteSVC(&(*it)->client.reliablebuf, SVC_PlayerInfo(**it));
+						MSG_BroadcastSVC(CLBUF_RELIABLE,
+						                 SVC_PlayerMembers(**it, SVC_PM_LIVES),
+						                 (*it)->id);
 					}
 				}
 			}
