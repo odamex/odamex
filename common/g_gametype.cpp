@@ -315,8 +315,20 @@ bool G_IsTeamGame()
  */
 bool G_IsRoundsGame()
 {
-	return (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
-	       g_rounds == true;
+	if (g_rounds == false)
+	{
+		// Not turned on.
+		return false;
+	}
+
+	if (G_IsCoopGame() && (g_lives < 1 || g_roundlimit < 1))
+	{
+		// Coop game modes only have rounds if they have lives and a limit.
+		// Otherwise, rounds can't really do anything.
+		return false;
+	}
+
+	return true;
 }
 
 /**
@@ -844,9 +856,15 @@ bool G_RoundsShouldEndGame()
 	// Coop doesn't have rounds to speak of - though perhaps in the future
 	// rounds might be used to limit the number of tries a map is attempted.
 	if (G_IsCoopGame())
-		return true;
-
-	if (sv_gametype == GM_DM)
+	{
+		if (g_roundlimit && ::levelstate.getRound() >= g_roundlimit)
+		{
+			SV_BroadcastPrintf(
+			    "Round limit hit. Players were unable to finish the level.\n");
+			return true;
+		}
+	}
+	else if (sv_gametype == GM_DM)
 	{
 		PlayerResults pr = PlayerQuery().sortWins().filterSortMax().execute();
 		if (pr.count == 1 && g_winlimit && pr.players.front()->roundwins >= g_winlimit)

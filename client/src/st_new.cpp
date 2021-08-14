@@ -123,6 +123,7 @@ EXTERN_CVAR(sv_scorelimit);
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(hud_feedobits)
 EXTERN_CVAR(g_horde_waves)
+EXTERN_CVAR(g_roundlimit)
 
 void ST_unloadNew()
 {
@@ -1144,6 +1145,16 @@ void LevelStateHUD()
 				{
 					lines.first = TEXTCOLOR_GREEN "CAPTURE!";
 					lines.second = "Capture the flag!";
+				}
+			}
+			else if (G_IsCoopGame())
+			{
+				lines.first = "GO!\n";
+				if (G_IsRoundsGame() && g_roundlimit)
+				{
+					StrFormat(lines.second,
+					          TEXTCOLOR_GREEN "%d" TEXTCOLOR_GREY " attempts left",
+					          g_roundlimit.asInt() - ::levelstate.getRound() + 1);
 				}
 			}
 			else

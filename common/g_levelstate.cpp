@@ -36,6 +36,7 @@ EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(sv_warmup_autostart)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(g_rounds)
+EXTERN_CVAR(g_roundlimit)
 EXTERN_CVAR(g_preroundtime)
 EXTERN_CVAR(g_postroundtime)
 
@@ -178,6 +179,13 @@ void LevelState::reset()
 		// Lobbies are all warmup, all the time.
 		setState(LevelState::WARMUP);
 	}
+	else if (g_lives && P_NumPlayersInGame() == 0)
+	{
+		// Empty servers that use lives should always get sent to warmup.
+		// If this wasn't here, LevelState::tic() would do the transition,
+		// but with the potential for a spurious "round start" message.
+		setState(LevelState::WARMUP);
+	}
 	else if (g_lives && !G_IsCoopGame())
 	{
 		// We need a warmup state when playing competitive survival modes,
@@ -286,7 +294,7 @@ void LevelState::readyToggle()
  */
 void LevelState::endRound()
 {
-	if (g_rounds)
+	if (G_IsRoundsGame())
 	{
 		// Check for round-ending conditions.
 		if (G_RoundsShouldEndGame())
@@ -569,16 +577,35 @@ void LevelState::setState(LevelState::States new_state)
  */
 void LevelState::printRoundStart() const
 {
-	team_t def = getDefendingTeam();
-	if (def != TEAM_NONE)
+	std::string left, right;
+	if (g_roundlimit > 0)
 	{
-		TeamInfo& teaminfo = *GetTeamInfo(def);
-		SV_BroadcastPrintf("Round %d has started - %s is on defense.\n", m_roundNumber,
-		                   teaminfo.ColorizedTeamName().c_str());
+		StrFormat(left, "Round %d of %d has started", m_roundNumber,
+		          g_roundlimit.asInt());
 	}
 	else
 	{
-		SV_BroadcastPrintf("Round %d has started.\n", m_roundNumber);
+		StrFormat(left, "Round %d has started", m_roundNumber);
+	}
+
+	team_t def = getDefendingTeam();
+	if (G_IsCoopGame() && g_roundlimit)
+	{
+		StrFormat(right, "%d attempts left", g_roundlimit.asInt() - m_roundNumber + 1);
+	}
+	else if (def != TEAM_NONE)
+	{
+		TeamInfo& teaminfo = *GetTeamInfo(def);
+		StrFormat(right, "%s is on defense", teaminfo.ColorizedTeamName().c_str());
+	}
+
+	if (!right.empty())
+	{
+		SV_BroadcastPrintf("%s - %s.\n", left.c_str(), right.c_str());
+	}
+	else
+	{
+		SV_BroadcastPrintf("%s.\n", left.c_str());
 	}
 }
 
