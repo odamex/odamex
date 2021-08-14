@@ -362,7 +362,7 @@ static const char*		lnametexts[2];
 static IWindowSurface*	background_surface;
 
 EXTERN_CVAR (sv_maxplayers)
-EXTERN_CVAR (wi_newintermission)
+EXTERN_CVAR (wi_oldintermission)
 EXTERN_CVAR (cl_autoscreenshot)
 //
 // CODE
@@ -1355,7 +1355,7 @@ void WI_checkForAccelerate(void)
 {
 	if (!serverside)
 		return;
-
+		
 	// check for button presses to skip delays
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -1413,7 +1413,7 @@ void WI_Ticker (void)
 				}
 			    else
 			    {
-				    if (sv_gametype == 0 && !wi_newintermission && P_NumPlayersInGame() < 5)
+				    if (sv_gametype == 0 && wi_oldintermission && P_NumPlayersInGame() < 5)
 					    WI_updateNetgameStats();
 				    else
 					    WI_updateNoState();
@@ -1691,7 +1691,7 @@ void WI_Drawer (void)
 				}
 				else
 				{
-					if (sv_gametype == 0 && !wi_newintermission && P_NumPlayersInGame() < 5)
+					if (sv_gametype == 0 && wi_oldintermission && P_NumPlayersInGame() < 5)
 						WI_drawNetgameStats();
 					else
 						WI_drawDeathmatchStats();
