@@ -180,7 +180,7 @@ CVAR_RANGE_FUNC_DECL(msgmidcolor, "5", "Color used for centered messages.",
 // ------------
 
 // Determines whether to draw the scores on intermission.
-CVAR(				wi_newintermission, "0", "Use Odamex's intermission screen if there are 4 players or less on cooperative gamemodes.",
+CVAR(				wi_oldintermission, "0", "Use Vanilla's intermission screen if there are 4 players or less on cooperative gamemodes.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 

@@ -74,10 +74,17 @@
 // Used by configuration files.  upversion.py will update thie field
 // deterministically and unambiguously so newer versions always compare
 // greater.
+<<<<<<< HEAD
 #define CONFIGVERSIONSTR "200"
 
 #define DOTVERSIONSTR "10.0.0"
 #define GAMEVER (MAKEVER(10, 0, 0))
+=======
+#define CONFIGVERSIONSTR "94"
+
+#define DOTVERSIONSTR "0.9.4"
+#define GAMEVER (MAKEVER(0, 9, 4))
+>>>>>>> stable
 
 #define COPYRIGHTSTR "Copyright (C) 2006-2021 The Odamex Team"
 
