@@ -523,7 +523,7 @@ public:
 	ActorBlockMapListNode bmapnode;
 };
 
-typedef std::vector<AActor*> AActors;
+typedef std::vector<AActor::AActorPtr> AActors;
 
 class FActorIterator
 {

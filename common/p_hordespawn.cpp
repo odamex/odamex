@@ -64,8 +64,8 @@ static bool CmpDist(const SpawnPointWeight& a, const SpawnPointWeight& b)
  * @param target Player to target.
  * @return Actor pointer we just spawned, or NULL if the spawn failed.
  */
-static AActor* SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
-                            const v2fixed_t offset)
+static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
+                                      const v2fixed_t offset)
 {
 	AActor* mo = new AActor(spawn.mo->x + offset.x, spawn.mo->y + offset.y, spawn.mo->z,
 	                        recipe.type);
@@ -89,7 +89,8 @@ static AActor* SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
 			// Spawn a teleport fog if it's not an ambush.
 			AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
 			S_Sound(tele, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
-			return mo;
+
+			return mo->ptr();
 		}
 		else
 		{
@@ -97,7 +98,8 @@ static AActor* SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
 			mo->Destroy();
 		}
 	}
-	return NULL;
+
+	return AActor::AActorPtr();
 }
 
 /**

@@ -333,7 +333,7 @@ void HordeState::tick()
 		size_t alive = 0;
 		for (AActors::iterator it = m_bosses.begin(); it != m_bosses.end(); ++it)
 		{
-			if ((*it)->health > 0)
+			if (*it && (*it)->health > 0)
 				alive += 1;
 		}
 		if (!alive)
