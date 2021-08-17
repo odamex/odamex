@@ -546,6 +546,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		if (mo->oflags)
 		{
 			mo->effects = FX_YELLOWFOUNTAIN;
+			mo->translation = translationref_t(&::bosstable[0]);
 		}
 	}
 

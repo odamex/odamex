@@ -80,6 +80,7 @@ static AActor* SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
 			{
 				// Heavy is the head that wears the crown.
 				mo->effects = FX_YELLOWFOUNTAIN;
+				mo->translation = translationref_t(&bosstable[0]);
 
 				// Set flags as a boss.
 				mo->oflags = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK;

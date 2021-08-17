@@ -243,6 +243,23 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 	dest[0x2C] = dest[0x2D] = dest[0x2F] = dest[end_index];
 }
 
+/**
+ * @brief Apply a soft light filter using Pegtop's formula.
+ * 
+ * @see https://en.wikipedia.org/wiki/Blend_modes#Soft_Light
+ * 
+ * @param bot Bottom channel value.
+ * @param top Top channel value.
+ * @return Filtered value.
+*/
+static byte SoftLight(const byte bot, const byte top)
+{
+	const float a = bot / 255.f;
+	const float b = top / 255.f;
+	const float res = (1.f - 2.f * b) * pow(a, 2.f) + (2.f * b * a);
+	return res * 255;
+}
+
 //
 // R_InitTranslationTables
 //
@@ -255,13 +272,14 @@ void R_InitTranslationTables()
 {
     R_FreeTranslationTables();
 
-	argb_t color(0xff, 0xff, 0x73);
+	// Boss translation is a yellow tint.
+	argb_t top(0xff, 0xff, 0x73);
 	for (size_t i = 0; i < ARRAY_LENGTH(::bosstable); i++)
 	{
-		const argb_t base = V_GetDefaultPalette()->basecolors[i];
-		const argb_t mul(((uint)base.getr() * (uint)color.getr()) / 0xFF,
-		                 ((uint)base.getg() * (uint)color.getg()) / 0xFF,
-		                 ((uint)base.getb() * (uint)color.getb()) / 0xFF);
+		const argb_t bot = V_GetDefaultPalette()->basecolors[i];
+		const argb_t mul(SoftLight(bot.getr(), top.getr()),
+		                 SoftLight(bot.getg(), top.getg()),
+		                 SoftLight(bot.getb(), top.getb()));
 
 		::bosstable[i] = V_BestColor(V_GetDefaultPalette()->basecolors, mul);
 	}
