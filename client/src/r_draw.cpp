@@ -210,7 +210,7 @@ byte* translationtables;
 argb_t translationRGB[MAXPLAYERS+1][16];
 byte *Ranges;
 static byte *translationtablesmem = NULL;
-
+byte bosstable[256];
 
 static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
 {
@@ -254,7 +254,18 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 void R_InitTranslationTables()
 {
     R_FreeTranslationTables();
-	
+
+	argb_t color(0xff, 0xff, 0x73);
+	for (size_t i = 0; i < ARRAY_LENGTH(::bosstable); i++)
+	{
+		const argb_t base = V_GetDefaultPalette()->basecolors[i];
+		const argb_t mul(((uint)base.getr() * (uint)color.getr()) / 0xFF,
+		                 ((uint)base.getg() * (uint)color.getg()) / 0xFF,
+		                 ((uint)base.getb() * (uint)color.getb()) / 0xFF);
+
+		::bosstable[i] = V_BestColor(V_GetDefaultPalette()->basecolors, mul);
+	}
+
 	translationtablesmem = new byte[256*(MAXPLAYERS+3+22)+255]; // denis - fixme - magic numbers?
 
 	// [Toke - fix13]
