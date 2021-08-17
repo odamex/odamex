@@ -156,7 +156,8 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 
 		// Ensure the URL ends with a slash.
 		std::string url = *wit;
-		if (*(url.rbegin()) != '/')
+		const char cmp = *(url.rbegin());
+		if (cmp != '/' && cmp != '=')
 			url += '/';
 
 		checkurls.push_back(url);

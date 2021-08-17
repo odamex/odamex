@@ -180,7 +180,7 @@ CVAR_RANGE_FUNC_DECL(msgmidcolor, "5", "Color used for centered messages.",
 // ------------
 
 // Determines whether to draw the scores on intermission.
-CVAR(				wi_newintermission, "0", "Use Odamex's intermission screen if there are 4 players or less on cooperative gamemodes.",
+CVAR(				wi_oldintermission, "0", "Use Vanilla's intermission screen if there are 4 players or less on cooperative gamemodes.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 
@@ -295,7 +295,8 @@ CVAR_RANGE (sv_teamsinplay, "2", "Teams that are enabled", CVARTYPE_BYTE, CVAR_S
 CVAR(cl_downloadsites,
      "https://static.allfearthesentinel.net/wads/ https://doomshack.org/wads/ "
      "http://grandpachuck.org/files/wads/ https://wads.doomleague.org/ "
-     "http://files.funcrusher.net/wads/",
+     "http://files.funcrusher.net/wads/ https://doomshack.org/uploads/ "
+     "https://doom.dogsoft.net/getwad.php?search=",
      "A list of websites to download WAD files from.  These websites are used if the "
      "server doesn't provide any websites to download files from, or the file can't be "
      "found on any of their sites.  The list of sites is separated by spaces.  These "
