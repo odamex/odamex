@@ -38,6 +38,8 @@
 
 EXTERN_CVAR(g_horde_waves)
 
+void A_PainDie(AActor* actor);
+
 /**
  * @brief Wake up all the passed monsters.
  *
@@ -162,8 +164,19 @@ class HordeState
 			TThinkerIterator<AActor> iterator;
 			while ((actor = iterator.Next()))
 			{
-				if (actor->oflags & MFO_HEALTHPOOL)
-					P_DamageMobj(actor, NULL, NULL, 10000, MOD_UNKNOWN);
+				if (actor->oflags & MFO_HEALTHPOOL || actor->type == MT_SKULL)
+				{
+					// [AM] Mostly copypasted from the massacre cheat.
+					if (actor->health > 0)
+					{
+						P_DamageMobj(actor, NULL, NULL, 10000, MOD_UNKNOWN);
+					}
+					if (actor->type == MT_PAIN)
+					{
+						A_PainDie(actor);
+						P_SetMobjState(actor, S_PAIN_DIE6);
+					}
+				}
 			}
 
 			G_EndGame();
