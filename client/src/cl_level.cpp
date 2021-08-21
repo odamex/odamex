@@ -271,8 +271,6 @@ void G_InitNew (const char *mapname)
 	level.mapname = mapname;
 	G_DoLoadLevel (0);
 
-	::levelstate.reset();
-
 	// [AM}] WDL stats (for testing purposes)
 	M_StartWDLLog();
 }
@@ -636,6 +634,8 @@ void G_DoLoadLevel (int position)
 	level.starttime = I_MSTime() * TICRATE / 1000;
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
     P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
+
+	::levelstate.reset();
 
 	C_FlushDisplay ();
 }

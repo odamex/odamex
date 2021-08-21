@@ -157,7 +157,7 @@ class HordeState
 	{
 		if (::g_horde_waves && m_wave >= ::g_horde_waves)
 		{
-			G_ExitLevel(0, 1);
+			G_EndGame();
 			return;
 		}
 
@@ -519,6 +519,10 @@ void P_RunHordeTics()
 		P_HordeAddSpawns();
 		::g_HordeDirector.reset();
 	}
+
+	// Pause game logic if levelstate doesn't allow it.
+	if (!G_CanTickGameplay())
+		return;
 
 	// Pause game logic if nobody is in the game.
 	PlayerResults targets = PlayerQuery().hasHealth().execute();

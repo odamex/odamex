@@ -319,7 +319,8 @@ void LevelState::endRound()
  */
 void LevelState::endGame()
 {
-	setState(LevelState::ENDGAME_COUNTDOWN);
+	if (m_state != LevelState::ENDGAME_COUNTDOWN)
+		setState(LevelState::ENDGAME_COUNTDOWN);
 }
 
 /**
@@ -327,8 +328,16 @@ void LevelState::endGame()
  */
 void LevelState::tic()
 {
-	// [AM] Clients are not authoritative on levelstate.
-	if (!serverside)
+	// Can't have levelstate without a level.
+	if (::gamestate != GS_LEVEL)
+		return;
+
+	// Clients are not authoritative on levelstate.
+	if (!::serverside)
+		return;
+
+	// Handle singleplayer pauses.
+	if (::paused || ::menuactive)
 		return;
 
 	// If there aren't any more active players, go back to warm up mode [tm512 2014/04/08]

@@ -396,6 +396,15 @@ int G_GetEndingTic()
 }
 
 /**
+ * @brief Drop everything and end the game right now.
+*/
+void G_EndGame()
+{
+	::levelstate.setWinner(WinInfo::WIN_EVERYBODY, 0);
+	::levelstate.endGame();
+}
+
+/**
  * @brief Assert that we have enough players to continue the game, otherwise
  *        end the game or reset it.
  */
@@ -861,6 +870,7 @@ bool G_RoundsShouldEndGame()
 		{
 			SV_BroadcastPrintf(
 			    "Round limit hit. Players were unable to finish the level.\n");
+			::levelstate.setWinner(WinInfo::WIN_NOBODY, 0);
 			return true;
 		}
 	}

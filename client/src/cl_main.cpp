@@ -628,6 +628,8 @@ void CL_StepTics(unsigned int count)
 		if (sv_gametype == GM_CTF)
 			CTF_RunTics ();
 
+		::levelstate.tic();
+
 		Maplist_Runtic();
 
 		R_InterpolationTicker();

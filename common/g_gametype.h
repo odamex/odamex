@@ -71,6 +71,7 @@ int G_GetEndingTic();
 
 // Mutating functions
 
+void G_EndGame();
 void G_AssertValidPlayerCount();
 void G_TimeCheckEndGame();
 void G_FragsCheckEndGame();
