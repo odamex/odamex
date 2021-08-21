@@ -157,6 +157,15 @@ class HordeState
 	{
 		if (::g_horde_waves && m_wave >= ::g_horde_waves)
 		{
+			// All monsters explode!  Woo!
+			AActor* actor;
+			TThinkerIterator<AActor> iterator;
+			while ((actor = iterator.Next()))
+			{
+				if (actor->oflags & MFO_HEALTHPOOL)
+					P_DamageMobj(actor, NULL, NULL, 10000, MOD_UNKNOWN);
+			}
+
 			G_EndGame();
 			return;
 		}
