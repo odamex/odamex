@@ -218,6 +218,23 @@ float P_RandomFloat()
 	return static_cast<float>(n) / (static_cast<float>(0xFFFFFFFFU) + 1.0f);
 }
 
+/**
+ * @brief Run one iteration of SplitMix64.
+ * 
+ * @detail This function is used to seed xorshift to avoid correlation
+ *         between similar seeds, as per recommendation.
+ *
+ * @param x State to mutate.
+ * @return A 64-bit random number.
+ */
+static uint64_t SplitMix64(uint64_t& x)
+{
+	uint64_t z = (x += 0x9e3779b97f4a7c15);
+	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
+	z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
+	return z ^ (z >> 31);
+}
+
 // Initialize all the seeds
 //
 // This initialization method is critical to maintaining demo sync.
@@ -242,7 +259,13 @@ void M_ClearRandom()
 	{
 		firsttime = false;
 		::rndindex = ::prndindex;
-		ArrayCopy(::g_rngState, ::g_prngState);
+
+		// [AM] Mix up initial starting state.
+		uint64_t seed = time(NULL);
+		::g_rngState[0] = SplitMix64(seed);
+		::g_rngState[1] = SplitMix64(seed);
+		::g_rngState[2] = SplitMix64(seed);
+		::g_rngState[3] = SplitMix64(seed);
 	}
 }
 
