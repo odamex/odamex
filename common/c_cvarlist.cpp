@@ -243,13 +243,13 @@ CVAR_RANGE(g_coopthingfilter, "0", "Removes cooperative things of the map. Value
            CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_LATCH,
            0.0f, 2.0f)
 
-CVAR(g_horde_waves, "3", "Number of horde waves per map", CVARTYPE_INT,
+CVAR(g_horde_waves, "5", "Number of horde waves per map", CVARTYPE_INT,
      CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
-CVAR(g_horde_mintotalhp, "7.0", "Multiplier for minimum spawned health at a time",
+CVAR(g_horde_mintotalhp, "4.0", "Multiplier for minimum spawned health at a time",
      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR(g_horde_maxtotalhp, "8.0", "Multiplier for maximum spawned health at a time",
+CVAR(g_horde_maxtotalhp, "10.0", "Multiplier for maximum spawned health at a time",
      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(g_horde_goalhp, "16.0", "Goal health multiplier for a given round",
