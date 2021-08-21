@@ -260,6 +260,7 @@ typedef enum
 	MFO_UNFLINCHING		= BIT(3),		// monster flinching reduced to 1 in 256
 	MFO_ARMOR			= BIT(4),		// damage taken by monster is reduced
 	MFO_QUICK			= BIT(5),		// speed of monster is increased
+	MFO_NORAISE			= BIT(6),		// vile can't raise corpse
 } mobjflag_t;
 
 #define MF_TRANSSHIFT	0x1A

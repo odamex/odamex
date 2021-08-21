@@ -83,7 +83,8 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 				mo->translation = translationref_t(&bosstable[0]);
 
 				// Set flags as a boss.
-				mo->oflags = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK;
+				mo->oflags = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK |
+				             MFO_NORAISE;
 			}
 
 			// Spawn a teleport fog if it's not an ambush.

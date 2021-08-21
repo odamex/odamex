@@ -1332,6 +1332,9 @@ BOOL PIT_VileCheck (AActor *thing)
 	int 	maxdist;
 	BOOL 	check;
 
+	if (thing->oflags & MFO_NORAISE)
+		return true;	// [AM] Can't raise
+
 	if (!(thing->flags & MF_CORPSE) )
 		return true;	// not a monster
 
