@@ -252,7 +252,7 @@ CVAR(g_horde_mintotalhp, "4.0", "Multiplier for minimum spawned health at a time
 CVAR(g_horde_maxtotalhp, "10.0", "Multiplier for maximum spawned health at a time",
      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR(g_horde_goalhp, "16.0", "Goal health multiplier for a given round",
+CVAR(g_horde_goalhp, "8.0", "Goal health multiplier for a given round",
      CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Game mode options commonized from the server
