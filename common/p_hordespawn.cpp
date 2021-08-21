@@ -264,9 +264,17 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 		//      easy to exploit.
 
 		float score = 1.0f;
-		if (sit->type == TTYPE_HORDE_FLYING || sit->type == TTYPE_HORDE_SMALLSNIPER ||
-		    sit->type == TTYPE_HORDE_SNIPER)
+		if (sit->type == TTYPE_HORDE_FLYING)
+		{
+			// Preferring flying spawns frees up ground-level spawns for
+			// ground-level monsters.
+			score = 1.25f;
+		}
+		else if (sit->type == TTYPE_HORDE_SMALLSNIPER || sit->type == TTYPE_HORDE_SNIPER)
+		{
+			// Sniper spawns can be annoying to clear, allow a breather.
 			score = 0.75f;
+		}
 
 		weight.score = score;
 		totalScore += score;
