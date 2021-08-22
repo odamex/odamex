@@ -222,39 +222,65 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 	for (hordeSpawns_t::iterator sit = monsterSpawns.begin(); sit != monsterSpawns.end();
 	     ++sit)
 	{
-		// Don't spawn bosses at non-boss spawns.
-		if (recipe.isBoss && sit->type != TTYPE_HORDE_BOSS)
-			continue;
-		else if (!recipe.isBoss && sit->type == TTYPE_HORDE_BOSS)
-			continue;
-
 		mobjinfo_t& info = ::mobjinfo[recipe.type];
-
-		// Small monster spawns have to spawn small monsters.
-		if (sit->type == TTYPE_HORDE_SMALLMONSTER && info.radius > (32 * FRACUNIT))
-			continue;
-
-		// Flying spawns have to spawn flying monsters.
 		const bool isFlying = info.flags & (MF_NOGRAVITY | MF_FLOAT);
-		if (sit->type == TTYPE_HORDE_FLYING && !isFlying)
-			continue;
 
-		// Snipers have to:
-		// - Have a ranged attack.
-		// - Not be flying.
-		// - Not be a boss monster for this wave.
-		// - Be skinny enough to fit in a 64x64 square.
-		if (sit->type == TTYPE_HORDE_SMALLSNIPER &&
-		    (info.missilestate == S_NULL || isFlying || recipe.isBoss ||
-		     info.radius > (32 * FRACUNIT)))
+		if (recipe.isBoss && sit->type != TTYPE_HORDE_BOSS)
+		{
+			// Bosses cannot spawn at non-boss spawns.
 			continue;
+		}
 
-		// Big snipers are similar, but they get to fit
-		// into a 128x128 square.
-		if (sit->type == TTYPE_HORDE_SNIPER &&
-		    (info.missilestate == S_NULL || isFlying || recipe.isBoss ||
-		     info.radius > (64 * FRACUNIT)))
-			continue;
+		// [AM] Radius reference for the big bodies, so you can get an idea
+		//      of what monsters are excluded from which radius comparisons.
+		//      - Spider Mastermind: 128 units
+		//      - Arachnotron: 64 units
+		//      - Mancubus: 48 units
+		//      - Cyberdemon: 40 units
+		//      - Cacodemon/Pain Elemental: 31 units
+		//      - Demon: 30 units
+
+		switch (sit->type)
+		{
+		case TTYPE_HORDE_MONSTER:
+			// Normal spawns can't spawn monsters that are too big.
+			if (info.radius > (64 * FRACUNIT))
+				continue;
+			break;
+		case TTYPE_HORDE_BOSS:
+			// Boss spawns can spawn non-boss monsters, but only if they're
+			// too big to spawn anywhere else.
+			if (!recipe.isBoss && info.radius <= (64 * FRACUNIT))
+				continue;
+			break;
+		case TTYPE_HORDE_SMALLMONSTER:
+			// Small monster spawns have to spawn small monsters.
+			if (info.radius > (32 * FRACUNIT))
+				continue;
+			break;
+		case TTYPE_HORDE_FLYING:
+			// Flying spawns have to spawn flying monsters.
+			if (!isFlying)
+				continue;
+			break;
+		case TTYPE_HORDE_SNIPER:
+			// Snipers have to:
+			// - Have a ranged attack.
+			// - Not be flying.
+			// - Not be a boss monster for this wave.
+			// - Be skinny enough to fit in a 128x128 square.
+			if ((info.missilestate == S_NULL || isFlying || recipe.isBoss ||
+			     info.radius > (64 * FRACUNIT)))
+				continue;
+			break;
+		case TTYPE_HORDE_SMALLSNIPER:
+			// Small snipers are similar, but they get to fit
+			// into a 64x64 square.
+			if ((info.missilestate == S_NULL || isFlying || recipe.isBoss ||
+			     info.radius > (32 * FRACUNIT)))
+				continue;
+			break;
+		}
 
 		SpawnPointWeight weight;
 		weight.spawn = &*sit;
