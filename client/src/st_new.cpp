@@ -445,6 +445,23 @@ void ST_voteDraw (int y) {
 namespace hud {
 
 /**
+ * @brief This is the number of pixels of viewable space, taking into account
+ *        the status bar.  We need to convert this into scaled pixels as
+ *        best we can.
+ */
+static int statusBarY()
+{
+	const int surfaceWidth = I_GetSurfaceWidth();
+	const int surfaceHeight = I_GetSurfaceHeight();
+
+	int stY = surfaceHeight - ST_StatusBarY(surfaceWidth, surfaceHeight);
+	if (::hud_scale)
+		stY /= ::CleanYfac;
+
+	return stY;
+}
+
+/**
  * @brief Sometimes we want the HUD to show round wins and not current round points.
  */
 static bool TeamHUDShowsRoundWins()
@@ -470,16 +487,11 @@ static bool TeamHUDShowsRoundWins()
 /**
  * @brief Draw gametype-specific scoreboard, such as flags and lives.
  */
-static void drawGametype()
+static void drawTeamGametype()
 {
 	const int SCREEN_BORDER = 4;
 	const int FLAG_ICON_HEIGHT = 18;
 	const int LIVES_HEIGHT = 12;
-
-	if (!G_IsTeamGame())
-	{
-		return;
-	}
 
 	std::string buffer;
 	player_t* plyr = &consoleplayer();
@@ -578,6 +590,56 @@ static void drawGametype()
 			              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, buffer.c_str(),
 			              color);
 		}
+	}
+}
+
+static void drawHordeGametype()
+{
+	const int SCREEN_BORDER = 4;
+	const int ABOVE_AMMO = 24;
+	const int LINE_SPACING = V_LineHeight() + 1;
+
+	const hordeInfo_t& info = P_HordeInfo();
+	const hordeDefine_t& define = G_HordeDefine(info.defineID);
+
+	std::string waverow, killrow;
+	if (::g_horde_waves.asInt() != 0)
+	{
+		StrFormat(waverow, "W:%d/%d", info.wave, ::g_horde_waves.asInt());
+	}
+	else
+	{
+		StrFormat(waverow, "W:%d", info.wave);
+	}
+
+	const double pct = (static_cast<double>(info.killed()) / define.goalHealth()) * 100.0;
+	if (pct < 100.0)
+	{
+		StrFormat(killrow, "%.0f%%", pct);
+	}
+	else
+	{
+		killrow = "BOSS";
+	}
+
+	const int y = R_StatusBarVisible() ? statusBarY() + SCREEN_BORDER : ABOVE_AMMO;
+	hud::DrawText(SCREEN_BORDER, y, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+	              hud::X_RIGHT, hud::Y_BOTTOM, waverow.c_str(), CR_GREY);
+	hud::DrawText(SCREEN_BORDER, y + LINE_SPACING, ::hud_scale, hud::X_RIGHT,
+	              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY);
+}
+
+static void drawGametype()
+{
+	if (G_IsTeamGame())
+	{
+		drawTeamGametype();
+		return;
+	}
+	else if (P_IsHordeMode())
+	{
+		drawHordeGametype();
+		return;
 	}
 }
 
@@ -799,41 +861,10 @@ void OdamexHUD() {
 	if (::hud_bigfont)
 		V_SetFont("BIGFONT");
 
-	std::string firstperson, secondperson;
-	if (P_IsHordeMode())
-	{
-		const hordeInfo_t& info = P_HordeInfo();
-		const hordeDefine_t& define = G_HordeDefine(info.defineID);
-
-		if (::g_horde_waves.asInt() != 0)
-		{
-			StrFormat(firstperson, "W:%d/%d", info.wave, ::g_horde_waves.asInt());
-		}
-		else
-		{
-			StrFormat(firstperson, "W:%d", info.wave);
-		}
-
-		const double pct =
-		    (static_cast<double>(info.killed()) / define.goalHealth()) * 100.0;
-		if (pct < 100.0)
-		{
-			StrFormat(secondperson, "%.0f%%", pct);
-		}
-		else
-		{
-			secondperson = "BOSS";
-		}
-	}
-	else
-	{
-		firstperson = hud::PersonalSpread();
-		secondperson = hud::PersonalScore();
-	}
 	hud::DrawText(4, 24 + V_LineHeight() + 1, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
-	              hud::X_RIGHT, hud::Y_BOTTOM, firstperson.c_str(), CR_GREY);
+	              hud::X_RIGHT, hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY);
 	hud::DrawText(4, 24, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
-	              hud::Y_BOTTOM, secondperson.c_str(), CR_GREY);
+	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_GREY);
 
 	if (::hud_bigfont)
 		V_SetFont("SMALLFONT");
@@ -1285,13 +1316,7 @@ void SpectatorHUD()
 // [AM] HUD drawn with the Doom Status Bar.
 void DoomHUD()
 {
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-
-	// ST_Y is the number of pixels of viewable space, taking into account the
-	// status bar.  We need to convert this into scaled pixels as best we can.
-	int st_y = surface_height - ST_StatusBarY(surface_width, surface_height);
-	if (hud_scale)
-		st_y /= CleanYfac;
+	int st_y = statusBarY();
 
 	// Draw warmup state or timer
 	if (hud_timer)
