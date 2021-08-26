@@ -838,9 +838,10 @@ void DrawToasts()
 		return;
 
 	V_SetFont("DIGFONT");
+	const int TOAST_HEIGHT = V_LineHeight() + 2;
 
 	std::string buffer;
-	int y = 1;
+	int y = 0;
 
 	const float oldtrans = ::hud_transparency;
 	for (drawToasts_t::const_iterator it = g_Toasts.begin(); it != g_Toasts.end(); ++it)
@@ -865,21 +866,25 @@ void DrawToasts()
 		int x = 1;
 
 		// Right-hand side.
-		hud::DrawText(0, y, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP,
-		              it->right.c_str(), CR_GREY);
+		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
+		              hud::Y_TOP, it->right.c_str(), CR_GREY);
 		x += V_StringWidth(it->right.c_str()) + 1;
 
 		// Icon
 		patch_t* icon = W_ResolvePatchHandle(it->icon);
-		hud::DrawPatch(x, y, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
-		               hud::Y_TOP, icon, false, true);
+		const double yoff =
+		    (static_cast<double>(TOAST_HEIGHT) - static_cast<double>(icon->height())) /
+		    2.0;
+
+		hud::DrawPatch(x, y + ceil(yoff), hud_scale, hud::X_RIGHT, hud::Y_TOP,
+		               hud::X_RIGHT, hud::Y_TOP, icon, false, true);
 		x += icon->width() + 1;
 
 		// Left-hand side.
-		hud::DrawText(x, y, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP,
-		              it->left.c_str(), CR_GREY);
+		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
+		              hud::Y_TOP, it->left.c_str(), CR_GREY);
 
-		y += MAX(V_LineHeight(), static_cast<int>(icon->height()));
+		y += TOAST_HEIGHT;
 	}
 	::hud_transparency.ForceSet(oldtrans);
 
