@@ -349,7 +349,8 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 #define MOD_HIT				22
 #define MOD_RAILGUN			23
 #define MOD_FIREBALL		24 // Odamex-specific - monster fireball.
-#define NUMMODS				(MOD_FIREBALL + 1)
+#define MOD_HITSCAN			25 // Odamex-specific - monster hitscan.
+#define NUMMODS				(MOD_HITSCAN + 1)
 #define MOD_FRIENDLY_FIRE	0x80000000
 
 extern	int MeansOfDeath;

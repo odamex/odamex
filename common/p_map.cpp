@@ -2088,7 +2088,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 
 	if (la_damage) {
 		// [RH] try and figure out means of death;
-		int mod = MOD_UNKNOWN;
+		int mod = MOD_HITSCAN;
 
 		if (shootthing->player) {
 			switch (shootthing->player->readyweapon) {
