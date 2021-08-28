@@ -918,14 +918,28 @@ void PushToast(const toast_t& toast)
 	drawToast.tic = ::gametic;
 	drawToast.pid_highlight = -1;
 
-	if (toast.flags & toast_t::LEFT)
+	if (toast.flags & toast_t::LEFT_PID)
 	{
-		buffer += toast.left + " ";
+		std::string netname = idplayer(toast.left_pid).userinfo.netname;
+		if (consoleplayer().id == toast.left_pid)
+		{
+			buffer += TEXTCOLOR_GOLD + netname;
+		}
+		else if (G_IsTeamGame())
+		{
+			TeamInfo* info = GetTeamInfo(idplayer(toast.left_pid).userinfo.team);
+			buffer += info->ToastColor + netname;
+		}
+		else
+		{
+			buffer += netname;
+		}
 	}
-	if (toast.flags & toast_t::LEFT_PLUS)
+	else if (toast.flags & toast_t::LEFT)
 	{
-		buffer += TEXTCOLOR_GOLD "+ " + toast.left_plus + " ";
+		buffer += toast.left;
 	}
+
 	if (!buffer.empty())
 	{
 		buffer.resize(buffer.size() - 1);
@@ -938,17 +952,30 @@ void PushToast(const toast_t& toast)
 	}
 
 	buffer.clear();
-	if (toast.flags & toast_t::RIGHT)
+	if (toast.flags & toast_t::RIGHT_PID)
 	{
-		buffer += toast.right + " ";
+		std::string netname = idplayer(toast.right_pid).userinfo.netname;
+		if (consoleplayer().id == toast.right_pid)
+		{
+			buffer += TEXTCOLOR_GOLD + netname;
+		}
+		else if (G_IsTeamGame())
+		{
+			TeamInfo* info = GetTeamInfo(idplayer(toast.right_pid).userinfo.team);
+			buffer += info->ToastColor + netname;
+		}
+		else
+		{
+			buffer += netname;
+		}
 	}
-	if (toast.flags & toast_t::RIGHT_PLUS)
+	else if (toast.flags & toast_t::RIGHT)
 	{
-		buffer += TEXTCOLOR_GOLD "+ " + toast.right_plus + " ";
+		buffer += toast.right;
 	}
+
 	if (!buffer.empty())
 	{
-		buffer.resize(buffer.size() - 1);
 		drawToast.right = buffer;
 	}
 

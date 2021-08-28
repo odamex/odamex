@@ -1216,13 +1216,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 
 		toast_t toast;
-		toast.flags = toast_t::ICON | toast_t::RIGHT;
-		if (G_IsTeamGame())
-		{
-			toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
-		}
+		toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
 		toast.icon = mod;
-		toast.right += self->player->userinfo.netname;
+		toast.right_pid = self->player->id;
 		COM_PushToast(toast);
 		return;
 	}
@@ -1293,15 +1289,10 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 
 		toast_t toast;
-		toast.flags = toast_t::LEFT | toast_t::ICON | toast_t::RIGHT;
-		if (G_IsTeamGame())
-		{
-			toast.left += GetTeamInfo(attacker->player->userinfo.team)->ToastColor;
-			toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
-		}
-		toast.left += attacker->player->userinfo.netname;
+		toast.flags = toast_t::LEFT_PID | toast_t::ICON | toast_t::RIGHT_PID;
+		toast.left_pid = attacker->player->id;
 		toast.icon = mod;
-		toast.right += self->player->userinfo.netname;
+		toast.right_pid = self->player->id;
 		COM_PushToast(toast);
 		return;
 	}
@@ -1312,13 +1303,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 
 	toast_t toast;
-	toast.flags = toast_t::ICON | toast_t::RIGHT;
-	if (G_IsTeamGame())
-	{
-		toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
-	}
+	toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
 	toast.icon = mod;
-	toast.right += self->player->userinfo.netname;
+	toast.right_pid = self->player->id;
 	COM_PushToast(toast);
 }
 

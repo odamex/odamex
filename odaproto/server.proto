@@ -645,11 +645,10 @@ message Toast
 {
 	uint32 flags = 1;
 	string left = 2;
-	string right = 3;
-	sint32 icon = 4;
-	sint32 pid_highlight = 5;
-	string left_plus = 6;
-	string right_plus = 7;
+	sint32 left_pid = 3;
+	string right = 4;
+	sint32 right_pid = 5;
+	sint32 icon = 6;
 }
 
 // svc_netdemocap
