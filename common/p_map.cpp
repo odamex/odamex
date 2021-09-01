@@ -539,7 +539,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 	if (tmthing->flags & MF_SKULLFLY)
 	{
 		int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
-		P_DamageMobj (thing, tmthing, tmthing, damage, MOD_UNKNOWN);
+		P_DamageMobj (thing, tmthing, tmthing, damage, MOD_HIT);
 		tmthing->flags &= ~MF_SKULLFLY;
 		tmthing->momx = tmthing->momy = tmthing->momz = 0;
 		P_SetMobjState (tmthing, tmthing->info->spawnstate);
