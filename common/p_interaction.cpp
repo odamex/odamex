@@ -1146,6 +1146,10 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 				case MT_KNIGHT:
 					messagename = OB_KNIGHTHIT;
 					break;
+				case MT_SKULL:
+					// [AM] Lost soul attacks now damage using MOD_HIT.
+					messagename = OB_SKULL;
+					break;
 				default:
 					break;
 				}
@@ -1171,9 +1175,6 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 					break;
 				case MT_CHAINGUY:
 					messagename = OB_CHAINGUY;
-					break;
-				case MT_SKULL:
-					messagename = OB_SKULL;
 					break;
 				case MT_TROOP:
 					messagename = OB_IMP;
