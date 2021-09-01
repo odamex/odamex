@@ -129,4 +129,45 @@ int P_RandomDiff (AActor *actor);
 // Fix randoms for demos.
 void M_ClearRandom(void);
 
+/**
+ * @brief Get a weighted random number from a vector.
+ * 
+ * @detail Upside of this algorithm is that it requires no preperation and
+ *         only requires a single complete iteration of the vector.
+ * 
+ * @see https://softwareengineering.stackexchange.com/a/150642
+ */
+template <typename T>
+const T& P_RandomFloatWeighted(const std::vector<T>& data, float (*func)(const T&))
+{
+	// this stores sum of weights of all elements before current
+	float totalWeight = 0;
+
+	// currently selected element
+	const T* selected = NULL;
+	for (std::vector<T>::const_iterator it = data.begin(); it != data.end(); ++it)
+	{
+		// weight of current element
+		const T& ele = *it;
+		const float weight = func(ele);
+
+		// random value
+		int r = P_RandomFloat() * (totalWeight + weight);
+
+		// probability of this is weight/(totalWeight+weight)
+		if (r >= totalWeight)
+		{
+			// it is the probability of discarding last selected element
+			// and selecting current one instead
+			selected = &ele; 
+		}
+
+		 // increase weight sum
+		totalWeight += weight;
+	}
+
+	// when iterations end, selected is some element of sequence.
+	return *selected;
+}
+
 #endif

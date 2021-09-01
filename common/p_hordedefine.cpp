@@ -37,10 +37,31 @@ EXTERN_CVAR(g_horde_goalhp)
 
 std::vector<hordeDefine_t> WAVE_DEFINES;
 
-void hordeDefine_t::addMonster(const waveMonsterType_e monster, const mobjtype_t mobj,
-                               const float chance)
+static float PowerupChance(const hordeDefine_t::powerup_t& pow)
 {
-	monster_t mon = {monster, mobj, chance};
+	return pow.config.chance;
+}
+
+static float MonsterChance(const hordeDefine_t::monster_t& mon)
+{
+	return mon.config.chance;
+}
+
+void hordeDefine_t::addPowerup(const mobjtype_t mobj, const powConfig_t& config)
+{
+	powerup_t pow = {mobj, config};
+	powerups.push_back(pow);
+}
+
+const hordeDefine_t::powerup_t& hordeDefine_t::randomPowerup() const
+{
+	return P_RandomFloatWeighted(powerups, PowerupChance);
+}
+
+void hordeDefine_t::addMonster(const waveMonsterType_e monster, const mobjtype_t mobj,
+                               const monConfig_t& config)
+{
+	monster_t mon = {monster, mobj, config};
 	monsters.push_back(mon);
 }
 
@@ -96,6 +117,12 @@ size_t P_HordePickDefine(const int current, const int total)
 	}
 }
 
+// [AM] This is quite possibly the worst type parameter I've ever written.
+static float MonsterWeight(const hordeDefine_t::monster_t* const& mon)
+{
+	return mon->config.chance;
+}
+
 /**
  * @brief Get a recipe of monsters to spawn.
  *
@@ -130,29 +157,46 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		return false;
 
 	// Randomly select a monster to spawn.
-	mobjtype_t outType = static_cast<mobjtype_t>(-1);
-	bool outIsBoss = false;
-	for (size_t i = 0; i < 16; i++)
-	{
-		size_t resultIdx = P_RandomInt(monsters.size());
-		outType = monsters.at(resultIdx)->mobj;
-		outIsBoss = monsters.at(resultIdx)->monster != hordeDefine_t::RM_NORMAL;
+	const hordeDefine_t::monster_t* const monster =
+	    P_RandomFloatWeighted(monsters, MonsterWeight);
 
-		// Chance is 100%?
-		if (monsters.at(resultIdx)->chance == 1.0f)
-			break;
-
-		// Chance is within bounds of a random number?
-		const float chance = P_RandomFloat();
-		if (monsters.at(resultIdx)->chance >= chance)
-			break;
-	}
+	const mobjtype_t outType = monster->mobj;
+	const bool outIsBoss = monster->monster != hordeDefine_t::RM_NORMAL;
+	const hordeDefine_t::monConfig_t* config = &monster->config;
 
 	int outCount = 0;
 	const int health = ::mobjinfo[outType].spawnhealth;
 
-	const int maxHealth = wantBoss ? define.maxBossHealth : define.maxGroupHealth;
-	const int minHealth = wantBoss ? define.minBossHealth : define.minGroupHealth;
+	// Maximum health.
+	int maxHealth = -1;
+	if (config->maxGroupHealth >= 0)
+	{
+		maxHealth = config->maxGroupHealth;
+	}
+	else if (wantBoss)
+	{
+		maxHealth = define.maxBossHealth;
+	}
+	else
+	{
+		maxHealth = define.maxGroupHealth;
+	}
+
+	// Minimum health.
+	int minHealth = -1;
+	if (config->minGroupHealth >= 0)
+	{
+		minHealth = config->minGroupHealth;
+	}
+	else if (wantBoss)
+	{
+		minHealth = define.minBossHealth;
+	}
+	else
+	{
+		minHealth = define.minGroupHealth;
+	}
+
 	const int upper = MAX(maxHealth / health, 1);
 	const int lower = MAX(minHealth / health, 1);
 

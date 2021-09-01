@@ -60,6 +60,18 @@ struct hordeRecipe_t
 
 struct hordeDefine_t
 {
+	struct powConfig_t
+	{
+		float chance;
+		powConfig_t() : chance(1.0f) { }
+	};
+
+	struct powerup_t
+	{
+		mobjtype_t mobj;
+		powConfig_t config;
+	};
+
 	enum waveMonsterType_e
 	{
 		RM_NULL,
@@ -67,17 +79,25 @@ struct hordeDefine_t
 		RM_BOSS,
 	};
 
+	struct monConfig_t
+	{
+		int minGroupHealth;
+		int maxGroupHealth;
+		float chance;
+		monConfig_t() : minGroupHealth(-1), maxGroupHealth(-1), chance(1.0f) { }
+	};
+
 	struct monster_t
 	{
 		hordeDefine_t::waveMonsterType_e monster;
 		mobjtype_t mobj;
-		float chance;
+		monConfig_t config;
 	};
 
 	typedef std::vector<weapontype_t> weapons_t;
 	typedef std::vector<ammotype_t> ammos_t;
+	typedef std::vector<powerup_t> powerups_t;
 	typedef std::vector<monster_t> monsters_t;
-	typedef std::vector<mobjtype_t> powerups_t;
 
 	std::string name;    // Name of the wave.
 	weapons_t weapons;   // Weapons we can spawn this wave.
@@ -94,8 +114,10 @@ struct hordeDefine_t
 	{
 	}
 
+	void addPowerup(const mobjtype_t mobj, const powConfig_t& config);
+	const powerup_t& randomPowerup() const;
 	void addMonster(const waveMonsterType_e monster, const mobjtype_t mobj,
-	                const float chance);
+	                const monConfig_t& config);
 	int minTotalHealth() const;
 	int maxTotalHealth() const;
 	int goalHealth() const;

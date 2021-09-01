@@ -481,8 +481,7 @@ void HordeState::tick()
 		const int offset = P_RandomInt(16) + 30;
 		m_nextPowerup = ::level.time + (offset * TICRATE);
 
-		const size_t idx = P_RandomInt(define.powerups.size());
-		const mobjtype_t pw = define.powerups[idx];
+		const mobjtype_t pw = define.randomPowerup().mobj;
 		P_HordeSpawnPowerup(pw);
 
 		Printf("Spawned powerup %s, next in %d.\n", ::mobjinfo[pw].name, offset);

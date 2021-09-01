@@ -32,6 +32,71 @@
 
 extern std::vector<hordeDefine_t> WAVE_DEFINES;
 
+static void ParsePowerupConfig(OScanner& os, hordeDefine_t::powConfig_t& outConfig)
+{
+	for (;;)
+	{
+		os.mustScan(); // Prime the next token.
+		if (os.compareToken("}"))
+		{
+			// Bail out of the block.
+			break;
+		}
+		else if (os.compareToken("chance"))
+		{
+			os.mustScan();
+			os.assertTokenIs("=");
+			os.mustScanFloat();
+			outConfig.chance = os.getTokenFloat();
+		}
+		else
+		{
+			// We don't know what this token is.
+			std::string buffer;
+			StrFormat(buffer, "Unknown Powerup Token \"%s\".", os.getToken().c_str());
+			os.error(buffer.c_str());
+		}
+	}
+}
+
+static void ParseMonsterConfig(OScanner& os, hordeDefine_t::monConfig_t& outConfig)
+{
+	for (;;)
+	{
+		os.mustScan(); // Prime the next token.
+		if (os.compareToken("}"))
+		{
+			// Bail out of the block.
+			break;
+		}
+		else if (os.compareToken("grouphealth"))
+		{
+			os.mustScan();
+			os.assertTokenIs("=");
+			os.mustScanInt();
+			outConfig.minGroupHealth = os.getTokenInt();
+			os.mustScan();
+			os.assertTokenIs(",");
+			os.mustScanInt();
+			outConfig.maxGroupHealth = os.getTokenInt();
+		}
+		else if (os.compareToken("chance"))
+		{
+			os.mustScan();
+			os.assertTokenIs("=");
+			os.mustScanFloat();
+			outConfig.chance = os.getTokenFloat();
+		}
+		else
+		{
+			// We don't know what this token is.
+			std::string buffer;
+			StrFormat(buffer, "Unknown Monster/Boss Token \"%s\".", os.getToken().c_str());
+			os.error(buffer.c_str());
+		}
+	}
+}
+
 static void ParseDefine(OScanner& os)
 {
 	hordeDefine_t define;
@@ -108,83 +173,91 @@ static void ParseDefine(OScanner& os)
 		}
 		else if (os.compareToken("addpowerup"))
 		{
-			os.mustScan();
-			os.assertTokenIs("=");
-
+			// Powerup name.
 			os.mustScan();
 			const mobjtype_t type = P_NameToMobj(os.getToken());
 			if (type == MT_NULL)
 			{
 				std::string buffer;
-				StrFormat(buffer, "Unknown object \"%s\".", os.getToken().c_str());
+				StrFormat(buffer, "Unknown powerup \"%s\".", os.getToken().c_str());
 				os.error(buffer.c_str());
 			}
 
-			define.powerups.push_back(type);
+			// Config block.
+			hordeDefine_t::powConfig_t config;
+			os.mustScan();
+			if (os.getToken() == "{")
+			{
+				ParsePowerupConfig(os, config);
+			}
+			else
+			{
+				// Use default config.
+				os.unScan();
+			}
+
+			define.addPowerup(type, config);
 		}
 		else if (os.compareToken("addmonster"))
 		{
-			os.mustScan();
-			os.assertTokenIs("=");
-
 			// Monster name.
 			os.mustScan();
 			const mobjtype_t type = P_NameToMobj(os.getToken());
 			if (type == MT_NULL)
 			{
 				std::string buffer;
-				StrFormat(buffer, "Unknown object \"%s\".", os.getToken().c_str());
+				StrFormat(buffer, "Unknown monster \"%s\".", os.getToken().c_str());
 				os.error(buffer.c_str());
 			}
 
-			// Chance.
-			float chance = 1.0f;
-
+			// Config block.
+			hordeDefine_t::monConfig_t config;
 			os.mustScan();
-			if (os.getToken() == ",")
+			if (os.getToken() == "{")
 			{
-				os.mustScanFloat();
-				chance = os.getTokenFloat();
+				ParseMonsterConfig(os, config);
 			}
 			else
 			{
-				// Default to 1.0.
+				// Use default config.
 				os.unScan();
 			}
 
-			define.addMonster(hordeDefine_t::RM_NORMAL, type, chance);
+			define.addMonster(hordeDefine_t::RM_NORMAL, type, config);
 		}
 		else if (os.compareToken("addboss"))
 		{
-			os.mustScan();
-			os.assertTokenIs("=");
-
 			// Monster name.
 			os.mustScan();
 			const mobjtype_t type = P_NameToMobj(os.getToken());
 			if (type == MT_NULL)
 			{
 				std::string buffer;
-				StrFormat(buffer, "Unknown object \"%s\".", os.getToken().c_str());
+				StrFormat(buffer, "Unknown boss \"%s\".", os.getToken().c_str());
 				os.error(buffer.c_str());
 			}
 
-			// Chance.
-			float chance = 1.0f;
-
+			// Config block.
+			hordeDefine_t::monConfig_t config;
 			os.mustScan();
-			if (os.getToken() == ",")
+			if (os.getToken() == "{")
 			{
-				os.mustScanFloat();
-				chance = os.getTokenFloat();
+				ParseMonsterConfig(os, config);
 			}
 			else
 			{
-				// Default to 1.0.
+				// Use default config.
 				os.unScan();
 			}
 
-			define.addMonster(hordeDefine_t::RM_BOSS, type, chance);
+			define.addMonster(hordeDefine_t::RM_BOSS, type, config);
+		}
+		else
+		{
+			// We don't know what this token is.
+			std::string buffer;
+			StrFormat(buffer, "Unknown Token \"%s\".", os.getToken().c_str());
+			os.error(buffer.c_str());
 		}
 	}
 
