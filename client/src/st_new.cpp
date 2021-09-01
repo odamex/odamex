@@ -942,7 +942,6 @@ void PushToast(const toast_t& toast)
 
 	if (!buffer.empty())
 	{
-		buffer.resize(buffer.size() - 1);
 		drawToast.left = buffer;
 	}
 
