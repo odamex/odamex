@@ -138,7 +138,7 @@ void M_ClearRandom(void);
  * @see https://softwareengineering.stackexchange.com/a/150642
  */
 template <typename T>
-const T& P_RandomFloatWeighted(const std::vector<T>& data, float (*func)(const T&))
+typename const T& P_RandomFloatWeighted(const std::vector<T>& data, float (*func)(const T&))
 {
 	// this stores sum of weights of all elements before current
 	float totalWeight = 0;
