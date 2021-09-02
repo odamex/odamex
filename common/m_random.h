@@ -138,14 +138,15 @@ void M_ClearRandom(void);
  * @see https://softwareengineering.stackexchange.com/a/150642
  */
 template <typename T>
-typename const T& P_RandomFloatWeighted(const std::vector<T>& data, float (*func)(const T&))
+const T& P_RandomFloatWeighted(const std::vector<T>& data, float (*func)(const T&))
 {
 	// this stores sum of weights of all elements before current
 	float totalWeight = 0;
 
 	// currently selected element
 	const T* selected = NULL;
-	for (std::vector<T>::const_iterator it = data.begin(); it != data.end(); ++it)
+	for (typename std::vector<T>::const_iterator it = data.begin(); it != data.end();
+	     ++it)
 	{
 		// weight of current element
 		const T& ele = *it;
@@ -159,10 +160,10 @@ typename const T& P_RandomFloatWeighted(const std::vector<T>& data, float (*func
 		{
 			// it is the probability of discarding last selected element
 			// and selecting current one instead
-			selected = &ele; 
+			selected = &ele;
 		}
 
-		 // increase weight sum
+		// increase weight sum
 		totalWeight += weight;
 	}
 
