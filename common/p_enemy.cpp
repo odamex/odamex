@@ -1537,7 +1537,7 @@ void A_VileAttack (AActor *actor)
 		return;
 
 	S_Sound (actor, CHAN_WEAPON, "vile/stop", 1, ATTN_NORM);
-	P_DamageMobj (actor->target, actor, actor, 20, MOD_UNKNOWN);
+	P_DamageMobj(actor->target, actor, actor, 20, MOD_FIREBALL);
 	actor->target->momz = 1000*FRACUNIT/actor->target->info->mass;
 
 	an = actor->angle >> ANGLETOFINESHIFT;
