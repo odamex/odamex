@@ -152,7 +152,7 @@ const T& P_RandomFloatWeighted(const std::vector<T>& data, float (*func)(const T
 		const float weight = func(ele);
 
 		// random value
-		int r = P_RandomFloat() * (totalWeight + weight);
+		const float r = P_RandomFloat() * (totalWeight + weight);
 
 		// probability of this is weight/(totalWeight+weight)
 		if (r >= totalWeight)
