@@ -812,7 +812,7 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 			// You are on the same team.
 			isTeammate = true;
 		}
-		else
+		else if (G_IsLivesGame())
 		{
 			PlayerResults pr =
 			    PlayerQuery().hasLives().onTeam(viewer.userinfo.team).execute();
