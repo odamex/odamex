@@ -123,41 +123,47 @@ int M_Random()
 }
 
 //
-// xoshiro128** 1.1
-// Written in 2018 by David Blackman and Sebastiano Vigna (vigna@acm.org)
-// https://creativecommons.org/publicdomain/zero/1.0/
-//
+// A PRNG commonly known as "Jenkins Small Fast" by Bob Jenkins.
+// Released into the public domain.
+// http://burtleburtle.net/bob/rand/talksmall.html
+// 
 
-static uint32_t g_rngState[4];
-static uint32_t g_prngState[4];
-
-static uint32_t ROTL(const uint32_t x, int k)
+struct jsf32ctx_t
 {
-	return (x << k) | (x >> (32 - k));
+	uint32_t a;
+	uint32_t b;
+	uint32_t c;
+	uint32_t d;
+};
+
+static jsf32ctx_t g_rngState;
+static jsf32ctx_t g_prngState;
+
+#define ROT32(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
+
+/**
+ * @brief Run one iteration of JSF32.
+ */
+static uint32_t JSF32(jsf32ctx_t* x)
+{
+	const uint32_t e = x->a - ROT32(x->b, 27);
+	x->a = x->b ^ ROT32(x->c, 17);
+	x->b = x->c + x->d;
+	x->c = x->d + e;
+	x->d = e + x->a;
+	return x->d;
 }
 
 /**
- * @brief Run one iteration of xoshiro128**.
- * 
- * @param s State.  Must not be zero.
- * @return A random number.
+ * @brief Seed the JSF state.
  */
-static uint32_t XOS128StarStar(uint32_t (&s)[4])
+static void JSF32Seed(jsf32ctx_t* x, const uint32_t seed)
 {
-	const uint32_t result = ROTL(s[1] * 5, 7) * 9;
-
-	const uint32_t t = s[1] << 9;
-
-	s[2] ^= s[0];
-	s[3] ^= s[1];
-	s[1] ^= s[2];
-	s[0] ^= s[3];
-
-	s[2] ^= t;
-
-	s[3] = ROTL(s[3], 11);
-
-	return result;
+	x->a = 0xf1ea5eed, x->b = x->c = x->d = seed;
+	for (uint32_t i = 0; i < 20; i++)
+	{
+		(void)JSF32(x);
+	}
 }
 
 /**
@@ -168,10 +174,10 @@ static uint32_t XOS128StarStar(uint32_t (&s)[4])
  */
 uint32_t M_RandomInt(const uint32_t range)
 {
-	const uint32_t t = (-range) % range;
+	const uint32_t t = (0U - range) % range;
 	for (;;)
 	{
-		const uint32_t r = XOS128StarStar(::g_rngState);
+		const uint32_t r = JSF32(&::g_rngState);
 		if (r >= t)
 		{
 			return r % range;
@@ -187,10 +193,10 @@ uint32_t M_RandomInt(const uint32_t range)
  */
 uint32_t P_RandomInt(const uint32_t range)
 {
-	const uint32_t t = (-range) % range;
+	const uint32_t t = (0U - range) % range;
 	for (;;)
 	{
-		const uint32_t r = XOS128StarStar(::g_prngState);
+		const uint32_t r = JSF32(&::g_prngState);
 		if (r >= t)
 		{
 			return r % range;
@@ -205,7 +211,7 @@ uint32_t P_RandomInt(const uint32_t range)
  */
 float M_RandomFloat()
 {
-	uint32_t n = XOS128StarStar(::g_rngState);
+	const uint32_t n = JSF32(&::g_rngState);
 	return static_cast<float>(n) / (static_cast<float>(0xFFFFFFFFU) + 1.0f);
 }
 
@@ -216,25 +222,8 @@ float M_RandomFloat()
  */
 float P_RandomFloat()
 {
-	uint32_t n = XOS128StarStar(::g_prngState);
+	const uint32_t n = JSF32(&::g_prngState);
 	return static_cast<float>(n) / (static_cast<float>(0xFFFFFFFFU) + 1.0f);
-}
-
-/**
- * @brief Run one iteration of SplitMix64.
- * 
- * @detail This function is used to seed xorshift to avoid correlation
- *         between similar seeds, as per recommendation.
- *
- * @param x State to mutate.
- * @return A 64-bit random number.
- */
-static uint64_t SplitMix64(uint64_t& x)
-{
-	uint64_t z = (x += 0x9e3779b97f4a7c15);
-	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
-	z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
-	return z ^ (z >> 31);
 }
 
 // Initialize all the seeds
@@ -250,11 +239,8 @@ void M_ClearRandom()
 
 	::prndindex = 0;
 
-	// Doom's release date run through two iterations of SplitMix64.
-	::g_prngState[0] = 0xdcd14231;
-	::g_prngState[1] = 0x78706a11;
-	::g_prngState[2] = 0x9f065d64;
-	::g_prngState[3] = 0x3bfe09e1;
+	// Odamex's release date.
+	JSF32Seed(&::g_prngState, 20071801U);
 
 	// Only init M_Random values once.
 	if (firsttime)
@@ -262,12 +248,9 @@ void M_ClearRandom()
 		firsttime = false;
 		::rndindex = ::prndindex;
 
-		// [AM] Mix up initial starting state.
-		uint64_t seed = time(NULL);
-		::g_rngState[0] = SplitMix64(seed);
-		::g_rngState[1] = SplitMix64(seed);
-		::g_rngState[2] = SplitMix64(seed);
-		::g_rngState[3] = SplitMix64(seed);
+		// [AM] Make non-playsim random unpredictable.
+		uint32_t seed = static_cast<uint32_t>(time(NULL));
+		JSF32Seed(&::g_rngState, seed);
 	}
 }
 
@@ -275,13 +258,13 @@ void P_SerializeRNGState(FArchive& arc)
 {
 	if (arc.IsStoring())
 	{
-		arc << ::prndindex << ::g_prngState[0] << ::g_prngState[1] << ::g_prngState[2]
-		    << ::g_prngState[3];
+		arc << ::prndindex << ::g_prngState.a << ::g_prngState.b << ::g_prngState.c
+		    << ::g_prngState.d;
 	}
 	else
 	{
-		arc >> ::prndindex >> ::g_prngState[0] >> ::g_prngState[1] >> ::g_prngState[2] >>
-		    ::g_prngState[3];
+		arc >> ::prndindex >> ::g_prngState.a >> ::g_prngState.b >> ::g_prngState.c >>
+		    ::g_prngState.d;
 	}
 }
 
