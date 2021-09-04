@@ -27,6 +27,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <time.h>
+
 #include "doomstat.h"
 #include "doomtype.h"
 #include "m_random.h"
