@@ -2817,7 +2817,7 @@ void SV_UpdateGametype(player_t& pl)
 {
 	if (::sv_gametype == GM_HORDE)
 	{
-		static hordeInfo_t lastInfo = {HS_STARTING, -1, -1, -1, 0, -1, -1, -1};
+		static hordeInfo_t lastInfo = {HS_STARTING, -1, -1, -1, 0, -1, -1, -1, -1, -1};
 		static int ticsent;
 
 		// If the hordeinfo has changed since last tic, save and send it.

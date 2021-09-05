@@ -2569,6 +2569,8 @@ static void CL_HordeInfo(const odaproto::svc::HordeInfo* msg)
 	info.defineID = msg->define_id();
 	info.spawnedHealth = msg->spawned_health();
 	info.killedHealth = msg->killed_health();
+	info.bossHealth = msg->boss_health();
+	info.bossDamage = msg->boss_damage();
 	info.waveStartHealth = msg->wave_start_health();
 
 	P_SetHordeInfo(info);

@@ -2063,6 +2063,12 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 				damage = MAX(damage / 2, 1);
 			}
 
+			// Calculate amount of HP to take away from the boss pool
+			int low = std::max(target->health - damage, 0);
+			int actualdamage = target->health - low;
+
+			P_AddDamagePool(target, actualdamage);
+
 			target->health -= damage; // do the damage to monsters.
 		}
 	}

@@ -111,6 +111,8 @@ class HordeState
 	size_t m_defineID;
 	int m_spawnedHealth;
 	int m_killedHealth;
+	int m_bossHealth;
+	int m_bossDamage;
 	int m_waveStartHealth;
 	AActors m_bosses;
 	hordeRecipe_t m_bossRecipe;
@@ -145,6 +147,8 @@ class HordeState
 		m_defineID = P_HordePickDefine(m_wave, ::g_horde_waves);
 		m_spawnedHealth = 0;
 		m_killedHealth = 0;
+		m_bossHealth = 0;
+		m_bossDamage = 0;
 		m_waveStartHealth = 0;
 		m_bosses.clear();
 		m_bossRecipe.clear();
@@ -189,6 +193,8 @@ class HordeState
 		m_bossTime = ::level.time;
 		m_defineID = P_HordePickDefine(m_wave, ::g_horde_waves);
 		m_waveStartHealth = m_killedHealth;
+		m_bossHealth = 0;
+		m_bossDamage = 0;
 		m_bosses.clear();
 		m_bossRecipe.clear();
 	}
@@ -210,6 +216,8 @@ class HordeState
 		m_bossTime = ::level.time;
 		m_defineID = defineID;
 		m_waveStartHealth = m_killedHealth;
+		m_bossHealth = 0;
+		m_bossDamage = 0;
 		m_bosses.clear();
 		m_bossRecipe.clear();
 
@@ -244,6 +252,8 @@ class HordeState
 		info.defineID = m_defineID;
 		info.spawnedHealth = m_spawnedHealth;
 		info.killedHealth = m_killedHealth;
+		info.bossHealth = m_bossHealth;
+		info.bossDamage = m_bossDamage;
 		info.waveStartHealth = m_waveStartHealth;
 		return info;
 	}
@@ -260,6 +270,8 @@ class HordeState
 		m_defineID = info.defineID;
 		m_spawnedHealth = info.spawnedHealth;
 		m_killedHealth = info.killedHealth;
+		m_bossHealth = info.bossHealth;
+		m_bossDamage = info.bossDamage;
 		m_waveStartHealth = info.waveStartHealth;
 	}
 
@@ -271,6 +283,16 @@ class HordeState
 	void addKilledHealth(const int health)
 	{
 		m_killedHealth += health;
+	}
+
+	void addBossHealth(const int health)
+	{
+		m_bossHealth += health;
+	}
+
+	void addBossDamage(const int health)
+	{
+		m_bossDamage += health;
 	}
 
 	size_t getDefineID() const
@@ -512,6 +534,12 @@ void P_AddHealthPool(AActor* mo)
 	mo->oflags |= MFO_HEALTHPOOL;
 
 	::g_HordeDirector.addSpawnHealth(::mobjinfo[mo->type].spawnhealth);
+
+	// Bosses also have health added to a separate pool for display purposes.
+	if (mo->oflags & MFO_BOSSPOOL)
+	{
+		::g_HordeDirector.addBossHealth(::mobjinfo[mo->type].spawnhealth);
+	}
 }
 
 void P_RemoveHealthPool(AActor* mo)
@@ -524,6 +552,19 @@ void P_RemoveHealthPool(AActor* mo)
 	mo->oflags &= ~MFO_HEALTHPOOL;
 
 	::g_HordeDirector.addKilledHealth(::mobjinfo[mo->type].spawnhealth);
+}
+
+void P_AddDamagePool(AActor* mo, const int damage)
+{
+	// Not a part of the pool
+	if (!(mo->oflags & MFO_BOSSPOOL))
+		return;
+
+	// Counts as a monster?
+	if (!(mo->flags & MF_COUNTKILL || mo->type == MT_SKULL))
+		return;
+
+	::g_HordeDirector.addBossDamage(damage);
 }
 
 void P_RunHordeTics()
@@ -690,5 +731,7 @@ BEGIN_COMMAND(hordeinfo)
 	Printf("State: %s\n", stateStr);
 	Printf("Alive Health: %d\n", ::g_HordeDirector.serialize().alive());
 	Printf("Killed Health: %d\n", ::g_HordeDirector.serialize().killed());
+	Printf("Boss Health: %d\n", ::g_HordeDirector.serialize().bossHealth);
+	Printf("Boss Damage: %d\n", ::g_HordeDirector.serialize().bossDamage);
 }
 END_COMMAND(hordeinfo)

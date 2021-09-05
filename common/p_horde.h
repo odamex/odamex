@@ -45,6 +45,8 @@ struct hordeInfo_t
 	uint64_t defineID;
 	int spawnedHealth;
 	int killedHealth;
+	int bossHealth;
+	int bossDamage;
 	int waveStartHealth;
 
 	int alive() const
@@ -79,6 +81,10 @@ struct hordeInfo_t
 			return false;
 		if (killedHealth != info.killedHealth)
 			return false;
+		if (bossHealth != info.bossHealth)
+			return false;
+		if (bossDamage != info.bossDamage)
+			return false;
 		if (waveStartHealth != info.waveStartHealth)
 			return false;
 		return true;
@@ -89,6 +95,7 @@ hordeInfo_t P_HordeInfo();
 void P_SetHordeInfo(const hordeInfo_t& info);
 void P_AddHealthPool(AActor* mo);
 void P_RemoveHealthPool(AActor* mo);
+void P_AddDamagePool(AActor* mo, const int damage);
 
 void P_RunHordeTics();
 bool P_IsHordeMode();

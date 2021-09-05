@@ -605,21 +605,25 @@ static void drawHordeGametype()
 	std::string waverow, killrow;
 	if (::g_horde_waves.asInt() != 0)
 	{
-		StrFormat(waverow, "W:%d/%d", info.wave, ::g_horde_waves.asInt());
+		StrFormat(waverow, "WAVE:%d/%d", info.wave, ::g_horde_waves.asInt());
 	}
 	else
 	{
-		StrFormat(waverow, "W:%d", info.wave);
+		StrFormat(waverow, "WAVE:%d", info.wave);
 	}
 
-	const double pct = (static_cast<double>(info.killed()) / define.goalHealth()) * 100.0;
-	if (pct < 100.0)
+	if (info.bossHealth)
 	{
-		StrFormat(killrow, "%.0f%%", pct);
+		const float bossPct =
+		    (static_cast<float>(info.bossHealth - info.bossDamage) / info.bossHealth) *
+		    100.0f;
+		StrFormat(killrow, "BOSS:%.0f%%", bossPct);
 	}
 	else
 	{
-		killrow = "BOSS";
+		const float pct =
+		    (static_cast<float>(info.killed()) / define.goalHealth()) * 100.0f;
+		StrFormat(killrow, "HORDE:%.0f%%", pct);
 	}
 
 	const int y = R_StatusBarVisible() ? statusBarY() + SCREEN_BORDER : ABOVE_AMMO;

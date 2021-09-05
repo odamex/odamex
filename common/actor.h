@@ -255,12 +255,13 @@ typedef enum
 	// --- mobj.oflags ---
 	// Odamex-specific flags
 	MFO_NOSNAPZ			= BIT(0),		// ignore snapshot z this tic
-	MFO_HEALTHPOOL		= BIT(1),		// added to global health pool
+	MFO_HEALTHPOOL		= BIT(1),		// global health pool that tracks killed HP
 	MFO_INFIGHTINVUL	= BIT(2),		// invulnerable to infighting
 	MFO_UNFLINCHING		= BIT(3),		// monster flinching reduced to 1 in 256
 	MFO_ARMOR			= BIT(4),		// damage taken by monster is reduced
 	MFO_QUICK			= BIT(5),		// speed of monster is increased
 	MFO_NORAISE			= BIT(6),		// vile can't raise corpse
+	MFO_BOSSPOOL		= BIT(7),		// boss health pool that tracks damage
 } mobjflag_t;
 
 #define MF_TRANSSHIFT	0x1A
