@@ -73,14 +73,14 @@ static lumpHandle_t bigammos[ARRAY_LENGTH(::bigammopatches)];
 static lumpHandle_t flagiconteam;
 static lumpHandle_t flagiconteamoffense;
 static lumpHandle_t flagiconteamdefense;
-static lumpHandle_t line_leftempty;
-static lumpHandle_t line_leftfull;
-static lumpHandle_t line_centerempty;
-static lumpHandle_t line_centerleft;
-static lumpHandle_t line_centerright;
-static lumpHandle_t line_centerfull;
-static lumpHandle_t line_rightempty;
-static lumpHandle_t line_rightfull;
+lumpHandle_t line_leftempty;
+lumpHandle_t line_leftfull;
+lumpHandle_t line_centerempty;
+lumpHandle_t line_centerleft;
+lumpHandle_t line_centerright;
+lumpHandle_t line_centerfull;
+lumpHandle_t line_rightempty;
+lumpHandle_t line_rightfull;
 static lumpHandle_t FlagIconHome[NUMTEAMS];
 static lumpHandle_t FlagIconReturn[NUMTEAMS];
 static lumpHandle_t FlagIconTaken[NUMTEAMS];
@@ -598,6 +598,7 @@ static void drawHordeGametype()
 	const int SCREEN_BORDER = 4;
 	const int ABOVE_AMMO = 24;
 	const int LINE_SPACING = V_LineHeight() + 1;
+	const int BAR_BORDER = 5;
 
 	const hordeInfo_t& info = P_HordeInfo();
 	const hordeDefine_t& define = G_HordeDefine(info.defineID);
@@ -612,24 +613,28 @@ static void drawHordeGametype()
 		StrFormat(waverow, "WAVE:%d", info.wave);
 	}
 
+	float killPct = NAN;
+	EColorRange killColor = CR_BRICK;
 	if (info.bossHealth)
 	{
-		const float bossPct =
-		    (static_cast<float>(info.bossHealth - info.bossDamage) / info.bossHealth) *
-		    100.0f;
-		StrFormat(killrow, "BOSS:%.0f%%", bossPct);
+		killPct = static_cast<float>(info.bossHealth - info.bossDamage) / info.bossHealth;
+		killrow = "BOSS";
+		killColor = CR_GOLD;
 	}
 	else
 	{
-		const float pct =
-		    (static_cast<float>(info.killed()) / define.goalHealth()) * 100.0f;
-		StrFormat(killrow, "HORDE:%.0f%%", pct);
+		killPct = static_cast<float>(info.killed()) / define.goalHealth();
+		killrow = "HORDE";
+		killColor = CR_GREEN;
 	}
 
 	const int y = R_StatusBarVisible() ? statusBarY() + SCREEN_BORDER : ABOVE_AMMO;
 	hud::DrawText(SCREEN_BORDER, y, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 	              hud::X_RIGHT, hud::Y_BOTTOM, waverow.c_str(), CR_GREY);
-	hud::DrawText(SCREEN_BORDER, y + LINE_SPACING, ::hud_scale, hud::X_RIGHT,
+	hud::EleBar(SCREEN_BORDER, y + LINE_SPACING, V_StringWidth("WAVE:0/0"), ::hud_scale,
+	            hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, killPct,
+	            killColor);
+	hud::DrawText(SCREEN_BORDER, y + LINE_SPACING + BAR_BORDER, ::hud_scale, hud::X_RIGHT,
 	              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY);
 }
 

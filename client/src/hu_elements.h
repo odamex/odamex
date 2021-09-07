@@ -47,6 +47,9 @@ void TeamLives(std::string& str, int& color, byte team);
 std::string TeamKD(int& color, byte team);
 std::string TeamPing(int& color, byte team);
 
+void EleBar(const int x, const int y, const int w, const float scale,
+            const x_align_t x_align, const y_align_t y_align, const x_align_t x_origin,
+            const y_align_t y_origin, const float pct, const EColorRange color);
 void EAPlayerColors(int x, int y,
                     const unsigned short w, const unsigned short h,
                     const float scale,

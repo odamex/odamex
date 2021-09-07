@@ -96,9 +96,13 @@
 	typedef unsigned __int32 uint32_t;
 	typedef unsigned __int64 uint64_t;
 
+	#define DBL_EPSILON 2.2204460492503131e-016
+	#define FLT_EPSILON 1.192092896e-07F
+
 	#define PRI_SIZE_PREFIX "I"
 #else
 	#include <stdint.h>
+	#include <float.h>
 
 	#define PRI_SIZE_PREFIX "z"
 #endif
