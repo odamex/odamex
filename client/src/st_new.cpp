@@ -1075,9 +1075,16 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	int tics = 0;
 	if (info.hasBoss())
 	{
-		const char* cool = (gametic % 4) / 2 == 0 ? TEXTCOLOR_YELLOW : TEXTCOLOR_WHITE;
-		StrFormat(lines.first, "%s!! %sWARNING: NO REFUGE %s!!", cool, TEXTCOLOR_RED, cool);
-		lines.second = "Defeat the boss to win the wave";
+		if (gametic % 18 < 9)
+		{
+			lines.first = TEXTCOLOR_RED "!! WARNING !!";
+		}
+		else
+		{
+			lines.first = TEXTCOLOR_RED "WARNING";
+		}
+		lines.second =
+		    "Defeat the " TEXTCOLOR_YELLOW "boss " TEXTCOLOR_GREY "to win the wave";
 		tics = info.bossTic();
 	}
 	else
