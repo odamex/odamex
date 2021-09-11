@@ -613,7 +613,7 @@ static void drawHordeGametype()
 		StrFormat(waverow, "WAVE:%d", info.wave);
 	}
 
-	float killPct = NAN;
+	float killPct = 0.0f;
 	EColorRange killColor = CR_BRICK;
 	if (info.bossHealth)
 	{
