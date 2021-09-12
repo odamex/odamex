@@ -395,7 +395,8 @@ static void ParseHordeDefs()
 		return;
 	}
 
-	std::sort(::WAVE_DEFINES.begin(), ::WAVE_DEFINES.end(), CmpHordeDefs);
+	// [AM] Must be stable for wave ID's to be the same on client and server.
+	std::stable_sort(::WAVE_DEFINES.begin(), ::WAVE_DEFINES.end(), CmpHordeDefs);
 }
 
 /**
