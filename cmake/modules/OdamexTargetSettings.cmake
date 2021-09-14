@@ -58,6 +58,7 @@ function(odamex_target_settings _TARGET)
   # https://kristerw.blogspot.com/2017/09/useful-gcc-warning-options-not-enabled.html
   if(MSVC)
     checked_add_compile_flag(CHECKED_OPTIONS /wd26812 WD_26812)
+    checked_add_compile_flag(CHECKED_OPTIONS /permissive- PERMISSIVE_DISABLED)
     checked_add_compile_flag(CHECKED_RELEASE_OPTIONS /GL MSVC_GL)
   else()
     checked_add_compile_flag(CHECKED_OPTIONS -Werror=format-security W_FORMAT_SECURITY)

@@ -822,7 +822,7 @@ static int PatchThing (int thingy)
 	while ((result = GetLine ()) == 1) {
 		size_t sndmap = atoi (Line2);
 
-		if (sndmap >= sizeof(SoundMap))
+		if (sndmap >= ARRAY_LENGTH(SoundMap))
 			sndmap = 0;
 
 		if (HandleKey (keys, info, Line1, atoi (Line2))) {
