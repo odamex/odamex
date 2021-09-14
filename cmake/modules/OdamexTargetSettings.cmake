@@ -59,6 +59,7 @@ function(odamex_target_settings _TARGET)
   if(MSVC)
     checked_add_compile_flag(CHECKED_OPTIONS /wd26812 WD_26812)
     checked_add_compile_flag(CHECKED_OPTIONS /permissive- PERMISSIVE_DISABLED)
+    checked_add_compile_flag(CHECKED_RELEASE_OPTIONS /GL MSVC_GL)
   else()
     checked_add_compile_flag(CHECKED_OPTIONS -Werror=format-security W_FORMAT_SECURITY)
     checked_add_compile_flag(CHECKED_OPTIONS -Wduplicated-cond W_DUPLICATED_COND)
@@ -70,7 +71,14 @@ function(odamex_target_settings _TARGET)
     checked_add_compile_flag(CHECKED_OPTIONS -Wno-unused-parameter W_NO_UNUSED_PARAMETER)
   endif()
   target_compile_options("${_TARGET}" PRIVATE ${CHECKED_OPTIONS})
-  
+  target_compile_options("${_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:${CHECKED_RELEASE_OPTIONS}>)
+
+  # Add link options - checked link options need at least 3.18.
+  if(MSVC)
+    target_link_options("${_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:/INCREMENTAL:NO>)
+    target_link_options("${_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:/LTCG>)
+  endif()
+
   # Ensure we get a useful stack trace on Linux.
   if(UNIX AND NOT APPLE)
     target_link_options("${_TARGET}" PRIVATE -rdynamic)
