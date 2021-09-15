@@ -28,7 +28,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
 
 #include "cmdlib.h"
 #include "i_system.h"

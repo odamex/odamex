@@ -23,8 +23,6 @@
 
 #include "odamex.h"
 
-#include <string>
-#include <vector>
 
 #include "sv_sqp.h"
 

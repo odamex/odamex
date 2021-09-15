@@ -23,7 +23,6 @@
 #ifndef __C_VOTE__
 #define __C_VOTE__
 
-#include <string>
 
 
 /**

@@ -26,9 +26,7 @@
 
 #include <cstdio>
 #include <ctime>
-#include <string>
 #include <sstream>
-#include <vector>
 
 #include "c_bind.h"
 #include "c_cvars.h"
@@ -320,6 +318,3 @@ bool M_FindFreeName(std::string &filename, const std::string &extension)
 }
 
 VERSION_CONTROL (m_misc_cpp, "$Id$")
-
-
-

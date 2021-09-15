@@ -25,8 +25,6 @@
 
 #include "odamex.h"
 
-#include <string>
-#include <vector>
 
 #include "d_main.h"
 #include "d_player.h"

@@ -26,8 +26,6 @@
 #define __CMDLIB__
 
 #include <algorithm>
-#include <string>
-#include <vector>
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4244)     // MIPS

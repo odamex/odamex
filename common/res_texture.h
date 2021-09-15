@@ -27,7 +27,6 @@
 
 #include "m_fixed.h"
 
-#include <vector>
 
 #include "m_ostring.h"
 #include "hashtable.h"

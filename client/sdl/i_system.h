@@ -33,7 +33,6 @@
 #include "d_ticcmd.h"
 #include "d_event.h"
 
-#include <string>
 
 // Index values into the LanguageIDs array
 enum

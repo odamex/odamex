@@ -27,7 +27,6 @@
 #include <cstddef>
 #include <cassert>
 #include <utility>
-#include <string>
 
 // ============================================================================
 //
@@ -581,4 +580,3 @@ private:
 };
 
 #endif	// __HASHTABLE_H__
-

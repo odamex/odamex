@@ -24,8 +24,6 @@
 #ifndef __M_STRINDEX__
 #define __M_STRINDEX__
 
-#include <string>
-#include <vector>
 
 #include "hashtable.h"
 

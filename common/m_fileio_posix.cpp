@@ -32,7 +32,6 @@
 
 #include "m_fileio.h"
 
-#include <string>
 #include <sstream>
 
 #include <errno.h>

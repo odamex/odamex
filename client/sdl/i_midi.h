@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <cstring>
 #include <list>
-#include <vector>
 #include "m_memio.h"
 
 typedef enum
@@ -238,4 +237,3 @@ bool I_IsMidiMetaEvent(MidiEvent *event);
 double I_GetTempoChange(MidiMetaEvent *event);
 
 #endif	// __I_MIDI_H__
-

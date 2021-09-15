@@ -37,7 +37,6 @@
 
 #include "w_ident.h"
 
-#include <vector>
 #include <stdio.h>
 
 

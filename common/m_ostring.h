@@ -28,7 +28,6 @@
 #define __M_OSTRING_H__
 
 #include <cstddef>
-#include <string>
 #include <iostream>
 #include <memory>
 #include <cassert>
@@ -674,4 +673,3 @@ OString OStringToLower(const char* s, size_t n = OString::npos);
 OString OStringToLower(const OString& str);
 
 #endif	// __M_OSTRING_H__
-

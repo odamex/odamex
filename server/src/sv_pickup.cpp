@@ -26,7 +26,6 @@
 
 #include <algorithm>
 #include <sstream>
-#include <vector>
 
 #include "c_cvars.h"
 #include "c_dispatch.h"

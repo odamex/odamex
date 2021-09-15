@@ -25,8 +25,6 @@
 #ifndef __D_MAIN__
 #define __D_MAIN__
 
-#include <vector>
-#include <string>
 
 #include "d_event.h"
 #include "m_resfile.h"

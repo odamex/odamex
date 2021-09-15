@@ -26,7 +26,6 @@
 #define __D_PLAYER_H__
 
 #include <list>
-#include <vector>
 #include <queue>
 
 #include <time.h>

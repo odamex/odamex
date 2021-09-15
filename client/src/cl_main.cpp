@@ -69,8 +69,6 @@
 #include "cl_parse.h"
 
 #include <bitset>
-#include <string>
-#include <vector>
 #include <map>
 #include <set>
 #include <sstream>

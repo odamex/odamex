@@ -27,7 +27,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <climits>
-#include <string>
 #include <algorithm>
 
 #include "i_sdl.h"
@@ -1203,5 +1202,3 @@ const PixelFormat* I_Get32bppPixelFormat()
 }
 
 VERSION_CONTROL (i_video_cpp, "$Id$")
-
-

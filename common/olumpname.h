@@ -24,7 +24,6 @@
 #define __OLUMPNAME_H__
 
 #include <stddef.h>
-#include <string>
 
 class OLumpName
 {

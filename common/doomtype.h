@@ -27,7 +27,6 @@
 #define __DOOMTYPE__
 
 // Standard libc/STL includes we use in countless places
-#include <string>
 
 #include "version.h"
 #include "errors.h"

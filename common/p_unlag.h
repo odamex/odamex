@@ -28,7 +28,6 @@
 #ifndef __PUNLAG_H__
 #define __PUNLAG_H__
 
-#include <vector>
 #include <map>
 #include "m_fixed.h"
 #include "actor.h"
@@ -125,4 +124,3 @@ private:
 
 
 #endif
-

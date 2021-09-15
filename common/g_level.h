@@ -30,8 +30,6 @@
 #include "r_defs.h" // line_t
 
 #include <assert.h>
-#include <string>
-#include <vector>
 
 #define NUM_MAPVARS				128
 #define NUM_WORLDVARS			256

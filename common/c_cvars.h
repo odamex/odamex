@@ -30,7 +30,6 @@
 #include "tarray.h"
 
 #include <cfloat>
-#include <string>
 
 /*
 ==========================================================

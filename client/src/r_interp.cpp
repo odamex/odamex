@@ -30,7 +30,6 @@
 #include "p_local.h"
 #include "cl_demo.h"
 
-#include <vector>
 
 typedef std::pair<fixed_t, unsigned int> fixed_uint_pair;
 

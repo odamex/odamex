@@ -24,7 +24,6 @@
 #define __CL_MAPLIST__
 
 #include <map>
-#include <string>
 
 #include "c_maplist.h"
 

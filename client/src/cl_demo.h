@@ -3,8 +3,6 @@
 
 #include "i_net.h"
 #include "d_net.h"
-#include <string>
-#include <vector>
 #include <list>
 
 class NetDemo
@@ -149,4 +147,3 @@ private:
 
 
 #endif
-

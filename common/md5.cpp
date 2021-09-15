@@ -390,7 +390,6 @@ md5_finish(md5_state_t *pms, md5_byte_t digest[16])
 }
 
 // denis lukianov 2006
-#include <string>
 #include <sstream>
 #include <algorithm>
 #include <cctype>
@@ -438,4 +437,3 @@ bool IsMD5SUM(const std::string& str)
 }
 
 VERSION_CONTROL (md5_cpp, "$Id$")
-

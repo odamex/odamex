@@ -30,7 +30,6 @@
 #ifndef __D_STATE__
 #define __D_STATE__
 
-#include <vector>
 
 #include "doomdata.h"
 #include "d_net.h"
@@ -217,6 +216,3 @@ struct DehInfo
 extern struct DehInfo deh;
 
 #endif
-
-
-

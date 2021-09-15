@@ -37,7 +37,6 @@
 #include "v_textcolors.h"
 #include "svc_message.h"
 
-#include <string>
 
 static const int MAX_LINE_LENGTH = 8192;
 

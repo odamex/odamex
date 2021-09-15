@@ -29,8 +29,6 @@
 #include "r_defs.h"
 #include "m_resfile.h"
 
-#include <string>
-#include <vector>
 
 // [RH] Compare wad header as ints instead of chars
 #define IWAD_ID (('I')|('W'<<8)|('A'<<16)|('D'<<24))

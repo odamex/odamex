@@ -32,7 +32,6 @@
 
 #include "m_fileio.h"
 
-#include <string>
 
 #include "win32inc.h"
 #include <shlobj.h>

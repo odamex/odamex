@@ -29,7 +29,6 @@
 
 #include "version.h"
 
-#include <vector>
 #include <algorithm>
 
 #include "win32inc.h"

@@ -28,8 +28,6 @@
 #include "m_swap.h"
 #include "v_pixelformat.h"
 
-#include <string>
-#include <vector>
 #include <cassert>
 #include <cstdlib>
 

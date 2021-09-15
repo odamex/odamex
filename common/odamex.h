@@ -38,6 +38,9 @@
 	#include "pstdint.h"
 #endif
 
+#include <string>
+#include <vector>
+
 #include "doomtype.h"
 #include "doomdef.h"
 #include "doomstat.h"

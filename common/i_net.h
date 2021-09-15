@@ -27,7 +27,6 @@
 
 #include "huffman.h"
 
-#include <string>
 
 // Default buffer size for a UDP packet.
 // This constant seems to be used as a default buffer size and should

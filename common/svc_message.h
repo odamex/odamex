@@ -27,8 +27,6 @@
 #ifndef __SVCMESSAGE_H__
 #define __SVCMESSAGE_H__
 
-#include <string>
-#include <vector>
 
 #include "server.pb.h"
 

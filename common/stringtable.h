@@ -31,7 +31,6 @@
 
 #include <stdlib.h>
 #include <utility>
-#include <vector>
 
 #include "hashtable.h"
 #include "m_ostring.h"

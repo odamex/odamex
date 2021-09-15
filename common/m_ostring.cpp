@@ -30,7 +30,6 @@
 #include "m_ostring.h"
 
 #include <cstddef>
-#include <string>
 
 // initialize static member variables
 bool OString::mInitialized = false;
@@ -825,4 +824,3 @@ OString OStringToLower(const OString& str)
 }
 
 VERSION_CONTROL (m_ostring_cpp, "$Id$")
-

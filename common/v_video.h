@@ -26,7 +26,6 @@
 #ifndef __V_VIDEO_H__
 #define __V_VIDEO_H__
 
-#include <string>
 
 #include "v_palette.h"
 #include "m_vectors.h"

@@ -27,7 +27,6 @@
 
 #include "dobject.h"
 
-#include <string>
 
 #define FA_RESET (1 << 0)
 
@@ -249,5 +248,3 @@ FArchive &operator<< (FArchive& arc, player_s* p);
 FArchive &operator>> (FArchive& arc, player_s* &p);
 
 #endif //__DARCHIVE_H__
-
-
