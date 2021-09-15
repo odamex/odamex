@@ -27,12 +27,6 @@
 #ifndef __DOOMDATA__
 #define __DOOMDATA__
 
-// The most basic types we use, portability.
-
-// Some global defines, that configure the game.
-
-
-
 //
 // Map level types.
 // The following data structures define the persistent format
