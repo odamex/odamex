@@ -25,7 +25,6 @@
 
 #include "odamex.h"
 
-#include "doomstat.h"
 #include "gstrings.h"
 #include "d_player.h"
 #include "g_game.h"

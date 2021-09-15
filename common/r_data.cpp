@@ -33,10 +33,8 @@
 
 #include "w_wad.h"
 
-#include "doomdef.h"
 #include "r_local.h"
 
-#include "doomstat.h"
 #include "r_sky.h"
 
 #include "cmdlib.h"
@@ -1181,4 +1179,3 @@ unsigned int SlopeDiv (unsigned int num, unsigned int den)
 }
 
 VERSION_CONTROL (r_data_cpp, "$Id$")
-

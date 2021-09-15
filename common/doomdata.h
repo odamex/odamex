@@ -30,7 +30,6 @@
 // The most basic types we use, portability.
 
 // Some global defines, that configure the game.
-#include "doomdef.h"
 
 
 
@@ -296,5 +295,3 @@ typedef struct
 
 
 #endif					// __DOOMDATA__
-
-

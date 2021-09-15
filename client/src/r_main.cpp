@@ -28,7 +28,6 @@
 
 #include <stdlib.h>
 #include <math.h>
-#include "doomstat.h"
 #include "m_random.h"
 #include "p_local.h"
 #include "r_local.h"
@@ -1311,5 +1310,3 @@ void R_ExitLevel()
 }
 
 VERSION_CONTROL (r_main_cpp, "$Id$")
-
-

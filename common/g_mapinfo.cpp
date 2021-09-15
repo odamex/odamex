@@ -22,8 +22,6 @@
 #include "odamex.h"
 
 #include "cmdlib.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "g_episode.h"
 #include "g_level.h"
 #include "gi.h"

@@ -25,7 +25,6 @@
 #ifndef __D_ITEMS_H__
 #define __D_ITEMS_H__
 
-#include "doomdef.h"
 #include "info.h"
 
 class AActor;
@@ -87,4 +86,3 @@ gitem_t* FindCardItem(card_t card);
 #define ITEM_INDEX(i)	((i)-itemlist)
 
 #endif //__D_ITEMS_H__
-

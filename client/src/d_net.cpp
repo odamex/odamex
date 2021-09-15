@@ -28,7 +28,6 @@
 #include "version.h"
 #include "i_system.h"
 #include "g_game.h"
-#include "doomstat.h"
 #include "d_netinf.h"
 #include "p_local.h"
 #include "gi.h"
@@ -81,4 +80,3 @@ void D_CheckNetGame (void)
 
 
 VERSION_CONTROL (d_net_cpp, "$Id$")
-

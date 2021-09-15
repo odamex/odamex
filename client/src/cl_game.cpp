@@ -28,8 +28,6 @@
 #include "version.h"
 #include "minilzo.h"
 #include "m_alloc.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "z_zone.h"
 #include "f_finale.h"
 #include "m_argv.h"

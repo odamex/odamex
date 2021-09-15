@@ -24,7 +24,6 @@
 
 #include "odamex.h"
 
-#include "doomstat.h"
 #include "c_cvars.h"
 #include "actor.h"
 #include "c_effect.h"

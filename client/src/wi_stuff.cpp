@@ -36,7 +36,6 @@
 #include "r_local.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
-#include "doomstat.h"
 #include "v_video.h"
 #include "wi_stuff.h"
 #include "c_console.h"

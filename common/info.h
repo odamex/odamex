@@ -30,7 +30,6 @@
 // Needed for action function pointer handling.
 #include "dthinker.h"
 #include "farchive.h"
-#include "doomdef.h"
 
 typedef enum
 {

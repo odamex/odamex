@@ -25,7 +25,6 @@
 
 #include "odamex.h"
 
-#include "doomstat.h"
 #include "m_fixed.h"
 #include "r_state.h"
 #include "p_local.h"
@@ -199,4 +198,3 @@ void R_InterpolateCamera(fixed_t amount)
 }
 
 VERSION_CONTROL (r_interp_cpp, "$Id$")
-

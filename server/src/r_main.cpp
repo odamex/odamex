@@ -28,7 +28,6 @@
 
 #include <math.h>
 #include <limits.h>
-#include "doomdef.h"
 #include "m_random.h"
 #include "m_bbox.h"
 #include "r_local.h"
@@ -252,4 +251,3 @@ void R_Init (void)
 }
 
 VERSION_CONTROL (r_main_cpp, "$Id$")
-

@@ -25,9 +25,7 @@
 #include "odamex.h"
 
 #include "m_random.h"
-#include "doomdef.h"
 #include "p_local.h"
-#include "doomstat.h"
 #include "r_state.h"
 #include "s_sound.h"
 
@@ -491,4 +489,3 @@ void EV_StopPlat (int tag)
 
 
 VERSION_CONTROL (p_plats_cpp, "$Id$")
-

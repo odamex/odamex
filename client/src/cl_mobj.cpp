@@ -25,10 +25,8 @@
 #include "odamex.h"
 
 #include "m_random.h"
-#include "doomdef.h"
 #include "p_local.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "v_video.h"
 #include "c_cvars.h"
 #include "c_effect.h"

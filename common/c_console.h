@@ -28,7 +28,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "doomdef.h"
 #include "d_event.h"
 #include "cmdlib.h"
 #include "d_player.h"
@@ -86,5 +85,3 @@ void C_RemoveTabCommand (const char *name);
 void C_RevealSecret ();
 
 #endif
-
-

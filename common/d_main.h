@@ -28,7 +28,6 @@
 #include <vector>
 #include <string>
 
-#include "doomstat.h"
 #include "d_event.h"
 #include "m_resfile.h"
 
@@ -81,5 +80,3 @@ void D_Init();
 void STACK_ARGS D_Shutdown();
 
 #endif
-
-

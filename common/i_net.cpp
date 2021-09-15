@@ -81,7 +81,6 @@ typedef int SOCKET;
 
 #include "i_system.h"
 
-#include "doomstat.h"
 #include "i_net.h"
 #include "svc_map.h"
 

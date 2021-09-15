@@ -26,7 +26,6 @@
 
 #include <cstring>
 
-#include "doomstat.h"
 #include "sc_man.h"
 #include "m_alloc.h"
 #include "m_random.h"

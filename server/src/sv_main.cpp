@@ -35,7 +35,6 @@
 #include <sys/time.h>
 #endif
 
-#include "doomstat.h"
 #include "gstrings.h"
 #include "d_player.h"
 #include "s_sound.h"

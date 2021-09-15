@@ -32,8 +32,6 @@
 #include <sstream>
 
 #include "cmdlib.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "cl_demo.h"
 #include "cl_main.h"
 #include "d_items.h"

@@ -28,7 +28,6 @@
 #include <sstream>
 #include <vector>
 
-#include "doomstat.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"

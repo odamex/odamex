@@ -26,7 +26,6 @@
 
 #include <stdio.h>
 
-#include "doomdef.h"
 #include "g_level.h"
 #include "z_zone.h"
 #include "st_stuff.h"
@@ -48,7 +47,6 @@
 #include "v_text.h"
 
 // State.
-#include "doomstat.h"
 #include "r_state.h"
 
 // Data.

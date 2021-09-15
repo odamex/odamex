@@ -29,7 +29,6 @@
 #include <cstddef>
 #include <cassert>
 
-#include "doomstat.h"
 #include "i_system.h"
 #include "v_video.h"
 #include "m_alloc.h"
@@ -1242,4 +1241,3 @@ void V_ResetPalette()
 
 
 VERSION_CONTROL (v_palette_cpp, "$Id$")
-

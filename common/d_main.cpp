@@ -45,7 +45,6 @@
 #include <stdlib.h>
 
 #include "m_alloc.h"
-#include "doomdef.h"
 #include "gstrings.h"
 #include "z_zone.h"
 #include "w_wad.h"

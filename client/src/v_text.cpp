@@ -35,7 +35,6 @@
 #include "w_wad.h"
 
 #include "hashtable.h"
-#include "doomstat.h"
 #include "cmdlib.h"
 
 EXTERN_CVAR(msg0color)

@@ -24,7 +24,6 @@
 
 #include "odamex.h"
 
-#include "doomstat.h"
 #include "p_local.h"
 #include "actor.h"
 #include "m_bbox.h"

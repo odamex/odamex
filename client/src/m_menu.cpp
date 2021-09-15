@@ -25,7 +25,6 @@
 
 #include "odamex.h"
 
-#include "doomdef.h"
 #include "gstrings.h"
 #include "c_console.h"
 #include "c_dispatch.h"
@@ -42,7 +41,6 @@
 #include "g_level.h"
 #include "m_random.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "m_menu.h"
 #include "v_text.h"
 #include "st_stuff.h"

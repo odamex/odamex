@@ -26,7 +26,6 @@
 #include <cstddef>
 
 #include "d_player.h"
-#include "doomstat.h"
 
 struct SerializedLevelState;
 

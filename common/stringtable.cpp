@@ -30,7 +30,6 @@
 #include <stddef.h>
 
 #include "cmdlib.h"
-#include "doomstat.h"
 #include "errors.h"
 #include "i_system.h"
 #include "m_swap.h"

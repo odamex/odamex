@@ -10,7 +10,6 @@
 #include "c_vote.h"
 #include "dobject.h"         
 #include "doomdata.h"        
-#include "doomdef.h"
 #include "doomkeys.h"        
 #include "doomstat.h"        
 #include "doomtype.h"        

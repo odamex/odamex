@@ -26,7 +26,6 @@
 #define __R_DEFS_H__
 
 // Screenwidth.
-#include "doomdef.h"
 
 // Some more or less basic data types
 // we depend on.
@@ -748,5 +747,3 @@ struct visplane_s
 typedef struct visplane_s visplane_t;
 
 #endif
-
-

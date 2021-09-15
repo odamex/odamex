@@ -26,8 +26,6 @@
 
 #include <cstring>
 
-#include "doomdef.h"
-#include "doomstat.h"
 #include "cmdlib.h"
 #include "d_netinf.h"
 #include "v_video.h"
@@ -263,4 +261,3 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 }
 
 VERSION_CONTROL (d_netinfo_cpp, "$Id$")
-

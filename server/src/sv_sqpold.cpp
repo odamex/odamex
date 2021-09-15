@@ -28,7 +28,6 @@
 #include <string>
 #include <vector>
 
-#include "doomstat.h"
 #include "d_main.h"
 #include "d_player.h"
 #include "i_system.h"

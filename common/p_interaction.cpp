@@ -25,9 +25,7 @@
 #include "odamex.h"
 
 // Data.
-#include "doomdef.h"
 #include "gstrings.h"
-#include "doomstat.h"
 #include "m_random.h"
 #include "i_system.h"
 #include "c_console.h"

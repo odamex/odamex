@@ -38,7 +38,6 @@
 #define SSE2_ALIGNED(x) x __attribute__((aligned(16)))
 #endif
 
-#include "doomdef.h"
 #include "i_system.h"
 #include "r_defs.h"
 #include "r_draw.h"

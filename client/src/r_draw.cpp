@@ -33,13 +33,11 @@
 #include "i_sdl.h"
 #include "r_intrin.h"
 
-#include "doomdef.h"
 #include "z_zone.h"
 #include "w_wad.h"
 #include "r_local.h"
 #include "i_video.h"
 #include "v_video.h"
-#include "doomstat.h"
 
 #include "gi.h"
 #include "v_text.h"
@@ -1661,4 +1659,3 @@ void R_InitColumnDrawers ()
 }
 
 VERSION_CONTROL (r_draw_cpp, "$Id$")
-

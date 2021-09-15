@@ -44,7 +44,6 @@
 #include "r_main.h"
 #include "st_stuff.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "cl_responderkeys.h"
 #include "cl_download.h"
 

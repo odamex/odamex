@@ -25,7 +25,6 @@
 #include "odamex.h"
 
 #include "gstrings.h"
-#include "doomstat.h"
 #include "c_cvars.h"
 #include "i_system.h"
 #include "p_acs.h"

@@ -32,7 +32,6 @@
 
 #include <algorithm>
 #include <functional>
-#include "doomstat.h"
 
 #include "i_video.h"
 #include "v_video.h"

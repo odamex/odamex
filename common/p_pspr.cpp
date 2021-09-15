@@ -27,7 +27,6 @@
 
 #include <stdlib.h>
 
-#include "doomdef.h"
 #include "d_event.h"
 
 #include "c_cvars.h"
@@ -40,7 +39,6 @@
 #include "svc_message.h"
 
 // State.
-#include "doomstat.h"
 #include "p_pspr.h"
 
 #include "p_unlag.h"

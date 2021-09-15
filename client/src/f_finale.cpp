@@ -39,7 +39,6 @@
 #include "w_wad.h"
 #include "s_sound.h"
 #include "gstrings.h"
-#include "doomstat.h"
 #include "r_state.h"
 #include "hu_stuff.h"
 

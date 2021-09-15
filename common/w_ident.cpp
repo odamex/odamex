@@ -33,7 +33,6 @@
 #include "m_fileio.h"
 #include "cmdlib.h"
 
-#include "doomstat.h"
 #include "gi.h"
 
 #include "w_ident.h"

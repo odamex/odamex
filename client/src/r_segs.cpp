@@ -32,8 +32,6 @@
 
 #include "i_system.h"
 
-#include "doomdef.h"
-#include "doomstat.h"
 
 #include "p_local.h"
 #include "r_local.h"
@@ -1092,4 +1090,3 @@ void R_ClearOpenings()
 }
 
 VERSION_CONTROL (r_segs_cpp, "$Id$")
-

@@ -33,7 +33,6 @@
 #include "c_dispatch.h"
 #include "v_palette.h"
 #include "sv_main.h"
-#include "doomstat.h"
 #include "gi.h"
 #include "v_textcolors.h"
 #include "svc_message.h"

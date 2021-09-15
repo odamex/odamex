@@ -29,7 +29,6 @@
 
 #include "m_bbox.h"
 
-#include "doomstat.h"
 #include "p_local.h"
 #include "r_data.h"
 
@@ -1197,4 +1196,3 @@ bool P_ActorInFOV(AActor* origin, AActor* mo , float f, fixed_t dist)
 }
 
 VERSION_CONTROL (p_maputl_cpp, "$Id$")
-

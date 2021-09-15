@@ -34,7 +34,6 @@
 #include "c_dispatch.h"
 #include "m_argv.h"
 #include "m_fileio.h"
-#include "doomstat.h"
 #include "m_alloc.h"
 #include "d_player.h"
 #include "r_defs.h"

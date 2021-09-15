@@ -33,7 +33,6 @@
 
 #include "win32inc.h"
 
-#include "doomdef.h"
 #include "i_system.h"
 #include "cmdlib.h"
 #include <map>

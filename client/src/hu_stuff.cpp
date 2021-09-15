@@ -28,12 +28,10 @@
 #include <iterator>
 #include <sstream>
 
-#include "doomdef.h"
 #include "z_zone.h"
 #include "hu_stuff.h"
 #include "w_wad.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "st_stuff.h"
 #include "c_bind.h"
 #include "c_console.h"

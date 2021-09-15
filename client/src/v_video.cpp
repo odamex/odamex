@@ -34,8 +34,6 @@
 #include "r_draw.h"
 #include "r_state.h"
 
-#include "doomdef.h"
-#include "doomstat.h"
 #include "d_main.h"
 
 #include "c_console.h"

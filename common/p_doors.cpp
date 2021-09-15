@@ -25,11 +25,9 @@
 
 #include "odamex.h"
 
-#include "doomdef.h"
 #include "p_local.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
-#include "doomstat.h"
 #include "r_state.h"
 
 #include "p_spec.h"
@@ -504,4 +502,3 @@ void P_SpawnDoorRaiseIn5Mins (sector_t *sec)
 }
 
 VERSION_CONTROL (p_doors_cpp, "$Id$")
-

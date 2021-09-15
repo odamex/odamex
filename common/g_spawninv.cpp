@@ -30,7 +30,6 @@
 
 #include "c_dispatch.h"
 #include "cmdlib.h"
-#include "doomstat.h"
 
 EXTERN_CVAR(g_spawninv);
 

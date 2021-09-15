@@ -33,7 +33,6 @@
 #include "cl_main.h"
 #include "d_event.h"
 #include "d_main.h"
-#include "doomstat.h"
 #include "f_finale.h"
 #include "g_level.h"
 #include "g_game.h"

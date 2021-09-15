@@ -29,7 +29,6 @@
 #include <cstring>
 #include <stddef.h>
 
-#include "doomstat.h"
 #include "info.h"
 #include "d_dehacked.h"
 #include "s_sound.h"

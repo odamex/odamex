@@ -40,7 +40,6 @@
 #include "cmdlib.h"
 #include "d_main.h"
 #include "d_player.h"
-#include "doomstat.h"
 #include "g_gametype.h"
 #include "g_level.h"
 #include "g_levelstate.h"

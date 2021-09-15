@@ -33,7 +33,6 @@
 #include "i_sdl.h"
 #include "win32inc.h"
 
-#include "doomstat.h"
 #include "m_argv.h"
 #include "i_input.h"
 #include "i_video.h"

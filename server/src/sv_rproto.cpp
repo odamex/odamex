@@ -24,7 +24,6 @@
 
 #include "odamex.h"
 
-#include "doomstat.h"
 #include "p_local.h"
 #include "sv_main.h"
 #include "huffman.h"
@@ -302,4 +301,3 @@ void SV_AcknowledgePacket(player_t &player)
 }
 
 VERSION_CONTROL (sv_rproto_cpp, "$Id$")
-

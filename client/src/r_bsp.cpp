@@ -26,7 +26,6 @@
 
 #include <math.h>
 #include "m_alloc.h"
-#include "doomdef.h"
 #include "m_bbox.h"
 #include "i_system.h"
 #include "r_main.h"
@@ -37,7 +36,6 @@
 #include "m_vectors.h"
 
 // State.
-#include "doomstat.h"
 #include "r_state.h"
 #include "v_palette.h"
 
@@ -770,4 +768,3 @@ void R_RenderBSPNode (int bspnum)
 
 
 VERSION_CONTROL (r_bsp_cpp, "$Id$")
-

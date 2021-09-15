@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "doomdef.h"
 #include "m_ostring.h"
 #include "cmdlib.h"
 #include "c_dispatch.h"

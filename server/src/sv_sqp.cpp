@@ -28,7 +28,6 @@
 
 #include "sv_sqp.h"
 
-#include "doomstat.h"
 #include "d_main.h"
 #include "d_player.h"
 #include "md5.h"

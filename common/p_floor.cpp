@@ -24,11 +24,9 @@
 
 #include "odamex.h"
 
-#include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "r_state.h"
 #include "tables.h"
 
@@ -1064,4 +1062,3 @@ BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 }
 
 VERSION_CONTROL (p_floor_cpp, "$Id$")
-

@@ -26,7 +26,6 @@
 
 #include <stdio.h>
 
-#include "doomstat.h"
 #include "d_player.h"
 #include "sv_master.h"
 #include "c_dispatch.h"
@@ -270,4 +269,3 @@ void SV_UpdateMaster(void)
 }
 
 VERSION_CONTROL (sv_master_cpp, "$Id$")
-
