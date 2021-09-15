@@ -523,9 +523,9 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		}
 		else
 		{
-			const char* gfx = std::strtok(lname, "\n");
-			const char* txt = std::strtok(NULL, "\n");
-			const char* alpha = std::strtok(NULL, "\n");
+			const char* gfx = strtok(lname, "\n");
+			const char* txt = strtok(NULL, "\n");
+			const char* alpha = strtok(NULL, "\n");
 
 			if (episodenum >= 8)
 			{
