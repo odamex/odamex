@@ -46,6 +46,7 @@
 #include "s_sound.h"
 #include "cl_responderkeys.h"
 #include "cl_download.h"
+#include "m_fileio.h"
 
 #include <string>
 #include <list>

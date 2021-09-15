@@ -31,6 +31,8 @@
 #include "d_event.h"
 #include "m_resfile.h"
 
+extern std::string LOG_FILE;
+
 //
 // D_DoomMain()
 // Not a globally visible function, just included for source reference,

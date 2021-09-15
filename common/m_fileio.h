@@ -31,6 +31,11 @@
 
 #include "d_main.h"
 
+#include <fstream>
+
+extern std::ofstream LOG;
+extern std::ifstream CON;
+
 void M_ExpandHomeDir(std::string& path);
 std::string M_FindUserFileName(const std::string& file, const char* ext);
 void M_FixPathSep(std::string& path);
