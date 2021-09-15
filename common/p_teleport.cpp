@@ -23,9 +23,10 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <stdlib.h>
 
-#include "doomtype.h"
 #include "doomdef.h"
 #include "doomstat.h"
 

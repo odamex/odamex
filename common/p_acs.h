@@ -4,7 +4,6 @@
 #define __P_ACS_H__
 
 #include "dobject.h"
-#include "doomtype.h"
 #include "r_defs.h"
 
 #define LOCAL_SIZE	20

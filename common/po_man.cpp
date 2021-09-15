@@ -23,6 +23,8 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include "odamex.h"
+
 #include "doomdef.h"
 #include "p_local.h"
 #include "r_local.h"

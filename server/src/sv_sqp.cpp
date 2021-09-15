@@ -20,12 +20,14 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <string>
 #include <vector>
 
 #include "sv_sqp.h"
 
-#include "doomtype.h"
 #include "doomstat.h"
 #include "d_main.h"
 #include "d_player.h"

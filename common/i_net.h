@@ -25,7 +25,6 @@
 #ifndef __I_NET_H__
 #define __I_NET_H__
 
-#include "doomtype.h"
 #include "huffman.h"
 
 #include <string>

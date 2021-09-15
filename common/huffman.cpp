@@ -80,6 +80,9 @@
 * marcus.geelnard at home.se
 *************************************************************************/
 
+
+#include "odamex.h"
+
 #include "version.h"
 #include "huffman.h"
 

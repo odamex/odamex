@@ -27,7 +27,6 @@
 
 #include <string>
 
-#include "doomtype.h"
 
 void M_LoadDefaults(void);
 

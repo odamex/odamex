@@ -22,6 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "doomdef.h"
 #include "doomkeys.h"
 #include "cl_responderkeys.h"

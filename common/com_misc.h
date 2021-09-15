@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "doomtype.h"
 
 #include <string>
 

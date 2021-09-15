@@ -22,6 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "stringenums.h"
 
 #include "hashtable.h"

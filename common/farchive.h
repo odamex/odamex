@@ -25,7 +25,6 @@
 #ifndef __DARCHIVE_H__
 #define __DARCHIVE_H__
 
-#include "doomtype.h"
 #include "dobject.h"
 
 #include <string>

@@ -25,6 +25,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "doomstat.h"
 #include "m_fixed.h"
 #include "r_data.h"

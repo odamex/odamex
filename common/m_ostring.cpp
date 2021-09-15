@@ -24,7 +24,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomtype.h"
+
+#include "odamex.h"
+
 #include "m_ostring.h"
 
 #include <cstddef>

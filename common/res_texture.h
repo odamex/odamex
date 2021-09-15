@@ -25,7 +25,6 @@
 #ifndef __RES_TEXTURE_H__
 #define __RES_TEXTURE_H__
 
-#include "doomtype.h"
 #include "m_fixed.h"
 
 #include <vector>

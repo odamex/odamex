@@ -23,6 +23,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <stddef.h>
 #include <assert.h>
 #include <algorithm>

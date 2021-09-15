@@ -20,6 +20,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "i_sdl.h"
 #include "r_intrin.h"
 
@@ -36,7 +39,6 @@
 #define MMX_ALIGNED(x) x __attribute__((aligned(8)))
 #endif
 
-#include "doomtype.h"
 #include "r_main.h"
 #include "i_video.h"
 

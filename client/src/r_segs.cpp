@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <stdio.h>
 #include <stddef.h>
 #include <math.h>

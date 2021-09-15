@@ -33,7 +33,6 @@
 #include <utility>
 #include <vector>
 
-#include "doomtype.h"
 #include "hashtable.h"
 #include "m_ostring.h"
 #include "stringenums.h"

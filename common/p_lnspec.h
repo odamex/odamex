@@ -25,7 +25,6 @@
 #ifndef __P_LNSPEC_H__
 #define __P_LNSPEC_H__
 
-#include "doomtype.h"
 #include "r_defs.h"
 
 typedef enum {

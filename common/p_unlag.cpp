@@ -34,6 +34,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "doomdef.h"
 #include "doomstat.h"
 #include "m_vectors.h"

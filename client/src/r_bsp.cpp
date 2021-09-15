@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <math.h>
 #include "m_alloc.h"
 #include "doomdef.h"

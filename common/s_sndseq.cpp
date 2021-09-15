@@ -21,9 +21,11 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <cstring>
 
-#include "doomtype.h"
 #include "doomstat.h"
 #include "sc_man.h"
 #include "m_alloc.h"

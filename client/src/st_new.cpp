@@ -23,6 +23,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -30,7 +32,6 @@
 #include <sstream>
 
 #include "cmdlib.h"
-#include "doomtype.h"
 #include "doomdef.h"
 #include "doomstat.h"
 #include "cl_demo.h"

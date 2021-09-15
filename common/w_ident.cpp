@@ -22,7 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomtype.h"
+
+#include "odamex.h"
+
 #include "hashtable.h"
 #include "sarray.h"
 #include "m_ostring.h"

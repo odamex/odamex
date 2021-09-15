@@ -22,9 +22,10 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <stdio.h>
 
-#include "doomtype.h"
 #include "doomstat.h"
 #include "d_player.h"
 #include "sv_master.h"

@@ -24,6 +24,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <math.h>
 #include <limits.h>
 #include "doomdef.h"

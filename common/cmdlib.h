@@ -38,7 +38,6 @@
 #pragma warning(disable : 4305)     // truncate from double to float
 #endif
 
-#include "doomtype.h"
 
 #include <stdio.h>
 #include <cstring>

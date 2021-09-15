@@ -22,6 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "c_cvars.h"
 #include "d_player.h"
 #include "doomdef.h"

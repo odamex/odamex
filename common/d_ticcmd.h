@@ -24,7 +24,6 @@
 #ifndef __D_TICCMD_H__
 #define __D_TICCMD_H__
 
-#include "doomtype.h"
 #include "farchive.h"
 
 // The data sampled per tick (single player)

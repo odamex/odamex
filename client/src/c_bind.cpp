@@ -22,10 +22,11 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "doomtype.h"
 #include "doomdef.h"
 #include "m_ostring.h"
 #include "cmdlib.h"

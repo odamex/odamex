@@ -32,6 +32,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "doomstat.h"

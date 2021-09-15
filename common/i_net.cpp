@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 /* [Petteri] Check if compiling for Win32:	*/
 //#if defined(__WINDOWS__) || defined(__NT__) || defined(_MSC_VER) || defined(WIN32)
 //#	define WIN32
@@ -76,7 +78,6 @@ typedef int SOCKET;
 
 #include <google/protobuf/message.h>
 
-#include "doomtype.h"
 
 #include "i_system.h"
 

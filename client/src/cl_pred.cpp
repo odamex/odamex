@@ -22,7 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomtype.h"
+#include "odamex.h"
+
 #include "doomstat.h"
 #include "d_player.h"
 #include "p_local.h"

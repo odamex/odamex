@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 // Data.
 #include "doomdef.h"
 #include "gstrings.h"

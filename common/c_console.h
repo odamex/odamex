@@ -28,7 +28,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "doomtype.h"
 #include "doomdef.h"
 #include "d_event.h"
 #include "cmdlib.h"

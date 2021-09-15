@@ -22,6 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "doomdef.h"
 #include "gstrings.h"
 #include "c_console.h"

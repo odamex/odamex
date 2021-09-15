@@ -20,6 +20,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "i_sdl.h"
 #include "r_intrin.h"
 
@@ -35,7 +38,6 @@
 #define SSE2_ALIGNED(x) x __attribute__((aligned(16)))
 #endif
 
-#include "doomtype.h"
 #include "doomdef.h"
 #include "i_system.h"
 #include "r_defs.h"

@@ -22,6 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <limits>
 
 #include "i_sdl.h" 
@@ -72,7 +75,6 @@
 
 #include "errors.h"
 
-#include "doomtype.h"
 #include "w_wad.h"
 #include "version.h"
 #include "cmdlib.h"

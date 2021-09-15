@@ -29,7 +29,6 @@
 
 #include <stdio.h>
 
-#include "doomtype.h"
 #include "d_main.h"
 
 void M_ExpandHomeDir(std::string& path);

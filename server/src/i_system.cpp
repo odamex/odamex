@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <sstream>
 #include <limits>
 
@@ -56,7 +59,6 @@
 
 #include "errors.h"
 
-#include "doomtype.h"
 #include "version.h"
 #include "cmdlib.h"
 #include "m_argv.h"

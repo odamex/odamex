@@ -26,7 +26,6 @@
 #define __M_ARGV_H__
 
 #include "dobject.h"
-#include "doomtype.h"
 
 #include <string>
 #include <vector>

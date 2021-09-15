@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <cstring>
 #include <cmath>
 #include <exception>

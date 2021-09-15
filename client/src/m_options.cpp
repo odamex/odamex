@@ -27,6 +27,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "doomdef.h"
 #include "gstrings.h"
 #include "minilzo.h"

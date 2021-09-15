@@ -22,6 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "version.h"
 #include "minilzo.h"
 #include "m_alloc.h"

@@ -21,7 +21,10 @@
 //
 //-----------------------------------------------------------------------------
 
+
 #if defined UNIX && !defined GCONSOLE
+
+#include "odamex.h"
 
 #define CRASH_DIR_LEN 1024
 

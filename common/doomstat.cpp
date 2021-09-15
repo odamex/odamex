@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "gstrings.h"
 #include "doomstat.h"
 #include "c_cvars.h"

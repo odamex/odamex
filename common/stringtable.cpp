@@ -20,7 +20,9 @@
 //	String Abstraction Layer (StringTable)
 //
 //-----------------------------------------------------------------------------
-//
+
+
+#include "odamex.h"
 
 #include "stringtable.h"
 

@@ -27,7 +27,6 @@
 #include <cstring>
 #include <list>
 #include <vector>
-#include "doomtype.h"
 #include "m_memio.h"
 
 typedef enum

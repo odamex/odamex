@@ -3,6 +3,7 @@
 //
 // $Id$
 //
+// Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -16,15 +17,25 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Query protocol for server
+//     This header must be included first by all Odamex/Odasrv TU's.
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __SV_SQP_H__
-#define __SV_SQP_H__
+#pragma once
 
-#include "version.h"
+#if defined(_MSC_VER)
+	#if _MSC_VER >= 1600
+		#define USE_STDINT_H
+	#endif
+#else
+	#define USE_STDINT_H
+#endif
 
-DWORD SV_QryParseEnquiry(const DWORD &Tag);
+#if defined(USE_STDINT_H)
+	#include <stdint.h>
+	#undef USE_STDINT_H
+#else
+	#include "pstdint.h"
+#endif
 
-#endif // __SV_SQP_H__
+#include "doomtype.h"

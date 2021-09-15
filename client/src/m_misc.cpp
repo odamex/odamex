@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <cstdio>
 #include <ctime>
 #include <string>
@@ -31,7 +33,6 @@
 #include "c_bind.h"
 #include "c_cvars.h"
 #include "c_dispatch.h"
-#include "doomtype.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"

@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "win32inc.h"
 #ifdef _WIN32
     #include <winsock.h>
@@ -32,7 +35,6 @@
 #include <sys/time.h>
 #endif
 
-#include "doomtype.h"
 #include "doomstat.h"
 #include "gstrings.h"
 #include "d_player.h"

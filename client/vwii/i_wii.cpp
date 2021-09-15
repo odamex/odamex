@@ -39,7 +39,6 @@
 #endif
 
 #include "i_wii.h"
-#include "doomtype.h"
 
 // External function declarations
 extern "C" { extern void __exception_setreload(int t); }

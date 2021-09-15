@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "version.h"
 
 #ifndef ODAMEX_NO_GITVER

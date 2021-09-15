@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #ifdef UNIX
 #include <ctype.h>
 #include <cstring>
@@ -38,7 +40,6 @@
 
 #include <fcntl.h>
 
-#include "doomtype.h"
 #include "m_swap.h"
 #include "m_fileio.h"
 #include "i_system.h"

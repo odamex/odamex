@@ -27,7 +27,6 @@
 
 #include <string>
 
-#include "doomtype.h"
 #include "hashtable.h"
 #include "d_event.h"
 #include <stdio.h>

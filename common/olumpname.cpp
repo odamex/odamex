@@ -20,9 +20,11 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "olumpname.h"
 
-#include "doomtype.h"
 
 #include <cstring>
 #include <stdexcept>

@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "m_alloc.h"
 #include "i_system.h"
 #include "s_sound.h"

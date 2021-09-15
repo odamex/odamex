@@ -27,7 +27,6 @@
 //Uncomment to allow for latency simulation - see sv_latency in sv_cvarlist.cpp
 //Note: When compiling for linux you will have link against pthread manually
 //#define SIMULATE_LATENCY
-#include "doomtype.h"
 #include "tarray.h"
 
 #include <cfloat>

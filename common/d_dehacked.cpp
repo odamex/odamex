@@ -22,12 +22,13 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstring>
 #include <stddef.h>
 
-#include "doomtype.h"
 #include "doomstat.h"
 #include "info.h"
 #include "d_dehacked.h"

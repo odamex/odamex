@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "c_cvars.h"
 
 #ifdef SIMULATE_LATENCY

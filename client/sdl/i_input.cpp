@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 // SoM 12-24-05: yeah... I'm programming on christmas eve.
 // Removed all the DirectX crap.
 

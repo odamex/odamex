@@ -25,7 +25,6 @@
 #ifndef __W_WAD__
 #define __W_WAD__
 
-#include "doomtype.h"
 #include "z_zone.h"
 #include "r_defs.h"
 #include "m_resfile.h"

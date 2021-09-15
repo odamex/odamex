@@ -23,6 +23,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <math.h>
 #include "m_random.h"
 #include "m_alloc.h"

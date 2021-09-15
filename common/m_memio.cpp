@@ -31,11 +31,13 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <cstring>
 
 #include "m_memio.h"
 
-#include "doomtype.h"
 #include "z_zone.h"
 
 typedef enum {

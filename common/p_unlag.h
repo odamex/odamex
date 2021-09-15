@@ -30,7 +30,6 @@
 
 #include <vector>
 #include <map>
-#include "doomtype.h"
 #include "m_fixed.h"
 #include "actor.h"
 #include "d_player.h"

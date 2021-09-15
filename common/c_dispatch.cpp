@@ -21,12 +21,14 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <string>
 #include <vector>
 #include <sstream>
 #include <algorithm>
 
-#include "doomtype.h"
 #include "cmdlib.h"
 #include "c_console.h"
 #include "c_dispatch.h"

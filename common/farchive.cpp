@@ -22,12 +22,13 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <stdio.h>
 #include <stddef.h>
 #include <cstring>
 #include <algorithm>
 
-#include "doomtype.h"
 #include "farchive.h"
 #include "m_alloc.h"
 #include "m_swap.h"

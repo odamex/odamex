@@ -23,6 +23,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <stdlib.h>
 #include <math.h>
 #include "doomstat.h"

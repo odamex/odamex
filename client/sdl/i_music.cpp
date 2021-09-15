@@ -20,6 +20,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <stdio.h>
 
 #include "win32inc.h"
@@ -33,7 +36,6 @@
 	#endif
 #endif
 
-#include "doomtype.h"
 #include "m_argv.h"
 #include "i_music.h"
 #include "i_system.h"

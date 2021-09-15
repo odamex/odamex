@@ -23,7 +23,6 @@
 #pragma once
 
 #include "i_sdl.h"
-#include "doomtype.h"
 #include "i_input.h"
 
 #include "d_event.h"

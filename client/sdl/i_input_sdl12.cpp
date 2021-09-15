@@ -20,9 +20,11 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "i_input_sdl12.h"
 
-#include "doomtype.h"
 #include "c_cvars.h"
 #include "i_sdl.h" 
 #include "i_input.h"

@@ -21,7 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomtype.h"
+
+#include "odamex.h"
+
 #include "doomstat.h"
 #include "p_local.h"
 #include "sv_main.h"

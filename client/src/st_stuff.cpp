@@ -24,6 +24,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "i_video.h"
 #include "z_zone.h"
 #include "m_random.h"

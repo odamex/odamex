@@ -23,7 +23,6 @@
 
 #pragma once
 
-#include "doomtype.h"
 #include "doomdef.h"
 #include "cmdlib.h"
 #include "m_fixed.h"

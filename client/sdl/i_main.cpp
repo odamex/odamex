@@ -23,6 +23,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 // denis - todo - remove
 #include "win32inc.h"
 #ifdef _WIN32
@@ -56,7 +58,6 @@
 
 #include "errors.h"
 
-#include "doomtype.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "d_main.h"

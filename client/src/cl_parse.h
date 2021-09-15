@@ -27,7 +27,6 @@
 #include <string>
 #include <vector>
 
-#include "doomtype.h"
 
 enum parseError_e
 {

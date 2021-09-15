@@ -21,11 +21,14 @@
 //
 //-----------------------------------------------------------------------------
 
+
 #if defined(UNIX)
 
 #if defined(_WIN32)
 #error "UNIX is mutually exclusive with _WIN32"
 #endif
+
+#include "odamex.h"
 
 #include "m_fileio.h"
 

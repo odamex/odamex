@@ -20,7 +20,9 @@
 //	[RH] p_acs.c: New file to handle ACS scripts
 //
 //-----------------------------------------------------------------------------
-//
+
+
+#include "odamex.h"
 
 #include "z_zone.h"
 #include "doomdef.h"

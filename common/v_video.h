@@ -28,7 +28,6 @@
 
 #include <string>
 
-#include "doomtype.h"
 #include "v_palette.h"
 #include "doomdef.h"
 #include "m_vectors.h"
