@@ -28,8 +28,6 @@
 #include <limits>
 
 #include <stdlib.h>
-#include <stdio.h>
-#include <cstring>
 #include <stdarg.h>
 
 #ifdef OSX

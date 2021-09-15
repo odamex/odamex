@@ -24,7 +24,6 @@
 #define __I_MIDI_H__
 
 #include <stdlib.h>
-#include <cstring>
 #include <list>
 #include "m_memio.h"
 

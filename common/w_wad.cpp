@@ -26,7 +26,6 @@
 
 #ifdef UNIX
 #include <ctype.h>
-#include <cstring>
 #ifndef O_BINARY
 #define O_BINARY		0
 #endif

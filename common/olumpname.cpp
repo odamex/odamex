@@ -26,7 +26,6 @@
 #include "olumpname.h"
 
 
-#include <cstring>
 #include <stdexcept>
 
 // private functions

@@ -25,7 +25,6 @@
 #ifndef __C_CONSOLE__
 #define __C_CONSOLE__
 
-#include <stdio.h>
 #include <stdarg.h>
 
 #include "d_event.h"

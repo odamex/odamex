@@ -27,11 +27,9 @@
 #ifndef __M_OSTRING_H__
 #define __M_OSTRING_H__
 
-#include <cstddef>
 #include <iostream>
 #include <memory>
 #include <cassert>
-#include <stdio.h>
 
 #include "sarray.h"
 #include "hashtable.h"

@@ -37,8 +37,6 @@
 #endif
 
 
-#include <stdio.h>
-#include <cstring>
 #include <stdlib.h>
 #include <errno.h>
 #include <ctype.h>

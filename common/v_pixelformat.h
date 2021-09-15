@@ -23,7 +23,6 @@
 #ifndef __V_PIXELFORMAT_H___
 #define __V_PIXELFORMAT_H___
 
-#include <cstring>
 
 
 // ============================================================================

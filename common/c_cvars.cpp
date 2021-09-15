@@ -24,10 +24,8 @@
 
 #include "odamex.h"
 
-#include <cstring>
 #include <cmath>
 #include <exception>
-#include <stdio.h>
 
 #include "cmdlib.h"
 #include "c_console.h"

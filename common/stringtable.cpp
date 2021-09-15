@@ -26,8 +26,6 @@
 
 #include "stringtable.h"
 
-#include <cstring>
-#include <stddef.h>
 
 #include "cmdlib.h"
 #include "i_system.h"

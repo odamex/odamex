@@ -23,7 +23,6 @@
 #ifndef __G_LEVELSTATE_H__
 #define __G_LEVELSTATE_H__
 
-#include <cstddef>
 
 #include "d_player.h"
 

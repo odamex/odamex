@@ -34,7 +34,6 @@
 
 #include "odamex.h"
 
-#include <cstring>
 
 #include "m_memio.h"
 
@@ -221,5 +220,3 @@ char *mem_fgetbuf(MEMFILE *stream) // [Russell] - return stream buffer
 }
 
 VERSION_CONTROL (memio_cpp, "$Id$")
-
-

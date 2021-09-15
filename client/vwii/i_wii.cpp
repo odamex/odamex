@@ -22,9 +22,7 @@
 //-----------------------------------------------------------------------------
 #ifdef GEKKO
 
-#include <cstdio>
 #include <cstdlib>
-#include <cstring>
 
 #include <wiiuse/wpad.h>
 #include <gccore.h>

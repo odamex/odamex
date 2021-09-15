@@ -24,7 +24,6 @@
 
 #include "odamex.h"
 
-#include <stdio.h>
 
 #include "d_player.h"
 #include "sv_master.h"

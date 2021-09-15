@@ -31,8 +31,6 @@
 /* Follow #ifdef __WIN32__ marks */
 
 #include <stdlib.h>
-#include <cstring>
-#include <stdio.h>
 
 #include <sstream>
 

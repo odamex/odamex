@@ -24,7 +24,6 @@
 
 #include "odamex.h"
 
-#include <cstring>
 
 #include "cmdlib.h"
 #include "d_netinf.h"

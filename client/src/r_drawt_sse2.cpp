@@ -29,7 +29,6 @@
 #ifdef __SSE2__
 
 #include <assert.h>
-#include <stdio.h>
 #include <emmintrin.h>
 
 #ifdef _MSC_VER

@@ -29,7 +29,6 @@
 
 #include "m_ostring.h"
 
-#include <cstddef>
 
 // initialize static member variables
 bool OString::mInitialized = false;

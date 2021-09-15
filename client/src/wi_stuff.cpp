@@ -25,7 +25,6 @@
 #include "odamex.h"
 
 #include <ctype.h>
-#include <stdio.h>
 
 #include "z_zone.h"
 #include "m_random.h"

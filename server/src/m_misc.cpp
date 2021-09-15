@@ -25,7 +25,6 @@
 
 #include "odamex.h"
 
-#include <stdio.h>
 
 #include "c_dispatch.h"
 #include "m_argv.h"

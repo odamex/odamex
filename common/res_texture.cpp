@@ -34,7 +34,6 @@
 #include "cmdlib.h"
 #include "oscanner.h"
 
-#include <cstring>
 #include <algorithm>
 #include <math.h>
 

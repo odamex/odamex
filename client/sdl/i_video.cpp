@@ -24,7 +24,6 @@
 
 #include "odamex.h"
 
-#include <cstdio>
 #include <cstdlib>
 #include <climits>
 #include <algorithm>

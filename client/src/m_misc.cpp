@@ -24,7 +24,6 @@
 
 #include "odamex.h"
 
-#include <cstdio>
 #include <ctime>
 #include <sstream>
 

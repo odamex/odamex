@@ -24,7 +24,6 @@
 
 #include "odamex.h"
 
-#include <stdio.h>
 #include <ctype.h>
 
 #include "v_text.h"

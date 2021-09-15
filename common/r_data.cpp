@@ -44,7 +44,6 @@
 #include "v_video.h"
 
 #include <ctype.h>
-#include <cstddef>
 
 #include <algorithm>
 

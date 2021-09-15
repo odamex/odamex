@@ -26,7 +26,6 @@
 
 #include "f_finale.h"
 
-#include <stdio.h>
 #include <ctype.h>
 #include <math.h>
 

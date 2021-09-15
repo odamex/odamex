@@ -31,8 +31,6 @@
 #include "i_crash.h"
 
 #include <signal.h>
-#include <stdio.h>
-#include <string.h>
 
 #include <execinfo.h>
 #include <fcntl.h>
@@ -190,7 +188,6 @@ void I_SetCrashDir(const char* crashdir)
 
 #include <switch.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 extern "C"
 {

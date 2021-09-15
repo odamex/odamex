@@ -30,7 +30,6 @@
 
 // NOTE(jsd): Do not consider MMX deprecated so lightly. The XBOX and other older systems still make use of it.
 
-#include <stdio.h>
 #include <mmintrin.h>
 
 #ifdef _MSC_VER

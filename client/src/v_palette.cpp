@@ -24,9 +24,7 @@
 
 #include "odamex.h"
 
-#include <cstring>
 #include <math.h>
-#include <cstddef>
 #include <cassert>
 
 #include "i_system.h"

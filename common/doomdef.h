@@ -25,9 +25,6 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <cstring>
-
 // GhostlyDeath -- MSVC++ 8+, remove "deprecated" warnings
 #if _MSC_VER >= 1400
 #pragma warning(disable : 4996)

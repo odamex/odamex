@@ -39,7 +39,6 @@
 #endif
 
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "i_crash.h"
 #include "m_argv.h"

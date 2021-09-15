@@ -26,7 +26,6 @@
 #include "i_video_sdl20.h"
 
 #include "i_sdl.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <cassert>
 

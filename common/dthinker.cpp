@@ -26,7 +26,6 @@
 
 #include "odamex.h"
 
-#include <stdio.h>
 
 #include "dthinker.h"
 #include "z_zone.h"

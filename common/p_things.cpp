@@ -23,7 +23,6 @@
 
 #include "odamex.h"
 
-#include <stdio.h>
 
 #include "p_local.h"
 #include "c_effect.h"

@@ -25,7 +25,6 @@
 
 #include "odamex.h"
 
-#include <stdio.h>
 #include <assert.h>
 
 #include "i_system.h"

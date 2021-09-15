@@ -24,7 +24,6 @@
 
 #include "odamex.h"
 
-#include <stdio.h>
 
 #include "v_video.h"
 #include "c_dispatch.h"
@@ -101,4 +100,3 @@ END_COMMAND (stat)
 
 
 VERSION_CONTROL (stats_cpp, "$Id$")
-

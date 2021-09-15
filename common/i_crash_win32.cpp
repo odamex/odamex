@@ -39,7 +39,6 @@
 #include <exception>
 #include <new.h>
 #include <signal.h>
-#include <stdio.h>
 
 #include "win32inc.h"
 #include <DbgHelp.h>

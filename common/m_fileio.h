@@ -25,7 +25,6 @@
 #define __M_FILEIO__
 
 
-#include <stdio.h>
 
 #include "d_main.h"
 

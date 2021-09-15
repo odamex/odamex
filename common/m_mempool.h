@@ -29,7 +29,6 @@
 #ifndef __M_MEMPOOL__
 #define __M_MEMPOOL__
 
-#include <cstring>
 
 template <typename T>
 class Pool

@@ -24,7 +24,6 @@
 
 #include "odamex.h"
 
-#include <stdio.h>
 
 #include "z_zone.h"
 #include "st_stuff.h"

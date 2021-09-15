@@ -23,7 +23,6 @@
 #ifndef __OLUMPNAME_H__
 #define __OLUMPNAME_H__
 
-#include <stddef.h>
 
 class OLumpName
 {

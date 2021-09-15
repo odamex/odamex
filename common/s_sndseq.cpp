@@ -24,7 +24,6 @@
 
 #include "odamex.h"
 
-#include <cstring>
 
 #include "sc_man.h"
 #include "m_alloc.h"

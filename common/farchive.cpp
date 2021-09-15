@@ -24,9 +24,6 @@
 
 #include "odamex.h"
 
-#include <stdio.h>
-#include <stddef.h>
-#include <cstring>
 #include <algorithm>
 
 #include "farchive.h"

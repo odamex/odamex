@@ -24,7 +24,6 @@
 
 #include "odamex.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #include "i_system.h"
@@ -89,4 +88,3 @@ void M_Free2 (void **memblock)
 }
 
 VERSION_CONTROL (m_alloc_cpp, "$Id$")
-
