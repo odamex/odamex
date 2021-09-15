@@ -39,7 +39,6 @@
 #include "d_main.h"
 #include "c_bind.h"
 #include "c_console.h"
-#include "c_cvars.h"
 #include "i_system.h"
 #include "hu_stuff.h"
 

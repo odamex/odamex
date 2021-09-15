@@ -27,7 +27,6 @@
 #include <stdarg.h>
 
 #include "actor.h"
-#include "c_cvars.h"
 #include "cmdlib.h"
 #include "p_ctf.h"
 #include "d_player.h"

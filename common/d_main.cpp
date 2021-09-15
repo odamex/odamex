@@ -25,7 +25,6 @@
 
 #include "odamex.h"
 
-#include "version.h"
 
 #include <sstream>
 #include <algorithm>

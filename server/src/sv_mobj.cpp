@@ -27,7 +27,6 @@
 #include "m_random.h"
 #include "p_local.h"
 #include "s_sound.h"
-#include "c_cvars.h"
 #include "m_vectors.h"
 #include "sv_main.h"
 #include "p_acs.h"

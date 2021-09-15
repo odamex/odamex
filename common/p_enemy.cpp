@@ -34,7 +34,6 @@
 #include "p_lnspec.h"
 #include "s_sound.h"
 #include "r_state.h"
-#include "c_cvars.h"
 #include "gi.h"
 #include "p_mobj.h"
 

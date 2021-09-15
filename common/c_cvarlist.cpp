@@ -24,7 +24,6 @@
 
 #include "odamex.h"
 
-#include "c_cvars.h"
 
 // Server settings
 // ---------------

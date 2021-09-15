@@ -27,7 +27,6 @@
 #include <algorithm>
 #include <sstream>
 
-#include "c_cvars.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "m_fixed.h"

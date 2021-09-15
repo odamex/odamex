@@ -25,7 +25,6 @@
 #ifndef __I_VIDEO_H__
 #define __I_VIDEO_H__
 
-#include "m_swap.h"
 #include "v_pixelformat.h"
 
 #include <cassert>

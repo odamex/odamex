@@ -25,7 +25,6 @@
 
 #include "odamex.h"
 
-#include "c_cvars.h"
 #include "d_player.h"
 #include "v_palette.h"
 

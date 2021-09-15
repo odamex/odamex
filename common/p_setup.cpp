@@ -34,7 +34,6 @@
 #include "m_vectors.h"
 #include "m_argv.h"
 #include "z_zone.h"
-#include "m_swap.h"
 #include "m_bbox.h"
 #include "g_game.h"
 #include "i_system.h"

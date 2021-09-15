@@ -33,11 +33,9 @@
 
 #include "odamex.h"
 
-#include "version.h"
 
 #include "m_memio.h"
 #include "mus2midi.h"
-#include "m_swap.h"
 
 // MUS event codes
 typedef enum 

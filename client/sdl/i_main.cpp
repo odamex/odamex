@@ -56,7 +56,6 @@
 #undef main
 #endif // WIN32
 
-#include "errors.h"
 
 #include "m_argv.h"
 #include "m_fileio.h"
@@ -64,7 +63,6 @@
 #include "i_system.h"
 #include "c_console.h"
 #include "z_zone.h"
-#include "version.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"

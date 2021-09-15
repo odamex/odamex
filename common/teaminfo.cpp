@@ -31,7 +31,6 @@
 #include "v_textcolors.h"
 #include "d_player.h"
 
-#include "c_cvars.h"
 
 EXTERN_CVAR(sv_teamsinplay)
 

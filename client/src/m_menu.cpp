@@ -38,7 +38,6 @@
 #include "hu_stuff.h"
 #include "g_episode.h"
 #include "g_game.h"
-#include "g_level.h"
 #include "m_random.h"
 #include "s_sound.h"
 #include "m_menu.h"

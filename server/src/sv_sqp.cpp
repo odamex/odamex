@@ -30,7 +30,6 @@
 #include "d_player.h"
 #include "md5.h"
 #include "p_ctf.h"
-#include "version.h"
 #include "g_gametype.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);

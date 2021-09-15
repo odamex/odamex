@@ -32,7 +32,6 @@
 #include "i_video.h"
 #include "w_wad.h"
 #include "g_game.h"
-#include "g_level.h"
 #include "r_local.h"
 #include "s_sound.h"
 #include "s_sndseq.h"

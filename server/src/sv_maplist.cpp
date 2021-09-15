@@ -29,10 +29,8 @@
 #include "c_maplist.h"
 #include "sv_maplist.h"
 
-#include "c_cvars.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
-#include "g_level.h"
 #include "hashtable.h"
 #include "i_system.h"
 #include "m_fileio.h"

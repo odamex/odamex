@@ -38,7 +38,6 @@
 #include "i_video.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
-#include "g_level.h"
 
 #include "v_palette.h"
 

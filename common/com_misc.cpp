@@ -25,7 +25,6 @@
 
 #include "com_misc.h"
 
-#include "version.h"
 #include "c_dispatch.h"
 #include "m_random.h"
 #include "p_local.h"

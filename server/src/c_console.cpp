@@ -27,9 +27,7 @@
 #include <stdarg.h>
 
 #include "m_memio.h"
-#include "version.h"
 #include "c_console.h"
-#include "c_cvars.h"
 #include "c_dispatch.h"
 #include "v_palette.h"
 #include "sv_main.h"

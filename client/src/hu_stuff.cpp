@@ -36,7 +36,6 @@
 #include "c_bind.h"
 #include "c_console.h"
 #include "c_dispatch.h"
-#include "c_cvars.h"
 #include "v_text.h"
 #include "g_gametype.h"
 

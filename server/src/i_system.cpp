@@ -57,9 +57,7 @@
 #include <limits.h>
 #endif
 
-#include "errors.h"
 
-#include "version.h"
 #include "cmdlib.h"
 #include "m_argv.h"
 

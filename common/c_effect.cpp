@@ -24,11 +24,9 @@
 
 #include "odamex.h"
 
-#include "c_cvars.h"
 #include "actor.h"
 #include "c_effect.h"
 #include "p_local.h"
-#include "g_level.h"
 #include "v_video.h"
 #include "m_random.h"
 #include "r_things.h"

@@ -23,7 +23,6 @@
 
 #include "cmdlib.h"
 #include "g_episode.h"
-#include "g_level.h"
 #include "gi.h"
 #include "gstrings.h"
 #include "i_system.h"

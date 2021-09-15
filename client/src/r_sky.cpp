@@ -32,8 +32,6 @@
 #include "r_data.h"
 #include "r_draw.h"
 #include "r_main.h"
-#include "c_cvars.h"
-#include "g_level.h"
 #include "r_sky.h"
 #include "w_wad.h"
 

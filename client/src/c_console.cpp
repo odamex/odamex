@@ -28,10 +28,8 @@
 
 #include "m_alloc.h"
 #include "m_memio.h"
-#include "version.h"
 #include "g_game.h"
 #include "c_console.h"
-#include "c_cvars.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
 #include "i_system.h"

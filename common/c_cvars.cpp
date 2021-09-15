@@ -34,7 +34,6 @@
 #include "c_dispatch.h"
 #include "m_alloc.h"
 
-#include "c_cvars.h"
 
 #include "d_netinf.h"
 

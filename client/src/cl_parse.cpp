@@ -41,7 +41,6 @@
 #include "d_main.h"
 #include "d_player.h"
 #include "g_gametype.h"
-#include "g_level.h"
 #include "g_levelstate.h"
 #include "gi.h"
 #include "m_argv.h"

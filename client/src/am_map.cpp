@@ -26,7 +26,6 @@
 
 #include <stdio.h>
 
-#include "g_level.h"
 #include "z_zone.h"
 #include "st_stuff.h"
 #include "p_local.h"

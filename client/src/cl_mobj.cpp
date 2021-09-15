@@ -28,7 +28,6 @@
 #include "p_local.h"
 #include "s_sound.h"
 #include "v_video.h"
-#include "c_cvars.h"
 #include "c_effect.h"
 #include "m_vectors.h"
 #include "p_mobj.h"

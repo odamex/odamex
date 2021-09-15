@@ -29,7 +29,6 @@
 
 #include "d_event.h"
 
-#include "c_cvars.h"
 
 #include "m_random.h"
 #include "p_local.h"

@@ -25,7 +25,6 @@
 
 #include "odamex.h"
 
-#include "g_level.h"
 
 #include <set>
 

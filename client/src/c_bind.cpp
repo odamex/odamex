@@ -31,7 +31,6 @@
 #include "cmdlib.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
-#include "g_level.h"
 #include "hu_stuff.h"
 #include "cl_demo.h"
 #include "d_player.h"

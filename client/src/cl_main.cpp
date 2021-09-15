@@ -28,7 +28,6 @@
 #include "gstrings.h"
 #include "d_player.h"
 #include "g_game.h"
-#include "d_net.h"
 #include "p_local.h"
 #include "p_tick.h"
 #include "s_sound.h"

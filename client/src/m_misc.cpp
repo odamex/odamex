@@ -29,13 +29,11 @@
 #include <sstream>
 
 #include "c_bind.h"
-#include "c_cvars.h"
 #include "c_dispatch.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"
 #include "i_system.h"
-#include "version.h"
 
 // Used to identify the version of the game that saved
 // a config file to compensate for new features that get

@@ -83,7 +83,6 @@
 
 #include "odamex.h"
 
-#include "version.h"
 #include "huffman.h"
 
 // For a memcpy
@@ -624,4 +623,3 @@ void huffman_client::reset()
 
 
 VERSION_CONTROL (huffman_cpp, "$Id$")
-

@@ -33,7 +33,6 @@
 #include "c_effect.h"
 #include "s_sound.h"
 #include "v_video.h"
-#include "c_cvars.h"
 #include "m_vectors.h"
 #include "g_game.h"
 #include "p_mobj.h"

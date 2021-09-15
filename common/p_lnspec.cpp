@@ -27,7 +27,6 @@
 
 #include "p_local.h"
 #include "p_lnspec.h"
-#include "g_level.h"
 #include "v_palette.h"
 #include "tables.h"
 #include "i_system.h"

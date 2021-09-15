@@ -36,7 +36,6 @@
 #include "st_lib.h"
 #include "r_local.h"
 
-#include "c_cvars.h"
 
 
 //

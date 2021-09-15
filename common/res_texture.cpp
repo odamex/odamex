@@ -28,7 +28,6 @@
 #include "i_system.h"
 #include "tables.h"
 #include "r_state.h"
-#include "g_level.h"
 #include "m_random.h"
 #include "w_wad.h"
 #include "m_memio.h"

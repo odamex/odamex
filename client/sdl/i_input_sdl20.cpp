@@ -25,7 +25,6 @@
 
 #include "i_input_sdl20.h"
 
-#include "c_cvars.h"
 #include "i_sdl.h" 
 #include "i_input.h"
 

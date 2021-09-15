@@ -23,8 +23,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __DOOMTYPE__
-#define __DOOMTYPE__
+#pragma once
 
 // Standard libc/STL includes we use in countless places
 
@@ -695,5 +694,3 @@ forceinline argb_t rt_tlatecolor<argb_t>(const shaderef_t &pal, const translatio
 {
 	return pal.tlate(translation, c);
 }
-
-#endif

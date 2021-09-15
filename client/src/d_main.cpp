@@ -27,7 +27,6 @@
 
 #include "odamex.h"
 
-#include "version.h"
 
 #include <algorithm>
 
@@ -43,7 +42,6 @@
 
 #include <math.h>
 
-#include "errors.h"
 
 #include "m_alloc.h"
 #include "m_random.h"

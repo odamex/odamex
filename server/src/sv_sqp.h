@@ -23,7 +23,6 @@
 #ifndef __SV_SQP_H__
 #define __SV_SQP_H__
 
-#include "version.h"
 
 DWORD SV_QryParseEnquiry(const DWORD &Tag);
 

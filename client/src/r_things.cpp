@@ -36,7 +36,6 @@
 #include "p_local.h"
 
 #include "c_console.h"
-#include "c_cvars.h"
 
 
 #include "v_video.h"

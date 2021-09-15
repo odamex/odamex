@@ -43,7 +43,6 @@
 #endif
 
 #include "i_system.h"
-#include "c_cvars.h"
 #include "m_misc.h"
 #include "i_input.h"
 #include "m_fileio.h"

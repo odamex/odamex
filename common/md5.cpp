@@ -58,7 +58,6 @@
 
 #include "odamex.h"
 
-#include "version.h"
 #include "md5.h"
 
 #include <cstring>

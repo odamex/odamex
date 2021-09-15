@@ -2,7 +2,6 @@
 #define __CL_DEMO_H__
 
 #include "i_net.h"
-#include "d_net.h"
 #include <list>
 
 class NetDemo

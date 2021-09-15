@@ -47,7 +47,6 @@
 #include "w_wad.h"
 #include "z_zone.h"
 
-#include "c_cvars.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
 

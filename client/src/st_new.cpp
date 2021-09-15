@@ -44,7 +44,6 @@
 #include "st_stuff.h"
 #include "hu_drawers.h"
 #include "hu_elements.h"
-#include "c_cvars.h"
 #include "p_ctf.h"
 #include "cl_parse.h"
 #include "cl_vote.h"

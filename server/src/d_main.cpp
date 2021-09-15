@@ -27,7 +27,6 @@
 
 #include "odamex.h"
 
-#include "version.h"
 
 #include <algorithm>
 
@@ -44,7 +43,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "errors.h"
 
 #include "m_random.h"
 #include "minilzo.h"

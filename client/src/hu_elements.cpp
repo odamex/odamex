@@ -28,7 +28,6 @@
 #include <sstream>
 
 #include "c_bind.h"
-#include "c_cvars.h"
 #include "cl_demo.h"
 #include "m_fixed.h" // This should probably go into d_netinf.h
 #include "d_netinf.h"

@@ -34,7 +34,6 @@
 #include "d_event.h"
 #include "d_main.h"
 #include "f_finale.h"
-#include "g_level.h"
 #include "g_game.h"
 #include "g_levelstate.h"
 #include "gi.h"

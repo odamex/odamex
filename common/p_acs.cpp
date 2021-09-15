@@ -27,7 +27,6 @@
 #include "z_zone.h"
 #include "p_local.h"
 #include "p_spec.h"
-#include "g_level.h"
 #include "s_sound.h"
 #include "p_acs.h"
 #include "p_saveg.h"

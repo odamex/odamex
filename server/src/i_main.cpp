@@ -47,7 +47,6 @@
 #include "i_system.h"
 #include "c_console.h"
 #include "z_zone.h"
-#include "errors.h"
 #include "i_net.h"
 #include "m_fileio.h"
 

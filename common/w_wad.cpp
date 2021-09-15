@@ -40,7 +40,6 @@
 
 #include <fcntl.h>
 
-#include "m_swap.h"
 #include "m_fileio.h"
 #include "i_system.h"
 #include "z_zone.h"

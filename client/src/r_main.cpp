@@ -33,7 +33,6 @@
 #include "r_local.h"
 #include "r_sky.h"
 #include "st_stuff.h"
-#include "c_cvars.h"
 #include "v_video.h"
 #include "stats.h"
 #include "z_zone.h"

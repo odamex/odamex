@@ -73,10 +73,8 @@
 
 #include <sys/stat.h>
 
-#include "errors.h"
 
 #include "w_wad.h"
-#include "version.h"
 #include "cmdlib.h"
 #include "m_argv.h"
 #include "m_misc.h"

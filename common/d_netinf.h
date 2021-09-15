@@ -25,7 +25,6 @@
 #ifndef __D_NETINFO_H__
 #define __D_NETINFO_H__
 
-#include "c_cvars.h"
 #include "teaminfo.h"
 
 #define MAXPLAYERNAME	15

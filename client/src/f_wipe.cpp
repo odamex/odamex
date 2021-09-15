@@ -28,7 +28,6 @@
 #include "i_video.h"
 #include "v_video.h"
 #include "m_random.h"
-#include "c_cvars.h"
 #include "st_stuff.h"
 
 //
@@ -514,4 +513,3 @@ void Wipe_Drawer()
 }
 
 VERSION_CONTROL (f_wipe_cpp, "$Id$")
-

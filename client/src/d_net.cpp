@@ -25,7 +25,6 @@
 
 #include "odamex.h"
 
-#include "version.h"
 #include "i_system.h"
 #include "g_game.h"
 #include "d_netinf.h"
