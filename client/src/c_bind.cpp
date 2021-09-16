@@ -207,7 +207,7 @@ void OKeyBindings::UnbindAll()
 	this->Binds.clear();
 }
 
-void OKeyBindings::BindAKey(size_t argc, char** argv, char* msg)
+void OKeyBindings::BindAKey(size_t argc, char** argv, const char* msg)
 {
 	if (argc > 1)
 	{
@@ -540,7 +540,7 @@ C_GetKeyStringsFromCommand
 Finds binds from a command and returns it into a std::string .
 - If TRUE, second arg returns up to 2 keys. ("x OR y")
 */
-std::string OKeyBindings::GetKeynameFromCommand(char *cmd, bool bTwoEntries)
+std::string OKeyBindings::GetKeynameFromCommand(const char* cmd, bool bTwoEntries)
 {
 	int first = -1;
 	int second = -1;
