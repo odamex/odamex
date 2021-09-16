@@ -27,8 +27,6 @@
 
 #include "dobject.h"
 
-#include <string>
-#include <vector>
 
 void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 

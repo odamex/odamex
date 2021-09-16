@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 /*
 native_midi_macosx: Native Midi support on Mac OS X for the SDL_mixer library
 Copyright (C) 2009 Ryan C. Gordon <icculus@icculus.org>
@@ -42,7 +45,6 @@ misrepresented as being the original software.
 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include <string>
 #include <math.h>
 #include "i_system.h"
 #include "m_fileio.h"

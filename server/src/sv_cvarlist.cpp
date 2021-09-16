@@ -21,7 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "c_cvars.h"
+
+#include "odamex.h"
+
 
 #ifdef SIMULATE_LATENCY
 CVAR(sv_latency, "80", "Latency simulation", CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE) //number of miliseconds to delay packet send, this will cause ping to be ~ sv_latency + network latency

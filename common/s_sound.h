@@ -26,7 +26,6 @@
 #define __S_SOUND__
 
 #include "m_fixed.h"
-#include <string>
 
 #define MAX_SNDNAME			63
 
@@ -171,5 +170,3 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 void S_NoiseDebug (void);
 
 #endif
-
-

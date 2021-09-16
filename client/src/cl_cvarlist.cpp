@@ -21,7 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "c_cvars.h"
+
+#include "odamex.h"
+
 #include "s_sound.h"
 #include "i_music.h"
 

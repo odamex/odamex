@@ -24,7 +24,6 @@
 #ifndef __WI_STUFF__
 #define __WI_STUFF__
 
-#include "doomdef.h"
 #include "d_player.h"
 
 // States for the intermission
@@ -50,5 +49,3 @@ void WI_Start (wbstartstruct_t *wbstartstruct);
 void WI_drawLF (void);
 
 #endif
-
-

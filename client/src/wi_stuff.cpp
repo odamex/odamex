@@ -22,19 +22,18 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <ctype.h>
-#include <stdio.h>
 
 #include "z_zone.h"
 #include "m_random.h"
 #include "i_video.h"
 #include "w_wad.h"
 #include "g_game.h"
-#include "g_level.h"
 #include "r_local.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
-#include "doomstat.h"
 #include "v_video.h"
 #include "wi_stuff.h"
 #include "c_console.h"

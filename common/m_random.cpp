@@ -27,7 +27,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomstat.h"
+
+#include "odamex.h"
+
 #include "m_random.h"
 #include "farchive.h"
 
@@ -145,4 +147,3 @@ void P_SerializeRNGState (FArchive &arc)
 
 
 VERSION_CONTROL (m_random_cpp, "$Id$")
-

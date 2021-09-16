@@ -25,12 +25,8 @@
 #ifndef __I_VIDEO_H__
 #define __I_VIDEO_H__
 
-#include "doomtype.h"
-#include "m_swap.h"
 #include "v_pixelformat.h"
 
-#include <string>
-#include <vector>
 #include <cassert>
 #include <cstdlib>
 

@@ -23,17 +23,17 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <math.h>
 #include "m_random.h"
 #include "m_alloc.h"
 #include "i_system.h"
-#include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "r_state.h"
-#include "c_cvars.h"
 #include "gi.h"
 #include "p_mobj.h"
 
@@ -2463,4 +2463,3 @@ void A_LineEffect(AActor* mo)
 }
 
 VERSION_CONTROL (p_enemy_cpp, "$Id$")
-

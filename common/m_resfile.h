@@ -23,8 +23,6 @@
 #ifndef __M_RESFILE_H__
 #define __M_RESFILE_H__
 
-#include <string>
-#include <vector>
 
 enum ofile_t
 {

@@ -21,8 +21,10 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <sstream>
-#include <string>
 
 #include "win32inc.h"
 

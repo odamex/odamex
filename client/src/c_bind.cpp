@@ -22,16 +22,14 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
+
 #include <stdlib.h>
 
-#include "doomtype.h"
-#include "doomdef.h"
 #include "m_ostring.h"
 #include "cmdlib.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
-#include "g_level.h"
 #include "hu_stuff.h"
 #include "cl_demo.h"
 #include "d_player.h"

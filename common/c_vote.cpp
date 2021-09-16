@@ -20,6 +20,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 /**
  * A string array used to associate vote types with command names.
  */

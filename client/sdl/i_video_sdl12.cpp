@@ -20,16 +20,17 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "i_video_sdl12.h"
 
 #include "i_sdl.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <cassert>
 
 #include <algorithm>
 #include <functional>
-#include "doomstat.h"
 
 #include "i_video.h"
 #include "v_video.h"

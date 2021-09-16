@@ -23,11 +23,6 @@
 #ifndef __V_PIXELFORMAT_H___
 #define __V_PIXELFORMAT_H___
 
-#include "doomtype.h"
-#include "version.h"
-#include "m_swap.h"			// for __BIG_ENDIAN__ macro
-
-#include <cstring>
 
 
 // ============================================================================

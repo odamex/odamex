@@ -20,18 +20,16 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <string>
-#include <vector>
+
+#include "odamex.h"
+
 
 #include "sv_sqp.h"
 
-#include "doomtype.h"
-#include "doomstat.h"
 #include "d_main.h"
 #include "d_player.h"
 #include "md5.h"
 #include "p_ctf.h"
-#include "version.h"
 #include "g_gametype.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);

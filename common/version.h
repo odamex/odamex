@@ -24,7 +24,6 @@
 #ifndef __VERSION_H__
 #define __VERSION_H__
 
-#include <string>
 
 #if defined(CLIENT_APP)
 #define GAMEEXE "odamex"

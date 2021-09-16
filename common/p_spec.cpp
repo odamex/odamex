@@ -32,9 +32,9 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "m_alloc.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "gstrings.h"
 
 #include "z_zone.h"
