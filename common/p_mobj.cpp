@@ -2492,6 +2492,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (P_IsHordeThing(mthing->type))
 	{
 		i = MT_HORDESPAWN;
+		::level.detected_gametype = GM_HORDE;
 	}
 
 	// [RH] Determine if it is an old ambient thing, and if so,

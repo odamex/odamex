@@ -645,7 +645,7 @@ static void drawGametype()
 		drawTeamGametype();
 		return;
 	}
-	else if (P_IsHordeMode())
+	else if (G_IsHordeMode())
 	{
 		drawHordeGametype();
 		return;
@@ -1175,7 +1175,7 @@ void LevelStateHUD()
 		break;
 	}
 	case LevelState::INGAME: {
-		if (P_IsHordeMode())
+		if (G_IsHordeMode())
 		{
 			LevelStateHorde(lines);
 		}

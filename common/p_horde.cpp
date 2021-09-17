@@ -506,7 +506,7 @@ void HordeState::tick()
 		const mobjtype_t pw = define.randomPowerup().mobj;
 		P_HordeSpawnPowerup(pw);
 
-		Printf("Spawned powerup %s, next in %d.\n", ::mobjinfo[pw].name, offset);
+		//Printf("Spawned powerup %s, next in %d.\n", ::mobjinfo[pw].name, offset);
 	}
 }
 
@@ -569,7 +569,7 @@ void P_AddDamagePool(AActor* mo, const int damage)
 
 void P_RunHordeTics()
 {
-	if (::sv_gametype != GM_HORDE)
+	if (!G_IsHordeMode())
 		return;
 
 	// Move this function to tick inside someplace that can be paused.
@@ -599,11 +599,6 @@ void P_RunHordeTics()
 		::g_HordeDirector.tick();
 }
 
-bool P_IsHordeMode()
-{
-	return sv_gametype == GM_HORDE;
-}
-
 bool P_IsHordeThing(const int type)
 {
 	return type >= TTYPE_HORDE_SMALLMONSTER && type <= TTYPE_HORDE_POWERUP;
@@ -611,7 +606,7 @@ bool P_IsHordeThing(const int type)
 
 const hordeDefine_t::weapons_t& P_HordeWeapons()
 {
-	if (::sv_gametype == GM_HORDE)
+	if (G_IsHordeMode())
 	{
 		const hordeDefine_t& define = G_HordeDefine(::g_HordeDirector.getDefineID());
 		return define.weapons;
@@ -634,7 +629,7 @@ const hordeDefine_t::weapons_t& P_HordeWeapons()
 
 const hordeDefine_t::ammos_t& P_HordeAmmos()
 {
-	if (::sv_gametype == GM_HORDE)
+	if (G_IsHordeMode())
 	{
 		const hordeDefine_t& define = G_HordeDefine(::g_HordeDirector.getDefineID());
 		return define.ammos;

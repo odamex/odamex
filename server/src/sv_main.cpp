@@ -2815,7 +2815,7 @@ void SV_UpdateMonsters(player_t &pl)
 
 void SV_UpdateGametype(player_t& pl)
 {
-	if (::sv_gametype == GM_HORDE)
+	if (G_IsHordeMode())
 	{
 		static hordeInfo_t lastInfo = {HS_STARTING, -1, -1, -1, 0, -1, -1, -1, -1, -1};
 		static int ticsent;

@@ -98,7 +98,6 @@ void P_RemoveHealthPool(AActor* mo);
 void P_AddDamagePool(AActor* mo, const int damage);
 
 void P_RunHordeTics();
-bool P_IsHordeMode();
 bool P_IsHordeThing(const int type);
 const hordeDefine_t::weapons_t& P_HordeWeapons();
 const hordeDefine_t::ammos_t& P_HordeAmmos();

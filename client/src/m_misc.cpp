@@ -32,6 +32,7 @@
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "doomtype.h"
+#include "g_gametype.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"
@@ -198,8 +199,12 @@ void M_LoadDefaults(void)
 
 const char* GetShortGameModeString()
 {
-	if (sv_gametype == GM_COOP)
-		return multiplayer ? "COOP" : "SOLO";
+	if (G_IsHordeMode())
+		return "HORDE";
+	else if (sv_gametype == GM_COOP && !::multiplayer)
+		return "SOLO";
+	else if (sv_gametype == GM_COOP)
+		return "COOP";
 	else if (sv_gametype == GM_DM && sv_maxplayers <= 2)
 		return "DUEL";
 	else if (sv_gametype == GM_DM)
@@ -208,8 +213,6 @@ const char* GetShortGameModeString()
 		return "TDM";
 	else if (sv_gametype == GM_CTF)
 		return "CTF";
-	else if (sv_gametype == GM_HORDE)
-		return "HORDE";
 
 	return "";
 }

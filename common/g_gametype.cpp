@@ -55,6 +55,10 @@ const std::string& G_GametypeName()
 	static std::string name;
 	if (!g_gametypename.str().empty())
 		name = g_gametypename.str();
+	if (G_IsHordeMode() && g_lives)
+		name = "Horde Survival";
+	else if (G_IsHordeMode())
+		name = "Horde";
 	else if (sv_gametype == GM_COOP && g_lives)
 		name = "Survival";
 	else if (sv_gametype == GM_COOP && ::multiplayer)
@@ -77,10 +81,6 @@ const std::string& G_GametypeName()
 		name = "LMS Capture The Flag";
 	else if (sv_gametype == GM_CTF)
 		name = "Capture The Flag";
-	else if (sv_gametype == GM_HORDE && g_lives)
-		name = "Horde Survival";
-	else if (sv_gametype == GM_HORDE)
-		name = "Horde";
 	return name;
 }
 
@@ -278,12 +278,29 @@ bool G_IsDefendingTeam(team_t team)
 }
 
 /**
+ * @brief Check if gametype is horde or if the map was detected to be Horde
+ *        in single-player.
+ */
+bool G_IsHordeMode()
+{
+	// Trust when manually set.
+	if (::sv_gametype == GM_HORDE)
+		return true;
+
+	// In single-player, trust the detected mode.
+	if (!::network_game && ::level.detected_gametype == GM_HORDE)
+		return true;
+
+	return false;
+}
+
+/**
  * @brief Check if the gametype is purely player versus environment, where
  *        the players win and lose as a whole.
  */
 bool G_IsCoopGame()
 {
-	return sv_gametype == GM_COOP || sv_gametype == GM_HORDE;
+	return sv_gametype == GM_COOP || G_IsHordeMode();
 }
 
 /**
