@@ -1537,7 +1537,7 @@ void A_VileAttack (AActor *actor)
 		return;
 
 	S_Sound (actor, CHAN_WEAPON, "vile/stop", 1, ATTN_NORM);
-	P_DamageMobj(actor->target, actor, actor, 20, MOD_FIREBALL);
+	P_DamageMobj(actor->target, actor, actor, 20, MOD_VILEFIRE);
 	actor->target->momz = 1000*FRACUNIT/actor->target->info->mass;
 
 	an = actor->angle >> ANGLETOFINESHIFT;
@@ -1550,7 +1550,7 @@ void A_VileAttack (AActor *actor)
 	// move the fire between the vile and the player
 	fire->x = actor->target->x - FixedMul (24*FRACUNIT, finecosine[an]);
 	fire->y = actor->target->y - FixedMul (24*FRACUNIT, finesine[an]);
-	P_RadiusAttack (fire, actor, 70, 70, true, MOD_UNKNOWN);
+	P_RadiusAttack(fire, actor, 70, 70, true, MOD_VILEFIRE);
 }
 
 
