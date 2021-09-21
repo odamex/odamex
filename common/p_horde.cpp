@@ -41,6 +41,81 @@ EXTERN_CVAR(g_horde_waves)
 void A_PainDie(AActor* actor);
 
 /**
+ * @brief Garbage-collector for Horde corpses.
+ *
+ * @details We want to destroy corpses from previous waves so the map isn't
+ *          overwhelmed with corpses.
+ */
+class corpseCollector_t
+{
+	typedef std::queue<AActor::AActorPtr> AActorQueue;
+
+	AActorQueue m_corpses;
+	size_t m_waveStart;
+	size_t m_added;
+	size_t m_removed;
+
+	void popCorpse()
+	{
+		m_corpses.pop();
+		m_removed += 1;
+	}
+
+  public:
+	corpseCollector_t() : m_waveStart(0), m_added(0), m_removed(0) { }
+	void clear()
+	{
+		m_corpses = AActorQueue();
+		m_waveStart = 0;
+		m_added = 0;
+		m_removed = 0;
+	}
+	void pushCorpse(AActor* ptr)
+	{
+		m_corpses.push(ptr->ptr());
+		m_added += 1;
+	}
+	void startWave()
+	{
+		m_waveStart = m_added;
+	}
+	void tick()
+	{
+		if (m_removed >= m_waveStart)
+		{
+			// Everything in the queue is from the current wave.
+			Printf("Corpse: No corpses to collect.\n");
+			return;
+		}
+
+		AActor::AActorPtr& actor = m_corpses.front();
+		if (!actor)
+		{
+			// Actor is destroyed, just pop it.
+			popCorpse();
+
+			Printf("Corpse: Found destroyed Actor.\n");
+			return;
+		}
+
+		if (actor->health > 0)
+		{
+			// Actor is not a corpse anymore, just pop it.
+			popCorpse();
+
+			Printf("Corpse: Found alive actor.\n");
+			return;
+		}
+
+		// Destroy the actor before we pop it.
+		actor->Destroy();
+		popCorpse();
+
+		Printf("Corpse: Destroyed dead actor.\n");
+	}
+};
+
+/**
  * @brief Wake up all the passed monsters.
  *
  * @details This is in a separate function because if we activated monsters
@@ -118,6 +193,7 @@ class HordeState
 	hordeRecipe_t m_bossRecipe;
 	int m_nextSpawn;
 	int m_nextPowerup;
+	corpseCollector_t m_corpses;
 
 	/**
 	 * @brief Set the given state.
@@ -135,6 +211,14 @@ class HordeState
 	}
 
   public:
+	HordeState()
+	    : m_state(HS_STARTING), m_wave(0), m_waveTime(0), m_bossTime(0), m_defineID(0),
+	      m_spawnedHealth(0), m_killedHealth(0), m_bossHealth(0), m_bossDamage(0),
+	      m_waveStartHealth(0), m_bossRecipe(hordeRecipe_t()), m_nextSpawn(0),
+	      m_nextPowerup(0)
+	{
+	}
+
 	/**
 	 * @brief Reset director state.
 	 */
@@ -154,6 +238,7 @@ class HordeState
 		m_bossRecipe.clear();
 		m_nextSpawn = ::level.time;
 		m_nextPowerup = ::level.time + (30 * TICRATE);
+		m_corpses.clear();
 	}
 
 	/**
@@ -197,6 +282,7 @@ class HordeState
 		m_bossDamage = 0;
 		m_bosses.clear();
 		m_bossRecipe.clear();
+		m_corpses.startWave();
 	}
 
 	/**
@@ -220,6 +306,7 @@ class HordeState
 		m_bossDamage = 0;
 		m_bosses.clear();
 		m_bossRecipe.clear();
+		m_corpses.startWave();
 
 		return true;
 	}
@@ -293,6 +380,11 @@ class HordeState
 	void addBossDamage(const int health)
 	{
 		m_bossDamage += health;
+	}
+
+	void addCorpse(AActor* mo)
+	{
+		m_corpses.pushCorpse(mo);
 	}
 
 	size_t getDefineID() const
@@ -370,6 +462,9 @@ void HordeState::changeState()
 void HordeState::tick()
 {
 	const hordeDefine_t& define = G_HordeDefine(m_defineID);
+
+	// Run GC on monster corpses.
+	m_corpses.tick();
 
 	// Are the bosses taken care of?
 	if (m_state != HS_WANTBOSS && m_bossRecipe.isValid())
@@ -506,7 +601,7 @@ void HordeState::tick()
 		const mobjtype_t pw = define.randomPowerup().mobj;
 		P_HordeSpawnPowerup(pw);
 
-		//Printf("Spawned powerup %s, next in %d.\n", ::mobjinfo[pw].name, offset);
+		// Printf("Spawned powerup %s, next in %d.\n", ::mobjinfo[pw].name, offset);
 	}
 }
 
@@ -567,6 +662,15 @@ void P_AddDamagePool(AActor* mo, const int damage)
 	::g_HordeDirector.addBossDamage(damage);
 }
 
+void P_QueueCorpseForDestroy(AActor* mo)
+{
+	// Only needed for horde.
+	if (!G_IsHordeMode())
+		return;
+
+	::g_HordeDirector.addCorpse(mo);
+}
+
 void P_RunHordeTics()
 {
 	if (!G_IsHordeMode())
@@ -594,7 +698,7 @@ void P_RunHordeTics()
 	// We can always change state.
 	::g_HordeDirector.changeState();
 
-	// The directory is only run once a second.
+	// The director is only run once a second.
 	if (P_AtInterval(TICRATE))
 		::g_HordeDirector.tick();
 }

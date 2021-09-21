@@ -1712,6 +1712,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	}
 
 	P_RemoveHealthPool(target);
+	P_QueueCorpseForDestroy(target);
 
     if (target->health < -target->info->spawnhealth
         && target->info->xdeathstate)

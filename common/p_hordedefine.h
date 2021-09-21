@@ -33,6 +33,8 @@ struct hordeRecipe_t
 	int count;
 	bool isBoss;
 
+	hordeRecipe_t() : type(MT_NULL), count(0), isBoss(false) { }
+
 	hordeRecipe_t& operator=(const hordeRecipe_t& other)
 	{
 		if (this == &other)
@@ -47,14 +49,14 @@ struct hordeRecipe_t
 
 	void clear()
 	{
-		type = MT_PLAYER;
+		type = MT_NULL;
 		count = 0;
 		isBoss = false;
 	}
 
 	bool isValid() const
 	{
-		return type != MT_PLAYER && count > 0;
+		return type != MT_NULL && count > 0;
 	}
 };
 

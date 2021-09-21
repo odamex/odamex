@@ -96,6 +96,7 @@ void P_SetHordeInfo(const hordeInfo_t& info);
 void P_AddHealthPool(AActor* mo);
 void P_RemoveHealthPool(AActor* mo);
 void P_AddDamagePool(AActor* mo, const int damage);
+void P_QueueCorpseForDestroy(AActor* mo);
 
 void P_RunHordeTics();
 bool P_IsHordeThing(const int type);
