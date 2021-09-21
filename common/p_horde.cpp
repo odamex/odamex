@@ -84,7 +84,6 @@ class corpseCollector_t
 		if (m_removed >= m_waveStart)
 		{
 			// Everything in the queue is from the current wave.
-			Printf("Corpse: No corpses to collect.\n");
 			return;
 		}
 
@@ -93,8 +92,6 @@ class corpseCollector_t
 		{
 			// Actor is destroyed, just pop it.
 			popCorpse();
-
-			Printf("Corpse: Found destroyed Actor.\n");
 			return;
 		}
 
@@ -102,16 +99,12 @@ class corpseCollector_t
 		{
 			// Actor is not a corpse anymore, just pop it.
 			popCorpse();
-
-			Printf("Corpse: Found alive actor.\n");
 			return;
 		}
 
 		// Destroy the actor before we pop it.
 		actor->Destroy();
 		popCorpse();
-
-		Printf("Corpse: Destroyed dead actor.\n");
 	}
 };
 
