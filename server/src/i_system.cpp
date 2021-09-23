@@ -21,12 +21,13 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <sstream>
 #include <limits>
 
 #include <stdlib.h>
-#include <stdio.h>
-#include <cstring>
 #include <stdarg.h>
 
 #ifdef OSX
@@ -54,10 +55,7 @@
 #include <limits.h>
 #endif
 
-#include "errors.h"
 
-#include "doomtype.h"
-#include "version.h"
 #include "cmdlib.h"
 #include "m_argv.h"
 

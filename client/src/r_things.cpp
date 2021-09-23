@@ -21,9 +21,11 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "m_alloc.h"
 
-#include "doomdef.h"
 #include "m_argv.h"
 
 #include "i_system.h"
@@ -34,9 +36,7 @@
 #include "p_local.h"
 
 #include "c_console.h"
-#include "c_cvars.h"
 
-#include "doomstat.h"
 
 #include "v_video.h"
 

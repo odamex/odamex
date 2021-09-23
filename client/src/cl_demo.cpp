@@ -22,21 +22,19 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomtype.h"
+
+#include "odamex.h"
+
 #include "cl_main.h"
 #include "p_ctf.h"
 #include "d_player.h"
 #include "m_argv.h"
 #include "c_console.h"
 #include "m_fileio.h"
-#include "d_net.h"
 #include "cl_demo.h"
-#include "m_swap.h"
 #include "p_saveg.h"
-#include "version.h"
 #include "st_stuff.h"
 #include "p_mobj.h"
-#include "g_level.h"
 #include "svc_message.h"
 #include "g_gametype.h"
 

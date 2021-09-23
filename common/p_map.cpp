@@ -22,12 +22,14 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "m_alloc.h"
 #include "m_bbox.h"
 #include "m_random.h"
 #include "i_system.h"
 
-#include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "c_effect.h"
@@ -37,7 +39,6 @@
 #include "s_sound.h"
 
 // State.
-#include "doomstat.h"
 #include "r_state.h"
 
 #include "z_zone.h"
@@ -3788,4 +3789,3 @@ void P_CopySector(sector_t *dest, sector_t *src)
 
 
 VERSION_CONTROL (p_map_cpp, "$Id$")
-

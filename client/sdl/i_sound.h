@@ -27,9 +27,7 @@
 #ifndef __I_SOUND__
 #define __I_SOUND__
 
-#include "doomdef.h"
 
-#include "doomstat.h"
 #include "s_sound.h"
 
 

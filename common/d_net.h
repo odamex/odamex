@@ -25,7 +25,6 @@
 #ifndef __D_NET__
 #define __D_NET__
 
-#include "doomdef.h"
 
 #define BACKUPTICS		12	// number of tics to remember
 
@@ -33,5 +32,3 @@
 void NetUpdate (void);
 
 #endif
-
-

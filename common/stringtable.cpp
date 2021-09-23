@@ -20,18 +20,15 @@
 //	String Abstraction Layer (StringTable)
 //
 //-----------------------------------------------------------------------------
-//
+
+
+#include "odamex.h"
 
 #include "stringtable.h"
 
-#include <cstring>
-#include <stddef.h>
 
 #include "cmdlib.h"
-#include "doomstat.h"
-#include "errors.h"
 #include "i_system.h"
-#include "m_swap.h"
 #include "oscanner.h"
 #include "stringenums.h"
 #include "w_wad.h"

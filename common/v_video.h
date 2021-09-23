@@ -26,11 +26,8 @@
 #ifndef __V_VIDEO_H__
 #define __V_VIDEO_H__
 
-#include <string>
 
-#include "doomtype.h"
 #include "v_palette.h"
-#include "doomdef.h"
 #include "m_vectors.h"
 
 // Needed because we are refering to patches.
@@ -520,5 +517,3 @@ void V_DrawFPSWidget();
 void V_DrawFPSTicker();
 
 #endif // __V_VIDEO_H__
-
-

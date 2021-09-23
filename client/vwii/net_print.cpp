@@ -33,11 +33,9 @@
 
 #include <sys/types.h>
 #include <network.h>
-#include <stdio.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <string.h>
 #include <stdarg.h>
 #include "net_print.h"
 

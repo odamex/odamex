@@ -22,7 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomtype.h"
+
+#include "odamex.h"
+
 #include "hashtable.h"
 #include "sarray.h"
 #include "m_ostring.h"
@@ -31,13 +33,10 @@
 #include "m_fileio.h"
 #include "cmdlib.h"
 
-#include "doomstat.h"
 #include "gi.h"
 
 #include "w_ident.h"
 
-#include <vector>
-#include <stdio.h>
 
 
 // ============================================================================

@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,34 +17,34 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Handlers for messages sent from the server.
+//     This header must be included first by all Odamex/Odasrv TU's.
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __CL_PARSE_H__
-#define __CL_PARSE_H__
+#pragma once
 
+#if defined(_MSC_VER)
+	#if _MSC_VER >= 1600
+		#define USE_STDINT_H
+	#endif
+#else
+	#define USE_STDINT_H
+#endif
 
+#if defined(USE_STDINT_H)
+	#include <stdint.h>
+	#undef USE_STDINT_H
+#else
+	#include "pstdint.h"
+#endif
 
-enum parseError_e
-{
-	PERR_OK,
-	PERR_UNKNOWN_HEADER,
-	PERR_UNKNOWN_MESSAGE,
-	PERR_BAD_DECODE
-};
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
 
-struct Proto
-{
-	byte header;
-	std::string name;
-	size_t size;
-	std::string data;
-};
+#include <string>
+#include <vector>
 
-typedef std::vector<Proto> Protos;
-
-const Protos& CL_GetTicProtos();
-parseError_e CL_ParseCommand();
-
-#endif // __CL_PARSE_H__
+#include "doomtype.h"
+#include "doomdef.h"
+#include "doomstat.h"

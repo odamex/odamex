@@ -25,12 +25,9 @@
 #ifndef __C_BINDINGS_H__
 #define __C_BINDINGS_H__
 
-#include <string>
 
-#include "doomtype.h"
 #include "hashtable.h"
 #include "d_event.h"
-#include <stdio.h>
 
 struct OBinding
 {
@@ -78,4 +75,3 @@ void C_ReleaseKeys();
 extern OKeyBindings Bindings, DoubleBindings, AutomapBindings, NetDemoBindings;
 
 #endif //__C_BINDINGS_H__
-

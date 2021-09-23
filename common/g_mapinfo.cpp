@@ -18,12 +18,11 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "cmdlib.h"
-#include "doomdef.h"
-#include "doomstat.h"
-#include "doomtype.h"
 #include "g_episode.h"
-#include "g_level.h"
 #include "gi.h"
 #include "gstrings.h"
 #include "i_system.h"
@@ -524,9 +523,9 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		}
 		else
 		{
-			const char* gfx = std::strtok(lname, "\n");
-			const char* txt = std::strtok(NULL, "\n");
-			const char* alpha = std::strtok(NULL, "\n");
+			const char* gfx = strtok(lname, "\n");
+			const char* txt = strtok(NULL, "\n");
+			const char* alpha = strtok(NULL, "\n");
 
 			if (episodenum >= 8)
 			{

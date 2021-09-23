@@ -22,11 +22,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <string>
-#include <vector>
 
-#include "doomtype.h"
-#include "doomstat.h"
+#include "odamex.h"
+
+
 #include "d_main.h"
 #include "d_player.h"
 #include "i_system.h"

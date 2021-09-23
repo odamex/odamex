@@ -21,11 +21,13 @@
 //
 // ----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "p_ctf.h"
 
 #include <sstream>
 
-#include "doomstat.h"
 #include "g_gametype.h"
 #include "i_system.h"
 #include "m_random.h"

@@ -20,6 +20,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "cl_download.h"
 
 #define CURL_STATICLIB
@@ -28,7 +31,6 @@
 #include "c_dispatch.h"
 #include "cl_main.h"
 #include "cmdlib.h"
-#include "doomstat.h"
 #include "i_system.h"
 #include "m_argv.h"
 #include "m_fileio.h"

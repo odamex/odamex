@@ -27,7 +27,10 @@
 //
 //-----------------------------------------------------------------------------
 
+
 #if defined _WIN32 && !defined _XBOX && defined _MSC_VER && !defined _DEBUG
+
+#include "odamex.h"
 
 #define CRASH_DIR_LEN 1024
 
@@ -36,14 +39,12 @@
 #include <exception>
 #include <new.h>
 #include <signal.h>
-#include <stdio.h>
 
 #include "win32inc.h"
 #include <DbgHelp.h>
 
 // Must be loaded last or else we're missing functions.
 
-#include "doomtype.h"
 #include "i_system.h"
 #include "m_fileio.h"
 

@@ -23,7 +23,6 @@
 #ifndef __I_INPUT_H__
 #define __I_INPUT_H__
 
-#include "doomtype.h"
 #include <SDL.h>
 #include "win32inc.h"
 

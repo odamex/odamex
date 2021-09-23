@@ -1,7 +1,6 @@
 #ifndef __S_SNDSEQ_H__
 #define __S_SNDSEQ_H__
 
-#include <stddef.h>
 #include "actor.h"
 #include "s_sound.h"
 #include "r_defs.h"
@@ -98,4 +97,3 @@ extern int ActiveSequences;
 extern int NumSequences;
 
 #endif //__S_SNDSEQ_H__
-

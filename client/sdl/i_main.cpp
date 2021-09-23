@@ -23,6 +23,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 // denis - todo - remove
 #include "win32inc.h"
 #ifdef _WIN32
@@ -54,16 +56,13 @@
 #undef main
 #endif // WIN32
 
-#include "errors.h"
 
-#include "doomtype.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "d_main.h"
 #include "i_system.h"
 #include "c_console.h"
 #include "z_zone.h"
-#include "version.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
