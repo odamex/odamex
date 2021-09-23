@@ -39,7 +39,6 @@
 #ifndef __SZP_H__
 #define __SZP_H__
 
-#include "errors.h"
 
 
 template <typename T>
@@ -168,5 +167,3 @@ public:
 };
 
 #endif // __SZP_H__
-
-

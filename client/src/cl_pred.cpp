@@ -22,8 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomtype.h"
-#include "doomstat.h"
+#include "odamex.h"
+
 #include "d_player.h"
 #include "p_local.h"
 #include "cl_main.h"
@@ -336,4 +336,3 @@ void CL_PredictWorld(void)
 
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")
-

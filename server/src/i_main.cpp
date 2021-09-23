@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <stack>
 #include <iostream>
 
@@ -36,7 +39,6 @@
 #endif
 
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "i_crash.h"
 #include "m_argv.h"
@@ -44,7 +46,6 @@
 #include "i_system.h"
 #include "c_console.h"
 #include "z_zone.h"
-#include "errors.h"
 #include "i_net.h"
 #include "m_fileio.h"
 

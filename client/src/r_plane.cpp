@@ -31,13 +31,14 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <stdlib.h>
 #include <math.h>
 
 #include "z_zone.h"
 #include "w_wad.h"
 
-#include "doomstat.h"
 
 #include "p_local.h"
 #include "r_local.h"
@@ -771,4 +772,3 @@ BOOL R_AlignFlat (int linenum, int side, int fc)
 }
 
 VERSION_CONTROL (r_plane_cpp, "$Id$")
-

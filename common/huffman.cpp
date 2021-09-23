@@ -80,11 +80,10 @@
 * marcus.geelnard at home.se
 *************************************************************************/
 
-#include "version.h"
-#include "huffman.h"
 
-// For a memcpy
-#include <cstring>
+#include "odamex.h"
+
+#include "huffman.h"
 
 /*************************************************************************
 *                           INTERNAL FUNCTIONS                           *
@@ -621,4 +620,3 @@ void huffman_client::reset()
 
 
 VERSION_CONTROL (huffman_cpp, "$Id$")
-

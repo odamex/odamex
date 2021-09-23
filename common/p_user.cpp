@@ -23,14 +23,15 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <limits.h>
 
 #include "cmdlib.h"
-#include "doomdef.h"
 #include "c_dispatch.h"
 #include "d_event.h"
 #include "p_local.h"
-#include "doomstat.h"
 #include "s_sound.h"
 #include "i_system.h"
 #include "gi.h"
@@ -812,7 +813,7 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 			// You are on the same team.
 			isTeammate = true;
 		}
-		else
+		else if (G_IsLivesGame())
 		{
 			PlayerResults pr =
 			    PlayerQuery().hasLives().onTeam(viewer.userinfo.team).execute();

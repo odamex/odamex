@@ -26,7 +26,6 @@
 #define __D_PLAYER_H__
 
 #include <list>
-#include <vector>
 #include <queue>
 
 #include <time.h>
@@ -36,7 +35,6 @@
 // as commands per game tick.
 #include "d_ticcmd.h"
 
-#include "d_net.h"
 
 // The player data structure depends on a number
 // of other structs: items (internal inventory),

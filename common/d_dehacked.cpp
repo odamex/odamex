@@ -22,18 +22,14 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <cstring>
-#include <stddef.h>
+#include "odamex.h"
 
-#include "doomtype.h"
-#include "doomstat.h"
+#include <stdlib.h>
+
 #include "info.h"
 #include "d_dehacked.h"
 #include "s_sound.h"
 #include "d_items.h"
-#include "g_level.h"
 #include "m_cheat.h"
 #include "cmdlib.h"
 #include "gstrings.h"
@@ -822,7 +818,7 @@ static int PatchThing (int thingy)
 	while ((result = GetLine ()) == 1) {
 		size_t sndmap = atoi (Line2);
 
-		if (sndmap >= sizeof(SoundMap))
+		if (sndmap >= ARRAY_LENGTH(SoundMap))
 			sndmap = 0;
 
 		if (HandleKey (keys, info, Line1, atoi (Line2))) {

@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "cl_parse.h"
 
 #include <bitset>
@@ -37,9 +40,7 @@
 #include "cmdlib.h"
 #include "d_main.h"
 #include "d_player.h"
-#include "doomstat.h"
 #include "g_gametype.h"
-#include "g_level.h"
 #include "g_levelstate.h"
 #include "gi.h"
 #include "m_argv.h"

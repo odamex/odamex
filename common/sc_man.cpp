@@ -25,11 +25,11 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include "odamex.h"
 
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "doomtype.h"
 #include "i_system.h"
 #include "sc_man.h"
 #include "w_wad.h"

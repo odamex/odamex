@@ -27,8 +27,6 @@
 #include <d_player.h>
 
 #include <map>
-#include <string>
-#include <vector>
 
 // Serverside maplist structure
 class Maplist {

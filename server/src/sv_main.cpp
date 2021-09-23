@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "win32inc.h"
 #ifdef _WIN32
     #include <winsock.h>
@@ -32,14 +35,10 @@
 #include <sys/time.h>
 #endif
 
-#include "doomtype.h"
-#include "doomstat.h"
 #include "gstrings.h"
 #include "d_player.h"
 #include "s_sound.h"
-#include "d_net.h"
 #include "g_game.h"
-#include "g_level.h"
 #include "p_tick.h"
 #include "p_local.h"
 #include "p_inter.h"
@@ -73,7 +72,6 @@
 
 #include <algorithm>
 #include <sstream>
-#include <vector>
 
 #include "server.pb.h"
 
@@ -4827,13 +4825,13 @@ void SV_ShareKeys(card_t card, player_t &player)
 {
 	// Add it to the KeysCheck array
 	keysfound[card] = true;
-	char* coloritem;
+	const char* coloritem = NULL;
 
 	// If the server hasn't accepted to share keys yet, stop it.
 	if (!sv_sharekeys)
 		return;
 
-	// Broadcast the key shared to 
+	// Broadcast the key shared to
 	gitem_t* item;
 	if (item = FindCardItem(card))
 	{
@@ -4841,7 +4839,7 @@ void SV_ShareKeys(card_t card, player_t &player)
 		{
 		case it_bluecard:
 		case it_blueskull:
-			coloritem = TEXTCOLOR_BLUE; 
+			coloritem = TEXTCOLOR_BLUE;
 			break;
 		case it_redcard:
 		case it_redskull:
@@ -4859,11 +4857,14 @@ void SV_ShareKeys(card_t card, player_t &player)
 		                   coloritem, item->pickup_name, TEXTCOLOR_NORMAL);
 	}
 	else
+	{
 		SV_BroadcastPrintf("%s found a key!\n", player.userinfo.netname.c_str());
+	}
 
 	// Refresh the inventory to everyone
 	// ToDo: If we're the player who picked it, don't refresh our own inventory
-	for (Players::iterator it = players.begin(); it != players.end(); ++it) {
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
 		SV_UpdateShareKeys(*it);
 	}
 }
