@@ -21,6 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "odamex.h"
+
 #include "p_hordespawn.h"
 
 #include <algorithm>

@@ -30,6 +30,8 @@
 
 #include "odamex.h"
 
+#include <time.h>
+
 #include "m_random.h"
 #include "farchive.h"
 
