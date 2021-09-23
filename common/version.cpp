@@ -21,14 +21,15 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
+
+#include "odamex.h"
+
 
 #ifndef ODAMEX_NO_GITVER
 #include "git_describe.h"
 #endif
 
 #include <map>
-#include <string>
 #include <sstream>
 #include <memory>
 
@@ -345,6 +346,3 @@ BEGIN_COMMAND (listsourcefiles)
 END_COMMAND(listsourcefiles)
 
 VERSION_CONTROL(version_cpp, "$Id$")
-
-
-

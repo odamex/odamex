@@ -22,10 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
 
-#include "doomdef.h"
-#include "g_level.h"
+
 #include "z_zone.h"
 #include "st_stuff.h"
 #include "p_local.h"
@@ -46,7 +45,6 @@
 #include "v_text.h"
 
 // State.
-#include "doomstat.h"
 #include "r_state.h"
 
 // Data.

@@ -22,12 +22,11 @@
 //-----------------------------------------------------------------------------
 
 
-#include <cstring>
+#include "odamex.h"
+
 #include <math.h>
-#include <cstddef>
 #include <cassert>
 
-#include "doomstat.h"
 #include "i_system.h"
 #include "v_video.h"
 #include "m_alloc.h"
@@ -37,7 +36,6 @@
 #include "i_video.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
-#include "g_level.h"
 
 #include "v_palette.h"
 
@@ -1240,4 +1238,3 @@ void V_ResetPalette()
 
 
 VERSION_CONTROL (v_palette_cpp, "$Id$")
-

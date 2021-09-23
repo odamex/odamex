@@ -23,17 +23,17 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "i_system.h"
 #include "z_zone.h"
 
-#include "m_swap.h"
 
 #include "w_wad.h"
 
-#include "doomdef.h"
 #include "r_local.h"
 
-#include "doomstat.h"
 #include "r_sky.h"
 
 #include "cmdlib.h"
@@ -44,7 +44,6 @@
 #include "v_video.h"
 
 #include <ctype.h>
-#include <cstddef>
 
 #include <algorithm>
 
@@ -1178,4 +1177,3 @@ unsigned int SlopeDiv (unsigned int num, unsigned int den)
 }
 
 VERSION_CONTROL (r_data_cpp, "$Id$")
-

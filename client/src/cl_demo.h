@@ -1,11 +1,7 @@
 #ifndef __CL_DEMO_H__
 #define __CL_DEMO_H__
 
-#include "doomtype.h"
 #include "i_net.h"
-#include "d_net.h"
-#include <string>
-#include <vector>
 #include <list>
 
 class NetDemo
@@ -150,4 +146,3 @@ private:
 
 
 #endif
-

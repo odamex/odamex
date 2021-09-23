@@ -23,8 +23,6 @@
 #ifndef __OSCANNER_H__
 #define __OSCANNER_H__
 
-#include <stddef.h>
-#include <string>
 
 struct OScannerConfig
 {

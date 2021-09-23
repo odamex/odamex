@@ -30,7 +30,6 @@
 #include "d_ticcmd.h"
 #include "r_defs.h"
 #include "cl_demo.h"
-#include <string>
 
 extern netadr_t  serveraddr;
 extern BOOL      connected;

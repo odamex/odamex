@@ -27,10 +27,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __D_STATE__
-#define __D_STATE__
-
-#include <vector>
+#pragma once
 
 #include "doomdata.h"
 #include "d_net.h"
@@ -216,8 +213,3 @@ struct DehInfo
 	int Infight;
 };
 extern struct DehInfo deh;
-
-#endif
-
-
-

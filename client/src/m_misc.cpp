@@ -22,22 +22,18 @@
 //-----------------------------------------------------------------------------
 
 
-#include <cstdio>
+#include "odamex.h"
+
 #include <ctime>
-#include <string>
 #include <sstream>
-#include <vector>
 
 #include "c_bind.h"
-#include "c_cvars.h"
 #include "c_dispatch.h"
-#include "doomtype.h"
 #include "g_gametype.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"
 #include "i_system.h"
-#include "version.h"
 
 // Used to identify the version of the game that saved
 // a config file to compensate for new features that get
@@ -324,6 +320,3 @@ bool M_FindFreeName(std::string &filename, const std::string &extension)
 }
 
 VERSION_CONTROL (m_misc_cpp, "$Id$")
-
-
-

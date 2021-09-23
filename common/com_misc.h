@@ -22,9 +22,7 @@
 
 #pragma once
 
-#include "doomtype.h"
 
-#include <string>
 
 /**
  * @brief Toast for infofeed - these can be constructed from anywhere.

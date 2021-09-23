@@ -22,13 +22,14 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomstat.h"
+
+#include "odamex.h"
+
 #include "m_fixed.h"
 #include "r_state.h"
 #include "p_local.h"
 #include "cl_demo.h"
 
-#include <vector>
 
 typedef std::pair<fixed_t, unsigned int> fixed_uint_pair;
 
@@ -196,4 +197,3 @@ void R_InterpolateCamera(fixed_t amount)
 }
 
 VERSION_CONTROL (r_interp_cpp, "$Id$")
-

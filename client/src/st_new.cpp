@@ -23,16 +23,14 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
+
 #include <stdlib.h>
 
 #include <algorithm>
 #include <sstream>
 
 #include "cmdlib.h"
-#include "doomtype.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "cl_demo.h"
 #include "cl_main.h"
 #include "d_items.h"
@@ -45,7 +43,6 @@
 #include "st_stuff.h"
 #include "hu_drawers.h"
 #include "hu_elements.h"
-#include "c_cvars.h"
 #include "p_ctf.h"
 #include "cl_parse.h"
 #include "cl_vote.h"

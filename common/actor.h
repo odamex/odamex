@@ -44,7 +44,6 @@
 #include "szp.h"
 
 // STL
-#include <vector>
 #include <map>
 
 //

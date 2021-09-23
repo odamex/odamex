@@ -23,7 +23,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
+
 #include <assert.h>
 
 #include "i_system.h"
@@ -32,8 +33,6 @@
 #include "r_draw.h"
 #include "r_state.h"
 
-#include "doomdef.h"
-#include "doomstat.h"
 #include "d_main.h"
 
 #include "c_console.h"
@@ -47,7 +46,6 @@
 #include "w_wad.h"
 #include "z_zone.h"
 
-#include "c_cvars.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
 

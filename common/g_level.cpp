@@ -22,7 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "g_level.h"
+
+#include "odamex.h"
+
 
 #include <set>
 
@@ -30,7 +32,6 @@
 #include "c_dispatch.h"
 #include "d_event.h"
 #include "d_main.h"
-#include "doomstat.h"
 #include "g_game.h"
 #include "gi.h"
 #include "i_system.h"

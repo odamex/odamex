@@ -23,12 +23,11 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomtype.h"
-#include "doomstat.h"
+#include "odamex.h"
+
 #include "gstrings.h"
 #include "d_player.h"
 #include "g_game.h"
-#include "d_net.h"
 #include "p_local.h"
 #include "p_tick.h"
 #include "s_sound.h"
@@ -69,8 +68,6 @@
 #include "cl_parse.h"
 
 #include <bitset>
-#include <string>
-#include <vector>
 #include <map>
 #include <set>
 #include <sstream>

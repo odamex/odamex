@@ -21,11 +21,13 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "p_local.h"
 #include "c_effect.h"
 #include "p_acs.h"
 #include "c_console.h"
-#include "doomstat.h"
 #include "p_unlag.h"
 #include "p_horde.h"
 
@@ -94,4 +96,3 @@ void P_Ticker (void)
 }
 
 VERSION_CONTROL (p_tick_cpp, "$Id$")
-

@@ -21,11 +21,12 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomtype.h"
+
+#include "odamex.h"
+
 #include "p_lnspec.h"
 #include "doomdata.h"
 #include "r_data.h"
-#include "m_swap.h"
 #include "p_local.h"
 
 // Speeds for ceilings/crushers (x/8 units per tic)

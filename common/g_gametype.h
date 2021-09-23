@@ -23,7 +23,6 @@
 #ifndef __G_GAMETYPE_H__
 #define __G_GAMETYPE_H__
 
-#include <string>
 
 #include "g_levelstate.h"
 #include "teaminfo.h"

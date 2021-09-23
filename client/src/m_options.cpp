@@ -27,7 +27,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "odamex.h"
+
 #include "gstrings.h"
 #include "minilzo.h"
 
@@ -52,7 +53,6 @@
 #include "s_sound.h"
 #include "i_musicsystem.h"
 
-#include "doomstat.h"
 
 #include "m_misc.h"
 #include "cl_demo.h"

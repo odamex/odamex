@@ -24,9 +24,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
 
-#include <vector>
+#include "odamex.h"
+
+
 #include <algorithm>
 
 #include "win32inc.h"
@@ -42,12 +43,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "errors.h"
 
 #include "m_random.h"
 #include "minilzo.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "gstrings.h"
 #include "z_zone.h"
 #include "w_wad.h"

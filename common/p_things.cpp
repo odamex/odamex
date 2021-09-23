@@ -21,16 +21,15 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
 
-#include "doomtype.h"
+
 #include "p_local.h"
 #include "c_effect.h"
 #include "p_mobj.h"
 #include "info.h"
 #include "s_sound.h"
 #include "tables.h"
-#include "doomstat.h"
 #include "m_random.h"
 #include "c_console.h"
 

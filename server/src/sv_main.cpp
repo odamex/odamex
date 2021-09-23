@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "win32inc.h"
 #ifdef _WIN32
     #include <winsock.h>
@@ -32,14 +35,10 @@
 #include <sys/time.h>
 #endif
 
-#include "doomtype.h"
-#include "doomstat.h"
 #include "gstrings.h"
 #include "d_player.h"
 #include "s_sound.h"
-#include "d_net.h"
 #include "g_game.h"
-#include "g_level.h"
 #include "p_tick.h"
 #include "p_local.h"
 #include "p_inter.h"
@@ -73,7 +72,6 @@
 
 #include <algorithm>
 #include <sstream>
-#include <vector>
 
 #include "server.pb.h"
 

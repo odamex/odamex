@@ -23,7 +23,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
+
 #include <stdlib.h>
 #include <math.h>
 #include <set>
@@ -32,16 +33,13 @@
 #include "m_vectors.h"
 #include "m_argv.h"
 #include "z_zone.h"
-#include "m_swap.h"
 #include "m_bbox.h"
 #include "g_game.h"
 #include "i_system.h"
 #include "w_wad.h"
-#include "doomdef.h"
 #include "p_local.h"
 #include "p_acs.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "p_lnspec.h"
 #include "v_palette.h"
 #include "c_console.h"

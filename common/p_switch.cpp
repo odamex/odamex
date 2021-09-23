@@ -22,13 +22,13 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <map>
 
-#include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "r_state.h"
 #include "z_zone.h"
 #include "w_wad.h"
@@ -417,4 +417,3 @@ void DActiveButton::RunThink ()
 }
 
 VERSION_CONTROL (p_switch_cpp, "$Id$")
-

@@ -22,11 +22,11 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
+
+#include "odamex.h"
+
 
 #include <sstream>
-#include <string>
-#include <vector>
 #include <algorithm>
 
 #include "win32inc.h"
@@ -42,7 +42,6 @@
 #include <stdlib.h>
 
 #include "m_alloc.h"
-#include "doomdef.h"
 #include "gstrings.h"
 #include "z_zone.h"
 #include "w_wad.h"

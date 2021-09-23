@@ -22,9 +22,10 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #ifdef UNIX
 #include <ctype.h>
-#include <cstring>
 #ifndef O_BINARY
 #define O_BINARY		0
 #endif
@@ -38,8 +39,6 @@
 
 #include <fcntl.h>
 
-#include "doomtype.h"
-#include "m_swap.h"
 #include "m_fileio.h"
 #include "i_system.h"
 #include "z_zone.h"
@@ -51,7 +50,6 @@
 
 #include <sstream>
 #include <algorithm>
-#include <vector>
 #include <iomanip>
 
 

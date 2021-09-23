@@ -21,14 +21,15 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 // ONLY for msvc! these make gcc debug builds GARGANTUAN
 // eg: 30mb compared to 13mb!
 #if defined(_MSC_VER)
 #include "win32inc.h"
 #endif // MSC_VER
 
-#include "version.h"
-#include "m_swap.h"
 
 // Endianess handling.
 // WAD files are stored little endian.

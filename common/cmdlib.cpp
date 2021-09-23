@@ -22,6 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <ctime>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -30,9 +33,7 @@
 
 #include "win32inc.h"
 
-#include "doomdef.h"
 #include "i_system.h"
-#include "doomtype.h"
 #include "cmdlib.h"
 #include <map>
 

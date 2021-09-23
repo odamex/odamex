@@ -23,14 +23,15 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <limits.h>
 
 #include "cmdlib.h"
-#include "doomdef.h"
 #include "c_dispatch.h"
 #include "d_event.h"
 #include "p_local.h"
-#include "doomstat.h"
 #include "s_sound.h"
 #include "i_system.h"
 #include "gi.h"

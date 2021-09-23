@@ -24,7 +24,6 @@
 #ifndef __G_EPISODE__
 #define __G_EPISODE__
 
-#include "doomdef.h"
 
 #define MAX_EPISODES 8
 
