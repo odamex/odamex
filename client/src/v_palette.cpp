@@ -1002,7 +1002,8 @@ fargb_t V_HSVtoRGB(const fahsv_t &color)
 /****** Colored Lighting Stuffs (Sorry, 8-bit only) ******/
 
 // Builds NUMCOLORMAPS colormaps lit with the specified color
-void BuildColoredLights(shademap_t* maps, int lr, int lg, int lb, int r, int g, int b)
+static void BuildColoredLights(shademap_t* maps, const int lr, const int lg, const int lb,
+                               const int fr, const int fg, const int fb)
 {
 	// The default palette is assumed to contain the maps for white light.
 	if (!maps)
@@ -1015,19 +1016,22 @@ void BuildColoredLights(shademap_t* maps, int lr, int lg, int lb, int r, int g, 
 	// build normal (but colored) light mappings
 	for (unsigned int l = 0; l < NUMCOLORMAPS; l++)
 	{
-		byte a = maps->ramp[l * 255 / NUMCOLORMAPS];
-
-		// Write directly to the shademap for blending:
-		argb_t* colors = maps->shademap + 256 * l;
-		V_DoBlending(colors, palette_colors, argb_t(a, r, g, b));
-
 		// Build the colormap and shademap:
-		palindex_t* colormap = maps->colormap + 256*l;
-		argb_t* shademap = maps->shademap + 256*l;
+		palindex_t* colormap = maps->colormap + 256 * l;
+		argb_t* shademap = maps->shademap + 256 * l;
 		for (unsigned int c = 0; c < 256; c++)
 		{
-			argb_t color(255, colors[c].getr() * lr / 255,
-						colors[c].getg() * lg / 255, colors[c].getb() * lb / 255);
+			unsigned int r = (palette_colors[c].getr() * (NUMCOLORMAPS - l) + fr * l +
+			                  NUMCOLORMAPS / 2) /
+			                 NUMCOLORMAPS;
+			unsigned int g = (palette_colors[c].getg() * (NUMCOLORMAPS - l) + fg * l +
+			                  NUMCOLORMAPS / 2) /
+			                 NUMCOLORMAPS;
+			unsigned int b = (palette_colors[c].getb() * (NUMCOLORMAPS - l) + fb * l +
+			                  NUMCOLORMAPS / 2) /
+			                 NUMCOLORMAPS;
+			argb_t color(255, r * lr / 255, g * lg / 255, b * lb / 255);
+
 			shademap[c] = V_GammaCorrect(color);
 			colormap[c] = V_BestColor(palette_colors, color);
 		}
