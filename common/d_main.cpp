@@ -837,11 +837,12 @@ void D_AddWadCommandLineFiles(OWantFiles& out)
 //
 // D_AddDehCommandLineFiles
 //
-// Adds the DEH/BEX files specified with -deh.
+// Adds the DEH/BEX files specified with -bex or -deh.
 // Call this from D_DoomMain
 //
 void D_AddDehCommandLineFiles(OWantFiles& out)
 {
+	AddCommandLineOptionFiles(out, "-bex", OFILE_DEH);
 	AddCommandLineOptionFiles(out, "-deh", OFILE_DEH);
 }
 

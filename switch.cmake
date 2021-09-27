@@ -22,10 +22,6 @@ set (CMAKE_GENERATOR "Unix Makefiles" CACHE INTERNAL "" FORCE)
 # Build type (Release/Debug)
 set (CMAKE_BUILD_TYPE, "Release")
 
-# Since 0.8.3, Odamex is forced to used C++98 standards.
-# Force it back to C++11 to allow the Switch to properly compile.
-set(CMAKE_CXX_STANDARD 11)
-
 # Odamex specific settings
 set (BUILD_CLIENT 1)
 set (BUILD_SERVER 0)
