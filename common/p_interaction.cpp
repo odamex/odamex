@@ -1147,6 +1147,10 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 				case MT_KNIGHT:
 					messagename = OB_KNIGHTHIT;
 					break;
+				case MT_SKULL:
+					// [AM] Lost soul attacks now damage using MOD_HIT.
+					messagename = OB_SKULL;
+					break;
 				default:
 					break;
 				}
@@ -1172,9 +1176,6 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 					break;
 				case MT_CHAINGUY:
 					messagename = OB_CHAINGUY;
-					break;
-				case MT_SKULL:
-					messagename = OB_SKULL;
 					break;
 				case MT_TROOP:
 					messagename = OB_IMP;
@@ -1217,13 +1218,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 
 		toast_t toast;
-		toast.flags = toast_t::ICON | toast_t::RIGHT;
-		if (G_IsTeamGame())
-		{
-			toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
-		}
+		toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
 		toast.icon = mod;
-		toast.right += self->player->userinfo.netname;
+		toast.right_pid = self->player->id;
 		COM_PushToast(toast);
 		return;
 	}
@@ -1294,15 +1291,10 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 
 		toast_t toast;
-		toast.flags = toast_t::LEFT | toast_t::ICON | toast_t::RIGHT;
-		if (G_IsTeamGame())
-		{
-			toast.left += GetTeamInfo(attacker->player->userinfo.team)->ToastColor;
-			toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
-		}
-		toast.left += attacker->player->userinfo.netname;
+		toast.flags = toast_t::LEFT_PID | toast_t::ICON | toast_t::RIGHT_PID;
+		toast.left_pid = attacker->player->id;
 		toast.icon = mod;
-		toast.right += self->player->userinfo.netname;
+		toast.right_pid = self->player->id;
 		COM_PushToast(toast);
 		return;
 	}
@@ -1313,13 +1305,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 
 	toast_t toast;
-	toast.flags = toast_t::ICON | toast_t::RIGHT;
-	if (G_IsTeamGame())
-	{
-		toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
-	}
+	toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
 	toast.icon = mod;
-	toast.right += self->player->userinfo.netname;
+	toast.right_pid = self->player->id;
 	COM_PushToast(toast);
 }
 

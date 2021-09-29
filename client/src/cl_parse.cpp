@@ -2531,11 +2531,10 @@ static void CL_Toast(const odaproto::svc::Toast* msg)
 	toast_t toast;
 	toast.flags = msg->flags();
 	toast.left = msg->left();
+	toast.left_pid = msg->left_pid();
 	toast.right = msg->right();
+	toast.right_pid = msg->right_pid();
 	toast.icon = msg->icon();
-	toast.pid_highlight = msg->pid_highlight();
-	toast.left_plus = msg->left_plus();
-	toast.right_plus = msg->right_plus();
 
 	COM_PushToast(toast);
 }
