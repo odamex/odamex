@@ -15,6 +15,7 @@ ProcessorCount(PARALLEL_PROC_COUNT)
 
 # Set our prefix path, so inter-dependencies are picked up on.
 set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/local")
+set(CMAKE_FRAMEWORK_PATH "${CMAKE_CURRENT_BINARY_DIR}/Frameworks")
 
 # Shorthand, to reduce line-noise
 set(libprefix "${CMAKE_STATIC_LIBRARY_PREFIX}")
@@ -23,6 +24,7 @@ set(dllprefix "${CMAKE_SHARED_LIBRARY_PREFIX}")
 set(dllsuffix "${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Frameworks")
 
 ### zlib ###
 
@@ -382,6 +384,15 @@ if(BUILD_CLIENT)
         set(SDL2_LIBRARY "${SDL2_DIR}/lib/libSDL2.dll.a" CACHE FILEPATH "")
         set(SDL2MAIN_LIBRARY "${SDL2_DIR}/lib/libSDL2main.a" CACHE FILEPATH "")
       endif()
+    elseif(APPLE)
+      file(DOWNLOAD
+        "https://www.libsdl.org/release/SDL2-2.0.16.dmg"
+        "${CMAKE_CURRENT_BINARY_DIR}/SDL2.dmg"
+        EXPECTED_HASH SHA256=315a4c6d23800b59051ab25300527d94ae18149b15ad210290cff03d1ac78452)
+      execute_process(COMMAND hdiutil attach "${CMAKE_CURRENT_BINARY_DIR}/SDL2.dmg")
+      file(COPY "/Volumes/SDL2/SDL2.framework"
+        DESTINATION "${CMAKE_FRAMEWORK_PATH}/")
+      execute_process(COMMAND hdiutil unmount "/Volumes/SDL2/")
     endif()
 
     find_package(SDL2)
@@ -456,6 +467,33 @@ if(BUILD_CLIENT)
         set(SDL2_MIXER_INCLUDE_DIR "${SDL2_MIXER_DIR}/include/SDL2" CACHE PATH "")
         set(SDL2_MIXER_LIBRARY "${SDL2_MIXER_DIR}/lib/libSDL2_mixer.dll.a" CACHE FILEPATH "")
       endif()
+    elseif(APPLE)
+      # SDL2_mixer 2.0.4 does not support ARM, so we must build off master.  Once 2.0.5
+      # comes out, we don't need to build our own anymore.
+      message(STATUS "Compiling internal SDL2_mixer...")
+      file(DOWNLOAD
+        "https://codeload.github.com/libsdl-org/SDL_mixer/zip/12265697c94260d90e4247ccccfe25a92e1b4978"
+        "${CMAKE_CURRENT_BINARY_DIR}/SDL2_mixer.zip"
+        EXPECTED_HASH SHA256=74898171b10976210d83a7104a54a1aa017636a1c19fefb5005e1ca47ecb8384)
+      execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
+        "${CMAKE_CURRENT_BINARY_DIR}/SDL2_mixer.zip"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+      set(SDL2_MIXER_PROJECT
+        "${CMAKE_CURRENT_BINARY_DIR}/SDL_mixer-12265697c94260d90e4247ccccfe25a92e1b4978/Xcode")
+
+      # [AM] Mea culpa, mea culpa, mea maxima culpa.
+      execute_process(COMMAND sed -i .bak "s/$(HOME)\\/Library\\/Frameworks/..\\/..\\/Frameworks/g"
+        "SDL_mixer.xcodeproj/project.pbxproj" WORKING_DIRECTORY "${SDL2_MIXER_PROJECT}")
+      execute_process(COMMAND xcodebuild -project SDL_mixer.xcodeproj
+        -scheme Framework -configuration Release
+        WORKING_DIRECTORY "${SDL2_MIXER_PROJECT}")
+      execute_process(
+        COMMAND xcodebuild -project SDL_mixer.xcodeproj -scheme Framework -showBuildSettings
+        COMMAND grep TARGET_BUILD_DIR
+        COMMAND sed "s/[ ]*TARGET_BUILD_DIR = //"
+        WORKING_DIRECTORY "${SDL2_MIXER_PROJECT}" OUTPUT_VARIABLE SDL2_MIXER_OUT OUTPUT_STRIP_TRAILING_WHITESPACE)
+      file(COPY "${SDL2_MIXER_OUT}/SDL2_mixer.framework"
+        DESTINATION "${CMAKE_FRAMEWORK_PATH}/")
     endif()
 
     find_package(SDL2_mixer)
