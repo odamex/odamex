@@ -26,7 +26,7 @@ include(GNUInstallDirs OPTIONAL)
 add_definitions(-DINSTALL_BINDIR="${CMAKE_INSTALL_BINDIR}")
 add_definitions(-DINSTALL_DATADIR="${CMAKE_INSTALL_DATADIR}")
 
-if(WIN32)
+if(WIN32 OR APPLE)
   set(USE_INTERNAL_LIBS 1)
 else()
   set(USE_INTERNAL_LIBS 0)
