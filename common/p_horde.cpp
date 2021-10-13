@@ -234,6 +234,9 @@ class HordeState
 		m_nextSpawn = ::level.time;
 		m_nextPowerup = ::level.time + (30 * TICRATE);
 		m_corpses.clear();
+
+		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
+		                   G_HordeDefine(m_defineID).name.c_str());
 	}
 
 	/**
@@ -278,6 +281,9 @@ class HordeState
 		m_bosses.clear();
 		m_bossRecipe.clear();
 		m_corpses.startWave();
+
+		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
+		                   G_HordeDefine(m_defineID).name.c_str());
 	}
 
 	/**
@@ -303,6 +309,8 @@ class HordeState
 		m_bossRecipe.clear();
 		m_corpses.startWave();
 
+		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
+		                   G_HordeDefine(m_defineID).name.c_str());
 		return true;
 	}
 
