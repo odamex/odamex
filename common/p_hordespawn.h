@@ -34,11 +34,14 @@
 #define TTYPE_HORDE_SMALLSNIPER (5305)
 #define TTYPE_HORDE_SNIPER (5306)
 #define TTYPE_HORDE_POWERUP (5307)
+#define TTYPE_HORDE_SMALLBOSS (5308)
 
 static inline const char* HordeThingStr(const int ttype)
 {
 	switch (ttype)
 	{
+	case TTYPE_HORDE_SMALLMONSTER:
+		return "Small Monster";
 	case TTYPE_HORDE_ITEM:
 		return "Item";
 	case TTYPE_HORDE_MONSTER:
@@ -48,11 +51,13 @@ static inline const char* HordeThingStr(const int ttype)
 	case TTYPE_HORDE_FLYING:
 		return "Flying";
 	case TTYPE_HORDE_SMALLSNIPER:
-		return "Sniper";
+		return "Small Sniper";
 	case TTYPE_HORDE_SNIPER:
-		return "Big Sniper";
+		return "Sniper";
 	case TTYPE_HORDE_POWERUP:
 		return "Powerup";
+	case TTYPE_HORDE_SMALLBOSS:
+		return "Small Boss";
 	default:
 		return "Unknown";
 	}

@@ -227,7 +227,8 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 		mobjinfo_t& info = ::mobjinfo[recipe.type];
 		const bool isFlying = info.flags & (MF_NOGRAVITY | MF_FLOAT);
 
-		if (recipe.isBoss && sit->type != TTYPE_HORDE_BOSS)
+		if (recipe.isBoss && sit->type != TTYPE_HORDE_BOSS &&
+		    sit->type != TTYPE_HORDE_SMALLBOSS)
 		{
 			// Bosses cannot spawn at non-boss spawns.
 			continue;
@@ -258,6 +259,11 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 		case TTYPE_HORDE_SMALLMONSTER:
 			// Small monster spawns have to spawn small monsters.
 			if (info.radius > (32 * FRACUNIT))
+				continue;
+			break;
+		case TTYPE_HORDE_SMALLBOSS:
+			// Small boss spawns can't spawn non-bosses, period.
+			if (!recipe.isBoss)
 				continue;
 			break;
 		case TTYPE_HORDE_FLYING:
