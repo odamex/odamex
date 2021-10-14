@@ -71,56 +71,65 @@ size_t P_NumPlayersOnTeam(team_t team);
 namespace hud {
 
 // Player sorting functions
-static bool STACK_ARGS cmpFrags(const player_t *arg1, const player_t *arg2) {
+static bool cmpFrags(const player_t* arg1, const player_t* arg2)
+{
 	return arg2->fragcount < arg1->fragcount;
 }
 
-static bool STACK_ARGS cmpDamage(const player_t* arg1, const player_t* arg2)
+static bool cmpDamage(const player_t* arg1, const player_t* arg2)
 {
-	return arg2->damagecount < arg1->damagecount;
+	return arg2->monsterdmgcount < arg1->monsterdmgcount;
 }
 
-static bool STACK_ARGS cmpKills(const player_t *arg1, const player_t *arg2) {
+static bool cmpKills(const player_t* arg1, const player_t* arg2)
+{
 	return arg2->killcount < arg1->killcount;
 }
 
-static bool STACK_ARGS cmpPoints (const player_t *arg1, const player_t *arg2) {
+static bool cmpPoints(const player_t* arg1, const player_t* arg2)
+{
 	return arg2->points < arg1->points;
 }
 
-static bool STACK_ARGS cmpRoundWins (const player_t *arg1, const player_t *arg2) {
+static bool cmpRoundWins(const player_t* arg1, const player_t* arg2)
+{
 	return arg2->roundwins < arg1->roundwins;
 }
 
-static bool STACK_ARGS cmpQueue(const player_t *arg1, const player_t *arg2) {
+static bool cmpQueue(const player_t* arg1, const player_t* arg2)
+{
 	return arg1->QueuePosition < arg2->QueuePosition;
 }
 
-
 // Returns true if a player is ingame.
-bool ingamePlayer(player_t* player) {
+bool ingamePlayer(player_t* player)
+{
 	return (player->ingame() && player->spectator == false);
 }
 
 // Returns true if a player is ingame and on a specific team
-bool inTeamPlayer(player_t* player, const byte team) {
-	return (player->ingame() && player->userinfo.team == team && player->spectator == false);
+bool inTeamPlayer(player_t* player, const byte team)
+{
+	return (player->ingame() && player->userinfo.team == team &&
+	        player->spectator == false);
 }
 
 // Returns true if a player is a spectator
-bool spectatingPlayer(player_t* player) {
+bool spectatingPlayer(player_t* player)
+{
 	return (!player->ingame() || player->spectator == true);
 }
 
 // Returns a sorted player list.  Calculates at most once a gametic.
-std::vector<player_t *> sortedPlayers(void) {
+const PlayersView& sortedPlayers()
+{
 	static int sp_tic = -1;
-	static std::vector<player_t *> sortedplayers(players.size());
-	static std::vector<player_t*> inGame;
-	static std::vector<player_t*> specInQueue;
-	static std::vector<player_t*> specNormal;
+	static PlayersView sortedplayers;
+	static PlayersView inGame;
+	static PlayersView specInQueue;
+	static PlayersView specNormal;
 
-	if (sp_tic == gametic)
+	if (sp_tic == ::gametic)
 		return sortedplayers;
 
 	sortedplayers.clear();
@@ -128,7 +137,7 @@ std::vector<player_t *> sortedPlayers(void) {
 	specInQueue.clear();
 	specNormal.clear();
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
 	{
 		if (!it->ingame())
 			continue;
@@ -136,9 +145,13 @@ std::vector<player_t *> sortedPlayers(void) {
 		if (it->spectator)
 		{
 			if (it->QueuePosition > 0)
+			{
 				specInQueue.push_back(&(*it));
+			}
 			else
+			{
 				specNormal.push_back(&(*it));
+			}
 		}
 		else
 		{
@@ -159,7 +172,9 @@ std::vector<player_t *> sortedPlayers(void) {
 	{
 		std::sort(inGame.begin(), inGame.end(), cmpFrags);
 		if (sv_gametype == GM_CTF)
+		{
 			std::sort(inGame.begin(), inGame.end(), cmpPoints);
+		}
 	}
 
 	std::sort(specInQueue.begin(), specInQueue.end(), cmpQueue);
@@ -167,10 +182,12 @@ std::vector<player_t *> sortedPlayers(void) {
 	for (std::vector<player_t*>::iterator it = inGame.begin(); it != inGame.end(); it++)
 		sortedplayers.push_back(*it);
 
-	for (std::vector<player_t*>::iterator it = specInQueue.begin(); it != specInQueue.end(); it++)
+	for (std::vector<player_t*>::iterator it = specInQueue.begin();
+	     it != specInQueue.end(); it++)
 		sortedplayers.push_back(*it);
 
-	for (std::vector<player_t*>::iterator it = specNormal.begin(); it != specNormal.end(); it++)
+	for (std::vector<player_t*>::iterator it = specNormal.begin(); it != specNormal.end();
+	     it++)
 		sortedplayers.push_back(*it);
 
 	sp_tic = gametic;
