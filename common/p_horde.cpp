@@ -517,10 +517,6 @@ void HordeState::tick()
 		switch (m_state)
 		{
 		case HS_PRESSURE: {
-			const int pressureHealth =
-			    P_RandomInt(define.maxGroupHealth - define.minGroupHealth) +
-			    define.minGroupHealth;
-
 			// Pick a recipe for some monsters.
 			hordeRecipe_t recipe;
 			const bool ok = P_HordeSpawnRecipe(recipe, define, false);
