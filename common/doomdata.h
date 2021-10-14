@@ -27,14 +27,6 @@
 #ifndef __DOOMDATA__
 #define __DOOMDATA__
 
-// The most basic types we use, portability.
-#include "doomtype.h"
-
-// Some global defines, that configure the game.
-#include "doomdef.h"
-
-
-
 //
 // Map level types.
 // The following data structures define the persistent format
@@ -297,5 +289,3 @@ typedef struct
 
 
 #endif					// __DOOMDATA__
-
-

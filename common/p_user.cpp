@@ -23,14 +23,15 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <limits.h>
 
 #include "cmdlib.h"
-#include "doomdef.h"
 #include "c_dispatch.h"
 #include "d_event.h"
 #include "p_local.h"
-#include "doomstat.h"
 #include "s_sound.h"
 #include "i_system.h"
 #include "gi.h"
@@ -799,9 +800,34 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 	if (demo)
 		return true;
 
-	// A teammate can see their other teammates.
-	// Spectators see anyone with one slight restriction.
-	if (P_AreTeammates(viewer, other) || viewer.spectator)
+	// Is the player a teammate?
+	bool isTeammate = false;
+	if (G_IsCoopGame())
+	{
+		// You are everyone's teammate in a coop game.
+		isTeammate = true;
+	}
+	else if (G_IsTeamGame())
+	{
+		if (viewer.userinfo.team == other.userinfo.team)
+		{
+			// You are on the same team.
+			isTeammate = true;
+		}
+		else if (G_IsLivesGame())
+		{
+			PlayerResults pr =
+			    PlayerQuery().hasLives().onTeam(viewer.userinfo.team).execute();
+			if (pr.count == 0)
+			{
+				// You are on a different team but your teammates are dead, so
+				// it doesn't really matter if you spectate them.
+				isTeammate = true;
+			}
+		}
+	}
+
+	if (isTeammate || viewer.spectator)
 	{
 		// If a player has no more lives, don't show him.
 		if (::g_lives && other.lives < 1)
@@ -813,8 +839,6 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 	// A player who is out of lives in LMS can see everyone else
 	if (::sv_gametype == GM_DM && ::g_lives && viewer.lives < 1)
 		return true;
-
-
 
 	return false;
 }

@@ -22,31 +22,32 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <ctype.h>
-#include <stdio.h>
 
 #include "z_zone.h"
 #include "m_random.h"
 #include "i_video.h"
 #include "w_wad.h"
 #include "g_game.h"
-#include "g_level.h"
 #include "r_local.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
-#include "doomstat.h"
 #include "v_video.h"
 #include "wi_stuff.h"
 #include "c_console.h"
 #include "hu_stuff.h"
 #include "v_palette.h"
 #include "c_dispatch.h"
+#include "v_text.h"
 #include "gi.h"
 #include "v_textcolors.h"
 
 extern byte* Ranges;
 
 void WI_unloadData(void);
+size_t P_NumPlayersInGame();
 
 //
 // Data needed to add patches to full screen intermission pics.
@@ -363,7 +364,7 @@ static const char*		lnametexts[2];
 static IWindowSurface*	background_surface;
 
 EXTERN_CVAR (sv_maxplayers)
-EXTERN_CVAR (wi_newintermission)
+EXTERN_CVAR (wi_oldintermission)
 EXTERN_CVAR (cl_autoscreenshot)
 //
 // CODE
@@ -459,7 +460,32 @@ static int WI_DrawName (const char *str, int x, int y)
 	return (5*(p->height()-p->topoffset()))/4;
 }
 
+static int WI_DrawSmallName(const char* str, int x, int y)
+{
+	int lump;
+	patch_t* p = NULL;
+	char charname[9];
 
+	while (*str)
+	{
+		sprintf(charname, "STCFN%.3d", HU_FONTSTART + (toupper(*str) - 32) - 1);
+		lump = W_CheckNumForName(charname);
+		if (lump != -1)
+		{
+			p = W_CachePatch(lump);
+			screen->DrawPatchClean(p, x, y);
+			x += p->width() - 1;
+		}
+		else
+		{
+			x += 12;
+		}
+		str++;
+	}
+
+	p = W_CachePatch("FONTB39");
+	return (5 * (p->height() - p->topoffset())) / 4;
+}
 
 //Draws "<Levelname> Finished!"
 void WI_drawLF (void)
@@ -1090,6 +1116,7 @@ void WI_updateNetgameStats()
 void WI_drawNetgameStats(void)
 {
 	unsigned int x, y;
+	unsigned int nbPlayers = 0;
 
 	patch_t* pPercent = W_ResolvePatchHandle(::percent);
 	patch_t* pKills = W_ResolvePatchHandle(::kills);
@@ -1124,8 +1151,12 @@ void WI_drawNetgameStats(void)
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		// [RH] Quick hack: Only show the first four players.
-		if (it->id > 4)
+		// Make sure while demoplaybacking that we're not exceeding the hardlimit of 4 players.
+		if (demoplayback && it->id > 4)
+			break;
+
+		// Break it anyway if we count more than 4 ACTIVE players in our session.
+		if (!demoplayback && nbPlayers > 4)
 			break;
 
 		byte i = (it->id) - 1;
@@ -1135,7 +1166,11 @@ void WI_drawNetgameStats(void)
 
 		x = NG_STATSX;
 		// [RH] Only use one graphic for the face backgrounds
-		V_ColorMap = translationref_t(translationtables + i * 256, i);
+		if (demoplayback)
+			V_ColorMap = translationref_t(translationtables + it->id * 256, it->id);
+		else
+			V_ColorMap = translationref_t(translationtables + i * 256, i);
+		
 		screen->DrawTranslatedPatchClean(pP, x - pP->width(), y);
 		// classic face background colour
 		//screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
@@ -1143,7 +1178,16 @@ void WI_drawNetgameStats(void)
 		if (i == me)
 			screen->DrawPatchClean(pStar, x - pP->width(), y);
 
+		// Display player names online!
+		if (!demoplayback)
+		{
+			std::string str;
+			StrFormat(str, "%s", it->userinfo.netname.c_str());			
+			WI_DrawSmallName(str.c_str(), x+10, y+24);
+		}
+
 		x += NG_SPACINGX;
+
 		WI_drawPercent (cnt_kills_c[i], x-pwidth, y+10, wbs->maxkills);	x += NG_SPACINGX;
 		WI_drawPercent (cnt_items_c[i], x-pwidth, y+10, wbs->maxitems);	x += NG_SPACINGX;
 		WI_drawPercent (cnt_secret_c[i], x-pwidth, y+10, wbs->maxsecret); x += NG_SPACINGX;
@@ -1151,7 +1195,8 @@ void WI_drawNetgameStats(void)
 		if (dofrags)
 			WI_drawNum(cnt_frags_c[i], x, y+10, -1);
 
-		y += WI_SPACINGY;
+		y += WI_SPACINGY+4;
+		nbPlayers++;
 	}
 }
 
@@ -1313,7 +1358,7 @@ void WI_checkForAccelerate(void)
 {
 	if (!serverside)
 		return;
-
+		
 	// check for button presses to skip delays
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -1363,12 +1408,19 @@ void WI_Ticker (void)
 	switch (state)
 	{
 		case StatCount:
-			if (multiplayer && sv_maxplayers > 1)
+			if (multiplayer)
 			{
-				if (sv_gametype == 0 && !wi_newintermission && sv_maxplayers < 5)
-					WI_updateNetgameStats();
-				else
-					WI_updateNoState();
+			    if (demoplayback)
+			    {
+				    WI_updateNetgameStats();
+				}
+			    else
+			    {
+				    if (sv_gametype == 0 && wi_oldintermission && P_NumPlayersInGame() < 5)
+					    WI_updateNetgameStats();
+				    else
+					    WI_updateNoState();
+				}
 			}
 			else
 				WI_updateStats();
@@ -1634,13 +1686,19 @@ void WI_Drawer (void)
 		switch (state)
 		{
 		case StatCount:
-			if (multiplayer && sv_maxplayers > 1)
+			if (multiplayer)
 			{
-				// TODO: Fix classic coop scoreboard
-				//if (sv_gametype == 0 && !wi_newintermission && sv_maxplayers < 5)
-					//WI_drawNetgameStats();
-				//else
-					WI_drawDeathmatchStats();
+				if (demoplayback)
+				{
+					WI_drawNetgameStats();
+				}
+				else
+				{
+					if (sv_gametype == 0 && wi_oldintermission && P_NumPlayersInGame() < 5)
+						WI_drawNetgameStats();
+					else
+						WI_drawDeathmatchStats();
+				}
 			}
 			else
 				WI_drawStats();

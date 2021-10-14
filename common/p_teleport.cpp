@@ -23,11 +23,10 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <stdlib.h>
 
-#include "doomtype.h"
-#include "doomdef.h"
-#include "doomstat.h"
 
 #include "m_random.h"
 #include "s_sound.h"
@@ -529,4 +528,3 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 }
 
 VERSION_CONTROL (p_teleport_cpp, "$Id$")
-

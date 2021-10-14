@@ -21,15 +21,16 @@
 //
 //-----------------------------------------------------------------------------
 
+
 #if defined UNIX && !defined GCONSOLE
+
+#include "odamex.h"
 
 #define CRASH_DIR_LEN 1024
 
 #include "i_crash.h"
 
 #include <signal.h>
-#include <stdio.h>
-#include <string.h>
 
 #include <execinfo.h>
 #include <fcntl.h>
@@ -187,7 +188,6 @@ void I_SetCrashDir(const char* crashdir)
 
 #include <switch.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 extern "C"
 {

@@ -23,17 +23,17 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "i_system.h"
 #include "z_zone.h"
 
-#include "m_swap.h"
 
 #include "w_wad.h"
 
-#include "doomdef.h"
 #include "r_local.h"
 
-#include "doomstat.h"
 #include "r_sky.h"
 
 #include "cmdlib.h"
@@ -44,7 +44,6 @@
 #include "v_video.h"
 
 #include <ctype.h>
-#include <cstddef>
 
 #include <algorithm>
 
@@ -143,30 +142,32 @@ void R_ConvertPatch(patch_t* newpatch, patch_t* rawpatch, const unsigned int lum
 	if (!rawpatch || !newpatch)
 		return;
 
-	memcpy(newpatch, rawpatch, 8);		// copy the patch header
+	memcpy(newpatch, rawpatch, 8); // copy the patch header
 
-	unsigned *rawpostofs = (unsigned*)((byte*)rawpatch + 8);
-	unsigned *newpostofs = (unsigned*)((byte*)newpatch + 8);
+	uint32_t* rawpostofs = rawpatch->ofs();
+	uint32_t* newpostofs = newpatch->ofs();
 
-	unsigned curofs = 8 + 4 * rawpatch->width();	// keep track of the column offset
+	uint32_t curofs = rawpatch->datastart(); // keep track of the column offset
 
 	for (int i = 0; i < rawpatch->width(); i++)
 	{
-		int abs_offset = 0;
-			
-		newpostofs[i] = LELONG(curofs);		// write the new offset for this column
-		post_t *rawpost = (post_t*)((byte*)rawpatch + LELONG(rawpostofs[i]));
-		tallpost_t *newpost = (tallpost_t*)((byte*)newpatch + curofs);
+		int newpost_top = -1;
+		int newpost_len = 0;
 
-		while (rawpost->topdelta != 0xFF)
+		int abs_offset = 0;
+
+		newpostofs[i] = LELONG(curofs); // write the new offset for this column
+		post_t* rawpost = rawpatch->post(LELONG(rawpostofs[i]));
+		tallpost_t* newpost = newpatch->tallpost(curofs);
+
+		while (!rawpost->end())
 		{
 			// handle DeePsea tall patches where topdelta is treated as a relative
 			// offset instead of an absolute offset
-			if (rawpost->topdelta <= abs_offset)
-				abs_offset += rawpost->topdelta;
-			else
-				abs_offset = rawpost->topdelta;
-				
+			abs_offset = rawpost->abs(abs_offset);
+			if (newpost_top == -1)
+				newpost_top = abs_offset;
+
 			// watch for column overruns
 			int length = rawpost->length;
 			if (abs_offset + length > rawpatch->height())
@@ -179,14 +180,24 @@ void R_ConvertPatch(patch_t* newpatch, patch_t* rawpatch, const unsigned int lum
 			}
 
 			// copy the pixels in the post
-			memcpy(newpost->data(), (byte*)(rawpost) + 3, length);
-				
-			newpost->topdelta = abs_offset;
-			newpost->length = length;
+			memcpy(newpost->data() + newpost_len, rawpost->data(), length);
+			newpost_len += length;
 
-			curofs += newpost->length + 4;
-			rawpost = (post_t*)((byte*)rawpost + rawpost->length + 4);
-			newpost = newpost->next();
+			// Should we finish the post?
+			if (rawpost->next()->end() ||
+			    abs_offset + length != rawpost->next()->abs(abs_offset))
+			{
+				newpost->topdelta = newpost_top;
+				newpost->length = newpost_len;
+
+				curofs += newpost->size();
+				newpost = newpost->next();
+
+				newpost_top = -1;
+				newpost_len = 0;
+			}
+
+			rawpost = rawpost->next();
 		}
 
 		newpost->writeend();
@@ -1166,4 +1177,3 @@ unsigned int SlopeDiv (unsigned int num, unsigned int den)
 }
 
 VERSION_CONTROL (r_data_cpp, "$Id$")
-

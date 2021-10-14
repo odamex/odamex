@@ -27,8 +27,6 @@
 #include <d_player.h>
 
 #include <map>
-#include <string>
-#include <vector>
 
 // Serverside maplist structure
 class Maplist {
@@ -45,6 +43,9 @@ private:
 	byte version;
 	void shuffle(void);
 	void update_shuffle_index(void);
+
+	maplist_entry_t lobbymap;
+
 public:
 	Maplist() : entered_once(false), error(""), index(0),
 				in_maplist(false), shuffled(false), s_index(0), version(0) { };
@@ -54,6 +55,7 @@ public:
 	bool insert(const size_t &position, maplist_entry_t &maplist_entry);
 	bool remove(const size_t &position);
 	bool clear(void);
+
 	// Elements
 	bool empty(void);
 	std::string get_error(void);
@@ -72,6 +74,12 @@ public:
 	bool pid_cached(const int index);
 	void set_timeout(const int index);
 	void clear_timeout(const int index);
+
+	// Lobby
+	void set_lobbymap(maplist_entry_t map);
+	maplist_entry_t get_lobbymap();
+	void clear_lobbymap();
+	bool lobbyempty();
 };
 
 void SV_Maplist(player_t &player);

@@ -28,7 +28,6 @@
 #ifndef __M_BBOX_H__
 #define __M_BBOX_H__
 
-#include "doomtype.h"
 #include "dobject.h"
 #include "m_fixed.h"
 

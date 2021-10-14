@@ -25,7 +25,6 @@
 #ifndef __GI_H__
 #define __GI_H__
 
-#include "doomtype.h"
 #include "olumpname.h"
 
 #define GI_MAPxx				0x00000001

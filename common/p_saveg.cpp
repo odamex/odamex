@@ -22,12 +22,13 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "i_system.h"
 #include "p_local.h"
 
 // State.
 #include "dobject.h"
-#include "doomstat.h"
 #include "d_player.h"
 #include "r_state.h"
 #include "m_random.h"
@@ -332,4 +333,3 @@ void P_SerializePolyobjs (FArchive &arc)
 }
 
 VERSION_CONTROL (p_saveg_cpp, "$Id$")
-

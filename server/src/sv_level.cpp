@@ -22,13 +22,14 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <algorithm>
 
 #include "c_dispatch.h"
 #include "d_event.h"
 #include "d_main.h"
-#include "doomstat.h"
-#include "g_level.h"
 #include "g_game.h"
 #include "gi.h"
 
@@ -192,29 +193,50 @@ void G_ChangeMap() {
 	}
 	else
 	{
-		size_t next_index;
-		if (!Maplist::instance().get_next_index(next_index)) {
-			// We don't have a maplist, so grab the next 'natural' map lump.
-			std::string next = G_NextMap();
-			G_DeferedInitNew(next.c_str());
-		}
-		else {
-			maplist_entry_t maplist_entry;
-			Maplist::instance().get_map_by_index(next_index, maplist_entry);
+		maplist_entry_t lobby_entry;
+		lobby_entry = Maplist::instance().get_lobbymap();
 
+		if (!Maplist::instance().lobbyempty())
+		{
 			std::string wadstr;
-			for (size_t i = 0; i < maplist_entry.wads.size(); i++)
+			for (size_t i = 0; i < lobby_entry.wads.size(); i++)
 			{
 				if (i != 0)
 				{
 					wadstr += " ";
 				}
-				wadstr += C_QuoteString(maplist_entry.wads.at(i));
+				wadstr += C_QuoteString(lobby_entry.wads.at(i));
 			}
-			G_LoadWadString(wadstr, maplist_entry.map);
+			G_LoadWadString(wadstr, lobby_entry.map);
+		}
+		else
+		{
+			size_t next_index;
+			if (!Maplist::instance().get_next_index(next_index))
+			{
+				// We don't have a maplist, so grab the next 'natural' map lump.
+				std::string next = G_NextMap();
+				G_DeferedInitNew((char*)next.c_str());
+			}
+			else
+			{
+				maplist_entry_t maplist_entry;
+				Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-			// Set the new map as the current map
-			Maplist::instance().set_index(next_index);
+				std::string wadstr;
+				for (size_t i = 0; i < maplist_entry.wads.size(); i++)
+				{
+					if (i != 0)
+					{
+						wadstr += " ";
+					}
+					wadstr += C_QuoteString(maplist_entry.wads.at(i));
+				}
+				G_LoadWadString(wadstr, maplist_entry.map);
+
+				// Set the new map as the current map
+				Maplist::instance().set_index(next_index);
+			}
 		}
 
 		// run script at the end of each map

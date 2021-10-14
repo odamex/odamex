@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "cl_parse.h"
 
 #include <bitset>
@@ -37,9 +40,7 @@
 #include "cmdlib.h"
 #include "d_main.h"
 #include "d_player.h"
-#include "doomstat.h"
 #include "g_gametype.h"
-#include "g_level.h"
 #include "g_levelstate.h"
 #include "gi.h"
 #include "m_argv.h"
@@ -783,13 +784,10 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 	if (p->userinfo.gender < 0 || p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
 
-	for (size_t i = 0; i < p->userinfo.color[i]; i++)
-	{
-		if (i < msg->color_size())
-			p->userinfo.color[i] = msg->color().Get(i);
-		else
-			p->userinfo.color[i] = 0;
-	}
+	p->userinfo.color[0] = 255;
+	p->userinfo.color[1] = msg->color().r();
+	p->userinfo.color[2] = msg->color().g();
+	p->userinfo.color[3] = msg->color().b();
 
 	p->GameTime = msg->join_time();
 
@@ -2538,11 +2536,10 @@ static void CL_Toast(const odaproto::svc::Toast* msg)
 	toast_t toast;
 	toast.flags = msg->flags();
 	toast.left = msg->left();
+	toast.left_pid = msg->left_pid();
 	toast.right = msg->right();
+	toast.right_pid = msg->right_pid();
 	toast.icon = msg->icon();
-	toast.pid_highlight = msg->pid_highlight();
-	toast.left_plus = msg->left_plus();
-	toast.right_plus = msg->right_plus();
 
 	COM_PushToast(toast);
 }

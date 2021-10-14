@@ -27,10 +27,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __D_STATE__
-#define __D_STATE__
-
-#include <vector>
+#pragma once
 
 #include "doomdata.h"
 #include "d_net.h"
@@ -81,6 +78,9 @@ EXTERN_CVAR (sv_maxplayers)
 #define GM_TEAMDM	2.0f
 #define GM_CTF		3.0f
 
+#define FPS_NONE	0
+#define FPS_FULL	1
+#define FPS_COUNTER	2
 
 // -------------------------
 // Internal parameters for sound rendering.
@@ -212,8 +212,3 @@ struct DehInfo
 	int Infight;
 };
 extern struct DehInfo deh;
-
-#endif
-
-
-

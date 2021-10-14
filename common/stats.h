@@ -25,8 +25,6 @@
 #ifndef __STATS_H__
 #define __STATS_H__
 
-#include <vector>
-#include <string>
 #include <algorithm>
 
 class FStat
@@ -62,5 +60,3 @@ private:
 #define END_STAT(n) Stat_var_##n.unclock();
 
 #endif //__STATS_H__
-
-

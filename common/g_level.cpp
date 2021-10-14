@@ -22,7 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "g_level.h"
+
+#include "odamex.h"
+
 
 #include <set>
 
@@ -30,7 +32,6 @@
 #include "c_dispatch.h"
 #include "d_event.h"
 #include "d_main.h"
-#include "doomstat.h"
 #include "g_game.h"
 #include "gi.h"
 #include "i_system.h"
@@ -1026,6 +1027,7 @@ BEGIN_COMMAND(mapinfo)
 	flags += (info.flags & LEVEL_STARTLIGHTNING ? " STARTLIGHTNING" : "");
 	flags += (info.flags & LEVEL_FILTERSTARTS ? " FILTERSTARTS" : "");
 	flags += (info.flags & LEVEL_LOBBYSPECIAL ? " LOBBYSPECIAL" : "");
+	flags += (info.flags & LEVEL_USEPLAYERSTARTZ ? " USEPLAYERSTARTZ" : "");
 	flags += (info.flags & LEVEL_DEFINEDINMAPINFO ? " DEFINEDINMAPINFO" : "");
 	flags += (info.flags & LEVEL_CHANGEMAPCHEAT ? " CHANGEMAPCHEAT" : "");
 	flags += (info.flags & LEVEL_VISITED ? " VISITED" : "");

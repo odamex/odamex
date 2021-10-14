@@ -23,16 +23,15 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
+
 #include <stdlib.h>
+#include <math.h>
 
 #include <algorithm>
 #include <sstream>
 
 #include "cmdlib.h"
-#include "doomtype.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "cl_demo.h"
 #include "cl_main.h"
 #include "d_items.h"
@@ -45,7 +44,6 @@
 #include "st_stuff.h"
 #include "hu_drawers.h"
 #include "hu_elements.h"
-#include "c_cvars.h"
 #include "p_ctf.h"
 #include "cl_parse.h"
 #include "cl_vote.h"
@@ -838,9 +836,10 @@ void DrawToasts()
 		return;
 
 	V_SetFont("DIGFONT");
+	const int TOAST_HEIGHT = V_LineHeight() + 2;
 
 	std::string buffer;
-	int y = 1;
+	int y = 0;
 
 	const float oldtrans = ::hud_transparency;
 	for (drawToasts_t::const_iterator it = g_Toasts.begin(); it != g_Toasts.end(); ++it)
@@ -865,21 +864,25 @@ void DrawToasts()
 		int x = 1;
 
 		// Right-hand side.
-		hud::DrawText(0, y, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP,
-		              it->right.c_str(), CR_GREY);
+		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
+		              hud::Y_TOP, it->right.c_str(), CR_GREY);
 		x += V_StringWidth(it->right.c_str()) + 1;
 
 		// Icon
 		patch_t* icon = W_ResolvePatchHandle(it->icon);
-		hud::DrawPatch(x, y, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
-		               hud::Y_TOP, icon, false, true);
+		const double yoff =
+		    (static_cast<double>(TOAST_HEIGHT) - static_cast<double>(icon->height())) /
+		    2.0;
+
+		hud::DrawPatch(x, y + ceil(yoff), hud_scale, hud::X_RIGHT, hud::Y_TOP,
+		               hud::X_RIGHT, hud::Y_TOP, icon, false, true);
 		x += icon->width() + 1;
 
 		// Left-hand side.
-		hud::DrawText(x, y, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP,
-		              it->left.c_str(), CR_GREY);
+		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
+		              hud::Y_TOP, it->left.c_str(), CR_GREY);
 
-		y += MAX(V_LineHeight(), static_cast<int>(icon->height()));
+		y += TOAST_HEIGHT;
 	}
 	::hud_transparency.ForceSet(oldtrans);
 
@@ -913,17 +916,30 @@ void PushToast(const toast_t& toast)
 	drawToast.tic = ::gametic;
 	drawToast.pid_highlight = -1;
 
-	if (toast.flags & toast_t::LEFT)
+	if (toast.flags & toast_t::LEFT_PID)
 	{
-		buffer += toast.left + " ";
+		std::string netname = idplayer(toast.left_pid).userinfo.netname;
+		if (consoleplayer().id == toast.left_pid)
+		{
+			buffer += TEXTCOLOR_GOLD + netname;
+		}
+		else if (G_IsTeamGame())
+		{
+			TeamInfo* info = GetTeamInfo(idplayer(toast.left_pid).userinfo.team);
+			buffer += info->ToastColor + netname;
+		}
+		else
+		{
+			buffer += netname;
+		}
 	}
-	if (toast.flags & toast_t::LEFT_PLUS)
+	else if (toast.flags & toast_t::LEFT)
 	{
-		buffer += TEXTCOLOR_GOLD "+ " + toast.left_plus + " ";
+		buffer += toast.left;
 	}
+
 	if (!buffer.empty())
 	{
-		buffer.resize(buffer.size() - 1);
 		drawToast.left = buffer;
 	}
 
@@ -933,17 +949,30 @@ void PushToast(const toast_t& toast)
 	}
 
 	buffer.clear();
-	if (toast.flags & toast_t::RIGHT)
+	if (toast.flags & toast_t::RIGHT_PID)
 	{
-		buffer += toast.right + " ";
+		std::string netname = idplayer(toast.right_pid).userinfo.netname;
+		if (consoleplayer().id == toast.right_pid)
+		{
+			buffer += TEXTCOLOR_GOLD + netname;
+		}
+		else if (G_IsTeamGame())
+		{
+			TeamInfo* info = GetTeamInfo(idplayer(toast.right_pid).userinfo.team);
+			buffer += info->ToastColor + netname;
+		}
+		else
+		{
+			buffer += netname;
+		}
 	}
-	if (toast.flags & toast_t::RIGHT_PLUS)
+	else if (toast.flags & toast_t::RIGHT)
 	{
-		buffer += TEXTCOLOR_GOLD "+ " + toast.right_plus + " ";
+		buffer += toast.right;
 	}
+
 	if (!buffer.empty())
 	{
-		buffer.resize(buffer.size() - 1);
 		drawToast.right = buffer;
 	}
 

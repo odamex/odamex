@@ -20,6 +20,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "hashtable.h"

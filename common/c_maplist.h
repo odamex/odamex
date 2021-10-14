@@ -23,8 +23,6 @@
 #ifndef __C_MAPLIST__
 #define __C_MAPLIST__
 
-#include <string>
-#include <vector>
 
 // Maplist statuses
 enum maplist_status_t

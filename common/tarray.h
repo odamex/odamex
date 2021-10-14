@@ -26,7 +26,6 @@
 #define __TARRAY_H__
 
 #include <stdlib.h>
-#include <cstring>
 #include "m_alloc.h"
 
 template <class T>
@@ -130,5 +129,3 @@ private:
 };
 
 #endif //__TARRAY_H__
-
-

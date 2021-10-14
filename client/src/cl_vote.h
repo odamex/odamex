@@ -24,7 +24,6 @@
 #define __CL_VOTE__
 
 #include "c_vote.h"
-#include "doomtype.h"
 
 // A class to actually deal with keeping track of voting state and ensuring
 // that the proper variables are set.

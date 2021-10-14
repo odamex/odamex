@@ -23,20 +23,20 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <stddef.h>
+
+#include "odamex.h"
+
 #include <assert.h>
 #include <algorithm>
 
 #include "i_sdl.h"
 #include "r_intrin.h"
 
-#include "doomdef.h"
 #include "z_zone.h"
 #include "w_wad.h"
 #include "r_local.h"
 #include "i_video.h"
 #include "v_video.h"
-#include "doomstat.h"
 
 #include "gi.h"
 #include "v_text.h"
@@ -120,9 +120,11 @@ public:
 	forceinline int getValue() const
 	{
 		// [SL] quickly convert the table value (-1 or 1) into (-pitch or pitch).
+		// [AM] Replaced with a multiply that returns accurate results.  Hopefully
+		//      we can find a way to improve upon an imul someday.
 		int pitch = R_GetRenderingSurface()->getPitchInPixels();
 		int value = table[pos];
-		return (pitch ^ value) + value;
+		return pitch * value;
 	}
 
 private:
@@ -1656,4 +1658,3 @@ void R_InitColumnDrawers ()
 }
 
 VERSION_CONTROL (r_draw_cpp, "$Id$")
-

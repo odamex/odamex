@@ -23,9 +23,7 @@
 #ifndef __C_VOTE__
 #define __C_VOTE__
 
-#include <string>
 
-#include "doomtype.h"
 
 /**
  * An enum used for keeping track of the state of the vote as well as

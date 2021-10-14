@@ -27,7 +27,6 @@
 #define __P_SNAPSHOT_H__
 
 #include "m_fixed.h"
-#include "doomdef.h"
 #include "dsectoreffect.h"
 
 class AActor;
@@ -735,4 +734,3 @@ bool P_CeilingSnapshotDone(SectorSnapshot *snap);
 bool P_FloorSnapshotDone(SectorSnapshot *snap);
 
 #endif	// __P_SNAPSHOT_H__
-

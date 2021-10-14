@@ -24,7 +24,6 @@
 #ifndef __W_IDENT_H__
 #define __W_IDENT_H__
 
-#include <string>
 
 #include "m_ostring.h"
 #include "m_resfile.h"

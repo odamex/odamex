@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <algorithm>
 
 #include "cl_main.h"
@@ -35,9 +37,7 @@
 #include "z_zone.h"
 #include "m_random.h"
 #include "w_wad.h"
-#include "doomdef.h"
 #include "p_local.h"
-#include "doomstat.h"
 #include "cmdlib.h"
 #include "i_video.h"
 #include "v_video.h"
@@ -1520,4 +1520,3 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 }
 
 VERSION_CONTROL (s_sound_cpp, "$Id$")
-

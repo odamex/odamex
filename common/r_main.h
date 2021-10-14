@@ -26,7 +26,6 @@
 #define __R_MAIN_H__
 
 #include "d_player.h"
-#include "g_level.h"
 #include "r_data.h"
 #include "v_palette.h"
 #include "m_vectors.h"

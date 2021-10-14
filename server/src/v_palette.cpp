@@ -21,8 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <stddef.h>
-#include <cstring>
+
+#include "odamex.h"
+
 
 #include "v_video.h"
 #include "m_alloc.h"
@@ -202,4 +203,3 @@ dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 
 
 VERSION_CONTROL (v_palette_cpp, "$Id$")
-

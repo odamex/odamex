@@ -21,21 +21,21 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <algorithm>
 #include <iterator>
 #include <sstream>
 
-#include "doomdef.h"
 #include "z_zone.h"
 #include "hu_stuff.h"
 #include "w_wad.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "st_stuff.h"
 #include "c_bind.h"
 #include "c_console.h"
 #include "c_dispatch.h"
-#include "c_cvars.h"
 #include "v_text.h"
 #include "g_gametype.h"
 

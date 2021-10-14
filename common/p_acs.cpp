@@ -20,19 +20,18 @@
 //	[RH] p_acs.c: New file to handle ACS scripts
 //
 //-----------------------------------------------------------------------------
-//
+
+
+#include "odamex.h"
 
 #include "z_zone.h"
-#include "doomdef.h"
 #include "p_local.h"
 #include "p_spec.h"
-#include "g_level.h"
 #include "s_sound.h"
 #include "p_acs.h"
 #include "p_saveg.h"
 #include "p_lnspec.h"
 #include "m_random.h"
-#include "doomstat.h"
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "s_sndseq.h"

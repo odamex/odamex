@@ -22,10 +22,11 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomstat.h"
+
+#include "odamex.h"
+
 #include "p_local.h"
 #include "p_lnspec.h"
-#include "g_level.h"
 #include "v_palette.h"
 #include "tables.h"
 #include "i_system.h"
@@ -284,6 +285,35 @@ FUNC(LS_Generic_Door)
 		default: return false;
 	}
 	return EV_DoDoor (type, ln, it, arg0, SPEED(arg1), OCTICS(arg3), (card_t)arg4);
+}
+
+FUNC(LS_Thing_Stop)
+// Thing_Stop (tid)
+{
+	AActor * target;
+
+	if (arg0 != 0)
+	{
+		FActorIterator iterator (arg0);
+
+		while ((target = iterator.Next()))
+		{
+			target->momx = target->momy = target->momz = 0;
+			if (target->player != NULL)
+				target->momx = target->momy = 0;
+			
+			return true;
+		}
+	}
+	else if (it)
+	{
+		it->momx = it->momy = it->momz = 0;
+		if (it->player != NULL)
+			it->momx = it->momy = 0;
+
+		return true;
+	}
+	return false;
 }
 
 FUNC(LS_Floor_LowerByValue)
@@ -1792,7 +1822,7 @@ lnSpecFunc LineSpecials[256] =
 	LS_NOP,		// 16
 	LS_NOP,		// 17
 	LS_NOP,		// 18
-	LS_NOP,		// 19
+	LS_Thing_Stop,		// 19
 	LS_Floor_LowerByValue,
 	LS_Floor_LowerToLowest,
 	LS_Floor_LowerToNearest,

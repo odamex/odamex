@@ -22,9 +22,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "c_cvars.h"
+
+#include "odamex.h"
+
 #include "d_player.h"
-#include "doomdef.h"
 #include "v_palette.h"
 
 void R_ExitLevel() {}
@@ -51,4 +52,3 @@ void V_RefreshColormaps() {}
 CVAR_FUNC_IMPL (sv_allowwidescreen) {}
 
 VERSION_CONTROL (sv_stubs_cpp, "$Id$")
-

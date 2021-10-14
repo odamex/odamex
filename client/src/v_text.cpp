@@ -22,7 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
+
 #include <ctype.h>
 
 #include "v_text.h"
@@ -33,7 +34,6 @@
 #include "w_wad.h"
 
 #include "hashtable.h"
-#include "doomstat.h"
 #include "cmdlib.h"
 
 EXTERN_CVAR(msg0color)

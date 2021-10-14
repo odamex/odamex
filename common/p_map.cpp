@@ -22,12 +22,14 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "m_alloc.h"
 #include "m_bbox.h"
 #include "m_random.h"
 #include "i_system.h"
 
-#include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "c_effect.h"
@@ -37,7 +39,6 @@
 #include "s_sound.h"
 
 // State.
-#include "doomstat.h"
 #include "r_state.h"
 
 #include "z_zone.h"
@@ -539,7 +540,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 	if (tmthing->flags & MF_SKULLFLY)
 	{
 		int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
-		P_DamageMobj (thing, tmthing, tmthing, damage, MOD_UNKNOWN);
+		P_DamageMobj (thing, tmthing, tmthing, damage, MOD_HIT);
 		tmthing->flags &= ~MF_SKULLFLY;
 		tmthing->momx = tmthing->momy = tmthing->momz = 0;
 		P_SetMobjState (tmthing, tmthing->info->spawnstate);
@@ -591,6 +592,16 @@ static BOOL PIT_CheckThing (AActor *thing)
 						break;
 					case MT_BFG:
 						mod = MOD_BFG_BOOM;
+						break;
+					// [AM] Monster fireballs get a special MOD.
+					case MT_ARACHPLAZ:
+					case MT_TROOPSHOT:
+					case MT_HEADSHOT:
+					case MT_BRUISERSHOT:
+					case MT_TRACER:
+					case MT_FATSHOT:
+					case MT_SPAWNSHOT:
+						mod = MOD_FIREBALL;
 						break;
 					default:
 						mod = MOD_UNKNOWN;
@@ -2078,7 +2089,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 
 	if (la_damage) {
 		// [RH] try and figure out means of death;
-		int mod = MOD_UNKNOWN;
+		int mod = MOD_HITSCAN;
 
 		if (shootthing->player) {
 			switch (shootthing->player->readyweapon) {
@@ -3788,4 +3799,3 @@ void P_CopySector(sector_t *dest, sector_t *src)
 
 
 VERSION_CONTROL (p_map_cpp, "$Id$")
-

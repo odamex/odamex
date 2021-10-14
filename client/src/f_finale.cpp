@@ -21,14 +21,15 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "f_finale.h"
 
-#include <stdio.h>
 #include <ctype.h>
 #include <math.h>
 
 #include "i_music.h"
-#include "m_swap.h"
 #include "z_zone.h"
 #include "i_video.h"
 #include "v_video.h"
@@ -36,7 +37,6 @@
 #include "w_wad.h"
 #include "s_sound.h"
 #include "gstrings.h"
-#include "doomstat.h"
 #include "r_state.h"
 #include "hu_stuff.h"
 

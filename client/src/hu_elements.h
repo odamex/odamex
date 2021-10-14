@@ -23,7 +23,6 @@
 #ifndef __HU_ELEMENTS_H__
 #define __HU_ELEMENTS_H__
 
-#include <string>
 
 namespace hud {
 

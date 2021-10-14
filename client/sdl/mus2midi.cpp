@@ -31,12 +31,11 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
+#include "odamex.h"
+
 
 #include "m_memio.h"
 #include "mus2midi.h"
-#include "doomdef.h"
-#include "m_swap.h"
 
 // MUS event codes
 typedef enum 
@@ -630,5 +629,3 @@ QWORD mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 
 
 VERSION_CONTROL (mus2midi_cpp, "$Id$")
-
-

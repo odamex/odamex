@@ -20,8 +20,10 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <algorithm>
-#include "doomtype.h"
 #include "m_memio.h"
 #include "i_midi.h"
 
