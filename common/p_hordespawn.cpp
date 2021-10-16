@@ -91,8 +91,7 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 
 			// Spawn a teleport fog if it's not an ambush.
 			AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
-			S_Sound(tele, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
-
+			S_NetSound(tele, CHAN_VOICE, "misc/teleport", ATTN_NORM);
 			return mo->ptr();
 		}
 		else
@@ -439,7 +438,7 @@ void P_HordeSpawnItem()
 
 			// Play the item respawn sound, so people can listen for it.
 			AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
-			S_Sound(pack, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
+			S_NetSound(pack, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
 		}
 	}
 }
@@ -476,6 +475,6 @@ void P_HordeSpawnPowerup(const mobjtype_t pw)
 
 		// Play the item respawn sound, so people can listen for it.
 		AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
-		S_Sound(pack, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
+		S_NetSound(pack, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
 	}
 }

@@ -169,4 +169,19 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 //		Modelled after Hexen's noise cheat.
 void S_NoiseDebug (void);
 
+// The following functions work seamlessly on local clients and networked games.
+
+#if SERVER_APP
+#include "sv_main.h"
+#endif
+
+static void S_NetSound(AActor* mo, byte channel, const char* name, const byte attenuation)
+{
+#if SERVER_APP
+	SV_Sound(mo, channel, name, attenuation);
+#else
+	S_Sound(mo, channel, name, 1, attenuation);
+#endif
+}
+
 #endif

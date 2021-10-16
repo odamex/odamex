@@ -155,7 +155,7 @@ static void ActivateMonsters(AActors& mobjs)
 					sound[strlen(sound) - 1] = '1';
 			}
 
-			S_Sound(mo, CHAN_VOICE, sound, 1, ATTN_NORM);
+			S_NetSound(mo, CHAN_VOICE, sound, ATTN_NORM);
 		}
 	}
 }
