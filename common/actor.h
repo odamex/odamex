@@ -261,6 +261,7 @@ typedef enum
 	MFO_QUICK			= BIT(5),		// speed of monster is increased
 	MFO_NORAISE			= BIT(6),		// vile can't raise corpse
 	MFO_BOSSPOOL		= BIT(7),		// boss health pool that tracks damage
+	MFO_FULLBRIGHT		= BIT(8),		// monster is fullbright
 } mobjflag_t;
 
 #define MF_TRANSSHIFT	0x1A

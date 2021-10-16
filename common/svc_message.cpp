@@ -303,8 +303,8 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 	}
 
 	// odamex flags - only monster flags for now
-	const uint32_t modMask =
-	    MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK | MFO_NORAISE;
+	const uint32_t modMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK |
+	                         MFO_NORAISE | MFO_FULLBRIGHT;
 	if (mo->oflags & modMask)
 	{
 		flags |= SVC_SM_OFLAGS;
