@@ -605,6 +605,27 @@ class PlayerQuery
 	PlayerResults execute();
 };
 
+class SpecQuery
+{
+	bool m_onlyInQueue;
+
+  public:
+	SpecQuery() : m_onlyInQueue(false) { }
+
+	/**
+	 * @brief Filter out players who are not in the queue.
+	 *
+	 * @return A mutated SpecQuery to chain off of.
+	 */
+	SpecQuery& onlyInQueue()
+	{
+		m_onlyInQueue = true;
+		return *this;
+	}
+
+	PlayersView execute();
+};
+
 enum
 {
 	SCORES_CLEAR_WINS = (1<<0),

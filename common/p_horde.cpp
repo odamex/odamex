@@ -38,7 +38,12 @@
 #include "s_sound.h"
 #include "svc_message.h"
 
+#if defined(SERVER_APP)
+#include "sv_main.h"
+#endif
+
 EXTERN_CVAR(g_horde_waves)
+EXTERN_CVAR(g_lives)
 
 void A_PainDie(AActor* actor);
 
@@ -480,25 +485,46 @@ void HordeState::tick()
 		}
 		if (!alive)
 		{
-			// Give all ingame players who are out of lives an extra life.
+			// The server can have lives, and if that's the case we want
+			// to bring back dead pl
 			if (G_IsLivesGame())
 			{
-				PlayerResults pr = PlayerQuery().notHasLives().execute();
-				for (PlayersView::iterator it = pr.players.begin();
-				     it != pr.players.end(); ++it)
+				// Give all ingame players an extra life for beating the wave.
+				PlayersView ingame = PlayerQuery().execute().players;
+				for (PlayersView::iterator it = ingame.begin(); it != ingame.end(); ++it)
 				{
-					(*it)->lives += 1;
-					(*it)->playerstate = PST_REBORN;
-					if (!::clientside)
+					// Dead players are reborn with a message.
+					if ((*it)->lives <= 0)
 					{
+						(*it)->playerstate = PST_REBORN;
 						SV_BroadcastPrintf("%s gets a new lease on life.\n",
 						                   (*it)->userinfo.netname.c_str());
+					}
+
+					// Give everyone an extra life.
+					if ((*it)->lives < g_lives)
+					{
+						(*it)->lives += 1;
 						MSG_WriteSVC(&(*it)->client.reliablebuf, SVC_PlayerInfo(**it));
 						MSG_BroadcastSVC(CLBUF_RELIABLE,
 						                 SVC_PlayerMembers(**it, SVC_PM_LIVES),
 						                 (*it)->id);
 					}
 				}
+
+#ifdef SERVER_APP
+				// Service the join queue and give all of the freshly-ingame
+				// players a single life to start with.
+				PlayersView queued = SpecQuery().onlyInQueue().execute();
+				SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
+				for (PlayersView::iterator it = queued.begin(); it != queued.end(); ++it)
+				{
+					(*it)->lives = 1;
+					MSG_WriteSVC(&(*it)->client.reliablebuf, SVC_PlayerInfo(**it));
+					MSG_BroadcastSVC(CLBUF_RELIABLE,
+					                 SVC_PlayerMembers(**it, SVC_PM_LIVES), (*it)->id);
+				}
+#endif
 			}
 
 			// Start the next wave.
