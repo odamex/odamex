@@ -69,8 +69,9 @@ struct PlaySoundType
 	{
 		data.mo = NULL;
 	}
-	PlaySoundType(AActor* mo) : tag(PS_MOBJ)
+	PlaySoundType(AActor* mo)
 	{
+		tag = mo ? PS_MOBJ : PS_NONE;
 		data.mo = mo;
 	}
 	PlaySoundType(fixed_t x, fixed_t y) : tag(PS_POS)

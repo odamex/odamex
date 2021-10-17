@@ -206,6 +206,7 @@ class HordeState
 		{
 			// Do the boss intro fanfare.
 			SV_BroadcastPrintf("The floor trembles as the boss of the wave arrives.\n");
+			S_NetSound(NULL, CHAN_GAMEINFO, "misc/horde/boss", ATTN_NONE);
 			m_bossTime = ::level.time;
 		}
 	}
@@ -499,6 +500,10 @@ void HordeState::tick()
 						(*it)->playerstate = PST_REBORN;
 						SV_BroadcastPrintf("%s gets a new lease on life.\n",
 						                   (*it)->userinfo.netname.c_str());
+
+						// Send a res sound directly to this player.
+						S_PlayerSound(*it, NULL, CHAN_INTERFACE, "misc/plraise",
+						              ATTN_NONE);
 					}
 
 					// Give everyone an extra life.

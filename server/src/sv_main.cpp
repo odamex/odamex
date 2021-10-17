@@ -686,7 +686,8 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 	}
 }
 
-void SV_Sound (player_t &pl, AActor *mo, byte channel, const char *name, byte attenuation)
+void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
+              const byte attenuation)
 {
 	int sfx_id;
 	int x = 0, y = 0;
