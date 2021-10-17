@@ -2047,10 +2047,19 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		// [RH] Only if not immune
 		if (!(target->flags2 & (MF2_INVULNERABLE | MF2_DORMANT)))
 		{
-			// [AM] Armored monsters take half damage.
+			// [AM] Armored monsters take less damage.
 			if (target->oflags & MFO_ARMOR)
 			{
-				damage = MAX(damage / 2, 1);
+				if (target->info->spawnhealth >= 1000)
+				{
+					// Big bodies get a green armor.
+					damage = MAX((damage * 2) / 3, 1);
+				}
+				else
+				{
+					// Small bodies get a blue armor.
+					damage = MAX(damage / 2, 1);
+				}
 			}
 
 			// Calculate amount of HP to take away from the boss pool
