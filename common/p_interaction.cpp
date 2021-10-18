@@ -90,7 +90,19 @@ void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
 void SV_ShareKeys(card_t card, player_t& player);
 #endif
 
-static void PersistPlayerScore(player_t& p, bool lives, bool score)
+static void PersistPlayerDamage(player_t& p)
+{
+	// Send this information to everybody.
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	{
+		if (!it->ingame())
+			continue;
+
+		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, SVC_PM_DAMAGE));
+	}
+}
+
+static void PersistPlayerScore(player_t& p, const bool lives, const bool score)
 {
 	// Only run this on the server.
 	if (!::serverside || ::clientside)
@@ -112,6 +124,7 @@ static void PersistPlayerScore(player_t& p, bool lives, bool score)
 	{
 		if (!it->ingame())
 			continue;
+
 		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, flags));
 	}
 }
@@ -170,6 +183,15 @@ bool P_GiveDeaths(player_t* player, int num)
 	if (G_IsRoundsGame() && !G_IsDuelGame())
 		player->totaldeaths += num;
 
+	return true;
+}
+
+bool P_GiveMonsterDamage(player_t* player, int num)
+{
+	if (!G_CanScoreChange())
+		return false;
+
+	player->monsterdmgcount += num;
 	return true;
 }
 
@@ -1437,8 +1459,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 				PersistTeamScore(splayer->userinfo.team);
 		}
 		// [deathz0r] Stats for co-op scoreboard
-		if (sv_gametype == GM_COOP &&
-            ((target->flags & MF_COUNTKILL) || (target->type == MT_SKULL)))
+		if (G_IsCoopGame() &&
+		    ((target->flags & MF_COUNTKILL) || (target->type == MT_SKULL)))
 		{
 			if (P_GiveKills(splayer, 1))
 				PersistPlayerScore(*splayer, sendLives, sendScore);
@@ -1655,14 +1677,18 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 {
     unsigned	ang;
 	int 		saved = 0;
-	player_t*   player = NULL; // shorthand for target->player
 
 	if (!serverside)
     {
 		return;
     }
 
-    player = target->player;
+	player_t* player = target->player;
+	player_t* splayer = NULL;
+	if (source)
+	{
+		splayer = source->player;
+	}
 
 	if (!(target->flags & MF_SHOOTABLE))
     {
@@ -1830,11 +1856,27 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod);
 		}
-	} else
+	}
+	else // not player
 	{
 		// [RH] Only if not immune
 		if (!(target->flags2 & (MF2_INVULNERABLE | MF2_DORMANT)))
-			target->health -= damage;		// do the damage to monsters.
+		{
+			target->health -= damage; // do the damage to monsters.
+			if (splayer)
+			{
+				if (target->health < 0)
+				{
+					if (P_GiveMonsterDamage(splayer, damage + target->health))
+						PersistPlayerDamage(*splayer);
+				}
+				else
+				{
+					if (P_GiveMonsterDamage(splayer, damage))
+						PersistPlayerDamage(*splayer);
+				}
+			}
+		}
 	}
 
 	if (target->health <= 0)

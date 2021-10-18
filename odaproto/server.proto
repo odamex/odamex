@@ -197,14 +197,16 @@ message PlayerMembers
 	int32 points = 7;
 	int32 fragcount = 8;
 	int32 deathcount = 9;
-	int32 killcount = 10;
+	int32 monsterdmgcount = 10;
+	int32 killcount = 11;
+
 	// [AM] Is there any reason we would ever care about itemcount?
-	int32 secretcount = 11;
-	int32 totalpoints = 12;
-	int32 totaldeaths = 13;
+	int32 secretcount = 12;
+	int32 totalpoints = 13;
+	int32 totaldeaths = 14;
 
 	// Ch0wW: Include Cheats...
-	uint32 cheats = 14;
+	uint32 cheats = 15;
 }
 
 // svc_teammembers
