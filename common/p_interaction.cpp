@@ -2068,16 +2068,11 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod);
 		}
 	}
-<<<<<<< HEAD
-	else
-=======
 	else // not player
->>>>>>> protobreak
 	{
 		// [RH] Only if not immune
 		if (!(target->flags2 & (MF2_INVULNERABLE | MF2_DORMANT)))
 		{
-<<<<<<< HEAD
 			// [AM] Armored monsters take less damage.
 			if (target->oflags & MFO_ARMOR)
 			{
@@ -2100,8 +2095,6 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			P_AddDamagePool(target, actualdamage);
 
 			target->health -= damage; // do the damage to monsters.
-=======
-			target->health -= damage; // do the damage to monsters.
 			if (splayer)
 			{
 				if (target->health < 0)
@@ -2115,7 +2108,6 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 						PersistPlayerDamage(*splayer);
 				}
 			}
->>>>>>> protobreak
 		}
 	}
 
