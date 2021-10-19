@@ -176,6 +176,7 @@ public:
     // Frags, deaths, monster kills
 	int			fragcount;
 	int			deathcount;
+	int			monsterdmgcount;
 	int			killcount, itemcount, secretcount;		// for intermission
 
 	// Total points/frags that aren't reset after rounds. Used for LMS/TLMS/LMSCTF.

@@ -867,14 +867,14 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 		if (G_IsLivesGame())
 		{
 			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "KILLS", CR_GREY, true);
+			              hud::X_RIGHT, hud::Y_TOP, "DAMAGE", CR_GREY, true);
 			hud::DrawText(140, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "LIVES", CR_GREY, true);
 		}
 		else
 		{
 			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "KILLS", CR_GREY, true);
+			              hud::X_RIGHT, hud::Y_TOP, "DAMAGE", CR_GREY, true);
 			hud::DrawText(140, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "DETHS", CR_GREY, true);
 		}
@@ -933,15 +933,15 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 	{
 		if (G_IsLivesGame())
 		{
-			hud::EAPlayerKills(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerDamage(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			hud::EAPlayerLives(140, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 		}
 		else
 		{
-			hud::EAPlayerKills(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerDamage(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			hud::EAPlayerDeaths(140, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 		}
@@ -1454,15 +1454,15 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	{
 		if (G_IsLivesGame())
 		{
-			hud::EAPlayerKills(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerDamage(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			hud::EAPlayerLives(90, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 		}
 		else
 		{
-			hud::EAPlayerKills(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerDamage(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			hud::EAPlayerDeaths(90, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 		}
