@@ -24,10 +24,7 @@
 #ifndef __M_STRINDEX__
 #define __M_STRINDEX__
 
-#include <string>
-#include <vector>
 
-#include "doomtype.h"
 #include "hashtable.h"
 
 // [AM] It might be possible to save memory from double string allocations,

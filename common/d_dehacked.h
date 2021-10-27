@@ -29,7 +29,7 @@
 
 // Sound equivalences. When a patch tries to change a sound,
 // use these sound names.
-static char* SoundMap[] = {NULL,
+static const char* SoundMap[] = {NULL,
                                  "weapons/pistol",
                                  "weapons/shotgf",
                                  "weapons/shotgr",

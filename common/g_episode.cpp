@@ -21,6 +21,9 @@
 // 
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "g_episode.h"
 
 char EpisodeMaps[MAX_EPISODES][8];

@@ -20,11 +20,12 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "olumpname.h"
 
-#include "doomtype.h"
 
-#include <cstring>
 #include <stdexcept>
 
 // private functions
@@ -43,24 +44,24 @@ void OLumpName::MakeDataPresentable()
 
 OLumpName::OLumpName()
 {
-	std::memset(_data, '\0', 9);
+	memset(_data, '\0', 9);
 }
 
 OLumpName::OLumpName(const OLumpName& other)
 {
-	std::memcpy(_data, other._data, 8);
+	memcpy(_data, other._data, 8);
 	MakeDataPresentable();
 }
 
 OLumpName::OLumpName(const char* other)
 {
-	std::strncpy(_data, other, 8);
+	strncpy(_data, other, 8);
 	MakeDataPresentable();
 }
 
 OLumpName::OLumpName(const std::string& other)
 {
-	std::strncpy(_data, other.data(), 8);
+	strncpy(_data, other.data(), 8);
 	MakeDataPresentable();
 }
 
@@ -68,7 +69,7 @@ OLumpName& OLumpName::operator=(const OLumpName& other)
 {
 	if (this != &other)
 	{
-		std::memcpy(_data, other._data, 8);
+		memcpy(_data, other._data, 8);
 		MakeDataPresentable();
 	}
 
@@ -77,7 +78,7 @@ OLumpName& OLumpName::operator=(const OLumpName& other)
 
 OLumpName& OLumpName::operator=(const char* other)
 {
-	std::strncpy(_data, other, 8);
+	strncpy(_data, other, 8);
 	MakeDataPresentable();
 
 	return *this;
@@ -85,7 +86,7 @@ OLumpName& OLumpName::operator=(const char* other)
 
 OLumpName& OLumpName::operator=(const std::string& other)
 {
-	std::strncpy(_data, other.data(), 8);
+	strncpy(_data, other.data(), 8);
 	MakeDataPresentable();
 
 	return *this;

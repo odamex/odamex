@@ -50,10 +50,6 @@ set(PROJECT_COPYRIGHT "2006-2021")
 set(PROJECT_RC_VERSION "10,0,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
 
-# Use C++ 98/03 for all targets
-set(CMAKE_CXX_STANDARD 98)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 # Include early required commands for specific systems
 if (NSWITCH)
 	include("switch.cmake" REQUIRED)  # Nintendo Switch

@@ -21,10 +21,11 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 // Data.
-#include "doomdef.h"
 #include "gstrings.h"
-#include "doomstat.h"
 #include "m_random.h"
 #include "i_system.h"
 #include "c_console.h"
@@ -89,7 +90,19 @@ void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
 void SV_ShareKeys(card_t card, player_t& player);
 #endif
 
-static void PersistPlayerScore(player_t& p, bool lives, bool score)
+static void PersistPlayerDamage(player_t& p)
+{
+	// Send this information to everybody.
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	{
+		if (!it->ingame())
+			continue;
+
+		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, SVC_PM_DAMAGE));
+	}
+}
+
+static void PersistPlayerScore(player_t& p, const bool lives, const bool score)
 {
 	// Only run this on the server.
 	if (!::serverside || ::clientside)
@@ -111,6 +124,7 @@ static void PersistPlayerScore(player_t& p, bool lives, bool score)
 	{
 		if (!it->ingame())
 			continue;
+
 		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, flags));
 	}
 }
@@ -169,6 +183,15 @@ bool P_GiveDeaths(player_t* player, int num)
 	if (G_IsRoundsGame() && !G_IsDuelGame())
 		player->totaldeaths += num;
 
+	return true;
+}
+
+bool P_GiveMonsterDamage(player_t* player, int num)
+{
+	if (!G_CanScoreChange())
+		return false;
+
+	player->monsterdmgcount += num;
 	return true;
 }
 
@@ -1146,6 +1169,10 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 				case MT_KNIGHT:
 					messagename = OB_KNIGHTHIT;
 					break;
+				case MT_SKULL:
+					// [AM] Lost soul attacks now damage using MOD_HIT.
+					messagename = OB_SKULL;
+					break;
 				default:
 					break;
 				}
@@ -1171,9 +1198,6 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 					break;
 				case MT_CHAINGUY:
 					messagename = OB_CHAINGUY;
-					break;
-				case MT_SKULL:
-					messagename = OB_SKULL;
 					break;
 				case MT_TROOP:
 					messagename = OB_IMP;
@@ -1216,13 +1240,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 
 		toast_t toast;
-		toast.flags = toast_t::ICON | toast_t::RIGHT;
-		if (G_IsTeamGame())
-		{
-			toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
-		}
+		toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
 		toast.icon = mod;
-		toast.right += self->player->userinfo.netname;
+		toast.right_pid = self->player->id;
 		COM_PushToast(toast);
 		return;
 	}
@@ -1293,15 +1313,10 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 
 		toast_t toast;
-		toast.flags = toast_t::LEFT | toast_t::ICON | toast_t::RIGHT;
-		if (G_IsTeamGame())
-		{
-			toast.left += GetTeamInfo(attacker->player->userinfo.team)->ToastColor;
-			toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
-		}
-		toast.left += attacker->player->userinfo.netname;
+		toast.flags = toast_t::LEFT_PID | toast_t::ICON | toast_t::RIGHT_PID;
+		toast.left_pid = attacker->player->id;
 		toast.icon = mod;
-		toast.right += self->player->userinfo.netname;
+		toast.right_pid = self->player->id;
 		COM_PushToast(toast);
 		return;
 	}
@@ -1312,13 +1327,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
 
 	toast_t toast;
-	toast.flags = toast_t::ICON | toast_t::RIGHT;
-	if (G_IsTeamGame())
-	{
-		toast.right += GetTeamInfo(self->player->userinfo.team)->ToastColor;
-	}
+	toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
 	toast.icon = mod;
-	toast.right += self->player->userinfo.netname;
+	toast.right_pid = self->player->id;
 	COM_PushToast(toast);
 }
 
@@ -1448,8 +1459,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 				PersistTeamScore(splayer->userinfo.team);
 		}
 		// [deathz0r] Stats for co-op scoreboard
-		if (sv_gametype == GM_COOP &&
-            ((target->flags & MF_COUNTKILL) || (target->type == MT_SKULL)))
+		if (G_IsCoopGame() &&
+		    ((target->flags & MF_COUNTKILL) || (target->type == MT_SKULL)))
 		{
 			if (P_GiveKills(splayer, 1))
 				PersistPlayerScore(*splayer, sendLives, sendScore);
@@ -1666,14 +1677,18 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 {
     unsigned	ang;
 	int 		saved = 0;
-	player_t*   player = NULL; // shorthand for target->player
 
 	if (!serverside)
     {
 		return;
     }
 
-    player = target->player;
+	player_t* player = target->player;
+	player_t* splayer = NULL;
+	if (source)
+	{
+		splayer = source->player;
+	}
 
 	if (!(target->flags & MF_SHOOTABLE))
     {
@@ -1841,11 +1856,27 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod);
 		}
-	} else
+	}
+	else // not player
 	{
 		// [RH] Only if not immune
 		if (!(target->flags2 & (MF2_INVULNERABLE | MF2_DORMANT)))
-			target->health -= damage;		// do the damage to monsters.
+		{
+			target->health -= damage; // do the damage to monsters.
+			if (splayer)
+			{
+				if (target->health < 0)
+				{
+					if (P_GiveMonsterDamage(splayer, damage + target->health))
+						PersistPlayerDamage(*splayer);
+				}
+				else
+				{
+					if (P_GiveMonsterDamage(splayer, damage))
+						PersistPlayerDamage(*splayer);
+				}
+			}
+		}
 	}
 
 	if (target->health <= 0)

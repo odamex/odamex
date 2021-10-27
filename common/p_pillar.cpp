@@ -22,7 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "odamex.h"
+
 #include "p_local.h"
 #include "p_spec.h"
 #include "s_sound.h"
@@ -225,4 +226,3 @@ BOOL EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
 }
 
 VERSION_CONTROL (p_pillar_cpp, "$Id$")
-

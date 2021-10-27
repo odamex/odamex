@@ -25,7 +25,6 @@
 
 #include <SDL_mixer.h>
 
-#include "doomstat.h"
 #include "m_memio.h"
 
 struct MusicHandler_t
@@ -76,4 +75,3 @@ void I_UpdateMusic();
 void I_ResetMidiVolume();
 
 #endif //__I_MUSIC_H__
-

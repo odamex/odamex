@@ -24,9 +24,10 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "i_sdl.h" 
 #include <SDL_mixer.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 #include "z_zone.h"

@@ -24,7 +24,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "odamex.h"
+
 
 #include "i_system.h"
 #include "p_local.h"
@@ -940,4 +941,3 @@ bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost)
 }
 
 VERSION_CONTROL (p_sight_cpp, "$Id$")
-

@@ -27,7 +27,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "odamex.h"
+
 #include "gstrings.h"
 #include "minilzo.h"
 
@@ -52,7 +53,6 @@
 #include "s_sound.h"
 #include "i_musicsystem.h"
 
-#include "doomstat.h"
 
 #include "m_misc.h"
 #include "cl_demo.h"
@@ -112,7 +112,7 @@ EXTERN_CVAR (hud_transparency)
 EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
-EXTERN_CVAR (wi_newintermission)
+EXTERN_CVAR (wi_oldintermission)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_zdoomsound)
 EXTERN_CVAR (co_fixweaponimpacts)
@@ -236,8 +236,8 @@ value_t DemoRestrictions[2] = {
 
 static value_t DoomOrOdamex[2] =
 {
-	{ 0.0, "Doom" },
-	{ 1.0, "Odamex" }
+	{ 0.0, "Odamex" },
+	{ 1.0, "Doom" }
 };
 
 menu_t  *CurrentMenu;
@@ -442,8 +442,8 @@ void M_ResetMouseValues()
 
 static menuitem_t MouseItems[] =
 {
-	{ slider,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.25},	{2.5},		{0.1},		{NULL}},
-	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.25},	{2.5},		{0.1},		{NULL}},
+	{ slider,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.05},	{2.5},		{0.05},		{NULL}},
+	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.05},	{2.5},		{0.05},		{NULL}},
 
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ discrete,	"Always FreeLook"				, {&cl_mouselook},		{2.0},	{0.0},		{0.0},		{OnOff}},
@@ -806,7 +806,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
-	{ discrete, "Multiplayer Intermissions",{&wi_newintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
+	{ discrete, "Multiplayer Intermissions",{&wi_oldintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
 	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },
     { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{2.0}, {0.0},	{0.0},  {OnOff} },
 

@@ -22,11 +22,11 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "odamex.h"
+
 #include "p_local.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
-#include "doomstat.h"
 #include "r_state.h"
 
 EXTERN_CVAR(co_boomphys)
@@ -529,4 +529,3 @@ BOOL EV_CeilingCrushStop (int tag)
 }
 
 VERSION_CONTROL (p_ceiling_cpp, "$Id$")
-

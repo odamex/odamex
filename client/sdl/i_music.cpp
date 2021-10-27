@@ -20,7 +20,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <stdio.h>
+
+#include "odamex.h"
+
 
 #include "win32inc.h"
 #if defined(_WIN32) && !defined(_XBOX)
@@ -33,7 +35,6 @@
 	#endif
 #endif
 
-#include "doomtype.h"
 #include "m_argv.h"
 #include "i_music.h"
 #include "i_system.h"
@@ -316,4 +317,3 @@ bool I_QrySongPlaying (int handle)
 }
 
 VERSION_CONTROL (i_music_cpp, "$Id$")
-

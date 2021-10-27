@@ -28,9 +28,7 @@
 #ifndef __PUNLAG_H__
 #define __PUNLAG_H__
 
-#include <vector>
 #include <map>
-#include "doomtype.h"
 #include "m_fixed.h"
 #include "actor.h"
 #include "d_player.h"
@@ -126,4 +124,3 @@ private:
 
 
 #endif
-

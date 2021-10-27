@@ -21,18 +21,18 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "m_alloc.h"
 #include "i_system.h"
 #include "z_zone.h"
 #include "m_random.h"
-#include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "c_effect.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "v_video.h"
-#include "c_cvars.h"
 #include "m_vectors.h"
 #include "g_game.h"
 #include "p_mobj.h"

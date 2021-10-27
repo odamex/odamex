@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "win32inc.h"
 #ifdef _WIN32
     #include <winsock.h>
@@ -32,14 +35,10 @@
 #include <sys/time.h>
 #endif
 
-#include "doomtype.h"
-#include "doomstat.h"
 #include "gstrings.h"
 #include "d_player.h"
 #include "s_sound.h"
-#include "d_net.h"
 #include "g_game.h"
-#include "g_level.h"
 #include "p_tick.h"
 #include "p_local.h"
 #include "p_inter.h"
@@ -73,7 +72,6 @@
 
 #include <algorithm>
 #include <sstream>
-#include <vector>
 
 #include "server.pb.h"
 
@@ -4239,15 +4237,28 @@ void SV_RunTics()
 		// [SL] Ordinarily we should call G_DeferedInitNew but this is called
 		// at the end of a gametic and the level reset should take place now
 		// rather than at the start of the next gametic.
+		maplist_entry_t lobby_entry;
+		lobby_entry = Maplist::instance().get_lobbymap();
 
-		// [SL] create a copy of level.mapname because G_InitNew uses strncpy
-		// to copy the mapname parameter to level.mapname, which is undefined
-		// behavior.
-		char mapname[9];
-		strncpy(mapname, level.mapname.c_str(), 8);
-		mapname[8] = 0;
-
-		G_InitNew(mapname);
+		if (!Maplist::instance().lobbyempty())
+		{
+			std::string wadstr;
+			for (size_t i = 0; i < lobby_entry.wads.size(); i++)
+			{
+				if (i != 0)
+				{
+					wadstr += " ";
+				}
+				wadstr += C_QuoteString(lobby_entry.wads.at(i));
+			}
+			G_LoadWadString(wadstr, lobby_entry.map);
+		}
+		else
+		{
+			// [AM] Make a copy of mapname for safety's sake.
+			std::string mapname = ::level.mapname.c_str();
+			G_InitNew(mapname.c_str());
+		}
 	}
 	last_player_count = players.size();
 }
@@ -4812,13 +4823,13 @@ void SV_ShareKeys(card_t card, player_t &player)
 {
 	// Add it to the KeysCheck array
 	keysfound[card] = true;
-	char* coloritem;
+	const char* coloritem = NULL;
 
 	// If the server hasn't accepted to share keys yet, stop it.
 	if (!sv_sharekeys)
 		return;
 
-	// Broadcast the key shared to 
+	// Broadcast the key shared to
 	gitem_t* item;
 	if (item = FindCardItem(card))
 	{
@@ -4826,7 +4837,7 @@ void SV_ShareKeys(card_t card, player_t &player)
 		{
 		case it_bluecard:
 		case it_blueskull:
-			coloritem = TEXTCOLOR_BLUE; 
+			coloritem = TEXTCOLOR_BLUE;
 			break;
 		case it_redcard:
 		case it_redskull:
@@ -4844,11 +4855,14 @@ void SV_ShareKeys(card_t card, player_t &player)
 		                   coloritem, item->pickup_name, TEXTCOLOR_NORMAL);
 	}
 	else
+	{
 		SV_BroadcastPrintf("%s found a key!\n", player.userinfo.netname.c_str());
+	}
 
 	// Refresh the inventory to everyone
 	// ToDo: If we're the player who picked it, don't refresh our own inventory
-	for (Players::iterator it = players.begin(); it != players.end(); ++it) {
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
 		SV_UpdateShareKeys(*it);
 	}
 }

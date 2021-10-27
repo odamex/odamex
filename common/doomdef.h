@@ -23,11 +23,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __DOOMDEF_H__
-#define __DOOMDEF_H__
-
-#include <stdio.h>
-#include <cstring>
+#pragma once
 
 // GhostlyDeath -- MSVC++ 8+, remove "deprecated" warnings
 #if _MSC_VER >= 1400
@@ -465,6 +461,3 @@ IndexType BinarySearchFlexible (IndexType max, const KeyType key, IndexType noIn
 	}
 	return noIndex;
 }
-
-
-#endif	// __DOOMDEF_H__

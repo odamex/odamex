@@ -21,10 +21,11 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <cstdio>
+
+#include "odamex.h"
+
 #include <cstdlib>
 #include <climits>
-#include <string>
 #include <algorithm>
 
 #include "i_sdl.h"
@@ -41,7 +42,6 @@
 #endif
 
 #include "i_system.h"
-#include "c_cvars.h"
 #include "m_misc.h"
 #include "i_input.h"
 #include "m_fileio.h"
@@ -1200,5 +1200,3 @@ const PixelFormat* I_Get32bppPixelFormat()
 }
 
 VERSION_CONTROL (i_video_cpp, "$Id$")
-
-

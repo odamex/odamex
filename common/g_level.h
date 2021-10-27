@@ -23,8 +23,6 @@
 
 #pragma once
 
-#include "doomtype.h"
-#include "doomdef.h"
 #include "cmdlib.h"
 #include "m_fixed.h"
 #include "m_resfile.h"
@@ -32,8 +30,6 @@
 #include "r_defs.h" // line_t
 
 #include <assert.h>
-#include <string>
-#include <vector>
 
 #define NUM_MAPVARS				128
 #define NUM_WORLDVARS			256
@@ -75,6 +71,8 @@ const static levelFlags_t LEVEL_STARTLIGHTNING = BIT(24);
 const static levelFlags_t LEVEL_FILTERSTARTS = BIT(25);
 // That level is a lobby, and has a few priorities
 const static levelFlags_t LEVEL_LOBBYSPECIAL = BIT(26);
+// Player spawns will have z-height
+const static levelFlags_t LEVEL_USEPLAYERSTARTZ = BIT(27);
 
  // Level was defined in a MAPINFO lump
 const static levelFlags_t LEVEL_DEFINEDINMAPINFO = BIT(29);

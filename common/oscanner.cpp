@@ -20,17 +20,16 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomtype.h"
+
+#include "odamex.h"
+
 
 #include "oscanner.h"
 
 #include "cmdlib.h"
-#include "version.h"
 
 #include <algorithm>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "i_system.h"
 

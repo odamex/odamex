@@ -23,11 +23,9 @@
 //-----------------------------------------------------------------------------
 
 
-#include <cstring>
+#include "odamex.h"
 
-#include "doomtype.h"
-#include "doomdef.h"
-#include "doomstat.h"
+
 #include "d_netinf.h"
 #include "sv_main.h"
 #include "v_textcolors.h"
@@ -91,4 +89,3 @@ FArchive &operator>> (FArchive &arc, UserInfo &info) // removeme
 }
 
 VERSION_CONTROL (d_netinfo_cpp, "$Id$")
-

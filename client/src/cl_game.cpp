@@ -22,11 +22,11 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
+
+#include "odamex.h"
+
 #include "minilzo.h"
 #include "m_alloc.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "z_zone.h"
 #include "f_finale.h"
 #include "m_argv.h"
@@ -45,7 +45,6 @@
 #include "st_stuff.h"
 #include "am_map.h"
 #include "c_console.h"
-#include "c_cvars.h"
 #include "c_bind.h"
 #include "c_dispatch.h"
 #include "v_video.h"
@@ -57,7 +56,6 @@
 #include "r_sky.h"
 #include "r_draw.h"
 #include "g_game.h"
-#include "g_level.h"
 #include "cl_main.h"
 #include "cl_demo.h"
 #include "gi.h"
@@ -1171,6 +1169,9 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 	fixed_t x = mthing->x << FRACBITS;
 	fixed_t y = mthing->y << FRACBITS;
 	fixed_t z = P_FloorHeight(x, y);
+
+	if (level.flags & LEVEL_USEPLAYERSTARTZ)
+		z = mthing->z << FRACBITS;
 
 	if (!player.mo)
 	{

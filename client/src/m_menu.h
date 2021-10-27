@@ -26,7 +26,6 @@
 #define __M_MENU_H__
 
 #include "d_event.h"
-#include "c_cvars.h"
 
 // Some defines...
 #define LINEHEIGHT	16

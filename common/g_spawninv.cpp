@@ -21,13 +21,15 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "g_spawninv.h"
 
 #include <assert.h>
 
 #include "c_dispatch.h"
 #include "cmdlib.h"
-#include "doomstat.h"
 
 EXTERN_CVAR(g_spawninv);
 

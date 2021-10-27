@@ -22,14 +22,14 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <stdarg.h>
 
 #include "m_alloc.h"
 #include "m_memio.h"
-#include "version.h"
 #include "g_game.h"
 #include "c_console.h"
-#include "c_cvars.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
 #include "i_system.h"
@@ -42,11 +42,10 @@
 #include "r_main.h"
 #include "st_stuff.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "cl_responderkeys.h"
 #include "cl_download.h"
+#include "m_fileio.h"
 
-#include <string>
 #include <list>
 #include <algorithm>
 

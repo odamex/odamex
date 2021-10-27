@@ -24,7 +24,6 @@
 #ifndef __V_PALETTE_H__
 #define __V_PALETTE_H__
 
-#include "doomtype.h"
 #include "r_defs.h"
 
 struct palette_t

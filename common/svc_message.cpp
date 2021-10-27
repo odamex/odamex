@@ -24,6 +24,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <bitset>
 
 #include "svc_message.h"
@@ -686,6 +689,11 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(player_t& player, byte flags)
 	if (flags & SVC_PM_LIVES)
 	{
 		msg.set_lives(player.lives);
+	}
+
+	if (flags & SVC_PM_DAMAGE)
+	{
+		msg.set_monsterdmgcount(player.monsterdmgcount);
 	}
 
 	if (flags & SVC_PM_SCORE)
@@ -1543,11 +1551,10 @@ odaproto::svc::Toast SVC_Toast(const toast_t& toast)
 
 	msg.set_flags(toast.flags);
 	msg.set_left(toast.left);
+	msg.set_left_pid(toast.left_pid);
 	msg.set_right(toast.right);
+	msg.set_right_pid(toast.right_pid);
 	msg.set_icon(toast.icon);
-	msg.set_pid_highlight(toast.pid_highlight);
-	msg.set_left_plus(toast.left_plus);
-	msg.set_right_plus(toast.right_plus);
 
 	return msg;
 }

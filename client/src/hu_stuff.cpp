@@ -21,21 +21,21 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <algorithm>
 #include <iterator>
 #include <sstream>
 
-#include "doomdef.h"
 #include "z_zone.h"
 #include "hu_stuff.h"
 #include "w_wad.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "st_stuff.h"
 #include "c_bind.h"
 #include "c_console.h"
 #include "c_dispatch.h"
-#include "c_cvars.h"
 #include "v_text.h"
 #include "g_gametype.h"
 
@@ -867,14 +867,14 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 		if (g_lives)
 		{
 			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "KILLS", CR_GREY, true);
+			              hud::X_RIGHT, hud::Y_TOP, "DAMAGE", CR_GREY, true);
 			hud::DrawText(140, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "LIVES", CR_GREY, true);
 		}
 		else
 		{
 			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "KILLS", CR_GREY, true);
+			              hud::X_RIGHT, hud::Y_TOP, "DAMAGE", CR_GREY, true);
 			hud::DrawText(140, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "DETHS", CR_GREY, true);
 		}
@@ -933,15 +933,15 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 	{
 		if (g_lives)
 		{
-			hud::EAPlayerKills(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerDamage(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			hud::EAPlayerLives(140, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 		}
 		else
 		{
-			hud::EAPlayerKills(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerDamage(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			hud::EAPlayerDeaths(140, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 		}
@@ -1454,15 +1454,15 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	{
 		if (g_lives)
 		{
-			hud::EAPlayerKills(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerDamage(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			hud::EAPlayerLives(90, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 		}
 		else
 		{
-			hud::EAPlayerKills(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerDamage(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			hud::EAPlayerDeaths(90, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 		}

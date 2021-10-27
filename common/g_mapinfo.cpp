@@ -18,12 +18,11 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "cmdlib.h"
-#include "doomdef.h"
-#include "doomstat.h"
-#include "doomtype.h"
 #include "g_episode.h"
-#include "g_level.h"
 #include "gi.h"
 #include "gstrings.h"
 #include "i_system.h"
@@ -249,9 +248,34 @@ void MustGet<OLumpName>(OScanner& os)
 
 bool IsIdentifier(OScanner& os)
 {
-	const char& ch = os.getToken()[0];
+	// [A-Za-z_]+[A-Za-z0-9_]*
 
-	return (ch == '_' || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'));
+	if (os.getToken().empty())
+		return false;
+
+	const std::string token = os.getToken();
+	for (std::string::const_iterator it = token.begin(); it != token.end(); ++it)
+	{
+		const char& ch = *it;
+		if (ch == '_')
+			continue;
+
+		if (ch >= 'A' && ch <= 'Z')
+			continue;
+
+		if (ch >= 'a' && ch <= 'z')
+			continue;
+
+		if (it != os.getToken().begin())
+		{
+			if (ch >= '0' && ch <= '9')
+				continue;
+		}
+
+		return false;
+	}
+
+	return true;
 }
 
 void MustGetIdentifier(OScanner& os)
@@ -499,9 +523,9 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		}
 		else
 		{
-			const char* gfx = std::strtok(lname, "\n");
-			const char* txt = std::strtok(NULL, "\n");
-			const char* alpha = std::strtok(NULL, "\n");
+			const char* gfx = strtok(lname, "\n");
+			const char* txt = strtok(NULL, "\n");
+			const char* alpha = strtok(NULL, "\n");
 
 			if (episodenum >= 8)
 			{

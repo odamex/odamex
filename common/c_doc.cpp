@@ -21,14 +21,15 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <algorithm>
 
-#include "c_cvars.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "i_system.h"
 #include "m_fileio.h"
-#include "version.h"
 
 #ifdef CLIENT_APP
 #define CS_STRING "Odamex Client"

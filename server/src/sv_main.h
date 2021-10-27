@@ -25,7 +25,6 @@
 #ifndef __I_SVMAIN_H__
 #define __I_SVMAIN_H__
 
-#include <string>
 
 #include "actor.h"
 #include "d_player.h"

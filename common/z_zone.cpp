@@ -21,12 +21,14 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <map>
 #include <stdlib.h>
 
 #include "z_zone.h"
 #include "i_system.h"
-#include "doomdef.h"
 #include "c_dispatch.h"
 #include "hashtable.h"
 #include "cmdlib.h"

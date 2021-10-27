@@ -26,10 +26,7 @@
 #define __M_ARGV_H__
 
 #include "dobject.h"
-#include "doomtype.h"
 
-#include <string>
-#include <vector>
 
 //
 // MISC
@@ -79,4 +76,3 @@ int M_GetParmValue(const char* name);
 extern bool DefaultsLoaded; 
 
 #endif //__M_ARGV_H__
-

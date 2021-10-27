@@ -21,10 +21,11 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "m_wdlstats.h"
 
-#include <string>
-#include <vector>
 
 #include "c_dispatch.h"
 #include "g_levelstate.h"

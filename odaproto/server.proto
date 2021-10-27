@@ -199,14 +199,16 @@ message PlayerMembers
 	int32 points = 7;
 	int32 fragcount = 8;
 	int32 deathcount = 9;
-	int32 killcount = 10;
+	int32 monsterdmgcount = 10;
+	int32 killcount = 11;
+
 	// [AM] Is there any reason we would ever care about itemcount?
-	int32 secretcount = 11;
-	int32 totalpoints = 12;
-	int32 totaldeaths = 13;
+	int32 secretcount = 12;
+	int32 totalpoints = 13;
+	int32 totaldeaths = 14;
 
 	// Ch0wW: Include Cheats...
-	uint32 cheats = 14;
+	uint32 cheats = 15;
 }
 
 // svc_teammembers
@@ -647,11 +649,10 @@ message Toast
 {
 	uint32 flags = 1;
 	string left = 2;
-	string right = 3;
-	sint32 icon = 4;
-	sint32 pid_highlight = 5;
-	string left_plus = 6;
-	string right_plus = 7;
+	sint32 left_pid = 3;
+	string right = 4;
+	sint32 right_pid = 5;
+	sint32 icon = 6;
 }
 
 // svc_netdemocap

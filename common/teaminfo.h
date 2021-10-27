@@ -5,8 +5,6 @@
 #include "info.h"
 #include "actor.h"
 
-#include <string>
-#include <vector>
 
 enum team_t
 {

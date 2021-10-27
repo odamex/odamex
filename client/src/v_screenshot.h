@@ -26,7 +26,6 @@
 #ifndef __V_SCREENSHOT_H__
 #define __V_SCREENSHOT_H__
 
-#include <string>
 
 void V_ScreenShot(std::string filename);
 
