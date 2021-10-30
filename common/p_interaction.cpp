@@ -1625,7 +1625,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 				    break;
 
 			    case wp_bfg:
-				    item = MT_BFG;
+				    item = MT_MISC25; // [RV] BFG.
 				    break;
 
 			    case wp_chainsaw:
