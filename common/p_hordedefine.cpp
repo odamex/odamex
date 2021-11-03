@@ -26,6 +26,7 @@
 #include "p_hordedefine.h"
 
 #include "c_cvars.h"
+#include "c_dispatch.h"
 #include "cmdlib.h"
 #include "i_system.h"
 #include "infomap.h"
@@ -36,6 +37,7 @@
 EXTERN_CVAR(g_horde_mintotalhp)
 EXTERN_CVAR(g_horde_maxtotalhp)
 EXTERN_CVAR(g_horde_goalhp)
+EXTERN_CVAR(g_horde_waves)
 
 std::vector<hordeDefine_t> WAVE_DEFINES;
 
@@ -100,10 +102,12 @@ size_t P_HordePickDefine(const int current, const int total)
 	{
 		// Split our defines into equal sections and randomly pick
 		// a wave from all of them.
+
 		const float section_size = static_cast<float>(::WAVE_DEFINES.size()) / total;
 		const float section_offset = (current - 1) * section_size;
 		const float section_choice = M_RandomFloat() * section_size;
-		return static_cast<size_t>(section_offset + section_choice);
+		const float section_limit = NextAfter(section_offset + section_size, 0.0f);
+		return MIN<size_t>(section_offset + section_choice, section_limit);
 	}
 	else if (current <= 1)
 	{
@@ -223,7 +227,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 /**
  * @brief Get a horde define with a given name.  Name matching is partial
  *        and case-insensitive.
- * 
+ *
  * @param out Index found.
  * @param name Partial name to search for.
  * @return True if the define was found, otherwise false.
@@ -247,3 +251,92 @@ bool P_HordeDefineNamed(int& out, const std::string& name)
 
 	return false;
 }
+
+static void PrintDefines(const std::vector<hordeDefine_t>::const_iterator& begin,
+                         const std::vector<hordeDefine_t>::const_iterator& end)
+{
+	std::vector<hordeDefine_t>::const_iterator it = begin;
+	for (; it != end; ++it)
+	{
+		const ptrdiff_t idx = it - ::WAVE_DEFINES.begin();
+		Printf("%" PRIdSIZE ": %s (Group HP: %d)\n", idx, it->name.c_str(),
+		       it->maxGroupHealth);
+	}
+}
+
+BEGIN_COMMAND(hordedefine)
+{
+	if (argc >= 2)
+	{
+		if (iequals(argv[1], "all"))
+		{
+			PrintDefines(::WAVE_DEFINES.begin(), ::WAVE_DEFINES.end());
+			return;
+		}
+		else if (iequals(argv[1], "wave"))
+		{
+			if (argc >= 3)
+			{
+				const int current = atoi(argv[2]);
+				if (current && current <= g_horde_waves)
+				{
+					int total = -1;
+					if (argc >= 4)
+					{
+						total = atoi(argv[3]);
+					}
+					else
+					{
+						total = g_horde_waves;
+					}
+
+					if (total > 0)
+					{
+						const float section_size =
+						    static_cast<float>(::WAVE_DEFINES.size()) / total;
+						const float section_offset = (current - 1) * section_size;
+						const float section_choice = NextAfter(1.0f, 0.0f) * section_size;
+						const float section_limit =
+						    NextAfter(section_offset + section_size, 0.0f);
+						const size_t start = static_cast<size_t>(section_offset);
+						const size_t end =
+						    MIN<size_t>(section_offset + section_choice, section_limit);
+						Printf("[Wave %d/%d - Start:%" PRIuSIZE " End:%" PRIuSIZE "]\n",
+						       current, total, start, end);
+						PrintDefines(::WAVE_DEFINES.begin() + start,
+						             ::WAVE_DEFINES.begin() + end + 1);
+						return;
+					}
+					else
+					{
+						Printf("error: Total waves must be > 0.");
+						return;
+					}
+				}
+				else
+				{
+					Printf("error: Must pass a valid wave number.");
+					return;
+				}
+			}
+			else
+			{
+				Printf("error: Must pass a wave number.");
+				return;
+			}
+		}
+		else
+		{
+			Printf("error: Unknown command.");
+			return;
+		}
+	}
+
+	Printf("Commands:\n");
+	Printf("  all\n");
+	Printf("    Show all defines.\n");
+	Printf("  wave <NUMBER> [TOTAL]\n");
+	Printf("    Show potential waves for wave NUMBER of [TOTAL].  If omitted, [TOTAL] "
+	       "defaults to the cvar `g_horde_waves`.\n");
+}
+END_COMMAND(hordedefine)
