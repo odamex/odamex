@@ -735,7 +735,7 @@ void P_RunHordeTics()
 
 bool P_IsHordeThing(const int type)
 {
-	return type >= TTYPE_HORDE_SMALLMONSTER && type <= TTYPE_HORDE_POWERUP;
+	return type >= TTYPE_HORDE_SMALLMONSTER && type <= TTYPE_HORDE_SMALLBOSS;
 }
 
 const hordeDefine_t::weapons_t& P_HordeWeapons()
