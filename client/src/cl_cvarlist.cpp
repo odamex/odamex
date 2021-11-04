@@ -396,6 +396,8 @@ CVAR(				cl_autorecord_teamdm, "1", "Allows team deathmatch netdemos from cl_aut
 CVAR(				cl_autorecord_ctf, "1", "Allows CTF netdemos from cl_autorecord CVAR.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(				cl_autorecord_horde, "1", "Allows Horde netdemos from cl_autorecord CVAR.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(				cl_autoscreenshot, "0", "Automatically capture a screenshot at the end of a match.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)

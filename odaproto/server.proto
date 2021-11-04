@@ -653,6 +653,21 @@ message Toast
 	sint32 icon = 6;
 }
 
+// svc_hordeinfo
+message HordeInfo
+{
+	int32 state = 1;
+	int32 wave = 2;
+	int32 wave_time = 3;
+	int32 boss_time = 4;
+	uint64 define_id = 5;
+	int32 spawned_health = 6;
+	int32 killed_health = 7;
+	int32 boss_health = 8;
+	int32 boss_damage = 9;
+	int32 wave_start_health = 10;
+}
+
 // svc_netdemocap
 message NetdemoCap
 {

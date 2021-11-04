@@ -163,9 +163,14 @@ bool P_CanActivateSpecials(AActor* mo, line_t* line)
 	{
 		// Always predict sectors if set to 1, only predict sectors activated
 		// by the local player if set to 2.
-		if (cl_predictsectors == 1.0f ||
-		    (mo->player == &consoleplayer() && cl_predictsectors == 2.0f))
+		if (cl_predictsectors == 1.0f)
+		{
 			return true;
+		}
+		else if (cl_predictsectors == 2.0f && mo != NULL && mo->player == &consoleplayer())
+		{
+			return true;
+		}
 	}
 
 	// Predict sectors that don't actually create floor or ceiling thinkers.

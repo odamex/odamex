@@ -625,6 +625,8 @@ void CL_StepTics(unsigned int count)
 		if (sv_gametype == GM_CTF)
 			CTF_RunTics ();
 
+		::levelstate.tic();
+
 		Maplist_Runtic();
 
 		R_InterpolationTicker();
@@ -848,7 +850,7 @@ END_COMMAND (playerinfo)
 
 BEGIN_COMMAND (kill)
 {
-    if (sv_allowcheats || sv_gametype == GM_COOP)
+    if (sv_allowcheats || G_IsCoopGame())
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
         Printf ("You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");

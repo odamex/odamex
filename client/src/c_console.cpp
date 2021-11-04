@@ -44,6 +44,7 @@
 #include "s_sound.h"
 #include "cl_responderkeys.h"
 #include "cl_download.h"
+#include "g_gametype.h"
 #include "m_fileio.h"
 
 #include <list>
@@ -2283,7 +2284,7 @@ void C_DrawGMid()
 EXTERN_CVAR(hud_revealsecrets)
 void C_RevealSecret()
 {
-	if(!hud_revealsecrets || sv_gametype != GM_COOP || !show_messages) // [ML] 09/4/06: Check for hud_revealsecrets
+	if(!hud_revealsecrets || !G_IsCoopGame() || !show_messages) // [ML] 09/4/06: Check for hud_revealsecrets
 		return;                      // NES - Also check for deathmatch
 
 	C_MidPrint("A secret is revealed!");

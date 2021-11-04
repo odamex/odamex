@@ -915,6 +915,8 @@ void G_InitLevelLocals()
 	::level.bossactions = &info.bossactions;
 	::level.bossactions_donothing = info.bossactions_donothing;
 	
+	::level.detected_gametype = GM_COOP;
+
 	movingsectors.clear();
 }
 

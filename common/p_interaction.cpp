@@ -38,6 +38,7 @@
 #include "g_gametype.h"
 #include "m_wdlstats.h"
 #include "svc_message.h"
+#include "p_horde.h"
 #include "com_misc.h"
 
 #ifdef SERVER_APP
@@ -391,7 +392,7 @@ ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 		player->bonuscount = BONUSADD;
 		player->weaponowned[weapon] = true;
 
-		if (sv_gametype != GM_COOP)
+		if (!G_IsCoopGame())
 		{
 			P_GiveAmmo(player, weaponinfo[weapon].ammotype, 5);
 		}
@@ -558,6 +559,202 @@ ItemEquipVal P_GivePower(player_t *player, int /*powertype_t*/ power)
 	player->powers[power] = 1;
 	return IEV_EquipRemove;
 }
+
+#include "v_textcolors.h"
+
+/**
+ * @brief Give the player a care package.
+ * 
+ * @detail A care package gives you a small collection of items based on what
+ *         you're already holding.  TODO: These messages should be LANGUAGE'ed.
+ */
+static void P_GiveCarePack(player_t* player)
+{
+	const int ammomulti[NUMAMMO] = {2, 1, 1, 2};
+
+	// [AM] There is way too much going on in here to accurately predict.
+	if (!::serverside)
+		return;
+
+	// Which weapons will we need ammo for?
+	bool hasWeap[NUMAMMO] = {false, false, false, false};
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		const ammotype_t ammo = ::weaponinfo[i].ammotype;
+		if (ammo == am_noammo)
+		{
+			continue;
+		}
+		if (player->weaponowned[i])
+		{
+			hasWeap[ammo] = true;
+		}
+	}
+
+	// We get "blocks" of inventory to give out.
+	int blocks = 4;
+	std::string message, midmessage;
+
+	// Players who are extremely low on health always get an initial health
+	// boost.
+	if (blocks >= 1 && player->mo->health < 25)
+	{
+		P_GiveBody(player, 25);
+		blocks -= 1;
+	}
+
+	// Players who are extremely low on ammo for a weapon they are holding
+	// always get ammo for that weapon.
+	const hordeDefine_t::ammos_t& ammos = P_HordeAmmos();
+	for (size_t i = 0; i < ammos.size(); i++)
+	{
+		const ammotype_t ammo = ammos.at(i);
+		if (blocks < 1)
+		{
+			break;
+		}
+
+		// Don't stockpile ammo for weapons we don't have.
+		if (!hasWeap[ammo])
+		{
+			continue;
+		}
+
+		// Missle clip is a bit stingy, so we double our handouts.
+		const int lowLimit = ammomulti[ammo] * 2;
+		const int giveAmount = ammomulti[ammo] * 5;
+
+		if (player->ammo[ammo] < ::clipammo[ammo] * lowLimit)
+		{
+			P_GiveAmmo(player, static_cast<ammotype_t>(ammo), giveAmount);
+			blocks -= 1;
+		}
+	}
+
+	// Players who have less than 100 health at this point get another health pack.
+	if (blocks >= 1 && player->mo->health < 100)
+	{
+		P_GiveBody(player, 25);
+		blocks -= 1;
+	}
+
+	// Give the player a missing weapon - just one.
+	if (blocks >= 1)
+	{
+		const hordeDefine_t::weapons_t& weapons = P_HordeWeapons();
+		for (size_t i = 0; i < weapons.size(); i++)
+		{
+			// No weapon is a special case that means give the player
+			// berserk strength (without the health).
+			if (weapons.at(i) == wp_none && player->powers[pw_strength] < 1)
+			{
+				player->powers[pw_strength] = 1;
+				blocks -= 1;
+
+				message = "You found a berserk stim in this supply cache!";
+				midmessage = "Got berserk";
+				break;
+			}
+			else if (weapons.at(i) != wp_none && !player->weaponowned[weapons.at(i)])
+			{
+				P_GiveWeapon(player, weapons.at(i), false);
+				blocks -= 1;
+
+				message = "You found a weapon in this supply cache!";
+				switch (weapons.at(i))
+				{
+				case wp_pistol:
+					midmessage = "Got Pistol";
+					break;
+				case wp_shotgun:
+					midmessage = "Got Shotgun";
+					break;
+				case wp_chaingun:
+					midmessage = "Got Chaingun";
+					break;
+				case wp_missile:
+					midmessage = "Got Rocket Launcher";
+					// [AM] Default missile clip is stingy.
+					P_GiveAmmo(player, am_misl, 2);
+					break;
+				case wp_plasma:
+					midmessage = "Got Plasmagun";
+					break;
+				case wp_bfg:
+					midmessage = "Got BFG9000";
+					break;
+				case wp_supershotgun:
+					midmessage = "Got Super Shotgun";
+					break;
+				}
+				
+				break;
+			}
+		}
+	}
+
+	// Hand out some ammo for all held weapons - that's always appreciated.
+	// If there are fewer than four ammos, we hand out more for the ones
+	// we have.
+	if (blocks >= 1 && !ammos.empty())
+	{
+		for (size_t i = 0; i < 4; i++)
+		{
+			const ammotype_t ammo = ammos.at(i % ammos.size());
+
+			// Don't stockpile ammo for weapons we don't have.
+			if (!hasWeap[ammo])
+			{
+				continue;
+			}
+
+			P_GiveAmmo(player, static_cast<ammotype_t>(ammo), ammomulti[ammo]);
+		}
+		blocks -= 1;
+	}
+
+	// We got this far, why not top off players armor?
+	if (blocks >= 1 && player->armorpoints + 10 < 95)
+	{
+		player->armorpoints += 10;
+		if (player->armorpoints > ::deh.MaxArmor)
+		{
+			player->armorpoints = ::deh.MaxArmor;
+		}
+		if (!player->armortype)
+		{
+			player->armortype = ::deh.GreenAC;
+		}
+
+		blocks -= 1;
+	}
+
+	if (message.empty())
+		message = "Picked up a supply cache full of health and ammo!";
+
+	if (!::clientside)
+	{
+		// [AM] FIXME: This gives players their inventory, with no
+		//             background flash.
+		MSG_WriteSVC(&player->client.reliablebuf, SVC_PlayerInfo(*player));
+		MSG_WriteSVC(&player->client.reliablebuf, SVC_Print(PRINT_PICKUP, message + "\n"));
+		if (!midmessage.empty())
+		{
+			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
+			MSG_WriteSVC(&player->client.reliablebuf, SVC_MidPrint(buf, 0));
+		}
+	}
+	else
+	{
+		Printf(PRINT_PICKUP, "%s\n", message.c_str());
+		if (!midmessage.empty())
+		{
+			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
+			C_MidPrint(buf.c_str(), NULL, 0);
+		}
+	}
+}
+
 static bool P_SpecialIsWeapon(AActor *special)
 {
 	if (!special)
@@ -814,21 +1011,26 @@ void P_GiveSpecial(player_t *player, AActor *special)
 			msg = &GOTSHELLBOX;
             break;
 
-	    case SPR_BPAK:
-            if (!player->backpack)
-            {
-                for (int i=0 ; i<NUMAMMO ; i++)
-                {
-                    player->maxammo[i] *= 2;
-                }
-                player->backpack = true;
-            }
-            for (int i=0 ; i<NUMAMMO ; i++)
-            {
-                P_GiveAmmo(player, (ammotype_t)i, 1);
-            }
+		case SPR_BPAK:
+			if (!player->backpack)
+			{
+				for (int i = 0; i < NUMAMMO; i++)
+				{
+					player->maxammo[i] *= 2;
+				}
+				player->backpack = true;
+			}
+			for (int i = 0; i < NUMAMMO; i++)
+			{
+				P_GiveAmmo(player, (ammotype_t)i, 1);
+			}
 			msg = &GOTBACKPACK;
-            break;
+			break;
+
+		case SPR_CARE:
+			// Care package.  What does it contian?
+			P_GiveCarePack(player);
+			break;
 
 		// weapons
 	    case SPR_BFUG:
@@ -1520,6 +1722,9 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		target->health = 0;
 	}
 
+	P_RemoveHealthPool(target);
+	P_QueueCorpseForDestroy(target);
+
     if (target->health < -target->info->spawnhealth
         && target->info->xdeathstate)
     {
@@ -1706,6 +1911,12 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		return;
     }
 
+	// [AM] Target is invulnerable to infighting from any non-player source.
+	if (source && source->player == NULL && target->oflags & MFO_INFIGHTINVUL)
+	{
+		return;
+	}
+
 	MeansOfDeath = mod;
 
 	TeamInfo* teamInfo = NULL;
@@ -1862,6 +2073,27 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		// [RH] Only if not immune
 		if (!(target->flags2 & (MF2_INVULNERABLE | MF2_DORMANT)))
 		{
+			// [AM] Armored monsters take less damage.
+			if (target->oflags & MFO_ARMOR)
+			{
+				if (target->info->spawnhealth >= 1000)
+				{
+					// Big bodies get a green armor.
+					damage = MAX((damage * 2) / 3, 1);
+				}
+				else
+				{
+					// Small bodies get a blue armor.
+					damage = MAX(damage / 2, 1);
+				}
+			}
+
+			// Calculate amount of HP to take away from the boss pool
+			int low = std::max(target->health - damage, 0);
+			int actualdamage = target->health - low;
+
+			P_AddDamagePool(target, actualdamage);
+
 			target->health -= damage; // do the damage to monsters.
 			if (splayer)
 			{
@@ -1906,6 +2138,21 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	{
 		int pain = P_Random();
 
+		if (target->oflags & MFO_UNFLINCHING)
+		{
+			// [AM] There is exactly one 255 in the random table.
+			if (pain != 255 || target->info->painchance == 0)
+			{
+				// Force no flinch.
+				pain = target->info->painchance;
+			}
+			else
+			{
+				// Force a flinch.
+				pain = target->info->painchance - 1;
+			}
+		}
+
 		if (!player)
 		{
 			SV_SendDamageMobj(target, pain);
@@ -1920,11 +2167,12 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 		target->reactiontime = 0;			// we're awake now...
 
-		if ((!target->threshold || target->type == MT_VILE)
-			 && source && source != target
-			 && source->type != MT_VILE)
+		if ((!target->threshold || target->type == MT_VILE) && source &&
+		    source != target && source->type != MT_VILE &&
+		    !(source->oflags & MFO_INFIGHTINVUL))
 		{
 			// if not intent on another player, chase after this one
+			// [AM] Infight invul monsters will never provoke attacks.
 
 			// killough 2/15/98: remember last enemy, to prevent
 			// sleeping early; 2/21/98: Place priority on players
