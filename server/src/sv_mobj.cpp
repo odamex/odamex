@@ -31,6 +31,7 @@
 #include "sv_main.h"
 #include "p_acs.h"
 #include "g_spawninv.h"
+#include "m_wdlstats.h"
 
 EXTERN_CVAR(sv_maxplayers)
 
@@ -151,6 +152,13 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 			else if (playerstate == PST_REBORN)
 				level.behavior->StartTypedScripts(SCRIPT_Respawn, player.mo);
 		}
+
+		// Log the spawn
+		M_LogWDLEvent(
+		    WDL_EVENT_SPAWNPLAYER, &player, NULL, 0, 0,
+		              M_GetPlayerSpawn(mobj->x, mobj->y, mobj->z,
+		                               player.userinfo.team),
+		              0);
 
 		// send new objects
 		SV_SpawnMobj(mobj);

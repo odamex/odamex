@@ -39,6 +39,7 @@
 #include "g_game.h"
 #include "sv_main.h"
 #include "g_spawninv.h"
+#include "m_wdlstats.h"
 
 void	G_PlayerReborn (player_t &player);
 

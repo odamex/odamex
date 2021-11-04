@@ -995,6 +995,8 @@ static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 	}
 }
 
+// 
+
 
 static void SetTextureNoErr (short *texture, unsigned int *color, char *name)
 {
@@ -1458,8 +1460,50 @@ void P_LoadBlockMap (int lump)
 	blockmap = blockmaplump+4;
 }
 
+/*
+* @brief P_GenerateUniqueMapHash
+* 
+* Creates a unique map hash used to identify a unique map.
+* Based on a few key lumps that makes a map unique.
+* 
+* @param things - Things lump offset
+* @param linedefs - Linedefs lump offset
+* @param sidedefs - Sidedefs lump offset
+* @param vertexes - Vertexes lump offset
+* @param segs - Segs lump offset
+* @param ssectors - SSectors lump offset
+* @param sectors - Sectors lump offset
+*/
+void P_GenerateUniqueMapHash(int things, int linedefs, int sidedefs,
+	int vertexes, int segs, int ssectors, int sectors)
+{
+	std::string thinghash    = "";
+	std::string linedefhash  = "";
+	std::string sidedefhash  = "";
+	std::string vertexhash   = "";
+	std::string segshash     = "";
+	std::string ssectorshash = "";
+	std::string sectorshash  = "";
 
+	const byte* thingbuffer    = static_cast<byte*>(W_CacheLumpNum(things,   PU_STATIC));
+	const byte* linedefbuffer  = static_cast<byte*>(W_CacheLumpNum(linedefs, PU_STATIC));
+	const byte* sidedefbuffer  = static_cast<byte*>(W_CacheLumpNum(sidedefs, PU_STATIC));
+	const byte* vertexbuffer   = static_cast<byte*>(W_CacheLumpNum(vertexes, PU_STATIC));
+	const byte* segsbuffer     = static_cast<byte*>(W_CacheLumpNum(segs,     PU_STATIC));
+	const byte* ssectorsbuffer = static_cast<byte*>(W_CacheLumpNum(ssectors, PU_STATIC));
+	const byte* sectorsbuffer  = static_cast<byte*>(W_CacheLumpNum(sectors,  PU_STATIC));
 
+	thinghash    = W_MD5(thingbuffer,   W_LumpLength(things));
+	linedefhash  = W_MD5(linedefbuffer, W_LumpLength(linedefs));
+	sidedefhash  = W_MD5(sidedefbuffer, W_LumpLength(sidedefs));
+	vertexhash   = W_MD5(vertexbuffer,  W_LumpLength(vertexes));
+	segshash     = W_MD5(segsbuffer,    W_LumpLength(segs));
+	ssectorshash = W_MD5(segsbuffer,    W_LumpLength(ssectors));
+	sectorshash  = W_MD5(segsbuffer,    W_LumpLength(sectors));
+
+	level.level_hash = thinghash + linedefhash + sidedefhash + vertexhash + segshash + ssectorshash +
+	       sectorshash;
+}
 //
 // P_GroupLines
 // Builds sector line lists and subsector sector numbers.
@@ -1690,6 +1734,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
 		wminfo.maxfrags = 0;
+	level.level_hash = "";
 	wminfo.partime = 180;
 
 	if (!savegamerestore)
@@ -1760,6 +1805,10 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_LoadSideDefs2 (lumpnum+ML_SIDEDEFS);
 	P_FinishLoadingLineDefs ();
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
+
+	// [BC] Create map hash
+	P_GenerateUniqueMapHash(lumpnum+ML_THINGS, lumpnum+ML_LINEDEFS, lumpnum+ML_SIDEDEFS,
+		lumpnum+ML_VERTEXES, lumpnum+ML_SEGS, lumpnum+ML_SSECTORS, lumpnum+ML_SECTORS);
 
 	if (!P_LoadXNOD(lumpnum+ML_NODES))
 	{

@@ -41,6 +41,7 @@
 #include "g_gametype.h"
 #include "c_dispatch.h"
 #include "g_mapinfo.h"
+#include "m_wdlstats.h"
 
 
 #define WATER_SINK_FACTOR		3
@@ -2246,6 +2247,8 @@ void P_RespawnSpecials (void)
 	iquetail = (iquetail+1)&(ITEMQUESIZE-1);
 
 	SV_SpawnMobj(mo);
+
+	M_LogWDLItemRespawnEvent(mo);
 }
 
 
@@ -2340,12 +2343,19 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (DeathMatchStarts.size() >= 10 && demoplayback)
 			return;
 
+		M_LogWDLPlayerSpawn(mthing);
 		DeathMatchStarts.push_back(*mthing);
 		return;
 	}
 
 	if (sv_teamspawns)
 	{
+		// [Blair] Log the spawn even if the server has sv_teamspawns on a DM gametype
+		if (sv_gametype == GM_DM)
+		{
+			M_LogWDLPlayerSpawn(mthing);
+		}
+
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
 			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
@@ -2353,6 +2363,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			if (mthing->type == teamInfo->TeamSpawnThingNum)
 			{
 				teamInfo->Starts.push_back(*mthing);
+				M_LogWDLPlayerSpawn(mthing);
 				return;
 			}
 		}
@@ -2398,6 +2409,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		// [RH] Only spawn spots that match position.
 		if (mthing->args[0] != position)
 			return;
+
+		M_LogWDLPlayerSpawn(mthing);
 
 		size_t playernum = P_GetMapThingPlayerNumber(mthing);
 
@@ -2666,6 +2679,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			if (mthing->type == teamInfo->FlagThingNum)
 			{
 				SpawnFlag(mthing, teamInfo->Team);
+				M_LogWDLFlagLocation(mthing, teamInfo->Team);
 				break;
 			}
 		}

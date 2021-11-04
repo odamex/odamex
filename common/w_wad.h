@@ -110,6 +110,7 @@ extern	lumpinfo_t*	lumpinfo;
 extern	size_t	numlumps;
 
 std::string W_MD5(std::string filename);
+std::string W_MD5(const byte* lumpdata, unsigned length);
 void W_InitMultipleFiles(const OResFiles& filenames);
 lumpHandle_t W_LumpToHandle(const unsigned lump);
 int W_HandleToLump(const lumpHandle_t handle);
