@@ -43,10 +43,12 @@
 #include "p_lnspec.h"
 #include "v_palette.h"
 #include "c_console.h"
+#include "p_horde.h"
 #include "g_gametype.h"
 
 #include "p_mobj.h"
 #include "p_setup.h"
+#include "p_hordespawn.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
@@ -584,6 +586,7 @@ void P_LoadThings (int lump)
 	mapthing_t *mt = (mapthing_t *)data;
 	mapthing_t *lastmt = (mapthing_t *)(data + W_LumpLength (lump));
 
+	P_HordeClearSpawns();
 	playerstarts.clear();
 	voodoostarts.clear();
 	DeathMatchStarts.clear();
@@ -653,6 +656,7 @@ void P_LoadThings2 (int lump, int position)
 	mapthing2_t *mt = (mapthing2_t *)data;
 	mapthing2_t *lastmt = (mapthing2_t *)(data + W_LumpLength (lump));
 
+	P_HordeClearSpawns();
 	playerstarts.clear();
 	voodoostarts.clear();
 	DeathMatchStarts.clear();
@@ -1898,7 +1902,7 @@ void P_Init (void)
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)
 {
-	if (sv_gametype == GM_COOP && var < 10) {
+	if (G_IsCoopGame() && var < 10) {
 		var.Set(10.0);	// Force to 10 seconds minimum
 	} else if (var < 1) {
 		var.RestoreDefault();

@@ -111,6 +111,7 @@ void StripColorCodes(std::string& str);
 
 uint32_t CRC32(const uint8_t* buf, uint32_t len);
 uint32_t Log2(uint32_t n);
+float NextAfter(const float from, const float to);
 
 /**
  * @brief Initialize an array with a specific value.

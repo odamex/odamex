@@ -49,10 +49,11 @@ struct spawnInventory_t
 	int ammo[NUMAMMO];
 	bool berserk;
 	bool backpack;
+	int invul;
 
 	spawnInventory_t()
 	    : isdefault(false), health(100), armorpoints(0), armortype(0),
-	      readyweapon(NUMWEAPONS), berserk(false), backpack(false)
+	      readyweapon(NUMWEAPONS), berserk(false), backpack(false), invul(0)
 	{
 		ArrayInit(weaponowned, false);
 		ArrayInit(ammo, 0);
@@ -61,7 +62,8 @@ struct spawnInventory_t
 	spawnInventory_t(const spawnInventory_t& other)
 	    : isdefault(other.isdefault), health(other.health),
 	      armorpoints(other.armorpoints), armortype(other.armortype),
-	      readyweapon(other.readyweapon), berserk(other.berserk), backpack(other.backpack)
+	      readyweapon(other.readyweapon), berserk(other.berserk),
+	      backpack(other.backpack), invul(other.invul)
 	{
 		ArrayCopy(weaponowned, other.weaponowned);
 		ArrayCopy(ammo, other.ammo);
@@ -216,6 +218,16 @@ static std::string InvBackpackStr(const spawnInventory_t& inv)
 }
 
 /**
+ * @brief Invulnerability timer to string.
+ */
+static std::string InvInvulStr(const spawnInventory_t& inv)
+{
+	std::string rvo;
+	StrFormat(rvo, "%d", inv.invul);
+	return rvo;
+}
+
+/**
  * @brief Set health from a string.
  */
 static void InvSetHealth(spawnInventory_t& inv, const std::string& value)
@@ -303,6 +315,12 @@ static void InvSetBackpack(spawnInventory_t& inv, const std::string& value)
 	inv.isdefault = false;
 }
 
+static void InvSetInvul(spawnInventory_t& inv, const std::string& value)
+{
+	inv.invul = atoi(value.c_str());
+	inv.isdefault = false;
+}
+
 /**
  * @brief A reasonable "default" inventory.
  */
@@ -378,6 +396,12 @@ static std::string SpawnInvSerialize(const spawnInventory_t& inv)
 	if (inv.backpack)
 		params.push_back("backpack");
 
+	if (inv.invul > 0)
+	{
+		StrFormat(buf, "invul:%s", InvInvulStr(inv).c_str());
+		params.push_back(buf);
+	}
+
 	return JoinStrings(params, " ");
 }
 
@@ -398,6 +422,7 @@ static void SetupDefaultInv()
 	::gDefaultInv.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 	::gDefaultInv.berserk = false;
 	::gDefaultInv.backpack = false;
+	::gDefaultInv.invul = 0;
 }
 
 /**
@@ -526,6 +551,10 @@ void G_SetupSpawnInventory()
 			{
 				InvSetAmmo(inv, am_cell, value);
 			}
+			else if (key == "invul")
+			{
+				InvSetInvul(inv, value);
+			}
 			else
 			{
 				Printf(PRINT_WARNING,
@@ -566,6 +595,7 @@ static void SpawninvHelp()
 	Printf("  cells <CELLS>\n");
 	Printf("  berserk <Y/N>\n");
 	Printf("  backpack <Y/N>\n");
+	Printf("  invul <DURATION>\n");
 	Printf("    Inventory commands show an explanation of their parameter if you omit "
 	       "it.\n");
 }
@@ -635,6 +665,11 @@ static void SpawninvCommandHelp(const char* cmd)
 		       "inventory item.\n");
 		Printf("  It does not double \"spawninv\" ammo counts.\n");
 	}
+	else if (!stricmp(cmd, "invul"))
+	{
+		Printf("invul <DURATION>\n");
+		Printf("  Give DURATION seconds worth of invulnerability.\n");
+	}
 	else
 	{
 		Printf(PRINT_WARNING, "spawninv: Unknown subcommand \"%s\".", cmd);
@@ -686,6 +721,10 @@ static void SpawninvCommand(const std::string& cmd, const std::string& param)
 	else if (iequals(cmd, "backpack"))
 	{
 		InvSetBackpack(::gSpawnInv, param);
+	}
+	else if (iequals(cmd, "invul"))
+	{
+		InvSetInvul(::gSpawnInv, param);
 	}
 	else
 	{
@@ -741,11 +780,23 @@ BEGIN_COMMAND(spawninv)
 
 		StringTokens other;
 		if (::gSpawnInv.berserk)
+		{
 			other.push_back("Berserk");
+		}
 		if (::gSpawnInv.backpack)
+		{
 			other.push_back("Backpack");
+		}
+		if (::gSpawnInv.invul)
+		{
+			std::string buf;
+			StrFormat(buf, "Invul (%ds)", ::gSpawnInv.invul);
+			other.push_back(buf);
+		}
 		if (!other.empty())
+		{
 			Printf("Other: %s\n", JoinStrings(other, ", ").c_str());
+		}
 
 		return;
 	}
@@ -799,6 +850,11 @@ void G_GiveSpawnInventory(player_t& player)
 		{
 			player.maxammo[i] *= 2;
 		}
+	}
+
+	if (inv.invul)
+	{
+		player.powers[pw_invulnerability] = TICRATE * inv.invul;
 	}
 }
 

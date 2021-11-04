@@ -245,6 +245,8 @@ set(ODAWAD_SOURCES
   lumps/dsquake.lmp
   lumps/dsradio2.lmp
   lumps/dssecret.lmp
+  lumps/dshboss.lmp
+  lumps/dsplrais.lmp
   lumps/dvbfd.lmp
   lumps/dvbfm.lmp
   lumps/dvbfr.lmp

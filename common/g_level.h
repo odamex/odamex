@@ -298,6 +298,8 @@ struct level_locals_t
 	std::vector<OBossAction> *bossactions;
 	bool			bossactions_donothing;
 	
+	// The following is used for automatic gametype detection.
+	float			detected_gametype;
 };
 
 typedef uint32_t clusterFlags_t;

@@ -48,6 +48,15 @@
 #define VERSION 65                // GhostlyDeath -- this should remain static from now on
 
 /**
+ * @brief Types of client buffers.
+ */
+enum clientBuf_e
+{
+	CLBUF_RELIABLE,
+	CLBUF_NET,
+};
+
+/**
  * @brief Compression is enabled for this packet
  */
 #define SVF_COMPRESSED BIT(0)
@@ -106,6 +115,11 @@
  * @brief svc_spawnmobj: Run corpse logic.
  */
 #define SVC_SM_CORPSE BIT(2)
+
+/**
+ * @brief svc_spawnmobj: Odamex-specific flags.
+ */
+#define SVC_SM_OFLAGS BIT(3)
 
 /**
  * @brief svc_updatemobj: Supply mobj position and random index.
@@ -242,6 +256,7 @@ enum svc_t
 	svc_maplist_update,    // [AM] - Send the entire maplist to the client in chunks.
 	svc_maplist_index,     // [AM] - Send the current and next map index to the client.
 	svc_toast,
+	svc_hordeinfo,
 	svc_netdemocap = 100,  // netdemos - NullPoint
 	svc_netdemostop = 101, // netdemos - NullPoint
 	svc_netdemoloadsnap = 102, // netdemos - NullPoint
@@ -751,6 +766,8 @@ void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteHexString(buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
 void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg);
+void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& msg,
+                      const int skipPlayer = -1);
 
 int MSG_BytesLeft(void);
 int MSG_NextByte (void);

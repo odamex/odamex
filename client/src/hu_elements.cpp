@@ -46,7 +46,16 @@ argb_t CL_GetPlayerColor(player_t*);
 extern NetDemo netdemo;
 extern bool HasBehavior;
 extern fixed_t FocalLengthX;
+extern byte* Ranges;
 
+extern lumpHandle_t line_leftempty;
+extern lumpHandle_t line_leftfull;
+extern lumpHandle_t line_centerempty;
+extern lumpHandle_t line_centerleft;
+extern lumpHandle_t line_centerright;
+extern lumpHandle_t line_centerfull;
+extern lumpHandle_t line_rightempty;
+extern lumpHandle_t line_rightfull;
 
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_gametype)
@@ -159,7 +168,7 @@ const PlayersView& sortedPlayers()
 		}
 	}
 
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
 		std::sort(inGame.begin(), inGame.end(), cmpDamage);
 	}
@@ -830,6 +839,120 @@ std::string TeamPing(int& color, byte team) {
 // "Elemants" are actually all-in-one drawable packages.  There are two types
 // of elements: plain old elements and ElementArrays, which draw the same thing
 // multiple times.  I'm still trying to figure out the interface for these though.
+
+void EleBar(const int x, const int y, const int w, const float scale,
+            const x_align_t x_align, const y_align_t y_align, const x_align_t x_origin,
+            const y_align_t y_origin, const float pct, const EColorRange color)
+{
+	patch_t* leftempty = W_ResolvePatchHandle(::line_leftempty);
+	patch_t* leftfull = W_ResolvePatchHandle(::line_leftfull);
+	patch_t* centerempty = W_ResolvePatchHandle(::line_centerempty);
+	patch_t* centerleft = W_ResolvePatchHandle(::line_centerleft);
+	patch_t* centerright = W_ResolvePatchHandle(::line_centerright);
+	patch_t* centerfull = W_ResolvePatchHandle(::line_centerfull);
+	patch_t* rightempty = W_ResolvePatchHandle(::line_rightempty);
+	patch_t* rightfull = W_ResolvePatchHandle(::line_rightfull);
+
+	// We assume that all parts of the bar are identical width.
+	const int UNIT_WIDTH = centerfull->width();
+
+	// Number of things to draw.
+	const int UNITS = w / UNIT_WIDTH;
+
+	// Actual width - rounded down from input w.
+	const int ACTUAL_WIDTH = UNIT_WIDTH * UNITS;
+
+	if (UNITS <= 2)
+	{
+		// We want at least one bar of progress, since the far left/right
+		// ends are short-circuited.
+		return;
+	}
+
+	std::vector<patch_t*> lineHandles;
+	lineHandles.reserve(UNITS);
+	for (int i = 0; i < UNITS; i++)
+	{
+		if (i == 0)
+		{
+			if (pct <= (0.0 + FLT_EPSILON))
+			{
+				// Completely empty.
+				lineHandles.push_back(leftempty);
+			}
+			else
+			{
+				// The smallest amount of progress.
+				lineHandles.push_back(leftfull);
+			}
+		}
+		else if (i == UNITS - 1)
+		{
+			if (pct >= (1.0 - FLT_EPSILON))
+			{
+				// Completely full.
+				lineHandles.push_back(rightfull);
+			}
+			else
+			{
+				// Anything short of 100% - epsilon.
+				lineHandles.push_back(rightempty);
+			}
+		}
+		else
+		{
+			// i0 is short-circuited, so remove it.
+			const int idx = i - 1;
+
+			// Each unit 
+			const float scaled = pct * (UNITS - 2);
+
+			if (scaled < static_cast<float>(idx) + 0.5f)
+			{
+				// Empty.
+				lineHandles.push_back(centerempty);
+			}
+			else if (scaled < static_cast<float>(idx) + 1.0f)
+			{
+				// Half full.
+				lineHandles.push_back(centerleft);
+			}
+			else
+			{
+				// Full.
+				lineHandles.push_back(centerfull);
+			}
+		}
+	}
+
+	// Draw the finished bar.  Passing through the X-Align leads to the bar
+	// being drawn backwards, so we have to draw the bar in reverse.
+	int drawX;
+	if (x_align == hud::X_RIGHT)
+	{
+		drawX = x + ((lineHandles.size() - 1) * UNIT_WIDTH);
+	}
+	else
+	{
+		drawX = x;
+	}
+
+	for (size_t i = 0; i < lineHandles.size(); i++)
+	{
+		patch_t* patch = lineHandles.at(i);
+		hud::DrawTranslatedPatch(drawX, y, scale, x_align, y_align, x_origin, y_origin,
+		                         patch, ::Ranges + color * 256);
+
+		if (x_align == hud::X_RIGHT)
+		{
+			drawX -= UNIT_WIDTH;
+		}
+		else
+		{
+			drawX += UNIT_WIDTH;
+		}
+	}
+}
 
 // Draw a list of player colors in the game.  Lines up with player names.
 void EAPlayerColors(int x, int y,

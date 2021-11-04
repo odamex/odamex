@@ -29,13 +29,16 @@
 // ---------------
 
 // Game mode
-CVAR_RANGE(sv_gametype, "0", "Sets the game mode, values are:\n" \
-					"// 0 = Cooperative\n" \
-					"// 1 = Deathmatch\n" \
-					"// 2 = Team Deathmatch\n" \
-					"// 3 = Capture The Flag",
-					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE,
-					0.0f, 3.0f)
+CVAR_RANGE(sv_gametype, "0",
+           "Sets the game mode, values are:\n"
+           "// 0 = Cooperative\n"
+           "// 1 = Deathmatch\n"
+           "// 2 = Team Deathmatch\n"
+           "// 3 = Capture The Flag\n"
+           "// 4 = Horde\n",
+           CVARTYPE_BYTE,
+           CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f,
+           4.0f)
 
 CVAR(				sv_friendlyfire, "1", "When set, players can injure others on the same team, " \
 					"it is ignored in deathmatch",
@@ -245,6 +248,18 @@ CVAR_RANGE(g_coopthingfilter, "0", "Removes cooperative things of the map. Value
         "// 2 - All Coop things are removed.",
            CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_LATCH,
            0.0f, 2.0f)
+
+CVAR(g_horde_waves, "5", "Number of horde waves per map", CVARTYPE_INT,
+     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_horde_mintotalhp, "4.0", "Multiplier for minimum spawned health at a time",
+     CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_horde_maxtotalhp, "10.0", "Multiplier for maximum spawned health at a time",
+     CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_horde_goalhp, "8.0", "Goal health multiplier for a given round", CVARTYPE_FLOAT,
+     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 // Game mode options commonized from the server
 //     At some point, replace "sv_" with "g_"

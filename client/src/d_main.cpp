@@ -82,6 +82,7 @@
 #include "cl_main.h"
 #include "g_mapinfo.h"
 #include "sc_man.h"
+#include "g_horde.h"
 
 #include "w_ident.h"
 
@@ -625,6 +626,7 @@ void D_Init()
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseHordeDefs();
 
 	// init the menu subsystem
 	if (first_time)
@@ -948,10 +950,6 @@ void D_DoomMain()
 			// single player warp (like in g_level)
 			serverside = true;
 			sv_allowexit = "1";
-			sv_freelook = "1";
-			sv_allowjump = "1";
-			sv_allowredscreen = "1";
-			sv_gametype = GM_COOP;
 
 			players.clear();
 			players.push_back(player_t());
