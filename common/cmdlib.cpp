@@ -25,17 +25,19 @@
 
 #include "odamex.h"
 
-#include <ctime>
+#include <math.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <sstream>
+
+#include <ctime>
 #include <functional>
+#include <map>
+#include <sstream>
 
 #include "win32inc.h"
 
 #include "i_system.h"
 #include "cmdlib.h"
-#include <map>
 
 #ifdef GEKKO
 #include "i_wii.h"
