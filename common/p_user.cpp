@@ -198,7 +198,13 @@ PlayerResults PlayerQuery::execute()
 		if (m_ready && !it->ready)
 			continue;
 
+		if (m_health && it->health <= 0)
+			continue;
+
 		if (m_lives && it->lives <= 0)
+			continue;
+
+		if (m_notLives && it->lives > 0)
 			continue;
 
 		if (m_team != TEAM_NONE && it->userinfo.team != m_team)
@@ -297,6 +303,30 @@ PlayerResults PlayerQuery::execute()
 
 	return results;
 }
+
+/**
+ * @brief Execute the query.
+ *
+ * @return Results of the query.
+ */
+PlayersView SpecQuery::execute()
+{
+	PlayersView rvo;
+
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	{
+		if (!it->ingame() || !it->spectator)
+			continue;
+
+		if (m_onlyInQueue && it->QueuePosition == 0)
+			continue;
+
+		rvo.push_back(&*it);
+	}
+
+	return rvo;
+}
+
 
 //
 // P_NumPlayersInGame()

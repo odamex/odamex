@@ -344,6 +344,8 @@ ctf/enemy/flag/return		dscefr
 // Any new sounds have to be last (for clients to use older servers)
 misc/pljoin			dspljoin
 misc/plpart			dsplpart
+misc/plraise		dsplrais
+misc/horde/boss		dshboss
 
 //---------------------------------------------------------------------------
 // DEFAULT ANNOUNCER

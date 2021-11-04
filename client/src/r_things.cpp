@@ -819,6 +819,11 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		// full bright
 		vis->colormap = basecolormap;	// [RH] Use basecolormap
 	}
+	else if (!foggy && thing->oflags & MFO_FULLBRIGHT) 
+	{
+		// full bright
+		vis->colormap = basecolormap;
+	}
 	else
 	{
 		// diminished light

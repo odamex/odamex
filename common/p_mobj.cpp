@@ -40,6 +40,8 @@
 #include "gi.h"
 #include "g_gametype.h"
 #include "c_dispatch.h"
+#include "p_horde.h"
+#include "p_hordespawn.h"
 #include "g_mapinfo.h"
 
 
@@ -397,6 +399,9 @@ void P_ClearId(uint32_t id)
 void AActor::Destroy ()
 {
 	SV_SendDestroyActor(this);
+
+	// Remove from health pool.
+	P_RemoveHealthPool(this);
 
     // Add special to item respawn queue if it is destined to be respawned
 	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0)
@@ -2429,7 +2434,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		playerstarts.push_back(*mthing);
 		player_t &p = idplayer(playernum+1);
 
-		if (clientside && sv_gametype == GM_COOP && (validplayer(p) && p.ingame()))
+		if (clientside && G_IsCoopGame() && (validplayer(p) && p.ingame()))
 		{
 			P_SpawnPlayer (p, mthing);
 			return;
@@ -2449,7 +2454,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (!(mthing->flags & MTF_DEATHMATCH))
 			return;
 	}
-	else if (sv_gametype == GM_COOP)
+	else if (G_IsCoopGame())
 	{
 		if (!(mthing->flags & MTF_COOPERATIVE))
 			return;
@@ -2492,6 +2497,12 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 				mthing->y << FRACBITS)->sector->seqType = type;
 		}
 		return;
+	}
+
+	if (P_IsHordeThing(mthing->type))
+	{
+		i = MT_HORDESPAWN;
+		::level.detected_gametype = GM_HORDE;
 	}
 
 	// [RH] Determine if it is an old ambient thing, and if so,
@@ -2545,7 +2556,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// don't spawn keycards and players in deathmatch
-	if (sv_gametype != GM_COOP && mobjinfo[i].flags & MF_NOTDMATCH)
+	if (!G_IsCoopGame() && mobjinfo[i].flags & MF_NOTDMATCH)
 		return;
 
 	// don't spawn deathmatch weapons in offline single player mode
@@ -2608,6 +2619,12 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		z = ONFLOORZ;
 
 	mobj = new AActor (x, y, z, (mobjtype_t)i);
+
+	if (i == MT_HORDESPAWN)
+	{
+		// Store the spawn type for later.
+		mobj->special1 = mthing->type;
+	}
 
 	if (z == ONFLOORZ)
 		mobj->z += mthing->z << FRACBITS;

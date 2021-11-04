@@ -30,6 +30,8 @@
 #define MAX_SNDNAME			63
 
 class AActor;
+class player_s;
+typedef player_s player_t;
 
 //
 // SoundFX struct.
@@ -168,5 +170,30 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 // [RH] Prints sound debug info to the screen.
 //		Modelled after Hexen's noise cheat.
 void S_NoiseDebug (void);
+
+// The following functions work seamlessly on local clients and networked games.
+
+#if SERVER_APP
+#include "sv_main.h"
+#endif
+
+static void S_NetSound(AActor* mo, byte channel, const char* name, const byte attenuation)
+{
+#if SERVER_APP
+	SV_Sound(mo, channel, name, attenuation);
+#else
+	S_Sound(mo, channel, name, 1, attenuation);
+#endif
+}
+
+static void S_PlayerSound(player_t* pl, AActor* mo, const byte channel, const char* name,
+                          const byte attenuation)
+{
+#if SERVER_APP
+	SV_Sound(*pl, mo, channel, name, attenuation);
+#else
+	S_Sound(mo, channel, name, 1, attenuation);
+#endif
+}
 
 #endif

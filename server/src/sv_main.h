@@ -82,6 +82,7 @@ void SV_SpawnMobj(AActor *mo);
 void SV_TouchSpecial(AActor *special, player_t *player);
 
 void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation);
+void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name, const byte attenuation);
 void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenuation);
 void SV_SoundTeam (byte channel, const char* name, byte attenuation, int t);
 

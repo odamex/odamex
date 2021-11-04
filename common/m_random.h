@@ -109,6 +109,14 @@ typedef enum {
 int M_Random();
 int P_Random();
 
+// [AM] RNG's that use xoshiro128** and not Doom's random table.
+
+uint32_t M_RandomInt(const uint32_t range);
+uint32_t P_RandomInt(const uint32_t range);
+
+float M_RandomFloat();
+float P_RandomFloat();
+
 // As P_Random, but used by the play simulation, one per actor
 int P_Random(AActor *actor);
 
@@ -120,5 +128,47 @@ int P_RandomDiff (AActor *actor);
 
 // Fix randoms for demos.
 void M_ClearRandom(void);
+
+/**
+ * @brief Get a weighted random number from a vector.
+ * 
+ * @detail Upside of this algorithm is that it requires no preperation and
+ *         only requires a single complete iteration of the vector.
+ * 
+ * @see https://softwareengineering.stackexchange.com/a/150642
+ */
+template <typename T>
+const T& P_RandomFloatWeighted(const std::vector<T>& data, float (*func)(const T&))
+{
+	// this stores sum of weights of all elements before current
+	float totalWeight = 0;
+
+	// currently selected element
+	const T* selected = NULL;
+	for (typename std::vector<T>::const_iterator it = data.begin(); it != data.end();
+	     ++it)
+	{
+		// weight of current element
+		const T& ele = *it;
+		const float weight = func(ele);
+
+		// random value
+		const float r = P_RandomFloat() * (totalWeight + weight);
+
+		// probability of this is weight/(totalWeight+weight)
+		if (r >= totalWeight)
+		{
+			// it is the probability of discarding last selected element
+			// and selecting current one instead
+			selected = &ele;
+		}
+
+		// increase weight sum
+		totalWeight += weight;
+	}
+
+	// when iterations end, selected is some element of sequence.
+	return *selected;
+}
 
 #endif
