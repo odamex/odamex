@@ -2355,12 +2355,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 	if (sv_teamspawns)
 	{
-		// [Blair] Log the spawn even if the server has sv_teamspawns on a DM gametype
-		if (sv_gametype == GM_DM)
-		{
-			M_LogWDLPlayerSpawn(mthing);
-		}
-
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
 			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
@@ -2415,7 +2409,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (mthing->args[0] != position)
 			return;
 
-		M_LogWDLPlayerSpawn(mthing);
+		if (G_IsCoopGame() || G_UsesCoopSpawns())
+			M_LogWDLPlayerSpawn(mthing);
 
 		size_t playernum = P_GetMapThingPlayerNumber(mthing);
 
@@ -2705,6 +2700,14 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// [RH] Go dormant as needed
 	if (mthing->flags & MTF_DORMANT)
 		P_DeactivateMobj (mobj);
+
+	// [Blair] This looks like an item we'd want to log.
+	// Check it and log it if so.
+	WDLPowerups typetocheck = M_GetWDLItemByMobjType(mobj->type);
+	if (typetocheck != WDL_PICKUP_UNKNOWN)
+	{
+		M_LogWDLItemSpawn(mobj, typetocheck);
+	}
 }
 
 /**

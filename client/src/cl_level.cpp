@@ -270,10 +270,11 @@ void G_InitNew (const char *mapname)
 	D_SetupUserInfo();
 	
 	level.mapname = mapname;
-	G_DoLoadLevel (0);
 
 	// [AM}] WDL stats (for testing purposes)
-	M_StartWDLLog();
+	M_StartWDLLog(true);
+
+	G_DoLoadLevel (0);
 }
 
 //

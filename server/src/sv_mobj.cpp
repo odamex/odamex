@@ -152,13 +152,15 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 			else if (playerstate == PST_REBORN)
 				level.behavior->StartTypedScripts(SCRIPT_Respawn, player.mo);
 		}
+		team_t team = TEAM_NONE;
 
+		if (player.userinfo.team)
+			team = player.userinfo.team;
+		
 		// Log the spawn
 		M_LogWDLEvent(
 		    WDL_EVENT_SPAWNPLAYER, &player, NULL, 0, 0,
-		              M_GetPlayerSpawn(mobj->x, mobj->y, mobj->z,
-		                               player.userinfo.team),
-		              0);
+		    M_GetPlayerSpawn(mthing->x, mthing->y), 0);
 
 		// send new objects
 		SV_SpawnMobj(mobj);

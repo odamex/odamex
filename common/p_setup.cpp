@@ -1810,7 +1810,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_FinishLoadingLineDefs ();
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
 
-	// [BC] Create map hash
+	// [Blair] Create map hash
 	P_GenerateUniqueMapHash(lumpnum+ML_THINGS, lumpnum+ML_LINEDEFS, lumpnum+ML_SIDEDEFS,
 		lumpnum+ML_VERTEXES, lumpnum+ML_SEGS, lumpnum+ML_SSECTORS, lumpnum+ML_SECTORS);
 

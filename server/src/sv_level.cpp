@@ -440,12 +440,6 @@ void G_InitNew (const char *mapname)
 
 			it->suicidedelay = 0;				// Ch0wW : Disallow suicide
 			it->joindelay = 0;
-
-			// Log the spawn
-			M_LogWDLEvent(
-			    WDL_EVENT_SPAWNPLAYER, &(*it), NULL, 0, 0,
-			    M_GetPlayerSpawn(it->mo->x, it->mo->y, it->mo->z, it->userinfo.team),
-			    0);
 		}
 	}
 
@@ -462,13 +456,13 @@ void G_InitNew (const char *mapname)
 
 	level.mapname = mapname;
 
+	// [AM] Start the WDL log on new level.
+	M_StartWDLLog(true);
+
 	G_DoLoadLevel (0);
 
 	if (::serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
 		SV_UpdatePlayerQueueLevelChange(info);
-
-	// [AM] Start the WDL log on new level.
-	M_StartWDLLog();
 }
 
 //
@@ -666,10 +660,11 @@ void G_DoResetLevel(bool full_reset)
 		SV_ClientFullUpdate(*it);
 	}
 
+	// No need to clear the spawn locations because we're not loading a new map.
+	M_StartWDLLog(false);
+
 	// Get queued players in the game.
 	SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
-
-	M_StartWDLLog();
 
 	// Force every ingame player to be reborn.
 	for (it = players.begin(); it != players.end(); ++it)

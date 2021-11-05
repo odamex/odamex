@@ -52,7 +52,8 @@ enum WDLEvents {
 	WDL_EVENT_DISCONNECT,
 	WDL_EVENT_PLAYERBEACON,
 	WDL_EVENT_PROJFIRE,
-	WDL_EVENT_TELEPORTPLAYER,
+	//WDL_EVENT_PLAYERSPECIAL,
+	//WDL_EVENT_TELEPORTPLAYER,
 	//WDL_EVENT_RJUMPGO,
 	//WDL_EVENT_RJUMPLAND,
 	//WDL_EVENT_RJUMPAPEX,
@@ -63,6 +64,7 @@ enum WDLEvents {
 	//WDL_EVENT_MOBSHOOT,
 	//WDL_EVENT_ARCHFIRE,
 	//WDL_EVENT_MOBPROJ,
+	//WDL_EVENT_MOBSPECIAL,
 	//WDL_EVENT_TELEPORTMOB,
 	//WDL_EVENT_EXITLEVEL,
 };
@@ -104,27 +106,11 @@ enum WDLPowerups {
 	WDL_PICKUP_PLASMAGUN,
 	WDL_PICKUP_SHOTGUN,
 	WDL_PICKUP_SUPERSHOTGUN,
+	WDL_PICKUP_CAREPACKAGE,
 	WDL_PICKUP_UNKNOWN,
 };
 
-/**
- * Weapons used by the Accuracy event.
- * 
- * There's probably an equivalent enum for these elsewhere.
- */
-enum WDLWeapons {
-	WDL_WEAPON_FIST,
-	WDL_WEAPON_PISTOL,
-	WDL_WEAPON_SHOTGUN,
-	WDL_WEAPON_CHAINGUN,
-	WDL_WEAPON_MISSLE,
-	WDL_WEAPON_PLASMA,
-	WDL_WEAPON_BFG,
-	WDL_WEAPON_CHAINSAW,
-	WDL_WEAPON_SSG,
-};
-
-void M_StartWDLLog();
+void M_StartWDLLog(bool newmap);
 void M_LogWDLEvent(
 	WDLEvents event, player_t* activator, player_t* target,
 	int arg0, int arg1, int arg2, int arg3
@@ -136,8 +122,10 @@ void M_LogActorWDLEvent(
 void M_LogWDLPlayerSpawn(mapthing2_t *mthing);
 void M_LogWDLItemRespawnEvent(AActor* activator);
 void M_LogWDLFlagLocation(mapthing2_t* activator, team_t team);
-void M_LogWDLPickupEvent(player_t* activator, AActor* target, WDLPowerups pickuptype);
-int M_GetPlayerSpawn(int x, int y, int z, team_t team);
+void M_LogWDLPickupEvent(player_t* activator, AActor* target, WDLPowerups pickuptype, bool dropped);
+int M_GetItemSpawn(int x, int y, int z, WDLPowerups item);
+void M_LogWDLItemSpawn(AActor* target, WDLPowerups type);
+int M_GetPlayerSpawn(int x, int y);
 void M_LogWDLAccuracyShot(
 	WDLEvents event, player_t* activator, int mod, 
 	angle_t angle
@@ -150,5 +138,6 @@ void M_HandleWDLNameChange(team_t team, std::string oldname, std::string newname
 weapontype_t M_MODToWeapon(int mod);
 int GetMaxShotsForMod(int mod);
 void M_CommitWDLLog();
+WDLPowerups M_GetWDLItemByMobjType(const mobjtype_t type);
 
 #endif
