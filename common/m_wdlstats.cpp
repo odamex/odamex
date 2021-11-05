@@ -1089,7 +1089,7 @@ void M_CommitWDLLog()
 
 	// Wads
 	fprintf(fh, "wads\n");
-	fprintf(fh, M_GetCurrentWadHashes().c_str());
+	fprintf(fh, "%s", M_GetCurrentWadHashes().c_str());
 
 	// Events
 	fprintf(fh, "events\n");
