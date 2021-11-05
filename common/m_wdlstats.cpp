@@ -22,9 +22,6 @@
 //-----------------------------------------------------------------------------
 
 #include <ctime>
-#include <sstream>
-#include <chrono>
-#include <iomanip>
 
 #include "odamex.h"
 
@@ -1037,10 +1034,10 @@ void M_CommitWDLLog()
 
 	// [BC] Make the in-file timestamp ISO 8601 instead of a homegrown one.
 	// However, keeping the homegrown one for filename as ISO 8601 characters aren't supported in Windows filenames.
-	std::stringstream iso8601timestamp;
-	std::time_t t =
-	    std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-	iso8601timestamp << std::put_time(std::localtime(&t), "%FT%T%z");
+	time_t now;
+	time(&now);
+	char buf[sizeof "2011-10-08T07:07:09Z"];
+	strftime(buf, sizeof buf, "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
 
 	FILE* fh = fopen(filename.c_str(), "w+");
 	if (fh == NULL)
@@ -1052,7 +1049,7 @@ void M_CommitWDLLog()
 
 	// Header
 	fprintf(fh, "version=%d\n", WDLSTATS_VERSION);
-	fprintf(fh, "time=%s\n", iso8601timestamp.str().c_str());
+	fprintf(fh, "time=%s\n", buf);
 	fprintf(fh, "levelnum=%d\n", ::level.levelnum);
 	fprintf(fh, "levelname=%s\n", ::level.level_name);
 	fprintf(fh, "levelhash=%s\n", ::level.level_hash.c_str());
