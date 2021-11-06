@@ -490,14 +490,30 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	const uint32_t bflags = msg->baseline_flags();
 
-	if (bflags & baseline_t::POSX)
-		mo->x = msg->current().pos().x();
+	// If position has changed, needs a relink.
+	if (bflags & (baseline_t::POSX | baseline_t::POSY | baseline_t::POSZ))
+	{
+		mo->UnlinkFromWorld();
 
-	if (bflags & baseline_t::POSY)
-		mo->y = msg->current().pos().y();
+		if (bflags & baseline_t::POSX)
+			mo->x = msg->current().pos().x();
 
-	if (bflags & baseline_t::POSZ)
-		mo->z = msg->current().pos().z();
+		if (bflags & baseline_t::POSY)
+			mo->y = msg->current().pos().y();
+
+		if (bflags & baseline_t::POSZ)
+			mo->z = msg->current().pos().z();
+
+		mo->LinkToWorld();
+
+		if (mo->subsector)
+		{
+			mo->floorz = P_FloorHeight(mo);
+			mo->ceilingz = P_CeilingHeight(mo);
+			mo->dropoffz = mo->floorz;
+			mo->floorsector = mo->subsector->sector;
+		}
+	}
 
 	if (bflags & baseline_t::MOMX)
 		mo->momx = msg->current().mom().x();
