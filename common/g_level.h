@@ -247,7 +247,7 @@ struct level_locals_t
 	int				cluster;
 	int				levelnum;
 	char			level_name[64];			// the descriptive name (Outer Base, etc)
-	std::string		level_hash;             // [BC] hash generated for the level to describe it uniquely so it can be
+	std::string     level_hash;				// [Blair] Hash generated for the level to describe it uniquely so it can be
 											// singled out if it's out of its host wad, like in a compilation wad.
 	OLumpName		mapname;                // the server name (base1, etc)
 	OLumpName		nextmap;				// go here when sv_fraglimit is hit

@@ -94,6 +94,7 @@ static struct WDLState {
 struct WDLPlayer
 {
 	int id;
+	int netid;
 	std::string netname;
 	team_t team;
 };
@@ -112,7 +113,7 @@ struct WDLPlayerSpawn
 	team_t team;
 };
 
-// WDL spawns that we're keeping track of.
+// WDL player spawns that we're keeping track of.
 typedef std::vector<WDLPlayerSpawn> WDLPlayerSpawns;
 static WDLPlayerSpawns wdlplayerspawns;
 
@@ -126,11 +127,11 @@ struct WDLItemSpawn
 	WDLPowerups item;
 };
 
-// WDL spawns that we're keeping track of.
+// WDL item spawns that we're keeping track of.
 typedef std::vector<WDLItemSpawn> WDLItemSpawns;
 static WDLItemSpawns wdlitemspawns;
 
-// A single tracked flag pedistool
+// A single tracked flag socket
 struct WDLFlagLocation
 {
 	team_t team;
@@ -139,7 +140,7 @@ struct WDLFlagLocation
 	int z;
 };
 
-// WDL spawns that we're keeping track of.
+// Flags that we're keeping track of.
 typedef std::vector<WDLFlagLocation> WDLFlagLocations;
 static WDLFlagLocations wdlflaglocations;
 
@@ -173,17 +174,19 @@ static const char* WDLEventString(WDLEvents i)
 static void AddWDLPlayer(const player_t* player)
 {
 	// Don't add player if their name is already in the vector.
-	// [BC] Check the player's team too as version six tracks all connects/disconnects/team switches
+	// [Blair] Check the player's team too as version six tracks all connects/disconnects/team switches
 	WDLPlayers::const_iterator it = ::wdlplayers.begin();
 	for (; it != ::wdlplayers.end(); ++it)
 	{
 		if ((*it).netname == player->userinfo.netname &&
-		    (*it).team == player->userinfo.team)
+		    (*it).team == player->userinfo.team && 
+			(*it).netid == player->id)
 			return;
 	}
 
 	WDLPlayer wdlplayer = {
 	    ::wdlplayers.size() + 1,
+	    player->id,
 		player->userinfo.netname,
 		player->userinfo.team,
 	};
@@ -240,7 +243,6 @@ void M_LogWDLItemSpawn(AActor* target, WDLPowerups type)
 		return;
 
 	// [Blair] Add item spawn to the table.
-
 	// Don't add an overlapping item spawn, treat it as one.
 	WDLItemSpawns::const_iterator it = ::wdlitemspawns.begin();
 	for (; it != ::wdlitemspawns.end(); ++it)
@@ -522,47 +524,6 @@ static bool LogDamageEvent(
 }
 
 /**
- * Log accuracy event.
- * 
- * Returns true if the function successfully appended to an existing event,
- * otherwise false if we need to generate a new event.
- */
-static bool LogAccuracyEvent(
-	WDLEvents event, player_t* activator, player_t* target,
-	int arg0, int arg1, int arg2
-)
-{
-	WDLEventLog::reverse_iterator it = ::wdlevents.rbegin();
-	for (;it != ::wdlevents.rend(); ++it)
-	{
-		if ((*it).gametic != ::gametic)
-		{
-			// We're too late for events from last tic, so we must have a
-			// new event.
-			return false;
-		}
-
-		// Event type is the same?
-		if ((*it).ev != event)
-			continue;
-
-		// Activator is the same?
-		if ((*it).activator != activator->id)
-			continue;
-
-		// Target is the same?
-		if ((*it).target != target->id)
-			continue;
-
-		// Update our existing event - by doing nothing.
-		return true;
-	}
-
-	// We ran through all our events, must be a new event.
-	return false;
-}
-
-/**
  * Log a WDL flag location.
  *
  *
@@ -665,7 +626,7 @@ void M_LogWDLPickupEvent(player_t* activator, AActor* target, WDLPowerups pickup
 
 		// Add the target.
 		if (!dropped)
-			itemspawnid = M_GetItemSpawn(ax, ay, az, pickuptype);
+			itemspawnid = M_GetItemSpawn(tx, ty, tz, pickuptype);
 	}
 
 	// Add the event to the log.
@@ -931,15 +892,13 @@ void M_LogWDLPlayerSpawn(mapthing2_t *mthing)
 	AddWDLPlayerSpawn(mthing);
 }
 
-void M_HandleWDLNameChange(team_t team, std::string oldname, std::string newname)
+void M_HandleWDLNameChange(team_t team, std::string oldname, std::string newname, int netid)
 {
-	// [BC] Add player spawns to the table with team info.
 	WDLPlayers::iterator it = ::wdlplayers.begin();
 	for (; it != ::wdlplayers.end(); ++it)
 	{
-		// If there are multiple spawns in the same exact area, it will only count as one
-		// spawn.
-		if ((*it).netname == oldname && (*it).team == team)
+		// Attempt a rename but don't go nuts.
+		if ((*it).netid == netid && (*it).netname == oldname && (*it).team == team)
 		{
 			(*it).netname = newname;
 			return;
@@ -967,35 +926,6 @@ int M_GetItemSpawn(int x, int y, int z, WDLPowerups item)
 			return (*it).id;
 	}
 	return 0;
-}
-
-weapontype_t M_MODToWeapon(int mod)
-{
-	switch (mod)
-	{
-	case MOD_FIST:
-		return wp_fist;
-	case MOD_PISTOL:
-		return wp_pistol;
-	case MOD_SHOTGUN:
-		return wp_shotgun;
-	case MOD_CHAINGUN:
-		return wp_chaingun;
-	case MOD_ROCKET:
-	case MOD_R_SPLASH:
-		return wp_missile;
-	case MOD_PLASMARIFLE:
-		return wp_plasma;
-	case MOD_BFG_BOOM:
-	case MOD_BFG_SPLASH:
-		return wp_bfg;
-	case MOD_CHAINSAW:
-		return wp_chainsaw;
-	case MOD_SSHOTGUN:
-		return wp_supershotgun;
-	}
-
-	return NUMWEAPONS;
 }
 
 // [BC] Helper function to determine max amount of shots that a mod shoots at a time.
@@ -1032,8 +962,9 @@ void M_CommitWDLLog()
 	std::string timestamp = GenerateTimestamp();
 	std::string filename = ::wdlstate.logdir + "wdl_" + timestamp + ".log";
 
-	// [BC] Make the in-file timestamp ISO 8601 instead of a homegrown one.
-	// However, keeping the homegrown one for filename as ISO 8601 characters aren't supported in Windows filenames.
+	// [Blair] Make the in-file timestamp ISO 8601 instead of a homegrown one.
+	// However, keeping the homegrown one for filename as ISO 8601 characters
+	// aren't supported in Windows filenames.
 	time_t now;
 	time(&now);
 	char buf[sizeof "2011-10-08T07:07:09Z"];
@@ -1064,7 +995,7 @@ void M_CommitWDLLog()
 	fprintf(fh, "players\n");
 	WDLPlayers::const_iterator pit = ::wdlplayers.begin();
 	for (; pit != ::wdlplayers.end(); ++pit)
-		fprintf(fh, "%d,%d,%s\n", pit->id,pit->team, pit->netname.c_str());
+		fprintf(fh, "%d,%d,%d,%s\n", pit->id, pit->netid, pit->team, pit->netname.c_str());
 
 	// ItemSpawns
 	fprintf(fh, "itemspawns\n");

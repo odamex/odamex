@@ -992,7 +992,7 @@ bool SV_SetupUserInfo(player_t &player)
 		    !G_IsLevelState(LevelState::WARMUP))
 		{
 			M_HandleWDLNameChange(team, old_netname.c_str(),
-			                      player.userinfo.netname.c_str());
+			                      player.userinfo.netname.c_str(), player.id);
 		}
 	}
 

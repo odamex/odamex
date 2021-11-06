@@ -134,8 +134,7 @@ void M_LogWDLAccuracyHit(
 	WDLEvents event, player_t* activator, player_t* target, 
 	int mod, int hits
 );
-void M_HandleWDLNameChange(team_t team, std::string oldname, std::string newname);
-weapontype_t M_MODToWeapon(int mod);
+void M_HandleWDLNameChange(team_t team, std::string oldname, std::string newname, int netid);
 int GetMaxShotsForMod(int mod);
 void M_CommitWDLLog();
 WDLPowerups M_GetWDLItemByMobjType(const mobjtype_t type);
