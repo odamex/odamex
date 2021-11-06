@@ -356,6 +356,8 @@ void CTF_RunTics (void)
 		SV_BroadcastPrintf ("%s flag returned.\n", teamInfo->ColorizedTeamName().c_str());
 
 		CTF_SpawnFlag(teamInfo->Team);
+
+		M_LogWDLEvent(WDL_EVENT_RETURNFLAG, NULL, NULL, teamInfo->Team, 0, 0, 0);
 	}
 }
 

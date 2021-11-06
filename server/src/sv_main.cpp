@@ -1005,7 +1005,8 @@ bool SV_SetupUserInfo(player_t &player)
 		{
 			// kill player if team is changed
 			P_DamageMobj(player.mo, 0, 0, 1000, 0);
-			M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, 0, 0, 0, 0);
+			M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, old_team, 0, 0,
+			              0);
 			M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team, 0, 0,
 			              0);
 			SV_BroadcastPrintf("%s switched to the %s team.\n",
@@ -3354,7 +3355,7 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	{
 		P_DamageMobj(player.mo, 0, 0, 1000, 0);
 
-		M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, 0, 0, 0, 0);
+		M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, old_team, 0, 0, 0);
 		M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, team, 0, 0, 0);
 	}
 	SV_BroadcastPrintf("%s has joined the %s team.\n", player.userinfo.netname.c_str(),

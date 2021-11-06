@@ -117,7 +117,7 @@ void M_LogWDLEvent(
 );
 void M_LogActorWDLEvent(
 	WDLEvents event, AActor* activator, AActor* target,
-	int arg0, int arg1, int arg2
+	int arg0, int arg1, int arg2, int arg3
 );
 void M_LogWDLPlayerSpawn(mapthing2_t *mthing);
 void M_LogWDLItemRespawnEvent(AActor* activator);

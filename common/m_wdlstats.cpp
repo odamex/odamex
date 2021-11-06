@@ -714,7 +714,7 @@ void M_LogWDLEvent(
  */
 void M_LogActorWDLEvent(
 	WDLEvents event, AActor* activator, AActor* target,
-	int arg0, int arg1, int arg2
+	int arg0, int arg1, int arg2, int arg3
 )
 {
 	if (!::wdlstate.recording)
@@ -728,7 +728,7 @@ void M_LogActorWDLEvent(
 	if (target != NULL && target->type == MT_PLAYER)
 		tp = target->player;
 
-	M_LogWDLEvent(event, ap, tp, arg0, arg1, arg2, 0);
+	M_LogWDLEvent(event, ap, tp, arg0, arg1, arg2, arg3);
 }
 
 /**

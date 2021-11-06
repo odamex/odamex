@@ -1932,7 +1932,6 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 // and other environmental stuff.
 //
 // [Toke] This is no longer needed client-side
-// [BC] Add hits to this function to make accuracy calculation easier.
 void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage, int mod, int flags)
 {
     unsigned	ang;
@@ -1976,10 +1975,23 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 	TeamInfo* teamInfo = NULL;
 	bool targethasflag = false;
+	team_t f = TEAM_NONE;
+
 	if (player)
 	{
 		teamInfo = GetTeamInfo(player->userinfo.team);
 		targethasflag = &idplayer(teamInfo->FlagData.flagger) == player;
+		// Determine the team's flag the player has.
+		if (targethasflag)
+		{
+			for (size_t i = 0; i < NUMTEAMS; i++)
+			{
+				if ((*player).flags[i])
+				{
+					f = (team_t)i;
+				}
+			}
+		}
 	}
 
 	if (target->flags & MF_SKULLFLY)
@@ -2101,15 +2113,17 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		int low = std::max(target->health - damage, 0);
 		int actualdamage = target->health - low;
 
-		if (source == NULL)
+		if (source == NULL && !targethasflag)
 		{
-			int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
-			M_LogActorWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, actualdamage, saved, emod);
+			M_LogActorWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, actualdamage, saved, mod, 0);
 		}
-		else if (targethasflag)
-			M_LogActorWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, actualdamage, saved, mod);
+		else if (source == NULL && targethasflag)
+			M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERDAMAGE, source, target, actualdamage, saved, mod, f);
+		else if (source != NULL && targethasflag)
+			M_LogActorWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target,
+			                   actualdamage, saved, mod, f);
 		else
-			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod);
+			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod, 0);
 		
 		if (mod == MOD_PISTOL || mod == MOD_CHAINGUN || mod == MOD_FIST ||
 		    mod == MOD_CHAINSAW || mod == MOD_RAILGUN)
@@ -2172,18 +2186,16 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		// WDL damage events.
 		if (source == NULL && targethasflag)
 		{
-			int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
-				M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, 0, 0, emod);
+				M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, f, 0, mod, 0);
 			}
 		else if (source == NULL)
 		{
-			int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
-			M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, emod);
+			M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, mod, 0);
 		}
 		else if (targethasflag)
-			M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
+			M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, f, 0, mod, 0);
 		else
-			M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
+			M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod, 0);
 
 		return;
 	}
@@ -2259,17 +2271,31 @@ void P_PlayerLeavesGame(player_s* player)
 
 	TeamInfo* teamInfo = NULL;
 	bool targethasflag = false;
+	team_t f = TEAM_NONE;
+	team_t current = TEAM_NONE;
 	if (player)
 	{
+		current = player->userinfo.team;
 		teamInfo = GetTeamInfo(player->userinfo.team);
 		targethasflag = &idplayer(teamInfo->FlagData.flagger) == player;
+		// Determine the team's flag the player has.
+		if (targethasflag)
+		{
+			for (size_t i = 0; i < NUMTEAMS; i++)
+			{
+				if ((*player).flags[i])
+				{
+					f = (team_t)i;
+				}
+			}
+		}
 	}
 
 	if (targethasflag)
-		M_LogWDLEvent(WDL_EVENT_CARRIERKILL, player, player, 0, 0, MOD_EXIT, 0);
+		M_LogWDLEvent(WDL_EVENT_CARRIERKILL, player, player, f, 0, MOD_EXIT, 0);
 	else
 		M_LogWDLEvent(WDL_EVENT_KILL, player, player, 0, 0, MOD_EXIT, 0);
-	M_LogWDLEvent(WDL_EVENT_DISCONNECT, player, NULL, 0, 0, 0, 0);
+	M_LogWDLEvent(WDL_EVENT_DISCONNECT, player, NULL, current, 0, 0, 0);
 
 	// Playercount changes can cause end-of-game conditions.
 	G_AssertValidPlayerCount();
