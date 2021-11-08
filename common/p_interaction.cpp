@@ -2127,14 +2127,18 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		
 		if (mod == MOD_PISTOL || mod == MOD_CHAINGUN || mod == MOD_FIST ||
 		    mod == MOD_CHAINSAW || mod == MOD_RAILGUN)
-			M_LogWDLAccuracyHit(WDL_EVENT_SSACCURACY, splayer, player, mod, 1);
+			M_LogWDLEvent(WDL_EVENT_SSACCURACY, splayer, player, splayer->mo->angle / 4, mod, 1,
+			              GetMaxShotsForMod(mod));
 		else if (mod == MOD_SHOTGUN || mod == MOD_SSHOTGUN)
-			M_LogWDLAccuracyHit(WDL_EVENT_SPREADACCURACY, splayer, player, mod, 1);
+			M_LogWDLEvent(WDL_EVENT_SPREADACCURACY, splayer, player,
+			              splayer->mo->angle / 4, mod, 1, GetMaxShotsForMod(mod));
 		else if (mod == MOD_ROCKET || mod == MOD_R_SPLASH || mod == MOD_BFG_BOOM ||
 		         mod == MOD_PLASMARIFLE)
-			M_LogWDLAccuracyHit(WDL_EVENT_PROJACCURACY, splayer, player, mod, 1);
+			M_LogWDLEvent(WDL_EVENT_PROJACCURACY, splayer, player, splayer->mo->angle / 4,
+			              mod, 1, GetMaxShotsForMod(mod));
 		else if (mod == MOD_BFG_SPLASH)
-			M_LogWDLAccuracyHit(WDL_EVENT_TRACERACCURACY, splayer, player, mod, 1);
+			M_LogWDLEvent(WDL_EVENT_TRACERACCURACY, splayer, player,
+			              splayer->mo->angle / 4, mod, 1, GetMaxShotsForMod(mod));
 	}
 	else // not player
 	{

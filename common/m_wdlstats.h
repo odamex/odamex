@@ -123,17 +123,8 @@ void M_LogWDLPlayerSpawn(mapthing2_t *mthing);
 void M_LogWDLItemRespawnEvent(AActor* activator);
 void M_LogWDLFlagLocation(mapthing2_t* activator, team_t team);
 void M_LogWDLPickupEvent(player_t* activator, AActor* target, WDLPowerups pickuptype, bool dropped);
-int M_GetItemSpawn(int x, int y, int z, WDLPowerups item);
 void M_LogWDLItemSpawn(AActor* target, WDLPowerups type);
 int M_GetPlayerSpawn(int x, int y);
-void M_LogWDLAccuracyShot(
-	WDLEvents event, player_t* activator, int mod, 
-	angle_t angle
-);
-void M_LogWDLAccuracyHit(
-	WDLEvents event, player_t* activator, player_t* target, 
-	int mod, int hits
-);
 void M_HandleWDLNameChange(team_t team, std::string oldname, std::string newname, int netid);
 int GetMaxShotsForMod(int mod);
 void M_CommitWDLLog();

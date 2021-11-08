@@ -94,7 +94,7 @@ static struct WDLState {
 struct WDLPlayer
 {
 	int id;
-	int netid;
+	int pid;
 	std::string netname;
 	team_t team;
 };
@@ -171,7 +171,7 @@ static const char* WDLEventString(WDLEvents i)
 	return ::wdlevstrings[i];
 }
 
-static void AddWDLPlayer(const player_t* player)
+static void AddWDLPlayer(player_t* player)
 {
 	// Don't add player if their name is already in the vector.
 	// [Blair] Check the player's team too as version six tracks all connects/disconnects/team switches
@@ -180,7 +180,7 @@ static void AddWDLPlayer(const player_t* player)
 	{
 		if ((*it).netname == player->userinfo.netname &&
 		    (*it).team == player->userinfo.team && 
-			(*it).netid == player->id)
+			(*it).pid == player->id)
 			return;
 	}
 
@@ -235,6 +235,17 @@ static void AddWDLFlagLocation(const mapthing2_t* mthing, team_t team)
 	                                   mthing->y,
 	                                 mthing->z};
 	::wdlflaglocations.push_back(wdlflaglocation);
+}
+
+int GetItemSpawn(int x, int y, int z, WDLPowerups item)
+{
+	WDLItemSpawns::const_iterator it = ::wdlitemspawns.begin();
+	for (; it != ::wdlitemspawns.end(); ++it)
+	{
+		if ((*it).x == x && (*it).y == y && (*it).z == z && (*it).item == item)
+			return (*it).id;
+	}
+	return 0;
 }
 
 void M_LogWDLItemSpawn(AActor* target, WDLPowerups type)
@@ -524,6 +535,131 @@ static bool LogDamageEvent(
 }
 
 /**
+ * Log a shot attempt made by a player.
+ *
+ * If there's already an accuracy record for this gametic with a populated actor
+ * then create a new one because the shot hit more than 1 player.
+ */
+bool LogAccuracyShot(WDLEvents event, player_t* activator, int mod, angle_t angle)
+{
+	// See if we have an existing accuracy event for this tic.
+	// If not, we need to create a new one
+	// If there is an existing accuracy event for this tic and it has a target,
+	// then there were more than 1 hits, create a new event.
+	WDLEventLog::reverse_iterator it = ::wdlevents.rbegin();
+	for (; it != ::wdlevents.rend(); ++it)
+	{
+		if ((*it).gametic != ::gametic)
+		{
+			// Whoops, we went a whole gametic without seeing an accuracy
+			// to our name.
+			break;
+		}
+
+		// Event type is the same?
+		if ((*it).ev != event)
+			continue;
+
+		// Activator is the same?
+		if ((*it).activator != activator->id)
+			continue;
+
+		// We found an existing accuracy event for this tic.
+		// Do nothing.
+		return true;
+	}
+
+	return false;
+}
+
+/**
+ * Log a hit shot by a player
+ *
+ * Looks for an accuracy log somewhere in the backlog, if there is none, it
+ * logs a message but continues.
+ *
+ *
+ */
+bool LogAccuracyHit(WDLEvents event, player_t* activator, player_t* target, int mod, int hits)
+{
+	// See if we have an existing accuracy event for this tic.
+	WDLEventLog::reverse_iterator it = ::wdlevents.rbegin();
+	for (; it != ::wdlevents.rend(); ++it)
+	{
+		if ((*it).gametic != ::gametic)
+		{
+			// Whoops, we went a whole gametic without seeing an accuracy
+			// to our name.
+			break;
+		}
+
+		// Event type is the same?
+		if ((*it).ev != event)
+			continue;
+
+		// Activator is the same?
+		if ((*it).activator != activator->id)
+			continue;
+
+		// Target is the same?
+		if ((*it).target != target->id && (*it).target != 0)
+			continue;
+
+		// Target
+		int tx = 0;
+		int ty = 0;
+		int tz = 0;
+		if (target != NULL)
+		{
+			tx = target->mo->x;
+			ty = target->mo->y;
+			tz = target->mo->z;
+		}
+		else
+		{
+			// Can't log a hit if it didn't hit anybody...
+			return true;
+		}
+
+		// We found an existing accuracy event for this tic - increment the number of
+		// shots hit if its a spread type
+		(*it).target = target->id;
+		(*it).arg2 += hits;
+		(*it).tpos[0] = tx;
+		(*it).tpos[1] = ty;
+		(*it).tpos[2] = tz;
+		return true;
+	}
+	// Not sure what happened but it can't find the event. Create one.
+	return false;
+}
+
+// [Blair] Helper function to determine max amount of shots that a mod shoots at a time.
+int GetMaxShotsForMod(int mod)
+{
+	switch (mod)
+	{
+	case MOD_FIST:
+	case MOD_PISTOL:
+	case MOD_CHAINGUN:
+	case MOD_ROCKET:
+	case MOD_R_SPLASH:
+	case MOD_CHAINSAW:
+	case MOD_PLASMARIFLE:
+	case MOD_BFG_BOOM:
+		return 1;
+	case MOD_SHOTGUN:
+		return 7;
+	case MOD_BFG_SPLASH:
+		return 40;
+	case MOD_SSHOTGUN:
+		return 20;
+	}
+
+	return 1;
+}
+
+/**
  * Log a WDL flag location.
  *
  *
@@ -565,7 +701,7 @@ void M_LogWDLItemRespawnEvent(AActor* activator)
 		az = activator->z;
 
 		// Add the id from the pickups table.
-		itemspawnid = M_GetItemSpawn(ax, ay, az, itemtype);
+		itemspawnid = GetItemSpawn(ax, ay, az, itemtype);
 	}
 
 	// Add the event to the log.
@@ -626,7 +762,7 @@ void M_LogWDLPickupEvent(player_t* activator, AActor* target, WDLPowerups pickup
 
 		// Add the target.
 		if (!dropped)
-			itemspawnid = M_GetItemSpawn(tx, ty, tz, pickuptype);
+			itemspawnid = GetItemSpawn(tx, ty, tz, pickuptype);
 	}
 
 	// Add the event to the log.
@@ -700,11 +836,31 @@ void M_LogWDLEvent(
 			return;
 	}
 
+	if (
+		activator && !target && 
+		(event == WDL_EVENT_SSACCURACY || event == WDL_EVENT_SPREADACCURACY ||
+		event == WDL_EVENT_PROJACCURACY || event == WDL_EVENT_TRACERACCURACY) &&
+		arg2 <= 0
+	) {
+		if (LogAccuracyShot(event, activator, arg1, arg0))
+			return;
+	}
+
+	if (
+		activator && target && 
+	    (event == WDL_EVENT_SSACCURACY || event == WDL_EVENT_SPREADACCURACY ||
+	     event == WDL_EVENT_PROJACCURACY || event == WDL_EVENT_TRACERACCURACY) &&
+	    arg2 > 0
+	) {
+		if (LogAccuracyHit(event, activator, target, arg1, arg2))
+			return;
+	}
+
 	// Add the event to the log.
 	WDLEvent evt = {
 		event, aid, tid, ::gametic,
 		{ ax, ay, az }, { tx, ty, tz },
-		arg0, arg1, arg2
+		arg0, arg1, arg2, arg3
 	};
 	::wdlevents.push_back(evt);
 }
@@ -731,174 +887,24 @@ void M_LogActorWDLEvent(
 	M_LogWDLEvent(event, ap, tp, arg0, arg1, arg2, arg3);
 }
 
-/**
- * Log a shot attempt made by a player.
- * 
- * If there's already an accuracy record for this gametic with a populated actor
- * then create a new one because the shot hit more than 1 player.
- */
-void M_LogWDLAccuracyShot(WDLEvents event, player_t* activator, int mod, angle_t angle)
-{
-	if (!::wdlstate.recording)
-		return;
-
-	fixed_t aid = 0;
-	int ax = 0;
-	int ay = 0;
-	int az = 0;
-	if (activator != NULL)
-	{
-		// Add the activator.
-		AddWDLPlayer(activator);
-		aid = activator->id;
-
-		// Add the activator's body information.
-		if (activator->mo)
-		{
-			ax = activator->mo->x >> FRACBITS;
-			ay = activator->mo->y >> FRACBITS;
-			az = activator->mo->z >> FRACBITS;
-		}
-	}
-
-	// See if we have an existing accuracy event for this tic.
-	// If not, we need to create a new one
-	// If there is an existing accuracy event for this tic and it has a target,
-	// then there were more than 1 hits, create a new event.
-	WDLEventLog::reverse_iterator it = ::wdlevents.rbegin();
-	for (; it != ::wdlevents.rend(); ++it)
-	{
-		if ((*it).gametic != ::gametic)
-		{
-			// Whoops, we went a whole gametic without seeing an accuracy
-			// to our name.
-			break;
-		}
-
-		// Event type is the same?
-		if ((*it).ev != event)
-			continue;
-
-		// Activator is the same?
-		if ((*it).activator != activator->id)
-			continue;
-
-		// We found an existing accuracy event for this tic.
-		// Do nothing.
-		return;
-	}
-
-	// Add the event to the log.
-	WDLEvent evt = {
-		event, aid, 0, ::gametic,
-		{ ax, ay, az }, { 0, 0, 0 }, angle, mod, 0, GetMaxShotsForMod(mod)
-	};
-	::wdlevents.push_back(evt);
-}
-
-/**
- * Log a hit shot by a player
- *
- * Looks for an accuracy log somewhere in the backlog, if there is none, it
- * logs a message but continues.
- * 
- * 
- */
-void M_LogWDLAccuracyHit(WDLEvents event, player_t* activator, player_t* target, int mod,
-                         int hits)
-{
-	if (!::wdlstate.recording)
-		return;
-
-	fixed_t aid = 0;
-	int ax = 0;
-	int ay = 0;
-	int az = 0;
-	if (activator != NULL)
-	{
-		// Add the activator.
-		AddWDLPlayer(activator);
-		aid = activator->id;
-
-		// Add the activator's body information.
-		if (activator->mo)
-		{
-			ax = activator->mo->x >> FRACBITS;
-			ay = activator->mo->y >> FRACBITS;
-			az = activator->mo->z >> FRACBITS;
-		}
-	}
-
-	// Target
-	fixed_t tid = 0;
-	int tx = 0;
-	int ty = 0;
-	int tz = 0;
-	if (target != NULL)
-	{
-		// Add the target.
-		AddWDLPlayer(target);
-		tid = target->id;
-
-		// Add the target's body information.
-		if (target->mo)
-		{
-			tx = target->mo->x >> FRACBITS;
-			ty = target->mo->y >> FRACBITS;
-			tz = target->mo->z >> FRACBITS;
-		}
-	}
-
-	// See if we have an existing accuracy event for this tic.
-	WDLEventLog::reverse_iterator it = ::wdlevents.rbegin();
-	for (; it != ::wdlevents.rend(); ++it)
-	{
-		if ((*it).gametic != ::gametic)
-		{
-			// Whoops, we went a whole gametic without seeing an accuracy
-			// to our name.
-			break;
-		}
-
-		// Event type is the same?
-		if ((*it).ev != event)
-			continue;
-
-		// Activator is the same?
-		if ((*it).activator != activator->id)
-			continue;
-
-		// Target is the same?
-		if ((*it).target != target->id && (*it).target != 0)
-			continue;
-
-		// We found an existing accuracy event for this tic - increment the number of
-		// shots hit if its a spread type
-		(*it).target = target->id;
-		(*it).arg2 += hits;
-		(*it).tpos[0] = tx;
-		(*it).tpos[1] = ty;
-		(*it).tpos[2] = tz;
-		return;
-	}
-
-	// Add the event to the log if for some reason it does not exist.
-	WDLEvent evt = {event, aid, tid, ::gametic, {ax, ay, az}, {tx, ty, tz}, 0, mod, hits, GetMaxShotsForMod(mod)};
-	::wdlevents.push_back(evt);
-}
-
 void M_LogWDLPlayerSpawn(mapthing2_t *mthing)
 {
+	if (!::wdlstate.recording)
+		return;
+
 	AddWDLPlayerSpawn(mthing);
 }
 
-void M_HandleWDLNameChange(team_t team, std::string oldname, std::string newname, int netid)
+void M_HandleWDLNameChange(team_t team, std::string oldname, std::string newname, int pid)
 {
+	if (!::wdlstate.recording)
+		return;
+
 	WDLPlayers::iterator it = ::wdlplayers.begin();
 	for (; it != ::wdlplayers.end(); ++it)
 	{
 		// Attempt a rename but don't go nuts.
-		if ((*it).netid == netid && (*it).netname == oldname && (*it).team == team)
+		if ((*it).pid == pid && (*it).netname == oldname && (*it).team == team)
 		{
 			(*it).netname = newname;
 			return;
@@ -908,6 +914,9 @@ void M_HandleWDLNameChange(team_t team, std::string oldname, std::string newname
 
 int M_GetPlayerSpawn(int x, int y)
 {
+	if (!::wdlstate.recording)
+		return 0;
+
 	WDLPlayerSpawns::const_iterator it = ::wdlplayerspawns.begin();
 	for (; it != ::wdlplayerspawns.end(); ++it)
 	{
@@ -915,42 +924,6 @@ int M_GetPlayerSpawn(int x, int y)
 			return (*it).id;
 	}
 	return 0;
-}
-
-int M_GetItemSpawn(int x, int y, int z, WDLPowerups item)
-{
-	WDLItemSpawns::const_iterator it = ::wdlitemspawns.begin();
-	for (; it != ::wdlitemspawns.end(); ++it)
-	{
-		if ((*it).x == x && (*it).y == y && (*it).z == z && (*it).item == item)
-			return (*it).id;
-	}
-	return 0;
-}
-
-// [BC] Helper function to determine max amount of shots that a mod shoots at a time.
-int GetMaxShotsForMod(int mod)
-{
-	switch (mod)
-	{
-	case MOD_FIST:
-	case MOD_PISTOL:
-	case MOD_CHAINGUN:
-	case MOD_ROCKET:
-	case MOD_R_SPLASH:
-	case MOD_CHAINSAW:
-	case MOD_PLASMARIFLE:
-	case MOD_BFG_BOOM:
-		return 1;
-	case MOD_SHOTGUN:
-		return 7;
-	case MOD_BFG_SPLASH:
-		return 40;
-	case MOD_SSHOTGUN:
-		return 20;
-	}
-
-	return 1;
 }
 
 void M_CommitWDLLog()
@@ -995,7 +968,7 @@ void M_CommitWDLLog()
 	fprintf(fh, "players\n");
 	WDLPlayers::const_iterator pit = ::wdlplayers.begin();
 	for (; pit != ::wdlplayers.end(); ++pit)
-		fprintf(fh, "%d,%d,%d,%s\n", pit->id, pit->netid, pit->team, pit->netname.c_str());
+		fprintf(fh, "%d,%d,%d,%s\n", pit->id, pit->pid, pit->team, pit->netname.c_str());
 
 	// ItemSpawns
 	fprintf(fh, "itemspawns\n");
