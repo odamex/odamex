@@ -156,9 +156,10 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		team_t team = player.userinfo.team;
 		
 		// Log the spawn
-		M_LogWDLEvent(
-		    WDL_EVENT_SPAWNPLAYER, &player, NULL, team, 0,
-		    M_GetPlayerSpawn(mthing->x, mthing->y), 0);
+		if (!player.spectator)
+			M_LogWDLEvent(
+				WDL_EVENT_SPAWNPLAYER, &player, NULL, team, 0,
+				M_GetPlayerSpawn(mthing->x, mthing->y), 0);
 
 		// send new objects
 		SV_SpawnMobj(mobj);
