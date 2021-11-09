@@ -750,8 +750,6 @@ void A_FireMissile(AActor* mo)
 	if (serverside)
 	{
 		M_LogWDLEvent(WDL_EVENT_PROJFIRE, player, NULL, player->mo->angle / 4, MOD_ROCKET, 0, 0);
-		M_LogWDLEvent(WDL_EVENT_PROJACCURACY, player, NULL, player->mo->angle / 4,
-		              MOD_ROCKET, 0, GetMaxShotsForMod(MOD_ROCKET));
 		P_SpawnPlayerMissile(player->mo, MT_ROCKET);
 	}
 }
@@ -779,8 +777,6 @@ void A_FireBFG(AActor* mo)
 		P_SpawnPlayerMissile(player->mo, MT_BFG);
 
 		M_LogWDLEvent(WDL_EVENT_PROJFIRE, player, NULL, player->mo->angle / 4, MOD_BFG_BOOM, 0, 0);
-		M_LogWDLEvent(WDL_EVENT_PROJACCURACY, player, NULL, player->mo->angle / 4,
-		              MOD_BFG_BOOM, 0, GetMaxShotsForMod(MOD_BFG_BOOM));
 	}
 
 	player->mo->pitch = storedpitch;
@@ -865,8 +861,6 @@ void A_FirePlasma(AActor* mo)
 	if (serverside)
 	{
 		M_LogWDLEvent(WDL_EVENT_PROJFIRE, player, NULL, player->mo->angle / 4, MOD_PLASMARIFLE, 0, 0);
-		M_LogWDLEvent(WDL_EVENT_PROJACCURACY, player, NULL, player->mo->angle / 4,
-		              MOD_PLASMARIFLE, 0, GetMaxShotsForMod(MOD_PLASMARIFLE));
 		P_SpawnPlayerMissile(player->mo, MT_PLASMA);
 	}
 }
