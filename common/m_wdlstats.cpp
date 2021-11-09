@@ -926,6 +926,24 @@ int M_GetPlayerSpawn(int x, int y)
 	return 0;
 }
 
+int M_GetPlayerId(player_t* player, team_t team)
+{
+	if (!::wdlstate.recording)
+		return 0;
+
+	// This gets called before the log function itself, so add it.
+	AddWDLPlayer(player);
+
+	// Make real good sure its in there.
+	WDLPlayers::const_iterator it = ::wdlplayers.begin();
+	for (; it != ::wdlplayers.end(); ++it)
+	{
+		if ((*it).pid == player->id && (*it).netname == player->userinfo.netname && (*it).team == team)
+			return (*it).id;
+	}
+	return 0;
+}
+
 void M_CommitWDLLog()
 {
 	if (!::wdlstate.recording || wdlevents.empty() || ::levelstate.getState() != LevelState::INGAME)

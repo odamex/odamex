@@ -119,7 +119,8 @@ void M_LogActorWDLEvent(
 	WDLEvents event, AActor* activator, AActor* target,
 	int arg0, int arg1, int arg2, int arg3
 );
-void M_LogWDLPlayerSpawn(mapthing2_t *mthing);
+int M_GetPlayerId(player_t* player, team_t team);
+void M_LogWDLPlayerSpawn(mapthing2_t* mthing);
 void M_LogWDLItemRespawnEvent(AActor* activator);
 void M_LogWDLFlagLocation(mapthing2_t* activator, team_t team);
 void M_LogWDLPickupEvent(player_t* activator, AActor* target, WDLPowerups pickuptype, bool dropped);
