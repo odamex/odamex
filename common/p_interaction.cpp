@@ -2085,6 +2085,41 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			damage -= armorDamage;
 		}
 
+		// WDL damage events - they have to be up here to ensure we know how
+		// much armor is subtracted.
+		int low = std::max(target->health - damage, 0);
+		int actualdamage = target->health - low;
+
+		if (source == NULL && !targethasflag)
+		{
+			M_LogActorWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, actualdamage,
+			                   armorDamage, mod, 0);
+		}
+		else if (source == NULL && targethasflag)
+			M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERDAMAGE, source, target,
+			                   actualdamage, armorDamage, mod, f);
+		else if (source != NULL && targethasflag)
+			M_LogActorWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, actualdamage,
+			                   armorDamage, mod, f);
+		else
+			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage,
+			                   armorDamage, mod, 0);
+
+		if (mod == MOD_PISTOL || mod == MOD_CHAINGUN || mod == MOD_FIST ||
+		    mod == MOD_CHAINSAW || mod == MOD_RAILGUN)
+			M_LogWDLEvent(WDL_EVENT_SSACCURACY, splayer, player, splayer->mo->angle / 4,
+			              mod, 1, GetMaxShotsForMod(mod));
+		else if (mod == MOD_SHOTGUN || mod == MOD_SSHOTGUN)
+			M_LogWDLEvent(WDL_EVENT_SPREADACCURACY, splayer, player,
+			              splayer->mo->angle / 4, mod, 1, GetMaxShotsForMod(mod));
+		else if (mod == MOD_ROCKET || mod == MOD_R_SPLASH || mod == MOD_BFG_BOOM ||
+		         mod == MOD_PLASMARIFLE)
+			M_LogWDLEvent(WDL_EVENT_PROJACCURACY, splayer, player, splayer->mo->angle / 4,
+			              mod, 1, GetMaxShotsForMod(mod));
+		else if (mod == MOD_BFG_SPLASH)
+			M_LogWDLEvent(WDL_EVENT_TRACERACCURACY, splayer, player,
+			              splayer->mo->angle / 4, mod, 1, GetMaxShotsForMod(mod));
+
 		player->health -= damage; // mirror mobj health here for Dave
 		target->health -= damage; // Do the same.
 
@@ -2107,38 +2142,6 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			player->damagecount = 100; // teleport stomp does 10k points...
 
 		SV_SendDamagePlayer(player, inflictor, damage, armorDamage);
-
-		// WDL damage events - they have to be up here to ensure we know how
-		// much armor is subtracted.
-		int low = std::max(target->health - damage, 0);
-		int actualdamage = target->health - low;
-
-		if (source == NULL && !targethasflag)
-		{
-			M_LogActorWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, actualdamage, saved, mod, 0);
-		}
-		else if (source == NULL && targethasflag)
-			M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERDAMAGE, source, target, actualdamage, saved, mod, f);
-		else if (source != NULL && targethasflag)
-			M_LogActorWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target,
-			                   actualdamage, saved, mod, f);
-		else
-			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod, 0);
-		
-		if (mod == MOD_PISTOL || mod == MOD_CHAINGUN || mod == MOD_FIST ||
-		    mod == MOD_CHAINSAW || mod == MOD_RAILGUN)
-			M_LogWDLEvent(WDL_EVENT_SSACCURACY, splayer, player, splayer->mo->angle / 4, mod, 1,
-			              GetMaxShotsForMod(mod));
-		else if (mod == MOD_SHOTGUN || mod == MOD_SSHOTGUN)
-			M_LogWDLEvent(WDL_EVENT_SPREADACCURACY, splayer, player,
-			              splayer->mo->angle / 4, mod, 1, GetMaxShotsForMod(mod));
-		else if (mod == MOD_ROCKET || mod == MOD_R_SPLASH || mod == MOD_BFG_BOOM ||
-		         mod == MOD_PLASMARIFLE)
-			M_LogWDLEvent(WDL_EVENT_PROJACCURACY, splayer, player, splayer->mo->angle / 4,
-			              mod, 1, GetMaxShotsForMod(mod));
-		else if (mod == MOD_BFG_SPLASH)
-			M_LogWDLEvent(WDL_EVENT_TRACERACCURACY, splayer, player,
-			              splayer->mo->angle / 4, mod, 1, GetMaxShotsForMod(mod));
 	}
 	else // not player
 	{
