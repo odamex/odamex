@@ -107,6 +107,7 @@ enum WDLPowerups {
 	WDL_PICKUP_SHOTGUN,
 	WDL_PICKUP_SUPERSHOTGUN,
 	WDL_PICKUP_CAREPACKAGE,
+	WDL_PICKUP_POWERUPSPAWNER,
 	WDL_PICKUP_UNKNOWN,
 };
 
@@ -121,6 +122,7 @@ void M_LogActorWDLEvent(
 );
 int M_GetPlayerId(player_t* player, team_t team);
 void M_LogWDLPlayerSpawn(mapthing2_t* mthing);
+void M_RemoveWDLPlayerSpawn(mapthing2_t* mthing);
 void M_LogWDLItemRespawnEvent(AActor* activator);
 void M_LogWDLFlagLocation(mapthing2_t* activator, team_t team);
 void M_LogWDLPickupEvent(player_t* activator, AActor* target, WDLPowerups pickuptype, bool dropped);

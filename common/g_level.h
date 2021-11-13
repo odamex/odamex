@@ -90,7 +90,7 @@ struct level_info_t
 	OLumpName		mapname;
 	int				levelnum;
 	std::string		level_name;
-	std::string		level_hash;
+	byte			level_hash[16];
 	OLumpName		pname;
 	OLumpName		nextmap;
 	OLumpName		secretmap;
@@ -107,6 +107,7 @@ struct level_info_t
 	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
 	      defered(NULL)
 	{
+		ArrayInit(level_hash, 0);
 	}
 
 	bool exists() const
@@ -121,7 +122,7 @@ struct level_pwad_info_t
 	OLumpName		mapname;
 	int				levelnum;
 	std::string		level_name;
-	std::string		level_hash;
+	byte			level_hash[16];
 	OLumpName		pname;
 	OLumpName		nextmap;
 	OLumpName		secretmap;
@@ -162,7 +163,7 @@ struct level_pwad_info_t
 	bool			bossactions_donothing;
 	
 	level_pwad_info_t()
-	    : mapname(""), levelnum(0), level_name(""), level_hash(""), pname(""), nextmap(""), secretmap(""),
+	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
 	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
 	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
 	      aircontrol(0.0f), exitpic(""), enterpic(""), endpic(""), intertext(""),
@@ -170,13 +171,14 @@ struct level_pwad_info_t
 	      bossactions_donothing(false)
 	{
 		ArrayInit(fadeto_color, 0);
+		ArrayInit(level_hash, 0);
 		ArrayInit(outsidefog_color, 0);
 		outsidefog_color[0] = 0xFF; // special token signaling to not handle it specially
 	}
 
 	level_pwad_info_t(const level_info_t& other)
 	    : mapname(other.mapname), levelnum(other.levelnum), level_name(other.level_name),
-	      level_hash(other.level_hash), pname(other.pname), nextmap(other.nextmap),
+	      pname(other.pname), nextmap(other.nextmap),
 		  secretmap(other.secretmap), partime(other.partime), skypic(other.skypic),
 		  music(other.music), flags(other.flags), cluster(other.cluster),
 		  snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
@@ -186,6 +188,7 @@ struct level_pwad_info_t
 	{
 		ArrayInit(fadeto_color, 0);
 		ArrayInit(outsidefog_color, 0);
+		ArrayInit(level_hash, 0);
 		outsidefog_color[0] = 0xFF; // special token signaling to not handle it specially
 	}
 
@@ -197,7 +200,6 @@ struct level_pwad_info_t
 		mapname = other.mapname;
 		levelnum = other.levelnum;
 		level_name = other.level_name;
-		level_hash = other.level_hash;
 		pname = other.pname;
 		nextmap = other.nextmap;
 		secretmap = other.secretmap;
@@ -210,6 +212,7 @@ struct level_pwad_info_t
 		defered = other.defered;
 		ArrayCopy(fadeto_color, other.fadeto_color);
 		ArrayCopy(outsidefog_color, other.outsidefog_color);
+		ArrayCopy(level_hash, other.level_hash);
 		fadetable = other.fadetable;
 		skypic2 = other.skypic2;
 		gravity = other.gravity;
@@ -247,7 +250,7 @@ struct level_locals_t
 	int				cluster;
 	int				levelnum;
 	char			level_name[64];			// the descriptive name (Outer Base, etc)
-	std::string     level_hash;				// [Blair] Hash generated for the level to describe it uniquely so it can be
+	byte			level_hash[16];			// [Blair] Hash generated for the level to describe it uniquely so it can be
 											// singled out if it's out of its host wad, like in a compilation wad.
 	OLumpName		mapname;                // the server name (base1, etc)
 	OLumpName		nextmap;				// go here when sv_fraglimit is hit

@@ -820,7 +820,7 @@ void G_InitLevelLocals()
 	::level.cluster = info.cluster;
 	::level.flags = info.flags;
 	::level.levelnum = info.levelnum;
-	::level.level_hash = info.level_hash;
+	memcpy(::level.level_hash, info.level_hash, sizeof(info.level_hash));
 
 	// Only copy the level name if there's a valid level name to be copied.
 	

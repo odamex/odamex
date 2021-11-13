@@ -46,6 +46,9 @@
 #include "m_argv.h"
 #include "md5.h"
 
+#include "cryptopp/cryptlib.h"
+#include "cryptopp/blake2.h"
+
 #include "w_wad.h"
 
 #include <sstream>
@@ -171,31 +174,33 @@ std::string W_MD5(std::string filename)
 }
 
 /*
-* @brief Checksums a byte array pointer.
-* 
-* @param lumpdata byte array pointer to the lump that needs to be hashed.
-* @param size of the byte array pointer.
-*/
-std::string W_MD5(const byte* lumpdata, unsigned length)
+ * @brief Checksums a byte array pointer via blake2.
+ * 
+ * However, it encodes the digest into a 16-byte array to be read later.
+ *
+ * @param lumpdata byte array pointer to the lump that needs to be hashed.
+ * @param size of the byte array pointer.
+ */
+byte* W_BLAKE2(const byte* lumpdata, int length)
 {
-	if (!lumpdata || length <= 0)
-		return "";
+	byte bytehash[16];
 
-	md5_state_t state;
-	md5_init(&state);
+	ArrayInit(bytehash, 0);
 
-	md5_append(&state, (unsigned char*)lumpdata, length);
+	if (!lumpdata)
+		return bytehash;
 
-	md5_byte_t digest[16];
-	md5_finish(&state, digest);
+	std::string digest;
 
-	std::stringstream hash;
+	CryptoPP::BLAKE2b hash;
 
-	for (int i = 0; i < 16; i++)
-		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase
-		     << (short)digest[i];
+	hash.Update(lumpdata, length);
+	digest.resize(hash.DIGESTSIZE);
+	hash.TruncatedFinal((byte*)&digest[0], digest.size());
 
-	return hash.str();
+	memcpy(bytehash, digest.data(), sizeof bytehash);
+
+	return bytehash;
 }
 
 //
