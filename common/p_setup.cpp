@@ -50,6 +50,9 @@
 #include "p_setup.h"
 #include "p_hordespawn.h"
 
+#include <chrono>
+using namespace std::chrono;
+
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
 void P_SpawnAvatars();
@@ -1478,35 +1481,36 @@ void P_LoadBlockMap (int lump)
 * @param ssectors - SSectors lump offset
 * @param sectors - Sectors lump offset
 */
-void P_GenerateUniqueMapHash(int things, int linedefs, int sidedefs,
-	int vertexes, int segs, int ssectors, int sectors)
+void P_GenerateUniqueMapHash(int things, int linedefs, int sidedefs, int vertexes,
+                             int segs, int ssectors, int sectors)
 {
-	std::string thinghash    = "";
-	std::string linedefhash  = "";
-	std::string sidedefhash  = "";
-	std::string vertexhash   = "";
-	std::string segshash     = "";
-	std::string ssectorshash = "";
-	std::string sectorshash  = "";
+	unsigned int length = 0;
 
-	const byte* thingbuffer    = static_cast<byte*>(W_CacheLumpNum(things,   PU_STATIC));
-	const byte* linedefbuffer  = static_cast<byte*>(W_CacheLumpNum(linedefs, PU_STATIC));
-	const byte* sidedefbuffer  = static_cast<byte*>(W_CacheLumpNum(sidedefs, PU_STATIC));
-	const byte* vertexbuffer   = static_cast<byte*>(W_CacheLumpNum(vertexes, PU_STATIC));
-	const byte* segsbuffer     = static_cast<byte*>(W_CacheLumpNum(segs,     PU_STATIC));
-	const byte* ssectorsbuffer = static_cast<byte*>(W_CacheLumpNum(ssectors, PU_STATIC));
-	const byte* sectorsbuffer  = static_cast<byte*>(W_CacheLumpNum(sectors,  PU_STATIC));
+	typedef std::vector<byte> LevelLumps;
+	static LevelLumps levellumps;
 
-	thinghash    = W_MD5(thingbuffer,   W_LumpLength(things));
-	linedefhash  = W_MD5(linedefbuffer, W_LumpLength(linedefs));
-	sidedefhash  = W_MD5(sidedefbuffer, W_LumpLength(sidedefs));
-	vertexhash   = W_MD5(vertexbuffer,  W_LumpLength(vertexes));
-	segshash     = W_MD5(segsbuffer,    W_LumpLength(segs));
-	ssectorshash = W_MD5(segsbuffer,    W_LumpLength(ssectors));
-	sectorshash  = W_MD5(segsbuffer,    W_LumpLength(sectors));
+	const byte* thingbytes = static_cast<byte*>(W_CacheLumpNum(things, PU_STATIC));
+	const byte* lindefbytes = static_cast<byte*>(W_CacheLumpNum(linedefs, PU_STATIC));
+	const byte* sidedefbytes = static_cast<byte*>(W_CacheLumpNum(sidedefs, PU_STATIC));
+	const byte* vertexbytes = static_cast<byte*>(W_CacheLumpNum(vertexes, PU_STATIC));
+	const byte* segsbytes = static_cast<byte*>(W_CacheLumpNum(segs, PU_STATIC));
+	const byte* ssectorsbytes = static_cast<byte*>(W_CacheLumpNum(ssectors, PU_STATIC));
+	const byte* sectorsbytes = static_cast<byte*>(W_CacheLumpNum(sectors, PU_STATIC));
 
-	level.level_hash = thinghash + linedefhash + sidedefhash + vertexhash + segshash + ssectorshash +
-	       sectorshash;
+	levellumps.insert(levellumps.end(), W_LumpLength(things), *thingbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(linedefs), *lindefbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(sidedefs), *sidedefbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(vertexes), *vertexbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(segs), *segsbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(ssectors), *ssectorsbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(sectors), *sectorsbytes);
+
+	length = W_LumpLength(things) + W_LumpLength(linedefs) + W_LumpLength(sidedefs) +
+	         W_LumpLength(vertexes) + W_LumpLength(segs) + W_LumpLength(ssectors) +
+	         W_LumpLength(sectors);
+
+	memcpy(::level.level_hash, W_BLAKE2(levellumps.data(), length),
+	       sizeof(::level.level_hash));
 }
 //
 // P_GroupLines
@@ -1738,7 +1742,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
 		wminfo.maxfrags = 0;
-	level.level_hash = "";
+	ArrayInit(level.level_hash, 0);
 	wminfo.partime = 180;
 
 	if (!savegamerestore)

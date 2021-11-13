@@ -2775,7 +2775,7 @@ static BOOL PIT_DoomRadiusAttack(AActor* thing)
 
 	if (dist >= bombdamage)
 	{
-		if (bombsource->player)
+		if (bombsource && bombsource->player)
 			M_LogWDLEvent(WDL_EVENT_PROJACCURACY, bombsource->player, NULL,
 				bombsource->player->mo->angle / 4, bombmod, 0,
 				GetMaxShotsForMod(bombmod));
@@ -2879,7 +2879,7 @@ static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 	}
 	else
 	{
-		if (bombsource->player)
+		if (bombsource && bombsource->player)
 			M_LogWDLEvent(WDL_EVENT_PROJACCURACY, bombsource->player, NULL,
 			              bombsource->player->mo->angle / 4, bombmod, 0,
 			              GetMaxShotsForMod(bombmod));

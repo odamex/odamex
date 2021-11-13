@@ -2444,7 +2444,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (mthing->args[0] != position)
 			return;
 
-		if (G_IsCoopGame() || G_UsesCoopSpawns())
+		if ((G_IsCoopGame() || G_UsesCoopSpawns()) && !G_IsHordeMode())
 			M_LogWDLPlayerSpawn(mthing);
 
 		size_t playernum = P_GetMapThingPlayerNumber(mthing);
@@ -2459,6 +2459,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 				// consider playerstarts[i] to be a voodoo doll start
 				voodoostarts.push_back(playerstarts[i]);
 				playerstarts.erase(playerstarts.begin() + i);
+				M_RemoveWDLPlayerSpawn(&playerstarts[i]);
 				break;
 			}
 		}
@@ -2657,6 +2658,10 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		// Store the spawn type for later.
 		mobj->special1 = mthing->type;
+		if (mthing->type == 5301) // Supply cache
+			M_LogWDLItemSpawn(mobj, WDL_PICKUP_CAREPACKAGE);
+		else if (mthing->type == 5307)
+			M_LogWDLItemSpawn(mobj, WDL_PICKUP_POWERUPSPAWNER);
 	}
 
 	if (z == ONFLOORZ)

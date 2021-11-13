@@ -2090,6 +2090,11 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		int low = std::max(target->health - damage, 0);
 		int actualdamage = target->health - low;
 
+		angle_t sangle = 0;
+
+		if (splayer != NULL)
+			sangle = splayer->mo->angle / 4;
+
 		if (source == NULL && !targethasflag)
 		{
 			M_LogActorWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, actualdamage,
@@ -2107,18 +2112,18 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 		if (mod == MOD_PISTOL || mod == MOD_CHAINGUN || mod == MOD_FIST ||
 		    mod == MOD_CHAINSAW || mod == MOD_RAILGUN)
-			M_LogWDLEvent(WDL_EVENT_SSACCURACY, splayer, player, splayer->mo->angle / 4,
+			M_LogWDLEvent(WDL_EVENT_SSACCURACY, splayer, player, sangle,
 			              mod, 1, GetMaxShotsForMod(mod));
 		else if (mod == MOD_SHOTGUN || mod == MOD_SSHOTGUN)
-			M_LogWDLEvent(WDL_EVENT_SPREADACCURACY, splayer, player,
-			              splayer->mo->angle / 4, mod, 1, GetMaxShotsForMod(mod));
+			M_LogWDLEvent(WDL_EVENT_SPREADACCURACY, splayer, player, sangle, mod, 1,
+			              GetMaxShotsForMod(mod));
 		else if (mod == MOD_ROCKET || mod == MOD_R_SPLASH || mod == MOD_BFG_BOOM ||
 		         mod == MOD_PLASMARIFLE)
-			M_LogWDLEvent(WDL_EVENT_PROJACCURACY, splayer, player, splayer->mo->angle / 4,
+			M_LogWDLEvent(WDL_EVENT_PROJACCURACY, splayer, player, sangle,
 			              mod, 1, GetMaxShotsForMod(mod));
 		else if (mod == MOD_BFG_SPLASH)
-			M_LogWDLEvent(WDL_EVENT_TRACERACCURACY, splayer, player,
-			              splayer->mo->angle / 4, mod, 1, GetMaxShotsForMod(mod));
+			M_LogWDLEvent(WDL_EVENT_TRACERACCURACY, splayer, player, sangle, mod, 1,
+			              GetMaxShotsForMod(mod));
 
 		player->health -= damage; // mirror mobj health here for Dave
 		target->health -= damage; // Do the same.
@@ -2191,6 +2196,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		P_KillMobj(source, target, inflictor, false);
 
 		// WDL damage events.
+		// todo: handle voodoo dolls here
 		if (source == NULL && targethasflag)
 		{
 				M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, f, 0, mod, 0);
