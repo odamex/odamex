@@ -612,3 +612,44 @@ if(BUILD_LAUNCHER)
     endif()
   endif()
 endif()
+
+### crypto++ ###
+if(BUILD_CLIENT OR BUILD_SERVER)
+    # Figure out the correct library path to attach to our imported target
+    if(USE_INTERNAL_CRYPTOPP)
+      set(CRYPTOPP_INCLUDE_DIR
+        "${CMAKE_CURRENT_BINARY_DIR}/local/include/cryptopp")
+      set(CRYPTOPP_LIBRARY
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}cryptopp-static${libsuffix}")
+
+      # This must exist before the target is synthesized.
+      file(MAKE_DIRECTORY ${CRYPTOPP_INCLUDE_DIR})
+
+      # Generate the build.
+      execute_process(COMMAND "${CMAKE_COMMAND}"
+        -S "${CMAKE_CURRENT_SOURCE_DIR}/cryptopp"
+        -B "${CMAKE_CURRENT_BINARY_DIR}/cryptopp-build"
+        -G "${CMAKE_GENERATOR}"
+        -A "${CMAKE_GENERATOR_PLATFORM}"
+        -T "${CMAKE_GENERATOR_TOOLSET}"
+        "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+        "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+        "-DCMAKE_LINKER=${CMAKE_LINKER}"
+        "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
+        "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+        "-DCMAKE_INSTALL_LIBDIR=lib" # Without this, CentOS installs into lib64
+        "-DBUILD_SHARED=No"
+        "-DBUILD_TESTING=No")
+
+      # Compile the library.
+      execute_process(COMMAND "${CMAKE_COMMAND}"
+        --build "${CMAKE_CURRENT_BINARY_DIR}/cryptopp-build"
+        --config ${CMAKE_BUILD_TYPE} --target install)
+
+      # Synthesize an imported target that can be linked against.
+      add_library(cryptopp-static STATIC IMPORTED GLOBAL)
+      set_target_properties(cryptopp-static PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${CRYPTOPP_INCLUDE_DIR}"
+        IMPORTED_LOCATION ${CRYPTOPP_LIBRARY})
+    endif()
+endif()
