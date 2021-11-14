@@ -99,6 +99,12 @@ struct WDLPlayerSpawn
 	team_t team;
 };
 
+bool operator==(const WDLPlayerSpawn& lhs, const WDLPlayerSpawn& rhs)
+{
+	return lhs.id == rhs.id && lhs.team == rhs.team && lhs.x == rhs.x && lhs.y == rhs.y &&
+	       lhs.z == rhs.z;
+}
+
 // WDL player spawns that we're keeping track of.
 typedef std::vector<WDLPlayerSpawn> WDLPlayerSpawns;
 static WDLPlayerSpawns wdlplayerspawns;
@@ -225,14 +231,25 @@ static void AddWDLFlagLocation(const mapthing2_t* mthing, team_t team)
 
 static void RemoveWDLPlayerSpawn(const mapthing2_t* mthing)
 {
-	::wdlplayerspawns.erase(
-	    std::remove_if(::wdlplayerspawns.begin(), ::wdlplayerspawns.end(),
-	                   [mthing](auto& p) {
-		                   return p.x == mthing->x && p.y == mthing->y &&
-		                          p.z == mthing->z;
-	                   }),
-	    ::wdlplayerspawns.end() // end iterator
-	);
+	bool found = false;
+	WDLPlayerSpawn w;
+
+	WDLPlayerSpawns::const_iterator it = ::wdlplayerspawns.begin();
+	for (; it != ::wdlplayerspawns.end(); ++it)
+	{
+		if ((*it).x == mthing->x && (*it).y == mthing->y && (*it).z == mthing->z)
+		{
+			w = (*it);
+			found = true;
+			break;
+		}
+	}
+
+	if (!found)
+		return;
+
+	wdlplayerspawns.erase(std::find(::wdlplayerspawns.begin(), ::wdlplayerspawns.end(), w));
+
 	return;
 }
 
