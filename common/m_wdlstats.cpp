@@ -225,15 +225,14 @@ static void AddWDLFlagLocation(const mapthing2_t* mthing, team_t team)
 
 static void RemoveWDLPlayerSpawn(const mapthing2_t* mthing)
 {
-	WDLPlayerSpawns::const_iterator it = ::wdlplayerspawns.begin();
-	for (; it != ::wdlplayerspawns.end(); ++it)
-	{
-		if ((*it).x == mthing->x && (*it).y == mthing->y && (*it).z == mthing->z)
-		{
-			::wdlplayerspawns.erase(it);
-			return;
-		}
-	}
+	::wdlplayerspawns.erase(
+	    std::remove_if(::wdlplayerspawns.begin(), ::wdlplayerspawns.end(),
+	                   [mthing](auto& p) {
+		                   return p.x == mthing->x && p.y == mthing->y &&
+		                          p.z == mthing->z;
+	                   }),
+	    ::wdlplayerspawns.end() // end iterator
+	);
 	return;
 }
 
