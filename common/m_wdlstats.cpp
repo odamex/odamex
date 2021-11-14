@@ -28,9 +28,6 @@
 #include "g_levelstate.h"
 #include "m_wdlstats.h"
 
-#include "cryptopp/filters.h"
-#include "cryptopp/hex.h"
-
 #include "c_dispatch.h"
 #include "p_local.h"
 
@@ -943,11 +940,26 @@ void M_CommitWDLLog()
 	std::string timestamp = GenerateTimestamp();
 	std::string filename = ::wdlstate.logdir + "wdl_" + timestamp + ".log";
 
-	std::string levelhash;
+	// [Blair] Serialize the hashes before reading.
+	uint64_t reconsthash1 =
+	    (uint64_t)(::level.level_hash[0]) |
+		(uint64_t)(::level.level_hash[1]) << 8 |
+	    (uint64_t)(::level.level_hash[2]) << 16 |
+	    (uint64_t)(::level.level_hash[3]) << 24 |
+	    (uint64_t)(::level.level_hash[4]) << 32 |
+	    (uint64_t)(::level.level_hash[5]) << 40 |
+	    (uint64_t)(::level.level_hash[6]) << 48 |
+		(uint64_t)(::level.level_hash[7]) << 56;
 
-	// [Blair] Hex encode the hash
-	const auto& _ = CryptoPP::StringSource(::level.level_hash, sizeof(::level.level_hash), true,
-	                       new CryptoPP::HexEncoder(new CryptoPP::StringSink(levelhash)));
+	uint64_t reconsthash2 = 
+		(uint64_t)(::level.level_hash[8]) |
+	    (uint64_t)(::level.level_hash[9]) << 8 |
+	    (uint64_t)(::level.level_hash[10]) << 16 |
+	    (uint64_t)(::level.level_hash[11]) << 24 |
+	    (uint64_t)(::level.level_hash[12]) << 32 |
+	    (uint64_t)(::level.level_hash[13]) << 40 |
+	    (uint64_t)(::level.level_hash[14]) << 48 |
+	    (uint64_t)(::level.level_hash[15]) << 56;
 
 	// [Blair] Make the in-file timestamp ISO 8601 instead of a homegrown one.
 	// However, keeping the homegrown one for filename as ISO 8601 characters
@@ -971,7 +983,7 @@ void M_CommitWDLLog()
 	fprintf(fh, "time=%s\n", iso8601buf);
 	fprintf(fh, "levelnum=%d\n", ::level.levelnum);
 	fprintf(fh, "levelname=%s\n", ::level.level_name);
-	fprintf(fh, "levelhash=%s\n", levelhash.c_str());
+	fprintf(fh, "levelhash=%.16llx%.16llx\n", reconsthash1, reconsthash2);
 	fprintf(fh, "gametype=%s\n", ::sv_gametype.cstring());
 	fprintf(fh, "lives=%s\n", ::g_lives.cstring());
 	fprintf(fh, "attackdefend=%s\n", ::g_sides.cstring());

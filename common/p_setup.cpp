@@ -50,9 +50,6 @@
 #include "p_setup.h"
 #include "p_hordespawn.h"
 
-#include <chrono>
-using namespace std::chrono;
-
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
 void P_SpawnAvatars();
@@ -1509,7 +1506,7 @@ void P_GenerateUniqueMapHash(int things, int linedefs, int sidedefs, int vertexe
 	         W_LumpLength(vertexes) + W_LumpLength(segs) + W_LumpLength(ssectors) +
 	         W_LumpLength(sectors);
 
-	memcpy(::level.level_hash, W_BLAKE2(levellumps.data(), length),
+	memcpy(::level.level_hash, W_SPOOKY2(levellumps.data(), length),
 	       sizeof(::level.level_hash));
 }
 //

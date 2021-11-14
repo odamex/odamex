@@ -46,8 +46,7 @@
 #include "m_argv.h"
 #include "md5.h"
 
-#include "cryptopp/cryptlib.h"
-#include "cryptopp/blake2.h"
+#include "spooky2.h"
 
 #include "w_wad.h"
 
@@ -174,14 +173,14 @@ std::string W_MD5(std::string filename)
 }
 
 /*
- * @brief Checksums a byte array pointer via blake2.
- * 
+ * @brief Checksums a byte array pointer via spooky2.
+ *
  * However, it encodes the digest into a 16-byte array to be read later.
  *
  * @param lumpdata byte array pointer to the lump that needs to be hashed.
  * @param size of the byte array pointer.
  */
-byte* W_BLAKE2(const byte* lumpdata, int length)
+byte* W_SPOOKY2(const byte* lumpdata, int length, int seed)
 {
 	byte bytehash[16];
 
@@ -190,15 +189,34 @@ byte* W_BLAKE2(const byte* lumpdata, int length)
 	if (!lumpdata)
 		return bytehash;
 
-	std::string digest;
+	char* buf;
+	buf = (char*)malloc(1 << 20);
+	memset(buf, (char)seed, 1 << 20);
 
-	CryptoPP::BLAKE2b hash;
+	uint64 hash1 = seed;
+	uint64 hash2 = seed;
 
-	hash.Update(lumpdata, length);
-	digest.resize(hash.DIGESTSIZE);
-	hash.TruncatedFinal((byte*)&digest[0], digest.size());
+	SpookyHash::Hash128(buf, 1 << 20, &hash1, &hash2);
 
-	memcpy(bytehash, digest.data(), sizeof bytehash);
+	// Store the bytes of the hashes in the array.
+
+	bytehash[0] = hash1 >> 8 * 0;
+	bytehash[1] = hash1 >> 8 * 1;
+	bytehash[2] = hash1 >> 8 * 2;
+	bytehash[3] = hash1 >> 8 * 3;
+	bytehash[4] = hash1 >> 8 * 4;
+	bytehash[5] = hash1 >> 8 * 5;
+	bytehash[6] = hash1 >> 8 * 6;
+	bytehash[7] = hash1 >> 8 * 7;
+
+	bytehash[8] = hash2 >> 8 * 0;
+	bytehash[9] = hash2 >> 8 * 1;
+	bytehash[10] = hash2 >> 8 * 2;
+	bytehash[11] = hash2 >> 8 * 3;
+	bytehash[12] = hash2 >> 8 * 4;
+	bytehash[13] = hash2 >> 8 * 5;
+	bytehash[14] = hash2 >> 8 * 6;
+	bytehash[15] = hash2 >> 8 * 7;
 
 	return bytehash;
 }
