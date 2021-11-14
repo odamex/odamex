@@ -90,7 +90,7 @@ struct level_info_t
 	OLumpName		mapname;
 	int				levelnum;
 	std::string		level_name;
-	byte			level_hash[16];
+	byte			level_fingerprint[16];
 	OLumpName		pname;
 	OLumpName		nextmap;
 	OLumpName		secretmap;
@@ -107,7 +107,7 @@ struct level_info_t
 	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
 	      defered(NULL)
 	{
-		ArrayInit(level_hash, 0);
+		ArrayInit(level_fingerprint, 0);
 	}
 
 	bool exists() const
@@ -122,7 +122,7 @@ struct level_pwad_info_t
 	OLumpName		mapname;
 	int				levelnum;
 	std::string		level_name;
-	byte			level_hash[16];
+	byte			level_fingerprint[16];
 	OLumpName		pname;
 	OLumpName		nextmap;
 	OLumpName		secretmap;
@@ -171,7 +171,7 @@ struct level_pwad_info_t
 	      bossactions_donothing(false)
 	{
 		ArrayInit(fadeto_color, 0);
-		ArrayInit(level_hash, 0);
+		ArrayInit(level_fingerprint, 0);
 		ArrayInit(outsidefog_color, 0);
 		outsidefog_color[0] = 0xFF; // special token signaling to not handle it specially
 	}
@@ -188,7 +188,7 @@ struct level_pwad_info_t
 	{
 		ArrayInit(fadeto_color, 0);
 		ArrayInit(outsidefog_color, 0);
-		ArrayInit(level_hash, 0);
+		ArrayInit(level_fingerprint, 0);
 		outsidefog_color[0] = 0xFF; // special token signaling to not handle it specially
 	}
 
@@ -212,7 +212,7 @@ struct level_pwad_info_t
 		defered = other.defered;
 		ArrayCopy(fadeto_color, other.fadeto_color);
 		ArrayCopy(outsidefog_color, other.outsidefog_color);
-		ArrayCopy(level_hash, other.level_hash);
+		ArrayCopy(level_fingerprint, other.level_fingerprint);
 		fadetable = other.fadetable;
 		skypic2 = other.skypic2;
 		gravity = other.gravity;
@@ -250,7 +250,7 @@ struct level_locals_t
 	int				cluster;
 	int				levelnum;
 	char			level_name[64];			// the descriptive name (Outer Base, etc)
-	byte			level_hash[16];			// [Blair] Hash generated for the level to describe it uniquely so it can be
+	byte			level_fingerprint[16];	// [Blair] Fingerprint generated for the level to describe it uniquely so it can be
 											// singled out if it's out of its host wad, like in a compilation wad.
 	OLumpName		mapname;                // the server name (base1, etc)
 	OLumpName		nextmap;				// go here when sv_fraglimit is hit

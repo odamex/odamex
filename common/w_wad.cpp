@@ -46,7 +46,7 @@
 #include "m_argv.h"
 #include "md5.h"
 
-#include "spooky2.h"
+#include "farmhash.h"
 
 #include "w_wad.h"
 
@@ -173,14 +173,14 @@ std::string W_MD5(std::string filename)
 }
 
 /*
- * @brief Checksums a byte array pointer via spooky2.
+ * @brief Creates a fingerprint for a map via FarmHash.
  *
- * However, it encodes the digest into a 16-byte array to be read later.
+ * However, it encodes the fingerprint into a 16-byte array to be read later.
  *
- * @param lumpdata byte array pointer to the lump that needs to be hashed.
+ * @param lumpdata byte array pointer to the lump that needs to be fingerprinted.
  * @param size of the byte array pointer.
  */
-byte* W_SPOOKY2(const byte* lumpdata, int length, int seed)
+byte* W_FARMHASH(const byte* lumpdata, int length)
 {
 	byte bytehash[16];
 
@@ -191,32 +191,29 @@ byte* W_SPOOKY2(const byte* lumpdata, int length, int seed)
 
 	char* buf;
 	buf = (char*)malloc(1 << 20);
-	memset(buf, (char)seed, 1 << 20);
+	memset(buf, (char)0, 1 << 20);
 
-	uint64 hash1 = seed;
-	uint64 hash2 = seed;
-
-	SpookyHash::Hash128(buf, 1 << 20, &hash1, &hash2);
+	util::uint128_t fingerprint = util::Fingerprint128((const char*)lumpdata, length);
 
 	// Store the bytes of the hashes in the array.
 
-	bytehash[0] = hash1 >> 8 * 0;
-	bytehash[1] = hash1 >> 8 * 1;
-	bytehash[2] = hash1 >> 8 * 2;
-	bytehash[3] = hash1 >> 8 * 3;
-	bytehash[4] = hash1 >> 8 * 4;
-	bytehash[5] = hash1 >> 8 * 5;
-	bytehash[6] = hash1 >> 8 * 6;
-	bytehash[7] = hash1 >> 8 * 7;
+	bytehash[0] = fingerprint.first >> 8 * 0;
+	bytehash[1] = fingerprint.first >> 8 * 1;
+	bytehash[2] = fingerprint.first >> 8 * 2;
+	bytehash[3] = fingerprint.first >> 8 * 3;
+	bytehash[4] = fingerprint.first >> 8 * 4;
+	bytehash[5] = fingerprint.first >> 8 * 5;
+	bytehash[6] = fingerprint.first >> 8 * 6;
+	bytehash[7] = fingerprint.first >> 8 * 7;
 
-	bytehash[8] = hash2 >> 8 * 0;
-	bytehash[9] = hash2 >> 8 * 1;
-	bytehash[10] = hash2 >> 8 * 2;
-	bytehash[11] = hash2 >> 8 * 3;
-	bytehash[12] = hash2 >> 8 * 4;
-	bytehash[13] = hash2 >> 8 * 5;
-	bytehash[14] = hash2 >> 8 * 6;
-	bytehash[15] = hash2 >> 8 * 7;
+	bytehash[8] = fingerprint.second >> 8 * 0;
+	bytehash[9] = fingerprint.second >> 8 * 1;
+	bytehash[10] = fingerprint.second >> 8 * 2;
+	bytehash[11] = fingerprint.second >> 8 * 3;
+	bytehash[12] = fingerprint.second >> 8 * 4;
+	bytehash[13] = fingerprint.second >> 8 * 5;
+	bytehash[14] = fingerprint.second >> 8 * 6;
+	bytehash[15] = fingerprint.second >> 8 * 7;
 
 	return bytehash;
 }

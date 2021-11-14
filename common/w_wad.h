@@ -110,7 +110,7 @@ extern	lumpinfo_t*	lumpinfo;
 extern	size_t	numlumps;
 
 std::string W_MD5(std::string filename);
-byte* W_SPOOKY2(const byte* lumpdata, int length, int seed = 0);
+byte* W_FARMHASH(const byte* lumpdata, int length);
 void W_InitMultipleFiles(const OResFiles& filenames);
 lumpHandle_t W_LumpToHandle(const unsigned lump);
 int W_HandleToLump(const lumpHandle_t handle);

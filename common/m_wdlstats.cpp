@@ -958,24 +958,24 @@ void M_CommitWDLLog()
 
 	// [Blair] Serialize the hashes before reading.
 	uint64_t reconsthash1 =
-	    (uint64_t)(::level.level_hash[0]) |
-		(uint64_t)(::level.level_hash[1]) << 8 |
-	    (uint64_t)(::level.level_hash[2]) << 16 |
-	    (uint64_t)(::level.level_hash[3]) << 24 |
-	    (uint64_t)(::level.level_hash[4]) << 32 |
-	    (uint64_t)(::level.level_hash[5]) << 40 |
-	    (uint64_t)(::level.level_hash[6]) << 48 |
-		(uint64_t)(::level.level_hash[7]) << 56;
+	    (uint64_t)(::level.level_fingerprint[0]) |
+		(uint64_t)(::level.level_fingerprint[1]) << 8 |
+	    (uint64_t)(::level.level_fingerprint[2]) << 16 |
+	    (uint64_t)(::level.level_fingerprint[3]) << 24 |
+	    (uint64_t)(::level.level_fingerprint[4]) << 32 |
+	    (uint64_t)(::level.level_fingerprint[5]) << 40 |
+	    (uint64_t)(::level.level_fingerprint[6]) << 48 |
+		(uint64_t)(::level.level_fingerprint[7]) << 56;
 
 	uint64_t reconsthash2 = 
-		(uint64_t)(::level.level_hash[8]) |
-	    (uint64_t)(::level.level_hash[9]) << 8 |
-	    (uint64_t)(::level.level_hash[10]) << 16 |
-	    (uint64_t)(::level.level_hash[11]) << 24 |
-	    (uint64_t)(::level.level_hash[12]) << 32 |
-	    (uint64_t)(::level.level_hash[13]) << 40 |
-	    (uint64_t)(::level.level_hash[14]) << 48 |
-	    (uint64_t)(::level.level_hash[15]) << 56;
+		(uint64_t)(::level.level_fingerprint[8]) |
+	    (uint64_t)(::level.level_fingerprint[9]) << 8 |
+	    (uint64_t)(::level.level_fingerprint[10]) << 16 |
+	    (uint64_t)(::level.level_fingerprint[11]) << 24 |
+	    (uint64_t)(::level.level_fingerprint[12]) << 32 |
+	    (uint64_t)(::level.level_fingerprint[13]) << 40 |
+	    (uint64_t)(::level.level_fingerprint[14]) << 48 |
+	    (uint64_t)(::level.level_fingerprint[15]) << 56;
 
 	// [Blair] Make the in-file timestamp ISO 8601 instead of a homegrown one.
 	// However, keeping the homegrown one for filename as ISO 8601 characters

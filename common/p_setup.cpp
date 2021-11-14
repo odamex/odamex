@@ -1506,8 +1506,8 @@ void P_GenerateUniqueMapHash(int things, int linedefs, int sidedefs, int vertexe
 	         W_LumpLength(vertexes) + W_LumpLength(segs) + W_LumpLength(ssectors) +
 	         W_LumpLength(sectors);
 
-	memcpy(::level.level_hash, W_SPOOKY2(levellumps.data(), length),
-	       sizeof(::level.level_hash));
+	memcpy(::level.level_fingerprint, W_FARMHASH(levellumps.data(), length),
+	       sizeof(::level.level_fingerprint));
 }
 //
 // P_GroupLines
@@ -1739,7 +1739,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
 		wminfo.maxfrags = 0;
-	ArrayInit(level.level_hash, 0);
+	ArrayInit(level.level_fingerprint, 0);
 	wminfo.partime = 180;
 
 	if (!savegamerestore)
