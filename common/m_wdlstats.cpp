@@ -230,7 +230,7 @@ static void RemoveWDLPlayerSpawn(const mapthing2_t* mthing)
 	{
 		if ((*it).x == mthing->x && (*it).y == mthing->y && (*it).z == mthing->z)
 		{
-			::wdlplayerspawns.erase(it);
+			::wdlplayerspawns.erase(*(&it));
 			return;
 		}
 	}
