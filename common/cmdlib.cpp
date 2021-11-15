@@ -573,6 +573,7 @@ void TicsToTime(OTimespan& span, int time, bool ceilsec)
 		span.minutes = 0;
 		span.seconds = 0;
 		span.tics = 0;
+		span.csecs = 0;
 		return;
 	}
 
@@ -597,6 +598,7 @@ void TicsToTime(OTimespan& span, int time, bool ceilsec)
 
 	span.seconds = time / TICRATE;
 	span.tics = time % TICRATE;
+	span.csecs = (span.tics * 100) / TICRATE;
 }
 
 // [SL] Reimplement std::isspace
