@@ -820,7 +820,7 @@ void G_InitLevelLocals()
 	::level.cluster = info.cluster;
 	::level.flags = info.flags;
 	::level.levelnum = info.levelnum;
-	memcpy(::level.level_fingerprint, info.level_fingerprint, sizeof(info.level_fingerprint));
+	ArrayCopy(::level.level_fingerprint, info.level_fingerprint);
 
 	// Only copy the level name if there's a valid level name to be copied.
 	

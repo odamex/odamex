@@ -1506,8 +1506,9 @@ void P_GenerateUniqueMapHash(int things, int linedefs, int sidedefs, int vertexe
 	         W_LumpLength(vertexes) + W_LumpLength(segs) + W_LumpLength(ssectors) +
 	         W_LumpLength(sectors);
 
-	memcpy(::level.level_fingerprint, W_FARMHASH(levellumps.data(), length),
-	       sizeof(::level.level_fingerprint));
+	fhfprint_s fingerprint = W_FarmHash128(levellumps.data(), length);
+
+	ArrayCopy(::level.level_fingerprint, fingerprint.fingerprint);
 }
 //
 // P_GroupLines

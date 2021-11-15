@@ -584,8 +584,6 @@ bool LogAccuracyShot(WDLEvents event, player_t* activator, int mod, angle_t angl
  *
  * Looks for an accuracy log somewhere in the backlog, if there is none, it
  * logs a message but continues.
- *
- *
  */
 bool LogAccuracyHit(WDLEvents event, player_t* activator, player_t* target, int mod,
                     int hits)

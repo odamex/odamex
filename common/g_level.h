@@ -116,6 +116,21 @@ struct level_info_t
 	}
 };
 
+// struct that contains a FarmHash 128-bit fingerprint.
+struct fhfprint_s
+{
+	byte fingerprint[16];
+
+	fhfprint_s() : fingerprint()
+	{
+		ArrayInit(fingerprint, 0);
+	}
+	bool operator==(const fhfprint_s& other)
+	{
+		return fingerprint == other.fingerprint;
+	}
+};
+
 struct level_pwad_info_t
 {
 	// level_info_t
@@ -250,8 +265,8 @@ struct level_locals_t
 	int				cluster;
 	int				levelnum;
 	char			level_name[64];			// the descriptive name (Outer Base, etc)
-	byte			level_fingerprint[16];	// [Blair] Fingerprint generated for the level to describe it uniquely so it can be
-											// singled out if it's out of its host wad, like in a compilation wad.
+	byte			level_fingerprint[16];	// [Blair] 128-bit FarmHash fingerprint generated for the level to describe it uniquely
+											// so it can besingled out if it's out of its host wad, like in a compilation wad. Contains a 16-byte array.
 	OLumpName		mapname;                // the server name (base1, etc)
 	OLumpName		nextmap;				// go here when sv_fraglimit is hit
 	OLumpName		secretmap;				// map to go to when used secret exit

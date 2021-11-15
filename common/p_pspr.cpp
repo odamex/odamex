@@ -1168,8 +1168,11 @@ void A_BFGSpray(AActor* mo)
 		return;
 
 	if (mo->target->player)
-		M_LogWDLEvent(WDL_EVENT_TRACERACCURACY, mo->target->player, NULL, mo->target->player->mo->angle / 4,
-	              MOD_BFG_SPLASH, 0, GetMaxShotsForMod(MOD_BFG_SPLASH));
+	{
+		M_LogWDLEvent(WDL_EVENT_TRACERACCURACY, mo->target->player, NULL,
+		              mo->target->player->mo->angle / 4, MOD_BFG_SPLASH, 0,
+		              GetMaxShotsForMod(MOD_BFG_SPLASH));
+	}
 
 	// offset angles from its attack angle
 	for (i=0 ; i<40 ; i++)

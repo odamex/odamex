@@ -173,49 +173,42 @@ std::string W_MD5(std::string filename)
 }
 
 /*
- * @brief Creates a fingerprint for a map via FarmHash.
+ * @brief Creates a 128-bit fingerprint for a map via FarmHash.
  *
  * However, it encodes the fingerprint into a 16-byte array to be read later.
  *
- * @param lumpdata byte array pointer to the lump that needs to be fingerprinted.
- * @param size of the byte array pointer.
+ * @param lumpdata byte array pointer to the lump (or lumps) that needs to be fingerprinted.
+ * @param size of the byte array pointer in bytes.
  */
-byte* W_FARMHASH(const byte* lumpdata, int length)
+fhfprint_s W_FarmHash128(const byte* lumpdata, int length)
 {
-	byte bytehash[16];
-
-	ArrayInit(bytehash, 0);
+	fhfprint_s fhfngprnt;
 
 	if (!lumpdata)
-		return bytehash;
+		return fhfngprnt;
 
-	char* buf;
-	buf = (char*)malloc(1 << 20);
-	memset(buf, (char)0, 1 << 20);
-
-	util::uint128_t fingerprint = util::Fingerprint128((const char*)lumpdata, length);
+	util::uint128_t fingerprint128 = util::Fingerprint128((const char*)lumpdata, length);
 
 	// Store the bytes of the hashes in the array.
+	fhfngprnt.fingerprint[0] = fingerprint128.first >> 8 * 0;
+	fhfngprnt.fingerprint[1] = fingerprint128.first >> 8 * 1;
+	fhfngprnt.fingerprint[2] = fingerprint128.first >> 8 * 2;
+	fhfngprnt.fingerprint[3] = fingerprint128.first >> 8 * 3;
+	fhfngprnt.fingerprint[4] = fingerprint128.first >> 8 * 4;
+	fhfngprnt.fingerprint[5] = fingerprint128.first >> 8 * 5;
+	fhfngprnt.fingerprint[6] = fingerprint128.first >> 8 * 6;
+	fhfngprnt.fingerprint[7] = fingerprint128.first >> 8 * 7;
 
-	bytehash[0] = fingerprint.first >> 8 * 0;
-	bytehash[1] = fingerprint.first >> 8 * 1;
-	bytehash[2] = fingerprint.first >> 8 * 2;
-	bytehash[3] = fingerprint.first >> 8 * 3;
-	bytehash[4] = fingerprint.first >> 8 * 4;
-	bytehash[5] = fingerprint.first >> 8 * 5;
-	bytehash[6] = fingerprint.first >> 8 * 6;
-	bytehash[7] = fingerprint.first >> 8 * 7;
+	fhfngprnt.fingerprint[8] = fingerprint128.second >> 8 * 0;
+	fhfngprnt.fingerprint[9] = fingerprint128.second >> 8 * 1;
+	fhfngprnt.fingerprint[10] = fingerprint128.second >> 8 * 2;
+	fhfngprnt.fingerprint[11] = fingerprint128.second >> 8 * 3;
+	fhfngprnt.fingerprint[12] = fingerprint128.second >> 8 * 4;
+	fhfngprnt.fingerprint[13] = fingerprint128.second >> 8 * 5;
+	fhfngprnt.fingerprint[14] = fingerprint128.second >> 8 * 6;
+	fhfngprnt.fingerprint[15] = fingerprint128.second >> 8 * 7;
 
-	bytehash[8] = fingerprint.second >> 8 * 0;
-	bytehash[9] = fingerprint.second >> 8 * 1;
-	bytehash[10] = fingerprint.second >> 8 * 2;
-	bytehash[11] = fingerprint.second >> 8 * 3;
-	bytehash[12] = fingerprint.second >> 8 * 4;
-	bytehash[13] = fingerprint.second >> 8 * 5;
-	bytehash[14] = fingerprint.second >> 8 * 6;
-	bytehash[15] = fingerprint.second >> 8 * 7;
-
-	return bytehash;
+	return fhfngprnt;
 }
 
 //
