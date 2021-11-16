@@ -681,8 +681,8 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 	{
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f,
-		                                        attenuation));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
+		                                             1.0f, attenuation));
 	}
 }
 
@@ -708,7 +708,7 @@ void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
 
 	client_t *cl = &pl.client;
 
-	MSG_WriteSVC(&cl->netbuf,
+	MSG_WriteSVC(&cl->reliablebuf,
 	             SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f, attenuation));
 }
 
@@ -741,8 +741,8 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f,
-		                                        attenuation));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
+		                                             1.0f, attenuation));
 	}
 }
 
@@ -770,8 +770,8 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 		{
 			cl = &(it->client);
 
-			MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(), channel, sfx_id,
-			                                        1.0f, attenuation));
+			MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(), channel, sfx_id,
+			                                             1.0f, attenuation));
 		}
 	}
 }
@@ -796,8 +796,8 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id,
-		                                        1.0f, attenuation));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id,
+		                                             1.0f, attenuation));
 	}
 }
 
