@@ -23,8 +23,6 @@
 #ifndef __OTRANSFER_H__
 #define __OTRANSFER_H__
 
-#include <stddef.h>
-#include <string>
 
 #define CURL_STATICLIB
 #include "curl/curl.h"

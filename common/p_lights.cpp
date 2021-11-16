@@ -22,9 +22,10 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "m_random.h"
 
-#include "doomdef.h"
 #include "p_local.h"
 
 #include "p_lnspec.h"
@@ -726,4 +727,3 @@ DPhased::DPhased (sector_t *sector, int baselevel, int phase)
 	sector->special &= 0xff00;
 }
 VERSION_CONTROL (p_lights_cpp, "$Id$")
-

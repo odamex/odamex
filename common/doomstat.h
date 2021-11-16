@@ -27,10 +27,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __D_STATE__
-#define __D_STATE__
-
-#include <vector>
+#pragma once
 
 #include "doomdata.h"
 #include "d_net.h"
@@ -80,6 +77,7 @@ EXTERN_CVAR (sv_maxplayers)
 #define GM_DM		1.0f
 #define GM_TEAMDM	2.0f
 #define GM_CTF		3.0f
+#define GM_HORDE	4.0f
 
 #define FPS_NONE	0
 #define FPS_FULL	1
@@ -215,8 +213,3 @@ struct DehInfo
 	int Infight;
 };
 extern struct DehInfo deh;
-
-#endif
-
-
-

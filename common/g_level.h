@@ -23,8 +23,6 @@
 
 #pragma once
 
-#include "doomtype.h"
-#include "doomdef.h"
 #include "cmdlib.h"
 #include "m_fixed.h"
 #include "m_resfile.h"
@@ -32,8 +30,6 @@
 #include "r_defs.h" // line_t
 
 #include <assert.h>
-#include <string>
-#include <vector>
 
 #define NUM_MAPVARS				128
 #define NUM_WORLDVARS			256
@@ -94,6 +90,7 @@ struct level_info_t
 	OLumpName		mapname;
 	int				levelnum;
 	std::string		level_name;
+	std::string		level_hash;
 	OLumpName		pname;
 	OLumpName		nextmap;
 	OLumpName		secretmap;
@@ -124,6 +121,7 @@ struct level_pwad_info_t
 	OLumpName		mapname;
 	int				levelnum;
 	std::string		level_name;
+	std::string		level_hash;
 	OLumpName		pname;
 	OLumpName		nextmap;
 	OLumpName		secretmap;
@@ -164,7 +162,7 @@ struct level_pwad_info_t
 	bool			bossactions_donothing;
 	
 	level_pwad_info_t()
-	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
+	    : mapname(""), levelnum(0), level_name(""), level_hash(""), pname(""), nextmap(""), secretmap(""),
 	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
 	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
 	      aircontrol(0.0f), exitpic(""), enterpic(""), endpic(""), intertext(""),
@@ -178,13 +176,13 @@ struct level_pwad_info_t
 
 	level_pwad_info_t(const level_info_t& other)
 	    : mapname(other.mapname), levelnum(other.levelnum), level_name(other.level_name),
-	      pname(other.pname), nextmap(other.nextmap), secretmap(other.secretmap),
-	      partime(other.partime), skypic(other.skypic), music(other.music),
-	      flags(other.flags), cluster(other.cluster), snapshot(other.snapshot),
-	      defered(other.defered), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
-	      aircontrol(0.0f), exitpic(""), enterpic(""), endpic(""), intertext(""),
-	      intertextsecret(""), interbackdrop(""), intermusic(""), bossactions(),
-	      bossactions_donothing(false)
+	      level_hash(other.level_hash), pname(other.pname), nextmap(other.nextmap),
+		  secretmap(other.secretmap), partime(other.partime), skypic(other.skypic),
+		  music(other.music), flags(other.flags), cluster(other.cluster),
+		  snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
+		  skypic2(""), gravity(0.0f), aircontrol(0.0f), exitpic(""), enterpic(""),
+		  endpic(""), intertext(""), intertextsecret(""), interbackdrop(""), intermusic(""),
+		  bossactions(), bossactions_donothing(false)
 	{
 		ArrayInit(fadeto_color, 0);
 		ArrayInit(outsidefog_color, 0);
@@ -199,6 +197,7 @@ struct level_pwad_info_t
 		mapname = other.mapname;
 		levelnum = other.levelnum;
 		level_name = other.level_name;
+		level_hash = other.level_hash;
 		pname = other.pname;
 		nextmap = other.nextmap;
 		secretmap = other.secretmap;
@@ -248,6 +247,8 @@ struct level_locals_t
 	int				cluster;
 	int				levelnum;
 	char			level_name[64];			// the descriptive name (Outer Base, etc)
+	std::string		level_hash;             // [BC] hash generated for the level to describe it uniquely so it can be
+											// singled out if it's out of its host wad, like in a compilation wad.
 	OLumpName		mapname;                // the server name (base1, etc)
 	OLumpName		nextmap;				// go here when sv_fraglimit is hit
 	OLumpName		secretmap;				// map to go to when used secret exit
@@ -297,6 +298,8 @@ struct level_locals_t
 	std::vector<OBossAction> *bossactions;
 	bool			bossactions_donothing;
 	
+	// The following is used for automatic gametype detection.
+	float			detected_gametype;
 };
 
 typedef uint32_t clusterFlags_t;

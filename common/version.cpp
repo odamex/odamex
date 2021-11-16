@@ -21,14 +21,15 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
+
+#include "odamex.h"
+
 
 #ifndef ODAMEX_NO_GITVER
 #include "git_describe.h"
 #endif
 
 #include <map>
-#include <string>
 #include <sstream>
 #include <memory>
 
@@ -55,9 +56,10 @@ int VersionCompat(const int server, const int client)
 	int cl_maj, cl_min, cl_pat;
 	BREAKVER(client, cl_maj, cl_min, cl_pat);
 
-	// Major and minor versions must be identical, client is allowed
-	// to have a newer patch.
-	if (sv_maj == cl_maj && sv_min == cl_min && sv_pat <= cl_pat)
+	// Major version must be identical, client is allowed to have a newer
+	// minor version, patch doesn't matter.  We don't need to account for
+	// 0.x's version selection because it's all incompatible anyway.
+	if (sv_maj == cl_maj && sv_min <= cl_min)
 	{
 		return 0;
 	}
@@ -344,6 +346,3 @@ BEGIN_COMMAND (listsourcefiles)
 END_COMMAND(listsourcefiles)
 
 VERSION_CONTROL(version_cpp, "$Id$")
-
-
-

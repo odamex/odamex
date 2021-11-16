@@ -22,13 +22,15 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <stdlib.h>
 
 #include "d_dehacked.h"
 #include "doomdef.h"
 #include "d_event.h"
 
-#include "c_cvars.h"
 
 #include "m_random.h"
 #include "p_local.h"
@@ -38,7 +40,6 @@
 #include "svc_message.h"
 
 // State.
-#include "doomstat.h"
 #include "p_pspr.h"
 
 #include "p_unlag.h"
@@ -665,6 +666,8 @@ void A_Punch(AActor* mo)
 	// this player hit the fire button clientside.
 	Unlag::getInstance().reconcile(player->id);
 
+	M_LogWDLAccuracyShot(WDL_EVENT_SSACCURACY, player, MOD_PISTOL, player->mo->angle / 4);
+
 	slope = P_AimLineAttack(player->mo, angle, player->mo->info->meleerange);
 	P_LineAttack(player->mo, angle, player->mo->info->meleerange, slope, damage);
 
@@ -699,6 +702,8 @@ void A_Saw(AActor* mo)
 	// [SL] 2011-07-12 - Move players and sectors back to their positions when
 	// this player hit the fire button clientside.
 	Unlag::getInstance().reconcile(player->id);
+
+	M_LogWDLAccuracyShot(WDL_EVENT_SSACCURACY, player, MOD_CHAINSAW, player->mo->angle / 4);
 
 	// use meleerange + 1 so the puff doesn't skip the flash
 	P_LineAttack(player->mo, angle, player->mo->info->meleerange + 1,
@@ -746,8 +751,12 @@ void A_FireMissile(AActor* mo)
 
 	DecreaseAmmo(player);
 
-	if(serverside)
-		P_SpawnPlayerMissile (player->mo, MT_ROCKET);
+	if (serverside)
+	{
+		M_LogWDLEvent(WDL_EVENT_PROJFIRE, player, NULL, player->mo->angle / 4, MOD_ROCKET, 0, 0);
+		M_LogWDLAccuracyShot(WDL_EVENT_PROJACCURACY, player, MOD_ROCKET, player->mo->angle / 4);
+		P_SpawnPlayerMissile(player->mo, MT_ROCKET);
+	}
 }
 
 
@@ -768,8 +777,13 @@ void A_FireBFG(AActor* mo)
 	player->mo->pitch = 0;
 	player->userinfo.aimdist = 81920000;
 
-	if(serverside)
-		P_SpawnPlayerMissile (player->mo, MT_BFG);
+	if (serverside)
+	{
+		P_SpawnPlayerMissile(player->mo, MT_BFG);
+
+		M_LogWDLEvent(WDL_EVENT_PROJFIRE, player, NULL, player->mo->angle / 4, MOD_BFG_BOOM, 0, 0);
+		M_LogWDLAccuracyShot(WDL_EVENT_PROJACCURACY, player, MOD_BFG_BOOM, player->mo->angle / 4);
+	}
 
 	player->mo->pitch = storedpitch;
 	player->userinfo.aimdist = storedaimdist;
@@ -1159,8 +1173,12 @@ void A_FirePlasma(AActor* mo)
 				  ps_flash,
 				  (statenum_t)(weaponinfo[player->readyweapon].flashstate+(P_Random (player->mo)&1)));
 
-	if(serverside)
-		P_SpawnPlayerMissile (player->mo, MT_PLASMA);
+	if (serverside)
+	{
+		M_LogWDLEvent(WDL_EVENT_PROJFIRE, player, NULL, player->mo->angle / 4, MOD_PLASMARIFLE, 0, 0);
+		M_LogWDLAccuracyShot(WDL_EVENT_PROJACCURACY, player, MOD_PLASMARIFLE, player->mo->angle / 4);
+		P_SpawnPlayerMissile(player->mo, MT_PLASMA);
+	}
 }
 
 //
@@ -1187,6 +1205,8 @@ void A_FireRailgun(AActor* mo)
 	// [SL] 2012-04-18 - Move players and sectors back to their positions when
 	// this player hit the fire button clientside.
 	Unlag::getInstance().reconcile(player->id);
+
+	M_LogWDLAccuracyShot(WDL_EVENT_SSACCURACY, player, MOD_RAILGUN, player->mo->angle / 4);
 
 	P_RailAttack (player->mo, damage, RailOffset);
 
@@ -1339,9 +1359,9 @@ void A_FirePistol(AActor* mo)
 				  weaponinfo[player->readyweapon].flashstate);
 
 	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
-	P_FireHitscan (player, 1, accuracy);
+	P_FireHitscan(player, 1, accuracy);
 
-	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_pistol);
+	M_LogWDLAccuracyShot(WDL_EVENT_SSACCURACY, player, MOD_PISTOL, player->mo->angle / 4);
 }
 
 
@@ -1361,9 +1381,9 @@ void A_FireShotgun(AActor* mo)
 				  ps_flash,
 				  weaponinfo[player->readyweapon].flashstate);
 
-	P_FireHitscan (player, 7, SPREAD_NORMAL);
+	P_FireHitscan(player, 7, SPREAD_NORMAL);
 
-	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_shotgun);
+	M_LogWDLAccuracyShot(WDL_EVENT_SPREADACCURACY, player, MOD_SHOTGUN, player->mo->angle / 4);
 }
 
 
@@ -1384,9 +1404,9 @@ void A_FireShotgun2(AActor* mo)
 				  ps_flash,
 				  weaponinfo[player->readyweapon].flashstate);
 
-	P_FireHitscan (player, 20, SPREAD_SUPERSHOTGUN);
+	P_FireHitscan(player, 20, SPREAD_SUPERSHOTGUN);
 
-	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_supershotgun);
+	M_LogWDLAccuracyShot(WDL_EVENT_SPREADACCURACY, player, MOD_SSHOTGUN, player->mo->angle / 4);
 }
 
 //
@@ -1414,9 +1434,9 @@ void A_FireCGun(AActor* mo)
 				  - &states[S_CHAIN1]) );
 
 	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
-	P_FireHitscan (player, 1, accuracy);
+	P_FireHitscan(player, 1, accuracy);
 
-	M_MaybeLogWDLAccuracyMiss(player, player->mo->angle / 4, wp_chaingun);
+	M_LogWDLAccuracyShot(WDL_EVENT_SSACCURACY, player, MOD_CHAINGUN, player->mo->angle / 4);
 }
 
 
@@ -1457,6 +1477,9 @@ void A_BFGSpray(AActor* mo)
 	// note: mo->target is the AActor of the player who fired the BFG
 	if (!mo->target)
 		return;
+
+	if (mo->target->player)
+		M_LogWDLAccuracyShot(WDL_EVENT_TRACERACCURACY, mo->target->player, MOD_BFG_SPLASH, mo->angle / 4);
 
 	// offset angles from its attack angle
 	for (i=0 ; i<40 ; i++)

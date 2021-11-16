@@ -22,6 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <set>
 
 #include "am_map.h"
@@ -30,9 +33,7 @@
 #include "cl_main.h"
 #include "d_event.h"
 #include "d_main.h"
-#include "doomstat.h"
 #include "f_finale.h"
-#include "g_level.h"
 #include "g_game.h"
 #include "g_levelstate.h"
 #include "gi.h"
@@ -270,12 +271,11 @@ void G_InitNew (const char *mapname)
 	D_SetupUserInfo();
 	
 	level.mapname = mapname;
-	G_DoLoadLevel (0);
-
-	::levelstate.reset();
 
 	// [AM}] WDL stats (for testing purposes)
-	M_StartWDLLog();
+	M_StartWDLLog(true);
+
+	G_DoLoadLevel (0);
 }
 
 //
@@ -637,6 +637,8 @@ void G_DoLoadLevel (int position)
 	level.starttime = I_MSTime() * TICRATE / 1000;
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
     P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
+
+	::levelstate.reset();
 
 	C_FlushDisplay ();
 }

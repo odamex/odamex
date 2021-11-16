@@ -23,8 +23,6 @@
 #ifndef __OSCANNER_H__
 #define __OSCANNER_H__
 
-#include <stddef.h>
-#include <string>
 
 struct OScannerConfig
 {
@@ -81,6 +79,7 @@ class OScanner
 	void assertTokenIs(const char* string) const;
 	bool compareToken(const char* string) const;
 	bool compareTokenNoCase(const char* string) const;
+	void warning(const char* message) const;
 	void error(const char* message) const;
 };
 

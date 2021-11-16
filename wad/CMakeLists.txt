@@ -208,6 +208,9 @@ set(ODAWAD_SOURCES
   graphics/odamod21.gif
   graphics/odamod22.gif
   graphics/odamod23.gif
+  graphics/odamod24.gif
+  graphics/odamod25.gif
+  graphics/odamod26.gif
   graphics/oslide.gif
   graphics/rslide.gif
   graphics/sbline.gif
@@ -242,6 +245,8 @@ set(ODAWAD_SOURCES
   lumps/dsquake.lmp
   lumps/dsradio2.lmp
   lumps/dssecret.lmp
+  lumps/dshboss.lmp
+  lumps/dsplrais.lmp
   lumps/dvbfd.lmp
   lumps/dvbfm.lmp
   lumps/dvbfr.lmp

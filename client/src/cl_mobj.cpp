@@ -21,14 +21,13 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "m_random.h"
-#include "doomdef.h"
 #include "p_local.h"
 #include "s_sound.h"
-#include "doomstat.h"
-#include "doomtype.h"
 #include "v_video.h"
-#include "c_cvars.h"
 #include "c_effect.h"
 #include "m_vectors.h"
 #include "p_mobj.h"
@@ -138,7 +137,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	P_SetupPsprites(&player);
 
 	// give all cards in death match mode
-	if (sv_gametype != GM_COOP)
+	if (!G_IsCoopGame())
 	{
 		for (int i = 0; i < NUMCARDS; i++)
 			player.cards[i] = true;

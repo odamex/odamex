@@ -25,9 +25,10 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "m_bbox.h"
 
-#include "doomstat.h"
 #include "p_local.h"
 #include "r_data.h"
 
@@ -1359,4 +1360,3 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance)
 }
 
 VERSION_CONTROL (p_maputl_cpp, "$Id$")
-

@@ -20,12 +20,14 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "sv_vote.h"
 
 #include <algorithm>
 #include <cmath>
 #include <sstream>
-#include <vector>
 
 #include "cmdlib.h"
 #include "c_dispatch.h"

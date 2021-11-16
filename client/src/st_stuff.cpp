@@ -24,11 +24,13 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "i_video.h"
 #include "z_zone.h"
 #include "m_random.h"
 #include "w_wad.h"
-#include "doomdef.h"
 #include "g_game.h"
 #include "st_stuff.h"
 #include "st_lib.h"
@@ -39,11 +41,8 @@
 #include "s_sound.h"
 #include "v_video.h"
 #include "v_text.h"
-#include "doomstat.h"
 #include "gstrings.h"
-#include "c_cvars.h"
 #include "c_dispatch.h"
-#include "version.h"
 #include "cl_main.h"
 #include "gi.h"
 #include "cl_demo.h"
@@ -949,10 +948,10 @@ void ST_updateWidgets(void)
 	ST_updateFaceWidget();
 
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && sv_gametype == GM_COOP;
+	st_armson = st_statusbaron && G_IsCoopGame();
 
 	// used by w_frags widget
-	st_fragson = sv_gametype != GM_COOP && st_statusbaron;
+	st_fragson = !G_IsCoopGame() && st_statusbaron;
 
 	//	[Toke - CTF]
 	if (sv_gametype == GM_CTF)
@@ -984,10 +983,10 @@ void ST_Ticker()
 void ST_drawWidgets(bool force_refresh)
 {
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && sv_gametype == GM_COOP;
+	st_armson = st_statusbaron && G_IsCoopGame();
 
 	// used by w_frags widget
-	st_fragson = sv_gametype != GM_COOP && st_statusbaron;
+	st_fragson = !G_IsCoopGame() && st_statusbaron;
 
 	STlib_updateNum(&w_ready, force_refresh);
 
@@ -1042,7 +1041,7 @@ static void ST_refreshBackground()
 	{
 		stbar_canvas->DrawPatch(W_ResolvePatchHandle(flagsbg), ST_FLAGSBGX, ST_FLAGSBGY);
 	}
-	else if (sv_gametype == GM_COOP)
+	else if (G_IsCoopGame())
 	{
 		stbar_canvas->DrawPatch(W_ResolvePatchHandle(armsbg), ST_ARMSBGX, ST_ARMSBGY);
 	}

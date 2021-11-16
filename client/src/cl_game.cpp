@@ -22,11 +22,11 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
+
+#include "odamex.h"
+
 #include "minilzo.h"
 #include "m_alloc.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "z_zone.h"
 #include "f_finale.h"
 #include "m_argv.h"
@@ -45,7 +45,6 @@
 #include "st_stuff.h"
 #include "am_map.h"
 #include "c_console.h"
-#include "c_cvars.h"
 #include "c_bind.h"
 #include "c_dispatch.h"
 #include "v_video.h"
@@ -57,12 +56,12 @@
 #include "r_sky.h"
 #include "r_draw.h"
 #include "g_game.h"
-#include "g_level.h"
 #include "cl_main.h"
 #include "cl_demo.h"
 #include "gi.h"
 #include "hu_mousegraph.h"
 #include "g_spawninv.h"
+#include "g_gametype.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -1348,7 +1347,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	int selections;
 	mapthing2_t *spot;
 
-	if(!serverside || sv_gametype == GM_COOP)
+	if(!serverside || G_UsesCoopSpawns())
 		return;
 
 	selections = DeathMatchStarts.size();
@@ -1396,7 +1395,7 @@ void G_DoReborn (player_t &player)
 		player.mo->player = NULL;
 
 	// spawn at random spot if in death match
-	if (sv_gametype != GM_COOP)
+	if (!G_UsesCoopSpawns())
 	{
 		G_DeathMatchSpawnPlayer (player);
 		return;

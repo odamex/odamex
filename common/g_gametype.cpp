@@ -20,6 +20,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "g_gametype.h"
 
 #include "c_dispatch.h"
@@ -55,6 +58,10 @@ const std::string& G_GametypeName()
 	static std::string name;
 	if (!g_gametypename.str().empty())
 		name = g_gametypename.str();
+	if (G_IsHordeMode() && g_lives)
+		name = "Horde Survival";
+	else if (G_IsHordeMode())
+		name = "Horde";
 	else if (sv_gametype == GM_COOP && g_lives)
 		name = "Survival";
 	else if (sv_gametype == GM_COOP && ::multiplayer)
@@ -274,12 +281,29 @@ bool G_IsDefendingTeam(team_t team)
 }
 
 /**
+ * @brief Check if gametype is horde or if the map was detected to be Horde
+ *        in single-player.
+ */
+bool G_IsHordeMode()
+{
+	// Trust when manually set.
+	if (::sv_gametype == GM_HORDE)
+		return true;
+
+	// In single-player, trust the detected mode.
+	if (!::network_game && ::level.detected_gametype == GM_HORDE)
+		return true;
+
+	return false;
+}
+
+/**
  * @brief Check if the gametype is purely player versus environment, where
  *        the players win and lose as a whole.
  */
 bool G_IsCoopGame()
 {
-	return sv_gametype == GM_COOP;
+	return sv_gametype == GM_COOP || G_IsHordeMode();
 }
 
 /**
@@ -311,8 +335,20 @@ bool G_IsTeamGame()
  */
 bool G_IsRoundsGame()
 {
-	return (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
-	       g_rounds == true;
+	if (g_rounds == false)
+	{
+		// Not turned on.
+		return false;
+	}
+
+	if (G_IsCoopGame() && (g_lives < 1 || g_roundlimit < 1))
+	{
+		// Coop game modes only have rounds if they have lives and a limit.
+		// Otherwise, rounds can't really do anything.
+		return false;
+	}
+
+	return true;
 }
 
 /**
@@ -329,6 +365,14 @@ bool G_IsLivesGame()
 bool G_IsSidesGame()
 {
 	return ::g_sides && G_IsTeamGame();
+}
+
+/**
+ * @brief Check if the gamemode uses coop spawns.
+ */
+bool G_UsesCoopSpawns()
+{
+	return ::sv_gametype == GM_COOP;
 }
 
 /**
@@ -372,6 +416,16 @@ int G_GetEndingTic()
 }
 
 /**
+ * @brief Drop everything and end the game right now.
+*/
+void G_EndGame()
+{
+	::levelstate.setWinner(WinInfo::WIN_EVERYBODY, 0);
+	M_CommitWDLLog();
+	::levelstate.endGame();
+}
+
+/**
  * @brief Assert that we have enough players to continue the game, otherwise
  *        end the game or reset it.
  */
@@ -391,7 +445,7 @@ void G_AssertValidPlayerCount()
 		return;
 
 	// Cooperative game modes have slightly different logic.
-	if (::sv_gametype == GM_COOP && P_NumPlayersInGame() == 0)
+	if (G_IsCoopGame() && P_NumPlayersInGame() == 0)
 	{
 		// Survival modes cannot function with no players in the gamne,
 		// so the level must be reset at this point.
@@ -627,8 +681,8 @@ void G_TimeCheckEndGame()
 		}
 	}
 
-	::levelstate.endRound();
 	M_CommitWDLLog();
+	::levelstate.endRound();
 }
 
 /**
@@ -654,6 +708,7 @@ void G_FragsCheckEndGame()
 			SV_BroadcastPrintf("Frag limit hit. Game won by %s!\n",
 			                   top->userinfo.netname.c_str());
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, top->id);
+			M_CommitWDLLog();
 			::levelstate.endRound();
 		}
 	}
@@ -680,6 +735,7 @@ void G_TeamFragsCheckEndGame()
 			SV_BroadcastPrintf("Frag limit hit. %s team wins!\n",
 			                   team->ColorString.c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, team->Team);
+			M_CommitWDLLog();
 			::levelstate.endRound();
 			return;
 		}
@@ -707,8 +763,8 @@ void G_TeamScoreCheckEndGame()
 			SV_BroadcastPrintf("Score limit hit. %s team wins!\n",
 			                   team->ColorizedTeamName().c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, team->Team);
-			::levelstate.endRound();
 			M_CommitWDLLog();
+			::levelstate.endRound();
 			return;
 		}
 	}
@@ -725,7 +781,7 @@ void G_LivesCheckEndGame()
 	if (!g_lives || !G_CanEndGame())
 		return;
 
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
 		// Everybody losing their lives in coop is a failure.
 		PlayerResults pr = PlayerQuery().hasLives().execute();
@@ -733,6 +789,7 @@ void G_LivesCheckEndGame()
 		{
 			SV_BroadcastPrintf("All players have run out of lives.\n");
 			::levelstate.setWinner(WinInfo::WIN_NOBODY, 0);
+			M_CommitWDLLog();
 			::levelstate.endRound();
 		}
 	}
@@ -744,6 +801,7 @@ void G_LivesCheckEndGame()
 		{
 			SV_BroadcastPrintf("All players have run out of lives.\n");
 			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
+			M_CommitWDLLog();
 			::levelstate.endRound();
 		}
 		else if (pr.count == 1)
@@ -752,6 +810,7 @@ void G_LivesCheckEndGame()
 			SV_BroadcastPrintf("%s wins as the last player standing!\n",
 			                   pr.players.front()->userinfo.netname.c_str());
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
+			M_CommitWDLLog();
 			::levelstate.endRound();
 		}
 
@@ -785,6 +844,7 @@ void G_LivesCheckEndGame()
 				    "%s team wins for having the highest score with %s left!\n",
 				    tv.front()->ColorizedTeamName().c_str(), teams);
 				::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
+				M_CommitWDLLog();
 				::levelstate.endRound();
 			}
 			else
@@ -792,6 +852,7 @@ void G_LivesCheckEndGame()
 				SV_BroadcastPrintf("Score is tied with with %s left. Game is a draw!\n",
 				                   teams);
 				::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
+				M_CommitWDLLog();
 				::levelstate.endRound();
 			}
 		}
@@ -800,6 +861,7 @@ void G_LivesCheckEndGame()
 		{
 			SV_BroadcastPrintf("All teams have run out of lives.\n");
 			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
+			M_CommitWDLLog();
 			::levelstate.endRound();
 		}
 		else if (aliveteams == 1)
@@ -809,6 +871,7 @@ void G_LivesCheckEndGame()
 			SV_BroadcastPrintf("%s team wins as the last team standing!\n",
 			                   GetTeamInfo(team)->ColorizedTeamName().c_str());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, team);
+			M_CommitWDLLog();
 			::levelstate.endRound();
 		}
 
@@ -831,10 +894,17 @@ bool G_RoundsShouldEndGame()
 
 	// Coop doesn't have rounds to speak of - though perhaps in the future
 	// rounds might be used to limit the number of tries a map is attempted.
-	if (sv_gametype == GM_COOP)
-		return true;
-
-	if (sv_gametype == GM_DM)
+	if (G_IsCoopGame())
+	{
+		if (g_roundlimit && ::levelstate.getRound() >= g_roundlimit)
+		{
+			SV_BroadcastPrintf(
+			    "Round limit hit. Players were unable to finish the level.\n");
+			::levelstate.setWinner(WinInfo::WIN_NOBODY, 0);
+			return true;
+		}
+	}
+	else if (sv_gametype == GM_DM)
 	{
 		PlayerResults pr = PlayerQuery().sortWins().filterSortMax().execute();
 		if (pr.count == 1 && g_winlimit && pr.players.front()->roundwins >= g_winlimit)

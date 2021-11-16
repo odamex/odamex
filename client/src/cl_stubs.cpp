@@ -21,13 +21,14 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <stdarg.h>
 
 #include "actor.h"
-#include "c_cvars.h"
 #include "cmdlib.h"
 #include "p_ctf.h"
-#include "doomdef.h"
 #include "d_player.h"
 
 // Unnatural Level Progression.  True if we've used 'map' or another command

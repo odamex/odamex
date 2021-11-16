@@ -20,17 +20,16 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomtype.h"
+
+#include "odamex.h"
+
 
 #include "oscanner.h"
 
 #include "cmdlib.h"
-#include "version.h"
 
 #include <algorithm>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "i_system.h"
 
@@ -287,15 +286,7 @@ void OScanner::mustScanInt()
 		error("Missing integer (unexpected end of file).");
 	}
 
-	// fix for parser reading in commas
 	std::string str = m_token;
-
-	// remove comma if necessary
-	if (*(str.end() - 1) == ',')
-	{
-		str.resize(str.size() - 1);
-	}
-
 	if (IsNum(str.c_str()) == false && str != "MAXINT")
 	{
 		std::string err;
@@ -314,15 +305,7 @@ void OScanner::mustScanFloat()
 		error("Missing float (unexpected end of file).");
 	}
 
-	// fix for parser reading in commas
 	std::string str = m_token;
-
-	// remove comma if necessary
-	if (*(str.end() - 1) == ',')
-	{
-		str.resize(str.size() - 1);
-	}
-
 	if (IsRealNum(str.c_str()) == false)
 	{
 		std::string err;
@@ -378,15 +361,7 @@ std::string OScanner::getToken() const
 //
 int OScanner::getTokenInt() const
 {
-	// fix for parser reading in commas
 	std::string str = m_token;
-
-	// remove comma if necessary
-	if (*(str.end() - 1) == ',')
-	{
-		str.resize(str.size() - 1);
-	}
-
 	char* stopper;
 
 	if (str == "MAXINT")
@@ -411,15 +386,7 @@ int OScanner::getTokenInt() const
 //
 float OScanner::getTokenFloat() const
 {
-	// fix for parser reading in commas
 	std::string str = m_token;
-
-	// remove comma if necessary
-	if (*(str.end() - 1) == ',')
-	{
-		str.resize(str.size() - 1);
-	}
-
 	char* stopper;
 
 	const double num = strtod(str.c_str(), &stopper);
@@ -478,6 +445,14 @@ bool OScanner::compareToken(const char* string) const
 bool OScanner::compareTokenNoCase(const char* string) const
 {
 	return iequals(m_token, string);
+}
+
+//
+// Print given error message.
+//
+void OScanner::warning(const char* message) const
+{
+	Printf(PRINT_WARNING, "Script Warning: %s:%d: %s\n", m_config.lumpName, m_lineNumber, message);
 }
 
 //

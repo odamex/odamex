@@ -27,7 +27,6 @@
 
 #include <stdlib.h>
 #include "tarray.h"
-#include "doomtype.h"
 
 class FArchive;
 

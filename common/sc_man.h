@@ -25,7 +25,6 @@
 #ifndef __SC_MAN_H__
 #define __SC_MAN_H__
 
-#include "doomtype.h"
 
 #define SC_NOMATCH (-1)
 

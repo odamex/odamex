@@ -24,9 +24,10 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <math.h>
 #include <limits.h>
-#include "doomdef.h"
 #include "m_random.h"
 #include "m_bbox.h"
 #include "r_local.h"
@@ -42,6 +43,7 @@ extern dyncolormap_t NormalLight;
 // [Russell] - Server expects these to exist
 // [Russell] - Doesn't get used serverside
 byte *translationtables;
+byte bosstable[256];
 
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
@@ -250,4 +252,3 @@ void R_Init (void)
 }
 
 VERSION_CONTROL (r_main_cpp, "$Id$")
-

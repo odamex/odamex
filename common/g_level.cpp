@@ -22,7 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "g_level.h"
+
+#include "odamex.h"
+
 
 #include <set>
 
@@ -30,7 +32,6 @@
 #include "c_dispatch.h"
 #include "d_event.h"
 #include "d_main.h"
-#include "doomstat.h"
 #include "g_game.h"
 #include "gi.h"
 #include "i_system.h"
@@ -819,6 +820,7 @@ void G_InitLevelLocals()
 	::level.cluster = info.cluster;
 	::level.flags = info.flags;
 	::level.levelnum = info.levelnum;
+	::level.level_hash = info.level_hash;
 
 	// Only copy the level name if there's a valid level name to be copied.
 	
@@ -914,6 +916,8 @@ void G_InitLevelLocals()
 	::level.bossactions = &info.bossactions;
 	::level.bossactions_donothing = info.bossactions_donothing;
 	
+	::level.detected_gametype = GM_COOP;
+
 	movingsectors.clear();
 }
 

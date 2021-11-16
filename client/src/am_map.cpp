@@ -22,10 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
 
-#include "doomdef.h"
-#include "g_level.h"
+
 #include "z_zone.h"
 #include "st_stuff.h"
 #include "p_local.h"
@@ -46,7 +45,6 @@
 #include "v_text.h"
 
 // State.
-#include "doomstat.h"
 #include "r_state.h"
 
 // Data.
@@ -1679,7 +1677,7 @@ void AM_Drawer()
 		int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
 		int OV_Y = surface_height - (surface_height * 32 / 200);
 
-		if (sv_gametype == GM_COOP)
+		if (G_IsCoopGame())
 		{
 			if (am_showmonsters)
 			{

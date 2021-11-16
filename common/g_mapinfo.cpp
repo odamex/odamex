@@ -18,12 +18,11 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "cmdlib.h"
-#include "doomdef.h"
-#include "doomstat.h"
-#include "doomtype.h"
 #include "g_episode.h"
-#include "g_level.h"
 #include "gi.h"
 #include "gstrings.h"
 #include "i_system.h"
@@ -33,41 +32,13 @@
 #include "stringenums.h"
 #include "v_video.h"
 #include "w_wad.h"
+#include "infomap.h"
 
 /// Globals
 BOOL HexenHack;
 
 namespace
 {
-// [DE] used for UMAPINFO's boss actions
-const char* const ActorNames[] = {
-    "DoomPlayer", "ZombieMan", "ShotgunGuy", "Archvile", "ArchvileFire", "Revenant",
-    "RevenantTracer", "RevenantTracerSmoke", "Fatso", "FatShot", "ChaingunGuy", "DoomImp",
-    "Demon", "Spectre", "Cacodemon", "BaronOfHell", "BaronBall", "HellKnight", "LostSoul",
-    "SpiderMastermind", "Arachnotron", "Cyberdemon", "PainElemental", "WolfensteinSS",
-    "CommanderKeen", "BossBrain", "BossEye", "BossTarget", "SpawnShot", "SpawnFire",
-    "ExplosiveBarrel", "DoomImpBall", "CacodemonBall", "Rocket", "PlasmaBall", "BFGBall",
-    "ArachnotronPlasma", "BulletPuff", "Blood", "TeleportFog", "ItemFog", "TeleportDest",
-    "BFGExtra", "GreenArmor", "BlueArmor", "HealthBonus", "ArmorBonus", "BlueCard",
-    "RedCard", "YellowCard", "YellowSkull", "RedSkull", "BlueSkull", "Stimpack",
-    "Medikit", "Soulsphere", "InvulnerabilitySphere", "Berserk", "BlurSphere", "RadSuit",
-    "Allmap", "Infrared", "Megasphere", "Clip", "ClipBox", "RocketAmmo", "RocketBox",
-    "Cell", "CellPack", "Shell", "ShellBox", "Backpack", "BFG9000", "Chaingun",
-    "Chainsaw", "RocketLauncher", "PlasmaRifle", "Shotgun", "SuperShotgun", "TechLamp",
-    "TechLamp2", "Column", "TallGreenColumn", "ShortGreenColumn", "TallRedColumn",
-    "ShortRedColumn", "SkullColumn", "HeartColumn", "EvilEye", "FloatingSkull",
-    "TorchTree", "BlueTorch", "GreenTorch", "RedTorch", "ShortBlueTorch",
-    "ShortGreenTorch", "ShortRedTorch", "Stalagtite", "TechPillar", "CandleStick",
-    "Candelabra", "BloodyTwitch", "Meat2", "Meat3", "Meat4", "Meat5", "NonsolidMeat2",
-    "NonsolidMeat4", "NonsolidMeat3", "NonsolidMeat5", "NonsolidTwitch", "DeadCacodemon",
-    "DeadMarine", "DeadZombieMan", "DeadDemon", "DeadLostSoul", "DeadDoomImp",
-    "DeadShotgunGuy", "GibbedMarine", "GibbedMarineExtra", "HeadsOnAStick", "Gibs",
-    "HeadOnAStick", "HeadCandles", "DeadStick", "LiveStick", "BigTree", "BurningBarrel",
-    "HangNoGuts", "HangBNoBrain", "HangTLookingDown", "HangTSkull", "HangTLookingUp",
-    "HangTNoBrain", "ColonGibs", "SmallBloodPool", "BrainStem",
-    // Boom/MBF additions
-    "PointPusher", "PointPuller", "MBFHelperDog", "PlasmaBall1", "PlasmaBall2",
-    "EvilSceptre", "UnholyBible", NULL};
 
 void SetLevelDefaults(level_pwad_info_t& levelinfo)
 {
@@ -247,11 +218,36 @@ void MustGet<OLumpName>(OScanner& os)
 //////////////////////////////////////////////////////////////////////
 /// Misc
 
-bool IsIdentifier(OScanner& os)
+static bool IsIdentifier(const OScanner& os)
 {
-	const char& ch = os.getToken()[0];
+	// [A-Za-z_]+[A-Za-z0-9_]*
 
-	return (ch == '_' || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'));
+	if (os.getToken().empty())
+		return false;
+
+	const std::string token = os.getToken();
+	for (std::string::const_iterator it = token.begin(); it != token.end(); ++it)
+	{
+		const char& ch = *it;
+		if (ch == '_')
+			continue;
+
+		if (ch >= 'A' && ch <= 'Z')
+			continue;
+
+		if (ch >= 'a' && ch <= 'z')
+			continue;
+
+		if (it != os.getToken().begin())
+		{
+			if (ch >= '0' && ch <= '9')
+				continue;
+		}
+
+		return false;
+	}
+
+	return true;
 }
 
 void MustGetIdentifier(OScanner& os)
@@ -259,7 +255,7 @@ void MustGetIdentifier(OScanner& os)
 	MustGetString(os);
 	if (!IsIdentifier(os))
 	{
-		I_Error("Expected identifier (unexpected end of file).");
+		os.error("Expected identifier (unexpected end of file).");
 	}
 }
 
@@ -365,7 +361,9 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 
 	if (!IsIdentifier(os))
 	{
-		I_Error("Expected identifier");
+		std::string buffer;
+		StrFormat(buffer, "Expected identifier, got \"%s\".", os.getToken().c_str());
+		os.error(buffer.c_str());
 	}
 	char* pname = strdup(os.getToken().c_str());
 	MustGetStringName(os, "=");
@@ -499,9 +497,9 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		}
 		else
 		{
-			const char* gfx = std::strtok(lname, "\n");
-			const char* txt = std::strtok(NULL, "\n");
-			const char* alpha = std::strtok(NULL, "\n");
+			const char* gfx = strtok(lname, "\n");
+			const char* txt = strtok(NULL, "\n");
+			const char* alpha = strtok(NULL, "\n");
 
 			if (episodenum >= 8)
 			{
@@ -528,18 +526,9 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		}
 		else
 		{
-			int i;
-
-			// remove comma from token
 			std::string actor_name = os.getToken();
-			actor_name[actor_name.length() - 1] = '\0';
-
-			for (i = 0; ActorNames[i]; i++)
-			{
-				if (!stricmp(actor_name.c_str(), ActorNames[i]))
-					break;
-			}
-			if (ActorNames[i] == NULL)
+			mobjtype_t i = P_NameToMobj(actor_name);
+			if (i == MT_NULL)
 			{
 				I_Error("Unknown thing type %s", os.getToken().c_str());
 				return 0;

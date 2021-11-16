@@ -21,16 +21,17 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <algorithm>
 #include <sstream>
 
 #include "c_bind.h"
-#include "c_cvars.h"
 #include "cl_demo.h"
 #include "m_fixed.h" // This should probably go into d_netinf.h
 #include "d_netinf.h"
 #include "d_player.h"
-#include "doomstat.h"
 #include "g_gametype.h"
 #include "g_levelstate.h"
 #include "hu_drawers.h"
@@ -45,7 +46,16 @@ argb_t CL_GetPlayerColor(player_t*);
 extern NetDemo netdemo;
 extern bool HasBehavior;
 extern fixed_t FocalLengthX;
+extern byte* Ranges;
 
+extern lumpHandle_t line_leftempty;
+extern lumpHandle_t line_leftfull;
+extern lumpHandle_t line_centerempty;
+extern lumpHandle_t line_centerleft;
+extern lumpHandle_t line_centerright;
+extern lumpHandle_t line_centerfull;
+extern lumpHandle_t line_rightempty;
+extern lumpHandle_t line_rightfull;
 
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_gametype)
@@ -70,51 +80,65 @@ size_t P_NumPlayersOnTeam(team_t team);
 namespace hud {
 
 // Player sorting functions
-static bool STACK_ARGS cmpFrags(const player_t *arg1, const player_t *arg2) {
+static bool cmpFrags(const player_t* arg1, const player_t* arg2)
+{
 	return arg2->fragcount < arg1->fragcount;
 }
 
-static bool STACK_ARGS cmpKills(const player_t *arg1, const player_t *arg2) {
+static bool cmpDamage(const player_t* arg1, const player_t* arg2)
+{
+	return arg2->monsterdmgcount < arg1->monsterdmgcount;
+}
+
+static bool cmpKills(const player_t* arg1, const player_t* arg2)
+{
 	return arg2->killcount < arg1->killcount;
 }
 
-static bool STACK_ARGS cmpPoints (const player_t *arg1, const player_t *arg2) {
+static bool cmpPoints(const player_t* arg1, const player_t* arg2)
+{
 	return arg2->points < arg1->points;
 }
 
-static bool STACK_ARGS cmpRoundWins (const player_t *arg1, const player_t *arg2) {
+static bool cmpRoundWins(const player_t* arg1, const player_t* arg2)
+{
 	return arg2->roundwins < arg1->roundwins;
 }
 
-static bool STACK_ARGS cmpQueue(const player_t *arg1, const player_t *arg2) {
+static bool cmpQueue(const player_t* arg1, const player_t* arg2)
+{
 	return arg1->QueuePosition < arg2->QueuePosition;
 }
 
-
 // Returns true if a player is ingame.
-bool ingamePlayer(player_t* player) {
+bool ingamePlayer(player_t* player)
+{
 	return (player->ingame() && player->spectator == false);
 }
 
 // Returns true if a player is ingame and on a specific team
-bool inTeamPlayer(player_t* player, const byte team) {
-	return (player->ingame() && player->userinfo.team == team && player->spectator == false);
+bool inTeamPlayer(player_t* player, const byte team)
+{
+	return (player->ingame() && player->userinfo.team == team &&
+	        player->spectator == false);
 }
 
 // Returns true if a player is a spectator
-bool spectatingPlayer(player_t* player) {
+bool spectatingPlayer(player_t* player)
+{
 	return (!player->ingame() || player->spectator == true);
 }
 
 // Returns a sorted player list.  Calculates at most once a gametic.
-std::vector<player_t *> sortedPlayers(void) {
+const PlayersView& sortedPlayers()
+{
 	static int sp_tic = -1;
-	static std::vector<player_t *> sortedplayers(players.size());
-	static std::vector<player_t*> inGame;
-	static std::vector<player_t*> specInQueue;
-	static std::vector<player_t*> specNormal;
+	static PlayersView sortedplayers;
+	static PlayersView inGame;
+	static PlayersView specInQueue;
+	static PlayersView specNormal;
 
-	if (sp_tic == gametic)
+	if (sp_tic == ::gametic)
 		return sortedplayers;
 
 	sortedplayers.clear();
@@ -122,7 +146,7 @@ std::vector<player_t *> sortedPlayers(void) {
 	specInQueue.clear();
 	specNormal.clear();
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
 	{
 		if (!it->ingame())
 			continue;
@@ -130,9 +154,13 @@ std::vector<player_t *> sortedPlayers(void) {
 		if (it->spectator)
 		{
 			if (it->QueuePosition > 0)
+			{
 				specInQueue.push_back(&(*it));
+			}
 			else
+			{
 				specNormal.push_back(&(*it));
+			}
 		}
 		else
 		{
@@ -140,9 +168,9 @@ std::vector<player_t *> sortedPlayers(void) {
 		}
 	}
 
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
-		std::sort(inGame.begin(), inGame.end(), cmpKills);
+		std::sort(inGame.begin(), inGame.end(), cmpDamage);
 	}
 	else if (sv_gametype == GM_DM && G_IsRoundsGame())
 	{
@@ -153,7 +181,9 @@ std::vector<player_t *> sortedPlayers(void) {
 	{
 		std::sort(inGame.begin(), inGame.end(), cmpFrags);
 		if (sv_gametype == GM_CTF)
+		{
 			std::sort(inGame.begin(), inGame.end(), cmpPoints);
+		}
 	}
 
 	std::sort(specInQueue.begin(), specInQueue.end(), cmpQueue);
@@ -161,10 +191,12 @@ std::vector<player_t *> sortedPlayers(void) {
 	for (std::vector<player_t*>::iterator it = inGame.begin(); it != inGame.end(); it++)
 		sortedplayers.push_back(*it);
 
-	for (std::vector<player_t*>::iterator it = specInQueue.begin(); it != specInQueue.end(); it++)
+	for (std::vector<player_t*>::iterator it = specInQueue.begin();
+	     it != specInQueue.end(); it++)
 		sortedplayers.push_back(*it);
 
-	for (std::vector<player_t*>::iterator it = specNormal.begin(); it != specNormal.end(); it++)
+	for (std::vector<player_t*>::iterator it = specNormal.begin(); it != specNormal.end();
+	     it++)
 		sortedplayers.push_back(*it);
 
 	sp_tic = gametic;
@@ -808,6 +840,120 @@ std::string TeamPing(int& color, byte team) {
 // of elements: plain old elements and ElementArrays, which draw the same thing
 // multiple times.  I'm still trying to figure out the interface for these though.
 
+void EleBar(const int x, const int y, const int w, const float scale,
+            const x_align_t x_align, const y_align_t y_align, const x_align_t x_origin,
+            const y_align_t y_origin, const float pct, const EColorRange color)
+{
+	patch_t* leftempty = W_ResolvePatchHandle(::line_leftempty);
+	patch_t* leftfull = W_ResolvePatchHandle(::line_leftfull);
+	patch_t* centerempty = W_ResolvePatchHandle(::line_centerempty);
+	patch_t* centerleft = W_ResolvePatchHandle(::line_centerleft);
+	patch_t* centerright = W_ResolvePatchHandle(::line_centerright);
+	patch_t* centerfull = W_ResolvePatchHandle(::line_centerfull);
+	patch_t* rightempty = W_ResolvePatchHandle(::line_rightempty);
+	patch_t* rightfull = W_ResolvePatchHandle(::line_rightfull);
+
+	// We assume that all parts of the bar are identical width.
+	const int UNIT_WIDTH = centerfull->width();
+
+	// Number of things to draw.
+	const int UNITS = w / UNIT_WIDTH;
+
+	// Actual width - rounded down from input w.
+	const int ACTUAL_WIDTH = UNIT_WIDTH * UNITS;
+
+	if (UNITS <= 2)
+	{
+		// We want at least one bar of progress, since the far left/right
+		// ends are short-circuited.
+		return;
+	}
+
+	std::vector<patch_t*> lineHandles;
+	lineHandles.reserve(UNITS);
+	for (int i = 0; i < UNITS; i++)
+	{
+		if (i == 0)
+		{
+			if (pct <= (0.0 + FLT_EPSILON))
+			{
+				// Completely empty.
+				lineHandles.push_back(leftempty);
+			}
+			else
+			{
+				// The smallest amount of progress.
+				lineHandles.push_back(leftfull);
+			}
+		}
+		else if (i == UNITS - 1)
+		{
+			if (pct >= (1.0 - FLT_EPSILON))
+			{
+				// Completely full.
+				lineHandles.push_back(rightfull);
+			}
+			else
+			{
+				// Anything short of 100% - epsilon.
+				lineHandles.push_back(rightempty);
+			}
+		}
+		else
+		{
+			// i0 is short-circuited, so remove it.
+			const int idx = i - 1;
+
+			// Each unit 
+			const float scaled = pct * (UNITS - 2);
+
+			if (scaled < static_cast<float>(idx) + 0.5f)
+			{
+				// Empty.
+				lineHandles.push_back(centerempty);
+			}
+			else if (scaled < static_cast<float>(idx) + 1.0f)
+			{
+				// Half full.
+				lineHandles.push_back(centerleft);
+			}
+			else
+			{
+				// Full.
+				lineHandles.push_back(centerfull);
+			}
+		}
+	}
+
+	// Draw the finished bar.  Passing through the X-Align leads to the bar
+	// being drawn backwards, so we have to draw the bar in reverse.
+	int drawX;
+	if (x_align == hud::X_RIGHT)
+	{
+		drawX = x + ((lineHandles.size() - 1) * UNIT_WIDTH);
+	}
+	else
+	{
+		drawX = x;
+	}
+
+	for (size_t i = 0; i < lineHandles.size(); i++)
+	{
+		patch_t* patch = lineHandles.at(i);
+		hud::DrawTranslatedPatch(drawX, y, scale, x_align, y_align, x_origin, y_origin,
+		                         patch, ::Ranges + color * 256);
+
+		if (x_align == hud::X_RIGHT)
+		{
+			drawX -= UNIT_WIDTH;
+		}
+		else
+		{
+			drawX += UNIT_WIDTH;
+		}
+	}
+}
+
 // Draw a list of player colors in the game.  Lines up with player names.
 void EAPlayerColors(int x, int y,
                     const unsigned short w, const unsigned short h,
@@ -1155,6 +1301,35 @@ void EATeamPlayerFrags(int x, int y, const float scale,
 		if (inTeamPlayer(player, team)) {
 			std::ostringstream buffer;
 			buffer << frags;
+
+			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			              buffer.str().c_str(), CR_GREY, force_opaque);
+			y += 7 + padding;
+			drawn += 1;
+		}
+	}
+}
+
+// Draw a list of kills in the game.  Lines up with player names.
+void EAPlayerDamage(int x, int y, const float scale, const x_align_t x_align,
+                    const y_align_t y_align, const x_align_t x_origin,
+                    const y_align_t y_origin, const short padding, const short limit,
+                    const bool force_opaque)
+{
+	byte drawn = 0;
+	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	{
+		// Make sure we're not overrunning our limit.
+		if (limit != 0 && drawn >= limit)
+		{
+			break;
+		}
+
+		player_t* player = sortedPlayers()[i];
+		if (ingamePlayer(player))
+		{
+			std::ostringstream buffer;
+			buffer << player->monsterdmgcount;
 
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);

@@ -24,7 +24,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "odamex.h"
+
 
 #include "i_system.h"
 #include "p_local.h"
@@ -961,4 +962,3 @@ bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov)
 }
 
 VERSION_CONTROL (p_sight_cpp, "$Id$")
-

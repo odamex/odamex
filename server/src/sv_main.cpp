@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "win32inc.h"
 #ifdef _WIN32
     #include <winsock.h>
@@ -32,14 +35,10 @@
 #include <sys/time.h>
 #endif
 
-#include "doomtype.h"
-#include "doomstat.h"
 #include "gstrings.h"
 #include "d_player.h"
 #include "s_sound.h"
-#include "d_net.h"
 #include "g_game.h"
-#include "g_level.h"
 #include "p_tick.h"
 #include "p_local.h"
 #include "p_inter.h"
@@ -73,7 +72,6 @@
 
 #include <algorithm>
 #include <sstream>
-#include <vector>
 
 #include "server.pb.h"
 
@@ -688,7 +686,8 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 	}
 }
 
-void SV_Sound (player_t &pl, AActor *mo, byte channel, const char *name, byte attenuation)
+void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
+              const byte attenuation)
 {
 	int sfx_id;
 	int x = 0, y = 0;
@@ -987,6 +986,14 @@ bool SV_SetupUserInfo(player_t &player)
 
 		SV_BroadcastPrintf("%s changed %s name to %s.\n",
 			old_netname.c_str(), gendermessage.c_str(), player.userinfo.netname.c_str());
+
+		team_t team = TEAM_NONE;
+		if (player.mo && player.userinfo.team && player.ingame() && !player.spectator &&
+		    !G_IsLevelState(LevelState::WARMUP))
+		{
+			M_HandleWDLNameChange(team, old_netname.c_str(),
+			                      player.userinfo.netname.c_str());
+		}
 	}
 
 	if (G_IsTeamGame())
@@ -998,6 +1005,9 @@ bool SV_SetupUserInfo(player_t &player)
 		{
 			// kill player if team is changed
 			P_DamageMobj(player.mo, 0, 0, 1000, 0);
+			M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, 0, 0, 0, 0);
+			M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team, 0, 0,
+			              0);
 			SV_BroadcastPrintf("%s switched to the %s team.\n",
 			                   player.userinfo.netname.c_str(),
 			                   V_GetTeamColor(player.userinfo.team).c_str());
@@ -1095,10 +1105,12 @@ bool SV_IsTeammate(player_t &a, player_t &b)
 		else
 			return false;
 	}
-	else if (sv_gametype == GM_COOP)
+	else if (G_IsCoopGame())
+	{
 		return true;
+	}
 
-	else return false;
+	return false;
 }
 
 //
@@ -1502,7 +1514,7 @@ void SV_ClientFullUpdate(player_t &pl)
 void SV_UpdateSecret(sector_t& sector, player_t &player)
 {
 	// Don't announce secrets on PvP gamemodes
-	if (sv_gametype != GM_COOP)
+	if (!G_IsCoopGame())
 		return;
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
@@ -1953,7 +1965,7 @@ void SV_DisconnectClient(player_t &who)
 			}
 
 			// Frags (DM/TDM/CTF) or Kills (Coop).
-			if (sv_gametype == GM_COOP)
+			if (G_IsCoopGame())
 				sprintf(str, "%d KILLS, ", who.killcount);
 			else
 				sprintf(str, "%d FRAGS, ", who.fragcount);
@@ -2297,7 +2309,7 @@ void SV_DrawScores()
 
 	}
 
-	else if (sv_gametype == GM_COOP)
+	else if (G_IsCoopGame())
 	{
 		compare_player_kills comparison_functor;
 		sortedplayers.sort(comparison_functor);
@@ -2692,7 +2704,7 @@ bool SV_PrivMsg(player_t &player)
 		return true;
 
 	// In competitive gamemodes, don't allow spectators to message players.
-	if (sv_gametype != GM_COOP && player.spectator && !dplayer.spectator)
+	if (!G_IsCoopGame() && player.spectator && !dplayer.spectator)
 		return true;
 
 	// Flood protection
@@ -2811,6 +2823,32 @@ void SV_UpdateMonsters(player_t &pl)
 	}
 }
 
+void SV_UpdateGametype(player_t& pl)
+{
+	if (G_IsHordeMode())
+	{
+		static hordeInfo_t lastInfo = {HS_STARTING, -1, -1, -1, 0, -1, -1, -1, -1, -1};
+		static int ticsent;
+
+		// If the hordeinfo has changed since last tic, save and send it.
+		if (ticsent != ::gametic)
+		{
+			const hordeInfo_t info = P_HordeInfo();
+			if (!info.equals(lastInfo))
+			{
+				memcpy(&lastInfo, &info, sizeof(hordeInfo_t));
+				ticsent = ::gametic;
+			}
+		}
+
+		// Send it if we're on the tic it mutated on or to a fresh player.
+		if (ticsent == ::gametic || (pl.GameTime == 0 && pl.ingame()))
+		{
+			MSG_WriteSVC(&pl.client.netbuf, SVC_HordeInfo(lastInfo));
+		}
+	}
+}
+
 //
 // SV_ActorTarget
 //
@@ -2898,7 +2936,7 @@ void SV_SendPingRequest(client_t* cl)
 
 void SV_UpdateMonsterRespawnCount()
 {
-	if (sv_gametype != GM_COOP)
+	if (!G_IsCoopGame())
 		return;
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
@@ -3093,6 +3131,8 @@ void SV_WriteCommands(void)
 		SV_UpdateMissiles(*it);
 
 		SV_UpdateMonsters(*it);
+
+		SV_UpdateGametype(*it);     // update gametype stuff
 
 		SV_SendPingRequest(cl);     // request ping reply
 
@@ -3313,6 +3353,9 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	    !G_IsLevelState(LevelState::WARMUP))
 	{
 		P_DamageMobj(player.mo, 0, 0, 1000, 0);
+
+		M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, 0, 0, 0, 0);
+		M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, team, 0, 0, 0);
 	}
 	SV_BroadcastPrintf("%s has joined the %s team.\n", player.userinfo.netname.c_str(),
 	                   V_GetTeamColor(team).c_str());
@@ -3459,6 +3502,8 @@ void SV_JoinPlayer(player_t& player, bool silent)
 			                   player.userinfo.netname.c_str(),
 			                   V_GetTeamColor(player.userinfo.team).c_str());
 	}
+
+	M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team, 0, 0, 0);
 }
 
 void SV_SpecPlayer(player_t &player, bool silent)
@@ -4002,7 +4047,7 @@ void SV_ParseCommands(player_t &player)
 
 		case clc_kill:
 			if(player.mo && player.suicidedelay == 0 && gamestate == GS_LEVEL &&
-               (sv_allowcheats || sv_gametype == GM_COOP))
+               (sv_allowcheats || G_IsCoopGame()))
             {
 				SV_Suicide (player);
             }
@@ -4240,15 +4285,28 @@ void SV_RunTics()
 		// [SL] Ordinarily we should call G_DeferedInitNew but this is called
 		// at the end of a gametic and the level reset should take place now
 		// rather than at the start of the next gametic.
+		maplist_entry_t lobby_entry;
+		lobby_entry = Maplist::instance().get_lobbymap();
 
-		// [SL] create a copy of level.mapname because G_InitNew uses strncpy
-		// to copy the mapname parameter to level.mapname, which is undefined
-		// behavior.
-		char mapname[9];
-		strncpy(mapname, level.mapname.c_str(), 8);
-		mapname[8] = 0;
-
-		G_InitNew(mapname);
+		if (!Maplist::instance().lobbyempty())
+		{
+			std::string wadstr;
+			for (size_t i = 0; i < lobby_entry.wads.size(); i++)
+			{
+				if (i != 0)
+				{
+					wadstr += " ";
+				}
+				wadstr += C_QuoteString(lobby_entry.wads.at(i));
+			}
+			G_LoadWadString(wadstr, lobby_entry.map);
+		}
+		else
+		{
+			// [AM] Make a copy of mapname for safety's sake.
+			std::string mapname = ::level.mapname.c_str();
+			G_InitNew(mapname.c_str());
+		}
 	}
 	last_player_count = players.size();
 }
@@ -4323,7 +4381,7 @@ BEGIN_COMMAND (playerinfo)
 	Printf(" userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(" time             - %d \n",		player->GameTime);
 	Printf(" spectator        - %d \n",		player->spectator);
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
 		Printf(" kills - %d  deaths - %d\n", player->killcount, player->deathcount);
 	}
@@ -4368,9 +4426,9 @@ BEGIN_COMMAND(playerlist)
 		          it->userinfo.netname.c_str(), it->spectator ? "(SPEC)" : "",
 		          NET_AdrToString(it->client.address), it->GameTime, it->ping);
 
-		if (sv_gametype == GM_COOP)
+		if (G_IsCoopGame())
 		{
-			if (g_lives)
+			if (G_IsLivesGame())
 			{
 				// Kills and Lives
 				StrFormat(strScore, " - kills:%d - lives:%d", it->killcount, it->lives);
@@ -4384,7 +4442,7 @@ BEGIN_COMMAND(playerlist)
 		}
 		else if (sv_gametype == GM_DM)
 		{
-			if (g_lives)
+			if (G_IsLivesGame())
 			{
 				// Wins, Lives, and Frags
 				StrFormat(strScore, " - wins:%d - lives:%d - frags:%d", it->roundwins,
@@ -4398,7 +4456,7 @@ BEGIN_COMMAND(playerlist)
 		}
 		else if (sv_gametype == GM_TEAMDM)
 		{
-			if (g_lives)
+			if (G_IsLivesGame())
 			{
 				// Frags and Lives
 				StrFormat(strScore, " - frags:%d - lives:%d", frags, it->lives);
@@ -4411,7 +4469,7 @@ BEGIN_COMMAND(playerlist)
 		}
 		else if (sv_gametype == GM_CTF)
 		{
-			if (g_lives)
+			if (G_IsLivesGame())
 			{
 				// Points and Lives
 				StrFormat(strScore, " - points:%d - lives:%d", points, it->lives);
@@ -4814,13 +4872,13 @@ void SV_ShareKeys(card_t card, player_t &player)
 {
 	// Add it to the KeysCheck array
 	keysfound[card] = true;
-	char* coloritem;
+	const char* coloritem = NULL;
 
 	// If the server hasn't accepted to share keys yet, stop it.
 	if (!sv_sharekeys)
 		return;
 
-	// Broadcast the key shared to 
+	// Broadcast the key shared to
 	gitem_t* item;
 	if (item = FindCardItem(card))
 	{
@@ -4828,7 +4886,7 @@ void SV_ShareKeys(card_t card, player_t &player)
 		{
 		case it_bluecard:
 		case it_blueskull:
-			coloritem = TEXTCOLOR_BLUE; 
+			coloritem = TEXTCOLOR_BLUE;
 			break;
 		case it_redcard:
 		case it_redskull:
@@ -4846,11 +4904,14 @@ void SV_ShareKeys(card_t card, player_t &player)
 		                   coloritem, item->pickup_name, TEXTCOLOR_NORMAL);
 	}
 	else
+	{
 		SV_BroadcastPrintf("%s found a key!\n", player.userinfo.netname.c_str());
+	}
 
 	// Refresh the inventory to everyone
 	// ToDo: If we're the player who picked it, don't refresh our own inventory
-	for (Players::iterator it = players.begin(); it != players.end(); ++it) {
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
 		SV_UpdateShareKeys(*it);
 	}
 }

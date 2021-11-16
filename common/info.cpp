@@ -25,6 +25,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 // Data.
 #include "m_fixed.h"
 #include "p_local.h"
@@ -74,7 +76,7 @@ const char *sprnames[NUMSPRITES+1] = {
 
 	//	[Toke - CTF]
 	"BSOK","RSOK","BFLG","RFLG","BDWN","RDWN","BCAR","RCAR", "GSOK", "GFLG",
-	"GDWN","GCAR","TLGL","WPBF","WPRF","WPGF",
+	"GDWN","GCAR","TLGL","WPBF","WPRF","WPGF", "CARE",
 	NULL
 };
 
@@ -1314,6 +1316,8 @@ state_t	states[NUMSTATES] = {
 	{SPR_WPRF,1,1,NULL,S_WPRF1,0,0}, // S_WPRF2
 	{SPR_WPGF,0,1,NULL,S_WPGF2,0,0}, // S_WPGF1 - Waypoint Green Flag
 	{SPR_WPGF,1,1,NULL,S_WPGF1,0,0}, // S_WPGF2
+
+	{SPR_CARE,0,-1,NULL,S_NULL,0,0}, // S_CARE - Horde Care Package
 
 	{ SPR_TNT1,0,1,A_Raise,S_NOWEAPON,0,0 },    //    S_NOWEAPONUP
 	{ SPR_TNT1,0,1,A_Lower,S_NOWEAPON,0,0 },    //S_NOWEAPONDOWN
@@ -7521,6 +7525,64 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		S_NULL,         // raisestate
 		0x10000,
 		"MT_AVATAR"
+	},
+	{                   // MT_HORDESPAWN
+		-1,             // doomednum
+		S_TNT1,         // spawnstate
+		100,            // spawnhealth
+		S_NULL,         // seestate
+		NULL,           // seesound
+		0,              // reactiontime
+		NULL,           // a ttacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		NULL,           // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		NULL,           // deathsound
+		0,              // speed
+		16*FRACUNIT,    // radius
+		16*FRACUNIT,    // height
+		16*FRACUNIT,    // cdheight
+		100,            // mass
+		0,              // damage
+		NULL,           // activesound
+		0,              // flags
+		0,              // flags2
+		S_NULL,         // raisestate
+		0x10000,
+		"MT_HORDESPAWN"
+	},
+	{                   // MT_CAREPACK
+		-1,             // doomednum
+		S_CARE,         // spawnstate
+		1000,           // spawnhealth
+		S_NULL,         // seestate
+		NULL,           // seesound
+		8,              // reactiontime
+		NULL,           // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		NULL,           // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		NULL,           // deathsound
+		0,              // speed
+		20*FRACUNIT,    // radius
+		16*FRACUNIT,    // height
+		16*FRACUNIT,    // cdheight
+		100,            // mass
+		0,              // damage
+		NULL,           // activesound
+		MF_SPECIAL,     // flags
+		0,              // flags2
+		S_NULL,         // raisestate
+		0x10000,
+		"MT_CAREPACK"
 	},
 };
 

@@ -22,9 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
 
-#include "doomtype.h"
+
 #include "v_video.h"
 #include "c_dispatch.h"
 #include "stats.h"
@@ -100,4 +100,3 @@ END_COMMAND (stat)
 
 
 VERSION_CONTROL (stats_cpp, "$Id$")
-

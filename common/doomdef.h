@@ -23,11 +23,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __DOOMDEF_H__
-#define __DOOMDEF_H__
-
-#include <stdio.h>
-#include <cstring>
+#pragma once
 
 // GhostlyDeath -- MSVC++ 8+, remove "deprecated" warnings
 #if _MSC_VER >= 1400
@@ -255,6 +251,7 @@ inline FArchive &operator>> (FArchive &arc, card_t &i)
 //	user has not changed weapon.
 enum weapontype_t
 {
+	wp_none = -1,
 	wp_fist,
 	wp_pistol,
 	wp_shotgun,
@@ -465,6 +462,3 @@ IndexType BinarySearchFlexible (IndexType max, const KeyType key, IndexType noIn
 	}
 	return noIndex;
 }
-
-
-#endif	// __DOOMDEF_H__

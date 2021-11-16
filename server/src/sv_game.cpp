@@ -22,25 +22,24 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
+
+#include "odamex.h"
+
 #include "minilzo.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "d_netinf.h"
 #include "z_zone.h"
 #include "m_misc.h"
 #include "m_random.h"
 #include "i_system.h"
 #include "p_tick.h"
-#include "c_cvars.h"
 #include "c_dispatch.h"
 #include "p_local.h"
 #include "s_sound.h"
 #include "r_data.h"
 #include "g_game.h"
-#include "g_level.h"
 #include "sv_main.h"
 #include "g_spawninv.h"
+#include "m_wdlstats.h"
 
 void	G_PlayerReborn (player_t &player);
 
@@ -523,7 +522,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	int selections;
 	mapthing2_t *spot;
 
-	if(sv_gametype == GM_COOP)
+	if(G_UsesCoopSpawns())
 		return;
 
 	if(G_IsTeamGame())
@@ -582,7 +581,7 @@ void G_DoReborn (player_t &player)
 	}
 
 	// spawn at random spot if in death match
-	if (sv_gametype != GM_COOP)
+	if (!G_UsesCoopSpawns())
 	{
 		G_DeathMatchSpawnPlayer (player);
 		return;

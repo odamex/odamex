@@ -24,9 +24,9 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
 
-#include "doomstat.h"
+
 #include "dthinker.h"
 #include "z_zone.h"
 #include "stats.h"

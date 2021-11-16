@@ -25,10 +25,8 @@
 #ifndef __I_NET_H__
 #define __I_NET_H__
 
-#include "doomtype.h"
 #include "huffman.h"
 
-#include <string>
 
 // Default buffer size for a UDP packet.
 // This constant seems to be used as a default buffer size and should
@@ -48,6 +46,15 @@
 #define MSG_CHALLENGE 5560020     // Signals challenger wants MSG protocol.
 #define LAUNCHER_CHALLENGE 777123 // csdl challenge
 #define VERSION 65                // GhostlyDeath -- this should remain static from now on
+
+/**
+ * @brief Types of client buffers.
+ */
+enum clientBuf_e
+{
+	CLBUF_RELIABLE,
+	CLBUF_NET,
+};
 
 /**
  * @brief Compression is enabled for this packet
@@ -110,6 +117,11 @@
 #define SVC_SM_CORPSE BIT(2)
 
 /**
+ * @brief svc_spawnmobj: Odamex-specific flags.
+ */
+#define SVC_SM_OFLAGS BIT(3)
+
+/**
  * @brief svc_updatemobj: Supply mobj position and random index.
  */
 #define SVC_UM_POS_RND BIT(0)
@@ -150,14 +162,19 @@
 #define SVC_PM_LIVES BIT(2)
 
 /**
+ * @brief svc_playermembers: Damage done to monsters.
+ */
+#define SVC_PM_DAMAGE BIT(3)
+
+/**
  * @brief svc_playermembers: "Score" members like frags, etc.
  */
-#define SVC_PM_SCORE BIT(3)
+#define SVC_PM_SCORE BIT(4)
 
 /**
  * @brief svc_playermembers: Cheats & flags.
  */
-#define SVC_PM_CHEATS BIT(4)
+#define SVC_PM_CHEATS BIT(5)
 
 extern int   localport;
 extern int   msg_badread;
@@ -239,6 +256,7 @@ enum svc_t
 	svc_maplist_update,    // [AM] - Send the entire maplist to the client in chunks.
 	svc_maplist_index,     // [AM] - Send the current and next map index to the client.
 	svc_toast,
+	svc_hordeinfo,
 	svc_netdemocap = 100,  // netdemos - NullPoint
 	svc_netdemostop = 101, // netdemos - NullPoint
 	svc_netdemoloadsnap = 102, // netdemos - NullPoint
@@ -748,6 +766,8 @@ void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteHexString(buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
 void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg);
+void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& msg,
+                      const int skipPlayer = -1);
 
 int MSG_BytesLeft(void);
 int MSG_NextByte (void);

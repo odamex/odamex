@@ -22,19 +22,22 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <ctime>
+
+#include "odamex.h"
+
+#include <math.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <sstream>
+
+#include <ctime>
 #include <functional>
+#include <map>
+#include <sstream>
 
 #include "win32inc.h"
 
-#include "doomdef.h"
 #include "i_system.h"
-#include "doomtype.h"
 #include "cmdlib.h"
-#include <map>
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -860,5 +863,39 @@ uint32_t Log2(uint32_t n)
 		return (t = (n >> 8)) ? 8 + LogTable256[t] : LogTable256[n];
 }
 
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ */
+
+/**
+ * @brief Returns the next representable value of from in the direction of to.
+ */
+float NextAfter(const float from, const float to)
+{
+	const float x = from;
+	const float y = to;
+	union {
+		float f;
+		unsigned int i;
+	} u;
+	if (isnan(y) || isnan(x))
+		return x + y;
+	if (x == y)
+		/* nextafter (0.0, -O.0) should return -0.0.  */
+		return y;
+	u.f = x;
+	if (x == 0.0F)
+	{
+		u.i = 1;
+		return y > 0.0F ? u.f : -u.f;
+	}
+	if (((x > 0.0F) ^ (y > x)) == 0)
+		u.i++;
+	else
+		u.i--;
+	return u.f;
+}
 
 VERSION_CONTROL (cmdlib_cpp, "$Id$")

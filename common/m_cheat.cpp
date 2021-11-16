@@ -22,13 +22,14 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <stdlib.h>
 #include <math.h>
 
 #include "g_gametype.h"
 #include "m_cheat.h"
 #include "d_player.h"
-#include "doomstat.h"
 #include "gstrings.h"
 #include "p_inter.h"
 #include "d_items.h"
@@ -565,4 +566,3 @@ void CHEAT_Suicide(player_t* plyr)
 #endif
 
 VERSION_CONTROL (m_cheat_cpp, "$Id$")
-

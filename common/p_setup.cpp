@@ -23,7 +23,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
+
 #include <stdlib.h>
 #include <math.h>
 #include <set>
@@ -32,23 +33,22 @@
 #include "m_vectors.h"
 #include "m_argv.h"
 #include "z_zone.h"
-#include "m_swap.h"
 #include "m_bbox.h"
 #include "g_game.h"
 #include "i_system.h"
 #include "w_wad.h"
-#include "doomdef.h"
 #include "p_local.h"
 #include "p_acs.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "p_lnspec.h"
 #include "v_palette.h"
 #include "c_console.h"
+#include "p_horde.h"
 #include "g_gametype.h"
 
 #include "p_mobj.h"
 #include "p_setup.h"
+#include "p_hordespawn.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
@@ -586,6 +586,7 @@ void P_LoadThings (int lump)
 	mapthing_t *mt = (mapthing_t *)data;
 	mapthing_t *lastmt = (mapthing_t *)(data + W_LumpLength (lump));
 
+	P_HordeClearSpawns();
 	playerstarts.clear();
 	voodoostarts.clear();
 	DeathMatchStarts.clear();
@@ -655,6 +656,7 @@ void P_LoadThings2 (int lump, int position)
 	mapthing2_t *mt = (mapthing2_t *)data;
 	mapthing2_t *lastmt = (mapthing2_t *)(data + W_LumpLength (lump));
 
+	P_HordeClearSpawns();
 	playerstarts.clear();
 	voodoostarts.clear();
 	DeathMatchStarts.clear();
@@ -996,6 +998,8 @@ static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 		}
 	}
 }
+
+// 
 
 
 static void SetTextureNoErr (short *texture, unsigned int *color, char *name)
@@ -1460,8 +1464,50 @@ void P_LoadBlockMap (int lump)
 	blockmap = blockmaplump+4;
 }
 
+/*
+* @brief P_GenerateUniqueMapHash
+* 
+* Creates a unique map hash used to identify a unique map.
+* Based on a few key lumps that makes a map unique.
+* 
+* @param things - Things lump offset
+* @param linedefs - Linedefs lump offset
+* @param sidedefs - Sidedefs lump offset
+* @param vertexes - Vertexes lump offset
+* @param segs - Segs lump offset
+* @param ssectors - SSectors lump offset
+* @param sectors - Sectors lump offset
+*/
+void P_GenerateUniqueMapHash(int things, int linedefs, int sidedefs,
+	int vertexes, int segs, int ssectors, int sectors)
+{
+	std::string thinghash    = "";
+	std::string linedefhash  = "";
+	std::string sidedefhash  = "";
+	std::string vertexhash   = "";
+	std::string segshash     = "";
+	std::string ssectorshash = "";
+	std::string sectorshash  = "";
 
+	const byte* thingbuffer    = static_cast<byte*>(W_CacheLumpNum(things,   PU_STATIC));
+	const byte* linedefbuffer  = static_cast<byte*>(W_CacheLumpNum(linedefs, PU_STATIC));
+	const byte* sidedefbuffer  = static_cast<byte*>(W_CacheLumpNum(sidedefs, PU_STATIC));
+	const byte* vertexbuffer   = static_cast<byte*>(W_CacheLumpNum(vertexes, PU_STATIC));
+	const byte* segsbuffer     = static_cast<byte*>(W_CacheLumpNum(segs,     PU_STATIC));
+	const byte* ssectorsbuffer = static_cast<byte*>(W_CacheLumpNum(ssectors, PU_STATIC));
+	const byte* sectorsbuffer  = static_cast<byte*>(W_CacheLumpNum(sectors,  PU_STATIC));
 
+	thinghash    = W_MD5(thingbuffer,   W_LumpLength(things));
+	linedefhash  = W_MD5(linedefbuffer, W_LumpLength(linedefs));
+	sidedefhash  = W_MD5(sidedefbuffer, W_LumpLength(sidedefs));
+	vertexhash   = W_MD5(vertexbuffer,  W_LumpLength(vertexes));
+	segshash     = W_MD5(segsbuffer,    W_LumpLength(segs));
+	ssectorshash = W_MD5(segsbuffer,    W_LumpLength(ssectors));
+	sectorshash  = W_MD5(segsbuffer,    W_LumpLength(sectors));
+
+	level.level_hash = thinghash + linedefhash + sidedefhash + vertexhash + segshash + ssectorshash +
+	       sectorshash;
+}
 //
 // P_GroupLines
 // Builds sector line lists and subsector sector numbers.
@@ -1692,6 +1738,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
 		wminfo.maxfrags = 0;
+	level.level_hash = "";
 	wminfo.partime = 180;
 
 	if (!savegamerestore)
@@ -1762,6 +1809,10 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_LoadSideDefs2 (lumpnum+ML_SIDEDEFS);
 	P_FinishLoadingLineDefs ();
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
+
+	// [Blair] Create map hash
+	P_GenerateUniqueMapHash(lumpnum+ML_THINGS, lumpnum+ML_LINEDEFS, lumpnum+ML_SIDEDEFS,
+		lumpnum+ML_VERTEXES, lumpnum+ML_SEGS, lumpnum+ML_SSECTORS, lumpnum+ML_SECTORS);
 
 	if (!P_LoadXNOD(lumpnum+ML_NODES))
 	{
@@ -1851,7 +1902,7 @@ void P_Init (void)
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)
 {
-	if (sv_gametype == GM_COOP && var < 10) {
+	if (G_IsCoopGame() && var < 10) {
 		var.Set(10.0);	// Force to 10 seconds minimum
 	} else if (var < 1) {
 		var.RestoreDefault();

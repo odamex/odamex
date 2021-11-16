@@ -22,13 +22,15 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomstat.h"
+
+#include "odamex.h"
+
 #include "p_local.h"
 #include "p_lnspec.h"
-#include "g_level.h"
 #include "v_palette.h"
 #include "tables.h"
 #include "i_system.h"
+#include "m_wdlstats.h"
 
 #define FUNC(a) static BOOL a (line_t *ln, AActor *it, int arg0, int arg1, \
 							   int arg2, int arg3, int arg4)
@@ -162,9 +164,14 @@ bool P_CanActivateSpecials(AActor* mo, line_t* line)
 	{
 		// Always predict sectors if set to 1, only predict sectors activated
 		// by the local player if set to 2.
-		if (cl_predictsectors == 1.0f ||
-		    (mo->player == &consoleplayer() && cl_predictsectors == 2.0f))
+		if (cl_predictsectors == 1.0f)
+		{
 			return true;
+		}
+		else if (cl_predictsectors == 2.0f && mo != NULL && mo->player == &consoleplayer())
+		{
+			return true;
+		}
 	}
 
 	// Predict sectors that don't actually create floor or ceiling thinkers.
@@ -871,6 +878,7 @@ FUNC(LS_Teleport_EndGame)
 {
 	if (!TeleportSide && it && CheckIfExitIsGood (it))
 	{
+		M_CommitWDLLog();
 		level.nextmap = "EndGameC";
 		G_ExitLevel (0, 1);
 		return true;
@@ -2090,6 +2098,7 @@ BOOL CheckIfExitIsGood (AActor *self)
 		SV_BroadcastPrintf("%s exited the level.\n",
 		                   self->player->userinfo.netname.c_str());
 
+	M_CommitWDLLog();
 	return true;
 }
 

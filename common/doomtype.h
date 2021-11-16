@@ -23,11 +23,9 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __DOOMTYPE__
-#define __DOOMTYPE__
+#pragma once
 
 // Standard libc/STL includes we use in countless places
-#include <string>
 
 #include "version.h"
 #include "errors.h"
@@ -63,12 +61,7 @@
 	#endif
 
 	typedef unsigned char byte;
-#endif
-
-#ifdef __cplusplus
-	typedef bool dboolean;
-#else
-	typedef enum {false, true} dboolean;
+    typedef unsigned int uint;
 #endif
 
 #if defined(_MSC_VER) || defined(__WATCOMC__)
@@ -92,18 +85,12 @@
 #endif
 
 #if (defined _XBOX || defined _MSC_VER)
-	typedef signed __int8 int8_t;
-	typedef signed __int16 int16_t;
-	typedef signed __int32 int32_t;
-	typedef signed __int64 int64_t;
-	typedef unsigned __int8 uint8_t;
-	typedef unsigned __int16 uint16_t;
-	typedef unsigned __int32 uint32_t;
-	typedef unsigned __int64 uint64_t;
+	#define DBL_EPSILON 2.2204460492503131e-016
+	#define FLT_EPSILON 1.192092896e-07F
 
 	#define PRI_SIZE_PREFIX "I"
 #else
-	#include <stdint.h>
+	#include <float.h>
 
 	#define PRI_SIZE_PREFIX "z"
 #endif
@@ -250,14 +237,6 @@ void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
 #ifdef SERVER_APP
 void STACK_ARGS SV_BroadcastPrintfButPlayer(int printlevel, int player_id, const char* format, ...);
 #endif
-
-// Simple log file
-#include <fstream>
-
-extern std::ofstream LOG;
-extern std::string LOG_FILE; //  Default is "odamex.log"
-
-extern std::ifstream CON;
 
 // game print flags
 typedef enum {
@@ -720,5 +699,3 @@ forceinline argb_t rt_tlatecolor<argb_t>(const shaderef_t &pal, const translatio
 {
 	return pal.tlate(translation, c);
 }
-
-#endif

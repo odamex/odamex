@@ -25,7 +25,6 @@
 #ifndef __R_SEGS_H__
 #define __R_SEGS_H__
 
-#include "c_cvars.h"
 
 void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, 
 				fixed_t dist1, fixed_t dist2, int start, int stop);
@@ -37,5 +36,3 @@ void R_ClearOpenings();
 EXTERN_CVAR (r_columnmethod)
 
 #endif
-
-

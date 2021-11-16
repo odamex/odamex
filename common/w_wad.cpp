@@ -22,9 +22,10 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #ifdef UNIX
 #include <ctype.h>
-#include <cstring>
 #ifndef O_BINARY
 #define O_BINARY		0
 #endif
@@ -38,8 +39,6 @@
 
 #include <fcntl.h>
 
-#include "doomtype.h"
-#include "m_swap.h"
 #include "m_fileio.h"
 #include "i_system.h"
 #include "z_zone.h"
@@ -51,7 +50,6 @@
 
 #include <sstream>
 #include <algorithm>
-#include <vector>
 #include <iomanip>
 
 
@@ -172,6 +170,33 @@ std::string W_MD5(std::string filename)
 	return hash.str();
 }
 
+/*
+* @brief Checksums a byte array pointer.
+* 
+* @param lumpdata byte array pointer to the lump that needs to be hashed.
+* @param size of the byte array pointer.
+*/
+std::string W_MD5(const byte* lumpdata, unsigned length)
+{
+	if (!lumpdata || length <= 0)
+		return "";
+
+	md5_state_t state;
+	md5_init(&state);
+
+	md5_append(&state, (unsigned char*)lumpdata, length);
+
+	md5_byte_t digest[16];
+	md5_finish(&state, digest);
+
+	std::stringstream hash;
+
+	for (int i = 0; i < 16; i++)
+		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase
+		     << (short)digest[i];
+
+	return hash.str();
+}
 
 //
 // LUMP BASED ROUTINES.

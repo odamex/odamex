@@ -21,17 +21,17 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "m_random.h"
-#include "doomdef.h"
 #include "p_local.h"
 #include "s_sound.h"
-#include "doomstat.h"
-#include "doomtype.h"
-#include "c_cvars.h"
 #include "m_vectors.h"
 #include "sv_main.h"
 #include "p_acs.h"
 #include "g_spawninv.h"
+#include "m_wdlstats.h"
 
 EXTERN_CVAR(sv_maxplayers)
 
@@ -129,7 +129,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	P_SetupPsprites(&player);
 
 	// give all cards in death match mode
-	if (sv_gametype != GM_COOP)
+	if (!G_IsCoopGame())
 	{
 		for (int i = 0; i < NUMCARDS; i++)
 			player.cards[i] = true;
@@ -152,6 +152,15 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 			else if (playerstate == PST_REBORN)
 				level.behavior->StartTypedScripts(SCRIPT_Respawn, player.mo);
 		}
+		team_t team = TEAM_NONE;
+
+		if (player.userinfo.team)
+			team = player.userinfo.team;
+		
+		// Log the spawn
+		M_LogWDLEvent(
+		    WDL_EVENT_SPAWNPLAYER, &player, NULL, 0, 0,
+		    M_GetPlayerSpawn(mthing->x, mthing->y), 0);
 
 		// send new objects
 		SV_SpawnMobj(mobj);
@@ -164,4 +173,3 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 void P_ShowSpawns(mapthing2_t* mthing) { }
 
 VERSION_CONTROL (sv_mobj_cpp, "$Id$")
-

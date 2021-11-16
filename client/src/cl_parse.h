@@ -24,10 +24,7 @@
 #ifndef __CL_PARSE_H__
 #define __CL_PARSE_H__
 
-#include <string>
-#include <vector>
 
-#include "doomtype.h"
 
 enum parseError_e
 {

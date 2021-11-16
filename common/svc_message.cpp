@@ -24,6 +24,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <bitset>
 
 #include "svc_message.h"
@@ -297,6 +300,15 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 	{
 		flags |= SVC_SM_FLAGS;
 		actor->set_flags(mo->flags);
+	}
+
+	// odamex flags - only monster flags for now
+	const uint32_t modMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK |
+	                         MFO_NORAISE | MFO_FULLBRIGHT;
+	if (mo->oflags & modMask)
+	{
+		flags |= SVC_SM_OFLAGS;
+		actor->set_oflags(mo->oflags & modMask);
 	}
 
 	// animating corpses
@@ -604,6 +616,11 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(player_t& player, byte flags)
 	if (flags & SVC_PM_LIVES)
 	{
 		msg.set_lives(player.lives);
+	}
+
+	if (flags & SVC_PM_DAMAGE)
+	{
+		msg.set_monsterdmgcount(player.monsterdmgcount);
 	}
 
 	if (flags & SVC_PM_SCORE)
@@ -1461,11 +1478,28 @@ odaproto::svc::Toast SVC_Toast(const toast_t& toast)
 
 	msg.set_flags(toast.flags);
 	msg.set_left(toast.left);
+	msg.set_left_pid(toast.left_pid);
 	msg.set_right(toast.right);
+	msg.set_right_pid(toast.right_pid);
 	msg.set_icon(toast.icon);
-	msg.set_pid_highlight(toast.pid_highlight);
-	msg.set_left_plus(toast.left_plus);
-	msg.set_right_plus(toast.right_plus);
+
+	return msg;
+}
+
+odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde)
+{
+	odaproto::svc::HordeInfo msg;
+
+	msg.set_state(horde.state);
+	msg.set_wave(horde.wave);
+	msg.set_wave_time(horde.waveTime);
+	msg.set_boss_time(horde.bossTime);
+	msg.set_define_id(horde.defineID);
+	msg.set_spawned_health(horde.spawnedHealth);
+	msg.set_killed_health(horde.killedHealth);
+	msg.set_boss_health(horde.bossHealth);
+	msg.set_boss_damage(horde.bossDamage);
+	msg.set_wave_start_health(horde.waveStartHealth);
 
 	return msg;
 }

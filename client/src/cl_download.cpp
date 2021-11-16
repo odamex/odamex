@@ -20,6 +20,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "cl_download.h"
 
 #define CURL_STATICLIB
@@ -28,7 +31,6 @@
 #include "c_dispatch.h"
 #include "cl_main.h"
 #include "cmdlib.h"
-#include "doomstat.h"
 #include "i_system.h"
 #include "m_argv.h"
 #include "m_fileio.h"
@@ -156,7 +158,8 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 
 		// Ensure the URL ends with a slash.
 		std::string url = *wit;
-		if (*(url.rbegin()) != '/')
+		const char cmp = *(url.rbegin());
+		if (cmp != '/' && cmp != '=')
 			url += '/';
 
 		checkurls.push_back(url);

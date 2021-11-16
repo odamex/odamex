@@ -25,13 +25,10 @@
 #ifndef __W_WAD__
 #define __W_WAD__
 
-#include "doomtype.h"
 #include "z_zone.h"
 #include "r_defs.h"
 #include "m_resfile.h"
 
-#include <string>
-#include <vector>
 
 // [RH] Compare wad header as ints instead of chars
 #define IWAD_ID (('I')|('W'<<8)|('A'<<16)|('D'<<24))
@@ -113,6 +110,7 @@ extern	lumpinfo_t*	lumpinfo;
 extern	size_t	numlumps;
 
 std::string W_MD5(std::string filename);
+std::string W_MD5(const byte* lumpdata, unsigned length);
 void W_InitMultipleFiles(const OResFiles& filenames);
 lumpHandle_t W_LumpToHandle(const unsigned lump);
 int W_HandleToLump(const lumpHandle_t handle);

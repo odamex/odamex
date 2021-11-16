@@ -2,7 +2,6 @@
 
 // for sixaxis stuff
 
-#include <cstring>
 #include <switch.h>
 #include "nx_io.h"
 #include "doomkeys.h"

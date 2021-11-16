@@ -31,11 +31,12 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <cstring>
+
+#include "odamex.h"
+
 
 #include "m_memio.h"
 
-#include "doomtype.h"
 #include "z_zone.h"
 
 typedef enum {
@@ -219,5 +220,3 @@ char *mem_fgetbuf(MEMFILE *stream) // [Russell] - return stream buffer
 }
 
 VERSION_CONTROL (memio_cpp, "$Id$")
-
-
