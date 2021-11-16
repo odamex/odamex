@@ -929,6 +929,7 @@ static int PatchThing (int thingy)
 	oldflags = info->flags;
 
 	while ((result = GetLine ()) == 1) {
+		size_t sndmap = atoi(Line2);
 
 		if (sndmap >= ARRAY_LENGTH(SoundMap))
 			sndmap = 0;
@@ -970,7 +971,7 @@ static int PatchThing (int thingy)
 					val = 0;
 				}
 
-				snd = SoundMap[val];
+				snd = (char*)SoundMap[val];
 
 				if (!strnicmp(Line1, "Alert", 5))
 					info->seesound = snd;

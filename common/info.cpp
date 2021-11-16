@@ -7530,6 +7530,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		-1,             // doomednum
 		S_TNT1,         // spawnstate
 		100,            // spawnhealth
+		0,				// gibhealth
 		S_NULL,         // seestate
 		NULL,           // seesound
 		0,              // reactiontime
@@ -7559,6 +7560,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		-1,             // doomednum
 		S_CARE,         // spawnstate
 		1000,           // spawnhealth
+		0,              // gibhealth
 		S_NULL,         // seestate
 		NULL,           // seesound
 		8,              // reactiontime
