@@ -218,6 +218,18 @@ void P_HordeClearSpawns()
 }
 
 /**
+ * @brief True if passed radius and height fits in the passed mobjinfo.
+ * 
+ * @param info Info to check against.
+ * @param rad Radius to check in whole units (not fixed).
+ * @param height Height to check in whole units (not fixed).
+ */
+static bool FitRadHeight(const mobjinfo_t& info, const int rad, const int height)
+{
+	return info.radius <= (rad * FRACUNIT) && info.height <= (rad * FRACUNIT);
+}
+
+/**
  * @brief Get a spawn point to place a monster at.
  */
 hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
@@ -247,32 +259,35 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 		//      - Cacodemon/Pain Elemental: 31 units
 		//      - Demon: 30 units
 
+		const bool fitsNormal = FitRadHeight(info, 64, 128);
+		const bool fitsSmall = FitRadHeight(info, 32, 64);
+
 		switch (sit->type)
 		{
 		case TTYPE_HORDE_MONSTER:
 			// Normal spawns can't spawn monsters that are too big.
-			if (info.radius > (64 * FRACUNIT))
+			if (!fitsNormal)
 				continue;
 			break;
 		case TTYPE_HORDE_BOSS:
 			// Boss spawns can spawn non-boss monsters, but only if they're
 			// too big to spawn anywhere else.
-			if (!recipe.isBoss && info.radius <= (64 * FRACUNIT))
+			if (!recipe.isBoss && fitsNormal)
 				continue;
 			break;
 		case TTYPE_HORDE_SMALLMONSTER:
 			// Small monster spawns have to spawn small monsters.
-			if (info.radius > (32 * FRACUNIT))
+			if (!fitsSmall)
 				continue;
 			break;
 		case TTYPE_HORDE_SMALLBOSS:
 			// Small boss spawns can't spawn non-bosses, period.
-			if (!recipe.isBoss)
+			if (!recipe.isBoss || !fitsNormal)
 				continue;
 			break;
 		case TTYPE_HORDE_FLYING:
 			// Flying spawns have to spawn flying monsters.
-			if (!isFlying)
+			if (!isFlying || !fitsNormal)
 				continue;
 			break;
 		case TTYPE_HORDE_SNIPER:
@@ -281,15 +296,13 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 			// - Not be flying.
 			// - Not be a boss monster for this wave.
 			// - Be skinny enough to fit in a 128x128 square.
-			if ((info.missilestate == S_NULL || isFlying || recipe.isBoss ||
-			     info.radius > (64 * FRACUNIT)))
+			if (info.missilestate == S_NULL || isFlying || recipe.isBoss || !fitsNormal)
 				continue;
 			break;
 		case TTYPE_HORDE_SMALLSNIPER:
 			// Small snipers are similar, but they get to fit
 			// into a 64x64 square.
-			if ((info.missilestate == S_NULL || isFlying || recipe.isBoss ||
-			     info.radius > (32 * FRACUNIT)))
+			if (info.missilestate == S_NULL || isFlying || recipe.isBoss || !fitsSmall)
 				continue;
 			break;
 		}
