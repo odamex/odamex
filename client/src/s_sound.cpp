@@ -299,7 +299,9 @@ void S_Stop (void)
 //
 void S_Start (void)
 {
-	S_Stop();
+	// Kill all sound channels - but don't stop music.
+	for (size_t i = 0; i < numChannels; i++)
+		S_StopChannel(i);
 
 	// start new music for the level
 	mus_paused = 0;
