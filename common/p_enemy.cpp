@@ -2032,9 +2032,77 @@ void A_HealChase(AActor* actor)
 	state = actor->state->args[0];
 	sound = actor->state->args[1];
 
-	// CH0WW ToDo ------- P_HealCorpse isn't made, will be done later on. ---------
-	//if (!P_HealCorpse(actor, actor->info->radius, state, sound))	
+	if (!P_HealCorpse(actor, actor->info->radius, state, sound))	
 		A_Chase(actor);
+}
+
+//
+// P_HealCorpse
+// A generic corpse resurrection codepointer.
+// 
+static bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
+{
+	int xl, xh;
+	int yl, yh;
+	int bx, by;
+
+	if (actor->movedir != DI_NODIR)
+	{
+		// check for corpses to raise
+		viletryx = actor->x + actor->info->speed * xspeed[actor->movedir];
+		viletryy = actor->y + actor->info->speed * yspeed[actor->movedir];
+
+		xl = (viletryx - bmaporgx - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
+		xh = (viletryx - bmaporgx + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
+		yl = (viletryy - bmaporgy - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
+		yh = (viletryy - bmaporgy + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
+
+		vileobj = actor;
+		int viletryradius = radius;
+		for (bx = xl; bx <= xh; bx++)
+		{
+			for (by = yl; by <= yh; by++)
+			{
+				// Call PIT_VileCheck to check
+				// whether object is a corpse
+				// that can be raised.
+				if (!P_BlockThingsIterator(bx, by, PIT_VileCheck))
+				{
+					mobjinfo_t* info;
+
+					// got one!
+					AActor::AActorPtr temp = actor->target;
+					actor->target = corpsehit->ptr();
+					A_FaceTarget(actor);
+					actor->target = temp;
+
+					P_SetMobjState(actor, (statenum_t)healstate, true);
+
+					if (!clientside)
+						SV_Sound(corpsehit, CHAN_BODY, SoundMap[healsound], ATTN_IDLE);
+					else
+						S_Sound(corpsehit, CHAN_BODY, SoundMap[healsound], 1, ATTN_IDLE);
+
+					info = corpsehit->info;
+
+					if (serverside)
+					{
+						level.respawned_monsters++;
+						SV_UpdateMonsterRespawnCount();
+					}
+
+					P_SetMobjState(corpsehit, info->raisestate, true);
+
+					corpsehit->flags = info->flags;
+					corpsehit->health = info->spawnhealth;
+					corpsehit->target = AActor::AActorPtr();
+
+					return true;
+				}
+			}
+		}
+	}
+	return false;
 }
 
 //
