@@ -784,6 +784,31 @@ const hordeDefine_t::ammos_t& P_HordeAmmos()
 	}
 }
 
+/**
+ * @brief Serialize horde using FArchive.
+ */
+void P_SerializeHorde(FArchive& arc)
+{
+	if (arc.IsStoring())
+	{
+		hordeInfo_t info = ::g_HordeDirector.serialize();
+		const int state = info.state;
+		arc << state << info.wave << info.waveTime << info.bossTime << info.defineID
+		    << info.spawnedHealth << info.killedHealth << info.bossHealth
+		    << info.bossDamage << info.waveStartHealth;
+	}
+	else
+	{
+		hordeInfo_t info;
+		int state;
+		arc >> state >> info.wave >> info.waveTime >> info.bossTime >> info.defineID >>
+		    info.spawnedHealth >> info.killedHealth >> info.bossHealth >>
+		    info.bossDamage >> info.waveStartHealth;
+		info.state = static_cast<hordeState_e>(state);
+		::g_HordeDirector.unserialize(info);
+	}
+}
+
 BEGIN_COMMAND(hordewave)
 {
 	if (argc < 2)
