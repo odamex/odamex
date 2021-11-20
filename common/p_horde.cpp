@@ -412,8 +412,8 @@ void HordeState::changeState()
 {
 	const hordeDefine_t& define = G_HordeDefine(m_defineID);
 
-	int aliveHealth = m_spawnedHealth - m_killedHealth;
-	int goalHealth = define.goalHealth() + m_waveStartHealth;
+	const int aliveHealth = m_spawnedHealth - m_killedHealth;
+	const int goalHealth = define.goalHealth() + m_waveStartHealth;
 
 	switch (m_state)
 	{
@@ -540,8 +540,10 @@ void HordeState::tick()
 
 	if (::level.time > m_nextSpawn)
 	{
-		// Determine our next spawn time.
-		const int offset = P_RandomInt(5) + 1;
+		// Determine our next spawn time.  Sped up slightly in an empty level.
+		const int aliveHealth = m_spawnedHealth - m_killedHealth;
+		const int nextMax = aliveHealth < define.minTotalHealth() ? 3 : 5;
+		const int offset = P_RandomInt(nextMax) + 1;
 		m_nextSpawn = ::level.time + (offset * TICRATE);
 
 		// Should we spawn a monster?
@@ -784,6 +786,31 @@ const hordeDefine_t::ammos_t& P_HordeAmmos()
 	}
 }
 
+/**
+ * @brief Serialize horde using FArchive.
+ */
+void P_SerializeHorde(FArchive& arc)
+{
+	if (arc.IsStoring())
+	{
+		hordeInfo_t info = ::g_HordeDirector.serialize();
+		const int state = info.state;
+		arc << state << info.wave << info.waveTime << info.bossTime << info.defineID
+		    << info.spawnedHealth << info.killedHealth << info.bossHealth
+		    << info.bossDamage << info.waveStartHealth;
+	}
+	else
+	{
+		hordeInfo_t info;
+		int state;
+		arc >> state >> info.wave >> info.waveTime >> info.bossTime >> info.defineID >>
+		    info.spawnedHealth >> info.killedHealth >> info.bossHealth >>
+		    info.bossDamage >> info.waveStartHealth;
+		info.state = static_cast<hordeState_e>(state);
+		::g_HordeDirector.unserialize(info);
+	}
+}
+
 BEGIN_COMMAND(hordewave)
 {
 	if (argc < 2)
@@ -827,17 +854,25 @@ EXTERN_CVAR(g_horde_goalhp)
 
 BEGIN_COMMAND(hordeinfo)
 {
+	float skillScaler = 1.0f;
+	if (sv_skill == sk_medium)
+		skillScaler = 0.75f;
+	else if (sv_skill == sk_baby || sv_skill == sk_easy)
+		skillScaler = 0.5f;
+
 	const hordeDefine_t& define = G_HordeDefine(::g_HordeDirector.getDefineID());
 
 	Printf("[Define: %s]\n", define.name.c_str());
 	Printf("Min Group Health: %d\n", define.minGroupHealth);
 	Printf("Max Group Health: %d\n", define.maxGroupHealth);
-	Printf("Min Total Health: %d = %d * %s\n", define.minTotalHealth(),
-	       define.maxGroupHealth, ::g_horde_mintotalhp.cstring());
-	Printf("Max Total Health: %d = %d * %s\n", define.maxTotalHealth(),
-	       define.maxGroupHealth, ::g_horde_maxtotalhp.cstring());
-	Printf("Goal Health: %d = %d * %s\n", define.goalHealth(), define.maxGroupHealth,
-	       ::g_horde_goalhp.cstring());
+	Printf("Min Total Health: %d = maxGroup:%d * cvar:%s * skill:%0.2f\n",
+	       define.minTotalHealth(), define.maxGroupHealth, ::g_horde_mintotalhp.cstring(),
+	       skillScaler);
+	Printf("Max Total Health: %d = maxGroup:%d * cvar:%s * skill:%0.2f\n",
+	       define.maxTotalHealth(), define.maxGroupHealth, ::g_horde_maxtotalhp.cstring(),
+	       skillScaler);
+	Printf("Goal Health: %d = maxGroup:%d * cvar:%s * skill:%0.2f\n", define.goalHealth(),
+	       define.maxGroupHealth, ::g_horde_goalhp.cstring(), skillScaler);
 
 	const char* stateStr = NULL;
 	switch (::g_HordeDirector.serialize().state)

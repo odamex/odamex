@@ -545,7 +545,7 @@ void G_DoLoadLevel (int position)
 	{
 		if (it->ingame())
 		{
-			if (it->playerstate == PST_REBORN)
+			if (it->playerstate == PST_DEAD || it->playerstate == PST_REBORN)
 				it->doreborn = true;
 			it->playerstate = PST_ENTER;
 		}

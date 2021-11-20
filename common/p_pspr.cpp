@@ -51,6 +51,7 @@
 #define WEAPONTOP				32*FRACUNIT
 
 void A_FireRailgun(AActor* mo);
+void M_LogWDLEvent(int mod);
 
 EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
@@ -665,7 +666,8 @@ void A_Punch(AActor* mo)
 	// this player hit the fire button clientside.
 	Unlag::getInstance().reconcile(player->id);
 
-	M_LogWDLAccuracyShot(WDL_EVENT_SSACCURACY, player, MOD_PISTOL, player->mo->angle / 4);
+	M_LogWDLEvent(WDL_EVENT_SSACCURACY, player, NULL, player->mo->angle / 4, MOD_FIST,
+	              0, GetMaxShotsForMod(MOD_FIST));
 
 	slope = P_AimLineAttack(player->mo, angle, player->mo->info->meleerange);
 	P_LineAttack(player->mo, angle, player->mo->info->meleerange, slope, damage);
@@ -702,7 +704,8 @@ void A_Saw(AActor* mo)
 	// this player hit the fire button clientside.
 	Unlag::getInstance().reconcile(player->id);
 
-	M_LogWDLAccuracyShot(WDL_EVENT_SSACCURACY, player, MOD_CHAINSAW, player->mo->angle / 4);
+	M_LogWDLEvent(WDL_EVENT_SSACCURACY, player, NULL, player->mo->angle / 4, MOD_CHAINSAW,
+	              0, GetMaxShotsForMod(MOD_CHAINSAW));
 
 	// use meleerange + 1 so the puff doesn't skip the flash
 	P_LineAttack(player->mo, angle, player->mo->info->meleerange + 1,
@@ -753,7 +756,6 @@ void A_FireMissile(AActor* mo)
 	if (serverside)
 	{
 		M_LogWDLEvent(WDL_EVENT_PROJFIRE, player, NULL, player->mo->angle / 4, MOD_ROCKET, 0, 0);
-		M_LogWDLAccuracyShot(WDL_EVENT_PROJACCURACY, player, MOD_ROCKET, player->mo->angle / 4);
 		P_SpawnPlayerMissile(player->mo, MT_ROCKET);
 	}
 }
@@ -781,7 +783,6 @@ void A_FireBFG(AActor* mo)
 		P_SpawnPlayerMissile(player->mo, MT_BFG);
 
 		M_LogWDLEvent(WDL_EVENT_PROJFIRE, player, NULL, player->mo->angle / 4, MOD_BFG_BOOM, 0, 0);
-		M_LogWDLAccuracyShot(WDL_EVENT_PROJACCURACY, player, MOD_BFG_BOOM, player->mo->angle / 4);
 	}
 
 	player->mo->pitch = storedpitch;
@@ -1179,7 +1180,6 @@ void A_FirePlasma(AActor* mo)
 	if (serverside)
 	{
 		M_LogWDLEvent(WDL_EVENT_PROJFIRE, player, NULL, player->mo->angle / 4, MOD_PLASMARIFLE, 0, 0);
-		M_LogWDLAccuracyShot(WDL_EVENT_PROJACCURACY, player, MOD_PLASMARIFLE, player->mo->angle / 4);
 		P_SpawnPlayerMissile(player->mo, MT_PLASMA);
 	}
 }
@@ -1209,7 +1209,8 @@ void A_FireRailgun(AActor* mo)
 	// this player hit the fire button clientside.
 	Unlag::getInstance().reconcile(player->id);
 
-	M_LogWDLAccuracyShot(WDL_EVENT_SSACCURACY, player, MOD_RAILGUN, player->mo->angle / 4);
+	M_LogWDLEvent(WDL_EVENT_SSACCURACY, player, NULL, player->mo->angle / 4, MOD_RAILGUN,
+	              0, GetMaxShotsForMod(MOD_RAILGUN));
 
 	P_RailAttack (player->mo, damage, RailOffset);
 
@@ -1364,7 +1365,8 @@ void A_FirePistol(AActor* mo)
 	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
 	P_FireHitscan(player, 1, accuracy);
 
-	M_LogWDLAccuracyShot(WDL_EVENT_SSACCURACY, player, MOD_PISTOL, player->mo->angle / 4);
+	M_LogWDLEvent(WDL_EVENT_SSACCURACY, player, NULL, player->mo->angle / 4, MOD_PISTOL,
+	              0, GetMaxShotsForMod(MOD_PISTOL));
 }
 
 
@@ -1386,7 +1388,8 @@ void A_FireShotgun(AActor* mo)
 
 	P_FireHitscan(player, 7, SPREAD_NORMAL);
 
-	M_LogWDLAccuracyShot(WDL_EVENT_SPREADACCURACY, player, MOD_SHOTGUN, player->mo->angle / 4);
+	M_LogWDLEvent(WDL_EVENT_SPREADACCURACY, player, NULL, player->mo->angle / 4,
+	              MOD_SHOTGUN, 0, GetMaxShotsForMod(MOD_SHOTGUN));
 }
 
 
@@ -1409,7 +1412,8 @@ void A_FireShotgun2(AActor* mo)
 
 	P_FireHitscan(player, 20, SPREAD_SUPERSHOTGUN);
 
-	M_LogWDLAccuracyShot(WDL_EVENT_SPREADACCURACY, player, MOD_SSHOTGUN, player->mo->angle / 4);
+	M_LogWDLEvent(WDL_EVENT_SPREADACCURACY, player, NULL, player->mo->angle / 4,
+	              MOD_SSHOTGUN, 0, GetMaxShotsForMod(MOD_SSHOTGUN));
 }
 
 //
@@ -1439,7 +1443,8 @@ void A_FireCGun(AActor* mo)
 	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
 	P_FireHitscan(player, 1, accuracy);
 
-	M_LogWDLAccuracyShot(WDL_EVENT_SSACCURACY, player, MOD_CHAINGUN, player->mo->angle / 4);
+	M_LogWDLEvent(WDL_EVENT_SSACCURACY, player, NULL, player->mo->angle / 4, MOD_CHAINGUN,
+	              0, GetMaxShotsForMod(MOD_CHAINGUN));
 }
 
 
@@ -1482,7 +1487,11 @@ void A_BFGSpray(AActor* mo)
 		return;
 
 	if (mo->target->player)
-		M_LogWDLAccuracyShot(WDL_EVENT_TRACERACCURACY, mo->target->player, MOD_BFG_SPLASH, mo->angle / 4);
+	{
+		M_LogWDLEvent(WDL_EVENT_TRACERACCURACY, mo->target->player, NULL,
+		              mo->target->player->mo->angle / 4, MOD_BFG_SPLASH, 0,
+		              GetMaxShotsForMod(MOD_BFG_SPLASH));
+	}
 
 	// offset angles from its attack angle
 	for (i=0 ; i<40 ; i++)
