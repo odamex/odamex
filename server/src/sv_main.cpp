@@ -986,6 +986,14 @@ bool SV_SetupUserInfo(player_t &player)
 
 		SV_BroadcastPrintf("%s changed %s name to %s.\n",
 			old_netname.c_str(), gendermessage.c_str(), player.userinfo.netname.c_str());
+
+		team_t team = TEAM_NONE;
+		if (player.mo && player.userinfo.team && player.ingame() && !player.spectator &&
+		    !G_IsLevelState(LevelState::WARMUP))
+		{
+			M_HandleWDLNameChange(team, old_netname.c_str(),
+			                      player.userinfo.netname.c_str(), player.id);
+		}
 	}
 
 	if (G_IsTeamGame())
@@ -997,6 +1005,11 @@ bool SV_SetupUserInfo(player_t &player)
 		{
 			// kill player if team is changed
 			P_DamageMobj(player.mo, 0, 0, 1000, 0);
+			M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, old_team,
+			              M_GetPlayerId(&player, old_team), 0, 0);
+			M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team,
+			              M_GetPlayerId(&player, player.userinfo.team), 0,
+			              0);
 			SV_BroadcastPrintf("%s switched to the %s team.\n",
 			                   player.userinfo.netname.c_str(),
 			                   V_GetTeamColor(player.userinfo.team).c_str());
@@ -3341,6 +3354,11 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	    !G_IsLevelState(LevelState::WARMUP))
 	{
 		P_DamageMobj(player.mo, 0, 0, 1000, 0);
+
+		M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, old_team,
+		              M_GetPlayerId(&player, old_team), 0, 0);
+		M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, team, M_GetPlayerId(&player, team), 0,
+		              0);
 	}
 	SV_BroadcastPrintf("%s has joined the %s team.\n", player.userinfo.netname.c_str(),
 	                   V_GetTeamColor(team).c_str());
@@ -3487,6 +3505,9 @@ void SV_JoinPlayer(player_t& player, bool silent)
 			                   player.userinfo.netname.c_str(),
 			                   V_GetTeamColor(player.userinfo.team).c_str());
 	}
+
+	M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team,
+	              M_GetPlayerId(&player, player.userinfo.team), 0, 0);
 }
 
 void SV_SpecPlayer(player_t &player, bool silent)

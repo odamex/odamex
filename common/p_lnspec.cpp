@@ -30,6 +30,7 @@
 #include "v_palette.h"
 #include "tables.h"
 #include "i_system.h"
+#include "m_wdlstats.h"
 
 #define FUNC(a) static BOOL a (line_t *ln, AActor *it, int arg0, int arg1, \
 							   int arg2, int arg3, int arg4)
@@ -877,6 +878,7 @@ FUNC(LS_Teleport_EndGame)
 {
 	if (!TeleportSide && it && CheckIfExitIsGood (it))
 	{
+		M_CommitWDLLog();
 		level.nextmap = "EndGameC";
 		G_ExitLevel (0, 1);
 		return true;
@@ -2112,6 +2114,7 @@ BOOL CheckIfExitIsGood (AActor *self)
 		                   self->player->userinfo.netname.c_str(), tstr.c_str());
 	}
 
+	M_CommitWDLLog();
 	return true;
 }
 
