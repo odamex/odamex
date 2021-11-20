@@ -89,7 +89,7 @@ void Table_SetTanToAngle(int version);
 // These are straight from Eternity so demos stay in sync.
 inline static angle_t FixedToAngle(fixed_t a)
 {
-	return (angle_t)(((fixed_t)a * ANG(1)) >> FRACBITS);
+	return (angle_t)(((uint64_t)a * ANG(1)) >> FRACBITS);
 }
 
 

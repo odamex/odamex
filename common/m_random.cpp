@@ -278,7 +278,7 @@ void P_SerializeRNGState(FArchive& arc)
 int P_RandomHitscanAngle(fixed_t spread)
 {
 	int t;
-	angle_t spread_bam;
+	uint64_t spread_bam;
 
 	// FixedToAngle doesn't work for negative numbers,
 	// so for convenience take just the absolute value.

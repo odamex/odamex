@@ -1856,8 +1856,8 @@ void A_SpawnObject(AActor* actor)
 // A parameterized monster projectile attack.
 //   args[0]: Type of actor to spawn
 //   args[1]: Angle (degrees, in fixed point), relative to calling actor's angle
-//   args[2]: Pitch (degrees, in fixed point), relative to calling actor's pitch;
-//   approximated args[3]: X/Y spawn offset, relative to calling actor's angle args[4]: Z
+//   args[2]: Pitch (degrees, in fixed point), relative to calling actor's pitch; approximated
+//   args[3]: X/Y spawn offset, relative to calling actor's angle args[4]: Z
 //   spawn offset, relative to actor's default projectile fire height
 //
 void A_MonsterProjectile(AActor* actor)
@@ -1907,9 +1907,8 @@ void A_MonsterProjectile(AActor* actor)
 //   args[0]: Horizontal spread (degrees, in fixed point)
 //   args[1]: Vertical spread (degrees, in fixed point)
 //   args[2]: Number of bullets to fire; if not set, defaults to 1
-//   args[3]: Base damage of attack (e.g. for 3d5, customize the 3); if not set, defaults
-//   to 3 args[4]: Attack damage modulus (e.g. for 3d5, customize the 5); if not set,
-//   defaults to 5
+//   args[3]: Base damage of attack (e.g. for 3d5, customize the 3); if not set, defaults to 3
+//   args[4]: Attack damage modulus (e.g. for 3d5, customize the 5); if not set, defaults to 5
 //
 
 void A_MonsterBulletAttack(AActor* actor)
@@ -1925,6 +1924,15 @@ void A_MonsterBulletAttack(AActor* actor)
 	numbullets = actor->state->args[2];
 	damagebase = actor->state->args[3];
 	damagemod = actor->state->args[4];
+
+	if (numbullets <= 0)
+		numbullets = 1;
+
+	if (damagebase <= 0)
+		damagebase = 3;
+
+	if (damagemod <= 0)
+		damagemod = 5;
 
 	A_FaceTarget(actor);
 	S_Sound(actor, CHAN_WEAPON, actor->info->attacksound, 1, ATTN_NORM);
@@ -2047,7 +2055,8 @@ void A_SeekTracer(AActor* actor)
 // A_FindTracer
 // Search for a valid tracer (seek target), if the calling actor doesn't already have one.
 //   args[0]: field-of-view to search in (degrees, in fixed point); if zero, will search
-//   in all directions args[1]: distance to search (map blocks, i.e. 128 units)
+//   in all directions
+//   args[1]: distance to search (map blocks, i.e. 128 units)
 //
 void A_FindTracer(AActor* actor)
 {
@@ -2060,7 +2069,10 @@ void A_FindTracer(AActor* actor)
 	fov = FixedToAngle(actor->state->args[0]);
 	dist = (actor->state->args[1]);
 
-	actor->tracer = P_RoughTargetSearch(actor, fov, dist)->ptr();
+	AActor* tracer = P_RoughTargetSearch(actor, fov, dist);
+
+	if (tracer)
+		actor->tracer = tracer->ptr();
 }
 
 //

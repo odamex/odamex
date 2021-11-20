@@ -565,6 +565,9 @@ static BOOL PIT_CheckThing (AActor *thing)
 	}
 
 	// missiles can hit other things
+	// [Blair] This emulates hexen behavior, where rockets can push
+	// dead/stationary things marked bouncy.
+	// Out of place in Doom, should fix.
 	if (tmthing->flags & MF_MISSILE || (tmthing->flags & MF_BOUNCES 
 		&& !(tmthing->flags & MF_SOLID)))
 	{

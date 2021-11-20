@@ -2164,7 +2164,7 @@ bool P_SeekerMissile(AActor* actor, AActor* seekTarget, angle_t thresh, angle_t 
 	angle_t angle;
 	AActor* target;
 
-	target = seekTarget->ptr();
+	target = seekTarget;
 	if (target == NULL)
 	{
 		return (false);
@@ -2369,17 +2369,18 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 		slope = P_AutoAimLineAttack(source, an, 1 << 26, 1, 16 * 64 * FRACUNIT);
 
 	if (!linetarget)
-		an = source->angle + angle;
+		an = source->angle;
 
 	// If a target was not found, or one was found, but outside the
 	// player's autoaim range, use the actor's pitch for the slope.
+	// [Blair] Also add MBF21 pitch to the projectile.
 	if (sv_freelook &&
 	    (!linetarget ||     // target not found, or:
 	     (source->player && // target found but outside of player's autoaim range
 	      abs(slope - pitchslope) >= source->player->userinfo.aimdist)))
 	{
 		an = source->angle;
-		slope = pitchslope;
+		slope = pitchslope + DegToSlope(pitch);
 	}
 
 	AActor* th = new AActor(source->x, source->y, source->z + 4 * 8 * FRACUNIT, type);
@@ -2388,9 +2389,9 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 		S_Sound(th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
 
 	th->target = source->ptr();
-	th->angle = an + (angle_t)((angle << 16) / 360);
+	an += (angle_t)(((int64_t)angle << 16) / 360);
+	th->angle = an;
 	
-
 	if (co_zdoomphys)
 	{
 		v3float_t velocity;
@@ -2414,6 +2415,18 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 		th->momy = FixedMul(speed, finesine[an >> ANGLETOFINESHIFT]);
 		th->momz = FixedMul(speed, slope);
 	}
+
+	// Adjust based on MBF21 params.
+	th->x += FixedMul(xyofs, finecosine[an >> ANGLETOFINESHIFT]);
+	th->y += FixedMul(xyofs, finesine[an >> ANGLETOFINESHIFT]);
+	th->z += zofs;
+
+	// [Blair] Set a tracer for player tracer weapons.
+	// This allows tracer projectiles fired from players to seek what
+	// was autoaim'd at.
+	// Piggybacks off linetarget to avoid autotargeting friendlies.
+	if (linetarget)
+		th->tracer = linetarget->ptr();
 
 	P_CheckMissileSpawn(th);
 }

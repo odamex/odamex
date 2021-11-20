@@ -108,7 +108,6 @@ static weaponstate_t P_GetWeaponState(player_t* player)
 	return atkstate;
 }
 
-
 //
 // P_CalculateWeaponBobX
 //
@@ -949,7 +948,14 @@ void A_RefireTo(AActor* mo)
 	if ((psp->state->args[1] || P_CheckAmmo(player)) &&
 	    (player->cmd.buttons & BT_ATTACK) &&
 	    (player->pendingweapon == wp_nochange && player->health))
+	{
+		player->refire++;
 		P_SetPspritePtr(player, psp, (statenum_t)psp->state->args[0]);
+	}
+	else
+	{
+		player->refire = 0;
+	}
 }
 
 //
@@ -977,9 +983,9 @@ void A_GunFlashTo(AActor* mo)
 // A parameterized player weapon projectile attack. Does not consume ammo.
 //   args[0]: Type of actor to spawn
 //   args[1]: Angle (degrees, in fixed point), relative to calling player's angle
-//   args[2]: Pitch (degrees, in fixed point), relative to calling player's pitch;
-//   approximated args[3]: X/Y spawn offset, relative to calling player's angle args[4]: Z
-//   spawn offset, relative to player's default projectile fire height
+//   args[2]: Pitch (degrees, in fixed point), relative to calling player's pitch; approximated
+//   args[3]: X/Y spawn offset, relative to calling player's angle
+//   args[4]: Z spawn offset, relative to player's default projectile fire height
 //
 void A_WeaponProjectile(AActor* mo)
 {
@@ -999,31 +1005,7 @@ void A_WeaponProjectile(AActor* mo)
 	spawnofs_xy = psp->state->args[3];
 	spawnofs_z = psp->state->args[4];
 
-	if (serverside)
-	{
-		P_SpawnMBF21PlayerMissile(player->mo, (mobjtype_t)type, angle, pitch, spawnofs_xy, spawnofs_z);
-		
-		/*// adjust angle
-		proj->angle += (angle_t)(((int64_t)angle << 16) / 360);
-		an = mo->angle >> ANGLETOFINESHIFT;
-		proj->momx = FixedMul(mo->info->speed, finecosine[an]);
-		proj->momy = FixedMul(mo->info->speed, finesine[an]);
-
-		// adjust pitch (approximated, using Doom's ye olde
-		// finetangent table; same method as autoaim)
-		proj->momz += FixedMul(mo->info->speed, DegToSlope(pitch));
-
-		// adjust position
-		an = (player->mo->angle - ANG90) >> ANGLETOFINESHIFT;
-		proj->x += FixedMul(spawnofs_xy, finecosine[an]);
-		proj->y += FixedMul(spawnofs_xy, finesine[an]);
-		proj->z += spawnofs_z;
-
-		// set tracer to the player's autoaim target,
-		// so player seeker missiles prioritizing the
-		// baddie the player is actually aiming at. ;)
-		proj->tracer = linetarget->ptr();*/
-	}
+	P_SpawnMBF21PlayerMissile(player->mo, (mobjtype_t)type, angle, pitch, spawnofs_xy, spawnofs_z);
 }
 
 //
@@ -1032,9 +1014,8 @@ void A_WeaponProjectile(AActor* mo)
 //   args[0]: Horizontal spread (degrees, in fixed point)
 //   args[1]: Vertical spread (degrees, in fixed point)
 //   args[2]: Number of bullets to fire; if not set, defaults to 1
-//   args[3]: Base damage of attack (e.g. for 5d3, customize the 5); if not set, defaults
-//   to 5 args[4]: Attack damage modulus (e.g. for 5d3, customize the 3); if not set,
-//   defaults to 3
+//   args[3]: Base damage of attack (e.g. for 5d3, customize the 5); if not set, defaults to 5
+//   args[4]: Attack damage modulus (e.g. for 5d3, customize the 3); if not set, defaults to 3
 //
 void A_WeaponBulletAttack(AActor* mo)
 {
@@ -1053,26 +1034,43 @@ void A_WeaponBulletAttack(AActor* mo)
 	damagebase = psp->state->args[3];
 	damagemod = psp->state->args[4];
 
+	bool refire = player->refire ? true : false;
+
+	angle = 0;
+
+	if (refire)
+		angle = P_RandomDiff(player->mo) << 18;
+
+	if (numbullets <= 0)
+		numbullets = 1;
+
+	if (damagebase <= 0)
+		damagebase = 5;
+
+	if (damagemod <= 0)
+		damagemod = 3;
+
 	fixed_t bulletslope = P_BulletSlope(player->mo);
 
 	for (i = 0; i < numbullets; i++)
 	{
+		int bangle = angle;
 		damage = (P_Random() % damagemod + 1) * damagebase;
-		angle = (int)player->mo->angle + P_RandomHitscanAngle(hspread);
+		bangle = angle + (int)player->mo->angle + P_RandomHitscanAngle(hspread);
 		slope = bulletslope + P_RandomHitscanSlope(vspread);
 
-		P_LineAttack(player->mo, angle, MISSILERANGE, slope, damage);
+		P_LineAttack(player->mo, bangle, MISSILERANGE, slope, damage);
 	}
 }
 
 //
 // A_WeaponMeleeAttack
 // A parameterized player weapon melee attack.
-//   args[0]: Base damage of attack (e.g. for 2d10, customize the 2); if not set, defaults
-//   to 2 args[1]: Attack damage modulus (e.g. for 2d10, customize the 10); if not set,
-//   defaults to 10 args[2]: Berserk damage multiplier (fixed point); if not set, defaults
-//   to 1.0 (no change). args[3]: Sound to play if attack hits args[4]: Range (fixed
-//   point); if not set, defaults to player mobj's melee range
+//   args[0]: Base damage of attack (e.g. for 2d10, customize the 2); if not set, defaults to 2
+//   args[1]: Attack damage modulus (e.g. for 2d10, customize the 10); if not set, defaults to 10
+//   args[2]: Berserk damage multiplier (fixed point); if not set, defaults to 1.0 (no change).
+//   args[3]: Sound to play if attack hits
+//   args[4]: Range (fixed point); if not set, defaults to player mobj's melee range
 //
 void A_WeaponMeleeAttack(AActor* mo)
 {
@@ -1092,7 +1090,16 @@ void A_WeaponMeleeAttack(AActor* mo)
 	hitsound = psp->state->args[3];
 	range = psp->state->args[4];
 
-	if (range == 0)
+	if (damagebase <= 0)
+		damagebase = 2;
+
+	if (damagemod <= 0)
+		damagemod = 10;
+
+	if (zerkfactor <= 0)
+		zerkfactor = 1;
+
+	if (range <= 0)
 		range = player->mo->info->meleerange;
 
 	damage = (P_Random() % damagemod + 1) * damagebase;
@@ -1139,14 +1146,10 @@ void A_WeaponSound(AActor *mo)
 	if (!psp->state)
 		return;
 
-	AActor* ent;
-
 	if (psp->state->args[1])
-		ent = player->mo;
+		S_Sound(CHAN_WEAPON, SoundMap[psp->state->args[0]], 1, ATTN_NORM);
 	else
-		ent = NULL;
-
-	S_Sound(ent, CHAN_WEAPON, SoundMap[psp->state->args[0]], 1, ATTN_NORM);
+		S_Sound(player->mo, CHAN_WEAPON, SoundMap[psp->state->args[0]], 1, ATTN_NORM);
 }
 
 
