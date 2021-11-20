@@ -714,8 +714,19 @@ void P_RunHordeTics()
 
 	if (::level.time == 0)
 	{
-		P_HordeAddSpawns();
 		::g_HordeDirector.reset();
+	}
+
+	// Add our spawns if a level reload or reset erased our previous spawns.
+	if (!P_HordeHasSpawns())
+	{
+		P_HordeAddSpawns();
+		if (!P_HordeHasSpawns())
+		{
+			// This map has no horde things in it - probably inside a
+			// non-horde map.
+			return;
+		}
 	}
 
 	// Pause game logic if levelstate doesn't allow it.
