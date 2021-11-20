@@ -41,14 +41,25 @@ EXTERN_CVAR(g_horde_waves)
 
 std::vector<hordeDefine_t> WAVE_DEFINES;
 
+static float SkillScaler()
+{
+	if (sv_skill == sk_baby || sv_skill == sk_easy)
+		return 0.5f;
+	else if (sv_skill == sk_medium)
+		return 0.75f;
+	else
+		return 1.0f;
+}
+
 static float PowerupChance(const hordeDefine_t::powerup_t& pow)
 {
 	return pow.config.chance;
 }
 
-static float MonsterChance(const hordeDefine_t::monster_t& mon)
+// [AM] This is quite possibly the worst type parameter I've ever written.
+static float MonsterChance(const hordeDefine_t::monster_t* const& mon)
 {
-	return mon.config.chance;
+	return mon->config.chance;
 }
 
 void hordeDefine_t::addPowerup(const mobjtype_t mobj, const powConfig_t& config)
@@ -71,17 +82,17 @@ void hordeDefine_t::addMonster(const waveMonsterType_e monster, const mobjtype_t
 
 int hordeDefine_t::minTotalHealth() const
 {
-	return static_cast<float>(maxGroupHealth) * ::g_horde_mintotalhp;
+	return static_cast<float>(maxGroupHealth) * ::g_horde_mintotalhp * SkillScaler();
 }
 
 int hordeDefine_t::maxTotalHealth() const
 {
-	return static_cast<float>(maxGroupHealth) * ::g_horde_maxtotalhp;
+	return static_cast<float>(maxGroupHealth) * ::g_horde_maxtotalhp * SkillScaler();
 }
 
 int hordeDefine_t::goalHealth() const
 {
-	return static_cast<float>(maxGroupHealth) * ::g_horde_goalhp;
+	return static_cast<float>(maxGroupHealth) * ::g_horde_goalhp * SkillScaler();
 }
 
 /**
@@ -123,12 +134,6 @@ size_t P_HordePickDefine(const int current, const int total)
 	}
 }
 
-// [AM] This is quite possibly the worst type parameter I've ever written.
-static float MonsterWeight(const hordeDefine_t::monster_t* const& mon)
-{
-	return mon->config.chance;
-}
-
 /**
  * @brief Get a recipe of monsters to spawn.
  *
@@ -164,7 +169,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 
 	// Randomly select a monster to spawn.
 	const hordeDefine_t::monster_t* const monster =
-	    P_RandomFloatWeighted(monsters, MonsterWeight);
+	    P_RandomFloatWeighted(monsters, MonsterChance);
 
 	const mobjtype_t outType = monster->mobj;
 	const bool outIsBoss = monster->monster != hordeDefine_t::RM_NORMAL;

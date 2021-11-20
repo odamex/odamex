@@ -62,6 +62,7 @@
 #include "hu_mousegraph.h"
 #include "g_spawninv.h"
 #include "g_gametype.h"
+#include "p_horde.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -1518,6 +1519,7 @@ void G_DoLoadGame (void)
 	G_SerializeSnapshots (arc);
 	P_SerializeRNGState (arc);
 	P_SerializeACSDefereds (arc);
+	P_SerializeHorde(arc);
 
 	multiplayer = false;
 
@@ -1617,6 +1619,7 @@ void G_DoSaveGame()
 	G_SerializeSnapshots (arc);
 	P_SerializeRNGState (arc);
 	P_SerializeACSDefereds (arc);
+	P_SerializeHorde(arc);
 
 	arc << level.time;
 
