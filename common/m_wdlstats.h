@@ -52,6 +52,7 @@ enum WDLEvents {
 	WDL_EVENT_DISCONNECT,
 	WDL_EVENT_PLAYERBEACON,
 	WDL_EVENT_PROJFIRE,
+	WDL_EVENT_CARRYRETURNFLAG,
 	//WDL_EVENT_PLAYERSPECIAL,
 	//WDL_EVENT_TELEPORTPLAYER,
 	//WDL_EVENT_RJUMPGO,
@@ -60,7 +61,6 @@ enum WDLEvents {
 	//WDL_EVENT_SPAWNMOB,
 	//WDL_EVENT_MOBBEACON,
 	//WDL_EVENT_TRACERBEACON,
-	//WDL_EVENT_TELEPORTMOB,
 	//WDL_EVENT_MOBSHOOT,
 	//WDL_EVENT_ARCHFIRE,
 	//WDL_EVENT_MOBPROJ,
@@ -107,6 +107,7 @@ enum WDLPowerups {
 	WDL_PICKUP_SHOTGUN,
 	WDL_PICKUP_SUPERSHOTGUN,
 	WDL_PICKUP_CAREPACKAGE,
+	WDL_PICKUP_POWERUPSPAWNER,
 	WDL_PICKUP_UNKNOWN,
 };
 
@@ -117,25 +118,17 @@ void M_LogWDLEvent(
 );
 void M_LogActorWDLEvent(
 	WDLEvents event, AActor* activator, AActor* target,
-	int arg0, int arg1, int arg2
+	int arg0, int arg1, int arg2, int arg3
 );
-void M_LogWDLPlayerSpawn(mapthing2_t *mthing);
+int M_GetPlayerId(player_t* player, team_t team);
+void M_LogWDLPlayerSpawn(mapthing2_t* mthing);
+void M_RemoveWDLPlayerSpawn(mapthing2_t* mthing);
 void M_LogWDLItemRespawnEvent(AActor* activator);
 void M_LogWDLFlagLocation(mapthing2_t* activator, team_t team);
 void M_LogWDLPickupEvent(player_t* activator, AActor* target, WDLPowerups pickuptype, bool dropped);
-int M_GetItemSpawn(int x, int y, int z, WDLPowerups item);
 void M_LogWDLItemSpawn(AActor* target, WDLPowerups type);
 int M_GetPlayerSpawn(int x, int y);
-void M_LogWDLAccuracyShot(
-	WDLEvents event, player_t* activator, int mod, 
-	angle_t angle
-);
-void M_LogWDLAccuracyHit(
-	WDLEvents event, player_t* activator, player_t* target, 
-	int mod, int hits
-);
-void M_HandleWDLNameChange(team_t team, std::string oldname, std::string newname);
-weapontype_t M_MODToWeapon(int mod);
+void M_HandleWDLNameChange(team_t team, std::string oldname, std::string newname, int netid);
 int GetMaxShotsForMod(int mod);
 void M_CommitWDLLog();
 WDLPowerups M_GetWDLItemByMobjType(const mobjtype_t type);

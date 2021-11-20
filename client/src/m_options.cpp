@@ -173,7 +173,7 @@ EXTERN_CVAR(cl_autorecord_deathmatch)
 EXTERN_CVAR(cl_autorecord_duel)
 EXTERN_CVAR(cl_autorecord_teamdm)
 EXTERN_CVAR(cl_autorecord_ctf)
-
+EXTERN_CVAR(cl_autorecord_horde)
 
 // Weapon Preferences
 EXTERN_CVAR (cl_switchweapon)
@@ -646,6 +646,7 @@ static menuitem_t NetworkItems[] = {
 	{ discrete,		"Duel",							{&cl_autorecord_duel},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 	{ discrete,		"Team Deathmatch",				{&cl_autorecord_teamdm},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 	{ discrete,		"Capture the Flag",				{&cl_autorecord_ctf},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Horde",						{&cl_autorecord_horde},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 };
 
 menu_t NetworkMenu = {

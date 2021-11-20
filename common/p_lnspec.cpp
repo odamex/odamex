@@ -2095,8 +2095,24 @@ BOOL CheckIfExitIsGood (AActor *self)
 	}
 
 	if (self->player && multiplayer)
-		SV_BroadcastPrintf("%s exited the level.\n",
-		                   self->player->userinfo.netname.c_str());
+	{
+		OTimespan tspan;
+		TicsToTime(tspan, ::level.time);
+
+		std::string tstr;
+		if (tspan.hours)
+		{
+			StrFormat(tstr, "%02d:%02d:%02d.%02d", tspan.hours, tspan.minutes,
+			          tspan.seconds, tspan.csecs);
+		}
+		else
+		{
+			StrFormat(tstr, "%02d:%02d.%02d", tspan.minutes, tspan.seconds, tspan.csecs);
+		}
+
+		SV_BroadcastPrintf("%s exited the level in %s.\n",
+		                   self->player->userinfo.netname.c_str(), tstr.c_str());
+	}
 
 	M_CommitWDLLog();
 	return true;

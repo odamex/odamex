@@ -44,11 +44,12 @@
 
 struct OTimespan
 {
+	int csecs;
 	int tics;
 	int seconds;
 	int minutes;
 	int hours;
-	OTimespan(): tics(0), seconds(0), minutes(0), hours(0) { }
+	OTimespan() : csecs(0), tics(0), seconds(0), minutes(0), hours(0) { }
 };
 
 int		ParseHex(const char *str);
