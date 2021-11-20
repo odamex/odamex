@@ -852,17 +852,25 @@ EXTERN_CVAR(g_horde_goalhp)
 
 BEGIN_COMMAND(hordeinfo)
 {
+	float skillScaler = 1.0f;
+	if (sv_skill == sk_medium)
+		skillScaler = 0.75f;
+	else if (sv_skill == sk_baby || sv_skill == sk_easy)
+		skillScaler = 0.5f;
+
 	const hordeDefine_t& define = G_HordeDefine(::g_HordeDirector.getDefineID());
 
 	Printf("[Define: %s]\n", define.name.c_str());
 	Printf("Min Group Health: %d\n", define.minGroupHealth);
 	Printf("Max Group Health: %d\n", define.maxGroupHealth);
-	Printf("Min Total Health: %d = %d * %s\n", define.minTotalHealth(),
-	       define.maxGroupHealth, ::g_horde_mintotalhp.cstring());
-	Printf("Max Total Health: %d = %d * %s\n", define.maxTotalHealth(),
-	       define.maxGroupHealth, ::g_horde_maxtotalhp.cstring());
-	Printf("Goal Health: %d = %d * %s\n", define.goalHealth(), define.maxGroupHealth,
-	       ::g_horde_goalhp.cstring());
+	Printf("Min Total Health: %d = maxGroup:%d * cvar:%s * skill:%0.2f\n",
+	       define.minTotalHealth(), define.maxGroupHealth, ::g_horde_mintotalhp.cstring(),
+	       skillScaler);
+	Printf("Max Total Health: %d = maxGroup:%d * cvar:%s * skill:%0.2f\n",
+	       define.maxTotalHealth(), define.maxGroupHealth, ::g_horde_maxtotalhp.cstring(),
+	       skillScaler);
+	Printf("Goal Health: %d = maxGroup:%d * cvar:%s * skill:%0.2f\n", define.goalHealth(),
+	       define.maxGroupHealth, ::g_horde_goalhp.cstring(), skillScaler);
 
 	const char* stateStr = NULL;
 	switch (::g_HordeDirector.serialize().state)
