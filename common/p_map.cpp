@@ -38,6 +38,7 @@
 
 #include "s_sound.h"
 
+#include "m_wdlstats.h"
 // State.
 #include "r_state.h"
 
@@ -212,7 +213,8 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 	validcount++;
 	spechit.clear();
 
-	StompAlwaysFrags = tmthing->player || (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
+	StompAlwaysFrags = tmthing->player || tmthing->type == MT_AVATAR ||
+	                   (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
 	// stomp on any things contacted
 	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
@@ -2773,7 +2775,15 @@ static BOOL PIT_DoomRadiusAttack(AActor* thing)
 		dist = 0;
 
 	if (dist >= bombdamage)
-		return true;	// out of range
+	{
+		if (bombsource && bombsource->player)
+		{
+			M_LogWDLEvent(WDL_EVENT_PROJACCURACY, bombsource->player, NULL,
+			              bombsource->player->mo->angle / 4, bombmod, 0,
+			              GetMaxShotsForMod(bombmod));
+		}
+		return true; // out of range
+	}
 
 	if (P_CheckSight(thing, bombspot))
 	{
@@ -2869,6 +2879,15 @@ static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 		thing->momx = momx + (fixed_t)((thing->x - bombspot->x) * thrust);
 		thing->momy = momy + (fixed_t)((thing->y - bombspot->y) * thrust);
 		thing->momz += (fixed_t)momz;
+	}
+	else
+	{
+		if (bombsource && bombsource->player)
+		{
+			M_LogWDLEvent(WDL_EVENT_PROJACCURACY, bombsource->player, NULL,
+			              bombsource->player->mo->angle / 4, bombmod, 0,
+			              GetMaxShotsForMod(bombmod));
+		}
 	}
 
 	return true;

@@ -68,6 +68,7 @@ EXTERN_CVAR(cl_autorecord_ctf)
 EXTERN_CVAR(cl_autorecord_deathmatch)
 EXTERN_CVAR(cl_autorecord_duel)
 EXTERN_CVAR(cl_autorecord_teamdm)
+EXTERN_CVAR(cl_autorecord_horde)
 EXTERN_CVAR(cl_chatsounds)
 EXTERN_CVAR(cl_connectalert)
 EXTERN_CVAR(cl_disconnectalert)
@@ -724,7 +725,8 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 		                      (isFFA && cl_autorecord_deathmatch) ||
 		                      (isDuel && cl_autorecord_duel) ||
 		                      (sv_gametype == GM_TEAMDM && cl_autorecord_teamdm) ||
-		                      (sv_gametype == GM_CTF && cl_autorecord_ctf);
+		                      (sv_gametype == GM_CTF && cl_autorecord_ctf) ||
+		                      (G_IsHordeMode() && cl_autorecord_horde);
 
 		size_t param = Args.CheckParm("-netrecord");
 		if (param && Args.GetArg(param + 1))

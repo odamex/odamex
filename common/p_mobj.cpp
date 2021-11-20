@@ -2262,6 +2262,41 @@ void P_RespawnSpecials (void)
 //
 void P_ExplodeMissile (AActor* mo)
 {
+	if (mo->target && mo->target->player)
+	{
+		// [Blair] We use means of death for WDL accuracy logs.
+		int mod;
+
+		switch (mo->type)
+		{
+		case MT_ROCKET:
+			mod = MOD_ROCKET;
+			break;
+		case MT_PLASMA:
+			mod = MOD_PLASMARIFLE;
+			break;
+		case MT_BFG:
+			mod = MOD_BFG_BOOM;
+			break;
+		// [AM] Monster fireballs get a special MOD.
+		case MT_ARACHPLAZ:
+		case MT_TROOPSHOT:
+		case MT_HEADSHOT:
+		case MT_BRUISERSHOT:
+		case MT_TRACER:
+		case MT_FATSHOT:
+		case MT_SPAWNSHOT:
+			mod = MOD_FIREBALL;
+			break;
+		default:
+			mod = MOD_UNKNOWN;
+			break;
+		}
+
+		M_LogWDLEvent(WDL_EVENT_PROJACCURACY, mo->target->player, NULL,
+		              mo->target->player->mo->angle / 4, mod, 0, GetMaxShotsForMod(mod));
+	}
+
 	SV_ExplodeMissile(mo);
 
 	mo->momx = mo->momy = mo->momz = 0;
@@ -2409,7 +2444,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (mthing->args[0] != position)
 			return;
 
-		if (G_IsCoopGame() || G_UsesCoopSpawns())
+		if ((G_IsCoopGame() || G_UsesCoopSpawns()) && !G_IsHordeMode())
 			M_LogWDLPlayerSpawn(mthing);
 
 		size_t playernum = P_GetMapThingPlayerNumber(mthing);
@@ -2424,6 +2459,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 				// consider playerstarts[i] to be a voodoo doll start
 				voodoostarts.push_back(playerstarts[i]);
 				playerstarts.erase(playerstarts.begin() + i);
+				M_RemoveWDLPlayerSpawn(&playerstarts[i]);
 				break;
 			}
 		}
@@ -2622,6 +2658,10 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		// Store the spawn type for later.
 		mobj->special1 = mthing->type;
+		if (mthing->type == 5301) // Supply cache
+			M_LogWDLItemSpawn(mobj, WDL_PICKUP_CAREPACKAGE);
+		else if (mthing->type == 5307)
+			M_LogWDLItemSpawn(mobj, WDL_PICKUP_POWERUPSPAWNER);
 	}
 
 	if (z == ONFLOORZ)
