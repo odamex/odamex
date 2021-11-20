@@ -203,6 +203,14 @@ void P_HordeAddSpawns()
 }
 
 /**
+ * @brief Return true if there are any horde spawns being tracked in the world.
+ */
+bool P_HordeHasSpawns()
+{
+	return !::itemSpawns.empty() && !::powerupSpawns.empty() && !::monsterSpawns.empty();
+}
+
+/**
  * @brief Clear all tracked spawn points.
  */
 void P_HordeClearSpawns()
