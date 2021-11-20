@@ -1857,8 +1857,8 @@ void A_SpawnObject(AActor* actor)
 //   args[0]: Type of actor to spawn
 //   args[1]: Angle (degrees, in fixed point), relative to calling actor's angle
 //   args[2]: Pitch (degrees, in fixed point), relative to calling actor's pitch; approximated
-//   args[3]: X/Y spawn offset, relative to calling actor's angle args[4]: Z
-//   spawn offset, relative to actor's default projectile fire height
+//   args[3]: X/Y spawn offset, relative to calling actor's angle
+//   args[4]: Z spawn offset, relative to actor's default projectile fire height
 //
 void A_MonsterProjectile(AActor* actor)
 {
@@ -1952,10 +1952,9 @@ void A_MonsterBulletAttack(AActor* actor)
 //
 // A_MonsterMeleeAttack
 // A parameterized monster melee attack.
-//   args[0]: Base damage of attack (e.g. for 3d8, customize the 3); if not set, defaults
-//   to 3 args[1]: Attack damage modulus (e.g. for 3d8, customize the 8); if not set,
-//   defaults to 8 args[2]: Sound to play if attack hits args[3]: Range (fixed point); if
-//   not set, defaults to monster's melee range
+//   args[0]: Base damage of attack (e.g. for 3d8, customize the 3); if not set, defaults to 3
+//   args[1]: Attack damage modulus (e.g. for 3d8, customize the 8); if not set, defaults to 8
+//   args[2]: Sound to play if attack hits args[3]: Range (fixed point); if not set, defaults to monster's melee range
 //
 void A_MonsterMeleeAttack(AActor* actor)
 {
@@ -1970,7 +1969,13 @@ void A_MonsterMeleeAttack(AActor* actor)
 	hitsound = actor->state->args[2];
 	range = actor->state->args[3];
 
-	if (range == 0)
+	if (damagebase <= 0)
+		damagebase = 3;
+
+	if (damagemod <= 0)
+		damagemod = 8;
+
+	if (range <= 0)
 		range = actor->info->meleerange;
 
 	range += actor->target->info->radius - 20 * FRACUNIT;
