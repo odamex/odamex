@@ -1465,46 +1465,48 @@ void P_LoadBlockMap (int lump)
 }
 
 /*
-* @brief P_GenerateUniqueMapHash
+* @brief P_GenerateUniqueMapFingerPrint
 * 
-* Creates a unique map hash used to identify a unique map.
+* Creates a unique map fingerprint used to identify a unique map.
 * Based on a few key lumps that makes a map unique.
 * 
-* @param things - Things lump offset
-* @param linedefs - Linedefs lump offset
-* @param sidedefs - Sidedefs lump offset
-* @param vertexes - Vertexes lump offset
-* @param segs - Segs lump offset
-* @param ssectors - SSectors lump offset
-* @param sectors - Sectors lump offset
+* @param maplumpnum - Lump offset number of the specified map 
+* If it is, use it as part of the map calculation.
 */
-void P_GenerateUniqueMapHash(int things, int linedefs, int sidedefs, int vertexes,
-                             int segs, int ssectors, int sectors)
+void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 {
 	unsigned int length = 0;
 
 	typedef std::vector<byte> LevelLumps;
 	static LevelLumps levellumps;
 
-	const byte* thingbytes = static_cast<byte*>(W_CacheLumpNum(things, PU_STATIC));
-	const byte* lindefbytes = static_cast<byte*>(W_CacheLumpNum(linedefs, PU_STATIC));
-	const byte* sidedefbytes = static_cast<byte*>(W_CacheLumpNum(sidedefs, PU_STATIC));
-	const byte* vertexbytes = static_cast<byte*>(W_CacheLumpNum(vertexes, PU_STATIC));
-	const byte* segsbytes = static_cast<byte*>(W_CacheLumpNum(segs, PU_STATIC));
-	const byte* ssectorsbytes = static_cast<byte*>(W_CacheLumpNum(ssectors, PU_STATIC));
-	const byte* sectorsbytes = static_cast<byte*>(W_CacheLumpNum(sectors, PU_STATIC));
+	const byte* thingbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
+	const byte* lindefbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
+	const byte* sidedefbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
+	const byte* vertexbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
+	const byte* segsbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
+	const byte* ssectorsbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
+	const byte* sectorsbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
 
-	levellumps.insert(levellumps.end(), W_LumpLength(things), *thingbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(linedefs), *lindefbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(sidedefs), *sidedefbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(vertexes), *vertexbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(segs), *segsbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(ssectors), *ssectorsbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(sectors), *sectorsbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_THINGS), *thingbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_LINEDEFS), *lindefbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SIDEDEFS), *sidedefbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_VERTEXES), *vertexbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SEGS), *segsbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SSECTORS), *ssectorsbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SECTORS), *sectorsbytes);
 
-	length = W_LumpLength(things) + W_LumpLength(linedefs) + W_LumpLength(sidedefs) +
-	         W_LumpLength(vertexes) + W_LumpLength(segs) + W_LumpLength(ssectors) +
-	         W_LumpLength(sectors);
+	length = W_LumpLength(maplumpnum+ML_THINGS) + W_LumpLength(maplumpnum+ML_LINEDEFS) +
+	         W_LumpLength(maplumpnum+ML_SIDEDEFS) + W_LumpLength(maplumpnum+ML_VERTEXES) +
+			 W_LumpLength(maplumpnum + ML_SEGS) + W_LumpLength(maplumpnum + ML_SSECTORS) +
+			 W_LumpLength(maplumpnum + ML_SECTORS);
+
+	if (HasBehavior)
+	{
+		const byte* behaviorbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum + ML_BEHAVIOR, PU_STATIC));
+		levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum + ML_BEHAVIOR), *behaviorbytes);
+		length += W_LumpLength(maplumpnum+ML_BEHAVIOR);
+	}
 
 	fhfprint_s fingerprint = W_FarmHash128(levellumps.data(), length);
 
@@ -1751,6 +1753,8 @@ void P_SetupLevel (const char *lumpname, int position)
 		}
 	}
 
+	// To use the correct nodes for 
+
 	// Initial height of PointOfView will be set by player think.
 	consoleplayer().viewz = 1;
 
@@ -1812,9 +1816,8 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_FinishLoadingLineDefs ();
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
 
-	// [Blair] Create map hash
-	P_GenerateUniqueMapHash(lumpnum+ML_THINGS, lumpnum+ML_LINEDEFS, lumpnum+ML_SIDEDEFS,
-		lumpnum+ML_VERTEXES, lumpnum+ML_SEGS, lumpnum+ML_SSECTORS, lumpnum+ML_SECTORS);
+	// [Blair] Create map fingerprint
+	P_GenerateUniqueMapFingerPrint(lumpnum);
 
 	if (!P_LoadXNOD(lumpnum+ML_NODES))
 	{
