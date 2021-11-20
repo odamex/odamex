@@ -51,6 +51,10 @@ CVAR(				sv_teamspawns, "1", "When disabled, treat team spawns like normal death
 					"spawns in Teamplay/CTF",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 
+CVAR(				sv_playerbeacons, "0",	"When enabled, print player beacons in WDL events." \
+					"This will take effect on map change.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
+
 CVAR(				sv_allowcheats, "0", "Allow usage of cheats in all game modes",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 

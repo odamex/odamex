@@ -786,6 +786,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	int sound = 0;
 	const OString* msg = NULL;
 	ItemEquipVal val = IEV_EquipRemove;
+	bool dropped = false;
 
 	// Identify by sprite.
 	switch (special->sprite)
@@ -794,17 +795,19 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	    case SPR_ARM1:
 			val = P_GiveArmor(player, deh.GreenAC);
 			msg = &GOTARMOR;
-			if (val == IEV_EquipRemove)
-				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
-					WDL_PICKUP_GREENARMOR, 0, 0);
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_GREENARMOR, false);
+		    }
             break;
 
 	    case SPR_ARM2:
 			val = P_GiveArmor(player, deh.BlueAC);
 			msg = &GOTMEGA;
-			if (val == IEV_EquipRemove)
-				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
-					WDL_PICKUP_BLUEARMOR, 0, 0);
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_BLUEARMOR, false);
+		    }
             break;
 
 		// bonus items
@@ -816,8 +819,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             }
             player->mo->health = player->health;
 			msg = &GOTHTHBONUS;
-			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
-				WDL_PICKUP_HEALTHBONUS, 0, 0);
+		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_HEALTHBONUS, false);
             break;
 
 	    case SPR_BON2:
@@ -831,8 +833,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 player->armortype = deh.GreenAC;
             }
 			msg = &GOTARMBONUS;
-			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
-				WDL_PICKUP_ARMORBONUS, 0, 0);
+		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_ARMORBONUS, false);
             break;
 
 	    case SPR_SOUL:
@@ -844,8 +845,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             player->mo->health = player->health;
 			msg = &GOTSUPER;
             sound = 1;
-			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
-				WDL_PICKUP_SOULSPHERE, 0, 0);
+		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_SOULSPHERE, false);
             break;
 
 	    case SPR_MEGA:
@@ -854,8 +854,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             P_GiveArmor(player,deh.BlueAC);
 			msg = &GOTMSPHERE;
             sound = 1;
-			M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
-				WDL_PICKUP_MEGASPHERE, 0, 0);
+		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_MEGASPHERE, false);
             break;
 
 		// cards
@@ -863,45 +862,70 @@ void P_GiveSpecial(player_t *player, AActor *special)
 			val = P_GiveCard(player, it_bluecard);
 			msg = &GOTBLUECARD;
             sound = 3;
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_BLUEKEY, false);
+		    }
             break;
 
 	    case SPR_YKEY:
             val = P_GiveCard(player, it_yellowcard);
 			msg = &GOTYELWCARD;
             sound = 3;
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_YELLOWKEY, false);
+		    }
             break;
 
 	    case SPR_RKEY:
             val = P_GiveCard(player, it_redcard);
 			msg = &GOTREDCARD;
             sound = 3;
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_REDKEY, false);
+		    }
             break;
 
 	    case SPR_BSKU:
             val = P_GiveCard(player, it_blueskull);
 			msg = &GOTBLUESKUL;
             sound = 3;
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_BLUESKULL, false);
+		    }
             break;
 
 	    case SPR_YSKU:
             val = P_GiveCard(player, it_yellowskull);
 			msg = &GOTYELWSKUL;
             sound = 3;
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_YELLOWSKULL, false);
+		    }
             break;
 
 	    case SPR_RSKU:
             val = P_GiveCard(player, it_redskull);
 			msg = &GOTREDSKUL;
             sound = 3;
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_REDSKULL, false);
+		    }
             break;
 
 		// medikits, heals
 	    case SPR_STIM:
 			val = P_GiveBody(player, 10);
 			msg = &GOTSTIM;
-			if (val == IEV_EquipRemove)
-				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
-					WDL_PICKUP_STIMPACK, 0, 0);
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_STIMPACK, false);
+		    }
             break;
 
 	    case SPR_MEDI:
@@ -914,9 +938,10 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 msg = &GOTMEDIKIT;
             }
 			val = P_GiveBody(player, 25);
-			if (val == IEV_EquipRemove)
-				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
-					WDL_PICKUP_MEDKIT, 0, 0);
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_MEDKIT, false);
+		    }
             break;
 
 		// power ups
@@ -924,6 +949,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             val = P_GivePower(player, pw_invulnerability);
 			msg = &GOTINVUL;
             sound = 1;
+		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_INVULNSPHERE, false);
             break;
 
 	    case SPR_PSTR:
@@ -934,33 +960,35 @@ void P_GiveSpecial(player_t *player, AActor *special)
                 player->pendingweapon = wp_fist;
             }
             sound = 1;
-			if (val == IEV_EquipRemove)
-				M_LogWDLEvent(WDL_EVENT_POWERPICKUP, player, NULL,
-					WDL_PICKUP_BERSERK, 0, 0);
+			M_LogWDLPickupEvent(player, special, WDL_PICKUP_BERSERK, false);
             break;
 
 	    case SPR_PINS:
             val = P_GivePower(player, pw_invisibility);
 			msg = &GOTINVIS;
             sound = 1;
+		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_INVISSPHERE, false);
             break;
 
 	    case SPR_SUIT:
             val = P_GivePower(player, pw_ironfeet);
 			msg = &GOTSUIT;
             sound = 1;
+		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_RADSUIT, false);
             break;
 
 	    case SPR_PMAP:
 			val = P_GivePower(player, pw_allmap);
 			msg = &GOTMAP;
             sound = 1;
+		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_COMPUTERMAP, false);
             break;
 
 	    case SPR_PVIS:
             val = P_GivePower(player, pw_infrared);
 			msg = &GOTVISOR;
             sound = 1;
+		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_GOGGLES, false);
             break;
 
 		// ammo
@@ -968,68 +996,107 @@ void P_GiveSpecial(player_t *player, AActor *special)
             if (special->flags & MF_DROPPED)
             {
 				val = P_GiveAmmo(player, am_clip, 0);
+			    dropped = true;
             }
             else
             {
 				val = P_GiveAmmo(player, am_clip, 1);
             }
 			msg = &GOTCLIP;
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CLIP, dropped);
+		    }
             break;
 
 	    case SPR_AMMO:
 			val = P_GiveAmmo(player, am_clip, 5);
 			msg = &GOTCLIPBOX;
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_AMMOBOX, false);
+		    }
             break;
 
 	    case SPR_ROCK:
             val = P_GiveAmmo(player, am_misl, 1);
 			msg = &GOTROCKET;
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_ROCKET, false);
+		    }
             break;
 
 	    case SPR_BROK:
             val = P_GiveAmmo(player, am_misl, 5);
 			msg = &GOTROCKBOX;
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_ROCKETBOX, false);
+		    }
             break;
 
 	    case SPR_CELL:
             val = P_GiveAmmo(player, am_cell, 1);
 			msg = &GOTCELL;
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CELL, false);
+		    }
             break;
 
 	    case SPR_CELP:
             val = P_GiveAmmo(player, am_cell, 5);
 			msg = &GOTCELLBOX;
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CELLPACK, false);
+		    }
             break;
 
 	    case SPR_SHEL:
-            val = P_GiveAmmo(player, am_shell, 1);
-			msg = &GOTSHELLS;
+		    if (special->flags & MF_DROPPED)
+		    {
+			    dropped = true;
+		    }
+		    val = P_GiveAmmo(player, am_shell, 1);
+		    msg = &GOTSHELLS;
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_SHELLS, dropped);
+		    }
             break;
 
 	    case SPR_SBOX:
 			val = P_GiveAmmo(player, am_shell, 5);
 			msg = &GOTSHELLBOX;
+		    if (val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_SHELLBOX, false);
+		    }
             break;
 
-		case SPR_BPAK:
-			if (!player->backpack)
-			{
-				for (int i = 0; i < NUMAMMO; i++)
-				{
-					player->maxammo[i] *= 2;
-				}
-				player->backpack = true;
-			}
-			for (int i = 0; i < NUMAMMO; i++)
-			{
-				P_GiveAmmo(player, (ammotype_t)i, 1);
-			}
+	    case SPR_BPAK:
+            if (!player->backpack)
+            {
+                for (int i=0 ; i<NUMAMMO ; i++)
+                {
+                    player->maxammo[i] *= 2;
+                }
+                player->backpack = true;
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_BACKPACK, false);
+            }
+            for (int i=0 ; i<NUMAMMO ; i++)
+            {
+                P_GiveAmmo(player, (ammotype_t)i, 1);
+            }
 			msg = &GOTBACKPACK;
 			break;
 
 		case SPR_CARE:
 			// Care package.  What does it contian?
 			P_GiveCarePack(player);
+		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CAREPACKAGE, false);
 			break;
 
 		// weapons
@@ -1037,42 +1104,77 @@ void P_GiveSpecial(player_t *player, AActor *special)
             val = P_GiveWeapon(player, wp_bfg, special->flags & MF_DROPPED);
 			msg = &GOTBFG9000;
             sound = 2;
+		    if (val == IEV_EquipStay || val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_BFG,
+			                        special->flags & MF_DROPPED);
+		    }
             break;
 
 	    case SPR_MGUN:
             val = P_GiveWeapon(player, wp_chaingun, special->flags & MF_DROPPED);
 			msg = &GOTCHAINGUN;
             sound = 2;
+		    if (val == IEV_EquipStay || val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CHAINGUN,
+			                        special->flags & MF_DROPPED);
+		    }
             break;
 
 	    case SPR_CSAW:
 			val = P_GiveWeapon(player, wp_chainsaw, special->flags & MF_DROPPED);
 			msg = &GOTCHAINSAW;
             sound = 2;
+		    if (val == IEV_EquipStay || val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CHAINSAW,
+			                        special->flags & MF_DROPPED);
+		    }
             break;
 
 	    case SPR_LAUN:
             val = P_GiveWeapon(player, wp_missile, special->flags & MF_DROPPED);
 			msg = &GOTLAUNCHER;
             sound = 2;
+		    if (val == IEV_EquipStay || val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_ROCKETLAUNCHER,
+			                        special->flags & MF_DROPPED);
+		    }
             break;
 
 	    case SPR_PLAS:
 			val = P_GiveWeapon(player, wp_plasma, special->flags & MF_DROPPED);
 			msg = &GOTPLASMA;
             sound = 2;
+		    if (val == IEV_EquipStay || val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_PLASMAGUN,
+			                        special->flags & MF_DROPPED);
+		    }
             break;
 
 	    case SPR_SHOT:
             val = P_GiveWeapon(player, wp_shotgun, special->flags & MF_DROPPED);
 			msg = &GOTSHOTGUN;
             sound = 2;
+		    if (val == IEV_EquipStay || val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_SHOTGUN,
+			                        special->flags & MF_DROPPED);
+		    }
             break;
 
 	    case SPR_SGN2:
 			val = P_GiveWeapon(player, wp_supershotgun, special->flags & MF_DROPPED);
 			msg = &GOTSHOTGUN2;
             sound = 2;
+		    if (val == IEV_EquipStay || val == IEV_EquipRemove)
+		    {
+			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_SUPERSHOTGUN,
+			                        special->flags & MF_DROPPED);
+		    }
             break;
 
         default:
@@ -1921,10 +2023,23 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 	TeamInfo* teamInfo = NULL;
 	bool targethasflag = false;
+	team_t f = TEAM_NONE;
+
 	if (player)
 	{
 		teamInfo = GetTeamInfo(player->userinfo.team);
 		targethasflag = &idplayer(teamInfo->FlagData.flagger) == player;
+		// Determine the team's flag the player has.
+		if (targethasflag)
+		{
+			for (size_t i = 0; i < NUMTEAMS; i++)
+			{
+				if ((*player).flags[i])
+				{
+					f = (team_t)i;
+				}
+			}
+		}
 	}
 
 	if (target->flags & MF_SKULLFLY)
@@ -2018,6 +2133,67 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			damage -= armorDamage;
 		}
 
+		// WDL damage events - they have to be up here to ensure we know how
+		// much armor is subtracted.
+		int low = std::max(target->health - damage, 0);
+		int actualdamage = target->health - low;
+
+		angle_t sangle = 0;
+
+		if (splayer != NULL)
+		{
+			sangle = splayer->mo->angle / 4;
+		}
+
+		if (source == NULL && !targethasflag)
+		{
+			M_LogActorWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, actualdamage,
+			                   armorDamage, mod, 0);
+		}
+		else if (source == NULL && targethasflag)
+		{
+			M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERDAMAGE, source, target,
+			                   actualdamage, armorDamage, mod, f);
+		}
+		else if (source != NULL && targethasflag)
+		{
+			M_LogActorWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, actualdamage,
+			                   armorDamage, mod, f);
+		}
+		else
+		{
+			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage,
+			                   armorDamage, mod, 0);
+		}
+
+		switch (mod)
+		{
+		case MOD_CHAINSAW:
+		case MOD_FIST:
+		case MOD_PISTOL:
+		case MOD_CHAINGUN:
+		case MOD_RAILGUN:
+			M_LogWDLEvent(WDL_EVENT_SSACCURACY, splayer, player, sangle, mod, 1,
+			              GetMaxShotsForMod(mod));
+			break;
+		case MOD_SHOTGUN:
+		case MOD_SSHOTGUN:
+			M_LogWDLEvent(WDL_EVENT_SPREADACCURACY, splayer, player, sangle, mod, 1,
+			              GetMaxShotsForMod(mod));
+			break;
+		case MOD_ROCKET:
+		case MOD_R_SPLASH:
+		case MOD_BFG_BOOM:
+		case MOD_PLASMARIFLE:
+			M_LogWDLEvent(WDL_EVENT_PROJACCURACY, splayer, player, sangle, mod, 1,
+			              GetMaxShotsForMod(mod));
+			break;
+		case MOD_BFG_SPLASH:
+			M_LogWDLEvent(WDL_EVENT_TRACERACCURACY, splayer, player, sangle, mod, 1,
+			              GetMaxShotsForMod(mod));
+			break;
+		}
+
 		player->health -= damage; // mirror mobj health here for Dave
 		target->health -= damage; // Do the same.
 
@@ -2040,33 +2216,6 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			player->damagecount = 100; // teleport stomp does 10k points...
 
 		SV_SendDamagePlayer(player, inflictor, damage, armorDamage);
-
-		// WDL damage events - they have to be up here to ensure we know how
-		// much armor is subtracted.
-		int low = std::max(target->health - damage, 0);
-		int actualdamage = target->health - low;
-
-		if (source == NULL)
-		{
-			int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
-			M_LogActorWDLEvent(WDL_EVENT_ENVIRODAMAGE, source, target, actualdamage, saved, emod);
-		}
-		else if (targethasflag)
-		{
-			if (mod == MOD_PISTOL || mod == MOD_SHOTGUN || mod == MOD_SSHOTGUN || mod == MOD_CHAINGUN)
-				M_LogActorWDLEvent(WDL_EVENT_ACCURACY, source, target, source->angle / 4,
-					M_MODToWeapon(mod), 0);
-
-			M_LogActorWDLEvent(WDL_EVENT_CARRIERDAMAGE, source, target, actualdamage, saved, mod);
-		}
-		else
-		{
-			if (mod == MOD_PISTOL || mod == MOD_SHOTGUN || mod == MOD_SSHOTGUN || mod == MOD_CHAINGUN)
-				M_LogActorWDLEvent(WDL_EVENT_ACCURACY, source, target, source->angle / 4,
-					M_MODToWeapon(mod), 0);
-
-			M_LogActorWDLEvent(WDL_EVENT_DAMAGE, source, target, actualdamage, saved, mod);
-		}
 	}
 	else // not player
 	{
@@ -2116,20 +2265,23 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		P_KillMobj(source, target, inflictor, false);
 
 		// WDL damage events.
+		// todo: handle voodoo dolls here
 		if (source == NULL && targethasflag)
 		{
-			int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
-				M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, 0, 0, emod);
-			}
+			M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, f, 0, mod, 0);
+		}
 		else if (source == NULL)
 		{
-			int emod = (mod >= MOD_FIST && mod <= MOD_SSHOTGUN) ? MOD_UNKNOWN : mod;
-			M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, emod);
+			M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, mod, 0);
 		}
 		else if (targethasflag)
-			M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, 0, 0, mod);
+		{
+			M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, f, 0, mod, 0);
+		}
 		else
-			M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod);
+		{
+			M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod, 0);
+		}
 
 		return;
 	}
@@ -2202,6 +2354,38 @@ void P_PlayerLeavesGame(player_s* player)
 	{
 		level.behavior->StartTypedScripts(SCRIPT_Disconnect, player->mo, player->GetPlayerNumber());
 	}
+
+	TeamInfo* teamInfo = NULL;
+	bool targethasflag = false;
+	team_t f = TEAM_NONE;
+	team_t current = TEAM_NONE;
+	if (player)
+	{
+		current = player->userinfo.team;
+		teamInfo = GetTeamInfo(player->userinfo.team);
+		targethasflag = &idplayer(teamInfo->FlagData.flagger) == player;
+		// Determine the team's flag the player has.
+		if (targethasflag)
+		{
+			for (size_t i = 0; i < NUMTEAMS; i++)
+			{
+				if ((*player).flags[i])
+				{
+					f = (team_t)i;
+				}
+			}
+		}
+	}
+
+	if (targethasflag)
+	{
+		M_LogWDLEvent(WDL_EVENT_CARRIERKILL, player, player, f, 0, MOD_EXIT, 0);
+	}
+	else
+	{
+		M_LogWDLEvent(WDL_EVENT_KILL, player, player, 0, 0, MOD_EXIT, 0);
+	}
+	M_LogWDLEvent(WDL_EVENT_DISCONNECT, player, NULL, current, 0, 0, 0);
 
 	// Playercount changes can cause end-of-game conditions.
 	G_AssertValidPlayerCount();

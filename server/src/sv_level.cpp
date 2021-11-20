@@ -455,13 +455,14 @@ void G_InitNew (const char *mapname)
 	WinInfo info = ::levelstate.getWinInfo();
 
 	level.mapname = mapname;
+
+	// [AM] Start the WDL log on new level.
+	M_StartWDLLog(true);
+
 	G_DoLoadLevel (0);
 
 	if (::serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
 		SV_UpdatePlayerQueueLevelChange(info);
-
-	// [AM] Start the WDL log on new level.
-	M_StartWDLLog();
 }
 
 //
@@ -659,6 +660,9 @@ void G_DoResetLevel(bool full_reset)
 		SV_ClientFullUpdate(*it);
 	}
 
+	// No need to clear the spawn locations because we're not loading a new map.
+	M_StartWDLLog(false);
+
 	// Get queued players in the game.
 	SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
 
@@ -676,8 +680,6 @@ void G_DoResetLevel(bool full_reset)
 		//      a players subsector to be valid (like use) to crash the server.
 		G_DoReborn(*it);
 	}
-
-	M_StartWDLLog();
 }
 
 //

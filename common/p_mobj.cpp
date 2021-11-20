@@ -43,6 +43,7 @@
 #include "p_horde.h"
 #include "p_hordespawn.h"
 #include "g_mapinfo.h"
+#include "m_wdlstats.h"
 
 
 #define WATER_SINK_FACTOR		3
@@ -2251,6 +2252,8 @@ void P_RespawnSpecials (void)
 	iquetail = (iquetail+1)&(ITEMQUESIZE-1);
 
 	SV_SpawnMobj(mo);
+
+	M_LogWDLItemRespawnEvent(mo);
 }
 
 
@@ -2259,6 +2262,41 @@ void P_RespawnSpecials (void)
 //
 void P_ExplodeMissile (AActor* mo)
 {
+	if (mo->target->player)
+	{
+		// [Blair] We use means of death for WDL accuracy logs.
+		int mod;
+
+		switch (mo->type)
+		{
+		case MT_ROCKET:
+			mod = MOD_ROCKET;
+			break;
+		case MT_PLASMA:
+			mod = MOD_PLASMARIFLE;
+			break;
+		case MT_BFG:
+			mod = MOD_BFG_BOOM;
+			break;
+		// [AM] Monster fireballs get a special MOD.
+		case MT_ARACHPLAZ:
+		case MT_TROOPSHOT:
+		case MT_HEADSHOT:
+		case MT_BRUISERSHOT:
+		case MT_TRACER:
+		case MT_FATSHOT:
+		case MT_SPAWNSHOT:
+			mod = MOD_FIREBALL;
+			break;
+		default:
+			mod = MOD_UNKNOWN;
+			break;
+		}
+
+		M_LogWDLEvent(WDL_EVENT_PROJACCURACY, mo->target->player, NULL,
+		              mo->target->player->mo->angle / 4, mod, 0, GetMaxShotsForMod(mod));
+	}
+
 	SV_ExplodeMissile(mo);
 
 	mo->momx = mo->momy = mo->momz = 0;
@@ -2345,6 +2383,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (DeathMatchStarts.size() >= 10 && demoplayback)
 			return;
 
+		M_LogWDLPlayerSpawn(mthing);
 		DeathMatchStarts.push_back(*mthing);
 		return;
 	}
@@ -2358,6 +2397,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			if (mthing->type == teamInfo->TeamSpawnThingNum)
 			{
 				teamInfo->Starts.push_back(*mthing);
+				M_LogWDLPlayerSpawn(mthing);
 				return;
 			}
 		}
@@ -2404,6 +2444,9 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (mthing->args[0] != position)
 			return;
 
+		if ((G_IsCoopGame() || G_UsesCoopSpawns()) && !G_IsHordeMode())
+			M_LogWDLPlayerSpawn(mthing);
+
 		size_t playernum = P_GetMapThingPlayerNumber(mthing);
 
 		// search for spots that already are for this player number
@@ -2416,6 +2459,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 				// consider playerstarts[i] to be a voodoo doll start
 				voodoostarts.push_back(playerstarts[i]);
 				playerstarts.erase(playerstarts.begin() + i);
+				M_RemoveWDLPlayerSpawn(&playerstarts[i]);
 				break;
 			}
 		}
@@ -2614,6 +2658,10 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		// Store the spawn type for later.
 		mobj->special1 = mthing->type;
+		if (mthing->type == 5301) // Supply cache
+			M_LogWDLItemSpawn(mobj, WDL_PICKUP_CAREPACKAGE);
+		else if (mthing->type == 5307)
+			M_LogWDLItemSpawn(mobj, WDL_PICKUP_POWERUPSPAWNER);
 	}
 
 	if (z == ONFLOORZ)
@@ -2683,6 +2731,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			if (mthing->type == teamInfo->FlagThingNum)
 			{
 				SpawnFlag(mthing, teamInfo->Team);
+				M_LogWDLFlagLocation(mthing, teamInfo->Team);
 				break;
 			}
 		}
@@ -2691,6 +2740,14 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// [RH] Go dormant as needed
 	if (mthing->flags & MTF_DORMANT)
 		P_DeactivateMobj (mobj);
+
+	// [Blair] This looks like an item we'd want to log.
+	// Check it and log it if so.
+	WDLPowerups typetocheck = M_GetWDLItemByMobjType(mobj->type);
+	if (typetocheck != WDL_PICKUP_UNKNOWN)
+	{
+		M_LogWDLItemSpawn(mobj, typetocheck);
+	}
 }
 
 /**

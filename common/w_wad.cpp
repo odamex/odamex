@@ -46,6 +46,8 @@
 #include "m_argv.h"
 #include "md5.h"
 
+#include "farmhash.h"
+
 #include "w_wad.h"
 
 #include <sstream>
@@ -170,6 +172,45 @@ std::string W_MD5(std::string filename)
 	return hash.str();
 }
 
+/*
+ * @brief Creates a 128-bit fingerprint for a map via FarmHash.
+ *
+ * However, it encodes the fingerprint into a 16-byte array to be read later.
+ *
+ * @param lumpdata byte array pointer to the lump (or lumps) that needs to be fingerprinted.
+ * @param size of the byte array pointer in bytes.
+ * @return fhfprint_s - struct containing 16-byte array of fingerprint.
+ */
+fhfprint_s W_FarmHash128(const byte* lumpdata, int length)
+{
+	fhfprint_s fhfngprnt;
+
+	if (!lumpdata)
+		return fhfngprnt;
+
+	util::uint128_t fingerprint128 = util::Fingerprint128((const char*)lumpdata, length);
+
+	// Store the bytes of the hashes in the array.
+	fhfngprnt.fingerprint[0] = fingerprint128.first >> 8 * 0;
+	fhfngprnt.fingerprint[1] = fingerprint128.first >> 8 * 1;
+	fhfngprnt.fingerprint[2] = fingerprint128.first >> 8 * 2;
+	fhfngprnt.fingerprint[3] = fingerprint128.first >> 8 * 3;
+	fhfngprnt.fingerprint[4] = fingerprint128.first >> 8 * 4;
+	fhfngprnt.fingerprint[5] = fingerprint128.first >> 8 * 5;
+	fhfngprnt.fingerprint[6] = fingerprint128.first >> 8 * 6;
+	fhfngprnt.fingerprint[7] = fingerprint128.first >> 8 * 7;
+
+	fhfngprnt.fingerprint[8] = fingerprint128.second >> 8 * 0;
+	fhfngprnt.fingerprint[9] = fingerprint128.second >> 8 * 1;
+	fhfngprnt.fingerprint[10] = fingerprint128.second >> 8 * 2;
+	fhfngprnt.fingerprint[11] = fingerprint128.second >> 8 * 3;
+	fhfngprnt.fingerprint[12] = fingerprint128.second >> 8 * 4;
+	fhfngprnt.fingerprint[13] = fingerprint128.second >> 8 * 5;
+	fhfngprnt.fingerprint[14] = fingerprint128.second >> 8 * 6;
+	fhfngprnt.fingerprint[15] = fingerprint128.second >> 8 * 7;
+
+	return fhfngprnt;
+}
 
 //
 // LUMP BASED ROUTINES.

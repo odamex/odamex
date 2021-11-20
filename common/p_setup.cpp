@@ -999,6 +999,8 @@ static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 	}
 }
 
+// 
+
 
 static void SetTextureNoErr (short *texture, unsigned int *color, char *name)
 {
@@ -1462,8 +1464,54 @@ void P_LoadBlockMap (int lump)
 	blockmap = blockmaplump+4;
 }
 
+/*
+* @brief P_GenerateUniqueMapFingerPrint
+* 
+* Creates a unique map fingerprint used to identify a unique map.
+* Based on a few key lumps that makes a map unique.
+* 
+* @param maplumpnum - Lump offset number of the specified map 
+* If it is, use it as part of the map calculation.
+*/
+void P_GenerateUniqueMapFingerPrint(int maplumpnum)
+{
+	unsigned int length = 0;
 
+	typedef std::vector<byte> LevelLumps;
+	static LevelLumps levellumps;
 
+	const byte* thingbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
+	const byte* lindefbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
+	const byte* sidedefbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
+	const byte* vertexbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
+	const byte* segsbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
+	const byte* ssectorsbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
+	const byte* sectorsbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
+
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_THINGS), *thingbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_LINEDEFS), *lindefbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SIDEDEFS), *sidedefbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_VERTEXES), *vertexbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SEGS), *segsbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SSECTORS), *ssectorsbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SECTORS), *sectorsbytes);
+
+	length = W_LumpLength(maplumpnum+ML_THINGS) + W_LumpLength(maplumpnum+ML_LINEDEFS) +
+	         W_LumpLength(maplumpnum+ML_SIDEDEFS) + W_LumpLength(maplumpnum+ML_VERTEXES) +
+			 W_LumpLength(maplumpnum + ML_SEGS) + W_LumpLength(maplumpnum + ML_SSECTORS) +
+			 W_LumpLength(maplumpnum + ML_SECTORS);
+
+	if (HasBehavior)
+	{
+		const byte* behaviorbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum + ML_BEHAVIOR, PU_STATIC));
+		levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum + ML_BEHAVIOR), *behaviorbytes);
+		length += W_LumpLength(maplumpnum+ML_BEHAVIOR);
+	}
+
+	fhfprint_s fingerprint = W_FarmHash128(levellumps.data(), length);
+
+	ArrayCopy(::level.level_fingerprint, fingerprint.fingerprint);
+}
 //
 // P_GroupLines
 // Builds sector line lists and subsector sector numbers.
@@ -1694,6 +1742,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
 		wminfo.maxfrags = 0;
+	ArrayInit(level.level_fingerprint, 0);
 	wminfo.partime = 180;
 
 	if (!savegamerestore)
@@ -1703,6 +1752,8 @@ void P_SetupLevel (const char *lumpname, int position)
 			it->killcount = it->secretcount = it->itemcount = 0;
 		}
 	}
+
+	// To use the correct nodes for 
 
 	// Initial height of PointOfView will be set by player think.
 	consoleplayer().viewz = 1;
@@ -1764,6 +1815,9 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_LoadSideDefs2 (lumpnum+ML_SIDEDEFS);
 	P_FinishLoadingLineDefs ();
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
+
+	// [Blair] Create map fingerprint
+	P_GenerateUniqueMapFingerPrint(lumpnum);
 
 	if (!P_LoadXNOD(lumpnum+ML_NODES))
 	{
