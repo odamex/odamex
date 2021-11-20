@@ -412,8 +412,8 @@ void HordeState::changeState()
 {
 	const hordeDefine_t& define = G_HordeDefine(m_defineID);
 
-	int aliveHealth = m_spawnedHealth - m_killedHealth;
-	int goalHealth = define.goalHealth() + m_waveStartHealth;
+	const int aliveHealth = m_spawnedHealth - m_killedHealth;
+	const int goalHealth = define.goalHealth() + m_waveStartHealth;
 
 	switch (m_state)
 	{
@@ -540,8 +540,10 @@ void HordeState::tick()
 
 	if (::level.time > m_nextSpawn)
 	{
-		// Determine our next spawn time.
-		const int offset = P_RandomInt(5) + 1;
+		// Determine our next spawn time.  Sped up slightly in an empty level.
+		const int aliveHealth = m_spawnedHealth - m_killedHealth;
+		const int nextMax = aliveHealth < define.minTotalHealth() ? 3 : 5;
+		const int offset = P_RandomInt(nextMax) + 1;
 		m_nextSpawn = ::level.time + (offset * TICRATE);
 
 		// Should we spawn a monster?
