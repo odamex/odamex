@@ -45,6 +45,8 @@
 #include "g_mapinfo.h"
 #include "m_wdlstats.h"
 
+void SV_UpdateMobj(AActor* mo);
+void SV_UpdateMobjState(AActor* mo);
 
 #define WATER_SINK_FACTOR		3
 #define WATER_SINK_SMALL_FACTOR	4
@@ -931,8 +933,6 @@ int P_ThingInfoHeight(mobjinfo_t *mi)
        mi->cdheight : mi->height);
 }
 
-extern void SV_UpdateMobjState(AActor *mo);
-
 // Use a heuristic approach to detect infinite state cycles: Count the number
 // of times the loop in P_SetMobjState() executes and exit with an error once
 // an arbitrary very large limit is reached.
@@ -970,10 +970,13 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 		mobj->sprite = st->sprite;
 		mobj->frame = st->frame;
 
-		// [AM] Broadcast the state of the mobj to every player, after changing
-		//      it but before running the action associated with it.
-		if (serverside && cl_update)
+#if defined(SERVER_APP)
+		// [AM] Broadcast the mobj's state after changing it but before
+		//      running the action associated with it.  Also, only update
+		//      the first state, since the client will cycle through the rest.
+		if (cl_update && !cycle_counter)
 			SV_UpdateMobjState(mobj);
+#endif
 
 		// Modified handling.
 		// Call action functions when the state is set
@@ -990,6 +993,13 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 			        mobj->info->name, state);
 		}
 	} while (!mobj->tics);
+
+#if defined(SERVER_APP)
+	// [AM] Now broadcast the final state of the mobj after all actions
+	//      have run.
+	if (cl_update)
+		SV_UpdateMobj(mobj);
+#endif
 
 	return true;
 }
