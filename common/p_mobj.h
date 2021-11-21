@@ -145,6 +145,7 @@ bool P_VisibleToPlayers(AActor *mo);
 
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);
+bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound);
 void SpawnFlag(mapthing2_t* mthing, team_t flag);
 
 // From MBF

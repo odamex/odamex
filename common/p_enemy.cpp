@@ -2040,7 +2040,7 @@ void A_HealChase(AActor* actor)
 // P_HealCorpse
 // A generic corpse resurrection codepointer.
 // 
-static bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
+bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 {
 	int xl, xh;
 	int yl, yh;
