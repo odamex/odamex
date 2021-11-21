@@ -2533,7 +2533,7 @@ void P_RespawnSpecials (void)
 //
 void P_ExplodeMissile (AActor* mo)
 {
-	if (mo->target->player)
+	if (mo->target && mo->target->player)
 	{
 		// [Blair] We use means of death for WDL accuracy logs.
 		int mod;
