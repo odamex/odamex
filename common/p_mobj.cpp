@@ -2467,9 +2467,9 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			if (otherplayernum == playernum)
 			{
 				// consider playerstarts[i] to be a voodoo doll start
+				M_RemoveWDLPlayerSpawn(&playerstarts[i]);
 				voodoostarts.push_back(playerstarts[i]);
 				playerstarts.erase(playerstarts.begin() + i);
-				M_RemoveWDLPlayerSpawn(&playerstarts[i]);
 				break;
 			}
 		}
