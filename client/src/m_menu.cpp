@@ -56,6 +56,8 @@
 #include "i_xbox.h"
 #endif
 
+EXTERN_CVAR(g_resetinvonexit)
+
 // temp for screenblocks (0-9)
 int 				screenSize;
 
@@ -303,6 +305,7 @@ enum newgame_t
 	hurtme,
 	violence,
 	nightmare,
+	pistolstart,
 	newg_end
 } newgame_e;
 
@@ -312,7 +315,8 @@ oldmenuitem_t NewGameMenu[]=
 	{1,"M_ROUGH",		M_ChooseSkill, 'h'},
 	{1,"M_HURT",		M_ChooseSkill, 'h'},
 	{1,"M_ULTRA",		M_ChooseSkill, 'u'},
-	{1,"M_NMARE",		M_ChooseSkill, 'n'}
+	{1,"M_NMARE",		M_ChooseSkill, 'n'},
+	{1,"\0",			M_ChooseSkill, 'p'}
 };
 
 oldmenu_t NewDef =
@@ -928,8 +932,17 @@ void M_DrawMainMenu()
 
 void M_DrawNewGame()
 {
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_NEWG"), 96, 14);
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_SKILL"), 54, 38);
+	screen->DrawPatchClean((patch_t*)W_CachePatch("M_NEWG"), 96, 14);
+	screen->DrawPatchClean((patch_t*)W_CachePatch("M_SKILL"), 54, 38);
+
+	const int SMALLFONT_OFFSET = 8; // Line up with the skull
+
+	const char* pslabel = "Pistol Start Each Level ";
+	const int psy = NewDef.y + (LINEHEIGHT * 5) + SMALLFONT_OFFSET;
+
+	screen->DrawTextCleanMove(CR_RED, NewDef.x, psy, pslabel);
+	screen->DrawTextCleanMove(CR_GREY, NewDef.x + V_StringWidth(pslabel), psy,
+	                          g_resetinvonexit ? "ON" : "OFF");
 }
 
 namespace
@@ -1052,7 +1065,12 @@ void M_StartGame(int choice)
 
 void M_ChooseSkill(int choice)
 {
-	if (choice == nightmare)
+	if (choice == pistolstart)
+	{
+		g_resetinvonexit = !g_resetinvonexit;
+		return;
+	}
+	else if (choice == nightmare)
 	{
 		M_StartMessage(GStrings(NIGHTMARE),M_VerifyNightmare,true);
 		return;
