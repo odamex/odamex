@@ -601,6 +601,9 @@ void P_MoveActor(AActor *mo)
 				mo->waterlevel = 3;
 			}
 		}
+
+		if (!mo->player && P_ActorInSpecialSector(mo))
+			return;
 	}
 
 	// killough 9/12/98: objects fall off ledges if they are hanging off
@@ -2416,9 +2419,10 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 		th->momz = FixedMul(speed, slope);
 	}
 
+	an = (th->angle - ANG90) >> ANGLETOFINESHIFT;
 	// Adjust based on MBF21 params.
-	th->x += FixedMul(xyofs, finecosine[an >> ANGLETOFINESHIFT]);
-	th->y += FixedMul(xyofs, finesine[an >> ANGLETOFINESHIFT]);
+	th->x += FixedMul(xyofs, finecosine[an]);
+	th->y += FixedMul(xyofs, finesine[an]);
 	th->z += zofs;
 
 	// [Blair] Set a tracer for player tracer weapons.

@@ -324,10 +324,15 @@ typedef enum {
 
 // [RH] Equivalents for BOOM's generalized sector types
 
-#define DAMAGE_MASK		0x0300
+#define DAMAGE_MASK		0x60
+#define DAMAGE_SHIFT    5
 #define SECRET_MASK		0x0400
 #define FRICTION_MASK	0x0800
 #define PUSH_MASK		0x1000
+
+// mbf21
+#define DEATH_MASK         0x1000 // bit 12
+#define KILL_MONSTERS_MASK 0x2000 // bit 13
 
 struct line_s;
 class AActor;
@@ -348,6 +353,7 @@ void EV_StopPlat (int tag);
 
 bool P_LineSpecialMovesSector(byte special);
 bool P_CanActivateSpecials(AActor* mo, line_t* line);
+bool P_ActorInSpecialSector(AActor* actor);
 
 extern int TeleportSide;
 

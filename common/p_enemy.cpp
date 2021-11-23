@@ -32,6 +32,7 @@
 #include "i_system.h"
 #include "p_local.h"
 #include "p_lnspec.h"
+#include "p_spec.h"
 #include "s_sound.h"
 #include "r_state.h"
 #include "gi.h"
@@ -43,6 +44,8 @@
 
 
 extern bool HasBehavior;
+extern int monster_backing;
+extern int distfriend;
 
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
@@ -431,8 +434,71 @@ BOOL P_TryWalk (AActor *actor)
 	return true;
 }
 
+/*
+ * P_IsOnLift
+ *
+ * killough 9/9/98:
+ *
+ * Returns true if the object is on a lift. Used for AI,
+ * since it may indicate the need for crowded conditions,
+ * or that a monster should stay on the lift for a while
+ * while it goes up or down.
+ */
 
+bool P_IsOnLift(const AActor* actor)
+{
+	const sector_t* sec = actor->subsector->sector;
+	line_t line;
+	int l;
 
+	// Short-circuit: it's on a lift which is active.
+	if (sec->floordata && ((DFloor*)sec->floordata)->m_Status == DFloor::up)
+		return true;
+
+	// Check to see if it's in a sector which can be activated as a lift.
+	if ((line.id = sec->tag))
+		for (l = -1; (l = P_FindLineFromLineTag(&line, l)) >= 0;)
+			switch (lines[l].special)
+			{
+			case 10:
+			case 14:
+			case 15:
+			case 20:
+			case 21:
+			case 22:
+			case 47:
+			case 53:
+			case 62:
+			case 66:
+			case 67:
+			case 68:
+			case 87:
+			case 88:
+			case 95:
+			case 120:
+			case 121:
+			case 122:
+			case 123:
+			case 143:
+			case 162:
+			case 163:
+			case 181:
+			case 182:
+			case 144:
+			case 148:
+			case 149:
+			case 211:
+			case 227:
+			case 228:
+			case 231:
+			case 232:
+			case 235:
+			case 236:
+				return true;
+			}
+
+	return false;
+}
 
 void P_NewChaseDir (AActor *actor)
 {
@@ -454,6 +520,30 @@ void P_NewChaseDir (AActor *actor)
 
 	deltax = actor->target->x - actor->x;
 	deltay = actor->target->y - actor->y;
+
+	if (monster_backing)
+	{
+		fixed_t dist = P_AproxDistance(deltax, deltay);
+		if (actor->flags & actor->target->flags & MF_FRIEND &&
+		    distfriend << FRACBITS > dist && !P_IsOnLift(actor) &&
+		    !P_IsUnderDamage(actor))
+		{
+			deltax = -deltax, deltay = -deltay;
+		}
+		else if (actor->target->health > 0 &&
+		         (actor->flags ^ actor->target->flags) & MF_FRIEND)
+		{ // Live enemy target
+			if (actor->info->missilestate && actor->type != MT_SKULL &&
+			    ((!actor->target->info->missilestate &&
+			      dist < actor->target->info->meleerange * 2) ||
+			     (actor->target->player &&
+			      dist < actor->target->player->mo->info->meleerange * 3 &&
+			      weaponinfo[actor->target->player->readyweapon].flags & WPF_FLEEMELEE)))
+			{ // Back away from melee attacker
+				deltax = -deltax, deltay = -deltay;
+			}
+		}
+	}
 
 	if (deltax>10*FRACUNIT)
 		d[1]= DI_EAST;
@@ -1362,6 +1452,7 @@ AActor* 		corpsehit;
 AActor* 		vileobj;
 fixed_t 		viletryx;
 fixed_t 		viletryy;
+int				viletryradius;
 
 BOOL PIT_VileCheck (AActor *thing)
 {
@@ -1380,7 +1471,7 @@ BOOL PIT_VileCheck (AActor *thing)
 	if (thing->info->raisestate == S_NULL)
 		return true;	// monster doesn't have a raise state
 
-	maxdist = thing->info->radius + mobjinfo[MT_VILE].radius;
+	maxdist = thing->info->radius + viletryradius;
 
 	if ( abs(thing->x - viletryx) > maxdist
 		 || abs(thing->y - viletryy) > maxdist )
@@ -1435,6 +1526,9 @@ void A_VileChase (AActor *actor)
 		yh = (viletryy - bmaporgy + MAXRADIUS*2)>>MAPBLOCKSHIFT;
 
 		vileobj = actor;
+
+		viletryradius = mobjinfo[MT_VILE].radius;
+
 		for (bx=xl ; bx<=xh ; bx++)
 		{
 			for (by=yl ; by<=yh ; by++)
@@ -1812,7 +1906,7 @@ void A_SpawnObject(AActor* actor)
 	vel_z = actor->state->args[7];
 
 	// calculate position offsets
-	an = actor->angle + ((angle << 16) / 360);
+	an = actor->angle + (unsigned int)(((int64_t)angle << 16) / 360);
 	fan = an >> ANGLETOFINESHIFT;
 	dx = FixedMul(ofs_x, finecosine[fan]) - FixedMul(ofs_y, finesine[fan]);
 	dy = FixedMul(ofs_x, finesine[fan]) + FixedMul(ofs_y, finecosine[fan]);
@@ -1845,6 +1939,12 @@ void A_SpawnObject(AActor* actor)
 			mo->target = actor->ptr();
 			mo->tracer = actor->target;
 		}
+	}
+	else
+	{
+		// If it's not a missile...what is it?
+		// Assign it a flag to make sure it gets spawned for clients.
+		mo->oflags |= MFO_DETRITUS;
 	}
 
 	// [XA] don't bother with the dont-inherit-friendliness hack
@@ -2001,7 +2101,7 @@ void A_RadiusDamage(AActor* actor)
 	if (!actor->state)
 		return;
 
-	P_RadiusAttack(actor, actor->target, actor->state->args[0], actor->state->args[1], true, MOD_UNKNOWN);
+	P_RadiusAttack(actor, actor->target, actor->state->args[0], actor->state->args[1], true, MOD_R_SPLASH);
 }
 
 //
@@ -2058,7 +2158,7 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 		yh = (viletryy - bmaporgy + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
 
 		vileobj = actor;
-		int viletryradius = radius;
+		viletryradius = radius;
 		for (bx = xl; bx <= xh; bx++)
 		{
 			for (by = yl; by <= yh; by++)
@@ -2121,7 +2221,11 @@ void A_SeekTracer(AActor* actor)
 	threshold = FixedToAngle(actor->state->args[0]);
 	maxturnangle = FixedToAngle(actor->state->args[1]);
 
-	P_SeekerMissile(actor, actor->tracer, threshold, maxturnangle, true);
+	if (serverside)
+	{
+		actor->flags2 |= MF2_SEEKERMISSILE;
+		P_SeekerMissile(actor, actor->tracer, threshold, maxturnangle, true);
+	}
 }
 
 //
@@ -2142,10 +2246,15 @@ void A_FindTracer(AActor* actor)
 	fov = FixedToAngle(actor->state->args[0]);
 	dist = (actor->state->args[1]);
 
+	if (serverside)
+		actor->flags2 |= MF2_SEEKERMISSILE;
+
 	AActor* tracer = P_RoughTargetSearch(actor, fov, dist);
 
-	if (tracer)
-		actor->tracer = tracer->ptr();
+	if (!tracer || tracer->health <= 0)
+		return;
+
+	actor->tracer = tracer->ptr();
 }
 
 //
@@ -2156,6 +2265,9 @@ void A_ClearTracer(AActor* actor)
 {
 	if (!actor)
 		return;
+
+	if (serverside)
+		actor->flags2 &= ~MF2_SEEKERMISSILE;
 
 	actor->tracer = AActor::AActorPtr();
 }
@@ -2250,8 +2362,14 @@ void A_JumpIfTracerInSight(AActor* actor)
 	if (fov > 0 && !P_CheckFov(actor, actor->tracer, fov))
 		return;
 
-	if (P_CheckSight(actor, actor->tracer))
-		P_SetMobjState(actor, (statenum_t)state);
+	if (actor->tracer->health <= 0)
+		return;
+
+	if (serverside)
+	{
+		if (P_CheckSight(actor, actor->tracer))
+			P_SetMobjState(actor, (statenum_t)state);
+	}
 }
 
 //
@@ -2271,9 +2389,15 @@ void A_JumpIfTracerCloser(AActor* actor)
 	state = actor->state->args[0];
 	distance = actor->state->args[1];
 
-	if (distance >
-	    P_AproxDistance(actor->x - actor->tracer->x, actor->y - actor->tracer->y))
-		P_SetMobjState(actor, (statenum_t)state);
+	if (actor->tracer->health <= 0)
+		return;
+
+	if (serverside)
+	{
+		if (distance >
+		    P_AproxDistance(actor->x - actor->tracer->x, actor->y - actor->tracer->y))
+			P_SetMobjState(actor, (statenum_t)state);
+	}
 }
 
 //
@@ -2995,6 +3119,8 @@ void A_Spawn(AActor* mo)
 
 			newmobj = new AActor(mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z,
 			                     (mobjtype_t)(mo->state->misc1 - 1));
+
+			newmobj->oflags |= MFO_DETRITUS; // [Blair] Make sure this gets spawned.
 
 			// newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
 			// // TODO !!!

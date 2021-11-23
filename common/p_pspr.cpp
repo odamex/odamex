@@ -1006,7 +1006,8 @@ void A_WeaponProjectile(AActor* mo)
 	spawnofs_xy = psp->state->args[3];
 	spawnofs_z = psp->state->args[4];
 
-	P_SpawnMBF21PlayerMissile(player->mo, (mobjtype_t)type, angle, pitch, spawnofs_xy, spawnofs_z);
+	if (serverside)
+		P_SpawnMBF21PlayerMissile(player->mo, (mobjtype_t)type, angle, pitch, spawnofs_xy, spawnofs_z);
 }
 
 //

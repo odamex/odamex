@@ -406,9 +406,18 @@ BOOL PIT_CheckLine (line_t *ld)
     if (!(tmthing->flags & (MF_MISSILE | MF_BOUNCES)) || (ld->flags & ML_BLOCKEVERYTHING))
     {
 		if ((ld->flags & (ML_BLOCKING|ML_BLOCKEVERYTHING)) || 	// explicitly blocking everything
-			(!tmthing->player && ld->flags & ML_BLOCKMONSTERS)) {	// block monsters only
-				CheckForPushSpecial (ld, 0, tmthing);
-				return false;
+		    (!tmthing->player &&
+		     (ld->flags & ML_BLOCKMONSTERS || // block monsters only
+				 (ld->flags & ML_BLOCKLANDMONSTERS && !(tmthing->flags & MF_FLOAT))))) // [Blair] Block land monsters.
+		{
+			CheckForPushSpecial (ld, 0, tmthing);
+			return false;
+		}
+
+		if (tmthing->player && ld->flags & ML_BLOCKPLAYERS) // [Blair] Block players only
+		{
+			CheckForPushSpecial(ld, 0, tmthing);
+			return false;
 		}
     }
 

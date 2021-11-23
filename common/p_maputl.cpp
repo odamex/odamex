@@ -1224,17 +1224,15 @@ static AActor* RoughBlockCheck(AActor* mo, int index, angle_t fov)
 			continue;
 		}
 
-		// [Blair] Need to figure out if they are friendly entities/players (teamdamage be damned)
-		/*
-		// skip actors on the same "team", unless infighting or deathmatching
-		if (mo && !((link->flags ^ mo->target->flags) & MF_FRIEND) &&
-		    mo->target->target != link &&
-		    !(sv_gametype == 1 && link->player && mo->target->player))
+
+		// [Blair] Don't target friendlies or teammates
+		if (!P_IsFriendlyThing(mo->target, link) &&
+		    !P_IsTeamMate(mo->target, link))
 		{
 			link = link->snext;
 			continue;
 		}
-		*/
+		
 
 		// skip actors outside of specified FOV
 		 if (fov > 0 && !P_CheckFov(mo, link, fov))
@@ -1256,11 +1254,6 @@ static AActor* RoughBlockCheck(AActor* mo, int index, angle_t fov)
 
 	// couldn't find a valid target
 	return NULL;
-}
-
-bool P_CheckFriend()
-{
-	return true;
 }
 
 AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance)

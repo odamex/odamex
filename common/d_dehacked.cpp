@@ -1055,6 +1055,10 @@ static int PatchThing (int thingy)
 				{
 					info->spawnhealth = val;
 				}
+				else if (stricmp(Line1, "Fast speed") == 0)
+				{
+					info->altspeed = val;
+				}
 				else if (stricmp(Line1, "Gib health") == 0)
 				{
 					gibhealth = true;
@@ -1082,10 +1086,90 @@ static int PatchThing (int thingy)
 							{
 								info->flags2 |= MF2_LOGRAV;
 							}
+
+							if (tempval & MF3_SHORTMRANGE)
+							{
+								info->flags3 |= MF3_SHORTMRANGE;
+							}
+
+							if (tempval & MF3_DMGIGNORED)
+							{
+								info->flags3 |= MF3_DMGIGNORED;
+							}
+
+							if (tempval & MF3_NORADIUSDMG)
+							{
+								info->flags3 |= MF3_NORADIUSDMG;
+							}
+
+							if (tempval & MF3_FORCERADIUSDMG)
+							{
+								info->flags3 |= MF3_FORCERADIUSDMG;
+							}
+
+							if (tempval & MF3_HIGHERMPROB)
+							{
+								info->flags3 |= MF3_HIGHERMPROB;
+							}
+
+							if (tempval & MF3_RANGEHALF)
+							{
+								info->flags3 |= MF3_RANGEHALF;
+							}
+
+							if (tempval & MF3_NOTHRESHOLD)
+							{
+								info->flags3 |= MF3_NOTHRESHOLD;
+							}
+
+							if (tempval & MF3_LONGMELEE)
+							{
+								info->flags3 |= MF3_LONGMELEE;
+							}
 								
 							if (tempval & MF2_BOSS)
 							{
 								info->flags2 |= MF2_BOSS;
+							}
+
+							if (tempval & MF3_MAP07BOSS1)
+							{
+								info->flags3 |= MF3_MAP07BOSS1;
+							}
+
+							if (tempval & MF3_MAP07BOSS2)
+							{
+								info->flags3 |= MF3_MAP07BOSS2;
+							}
+
+							if (tempval & MF3_E1M8BOSS)
+							{
+								info->flags3 |= MF3_E1M8BOSS;
+							}
+
+							if (tempval & MF3_E2M8BOSS)
+							{
+								info->flags3 |= MF3_E2M8BOSS;
+							}
+
+							if (tempval & MF3_E3M8BOSS)
+							{
+								info->flags3 |= MF3_E3M8BOSS;
+							}
+
+							if (tempval & MF3_E4M6BOSS)
+							{
+								info->flags3 |= MF3_E4M6BOSS;
+							}
+
+							if (tempval & MF3_E4M8BOSS)
+							{
+								info->flags3 |= MF3_E4M8BOSS;
+							}
+
+							if (tempval & MF3_FULLVOLSOUNDS)
+							{
+								info->flags3 |= MF3_FULLVOLSOUNDS;
 							}
 								
 							if (tempval & MF2_NODMGTHRUST)
@@ -1198,7 +1282,7 @@ static int PatchThing (int thingy)
 						}
 
 						if (value[0] & MF_BOUNCES)
-						    DPrintf("[DEH Bits] MBF flag BOUNCES is partially supported. Use it as your own risks!\n");
+						    DPrintf("[DEH Bits] MBF flag BOUNCES is partially supported. Use it at your own risk!\n");
 
 						if (value[0] & MF_FRIEND)
 					    {
@@ -1343,7 +1427,7 @@ static int PatchFrame (int frameNum)
 		short Bit;
 		const char* Name;
 	} bitnames[] = {
-	    {0, "SKILL5FAST"},
+	    {1, "SKILL5FAST"},
 	};
 
 	if (frameNum >= 0 && frameNum < NUMSTATES) {
@@ -1500,12 +1584,12 @@ static int PatchWeapon (int weapNum)
 		short Bit;
 		const char *Name;
 	} bitnames[] = {
-		{0, "NOTHRUST"},
-		{1, "SILENT"},
-		{2, "NOAUTOFIRE"},
-		{3, "FLEEMELEE"},
-		{4, "AUTOSWITCHFROM"},
-		{5, "NOAUTOSWITCHTO"},
+		{1, "NOTHRUST"},
+		{2, "SILENT"},
+		{4, "NOAUTOFIRE"},
+		{8, "FLEEMELEE"},
+		{16, "AUTOSWITCHFROM"},
+		{32, "NOAUTOSWITCHTO"},
 	};
 
 	int result;

@@ -1240,10 +1240,11 @@ typedef enum
 	S_DOGS_RAISE4,
 	S_DOGS_RAISE5,
 	S_DOGS_RAISE6,
-
+	
 	S_OLDBFG1,  // killough 7/11/98: the old BFG's 43 firing frames
 	S_OLDBFG42 = S_OLDBFG1 + 41,
 	S_OLDBFG43,
+	
 
 	S_PLS1BALL,      // killough 7/19/98: first plasma fireball in the beta
 	S_PLS1BALL2,

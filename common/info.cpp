@@ -169,7 +169,7 @@ void A_BetaSkullAttack(AActor*); // killough 10/98: beta lost souls attacked dif
 void A_Ambient(AActor*);		// [RH] Play ambient sound
 void A_Gibify(AActor*); // denis - squash thing
 
-state_t	states[NUMSTATES] = {
+state_t	boomstates[S_MUSHROOM + 1] = {
 	{SPR_TROO,0,-1,NULL,S_NULL,0,0},	// S_NULL
 	{SPR_SHTG,4,0,A_Light0,S_NULL,0,0},	// S_LIGHTDONE
 	{SPR_PUNG,0,1,A_WeaponReady,S_PUNCH,0,0},	// S_PUNCH
@@ -1254,75 +1254,87 @@ state_t	states[NUMSTATES] = {
 
 	// killough 10/98: mushroom effect
 	{SPR_MISL,32769,8,A_Mushroom,S_EXPLODE2,0,0},  // S_MUSHROOM
-
-	// ZDoom/Odamex stuff starts here
-
-	{SPR_GIB0,0,-1,NULL,S_NULL,0,0},	// S_GIB0
-	{SPR_GIB1,0,-1,NULL,S_NULL,0,0},	// S_GIB1
-	{SPR_GIB2,0,-1,NULL,S_NULL,0,0},	// S_GIB2
-	{SPR_GIB3,0,-1,NULL,S_NULL,0,0},	// S_GIB3
-	{SPR_GIB4,0,-1,NULL,S_NULL,0,0},	// S_GIB4
-	{SPR_GIB5,0,-1,NULL,S_NULL,0,0},	// S_GIB5
-	{SPR_GIB6,0,-1,NULL,S_NULL,0,0},	// S_GIB6
-	{SPR_GIB7,0,-1,NULL,S_NULL,0,0},	// S_GIB7
-	{SPR_TROO,0,1,A_Ambient,S_AMBIENTSOUND,0,0},	// S_AMBIENTSOUND
-	{SPR_UNKN,0,-1,NULL,S_NULL,0,0},	// S_UNKNOWNTHING
-	
-	//	[Toke - CTF]
-	{SPR_BSOK,0,-1,NULL,S_NULL,0,0},	// Blue Socket
-	{SPR_RSOK,0,-1,NULL,S_NULL,0,0},	// Red Socket
-	{SPR_BFLG,32768,4,NULL,S_BFLG2,0,0}, // BLUE Flag Animation
-	{SPR_BFLG,32769,4,NULL,S_BFLG3,0,0},
-	{SPR_BFLG,32770,4,NULL,S_BFLG4,0,0},
-	{SPR_BFLG,32771,4,NULL,S_BFLG5,0,0},
-	{SPR_BFLG,32772,4,NULL,S_BFLG6,0,0},
-	{SPR_BFLG,32773,4,NULL,S_BFLG7,0,0},
-	{SPR_BFLG,32774,4,NULL,S_BFLG8,0,0},
-	{SPR_BFLG,32775,4,NULL,S_BFLG,0,0},
-	{SPR_RFLG,32768,4,NULL,S_RFLG2,0,0}, // RED Flag Animation
-	{SPR_RFLG,32769,4,NULL,S_RFLG3,0,0},
-	{SPR_RFLG,32770,4,NULL,S_RFLG4,0,0},
-	{SPR_RFLG,32771,4,NULL,S_RFLG5,0,0},
-	{SPR_RFLG,32772,4,NULL,S_RFLG6,0,0},
-	{SPR_RFLG,32773,4,NULL,S_RFLG7,0,0},
-	{SPR_RFLG,32774,4,NULL,S_RFLG8,0,0},
-	{SPR_RFLG,32775,4,NULL,S_RFLG,0,0},
-	{SPR_BDWN,0,-1,NULL,S_NULL,0,0},	// Blue Dropped Flag
-	{SPR_RDWN,0,-1,NULL,S_NULL,0,0},	// Red Dropped Flag
-	{SPR_BCAR,0,-1,NULL,S_NULL,0,0},	// Blue Dropped Flag
-	{SPR_RCAR,0,-1,NULL,S_NULL,0,0},	// Red Dropped Flag
-
-	{SPR_GSOK,0,-1,NULL,S_NULL,0,0},	//S_GSOK,
-	{SPR_GFLG,32768,4,NULL,S_GFLG2,0,0}, // BLUE Flag Animation
-	{SPR_GFLG,32769,4,NULL,S_GFLG3,0,0},
-	{SPR_GFLG,32770,4,NULL,S_GFLG4,0,0},
-	{SPR_GFLG,32771,4,NULL,S_GFLG5,0,0},
-	{SPR_GFLG,32772,4,NULL,S_GFLG6,0,0},
-	{SPR_GFLG,32773,4,NULL,S_GFLG7,0,0},
-	{SPR_GFLG,32774,4,NULL,S_GFLG8,0,0},
-	{SPR_GFLG,32775,4,NULL,S_GFLG,0,0},
-	{SPR_GDWN,0,-1,NULL,S_NULL,0,0},	//S_GDWN,
-	{SPR_GCAR,0,-1,NULL,S_NULL,0,0},	//S_GCAR,
-	
-	{SPR_TLGL,32768,4,NULL,S_BRIDGE2,0,0},	// S_BRIDGE1
-	{SPR_TLGL,32769,4,NULL,S_BRIDGE3,0,0},	// S_BRIDGE2
-	{SPR_TLGL,32770,4,NULL,S_BRIDGE4,0,0},	// S_BRIDGE3
-	{SPR_TLGL,32771,4,NULL,S_BRIDGE5,0,0},	// S_BRIDGE4
-	{SPR_TLGL,32772,4,NULL,S_BRIDGE1,0,0},	// S_BRIDGE5
-
-	{SPR_WPBF,0,1,NULL,S_WPBF2,0,0}, // S_WPBF1 - Waypoint Blue Flag
-	{SPR_WPBF,1,1,NULL,S_WPBF1,0,0}, // S_WPBF2
-	{SPR_WPRF,0,1,NULL,S_WPRF2,0,0}, // S_WPRF1 - Waypoint Red Flag
-	{SPR_WPRF,1,1,NULL,S_WPRF1,0,0}, // S_WPRF2
-	{SPR_WPGF,0,1,NULL,S_WPGF2,0,0}, // S_WPGF1 - Waypoint Green Flag
-	{SPR_WPGF,1,1,NULL,S_WPGF1,0,0}, // S_WPGF2
-
-	{SPR_CARE,0,-1,NULL,S_NULL,0,0}, // S_CARE - Horde Care Package
-
-	{ SPR_TNT1,0,1,A_Raise,S_NOWEAPON,0,0 },    //    S_NOWEAPONUP
-	{ SPR_TNT1,0,1,A_Lower,S_NOWEAPON,0,0 },    //S_NOWEAPONDOWN
-	{ SPR_TNT1,0,1,A_WeaponReady,S_NOWEAPON,0,0 },    //S_NOWEAPON
 };
+
+state_t dehextrastates[S_GIB0 - 1 - EXTRASTATES] = {};
+
+state_t odastates[NUMSTATES - S_GIB0] = {
+    // ZDoom/Odamex stuff starts here
+
+    {SPR_GIB0, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB0
+    {SPR_GIB1, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB1
+    {SPR_GIB2, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB2
+    {SPR_GIB3, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB3
+    {SPR_GIB4, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB4
+    {SPR_GIB5, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB5
+    {SPR_GIB6, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB6
+    {SPR_GIB7, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB7
+    {SPR_TROO, 0, 1, A_Ambient, S_AMBIENTSOUND, 0, 0}, // S_AMBIENTSOUND
+    {SPR_UNKN, 0, -1, NULL, S_NULL, 0, 0},             // S_UNKNOWNTHING
+
+    //	[Toke - CTF]
+    {SPR_BSOK, 0, -1, NULL, S_NULL, 0, 0},     // Blue Socket
+    {SPR_RSOK, 0, -1, NULL, S_NULL, 0, 0},     // Red Socket
+    {SPR_BFLG, 32768, 4, NULL, S_BFLG2, 0, 0}, // BLUE Flag Animation
+    {SPR_BFLG, 32769, 4, NULL, S_BFLG3, 0, 0},
+    {SPR_BFLG, 32770, 4, NULL, S_BFLG4, 0, 0},
+    {SPR_BFLG, 32771, 4, NULL, S_BFLG5, 0, 0},
+    {SPR_BFLG, 32772, 4, NULL, S_BFLG6, 0, 0},
+    {SPR_BFLG, 32773, 4, NULL, S_BFLG7, 0, 0},
+    {SPR_BFLG, 32774, 4, NULL, S_BFLG8, 0, 0},
+    {SPR_BFLG, 32775, 4, NULL, S_BFLG, 0, 0},
+    {SPR_RFLG, 32768, 4, NULL, S_RFLG2, 0, 0}, // RED Flag Animation
+    {SPR_RFLG, 32769, 4, NULL, S_RFLG3, 0, 0},
+    {SPR_RFLG, 32770, 4, NULL, S_RFLG4, 0, 0},
+    {SPR_RFLG, 32771, 4, NULL, S_RFLG5, 0, 0},
+    {SPR_RFLG, 32772, 4, NULL, S_RFLG6, 0, 0},
+    {SPR_RFLG, 32773, 4, NULL, S_RFLG7, 0, 0},
+    {SPR_RFLG, 32774, 4, NULL, S_RFLG8, 0, 0},
+    {SPR_RFLG, 32775, 4, NULL, S_RFLG, 0, 0},
+    {SPR_BDWN, 0, -1, NULL, S_NULL, 0, 0}, // Blue Dropped Flag
+    {SPR_RDWN, 0, -1, NULL, S_NULL, 0, 0}, // Red Dropped Flag
+    {SPR_BCAR, 0, -1, NULL, S_NULL, 0, 0}, // Blue Dropped Flag
+    {SPR_RCAR, 0, -1, NULL, S_NULL, 0, 0}, // Red Dropped Flag
+
+    {SPR_GSOK, 0, -1, NULL, S_NULL, 0, 0},     // S_GSOK,
+    {SPR_GFLG, 32768, 4, NULL, S_GFLG2, 0, 0}, // BLUE Flag Animation
+    {SPR_GFLG, 32769, 4, NULL, S_GFLG3, 0, 0},
+    {SPR_GFLG, 32770, 4, NULL, S_GFLG4, 0, 0},
+    {SPR_GFLG, 32771, 4, NULL, S_GFLG5, 0, 0},
+    {SPR_GFLG, 32772, 4, NULL, S_GFLG6, 0, 0},
+    {SPR_GFLG, 32773, 4, NULL, S_GFLG7, 0, 0},
+    {SPR_GFLG, 32774, 4, NULL, S_GFLG8, 0, 0},
+    {SPR_GFLG, 32775, 4, NULL, S_GFLG, 0, 0},
+    {SPR_GDWN, 0, -1, NULL, S_NULL, 0, 0}, // S_GDWN,
+    {SPR_GCAR, 0, -1, NULL, S_NULL, 0, 0}, // S_GCAR,
+
+    {SPR_TLGL, 32768, 4, NULL, S_BRIDGE2, 0, 0}, // S_BRIDGE1
+    {SPR_TLGL, 32769, 4, NULL, S_BRIDGE3, 0, 0}, // S_BRIDGE2
+    {SPR_TLGL, 32770, 4, NULL, S_BRIDGE4, 0, 0}, // S_BRIDGE3
+    {SPR_TLGL, 32771, 4, NULL, S_BRIDGE5, 0, 0}, // S_BRIDGE4
+    {SPR_TLGL, 32772, 4, NULL, S_BRIDGE1, 0, 0}, // S_BRIDGE5
+
+    {SPR_WPBF, 0, 1, NULL, S_WPBF2, 0, 0},       // S_WPBF1 - Waypoint Blue Flag
+    {SPR_WPBF, 1, 1, NULL, S_WPBF1, 0, 0},       // S_WPBF2
+    {SPR_WPRF, 0, 1, NULL, S_WPRF2, 0, 0},       // S_WPRF1 - Waypoint Red Flag
+    {SPR_WPRF, 1, 1, NULL, S_WPRF1, 0, 0},       // S_WPRF2
+    {SPR_WPGF, 0, 1, NULL, S_WPGF2, 0, 0},       // S_WPGF1 - Waypoint Green Flag
+    {SPR_WPGF, 1, 1, NULL, S_WPGF1, 0, 0},       // S_WPGF2
+
+    {SPR_CARE, 0, -1, NULL, S_NULL, 0, 0}, // S_CARE - Horde Care Package
+
+    {SPR_TNT1, 0, 1, A_Raise, S_NOWEAPON, 0, 0},       // S_NOWEAPONUP
+    {SPR_TNT1, 0, 1, A_Lower, S_NOWEAPON, 0, 0},       // S_NOWEAPONDOWN
+    {SPR_TNT1, 0, 1, A_WeaponReady, S_NOWEAPON, 0, 0}, // S_NOWEAPON
+};
+
+// [Blair] Since Odamex has more out-of-the-box states,
+// the new DEHExtra state spec starts at 1100, while we have around
+// 1130. To fix this, we'll need to append the states Odamex adds
+// at the end and reference them that way.
+// When we convert this to DSDHacked, we'll need to append the dynamic
+// frame list size to the end of the doom states to get the odamex states.
+state_t states[NUMSTATES] = {};
 
 mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 
@@ -1537,7 +1549,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	10,		// damage
 	NULL,		// activesound
 	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
-	MF2_PCROSS|MF2_IMPACT,		// flags2	
+	MF2_PCROSS|MF2_IMPACT|MF2_SEEKERMISSILE,		// flags2	
 	S_NULL,		// raisestate
 	FRACUNIT,
 	"MT_TRACER"
@@ -7556,7 +7568,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		0x10000,
 		"MT_HORDESPAWN"
 	},
-	{                   // MT_CAREPACK
+    {               // MT_CAREPACK
 		-1,             // doomednum
 		S_CARE,         // spawnstate
 		1000,           // spawnhealth
@@ -7593,16 +7605,44 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 void D_Init_DEHEXTRA_Frames(void)
 {
 	// [BH] Initialize extra dehacked states
-	for (int i = EXTRASTATES; i < NUMSTATES; i++)
+	for (int i = 0; i < (S_GIB0 - EXTRASTATES + 1); i++)
 	{
-		states[i].sprite = SPR_TNT1;
-		states[i].frame = 0;
-		states[i].tics = -1;
-		states[i].action = NULL;
-		states[i].nextstate = (statenum_t)i;
-		states[i].misc1 = 0;
-		states[i].misc2 = 0;
-		states[i].flags = STATEF_NONE;
+		dehextrastates[i].sprite = SPR_TNT1;
+		dehextrastates[i].frame = 0;
+		dehextrastates[i].tics = -1;
+		dehextrastates[i].action = NULL;
+		dehextrastates[i].nextstate = (statenum_t)(i + EXTRASTATES);
+		dehextrastates[i].misc1 = 0;
+		dehextrastates[i].misc2 = 0;
+		dehextrastates[i].flags = STATEF_NONE;
+	}
+
+	// [Blair] Combine all the state tables.
+	for (int i = 0; i < NUMSTATES; i++)
+	{
+		if (i <= S_MUSHROOM)
+		{
+			states[i] = boomstates[i];
+		}
+		else if (i >= EXTRASTATES && i < S_GIB0)
+		{
+			states[i] = dehextrastates[i - EXTRASTATES];
+		}
+		else if (i >= S_GIB0)
+		{
+			states[i] = odastates[i - S_GIB0];
+		}
+		else
+		{
+			states[i].sprite = SPR_TNT1;
+			states[i].frame = 0;
+			states[i].tics = -1;
+			states[i].action = NULL;
+			states[i].nextstate = (statenum_t)(i + 1);
+			states[i].misc1 = 0;
+			states[i].misc2 = 0;
+			states[i].flags = STATEF_NONE;
+		}
 	}
 
 	// NIGHTMARE! stuff
@@ -7627,7 +7667,7 @@ void D_Init_DEHEXTRA_Frames(void)
 		mobjinfo[i].meleerange = MELEERANGE;
 	}
 
-	mobjinfo[MT_VILE].flags3 = MF3_SHORTMRANGE | MF3_DMGIGNORED;
+	mobjinfo[MT_VILE].flags3 = MF3_SHORTMRANGE | MF3_DMGIGNORED | MF3_NOTHRESHOLD;
 	mobjinfo[MT_CYBORG].flags3 = MF3_NORADIUSDMG | MF3_HIGHERMPROB | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E2M8BOSS | MF3_E4M6BOSS;
 	mobjinfo[MT_SPIDER].flags3 = MF3_NORADIUSDMG | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E3M8BOSS | MF3_E4M8BOSS;
 	mobjinfo[MT_SKULL].flags3 = MF3_RANGEHALF;

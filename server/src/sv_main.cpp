@@ -665,7 +665,7 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id > 255 || sfx_id < 0)
+	if (sfx_id > numsfx || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -694,7 +694,7 @@ void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id > 255 || sfx_id < 0)
+	if (sfx_id > numsfx || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -728,7 +728,7 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id > 255 || sfx_id < 0)
+	if (sfx_id > numsfx || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -758,7 +758,7 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 
 	sfx_id = S_FindSound( name );
 
-	if ( sfx_id > 255 || sfx_id < 0 )
+	if (sfx_id > numsfx || sfx_id < 0)
 	{
 		Printf("SV_StartSound: range error. Sfx_id = %d\n", sfx_id );
 		return;
@@ -783,7 +783,7 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id > 255 || sfx_id < 0)
+	if (sfx_id > numsfx || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -2743,17 +2743,17 @@ void SV_UpdateMissiles(player_t &pl)
     TThinkerIterator<AActor> iterator;
     while ( (mo = iterator.Next() ) )
     {
-        if (!(mo->flags & MF_MISSILE || mo->flags & MF_SKULLFLY))
+		if (!(mo->flags & MF_MISSILE) || mo->flags & MF_SKULLFLY)
 			continue;
 
 		if (mo->type == MT_PLASMA)
 			continue;
 
 		// update missile position every 30 tics
-		if (((gametic+mo->netid) % 30) && (mo->type != MT_TRACER) && (mo->type != MT_FATSHOT))
+		if (((gametic+mo->netid) % 30) && (mo->type != MT_TRACER) && (mo->type != MT_FATSHOT) && !(mo->flags2 & MF2_SEEKERMISSILE))
 			continue;
-		// Revenant tracers and Mancubus fireballs need to be  updated more often
-		else if (((gametic+mo->netid) % 5) && (mo->type == MT_TRACER || mo->type == MT_FATSHOT))
+		// Revenant tracers and Mancubus fireballs need to be updated more often (and custom tracers)
+		else if (((gametic+mo->netid) % 5) && (mo->type == MT_TRACER || mo->type == MT_FATSHOT || mo->flags2 & MF2_SEEKERMISSILE))
 			continue;
 
 		if(SV_IsPlayerAllowedToSee(pl, mo))
@@ -2769,6 +2769,41 @@ void SV_UpdateMissiles(player_t &pl)
                     return;
 		}
     }
+}
+
+//
+// SV_UpdateSpawnedObjects
+// This function will iterate thru objects and find one that was freshly spawned
+// outside of normal parameters, like in a SpawnObject codepointer.
+// It will then update it for players and remove the flag to preserve network bandwidth.
+// And most objects here otherwise wouldn't be updated by other netcode, so let's update it.
+// This is most likely used for decorations like weapon smoke puffs.
+//
+void SV_UpdateSpawnedObjects(player_t& pl)
+{
+	AActor* mo;
+
+	TThinkerIterator<AActor> iterator;
+	while ((mo = iterator.Next()))
+	{
+		if (!(mo->oflags & MFO_DETRITUS))
+			continue;
+
+		if (SV_IsPlayerAllowedToSee(pl, mo))
+		{
+			client_t* cl = &pl.client;
+
+			MSG_WriteSVC(
+			    &cl->netbuf,
+			    SVC_UpdateMobj(*mo, SVC_UM_POS_RND | SVC_UM_MOM_ANGLE ));
+
+			mo->oflags &= ~MFO_DETRITUS;
+
+			if (cl->netbuf.cursize >= 1024)
+				if (!SV_SendPacket(pl))
+					return;
+		}
+	}
 }
 
 // Update the given actors state immediately.
@@ -3129,6 +3164,8 @@ void SV_WriteCommands(void)
 			SV_SendPlayerStateUpdate(&(it->client), target);
 
 		SV_UpdateConsolePlayer(*it);
+
+		SV_UpdateSpawnedObjects(*it);
 
 		SV_UpdateMissiles(*it);
 
