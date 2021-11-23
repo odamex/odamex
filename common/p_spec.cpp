@@ -1882,6 +1882,9 @@ void P_PlayerInSpecialSector (player_t *player)
 //
 bool P_ActorInSpecialSector(AActor* actor)
 {
+	if (!actor)
+		return;
+
 	sector_t* sector = actor->subsector->sector;
 
 	if (sector && sector->special & KILL_MONSTERS_MASK && actor->z == actor->floorz &&
