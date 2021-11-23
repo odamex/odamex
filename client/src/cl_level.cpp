@@ -69,7 +69,7 @@ EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_monstersrespawn)
 EXTERN_CVAR(sv_gravity)
 EXTERN_CVAR(sv_aircontrol)
-EXTERN_CVAR(g_resetinv)
+EXTERN_CVAR(g_resetinvonexit)
 
 // Start time for timing demos
 dtime_t starttime;
@@ -545,7 +545,7 @@ void G_DoLoadLevel (int position)
 	{
 		if (it->ingame())
 		{
-			if (::g_resetinv || it->playerstate == PST_DEAD ||
+			if (::g_resetinvonexit || it->playerstate == PST_DEAD ||
 			    it->playerstate == PST_REBORN)
 			{
 				it->doreborn = true;
