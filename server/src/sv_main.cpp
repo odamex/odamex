@@ -119,6 +119,7 @@ EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_winnerstays)
 EXTERN_CVAR(debug_disconnect)
+EXTERN_CVAR(g_resetinv)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -4634,7 +4635,7 @@ void SV_PreservePlayer(player_t &player)
 	if (!serverside || sv_gametype != GM_COOP || !validplayer(player) || !player.ingame())
 		return;
 
-	if(!unnatural_level_progression)
+	if(!::unnatural_level_progression && !::g_resetinv)
 		player.playerstate = PST_LIVE; // denis - carry weapons and keys over to next level
 
 	G_DoReborn(player);
