@@ -29,7 +29,6 @@
 
 // Data.
 #include "m_fixed.h"
-#include "p_local.h"
 #include "info.h"
 #include "actor.h"
 
@@ -7664,7 +7663,7 @@ void D_Init_DEHEXTRA_Frames(void)
 		mobjinfo[i].projectile_group = PG_DEFAULT;
 		mobjinfo[i].splash_group = SG_DEFAULT;
 		mobjinfo[i].ripsound = "";
-		mobjinfo[i].meleerange = MELEERANGE;
+		mobjinfo[i].meleerange = (64 * FRACUNIT);
 	}
 
 	mobjinfo[MT_VILE].flags3 = MF3_SHORTMRANGE | MF3_DMGIGNORED | MF3_NOTHRESHOLD;
