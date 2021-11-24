@@ -123,6 +123,7 @@ void SV_SendPlayerQueuePosition(player_t* source, player_t* dest);
 void SV_ClearPlayerQueue();
 
 void SV_UpdateSecretCount(player_t & player);
+void SV_UpdateSpawnedObjects(player_t& pl);
 void SV_UpdateMonsterRespawnCount();
 void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, int arg0,
                                int arg1, int arg2, int arg3, int arg4);
