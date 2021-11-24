@@ -7604,7 +7604,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 void D_Init_DEHEXTRA_Frames(void)
 {
 	// [BH] Initialize extra dehacked states
-	for (int i = 0; i < (S_GIB0 - EXTRASTATES + 1); i++)
+	for (int i = 0; i < ARRAY_LENGTH(dehextrastates); i++)
 	{
 		dehextrastates[i].sprite = SPR_TNT1;
 		dehextrastates[i].frame = 0;
