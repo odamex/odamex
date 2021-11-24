@@ -147,11 +147,12 @@ struct Player_t
 
 enum GameType_t
 {
-	GT_Cooperative = 0
-    ,GT_Deathmatch
-	,GT_TeamDeathmatch
-	,GT_CaptureTheFlag
-	,GT_Max
+	GT_Cooperative = 0,
+	GT_Deathmatch,
+	GT_TeamDeathmatch,
+	GT_CaptureTheFlag,
+	GT_Horde,
+	GT_Max
 };
 
 struct ServerInfo_t
