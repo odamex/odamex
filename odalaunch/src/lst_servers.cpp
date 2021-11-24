@@ -459,6 +459,10 @@ void LstOdaServerList::AddServerToList(const Server& s,
 		GameType = "LMS Capture The Flag";
 	else if (s.Info.GameType == GT_CaptureTheFlag)
 		GameType = "Capture The Flag";
+	else if (s.Info.GameType == GT_Horde && s.Info.Lives)
+		GameType = "Survival Horde";
+	else if (s.Info.GameType == GT_Horde)
+		GameType = "Horde";
 	else
 		GameType = "Unknown";
 

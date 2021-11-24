@@ -54,7 +54,7 @@
 #include "m_wdlstats.h"
 #include "svc_message.h"
 #include "g_gametype.h"
-
+#include "p_hordespawn.h"
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
@@ -455,13 +455,14 @@ void G_InitNew (const char *mapname)
 	WinInfo info = ::levelstate.getWinInfo();
 
 	level.mapname = mapname;
+
+	// [AM] Start the WDL log on new level.
+	M_StartWDLLog(true);
+
 	G_DoLoadLevel (0);
 
 	if (::serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
 		SV_UpdatePlayerQueueLevelChange(info);
-
-	// [AM] Start the WDL log on new level.
-	M_StartWDLLog();
 }
 
 //
@@ -620,7 +621,7 @@ void G_DoResetLevel(bool full_reset)
 	for (it = players.begin(); it != players.end(); ++it)
 	{
 		// Don't let players keep cards through a reset.
-		if (sv_gametype == GM_COOP)
+		if (G_IsCoopGame())
 			P_ClearPlayerCards(*it);
 
 		P_ClearPlayerPowerups(*it);
@@ -643,6 +644,9 @@ void G_DoResetLevel(bool full_reset)
 	level.time = 0;
 	level.inttimeleft = mapchange / TICRATE;
 
+	// [AM] Clear horde spawns - they will be repopulated later.
+	P_HordeClearSpawns();
+
 	// Reset the respawned monster count
 	level.respawned_monsters = 0;	
 
@@ -655,6 +659,9 @@ void G_DoResetLevel(bool full_reset)
 
 		SV_ClientFullUpdate(*it);
 	}
+
+	// No need to clear the spawn locations because we're not loading a new map.
+	M_StartWDLLog(false);
 
 	// Get queued players in the game.
 	SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
@@ -673,8 +680,6 @@ void G_DoResetLevel(bool full_reset)
 		//      a players subsector to be valid (like use) to crash the server.
 		G_DoReborn(*it);
 	}
-
-	M_StartWDLLog();
 }
 
 //

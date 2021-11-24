@@ -327,6 +327,22 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	return false;
 }
 
+std::string M_GetCurrentWadHashes()
+{
+	std::string builder = "";
+
+	for (OResFiles::const_iterator it = ::wadfiles.begin(); it != ::wadfiles.end(); ++it)
+	{
+		std::string base = it->getBasename().c_str();
+		std::string hash = it->getHash().c_str();
+		std::string line = base + ',' + hash + '\n';
+
+		builder += line;
+	}
+
+	return builder;
+}
+
 BEGIN_COMMAND(whereis)
 {
 	if (argc < 2)

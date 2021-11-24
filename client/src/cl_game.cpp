@@ -61,6 +61,8 @@
 #include "gi.h"
 #include "hu_mousegraph.h"
 #include "g_spawninv.h"
+#include "g_gametype.h"
+#include "p_horde.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -1346,7 +1348,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	int selections;
 	mapthing2_t *spot;
 
-	if(!serverside || sv_gametype == GM_COOP)
+	if(!serverside || G_UsesCoopSpawns())
 		return;
 
 	selections = DeathMatchStarts.size();
@@ -1394,7 +1396,7 @@ void G_DoReborn (player_t &player)
 		player.mo->player = NULL;
 
 	// spawn at random spot if in death match
-	if (sv_gametype != GM_COOP)
+	if (!G_UsesCoopSpawns())
 	{
 		G_DeathMatchSpawnPlayer (player);
 		return;
@@ -1517,6 +1519,7 @@ void G_DoLoadGame (void)
 	G_SerializeSnapshots (arc);
 	P_SerializeRNGState (arc);
 	P_SerializeACSDefereds (arc);
+	P_SerializeHorde(arc);
 
 	multiplayer = false;
 
@@ -1616,6 +1619,7 @@ void G_DoSaveGame()
 	G_SerializeSnapshots (arc);
 	P_SerializeRNGState (arc);
 	P_SerializeACSDefereds (arc);
+	P_SerializeHorde(arc);
 
 	arc << level.time;
 

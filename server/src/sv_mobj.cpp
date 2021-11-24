@@ -31,6 +31,7 @@
 #include "sv_main.h"
 #include "p_acs.h"
 #include "g_spawninv.h"
+#include "m_wdlstats.h"
 
 EXTERN_CVAR(sv_maxplayers)
 
@@ -128,7 +129,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	P_SetupPsprites(&player);
 
 	// give all cards in death match mode
-	if (sv_gametype != GM_COOP)
+	if (!G_IsCoopGame())
 	{
 		for (int i = 0; i < NUMCARDS; i++)
 			player.cards[i] = true;
@@ -150,6 +151,15 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 				level.behavior->StartTypedScripts(SCRIPT_Enter, player.mo);
 			else if (playerstate == PST_REBORN)
 				level.behavior->StartTypedScripts(SCRIPT_Respawn, player.mo);
+		}
+
+		team_t team = player.userinfo.team;
+		
+		// Log the spawn
+		if (!player.spectator)
+		{
+			M_LogWDLEvent(WDL_EVENT_SPAWNPLAYER, &player, NULL, team, 0,
+			              M_GetPlayerSpawn(mthing->x, mthing->y), 0);
 		}
 
 		// send new objects

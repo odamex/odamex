@@ -365,6 +365,15 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 		cur->set_flags(mo->flags);
 	}
 
+	// odamex flags - only monster flags for now
+	const uint32_t modMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK |
+	                         MFO_NORAISE | MFO_FULLBRIGHT;
+	if (mo->oflags & modMask)
+	{
+		spawnFlags |= SVC_SM_OFLAGS;
+		cur->set_oflags(mo->oflags & modMask);
+	}
+
 	// animating corpses
 	if ((mo->flags & MF_CORPSE) && mo->state - states != S_GIBS)
 	{
@@ -1555,6 +1564,24 @@ odaproto::svc::Toast SVC_Toast(const toast_t& toast)
 	msg.set_right(toast.right);
 	msg.set_right_pid(toast.right_pid);
 	msg.set_icon(toast.icon);
+
+	return msg;
+}
+
+odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde)
+{
+	odaproto::svc::HordeInfo msg;
+
+	msg.set_state(horde.state);
+	msg.set_wave(horde.wave);
+	msg.set_wave_time(horde.waveTime);
+	msg.set_boss_time(horde.bossTime);
+	msg.set_define_id(horde.defineID);
+	msg.set_spawned_health(horde.spawnedHealth);
+	msg.set_killed_health(horde.killedHealth);
+	msg.set_boss_health(horde.bossHealth);
+	msg.set_boss_damage(horde.bossDamage);
+	msg.set_wave_start_health(horde.waveStartHealth);
 
 	return msg;
 }

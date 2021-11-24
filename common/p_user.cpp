@@ -34,7 +34,9 @@
 #include "p_local.h"
 #include "s_sound.h"
 #include "i_system.h"
+#include "p_tick.h"
 #include "gi.h"
+#include "m_wdlstats.h"
 
 #include "p_snapshot.h"
 #include "g_gametype.h"
@@ -198,7 +200,13 @@ PlayerResults PlayerQuery::execute()
 		if (m_ready && !it->ready)
 			continue;
 
+		if (m_health && it->health <= 0)
+			continue;
+
 		if (m_lives && it->lives <= 0)
+			continue;
+
+		if (m_notLives && it->lives > 0)
 			continue;
 
 		if (m_team != TEAM_NONE && it->userinfo.team != m_team)
@@ -297,6 +305,30 @@ PlayerResults PlayerQuery::execute()
 
 	return results;
 }
+
+/**
+ * @brief Execute the query.
+ *
+ * @return Results of the query.
+ */
+PlayersView SpecQuery::execute()
+{
+	PlayersView rvo;
+
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	{
+		if (!it->ingame() || !it->spectator)
+			continue;
+
+		if (m_onlyInQueue && it->QueuePosition == 0)
+			continue;
+
+		rvo.push_back(&*it);
+	}
+
+	return rvo;
+}
+
 
 //
 // P_NumPlayersInGame()
@@ -1018,6 +1050,16 @@ void P_PlayerThink (player_t *player)
 	else if (player->air_finished <= level.time && !(level.time & 31))
 	{
 		P_DamageMobj (player->mo, NULL, NULL, 2 + 2*((level.time-player->air_finished)/TICRATE), MOD_WATER, DMG_NO_ARMOR);
+	}
+
+	// [BC] Handle WDL Beacon
+	if (serverside && player->ingame() && !player->spectator && player->mo->health > 0)
+	{
+		if (P_AtInterval(5))
+		{
+			M_LogWDLEvent(WDL_EVENT_PLAYERBEACON, player, NULL, player->mo->angle / 4, 0,
+			              0, 0);
+		}
 	}
 }
 

@@ -820,6 +820,7 @@ void G_InitLevelLocals()
 	::level.cluster = info.cluster;
 	::level.flags = info.flags;
 	::level.levelnum = info.levelnum;
+	ArrayCopy(::level.level_fingerprint, info.level_fingerprint);
 
 	// Only copy the level name if there's a valid level name to be copied.
 	
@@ -915,6 +916,8 @@ void G_InitLevelLocals()
 	::level.bossactions = &info.bossactions;
 	::level.bossactions_donothing = info.bossactions_donothing;
 	
+	::level.detected_gametype = GM_COOP;
+
 	movingsectors.clear();
 }
 

@@ -213,6 +213,8 @@ typedef enum
 	SPR_WPRF,
 	SPR_WPGF,
 
+	SPR_CARE,
+
 	NUMSPRITES
 
 } spritenum_t;
@@ -1338,6 +1340,8 @@ typedef enum
 	S_WPGF1, // Waypoint - Green flag
 	S_WPGF2,
 
+	S_CARE, // Horde - Care Package
+
 	S_NOWEAPONUP,
 	S_NOWEAPONDOWN,
 	S_NOWEAPON,
@@ -1385,6 +1389,7 @@ inline FArchive &operator>> (FArchive &arc, state_t *&state)
 }
 
 typedef enum {
+	MT_NULL = -1, // ferk: null/invalid mobj (zero is reserved for MT_PLAYER)
 	MT_PLAYER,
 	MT_POSSESSED,
 	MT_SHOTGUY,
@@ -1594,6 +1599,8 @@ typedef enum {
 	MT_WPRFLAG,
 	MT_WPGFLAG,
 	MT_AVATAR,
+	MT_HORDESPAWN,
+	MT_CAREPACK,
 
 	// FIXME: Has no info.cpp entry.
 	MT_MUSICCHANGE,

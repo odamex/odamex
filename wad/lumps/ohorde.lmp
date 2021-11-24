@@ -1,0 +1,56 @@
+round
+{
+    // name = "<title>", "[subtitle]"
+    //
+    // This is the title of the round definition, shown when the round begins.
+    // The optional subtitle is displayed below the title, and is designed
+    // for longer-form "flavor text".
+    name = "Knee Deep In The Dead"
+
+    // range = <minrange>, <maxrange>
+    //
+    // Lower and upper bounds on when the round definition can be used.
+    // 0.0 is the first round, 1.0 is the last round, and numbers in between
+    // are somewhere in the middle.
+    // 
+    // As an example, a range of 0.5 to 1.0 means that a round definition
+    // will only be used in the second half of the game.
+    range = 0.0, 0.25
+
+    // grouphealth = <minhp>, <maxhp>
+    //
+    // Lower and upper bounds on the quantity of monsters can spawn at once,
+    // using their health pools as a measuring stick.
+    grouphealth = 150, 300
+
+    // weapon = <wepname>, [wepname], [...]
+    //
+    // Weapons that are given out by care packages.  The order of the "weapon"
+    // tokens top to bottom designates how soon the game will give you a
+    // particular weapon; top being sooner, bottom being later.
+    //
+    // If you specify more than one weapon name in a single "weapon", you
+    // will get both weapons at the same time.
+    weapon = "Shotgun", "Chainsaw"
+    weapon = "Chaingun"
+    weapon = "RocketLauncher"
+
+    // enemy = "<enemyname>", [chance]
+    //
+    // Enemies that are randomly selected between for spawning in a round.
+    //
+    // Chance is a number that defaults to 1.0 that designates how likely
+    // an enemy is to be selected.  For example, an enemy with a chance
+    // of 0.5 is half as likley to be selected.
+    enemy = "ZombieMan"
+    enemy = "ShotgunGuy"
+    enemy = "DoomImp"
+    enemy = "Demon"
+    enemy = "Spectre"
+
+    // boss = "<bossname>"
+    //
+    // Boss monsters that are randomly selected between for spawning in
+    // a round.
+    boss = "BaronOfHell"
+}

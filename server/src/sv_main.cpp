@@ -681,12 +681,13 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 	{
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f,
-		                                        attenuation));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
+		                                             1.0f, attenuation));
 	}
 }
 
-void SV_Sound (player_t &pl, AActor *mo, byte channel, const char *name, byte attenuation)
+void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
+              const byte attenuation)
 {
 	int sfx_id;
 	int x = 0, y = 0;
@@ -707,7 +708,7 @@ void SV_Sound (player_t &pl, AActor *mo, byte channel, const char *name, byte at
 
 	client_t *cl = &pl.client;
 
-	MSG_WriteSVC(&cl->netbuf,
+	MSG_WriteSVC(&cl->reliablebuf,
 	             SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f, attenuation));
 }
 
@@ -740,8 +741,8 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f,
-		                                        attenuation));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
+		                                             1.0f, attenuation));
 	}
 }
 
@@ -769,8 +770,8 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 		{
 			cl = &(it->client);
 
-			MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(), channel, sfx_id,
-			                                        1.0f, attenuation));
+			MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(), channel, sfx_id,
+			                                             1.0f, attenuation));
 		}
 	}
 }
@@ -795,8 +796,8 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id,
-		                                        1.0f, attenuation));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id,
+		                                             1.0f, attenuation));
 	}
 }
 
@@ -985,6 +986,14 @@ bool SV_SetupUserInfo(player_t &player)
 
 		SV_BroadcastPrintf("%s changed %s name to %s.\n",
 			old_netname.c_str(), gendermessage.c_str(), player.userinfo.netname.c_str());
+
+		team_t team = TEAM_NONE;
+		if (player.mo && player.userinfo.team && player.ingame() && !player.spectator &&
+		    !G_IsLevelState(LevelState::WARMUP))
+		{
+			M_HandleWDLNameChange(team, old_netname.c_str(),
+			                      player.userinfo.netname.c_str(), player.id);
+		}
 	}
 
 	if (G_IsTeamGame())
@@ -996,6 +1005,11 @@ bool SV_SetupUserInfo(player_t &player)
 		{
 			// kill player if team is changed
 			P_DamageMobj(player.mo, 0, 0, 1000, 0);
+			M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, old_team,
+			              M_GetPlayerId(&player, old_team), 0, 0);
+			M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team,
+			              M_GetPlayerId(&player, player.userinfo.team), 0,
+			              0);
 			SV_BroadcastPrintf("%s switched to the %s team.\n",
 			                   player.userinfo.netname.c_str(),
 			                   V_GetTeamColor(player.userinfo.team).c_str());
@@ -1093,10 +1107,12 @@ bool SV_IsTeammate(player_t &a, player_t &b)
 		else
 			return false;
 	}
-	else if (sv_gametype == GM_COOP)
+	else if (G_IsCoopGame())
+	{
 		return true;
+	}
 
-	else return false;
+	return false;
 }
 
 //
@@ -1502,7 +1518,7 @@ void SV_ClientFullUpdate(player_t &pl)
 void SV_UpdateSecret(sector_t& sector, player_t &player)
 {
 	// Don't announce secrets on PvP gamemodes
-	if (sv_gametype != GM_COOP)
+	if (!G_IsCoopGame())
 		return;
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
@@ -1953,7 +1969,7 @@ void SV_DisconnectClient(player_t &who)
 			}
 
 			// Frags (DM/TDM/CTF) or Kills (Coop).
-			if (sv_gametype == GM_COOP)
+			if (G_IsCoopGame())
 				sprintf(str, "%d KILLS, ", who.killcount);
 			else
 				sprintf(str, "%d FRAGS, ", who.fragcount);
@@ -2297,7 +2313,7 @@ void SV_DrawScores()
 
 	}
 
-	else if (sv_gametype == GM_COOP)
+	else if (G_IsCoopGame())
 	{
 		compare_player_kills comparison_functor;
 		sortedplayers.sort(comparison_functor);
@@ -2692,7 +2708,7 @@ bool SV_PrivMsg(player_t &player)
 		return true;
 
 	// In competitive gamemodes, don't allow spectators to message players.
-	if (sv_gametype != GM_COOP && player.spectator && !dplayer.spectator)
+	if (!G_IsCoopGame() && player.spectator && !dplayer.spectator)
 		return true;
 
 	// Flood protection
@@ -2755,20 +2771,34 @@ void SV_UpdateMissiles(player_t &pl)
     }
 }
 
-// Update the given actors state immediately.
-void SV_UpdateMobjState(AActor *mo)
+// Update the given actors data immediately.
+void SV_UpdateMobj(AActor* mo)
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		if (!(it->ingame()))
 			continue;
 
 		if (SV_IsPlayerAllowedToSee(*it, mo))
 		{
-			client_t *cl = &(it->client);
-
-			MSG_WriteSVC(&cl->reliablebuf, SVC_MobjState(mo));
+			client_t* cl = &(it->client);
 			MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
+		}
+	}
+}
+
+// Update the given actors state immediately.
+void SV_UpdateMobjState(AActor* mo)
+{
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		if (!(it->ingame()))
+			continue;
+
+		if (SV_IsPlayerAllowedToSee(*it, mo))
+		{
+			client_t* cl = &(it->client);
+			MSG_WriteSVC(&cl->reliablebuf, SVC_MobjState(mo));
 		}
 	}
 }
@@ -2804,6 +2834,32 @@ void SV_UpdateMonsters(player_t &pl)
 				if (!SV_SendPacket(pl))
 					return;
 			}
+		}
+	}
+}
+
+void SV_UpdateGametype(player_t& pl)
+{
+	if (G_IsHordeMode())
+	{
+		static hordeInfo_t lastInfo = {HS_STARTING, -1, -1, -1, 0, -1, -1, -1, -1, -1};
+		static int ticsent;
+
+		// If the hordeinfo has changed since last tic, save and send it.
+		if (ticsent != ::gametic)
+		{
+			const hordeInfo_t info = P_HordeInfo();
+			if (!info.equals(lastInfo))
+			{
+				memcpy(&lastInfo, &info, sizeof(hordeInfo_t));
+				ticsent = ::gametic;
+			}
+		}
+
+		// Send it if we're on the tic it mutated on or to a fresh player.
+		if (ticsent == ::gametic || (pl.GameTime == 0 && pl.ingame()))
+		{
+			MSG_WriteSVC(&pl.client.netbuf, SVC_HordeInfo(lastInfo));
 		}
 	}
 }
@@ -2895,7 +2951,7 @@ void SV_SendPingRequest(client_t* cl)
 
 void SV_UpdateMonsterRespawnCount()
 {
-	if (sv_gametype != GM_COOP)
+	if (!G_IsCoopGame())
 		return;
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
@@ -3090,6 +3146,8 @@ void SV_WriteCommands(void)
 		SV_UpdateMissiles(*it);
 
 		SV_UpdateMonsters(*it);
+
+		SV_UpdateGametype(*it);     // update gametype stuff
 
 		SV_SendPingRequest(cl);     // request ping reply
 
@@ -3310,6 +3368,11 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 	    !G_IsLevelState(LevelState::WARMUP))
 	{
 		P_DamageMobj(player.mo, 0, 0, 1000, 0);
+
+		M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, old_team,
+		              M_GetPlayerId(&player, old_team), 0, 0);
+		M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, team, M_GetPlayerId(&player, team), 0,
+		              0);
 	}
 	SV_BroadcastPrintf("%s has joined the %s team.\n", player.userinfo.netname.c_str(),
 	                   V_GetTeamColor(team).c_str());
@@ -3456,6 +3519,9 @@ void SV_JoinPlayer(player_t& player, bool silent)
 			                   player.userinfo.netname.c_str(),
 			                   V_GetTeamColor(player.userinfo.team).c_str());
 	}
+
+	M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team,
+	              M_GetPlayerId(&player, player.userinfo.team), 0, 0);
 }
 
 void SV_SpecPlayer(player_t &player, bool silent)
@@ -3999,7 +4065,7 @@ void SV_ParseCommands(player_t &player)
 
 		case clc_kill:
 			if(player.mo && player.suicidedelay == 0 && gamestate == GS_LEVEL &&
-               (sv_allowcheats || sv_gametype == GM_COOP))
+               (sv_allowcheats || G_IsCoopGame()))
             {
 				SV_Suicide (player);
             }
@@ -4333,7 +4399,7 @@ BEGIN_COMMAND (playerinfo)
 	Printf(" userinfo.gender  - %d \n",		player->userinfo.gender);
 	Printf(" time             - %d \n",		player->GameTime);
 	Printf(" spectator        - %d \n",		player->spectator);
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
 		Printf(" kills - %d  deaths - %d\n", player->killcount, player->deathcount);
 	}
@@ -4378,9 +4444,9 @@ BEGIN_COMMAND(playerlist)
 		          it->userinfo.netname.c_str(), it->spectator ? "(SPEC)" : "",
 		          NET_AdrToString(it->client.address), it->GameTime, it->ping);
 
-		if (sv_gametype == GM_COOP)
+		if (G_IsCoopGame())
 		{
-			if (g_lives)
+			if (G_IsLivesGame())
 			{
 				// Kills and Lives
 				StrFormat(strScore, " - kills:%d - lives:%d", it->killcount, it->lives);
@@ -4394,7 +4460,7 @@ BEGIN_COMMAND(playerlist)
 		}
 		else if (sv_gametype == GM_DM)
 		{
-			if (g_lives)
+			if (G_IsLivesGame())
 			{
 				// Wins, Lives, and Frags
 				StrFormat(strScore, " - wins:%d - lives:%d - frags:%d", it->roundwins,
@@ -4408,7 +4474,7 @@ BEGIN_COMMAND(playerlist)
 		}
 		else if (sv_gametype == GM_TEAMDM)
 		{
-			if (g_lives)
+			if (G_IsLivesGame())
 			{
 				// Frags and Lives
 				StrFormat(strScore, " - frags:%d - lives:%d", frags, it->lives);
@@ -4421,7 +4487,7 @@ BEGIN_COMMAND(playerlist)
 		}
 		else if (sv_gametype == GM_CTF)
 		{
-			if (g_lives)
+			if (G_IsLivesGame())
 			{
 				// Points and Lives
 				StrFormat(strScore, " - points:%d - lives:%d", points, it->lives);

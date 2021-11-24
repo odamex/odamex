@@ -1429,6 +1429,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	G_SerializeSnapshots(arc);
 	P_SerializeRNGState(arc);
 	P_SerializeACSDefereds(arc);
+	P_SerializeHorde(arc);
 
 	// Save the status of the flags in CTF
 	for (int i = 0; i < NUMTEAMS; i++)
@@ -1531,6 +1532,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	G_SerializeSnapshots(arc);
 	P_SerializeRNGState(arc);
 	P_SerializeACSDefereds(arc);
+	P_SerializeHorde(arc);
 
 	// Read the status of flags in CTF
 	for (int i = 0; i < NUMTEAMS; i++)

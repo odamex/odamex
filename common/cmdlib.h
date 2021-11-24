@@ -44,11 +44,12 @@
 
 struct OTimespan
 {
+	int csecs;
 	int tics;
 	int seconds;
 	int minutes;
 	int hours;
-	OTimespan(): tics(0), seconds(0), minutes(0), hours(0) { }
+	OTimespan() : csecs(0), tics(0), seconds(0), minutes(0), hours(0) { }
 };
 
 int		ParseHex(const char *str);
@@ -111,6 +112,7 @@ void StripColorCodes(std::string& str);
 
 uint32_t CRC32(const uint8_t* buf, uint32_t len);
 uint32_t Log2(uint32_t n);
+float NextAfter(const float from, const float to);
 
 /**
  * @brief Initialize an array with a specific value.

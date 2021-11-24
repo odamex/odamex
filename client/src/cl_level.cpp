@@ -270,12 +270,11 @@ void G_InitNew (const char *mapname)
 	D_SetupUserInfo();
 	
 	level.mapname = mapname;
-	G_DoLoadLevel (0);
-
-	::levelstate.reset();
 
 	// [AM}] WDL stats (for testing purposes)
-	M_StartWDLLog();
+	M_StartWDLLog(true);
+
+	G_DoLoadLevel (0);
 }
 
 //
@@ -545,7 +544,7 @@ void G_DoLoadLevel (int position)
 	{
 		if (it->ingame())
 		{
-			if (it->playerstate == PST_REBORN)
+			if (it->playerstate == PST_DEAD || it->playerstate == PST_REBORN)
 				it->doreborn = true;
 			it->playerstate = PST_ENTER;
 		}
@@ -637,6 +636,8 @@ void G_DoLoadLevel (int position)
 	level.starttime = I_MSTime() * TICRATE / 1000;
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
     P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
+
+	::levelstate.reset();
 
 	C_FlushDisplay ();
 }

@@ -54,6 +54,7 @@ bool G_CanShowObituary();
 bool G_CanTickGameplay();
 bool G_IsLevelState(LevelState::States state);
 bool G_IsDefendingTeam(team_t team);
+bool G_IsHordeMode();
 bool G_IsCoopGame();
 bool G_IsFFAGame();
 bool G_IsDuelGame();
@@ -61,6 +62,7 @@ bool G_IsTeamGame();
 bool G_IsRoundsGame();
 bool G_IsLivesGame();
 bool G_IsSidesGame();
+bool G_UsesCoopSpawns();
 bool G_UsesWinlimit();
 bool G_UsesRoundlimit();
 bool G_UsesScorelimit();
@@ -69,6 +71,7 @@ int G_GetEndingTic();
 
 // Mutating functions
 
+void G_EndGame();
 void G_AssertValidPlayerCount();
 void G_TimeCheckEndGame();
 void G_FragsCheckEndGame();
