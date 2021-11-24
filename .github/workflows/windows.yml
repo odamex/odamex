@@ -37,12 +37,6 @@ jobs:
       run: cmake --build .\build\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
       run: .\ci\win-artifact.ps1
-    - name: Upload artifact to B2
-      run: python .\ci\upload-b2.py .\build\archive Win-x64
-      env:
-        B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
-        B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
-        B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Upload artifact to Github
       uses: actions/upload-artifact@v2
       with:
@@ -67,12 +61,6 @@ jobs:
       run: cmake --build .\build-x32\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
       run: .\ci\win-x32-artifact.ps1
-    - name: Upload artifact to B2
-      run: python .\ci\upload-b2.py .\build-x32\archive Win-x32
-      env:
-        B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
-        B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
-        B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Upload artifact to Github
       uses: actions/upload-artifact@v2
       with:
