@@ -476,15 +476,14 @@ BOOL PO_RotatePolyobj (int num, angle_t angle);
 void PO_Init (void);
 BOOL PO_Busy (int polyobj);
 
+bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov);
+bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest);
+bool P_IsTeamMate(AActor* actor, AActor* player);
+
 //
 // P_SPEC
 //
 #include "p_spec.h"
-
-
-bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov);
-bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest);
-bool P_IsTeamMate(AActor* actor, AActor* player);
 
 #endif	// __P_LOCAL__
 

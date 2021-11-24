@@ -32,7 +32,6 @@
 #include "i_system.h"
 #include "p_local.h"
 #include "p_lnspec.h"
-#include "p_spec.h"
 #include "s_sound.h"
 #include "r_state.h"
 #include "gi.h"
