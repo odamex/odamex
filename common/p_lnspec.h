@@ -324,7 +324,7 @@ typedef enum {
 
 // [RH] Equivalents for BOOM's generalized sector types
 
-#define DAMAGE_MASK		0x60
+#define DAMAGE_MASK		0x0300
 #define DAMAGE_SHIFT    5
 #define SECRET_MASK		0x0400
 #define FRICTION_MASK	0x0800

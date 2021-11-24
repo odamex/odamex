@@ -1787,7 +1787,7 @@ void P_PlayerInSpecialSector (player_t *player)
 	{
 		if (sector->special & DEATH_MASK) // [Blair] MBF21 sector actions
 		{
-			switch ((sector->special & DAMAGE_MASK) >> DAMAGE_SHIFT)
+			switch ((sector->special & 0x60) >> DAMAGE_SHIFT)
 			{
 			case 0: // Kill player unless invuln or rad suit
 				if (!player->powers[pw_invulnerability] && !player->powers[pw_ironfeet])
@@ -1817,19 +1817,19 @@ void P_PlayerInSpecialSector (player_t *player)
 		else // Old Boom generalized sector actions
 		{
 			// jff 3/14/98 handle extended sector types for secrets and damage
-			switch (((sector->special & DAMAGE_MASK) >> DAMAGE_SHIFT) & 3)
+			switch (special & DAMAGE_MASK)
 			{
-			case 0: // no damage
+			case 0x000: // no damage
 				break;
-			case 1: // 2/5 damage per 31 ticks
+			case 0x100: // 2/5 damage per 31 ticks
 				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
 					P_DamageMobj(player->mo, NULL, NULL, 5, MOD_LAVA);
 				break;
-			case 2: // 5/10 damage per 31 ticks
+			case 0x200: // 5/10 damage per 31 ticks
 				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
 					P_DamageMobj(player->mo, NULL, NULL, 10, MOD_SLIME);
 				break;
-			case 3: // 10/20 damage per 31 ticks
+			case 0x300: // 10/20 damage per 31 ticks
 				if (!player->powers[pw_ironfeet] ||
 				    (P_Random(player->mo) < 5)) // take damage even with suit
 				{
@@ -2575,7 +2575,25 @@ static void P_SpawnScrollers(void)
 					new DScroller (DScroller::sc_side, dx, dy, -1, lines[i].sidenum[0], accel);
 				}
 				break;
+		    case 1024: // special 255 with tag control
+		    case 1025:
+		    case 1026:
+			    if (l->id == 0)
+				    Printf(PRINT_HIGH, "Line %d is missing a tag!", i);
 
+			    if (special > 1024)
+				    control = sides[*l->sidenum].sector - sectors;
+
+			    if (special == 1026)
+				    accel = 1;
+
+			    s = lines[i].sidenum[0];
+			    dx = -sides[s].textureoffset;
+			    dy = sides[s].rowoffset;
+			    for (s = -1; (s = P_FindLineFromLineTag(l, s)) >= 0;)
+				    if (s != i)
+					    new DScroller(DScroller::sc_side, dx, dy, control, lines[s].sidenum[0], accel);
+			    break;
 			default:
 				l->special = special;
 				break;
