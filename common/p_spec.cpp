@@ -112,7 +112,7 @@ int P_IsUnderDamage(AActor* actor)
 	int dir = 0;
 	for (seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
 		if ((cr = (DCeiling*)seclist->m_sector->ceilingdata) &&
-		    cr->m_Status == DCeiling::ECeilingState::down)
+		    cr->m_Status == 2) // Down
 			cr->m_Crush ? dir = 1 : dir = 0;
 	return dir;
 }
@@ -1883,7 +1883,7 @@ void P_PlayerInSpecialSector (player_t *player)
 bool P_ActorInSpecialSector(AActor* actor)
 {
 	if (!actor)
-		return;
+		return false;
 
 	sector_t* sector = actor->subsector->sector;
 
