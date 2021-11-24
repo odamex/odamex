@@ -71,6 +71,7 @@ inline fixed_t INT2FIXED(int x)
 	return x << FRACBITS;
 }
 
+
 //
 // Fixed Point Multiplication for 16.16 precision
 //
