@@ -68,12 +68,6 @@ EXTERN_CVAR(sv_fragexitswitch)
 std::list<movingsector_t> movingsectors;
 bool s_SpecialFromServer;
 
-// killough 8/8/98: distance friends tend to move towards players
-int distfriend = 128;
-
-// killough 9/8/98: whether monsters are allowed to strafe or retreat
-int monster_backing = 0;
-
 //
 // P_FindMovingSector
 //

@@ -43,8 +43,6 @@
 
 
 extern bool HasBehavior;
-extern int monster_backing;
-extern int distfriend;
 
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
@@ -94,6 +92,12 @@ void A_Fall (AActor *actor);
 
 void SV_UpdateMonsterRespawnCount();
 void SV_Sound(AActor* mo, byte channel, const char* name, byte attenuation);
+
+// killough 8/8/98: distance friends tend to move towards players
+const int distfriend = 128;
+
+// killough 9/8/98: whether monsters are allowed to strafe or retreat
+const int monster_backing = 0;
 
 //
 // ENEMY THINKING
