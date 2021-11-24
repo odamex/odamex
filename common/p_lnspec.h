@@ -355,6 +355,11 @@ bool P_LineSpecialMovesSector(byte special);
 bool P_CanActivateSpecials(AActor* mo, line_t* line);
 bool P_ActorInSpecialSector(AActor* actor);
 
+int P_FindLineFromLineTag(const line_t* line, int start);
+int P_IsUnderDamage(const AActor* actor);
+bool P_IsOnLift(const AActor* actor);
+int P_IsUnderDamage(AActor* actor);
+
 extern int TeleportSide;
 
 #endif //__P_LNSPEC_H__

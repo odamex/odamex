@@ -1023,9 +1023,4 @@ BOOL P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad
 // [AM] Trigger actor specials.
 bool A_TriggerAction(AActor *mo, AActor *triggerer, int activationType);
 
-int P_FindLineFromLineTag(const line_t* line, int start);
-int P_IsUnderDamage(const AActor* actor);
-bool P_IsOnLift(const AActor* actor);
-int P_IsUnderDamage(AActor* actor);
-
 #endif

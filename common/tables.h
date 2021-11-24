@@ -37,6 +37,8 @@
 #ifndef __TABLES_H__
 #define __TABLES_H__
 
+#include "m_fixed.h"
+
 #define PI				3.141592657
 
 #define FINEANGLES		8192
