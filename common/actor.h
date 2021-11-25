@@ -28,6 +28,7 @@
 // Basics.
 #include "tables.h"
 #include "m_fixed.h"
+#include "m_vectors.h"
 
 // We need the thinker_t stuff.
 #include "dthinker.h"
@@ -285,7 +286,6 @@ typedef enum
 		MFO_FULLBRIGHT   = BIT(8),		// monster is fullbright
 		MFO_SPECTATOR    = BIT(9),		// GhostlyDeath -- thing is/was a spectator and can't be seen!
 		MFO_FALLING      = BIT(10),		// [INTERNAL] for falling
-	    MFO_DETRITUS     = BIT(11),     // Track things to be spawned online, like smoke puffs.
 } mobjflag_t;
 
 #define MF_TRANSSHIFT	0x1A
@@ -299,6 +299,57 @@ typedef enum
 // killough 11/98: For torque simulation:
 #define OVERDRIVE 6
 #define MAXGEAR (OVERDRIVE+16)
+
+struct baseline_t
+{
+	v3fixed_t pos;
+	v3fixed_t mom;
+	angle_t angle;
+	uint32_t targetid;
+	uint32_t tracerid;
+	int movecount;
+	byte movedir;
+	byte rndindex;
+
+	// Flags are a varint, so order from most to least likely.
+	static const uint32_t POSX = BIT(0);
+	static const uint32_t POSY = BIT(1);
+	static const uint32_t POSZ = BIT(2);
+	static const uint32_t ANGLE = BIT(3);
+	static const uint32_t MOVEDIR = BIT(4);
+	static const uint32_t MOVECOUNT = BIT(5);
+	static const uint32_t RNDINDEX = BIT(6);
+	static const uint32_t TARGET = BIT(7);
+	static const uint32_t TRACER = BIT(8);
+	static const uint32_t MOMX = BIT(9);
+	static const uint32_t MOMY = BIT(10);
+	static const uint32_t MOMZ = BIT(11);
+
+	baseline_t()
+	    : angle(0), targetid(0), tracerid(0), movecount(0), movedir(0), rndindex(0)
+	{
+		pos.x = 0;
+		pos.y = 0;
+		pos.z = 0;
+		mom.x = 0;
+		mom.y = 0;
+		mom.z = 0;
+	}
+
+	void Serialize(FArchive& arc)
+	{
+		if (arc.IsStoring())
+		{
+			arc << pos.x << pos.y << pos.z << mom.x << mom.y << mom.z << angle << targetid
+			    << tracerid << movecount << movedir << rndindex;
+		}
+		else
+		{
+			arc >> pos.x >> pos.y >> pos.z >> mom.x >> mom.y >> mom.z >> angle >>
+			    targetid >> tracerid >> movecount >> movedir >> rndindex;
+		}
+	}
+};
 
 // Map Object definition.
 class AActor : public DThinker
@@ -492,6 +543,8 @@ public:
 
 	uint32_t		netid;          // every object has its own netid
 	short			tid;			// thing identifier
+	baseline_t		baseline;		// Baseline data for mobj sent to clients
+	bool			baseline_set;	// Have we set our baseline yet?
 
 private:
 	static const size_t TIDHashSize = 256;

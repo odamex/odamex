@@ -34,6 +34,9 @@
 #include "p_local.h"
 #include "s_sound.h"
 
+// Stub for client.
+void SV_SpawnMobj(AActor* mobj);
+
 struct SpawnPointWeight
 {
 	hordeSpawn_t* spawn;
@@ -88,9 +91,11 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 				mo->oflags = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK |
 				             MFO_NORAISE | MFO_BOSSPOOL | MFO_FULLBRIGHT;
 			}
+			SV_SpawnMobj(mo);
 
 			// Spawn a teleport fog if it's not an ambush.
 			AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
+			SV_SpawnMobj(tele);
 			S_NetSound(tele, CHAN_VOICE, "misc/teleport", ATTN_NORM);
 			return mo->ptr();
 		}
@@ -456,10 +461,12 @@ void P_HordeSpawnItem()
 
 			// Don't respawn the usual way.
 			pack->flags |= MF_DROPPED;
+			SV_SpawnMobj(pack);
 
 			// Play the item respawn sound, so people can listen for it.
 			AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
-			S_NetSound(pack, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
+			SV_SpawnMobj(tele);
+			S_NetSound(tele, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
 		}
 	}
 }
@@ -493,9 +500,11 @@ void P_HordeSpawnPowerup(const mobjtype_t pw)
 
 		// Don't respawn the usual way.
 		pack->flags |= MF_DROPPED;
+		SV_SpawnMobj(pack);
 
 		// Play the item respawn sound, so people can listen for it.
 		AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
-		S_NetSound(pack, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
+		SV_SpawnMobj(tele);
+		S_NetSound(tele, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
 	}
 }

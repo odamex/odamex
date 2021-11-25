@@ -86,8 +86,8 @@ void SV_SendDestroyActor(AActor *mo) {}
 void SV_ExplodeMissile(AActor *mo) {}
 void SV_SendPlayerInfo(player_t &player) {}
 void SV_PreservePlayer(player_t &player) {}
-void SV_UpdateMobjState(AActor *mo) {}
 void SV_BroadcastSector(int sectornum) {}
+void SV_UpdateMobjState(AActor* mo) {}
 
 void CTF_RememberFlagPos(mapthing2_t *mthing) {}
 void CTF_SpawnFlag(team_t f) {}

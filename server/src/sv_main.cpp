@@ -681,8 +681,8 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 	{
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f,
-		                                        attenuation));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
+		                                             1.0f, attenuation));
 	}
 }
 
@@ -708,7 +708,7 @@ void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
 
 	client_t *cl = &pl.client;
 
-	MSG_WriteSVC(&cl->netbuf,
+	MSG_WriteSVC(&cl->reliablebuf,
 	             SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f, attenuation));
 }
 
@@ -741,8 +741,8 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f,
-		                                        attenuation));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
+		                                             1.0f, attenuation));
 	}
 }
 
@@ -770,8 +770,8 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 		{
 			cl = &(it->client);
 
-			MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(), channel, sfx_id,
-			                                        1.0f, attenuation));
+			MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(), channel, sfx_id,
+			                                             1.0f, attenuation));
 		}
 	}
 }
@@ -796,8 +796,8 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id,
-		                                        1.0f, attenuation));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id,
+		                                             1.0f, attenuation));
 	}
 }
 
@@ -1177,6 +1177,8 @@ void SV_SpawnMobj(AActor *mo)
 {
 	if (!mo)
 		return;
+
+	P_SetMobjBaseline(*mo);
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
@@ -2760,9 +2762,7 @@ void SV_UpdateMissiles(player_t &pl)
 		{
 			client_t *cl = &pl.client;
 
-			MSG_WriteSVC(
-			    &cl->netbuf,
-			    SVC_UpdateMobj(*mo, SVC_UM_POS_RND | SVC_UM_MOM_ANGLE | SVC_UM_TRACER));
+			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*mo));
 
             if (cl->netbuf.cursize >= 1024)
                 if(!SV_SendPacket(pl))
@@ -2771,53 +2771,33 @@ void SV_UpdateMissiles(player_t &pl)
     }
 }
 
-//
-// SV_UpdateSpawnedObjects
-// This function will iterate thru objects and find one that was freshly spawned
-// outside of normal parameters, like in a SpawnObject codepointer.
-// It will then update it for players and remove the flag to preserve network bandwidth.
-// And most objects here otherwise wouldn't be updated by other netcode, so let's update it.
-// This is most likely used for decorations like weapon smoke puffs.
-//
-void SV_UpdateSpawnedObjects(player_t& pl)
+// Update the given actors data immediately.
+void SV_UpdateMobj(AActor* mo)
 {
-	AActor* mo;
-
-	TThinkerIterator<AActor> iterator;
-	while ((mo = iterator.Next()))
-	{
-		if (!(mo->oflags & MFO_DETRITUS))
-			continue;
-
-		if (SV_IsPlayerAllowedToSee(pl, mo))
-		{
-			client_t* cl = &pl.client;
-
-			MSG_WriteSVC(
-			    &cl->netbuf,
-			    SVC_UpdateMobj(*mo, SVC_UM_POS_RND | SVC_UM_MOM_ANGLE ));
-
-			mo->oflags &= ~MFO_DETRITUS;
-
-			if (cl->netbuf.cursize >= 1024)
-				if (!SV_SendPacket(pl))
-					return;
-		}
-	}
-}
-
-// Update the given actors state immediately.
-void SV_UpdateMobjState(AActor *mo)
-{
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		if (!(it->ingame()))
 			continue;
 
 		if (SV_IsPlayerAllowedToSee(*it, mo))
 		{
-			client_t *cl = &(it->client);
+			client_t* cl = &(it->client);
+			MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
+		}
+	}
+}
 
+// Update the given actors state immediately.
+void SV_UpdateMobjState(AActor* mo)
+{
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		if (!(it->ingame()))
+			continue;
+
+		if (SV_IsPlayerAllowedToSee(*it, mo))
+		{
+			client_t* cl = &(it->client);
 			MSG_WriteSVC(&cl->reliablebuf, SVC_MobjState(mo));
 		}
 	}
@@ -2847,9 +2827,7 @@ void SV_UpdateMonsters(player_t &pl)
 		{
 			client_t *cl = &pl.client;
 
-			MSG_WriteSVC(&cl->netbuf,
-			             SVC_UpdateMobj(*mo, SVC_UM_POS_RND | SVC_UM_MOM_ANGLE |
-			                                     SVC_UM_MOVEDIR | SVC_UM_TARGET));
+			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*mo));
 
 			if (cl->netbuf.cursize >= 1024)
 			{
@@ -2901,7 +2879,7 @@ void SV_ActorTarget(AActor *actor)
 		if(!SV_IsPlayerAllowedToSee(*it, actor))
 			continue;
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor, SVC_UM_TARGET));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor));
 	}
 }
 
@@ -2917,7 +2895,7 @@ void SV_ActorTracer(AActor *actor)
 
 		client_t *cl = &(it->client);
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor, SVC_UM_TRACER));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor));
 	}
 }
 
@@ -3164,8 +3142,6 @@ void SV_WriteCommands(void)
 			SV_SendPlayerStateUpdate(&(it->client), target);
 
 		SV_UpdateConsolePlayer(*it);
-
-		SV_UpdateSpawnedObjects(*it);
 
 		SV_UpdateMissiles(*it);
 
@@ -4594,8 +4570,7 @@ void SV_SendDamageMobj(AActor *target, int pain)
 		client_t *cl = &(it->client);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_DamageMobj(target, pain));
-		MSG_WriteSVC(&cl->netbuf,
-		             SVC_UpdateMobj(*target, SVC_UM_POS_RND | SVC_UM_MOM_ANGLE));
+		MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*target));
 	}
 }
 
@@ -4647,7 +4622,7 @@ void SV_ExplodeMissile(AActor *mo)
 		if (!SV_IsPlayerAllowedToSee(*it, mo))
 			continue;
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo, SVC_UM_POS_RND));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
 		MSG_WriteSVC(&cl->reliablebuf, SVC_ExplodeMissile(*mo));
 	}
 }

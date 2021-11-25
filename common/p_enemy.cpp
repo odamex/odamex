@@ -91,6 +91,7 @@ void A_Fall (AActor *actor);
 
 
 void SV_UpdateMonsterRespawnCount();
+void SV_UpdateMobjState(AActor* mo);
 void SV_Sound(AActor* mo, byte channel, const char* name, byte attenuation);
 
 // killough 8/8/98: distance friends tend to move towards players
@@ -1943,12 +1944,6 @@ void A_SpawnObject(AActor* actor)
 			mo->tracer = actor->target;
 		}
 	}
-	else
-	{
-		// If it's not a missile...what is it?
-		// Assign it a flag to make sure it gets spawned for clients.
-		mo->oflags |= MFO_DETRITUS;
-	}
 
 	// [XA] don't bother with the dont-inherit-friendliness hack
 	// that exists in A_Spawn, 'cause WTF is that about anyway?
@@ -2226,7 +2221,6 @@ void A_SeekTracer(AActor* actor)
 
 	if (serverside)
 	{
-		actor->flags2 |= MF2_SEEKERMISSILE;
 		P_SeekerMissile(actor, actor->tracer, threshold, maxturnangle, true);
 	}
 }
@@ -2249,15 +2243,15 @@ void A_FindTracer(AActor* actor)
 	fov = FixedToAngle(actor->state->args[0]);
 	dist = (actor->state->args[1]);
 
-	if (serverside)
-		actor->flags2 |= MF2_SEEKERMISSILE;
-
 	AActor* tracer = P_RoughTargetSearch(actor, fov, dist);
 
 	if (!tracer || tracer->health <= 0)
 		return;
 
 	actor->tracer = tracer->ptr();
+
+	if (serverside)
+		SV_UpdateMobjState(actor);
 }
 
 //
@@ -2269,10 +2263,10 @@ void A_ClearTracer(AActor* actor)
 	if (!actor)
 		return;
 
-	if (serverside)
-		actor->flags2 &= ~MF2_SEEKERMISSILE;
-
 	actor->tracer = AActor::AActorPtr();
+
+	if (serverside)
+		SV_UpdateMobjState(actor);
 }
 
 //
@@ -3122,8 +3116,6 @@ void A_Spawn(AActor* mo)
 
 			newmobj = new AActor(mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z,
 			                     (mobjtype_t)(mo->state->misc1 - 1));
-
-			newmobj->oflags |= MFO_DETRITUS; // [Blair] Make sure this gets spawned.
 
 			// newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
 			// // TODO !!!

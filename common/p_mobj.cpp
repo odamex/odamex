@@ -45,6 +45,8 @@
 #include "g_mapinfo.h"
 #include "m_wdlstats.h"
 
+void SV_UpdateMobj(AActor* mo);
+void SV_UpdateMobjState(AActor* mo);
 
 #define WATER_SINK_FACTOR		3
 #define WATER_SINK_SMALL_FACTOR	4
@@ -116,43 +118,45 @@ void MapThing::Serialize (FArchive &arc)
 	}
 }
 
-AActor::AActor () :
-    x(0), y(0), z(0), prevx(0), prevy(0), prevz(0),
-	snext(NULL), sprev(NULL), angle(0), prevangle(0), sprite(SPR_UNKN), frame(0),
-    pitch(0), prevpitch(0), effects(0), subsector(NULL),
-    floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0),
-    momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL),
-    damage(0), flags(0), flags2(0), flags3(0), oflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0),
-    visdir(0), reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-    iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0), gear(0), onground(false),
-    touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
-    tid(0), bmapnode(this)
+AActor::AActor()
+    : x(0), y(0), z(0), prevx(0), prevy(0), prevz(0), snext(NULL), sprev(NULL), angle(0),
+      prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
+      subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
+      height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
+      info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
+      special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
+      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
+      iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
+      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
+      rndindex(0), netid(0), tid(0), bmapnode(this), baseline_set(false)
 {
 	memset(args, 0, sizeof(args));
+	memset(&baseline, 0, sizeof(baseline));
 	self.init(this);
 }
 
-AActor::AActor (const AActor &other) :
-    x(other.x), y(other.y), z(other.z), prevx(other.prevx), prevy(other.prevy), prevz(other.prevz),
-	snext(other.snext), sprev(other.sprev),
-    angle(other.angle), prevangle(other.prevangle), sprite(other.sprite), frame(other.frame),
-    pitch(other.pitch), prevpitch(other.prevpitch), effects(other.effects),
-    subsector(other.subsector),
-    floorz(other.floorz), ceilingz(other.ceilingz), dropoffz(other.dropoffz),
-    floorsector(other.floorsector),	radius(other.radius), height(other.height), momx(other.momx),
-	momy(other.momy), momz(other.momz), validcount(other.validcount),
-	type(other.type), info(other.info), tics(other.tics), state(other.state),
-	damage(other.damage), flags(other.flags), flags2(other.flags2), flags3(other.flags3), oflags(other.oflags), special1(other.special1),
-	special2(other.special2), health(other.health), movedir(other.movedir),
-	movecount(other.movecount), visdir(other.visdir), reactiontime(other.reactiontime),
-    threshold(other.threshold), player(other.player), lastlook(other.lastlook),
-    special(other.special),inext(other.inext), iprev(other.iprev), translation(other.translation),
-    translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
-    onground(other.onground), touching_sectorlist(other.touching_sectorlist),
-    deadtic(other.deadtic), oldframe(other.oldframe),
-    rndindex(other.rndindex), netid(other.netid), tid(other.tid), bmapnode(other.bmapnode)
+AActor::AActor(const AActor& other)
+    : x(other.x), y(other.y), z(other.z), prevx(other.prevx), prevy(other.prevy),
+      prevz(other.prevz), snext(other.snext), sprev(other.sprev), angle(other.angle),
+      prevangle(other.prevangle), sprite(other.sprite), frame(other.frame),
+      pitch(other.pitch), prevpitch(other.prevpitch), effects(other.effects),
+      subsector(other.subsector), floorz(other.floorz), ceilingz(other.ceilingz),
+      dropoffz(other.dropoffz), floorsector(other.floorsector), radius(other.radius),
+      height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
+      validcount(other.validcount), type(other.type), info(other.info), tics(other.tics),
+      state(other.state), damage(other.damage), flags(other.flags), flags2(other.flags2),
+	  flags3(other.flags3), oflags(other.oflags), special1(other.special1), special2(other.special2),
+      health(other.health), movedir(other.movedir), movecount(other.movecount),
+      visdir(other.visdir), reactiontime(other.reactiontime), threshold(other.threshold),
+      player(other.player), lastlook(other.lastlook), special(other.special),
+      inext(other.inext), iprev(other.iprev), translation(other.translation),
+      translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
+      onground(other.onground), touching_sectorlist(other.touching_sectorlist),
+      deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex),
+      netid(other.netid), tid(other.tid), bmapnode(other.bmapnode), baseline_set(false)
 {
 	memcpy(args, other.args, sizeof(args));
+	memcpy(&baseline, &other.baseline, sizeof(baseline));
 	self.init(this);
 }
 
@@ -219,6 +223,8 @@ AActor &AActor::operator= (const AActor &other)
     special = other.special;
     memcpy(args, other.args, sizeof(args));
 	bmapnode = other.bmapnode;
+	memcpy(&baseline, &other.baseline, sizeof(baseline));
+	baseline_set = other.baseline_set;
 
 	return *this;
 }
@@ -229,17 +235,17 @@ AActor &AActor::operator= (const AActor &other)
 //
 //
 
-AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
-    x(0), y(0), z(0), prevx(0), prevy(0), prevz(0),
-	snext(NULL), sprev(NULL), angle(0), prevangle(0), sprite(SPR_UNKN), frame(0),
-    pitch(0), prevpitch(0), effects(0), subsector(NULL),
-    floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0), height(0), momx(0), momy(0), momz(0),
-    validcount(0), type(MT_UNKNOWNTHING), info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
-    special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
-    reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-    iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0), gear(0), onground(false),
-    touching_sectorlist(NULL), deadtic(0), oldframe(0), rndindex(0), netid(0),
-    tid(0), bmapnode(this)
+AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
+    : x(0), y(0), z(0), prevx(0), prevy(0), prevz(0), snext(NULL), sprev(NULL), angle(0),
+      prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
+      subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
+      height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
+      info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
+      special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
+      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
+      iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
+      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
+      rndindex(0), netid(0), tid(0), bmapnode(this), baseline_set(false)
 {
 	state_t *st;
 
@@ -314,6 +320,7 @@ AActor::AActor (fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype) :
 
 	spawnpoint.type = 0;
 	memset(args, 0, sizeof(args));
+	memset(&baseline, 0, sizeof(baseline));
 }
 
 
@@ -821,6 +828,7 @@ void AActor::Serialize (FArchive &arc)
 		else
 			arc << (DWORD)0xffffffff;
 		spawnpoint.Serialize (arc);
+		baseline.Serialize(arc);
 	}
 	else
 	{
@@ -899,6 +907,7 @@ void AActor::Serialize (FArchive &arc)
 				translation = translationref_t(translationtables + trans);
 		}
 		spawnpoint.Serialize (arc);
+		baseline.Serialize(arc);
 		if(type >= NUMMOBJTYPES)
 			I_Error("Unknown object type in saved game");
 		if(sprite >= NUMSPRITES)
@@ -931,8 +940,6 @@ int P_ThingInfoHeight(mobjinfo_t *mi)
    return (P_AllowPassover() && mi->cdheight ?
        mi->cdheight : mi->height);
 }
-
-extern void SV_UpdateMobjState(AActor *mo);
 
 // Use a heuristic approach to detect infinite state cycles: Count the number
 // of times the loop in P_SetMobjState() executes and exit with an error once
@@ -971,10 +978,13 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 		mobj->sprite = st->sprite;
 		mobj->frame = st->frame;
 
-		// [AM] Broadcast the state of the mobj to every player, after changing
-		//      it but before running the action associated with it.
-		if (serverside && cl_update)
+#if defined(SERVER_APP)
+		// [AM] Broadcast the mobj's state after changing it but before
+		//      running the action associated with it.  Also, only update
+		//      the first state, since the client will cycle through the rest.
+		if (cl_update && !cycle_counter)
 			SV_UpdateMobjState(mobj);
+#endif
 
 		// Modified handling.
 		// Call action functions when the state is set
@@ -991,6 +1001,13 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 			        mobj->info->name, state);
 		}
 	} while (!mobj->tics);
+
+#if defined(SERVER_APP)
+	// [AM] Now broadcast the final state of the mobj after all actions
+	//      have run.
+	if (cl_update)
+		SV_UpdateMobj(mobj);
+#endif
 
 	return true;
 }
@@ -2100,6 +2117,9 @@ bool P_CheckMissileSpawn (AActor* th)
 
 	// killough 3/15/98: no dropoff (really = don't care for missiles)
 
+	// [AM] Set the baseline before we send it to clients.
+	P_SetMobjBaseline(*th);
+
 	// [SL] 2011-06-02 - If a missile explodes immediatley upon firing,
 	// make sure we spawn the missile first, send it to all clients immediately
 	// instead of queueing it, then explode it.
@@ -3085,6 +3105,91 @@ bool P_VisibleToPlayers(AActor *mo)
 	}
 
 	return false;
+}
+
+/**
+ * @brief Bake the baseline into the actor before sending it to clients.
+ */
+void P_SetMobjBaseline(AActor& mo)
+{
+	if (mo.baseline_set)
+		return;
+
+	mo.baseline.pos.x = mo.x;
+	mo.baseline.pos.y = mo.y;
+	mo.baseline.pos.z = mo.z;
+	mo.baseline.mom.x = mo.momx;
+	mo.baseline.mom.y = mo.momy;
+	mo.baseline.mom.z = mo.momz;
+	mo.baseline.angle = mo.angle;
+	mo.baseline.targetid = mo.target ? mo.target->netid : 0;
+	mo.baseline.tracerid = mo.tracer ? mo.tracer->netid : 0;
+	mo.baseline.movecount = mo.movecount;
+	mo.baseline.movedir = mo.movedir;
+	mo.baseline.rndindex = mo.rndindex;
+
+	mo.baseline_set = true;
+}
+
+/**
+ * @brief Generate flags that lists which fields are different 
+ */
+uint32_t P_GetMobjBaselineFlags(AActor& mo)
+{
+	uint32_t flags = 0;
+
+	if (mo.baseline.pos.x != mo.x)
+	{
+		flags |= baseline_t::POSX;
+	}
+	if (mo.baseline.pos.y != mo.y)
+	{
+		flags |= baseline_t::POSY;
+	}
+	if (mo.baseline.pos.z != mo.z)
+	{
+		flags |= baseline_t::POSZ;
+	}
+
+	if (mo.baseline.angle != mo.angle)
+	{
+		flags |= baseline_t::ANGLE;
+	}
+	if (mo.baseline.movedir != mo.movedir)
+	{
+		flags |= baseline_t::MOVEDIR;
+	}
+	if (mo.baseline.movecount != mo.movecount)
+	{
+		flags |= baseline_t::MOVECOUNT;
+	}
+	if (mo.baseline.rndindex != mo.rndindex)
+	{
+		flags |= baseline_t::RNDINDEX;
+	}
+	if (mo.baseline.targetid != (mo.target ? mo.target->netid : 0))
+	{
+		flags |= baseline_t::TARGET;
+	}
+	if (mo.baseline.tracerid != (mo.tracer ? mo.tracer->netid : 0))
+	{
+		flags |= baseline_t::TRACER;
+	}
+
+	if (mo.baseline.mom.x != mo.momx)
+	{
+		flags |= baseline_t::MOMX;
+	}
+	if (mo.baseline.mom.y != mo.momy)
+	{
+		flags |= baseline_t::MOMY;
+	}
+	if (mo.baseline.mom.z != mo.momz)
+	{
+		flags |= baseline_t::MOMZ;
+	}
+
+	return flags;
 }
 
 BEGIN_COMMAND(cheat_mobjs)
