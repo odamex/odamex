@@ -403,22 +403,31 @@ BOOL PIT_CheckLine (line_t *ld)
 		return false;
 	}
 
+	int flags;
+	// [Blair] Remove SPAC from these flags since we don't need it.
+	// And they interfere with new MBF21 linedef flags.
+	// A bit hacky, and a rewrite to not use SPAC on linedef flags in doom format is probably what the doctor ordered.
+	if (ld->special > 0 && ld->special <= NUM_SPECIALS && GET_SPAC(ld->flags) >= SPAC_CROSS &&
+	    GET_SPAC(ld->flags) <= SPAC_CROSSTHROUGH && ld->flags & ML_SPAC_MASK)
+	{
+		flags = (ld->flags & ML_SPAC_MASK);
+	}
+	else
+	{
+		flags = ld->flags; 
+	}
+
     if (!(tmthing->flags & (MF_MISSILE | MF_BOUNCES)) || (ld->flags & ML_BLOCKEVERYTHING))
     {
 		if ((ld->flags & (ML_BLOCKING|ML_BLOCKEVERYTHING)) || 	// explicitly blocking everything
 		    (!tmthing->player &&
 		     (ld->flags & ML_BLOCKMONSTERS || // block monsters only
-				 (ld->flags & ML_BLOCKLANDMONSTERS && !(tmthing->flags & MF_FLOAT))))) // [Blair] Block land monsters.
+				 (flags & ML_BLOCKLANDMONSTERS && !(tmthing->flags & MF_FLOAT)))) || // [Blair] Block land monsters.
+		    (tmthing->player && (flags & ML_BLOCKPLAYERS))) // [Blair] Block players only
 		{
 			CheckForPushSpecial (ld, 0, tmthing);
 			return false;
-		}
-
-		if (tmthing->player && ld->flags & ML_BLOCKPLAYERS) // [Blair] Block players only
-		{
-			CheckForPushSpecial(ld, 0, tmthing);
-			return false;
-		}
+		}		
     }
 
 	// [RH] Steep sectors count as dropoffs (unless already in one)

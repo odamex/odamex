@@ -85,6 +85,7 @@
 #define GenLiftBase           (0x3400)
 #define GenStairsBase         (0x3000)
 #define GenCrusherBase        (0x2F80)
+#define GenScrollerBase       (0x0400)
 
 #define OdamexStaticInits      (333)
 
@@ -397,7 +398,7 @@ static const xlat_t SpecialTranslation[] = {
 /* 271 */ { 0,				Static_Init,				 { TAG, Init_TransferSky, 0 } },
 /* 272 */ { 0,				Static_Init,				 { TAG, Init_TransferSky, 1 } }
 };
-#define NUM_SPECIALS 272
+//#define NUM_SPECIALS 272 - now in doomdata.h
 
 void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 {
@@ -407,7 +408,7 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 	bool passthrough = (flags & ML_PASSUSE_BOOM);
 	int i;
 	
-	flags &= 0x01ff;	// Ignore flags unknown to DOOM
+	flags &= 0x33ff; // Ignore flags unknown to DOOM (and BOOM and MDF21)
 
 	if (special <= NUM_SPECIALS)
 	{
@@ -478,6 +479,12 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 			ld->args[0] = 1;
 			ld->args[1] = 2;
 		}
+	}
+	else if (special >= 1024 && special <= 1026) // [Blair] Boom generalized scroller workaround
+	{
+		ld->special = Scroll_Texture_Offsets;
+		ld->args[0] = special;
+		ld->id = tag;
 	}
 	else if (special <= GenCrusherBase)
 	{
@@ -760,7 +767,9 @@ void P_TranslateTeleportThings()
 
 int P_TranslateSectorSpecial (int special)
 {
-	int high;
+	int high, org;
+
+	org = special;
 
 	// Allow any supported sector special by or-ing 0x8000 to it in Doom format maps
 	// That's for those who like to mess around with existing maps. ;)
@@ -775,7 +784,11 @@ int P_TranslateSectorSpecial (int special)
 	// This supports phased lighting with specials 21-24
 	high = (special & 0xfe0) << 3;
 	special &= 0x1f;
-	if (special < 21)
+	if (org >= 32) // MBF21/Boom sector actions
+	{
+		return org;
+	}
+	else if (special < 21)
 	{
 		return high | (special + 64);
 	}

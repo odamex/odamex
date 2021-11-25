@@ -2290,7 +2290,7 @@ void DScroller::RunThink ()
 	if (m_Control != -1)
 	{	// compute scroll amounts based on a sector's height changes
 		sector_t *sector = &sectors[m_Control];
-		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = sector->ceilingheight;
 
 		fixed_t delta = height - m_LastHeight;
 		m_LastHeight = height;
@@ -2390,7 +2390,7 @@ DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
 	if ((m_Control = control) != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = sector->ceilingheight;
 
 		m_LastHeight = height;
 	}
@@ -2424,7 +2424,7 @@ DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 	if ((m_Control = control) != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = sector->ceilingheight;
 
 		m_LastHeight = height;
 	}
@@ -2527,10 +2527,32 @@ static void P_SpawnScrollers(void)
 				if (IgnoreSpecial)
 					break;
 
-				// killough 3/2/98: scroll according to sidedef offsets
-				s = lines[i].sidenum[0];
-				new DScroller (DScroller::sc_side, -sides[s].textureoffset,
-							   sides[s].rowoffset, -1, s, accel);
+				if (l->args[0] == 0) // [Blair] Hack in generalized scrollers.
+			    {
+				    // killough 3/2/98: scroll according to sidedef offsets
+				    s = lines[i].sidenum[0];
+				    new DScroller(DScroller::sc_side, -sides[s].textureoffset,
+				                  sides[s].rowoffset, -1, s, accel);
+			    }
+			    else
+			    {
+				    if (l->id == 0)
+					    Printf(PRINT_HIGH, "Line %d is missing a tag!", i);
+
+				    if (l->args[0] > 1024)
+					    control = sides[*l->sidenum].sector - sectors;
+
+				    if (l->args[0] == 1026)
+					    accel = 1;
+
+				    s = lines[i].sidenum[0];
+				    dx = -sides[s].textureoffset / 8;
+				    dy = sides[s].rowoffset / 8;
+				    for (s = -1; (s = P_FindLineFromLineTag(l, s)) >= 0;)
+					    if (s != i)
+						    new DScroller(DScroller::sc_side, dx, dy, control,
+						                  lines[s].sidenum[0], accel);
+			    }
 				break;
 
 			case Scroll_Texture_Left:
@@ -2575,25 +2597,6 @@ static void P_SpawnScrollers(void)
 					new DScroller (DScroller::sc_side, dx, dy, -1, lines[i].sidenum[0], accel);
 				}
 				break;
-		    case 1024: // special 255 with tag control
-		    case 1025:
-		    case 1026:
-			    if (l->id == 0)
-				    Printf(PRINT_HIGH, "Line %d is missing a tag!", i);
-
-			    if (special > 1024)
-				    control = sides[*l->sidenum].sector - sectors;
-
-			    if (special == 1026)
-				    accel = 1;
-
-			    s = lines[i].sidenum[0];
-			    dx = -sides[s].textureoffset;
-			    dy = sides[s].rowoffset;
-			    for (s = -1; (s = P_FindLineFromLineTag(l, s)) >= 0;)
-				    if (s != i)
-					    new DScroller(DScroller::sc_side, dx, dy, control, lines[s].sidenum[0], accel);
-			    break;
 			default:
 				l->special = special;
 				break;

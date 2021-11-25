@@ -149,6 +149,8 @@ typedef struct
 
 #define ML_BLOCKPLAYERS				0x2000
 
+#define NUM_SPECIALS 272
+
 // Sector definition, from editing
 typedef struct
 {
