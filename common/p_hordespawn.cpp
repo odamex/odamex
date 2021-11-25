@@ -90,6 +90,8 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 				// Set flags as a boss.
 				mo->oflags = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK |
 				             MFO_NORAISE | MFO_BOSSPOOL | MFO_FULLBRIGHT;
+
+				mo->flags3 = MF2_BOSS | MF3_FULLVOLSOUNDS | MF3_DMGIGNORED;
 			}
 			SV_SpawnMobj(mo);
 
