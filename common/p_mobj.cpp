@@ -65,6 +65,7 @@ void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(AActor *);
 void SV_ExplodeMissile(AActor *);
 void SV_UpdateMonsterRespawnCount();
+void SV_UpdateMobjState(AActor* mo);
 fixed_t P_GetActorSpeed(AActor* actor);
 
 EXTERN_CVAR(sv_freelook)
@@ -2451,6 +2452,8 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 	// Piggybacks off linetarget to avoid autotargeting friendlies.
 	if (linetarget)
 		th->tracer = linetarget->ptr();
+
+	SV_UpdateMobjState(th);
 
 	P_CheckMissileSpawn(th);
 }

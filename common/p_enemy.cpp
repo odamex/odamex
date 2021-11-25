@@ -2222,6 +2222,7 @@ void A_SeekTracer(AActor* actor)
 	if (serverside)
 	{
 		P_SeekerMissile(actor, actor->tracer, threshold, maxturnangle, true);
+		SV_UpdateMobjState(actor);
 	}
 }
 
@@ -2243,15 +2244,15 @@ void A_FindTracer(AActor* actor)
 	fov = FixedToAngle(actor->state->args[0]);
 	dist = (actor->state->args[1]);
 
+	if (serverside)
+		SV_UpdateMobjState(actor);
+
 	AActor* tracer = P_RoughTargetSearch(actor, fov, dist);
 
 	if (!tracer || tracer->health <= 0)
 		return;
 
 	actor->tracer = tracer->ptr();
-
-	if (serverside)
-		SV_UpdateMobjState(actor);
 }
 
 //
