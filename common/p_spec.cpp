@@ -1791,26 +1791,56 @@ void P_PlayerInSpecialSector (player_t *player)
 			{
 			case 0: // Kill player unless invuln or rad suit
 				if (!player->powers[pw_invulnerability] && !player->powers[pw_ironfeet])
+				{
 					P_DamageMobj(player->mo, NULL, NULL, 10000, MOD_UNKNOWN);
+				}
 				break;
 			case 1: // Kill player with no scruples
 				P_DamageMobj(player->mo, NULL, NULL, 10000, MOD_UNKNOWN);
 				break;
 			case 2: // Kill all players and exit. There's no delay here so it may confuse some players.
-				for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+				if (serverside)
 				{
-					if (player->ingame() && player->health > 0)
-						P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_UNKNOWN);
+					if (sv_allowexit)
+					{
+						for (Players::iterator it = ::players.begin();
+						     it != ::players.end(); ++it)
+						{
+							if (player->ingame() && player->health > 0)
+								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
+						}
+						G_ExitLevel(0, 1);
+					}
+					else
+					{
+						P_DamageMobj(
+						    player->mo, NULL, NULL, 10000,
+						    MOD_EXIT); // Exiting not allowed, kill only activator here
+						               // even if fragexitswitch = 0
+					}
 				}
-				G_ExitLevel(0, 1);
 				break;
 			case 3: // Kill all players and secret exit. There's no delay here so it may confuse some players.
-				for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+				if (serverside)
 				{
-					if (player->ingame() && player->health > 0)
-						P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_UNKNOWN);
+					if (sv_allowexit)
+					{
+						for (Players::iterator it = ::players.begin();
+						     it != ::players.end(); ++it)
+						{
+							if (player->ingame() && player->health > 0)
+								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
+						}
+						G_SecretExitLevel(0, 1);
+					}
+					else
+					{
+						P_DamageMobj(
+						    player->mo, NULL, NULL, 10000,
+						    MOD_EXIT); // Exiting not allowed, kill only activator here
+						               // even if fragexitswitch = 0
+					}
 				}
-				G_SecretExitLevel(0, 1);
 				break;
 			}
 		}
