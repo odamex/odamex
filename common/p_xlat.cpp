@@ -783,12 +783,14 @@ int P_TranslateSectorSpecial (int special)
 
 	// This supports phased lighting with specials 21-24
 	high = (special & 0xfe0) << 3;
-	special &= 0x1f;
-	if (org >= 32) // MBF21/Boom sector actions
+
+	if (special >= 32)
 	{
-		return org;
+		return org; // Boom generalized sectors
 	}
-	else if (special < 21)
+
+	special &= 0x1f;
+	if (special < 21)
 	{
 		return high | (special + 64);
 	}
