@@ -2222,7 +2222,10 @@ void A_SeekTracer(AActor* actor)
 	if (serverside)
 	{
 		if (P_SeekerMissile(actor, actor->tracer, threshold, maxturnangle, true))
+		{
 			actor->flags2 |= MF2_SEEKERMISSILE;
+			SV_UpdateMobjState(actor);
+		}
 	}
 }
 
@@ -2250,7 +2253,10 @@ void A_FindTracer(AActor* actor)
 		return;
 
 	if (serverside)
+	{
 		actor->flags2 |= MF2_SEEKERMISSILE;
+		SV_UpdateMobjState(actor);
+	}
 
 	actor->tracer = tracer->ptr();
 }
@@ -2267,7 +2273,10 @@ void A_ClearTracer(AActor* actor)
 	actor->tracer = AActor::AActorPtr();
 
 	if (serverside)
+	{
+		SV_UpdateMobjState(actor);
 		actor->flags2 &= ~MF2_SEEKERMISSILE;
+	}
 }
 
 //

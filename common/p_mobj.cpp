@@ -65,7 +65,6 @@ void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(AActor *);
 void SV_ExplodeMissile(AActor *);
 void SV_UpdateMonsterRespawnCount();
-void SV_UpdateMobjState(AActor* mo);
 fixed_t P_GetActorSpeed(AActor* actor);
 
 EXTERN_CVAR(sv_freelook)
