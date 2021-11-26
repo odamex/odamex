@@ -534,7 +534,7 @@ static void BackupData (void)
 	if (BackedUpData)
 		return;
 
-//	for (i = 0; i < NUMSFX; i++)
+//	for (i = 0; i < numsfx; i++)
 //		OrgSfxNames[i] = S_sfx[i].name;
 
 	for (i = 0; i < NUMSPRITES; i++)

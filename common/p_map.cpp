@@ -403,27 +403,14 @@ BOOL PIT_CheckLine (line_t *ld)
 		return false;
 	}
 
-	int flags;
-	// [Blair] Remove SPAC from these flags since we don't need it.
-	// And they interfere with new MBF21 linedef flags.
-	// A bit hacky, and a rewrite to not use SPAC on linedef flags in doom format is probably what the doctor ordered.
-	if (ld->special > 0 && ld->special <= NUM_SPECIALS && GET_SPAC(ld->flags) >= SPAC_CROSS &&
-	    GET_SPAC(ld->flags) <= SPAC_CROSSTHROUGH && ld->flags & ML_SPAC_MASK)
-	{
-		flags = (ld->flags & ML_SPAC_MASK);
-	}
-	else
-	{
-		flags = ld->flags; 
-	}
-
     if (!(tmthing->flags & (MF_MISSILE | MF_BOUNCES)) || (ld->flags & ML_BLOCKEVERYTHING))
     {
 		if ((ld->flags & (ML_BLOCKING|ML_BLOCKEVERYTHING)) || 	// explicitly blocking everything
 		    (!tmthing->player &&
-		     (ld->flags & ML_BLOCKMONSTERS || // block monsters only
-				 (flags & ML_BLOCKLANDMONSTERS && !(tmthing->flags & MF_FLOAT)))) || // [Blair] Block land monsters.
-		    (tmthing->player && (flags & ML_BLOCKPLAYERS))) // [Blair] Block players only
+		     (ld->flags & ML_BLOCKMONSTERS))) // block monsters only
+//			||	 (ld->flags & ML_BLOCKLANDMONSTERS && !(tmthing->flags & MF_FLOAT)))) || // [Blair] Block land monsters.
+//		    (tmthing->player && (ld->flags & ML_BLOCKPLAYERS))) // [Blair] Block players only
+//			[Blair] Remove new MBF21 flags as SPAC
 		{
 			CheckForPushSpecial (ld, 0, tmthing);
 			return false;
@@ -3157,8 +3144,8 @@ bool P_ChangeSector (sector_t *sector, bool crunch)
 				if (!n->visited)								// unprocessed thing found
 				{
 					n->visited	= true; 						// mark thing as processed
-					if (!(n->m_thing->flags & MF_NOBLOCKMAP))	//jff 4/7/98 don't do these
-						PIT_ChangeSector(n->m_thing); 			// process it
+					if (n->m_thing && !(n->m_thing->flags & MF_NOBLOCKMAP))	// [Blair] Add nullcheck here
+						PIT_ChangeSector(n->m_thing); 						// for clients that aren't updated yet.
 					break;										// exit and start over
 				}
 		while (n);	// repeat from scratch until all things left are marked valid

@@ -408,7 +408,7 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 	bool passthrough = (flags & ML_PASSUSE_BOOM);
 	int i;
 	
-	flags &= 0x33ff; // Ignore flags unknown to DOOM (and BOOM and MDF21)
+	flags &= 0x01ff; // Ignore flags unknown to DOOM (and BOOM and MDF21)
 
 	if (special <= NUM_SPECIALS)
 	{
@@ -429,7 +429,6 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 			
 			// TODO: what to do with gun-activated lines with passthrough?
 		}
-
 		ld->special = SpecialTranslation[special].newspecial;
 		for (i = 0; i < 5; i++)
 			ld->args[i] = SpecialTranslation[special].args[i] == TAG ? tag :
