@@ -123,7 +123,7 @@ bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest)
 {
 	if (friendshiptest->flags & MF_FRIEND)
 	{
-		if (sv_gametype == 1)
+		if (sv_gametype == (GM_COOP || GM_HORDE))
 		{
 			return true;
 		}
@@ -150,12 +150,17 @@ bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest)
  *
  * @param actor Source player actor
  * @param player Player actor to test same teamness
+ * @returns A boolean to determine if the player is on the shooter's team.
  */
 bool P_IsTeamMate(AActor* actor, AActor* player)
 {
-	if (sv_gametype == 1)
+	if (sv_gametype == GM_DM)
 	{
 		return false;
+	}
+	else if (sv_gametype == (GM_HORDE || GM_COOP))
+	{
+		return true;
 	}
 	else if (actor && actor->player && player && player->player &&
 		        actor->player->userinfo.team == player->player->userinfo.team)

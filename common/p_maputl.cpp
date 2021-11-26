@@ -1226,8 +1226,8 @@ static AActor* RoughBlockCheck(AActor* mo, int index, angle_t fov)
 
 
 		// [Blair] Don't target friendlies or teammates
-		if (!P_IsFriendlyThing(mo->target, link) &&
-		    !P_IsTeamMate(mo->target, link))
+		if (P_IsFriendlyThing(mo->target, link) ||
+		    P_IsTeamMate(mo->target, link))
 		{
 			link = link->snext;
 			continue;
