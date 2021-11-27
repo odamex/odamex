@@ -225,6 +225,7 @@ static const char* SoundMap[] = { NULL,
                             "misc/teamchat"};
 
 void D_UndoDehPatch();
+void D_PostProcessDeh();
 bool D_DoDehPatch(const OResFile* patchfile, const int lump);
 
 #endif //__D_DEHACK_H__

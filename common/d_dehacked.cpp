@@ -286,6 +286,8 @@ void A_GunFlashTo(AActor* mo);
 struct CodePtr {
 	const char *name;
 	actionf_p1 func;
+	int argcount;
+	long default_args[MAXSTATEARGS];
 };
 
 static const struct CodePtr CodePtrs[] = {
@@ -382,36 +384,35 @@ static const struct CodePtr CodePtrs[] = {
     { "BetaSkullAttack", A_BetaSkullAttack},
 
 	// MBF21 Pointers
-	{ "SpawnObject",	A_SpawnObject},
-	{ "MonsterProjectile",	A_MonsterProjectile},
-    { "MonsterBulletAttack", A_MonsterBulletAttack},
-    { "MonsterMeleeAttack", A_MonsterMeleeAttack},
-    { "RadiusDamage", A_RadiusDamage},
-    { "NoiseAlert", A_NoiseAlert},
-    { "HealChase", A_HealChase},
-    { "SeekTracer", A_SeekTracer},
-    { "FindTracer", A_FindTracer},
-    { "ClearTracer", A_ClearTracer},
-    { "JumpIfHealthBelow", A_JumpIfHealthBelow},
-    { "JumpIfTargetInSight", A_JumpIfTargetInSight},
-    { "JumpIfTargetCloser", A_JumpIfTargetCloser},
-    { "JumpIfTracerInSight", A_JumpIfTracerInSight},
-    { "JumpIfTracerCloser", A_JumpIfTracerCloser},
-    { "JumpIfFlagsSet", A_JumpIfFlagsSet},
-    { "AddFlags", A_AddFlags},
-    { "RemoveFlags", A_RemoveFlags},
+	{ "SpawnObject",	     A_SpawnObject, 8},
+	{ "MonsterProjectile",	 A_MonsterProjectile, 5},
+    { "MonsterBulletAttack", A_MonsterBulletAttack, 5, {0, 0, 1, 3, 5}},
+    { "MonsterMeleeAttack",  A_MonsterMeleeAttack, 4, {3, 8, 0, 0}},
+    { "RadiusDamage",        A_RadiusDamage, 2},
+    { "NoiseAlert",          A_NoiseAlert, 0},
+    { "HealChase",           A_HealChase, 2},
+    { "SeekTracer",          A_SeekTracer, 2},
+    { "FindTracer",          A_FindTracer, 2, {0, 10}},
+    { "ClearTracer",         A_ClearTracer, 0},
+    { "JumpIfHealthBelow",   A_JumpIfHealthBelow, 2},
+    { "JumpIfTargetInSight", A_JumpIfTargetInSight, 2},
+    { "JumpIfTargetCloser",  A_JumpIfTargetCloser, 2},
+    { "JumpIfTracerInSight", A_JumpIfTracerInSight, 2},
+    { "JumpIfTracerCloser",  A_JumpIfTracerCloser, 2},
+    { "JumpIfFlagsSet",      A_JumpIfFlagsSet, 3},
+    { "AddFlags",            A_AddFlags, 2},
+    { "RemoveFlags",         A_RemoveFlags, 2},
 	// MBF21 Weapon Pointers
-	{ "ConsumeAmmo", A_ConsumeAmmo},
-	{ "CheckAmmo", A_CheckAmmo},
-	{ "WeaponJump", A_WeaponJump},
-	{ "WeaponProjectile", A_WeaponProjectile},
-	{ "WeaponBulletAttack", A_WeaponBulletAttack},
-	{ "WeaponMeleeAttack", A_WeaponMeleeAttack},
-	{ "WeaponSound", A_WeaponSound},
-	{ "WeaponAlert", A_WeaponAlert},
-	{ "RefireTo", A_RefireTo},
-	{ "GunFlashTo", A_GunFlashTo},
-
+	{ "WeaponProjectile",    A_WeaponProjectile, 5},
+	{ "WeaponBulletAttack",  A_WeaponBulletAttack, 5, {0, 0, 1, 5, 3}},
+	{ "WeaponMeleeAttack",   A_WeaponMeleeAttack, 5, {2, 10, 1 * FRACUNIT, 0, 0}},
+	{ "WeaponSound",         A_WeaponSound, 2},
+	{ "WeaponAlert",         A_WeaponAlert, 0},
+	{ "WeaponJump",          A_WeaponJump, 2},
+	{ "ConsumeAmmo",         A_ConsumeAmmo, 1},
+	{ "CheckAmmo",           A_CheckAmmo, 2},
+	{ "RefireTo",            A_RefireTo, 2},
+	{ "GunFlashTo",          A_GunFlashTo, 2},
 
 	{ NULL, NULL }
 };
@@ -2278,7 +2279,49 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 	}
 	Printf(" (DeHackEd patch)\n");
 
+	D_PostProcessDeh();
+
 	return true;
+}
+
+static CodePtr null_bexptr = {"(NULL)", NULL};
+
+/*
+* @brief Check loaded deh files for any problems prior
+* to launching the game.
+* 
+* (Credit to DSDADoom for the inspiration for this)
+*/
+
+void D_PostProcessDeh()
+{
+	int i, j;
+	const CodePtr* bexptr_match;
+
+	for (i = 0; i < NUMSTATES; i++)
+	{
+		bexptr_match = &null_bexptr;
+
+		for (j = 1; CodePtrs[j].func != NULL; ++j)
+			if (states[i].action == CodePtrs[j].func)
+			{
+				bexptr_match = &CodePtrs[j];
+				break;
+			}
+
+		// ensure states don't use more mbf21 args than their
+		// action pointer expects, for future-proofing's sake
+		for (j = MAXSTATEARGS - 1; j >= bexptr_match->argcount; j--)
+			if (states[i].args[j] != 0)
+				I_Error("Action %s on state %d expects no more than %d nonzero args (%d "
+				        "found). Check your dehacked.",
+				        bexptr_match->name, i, bexptr_match->argcount, j + 1);
+
+		// replace unset fields with default values
+		for (; j >= 0; j--)
+			if (states[i].args[j] == 0 && bexptr_match->default_args[j])
+				states[i].args[j] = bexptr_match->default_args[j];
+	}
 }
 
 #include "c_dispatch.h"
