@@ -2246,13 +2246,13 @@ void A_FindTracer(AActor* actor)
 	if (!tracer || tracer->health <= 0)
 		return;
 
+	actor->tracer = tracer->ptr();
+
 	if (serverside)
 	{
 		actor->flags2 |= MF2_SEEKERMISSILE;
 		SV_UpdateMobjState(actor);
 	}
-
-	actor->tracer = tracer->ptr();
 }
 
 //
@@ -2268,8 +2268,8 @@ void A_ClearTracer(AActor* actor)
 
 	if (serverside)
 	{
-		SV_UpdateMobjState(actor);
 		actor->flags2 &= ~MF2_SEEKERMISSILE;
+		SV_UpdateMobjState(actor);
 	}
 }
 
