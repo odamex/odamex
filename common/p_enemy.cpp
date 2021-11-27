@@ -2032,15 +2032,6 @@ void A_MonsterBulletAttack(AActor* actor)
 	damagebase = actor->state->args[3];
 	damagemod = actor->state->args[4];
 
-	if (numbullets <= 0)
-		numbullets = 1;
-
-	if (damagebase <= 0)
-		damagebase = 3;
-
-	if (damagemod <= 0)
-		damagemod = 5;
-
 	A_FaceTarget(actor);
 	S_Sound(actor, CHAN_WEAPON, actor->info->attacksound, 1, ATTN_NORM);
 
@@ -2075,12 +2066,6 @@ void A_MonsterMeleeAttack(AActor* actor)
 	damagemod = actor->state->args[1];
 	hitsound = actor->state->args[2];
 	range = actor->state->args[3];
-
-	if (damagebase <= 0)
-		damagebase = 3;
-
-	if (damagemod <= 0)
-		damagemod = 8;
 
 	if (range <= 0)
 		range = actor->info->meleerange;
@@ -2255,9 +2240,6 @@ void A_FindTracer(AActor* actor)
 
 	fov = FixedToAngle(actor->state->args[0]);
 	dist = (actor->state->args[1]);
-
-	if (dist == 0)
-		dist = 10;
 
 	AActor* tracer = P_RoughTargetSearch(actor, fov, dist);
 

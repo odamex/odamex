@@ -1045,15 +1045,6 @@ void A_WeaponBulletAttack(AActor* mo)
 	if (refire)
 		angle = P_RandomDiff(player->mo) << 18;
 
-	if (numbullets <= 0)
-		numbullets = 1;
-
-	if (damagebase <= 0)
-		damagebase = 5;
-
-	if (damagemod <= 0)
-		damagemod = 3;
-
 	fixed_t bulletslope = P_BulletSlope(player->mo);
 
 	for (i = 0; i < numbullets; i++)
@@ -1093,15 +1084,6 @@ void A_WeaponMeleeAttack(AActor* mo)
 	zerkfactor = psp->state->args[2];
 	hitsound = psp->state->args[3];
 	range = psp->state->args[4];
-
-	if (damagebase <= 0)
-		damagebase = 2;
-
-	if (damagemod <= 0)
-		damagemod = 10;
-
-	if (zerkfactor <= 0)
-		zerkfactor = 1;
 
 	if (range <= 0)
 		range = player->mo->info->meleerange;
