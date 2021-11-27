@@ -36,6 +36,8 @@ class WinMMMusicSystem : public MidiMusicSystem
 	WinMMMusicSystem();
 	virtual ~WinMMMusicSystem();
 	virtual void startSong(byte* data, size_t length, bool loop);
+	virtual void stopSong();
+	virtual bool isInitialized() const { return m_initialized; }
 
   private:
 	static const size_t STREAM_MAX_EVENTS = 4;

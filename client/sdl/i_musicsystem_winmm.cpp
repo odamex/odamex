@@ -139,7 +139,7 @@ WinMMMusicSystem::~WinMMMusicSystem()
 
 void WinMMMusicSystem::startSong(byte* data, size_t length, bool loop)
 {
-	mLoop = loop;
+	MidiMusicSystem::startSong(data, length, loop);
 
 	m_playerThread = CreateThread(
 	    NULL, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(playerProc), this, 0, 0);
@@ -155,6 +155,33 @@ void WinMMMusicSystem::startSong(byte* data, size_t length, bool loop)
 	{
 		MidiErrorMessage(mmr);
 	}
+}
+
+void WinMMMusicSystem::stopSong()
+{
+	MMRESULT mmr;
+
+	if (m_playerThread)
+	{
+		SetEvent(m_exitEvent);
+		WaitForSingleObject(m_playerThread, INFINITE);
+
+		CloseHandle(m_playerThread);
+		m_playerThread = NULL;
+	}
+
+	mmr = midiStreamStop(m_midiStream);
+	if (mmr != MMSYSERR_NOERROR)
+	{
+		MidiErrorMessage(mmr);
+	}
+	mmr = midiOutReset((HMIDIOUT)m_midiStream);
+	if (mmr != MMSYSERR_NOERROR)
+	{
+		MidiErrorMessage(mmr);
+	}
+
+	MidiMusicSystem::stopSong();
 }
 
 /**
