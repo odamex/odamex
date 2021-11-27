@@ -1497,10 +1497,11 @@ static int PatchFrame (int frameNum)
 		}
 			
 	}
-
+#if defined _DEBUG
 	Printf("FRAME %d: Duration: %d, Next: %d, SprNum: %d(%s), SprSub: %d\n",
 	       frameNum, info->tics,
 	       info->nextstate, info->sprite, sprnames[info->sprite], info->frame);
+#endif
 
 	return result;
 }
@@ -1511,12 +1512,13 @@ static int PatchSprite (int sprNum)
 	int offset = 0;
 
 	if (sprNum >= 0 && sprNum < NUMSPRITES) {
+#if defined _DEBUG
 		DPrintf ("Sprite %d\n", sprNum);
+#endif
 	} else {
 		DPrintf ("Sprite %d out of range.\n", sprNum);
 		sprNum = -1;
 	}
-
 	while ((result = GetLine ()) == 1) {
 		if (!stricmp ("Offset", Line1))
 			offset = atoi (Line2);
@@ -1548,7 +1550,9 @@ static int PatchAmmo (int ammoNum)
 	int dummy;
 
 	if (ammoNum >= 0 && ammoNum < NUMAMMO) {
+#if defined _DEBUG
 		DPrintf ("Ammo %d.\n", ammoNum);
+#endif
 		max = &maxammo[ammoNum];
 		per = &clipammo[ammoNum];
 	} else {
@@ -1597,7 +1601,9 @@ static int PatchWeapon (int weapNum)
 
 	if (weapNum >= 0 && weapNum < NUMWEAPONS) {
 		info = &weaponinfo[weapNum];
+#if defined _DEBUG
 		DPrintf ("Weapon %d\n", weapNum);
+#endif
 	} else {
 		info = &dummy;
 		DPrintf ("Weapon %d out of range.\n", weapNum);
@@ -1672,7 +1678,9 @@ static int PatchPointer (int ptrNum)
 	int result;
 
 	if (ptrNum >= 0 && ptrNum < 448) {
+#if defined _DEBUG
 		DPrintf ("Pointer %d\n", ptrNum);
+#endif
 	} else {
 		DPrintf ("Pointer %d out of range.\n", ptrNum);
 		ptrNum = -1;
@@ -1738,9 +1746,9 @@ static int PatchMisc (int dummy)
 	};
 	int result;
 	gitem_t *item;
-
+#if defined _DEBUG
 	DPrintf ("Misc\n");
-
+#endif
 	while ((result = GetLine()) == 1)
 	{
 		if (HandleKey (keys, &deh, Line1, atoi (Line2)))
@@ -1771,9 +1779,9 @@ static int PatchPars (int dummy)
 {
 	char *space, mapname[8], *moredata;
 	int result, par;
-
+#if defined _DEBUG
 	DPrintf ("[Pars]\n");
-
+#endif
 	while ( (result = GetLine()) ) {
 		// Argh! .bex doesn't follow the same rules as .deh
 		if (result == 1) {
@@ -1816,7 +1824,9 @@ static int PatchPars (int dummy)
 		}
 
 		info.partime = par;
+#if defined _DEBUG
 		DPrintf ("Par for %s changed to %d\n", mapname, par);
+#endif
 	}
 	return result;
 }
@@ -1824,9 +1834,9 @@ static int PatchPars (int dummy)
 static int PatchCodePtrs (int dummy)
 {
 	int result;
-
+#if defined _DEBUG
 	DPrintf ("[CodePtr]\n");
-
+#endif
 	while ((result = GetLine()) == 1) {
 		if (!strnicmp ("Frame", Line1, 5) && isspace(Line1[5])) {
 			int frame = atoi (Line1 + 5);
@@ -1864,9 +1874,9 @@ static int PatchMusic (int dummy)
 {
 	int result;
 	char keystring[128];
-
+#if defined _DEBUG
 	DPrintf ("[Music]\n");
-
+#endif
 	while ((result = GetLine()) == 1)
 	{
 		const char* newname = skipwhite(Line2);
@@ -2005,9 +2015,9 @@ static int PatchStrings (int dummy)
 	static size_t maxstrlen = 128;
 	static char *holdstring;
 	int result;
-
+#if defined _DEBUG
 	DPrintf ("[Strings]\n");
-
+#endif
 	if (!holdstring)
 		holdstring = (char *)Malloc (maxstrlen);
 
@@ -2098,8 +2108,9 @@ static int DoInclude(int dummy)
 		DPrintf("Include directive is missing filename\n");
 		goto endinclude;
 	}
-
+#if defined _DEBUG
 	DPrintf("Including %s\n", com_token);
+#endif
 	savepatchfile = PatchFile;
 	savepatchpt = PatchPt;
 	savedversion = dversion;
