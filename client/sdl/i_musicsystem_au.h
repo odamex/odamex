@@ -26,6 +26,8 @@
 
 #ifdef OSX
 
+#include <AudioToolbox/AudioToolbox.h>
+
 #include "i_musicsystem.h"
 
 class AuMusicSystem : public MusicSystem
