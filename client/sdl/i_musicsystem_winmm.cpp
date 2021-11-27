@@ -24,10 +24,10 @@
 #if defined(WIN32) && !defined(_XBOX)
 
 // [AM] This is a new strategy for allowing control over MIDI volume that
-//      originated in WinMBF.  The mechanism is similar in that MIDI events
-//      have their volume changed, but this code feeds WinMM directly in
-//      a job thread instead of pushing events to PortMIDI in the main
-//      thread.
+//      originated in Woof!  The mechanism is similar to PortMidi in that
+//      MIDI events have their volume changed, but this code feeds WinMM
+//      directly in a job thread instead of roundtripping events through
+//      PortMidi first.
 
 #include "odamex.h"
 
