@@ -91,7 +91,7 @@ void A_Fall (AActor *actor);
 
 
 void SV_UpdateMonsterRespawnCount();
-void SV_UpdateMobjState(AActor* mo);
+void SV_UpdateMobj(AActor* mo);
 void SV_Sound(AActor* mo, byte channel, const char* name, byte attenuation);
 
 // killough 8/8/98: distance friends tend to move towards players
@@ -2218,7 +2218,12 @@ void A_SeekTracer(AActor* actor)
 		if (P_SeekerMissile(actor, actor->tracer, threshold, maxturnangle, true))
 		{
 			actor->flags2 |= MF2_SEEKERMISSILE;
-			SV_UpdateMobjState(actor);
+			SV_UpdateMobj(actor);
+		}
+		else
+		{
+			actor->tracer = AActor::AActorPtr();
+			actor->flags2 &= ~MF2_SEEKERMISSILE;
 		}
 	}
 }
@@ -2251,7 +2256,7 @@ void A_FindTracer(AActor* actor)
 	if (serverside)
 	{
 		actor->flags2 |= MF2_SEEKERMISSILE;
-		SV_UpdateMobjState(actor);
+		SV_UpdateMobj(actor);
 	}
 }
 
@@ -2269,7 +2274,7 @@ void A_ClearTracer(AActor* actor)
 	if (serverside)
 	{
 		actor->flags2 &= ~MF2_SEEKERMISSILE;
-		SV_UpdateMobjState(actor);
+		SV_UpdateMobj(actor);
 	}
 }
 
