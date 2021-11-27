@@ -35,13 +35,14 @@ struct MusicHandler_t
 	MusicHandler_t() : Track(NULL), Data(NULL), Mem(NULL) { }
 };
 
-typedef enum
+enum MusicSystemType
 {
-	MS_NONE			= 0,
-	MS_SDLMIXER		= 1,
-	MS_AUDIOUNIT	= 2,
-	MS_PORTMIDI		= 3
-} MusicSystemType;
+	MS_NONE = 0,
+	MS_SDLMIXER = 1,
+	MS_AUDIOUNIT = 2,
+	MS_PORTMIDI = 3,
+	MS_WINMM = 4
+};
 
 bool S_MusicIsMus(byte* data, size_t length);
 bool S_MusicIsMidi(byte* data, size_t length);

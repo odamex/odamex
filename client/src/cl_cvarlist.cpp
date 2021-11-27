@@ -573,28 +573,26 @@ CVAR_RANGE_FUNC_DECL(snd_channels, "32", "Number of channels for sound effects",
 // Allows the default value for snd_musicsystem to change depending on
 // compile-time factors (eg, OS)
 //
-static char *C_GetDefaultMusicSystem()
+static char* GetDefaultMusicSystem()
 {
 	static char str[4];
 
 	MusicSystemType defaultmusicsystem = MS_SDLMIXER;
-	#ifdef OSX
+#ifdef OSX
 	defaultmusicsystem = MS_AUDIOUNIT;
-	#endif
-
-	#if defined _WIN32 && !defined _XBOX
-	defaultmusicsystem = MS_PORTMIDI;
-	#endif
+#elif defined(_WIN32) && !defined(_XBOX)
+	defaultmusicsystem = MS_WINMM;
+#endif
 
 	// don't overflow str
 	if (int(defaultmusicsystem) > 999 || int(defaultmusicsystem) < 0)
 		defaultmusicsystem = MS_NONE;
 
-	sprintf(str, "%i", defaultmusicsystem);
+	snprintf(str, ARRAY_LENGTH(str), "%i", defaultmusicsystem);
 	return str;
 }
 
-CVAR_FUNC_DECL(	snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem preference",
+CVAR_FUNC_DECL(	snd_musicsystem, GetDefaultMusicSystem(), "Music subsystem preference",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(			snd_musicdevice, "", "Music output device for the chosen music subsystem",

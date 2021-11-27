@@ -517,16 +517,17 @@ menu_t JoystickMenu = {
   *
   *=======================================*/
 
-static value_t MusSys[] = {
-	{ MS_SDLMIXER,	"SDL Mixer"},
-	#ifdef OSX
-	{ MS_AUDIOUNIT,	"AudioUnit"},
-	#endif	// OSX
-	#ifdef PORTMIDI
-	{ MS_PORTMIDI,	"PortMidi"},
-	#endif	// PORTMIDI
-	{ MS_NONE,		"No Music"}
-};
+static value_t MusSys[] = {{MS_SDLMIXER, "SDL Mixer"},
+#ifdef OSX
+                           {MS_AUDIOUNIT, "AudioUnit"},
+#endif
+#ifdef PORTMIDI
+                           {MS_PORTMIDI, "PortMidi"},
+#endif
+#ifdef _WIN32
+                           {MS_WINMM, "WinMM"},
+#endif
+                           {MS_NONE, "No Music"}};
 
 static value_t VoxType[] = {
 	{ 0.0,			"Off" },

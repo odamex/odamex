@@ -27,17 +27,20 @@
 
 #include "odamex.h"
 
+#include "i_musicsystem.h"
 #include "win32inc.h"
 #include <mmeapi.h>
-#include "i_musicsystem.h"
 
 class WinMMMusicSystem : public MidiMusicSystem
 {
+  public:
 	WinMMMusicSystem();
 	virtual ~WinMMMusicSystem();
 	virtual void startSong(byte* data, size_t length, bool loop);
 	virtual void stopSong();
+
 	virtual bool isInitialized() const { return m_initialized; }
+	virtual void playEvent(MidiEvent* event, int time = 0){};
 
   private:
 	static const size_t STREAM_MAX_EVENTS = 4;

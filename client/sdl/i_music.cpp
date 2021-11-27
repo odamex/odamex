@@ -33,6 +33,9 @@
 #include "i_system.h"
 
 #include "i_musicsystem.h"
+#ifdef _WIN32
+#include "i_musicsystem_winmm.h"
+#endif
 #ifdef OSX
 #include "i_musicsystem_au.h"
 #endif
@@ -192,22 +195,28 @@ void I_InitMusic(MusicSystemType musicsystem_type)
 
 	switch ((int)musicsystem_type)
 	{
-		#ifdef OSX
-		case MS_AUDIOUNIT:
-			musicsystem = new AuMusicSystem();
-			break;
-		#endif	// OSX
+#ifdef _WIN32
+	case MS_WINMM:
+		musicsystem = new WinMMMusicSystem();
+		break;
+#endif
 
-		#ifdef PORTMIDI
-		case MS_PORTMIDI:
-			musicsystem = new PortMidiMusicSystem();
-			break;
-		#endif	// PORTMIDI
+#ifdef OSX
+	case MS_AUDIOUNIT:
+		musicsystem = new AuMusicSystem();
+		break;
+#endif // OSX
 
-		case MS_SDLMIXER:	// fall through
-		default:
-			musicsystem = new SdlMixerMusicSystem();
-			break;
+#ifdef PORTMIDI
+	case MS_PORTMIDI:
+		musicsystem = new PortMidiMusicSystem();
+		break;
+#endif // PORTMIDI
+
+	case MS_SDLMIXER: // fall through
+	default:
+		musicsystem = new SdlMixerMusicSystem();
+		break;
 	}
 
 	current_musicsystem_type = musicsystem_type;
