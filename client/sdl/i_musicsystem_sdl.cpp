@@ -31,6 +31,16 @@
 #include "i_music.h"
 #include "mus2midi.h"
 
+// [Russell] - define a temporary midi file, for consistency
+// SDL < 1.2.7
+#ifdef _XBOX
+// Use the cache partition
+#define TEMP_MIDI "Z:\\temp_music"
+#elif MIX_MAJOR_VERSION < 1 || (MIX_MAJOR_VERSION == 1 && MIX_MINOR_VERSION < 2) || \
+    (MIX_MAJOR_VERSION == 1 && MIX_MINOR_VERSION == 2 && MIX_PATCHLEVEL < 7)
+#define TEMP_MIDI "temp_music"
+#endif
+
 EXTERN_CVAR(snd_musicvolume)
 
 SdlMixerMusicSystem::SdlMixerMusicSystem() : mIsInitialized(false), mRegisteredSong()

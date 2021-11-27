@@ -35,10 +35,7 @@ class PortMidiMusicSystem : public MidiMusicSystem
 	virtual ~PortMidiMusicSystem();
 
 	virtual void stopSong();
-	virtual bool isInitialized() const
-	{
-		return mIsInitialized;
-	}
+	virtual bool isInitialized() const { return mIsInitialized; }
 
 	virtual void playEvent(MidiEvent* event, int time = 0);
 

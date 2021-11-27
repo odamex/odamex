@@ -46,51 +46,21 @@ class MusicSystem
 	virtual void playChunk() = 0;
 
 	virtual void setVolume(float volume);
-	float getVolume() const
-	{
-		return mVolume;
-	}
+	float getVolume() const { return mVolume; }
 	virtual void setTempo(float tempo);
-	float getTempo() const
-	{
-		return mTempo;
-	}
+	float getTempo() const { return mTempo; }
 
 	virtual bool isInitialized() const = 0;
-	bool isPlaying() const
-	{
-		return mIsPlaying;
-	}
-	bool isPaused() const
-	{
-		return mIsPaused;
-	}
+	bool isPlaying() const { return mIsPlaying; }
+	bool isPaused() const { return mIsPaused; }
 
 	// Can this MusicSystem object play a particular type of music file?
-	virtual bool isMusCapable() const
-	{
-		return false;
-	}
-	virtual bool isMidiCapable() const
-	{
-		return false;
-	}
-	virtual bool isOggCapable() const
-	{
-		return false;
-	}
-	virtual bool isMp3Capable() const
-	{
-		return false;
-	}
-	virtual bool isModCapable() const
-	{
-		return false;
-	}
-	virtual bool isWaveCapable() const
-	{
-		return false;
-	}
+	virtual bool isMusCapable() const { return false; }
+	virtual bool isMidiCapable() const { return false; }
+	virtual bool isOggCapable() const { return false; }
+	virtual bool isMp3Capable() const { return false; }
+	virtual bool isModCapable() const { return false; }
+	virtual bool isWaveCapable() const { return false; }
 
   private:
 	bool mIsPlaying;
@@ -124,36 +94,15 @@ class SilentMusicSystem : public MusicSystem
 	virtual void playChunk() { }
 	virtual void setVolume(float volume) const { }
 
-	virtual bool isInitialized() const
-	{
-		return true;
-	}
+	virtual bool isInitialized() const { return true; }
 
 	// SilentMusicSystem can handle any type of music by doing nothing
-	virtual bool isMusCapable() const
-	{
-		return true;
-	}
-	virtual bool isMidiCapable() const
-	{
-		return true;
-	}
-	virtual bool isOggCapable() const
-	{
-		return true;
-	}
-	virtual bool isMp3Capable() const
-	{
-		return true;
-	}
-	virtual bool isModCapable() const
-	{
-		return true;
-	}
-	virtual bool isWaveCapable() const
-	{
-		return true;
-	}
+	virtual bool isMusCapable() const { return true; }
+	virtual bool isMidiCapable() const { return true; }
+	virtual bool isOggCapable() const { return true; }
+	virtual bool isMp3Capable() const { return true; }
+	virtual bool isModCapable() const { return true; }
+	virtual bool isWaveCapable() const { return true; }
 };
 
 // ============================================================================
@@ -182,14 +131,8 @@ class MidiMusicSystem : public MusicSystem
 	virtual void setVolume(float volume);
 
 	// Only plays midi-type music
-	virtual bool isMusCapable() const
-	{
-		return true;
-	}
-	virtual bool isMidiCapable() const
-	{
-		return true;
-	}
+	virtual bool isMusCapable() const { return true; }
+	virtual bool isMidiCapable() const { return true; }
 
 	virtual void playEvent(MidiEvent* event, int time = 0) = 0;
 
@@ -198,17 +141,11 @@ class MidiMusicSystem : public MusicSystem
 
 	virtual void _AllNotesOff();
 
-	int _GetNumChannels() const
-	{
-		return cNumChannels;
-	}
+	int _GetNumChannels() const { return cNumChannels; }
 	void _SetChannelVolume(int channel, int volume);
 	void _RefreshVolume();
 
-	unsigned int _GetLastEventTime() const
-	{
-		return mLastEventTime;
-	}
+	unsigned int _GetLastEventTime() const { return mLastEventTime; }
 
 	void _InitializePlayback();
 

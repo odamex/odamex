@@ -29,6 +29,7 @@
 #include "i_musicsystem_au.h"
 
 #include <AudioToolbox/AudioToolbox.h>
+#include <CoreServices/CoreServices.h>
 
 // ============================================================================
 //
@@ -38,39 +39,37 @@
 //
 // ============================================================================
 
-AuMusicSystem::AuMusicSystem() :
-	mIsInitialized(false)
+AuMusicSystem::AuMusicSystem() : mIsInitialized(false)
 {
 	NewAUGraph(&mGraph);
 
-	#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
 	ComponentDescription d;
-	#else
+#else
 	AudioComponentDescription d;
-	#endif
+#endif
 
 	d.componentType = kAudioUnitType_MusicDevice;
 	d.componentSubType = kAudioUnitSubType_DLSSynth;
 	d.componentManufacturer = kAudioUnitManufacturer_Apple;
 	d.componentFlags = 0;
 	d.componentFlagsMask = 0;
-	#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
 	AUGraphNewNode(mGraph, &d, 0, NULL, &mSynth);
-	#else
+#else
 	AUGraphAddNode(mGraph, &d, &mSynth);
-	#endif
-
+#endif
 
 	d.componentType = kAudioUnitType_Output;
 	d.componentSubType = kAudioUnitSubType_DefaultOutput;
 	d.componentManufacturer = kAudioUnitManufacturer_Apple;
 	d.componentFlags = 0;
 	d.componentFlagsMask = 0;
-	#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
 	AUGraphNewNode(mGraph, &d, 0, NULL, &mOutput);
-	#else
+#else
 	AUGraphAddNode(mGraph, &d, &mOutput);
-	#endif
+#endif
 
 	if (AUGraphConnectNodeInput(mGraph, mSynth, 0, mOutput, 0) != noErr)
 	{
@@ -90,11 +89,12 @@ AuMusicSystem::AuMusicSystem() :
 		return;
 	}
 
-	#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050	/* this is deprecated, but works back to 10.0 */
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050 /* this is deprecated, but works back to 10.0 \
+                                          */
 	if (AUGraphGetNodeInfo(mGraph, mOutput, NULL, NULL, NULL, &mUnit) != noErr)
-	#else		/* not deprecated, but requires 10.5 or later */
+#else /* not deprecated, but requires 10.5 or later */
 	if (AUGraphNodeInfo(mGraph, mOutput, NULL, &mUnit) != noErr)
-	#endif
+#endif
 	{
 		Printf(PRINT_HIGH, "I_InitMusic: AUGraphGetNodeInfo failed\n");
 		return;
@@ -102,7 +102,8 @@ AuMusicSystem::AuMusicSystem() :
 
 	if (NewMusicPlayer(&mPlayer) != noErr)
 	{
-		Printf(PRINT_HIGH, "I_InitMusic: Music player creation failed using AudioToolbox\n");
+		Printf(PRINT_HIGH,
+		       "I_InitMusic: Music player creation failed using AudioToolbox\n");
 		return;
 	}
 
@@ -115,7 +116,7 @@ AuMusicSystem::~AuMusicSystem()
 {
 	_StopSong();
 	MusicSystem::stopSong();
-	
+
 	DisposeMusicPlayer(mPlayer);
 	AUGraphClose(mGraph);
 }
@@ -124,14 +125,14 @@ void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
 {
 	if (!isInitialized())
 		return;
-		
+
 	stopSong();
-	
+
 	if (!data || !length)
 		return;
-	
+
 	_RegisterSong(data, length);
-	
+
 	if (MusicSequenceSetAUGraph(mSequence, mGraph) != noErr)
 	{
 		Printf(PRINT_HIGH, "I_PlaySong: MusicSequenceSetAUGraph failed\n");
@@ -175,7 +176,8 @@ void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
 
 		UInt32 inLength = sizeof(LoopInfo);
 
-		if (MusicTrackGetProperty(track, kSequenceTrackProperty_LoopInfo, &LoopInfo, &inLength) != noErr)
+		if (MusicTrackGetProperty(track, kSequenceTrackProperty_LoopInfo, &LoopInfo,
+		                          &inLength) != noErr)
 		{
 			Printf(PRINT_HIGH, "I_PlaySong: MusicTrackGetProperty failed\n");
 			return;
@@ -183,7 +185,8 @@ void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
 
 		inLength = sizeof(LoopInfo.time);
 
-		if (MusicTrackGetProperty(track, kSequenceTrackProperty_TrackLength, &LoopInfo.time, &inLength) != noErr)
+		if (MusicTrackGetProperty(track, kSequenceTrackProperty_TrackLength,
+		                          &LoopInfo.time, &inLength) != noErr)
 		{
 			Printf(PRINT_HIGH, "I_PlaySong: MusicTrackGetProperty failed\n");
 			return;
@@ -191,7 +194,8 @@ void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
 
 		LoopInfo.loops = loop ? 0 : 1;
 
-		if (MusicTrackSetProperty(track, kSequenceTrackProperty_LoopInfo, &LoopInfo, sizeof(LoopInfo)) != noErr)
+		if (MusicTrackSetProperty(track, kSequenceTrackProperty_LoopInfo, &LoopInfo,
+		                          sizeof(LoopInfo)) != noErr)
 		{
 			Printf(PRINT_HIGH, "I_PlaySong: MusicTrackSetProperty failed\n");
 			return;
@@ -203,7 +207,7 @@ void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
 		Printf(PRINT_HIGH, "I_PlaySong: MusicPlayerStart failed\n");
 		return;
 	}
-	
+
 	MusicSystem::startSong(data, length, loop);
 }
 
@@ -220,7 +224,7 @@ void AuMusicSystem::_StopSong()
 
 	if (isPaused())
 		resumeSong();
-		
+
 	MusicPlayerStop(mPlayer);
 	_UnregisterSong();
 }
@@ -249,12 +253,13 @@ void AuMusicSystem::resumeSong()
 // AuMusicSystem::setVolume
 //
 // Sanity checks the volume parameter and then sets the volume for the midi
-// output mixer channel.  
+// output mixer channel.
 void AuMusicSystem::setVolume(float volume)
 {
 	MusicSystem::setVolume(volume);
-	
-	if (AudioUnitSetParameter(mUnit, kAudioUnitParameterUnit_LinearGain, kAudioUnitScope_Output, 0, getVolume(), 0) != noErr)
+
+	if (AudioUnitSetParameter(mUnit, kAudioUnitParameterUnit_LinearGain,
+	                          kAudioUnitScope_Output, 0, getVolume(), 0) != noErr)
 	{
 		Printf(PRINT_HIGH, "I_InitMusic: AudioUnitSetParameter failed\n");
 		return;
@@ -271,7 +276,7 @@ void AuMusicSystem::_UnregisterSong()
 	if (!isInitialized())
 		return;
 
-    DisposeMusicSequence(mSequence);
+	DisposeMusicSequence(mSequence);
 }
 
 //
@@ -285,12 +290,12 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 	byte* regdata = data;
 	size_t reglength = length;
 	MEMFILE *mus = NULL, *midi = NULL;
-	
+
 	if (S_MusicIsMus(data, length))
 	{
 		mus = mem_fopen_read(data, length);
 		midi = mem_fopen_write();
-	
+
 		int result = mus2mid(mus, midi);
 		if (result == 0)
 		{
@@ -309,14 +314,14 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 		Printf(PRINT_HIGH, "I_PlaySong: AudioUnit does not support this music format\n");
 		return;
 	}
-	
+
 	if (NewMusicSequence(&mSequence) != noErr)
 	{
 		Printf(PRINT_HIGH, "I_PlaySong: Unable to create AudioUnit sequence\n");
 		return;
 	}
 
-	mCfd = CFDataCreate(NULL, (const Uint8 *)regdata, reglength);
+	mCfd = CFDataCreate(NULL, (const Uint8*)regdata, reglength);
 
 	if (!mCfd)
 	{
@@ -324,19 +329,18 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 		return;
 	}
 
-
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
-	/* MusicSequenceLoadSMFData() (avail. in 10.2, no 64 bit) is
-	 * equivalent to calling MusicSequenceLoadSMFDataWithFlags()
-	 * with a flags value of 0 (avail. in 10.3, avail. 64 bit).
-	 * So, we use MusicSequenceLoadSMFData() for powerpc versions
-	 * but the *WithFlags() on intel which require 10.4 anyway. */
-	# if defined(__ppc__) || defined(__POWERPC__)
+/* MusicSequenceLoadSMFData() (avail. in 10.2, no 64 bit) is
+ * equivalent to calling MusicSequenceLoadSMFDataWithFlags()
+ * with a flags value of 0 (avail. in 10.3, avail. 64 bit).
+ * So, we use MusicSequenceLoadSMFData() for powerpc versions
+ * but the *WithFlags() on intel which require 10.4 anyway. */
+#if defined(__ppc__) || defined(__POWERPC__)
 	if (MusicSequenceLoadSMFData(mSequence, (CFDataRef)mCfd) != noErr)
-	# else
+#else
 	if (MusicSequenceLoadSMFDataWithFlags(mSequence, (CFDataRef)mCfd, 0) != noErr)
-	# endif
-#else		/* MusicSequenceFileLoadData() requires 10.5 or later. */
+#endif
+#else /* MusicSequenceFileLoadData() requires 10.5 or later. */
 	if (MusicSequenceFileLoadData(mSequence, (CFDataRef)mCfd, 0, 0) != noErr)
 #endif
 	{
@@ -351,4 +355,4 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 		mem_fclose(midi);
 }
 
-#endif	// OSX
+#endif // OSX

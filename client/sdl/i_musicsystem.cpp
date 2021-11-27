@@ -21,7 +21,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include "odamex.h"
 
 /*
@@ -45,39 +44,15 @@ misrepresented as being the original software.
 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include <math.h>
 #include "i_system.h"
-#include "m_fileio.h"
-#include "cmdlib.h"
 
-#include "i_sdl.h"
-#include "i_music.h"
 #include "i_midi.h"
-#include "mus2midi.h"
+#include "i_music.h"
 #include "i_musicsystem.h"
-
-#include <SDL_mixer.h>
-
-#ifdef OSX
-#include <AudioToolbox/AudioToolbox.h>
-#include <CoreServices/CoreServices.h>
-#endif	// OSX
-
-#ifdef PORTMIDI
-#include "portmidi.h"
-#endif	// PORTMIDI
-
-// [Russell] - define a temporary midi file, for consistency
-// SDL < 1.2.7
-#ifdef _XBOX
-	// Use the cache partition
-	#define TEMP_MIDI "Z:\\temp_music"
-#elif MIX_MAJOR_VERSION < 1 || (MIX_MAJOR_VERSION == 1 && MIX_MINOR_VERSION < 2) || (MIX_MAJOR_VERSION == 1 && MIX_MINOR_VERSION == 2 && MIX_PATCHLEVEL < 7)
-    #define TEMP_MIDI "temp_music"
-#endif
+#include "i_sdl.h"
+#include "mus2midi.h"
 
 extern MusicSystem* musicsystem;
-
 
 //
 // I_CalculateMsPerMidiClock()
@@ -92,12 +67,12 @@ static double I_CalculateMsPerMidiClock(int timeDivision, double tempo = 120.0)
 		// timeDivision is in SMPTE frames per second format
 		double framespersecond = double((timeDivision & 0x7F00) >> 8);
 		double ticksperframe = double((timeDivision & 0xFF));
-		
+
 		// [SL] 2011-12-23 - An fps value of 29 in timeDivision really implies
 		// 29.97 fps.
 		if (framespersecond == 29.0)
 			framespersecond = 29.97;
-		
+
 		return 1000.0 / framespersecond / ticksperframe;
 	}
 	else
@@ -110,7 +85,6 @@ static double I_CalculateMsPerMidiClock(int timeDivision, double tempo = 120.0)
 		return millisecondsperbeat / ticsperbeat;
 	}
 }
-
 
 // ============================================================================
 //
@@ -163,18 +137,18 @@ void MusicSystem::setVolume(float volume)
 // Returns a new MidiSong object, parsing the MUS or MIDI lump stored
 // in data.
 //
-static MidiSong* I_RegisterMidiSong(byte *data, size_t length)
+static MidiSong* I_RegisterMidiSong(byte* data, size_t length)
 {
 	byte* regdata = data;
 	size_t reglength = length;
 	MEMFILE *mus = NULL, *midi = NULL;
-	
+
 	// Convert from MUS format to MIDI format
 	if (S_MusicIsMus(data, length))
 	{
 		mus = mem_fopen_read(data, length);
 		midi = mem_fopen_write();
-	
+
 		int result = mus2mid(mus, midi);
 		if (result == 0)
 		{
@@ -190,17 +164,18 @@ static MidiSong* I_RegisterMidiSong(byte *data, size_t length)
 	}
 	else if (!S_MusicIsMidi(data, length))
 	{
-		Printf(PRINT_WARNING, "I_RegisterMidiSong: Only midi music formats are supported with the selected music system.\n");
+		Printf(PRINT_WARNING, "I_RegisterMidiSong: Only midi music formats are supported "
+		                      "with the selected music system.\n");
 		return NULL;
 	}
-	
-	MidiSong *midisong = new MidiSong(regdata, reglength);
-	
+
+	MidiSong* midisong = new MidiSong(regdata, reglength);
+
 	if (mus)
 		mem_fclose(mus);
 	if (midi)
 		mem_fclose(midi);
-		
+
 	return midisong;
 }
 
@@ -215,7 +190,6 @@ static void I_UnregisterMidiSong(MidiSong* midisong)
 		delete midisong;
 }
 
-
 // ============================================================================
 //
 // MidiMusicSystem
@@ -223,16 +197,16 @@ static void I_UnregisterMidiSong(MidiSong* midisong)
 // Partially based on an implementation from prboom-plus by Nicholai Main (Natt).
 // ============================================================================
 
-MidiMusicSystem::MidiMusicSystem() :
-	MusicSystem(), mMidiSong(NULL), mSongItr(), mLoop(false), mTimeDivision(96),
-	mLastEventTime(0), mPrevClockTime(0), mChannelVolume()
+MidiMusicSystem::MidiMusicSystem()
+    : MusicSystem(), mMidiSong(NULL), mSongItr(), mLoop(false), mTimeDivision(96),
+      mLastEventTime(0), mPrevClockTime(0), mChannelVolume()
 {
 }
 
 MidiMusicSystem::~MidiMusicSystem()
 {
 	_StopSong();
-	
+
 	I_UnregisterMidiSong(mMidiSong);
 }
 
@@ -247,22 +221,20 @@ void MidiMusicSystem::_AllNotesOff()
 	}
 }
 
-void MidiMusicSystem::_StopSong()
-{
-}
+void MidiMusicSystem::_StopSong() { }
 
 void MidiMusicSystem::startSong(byte* data, size_t length, bool loop)
 {
 	if (!isInitialized())
 		return;
-		
+
 	stopSong();
-	
+
 	if (!data || !length)
 		return;
-	
+
 	mLoop = loop;
-	
+
 	mMidiSong = I_RegisterMidiSong(data, length);
 	if (!mMidiSong)
 	{
@@ -278,7 +250,7 @@ void MidiMusicSystem::stopSong()
 {
 	I_UnregisterMidiSong(mMidiSong);
 	mMidiSong = NULL;
-	
+
 	_AllNotesOff();
 	MusicSystem::stopSong();
 }
@@ -286,17 +258,17 @@ void MidiMusicSystem::stopSong()
 void MidiMusicSystem::pauseSong()
 {
 	_AllNotesOff();
-	
+
 	MusicSystem::pauseSong();
 }
 
 void MidiMusicSystem::resumeSong()
 {
 	MusicSystem::resumeSong();
-	
+
 	mLastEventTime = I_MSTime();
-	
-	MidiEvent *event = *mSongItr;
+
+	MidiEvent* event = *mSongItr;
 	if (event)
 		mPrevClockTime = event->getMidiClockTime();
 }
@@ -363,13 +335,13 @@ void MidiMusicSystem::_InitializePlayback()
 {
 	if (!mMidiSong)
 		return;
-		
+
 	mLastEventTime = I_MSTime();
-	
+
 	// seek to the begining of the song
 	mSongItr = mMidiSong->begin();
 	mPrevClockTime = 0;
-	
+
 	// shut off all notes and reset all controllers
 	_AllNotesOff();
 
@@ -386,34 +358,34 @@ void MidiMusicSystem::playChunk()
 {
 	if (!isInitialized() || !mMidiSong || !isPlaying() || isPaused())
 		return;
-		
+
 	unsigned int endtime = I_MSTime() + 1000 / TICRATE;
 
 	while (mSongItr != mMidiSong->end())
 	{
-		MidiEvent *event = *mSongItr;
+		MidiEvent* event = *mSongItr;
 		if (!event)
 			break;
-	
-		double msperclock = 
-			I_CalculateMsPerMidiClock(mMidiSong->getTimeDivision(), getTempo());
-			
+
+		double msperclock =
+		    I_CalculateMsPerMidiClock(mMidiSong->getTimeDivision(), getTempo());
+
 		unsigned int deltatime =
-			(event->getMidiClockTime() - mPrevClockTime) * msperclock;
+		    (event->getMidiClockTime() - mPrevClockTime) * msperclock;
 
 		unsigned int eventplaytime = mLastEventTime + deltatime;
-		
+
 		if (eventplaytime > endtime)
 			break;
 
 		playEvent(event, eventplaytime);
-		
+
 		mPrevClockTime = event->getMidiClockTime();
 		mLastEventTime = eventplaytime;
-		
+
 		++mSongItr;
 	}
-	
+
 	// At the end of the song.  Either stop or loop back to the begining
 	if (mSongItr == mMidiSong->end())
 	{
@@ -430,5 +402,4 @@ void MidiMusicSystem::playChunk()
 	}
 }
 
-VERSION_CONTROL (i_musicsystem_cpp, "$Id$")
-	
+VERSION_CONTROL(i_musicsystem_cpp, "$Id$")

@@ -41,20 +41,11 @@ class AuMusicSystem : public MusicSystem
 	virtual void playChunk() { }
 	virtual void setVolume(float volume);
 
-	virtual bool isInitialized() const
-	{
-		return mIsInitialized;
-	}
+	virtual bool isInitialized() const { return mIsInitialized; }
 
 	// Only plays midi-type music
-	virtual bool isMusCapable() const
-	{
-		return true;
-	}
-	virtual bool isMidiCapable() const
-	{
-		return true;
-	}
+	virtual bool isMusCapable() const { return true; }
+	virtual bool isMidiCapable() const { return true; }
 
   private:
 	bool mIsInitialized;

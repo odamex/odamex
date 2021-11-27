@@ -40,35 +40,14 @@ class SdlMixerMusicSystem : public MusicSystem
 	virtual void playChunk() { }
 	virtual void setVolume(float volume);
 
-	virtual bool isInitialized() const
-	{
-		return mIsInitialized;
-	}
+	virtual bool isInitialized() const { return mIsInitialized; }
 
-	virtual bool isMusCapable() const
-	{
-		return true;
-	}
-	virtual bool isMidiCapable() const
-	{
-		return true;
-	}
-	virtual bool isOggCapable() const
-	{
-		return true;
-	}
-	virtual bool isMp3Capable() const
-	{
-		return true;
-	}
-	virtual bool isModCapable() const
-	{
-		return true;
-	}
-	virtual bool isWaveCapable() const
-	{
-		return true;
-	}
+	virtual bool isMusCapable() const { return true; }
+	virtual bool isMidiCapable() const { return true; }
+	virtual bool isOggCapable() const { return true; }
+	virtual bool isMp3Capable() const { return true; }
+	virtual bool isModCapable() const { return true; }
+	virtual bool isWaveCapable() const { return true; }
 
   private:
 	bool mIsInitialized;
