@@ -84,6 +84,7 @@ enum weaponstate_t
 void A_WeaponReady(AActor* mo);
 void A_Raise(AActor* mo);
 void A_Lower(AActor* mo);
+
 fixed_t P_BulletSlope(AActor* mo);
 
 //
@@ -108,6 +109,7 @@ static weaponstate_t P_GetWeaponState(player_t* player)
 	// must be in one of the many attack states...
 	return atkstate;
 }
+
 
 //
 // P_CalculateWeaponBobX

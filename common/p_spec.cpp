@@ -2433,6 +2433,7 @@ DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
 	m_Affectee = affectee;
 }
 
+
 // Adds wall scroller. Scroll amount is rotated with respect to wall's
 // linedef first, so that scrolling towards the wall in a perpendicular
 // direction is translated into vertical motion, while scrolling along

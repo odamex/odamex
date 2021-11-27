@@ -85,7 +85,6 @@
 #define GenLiftBase           (0x3400)
 #define GenStairsBase         (0x3000)
 #define GenCrusherBase        (0x2F80)
-#define GenScrollerBase       (0x0400)
 
 #define OdamexStaticInits      (333)
 
@@ -398,7 +397,7 @@ static const xlat_t SpecialTranslation[] = {
 /* 271 */ { 0,				Static_Init,				 { TAG, Init_TransferSky, 0 } },
 /* 272 */ { 0,				Static_Init,				 { TAG, Init_TransferSky, 1 } }
 };
-//#define NUM_SPECIALS 272 - now in doomdata.h
+#define NUM_SPECIALS 272
 
 void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 {
@@ -408,7 +407,7 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 	bool passthrough = (flags & ML_PASSUSE_BOOM);
 	int i;
 	
-	flags &= 0x01ff; // Ignore flags unknown to DOOM (and BOOM and MDF21)
+	flags &= 0x01ff;	// Ignore flags unknown to DOOM
 
 	if (special <= NUM_SPECIALS)
 	{

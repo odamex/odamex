@@ -1671,7 +1671,6 @@ static int PatchPointer (int ptrNum)
 {
 	int result;
 
-
 	if (ptrNum >= 0 && ptrNum < 448) {
 		DPrintf ("Pointer %d\n", ptrNum);
 	} else {
@@ -1829,7 +1828,6 @@ static int PatchCodePtrs (int dummy)
 	DPrintf ("[CodePtr]\n");
 
 	while ((result = GetLine()) == 1) {
-
 		if (!strnicmp ("Frame", Line1, 5) && isspace(Line1[5])) {
 			int frame = atoi (Line1 + 5);
 
