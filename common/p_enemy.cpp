@@ -2256,6 +2256,9 @@ void A_FindTracer(AActor* actor)
 	fov = FixedToAngle(actor->state->args[0]);
 	dist = (actor->state->args[1]);
 
+	if (dist == 0)
+		dist = 10;
+
 	AActor* tracer = P_RoughTargetSearch(actor, fov, dist);
 
 	if (!tracer || tracer->health <= 0)
