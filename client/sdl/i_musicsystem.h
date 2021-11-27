@@ -151,7 +151,6 @@ class MidiMusicSystem : public MusicSystem
 
 	float _GetScaledVolume();
 
-  private:
 	static const int cNumChannels = 16;
 	MidiSong* mMidiSong;
 	MidiSong::const_iterator mSongItr;
