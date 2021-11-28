@@ -1696,11 +1696,11 @@ void SV_UpdateSecret(sector_t& sector, player_t &player);
 #endif
 
 //
-// P_PlayerInSpecialSector
+// P_PlayerInZDoomSector
 // Called every tic frame
 //	that the player origin is in a special sector
 //
-void P_PlayerInSpecialSector (player_t *player)
+void P_PlayerInZDoomSector (player_t *player)
 {
 	// Spectators should not be affected by special sectors
 	if (player->spectator)
@@ -2014,12 +2014,13 @@ CVAR_FUNC_IMPL (sv_forcewater)
 }
 
 //
-// P_SpawnSpecials
+// P_SpawnZDoomSectorSpecials
 // After the map has been loaded, scan for specials
-//	that spawn thinkers
+// that spawn thinkers.
+// Only runs for maps in ZDoom (Doom in Hexen) format.
 //
 
-void P_SpawnSpecials (void)
+void P_SpawnZDoomSectorSpecials (void)
 {
 	sector_t*	sector;
 	int 		i;

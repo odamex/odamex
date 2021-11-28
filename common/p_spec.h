@@ -196,8 +196,8 @@ BOOL	CheckIfExitIsGood (AActor *self);
 // at game start
 void	P_InitPicAnims (void);
 
-// at map load
-void	P_SpawnSpecials (void);
+// [Blair] ZDoom sector specials
+void	P_SpawnZDoomSectorSpecials (void);
 
 // every tic
 void	P_UpdateSpecials (void);
@@ -208,7 +208,7 @@ void    P_ShootSpecialLine (AActor* thing, line_t* line);
 bool    P_UseSpecialLine (AActor* thing, line_t* line, int side, bool bossaction);
 bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side);
 
-void    P_PlayerInSpecialSector (player_t *player);
+void    P_PlayerInZDoomSector (player_t *player);
 
 //
 // getSector()

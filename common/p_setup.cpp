@@ -49,6 +49,7 @@
 #include "p_mobj.h"
 #include "p_setup.h"
 #include "p_hordespawn.h"
+#include "p_mapformat.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
@@ -1881,7 +1882,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_SpawnBrainTargets();
 
 	// set up world state
-	P_SpawnSpecials ();
+	map_format.init_sector_special;
 
 	// build subsector connect matrix
 	//	UNUSED P_ConnectSubsectors ();
