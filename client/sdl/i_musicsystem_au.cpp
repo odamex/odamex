@@ -52,6 +52,8 @@ misrepresented as being the original software.
 #include <AudioToolbox/AudioToolbox.h>
 #include <CoreServices/CoreServices.h>
 
+EXTERN_CVAR(snd_musicvolume);
+
 // ============================================================================
 //
 // denis - midi via SDL+timidity on OSX crashes miserably after a while
