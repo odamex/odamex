@@ -665,7 +665,7 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id > 255 || sfx_id < 0)
+	if (sfx_id >= numsfx || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -694,7 +694,7 @@ void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id > 255 || sfx_id < 0)
+	if (sfx_id >= numsfx || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -728,7 +728,7 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id > 255 || sfx_id < 0)
+	if (sfx_id >= numsfx || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -758,7 +758,7 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 
 	sfx_id = S_FindSound( name );
 
-	if ( sfx_id > 255 || sfx_id < 0 )
+	if (sfx_id >= numsfx || sfx_id < 0)
 	{
 		Printf("SV_StartSound: range error. Sfx_id = %d\n", sfx_id );
 		return;
@@ -783,7 +783,7 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id > 255 || sfx_id < 0)
+	if (sfx_id >= numsfx || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -1129,7 +1129,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		ok = true;
 	else if(!mo->player)
 		ok = true;
-	else if (mo->flags & MF_SPECTATOR)      // GhostlyDeath -- Spectating things
+	else if (mo->oflags & MFO_SPECTATOR)      // GhostlyDeath -- Spectating things
 		ok = false;
 	else if(player.mo && mo->player && mo->player->spectator)
 		ok = false;
@@ -1198,7 +1198,7 @@ bool SV_IsPlayerAllowedToSee(player_t &p, AActor *mo)
 	if (!mo)
 		return false;
 
-	if (mo->flags & MF_SPECTATOR)
+	if (mo->oflags & MFO_SPECTATOR)
 		return false; // GhostlyDeath -- always false, as usual!
 	else
 		return mo->players_aware.get(p.id);
@@ -2745,17 +2745,17 @@ void SV_UpdateMissiles(player_t &pl)
     TThinkerIterator<AActor> iterator;
     while ( (mo = iterator.Next() ) )
     {
-        if (!(mo->flags & MF_MISSILE || mo->flags & MF_SKULLFLY))
+		if (!(mo->flags & MF_MISSILE) || mo->flags & MF_SKULLFLY)
 			continue;
 
 		if (mo->type == MT_PLASMA)
 			continue;
 
 		// update missile position every 30 tics
-		if (((gametic+mo->netid) % 30) && (mo->type != MT_TRACER) && (mo->type != MT_FATSHOT))
+		if (((gametic+mo->netid) % 30) && (mo->type != MT_TRACER) && (mo->type != MT_FATSHOT) && !(mo->flags2 & MF2_SEEKERMISSILE))
 			continue;
-		// Revenant tracers and Mancubus fireballs need to be  updated more often
-		else if (((gametic+mo->netid) % 5) && (mo->type == MT_TRACER || mo->type == MT_FATSHOT))
+		// Revenant tracers and Mancubus fireballs need to be updated more often (and custom tracers)
+		else if (((gametic+mo->netid) % 5) && (mo->type == MT_TRACER || mo->type == MT_FATSHOT || mo->flags2 & MF2_SEEKERMISSILE))
 			continue;
 
 		if(SV_IsPlayerAllowedToSee(pl, mo))

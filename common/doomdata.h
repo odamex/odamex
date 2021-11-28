@@ -144,6 +144,11 @@ typedef struct
 // [RH] Line blocks everything
 #define ML_BLOCKEVERYTHING			0x8000
 
+// [Blair] MBF21 Line flags
+#define ML_BLOCKLANDMONSTERS		0x1000
+
+#define ML_BLOCKPLAYERS				0x2000
+
 // Sector definition, from editing
 typedef struct
 {

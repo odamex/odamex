@@ -394,19 +394,20 @@ void G_InitNew (const char *mapname)
 	{
 		if (wantFast)
 		{
-			for (i=S_SARG_RUN1 ; i<=S_SARG_PAIN2 ; i++)
-				states[i].tics >>= 1;
-			mobjinfo[MT_BRUISERSHOT].speed = 20*FRACUNIT;
-			mobjinfo[MT_HEADSHOT].speed = 20*FRACUNIT;
-			mobjinfo[MT_TROOPSHOT].speed = 20*FRACUNIT;
+			for (i = 0; i < NUMSTATES; i++)
+			{
+				if (states[i].flags & STATEF_SKILL5FAST &&
+				    (states[i].tics != 1 || demoplayback))
+					states[i].tics >>= 1; // don't change 1->0 since it causes cycles
+			}
 		}
 		else
 		{
-			for (i=S_SARG_RUN1 ; i<=S_SARG_PAIN2 ; i++)
-				states[i].tics <<= 1;
-			mobjinfo[MT_BRUISERSHOT].speed = 15*FRACUNIT;
-			mobjinfo[MT_HEADSHOT].speed = 10*FRACUNIT;
-			mobjinfo[MT_TROOPSHOT].speed = 10*FRACUNIT;
+			for (i = 0; i < NUMSTATES; i++)
+			{
+				if (states[i].flags & STATEF_SKILL5FAST)
+					states[i].tics <<= 1; // don't change 1->0 since it causes cycles
+			}
 		}
 		isFast = wantFast;
 	}

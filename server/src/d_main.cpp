@@ -217,7 +217,7 @@ void STACK_ARGS D_Shutdown()
 	NormalLight.next = NULL;
 }
 
-
+void D_Init_DEHEXTRA_Frames(void);
 
 //
 // D_DoomMain
@@ -235,6 +235,8 @@ void D_DoomMain()
 
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
+	// Initialize all extra frames
+	D_Init_DEHEXTRA_Frames();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
@@ -256,6 +258,8 @@ void D_DoomMain()
 		OWantFile::make(file, iwad_filename_cstr, OFILE_WAD);
 		newwadfiles.push_back(file);
 	}
+
+
 
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
