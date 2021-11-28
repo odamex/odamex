@@ -26,6 +26,7 @@
 
 #ifdef OSX
 
+#include <CoreFoundation/CoreFoundation.h>
 #include <AudioToolbox/AudioToolbox.h>
 
 #include "i_musicsystem.h"

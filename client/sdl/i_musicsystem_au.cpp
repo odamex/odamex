@@ -49,8 +49,8 @@ misrepresented as being the original software.
 
 #include "i_musicsystem_au.h"
 
-#include <AudioToolbox/AudioToolbox.h>
-#include <CoreServices/CoreServices.h>
+#include "i_music.h"
+#include "mus2midi.h"
 
 EXTERN_CVAR(snd_musicvolume);
 
