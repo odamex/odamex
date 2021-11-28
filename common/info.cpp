@@ -7654,7 +7654,6 @@ void D_Init_DEHEXTRA_Frames(void)
 	mobjinfo[MT_HEADSHOT].altspeed = 20;
 	mobjinfo[MT_TROOPSHOT].altspeed = 20;
 
-
 	// Start all MBF21 content here.
 	for (int i = 0; i < NUMMOBJTYPES ; i++)
 	{
@@ -7664,7 +7663,14 @@ void D_Init_DEHEXTRA_Frames(void)
 		mobjinfo[i].splash_group = SG_DEFAULT;
 		mobjinfo[i].ripsound = "";
 		mobjinfo[i].meleerange = (64 * FRACUNIT);
+		mobjinfo[i].droppeditem = MT_NULL;
 	}
+
+	// Dropped items
+	mobjinfo[MT_WOLFSS].droppeditem = MT_CLIP;
+	mobjinfo[MT_POSSESSED].droppeditem = MT_CLIP;
+	mobjinfo[MT_SHOTGUY].droppeditem = MT_SHOTGUN;
+	mobjinfo[MT_CHAINGUY].droppeditem = MT_CHAINGUN;
 
 	mobjinfo[MT_VILE].flags3 = MF3_SHORTMRANGE | MF3_DMGIGNORED | MF3_NOTHRESHOLD;
 	mobjinfo[MT_CYBORG].flags3 = MF3_NORADIUSDMG | MF3_HIGHERMPROB | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E2M8BOSS | MF3_E4M6BOSS;

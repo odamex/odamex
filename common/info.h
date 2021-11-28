@@ -1567,7 +1567,7 @@ typedef enum {
 	MT_SCEPTRE, // killough 7/11/98: evil sceptre in beta version
 	MT_BIBLE,   // killough 7/11/98: unholy bible in beta version
 
-		    // [crispy] support MUSINFO lump (dynamic music changing)
+				// [crispy] support MUSINFO lump (dynamic music changing)
     MT_MUSICCHANGE,
 
     // [BH] 100 extra mobjs to use in dehacked patches
@@ -1725,6 +1725,7 @@ typedef struct
 	int splash_group;
 	int flags3;
 	const char* ripsound;
+	mobjtype_t droppeditem;
 
 } mobjinfo_t;
 

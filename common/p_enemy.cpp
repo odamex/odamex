@@ -1796,6 +1796,9 @@ void A_FatAttack3 (AActor *actor)
 
 void A_Mushroom(AActor* actor)
 {
+	if (!serverside)
+		return;
+
 	int n = actor->info->damage;
 
 	// Mushroom parameters are part of code pointer's state
@@ -1804,27 +1807,24 @@ void A_Mushroom(AActor* actor)
 
 	A_Explode(actor); // make normal explosion
 
-	if (serverside)
+	for (int i = -n; i <= n; i += 8) // launch mushroom cloud
 	{
-		for (int i = -n; i <= n; i += 8) // launch mushroom cloud
+		for (int j = -n; j <= n; j += 8)
 		{
-			for (int j = -n; j <= n; j += 8)
+			AActor* target =
+				new AActor(actor->x, actor->y, actor->z, MT_UNKNOWNTHING);
+			target->x += i << FRACBITS; // Aim in many directions from source
+			target->y += j << FRACBITS;
+			target->z += P_AproxDistance(i, j) * misc1;             // Aim fairly high
+			AActor* mo = P_SpawnMissile(actor, target, MT_FATSHOT); // Launch fireball
+			if (mo != NULL)
 			{
-				AActor* target =
-				    new AActor(actor->x, actor->y, actor->z, MT_UNKNOWNTHING);
-				target->x += i << FRACBITS; // Aim in many directions from source
-				target->y += j << FRACBITS;
-				target->z += P_AproxDistance(i, j) * misc1;             // Aim fairly high
-				AActor* mo = P_SpawnMissile(actor, target, MT_FATSHOT); // Launch fireball
-				if (mo != NULL)
-				{
-					mo->momx = FixedMul(mo->momx, misc2);
-					mo->momy = FixedMul(mo->momy, misc2); // Slow down a bit
-					mo->momz = FixedMul(mo->momz, misc2);
-					mo->flags &= ~MF_NOGRAVITY; // Make debris fall under gravity
-				}
-				target->Destroy();
+				mo->momx = FixedMul(mo->momx, misc2);
+				mo->momy = FixedMul(mo->momy, misc2); // Slow down a bit
+				mo->momz = FixedMul(mo->momz, misc2);
+				mo->flags &= ~MF_NOGRAVITY; // Make debris fall under gravity
 			}
+			target->Destroy();
 		}
 	}
 }
@@ -1901,7 +1901,7 @@ void A_SpawnObject(AActor* actor)
 	fixed_t fan, dx, dy;
 	AActor* mo;
 
-	if (!actor->state->args[0])
+	if (!actor->state->args[0] || !serverside)
 		return;
 
 	type = actor->state->args[0] - 1;
@@ -1913,46 +1913,43 @@ void A_SpawnObject(AActor* actor)
 	vel_y = actor->state->args[6];
 	vel_z = actor->state->args[7];
 
-	if (serverside)
+	// calculate position offsets
+	an = actor->angle + (unsigned int)(((int64_t)angle << 16) / 360);
+	fan = an >> ANGLETOFINESHIFT;
+	dx = FixedMul(ofs_x, finecosine[fan]) - FixedMul(ofs_y, finesine[fan]);
+	dy = FixedMul(ofs_x, finesine[fan]) + FixedMul(ofs_y, finecosine[fan]);
+	// spawn it, yo
+	mo = new AActor(actor->x + dx, actor->y + dy, actor->z + ofs_z, (mobjtype_t)type);
+	if (!mo)
+		return;
+
+	// angle dangle
+	mo->angle = an;
+
+	// set velocity
+	mo->momx = FixedMul(vel_x, finecosine[fan]) - FixedMul(vel_y, finesine[fan]);
+	mo->momy = FixedMul(vel_x, finesine[fan]) + FixedMul(vel_y, finecosine[fan]);
+	mo->momz = vel_z;
+
+	// if spawned object is a missile, set target+tracer
+	if (mo->info->flags & (MF_MISSILE | MF_BOUNCES))
 	{
-		// calculate position offsets
-		an = actor->angle + (unsigned int)(((int64_t)angle << 16) / 360);
-		fan = an >> ANGLETOFINESHIFT;
-		dx = FixedMul(ofs_x, finecosine[fan]) - FixedMul(ofs_y, finesine[fan]);
-		dy = FixedMul(ofs_x, finesine[fan]) + FixedMul(ofs_y, finecosine[fan]);
-		// spawn it, yo
-		mo = new AActor(actor->x + dx, actor->y + dy, actor->z + ofs_z, (mobjtype_t)type);
-		if (!mo)
-			return;
-
-		// angle dangle
-		mo->angle = an;
-
-		// set velocity
-		mo->momx = FixedMul(vel_x, finecosine[fan]) - FixedMul(vel_y, finesine[fan]);
-		mo->momy = FixedMul(vel_x, finesine[fan]) + FixedMul(vel_y, finecosine[fan]);
-		mo->momz = vel_z;
-
-		// if spawned object is a missile, set target+tracer
-		if (mo->info->flags & (MF_MISSILE | MF_BOUNCES))
+		// if spawner is also a missile, copy 'em
+		if (actor->info->flags & (MF_MISSILE | MF_BOUNCES))
 		{
-			// if spawner is also a missile, copy 'em
-			if (actor->info->flags & (MF_MISSILE | MF_BOUNCES))
-			{
-				mo->target = actor->target;
-				mo->tracer = actor->tracer;
-			}
-			// otherwise, set 'em as if a monster fired 'em
-			else
-			{
-				mo->target = actor->ptr();
-				mo->tracer = actor->target;
-			}
+			mo->target = actor->target;
+			mo->tracer = actor->tracer;
 		}
-
-		// [XA] don't bother with the dont-inherit-friendliness hack
-		// that exists in A_Spawn, 'cause WTF is that about anyway?
+		// otherwise, set 'em as if a monster fired 'em
+		else
+		{
+			mo->target = actor->ptr();
+			mo->tracer = actor->target;
+		}
 	}
+
+	// [XA] don't bother with the dont-inherit-friendliness hack
+	// that exists in A_Spawn, 'cause WTF is that about anyway?
 }
 
 //
@@ -1970,7 +1967,7 @@ void A_MonsterProjectile(AActor* actor)
 	AActor* mo;
 	int an;
 
-	if (!actor->target || !actor->state->args[0])
+	if (!actor->target || !actor->state->args[0] || !serverside)
 		return;
 
 	type = actor->state->args[0] - 1;
@@ -1980,32 +1977,29 @@ void A_MonsterProjectile(AActor* actor)
 	spawnofs_z = actor->state->args[4];
 
 	A_FaceTarget(actor);
-	if (serverside)
-	{
-		mo = P_SpawnMissile(actor, actor->target, (mobjtype_t)type);
-		if (!mo)
-			return;
+	mo = P_SpawnMissile(actor, actor->target, (mobjtype_t)type);
+	if (!mo)
+		return;
 
-		// adjust angle
-		mo->angle += (angle_t)(((int64_t)angle << 16) / 360);
-		an = mo->angle >> ANGLETOFINESHIFT;
-		mo->momx = FixedMul(mo->info->speed, finecosine[an]);
-		mo->momy = FixedMul(mo->info->speed, finesine[an]);
+	// adjust angle
+	mo->angle += (angle_t)(((int64_t)angle << 16) / 360);
+	an = mo->angle >> ANGLETOFINESHIFT;
+	mo->momx = FixedMul(mo->info->speed, finecosine[an]);
+	mo->momy = FixedMul(mo->info->speed, finesine[an]);
 
-		// adjust pitch (approximated, using Doom's ye olde
-		// finetangent table; same method as monster aim)
-		mo->momz += FixedMul(mo->info->speed, pitch);
+	// adjust pitch (approximated, using Doom's ye olde
+	// finetangent table; same method as monster aim)
+	mo->momz += FixedMul(mo->info->speed, pitch);
 
-		// adjust position
-		an = (actor->angle - ANG90) >> ANGLETOFINESHIFT;
-		mo->x += FixedMul(spawnofs_xy, finecosine[an]);
-		mo->y += FixedMul(spawnofs_xy, finesine[an]);
-		mo->z += spawnofs_z;
+	// adjust position
+	an = (actor->angle - ANG90) >> ANGLETOFINESHIFT;
+	mo->x += FixedMul(spawnofs_xy, finecosine[an]);
+	mo->y += FixedMul(spawnofs_xy, finesine[an]);
+	mo->z += spawnofs_z;
 
-		// always set the 'tracer' field, so this pointer
-		// can be used to fire seeker missiles at will.
-		mo->tracer = actor->target;
-	}
+	// always set the 'tracer' field, so this pointer
+	// can be used to fire seeker missiles at will.
+	mo->tracer = actor->target;
 }
 
 //
@@ -2207,24 +2201,20 @@ void A_SeekTracer(AActor* actor)
 {
 	angle_t threshold, maxturnangle;
 
-	if (!actor)
+	if (!actor || !serverside)
 		return;
 
 	threshold = FixedToAngle(actor->state->args[0]);
 	maxturnangle = FixedToAngle(actor->state->args[1]);
 
-	if (serverside)
+	if (P_SeekerMissile(actor, actor->tracer, threshold, maxturnangle, true))
 	{
-		if (P_SeekerMissile(actor, actor->tracer, threshold, maxturnangle, true))
-		{
-			actor->flags2 |= MF2_SEEKERMISSILE;
-			SV_UpdateMobj(actor);
-		}
-		else
-		{
-			actor->tracer = AActor::AActorPtr();
-			actor->flags2 &= ~MF2_SEEKERMISSILE;
-		}
+		actor->flags2 |= MF2_SEEKERMISSILE;
+		SV_UpdateMobj(actor);
+	}
+	else
+	{
+		actor->flags2 &= ~MF2_SEEKERMISSILE;
 	}
 }
 
@@ -2240,7 +2230,7 @@ void A_FindTracer(AActor* actor)
 	angle_t fov;
 	int dist;
 
-	if (!actor || actor->tracer)
+	if (!actor || actor->tracer || !serverside)
 		return;
 
 	fov = FixedToAngle(actor->state->args[0]);
@@ -2253,11 +2243,8 @@ void A_FindTracer(AActor* actor)
 
 	actor->tracer = tracer->ptr();
 
-	if (serverside)
-	{
-		actor->flags2 |= MF2_SEEKERMISSILE;
-		SV_UpdateMobj(actor);
-	}
+	actor->flags2 |= MF2_SEEKERMISSILE;
+	SV_UpdateMobj(actor);
 }
 
 //
@@ -2266,16 +2253,13 @@ void A_FindTracer(AActor* actor)
 //
 void A_ClearTracer(AActor* actor)
 {
-	if (!actor)
+	if (!actor || !serverside)
 		return;
 
 	actor->tracer = AActor::AActorPtr();
 
-	if (serverside)
-	{
-		actor->flags2 &= ~MF2_SEEKERMISSILE;
-		SV_UpdateMobj(actor);
-	}
+	actor->flags2 &= ~MF2_SEEKERMISSILE;
+	SV_UpdateMobj(actor);
 }
 
 //
@@ -2358,7 +2342,7 @@ void A_JumpIfTracerInSight(AActor* actor)
 	angle_t fov;
 	int state;
 
-	if (!actor || !actor->tracer)
+	if (!actor || !actor->tracer || !serverside)
 		return;
 
 	state = (actor->state->args[0]);
@@ -2371,11 +2355,8 @@ void A_JumpIfTracerInSight(AActor* actor)
 	if (actor->tracer->health <= 0)
 		return;
 
-	if (serverside)
-	{
-		if (P_CheckSight(actor, actor->tracer))
-			P_SetMobjState(actor, (statenum_t)state);
-	}
+	if (P_CheckSight(actor, actor->tracer))
+		P_SetMobjState(actor, (statenum_t)state);
 }
 
 //
@@ -2389,7 +2370,7 @@ void A_JumpIfTracerCloser(AActor* actor)
 {
 	int state, distance;
 
-	if (!actor || !actor->tracer)
+	if (!actor || !actor->tracer || !serverside)
 		return;
 
 	state = actor->state->args[0];
@@ -2398,12 +2379,9 @@ void A_JumpIfTracerCloser(AActor* actor)
 	if (actor->tracer->health <= 0)
 		return;
 
-	if (serverside)
-	{
-		if (distance >
-		    P_AproxDistance(actor->x - actor->tracer->x, actor->y - actor->tracer->y))
-			P_SetMobjState(actor, (statenum_t)state);
-	}
+	if (distance >
+		P_AproxDistance(actor->x - actor->tracer->x, actor->y - actor->tracer->y))
+		P_SetMobjState(actor, (statenum_t)state);
 }
 
 //
@@ -3115,20 +3093,20 @@ void A_Gibify(AActor *mo) // denis - squash thing
 //
 void A_Spawn(AActor* mo)
 {
-	if (serverside)
+	if (!serverside)
+		return;
+
+	// Partial integration of A_Spawn.
+	// ToDo: Currently missing MBF's MF_FRIEND flag support!
+	if (mo->state->misc1)
 	{
-		// Partial integration of A_Spawn.
-		// ToDo: Currently missing MBF's MF_FRIEND flag support!
-		if (mo->state->misc1)
-		{
-			AActor* newmobj;
+		AActor* newmobj;
 
-			newmobj = new AActor(mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z,
-			                     (mobjtype_t)(mo->state->misc1 - 1));
+		newmobj = new AActor(mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z,
+			                    (mobjtype_t)(mo->state->misc1 - 1));
 
-			// newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
-			// // TODO !!!
-		}
+		// newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
+		// // TODO !!!
 	}
 }
 

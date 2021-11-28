@@ -61,6 +61,7 @@
 
 // [RH] Needed for sky scrolling
 #include "r_sky.h"
+#include <g_gametype.h>
 
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
@@ -105,9 +106,12 @@ int P_IsUnderDamage(AActor* actor)
 	const DCeiling* cr; // Crushing ceiling
 	int dir = 0;
 	for (seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
-		if ((cr = (DCeiling*)seclist->m_sector->ceilingdata) &&
-		    cr->m_Status == 2) // Down
+	{
+		if ((cr = (DCeiling*)seclist->m_sector->ceilingdata) && cr->m_Status == 2) // Down
+		{
 			cr->m_Crush ? dir = 1 : dir = 0;
+		}
+	}
 	return dir;
 }
 
@@ -123,7 +127,7 @@ bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest)
 {
 	if (friendshiptest->flags & MF_FRIEND)
 	{
-		if (sv_gametype == (GM_COOP || GM_HORDE))
+		if (G_IsCoopGame())
 		{
 			return true;
 		}
@@ -136,36 +140,6 @@ bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest)
 		{
 			return false;
 		}
-	}
-	else
-	{
-		return false;
-	}
-}
-
-/*
- *
- * P_IsTeamMate
- * @brief Helper function to determine if a particular thing is a teammate.
- *
- * @param actor Source player actor
- * @param player Player actor to test same teamness
- * @returns A boolean to determine if the player is on the shooter's team.
- */
-bool P_IsTeamMate(AActor* actor, AActor* player)
-{
-	if (sv_gametype == GM_DM)
-	{
-		return false;
-	}
-	else if (sv_gametype == (GM_HORDE || GM_COOP))
-	{
-		return true;
-	}
-	else if (actor && actor->player && player && player->player &&
-		        actor->player->userinfo.team == player->player->userinfo.team)
-	{
-		return true;
 	}
 	else
 	{
@@ -1812,7 +1786,9 @@ void P_PlayerInSpecialSector (player_t *player)
 						     it != ::players.end(); ++it)
 						{
 							if (player->ingame() && player->health > 0)
+							{
 								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
+							}
 						}
 						G_ExitLevel(0, 1);
 					}
@@ -1834,7 +1810,9 @@ void P_PlayerInSpecialSector (player_t *player)
 						     it != ::players.end(); ++it)
 						{
 							if (player->ingame() && player->health > 0)
+							{
 								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
+							}
 						}
 						G_SecretExitLevel(0, 1);
 					}
@@ -1859,18 +1837,24 @@ void P_PlayerInSpecialSector (player_t *player)
 				break;
 			case 1: // 2/5 damage per 31 ticks
 				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
+				{
 					P_DamageMobj(player->mo, NULL, NULL, 5, MOD_LAVA);
+				}
 				break;
 			case 2: // 5/10 damage per 31 ticks
 				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
+				{
 					P_DamageMobj(player->mo, NULL, NULL, 10, MOD_SLIME);
+				}
 				break;
 			case 3: // 10/20 damage per 31 ticks
 				if (!player->powers[pw_ironfeet] ||
 				    (P_Random(player->mo) < 5)) // take damage even with suit
 				{
 					if (!(level.time & 0x1f))
+					{
 						P_DamageMobj(player->mo, NULL, NULL, 20, MOD_SLIME);
+					}
 				}
 				break;
 			}
