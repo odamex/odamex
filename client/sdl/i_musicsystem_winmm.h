@@ -56,11 +56,13 @@ class WinMMMusicSystem : public MidiMusicSystem
 		DWORD dwEvent;
 	};
 
+	// [AM] MIDIHDR was showing up as a different size form different TU's,
+	//      so we use PMIDIHDR so ctor caller doesn't need to know its size.
 	struct buffer_t
 	{
 		native_event_t events[STREAM_MAX_EVENTS];
 		int num_events;
-		MIDIHDR MidiStreamHdr;
+		PMIDIHDR MidiStreamHdr;
 	};
 
 	buffer_t m_buffer;

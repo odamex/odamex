@@ -71,14 +71,15 @@ static void MidiErrorMessage(const DWORD error)
  * @brief Initialize music.
  */
 WinMMMusicSystem::WinMMMusicSystem()
-    : m_initialized(false), m_midiStream(NULL), m_bufferReturnEvent(NULL),
-      m_exitEvent(NULL), m_playerThread(NULL)
+    : MidiMusicSystem(), m_initialized(false), m_midiStream(NULL),
+      m_bufferReturnEvent(NULL), m_exitEvent(NULL), m_playerThread(NULL)
 {
-	// [AM] Update this if m_buffer gets any non-POD members.
-	memset(m_buffer.events, 0x0, sizeof(m_buffer.events));
+	memset(&m_buffer, 0x0, sizeof(m_buffer));
+	m_buffer.MidiStreamHdr = new MIDIHDR;
+	memset(m_buffer.MidiStreamHdr, 0x0, sizeof(MIDIHDR));
 
 	UINT MidiDevice = MIDI_MAPPER;
-	MIDIHDR* hdr = &m_buffer.MidiStreamHdr;
+	PMIDIHDR hdr = m_buffer.MidiStreamHdr;
 	MMRESULT mmr;
 
 	mmr = midiStreamOpen(&m_midiStream, &MidiDevice, static_cast<DWORD>(1),
@@ -90,11 +91,8 @@ WinMMMusicSystem::WinMMMusicSystem()
 		return;
 	}
 
-	hdr->lpData = (LPSTR)m_buffer.events;
-	hdr->dwBytesRecorded = 0;
-	hdr->dwBufferLength = STREAM_MAX_EVENTS * sizeof(native_event_t);
-	hdr->dwFlags = 0;
-	hdr->dwOffset = 0;
+	hdr->lpData = reinterpret_cast<LPSTR>(m_buffer.events);
+	hdr->dwBufferLength = sizeof(m_buffer.events);
 
 	mmr = midiOutPrepareHeader(reinterpret_cast<HMIDIOUT>(m_midiStream), hdr,
 	                           sizeof(MIDIHDR));
@@ -103,6 +101,9 @@ WinMMMusicSystem::WinMMMusicSystem()
 		MidiErrorMessage(mmr);
 		return;
 	}
+
+	mmr = midiOutUnprepareHeader(reinterpret_cast<HMIDIOUT>(m_midiStream), hdr,
+	                             sizeof(MIDIHDR));
 
 	m_bufferReturnEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_exitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -114,12 +115,12 @@ WinMMMusicSystem::WinMMMusicSystem()
  */
 WinMMMusicSystem::~WinMMMusicSystem()
 {
-	MIDIHDR* hdr = &m_buffer.MidiStreamHdr;
+	PMIDIHDR hdr = m_buffer.MidiStreamHdr;
 	MMRESULT mmr;
 
 	stopSong();
 
-	mmr = midiOutUnprepareHeader((HMIDIOUT)m_midiStream, hdr, sizeof(MIDIHDR));
+	mmr = midiOutUnprepareHeader(reinterpret_cast<HMIDIOUT>(m_midiStream), hdr, sizeof(MIDIHDR));
 	if (mmr != MMSYSERR_NOERROR)
 	{
 		MidiErrorMessage(mmr);
@@ -135,6 +136,8 @@ WinMMMusicSystem::~WinMMMusicSystem()
 
 	CloseHandle(m_bufferReturnEvent);
 	CloseHandle(m_exitEvent);
+
+	delete m_buffer.MidiStreamHdr;
 }
 
 void WinMMMusicSystem::startSong(byte* data, size_t length, bool loop)
@@ -175,7 +178,7 @@ void WinMMMusicSystem::stopSong()
 	{
 		MidiErrorMessage(mmr);
 	}
-	mmr = midiOutReset((HMIDIOUT)m_midiStream);
+	mmr = midiOutReset(reinterpret_cast<HMIDIOUT>(m_midiStream));
 	if (mmr != MMSYSERR_NOERROR)
 	{
 		MidiErrorMessage(mmr);
@@ -237,7 +240,7 @@ void WinMMMusicSystem::fillBuffer()
  */
 void WinMMMusicSystem::streamOut()
 {
-	MIDIHDR* hdr = &m_buffer.MidiStreamHdr;
+	PMIDIHDR hdr = m_buffer.MidiStreamHdr;
 	int num_events = m_buffer.num_events;
 
 	if (num_events == 0)
