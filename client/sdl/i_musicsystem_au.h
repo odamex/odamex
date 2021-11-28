@@ -17,8 +17,7 @@
 //
 // DESCRIPTION:
 //  Plays music utilizing OSX's Audio Unit system, which is the default for
-//  OSX.  On non-OSX systems, the AuMusicSystem will not output any sound
-//  and should not be selected.
+//  OSX.
 //
 //-----------------------------------------------------------------------------
 
@@ -26,11 +25,18 @@
 
 #ifdef OSX
 
-#include <CoreFoundation/CoreFoundation.h>
 #include <AudioToolbox/AudioToolbox.h>
+#include <CoreFoundation/CoreFoundation.h>
 
 #include "i_musicsystem.h"
 
+/**
+ * @brief Plays music utilizing OSX's Audio Unit system, which is the default
+ *        for OSX.
+ *
+ * @detail On non-OSX systems, the AuMusicSystem will not output any sound
+ *         and should not be selected.
+ */
 class AuMusicSystem : public MusicSystem
 {
   public:
@@ -44,22 +50,22 @@ class AuMusicSystem : public MusicSystem
 	virtual void playChunk() { }
 	virtual void setVolume(float volume);
 
-	virtual bool isInitialized() const { return mIsInitialized; }
+	virtual bool isInitialized() const { return m_isInitialized; }
 
 	// Only plays midi-type music
 	virtual bool isMusCapable() const { return true; }
 	virtual bool isMidiCapable() const { return true; }
 
   private:
-	bool mIsInitialized;
+	bool m_isInitialized;
 
-	MusicPlayer mPlayer;
-	MusicSequence mSequence;
-	AUGraph mGraph;
-	AUNode mSynth;
-	AUNode mOutput;
-	AudioUnit mUnit;
-	CFDataRef mCfd;
+	MusicPlayer m_player;
+	MusicSequence m_sequence;
+	AUGraph m_graph;
+	AUNode m_synth;
+	AUNode m_output;
+	AudioUnit m_unit;
+	CFDataRef m_cfd;
 
 	void _StopSong();
 	void _RegisterSong(byte* data, size_t length);

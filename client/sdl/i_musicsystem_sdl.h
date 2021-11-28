@@ -27,6 +27,10 @@
 #include "i_music.h"
 #include "i_musicsystem.h"
 
+/**
+ * @brief Plays music utilizing the SDL_Mixer library and can handle a wide
+ *        range of music formats.
+ */
 class SdlMixerMusicSystem : public MusicSystem
 {
   public:
@@ -40,7 +44,7 @@ class SdlMixerMusicSystem : public MusicSystem
 	virtual void playChunk() { }
 	virtual void setVolume(float volume);
 
-	virtual bool isInitialized() const { return mIsInitialized; }
+	virtual bool isInitialized() const { return m_isInitialized; }
 
 	virtual bool isMusCapable() const { return true; }
 	virtual bool isMidiCapable() const { return true; }
@@ -50,8 +54,8 @@ class SdlMixerMusicSystem : public MusicSystem
 	virtual bool isWaveCapable() const { return true; }
 
   private:
-	bool mIsInitialized;
-	MusicHandler_t mRegisteredSong;
+	bool m_isInitialized;
+	MusicHandler_t m_registeredSong;
 
 	void _StopSong();
 	void _RegisterSong(byte* data, size_t length);

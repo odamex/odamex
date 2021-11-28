@@ -49,7 +49,7 @@ static int I_PortMidiTime(void* time_info = NULL)
 }
 
 PortMidiMusicSystem::PortMidiMusicSystem()
-    : MidiMusicSystem(), mIsInitialized(false), mOutputDevice(-1), mStream(NULL)
+    : MidiMusicSystem(), m_isInitialized(false), m_outputDevice(-1), m_stream(NULL)
 {
 	const int output_buffer_size = 1024;
 
@@ -59,7 +59,7 @@ PortMidiMusicSystem::PortMidiMusicSystem()
 		return;
 	}
 
-	mOutputDevice = Pm_GetDefaultOutputDeviceID();
+	m_outputDevice = Pm_GetDefaultOutputDeviceID();
 	std::string prefdevicename(snd_musicdevice.cstring());
 
 	// List PortMidi devices
@@ -71,31 +71,31 @@ PortMidiMusicSystem::PortMidiMusicSystem()
 
 		std::string curdevicename(info->name);
 		if (!prefdevicename.empty() && iequals(prefdevicename, curdevicename))
-			mOutputDevice = i;
+			m_outputDevice = i;
 
 		Printf(PRINT_HIGH, "%d: %s, %s\n", i, info->interf, info->name);
 	}
 
-	if (mOutputDevice == pmNoDevice)
+	if (m_outputDevice == pmNoDevice)
 	{
 		Printf(PRINT_WARNING, "I_InitMusic: No PortMidi output devices available.\n");
 		Pm_Terminate();
 		return;
 	}
 
-	if (Pm_OpenOutput(&mStream, mOutputDevice, NULL, output_buffer_size, I_PortMidiTime,
+	if (Pm_OpenOutput(&m_stream, m_outputDevice, NULL, output_buffer_size, I_PortMidiTime,
 	                  NULL, cLatency) != pmNoError)
 	{
 		Printf(PRINT_WARNING, "I_InitMusic: Failure opening PortMidi output device %d.\n",
-		       mOutputDevice);
+		       m_outputDevice);
 		return;
 	}
 
-	if (!mStream)
+	if (!m_stream)
 		return;
 
 	Printf(PRINT_HIGH, "I_InitMusic: Music playback enabled using PortMidi.\n");
-	mIsInitialized = true;
+	m_isInitialized = true;
 }
 
 PortMidiMusicSystem::~PortMidiMusicSystem()
@@ -104,16 +104,16 @@ PortMidiMusicSystem::~PortMidiMusicSystem()
 		return;
 
 	_StopSong();
-	mIsInitialized = false;
+	m_isInitialized = false;
 
-	if (mStream)
+	if (m_stream)
 	{
 		// Sleep to allow the All-Notes-Off events to be processed
 		I_Sleep(I_ConvertTimeFromMs(cLatency * 2));
 
-		Pm_Close(mStream);
+		Pm_Close(m_stream);
 		Pm_Terminate();
-		mStream = NULL;
+		m_stream = NULL;
 	}
 }
 
@@ -188,7 +188,7 @@ void PortMidiMusicSystem::_PlayEvent(MidiEvent* event, int time)
 		}
 
 		PmMessage msg = Pm_Message(event->getEventType() | channel, controltype, param1);
-		Pm_WriteShort(mStream, time, msg);
+		Pm_WriteShort(m_stream, time, msg);
 	}
 	else if (I_IsMidiChannelEvent(event))
 	{
@@ -198,7 +198,7 @@ void PortMidiMusicSystem::_PlayEvent(MidiEvent* event, int time)
 		byte param2 = chanevent->getParam2();
 
 		PmMessage msg = Pm_Message(event->getEventType() | channel, param1, param2);
-		Pm_WriteShort(mStream, time, msg);
+		Pm_WriteShort(m_stream, time, msg);
 	}
 }
 
