@@ -45,6 +45,28 @@ extern std::string server_host;
 extern std::string digest;
 extern OResFiles wadfiles;
 
+/**
+ * @brief Map demo versions to the latest Odamex version that can read them.
+ * 
+ * @param version Demo version to check.
+ * @return Latest Odamex version for that demo in packed format, or 0 if
+ *         the demo version is unknown to us.
+ */
+int LatestDemoVersion(const int version)
+{
+	switch (version)
+	{
+	case 3:
+		return GAMEVER;
+	case 2:
+		return MAKEVER(0, 6, 0);
+	case 1:
+		return MAKEVER(0, 5, 3);
+	default:
+		return 0;
+	}
+}
+
 NetDemo::NetDemo()
     : state(st_stopped), oldstate(st_stopped), filename(""), demofp(NULL), netdemotic(0),
       pause_netdemotic(0)
@@ -508,10 +530,29 @@ bool NetDemo::startPlaying(const std::string &filename)
 		return false;
 	}
 
-    if (header.version != NETDEMOVER)
-    {
-        // Do nothing since there is only one version of netdemo files currently
-    }
+	if (header.version != NETDEMOVER)
+	{
+		std::string buffer;
+		const int latestVersion = LatestDemoVersion(header.version);
+		if (latestVersion)
+		{
+			int maj, min, patch;
+			BREAKVER(latestVersion, maj, min, patch);
+			StrFormat(buffer,
+			          "This demo is too old to play in this version of Odamex.  Please "
+			          "visit https://odamex.net/ to obtain Odamex %d.%d.%d or older.",
+			          maj, min, patch);
+		}
+		else
+		{
+			StrFormat(buffer,
+			          "This demo is too new to play in this version of Odamex.  Please "
+			          "visit https://odamex.net/ to obtain a newer version of Odamex.");
+		}
+
+		error(buffer);
+		return false;
+	}
 
 	// read the demo's index
 	if (fseek(demofp, header.snapshot_index_offset, SEEK_SET) != 0)
