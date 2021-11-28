@@ -73,6 +73,7 @@ EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_teamsinplay)
+EXTERN_CVAR(g_resetinvonexit)
 
 extern int mapchange;
 
@@ -737,7 +738,7 @@ void G_DoLoadLevel (int position)
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (it->ingame() && it->playerstate == PST_DEAD)
+		if (it->ingame() && (::g_resetinvonexit || it->playerstate == PST_DEAD))
 			it->playerstate = PST_REBORN;
 
 		// Properly reset Cards, Powerups, and scores.

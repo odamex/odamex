@@ -143,6 +143,7 @@ EXTERN_CVAR (vid_32bpp)
 EXTERN_CVAR (vid_widescreen)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_vsync)
+EXTERN_CVAR (g_resetinvonexit)
 
 std::string LOG_FILE;
 
@@ -814,6 +815,9 @@ void D_DoomMain()
 
 	// Fast
 	sv_fastmonsters = Args.CheckParm("-fast");
+
+	// Pistol start
+	g_resetinvonexit = Args.CheckParm("-pistolstart");
 
 	// get skill / episode / map from parms
 	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
