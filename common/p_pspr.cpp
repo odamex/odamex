@@ -28,7 +28,6 @@
 #include <stdlib.h>
 
 #include "d_dehacked.h"
-#include "doomdef.h"
 #include "d_event.h"
 
 

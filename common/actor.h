@@ -161,95 +161,95 @@ private:
 //
 // Misc. mobj flags
 //
-typedef enum
+enum mobjflag_t
 {
 	// --- mobj.flags ---
 
-	MF_SPECIAL = BIT(0), // call P_SpecialThing when touched
-	MF_SOLID = BIT(1),
-	MF_SHOOTABLE = BIT(2),
-	MF_NOSECTOR = BIT(3),     // don't use the sector links
-	                          // (invisible but touchable)
-	MF_NOBLOCKMAP = BIT(4),   // don't use the blocklinks
-	                          // (inert but displayable)
-	MF_AMBUSH = BIT(5),       // not activated by sound; deaf monster
-	MF_JUSTHIT = BIT(6),      // try to attack right back
-	MF_JUSTATTACKED = BIT(7), // take at least one step before attacking
-	MF_SPAWNCEILING = BIT(8), // hang from ceiling instead of floor
-	MF_NOGRAVITY = BIT(9),    // don't apply gravity every tic
+	MF_SPECIAL		= BIT(0),	// call P_SpecialThing when touched
+	MF_SOLID		= BIT(1),
+	MF_SHOOTABLE	= BIT(2),
+	MF_NOSECTOR		= BIT(3),	// don't use the sector links
+								// (invisible but touchable)
+	MF_NOBLOCKMAP	= BIT(4),	// don't use the blocklinks
+								// (inert but displayable)
+	MF_AMBUSH		= BIT(5),	// not activated by sound; deaf monster
+	MF_JUSTHIT		= BIT(6),	// try to attack right back
+	MF_JUSTATTACKED = BIT(7),	// take at least one step before attacking
+	MF_SPAWNCEILING = BIT(8),	// hang from ceiling instead of floor
+	MF_NOGRAVITY	= BIT(9),	// don't apply gravity every tic
 
 	// movement flags
-	MF_DROPOFF = BIT(10),  // allow jumps from high places
-	MF_PICKUP = BIT(11),   // for players to pick up items
-	MF_NOCLIP = BIT(12),   // player cheat
-	MF_SLIDE = BIT(13),    // keep info about sliding along walls
-	MF_FLOAT = BIT(14),    // allow moves to any height, no gravity
-	MF_TELEPORT = BIT(15), // don't cross lines or look at heights
-	MF_MISSILE = BIT(16),  // don't hit same species, explode on block
+	MF_DROPOFF	= BIT(10),		// allow jumps from high places
+	MF_PICKUP	= BIT(11),		// for players to pick up items
+	MF_NOCLIP	= BIT(12),		// player cheat
+	MF_SLIDE	= BIT(13),		// keep info about sliding along walls
+	MF_FLOAT	= BIT(14),		// allow moves to any height, no gravity
+	MF_TELEPORT = BIT(15),		// don't cross lines or look at heights
+	MF_MISSILE	= BIT(16),		// don't hit same species, explode on block
 
-	MF_DROPPED = BIT(17), // dropped by a demon, not level spawned
-	MF_SHADOW = BIT(18),  // actor is hard for monsters to see
-	MF_NOBLOOD = BIT(19), // don't bleed when shot (use puff)
-	MF_CORPSE = BIT(20),  // don't stop moving halfway off a step
-	MF_INFLOAT = BIT(21), // floating to a height for a move, don't
-	                      // auto float to target's height
+	MF_DROPPED	= BIT(17),		// dropped by a demon, not level spawned
+	MF_SHADOW	= BIT(18),		// actor is hard for monsters to see
+	MF_NOBLOOD	= BIT(19),		// don't bleed when shot (use puff)
+	MF_CORPSE	= BIT(20),		// don't stop moving halfway off a step
+	MF_INFLOAT	= BIT(21),		// floating to a height for a move, don't
+								// auto float to target's height
 
-	MF_COUNTKILL = BIT(22), // count towards intermission kill total
-	MF_COUNTITEM = BIT(23), // count towards intermission item total
+	MF_COUNTKILL = BIT(22),		// count towards intermission kill total
+	MF_COUNTITEM = BIT(23),		// count towards intermission item total
 
-	MF_SKULLFLY = BIT(24),  // skull in flight
-	MF_NOTDMATCH = BIT(25), // don't spawn in death match (key cards)
+	MF_SKULLFLY  = BIT(24),		// skull in flight
+	MF_NOTDMATCH = BIT(25),		// don't spawn in death match (key cards)
 
 	// Player sprites in multiplayer modes are modified
 	//  using an internal color lookup table for re-indexing.
 	// If 0x4 0x8 or 0xc, use a translation table for player colormaps
 	MF_TRANSLATION = 0xc000000,
 
-	MF_TOUCHY = BIT(28),  // MBF - UNUSED FOR NOW
+	MF_TOUCHY  = BIT(28), // MBF - UNUSED FOR NOW
 	MF_BOUNCES = BIT(29), // MBF - PARTIAL IMPLEMENTATION
-	MF_FRIEND = BIT(30),  // MBF - UNUSED FOR NOW
+	MF_FRIEND  = BIT(30), // MBF - UNUSED FOR NOW
 
 	// --- mobj.flags2 ---
 	// Heretic flags
-	MF2_LOGRAV = BIT(0),       // alternate gravity setting
-	MF2_WINDTHRUST = BIT(1),   // gets pushed around by the wind
-	                           // specials
-	MF2_FLOORBOUNCE = BIT(2),  // bounces off the floor
-	MF2_BLASTED = BIT(3),      // mobj can be on an edge because it was hit by a blast
-	MF2_FLY = BIT(4),          // fly mode is active
-	MF2_FLOORCLIP = BIT(5),    // if feet are allowed to be clipped
-	MF2_SPAWNFLOAT = BIT(6),   // spawn random float z
-	MF2_NOTELEPORT = BIT(7),   // does not teleport
-	MF2_RIP = BIT(8),          // missile rips through solid
-	                           // targets
-	MF2_PUSHABLE = BIT(9),     // can be pushed by other moving
-	                           // mobjs
-	MF2_SLIDE = BIT(10),       // slides against walls
-	MF2_ONMOBJ = BIT(11),      // mobj is resting on top of another
-	                           // mobj
-	MF2_PASSMOBJ = BIT(12),    // Enable z block checking.  If on,
-	                           // this flag will allow the mobj to
-	                           // pass over/under other mobjs.
-	MF2_CANNOTPUSH = BIT(13),  // cannot push other pushable mobjs
-	MF2_THRUGHOST = BIT(14),   // missile will pass through ghosts [RH] was 8
-	MF2_BOSS = BIT(15),        // mobj is a major boss
-	MF2_FIREDAMAGE = BIT(16),  // does fire damage
-	MF2_NODMGTHRUST = BIT(17), // does not thrust target when damaging
-	MF2_TELESTOMP = BIT(18),   // mobj can stomp another
-	MF2_FLOATBOB = BIT(19),    // use float bobbing z movement
-	MF2_DONTDRAW = BIT(20),    // don't generate a vissprite
-	MF2_IMPACT = BIT(21),      // an MF_MISSILE mobj can activate SPAC_IMPACT
-	MF2_PUSHWALL = BIT(22),    // mobj can push walls
-	MF2_MCROSS = BIT(23),      // can activate monster cross lines
-	MF2_PCROSS = BIT(24),      // can activate projectile cross lines
-	MF2_CANTLEAVEFLOORPIC = BIT(25), // stay within a certain floor type
-	MF2_NONSHOOTABLE = BIT(26),      // mobj is totally non-shootable,
-	                                 // but still considered solid
-	MF2_INVULNERABLE = BIT(27),      // mobj is invulnerable
-	MF2_DORMANT = BIT(28),           // thing is dormant
-	MF2_ICEDAMAGE = BIT(29),         // does ice damage
-	MF2_SEEKERMISSILE = BIT(30),     // is a seeker (for reflection)
-	MF2_REFLECTIVE = BIT(31),        // reflects missiles
+	MF2_LOGRAV			= BIT(0),   // alternate gravity setting
+	MF2_WINDTHRUST		= BIT(1),   // gets pushed around by the wind
+									// specials
+	MF2_FLOORBOUNCE		= BIT(2),   // bounces off the floor
+	MF2_BLASTED			= BIT(3),	// mobj can be on an edge because it was hit by a blast
+	MF2_FLY				= BIT(4),   // fly mode is active
+	MF2_FLOORCLIP		= BIT(5),   // if feet are allowed to be clipped
+	MF2_SPAWNFLOAT		= BIT(6),   // spawn random float z
+	MF2_NOTELEPORT		= BIT(7),   // does not teleport
+	MF2_RIP				= BIT(8),   // missile rips through solid
+									// targets
+	MF2_PUSHABLE		= BIT(9),   // can be pushed by other moving
+									// mobjs
+	MF2_SLIDE			= BIT(10),  // slides against walls
+	MF2_ONMOBJ			= BIT(11),  // mobj is resting on top of another
+									// mobj
+	MF2_PASSMOBJ		= BIT(12),  // Enable z block checking.  If on,
+									// this flag will allow the mobj to
+									// pass over/under other mobjs.
+	MF2_CANNOTPUSH		= BIT(13),  // cannot push other pushable mobjs
+	MF2_THRUGHOST		= BIT(14),  // missile will pass through ghosts [RH] was 8
+	MF2_BOSS			= BIT(15),  // mobj is a major boss
+	MF2_FIREDAMAGE		= BIT(16),  // does fire damage
+	MF2_NODMGTHRUST		= BIT(17),  // does not thrust target when damaging
+	MF2_TELESTOMP		= BIT(18),  // mobj can stomp another
+	MF2_FLOATBOB		= BIT(19),  // use float bobbing z movement
+	MF2_DONTDRAW		= BIT(20),  // don't generate a vissprite
+	MF2_IMPACT			= BIT(21),  // an MF_MISSILE mobj can activate SPAC_IMPACT
+	MF2_PUSHWALL		= BIT(22),  // mobj can push walls
+	MF2_MCROSS			= BIT(23),  // can activate monster cross lines
+	MF2_PCROSS			= BIT(24),  // can activate projectile cross lines
+	MF2_CANTLEAVEFLOORPIC = BIT(25),// stay within a certain floor type
+	MF2_NONSHOOTABLE	= BIT(26),  // mobj is totally non-shootable,
+									// but still considered solid
+	MF2_INVULNERABLE	= BIT(27),  // mobj is invulnerable
+	MF2_DORMANT			= BIT(28),  // thing is dormant
+	MF2_ICEDAMAGE		= BIT(29),  // does ice damage
+	MF2_SEEKERMISSILE	= BIT(30),  // is a seeker (for reflection)
+	MF2_REFLECTIVE		= BIT(31),  // reflects missiles
 
 	// --- mobj.flags3 ---
 	// MBF21-specific flags
@@ -275,18 +275,18 @@ typedef enum
 
 	// --- mobj.oflags ---
 	// Odamex-specific flags
-		MFO_NOSNAPZ      = BIT(0),		// ignore snapshot z this tic
-		MFO_HEALTHPOOL   = BIT(1),		// global health pool that tracks killed HP
-		MFO_INFIGHTINVUL = BIT(2),		// invulnerable to infighting
-		MFO_UNFLINCHING  = BIT(3),		// monster flinching reduced to 1 in 256
-		MFO_ARMOR        = BIT(4),		// damage taken by monster is reduced
-		MFO_QUICK        = BIT(5),		// speed of monster is increased
-		MFO_NORAISE      = BIT(6),		// vile can't raise corpse
-		MFO_BOSSPOOL     = BIT(7),		// boss health pool that tracks damage
-		MFO_FULLBRIGHT   = BIT(8),		// monster is fullbright
-		MFO_SPECTATOR    = BIT(9),		// GhostlyDeath -- thing is/was a spectator and can't be seen!
-		MFO_FALLING      = BIT(10),		// [INTERNAL] for falling
-} mobjflag_t;
+	MFO_NOSNAPZ			= BIT(0),	// ignore snapshot z this tic
+	MFO_HEALTHPOOL		= BIT(1),	// global health pool that tracks killed HP
+	MFO_INFIGHTINVUL	= BIT(2),	// invulnerable to infighting
+	MFO_UNFLINCHING		= BIT(3),	// monster flinching reduced to 1 in 256
+	MFO_ARMOR			= BIT(4),	// damage taken by monster is reduced
+	MFO_QUICK			= BIT(5),	// speed of monster is increased
+	MFO_NORAISE			= BIT(6),	// vile can't raise corpse
+	MFO_BOSSPOOL		= BIT(7),	// boss health pool that tracks damage
+	MFO_FULLBRIGHT		= BIT(8),	// monster is fullbright
+	MFO_SPECTATOR		= BIT(9),	// GhostlyDeath -- thing is/was a spectator and can't be seen!
+	MFO_FALLING			= BIT(10),	// [INTERNAL] for falling
+};
 
 #define MF_TRANSSHIFT	0x1A
 

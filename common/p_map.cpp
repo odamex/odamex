@@ -2821,10 +2821,9 @@ static BOOL PIT_DoomRadiusAttack(AActor* thing)
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if (bombspot->flags & MF_BOUNCES ? 
-		thing->type == MT_CYBORG && bombsource->type == MT_CYBORG : 
-			(thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS) && 
-			!(bombspot->flags3 & MF3_FORCERADIUSDMG)) 
+	if ((thing->type == MT_CYBORG && bombsource->type == MT_CYBORG) || 
+		(thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS) && 
+		!(bombspot->flags3 & MF3_FORCERADIUSDMG)) 
 		return true;
 
 	fixed_t dx = abs(thing->x - bombspot->x);
@@ -2872,10 +2871,9 @@ static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if (bombspot->flags & MF_BOUNCES
-	        ? thing->type == MT_CYBORG && bombsource->type == MT_CYBORG
-	        : (thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS) &&
-	              !(bombspot->flags3 & MF3_FORCERADIUSDMG)) 
+	if ((thing->type == MT_CYBORG && bombsource->type == MT_CYBORG) ||
+	   (thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS) &&
+	   !(bombspot->flags3 & MF3_FORCERADIUSDMG)) 
 		return true;
 
 	// Barrels always use the original code, since this makes

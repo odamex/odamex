@@ -1895,75 +1895,62 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	// during the death frame of a thing.
 	mobjtype_t item = (mobjtype_t)0;
 
-	switch (target->type)
+	//
+	// sapientlion - if player killed themselves or were killed by the other
+	// player(s), spawn a weapon (which they were helding moments before death) on
+	// top of their remains.
+	//
+	// TODO add current ammo.
+	//
+	if (target->player)
 	{
-        case MT_WOLFSS:
-        case MT_POSSESSED:
-            item = MT_CLIP;
-            break;
-
-        case MT_SHOTGUY:
-            item = MT_SHOTGUN;
-            break;
-
-        case MT_CHAINGUY:
-            item = MT_CHAINGUN;
-            break;
-
-		//
-		// sapientlion - if player killed themselves or were killed by the other
-		// player(s), spawn a weapon (which they were helding moments before death) on
-		// top of their remains.
-		//
-		// TODO add current ammo.
-		//
-	    case MT_PLAYER:
-
-			if(sv_weapondrop)
+		if (sv_weapondrop)
+		{
+			switch (target->player->readyweapon)
 			{
-			    switch (target->player->readyweapon)
-			    {
-			    case wp_pistol:
-				    item = MT_CLIP;
-				    break;
+			case wp_pistol:
+				item = MT_CLIP;
+				break;
 
-			    case wp_shotgun:
-				    item = MT_SHOTGUN;
-				    break;
+			case wp_shotgun:
+				item = MT_SHOTGUN;
+				break;
 
-			    case wp_chaingun:
-				    item = MT_CHAINGUN;
-				    break;
+			case wp_chaingun:
+				item = MT_CHAINGUN;
+				break;
 
-			    case wp_missile:
-				    item = MT_MISC27; // Rocket launcher.
-				    break;
+			case wp_missile:
+				item = MT_MISC27; // Rocket launcher.
+				break;
 
-			    case wp_plasma:
-				    item = MT_MISC28; // Plasma gun.
-				    break;
+			case wp_plasma:
+				item = MT_MISC28; // Plasma gun.
+				break;
 
-			    case wp_bfg:
-				    item = MT_MISC25; // [RV] BFG.
-				    break;
+			case wp_bfg:
+				item = MT_MISC25; // [RV] BFG.
+				break;
 
-			    case wp_chainsaw:
-				    item = MT_MISC26; // Chainsaw.
-				    break;
+			case wp_chainsaw:
+				item = MT_MISC26; // Chainsaw.
+				break;
 
-			    case wp_supershotgun:
-				    item = MT_SUPERSHOTGUN;
-				    break;
+			case wp_supershotgun:
+				item = MT_SUPERSHOTGUN;
+				break;
 
-			    default:
-				    return;
-			    }
-		    }
-
-			break;
-
-        default:
-            return;
+			default:
+				return;
+			}
+		}
+	}
+	else
+	{
+		if (target->info->droppeditem != MT_NULL)
+		{
+			item = target->info->droppeditem;
+		}
 	}
 
 	if (!item)

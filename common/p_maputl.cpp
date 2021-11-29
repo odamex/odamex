@@ -1223,17 +1223,22 @@ static AActor* RoughBlockCheck(AActor* mo, int index, angle_t fov)
 			link = link->snext;
 			continue;
 		}
+		
+		// [Blair] Don't target friendlies
+		if (P_IsFriendlyThing(mo->target, link))
+		{
+			link = link->snext;
+			continue;
+		}
 
-
-		// [Blair] Don't target friendlies or teammates
-		if (P_IsFriendlyThing(mo->target, link) ||
-		    P_IsTeamMate(mo->target, link))
+		// [Blair] Don't target teammates
+		if (mo->target->player && link->player &&
+			P_AreTeammates((player_t&)mo->target->player, (player_t&)link->player))
 		{
 			link = link->snext;
 			continue;
 		}
 		
-
 		// skip actors outside of specified FOV
 		 if (fov > 0 && !P_CheckFov(mo, link, fov))
 		{
