@@ -49,6 +49,8 @@
 #include <math.h>
 #include <set>
 
+bool P_ShouldClipPlayer(AActor* projectile, AActor* player);
+
 EXTERN_CVAR(sv_unblockplayers)
 
 fixed_t 		tmbbox[4];
@@ -500,6 +502,38 @@ BOOL PIT_CheckLine (line_t *ld)
 	return true;
 }
 
+/*
+ * @brief Determines if a projectile should clip a player.
+ *
+ * @param projectile (suspected) projectile actor
+ * @param player (suspected) player actor
+ * @return true if the player should be clipped.
+ */
+bool P_ShouldClipPlayer(AActor* projectile, AActor* player)
+{
+	if (!sv_unblockplayers)
+	{
+		return true; // Clip all players all the time.
+	}
+	else if (projectile->target && projectile->target->player && player->player)
+	{
+		if (G_IsCoopGame() ||
+		    (projectile->target->player->userinfo.team == player->player->userinfo.team &&
+		     G_IsTeamGame()))
+		{
+			return false; // Friendly player
+		}
+		else
+		{
+			return true; // Enemy player
+		}
+	}
+	else
+	{
+		return true; // Not a player.
+	}
+}
+
 //
 // PIT_CheckThing
 //
@@ -579,11 +613,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 			return !solid;		// didn't do any damage
 
 		// Don't clip the projectile unless it's not a teammate.
-		if (sv_unblockplayers && tmthing->target && tmthing->target->player &&
-		    thing->player &&
-		    (G_IsCoopGame() ||
-		     (tmthing->target->player->userinfo.team == thing->player->userinfo.team &&
-		      G_IsTeamGame())))
+		if (!P_ShouldClipPlayer(tmthing, thing))
 			return true;
 
 		// damage / explode
@@ -716,11 +746,7 @@ BOOL PIT_CheckOnmobjZ (AActor *thing)
 		return true;
 
 	// Don't clip the projectile unless it's not a teammate.
-	if (sv_unblockplayers && tmthing->flags & MF_MISSILE && tmthing->target &&
-	    tmthing->target->player && thing->player &&
-	    (G_IsCoopGame() ||
-	     (tmthing->target->player->userinfo.team == thing->player->userinfo.team &&
-	      G_IsTeamGame())))
+	if (tmthing->flags & MF_MISSILE && !P_ShouldClipPlayer(tmthing, thing))
 		return true;
 
 	fixed_t blockdist = thing->radius+tmthing->radius;
