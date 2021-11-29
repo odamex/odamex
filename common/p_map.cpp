@@ -522,14 +522,6 @@ static BOOL PIT_CheckThing (AActor *thing)
 	if (tmthing->player && thing->player && sv_unblockplayers)
 		return true;
 
-	// Don't clip the projectile unless it's not a teammate.
-	if (sv_unblockplayers &&
-	    (G_IsCoopGame() ||
-	     (tmthing->target && tmthing->target->player && thing->player &&
-	      tmthing->target->player->userinfo.team == thing->player->userinfo.team &&
-	      G_IsTeamGame())))
-		return true;
-
 	fixed_t blockdist = thing->radius + tmthing->radius;
 	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
 	{
@@ -585,6 +577,14 @@ static BOOL PIT_CheckThing (AActor *thing)
 
 		if (!(thing->flags & MF_SHOOTABLE))
 			return !solid;		// didn't do any damage
+
+		// Don't clip the projectile unless it's not a teammate.
+		if (sv_unblockplayers && tmthing->target && tmthing->target->player &&
+		    thing->player &&
+		    (G_IsCoopGame() ||
+		     (tmthing->target->player->userinfo.team == thing->player->userinfo.team &&
+		      G_IsTeamGame())))
+			return true;
 
 		// damage / explode
 		if (tmthing->info->damage)
@@ -716,10 +716,10 @@ BOOL PIT_CheckOnmobjZ (AActor *thing)
 		return true;
 
 	// Don't clip the projectile unless it's not a teammate.
-	if (sv_unblockplayers &&
+	if (sv_unblockplayers && tmthing->flags & MF_MISSILE && tmthing->target &&
+	    tmthing->target->player && thing->player &&
 	    (G_IsCoopGame() ||
-	     (tmthing->target && tmthing->target->player && thing->player &&
-	      tmthing->target->player->userinfo.team == thing->player->userinfo.team &&
+	     (tmthing->target->player->userinfo.team == thing->player->userinfo.team &&
 	      G_IsTeamGame())))
 		return true;
 
