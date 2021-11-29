@@ -172,7 +172,7 @@ CVAR_RANGE(			sv_forcerespawntime, "30", "Force a player to respawn after a set 
 CVAR_RANGE(			sv_spawndelaytime, "0.0", "Force a player to wait a period (in seconds) before respawning",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 32768.0f)
 
-CVAR(				sv_unblockplayers, "0", "Allows players to walk through other players",
+CVAR(				sv_unblockplayers, "0", "Allows players to through other players, and player projectiles to pass through teammates.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 
 CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
