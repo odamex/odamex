@@ -517,7 +517,11 @@ bool P_ShouldClipPlayer(AActor* projectile, AActor* player)
 	}
 	else if (projectile->target && projectile->target->player && player->player)
 	{
-		if (G_IsCoopGame() ||
+		if (sv_friendlyfire)
+		{
+			return true; // Always clip if friendly fire is on.
+		}
+		else if (G_IsCoopGame() ||
 		    (projectile->target->player->userinfo.team == player->player->userinfo.team &&
 		     G_IsTeamGame()))
 		{
