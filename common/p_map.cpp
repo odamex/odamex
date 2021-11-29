@@ -39,6 +39,7 @@
 #include "s_sound.h"
 
 #include "m_wdlstats.h"
+#include "g_gametype.h"
 // State.
 #include "r_state.h"
 
@@ -521,6 +522,14 @@ static BOOL PIT_CheckThing (AActor *thing)
 	if (tmthing->player && thing->player && sv_unblockplayers)
 		return true;
 
+	// Don't clip the projectile unless it's not a teammate.
+	if (sv_unblockplayers &&
+	    (G_IsCoopGame() ||
+	     (tmthing->target && tmthing->target->player && thing->player &&
+	      tmthing->target->player->userinfo.team == thing->player->userinfo.team &&
+	      G_IsTeamGame())))
+		return true;
+
 	fixed_t blockdist = thing->radius + tmthing->radius;
 	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
 	{
@@ -704,6 +713,14 @@ BOOL PIT_CheckOnmobjZ (AActor *thing)
 	if (tmthing->z > thing->z + thing->height)
 		return true;
 	else if (tmthing->z + tmthing->height <= thing->z)
+		return true;
+
+	// Don't clip the projectile unless it's not a teammate.
+	if (sv_unblockplayers &&
+	    (G_IsCoopGame() ||
+	     (tmthing->target && tmthing->target->player && thing->player &&
+	      tmthing->target->player->userinfo.team == thing->player->userinfo.team &&
+	      G_IsTeamGame())))
 		return true;
 
 	fixed_t blockdist = thing->radius+tmthing->radius;
