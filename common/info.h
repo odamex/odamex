@@ -1568,7 +1568,7 @@ typedef enum {
 	MT_BIBLE,   // killough 7/11/98: unholy bible in beta version
 
 				// [crispy] support MUSINFO lump (dynamic music changing)
-    MT_MUSICCHANGE,
+	MT_MUSICSOURCE,
 
     // [BH] 100 extra mobjs to use in dehacked patches
     MT_EXTRA00 = 150, MT_EXTRA01, MT_EXTRA02, MT_EXTRA03, MT_EXTRA04,

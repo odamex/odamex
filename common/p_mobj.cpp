@@ -2846,12 +2846,12 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// [ML] Determine if it is a musicchanger thing, and if so,
-	//		map it to MT_MUSICCHANGE with the proper parameter.
+	//		map it to MT_MUSICSOURCE with the proper parameter.
 	if (mthing->type >= 14101 && mthing->type <= 14164)
 	{
 		mthing->args[0] = mthing->type - 14100;
 		mthing->type = 14165;
-		i = MT_MUSICCHANGE;
+		i = MT_MUSICSOURCE;
 	}
 
 	// [RH] Check if it's a particle fountain
