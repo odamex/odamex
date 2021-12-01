@@ -10,3 +10,7 @@ CMakeSettings.json
 # Used when generating the installer.
 /installer/windows/Build*/
 /installer/windows/Out*/
+/installer/linux/build*
+/installer/linux/.flatpak-builder*
+
+!/installer/linux/build_release.sh

@@ -1,0 +1,19 @@
+app-id: net.odamex.Odalaunch
+runtime: org.freedesktop.Platform
+runtime-version: "21.08"
+sdk: org.freedesktop.Sdk
+modules:
+  - name: odamex
+    buildsystem: cmake-ninja
+    builddir: true
+    sources:
+      - type: dir
+        path: "../.."
+        skip: [build, installer]
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DBUILD_OR_FAIL=1
+      - -DBUILD_CLIENT=0
+      - -DBUILD_SERVER=0
+      - -DBUILD_MASTER=0
+      - -DBUILD_LAUNCHER=1
