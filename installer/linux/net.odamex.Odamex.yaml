@@ -2,6 +2,7 @@ app-id: net.odamex.Odamex
 runtime: org.freedesktop.Platform
 runtime-version: "21.08"
 sdk: org.freedesktop.Sdk
+command: odamex
 modules:
   - name: odamex
     buildsystem: cmake-ninja
@@ -17,3 +18,7 @@ modules:
       - -DBUILD_SERVER=0
       - -DBUILD_MASTER=0
       - -DBUILD_LAUNCHER=0
+finish-args:
+  - --socket=x11
+  - --socket=wayland
+  - --share=network
