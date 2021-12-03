@@ -11,6 +11,7 @@ CMakeSettings.json
 /installer/windows/Build*/
 /installer/windows/Out*/
 /installer/linux/build*
+/installer/linux/repo*
 /installer/linux/.flatpak-builder*
 
 !/installer/linux/build_release.sh

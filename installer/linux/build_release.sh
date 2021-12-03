@@ -35,4 +35,4 @@ function oda_build_launcher {
 
 oda_preflight
 #oda_build_client
-oda_build_launcher
+#oda_build_launcher

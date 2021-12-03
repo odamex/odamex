@@ -5,10 +5,15 @@ sdk: org.freedesktop.Sdk
 command: odalaunch
 modules:
   - name: wxwidgets
+    buildsystem: cmake-ninja
+    builddir: true
     sources:
     - type: archive
       url: https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.5/wxWidgets-3.1.5.tar.bz2
       sha256: d7b3666de33aa5c10ea41bb9405c40326e1aeb74ee725bb88f90f1d50270a224
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Debug
+      - -DwxUSE_STL=ON
   - name: odalaunch
     buildsystem: cmake-ninja
     builddir: true
@@ -17,13 +22,17 @@ modules:
         path: "../.."
         skip: [build, installer]
     config-opts:
-      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DCMAKE_BUILD_TYPE=Debug
       - -DBUILD_OR_FAIL=1
       - -DBUILD_CLIENT=0
       - -DBUILD_SERVER=0
       - -DBUILD_MASTER=0
       - -DBUILD_LAUNCHER=1
 finish-args:
-  - --socket=x11
-  - --socket=wayland
+  - --share=ipc
   - --share=network
+  #- --socket=fallback-x11
+  - --socket=pulseaudio
+  #- --socket=wayland
+  - --socket=x11
+  
