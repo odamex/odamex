@@ -22,12 +22,14 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "m_alloc.h"
 #include "m_bbox.h"
 #include "m_random.h"
 #include "i_system.h"
 
-#include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "c_effect.h"
@@ -36,8 +38,9 @@
 
 #include "s_sound.h"
 
+#include "m_wdlstats.h"
+#include "g_gametype.h"
 // State.
-#include "doomstat.h"
 #include "r_state.h"
 
 #include "z_zone.h"
@@ -45,6 +48,8 @@
 #include "m_vectors.h"
 #include <math.h>
 #include <set>
+
+bool P_ShouldClipPlayer(AActor* projectile, AActor* player);
 
 EXTERN_CVAR(sv_unblockplayers)
 
@@ -211,7 +216,8 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 	validcount++;
 	spechit.clear();
 
-	StompAlwaysFrags = tmthing->player || (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
+	StompAlwaysFrags = tmthing->player || tmthing->type == MT_AVATAR ||
+	                   (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
 	// stomp on any things contacted
 	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
@@ -496,6 +502,42 @@ BOOL PIT_CheckLine (line_t *ld)
 	return true;
 }
 
+/*
+ * @brief Determines if a projectile should clip a player.
+ *
+ * @param projectile (suspected) projectile actor
+ * @param player (suspected) player actor
+ * @return true if the player should be clipped.
+ */
+bool P_ShouldClipPlayer(AActor* projectile, AActor* player)
+{
+	if (!sv_unblockplayers)
+	{
+		return true; // Clip all players all the time.
+	}
+	else if (projectile->target && projectile->target->player && player->player)
+	{
+		if (sv_friendlyfire)
+		{
+			return true; // Always clip if friendly fire is on.
+		}
+		else if (G_IsCoopGame() ||
+		    (projectile->target->player->userinfo.team == player->player->userinfo.team &&
+		     G_IsTeamGame()))
+		{
+			return false; // Friendly player
+		}
+		else
+		{
+			return true; // Enemy player
+		}
+	}
+	else
+	{
+		return true; // Not a player.
+	}
+}
+
 //
 // PIT_CheckThing
 //
@@ -539,7 +581,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 	if (tmthing->flags & MF_SKULLFLY)
 	{
 		int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
-		P_DamageMobj (thing, tmthing, tmthing, damage, MOD_UNKNOWN);
+		P_DamageMobj (thing, tmthing, tmthing, damage, MOD_HIT);
 		tmthing->flags &= ~MF_SKULLFLY;
 		tmthing->momx = tmthing->momy = tmthing->momz = 0;
 		P_SetMobjState (tmthing, tmthing->info->spawnstate);
@@ -574,6 +616,10 @@ static BOOL PIT_CheckThing (AActor *thing)
 		if (!(thing->flags & MF_SHOOTABLE))
 			return !solid;		// didn't do any damage
 
+		// Don't clip the projectile unless it's not a teammate.
+		if (!P_ShouldClipPlayer(tmthing, thing))
+			return true;
+
 		// damage / explode
 		if (tmthing->info->damage)
 		{
@@ -591,6 +637,16 @@ static BOOL PIT_CheckThing (AActor *thing)
 						break;
 					case MT_BFG:
 						mod = MOD_BFG_BOOM;
+						break;
+					// [AM] Monster fireballs get a special MOD.
+					case MT_ARACHPLAZ:
+					case MT_TROOPSHOT:
+					case MT_HEADSHOT:
+					case MT_BRUISERSHOT:
+					case MT_TRACER:
+					case MT_FATSHOT:
+					case MT_SPAWNSHOT:
+						mod = MOD_FIREBALL;
 						break;
 					default:
 						mod = MOD_UNKNOWN;
@@ -691,6 +747,10 @@ BOOL PIT_CheckOnmobjZ (AActor *thing)
 	if (tmthing->z > thing->z + thing->height)
 		return true;
 	else if (tmthing->z + tmthing->height <= thing->z)
+		return true;
+
+	// Don't clip the projectile unless it's not a teammate.
+	if (tmthing->flags & MF_MISSILE && !P_ShouldClipPlayer(tmthing, thing))
 		return true;
 
 	fixed_t blockdist = thing->radius+tmthing->radius;
@@ -2078,7 +2138,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 
 	if (la_damage) {
 		// [RH] try and figure out means of death;
-		int mod = MOD_UNKNOWN;
+		int mod = MOD_HITSCAN;
 
 		if (shootthing->player) {
 			switch (shootthing->player->readyweapon) {
@@ -2762,7 +2822,15 @@ static BOOL PIT_DoomRadiusAttack(AActor* thing)
 		dist = 0;
 
 	if (dist >= bombdamage)
-		return true;	// out of range
+	{
+		if (bombsource && bombsource->player)
+		{
+			M_LogWDLEvent(WDL_EVENT_PROJACCURACY, bombsource->player, NULL,
+			              bombsource->player->mo->angle / 4, bombmod, 0,
+			              GetMaxShotsForMod(bombmod));
+		}
+		return true; // out of range
+	}
 
 	if (P_CheckSight(thing, bombspot))
 	{
@@ -2858,6 +2926,15 @@ static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 		thing->momx = momx + (fixed_t)((thing->x - bombspot->x) * thrust);
 		thing->momy = momy + (fixed_t)((thing->y - bombspot->y) * thrust);
 		thing->momz += (fixed_t)momz;
+	}
+	else
+	{
+		if (bombsource && bombsource->player)
+		{
+			M_LogWDLEvent(WDL_EVENT_PROJACCURACY, bombsource->player, NULL,
+			              bombsource->player->mo->angle / 4, bombmod, 0,
+			              GetMaxShotsForMod(bombmod));
+		}
 	}
 
 	return true;
@@ -3788,4 +3865,3 @@ void P_CopySector(sector_t *dest, sector_t *src)
 
 
 VERSION_CONTROL (p_map_cpp, "$Id$")
-

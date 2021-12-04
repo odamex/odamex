@@ -23,7 +23,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
+
 #include <stdlib.h>
 #include <math.h>
 #include <set>
@@ -32,23 +33,22 @@
 #include "m_vectors.h"
 #include "m_argv.h"
 #include "z_zone.h"
-#include "m_swap.h"
 #include "m_bbox.h"
 #include "g_game.h"
 #include "i_system.h"
 #include "w_wad.h"
-#include "doomdef.h"
 #include "p_local.h"
 #include "p_acs.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "p_lnspec.h"
 #include "v_palette.h"
 #include "c_console.h"
+#include "p_horde.h"
 #include "g_gametype.h"
 
 #include "p_mobj.h"
 #include "p_setup.h"
+#include "p_hordespawn.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
@@ -586,6 +586,7 @@ void P_LoadThings (int lump)
 	mapthing_t *mt = (mapthing_t *)data;
 	mapthing_t *lastmt = (mapthing_t *)(data + W_LumpLength (lump));
 
+	P_HordeClearSpawns();
 	playerstarts.clear();
 	voodoostarts.clear();
 	DeathMatchStarts.clear();
@@ -655,6 +656,7 @@ void P_LoadThings2 (int lump, int position)
 	mapthing2_t *mt = (mapthing2_t *)data;
 	mapthing2_t *lastmt = (mapthing2_t *)(data + W_LumpLength (lump));
 
+	P_HordeClearSpawns();
 	playerstarts.clear();
 	voodoostarts.clear();
 	DeathMatchStarts.clear();
@@ -996,6 +998,8 @@ static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 		}
 	}
 }
+
+// 
 
 
 static void SetTextureNoErr (short *texture, unsigned int *color, char *name)
@@ -1460,8 +1464,54 @@ void P_LoadBlockMap (int lump)
 	blockmap = blockmaplump+4;
 }
 
+/*
+* @brief P_GenerateUniqueMapFingerPrint
+* 
+* Creates a unique map fingerprint used to identify a unique map.
+* Based on a few key lumps that makes a map unique.
+* 
+* @param maplumpnum - Lump offset number of the specified map 
+* If it is, use it as part of the map calculation.
+*/
+void P_GenerateUniqueMapFingerPrint(int maplumpnum)
+{
+	unsigned int length = 0;
 
+	typedef std::vector<byte> LevelLumps;
+	static LevelLumps levellumps;
 
+	const byte* thingbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
+	const byte* lindefbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
+	const byte* sidedefbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
+	const byte* vertexbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
+	const byte* segsbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
+	const byte* ssectorsbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
+	const byte* sectorsbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
+
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_THINGS), *thingbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_LINEDEFS), *lindefbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SIDEDEFS), *sidedefbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_VERTEXES), *vertexbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SEGS), *segsbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SSECTORS), *ssectorsbytes);
+	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SECTORS), *sectorsbytes);
+
+	length = W_LumpLength(maplumpnum+ML_THINGS) + W_LumpLength(maplumpnum+ML_LINEDEFS) +
+	         W_LumpLength(maplumpnum+ML_SIDEDEFS) + W_LumpLength(maplumpnum+ML_VERTEXES) +
+			 W_LumpLength(maplumpnum + ML_SEGS) + W_LumpLength(maplumpnum + ML_SSECTORS) +
+			 W_LumpLength(maplumpnum + ML_SECTORS);
+
+	if (HasBehavior)
+	{
+		const byte* behaviorbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum + ML_BEHAVIOR, PU_STATIC));
+		levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum + ML_BEHAVIOR), *behaviorbytes);
+		length += W_LumpLength(maplumpnum+ML_BEHAVIOR);
+	}
+
+	fhfprint_s fingerprint = W_FarmHash128(levellumps.data(), length);
+
+	ArrayCopy(::level.level_fingerprint, fingerprint.fingerprint);
+}
 //
 // P_GroupLines
 // Builds sector line lists and subsector sector numbers.
@@ -1692,6 +1742,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
 		wminfo.maxfrags = 0;
+	ArrayInit(level.level_fingerprint, 0);
 	wminfo.partime = 180;
 
 	if (!savegamerestore)
@@ -1701,6 +1752,8 @@ void P_SetupLevel (const char *lumpname, int position)
 			it->killcount = it->secretcount = it->itemcount = 0;
 		}
 	}
+
+	// To use the correct nodes for 
 
 	// Initial height of PointOfView will be set by player think.
 	consoleplayer().viewz = 1;
@@ -1762,6 +1815,9 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_LoadSideDefs2 (lumpnum+ML_SIDEDEFS);
 	P_FinishLoadingLineDefs ();
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
+
+	// [Blair] Create map fingerprint
+	P_GenerateUniqueMapFingerPrint(lumpnum);
 
 	if (!P_LoadXNOD(lumpnum+ML_NODES))
 	{
@@ -1851,7 +1907,7 @@ void P_Init (void)
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)
 {
-	if (sv_gametype == GM_COOP && var < 10) {
+	if (G_IsCoopGame() && var < 10) {
 		var.Set(10.0);	// Force to 10 seconds minimum
 	} else if (var < 1) {
 		var.RestoreDefault();

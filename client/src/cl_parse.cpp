@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "cl_parse.h"
 
 #include <bitset>
@@ -37,9 +40,7 @@
 #include "cmdlib.h"
 #include "d_main.h"
 #include "d_player.h"
-#include "doomstat.h"
 #include "g_gametype.h"
-#include "g_level.h"
 #include "g_levelstate.h"
 #include "gi.h"
 #include "m_argv.h"
@@ -48,6 +49,7 @@
 #include "m_strindex.h"
 #include "p_acs.h"
 #include "p_ctf.h"
+#include "p_horde.h"
 #include "p_inter.h"
 #include "p_lnspec.h"
 #include "p_mobj.h"
@@ -66,6 +68,7 @@ EXTERN_CVAR(cl_autorecord_ctf)
 EXTERN_CVAR(cl_autorecord_deathmatch)
 EXTERN_CVAR(cl_autorecord_duel)
 EXTERN_CVAR(cl_autorecord_teamdm)
+EXTERN_CVAR(cl_autorecord_horde)
 EXTERN_CVAR(cl_chatsounds)
 EXTERN_CVAR(cl_connectalert)
 EXTERN_CVAR(cl_disconnectalert)
@@ -228,6 +231,12 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	p.health = msg->player().health();
 	p.armorpoints = msg->player().armorpoints();
 	p.armortype = msg->player().armortype();
+
+	if (p.lives == 0 && msg->player().lives() > 0)
+	{
+		// Stop spying so you know you're back from the dead.
+		::displayplayer_id = ::consoleplayer_id;
+	}
 	p.lives = msg->player().lives();
 
 	weapontype_t pending = static_cast<weapontype_t>(msg->player().pendingweapon());
@@ -252,6 +261,9 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 			p.powers[i] = 0;
 		}
 	}
+
+	if (!p.spectator)
+		p.cheats = msg->player().cheats();
 }
 
 /**
@@ -528,6 +540,18 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->flags = msg->actor().flags();
 	}
 
+	if (msg->flags() & SVC_SM_OFLAGS)
+	{
+		mo->oflags = msg->actor().oflags();
+
+		// [AM] HACK! Assume that any monster with a flag is a boss.
+		if (mo->oflags)
+		{
+			mo->effects = FX_YELLOWFOUNTAIN;
+			mo->translation = translationref_t(&::bosstable[0]);
+		}
+	}
+
 	if (msg->flags() & SVC_SM_CORPSE)
 	{
 		int frame = msg->actor().frame();
@@ -604,6 +628,8 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
 	::forcenetdemosplit = false;
+
+	//am_cheating = 0;
 
 	if (splitnetdemo)
 		netdemo.stopRecording();
@@ -699,7 +725,8 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 		                      (isFFA && cl_autorecord_deathmatch) ||
 		                      (isDuel && cl_autorecord_duel) ||
 		                      (sv_gametype == GM_TEAMDM && cl_autorecord_teamdm) ||
-		                      (sv_gametype == GM_CTF && cl_autorecord_ctf);
+		                      (sv_gametype == GM_CTF && cl_autorecord_ctf) ||
+		                      (G_IsHordeMode() && cl_autorecord_horde);
 
 		size_t param = Args.CheckParm("-netrecord");
 		if (param && Args.GetArg(param + 1))
@@ -778,13 +805,10 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 	if (p->userinfo.gender < 0 || p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
 
-	for (size_t i = 0; i < p->userinfo.color[i]; i++)
-	{
-		if (i < msg->color_size())
-			p->userinfo.color[i] = msg->color().Get(i);
-		else
-			p->userinfo.color[i] = 0;
-	}
+	p->userinfo.color[0] = 255;
+	p->userinfo.color[1] = msg->color().r();
+	p->userinfo.color[2] = msg->color().g();
+	p->userinfo.color[3] = msg->color().b();
 
 	p->GameTime = msg->join_time();
 
@@ -939,7 +963,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	P_SetupPsprites(p);
 
 	// give all cards in death match mode
-	if (sv_gametype != GM_COOP)
+	if (!G_IsCoopGame())
 		for (size_t i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
 
@@ -984,6 +1008,8 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	uint32_t attackerid = msg->inflictorid();
 	int healthDamage = msg->health_damage();
 	int armorDamage = msg->armor_damage();
+	int health = msg->player().health();
+	int armorpoints = msg->player().armorpoints();
 
 	AActor* actor = P_FindThingById(netid);
 	AActor* attacker = P_FindThingById(attackerid);
@@ -992,15 +1018,23 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 		return;
 
 	player_t* p = actor->player;
-	p->health -= healthDamage;
+	p->health = MIN(p->health, health);
+	p->armorpoints = MIN(p->armorpoints, armorpoints);
 	p->mo->health = p->health;
-	p->armorpoints -= armorDamage;
 
 	if (attacker != NULL)
 		p->attacker = attacker->ptr();
 
 	if (p->health < 0)
-		p->health = 0;
+	{
+		if (p->cheats & CF_BUDDHA)
+		{
+			p->health = 1;
+			p->mo->health = 1;
+		}
+		else 
+			p->health = 0;
+	}
 	if (p->armorpoints < 0)
 		p->armorpoints = 0;
 
@@ -1027,7 +1061,7 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	uint32_t tgtid = msg->target().netid();
 	uint32_t infid = msg->inflictor_netid();
 	int health = msg->health();
-	::MeansOfDeath = msg->mod();
+	//::MeansOfDeath = msg->mod();
 	bool joinkill = msg->joinkill();
 	int lives = msg->lives();
 
@@ -1207,6 +1241,11 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		p.lives = msg->lives();
 	}
 
+	if (flags & SVC_PM_DAMAGE)
+	{
+		p.monsterdmgcount = msg->monsterdmgcount();
+	}
+
 	if (flags & SVC_PM_SCORE)
 	{
 		p.roundwins = msg->roundwins();
@@ -1217,6 +1256,12 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		p.secretcount = msg->secretcount();
 		p.totalpoints = msg->totalpoints();
 		p.totaldeaths = msg->totaldeaths();
+	}
+
+	if (flags & SVC_PM_CHEATS)
+	{
+		if (!p.spectator)
+			p.cheats = msg->cheats();
 	}
 }
 
@@ -1561,15 +1606,15 @@ static void CL_Say(const odaproto::svc::Say* msg)
 	}
 
 	const char* name = player.userinfo.netname.c_str();
+	printlevel_t publicmsg = filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT;
+	printlevel_t publicteammsg = filtermessage ? PRINT_FILTERCHAT : PRINT_TEAMCHAT;
 
 	if (message_visibility == 0)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "* %s %s\n", name,
-			       &message[4]);
+			Printf(publicmsg, "* %s %s\n", name, &message[4]);
 		else
-			Printf(filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT, "%s: %s\n", name,
-			       message);
+			Printf(publicmsg, "%s: %s\n", name, message);
 
 		if (show_messages && !filtermessage)
 		{
@@ -1580,11 +1625,11 @@ static void CL_Say(const odaproto::svc::Say* msg)
 	else if (message_visibility == 1)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &message[4]);
+			Printf(publicteammsg, "* %s %s\n", name, &message[4]);
 		else
-			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
+			Printf(publicteammsg, "%s: %s\n", name, message);
 
-		if (show_messages && cl_chatsounds)
+		if (show_messages && cl_chatsounds && !filtermessage)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
 }
@@ -1757,7 +1802,7 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 	std::string buf;
 	StrFormat(buf, "%s%s %sfound a secret!\n", TEXTCOLOR_YELLOW,
 	          player.userinfo.netname.c_str(), TEXTCOLOR_NORMAL);
-	Printf(buf.c_str());
+	Printf("%s", buf.c_str());
 
 	if (::hud_revealsecrets == 1)
 		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
@@ -1932,6 +1977,8 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		}
 	}
 
+	uint32_t cheats = msg->player().cheats();
+
 	player_t& player = idplayer(id);
 	if (!validplayer(player) || !player.mo)
 		return;
@@ -1958,6 +2005,9 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		player.powers[i] = powerups[i];
+
+	if (!player.spectator)
+		player.cheats = cheats;
 }
 
 /**
@@ -2502,6 +2552,37 @@ static void CL_MaplistIndex(const odaproto::svc::MaplistIndex* msg)
 	}
 }
 
+static void CL_Toast(const odaproto::svc::Toast* msg)
+{
+	toast_t toast;
+	toast.flags = msg->flags();
+	toast.left = msg->left();
+	toast.left_pid = msg->left_pid();
+	toast.right = msg->right();
+	toast.right_pid = msg->right_pid();
+	toast.icon = msg->icon();
+
+	COM_PushToast(toast);
+}
+
+static void CL_HordeInfo(const odaproto::svc::HordeInfo* msg)
+{
+	hordeInfo_t info;
+
+	info.state = static_cast<hordeState_e>(msg->state());
+	info.wave = msg->wave();
+	info.waveTime = msg->wave_time();
+	info.bossTime = msg->boss_time();
+	info.defineID = msg->define_id();
+	info.spawnedHealth = msg->spawned_health();
+	info.killedHealth = msg->killed_health();
+	info.bossHealth = msg->boss_health();
+	info.bossDamage = msg->boss_damage();
+	info.waveStartHealth = msg->wave_start_health();
+
+	P_SetHordeInfo(info);
+}
+
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 {
 	player_t* clientPlayer = &consoleplayer();
@@ -2734,6 +2815,8 @@ parseError_e CL_ParseCommand()
 		SV_MSG(svc_maplist, CL_Maplist, odaproto::svc::Maplist);
 		SV_MSG(svc_maplist_update, CL_MaplistUpdate, odaproto::svc::MaplistUpdate);
 		SV_MSG(svc_maplist_index, CL_MaplistIndex, odaproto::svc::MaplistIndex);
+		SV_MSG(svc_toast, CL_Toast, odaproto::svc::Toast);
+		SV_MSG(svc_hordeinfo, CL_HordeInfo, odaproto::svc::HordeInfo);
 		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);

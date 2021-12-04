@@ -24,6 +24,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <bitset>
 
 #include "svc_message.h"
@@ -97,6 +100,9 @@ odaproto::svc::PlayerInfo SVC_PlayerInfo(player_t& player)
 	{
 		msg.mutable_player()->add_powers(player.powers[i]);
 	}
+
+	if (!player.spectator)
+		msg.mutable_player()->set_cheats(player.cheats);
 
 	return msg;
 }
@@ -296,6 +302,15 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 		actor->set_flags(mo->flags);
 	}
 
+	// odamex flags - only monster flags for now
+	const uint32_t modMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK |
+	                         MFO_NORAISE | MFO_FULLBRIGHT;
+	if (mo->oflags & modMask)
+	{
+		flags |= SVC_SM_OFLAGS;
+		actor->set_oflags(mo->oflags & modMask);
+	}
+
 	// animating corpses
 	if ((mo->flags & MF_CORPSE) && mo->state - states != S_GIBS)
 	{
@@ -390,10 +405,11 @@ odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time)
 	msg.set_team(player.userinfo.team);
 	msg.set_gender(player.userinfo.gender);
 
-	for (size_t i = 0; i < ARRAY_LENGTH(player.userinfo.color); i++)
-	{
-		msg.mutable_color()->Add(player.userinfo.color[i]);
-	}
+	// [AM] Alpha is always 255.
+	odaproto::Color* color = msg.mutable_color();
+	color->set_r(player.userinfo.color[1]);
+	color->set_g(player.userinfo.color[2]);
+	color->set_b(player.userinfo.color[3]);
 
 	msg.set_join_time(time);
 
@@ -483,6 +499,8 @@ odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, AActor* inflictor
 	msg.set_inflictorid(inflictor ? inflictor->netid : 0);
 	msg.set_health_damage(health);
 	msg.set_armor_damage(armor);
+	msg.mutable_player()->set_health(player.health);
+	msg.mutable_player()->set_armorpoints(player.armorpoints);
 
 	return msg;
 }
@@ -600,6 +618,11 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(player_t& player, byte flags)
 		msg.set_lives(player.lives);
 	}
 
+	if (flags & SVC_PM_DAMAGE)
+	{
+		msg.set_monsterdmgcount(player.monsterdmgcount);
+	}
+
 	if (flags & SVC_PM_SCORE)
 	{
 		// [AM] Just send everything instead of trying to be clever about
@@ -615,6 +638,12 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(player_t& player, byte flags)
 		msg.set_secretcount(player.secretcount);
 		msg.set_totalpoints(player.totalpoints);
 		msg.set_totaldeaths(player.totaldeaths);
+	}
+
+	if (flags & SVC_PM_CHEATS)
+	{
+		if (!player.spectator)
+			msg.set_cheats(player.cheats);
 	}
 
 	return msg;
@@ -883,6 +912,9 @@ odaproto::svc::PlayerState SVC_PlayerState(player_t& player)
 	{
 		pl->add_powers(player.powers[i]);
 	}
+
+	if (!player.spectator)
+		pl->set_cheats(player.cheats);
 
 	return msg;
 }
@@ -1436,6 +1468,38 @@ odaproto::svc::MaplistIndex SVC_MaplistIndex(const byte count, const size_t this
 			msg.set_this_index(this_index);
 		}
 	}
+
+	return msg;
+}
+
+odaproto::svc::Toast SVC_Toast(const toast_t& toast)
+{
+	odaproto::svc::Toast msg;
+
+	msg.set_flags(toast.flags);
+	msg.set_left(toast.left);
+	msg.set_left_pid(toast.left_pid);
+	msg.set_right(toast.right);
+	msg.set_right_pid(toast.right_pid);
+	msg.set_icon(toast.icon);
+
+	return msg;
+}
+
+odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde)
+{
+	odaproto::svc::HordeInfo msg;
+
+	msg.set_state(horde.state);
+	msg.set_wave(horde.wave);
+	msg.set_wave_time(horde.waveTime);
+	msg.set_boss_time(horde.bossTime);
+	msg.set_define_id(horde.defineID);
+	msg.set_spawned_health(horde.spawnedHealth);
+	msg.set_killed_health(horde.killedHealth);
+	msg.set_boss_health(horde.bossHealth);
+	msg.set_boss_damage(horde.bossDamage);
+	msg.set_wave_start_health(horde.waveStartHealth);
 
 	return msg;
 }

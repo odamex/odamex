@@ -21,10 +21,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <cstring>
 
-#include "doomtype.h"
-#include "doomstat.h"
+#include "odamex.h"
+
+
 #include "sc_man.h"
 #include "m_alloc.h"
 #include "m_random.h"

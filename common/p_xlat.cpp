@@ -21,11 +21,12 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomtype.h"
+
+#include "odamex.h"
+
 #include "p_lnspec.h"
 #include "doomdata.h"
 #include "r_data.h"
-#include "m_swap.h"
 #include "p_local.h"
 
 // Speeds for ceilings/crushers (x/8 units per tic)
@@ -697,7 +698,8 @@ void P_TranslateTeleportThings()
 	AActor* mo;
 	TThinkerIterator<AActor> iterator;
 
-	bool found = false;
+	// [AM] All teleport destinations in zero-tagged sectors get a destination
+	//      tid of 1.
 	while ((mo = iterator.Next()))
 	{
 		// not a teleportman
@@ -709,25 +711,45 @@ void P_TranslateTeleportThings()
 			continue;
 
 		mo->tid = 1;
-		found = true;
 	}
 
-	if (found)
+	for (int i = 0; i < ::numlines; i++)
 	{
-		for (int i = 0; i < ::numlines; i++)
+		// Transfer the tag to the proper argument slot.
+		if (::lines[i].special == Teleport)
 		{
-			// Transfer the tag to the proper argument slot.
-			if (::lines[i].special == Teleport)
+			if (::lines[i].args[0] == 0)
+			{
+				// Untagged teleporters teleport to tid 1.
+				::lines[i].args[0] = 1;
+			}
+			else
 			{
 				::lines[i].args[1] = ::lines[i].args[0];
 				::lines[i].args[0] = 0;
 			}
-			else if (::lines[i].special == Teleport_NoFog)
+		}
+		else if (::lines[i].special == Teleport_NoFog)
+		{
+			if (::lines[i].args[0] == 0)
+			{
+				// Untagged teleporters teleport to tid 1.
+				::lines[i].args[0] = 1;
+			}
+			else
 			{
 				::lines[i].args[2] = ::lines[i].args[0];
 				::lines[i].args[0] = 0;
 			}
-			else if (::lines[i].special == Teleport_NoStop)
+		}
+		else if (::lines[i].special == Teleport_NoStop)
+		{
+			if (::lines[i].args[0] == 0)
+			{
+				// Untagged teleporters teleport to tid 1.
+				::lines[i].args[0] = 1;
+			}
+			else
 			{
 				::lines[i].args[1] = ::lines[i].args[0];
 				::lines[i].args[0] = 0;

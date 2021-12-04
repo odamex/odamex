@@ -23,17 +23,17 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <math.h>
 #include "m_random.h"
 #include "m_alloc.h"
 #include "i_system.h"
-#include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "r_state.h"
-#include "c_cvars.h"
 #include "gi.h"
 #include "p_mobj.h"
 
@@ -318,6 +318,12 @@ BOOL P_Move (AActor *actor)
 		I_Error ("Weird actor->movedir!");
 
 	speed = actor->info->speed;
+
+	// [AM] Quick monsters are faster.
+	if (actor->oflags & MFO_QUICK)
+	{
+		speed = speed + (speed / 2);
+	}
 
 #if 0	// [RH] I'm not so sure this is such a good idea
 	// killough 10/98: make monsters get affected by ice and sludge too:
@@ -1326,6 +1332,9 @@ BOOL PIT_VileCheck (AActor *thing)
 	int 	maxdist;
 	BOOL 	check;
 
+	if (thing->oflags & MFO_NORAISE)
+		return true;	// [AM] Can't raise
+
 	if (!(thing->flags & MF_CORPSE) )
 		return true;	// not a monster
 
@@ -1537,7 +1546,7 @@ void A_VileAttack (AActor *actor)
 		return;
 
 	S_Sound (actor, CHAN_WEAPON, "vile/stop", 1, ATTN_NORM);
-	P_DamageMobj (actor->target, actor, actor, 20, MOD_UNKNOWN);
+	P_DamageMobj(actor->target, actor, actor, 20, MOD_VILEFIRE);
 	actor->target->momz = 1000*FRACUNIT/actor->target->info->mass;
 
 	an = actor->angle >> ANGLETOFINESHIFT;
@@ -1550,7 +1559,7 @@ void A_VileAttack (AActor *actor)
 	// move the fire between the vile and the player
 	fire->x = actor->target->x - FixedMul (24*FRACUNIT, finecosine[an]);
 	fire->y = actor->target->y - FixedMul (24*FRACUNIT, finesine[an]);
-	P_RadiusAttack (fire, actor, 70, 70, true, MOD_UNKNOWN);
+	P_RadiusAttack(fire, actor, 70, 70, true, MOD_VILEFIRE);
 }
 
 
@@ -1641,41 +1650,35 @@ void A_FatAttack3 (AActor *actor)
 // Original idea: Linguica
 //
 
-void A_Mushroom (AActor *actor)
+void A_Mushroom(AActor* actor)
 {
-	int i, j, n = actor->damage;
+	int n = actor->info->damage;
 
-	A_Explode (actor);	// First make normal explosion
+	// Mushroom parameters are part of code pointer's state
+	fixed_t misc1 = actor->state->misc1 ? actor->state->misc1 : FRACUNIT * 4;
+	fixed_t misc2 = actor->state->misc2 ? actor->state->misc2 : FRACUNIT / 2;
 
-	// FIXME FIXME FIXME FIXME FIXME FIXME FIXME
-	//
-	// THIS CODE BELOW CRASHES BECAUSE OF THINKERS!
-	// IT'S A SERIOUS BUG TO FIX!!
-	//
-	// FIXME FIXME FIXME FIXME FIXME FIXME FIXME
+	A_Explode(actor); // make normal explosion
 
-	/*if(serverside)
+	for (int i = -n; i <= n; i += 8) // launch mushroom cloud
 	{
-        // Now launch mushroom cloud
-        for (i = -n; i <= n; i += 8)
-        {
-            for (j = -n; j <= n; j += 8)
-            {
-                AActor target = *actor, *mo;
-                target.x += i << FRACBITS; // Aim in many directions from source
-                target.y += j << FRACBITS;
-                target.z += P_AproxDistance(i,j) << (FRACBITS+2); // Aim up fairly high
-                mo = P_SpawnMissile (actor, &target, MT_FATSHOT); // Launch fireball
-                if (mo != NULL)
-                {
-                    mo->momx >>= 1;
-                    mo->momy >>= 1;				  // Slow it down a bit
-                    mo->momz >>= 1;
-                    mo->flags &= ~MF_NOGRAVITY;   // Make debris fall under gravity
-                }
-            }
-        }
-	}*/
+		for (int j = -n; j <= n; j += 8)
+		{
+			AActor* target = new AActor(actor->x, actor->y, actor->z, MT_UNKNOWNTHING);
+			target->x += i << FRACBITS; // Aim in many directions from source
+			target->y += j << FRACBITS;
+			target->z += P_AproxDistance(i, j) * misc1;     // Aim fairly high
+			AActor* mo = P_SpawnMissile(actor, target, MT_FATSHOT); // Launch fireball
+			if (mo != NULL)
+			{
+				mo->momx = FixedMul(mo->momx, misc2);
+				mo->momy = FixedMul(mo->momy, misc2); // Slow down a bit
+				mo->momz = FixedMul(mo->momz, misc2);
+				mo->flags &= ~MF_NOGRAVITY; // Make debris fall under gravity
+			}
+			target->Destroy();
+		}
+	}
 }
 
 
@@ -2469,4 +2472,3 @@ void A_LineEffect(AActor* mo)
 }
 
 VERSION_CONTROL (p_enemy_cpp, "$Id$")
-

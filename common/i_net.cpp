@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 /* [Petteri] Check if compiling for Win32:	*/
 //#if defined(__WINDOWS__) || defined(__NT__) || defined(_MSC_VER) || defined(WIN32)
 //#	define WIN32
@@ -29,8 +31,6 @@
 /* Follow #ifdef __WIN32__ marks */
 
 #include <stdlib.h>
-#include <cstring>
-#include <stdio.h>
 
 #include <sstream>
 
@@ -76,13 +76,11 @@ typedef int SOCKET;
 
 #include <google/protobuf/message.h>
 
-#include "doomtype.h"
 
 #include "i_system.h"
-
-#include "doomstat.h"
 #include "i_net.h"
 #include "svc_map.h"
+#include "d_player.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -663,6 +661,61 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 	b->WriteChunk(buffer.data(), buffer.size());
 }
 
+/**
+ * @brief Broadcast message to all players.
+ * 
+ * @param buf Type of buffer to broadcast in, per player.
+ * @param msg Message to broadcast to all players.
+ * @param skip If passed, skip this player id.
+ */
+void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& msg,
+                      const int skipPlayer)
+{
+	if (simulated_connection)
+		return;
+
+	static std::string buffer;
+	if (!msg.SerializeToString(&buffer))
+	{
+		Printf(
+		    PRINT_WARNING,
+		    "WARNING: Could not serialize message \"%s\".  This is most likely a bug.\n",
+		    msg.GetDescriptor()->full_name().c_str());
+		return;
+	}
+
+	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	if (header == svc_noop)
+	{
+		Printf(PRINT_WARNING,
+		       "WARNING: Could not find svc header for message \"%s\".  This is most "
+		       "likely a bug.\n",
+		       msg.GetDescriptor()->full_name().c_str());
+		return;
+	}
+
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	{
+		if (!it->ingame())
+			continue;
+
+		if (static_cast<int>(it->id) == skipPlayer)
+			continue;
+
+		// Select the correct buffer.
+		buf_t* b = buf == CLBUF_RELIABLE ? &it->client.reliablebuf : &it->client.netbuf;
+
+		// Do we actaully have room for this upcoming message?
+		const size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
+		if (b->cursize + MAX_HEADER_SIZE + msg.ByteSize() >= MAX_UDP_SIZE)
+			SV_SendPackets();
+
+		b->WriteByte(header);
+		b->WriteUnVarint(buffer.size());
+		b->WriteChunk(buffer.data(), buffer.size());
+	}
+}
+
 void MSG_WriteShort (buf_t *b, short c)
 {
 	if (simulated_connection)
@@ -1096,7 +1149,6 @@ static void InitNetMessageFormats()
 	CLC_INFO(clc_wantwad);
 	CLC_INFO(clc_kill);
 	CLC_INFO(clc_cheat);
-    CLC_INFO(clc_cheatpulse);
 	CLC_INFO(clc_callvote);
 	CLC_INFO(clc_maplist);
 	CLC_INFO(clc_maplist_update);

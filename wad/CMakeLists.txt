@@ -184,6 +184,33 @@ set(ODAWAD_SOURCES
   graphics/odaliveb.gif
   graphics/odaliveg.gif
   graphics/odaliver.gif
+  graphics/odamod0.gif
+  graphics/odamod1.gif
+  graphics/odamod2.gif
+  graphics/odamod3.gif
+  graphics/odamod4.gif
+  graphics/odamod5.gif
+  graphics/odamod6.gif
+  graphics/odamod7.gif
+  graphics/odamod8.gif
+  graphics/odamod9.gif
+  graphics/odamod10.gif
+  graphics/odamod11.gif
+  graphics/odamod12.gif
+  graphics/odamod13.gif
+  graphics/odamod14.gif
+  graphics/odamod15.gif
+  graphics/odamod16.gif
+  graphics/odamod17.gif
+  graphics/odamod18.gif
+  graphics/odamod19.gif
+  graphics/odamod20.gif
+  graphics/odamod21.gif
+  graphics/odamod22.gif
+  graphics/odamod23.gif
+  graphics/odamod24.gif
+  graphics/odamod25.gif
+  graphics/odamod26.gif
   graphics/oslide.gif
   graphics/rslide.gif
   graphics/sbline.gif
@@ -218,6 +245,8 @@ set(ODAWAD_SOURCES
   lumps/dsquake.lmp
   lumps/dsradio2.lmp
   lumps/dssecret.lmp
+  lumps/dshboss.lmp
+  lumps/dsplrais.lmp
   lumps/dvbfd.lmp
   lumps/dvbfm.lmp
   lumps/dvbfr.lmp

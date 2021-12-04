@@ -26,12 +26,10 @@
 #define __R_DEFS_H__
 
 // Screenwidth.
-#include "doomdef.h"
 
 // Some more or less basic data types
 // we depend on.
 #include "m_fixed.h"
-#include "m_swap.h"
 
 // We rely on the thinker data struct
 // to handle sound origins in sectors.
@@ -465,27 +463,87 @@ typedef struct node_s node_t;
 
 
 // posts are runs of non masked source pixels
-struct post_s
+struct post_t
 {
-	byte		topdelta;		// -1 is the last post in a column
-	byte		length; 		// length data bytes follows
+	byte topdelta; // -1 is the last post in a column
+	byte length;   // length data bytes follows
+
+	/**
+	 * @brief Return the post's absolute topdelta accounting for tall
+	 *        patches, which treat topdelta as relative.
+	 * 
+	 * @param lastAbs Last absolute topdelta.
+	 */
+	int abs(const int lastAbs) const
+	{
+		if (topdelta <= lastAbs)
+			return lastAbs + topdelta;
+		else
+			return topdelta;
+	}
+
+	/**
+	 * @brief Size of the post, including header.
+	 */
+	uint32_t size() const
+	{
+		return length + 3;
+	}
+	
+	/**
+	 * @brief Return a pointer to post data.
+	 */
+	byte* data() const
+	{
+		return (byte*)(this) + 3;
+	}
+
+	/**
+	 * @brief Return a pointer to the next post in the column.
+	 */
+	post_t* next() const
+	{
+		return (post_t*)((byte*)this + length + 4);
+	}
+
+	/**
+	 * @brief Check if the post ends the column.
+	 */
+	bool end() const
+	{
+		return topdelta == 0xFF;
+	}
 };
-typedef struct post_s post_t;
 
 // column_t is a list of 0 or more post_t, (byte)-1 terminated
 typedef post_t	column_t;
 
-struct tallpost_s
+struct tallpost_t
 {
-	unsigned short		topdelta;
-	unsigned short		length;
-	
-	byte *data() const { return (byte*)(this) + 4; }
-	tallpost_s *next() const { return (tallpost_s*)((byte*)(this) + 4 + length); }
-	bool end() const { return topdelta == 0xFFFF; }
-	void writeend() { topdelta = 0xFFFF; }
+	unsigned short topdelta;
+	unsigned short length;
+
+	uint32_t size() const
+	{
+		return length + 4;
+	}
+	byte* data() const
+	{
+		return (byte*)(this) + 4;
+	}
+	tallpost_t* next() const
+	{
+		return (tallpost_t*)((byte*)(this) + 4 + length);
+	}
+	bool end() const
+	{
+		return topdelta == 0xFFFF;
+	}
+	void writeend()
+	{
+		topdelta = 0xFFFF;
+	}
 };
-typedef struct tallpost_s tallpost_t;
 
 //
 // OTHER TYPES
@@ -529,14 +587,41 @@ private:
 	short			_topoffset;		// pixels below the origin
 
 public:
-
-	short width() const { return LESHORT(_width); }
-	short height() const { return LESHORT(_height); }
-	short leftoffset() const { return LESHORT(_leftoffset); }
-	short topoffset() const { return LESHORT(_topoffset); }
-
 	int columnofs[8]; // only [width] used
 	// the [0] is &columnofs[width]
+
+	short width() const
+	{
+		return LESHORT(_width);
+	}
+	short height() const
+	{
+		return LESHORT(_height);
+	}
+	short leftoffset() const
+	{
+		return LESHORT(_leftoffset);
+	}
+	short topoffset() const
+	{
+		return LESHORT(_topoffset);
+	}
+	uint32_t* ofs() const
+	{
+		return (uint32_t*)((byte*)this + 8);
+	}
+	uint32_t datastart() const
+	{
+		return 8 + 4 * width();
+	}
+	post_t* post(const uint32_t ofs)
+	{
+		return (post_t*)((byte*)this + ofs);
+	}
+	tallpost_t* tallpost(const uint32_t ofs)
+	{
+		return (tallpost_t*)((byte*)this + ofs);
+	}
 };
 typedef struct patch_s patch_t;
 
@@ -661,5 +746,3 @@ struct visplane_s
 typedef struct visplane_s visplane_t;
 
 #endif
-
-

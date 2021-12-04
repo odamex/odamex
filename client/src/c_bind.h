@@ -25,12 +25,9 @@
 #ifndef __C_BINDINGS_H__
 #define __C_BINDINGS_H__
 
-#include <string>
 
-#include "doomtype.h"
 #include "hashtable.h"
 #include "d_event.h"
-#include <stdio.h>
 
 struct OBinding
 {
@@ -49,7 +46,7 @@ public :
 
 	void SetBindingType(std::string cmd);
 	void SetBinds(const OBinding* binds);
-	void BindAKey(size_t argc, char** argv, char* msg);
+	void BindAKey(size_t argc, char** argv, const char* msg);
 	void DoBind(const char* key, const char* bind);
 
 	void UnbindKey(const char* key);
@@ -61,7 +58,7 @@ public :
 	const std::string &GetBind(int key);			// Returns string bound to given key (NULL if none)
 	std::string GetNameKeys(int first, int second);
 	int  GetKeysForCommand(const char* cmd, int* first, int* second);
-	std::string GetKeynameFromCommand(char* cmd, bool bTwoEntries = false);
+	std::string GetKeynameFromCommand(const char* cmd, bool bTwoEntries = false);
 
 	void ArchiveBindings(FILE* f);
 };
@@ -78,4 +75,3 @@ void C_ReleaseKeys();
 extern OKeyBindings Bindings, DoubleBindings, AutomapBindings, NetDemoBindings;
 
 #endif //__C_BINDINGS_H__
-

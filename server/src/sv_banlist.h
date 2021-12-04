@@ -25,8 +25,6 @@
 #define __SV_BANLIST__
 
 #include <sstream>
-#include <string>
-#include <vector>
 
 #include "json/json.h"
 

@@ -1,3 +1,29 @@
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// $Id$
+//
+// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
+// Copyright (C) 2006-2020 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//   Team Information.
+//
+//-----------------------------------------------------------------------------
+
+
+#include "odamex.h"
+
 #include <algorithm>
 #include <sstream>
 #include "cmdlib.h"
@@ -5,7 +31,6 @@
 #include "v_textcolors.h"
 #include "d_player.h"
 
-#include "c_cvars.h"
 
 EXTERN_CVAR(sv_teamsinplay)
 
@@ -20,6 +45,7 @@ void InitTeamInfo()
 	teamInfo->ColorStringUpper = "BLUE";
 	teamInfo->ColorString = "Blue";
 	teamInfo->TextColor = TEXTCOLOR_BLUE;
+	teamInfo->ToastColor = TEXTCOLOR_LIGHTBLUE;
 	teamInfo->TransColor = CR_BLUE;
 	teamInfo->FountainColorArg = 3;
 	teamInfo->TeamSpawnThingNum = 5080;
@@ -37,6 +63,7 @@ void InitTeamInfo()
 	teamInfo->ColorStringUpper = "RED";
 	teamInfo->ColorString = "Red";
 	teamInfo->TextColor = TEXTCOLOR_RED;
+	teamInfo->ToastColor = TEXTCOLOR_BRICK;
 	teamInfo->TransColor = CR_RED;
 	teamInfo->FountainColorArg = 1;
 	teamInfo->TeamSpawnThingNum = 5081;
@@ -55,6 +82,7 @@ void InitTeamInfo()
 	teamInfo->ColorStringUpper = "GREEN";
 	teamInfo->ColorString = "Green";
 	teamInfo->TextColor = TEXTCOLOR_GREEN;
+	teamInfo->ToastColor = TEXTCOLOR_GREEN;
 	teamInfo->TransColor = CR_GREEN;
 	teamInfo->FountainColorArg = 2;
 	teamInfo->TeamSpawnThingNum = 5083;
@@ -72,6 +100,7 @@ void InitTeamInfo()
 	s_NoTeam.ColorStringUpper = "";
 	s_NoTeam.ColorString = "";
 	s_NoTeam.TextColor = TEXTCOLOR_GRAY;
+	s_NoTeam.ToastColor = TEXTCOLOR_GRAY;
 	s_NoTeam.TransColor = CR_GRAY;
 	s_NoTeam.FountainColorArg = 0;
 	s_NoTeam.TeamSpawnThingNum = 0;

@@ -24,8 +24,6 @@
 #ifndef __SV_PICKUP__
 #define __SV_PICKUP__
 
-#include <string>
-#include <vector>
 
 bool Pickup_DistributePlayers(size_t num_players, std::string &error);
 bool CMD_RandpickupCheck(const std::vector<std::string> &args,

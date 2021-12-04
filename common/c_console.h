@@ -25,11 +25,8 @@
 #ifndef __C_CONSOLE__
 #define __C_CONSOLE__
 
-#include <stdio.h>
 #include <stdarg.h>
 
-#include "doomtype.h"
-#include "doomdef.h"
 #include "d_event.h"
 #include "cmdlib.h"
 #include "d_player.h"
@@ -87,5 +84,3 @@ void C_RemoveTabCommand (const char *name);
 void C_RevealSecret ();
 
 #endif
-
-

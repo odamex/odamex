@@ -45,6 +45,7 @@ endif()
 add_executable(odasrv
   ${COMMON_SOURCES} ${SERVER_SOURCES} ${SERVER_WIN32_SOURCES})
 odamex_target_settings(odasrv)
+set_property(TARGET odasrv PROPERTY CXX_STANDARD 98)
 
 target_include_directories(odasrv PRIVATE src)
 if(WIN32)

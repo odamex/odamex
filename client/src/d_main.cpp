@@ -24,10 +24,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
 
-#include <string>
-#include <vector>
+#include "odamex.h"
+
+
 #include <algorithm>
 
 #include "win32inc.h"
@@ -42,13 +42,10 @@
 
 #include <math.h>
 
-#include "errors.h"
 
 #include "m_alloc.h"
 #include "m_random.h"
 #include "minilzo.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "gstrings.h"
 #include "z_zone.h"
 #include "w_wad.h"
@@ -85,6 +82,7 @@
 #include "cl_main.h"
 #include "g_mapinfo.h"
 #include "sc_man.h"
+#include "g_horde.h"
 
 #include "w_ident.h"
 
@@ -145,6 +143,7 @@ EXTERN_CVAR (vid_32bpp)
 EXTERN_CVAR (vid_widescreen)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_vsync)
+EXTERN_CVAR (g_resetinvonexit)
 
 std::string LOG_FILE;
 
@@ -628,6 +627,7 @@ void D_Init()
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseHordeDefs();
 
 	// init the menu subsystem
 	if (first_time)
@@ -813,6 +813,9 @@ void D_DoomMain()
 	// Fast
 	sv_fastmonsters = Args.CheckParm("-fast");
 
+	// Pistol start
+	g_resetinvonexit = Args.CheckParm("-pistolstart");
+
 	// get skill / episode / map from parms
 	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
@@ -951,10 +954,6 @@ void D_DoomMain()
 			// single player warp (like in g_level)
 			serverside = true;
 			sv_allowexit = "1";
-			sv_freelook = "1";
-			sv_allowjump = "1";
-			sv_allowredscreen = "1";
-			sv_gametype = GM_COOP;
 
 			players.clear();
 			players.push_back(player_t());

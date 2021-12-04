@@ -25,8 +25,6 @@
 #ifndef __SVMASTER_H__
 #define __SVMASTER_H__
 
-#include "doomtype.h"
-#include "doomstat.h"
 #include "d_player.h"
 #include "p_local.h"
 #include "sv_main.h"

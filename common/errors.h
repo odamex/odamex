@@ -25,7 +25,6 @@
 #ifndef __ERRORS_H__
 #define __ERRORS_H__
 
-#include <string>
 
 class CDoomError
 {
@@ -50,4 +49,3 @@ public:
 };
 
 #endif //__ERRORS_H__
-

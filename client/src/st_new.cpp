@@ -23,16 +23,15 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
+
 #include <stdlib.h>
+#include <math.h>
 
 #include <algorithm>
 #include <sstream>
 
 #include "cmdlib.h"
-#include "doomtype.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "cl_demo.h"
 #include "cl_main.h"
 #include "d_items.h"
@@ -45,13 +44,14 @@
 #include "st_stuff.h"
 #include "hu_drawers.h"
 #include "hu_elements.h"
-#include "c_cvars.h"
 #include "p_ctf.h"
 #include "cl_parse.h"
 #include "cl_vote.h"
 #include "g_levelstate.h"
 #include "g_gametype.h"
 #include "c_bind.h"
+#include "p_horde.h"
+#include "c_dispatch.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
@@ -71,19 +71,20 @@ static lumpHandle_t bigammos[ARRAY_LENGTH(::bigammopatches)];
 static lumpHandle_t flagiconteam;
 static lumpHandle_t flagiconteamoffense;
 static lumpHandle_t flagiconteamdefense;
-static lumpHandle_t line_leftempty;
-static lumpHandle_t line_leftfull;
-static lumpHandle_t line_centerempty;
-static lumpHandle_t line_centerleft;
-static lumpHandle_t line_centerright;
-static lumpHandle_t line_centerfull;
-static lumpHandle_t line_rightempty;
-static lumpHandle_t line_rightfull;
+lumpHandle_t line_leftempty;
+lumpHandle_t line_leftfull;
+lumpHandle_t line_centerempty;
+lumpHandle_t line_centerleft;
+lumpHandle_t line_centerright;
+lumpHandle_t line_centerfull;
+lumpHandle_t line_rightempty;
+lumpHandle_t line_rightfull;
 static lumpHandle_t FlagIconHome[NUMTEAMS];
 static lumpHandle_t FlagIconReturn[NUMTEAMS];
 static lumpHandle_t FlagIconTaken[NUMTEAMS];
 static lumpHandle_t FlagIconDropped[NUMTEAMS];
 static lumpHandle_t LivesIcon[NUMTEAMS];
+static lumpHandle_t ToastIcon[NUMMODS];
 
 static int		NameUp = -1;
 
@@ -118,6 +119,9 @@ EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(sv_scorelimit);
 EXTERN_CVAR(sv_warmup)
+EXTERN_CVAR(hud_feedobits)
+EXTERN_CVAR(g_horde_waves)
+EXTERN_CVAR(g_roundlimit)
 
 void ST_unloadNew()
 {
@@ -163,6 +167,7 @@ void ST_initNew()
 	::widest_num = widest;
 	::num_height = W_ResolvePatchHandle(::tallnum[0])->height();
 
+	// [AM] FIXME: What does this do, exactly?
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
 		NameUp = level.time + 2 * TICRATE;
 
@@ -178,6 +183,13 @@ void ST_initNew()
 	::line_centerfull = W_CachePatchHandle("ODABARCF", PU_STATIC);
 	::line_rightempty = W_CachePatchHandle("ODABARRE", PU_STATIC);
 	::line_rightfull = W_CachePatchHandle("ODABARRF", PU_STATIC);
+
+	std::string buffer;
+	for (size_t i = 0; i < NUMMODS; i++)
+	{
+		StrFormat(buffer, "ODAMOD%d", i);
+		::ToastIcon[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+	}
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
@@ -431,6 +443,23 @@ void ST_voteDraw (int y) {
 namespace hud {
 
 /**
+ * @brief This is the number of pixels of viewable space, taking into account
+ *        the status bar.  We need to convert this into scaled pixels as
+ *        best we can.
+ */
+static int statusBarY()
+{
+	const int surfaceWidth = I_GetSurfaceWidth();
+	const int surfaceHeight = I_GetSurfaceHeight();
+
+	int stY = surfaceHeight - ST_StatusBarY(surfaceWidth, surfaceHeight);
+	if (::hud_scale)
+		stY /= ::CleanYfac;
+
+	return stY;
+}
+
+/**
  * @brief Sometimes we want the HUD to show round wins and not current round points.
  */
 static bool TeamHUDShowsRoundWins()
@@ -456,16 +485,11 @@ static bool TeamHUDShowsRoundWins()
 /**
  * @brief Draw gametype-specific scoreboard, such as flags and lives.
  */
-static void drawGametype()
+static void drawTeamGametype()
 {
 	const int SCREEN_BORDER = 4;
 	const int FLAG_ICON_HEIGHT = 18;
 	const int LIVES_HEIGHT = 12;
-
-	if (!G_IsTeamGame())
-	{
-		return;
-	}
 
 	std::string buffer;
 	player_t* plyr = &consoleplayer();
@@ -564,6 +588,65 @@ static void drawGametype()
 			              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, buffer.c_str(),
 			              color);
 		}
+	}
+}
+
+static void drawHordeGametype()
+{
+	const int SCREEN_BORDER = 4;
+	const int ABOVE_AMMO = 24;
+	const int LINE_SPACING = V_LineHeight() + 1;
+	const int BAR_BORDER = 5;
+
+	const hordeInfo_t& info = P_HordeInfo();
+	const hordeDefine_t& define = G_HordeDefine(info.defineID);
+
+	std::string waverow, killrow;
+	if (::g_horde_waves.asInt() != 0)
+	{
+		StrFormat(waverow, "WAVE:%d/%d", info.wave, ::g_horde_waves.asInt());
+	}
+	else
+	{
+		StrFormat(waverow, "WAVE:%d", info.wave);
+	}
+
+	float killPct = 0.0f;
+	EColorRange killColor = CR_BRICK;
+	if (info.bossHealth)
+	{
+		killPct = static_cast<float>(info.bossHealth - info.bossDamage) / info.bossHealth;
+		killrow = "BOSS";
+		killColor = CR_GOLD;
+	}
+	else
+	{
+		killPct = static_cast<float>(info.killed()) / define.goalHealth();
+		killrow = "HORDE";
+		killColor = CR_GREEN;
+	}
+
+	const int y = R_StatusBarVisible() ? statusBarY() + SCREEN_BORDER : ABOVE_AMMO;
+	hud::DrawText(SCREEN_BORDER, y, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+	              hud::X_RIGHT, hud::Y_BOTTOM, waverow.c_str(), CR_GREY);
+	hud::EleBar(SCREEN_BORDER, y + LINE_SPACING, V_StringWidth("WAVE:0/0"), ::hud_scale,
+	            hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, killPct,
+	            killColor);
+	hud::DrawText(SCREEN_BORDER, y + LINE_SPACING + BAR_BORDER, ::hud_scale, hud::X_RIGHT,
+	              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY);
+}
+
+static void drawGametype()
+{
+	if (G_IsTeamGame())
+	{
+		drawTeamGametype();
+		return;
+	}
+	else if (G_IsHordeMode())
+	{
+		drawHordeGametype();
+		return;
 	}
 }
 
@@ -785,17 +868,16 @@ void OdamexHUD() {
 	if (::hud_bigfont)
 		V_SetFont("BIGFONT");
 
-	hud::DrawText(4, 24 + V_LineHeight() + 1, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
-	              hud::X_RIGHT, hud::Y_BOTTOM, hud::PersonalSpread().c_str(),
-	              CR_UNTRANSLATED);
-	hud::DrawText(4, 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
-	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_UNTRANSLATED);
+	hud::DrawText(4, 24 + V_LineHeight() + 1, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+	              hud::X_RIGHT, hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY);
+	hud::DrawText(4, 24, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_GREY);
 
 	if (::hud_bigfont)
 		V_SetFont("SMALLFONT");
 
 	// Draw keys in coop
-	if (sv_gametype == GM_COOP) {
+	if (G_IsCoopGame()) {
 		for (byte i = 0;i < NUMCARDS;i++) {
 			if (plyr->cards[i]) {
 				hud::DrawPatch(4 + (i * 10), 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
@@ -807,6 +889,168 @@ void OdamexHUD() {
 
 	// Draw gametype scoreboard
 	hud::drawGametype();
+}
+
+struct drawToast_t
+{
+	int tic;
+	int pid_highlight;
+	std::string left;
+	lumpHandle_t icon;
+	std::string right;
+};
+
+typedef std::vector<drawToast_t> drawToasts_t;
+
+drawToasts_t g_Toasts;
+
+void DrawToasts()
+{
+	if (!hud_feedobits)
+		return;
+
+	V_SetFont("DIGFONT");
+	const int TOAST_HEIGHT = V_LineHeight() + 2;
+
+	std::string buffer;
+	int y = 0;
+
+	const float oldtrans = ::hud_transparency;
+	for (drawToasts_t::const_iterator it = g_Toasts.begin(); it != g_Toasts.end(); ++it)
+	{
+		// Only render the message if it's less than 2 seconds in.
+		int tics = ::gametic - it->tic;
+		if (tics < TICRATE * 2)
+		{
+			::hud_transparency.ForceSet(1.0);
+		}
+		else if (tics < TICRATE * 3)
+		{
+			tics %= TICRATE;
+			float trans = static_cast<float>(TICRATE - tics) / TICRATE;
+			::hud_transparency.ForceSet(trans);
+		}
+		else
+		{
+			::hud_transparency.ForceSet(0.0);
+		}
+
+		int x = 1;
+
+		// Right-hand side.
+		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
+		              hud::Y_TOP, it->right.c_str(), CR_GREY);
+		x += V_StringWidth(it->right.c_str()) + 1;
+
+		// Icon
+		patch_t* icon = W_ResolvePatchHandle(it->icon);
+		const double yoff =
+		    (static_cast<double>(TOAST_HEIGHT) - static_cast<double>(icon->height())) /
+		    2.0;
+
+		hud::DrawPatch(x, y + ceil(yoff), hud_scale, hud::X_RIGHT, hud::Y_TOP,
+		               hud::X_RIGHT, hud::Y_TOP, icon, false, true);
+		x += icon->width() + 1;
+
+		// Left-hand side.
+		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
+		              hud::Y_TOP, it->left.c_str(), CR_GREY);
+
+		y += TOAST_HEIGHT;
+	}
+	::hud_transparency.ForceSet(oldtrans);
+
+	V_SetFont("SMALLFONT");
+}
+
+void ToastTicker()
+{
+	// Remove stale toasts in a loop.
+	drawToasts_t::iterator it = g_Toasts.begin();
+	while (it != g_Toasts.end())
+	{
+		int tics = ::gametic - it->tic;
+
+		if (tics >= TICRATE * 3)
+		{
+			it = g_Toasts.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
+}
+
+void PushToast(const toast_t& toast)
+{
+	std::string buffer;
+
+	drawToast_t drawToast;
+	drawToast.tic = ::gametic;
+	drawToast.pid_highlight = -1;
+
+	if (toast.flags & toast_t::LEFT_PID)
+	{
+		std::string netname = idplayer(toast.left_pid).userinfo.netname;
+		if (consoleplayer().id == toast.left_pid)
+		{
+			buffer += TEXTCOLOR_GOLD + netname;
+		}
+		else if (G_IsTeamGame())
+		{
+			TeamInfo* info = GetTeamInfo(idplayer(toast.left_pid).userinfo.team);
+			buffer += info->ToastColor + netname;
+		}
+		else
+		{
+			buffer += netname;
+		}
+	}
+	else if (toast.flags & toast_t::LEFT)
+	{
+		buffer += toast.left;
+	}
+
+	if (!buffer.empty())
+	{
+		drawToast.left = buffer;
+	}
+
+	if (toast.flags & toast_t::ICON)
+	{
+		drawToast.icon = ::ToastIcon[toast.icon];
+	}
+
+	buffer.clear();
+	if (toast.flags & toast_t::RIGHT_PID)
+	{
+		std::string netname = idplayer(toast.right_pid).userinfo.netname;
+		if (consoleplayer().id == toast.right_pid)
+		{
+			buffer += TEXTCOLOR_GOLD + netname;
+		}
+		else if (G_IsTeamGame())
+		{
+			TeamInfo* info = GetTeamInfo(idplayer(toast.right_pid).userinfo.team);
+			buffer += info->ToastColor + netname;
+		}
+		else
+		{
+			buffer += netname;
+		}
+	}
+	else if (toast.flags & toast_t::RIGHT)
+	{
+		buffer += toast.right;
+	}
+
+	if (!buffer.empty())
+	{
+		drawToast.right = buffer;
+	}
+
+	g_Toasts.push_back(drawToast);
 }
 
 static std::string WinToColorString(const WinInfo& win)
@@ -845,125 +1089,95 @@ static std::string WinToColorString(const WinInfo& win)
 	return buf;
 }
 
+struct levelStateLines_t
+{
+	std::string first;
+	std::string second;
+	float lucent;
+};
+
+static void LevelStateHorde(levelStateLines_t& lines)
+{
+	const hordeInfo_t& info = P_HordeInfo();
+	const hordeDefine_t& define = G_HordeDefine(info.defineID);
+
+	int tics = 0;
+	if (info.hasBoss())
+	{
+		if (gametic % 18 < 9)
+		{
+			lines.first = TEXTCOLOR_RED "!! WARNING !!";
+		}
+		else
+		{
+			lines.first = TEXTCOLOR_RED "WARNING";
+		}
+		lines.second =
+		    "Defeat the " TEXTCOLOR_YELLOW "boss " TEXTCOLOR_GREY "to win the wave";
+		tics = info.bossTic();
+	}
+	else
+	{
+		if (::g_horde_waves.asInt() != 0)
+		{
+			StrFormat(lines.first,
+			          "Wave " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "of " TEXTCOLOR_YELLOW
+			          "%d",
+			          info.wave, ::g_horde_waves.asInt());
+		}
+		else
+		{
+			StrFormat(lines.first, "Wave " TEXTCOLOR_YELLOW "%d", info.wave);
+		}
+
+		StrFormat(lines.second, "\"%s\"", define.name.c_str());
+		tics = ::level.time - info.waveTime;
+	}
+
+	// Only render the wave message if it's less than 2 seconds in.
+	if (tics < TICRATE * 2)
+	{
+		lines.lucent = 1.0f;
+	}
+	else if (tics < TICRATE * 3)
+	{
+		tics %= TICRATE;
+		lines.lucent = static_cast<float>(TICRATE - tics) / TICRATE;
+	}
+	else
+	{
+		lines.lucent = 0.0f;
+	}
+}
+
 void LevelStateHUD()
 {
 	// Don't bother with levelstate information in lobbies.
-	if (::level.flags & LEVEL_LOBBYSPECIAL)
+	if (::level.flags & ::LEVEL_LOBBYSPECIAL)
 	{
 		return;
 	}
 
-	// First line...BIGFONT.
-	std::string str;
+	levelStateLines_t lines = {"", "", 1.0f};
 	switch (::levelstate.getState())
 	{
-	case LevelState::WARMUP:
+	case LevelState::WARMUP: {
 		if (consoleplayer().spectator)
 		{
-			str = "";
 			break;
 		}
 
-		str = "Warmup";
-		break;
-	case LevelState::WARMUP_COUNTDOWN:
-	case LevelState::WARMUP_FORCED_COUNTDOWN:
-		str = G_GametypeName();
-		break;
-	case LevelState::PREROUND_COUNTDOWN:
-		StrFormat(str, "Round %d\n", ::levelstate.getRound());
-		break;
-	case LevelState::INGAME:
-		if (G_CanShowFightMessage())
-		{
-			if (G_IsSidesGame())
-			{
-				if (G_IsDefendingTeam(consoleplayer().userinfo.team))
-				{
-					str = "DEFEND!\n";
-				}
-				else
-				{
-					str = "CAPTURE!\n";
-				}
-			}
-			else
-			{
-				str = "FIGHT!\n";
-			}
-		}
-		else
-		{
-			str = "";
-		}
-		break;
-	case LevelState::ENDROUND_COUNTDOWN:
-		StrFormat(str, "Round %d complete\n", ::levelstate.getRound());
-		break;
-	case LevelState::ENDGAME_COUNTDOWN:
-		StrFormat(str, "Match complete\n");
-		break;
-	default:
-		str = "";
-		break;
-	}
+		lines.first = "Warmup";
 
-	V_SetFont("BIGFONT");
-
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(str.c_str()) * CleanYfac;
-	int h = 12 * CleanYfac;
-
-	float oldtrans = ::hud_transparency;
-	if (::levelstate.getState() == LevelState::INGAME)
-	{
-		// Only render the "FIGHT" message if it's less than 2 seconds in.
-		int tics = ::level.time - ::levelstate.getIngameStartTime();
-		if (tics < TICRATE * 2)
-		{
-			::hud_transparency.ForceSet(1.0);
-		}
-		else if (tics < TICRATE * 3)
-		{
-			tics %= TICRATE;
-			float trans = static_cast<float>(TICRATE - tics) / TICRATE;
-			::hud_transparency.ForceSet(trans);
-		}
-		else
-		{
-			::hud_transparency.ForceSet(0.0);
-		}
-	}
-	else
-	{
-		::hud_transparency.ForceSet(1.0);
-	}
-	if (::hud_transparency > 0.0f)
-	{
-		screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
-		                             surface_height / 4 - h / 2, str.c_str(), CleanYfac,
-		                             CleanYfac);
-	}
-
-	V_SetFont("SMALLFONT");
-
-	// Second line...SMALLFONT.
-	str = "";
-	switch (::levelstate.getState())
-	{
-	case LevelState::WARMUP:
-		if (consoleplayer().spectator)
-			break;
-
-		if (sv_warmup)
+		if (::sv_warmup)
 		{
 			if (consoleplayer().ready)
 			{
-				StrFormat(str, "Waiting for other players to ready up...");
+				lines.second = "Waiting for other players to ready up...";
 			}
 			else
 			{
-				StrFormat(str,
+				StrFormat(lines.second,
 				          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
 				          " when ready to play",
 				          ::Bindings.GetKeynameFromCommand("ready").c_str());
@@ -971,74 +1185,139 @@ void LevelStateHUD()
 		}
 		else
 		{
-			StrFormat(str, "Waiting for other players to join...");
+			lines.second = "Waiting for other players to join...";
 		}
 
 		break;
+	}
 	case LevelState::WARMUP_COUNTDOWN:
-	case LevelState::WARMUP_FORCED_COUNTDOWN:
-		StrFormat(str, "Match begins in " TEXTCOLOR_GREEN "%d",
+	case LevelState::WARMUP_FORCED_COUNTDOWN: {
+		StrFormat(lines.first, "%s", G_GametypeName().c_str());
+		StrFormat(lines.second, "Match begins in " TEXTCOLOR_GREEN "%d",
 		          ::levelstate.getCountdown());
 		break;
-	case LevelState::PREROUND_COUNTDOWN:
-		StrFormat(str, "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
+	}
+	case LevelState::PREROUND_COUNTDOWN: {
+		StrFormat(lines.first, "Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
+		StrFormat(lines.second, "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
 		          ::levelstate.getCountdown());
 		break;
-	case LevelState::INGAME:
-		if (G_CanShowFightMessage())
+	}
+	case LevelState::INGAME: {
+		if (G_IsHordeMode())
+		{
+			LevelStateHorde(lines);
+		}
+		else if (G_CanShowFightMessage())
 		{
 			if (G_IsSidesGame())
 			{
 				if (G_IsDefendingTeam(consoleplayer().userinfo.team))
 				{
-					str = TEXTCOLOR_YELLOW "Defend the flag!\n";
+					lines.first = TEXTCOLOR_YELLOW "DEFEND!";
+					lines.second = "Defend the flag!";
 				}
 				else
 				{
-					str = TEXTCOLOR_GREEN "Capture the flag!\n";
+					lines.first = TEXTCOLOR_GREEN "CAPTURE!";
+					lines.second = "Capture the flag!";
 				}
 			}
-		}
-		else
-		{
-			str = "";
+			else if (G_IsCoopGame())
+			{
+				lines.first = "GO!\n";
+				if (G_IsRoundsGame() && g_roundlimit)
+				{
+					StrFormat(lines.second,
+					          TEXTCOLOR_GREEN "%d" TEXTCOLOR_GREY " attempts left",
+					          g_roundlimit.asInt() - ::levelstate.getRound() + 1);
+				}
+			}
+			else
+			{
+				lines.first = "FIGHT!\n";
+			}
+
+			// Only render the "FIGHT" message if it's less than 2 seconds in.
+			int tics = ::level.time - ::levelstate.getIngameStartTime();
+			if (tics < TICRATE * 2)
+			{
+				lines.lucent = 1.0f;
+			}
+			else if (tics < TICRATE * 3)
+			{
+				tics %= TICRATE;
+				lines.lucent = static_cast<float>(TICRATE - tics) / TICRATE;
+			}
+			else
+			{
+				lines.lucent = 0.0f;
+			}
 		}
 		break;
+	}
 	case LevelState::ENDROUND_COUNTDOWN: {
+		StrFormat(lines.first,
+		          "Round " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
+		          ::levelstate.getRound());
+
 		WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
-			StrFormat(str, "Tied at the end of the round");
+			StrFormat(lines.second, "Tied at the end of the round");
 		else if (win.type == WinInfo::WIN_PLAYER)
-			StrFormat(str, "%s wins the round", WinToColorString(win).c_str());
+			StrFormat(lines.second, "%s wins the round", WinToColorString(win).c_str());
 		else if (win.type == WinInfo::WIN_TEAM)
-			StrFormat(str, "%s team wins the round", WinToColorString(win).c_str());
+			StrFormat(lines.second, "%s team wins the round",
+			          WinToColorString(win).c_str());
 		else
-			StrFormat(str, "Next round in " TEXTCOLOR_GREEN "%d",
+			StrFormat(lines.second, "Next round in " TEXTCOLOR_GREEN "%d",
 			          ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::ENDGAME_COUNTDOWN: {
+		StrFormat(lines.first, "Match complete");
+
 		WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
-			StrFormat(str, "The game ends in a tie");
+			StrFormat(lines.second, "The game ends in a tie");
 		else if (win.type == WinInfo::WIN_PLAYER)
-			StrFormat(str, "%s wins!", WinToColorString(win).c_str());
+			StrFormat(lines.second, "%s wins!", WinToColorString(win).c_str());
 		else if (win.type == WinInfo::WIN_TEAM)
-			StrFormat(str, "%s team wins!", WinToColorString(win).c_str());
+			StrFormat(lines.second, "%s team wins!", WinToColorString(win).c_str());
 		else
-			StrFormat(str, "Intermission in " TEXTCOLOR_GREEN "%d",
+			StrFormat(lines.second, "Intermission in " TEXTCOLOR_GREEN "%d",
 			          ::levelstate.getCountdown());
 		break;
 	}
+	default:
+		break;
 	}
 
-	w = V_StringWidth(str.c_str()) * CleanYfac;
-	h = 8 * CleanYfac;
+	V_SetFont("BIGFONT");
+
+	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	int w = V_StringWidth(lines.first.c_str()) * CleanYfac;
+	int h = 12 * CleanYfac;
+
+	const float oldtrans = ::hud_transparency;
+	::hud_transparency = lines.lucent;
+
 	if (::hud_transparency > 0.0f)
 	{
-		screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
-		                             (surface_height / 4 - h / 2) + (12 * CleanYfac),
-		                             str.c_str(), CleanYfac, CleanYfac);
+		::screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
+		                               surface_height / 4 - h / 2, lines.first.c_str(),
+		                               ::CleanYfac, ::CleanYfac);
+	}
+
+	V_SetFont("SMALLFONT");
+
+	w = V_StringWidth(lines.second.c_str()) * ::CleanYfac;
+	h = 8 * ::CleanYfac;
+	if (::hud_transparency > 0.0f)
+	{
+		::screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
+		                               (surface_height / 4 - h / 2) + (12 * ::CleanYfac),
+		                               lines.second.c_str(), ::CleanYfac, ::CleanYfac);
 	}
 
 	::hud_transparency.ForceSet(oldtrans);
@@ -1079,147 +1358,10 @@ void SpectatorHUD()
 	hud::drawGametype();
 }
 
-// [AM] Original ZDoom HUD
-void ZDoomHUD() {
-	player_t *plyr = &displayplayer();
-	int y, i;
-	ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
-	int xscale = hud_scale ? CleanXfac : 1;
-	int yscale = hud_scale ? CleanYfac : 1;
-
-	y = I_GetSurfaceHeight() - (num_height + 4) * yscale;
-
-	// Draw health
-	{
-		const patch_t* curr_powerup = W_ResolvePatchHandle(medi[0]);
-		int xPos = 20;
-		int yPos = 2;
-
-		if (plyr->powers[pw_strength])
-		{
-			curr_powerup = W_ResolvePatchHandle(medi[1]);
-			xPos -= 1;	// the x position of the Berzerk is 1 pixel to the right compared to the Medikit.
-			yPos += 4;	// the y position of the Berzerk is slightly lowered by 4. So make it the same y position as the medikit.
-		}
-
-		if (hud_scale)
-			screen->DrawLucentPatchCleanNoMove(curr_powerup, xPos * CleanXfac,
-				I_GetSurfaceHeight() - yPos * CleanYfac);
-		else
-			screen->DrawLucentPatch(curr_powerup, xPos, I_GetSurfaceHeight() - yPos);
-		ST_DrawNum(40 * xscale, y, screen, plyr->health);
-	}
-
-	// Draw armor
-	if (plyr->armortype && plyr->armorpoints)
-	{
-		const patch_t* current_armor = W_ResolvePatchHandle(armors[1]);
-		if(plyr->armortype == 1)
-			current_armor = W_ResolvePatchHandle(armors[0]);
-
-		if (current_armor)
-		{
-			if (hud_scale)
-				screen->DrawLucentPatchCleanNoMove (current_armor, 20 * CleanXfac, y - 4*CleanYfac);
-			else
-				screen->DrawLucentPatch (current_armor, 20, y - 4);
-		}
-		ST_DrawNum(40 * xscale,
-		           y - (W_ResolvePatchHandle(armors[0])->height() + 3) * yscale, screen,
-		           plyr->armorpoints);
-	}
-
-	// Draw ammo
-	if (ammotype < NUMAMMO)
-	{
-		const patch_t* ammopatch =
-		    W_ResolvePatchHandle(ammos[weaponinfo[plyr->readyweapon].ammotype]);
-
-		if (hud_scale)
-			screen->DrawLucentPatchCleanNoMove(ammopatch,
-							I_GetSurfaceWidth() - 14 * CleanXfac, I_GetSurfaceHeight() - 4 * CleanYfac);
-		else
-			screen->DrawLucentPatch(ammopatch, I_GetSurfaceWidth() - 14, I_GetSurfaceHeight() - 4);
-
-		ST_DrawNumRight(I_GetSurfaceWidth() - 25 * xscale, y, screen, plyr->ammo[ammotype]);
-	}
-
-	// Draw top-right info. (Keys/Frags/Score)
-	hud::drawGametype();
-
-	if (sv_gametype != GM_COOP)
-	{
-		// Draw frags (in DM)
-		ST_DrawNumRight(I_GetSurfaceWidth() - (2 * xscale), 2 * yscale, screen, plyr->fragcount);
-	}
-	else
-	{
-		// Draw keys (not DM)
-		y = CleanYfac;
-		for (i = 0; i < 6; i++)
-		{
-			if (plyr->cards[i])
-			{
-				patch_t* keysi = W_ResolvePatchHandle(keys[i]);
-
-				if (hud_scale)
-				{
-					screen->DrawLucentPatchCleanNoMove(
-					    keysi, I_GetSurfaceWidth() - 10 * CleanXfac, y);
-				}
-				else
-				{
-					screen->DrawLucentPatch(keysi, I_GetSurfaceWidth() - 10, y);
-				}
-
-				y += (8 + (i < 3 ? 0 : 2)) * yscale;
-			}
-		}
-	}
-
-	int color;
-	std::string str;
-
-	// Draw warmup state or timer
-	if (hud_timer) {
-		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
-	}
-
-	if (g_lives)
-	{
-		// Lives are next to doomguy.  Supposed to be vertically-centered with his head.
-		int lives_color = CR_GREY;
-		if (plyr->lives <= 0)
-			lives_color = CR_DARKGREY;
-		
-		std::string buf;
-		StrFormat(buf, "x%d", plyr->lives);
-		hud::DrawText(60 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
-		              hud::X_LEFT, hud::Y_MIDDLE, buf.c_str(), lives_color, false);
-	}
-
-	// Draw other player name, if spying
-	hud::DrawText(0, 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_GREY);
-
-	// Draw targeted player names.
-	hud::EATargets(0, 20, hud_scale,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               1, 0);
-}
-
 // [AM] HUD drawn with the Doom Status Bar.
 void DoomHUD()
 {
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-
-	// ST_Y is the number of pixels of viewable space, taking into account the
-	// status bar.  We need to convert this into scaled pixels as best we can.
-	int st_y = surface_height - ST_StatusBarY(surface_width, surface_height);
-	if (hud_scale)
-		st_y /= CleanYfac;
+	int st_y = statusBarY();
 
 	// Draw warmup state or timer
 	if (hud_timer)
@@ -1243,8 +1385,6 @@ void DoomHUD()
 }
 
 }
-
-#include "c_dispatch.h"
 
 BEGIN_COMMAND(netprotoup)
 {

@@ -30,7 +30,6 @@
 #include "d_ticcmd.h"
 #include "r_defs.h"
 #include "cl_demo.h"
-#include <string>
 
 extern netadr_t  serveraddr;
 extern BOOL      connected;
@@ -69,6 +68,9 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictWorld(void);
 void CL_SendUserInfo(void);
 bool CL_Connect();
+
+void CL_SendCheat(int cheats);
+void CL_SendGiveCheat(const char* item);
 
 void CL_DisplayTics();
 void CL_RunTics();

@@ -25,7 +25,6 @@
 #ifndef __P_LNSPEC_H__
 #define __P_LNSPEC_H__
 
-#include "doomtype.h"
 #include "r_defs.h"
 
 typedef enum {
@@ -45,6 +44,7 @@ typedef enum {
 	Door_Raise = 12,
 	Door_LockedRaise = 13,
 
+	Thing_Stop = 19,
 	Floor_LowerByValue = 20,
 	Floor_LowerToLowest = 21,
 	Floor_LowerToNearest = 22,

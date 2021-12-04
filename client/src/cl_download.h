@@ -23,8 +23,6 @@
 #ifndef __CL_DOWNLOAD_H__
 #define __CL_DOWNLOAD_H__
 
-#include <string>
-#include <vector>
 
 #include "otransfer.h"
 #include "m_resfile.h"

@@ -21,14 +21,13 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "m_random.h"
-#include "doomdef.h"
 #include "p_local.h"
 #include "s_sound.h"
-#include "doomstat.h"
-#include "doomtype.h"
 #include "v_video.h"
-#include "c_cvars.h"
 #include "c_effect.h"
 #include "m_vectors.h"
 #include "p_mobj.h"
@@ -138,7 +137,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	P_SetupPsprites(&player);
 
 	// give all cards in death match mode
-	if (sv_gametype != GM_COOP)
+	if (!G_IsCoopGame())
 	{
 		for (int i = 0; i < NUMCARDS; i++)
 			player.cards[i] = true;
@@ -183,7 +182,10 @@ void P_ShowSpawns(mapthing2_t* mthing)
 
 		if (sv_gametype == GM_DM && mthing->type == 11)
 		{
-			spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->z << FRACBITS, MT_FOUNTAIN);
+			// [RK] If we're not using z-height spawns, spawn the fountain on the floor
+			spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS,
+				(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing->z << FRACBITS : ONFLOORZ), MT_FOUNTAIN);
+			
 			spawn->args[0] = 7; // White
 		}
 
@@ -194,7 +196,10 @@ void P_ShowSpawns(mapthing2_t* mthing)
 				TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
 				if (teamInfo->TeamSpawnThingNum == mthing->type)
 				{
-					spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->z << FRACBITS, MT_FOUNTAIN);
+					// [RK] If we're not using z-height spawns, spawn the fountain on the floor
+					spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS,
+						(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing->z << FRACBITS : ONFLOORZ), MT_FOUNTAIN);
+					
 					spawn->args[0] = teamInfo->FountainColorArg;
 					break;
 				}

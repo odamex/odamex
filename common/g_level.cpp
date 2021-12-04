@@ -22,7 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "g_level.h"
+
+#include "odamex.h"
+
 
 #include <set>
 
@@ -30,7 +32,6 @@
 #include "c_dispatch.h"
 #include "d_event.h"
 #include "d_main.h"
-#include "doomstat.h"
 #include "g_game.h"
 #include "gi.h"
 #include "i_system.h"
@@ -46,6 +47,9 @@
 
 level_locals_t level;			// info about current level
 
+level_pwad_info_t g_EmptyLevel;
+cluster_info_t g_EmptyCluster;
+
 EXTERN_CVAR(co_allowdropoff)
 EXTERN_CVAR(co_realactorheight)
 
@@ -55,7 +59,7 @@ EXTERN_CVAR(co_realactorheight)
 
 // Construct from array of levelinfos, ending with an "empty" level
 LevelInfos::LevelInfos(const level_info_t* levels) :
-	_defaultInfos(levels)
+	m_defaultInfos(levels)
 {
 	//addDefaults();
 }
@@ -71,21 +75,20 @@ void LevelInfos::addDefaults()
 {
 	for (size_t i = 0;; i++)
 	{
-		const level_info_t& level = _defaultInfos[i];
+		const level_info_t& level = m_defaultInfos[i];
 		if (!level.exists())
 			break;
 
 		// Copied, so it can be mutated.
-		level_pwad_info_t info = _empty;
-		memcpy(&info, &level, sizeof(level));
-		_infos.push_back(info);
+		level_pwad_info_t info(level);
+		m_infos.push_back(info);
 	}
 }
 
 // Get a specific info index
 level_pwad_info_t& LevelInfos::at(size_t i)
 {
-	return _infos.at(i);
+	return m_infos.at(i);
 }
 
 // Clear all cluster definitions
@@ -93,13 +96,13 @@ void LevelInfos::clear()
 {
 	clearSnapshots();
 	zapDeferreds();
-	_infos.clear();
+	m_infos.clear();
 }
 
 // Clear all stored snapshots
 void LevelInfos::clearSnapshots()
 {
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
+	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
 	{
 		if (it->snapshot)
 		{
@@ -112,71 +115,70 @@ void LevelInfos::clearSnapshots()
 // Add a new levelinfo and return it by reference
 level_pwad_info_t& LevelInfos::create()
 {
-	_infos.push_back(level_pwad_info_t());
-	_infos.back() = _empty;
-	return _infos.back();
+	m_infos.push_back(level_pwad_info_t());
+	return m_infos.back();
 }
 
 // Find a levelinfo by mapname
 level_pwad_info_t& LevelInfos::findByName(const char* mapname)
 {
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
+	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
 	{
 		if (it->mapname == mapname)
 		{
 			return *it;
 		}
 	}
-	return _empty;
+	return ::g_EmptyLevel;
 }
 
 level_pwad_info_t& LevelInfos::findByName(const std::string &mapname)
 {
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
+	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
 	{
 		if (it->mapname == mapname)
 		{
 			return *it;
 		}
 	}
-	return _empty;
+	return ::g_EmptyLevel;
 }
 
 level_pwad_info_t& LevelInfos::findByName(const OLumpName& mapname)
 {
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
+	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
 	{
 		if (it->mapname == mapname)
 		{
 			return *it;
 		}
 	}
-	return _empty;
+	return ::g_EmptyLevel;
 }
 
 // Find a levelinfo by mapnum
 level_pwad_info_t& LevelInfos::findByNum(int levelnum)
 {
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
+	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
 	{
 		if (it->levelnum == levelnum && W_CheckNumForName(it->mapname.c_str()) != -1)
 		{
 			return *it;
 		}
 	}
-	return _empty;
+	return ::g_EmptyLevel;
 }
 
 // Number of info entries.
 size_t LevelInfos::size()
 {
-	return _infos.size();
+	return m_infos.size();
 }
 
 // Zap all deferred ACS scripts
 void LevelInfos::zapDeferreds()
 {
-	for (_LevelInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
+	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
 	{
 		acsdefered_t* def = it->defered;
 		while (def) {
@@ -188,43 +190,13 @@ void LevelInfos::zapDeferreds()
 	}
 }
 
-// Empty levelinfo.
-level_pwad_info_t LevelInfos::_empty = {
-	"",   // mapname
-	0,    // levelnum
-	"",   // level_name
-	"",   // pname
-	"",   // nextmap
-	"",   // secretmap
-	0,    // partime
-	"",   // skypic
-	"",   // music
-	0,    // flags
-	0,    // cluster
-	NULL, // snapshot
-	NULL, // defered
-	{ 0, 0, 0, 0 },    // fadeto_color
-	{ 0xFF, 0, 0, 0 }, // outsidefog_color, 0xFF000000 is special token signaling to not handle it specially
-	"COLORMAP",        // fadetable
-	"",   // skypic2
-	0.0,  // gravity
-	0.0,  // aircontrol
-    "",	  // exitpic
-	"",	  // enterpic
-	"",	  // endpic
-    "",   // intertext
-    "",   // intertextsecret
-    "",   // interbackdrop
-    "",   // intermusic
-	};
-
 //
 // ClusterInfos methods
 //
 
 // Construct from array of clusterinfos, ending with an "empty" cluster.
 ClusterInfos::ClusterInfos(const cluster_info_t* clusters) :
-	_defaultInfos(clusters)
+	m_defaultInfos(clusters)
 {
 	//addDefaults();
 }
@@ -240,73 +212,62 @@ void ClusterInfos::addDefaults()
 {
 	for (size_t i = 0;; i++)
 	{
-		const cluster_info_t& cluster = _defaultInfos[i];
+		const cluster_info_t& cluster = m_defaultInfos[i];
 		if (cluster.cluster == 0)
 		{
 			break;
 		}
 
 		// Copied, so it can be mutated.
-		_infos.push_back(cluster);
+		m_infos.push_back(cluster);
 	}
 }
 
 // Get a specific info index
 cluster_info_t& ClusterInfos::at(size_t i)
 {
-	return _infos.at(i);
+	return m_infos.at(i);
 }
 
 // Clear all cluster definitions
 void ClusterInfos::clear()
 {
 	// Free all strings.
-	for (_ClusterInfoArray::iterator it = _infos.begin(); it != _infos.end(); ++it)
+	for (_ClusterInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
 	{
 		free(it->exittext);
 		it->exittext = NULL;
 		free(it->entertext);
 		it->entertext = NULL;
 	}
-	return _infos.clear();
+	return m_infos.clear();
 }
 
 // Add a new levelinfo and return it by reference
 cluster_info_t& ClusterInfos::create()
 {
-	_infos.push_back(cluster_info_t());
-	_infos.back() = _empty;
-	return _infos.back();
+	m_infos.push_back(cluster_info_t());
+	return m_infos.back();
 }
 
 // Find a clusterinfo by mapname
 cluster_info_t& ClusterInfos::findByCluster(int i)
 {
-	for (_ClusterInfoArray::iterator it = _infos.begin();it != _infos.end();++it)
+	for (_ClusterInfoArray::iterator it = m_infos.begin();it != m_infos.end();++it)
 	{
 		if (it->cluster == i)
 		{
 			return *it;
 		}
 	}
-	return _empty;
+	return ::g_EmptyCluster;
 }
 
 // Number of info entries.
 size_t ClusterInfos::size() const
 {
-	return _infos.size();
+	return m_infos.size();
 }
-
-// Empty clusterinfo.
-cluster_info_t ClusterInfos::_empty = {
-	0,    // cluster
-	"",   // messagemusic
-	"",   // finaleflat
-	NULL, // exittext
-	NULL, // entertext
-	0,    // flags
-};
 
 void P_RemoveDefereds()
 {
@@ -685,10 +646,10 @@ void G_ClearSnapshots()
 	getLevelInfos().clearSnapshots();
 }
 
-static void writeSnapShot(FArchive &arc, level_info_t *i)
+static void writeSnapShot(FArchive &arc, level_pwad_info_t& info)
 {
-	arc.Write (i->mapname.c_str(), 8);
-	i->snapshot->Serialize (arc);
+	arc.Write(info.mapname.c_str(), 8);
+	info.snapshot->Serialize(arc);
 }
 
 void G_SerializeSnapshots(FArchive &arc)
@@ -702,7 +663,7 @@ void G_SerializeSnapshots(FArchive &arc)
 			level_pwad_info_t& level = levels.at(i);
 			if (level.snapshot)
 			{
-				writeSnapShot(arc, reinterpret_cast<level_info_t*>(&level));
+				writeSnapShot(arc, level);
 			}
 		}
 
@@ -730,10 +691,10 @@ void G_SerializeSnapshots(FArchive &arc)
 	}
 }
 
-static void writeDefereds(FArchive &arc, level_info_t *i)
+static void writeDefereds(FArchive &arc, level_pwad_info_t& info)
 {
-	arc.Write (i->mapname.c_str(), 8);
-	arc << i->defered;
+	arc.Write(info.mapname.c_str(), 8);
+	arc << info.defered;
 }
 
 void P_SerializeACSDefereds(FArchive &arc)
@@ -747,7 +708,7 @@ void P_SerializeACSDefereds(FArchive &arc)
 			level_pwad_info_t& level = levels.at(i);
 			if (level.defered)
 			{
-				writeDefereds(arc, reinterpret_cast<level_info_t*>(&level));
+				writeDefereds(arc, level);
 			}
 		}
 
@@ -859,6 +820,7 @@ void G_InitLevelLocals()
 	::level.cluster = info.cluster;
 	::level.flags = info.flags;
 	::level.levelnum = info.levelnum;
+	ArrayCopy(::level.level_fingerprint, info.level_fingerprint);
 
 	// Only copy the level name if there's a valid level name to be copied.
 	
@@ -954,6 +916,8 @@ void G_InitLevelLocals()
 	::level.bossactions = &info.bossactions;
 	::level.bossactions_donothing = info.bossactions_donothing;
 	
+	::level.detected_gametype = GM_COOP;
+
 	movingsectors.clear();
 }
 
@@ -1066,6 +1030,7 @@ BEGIN_COMMAND(mapinfo)
 	flags += (info.flags & LEVEL_STARTLIGHTNING ? " STARTLIGHTNING" : "");
 	flags += (info.flags & LEVEL_FILTERSTARTS ? " FILTERSTARTS" : "");
 	flags += (info.flags & LEVEL_LOBBYSPECIAL ? " LOBBYSPECIAL" : "");
+	flags += (info.flags & LEVEL_USEPLAYERSTARTZ ? " USEPLAYERSTARTZ" : "");
 	flags += (info.flags & LEVEL_DEFINEDINMAPINFO ? " DEFINEDINMAPINFO" : "");
 	flags += (info.flags & LEVEL_CHANGEMAPCHEAT ? " CHANGEMAPCHEAT" : "");
 	flags += (info.flags & LEVEL_VISITED ? " VISITED" : "");

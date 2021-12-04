@@ -35,10 +35,12 @@ from tkinter import (
     DISABLED as STATE_DISABLED,
 )
 
-ODAMEX_EXE = Path(r"client/Debug/odamex.exe").resolve(strict=True)
-ODAMEX_CWD = Path(r"client").resolve(strict=True)
-ODASRV_EXE = Path(r"server/Debug/odasrv.exe").resolve(strict=True)
-ODASRV_CWD = Path(r"server").resolve(strict=True)
+BUILD_DIR = Path(__file__).parent.parent.parent / "build"
+ODAMEX_EXE = BUILD_DIR / "client" / "Debug" / "odamex.exe"
+ODAMEX_CWD = ODAMEX_EXE.parent
+ODASRV_EXE = BUILD_DIR / "server" / "Debug" / "odasrv.exe"
+ODASRV_CWD = ODASRV_EXE.parent
+CONSOLE_CMD = ["wt.exe", "--window", "-1"]
 
 root = Tk()
 
@@ -54,7 +56,7 @@ def run_odamex():
 
 def run_odasrv():
     params = shlex.split(odasrv_params_sv.get())
-    subprocess.Popen([r"wt.exe", ODASRV_EXE, *params], cwd=ODASRV_CWD)
+    subprocess.Popen([*CONSOLE_CMD, ODASRV_EXE, *params], cwd=ODASRV_CWD)
 
 
 paths_f = Frame(root)
@@ -65,7 +67,7 @@ buttons_f.pack()
 odamex_l = Label(paths_f, text="Odamex")
 odamex_l.grid(row=1, column=1)
 odamex_sv = StringVar()
-odamex_sv.set(ODAMEX_EXE)
+odamex_sv.set(str(ODAMEX_EXE))
 odamex_e = Entry(paths_f, state=STATE_DISABLED, textvariable=odamex_sv, width=100)
 odamex_e.grid(row=1, column=2)
 
@@ -75,7 +77,7 @@ odamex_params_e.grid(row=2, column=2)
 odasrv_l = Label(paths_f, text="Odasrv")
 odasrv_l.grid(row=3, column=1)
 odasrv_sv = StringVar()
-odasrv_sv.set(ODASRV_EXE)
+odasrv_sv.set(str(ODASRV_EXE))
 odasrv_e = Entry(paths_f, state=STATE_DISABLED, textvariable=odasrv_sv, width=100)
 odasrv_e.grid(row=3, column=2)
 

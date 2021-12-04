@@ -21,11 +21,13 @@
 //
 // ----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "p_ctf.h"
 
 #include <sstream>
 
-#include "doomstat.h"
 #include "g_gametype.h"
 #include "i_system.h"
 #include "m_random.h"
@@ -141,16 +143,17 @@ ItemEquipVal SV_FlagGrab (player_t &player, team_t f, bool firstgrab)
 			teamInfo->FlagData.firstgrab = true;
 			SV_BroadcastPrintf("%s has taken the %s flag!\n", player.userinfo.netname.c_str(), teamInfo->ColorizedTeamName().c_str());
 			SV_CTFEvent (f, SCORE_FIRSTGRAB, player);
-			M_LogWDLEvent(WDL_EVENT_TOUCH, &player, NULL, 0, 0, 0);
+			M_LogWDLEvent(WDL_EVENT_TOUCH, &player, NULL, f, 0, 0, 0);
 		} else {
 			teamInfo->FlagData.firstgrab = false;
 			SV_BroadcastPrintf ("%s picked up the %s flag!\n", player.userinfo.netname.c_str(), teamInfo->ColorizedTeamName().c_str());
 			SV_CTFEvent (f, SCORE_GRAB, player);
-			M_LogWDLEvent(WDL_EVENT_PICKUPTOUCH, &player, NULL, 0, 0, 0);
+			M_LogWDLEvent(WDL_EVENT_PICKUPTOUCH, &player, NULL, f, 0, 0, 0);
 		}
 	} else {
 		SV_BroadcastPrintf ("%s is recovering the %s flag!\n", player.userinfo.netname.c_str(), teamInfo->ColorizedTeamName().c_str());
 		SV_CTFEvent (f, SCORE_MANUALRETURN, player);
+		M_LogWDLEvent(WDL_EVENT_CARRYRETURNFLAG, &player, NULL, f, 0, 0, 0);
 	}
 
 	return IEV_EquipRemove;
@@ -167,7 +170,7 @@ void SV_FlagReturn (player_t &player, team_t f)
 	CTF_SpawnFlag (f);
 
 	SV_BroadcastPrintf ("%s has returned the %s flag.\n", player.userinfo.netname.c_str(), V_GetTeamColor(f).c_str());
-	M_LogWDLEvent(WDL_EVENT_RETURNFLAG, &player, NULL, 0, 0, 0);
+	M_LogWDLEvent(WDL_EVENT_RETURNFLAG, &player, NULL, f, 0, 0, 0);
 }
 
 //
@@ -211,9 +214,9 @@ void SV_FlagScore (player_t &player, team_t f)
 						CTF_TimeMSG(time_held));
 
 	if (teamInfo->FlagData.firstgrab)
-		M_LogWDLEvent(WDL_EVENT_CAPTURE, &player, NULL, 0, 0, 0);
+		M_LogWDLEvent(WDL_EVENT_CAPTURE, &player, NULL, f, 0, 0, 0);
 	else
-		M_LogWDLEvent(WDL_EVENT_PICKUPCAPTURE, &player, NULL, 0, 0, 0);
+		M_LogWDLEvent(WDL_EVENT_PICKUPCAPTURE, &player, NULL, f, 0, 0, 0);
 
 	player.flags[f] = false; // take scoring player's flag
 	teamInfo->FlagData.flagger = 0;
@@ -353,6 +356,8 @@ void CTF_RunTics (void)
 		SV_BroadcastPrintf ("%s flag returned.\n", teamInfo->ColorizedTeamName().c_str());
 
 		CTF_SpawnFlag(teamInfo->Team);
+
+		M_LogWDLEvent(WDL_EVENT_RETURNFLAG, NULL, NULL, teamInfo->Team, 0, 0, 0);
 	}
 }
 
@@ -424,6 +429,7 @@ void CTF_RememberFlagPos (mapthing2_t *mthing)
 			teamInfo->FlagData.flaglocated = true;
 			break;
 		}
+
 	}
 }
 

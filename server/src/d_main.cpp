@@ -24,9 +24,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
 
-#include <vector>
+#include "odamex.h"
+
+
 #include <algorithm>
 
 #include "win32inc.h"
@@ -42,12 +43,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "errors.h"
 
 #include "m_random.h"
 #include "minilzo.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "gstrings.h"
 #include "z_zone.h"
 #include "w_wad.h"
@@ -68,6 +66,7 @@
 #include "g_mapinfo.h"
 #include "sv_main.h"
 #include "sv_banlist.h"
+#include "g_horde.h"
 
 #include "w_ident.h"
 
@@ -173,6 +172,7 @@ void D_Init()
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseHordeDefs();
 
 	if (first_time)
 		Printf(PRINT_HIGH, "P_Init: Init Playloop state.\n");

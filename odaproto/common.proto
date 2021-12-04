@@ -39,13 +39,14 @@ message Actor
 	int32 tics = 8;
 	int32 statenum = 9;
 	fixed32 flags = 10;
-	uint32 movedir = 11;
-	int32 movecount = 12;
-	uint32 targetid = 13;
-	int32 reactiontime = 14;
-	uint32 tracerid = 15;
-	int32 waterlevel = 16;
-	uint32 rndindex = 17;
+	fixed32 oflags = 11;
+	uint32 movedir = 12;
+	int32 movecount = 13;
+	uint32 targetid = 14;
+	int32 reactiontime = 15;
+	uint32 tracerid = 16;
+	int32 waterlevel = 17;
+	uint32 rndindex = 18;
 }
 
 message Player
@@ -69,13 +70,14 @@ message Player
 	uint32 cards = 9;
 	bool backpack = 10;
 	int32 lives = 11;
-	int32 pendingweapon = 12;
-	int32 readyweapon = 13;
-	uint32 weaponowned = 14;
-	repeated int32 ammo = 15;
-	repeated int32 maxammo = 16;
-	repeated Psp psprites = 17;
-	int32 jumptics = 18;
+	uint32 cheats = 12;
+	int32 pendingweapon = 13;
+	int32 readyweapon = 14;
+	uint32 weaponowned = 15;
+	repeated int32 ammo = 16;
+	repeated int32 maxammo = 17;
+	repeated Psp psprites = 18;
+	int32 jumptics = 19;
 }
 
 message Sector

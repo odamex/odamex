@@ -22,10 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
 
-#include "doomdef.h"
-#include "g_level.h"
+
 #include "z_zone.h"
 #include "st_stuff.h"
 #include "p_local.h"
@@ -46,7 +45,6 @@
 #include "v_text.h"
 
 // State.
-#include "doomstat.h"
 #include "r_state.h"
 
 // Data.
@@ -253,16 +251,15 @@ mline_t thintriangle_guy[] = {
 #undef R
 #define NUMTHINTRIANGLEGUYLINES (ARRAY_LENGTH(thintriangle_guy))
 
-
-
-
-static int 	cheating = 0;
+int am_cheating = 0;
 static int 	grid = 0;
 static int	bigstate = 0;	// Bigmode
 
 static int 	leveljuststarted = 1; 	// kluge until AM_LevelInit() is called
 
-static bool	automapactive = false;
+
+
+bool	automapactive = false;
 
 // location of window on screen
 static int	f_x;
@@ -322,10 +319,6 @@ static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0; // next point to be assigned
 
 static bool followplayer = true; // specifies whether to follow the player around
-
-// [RH] Not static so that the DeHackEd code can reach it.
-extern byte cheat_amap_seq[5];
-cheatseq_t cheat_amap = { cheat_amap_seq, 0 };
 
 static BOOL stopped = true;
 
@@ -700,6 +693,7 @@ void AM_clearMarks(void)
 void AM_LevelInit(void)
 {
 	leveljuststarted = 0;
+	am_cheating = 0; // force-reset IDDT after loading a map
 
 	AM_clearMarks();
 
@@ -822,11 +816,6 @@ BOOL AM_Responder (event_t *ev)
 		}
 
 		bool res = C_DoKey(ev, &AutomapBindings, NULL);
-		if (ev->type == ev_keydown && sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data3))
-		{
-			cheating = (cheating + 1) % 3;
-			return true;
-		}
 		if (res && ev->type == ev_keyup)
 		{
 			// If this is a release event we also need to check if it released a button in the main Bindings
@@ -1311,9 +1300,9 @@ void AM_drawWalls(void)
 			AM_rotatePoint (&l.b.x, &l.b.y);
 		}
 
-		if (cheating || (lines[i].flags & ML_MAPPED))
+		if (am_cheating || (lines[i].flags & ML_MAPPED))
 		{
-			if ((lines[i].flags & ML_DONTDRAW) && !cheating)
+			if ((lines[i].flags & ML_DONTDRAW) && !am_cheating)
 				continue;
             if (!lines[i].backsector &&
                 (((am_usecustomcolors || viewactive) &&
@@ -1343,7 +1332,7 @@ void AM_drawWalls(void)
 				}
 				else if (lines[i].flags & ML_SECRET)
 				{ // secret door
-					if (cheating)
+					if (am_cheating)
 						AM_drawMline(&l, SecretWallColor);
 				    else
 						AM_drawMline(&l, WallColor);
@@ -1395,7 +1384,7 @@ void AM_drawWalls(void)
 				{
 					AM_drawMline(&l, CDWallColor); // ceiling level change
 				}
-				else if (cheating)
+				else if (am_cheating)
 				{
 					AM_drawMline(&l, TSWallColor);
 				}
@@ -1503,7 +1492,7 @@ void AM_drawPlayers(void)
 		else
 			angle = conplayer.camera->angle;
 
-		if (cheating)
+		if (am_cheating)
 			AM_drawLineCharacter
 			(cheat_player_arrow, NUMCHEATPLYRLINES, 0,
 			 angle, YourColor, conplayer.camera->x, conplayer.camera->y);
@@ -1672,7 +1661,7 @@ void AM_Drawer()
 
 	AM_drawWalls();
 	AM_drawPlayers();
-	if (cheating==2)
+	if (am_cheating == 2)
 		AM_drawThings(ThingColor);
 
 	if (!(viewactive && am_overlay < 2))
@@ -1688,7 +1677,7 @@ void AM_Drawer()
 		int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
 		int OV_Y = surface_height - (surface_height * 32 / 200);
 
-		if (sv_gametype == GM_COOP)
+		if (G_IsCoopGame())
 		{
 			if (am_showmonsters)
 			{

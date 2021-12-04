@@ -27,8 +27,6 @@
 #ifndef __SVCMESSAGE_H__
 #define __SVCMESSAGE_H__
 
-#include <string>
-#include <vector>
 
 #include "server.pb.h"
 
@@ -37,11 +35,12 @@
 #include "actor.h"
 #include "c_maplist.h"
 #include "c_vote.h"
+#include "com_misc.h"
 #include "d_player.h"
-#include "g_level.h"
 #include "g_levelstate.h"
 #include "i_net.h"
 #include "p_ctf.h"
+#include "p_horde.h"
 #include "p_spec.h"
 
 /**
@@ -70,8 +69,9 @@ struct PlaySoundType
 	{
 		data.mo = NULL;
 	}
-	PlaySoundType(AActor* mo) : tag(PS_MOBJ)
+	PlaySoundType(AActor* mo)
 	{
+		tag = mo ? PS_MOBJ : PS_NONE;
 		data.mo = mo;
 	}
 	PlaySoundType(fixed_t x, fixed_t y) : tag(PS_POS)
@@ -149,6 +149,8 @@ odaproto::svc::MaplistUpdate SVC_MaplistUpdate(const maplist_status_t status,
                                                const maplist_qrows_t* maplist);
 odaproto::svc::MaplistIndex SVC_MaplistIndex(const byte count, const size_t this_index,
                                              const size_t next_index);
+odaproto::svc::Toast SVC_Toast(const toast_t& toast);
+odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde);
 odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player);
 
 #endif // __SVCMESSAGE_H__

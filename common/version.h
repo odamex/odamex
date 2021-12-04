@@ -24,7 +24,6 @@
 #ifndef __VERSION_H__
 #define __VERSION_H__
 
-#include <string>
 
 #if defined(CLIENT_APP)
 #define GAMEEXE "odamex"
@@ -74,7 +73,7 @@
 // Used by configuration files.  upversion.py will update thie field
 // deterministically and unambiguously so newer versions always compare
 // greater.
-#define CONFIGVERSIONSTR "200"
+#define CONFIGVERSIONSTR "010000"
 
 #define DOTVERSIONSTR "10.0.0"
 #define GAMEVER (MAKEVER(10, 0, 0))

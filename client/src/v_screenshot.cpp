@@ -21,13 +21,13 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <SDL.h>
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <string>
 
-#include "doomtype.h"
 #include "cmdlib.h"
 #include "i_system.h"
 #include "i_video.h"

@@ -22,13 +22,15 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomstat.h"
+
+#include "odamex.h"
+
 #include "p_local.h"
 #include "p_lnspec.h"
-#include "g_level.h"
 #include "v_palette.h"
 #include "tables.h"
 #include "i_system.h"
+#include "m_wdlstats.h"
 
 #define FUNC(a) static BOOL a (line_t *ln, AActor *it, int arg0, int arg1, \
 							   int arg2, int arg3, int arg4)
@@ -162,9 +164,14 @@ bool P_CanActivateSpecials(AActor* mo, line_t* line)
 	{
 		// Always predict sectors if set to 1, only predict sectors activated
 		// by the local player if set to 2.
-		if (cl_predictsectors == 1.0f ||
-		    (mo->player == &consoleplayer() && cl_predictsectors == 2.0f))
+		if (cl_predictsectors == 1.0f)
+		{
 			return true;
+		}
+		else if (cl_predictsectors == 2.0f && mo != NULL && mo->player == &consoleplayer())
+		{
+			return true;
+		}
 	}
 
 	// Predict sectors that don't actually create floor or ceiling thinkers.
@@ -284,6 +291,35 @@ FUNC(LS_Generic_Door)
 		default: return false;
 	}
 	return EV_DoDoor (type, ln, it, arg0, SPEED(arg1), OCTICS(arg3), (card_t)arg4);
+}
+
+FUNC(LS_Thing_Stop)
+// Thing_Stop (tid)
+{
+	AActor * target;
+
+	if (arg0 != 0)
+	{
+		FActorIterator iterator (arg0);
+
+		while ((target = iterator.Next()))
+		{
+			target->momx = target->momy = target->momz = 0;
+			if (target->player != NULL)
+				target->momx = target->momy = 0;
+			
+			return true;
+		}
+	}
+	else if (it)
+	{
+		it->momx = it->momy = it->momz = 0;
+		if (it->player != NULL)
+			it->momx = it->momy = 0;
+
+		return true;
+	}
+	return false;
 }
 
 FUNC(LS_Floor_LowerByValue)
@@ -842,6 +878,7 @@ FUNC(LS_Teleport_EndGame)
 {
 	if (!TeleportSide && it && CheckIfExitIsGood (it))
 	{
+		M_CommitWDLLog();
 		level.nextmap = "EndGameC";
 		G_ExitLevel (0, 1);
 		return true;
@@ -1792,7 +1829,7 @@ lnSpecFunc LineSpecials[256] =
 	LS_NOP,		// 16
 	LS_NOP,		// 17
 	LS_NOP,		// 18
-	LS_NOP,		// 19
+	LS_Thing_Stop,		// 19
 	LS_Floor_LowerByValue,
 	LS_Floor_LowerToLowest,
 	LS_Floor_LowerToNearest,
@@ -2051,16 +2088,33 @@ BOOL CheckIfExitIsGood (AActor *self)
         if (!sv_allowexit)
         {
 			if (sv_fragexitswitch && serverside)
-				P_DamageMobj(self, NULL, NULL, 10000, MOD_SUICIDE);
+				P_DamageMobj(self, NULL, NULL, 10000, MOD_EXIT);
 
 			return false;
 		}
 	}
 
 	if (self->player && multiplayer)
-		SV_BroadcastPrintf("%s exited the level.\n",
-		                   self->player->userinfo.netname.c_str());
+	{
+		OTimespan tspan;
+		TicsToTime(tspan, ::level.time);
 
+		std::string tstr;
+		if (tspan.hours)
+		{
+			StrFormat(tstr, "%02d:%02d:%02d.%02d", tspan.hours, tspan.minutes,
+			          tspan.seconds, tspan.csecs);
+		}
+		else
+		{
+			StrFormat(tstr, "%02d:%02d.%02d", tspan.minutes, tspan.seconds, tspan.csecs);
+		}
+
+		SV_BroadcastPrintf("%s exited the level in %s.\n",
+		                   self->player->userinfo.netname.c_str(), tstr.c_str());
+	}
+
+	M_CommitWDLLog();
 	return true;
 }
 

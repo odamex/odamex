@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "p_local.h"
 #include "dsectoreffect.h"
 

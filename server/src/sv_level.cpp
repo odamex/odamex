@@ -22,13 +22,14 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <algorithm>
 
 #include "c_dispatch.h"
 #include "d_event.h"
 #include "d_main.h"
-#include "doomstat.h"
-#include "g_level.h"
 #include "g_game.h"
 #include "gi.h"
 
@@ -53,7 +54,7 @@
 #include "m_wdlstats.h"
 #include "svc_message.h"
 #include "g_gametype.h"
-
+#include "p_hordespawn.h"
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
@@ -72,6 +73,7 @@ EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_teamsinplay)
+EXTERN_CVAR(g_resetinvonexit)
 
 extern int mapchange;
 
@@ -192,29 +194,50 @@ void G_ChangeMap() {
 	}
 	else
 	{
-		size_t next_index;
-		if (!Maplist::instance().get_next_index(next_index)) {
-			// We don't have a maplist, so grab the next 'natural' map lump.
-			std::string next = G_NextMap();
-			G_DeferedInitNew(next.c_str());
-		}
-		else {
-			maplist_entry_t maplist_entry;
-			Maplist::instance().get_map_by_index(next_index, maplist_entry);
+		maplist_entry_t lobby_entry;
+		lobby_entry = Maplist::instance().get_lobbymap();
 
+		if (!Maplist::instance().lobbyempty())
+		{
 			std::string wadstr;
-			for (size_t i = 0; i < maplist_entry.wads.size(); i++)
+			for (size_t i = 0; i < lobby_entry.wads.size(); i++)
 			{
 				if (i != 0)
 				{
 					wadstr += " ";
 				}
-				wadstr += C_QuoteString(maplist_entry.wads.at(i));
+				wadstr += C_QuoteString(lobby_entry.wads.at(i));
 			}
-			G_LoadWadString(wadstr, maplist_entry.map);
+			G_LoadWadString(wadstr, lobby_entry.map);
+		}
+		else
+		{
+			size_t next_index;
+			if (!Maplist::instance().get_next_index(next_index))
+			{
+				// We don't have a maplist, so grab the next 'natural' map lump.
+				std::string next = G_NextMap();
+				G_DeferedInitNew((char*)next.c_str());
+			}
+			else
+			{
+				maplist_entry_t maplist_entry;
+				Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-			// Set the new map as the current map
-			Maplist::instance().set_index(next_index);
+				std::string wadstr;
+				for (size_t i = 0; i < maplist_entry.wads.size(); i++)
+				{
+					if (i != 0)
+					{
+						wadstr += " ";
+					}
+					wadstr += C_QuoteString(maplist_entry.wads.at(i));
+				}
+				G_LoadWadString(wadstr, maplist_entry.map);
+
+				// Set the new map as the current map
+				Maplist::instance().set_index(next_index);
+			}
 		}
 
 		// run script at the end of each map
@@ -433,13 +456,14 @@ void G_InitNew (const char *mapname)
 	WinInfo info = ::levelstate.getWinInfo();
 
 	level.mapname = mapname;
+
+	// [AM] Start the WDL log on new level.
+	M_StartWDLLog(true);
+
 	G_DoLoadLevel (0);
 
 	if (::serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
 		SV_UpdatePlayerQueueLevelChange(info);
-
-	// [AM] Start the WDL log on new level.
-	M_StartWDLLog();
 }
 
 //
@@ -598,7 +622,7 @@ void G_DoResetLevel(bool full_reset)
 	for (it = players.begin(); it != players.end(); ++it)
 	{
 		// Don't let players keep cards through a reset.
-		if (sv_gametype == GM_COOP)
+		if (G_IsCoopGame())
 			P_ClearPlayerCards(*it);
 
 		P_ClearPlayerPowerups(*it);
@@ -621,6 +645,9 @@ void G_DoResetLevel(bool full_reset)
 	level.time = 0;
 	level.inttimeleft = mapchange / TICRATE;
 
+	// [AM] Clear horde spawns - they will be repopulated later.
+	P_HordeClearSpawns();
+
 	// Reset the respawned monster count
 	level.respawned_monsters = 0;	
 
@@ -633,6 +660,9 @@ void G_DoResetLevel(bool full_reset)
 
 		SV_ClientFullUpdate(*it);
 	}
+
+	// No need to clear the spawn locations because we're not loading a new map.
+	M_StartWDLLog(false);
 
 	// Get queued players in the game.
 	SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
@@ -651,8 +681,6 @@ void G_DoResetLevel(bool full_reset)
 		//      a players subsector to be valid (like use) to crash the server.
 		G_DoReborn(*it);
 	}
-
-	M_StartWDLLog();
 }
 
 //
@@ -709,7 +737,7 @@ void G_DoLoadLevel (int position)
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (it->ingame() && it->playerstate == PST_DEAD)
+		if (it->ingame() && (::g_resetinvonexit || it->playerstate == PST_DEAD))
 			it->playerstate = PST_REBORN;
 
 		// Properly reset Cards, Powerups, and scores.

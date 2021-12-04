@@ -26,7 +26,6 @@
 #define __D_PLAYER_H__
 
 #include <list>
-#include <vector>
 #include <queue>
 
 #include <time.h>
@@ -36,7 +35,6 @@
 // as commands per game tick.
 #include "d_ticcmd.h"
 
-#include "d_net.h"
 
 // The player data structure depends on a number
 // of other structs: items (internal inventory),
@@ -96,22 +94,15 @@ typedef enum
 //
 typedef enum
 {
-	// No clipping, walk through barriers.
-	CF_NOCLIP			= 1,
-	// No damage, no health loss.
-	CF_GODMODE			= 2,
-	// Not really a cheat, just a debug aid.
-	CF_NOMOMENTUM		= 4,
-	// [RH] Monsters don't target
-	CF_NOTARGET			= 8,
-	// [RH] Flying player
-	CF_FLY				= 16,
-	// [RH] Put camera behind player
-	CF_CHASECAM			= 32,
-	// [RH] Don't let the player move
-	CF_FROZEN			= 64,
-	// [RH] Stick camera in player's head if he moves
-	CF_REVERTPLEASE		= 128
+	CF_NOCLIP =			(1 << 0), // No clipping, walk through barriers.
+	CF_GODMODE =		(1 << 1), // No damage, no health loss.
+	CF_NOMOMENTUM =		(1 << 2), // Not really a cheat, just a debug aid.
+	CF_NOTARGET =		(1 << 3), // [RH] Monsters don't target
+	CF_FLY =			(1 << 4), // [RH] Flying player
+	CF_CHASECAM =		(1 << 5), // [RH] Put camera behind player
+	CF_FROZEN =			(1 << 6), // [RH] Don't let the player move
+	CF_REVERTPLEASE =	(1 << 7), // [RH] Stick camera in player's head if he moves
+	CF_BUDDHA =			(1 << 8), // [Ch0wW] Buddha Cheatcode
 } cheat_t;
 
 #define MAX_PLAYER_SEE_MOBJ	0x7F
@@ -185,6 +176,7 @@ public:
     // Frags, deaths, monster kills
 	int			fragcount;
 	int			deathcount;
+	int			monsterdmgcount;
 	int			killcount, itemcount, secretcount;		// for intermission
 
 	// Total points/frags that aren't reset after rounds. Used for LMS/TLMS/LMSCTF.
@@ -205,7 +197,7 @@ public:
 
 	// Bit flags, for cheats and debug.
     // See cheat_t, above.
-	int			cheats;
+	uint32_t cheats;
 
 	// Refired shots are less accurate.
 	short		refire;
@@ -299,8 +291,7 @@ public:
 
 		// protocol version supported by the client
 		short		version;
-		short		majorversion;	// GhostlyDeath -- Major
-		short		minorversion;	// GhostlyDeath -- Minor
+		int			packedversion;
 
 		// for reliable protocol
 		oldPacket_t oldpackets[256];
@@ -339,8 +330,7 @@ public:
 			// GhostlyDeath -- Initialize to Zero
 			memset(&address, 0, sizeof(netadr_t));
 			version = 0;
-			majorversion = 0;
-			minorversion = 0;
+			packedversion = 0;
 			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
 			{
 				oldpackets[i].sequence = -1;
@@ -371,8 +361,7 @@ public:
 			netbuf(other.netbuf),
 			reliablebuf(other.reliablebuf),
 			version(other.version),
-			majorversion(other.majorversion),
-			minorversion(other.minorversion),
+			packedversion(other.packedversion),
 			sequence(other.sequence),
 			last_sequence(other.last_sequence),
 			packetnum(other.packetnum),
@@ -487,15 +476,17 @@ class PlayerQuery
 	};
 
 	bool m_ready;
+	bool m_health;
 	bool m_lives;
+	bool m_notLives;
 	team_t m_team;
 	SortTypes m_sort;
 	SortFilters m_sortFilter;
 
   public:
 	PlayerQuery()
-	    : m_ready(false), m_lives(false), m_team(TEAM_NONE), m_sort(SORT_NONE),
-	      m_sortFilter(SFILTER_NONE)
+	    : m_ready(false), m_health(false), m_lives(false), m_notLives(false),
+	      m_team(TEAM_NONE), m_sort(SORT_NONE), m_sortFilter(SFILTER_NONE)
 	{
 	}
 
@@ -511,6 +502,17 @@ class PlayerQuery
 	}
 
 	/**
+	 * @brief Check for players with health left.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& hasHealth()
+	{
+		m_health = true;
+		return *this;
+	}
+
+	/**
 	 * @brief Check for players with lives left.
 	 *
 	 * @return A mutated PlayerQuery to chain off of.
@@ -518,6 +520,17 @@ class PlayerQuery
 	PlayerQuery& hasLives()
 	{
 		m_lives = true;
+		return *this;
+	}
+
+	/**
+	 * @brief Check for players with no lives left.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& notHasLives()
+	{
+		m_notLives = true;
 		return *this;
 	}
 
@@ -591,6 +604,27 @@ class PlayerQuery
 	}
 
 	PlayerResults execute();
+};
+
+class SpecQuery
+{
+	bool m_onlyInQueue;
+
+  public:
+	SpecQuery() : m_onlyInQueue(false) { }
+
+	/**
+	 * @brief Filter out players who are not in the queue.
+	 *
+	 * @return A mutated SpecQuery to chain off of.
+	 */
+	SpecQuery& onlyInQueue()
+	{
+		m_onlyInQueue = true;
+		return *this;
+	}
+
+	PlayersView execute();
 };
 
 enum
