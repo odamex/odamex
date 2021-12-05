@@ -490,14 +490,6 @@ void EV_LightChange (int tag, int value)
 	}
 }
 
-void EV_LightSet(int tag, short level)
-{
-	int s = -1;
-
-	while ((s = P_FindSectorFromTag(tag, s)) >= 0)
-		sectors[s].lightlevel = level;
-}
-
 void EV_LightSetMinNeighbor(int tag)
 {
 	int s = -1;

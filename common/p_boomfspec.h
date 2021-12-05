@@ -40,6 +40,7 @@ void P_ApplyGeneralizedSectorDamage(player_t* player, int bits);
 void P_CollectSecretBoom(sector_t* sector, player_t* player);
 void P_PlayerInCompatibleSector(player_t* player);
 bool P_ActorInCompatibleSector(AActor* actor);
-bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side, bool bossaction);
+lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
+                                        bool bossaction);
 
 #endif

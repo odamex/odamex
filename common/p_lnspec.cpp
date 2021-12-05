@@ -65,7 +65,7 @@ BOOL EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle, int dir
 bool P_LineSpecialMovesSector(byte special)
 {
 	static bool initialized = false;
-	static bool specials[256];
+	static bool specials[283];
 
 	if (!initialized)
 	{
@@ -186,6 +186,12 @@ FUNC(LS_NOP)
 	return false;
 }
 
+FUNC(LS_NOTIMP)
+{
+	Printf(PRINT_HIGH, "Line special not implemented yet: special number %d", ln->special);
+	return false;
+}
+
 FUNC(LS_Polyobj_RotateLeft)
 // Polyobj_RotateLeft (po, speed, angle)
 {
@@ -249,48 +255,94 @@ FUNC(LS_Polyobj_OR_MoveTimes8)
 FUNC(LS_Door_Close)
 // Door_Close (tag, speed)
 {
-	return EV_DoDoor (DDoor::doorClose, ln, it, arg0, SPEED(arg1), 0, NoKey);
+	return EV_DoZDoomDoor(DDoor::doorClose, ln, it, arg0, arg1, 0, zk_none, arg2,
+	                      false, 0);
 }
 
 FUNC(LS_Door_Open)
 // Door_Open (tag, speed)
 {
-	return EV_DoDoor (DDoor::doorOpen, ln, it, arg0, SPEED(arg1), 0, NoKey);
+	return EV_DoZDoomDoor(DDoor::doorOpen, ln, it, arg0, arg1, 0, zk_none, arg2, false,
+	                      0);
 }
 
 FUNC(LS_Door_Raise)
 // Door_Raise (tag, speed, delay)
 {
-	return EV_DoDoor (DDoor::doorRaise, ln, it, arg0, SPEED(arg1), TICS(arg2), NoKey);
+	return EV_DoZDoomDoor(DDoor::doorRaise, ln, it, arg0, arg1, arg2, zk_none,
+	                      arg3, false, 0);
 }
 
 FUNC(LS_Door_LockedRaise)
 // Door_LockedRaise (tag, speed, delay, lock)
 {
-	return EV_DoDoor (arg2 ? DDoor::doorRaise : DDoor::doorOpen, ln, it,
-                          arg0, SPEED(arg1), TICS(arg2), (card_t)arg3);
+	return EV_DoZDoomDoor(arg2 ? DDoor::doorRaise : DDoor::doorOpen, ln, it, arg0,
+	                      arg1, arg2, (zdoom_lock_t)arg3, arg4, false, 0);
 }
 
 FUNC(LS_Door_CloseWaitOpen)
 // Door_CloseWaitOpen (tag, speed, delay)
 {
-	return EV_DoDoor (DDoor::doorCloseWaitOpen, ln, it, arg0, SPEED(arg1), OCTICS(arg2), NoKey);
+	return EV_DoZDoomDoor(DDoor::genCdO, ln, it, arg0, arg1, (int)arg2 * 35 / 8, zk_none,
+	                      arg3, false, 0);
+}
+
+FUNC(LS_Door_WaitRaise)
+// Door_WaitRaise (tag, speed, delay, wait, lighttag)
+{
+	return EV_DoZDoomDoor(DDoor::waitRaiseDoor, ln, it, arg0, arg1, arg2, zk_none,
+	                      arg4, false, arg3);
+}
+
+FUNC(LS_Door_WaitClose)
+// Door_WaitClose (tag, speed, wait, lighttag)
+{
+	return EV_DoZDoomDoor(DDoor::waitCloseDoor, ln, it, arg0, arg1, 0, zk_none, arg3,
+	                      false, arg2);
 }
 
 FUNC(LS_Generic_Door)
 // Generic_Door (tag, speed, kind, delay, lock)
 {
+	byte tag, lightTag;
 	DDoor::EVlDoor type;
+	bool boomgen = false;
 
-	switch (arg2)
+	switch (arg2 & 63)
 	{
-		case 0: type = DDoor::doorRaise;			break;
-		case 1: type = DDoor::doorOpen;				break;
-		case 2: type = DDoor::doorCloseWaitOpen;	break;
-		case 3: type = DDoor::doorClose;			break;
-		default: return false;
+	case 0:
+		type = DDoor::doorRaise;
+		break;
+	case 1:
+		type = DDoor::doorOpen;
+		break;
+	case 2:
+		type = DDoor::genCdO;
+		break;
+	case 3:
+		type = DDoor::doorClose;
+		break;
+	default:
+		return 0;
 	}
-	return EV_DoDoor (type, ln, it, arg0, SPEED(arg1), OCTICS(arg3), (card_t)arg4);
+
+	// Boom doesn't allow manual generalized doors to be activated while they move
+	if (arg2 & 64)
+		boomgen = true;
+
+	if (arg2 & 128)
+	{
+		tag = 0;
+		lightTag = arg0;
+	}
+	else
+	{
+		tag = arg0;
+		lightTag = 0;
+	}
+
+	return EV_DoZDoomDoor(type, ln, it, tag, arg1, (int)arg3 * 35 / 8,
+	                               (zdoom_lock_t)arg4, lightTag, boomgen, 0);
 }
 
 FUNC(LS_Thing_Stop)
@@ -325,61 +377,94 @@ FUNC(LS_Thing_Stop)
 FUNC(LS_Floor_LowerByValue)
 // Floor_LowerByValue (tag, speed, height)
 {
-	return EV_DoFloor (DFloor::floorLowerByValue, ln, arg0, SPEED(arg1), FRACUNIT*arg2, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerByValue, ln, arg0, arg1,
+	                       arg2, NO_CRUSH, P_ArgToChange(arg3), false, false);
 }
 
 FUNC(LS_Floor_LowerToLowest)
 // Floor_LowerToLowest (tag, speed)
 {
-	return EV_DoFloor (DFloor::floorLowerToLowest, ln, arg0, SPEED(arg1), 0, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerToLowest, ln, arg0, arg1, 0,
+	                       NO_CRUSH, P_ArgToChange(arg2), false, false);
+}
+
+FUNC(LS_Floor_LowerToLowestCeiling)
+// Floor_LowerToLowestCeiling (tag, speed)
+{
+	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerToLowestCeiling, ln, arg0, arg1, 0,
+	                       NO_CRUSH, P_ArgToChange(arg2), false, false);
 }
 
 FUNC(LS_Floor_LowerToHighest)
 // Floor_LowerToHighest (tag, speed, adjust)
 {
-	return EV_DoFloor (DFloor::floorLowerToHighest, ln, arg0, SPEED(arg1), (arg2-128)*FRACUNIT, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerToHighest, ln, arg0, arg1,
+	                       (int)arg2 - 128, NO_CRUSH, 0, false, arg3 == 1);
+}
+
+FUNC(LS_Floor_LowerToHighestEE)
+// Floor_LowerToHighestEE (tag, speed, adjust)
+{
+	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerToHighest, ln, arg0, arg1, 0,
+	                       NO_CRUSH, P_ArgToChange(arg2), false, false);
 }
 
 FUNC(LS_Floor_LowerToNearest)
 // Floor_LowerToNearest (tag, speed)
 {
-	return EV_DoFloor (DFloor::floorLowerToNearest, ln, arg0, SPEED(arg1), 0, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerToNearest, ln, arg0, arg1, 0,
+	                       NO_CRUSH, P_ArgToChange(arg2), false, false);
 }
 
 FUNC(LS_Floor_RaiseByValue)
 // Floor_RaiseByValue (tag, speed, height)
 {
-	return EV_DoFloor (DFloor::floorRaiseByValue, ln, arg0, SPEED(arg1), FRACUNIT*arg2, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseByValue, ln, arg0, arg1,
+	                       arg2, P_ArgToCrush(arg4), P_ArgToChange(arg3), true,
+	                       false);
 }
 
 FUNC(LS_Floor_RaiseToHighest)
 // Floor_RaiseToHighest (tag, speed)
 {
-	return EV_DoFloor (DFloor::floorRaiseToHighest, ln, arg0, SPEED(arg1), 0, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseToHighest, ln, arg0, arg1, 0,
+	                       P_ArgToCrush(arg3), P_ArgToChange(arg2), true, false);
 }
 
 FUNC(LS_Floor_RaiseToNearest)
 // Floor_RaiseToNearest (tag, speed)
 {
-	return EV_DoFloor (DFloor::floorRaiseToNearest, ln, arg0, SPEED(arg1), 0, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseToNearest, ln, arg0, arg1, 0,
+	                       P_ArgToCrush(arg3), P_ArgToChange(arg2), true, false);
 }
 
 FUNC(LS_Floor_RaiseAndCrush)
-// Floor_RaiseAndCrush (tag, speed, crush)
+// Floor_RaiseAndCrush (tag, speed, crush, crushmode)
 {
-	return EV_DoFloor (DFloor::floorRaiseAndCrush, ln, arg0, SPEED(arg1), 0, (arg2 != 0), 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseAndCrush, ln, arg0, arg1, 0,
+	                       arg2, 0, P_ArgToCrushType(arg3), false);
+}
+
+FUNC(LS_Floor_RaiseAndCrushDoom)
+// Floor_RaiseAndCrushDoom (tag, speed, crush, crushmode)
+{
+	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseAndCrushDoom, ln, arg0, arg1,
+	                       0, arg2, 0, P_ArgToCrushType(arg3), false);
 }
 
 FUNC(LS_Floor_RaiseByValueTimes8)
 // FLoor_RaiseByValueTimes8 (tag, speed, height)
 {
-	return EV_DoFloor (DFloor::floorRaiseByValue, ln, arg0, SPEED(arg1), FRACUNIT*arg2*8, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseByValue, ln, arg0, arg1,
+	                       (int)arg2 * 8, P_ArgToCrush(arg4),
+	                       P_ArgToChange(arg3), true, false);
 }
 
 FUNC(LS_Floor_LowerByValueTimes8)
 // Floor_LowerByValueTimes8 (tag, speed, height)
 {
-	return EV_DoFloor (DFloor::floorLowerByValue, ln, arg0, SPEED(arg1), FRACUNIT*arg2*8, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerByValue, ln, arg0, arg1,
+	                       (int)arg2 * 8, NO_CRUSH, P_ArgToChange(arg3), false, false);
 }
 
 FUNC(LS_Floor_CrushStop)
@@ -392,51 +477,103 @@ FUNC(LS_Floor_CrushStop)
 FUNC(LS_Floor_LowerInstant)
 // Floor_LowerInstant (tag, unused, height)
 {
-	return EV_DoFloor (DFloor::floorLowerInstant, ln, arg0, 0, arg2*FRACUNIT*8, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerInstant, ln, arg0, 0,
+	                       (int)arg2 * 8, NO_CRUSH, P_ArgToChange(arg3), false,
+	                       false);
 }
 
 FUNC(LS_Floor_RaiseInstant)
-// Floor_RaiseInstant (tag, unused, height)
+// Floor_RaiseInstant (tag, unused, height, crush)
 {
-	return EV_DoFloor (DFloor::floorRaiseInstant, ln, arg0, 0, arg2*FRACUNIT*8, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseInstant, ln, arg0, 0,
+	                       (int)arg2 * 8, P_ArgToCrush(arg4),
+	                       P_ArgToChange(arg3), true, false);
+}
+
+FUNC(LS_Floor_MoveToValue)
+// Floor_MoveToValue (tag, speed, height, negative)
+{
+	return EV_DoZDoomFloor(DFloor::EFloor::floorMoveToValue, ln, arg0, arg1,
+	                       (int)arg2 * (arg3 ? -1 : 1), NO_CRUSH,
+	                       P_ArgToChange(arg4), false, false);
 }
 
 FUNC(LS_Floor_MoveToValueTimes8)
 // Floor_MoveToValueTimes8 (tag, speed, height, negative)
 {
-	return EV_DoFloor (DFloor::floorMoveToValue, ln, arg0, SPEED(arg1),
-					   arg2*FRACUNIT*8*(arg3?-1:1), 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorMoveToValue, ln, arg0, arg1,
+	                       (int)arg2 * 8 * (arg3 ? -1 : 1), NO_CRUSH,
+	                       P_ArgToChange(arg4), false, false);
+}
+
+FUNC(LS_Floor_RaiseToLowest)
+// Floor_RaiseToLowest (tag, change, crush)
+{
+	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseToLowest, ln, arg0, 2, 0,
+	                       P_ArgToCrush(arg3), P_ArgToChange(arg2), true, false);
+}
+
+FUNC(LS_Floor_ToCeilingInstant)
+// Floor_ToCeilingInstant (tag, change, crush, gap)
+{
+	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseToLowest, ln, arg0, 2, 0,
+	                       P_ArgToCrush(arg3), P_ArgToChange(arg2), true, false);
 }
 
 FUNC(LS_Floor_RaiseToLowestCeiling)
-// Floor_RaiseToLowestCeiling (tag, speed)
+// Floor_RaiseToLowestCeiling (tag, speed, change, crush)
 {
-	return EV_DoFloor (DFloor::floorRaiseToLowestCeiling, ln, arg0, SPEED(arg1), 0, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseToLowestCeiling, ln, arg0,
+	                       arg1, 0, P_ArgToCrush(arg3), P_ArgToChange(arg2),
+	                       true, false);
+}
+
+FUNC(LS_Floor_RaiseToCeiling)
+// Floor_RaiseToLowestCeiling (tag, speed, change, crush, gap)
+{
+	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseToCeiling, ln, arg0, arg1,
+	                       arg4, P_ArgToCrush(arg3), P_ArgToChange(arg2), true,
+	                       false);
 }
 
 FUNC(LS_Floor_RaiseByTexture)
-// Floor_RaiseByTexture (tag, speed)
+// Floor_RaiseByTexture (tag, speed, change, crush)
 {
-	return EV_DoFloor (DFloor::floorRaiseByTexture, ln, arg0, SPEED(arg1), 0, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseByTexture, ln, arg0, arg1, 0,
+	                       P_ArgToCrush(arg3), P_ArgToChange(arg2), true, false);
+}
+
+FUNC(LS_Floor_LowerByTexture)
+// Floor_LowerByTexture (tag, speed, change)
+{
+	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerByTexture, ln, arg0, arg1, 0,
+	                       NO_CRUSH, P_ArgToChange(arg2), true, false);
 }
 
 FUNC(LS_Floor_RaiseByValueTxTy)
 // Floor_RaiseByValueTxTy (tag, speed, height)
 {
-	return EV_DoFloor (DFloor::floorRaiseAndChange, ln, arg0, SPEED(arg1), arg2*FRACUNIT, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseAndChange, ln, arg0, arg1,
+	                       arg2, NO_CRUSH, 0, false, false);
 }
 
 FUNC(LS_Floor_LowerToLowestTxTy)
 // Floor_LowerToLowestTxTy (tag, speed)
 {
-	return EV_DoFloor (DFloor::floorLowerAndChange, ln, arg0, SPEED(arg1), arg2*FRACUNIT, 0, 0);
+	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerAndChange, ln, arg0, arg1,
+	                       0, NO_CRUSH, 0, false, false);
 }
 
 FUNC(LS_Floor_Waggle)
 // Floor_Waggle (tag, amplitude, frequency, delay, time)
 {
-//	return EV_StartFloorWaggle (arg0, arg1, arg2, arg3, arg4);
-	return 0;
+	return EV_StartPlaneWaggle(arg0, ln, arg1, arg2, arg3, arg4, false);
+}
+
+FUNC(LS_Ceiling_Waggle)
+// Ceiling_Waggle (tag, amplitude, frequency, delay, time)
+{
+	return EV_StartPlaneWaggle(arg0, ln, arg1, arg2, arg3, arg4, true);
 }
 
 FUNC(LS_Floor_TransferTrigger)
@@ -454,7 +591,7 @@ FUNC(LS_Floor_TransferNumeric)
 FUNC(LS_Floor_Donut)
 // Floor_Donut (pillartag, pillarspeed, slimespeed)
 {
-	return EV_DoDonut (arg0, SPEED(arg1), SPEED(arg2));
+	return EV_DoZDoomDonut(arg0, ln, P_ArgToSpeed(arg1), P_ArgToSpeed(arg2));
 }
 
 FUNC(LS_Generic_Floor)
@@ -489,7 +626,8 @@ FUNC(LS_Generic_Floor)
 		}
 	}
 
-	return EV_DoFloor (type, ln, arg0, SPEED(arg1), arg2*FRACUNIT, bool(arg4 & 16), arg4 & 7);
+	return EV_DoZDoomFloor(type, ln, arg0, arg1, arg2, (arg4 & 16) ? 20 : NO_CRUSH,
+	                arg4 & 7, false, false);
 
 }
 
@@ -524,8 +662,39 @@ FUNC(LS_Stairs_BuildUpSync)
 FUNC(LS_Stairs_BuildUpDoom)
 // Stairs_BuildUpDoom (tag, speed, height, delay, reset)
 {
-	return EV_BuildStairs (arg0, DFloor::buildUp, ln,
-						   arg2 * FRACUNIT, SPEED(arg1), TICS(arg3), arg4, 0, 0);
+	return EV_BuildStairs(arg0, DFloor::EStair::buildUp, ln, arg2 * FRACUNIT, SPEED(arg1),
+	                      arg3,
+	                      arg4, 0, 0);
+}
+
+FUNC(LS_Stairs_BuildDownDoom)
+// Stairs_BuildDownDoom (tag, speed, height, delay, reset)
+{
+	return EV_BuildStairs(arg0, DFloor::EStair::buildDown, ln, arg2 * FRACUNIT,
+	                      SPEED(arg1), arg3,
+	                      arg4, 0, 0);
+}
+
+FUNC(LS_Stairs_BuildDownDoomSync)
+// Stairs_BuildDownDoomSync (tag, speed, height, reset)
+{
+	return EV_BuildStairs(arg0, DFloor::EStair::buildDown, ln, arg2 * FRACUNIT,
+	                      SPEED(arg1), 0, arg3,
+	                      0, 2);
+}
+
+FUNC(LS_Stairs_BuildUpDoomSync)
+// Stairs_BuildUpDoomSync (tag, speed, height, reset)
+{
+	return EV_BuildStairs(arg0, DFloor::EStair::buildUp, ln, arg2 * FRACUNIT, SPEED(arg1),
+	                      0, arg3, 0, 2);
+}
+
+FUNC(LS_Stairs_BuildUpDoomCrush)
+// Stairs_BuildUpDoomCrush (tag, speed, height, delay, reset)
+{
+	return EV_BuildStairs(arg0, DFloor::EStair::buildUp, ln, arg2 * FRACUNIT, SPEED(arg1),
+	                      arg3, arg4, 0, 1);
 }
 
 FUNC(LS_Generic_Stairs)
@@ -535,7 +704,7 @@ FUNC(LS_Generic_Stairs)
 	BOOL res = EV_BuildStairs (arg0, type, ln,
 							   arg2 * FRACUNIT, SPEED(arg1), 0, arg4, arg3 & 2, 0);
 
-	if (res && ln && (ln->flags & ML_REPEAT_SPECIAL) && ln->special == Generic_Stairs)
+	if (res && ln && (ln->flags & ML_REPEATSPECIAL) && ln->special == Generic_Stairs)
 		// Toggle direction of next activation of repeatable stairs
 		arg3 ^= 1;
 
@@ -548,125 +717,263 @@ FUNC(LS_Pillar_Build)
 	return EV_DoPillar (DPillar::pillarBuild, arg0, SPEED(arg1), arg2*FRACUNIT, 0, -1);
 }
 
+FUNC(LS_Pillar_BuildAndCrush)
+// Pillar_Build (tag, speed, height)
+{
+	return EV_DoZDoomPillar(DPillar::EPillar::pillarBuild, ln, arg0,
+	                        P_ArgToSpeed(arg1), arg2, 0, arg3,
+	                        P_ArgToCrushType(arg4));
+}
+
 FUNC(LS_Pillar_Open)
 // Pillar_Open (tag, speed, f_height, c_height)
 {
-	return EV_DoPillar (DPillar::pillarOpen, arg0, SPEED(arg1), arg2*FRACUNIT, arg3*FRACUNIT, -1);
+	return EV_DoZDoomPillar(DPillar::EPillar::pillarOpen, ln, arg0,
+	                        P_ArgToSpeed(arg1), arg2, arg3, NO_CRUSH, false);
 }
 
 FUNC(LS_Ceiling_LowerByValue)
 // Ceiling_LowerByValue (tag, speed, height)
 {
-	return EV_DoCeiling (DCeiling::ceilLowerByValue, ln, arg0, SPEED(arg1), 0, arg2*FRACUNIT, 0, 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerByValue, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, arg2, NO_CRUSH, 0,
+	                         0, crushDoom);
 }
 
 FUNC(LS_Ceiling_RaiseByValue)
 // Ceiling_RaiseByValue (tag, speed, height)
 {
-	return EV_DoCeiling (DCeiling::ceilRaiseByValue, ln, arg0, SPEED(arg1), 0, arg2*FRACUNIT, 0, 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseByValue, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, arg2, NO_CRUSH, 0, 0, crushDoom);
 }
 
 FUNC(LS_Ceiling_LowerByValueTimes8)
 // Ceiling_LowerByValueTimes8 (tag, speed, height)
 {
-	return EV_DoCeiling (DCeiling::ceilLowerByValue, ln, arg0, SPEED(arg1), 0, arg2*FRACUNIT*8, 0, 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerByValue, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, (int)arg2 * 8, NO_CRUSH, 0, 0,
+	                         crushDoom);
 }
 
 FUNC(LS_Ceiling_RaiseByValueTimes8)
 // Ceiling_RaiseByValueTimes8 (tag, speed, height)
 {
-	return EV_DoCeiling (DCeiling::ceilRaiseByValue, ln, arg0, SPEED(arg1), 0, arg2*FRACUNIT*8, 0, 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseByValue, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, (int)arg2 * 8, NO_CRUSH, 0, 0,
+	                         crushDoom);
 }
 
 FUNC(LS_Ceiling_CrushAndRaise)
-// Ceiling_CrushAndRaise (tag, speed, crush)
+// Ceiling_CrushAndRaise (tag, speed, damage [, crushmode])
 {
-	return EV_DoCeiling (DCeiling::ceilCrushAndRaise, ln, arg0, SPEED(arg1), SPEED(arg1)/2, 0, (arg2 != 0), 0, 0);
+	EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
+	                  P_ArgToSpeed(arg1), P_ArgToSpeed(arg1) / 2, 8, arg2, 0, 0,
+	                  (crushmode_e)P_ArgToCrushMode(arg3, false));
+}
+
+FUNC(LS_Ceiling_CrushAndRaiseDist)
+// Ceiling_CrushAndRaiseDist (tag, dist, speed, damage [, crushmode])
+{
+	EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
+	                  P_ArgToSpeed(arg2), P_ArgToSpeed(arg2), arg1, arg3, 0,
+	                  0, (crushmode_e)P_ArgToCrushMode(arg4, arg2 == 8));
 }
 
 FUNC(LS_Ceiling_LowerAndCrush)
-// Ceiling_LowerAndCrush (tag, speed, crush)
+// Ceiling_LowerAndCrush (tag, speed, crush [, crushmode])
 {
-	return EV_DoCeiling (DCeiling::ceilLowerAndCrush, ln, arg0, SPEED(arg1), SPEED(arg1)/2, 0, (arg2 != 0), 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerAndCrush, ln, arg0,
+	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg1), 8, arg2, 0,
+	                         0, (crushmode_e)P_ArgToCrushMode(arg3, arg1 == 8));
+}
+
+FUNC(LS_Ceiling_LowerAndCrushDist)
+// Ceiling_LowerAndCrushDist (tag, speed, crush [, dist[, crushmode]])
+{
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerAndCrush, ln, arg0,
+	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg1), arg3,
+	                         arg2, 0, 0, (crushmode_e)P_ArgToCrushMode(arg4, arg1 == 8));
 }
 
 FUNC(LS_Ceiling_CrushStop)
 // Ceiling_CrushStop (tag)
 {
-	return EV_CeilingCrushStop (arg0);
+	return EV_ZDoomCeilingCrushStop(arg0, false);
 }
 
 FUNC(LS_Ceiling_CrushRaiseAndStay)
-// Ceiling_CrushRaiseAndStay (tag, speed, crush)
+// Ceiling_CrushRaiseAndStay (tag, speed, crush [, crushmode])
 {
-	return EV_DoCeiling (DCeiling::ceilCrushRaiseAndStay, ln, arg0, SPEED(arg1), SPEED(arg1)/2, 0, (arg2 != 0), 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushRaiseAndStay, ln, arg0,
+	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg1) / 2, 8, arg2,
+	                         0, 0, (crushmode_e)P_ArgToCrushMode(arg3, false));
 }
 
 FUNC(LS_Ceiling_MoveToValueTimes8)
 // Ceiling_MoveToValueTimes8 (tag, speed, height, negative)
 {
-	return EV_DoCeiling (DCeiling::ceilMoveToValue, ln, arg0, SPEED(arg1), 0,
-						 arg2*FRACUNIT*8*((arg3) ? -1 : 1), 0, 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilMoveToValue, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0,
+	                         (int)arg2 * 8 * (arg3 ? -1 : 1), NO_CRUSH, 0,
+	                         0, crushDoom);
+}
+
+FUNC(LS_Ceiling_MoveToValue)
+// Ceiling_MoveToValue (tag, speed, height, negative)
+{
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilMoveToValue, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, (int)arg2 * (arg3 ? -1 : 1),
+	                         NO_CRUSH, 0, 0, crushDoom);
 }
 
 FUNC(LS_Ceiling_LowerToHighestFloor)
 // Ceiling_LowerToHighestFloor (tag, speed)
 {
-	return EV_DoCeiling (DCeiling::ceilLowerToHighestFloor, ln, arg0, SPEED(arg1), 0, 0, 0, 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerToHighestFloor, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, arg4, NO_CRUSH, 0, 0, crushDoom);
 }
 
 FUNC(LS_Ceiling_LowerInstant)
 // Ceiling_LowerInstant (tag, unused, height)
 {
-	return EV_DoCeiling (DCeiling::ceilLowerInstant, ln, arg0, 0, 0, arg2*FRACUNIT*8, 0, 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerInstant, ln, arg0, 0, 0,
+	                         (int)arg2 * 8, NO_CRUSH, 0, 0,
+	                         crushDoom);
 }
 
 FUNC(LS_Ceiling_RaiseInstant)
 // Ceiling_RaiseInstant (tag, unused, height)
 {
-	return EV_DoCeiling (DCeiling::ceilRaiseInstant, ln, arg0, 0, 0, arg2*FRACUNIT*8, 0, 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseInstant, ln, arg0, 0, 0,
+	                         (int)arg2 * 8, NO_CRUSH, 0, 0, crushDoom);
 }
 
 FUNC(LS_Ceiling_CrushRaiseAndStayA)
-// Ceiling_CrushRaiseAndStayA (tag, dnspeed, upspeed, damage)
+// Ceiling_CrushRaiseAndStayA (tag, dnspeed, upspeed, damage[, crushmode])
 {
-	return EV_DoCeiling (DCeiling::ceilCrushRaiseAndStay, ln, arg0, SPEED(arg1), SPEED(arg2), 0, (arg3 != 0), 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushRaiseAndStay, ln, arg0,
+	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg2), 0, arg3, 0, 0,
+	                         (crushmode_e)P_ArgToCrushMode(arg4, false));
 }
 
 FUNC(LS_Ceiling_CrushRaiseAndStaySilA)
-// Ceiling_CrushRaiseAndStaySilA (tag, dnspeed, upspeed, damage)
+// Ceiling_CrushRaiseAndStaySilA (tag, dnspeed, upspeed, damage[, crushmode])
 {
-	return EV_DoCeiling (DCeiling::ceilCrushRaiseAndStay, ln, arg0, SPEED(arg1), SPEED(arg2), 0, (arg3 != 0), 1, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushRaiseAndStay, ln, arg0,
+	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg2), 0, arg3, 1,
+	                         0, (crushmode_e)P_ArgToCrushMode(arg4, false));
 }
 
 FUNC(LS_Ceiling_CrushAndRaiseA)
-// Ceiling_CrushAndRaiseA (tag, dnspeed, upspeed, damage)
+// Ceiling_CrushAndRaiseA (tag, dnspeed, upspeed, damage[, crushmode])
 {
-	return EV_DoCeiling (DCeiling::ceilCrushAndRaise, ln, arg0, SPEED(arg1), SPEED(arg2), 0, (arg3 != 0), 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
+	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg2), 0, arg3, 0, 0,
+	                         (crushmode_e)P_ArgToCrushMode(arg4, arg1 == 8 && arg2 == 8));
 }
 
 FUNC(LS_Ceiling_CrushAndRaiseSilentA)
-// Ceiling_CrushAndRaiseSilentA (tag, dnspeed, upspeed, damage)
+// Ceiling_CrushAndRaiseSilentA (tag, dnspeed, upspeed, damage[, crushmode])
 {
-	return EV_DoCeiling (DCeiling::ceilCrushAndRaise, ln, arg0, SPEED(arg1), SPEED(arg2), 0, (arg3 != 0), 1, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
+	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg2), 0, arg3, 1, 0,
+	                         (crushmode_e)P_ArgToCrushMode(arg4, arg1 == 8 && arg2 == 8));
+}
+
+FUNC(LS_Ceiling_CrushAndRaiseSilentDist)
+// Ceiling_CrushAndRaiseSilentDist (tag, dist, speed, damage[, crushmode])
+{
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
+	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg2), 0, arg3, 1, 0,
+	                         (crushmode_e)P_ArgToCrushMode(arg4, arg1 == 8 && arg2 == 8));
 }
 
 FUNC(LS_Ceiling_RaiseToNearest)
 // Ceiling_RaiseToNearest (tag, speed)
 {
-	return EV_DoCeiling (DCeiling::ceilRaiseToNearest, ln, arg0, SPEED(arg1), 0, 0, 0, 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseToNearest, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, 0, NO_CRUSH,
+	                         0, 0, crushDoom);
+}
+
+FUNC(LS_Ceiling_RaiseToHighest)
+// Ceiling_RaiseToHighest (tag, speed, change)
+{
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseToHighest, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, 0, NO_CRUSH, 0, P_ArgToChange(arg2),
+	                         crushDoom);
+}
+
+FUNC(LS_Ceiling_RaiseToHighestFloor)
+// Ceiling_RaiseToHighestFloor (tag, speed, change)
+{
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseToHighestFloor, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, 0, NO_CRUSH, 0, P_ArgToChange(arg2),
+	                         crushDoom);
+}
+
+FUNC(LS_Ceiling_RaiseToLowest)
+// Ceiling_RaiseToLowest (tag, speed, change)
+{
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseToLowest, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, 0, NO_CRUSH, 0, P_ArgToChange(arg2),
+	                         crushDoom);
+}
+
+FUNC(LS_Ceiling_RaiseByTexture)
+// Ceiling_RaiseByTexture (tag, speed, change)
+{
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseByTexture, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, 0, NO_CRUSH, P_ArgToChange(arg2), 0,
+	                         crushDoom);
 }
 
 FUNC(LS_Ceiling_LowerToLowest)
 // Ceiling_LowerToLowest (tag, speed)
 {
-	return EV_DoCeiling (DCeiling::ceilLowerToLowest, ln, arg0, SPEED(arg1), 0, 0, 0, 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerToLowest, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, 0, NO_CRUSH, 0,
+	                         0, crushDoom);
+}
+
+FUNC(LS_Ceiling_ToHighestInstant)
+// Ceiling_ToHighestInstant (tag, change, crush)
+{
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerToHighest, ln, arg0,
+	                         2 * FRACUNIT, 0, 0, P_ArgToCrush(arg2), 0,
+	                         P_ArgToChange(arg1), crushDoom);
+}
+
+FUNC(LS_Ceiling_ToFloorInstant)
+// Ceiling_ToFloorInstant (tag, change, crush, gap)
+{
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerToHighest, ln, arg0,
+	                         2 * FRACUNIT, 0, arg3, P_ArgToCrush(arg2), 0,
+	                         P_ArgToChange(arg1), crushDoom);
+}
+
+FUNC(LS_Ceiling_LowerToNearest)
+// Ceiling_LowerToNearest (tag, speed, change, crush)
+{
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerToNearest, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, 0, P_ArgToCrush(arg3), 0,
+	                         P_ArgToChange(arg2), crushDoom);
 }
 
 FUNC(LS_Ceiling_LowerToFloor)
 // Ceiling_LowerToFloor (tag, speed)
 {
-	return EV_DoCeiling (DCeiling::ceilLowerToFloor, ln, arg0, SPEED(arg1), 0, 0, 0, 0, 0);
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerToFloor, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, NO_CRUSH, 0, 0,
+	                         0, crushDoom);
+}
+
+FUNC(LS_Ceiling_LowerByTexture)
+// Ceiling_LowerByTexture (tag, speed, change, crush)
+{
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerByTexture, ln, arg0,
+	                         P_ArgToSpeed(arg1), 0, 0, P_ArgToCrush(arg3), 0,
+	                         P_ArgToChange(arg4), crushDoom);
 }
 
 FUNC(LS_Generic_Ceiling)
@@ -696,15 +1003,26 @@ FUNC(LS_Generic_Ceiling)
 		}
 	}
 
-	return EV_DoCeiling(type, ln, arg0, SPEED(arg1), SPEED(arg1), arg2*FRACUNIT, bool(arg4 & 16), 0, arg4 & 7);
-	return false;
+	return EV_DoZDoomCeiling(type, ln, arg0, P_ArgToSpeed(arg1),
+	                         P_ArgToSpeed(arg1), arg2,
+	                         (arg4 & 16) ? 20 : NO_CRUSH, 0, arg4 & 7, crushDoom);
 }
 
 FUNC(LS_Generic_Crusher)
 // Generic_Crusher (tag, dnspeed, upspeed, silent, damage)
 {
-	return EV_DoCeiling (DCeiling::ceilCrushAndRaise, ln, arg0, SPEED(arg1),
-						 SPEED(arg2), 0, (arg4 != 0), arg3 ? 2 : 0, 0);
+	return EV_DoZDoomCeiling(
+	    DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0, P_ArgToSpeed(arg1),
+	    P_ArgToSpeed(arg2), 0, arg4, arg3 ? 2 : 0, 0,
+	    (arg1 <= 24 && arg2 <= 24) ? crushSlowdown : crushDoom);
+}
+
+FUNC(LS_Generic_Crusher2)
+// Generic_Crusher2 (tag, dnspeed, upspeed, silent, damage)
+{
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
+	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg2), 0, arg4,
+	                         arg3 ? 2 : 0, 0, crushHexen);
 }
 
 FUNC(LS_Plat_PerpetualRaise)
@@ -756,10 +1074,32 @@ FUNC(LS_Plat_UpWaitDownStay)
 	return EV_DoPlat (arg0, ln, DPlat::platUpWaitDownStay, 0, SPEED(arg1), TICS(arg2), 0, 0);
 }
 
-FUNC(LS_Plat_RaiseAndStayTx0)
-// Plat_RaiseAndStayTx0 (tag, speed)
+FUNC(LS_Plat_UpNearestWaitDownStay)
+// Plat_UpNearestWaitDownStay (tag, speed, delay)
 {
-	return EV_DoPlat (arg0, ln, DPlat::platRaiseAndStay, 0, SPEED(arg1), 0, 0, 1);
+	return EV_DoPlat(arg0, ln, DPlat::platUpNearestWaitDownStay, 0, SPEED(arg1),
+	                 TICS(arg2), 0, 0);
+}
+
+FUNC(LS_Plat_RaiseAndStayTx0)
+// Plat_RaiseAndStayTx0 (tag, speed, lockout)
+{
+	DPlat::EPlatType type;
+
+	switch (arg3)
+	{
+	case 1:
+		type = DPlat::EPlatType::platRaiseAndStay;
+		break;
+	case 2:
+		type = DPlat::EPlatType::platRaiseAndStayLockout;
+		break;
+	default:
+		type = DPlat::EPlatType::platRaiseAndStay;
+		break;
+	}
+
+	return EV_DoPlat(arg0, ln, type, 0, P_ArgToSpeed(arg1), 0, 0, 1);
 }
 
 FUNC(LS_Plat_UpByValueStayTx)
@@ -799,6 +1139,185 @@ FUNC(LS_Generic_Lift)
 	}
 
 	return EV_DoPlat (arg0, ln, type, arg4*8*FRACUNIT, SPEED(arg1), OCTICS(arg2), 0, 0);
+}
+
+FUNC(LS_Line_SetBlocking)
+// Line_SetBlocking (tag, setflags, clearflags)
+{
+	if (arg0)
+	{
+		int i, s;
+		static const int flags[] = {ML_BLOCKING,
+		                            ML_BLOCKMONSTERS,
+		                            ML_BLOCKPLAYERS,
+		                            0, // block floaters (not supported)
+		                            0, // block projectiles (not supported)
+		                            ML_BLOCKEVERYTHING,
+		                            0, // railing (not supported)
+		                            0, // block use (not supported)
+		                            0, // block sight (not supported)
+		                            0, // block hitscan (not supported)
+		                            ML_SOUNDBLOCK,
+		                            -1};
+
+		int setflags = 0;
+		int clearflags = 0;
+
+		for (i = 0; flags[i] != -1; i++, arg1 >>= 1, arg2 >>= 1)
+		{
+			if (arg1 & 1)
+				setflags |= flags[i];
+			if (arg2 & 1)
+				clearflags |= flags[i];
+		}
+
+		for (s = -1; (s = P_FindLineFromTag(arg0, s)) >= 0;)
+		{
+			lines[s].flags = (lines[s].flags & ~clearflags) | setflags;
+		}
+
+		return true;
+	}
+	return false;
+}
+
+FUNC(LS_Scroll_Wall)
+// Scroll_Wall (lineid, x, y, side, flags)
+{
+	if (arg4)
+	{
+		Printf(PRINT_HIGH,
+		       "Warning: Odamex can only scroll entire sidedefs (special 52)");
+	}
+	if (arg0)
+	{
+		int s;
+		int side = !!arg3;
+
+		for (s = -1; (s = P_FindLineFromTag(arg0, s)) >= 0;)
+		{
+			new DScroller(DScroller::EScrollType::sc_side, arg1, arg2, -1,
+			              lines[s].sidenum[side], 0);
+		}
+
+		return true;
+	}
+	return false;
+}
+
+FUNC(LS_Line_SetTextureOffset)
+// Line_SetTextureOffset (lineid, x, y, side, flags)
+{
+	if (arg4 & 7)
+	{
+		Printf(PRINT_HIGH,
+		       "Warning: Odamex can only offset entire sidedefs (special 53)");
+	}
+	if (arg0 && arg3 <= 1)
+	{
+		int s;
+		int sidenum = !!arg3;
+
+		for (s = -1; (s = P_FindLineFromTag(arg0, s)) >= 0;)
+		{
+			side_t* side = &sides[lines[s].sidenum[sidenum]];
+			side->textureoffset = arg1;
+			side->rowoffset = arg2;
+		}
+
+		return true;
+	}
+	return false;
+}
+
+FUNC(LS_Noise_Alert)
+// Noise_Alert (target, emitter)
+{
+	AActor *target, *emitter;
+	bool noise = false;
+
+	if (!arg0)
+	{
+		target = it;
+	}
+	else
+	{
+		// not supported yet
+		target = NULL;
+	}
+
+	if (!arg1)
+	{
+		emitter = it;
+	}
+	else
+	{
+		// not supported yet
+		emitter = NULL;
+	}
+
+	if (emitter)
+	{
+		P_NoiseAlert(target, emitter);
+		noise = true;
+	}
+
+	return noise;
+}
+
+FUNC(LS_Sector_SetGravity)
+// Sector_SetGravity (tag, ipart, fpart)
+{
+	fixed_t gravity;
+	int s = -1;
+
+	if (arg2 > 99)
+		arg2 = 99;
+
+	gravity = P_ArgsToFixed(arg1, arg2);
+
+	while ((s = P_FindSectorFromTag(arg0, s)) >= 0)
+		sectors[s].gravity = gravity;
+	return true;
+}
+
+FUNC(LS_Sector_SetDamage)
+// Sector_SetDamage (tag, amount, mod, interval, leaky)
+{
+	int s = -1;
+	bool unblockable = false;
+
+	if (arg3 == 0)
+	{
+		if (arg1 < 20)
+		{
+			arg4 = 0;
+			arg3 = 32;
+		}
+		else if (arg1 < 50)
+		{
+			arg4 = 5;
+			arg3 = 32;
+		}
+		else
+		{
+			unblockable = true;
+			arg4 = 0;
+			arg3 = 1;
+		}
+	}
+
+	while ((s = P_FindSectorFromTag(arg0, s)) >= 0)
+	{
+		sectors[s].damage.amount = arg1;
+		sectors[s].damage.interval = arg3;
+		sectors[s].damage.leakrate = arg4;
+		if (unblockable)
+			sectors[s].flags |= SECF_DMGUNBLOCKABLE;
+		else
+			sectors[s].flags &= ~SECF_DMGUNBLOCKABLE;
+	}
+	return true;
 }
 
 FUNC(LS_Exit_Normal)
@@ -847,12 +1366,12 @@ FUNC(LS_Teleport)
 	if(!it) return false;
 	BOOL result;
 
-	if (HasBehavior)
-		// [AM] Use ZDoom-style teleport for Hexen-format maps
-		result = EV_Teleport(arg0, arg1, arg2, TeleportSide, it, 0);
-	else
-		// [AM] Use Vanilla-style teleport for Doom-format maps
-		result = EV_LineTeleport(ln, TeleportSide, it);
+	int flags = TELF_DESTFOG;
+
+	if (!arg2)
+		flags |= TELF_SOURCEFOG;
+
+	result = EV_CompatibleTeleport(arg1, ln, TeleportSide, it, flags);
 
 	return result;
 }
@@ -861,7 +1380,12 @@ FUNC(LS_Teleport_NoStop)
 // Teleport_NoStop(tid, tag, nofog)
 {
 	if (!it) return false;
-	return EV_Teleport(arg0, arg1, arg2, TeleportSide, it, 1);
+	int flags = TELF_DESTFOG | TELF_KEEPVELOCITY;
+
+	if (!arg2)
+		flags |= TELF_SOURCEFOG;
+
+	return EV_CompatibleTeleport(arg1, ln, TeleportSide, it, flags);
 }
 
 FUNC(LS_Teleport_NoFog)
@@ -870,7 +1394,32 @@ FUNC(LS_Teleport_NoFog)
 	if(!it)
 		return false;
 
-	return EV_SilentTeleport(arg0, arg1, arg2, arg3, ln, TeleportSide, it);
+	int flags = 0;
+
+	switch (arg1)
+	{
+	case 0:
+		flags |= TELF_KEEPORIENTATION;
+		break;
+
+	case 2:
+		if (ln)
+			flags |= TELF_KEEPORIENTATION | TELF_ROTATEBOOM;
+		break;
+
+	case 3:
+		if (ln)
+			flags |= TELF_KEEPORIENTATION | TELF_ROTATEBOOMINVERSE;
+		break;
+
+	default:
+		break;
+	}
+
+	if (arg3)
+		flags |= TELF_KEEPHEIGHT;
+
+	return EV_CompatibleTeleport(arg2, ln, TeleportSide, it, flags);
 }
 
 FUNC(LS_Teleport_EndGame)
@@ -941,16 +1490,84 @@ FUNC(LS_ThrustThingZ)
 }
 
 FUNC(LS_DamageThing)
-// DamageThing (damage)
+// DamageThing (damage, mod)
 {
 	if(!it) return false;
 
 	if (arg0)
-		P_DamageMobj (it, NULL, NULL, arg0, MOD_UNKNOWN);
+		P_DamageMobj (it, NULL, NULL, arg0, arg1);
 	else
-		P_DamageMobj (it, NULL, NULL, 10000, MOD_UNKNOWN);
+		P_DamageMobj (it, NULL, NULL, 10000, arg1);
 
 	return true;
+}
+
+FUNC(LS_Thing_Damage)
+// Thing_Damage (tid, amount, mod)
+{
+	if (!arg0)
+		return false;
+
+	TThinkerIterator<AActor> iterator;
+	AActor* actor;
+	while ((actor = iterator.Next()))
+	{
+		if (actor->tid == arg0)
+		{
+			if (arg1)
+			{
+				P_DamageMobj(it, NULL, NULL, arg1, arg2);
+			}
+			else
+			{
+				P_DamageMobj(it, NULL, NULL, 10000, arg2);
+			}
+		}
+	}
+
+	return true;
+}
+
+FUNC(LS_ForceField)
+// ForceField (damage)
+{
+	if (!it)
+		return false;
+
+	P_DamageMobj(it, NULL, NULL, 16);
+	P_ThrustMobj(it, ANG180 + it->angle, 2048 * 250);
+
+	return true;
+}
+
+FUNC(LS_Clear_ForceField)
+// ForceField (damage)
+{
+	int s = -1;
+	bool clear = false;
+
+	while ((s = P_FindSectorFromTag(arg0, s)) >= 0)
+	{
+		int i;
+		line_t* line;
+
+		for (i = 0; i < sectors[s].linecount; i++)
+		{
+			line_t* line = sectors[s].lines[i];
+
+			clear = true;
+
+			if (line->backsector && line->special == ForceField)
+			{
+				line->flags &= ~(ML_BLOCKING | ML_BLOCKEVERYTHING);
+				line->special = 0;
+				sides[line->sidenum[0]].midtexture = NO_TEXTURE;
+				sides[line->sidenum[1]].midtexture = NO_TEXTURE;
+			}
+		}
+	}
+
+	return clear;
 }
 
 ItemEquipVal P_GiveBody (player_t *, int);
@@ -1161,44 +1778,55 @@ FUNC(LS_ACS_Terminate)
 FUNC(LS_FloorAndCeiling_LowerByValue)
 // FloorAndCeiling_LowerByValue (tag, speed, height)
 {
-	return EV_DoElevator (ln, DElevator::elevateLower, SPEED(arg1), arg2*FRACUNIT, arg0);
+	return EV_DoZDoomElevator(ln, DElevator::EElevator::elevateLower,
+	                          P_ArgToSpeed(arg1), arg2, arg0);
 }
 
 FUNC(LS_FloorAndCeiling_RaiseByValue)
 // FloorAndCeiling_RaiseByValue (tag, speed, height)
 {
-	return EV_DoElevator (ln, DElevator::elevateRaise, SPEED(arg1), arg2*FRACUNIT, arg0);
+	return EV_DoZDoomElevator(ln, DElevator::EElevator::elevateRaise,
+	                          P_ArgToSpeed(arg1), arg2, arg0);
 }
 
 FUNC(LS_FloorAndCeiling_LowerRaise)
-// FloorAndCeiling_LowerRaise (tag, fspeed, cspeed)
+// FloorAndCeiling_LowerRaise (tag, fspeed, cspeed, boomemu)
 {
-	return EV_DoCeiling (DCeiling::ceilRaiseToHighest, ln, arg0, SPEED(arg2), 0, 0, 0, 0, 0) ||
-		EV_DoFloor (DFloor::floorLowerToLowest, ln, arg0, SPEED(arg1), 0, 0, 0);
+	if (arg3 == 1998)
+	{
+		return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseToHighest, ln, arg0,
+		                         P_ArgToSpeed(arg2), 0, 0, 0, 0, 0, crushDoom) ||
+		       EV_DoZDoomFloor(DFloor::EFloor::floorLowerToLowest, ln, arg0, arg1, 0,
+		                       NO_CRUSH, 0, false, crushDoom);
+	}
+	else
+	{
+		return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseToHighest, ln, arg0,
+		                         P_ArgToSpeed(arg2), 0, 0, 0, 0, 0, crushDoom) &&
+		       EV_DoZDoomFloor(DFloor::EFloor::floorLowerToLowest, ln, arg0, arg1, 0,
+		                       NO_CRUSH, 0, false, crushDoom);
+	}
 }
 
 FUNC(LS_Elevator_MoveToFloor)
 // Elevator_MoveToFloor (tag, speed)
 {
-	return EV_DoElevator (ln, DElevator::elevateCurrent, SPEED(arg1), 0, arg0);
+	return EV_DoZDoomElevator(ln, DElevator::EElevator::elevateCurrent,
+	                          P_ArgToSpeed(arg1), 0, arg0);
 }
 
 FUNC(LS_Elevator_RaiseToNearest)
 // Elevator_RaiseToNearest (tag, speed)
 {
-	return EV_DoElevator (ln, DElevator::elevateUp, SPEED(arg1), 0, arg0);
+	return EV_DoZDoomElevator(ln, DElevator::EElevator::elevateUp,
+	                          P_ArgToSpeed(arg1), 0, arg0);
 }
 
 FUNC(LS_Elevator_LowerToNearest)
 // Elevator_LowerToNearest (tag, speed)
 {
-	return EV_DoElevator (ln, DElevator::elevateDown, SPEED(arg1), 0, arg0);
-}
-
-FUNC(LS_Light_ForceLightning)
-// Light_ForceLightning (tag)
-{
-	return false;
+	return EV_DoZDoomElevator(ln, DElevator::EElevator::elevateDown,
+	                          P_ArgToSpeed(arg1), 0, arg0);
 }
 
 FUNC(LS_Light_RaiseByValue)
@@ -1260,14 +1888,21 @@ FUNC(LS_Light_StrobeDoom)
 FUNC(LS_Light_MinNeighbor)
 // Light_MinNeighbor (tag)
 {
-	EV_TurnTagLightsOff (arg0);
+	EV_LightSetMinNeighbor(arg0);
 	return true;
 }
 
 FUNC(LS_Light_MaxNeighbor)
 // Light_MaxNeighbor (tag)
 {
-	EV_LightTurnOn (arg0, -1);
+	EV_LightSetMaxNeighbor(arg0);
+	return true;
+}
+
+FUNC(LS_Light_Stop)
+// Light_Stop (tag)
+{
+	EV_TurnTagLightsOff(arg0);
 	return true;
 }
 
@@ -1518,11 +2153,13 @@ FUNC(LS_PointPush_SetForce)
 }
 
 FUNC(LS_Sector_SetDamage)
-// Sector_SetDamage (tag, amount, mod)
+// Sector_SetDamage (tag, amount, mod, interval, leaky)
 {
 	int secnum = -1;
 	while ((secnum = P_FindSectorFromTag (arg0, secnum)) >= 0) {
-		sectors[secnum].damage = arg1;
+		sectors[secnum].damage.amount = arg1;
+		sectors[secnum].damage.interval = arg3;
+		sectors[secnum].damage.leakrate = arg4;
 		sectors[secnum].mod = arg2;
 	}
 	return true;
@@ -1808,28 +2445,28 @@ FUNC(LS_TranslucentLine)
 	return true;
 }
 
-lnSpecFunc LineSpecials[256] =
+lnSpecFunc LineSpecials[283] =
 {
 	LS_NOP,
 	LS_NOP,		// Polyobj_StartLine,
 	LS_Polyobj_RotateLeft,
 	LS_Polyobj_RotateRight,
 	LS_Polyobj_Move,
-	LS_NOP,		// Polyobj_ExplicitLine
+	LS_NOTIMP,	// Polyobj_ExplicitLine
 	LS_Polyobj_MoveTimes8,
 	LS_Polyobj_DoorSwing,
 	LS_Polyobj_DoorSlide,
-	LS_NOP,		// 9
+	LS_NOP,		// 9 Line Horizon (handled elsewhere)
 	LS_Door_Close,
 	LS_Door_Open,
 	LS_Door_Raise,
 	LS_Door_LockedRaise,
-	LS_NOP,		// 14
-	LS_NOP,		// 15
-	LS_NOP,		// 16
-	LS_NOP,		// 17
-	LS_NOP,		// 18
-	LS_Thing_Stop,		// 19
+    LS_NOTIMP, // 14 Door Animated (Not Supported)
+    LS_NOTIMP, // 15 Autosave (Not Supported)
+    LS_NOTIMP, // 16 Transfer_WallLight (Not Supported)
+    LS_NOTIMP, // 17 Thing_Raise (Not Supported)
+    LS_NOTIMP, // 18 StartConversation (Not Supported)
+	LS_Thing_Stop,
 	LS_Floor_LowerByValue,
 	LS_Floor_LowerToLowest,
 	LS_Floor_LowerToNearest,
@@ -1843,13 +2480,13 @@ lnSpecFunc LineSpecials[256] =
 	LS_Pillar_Open,
 	LS_Stairs_BuildDownSync,
 	LS_Stairs_BuildUpSync,
-	LS_NOP,		// 33
-	LS_NOP,		// 34
+	LS_ForceField,
+	LS_Clear_ForceField,
 	LS_Floor_RaiseByValueTimes8,
 	LS_Floor_LowerByValueTimes8,
-	LS_NOP,		// 37
-	LS_NOP,		// 38
-	LS_NOP,		// 39
+	LS_Floor_MoveToValue,
+	LS_Ceiling_Waggle,
+    LS_NOTIMP, // 39 Teleport_ZombieChanger (not supported)
 	LS_Ceiling_LowerByValue,
 	LS_Ceiling_RaiseByValue,
 	LS_Ceiling_CrushAndRaise,
@@ -1857,19 +2494,19 @@ lnSpecFunc LineSpecials[256] =
 	LS_Ceiling_CrushStop,
 	LS_Ceiling_CrushRaiseAndStay,
 	LS_Floor_CrushStop,
-	LS_NOP,		// 47
-	LS_NOP,		// 48
-	LS_NOP,		// 49
-	LS_NOP,		// 50
-	LS_NOP,		// 51
-	LS_NOP,		// 52
-	LS_NOP,		// 53
-	LS_NOP,		// 54
-	LS_NOP,		// 55
-	LS_NOP,		// 56
-	LS_NOP,		// 57
-	LS_NOP,		// 58
-	LS_NOP,		// 59
+	LS_Ceiling_MoveToValue,
+    LS_NOTIMP, // 48 Sector_Attach3dMidtex (not supported)
+    LS_NOTIMP, // 49 GlassBreak (not supported)
+    LS_NOTIMP, // 50 ExtraFloor_LightOnly (not supported)
+    LS_NOTIMP, // 51 Sector_SetLink (not supported)
+	LS_Scroll_Wall,
+	LS_Line_SetTextureOffset,
+    LS_NOTIMP, // 54 Sector_ChangeFlags (not supported)
+	LS_Line_SetBlocking,
+    LS_NOTIMP, // 56 Line_SetTextureScale (not supported)
+    LS_NOTIMP, // 57 Sector_SetPortal (not supported)
+    LS_NOTIMP, // 58 Sector_CopyScroller (not supported)
+    LS_NOTIMP, // 59 Polyobj_OR_MoveToSpot (not supported)
 	LS_Plat_PerpetualRaise,
 	LS_Plat_Stop,
 	LS_Plat_DownWaitUpStay,
@@ -1886,40 +2523,40 @@ lnSpecFunc LineSpecials[256] =
 	LS_DamageThing,
 	LS_Teleport_NewMap,
 	LS_Teleport_EndGame,
-	LS_NOP,		// 76
-	LS_NOP,		// 77
-	LS_NOP,		// 78
-	LS_NOP,		// 79
+    LS_NOTIMP, // 76 Teleport_Other (not supported)
+    LS_NOTIMP, // 77 Teleport_Group (not supported)
+    LS_NOTIMP, // 78 Teleport_InSector (not supported)
+    LS_NOTIMP, // 79 Thing_SetConversation (not supported)
 	LS_ACS_Execute,
 	LS_ACS_Suspend,
 	LS_ACS_Terminate,
 	LS_ACS_LockedExecute,
-	LS_NOP,		// 84
-	LS_NOP,		// 85
-	LS_NOP,		// 86
-	LS_NOP,		// 87
-	LS_NOP,		// 88
-	LS_NOP,		// 89
+    LS_NOTIMP, // 84 ACS_ExecuteWithResult (not supported)
+    LS_NOTIMP, // 85 ACS_LockedExecuteDoor (not supported)
+    LS_NOTIMP, // 86 Polyobj_MoveToSpot (not supported)
+    LS_NOTIMP, // 87 Polyobj_Stop (not supported)
+    LS_NOTIMP, // 88 Polyobj_MoveTo (not supported)
+    LS_NOTIMP, // 89 Polyobj_OR_MoveTo (not supported)
 	LS_Polyobj_OR_RotateLeft,
 	LS_Polyobj_OR_RotateRight,
 	LS_Polyobj_OR_Move,
 	LS_Polyobj_OR_MoveTimes8,
-	LS_NOP,
+	LS_Pillar_BuildAndCrush,
 	LS_FloorAndCeiling_LowerByValue,
 	LS_FloorAndCeiling_RaiseByValue,
-	LS_NOP,		// 97
-	LS_NOP,		// 98
-	LS_NOP,		// 99
-	LS_NOP,		// Scroll_Texture_Left
-	LS_NOP,		// Scroll_Texture_Right
-	LS_NOP,		// Scroll_Texture_Up
-	LS_NOP,		// Scroll_Texture_Down
-	LS_NOP,		// 104
-	LS_NOP,		// 105
-	LS_NOP,		// 106
-	LS_NOP,		// 107
-	LS_NOP,		// 108
-	LS_Light_ForceLightning,
+	LS_Ceiling_LowerAndCrushDist,
+	LS_NOP,		// 98 Sector_SetTranslucent (not supported/handled elsewhere?)
+    LS_Floor_RaiseAndCrushDoom,
+    LS_NOP, // 100 Scroll_Texture_Left (handled elsewhere)
+	LS_NOP, // 101 Scroll_Texture_Right (handled elsewhere)
+    LS_NOP, // 102 Scroll_Texture_Up (handled elsewhere)
+    LS_NOP, // 103 Scroll_Texture_Down (handled elsewhere)
+    LS_Ceiling_CrushAndRaiseSilentDist,
+    LS_Door_WaitRaise,
+    LS_Door_WaitClose,
+    LS_NOTIMP,  // 107 Line_SetPortalTarget (not supported)
+	LS_NOP,		// 108 (unused)
+    LS_NOTIMP,  // 109 Light_ForceLightning (not supported)
 	LS_Light_RaiseByValue,
 	LS_Light_LowerByValue,
 	LS_Light_ChangeToValue,
@@ -1927,18 +2564,18 @@ lnSpecFunc LineSpecials[256] =
 	LS_Light_Glow,
 	LS_Light_Flicker,
 	LS_Light_Strobe,
-	LS_NOP,		// 117
-	LS_NOP,		// 118
-	LS_NOP,		// 119
+	LS_Light_Stop,
+	LS_NOP,		// 118 Plane_Copy (handled elsewhere/not supported)
+    LS_Thing_Damage,
 	LS_Radius_Quake,
-	LS_NOP,		// Line_SetIdentification
-	LS_NOP,		// 122
-	LS_NOP,		// 123
-	LS_NOP,		// 124
-	LS_NOP,		// 125
-	LS_NOP,		// 126
-	LS_NOP,		// 127
-	LS_ThrustThingZ,		// 128
+	LS_NOP,		// 123 Set_LineIdentification (handled elsewhere)
+	LS_NOP,		// 122 (unused)
+	LS_NOP,		// 123 (unused)
+	LS_NOP,		// 124 (unused)
+    LS_NOTIMP,  // 125 Thing_Move (not supported)
+	LS_NOP,		// 126 (unused)
+    LS_NOTIMP,  // 127 Thing_SetSpecial (not supported)
+	LS_ThrustThingZ,
 	LS_UsePuzzleItem,
 	LS_Thing_Activate,
 	LS_Thing_Deactivate,
@@ -1949,50 +2586,50 @@ lnSpecFunc LineSpecials[256] =
 	LS_Thing_ProjectileGravity,
 	LS_Thing_SpawnNoFog,
 	LS_Floor_Waggle,
-	LS_NOP,		// 139
+    LS_NOTIMP,  // 139 Thing_SpawnFacing (not supported)
 	LS_Sector_ChangeSound,
-	LS_NOP,		// 141
-	LS_NOP,		// 142
-	LS_NOP,		// 143
-	LS_NOP,		// 144
-	LS_NOP,		// 145
-	LS_NOP,		// 146
-	LS_NOP,		// 147
-	LS_NOP,		// 148
-	LS_NOP,		// 149
-	LS_NOP,		// 150
-	LS_NOP,		// 151
-	LS_NOP,		// 152
-	LS_NOP,		// 153
+	LS_NOP,		// 141 (unused)
+	LS_NOP,		// 142 (unused)
+	LS_NOP,		// 143 (unused)
+	LS_NOP,		// 144 (unused)
+    LS_NOTIMP,  // 145 Player_SetTeam (not supported)
+	LS_NOP,		// 146 (unused)
+	LS_NOP,		// 147 (unused)
+	LS_NOP,		// 148 (unused)
+	LS_NOP,		// 149 (unused)
+	LS_NOP,		// 150 (unused)
+	LS_NOP,		// 151 (unused)
+    LS_NOTIMP,  // 152 Team_Score (not supported)
+    LS_NOTIMP,  // 153 Team_GivePoints (not supported)
 	LS_Teleport_NoStop,
-	LS_NOP,		// 155
-	LS_NOP,		// 156
-	LS_NOP,		// 157
-	LS_NOP,		// 158
-	LS_NOP,		// 159
-	LS_NOP,		// 160
-	LS_NOP,		// 161
-	LS_NOP,		// 162
-	LS_NOP,		// 163
-	LS_NOP,		// 164
-	LS_NOP,		// 165
-	LS_NOP,		// 166
-	LS_NOP,		// 167
-	LS_NOP,		// 168
-	LS_NOP,		// 169
-	LS_NOP,		// 170
-	LS_NOP,		// 171
-	LS_NOP,		// 172
-	LS_NOP,		// 173
-	LS_NOP,		// 174
-	LS_NOP,		// 175
-	LS_NOP,		// 176
-	LS_NOP,		// 177
-	LS_NOP,		// 178
-	LS_NOP,		// 179
-	LS_NOP,		// 180
-	LS_NOP,		// 181
-	LS_NOP,		// 182
+	LS_NOP,		// 155 (unused)
+    LS_NOTIMP,  // 156 Line_SetPortal (not supported)
+    LS_NOTIMP,  // 157 Set_GlobalFogParameter (not supported)
+    LS_NOTIMP,  // 158 FS_Execute (not supported)
+    LS_NOTIMP,  // 159 Sector_SetPlaneReflection (not supported)
+    LS_NOTIMP,  // 160 Sector_Set3dFloor (not supported)
+    LS_NOTIMP,  // 161 Sector_SetContents (not supported)
+	LS_NOP,		// 162 (unused)
+	LS_NOP,		// 163 (unused)
+	LS_NOP,		// 164 (unused)
+	LS_NOP,		// 165 (unused)
+	LS_NOP,		// 166 (unused)
+	LS_NOP,		// 167 (unused)
+    LS_Ceiling_CrushAndRaiseDist,
+    LS_Generic_Crusher2,
+    LS_NOTIMP, // 170 Sector_SetCeilingScale2 (not supported)
+    LS_NOTIMP, // 171 Sector_SetFloorScale2 (not supported)
+    LS_Plat_UpNearestWaitDownStay,
+    LS_Noise_Alert,
+    LS_NOTIMP, // 174 SendToCommunicator (not supported)
+    LS_NOTIMP, // 175 Thing_ProjectileIntercept (not supported)
+    LS_NOTIMP, // 176 Thing_ChangeTID (not supported)
+    LS_NOTIMP, // 177 Thing_Hate (not supported)
+    LS_NOTIMP, // 178 Thing_ProjectileAimed (not supported)
+    LS_NOTIMP, // 179 Change_Skill (not supported)
+    LS_NOTIMP, // 180 Thing_SetTranslation (not supported)
+    LS_NOP,    // 181 Plane_Align (handled elsewhere)
+    LS_NOTIMP, // 182 Line_Mirror (not supported)
 	LS_Line_AlignCeiling,
 	LS_Line_AlignFloor,
 	LS_Sector_SetRotation,
@@ -2000,7 +2637,7 @@ lnSpecFunc LineSpecials[256] =
 	LS_Sector_SetFloorPanning,
 	LS_Sector_SetCeilingScale,
 	LS_Sector_SetFloorScale,
-	LS_NOP,		// Static_Init
+	LS_NOP,		// 190 Static_Init
 	LS_SetPlayerProperty,
 	LS_Ceiling_LowerToHighestFloor,
 	LS_Ceiling_LowerInstant,
@@ -2019,9 +2656,9 @@ lnSpecFunc LineSpecials[256] =
 	LS_Plat_DownWaitUpStayLip,
 	LS_Plat_PerpetualRaiseLip,
 	LS_TranslucentLine,
-	LS_NOP,		// Transfer_Heights
-	LS_NOP,		// Transfer_FloorLight
-	LS_NOP,		// Transfer_CeilingLight
+	LS_NOP,		// 209 Transfer_Heights (handled elsewhere)
+	LS_NOP,		// 210 Transfer_FloorLight (handled elsewhere)
+	LS_NOP,		// 211 Transfer_CeilingLight (handled elsewhere)
 	LS_Sector_SetColor,
 	LS_Sector_SetFade,
 	LS_Sector_SetDamage,
@@ -2032,10 +2669,10 @@ lnSpecFunc LineSpecials[256] =
 	LS_Sector_SetFriction,
 	LS_Sector_SetCurrent,
 	LS_Scroll_Texture_Both,
-	LS_NOP,		// Scroll_Texture_Model
+    LS_NOP, //222 LS_Scroll_Texture_Model (handled elsewhere)
 	LS_Scroll_Floor,
 	LS_Scroll_Ceiling,
-	LS_NOP,		// Scroll_Texture_Offsets
+    LS_NOP, // 225 Scroll_TextureOffsets (handled elsewhere)
 	LS_ACS_ExecuteAlways,
 	LS_PointPush_SetForce,
 	LS_Plat_RaiseAndStayTx0,
@@ -2065,7 +2702,34 @@ lnSpecFunc LineSpecials[256] =
 	LS_Ceiling_RaiseToNearest,
 	LS_Ceiling_LowerToLowest,
 	LS_Ceiling_LowerToFloor,
-	LS_Ceiling_CrushRaiseAndStaySilA
+	LS_Ceiling_CrushRaiseAndStaySilA,
+    LS_Floor_LowerToHighestEE,
+    LS_Floor_RaiseToLowest,
+    LS_Floor_LowerToLowestCeiling,
+    LS_Floor_RaiseToCeiling,
+    LS_Floor_ToCeilingInstant,
+    LS_Floor_LowerByTexture,
+    LS_Ceiling_RaiseToHighest,
+    LS_Ceiling_ToHighestInstant,
+    LS_Ceiling_LowerToNearest,
+    LS_Ceiling_RaiseToLowest,
+    LS_Ceiling_RaiseToHighestFloor,
+    LS_Ceiling_ToFloorInstant,
+    LS_Ceiling_RaiseByTexture,
+    LS_Ceiling_LowerByTexture,
+    LS_Stairs_BuildDownDoom,
+    LS_Stairs_BuildUpDoomSync,
+    LS_Stairs_BuildDownDoomSync,
+	LS_Stairs_BuildUpDoomCrush,
+    LS_NOTIMP, // 274 Door_AnimatedClose (not supported)
+    LS_NOTIMP, // 275 Floor_Stop (not supported)
+    LS_NOTIMP, // 276 Ceiling_Stop (not supported)
+    LS_NOTIMP, // 277 Sector_SetFloorGlow (not supported)
+    LS_NOTIMP, // 278 Sector_SetCeilingGlow (not supported)
+    LS_NOTIMP, // 279 Floor_MoveToValueAndCrush (not supported)
+    LS_NOTIMP, // 280 Ceiling_MoveToValueAndCrush (not supported)
+    LS_NOTIMP, // 281 Line_SetAutomapFlags (not supported)
+    LS_NOTIMP, // 282 Line_SetAutomapStyle (not supported)
 };
 
 

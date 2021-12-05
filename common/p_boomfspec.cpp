@@ -1450,7 +1450,8 @@ void P_SpawnCompatiblePusher(line_t* l)
 // Passed the thing using the line, the line being used, and the side used
 // Returns true if a thinker was created
 //
-bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
+lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
+                                        bool bossaction)
 {
 	// e6y
 	// b.m. side test was broken in boom201

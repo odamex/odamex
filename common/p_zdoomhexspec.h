@@ -25,7 +25,6 @@
 #ifndef __P_ZDOOMHEXSPEC__
 #define __P_ZDOOMHEXSPEC__
 
-#include "r_defs.h"
 #include "doomdef.h"
 #include "doomtype.h"
 #include "p_local.h"

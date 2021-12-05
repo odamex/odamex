@@ -1042,6 +1042,10 @@ protected:
 	friend bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed,
 	                            fixed_t slimespeed);
 	friend int P_SpawnDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
+	friend bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag,
+	                            fixed_t speed, fixed_t height, int crush, int change,
+	                            bool hexencrush, bool hereticlower);
+	friend int EV_ZDoomFloorCrushStop(int tag);
 
   private:
 	DFloor ();
@@ -1104,6 +1108,9 @@ public:
 protected:
 	friend BOOL EV_DoElevator (line_t *line, DElevator::EElevator type, fixed_t speed,
 		fixed_t height, int tag);
+    friend bool EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
+	                        fixed_t height, int tag);
+
 private:
 	DElevator ();
 };

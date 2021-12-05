@@ -43,7 +43,11 @@ typedef enum {
 	Door_Open = 11,
 	Door_Raise = 12,
 	Door_LockedRaise = 13,
-
+	Door_Animated = 14,
+	Autosave = 15,
+	Transfer_WallLight = 16,
+	Thing_Raise = 17,
+	StartConversation = 18,
 	Thing_Stop = 19,
 	Floor_LowerByValue = 20,
 	Floor_LowerToLowest = 21,
@@ -64,12 +68,11 @@ typedef enum {
 	Stairs_BuildUpSync = 32,
 	ForceField = 33,
 	Clear_ForceField = 34,
-
-	Floor_MoveToValue = 37,
-	Ceiling_Waggle = 38,
-
 	Floor_RaiseByValueTimes8 = 35,
 	Floor_LowerByValueTimes8 = 36,
+	Floor_MoveToValue = 37,
+	Ceiling_Waggle = 38,
+	Teleport_ZombieChanger = 39,
 
 	Ceiling_LowerByValue = 40,
 	Ceiling_RaiseByValue = 41,
@@ -80,10 +83,23 @@ typedef enum {
 	Floor_CrushStop = 46,
 	Ceiling_MoveToValue = 47,
 
+	Sector_Attach3dMidtex = 48,
+	GlassBreak = 49,
+	ExtraFloor_LightOnly = 50,
+	Sector_SetLink = 51,
+
 	Scroll_Wall = 52,
 	Line_SetTextureOffset = 53,
 
+	Sector_ChangeFlags = 54,
+
 	Line_SetBlocking = 55,
+	Line_SetTextureScale = 56,
+
+	Sector_SetPortal = 57,
+	Sector_CopyScroller = 58,
+
+	Polyobj_OR_MoveToSpot = 59,
 
 	Plat_PerpetualRaise = 60,
 	Plat_Stop = 61,
@@ -106,20 +122,36 @@ typedef enum {
 
 	Teleport_NewMap = 74,
 	Teleport_EndGame = 75,
+	Teleport_Other = 76,
+	Teleport_Group = 77,
+	Teleport_InSector = 78,
+	Thing_SetConversation = 79,
+
 	ACS_Execute = 80,
 	ACS_Suspend = 81,
 	ACS_Terminate = 82,
 	ACS_LockedExecute = 83,
+	ACS_ExecuteWithResult = 84,
+	ACS_LockedExecuteDoor = 85,
 
+	Polyobj_MoveToSpot = 86,
+	Polyobj_Stop = 87,
+	Polyobj_MoveTo = 88,
+
+	Polyobj_OR_MoveTo = 89,
 	Polyobj_OR_RotateLeft = 90,
 	Polyobj_OR_RotateRight = 91,
 	Polyobj_OR_Move = 92,
 	Polyobj_OR_MoveTimes8 = 93,
+
 	Pillar_BuildAndCrush = 94,
 
 	FloorAndCeiling_LowerByValue = 95,
 	FloorAndCeiling_RaiseByValue = 96,
+
 	Ceiling_LowerAndCrushDist = 97,
+
+	Sector_SetTranslucent = 98,
 
 	Floor_RaiseAndCrushDoom = 99,
 
@@ -127,9 +159,13 @@ typedef enum {
 	Scroll_Texture_Right = 101,
 	Scroll_Texture_Up = 102,
 	Scroll_Texture_Down = 103,
+
 	Ceiling_CrushAndRaiseSilentDist = 104,
+
 	Door_WaitRaise = 105,
 	Door_WaitClose = 106,
+
+	Line_SetPortalTarget = 107,
 
 	Light_ForceLightning = 109,
 	Light_RaiseByValue = 110,
@@ -141,10 +177,16 @@ typedef enum {
 	Light_Strobe = 116,
 	Light_Stop = 117,
 
+	Plane_Copy = 118,
+
+	Thing_Damage = 119,
+
 	Radius_Quake = 120,	// Earthquake
 
 	Line_SetIdentification = 121,
 
+	Thing_Move = 125,
+	Thing_SetSpecial = 127,
     ThrustThingZ = 128,
 
 	UsePuzzleItem = 129,
@@ -160,24 +202,56 @@ typedef enum {
 
 	Floor_Waggle = 138,
 
+	Thing_SpawnFacing = 139,
+
 	Sector_ChangeSound = 140,
+
+	Player_SetTeam = 145,
+
+	Team_Score = 152,
+	Team_GivePoints = 153,
 
 // [RH] Begin new specials for ZDoom
 	Teleport_NoStop = 154,
 
+	Line_SetPortal = 156,
+
+	SetGlobalFogParameter = 157,
+
+	FS_Execute = 158,
+
+	Sector_SetPlaneReflection = 159,
+	Sector_Set3dFloor = 160,
+	Sector_SetContents = 161,
+
 	Ceiling_CrushAndRaiseDist = 168,
 	Generic_Crusher2 = 169,
+
+	Sector_SetCeilingScale2 = 170,
+	Sector_SetFloorScale2 = 171,
 
 	Plat_UpNearestWaitDownStay = 172,
 	Noise_Alert = 173,
 
+	SendToCommunicator = 174,
+
+	Thing_ProjectileIntercept = 175,
+	Thing_ChangeTID = 176,
+	Thing_Hate = 177,
+	Thing_ProjectileAimed = 178,
+
+	Change_Skill = 179,
+
+	Thing_SetTranslation = 180,
+
 	Plane_Align = 181,
+	Line_Mirror = 182,
 	Line_AlignCeiling = 183,
 	Line_AlignFloor = 184,
 
 	Sector_SetRotation = 185,
-	Sector_SetCeilingOffset = 186,
-	Sector_SetFloorOffset = 187,
+	Sector_SetCeilingPanning = 186,
+	Sector_SetFloorPanning = 187,
 	Sector_SetCeilingScale = 188,
 	Sector_SetFloorScale = 189,
 
@@ -205,6 +279,7 @@ typedef enum {
 	Plat_PerpetualRaiseLip = 207,
 
 	TranslucentLine = 208,
+
 	Transfer_Heights = 209,
 	Transfer_FloorLight = 210,
 	Transfer_CeilingLight = 211,
@@ -271,12 +346,14 @@ typedef enum {
 	Ceiling_LowerToLowest = 253,
 	Ceiling_LowerToFloor = 254,
 	Ceiling_CrushRaiseAndStaySilA = 255,
+
 	Floor_LowerToHighestEE = 256,
 	Floor_RaiseToLowest = 257,
 	Floor_LowerToLowestCeiling = 258,
 	Floor_RaiseToCeiling = 259,
 	Floor_ToCeilingInstant = 260,
 	Floor_LowerByTexture = 261,
+
 	Ceiling_RaiseToHighest = 262,
 	Ceiling_ToHighestInstant = 263,
 	Ceiling_LowerToNearest = 264,
@@ -285,9 +362,25 @@ typedef enum {
 	Ceiling_ToFloorInstant = 267,
 	Ceiling_RaiseByTexture = 268,
 	Ceiling_LowerByTexture = 269,
+
 	Stairs_BuildDownDoom = 270,
 	Stairs_BuildUpDoomSync = 271,
 	Stairs_BuildDownDoomSync = 272,
+	Stairs_BuildUpDoomCrush = 273,
+
+	Door_AnimatedClose = 274,
+
+	Floor_Stop = 275,
+
+	Ceiling_Stop = 276,
+
+	Sector_SetFloorGlow = 277,
+	Sector_SetCeilingGlow = 278,
+
+	Floor_MoveToValueAndCrush = 279,
+	Ceiling_MoveToValueAndCrush = 280,
+	Line_SetAutomapFlags = 281,
+	Line_SetAutomapStyle = 282,
 } linespecial_t;
 
 typedef enum {
@@ -604,11 +697,20 @@ typedef BOOL (*lnSpecFunc)(struct line_s	*line,
 						   int				arg4,
 						   int				arg5);
 
-extern lnSpecFunc LineSpecials[256];
+extern lnSpecFunc LineSpecials[283];
 
 BOOL EV_CeilingCrushStop (int tag);
 int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed);
 void EV_StopPlat (int tag);
+int EV_ZDoomFloorCrushStop(int tag);
+bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
+bool EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
+                       fixed_t speed2, fixed_t height, int crush, byte silent, int change,
+                       crushmode_e crushmode);
+bool EV_ZDoomCeilingCrushStop(int tag, bool remove);
+bool EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
+                         int timer, bool ceiling);
+bool EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int flags);
 
 bool P_LineSpecialMovesSector(byte special);
 bool P_CanActivateSpecials(AActor* mo, line_t* line);
@@ -619,6 +721,8 @@ int P_IsUnderDamage(const AActor* actor);
 bool P_IsOnLift(const AActor* actor);
 int P_IsUnderDamage(AActor* actor);
 static bool P_CheckRange(AActor* actor, fixed_t range);
+void EV_LightSetMinNeighbor(int tag);
+void EV_LightSetMaxNeighbor(int tag);
 
 extern int TeleportSide;
 

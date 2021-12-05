@@ -147,7 +147,7 @@ void DDoor::RunThink ()
 		break;
 		
 	case closing:
-		res = MoveCeiling(m_Speed, floorheight, false, -1);
+		res = MoveCeiling(m_Speed, floorheight, -1);
 		
         if (m_Line && m_Line->id)
         {
@@ -196,7 +196,7 @@ void DDoor::RunThink ()
 		
 	case reopening:
 	case opening:
-		res = MoveCeiling(m_Speed, m_TopHeight, false, 1);
+		res = MoveCeiling(m_Speed, m_TopHeight, 1);
 		
         if (m_Line && m_Line->id)
         {

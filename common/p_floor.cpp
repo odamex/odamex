@@ -31,6 +31,7 @@
 #include "tables.h"
 
 void P_ResetTransferSpecial(newspecial_s* newspecial);
+void P_ResetSectorTransferFlags(unsigned int* flags);
 
 EXTERN_CVAR(co_boomphys)
 
@@ -457,20 +458,19 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 					m_NewDamageRate = ns.damage.amount;
 					m_NewDmgInterval = ns.damage.interval;
 					m_NewLeakRate = ns.damage.leakrate;
-					m_NewFlags = ns.flags;
+					m_NewFlags = found->flags;
+					P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
 					m_Type = DFloor::genFloorChg0;
 					break;
 				case 2:
 					m_Type = DFloor::genFloorChg;
 					break;
 				case 3:
-					newspecial_s ns;
-					P_ResetTransferSpecial(&ns);
-					m_NewSpecial = ns.special;
-					m_NewDamageRate = ns.damage.amount;
-					m_NewDmgInterval = ns.damage.interval;
-					m_NewLeakRate = ns.damage.leakrate;
-					m_NewFlags = ns.flags;
+					found->special = m_NewSpecial;
+					found->damage.amount = m_NewDamageRate;
+					found->damage.interval = m_NewDmgInterval;
+					found->damage.leakrate = m_NewLeakRate;
+					found->flags = m_NewFlags;
 					m_Type = DFloor::genFloorChgT;
 					break;
 				}
@@ -490,20 +490,19 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 				m_NewDamageRate = ns.damage.amount;
 				m_NewDmgInterval = ns.damage.interval;
 				m_NewLeakRate = ns.damage.leakrate;
-				m_NewFlags = ns.flags;
+				m_NewFlags = line->frontsector->flags;
+				P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
 				m_Type = DFloor::genFloorChg0;
 				break;
 			case 2:
 				m_Type = DFloor::genFloorChg;
 				break;
 			case 3:
-				newspecial_s ns;
-				P_ResetTransferSpecial(&ns);
-				m_NewSpecial = ns.special;
-				m_NewDamageRate = ns.damage.amount;
-				m_NewDmgInterval = ns.damage.interval;
-				m_NewLeakRate = ns.damage.leakrate;
-				m_NewFlags = ns.flags;
+				line->frontsector->special = m_NewSpecial;
+				line->frontsector->damage.amount = m_NewDamageRate;
+				line->frontsector->damage.interval = m_NewDmgInterval;
+				line->frontsector->damage.leakrate = m_NewLeakRate;
+				line->frontsector->flags = m_NewFlags;
 				m_Type = DFloor::genFloorChgT;
 				break;
 			}
@@ -807,7 +806,7 @@ int EV_ZDoomFloorCrushStop(int tag)
 }
 
 bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
-                fixed_t height, bool crush, int change, bool hexencrush, bool hereticlower)
+                fixed_t height, int crush, int change, bool hexencrush, bool hereticlower)
 {
 	int secnum;
 	bool rtn = false;
@@ -982,7 +981,7 @@ manual_stair:
 		floor->m_PauseTime = 0;
 		floor->m_StepTime = floor->m_PerStepTime = persteptime;
 
-		floor->m_Crush = (!usespecials && speed == 4*FRACUNIT); //jff 2/27/98 fix uninitialized crush field
+		floor->m_Crush = (!usespecials && speed == 4*FRACUNIT) ? DOOM_CRUSH : NO_CRUSH; //jff 2/27/98 fix uninitialized crush field
 
 		floor->m_Speed = speed;
 		height = floorheight + stairsize * floor->m_Direction;
@@ -1092,7 +1091,8 @@ manual_stair:
 				}
 				floor->m_Type = DFloor::buildStair;	//jff 3/31/98 do not leave uninited
 				//jff 2/27/98 fix uninitialized crush field
-				floor->m_Crush = (!usespecials && speed == 4*FRACUNIT);
+				floor->m_Crush =
+				    (!usespecials && speed == 4 * FRACUNIT) ? DOOM_CRUSH : NO_CRUSH;
 				floor->m_ResetCount = reset;	// [RH] Tics until reset (0 if never)
 				floor->m_OrgHeight = floorheight;	// [RH] Height to reset to
 			}
@@ -1439,7 +1439,7 @@ bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
 }
 
 // Almost identical to the above, but height is multiplied by FRACUNIT
-int EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
+bool EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
                        fixed_t height, int tag)
 {
 	height *= FRACUNIT;
