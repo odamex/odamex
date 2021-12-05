@@ -343,6 +343,55 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	}
 }
 
+// [Blair] ZDoom-compatible door type
+DDoor::DDoor(sector_t* sec, line_t* ln, EVlDoor type, fixed_t speed, int topwait, byte lighttag, int topcountdown)
+    : DMovingCeiling(sec), m_Status(init)
+{
+	m_Type = type;
+	m_TopWait = topwait;
+	m_TopCountdown = topcountdown;
+	m_Speed = speed;
+	m_Line = ln;
+	m_LightTag = lighttag;
+
+	fixed_t ceilingheight = P_CeilingHeight(sec);
+
+	switch (type)
+	{
+	case doorClose:
+		m_Status = closing;
+		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4 * FRACUNIT;
+		PlayDoorSound();
+		break;
+
+	case genCdO:
+		m_TopHeight = ceilingheight;
+		m_Status = closing;
+		m_TopWait = topwait;
+		PlayDoorSound();
+		break;
+	case doorOpen:
+	case doorRaise:
+		m_Status = opening;
+		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4 * FRACUNIT;
+		if (m_TopHeight != ceilingheight)
+			PlayDoorSound();
+		break;
+
+	case waitRaiseDoor:
+		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4 * FRACUNIT;
+		m_Status = opening;
+		break;
+
+	case waitCloseDoor:
+		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4 * FRACUNIT;
+		m_Status = opening;
+		break;
+	default:
+		break;
+	}
+}
+
 // Clones a DDoor and returns a pointer to that clone.
 //
 // The caller owns the pointer, and it must be deleted with `delete`.
@@ -414,7 +463,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 						door->PlayDoorSound();
 						return true;
 					}
-					else if (GET_SPAC(line->flags) == SPAC_PUSH)
+					else if (GET_SPAC(line->flags) == ML_SPAC_PUSH)
 					{
 						// [RH] activate push doors don't go back down when you
 						// run into them (otherwise opening them would be
@@ -499,6 +548,106 @@ void P_SpawnDoorRaiseIn5Mins (sector_t *sec)
 	door->m_TopWait = (150*TICRATE)/35;
 	door->m_TopCountdown = 5 * 60 * TICRATE;
 	door->m_Status = DDoor::waiting;
+}
+
+bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
+                   byte speed_byte, int topwait, zdoom_lock_t lock, byte lightTag,
+                   bool boomgen, int topcountdown)
+{
+	sector_t* sec;
+	fixed_t speed;
+	DDoor* door;
+
+	speed = (fixed_t)speed_byte * FRACUNIT / 8;
+
+	if (lock && !P_CanUnlockZDoomDoor(mo->player, lock, tag))
+		return false;
+
+	if (!tag)
+	{
+		if (!line)
+			return false;
+
+		// if the wrong side of door is pushed, give oof sound
+		if (line->sidenum[1] == NO_INDEX)
+		{
+			if (mo->player) // is this check necessary?
+				UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+			return false;
+		}
+
+		// get the sector on the second side of activating linedef
+		sec = sides[line->sidenum[1]].sector;
+
+		if (sec->ceilingdata && P_MovingCeilingCompleted(sec))
+		{
+			sec->ceilingdata->Destroy();
+			sec->ceilingdata = NULL;
+		}
+
+		// if door already has a thinker, use it
+		door = static_cast<DDoor*>(sec->ceilingdata);
+
+		if (door)
+		{
+			// Boom used remote door logic for generalized doors, even if they are manual
+			if (boomgen)
+				return false;
+
+			if (sec->ceilingdata && sec->ceilingdata->IsKindOf(RUNTIME_CLASS(DDoor)))
+			{
+				// ONLY FOR "RAISE" DOORS, NOT "OPEN"s
+				if (door->m_Type == DDoor::doorRaise && type == DDoor::doorRaise)
+				{
+					if (door->m_Status == DDoor::closing)
+					{
+						door->m_Status = DDoor::reopening;
+						door->PlayDoorSound();
+						return true;
+					}
+					else if (!(line->flags & ML_SPAC_PUSH))
+					// [RH] activate push doors don't go back down when you
+					//    run into them (otherwise opening them would be
+					//    a real pain).
+					{
+						if (!mo->player)
+							return false; // JDC: bad guys never close doors
+
+						door->m_Status = DDoor::closing; // start going down immediately
+						door->PlayDoorSound();
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+			}
+
+			return false;
+		}
+
+		new DDoor(sec, line, type, speed, topwait, lightTag, topcountdown);
+		return true;
+	}
+	else
+	{
+		int secnum = -1;
+		int retcode = false;
+
+		while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
+		{
+			sec = &sectors[secnum];
+			if (sec->ceilingdata)
+			{
+				continue;
+			}
+			retcode = true;
+			new DDoor(sec, line, type, speed, topwait, lightTag, topcountdown);
+		}
+
+		return retcode;
+	}
 }
 
 VERSION_CONTROL (p_doors_cpp, "$Id$")

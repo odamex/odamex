@@ -57,6 +57,33 @@ extern int MaxDrawSegs;
 //
 
 //
+// The SECTORS record, at runtime.
+// Stores things/mobjs.
+//
+
+#define NO_TOPTEXTURES             0x00000001
+#define NO_BOTTOMTEXTURES          0x00000002
+#define SECTOR_IS_CLOSED           0x00000004
+#define NULL_SECTOR                0x00000008
+#define MISSING_TOPTEXTURES        0x00000010
+#define MISSING_BOTTOMTEXTURES     0x00000020
+
+#define SECF_SECRET                0x00000040
+#define SECF_WASSECRET             0x00000080
+#define SECF_HIDDEN                0x00000100
+#define SECF_ENDGODMODE            0x00000200
+#define SECF_ENDLEVEL              0x00000400
+#define SECF_DMGTERRAINFX          0x00000800
+#define SECF_HAZARD                0x00001000
+#define SECF_DMGUNBLOCKABLE        0x00002000
+#define SECF_FRICTION              0x00004000
+#define SECF_PUSH                  0x00008000
+#define SECF_DAMAGEFLAGS (SECF_ENDGODMODE|SECF_ENDLEVEL|SECF_DMGTERRAINFX|SECF_HAZARD|SECF_DMGUNBLOCKABLE)
+#define SECF_TRANSFERMASK (SECF_SECRET|SECF_WASSECRET|SECF_DAMAGEFLAGS|SECF_FRICTION|SECF_PUSH)
+
+#define FRICTION_LOW 0xf900
+
+//
 // Your plain vanilla vertex.
 // Note: transformed values not buffered locally,
 //	like some DOOM-alikes ("wt", "WebView") did.
@@ -166,6 +193,7 @@ struct sector_s
 	short		tag;
 	int			nexttag,firsttag;	// killough 1/30/98: improves searches for tags.
 	bool		secretsector;		// Ch0wW : This is a secret sector !
+	unsigned int flags;				// [Blair] Let's use actual sector flags instead of shoehorning them in special
 
     // 0 = untraversed, 1,2 = sndlines -1
 	int 				soundtraversed;
@@ -238,7 +266,7 @@ struct sector_s
 	struct line_s **lines;		// [linecount] size
 
 	float gravity;		// [RH] Sector gravity (1.0 is normal)
-	short damage;		// [RH] Damage to do while standing on floor
+	damage_s damage;    // [Blair] Convert to struct to hold more information.
 	short mod;			// [RH] Means-of-death for applied damage
 	struct dyncolormap_s *colormap;	// [RH] Per-sector colormap
 
@@ -259,7 +287,12 @@ struct sector_s
 };
 typedef struct sector_s sector_t;
 
-
+struct damage_s
+{
+	short amount;
+	byte leakrate;
+	byte interval;
+};
 
 
 //
@@ -315,8 +348,8 @@ struct line_s
     fixed_t	dy;
 
     // Animation related.
-    short		flags;
-	byte		special;	// [RH] specials are only one byte (like Hexen)
+    unsigned int flags;		// [Blair]MBF21 compatibility
+	short		special;    // [Blair] Change to short for compatibility
 	byte		lucency;	// <--- translucency (0-255/255=opaque)
 
 	// Visual appearance: SideDefs.

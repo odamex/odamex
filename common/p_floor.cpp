@@ -30,6 +30,8 @@
 #include "r_state.h"
 #include "tables.h"
 
+void P_ResetTransferSpecial(newspecial_s* newspecial);
+
 EXTERN_CVAR(co_boomphys)
 
 extern bool predicting;
@@ -68,7 +70,12 @@ void DFloor::Serialize (FArchive &arc)
 			<< m_Status
 			<< m_Crush
 			<< m_Direction
+			<< m_HexenCrush
 			<< m_NewSpecial
+			<< m_NewDamageRate
+			<< m_NewDmgInterval
+			<< m_NewFlags
+			<< m_NewLeakRate
 			<< m_Texture
 			<< m_FloorDestHeight
 			<< m_Speed
@@ -85,7 +92,12 @@ void DFloor::Serialize (FArchive &arc)
 			>> m_Status
 			>> m_Crush
 			>> m_Direction
+			>> m_HexenCrush
 			>> m_NewSpecial
+			>> m_NewDamageRate
+			>> m_NewDmgInterval
+			>> m_NewFlags
+			>> m_NewLeakRate
 			>> m_Texture
 			>> m_FloorDestHeight
 			>> m_Speed
@@ -155,7 +167,10 @@ void DFloor::RunThink ()
 	if (m_Type == waitStair)
 		return;
 
-	EResult res = MoveFloor (m_Speed, m_FloorDestHeight, m_Crush, m_Direction);
+	EResult res = MoveFloor (m_Speed, m_FloorDestHeight, m_Crush, m_Direction, m_HexenCrush);
+
+	if (!(level.time & 7)) // make the floormove sound
+		PlayFloorSound();
 
 	if (res == pastdest)
 	{
@@ -175,6 +190,10 @@ void DFloor::RunThink ()
 				case genFloorChgT:
 				case genFloorChg0:
 					m_Sector->special = m_NewSpecial;
+					m_Sector->flags = m_NewFlags;
+					m_Sector->damage.amount = m_NewDamageRate;
+					m_Sector->damage.interval = m_NewDmgInterval;
+					m_Sector->damage.leakrate = m_NewLeakRate;
 					//fall thru
 				case genFloorChg:
 					m_Sector->floorpic = m_Texture;
@@ -191,6 +210,10 @@ void DFloor::RunThink ()
 				case genFloorChgT:
 				case genFloorChg0:
 					m_Sector->special = m_NewSpecial;
+					m_Sector->flags = m_NewFlags;
+					m_Sector->damage.amount = m_NewDamageRate;
+					m_Sector->damage.interval = m_NewDmgInterval;
+					m_Sector->damage.leakrate = m_NewLeakRate;
 					//fall thru
 				case genFloorChg:
 					m_Sector->floorpic = m_Texture;
@@ -237,6 +260,257 @@ DFloor::DFloor (sector_t *sec)
 {
 }
 
+DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t speed,
+               fixed_t height, int crush, int change, bool hexencrush, bool hereticlower)
+    : DMovingFloor(sec), m_Status(init)
+{
+	fixed_t floorheight = P_FloorHeight(sec);
+	fixed_t ceilingheight = P_CeilingHeight(sec);
+
+	m_Type = floortype;
+	m_Crush = crush;
+	m_HexenCrush = hexencrush;
+	m_Speed = speed;
+	m_ResetCount = 0; // [RH]
+	m_Direction = 1;
+	m_OrgHeight = floorheight;
+	m_Height = height;
+	m_Change = change;
+	m_Line = line;
+
+	PlayFloorSound();
+
+	switch (floortype)
+	{
+	case DFloor::floorLowerToHighest:
+		m_Direction = -1;
+		m_FloorDestHeight = P_FindHighestFloorSurrounding(sec);
+		// [RH] DOOM's turboLower type did this. I've just extended it
+		//		to be applicable to all LowerToHighest types.
+		if (hereticlower || m_FloorDestHeight != floorheight)
+			m_FloorDestHeight += height;
+		break;
+
+	case DFloor::floorLowerToLowest:
+		m_Direction = -1;
+		m_FloorDestHeight = P_FindLowestFloorSurrounding(sec);
+		break;
+
+	case DFloor::floorLowerToNearest:
+		// jff 02/03/30 support lowering floor to next lowest floor
+		m_Direction = -1;
+		m_FloorDestHeight = P_FindNextLowestFloor(sec);
+		break;
+
+	case DFloor::floorLowerInstant:
+		m_Speed = height;
+	case DFloor::floorLowerByValue:
+		m_Direction = -1;
+		m_FloorDestHeight = floorheight - height;
+		break;
+
+	case DFloor::floorRaiseInstant:
+		m_Speed = height;
+	case DFloor::floorRaiseByValue:
+		m_Direction = 1;
+		m_FloorDestHeight = floorheight + height;
+		break;
+
+	case DFloor::floorMoveToValue:
+		m_FloorDestHeight = height;
+		m_Direction = (m_FloorDestHeight > floorheight) ? 1 : -1;
+		break;
+
+	case DFloor::floorRaiseAndCrushDoom:
+		height = 8 * FRACUNIT;
+	case DFloor::floorRaiseToLowestCeiling:
+		m_Direction = 1;
+		m_FloorDestHeight = P_FindLowestCeilingSurrounding(sec);
+		if (m_FloorDestHeight > ceilingheight)
+			m_FloorDestHeight = ceilingheight - height;
+		break;
+
+	case DFloor::floorRaiseToHighest:
+		m_Direction = 1;
+		m_FloorDestHeight = P_FindHighestFloorSurrounding(sec);
+		break;
+
+	case DFloor::floorRaiseToNearest:
+		m_Direction = 1;
+		m_FloorDestHeight = P_FindNextHighestFloor(sec);
+		break;
+
+	case DFloor::floorRaiseToLowest:
+		m_Direction = 1;
+		m_FloorDestHeight = P_FindLowestFloorSurrounding(sec);
+		break;
+
+	case DFloor::floorRaiseAndCrush:
+		height = 8 * FRACUNIT;
+	case DFloor::floorRaiseToCeiling:
+		m_Direction = 1;
+		m_FloorDestHeight = ceilingheight - height;
+		break;
+
+	case DFloor::floorLowerToLowestCeiling:
+		m_Direction = -1;
+		m_FloorDestHeight = P_FindLowestCeilingSurrounding(sec);
+		break;
+
+	case DFloor::floorLowerByTexture:
+		m_Direction = -1;
+		m_FloorDestHeight = floorheight - P_FindShortestTextureAround(sec);
+		break;
+
+	case DFloor::floorLowerToCeiling:
+		// [RH] Essentially instantly raises the floor to the ceiling
+		m_Direction = -1;
+		m_FloorDestHeight = ceilingheight - height;
+		break;
+
+	case DFloor::floorRaiseByTexture:
+		m_Direction = 1;
+		// [RH] Use P_FindShortestTextureAround from BOOM to do this
+		//		since the code is identical to what was here. (Oddly
+		//		enough, BOOM preserved the code here even though it
+		//		also had this function.)
+		m_FloorDestHeight = floorheight + P_FindShortestTextureAround(sec);
+		break;
+
+	case DFloor::floorRaiseAndChange:
+		m_Direction = 1;
+		m_FloorDestHeight = floorheight + height;
+		if (line)
+		{
+			sec->floorpic = line->frontsector->floorpic;
+			P_CopySectorSpecial(sec, line->frontsector);
+		}
+		else
+		{
+			P_ResetSectorSpecial(sec);
+		}
+		break;
+
+	case DFloor::floorLowerAndChange:
+		m_Direction = -1;
+		m_FloorDestHeight = P_FindLowestFloorSurrounding(sec);
+		m_Texture = sec->floorpic;
+		// jff 1/24/98 make sure m_NewSpecial gets initialized
+		// in case no surrounding sector is at floordestheight
+		// --> should not affect compatibility <--
+		m_NewSpecial = sec->special;
+		m_NewDamageRate = sec->damage.amount;
+		m_NewDmgInterval = sec->damage.interval;
+		m_NewLeakRate = sec->damage.leakrate;
+		m_NewFlags = sec->flags;
+
+		// jff 5/23/98 use model subroutine to unify fixes and handling
+		sec = P_FindModelFloorSector(m_FloorDestHeight, sec);
+		if (sec)
+		{
+			m_Texture = sec->floorpic;
+			m_NewSpecial = sec->special;
+			m_NewDamageRate = sec->damage.amount;
+			m_NewDmgInterval = sec->damage.interval;
+			m_NewLeakRate = sec->damage.leakrate;
+			m_NewFlags = sec->flags;
+		}
+		break;
+
+	default:
+		break;
+	}
+
+	if (m_Direction == 1)
+		m_Status = up;
+	else if (m_Direction == -1)
+		m_Status = down;
+
+	if (change & 3)
+	{
+		// [RH] Need to do some transferring
+		if (change & 4)
+		{
+			// Numeric model change
+			sector_t* found = NULL;
+			if (floortype == DFloor::floorRaiseToLowestCeiling ||
+			    floortype == DFloor::floorLowerToLowestCeiling ||
+			    floortype == DFloor::floorRaiseToCeiling ||
+			    floortype == DFloor::floorLowerToCeiling)
+			{
+				found = P_FindModelCeilingSector(m_FloorDestHeight, sec);
+			}
+			else
+			{
+				found = P_FindModelFloorSector(m_FloorDestHeight, sec);
+			}
+
+			if (found != NULL)
+			{
+				m_Texture = found->floorpic;
+				switch (change & 3)
+				{
+				case 1:
+					newspecial_s ns;
+					P_ResetTransferSpecial(&ns);
+					m_NewSpecial = ns.special;
+					m_NewDamageRate = ns.damage.amount;
+					m_NewDmgInterval = ns.damage.interval;
+					m_NewLeakRate = ns.damage.leakrate;
+					m_NewFlags = ns.flags;
+					m_Type = DFloor::genFloorChg0;
+					break;
+				case 2:
+					m_Type = DFloor::genFloorChg;
+					break;
+				case 3:
+					newspecial_s ns;
+					P_ResetTransferSpecial(&ns);
+					m_NewSpecial = ns.special;
+					m_NewDamageRate = ns.damage.amount;
+					m_NewDmgInterval = ns.damage.interval;
+					m_NewLeakRate = ns.damage.leakrate;
+					m_NewFlags = ns.flags;
+					m_Type = DFloor::genFloorChgT;
+					break;
+				}
+			}
+		}
+		else if (line != NULL)
+		{
+			// Trigger model change
+			m_Texture = line->frontsector->floorpic;
+
+			switch (change & 3)
+			{
+			case 1:
+				newspecial_s ns;
+				P_ResetTransferSpecial(&ns);
+				m_NewSpecial = ns.special;
+				m_NewDamageRate = ns.damage.amount;
+				m_NewDmgInterval = ns.damage.interval;
+				m_NewLeakRate = ns.damage.leakrate;
+				m_NewFlags = ns.flags;
+				m_Type = DFloor::genFloorChg0;
+				break;
+			case 2:
+				m_Type = DFloor::genFloorChg;
+				break;
+			case 3:
+				newspecial_s ns;
+				P_ResetTransferSpecial(&ns);
+				m_NewSpecial = ns.special;
+				m_NewDamageRate = ns.damage.amount;
+				m_NewDmgInterval = ns.damage.interval;
+				m_NewLeakRate = ns.damage.leakrate;
+				m_NewFlags = ns.flags;
+				m_Type = DFloor::genFloorChgT;
+				break;
+			}
+		}
+	}
+}
+
 DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 			   fixed_t speed, fixed_t height, bool crush, int change)
 	: DMovingFloor (sec), m_Status(init)
@@ -245,7 +519,8 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 	fixed_t ceilingheight = P_CeilingHeight(sec);
 
 	m_Type = floortype;
-	m_Crush = false;
+	m_Crush = crush ? DOOM_CRUSH : NO_CRUSH;
+	m_HexenCrush = false;
 	m_Speed = speed;
 	m_ResetCount = 0;				// [RH]
 	m_Direction = 1;
@@ -513,6 +788,71 @@ manual_floor:
 	return rtn;
 }
 
+int EV_ZDoomFloorCrushStop(int tag)
+{
+	int s = -1;
+
+	while ((s = P_FindSectorFromTag(tag, s)) >= 0)
+	{
+		sector_t* sec = &sectors[s];
+		DFloor* floor = (DFloor*)sec->floordata;
+
+		if (floor && floor->m_Type == DFloor::EFloor::floorRaiseAndCrush)
+		{
+			P_SetFloorDestroy(floor);
+		}
+	}
+
+	return 1;
+}
+
+bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
+                fixed_t height, bool crush, int change, bool hexencrush, bool hereticlower)
+{
+	int secnum;
+	bool rtn = false;
+	sector_t* sec;
+	bool manual = false;
+
+	speed *= FRACUNIT / 8;
+	height *= FRACUNIT;
+
+	// check if a manual trigger; if so do just the sector on the backside
+	if (co_boomphys && tag == 0)
+	{
+		if (!line || !(sec = line->backsector))
+			return rtn;
+		secnum = sec - sectors;
+		manual = true;
+		goto manual_floor;
+	}
+
+	secnum = -1;
+	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
+	{
+		sec = &sectors[secnum];
+
+	manual_floor:
+		// ALREADY MOVING?	IF SO, KEEP GOING...
+		if (sec->floordata)
+		{
+			if (co_boomphys && manual)
+				return false;
+			else
+				continue;
+		}
+
+		// new floor thinker
+		rtn = true;
+		new DFloor(sec, floortype, line, speed, height, crush, change, hexencrush, hereticlower);
+		P_AddMovingFloor(sec);
+
+		if (manual)
+			return rtn;
+	}
+	return rtn;
+}
+
 //
 // EV_DoChange()
 //
@@ -764,8 +1104,31 @@ manual_stair:
 	return rtn;
 }
 
+bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
+{
+	int secnum = -1;
+	int rtn = 0;
+
+	while ((secnum = P_FindSectorFromTagOrLine(tag, line, secnum)) >= 0)
+		rtn |= P_SpawnDonut(secnum, line, pillarspeed, slimespeed);
+
+	return rtn;
+}
+
+bool EV_DoDonut(line_t* line)
+{
+	int secnum = -1;
+	int rtn = 0;
+
+	// do function on all sectors with same tag as linedef
+	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+		rtn |= P_SpawnDonut(secnum, line, FLOORSPEED / 2, FLOORSPEED / 2);
+
+	return rtn;
+}
+
 // [RH] Added pillarspeed and slimespeed parameters
-int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
+int P_SpawnDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
 {
 	sector_t*			s1;
 	sector_t*			s2;
@@ -801,13 +1164,21 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 			floor = new DFloor (s2);
 			P_AddMovingFloor(s2);
 
+			newspecial_s newspec;
+			P_ResetTransferSpecial(&newspec);
+
 			floor->m_Type = DFloor::donutRaise;
 			floor->m_Crush = false;
+			floor->m_HexenCrush = false;
 			floor->m_Direction = 1;
 			floor->m_Sector = s2;
 			floor->m_Speed = slimespeed;
 			floor->m_Texture = s3->floorpic;
-			floor->m_NewSpecial = 0;
+			floor->m_NewSpecial = newspec.special;
+			floor->m_NewDamageRate = newspec.damage.amount;
+			floor->m_NewFlags = newspec.flags;
+			floor->m_NewDmgInterval = newspec.damage.interval;
+			floor->m_NewLeakRate = newspec.damage.leakrate;
 			floor->m_FloorDestHeight = P_FloorHeight(s3);
 			floor->m_Change = 0;
 			floor->m_Height = 0;
@@ -820,6 +1191,7 @@ int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed)
 
 			floor->m_Type = DFloor::floorLowerToNearest;
 			floor->m_Crush = false;
+			floor->m_HexenCrush = false;
 			floor->m_Direction = -1;
 			floor->m_Sector = s1;
 			floor->m_Speed = pillarspeed;
@@ -968,18 +1340,25 @@ DElevator* DElevator::Clone(sector_t* sec) const
 BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 					fixed_t speed, fixed_t height, int tag)
 {
-	int			secnum;
-	BOOL		rtn;
-	sector_t*	sec;
-	DElevator*	elevator;
+	bool rtn = SpawnCommonElevator(line, elevtype, speed, height, tag);
+	return rtn;
+}
 
-	if (!line && (elevtype == DElevator::elevateCurrent))
+bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
+                       fixed_t height, int tag)
+{
+	int secnum;
+	BOOL rtn;
+	sector_t* sec;
+	DElevator* elevator;
+
+	if (!line && (type == DElevator::elevateCurrent))
 		return false;
 
 	secnum = -1;
 	rtn = false;
 	// act on all sectors with the same tag as the triggering linedef
-	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
+	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
 	{
 		sec = &sectors[secnum];
 
@@ -995,7 +1374,7 @@ BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 			sec->floordata = NULL;
 		}
 
-		if (sec->floordata || sec->ceilingdata) //jff 2/22/98
+		if (sec->floordata || sec->ceilingdata) // jff 2/22/98
 			continue;
 
 		fixed_t floorheight = P_FloorHeight(sec);
@@ -1003,27 +1382,27 @@ BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 
 		// create and initialize new elevator thinker
 		rtn = true;
-		elevator = new DElevator (sec);
+		elevator = new DElevator(sec);
 
 		// [SL] 2012-04-19 - Elevators have both moving ceilings and floors.
 		// Consider them as moving ceilings for consistency sake.
 		P_AddMovingCeiling(sec);
 
-		elevator->m_Type = elevtype;
+		elevator->m_Type = type;
 		elevator->m_Speed = speed;
 		elevator->PlayElevatorSound();
 
-        sec->floordata = sec->ceilingdata = elevator;
+		sec->floordata = sec->ceilingdata = elevator;
 
 		// set up the fields according to the type of elevator action
-		switch (elevtype)
+		switch (type)
 		{
 		// elevator down to next floor
 		case DElevator::elevateDown:
 			elevator->m_Direction = -1;
 			elevator->m_FloorDestHeight = P_FindNextLowestFloor(sec);
 			elevator->m_CeilingDestHeight =
-				elevator->m_FloorDestHeight + ceilingheight - floorheight;
+			    elevator->m_FloorDestHeight + ceilingheight - floorheight;
 			break;
 
 		// elevator up to next floor
@@ -1031,16 +1410,15 @@ BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 			elevator->m_Direction = 1;
 			elevator->m_FloorDestHeight = P_FindNextHighestFloor(sec);
 			elevator->m_CeilingDestHeight =
-				elevator->m_FloorDestHeight + ceilingheight - floorheight;
+			    elevator->m_FloorDestHeight + ceilingheight - floorheight;
 			break;
 
 		// elevator to floor height of activating switch's front sector
 		case DElevator::elevateCurrent:
 			elevator->m_FloorDestHeight = P_FloorHeight(line->frontsector);
 			elevator->m_CeilingDestHeight =
-				elevator->m_FloorDestHeight + ceilingheight - floorheight;
-			elevator->m_Direction =
-				elevator->m_FloorDestHeight > floorheight ? 1 : -1;
+			    elevator->m_FloorDestHeight + ceilingheight - floorheight;
+			elevator->m_Direction = elevator->m_FloorDestHeight > floorheight ? 1 : -1;
 			break;
 
 		// [RH] elevate up by a specific amount
@@ -1058,7 +1436,168 @@ BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 			break;
 		}
 	}
+}
+
+// Almost identical to the above, but height is multiplied by FRACUNIT
+int EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
+                       fixed_t height, int tag)
+{
+	height *= FRACUNIT;
+
+	bool rtn = SpawnCommonElevator(line, type, speed, height, tag);
+
 	return rtn;
+}
+
+///////////////////////////////////////
+/// Waggle
+///////////////////////////////////////
+bool EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
+                             int timer, bool ceiling)
+{
+	int sectorIndex;
+	sector_t* sector;
+	bool retCode;
+
+	retCode = false;
+	sectorIndex = -1;
+	while ((sectorIndex = P_FindSectorFromTagOrLine(tag, line, sectorIndex)) >= 0)
+	{
+		sector = &sectors[sectorIndex];
+		if (ceiling ? P_CeilingActive(sector) : P_FloorActive(sector))
+		{ // Already busy with another thinker
+			continue;
+		}
+		retCode = true;
+		new DWaggle(sector, height, speed, offset, timer, ceiling);
+	}
+
+	return retCode;
+}
+
+IMPLEMENT_SERIAL(DWaggle, DMover)
+
+void DWaggle::Serialize(FArchive& arc)
+{
+	Super::Serialize (arc);
+	if (arc.IsStoring ())
+	{
+		arc << m_OriginalHeight
+			<< m_Accumulator
+			<< m_AccDelta
+			<< m_TargetScale
+			<< m_Scale
+		    << m_ScaleDelta
+			<< m_Ticker
+			<< m_State
+			<< m_Ceiling;
+	}
+	else
+	{
+		arc >> m_OriginalHeight
+			>> m_Accumulator
+			>> m_AccDelta
+			>> m_TargetScale
+			>> m_Scale
+			>> m_ScaleDelta
+			>> m_Ticker
+			>> m_State
+			>> m_Ceiling;
+	}
+}
+
+DWaggle::DWaggle(sector_t* sector, int height, int speed, int offset, int timer,
+                 bool ceiling)
+{
+	DWaggle* waggle;
+
+	if (ceiling)
+	{
+		sector->ceilingdata = waggle;
+		waggle->m_OriginalHeight = sector->ceilingheight;
+	}
+	else
+	{
+		sector->floordata = waggle;
+		waggle->m_OriginalHeight = sector->floorheight;
+	}
+	waggle->m_Sector = sector;
+	waggle->m_Accumulator = offset * FRACUNIT;
+	waggle->m_AccDelta = speed << 10;
+	waggle->m_Scale = 0;
+	waggle->m_TargetScale = height << 10;
+	waggle->m_ScaleDelta = waggle->m_TargetScale / (35 + ((3 * 35) * height) / 255);
+	waggle->m_Ticker = timer ? timer * 35 : -1;
+	waggle->m_State = WGLSTATE_EXPAND;
+	waggle->m_Ceiling = ceiling;
+}
+
+void DWaggle::RunThink()
+{
+	switch (m_State)
+	{
+	case WGLSTATE_EXPAND:
+		if ((m_Scale += m_ScaleDelta) >= m_TargetScale)
+		{
+			m_Scale = m_TargetScale;
+			m_State = WGLSTATE_STABLE;
+		}
+		break;
+	case WGLSTATE_REDUCE:
+		if ((m_Scale -= m_ScaleDelta) <= 0)
+		{ // Remove
+			if (m_Ceiling)
+			{
+				m_Sector->ceilingheight = m_OriginalHeight;
+			}
+			else
+			{
+				m_Sector->floorheight = m_OriginalHeight;
+			}
+			P_ChangeSector(m_Sector, true);
+			Destroy();
+			return;
+		}
+		break;
+	case WGLSTATE_STABLE:
+		if (m_Ticker != -1)
+		{
+			if (!--m_Ticker)
+			{
+				m_State = WGLSTATE_REDUCE;
+			}
+		}
+		break;
+	}
+	m_Accumulator += m_AccDelta;
+	if (m_Ceiling)
+	{
+		m_Sector->ceilingheight =
+		    m_OriginalHeight +
+		    FixedMul(FloatBobOffsets[(m_Accumulator >> FRACBITS) & 63], m_Scale);
+	}
+	else
+	{
+		m_Sector->floorheight =
+		    m_OriginalHeight +
+		    FixedMul(FloatBobOffsets[(m_Accumulator >> FRACBITS) & 63], m_Scale);
+	}
+	P_ChangeSector(m_Sector, true);
+}
+
+DWaggle::DWaggle(sector_t* sec) : Super(sec) { }
+
+// Clones a DWaggle and returns a pointer to that clone.
+//
+// The caller owns the pointer, and it must be deleted with `delete`.
+DWaggle* DWaggle::Clone(sector_t* sec) const
+{
+	DWaggle* ele = new DWaggle(*this);
+
+	ele->Orphan();
+	ele->m_Sector = sec;
+
+	return ele;
 }
 
 VERSION_CONTROL (p_floor_cpp, "$Id$")

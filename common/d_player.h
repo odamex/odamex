@@ -254,6 +254,10 @@ public:
 
 	byte        QueuePosition;            //Queue position to join game. 0 means not in queue
 
+	// zdoom
+	int hazardcount;
+	byte hazardinterval;
+
 	// For flood protection
 	struct LastMessage_s
 	{

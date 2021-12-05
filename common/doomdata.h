@@ -164,7 +164,7 @@ typedef struct
 #define HML_REPEATSPECIAL	0x0200 // special is repeatable
 #define HML_SPAC_SHIFT		10
 #define HML_SPAC_MASK		0x1c00
-#define GET_SPAC(flags)		((flags & HML_SPAC_MASK) >> HML_SPAC_SHIFT)
+#define GET_HSPAC(flags)		((flags & HML_SPAC_MASK) >> HML_SPAC_SHIFT)
 
 // zdoom
 #define ZML_MONSTERSCANACTIVATE 0x2000 // Monsters and players can activate
@@ -253,15 +253,16 @@ typedef struct MapThing
 	void Serialize (FArchive &);
 } mapthing2_t;
 
+#define NO_INDEX ((unsigned short)-1)
 
 // [RH] MapThing flags.
 
-/*
+
 #define MTF_EASY			0x0001	// Thing will appear on easy skill setting
 #define MTF_MEDIUM			0x0002	// Thing will appear on medium skill setting
 #define MTF_HARD			0x0004	// Thing will appear on hard skill setting
 #define MTF_AMBUSH			0x0008	// Thing is deaf
-*/
+
 #define MTF_DORMANT			0x0010	// Thing is dormant (use Thing_Activate)
 #define MTF_SINGLE			0x0100	// Thing appears in single-player games
 #define MTF_COOPERATIVE		0x0200	// Thing appears in cooperative games

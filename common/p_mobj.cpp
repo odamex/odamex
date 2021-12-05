@@ -44,6 +44,7 @@
 #include "p_hordespawn.h"
 #include "g_mapinfo.h"
 #include "m_wdlstats.h"
+#include "p_mapformat.h"
 
 void SV_UpdateMobj(AActor* mo);
 void SV_UpdateMobjState(AActor* mo);
@@ -609,7 +610,7 @@ void P_MoveActor(AActor *mo)
 			}
 		}
 
-		if (!mo->player && P_ActorInSpecialSector(mo))
+		if (!mo->player && map_format.actor_in_special_sector(mo))
 			return;
 	}
 

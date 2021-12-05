@@ -62,6 +62,11 @@ typedef enum {
 
 	Stairs_BuildDownSync = 31,
 	Stairs_BuildUpSync = 32,
+	ForceField = 33,
+	Clear_ForceField = 34,
+
+	Floor_MoveToValue = 37,
+	Ceiling_Waggle = 38,
 
 	Floor_RaiseByValueTimes8 = 35,
 	Floor_LowerByValueTimes8 = 36,
@@ -72,8 +77,13 @@ typedef enum {
 	Ceiling_LowerAndCrush = 43,
 	Ceiling_CrushStop = 44,
 	Ceiling_CrushRaiseAndStay = 45,
-
 	Floor_CrushStop = 46,
+	Ceiling_MoveToValue = 47,
+
+	Scroll_Wall = 52,
+	Line_SetTextureOffset = 53,
+
+	Line_SetBlocking = 55,
 
 	Plat_PerpetualRaise = 60,
 	Plat_Stop = 61,
@@ -109,11 +119,17 @@ typedef enum {
 
 	FloorAndCeiling_LowerByValue = 95,
 	FloorAndCeiling_RaiseByValue = 96,
+	Ceiling_LowerAndCrushDist = 97,
+
+	Floor_RaiseAndCrushDoom = 99,
 
 	Scroll_Texture_Left = 100,
 	Scroll_Texture_Right = 101,
 	Scroll_Texture_Up = 102,
 	Scroll_Texture_Down = 103,
+	Ceiling_CrushAndRaiseSilentDist = 104,
+	Door_WaitRaise = 105,
+	Door_WaitClose = 106,
 
 	Light_ForceLightning = 109,
 	Light_RaiseByValue = 110,
@@ -123,6 +139,7 @@ typedef enum {
 	Light_Glow = 114,
 	Light_Flicker = 115,
 	Light_Strobe = 116,
+	Light_Stop = 117,
 
 	Radius_Quake = 120,	// Earthquake
 
@@ -147,6 +164,13 @@ typedef enum {
 
 // [RH] Begin new specials for ZDoom
 	Teleport_NoStop = 154,
+
+	Ceiling_CrushAndRaiseDist = 168,
+	Generic_Crusher2 = 169,
+
+	Plat_UpNearestWaitDownStay = 172,
+	Noise_Alert = 173,
+
 	Plane_Align = 181,
 	Line_AlignCeiling = 183,
 	Line_AlignFloor = 184,
@@ -246,7 +270,24 @@ typedef enum {
 	Ceiling_RaiseToNearest = 252,
 	Ceiling_LowerToLowest = 253,
 	Ceiling_LowerToFloor = 254,
-	Ceiling_CrushRaiseAndStaySilA = 255
+	Ceiling_CrushRaiseAndStaySilA = 255,
+	Floor_LowerToHighestEE = 256,
+	Floor_RaiseToLowest = 257,
+	Floor_LowerToLowestCeiling = 258,
+	Floor_RaiseToCeiling = 259,
+	Floor_ToCeilingInstant = 260,
+	Floor_LowerByTexture = 261,
+	Ceiling_RaiseToHighest = 262,
+	Ceiling_ToHighestInstant = 263,
+	Ceiling_LowerToNearest = 264,
+	Ceiling_RaiseToLowest = 265,
+	Ceiling_RaiseToHighestFloor = 266,
+	Ceiling_ToFloorInstant = 267,
+	Ceiling_RaiseByTexture = 268,
+	Ceiling_LowerByTexture = 269,
+	Stairs_BuildDownDoom = 270,
+	Stairs_BuildUpDoomSync = 271,
+	Stairs_BuildDownDoomSync = 272,
 } linespecial_t;
 
 typedef enum {
@@ -279,6 +320,7 @@ typedef enum {
 	dLight_StrobeSlowSync = 76,
 	dLight_StrobeFastSync = 77,
 	dSector_DoorRaiseIn5Mins = 78,
+	dSector_LowFriction = 79,
 	dDamage_SuperHellslime = 80,
 	dLight_FireFlicker = 81,
 	dDamage_LavaWimpy = 82,
@@ -290,7 +332,9 @@ typedef enum {
 	sDamage_Hellslime = 105,
 	Damage_InstantDeath = 115,
 	sDamage_SuperHellslime = 116,
-
+	Scroll_Strife_Current = 118,
+	Sector_Hidden = 195,
+	Sector_Heal = 196,
 	Light_IndoorLightning2 = 198,
 	Light_IndoorLightning1 = 199,
 
@@ -319,7 +363,29 @@ typedef enum {
 	Scroll_SouthEast_Fast = 221,
 	Scroll_SouthWest_Slow = 222,
 	Scroll_SouthWest_Medium = 223,
-	Scroll_SouthWest_Fast = 224
+	Scroll_SouthWest_Fast = 224,
+
+	// heretic-type scrollers
+	Scroll_Carry_East5 = 225,
+	Scroll_Carry_East10 = 226,
+	Scroll_Carry_East25 = 227,
+	Scroll_Carry_East30 = 228,
+	Scroll_Carry_East35 = 229,
+	Scroll_Carry_North5 = 230,
+	Scroll_Carry_North10 = 231,
+	Scroll_Carry_North25 = 232,
+	Scroll_Carry_North30 = 233,
+	Scroll_Carry_North35 = 234,
+	Scroll_Carry_South5 = 235,
+	Scroll_Carry_South10 = 236,
+	Scroll_Carry_South25 = 237,
+	Scroll_Carry_South30 = 238,
+	Scroll_Carry_South35 = 239,
+	Scroll_Carry_West5 = 240,
+	Scroll_Carry_West10 = 241,
+	Scroll_Carry_West25 = 242,
+	Scroll_Carry_West30 = 243,
+	Scroll_Carry_West35 = 244
 } sectorspecial_t;
 
 // [RH] Equivalents for BOOM's generalized sector types

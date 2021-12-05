@@ -134,7 +134,7 @@ void DPlat::RunThink ()
 	{
 	case midup:
 	case up:
-		res = MoveFloor (m_Speed, m_High, m_Crush, 1);
+		res = MoveFloor (m_Speed, m_High, m_Crush, 1, false);
 
 		if (res == crushed && !m_Crush)
 		{
@@ -156,6 +156,7 @@ void DPlat::RunThink ()
 					case platUpByValueStay:
 					case platDownToNearestFloor:
 					case platDownToLowestCeiling:
+				    case platRaiseAndStayLockout:
 						m_Status = finished;
 						break;
 
@@ -174,7 +175,7 @@ void DPlat::RunThink ()
 
 	case middown:
 	case down:
-		res = MoveFloor (m_Speed, m_Low, false, -1);
+		res = MoveFloor (m_Speed, m_Low, false, -1, false);
 
 		if (res == pastdest)
 		{
@@ -187,6 +188,7 @@ void DPlat::RunThink ()
 				switch (m_Type)
 				{
 					case platUpWaitDownStay:
+					case platUpNearestWaitDownStay:
 					case platUpByValue:
 						m_Status = finished;
 						break;
@@ -211,6 +213,7 @@ void DPlat::RunThink ()
 		{
 			case platUpByValueStay:
 			case platRaiseAndStay:
+		    case platRaiseAndStayLockout:
 				m_Status = finished;
 				break;
 
@@ -304,6 +307,7 @@ DPlat::DPlat(sector_t *sec, DPlat::EPlatType type, fixed_t height,
 		break;
 
 	case DPlat::platDownWaitUpStay:
+	case DPlat::platDownWaitUpStayStone:
 		m_Low = P_FindLowestFloorSurrounding(sec) + lip;
 
 		if (m_Low > P_FloorHeight(sec))
@@ -311,6 +315,12 @@ DPlat::DPlat(sector_t *sec, DPlat::EPlatType type, fixed_t height,
 
 		m_High = P_FloorHeight(sec);
 		m_Status = DPlat::down;
+		PlayPlatSound();
+		break;
+
+	case DPlat::platUpNearestWaitDownStay:
+		m_High = P_FindNextHighestFloor(sec);
+		m_Status = DPlat::up;
 		PlayPlatSound();
 		break;
 

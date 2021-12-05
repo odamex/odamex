@@ -27,6 +27,7 @@
 #include "p_local.h"
 #include "p_spec.h"
 #include "s_sound.h"
+#include "p_mapformat.h"
 
 extern bool predicting;
 
@@ -94,13 +95,13 @@ void DPillar::RunThink ()
 
 	if (m_Type == pillarBuild)
 	{
-		r = MoveFloor (m_FloorSpeed, m_FloorTarget, m_Crush, 1);
-		s = MoveCeiling (m_CeilingSpeed, m_CeilingTarget, m_Crush, -1);
+		r = MoveFloor(m_FloorSpeed, m_FloorTarget, m_Crush, 1, m_HexenCrush);
+		s = MoveCeiling(m_CeilingSpeed, m_CeilingTarget, m_Crush, -1, m_HexenCrush);
 	}
 	else
 	{
-		r = MoveFloor (m_FloorSpeed, m_FloorTarget, m_Crush, -1);
-		s = MoveCeiling (m_CeilingSpeed, m_CeilingTarget, m_Crush, 1);
+		r = MoveFloor(m_FloorSpeed, m_FloorTarget, m_Crush, -1, m_HexenCrush);
+		s = MoveCeiling(m_CeilingSpeed, m_CeilingTarget, m_Crush, 1, m_HexenCrush);
 	}
 
 	if (r == pastdest && s == pastdest)
@@ -111,11 +112,13 @@ void DPillar::RunThink ()
 	}
 }
 
-DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
-				  fixed_t height, fixed_t height2, bool crush)
-	: DMover (sector), m_Status(init)
+// ZDoom compatible pillar
+// Main fixes: make crush variable, add hexen crush
+DPillar::DPillar(sector_t* sector, EPillar type, fixed_t speed, fixed_t height,
+                 fixed_t height2, int crush, bool hexencrush)
+    : DMover(sector), m_Status(init)
 {
-	fixed_t	ceilingdist, floordist;
+	fixed_t ceilingdist, floordist;
 
 	sector->floordata = sector->ceilingdata = this;
 
@@ -124,6 +127,7 @@ DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
 
 	m_Type = type;
 	m_Crush = crush;
+	m_HexenCrush = hexencrush;
 
 	if (type == pillarBuild)
 	{
@@ -131,7 +135,7 @@ DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
 		if (height == 0)
 		{
 			m_FloorTarget = m_CeilingTarget =
-				 (ceilingheight - floorheight) / 2 + floorheight;
+			    (ceilingheight - floorheight) / 2 + floorheight;
 			floordist = m_FloorTarget - floorheight;
 		}
 		else
@@ -147,7 +151,7 @@ DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
 		// surrounding sectors
 		if (height == 0)
 		{
-			m_FloorTarget = P_FindLowestFloorSurrounding (sector);
+			m_FloorTarget = P_FindLowestFloorSurrounding(sector);
 			floordist = floorheight - m_FloorTarget;
 		}
 		else
@@ -157,7 +161,7 @@ DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
 		}
 		if (height2 == 0)
 		{
-			m_CeilingTarget = P_FindHighestCeilingSurrounding (sector);
+			m_CeilingTarget = P_FindHighestCeilingSurrounding(sector);
 			ceilingdist = m_CeilingTarget - ceilingheight;
 		}
 		else
@@ -173,12 +177,12 @@ DPillar::DPillar (sector_t *sector, EPillar type, fixed_t speed,
 	if (floordist > ceilingdist)
 	{
 		m_FloorSpeed = speed;
-		m_CeilingSpeed = FixedDiv (FixedMul (speed, ceilingdist), floordist);
+		m_CeilingSpeed = FixedMul(speed, FixedDiv(ceilingdist, floordist));
 	}
 	else
 	{
 		m_CeilingSpeed = speed;
-		m_FloorSpeed = FixedDiv (FixedMul (speed, floordist), ceilingdist);
+		m_FloorSpeed = FixedMul(speed, FixedDiv(ceilingdist, floordist));
 	}
 
 	PlayPillarSound();
@@ -220,6 +224,36 @@ BOOL EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
 
 		rtn = true;
 		new DPillar (sec, type, speed, height, height2, crush);
+		P_AddMovingCeiling(sec);
+	}
+	return rtn;
+}
+
+bool EV_DoZDoomPillar(DPillar::EPillar type, line_t* line, int tag, fixed_t speed,
+                      fixed_t floordist, fixed_t ceilingdist, int crush, bool hexencrush)
+{
+	bool rtn = false;
+	sector_t* sec;
+	int secnum = -1;
+
+	floordist *= FRACUNIT;
+	ceilingdist *= FRACUNIT;
+
+	while ((secnum = P_FindSectorFromTagOrLine(tag, line, secnum)) >= 0)
+	{
+		sector_t* sec = &sectors[secnum];
+
+		if (P_FloorActive(sec) || P_CeilingActive(sec))
+			continue;
+
+		if (type == DPillar::pillarBuild && sec->floorheight == sec->ceilingheight)
+			continue;
+
+		if (type == DPillar::pillarOpen && sec->floorheight != sec->ceilingheight)
+			continue;
+
+		rtn = true;
+		new DPillar(sec, type, speed, floordist, ceilingdist, crush, hexencrush);
 		P_AddMovingCeiling(sec);
 	}
 	return rtn;

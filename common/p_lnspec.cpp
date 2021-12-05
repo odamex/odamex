@@ -1663,8 +1663,8 @@ FUNC(LS_Sector_SetRotation)
 // Sector_SetRotation (tag, floor-angle, ceiling-angle)
 {
 	int secnum = -1;
-	angle_t ceiling = arg2 * ANG(1);
-	angle_t floor = arg1 * ANG(1);
+	angle_t ceiling = ANG(arg2);
+	angle_t floor = ANG(arg1);
 
 	while ((secnum = P_FindSectorFromTag (arg0, secnum)) >= 0)
 	{

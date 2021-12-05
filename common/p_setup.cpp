@@ -49,7 +49,6 @@
 #include "p_mobj.h"
 #include "p_setup.h"
 #include "p_hordespawn.h"
-#include "p_mapformat.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
@@ -63,6 +62,7 @@ static void P_SetupLevelFloorPlane(sector_t *sector);
 static void P_SetupLevelCeilingPlane(sector_t *sector);
 static void P_SetupSlopes();
 void P_InvertPlane(plane_t *plane);
+void P_SetupWorldState();
 
 extern dyncolormap_t NormalLight;
 extern AActor* shootthing;
@@ -1882,7 +1882,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_SpawnBrainTargets();
 
 	// set up world state
-	map_format.init_sector_special;
+	P_SetupWorldState();
 
 	// build subsector connect matrix
 	//	UNUSED P_ConnectSubsectors ();
@@ -1904,7 +1904,6 @@ void P_Init (void)
 	R_InitSprites (sprnames);
 	InitTeamInfo();
 }
-
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)
 {

@@ -2699,9 +2699,19 @@ BOOL PTR_UseTraverse (intercept_t *in)
 	//	   it through, including SPAC_USETHROUGH.
 	//[ML] And NOW (8/16/10) it checks whether it's use or NOT the passthrough flags
 	// (passthru on a cross or use line).  This may get augmented/changed even more in the future.
-	return (GET_SPAC(in->d.line->flags) == SPAC_USE ||
-            (GET_SPAC(in->d.line->flags) != SPAC_CROSSTHROUGH &&
-             GET_SPAC(in->d.line->flags) != SPAC_USETHROUGH)) ? false : true;
+	
+	bool eatuse = false;
+	if (map_format.zdoom)
+	{
+		eatuse = (GET_SPAC(in->d.line->flags) == ML_SPAC_USE ||
+		        (GET_SPAC(in->d.line->flags) != ML_SPAC_CROSS &&
+		         GET_SPAC(in->d.line->flags) != ML_SPAC_USE))
+		           ? true
+		           : false;
+	}
+
+	return (!demoplayback && (in->d.line->flags & ML_PASSUSE) && !eatuse) ?
+          true : false;
 }
 
 // Returns false if a "oof" sound should be made because of a blocking
@@ -3028,13 +3038,13 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 // of all things that touch the sector.
 //
 // If anything doesn't fit anymore, true will be returned.
-// If crunch is true, they will take damage
-//  as they are being crushed.
-// If Crunch is false, you should set the sector height back
+// If crunch is greater than zero, it will crush based on its value
+// (BOOM's default crush is 10 dmg per crush)
+// If Crunch is 0 or less, you should set the sector height back
 //  the way it was and call P_ChangeSector again
 //  to undo the changes.
 //
-bool	crushchange;
+int		crushchange;
 bool 	nofit;
 
 //
@@ -3084,9 +3094,9 @@ BOOL PIT_ChangeSector (AActor *thing)
 
 	nofit = true;
 
-	if (crushchange && !(level.time&3) )
+	if (crushchange > 0 && !(level.time&3) )
 	{
-		P_DamageMobj (thing, NULL, NULL, 10, MOD_CRUSH);
+		P_DamageMobj(thing, NULL, NULL, crushchange, MOD_CRUSH);
 
 		// spray blood in a random direction
 		if (!(thing->flags&MF_NOBLOOD))
@@ -3111,7 +3121,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 // sector. Both more accurate and faster.
 //
 
-bool P_ChangeSector (sector_t *sector, bool crunch)
+bool P_ChangeSector (sector_t *sector, int crunch)
 {
 	if (!sector)
 		return true;

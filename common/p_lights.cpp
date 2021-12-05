@@ -490,6 +490,58 @@ void EV_LightChange (int tag, int value)
 	}
 }
 
+void EV_LightSet(int tag, short level)
+{
+	int s = -1;
+
+	while ((s = P_FindSectorFromTag(tag, s)) >= 0)
+		sectors[s].lightlevel = level;
+}
+
+void EV_LightSetMinNeighbor(int tag)
+{
+	int s = -1;
+
+	while ((s = P_FindSectorFromTag(tag, s)) >= 0)
+	{
+		int i;
+		short level;
+		sector_t *temp, *sector;
+
+		sector = &sectors[s];
+		level = sector->lightlevel;
+
+		for (i = 0; i < sector->linecount; i++)
+			if ((temp = getNextSector(sector->lines[i], sector)) &&
+			    temp->lightlevel < level)
+				level = temp->lightlevel;
+
+		sector->lightlevel = level;
+	}
+}
+
+void EV_LightSetMaxNeighbor(int tag)
+{
+	int s = -1;
+
+	while ((s = P_FindSectorFromTag(tag, s)) >= 0)
+	{
+		int i;
+		short level;
+		sector_t *temp, *sector;
+
+		sector = &sectors[s];
+		level = 0;
+
+		for (i = 0; i < sector->linecount; i++)
+			if ((temp = getNextSector(sector->lines[i], sector)) &&
+			    temp->lightlevel > level)
+				level = temp->lightlevel;
+
+		sector->lightlevel = level;
+	}
+}
+
 	
 //
 // Spawn glowing light
@@ -701,8 +753,6 @@ int DPhased::PhaseHelper (sector_t *sector, int index, int light, sector_t *prev
 				index + 1, l->m_BaseLevel, sector);
 		l->m_Phase = ((numsteps - index - 1) * 64) / numsteps;
 
-		sector->special &= 0xff00;
-
 		return numsteps;
 	}
 }
@@ -724,6 +774,5 @@ DPhased::DPhased (sector_t *sector, int baselevel, int phase)
 {
 	m_BaseLevel = baselevel;
 	m_Phase = phase;
-	sector->special &= 0xff00;
 }
 VERSION_CONTROL (p_lights_cpp, "$Id$")

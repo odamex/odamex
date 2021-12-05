@@ -30,6 +30,9 @@
 #include "r_state.h"
 #include "w_wad.h"
 
+#include "p_boomfspec.h"
+#include "p_zdoomhexspec.h"
+
 #include "p_mapformat.h"
 
 map_format_s map_format;
@@ -180,6 +183,7 @@ extern bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 
 extern void P_PostProcessCompatibleLineSpecial(line_t* ld);
 extern void P_PostProcessZDoomLineSpecial(line_t* ld);
+extern void P_PostProcessZDoomLineSectorSpecial(int line);
 
 extern void P_PostProcessCompatibleSidedefSpecial(side_t* sd, const mapsidedef_t* msd,
                                                   sector_t* sec, int i);
@@ -236,9 +240,9 @@ static const map_format_s zdoom_in_hexen_map_format = {
     .lax_monster_activation = true,
     .generalized_mask = ~0xff,
     .switch_activation = ML_SPAC_USE | ML_SPAC_IMPACT | ML_SPAC_PUSH,
-    .init_sector_special = P_SpawnZDoomSectorSpecials,
+    .init_sector_special = P_SpawnZDoomSectorSpecial,
     .player_in_special_sector = P_PlayerInZDoomSector,
-    .mobj_in_special_sector = P_ActorInZDoomSector,
+    .actor_in_special_sector = P_ActorInZDoomSector,
     .spawn_scroller = P_SpawnZDoomScroller,
     .spawn_friction = P_SpawnZDoomFriction,
     .spawn_pusher = P_SpawnZDoomPusher,
@@ -258,8 +262,6 @@ static const map_format_s zdoom_in_hexen_map_format = {
     .t_move_ceiling = T_MoveCompatibleCeiling,
     .t_build_pillar = T_BuildZDoomPillar,
     .t_plat_raise = T_ZDoomPlatRaise,
-    .ev_teleport = EV_CompatibleTeleport,
-    .player_thrust = P_CompatiblePlayerThrust,
     .mapthing_size = sizeof(mapthing2_t),
     .maplinedef_size = sizeof(hexen_maplinedef_t),
     .mt_push = MT_PUSH,
@@ -280,17 +282,15 @@ static const map_format_s doom_map_format = {
     .lax_monster_activation = true,
     .generalized_mask = ~31,
     .switch_activation = 0, // not used
-    .init_sector_special = P_SpawnCompatibleSectorSpecial,
+    .actor_in_special_sector = P_SpawnCompatibleSectorSpecial,
     .player_in_special_sector = P_PlayerInCompatibleSector,
-    .mobj_in_special_sector = P_MobjInCompatibleSector,
+    .mobj_in_special_sector = P_ActorInCompatibleSector,
     .spawn_scroller = P_SpawnCompatibleScroller,
     .spawn_friction = P_SpawnCompatibleFriction,
     .spawn_pusher = P_SpawnCompatiblePusher,
     .spawn_extra = P_SpawnCompatibleExtra,
     .cross_special_line = P_CrossCompatibleSpecialLine,
     .shoot_special_line = P_ShootCompatibleSpecialLine,
-    .test_activate_line = NULL,   // not used
-    .execute_line_special = NULL, // not used
     .post_process_line_special = P_PostProcessCompatibleLineSpecial,
     .post_process_sidedef_special = P_PostProcessCompatibleSidedefSpecial,
     .animate_surfaces = P_AnimateCompatibleSurfaces,
@@ -302,8 +302,6 @@ static const map_format_s doom_map_format = {
     .t_move_ceiling = T_MoveCompatibleCeiling,
     .t_build_pillar = NULL, // not used
     .t_plat_raise = T_CompatiblePlatRaise,
-    .ev_teleport = EV_CompatibleTeleport,
-    .player_thrust = P_CompatiblePlayerThrust,
     .mapthing_size = sizeof(mapthing2_t), // We'll use hexen mapthings to allow non-inf height things
     .maplinedef_size = sizeof(doom_maplinedef_t),
     .mt_push = MT_PUSH,

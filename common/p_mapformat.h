@@ -26,7 +26,6 @@
 
 #include "doomtype.h"
 #include "p_spec.h"
-#include "r_defs.h"
 
 struct map_format_s
 {
@@ -43,18 +42,18 @@ struct map_format_s
 	bool lax_monster_activation;
 	short generalized_mask;
 	unsigned int switch_activation;
-	void (*init_sector_special)(void);
-	void (*player_in_special_sector)(player_t*, sector_t*);
+	void (*init_sector_special)(sector_t*, int);
+	void (*player_in_special_sector)(player_t*);
 	bool (*actor_in_special_sector)(AActor*);
 	void (*spawn_scroller)(line_t*, int);
 	void (*spawn_friction)(line_t*);
 	void (*spawn_pusher)(line_t*);
-	void (*spawn_extra)(line_t*, int);
+	void (*spawn_extra)(int);
 	void (*cross_special_line)(line_t*, int, AActor*, bool);
 	void (*shoot_special_line)(AActor*, line_t*);
 	bool (*test_activate_line)(line_t*, AActor*, int, unsigned int);
-	bool (*execute_line_special)(int, byte*, line_t*, int, AActor*);
-	void (*post_process_line_special)(line_t*);
+	bool (*execute_line_special)(int, short*, line_t*, int, AActor*);
+	void (*post_process_line_special)(int);
 	void (*post_process_sidedef_special)(side_t*, const mapsidedef_t*, sector_t*, int);
 	void (*animate_surfaces)(void);
 	void (*check_impact)(AActor*);
@@ -65,8 +64,6 @@ struct map_format_s
 	void (*t_move_ceiling)(ceiling_t*);
 	void (*t_build_pillar)(pillar_t*);
 	void (*t_plat_raise)(plat_t*);
-	int  (*ev_teleport)(int, line_t*, int, AActor*, int);
-	void (*player_thrust)(player_t* player, angle_t angle, fixed_t move);
 	size_t mapthing_size;
 	size_t maplinedef_size;
 	int  mt_push;
