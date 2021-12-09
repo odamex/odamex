@@ -36,12 +36,17 @@ if (GCONSOLE)
   endif()
 endif()
 
+if(NOT GCONSOLE)
+  # Only non-consoles can use the client GUI.
+  file(GLOB CLIENT_GUI_SOURCES gui/*.cpp gui/*.h)
+endif()
+
 # Tag source files with correct directories
 get_target_property(COMMON_SOURCES odamex-common INTERFACE_SOURCES)
 source_group("Client" FILES ${CLIENT_SOURCES})
 source_group("Common" FILES ${COMMON_SOURCES})
 source_group("SDL" FILES ${CLIENT_SDL_SOURCES})
-
+source_group("GUI" FILES ${CLIENT_GUI_SOURCES})
 
 # Client definitions
 include_directories(${COMMON_DIR} ${CLIENT_DIR})
@@ -154,7 +159,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   add_executable(odamex MACOSX_BUNDLE WIN32
-    ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${COMMON_SOURCES})
+    ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${COMMON_SOURCES} ${CLIENT_GUI_SOURCES})
   odamex_target_settings(odamex)
   set_property(TARGET odamex PROPERTY CXX_STANDARD 98)
 
@@ -198,6 +203,10 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex SDL2::mixer)
   endif()
   target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY} CURL::libcurl)
+  if(NOT GCONSOLE)
+    target_include_directories(odamex PRIVATE gui)
+    target_link_libraries(odamex fltk)
+  endif()
 
   if(ENABLE_PORTMIDI)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})

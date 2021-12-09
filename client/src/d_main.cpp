@@ -722,6 +722,8 @@ void STACK_ARGS D_Shutdown()
 
 void C_DoCommand(const char *cmd, uint32_t key);
 
+#include "gui_boot.h"
+
 //
 // D_DoomMain
 //
@@ -754,6 +756,9 @@ void D_DoomMain()
 		C_DoCommand("logfile", 0);
 
 	M_LoadDefaults();					// load before initing other systems
+
+	GUI_BootWindow();
+
 	C_BindingsInit();					// Ch0wW : Initialize bindings
 
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
