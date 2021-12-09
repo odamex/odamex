@@ -72,8 +72,8 @@ static void ShowBoot()
 				} // Fl_Button* o
 				{
 					Fl_Box* o = new Fl_Box(10, 34, 295, 42,
-					                       "Add directories containing WAD and DEH "
-					                       "files here so Odamex can find them.");
+					                       "Add directories containing WAD and DEH files "
+					                       "here so Odamex can find them.");
 					o->align(Fl_Align(132 | FL_ALIGN_INSIDE));
 				} // Fl_Box* o
 				o->end();
@@ -88,17 +88,20 @@ static void ShowBoot()
 		} // Fl_Return_Button* o
 		o->end();
 	} // Fl_Double_Window* o
+
+	// Center window.
+	w->position((Fl::w() - w->w()) / 2, (Fl::h() - w->h()) / 2);
 	w->show();
 }
 
 void GUI_BootWindow()
 {
+	// Scale according to 720p.
+	Fl::screen_scale(0, Fl::h() / 720.0f);
+
 	// This feature is too clever by half, and in my experience just
 	// deforms the window.
 	Fl::keyboard_screen_scaling(0);
-
-	// TODO: Determine the proper scaling factor for this screen.
-	Fl::screen_scale(0, 1.5);
 
 	ShowBoot();
 
