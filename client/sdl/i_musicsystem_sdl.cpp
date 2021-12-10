@@ -43,10 +43,10 @@
 
 EXTERN_CVAR(snd_musicvolume)
 
-SdlMixerMusicSystem::SdlMixerMusicSystem() : mIsInitialized(false), mRegisteredSong()
+SdlMixerMusicSystem::SdlMixerMusicSystem() : m_isInitialized(false), m_registeredSong()
 {
 	Printf("I_InitMusic: Music playback enabled using SDL_Mixer.\n");
-	mIsInitialized = true;
+	m_isInitialized = true;
 }
 
 SdlMixerMusicSystem::~SdlMixerMusicSystem()
@@ -57,7 +57,7 @@ SdlMixerMusicSystem::~SdlMixerMusicSystem()
 	Mix_HaltMusic();
 
 	_StopSong();
-	mIsInitialized = false;
+	m_isInitialized = false;
 }
 
 void SdlMixerMusicSystem::startSong(byte* data, size_t length, bool loop)
@@ -72,10 +72,10 @@ void SdlMixerMusicSystem::startSong(byte* data, size_t length, bool loop)
 
 	_RegisterSong(data, length);
 
-	if (!mRegisteredSong.Track || !mRegisteredSong.Data)
+	if (!m_registeredSong.Track || !m_registeredSong.Data)
 		return;
 
-	if (Mix_PlayMusic(mRegisteredSong.Track, loop ? -1 : 1) == -1)
+	if (Mix_PlayMusic(m_registeredSong.Track, loop ? -1 : 1) == -1)
 	{
 		Printf(PRINT_WARNING, "Mix_PlayMusic: %s\n", Mix_GetError());
 		return;
@@ -162,15 +162,15 @@ void SdlMixerMusicSystem::_UnregisterSong()
 	if (!isInitialized())
 		return;
 
-	if (mRegisteredSong.Track)
-		Mix_FreeMusic(mRegisteredSong.Track);
+	if (m_registeredSong.Track)
+		Mix_FreeMusic(m_registeredSong.Track);
 
-	mRegisteredSong.Track = NULL;
-	mRegisteredSong.Data = NULL;
-	if (mRegisteredSong.Mem != NULL)
+	m_registeredSong.Track = NULL;
+	m_registeredSong.Data = NULL;
+	if (m_registeredSong.Mem != NULL)
 	{
-		mem_fclose(mRegisteredSong.Mem);
-		mRegisteredSong.Mem = NULL;
+		mem_fclose(m_registeredSong.Mem);
+		m_registeredSong.Mem = NULL;
 	}
 }
 
@@ -187,13 +187,13 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	if (S_MusicIsMus(data, length))
 	{
 		MEMFILE* mus = mem_fopen_read(data, length);
-		mRegisteredSong.Mem = mem_fopen_write();
+		m_registeredSong.Mem = mem_fopen_write();
 
-		int result = mus2mid(mus, mRegisteredSong.Mem);
+		int result = mus2mid(mus, m_registeredSong.Mem);
 		if (result == 0)
 		{
-			mRegisteredSong.Data = SDL_RWFromMem(mem_fgetbuf(mRegisteredSong.Mem),
-			                                     mem_fsize(mRegisteredSong.Mem));
+			m_registeredSong.Data = SDL_RWFromMem(mem_fgetbuf(m_registeredSong.Mem),
+			                                      mem_fsize(m_registeredSong.Mem));
 		}
 		else
 		{
@@ -204,10 +204,10 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	}
 	else
 	{
-		mRegisteredSong.Data = SDL_RWFromMem(data, length);
+		m_registeredSong.Data = SDL_RWFromMem(data, length);
 	}
 
-	if (!mRegisteredSong.Data)
+	if (!m_registeredSong.Data)
 	{
 		Printf(PRINT_WARNING, "SDL_RWFromMem: %s\n", SDL_GetError());
 		return;
@@ -225,27 +225,27 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	}
 
 	// Get the size of the music data
-	SDL_RWseek(mRegisteredSong.Data, 0, SEEK_END);
-	size_t reglength = SDL_RWtell(mRegisteredSong.Data);
+	SDL_RWseek(m_registeredSong.Data, 0, SEEK_END);
+	size_t reglength = SDL_RWtell(m_registeredSong.Data);
 
 	// Write the music data to the temporary file
-	SDL_RWseek(mRegisteredSong.Data, 0, SEEK_SET);
+	SDL_RWseek(m_registeredSong.Data, 0, SEEK_SET);
 	char buf[1024];
 	while (reglength)
 	{
 		size_t chunksize = reglength > sizeof(buf) ? sizeof(buf) : reglength;
 
-		SDL_RWread(mRegisteredSong.Data, buf, chunksize, 1);
+		SDL_RWread(m_registeredSong.Data, buf, chunksize, 1);
 		fwrite(buf, chunksize, 1, fp);
 		reglength -= chunksize;
 	}
 
 	fclose(fp);
 	// Read the midi data from the temporary file
-	mRegisteredSong.Track = Mix_LoadMUS(TEMP_MIDI);
+	m_registeredSong.Track = Mix_LoadMUS(TEMP_MIDI);
 	unlink(TEMP_MIDI); // remove the temporary file
 
-	if (!mRegisteredSong.Track)
+	if (!m_registeredSong.Track)
 	{
 		Printf(PRINT_WARNING, "Mix_LoadMUSW: %s\n", Mix_GetError());
 		return;
@@ -255,12 +255,12 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 
 // We can read the midi data directly from memory
 #ifdef SDL20
-	mRegisteredSong.Track = Mix_LoadMUS_RW(mRegisteredSong.Data, 0);
+	m_registeredSong.Track = Mix_LoadMUS_RW(m_registeredSong.Data, 0);
 #elif defined SDL12
-	mRegisteredSong.Track = Mix_LoadMUS_RW(mRegisteredSong.Data);
+	m_registeredSong.Track = Mix_LoadMUS_RW(m_registeredSong.Data);
 #endif // SDL12
 
-	if (!mRegisteredSong.Track)
+	if (!m_registeredSong.Track)
 	{
 		Printf(PRINT_WARNING, "Mix_LoadMUS_RW: %s\n", Mix_GetError());
 		return;

@@ -25,11 +25,11 @@
 
 #include <math.h>
 
-#include "i_system.h"
 #include "i_midi.h"
 #include "i_music.h"
 #include "i_musicsystem.h"
 #include "i_sdl.h"
+#include "i_system.h"
 #include "mus2midi.h"
 
 extern MusicSystem* musicsystem;
@@ -74,35 +74,35 @@ static double I_CalculateMsPerMidiClock(int timeDivision, double tempo = 120.0)
 
 void MusicSystem::startSong(byte* data, size_t length, bool loop)
 {
-	mIsPlaying = true;
-	mIsPaused = false;
+	m_isPlaying = true;
+	m_isPaused = false;
 }
 
 void MusicSystem::stopSong()
 {
-	mIsPlaying = false;
-	mIsPaused = false;
+	m_isPlaying = false;
+	m_isPaused = false;
 }
 
 void MusicSystem::pauseSong()
 {
-	mIsPaused = mIsPlaying;
+	m_isPaused = m_isPlaying;
 }
 
 void MusicSystem::resumeSong()
 {
-	mIsPaused = false;
+	m_isPaused = false;
 }
 
 void MusicSystem::setTempo(float tempo)
 {
 	if (tempo > 0.0f)
-		mTempo = tempo;
+		m_tempo = tempo;
 }
 
 void MusicSystem::setVolume(float volume)
 {
-	mVolume = clamp(volume, 0.0f, 1.0f);
+	m_volume = clamp(volume, 0.0f, 1.0f);
 }
 
 // ============================================================================
@@ -178,8 +178,8 @@ static void I_UnregisterMidiSong(MidiSong* midisong)
 // ============================================================================
 
 MidiMusicSystem::MidiMusicSystem()
-    : MusicSystem(), mMidiSong(NULL), mSongItr(), mLoop(false), mTimeDivision(96),
-      mLastEventTime(0), mPrevClockTime(0), mChannelVolume()
+    : MusicSystem(), m_midiSong(NULL), m_songItr(), m_loop(false), m_timeDivision(96),
+      m_lastEventTime(0), m_prevClockTime(0), m_channelVolume()
 {
 }
 
@@ -187,7 +187,7 @@ MidiMusicSystem::~MidiMusicSystem()
 {
 	_StopSong();
 
-	I_UnregisterMidiSong(mMidiSong);
+	I_UnregisterMidiSong(m_midiSong);
 }
 
 void MidiMusicSystem::_AllNotesOff()
@@ -213,10 +213,10 @@ void MidiMusicSystem::startSong(byte* data, size_t length, bool loop)
 	if (!data || !length)
 		return;
 
-	mLoop = loop;
+	m_loop = loop;
 
-	mMidiSong = I_RegisterMidiSong(data, length);
-	if (!mMidiSong)
+	m_midiSong = I_RegisterMidiSong(data, length);
+	if (!m_midiSong)
 	{
 		stopSong();
 		return;
@@ -228,8 +228,8 @@ void MidiMusicSystem::startSong(byte* data, size_t length, bool loop)
 
 void MidiMusicSystem::stopSong()
 {
-	I_UnregisterMidiSong(mMidiSong);
-	mMidiSong = NULL;
+	I_UnregisterMidiSong(m_midiSong);
+	m_midiSong = NULL;
 
 	_AllNotesOff();
 	MusicSystem::stopSong();
@@ -246,11 +246,11 @@ void MidiMusicSystem::resumeSong()
 {
 	MusicSystem::resumeSong();
 
-	mLastEventTime = I_MSTime();
+	m_lastEventTime = I_MSTime();
 
-	MidiEvent* event = *mSongItr;
+	MidiEvent* event = *m_songItr;
 	if (event)
-		mPrevClockTime = event->getMidiClockTime();
+		m_prevClockTime = event->getMidiClockTime();
 }
 
 //
@@ -286,7 +286,7 @@ float MidiMusicSystem::_GetScaledVolume()
 void MidiMusicSystem::_SetChannelVolume(int channel, int volume)
 {
 	if (channel >= 0 && channel < _GetNumChannels())
-		mChannelVolume[channel] = clamp(volume, 0, 127);
+		m_channelVolume[channel] = clamp(volume, 0, 127);
 }
 
 //
@@ -299,7 +299,7 @@ void MidiMusicSystem::_RefreshVolume()
 {
 	for (int i = 0; i < _GetNumChannels(); i++)
 	{
-		MidiControllerEvent event(0, MIDI_CONTROLLER_MAIN_VOLUME, i, mChannelVolume[i]);
+		MidiControllerEvent event(0, MIDI_CONTROLLER_MAIN_VOLUME, i, m_channelVolume[i]);
 		playEvent(&event);
 	}
 }
@@ -313,14 +313,14 @@ void MidiMusicSystem::_RefreshVolume()
 //
 void MidiMusicSystem::_InitializePlayback()
 {
-	if (!mMidiSong)
+	if (!m_midiSong)
 		return;
 
-	mLastEventTime = I_MSTime();
+	m_lastEventTime = I_MSTime();
 
 	// seek to the begining of the song
-	mSongItr = mMidiSong->begin();
-	mPrevClockTime = 0;
+	m_songItr = m_midiSong->begin();
+	m_prevClockTime = 0;
 
 	// shut off all notes and reset all controllers
 	_AllNotesOff();
@@ -329,47 +329,47 @@ void MidiMusicSystem::_InitializePlayback()
 
 	// initialize all channel volumes to 100%
 	for (int i = 0; i < _GetNumChannels(); i++)
-		mChannelVolume[i] = 127;
+		m_channelVolume[i] = 127;
 
 	_RefreshVolume();
 }
 
 void MidiMusicSystem::playChunk()
 {
-	if (!isInitialized() || !mMidiSong || !isPlaying() || isPaused())
+	if (!isInitialized() || !m_midiSong || !isPlaying() || isPaused())
 		return;
 
 	unsigned int endtime = I_MSTime() + 1000 / TICRATE;
 
-	while (mSongItr != mMidiSong->end())
+	while (m_songItr != m_midiSong->end())
 	{
-		MidiEvent* event = *mSongItr;
+		MidiEvent* event = *m_songItr;
 		if (!event)
 			break;
 
 		double msperclock =
-		    I_CalculateMsPerMidiClock(mMidiSong->getTimeDivision(), getTempo());
+		    I_CalculateMsPerMidiClock(m_midiSong->getTimeDivision(), getTempo());
 
 		unsigned int deltatime =
-		    (event->getMidiClockTime() - mPrevClockTime) * msperclock;
+		    (event->getMidiClockTime() - m_prevClockTime) * msperclock;
 
-		unsigned int eventplaytime = mLastEventTime + deltatime;
+		unsigned int eventplaytime = m_lastEventTime + deltatime;
 
 		if (eventplaytime > endtime)
 			break;
 
 		playEvent(event, eventplaytime);
 
-		mPrevClockTime = event->getMidiClockTime();
-		mLastEventTime = eventplaytime;
+		m_prevClockTime = event->getMidiClockTime();
+		m_lastEventTime = eventplaytime;
 
-		++mSongItr;
+		++m_songItr;
 	}
 
 	// At the end of the song.  Either stop or loop back to the begining
-	if (mSongItr == mMidiSong->end())
+	if (m_songItr == m_midiSong->end())
 	{
-		if (!mLoop)
+		if (!m_loop)
 		{
 			stopSong();
 			return;

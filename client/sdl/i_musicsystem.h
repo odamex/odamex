@@ -24,19 +24,16 @@
 
 #include "i_midi.h"
 
-// ============================================================================
-//
-// MusicSystem abstract base class
-//
-// Abstract base class that provides an interface for inheriting classes as
-// well as default implementations for several functions.
-//
-// ============================================================================
-
+/**
+ * @brief Abstract base class that provides an interface for inheriting
+ *        classes as well as default implementations for several functions.
+ */
 class MusicSystem
 {
   public:
-	MusicSystem() : mIsPlaying(false), mIsPaused(false), mTempo(120.0f), mVolume(1.0f) { }
+	MusicSystem() : m_isPlaying(false), m_isPaused(false), m_tempo(120.0f), m_volume(1.0f)
+	{
+	}
 	virtual ~MusicSystem() { }
 
 	virtual void startSong(byte* data, size_t length, bool loop);
@@ -46,13 +43,13 @@ class MusicSystem
 	virtual void playChunk() = 0;
 
 	virtual void setVolume(float volume);
-	float getVolume() const { return mVolume; }
+	float getVolume() const { return m_volume; }
 	virtual void setTempo(float tempo);
-	float getTempo() const { return mTempo; }
+	float getTempo() const { return m_tempo; }
 
 	virtual bool isInitialized() const = 0;
-	bool isPlaying() const { return mIsPlaying; }
-	bool isPaused() const { return mIsPaused; }
+	bool isPlaying() const { return m_isPlaying; }
+	bool isPaused() const { return m_isPaused; }
 
 	// Can this MusicSystem object play a particular type of music file?
 	virtual bool isMusCapable() const { return false; }
@@ -63,22 +60,17 @@ class MusicSystem
 	virtual bool isWaveCapable() const { return false; }
 
   private:
-	bool mIsPlaying;
-	bool mIsPaused;
+	bool m_isPlaying;
+	bool m_isPaused;
 
-	float mTempo;
-	float mVolume;
+	float m_tempo;
+	float m_volume;
 };
 
-// ============================================================================
-//
-// SilentMusicSystem class
-//
-// This music system does not play any music.  It can be selected when the user
-// wishes to disable music output.
-//
-// ============================================================================
-
+/**
+ * @brief This music system does not play any music.  It can be selected
+ *        when the user wishes to disable music output.
+ */
 class SilentMusicSystem : public MusicSystem
 {
   public:
@@ -105,17 +97,14 @@ class SilentMusicSystem : public MusicSystem
 	virtual bool isWaveCapable() const { return true; }
 };
 
-// ============================================================================
-//
-// MidiMusicSystem abstract base class
-//
-// Abstract base class that provides an interface for cross-platform midi
-// libraries.  MidiMusicSystem handles parsing a lump containing a MUS or MIDI
-// file and feeding each midi event to the library.  MidiMusicSystem does the
-// heavy lifting for the subclasses that are based on it.
-//
-// ============================================================================
-
+/**
+ * @brief Abstract base class that provides an interface for cross-platform
+ *        midi libraries.
+ *
+ * @detail MidiMusicSystem handles parsing a lump containing a MUS or MIDI
+ *         file and feeding each midi event to the library.  MidiMusicSystem
+ *         does the heavy lifting for the subclasses that are based on it.
+ */
 class MidiMusicSystem : public MusicSystem
 {
   public:
@@ -141,24 +130,25 @@ class MidiMusicSystem : public MusicSystem
 
 	virtual void _AllNotesOff();
 
-	int _GetNumChannels() const { return cNumChannels; }
+	int _GetNumChannels() const { return NUM_CHANNELS; }
 	void _SetChannelVolume(int channel, int volume);
 	void _RefreshVolume();
 
-	unsigned int _GetLastEventTime() const { return mLastEventTime; }
+	unsigned int _GetLastEventTime() const { return m_lastEventTime; }
 
 	void _InitializePlayback();
 
 	float _GetScaledVolume();
 
-	static const int cNumChannels = 16;
-	MidiSong* mMidiSong;
-	MidiSong::const_iterator mSongItr;
-	bool mLoop;
-	int mTimeDivision;
+  private:
+	static const int NUM_CHANNELS = 16;
+	MidiSong* m_midiSong;
+	MidiSong::const_iterator m_songItr;
+	bool m_loop;
+	int m_timeDivision;
 
-	unsigned int mLastEventTime;
-	int mPrevClockTime;
+	unsigned int m_lastEventTime;
+	int m_prevClockTime;
 
-	byte mChannelVolume[cNumChannels];
+	byte m_channelVolume[NUM_CHANNELS];
 };

@@ -28,6 +28,9 @@
 
 #include "portmidi.h"
 
+/**
+ * @brief Plays music utilizing the PortMidi music library.
+ */
 class PortMidiMusicSystem : public MidiMusicSystem
 {
   public:
@@ -35,17 +38,17 @@ class PortMidiMusicSystem : public MidiMusicSystem
 	virtual ~PortMidiMusicSystem();
 
 	virtual void stopSong();
-	virtual bool isInitialized() const { return mIsInitialized; }
+	virtual bool isInitialized() const { return m_isInitialized; }
 
 	virtual void playEvent(MidiEvent* event, int time = 0);
 
   private:
 	static const int cLatency = 80;
 
-	bool mIsInitialized;
+	bool m_isInitialized;
 
-	PmDeviceID mOutputDevice;
-	PmStream* mStream;
+	PmDeviceID m_outputDevice;
+	PmStream* m_stream;
 
 	void _PlayEvent(MidiEvent* event, int time = 0);
 	void _StopSong();
