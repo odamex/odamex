@@ -198,11 +198,11 @@ void WinMMMusicSystem::fillBuffer()
 	{
 		native_event_t* event = &m_buffer.events[i];
 
-		if (mSongItr == mMidiSong->end())
+		if (m_songItr == m_midiSong->end())
 		{
-			if (mLoop)
+			if (m_loop)
 			{
-				mSongItr = mMidiSong->begin();
+				m_songItr = m_midiSong->begin();
 			}
 			else
 			{
@@ -210,7 +210,7 @@ void WinMMMusicSystem::fillBuffer()
 			}
 		}
 
-		MidiEvent* odaEvent = *mSongItr;
+		MidiEvent* odaEvent = *m_songItr;
 		event->dwDeltaTime = odaEvent->getMidiClockTime();
 		event->dwStreamID = 0;
 		event->dwEvent = odaEvent->getEventType();
@@ -229,7 +229,7 @@ void WinMMMusicSystem::fillBuffer()
 			event->dwEvent = (event->dwEvent & 0xFF00FFFF) | ((volume & 0x7F) << 16);
 		}
 
-		++mSongItr;
+		++m_songItr;
 	}
 
 	m_buffer.num_events = i;
