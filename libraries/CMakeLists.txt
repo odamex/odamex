@@ -266,6 +266,7 @@ if(BUILD_CLIENT)
   endif()
 
   set_target_properties(fltk PROPERTIES IMPORTED_GLOBAL True)
+  set_target_properties(fltk_images PROPERTIES IMPORTED_GLOBAL True)
   if(WIN32)
     target_link_libraries(fltk INTERFACE gdiplus)
   endif()

@@ -205,7 +205,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY} CURL::libcurl)
   if(NOT GCONSOLE)
     target_include_directories(odamex PRIVATE gui)
-    target_link_libraries(odamex fltk)
+    target_link_libraries(odamex fltk fltk_images)
   endif()
 
   if(ENABLE_PORTMIDI)
