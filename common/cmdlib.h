@@ -85,10 +85,6 @@ extern	BOOL	com_eof;
 
 char	*copystring(const char *s);
 
-void	CRC_Init(unsigned short *crcvalue);
-void	CRC_ProcessByte(unsigned short *crcvalue, byte data);
-unsigned short CRC_Value(unsigned short crcvalue);
-
 std::vector<std::string> VectorArgs(size_t argc, char **argv);
 std::string JoinStrings(const std::vector<std::string> &pieces, const std::string &glue = "");
 
@@ -110,7 +106,6 @@ void ReplaceString (char** ptr, const char* str);
 
 void StripColorCodes(std::string& str);
 
-uint32_t CRC32(const uint8_t* buf, uint32_t len);
 uint32_t Log2(uint32_t n);
 float NextAfter(const float from, const float to);
 

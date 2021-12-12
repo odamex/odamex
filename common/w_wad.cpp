@@ -39,6 +39,8 @@
 
 #include <fcntl.h>
 
+#include "zlib.h" // crc32
+
 #include "m_fileio.h"
 #include "i_system.h"
 #include "z_zone.h"
@@ -140,6 +142,34 @@ void uppercopy (char *to, const char *from)
 		to[i] = 0;
 }
 
+/**
+ * @brief Calculate a CRC32 hash from a file.
+ * 
+ * @param filename Filename of file to hash.
+ * @return Output hash, or blank if file could not be found.
+ */
+std::string W_CRC32(const std::string& filename)
+{
+	std::string rvo;
+
+	const int file_chunk_size = 8192;
+	FILE* fp = fopen(filename.c_str(), "rb");
+
+	if (!fp)
+		return rvo;
+
+	unsigned n = 0;
+	unsigned char buf[file_chunk_size];
+	uLong crc = crc32(0L, Z_NULL, 0);
+
+	while ((n = fread(buf, 1, sizeof(buf), fp)))
+	{
+		crc = crc32(crc, buf, n);
+	}
+
+	StrFormat(rvo, "%08X", crc);
+	return rvo;
+}
 
 // denis - Standard MD5SUM
 std::string W_MD5(std::string filename)
