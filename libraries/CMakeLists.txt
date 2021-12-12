@@ -253,11 +253,27 @@ endif()
 if(BUILD_CLIENT)
   message(STATUS "Compiling FLTK...")
 
-  # FLTK looks in the wrong places for libpng headers, so it needs extra help.
-  lib_buildgen(LIBRARY fltk PARAMS
-    "-DOPTION_PRINT_SUPPORT=OFF" "-DOPTION_USE_GL=OFF" "-DFLTK_BUILD_TEST=OFF"
-    "-DPNG_PNG_INCLUDE_DIR=${CMAKE_CURRENT_BINARY_DIR}/local/include/libpng16"
-    "-DHAVE_PNG_H=ON")
+  set(_FLTK_BUILDGEN_PARAMS
+    "-DOPTION_USE_SYSTEM_LIBJPEG=FF" # We don't use this
+    "-DOPTION_PRINT_SUPPORT=OFF"
+    "-DOPTION_USE_GL=OFF"
+    "-DFLTK_BUILD_TEST=OFF")
+
+  if(USE_INTERNAL_ZLIB)
+    # FLTK defaults to the dynamic library, but we want the static lib.
+    list(APPEND _FLTK_BUILDGEN_PARAMS
+      "-DZLIB_LIBRARY_RELEASE=${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}zlibstatic${libsuffix}")
+  endif()
+
+  if(USE_INTERNAL_PNG)
+    # FLTK looks in the wrong places for libpng headers, so it needs extra
+    # help.  We don't use JPEG at all, so torch it.
+    list(APPEND _FLTK_BUILDGEN_PARAMS
+      "-DPNG_PNG_INCLUDE_DIR=${CMAKE_CURRENT_BINARY_DIR}/local/include/libpng16"
+      "-DHAVE_PNG_H=ON" "-DOPTION_USE_SYSTEM_LIBJPEG=OFF" "-DHAVE_LIBJPEG=OFF")
+  endif()
+
+  lib_buildgen(LIBRARY fltk PARAMS ${_FLTK_BUILDGEN_PARAMS})
   lib_build(LIBRARY fltk)
 
   find_package(FLTK CONFIG)
