@@ -108,7 +108,7 @@ file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
 
 ### zlib ###
 
-if(BUILD_CLIENT)
+if(BUILD_CLIENT OR BUILD_SERVER)
   if(USE_INTERNAL_ZLIB)
     message(STATUS "Compiling internal ZLIB...")
 
