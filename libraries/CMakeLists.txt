@@ -254,7 +254,7 @@ if(BUILD_CLIENT)
   message(STATUS "Compiling FLTK...")
 
   set(_FLTK_BUILDGEN_PARAMS
-    "-DOPTION_USE_SYSTEM_LIBJPEG=FF" # We don't use this
+    "-DOPTION_USE_SYSTEM_LIBJPEG=OFF"
     "-DOPTION_PRINT_SUPPORT=OFF"
     "-DOPTION_USE_GL=OFF"
     "-DFLTK_BUILD_TEST=OFF")
@@ -267,10 +267,10 @@ if(BUILD_CLIENT)
 
   if(USE_INTERNAL_PNG)
     # FLTK looks in the wrong places for libpng headers, so it needs extra
-    # help.  We don't use JPEG at all, so torch it.
+    # help.
     list(APPEND _FLTK_BUILDGEN_PARAMS
       "-DPNG_PNG_INCLUDE_DIR=${CMAKE_CURRENT_BINARY_DIR}/local/include/libpng16"
-      "-DHAVE_PNG_H=ON" "-DOPTION_USE_SYSTEM_LIBJPEG=OFF" "-DHAVE_LIBJPEG=OFF")
+      "-DHAVE_PNG_H=ON")
   endif()
 
   lib_buildgen(LIBRARY fltk PARAMS ${_FLTK_BUILDGEN_PARAMS})
