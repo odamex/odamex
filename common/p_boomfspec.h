@@ -26,14 +26,16 @@
 #ifndef __P_BOOMFSPEC__
 #define __P_BOOMFSPEC__
 
-#include "r_defs.h"
-#include "actor.h"
 #include "doomdef.h"
 #include "doomtype.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "p_spec.h"
 #include "d_player.h"
+#include "m_random.h"
+#include "c_cvars.h"
+#include "g_level.h"
+#include "m_wdlstats.h"
 
 void P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing, bool bossaction);
 void P_ApplyGeneralizedSectorDamage(player_t* player, int bits);
@@ -42,5 +44,11 @@ void P_PlayerInCompatibleSector(player_t* player);
 bool P_ActorInCompatibleSector(AActor* actor);
 lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
                                         bool bossaction);
+void P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
+bool EV_DoGenDoor(line_t* line);
+bool P_CanUnlockGenDoor(line_t* line, player_t* player);
+bool EV_DoGenLockedDoor(line_t* line);
+
+extern BOOL demoplayback;
 
 #endif

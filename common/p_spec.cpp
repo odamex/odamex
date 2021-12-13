@@ -1534,12 +1534,171 @@ bool P_CanUnlockZDoomDoor(player_t* player, zdoom_lock_t lock, bool remote)
 	{
 		int keytrysound = S_FindSound("misc/keytry");
 		if (keytrysound > -1)
+		{
 			UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
+		}
 		else
+		{
 			UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+		}
 
 		if (msg != NULL)
+		{
 			C_MidPrint(GStrings(*msg), player);
+		}
+	}
+
+	return false;
+}
+
+//
+// P_CanUnlockGenDoor()
+//
+// Passed a generalized locked door linedef and a player, returns whether
+// the player has the keys necessary to unlock that door.
+//
+// Note: The linedef passed MUST be a generalized locked door type
+//       or results are undefined.
+//
+// jff 02/05/98 routine added to test for unlockability of
+//  generalized locked doors
+//
+bool P_CanUnlockGenDoor(line_t* line, player_t* player)
+{
+	if (!player)
+		return false;
+
+	const OString* msg = NULL;
+
+	// does this line special distinguish between skulls and keys?
+	int skulliscard = (line->special & LockedNKeys) >> LockedNKeysShift;
+
+	// determine for each case of lock type if player's keys are adequate
+	switch ((line->special & LockedKey) >> LockedKeyShift)
+	{
+	case AnyKey:
+		if (!player->cards[it_redcard] && !player->cards[it_redskull] &&
+		    !player->cards[it_bluecard] && !player->cards[it_blueskull] &&
+		    !player->cards[it_yellowcard] && !player->cards[it_yellowskull])
+		{
+			msg = &PD_ANY; // Ty 03/27/98 - externalized
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case RCard:
+		if (!player->cards[it_redcard] && (!skulliscard || !player->cards[it_redskull]))
+		{
+			msg = skulliscard ? &PD_REDK : &PD_REDC; // Ty 03/27/98 - externalized
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case BCard:
+		if (!player->cards[it_bluecard] && (!skulliscard || !player->cards[it_blueskull]))
+		{
+			msg = skulliscard ? &PD_BLUEK : &PD_BLUEC; // Ty 03/27/98 - externalized
+		}
+		break;
+	case YCard:
+		if (!player->cards[it_yellowcard] &&
+		    (!skulliscard || !player->cards[it_yellowskull]))
+		{
+			msg = skulliscard ? &PD_YELLOWK : &PD_YELLOWC; // Ty 03/27/98 - externalized
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case RSkull:
+		if (!player->cards[it_redskull] && (!skulliscard || !player->cards[it_redcard]))
+		{
+			msg = skulliscard ? &PD_REDK : &PD_REDS; // Ty 03/27/98 - externalized
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case BSkull:
+		if (!player->cards[it_blueskull] && (!skulliscard || !player->cards[it_bluecard]))
+		{
+			msg = skulliscard ? &PD_BLUEK : &PD_BLUES; // Ty 03/27/98 - externalized
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case YSkull:
+		if (!player->cards[it_yellowskull] &&
+		    (!skulliscard || !player->cards[it_yellowcard]))
+		{
+			msg = skulliscard ? &PD_YELLOWK : &PD_YELLOWS; // Ty 03/27/98 - externalized
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case AllKeys:
+		if (!skulliscard &&
+		    (!player->cards[it_redcard] || !player->cards[it_redskull] ||
+		     !player->cards[it_bluecard] || !player->cards[it_blueskull] ||
+		     !player->cards[it_yellowcard] || !player->cards[it_yellowskull]))
+		{
+			msg = &PD_ALL6; // Ty 03/27/98 - externalized
+		}
+		else if (skulliscard &&
+		    ((!player->cards[it_redcard] && !player->cards[it_redskull]) ||
+		     (!player->cards[it_bluecard] && !player->cards[it_blueskull]) ||
+		     // e6y
+		     // Compatibility with buggy MBF behavior when 3-key door works with only 2
+		     // keys There is no more desync on 10sector.wad\ts27-137.lmp
+		     // http://www.doomworld.com/tas/ts27-137.zip
+
+		     /*
+		     (!player->cards[it_yellowcard] &&
+		      (compatibility_level == mbf_compatibility &&
+		               !prboom_comp[PC_FORCE_CORRECT_CODE_FOR_3_KEYS_DOORS_IN_MBF].state
+		           ? player->cards[it_yellowskull]
+		           : !player->cards[it_yellowskull]))))
+				   // [Blair] No MBF Compat options...yet
+			*/
+			(!player->cards[it_yellowcard] && !player->cards[it_yellowskull])))
+
+		{
+			msg = &PD_ALL3; // Ty 03/27/98 - externalized
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	}
+	// If we get here, we don't have the right key,
+	// so print an appropriate message and grunt.
+	if (player->mo == consoleplayer().camera)
+	{
+		int keytrysound = S_FindSound("misc/keytry");
+		if (keytrysound > -1)
+		{
+			UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
+		}
+		else
+		{
+			UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+		}
+
+		if (msg != NULL)
+		{
+			C_MidPrint(GStrings(*msg), player);
+		}
 	}
 
 	return false;
@@ -1704,7 +1863,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	if(thing)
 	{
-		if (!(GET_SPAC(line->flags) == ML_SPAC_IMPACT))
+		if (map_format.zdoom && !(GET_SPAC(line->flags) == ML_SPAC_IMPACT))
 			return;
 
 		if (thing->flags & MF_MISSILE)
@@ -1717,9 +1876,15 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	//TeleportSide = side;
 
-	LineSpecials[line->special] (line, thing, line->args[0],
-					line->args[1], line->args[2],
-					line->args[3], line->args[4]);
+	if (map_format.zdoom) // All zdoom specials can be impact activated
+	{
+		LineSpecials[line->special](line, thing, line->args[0], line->args[1],
+		                            line->args[2], line->args[3], line->args[4]);
+	}
+	else // Only certain specials from Doom/Boom can be impact activated
+	{
+		P_ShootCompatibleSpecialLine(thing, line);
+	}
 
 	P_HandleSpecialRepeat(line);
 

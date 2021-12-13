@@ -466,11 +466,11 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 					m_Type = DFloor::genFloorChg;
 					break;
 				case 3:
-					found->special = m_NewSpecial;
-					found->damage.amount = m_NewDamageRate;
-					found->damage.interval = m_NewDmgInterval;
-					found->damage.leakrate = m_NewLeakRate;
-					found->flags = m_NewFlags;
+					m_NewSpecial = found->special;
+					m_NewDamageRate = found->damage.amount;
+					m_NewDmgInterval = found->damage.interval;
+					m_NewLeakRate = found->damage.leakrate;
+					m_NewFlags = found->flags;
 					m_Type = DFloor::genFloorChgT;
 					break;
 				}
@@ -498,12 +498,181 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 				m_Type = DFloor::genFloorChg;
 				break;
 			case 3:
-				line->frontsector->special = m_NewSpecial;
-				line->frontsector->damage.amount = m_NewDamageRate;
-				line->frontsector->damage.interval = m_NewDmgInterval;
-				line->frontsector->damage.leakrate = m_NewLeakRate;
-				line->frontsector->flags = m_NewFlags;
+				m_NewSpecial = line->frontsector->special;
+				m_NewDamageRate = line->frontsector->damage.amount;
+				m_NewDmgInterval = line->frontsector->damage.interval;
+				m_NewLeakRate = line->frontsector->damage.leakrate;
+				m_NewFlags = line->frontsector->flags;
 				m_Type = DFloor::genFloorChgT;
+				break;
+			}
+		}
+	}
+}
+
+// Generalized floor init
+DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, int speed,
+               int target, int crush, int change, int direction, int model)
+    : DMovingFloor(sec), m_Status(init)
+{
+	fixed_t floorheight = P_FloorHeight(sec);
+	fixed_t ceilingheight = P_CeilingHeight(sec);
+
+	m_Type = floortype;
+	m_Crush = crush ? DOOM_CRUSH : NO_CRUSH;
+	m_HexenCrush = false;
+	m_ResetCount = 0; // [RH]
+	m_Sector = sec;
+	m_OrgHeight = floorheight;
+	m_Line = line;
+	m_Direction = direction ? 1 : -1;
+	m_NewSpecial = sec->special;
+	m_NewDamageRate = sec->damage.amount;
+	m_NewDmgInterval = sec->damage.interval;
+	m_NewLeakRate = sec->damage.leakrate;
+	m_NewFlags = sec->flags;
+
+	PlayFloorSound();
+
+	switch (speed)
+	{
+	case SpeedSlow:
+		m_Speed = FLOORSPEED;
+		break;
+	case SpeedNormal:
+		m_Speed = FLOORSPEED * 2;
+		break;
+	case SpeedFast:
+		m_Speed = FLOORSPEED * 4;
+		break;
+	case SpeedTurbo:
+		m_Speed = FLOORSPEED * 8;
+		break;
+	default:
+		break;
+	}
+
+	// set the destination height
+	switch (target)
+	{
+	case FtoHnF:
+		m_FloorDestHeight = P_FindHighestFloorSurrounding(sec);
+		break;
+	case FtoLnF:
+		m_FloorDestHeight = P_FindLowestFloorSurrounding(sec);
+		break;
+	case FtoNnF:
+		m_FloorDestHeight =
+		    m_Direction ? P_FindNextHighestFloor(sec) : P_FindNextLowestFloor(sec);
+		break;
+	case FtoLnC:
+		m_FloorDestHeight = P_FindLowestCeilingSurrounding(sec);
+		break;
+	case FtoC:
+		m_FloorDestHeight = sec->ceilingheight;
+		break;
+	case FbyST:
+		m_FloorDestHeight =
+		    (sec->floorheight >> FRACBITS) +
+		    m_Direction * (P_FindShortestTextureAround(sec) >> FRACBITS);
+		if (m_FloorDestHeight > 32000)      // jff 3/13/98 prevent overflow
+			m_FloorDestHeight = 32000; // wraparound in floor height
+		if (m_FloorDestHeight < -32000)
+			m_FloorDestHeight = -32000;
+		m_FloorDestHeight <<= FRACBITS;
+		break;
+	case Fby24:
+		m_FloorDestHeight =
+		    sec->floorheight + m_Direction * 24 * FRACUNIT;
+		break;
+	case Fby32:
+		m_FloorDestHeight = sec->floorheight + m_Direction * 32 * FRACUNIT;
+		break;
+	default:
+		break;
+	}
+
+	// set texture/type change properties
+	if (change) // if a texture change is indicated
+	{
+		if (model) // if a numeric model change
+		{
+			sector_t* sec;
+
+			// jff 5/23/98 find model with ceiling at target height if target
+			// is a ceiling type
+			sec = (target == FtoLnC || target == FtoC)
+			          ? P_FindModelCeilingSector(m_FloorDestHeight, sec)
+			          : P_FindModelFloorSector(m_FloorDestHeight, sec);
+			if (sec)
+			{
+				m_Texture = sec->floorpic;
+				m_NewSpecial = sec->special;
+				m_NewDamageRate = sec->damage.amount;
+				m_NewDmgInterval = sec->damage.interval;
+				m_NewLeakRate = sec->damage.leakrate;
+				m_NewFlags = sec->flags;
+				switch (change)
+				{
+				case FChgZero: // zero type
+					newspecial_s ns;
+					P_ResetTransferSpecial(&ns);
+					m_NewSpecial = ns.special;
+					m_NewDamageRate = ns.damage.amount;
+					m_NewDmgInterval = ns.damage.interval;
+					m_NewLeakRate = ns.damage.leakrate;
+					m_NewFlags = sec->flags;
+					P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+					m_Type = DFloor::EFloor::genFloorChg0;
+					break;
+				case FChgTyp: // copy type
+					m_NewSpecial = sec->special;
+					m_NewDamageRate = sec->damage.amount;
+					m_NewDmgInterval = sec->damage.interval;
+					m_NewLeakRate = sec->damage.leakrate;
+					m_NewFlags = sec->flags;
+					m_Type = DFloor::EFloor::genFloorChgT;
+					break;
+				case FChgTxt: // leave type be
+					m_Type = DFloor::EFloor::genFloorChg;
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		else // else if a trigger model change
+		{
+			m_Texture = line->frontsector->floorpic;
+			m_NewSpecial = line->frontsector->special;
+			m_NewDamageRate = line->frontsector->damage.amount;
+			m_NewDmgInterval = line->frontsector->damage.interval;
+			m_NewLeakRate = line->frontsector->damage.leakrate;
+			m_NewFlags = line->frontsector->flags;
+			switch (change)
+			{
+			case FChgZero: // zero type
+				newspecial_s ns;
+				P_ResetTransferSpecial(&ns);
+				m_NewSpecial = ns.special;
+				m_NewDamageRate = ns.damage.amount;
+				m_NewDmgInterval = ns.damage.interval;
+				m_NewLeakRate = ns.damage.leakrate;
+				m_NewFlags = line->frontsector->flags;
+				P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+				m_Type = DFloor::EFloor::genFloorChg0;
+				break;
+			case FChgTyp: // copy type
+				m_NewSpecial = line->frontsector->special;
+				m_NewDamageRate = line->frontsector->damage.amount;
+				m_NewDmgInterval = line->frontsector->damage.interval;
+				m_NewLeakRate = line->frontsector->damage.leakrate;
+				m_NewFlags = line->frontsector->flags;
+				m_Type = DFloor::EFloor::genFloorChgT;
+				break;
+			case FChgTxt: // leave type be
+				m_Type = DFloor::EFloor::genFloorChg;
+			default:
 				break;
 			}
 		}
@@ -803,6 +972,75 @@ int EV_ZDoomFloorCrushStop(int tag)
 	}
 
 	return 1;
+}
+
+//
+// EV_DoGenFloor()
+//
+// Handle generalized floor types
+//
+// Passed the line activating the generalized floor function
+// Returns true if a thinker is created
+//
+// jff 02/04/98 Added this routine (and file) to handle generalized
+// floor movers using bit fields in the line special type.
+//
+bool EV_DoGenFloor(line_t* line)
+{
+	int secnum;
+	bool rtn;
+	bool manual;
+	sector_t* sec;
+	DFloor* floor;
+	unsigned value = (unsigned)line->special - GenFloorBase;
+
+	// parse the bit fields in the line's special type
+
+	int Crsh = (value & FloorCrush) >> FloorCrushShift;
+	int ChgT = (value & FloorChange) >> FloorChangeShift;
+	int Targ = (value & FloorTarget) >> FloorTargetShift;
+	int Dirn = (value & FloorDirection) >> FloorDirectionShift;
+	int ChgM = (value & FloorModel) >> FloorModelShift;
+	int Sped = (value & FloorSpeed) >> FloorSpeedShift;
+	int Trig = (value & TriggerType) >> TriggerTypeShift;
+
+	rtn = false;
+
+	// check if a manual trigger; if so do just the sector on the backside
+	if (Trig == PushOnce || Trig == PushMany)
+	{
+		if (!line || !(sec = line->backsector))
+			return rtn;
+		secnum = sec - sectors;
+		manual = true;
+		goto manual_floor;
+	}
+
+	secnum = -1;
+	while ((secnum = P_FindSectorFromTag(line->id, secnum)) >= 0)
+	{
+		sec = &sectors[secnum];
+
+	manual_floor:
+		// ALREADY MOVING?	IF SO, KEEP GOING...
+		if (sec->floordata)
+		{
+			if (co_boomphys && manual)
+				return false;
+			else
+				continue;
+		}
+
+		DFloor::EFloor floortype = DFloor::EFloor::genFloor;
+
+		// new floor thinker
+		rtn = true;
+		new DFloor(sec, floortype, line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
+		P_AddMovingFloor(sec);
+
+		if (manual)
+			return rtn;
+	}
 }
 
 bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
@@ -1582,7 +1820,7 @@ void DWaggle::RunThink()
 		    m_OriginalHeight +
 		    FixedMul(FloatBobOffsets[(m_Accumulator >> FRACBITS) & 63], m_Scale);
 	}
-	P_ChangeSector(m_Sector, true);
+	P_ChangeSector(m_Sector, DOOM_CRUSH);
 }
 
 DWaggle::DWaggle(sector_t* sec) : Super(sec) { }

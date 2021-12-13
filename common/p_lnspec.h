@@ -632,6 +632,7 @@ typedef enum {
 #define D_TURBO 128
 
 #define VDOORWAIT 150
+#define VDOORSPEED (FRACUNIT * 2)
 
 // Speeds for stairs (x/8 units per tic)
 #define S_SLOW 2

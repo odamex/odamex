@@ -39,6 +39,7 @@
 #include "s_sound.h"
 
 #include "m_wdlstats.h"
+#include "p_mapformat.h"
 // State.
 #include "r_state.h"
 

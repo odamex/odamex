@@ -65,91 +65,91 @@ BOOL EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle, int dir
 bool P_LineSpecialMovesSector(byte special)
 {
 	static bool initialized = false;
-	static bool specials[283];
+	static bool zdoomspecials[283];
 
 	if (!initialized)
 	{
-		// generate a lookup table for line specials
+		// generate a lookup table for line zdoomspecials
 		initialized = true;
-		memset(specials, 0, sizeof(specials));
+		memset(zdoomspecials, 0, sizeof(zdoomspecials));
 
-		specials[Door_Close]					= true;		// 10
-		specials[Door_Open]						= true;		// 11
-		specials[Door_Raise]					= true;		// 12
-		specials[Door_LockedRaise]				= true;		// 13
-		specials[Floor_LowerByValue]			= true;		// 20
-		specials[Floor_LowerToLowest]			= true;		// 21
-		specials[Floor_LowerToNearest]			= true;		// 22
-		specials[Floor_RaiseByValue]			= true;		// 23
-		specials[Floor_RaiseToHighest]			= true;		// 24
-		specials[Floor_RaiseToNearest]			= true;		// 25
-		specials[Stairs_BuildDown]				= true;		// 26
-		specials[Stairs_BuildUp]				= true;		// 27
-		specials[Floor_RaiseAndCrush]			= true;		// 28
-		specials[Pillar_Build]					= true;		// 29
-		specials[Pillar_Open]					= true;		// 30
-		specials[Stairs_BuildDownSync]			= true;		// 31
-		specials[Stairs_BuildUpSync]			= true;		// 32
-		specials[Floor_RaiseByValueTimes8]		= true;		// 35
-		specials[Floor_LowerByValueTimes8]		= true;		// 36
-		specials[Ceiling_LowerByValue]			= true;		// 40
-		specials[Ceiling_RaiseByValue]			= true;		// 41
-		specials[Ceiling_CrushAndRaise]			= true;		// 42
-		specials[Ceiling_LowerAndCrush]			= true;		// 43
-		specials[Ceiling_CrushStop]				= true;		// 44
-		specials[Ceiling_CrushRaiseAndStay]		= true;		// 45
-		specials[Floor_CrushStop]				= true;		// 46
-		specials[Plat_PerpetualRaise]			= true;		// 60
-		specials[Plat_Stop]						= true;		// 61
-		specials[Plat_DownWaitUpStay]			= true;		// 62
-		specials[Plat_DownByValue]				= true;		// 63
-		specials[Plat_UpWaitDownStay]			= true;		// 64
-		specials[Plat_UpByValue]				= true;		// 65
-		specials[Floor_LowerInstant]			= true;		// 66
-		specials[Floor_RaiseInstant]			= true;		// 67
-		specials[Floor_MoveToValueTimes8]		= true;		// 68
-		specials[Ceiling_MoveToValueTimes8]		= true;		// 69
-		specials[Pillar_BuildAndCrush]			= true;		// 94
-		specials[FloorAndCeiling_LowerByValue]	= true;		// 95
-		specials[FloorAndCeiling_RaiseByValue]	= true;		// 96
-		specials[Ceiling_LowerToHighestFloor]	= true;		// 192
-		specials[Ceiling_LowerInstant]			= true;		// 193
-		specials[Ceiling_RaiseInstant]			= true;		// 194
-		specials[Ceiling_CrushRaiseAndStayA]	= true;		// 195
-		specials[Ceiling_CrushAndRaiseA]		= true;		// 196
-		specials[Ceiling_CrushAndRaiseSilentA]	= true;		// 197
-		specials[Ceiling_RaiseByValueTimes8]	= true;		// 198
-		specials[Ceiling_LowerByValueTimes8]	= true;		// 199
-		specials[Generic_Floor]					= true;		// 200
-		specials[Generic_Ceiling]				= true;		// 201
-		specials[Generic_Door]					= true;		// 202
-		specials[Generic_Lift]					= true;		// 203
-		specials[Generic_Stairs]				= true;		// 204
-		specials[Generic_Crusher]				= true;		// 205
-		specials[Plat_DownWaitUpStayLip]		= true;		// 206
-		specials[Plat_PerpetualRaiseLip]		= true;		// 207
-		specials[Stairs_BuildUpDoom]			= true;		// 217
-		specials[Plat_RaiseAndStayTx0]			= true;		// 228
-		specials[Plat_UpByValueStayTx]			= true;		// 230
-		specials[Plat_ToggleCeiling]			= true;		// 231
-		specials[Floor_RaiseToLowestCeiling]	= true;		// 238
-		specials[Floor_RaiseByValueTxTy]		= true;		// 239
-		specials[Floor_RaiseByTexture]			= true;		// 240
-		specials[Floor_LowerToLowestTxTy]		= true;		// 241
-		specials[Floor_LowerToHighest]			= true;		// 242
-		specials[Elevator_RaiseToNearest]		= true;		// 245
-		specials[Elevator_MoveToFloor]			= true;		// 246
-		specials[Elevator_LowerToNearest]		= true;		// 247
-		specials[Door_CloseWaitOpen]			= true;		// 249
-		specials[Floor_Donut]					= true;		// 250
-		specials[FloorAndCeiling_LowerRaise]	= true;		// 251
-		specials[Ceiling_RaiseToNearest]		= true;		// 252
-		specials[Ceiling_LowerToLowest]			= true;		// 253
-		specials[Ceiling_LowerToFloor]			= true;		// 254
-		specials[Ceiling_CrushRaiseAndStaySilA]	= true;		// 255
+		zdoomspecials[Door_Close]					= true;		// 10
+		zdoomspecials[Door_Open]					= true;		// 11
+		zdoomspecials[Door_Raise]					= true;		// 12
+		zdoomspecials[Door_LockedRaise]				= true;		// 13
+		zdoomspecials[Floor_LowerByValue]			= true;		// 20
+		zdoomspecials[Floor_LowerToLowest]			= true;		// 21
+		zdoomspecials[Floor_LowerToNearest]			= true;		// 22
+		zdoomspecials[Floor_RaiseByValue]			= true;		// 23
+		zdoomspecials[Floor_RaiseToHighest]			= true;		// 24
+		zdoomspecials[Floor_RaiseToNearest]			= true;		// 25
+		zdoomspecials[Stairs_BuildDown]				= true;		// 26
+		zdoomspecials[Stairs_BuildUp]				= true;		// 27
+		zdoomspecials[Floor_RaiseAndCrush]			= true;		// 28
+		zdoomspecials[Pillar_Build]					= true;		// 29
+		zdoomspecials[Pillar_Open]					= true;		// 30
+		zdoomspecials[Stairs_BuildDownSync]			= true;		// 31
+		zdoomspecials[Stairs_BuildUpSync]			= true;		// 32
+		zdoomspecials[Floor_RaiseByValueTimes8]		= true;		// 35
+		zdoomspecials[Floor_LowerByValueTimes8]		= true;		// 36
+		zdoomspecials[Ceiling_LowerByValue]			= true;		// 40
+		zdoomspecials[Ceiling_RaiseByValue]			= true;		// 41
+		zdoomspecials[Ceiling_CrushAndRaise]		= true;		// 42
+		zdoomspecials[Ceiling_LowerAndCrush]		= true;		// 43
+		zdoomspecials[Ceiling_CrushStop]			= true;		// 44
+		zdoomspecials[Ceiling_CrushRaiseAndStay]	= true;		// 45
+		zdoomspecials[Floor_CrushStop]				= true;		// 46
+		zdoomspecials[Plat_PerpetualRaise]			= true;		// 60
+		zdoomspecials[Plat_Stop]					= true;		// 61
+		zdoomspecials[Plat_DownWaitUpStay]			= true;		// 62
+		zdoomspecials[Plat_DownByValue]				= true;		// 63
+		zdoomspecials[Plat_UpWaitDownStay]			= true;		// 64
+		zdoomspecials[Plat_UpByValue]				= true;		// 65
+		zdoomspecials[Floor_LowerInstant]			= true;		// 66
+		zdoomspecials[Floor_RaiseInstant]			= true;		// 67
+		zdoomspecials[Floor_MoveToValueTimes8]		= true;		// 68
+		zdoomspecials[Ceiling_MoveToValueTimes8]	= true;		// 69
+		zdoomspecials[Pillar_BuildAndCrush]			= true;		// 94
+		zdoomspecials[FloorAndCeiling_LowerByValue]	= true;		// 95
+		zdoomspecials[FloorAndCeiling_RaiseByValue]	= true;		// 96
+		zdoomspecials[Ceiling_LowerToHighestFloor]	= true;		// 192
+		zdoomspecials[Ceiling_LowerInstant]			= true;		// 193
+		zdoomspecials[Ceiling_RaiseInstant]			= true;		// 194
+		zdoomspecials[Ceiling_CrushRaiseAndStayA]	= true;		// 195
+		zdoomspecials[Ceiling_CrushAndRaiseA]		= true;		// 196
+		zdoomspecials[Ceiling_CrushAndRaiseSilentA]	= true;		// 197
+		zdoomspecials[Ceiling_RaiseByValueTimes8]	= true;		// 198
+		zdoomspecials[Ceiling_LowerByValueTimes8]	= true;		// 199
+		zdoomspecials[Generic_Floor]				= true;		// 200
+		zdoomspecials[Generic_Ceiling]				= true;		// 201
+		zdoomspecials[Generic_Door]					= true;		// 202
+		zdoomspecials[Generic_Lift]					= true;		// 203
+		zdoomspecials[Generic_Stairs]				= true;		// 204
+		zdoomspecials[Generic_Crusher]				= true;		// 205
+		zdoomspecials[Plat_DownWaitUpStayLip]		= true;		// 206
+		zdoomspecials[Plat_PerpetualRaiseLip]		= true;		// 207
+		zdoomspecials[Stairs_BuildUpDoom]			= true;		// 217
+		zdoomspecials[Plat_RaiseAndStayTx0]			= true;		// 228
+		zdoomspecials[Plat_UpByValueStayTx]			= true;		// 230
+		zdoomspecials[Plat_ToggleCeiling]			= true;		// 231
+		zdoomspecials[Floor_RaiseToLowestCeiling]	= true;		// 238
+		zdoomspecials[Floor_RaiseByValueTxTy]		= true;		// 239
+		zdoomspecials[Floor_RaiseByTexture]			= true;		// 240
+		zdoomspecials[Floor_LowerToLowestTxTy]		= true;		// 241
+		zdoomspecials[Floor_LowerToHighest]			= true;		// 242
+		zdoomspecials[Elevator_RaiseToNearest]		= true;		// 245
+		zdoomspecials[Elevator_MoveToFloor]			= true;		// 246
+		zdoomspecials[Elevator_LowerToNearest]		= true;		// 247
+		zdoomspecials[Door_CloseWaitOpen]			= true;		// 249
+		zdoomspecials[Floor_Donut]					= true;		// 250
+		zdoomspecials[FloorAndCeiling_LowerRaise]	= true;		// 251
+		zdoomspecials[Ceiling_RaiseToNearest]		= true;		// 252
+		zdoomspecials[Ceiling_LowerToLowest]		= true;		// 253
+		zdoomspecials[Ceiling_LowerToFloor]			= true;		// 254
+		zdoomspecials[Ceiling_CrushRaiseAndStaySilA]= true;		// 255
 	}
 
-	return specials[special];
+	return zdoomspecials[special];
 }
 
 EXTERN_CVAR (cl_predictsectors)
@@ -192,6 +192,7 @@ FUNC(LS_NOTIMP)
 	return false;
 }
 
+// Begin ZDoom specials
 FUNC(LS_Polyobj_RotateLeft)
 // Polyobj_RotateLeft (po, speed, angle)
 {
@@ -2445,6 +2446,7 @@ FUNC(LS_TranslucentLine)
 	return true;
 }
 
+// ZDoom line specials
 lnSpecFunc LineSpecials[283] =
 {
 	LS_NOP,
@@ -2669,7 +2671,7 @@ lnSpecFunc LineSpecials[283] =
 	LS_Sector_SetFriction,
 	LS_Sector_SetCurrent,
 	LS_Scroll_Texture_Both,
-    LS_NOP, //222 LS_Scroll_Texture_Model (handled elsewhere)
+    LS_NOP, //222 Scroll_Texture_Model (handled elsewhere)
 	LS_Scroll_Floor,
 	LS_Scroll_Ceiling,
     LS_NOP, // 225 Scroll_TextureOffsets (handled elsewhere)

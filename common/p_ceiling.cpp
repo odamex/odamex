@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include "p_local.h"
+#include "p_lnspec.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
 #include "r_state.h"
@@ -33,6 +34,9 @@
 EXTERN_CVAR(co_boomphys)
 
 extern bool predicting;
+
+void P_ResetTransferSpecial(newspecial_s* newspecial);
+void P_ResetSectorTransferFlags(unsigned int* flags);
 
 //
 // CEILINGS
@@ -287,6 +291,179 @@ DCeiling::DCeiling (sector_t *sec, fixed_t speed1, fixed_t speed2, int silent)
 	m_Speed = m_Speed1 = speed1;
 	m_Speed2 = speed2;
 	m_Silent = silent;
+}
+
+DCeiling::DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, int speed,
+                   int target, int crush, int change, int direction, int model)
+    : DMovingCeiling(sec), m_Status(init)
+{
+	fixed_t targheight;
+
+	m_Type = ceilingtype;
+	m_Crush = (crush ? DOOM_CRUSH : NO_CRUSH);
+	m_CrushMode = crushDoom;
+	m_Direction = direction ? 1 : -1;
+	m_Sector = sec;
+	m_Texture = sec->ceilingpic;
+	m_NewSpecial = sec->special;
+	m_NewDamageRate = sec->damage.amount;
+	m_NewDmgInterval = sec->damage.interval;
+	m_NewLeakRate = sec->damage.leakrate;
+	m_NewFlags = sec->flags;
+	m_Tag = sec->tag;
+
+	// set speed of motion
+	switch (speed)
+	{
+	case SpeedSlow:
+		m_Speed = CEILSPEED;
+		break;
+	case SpeedNormal:
+		m_Speed = CEILSPEED * 2;
+		break;
+	case SpeedFast:
+		m_Speed = CEILSPEED * 4;
+		break;
+	case SpeedTurbo:
+		m_Speed = CEILSPEED * 8;
+		break;
+	default:
+		break;
+	}
+
+	// set destination target height
+	targheight = sec->ceilingheight;
+	switch (target)
+	{
+	case CtoHnC:
+		targheight = P_FindHighestCeilingSurrounding(sec);
+		break;
+	case CtoLnC:
+		targheight = P_FindLowestCeilingSurrounding(sec);
+		break;
+	case CtoNnC:
+		targheight =
+		    direction ? P_FindNextHighestCeiling(sec)
+		                  : P_FindNextLowestCeiling(sec);
+		break;
+	case CtoHnF:
+		targheight = P_FindHighestFloorSurrounding(sec);
+		break;
+	case CtoF:
+		targheight = sec->floorheight;
+		break;
+	case CbyST:
+		targheight =
+		    (sec->ceilingheight >> FRACBITS) +
+		             m_Direction * (P_FindShortestUpperAround(sec) >> FRACBITS);
+		if (targheight > 32000)     // jff 3/13/98 prevent overflow
+			targheight = 32000; // wraparound in ceiling height
+		if (targheight < -32000)
+			targheight = -32000;
+		targheight <<= FRACBITS;
+		break;
+	case Cby24:
+		targheight =
+		    sec->ceilingheight + m_Direction * 24 * FRACUNIT;
+		break;
+	case Cby32:
+		targheight =
+		   sec->ceilingheight + m_Direction * 32 * FRACUNIT;
+		break;
+	default:
+		break;
+	}
+	if (direction)
+		m_TopHeight = targheight;
+	else
+		m_BottomHeight = targheight;
+
+	// set texture/type change properties
+	if (change) // if a texture change is indicated
+	{
+		if (model) // if a numeric model change
+		{
+			sector_t* sec;
+
+			// jff 5/23/98 find model with floor at target height if target
+			// is a floor type
+			sec = (target == CtoHnF || target == CtoF)
+			          ? P_FindModelFloorSector(targheight, sec)
+			          : P_FindModelCeilingSector(targheight, sec);
+			if (sec)
+			{
+				m_Texture = sec->floorpic;
+				m_NewSpecial = sec->special;
+				m_NewDamageRate = sec->damage.amount;
+				m_NewDmgInterval = sec->damage.interval;
+				m_NewLeakRate = sec->damage.leakrate;
+				m_NewFlags = sec->flags;
+				switch (change)
+				{
+				case CChgZero: // type is zeroed
+					newspecial_s ns;
+					P_ResetTransferSpecial(&ns);
+					m_NewSpecial = ns.special;
+					m_NewDamageRate = ns.damage.amount;
+					m_NewDmgInterval = ns.damage.interval;
+					m_NewLeakRate = ns.damage.leakrate;
+					m_NewFlags = sec->flags;
+					P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+					m_Type = genCeilingChg0;
+					break;
+				case CChgTyp: // type is copied
+					m_NewSpecial = line->frontsector->special;
+					m_NewDamageRate = line->frontsector->damage.amount;
+					m_NewDmgInterval = line->frontsector->damage.interval;
+					m_NewLeakRate = line->frontsector->damage.leakrate;
+					m_NewFlags = line->frontsector->flags;
+					m_Type = genCeilingChgT;
+					break;
+				case CChgTxt: // type is left alone
+					m_Type = genCeilingChg;
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		else // else if a trigger model change
+		{
+			m_Texture = line->frontsector->floorpic;
+			m_NewSpecial = line->frontsector->special;
+			m_NewDamageRate = line->frontsector->damage.amount;
+			m_NewDmgInterval = line->frontsector->damage.interval;
+			m_NewLeakRate = line->frontsector->damage.leakrate;
+			m_NewFlags = line->frontsector->flags;
+			switch (change)
+			{
+			case CChgZero: // type is zeroed
+				newspecial_s ns;
+				P_ResetTransferSpecial(&ns);
+				m_NewSpecial = ns.special;
+				m_NewDamageRate = ns.damage.amount;
+				m_NewDmgInterval = ns.damage.interval;
+				m_NewLeakRate = ns.damage.leakrate;
+				m_NewFlags = line->frontsector->flags;
+				P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+				m_Type = genCeilingChg0;
+				break;
+			case CChgTyp: // type is copied
+				m_NewSpecial = line->frontsector->special;
+				m_NewDamageRate = line->frontsector->damage.amount;
+				m_NewDmgInterval = line->frontsector->damage.interval;
+				m_NewLeakRate = line->frontsector->damage.leakrate;
+				m_NewFlags = line->frontsector->flags;
+				m_Type = genCeilingChgT;
+				break;
+			case CChgTxt: // type is left alone
+				m_Type = genCeilingChg;
+				break;
+			default:
+				break;
+			}
+		}
+	}
 }
 
 // Clones a DCeiling and returns a pointer to that clone.
@@ -874,6 +1051,79 @@ manual_ceiling:
 
 		ceiling->PlayCeilingSound ();
 
+		if (manual)
+			return rtn;
+	}
+	return rtn;
+}
+
+//
+// EV_DoGenCeiling()
+//
+// Handle generalized ceiling types
+//
+// Passed the linedef activating the ceiling function
+// Returns true if a thinker created
+//
+// jff 02/04/98 Added this routine (and file) to handle generalized
+// floor movers using bit fields in the line special type.
+//
+bool EV_DoGenCeiling(line_t* line)
+{
+	int secnum;
+	int rtn;
+	bool manual;
+	fixed_t targheight;
+	sector_t* sec;
+	DCeiling* ceiling;
+	unsigned value = (unsigned)line->special - GenCeilingBase;
+
+	// parse the bit fields in the line's special type
+
+	int Crsh = (value & CeilingCrush) >> CeilingCrushShift;
+	int ChgT = (value & CeilingChange) >> CeilingChangeShift;
+	int Targ = (value & CeilingTarget) >> CeilingTargetShift;
+	int Dirn = (value & CeilingDirection) >> CeilingDirectionShift;
+	int ChgM = (value & CeilingModel) >> CeilingModelShift;
+	int Sped = (value & CeilingSpeed) >> CeilingSpeedShift;
+	int Trig = (value & TriggerType) >> TriggerTypeShift;
+
+	rtn = false;
+
+	// check if a manual trigger, if so do just the sector on the backside
+	manual = false;
+	if (Trig == PushOnce || Trig == PushMany)
+	{
+		if (!(sec = line->backsector))
+			return rtn;
+		secnum = sec - sectors;
+		manual = true;
+		goto manual_ceiling;
+	}
+
+	secnum = -1;
+	// if not manual do all sectors tagged the same as the line
+	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+	{
+		sec = &sectors[secnum];
+
+	manual_ceiling:
+		// Do not start another function if ceiling already moving
+		if (P_CeilingActive(sec)) // jff 2/22/98
+		{
+			if (!manual)
+				continue;
+			else
+				return rtn;
+		}
+
+		// new ceiling thinker
+		rtn = true;
+
+		DCeiling::ECeiling type = DCeiling::ECeiling::genCeiling;
+
+		new DCeiling(sec, type, line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
+		P_AddMovingCeiling(sec); // add this ceiling to the active list
 		if (manual)
 			return rtn;
 	}

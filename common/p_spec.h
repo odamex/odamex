@@ -42,6 +42,62 @@ typedef struct movingsector_s
 	bool		moving_floor;
 } movingsector_t;
 
+enum motionspeed_e
+{
+	SpeedSlow,
+	SpeedNormal,
+	SpeedFast,
+	SpeedTurbo,
+};
+
+enum doorkind_e
+{
+	OdCDoor,
+	ODoor,
+	CdODoor,
+	CDoor,
+};
+
+enum floortarget_e
+{
+	FtoHnF,
+	FtoLnF,
+	FtoNnF,
+	FtoLnC,
+	FtoC,
+	FbyST,
+	Fby24,
+	Fby32,
+};
+
+enum floorchange_e
+{
+	FNoChg,
+	FChgZero,
+	FChgTxt,
+	FChgTyp,
+};
+
+enum ceilingtarget_e
+{
+	CtoHnC,
+	CtoLnC,
+	CtoNnC,
+	CtoHnF,
+	CtoF,
+	CbyST,
+	Cby24,
+	Cby32,
+};
+
+enum ceilingchange_e
+{
+	CNoChg,
+	CChgZero,
+	CChgTxt,
+	CChgTyp,
+};
+
 extern std::list<movingsector_t> movingsectors;
 extern bool s_SpecialFromServer;
 
@@ -62,7 +118,6 @@ bool P_HandleSpecialRepeat(line_t* line);
 void P_ApplySectorDamage(player_t* player, int damage, bool leak);
 void P_ApplySectorDamageEndLevel(player_t* player);
 void P_CollectSecretCommon(sector_t* sector, player_t* player);
-bool P_CanUnlockZDoomDoor(player_t* player, zdoom_lock_t lock, bool remote);
 int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start);
 int P_FindLineFromTag(int tag, int start);
 bool P_FloorActive(const sector_t* sec);
@@ -151,6 +206,8 @@ struct newspecial_s
 
 #define ELEVATORSPEED (FRACUNIT * 4)
 #define FLOORSPEED FRACUNIT
+
+bool P_CanUnlockZDoomDoor(player_t* player, zdoom_lock_t lock, bool remote);
 
 // killough 3/7/98: Add generalized scroll effects
 
@@ -288,6 +345,7 @@ bool    P_UseSpecialLine (AActor* thing, line_t* line, int side, bool bossaction
 bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side);
 
 void    P_PlayerInZDoomSector (player_t *player);
+void P_ApplySectorFriction(int tag, int value, bool use_thinker);
 
 //
 // getSector()
@@ -711,6 +769,7 @@ public:
 		doorRaise,
 		doorRaiseIn5Mins,
 		doorCloseWaitOpen,
+		close30ThenOpen,
 		blazeRaise,
 		blazeOpen,
 		blazeClose,
@@ -741,7 +800,11 @@ public:
 	};
 
 	DDoor (sector_t *sector);
-	// DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay);
+	// Boom Generic Door
+	DDoor(sector_t* sec, line_t* ln, int delay, int time, int trigger,
+	      int speed);
+	// Boom Generic Locked Door
+	DDoor(sector_t* sec, line_t* ln, int kind, int trigger, int speed);
 	// Boom Compatible DDoor
     DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
 	// ZDoom Compatible DDoor
@@ -866,6 +929,8 @@ public:
 
 	DCeiling (sector_t *sec);
 	DCeiling (sector_t *sec, fixed_t speed1, fixed_t speed2, int silent);
+	DCeiling (sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, int speed,
+	         int target, int crush, int change, int direction, int model);
 	DCeiling* Clone(sector_t* sec) const;
 	friend void P_SetCeilingDestroy(DCeiling *ceiling);
 	
@@ -909,6 +974,7 @@ private:
 	friend BOOL EV_CeilingCrushStop (int tag);
 	friend void P_ActivateInStasisCeiling (int tag);
 	friend bool EV_ZDoomCeilingCrushStop(int tag, bool remove);
+	friend bool EV_DoGenCeiling(line_t* line);
 };
 
 inline FArchive &operator<< (FArchive &arc, DCeiling::ECeiling type)
@@ -982,6 +1048,7 @@ public:
 		resetStair,
 
 		// Not to be used as parameters to EV_DoFloor()
+		genFloor,
 		genFloorChg0,
 		genFloorChgT,
 		genFloorChg
@@ -997,6 +1064,8 @@ public:
 	DFloor(sector_t *sec);
 	DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line, fixed_t speed,
 		   fixed_t height, bool crush, int change);
+	DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, int speed,
+	       int target, int crush, int change, int direction, int model);
 	DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t speed,
 	               fixed_t height, int crush, int change, bool hexencrush,
 	               bool hereticlower);
@@ -1046,6 +1115,7 @@ protected:
 	                            fixed_t speed, fixed_t height, int crush, int change,
 	                            bool hexencrush, bool hereticlower);
 	friend int EV_ZDoomFloorCrushStop(int tag);
+	friend bool EV_DoGenFloor(line_t* line);
 
   private:
 	DFloor ();
