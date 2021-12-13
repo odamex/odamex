@@ -1142,6 +1142,213 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag)
 	return rtn;
 }
 
+//
+// [Blair] Generic staircase building
+//
+bool EV_DoGenStairs(line_t* line)
+{
+	int secnum;
+	int osecnum; // jff 3/4/98 save old loop index
+	int height;
+	int i;
+	int newsecnum = 0;
+	int texture;
+	int ok;
+	bool rtn = false;
+
+	sector_t* sec = NULL;
+	sector_t* tsec = NULL;
+
+	DFloor* floor = NULL;
+	bool manual = false;
+
+	fixed_t stairsize;
+	fixed_t speed;
+
+	unsigned value = (unsigned)line->special - GenStairsBase;
+
+	  // parse the bit fields in the line's special type
+
+	int Igno = (value & StairIgnore) >> StairIgnoreShift;
+	int Dirn = (value & StairDirection) >> StairDirectionShift;
+	int Step = (value & StairStep) >> StairStepShift;
+	int Sped = (value & StairSpeed) >> StairSpeedShift;
+	int Trig = (value & TriggerType) >> TriggerTypeShift;
+
+	if (speed == 0)
+		return false;
+
+	// check if a manual trigger, if so do just the sector on the backside
+	if (line->id == 0)
+	{
+		secnum = sec - sectors;
+		manual = true;
+		goto manual_genstair;
+	}
+
+	// check if a manual trigger, if so do just the sector on the backside
+	if (Trig == PushOnce || Trig == PushMany)
+	{
+		if (!line || !(sec = line->backsector))
+			return rtn;
+		secnum = sec - sectors;
+		manual = true;
+		goto manual_genstair;
+	}
+
+	secnum = -1;
+	while ((secnum = P_FindSectorFromTag(line->id, secnum)) >= 0)
+	{
+		sec = &sectors[secnum];
+
+	manual_genstair:
+		// ALREADY MOVING?	IF SO, KEEP GOING...
+		// jff 2/26/98 add special lockout condition to wait for entire
+		// staircase to build before retriggering
+		if (sec->floordata || sec->stairlock)
+		{
+			if (!manual)
+				continue;
+			else
+				return rtn;
+		}
+
+		fixed_t floorheight = P_FloorHeight(sec);
+
+		// new floor thinker
+		rtn = true;
+		floor = new DFloor(sec);
+		P_AddMovingFloor(sec);
+
+		floor->m_Direction = Dirn ? 1 : -1;
+		floor->m_OrgHeight = floorheight;   // [RH] Height to reset to
+		floor->m_PauseTime = 0;
+
+		// setup speed of stair building
+		switch (Sped)
+		{
+		default:
+		case SpeedSlow:
+			floor->m_Speed = FLOORSPEED / 4;
+			break;
+		case SpeedNormal:
+			floor->m_Speed = FLOORSPEED / 2;
+			break;
+		case SpeedFast:
+			floor->m_Speed = FLOORSPEED * 2;
+			break;
+		case SpeedTurbo:
+			floor->m_Speed = FLOORSPEED * 4;
+			break;
+		}
+
+		// setup stepsize for stairs
+		switch (Step)
+		{
+		default:
+		case 0:
+			stairsize = 4 * FRACUNIT;
+			break;
+		case 1:
+			stairsize = 8 * FRACUNIT;
+			break;
+		case 2:
+			stairsize = 16 * FRACUNIT;
+			break;
+		case 3:
+			stairsize = 24 * FRACUNIT;
+			break;
+		}
+
+		speed = floor->m_Speed;
+		height = sec->floorheight + floor->m_Direction * stairsize;
+		floor->m_FloorDestHeight = height;
+		texture = sec->floorpic;
+		floor->m_Crush = NO_CRUSH;
+		floor->m_Type = DFloor::genBuildStair; // jff 3/31/98 do not leave uninited
+
+		sec->stairlock = -2;
+		sec->nextsec = -1;
+		sec->prevsec = -1;
+
+		osecnum = secnum; // jff 3/4/98 preserve loop index
+
+		// Find next sector to raise
+		// 1.	Find 2-sided line with same sector side[0] (lowest numbered)
+		// 2.	Other side is the next sector to raise
+		// 3.	Unless already moving, or different texture, then stop building
+		do
+		{
+			ok = 0;
+			for (i = 0; i < sec->linecount; i++)
+			{
+				if (!((sec->lines[i])->backsector))
+					continue;
+
+				tsec = (sec->lines[i])->frontsector;
+				newsecnum = tsec - sectors;
+
+				if (secnum != newsecnum)
+					continue;
+
+				tsec = (sec->lines[i])->backsector;
+				newsecnum = tsec - sectors;
+
+				if (!Igno && tsec->floorpic != texture)
+					continue;
+
+				height += floor->m_Direction * stairsize;
+
+				// if sector's floor already moving, look for another
+				// jff 2/26/98 special lockout condition for retriggering
+				if (tsec->floordata || tsec->stairlock)
+					continue;
+
+				height += floor->m_Direction * stairsize;
+
+				ok = true;
+				break;
+			}
+
+			if (ok)
+			{
+				// jff 2/26/98
+				// link the stair chain in both directions
+				// lock the stair sector until building complete
+				sec->nextsec = newsecnum; // link step to next
+				tsec->prevsec = secnum;   // link next back
+				tsec->nextsec = -1;       // set next forward link as end
+				tsec->stairlock = -2;     // lock the step
+
+				sec = tsec;
+				secnum = newsecnum;
+
+				// create and initialize a thinker for the next step
+				floor = new DFloor(sec);
+				P_AddMovingFloor(sec);
+
+				floor->PlayFloorSound();
+				floor->m_Direction = Dirn ? 1 : -1;
+				floor->m_FloorDestHeight = height;
+				// [RH] Set up delay values
+				floor->m_Delay = 0;
+				floor->m_PauseTime = 0;
+
+				floor->m_Speed = speed;
+				floor->m_Type =
+				    DFloor::genBuildStair; // jff 3/31/98 do not leave uninited
+				// jff 2/27/98 fix uninitialized crush field
+				floor->m_Crush = NO_CRUSH;
+				floor->m_ResetCount = 0;      // [RH] Tics until reset (0 if never)
+				floor->m_OrgHeight = floorheight; // [RH] Height to reset to
+			}
+		} while (ok);
+		if (manual)
+			return rtn;
+		secnum = osecnum; // jff 3/4/98 restore loop index
+	}
+	return rtn;
+}
 
 //
 // BUILD A STAIRCASE!

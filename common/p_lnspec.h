@@ -647,6 +647,7 @@ typedef enum {
 #define P_TURBO 64
 
 #define PLATWAIT 105
+#define PLATSPEED FRACUNIT
 
 #define ELEVATORSPEED 32
 

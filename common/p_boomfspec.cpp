@@ -167,7 +167,7 @@ void P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing, bool bo
 			*/
 			linefunc = EV_DoGenStairs;
 		}
-		else if (mbf21 && (unsigned)line->special >= GenCrusherBase)
+		else if ((unsigned)line->special >= GenCrusherBase)
 		{
 			// haleyjd 06/09/09: This was completely forgotten in BOOM, disabling
 			// all generalized walk-over crusher types!

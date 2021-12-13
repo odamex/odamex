@@ -28,6 +28,7 @@
 #include "p_local.h"
 #include "r_state.h"
 #include "s_sound.h"
+#include "p_lnspec.h"
 
 // From sv_main.cpp
 void SV_BroadcastSector(int sectornum);
@@ -157,6 +158,10 @@ void DPlat::RunThink ()
 					case platDownToNearestFloor:
 					case platDownToLowestCeiling:
 				    case platRaiseAndStayLockout:
+				    case blazeDWUS:
+				    case raiseAndChange:
+				    case raiseToNearestAndChange:
+				    case genLift:
 						m_Status = finished;
 						break;
 
@@ -190,6 +195,8 @@ void DPlat::RunThink ()
 					case platUpWaitDownStay:
 					case platUpNearestWaitDownStay:
 					case platUpByValue:
+				    case raiseAndChange:
+				    case raiseToNearestAndChange:
 						m_Status = finished;
 						break;
 
@@ -214,6 +221,8 @@ void DPlat::RunThink ()
 			case platUpByValueStay:
 			case platRaiseAndStay:
 		    case platRaiseAndStayLockout:
+		    case raiseAndChange:
+		    case raiseToNearestAndChange:
 				m_Status = finished;
 				break;
 
@@ -383,6 +392,79 @@ DPlat::DPlat(sector_t *sec, DPlat::EPlatType type, fixed_t height,
 	}
 }
 
+DPlat::DPlat(sector_t* sec, int target, int delay, int speed, int trigger)
+    : DMovingFloor(sec), m_Status(init)
+{
+	m_Crush = false;
+	m_Type = genLift;
+
+	// setup the target destination height
+	switch (target)
+	{
+	case F2LnF:
+		m_Low = P_FindLowestFloorSurrounding(sec);
+		if (m_Low > sec->floorheight)
+			m_Low = sec->floorheight;
+		break;
+	case F2NnF:
+		m_Low = P_FindNextLowestFloor(sec);
+		break;
+	case F2LnC:
+		m_Low = P_FindLowestCeilingSurrounding(sec);
+		if (m_Low > sec->floorheight)
+			m_Low = sec->floorheight;
+		break;
+	case LnF2HnF:
+		m_Type = genPerpetual;
+		m_Low = P_FindLowestFloorSurrounding(sec);
+		if (m_Low > sec->floorheight)
+			m_Low = sec->floorheight;
+		m_High = P_FindHighestFloorSurrounding(sec);
+		if (m_High < sec->floorheight)
+			m_High = sec->floorheight;
+		m_Status = (EPlatState)(P_Random() & 1);
+		break;
+	default:
+		break;
+	}
+
+	// setup the speed of motion
+	switch (speed)
+	{
+	case SpeedSlow:
+		m_Speed = PLATSPEED * 2;
+		break;
+	case SpeedNormal:
+		m_Speed = PLATSPEED * 4;
+		break;
+	case SpeedFast:
+		m_Speed = PLATSPEED * 8;
+		break;
+	case SpeedTurbo:
+		m_Speed = PLATSPEED * 16;
+		break;
+	default:
+		break;
+	}
+
+	// setup the delay time before the floor returns
+	switch (delay)
+	{
+	case 0:
+		m_Wait = 1 * 35;
+		break;
+	case 1:
+		m_Wait = 3 * 35;
+		break;
+	case 2:
+		m_Wait = 5 * 35;
+		break;
+	case 3:
+		m_Wait = 10 * 35;
+		break;
+	}
+}
+
 // Clones a DPlat and returns a pointer to that clone.
 //
 // The caller owns the pointer, and it must be deleted with `delete`.
@@ -464,6 +546,59 @@ manual_plat:
 			if (serverside)
 				SV_BroadcastSector(secnum);
 		}
+
+		if (manual)
+			return rtn;
+	}
+	return rtn;
+}
+
+bool EV_DoGenLift(line_t* line)
+{
+	DPlat* plat;
+	int secnum;
+	sector_t* sec;
+	int rtn = false;
+	bool manual = false;
+	unsigned value = (unsigned)line->special - GenLiftBase;
+
+    int Targ = (value & LiftTarget) >> LiftTargetShift;
+	int Dely = (value & LiftDelay) >> LiftDelayShift;
+	int Sped = (value & LiftSpeed) >> LiftSpeedShift;
+	int Trig = (value & TriggerType) >> TriggerTypeShift;
+
+	 // Activate all <type> plats that are in_stasis
+
+	if (Targ == LnF2HnF)
+		P_ActivateInStasis(line->id);
+
+	if (Trig == PushOnce || Trig == PushMany)
+	{
+		if (!line || !(sec = line->backsector))
+			return false;
+		secnum = sec - sectors;
+		manual = true;
+		goto manual_genplat;
+	}
+
+	secnum = -1;
+	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+	{
+		sec = &sectors[secnum];
+
+	manual_genplat:
+		if (sec->floordata)
+		{
+			if (co_boomphys && manual)
+				return false;
+			else
+				continue;
+		}
+
+		// Find lowest & highest floors around sector
+		rtn = true;
+		new DPlat(sec, Targ, Dely, Sped, Trig);
+		P_AddMovingFloor(sec);
 
 		if (manual)
 			return rtn;

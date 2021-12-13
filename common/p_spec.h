@@ -149,6 +149,14 @@ enum crushmode_e
 	crushSlowdown = 2,
 };
 
+enum lifttarget_e
+{
+	F2LnF,
+	F2NnF,
+	F2LnC,
+	LnF2HnF,
+};
+
 enum LineActivationType
 {
 	LineCross,
@@ -614,6 +622,14 @@ public:
 
 	enum EPlatType
 	{
+		perpetualRaise,
+		downWaitUpStay,
+		raiseAndChange,
+		raiseToNearestAndChange,
+		blazeDWUS,
+		genLift, // jff added to support generalized Plat types
+		genPerpetual,
+		toggleUpDn, // jff 3/14/98 added to support instant toggle type
 		platPerpetualRaise,
 		platDownWaitUpStay,
 		platDownWaitUpStayStone,
@@ -636,6 +652,7 @@ public:
 
 	DPlat(sector_t *sector);
 	DPlat(sector_t *sector, DPlat::EPlatType type, fixed_t height, int speed, int delay, fixed_t lip);
+	DPlat(sector_t* sector, int target, int delay, int speed, int trigger); // [Blair] Boom Generic Plat type
 	DPlat* Clone(sector_t* sec) const;
 	friend void P_SetPlatDestroy(DPlat *plat);
 	
@@ -666,6 +683,7 @@ private:
 						   fixed_t height, int speed, int delay, fixed_t lip, int change);
 	friend void EV_StopPlat (int tag);
 	friend void P_ActivateInStasis (int tag);
+	friend bool EV_DoGenLift(line_t* line);
 };
 
 inline FArchive &operator<< (FArchive &arc, DPlat::EPlatType type)
@@ -1043,6 +1061,7 @@ public:
 
 		donutRaise,
 
+		genBuildStair,
 		buildStair,
 		waitStair,
 		resetStair,
@@ -1116,6 +1135,7 @@ protected:
 	                            bool hexencrush, bool hereticlower);
 	friend int EV_ZDoomFloorCrushStop(int tag);
 	friend bool EV_DoGenFloor(line_t* line);
+	friend bool EV_DoGenStairs(line_t* line);
 
   private:
 	DFloor ();
