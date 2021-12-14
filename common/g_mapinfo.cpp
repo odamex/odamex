@@ -1669,6 +1669,12 @@ void G_ParseMapInfo()
 	case chex:
 		baseinfoname = "_CHEXNFO";
 		break;
+	case retail_freedoom:
+		baseinfoname = "_F1NFO";
+		break;
+	case commercial_freedoom:
+		baseinfoname = "_F2NFO";
+		break;
 	default:
 		break;
 	}
