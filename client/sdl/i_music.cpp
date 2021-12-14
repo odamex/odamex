@@ -23,25 +23,23 @@
 
 #include "odamex.h"
 
-
 #include "win32inc.h"
 #if defined(_WIN32) && !defined(_XBOX)
-	#include <mmsystem.h>
-#endif
-
-#ifndef OSX
-	#ifdef UNIX
-		#include <sys/stat.h>
-	#endif
+#include <mmsystem.h>
 #endif
 
 #include "m_argv.h"
 #include "i_music.h"
 #include "i_system.h"
 
-#include <SDL_mixer.h>
-#include "mus2midi.h"
 #include "i_musicsystem.h"
+#ifdef OSX
+#include "i_musicsystem_au.h"
+#endif
+#ifdef PORTMIDI
+#include "i_musicsystem_portmidi.h"
+#endif
+#include "i_musicsystem_sdl.h"
 
 MusicSystem* musicsystem = NULL;
 MusicSystemType current_musicsystem_type = MS_NONE;
@@ -129,7 +127,6 @@ bool S_MusicIsWave(byte* data, size_t length)
 
 	return false;
 }
-
 
 //
 // I_ResetMidiVolume()

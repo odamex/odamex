@@ -51,6 +51,7 @@
 #include "m_memio.h"
 
 #include "s_sound.h"
+#include "i_music.h"
 #include "i_musicsystem.h"
 
 
