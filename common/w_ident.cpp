@@ -59,7 +59,7 @@ static const identData_t identdata[] = {
     {
         "Doom 2 v1.9",                      // idName
         "DOOM2.WAD",                        // filename
-        "",                                 // crc32Sum
+        "EC8725DB",                         // crc32Sum
         "25E1459CA71D321525F84628F45CA8CD", // md5Sum
         "Doom2 v1.9",                       // groupName
         IDENT_COMMERCIAL | IDENT_IWAD       // flags
@@ -619,6 +619,15 @@ private:
 //
 // ============================================================================
 
+template <>
+struct hashfunc<OFileHash>
+{
+	unsigned int operator()(const OFileHash& str) const
+	{
+		return __hash_cstring(str.getHexStr().c_str());
+	}
+};
+
 class FileIdentificationManager
 {
 public:
@@ -634,19 +643,26 @@ public:
 	             const OString& md5, const OString& group, bool commercial,
 	             bool iwad = true, bool deprecated = false)
 	{
+		OFileHash crc32Hash;
+		OFileHash::makeFromHexStr(crc32Hash, crc32);
+		OFileHash md5Hash;
+		OFileHash::makeFromHexStr(md5Hash, md5);
+
 		IdType id = mIdentifiers.insert();
 		FileIdentifier* file = &mIdentifiers.get(id);
-
 		file->mIdName = OStringToUpper(idname);
 		file->mFilename = OStringToUpper(filename);
-		file->mCRC32Sum = OStringToUpper(crc32);
-		file->mMd5Sum = OStringToUpper(md5);
+		file->mCRC32Sum = crc32Hash;
+		file->mMd5Sum = md5Hash;
 		file->mGroupName = OStringToUpper(group);
 		file->mIsCommercial = commercial;
 		file->mIsIWAD = iwad;
 		file->mIsDeprecated = deprecated;
 
-		mMd5SumLookup.insert(std::make_pair(OStringToUpper(file->mMd5Sum), id));
+		if (!md5Hash.empty())
+		{
+			mMd5SumLookup.insert(std::make_pair(file->mMd5Sum, id));
+		}
 
 		// add the filename to the IWAD search list if it's not already in there
 		if (std::find(mIWADSearchOrder.begin(), mIWADSearchOrder.end(), file->mFilename) == mIWADSearchOrder.end())
@@ -681,19 +697,19 @@ public:
 		return false;
 	}
 
-	bool isCommercial(const OString& hash) const
+	bool isCommercial(const OFileHash& hash) const
 	{
 		const FileIdentifier* file = lookupByMd5Sum(hash);
 		return file && file->mIsCommercial;
 	}
 
-	bool isKnownIWAD(const OString& hash) const
+	bool isKnownIWAD(const OFileHash& hash) const
 	{
 		const FileIdentifier* file = lookupByMd5Sum(hash);
 		return file && file->mIsIWAD;
 	}
 
-	bool isDeprecated(const OString& hash) const
+	bool isDeprecated(const OFileHash& hash) const
 	{
 		const FileIdentifier* file = lookupByMd5Sum(hash);
 		return file && file->mIsDeprecated;
@@ -701,7 +717,7 @@ public:
 
 	bool isIWAD(const OResFile& file) const
 	{
-		const OString& md5sum(file.getHash());
+		const OFileHash& md5sum(file.getHash());
 		const FileIdentifier* ident = lookupByMd5Sum(md5sum);
 		if (ident)
 			return ident->mIsIWAD;
@@ -725,7 +741,7 @@ public:
 		return true;
 	}
 
-	bool areCompatible(const OString& hash1, const OString& hash2) const
+	bool areCompatible(const OFileHash& hash1, const OFileHash& hash2) const
 	{
 		const FileIdentifier* file1 = lookupByMd5Sum(hash1);
 		const FileIdentifier* file2 = lookupByMd5Sum(hash2);
@@ -832,8 +848,12 @@ public:
 
 	void dump() const
 	{
-		for (IdentifierTable::const_iterator it = mIdentifiers.begin(); it != mIdentifiers.end(); ++it)
-			Printf(PRINT_HIGH, "%s %s %s\n", it->mGroupName.c_str(), it->mFilename.c_str(), it->mMd5Sum.c_str());
+		for (IdentifierTable::const_iterator it = mIdentifiers.begin();
+		     it != mIdentifiers.end(); ++it)
+		{
+			Printf(PRINT_HIGH, "%s %s %s\n", it->mGroupName.c_str(),
+			       it->mFilename.c_str(), it->mMd5Sum.getHexStr().c_str());
+		}
 	}
 
 private:
@@ -841,17 +861,17 @@ private:
 	{
 		OString				mIdName;
 		OString				mFilename;
-		OString				mCRC32Sum;
-		OString				mMd5Sum;
+		OFileHash			mCRC32Sum;
+		OFileHash			mMd5Sum;
 		OString				mGroupName;
 		bool				mIsCommercial;
 		bool				mIsIWAD;
 		bool				mIsDeprecated;
 	};
 
-	const FileIdentifier* lookupByMd5Sum(const OString& md5sum) const
+	const FileIdentifier* lookupByMd5Sum(const OFileHash& md5sum) const
 	{
-		Md5SumLookupTable::const_iterator it = mMd5SumLookup.find(OStringToUpper(md5sum));
+		Md5SumLookupTable::const_iterator it = mMd5SumLookup.find(md5sum);
 		if (it != mMd5SumLookup.end())
 			return &mIdentifiers.get(it->second);
 		return NULL;
@@ -862,7 +882,7 @@ private:
 	typedef SArray<FileIdentifier> IdentifierTable;
 	IdentifierTable			mIdentifiers;
 
-	typedef OHashTable<OString, IdType> Md5SumLookupTable;
+	typedef OHashTable<OFileHash, IdType> Md5SumLookupTable;
 	Md5SumLookupTable		mMd5SumLookup;
 
 	typedef std::vector<OString> FilenameArray;
@@ -1051,9 +1071,9 @@ bool W_IsFilenameCommercialIWAD(const std::string& filename)
 //
 // Checks to see whether a given hash belongs to an IWAD flagged as "commercial"
 //
-bool W_IsFilehashCommercialIWAD(const std::string& filename)
+bool W_IsFilehashCommercialIWAD(const OFileHash& fileHash)
 {
-	return identtab.isCommercial(filename);
+	return identtab.isCommercial(fileHash);
 }
 
 
@@ -1064,7 +1084,7 @@ bool W_IsFilehashCommercialIWAD(const std::string& filename)
 //
 bool W_IsFileCommercialIWAD(const std::string& filename)
 {
-	const OString md5sum = W_MD5(filename);
+	const OFileHash md5sum = W_MD5(filename);
 	return identtab.isCommercial(md5sum);
 }
 

@@ -194,7 +194,7 @@ void SV_SendServerInfo()
 	}
 
 	for (i = 1; i < numwads; ++i)
-		MSG_WriteString(&ml_message, ::wadfiles[i].getHash().c_str());
+		MSG_WriteString(&ml_message, ::wadfiles[i].getHash().getHexStr().c_str());
 
 	// [AM] Used to be sv_website - sv_downloadsites can have multiple sites.
 	MSG_WriteString(&ml_message, sv_downloadsites.cstring());

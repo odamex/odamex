@@ -20,9 +20,37 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __M_RESFILE_H__
-#define __M_RESFILE_H__
+#pragma once
 
+enum ofilehash_t
+{
+	/**
+	 * @brief Hash is or wants to look for an MD5 hash.
+	 */
+	OFHASH_MD5,
+
+	/**
+	 * @brief Hash is or wants to look for a CRC32 checksum.
+	 */
+	OFHASH_CRC,
+};
+
+class OFileHash
+{
+	ofilehash_t m_type;
+	std::string m_hash;
+
+  public:
+	OFileHash() : m_type(OFHASH_MD5), m_hash("") { }
+	bool operator==(const OFileHash& other) const { return m_hash == other.m_hash; }
+	bool operator!=(const OFileHash& other) const { return !(operator==(other)); }
+	ofilehash_t getType() const { return m_type; }
+	const std::string& getHexStr() const { return m_hash; }
+	bool empty() const { return m_hash.empty(); }
+
+	static void makeEmpty(OFileHash& out, const ofilehash_t type);
+	static bool makeFromHexStr(OFileHash& out, const std::string& hash);
+};
 
 enum ofile_t
 {
@@ -48,47 +76,31 @@ enum ofile_t
 class OResFile
 {
 	std::string m_fullpath;
-	std::string m_hash;
+	OFileHash m_hash;
 	std::string m_basename;
 
   public:
-	bool operator==(const OResFile& other) const
-	{
-		return m_hash == other.m_hash;
-	}
-
-	bool operator!=(const OResFile& other) const
-	{
-		return !(operator==(other));
-	}
+	bool operator==(const OResFile& other) const { return m_hash == other.m_hash; }
+	bool operator!=(const OResFile& other) const { return !(operator==(other)); }
 
 	/**
 	 * @brief Get the full absolute path to the file.
 	 */
-	const std::string& getFullpath() const
-	{
-		return m_fullpath;
-	}
+	const std::string& getFullpath() const { return m_fullpath; }
 
 	/**
 	 * @brief Get a unique hash of the file.
 	 */
-	const std::string& getHash() const
-	{
-		return m_hash;
-	}
+	const OFileHash& getHash() const { return m_hash; }
 
 	/**
 	 * @brief Get the base filename, with no path.
 	 */
-	const std::string& getBasename() const
-	{
-		return m_basename;
-	}
+	const std::string& getBasename() const { return m_basename; }
 
 	static bool make(OResFile& out, const std::string& file);
 	static bool makeWithHash(OResFile& out, const std::string& file,
-	                         const std::string& hash);
+	                         const OFileHash& hash);
 };
 typedef std::vector<OResFile> OResFiles;
 
@@ -99,7 +111,7 @@ class OWantFile
 {
 	std::string m_wantedpath;
 	ofile_t m_wantedtype;
-	std::string m_wantedhash;
+	OFileHash m_wantedhash;
 	std::string m_basename;
 	std::string m_extension;
 
@@ -107,47 +119,32 @@ class OWantFile
 	/**
 	 * @brief Get the original "wanted" path.
 	 */
-	const std::string& getWantedPath() const
-	{
-		return m_wantedpath;
-	}
+	const std::string& getWantedPath() const { return m_wantedpath; }
 
 	/**
 	 * @brief Get the original "wanted" path.
 	 */
-	ofile_t getWantedType() const
-	{
-		return m_wantedtype;
-	}
+	ofile_t getWantedType() const { return m_wantedtype; }
 
 	/**
 	 * @brief Get the assumed hash of the file, or an empty string if there
 	 *        is no hash.
 	 */
-	const std::string& getWantedHash() const
-	{
-		return m_wantedhash;
-	}
+	const OFileHash& getWantedHash() const { return m_wantedhash; }
 
 	/**
 	 * @brief Get the base filename of the resource, with no directory.
 	 */
-	const std::string& getBasename() const
-	{
-		return m_basename;
-	}
+	const std::string& getBasename() const { return m_basename; }
 
 	/**
 	 * @brief Get the extension of the resource.
 	 */
-	const std::string& getExt() const
-	{
-		return m_extension;
-	}
+	const std::string& getExt() const { return m_extension; }
 
-	static bool make(OWantFile& out, const std::string& file, ofile_t type);
-	static bool makeWithHash(OWantFile& out, const std::string& file, ofile_t type,
-	                         const std::string& hash);
+	static bool make(OWantFile& out, const std::string& file, const ofile_t type);
+	static bool makeWithHash(OWantFile& out, const std::string& file, const ofile_t type,
+	                         const OFileHash& hash);
 };
 typedef std::vector<OWantFile> OWantFiles;
 
@@ -155,5 +152,3 @@ std::string M_ResFilesToString(const OResFiles& files);
 const std::vector<std::string>& M_FileTypeExts(ofile_t type);
 std::vector<std::string> M_FileSearchDirs();
 bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted);
-
-#endif // __ORESFILE_H__

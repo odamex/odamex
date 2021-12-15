@@ -166,7 +166,7 @@ std::string M_GetUserFileName(const std::string& file)
 
 std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
                                 const std::vector<std::string>& exts,
-                                const std::string& hash)
+                                const OFileHash& hash)
 {
 	dir = M_CleanPath(dir);
 	std::vector<OString> cmp_files;
@@ -176,7 +176,8 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 		if (!hash.empty())
 		{
 			// Filenames with supplied hashes always match first.
-			cmp_files.push_back(StdStringToUpper(file + "." + hash.substr(0, 6) + *it));
+			cmp_files.push_back(
+			    StdStringToUpper(file + "." + hash.getHexStr().substr(0, 6) + *it));
 		}
 		cmp_files.push_back(StdStringToUpper(file + *it));
 	}
@@ -207,7 +208,7 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 		if (this_it < found_it)
 		{
 			const std::string local_file(dir + PATHSEP + FindFileData.cFileName);
-			const std::string local_hash(W_MD5(local_file));
+			const OFileHash local_hash = W_MD5(local_file);
 
 			if (hash.empty() || hash == local_hash)
 			{
@@ -224,8 +225,8 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 			{
 				Printf(PRINT_WARNING, "WAD at %s does not match required copy\n",
 				       local_file.c_str());
-				Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.c_str());
-				Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.c_str());
+				Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.getHexStr().c_str());
+				Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.getHexStr().c_str());
 			}
 		}
 	} while (FindNextFile(hFind, &FindFileData));

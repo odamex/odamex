@@ -58,7 +58,7 @@ static struct DownloadState
 	OTransfer* transfer;
 	std::string url;
 	std::string filename;
-	std::string hash;
+	OFileHash hash;
 	unsigned flags;
 	Websites checkurls;
 	size_t checkurlidx;
@@ -66,7 +66,7 @@ static struct DownloadState
 	int checkfails;
 	DownloadState()
 	    : state(STATE_SHUTDOWN), check(NULL), transfer(NULL), url(""), filename(""),
-	      hash(""), flags(0), checkurls(), checkurlidx(0), checkfilename(""),
+	      hash(), flags(0), checkurls(), checkurlidx(0), checkfilename(""),
 	      checkfails(0)
 	{
 	}
@@ -79,7 +79,7 @@ static struct DownloadState
 		this->transfer = NULL;
 		this->url = "";
 		this->filename = "";
-		this->hash = "";
+		this->hash = OFileHash();
 		this->flags = 0;
 		this->checkurls.clear();
 		this->checkurlidx = 0;

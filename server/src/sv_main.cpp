@@ -3874,86 +3874,16 @@ void SV_WantWad(player_t &player)
 {
 	client_t *cl = &player.client;
 
-	if(!sv_waddownload)
-	{
-		// read and ignore the rest of the wad request
-		MSG_ReadString();
-		MSG_ReadString();
-		MSG_ReadLong();
+	// read and ignore the rest of the wad request
+	MSG_ReadString();
+	MSG_ReadString();
+	MSG_ReadLong();
 
-		MSG_WriteSVC(&cl->reliablebuf,
-		             SVC_Print(PRINT_HIGH, "Server: Downloading is disabled\n"));
+	MSG_WriteSVC(&cl->reliablebuf,
+		            SVC_Print(PRINT_HIGH, "Server: Downloading is disabled\n"));
 
-		SV_DropClient(player);
-		return;
-	}
-
-	if(player.ingame())
-		SV_Suicide(player);
-
-	std::string request = MSG_ReadString();
-	std::string md5 = MSG_ReadString();
-	size_t next_offset = MSG_ReadLong();
-
-	std::string curr_request = D_CleanseFileName(cl->download.name);
-
-	//DPrintf("pre-check client requesting {name: \"%s\", hash: \"%s\"} against {name: \"%s\", hash: \"%s\"}\n",
-	//		request.c_str(), md5.c_str(),
-	//		curr_request.c_str(), cl->download.md5.c_str()
-	//);
-
-	// [jsd] quick check for continuation of download:
-	if (curr_request == request &&
-		cl->download.md5 == md5)
-	{
-		cl->download.next_offset = next_offset;
-		player.playerstate = PST_DOWNLOAD;
-
-		return;
-	}
-
-	std::transform(md5.begin(), md5.end(), md5.begin(), toupper);
-
-	//DPrintf("client requesting {name: \"%s\", hash: \"%s\"}\n", request.c_str(), md5.c_str());
-
-	size_t i;
-	std::string filename;
-	for (i = 0; i < wadfiles.size(); i++)
-	{
-		filename = wadfiles[i].getBasename();
-		if (filename == request && (md5.empty() || wadfiles[i].getHash() == md5))
-			break;
-	}
-
-	if (i == wadfiles.size())
-	{
-		MSG_WriteSVC(&cl->reliablebuf,
-		             SVC_Print(PRINT_HIGH, "Server: Bad wad request\n"));
-		SV_DropClient(player);
-		return;
-	}
-
-	// denis - do not download commercial wads
-	if (W_IsIWAD(wadfiles[i]))
-	{
-		std::string message;
-		StrFormat(message, "Server: %s is a commercial wad and will not be downloaded\n",
-		          wadfiles[i].getBasename().c_str());
-
-		MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_HIGH, message));
-
-		SV_DropClient(player);
-		return;
-	}
-
-	if (player.playerstate != PST_DOWNLOAD ||
-	    cl->download.name != wadfiles[i].getBasename())
-		Printf("> client %d is downloading %s\n", player.id, filename.c_str());
-
-	cl->download.name = wadfiles[i].getBasename();
-	cl->download.md5 = md5;
-	cl->download.next_offset = next_offset;
-	player.playerstate = PST_DOWNLOAD;
+	SV_DropClient(player);
+	return;
 }
 
 //

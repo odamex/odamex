@@ -639,6 +639,23 @@ bool ValidString(const std::string& s)
 	return true;
 }
 
+bool IsHexString(const std::string& str, const size_t len)
+{
+	if (str.length() != len)
+		return false;
+
+	for (std::string::const_iterator it = str.begin(); it != str.end(); ++it)
+	{
+		if (*it >= '0' && *it <= '9')
+			continue;
+		if (*it >= 'A' && *it <= 'F')
+			continue;
+		return false;
+	}
+	return true;
+}
+
+
 //==========================================================================
 //
 // CheckWildcards

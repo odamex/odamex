@@ -220,7 +220,7 @@ next:
 	{
 		MSG_WriteString(&ml_message,
 		                D_CleanseFileName(::wadfiles[i].getBasename(), "wad").c_str());
-		MSG_WriteHexString(&ml_message, ::wadfiles[i].getHash().c_str());
+		MSG_WriteHexString(&ml_message, ::wadfiles[i].getHash().getHexStr().c_str());
 	}
 
 	MSG_WriteByte(&ml_message, players.size());

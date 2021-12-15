@@ -39,7 +39,7 @@
 
 #include <fcntl.h>
 
-#include "zlib.h" // crc32
+#include "crc32.h"
 
 #include "m_fileio.h"
 #include "i_system.h"
@@ -148,9 +148,9 @@ void uppercopy (char *to, const char *from)
  * @param filename Filename of file to hash.
  * @return Output hash, or blank if file could not be found.
  */
-std::string W_CRC32(const std::string& filename)
+OFileHash W_CRC32(const std::string& filename)
 {
-	std::string rvo;
+	OFileHash rvo;
 
 	const int file_chunk_size = 8192;
 	FILE* fp = fopen(filename.c_str(), "rb");
@@ -160,25 +160,31 @@ std::string W_CRC32(const std::string& filename)
 
 	unsigned n = 0;
 	unsigned char buf[file_chunk_size];
-	uLong crc = crc32(0L, Z_NULL, 0);
+	uint32_t crc = 0;
 
 	while ((n = fread(buf, 1, sizeof(buf), fp)))
 	{
-		crc = crc32(crc, buf, n);
+		crc = crc32_fast(buf, n, crc);
 	}
 
-	StrFormat(rvo, "%08X", crc);
-	return rvo;
+	std::string hashStr;
+
+	StrFormat(hashStr, "%08X", crc);
+
+	OFileHash::makeFromHexStr(rvo, hashStr);
+	return rvo; // bubble up failure
 }
 
 // denis - Standard MD5SUM
-std::string W_MD5(std::string filename)
+OFileHash W_MD5(const std::string& filename)
 {
+	OFileHash rvo;
+
 	const int file_chunk_size = 8192;
 	FILE *fp = fopen(filename.c_str(), "rb");
 
 	if(!fp)
-		return "";
+		return rvo;
 
 	md5_state_t state;
 	md5_init(&state);
@@ -194,12 +200,13 @@ std::string W_MD5(std::string filename)
 
 	fclose(fp);
 
-	std::stringstream hash;
+	std::stringstream hashStr;
 
 	for(int i = 0; i < 16; i++)
-		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << (short)digest[i];
+		hashStr << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << (short)digest[i];
 
-	return hash.str();
+	OFileHash::makeFromHexStr(rvo, hashStr.str());
+	return rvo; // bubble up failure
 }
 
 /*
@@ -285,17 +292,17 @@ void W_AddLumps(FILE* handle, filelump_t* fileinfo, size_t newlumps, bool client
 // Map reloads are supported through WAD reload so no need for vanilla tilde
 // reload hack here
 //
-std::string W_AddFile(std::string filename)
+void AddFile(const OResFile& file)
 {
 	FILE*			handle;
 	filelump_t*		fileinfo;
 
-	M_FixPathSep(filename);
+	const std::string filename = file.getFullpath();
 
 	if ( (handle = fopen(filename.c_str(), "rb")) == NULL)
 	{
 		Printf(PRINT_WARNING, "couldn't open %s\n", filename.c_str());
-		return "";
+		return;
 	}
 
 	Printf(PRINT_HIGH, "adding %s", filename.c_str());
@@ -308,7 +315,7 @@ std::string W_AddFile(std::string filename)
 	{
 		Printf(PRINT_HIGH, "failed to read %s.\n", filename.c_str());
 		fclose(handle);
-		return "";
+		return;
 	}
 	header.identification = LELONG(header.identification);
 
@@ -337,7 +344,7 @@ std::string W_AddFile(std::string filename)
 		{
 			Printf(PRINT_WARNING, "\nbad number of lumps for %s\n", filename.c_str());
 			fclose(handle);
-			return "";
+			return;
 		}
 
 		fileinfo = new filelump_t[header.numlumps];
@@ -347,7 +354,7 @@ std::string W_AddFile(std::string filename)
 		{
 			Printf(PRINT_HIGH, "failed to read file info in %s\n", filename.c_str());
 			fclose(handle);
-			return "";
+			return;
 		}
 
 		// convert from little-endian to target arch and capitalize lump name
@@ -366,7 +373,7 @@ std::string W_AddFile(std::string filename)
 
 	delete [] fileinfo;
 
-	return W_MD5(filename);
+	return;
 }
 
 
@@ -546,13 +553,13 @@ void W_InitMultipleFiles(const OResFiles& files)
 	::lumpinfo = NULL;
 
 	// open each file once, load headers, and count lumps
-	std::vector<std::string> loaded;
+	std::vector<OFileHash> loaded;
 	for (size_t i = 0; i < files.size(); i++)
 	{
 		if (std::find(loaded.begin(), loaded.end(), files.at(i).getHash()) ==
 		    loaded.end())
 		{
-			std::string hash = W_AddFile(files.at(i).getFullpath());
+			AddFile(files.at(i));
 			loaded.push_back(files.at(i).getHash());
 		}
 	}

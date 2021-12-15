@@ -77,6 +77,7 @@ std::string &TrimStringStart(std::string &s);
 std::string &TrimStringEnd(std::string &s);
 
 bool ValidString(const std::string&);
+bool IsHexString(const std::string& str, const size_t len);
 
 char	*COM_Parse (char *data);
 

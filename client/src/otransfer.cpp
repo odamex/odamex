@@ -306,7 +306,7 @@ int OTransfer::setOutputFile(const std::string& dest)
  *
  * @param hash Hash string.
  */
-void OTransfer::setHash(const std::string& hash)
+void OTransfer::setHash(const OFileHash& hash)
 {
 	m_expectHash = hash;
 }
@@ -415,7 +415,7 @@ bool OTransfer::tick()
 
 	// Verify that the file is what the server wants and is not a renamed
 	// commercial IWAD.
-	std::string actualHash = W_MD5(m_filePart);
+	OFileHash actualHash = W_MD5(m_filePart);
 	if (W_IsFilehashCommercialIWAD(actualHash))
 	{
 		remove(m_filePart.c_str());
@@ -442,7 +442,7 @@ bool OTransfer::tick()
 			ext = std::string(".") + ext;
 		}
 		StrFormat(fallback, "%s%s%s.%s%s", path.c_str(), PATHSEP, base.c_str(),
-		          actualHash.substr(0, 6).c_str(), ext.c_str());
+		          actualHash.getHexStr().substr(0, 6).c_str(), ext.c_str());
 
 		// Try one more time.
 		ok = rename(m_filePart.c_str(), fallback.c_str());

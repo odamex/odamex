@@ -116,7 +116,7 @@ std::string M_GetUserFileName(const std::string& file);
 */
 std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
                                 const std::vector<std::string>& exts,
-                                const std::string& hash);
+                                const OFileHash& hash);
 
 /**
  * @brief Get absolute path from passed path.

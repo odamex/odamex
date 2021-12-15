@@ -210,7 +210,7 @@ std::string M_GetUserFileName(const std::string& file)
 
 std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
                                 const std::vector<std::string>& exts,
-                                const std::string& hash)
+                                const OFileHash& hash)
 {
 	dir = M_CleanPath(dir);
 	std::vector<OString> cmp_files;

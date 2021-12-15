@@ -1045,7 +1045,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 
 	// MD5 hash sums for all the wadfiles on the server
 	for (size_t n = 1; n < numwads; n++)
-		MSG_WriteString(netbuffer, ::wadfiles[n].getHash().c_str());
+		MSG_WriteString(netbuffer, ::wadfiles[n].getHash().getHexStr().c_str());
 
 	MSG_WriteString	(netbuffer, "");	// sv_website.cstring()
 
@@ -1453,14 +1453,14 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	for (size_t i = 1; i < wadfiles.size(); i++)
 	{
 		arc << D_CleanseFileName(::wadfiles[i].getBasename()).c_str();
-		arc << ::wadfiles[i].getHash().c_str();
+		arc << ::wadfiles[i].getHash().getHexStr().c_str();
 	}
 
 	arc << (byte)patchfiles.size();
 	for (size_t i = 0; i < patchfiles.size(); i++)
 	{
 		arc << D_CleanseFileName(::patchfiles[i].getBasename()).c_str();
-		arc << ::patchfiles[i].getHash().c_str();
+		arc << ::patchfiles[i].getHash().getHexStr().c_str();
 	}
 
 	// write map info
@@ -1541,13 +1541,16 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	// read wad info
 	OWantFiles newwadfiles, newpatchfiles;
 	byte numwads, numpatches;
-	std::string res, hash;
+	std::string res, hashStr;
 
 	arc >> numwads;
 	for (size_t i = 0; i < numwads; i++)
 	{
 		arc >> res;
-		arc >> hash;
+		arc >> hashStr;
+
+		OFileHash hash;
+		OFileHash::makeFromHexStr(hash, hashStr);
 
 		OWantFile want;
 		OWantFile::makeWithHash(want, res, OFILE_WAD, hash);
@@ -1558,7 +1561,10 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	for (size_t i = 0; i < numpatches; i++)
 	{
 		arc >> res;
-		arc >> hash;
+		arc >> hashStr;
+
+		OFileHash hash;
+		OFileHash::makeFromHexStr(hash, hashStr);
 
 		OWantFile want;
 		OWantFile::makeWithHash(want, res, OFILE_DEH, hash);
