@@ -620,11 +620,20 @@ private:
 // ============================================================================
 
 template <>
-struct hashfunc<OFileHash>
+struct hashfunc<OCRC32Sum>
 {
-	unsigned int operator()(const OFileHash& str) const
+	unsigned int operator()(const OCRC32Sum& str) const
 	{
-		return __hash_cstring(str.getHexStr().c_str());
+		return __hash_cstring(str.getHexCStr());
+	}
+};
+
+template <>
+struct hashfunc<OMD5Hash>
+{
+	unsigned int operator()(const OMD5Hash& str) const
+	{
+		return __hash_cstring(str.getHexCStr());
 	}
 };
 
@@ -643,10 +652,10 @@ public:
 	             const OString& md5, const OString& group, bool commercial,
 	             bool iwad = true, bool deprecated = false)
 	{
-		OFileHash crc32Hash;
-		OFileHash::makeFromHexStr(crc32Hash, crc32);
-		OFileHash md5Hash;
-		OFileHash::makeFromHexStr(md5Hash, md5);
+		OCRC32Sum crc32Hash;
+		OCRC32Sum::makeFromHexStr(crc32Hash, crc32);
+		OMD5Hash md5Hash;
+		OMD5Hash::makeFromHexStr(md5Hash, md5);
 
 		IdType id = mIdentifiers.insert();
 		FileIdentifier* file = &mIdentifiers.get(id);
@@ -697,19 +706,19 @@ public:
 		return false;
 	}
 
-	bool isCommercial(const OFileHash& hash) const
+	bool isCommercial(const OMD5Hash& hash) const
 	{
 		const FileIdentifier* file = lookupByMd5Sum(hash);
 		return file && file->mIsCommercial;
 	}
 
-	bool isKnownIWAD(const OFileHash& hash) const
+	bool isKnownIWAD(const OMD5Hash& hash) const
 	{
 		const FileIdentifier* file = lookupByMd5Sum(hash);
 		return file && file->mIsIWAD;
 	}
 
-	bool isDeprecated(const OFileHash& hash) const
+	bool isDeprecated(const OMD5Hash& hash) const
 	{
 		const FileIdentifier* file = lookupByMd5Sum(hash);
 		return file && file->mIsDeprecated;
@@ -717,7 +726,7 @@ public:
 
 	bool isIWAD(const OResFile& file) const
 	{
-		const OFileHash& md5sum(file.getHash());
+		const OMD5Hash& md5sum(file.getMD5());
 		const FileIdentifier* ident = lookupByMd5Sum(md5sum);
 		if (ident)
 			return ident->mIsIWAD;
@@ -741,7 +750,7 @@ public:
 		return true;
 	}
 
-	bool areCompatible(const OFileHash& hash1, const OFileHash& hash2) const
+	bool areCompatible(const OMD5Hash& hash1, const OMD5Hash& hash2) const
 	{
 		const FileIdentifier* file1 = lookupByMd5Sum(hash1);
 		const FileIdentifier* file2 = lookupByMd5Sum(hash2);
@@ -754,7 +763,7 @@ public:
 
 	const OString identify(const OResFile& file)
 	{
-		const FileIdentifier* fileid = lookupByMd5Sum(file.getHash());
+		const FileIdentifier* fileid = lookupByMd5Sum(file.getMD5());
 
 		if (fileid != NULL)
 			return fileid->mIdName;
@@ -852,7 +861,7 @@ public:
 		     it != mIdentifiers.end(); ++it)
 		{
 			Printf(PRINT_HIGH, "%s %s %s\n", it->mGroupName.c_str(),
-			       it->mFilename.c_str(), it->mMd5Sum.getHexStr().c_str());
+			       it->mFilename.c_str(), it->mMd5Sum.getHexCStr());
 		}
 	}
 
@@ -861,15 +870,15 @@ private:
 	{
 		OString				mIdName;
 		OString				mFilename;
-		OFileHash			mCRC32Sum;
-		OFileHash			mMd5Sum;
+		OCRC32Sum			mCRC32Sum;
+		OMD5Hash			mMd5Sum;
 		OString				mGroupName;
 		bool				mIsCommercial;
 		bool				mIsIWAD;
 		bool				mIsDeprecated;
 	};
 
-	const FileIdentifier* lookupByMd5Sum(const OFileHash& md5sum) const
+	const FileIdentifier* lookupByMd5Sum(const OMD5Hash& md5sum) const
 	{
 		Md5SumLookupTable::const_iterator it = mMd5SumLookup.find(md5sum);
 		if (it != mMd5SumLookup.end())
@@ -882,7 +891,7 @@ private:
 	typedef SArray<FileIdentifier> IdentifierTable;
 	IdentifierTable			mIdentifiers;
 
-	typedef OHashTable<OFileHash, IdType> Md5SumLookupTable;
+	typedef OHashTable<OMD5Hash, IdType> Md5SumLookupTable;
 	Md5SumLookupTable		mMd5SumLookup;
 
 	typedef std::vector<OString> FilenameArray;
@@ -1034,7 +1043,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 //
 bool W_IsKnownIWAD(const OWantFile& file)
 {
-	if (::identtab.isKnownIWAD(file.getWantedHash()))
+	if (::identtab.isKnownIWAD(file.getWantedMD5()))
 		return true;
 
 	if (::identtab.isKnownIWADFilename(file.getBasename()))
@@ -1071,7 +1080,7 @@ bool W_IsFilenameCommercialIWAD(const std::string& filename)
 //
 // Checks to see whether a given hash belongs to an IWAD flagged as "commercial"
 //
-bool W_IsFilehashCommercialIWAD(const OFileHash& fileHash)
+bool W_IsFilehashCommercialIWAD(const OMD5Hash& fileHash)
 {
 	return identtab.isCommercial(fileHash);
 }
@@ -1084,7 +1093,7 @@ bool W_IsFilehashCommercialIWAD(const OFileHash& fileHash)
 //
 bool W_IsFileCommercialIWAD(const std::string& filename)
 {
-	const OFileHash md5sum = W_MD5(filename);
+	const OMD5Hash md5sum = W_MD5(filename);
 	return identtab.isCommercial(md5sum);
 }
 
@@ -1096,7 +1105,7 @@ bool W_IsFileCommercialIWAD(const std::string& filename)
 //
 bool W_IsIWADDeprecated(const OResFile& file)
 {
-	return identtab.isDeprecated(file.getHash());
+	return identtab.isDeprecated(file.getMD5());
 }
 
 

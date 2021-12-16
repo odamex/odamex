@@ -306,7 +306,7 @@ int OTransfer::setOutputFile(const std::string& dest)
  *
  * @param hash Hash string.
  */
-void OTransfer::setHash(const OFileHash& hash)
+void OTransfer::setMD5(const OMD5Hash& hash)
 {
 	m_expectHash = hash;
 }
@@ -415,7 +415,7 @@ bool OTransfer::tick()
 
 	// Verify that the file is what the server wants and is not a renamed
 	// commercial IWAD.
-	OFileHash actualHash = W_MD5(m_filePart);
+	OMD5Hash actualHash = W_MD5(m_filePart);
 	if (W_IsFilehashCommercialIWAD(actualHash))
 	{
 		remove(m_filePart.c_str());

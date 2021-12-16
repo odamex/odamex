@@ -148,9 +148,9 @@ void uppercopy (char *to, const char *from)
  * @param filename Filename of file to hash.
  * @return Output hash, or blank if file could not be found.
  */
-OFileHash W_CRC32(const std::string& filename)
+OCRC32Sum W_CRC32(const std::string& filename)
 {
-	OFileHash rvo;
+	OCRC32Sum rvo;
 
 	const int file_chunk_size = 8192;
 	FILE* fp = fopen(filename.c_str(), "rb");
@@ -171,14 +171,14 @@ OFileHash W_CRC32(const std::string& filename)
 
 	StrFormat(hashStr, "%08X", crc);
 
-	OFileHash::makeFromHexStr(rvo, hashStr);
+	OCRC32Sum::makeFromHexStr(rvo, hashStr);
 	return rvo; // bubble up failure
 }
 
 // denis - Standard MD5SUM
-OFileHash W_MD5(const std::string& filename)
+OMD5Hash W_MD5(const std::string& filename)
 {
-	OFileHash rvo;
+	OMD5Hash rvo;
 
 	const int file_chunk_size = 8192;
 	FILE *fp = fopen(filename.c_str(), "rb");
@@ -205,7 +205,7 @@ OFileHash W_MD5(const std::string& filename)
 	for(int i = 0; i < 16; i++)
 		hashStr << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << (short)digest[i];
 
-	OFileHash::makeFromHexStr(rvo, hashStr.str());
+	OMD5Hash::makeFromHexStr(rvo, hashStr.str());
 	return rvo; // bubble up failure
 }
 
@@ -553,14 +553,14 @@ void W_InitMultipleFiles(const OResFiles& files)
 	::lumpinfo = NULL;
 
 	// open each file once, load headers, and count lumps
-	std::vector<OFileHash> loaded;
+	std::vector<OMD5Hash> loaded;
 	for (size_t i = 0; i < files.size(); i++)
 	{
-		if (std::find(loaded.begin(), loaded.end(), files.at(i).getHash()) ==
+		if (std::find(loaded.begin(), loaded.end(), files.at(i).getMD5()) ==
 		    loaded.end())
 		{
 			AddFile(files.at(i));
-			loaded.push_back(files.at(i).getHash());
+			loaded.push_back(files.at(i).getMD5());
 		}
 	}
 

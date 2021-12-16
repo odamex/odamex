@@ -208,7 +208,7 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 		if (this_it < found_it)
 		{
 			const std::string local_file(dir + PATHSEP + FindFileData.cFileName);
-			const OFileHash local_hash = W_MD5(local_file);
+			const OMD5Hash local_hash = W_MD5(local_file);
 
 			if (hash.empty() || hash == local_hash)
 			{
@@ -225,8 +225,8 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 			{
 				Printf(PRINT_WARNING, "WAD at %s does not match required copy\n",
 				       local_file.c_str());
-				Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.getHexStr().c_str());
-				Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.getHexStr().c_str());
+				Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.getHexCStr());
+				Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.getHexCStr());
 			}
 		}
 	} while (FindNextFile(hFind, &FindFileData));

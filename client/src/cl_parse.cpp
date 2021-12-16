@@ -642,8 +642,8 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 		std::string name = msg->wadnames().Get(i).name();
 		std::string hashStr = msg->wadnames().Get(i).hash();
 
-		OFileHash hash;
-		OFileHash::makeFromHexStr(hash, hashStr);
+		OMD5Hash hash;
+		OMD5Hash::makeFromHexStr(hash, hashStr);
 
 		OWantFile file;
 		if (!OWantFile::makeWithHash(file, name, OFILE_WAD, hash))
@@ -665,8 +665,8 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 		std::string name = msg->patchnames().Get(i).name();
 		std::string hashStr = msg->patchnames().Get(i).hash();
 
-		OFileHash hash;
-		OFileHash::makeFromHexStr(hash, hashStr);
+		OMD5Hash hash;
+		OMD5Hash::makeFromHexStr(hash, hashStr);
 
 		OWantFile file;
 		if (!OWantFile::makeWithHash(file, name, OFILE_DEH, hash))

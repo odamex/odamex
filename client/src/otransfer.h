@@ -99,7 +99,7 @@ class OTransfer
 	OTransferProgress m_progress;
 	std::string m_filename;
 	std::string m_filePart;
-	OFileHash m_expectHash;
+	OMD5Hash m_expectHash;
 	bool m_shouldCheckAgain;
 
 	OTransfer(const OTransfer&);
@@ -129,7 +129,7 @@ class OTransfer
 
 	void setURL(const std::string& src);
 	int setOutputFile(const std::string& dest);
-	void setHash(const OFileHash& hash);
+	void setMD5(const OMD5Hash& hash);
 	bool start();
 	void stop();
 	bool tick();

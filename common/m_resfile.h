@@ -22,34 +22,39 @@
 
 #pragma once
 
-enum ofilehash_t
-{
-	/**
-	 * @brief Hash is or wants to look for an MD5 hash.
-	 */
-	OFHASH_MD5,
-
-	/**
-	 * @brief Hash is or wants to look for a CRC32 checksum.
-	 */
-	OFHASH_CRC,
-};
-
 class OFileHash
 {
-	ofilehash_t m_type;
+  private:
+	virtual void concrete() = 0; // [AM] Hack to make this class abstract.
+
+  protected:
 	std::string m_hash;
 
   public:
-	OFileHash() : m_type(OFHASH_MD5), m_hash("") { }
+	virtual ~OFileHash() { }
 	bool operator==(const OFileHash& other) const { return m_hash == other.m_hash; }
 	bool operator!=(const OFileHash& other) const { return !(operator==(other)); }
-	ofilehash_t getType() const { return m_type; }
 	const std::string& getHexStr() const { return m_hash; }
+	const char* getHexCStr() const { return m_hash.c_str(); }
 	bool empty() const { return m_hash.empty(); }
+};
 
-	static void makeEmpty(OFileHash& out, const ofilehash_t type);
-	static bool makeFromHexStr(OFileHash& out, const std::string& hash);
+class OMD5Hash : public OFileHash
+{
+  protected:
+	void concrete() { }
+
+  public:
+	static bool makeFromHexStr(OMD5Hash& out, const std::string& hash);
+};
+
+class OCRC32Sum : public OFileHash
+{
+  protected:
+	void concrete() { }
+
+  public:
+	static bool makeFromHexStr(OCRC32Sum& out, const std::string& hash);
 };
 
 enum ofile_t
@@ -76,11 +81,11 @@ enum ofile_t
 class OResFile
 {
 	std::string m_fullpath;
-	OFileHash m_hash;
+	OMD5Hash m_md5;
 	std::string m_basename;
 
   public:
-	bool operator==(const OResFile& other) const { return m_hash == other.m_hash; }
+	bool operator==(const OResFile& other) const { return m_md5 == other.m_md5; }
 	bool operator!=(const OResFile& other) const { return !(operator==(other)); }
 
 	/**
@@ -89,9 +94,9 @@ class OResFile
 	const std::string& getFullpath() const { return m_fullpath; }
 
 	/**
-	 * @brief Get a unique hash of the file.
+	 * @brief Get the MD5 hash of the file.
 	 */
-	const OFileHash& getHash() const { return m_hash; }
+	const OMD5Hash& getMD5() const { return m_md5; }
 
 	/**
 	 * @brief Get the base filename, with no path.
@@ -100,7 +105,7 @@ class OResFile
 
 	static bool make(OResFile& out, const std::string& file);
 	static bool makeWithHash(OResFile& out, const std::string& file,
-	                         const OFileHash& hash);
+	                         const OMD5Hash& hash);
 };
 typedef std::vector<OResFile> OResFiles;
 
@@ -111,7 +116,8 @@ class OWantFile
 {
 	std::string m_wantedpath;
 	ofile_t m_wantedtype;
-	OFileHash m_wantedhash;
+	OMD5Hash m_wantedMD5;
+	OCRC32Sum m_wantedCRC32;
 	std::string m_basename;
 	std::string m_extension;
 
@@ -130,7 +136,7 @@ class OWantFile
 	 * @brief Get the assumed hash of the file, or an empty string if there
 	 *        is no hash.
 	 */
-	const OFileHash& getWantedHash() const { return m_wantedhash; }
+	const OMD5Hash& getWantedMD5() const { return m_wantedMD5; }
 
 	/**
 	 * @brief Get the base filename of the resource, with no directory.
@@ -144,7 +150,7 @@ class OWantFile
 
 	static bool make(OWantFile& out, const std::string& file, const ofile_t type);
 	static bool makeWithHash(OWantFile& out, const std::string& file, const ofile_t type,
-	                         const OFileHash& hash);
+	                         const OMD5Hash& hash);
 };
 typedef std::vector<OWantFile> OWantFiles;
 

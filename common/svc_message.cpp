@@ -349,7 +349,7 @@ odaproto::svc::LoadMap SVC_LoadMap(const OResFiles& wadnames, const OResFiles& p
 	{
 		odaproto::svc::LoadMap_Resource* wad = msg.add_wadnames();
 		wad->set_name(wadnames[i].getBasename());
-		wad->set_hash(wadnames[i].getHash().getHexStr());
+		wad->set_hash(wadnames[i].getMD5().getHexStr());
 	}
 
 	// send list of DEH/BEX patches
@@ -358,7 +358,7 @@ odaproto::svc::LoadMap SVC_LoadMap(const OResFiles& wadnames, const OResFiles& p
 	{
 		odaproto::svc::LoadMap_Resource* patch = msg.add_patchnames();
 		patch->set_name(patchnames[i].getBasename());
-		patch->set_hash(patchnames[i].getHash().getHexStr());
+		patch->set_hash(patchnames[i].getMD5().getHexStr());
 	}
 
 	msg.set_mapname(mapname);
