@@ -67,7 +67,7 @@ static const identData_t identdata[] = {
     {
         "Doom 2 BFG",                       // idName
         "DOOM2BFG.WAD",                     // filename
-        "",                                 // crc32Sum
+        "927A778A",                         // crc32Sum
         "C3BEA40570C23E511A7ED3EBCD9865F7", // md5Sum
         "Doom2 v1.9",                       // groupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
@@ -127,7 +127,7 @@ static const identData_t identdata[] = {
     {
         "Plutonia v1.9",                    // mIdName
         "PLUTONIA.WAD",                     // mFilename
-        "",                                 // mCRC32Sum
+        "48D1453C",                         // mCRC32Sum
         "75C8CF89566741FA9D22447604053BD7", // mMd5Sum
         "Plutonia v1.9",                    // groupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
@@ -139,7 +139,7 @@ static const identData_t identdata[] = {
     {
         "TNT Evilution v1.9",               // mIdName
         "TNT.WAD",                          // mFilename
-        "",                                 // mCRC32Sum
+        "903DCC27",                         // mCRC32Sum
         "4E158D9953C79CCF97BD0663244CC6B6", // mMd5Sum
         "TNT Evilution v1.9",               // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
@@ -151,26 +151,26 @@ static const identData_t identdata[] = {
     {
         "Ultimate Doom v1.9",               // mIdName
         "DOOMU.WAD",                        // mFilename
-        "",                                 // mCRC32Sum
+        "BF0EAAC0",                         // mCRC32Sum
         "C4FE9FD920207691A9F493668E0A2083", // mMd5Sum
         "Ultimate Doom v1.9",               // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
     },
     {
-        "Doom v1.9",                        // mIdName
-        "DOOM.WAD",                         // mFilename
-        "",                                 // mCRC32Sum
-        "1CD63C5DDFF1BF8CE844237F580E9CF3", // mMd5Sum
-        "Doom v1.9",                        // mGroupName
-        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
-    },
-    {
         "Ultimate Doom BFG",                // mIdName
         "DOOMBFG.WAD",                      // mFilename
-        "",                                 // mCRC32Sum
+        "5EFA677E",                         // mCRC32Sum
         "FB35C4A5A9FD49EC29AB6E900572C524", // mMd5Sum
         "Ultimate Doom v1.9",               // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+    },
+    {
+        "Doom v1.9",                                      // mIdName
+        "DOOM.WAD",                                       // mFilename
+        "",                                               // mCRC32Sum
+        "1CD63C5DDFF1BF8CE844237F580E9CF3",               // mMd5Sum
+        "Doom v1.9",                                      // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
     },
     {
         "Doom v1.8",                                      // mIdName
@@ -211,7 +211,7 @@ static const identData_t identdata[] = {
     {
         "Doom Shareware v1.9",              // mIdName
         "DOOM1.WAD",                        // mFilename
-        "",                                 // mCRC32Sum
+        "162B696A",                         // mCRC32Sum
         "F0CEFCA49926D00903CF57551D901ABE", // mMd5Sum
         "Doom Shareware v1.9",              // mGroupName
         IDENT_IWAD,                         // flags
@@ -277,15 +277,15 @@ static const identData_t identdata[] = {
     // FREEDOOM1.WAD
     // ------------------------------------------------------------------------
     {
-        "Ultimate Freedoom v0.12.1",        // mIdName
+        "Freedoom: Phase 1 v0.12.1",        // mIdName
         "FREEDOOM1.WAD",                    // mFilename
-        "",                                 // mCRC32Sum
+        "DE6DDB27",                         // mCRC32Sum
         "B36AA44A23045E503C19AF4B4C438A78", // mMd5Sum
         "Ultimate Doom v1.9",               // mGroupName
         IDENT_IWAD,                         // flags
     },
     {
-        "Ultimate Freedoom v0.12.0",        // mIdName
+        "Freedoom: Phase 1 v0.12.0",        // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "0C5F8FF45CC3538D368A0F8D8FC11CE3", // mMd5Sum
@@ -293,7 +293,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Ultimate Freedoom v0.11.3",        // mIdName
+        "Freedoom: Phase 1 v0.11.3",        // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "EA471A3D38FCEE0FB3A69BCD3221E335", // mMd5Sum
@@ -301,7 +301,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Ultimate Freedoom v0.11.2",        // mIdName
+        "Freedoom: Phase 1 v0.11.2",        // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "6D00C49520BE26F08A6BD001814A32AB", // mMd5Sum
@@ -309,7 +309,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Ultimate Freedoom v0.11.1",        // mIdName
+        "Freedoom: Phase 1 v0.11.1",        // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "35312E99D2473297AABE0602700BEE8A", // mMd5Sum
@@ -317,7 +317,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Ultimate Freedoom v0.11",          // mIdName
+        "Freedoom: Phase 1 v0.11",          // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "21A4707FC25D29EDF4B098BD400C5C42", // mMd5Sum
@@ -325,7 +325,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Ultimate Freedoom v0.10.1",        // mIdName
+        "Freedoom: Phase 1 v0.10.1",        // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "91DE79621A393A08C39A9AB2C034B766", // mMd5Sum
@@ -333,7 +333,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Ultimate Freedoom v0.10",          // mIdName
+        "Freedoom: Phase 1 v0.10",          // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "9B8D72B59FD93B2B3E116149BAA1B142", // mMd5Sum
@@ -341,7 +341,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Ultimate Freedoom v0.9",           // mIdName
+        "Freedoom: Phase 1 v0.9",           // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "ACA90CF5AC36E996EDC58BD0329B979A", // mMd5Sum
@@ -349,7 +349,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Ultimate Freedoom v0.8",           // mIdName
+        "Freedoom: Phase 1 v0.8",           // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "30095B256DD3A1566BBC30286F72BC47", // mMd5Sum
@@ -361,15 +361,15 @@ static const identData_t identdata[] = {
     // FREEDOOM2.WAD
     // ------------------------------------------------------------------------
     {
-        "Freedoom v0.12.1",                 // mIdName
+        "Freedoom: Phase 2 v0.12.1",        // mIdName
         "FREEDOOM2.WAD",                    // mFilename
-        "",                                 // mCRC32Sum
+        "212E1CF9",                         // mCRC32Sum
         "CA9A4159A7833544A89144C7F5053412", // mMd5Sum
         "Doom 2 v1.9",                      // mGroupName
         IDENT_IWAD,                         // flags
     },
     {
-        "Freedoom v0.12.0",                 // mIdName
+        "Freedoom: Phase 2 v0.12.0",        // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "83560B2963424FA4A2EB971194428BF8", // mMd5Sum
@@ -377,7 +377,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom v0.11.3",                 // mIdName
+        "Freedoom: Phase 2 v0.11.3",        // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "984F99AF08F085E38070F51095AB7C31", // mMd5Sum
@@ -385,7 +385,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom v0.11.2",                 // mIdName
+        "Freedoom: Phase 2 v0.11.2",        // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "90832A872B5BB0ACA4CA0B20419AAD5D", // mMd5Sum
@@ -393,7 +393,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom v0.11.1",                 // mIdName
+        "Freedoom: Phase 2 v0.11.1",        // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "EC5B38B30BA2B70E278205776AF3FBB5", // mMd5Sum
@@ -401,7 +401,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom v0.11",                   // mIdName
+        "Freedoom: Phase 2 v0.11",          // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "B1018017C61B06E33C11102D8BAFAAD0", // mMd5Sum
@@ -409,7 +409,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom v0.10.1",                 // mIdName
+        "Freedoom: Phase 2 v0.10.1",        // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "DD9C9E73F5F50D3778C85573CD08D9A4", // mMd5Sum
@@ -417,7 +417,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom v0.10",                   // mIdName
+        "Freedoom: Phase 2 v0.10",          // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "C5A4F2D38D78B251D8557CB2D93E40EE", // mMd5Sum
@@ -425,7 +425,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom v0.9",                    // mIdName
+        "Freedoom: Phase 2 v0.9",           // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "8FA57DBC7687F84528EBA39DDE3A20E0", // mMd5Sum
@@ -433,7 +433,7 @@ static const identData_t identdata[] = {
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom v0.8",                    // mIdName
+        "Freedoom: Phase 2 v0.8",           // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "E3668912FC37C479B2840516C887018B", // mMd5Sum
@@ -447,7 +447,7 @@ static const identData_t identdata[] = {
     {
         "FreeDM v0.12.1",                   // mIdName
         "FREEDM.WAD",                       // mFilename
-        "",                                 // mCRC32Sum
+        "BD680D11",                         // mCRC32Sum
         "D40C932A9183DED919AFA89F4A729668", // mMd5Sum
         "Doom 2 v1.9",                      // mGroupName
         IDENT_IWAD,                         // flags
@@ -531,7 +531,7 @@ static const identData_t identdata[] = {
     {
         "Chex Quest",                       // mIdName
         "CHEX.WAD",                         // mFilename
-        "",                                 // mCRC32Sum
+        "298DD5B5",                         // mCRC32Sum
         "25485721882B050AFA96A56E5758DD52", // mMd5Sum
         "Chex Quest",                       // mGroupName
         IDENT_IWAD,                         // flags
@@ -543,7 +543,7 @@ static const identData_t identdata[] = {
     {
         "HACX 1.2",                         // mIdName
         "HACX.WAD",                         // mFilename
-        "",                                 // mCRC32Sum
+        "72E3B8AC",                         // mCRC32Sum
         "65ED74D522BDF6649C2831B13B9E02B4", // mMd5Sum
         "Doom 2 v1.9",                      // mGroupName
         IDENT_IWAD,                         // flags
@@ -658,8 +658,9 @@ public:
 		OMD5Hash::makeFromHexStr(md5Hash, md5);
 
 		IdType id = mIdentifiers.insert();
-		FileIdentifier* file = &mIdentifiers.get(id);
+		fileIdentifier_t* file = &mIdentifiers.get(id);
 		file->mIdName = OStringToUpper(idname);
+		file->mNiceName = idname;
 		file->mFilename = OStringToUpper(filename);
 		file->mCRC32Sum = crc32Hash;
 		file->mMd5Sum = md5Hash;
@@ -667,6 +668,11 @@ public:
 		file->mIsCommercial = commercial;
 		file->mIsIWAD = iwad;
 		file->mIsDeprecated = deprecated;
+
+		if (!crc32Hash.empty())
+		{
+			mCRC32SumLookup.insert(std::make_pair(file->mCRC32Sum, id));
+		}
 
 		if (!md5Hash.empty())
 		{
@@ -708,26 +714,26 @@ public:
 
 	bool isCommercial(const OMD5Hash& hash) const
 	{
-		const FileIdentifier* file = lookupByMd5Sum(hash);
+		const fileIdentifier_t* file = lookupByMd5Sum(hash);
 		return file && file->mIsCommercial;
 	}
 
 	bool isKnownIWAD(const OMD5Hash& hash) const
 	{
-		const FileIdentifier* file = lookupByMd5Sum(hash);
+		const fileIdentifier_t* file = lookupByMd5Sum(hash);
 		return file && file->mIsIWAD;
 	}
 
 	bool isDeprecated(const OMD5Hash& hash) const
 	{
-		const FileIdentifier* file = lookupByMd5Sum(hash);
+		const fileIdentifier_t* file = lookupByMd5Sum(hash);
 		return file && file->mIsDeprecated;
 	}
 
 	bool isIWAD(const OResFile& file) const
 	{
 		const OMD5Hash& md5sum(file.getMD5());
-		const FileIdentifier* ident = lookupByMd5Sum(md5sum);
+		const fileIdentifier_t* ident = lookupByMd5Sum(md5sum);
 		if (ident)
 			return ident->mIsIWAD;
 
@@ -752,8 +758,8 @@ public:
 
 	bool areCompatible(const OMD5Hash& hash1, const OMD5Hash& hash2) const
 	{
-		const FileIdentifier* file1 = lookupByMd5Sum(hash1);
-		const FileIdentifier* file2 = lookupByMd5Sum(hash2);
+		const fileIdentifier_t* file1 = lookupByMd5Sum(hash1);
+		const fileIdentifier_t* file2 = lookupByMd5Sum(hash2);
 
 		if (!file1 || !file2)
 			return false;
@@ -763,7 +769,7 @@ public:
 
 	const OString identify(const OResFile& file)
 	{
-		const FileIdentifier* fileid = lookupByMd5Sum(file.getMD5());
+		const fileIdentifier_t* fileid = lookupByMd5Sum(file.getMD5());
 
 		if (fileid != NULL)
 			return fileid->mIdName;
@@ -800,11 +806,11 @@ public:
 			return "HACX UNKNOWN";
 		}
 
-		// [SL] Check for FreeDoom / Ultimate FreeDoom
+		// [SL] Check for FreeDoom / Freedoom: Phase 1
 		if (lumpsfound[10])
 		{
 			if (lumpsfound[0])
-				return "ULTIMATE FREEDOOM UNKNOWN";
+				return "Freedoom: Phase 1 UNKNOWN";
 			else
 				return "FREEDOOM UNKNOWN";
 		}
@@ -865,20 +871,15 @@ public:
 		}
 	}
 
-private:
-	struct FileIdentifier
+	const fileIdentifier_t* lookupByCRC32Sum(const OCRC32Sum& crc32sum) const
 	{
-		OString				mIdName;
-		OString				mFilename;
-		OCRC32Sum			mCRC32Sum;
-		OMD5Hash			mMd5Sum;
-		OString				mGroupName;
-		bool				mIsCommercial;
-		bool				mIsIWAD;
-		bool				mIsDeprecated;
-	};
+		CRC32SumLookupTable::const_iterator it = mCRC32SumLookup.find(crc32sum);
+		if (it != mCRC32SumLookup.end())
+			return &mIdentifiers.get(it->second);
+		return NULL;
+	}
 
-	const FileIdentifier* lookupByMd5Sum(const OMD5Hash& md5sum) const
+	const fileIdentifier_t* lookupByMd5Sum(const OMD5Hash& md5sum) const
 	{
 		Md5SumLookupTable::const_iterator it = mMd5SumLookup.find(md5sum);
 		if (it != mMd5SumLookup.end())
@@ -886,10 +887,14 @@ private:
 		return NULL;
 	}
 
+  private:
 	typedef unsigned int IdType;
 
-	typedef SArray<FileIdentifier> IdentifierTable;
+	typedef SArray<fileIdentifier_t> IdentifierTable;
 	IdentifierTable			mIdentifiers;
+
+	typedef OHashTable<OCRC32Sum, IdType> CRC32SumLookupTable;
+	CRC32SumLookupTable		mCRC32SumLookup;
 
 	typedef OHashTable<OMD5Hash, IdType> Md5SumLookupTable;
 	Md5SumLookupTable		mMd5SumLookup;
@@ -919,6 +924,13 @@ void W_SetupFileIdentifiers()
 	}
 }
 
+/**
+ * @brief Return the gameinfo associated with the given CRC32.
+ */
+const fileIdentifier_t* W_GameInfo(const OCRC32Sum& crc32)
+{
+	return ::identtab.lookupByCRC32Sum(crc32);
+}
 
 //
 // W_ConfigureGameInfo
@@ -966,7 +978,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = retail_chex;
 		gameinfo = RetailGameInfo;
 	}
-	else if (idname.find("ULTIMATE FREEDOOM") == 0)
+	else if (idname.find("Freedoom: Phase 1") == 0)
 	{
 		gamemode = retail;
 		gameinfo = RetailGameInfo;

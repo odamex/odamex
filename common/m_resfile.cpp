@@ -354,20 +354,37 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	return false;
 }
 
-void M_ResolveIWADs()
+/**
+ * @brief Scan all file search directories for IWAD files.
+ */
+std::vector<scannedIWAD_t> M_ScanIWADs()
 {
 	const std::vector<OString> iwads = W_GetIWADFilenames();
-	for (size_t i = 0; i < iwads.size(); i++)
-	{
-		OWantFile wantfile;
-		if (!OWantFile::make(wantfile, iwads[i], OFILE_WAD))
-		{
-			return;
-		}
+	const std::vector<std::string> dirs = M_FileSearchDirs();
+	std::vector<scannedIWAD_t> rvo;
 
-		OResFile resfile;
-		M_ResolveWantedFile(resfile, wantfile);
+	for (size_t i = 0; i < dirs.size(); i++)
+	{
+		std::vector<std::string> files = M_BaseFilesScanDir(dirs[i], iwads);
+		for (size_t j = 0; j < files.size(); j++)
+		{
+			const std::string fullpath = dirs[i] + PATHSEP + files[j];
+
+			// Check to see if we got a real IWAD.
+			const OCRC32Sum crc32 = W_CRC32(fullpath);
+			if (crc32.empty())
+				continue;
+
+			const fileIdentifier_t* id = W_GameInfo(crc32);
+			if (id == NULL)
+				continue;
+
+			scannedIWAD_t iwad = {fullpath, *id};
+			rvo.push_back(iwad);
+		}
 	}
+
+	return rvo;
 }
 
 std::string M_GetCurrentWadHashes()

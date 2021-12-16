@@ -35,6 +35,9 @@
 #include "FL/Fl_Tabs.H"
 
 #include "gui_resource.h"
+#include "w_ident.h"
+
+std::vector<scannedIWAD_t> g_IWADs;
 
 static Fl_Image* image_icon_odamex_128()
 {
@@ -62,7 +65,11 @@ static Fl_Double_Window* BootWindow()
 					o->align(Fl_Align(512));
 				} // Fl_Box* o
 				{
-					new Fl_Browser(135, 35, 175, 155);
+					Fl_Browser* o = new Fl_Browser(135, 35, 175, 155);
+					for (size_t i = 0; i < ::g_IWADs.size(); i++)
+					{
+						o->add(::g_IWADs[i].id.mNiceName.c_str());
+					}
 				} // Fl_Browser* o
 				o->end();
 			} // Fl_Group* o
@@ -107,6 +114,10 @@ static Fl_Double_Window* BootWindow()
 
 void GUI_BootWindow()
 {
+	::g_IWADs = M_ScanIWADs();
+
+	Fl::scheme("gtk+");
+
 	// Scale according to 720p.
 	Fl::screen_scale(0, Fl::h() / 720.0f);
 

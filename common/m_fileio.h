@@ -29,6 +29,7 @@
 #include "d_main.h"
 
 #include <fstream>
+#include "m_ostring.h"
 
 extern std::ofstream LOG;
 extern std::ifstream CON;
@@ -117,6 +118,18 @@ std::string M_GetUserFileName(const std::string& file);
 std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
                                 const std::vector<std::string>& exts,
                                 const OFileHash& hash);
+
+/**
+ * @brief Attempt to find multiple files in a directory - case insensitive.
+ * 
+ * @detail Unlike M_BaseFileSearchDir, this scans the entire directory and
+ *         doesn't care about hashes or hashed files.
+ * 
+ * @param dir Directory to search.
+ * @param files Files to search, with extension.
+ * @return Filenames of any found files.
+ */
+std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString> files);
 
 /**
  * @brief Get absolute path from passed path.
