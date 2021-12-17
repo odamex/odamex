@@ -72,8 +72,6 @@ function(lib_build)
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
       --config Debug --target install
       --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
-    file(READ "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build/CMakeCache.txt" _DEBUG)
-    message(FATAL_ERROR "${_DEBUG}")
     if(_RESVAL GREATER 0)
       message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Debug.")
     endif()
