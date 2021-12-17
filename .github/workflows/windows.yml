@@ -18,7 +18,7 @@ jobs:
     name: Build (Visual Studio)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
@@ -50,7 +50,7 @@ jobs:
         path: 'build/artifact/*'
   build-x32:
     name: Build (Visual Studio, 32-bit)
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
@@ -80,7 +80,7 @@ jobs:
         path: 'build/artifact/*'
   build-mingw:
     name: Build (MinGW)
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
