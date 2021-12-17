@@ -210,7 +210,7 @@ std::string M_GetUserFileName(const std::string& file)
 
 std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
                                 const std::vector<std::string>& exts,
-                                const OFileHash& hash)
+                                const OMD5Hash& hash)
 {
 	dir = M_CleanPath(dir);
 	std::vector<OString> cmp_files;
@@ -249,7 +249,7 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 		if (this_it < found_it)
 		{
 			const std::string local_file(dir + PATHSEP + d_name);
-			const std::string local_hash(W_MD5(local_file));
+			const OMD56Hash local_hash(W_MD5(local_file));
 
 			if (hash.empty() || hash == local_hash)
 			{
@@ -262,8 +262,8 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 			{
 				Printf(PRINT_WARNING, "WAD at %s does not match required copy\n",
 				       local_file.c_str());
-				Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.c_str());
-				Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.c_str());
+				Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.getHexCStr());
+				Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.getHexCStr());
 			}
 		}
 	}
