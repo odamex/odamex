@@ -70,7 +70,7 @@ function(lib_build)
     # Debug and Release are not compatible, so build both.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
-      --config Debug --target install
+      --config Debug --target install --verbose
       --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
     if(_RESVAL GREATER 0)
       message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Debug.")
@@ -78,7 +78,7 @@ function(lib_build)
 
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
-      --config RelWithDebInfo --target install
+      --config RelWithDebInfo --target install --verbose
       --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
     if(_RESVAL GREATER 0)
       message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Release.")
@@ -87,7 +87,7 @@ function(lib_build)
     # Single config uses the passed build type.
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
-      --config ${CMAKE_BUILD_TYPE} --target install
+      --config ${CMAKE_BUILD_TYPE} --target install --verbose
       --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
     if(_RESVAL GREATER 0)
       message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly.")
