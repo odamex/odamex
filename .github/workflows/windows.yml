@@ -34,7 +34,7 @@ jobs:
     - name: Turn on problem matcher
       uses: ammaraskar/msvc-problem-matcher@master
     - name: Run build
-      run: cmake --build .\build\ --config RelWithDebInfo --parallel --verbose
+      run: cmake --build .\build\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
       run: .\ci\win-artifact.ps1
     - name: Upload artifact to B2
@@ -64,7 +64,7 @@ jobs:
     - name: Prepare build
       run: .\ci\win-x32-buildgen.ps1
     - name: Run build
-      run: cmake --build .\build-x32\ --config RelWithDebInfo --parallel --verbose
+      run: cmake --build .\build-x32\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
       run: .\ci\win-x32-artifact.ps1
     - name: Upload artifact to B2
@@ -93,4 +93,4 @@ jobs:
     - name: Prepare build
       run: .\ci\win-mingw-buildgen.ps1
     - name: Run build
-      run: cmake --build .\build-gcc\ --verbose
+      run: cmake --build .\build-gcc\
