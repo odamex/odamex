@@ -27,7 +27,7 @@
 
 #include "FL/Fl.H"
 #include "FL/Fl_Box.H"
-#include "FL/Fl_Browser.H"
+#include "FL/Fl_Hold_Browser.H"
 #include "FL/Fl_Button.H"
 #include "FL/Fl_Double_Window.H"
 #include "FL/Fl_PNG_Image.H"
@@ -40,8 +40,6 @@
 const int WINDOW_WIDTH = 320;
 const int WINDOW_HEIGHT = 240;
 
-std::vector<scannedIWAD_t> g_IWADs;
-
 static Fl_Image* image_icon_odamex_128()
 {
 	static Fl_Image* image = new Fl_PNG_Image("icon_odamex_128", __icon_odamex_128_png,
@@ -51,9 +49,13 @@ static Fl_Image* image_icon_odamex_128()
 
 class BootWindow : public Fl_Window
 {
+	std::vector<scannedIWAD_t> m_IWADs;
+	Fl_Hold_Browser* m_IWADBrowser;
+
   public:
 	BootWindow() : BootWindow(0, 0, 425, 240, "Odamex 10.0.0") { }
-	BootWindow(int X, int Y, int W, int H, const char* L) : Fl_Window(X, Y, W, H, L)
+	BootWindow(int X, int Y, int W, int H, const char* L)
+	    : Fl_Window(X, Y, W, H, L), m_IWADs()
 	{
 		{
 			Fl_Tabs* tabs = new Fl_Tabs(0, 0, 425, 200);
@@ -65,8 +67,8 @@ class BootWindow : public Fl_Window
 					logo->align(Fl_Align(512));
 				} // Fl_Box* logo
 				{
-					Fl_Browser* iwads = new Fl_Browser(135, 35, 280, 155);
-				} // Fl_Browser* iwads
+					m_IWADBrowser = new Fl_Hold_Browser(135, 35, 280, 155);
+				} // Fl_Browser* m_IWADBrowser
 				tabIWAD->end();
 			} // Fl_Group* tabIWAD
 			{
@@ -106,12 +108,20 @@ class BootWindow : public Fl_Window
 		} // Fl_Return_Button* doPlay
 		end();
 	}
+
+	void rescanIWADs()
+	{
+		m_IWADBrowser->clear();
+		m_IWADs = M_ScanIWADs();
+		for (size_t i = 0; i < m_IWADs.size(); i++)
+		{
+			m_IWADBrowser->add(m_IWADs[i].id->mNiceName.c_str(), (void*)m_IWADs[i].id);
+		}
+	}
 };
 
 void GUI_BootWindow()
 {
-	::g_IWADs = M_ScanIWADs();
-
 	Fl::scheme("gtk+");
 
 	// Scale according to 720p.
@@ -122,6 +132,7 @@ void GUI_BootWindow()
 	Fl::keyboard_screen_scaling(0);
 
 	BootWindow* win = new BootWindow();
+	win->rescanIWADs();
 	win->position((Fl::w() - win->w()) / 2, (Fl::h() - win->h()) / 2);
 	win->show();
 
