@@ -13,6 +13,17 @@
 include(ProcessorCount)
 ProcessorCount(PARALLEL_PROC_COUNT)
 
+# Set our prefix path, so inter-dependencies are picked up on.
+set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/local")
+
+# Shorthand, to reduce line-noise
+set(libprefix "${CMAKE_STATIC_LIBRARY_PREFIX}")
+set(libsuffix "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set(dllprefix "${CMAKE_SHARED_LIBRARY_PREFIX}")
+set(dllsuffix "${CMAKE_SHARED_LIBRARY_SUFFIX}")
+
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
+
 function(lib_buildgen)
   cmake_parse_arguments("" "" "LIBRARY" "PARAMS" ${ARGN})
 
@@ -21,6 +32,7 @@ function(lib_buildgen)
     -S "${CMAKE_CURRENT_SOURCE_DIR}/${_LIBRARY}"
     -B "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
     -G "${CMAKE_GENERATOR}"
+    "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
     "-DCMAKE_INSTALL_LIBDIR=lib") # Without this, CentOS installs into lib64
 
@@ -94,17 +106,6 @@ function(lib_build)
     endif()  
   endif()
 endfunction()
-
-# Set our prefix path, so inter-dependencies are picked up on.
-set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/local")
-
-# Shorthand, to reduce line-noise
-set(libprefix "${CMAKE_STATIC_LIBRARY_PREFIX}")
-set(libsuffix "${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set(dllprefix "${CMAKE_SHARED_LIBRARY_PREFIX}")
-set(dllsuffix "${CMAKE_SHARED_LIBRARY_SUFFIX}")
-
-file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
 
 ### zlib ###
 
