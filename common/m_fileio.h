@@ -117,7 +117,7 @@ std::string M_GetUserFileName(const std::string& file);
 */
 std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
                                 const std::vector<std::string>& exts,
-                                const OFileHash& hash);
+                                const OMD5Hash& hash);
 
 /**
  * @brief Attempt to find multiple files in a directory - case insensitive.

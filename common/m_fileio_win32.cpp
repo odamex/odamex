@@ -166,7 +166,7 @@ std::string M_GetUserFileName(const std::string& file)
 
 std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
                                 const std::vector<std::string>& exts,
-                                const OFileHash& hash)
+                                const OMD5Hash& hash)
 {
 	dir = M_CleanPath(dir);
 	std::vector<OString> cmp_files;

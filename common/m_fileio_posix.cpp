@@ -208,7 +208,7 @@ std::string M_GetUserFileName(const std::string& file)
 	return M_CleanPath(path);
 }
 
-std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
+std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
                                 const std::vector<std::string>& exts,
                                 const OMD5Hash& hash)
 {
@@ -221,9 +221,9 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 		{
 			// Filenames with supplied hashes always match first.
 			cmp_files.push_back(
-			    StdStringToUpper(file + "." + hash.getHexStr().substr(0, 6) + *it));
+			    StdStringToUpper(name + "." + hash.getHexStr().substr(0, 6) + *it));
 		}
-		cmp_files.push_back(StdStringToUpper(file + *it));
+		cmp_files.push_back(StdStringToUpper(name + *it));
 	}
 
 	// denis - list files in the directory of interest, case-desensitize
