@@ -37,6 +37,9 @@
 #include "gui_resource.h"
 #include "w_ident.h"
 
+const int WINDOW_WIDTH = 320;
+const int WINDOW_HEIGHT = 240;
+
 std::vector<scannedIWAD_t> g_IWADs;
 
 static Fl_Image* image_icon_odamex_128()
@@ -46,71 +49,64 @@ static Fl_Image* image_icon_odamex_128()
 	return image;
 }
 
-static Fl_Double_Window* BootWindow()
+class BootWindow : public Fl_Window
 {
-	Fl_Double_Window* w;
+  public:
+	BootWindow() : BootWindow(0, 0, 425, 240, "Odamex 10.0.0") { }
+	BootWindow(int X, int Y, int W, int H, const char* L) : Fl_Window(X, Y, W, H, L)
 	{
-		Fl_Double_Window* o = new Fl_Double_Window(320, 240, "Odamex 10.0.0");
-		w = o;
-		if (w)
-		{ /* empty */
-		}
 		{
-			Fl_Tabs* o = new Fl_Tabs(0, 0, 320, 200);
+			Fl_Tabs* tabs = new Fl_Tabs(0, 0, 425, 200);
 			{
-				Fl_Group* o = new Fl_Group(0, 25, 320, 175, "Game Select");
+				Fl_Group* tabIWAD = new Fl_Group(0, 25, 425, 175, "Game Select");
 				{
-					Fl_Box* o = new Fl_Box(10, 34, 115, 157);
-					o->image(image_icon_odamex_128());
-					o->align(Fl_Align(512));
-				} // Fl_Box* o
+					Fl_Box* logo = new Fl_Box(10, 35, 115, 155);
+					logo->image(image_icon_odamex_128());
+					logo->align(Fl_Align(512));
+				} // Fl_Box* logo
 				{
-					Fl_Browser* o = new Fl_Browser(135, 35, 175, 155);
-					for (size_t i = 0; i < ::g_IWADs.size(); i++)
-					{
-						o->add(::g_IWADs[i].id.mNiceName.c_str());
-					}
-				} // Fl_Browser* o
-				o->end();
-			} // Fl_Group* o
+					Fl_Browser* iwads = new Fl_Browser(135, 35, 280, 155);
+				} // Fl_Browser* iwads
+				tabIWAD->end();
+			} // Fl_Group* tabIWAD
 			{
-				Fl_Group* o = new Fl_Group(0, 25, 320, 175, "Resource Locations");
-				o->hide();
+				Fl_Group* tabWADDirs =
+				    new Fl_Group(0, 25, 425, 175, "Resource Locations");
+				tabWADDirs->hide();
 				{
-					Fl_Box* o = new Fl_Box(10, 35, 295, 35,
-					                       "Add directories containing WAD and DEH files "
-					                       "here so Odamex can find them.");
+					Fl_Box* o = new Fl_Box(
+					    10, 35, 405, 20,
+					    "Add folders containing WAD files here so Odamex can find them.");
 					o->align(Fl_Align(132 | FL_ALIGN_INSIDE));
 				} // Fl_Box* o
 				{
-					new Fl_Browser(10, 80, 265, 110);
-				} // Fl_Browser* o
+					Fl_Browser* wadDirList = new Fl_Browser(10, 65, 375, 125);
+				} // Fl_Browser* wadDirList
 				{
-					new Fl_Button(285, 81, 20, 20, "@+");
-				} // Fl_Button* o
+					Fl_Button* doDirAdd = new Fl_Button(395, 65, 20, 20, "@+");
+				} // Fl_Button* doDirAdd
 				{
-					new Fl_Button(285, 104, 20, 20, "@2<<");
-				} // Fl_Button* o
+					Fl_Button* doDirUp = new Fl_Button(395, 90, 20, 20, "@2<<");
+				} // Fl_Button* doDirUp
 				{
-					new Fl_Button(285, 127, 20, 20, "@2>>");
-				} // Fl_Button* o
+					Fl_Button* doDirDown = new Fl_Button(395, 115, 20, 20, "@2>>");
+				} // Fl_Button* doDirDown
 				{
-					new Fl_Button(285, 150, 20, 20, "@1+");
-				} // Fl_Button* o
-				o->end();
-			} // Fl_Group* o
-			o->end();
-		} // Fl_Tabs* o
+					Fl_Button* doDirRemove = new Fl_Button(395, 140, 20, 20, "@1+");
+				} // Fl_Button* doDirRemove
+				tabWADDirs->end();
+			} // Fl_Group* tabWADDirs
+			tabs->end();
+		} // Fl_Tabs* tabs
 		{
-			new Fl_Button(10, 210, 65, 20, "Quit");
-		} // Fl_Button* o
+			Fl_Button* doQuit = new Fl_Button(10, 210, 65, 20, "Quit");
+		} // Fl_Button* doQuit
 		{
-			new Fl_Return_Button(245, 210, 65, 20, "Play!");
-		} // Fl_Return_Button* o
-		o->end();
-	} // Fl_Double_Window* o
-	return w;
-}
+			Fl_Return_Button* doPlay = new Fl_Return_Button(350, 210, 65, 20, "Play!");
+		} // Fl_Return_Button* doPlay
+		end();
+	}
+};
 
 void GUI_BootWindow()
 {
@@ -125,7 +121,7 @@ void GUI_BootWindow()
 	// deforms the window.
 	Fl::keyboard_screen_scaling(0);
 
-	Fl_Double_Window* win = BootWindow();
+	BootWindow* win = new BootWindow();
 	win->position((Fl::w() - win->w()) / 2, (Fl::h() - win->h()) / 2);
 	win->show();
 

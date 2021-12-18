@@ -4,62 +4,59 @@ header_name {.h}
 code_name {.cxx}
 win_shell_cmd {echo "Custom Shell Command"}
 win_shell_flags 3
-Function {BootWindow()} {open selected
+widget_class BootWindow {
+  label {Odamex 10.0.0} open
+  xywh {57 80 425 240} type Double visible
 } {
-  Fl_Window {} {
-    label {Odamex 10.0.0} open
-    xywh {719 251 320 240} type Double visible
+  Fl_Tabs tabs {open selected
+    xywh {0 0 425 200}
   } {
-    Fl_Tabs {} {open
-      xywh {0 0 320 200}
+    Fl_Group tabIWAD {
+      label {Game Select} open
+      xywh {0 25 425 175}
     } {
-      Fl_Group {} {
-        label {Game Select} open
-        xywh {0 25 320 175}
-      } {
-        Fl_Box {} {
-          image {icon_odamex_128.png} xywh {10 34 115 157} align 512
-        }
-        Fl_Browser {} {
-          xywh {135 35 175 155}
-        }
+      Fl_Box logo {
+        image {icon_odamex_128.png} xywh {10 35 115 155} align 512
       }
-      Fl_Group {} {
-        label {Resource Locations} open
-        xywh {0 25 320 175} hide
-      } {
-        Fl_Box {} {
-          label {Add directories containing WAD and DEH files here so Odamex can find them.}
-          xywh {10 35 295 35} align 148
-        }
-        Fl_Browser {} {
-          xywh {10 80 265 110}
-        }
-        Fl_Button {} {
-          label {@+}
-          xywh {285 81 20 20}
-        }
-        Fl_Button {} {
-          label {@2<<}
-          xywh {285 104 20 20}
-        }
-        Fl_Button {} {
-          label {@2>>}
-          xywh {285 127 20 20}
-        }
-        Fl_Button {} {
-          label {@1+}
-          xywh {285 150 20 20}
-        }
+      Fl_Browser iwads {
+        xywh {135 35 280 155}
       }
     }
-    Fl_Button {} {
-      label Quit
-      xywh {10 210 65 20}
+    Fl_Group tabWADDirs {
+      label {Resource Locations} open
+      xywh {0 25 425 175} hide
+    } {
+      Fl_Box {} {
+        label {Add folders containing WAD files here so Odamex can find them.}
+        xywh {10 35 405 20} align 148
+      }
+      Fl_Browser wadDirList {
+        xywh {10 65 375 125}
+      }
+      Fl_Button doDirAdd {
+        label {@+}
+        xywh {395 65 20 20}
+      }
+      Fl_Button doDirUp {
+        label {@2<<}
+        xywh {395 90 20 20}
+      }
+      Fl_Button doDirDown {
+        label {@2>>}
+        xywh {395 115 20 20}
+      }
+      Fl_Button doDirRemove {
+        label {@1+}
+        xywh {395 140 20 20}
+      }
     }
-    Fl_Return_Button {} {
-      label {Play!}
-      xywh {245 210 65 20}
-    }
+  }
+  Fl_Button doQuit {
+    label Quit
+    xywh {10 210 65 20}
+  }
+  Fl_Return_Button doPlay {
+    label {Play!}
+    xywh {350 210 65 20}
   }
 }
