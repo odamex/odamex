@@ -27,9 +27,9 @@
 
 #include "FL/Fl.H"
 #include "FL/Fl_Box.H"
-#include "FL/Fl_Hold_Browser.H"
 #include "FL/Fl_Button.H"
 #include "FL/Fl_Double_Window.H"
+#include "FL/Fl_Hold_Browser.H"
 #include "FL/Fl_PNG_Image.H"
 #include "FL/Fl_Return_Button.H"
 #include "FL/Fl_Tabs.H"
@@ -53,7 +53,6 @@ class BootWindow : public Fl_Window
 	Fl_Hold_Browser* m_IWADBrowser;
 
   public:
-	BootWindow() : BootWindow(0, 0, 425, 240, "Odamex 10.0.0") { }
 	BootWindow(int X, int Y, int W, int H, const char* L)
 	    : Fl_Window(X, Y, W, H, L), m_IWADs()
 	{
@@ -120,6 +119,11 @@ class BootWindow : public Fl_Window
 	}
 };
 
+static BootWindow* MakeBootWindow()
+{
+	return new BootWindow(0, 0, 425, 240, "Odamex 10.0.0");
+}
+
 void GUI_BootWindow()
 {
 	Fl::scheme("gtk+");
@@ -131,7 +135,7 @@ void GUI_BootWindow()
 	// deforms the window.
 	Fl::keyboard_screen_scaling(0);
 
-	BootWindow* win = new BootWindow();
+	BootWindow* win = MakeBootWindow();
 	win->rescanIWADs();
 	win->position((Fl::w() - win->w()) / 2, (Fl::h() - win->h()) / 2);
 	win->show();

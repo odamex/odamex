@@ -22,40 +22,7 @@
 
 #pragma once
 
-class OFileHash
-{
-  private:
-	virtual void concrete() = 0; // [AM] Hack to make this class abstract.
-
-  protected:
-	std::string m_hash;
-
-  public:
-	virtual ~OFileHash() { }
-	bool operator==(const OFileHash& other) const { return m_hash == other.m_hash; }
-	bool operator!=(const OFileHash& other) const { return !(operator==(other)); }
-	const std::string& getHexStr() const { return m_hash; }
-	const char* getHexCStr() const { return m_hash.c_str(); }
-	bool empty() const { return m_hash.empty(); }
-};
-
-class OMD5Hash : public OFileHash
-{
-  protected:
-	void concrete() { }
-
-  public:
-	static bool makeFromHexStr(OMD5Hash& out, const std::string& hash);
-};
-
-class OCRC32Sum : public OFileHash
-{
-  protected:
-	void concrete() { }
-
-  public:
-	static bool makeFromHexStr(OCRC32Sum& out, const std::string& hash);
-};
+#include "ohash.h"
 
 enum ofile_t
 {

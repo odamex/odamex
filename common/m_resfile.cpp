@@ -38,42 +38,6 @@ EXTERN_CVAR(cl_waddownloaddir)
 EXTERN_CVAR(waddirs)
 
 /**
- * @brief Populate an OMD5Hash with the passed hex string.
- *
- * @param out FileHash to populate.
- * @param hash Hex string to populate with.
- * @return True if the hash was populated, otherwise false.
- */
-bool OMD5Hash::makeFromHexStr(OMD5Hash& out, const std::string& hash)
-{
-	if (IsHexString(hash, 32))
-	{
-		out.m_hash = StdStringToUpper(hash);
-		return true;
-	}
-
-	return false;
-}
-
-/**
- * @brief Populate an OCRC32Hash with the passed hex string.
- *
- * @param out FileHash to populate.
- * @param hash Hex string to populate with.
- * @return True if the hash was populated, otherwise false.
- */
-bool OCRC32Sum::makeFromHexStr(OCRC32Sum& out, const std::string& hash)
-{
-	if (IsHexString(hash, 8))
-	{
-		out.m_hash = StdStringToUpper(hash);
-		return true;
-	}
-
-	return false;
-}
-
-/**
  * @brief Populate an OResFile.
  *
  * @param out OResFile to populate.
@@ -361,7 +325,9 @@ std::vector<scannedIWAD_t> M_ScanIWADs()
 {
 	const std::vector<OString> iwads = W_GetIWADFilenames();
 	const std::vector<std::string> dirs = M_FileSearchDirs();
+
 	std::vector<scannedIWAD_t> rvo;
+	OHashTable<OCRC32Sum, bool> found;
 
 	for (size_t i = 0; i < dirs.size(); i++)
 	{
@@ -375,12 +341,18 @@ std::vector<scannedIWAD_t> M_ScanIWADs()
 			if (crc32.empty())
 				continue;
 
+			// Found a dupe?
+			if (found.find(crc32) != found.end())
+				continue;
+
+			// Does the gameinfo exist?
 			const fileIdentifier_t* id = W_GameInfo(crc32);
 			if (id == NULL)
 				continue;
 
 			scannedIWAD_t iwad = {fullpath, id};
 			rvo.push_back(iwad);
+			found[crc32] = true;
 		}
 	}
 
