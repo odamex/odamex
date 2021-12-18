@@ -159,7 +159,7 @@ struct fileIdentifier_t;
 struct scannedIWAD_t
 {
 	std::string path;
-	const fileIdentifier_t& id;
+	const fileIdentifier_t* id;
 };
 
 std::string M_ResFilesToString(const OResFiles& files);

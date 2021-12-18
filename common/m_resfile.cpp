@@ -379,7 +379,7 @@ std::vector<scannedIWAD_t> M_ScanIWADs()
 			if (id == NULL)
 				continue;
 
-			scannedIWAD_t iwad = {fullpath, *id};
+			scannedIWAD_t iwad = {fullpath, id};
 			rvo.push_back(iwad);
 		}
 	}
