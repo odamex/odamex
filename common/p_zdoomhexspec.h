@@ -44,10 +44,10 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
                              unsigned int activationType);
 bool P_ExecuteZDoomLineSpecial(int special, byte* args, line_t* line, int side,
                                AActor* mo);
-bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
+BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
                      fixed_t height, bool crush, int change, bool hexencrush,
                      bool hereticlower);
-bool EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
+BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
                        fixed_t speed2, fixed_t height, int crush, byte silent, int change,
                        crushmode_e crushmode);
 

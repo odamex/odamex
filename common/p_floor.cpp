@@ -192,9 +192,9 @@ void DFloor::RunThink ()
 				case genFloorChg0:
 					m_Sector->special = m_NewSpecial;
 					m_Sector->flags = m_NewFlags;
-					m_Sector->damage.amount = m_NewDamageRate;
-					m_Sector->damage.interval = m_NewDmgInterval;
-					m_Sector->damage.leakrate = m_NewLeakRate;
+					m_Sector->damage->amount = m_NewDamageRate;
+					m_Sector->damage->interval = m_NewDmgInterval;
+					m_Sector->damage->leakrate = m_NewLeakRate;
 					//fall thru
 				case genFloorChg:
 					m_Sector->floorpic = m_Texture;
@@ -212,9 +212,9 @@ void DFloor::RunThink ()
 				case genFloorChg0:
 					m_Sector->special = m_NewSpecial;
 					m_Sector->flags = m_NewFlags;
-					m_Sector->damage.amount = m_NewDamageRate;
-					m_Sector->damage.interval = m_NewDmgInterval;
-					m_Sector->damage.leakrate = m_NewLeakRate;
+					m_Sector->damage->amount = m_NewDamageRate;
+					m_Sector->damage->interval = m_NewDmgInterval;
+					m_Sector->damage->leakrate = m_NewLeakRate;
 					//fall thru
 				case genFloorChg:
 					m_Sector->floorpic = m_Texture;
@@ -400,9 +400,9 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 		// in case no surrounding sector is at floordestheight
 		// --> should not affect compatibility <--
 		m_NewSpecial = sec->special;
-		m_NewDamageRate = sec->damage.amount;
-		m_NewDmgInterval = sec->damage.interval;
-		m_NewLeakRate = sec->damage.leakrate;
+		m_NewDamageRate = sec->damage->amount;
+		m_NewDmgInterval = sec->damage->interval;
+		m_NewLeakRate = sec->damage->leakrate;
 		m_NewFlags = sec->flags;
 
 		// jff 5/23/98 use model subroutine to unify fixes and handling
@@ -411,9 +411,9 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 		{
 			m_Texture = sec->floorpic;
 			m_NewSpecial = sec->special;
-			m_NewDamageRate = sec->damage.amount;
-			m_NewDmgInterval = sec->damage.interval;
-			m_NewLeakRate = sec->damage.leakrate;
+			m_NewDamageRate = sec->damage->amount;
+			m_NewDmgInterval = sec->damage->interval;
+			m_NewLeakRate = sec->damage->leakrate;
 			m_NewFlags = sec->flags;
 		}
 		break;
@@ -467,9 +467,9 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 					break;
 				case 3:
 					m_NewSpecial = found->special;
-					m_NewDamageRate = found->damage.amount;
-					m_NewDmgInterval = found->damage.interval;
-					m_NewLeakRate = found->damage.leakrate;
+					m_NewDamageRate = found->damage->amount;
+					m_NewDmgInterval = found->damage->interval;
+					m_NewLeakRate = found->damage->leakrate;
 					m_NewFlags = found->flags;
 					m_Type = DFloor::genFloorChgT;
 					break;
@@ -499,9 +499,9 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 				break;
 			case 3:
 				m_NewSpecial = line->frontsector->special;
-				m_NewDamageRate = line->frontsector->damage.amount;
-				m_NewDmgInterval = line->frontsector->damage.interval;
-				m_NewLeakRate = line->frontsector->damage.leakrate;
+				m_NewDamageRate = line->frontsector->damage->amount;
+				m_NewDmgInterval = line->frontsector->damage->interval;
+				m_NewLeakRate = line->frontsector->damage->leakrate;
 				m_NewFlags = line->frontsector->flags;
 				m_Type = DFloor::genFloorChgT;
 				break;
@@ -527,9 +527,9 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, int speed,
 	m_Line = line;
 	m_Direction = direction ? 1 : -1;
 	m_NewSpecial = sec->special;
-	m_NewDamageRate = sec->damage.amount;
-	m_NewDmgInterval = sec->damage.interval;
-	m_NewLeakRate = sec->damage.leakrate;
+	m_NewDamageRate = sec->damage->amount;
+	m_NewDmgInterval = sec->damage->interval;
+	m_NewLeakRate = sec->damage->leakrate;
 	m_NewFlags = sec->flags;
 
 	PlayFloorSound();
@@ -608,9 +608,9 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, int speed,
 			{
 				m_Texture = sec->floorpic;
 				m_NewSpecial = sec->special;
-				m_NewDamageRate = sec->damage.amount;
-				m_NewDmgInterval = sec->damage.interval;
-				m_NewLeakRate = sec->damage.leakrate;
+				m_NewDamageRate = sec->damage->amount;
+				m_NewDmgInterval = sec->damage->interval;
+				m_NewLeakRate = sec->damage->leakrate;
 				m_NewFlags = sec->flags;
 				switch (change)
 				{
@@ -627,9 +627,9 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, int speed,
 					break;
 				case FChgTyp: // copy type
 					m_NewSpecial = sec->special;
-					m_NewDamageRate = sec->damage.amount;
-					m_NewDmgInterval = sec->damage.interval;
-					m_NewLeakRate = sec->damage.leakrate;
+					m_NewDamageRate = sec->damage->amount;
+					m_NewDmgInterval = sec->damage->interval;
+					m_NewLeakRate = sec->damage->leakrate;
 					m_NewFlags = sec->flags;
 					m_Type = DFloor::EFloor::genFloorChgT;
 					break;
@@ -645,9 +645,9 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, int speed,
 		{
 			m_Texture = line->frontsector->floorpic;
 			m_NewSpecial = line->frontsector->special;
-			m_NewDamageRate = line->frontsector->damage.amount;
-			m_NewDmgInterval = line->frontsector->damage.interval;
-			m_NewLeakRate = line->frontsector->damage.leakrate;
+			m_NewDamageRate = line->frontsector->damage->amount;
+			m_NewDmgInterval = line->frontsector->damage->interval;
+			m_NewLeakRate = line->frontsector->damage->leakrate;
 			m_NewFlags = line->frontsector->flags;
 			switch (change)
 			{
@@ -664,9 +664,9 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, int speed,
 				break;
 			case FChgTyp: // copy type
 				m_NewSpecial = line->frontsector->special;
-				m_NewDamageRate = line->frontsector->damage.amount;
-				m_NewDmgInterval = line->frontsector->damage.interval;
-				m_NewLeakRate = line->frontsector->damage.leakrate;
+				m_NewDamageRate = line->frontsector->damage->amount;
+				m_NewDmgInterval = line->frontsector->damage->interval;
+				m_NewLeakRate = line->frontsector->damage->leakrate;
 				m_NewFlags = line->frontsector->flags;
 				m_Type = DFloor::EFloor::genFloorChgT;
 				break;
@@ -985,7 +985,7 @@ int EV_ZDoomFloorCrushStop(int tag)
 // jff 02/04/98 Added this routine (and file) to handle generalized
 // floor movers using bit fields in the line special type.
 //
-bool EV_DoGenFloor(line_t* line)
+BOOL EV_DoGenFloor(line_t* line)
 {
 	int secnum;
 	bool rtn;
@@ -1043,7 +1043,7 @@ bool EV_DoGenFloor(line_t* line)
 	}
 }
 
-bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
+BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
                 fixed_t height, int crush, int change, bool hexencrush, bool hereticlower)
 {
 	int secnum;
@@ -1145,7 +1145,7 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag)
 //
 // [Blair] Generic staircase building
 //
-bool EV_DoGenStairs(line_t* line)
+BOOL EV_DoGenStairs(line_t* line)
 {
 	int secnum;
 	int osecnum; // jff 3/4/98 save old loop index
@@ -1549,7 +1549,7 @@ manual_stair:
 	return rtn;
 }
 
-bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
+BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
 {
 	int secnum = -1;
 	int rtn = 0;
@@ -1560,7 +1560,7 @@ bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimesp
 	return rtn;
 }
 
-bool EV_DoDonut(line_t* line)
+int EV_DoDonut(line_t* line)
 {
 	int secnum = -1;
 	int rtn = 0;
@@ -1897,7 +1897,7 @@ bool EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
 ///////////////////////////////////////
 /// Waggle
 ///////////////////////////////////////
-bool EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
+BOOL EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
                              int timer, bool ceiling)
 {
 	int sectorIndex;
@@ -1915,6 +1915,15 @@ bool EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offse
 		}
 		retCode = true;
 		new DWaggle(sector, height, speed, offset, timer, ceiling);
+
+		if (ceiling)
+		{
+			P_AddMovingCeiling(sector);
+		}
+		else
+		{
+			P_AddMovingFloor(sector);
+		}
 	}
 
 	return retCode;

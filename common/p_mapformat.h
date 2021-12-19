@@ -59,11 +59,6 @@ struct map_format_s
 	void (*check_impact)(AActor*);
 	void (*translate_line_flags)(unsigned int*);
 	void (*apply_sector_movement_special)(AActor*, int);
-	void (*t_vertical_door)(vldoor_t*);
-	void (*t_move_floor)(floormove_t*);
-	void (*t_move_ceiling)(ceiling_t*);
-	void (*t_build_pillar)(pillar_t*);
-	void (*t_plat_raise)(plat_t*);
 	size_t mapthing_size;
 	size_t maplinedef_size;
 	int  mt_push;

@@ -702,7 +702,7 @@ void P_SpawnDoorRaiseIn5Mins (sector_t *sec)
 	door->m_Status = DDoor::waiting;
 }
 
-bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
+BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
                    byte speed_byte, int topwait, zdoom_lock_t lock, byte lightTag,
                    bool boomgen, int topcountdown)
 {
@@ -785,7 +785,7 @@ bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 	else
 	{
 		int secnum = -1;
-		int retcode = false;
+		BOOL retcode = false;
 
 		while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
 		{

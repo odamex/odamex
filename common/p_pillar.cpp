@@ -223,7 +223,7 @@ BOOL EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
 			continue;
 
 		rtn = true;
-		new DPillar (sec, type, speed, height, height2, crush);
+		new DPillar (sec, type, speed, height, height2, crush, false);
 		P_AddMovingCeiling(sec);
 	}
 	return rtn;

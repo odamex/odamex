@@ -266,7 +266,7 @@ struct sector_s
 	struct line_s **lines;		// [linecount] size
 
 	float gravity;		// [RH] Sector gravity (1.0 is normal)
-	damage_s damage;    // [Blair] Convert to struct to hold more information.
+	struct damage_s *damage;    // [Blair] Convert to struct to hold more information.
 	short mod;			// [RH] Means-of-death for applied damage
 	struct dyncolormap_s *colormap;	// [RH] Per-sector colormap
 

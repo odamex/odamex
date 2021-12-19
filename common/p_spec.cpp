@@ -151,12 +151,12 @@ void P_TransferSectorFlags(unsigned int* dest, unsigned int source)
 	*dest |= source & SECF_TRANSFERMASK;
 }
 
-static const damage_s no_damage = {0};
+static const damage_s no_damage = {0, 0, 0};
 
 void P_ResetSectorSpecial(sector_t* sector)
 {
 	sector->special = 0;
-	sector->damage = no_damage;
+	*sector->damage = no_damage;
 	P_ResetSectorTransferFlags(&sector->flags);
 }
 
@@ -2188,12 +2188,12 @@ void P_SetupSectorDamage(sector_t* sector, short amount, byte interval, byte lea
                          unsigned int flags)
 {
 	// Only set if damage is not yet initialized.
-	if (sector->damage.amount)
+	if (sector->damage->amount)
 		return;
 
-	sector->damage.amount = amount;
-	sector->damage.interval = interval;
-	sector->damage.leakrate = leakrate;
+	sector->damage->amount = amount;
+	sector->damage->interval = interval;
+	sector->damage->leakrate = leakrate;
 	sector->flags = (sector->flags & ~SECF_DAMAGEFLAGS) | (flags & SECF_DAMAGEFLAGS);
 }
 

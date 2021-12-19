@@ -705,14 +705,14 @@ BOOL EV_CeilingCrushStop (int tag);
 int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed);
 void EV_StopPlat (int tag);
 int EV_ZDoomFloorCrushStop(int tag);
-bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
-bool EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
+BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
+BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
                        fixed_t speed2, fixed_t height, int crush, byte silent, int change,
                        crushmode_e crushmode);
-bool EV_ZDoomCeilingCrushStop(int tag, bool remove);
-bool EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
+BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
+BOOL EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
                          int timer, bool ceiling);
-bool EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int flags);
+BOOL EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int flags);
 
 bool P_LineSpecialMovesSector(byte special);
 bool P_CanActivateSpecials(AActor* mo, line_t* line);

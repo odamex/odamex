@@ -553,13 +553,13 @@ manual_plat:
 	return rtn;
 }
 
-bool EV_DoGenLift(line_t* line)
+BOOL EV_DoGenLift(line_t* line)
 {
 	DPlat* plat;
 	int secnum;
 	sector_t* sec;
-	int rtn = false;
-	bool manual = false;
+	BOOL rtn = false;
+	BOOL manual = false;
 	unsigned value = (unsigned)line->special - GenLiftBase;
 
     int Targ = (value & LiftTarget) >> LiftTargetShift;

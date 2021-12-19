@@ -683,7 +683,7 @@ private:
 						   fixed_t height, int speed, int delay, fixed_t lip, int change);
 	friend void EV_StopPlat (int tag);
 	friend void P_ActivateInStasis (int tag);
-	friend bool EV_DoGenLift(line_t* line);
+	friend BOOL EV_DoGenLift(line_t* line);
 };
 
 inline FArchive &operator<< (FArchive &arc, DPlat::EPlatType type)
@@ -854,7 +854,7 @@ public:
 protected:
 	friend BOOL	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                                    int tag, int speed, int delay, card_t lock);
-    friend bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
+    friend BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 	                         byte speed_byte, int topwait, zdoom_lock_t lock,
 	                         byte lightTag, bool boomgen, int topcountdown);
 	friend void P_SpawnDoorCloseIn30 (sector_t *sec);
@@ -949,6 +949,7 @@ public:
 	DCeiling (sector_t *sec, fixed_t speed1, fixed_t speed2, int silent);
 	DCeiling (sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, int speed,
 	         int target, int crush, int change, int direction, int model);
+	DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, int speed);
 	DCeiling* Clone(sector_t* sec) const;
 	friend void P_SetCeilingDestroy(DCeiling *ceiling);
 	
@@ -991,8 +992,8 @@ private:
 		bool crush, int silent, int change);
 	friend BOOL EV_CeilingCrushStop (int tag);
 	friend void P_ActivateInStasisCeiling (int tag);
-	friend bool EV_ZDoomCeilingCrushStop(int tag, bool remove);
-	friend bool EV_DoGenCeiling(line_t* line);
+	friend BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
+	friend BOOL EV_DoGenCeiling(line_t* line);
 };
 
 inline FArchive &operator<< (FArchive &arc, DCeiling::ECeiling type)
@@ -1126,16 +1127,16 @@ protected:
 		int usespecials);
 	friend BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 		fixed_t speed, fixed_t height, bool crush, int change);
-	friend bool EV_DoDonut (line_t* line);
-	friend bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed,
+	friend int EV_DoDonut (line_t* line);
+	friend BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed,
 	                            fixed_t slimespeed);
 	friend int P_SpawnDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
-	friend bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag,
+	friend BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag,
 	                            fixed_t speed, fixed_t height, int crush, int change,
 	                            bool hexencrush, bool hereticlower);
 	friend int EV_ZDoomFloorCrushStop(int tag);
-	friend bool EV_DoGenFloor(line_t* line);
-	friend bool EV_DoGenStairs(line_t* line);
+	friend BOOL EV_DoGenFloor(line_t* line);
+	friend BOOL EV_DoGenStairs(line_t* line);
 
   private:
 	DFloor ();
@@ -1261,7 +1262,7 @@ class DWaggle : public DMover
 	bool m_Ceiling;
 
   protected:
-	friend bool EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed,
+	friend BOOL EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed,
 	                                int offset, int timer, bool ceiling);
 
   private:
