@@ -757,21 +757,26 @@ void D_DoomMain()
 
 	M_LoadDefaults();					// load before initing other systems
 
-	GUI_BootWindow();
-
 	C_BindingsInit();					// Ch0wW : Initialize bindings
 
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
+	std::string iwad;
+	const char* iwadParam = Args.CheckValue("-iwad");
+	if (iwadParam)
+	{
+		iwad = iwadParam;
+	}
+	else
+	{
+		iwad = GUI_BootWindow();
+	}
+
 	OWantFiles newwadfiles, newpatchfiles;
 
-	const char* iwad_filename_cstr = Args.CheckValue("-iwad");
-	if (iwad_filename_cstr)
-	{
-		OWantFile file;
-		OWantFile::make(file, iwad_filename_cstr, OFILE_WAD);
-		newwadfiles.push_back(file);
-	}
+	OWantFile file;
+	OWantFile::make(file, iwad, OFILE_WAD);
+	newwadfiles.push_back(file);
 
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);

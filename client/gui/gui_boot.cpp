@@ -26,6 +26,7 @@
 #include "gui_boot.h"
 
 #include "FL/Fl.H"
+#include "FL/fl_ask.H"
 #include "FL/Fl_Box.H"
 #include "FL/Fl_Button.H"
 #include "FL/Fl_Double_Window.H"
@@ -34,8 +35,11 @@
 #include "FL/Fl_Return_Button.H"
 #include "FL/Fl_Tabs.H"
 
+#include "i_system.h"
 #include "gui_resource.h"
 #include "w_ident.h"
+
+const scannedIWAD_t* g_SelectedIWAD;
 
 const int WINDOW_WIDTH = 320;
 const int WINDOW_HEIGHT = 240;
@@ -101,12 +105,36 @@ class BootWindow : public Fl_Window
 		} // Fl_Tabs* tabs
 		{
 			Fl_Button* doQuit = new Fl_Button(10, 210, 65, 20, "Quit");
+			doQuit->callback(BootWindow::doQuitCB);
 		} // Fl_Button* doQuit
 		{
 			Fl_Return_Button* doPlay = new Fl_Return_Button(350, 210, 65, 20, "Play!");
+			doPlay->callback(BootWindow::doPlayCB, static_cast<void*>(this));
 		} // Fl_Return_Button* doPlay
 		end();
+		callback(BootWindow::doCallback);
 	}
+
+	static void doCallback(Fl_Widget*, void*) { exit(0); }
+
+	static void doQuitCB(Fl_Widget*, void*) { exit(0); }
+
+	static void doPlayCB(Fl_Widget*, void* data)
+	{
+		BootWindow* boot = static_cast<BootWindow*>(data);
+		if (boot->selectedIWAD() == NULL)
+		{
+			// A valid IWAD isn't selected.
+			fl_message_title("Play Odamex");
+			fl_alert("Please select a game to play.");
+			return;
+		}
+
+		::g_SelectedIWAD = boot->selectedIWAD();
+		Fl::delete_widget(boot);
+	}
+
+	void doPlayCB() { }
 
 	void rescanIWADs()
 	{
@@ -117,6 +145,14 @@ class BootWindow : public Fl_Window
 			m_IWADBrowser->add(m_IWADs[i].id->mNiceName.c_str(), (void*)m_IWADs[i].id);
 		}
 	}
+
+	const scannedIWAD_t* selectedIWAD()
+	{
+		const size_t value = static_cast<size_t>(m_IWADBrowser->value());
+		if (value == 0)
+			return NULL;
+		return &m_IWADs.at(value - 1);
+	}
 };
 
 static BootWindow* MakeBootWindow()
@@ -124,7 +160,12 @@ static BootWindow* MakeBootWindow()
 	return new BootWindow(0, 0, 425, 240, "Odamex 10.0.0");
 }
 
-void GUI_BootWindow()
+/**
+ * @brief Create the boot window for Odamex.
+ * 
+ * @return The IWAD file to use when starting the game.
+ */
+std::string GUI_BootWindow()
 {
 	Fl::scheme("gtk+");
 
@@ -142,4 +183,7 @@ void GUI_BootWindow()
 
 	// Blocks until the boot window has been closed.
 	Fl::run();
+
+	// Return the full IWAD path.
+	return ::g_SelectedIWAD->path;
 }

@@ -23,4 +23,4 @@
 
 #pragma once
 
-void GUI_BootWindow();
+std::string GUI_BootWindow();

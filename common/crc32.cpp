@@ -46,6 +46,7 @@
   #if defined(__APPLE__)
     // [AM] macOS uses non-standard location for endian checking.
     #include <machine/endian.h>
+    #define __BYTE_ORDER __DARWIN_BYTE_ORDER
   #else
     // defines __BYTE_ORDER as __LITTLE_ENDIAN or __BIG_ENDIAN
     #include <sys/param.h>
