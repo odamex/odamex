@@ -43,8 +43,13 @@
     #endif
   #endif
 #else
-  // defines __BYTE_ORDER as __LITTLE_ENDIAN or __BIG_ENDIAN
-  #include <sys/param.h>
+  #if defined(__APPLE__)
+    // [AM] macOS uses non-standard location for endian checking.
+    #include <machine/endian.h>
+  #else
+    // defines __BYTE_ORDER as __LITTLE_ENDIAN or __BIG_ENDIAN
+    #include <sys/param.h>
+  #endif
 
   // intrinsics / prefetching
   #ifdef __GNUC__
