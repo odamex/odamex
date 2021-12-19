@@ -1649,9 +1649,11 @@ void G_ParseMapInfo()
 	switch (gamemission)
 	{
 	case doom:
+	case retail_freedoom:
 		baseinfoname = "_D1NFO";
 		break;
 	case doom2:
+	case commercial_freedoom:
 		baseinfoname = "_D2NFO";
 		if (gamemode == commercial_bfg)
 		{
@@ -1670,6 +1672,7 @@ void G_ParseMapInfo()
 		baseinfoname = "_CHEXNFO";
 		break;
 	default:
+		I_Error("This IWAD is unknown to Odamex");
 		break;
 	}
 
