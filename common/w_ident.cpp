@@ -52,72 +52,82 @@ struct identData_t
 	uint32_t flags;
 };
 
+#define DOOMSW_PREFIX "DOOM Shareware"
+#define DOOM_PREFIX "DOOM"
+#define UDOOM_PREFIX "The Ultimate DOOM"
+#define DOOM2_PREFIX "DOOM II: Hell on Earth"
+#define PLUTONIA_PREFIX "The Plutonia Experiment"
+#define TNT_PREFIX "TNT: Evilution"
+#define FREEDOOM1_PREFIX "Freedoom: Phase 1"
+#define FREEDOOM2_PREFIX "Freedoom: Phase 2"
+#define FREEDM_PREFIX "FreeDM"
+
 static const identData_t identdata[] = {
     // ------------------------------------------------------------------------
     // DOOM2.WAD
     // ------------------------------------------------------------------------
     {
-        "Doom 2 v1.9",                      // idName
+        DOOM2_PREFIX " v1.9",               // idName
         "DOOM2.WAD",                        // filename
         "EC8725DB",                         // crc32Sum
         "25E1459CA71D321525F84628F45CA8CD", // md5Sum
-        "Doom2 v1.9",                       // groupName
+        DOOM2_PREFIX " v1.9",               // groupName
         IDENT_COMMERCIAL | IDENT_IWAD       // flags
     },
     {
-        "Doom 2 BFG",                       // idName
+        DOOM2_PREFIX " BFG Edition",        // idName
         "DOOM2BFG.WAD",                     // filename
         "927A778A",                         // crc32Sum
         "C3BEA40570C23E511A7ED3EBCD9865F7", // md5Sum
-        "Doom2 v1.9",                       // groupName
+        DOOM2_PREFIX " v1.9",               // groupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
     },
     {
-        "Doom 2 v1.8",                                    // idName
+        DOOM2_PREFIX " v1.8",                             // idName
         "DOOM2.WAD",                                      // filename
         "",                                               // crc32Sum
         "C236745BB01D89BBB866C8FED81B6F8C",               // md5Sum
-        "Doom2 v1.8",                                     // groupName
+        DOOM2_PREFIX " v1.8",                             // groupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
     },
     {
-        "Doom 2 v1.8 French",                             // idName
+        DOOM2_PREFIX " v1.8 French",                      // idName
         "DOOM2F.WAD",                                     // filename
         "",                                               // crc32Sum
         "3CB02349B3DF649C86290907EED64E7B",               // md5Sum
-        "Doom2 v1.8",                                     // groupName
+        DOOM2_PREFIX " v1.8 French",                      // groupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
     },
     {
-        "Doom 2 v1.7a",                                   // mIdName
+        DOOM2_PREFIX " v1.7a",                            // mIdName
         "DOOM2.WAD",                                      // filename
         "",                                               // crc32Sum
         "D7A07E5D3F4625074312BC299D7ED33F",               // md5Sum
-        "Doom2 v1.7a",                                    // groupName
+        DOOM2_PREFIX " v1.7a",                            // groupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
     },
     {
-        "Doom 2 v1.7",                                    // idName
+        DOOM2_PREFIX " v1.7",                             // idName
         "DOOM2.WAD",                                      // filename
         "",                                               // crc32Sum
         "EA74A47A791FDEF2E9F2EA8B8A9DA13B",               // md5Sum
-        "Doom2 v1.7",                                     // groupName
+        DOOM2_PREFIX " v1.7",                             // groupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
     },
     {
-        "Doom 2 v1.666",                                  // idName
+        DOOM2_PREFIX " v1.666",                           // idName
         "DOOM2.WAD",                                      // filename
         "",                                               // crc32Sum
         "30E3C2D0350B67BFBF47271970B74B2F",               // md5Sum
-        "Doom2 v1.666",                                   // groupName
+        DOOM2_PREFIX " v1.666",                           // groupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
     },
     {
-        "Doom 2 v1.666 German",                           // idName
+        DOOM2_PREFIX " v1.666 German",                    // idName
         "DOOM2.WAD",                                      // filename
         "",                                               // crc32Sum
         "D9153CED9FD5B898B36CC5844E35B520",               // md5Sum
-        "Doom2 v1.666",                                   // groupName
+        DOOM2_PREFIX " v1.666 German",                    // groupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
     },
 
@@ -125,11 +135,11 @@ static const identData_t identdata[] = {
     // PLUTONIA.WAD
     // ------------------------------------------------------------------------
     {
-        "Plutonia v1.9",                    // mIdName
+        PLUTONIA_PREFIX " v1.9",            // mIdName
         "PLUTONIA.WAD",                     // mFilename
         "48D1453C",                         // mCRC32Sum
         "75C8CF89566741FA9D22447604053BD7", // mMd5Sum
-        "Plutonia v1.9",                    // groupName
+        PLUTONIA_PREFIX " v1.9",            // groupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
     },
 
@@ -137,11 +147,11 @@ static const identData_t identdata[] = {
     // TNT.WAD
     // ------------------------------------------------------------------------
     {
-        "TNT Evilution v1.9",               // mIdName
+        TNT_PREFIX " v1.9",                 // mIdName
         "TNT.WAD",                          // mFilename
         "903DCC27",                         // mCRC32Sum
         "4E158D9953C79CCF97BD0663244CC6B6", // mMd5Sum
-        "TNT Evilution v1.9",               // mGroupName
+        TNT_PREFIX " v1.9",                 // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
     },
 
@@ -149,59 +159,59 @@ static const identData_t identdata[] = {
     // DOOM.WAD
     // ------------------------------------------------------------------------
     {
-        "Ultimate Doom v1.9",               // mIdName
+        UDOOM_PREFIX " v1.9",               // mIdName
         "DOOMU.WAD",                        // mFilename
         "BF0EAAC0",                         // mCRC32Sum
         "C4FE9FD920207691A9F493668E0A2083", // mMd5Sum
-        "Ultimate Doom v1.9",               // mGroupName
+        UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
     },
     {
-        "Ultimate Doom BFG",                // mIdName
+        UDOOM_PREFIX " BFG Edition",        // mIdName
         "DOOMBFG.WAD",                      // mFilename
         "5EFA677E",                         // mCRC32Sum
         "FB35C4A5A9FD49EC29AB6E900572C524", // mMd5Sum
-        "Ultimate Doom v1.9",               // mGroupName
+        UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
     },
     {
-        "Doom v1.9",                                      // mIdName
+        DOOM_PREFIX " v1.9",                              // mIdName
         "DOOM.WAD",                                       // mFilename
         "",                                               // mCRC32Sum
         "1CD63C5DDFF1BF8CE844237F580E9CF3",               // mMd5Sum
-        "Doom v1.9",                                      // mGroupName
+        DOOM_PREFIX " v1.9",                              // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
     },
     {
-        "Doom v1.8",                                      // mIdName
+        DOOM_PREFIX " v1.8",                              // mIdName
         "DOOM.WAD",                                       // mFilename
         "",                                               // mCRC32Sum
         "11E1CD216801EA2657723ABC86ECB01F",               // mMd5Sum
-        "Doom v1.8",                                      // mGroupName
+        DOOM_PREFIX " v1.8",                              // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
     },
     {
-        "Doom v1.666",                                    // mIdName
+        DOOM_PREFIX " v1.666",                            // mIdName
         "DOOM.WAD",                                       // mFilename
         "",                                               // mCRC32Sum
         "54978D12DE87F162B9BCC011676CB3C0",               // mMd5Sum
-        "Doom v1.666",                                    // mGroupName
+        DOOM_PREFIX " v1.666",                            // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
     },
     {
-        "Doom v1.2",                                      // mIdName
+        DOOM_PREFIX " v1.2",                              // mIdName
         "DOOM.WAD",                                       // mFilename
         "",                                               // mCRC32Sum
         "792FD1FEA023D61210857089A7C1E351",               // mMd5Sum
-        "Doom v1.2",                                      // mGroupName
+        DOOM_PREFIX " v1.2",                              // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
     },
     {
-        "Doom v1.1",                                      // mIdName
+        DOOM_PREFIX " v1.1",                              // mIdName
         "DOOM.WAD",                                       // mFilename
         "",                                               // mCRC32Sum
         "981B03E6D1DC033301AA3095ACC437CE",               // mMd5Sum
-        "Doom v1.1",                                      // mGroupName
+        DOOM_PREFIX " v1.1",                              // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
     },
 
@@ -209,67 +219,67 @@ static const identData_t identdata[] = {
     // DOOM1.WAD
     // ------------------------------------------------------------------------
     {
-        "Doom Shareware v1.9",              // mIdName
+        DOOMSW_PREFIX " v1.9",              // mIdName
         "DOOM1.WAD",                        // mFilename
         "162B696A",                         // mCRC32Sum
         "F0CEFCA49926D00903CF57551D901ABE", // mMd5Sum
-        "Doom Shareware v1.9",              // mGroupName
+        DOOMSW_PREFIX " v1.9",              // mGroupName
         IDENT_IWAD,                         // flags
     },
     {
-        "Doom Shareware v1.8",              // mIdName
+        DOOMSW_PREFIX " v1.8",              // mIdName
         "DOOM1.WAD",                        // mFilename
         "",                                 // mCRC32Sum
         "5F4EB849B1AF12887DEC04A2A12E5E62", // mMd5Sum
-        "Doom Shareware v1.8",              // mGroupName
+        DOOMSW_PREFIX " v1.8",              // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Doom Shareware v1.6",              // mIdName
+        DOOMSW_PREFIX " v1.6",              // mIdName
         "DOOM1.WAD",                        // mFilename
         "",                                 // mCRC32Sum
         "762FD6D4B960D4B759730F01387A50A1", // mMd5Sum
-        "Doom Shareware v1.6",              // mGroupName
+        DOOMSW_PREFIX " v1.6",              // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Doom Shareware v1.5",              // mIdName
+        DOOMSW_PREFIX " v1.5",              // mIdName
         "DOOM1.WAD",                        // mFilename
         "",                                 // mCRC32Sum
         "E280233D533DCC28C1ACD6CCDC7742D4", // mMd5Sum
-        "Doom Shareware v1.5",              // mGroupName
+        DOOMSW_PREFIX " v1.5",              // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Doom Shareware v1.4",              // mIdName
+        DOOMSW_PREFIX " v1.4",              // mIdName
         "DOOM1.WAD",                        // mFilename
         "",                                 // mCRC32Sum
         "A21AE40C388CB6F2C3CC1B95589EE693", // mMd5Sum
-        "Doom Shareware v1.4",              // mGroupName
+        DOOMSW_PREFIX " v1.4",              // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Doom Shareware v1.2",              // mIdName
+        DOOMSW_PREFIX " v1.2",              // mIdName
         "DOOM1.WAD",                        // mFilename
         "",                                 // mCRC32Sum
         "30AA5BEB9E5EBFBBE1E1765561C08F38", // mMd5Sum
-        "Doom Shareware v1.2",              // mGroupName
+        DOOMSW_PREFIX " v1.2",              // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Doom Shareware v1.1",              // mIdName
+        DOOMSW_PREFIX " v1.1",              // mIdName
         "DOOM1.WAD",                        // mFilename
         "",                                 // mCRC32Sum
         "52CBC8882F445573CE421FA5453513C1", // mMd5Sum
-        "Doom Shareware v1.1",              // mGroupName
+        DOOMSW_PREFIX " v1.1",              // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Doom Shareware v1.0",              // mIdName
+        DOOMSW_PREFIX " v1.0",              // mIdName
         "DOOM1.WAD",                        // mFilename
         "",                                 // mCRC32Sum
         "90FACAB21EEDE7981BE10790E3F82DA2", // mMd5Sum
-        "Doom Shareware v1.0",              // mGroupName
+        DOOMSW_PREFIX " v1.0",              // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
 
@@ -277,83 +287,83 @@ static const identData_t identdata[] = {
     // FREEDOOM1.WAD
     // ------------------------------------------------------------------------
     {
-        "Freedoom: Phase 1 v0.12.1",        // mIdName
+        FREEDOOM1_PREFIX " v0.12.1",        // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "DE6DDB27",                         // mCRC32Sum
         "B36AA44A23045E503C19AF4B4C438A78", // mMd5Sum
-        "Ultimate Doom v1.9",               // mGroupName
+        UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD,                         // flags
     },
     {
-        "Freedoom: Phase 1 v0.12.0",        // mIdName
+        FREEDOOM1_PREFIX " v0.12.0",        // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "0C5F8FF45CC3538D368A0F8D8FC11CE3", // mMd5Sum
-        "Ultimate Doom v1.9",               // mGroupName
+        UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 1 v0.11.3",        // mIdName
+        FREEDOOM1_PREFIX " v0.11.3",        // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "EA471A3D38FCEE0FB3A69BCD3221E335", // mMd5Sum
-        "Ultimate Doom v1.9",               // mGroupName
+        UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 1 v0.11.2",        // mIdName
+        FREEDOOM1_PREFIX " v0.11.2",        // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "6D00C49520BE26F08A6BD001814A32AB", // mMd5Sum
-        "Ultimate Doom v1.9",               // mGroupName
+        UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 1 v0.11.1",        // mIdName
+        FREEDOOM1_PREFIX " v0.11.1",        // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "35312E99D2473297AABE0602700BEE8A", // mMd5Sum
-        "Ultimate Doom v1.9",               // mGroupName
+        UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 1 v0.11",          // mIdName
+        FREEDOOM1_PREFIX " v0.11",          // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "21A4707FC25D29EDF4B098BD400C5C42", // mMd5Sum
-        "Ultimate Doom v1.9",               // mGroupName
+        UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 1 v0.10.1",        // mIdName
+        FREEDOOM1_PREFIX " v0.10.1",        // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "91DE79621A393A08C39A9AB2C034B766", // mMd5Sum
-        "Ultimate Doom v1.9",               // mGroupName
+        UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 1 v0.10",          // mIdName
+        FREEDOOM1_PREFIX " v0.10",          // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "9B8D72B59FD93B2B3E116149BAA1B142", // mMd5Sum
-        "Ultimate Doom v1.9",               // mGroupName
+        UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 1 v0.9",           // mIdName
+        FREEDOOM1_PREFIX " v0.9",           // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "ACA90CF5AC36E996EDC58BD0329B979A", // mMd5Sum
-        "Ultimate Doom v1.9",               // mGroupName
+        UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 1 v0.8",           // mIdName
+        FREEDOOM1_PREFIX " v0.8",           // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "30095B256DD3A1566BBC30286F72BC47", // mMd5Sum
-        "Ultimate Doom v1.9",               // mGroupName
+        UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
 
@@ -361,83 +371,83 @@ static const identData_t identdata[] = {
     // FREEDOOM2.WAD
     // ------------------------------------------------------------------------
     {
-        "Freedoom: Phase 2 v0.12.1",        // mIdName
+        FREEDOOM2_PREFIX " v0.12.1",        // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "212E1CF9",                         // mCRC32Sum
         "CA9A4159A7833544A89144C7F5053412", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD,                         // flags
     },
     {
-        "Freedoom: Phase 2 v0.12.0",        // mIdName
+        FREEDOOM2_PREFIX " v0.12.0",        // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "83560B2963424FA4A2EB971194428BF8", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 2 v0.11.3",        // mIdName
+        FREEDOOM2_PREFIX " v0.11.3",        // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "984F99AF08F085E38070F51095AB7C31", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 2 v0.11.2",        // mIdName
+        FREEDOOM2_PREFIX " v0.11.2",        // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "90832A872B5BB0ACA4CA0B20419AAD5D", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 2 v0.11.1",        // mIdName
+        FREEDOOM2_PREFIX " v0.11.1",        // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "EC5B38B30BA2B70E278205776AF3FBB5", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 2 v0.11",          // mIdName
+        FREEDOOM2_PREFIX " v0.11",          // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "B1018017C61B06E33C11102D8BAFAAD0", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 2 v0.10.1",        // mIdName
+        FREEDOOM2_PREFIX " v0.10.1",        // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "DD9C9E73F5F50D3778C85573CD08D9A4", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 2 v0.10",          // mIdName
+        FREEDOOM2_PREFIX " v0.10",          // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "C5A4F2D38D78B251D8557CB2D93E40EE", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 2 v0.9",           // mIdName
+        FREEDOOM2_PREFIX " v0.9",           // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "8FA57DBC7687F84528EBA39DDE3A20E0", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "Freedoom: Phase 2 v0.8",           // mIdName
+        FREEDOOM2_PREFIX " v0.8",           // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "",                                 // mCRC32Sum
         "E3668912FC37C479B2840516C887018B", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
 
@@ -445,83 +455,83 @@ static const identData_t identdata[] = {
     // FREEDM.WAD
     // ------------------------------------------------------------------------
     {
-        "FreeDM v0.12.1",                   // mIdName
+        FREEDM_PREFIX " v0.12.1",           // mIdName
         "FREEDM.WAD",                       // mFilename
         "BD680D11",                         // mCRC32Sum
         "D40C932A9183DED919AFA89F4A729668", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD,                         // flags
     },
     {
-        "FreeDM v0.12.0",                   // mIdName
+        FREEDM_PREFIX " v0.12.0",           // mIdName
         "FREEDM.WAD",                       // mFilename
         "",                                 // mCRC32Sum
         "3250AAD8B1D40FB7B25B7DF6573EB29F", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "FreeDM v0.11.3",                   // mIdName
+        FREEDM_PREFIX " v0.11.3",           // mIdName
         "FREEDM.WAD",                       // mFilename
         "",                                 // mCRC32Sum
         "87EE2494D921633420CE9BDB418127C4", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "FreeDM v0.11.2",                   // mIdName
+        FREEDM_PREFIX " v0.11.2",           // mIdName
         "FREEDM.WAD",                       // mFilename
         "",                                 // mCRC32Sum
         "9352B09AE878DC52C6C18AA38ACDA6EB", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "FreeDM v0.11.1",                   // mIdName
+        FREEDM_PREFIX " v0.11.1",           // mIdName
         "FREEDM.WAD",                       // mFilename
         "",                                 // mCRC32Sum
         "77BA9C0F75C32E4A729490688BB99241", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "FreeDM v0.11",                     // mIdName
+        FREEDM_PREFIX " v0.11",             // mIdName
         "FREEDM.WAD",                       // mFilename
         "",                                 // mCRC32Sum
         "D76D3973C075B069ECB4E16DC9EACBB4", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "FreeDM v0.10.1",                   // mIdName
+        FREEDM_PREFIX " v0.10.1",           // mIdName
         "FREEDM.WAD",                       // mFilename
         "",                                 // mCRC32Sum
         "BD4F359F1963E388BEDA014C5548B420", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "FreeDM v0.10",                     // mIdName
+        FREEDM_PREFIX " v0.10",             // mIdName
         "FREEDM.WAD",                       // mFilename
         "",                                 // mCRC32Sum
         "F37B8B70E1394289A7EC404F67CDEC1A", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "FreeDM v0.9",                      // mIdName
+        FREEDM_PREFIX " v0.9",              // mIdName
         "FREEDM.WAD",                       // mFilename
         "",                                 // mCRC32Sum
         "CBB27C5F3C2C44D34843CF63DAA627F6", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
     {
-        "FreeDM v0.8",                      // mIdName
+        FREEDM_PREFIX " v0.8",              // mIdName
         "FREEDM.WAD",                       // mFilename
         "",                                 // mCRC32Sum
         "05859098BF191899903EF343AFBA369D", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
     },
 
@@ -541,11 +551,11 @@ static const identData_t identdata[] = {
     // HACX.WAD
     // ------------------------------------------------------------------------
     {
-        "HACX 1.2",                         // mIdName
+        "HACX v1.2",                        // mIdName
         "HACX.WAD",                         // mFilename
         "72E3B8AC",                         // mCRC32Sum
         "65ED74D522BDF6649C2831B13B9E02B4", // mMd5Sum
-        "Doom 2 v1.9",                      // mGroupName
+        DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD,                         // flags
     }};
 
@@ -792,22 +802,22 @@ public:
 		if (lumpsfound[10])
 		{
 			if (lumpsfound[0])
-				return "Freedoom: Phase 1 UNKNOWN";
+				return OStringToUpper(FREEDOOM1_PREFIX " Unknown");
 			else
 				return "FREEDOOM UNKNOWN";
 		}
 
-		// Check for Doom 2 or TNT / Plutonia
+		// Check for Doom II: Hell on Earth or TNT / Plutonia
 		if (lumpsfound[3])
 		{
 			if (lumpsfound[6])
-				return "TNT EVILUTION UNKNOWN";
+				return OStringToUpper(TNT_PREFIX " Unknown");
 			if (lumpsfound[7])
-				return "PLUTONIA UNKNOWN";
+				return OStringToUpper(PLUTONIA_PREFIX " Unknown");
 			if (lumpsfound[9])
-				return "DOOM 2 BFG UNKNOWN";
+				return OStringToUpper(DOOM2_PREFIX " BFG Edition Unknown");
 			else
-				return "DOOM 2 UNKNOWN";
+				return OStringToUpper(DOOM2_PREFIX " Unknown");
 		}
 
 		// Check for Registered Doom / Ultimate Doom / Chex Quest / Shareware Doom
@@ -820,23 +830,25 @@ public:
 					// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
 					// iwad.  It's ultimate doom with their stuff replacing most things.
 					if (iequals(file.getBasename(), "chex.wad"))
+					{
 						return "CHEX QUEST UNKNOWN";
+					}
 					else
 					{
 						if (lumpsfound[9])
-							return "ULTIMATE DOOM BFG UNKNOWN";
+							return UDOOM_PREFIX " BFG UNKNOWN";
 						else
-							return "ULTIMATE DOOM UNKNOWN";
+							return UDOOM_PREFIX " UNKNOWN";
 					}
 				}
 				else
 				{
-					return "DOOM UNKNOWN";
+					return DOOM_PREFIX " UNKNOWN";
 				}
 			}
 			else
 			{
-				return "DOOM SHAREWARE UNKNOWN";
+				return DOOMSW_PREFIX " UNKNOWN";
 			}
 		}
 
@@ -935,20 +947,19 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 
 	const OString idname = identtab.identify(iwad);
 
-
 	if (idname.find("HACX") == 0)
 	{
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = commercial_hacx;
 	}
-	else if (idname.find("PLUTONIA") == 0)
+	else if (idname.find(OStringToUpper(OString(PLUTONIA_PREFIX))) == 0)
 	{
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = pack_plut;
 	}
-	else if (idname.find("TNT EVILUTION") == 0)
+	else if (idname.find(OStringToUpper(OString(TNT_PREFIX))) == 0)
 	{
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
@@ -960,7 +971,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = retail_chex;
 		gameinfo = RetailGameInfo;
 	}
-	else if (idname.find("Freedoom: Phase 1") == 0)
+	else if (idname.find(OStringToUpper(OString(FREEDOOM1_PREFIX))) == 0)
 	{
 		gamemode = retail;
 		gameinfo = RetailGameInfo;
@@ -972,50 +983,50 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
 	}
-	else if (idname.find("FREEDOOM2") == 0)
+	else if (idname.find(OStringToUpper(OString(FREEDOOM2_PREFIX))) == 0)
 	{
 		gamemode = commercial;
 		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
 	}
 
-	else if (idname.find("FREEDM") == 0)
+	else if (idname.find(OStringToUpper(OString(FREEDM_PREFIX))) == 0)
 	{
 		gamemode = commercial;
 		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
 	}	
-	else if (idname.find("DOOM SHAREWARE") == 0)
+	else if (idname.find(OStringToUpper(OString(DOOMSW_PREFIX))) == 0)
 	{
 		gamemode = shareware;
 		gameinfo = SharewareGameInfo;
 		gamemission = doom;
 	}
-	else if (idname.find("ULTIMATE DOOM BFG") == 0)
+	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX " BFG"))) == 0)
 	{
 		gamemode = retail_bfg;
 		gameinfo = RetailBFGGameInfo;
 		gamemission = doom;
 	}
-	else if (idname.find("ULTIMATE DOOM") == 0)
+	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX))) == 0)
 	{
 		gamemode = retail;
 		gameinfo = RetailGameInfo;
 		gamemission = doom;
 	}
-	else if (idname.find("DOOM 2 BFG") == 0)
+	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX " BFG"))) == 0)
 	{
 		gameinfo = CommercialBFGGameInfo;
 		gamemode = commercial_bfg;
 		gamemission = doom2;
 	}
-	else if (idname.find("DOOM 2") == 0)
+	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX))) == 0)
 	{
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = doom2;
 	}
-	else if (idname.find("DOOM") == 0)
+	else if (idname.find(OStringToUpper(OString(DOOM_PREFIX))) == 0)
 	{
 		gamemode = registered;
 		gameinfo = RegisteredGameInfo;
