@@ -1449,7 +1449,6 @@ void P_SpawnCompatiblePusher(line_t* l)
 //
 // Passed the thing using the line, the line being used, and the side used
 // Returns true if a thinker was created
-// [Blair] Use LineSpecials for these when possible.
 //
 lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
                                         bool bossaction)
@@ -1560,23 +1559,37 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			{
 			case PushOnce:
 				if (!side)
+				{
 					if (linefunc(line))
+					{
 						line->special = 0;
-				return true;
+						result.lineexecuted = true;
+					}
+				}
+				return result;
 			case PushMany:
 				if (!side)
+				{
 					linefunc(line);
-				return true;
+					result.lineexecuted = true;
+				}
+				return result;
 			case SwitchOnce:
 				if (linefunc(line))
-					P_ChangeSwitchTexture(line, 0);
-				return true;
+				{
+					result.lineexecuted = true;
+					result.switchchanged = true;
+				}
+				return result;
 			case SwitchMany:
 				if (linefunc(line))
-					P_ChangeSwitchTexture(line, 1);
-				return true;
+				{
+					result.lineexecuted = true;
+					result.switchchanged = true;
+				}
+				return result;
 			default: // if not a switch/push type, do nothing here
-				return false;
+				return result;
 			}
 	}
 
@@ -1585,7 +1598,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	{
 		// never open secret doors
 		if (line->flags & ML_SECRET)
-			return false;
+			return result;
 
 		switch (line->special)
 		{
@@ -1601,7 +1614,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			break;
 
 		default:
-			return false;
+			return result;
 			break;
 		}
 	}
@@ -1631,44 +1644,78 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 174:
 		case 210: // silent switch teleporters
 		case 209:
-			return false;
+			return result;
 			break;
 		}
 	}
 
 	if (!P_CheckTag(line)) // jff 2/27/98 disallow zero tag on some types
-		return false;
+		return result;
 
 	// Dispatch to handler according to linedef type
 	switch (line->special)
 	{
 	// Manual doors, push type with no tag
 	case 1:  // Vertical Door
+		result.lineexecuted = EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
+		                                TICS(VDOORWAIT), NoKey);
+		break;
 	case 26: // Blue Door/Locked
+		result.lineexecuted = EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
+		                                TICS(VDOORWAIT), BCard | CardIsSkull);
+		break;
 	case 27: // Yellow Door /Locked
+		result.lineexecuted = EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
+		                                TICS(VDOORWAIT), YCard | CardIsSkull);
+		break;
 	case 28: // Red Door /Locked
-
+		result.lineexecuted = EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
+		                                TICS(VDOORWAIT), RCard | CardIsSkull);
+		break;
 	case 31: // Manual door open
+		result.lineexecuted =
+		    EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0, NoKey);
+		break;
 	case 32: // Blue locked door open
+		result.lineexecuted = EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW),
+		                                0, BCard | CardIsSkull);
+		break;
 	case 33: // Red locked door open
+		result.lineexecuted = EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0,
+		                                RCard | CardIsSkull);
+		break;
 	case 34: // Yellow locked door open
+		result.lineexecuted = EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0,
+		                                YCard | CardIsSkull);
+		break;
 
 	case 117: // Blazing door raise
+		result.lineexecuted = EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_FAST),
+		                                TICS(VDOORWAIT), NoKey);
+		break;
 	case 118: // Blazing door open
-		EV_VerticalDoor(line, thing);
+		result.lineexecuted =
+		    EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_FAST), 0, NoKey);
 		break;
 
 	// Switches (non-retriggerable)
 	case 7:
 		// Build Stairs
-		if (EV_BuildStairs(line, build8))
-			P_ChangeSwitchTexture(line, 0);
+		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT, SPEED(S_SLOW),
+		                   0, 0, 0, 0))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 9:
 		// Change Donut
 		if (EV_DoDonut(line))
-			P_ChangeSwitchTexture(line, 0);
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 11:
@@ -1677,24 +1724,35 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		 */
 		if (!bossaction && thing->player && thing->player->health <= 0)
 		{
-			S_StartSound(thing, sfx_noway);
-			return false;
+			return result;
 		}
 
-		P_ChangeSwitchTexture(line, 0);
-		G_ExitLevel();
+		if (thing && CheckIfExitIsGood(thing))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+			G_ExitLevel(0, 1);
+		}
 		break;
 
 	case 14:
 		// Raise Floor 32 and change texture
-		if (EV_DoPlat(line, raiseAndChange, 32))
-			P_ChangeSwitchTexture(line, 0);
+		if (EV_DoPlat(line->tag, line, DPlat::platUpByValueStay, FRACUNIT * 4 * 8,
+		              SPEED(P_SLOW / 2), 0, 0, 2))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 15:
 		// Raise Floor 24 and change texture
-		if (EV_DoPlat(line, raiseAndChange, 24))
-			P_ChangeSwitchTexture(line, 0);
+		if (EV_DoPlat(line->tag, line, DPlat::platUpByValueStay, FRACUNIT * 3 * 8,
+		              SPEED(P_SLOW / 2), 0, 0, 2))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 18:
@@ -1757,8 +1815,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		 */
 		if (!bossaction && thing->player && thing->player->health <= 0)
 		{
-			S_StartSound(thing, sfx_noway);
-			return false;
+			return result;
 		}
 
 		P_ChangeSwitchTexture(line, 0);
@@ -1845,7 +1902,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// added inner switch, relaxed check to demo_compatibility
 
 	default:
-		if (!demo_compatibility)
+		if (!demoplayback)
 			switch (line->special)
 			{
 				// jff 1/29/98 added linedef types to fill all functions out so that
@@ -2406,7 +2463,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		P_ChangeSwitchTexture(line, 1);
 		break;
 	}
-	return true;
+	return result;
 }
 
 //

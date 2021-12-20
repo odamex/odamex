@@ -1310,9 +1310,9 @@ FUNC(LS_Sector_SetDamage)
 
 	while ((s = P_FindSectorFromTag(arg0, s)) >= 0)
 	{
-		sectors[s].damage.amount = arg1;
-		sectors[s].damage.interval = arg3;
-		sectors[s].damage.leakrate = arg4;
+		sectors[s].damage->amount = arg1;
+		sectors[s].damage->interval = arg3;
+		sectors[s].damage->leakrate = arg4;
 		if (unblockable)
 			sectors[s].flags |= SECF_DMGUNBLOCKABLE;
 		else
@@ -2158,9 +2158,9 @@ FUNC(LS_Sector_SetDamage)
 {
 	int secnum = -1;
 	while ((secnum = P_FindSectorFromTag (arg0, secnum)) >= 0) {
-		sectors[secnum].damage.amount = arg1;
-		sectors[secnum].damage.interval = arg3;
-		sectors[secnum].damage.leakrate = arg4;
+		sectors[secnum].damage->amount = arg1;
+		sectors[secnum].damage->interval = arg3;
+		sectors[secnum].damage->leakrate = arg4;
 		sectors[secnum].mod = arg2;
 	}
 	return true;

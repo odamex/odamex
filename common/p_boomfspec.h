@@ -26,8 +26,7 @@
 #ifndef __P_BOOMFSPEC__
 #define __P_BOOMFSPEC__
 
-#include "doomdef.h"
-#include "doomtype.h"
+#include "odamex.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "p_spec.h"
@@ -37,6 +36,9 @@
 #include "g_level.h"
 #include "m_wdlstats.h"
 
+#define SPEED(a) ((a) * (FRACUNIT / 8))
+#define TICS(a) (((a)*TICRATE) / 35)
+
 void P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing, bool bossaction);
 void P_ApplyGeneralizedSectorDamage(player_t* player, int bits);
 void P_CollectSecretBoom(sector_t* sector, player_t* player);
@@ -45,9 +47,12 @@ bool P_ActorInCompatibleSector(AActor* actor);
 lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
                                         bool bossaction);
 void P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
-bool EV_DoGenDoor(line_t* line);
+BOOL EV_DoGenDoor(line_t* line);
 bool P_CanUnlockGenDoor(line_t* line, player_t* player);
-bool EV_DoGenLockedDoor(line_t* line);
+BOOL EV_DoGenLockedDoor(line_t* line);
+BOOL EV_DoGenCrusher(line_t* line);
+void EV_StartLightStrobing(int tag, int upper, int lower, int utics, int ltics);
+void EV_StartLightStrobing(int tag, int utics, int ltics);
 
 extern BOOL demoplayback;
 
