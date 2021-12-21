@@ -25,6 +25,8 @@
 
 #include "gui_boot.h"
 
+#include <algorithm>
+
 #include "FL/Fl.H"
 #include "FL/Fl_Box.H"
 #include "FL/Fl_Button.H"
@@ -41,6 +43,7 @@
 #include "i_system.h"
 #include "w_ident.h"
 
+void CL_QuitCommand();
 EXTERN_CVAR(waddirs);
 
 const scannedIWAD_t* g_SelectedIWAD;
@@ -60,7 +63,7 @@ class BootWindow : public Fl_Window
 	std::vector<scannedIWAD_t> m_IWADs;
 	Fl_Hold_Browser* m_IWADBrowser;
 	std::vector<std::string> m_WADDirs;
-	Fl_Browser* m_WADDirList;
+	Fl_Hold_Browser* m_WADDirList;
 
   public:
 	BootWindow(int X, int Y, int W, int H, const char* L)
@@ -91,7 +94,7 @@ class BootWindow : public Fl_Window
 					o->align(Fl_Align(132 | FL_ALIGN_INSIDE));
 				} // Fl_Box* o
 				{
-					m_WADDirList = new Fl_Browser(10, 65, 375, 125);
+					m_WADDirList = new Fl_Hold_Browser(10, 65, 375, 125);
 				} // Fl_Browser* wadDirList
 				{
 					Fl_Button* doDirAdd = new Fl_Button(395, 65, 20, 20, "@+");
@@ -99,15 +102,17 @@ class BootWindow : public Fl_Window
 				} // Fl_Button* doDirAdd
 				{
 					Fl_Button* doDirUp = new Fl_Button(395, 90, 20, 20, "@2<<");
-					doDirUp->callback(BootWindow::doDirUpCB);
+					doDirUp->callback(BootWindow::doDirUpCB, static_cast<void*>(this));
 				} // Fl_Button* doDirUp
 				{
 					Fl_Button* doDirDown = new Fl_Button(395, 115, 20, 20, "@2>>");
-					doDirDown->callback(BootWindow::doDirDownCB);
+					doDirDown->callback(BootWindow::doDirDownCB,
+					                    static_cast<void*>(this));
 				} // Fl_Button* doDirDown
 				{
 					Fl_Button* doDirRemove = new Fl_Button(395, 140, 20, 20, "@1+");
-					doDirRemove->callback(BootWindow::doDirRemoveCB);
+					doDirRemove->callback(BootWindow::doDirRemoveCB,
+					                      static_cast<void*>(this));
 				} // Fl_Button* doDirRemove
 				tabWADDirs->end();
 			} // Fl_Group* tabWADDirs
@@ -132,9 +137,9 @@ class BootWindow : public Fl_Window
 
 	// -- Game Select --
 
-	static void doCallback(Fl_Widget*, void*) { exit(0); }
+	static void doCallback(Fl_Widget*, void*) { CL_QuitCommand(); }
 
-	static void doQuitCB(Fl_Widget*, void*) { exit(0); }
+	static void doQuitCB(Fl_Widget*, void*) { CL_QuitCommand(); }
 
 	static void doPlayCB(Fl_Widget*, void* data)
 	{
@@ -153,6 +158,9 @@ class BootWindow : public Fl_Window
 
 	// -- Resource Locations --
 
+	/**
+	 * @brief Adds a directory to the WAD dir list.
+	 */
 	static void doDirAddCB(Fl_Widget*, void* data)
 	{
 		BootWindow* boot = static_cast<BootWindow*>(data);
@@ -176,16 +184,43 @@ class BootWindow : public Fl_Window
 	static void doDirUpCB(Fl_Widget*, void* data)
 	{
 		BootWindow* boot = static_cast<BootWindow*>(data);
+
+		const int val = boot->m_WADDirList->value() - 1;
+		if (val <= 0 || val >= boot->m_WADDirs.size())
+			return;
+
+		std::iter_swap(boot->m_WADDirs.begin() + val, boot->m_WADDirs.begin() + val - 1);
+		boot->setWADDirs();
+		boot->updateWADDirBrowser();
 	}
 
 	static void doDirDownCB(Fl_Widget*, void* data)
 	{
 		BootWindow* boot = static_cast<BootWindow*>(data);
+
+		const int val = boot->m_WADDirList->value() - 1;
+		if (val < 0 || val >= boot->m_WADDirs.size() - 1)
+			return;
+
+		std::iter_swap(boot->m_WADDirs.begin() + val, boot->m_WADDirs.begin() + val + 1);
+		boot->setWADDirs();
+		boot->updateWADDirBrowser();
 	}
 
+	/**
+	 * @brief Removes a directory from the WAD dir list.
+	 */
 	static void doDirRemoveCB(Fl_Widget*, void* data)
 	{
 		BootWindow* boot = static_cast<BootWindow*>(data);
+
+		const int val = boot->m_WADDirList->value() - 1;
+		if (val < 0 || val >= boot->m_WADDirs.size())
+			return;
+
+		boot->m_WADDirs.erase(boot->m_WADDirs.begin() + val);
+		boot->setWADDirs();
+		boot->updateWADDirBrowser();
 	}
 
 	void rescanIWADs()
@@ -198,6 +233,9 @@ class BootWindow : public Fl_Window
 		}
 	}
 
+	/**
+	 * @brief Get WAD information for selected IWAD.
+	 */
 	const scannedIWAD_t* selectedIWAD()
 	{
 		const size_t value = static_cast<size_t>(m_IWADBrowser->value());
@@ -231,6 +269,9 @@ class BootWindow : public Fl_Window
 	void setWADDirs() { ::waddirs.Set(JoinStrings(m_WADDirs, PATHLISTSEP).c_str()); }
 };
 
+/**
+ * @brief Shim function to call new BootWindow() with proper params.
+ */
 static BootWindow* MakeBootWindow()
 {
 	return new BootWindow(0, 0, 425, 240, "Odamex 10.0.0");
@@ -252,6 +293,7 @@ std::string GUI_BootWindow()
 
 	BootWindow* win = MakeBootWindow();
 	win->initWADDirs();
+	win->updateWADDirBrowser();
 	win->rescanIWADs();
 	win->position((Fl::w() - win->w()) / 2, (Fl::h() - win->h()) / 2);
 	win->show();

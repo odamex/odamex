@@ -83,8 +83,8 @@
 #include "g_mapinfo.h"
 #include "sc_man.h"
 #include "g_horde.h"
-
 #include "w_ident.h"
+#include "gui_boot.h"
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -721,8 +721,6 @@ void STACK_ARGS D_Shutdown()
 
 
 void C_DoCommand(const char *cmd, uint32_t key);
-
-#include "gui_boot.h"
 
 //
 // D_DoomMain
