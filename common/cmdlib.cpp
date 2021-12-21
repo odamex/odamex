@@ -341,6 +341,10 @@ std::string JoinStrings(const std::vector<std::string> &pieces, const std::strin
 // Tokenize a string
 StringTokens TokenizeString(const std::string& str, const std::string& delim) {
 	StringTokens tokens;
+
+	if (str.empty())
+		return tokens;
+
 	size_t delimPos = 0;
 	size_t prevDelim = 0;
 

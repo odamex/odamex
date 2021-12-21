@@ -6,13 +6,13 @@ win_shell_cmd {echo "Custom Shell Command"}
 win_shell_flags 3
 widget_class BootWindow {
   label {Odamex 10.0.0} open
-  xywh {57 80 425 240} type Double visible
+  xywh {203 267 425 240} type Double visible
 } {
-  Fl_Tabs tabs {open selected
+  Fl_Tabs tabs {open
     xywh {0 0 425 200}
   } {
     Fl_Group tabIWAD {
-      label {Game Select} open
+      label {Game Select}
       xywh {0 25 425 175}
     } {
       Fl_Box logo {
@@ -23,7 +23,7 @@ widget_class BootWindow {
       }
     }
     Fl_Group tabWADDirs {
-      label {Resource Locations} open
+      label {Resource Locations}
       xywh {0 25 425 175} hide
     } {
       Fl_Box {} {
@@ -51,9 +51,13 @@ widget_class BootWindow {
       }
     }
   }
+  Fl_Check_Button notAgain {
+    label {Don't Show This Again}
+    xywh {10 210 20 20} down_box DOWN_BOX
+  }
   Fl_Button doQuit {
     label Quit
-    xywh {10 210 65 20}
+    xywh {275 210 65 20}
   }
   Fl_Return_Button doPlay {
     label {Play!}

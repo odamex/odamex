@@ -26,18 +26,22 @@
 #include "gui_boot.h"
 
 #include "FL/Fl.H"
-#include "FL/fl_ask.H"
 #include "FL/Fl_Box.H"
 #include "FL/Fl_Button.H"
-#include "FL/Fl_Double_Window.H"
+#include "FL/Fl_Check_Button.H"
 #include "FL/Fl_Hold_Browser.H"
+#include "FL/Fl_Native_File_Chooser.H"
 #include "FL/Fl_PNG_Image.H"
 #include "FL/Fl_Return_Button.H"
 #include "FL/Fl_Tabs.H"
+#include "FL/Fl_Window.H"
+#include "FL/fl_ask.H"
 
-#include "i_system.h"
 #include "gui_resource.h"
+#include "i_system.h"
 #include "w_ident.h"
+
+EXTERN_CVAR(waddirs);
 
 const scannedIWAD_t* g_SelectedIWAD;
 
@@ -55,6 +59,8 @@ class BootWindow : public Fl_Window
 {
 	std::vector<scannedIWAD_t> m_IWADs;
 	Fl_Hold_Browser* m_IWADBrowser;
+	std::vector<std::string> m_WADDirs;
+	Fl_Browser* m_WADDirList;
 
   public:
 	BootWindow(int X, int Y, int W, int H, const char* L)
@@ -85,26 +91,35 @@ class BootWindow : public Fl_Window
 					o->align(Fl_Align(132 | FL_ALIGN_INSIDE));
 				} // Fl_Box* o
 				{
-					Fl_Browser* wadDirList = new Fl_Browser(10, 65, 375, 125);
+					m_WADDirList = new Fl_Browser(10, 65, 375, 125);
 				} // Fl_Browser* wadDirList
 				{
 					Fl_Button* doDirAdd = new Fl_Button(395, 65, 20, 20, "@+");
+					doDirAdd->callback(BootWindow::doDirAddCB, static_cast<void*>(this));
 				} // Fl_Button* doDirAdd
 				{
 					Fl_Button* doDirUp = new Fl_Button(395, 90, 20, 20, "@2<<");
+					doDirUp->callback(BootWindow::doDirUpCB);
 				} // Fl_Button* doDirUp
 				{
 					Fl_Button* doDirDown = new Fl_Button(395, 115, 20, 20, "@2>>");
+					doDirDown->callback(BootWindow::doDirDownCB);
 				} // Fl_Button* doDirDown
 				{
 					Fl_Button* doDirRemove = new Fl_Button(395, 140, 20, 20, "@1+");
+					doDirRemove->callback(BootWindow::doDirRemoveCB);
 				} // Fl_Button* doDirRemove
 				tabWADDirs->end();
 			} // Fl_Group* tabWADDirs
 			tabs->end();
 		} // Fl_Tabs* tabs
 		{
-			Fl_Button* doQuit = new Fl_Button(10, 210, 65, 20, "Quit");
+			Fl_Check_Button* notAgain =
+			    new Fl_Check_Button(10, 210, 20, 20, "Don\'t Show This Again");
+			notAgain->down_box(FL_DOWN_BOX);
+		} // Fl_Check_Button* notAgain
+		{
+			Fl_Button* doQuit = new Fl_Button(275, 210, 65, 20, "Quit");
 			doQuit->callback(BootWindow::doQuitCB);
 		} // Fl_Button* doQuit
 		{
@@ -114,6 +129,8 @@ class BootWindow : public Fl_Window
 		end();
 		callback(BootWindow::doCallback);
 	}
+
+	// -- Game Select --
 
 	static void doCallback(Fl_Widget*, void*) { exit(0); }
 
@@ -134,7 +151,42 @@ class BootWindow : public Fl_Window
 		Fl::delete_widget(boot);
 	}
 
-	void doPlayCB() { }
+	// -- Resource Locations --
+
+	static void doDirAddCB(Fl_Widget*, void* data)
+	{
+		BootWindow* boot = static_cast<BootWindow*>(data);
+
+		Fl_Native_File_Chooser chooser;
+		chooser.title("Add Directory");
+		chooser.type(Fl_Native_File_Chooser::BROWSE_DIRECTORY);
+		switch (chooser.show())
+		{
+		case 1:  // Cancelled.
+		case -1: // Failed.
+			return;
+		default: // Picked a directory.
+			boot->m_WADDirs.push_back(chooser.filename());
+			boot->setWADDirs();
+			boot->updateWADDirBrowser();
+			break;
+		}
+	}
+
+	static void doDirUpCB(Fl_Widget*, void* data)
+	{
+		BootWindow* boot = static_cast<BootWindow*>(data);
+	}
+
+	static void doDirDownCB(Fl_Widget*, void* data)
+	{
+		BootWindow* boot = static_cast<BootWindow*>(data);
+	}
+
+	static void doDirRemoveCB(Fl_Widget*, void* data)
+	{
+		BootWindow* boot = static_cast<BootWindow*>(data);
+	}
 
 	void rescanIWADs()
 	{
@@ -153,6 +205,30 @@ class BootWindow : public Fl_Window
 			return NULL;
 		return &m_IWADs.at(value - 1);
 	}
+
+	/**
+	 * @brief Update the WAD dir browser widget from the vector.
+	 */
+	void updateWADDirBrowser()
+	{
+		const int val = m_WADDirList->value();
+		m_WADDirList->clear();
+		for (size_t i = 0; i < m_WADDirs.size(); i++)
+		{
+			m_WADDirList->add(m_WADDirs[i].c_str());
+		}
+		m_WADDirList->value(val);
+	}
+
+	/**
+	 * @brief Initialize WAD directories from CVar.
+	 */
+	void initWADDirs() { m_WADDirs = TokenizeString(::waddirs.str(), PATHLISTSEP); }
+
+	/**
+	 * @brief Update the CVar from WAD directories list.
+	 */
+	void setWADDirs() { ::waddirs.Set(JoinStrings(m_WADDirs, PATHLISTSEP).c_str()); }
 };
 
 static BootWindow* MakeBootWindow()
@@ -162,13 +238,11 @@ static BootWindow* MakeBootWindow()
 
 /**
  * @brief Create the boot window for Odamex.
- * 
+ *
  * @return The IWAD file to use when starting the game.
  */
 std::string GUI_BootWindow()
 {
-	Fl::scheme("gtk+");
-
 	// Scale according to 720p.
 	Fl::screen_scale(0, Fl::h() / 720.0f);
 
@@ -177,6 +251,7 @@ std::string GUI_BootWindow()
 	Fl::keyboard_screen_scaling(0);
 
 	BootWindow* win = MakeBootWindow();
+	win->initWADDirs();
 	win->rescanIWADs();
 	win->position((Fl::w() - win->w()) / 2, (Fl::h() - win->h()) / 2);
 	win->show();
