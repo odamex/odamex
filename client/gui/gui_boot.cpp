@@ -192,6 +192,7 @@ class BootWindow : public Fl_Window
 		std::iter_swap(boot->m_WADDirs.begin() + val, boot->m_WADDirs.begin() + val - 1);
 		boot->setWADDirs();
 		boot->updateWADDirBrowser();
+		boot->m_WADDirList->value(val);
 	}
 
 	static void doDirDownCB(Fl_Widget*, void* data)
@@ -205,6 +206,7 @@ class BootWindow : public Fl_Window
 		std::iter_swap(boot->m_WADDirs.begin() + val, boot->m_WADDirs.begin() + val + 1);
 		boot->setWADDirs();
 		boot->updateWADDirBrowser();
+		boot->m_WADDirList->value(val + 2);
 	}
 
 	/**
@@ -274,7 +276,7 @@ class BootWindow : public Fl_Window
  */
 static BootWindow* MakeBootWindow()
 {
-	return new BootWindow(0, 0, 425, 240, "Odamex 10.0.0");
+	return new BootWindow(0, 0, 425, 240, "Odamex " DOTVERSIONSTR);
 }
 
 /**
