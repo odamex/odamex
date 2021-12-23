@@ -238,7 +238,7 @@ void P_HordeClearSpawns()
  */
 static bool FitRadHeight(const mobjinfo_t& info, const int rad, const int height)
 {
-	return info.radius <= (rad * FRACUNIT) && info.height <= (rad * FRACUNIT);
+	return info.radius <= (rad * FRACUNIT) && info.height <= (height * FRACUNIT);
 }
 
 /**
