@@ -43,8 +43,13 @@
 #include "i_system.h"
 #include "w_ident.h"
 
+// -- Externals --
+
 void CL_QuitCommand();
+EXTERN_CVAR(i_skipbootwin);
 EXTERN_CVAR(waddirs);
+
+// ---------------
 
 const scannedIWAD_t* g_SelectedIWAD;
 
@@ -122,6 +127,8 @@ class BootWindow : public Fl_Window
 			Fl_Check_Button* notAgain =
 			    new Fl_Check_Button(10, 210, 20, 20, "Don\'t Show This Again");
 			notAgain->down_box(FL_DOWN_BOX);
+			notAgain->callback(BootWindow::doDontShowCB);
+			notAgain->value(::i_skipbootwin);
 		} // Fl_Check_Button* notAgain
 		{
 			Fl_Button* doQuit = new Fl_Button(275, 210, 65, 20, "Quit");
@@ -138,6 +145,12 @@ class BootWindow : public Fl_Window
 	// -- Game Select --
 
 	static void doCallback(Fl_Widget*, void*) { CL_QuitCommand(); }
+
+	static void doDontShowCB(Fl_Widget* w, void*)
+	{
+		Fl_Check_Button* check = static_cast<Fl_Check_Button*>(w);
+		::i_skipbootwin.Set(check->value());
+	}
 
 	static void doQuitCB(Fl_Widget*, void*) { CL_QuitCommand(); }
 

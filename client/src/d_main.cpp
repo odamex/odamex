@@ -144,6 +144,7 @@ EXTERN_CVAR (vid_widescreen)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_vsync)
 EXTERN_CVAR (g_resetinvonexit)
+EXTERN_CVAR (i_skipbootwin)
 
 std::string LOG_FILE;
 
@@ -765,9 +766,28 @@ void D_DoomMain()
 	{
 		iwad = iwadParam;
 	}
-	else
+	else if (!::i_skipbootwin)
 	{
-		iwad = GUI_BootWindow();
+		// Skip boot window if any of these params are passed.
+		const char* skipParams[] = {
+		    "+connect", "+demotest", "+map",      "+netplay", "+playdemo",
+		    "-file",    "-playdemo", "-timedemo", "-warp",
+		};
+
+		bool shouldSkip = false;
+		for (size_t i = 0; i < ARRAY_LENGTH(skipParams); i++)
+		{
+			if (Args.CheckValue(skipParams[i]))
+			{
+				shouldSkip = true;
+				break;
+			}
+		}
+
+		if (!shouldSkip)
+		{
+			iwad = GUI_BootWindow();
+		}
 	}
 
 	OWantFiles newwadfiles, newpatchfiles;
