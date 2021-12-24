@@ -33,13 +33,13 @@
 #include "FL/Fl_Check_Button.H"
 #include "FL/Fl_Hold_Browser.H"
 #include "FL/Fl_Native_File_Chooser.H"
-#include "FL/Fl_PNG_Image.H"
 #include "FL/Fl_Return_Button.H"
 #include "FL/Fl_Tabs.H"
 #include "FL/Fl_Window.H"
 #include "FL/fl_ask.H"
 
-#include "gui_resource.h"
+#include "gui_common.h"
+
 #include "i_system.h"
 #include "w_ident.h"
 
@@ -55,13 +55,6 @@ const scannedIWAD_t* g_SelectedIWAD;
 
 const int WINDOW_WIDTH = 320;
 const int WINDOW_HEIGHT = 240;
-
-static Fl_Image* image_icon_odamex_128()
-{
-	static Fl_Image* image = new Fl_PNG_Image("icon_odamex_128", __icon_odamex_128_png,
-	                                          __icon_odamex_128_png_len);
-	return image;
-}
 
 class BootWindow : public Fl_Window
 {
@@ -80,7 +73,7 @@ class BootWindow : public Fl_Window
 				Fl_Group* tabIWAD = new Fl_Group(0, 25, 425, 175, "Game Select");
 				{
 					Fl_Box* logo = new Fl_Box(10, 35, 115, 155);
-					logo->image(image_icon_odamex_128());
+					logo->image(GUIRes::icon_odamex_128());
 					logo->align(Fl_Align(512));
 				} // Fl_Box* logo
 				{
@@ -140,6 +133,7 @@ class BootWindow : public Fl_Window
 		} // Fl_Return_Button* doPlay
 		end();
 		callback(BootWindow::doCallback);
+		GUI_SetIcon(this);
 	}
 
 	// -- Game Select --
@@ -311,7 +305,7 @@ std::string GUI_BootWindow()
 	win->updateWADDirBrowser();
 	win->rescanIWADs();
 	win->position((Fl::w() - win->w()) / 2, (Fl::h() - win->h()) / 2);
-	win->show();
+	win->show(0, NULL);
 
 	// Blocks until the boot window has been closed.
 	Fl::run();
