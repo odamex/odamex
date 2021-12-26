@@ -50,6 +50,7 @@ struct identData_t
 	const char* md5Sum;
 	const char* groupName;
 	uint32_t flags;
+	int weight;
 };
 
 #define DOOMSW_PREFIX "DOOM Shareware"
@@ -72,7 +73,8 @@ static const identData_t identdata[] = {
         "EC8725DB",                         // crc32Sum
         "25E1459CA71D321525F84628F45CA8CD", // md5Sum
         DOOM2_PREFIX " v1.9",               // groupName
-        IDENT_COMMERCIAL | IDENT_IWAD       // flags
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        100,                                // weight
     },
     {
         DOOM2_PREFIX " BFG Edition",        // idName
@@ -81,6 +83,7 @@ static const identData_t identdata[] = {
         "C3BEA40570C23E511A7ED3EBCD9865F7", // md5Sum
         DOOM2_PREFIX " v1.9",               // groupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        150,                                // weight
     },
     {
         DOOM2_PREFIX " v1.8",                             // idName
@@ -89,6 +92,7 @@ static const identData_t identdata[] = {
         "C236745BB01D89BBB866C8FED81B6F8C",               // md5Sum
         DOOM2_PREFIX " v1.8",                             // groupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
+        1100,                                             // weight
     },
     {
         DOOM2_PREFIX " v1.8 French",                      // idName
@@ -97,6 +101,7 @@ static const identData_t identdata[] = {
         "3CB02349B3DF649C86290907EED64E7B",               // md5Sum
         DOOM2_PREFIX " v1.8 French",                      // groupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
+        1100,                                             // weight
     },
     {
         DOOM2_PREFIX " v1.7a",                            // mIdName
@@ -105,6 +110,7 @@ static const identData_t identdata[] = {
         "D7A07E5D3F4625074312BC299D7ED33F",               // md5Sum
         DOOM2_PREFIX " v1.7a",                            // groupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
+        1100,                                             // weight
     },
     {
         DOOM2_PREFIX " v1.7",                             // idName
@@ -113,6 +119,7 @@ static const identData_t identdata[] = {
         "EA74A47A791FDEF2E9F2EA8B8A9DA13B",               // md5Sum
         DOOM2_PREFIX " v1.7",                             // groupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
+        1100,                                             // weight
     },
     {
         DOOM2_PREFIX " v1.666",                           // idName
@@ -121,6 +128,7 @@ static const identData_t identdata[] = {
         "30E3C2D0350B67BFBF47271970B74B2F",               // md5Sum
         DOOM2_PREFIX " v1.666",                           // groupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
+        1100,                                             // weight
     },
     {
         DOOM2_PREFIX " v1.666 German",                    // idName
@@ -129,6 +137,7 @@ static const identData_t identdata[] = {
         "D9153CED9FD5B898B36CC5844E35B520",               // md5Sum
         DOOM2_PREFIX " v1.666 German",                    // groupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
+        1100,                                             // weight
     },
 
     // ------------------------------------------------------------------------
@@ -141,6 +150,7 @@ static const identData_t identdata[] = {
         "75C8CF89566741FA9D22447604053BD7", // mMd5Sum
         PLUTONIA_PREFIX " v1.9",            // groupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        300,                                // weight
     },
 
     // ------------------------------------------------------------------------
@@ -153,6 +163,7 @@ static const identData_t identdata[] = {
         "4E158D9953C79CCF97BD0663244CC6B6", // mMd5Sum
         TNT_PREFIX " v1.9",                 // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        300,                                // weight
     },
 
     // ------------------------------------------------------------------------
@@ -165,6 +176,7 @@ static const identData_t identdata[] = {
         "C4FE9FD920207691A9F493668E0A2083", // mMd5Sum
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        200,                                // weight
     },
     {
         UDOOM_PREFIX " BFG Edition",        // mIdName
@@ -173,6 +185,7 @@ static const identData_t identdata[] = {
         "FB35C4A5A9FD49EC29AB6E900572C524", // mMd5Sum
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        250,                                // weight
     },
     {
         DOOM_PREFIX " v1.9",                              // mIdName
@@ -181,6 +194,7 @@ static const identData_t identdata[] = {
         "1CD63C5DDFF1BF8CE844237F580E9CF3",               // mMd5Sum
         DOOM_PREFIX " v1.9",                              // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
+        1200,                                             // weight
     },
     {
         DOOM_PREFIX " v1.8",                              // mIdName
@@ -189,6 +203,7 @@ static const identData_t identdata[] = {
         "11E1CD216801EA2657723ABC86ECB01F",               // mMd5Sum
         DOOM_PREFIX " v1.8",                              // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
+        1200,                                             // weight
     },
     {
         DOOM_PREFIX " v1.666",                            // mIdName
@@ -197,6 +212,7 @@ static const identData_t identdata[] = {
         "54978D12DE87F162B9BCC011676CB3C0",               // mMd5Sum
         DOOM_PREFIX " v1.666",                            // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
+        1200,                                             // weight
     },
     {
         DOOM_PREFIX " v1.2",                              // mIdName
@@ -205,6 +221,7 @@ static const identData_t identdata[] = {
         "792FD1FEA023D61210857089A7C1E351",               // mMd5Sum
         DOOM_PREFIX " v1.2",                              // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
+        1200,                                             // weight
     },
     {
         DOOM_PREFIX " v1.1",                              // mIdName
@@ -213,6 +230,7 @@ static const identData_t identdata[] = {
         "981B03E6D1DC033301AA3095ACC437CE",               // mMd5Sum
         DOOM_PREFIX " v1.1",                              // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
+        1200,                                             // weight
     },
 
     // ------------------------------------------------------------------------
@@ -225,6 +243,7 @@ static const identData_t identdata[] = {
         "F0CEFCA49926D00903CF57551D901ABE", // mMd5Sum
         DOOMSW_PREFIX " v1.9",              // mGroupName
         IDENT_IWAD,                         // flags
+        400,                                // weight
     },
     {
         DOOMSW_PREFIX " v1.8",              // mIdName
@@ -233,6 +252,7 @@ static const identData_t identdata[] = {
         "5F4EB849B1AF12887DEC04A2A12E5E62", // mMd5Sum
         DOOMSW_PREFIX " v1.8",              // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1400,                               // weight
     },
     {
         DOOMSW_PREFIX " v1.6",              // mIdName
@@ -241,6 +261,7 @@ static const identData_t identdata[] = {
         "762FD6D4B960D4B759730F01387A50A1", // mMd5Sum
         DOOMSW_PREFIX " v1.6",              // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1400,                               // weight
     },
     {
         DOOMSW_PREFIX " v1.5",              // mIdName
@@ -249,6 +270,7 @@ static const identData_t identdata[] = {
         "E280233D533DCC28C1ACD6CCDC7742D4", // mMd5Sum
         DOOMSW_PREFIX " v1.5",              // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1400,                               // weight
     },
     {
         DOOMSW_PREFIX " v1.4",              // mIdName
@@ -257,6 +279,7 @@ static const identData_t identdata[] = {
         "A21AE40C388CB6F2C3CC1B95589EE693", // mMd5Sum
         DOOMSW_PREFIX " v1.4",              // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1400,                               // weight
     },
     {
         DOOMSW_PREFIX " v1.2",              // mIdName
@@ -265,6 +288,7 @@ static const identData_t identdata[] = {
         "30AA5BEB9E5EBFBBE1E1765561C08F38", // mMd5Sum
         DOOMSW_PREFIX " v1.2",              // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1400,                               // weight
     },
     {
         DOOMSW_PREFIX " v1.1",              // mIdName
@@ -273,6 +297,7 @@ static const identData_t identdata[] = {
         "52CBC8882F445573CE421FA5453513C1", // mMd5Sum
         DOOMSW_PREFIX " v1.1",              // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1400,                               // weight
     },
     {
         DOOMSW_PREFIX " v1.0",              // mIdName
@@ -281,6 +306,7 @@ static const identData_t identdata[] = {
         "90FACAB21EEDE7981BE10790E3F82DA2", // mMd5Sum
         DOOMSW_PREFIX " v1.0",              // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1400,                               // weight
     },
 
     // ------------------------------------------------------------------------
@@ -293,6 +319,7 @@ static const identData_t identdata[] = {
         "B36AA44A23045E503C19AF4B4C438A78", // mMd5Sum
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD,                         // flags
+        525,                                // weight
     },
     {
         FREEDOOM1_PREFIX " v0.12.0",        // mIdName
@@ -301,6 +328,7 @@ static const identData_t identdata[] = {
         "0C5F8FF45CC3538D368A0F8D8FC11CE3", // mMd5Sum
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1525,                               // weight
     },
     {
         FREEDOOM1_PREFIX " v0.11.3",        // mIdName
@@ -309,6 +337,7 @@ static const identData_t identdata[] = {
         "EA471A3D38FCEE0FB3A69BCD3221E335", // mMd5Sum
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1525,                               // weight
     },
     {
         FREEDOOM1_PREFIX " v0.11.2",        // mIdName
@@ -317,6 +346,7 @@ static const identData_t identdata[] = {
         "6D00C49520BE26F08A6BD001814A32AB", // mMd5Sum
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1525,                               // weight
     },
     {
         FREEDOOM1_PREFIX " v0.11.1",        // mIdName
@@ -325,6 +355,7 @@ static const identData_t identdata[] = {
         "35312E99D2473297AABE0602700BEE8A", // mMd5Sum
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1525,                               // weight
     },
     {
         FREEDOOM1_PREFIX " v0.11",          // mIdName
@@ -333,6 +364,7 @@ static const identData_t identdata[] = {
         "21A4707FC25D29EDF4B098BD400C5C42", // mMd5Sum
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1525,                               // weight
     },
     {
         FREEDOOM1_PREFIX " v0.10.1",        // mIdName
@@ -341,6 +373,7 @@ static const identData_t identdata[] = {
         "91DE79621A393A08C39A9AB2C034B766", // mMd5Sum
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1525,                               // weight
     },
     {
         FREEDOOM1_PREFIX " v0.10",          // mIdName
@@ -349,6 +382,7 @@ static const identData_t identdata[] = {
         "9B8D72B59FD93B2B3E116149BAA1B142", // mMd5Sum
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1525,                               // weight
     },
     {
         FREEDOOM1_PREFIX " v0.9",           // mIdName
@@ -357,6 +391,7 @@ static const identData_t identdata[] = {
         "ACA90CF5AC36E996EDC58BD0329B979A", // mMd5Sum
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1525,                               // weight
     },
     {
         FREEDOOM1_PREFIX " v0.8",           // mIdName
@@ -365,6 +400,7 @@ static const identData_t identdata[] = {
         "30095B256DD3A1566BBC30286F72BC47", // mMd5Sum
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1525,                               // weight
     },
 
     // ------------------------------------------------------------------------
@@ -377,6 +413,7 @@ static const identData_t identdata[] = {
         "CA9A4159A7833544A89144C7F5053412", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD,                         // flags
+        500,                                // weight
     },
     {
         FREEDOOM2_PREFIX " v0.12.0",        // mIdName
@@ -385,6 +422,7 @@ static const identData_t identdata[] = {
         "83560B2963424FA4A2EB971194428BF8", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1500,                               // weight
     },
     {
         FREEDOOM2_PREFIX " v0.11.3",        // mIdName
@@ -393,6 +431,7 @@ static const identData_t identdata[] = {
         "984F99AF08F085E38070F51095AB7C31", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1500,                               // weight
     },
     {
         FREEDOOM2_PREFIX " v0.11.2",        // mIdName
@@ -401,6 +440,7 @@ static const identData_t identdata[] = {
         "90832A872B5BB0ACA4CA0B20419AAD5D", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1500,                               // weight
     },
     {
         FREEDOOM2_PREFIX " v0.11.1",        // mIdName
@@ -409,6 +449,7 @@ static const identData_t identdata[] = {
         "EC5B38B30BA2B70E278205776AF3FBB5", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1500,                               // weight
     },
     {
         FREEDOOM2_PREFIX " v0.11",          // mIdName
@@ -417,6 +458,7 @@ static const identData_t identdata[] = {
         "B1018017C61B06E33C11102D8BAFAAD0", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1500,                               // weight
     },
     {
         FREEDOOM2_PREFIX " v0.10.1",        // mIdName
@@ -425,6 +467,7 @@ static const identData_t identdata[] = {
         "DD9C9E73F5F50D3778C85573CD08D9A4", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1500,                               // weight
     },
     {
         FREEDOOM2_PREFIX " v0.10",          // mIdName
@@ -433,6 +476,7 @@ static const identData_t identdata[] = {
         "C5A4F2D38D78B251D8557CB2D93E40EE", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1500,                               // weight
     },
     {
         FREEDOOM2_PREFIX " v0.9",           // mIdName
@@ -441,6 +485,7 @@ static const identData_t identdata[] = {
         "8FA57DBC7687F84528EBA39DDE3A20E0", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1500,                               // weight
     },
     {
         FREEDOOM2_PREFIX " v0.8",           // mIdName
@@ -449,6 +494,7 @@ static const identData_t identdata[] = {
         "E3668912FC37C479B2840516C887018B", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1500,                               // weight
     },
 
     // ------------------------------------------------------------------------
@@ -461,6 +507,7 @@ static const identData_t identdata[] = {
         "D40C932A9183DED919AFA89F4A729668", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD,                         // flags
+        550,                                // weight
     },
     {
         FREEDM_PREFIX " v0.12.0",           // mIdName
@@ -469,6 +516,7 @@ static const identData_t identdata[] = {
         "3250AAD8B1D40FB7B25B7DF6573EB29F", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1550,                               // weight
     },
     {
         FREEDM_PREFIX " v0.11.3",           // mIdName
@@ -477,6 +525,7 @@ static const identData_t identdata[] = {
         "87EE2494D921633420CE9BDB418127C4", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1550,                               // weight
     },
     {
         FREEDM_PREFIX " v0.11.2",           // mIdName
@@ -485,6 +534,7 @@ static const identData_t identdata[] = {
         "9352B09AE878DC52C6C18AA38ACDA6EB", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1550,                               // weight
     },
     {
         FREEDM_PREFIX " v0.11.1",           // mIdName
@@ -493,6 +543,7 @@ static const identData_t identdata[] = {
         "77BA9C0F75C32E4A729490688BB99241", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1550,                               // weight
     },
     {
         FREEDM_PREFIX " v0.11",             // mIdName
@@ -501,6 +552,7 @@ static const identData_t identdata[] = {
         "D76D3973C075B069ECB4E16DC9EACBB4", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1550,                               // weight
     },
     {
         FREEDM_PREFIX " v0.10.1",           // mIdName
@@ -509,6 +561,7 @@ static const identData_t identdata[] = {
         "BD4F359F1963E388BEDA014C5548B420", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1550,                               // weight
     },
     {
         FREEDM_PREFIX " v0.10",             // mIdName
@@ -517,6 +570,7 @@ static const identData_t identdata[] = {
         "F37B8B70E1394289A7EC404F67CDEC1A", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1550,                               // weight
     },
     {
         FREEDM_PREFIX " v0.9",              // mIdName
@@ -525,6 +579,7 @@ static const identData_t identdata[] = {
         "CBB27C5F3C2C44D34843CF63DAA627F6", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1550,                               // weight
     },
     {
         FREEDM_PREFIX " v0.8",              // mIdName
@@ -533,6 +588,7 @@ static const identData_t identdata[] = {
         "05859098BF191899903EF343AFBA369D", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1550,                               // weight
     },
 
     // ------------------------------------------------------------------------
@@ -545,6 +601,7 @@ static const identData_t identdata[] = {
         "25485721882B050AFA96A56E5758DD52", // mMd5Sum
         "Chex Quest",                       // mGroupName
         IDENT_IWAD,                         // flags
+        600,                                // weight
     },
 
     // ------------------------------------------------------------------------
@@ -557,6 +614,7 @@ static const identData_t identdata[] = {
         "65ED74D522BDF6649C2831B13B9E02B4", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD,                         // flags
+        600,                                // weight
     }};
 
 
@@ -642,7 +700,7 @@ public:
 	//
 	void addFile(const OString& idname, const OString& filename, const OString& crc32,
 	             const OString& md5, const OString& group, bool commercial,
-	             bool iwad = true, bool deprecated = false)
+	             const bool iwad, const bool deprecated, const int weight)
 	{
 		OCRC32Sum crc32Hash;
 		OCRC32Sum::makeFromHexStr(crc32Hash, crc32);
@@ -660,6 +718,7 @@ public:
 		file->mIsCommercial = commercial;
 		file->mIsIWAD = iwad;
 		file->mIsDeprecated = deprecated;
+		file->weight = weight;
 
 		if (!crc32Hash.empty())
 		{
@@ -914,7 +973,8 @@ void W_SetupFileIdentifiers()
 		const identData_t& data = ::identdata[i];
 		::identtab.addFile(data.idName, data.filename, data.crc32Sum, data.md5Sum,
 		                   data.groupName, data.flags & IDENT_COMMERCIAL,
-		                   data.flags & IDENT_IWAD, data.flags & IDENT_DEPRECATED);
+		                   data.flags & IDENT_IWAD, data.flags & IDENT_DEPRECATED,
+		                   data.weight);
 	}
 }
 

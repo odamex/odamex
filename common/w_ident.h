@@ -39,6 +39,7 @@ struct fileIdentifier_t
 	bool mIsCommercial;
 	bool mIsIWAD;
 	bool mIsDeprecated;
+	int weight;
 };
 
 void W_SetupFileIdentifiers();

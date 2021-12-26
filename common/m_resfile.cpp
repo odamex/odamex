@@ -356,6 +356,17 @@ std::vector<scannedIWAD_t> M_ScanIWADs()
 		}
 	}
 
+	struct
+	{
+		bool operator()(const scannedIWAD_t& a, const scannedIWAD_t& b)
+		{
+			return a.id->weight < b.id->weight;
+		}
+	} ScanIWADCmp;
+
+	// Sort the results by weight.
+	std::sort(rvo.begin(), rvo.end(), ScanIWADCmp);
+
 	return rvo;
 }
 
