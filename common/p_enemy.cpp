@@ -2279,7 +2279,7 @@ void A_JumpIfHealthBelow(AActor* actor)
 	health = actor->state->args[1];
 
 	if (actor->health < health)
-		P_SetMobjState(actor, (statenum_t)state);
+		P_SetMobjState(actor, (statenum_t)state, true);
 }
 
 //
@@ -2305,7 +2305,7 @@ void A_JumpIfTargetInSight(AActor* actor)
 		return;
 
 	if (P_CheckSight(actor, actor->target))
-		P_SetMobjState(actor, (statenum_t)state);
+		P_SetMobjState(actor, (statenum_t)state, true);
 }
 
 
@@ -2327,7 +2327,7 @@ void A_JumpIfTargetCloser(AActor* actor)
 
 	if (distance >
 	    P_AproxDistance(actor->x - actor->target->x, actor->y - actor->target->y))
-		P_SetMobjState(actor, (statenum_t)state);
+		P_SetMobjState(actor, (statenum_t)state, true);
 }
 
 //
@@ -2356,7 +2356,7 @@ void A_JumpIfTracerInSight(AActor* actor)
 		return;
 
 	if (P_CheckSight(actor, actor->tracer))
-		P_SetMobjState(actor, (statenum_t)state);
+		P_SetMobjState(actor, (statenum_t)state, true);
 }
 
 //
@@ -2381,7 +2381,7 @@ void A_JumpIfTracerCloser(AActor* actor)
 
 	if (distance >
 		P_AproxDistance(actor->x - actor->tracer->x, actor->y - actor->tracer->y))
-		P_SetMobjState(actor, (statenum_t)state);
+		P_SetMobjState(actor, (statenum_t)state, true);
 }
 
 //
@@ -2404,7 +2404,7 @@ void A_JumpIfFlagsSet(AActor* actor)
 	flags2 = actor->state->args[2];
 
 	if ((actor->flags & flags) == flags && (actor->flags2 & flags2) == flags2)
-		P_SetMobjState(actor, (statenum_t)state);
+		P_SetMobjState(actor, (statenum_t)state, true);
 }
 
 
