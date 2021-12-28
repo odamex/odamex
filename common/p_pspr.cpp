@@ -1132,9 +1132,11 @@ void A_WeaponSound(AActor *mo)
 		return;
 
 	if (psp->state->args[1])
-		S_Sound(CHAN_WEAPON, SoundMap[psp->state->args[0]], 1, ATTN_NORM);
+		UV_SoundAvoidPlayer(player->mo, CHAN_WEAPON, SoundMap[psp->state->args[0]],
+		                    ATTN_NONE);
 	else
-		S_Sound(player->mo, CHAN_WEAPON, SoundMap[psp->state->args[0]], 1, ATTN_NORM);
+		UV_SoundAvoidPlayer(player->mo, CHAN_WEAPON, SoundMap[psp->state->args[0]],
+		                    ATTN_NORM);
 }
 
 
