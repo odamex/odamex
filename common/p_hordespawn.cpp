@@ -172,10 +172,9 @@ static AActors SpawnMonsterGroup(hordeSpawn_t& spawn, const hordeRecipe_t& recip
 
 	if (ret.size() < count)
 	{
-		Printf(PRINT_WARNING,
-		       "Spawned %" PRIuSIZE "/%d of type %s at a %s spawn (%f, %f).\n",
-		       ret.size(), count, name, HordeThingStr(spawn.type),
-		       FIXED2FLOAT(spawn.mo->x), FIXED2FLOAT(spawn.mo->y));
+		DPrintf("Partial spawn %" PRIuSIZE "/%d of type %s at a %s spawn (%f, %f).\n",
+		        ret.size(), count, name, HordeThingStr(spawn.type),
+		        FIXED2FLOAT(spawn.mo->x), FIXED2FLOAT(spawn.mo->y));
 	}
 
 	return ret;
@@ -238,7 +237,7 @@ void P_HordeClearSpawns()
  */
 static bool FitRadHeight(const mobjinfo_t& info, const int rad, const int height)
 {
-	return info.radius <= (rad * FRACUNIT) && info.height <= (rad * FRACUNIT);
+	return info.radius <= (rad * FRACUNIT) && info.height <= (height * FRACUNIT);
 }
 
 /**
@@ -348,8 +347,7 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 	// Did we find any spawns?
 	if (weights.empty())
 	{
-		Printf(PRINT_WARNING, "Could not find a spawn point (boss:%s).\n",
-		       recipe.isBoss ? "y" : "n");
+		// Error is printed in parent.
 		return NULL;
 	}
 

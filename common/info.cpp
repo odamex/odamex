@@ -7614,6 +7614,14 @@ void D_Init_DEHEXTRA_Frames(void)
 		dehextrastates[i].misc1 = 0;
 		dehextrastates[i].misc2 = 0;
 		dehextrastates[i].flags = STATEF_NONE;
+		dehextrastates[i].args[0] = 0;
+		dehextrastates[i].args[1] = 0;
+		dehextrastates[i].args[2] = 0;
+		dehextrastates[i].args[3] = 0;
+		dehextrastates[i].args[4] = 0;
+		dehextrastates[i].args[5] = 0;
+		dehextrastates[i].args[6] = 0;
+		dehextrastates[i].args[7] = 0;
 	}
 
 	// [Blair] Combine all the state tables.
@@ -7640,8 +7648,17 @@ void D_Init_DEHEXTRA_Frames(void)
 			states[i].nextstate = (statenum_t)(i + 1);
 			states[i].misc1 = 0;
 			states[i].misc2 = 0;
-			states[i].flags = STATEF_NONE;
 		}
+
+		states[i].flags = STATEF_NONE;
+		states[i].args[0] = 0;
+		states[i].args[1] = 0;
+		states[i].args[2] = 0;
+		states[i].args[3] = 0;
+		states[i].args[4] = 0;
+		states[i].args[5] = 0;
+		states[i].args[6] = 0;
+		states[i].args[7] = 0;
 	}
 
 	// NIGHTMARE! stuff
