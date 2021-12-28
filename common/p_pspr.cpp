@@ -1110,7 +1110,8 @@ void A_WeaponMeleeAttack(AActor* mo)
 		return;
 
 	// un-missed!
-	S_Sound(player->mo, CHAN_WEAPON, SoundMap[hitsound], 1, ATTN_NORM);
+	UV_SoundAvoidPlayer(player->mo, CHAN_WEAPON, SoundMap[hitsound],
+	                    ATTN_NORM);
 
 	// turn to face target
 	player->mo->angle =
