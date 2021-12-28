@@ -3148,12 +3148,12 @@ void A_PlaySound(AActor* mo)
 		sndmap = 0;
 	}
 
-	S_Sound(
-		(mo->state->misc2 ? NULL : mo),
-		CHAN_BODY, 
-		SoundMap[mo->state->misc1],
-		1,
-		ATTN_NORM);
+	if (!clientside)
+		SV_Sound(mo, CHAN_BODY, SoundMap[sndmap],
+		         (!mo->state->misc2 ? ATTN_NORM : ATTN_NONE));
+	else
+		S_Sound(mo, CHAN_BODY, SoundMap[sndmap], 1,
+		        (!mo->state->misc2 ? ATTN_NORM : ATTN_NONE));
 }
 
 void A_RandomJump(AActor* mo)
