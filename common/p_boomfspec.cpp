@@ -3,7 +3,6 @@
 //
 // $Id$
 //
-// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -2627,74 +2626,121 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	case 45:
 		// Lower Floor to Surrounding floor height
-		if (EV_DoFloor(line, lowerFloor))
-			P_ChangeSwitchTexture(line, 1);
+		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_SLOW),
+		               (128 - 128) * FRACUNIT, 0, 0))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 60:
 		// Lower Floor to Lowest
-		if (EV_DoFloor(line, lowerFloorToLowest))
-			P_ChangeSwitchTexture(line, 1);
+		if (EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
+		               0))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 61:
 		// Open Door
-		if (EV_DoDoor(line, openDoor))
-			P_ChangeSwitchTexture(line, 1);
+		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 62:
 		// PlatDownWaitUpStay
-		if (EV_DoPlat(line, downWaitUpStay, 1))
-			P_ChangeSwitchTexture(line, 1);
+		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_FAST),
+		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 63:
 		// Raise Door
-		if (EV_DoDoor(line, normal))
-			P_ChangeSwitchTexture(line, 1);
+		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_SLOW),
+		              TICS(VDOORWAIT), NoKey))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 64:
 		// Raise Floor to ceiling
-		if (EV_DoFloor(line, raiseFloor))
-			P_ChangeSwitchTexture(line, 1);
+		if (EV_DoFloor(DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW),
+		               0, 0, 0))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 66:
 		// Raise Floor 24 and change texture
-		if (EV_DoPlat(line, raiseAndChange, 24))
-			P_ChangeSwitchTexture(line, 1);
+		if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 3 * 8,
+		              SPEED(P_SLOW / 2), 0, 0, 2))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 67:
 		// Raise Floor 32 and change texture
-		if (EV_DoPlat(line, raiseAndChange, 32))
-			P_ChangeSwitchTexture(line, 1);
+		if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 4 * 8,
+		              SPEED(P_SLOW / 2), 0, 0, 2))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 65:
 		// Raise Floor Crush
-		if (EV_DoFloor(line, raiseFloorCrush))
-			P_ChangeSwitchTexture(line, 1);
+		if (EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(F_SLOW), 0, true,
+		               0))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 68:
 		// Raise Plat to next highest floor and change texture
-		if (EV_DoPlat(line, raiseToNearestAndChange, 0))
-			P_ChangeSwitchTexture(line, 1);
+		if (EV_DoPlat(line->id, line, DPlat::platRaiseAndStay, 0, SPEED(P_SLOW / 2), 0, 0,
+		              1))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 69:
 		// Raise Floor to next highest floor
-		if (EV_DoFloor(line, raiseFloorToNearest))
-			P_ChangeSwitchTexture(line, 1);
+		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0,
+		               0))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 70:
 		// Turbo Lower Floor
-		if (EV_DoFloor(line, turboLower))
-			P_ChangeSwitchTexture(line, 1);
+		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_FAST),
+		               (136 - 128) * FRACUNIT, 0, 0))
+		{
+			result.lineexecuted = true;
+			result.switchchanged = true;
+		}
 		break;
 
 	case 114:
