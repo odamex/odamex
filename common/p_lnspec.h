@@ -657,6 +657,11 @@ typedef enum {
 // Texture scrollers operate at a rate of x/64 units per tic.
 #define SCROLL_UNIT 64
 
+#define SPEED(a) ((a) * (FRACUNIT / 8))
+#define TICS(a) (((a)*TICRATE) / 35)
+#define OCTICS(a) (((a)*TICRATE) / 8)
+#define BYTEANGLE(a) ((angle_t)((a) << 24))
+
 // define names for the TriggerType field of the general linedefs
 
 typedef enum

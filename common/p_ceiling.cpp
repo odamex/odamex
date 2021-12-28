@@ -922,7 +922,7 @@ manual_ceiling:
 		case DCeiling::ceilCrushRaiseAndStay:
 			ceiling->m_TopHeight = ceilingheight;
 		case DCeiling::ceilLowerAndCrush:
-			ceiling->m_Crush = crush;
+			ceiling->m_Crush = crush ? DOOM_CRUSH : NO_CRUSH;
 			targheight = ceiling->m_BottomHeight = floorheight + 8*FRACUNIT;
 			ceiling->m_Direction = -1;
 			break;

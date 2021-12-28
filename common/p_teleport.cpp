@@ -156,6 +156,7 @@ BOOL EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop
 	player_t	*player;
 
 	// don't teleport missiles
+	// TODO: Allow projectile activated missiles to teleport
 	if (thing->flags & MF_MISSILE)
 		return false;
 
@@ -236,7 +237,6 @@ bool EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int f
 	unsigned an;
 
 	// don't teleport missiles
-	// TODO: Allow projectile activated missiles to teleport
 	if (thing->flags & MF_MISSILE)
 		return false;
 
