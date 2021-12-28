@@ -1132,8 +1132,16 @@ void A_WeaponSound(AActor *mo)
 	if (!psp->state)
 		return;
 
-	UV_SoundAvoidPlayer(player->mo, CHAN_WEAPON, SoundMap[psp->state->args[0]],
-		                (psp->state->args[1] ? ATTN_NONE : ATTN_NORM));
+	int sndmap = psp->state->args[0];
+
+	if (sndmap >= ARRAY_LENGTH(SoundMap))
+	{
+		DPrintf("Warning: Weapon Sound ID is beyond the array of the Sound Map!\n");
+		sndmap = 0;
+	}
+
+	UV_SoundAvoidPlayer(player->mo, CHAN_WEAPON, SoundMap[sndmap],
+	                    (psp->state->args[1] ? ATTN_NONE : ATTN_NORM));
 }
 
 
