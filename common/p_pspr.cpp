@@ -1084,6 +1084,12 @@ void A_WeaponMeleeAttack(AActor* mo)
 	hitsound = psp->state->args[3];
 	range = psp->state->args[4];
 
+	if (hitsound >= ARRAY_LENGTH(SoundMap))
+	{
+		DPrintf("Warning: Weapon Melee Hitsound ID is beyond the array of the Sound Map!\n");
+		hitsound = 0;
+	}
+
 	if (range <= 0)
 		range = player->mo->info->meleerange;
 
