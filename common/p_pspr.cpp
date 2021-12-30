@@ -1084,6 +1084,12 @@ void A_WeaponMeleeAttack(AActor* mo)
 	hitsound = psp->state->args[3];
 	range = psp->state->args[4];
 
+	if (hitsound >= ARRAY_LENGTH(SoundMap))
+	{
+		DPrintf("Warning: Weapon Melee Hitsound ID is beyond the array of the Sound Map!\n");
+		hitsound = 0;
+	}
+
 	if (range <= 0)
 		range = player->mo->info->meleerange;
 
@@ -1110,7 +1116,8 @@ void A_WeaponMeleeAttack(AActor* mo)
 		return;
 
 	// un-missed!
-	S_Sound(player->mo, CHAN_WEAPON, SoundMap[hitsound], 1, ATTN_NORM);
+	UV_SoundAvoidPlayer(player->mo, CHAN_WEAPON, SoundMap[hitsound],
+	                    ATTN_NORM);
 
 	// turn to face target
 	player->mo->angle =
@@ -1131,10 +1138,16 @@ void A_WeaponSound(AActor *mo)
 	if (!psp->state)
 		return;
 
-	if (psp->state->args[1])
-		S_Sound(CHAN_WEAPON, SoundMap[psp->state->args[0]], 1, ATTN_NORM);
-	else
-		S_Sound(player->mo, CHAN_WEAPON, SoundMap[psp->state->args[0]], 1, ATTN_NORM);
+	int sndmap = psp->state->args[0];
+
+	if (sndmap >= ARRAY_LENGTH(SoundMap))
+	{
+		DPrintf("Warning: Weapon Sound ID is beyond the array of the Sound Map!\n");
+		sndmap = 0;
+	}
+
+	UV_SoundAvoidPlayer(player->mo, CHAN_WEAPON, SoundMap[sndmap],
+	                    (psp->state->args[1] ? ATTN_NONE : ATTN_NORM));
 }
 
 
