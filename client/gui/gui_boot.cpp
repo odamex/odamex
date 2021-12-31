@@ -315,8 +315,8 @@ static BootWindow* MakeBootWindow()
  */
 std::string GUI_BootWindow()
 {
-	// Scale according to 720p.
-	Fl::screen_scale(0, Fl::h() / 720.0f);
+	// Scale according to 1600x900.
+	Fl::screen_scale(0, MAX(Fl::h() / 900.0f, 1.0f));
 
 	// This feature is too clever by half, and in my experience just
 	// deforms the window.
