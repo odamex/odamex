@@ -47,7 +47,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	lineresult_s result;
 
 	result.lineexecuted = false;
-	result.switchchanged = false;
+	result.switchchanged = false; // Cross doesn't activate a switch
 
 	int ok;
 
@@ -255,192 +255,295 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 2:
 		// Open Door
-		if (EV_DoDoor(line, openDoor) || demoplayback)
+		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 3:
 		// Close Door
-		if (EV_DoDoor(line, closeDoor) || demoplayback)
+		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 4:
 		// Raise Door
-		if (EV_DoDoor(line, normal) || demo_compatibility)
+		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_SLOW),
+		              TICS(VDOORWAIT), NoKey))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 5:
 		// Raise Floor
-		if (EV_DoFloor(line, raiseFloor) || demo_compatibility)
+		if (EV_DoFloor(DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW),
+		               0, 0, 0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 6:
 		// Fast Ceiling Crush & Raise
-		if (EV_DoCeiling(line, fastCrushAndRaise) || demo_compatibility)
+		if (EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_NORMAL),
+		                 SPEED(C_NORMAL), 0, true, 0, 0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 8:
 		// Build Stairs
-		if (EV_BuildStairs(line, build8) || demo_compatibility)
+		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT, SPEED(S_SLOW),
+		                   TICS(0), 0, 0, 0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 10:
 		// PlatDownWaitUp
-		if (EV_DoPlat(line, downWaitUpStay, 0) || demo_compatibility)
+		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_FAST),
+		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 12:
 		// Light Turn On - brightest near
-		if (EV_LightTurnOn(line, 0) || demo_compatibility)
+		if (EV_LightTurnOn(line->id, -1))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 13:
 		// Light Turn On 255
-		if (EV_LightTurnOn(line, 255) || demo_compatibility)
+		if (EV_LightTurnOn(line, 255))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 16:
 		// Close Door 30
-		if (EV_DoDoor(line, close30ThenOpen) || demo_compatibility)
+		if (EV_DoDoor(DDoor::doorCloseWaitOpen, line, thing, line->id, SPEED(D_SLOW),
+		              OCTICS(240), NoKey))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 17:
 		// Start Light Strobing
-		if (EV_StartLightStrobing(line) || demo_compatibility)
+		if (EV_StartLightStrobing(line->id, TICS(5), TICS(35)))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 19:
 		// Lower Floor
-		if (EV_DoFloor(line, lowerFloor) || demo_compatibility)
+		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_SLOW),
+		               (128 - 128) * FRACUNIT, 0, 0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 22:
 		// Raise floor to nearest height and change texture
-		if (EV_DoPlat(line, raiseToNearestAndChange, 0) || demo_compatibility)
+		if (EV_DoPlat(line->id, line, DPlat::platRaiseAndStay, 0, SPEED(P_SLOW / 2), 0, 0,
+		              1))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 25:
 		// Ceiling Crush and Raise
-		if (EV_DoCeiling(line, crushAndRaise) || demo_compatibility)
+		if (EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_SLOW),
+		                 SPEED(C_SLOW), 0, true, 0, 0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 30:
 		// Raise floor to shortest texture height
 		//  on either side of lines.
-		if (EV_DoFloor(line, raiseToTexture) || demo_compatibility)
+		if (EV_DoFloor(DFloor::floorRaiseByTexture, line, line->id, SPEED(F_SLOW), 0, 0,
+		               0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 35:
 		// Lights Very Dark
-		if (EV_LightTurnOn(line, 35) || demo_compatibility)
+		if (EV_LightTurnOn(line->id, 35))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 36:
 		// Lower Floor (TURBO)
-		if (EV_DoFloor(line, turboLower) || demo_compatibility)
+		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_FAST),
+		               (136 - 128) * FRACUNIT, 0, 0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 37:
 		// LowerAndChange
-		if (EV_DoFloor(line, lowerAndChange) || demo_compatibility)
+		if (EV_DoFloor(DFloor::floorLowerAndChange, line, line->id, SPEED(F_SLOW),
+		               0 * FRACUNIT, 0, 0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 38:
 		// Lower Floor To Lowest
-		if (EV_DoFloor(line, lowerFloorToLowest) || demo_compatibility)
+		if (EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
+		               0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 39:
 		// TELEPORT! //jff 02/09/98 fix using up with wrong side crossing
-		if (map_format.ev_teleport(line->tag, line, side, thing, TELF_VANILLA) ||
-		    demo_compatibility)
+		if (EV_CompatibleTeleport(line->id, line, side, thing, TELF_VANILLA))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 40:
 		// RaiseCeilingLowerFloor
-		if (demo_compatibility)
-		{
-			EV_DoCeiling(line, raiseToHighest);
-			EV_DoFloor(line, lowerFloorToLowest); // jff 02/12/98 doesn't work
-			line->special = 0;
-		}
-		else if (EV_DoCeiling(line, raiseToHighest))
-			line->special = 0;
+		EV_DoCeiling(DCeiling::ceilRaiseToHighest, line, line->id, SPEED(C_SLOW), 0, 0, 0,
+		             0, 0);
+		EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
+		           0); // jff 02/12/98 doesn't work
+		result.lineexecuted = true;
+		line->special = 0;
 		break;
 
 	case 44:
 		// Ceiling Crush
-		if (EV_DoCeiling(line, lowerAndCrush) || demo_compatibility)
+		if (EV_DoCeiling(DCeiling::ceilLowerAndCrush, line, line->id, SPEED(C_SLOW),
+		                 SPEED(C_SLOW) / 2, 0, true, 0, 0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 52:
 		// EXIT!
 		// killough 10/98: prevent zombies from exiting levels
 		if (bossaction ||
-		    (!(thing->player && thing->player->health <= 0 && !comp[comp_zombie])))
-			G_ExitLevel();
+		    ((!(thing->player && thing->player->health <= 0 && thing->player->spectator)) && 
+			CheckIfExitIsGood(thing)))
+		{
+			result.lineexecuted = true;
+			G_ExitLevel(0, 1);
+		}
 		break;
 
 	case 53:
 		// Perpetual Platform Raise
-		if (EV_DoPlat(line, perpetualRaise, 0) || demo_compatibility)
+		if (EV_DoPlat(line->id, line, DPlat::platPerpetualRaise, 0, SPEED(P_SLOW),
+		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 54:
 		// Platform Stop
-		if (EV_StopPlat(line) || demo_compatibility)
+		if (EV_StopPlat(line->id))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 56:
 		// Raise Floor Crush
-		if (EV_DoFloor(line, raiseFloorCrush) || demo_compatibility)
+		if (EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(F_SLOW), 0, true,
+		               0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 57:
 		// Ceiling Crush Stop
-		if (EV_CeilingCrushStop(line) || demo_compatibility)
+		if (EV_CeilingCrushStop(line->id))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 58:
 		// Raise Floor 24
-		if (EV_DoFloor(line, raiseFloor24) || demo_compatibility)
+		if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
+		               FRACUNIT * 24, 0, 0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 59:
 		// Raise Floor 24 And Change
-		if (EV_DoFloor(line, raiseFloor24AndChange) || demo_compatibility)
+		if (EV_DoFloor(DFloor::floorRaiseAndChange, line, line->id, SPEED(F_SLOW),
+		               24 * FRACUNIT, 0, 0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 100:
 		// Build Stairs Turbo 16
-		if (EV_BuildStairs(line, turbo16) || demo_compatibility)
+		if (EV_BuildStairs(line, turbo16))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 104:
@@ -491,8 +594,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 125:
 		// TELEPORT MonsterONLY
 		if (!thing->player &&
-		    (map_format.ev_teleport(line->tag, line, side, thing, TELF_VANILLA) ||
-		     demo_compatibility))
+		    (map_format.ev_teleport(line->tag, line, side, thing, TELF_VANILLA)))
 			line->special = 0;
 		break;
 
