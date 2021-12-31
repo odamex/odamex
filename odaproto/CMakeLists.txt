@@ -34,5 +34,5 @@ source_group("Definitions" FILES ${ODAPROTO_PROTOS})
 source_group("Generated" FILES ${ODAPROTO_SOURCES})
 
 add_library(odaproto STATIC ${ODAPROTO_SOURCES} ${ODAPROTO_PROTOS})
-target_include_directories(odaproto PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+target_include_directories(odaproto SYSTEM PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries(odaproto protobuf::libprotobuf)
