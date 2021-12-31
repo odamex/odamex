@@ -1654,6 +1654,7 @@ void G_ParseMapInfo()
 		break;
 	case doom2:
 	case commercial_freedoom:
+	case commercial_hacx:
 		baseinfoname = "_D2NFO";
 		if (gamemode == commercial_bfg)
 		{
