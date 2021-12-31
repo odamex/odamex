@@ -1359,9 +1359,9 @@ void ParseEpisodeInfo(OScanner& os)
 	{
 		// Detected new-style MAPINFO
 		new_mapinfo = true;
+		MustGetString(os);
 	}
 
-	MustGetString(os);
 	while (os.scan())
 	{
 		if (os.compareToken("{"))
