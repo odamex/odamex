@@ -392,7 +392,7 @@ BOOL SC_GetNumber (void)
 	{
 		if (strcmp (sc_String, "MAXINT") == 0)
 		{
-			sc_Number = MAXINT;
+			sc_Number = INT32_MAX;
 		}
 		else
 		{

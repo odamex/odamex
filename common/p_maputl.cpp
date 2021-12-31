@@ -882,7 +882,7 @@ BOOL P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 
 	while (count--)
 	{
-		dist = MAXINT;
+		dist = INT32_MAX;
 		for (scan = 0 ; scan < intercepts.Size(); scan++)
 		{
 			if (intercepts[scan].frac < dist)
@@ -899,7 +899,7 @@ BOOL P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 		if ( !func (in) )
 			return false;		// don't bother going farther
 
-		in->frac = MAXINT;
+		in->frac = INT32_MAX;
 	}
 
 	return true;				// everything was traversed

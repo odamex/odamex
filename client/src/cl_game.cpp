@@ -1286,7 +1286,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 // denis - todo - should this be used somewhere?
 /*static fixed_t PlayersRangeFromSpot (mapthing2_t *spot)
 {
-	fixed_t closest = MAXINT;
+	fixed_t closest = INT32_MAX;
 	fixed_t distance;
 
 	for (size_t i = 0; i < players.size(); i++)

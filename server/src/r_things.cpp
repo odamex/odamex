@@ -42,7 +42,7 @@ extern fixed_t FocalLengthX, FocalLengthY;
 #define BASEYCENTER 					(100)
 
 #define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
-#define SPRITE_NEEDS_INFO	MAXINT
+#define SPRITE_NEEDS_INFO	INT32_MAX
 
 //
 // INITIALIZATION FUNCTIONS

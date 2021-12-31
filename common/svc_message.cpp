@@ -567,7 +567,7 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player)
 		// The client hasn't yet received his own position from the server
 		// This happens with cl_autorecord
 		// Just fake a position for now
-		act->set_netid(MAXSHORT);
+		act->set_netid(INT32_MAX);
 	}
 
 	return msg;

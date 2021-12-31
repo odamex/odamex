@@ -77,7 +77,7 @@ public:
 		entchannel = CHAN_VOICE;
 		attenuation = 0.0f;
 		volume = 0.0f;
-		priority = MININT;
+		priority = INT32_MIN;
 		loop = false;
 		start_time = 0;
 	}

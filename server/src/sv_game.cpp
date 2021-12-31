@@ -394,7 +394,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 static fixed_t PlayersRangeFromSpot (mapthing2_t *spot)
 {
 	Players::iterator it;
-	fixed_t closest = MAXINT;
+	fixed_t closest = INT32_MAX;
 	fixed_t distance;
 
 	for (it = players.begin(); it != players.end(); ++it)
