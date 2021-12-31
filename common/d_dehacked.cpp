@@ -262,135 +262,224 @@ struct CodePtr
 {
 	const char* name;
 	actionf_p1 func;
-	int argcount;
-	long default_args[MAXSTATEARGS];
+	const int argcount;
+	statearg_t default_args[MAXSTATEARGS];
+
+	CodePtr() : name(NULL), func(NULL), argcount(0) { ArrayInit(default_args, 0x0); }
+	CodePtr(const char* name, actionf_p1 func) : name(name), func(func), argcount(0)
+	{
+		ArrayInit(default_args, 0x0);
+	}
+	CodePtr(const char* name, actionf_p1 func, const int arg0)
+	    : name(name), func(func), argcount(1)
+	{
+		ArrayInit(default_args, 0x0);
+		default_args[0] = arg0;
+	}
+	CodePtr(const char* name, actionf_p1 func, const int arg0, const int arg1)
+	    : name(name), func(func), argcount(2)
+	{
+		ArrayInit(default_args, 0x0);
+		default_args[0] = arg0;
+		default_args[1] = arg1;
+	}
+	CodePtr(const char* name, actionf_p1 func, const int arg0, const int arg1,
+	        const int arg2)
+	    : name(name), func(func), argcount(3)
+	{
+		ArrayInit(default_args, 0x0);
+		default_args[0] = arg0;
+		default_args[1] = arg1;
+		default_args[2] = arg2;
+	}
+	CodePtr(const char* name, actionf_p1 func, const int arg0, const int arg1,
+	        const int arg2, const int arg3)
+	    : name(name), func(func), argcount(4)
+	{
+		ArrayInit(default_args, 0x0);
+		default_args[0] = arg0;
+		default_args[1] = arg1;
+		default_args[2] = arg2;
+		default_args[3] = arg3;
+	}
+	CodePtr(const char* name, actionf_p1 func, const int arg0, const int arg1,
+	        const int arg2, const int arg3, const int arg4)
+	    : name(name), func(func), argcount(5)
+	{
+		ArrayInit(default_args, 0x0);
+		default_args[0] = arg0;
+		default_args[1] = arg1;
+		default_args[2] = arg2;
+		default_args[3] = arg3;
+		default_args[4] = arg4;
+	}
+	CodePtr(const char* name, actionf_p1 func, const int arg0, const int arg1,
+	        const int arg2, const int arg3, const int arg4, const int arg5)
+	    : name(name), func(func), argcount(6)
+	{
+		ArrayInit(default_args, 0x0);
+		default_args[0] = arg0;
+		default_args[1] = arg1;
+		default_args[2] = arg2;
+		default_args[3] = arg3;
+		default_args[4] = arg4;
+		default_args[5] = arg5;
+	}
+	CodePtr(const char* name, actionf_p1 func, const int arg0, const int arg1,
+	        const int arg2, const int arg3, const int arg4, const int arg5,
+	        const int arg6)
+	    : name(name), func(func), argcount(7)
+	{
+		ArrayInit(default_args, 0x0);
+		default_args[0] = arg0;
+		default_args[1] = arg1;
+		default_args[2] = arg2;
+		default_args[3] = arg3;
+		default_args[4] = arg4;
+		default_args[5] = arg5;
+		default_args[6] = arg6;
+	}
+	CodePtr(const char* name, actionf_p1 func, const int arg0, const int arg1,
+	        const int arg2, const int arg3, const int arg4, const int arg5,
+	        const int arg6, const int arg7)
+	    : name(name), func(func), argcount(8)
+	{
+		ArrayInit(default_args, 0x0);
+		default_args[0] = arg0;
+		default_args[1] = arg1;
+		default_args[2] = arg2;
+		default_args[3] = arg3;
+		default_args[4] = arg4;
+		default_args[5] = arg5;
+		default_args[6] = arg6;
+		default_args[7] = arg7;
+	}
 };
 
-static const struct CodePtr CodePtrs[] = {
-    {"NULL", NULL},
-    {"MonsterRail", A_MonsterRail},
-    {"FireRailgun", A_FireRailgun},
-    {"FireRailgunLeft", A_FireRailgunLeft},
-    {"FireRailgunRight", A_FireRailgunRight},
-    {"RailWait", A_RailWait},
-    {"Light0", A_Light0},
-    {"WeaponReady", A_WeaponReady},
-    {"Lower", A_Lower},
-    {"Raise", A_Raise},
-    {"Punch", A_Punch},
-    {"ReFire", A_ReFire},
-    {"FirePistol", A_FirePistol},
-    {"Light1", A_Light1},
-    {"FireShotgun", A_FireShotgun},
-    {"Light2", A_Light2},
-    {"FireShotgun2", A_FireShotgun2},
-    {"CheckReload", A_CheckReload},
-    {"OpenShotgun2", A_OpenShotgun2},
-    {"LoadShotgun2", A_LoadShotgun2},
-    {"CloseShotgun2", A_CloseShotgun2},
-    {"FireCGun", A_FireCGun},
-    {"GunFlash", A_GunFlash},
-    {"FireMissile", A_FireMissile},
-    {"Saw", A_Saw},
-    {"FirePlasma", A_FirePlasma},
-    {"BFGsound", A_BFGsound},
-    {"FireBFG", A_FireBFG},
-    {"BFGSpray", A_BFGSpray},
-    {"Explode", A_Explode},
-    {"Pain", A_Pain},
-    {"PlayerScream", A_PlayerScream},
-    {"Fall", A_Fall},
-    {"XScream", A_XScream},
-    {"Look", A_Look},
-    {"Chase", A_Chase},
-    {"FaceTarget", A_FaceTarget},
-    {"PosAttack", A_PosAttack},
-    {"Scream", A_Scream},
-    {"SPosAttack", A_SPosAttack},
-    {"VileChase", A_VileChase},
-    {"VileStart", A_VileStart},
-    {"VileTarget", A_VileTarget},
-    {"VileAttack", A_VileAttack},
-    {"StartFire", A_StartFire},
-    {"Fire", A_Fire},
-    {"FireCrackle", A_FireCrackle},
-    {"Tracer", A_Tracer},
-    {"SkelWhoosh", A_SkelWhoosh},
-    {"SkelFist", A_SkelFist},
-    {"SkelMissile", A_SkelMissile},
-    {"FatRaise", A_FatRaise},
-    {"FatAttack1", A_FatAttack1},
-    {"FatAttack2", A_FatAttack2},
-    {"FatAttack3", A_FatAttack3},
-    {"BossDeath", A_BossDeath},
-    {"CPosAttack", A_CPosAttack},
-    {"CPosRefire", A_CPosRefire},
-    {"TroopAttack", A_TroopAttack},
-    {"SargAttack", A_SargAttack},
-    {"HeadAttack", A_HeadAttack},
-    {"BruisAttack", A_BruisAttack},
-    {"SkullAttack", A_SkullAttack},
-    {"Metal", A_Metal},
-    {"SpidRefire", A_SpidRefire},
-    {"BabyMetal", A_BabyMetal},
-    {"BspiAttack", A_BspiAttack},
-    {"Hoof", A_Hoof},
-    {"CyberAttack", A_CyberAttack},
-    {"PainAttack", A_PainAttack},
-    {"PainDie", A_PainDie},
-    {"KeenDie", A_KeenDie},
-    {"BrainPain", A_BrainPain},
-    {"BrainScream", A_BrainScream},
-    {"BrainDie", A_BrainDie},
-    {"BrainAwake", A_BrainAwake},
-    {"BrainSpit", A_BrainSpit},
-    {"SpawnSound", A_SpawnSound},
-    {"SpawnFly", A_SpawnFly},
-    {"BrainExplode", A_BrainExplode},
-    {"Detonate", A_Detonate},     // killough 8/9/98
-    {"Mushroom", A_Mushroom},     // killough 10/98
-    {"Die", A_Die},               // killough 11/98
-    {"Spawn", A_Spawn},           // killough 11/98
-    {"Turn", A_Turn},             // killough 11/98
-    {"Face", A_Face},             // killough 11/98
-    {"Scratch", A_Scratch},       // killough 11/98
-    {"PlaySound", A_PlaySound},   // killough 11/98
-    {"RandomJump", A_RandomJump}, // killough 11/98
-    {"LineEffect", A_LineEffect}, // killough 11/98
-    {"BetaSkullAttack", A_BetaSkullAttack},
+const CodePtr CodePtrs[] = {
+    CodePtr("NULL", NULL),
+    CodePtr("MonsterRail", A_MonsterRail),
+    CodePtr("FireRailgun", A_FireRailgun),
+    CodePtr("FireRailgunLeft", A_FireRailgunLeft),
+    CodePtr("FireRailgunRight", A_FireRailgunRight),
+    CodePtr("RailWait", A_RailWait),
+    CodePtr("Light0", A_Light0),
+    CodePtr("WeaponReady", A_WeaponReady),
+    CodePtr("Lower", A_Lower),
+    CodePtr("Raise", A_Raise),
+    CodePtr("Punch", A_Punch),
+    CodePtr("ReFire", A_ReFire),
+    CodePtr("FirePistol", A_FirePistol),
+    CodePtr("Light1", A_Light1),
+    CodePtr("FireShotgun", A_FireShotgun),
+    CodePtr("Light2", A_Light2),
+    CodePtr("FireShotgun2", A_FireShotgun2),
+    CodePtr("CheckReload", A_CheckReload),
+    CodePtr("OpenShotgun2", A_OpenShotgun2),
+    CodePtr("LoadShotgun2", A_LoadShotgun2),
+    CodePtr("CloseShotgun2", A_CloseShotgun2),
+    CodePtr("FireCGun", A_FireCGun),
+    CodePtr("GunFlash", A_GunFlash),
+    CodePtr("FireMissile", A_FireMissile),
+    CodePtr("Saw", A_Saw),
+    CodePtr("FirePlasma", A_FirePlasma),
+    CodePtr("BFGsound", A_BFGsound),
+    CodePtr("FireBFG", A_FireBFG),
+    CodePtr("BFGSpray", A_BFGSpray),
+    CodePtr("Explode", A_Explode),
+    CodePtr("Pain", A_Pain),
+    CodePtr("PlayerScream", A_PlayerScream),
+    CodePtr("Fall", A_Fall),
+    CodePtr("XScream", A_XScream),
+    CodePtr("Look", A_Look),
+    CodePtr("Chase", A_Chase),
+    CodePtr("FaceTarget", A_FaceTarget),
+    CodePtr("PosAttack", A_PosAttack),
+    CodePtr("Scream", A_Scream),
+    CodePtr("SPosAttack", A_SPosAttack),
+    CodePtr("VileChase", A_VileChase),
+    CodePtr("VileStart", A_VileStart),
+    CodePtr("VileTarget", A_VileTarget),
+    CodePtr("VileAttack", A_VileAttack),
+    CodePtr("StartFire", A_StartFire),
+    CodePtr("Fire", A_Fire),
+    CodePtr("FireCrackle", A_FireCrackle),
+    CodePtr("Tracer", A_Tracer),
+    CodePtr("SkelWhoosh", A_SkelWhoosh),
+    CodePtr("SkelFist", A_SkelFist),
+    CodePtr("SkelMissile", A_SkelMissile),
+    CodePtr("FatRaise", A_FatRaise),
+    CodePtr("FatAttack1", A_FatAttack1),
+    CodePtr("FatAttack2", A_FatAttack2),
+    CodePtr("FatAttack3", A_FatAttack3),
+    CodePtr("BossDeath", A_BossDeath),
+    CodePtr("CPosAttack", A_CPosAttack),
+    CodePtr("CPosRefire", A_CPosRefire),
+    CodePtr("TroopAttack", A_TroopAttack),
+    CodePtr("SargAttack", A_SargAttack),
+    CodePtr("HeadAttack", A_HeadAttack),
+    CodePtr("BruisAttack", A_BruisAttack),
+    CodePtr("SkullAttack", A_SkullAttack),
+    CodePtr("Metal", A_Metal),
+    CodePtr("SpidRefire", A_SpidRefire),
+    CodePtr("BabyMetal", A_BabyMetal),
+    CodePtr("BspiAttack", A_BspiAttack),
+    CodePtr("Hoof", A_Hoof),
+    CodePtr("CyberAttack", A_CyberAttack),
+    CodePtr("PainAttack", A_PainAttack),
+    CodePtr("PainDie", A_PainDie),
+    CodePtr("KeenDie", A_KeenDie),
+    CodePtr("BrainPain", A_BrainPain),
+    CodePtr("BrainScream", A_BrainScream),
+    CodePtr("BrainDie", A_BrainDie),
+    CodePtr("BrainAwake", A_BrainAwake),
+    CodePtr("BrainSpit", A_BrainSpit),
+    CodePtr("SpawnSound", A_SpawnSound),
+    CodePtr("SpawnFly", A_SpawnFly),
+    CodePtr("BrainExplode", A_BrainExplode),
+    CodePtr("Detonate", A_Detonate),     // killough 8/9/98
+    CodePtr("Mushroom", A_Mushroom),     // killough 10/98
+    CodePtr("Die", A_Die),               // killough 11/98
+    CodePtr("Spawn", A_Spawn),           // killough 11/98
+    CodePtr("Turn", A_Turn),             // killough 11/98
+    CodePtr("Face", A_Face),             // killough 11/98
+    CodePtr("Scratch", A_Scratch),       // killough 11/98
+    CodePtr("PlaySound", A_PlaySound),   // killough 11/98
+    CodePtr("RandomJump", A_RandomJump), // killough 11/98
+    CodePtr("LineEffect", A_LineEffect), // killough 11/98
+    CodePtr("BetaSkullAttack", A_BetaSkullAttack),
 
     // MBF21 Pointers
-    {"SpawnObject", A_SpawnObject, 8},
-    {"MonsterProjectile", A_MonsterProjectile, 5},
-    {"MonsterBulletAttack", A_MonsterBulletAttack, 5, {0, 0, 1, 3, 5}},
-    {"MonsterMeleeAttack", A_MonsterMeleeAttack, 4, {3, 8, 0, 0}},
-    {"RadiusDamage", A_RadiusDamage, 2},
-    {"NoiseAlert", A_NoiseAlert, 0},
-    {"HealChase", A_HealChase, 2},
-    {"SeekTracer", A_SeekTracer, 2},
-    {"FindTracer", A_FindTracer, 2, {0, 10}},
-    {"ClearTracer", A_ClearTracer, 0},
-    {"JumpIfHealthBelow", A_JumpIfHealthBelow, 2},
-    {"JumpIfTargetInSight", A_JumpIfTargetInSight, 2},
-    {"JumpIfTargetCloser", A_JumpIfTargetCloser, 2},
-    {"JumpIfTracerInSight", A_JumpIfTracerInSight, 2},
-    {"JumpIfTracerCloser", A_JumpIfTracerCloser, 2},
-    {"JumpIfFlagsSet", A_JumpIfFlagsSet, 3},
-    {"AddFlags", A_AddFlags, 2},
-    {"RemoveFlags", A_RemoveFlags, 2},
+    CodePtr("SpawnObject", A_SpawnObject, 0, 0, 0, 0, 0, 0, 0, 0),        // 8
+    CodePtr("MonsterProjectile", A_MonsterProjectile, 0, 0, 0, 0, 0),     // 5
+    CodePtr("MonsterBulletAttack", A_MonsterBulletAttack, 0, 0, 1, 3, 5), // 5
+    CodePtr("MonsterMeleeAttack", A_MonsterMeleeAttack, 3, 8, 0, 0),      // 4
+    CodePtr("RadiusDamage", A_RadiusDamage, 0, 0),                        // 2
+    CodePtr("NoiseAlert", A_NoiseAlert),                                  // 0
+    CodePtr("HealChase", A_HealChase, 0, 0),                              // 2
+    CodePtr("SeekTracer", A_SeekTracer, 0, 0),                            // 2
+    CodePtr("FindTracer", A_FindTracer, 0, 10),                           // 2
+    CodePtr("ClearTracer", A_ClearTracer),                                // 0
+    CodePtr("JumpIfHealthBelow", A_JumpIfHealthBelow, 0, 0),              // 2
+    CodePtr("JumpIfTargetInSight", A_JumpIfTargetInSight, 0, 0),          // 2
+    CodePtr("JumpIfTargetCloser", A_JumpIfTargetCloser, 0, 0),            // 2
+    CodePtr("JumpIfTracerInSight", A_JumpIfTracerInSight, 0, 0),          // 2
+    CodePtr("JumpIfTracerCloser", A_JumpIfTracerCloser, 0, 0),            // 2
+    CodePtr("JumpIfFlagsSet", A_JumpIfFlagsSet, 0, 0, 0),                 // 3
+    CodePtr("AddFlags", A_AddFlags, 0, 0),                                // 2
+    CodePtr("RemoveFlags", A_RemoveFlags, 0, 0),                          // 2
     // MBF21 Weapon Pointers
-    {"WeaponProjectile", A_WeaponProjectile, 5},
-    {"WeaponBulletAttack", A_WeaponBulletAttack, 5, {0, 0, 1, 5, 3}},
-    {"WeaponMeleeAttack", A_WeaponMeleeAttack, 5, {2, 10, 1 * FRACUNIT, 0, 0}},
-    {"WeaponSound", A_WeaponSound, 2},
-    {"WeaponAlert", A_WeaponAlert, 0},
-    {"WeaponJump", A_WeaponJump, 2},
-    {"ConsumeAmmo", A_ConsumeAmmo, 1},
-    {"CheckAmmo", A_CheckAmmo, 2},
-    {"RefireTo", A_RefireTo, 2},
-    {"GunFlashTo", A_GunFlashTo, 2},
-
-    {NULL, NULL}};
+    CodePtr("WeaponProjectile", A_WeaponProjectile, 0, 0, 0, 0, 0),               // 5
+    CodePtr("WeaponBulletAttack", A_WeaponBulletAttack, 0, 0, 1, 5, 3),           // 5
+    CodePtr("WeaponMeleeAttack", A_WeaponMeleeAttack, 2, 10, 1 * FRACUNIT, 0, 0), // 5
+    CodePtr("WeaponSound", A_WeaponSound, 0, 0),                                  // 2
+    CodePtr("WeaponAlert", A_WeaponAlert),                                        // 0
+    CodePtr("WeaponJump", A_WeaponJump, 0, 0),                                    // 2
+    CodePtr("ConsumeAmmo", A_ConsumeAmmo, 0),                                     // 1
+    CodePtr("CheckAmmo", A_CheckAmmo, 0, 0),                                      // 2
+    CodePtr("RefireTo", A_RefireTo, 0, 0),                                        // 2
+    CodePtr("GunFlashTo", A_GunFlashTo, 0, 0),                                    // 2
+    CodePtr()};
 
 struct Key
 {

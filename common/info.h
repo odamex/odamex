@@ -1372,7 +1372,7 @@ inline FArchive &operator>> (FArchive &arc, statenum_t &i) { DWORD in; arc >> in
 
 
 #define MAXSTATEARGS 8
-typedef long statearg_t;
+typedef int statearg_t;
 
 typedef struct
 {
