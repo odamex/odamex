@@ -85,6 +85,12 @@ extern const angle_t *p_tantoangle;
 void Table_InitTanToAngle(void);
 void Table_SetTanToAngle(int version);
 
+// More utility functions, courtesy of Quasar (James Haley).
+// These are straight from Eternity so demos stay in sync.
+inline static angle_t FixedToAngle(fixed_t a)
+{
+	return (angle_t)(((uint64_t)a * ANG(1)) >> FRACBITS);
+}
 
 
 #endif // __TABLES_H__

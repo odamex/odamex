@@ -442,7 +442,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 	dcol.textureheight = 256 << FRACBITS;
 
-	if (vis->mobjflags & MF_SPECTATOR)
+	if (vis->spectator)
 		return;
 
 	if (vis->patch == NO_PARTICLE)
@@ -610,6 +610,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	vis->depth = ty;
 	vis->FakeFlat = fakeside;
 	vis->colormap = basecolormap;
+	vis->spectator = false;
 
 	fixed_t iscale = FixedDiv(ty, FocalLengthX);
 	if (flip)
@@ -799,6 +800,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		return;
 
 	vis->mobjflags = thing->flags;
+	vis->spectator = thing->oflags & MFO_SPECTATOR;
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
 	vis->patch = lump;
@@ -953,6 +955,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	vis->translation = translationref_t();		// [RH] Use default colors
 	vis->translucency = r_drawplayersprites * FRACUNIT;
 	vis->mo = NULL;
+	vis->spectator = false;
 
 	if (flip)
 	{
@@ -1353,6 +1356,7 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	vis->patch = NO_PARTICLE;
 	vis->mobjflags = particle->trans;
 	vis->mo = NULL;
+	vis->spectator = false;
 
 	// get light level
 	if (fixedcolormap.isValid())

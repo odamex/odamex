@@ -81,6 +81,7 @@ void (*R_DrawColumn)(void);
 void (*R_DrawFuzzColumn)(void);
 void (*R_DrawTranslucentColumn)(void);
 void (*R_DrawTranslatedColumn)(void);
+void (*R_DrawTlatedLucentColumn)(void);
 void (*R_DrawSpan)(void);
 void (*R_DrawSlopeSpan)(void);
 void (*R_FillColumn)(void);
@@ -1666,6 +1667,7 @@ void R_InitColumnDrawers ()
 		R_DrawFuzzColumn		= R_DrawFuzzColumnP;
 		R_DrawTranslucentColumn	= R_DrawTranslucentColumnP;
 		R_DrawTranslatedColumn	= R_DrawTranslatedColumnP;
+		R_DrawTlatedLucentColumn = R_DrawTlatedLucentColumnP;
 		R_DrawSlopeSpan			= R_DrawSlopeSpanP;
 		R_DrawSpan				= R_DrawSpanP;
 		R_FillColumn			= R_FillColumnP;
@@ -1679,6 +1681,7 @@ void R_InitColumnDrawers ()
 		R_DrawFuzzColumn		= R_DrawFuzzColumnD;
 		R_DrawTranslucentColumn	= R_DrawTranslucentColumnD;
 		R_DrawTranslatedColumn	= R_DrawTranslatedColumnD;
+		R_DrawTlatedLucentColumn = R_DrawTlatedLucentColumnD;
 		R_DrawSlopeSpan			= R_DrawSlopeSpanD;
 		R_DrawSpan				= R_DrawSpanD;
 		R_FillColumn			= R_FillColumnD;

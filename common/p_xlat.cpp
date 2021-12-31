@@ -428,7 +428,6 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 			
 			// TODO: what to do with gun-activated lines with passthrough?
 		}
-
 		ld->special = SpecialTranslation[special].newspecial;
 		for (i = 0; i < 5; i++)
 			ld->args[i] = SpecialTranslation[special].args[i] == TAG ? tag :
@@ -478,6 +477,12 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 			ld->args[0] = 1;
 			ld->args[1] = 2;
 		}
+	}
+	else if (special >= 1024 && special <= 1026) // [Blair] Boom generalized scroller workaround
+	{
+		ld->special = Scroll_Texture_Offsets;
+		ld->args[0] = special;
+		ld->id = tag;
 	}
 	else if (special <= GenCrusherBase)
 	{
@@ -760,7 +765,9 @@ void P_TranslateTeleportThings()
 
 int P_TranslateSectorSpecial (int special)
 {
-	int high;
+	int high, org;
+
+	org = special;
 
 	// Allow any supported sector special by or-ing 0x8000 to it in Doom format maps
 	// That's for those who like to mess around with existing maps. ;)
@@ -774,6 +781,12 @@ int P_TranslateSectorSpecial (int special)
 
 	// This supports phased lighting with specials 21-24
 	high = (special & 0xfe0) << 3;
+
+	if (special >= 32)
+	{
+		return org; // Boom generalized sectors
+	}
+
 	special &= 0x1f;
 	if (special < 21)
 	{

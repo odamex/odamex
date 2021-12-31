@@ -44,7 +44,7 @@ void P_SetSpectatorFlags(player_t &player)
 
 	if (player.mo)
 	{
-		player.mo->flags |= MF_SPECTATOR;
+		player.mo->oflags |= MFO_SPECTATOR;
 		player.mo->flags &= ~MF_SOLID;
 		player.mo->flags2 |= MF2_FLY;
 	}

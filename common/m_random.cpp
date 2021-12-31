@@ -269,4 +269,43 @@ void P_SerializeRNGState(FArchive& arc)
 	}
 }
 
+//
+// P_RandomHitscanAngle
+// Outputs a random angle between (-spread, spread), as an int ('cause it can be
+// negative).
+//   spread: Maximum angle (degrees, in fixed point -- not BAM!)
+//
+int P_RandomHitscanAngle(fixed_t spread)
+{
+	int t;
+	uint64_t spread_bam;
+
+	// FixedToAngle doesn't work for negative numbers,
+	// so for convenience take just the absolute value.
+	spread_bam = (spread < 0 ? FixedToAngle(-spread) : FixedToAngle(spread));
+	t = P_Random();
+	return (int)((spread_bam * (t - P_Random())) / 255);
+}
+
+//
+// P_RandomHitscanSlope
+// Outputs a random angle between (-spread, spread), converted to values used for slope
+//   spread: Maximum vertical angle (degrees, in fixed point -- not BAM!)
+//
+int P_RandomHitscanSlope(fixed_t spread)
+{
+	int angle;
+
+	angle = P_RandomHitscanAngle(spread);
+
+	// clamp it, yo
+	if (angle > ANG90)
+		return finetangent[0];
+	else if (-angle > ANG90)
+		return finetangent[FINEANGLES / 2 - 1];
+	else
+		return finetangent[(ANG90 - angle) >> ANGLETOFINESHIFT];
+}
+
 VERSION_CONTROL (m_random_cpp, "$Id$")
+
