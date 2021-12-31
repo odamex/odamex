@@ -32,6 +32,7 @@
 #endif
 
 #if defined(USE_STDINT_H)
+	#define __STDC_LIMIT_MACROS
 	#include <stdint.h>
 	#undef USE_STDINT_H
 #else
