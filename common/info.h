@@ -1374,24 +1374,34 @@ inline FArchive &operator>> (FArchive &arc, statenum_t &i) { DWORD in; arc >> in
 #define MAXSTATEARGS 8
 typedef int statearg_t;
 
-typedef struct
+struct state_t
 {
-	spritenum_t	sprite;
-	int			frame;
-	int			tics;
-	actionf_p1 	action;
-	statenum_t	nextstate;
-	int			misc1, misc2;
+	spritenum_t sprite;
+	int frame;
+	int tics;
+	actionf_p1 action;
+	statenum_t nextstate;
+	int misc1, misc2;
 
 	// MBF21
 	statearg_t args[MAXSTATEARGS]; // [XA] mbf21 args
 	int flags;
-	/*
-	DState (spritenum_t sprite, int frame, int tics, acp2, statenum_t nextstate);
-	DState (spritenum_t sprite, int frame, int tics, acp2, statenum_t nextstate, int misc1, int misc2);
-	DState (spritenum_t sprite, int frame, int tics, acp1, statenum_t nextstate);
-*/
-} state_t;
+
+	state_t()
+	    : sprite(SPR_TROO), frame(0), tics(0), action(NULL), nextstate(S_NULL), misc1(0),
+	      misc2(0), flags(0)
+	{
+		ArrayInit(args, 0x0);
+	}
+
+	state_t(spritenum_t sprite, int frame, int tics, actionf_p1 action,
+	        statenum_t nextstate)
+	    : sprite(sprite), frame(frame), tics(tics), action(action), nextstate(nextstate),
+	      misc1(0), misc2(0), flags(0)
+	{
+		ArrayInit(args, 0x0);
+	}
+};
 
 extern state_t states[NUMSTATES];
 extern const char *sprnames[NUMSPRITES+1];
