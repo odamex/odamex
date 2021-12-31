@@ -2540,7 +2540,7 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 	return true;
 }
 
-static CodePtr null_bexptr = {"(NULL)", NULL};
+static CodePtr null_bexptr = CodePtr("(NULL)", NULL);
 
 /*
  * @brief Check loaded deh files for any problems prior
