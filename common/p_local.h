@@ -111,6 +111,8 @@ bool	P_SetMobjState (AActor* mobj, statenum_t state, bool cl_update = false);
 void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage);
 AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
 void	P_SpawnPlayerMissile (AActor* source, mobjtype_t type);
+void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle,
+                               fixed_t pitch, fixed_t xyofs, fixed_t zofs);
 
 void	P_RailAttack (AActor *source, int damage, int offset);	// [RH] Shoot a railgun
 bool	P_HitFloor (AActor *thing);
@@ -172,6 +174,7 @@ fixed_t P_AproxDistance2 (AActor *mo, fixed_t x, fixed_t y);
 fixed_t P_AproxDistance2 (AActor *a, AActor *b);
 
 bool P_ActorInFOV(AActor* origin, AActor* mo , float f, fixed_t dist);
+AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance);
 
 int 	P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line);
@@ -473,11 +476,15 @@ BOOL PO_RotatePolyobj (int num, angle_t angle);
 void PO_Init (void);
 BOOL PO_Busy (int polyobj);
 
+bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov);
+bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest);
+bool P_IsTeamMate(AActor* actor, AActor* player);
+
+
 //
 // P_SPEC
 //
 #include "p_spec.h"
-
 
 #endif	// __P_LOCAL__
 

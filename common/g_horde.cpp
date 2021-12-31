@@ -28,11 +28,28 @@
 
 #include "cmdlib.h"
 #include "d_items.h"
+#include "hashtable.h"
 #include "infomap.h"
 #include "oscanner.h"
 #include "w_wad.h"
 
 extern std::vector<hordeDefine_t> WAVE_DEFINES;
+
+typedef OHashTable<std::string, mobjtype_t> AliasMap;
+AliasMap g_aliasMap;
+
+static mobjtype_t NameOrAliasToMobj(const std::string& name)
+{
+	AliasMap::iterator it = ::g_aliasMap.find(name);
+	if (it != ::g_aliasMap.end())
+	{
+		return it->second;
+	}
+	else
+	{
+		return P_NameToMobj(name);
+	}
+}
 
 static void ParsePowerupConfig(OScanner& os, hordeDefine_t::powConfig_t& outConfig)
 {
@@ -177,7 +194,7 @@ static void ParseDefine(OScanner& os)
 		{
 			// Powerup name.
 			os.mustScan();
-			const mobjtype_t type = P_NameToMobj(os.getToken());
+			const mobjtype_t type = NameOrAliasToMobj(os.getToken());
 			if (type == MT_NULL)
 			{
 				std::string buffer;
@@ -204,7 +221,7 @@ static void ParseDefine(OScanner& os)
 		{
 			// Monster name.
 			os.mustScan();
-			const mobjtype_t type = P_NameToMobj(os.getToken());
+			const mobjtype_t type = NameOrAliasToMobj(os.getToken());
 			if (type == MT_NULL)
 			{
 				std::string buffer;
@@ -231,7 +248,7 @@ static void ParseDefine(OScanner& os)
 		{
 			// Monster name.
 			os.mustScan();
-			const mobjtype_t type = P_NameToMobj(os.getToken());
+			const mobjtype_t type = NameOrAliasToMobj(os.getToken());
 			if (type == MT_NULL)
 			{
 				std::string buffer;
@@ -351,6 +368,26 @@ static void ParseDefine(OScanner& os)
 	::WAVE_DEFINES.push_back(define);
 }
 
+static void ParseAlias(OScanner& os)
+{
+	os.assertTokenIs("alias");
+	os.mustScan();
+	std::string alias = os.getToken();
+	os.mustScan();
+	std::string original = os.getToken();
+
+	const mobjtype_t otype = P_NameToMobj(original);
+	if (otype == MT_NULL)
+	{
+		// We don't know what this token is.
+		std::string buffer;
+		StrFormat(buffer, "Can't alias unknown thing \"%s\".", original.c_str());
+		os.error(buffer.c_str());
+	}
+
+	g_aliasMap.insert(std::make_pair(alias, otype));
+}
+
 static void ParseHordeDef(const int lump, const char* name)
 {
 	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
@@ -372,6 +409,17 @@ static void ParseHordeDef(const int lump, const char* name)
 		else if (os.compareTokenNoCase("cleardefines"))
 		{
 			::WAVE_DEFINES.clear();
+		}
+		else if (os.compareTokenNoCase("alias"))
+		{
+			ParseAlias(os);
+		}
+		else
+		{
+			// We don't know what this token is.
+			std::string buffer;
+			StrFormat(buffer, "Unknown Token \"%s\".", os.getToken().c_str());
+			os.error(buffer.c_str());
 		}
 	}
 }
@@ -407,6 +455,7 @@ static void ParseHordeDefs()
 void G_ParseHordeDefs()
 {
 	::WAVE_DEFINES.clear();
+	::g_aliasMap.clear();
 	ParseHordeDefs();
 }
 

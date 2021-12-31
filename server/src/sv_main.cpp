@@ -666,7 +666,7 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id > 255 || sfx_id < 0)
+	if (sfx_id >= numsfx || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -682,8 +682,8 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 	{
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f,
-		                                        attenuation));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
+		                                             1.0f, attenuation));
 	}
 }
 
@@ -695,7 +695,7 @@ void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id > 255 || sfx_id < 0)
+	if (sfx_id >= numsfx || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -709,7 +709,7 @@ void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
 
 	client_t *cl = &pl.client;
 
-	MSG_WriteSVC(&cl->netbuf,
+	MSG_WriteSVC(&cl->reliablebuf,
 	             SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f, attenuation));
 }
 
@@ -729,7 +729,7 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id > 255 || sfx_id < 0)
+	if (sfx_id >= numsfx || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -742,8 +742,8 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f,
-		                                        attenuation));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
+		                                             1.0f, attenuation));
 	}
 }
 
@@ -759,7 +759,7 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 
 	sfx_id = S_FindSound( name );
 
-	if ( sfx_id > 255 || sfx_id < 0 )
+	if (sfx_id >= numsfx || sfx_id < 0)
 	{
 		Printf("SV_StartSound: range error. Sfx_id = %d\n", sfx_id );
 		return;
@@ -771,8 +771,8 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 		{
 			cl = &(it->client);
 
-			MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(), channel, sfx_id,
-			                                        1.0f, attenuation));
+			MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(), channel, sfx_id,
+			                                             1.0f, attenuation));
 		}
 	}
 }
@@ -784,7 +784,7 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id > 255 || sfx_id < 0)
+	if (sfx_id >= numsfx || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -797,8 +797,8 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->netbuf, SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id,
-		                                        1.0f, attenuation));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id,
+		                                             1.0f, attenuation));
 	}
 }
 
@@ -1130,7 +1130,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		ok = true;
 	else if(!mo->player)
 		ok = true;
-	else if (mo->flags & MF_SPECTATOR)      // GhostlyDeath -- Spectating things
+	else if (mo->oflags & MFO_SPECTATOR)      // GhostlyDeath -- Spectating things
 		ok = false;
 	else if(player.mo && mo->player && mo->player->spectator)
 		ok = false;
@@ -1179,6 +1179,8 @@ void SV_SpawnMobj(AActor *mo)
 	if (!mo)
 		return;
 
+	P_SetMobjBaseline(*mo);
+
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		if (mo->player)
@@ -1197,7 +1199,7 @@ bool SV_IsPlayerAllowedToSee(player_t &p, AActor *mo)
 	if (!mo)
 		return false;
 
-	if (mo->flags & MF_SPECTATOR)
+	if (mo->oflags & MFO_SPECTATOR)
 		return false; // GhostlyDeath -- always false, as usual!
 	else
 		return mo->players_aware.get(p.id);
@@ -2744,26 +2746,24 @@ void SV_UpdateMissiles(player_t &pl)
     TThinkerIterator<AActor> iterator;
     while ( (mo = iterator.Next() ) )
     {
-        if (!(mo->flags & MF_MISSILE || mo->flags & MF_SKULLFLY))
+		if (!(mo->flags & MF_MISSILE) || mo->flags & MF_SKULLFLY)
 			continue;
 
 		if (mo->type == MT_PLASMA)
 			continue;
 
 		// update missile position every 30 tics
-		if (((gametic+mo->netid) % 30) && (mo->type != MT_TRACER) && (mo->type != MT_FATSHOT))
+		if (((gametic+mo->netid) % 30) && (mo->type != MT_TRACER) && (mo->type != MT_FATSHOT) && !(mo->flags2 & MF2_SEEKERMISSILE))
 			continue;
-		// Revenant tracers and Mancubus fireballs need to be  updated more often
-		else if (((gametic+mo->netid) % 5) && (mo->type == MT_TRACER || mo->type == MT_FATSHOT))
+		// Revenant tracers and Mancubus fireballs need to be updated more often (and custom tracers)
+		else if (((gametic+mo->netid) % 5) && (mo->type == MT_TRACER || mo->type == MT_FATSHOT || mo->flags2 & MF2_SEEKERMISSILE))
 			continue;
 
 		if(SV_IsPlayerAllowedToSee(pl, mo))
 		{
 			client_t *cl = &pl.client;
 
-			MSG_WriteSVC(
-			    &cl->netbuf,
-			    SVC_UpdateMobj(*mo, SVC_UM_POS_RND | SVC_UM_MOM_ANGLE | SVC_UM_TRACER));
+			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*mo));
 
             if (cl->netbuf.cursize >= 1024)
                 if(!SV_SendPacket(pl))
@@ -2772,18 +2772,33 @@ void SV_UpdateMissiles(player_t &pl)
     }
 }
 
-// Update the given actors state immediately.
-void SV_UpdateMobjState(AActor *mo)
+// Update the given actors data immediately.
+void SV_UpdateMobj(AActor* mo)
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		if (!(it->ingame()))
 			continue;
 
 		if (SV_IsPlayerAllowedToSee(*it, mo))
 		{
-			client_t *cl = &(it->client);
+			client_t* cl = &(it->client);
+			MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
+		}
+	}
+}
 
+// Update the given actors state immediately.
+void SV_UpdateMobjState(AActor* mo)
+{
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		if (!(it->ingame()))
+			continue;
+
+		if (SV_IsPlayerAllowedToSee(*it, mo))
+		{
+			client_t* cl = &(it->client);
 			MSG_WriteSVC(&cl->reliablebuf, SVC_MobjState(mo));
 		}
 	}
@@ -2813,9 +2828,7 @@ void SV_UpdateMonsters(player_t &pl)
 		{
 			client_t *cl = &pl.client;
 
-			MSG_WriteSVC(&cl->netbuf,
-			             SVC_UpdateMobj(*mo, SVC_UM_POS_RND | SVC_UM_MOM_ANGLE |
-			                                     SVC_UM_MOVEDIR | SVC_UM_TARGET));
+			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*mo));
 
 			if (cl->netbuf.cursize >= 1024)
 			{
@@ -2867,7 +2880,7 @@ void SV_ActorTarget(AActor *actor)
 		if(!SV_IsPlayerAllowedToSee(*it, actor))
 			continue;
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor, SVC_UM_TARGET));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor));
 	}
 }
 
@@ -2883,7 +2896,7 @@ void SV_ActorTracer(AActor *actor)
 
 		client_t *cl = &(it->client);
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor, SVC_UM_TRACER));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor));
 	}
 }
 
@@ -4558,8 +4571,7 @@ void SV_SendDamageMobj(AActor *target, int pain)
 		client_t *cl = &(it->client);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_DamageMobj(target, pain));
-		MSG_WriteSVC(&cl->netbuf,
-		             SVC_UpdateMobj(*target, SVC_UM_POS_RND | SVC_UM_MOM_ANGLE));
+		MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*target));
 	}
 }
 
@@ -4611,7 +4623,7 @@ void SV_ExplodeMissile(AActor *mo)
 		if (!SV_IsPlayerAllowedToSee(*it, mo))
 			continue;
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo, SVC_UM_POS_RND));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
 		MSG_WriteSVC(&cl->reliablebuf, SVC_ExplodeMissile(*mo));
 	}
 }

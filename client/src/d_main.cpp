@@ -721,6 +721,7 @@ void STACK_ARGS D_Shutdown()
 
 
 void C_DoCommand(const char *cmd, uint32_t key);
+void D_Init_DEHEXTRA_Frames(void);
 
 //
 // D_DoomMain
@@ -741,6 +742,8 @@ void D_DoomMain()
 
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
+	// Initialize all extra frames
+	D_Init_DEHEXTRA_Frames();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
