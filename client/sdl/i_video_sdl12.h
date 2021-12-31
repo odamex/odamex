@@ -44,7 +44,7 @@ public:
 	virtual const IVideoModeList* getSupportedVideoModes() const
 	{	return &mModeList;	}
 
-	virtual const EDisplayType getDisplayType() const
+	virtual EDisplayType getDisplayType() const
 	{
 		#ifdef GCONSOLE
 		return DISPLAY_FullscreenOnly;

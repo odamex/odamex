@@ -226,7 +226,7 @@ public:
 	virtual bool supportsWindowed() const
 	{	return getDisplayType() == DISPLAY_WindowOnly || getDisplayType() == DISPLAY_Both;	}
 
-	virtual const EDisplayType getDisplayType() const = 0;
+	virtual EDisplayType getDisplayType() const = 0;
 
 	virtual bool supports8bpp() const
 	{
@@ -273,7 +273,7 @@ public:
 	virtual const IVideoModeList* getSupportedVideoModes() const
 	{	return &mModeList;	}
 
-	virtual const EDisplayType getDisplayType() const
+	virtual EDisplayType getDisplayType() const
 	{	return DISPLAY_WindowOnly;	}
 
 	virtual const IVideoMode& getNativeMode() const

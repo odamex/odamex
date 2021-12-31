@@ -359,7 +359,6 @@ int P_FindLineFromLineTag(const line_t* line, int start);
 int P_IsUnderDamage(const AActor* actor);
 bool P_IsOnLift(const AActor* actor);
 int P_IsUnderDamage(AActor* actor);
-static bool P_CheckRange(AActor* actor, fixed_t range);
 
 extern int TeleportSide;
 
