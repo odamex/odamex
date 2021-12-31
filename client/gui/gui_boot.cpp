@@ -58,6 +58,8 @@ const int WINDOW_HEIGHT = 240;
 
 class BootWindow : public Fl_Window
 {
+	Fl_Group* m_tabIWAD;
+	std::string m_genWaddirs;
 	std::vector<scannedIWAD_t> m_IWADs;
 	Fl_Hold_Browser* m_IWADBrowser;
 	std::vector<std::string> m_WADDirs;
@@ -70,7 +72,9 @@ class BootWindow : public Fl_Window
 		{
 			Fl_Tabs* tabs = new Fl_Tabs(0, 0, 425, 200);
 			{
-				Fl_Group* tabIWAD = new Fl_Group(0, 25, 425, 175, "Game Select");
+				tabs->callback(tabsCB, static_cast<void*>(this));
+				tabs->when(FL_WHEN_CHANGED);
+				m_tabIWAD = new Fl_Group(0, 25, 425, 175, "Game Select");
 				{
 					Fl_Box* logo = new Fl_Box(10, 35, 115, 155);
 					logo->image(GUIRes::icon_odamex_128());
@@ -79,7 +83,7 @@ class BootWindow : public Fl_Window
 				{
 					m_IWADBrowser = new Fl_Hold_Browser(135, 35, 280, 155);
 				} // Fl_Browser* m_IWADBrowser
-				tabIWAD->end();
+				m_tabIWAD->end();
 			} // Fl_Group* tabIWAD
 			{
 				Fl_Group* tabWADDirs =
@@ -137,6 +141,23 @@ class BootWindow : public Fl_Window
 	}
 
 	// -- Game Select --
+
+	static void tabsCB(Fl_Widget* w, void* data)
+	{
+		Fl_Tabs* tabs = static_cast<Fl_Tabs*>(w);
+		BootWindow* boot = static_cast<BootWindow*>(data);
+
+		Fl_Group* clicked = static_cast<Fl_Group*>(tabs->value());
+		if (clicked != boot->m_tabIWAD)
+			return;
+
+		// User clicked on the first tab, see if we need to regenerate the
+		// list of IWADs.
+		if (boot->m_genWaddirs == ::waddirs)
+			return;
+
+		boot->rescanIWADs();
+	}
 
 	static void doCallback(Fl_Widget*, void*) { CL_QuitCommand(); }
 
@@ -240,6 +261,7 @@ class BootWindow : public Fl_Window
 		{
 			m_IWADBrowser->add(m_IWADs[i].id->mNiceName.c_str(), (void*)m_IWADs[i].id);
 		}
+		m_genWaddirs = ::waddirs.str();
 	}
 
 	/**
