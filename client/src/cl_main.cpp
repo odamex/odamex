@@ -1251,16 +1251,14 @@ BEGIN_COMMAND(netdemostats)
 	int curtime = netdemo.calculateTimeElapsed();
 	int totaltime = netdemo.calculateTotalTime();
 
-	Printf(PRINT_HIGH, "\n%s\n", netdemo.getFileName().c_str());
-	Printf(PRINT_HIGH, "============================================\n");
-	Printf(PRINT_HIGH, "Total time: %i seconds\n", totaltime);
-	Printf(PRINT_HIGH, "Current position: %i seconds (%i%%)\n",
-		curtime, curtime * 100 / totaltime);
-	Printf(PRINT_HIGH, "Number of maps: %i\n", maptimes.size());
+	Printf("\n%s\n", netdemo.getFileName().c_str());
+	Printf("============================================\n");
+	Printf("Total time: %d seconds\n", totaltime);
+	Printf("Current position: %d seconds (%d%%)\n", curtime, curtime * 100 / totaltime);
+	Printf("Number of maps: %" PRIuSIZE "\n", maptimes.size());
 	for (size_t i = 0; i < maptimes.size(); i++)
 	{
-		Printf(PRINT_HIGH, "> %02i Starting time: %i seconds\n",
-			i + 1, maptimes[i]);
+		Printf("> %02" PRIuSIZE " Starting time: %i seconds\n", i + 1, maptimes[i]);
 	}
 }
 END_COMMAND(netdemostats)
@@ -2045,7 +2043,8 @@ void CL_ParseCommands()
 		// Measure length of each message, so we can keep track of bandwidth.
 		if (::net_message.BytesRead() < byteStart)
 		{
-			Printf("CL_ParseCommands: end byte (%d) < start byte (%d)\n",
+			Printf("CL_ParseCommands: end byte (%" PRIuSIZE ") < start byte (%" PRIuSIZE
+			       ")\n",
 			       ::net_message.BytesRead(), byteStart);
 		}
 

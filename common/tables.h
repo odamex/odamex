@@ -71,7 +71,7 @@ extern const fixed_t		finetangent[FINEANGLES/2];
 #define SLOPEBITS		11
 #define DBITS			(FRACBITS-SLOPEBITS)
 
-typedef DWORD			angle_t;
+typedef uint32_t		angle_t;
 
 
 // Effective size is 2049;

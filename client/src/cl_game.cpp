@@ -295,8 +295,8 @@ BEGIN_COMMAND (turnspeeds)
 {
 	if (argc == 1)
 	{
-		Printf (PRINT_HIGH, "Current turn speeds: %ld %ld %ld\n",
-				angleturn[0], angleturn[1], angleturn[2]);
+		Printf("Current turn speeds: %f %f %f\n", FIXED2DOUBLE(angleturn[0]),
+		       FIXED2DOUBLE(angleturn[1]), FIXED2DOUBLE(angleturn[2]));
 	}
 	else
 	{
@@ -1848,7 +1848,8 @@ void G_DoPlayDemo(bool justStreamInput)
 			if (!validplayer(con))
 			{
 				Z_Free(demobuffer);
-				Printf(PRINT_HIGH, "DOOM Demo: invalid console player %d of %d\n", who + 1, players.size());
+				Printf("DOOM Demo: invalid console player %d of %" PRIuSIZE "\n", who + 1,
+				       players.size());
 				gameaction = ga_fullconsole;
 				return;
 			}
