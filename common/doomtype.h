@@ -65,7 +65,9 @@
 	#define FORMAT_PRINTF(index, first_arg) __attribute__ ((format(printf, index, first_arg)))
 #endif
 
-#ifdef _MSC_VER
+#if CPLUSPLUS >= 201103
+	#define NORETURN [[noreturn]]
+#elif defined(_MSC_VER)
 	#define NORETURN __declspec(noreturn)
 #else
 	#define NORETURN __attribute__ ((noreturn))

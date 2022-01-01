@@ -92,7 +92,7 @@ ticcmd_t *I_BaseTiccmd (void);
 void STACK_ARGS I_Quit (void);
 
 void STACK_ARGS I_Warning(const char *warning, ...);
-void STACK_ARGS I_Error (const char *error, ...);
+NORETURN void STACK_ARGS I_Error(const char* error, ...);
 NORETURN void STACK_ARGS I_FatalError(const char *error, ...);
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);

@@ -392,7 +392,7 @@ void STACK_ARGS I_FatalError (const char *error, ...)
     }
 }
 
-void STACK_ARGS I_Error (const char *error, ...)
+NORETURN void STACK_ARGS I_Error (const char *error, ...)
 {
     va_list argptr;
     char errortext[MAX_ERRORTEXT];
