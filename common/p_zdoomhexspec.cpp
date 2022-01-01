@@ -79,17 +79,12 @@ lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 
 	lineresult_s result;
 
-	if (!P_CanActivateSpecials(thing, line))
-	{
-		result.lineexecuted = false;
-		result.switchchanged = false;
-		return result;
-	}
+	result.lineexecuted = false;
+	result.switchchanged = false;
 
-	if (!P_TestActivateZDoomLine(line, mo, side, activationType))
+	if (!P_TestActivateZDoomLine(line, mo, side, activationType) ||
+	    !P_CanActivateSpecials(mo, line))
 	{
-		result.lineexecuted = false;
-		result.switchchanged = false;
 		return result;
 	}
 

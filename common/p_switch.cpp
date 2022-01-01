@@ -290,7 +290,7 @@ void P_ChangeSwitchTexture(line_t* line, int useAgain, bool playsound)
 {
 	const char *sound;
 
-	if (!useAgain)
+	if (!useAgain && P_HandleSpecialRepeat(line))
 		line->special = 0;
 
 	// EXIT SWITCH?

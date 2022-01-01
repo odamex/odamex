@@ -1967,8 +1967,6 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 		P_ShootCompatibleSpecialLine(thing, line);
 	}
 
-	P_HandleSpecialRepeat(line);
-
 	SV_OnActivatedLine(line, thing, 0, LineShoot, false);
 
 	if(serverside)

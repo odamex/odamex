@@ -470,9 +470,8 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 52:
 		// EXIT!
 		// killough 10/98: prevent zombies from exiting levels
-		if (bossaction ||
-		    ((!(thing->player && thing->player->health <= 0 && thing->player->spectator)) && 
-			CheckIfExitIsGood(thing)))
+		if (bossaction || ((!(thing->player && thing->player->health <= 0)) &&
+		                   CheckIfExitIsGood(thing)))
 		{
 			result.lineexecuted = true;
 			G_ExitLevel(0, 1);
@@ -539,7 +538,8 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 100:
 		// Build Stairs Turbo 16
-		if (EV_BuildStairs(line, turbo16))
+		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT, SPEED(S_TURBO),
+		                   TICS(0), 0, 0, 0))
 		{
 			result.lineexecuted = true;
 			line->special = 0;
@@ -548,231 +548,314 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 104:
 		// Turn lights off in sector(tag)
-		if (EV_TurnTagLightsOff(line) || demo_compatibility)
+		if (EV_TurnTagLightsOff(line->id))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 108:
 		// Blazing Door Raise (faster than TURBO!)
-		if (EV_DoDoor(line, blazeRaise) || demo_compatibility)
+		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_FAST),
+		              TICS(VDOORWAIT), NoKey))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 109:
 		// Blazing Door Open (faster than TURBO!)
-		if (EV_DoDoor(line, blazeOpen) || demo_compatibility)
+		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 110:
 		// Blazing Door Close (faster than TURBO!)
-		if (EV_DoDoor(line, blazeClose) || demo_compatibility)
+		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 119:
 		// Raise floor to nearest surr. floor
-		if (EV_DoFloor(line, raiseFloorToNearest) || demo_compatibility)
+		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0,
+		               0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 121:
 		// Blazing PlatDownWaitUpStay
-		if (EV_DoPlat(line, blazeDWUS, 0) || demo_compatibility)
+		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_TURBO),
+		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 124:
 		// Secret EXIT
 		// killough 10/98: prevent zombies from exiting levels
 		// CPhipps - change for lxdoom's compatibility handling
-		if (bossaction ||
-		    (!(thing->player && thing->player->health <= 0 && !comp[comp_zombie])))
-			G_SecretExitLevel();
+		if (bossaction || ((!(thing->player && thing->player->health <= 0)) &&
+		                   CheckIfExitIsGood(thing)))
+		{
+			result.lineexecuted = true;
+			G_SecretExitLevel(0, 1);
+		}
 		break;
 
 	case 125:
 		// TELEPORT MonsterONLY
 		if (!thing->player &&
-		    (map_format.ev_teleport(line->tag, line, side, thing, TELF_VANILLA)))
+		    (EV_CompatibleTeleport(line->id, line, side, thing, TELF_VANILLA)))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 130:
 		// Raise Floor Turbo
-		if (EV_DoFloor(line, raiseFloorTurbo) || demo_compatibility)
+		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_FAST), 0, 0,
+		               0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 	case 141:
 		// Silent Ceiling Crush & Raise
-		if (EV_DoCeiling(line, silentCrushAndRaise) || demo_compatibility)
+		if (EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_SLOW),
+		                 SPEED(C_SLOW), 0, true, 1, 0))
+		{
+			result.lineexecuted = true;
 			line->special = 0;
+		}
 		break;
 
 		// Regular walk many retriggerable
 
 	case 72:
 		// Ceiling Crush
-		EV_DoCeiling(line, lowerAndCrush);
+		EV_DoCeiling(DCeiling::ceilLowerAndCrush, line, line->id, SPEED(C_SLOW),
+		             SPEED(C_SLOW) / 2, 0, true, 0, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 73:
 		// Ceiling Crush and Raise
-		EV_DoCeiling(line, crushAndRaise);
+		EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_SLOW),
+		             SPEED(C_SLOW), 0, true, 0, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 74:
 		// Ceiling Crush Stop
-		EV_CeilingCrushStop(line);
+		EV_CeilingCrushStop(line->id);
+		result.lineexecuted = true;
 		break;
 
 	case 75:
 		// Close Door
-		EV_DoDoor(line, closeDoor);
+		EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_SLOW), 0, NoKey);
+		result.lineexecuted = true;
 		break;
 
 	case 76:
 		// Close Door 30
-		EV_DoDoor(line, close30ThenOpen);
+		EV_DoDoor(DDoor::doorCloseWaitOpen, line, thing, line->id, SPEED(D_SLOW),
+		          OCTICS(240), NoKey);
+		result.lineexecuted = true;
 		break;
 
 	case 77:
 		// Fast Ceiling Crush & Raise
-		EV_DoCeiling(line, fastCrushAndRaise);
+		EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_NORMAL),
+		             SPEED(C_NORMAL), 0, true, 0, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 79:
 		// Lights Very Dark
-		EV_LightTurnOn(line, 35);
+		EV_LightTurnOn(line->id, 35);
+		result.lineexecuted = true;
 		break;
 
 	case 80:
 		// Light Turn On - brightest near
-		EV_LightTurnOn(line, 0);
+		EV_LightTurnOn(line->id, -1);
+		result.lineexecuted = true;
 		break;
 
 	case 81:
 		// Light Turn On 255
-		EV_LightTurnOn(line, 255);
+		EV_LightTurnOn(line->id, 255);
+		result.lineexecuted = true;
 		break;
 
 	case 82:
 		// Lower Floor To Lowest
-		EV_DoFloor(line, lowerFloorToLowest);
+		EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 83:
 		// Lower Floor
-		EV_DoFloor(line, lowerFloor);
+		EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_SLOW),
+		           (128 - 128) * FRACUNIT, 0, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 84:
 		// LowerAndChange
-		EV_DoFloor(line, lowerAndChange);
+		EV_DoFloor(DFloor::floorLowerAndChange, line, line->id, SPEED(F_SLOW),
+		           0 * FRACUNIT, 0, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 86:
 		// Open Door
-		EV_DoDoor(line, openDoor);
+		EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_SLOW), 0, NoKey);
+		result.lineexecuted = true;
 		break;
 
 	case 87:
 		// Perpetual Platform Raise
-		EV_DoPlat(line, perpetualRaise, 0);
+		EV_DoPlat(line->id, line, DPlat::platPerpetualRaise, 0, SPEED(P_SLOW),
+		          TICS(PLATWAIT), 0 * FRACUNIT, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 88:
 		// PlatDownWaitUp
-		EV_DoPlat(line, downWaitUpStay, 0);
+		EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_FAST),
+		          TICS(PLATWAIT), 0 * FRACUNIT, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 89:
 		// Platform Stop
-		EV_StopPlat(line);
+		EV_StopPlat(line->id);
+		result.lineexecuted = true;
 		break;
 
 	case 90:
 		// Raise Door
-		EV_DoDoor(line, normal);
+		EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_SLOW), TICS(VDOORWAIT),
+		          NoKey);
+		result.lineexecuted = true;
 		break;
 
 	case 91:
 		// Raise Floor
-		EV_DoFloor(line, raiseFloor);
+		EV_DoFloor(DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW), 0, 0,
+		           0);
+		result.lineexecuted = true;
 		break;
 
 	case 92:
 		// Raise Floor 24
-		EV_DoFloor(line, raiseFloor24);
+		EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
+		           FRACUNIT * 24, 0, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 93:
 		// Raise Floor 24 And Change
-		EV_DoFloor(line, raiseFloor24AndChange);
+		EV_DoFloor(DFloor::floorRaiseAndChange, line, line->id, SPEED(F_SLOW),
+		           24 * FRACUNIT, 0, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 94:
 		// Raise Floor Crush
-		EV_DoFloor(line, raiseFloorCrush);
+		EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(F_SLOW), 0, true, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 95:
 		// Raise floor to nearest height
 		// and change texture.
-		EV_DoPlat(line, raiseToNearestAndChange, 0);
+		EV_DoPlat(line->id, line, DPlat::platRaiseAndStay, 0, SPEED(P_SLOW / 2), 0, 0, 1);
+		result.lineexecuted = true;
 		break;
 
 	case 96:
 		// Raise floor to shortest texture height
 		// on either side of lines.
-		EV_DoFloor(line, raiseToTexture);
+		EV_DoFloor(DFloor::floorRaiseByTexture, line, line->id, SPEED(F_SLOW), 0, 0, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 97:
 		// TELEPORT!
-		map_format.ev_teleport(line->tag, line, side, thing, TELF_VANILLA);
+		EV_CompatibleTeleport(line->id, line, side, thing, TELF_VANILLA);
+		result.lineexecuted = true;
 		break;
 
 	case 98:
 		// Lower Floor (TURBO)
-		EV_DoFloor(line, turboLower);
+		EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_FAST),
+		           (136 - 128) * FRACUNIT, 0, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 105:
 		// Blazing Door Raise (faster than TURBO!)
-		EV_DoDoor(line, blazeRaise);
+		EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_FAST), TICS(VDOORWAIT),
+		          NoKey);
+		result.lineexecuted = true;
 		break;
 
 	case 106:
 		// Blazing Door Open (faster than TURBO!)
-		EV_DoDoor(line, blazeOpen);
+		EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), 0, NoKey);
+		result.lineexecuted = true;
 		break;
 
 	case 107:
 		// Blazing Door Close (faster than TURBO!)
-		EV_DoDoor(line, blazeClose);
+		EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_FAST), 0, NoKey);
+		result.lineexecuted = true;
 		break;
 
 	case 120:
 		// Blazing PlatDownWaitUpStay.
 		EV_DoPlat(line, blazeDWUS, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 126:
 		// TELEPORT MonsterONLY.
 		if (!thing->player)
-			map_format.ev_teleport(line->tag, line, side, thing, TELF_VANILLA);
+		{
+			EV_CompatibleTeleport(line->id, line, side, thing, TELF_VANILLA);
+			result.lineexecuted = true;
+		}
 		break;
 
 	case 128:
 		// Raise To Nearest Floor
-		EV_DoFloor(line, raiseFloorToNearest);
+		EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0, 0);
+		result.lineexecuted = true;
 		break;
 
 	case 129:
 		// Raise Floor Turbo
-		EV_DoFloor(line, raiseFloorTurbo);
+		EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_FAST), 0, 0, 0);
+		result.lineexecuted = true;
 		break;
 
 		// Extended walk triggers
@@ -782,306 +865,404 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 		// killough 1/31/98: "factor out" compatibility test, by
 		// adding inner switch qualified by compatibility flag.
-		// relax test to demo_compatibility
 
 		// killough 2/16/98: Fix problems with W1 types being cleared too early
 
 	default:
-		if (!demoplayback)
-			switch (line->special)
+		switch (line->special)
+		{
+			// Extended walk once triggers
+
+		case 142:
+			// Raise Floor 512
+			// 142 W1  EV_DoFloor(raiseFloor512)
+			if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
+			               FRACUNIT * 64 * 8, 0, 0))
 			{
-				// Extended walk once triggers
-
-			case 142:
-				// Raise Floor 512
-				// 142 W1  EV_DoFloor(raiseFloor512)
-				if (EV_DoFloor(line, raiseFloor512))
-					line->special = 0;
-				break;
-
-			case 143:
-				// Raise Floor 24 and change
-				// 143 W1  EV_DoPlat(raiseAndChange,24)
-				if (EV_DoPlat(line, raiseAndChange, 24))
-					line->special = 0;
-				break;
-
-			case 144:
-				// Raise Floor 32 and change
-				// 144 W1  EV_DoPlat(raiseAndChange,32)
-				if (EV_DoPlat(line, raiseAndChange, 32))
-					line->special = 0;
-				break;
-
-			case 145:
-				// Lower Ceiling to Floor
-				// 145 W1  EV_DoCeiling(lowerToFloor)
-				if (EV_DoCeiling(line, lowerToFloor))
-					line->special = 0;
-				break;
-
-			case 146:
-				// Lower Pillar, Raise Donut
-				// 146 W1  EV_DoDonut()
-				if (EV_DoDonut(line))
-					line->special = 0;
-				break;
-
-			case 199:
-				// Lower ceiling to lowest surrounding ceiling
-				// 199 W1 EV_DoCeiling(lowerToLowest)
-				if (EV_DoCeiling(line, lowerToLowest))
-					line->special = 0;
-				break;
-
-			case 200:
-				// Lower ceiling to highest surrounding floor
-				// 200 W1 EV_DoCeiling(lowerToMaxFloor)
-				if (EV_DoCeiling(line, lowerToMaxFloor))
-					line->special = 0;
-				break;
-
-			case 207:
-				// killough 2/16/98: W1 silent teleporter (normal kind)
-				if (map_format.ev_teleport(line->tag, line, side, thing, TELF_SILENT))
-					line->special = 0;
-				break;
-
-				// jff 3/16/98 renumber 215->153
-			case 153: // jff 3/15/98 create texture change no motion type
-				// Texture/Type Change Only (Trig)
-				// 153 W1 Change Texture/Type Only
-				if (EV_DoChange(line, trigChangeOnly, line->tag))
-					line->special = 0;
-				break;
-
-			case 239: // jff 3/15/98 create texture change no motion type
-				// Texture/Type Change Only (Numeric)
-				// 239 W1 Change Texture/Type Only
-				if (EV_DoChange(line, numChangeOnly, line->tag))
-					line->special = 0;
-				break;
-
-			case 219:
-				// Lower floor to next lower neighbor
-				// 219 W1 Lower Floor Next Lower Neighbor
-				if (EV_DoFloor(line, lowerFloorToNearest))
-					line->special = 0;
-				break;
-
-			case 227:
-				// Raise elevator next floor
-				// 227 W1 Raise Elevator next floor
-				if (EV_DoElevator(line, elevateUp))
-					line->special = 0;
-				break;
-
-			case 231:
-				// Lower elevator next floor
-				// 231 W1 Lower Elevator next floor
-				if (EV_DoElevator(line, elevateDown))
-					line->special = 0;
-				break;
-
-			case 235:
-				// Elevator to current floor
-				// 235 W1 Elevator to current floor
-				if (EV_DoElevator(line, elevateCurrent))
-					line->special = 0;
-				break;
-
-			case 243: // jff 3/6/98 make fit within DCK's 256 linedef types
-				// killough 2/16/98: W1 silent teleporter (linedef-linedef kind)
-				if (EV_SilentLineTeleport(line, side, thing, line->tag, false))
-					line->special = 0;
-				break;
-
-			case 262: // jff 4/14/98 add silent line-line reversed
-				if (EV_SilentLineTeleport(line, side, thing, line->tag, true))
-					line->special = 0;
-				break;
-
-			case 264: // jff 4/14/98 add monster-only silent line-line reversed
-				if (!thing->player &&
-				    EV_SilentLineTeleport(line, side, thing, line->tag, true))
-					line->special = 0;
-				break;
-
-			case 266: // jff 4/14/98 add monster-only silent line-line
-				if (!thing->player &&
-				    EV_SilentLineTeleport(line, side, thing, line->tag, false))
-					line->special = 0;
-				break;
-
-			case 268: // jff 4/14/98 add monster-only silent
-				if (!thing->player &&
-				    map_format.ev_teleport(line->tag, line, side, thing, TELF_SILENT))
-					line->special = 0;
-				break;
-
-				// jff 1/29/98 end of added W1 linedef types
-
-				// Extended walk many retriggerable
-
-				// jff 1/29/98 added new linedef types to fill all functions
-				// out so that all have varieties SR, S1, WR, W1
-
-			case 147:
-				// Raise Floor 512
-				// 147 WR  EV_DoFloor(raiseFloor512)
-				EV_DoFloor(line, raiseFloor512);
-				break;
-
-			case 148:
-				// Raise Floor 24 and Change
-				// 148 WR  EV_DoPlat(raiseAndChange,24)
-				EV_DoPlat(line, raiseAndChange, 24);
-				break;
-
-			case 149:
-				// Raise Floor 32 and Change
-				// 149 WR  EV_DoPlat(raiseAndChange,32)
-				EV_DoPlat(line, raiseAndChange, 32);
-				break;
-
-			case 150:
-				// Start slow silent crusher
-				// 150 WR  EV_DoCeiling(silentCrushAndRaise)
-				EV_DoCeiling(line, silentCrushAndRaise);
-				break;
-
-			case 151:
-				// RaiseCeilingLowerFloor
-				// 151 WR  EV_DoCeiling(raiseToHighest),
-				//         EV_DoFloor(lowerFloortoLowest)
-				EV_DoCeiling(line, raiseToHighest);
-				EV_DoFloor(line, lowerFloorToLowest);
-				break;
-
-			case 152:
-				// Lower Ceiling to Floor
-				// 152 WR  EV_DoCeiling(lowerToFloor)
-				EV_DoCeiling(line, lowerToFloor);
-				break;
-
-				// jff 3/16/98 renumber 153->256
-			case 256:
-				// Build stairs, step 8
-				// 256 WR EV_BuildStairs(build8)
-				EV_BuildStairs(line, build8);
-				break;
-
-				// jff 3/16/98 renumber 154->257
-			case 257:
-				// Build stairs, step 16
-				// 257 WR EV_BuildStairs(turbo16)
-				EV_BuildStairs(line, turbo16);
-				break;
-
-			case 155:
-				// Lower Pillar, Raise Donut
-				// 155 WR  EV_DoDonut()
-				EV_DoDonut(line);
-				break;
-
-			case 156:
-				// Start lights strobing
-				// 156 WR Lights EV_StartLightStrobing()
-				EV_StartLightStrobing(line);
-				break;
-
-			case 157:
-				// Lights to dimmest near
-				// 157 WR Lights EV_TurnTagLightsOff()
-				EV_TurnTagLightsOff(line);
-				break;
-
-			case 201:
-				// Lower ceiling to lowest surrounding ceiling
-				// 201 WR EV_DoCeiling(lowerToLowest)
-				EV_DoCeiling(line, lowerToLowest);
-				break;
-
-			case 202:
-				// Lower ceiling to highest surrounding floor
-				// 202 WR EV_DoCeiling(lowerToMaxFloor)
-				EV_DoCeiling(line, lowerToMaxFloor);
-				break;
-
-			case 208:
-				// killough 2/16/98: WR silent teleporter (normal kind)
-				map_format.ev_teleport(line->tag, line, side, thing, TELF_SILENT);
-				break;
-
-			case 212: // jff 3/14/98 create instant toggle floor type
-				// Toggle floor between C and F instantly
-				// 212 WR Instant Toggle Floor
-				EV_DoPlat(line, toggleUpDn, 0);
-				break;
-
-			// jff 3/16/98 renumber 216->154
-			case 154: // jff 3/15/98 create texture change no motion type
-				// Texture/Type Change Only (Trigger)
-				// 154 WR Change Texture/Type Only
-				EV_DoChange(line, trigChangeOnly, line->tag);
-				break;
-
-			case 240: // jff 3/15/98 create texture change no motion type
-				// Texture/Type Change Only (Numeric)
-				// 240 WR Change Texture/Type Only
-				EV_DoChange(line, numChangeOnly, line->tag);
-				break;
-
-			case 220:
-				// Lower floor to next lower neighbor
-				// 220 WR Lower Floor Next Lower Neighbor
-				EV_DoFloor(line, lowerFloorToNearest);
-				break;
-
-			case 228:
-				// Raise elevator next floor
-				// 228 WR Raise Elevator next floor
-				EV_DoElevator(line, elevateUp);
-				break;
-
-			case 232:
-				// Lower elevator next floor
-				// 232 WR Lower Elevator next floor
-				EV_DoElevator(line, elevateDown);
-				break;
-
-			case 236:
-				// Elevator to current floor
-				// 236 WR Elevator to current floor
-				EV_DoElevator(line, elevateCurrent);
-				break;
-
-			case 244: // jff 3/6/98 make fit within DCK's 256 linedef types
-				// killough 2/16/98: WR silent teleporter (linedef-linedef kind)
-				EV_SilentLineTeleport(line, side, thing, line->tag, false);
-				break;
-
-			case 263: // jff 4/14/98 add silent line-line reversed
-				EV_SilentLineTeleport(line, side, thing, line->tag, true);
-				break;
-
-			case 265: // jff 4/14/98 add monster-only silent line-line reversed
-				if (!thing->player)
-					EV_SilentLineTeleport(line, side, thing, line->tag, true);
-				break;
-
-			case 267: // jff 4/14/98 add monster-only silent line-line
-				if (!thing->player)
-					EV_SilentLineTeleport(line, side, thing, line->tag, false);
-				break;
-
-			case 269: // jff 4/14/98 add monster-only silent
-				if (!thing->player)
-					map_format.ev_teleport(line->tag, line, side, thing, TELF_SILENT);
-				break;
-
-				// jff 1/29/98 end of added WR linedef types
+				result.lineexecuted = true;
+				line->special = 0;
 			}
+			break;
+
+		case 143:
+			// Raise Floor 24 and change
+			// 143 W1  EV_DoPlat(raiseAndChange,24)
+			if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 3 * 8,
+			              SPEED(P_SLOW / 2), 0, 0, 2))
+			{
+				result.lineexecuted = true;
+				line->special = 0;
+			}
+			break;
+
+		case 144:
+			// Raise Floor 32 and change
+			// 144 W1  EV_DoPlat(raiseAndChange,32)
+			if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 4 * 8,
+			              SPEED(P_SLOW / 2), 0, 0, 2))
+			{
+				result.lineexecuted = true;
+				line->special = 0;
+			}
+			break;
+
+		case 145:
+			// Lower Ceiling to Floor
+			// 145 W1  EV_DoCeiling(lowerToFloor)
+			if (EV_DoCeiling(DCeiling::ceilLowerToFloor, line, line->id, SPEED(C_SLOW), 0,
+			                 0, 0, 0, 0))
+			{
+				result.lineexecuted = true;
+				line->special = 0;
+			}
+			break;
+
+		case 146:
+			// Lower Pillar, Raise Donut
+			// 146 W1  EV_DoDonut()
+			if (EV_DoDonut(line))
+			{
+				result.lineexecuted = true;
+				line->special = 0;
+			}
+			break;
+
+		case 199:
+			// Lower ceiling to lowest surrounding ceiling
+			// 199 W1 EV_DoCeiling(lowerToLowest)
+			if (EV_DoCeiling(DCeiling::ceilLowerToLowest, line, line->id, SPEED(C_SLOW),
+			                 0, 0, 0, 0, 0))
+			{
+				result.lineexecuted = true;
+				line->special = 0;
+			}
+			break;
+
+		case 200:
+			// Lower ceiling to highest surrounding floor
+			// 200 W1 EV_DoCeiling(lowerToMaxFloor)
+			if (EV_DoCeiling(DCeiling::ceilLowerToHighestFloor, line, line->id,
+			                 SPEED(C_SLOW), 0, 0, 0, 0, 0))
+			{
+				result.lineexecuted = true;
+			}
+			break;
+
+		case 207:
+			// killough 2/16/98: W1 silent teleporter (normal kind)
+			if (EV_CompatibleTeleport(line->id, line, side, thing, TELF_SILENT))
+			{
+				result.lineexecuted = true;
+			}
+			break;
+
+			// jff 3/16/98 renumber 215->153
+		case 153: // jff 3/15/98 create texture change no motion type
+			// Texture/Type Change Only (Trig)
+			// 153 W1 Change Texture/Type Only
+			if (EV_DoChange(line, trigChangeOnly, line->id))
+			{
+				result.lineexecuted = true;
+			}
+			break;
+
+		case 239: // jff 3/15/98 create texture change no motion type
+			// Texture/Type Change Only (Numeric)
+			// 239 W1 Change Texture/Type Only
+			if (EV_DoChange(line, numChangeOnly, line->id))
+			{
+				result.lineexecuted = true;
+			}
+			break;
+
+		case 219:
+			// Lower floor to next lower neighbor
+			// 219 W1 Lower Floor Next Lower Neighbor
+			if (EV_DoFloor(DFloor::floorLowerToNearest, line, line->id, SPEED(F_SLOW), 0,
+			               0, 0))
+			{
+				result.lineexecuted = true;
+			}
+			break;
+
+		case 227:
+			// Raise elevator next floor
+			// 227 W1 Raise Elevator next floor
+			if (EV_DoElevator(line, DElevator::elevateUp, SPEED(ELEVATORSPEED), 0,
+			                  line->id))
+			{
+				result.lineexecuted = true;
+			}
+			break;
+
+		case 231:
+			// Lower elevator next floor
+			// 231 W1 Lower Elevator next floor
+			if (EV_DoElevator(line, DElevator::elevateDown, SPEED(ELEVATORSPEED), 0,
+			                  line->id))
+			{
+				result.lineexecuted = true;
+			}
+			break;
+
+		case 235:
+			// Elevator to current floor
+			// 235 W1 Elevator to current floor
+			if (EV_DoElevator(line, DElevator::elevateCurrent, SPEED(ELEVATORSPEED), 0,
+			                  line->id))
+			{
+				result.lineexecuted = true;
+			}
+			break;
+
+		case 243: // jff 3/6/98 make fit within DCK's 256 linedef types
+			// killough 2/16/98: W1 silent teleporter (linedef-linedef kind)
+			if (EV_SilentLineTeleport(line, side, thing, line->id, false))
+			{
+				result.lineexecuted = true;
+			}
+			break;
+
+		case 262: // jff 4/14/98 add silent line-line reversed
+			if (EV_SilentLineTeleport(line, side, thing, line->id, true))
+			{
+				result.lineexecuted = true;
+			}
+			break;
+
+		case 264: // jff 4/14/98 add monster-only silent line-line reversed
+			if (!thing->player &&
+			    EV_SilentLineTeleport(line, side, thing, line->id, true))
+			{
+				result.lineexecuted = true;
+			}
+			break;
+
+		case 266: // jff 4/14/98 add monster-only silent line-line
+			if (!thing->player &&
+			    EV_SilentLineTeleport(line, side, thing, line->id, false))
+			{
+				result.lineexecuted = true;
+			}
+			break;
+
+		case 268: // jff 4/14/98 add monster-only silent
+			if (!thing->player &&
+			    EV_CompatibleTeleport(line->id, line, side, thing, TELF_SILENT))
+			{
+				result.lineexecuted = true;
+			}
+			break;
+
+			// jff 1/29/98 end of added W1 linedef types
+
+			// Extended walk many retriggerable
+
+			// jff 1/29/98 added new linedef types to fill all functions
+			// out so that all have varieties SR, S1, WR, W1
+
+		case 147:
+			// Raise Floor 512
+			// 147 WR  EV_DoFloor(raiseFloor512)
+			EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
+			           FRACUNIT * 64 * 8, 0, 0);
+			result.lineexecuted = true;
+			break;
+
+		case 148:
+			// Raise Floor 24 and Change
+			// 148 WR  EV_DoPlat(raiseAndChange,24)
+			EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 3 * 8,
+			          SPEED(P_SLOW / 2), 0, 0, 2);
+			result.lineexecuted = true;
+			break;
+
+		case 149:
+			// Raise Floor 32 and Change
+			// 149 WR  EV_DoPlat(raiseAndChange,32)
+			EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 4 * 8,
+			          SPEED(P_SLOW / 2), 0, 0, 2);
+			result.lineexecuted = true;
+			break;
+
+		case 150:
+			// Start slow silent crusher
+			// 150 WR  EV_DoCeiling(silentCrushAndRaise)
+			EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_SLOW),
+			             SPEED(C_SLOW), 0, true, 1, 0);
+			result.lineexecuted = true;
+			break;
+
+		case 151:
+			// RaiseCeilingLowerFloor
+			// 151 WR  EV_DoCeiling(raiseToHighest),
+			//         EV_DoFloor(lowerFloortoLowest)
+			EV_DoCeiling(DCeiling::ceilRaiseToHighest, line, line->id, SPEED(C_SLOW), 0,
+			             0, 0, 0, 0);
+			EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
+			           0);
+			result.lineexecuted = true;
+			break;
+
+		case 152:
+			// Lower Ceiling to Floor
+			// 152 WR  EV_DoCeiling(lowerToFloor)
+			EV_DoCeiling(DCeiling::ceilLowerToFloor, line, line->id, SPEED(C_SLOW), 0, 0,
+			             0, 0, 0);
+			result.lineexecuted = true;
+			break;
+
+			// jff 3/16/98 renumber 153->256
+		case 256:
+			// Build stairs, step 8
+			// 256 WR EV_BuildStairs(build8)
+			EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT, SPEED(S_SLOW),
+			               0, 0, 0, 0);
+			result.lineexecuted = true;
+			break;
+
+			// jff 3/16/98 renumber 154->257
+		case 257:
+			// Build stairs, step 16
+			// 257 WR EV_BuildStairs(turbo16)
+			EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT, SPEED(S_TURBO),
+			               0, 0, 0, 0);
+			result.lineexecuted = true;
+			break;
+
+		case 155:
+			// Lower Pillar, Raise Donut
+			// 155 WR  EV_DoDonut()
+			EV_DoDonut(line);
+			result.lineexecuted = true;
+			break;
+
+		case 156:
+			// Start lights strobing
+			// 156 WR Lights EV_StartLightStrobing()
+			EV_StartLightStrobing(line->id, TICS(5), TICS(35));
+			result.lineexecuted = true;
+			break;
+
+		case 157:
+			// Lights to dimmest near
+			// 157 WR Lights EV_TurnTagLightsOff()
+			EV_TurnTagLightsOff(line->id);
+			result.lineexecuted = true;
+			break;
+
+		case 201:
+			// Lower ceiling to lowest surrounding ceiling
+			// 201 WR EV_DoCeiling(lowerToLowest)
+			EV_DoCeiling(DCeiling::ceilLowerToLowest, line, line->id, SPEED(C_SLOW), 0, 0,
+			             0, 0, 0);
+			result.lineexecuted = true;
+			break;
+
+		case 202:
+			// Lower ceiling to highest surrounding floor
+			// 202 WR EV_DoCeiling(lowerToMaxFloor)
+			EV_DoCeiling(DCeiling::ceilLowerToHighestFloor, line, line->id, SPEED(C_SLOW),
+			             0, 0, 0, 0, 0);
+			result.lineexecuted = true;
+			break;
+
+		case 208:
+			// killough 2/16/98: WR silent teleporter (normal kind)
+			EV_CompatibleTeleport(line->id, line, side, thing, TELF_SILENT);
+			result.lineexecuted = true;
+			break;
+
+		case 212: // jff 3/14/98 create instant toggle floor type
+			// Toggle floor between C and F instantly
+			// 212 WR Instant Toggle Floor
+			EV_DoPlat(line->id, line, DPlat::platToggle, 0, 0, 0, 0, 0);
+			result.lineexecuted = true;
+			break;
+
+		// jff 3/16/98 renumber 216->154
+		case 154: // jff 3/15/98 create texture change no motion type
+			// Texture/Type Change Only (Trigger)
+			// 154 WR Change Texture/Type Only
+			EV_DoChange(line, trigChangeOnly, line->id);
+			result.lineexecuted = true;
+			break;
+
+		case 240: // jff 3/15/98 create texture change no motion type
+			// Texture/Type Change Only (Numeric)
+			// 240 WR Change Texture/Type Only
+			EV_DoChange(line, numChangeOnly, line->id);
+			result.lineexecuted = true;
+			break;
+
+		case 220:
+			// Lower floor to next lower neighbor
+			// 220 WR Lower Floor Next Lower Neighbor
+			EV_DoFloor(DFloor::floorLowerToNearest, line, line->id, SPEED(F_SLOW), 0, 0,
+			           0);
+			result.lineexecuted = true;
+			break;
+
+		case 228:
+			// Raise elevator next floor
+			// 228 WR Raise Elevator next floor
+			EV_DoElevator(line, DElevator::elevateUp, SPEED(ELEVATORSPEED), 0, line->id);
+			result.lineexecuted = true;
+			break;
+
+		case 232:
+			// Lower elevator next floor
+			// 232 WR Lower Elevator next floor
+			EV_DoElevator(line, DElevator::elevateDown, SPEED(ELEVATORSPEED), 0,
+			              line->id);
+			result.lineexecuted = true;
+			break;
+
+		case 236:
+			// Elevator to current floor
+			// 236 WR Elevator to current floor
+			EV_DoElevator(line, DElevator::elevateCurrent, SPEED(ELEVATORSPEED), 0,
+			              line->id);
+			result.lineexecuted = true;
+			break;
+
+		case 244: // jff 3/6/98 make fit within DCK's 256 linedef types
+			// killough 2/16/98: WR silent teleporter (linedef-linedef kind)
+			EV_SilentLineTeleport(line, side, thing, line->id, false);
+			result.lineexecuted = true;
+			break;
+
+		case 263: // jff 4/14/98 add silent line-line reversed
+			EV_SilentLineTeleport(line, side, thing, line->id, true);
+			result.lineexecuted = true;
+			break;
+
+		case 265: // jff 4/14/98 add monster-only silent line-line reversed
+			if (!thing->player)
+			{
+				EV_SilentLineTeleport(line, side, thing, line->id, true);
+				result.lineexecuted = true;
+			}
+			break;
+
+		case 267: // jff 4/14/98 add monster-only silent line-line
+			if (!thing->player)
+			{
+				EV_SilentLineTeleport(line, side, thing, line->id, false);
+				result.lineexecuted = true;
+			}
+			break;
+
+		case 269: // jff 4/14/98 add monster-only silent
+			if (!thing->player)
+			{
+				EV_CompatibleTeleport(line->id, line, side, thing, TELF_SILENT));
+				result.lineexecuted = true;
+			}
+			break;
+
+			// jff 1/29/98 end of added WR linedef types
+		}
 		break;
 	}
 }
