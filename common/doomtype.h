@@ -107,14 +107,9 @@
 	#define __int64 long
 #endif
 
-#if (defined _XBOX || defined _MSC_VER)
-	#define DBL_EPSILON 2.2204460492503131e-016
-	#define FLT_EPSILON 1.192092896e-07F
-
+#if (defined _WIN32 || defined _XBOX)
 	#define PRI_SIZE_PREFIX "I"
 #else
-	#include <float.h>
-
 	#define PRI_SIZE_PREFIX "z"
 #endif
 

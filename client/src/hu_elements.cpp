@@ -875,7 +875,8 @@ void EleBar(const int x, const int y, const int w, const float scale,
 	{
 		if (i == 0)
 		{
-			if (pct <= (0.0 + FLT_EPSILON))
+			const float fudge = NextAfter(0.0f, 1.0f);
+			if (pct <= fudge)
 			{
 				// Completely empty.
 				lineHandles.push_back(leftempty);
@@ -888,7 +889,8 @@ void EleBar(const int x, const int y, const int w, const float scale,
 		}
 		else if (i == UNITS - 1)
 		{
-			if (pct >= (1.0 - FLT_EPSILON))
+			const float fudge = NextAfter(1.0f, 0.0f);
+			if (pct >= fudge)
 			{
 				// Completely full.
 				lineHandles.push_back(rightfull);
