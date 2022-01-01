@@ -120,10 +120,11 @@ endif()
 
 # Find Mac frameworks
 if(APPLE)
+  find_library(APPKIT_LIBRARY AppKit)
   find_library(CARBON_LIBRARY Carbon)
   find_library(AUDIOTBOX_LIBRARY AudioToolbox)
   find_library(AUDIOUNIT_LIBRARY AudioUnit)
-  set(APPLE_FRAMEWORKS ${CARBON_LIBRARY} ${AUDIOTBOX_LIBRARY}
+  set(APPLE_FRAMEWORKS ${APPKIT_LIBRARY} ${CARBON_LIBRARY} ${AUDIOTBOX_LIBRARY}
     ${AUDIOUNIT_LIBRARY})
 endif()
 
