@@ -36,6 +36,22 @@
 	#include <gctypes.h>
 #endif
 
+#if defined(_MSVC_LANG) && !defined(__clang__)
+	#if _MSC_VER == 1900
+		#define CPLUSPLUS (201103L)
+	#else
+		#define CPLUSPLUS (_MSVC_LANG)
+	#endif
+#else
+	#define CPLUSPLUS __cplusplus
+#endif
+
+#if CPLUSPLUS >= 201103
+	#define CONSTEXPR constexpr
+#else
+	#define CONSTEXPR
+#endif
+
 #ifdef _MSC_VER
 	#define FORMAT_PRINTF(index, first_arg)
 #else

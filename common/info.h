@@ -1387,19 +1387,17 @@ struct state_t
 	statearg_t args[MAXSTATEARGS]; // [XA] mbf21 args
 	int flags;
 
-	state_t()
+	CONSTEXPR state_t()
 	    : sprite(SPR_TROO), frame(0), tics(0), action(NULL), nextstate(S_NULL), misc1(0),
-	      misc2(0), flags(0)
+	      misc2(0), args(), flags(0)
 	{
-		ArrayInit(args, 0x0);
 	}
 
-	state_t(spritenum_t sprite, int frame, int tics, actionf_p1 action,
-	        statenum_t nextstate)
+	CONSTEXPR state_t(spritenum_t sprite, int frame, int tics, actionf_p1 action,
+	                  statenum_t nextstate)
 	    : sprite(sprite), frame(frame), tics(tics), action(action), nextstate(nextstate),
-	      misc1(0), misc2(0), flags(0)
+	      misc1(0), misc2(0), args(), flags(0)
 	{
-		ArrayInit(args, 0x0);
 	}
 };
 
