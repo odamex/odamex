@@ -95,7 +95,8 @@ std::string JoinStrings(const std::vector<std::string> &pieces, const std::strin
 typedef std::vector<std::string> StringTokens;
 StringTokens TokenizeString(const std::string& str, const std::string& delim);
 
-FORMAT_PRINTF(2, 3) void STACK_ARGS StrFormat(std::string& out, const char* fmt, ...);
+FORMAT_PRINTF(2, 3)
+void STACK_ARGS StrFormat(std::string& out, FMTSTR_PRINTF const char* fmt, ...);
 void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va);
 
 void StrFormatBytes(std::string& out, size_t bytes);
