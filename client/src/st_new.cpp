@@ -187,7 +187,7 @@ void ST_initNew()
 	std::string buffer;
 	for (size_t i = 0; i < NUMMODS; i++)
 	{
-		StrFormat(buffer, "ODAMOD%d", i);
+		StrFormat(buffer, "ODAMOD%" PRIuSIZE, i);
 		::ToastIcon[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
 	}
 }

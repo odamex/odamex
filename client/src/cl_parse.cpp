@@ -1316,9 +1316,9 @@ static void CL_Print(const odaproto::svc::Print* msg)
 
 	// TODO : Clientchat moved, remove that but PRINT_SERVERCHAT
 	if (level == PRINT_CHAT)
-		Printf(level, "%s*%s", TEXTCOLOR_ESCAPE, str);
+		Printf(level, "%c*%s", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_TEAMCHAT)
-		Printf(level, "%s!%s", TEXTCOLOR_ESCAPE, str);
+		Printf(level, "%c!%s", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
 		Printf(level, "%s%s", TEXTCOLOR_YELLOW, str);
 	else

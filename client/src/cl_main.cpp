@@ -885,22 +885,21 @@ BEGIN_COMMAND (serverinfo)
 	// sort the list of cvars
 	std::sort(server_cvars.begin(), server_cvars.end());
 
-    // Heading
-    Printf ("\n%*s - Value\n", MaxFieldLength, "Name");
+	// Printf requires uint for this length.
+	const int maxLen = static_cast<int>(clamp<size_t>(MaxFieldLength, 0, UINT32_MAX));
 
-    // Data
+	// Heading
+	Printf("\n%*s - Value\n", maxLen, "Name");
+
+	// Data
 	for (size_t i = 0; i < server_cvars.size(); i++)
 	{
-		cvar_t *dummy;
+		cvar_t* dummy = NULL;
 		Cvar = cvar_t::FindCVar(server_cvars[i].c_str(), &dummy);
-
-		Printf( "%*s - %s\n",
-				MaxFieldLength,
-				Cvar->name(),
-				Cvar->cstring());
+		Printf("%*s - %s\n", maxLen, Cvar->name(), Cvar->cstring());
 	}
 
-    Printf ("\n");
+	Printf("\n");
 }
 END_COMMAND (serverinfo)
 
