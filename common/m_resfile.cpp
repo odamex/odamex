@@ -318,6 +318,11 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	return false;
 }
 
+static bool ScanIWADCmp(const scannedIWAD_t& a, const scannedIWAD_t& b)
+{
+	return a.id->weight < b.id->weight;
+}
+
 /**
  * @brief Scan all file search directories for IWAD files.
  */
@@ -355,14 +360,6 @@ std::vector<scannedIWAD_t> M_ScanIWADs()
 			found[crc32] = true;
 		}
 	}
-
-	struct
-	{
-		bool operator()(const scannedIWAD_t& a, const scannedIWAD_t& b)
-		{
-			return a.id->weight < b.id->weight;
-		}
-	} ScanIWADCmp;
 
 	// Sort the results by weight.
 	std::sort(rvo.begin(), rvo.end(), ScanIWADCmp);
