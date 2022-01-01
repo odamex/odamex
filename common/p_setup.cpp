@@ -1737,8 +1737,6 @@ static void P_InitTagLists(void)
 // [RH] position indicates the start spot to spawn at
 void P_SetupLevel (const char *lumpname, int position)
 {
-	size_t lumpnum;
-
 	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
 		wminfo.maxfrags = 0;
@@ -1782,7 +1780,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	// UNUSED W_Profile ();
 
 	// find map num
-	lumpnum = W_GetNumForName (lumpname);
+	const int lumpnum = W_GetNumForName (lumpname);
 
 	// [RH] Check if this map is Hexen-style.
 	//		LINEDEFS and THINGS need to be handled accordingly.
