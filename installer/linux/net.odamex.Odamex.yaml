@@ -4,6 +4,13 @@ runtime-version: "21.08"
 sdk: org.freedesktop.Sdk
 command: odamex
 modules:
+  - name: deutex
+    buildsystem: autotools
+    builddir: true
+    sources:
+    - type: archive
+      url: https://github.com/Doom-Utils/deutex/archive/refs/tags/v5.2.2.tar.gz
+      sha256: 767e75eb3615bb732947448b81031410e26f808dfc3a099d64a483931fe0b313
   - name: odamex
     buildsystem: cmake-ninja
     builddir: true
@@ -19,6 +26,10 @@ modules:
       - -DBUILD_MASTER=0
       - -DBUILD_LAUNCHER=0
 finish-args:
-  - --socket=x11
-  - --socket=wayland
+  - --device=dri
+  - --filesystem=host
+  - --share=ipc
   - --share=network
+  - --socket=pulseaudio
+  - --socket=wayland
+  - --socket=x11
