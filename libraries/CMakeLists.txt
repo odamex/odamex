@@ -24,9 +24,92 @@ set(dllsuffix "${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
 
+function(lib_buildgen)
+  cmake_parse_arguments("" "" "LIBRARY" "PARAMS" ${ARGN})
+
+  # Baseline library generation.
+  set(_COMMAND "${CMAKE_COMMAND}"
+    -S "${CMAKE_CURRENT_SOURCE_DIR}/${_LIBRARY}"
+    -B "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
+    -G "${CMAKE_GENERATOR}"
+    "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+    "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+    "-DCMAKE_INSTALL_LIBDIR=lib") # Without this, CentOS installs into lib64
+
+  if(CMAKE_GENERATOR_PLATFORM)
+    list(APPEND _COMMAND -A)
+    list(APPEND _COMMAND ${CMAKE_GENERATOR_PLATFORM})
+  endif()
+
+  if(CMAKE_GENERATOR_TOOLSET)
+    list(APPEND _COMMAND -T)
+    list(APPEND _COMMAND ${CMAKE_GENERATOR_TOOLSET})
+  endif()
+
+  if(CMAKE_C_COMPILER)
+    list(APPEND _COMMAND "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}")
+  endif()
+
+  if(CMAKE_CXX_COMPILER)
+    list(APPEND _COMMAND "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
+  endif()
+
+  if(CMAKE_LINKER)
+    list(APPEND _COMMAND "-DCMAKE_LINKER=${CMAKE_LINKER}")
+  endif()
+
+  if(CMAKE_RC_COMPILER)
+    list(APPEND _COMMAND "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}")
+  endif()
+
+  get_property(_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+  if(NOT _IS_MULTI_CONFIG)
+    list(APPEND _COMMAND "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
+  endif()
+
+  execute_process(COMMAND ${_COMMAND} ${_PARAMS} RESULT_VARIABLE _RESVAL)
+  if(_RESVAL GREATER 0)
+    message(FATAL_ERROR "Library ${_LIBRARY} did not generate correctly.")
+  endif()
+endfunction()
+
+function(lib_build)
+  cmake_parse_arguments("" "" "LIBRARY" "" ${ARGN})
+
+  # Compile the library.
+  get_property(_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+  if(_IS_MULTI_CONFIG)
+    # Debug and Release are not compatible, so build both.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
+      --config Debug --target install
+      --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
+    if(_RESVAL GREATER 0)
+      message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Debug.")
+    endif()
+
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
+      --config RelWithDebInfo --target install
+      --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
+    if(_RESVAL GREATER 0)
+      message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Release.")
+    endif()  
+  else()
+    # Single config uses the passed build type.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
+      --config ${CMAKE_BUILD_TYPE} --target install
+      --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
+    if(_RESVAL GREATER 0)
+      message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly.")
+    endif()  
+  endif()
+endfunction()
+
 ### zlib ###
 
-if(BUILD_CLIENT)
+if(BUILD_CLIENT OR BUILD_SERVER)
   if(USE_INTERNAL_ZLIB)
     message(STATUS "Compiling internal ZLIB...")
 
@@ -59,6 +142,54 @@ if(BUILD_CLIENT)
   find_package(ZLIB)
   if(TARGET ZLIB::ZLIB)
     set_target_properties(ZLIB::ZLIB PROPERTIES IMPORTED_GLOBAL True)
+  endif()
+endif()
+
+### libpng (dep: zlib) ###
+
+if(BUILD_CLIENT)
+  if(USE_INTERNAL_PNG)
+    message(STATUS "Compiling internal libpng...")
+
+    # Set vars so the finder can find them.
+    set(PNG_PNG_INCLUDE_DIR
+      "${CMAKE_CURRENT_BINARY_DIR}/local/include")
+    if(NOT MSVC)
+      set(PNG_LIBRARY
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libpng16${libsuffix}")
+    else()
+      set(PNG_LIBRARY
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libpng16_static${libsuffix}")
+    endif()
+
+    # Generate the build.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      -S "${CMAKE_CURRENT_SOURCE_DIR}/libpng"
+      -B "${CMAKE_CURRENT_BINARY_DIR}/libpng-build"
+      -G "${CMAKE_GENERATOR}"
+      -A "${CMAKE_GENERATOR_PLATFORM}"
+      -T "${CMAKE_GENERATOR_TOOLSET}"
+      "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+      "-DCMAKE_LINKER=${CMAKE_LINKER}"
+      "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
+      "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+      "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+      "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
+      "-DPNG_SHARED=OFF"
+      "-DPNG_TESTS=OFF")
+
+    # Compile the library.
+    execute_process(COMMAND "${CMAKE_COMMAND}"
+      --build "${CMAKE_CURRENT_BINARY_DIR}/libpng-build"
+      --config RelWithDebInfo --target install)
+  endif()
+
+  set(ZLIB_INCLUDE_DIR
+    "${CMAKE_CURRENT_BINARY_DIR}/local/include" CACHE PATH "" FORCE)
+
+  find_package(PNG)
+  if(TARGET PNG::PNG)
+    set_target_properties(PNG::PNG PROPERTIES IMPORTED_GLOBAL True)
   endif()
 endif()
 
@@ -118,6 +249,46 @@ if(BUILD_CLIENT)
   endif()
 endif()
 
+### FLTK (dep: libpng) ###
+
+if(BUILD_CLIENT)
+  message(STATUS "Compiling FLTK...")
+
+  set(_FLTK_BUILDGEN_PARAMS
+    "-DOPTION_USE_SYSTEM_LIBJPEG=OFF"
+    "-DOPTION_PRINT_SUPPORT=OFF"
+    "-DOPTION_USE_GL=OFF"
+    "-DFLTK_BUILD_TEST=OFF")
+
+  if(USE_INTERNAL_ZLIB)
+    # FLTK defaults to the dynamic library, but we want the static lib.
+    list(APPEND _FLTK_BUILDGEN_PARAMS
+      "-DZLIB_LIBRARY_RELEASE=${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}zlibstatic${libsuffix}")
+  endif()
+
+  if(USE_INTERNAL_PNG)
+    # FLTK looks in the wrong places for libpng headers, so it needs extra
+    # help.
+    list(APPEND _FLTK_BUILDGEN_PARAMS
+      "-DPNG_PNG_INCLUDE_DIR=${CMAKE_CURRENT_BINARY_DIR}/local/include/libpng16"
+      "-DHAVE_PNG_H=ON")
+  endif()
+
+  lib_buildgen(LIBRARY fltk PARAMS ${_FLTK_BUILDGEN_PARAMS})
+  lib_build(LIBRARY fltk)
+
+  find_package(FLTK CONFIG)
+  if(NOT TARGET fltk)
+    message(FATAL_ERROR "FLTK target not found.")
+  endif()
+
+  set_target_properties(fltk PROPERTIES IMPORTED_GLOBAL True)
+  set_target_properties(fltk_images PROPERTIES IMPORTED_GLOBAL True)
+  if(WIN32)
+    target_link_libraries(fltk INTERFACE gdiplus)
+  endif()
+endif()
+
 ### JsonCpp ###
 
 if(BUILD_SERVER)
@@ -170,54 +341,6 @@ if(BUILD_SERVER)
     IMPORTED_LOCATION_RELEASE ${JSONCPP_LIBRARY_RELEASE}
     MAP_IMPORTED_CONFIG_MINSIZEREL Release
     MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release)
-endif()
-
-### libpng ###
-
-if(BUILD_CLIENT)
-  if(USE_INTERNAL_PNG)
-    message(STATUS "Compiling internal libpng...")
-
-    # Set vars so the finder can find them.
-    set(PNG_PNG_INCLUDE_DIR
-      "${CMAKE_CURRENT_BINARY_DIR}/local/include")
-    if(NOT MSVC)
-      set(PNG_LIBRARY
-        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libpng16${libsuffix}")
-    else()
-      set(PNG_LIBRARY
-        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libpng16_static${libsuffix}")
-    endif()
-
-    # Generate the build.
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-      -S "${CMAKE_CURRENT_SOURCE_DIR}/libpng"
-      -B "${CMAKE_CURRENT_BINARY_DIR}/libpng-build"
-      -G "${CMAKE_GENERATOR}"
-      -A "${CMAKE_GENERATOR_PLATFORM}"
-      -T "${CMAKE_GENERATOR_TOOLSET}"
-      "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
-      "-DCMAKE_LINKER=${CMAKE_LINKER}"
-      "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
-      "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
-      "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
-      "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
-      "-DPNG_SHARED=OFF"
-      "-DPNG_TESTS=OFF")
-
-    # Compile the library.
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-      --build "${CMAKE_CURRENT_BINARY_DIR}/libpng-build"
-      --config RelWithDebInfo --target install)
-  endif()
-
-  set(ZLIB_INCLUDE_DIR
-    "${CMAKE_CURRENT_BINARY_DIR}/local/include" CACHE PATH "" FORCE)
-
-  find_package(PNG)
-  if(TARGET PNG::PNG)
-    set_target_properties(PNG::PNG PROPERTIES IMPORTED_GLOBAL True)
-  endif()
 endif()
 
 ### MiniUPnPc ###
