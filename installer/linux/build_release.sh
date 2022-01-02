@@ -20,7 +20,9 @@ function oda_preflight {
         "$SCRIPT_DIR/build_client" \
         "$SCRIPT_DIR/build_launcher"
 
-    flatpak install --assumeyes flathub \
+    flatpak remote-add --user --if-not-exists flathub \
+        https://flathub.org/repo/flathub.flatpakrepo
+    flatpak install --user --assumeyes flathub \
         org.freedesktop.Platform//21.08 \
         org.freedesktop.Sdk//21.08
 }
