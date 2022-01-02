@@ -95,7 +95,7 @@ function CopyFiles {
         -Destination "${CommonDir}\licenses"
     Copy-Item -Force -Path "${PSScriptRoot}\BuildX64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.opusfile.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${PSScriptRoot}\BuildX64\libraries\SDL2-2.0.12\COPYING.txt" `
+    Copy-Item -Force -Path "${PSScriptRoot}\BuildX64\libraries\SDL2-2.0.18\COPYING.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2.txt"
 
     ########################################

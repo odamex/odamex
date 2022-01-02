@@ -1,7 +1,7 @@
 ---
 BasedOnStyle: Microsoft
 AlignEscapedNewlines: Left
-AllowShortFunctionsOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Inline
 AlwaysBreakTemplateDeclarations: Yes
 ColumnLimit: 90
 IndentWidth: 4

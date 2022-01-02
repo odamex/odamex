@@ -61,6 +61,7 @@
 
 // [RH] Needed for sky scrolling
 #include "r_sky.h"
+#include <g_gametype.h>
 
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
@@ -80,6 +81,70 @@ std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector)
 
 	// not found
 	return movingsectors.end();
+}
+
+int P_FindLineFromLineTag(const line_t* line, int start)
+{
+	start = start >= 0 ? lines[start].nextid
+	                   : lines[(unsigned)line->id % (unsigned)numlines].firstid;
+	while (start >= 0 && lines[start].id != line->id)
+		start = lines[start].nextid;
+	return start;
+}
+
+/*
+ * P_IsUnderDamage
+ *
+ * killough 9/9/98:
+ *
+ * Returns nonzero if the object is under damage based on
+ * their current position.
+ */
+int P_IsUnderDamage(AActor* actor)
+{
+	const struct msecnode_s* seclist;
+	const DCeiling* cr; // Crushing ceiling
+	int dir = 0;
+	for (seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
+	{
+		if ((cr = (DCeiling*)seclist->m_sector->ceilingdata) && cr->m_Status == 2) // Down
+		{
+			cr->m_Crush ? dir = 1 : dir = 0;
+		}
+	}
+	return dir;
+}
+
+/*
+* 
+* P_IsFriendlyThing
+* @brief Helper function to determine if a particular thing is of friendly origin.
+* 
+* @param actor Source actor
+* @param friendshiptest Thing to test friendliness
+*/
+bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest)
+{
+	if (friendshiptest->flags & MF_FRIEND)
+	{
+		if (G_IsCoopGame())
+		{
+			return true;
+		}
+		else if (actor->player && friendshiptest->target && friendshiptest->target->player &&
+		    actor->player->userinfo.team == friendshiptest->target->player->userinfo.team)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
 }
 
 //
@@ -294,29 +359,16 @@ DPusher::DPusher () : m_Type(p_push), m_Xmag(0), m_Ymag(0), m_Magnitude(0),
 void DPusher::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
-	if (arc.IsStoring ())
+	if (arc.IsStoring())
 	{
-		arc << m_Type
-			<< m_Source
-			<< m_Xmag
-			<< m_Ymag
-			<< m_Magnitude
-			<< m_Radius
-			<< m_X
-			<< m_Y
-			<< m_Affectee;
+		arc << m_Type << m_Source << m_Xmag << m_Ymag << m_Magnitude << m_Radius << m_X
+		    << m_Y << m_Affectee;
 	}
 	else
 	{
-		arc >> m_Type
-			>> m_Source->netid
-			>> m_Xmag
-			>> m_Ymag
-			>> m_Magnitude
-			>> m_Radius
-			>> m_X
-			>> m_Y
-			>> m_Affectee;
+		arc >> m_Type;
+		arc.ReadObject((DObject*&)m_Source, DPusher::StaticType());
+		arc >> m_Xmag >> m_Ymag >> m_Magnitude >> m_Radius >> m_X >> m_Y >> m_Affectee;
 	}
 }
 
@@ -1699,25 +1751,100 @@ void P_PlayerInSpecialSector (player_t *player)
 	}
 	else
 	{
-		//jff 3/14/98 handle extended sector types for secrets and damage
-		switch (special & DAMAGE_MASK) {
-			case 0x000: // no damage
-				break;
-			case 0x100: // 2/5 damage per 31 ticks
-				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
-						P_DamageMobj (player->mo, NULL, NULL, 5, MOD_LAVA);
-				break;
-			case 0x200: // 5/10 damage per 31 ticks
-				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
-						P_DamageMobj (player->mo, NULL, NULL, 10, MOD_SLIME);
-				break;
-			case 0x300: // 10/20 damage per 31 ticks
-				if (!player->powers[pw_ironfeet] || (P_Random(player->mo)<5))	// take damage even with suit
+		if (sector->special & DEATH_MASK) // [Blair] MBF21 sector actions
+		{
+			switch ((sector->special & 0x60) >> DAMAGE_SHIFT)
+			{
+			case 0: // Kill player unless invuln or rad suit
+				if (!player->powers[pw_invulnerability] && !player->powers[pw_ironfeet])
 				{
-					if (!(level.time&0x1f))
-						P_DamageMobj (player->mo, NULL, NULL, 20, MOD_SLIME);
+					P_DamageMobj(player->mo, NULL, NULL, 10000, MOD_UNKNOWN);
 				}
 				break;
+			case 1: // Kill player with no scruples
+				P_DamageMobj(player->mo, NULL, NULL, 10000, MOD_UNKNOWN);
+				break;
+			case 2: // Kill all players and exit. There's no delay here so it may confuse some players.
+				if (serverside)
+				{
+					if (sv_allowexit)
+					{
+						for (Players::iterator it = ::players.begin();
+						     it != ::players.end(); ++it)
+						{
+							if (player->ingame() && player->health > 0)
+							{
+								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
+							}
+						}
+						G_ExitLevel(0, 1);
+					}
+					else
+					{
+						P_DamageMobj(
+						    player->mo, NULL, NULL, 10000,
+						    MOD_EXIT); // Exiting not allowed, kill only activator here
+						               // even if fragexitswitch = 0
+					}
+				}
+				break;
+			case 3: // Kill all players and secret exit. There's no delay here so it may confuse some players.
+				if (serverside)
+				{
+					if (sv_allowexit)
+					{
+						for (Players::iterator it = ::players.begin();
+						     it != ::players.end(); ++it)
+						{
+							if (player->ingame() && player->health > 0)
+							{
+								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
+							}
+						}
+						G_SecretExitLevel(0, 1);
+					}
+					else
+					{
+						P_DamageMobj(
+						    player->mo, NULL, NULL, 10000,
+						    MOD_EXIT); // Exiting not allowed, kill only activator here
+						               // even if fragexitswitch = 0
+					}
+				}
+				break;
+			}
+		}
+		else // Old Boom generalized sector actions
+		{
+			// jff 3/14/98 handle extended sector types for secrets and damage
+			int s = (sector->special & 0x60) >> 4;
+			switch (s)
+			{
+			case 0: // no damage
+				break;
+			case 1: // 2/5 damage per 31 ticks
+				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
+				{
+					P_DamageMobj(player->mo, NULL, NULL, 5, MOD_LAVA);
+				}
+				break;
+			case 2: // 5/10 damage per 31 ticks
+				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
+				{
+					P_DamageMobj(player->mo, NULL, NULL, 10, MOD_SLIME);
+				}
+				break;
+			case 3: // 10/20 damage per 31 ticks
+				if (!player->powers[pw_ironfeet] ||
+				    (P_Random(player->mo) < 5)) // take damage even with suit
+				{
+					if (!(level.time & 0x1f))
+					{
+						P_DamageMobj(player->mo, NULL, NULL, 20, MOD_SLIME);
+					}
+				}
+				break;
+			}
 		}
 
 		// [RH] Apply any customizable damage
@@ -1748,6 +1875,30 @@ void P_PlayerInSpecialSector (player_t *player)
 #endif
 		}
 	}
+}
+
+//
+// P_ActorInSpecialSector
+// Really only used for one function -- kill monsters sector action. 
+//
+bool P_ActorInSpecialSector(AActor* actor)
+{
+	if (!actor)
+		return false;
+
+	sector_t* sector = actor->subsector->sector;
+
+	if (sector && sector->special & KILL_MONSTERS_MASK && actor->z == actor->floorz &&
+	    !actor->player && actor->flags & MF_SHOOTABLE && !(actor->flags & MF_FLOAT))
+	{
+		P_DamageMobj(actor, NULL, NULL, 10000);
+
+		// must have been killed
+		if (actor->health <= 0)
+			return true;
+	}
+
+	return false;
 }
 
 //
@@ -2146,7 +2297,7 @@ void DScroller::RunThink ()
 	if (m_Control != -1)
 	{	// compute scroll amounts based on a sector's height changes
 		sector_t *sector = &sectors[m_Control];
-		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = sector->ceilingheight + sector->floorheight;
 
 		fixed_t delta = height - m_LastHeight;
 		m_LastHeight = height;
@@ -2246,12 +2397,13 @@ DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
 	if ((m_Control = control) != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = sector->ceilingheight + sector->floorheight;
 
 		m_LastHeight = height;
 	}
 	m_Affectee = affectee;
 }
+
 
 // Adds wall scroller. Scroll amount is rotated with respect to wall's
 // linedef first, so that scrolling towards the wall in a perpendicular
@@ -2280,7 +2432,7 @@ DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 	if ((m_Control = control) != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t height = P_FloorHeight(sector->soundorg[0], sector->soundorg[1], sector);
+		fixed_t height = sector->ceilingheight + sector->floorheight;
 
 		m_LastHeight = height;
 	}
@@ -2383,10 +2535,32 @@ static void P_SpawnScrollers(void)
 				if (IgnoreSpecial)
 					break;
 
-				// killough 3/2/98: scroll according to sidedef offsets
-				s = lines[i].sidenum[0];
-				new DScroller (DScroller::sc_side, -sides[s].textureoffset,
-							   sides[s].rowoffset, -1, s, accel);
+				if (l->args[0] == 0) // [Blair] Hack in generalized scrollers.
+			    {
+				    // killough 3/2/98: scroll according to sidedef offsets
+				    s = lines[i].sidenum[0];
+				    new DScroller(DScroller::sc_side, -sides[s].textureoffset,
+				                  sides[s].rowoffset, -1, s, accel);
+			    }
+			    else
+			    {
+				    if (l->id == 0)
+					    Printf(PRINT_HIGH, "Line %d is missing a tag!", i);
+
+				    if (l->args[0] > 1024)
+					    control = sides[*l->sidenum].sector - sectors;
+
+				    if (l->args[0] == 1026)
+					    accel = 1;
+
+				    s = lines[i].sidenum[0];
+				    dx = -sides[s].textureoffset / 8;
+				    dy = sides[s].rowoffset / 8;
+				    for (s = -1; (s = P_FindLineFromLineTag(l, s)) >= 0;)
+					    if (s != i)
+						    new DScroller(DScroller::sc_side, dx, dy, control,
+						                  lines[s].sidenum[0], accel);
+			    }
 				break;
 
 			case Scroll_Texture_Left:
@@ -2431,7 +2605,6 @@ static void P_SpawnScrollers(void)
 					new DScroller (DScroller::sc_side, dx, dy, -1, lines[i].sidenum[0], accel);
 				}
 				break;
-
 			default:
 				l->special = special;
 				break;

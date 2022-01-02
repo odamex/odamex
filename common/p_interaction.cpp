@@ -249,6 +249,70 @@ int P_GetDeathCount(const player_t* player)
 // Returns false if the ammo can't be picked up at all
 //
 
+// mbf21: take into account new weapon autoswitch flags
+static ItemEquipVal P_GiveAmmoAutoSwitch(player_t* player, ammotype_t ammo, int oldammo)
+{
+	int i;
+
+	// Keep the original behaviour while playbacking demos only.
+	if (demoplayback)
+	{
+		switch (ammo)
+		{
+		case am_clip:
+			if (player->readyweapon == wp_fist)
+			{
+				if (player->weaponowned[wp_chaingun])
+					player->pendingweapon = wp_chaingun;
+				else
+					player->pendingweapon = wp_pistol;
+			}
+			break;
+
+		case am_shell:
+			if (player->readyweapon == wp_fist || player->readyweapon == wp_pistol)
+			{
+				if (player->weaponowned[wp_shotgun])
+					player->pendingweapon = wp_shotgun;
+			}
+			break;
+
+		case am_cell:
+			if (player->readyweapon == wp_fist || player->readyweapon == wp_pistol)
+				if (player->weaponowned[wp_plasma])
+					player->pendingweapon = wp_plasma;
+			break;
+
+		case am_misl:
+			if (player->readyweapon == wp_fist)
+				if (player->weaponowned[wp_missile])
+					player->pendingweapon = wp_missile;
+		default:
+			break;
+		}
+	}
+	else if (player->userinfo.switchweapon != WPSW_NEVER)
+	{
+		if (weaponinfo[player->readyweapon].flags & WPF_AUTOSWITCHFROM &&
+		    player->ammo[weaponinfo[player->readyweapon].ammotype] != ammo)
+		{
+			for (i = NUMWEAPONS - 1; i > player->readyweapon; --i)
+			{
+				if (player->weaponowned[i] &&
+				    !(weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
+				    weaponinfo[i].ammotype == ammo &&
+				    weaponinfo[i].ammouse > oldammo &&
+				    weaponinfo[i].ammouse <= player->ammo[ammo])
+				{
+					player->pendingweapon = (weapontype_t)i;
+					break;
+				}
+			}
+		}
+	}
+	return IEV_EquipRemove;
+}
+
 ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 {
 	int oldammotype;
@@ -303,60 +367,9 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
 	// We were down to zero,
 	// so select a new weapon.
 	// Preferences are not user selectable.
-	if (player->userinfo.switchweapon != WPSW_NEVER || demoplayback)
-	{
-		switch (ammotype)
-		{
-		case am_clip:
-			if (player->readyweapon == wp_fist)
-			{
-				if (player->weaponowned[wp_chaingun])
-				{
-					player->pendingweapon = wp_chaingun;
-				}
-				else
-				{
-					player->pendingweapon = wp_pistol;
-				}
-			}
-			break;
+	return P_GiveAmmoAutoSwitch(player, ammotype, oldammotype);
 
-		case am_shell:
-			if (player->readyweapon == wp_fist ||
-				player->readyweapon == wp_pistol)
-			{
-				if (player->weaponowned[wp_shotgun])
-				{
-					player->pendingweapon = wp_shotgun;
-				}
-			}
-			break;
-
-		case am_cell:
-			if (player->readyweapon == wp_fist
-				|| player->readyweapon == wp_pistol)
-			{
-				if (player->weaponowned[wp_plasma])
-				{
-					player->pendingweapon = wp_plasma;
-				}
-			}
-			break;
-
-		case am_misl:
-			if (player->readyweapon == wp_fist)
-			{
-				if (player->weaponowned[wp_missile])
-				{
-					player->pendingweapon = wp_missile;
-				}
-			}
-		default:
-			break;
-		}
-	}
-
-	return IEV_EquipRemove;
+	//return IEV_EquipRemove;
 }
 
 //
@@ -1656,7 +1669,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	// GhostlyDeath -- Joinkill is only set on players, so we should be safe!
 	if (joinkill)
 	{
-		target->flags |= MF_SPECTATOR;
+		target->oflags |= MFO_SPECTATOR;
 		target->flags2 |= MF2_FLY;
 	}
 
@@ -1827,8 +1840,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	P_RemoveHealthPool(target);
 	P_QueueCorpseForDestroy(target);
 
-    if (target->health < -target->info->spawnhealth
-        && target->info->xdeathstate)
+    if (target->info->xdeathstate && target->health < target->info->gibhealth)
     {
         P_SetMobjState(target, target->info->xdeathstate);
     }
@@ -1883,75 +1895,62 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	// during the death frame of a thing.
 	mobjtype_t item = (mobjtype_t)0;
 
-	switch (target->type)
+	//
+	// sapientlion - if player killed themselves or were killed by the other
+	// player(s), spawn a weapon (which they were helding moments before death) on
+	// top of their remains.
+	//
+	// TODO add current ammo.
+	//
+	if (target->player)
 	{
-        case MT_WOLFSS:
-        case MT_POSSESSED:
-            item = MT_CLIP;
-            break;
-
-        case MT_SHOTGUY:
-            item = MT_SHOTGUN;
-            break;
-
-        case MT_CHAINGUY:
-            item = MT_CHAINGUN;
-            break;
-
-		//
-		// sapientlion - if player killed themselves or were killed by the other
-		// player(s), spawn a weapon (which they were helding moments before death) on
-		// top of their remains.
-		//
-		// TODO add current ammo.
-		//
-	    case MT_PLAYER:
-
-			if(sv_weapondrop)
+		if (sv_weapondrop)
+		{
+			switch (target->player->readyweapon)
 			{
-			    switch (target->player->readyweapon)
-			    {
-			    case wp_pistol:
-				    item = MT_CLIP;
-				    break;
+			case wp_pistol:
+				item = MT_CLIP;
+				break;
 
-			    case wp_shotgun:
-				    item = MT_SHOTGUN;
-				    break;
+			case wp_shotgun:
+				item = MT_SHOTGUN;
+				break;
 
-			    case wp_chaingun:
-				    item = MT_CHAINGUN;
-				    break;
+			case wp_chaingun:
+				item = MT_CHAINGUN;
+				break;
 
-			    case wp_missile:
-				    item = MT_MISC27; // Rocket launcher.
-				    break;
+			case wp_missile:
+				item = MT_MISC27; // Rocket launcher.
+				break;
 
-			    case wp_plasma:
-				    item = MT_MISC28; // Plasma gun.
-				    break;
+			case wp_plasma:
+				item = MT_MISC28; // Plasma gun.
+				break;
 
-			    case wp_bfg:
-				    item = MT_MISC25; // [RV] BFG.
-				    break;
+			case wp_bfg:
+				item = MT_MISC25; // [RV] BFG.
+				break;
 
-			    case wp_chainsaw:
-				    item = MT_MISC26; // Chainsaw.
-				    break;
+			case wp_chainsaw:
+				item = MT_MISC26; // Chainsaw.
+				break;
 
-			    case wp_supershotgun:
-				    item = MT_SUPERSHOTGUN;
-				    break;
+			case wp_supershotgun:
+				item = MT_SUPERSHOTGUN;
+				break;
 
-			    default:
-				    return;
-			    }
-		    }
-
-			break;
-
-        default:
-            return;
+			default:
+				return;
+			}
+		}
+	}
+	else
+	{
+		if (target->info->droppeditem != MT_NULL)
+		{
+			item = target->info->droppeditem;
+		}
 	}
 
 	if (!item)
@@ -1966,6 +1965,14 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		mo->flags |= MF_DROPPED;	// special versions of items
 		SV_SpawnMobj(mo);
 	}
+}
+
+static bool P_InfightingImmune(AActor* target, AActor* source)
+{
+	return // not default behaviour, and same group
+		mobjinfo[target->type].infighting_group != IG_DEFAULT &&
+		mobjinfo[target->type].infighting_group ==
+		mobjinfo[source->type].infighting_group;
 }
 
 //
@@ -1997,7 +2004,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		splayer = source->player;
 	}
 
-	if (!(target->flags & MF_SHOOTABLE))
+	if (!(target->flags & (MF_SHOOTABLE | MF_BOUNCES)))
     {
 		return; // shouldn't happen...
     }
@@ -2061,9 +2068,13 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	// Some close combat weapons should not
 	// inflict thrust and push the victim out of reach,
 	// thus kick away unless using the chainsaw.
-	if (inflictor && !(target->flags & MF_NOCLIP) &&
-	    (!source || !source->player || source->player->readyweapon != wp_chainsaw))
+
+	if (inflictor && 
+		!(target->flags & MF_NOCLIP) && 
+	    (!source || !source->player || !(weaponinfo[source->player->readyweapon].flags & WPF_NOTHRUST)) &&
+	    !(inflictor->flags2 & MF2_NODMGTHRUST))
 	{
+
 		unsigned int ang = P_PointToAngle(inflictor->x, inflictor->y, target->x, target->y);
 
 		fixed_t thrust = damage * (FRACUNIT >> 3) * 100 / target->info->mass;
@@ -2319,9 +2330,12 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 		target->reactiontime = 0;			// we're awake now...
 
-		if ((!target->threshold || target->type == MT_VILE) && source &&
-		    source != target && source->type != MT_VILE &&
-		    !(source->oflags & MFO_INFIGHTINVUL))
+		if (source &&
+			source != target &&
+		    !(source->flags3 & MF3_DMGIGNORED) &&
+		    !(source->oflags & MFO_INFIGHTINVUL) &&
+		    (!target->threshold || target->flags3 & MF3_NOTHRESHOLD) &&
+		    !P_InfightingImmune(target, source))
 		{
 			// if not intent on another player, chase after this one
 			// [AM] Infight invul monsters will never provoke attacks.

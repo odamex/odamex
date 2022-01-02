@@ -38,6 +38,7 @@
 #include "m_strindex.h"
 #include "p_lnspec.h"
 #include "p_local.h"
+#include "p_mobj.h"
 #include "p_unlag.h"
 
 /**
@@ -257,23 +258,90 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 {
 	odaproto::svc::SpawnMobj msg;
 
-	odaproto::Actor* actor = msg.mutable_actor();
-	odaproto::Vec3* pos = actor->mutable_pos();
+	odaproto::Actor* base = msg.mutable_baseline();
+	odaproto::Vec3* bpos = base->mutable_pos();
+	odaproto::Vec3* bmom = base->mutable_mom();
 
-	uint32_t flags = 0;
+	odaproto::Actor* cur = msg.mutable_current();
+	odaproto::Vec3* apos = cur->mutable_pos();
+	odaproto::Vec3* amom = cur->mutable_mom();
 
-	pos->set_x(mo->x);
-	pos->set_y(mo->y);
-	pos->set_z(mo->z);
+	uint32_t spawnFlags = 0;
 
-	actor->set_angle(mo->angle);
+	// Contents of the baseline
 
-	actor->set_type(mo->type);
-	actor->set_netid(mo->netid);
-	actor->set_rndindex(mo->rndindex);
-	actor->set_statenum(
-	    mo->state -
-	    states); // denis - sending state fixes monster ghosts appearing under doors
+	bpos->set_x(mo->baseline.pos.x);
+	bpos->set_y(mo->baseline.pos.y);
+	bpos->set_z(mo->baseline.pos.z);
+	bmom->set_x(mo->baseline.mom.x);
+	bmom->set_y(mo->baseline.mom.y);
+	bmom->set_z(mo->baseline.mom.z);
+	base->set_angle(mo->baseline.angle);
+	base->set_targetid(mo->baseline.targetid);
+	base->set_tracerid(mo->baseline.tracerid);
+	base->set_movecount(mo->baseline.movecount);
+	base->set_movedir(mo->baseline.movedir);
+	base->set_rndindex(mo->baseline.rndindex);
+
+	// Current location could be different than the baseline
+
+	uint32_t bflags = P_GetMobjBaselineFlags(*mo);
+	msg.set_baseline_flags(bflags);
+
+	if (bflags & baseline_t::POSX)
+	{
+		apos->set_x(mo->x);
+	}
+	if (bflags & baseline_t::POSY)
+	{
+		apos->set_y(mo->y);
+	}
+	if (bflags & baseline_t::POSZ)
+	{
+		apos->set_z(mo->z);
+	}
+	if (bflags & baseline_t::ANGLE)
+	{
+		cur->set_angle(mo->angle);
+	}
+	if (bflags & baseline_t::MOVEDIR)
+	{
+		cur->set_movedir(mo->movedir);
+	}
+	if (bflags & baseline_t::MOVECOUNT)
+	{
+		cur->set_movecount(mo->movecount);
+	}
+	if (bflags & baseline_t::RNDINDEX)
+	{
+		cur->set_rndindex(mo->rndindex);
+	}
+	if (bflags & baseline_t::TARGET)
+	{
+		cur->set_targetid(mo->target ? mo->target->netid : 0);
+	}
+	if (bflags & baseline_t::TRACER)
+	{
+		cur->set_tracerid(mo->tracer ? mo->tracer->netid : 0);
+	}
+	if (bflags & baseline_t::MOMX)
+	{
+		amom->set_x(mo->momx);
+	}
+	if (bflags & baseline_t::MOMY)
+	{
+		amom->set_y(mo->momy);
+	}
+	if (bflags & baseline_t::MOMZ)
+	{
+		amom->set_z(mo->momz);
+	}
+
+	cur->set_type(mo->type);
+	cur->set_netid(mo->netid);
+
+	// denis - sending state fixes monster ghosts appearing under doors
+	cur->set_statenum(mo->state - states); 
 
 	if (mo->type == MT_FOUNTAIN)
 	{
@@ -289,17 +357,12 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 	// denis - check type as that is what the client will be spawning
 	if (mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE)
 	{
-		flags |= SVC_SM_MISSILE;
 		msg.set_target_netid(mo->target ? mo->target->netid : 0);
-		actor->set_angle(mo->angle);
-		actor->mutable_mom()->set_x(mo->momx);
-		actor->mutable_mom()->set_y(mo->momy);
-		actor->mutable_mom()->set_z(mo->momz);
 	}
 	else if (mo->flags & MF_AMBUSH || mo->flags & MF_DROPPED)
 	{
-		flags |= SVC_SM_FLAGS;
-		actor->set_flags(mo->flags);
+		spawnFlags |= SVC_SM_FLAGS;
+		cur->set_flags(mo->flags);
 	}
 
 	// odamex flags - only monster flags for now
@@ -307,20 +370,20 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 	                         MFO_NORAISE | MFO_FULLBRIGHT;
 	if (mo->oflags & modMask)
 	{
-		flags |= SVC_SM_OFLAGS;
-		actor->set_oflags(mo->oflags & modMask);
+		spawnFlags |= SVC_SM_OFLAGS;
+		cur->set_oflags(mo->oflags & modMask);
 	}
 
 	// animating corpses
 	if ((mo->flags & MF_CORPSE) && mo->state - states != S_GIBS)
 	{
 		// This sets off some additional logic on the client.
-		flags |= SVC_SM_CORPSE;
-		actor->set_frame(mo->frame);
-		actor->set_tics(mo->tics);
+		spawnFlags |= SVC_SM_CORPSE;
+		cur->set_frame(mo->frame);
+		cur->set_tics(mo->tics);
 	}
 
-	msg.set_flags(flags);
+	msg.set_spawn_flags(spawnFlags);
 
 	return msg;
 }
@@ -349,7 +412,7 @@ odaproto::svc::LoadMap SVC_LoadMap(const OResFiles& wadnames, const OResFiles& p
 	{
 		odaproto::svc::LoadMap_Resource* wad = msg.add_wadnames();
 		wad->set_name(wadnames[i].getBasename());
-		wad->set_hash(wadnames[i].getHash());
+		wad->set_hash(wadnames[i].getMD5().getHexStr());
 	}
 
 	// send list of DEH/BEX patches
@@ -358,7 +421,7 @@ odaproto::svc::LoadMap SVC_LoadMap(const OResFiles& wadnames, const OResFiles& p
 	{
 		odaproto::svc::LoadMap_Resource* patch = msg.add_patchnames();
 		patch->set_name(patchnames[i].getBasename());
-		patch->set_hash(patchnames[i].getHash());
+		patch->set_hash(patchnames[i].getMD5().getHexStr());
 	}
 
 	msg.set_mapname(mapname);
@@ -417,49 +480,68 @@ odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time)
 }
 
 /**
- * @brief Move a mobj to a new location.  If it's a player, it will update
- *        the client's snapshot.
+ * @brief Update mobj data on the client compared to the baseline.
  */
-odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj, uint32_t flags)
+odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj)
 {
 	odaproto::svc::UpdateMobj msg;
+
+	uint32_t flags = P_GetMobjBaselineFlags(mobj);
 	msg.set_flags(flags);
 
 	odaproto::Actor* act = msg.mutable_actor();
+	odaproto::Vec3* pos = act->mutable_pos();
+	odaproto::Vec3* mom = act->mutable_mom();
+
 	act->set_netid(mobj.netid);
 
-	if (flags & SVC_UM_POS_RND)
+	if (flags & baseline_t::POSX)
 	{
-		odaproto::Vec3* pos = act->mutable_pos();
 		pos->set_x(mobj.x);
-		pos->set_y(mobj.y);
-		pos->set_z(mobj.z);
-		act->set_rndindex(mobj.rndindex);
 	}
-
-	if (flags & SVC_UM_MOM_ANGLE)
+	if (flags & baseline_t::POSY)
 	{
-		odaproto::Vec3* mom = act->mutable_mom();
-		mom->set_x(mobj.momx);
-		mom->set_y(mobj.momy);
-		mom->set_z(mobj.momz);
+		pos->set_y(mobj.y);
+	}
+	if (flags & baseline_t::POSZ)
+	{
+		pos->set_z(mobj.z);
+	}
+	if (flags & baseline_t::ANGLE)
+	{
 		act->set_angle(mobj.angle);
 	}
-
-	if (flags & SVC_UM_MOVEDIR)
+	if (flags & baseline_t::MOVEDIR)
 	{
 		act->set_movedir(mobj.movedir);
+	}
+	if (flags & baseline_t::MOVECOUNT)
+	{
 		act->set_movecount(mobj.movecount);
 	}
-
-	if (flags & SVC_UM_TARGET)
+	if (flags & baseline_t::RNDINDEX)
+	{
+		act->set_rndindex(mobj.rndindex);
+	}
+	if (flags & baseline_t::TARGET)
 	{
 		act->set_targetid(mobj.target ? mobj.target->netid : 0);
 	}
-
-	if (flags & SVC_UM_TRACER)
+	if (flags & baseline_t::TRACER)
 	{
-		act->set_tracerid(mobj.target ? mobj.target->netid : 0);
+		act->set_tracerid(mobj.tracer ? mobj.tracer->netid : 0);
+	}
+	if (flags & baseline_t::MOMX)
+	{
+		mom->set_x(mobj.momx);
+	}
+	if (flags & baseline_t::MOMY)
+	{
+		mom->set_y(mobj.momy);
+	}
+	if (flags & baseline_t::MOMZ)
+	{
+		mom->set_z(mobj.momz);
 	}
 
 	return msg;

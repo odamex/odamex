@@ -34,6 +34,9 @@
 #include "p_local.h"
 #include "s_sound.h"
 
+// Stub for client.
+void SV_SpawnMobj(AActor* mobj);
+
 struct SpawnPointWeight
 {
 	hordeSpawn_t* spawn;
@@ -87,10 +90,16 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 				// Set flags as a boss.
 				mo->oflags = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK |
 				             MFO_NORAISE | MFO_BOSSPOOL | MFO_FULLBRIGHT;
+
+				mo->flags2 = MF2_BOSS;
+
+				mo->flags3 = MF3_FULLVOLSOUNDS | MF3_DMGIGNORED;
 			}
+			SV_SpawnMobj(mo);
 
 			// Spawn a teleport fog if it's not an ambush.
 			AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
+			SV_SpawnMobj(tele);
 			S_NetSound(tele, CHAN_VOICE, "misc/teleport", ATTN_NORM);
 			return mo->ptr();
 		}
@@ -163,10 +172,9 @@ static AActors SpawnMonsterGroup(hordeSpawn_t& spawn, const hordeRecipe_t& recip
 
 	if (ret.size() < count)
 	{
-		Printf(PRINT_WARNING,
-		       "Spawned %" PRIuSIZE "/%d of type %s at a %s spawn (%f, %f).\n",
-		       ret.size(), count, name, HordeThingStr(spawn.type),
-		       FIXED2FLOAT(spawn.mo->x), FIXED2FLOAT(spawn.mo->y));
+		DPrintf("Partial spawn %" PRIuSIZE "/%d of type %s at a %s spawn (%f, %f).\n",
+		        ret.size(), count, name, HordeThingStr(spawn.type),
+		        FIXED2FLOAT(spawn.mo->x), FIXED2FLOAT(spawn.mo->y));
 	}
 
 	return ret;
@@ -229,7 +237,7 @@ void P_HordeClearSpawns()
  */
 static bool FitRadHeight(const mobjinfo_t& info, const int rad, const int height)
 {
-	return info.radius <= (rad * FRACUNIT) && info.height <= (rad * FRACUNIT);
+	return info.radius <= (rad * FRACUNIT) && info.height <= (height * FRACUNIT);
 }
 
 /**
@@ -339,8 +347,7 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 	// Did we find any spawns?
 	if (weights.empty())
 	{
-		Printf(PRINT_WARNING, "Could not find a spawn point (boss:%s).\n",
-		       recipe.isBoss ? "y" : "n");
+		// Error is printed in parent.
 		return NULL;
 	}
 
@@ -456,10 +463,12 @@ void P_HordeSpawnItem()
 
 			// Don't respawn the usual way.
 			pack->flags |= MF_DROPPED;
+			SV_SpawnMobj(pack);
 
 			// Play the item respawn sound, so people can listen for it.
 			AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
-			S_NetSound(pack, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
+			SV_SpawnMobj(tele);
+			S_NetSound(tele, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
 		}
 	}
 }
@@ -493,9 +502,11 @@ void P_HordeSpawnPowerup(const mobjtype_t pw)
 
 		// Don't respawn the usual way.
 		pack->flags |= MF_DROPPED;
+		SV_SpawnMobj(pack);
 
 		// Play the item respawn sound, so people can listen for it.
 		AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
-		S_NetSound(pack, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
+		SV_SpawnMobj(tele);
+		S_NetSound(tele, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
 	}
 }
