@@ -773,8 +773,8 @@ void D_DoomMain()
 	{
 		// Skip boot window if any of these params are passed.
 		const char* skipParams[] = {
-		    "+connect", "+demotest", "+map",      "+netplay", "+playdemo",
-		    "-file",    "-playdemo", "-timedemo", "-warp",
+		    "+connect", "+demotest", "+map",      "+netplay",  "+playdemo",
+		    "-connect", "-file",     "-playdemo", "-timedemo", "-warp",
 		};
 
 		bool shouldSkip = false;
