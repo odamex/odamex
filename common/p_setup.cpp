@@ -49,13 +49,17 @@
 #include "p_mobj.h"
 #include "p_setup.h"
 #include "p_hordespawn.h"
+#include "p_mapformat.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
 void P_SpawnAvatars();
 
 void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
-void P_TranslateTeleportThings (void);
+const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags);
+const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags);
+void P_SpawnCompatibleSectorSpecial(sector_t* sector);
+void P_TranslateTeleportThings(void);
 int	P_TranslateSectorSpecial (int);
 
 static void P_SetupLevelFloorPlane(sector_t *sector);
@@ -323,10 +327,7 @@ void P_LoadSectors (int lump)
 		ss->floorpic = (short)R_FlatNumForName(ms->floorpic);
 		ss->ceilingpic = (short)R_FlatNumForName(ms->ceilingpic);
 		ss->lightlevel = LESHORT(ms->lightlevel);
-		if (HasBehavior)
-			ss->special = LESHORT(ms->special);
-		else	// [RH] Translate to new sector special
-			ss->special = P_TranslateSectorSpecial (LESHORT(ms->special));
+		ss->special = LESHORT(ms->special);
 		ss->secretsector = !!(ss->special&SECRET_MASK);
 		ss->tag = LESHORT(ms->tag);
 		ss->thinglist = NULL;
@@ -733,27 +734,96 @@ void P_AdjustLine (line_t *ld)
 		ld->bbox[BOXTOP] = v1->y;
 	}
 
-	// [RH] Set line id (as appropriate) here
-	if (ld->special == Line_SetIdentification ||
-		ld->special == Teleport_Line ||
-		ld->special == TranslucentLine ||
-		ld->special == Scroll_Texture_Model) {
-		ld->id = ld->args[0];
+	if (map_format.zdoom)
+	{
+		// [RH] Set line id (as appropriate) here
+		if (ld->special == Line_SetIdentification || ld->special == Teleport_Line ||
+		    ld->special == TranslucentLine || ld->special == Scroll_Texture_Model)
+		{
+			ld->id = ld->args[0];
+		}
+	}
+	else
+	{
+		if (ld->special >= OdamexStaticInits &&
+		         ld->special < OdamexStaticInits + NUM_STATIC_INITS)
+		{
+			// An Odamex Static_Init special
+			ld->args[0] = ld->id;
+			ld->args[1] = ld->special - OdamexStaticInits;
+		}
+		else if (ld->special >= 340 && ld->special <= 347)
+		{
+			// [SL] 2012-01-30 - convert to ZDoom Plane_Align special for
+			// sloping sectors
+			// [Blair] Massage this a bit to work with map_format
+			switch (ld->special)
+			{
+			case 340: // Slope the Floor in front of the line
+				ld->args[0] = 1;
+				break;
+			case 341: // Slope the Ceiling in front of the line
+				ld->args[1] = 1;
+				break;
+			case 342: // Slope the Floor+Ceiling in front of the line
+				ld->args[0] = ld->args[1] = 1;
+				break;
+			case 343: // Slope the Floor behind the line
+				ld->args[0] = 2;
+				break;
+			case 344: // Slope the Ceiling behind the line
+				ld->args[1] = 2;
+				break;
+			case 345: // Slope the Floor+Ceiling behind the line
+				ld->args[0] = ld->args[1] = 2;
+				break;
+			case 346: // Slope the Floor behind+Ceiling in front of the line
+				ld->args[0] = 2;
+				ld->args[1] = 1;
+				break;
+			case 347: // Slope the Floor in front+Ceiling behind the line
+				ld->args[0] = 1;
+				ld->args[1] = 2;
+			}
+		}
 	}
 
 	// denis - prevent buffer overrun
 	if(*ld->sidenum == R_NOSIDE)
 		return;
 
-	// killough 4/4/98: support special sidedef interpretation below
-	if (// [RH] Save Static_Init only if it's interested in the textures
-		( (ld->special == Static_Init && ld->args[1] == Init_Color)
-			|| ld->special != Static_Init) ) {
+	if (map_format.zdoom)
+	{
+		// killough 4/4/98: support special sidedef interpretation below
+		if ( // [RH] Save Static_Init only if it's interested in the textures
+		    ((ld->special == Static_Init && ld->args[1] == Init_Color) ||
+		     ld->special != Static_Init))
+		{
 			sides[*ld->sidenum].special = ld->special;
 			sides[*ld->sidenum].tag = ld->args[0];
 		}
+		else
+		{
+			sides[*ld->sidenum].special = 0;
+		}
+	}
 	else
-		sides[*ld->sidenum].special = 0;
+	{
+		// killough 4/4/98: support special sidedef interpretation below
+		if ( // [Blair] Save Odamex Static Inits in Boom format
+		    (ld->special == OdamexStaticInits + 1 ||
+		     (ld->special < OdamexStaticInits ||
+		      (ld->special != OdamexStaticInits &&
+		       ld->special > OdamexStaticInits + NUM_STATIC_INITS))))
+		{
+			sides[*ld->sidenum].special = ld->special;
+			sides[*ld->sidenum].tag = ld->args[0];
+		}
+		else
+		{
+			sides[*ld->sidenum].special = 0;
+		}
+	}
 }
 
 // killough 4/4/98: delay using sidedefs until they are loaded
@@ -799,7 +869,7 @@ void P_FinishLoadingLineDefs (void)
 	}
 }
 
-void P_LoadLineDefs (int lump)
+void P_LoadLineDefs (const int lump)
 {
 	byte *data;
 	int i;
@@ -813,11 +883,21 @@ void P_LoadLineDefs (int lump)
 	ld = lines;
 	for (i=0 ; i<numlines ; i++, ld++)
 	{
-		maplinedef_t *mld = ((maplinedef_t *)data) + i;
+		const maplinedef_t *mld = ((maplinedef_t *)data) + i;
 
 		// [RH] Translate old linedef special and flags to be
 		//		compatible with the new format.
-		P_TranslateLineDef (ld, mld);
+
+		ld->flags = (unsigned short)LESHORT(mld->flags);
+		ld->special = LESHORT(mld->special);
+		ld->id = LESHORT(mld->tag);
+		ld->args[0] = 0;
+		ld->args[1] = 0;
+		ld->args[2] = 0;
+		ld->args[3] = 0;
+		ld->args[4] = 0;
+
+		ld->flags = P_TranslateCompatibleLineFlags(ld->flags);
 
 		unsigned short v = LESHORT(mld->v1);
 
@@ -872,17 +952,19 @@ void P_LoadLineDefs2 (int lump)
 		ld->flags = LESHORT(mld->flags);
 		ld->special = mld->special;
 
+		ld->flags = P_TranslateZDoomLineFlags(ld->flags);
+
 		unsigned short v = LESHORT(mld->v1);
 
 		if(v >= numvertexes)
-			I_Error("P_LoadLineDefs: invalid vertex %d", v);
+			I_Error("P_LoadLineDefs2: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = LESHORT(mld->v2);
 
 		if(v >= numvertexes)
-			I_Error("P_LoadLineDefs: invalid vertex %d", v);
+			I_Error("P_LoadLineDefs2: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
 
@@ -1802,6 +1884,11 @@ void P_SetupLevel (const char *lumpname, int position)
 	if (HasBehavior)
 	{
 		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
+		map_format = zdoom_in_hexen_map_format;
+	}
+	else
+	{
+		map_format = doom_map_format;
 	}
 
     level.time = 0;

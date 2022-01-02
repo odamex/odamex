@@ -833,7 +833,8 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 120:
 		// Blazing PlatDownWaitUpStay.
-		EV_DoPlat(line, blazeDWUS, 0);
+		EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_TURBO),
+		          TICS(PLATWAIT), 0 * FRACUNIT, 0);
 		result.lineexecuted = true;
 		break;
 
@@ -945,6 +946,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                 SPEED(C_SLOW), 0, 0, 0, 0, 0))
 			{
 				result.lineexecuted = true;
+				line->special = 0;
 			}
 			break;
 
@@ -953,6 +955,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_CompatibleTeleport(line->id, line, side, thing, TELF_SILENT))
 			{
 				result.lineexecuted = true;
+				line->special = 0;
 			}
 			break;
 
@@ -963,6 +966,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoChange(line, trigChangeOnly, line->id))
 			{
 				result.lineexecuted = true;
+				line->special = 0;
 			}
 			break;
 
@@ -972,6 +976,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoChange(line, numChangeOnly, line->id))
 			{
 				result.lineexecuted = true;
+				line->special = 0;
 			}
 			break;
 
@@ -982,6 +987,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			               0, 0))
 			{
 				result.lineexecuted = true;
+				line->special = 0;
 			}
 			break;
 
@@ -992,6 +998,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                  line->id))
 			{
 				result.lineexecuted = true;
+				line->special = 0;
 			}
 			break;
 
@@ -1002,6 +1009,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                  line->id))
 			{
 				result.lineexecuted = true;
+				line->special = 0;
 			}
 			break;
 
@@ -1012,6 +1020,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                  line->id))
 			{
 				result.lineexecuted = true;
+				line->special = 0;
 			}
 			break;
 
@@ -1020,6 +1029,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_SilentLineTeleport(line, side, thing, line->id, false))
 			{
 				result.lineexecuted = true;
+				line->special = 0;
 			}
 			break;
 
@@ -1027,6 +1037,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_SilentLineTeleport(line, side, thing, line->id, true))
 			{
 				result.lineexecuted = true;
+				line->special = 0;
 			}
 			break;
 
@@ -1035,6 +1046,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			    EV_SilentLineTeleport(line, side, thing, line->id, true))
 			{
 				result.lineexecuted = true;
+				line->special = 0;
 			}
 			break;
 
@@ -1043,6 +1055,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			    EV_SilentLineTeleport(line, side, thing, line->id, false))
 			{
 				result.lineexecuted = true;
+				line->special = 0;
 			}
 			break;
 
@@ -1051,6 +1064,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			    EV_CompatibleTeleport(line->id, line, side, thing, TELF_SILENT))
 			{
 				result.lineexecuted = true;
+				line->special = 0;
 			}
 			break;
 
@@ -1491,7 +1505,7 @@ void P_SpawnCompatibleExtra(int i)
 // Only runs for maps in Doom format.
 //
 
-void P_SpawnCompatibleSectorSpecial(sector_t* sector, int i)
+void P_SpawnCompatibleSectorSpecial(sector_t* sector)
 {
 	if (sector->special & SECRET_MASK) // jff 3/15/98 count extended
 		P_AddSectorSecret(sector);
@@ -3338,4 +3352,18 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		break;
 	}
 	return result;
+}
+
+const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags)
+{
+	/*
+	if (mbf21)
+		const unsigned int filter = (flags & ML_RESERVED && comp[comp_reservedlineflag]) ? 0x01ff : 0x3fff;
+	else
+		const unsigned int filter = 0x03ff;
+	*/
+
+	const unsigned int filter = 0x3fff;
+
+	return (flags & filter);
 }

@@ -486,7 +486,7 @@ void P_SpawnZDoomLights(sector_t* sector)
 // Only runs for maps in ZDoom (Doom in Hexen) format.
 //
 
-void P_SpawnZDoomSectorSpecial(sector_t* sector, int i)
+void P_SpawnZDoomSectorSpecial(sector_t* sector)
 {
 	if (!sector->special)
 		return;
@@ -749,7 +749,7 @@ void P_SpawnZDoomExtra(int i)
 }
 
 // Initialize the scrollers
-void P_SpawnZDoomScroller(line_t* l, int i)
+void P_SpawnZDoomScroller(line_t* l)
 {
 	fixed_t dx = 0; // direction and speed of scrolling
 	fixed_t dy = 0;
@@ -981,4 +981,36 @@ bool P_ExecuteZDoomLineSpecial(int special, byte* args, line_t* line, int side,
 {
 	return LineSpecials[special](line, mo, args[0], args[1], args[2], args[3],
 		                                args[4]);
+}
+
+const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags)
+{
+	unsigned int result = flags & 0x1ff;
+
+	const unsigned int spac_to_flags[8] = {ML_SPAC_CROSS,
+	                                        ML_SPAC_USE,
+	                                        ML_SPAC_MCROSS,
+	                                        ML_SPAC_IMPACT,
+	                                        ML_SPAC_PUSH,
+	                                        ML_SPAC_PCROSS,
+	                                        ML_SPAC_USE | ML_PASSUSE,
+	                                        ML_SPAC_IMPACT | ML_SPAC_PCROSS};
+
+	// from zdoom-in-hexen to Odamex
+
+	result |= spac_to_flags[GET_SPAC(flags)];
+
+	if (flags & HML_REPEATSPECIAL)
+		result |= ML_REPEATSPECIAL;
+
+	if (flags & ZML_BLOCKPLAYERS)
+		result |= ML_BLOCKPLAYERS;
+
+	if (flags & ZML_MONSTERSCANACTIVATE)
+		result |= ML_MONSTERSCANACTIVATE;
+
+	if (flags & ZML_BLOCKEVERYTHING)
+		result |= ML_BLOCKING | ML_BLOCKEVERYTHING;
+
+	return result;
 }

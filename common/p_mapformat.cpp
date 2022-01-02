@@ -153,7 +153,7 @@ static void P_MigrateActorInfo(void)
 }
 
 extern void P_SpawnCompatibleSectorSpecial(sector_t* sector, int i);
-extern void P_SpawnZDoomSectorSpecials(void);
+void P_SpawnZDoomSectorSpecials(sector_t* sector);
 
 extern void P_PlayerInCompatibleSector(player_t* player, sector_t* sector);
 extern void P_PlayerInZDoomSector(player_t* player, sector_t* sector);
@@ -221,26 +221,21 @@ void T_MoveCompatibleCeiling(ceiling_t* ceiling);
 
 int EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int flags);
 
-void T_BuildZDoomPillar(pillar_t* pillar);
-
-void T_CompatiblePlatRaise(plat_t* plat);
-void T_ZDoomPlatRaise(plat_t* plat);
-
 static const map_format_s zdoom_in_hexen_map_format = {
-    .zdoom = true,
-    .hexen = true,
-    .polyobjs = false,
-    .acs = false,
-    .mapinfo = false,
-    .sndseq = false,
-    .sndinfo = false,
-    .animdefs = false,
-    .doublesky = false,
-    .map99 = false,
-    .lax_monster_activation = true,
-    .generalized_mask = ~0xff,
-    .switch_activation = ML_SPAC_USE | ML_SPAC_IMPACT | ML_SPAC_PUSH,
-    .init_sector_special = P_SpawnZDoomSectorSpecial,
+    true, //zdoom
+    true, //hexen
+    false, //polyobjs (true when detected)
+    false, //acs (true when detected)
+    false, // mapinfo (true when detected)
+    false, // sndseq (true when detected)
+    false, // sndinfo (true when detected)
+    false, // animdefs (true when detected)
+    false, // doublesky (true when detected)
+    false, // map99 (true when detected)
+    true, // lax_monster_activation
+    ~0xff, // generalized_mask
+    ML_SPAC_USE | ML_SPAC_IMPACT | ML_SPAC_PUSH, // switch_activation
+    P_SpawnZDoomSectorSpecial, // init_sector_special
     .player_in_special_sector = P_PlayerInZDoomSector,
     .actor_in_special_sector = P_ActorInZDoomSector,
     .spawn_scroller = P_SpawnZDoomScroller,
@@ -257,13 +252,6 @@ static const map_format_s zdoom_in_hexen_map_format = {
     .check_impact = P_CheckZDoomImpact,
     .translate_line_flags = P_TranslateZDoomLineFlags,
     .apply_sector_movement_special = P_ApplyHereticSectorMovementSpecial,
-    .t_vertical_door = T_VerticalCompatibleDoor,
-    .t_move_floor = T_MoveCompatibleFloor,
-    .t_move_ceiling = T_MoveCompatibleCeiling,
-    .t_build_pillar = T_BuildZDoomPillar,
-    .t_plat_raise = T_ZDoomPlatRaise,
-    .mapthing_size = sizeof(mapthing2_t),
-    .maplinedef_size = sizeof(hexen_maplinedef_t),
     .mt_push = MT_PUSH,
     .mt_pull = MT_PULL,
 };
@@ -282,7 +270,8 @@ static const map_format_s doom_map_format = {
     .lax_monster_activation = true,
     .generalized_mask = ~31,
     .switch_activation = 0, // not used
-    .actor_in_special_sector = P_SpawnCompatibleSectorSpecial,
+    .init_sector_special = P_SpawnCompatibleSectorSpecial,
+    .actor_in_special_sector = P_ActorInCompatibleSectorSpecial,
     .player_in_special_sector = P_PlayerInCompatibleSector,
     .mobj_in_special_sector = P_ActorInCompatibleSector,
     .spawn_scroller = P_SpawnCompatibleScroller,
@@ -297,13 +286,6 @@ static const map_format_s doom_map_format = {
     .check_impact = P_CheckCompatibleImpact,
     .translate_line_flags = P_TranslateCompatibleLineFlags,
     .apply_sector_movement_special = P_ApplyCompatibleSectorMovementSpecial,
-    .t_vertical_door = T_VerticalCompatibleDoor,
-    .t_move_floor = T_MoveCompatibleFloor,
-    .t_move_ceiling = T_MoveCompatibleCeiling,
-    .t_build_pillar = NULL, // not used
-    .t_plat_raise = T_CompatiblePlatRaise,
-    .mapthing_size = sizeof(mapthing2_t), // We'll use hexen mapthings to allow non-inf height things
-    .maplinedef_size = sizeof(doom_maplinedef_t),
     .mt_push = MT_PUSH,
     .mt_pull = MT_PULL,
 };

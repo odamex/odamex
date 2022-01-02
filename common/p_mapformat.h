@@ -27,6 +27,34 @@
 #include "doomtype.h"
 #include "p_spec.h"
 
+class MapFormat
+{
+  public:
+	bool zdoom;
+	bool hexen;
+	bool polyobjs;
+	bool acs;
+	bool mapinfo;
+	bool sndseq;
+	bool sndinfo;
+	bool animdefs;
+	bool doublesky;
+	bool map99;
+	bool lax_monster_activation;
+	short generalized_mask;
+	unsigned int switch_activation;
+	int mt_push;
+	int mt_pull;
+
+	void init_sector_special(sector_t*);
+	void player_in_special_sector(player_t*);
+	bool actor_in_special_sector(AActor*);
+	void spawn_scroller(line_t*);
+	void spawn_friction(line_t*);
+	void spawn_pusher(line_t*);
+	void spawn_extra(line_t*);
+};
+
 struct map_format_s
 {
 	bool zdoom;
@@ -42,10 +70,10 @@ struct map_format_s
 	bool lax_monster_activation;
 	short generalized_mask;
 	unsigned int switch_activation;
-	void (*init_sector_special)(sector_t*, int);
+	void (*init_sector_special)(sector_t*);
 	void (*player_in_special_sector)(player_t*);
 	bool (*actor_in_special_sector)(AActor*);
-	void (*spawn_scroller)(line_t*, int);
+	void (*spawn_scroller)(line_t*);
 	void (*spawn_friction)(line_t*);
 	void (*spawn_pusher)(line_t*);
 	void (*spawn_extra)(int);
@@ -59,18 +87,18 @@ struct map_format_s
 	void (*check_impact)(AActor*);
 	void (*translate_line_flags)(unsigned int*);
 	void (*apply_sector_movement_special)(AActor*, int);
-	size_t mapthing_size;
-	size_t maplinedef_size;
 	int  mt_push;
 	int  mt_pull;
 };
 
-extern map_format_s map_format;
+extern MapFormat map_format;
 
 int  P_DoorType(int index);
 bool P_IsExitLine(int index);
 bool P_IsTeleportLine(int index);
 void P_ApplyZDoomMapFormat(void);
 void P_ApplyDefaultMapFormat(void);
+static const map_format_s zdoom_in_hexen_map_format;
+static const map_format_s doom_map_format;
 
 #endif

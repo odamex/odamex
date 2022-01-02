@@ -40,6 +40,7 @@
 #define TICS(a) (((a)*TICRATE) / 35)
 
 void P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing, bool bossaction);
+const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags);
 void P_ApplyGeneralizedSectorDamage(player_t* player, int bits);
 void P_CollectSecretBoom(sector_t* sector, player_t* player);
 void P_PlayerInCompatibleSector(player_t* player);
