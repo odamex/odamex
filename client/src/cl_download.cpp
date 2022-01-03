@@ -58,7 +58,7 @@ static struct DownloadState
 	OTransfer* transfer;
 	std::string url;
 	std::string filename;
-	std::string hash;
+	OMD5Hash hash;
 	unsigned flags;
 	Websites checkurls;
 	size_t checkurlidx;
@@ -66,7 +66,7 @@ static struct DownloadState
 	int checkfails;
 	DownloadState()
 	    : state(STATE_SHUTDOWN), check(NULL), transfer(NULL), url(""), filename(""),
-	      hash(""), flags(0), checkurls(), checkurlidx(0), checkfilename(""),
+	      hash(), flags(0), checkurls(), checkurlidx(0), checkfilename(""),
 	      checkfails(0)
 	{
 	}
@@ -79,7 +79,7 @@ static struct DownloadState
 		this->transfer = NULL;
 		this->url = "";
 		this->filename = "";
-		this->hash = "";
+		this->hash = OMD5Hash();
 		this->flags = 0;
 		this->checkurls.clear();
 		this->checkurlidx = 0;
@@ -177,7 +177,7 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 		return false;
 	}
 
-	if (W_IsFilehashCommercialIWAD(filename.getWantedHash()))
+	if (W_IsFilehashCommercialIWAD(filename.getWantedMD5()))
 	{
 		Printf(PRINT_WARNING, "Refusing to download renamed commercial IWAD file.\n");
 		return false;
@@ -188,7 +188,7 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 
 	// Assign the other params to the download state.
 	::dlstate.filename = filename.getBasename();
-	::dlstate.hash = filename.getWantedHash();
+	::dlstate.hash = filename.getWantedMD5();
 	::dlstate.flags = flags;
 
 	// Start the checking bit on the next tick.
@@ -395,7 +395,7 @@ static void TickDownload()
 		}
 
 		// Set our expected hash of the file.
-		::dlstate.transfer->setHash(::dlstate.hash);
+		::dlstate.transfer->setMD5(::dlstate.hash);
 
 		if (!::dlstate.transfer->start())
 		{

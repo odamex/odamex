@@ -20,7 +20,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include "odamex.h"
 
 #include "m_resfile.h"
@@ -64,14 +63,14 @@ bool OResFile::make(OResFile& out, const std::string& file)
 		return false;
 	}
 
-	std::string hash = W_MD5(file);
+	OMD5Hash hash = W_MD5(file);
 	if (hash.empty())
 	{
 		return false;
 	}
 
 	out.m_fullpath = fullpath;
-	out.m_hash = hash;
+	out.m_md5 = hash;
 	out.m_basename = StdStringToUpper(basename);
 	return true;
 }
@@ -86,8 +85,7 @@ bool OResFile::make(OResFile& out, const std::string& file)
  *             file.
  * @return True if the OResFile was populated successfully.
  */
-bool OResFile::makeWithHash(OResFile& out, const std::string& file,
-                            const std::string& hash)
+bool OResFile::makeWithHash(OResFile& out, const std::string& file, const OMD5Hash& hash)
 {
 	if (!M_FileExists(file))
 	{
@@ -100,8 +98,7 @@ bool OResFile::makeWithHash(OResFile& out, const std::string& file,
 		return false;
 	}
 
-	std::string nicehash = StdStringToUpper(hash);
-	if (!nicehash.empty() && !IsMD5SUM(nicehash))
+	if (hash.empty())
 	{
 		return false;
 	}
@@ -113,7 +110,7 @@ bool OResFile::makeWithHash(OResFile& out, const std::string& file,
 	}
 
 	out.m_fullpath = fullpath;
-	out.m_hash = nicehash;
+	out.m_md5 = hash;
 	out.m_basename = StdStringToUpper(basename);
 	return true;
 }
@@ -126,7 +123,7 @@ bool OResFile::makeWithHash(OResFile& out, const std::string& file,
  * @param type Type of resource we're interested in.
  * @return True if the OWantFile was populated successfully.
  */
-bool OWantFile::make(OWantFile& out, const std::string& file, ofile_t type)
+bool OWantFile::make(OWantFile& out, const std::string& file, const ofile_t type)
 {
 	std::string basename = M_ExtractFileName(file);
 	if (basename.empty())
@@ -153,17 +150,11 @@ bool OWantFile::make(OWantFile& out, const std::string& file, ofile_t type)
  * @param hash Desired hash to populate with.
  * @return True if the OWantFile was populated successfully.
  */
-bool OWantFile::makeWithHash(OWantFile& out, const std::string& file, ofile_t type,
-                             const std::string& hash)
+bool OWantFile::makeWithHash(OWantFile& out, const std::string& file, const ofile_t type,
+                             const OMD5Hash& hash)
 {
 	std::string basename = M_ExtractFileName(file);
 	if (basename.empty())
-	{
-		return false;
-	}
-
-	std::string nicehash = StdStringToUpper(hash);
-	if (!nicehash.empty() && !IsMD5SUM(nicehash))
 	{
 		return false;
 	}
@@ -173,7 +164,7 @@ bool OWantFile::makeWithHash(OWantFile& out, const std::string& file, ofile_t ty
 
 	out.m_wantedpath = file;
 	out.m_wantedtype = type;
-	out.m_wantedhash = nicehash;
+	out.m_wantedMD5 = hash;
 	out.m_basename = StdStringToUpper(basename);
 	out.m_extension = StdStringToUpper(extension);
 	return true;
@@ -181,7 +172,7 @@ bool OWantFile::makeWithHash(OWantFile& out, const std::string& file, ofile_t ty
 
 /**
  * @brief Turn passed list of ResFiles to string.
- * 
+ *
  * @param files Files to stringify.
  */
 std::string M_ResFilesToString(const OResFiles& files)
@@ -250,9 +241,9 @@ std::vector<std::string> M_FileSearchDirs()
 	dirs.push_back(M_GetCWD());
 	dirs.push_back(M_GetBinaryDir());
 
-	#ifdef __SWITCH__
+#ifdef __SWITCH__
 	dirs.push_back("./wads");
-	#endif
+#endif
 
 	// [AM] Search additional paths based on platform
 	D_AddPlatformSearchDirs(dirs);
@@ -276,14 +267,14 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	// correctly, believe them.
 	if (M_FileExists(wanted.getWantedPath()))
 	{
-		if (wanted.getWantedHash().empty())
+		if (wanted.getWantedMD5().empty())
 		{
 			// No hash preference.
 			return OResFile::make(out, wanted.getWantedPath());
 		}
 
-		std::string hash = W_MD5(wanted.getWantedPath());
-		if (wanted.getWantedHash() == hash)
+		OMD5Hash hash = W_MD5(wanted.getWantedPath());
+		if (wanted.getWantedMD5() == hash)
 		{
 			// File matches our hash.
 			return OResFile::makeWithHash(out, wanted.getWantedPath(), hash);
@@ -314,7 +305,7 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	     ++it)
 	{
 		const std::string result =
-		    M_BaseFileSearchDir(*it, basename, exts, wanted.getWantedHash());
+		    M_BaseFileSearchDir(*it, basename, exts, wanted.getWantedMD5());
 		if (!result.empty())
 		{
 			// Found a file.
@@ -327,6 +318,55 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	return false;
 }
 
+static bool ScanIWADCmp(const scannedIWAD_t& a, const scannedIWAD_t& b)
+{
+	return a.id->weight < b.id->weight;
+}
+
+/**
+ * @brief Scan all file search directories for IWAD files.
+ */
+std::vector<scannedIWAD_t> M_ScanIWADs()
+{
+	const std::vector<OString> iwads = W_GetIWADFilenames();
+	const std::vector<std::string> dirs = M_FileSearchDirs();
+
+	std::vector<scannedIWAD_t> rvo;
+	OHashTable<OCRC32Sum, bool> found;
+
+	for (size_t i = 0; i < dirs.size(); i++)
+	{
+		std::vector<std::string> files = M_BaseFilesScanDir(dirs[i], iwads);
+		for (size_t j = 0; j < files.size(); j++)
+		{
+			const std::string fullpath = dirs[i] + PATHSEP + files[j];
+
+			// Check to see if we got a real IWAD.
+			const OCRC32Sum crc32 = W_CRC32(fullpath);
+			if (crc32.empty())
+				continue;
+
+			// Found a dupe?
+			if (found.find(crc32) != found.end())
+				continue;
+
+			// Does the gameinfo exist?
+			const fileIdentifier_t* id = W_GameInfo(crc32);
+			if (id == NULL)
+				continue;
+
+			scannedIWAD_t iwad = {fullpath, id};
+			rvo.push_back(iwad);
+			found[crc32] = true;
+		}
+	}
+
+	// Sort the results by weight.
+	std::sort(rvo.begin(), rvo.end(), ScanIWADCmp);
+
+	return rvo;
+}
+
 std::string M_GetCurrentWadHashes()
 {
 	std::string builder = "";
@@ -334,7 +374,7 @@ std::string M_GetCurrentWadHashes()
 	for (OResFiles::const_iterator it = ::wadfiles.begin(); it != ::wadfiles.end(); ++it)
 	{
 		std::string base = it->getBasename().c_str();
-		std::string hash = it->getHash().c_str();
+		std::string hash = it->getMD5().getHexCStr();
 		std::string line = base + ',' + hash + '\n';
 
 		builder += line;
@@ -355,7 +395,7 @@ BEGIN_COMMAND(whereis)
 	if (M_ResolveWantedFile(res, want))
 	{
 		Printf("basename: %s\nfullpath: %s\nhash: %s\n", res.getBasename().c_str(),
-		       res.getFullpath().c_str(), res.getHash().c_str());
+		       res.getFullpath().c_str(), res.getMD5().getHexCStr());
 		return;
 	}
 
@@ -369,7 +409,7 @@ BEGIN_COMMAND(loaded)
 	{
 		Printf("%s\n", it->getBasename().c_str());
 		Printf("  PATH: %s\n", it->getFullpath().c_str());
-		Printf("  MD5:  %s\n", it->getHash().c_str());
+		Printf("  MD5:  %s\n", it->getMD5().getHexCStr());
 	}
 
 	for (OResFiles::const_iterator it = ::patchfiles.begin(); it != ::patchfiles.end();
@@ -377,7 +417,7 @@ BEGIN_COMMAND(loaded)
 	{
 		Printf("%s\n", it->getBasename().c_str());
 		Printf("  PATH: %s\n", it->getFullpath().c_str());
-		Printf("  MD5:  %s\n", it->getHash().c_str());
+		Printf("  MD5:  %s\n", it->getMD5().getHexCStr());
 	}
 }
 END_COMMAND(loaded)

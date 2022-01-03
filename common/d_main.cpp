@@ -696,7 +696,7 @@ static bool CheckWantedMatchesLoaded(const OWantFiles& newwadfiles,
 	     ++it)
 	{
 		size_t idx = it - newwadfiles.begin();
-		if (it->getWantedHash() != ::wadfiles.at(idx + 1).getHash())
+		if (it->getWantedMD5() != ::wadfiles.at(idx + 1).getMD5())
 		{
 			return false;
 		}
@@ -707,7 +707,7 @@ static bool CheckWantedMatchesLoaded(const OWantFiles& newwadfiles,
 	     ++it)
 	{
 		size_t idx = it - newpatchfiles.begin();
-		if (it->getWantedHash() != ::patchfiles.at(idx).getHash())
+		if (it->getWantedMD5() != ::patchfiles.at(idx).getMD5())
 		{
 			return false;
 		}
