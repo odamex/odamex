@@ -24,6 +24,8 @@
 
 #include "p_boomfspec.h"
 
+EXTERN_CVAR(sv_allowexit)
+
 void G_SecretExitLevel(int position, int drawscores);
 void P_DamageMobj(AActor* target, AActor* inflictor, AActor* source, int damage, int mod,
                   int flags);
@@ -87,7 +89,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	{
 		// pointer to line function is NULL by default, set non-null if
 		// line special is walkover generalized linedef type
-		bool (*linefunc)(line_t * line) = NULL;
+		BOOL (*linefunc)(line_t * line) = NULL;
 
 		// check each range of generalized linedefs
 		if ((unsigned)line->special >= GenEnd)
@@ -138,7 +140,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		else if ((unsigned)line->special >= GenLockedBase)
 		{
 			if (!thing->player || bossaction) // boss actions can't handle locked doors
-				return;                       // monsters disallowed from unlocking doors
+				return result;                // monsters disallowed from unlocking doors
 			if (((line->special & TriggerType) == WalkOnce) ||
 			    ((line->special & TriggerType) == WalkMany))
 			{ // jff 4/1/98 check for being a walk type before reporting door type
@@ -323,20 +325,16 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 12:
 		// Light Turn On - brightest near
-		if (EV_LightTurnOn(line->id, -1))
-		{
-			result.lineexecuted = true;
-			line->special = 0;
-		}
+		EV_LightTurnOn(line->id, -1);
+		result.lineexecuted = true;
+		line->special = 0;
 		break;
 
 	case 13:
 		// Light Turn On 255
-		if (EV_LightTurnOn(line, 255))
-		{
-			result.lineexecuted = true;
-			line->special = 0;
-		}
+		EV_LightTurnOn(line->id, 255);
+		result.lineexecuted = true;
+		line->special = 0;
 		break;
 
 	case 16:
@@ -351,11 +349,9 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 17:
 		// Start Light Strobing
-		if (EV_StartLightStrobing(line->id, TICS(5), TICS(35)))
-		{
-			result.lineexecuted = true;
-			line->special = 0;
-		}
+		EV_StartLightStrobing(line->id, TICS(5), TICS(35));
+		result.lineexecuted = true;
+		line->special = 0;
 		break;
 
 	case 19:
@@ -401,11 +397,9 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 35:
 		// Lights Very Dark
-		if (EV_LightTurnOn(line->id, 35))
-		{
-			result.lineexecuted = true;
-			line->special = 0;
-		}
+		EV_LightTurnOn(line->id, 35);
+		result.lineexecuted = true;
+		line->special = 0;
 		break;
 
 	case 36:
@@ -490,11 +484,9 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 54:
 		// Platform Stop
-		if (EV_StopPlat(line->id))
-		{
-			result.lineexecuted = true;
-			line->special = 0;
-		}
+		EV_StopPlat(line->id);
+		result.lineexecuted = true;
+		line->special = 0;
 		break;
 
 	case 56:
@@ -548,11 +540,9 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 104:
 		// Turn lights off in sector(tag)
-		if (EV_TurnTagLightsOff(line->id))
-		{
-			result.lineexecuted = true;
-			line->special = 0;
-		}
+		EV_TurnTagLightsOff(line->id);
+		result.lineexecuted = true;
+		line->special = 0;
 		break;
 
 	case 108:
@@ -1270,7 +1260,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		case 269: // jff 4/14/98 add monster-only silent
 			if (!thing->player)
 			{
-				EV_CompatibleTeleport(line->id, line, side, thing, TELF_SILENT));
+				EV_CompatibleTeleport(line->id, line, side, thing, TELF_SILENT);
 				result.lineexecuted = true;
 			}
 			break;
@@ -1450,7 +1440,7 @@ bool P_ActorInCompatibleSector(AActor* actor)
 	return false;
 }
 
-void P_PostProcessCompatibleSidedefSpecial(side_t* sd, const mapsidedef_t* msd,
+void P_PostProcessCompatibleSidedefSpecial(side_t* sd, mapsidedef_t* msd,
                                            sector_t* sec, int i)
 {
 	switch (sd->special)
@@ -1690,13 +1680,13 @@ void P_SpawnCompatibleScroller(line_t* l, int i)
 		int s;
 
 	case 250: // scroll effect ceiling
-		for (s = -1; (s = P_FindSectorFromLineTag(l->id, s)) >= 0;)
+		for (s = -1; (s = P_FindSectorFromLineTag(l, s)) >= 0;)
 			new DScroller(DScroller::sc_ceiling, -dx, dy, control, s, accel);
 		break;
 
 	case 251: // scroll effect floor
 	case 253: // scroll and carry objects on floor
-		for (s = -1; (s = P_FindSectorFromLineTag(l->id, s)) >= 0;)
+		for (s = -1; (s = P_FindSectorFromLineTag(l, s)) >= 0;)
 			new DScroller(DScroller::sc_floor, -dx, dy, control, s, accel);
 		if (special != 253)
 			break;
@@ -1705,7 +1695,7 @@ void P_SpawnCompatibleScroller(line_t* l, int i)
 	case 252: // carry objects on floor
 		dx = FixedMul(dx, CARRYFACTOR);
 		dy = FixedMul(dy, CARRYFACTOR);
-		for (s = -1; (s = P_FindSectorFromLineTag(l->id, s)) >= 0;)
+		for (s = -1; (s = P_FindSectorFromLineTag(l, s)) >= 0;)
 			new DScroller(DScroller::sc_carry, dx, dy, control, s, accel);
 		break;
 
@@ -1785,15 +1775,15 @@ void P_SpawnCompatiblePusher(line_t* l)
 	switch (l->special)
 	{
 	case 224: // wind
-		for (s = -1; (s = P_FindSectorFromLineTag(l->id, s)) >= 0;)
+		for (s = -1; (s = P_FindSectorFromLineTag(l, s)) >= 0;)
 			new DPusher(DPusher::p_wind, l, 0, 0, NULL, s);
 		break;
 	case 225: // current
-		for (s = -1; (s = P_FindSectorFromLineTag(l->id, s)) >= 0;)
+		for (s = -1; (s = P_FindSectorFromLineTag(l, s)) >= 0;)
 			new DPusher(DPusher::p_current, l, 0, 0, NULL, s);
 		break;
 	case 226: // push/pull
-		for (s = -1; (s = P_FindSectorFromLineTag(l->id, s)) >= 0;)
+		for (s = -1; (s = P_FindSectorFromLineTag(l, s)) >= 0;)
 		{
 			thing = P_GetPushThing(s);
 			if (thing) // No MT_P* means no effect
@@ -1880,7 +1870,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			return result; // monsters disallowed from unlocking doors
 		if (!P_CanUnlockGenDoor(line, thing->player))
 			return result;
-		if (!line->tag &&
+		if (!line->id &&
 			((line->special & 6) != 6)) // e6y //jff 2/27/98 all non-manual
 			return result;              // generalized types require tag
 
@@ -2024,15 +2014,15 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		break;
 	case 26: // Blue Door/Locked
 		result.lineexecuted = EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
-		                                TICS(VDOORWAIT), BCard | CardIsSkull);
+		                                TICS(VDOORWAIT), (card_t)(BCard | CardIsSkull));
 		break;
 	case 27: // Yellow Door /Locked
 		result.lineexecuted = EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
-		                                TICS(VDOORWAIT), YCard | CardIsSkull);
+		                                TICS(VDOORWAIT), (card_t)(YCard | CardIsSkull));
 		break;
 	case 28: // Red Door /Locked
 		result.lineexecuted = EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
-		                                TICS(VDOORWAIT), RCard | CardIsSkull);
+		                                TICS(VDOORWAIT), (card_t)(RCard | CardIsSkull));
 		break;
 	case 31: // Manual door open
 		result.lineexecuted =
@@ -2040,15 +2030,15 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		break;
 	case 32: // Blue locked door open
 		result.lineexecuted = EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW),
-		                                0, BCard | CardIsSkull);
+		                                0, (card_t)(BCard | CardIsSkull));
 		break;
 	case 33: // Red locked door open
 		result.lineexecuted = EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0,
-		                                RCard | CardIsSkull);
+		                                (card_t)(RCard | CardIsSkull));
 		break;
 	case 34: // Yellow locked door open
 		result.lineexecuted = EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0,
-		                                YCard | CardIsSkull);
+		                                (card_t)(YCard | CardIsSkull));
 		break;
 
 	case 117: // Blazing door raise
@@ -2099,7 +2089,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	case 14:
 		// Raise Floor 32 and change texture
-		if (EV_DoPlat(line->tag, line, DPlat::platUpByValueStay, FRACUNIT * 4 * 8,
+		if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 4 * 8,
 		              SPEED(P_SLOW / 2), 0, 0, 2))
 		{
 			result.lineexecuted = true;
@@ -2109,7 +2099,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	case 15:
 		// Raise Floor 24 and change texture
-		if (EV_DoPlat(line->tag, line, DPlat::platUpByValueStay, FRACUNIT * 3 * 8,
+		if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 3 * 8,
 		              SPEED(P_SLOW / 2), 0, 0, 2))
 		{
 			result.lineexecuted = true;
@@ -2320,7 +2310,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 133:
 		// BlzOpenDoor BLUE
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id,
-		              SPEED(D_FAST), TICS(0), BCard | CardIsSkull))
+		              SPEED(D_FAST), TICS(0), (card_t)(BCard | CardIsSkull)))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -2329,7 +2319,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 135:
 		// BlzOpenDoor RED
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
-		              RCard | CardIsSkull))
+		              (card_t)(RCard | CardIsSkull)))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -2338,7 +2328,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 137:
 		// BlzOpenDoor YELLOW
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
-		              YCard | CardIsSkull))
+		              (card_t)(YCard | CardIsSkull)))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -3161,7 +3151,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 99:
 		// BlzOpenDoor BLUE
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
-		              BCard | CardIsSkull))
+		              (card_t)(BCard | CardIsSkull)))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -3170,7 +3160,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 134:
 		// BlzOpenDoor RED
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
-		              RCard | CardIsSkull))
+		              (card_t)(RCard | CardIsSkull)))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -3179,7 +3169,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 136:
 		// BlzOpenDoor YELLOW
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
-		              YCard | CardIsSkull))
+		              (card_t)(YCard | CardIsSkull)))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -3235,7 +3225,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		if (!thing->player)
 			if ((line->special & FloorChange) || !(line->special & FloorModel))
 				return result; // FloorModel is "Allow Monsters" if FloorChange is 0
-		if (!line->tag)        // e6y //jff 2/27/98 all gun generalized types require tag
+		if (!line->id)        // e6y //jff 2/27/98 all gun generalized types require tag
 			return result;
 
 		linefunc = EV_DoGenFloor;
@@ -3245,7 +3235,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		if (!thing->player)
 			if ((line->special & CeilingChange) || !(line->special & CeilingModel))
 				return result; // CeilingModel is "Allow Monsters" if CeilingChange is 0
-		if (!line->tag)        // jff 2/27/98 all gun generalized types require tag
+		if (!line->id)        // jff 2/27/98 all gun generalized types require tag
 			return result;
 		linefunc = EV_DoGenCeiling;
 	}
@@ -3258,7 +3248,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 			if (line->flags & ML_SECRET) // they can't open secret doors either
 				return result;
 		}
-		if (!line->tag) // e6y //jff 3/2/98 all gun generalized types require tag
+		if (!line->id) // e6y //jff 3/2/98 all gun generalized types require tag
 			return result;
 		linefunc = EV_DoGenDoor;
 	}
@@ -3274,7 +3264,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		}
 		else
 			return result;
-		if (!line->tag) // e6y //jff 2/27/98 all gun generalized types require tag
+		if (!line->id) // e6y //jff 2/27/98 all gun generalized types require tag
 			return result;
 
 		linefunc = EV_DoGenLockedDoor;
@@ -3291,7 +3281,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		if (!thing->player)
 			if (!(line->special & StairMonster))
 				return result; // monsters disallowed
-		if (!line->tag)        // e6y //jff 2/27/98 all gun generalized types require tag
+		if (!line->id)        // e6y //jff 2/27/98 all gun generalized types require tag
 			return result;
 		linefunc = EV_DoGenStairs;
 	}
@@ -3300,7 +3290,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		if (!thing->player)
 			if (!(line->special & StairMonster))
 				return result; // monsters disallowed
-		if (!line->tag)        // e6y //jff 2/27/98 all gun generalized types require tag
+		if (!line->id)        // e6y //jff 2/27/98 all gun generalized types require tag
 			return result;
 		linefunc = EV_DoGenCrusher;
 	}

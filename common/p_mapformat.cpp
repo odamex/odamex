@@ -23,7 +23,6 @@
 //-----------------------------------------------------------------------------
 #include "doomstat.h"
 #include "doomdata.h"
-#include "lprintf.h"
 #include "m_argv.h"
 #include "actor.h"
 #include "p_lnspec.h"
@@ -46,71 +45,6 @@ enum door_type_t
 	door_type_unknown = door_type_yellow,
 	door_type_multiple
 };
-
-int P_DoorType(int index)
-{
-	int special = lines[index].special;
-
-	if (map_format.hexen)
-	{
-		if (special == 13 || special == 83)
-			return door_type_unknown;
-
-		return door_type_none;
-	}
-
-	if (GenLockedBase <= special && special < GenDoorBase)
-	{
-		special -= GenLockedBase;
-		special = (special & LockedKey) >> LockedKeyShift;
-		if (!special || special == 7)
-			return door_type_multiple;
-		else
-			return (special - 1) % 3;
-	}
-
-	switch (special)
-	{
-	case 26:
-	case 32:
-	case 99:
-	case 133:
-		return door_type_blue;
-	case 27:
-	case 34:
-	case 136:
-	case 137:
-		return door_type_yellow;
-	case 28:
-	case 33:
-	case 134:
-	case 135:
-		return door_type_red;
-	default:
-		return door_type_none;
-	}
-}
-
-bool P_IsExitLine(int index)
-{
-	int special = lines[index].special;
-
-	if (map_format.hexen)
-		return special == 74 || special == 75;
-
-	return special == 11 || special == 52 || special == 197 || special == 51 ||
-	       special == 124 || special == 198;
-}
-
-bool P_IsTeleportLine(int index)
-{
-	int special = lines[index].special;
-
-	if (map_format.hexen)
-		return special == 70 || special == 71;
-
-	return special == 39 || special == 97 || special == 125 || special == 126;
-}
 
 // Migrate some non-hexen data to hexen format
 void P_MigrateActorInfo(void)
@@ -216,7 +150,7 @@ void MapFormat::cross_special_line(line_t* line, int side, AActor* thing, bool b
 		P_CrossCompatibleSpecialLine(line, side, thing, bossaction);
 }
 
-void MapFormat::post_process_sidedef_special(side_t* sd, const mapsidedef_t* msd,
+void MapFormat::post_process_sidedef_special(side_t* sd, mapsidedef_t* msd,
                                              sector_t* sec, int i)
 {
 	if (map_format.zdoom)

@@ -328,6 +328,9 @@ inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 // [ML] Default intermission length
 #define DEFINTSECS	10
 
+// Amount (dx,dy) vector linedef is shifted right to get scroll amount
+#define SCROLL_SHIFT 5
+
 // phares 3/20/98:
 //
 // Player friction is variable, based on controlling
@@ -338,6 +341,10 @@ inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 #define ORIG_FRICTION			0xE800	// original value
 #define ORIG_FRICTION_FACTOR	2048	// original value
 #define FRICTION_FLY			0xeb00
+
+// Factor to scale scrolling effect into mobj-carrying properties = 3/32.
+// (This is so scrolling floors and objects on them can move at same speed.)
+#define CARRYFACTOR ((fixed_t)(FRACUNIT * .09375))
 
 #ifndef __BIG_ENDIAN__
 #define MAKE_ID(a,b,c,d)	((a)|((b)<<8)|((c)<<16)|((d)<<24))

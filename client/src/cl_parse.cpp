@@ -1683,7 +1683,7 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
 	{
 		// only playsound if we've received the full update from
 		// the server (not setting up the map from the server)
-		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL,
+		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEATSPECIAL,
 		                      recv_full_update);
 	}
 

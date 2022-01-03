@@ -133,6 +133,7 @@ int P_FindSectorFromLineTag(const line_t* line, int start);
 int P_ArgToCrushMode(byte arg, bool slowdown);
 fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f);
 bool P_CheckTag(line_t* line);
+void P_TransferSectorFlags(unsigned int*, unsigned int);
 
 //jff 2/23/98 identify the special classes that can share sectors
 

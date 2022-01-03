@@ -567,6 +567,10 @@ BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove)
 	return rtn;
 }
 
+BOOL P_SpawnZDoomCeiling(DCeiling::ECeiling, line_t*, int, fixed_t,
+                         fixed_t, fixed_t, int, int,
+                         int, crushmode_e);
+
 BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
                        fixed_t speed2, fixed_t height, int crush, byte silent, int change,
                        crushmode_e crushmode)

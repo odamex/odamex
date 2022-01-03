@@ -41,13 +41,15 @@ class MapFormat
 	void spawn_pusher(line_t*);
 	void spawn_extra(int);
 	void cross_special_line(line_t*, int, AActor*, bool);
-	void post_process_sidedef_special(side_t*, const mapsidedef_t*, sector_t*, int);
+	void post_process_sidedef_special(side_t*, mapsidedef_t*, sector_t*, int);
 
 	friend void P_ShootSpecialLine(AActor* thing, line_t* line);
 	friend void P_AdjustLine(line_t* ld);
 	friend bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction);
 	friend void P_ClearNonGeneralizedSectorSpecial(sector_t* sector);
 	friend void DCeiling::RunThink();
+	friend BOOL PTR_UseTraverse(intercept_t* in);
+	friend void P_MigrateActorInfo(void);
 
   protected:
 	bool zdoom;
@@ -87,9 +89,9 @@ void P_SpawnZDoomPusher(line_t* l);
 void P_SpawnCompatibleExtra(int i);
 void P_SpawnZDoomExtra(int i);
 
-void P_PostProcessZDoomSidedefSpecial(side_t* sd, const mapsidedef_t* msd, sector_t* sec,
+void P_PostProcessZDoomSidedefSpecial(side_t* sd, mapsidedef_t* msd, sector_t* sec,
                                       int i);
-void P_PostProcessCompatibleSidedefSpecial(side_t* sd, const mapsidedef_t* msd,
+void P_PostProcessCompatibleSidedefSpecial(side_t* sd, mapsidedef_t* msd,
                                            sector_t* sec, int i);
 
 #endif

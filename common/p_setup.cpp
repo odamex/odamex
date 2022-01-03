@@ -1029,7 +1029,7 @@ static argb_t P_GetColorFromTextureName(const char* name)
 // is an ARGB value in hexadecimal, that value is used for the appropriate
 // sector blend.
 // 
-static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
+void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 {
 	sector_t* sec = &sectors[LESHORT(msd->sector)];
 
@@ -1085,7 +1085,7 @@ static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 // 
 
 
-static void SetTextureNoErr (short *texture, unsigned int *color, char *name)
+void SetTextureNoErr (short *texture, unsigned int *color, char *name)
 {
 	if ((*texture = R_CheckTextureNumForName (name)) == -1) {
 		char name2[9];

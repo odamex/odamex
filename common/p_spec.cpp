@@ -145,12 +145,6 @@ void P_ResetSectorTransferFlags(unsigned int* flags)
 	*flags &= ~SECF_TRANSFERMASK;
 }
 
-void P_TransferSectorFlags(unsigned int* dest, unsigned int source)
-{
-	*dest &= ~SECF_TRANSFERMASK;
-	*dest |= source & SECF_TRANSFERMASK;
-}
-
 static const damage_s no_damage = {0, 0, 0};
 
 void P_ResetSectorSpecial(sector_t* sector)
@@ -500,16 +494,12 @@ static anim_t*  lastanim;
 static anim_t*  anims;
 static size_t	maxanims;
 
-
-// Factor to scale scrolling effect into mobj-carrying properties = 3/32.
-// (This is so scrolling floors and objects on them can move at same speed.)
-#define CARRYFACTOR ((fixed_t)(FRACUNIT*.09375))
-
 // killough 3/7/98: Initialize generalized scrolling
 static void P_SpawnScrollers();
 
 static void P_SpawnFriction();		// phares 3/16/98
 static void P_SpawnPushers();		// phares 3/20/98
+static void P_SpawnExtra();
 
 static void ParseAnim(OScanner &os, byte istex);
 
@@ -2324,7 +2314,7 @@ void P_SpawnStrobeFlash(sector_t* sector, int utics, int ltics, bool inSync)
 	P_ClearNonGeneralizedSectorSpecial(sector);
 }
 
-void P_SpawnExtra()
+static void P_SpawnExtra()
 {
 	for (int i = 0; i < numlines; i++)
 	{
@@ -2499,9 +2489,6 @@ DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 	}
 	m_Affectee = *l->sidenum;
 }
-
-// Amount (dx,dy) vector linedef is shifted right to get scroll amount
-#define SCROLL_SHIFT 5
 
 // Initialize the scrollers
 static void P_SpawnScrollers(void)

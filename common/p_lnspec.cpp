@@ -767,7 +767,7 @@ FUNC(LS_Ceiling_RaiseByValueTimes8)
 FUNC(LS_Ceiling_CrushAndRaise)
 // Ceiling_CrushAndRaise (tag, speed, damage [, crushmode])
 {
-	EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
 	                  P_ArgToSpeed(arg1), P_ArgToSpeed(arg1) / 2, 8, arg2, 0, 0,
 	                  (crushmode_e)P_ArgToCrushMode(arg3, false));
 }
@@ -775,7 +775,7 @@ FUNC(LS_Ceiling_CrushAndRaise)
 FUNC(LS_Ceiling_CrushAndRaiseDist)
 // Ceiling_CrushAndRaiseDist (tag, dist, speed, damage [, crushmode])
 {
-	EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
 	                  P_ArgToSpeed(arg2), P_ArgToSpeed(arg2), arg1, arg3, 0,
 	                  0, (crushmode_e)P_ArgToCrushMode(arg4, arg2 == 8));
 }
@@ -1264,22 +1264,6 @@ FUNC(LS_Noise_Alert)
 	}
 
 	return noise;
-}
-
-FUNC(LS_Sector_SetGravity)
-// Sector_SetGravity (tag, ipart, fpart)
-{
-	fixed_t gravity;
-	int s = -1;
-
-	if (arg2 > 99)
-		arg2 = 99;
-
-	gravity = P_ArgsToFixed(arg1, arg2);
-
-	while ((s = P_FindSectorFromTag(arg0, s)) >= 0)
-		sectors[s].gravity = gravity;
-	return true;
 }
 
 FUNC(LS_Sector_SetDamage)
@@ -2151,19 +2135,6 @@ FUNC(LS_PointPush_SetForce)
 // PointPush_SetForce ()
 {
 	return false;
-}
-
-FUNC(LS_Sector_SetDamage)
-// Sector_SetDamage (tag, amount, mod, interval, leaky)
-{
-	int secnum = -1;
-	while ((secnum = P_FindSectorFromTag (arg0, secnum)) >= 0) {
-		sectors[secnum].damage->amount = arg1;
-		sectors[secnum].damage->interval = arg3;
-		sectors[secnum].damage->leakrate = arg4;
-		sectors[secnum].mod = arg2;
-	}
-	return true;
 }
 
 FUNC(LS_Sector_SetGravity)

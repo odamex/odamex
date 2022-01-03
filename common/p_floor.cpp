@@ -1549,6 +1549,8 @@ manual_stair:
 	return rtn;
 }
 
+int P_SpawnDonut(int, line_t*, fixed_t, fixed_t);
+
 BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
 {
 	int secnum = -1;
@@ -1771,6 +1773,9 @@ DElevator* DElevator::Clone(sector_t* sec) const
 
 	return ele;
 }
+
+bool SpawnCommonElevator(line_t*, DElevator::EElevator, fixed_t,
+                         fixed_t, int);
 
 //
 // EV_DoElevator
