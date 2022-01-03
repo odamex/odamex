@@ -35,7 +35,7 @@
 
 #include "p_mapformat.h"
 
-map_format_s map_format;
+MapFormat map_format;
 
 enum door_type_t
 {
@@ -152,75 +152,6 @@ static void P_MigrateActorInfo(void)
 	}
 }
 
-extern void P_SpawnCompatibleSectorSpecial(sector_t* sector, int i);
-void P_SpawnZDoomSectorSpecials(sector_t* sector);
-
-extern void P_PlayerInCompatibleSector(player_t* player, sector_t* sector);
-extern void P_PlayerInZDoomSector(player_t* player, sector_t* sector);
-
-extern void P_SpawnCompatibleScroller(line_t* l, int i);
-extern void P_SpawnZDoomScroller(line_t* l, int i);
-
-extern void P_SpawnCompatibleFriction(line_t* l);
-extern void P_SpawnZDoomFriction(line_t* l);
-
-extern void P_SpawnCompatiblePusher(line_t* l);
-extern void P_SpawnZDoomPusher(line_t* l);
-
-extern void P_SpawnCompatibleExtra(line_t* l, int i);
-extern void P_SpawnZDoomExtra(line_t* l, int i);
-
-extern void P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
-                                         bool bossaction);
-extern void P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
-                                    bool bossaction);
-
-extern void P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
-extern void P_ShootHexenSpecialLine(AActor* thing, line_t* line);
-
-extern bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
-                                        unsigned int activationType);
-
-extern void P_PostProcessCompatibleLineSpecial(line_t* ld);
-extern void P_PostProcessZDoomLineSpecial(line_t* ld);
-extern void P_PostProcessZDoomLineSectorSpecial(int line);
-
-extern void P_PostProcessCompatibleSidedefSpecial(side_t* sd, const mapsidedef_t* msd,
-                                                  sector_t* sec, int i);
-extern void P_PostProcessZDoomSidedefSpecial(side_t* sd, const mapsidedef_t* msd,
-                                             sector_t* sec, int i);
-
-extern void P_AnimateCompatibleSurfaces(void);
-extern void P_AnimateZDoomSurfaces(void);
-
-extern void P_CheckCompatibleImpact(AActor*);
-extern void P_CheckZDoomImpact(AActor*);
-
-extern void P_TranslateZDoomLineFlags(unsigned int*);
-extern void P_TranslateCompatibleLineFlags(unsigned int*);
-
-extern void P_ApplyCompatibleSectorMovementSpecial(AActor*, int);
-extern void P_ApplyHereticSectorMovementSpecial(AActor*, int);
-
-extern bool P_ActorInCompatibleSector(AActor*);
-extern bool P_ActorInZDoomSector(AActor*);
-
-extern void P_CompatiblePlayerThrust(player_t* player, angle_t angle, fixed_t move);
-
-extern bool P_ExecuteZDoomLineSpecial(int special, byte* args, line_t* line, int side,
-                                          AActor* mo);
-extern bool P_ExecuteHexenLineSpecial(int special, byte* args, line_t* line, int side,
-                                          AActor* mo);
-
-extern void T_VerticalCompatibleDoor(vldoor_t* door);
-extern void T_VerticalHexenDoor(vldoor_t* door);
-
-extern void T_MoveCompatibleFloor(floormove_t*);
-
-void T_MoveCompatibleCeiling(ceiling_t* ceiling);
-
-int EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int flags);
-
 static const map_format_s zdoom_in_hexen_map_format = {
     true, //zdoom
     true, //hexen
@@ -286,20 +217,45 @@ static const map_format_s doom_map_format = {
     .check_impact = P_CheckCompatibleImpact,
     .translate_line_flags = P_TranslateCompatibleLineFlags,
     .apply_sector_movement_special = P_ApplyCompatibleSectorMovementSpecial,
-    .mt_push = MT_PUSH,
-    .mt_pull = MT_PULL,
 };
 
-void P_ApplyZDoomMapFormat(void)
+CONSTEXPR void MapFormat::P_ApplyZDoomMapFormat(CONSTEXPR void)
 {
-	map_format = zdoom_in_hexen_map_format;
+	map_format.zdoom = true;
+	map_format.hexen = true;
+	map_format.polyobjs = false;
+	map_format.acs = false;
+	map_format.mapinfo = false;
+	map_format.sndseq = false;
+	map_format.sndinfo = false;
+	map_format.animdefs = false;
+	map_format.doublesky = false;
+	map_format.map99 = false;
+	map_format.generalized_mask = ~0xff;
+	map_format.switch_activation = ML_SPAC_USE | ML_SPAC_IMPACT | ML_SPAC_PUSH;
 
 	P_MigrateActorInfo();
 }
 
-void P_ApplyDefaultMapFormat(void)
+CONSTEXPR MapFormat::P_ApplyDefaultMapFormat(CONSTEXPR void)
 {
-	map_format = doom_map_format;
+	map_format.zdoom = false;
+	map_format.hexen = false;
+	map_format.polyobjs = false;
+	map_format.acs = false;
+	map_format.mapinfo = false;
+	map_format.sndseq = false;
+	map_format.sndinfo = false;
+	map_format.animdefs = false;
+	map_format.doublesky = false;
+	map_format.map99 = false;
+	map_format.generalized_mask = ~31;
+	map_format.switch_activation = 0; // not used
 
 	P_MigrateActorInfo();
+}
+
+bool MapFormat::GetZDoom(void)
+{
+	return map_format.zdoom;
 }

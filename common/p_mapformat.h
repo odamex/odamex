@@ -30,21 +30,21 @@
 class MapFormat
 {
   public:
-	bool zdoom;
-	bool hexen;
-	bool polyobjs;
-	bool acs;
-	bool mapinfo;
-	bool sndseq;
-	bool sndinfo;
-	bool animdefs;
-	bool doublesky;
-	bool map99;
-	bool lax_monster_activation;
-	short generalized_mask;
-	unsigned int switch_activation;
-	int mt_push;
-	int mt_pull;
+	void P_ApplyZDoomMapFormat(void);
+	void P_ApplyDefaultMapFormat(void);
+
+	bool GetZDoom(void);
+	bool GetHexen(void);
+	bool GetPolyObjs(void);
+	bool GetACS(void);
+	bool GetMAPINFO(void);
+	bool GetSNDSEQ(void);
+	bool GetSNDINFO(void);
+	bool GetANIMDEFS(void);
+	bool GetDoubleSky(void);
+	bool GetMAP99(void);
+	short GetGeneralizedMask(void);
+	unsigned int GetSwitchActivation(void);
 
 	void init_sector_special(sector_t*);
 	void player_in_special_sector(player_t*);
@@ -52,11 +52,19 @@ class MapFormat
 	void spawn_scroller(line_t*);
 	void spawn_friction(line_t*);
 	void spawn_pusher(line_t*);
-	void spawn_extra(line_t*);
-};
+	void spawn_extra(int);
+	void cross_special_line(line_t*, int, AActor*, bool);
+	void shoot_special_line(AActor*, line_t*);
+	bool test_activate_line(int, short*, line_t*, int, AActor*);
+	bool execute_line_special(int, short*, line_t*, int, AActor*);
+	void post_process_line_special(int);
+	void post_process_sidedef_special(side_t*, const mapsidedef_t*, sector_t*, int);
+	void animate_surfaces(void);
+	void check_impact(AActor*);
+	void translate_line_flags(unsigned int*);
+	void apply_sector_movement_special(AActor*, int);
 
-struct map_format_s
-{
+  protected:
 	bool zdoom;
 	bool hexen;
 	bool polyobjs;
@@ -67,28 +75,8 @@ struct map_format_s
 	bool animdefs;
 	bool doublesky;
 	bool map99;
-	bool lax_monster_activation;
 	short generalized_mask;
 	unsigned int switch_activation;
-	void (*init_sector_special)(sector_t*);
-	void (*player_in_special_sector)(player_t*);
-	bool (*actor_in_special_sector)(AActor*);
-	void (*spawn_scroller)(line_t*);
-	void (*spawn_friction)(line_t*);
-	void (*spawn_pusher)(line_t*);
-	void (*spawn_extra)(int);
-	void (*cross_special_line)(line_t*, int, AActor*, bool);
-	void (*shoot_special_line)(AActor*, line_t*);
-	bool (*test_activate_line)(line_t*, AActor*, int, unsigned int);
-	bool (*execute_line_special)(int, short*, line_t*, int, AActor*);
-	void (*post_process_line_special)(int);
-	void (*post_process_sidedef_special)(side_t*, const mapsidedef_t*, sector_t*, int);
-	void (*animate_surfaces)(void);
-	void (*check_impact)(AActor*);
-	void (*translate_line_flags)(unsigned int*);
-	void (*apply_sector_movement_special)(AActor*, int);
-	int  mt_push;
-	int  mt_pull;
 };
 
 extern MapFormat map_format;
@@ -96,9 +84,5 @@ extern MapFormat map_format;
 int  P_DoorType(int index);
 bool P_IsExitLine(int index);
 bool P_IsTeleportLine(int index);
-void P_ApplyZDoomMapFormat(void);
-void P_ApplyDefaultMapFormat(void);
-static const map_format_s zdoom_in_hexen_map_format;
-static const map_format_s doom_map_format;
 
 #endif
