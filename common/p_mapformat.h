@@ -47,6 +47,7 @@ class MapFormat
 	friend void P_AdjustLine(line_t* ld);
 	friend bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction);
 	friend void P_ClearNonGeneralizedSectorSpecial(sector_t* sector);
+	friend void DCeiling::RunThink();
 
   protected:
 	bool zdoom;
