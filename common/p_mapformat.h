@@ -33,36 +33,20 @@ class MapFormat
 	void P_ApplyZDoomMapFormat(void);
 	void P_ApplyDefaultMapFormat(void);
 
-	bool GetZDoom(void);
-	bool GetHexen(void);
-	bool GetPolyObjs(void);
-	bool GetACS(void);
-	bool GetMAPINFO(void);
-	bool GetSNDSEQ(void);
-	bool GetSNDINFO(void);
-	bool GetANIMDEFS(void);
-	bool GetDoubleSky(void);
-	bool GetMAP99(void);
-	short GetGeneralizedMask(void);
-	unsigned int GetSwitchActivation(void);
-
 	void init_sector_special(sector_t*);
 	void player_in_special_sector(player_t*);
 	bool actor_in_special_sector(AActor*);
-	void spawn_scroller(line_t*);
+	void spawn_scroller(line_t*, int);
 	void spawn_friction(line_t*);
 	void spawn_pusher(line_t*);
 	void spawn_extra(int);
 	void cross_special_line(line_t*, int, AActor*, bool);
-	void shoot_special_line(AActor*, line_t*);
-	bool test_activate_line(int, short*, line_t*, int, AActor*);
-	bool execute_line_special(int, short*, line_t*, int, AActor*);
-	void post_process_line_special(int);
 	void post_process_sidedef_special(side_t*, const mapsidedef_t*, sector_t*, int);
-	void animate_surfaces(void);
-	void check_impact(AActor*);
-	void translate_line_flags(unsigned int*);
-	void apply_sector_movement_special(AActor*, int);
+
+	friend void P_ShootSpecialLine(AActor* thing, line_t* line);
+	friend void P_AdjustLine(line_t* ld);
+	friend bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction);
+	friend void P_ClearNonGeneralizedSectorSpecial(sector_t* sector);
 
   protected:
 	bool zdoom;
@@ -84,5 +68,27 @@ extern MapFormat map_format;
 int  P_DoorType(int index);
 bool P_IsExitLine(int index);
 bool P_IsTeleportLine(int index);
+
+void P_SpawnZDoomSectorSpecial(sector_t*);
+void P_SpawnCompatibleSectorSpecial(sector_t*);
+
+void P_ActorInZDoomSector(AActor*);
+
+void P_SpawnZDoomScroller(line_t*, int);
+void P_SpawnCompatibleScroller(line_t*, int);
+
+void P_SpawnZDoomFriction(line_t* l);
+void P_SpawnCompatibleFriction(line_t* l);
+
+void P_SpawnCompatiblePusher(line_t* l);
+void P_SpawnZDoomPusher(line_t* l);
+
+void P_SpawnCompatibleExtra(int i);
+void P_SpawnZDoomExtra(int i);
+
+void P_PostProcessZDoomSidedefSpecial(side_t* sd, const mapsidedef_t* msd, sector_t* sec,
+                                      int i);
+void P_PostProcessCompatibleSidedefSpecial(side_t* sd, const mapsidedef_t* msd,
+                                           sector_t* sec, int i);
 
 #endif

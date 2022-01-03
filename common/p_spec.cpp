@@ -2224,7 +2224,7 @@ void P_SetupWorldState(void)
 	sector = sectors;
 	for (i = 0; i < numsectors; i++, sector++)
 	{
-		map_format.init_sector_special(sector, i);
+		map_format.init_sector_special(sector);
 	}
 
 	// Init other misc stuff

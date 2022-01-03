@@ -1109,69 +1109,18 @@ void P_LoadSideDefs2 (int lump)
 	{
 		register mapsidedef_t* msd = (mapsidedef_t*)data + i;
 		register side_t* sd = sides + i;
+		register sector_t* sec;
 
 		sd->textureoffset = LESHORT(msd->textureoffset)<<FRACBITS;
 		sd->rowoffset = LESHORT(msd->rowoffset)<<FRACBITS;
 		sd->linenum = -1;
-		sd->sector = &sectors[LESHORT(msd->sector)];
+		sd->sector = sec = &sectors[LESHORT(msd->sector)];
 
 		// killough 4/4/98: allow sidedef texture names to be overloaded
 		// killough 4/11/98: refined to allow colormaps to work as wall
 		// textures if invalid as colormaps but valid as textures.
 
-		switch (sd->special)
-		{
-		  case Transfer_Heights:	// variable colormap via 242 linedef
-			  // [RH] The colormap num we get here isn't really a colormap,
-			  //	  but a packed ARGB word for blending, so we also allow
-			  //	  the blend to be specified directly by the texture names
-			  //	  instead of figuring something out from the colormap.
-			P_SetTransferHeightBlends(sd, msd);
-			break;
-
-		  case Static_Init:
-			// [RH] Set sector color and fog
-			// upper "texture" is light color
-			// lower "texture" is fog color
-			{
-				unsigned int color = 0xffffff, fog = 0x000000;
-
-				SetTextureNoErr (&sd->bottomtexture, &fog, msd->bottomtexture);
-				SetTextureNoErr (&sd->toptexture, &color, msd->toptexture);
-				sd->midtexture = R_TextureNumForName (msd->midtexture);
-
-				if (fog != 0x000000 || color != 0xffffff)
-				{
-					dyncolormap_t *colormap = GetSpecialLights(
-						((argb_t)color).getr(), ((argb_t)color).getg(), ((argb_t)color).getb(),
-						((argb_t)fog).getr(), ((argb_t)fog).getg(), ((argb_t)fog).getb());
-
-					for (int s = 0; s < numsectors; s++)
-					{
-						if (sectors[s].tag == sd->tag)
-							sectors[s].colormap = colormap;
-					}
-				}
-			}
-			break;
-
-/*
-		  case TranslucentLine:	// killough 4/11/98: apply translucency to 2s normal texture
-			sd->midtexture = strncasecmp("TRANMAP", msd->midtexture, 8) ?
-				(sd->special = W_CheckNumForName(msd->midtexture)) < 0 ||
-				W_LumpLength(sd->special) != 65536 ?
-				sd->special=0, R_TextureNumForName(msd->midtexture) :
-					(sd->special++, 0) : (sd->special=0);
-			sd->toptexture = R_TextureNumForName(msd->toptexture);
-			sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
-			break;
-*/
-		  default:			// normal cases
-			sd->midtexture = R_TextureNumForName(msd->midtexture);
-			sd->toptexture = R_TextureNumForName(msd->toptexture);
-			sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
-			break;
-		}
+		map_format.post_process_sidedef_special(sd, msd, sec, i);
 	}
 	Z_Free (data);
 }
@@ -1884,11 +1833,11 @@ void P_SetupLevel (const char *lumpname, int position)
 	if (HasBehavior)
 	{
 		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
-		map_format = zdoom_in_hexen_map_format;
+		map_format.P_ApplyZDoomMapFormat();
 	}
 	else
 	{
-		map_format = doom_map_format;
+		map_format.P_ApplyDefaultMapFormat();
 	}
 
     level.time = 0;

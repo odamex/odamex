@@ -113,7 +113,7 @@ bool P_IsTeleportLine(int index)
 }
 
 // Migrate some non-hexen data to hexen format
-static void P_MigrateActorInfo(void)
+void P_MigrateActorInfo(void)
 {
 	int i;
 	static bool migrated = false;
@@ -152,74 +152,80 @@ static void P_MigrateActorInfo(void)
 	}
 }
 
-static const map_format_s zdoom_in_hexen_map_format = {
-    true, //zdoom
-    true, //hexen
-    false, //polyobjs (true when detected)
-    false, //acs (true when detected)
-    false, // mapinfo (true when detected)
-    false, // sndseq (true when detected)
-    false, // sndinfo (true when detected)
-    false, // animdefs (true when detected)
-    false, // doublesky (true when detected)
-    false, // map99 (true when detected)
-    true, // lax_monster_activation
-    ~0xff, // generalized_mask
-    ML_SPAC_USE | ML_SPAC_IMPACT | ML_SPAC_PUSH, // switch_activation
-    P_SpawnZDoomSectorSpecial, // init_sector_special
-    .player_in_special_sector = P_PlayerInZDoomSector,
-    .actor_in_special_sector = P_ActorInZDoomSector,
-    .spawn_scroller = P_SpawnZDoomScroller,
-    .spawn_friction = P_SpawnZDoomFriction,
-    .spawn_pusher = P_SpawnZDoomPusher,
-    .spawn_extra = P_SpawnZDoomExtra,
-    .cross_special_line = P_CrossZDoomSpecialLine,
-    .shoot_special_line = P_ShootHexenSpecialLine,
-    .test_activate_line = P_TestActivateZDoomLine,
-    .execute_line_special = P_ExecuteZDoomLineSpecial,
-    .post_process_line_special = P_PostProcessZDoomLineSpecial,
-    .post_process_sidedef_special = P_PostProcessZDoomSidedefSpecial,
-    .animate_surfaces = P_AnimateZDoomSurfaces,
-    .check_impact = P_CheckZDoomImpact,
-    .translate_line_flags = P_TranslateZDoomLineFlags,
-    .apply_sector_movement_special = P_ApplyHereticSectorMovementSpecial,
-    .mt_push = MT_PUSH,
-    .mt_pull = MT_PULL,
-};
+void MapFormat::init_sector_special(sector_t* sector)
+{
+	if (map_format.zdoom)
+		P_SpawnZDoomSectorSpecial(sector);
+	else
+		P_SpawnCompatibleSectorSpecial(sector);
+}
 
-static const map_format_s doom_map_format = {
-    .zdoom = false,
-    .hexen = false,
-    .polyobjs = false,
-    .acs = false,
-    .mapinfo = false,
-    .sndseq = false,
-    .sndinfo = false,
-    .animdefs = false,
-    .doublesky = false,
-    .map99 = false,
-    .lax_monster_activation = true,
-    .generalized_mask = ~31,
-    .switch_activation = 0, // not used
-    .init_sector_special = P_SpawnCompatibleSectorSpecial,
-    .actor_in_special_sector = P_ActorInCompatibleSectorSpecial,
-    .player_in_special_sector = P_PlayerInCompatibleSector,
-    .mobj_in_special_sector = P_ActorInCompatibleSector,
-    .spawn_scroller = P_SpawnCompatibleScroller,
-    .spawn_friction = P_SpawnCompatibleFriction,
-    .spawn_pusher = P_SpawnCompatiblePusher,
-    .spawn_extra = P_SpawnCompatibleExtra,
-    .cross_special_line = P_CrossCompatibleSpecialLine,
-    .shoot_special_line = P_ShootCompatibleSpecialLine,
-    .post_process_line_special = P_PostProcessCompatibleLineSpecial,
-    .post_process_sidedef_special = P_PostProcessCompatibleSidedefSpecial,
-    .animate_surfaces = P_AnimateCompatibleSurfaces,
-    .check_impact = P_CheckCompatibleImpact,
-    .translate_line_flags = P_TranslateCompatibleLineFlags,
-    .apply_sector_movement_special = P_ApplyCompatibleSectorMovementSpecial,
-};
+void MapFormat::player_in_special_sector(player_t* player)
+{
+	if (map_format.zdoom)
+		P_PlayerInZDoomSector(player);
+	else
+		P_PlayerInCompatibleSector(player);
+}
 
-CONSTEXPR void MapFormat::P_ApplyZDoomMapFormat(CONSTEXPR void)
+bool MapFormat::actor_in_special_sector(AActor* actor)
+{
+	if (map_format.zdoom)
+		P_ActorInZDoomSector(actor);
+	else
+		P_ActorInCompatibleSector(actor);
+}
+
+void MapFormat::spawn_scroller(line_t* line, int i)
+{
+	if (map_format.zdoom)
+		P_SpawnZDoomScroller(line, i);
+	else
+		P_SpawnCompatibleScroller(line, i);
+}
+
+void MapFormat::spawn_friction(line_t* line)
+{
+	if (map_format.zdoom)
+		P_SpawnZDoomFriction(line);
+	else
+		P_SpawnCompatibleFriction(line);
+}
+
+void MapFormat::spawn_pusher(line_t* line)
+{
+	if (map_format.zdoom)
+		P_SpawnZDoomPusher(line);
+	else
+		P_SpawnCompatiblePusher(line);
+}
+
+void MapFormat::spawn_extra(int i)
+{
+	if (map_format.zdoom)
+		P_SpawnZDoomExtra(i);
+	else
+		P_SpawnCompatibleExtra(i);
+}
+
+void MapFormat::cross_special_line(line_t* line, int side, AActor* thing, bool bossaction)
+{
+	if (map_format.zdoom)
+		P_CrossZDoomSpecialLine(line, side, thing, bossaction);
+	else
+		P_CrossCompatibleSpecialLine(line, side, thing, bossaction);
+}
+
+void MapFormat::post_process_sidedef_special(side_t* sd, const mapsidedef_t* msd,
+                                             sector_t* sec, int i)
+{
+	if (map_format.zdoom)
+		P_PostProcessZDoomSidedefSpecial(sd, msd, sec, i);
+	else
+		P_PostProcessCompatibleSidedefSpecial(sd, msd, sec, i);
+}
+
+void MapFormat::P_ApplyZDoomMapFormat(void)
 {
 	map_format.zdoom = true;
 	map_format.hexen = true;
@@ -237,7 +243,7 @@ CONSTEXPR void MapFormat::P_ApplyZDoomMapFormat(CONSTEXPR void)
 	P_MigrateActorInfo();
 }
 
-CONSTEXPR MapFormat::P_ApplyDefaultMapFormat(CONSTEXPR void)
+void MapFormat::P_ApplyDefaultMapFormat(void)
 {
 	map_format.zdoom = false;
 	map_format.hexen = false;
@@ -253,9 +259,4 @@ CONSTEXPR MapFormat::P_ApplyDefaultMapFormat(CONSTEXPR void)
 	map_format.switch_activation = 0; // not used
 
 	P_MigrateActorInfo();
-}
-
-bool MapFormat::GetZDoom(void)
-{
-	return map_format.zdoom;
 }

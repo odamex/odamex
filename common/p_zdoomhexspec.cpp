@@ -363,7 +363,7 @@ void P_PlayerInZDoomSector(player_t* player)
 	}
 }
 
-bool P_ActorInZDoomSector(AActor* mobj)
+bool P_ActorInZDoomSector(AActor* actor)
 {
 	return false;
 }
@@ -749,7 +749,7 @@ void P_SpawnZDoomExtra(int i)
 }
 
 // Initialize the scrollers
-void P_SpawnZDoomScroller(line_t* l)
+void P_SpawnZDoomScroller(line_t* l, int i)
 {
 	fixed_t dx = 0; // direction and speed of scrolling
 	fixed_t dy = 0;
@@ -972,6 +972,65 @@ void P_SpawnZDoomPusher(line_t* l)
 					            thing, thing->subsector->sector - sectors);
 			}
 		}
+		break;
+	}
+}
+
+void P_PostProcessZDoomSidedefSpecial(side_t* sd, const mapsidedef_t* msd, sector_t* sec,
+                                   int i)
+{
+	switch (sd->special)
+	{
+	case Transfer_Heights: // variable colormap via 242 linedef
+	                       // [RH] The colormap num we get here isn't really a colormap,
+	                       //	  but a packed ARGB word for blending, so we also allow
+	                       //	  the blend to be specified directly by the texture names
+	                       //	  instead of figuring something out from the colormap.
+		P_SetTransferHeightBlends(sd, msd);
+		break;
+
+	case Static_Init:
+		// [RH] Set sector color and fog
+		// upper "texture" is light color
+		// lower "texture" is fog color
+		{
+			unsigned int color = 0xffffff, fog = 0x000000;
+
+			SetTextureNoErr(&sd->bottomtexture, &fog, msd->bottomtexture);
+			SetTextureNoErr(&sd->toptexture, &color, msd->toptexture);
+			sd->midtexture = R_TextureNumForName(msd->midtexture);
+
+			if (fog != 0x000000 || color != 0xffffff)
+			{
+				dyncolormap_t* colormap =
+				    GetSpecialLights(((argb_t)color).getr(), ((argb_t)color).getg(),
+				                     ((argb_t)color).getb(), ((argb_t)fog).getr(),
+				                     ((argb_t)fog).getg(), ((argb_t)fog).getb());
+
+				for (int s = 0; s < numsectors; s++)
+				{
+					if (sectors[s].tag == sd->tag)
+						sectors[s].colormap = colormap;
+				}
+			}
+		}
+		break;
+
+		/*
+		          case TranslucentLine:	// killough 4/11/98: apply translucency to 2s
+		   normal texture sd->midtexture = strncasecmp("TRANMAP", msd->midtexture, 8) ?
+		                (sd->special = W_CheckNumForName(msd->midtexture)) < 0 ||
+		                W_LumpLength(sd->special) != 65536 ?
+		                sd->special=0, R_TextureNumForName(msd->midtexture) :
+		                    (sd->special++, 0) : (sd->special=0);
+		            sd->toptexture = R_TextureNumForName(msd->toptexture);
+		            sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
+		            break;
+		*/
+	default: // normal cases
+		sd->midtexture = R_TextureNumForName(msd->midtexture);
+		sd->toptexture = R_TextureNumForName(msd->toptexture);
+		sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
 		break;
 	}
 }

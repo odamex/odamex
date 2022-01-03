@@ -54,6 +54,8 @@ BOOL EV_DoGenLockedDoor(line_t* line);
 BOOL EV_DoGenCrusher(line_t* line);
 void EV_StartLightStrobing(int tag, int upper, int lower, int utics, int ltics);
 void EV_StartLightStrobing(int tag, int utics, int ltics);
+static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
+static void SetTextureNoErr(short* texture, unsigned int* color, char* name);
 
 extern BOOL demoplayback;
 
