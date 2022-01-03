@@ -208,9 +208,9 @@ std::string M_GetUserFileName(const std::string& file)
 	return M_CleanPath(path);
 }
 
-std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
+std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
                                 const std::vector<std::string>& exts,
-                                const std::string& hash)
+                                const OMD5Hash& hash)
 {
 	dir = M_CleanPath(dir);
 	std::vector<OString> cmp_files;
@@ -220,9 +220,10 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 		if (!hash.empty())
 		{
 			// Filenames with supplied hashes always match first.
-			cmp_files.push_back(StdStringToUpper(file + "." + hash.substr(0, 6) + *it));
+			cmp_files.push_back(
+			    StdStringToUpper(name + "." + hash.getHexStr().substr(0, 6) + *it));
 		}
-		cmp_files.push_back(StdStringToUpper(file + *it));
+		cmp_files.push_back(StdStringToUpper(name + *it));
 	}
 
 	// denis - list files in the directory of interest, case-desensitize
@@ -249,7 +250,7 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 		if (this_it < found_it)
 		{
 			const std::string local_file(dir + PATHSEP + d_name);
-			const std::string local_hash(W_MD5(local_file));
+			const OMD5Hash local_hash(W_MD5(local_file));
 
 			if (hash.empty() || hash == local_hash)
 			{
@@ -262,14 +263,46 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 			{
 				Printf(PRINT_WARNING, "WAD at %s does not match required copy\n",
 				       local_file.c_str());
-				Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.c_str());
-				Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.c_str());
+				Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.getHexCStr());
+				Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.getHexCStr());
 			}
 		}
 	}
 
 	M_Free(namelist);
 	return found;
+}
+
+std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString> files)
+{
+	std::vector<std::string> rvo;
+
+	// Fix up parameters.
+	dir = M_CleanPath(dir);
+	for (size_t i = 0; i < files.size(); i++)
+	{
+		files[i] = StdStringToUpper(files[i]);
+	}
+
+	struct dirent** namelist = 0;
+	int n = scandir(dir.c_str(), &namelist, 0, alphasort);
+
+	for (int i = 0; i < n && namelist[i]; i++)
+	{
+		const std::string d_name = namelist[i]->d_name;
+		M_Free(namelist[i]);
+
+		// Find the file.
+		std::string check = StdStringToUpper(d_name);
+		std::vector<OString>::iterator it = std::find(files.begin(), files.end(), check);
+
+		if (it == files.end())
+			continue;
+
+		rvo.push_back(check);
+	}
+
+	return rvo;
 }
 
 bool M_GetAbsPath(const std::string& path, std::string& out)

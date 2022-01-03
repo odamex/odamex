@@ -555,7 +555,7 @@ void HordeState::tick()
 			const bool ok = P_HordeSpawnRecipe(recipe, define, false);
 			if (!ok)
 			{
-				Printf("%s: No recipe for non-boss monster.\n", __FUNCTION__);
+				Printf(PRINT_WARNING, "%s: No spawn recipe for monster.\n", __FUNCTION__);
 				return;
 			}
 
@@ -563,8 +563,8 @@ void HordeState::tick()
 			hordeSpawn_t* spawn = P_HordeSpawnPoint(recipe);
 			if (spawn == NULL)
 			{
-				Printf("%s: No spawn candidate for %s.\n", __FUNCTION__,
-				       ::mobjinfo[recipe.type].name);
+				Printf(PRINT_WARNING, "%s: Can't find a place to spawn %s.\n",
+				       __FUNCTION__, ::mobjinfo[recipe.type].name);
 				return;
 			}
 
@@ -590,7 +590,8 @@ void HordeState::tick()
 				const bool ok = P_HordeSpawnRecipe(recipe, define, true);
 				if (!ok)
 				{
-					Printf("%s: No recipe for boss monster.\n", __FUNCTION__);
+					Printf(PRINT_WARNING, "%s: No spawn recipe for boss monster.\n",
+					       __FUNCTION__);
 					break;
 				}
 
@@ -608,8 +609,8 @@ void HordeState::tick()
 			hordeSpawn_t* spawn = P_HordeSpawnPoint(recipe);
 			if (spawn == NULL)
 			{
-				Printf("%s: No spawn candidate for %s.\n", __FUNCTION__,
-				       ::mobjinfo[recipe.type].name);
+				Printf(PRINT_WARNING, "%s: Can't find a place to spawn %s.\n",
+				       __FUNCTION__, ::mobjinfo[recipe.type].name);
 				break;
 			}
 
@@ -723,6 +724,14 @@ void P_RunHordeTics()
 		P_HordeAddSpawns();
 		if (!P_HordeHasSpawns())
 		{
+			if (::level.time == 0)
+			{
+				Printf(
+				    PRINT_WARNING,
+				    "WARNING: This map is missing Horde Monster, Horde Supply Cache, "
+				    "or Horde Powerup spawns.  At least one of each must be present.\n");
+			}
+			
 			// This map has no horde things in it - probably inside a
 			// non-horde map.
 			return;

@@ -1588,7 +1588,9 @@ bool CL_PrepareConnect()
 	for (byte i = 0; i < server_wads; i++)
 	{
 		OWantFile& file = newwadfiles.at(i);
-		std::string hash = MSG_ReadString();
+		const std::string hashStr = MSG_ReadString();
+		OMD5Hash hash;
+		OMD5Hash::makeFromHexStr(hash, hashStr);
 		if (!OWantFile::makeWithHash(file, newwadnames.at(i), OFILE_WAD, hash))
 		{
 			Printf(PRINT_WARNING,
@@ -1598,7 +1600,8 @@ bool CL_PrepareConnect()
 			return false;
 		}
 
-		Printf("> %s\n   %s\n", file.getBasename().c_str(), file.getWantedHash().c_str());
+		Printf("> %s\n   %s\n", file.getBasename().c_str(),
+		       file.getWantedMD5().getHexCStr());
 	}
 
 	// Download website - needed for HTTP downloading to work.

@@ -1359,9 +1359,9 @@ void ParseEpisodeInfo(OScanner& os)
 	{
 		// Detected new-style MAPINFO
 		new_mapinfo = true;
+		MustGetString(os);
 	}
 
-	MustGetString(os);
 	while (os.scan())
 	{
 		if (os.compareToken("{"))
@@ -1649,9 +1649,12 @@ void G_ParseMapInfo()
 	switch (gamemission)
 	{
 	case doom:
+	case retail_freedoom:
 		baseinfoname = "_D1NFO";
 		break;
 	case doom2:
+	case commercial_freedoom:
+	case commercial_hacx:
 		baseinfoname = "_D2NFO";
 		if (gamemode == commercial_bfg)
 		{
@@ -1670,6 +1673,7 @@ void G_ParseMapInfo()
 		baseinfoname = "_CHEXNFO";
 		break;
 	default:
+		I_Error("This IWAD is unknown to Odamex");
 		break;
 	}
 

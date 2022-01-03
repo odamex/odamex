@@ -459,29 +459,16 @@ DPusher::DPusher () : m_Type(p_push), m_Xmag(0), m_Ymag(0), m_Magnitude(0),
 void DPusher::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
-	if (arc.IsStoring ())
+	if (arc.IsStoring())
 	{
-		arc << m_Type
-			<< m_Source
-			<< m_Xmag
-			<< m_Ymag
-			<< m_Magnitude
-			<< m_Radius
-			<< m_X
-			<< m_Y
-			<< m_Affectee;
+		arc << m_Type << m_Source << m_Xmag << m_Ymag << m_Magnitude << m_Radius << m_X
+		    << m_Y << m_Affectee;
 	}
 	else
 	{
-		arc >> m_Type
-			>> m_Source->netid
-			>> m_Xmag
-			>> m_Ymag
-			>> m_Magnitude
-			>> m_Radius
-			>> m_X
-			>> m_Y
-			>> m_Affectee;
+		arc >> m_Type;
+		arc.ReadObject((DObject*&)m_Source, DPusher::StaticType());
+		arc >> m_Xmag >> m_Ymag >> m_Magnitude >> m_Radius >> m_X >> m_Y >> m_Affectee;
 	}
 }
 

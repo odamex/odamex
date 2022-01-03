@@ -1,0 +1,66 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0400
+header_name {.h}
+code_name {.cxx}
+win_shell_cmd {echo "Custom Shell Command"}
+win_shell_flags 3
+widget_class BootWindow {
+  label {Odamex 10.0.0} open
+  xywh {203 267 425 240} type Double visible
+} {
+  Fl_Tabs tabs {open
+    xywh {0 0 425 200}
+  } {
+    Fl_Group tabIWAD {
+      label {Game Select}
+      xywh {0 25 425 175}
+    } {
+      Fl_Box logo {
+        image {icon_odamex_128.png} xywh {10 35 115 155} align 512
+      }
+      Fl_Browser iwads {
+        xywh {135 35 280 155}
+      }
+    }
+    Fl_Group tabWADDirs {
+      label {Resource Locations}
+      xywh {0 25 425 175} hide
+    } {
+      Fl_Box {} {
+        label {Add folders containing WAD files here so Odamex can find them.}
+        xywh {10 35 405 20} align 148
+      }
+      Fl_Browser wadDirList {
+        xywh {10 65 375 125}
+      }
+      Fl_Button doDirAdd {
+        label {@+}
+        xywh {395 65 20 20}
+      }
+      Fl_Button doDirUp {
+        label {@2<<}
+        xywh {395 90 20 20}
+      }
+      Fl_Button doDirDown {
+        label {@2>>}
+        xywh {395 115 20 20}
+      }
+      Fl_Button doDirRemove {
+        label {@1+}
+        xywh {395 140 20 20}
+      }
+    }
+  }
+  Fl_Check_Button notAgain {
+    label {Don't Show This Again}
+    xywh {10 210 20 20} down_box DOWN_BOX
+  }
+  Fl_Button doQuit {
+    label Quit
+    xywh {275 210 65 20}
+  }
+  Fl_Return_Button doPlay {
+    label {Play!}
+    xywh {350 210 65 20}
+  }
+}
