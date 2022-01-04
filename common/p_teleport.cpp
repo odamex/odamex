@@ -231,7 +231,7 @@ BOOL EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop
 	return true;
 }
 
-bool EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int flags)
+BOOL EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int flags)
 {
 	AActor* m;
 	unsigned an;

@@ -526,7 +526,6 @@ typedef BOOL (*lnSpecFunc)(struct line_s	*line,
 extern lnSpecFunc LineSpecials[283];
 
 BOOL EV_CeilingCrushStop (int tag);
-int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed);
 void EV_StopPlat (int tag);
 int EV_ZDoomFloorCrushStop(int tag);
 BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);

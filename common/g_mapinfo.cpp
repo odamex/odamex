@@ -33,6 +33,7 @@
 #include "v_video.h"
 #include "w_wad.h"
 #include "infomap.h"
+#include "p_boomfspec.h"
 
 /// Globals
 BOOL HexenHack;
@@ -553,7 +554,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 				maplinedef_t mld;
 				mld.special = static_cast<short>(special);
 				mld.tag = static_cast<short>(tag);
-				P_TranslateLineDef(&new_bossaction.ld, &mld);
+				P_RecordCompatibleLineSpecial(&new_bossaction.ld, &mld);
 
 				new_bossaction.type = i;
 

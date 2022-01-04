@@ -154,14 +154,6 @@ void MapFormat::P_ApplyZDoomMapFormat(void)
 {
 	map_format.zdoom = true;
 	map_format.hexen = true;
-	map_format.polyobjs = false;
-	map_format.acs = false;
-	map_format.mapinfo = false;
-	map_format.sndseq = false;
-	map_format.sndinfo = false;
-	map_format.animdefs = false;
-	map_format.doublesky = false;
-	map_format.map99 = false;
 	map_format.generalized_mask = ~0xff;
 
 	P_MigrateActorInfo();
@@ -171,14 +163,6 @@ void MapFormat::P_ApplyDefaultMapFormat(void)
 {
 	map_format.zdoom = false;
 	map_format.hexen = false;
-	map_format.polyobjs = false;
-	map_format.acs = false;
-	map_format.mapinfo = false;
-	map_format.sndseq = false;
-	map_format.sndinfo = false;
-	map_format.animdefs = false;
-	map_format.doublesky = false;
-	map_format.map99 = false;
 	map_format.generalized_mask = ~31;
 
 	P_MigrateActorInfo();

@@ -2833,7 +2833,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 191:
 			// Lower Pillar, Raise Donut
 			// 191 SR  EV_DoDonut()
-			if (EV_DoDonut(line->id, SPEED(DORATE), SPEED(DORATE)))
+			if (EV_DoDonut(line))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;

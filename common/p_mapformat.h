@@ -53,14 +53,6 @@ class MapFormat
   protected:
 	bool zdoom;
 	bool hexen;
-	bool polyobjs;
-	bool acs;
-	bool mapinfo;
-	bool sndseq;
-	bool sndinfo;
-	bool animdefs;
-	bool doublesky;
-	bool map99;
 	short generalized_mask;
 };
 
@@ -86,6 +78,9 @@ void P_SpawnZDoomPusher(line_t* l);
 
 void P_SpawnCompatibleExtra(int i);
 void P_SpawnZDoomExtra(int i);
+
+void P_RecordCompatibleLineSpecial(line_t* ld, maplinedef_t* mld);
+void P_RecordZDoomLineSpecial(line_t* ld, maplinedef_t* mld);
 
 lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
                                      bool bossaction);

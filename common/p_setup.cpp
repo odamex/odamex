@@ -59,7 +59,6 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
 const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags);
 const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags);
 void P_SpawnCompatibleSectorSpecial(sector_t* sector);
-void P_TranslateTeleportThings(void);
 int	P_TranslateSectorSpecial (int);
 
 static void P_SetupLevelFloorPlane(sector_t *sector);
@@ -1890,9 +1889,6 @@ void P_SetupLevel (const char *lumpname, int position)
 		P_LoadThings (lumpnum+ML_THINGS);
 	else
 		P_LoadThings2 (lumpnum+ML_THINGS, position);	// [RH] Load Hexen-style things
-
-	if (!HasBehavior)
-		P_TranslateTeleportThings ();	// [RH] Assign teleport destination TIDs
 
     PO_Init ();
 

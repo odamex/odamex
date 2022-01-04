@@ -1977,6 +1977,11 @@ void DWaggle::Serialize(FArchive& arc)
 	}
 }
 
+DWaggle::DWaggle()
+{
+
+}
+
 DWaggle::DWaggle(sector_t* sector, int height, int speed, int offset, int timer,
                  bool ceiling)
 {
