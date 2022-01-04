@@ -22,40 +22,24 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __P_ZDOOMHEXSPEC__
-#define __P_ZDOOMHEXSPEC__
-
-#include "doomdef.h"
-#include "doomtype.h"
-#include "p_local.h"
-#include "p_lnspec.h"
-#include "p_spec.h"
-#include "d_player.h"
-#include "m_random.h"
-#include "c_cvars.h"
-#include "g_level.h"
-#include "m_wdlstats.h"
-
-void P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing, bool bossaction);
-lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
-                                 unsigned int activationType);
-void P_CollectSecretZDoom(sector_t* sector, player_t* player);
-bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
-                             unsigned int activationType);
-bool P_ExecuteZDoomLineSpecial(int special, byte* args, line_t* line, int side,
-                               AActor* mo);
-BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
-                     fixed_t height, bool crush, int change, bool hexencrush,
-                     bool hereticlower);
-BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
-                       fixed_t speed2, fixed_t height, int crush, byte silent, int change,
-                       crushmode_e crushmode);
-static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
-static void SetTextureNoErr(short* texture, unsigned int* color, char* name);
-
-#define SPEED(a) ((a) * (FRACUNIT / 8))
-#define TICS(a) (((a)*TICRATE) / 35)
-#define OCTICS(a) (((a)*TICRATE) / 8)
-#define BYTEANGLE(a) ((angle_t)((a) << 24))
-
-#endif
+//#ifndef __P_ZDOOMHEXSPEC__
+//#define __P_ZDOOMHEXSPEC__
+//
+//void P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing, bool bossaction);
+//lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
+//                                 unsigned int activationType);
+//void P_CollectSecretZDoom(sector_t* sector, player_t* player);
+//bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
+//                             unsigned int activationType);
+//bool P_ExecuteZDoomLineSpecial(int special, byte* args, line_t* line, int side,
+//                               AActor* mo);
+//BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
+//                     fixed_t height, int crush, int change, bool hexencrush,
+//                     bool hereticlower);
+//BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
+//                       fixed_t speed2, fixed_t height, int crush, byte silent, int change,
+//                       crushmode_e crushmode);
+//static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
+//static void SetTextureNoErr(short* texture, unsigned int* color, char* name);
+//
+//#endif

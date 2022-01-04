@@ -21,16 +21,7 @@
 //  (Props to DSDA-Doom for the inspiration.)
 //
 //-----------------------------------------------------------------------------
-#include "doomstat.h"
-#include "doomdata.h"
-#include "m_argv.h"
-#include "actor.h"
-#include "p_lnspec.h"
-#include "r_state.h"
-#include "w_wad.h"
-
-#include "p_boomfspec.h"
-#include "p_zdoomhexspec.h"
+#include "odamex.h"
 
 #include "p_mapformat.h"
 
@@ -105,9 +96,9 @@ void MapFormat::player_in_special_sector(player_t* player)
 bool MapFormat::actor_in_special_sector(AActor* actor)
 {
 	if (map_format.zdoom)
-		P_ActorInZDoomSector(actor);
+		return P_ActorInZDoomSector(actor);
 	else
-		P_ActorInCompatibleSector(actor);
+		return P_ActorInCompatibleSector(actor);
 }
 
 void MapFormat::spawn_scroller(line_t* line, int i)
@@ -172,7 +163,6 @@ void MapFormat::P_ApplyZDoomMapFormat(void)
 	map_format.doublesky = false;
 	map_format.map99 = false;
 	map_format.generalized_mask = ~0xff;
-	map_format.switch_activation = ML_SPAC_USE | ML_SPAC_IMPACT | ML_SPAC_PUSH;
 
 	P_MigrateActorInfo();
 }
@@ -190,7 +180,6 @@ void MapFormat::P_ApplyDefaultMapFormat(void)
 	map_format.doublesky = false;
 	map_format.map99 = false;
 	map_format.generalized_mask = ~31;
-	map_format.switch_activation = 0; // not used
 
 	P_MigrateActorInfo();
 }

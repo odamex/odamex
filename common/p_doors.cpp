@@ -810,7 +810,7 @@ BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 // Passed the linedef activating the generalized door
 // Returns true if a thinker created
 //
-bool EV_DoGenDoor(line_t* line)
+BOOL EV_DoGenDoor(line_t* line)
 {
 	int secnum;
 	bool rtn;
@@ -879,7 +879,7 @@ bool EV_DoGenDoor(line_t* line)
 // Passed the linedef activating the generalized locked door
 // Returns true if a thinker created
 //
-bool EV_DoGenLockedDoor(line_t* line)
+BOOL EV_DoGenLockedDoor(line_t* line)
 {
 	int secnum;
 	bool rtn;

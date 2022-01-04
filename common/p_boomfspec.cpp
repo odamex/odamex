@@ -22,13 +22,49 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "p_boomfspec.h"
+#include "odamex.h"
+#include "p_local.h"
+#include "p_lnspec.h"
+#include "m_wdlstats.h"
+#include "c_cvars.h"
+#include "d_player.h"
 
 EXTERN_CVAR(sv_allowexit)
 
 void G_SecretExitLevel(int position, int drawscores);
 void P_DamageMobj(AActor* target, AActor* inflictor, AActor* source, int damage, int mod,
                   int flags);
+lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
+                                          bool bossaction);
+const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags);
+void P_ApplyGeneralizedSectorDamage(player_t* player, int bits);
+void P_CollectSecretBoom(sector_t* sector, player_t* player);
+void P_PlayerInCompatibleSector(player_t* player);
+bool P_ActorInCompatibleSector(AActor* actor);
+lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
+                                        bool bossaction);
+lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
+BOOL EV_DoGenDoor(line_t* line);
+BOOL EV_DoGenFloor(line_t* line);
+BOOL EV_DoGenCeiling(line_t* line);
+BOOL EV_DoGenLift(line_t* line);
+BOOL EV_DoGenStairs(line_t* line);
+bool P_CanUnlockGenDoor(line_t* line, player_t* player);
+BOOL EV_DoGenLockedDoor(line_t* line);
+BOOL EV_DoGenCrusher(line_t* line);
+int EV_DoDonut(line_t* line);
+void P_CollectSecretVanilla(sector_t* sector, player_t* player);
+void EV_StartLightStrobing(int tag, int upper, int lower, int utics, int ltics);
+void EV_StartLightStrobing(int tag, int utics, int ltics);
+void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
+void SetTextureNoErr(short* texture, unsigned int* color, char* name);
+void P_AddSectorSecret(sector_t* sector);
+void P_SpawnLightFlash(sector_t* sector);
+void P_SpawnStrobeFlash(sector_t* sector, int utics, int ltics, bool inSync);
+void P_SpawnFireFlicker(sector_t* sector);
+AActor* P_GetPushThing(int);
+
+extern BOOL demoplayback;
 
 //
 // P_CrossCompatibleSpecialLine - Walkover Trigger Dispatcher

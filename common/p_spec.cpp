@@ -82,6 +82,11 @@ bool s_SpecialFromServer;
 int P_FindSectorFromLineTag(int tag, int start);
 BOOL EV_DoDoor(DDoor::EVlDoor type, line_t* line, AActor* thing, int tag, int speed,
                int delay, card_t lock);
+lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
+lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
+                                 unsigned int activationType);
+lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
+                                        bool bossaction);
 
 //
 // P_FindMovingSector

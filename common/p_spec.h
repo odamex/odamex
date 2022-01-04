@@ -168,12 +168,6 @@ enum LineActivationType
 	LineACS,
 };
 
-struct lineresult_s
-{
-	bool switchchanged;
-	bool lineexecuted;
-};
-
 enum zdoom_lock_t
 {
 	zk_none = 0,

@@ -932,7 +932,7 @@ void P_PlayerThink (player_t *player)
 	P_MovePlayer (player);
 	P_CalcHeight (player);
 
-	if (player->mo->subsector && (player->mo->subsector->sector->special || player->mo->subsector->sector->damage.amount))
+	if (player->mo->subsector && (player->mo->subsector->sector->special || player->mo->subsector->sector->damage->amount))
 		map_format.player_in_special_sector(player);
 
 	// Check for weapon change.

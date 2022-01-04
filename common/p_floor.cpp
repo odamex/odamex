@@ -988,7 +988,7 @@ int EV_ZDoomFloorCrushStop(int tag)
 BOOL EV_DoGenFloor(line_t* line)
 {
 	int secnum;
-	bool rtn;
+	BOOL rtn;
 	bool manual;
 	sector_t* sec;
 	DFloor* floor;
@@ -1005,6 +1005,7 @@ BOOL EV_DoGenFloor(line_t* line)
 	int Trig = (value & TriggerType) >> TriggerTypeShift;
 
 	rtn = false;
+	manual = false;
 
 	// check if a manual trigger; if so do just the sector on the backside
 	if (Trig == PushOnce || Trig == PushMany)
@@ -1013,7 +1014,7 @@ BOOL EV_DoGenFloor(line_t* line)
 			return rtn;
 		secnum = sec - sectors;
 		manual = true;
-		goto manual_floor;
+		goto manual_genfloor;
 	}
 
 	secnum = -1;
@@ -1021,7 +1022,7 @@ BOOL EV_DoGenFloor(line_t* line)
 	{
 		sec = &sectors[secnum];
 
-	manual_floor:
+	manual_genfloor:
 		// ALREADY MOVING?	IF SO, KEEP GOING...
 		if (sec->floordata)
 		{
@@ -1047,7 +1048,7 @@ BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t sp
                 fixed_t height, int crush, int change, bool hexencrush, bool hereticlower)
 {
 	int secnum;
-	bool rtn = false;
+	BOOL rtn = false;
 	sector_t* sec;
 	bool manual = false;
 

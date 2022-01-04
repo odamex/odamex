@@ -113,7 +113,7 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec->floorlightsec << sec->ceilinglightsec
 				<< sec->bottommap << sec->midmap << sec->topmap
 				<< sec->gravity
-				<< sec->damage
+				<< sec->damage->amount << sec->damage->interval << sec->damage->leakrate
 				<< sec->mod
 
 				<< sec->colormap->color.geta() << sec->colormap->color.getr()
@@ -204,7 +204,7 @@ void P_SerializeWorld (FArchive &arc)
 				>> sec->floorlightsec >> sec->ceilinglightsec
 				>> sec->bottommap >> sec->midmap >> sec->topmap
 				>> sec->gravity
-				>> sec->damage
+				>> sec->damage->amount >> sec->damage->interval >> sec->damage->leakrate
 				>> sec->mod;
 
 			byte color_values[4];

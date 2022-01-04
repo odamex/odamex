@@ -22,52 +22,75 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "p_zdoomhexspec.h"
+#include "odamex.h"
+#include "p_local.h"
+#include "p_lnspec.h"
+#include "m_wdlstats.h"
+#include "c_cvars.h"
+#include "d_player.h"
 
 void OnChangedSwitchTexture(line_t* line, int useAgain);
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
                         const LineActivationType activationType, const bool bossaction);
-bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
+BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
                     byte speed_byte, int topwait, zdoom_lock_t lock, byte lightTag,
                     bool boomgen, int topcountdown);
 bool EV_DoZDoomPillar(DPillar::EPillar type, line_t* line, int tag, fixed_t speed,
                       fixed_t floordist, fixed_t ceilingdist, int crush, bool hexencrush);
-int EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
+bool EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
                        fixed_t height, int tag);
 int EV_ZDoomFloorCrushStop(int tag);
-bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
-bool EV_ZDoomCeilingCrushStop(int tag, bool remove);
+BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
+BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
 void P_HealMobj(AActor* mo, int num);
-bool EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int flags);
-void EV_LightSet(int tag, short level);
 void EV_LightSetMinNeighbor(int tag);
 void EV_LightSetMaxNeighbor(int tag);
 void P_ApplySectorFriction(int tag, int value, bool use_thinker);
 void P_SetupSectorDamage(sector_t* sector, short amount, byte interval, byte leakrate,
                          unsigned int flags);
 void P_AddSectorSecret(sector_t* sector);
+lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
+                                     bool bossaction);
+lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
+                                 unsigned int activationType);
+void P_CollectSecretZDoom(sector_t* sector, player_t* player);
+bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
+                             unsigned int activationType);
+bool P_ExecuteZDoomLineSpecial(int special, byte* args, line_t* line, int side,
+                               AActor* mo);
+BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
+                     fixed_t height, int crush, int change, bool hexencrush,
+                     bool hereticlower);
+BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
+                       fixed_t speed2, fixed_t height, int crush, byte silent, int change,
+                       crushmode_e crushmode);
+static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
+static void SetTextureNoErr(short* texture, unsigned int* color, char* name);
+
+int P_Random(AActor* actor);
 
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
 
-void P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing, bool bossaction)
+lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
+                                     bool bossaction)
 {
 	if (thing->player)
 	{
-		P_ActivateZDoomLine(line, thing, side, ML_SPAC_CROSS);
+		return P_ActivateZDoomLine(line, thing, side, ML_SPAC_CROSS);
 	}
 	else if (thing->flags2 & MF2_MCROSS)
 	{
-		P_ActivateZDoomLine(line, thing, side, ML_SPAC_MCROSS);
+		return P_ActivateZDoomLine(line, thing, side, ML_SPAC_MCROSS);
 	}
 	else if (thing->flags2 & MF2_PCROSS)
 	{
-		P_ActivateZDoomLine(line, thing, side, ML_SPAC_PCROSS);
+		return P_ActivateZDoomLine(line, thing, side, ML_SPAC_PCROSS);
 	}
 	else if (line->special == Teleport || line->special == Teleport_NoFog ||
 	         line->special == Teleport_Line)
 	{ // [RH] Just a little hack for BOOM compatibility
-		P_ActivateZDoomLine(line, thing, side, ML_SPAC_MCROSS);
+		return P_ActivateZDoomLine(line, thing, side, ML_SPAC_MCROSS);
 	}
 }
 
@@ -100,9 +123,9 @@ lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 		line->special = 0;
 	}
 
-	SV_OnActivatedLine(line, thing, side, activationType, false);
+	SV_OnActivatedLine(line, mo, side, activationType, false);
 
-	if (buttonSuccess && line->flags & map_format.switch_activation)
+	if (buttonSuccess && line->flags & ML_SPAC_USE | ML_SPAC_IMPACT | ML_SPAC_PUSH)
 	{
 		if (serverside)
 		{
@@ -140,7 +163,7 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 		}
 	}
 
-	if (mo && !mo->player && thing->type != MT_AVATAR && !(mo->flags & MF_MISSILE) &&
+	if (mo && !mo->player && mo->type != MT_AVATAR && !(mo->flags & MF_MISSILE) &&
 	    !(line->flags & ML_MONSTERSCANACTIVATE) &&
 	    (activationType != ML_SPAC_MCROSS || !(lineActivation & ML_SPAC_MCROSS)))
 	{
@@ -1035,7 +1058,7 @@ void P_PostProcessZDoomSidedefSpecial(side_t* sd, const mapsidedef_t* msd, secto
 	}
 }
 
-bool P_ExecuteZDoomLineSpecial(int special, byte* args, line_t* line, int side,
+bool P_ExecuteZDoomLineSpecial(int special, short* args, line_t* line, int side,
                                    AActor* mo)
 {
 	return LineSpecials[special](line, mo, args[0], args[1], args[2], args[3],

@@ -24,8 +24,7 @@
 #ifndef __P_MAPFORMAT__
 #define __P_MAPFORMAT__
 
-#include "doomtype.h"
-#include "p_spec.h"
+#include "p_local.h"
 
 class MapFormat
 {
@@ -63,19 +62,18 @@ class MapFormat
 	bool doublesky;
 	bool map99;
 	short generalized_mask;
-	unsigned int switch_activation;
 };
 
 extern MapFormat map_format;
 
-int  P_DoorType(int index);
-bool P_IsExitLine(int index);
-bool P_IsTeleportLine(int index);
-
 void P_SpawnZDoomSectorSpecial(sector_t*);
 void P_SpawnCompatibleSectorSpecial(sector_t*);
 
-void P_ActorInZDoomSector(AActor*);
+bool P_ActorInZDoomSector(AActor*);
+bool P_ActorInCompatibleSector(AActor* actor);
+
+void P_PlayerInCompatibleSector(player_t* player);
+void P_PlayerInZDoomSector(player_t* player);
 
 void P_SpawnZDoomScroller(line_t*, int);
 void P_SpawnCompatibleScroller(line_t*, int);
@@ -88,6 +86,11 @@ void P_SpawnZDoomPusher(line_t* l);
 
 void P_SpawnCompatibleExtra(int i);
 void P_SpawnZDoomExtra(int i);
+
+lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
+                                     bool bossaction);
+lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
+                                          bool bossaction);
 
 void P_PostProcessZDoomSidedefSpecial(side_t* sd, mapsidedef_t* msd, sector_t* sec,
                                       int i);
