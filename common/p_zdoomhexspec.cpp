@@ -49,6 +49,9 @@ void P_ApplySectorFriction(int tag, int value, bool use_thinker);
 void P_SetupSectorDamage(sector_t* sector, short amount, byte interval, byte leakrate,
                          unsigned int flags);
 void P_AddSectorSecret(sector_t* sector);
+void P_SpawnLightFlash(sector_t* sector);
+void P_SpawnStrobeFlash(sector_t* sector, int utics, int ltics, bool inSync);
+void P_SpawnFireFlicker(sector_t* sector);
 lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
                                      bool bossaction);
 lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
@@ -56,7 +59,7 @@ lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 void P_CollectSecretZDoom(sector_t* sector, player_t* player);
 bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
                              unsigned int activationType);
-bool P_ExecuteZDoomLineSpecial(int special, byte* args, line_t* line, int side,
+bool P_ExecuteZDoomLineSpecial(int special, short* args, line_t* line, int side,
                                AActor* mo);
 BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
                      fixed_t height, int crush, int change, bool hexencrush,
@@ -64,13 +67,18 @@ BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t sp
 BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
                        fixed_t speed2, fixed_t height, int crush, byte silent, int change,
                        crushmode_e crushmode);
-static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
-static void SetTextureNoErr(short* texture, unsigned int* color, char* name);
+void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
+void SetTextureNoErr(short* texture, unsigned int* color, char* name);
 
 int P_Random(AActor* actor);
+const LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int activationType);
+void P_SpawnPhasedLight(sector_t* sector, int base, int index);
+void P_SpawnLightSequence(sector_t* sector);
+AActor* P_GetPushThing(int s);
 
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
+EXTERN_CVAR(sv_forcewater)
 
 lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
                                      bool bossaction)
@@ -123,7 +131,8 @@ lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 		line->special = 0;
 	}
 
-	SV_OnActivatedLine(line, mo, side, activationType, false);
+	SV_OnActivatedLine(line, mo, side, P_LineActivationTypeForSPACFlag(activationType),
+	                   false);
 
 	if (buttonSuccess && line->flags & ML_SPAC_USE | ML_SPAC_IMPACT | ML_SPAC_PUSH)
 	{
@@ -135,6 +144,20 @@ lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 	}
 
 	return result;
+}
+
+const LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int activationType)
+{
+	if (activationType & (ML_SPAC_CROSS | ML_SPAC_MCROSS | ML_SPAC_PCROSS))
+		return LineActivationType::LineCross;
+	else if (activationType & ML_SPAC_IMPACT)
+		return LineActivationType::LineShoot;
+	else if (activationType & ML_SPAC_PUSH)
+		return LineActivationType::LinePush;
+	else if (activationType & ML_SPAC_USE)
+		return LineActivationType::LineUse;
+
+	return LineActivationType::LineUse;
 }
 
 void P_CollectSecretZDoom(sector_t* sector, player_t* player)
@@ -247,7 +270,7 @@ void P_PlayerInZDoomSector(player_t* player)
 
 	static const int hexen_carry[3] = {2048 * 5, 2048 * 10, 2048 * 25};
 
-	if (sector->damage.amount > 0)
+	if (sector->damage->amount > 0)
 	{
 		if (sector->flags & SECF_ENDGODMODE)
 		{
@@ -255,18 +278,18 @@ void P_PlayerInZDoomSector(player_t* player)
 		}
 
 		if (sector->flags & SECF_DMGUNBLOCKABLE || !player->powers[pw_ironfeet] ||
-		    (sector->damage.leakrate && P_Random(player->mo) < sector->damage.leakrate))
+		    (sector->damage->leakrate && P_Random(player->mo) < sector->damage->leakrate))
 		{
 			if (sector->flags & SECF_HAZARD)
 			{
-				player->hazardcount += sector->damage.amount;
-				player->hazardinterval = sector->damage.interval;
+				player->hazardcount += sector->damage->amount;
+				player->hazardinterval = sector->damage->interval;
 			}
 			else
 			{
-				if (level.time % sector->damage.interval == 0)
+				if (level.time % sector->damage->interval == 0)
 				{
-					P_DamageMobj(player->mo, NULL, NULL, sector->damage.amount);
+					P_DamageMobj(player->mo, NULL, NULL, sector->damage->amount);
 
 					if (sector->flags & SECF_ENDLEVEL && player->health <= 10)
 					{
@@ -747,7 +770,7 @@ void P_SpawnZDoomExtra(int i)
 			int damage = P_AproxDistance(lines[i].dx, lines[i].dy) >> FRACBITS;
 			for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0], s)) >= 0;)
 			{
-				sectors[s].damage.amount = damage;
+				sectors[s].damage->amount = damage;
 				sectors[s].mod = MOD_UNKNOWN;
 			}
 		}
@@ -999,7 +1022,7 @@ void P_SpawnZDoomPusher(line_t* l)
 	}
 }
 
-void P_PostProcessZDoomSidedefSpecial(side_t* sd, const mapsidedef_t* msd, sector_t* sec,
+void P_PostProcessZDoomSidedefSpecial(side_t* sd, mapsidedef_t* msd, sector_t* sec,
                                    int i)
 {
 	switch (sd->special)

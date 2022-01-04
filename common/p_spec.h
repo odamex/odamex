@@ -208,7 +208,6 @@ struct newspecial_s
 #define TELF_VANILLA (TELF_SOURCEFOG | TELF_DESTFOG)
 #define TELF_SILENT (TELF_KEEPORIENTATION | TELF_ROTATEBOOM | TELF_KEEPHEIGHT)
 
-#define ELEVATORSPEED (FRACUNIT * 4)
 #define FLOORSPEED FRACUNIT
 
 bool P_CanUnlockZDoomDoor(player_t* player, zdoom_lock_t lock, bool remote);
@@ -1220,20 +1219,6 @@ inline FArchive &operator>> (FArchive &arc, DElevator::EElevatorState &out)
 }
 
 // Waggle
-
-fixed_t FloatBobOffsets[64] = {
-    0,       51389,   102283,  152192,  200636,  247147,  291278,  332604,
-    370727,  405280,  435929,  462380,  484378,  501712,  514213,  521763,
-    524287,  521763,  514213,  501712,  484378,  462380,  435929,  405280,
-    370727,  332604,  291278,  247147,  200636,  152192,  102283,  51389,
-    -1,      -51390,  -102284, -152193, -200637, -247148, -291279, -332605,
-    -370728, -405281, -435930, -462381, -484380, -501713, -514215, -521764,
-    -524288, -521764, -514214, -501713, -484379, -462381, -435930, -405280,
-    -370728, -332605, -291279, -247148, -200637, -152193, -102284, -51389};
-
-#define WGLSTATE_EXPAND 1
-#define WGLSTATE_STABLE 2
-#define WGLSTATE_REDUCE 3
 
 class DWaggle : public DMover
 {
