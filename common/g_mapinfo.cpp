@@ -538,6 +538,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			MustGetStringName(os, ",");
 			MustGet<int>(os);
 			const int special = GetToken<int>(os);
+			MustGetStringName(os, ",");
 			MustGet<int>(os);
 			const int tag = GetToken<int>(os);
 			// allow no 0-tag specials here, unless a level exit.
