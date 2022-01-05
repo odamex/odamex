@@ -637,10 +637,6 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 		                              ? levels.findByName(mapname)
 		                              : levels.create();
 
-		// Free the level name string before we pave over it.
-		info.level_name.clear();
-
-		info = defaultinfo;
 		info.mapname = mapname;
 
 		MapNameToLevelNum(info);
