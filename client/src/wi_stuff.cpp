@@ -379,8 +379,8 @@ EXTERN_CVAR (cl_autoscreenshot)
 //
 static int WI_GetWidth()
 {
-	int surface_width = I_GetPrimarySurface()->getWidth();
-	int surface_height = I_GetPrimarySurface()->getHeight();
+	const int surface_width = I_GetPrimarySurface()->getWidth();
+	const int surface_height = I_GetPrimarySurface()->getHeight();
 
 	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 		return surface_width;
@@ -400,8 +400,8 @@ static int WI_GetWidth()
 //
 static int WI_GetHeight()
 {
-	int surface_width = I_GetPrimarySurface()->getWidth();
-	int surface_height = I_GetPrimarySurface()->getHeight();
+	const int surface_width = I_GetPrimarySurface()->getWidth();
+	const int surface_height = I_GetPrimarySurface()->getHeight();
 
 	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 		return surface_height;
@@ -416,14 +416,14 @@ static int WI_GetHeight()
 // slam background
 // UNUSED static unsigned char *background=0;
 
-void WI_slamBackground (void)
+void WI_slamBackground()
 {
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear();		// ensure black background in matted modes
 
 	background_surface->lock();
 
-	int destw = WI_GetWidth(), desth = WI_GetHeight();
+	const int destw = WI_GetWidth(), desth = WI_GetHeight();
 
 	primary_surface->blit(background_surface, 0, 0, background_surface->getWidth(), background_surface->getHeight(),
 				(primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
@@ -434,15 +434,15 @@ void WI_slamBackground (void)
 
 static int WI_DrawName (const char *str, int x, int y)
 {
-	int lump;
 	patch_t *p = NULL;
-	char charname[9];
 
 	::V_ColorMap = translationref_t(::Ranges + CR_GREY * 256);
 	while (*str)
 	{
+		char charname[9];
 		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
-		lump = W_CheckNumForName (charname);
+		int lump = W_CheckNumForName(charname);
+
 		if (lump != -1)
 		{
 			p = W_CachePatch (lump);
@@ -462,14 +462,14 @@ static int WI_DrawName (const char *str, int x, int y)
 
 static int WI_DrawSmallName(const char* str, int x, int y)
 {
-	int lump;
 	patch_t* p = NULL;
-	char charname[9];
 
 	while (*str)
 	{
+		char charname[9];
 		sprintf(charname, "STCFN%.3d", HU_FONTSTART + (toupper(*str) - 32) - 1);
-		lump = W_CheckNumForName(charname);
+		int lump = W_CheckNumForName(charname);
+
 		if (lump != -1)
 		{
 			p = W_CachePatch(lump);
@@ -488,14 +488,12 @@ static int WI_DrawSmallName(const char* str, int x, int y)
 }
 
 //Draws "<Levelname> Finished!"
-void WI_drawLF (void)
+void WI_drawLF()
 {
-	int y;
-
 	if (lnames[0].empty() && !lnamewidths[0])
 		return;
 
-	y = WI_TITLEY;
+	int y = WI_TITLEY;
 
 	if (!lnames[0].empty())
 	{
@@ -521,14 +519,12 @@ void WI_drawLF (void)
 
 
 // Draws "Entering <LevelName>"
-void WI_drawEL (void)
+void WI_drawEL()
 {
-	int y = WI_TITLEY;
-
 	if (lnames[1].empty() && !lnamewidths[1])
 		return;
 
-	y = WI_TITLEY;
+	int y = WI_TITLEY;
 
 	patch_t* ent = W_ResolvePatchHandle(entering);
 	patch_t* lnames1 = W_ResolvePatchHandle(lnames[1]);
@@ -560,6 +556,7 @@ int WI_MapToIndex (char *map)
 		if (!strnicmp (names[wbs->epsd][i], map, 8))
 			break;
 	}
+
 	return i;
 }
 
@@ -578,22 +575,17 @@ int WI_MapToIndex (char *map)
 // intermission change
 void WI_drawOnLnode (int n, lumpHandle_t* c, int numpatches)
 {
-	int 	i;
-	int 	left;
-	int 	top;
-	int 	right;
-	int 	bottom;
-	BOOL 	fits = false;
+	int i = 0;
+	bool fits = false;
 
-	i = 0;
 	do
 	{
 		patch_t* ch = W_ResolvePatchHandle(c[i]);
 
-		left = lnodes[wbs->epsd][n].x - ch->leftoffset();
-		top = lnodes[wbs->epsd][n].y - ch->topoffset();
-		right = left + ch->width();
-		bottom = top + ch->height();
+		int left = lnodes[wbs->epsd][n].x - ch->leftoffset();
+		int top = lnodes[wbs->epsd][n].y - ch->topoffset();
+		int right = left + ch->width();
+		int bottom = top + ch->height();
 
 		if (left >= 0 && right < WI_GetWidth() &&
             top >= 0 && bottom < WI_GetHeight())
@@ -620,17 +612,14 @@ void WI_drawOnLnode (int n, lumpHandle_t* c, int numpatches)
 
 
 
-void WI_initAnimatedBack (void)
+void WI_initAnimatedBack()
 {
-	int i;
-	animinfo_t *a;
-
 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
 		return;
 
-	for (i = 0; i < NUMANIMS[wbs->epsd]; i++)
+	for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
 	{
-		a = &anims[wbs->epsd][i];
+		animinfo_t* a = &anims[wbs->epsd][i];
 
 		// init variables
 		a->ctr = -1;
@@ -641,20 +630,16 @@ void WI_initAnimatedBack (void)
 		else if (a->type == ANIM_LEVEL)
 			a->nexttic = bcnt + 1;
 	}
-
 }
 
-void WI_updateAnimatedBack (void)
+void WI_updateAnimatedBack()
 {
-	int i;
-	animinfo_t *a;
-
 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
 		return;
 
-	for (i = 0; i < NUMANIMS[wbs->epsd]; i++)
+	for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
 	{
-		a = &anims[wbs->epsd][i];
+		animinfo_t* a = &anims[wbs->epsd][i];
 
 		if (bcnt == a->nexttic)
 		{
@@ -691,9 +676,7 @@ void WI_updateAnimatedBack (void)
 				break;
 			}
 		}
-
 	}
-
 }
 
 void WI_drawAnimatedBack()
@@ -719,10 +702,6 @@ void WI_drawAnimatedBack()
 
 int WI_drawNum(int n, int x, int y, int digits)
 {
-    int		fontwidth = W_ResolvePatchHandle(num[0])->width();
-    int		neg;
-    int		temp;
-
 	if (digits < 0)
 	{
 		if (n == 0)
@@ -734,7 +713,7 @@ int WI_drawNum(int n, int x, int y, int digits)
 		{
 			// figure out # of digits in #
 			digits = 0;
-			temp = n;
+			int temp = n;
 
 			while (temp)
 			{
@@ -744,13 +723,15 @@ int WI_drawNum(int n, int x, int y, int digits)
 		}
 	}
 
-	neg = n < 0;
+	const bool neg = n < 0;
     if (neg)
 		n = -n;
 
 	// if non-number, do not draw it
 	if (n == 1994)
 		return 0;
+
+	const int fontwidth = W_ResolvePatchHandle(num[0])->width();
 
 	// draw the new number
 	while (digits--)
@@ -783,30 +764,26 @@ void WI_drawPercent (int p, int x, int y, int b = 0)
 
 void WI_drawTime (int t, int x, int y)
 {
+	if (t < 0)
+		return;
 
-    int		div;
-    int		n;
-
-    if (t<0)
-	return;
-
-    if (t <= 61*59)
+    if (t <= 61 * 59)
     {
-	div = 1;
+	    int div = 1;
 
-	patch_t* col = W_ResolvePatchHandle(colon);
+		patch_t* col = W_ResolvePatchHandle(colon);
 
-	do
-	{
-	    n = (t / div) % 60;
-		x = WI_drawNum(n, x, y, 2) - col->width();
-	    div *= 60;
+		do
+		{
+			const int n = (t / div) % 60;
+			x = WI_drawNum(n, x, y, 2) - col->width();
+			div *= 60;
 
-		// draw
-		if (div==60 || t / div)
-			screen->DrawPatchClean(col, x, y);
+			// draw
+			if (div==60 || t / div)
+				screen->DrawPatchClean(col, x, y);
 
-	} while (t / div);
+		} while (t / div);
     }
     else
     {
@@ -824,19 +801,19 @@ void WI_End()
 	I_FreeSurface(background_surface);
 }
 
-void WI_initNoState (void)
+void WI_initNoState()
 {
 	state = NoState;
 	acceleratestage = 0;
 	cnt = 10;
 }
 
-void WI_updateNoState (void)
+void WI_updateNoState()
 {
 	WI_updateAnimatedBack();
 
 	// denis - let the server decide when to load the next map
-	if(serverside)
+	if (serverside)
 	{
 		if (!--cnt)
 		{
@@ -846,18 +823,16 @@ void WI_updateNoState (void)
 	}
 }
 
-static BOOL snl_pointeron = false;
+static bool snl_pointeron = false;
 
-void WI_initShowNextLoc (void)
+void WI_initShowNextLoc()
 {
 	state = ShowNextLoc;
 	acceleratestage = 0;
 	cnt = SHOWNEXTLOCDELAY * TICRATE;
-
-	WI_initAnimatedBack();
 }
 
-void WI_updateShowNextLoc (void)
+void WI_updateShowNextLoc()
 {
 	WI_updateAnimatedBack();
 
@@ -870,10 +845,8 @@ void WI_updateShowNextLoc (void)
 	}
 }
 
-void WI_drawShowNextLoc (void)
+void WI_drawShowNextLoc()
 {
-	int i;
-
 	// draw animated background
 	WI_drawAnimatedBack();
 
@@ -887,7 +860,7 @@ void WI_drawShowNextLoc (void)
 
 		// draw a splat on taken cities.
 		LevelInfos& levels = getLevelInfos();
-		for (i=0; i < NUMMAPS; i++)
+		for (int i = 0; i < NUMMAPS; i++)
 		{
 			if (levels.findByName(names[wbs->epsd][i]).flags & LEVEL_VISITED)
 			{
@@ -905,7 +878,7 @@ void WI_drawShowNextLoc (void)
 
 }
 
-void WI_drawNoState (void)
+void WI_drawNoState()
 {
 	snl_pointeron = true;
 	WI_drawShowNextLoc();
@@ -960,8 +933,7 @@ void WI_initNetgameStats()
 void WI_updateNetgameStats()
 {
 	unsigned int i;
-	int fsum;
-	BOOL stillticking;
+	bool stillticking;
 
 	WI_updateAnimatedBack();
 
@@ -1067,6 +1039,7 @@ void WI_updateNetgameStats()
 	}
 	else if (ng_state == 8)
 	{
+		int fsum;
 		if (!(bcnt&3))
 			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
@@ -1113,7 +1086,7 @@ void WI_updateNetgameStats()
 	}
 }
 
-void WI_drawNetgameStats(void)
+void WI_drawNetgameStats()
 {
 	unsigned int x, y;
 	unsigned int nbPlayers = 0;
@@ -1182,7 +1155,7 @@ void WI_drawNetgameStats(void)
 		if (!demoplayback)
 		{
 			std::string str;
-			StrFormat(str, "%s", it->userinfo.netname.c_str());			
+			StrFormat(str, "%s", it->userinfo.netname.c_str());
 			WI_DrawSmallName(str.c_str(), x+10, y+24);
 		}
 
@@ -1200,9 +1173,9 @@ void WI_drawNetgameStats(void)
 	}
 }
 
-static int	sp_state;
+static int sp_state;
 
-void WI_initStats(void)
+void WI_initStats()
 {
     state = StatCount;
     acceleratestage = 0;
@@ -1214,113 +1187,129 @@ void WI_initStats(void)
     WI_initAnimatedBack();
 }
 
-void WI_updateStats(void)
+void WI_updateStats()
 {
-
     WI_updateAnimatedBack();
 
     if (acceleratestage && sp_state != 10)
     {
-	acceleratestage = 0;
-	cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
-	cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
-	cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
-	cnt_time = (plrs[me].stime) ? plrs[me].stime / TICRATE : level.time / TICRATE;
-	cnt_par = wminfo.partime / TICRATE;
-	S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-	sp_state = 10;
+		acceleratestage = 0;
+		cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
+		cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
+		cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
+		cnt_time = (plrs[me].stime) ? plrs[me].stime / TICRATE : level.time / TICRATE;
+		cnt_par = wminfo.partime / TICRATE;
+		S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+		sp_state = 10;
     }
 
     if (sp_state == 2)
     {
-	cnt_kills += 2;
+		cnt_kills += 2;
 
-	if (!(bcnt&3))
-	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+		if (!(bcnt&3))
+		    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-	if (!wminfo.maxkills || cnt_kills >= (level.killed_monsters * 100) / wminfo.maxkills)
-	{
-	    cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
-	    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-	    sp_state++;
-	}
+		if (!wminfo.maxkills || cnt_kills >= (level.killed_monsters * 100) / wminfo.maxkills)
+		{
+		    cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
+		    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+		    sp_state++;
+		}
     }
     else if (sp_state == 4)
     {
-	cnt_items += 2;
+		cnt_items += 2;
 
-	if (!(bcnt&3))
-	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+		if (!(bcnt&3))
+		    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-	if (!wminfo.maxitems || cnt_items >= (level.found_items * 100) / wminfo.maxitems)
-	{
-	    cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
-	    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-	    sp_state++;
-	}
+		if (!wminfo.maxitems || cnt_items >= (level.found_items * 100) / wminfo.maxitems)
+		{
+		    cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
+		    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+		    sp_state++;
+		}
     }
     else if (sp_state == 6)
     {
-	cnt_secret += 2;
+		cnt_secret += 2;
 
-	if (!(bcnt&3))
-	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+		if (!(bcnt&3))
+		    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-	if (!wminfo.maxsecret || cnt_secret >= (level.found_secrets * 100) / wminfo.maxsecret)
-	{
-	    cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
-	    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-	    sp_state++;
-	}
+		if (!wminfo.maxsecret || cnt_secret >= (level.found_secrets * 100) / wminfo.maxsecret)
+		{
+		    cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
+		    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+		    sp_state++;
+		}
     }
 
     else if (sp_state == 8)
     {
-	if (!(bcnt&3))
-	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+		if (!(bcnt&3))
+		    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-	cnt_time += 3;
+		cnt_time += 3;
 
-	if (cnt_time >= plrs[me].stime / TICRATE)
-	    cnt_time = plrs[me].stime / TICRATE;
+		if (cnt_time >= plrs[me].stime / TICRATE)
+		    cnt_time = plrs[me].stime / TICRATE;
 
-	cnt_par += 3;
+		cnt_par += 3;
 
-	if (cnt_par >= wminfo.partime / TICRATE)
-	{
-	    cnt_par = wminfo.partime / TICRATE;
+		if (cnt_par >= wminfo.partime / TICRATE)
+		{
+		    cnt_par = wminfo.partime / TICRATE;
 
-	    if (cnt_time >= plrs[me].stime / TICRATE)
-	    {
-		S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-		sp_state++;
-	    }
-	}
+		    if (cnt_time >= plrs[me].stime / TICRATE)
+		    {
+			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			sp_state++;
+		    }
+		}
     }
     else if (sp_state == 10)
     {
-	if (acceleratestage)
-	{
-	    S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
+		if (acceleratestage)
+		{
+			LevelInfos& levels = getLevelInfos();
+			level_pwad_info_t& nextlevel = levels.findByName(wbs->next);
 
-	    if ((gameinfo.flags & GI_MAPxx))
-		WI_initNoState();
-	    else
-		WI_initShowNextLoc();
-	}
+			OLumpName name = nextlevel.enterpic;
+
+			// background
+			const patch_t* bg_patch = W_CachePatch(name.c_str());
+			background_surface =
+			    I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+			const DCanvas* canvas = background_surface->getDefaultCanvas();
+
+			background_surface->lock();
+			canvas->DrawPatch(bg_patch, 0, 0);
+			background_surface->unlock();
+
+			WI_initAnimatedBack();
+
+		    S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
+
+		    if ((gameinfo.flags & GI_MAPxx))
+			WI_initNoState();
+		    else
+			WI_initShowNextLoc();
+		}
     }
     else if (sp_state & 1)
     {
-	if (!--cnt_pause)
-	{
-	    sp_state++;
-	    cnt_pause = TICRATE;
-	}
+		if (!--cnt_pause)
+		{
+		    sp_state++;
+		    cnt_pause = TICRATE;
+		}
     }
 
 }
 
-void WI_drawStats (void)
+void WI_drawStats()
 {
 	patch_t* pKills = W_ResolvePatchHandle(::kills);
 	patch_t* pItems = W_ResolvePatchHandle(::items);
@@ -1329,7 +1318,7 @@ void WI_drawStats (void)
 	patch_t* pPar = W_ResolvePatchHandle(::par);
 
 	// line height
-	int lh = (3 * W_ResolvePatchHandle(::num[0])->height()) / 2;
+	const int lh = (3 * W_ResolvePatchHandle(::num[0])->height()) / 2;
 
 	// draw animated background
 	WI_drawAnimatedBack();
@@ -1354,7 +1343,7 @@ void WI_drawStats (void)
 	}
 }
 
-void WI_checkForAccelerate(void)
+void WI_checkForAccelerate()
 {
 	if (!serverside)
 		return;
@@ -1389,7 +1378,7 @@ void WI_checkForAccelerate(void)
 
 
 // Updates stuff each tick
-void WI_Ticker (void)
+void WI_Ticker()
 {
 	// counter for general background animation
 	bcnt++;
@@ -1445,19 +1434,20 @@ void WI_Ticker (void)
 
 static int WI_CalcWidth (const char *str)
 {
-	int w = 0;
-	int lump;
-	patch_t *p;
-	char charname[9];
-
 	if (!str)
 		return 0;
 
-	while (*str) {
+	int w = 0;
+
+	while (*str)
+	{
+		char charname[9];
 		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
-		lump = W_CheckNumForName (charname);
-		if (lump != -1) {
-			p = W_CachePatch (lump);
+		int lump = W_CheckNumForName(charname);
+
+		if (lump != -1)
+		{
+			patch_t* p = W_CachePatch(lump);
 			w += p->width() - 1;
 		} else {
 			w += 12;
@@ -1468,15 +1458,16 @@ static int WI_CalcWidth (const char *str)
 	return w;
 }
 
-void WI_loadData (void)
+void WI_loadData()
 {
 	LevelInfos& levels = getLevelInfos();
+	level_pwad_info_t& currentlevel = levels.findByName(wbs->current);
 
-	int i, j;
 	char name[17];
-	animinfo_t *a;
 
-	if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
+	if (currentlevel.exitpic[0] != '\0')
+		strcpy(name, currentlevel.exitpic.c_str());
+	else if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
 		strcpy(name, "INTERPIC");
 	else
 		sprintf(name, "WIMAP%d", wbs->epsd);
@@ -1484,13 +1475,13 @@ void WI_loadData (void)
 	// background
 	const patch_t* bg_patch = W_CachePatch(name);
 	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
-	DCanvas* canvas = background_surface->getDefaultCanvas();
+	const DCanvas* canvas = background_surface->getDefaultCanvas();
 
 	background_surface->lock();
 	canvas->DrawPatch(bg_patch, 0, 0);
 	background_surface->unlock();
 
-	for (i = 0; i < 2; i++)
+	for (int i = 0, j; i < 2; i++)
 	{
 		char *lname = (i == 0 ? wbs->lname0 : wbs->lname1);
 
@@ -1524,10 +1515,10 @@ void WI_loadData (void)
 
 		if (wbs->epsd < 3)
 		{
-			for (j=0;j<NUMANIMS[wbs->epsd];j++)
+			for (int j = 0; j < NUMANIMS[wbs->epsd]; j++)
 			{
-				a = &anims[wbs->epsd][j];
-				for (i=0;i<a->nanims;i++)
+				animinfo_t* a = &anims[wbs->epsd][j];
+				for (int i = 0; i < a->nanims; i++)
 				{
 					// MONDO HACK!
 					if (wbs->epsd != 1 || j != 8)
@@ -1546,7 +1537,7 @@ void WI_loadData (void)
 		}
 	}
 
-	for (i=0;i<10;i++)
+	for (int i = 0; i < 10; i++)
 	{
 		// numbers 0-9
 		sprintf(name, "WINUM%d", i);
@@ -1604,13 +1595,14 @@ void WI_loadData (void)
 	p = W_CachePatchHandle("STPBANY", PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
-	for (i = 0; i < 4; i++) {
+	for (int i = 0; i < 4; i++)
+	{
 		sprintf(name, "STPB%d", i);
 		faceclassic[i] = W_CachePatchHandle(name, PU_STATIC);
 	}
 }
 
-void WI_unloadData (void)
+void WI_unloadData()
 {
 /*	int i, j;
 
@@ -1649,9 +1641,7 @@ void WI_unloadData (void)
 
 	Z_ChangeTag (p, PU_CACHE);*/
 
-	int i;
-
-	for (i = 0; i < 10; i++)
+	for (int i = 0; i < 10; i++)
 		num[i].clear();
 
 	wiminus.clear();
@@ -1671,11 +1661,11 @@ void WI_unloadData (void)
 	//	Z_ChangeTag(bstar, PU_CACHE);
 	p.clear();
 
-	for (i=0 ; i<4 ; i++)
-		faceclassic[i].clear();
+	for (int i = 0; i < 4; i++)
+		faceclassic[i ].clear();
 }
 
-void WI_Drawer (void)
+void WI_Drawer()
 {
 	C_MidPrint(NULL);	// Don't midprint anything during intermission
 
