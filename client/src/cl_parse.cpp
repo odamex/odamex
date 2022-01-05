@@ -1499,6 +1499,26 @@ static void CL_MovingSector(const odaproto::svc::MovingSector* msg)
 		snap.setFloorLip(floor.floor_lip());
 	}
 
+	if (floor_mover == SEC_WAGGLE)
+	{
+		const odaproto::svc::MovingSector_Snapshot& floor = msg->floor_mover();
+
+		// Waggle
+		snap.setFloorMoverType(SEC_WAGGLE);
+		snap.setOriginalHeight(floor.original_height());
+		snap.setAccumulator(floor.accumulator());
+		snap.setAccDelta(floor.accdelta());
+		snap.setTargetScale(floor.targetscale());
+		snap.setScale(floor.scale());
+		snap.setScaleDelta(floor.scaledelta());
+		snap.setOldFloorStatus(floor.floor_old_status());
+		snap.setFloorCrush(floor.floor_crush());
+		snap.setFloorTag(floor.floor_tag());
+		snap.setFloorType(floor.floor_type());
+		snap.setFloorOffset(floor.floor_offset());
+		snap.setFloorLip(floor.floor_lip());
+	}
+
 	if (ceiling_mover == SEC_CEILING)
 	{
 		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();

@@ -1985,7 +1985,7 @@ DWaggle::DWaggle()
 DWaggle::DWaggle(sector_t* sector, int height, int speed, int offset, int timer,
                  bool ceiling)
 {
-	DWaggle* waggle;
+	DWaggle* waggle = new DWaggle();
 
 	if (ceiling)
 	{
@@ -2004,7 +2004,7 @@ DWaggle::DWaggle(sector_t* sector, int height, int speed, int offset, int timer,
 	waggle->m_TargetScale = height << 10;
 	waggle->m_ScaleDelta = waggle->m_TargetScale / (35 + ((3 * 35) * height) / 255);
 	waggle->m_Ticker = timer ? timer * 35 : -1;
-	waggle->m_State = WGLSTATE_EXPAND;
+	waggle->m_State = expand;
 	waggle->m_Ceiling = ceiling;
 }
 
@@ -2012,14 +2012,19 @@ void DWaggle::RunThink()
 {
 	switch (m_State)
 	{
-	case WGLSTATE_EXPAND:
+	case finished:
+		Destroy();
+	case destroy:
+		return;
+		break;
+	case expand:
 		if ((m_Scale += m_ScaleDelta) >= m_TargetScale)
 		{
 			m_Scale = m_TargetScale;
-			m_State = WGLSTATE_STABLE;
+			m_State = stable;
 		}
 		break;
-	case WGLSTATE_REDUCE:
+	case reduce:
 		if ((m_Scale -= m_ScaleDelta) <= 0)
 		{ // Remove
 			if (m_Ceiling)
@@ -2030,21 +2035,22 @@ void DWaggle::RunThink()
 			{
 				m_Sector->floorheight = m_OriginalHeight;
 			}
-			P_ChangeSector(m_Sector, true);
-			Destroy();
+			P_ChangeSector(m_Sector, DOOM_CRUSH);
+			m_State = finished;
 			return;
 		}
 		break;
-	case WGLSTATE_STABLE:
+	case stable:
 		if (m_Ticker != -1)
 		{
 			if (!--m_Ticker)
 			{
-				m_State = WGLSTATE_REDUCE;
+				m_State = reduce;
 			}
 		}
 		break;
 	}
+
 	m_Accumulator += m_AccDelta;
 	if (m_Ceiling)
 	{

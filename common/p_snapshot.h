@@ -586,6 +586,16 @@ public:
 	void setFloorOffset(fixed_t val)		{ mFloorOffset = val; }
 	void setCeilingChange(int val)			{ mCeilingChange = val; }
 	void setFloorChange(int val)			{ mFloorChange = val; }
+	void setOriginalHeight(fixed_t val)		{ mOriginalHeight = val; }
+	void setAccumulator(fixed_t val)		{ mAccumulator = val; }
+	void setAccDelta(fixed_t val)			{ mAccDelta = val; }
+	void setTargetScale(fixed_t val)		{ mTargetScale = val; }
+	void setScale(fixed_t val)				{ mScale = val; }
+	void setScaleDelta(fixed_t val)			{ mScaleDelta = val; }
+	void setTicker(int val)					{ mTicker = val; }
+	void setState(int val)					{ mState = val; }
+
+
 		
 	movertype_t	getCeilingMoverType() const	{ return mCeilingMoverType; }
 	movertype_t	getFloorMoverType() const	{ return mFloorMoverType; }	
@@ -636,6 +646,14 @@ public:
 	fixed_t	getFloorOffset() const			{ return mFloorOffset; }
 	int		getCeilingChange() const		{ return mCeilingChange; }
 	int		getFloorChange() const			{ return mFloorChange; }
+	fixed_t getOriginalHeight() const		{ return mOriginalHeight; }
+	fixed_t getAccumulator() const			{ return mAccumulator; }
+	fixed_t getAccDelta() const				{ return mAccDelta; }
+	fixed_t getTargetScale() const			{ return mTargetScale; }
+	fixed_t getScale() const				{ return mScale; }
+	fixed_t getScaleDelta() const			{ return mScaleDelta; }
+	int getTicker() const					{ return mTicker; }
+	int getState() const					{ return mState; }
 
 private:
 	movertype_t		mCeilingMoverType;
@@ -703,6 +721,15 @@ private:
 	
 	int				mCeilingChange;
 	int				mFloorChange;
+
+	fixed_t			mOriginalHeight;
+	fixed_t			mAccumulator;
+	fixed_t			mAccDelta;
+	fixed_t			mTargetScale;
+	fixed_t			mScale;
+	fixed_t			mScaleDelta;
+	int				mTicker;
+	int				mState;
 };
 
 

@@ -690,7 +690,9 @@ SectorSnapshot::SectorSnapshot(int time) :
 	mCeilingWait(0), mFloorWait(0), mCeilingCounter(0), mFloorCounter(0), mResetCounter(0),
 	mCeilingStatus(0), mFloorStatus(0), mOldFloorStatus(0),
 	mCrusherSpeed1(0), mCrusherSpeed2(0), mStepTime(0), mPerStepTime(0), mPauseTime(0),
-	mOrgHeight(0), mDelay(0), mFloorLip(0), mFloorOffset(0), mCeilingChange(0), mFloorChange(0)
+	mOrgHeight(0), mDelay(0), mFloorLip(0), mFloorOffset(0), mCeilingChange(0), mFloorChange(0),
+    mOriginalHeight(0), mAccumulator(0), mAccDelta(0), mTargetScale(0), mScale(0),
+    mScaleDelta(0), mTicker(0), mState(0)
 {
 }
 
@@ -780,6 +782,19 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 			mFloorOffset		= plat->m_Height;
 			mFloorLip			= plat->m_Lip;
 		}
+		else if (sector->floordata->IsA(RUNTIME_CLASS(DWaggle)))
+		{
+			DWaggle* waggle		= static_cast<DWaggle*>(sector->floordata);
+			mFloorMoverType		= SEC_WAGGLE;
+			mOriginalHeight		= waggle->m_OriginalHeight;
+			mAccumulator		= waggle->m_Accumulator;
+			mAccDelta			= waggle->m_AccDelta;
+			mTargetScale		= waggle->m_TargetScale;
+			mScale				= waggle->m_Scale;
+			mScaleDelta			= waggle->m_ScaleDelta;
+			mTicker				= waggle->m_Ticker;
+			mState				= waggle->m_State;
+		}
 	}
 	
 	if (sector->ceilingdata)
@@ -787,7 +802,7 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 		if (sector->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
 		{
 			DCeiling *ceiling	= static_cast<DCeiling *>(sector->ceilingdata);
-			mCeilingMoverType	= SEC_CEILING;			
+			mCeilingMoverType	= SEC_CEILING;
 			mCeilingType		= ceiling->m_Type;
 			mCeilingStatus		= ceiling->m_Status;
 			mCeilingTag			= ceiling->m_Tag;
@@ -814,6 +829,19 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 			mCeilingCounter		= door->m_TopCountdown;
 			mCeilingStatus		= door->m_Status;
 			mCeilingLine		= door->m_Line;
+		}
+		else if (sector->ceilingdata->IsA(RUNTIME_CLASS(DWaggle)))
+		{
+			DWaggle* waggle = static_cast<DWaggle*>(sector->ceilingdata);
+			mCeilingMoverType = SEC_WAGGLE;
+			mOriginalHeight = waggle->m_OriginalHeight;
+			mAccumulator	= waggle->m_Accumulator;
+			mAccDelta		= waggle->m_AccDelta;
+			mTargetScale	= waggle->m_TargetScale;
+			mScale			= waggle->m_Scale;
+			mScaleDelta		= waggle->m_ScaleDelta;
+			mTicker			= waggle->m_Ticker;
+			mState			= waggle->m_State;
 		}
 	}
 }
@@ -868,6 +896,30 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		pillar->m_CeilingTarget		= mCeilingDestination;
 		pillar->m_FloorTarget		= mFloorDestination;
 		pillar->m_Crush				= mCeilingCrush;
+	}
+
+	if (mCeilingMoverType == SEC_WAGGLE && mCeilingStatus != DWaggle::destroy)
+	{
+		int status = mCeilingStatus;
+
+		if (status == DWaggle::finished)
+			return;
+
+		if (!sector->ceilingdata)
+		{
+			sector->ceilingdata = new DWaggle(sector);
+		}
+
+		DWaggle* waggle = static_cast<DWaggle*>(sector->ceilingdata);
+		waggle->m_State = static_cast<DWaggle::EWaggleState>(mCeilingStatus);
+		waggle->m_Accumulator = mAccumulator;
+		waggle->m_AccDelta = mAccDelta;
+		waggle->m_OriginalHeight = mOriginalHeight;
+		waggle->m_Scale = mScale;
+		waggle->m_ScaleDelta = mScaleDelta;
+		waggle->m_TargetScale = mTargetScale;
+		waggle->m_Ticker = mTicker;
+		waggle->m_Ceiling = true;
 	}
 	
 	if (mCeilingMoverType == SEC_ELEVATOR && mCeilingStatus != DElevator::destroy)
@@ -986,6 +1038,30 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		floor->m_Height				= mFloorOffset;
 		floor->m_Change				= mFloorChange;
 		floor->m_Texture			= mFloorTexture;
+	}
+
+	if (mFloorMoverType == SEC_WAGGLE && mFloorStatus != DWaggle::destroy)
+	{
+		int status = mFloorStatus;
+
+		if (status == DWaggle::finished)
+			return;
+
+		if (!sector->floordata)
+		{
+			sector->floordata = new DWaggle(sector);
+		}
+
+		DWaggle* waggle = static_cast<DWaggle*>(sector->floordata);
+		waggle->m_State = static_cast<DWaggle::EWaggleState>(mFloorStatus);
+		waggle->m_Accumulator = mAccumulator;
+		waggle->m_AccDelta = mAccDelta;
+		waggle->m_OriginalHeight = mOriginalHeight;
+		waggle->m_Scale = mScale;
+		waggle->m_ScaleDelta = mScaleDelta;
+		waggle->m_TargetScale = mTargetScale;
+		waggle->m_Ticker = mTicker;
+		waggle->m_Ceiling = false;
 	}
 		
 	if (mFloorMoverType == SEC_PLAT && mFloorStatus != DPlat::destroy)
@@ -1197,7 +1273,9 @@ bool P_CeilingSnapshotDone(SectorSnapshot *snap)
 		(snap->getCeilingMoverType() == SEC_PILLAR &&
 		 snap->getCeilingStatus() == DPillar::destroy) ||
 		(snap->getCeilingMoverType() == SEC_ELEVATOR &&
-		 snap->getCeilingStatus() == DElevator::destroy))
+		 snap->getCeilingStatus() == DElevator::destroy) ||
+	    (snap->getCeilingMoverType() == SEC_WAGGLE &&
+	     snap->getCeilingStatus() == DWaggle::destroy))
 		return true;
 		
 	return false;
@@ -1215,7 +1293,9 @@ bool P_FloorSnapshotDone(SectorSnapshot *snap)
 		(snap->getFloorMoverType() == SEC_PILLAR &&
 		 snap->getFloorStatus() == DPillar::destroy) ||
 		(snap->getFloorMoverType() == SEC_ELEVATOR &&
-		 snap->getFloorStatus() == DElevator::destroy))
+	     snap->getFloorStatus() == DElevator::destroy) ||
+	    (snap->getFloorMoverType() == SEC_WAGGLE &&
+	     snap->getFloorStatus() == DWaggle::destroy))
 		return true;
 		
 	return false;

@@ -38,6 +38,7 @@ typedef enum
 	SEC_DOOR,
 	SEC_ELEVATOR,
 	SEC_PILLAR,
+	SEC_WAGGLE,
 } movertype_t;
 
 class DSectorEffect : public DThinker

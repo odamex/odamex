@@ -31,6 +31,7 @@
 #include "tables.h"
 #include "i_system.h"
 #include "m_wdlstats.h"
+#include "p_mapformat.h"
 
 #define FUNC(a) static BOOL a (line_t *ln, AActor *it, int arg0, int arg1, \
 							   int arg2, int arg3, int arg4)
@@ -69,13 +70,16 @@ bool P_LineSpecialMovesSector(byte special)
 {
 	static bool initialized = false;
 	static bool zdoomspecials[283];
+	static bool boomspecials[272];
 
 	if (!initialized)
 	{
 		// generate a lookup table for line zdoomspecials
 		initialized = true;
-		memset(zdoomspecials, 0, sizeof(zdoomspecials));
+		ArrayInit(zdoomspecials, false);
+		ArrayInit(boomspecials, false);
 
+		// ZDoom moving sectors
 		zdoomspecials[Door_Close]					= true;		// 10
 		zdoomspecials[Door_Open]					= true;		// 11
 		zdoomspecials[Door_Raise]					= true;		// 12
@@ -95,6 +99,7 @@ bool P_LineSpecialMovesSector(byte special)
 		zdoomspecials[Stairs_BuildUpSync]			= true;		// 32
 		zdoomspecials[Floor_RaiseByValueTimes8]		= true;		// 35
 		zdoomspecials[Floor_LowerByValueTimes8]		= true;		// 36
+		zdoomspecials[Ceiling_Waggle]				= true;		// 38
 		zdoomspecials[Ceiling_LowerByValue]			= true;		// 40
 		zdoomspecials[Ceiling_RaiseByValue]			= true;		// 41
 		zdoomspecials[Ceiling_CrushAndRaise]		= true;		// 42
@@ -115,6 +120,13 @@ bool P_LineSpecialMovesSector(byte special)
 		zdoomspecials[Pillar_BuildAndCrush]			= true;		// 94
 		zdoomspecials[FloorAndCeiling_LowerByValue]	= true;		// 95
 		zdoomspecials[FloorAndCeiling_RaiseByValue]	= true;		// 96
+		zdoomspecials[Ceiling_CrushAndRaiseSilentDist] = true;  // 104
+		zdoomspecials[Door_WaitRaise]				= true;		// 105
+		zdoomspecials[Door_WaitClose]				= true;		// 106
+		zdoomspecials[Floor_Waggle]					= true;		// 138
+		zdoomspecials[Ceiling_CrushAndRaiseDist]	= true;		// 168
+		zdoomspecials[Generic_Crusher2]				= true;		// 169
+		zdoomspecials[Plat_UpNearestWaitDownStay]	= true;		// 172
 		zdoomspecials[Ceiling_LowerToHighestFloor]	= true;		// 192
 		zdoomspecials[Ceiling_LowerInstant]			= true;		// 193
 		zdoomspecials[Ceiling_RaiseInstant]			= true;		// 194
@@ -150,9 +162,244 @@ bool P_LineSpecialMovesSector(byte special)
 		zdoomspecials[Ceiling_LowerToLowest]		= true;		// 253
 		zdoomspecials[Ceiling_LowerToFloor]			= true;		// 254
 		zdoomspecials[Ceiling_CrushRaiseAndStaySilA]= true;		// 255
+		zdoomspecials[Floor_LowerToHighestEE]		= true;		// 256
+		zdoomspecials[Floor_RaiseToLowest]			= true;		// 257
+		zdoomspecials[Floor_LowerToLowestCeiling]	= true;		// 258
+		zdoomspecials[Floor_RaiseToCeiling]			= true;		// 259
+		zdoomspecials[Floor_ToCeilingInstant]		= true;		// 260
+		zdoomspecials[Floor_LowerByTexture]			= true;		// 261
+		zdoomspecials[Ceiling_RaiseToHighest]		= true;		// 262
+		zdoomspecials[Ceiling_ToHighestInstant]		= true;		// 263
+		zdoomspecials[Ceiling_LowerToNearest]		= true;		// 264
+		zdoomspecials[Ceiling_RaiseToLowest]		= true;		// 265
+		zdoomspecials[Floor_LowerToHighestEE]		= true;		// 266
+		zdoomspecials[Ceiling_ToFloorInstant]		= true;		// 267
+		zdoomspecials[Ceiling_RaiseByTexture]		= true;		// 268
+		zdoomspecials[Ceiling_LowerByTexture]		= true;		// 269
+		zdoomspecials[Stairs_BuildDownDoom]			= true;		// 270
+		zdoomspecials[Stairs_BuildUpDoomSync]		= true;		// 271
+		zdoomspecials[Stairs_BuildDownDoomSync]		= true;		// 272
+		zdoomspecials[Stairs_BuildUpDoomCrush]		= true;		// 273
+		zdoomspecials[Door_AnimatedClose]			= true;		// 274
+		zdoomspecials[Floor_Stop]					= true;		// 275
+		zdoomspecials[Ceiling_Stop]					= true;		// 276
+		zdoomspecials[Floor_MoveToValueAndCrush]	= true;		// 279
+		zdoomspecials[Ceiling_MoveToValueAndCrush]	= true;		// 280
+
+		// Boom moving sectors
+		boomspecials[1]		= true;
+		boomspecials[2]		= true;
+		boomspecials[3]		= true;
+		boomspecials[4]		= true;
+		boomspecials[5]		= true;
+		boomspecials[6]		= true;
+		boomspecials[7]		= true;
+		boomspecials[8]		= true;
+		boomspecials[9]		= true;
+		boomspecials[10]	= true;
+		boomspecials[14]	= true;
+		boomspecials[15]	= true;
+		boomspecials[16]	= true;
+		boomspecials[18]	= true;
+		boomspecials[19]	= true;
+		boomspecials[21]	= true;
+		boomspecials[23]	= true;
+		boomspecials[24]	= true;
+		boomspecials[26]	= true;
+		boomspecials[27]	= true;
+		boomspecials[28]	= true;
+		boomspecials[29]	= true;
+		boomspecials[30]	= true;
+		boomspecials[31]	= true;
+		boomspecials[32]	= true;
+		boomspecials[33]	= true;
+		boomspecials[34]	= true;
+		boomspecials[36]	= true;
+		boomspecials[37]	= true;
+		boomspecials[38]	= true;
+		boomspecials[40]	= true;
+		boomspecials[41]	= true;
+		boomspecials[42]	= true;
+		boomspecials[43]	= true;
+		boomspecials[44]	= true;
+		boomspecials[45]	= true;
+		boomspecials[46]	= true;
+		boomspecials[47]	= true;
+		boomspecials[49]	= true;
+		boomspecials[50]	= true;
+		boomspecials[53]	= true;
+		boomspecials[54]	= true;
+		boomspecials[55]	= true;
+		boomspecials[56]	= true;
+		boomspecials[57]	= true;
+		boomspecials[58]	= true;
+		boomspecials[59]	= true;
+		boomspecials[60]	= true;
+		boomspecials[61]	= true;
+		boomspecials[62]	= true;
+		boomspecials[63]	= true;
+		boomspecials[64]	= true;
+		boomspecials[65]	= true;
+		boomspecials[66]	= true;
+		boomspecials[67]	= true;
+		boomspecials[68]	= true;
+		boomspecials[69]	= true;
+		boomspecials[70]	= true;
+		boomspecials[71]	= true;
+		boomspecials[72]	= true;
+		boomspecials[73]	= true;
+		boomspecials[74]	= true;
+		boomspecials[75]	= true;
+		boomspecials[76]	= true;
+		boomspecials[77]	= true;
+		boomspecials[78]	= true;
+		boomspecials[82]	= true;
+		boomspecials[83]	= true;
+		boomspecials[84]	= true;
+		boomspecials[86]	= true;
+		boomspecials[87]	= true;
+		boomspecials[88]	= true;
+		boomspecials[89]	= true;
+		boomspecials[90]	= true;
+		boomspecials[91]	= true;
+		boomspecials[92]	= true;
+		boomspecials[93]	= true;
+		boomspecials[94]	= true;
+		boomspecials[95]	= true;
+		boomspecials[96]	= true;
+		boomspecials[98]	= true;
+		boomspecials[99]	= true;
+		boomspecials[100]	= true;
+		boomspecials[101]	= true;
+		boomspecials[102]	= true;
+		boomspecials[103]	= true;
+		boomspecials[105]	= true;
+		boomspecials[106]	= true;
+		boomspecials[107]	= true;
+		boomspecials[108]	= true;
+		boomspecials[109]	= true;
+		boomspecials[110]	= true;
+		boomspecials[111]	= true;
+		boomspecials[112]	= true;
+		boomspecials[113]	= true;
+		boomspecials[114]	= true;
+		boomspecials[115]	= true;
+		boomspecials[116]	= true;
+		boomspecials[117]	= true;
+		boomspecials[118]	= true;
+		boomspecials[119]	= true;
+		boomspecials[120]	= true;
+		boomspecials[121]	= true;
+		boomspecials[122]	= true;
+		boomspecials[123]	= true;
+		boomspecials[127]	= true;
+		boomspecials[128]	= true;
+		boomspecials[129]	= true;
+		boomspecials[130]	= true;
+		boomspecials[131]	= true;
+		boomspecials[132]	= true;
+		boomspecials[133]	= true;
+		boomspecials[134]	= true;
+		boomspecials[135]	= true;
+		boomspecials[136]	= true;
+		boomspecials[137]	= true;
+		boomspecials[138]	= true;
+		boomspecials[139]	= true;
+		boomspecials[140]	= true;
+		boomspecials[141]	= true;
+		boomspecials[142]	= true;
+		boomspecials[143]	= true;
+		boomspecials[144]	= true;
+		boomspecials[145]	= true;
+		boomspecials[146]	= true;
+		boomspecials[147]	= true;
+		boomspecials[148]	= true;
+		boomspecials[149]	= true;
+		boomspecials[150]	= true;
+		boomspecials[151]	= true;
+		boomspecials[152]	= true;
+		boomspecials[155]	= true;
+		boomspecials[158]	= true;
+		boomspecials[159]	= true;
+		boomspecials[160]	= true;
+		boomspecials[161]	= true;
+		boomspecials[162]	= true;
+		boomspecials[163]	= true;
+		boomspecials[164]	= true;
+		boomspecials[165]	= true;
+		boomspecials[166]	= true;
+		boomspecials[167]	= true;
+		boomspecials[168]	= true;
+		boomspecials[175]	= true;
+		boomspecials[176]	= true;
+		boomspecials[177]	= true;
+		boomspecials[178]	= true;
+		boomspecials[179]	= true;
+		boomspecials[180]	= true;
+		boomspecials[181]	= true;
+		boomspecials[182]	= true;
+		boomspecials[183]	= true;
+		boomspecials[184]	= true;
+		boomspecials[185]	= true;
+		boomspecials[186]	= true;
+		boomspecials[187]	= true;
+		boomspecials[188]	= true;
+		boomspecials[191]	= true;
+		boomspecials[196]	= true;
+		boomspecials[199]	= true;
+		boomspecials[200]	= true;
+		boomspecials[201]	= true;
+		boomspecials[202]	= true;
+		boomspecials[203]	= true;
+		boomspecials[204]	= true;
+		boomspecials[205]	= true;
+		boomspecials[206]	= true;
+		boomspecials[211]	= true;
+		boomspecials[212]	= true;
+		boomspecials[219]	= true;
+		boomspecials[220]	= true;
+		boomspecials[221]	= true;
+		boomspecials[222]	= true;
+		boomspecials[227]	= true;
+		boomspecials[228]	= true;
+		boomspecials[229]	= true;
+		boomspecials[230]	= true;
+		boomspecials[231]	= true;
+		boomspecials[232]	= true;
+		boomspecials[233]	= true;
+		boomspecials[234]	= true;
+		boomspecials[235]	= true;
+		boomspecials[236]	= true;
+		boomspecials[237]	= true;
+		boomspecials[238]	= true;
+		boomspecials[239]	= true;
+		boomspecials[240]	= true;
+		boomspecials[241]	= true;
+		boomspecials[256]	= true;
+		boomspecials[257]	= true;
+		boomspecials[258]	= true;
+		boomspecials[259]	= true;
 	}
 
-	return zdoomspecials[special];
+	if (map_format.getZDoom())
+	{
+		return zdoomspecials[special];
+	}
+	else
+	{
+		if (special <= 272)
+		{
+			return boomspecials[special];
+		}
+		else if (special <= GenCrusherBase)
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
 }
 
 EXTERN_CVAR (cl_predictsectors)

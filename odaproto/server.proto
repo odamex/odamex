@@ -280,6 +280,14 @@ message MovingSector
 		sfixed32 floor_offset = 44;
 		int32 ceil_change = 45;
 		int32 floor_change = 46;
+		sfixed32 original_height = 47;
+		sfixed32 accumulator = 48;
+		sfixed32 accdelta = 49;
+		sfixed32 targetscale = 50;
+		sfixed32 scale = 51;
+		sfixed32 scaledelta = 52;
+		int32 ticker = 53;
+		int32 state = 54;
 	}
 
 	int32 sector = 1;

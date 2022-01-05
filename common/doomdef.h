@@ -539,10 +539,6 @@ inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 #define MAKE_ID(a,b,c,d)	((d)|((c)<<8)|((b)<<16)|((a)<<24))
 #endif
 
-#define WGLSTATE_EXPAND 1
-#define WGLSTATE_STABLE 2
-#define WGLSTATE_REDUCE 3
-
 static inline void UNMAKE_ID(char* out, uint32_t id)
 {
 	out[0] = id & 0xFF;

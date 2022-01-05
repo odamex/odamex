@@ -1224,6 +1224,15 @@ class DWaggle : public DMover
 {
 	DECLARE_SERIAL(DWaggle, DMover)
   public:
+	enum EWaggleState
+	{
+		expand = 0,
+		reduce,
+		stable,
+		finished,
+		destroy,
+		state_size
+	};
 	DWaggle(sector_t* sec);
 	DWaggle(sector_t* sector, int height, int speed, int offset, int timer,
 	                 bool ceiling);
@@ -1241,13 +1250,11 @@ class DWaggle : public DMover
 	int m_Ticker;
 	int m_State;
 	bool m_Ceiling;
+	DWaggle();
 
   protected:
 	friend BOOL EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed,
 	                                int offset, int timer, bool ceiling);
-
-  private:
-	DWaggle();
 };
 
 //jff 3/15/98 pure texture/type change for better generalized support
