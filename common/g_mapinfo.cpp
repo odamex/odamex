@@ -443,7 +443,12 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	}
 	else if (!stricmp(pname, "intermusic"))
 	{
-		ParseOLumpName(os, mape->intermusic);
+		MustGet<OLumpName>(os);
+		const std::string musicname = os.getToken();
+		if (W_CheckNumForName(musicname.c_str()) != -1)
+		{
+			mape->intermusic = musicname;
+		}
 	}
 	else if (!stricmp(pname, "episode"))
 	{
@@ -892,11 +897,19 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 		// with a D_, so we must add it.
 		char lumpname[9];
 		snprintf(lumpname, ARRAY_LENGTH(lumpname), "D_%s", s.c_str());
-		*static_cast<OLumpName*>(data) = lumpname;
+		if (W_CheckNumForName(lumpname) != -1)
+		{
+			*static_cast<OLumpName*>(data) = lumpname;
+		}
 	}
 	else
 	{
-		*static_cast<OLumpName*>(data) = os.getToken();
+		MustGet<OLumpName>(os);
+		const std::string musicname = os.getToken();
+		if (W_CheckNumForName(musicname.c_str()) != -1)
+		{
+			*static_cast<OLumpName*>(data) = musicname;
+		}
 	}
 }
 
