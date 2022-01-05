@@ -362,8 +362,12 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	}
 	else if (!stricmp(pname, "music"))
 	{
-
-		ParseOLumpName(os, mape->music);
+		MustGet<OLumpName>(os);
+		const std::string musicname = os.getToken();
+		if (W_CheckNumForName(musicname.c_str()) != -1)
+		{
+			mape->music = musicname;
+		}
 	}
 	else if (!stricmp(pname, "endpic"))
 	{
