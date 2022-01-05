@@ -335,6 +335,11 @@ void P_LoadSectors (int lump)
 		ss->nextsec = -1;	//jff 2/26/98 add fields to support locking out
 		ss->prevsec = -1;	// stair retriggering until build completes
 
+		// damage
+		ss->damageamount = 0;
+		ss->damageinterval = 0;
+		ss->leakrate = 0;
+
 		// killough 3/7/98:
 		ss->floor_xoffs = 0;
 		ss->floor_yoffs = 0;	// floor and ceiling flats offsets
@@ -2052,7 +2057,10 @@ static void P_SetupSlopes()
 	{
 		line_t *line = &lines[i];
 
-		if (line->special == Plane_Align)
+		short spec = line->special;
+
+		if ((map_format.getZDoom() && line->special == Plane_Align) ||
+		    (line->special >= 340 && line->special <= 347))
 		{
 			line->special = 0;
 			line->id = line->args[2];

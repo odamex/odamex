@@ -192,7 +192,9 @@ struct newspecial_s
 {
 	short special;
 	unsigned int flags;
-	damage_s damage;
+	int damageamount;
+	int damageinterval;
+	int damageleakrate;
 };
 
 #define NO_CRUSH -1

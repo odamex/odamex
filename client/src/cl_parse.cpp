@@ -59,6 +59,7 @@
 #include "st_stuff.h"
 #include "svc_map.h"
 #include "v_textcolors.h"
+#include "p_mapformat.h"
 
 // Extern data from other files.
 
@@ -1723,8 +1724,14 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
 	{
 		// only playsound if we've received the full update from
 		// the server (not setting up the map from the server)
-		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEATSPECIAL,
-		                      recv_full_update);
+		bool repeat;
+
+		if (map_format.getZDoom())
+			repeat = lines[l].flags & ML_REPEATSPECIAL;
+		else
+			repeat = P_IsSpecialBoomRepeatable(lines[l].special);
+
+		P_ChangeSwitchTexture(&lines[l], repeat, recv_full_update);
 	}
 
 	// Only accept texture change from server while receiving the full update

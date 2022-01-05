@@ -266,7 +266,9 @@ struct sector_s
 	struct line_s **lines;		// [linecount] size
 
 	float gravity;		// [RH] Sector gravity (1.0 is normal)
-	struct damage_s *damage;    // [Blair] Convert to struct to hold more information.
+	int damageamount;
+	int damageinterval;
+	int leakrate;
 	short mod;			// [RH] Means-of-death for applied damage
 	struct dyncolormap_s *colormap;	// [RH] Per-sector colormap
 
@@ -286,13 +288,6 @@ struct sector_s
 	int SectorChanges;
 };
 typedef struct sector_s sector_t;
-
-struct damage_s
-{
-	short amount;
-	byte leakrate;
-	byte interval;
-};
 
 
 //

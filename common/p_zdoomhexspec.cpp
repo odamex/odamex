@@ -270,7 +270,7 @@ void P_PlayerInZDoomSector(player_t* player)
 
 	static const int hexen_carry[3] = {2048 * 5, 2048 * 10, 2048 * 25};
 
-	if (sector->damage->amount > 0)
+	if (sector->damageamount > 0)
 	{
 		if (sector->flags & SECF_ENDGODMODE)
 		{
@@ -278,18 +278,18 @@ void P_PlayerInZDoomSector(player_t* player)
 		}
 
 		if (sector->flags & SECF_DMGUNBLOCKABLE || !player->powers[pw_ironfeet] ||
-		    (sector->damage->leakrate && P_Random(player->mo) < sector->damage->leakrate))
+		    (sector->leakrate && P_Random(player->mo) < sector->leakrate))
 		{
 			if (sector->flags & SECF_HAZARD)
 			{
-				player->hazardcount += sector->damage->amount;
-				player->hazardinterval = sector->damage->interval;
+				player->hazardcount += sector->damageamount;
+				player->hazardinterval = sector->damageinterval;
 			}
 			else
 			{
-				if (level.time % sector->damage->interval == 0)
+				if (level.time % sector->damageinterval == 0)
 				{
-					P_DamageMobj(player->mo, NULL, NULL, sector->damage->amount);
+					P_DamageMobj(player->mo, NULL, NULL, sector->damageamount);
 
 					if (sector->flags & SECF_ENDLEVEL && player->health <= 10)
 					{
@@ -770,7 +770,9 @@ void P_SpawnZDoomExtra(int i)
 			int damage = P_AproxDistance(lines[i].dx, lines[i].dy) >> FRACBITS;
 			for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0], s)) >= 0;)
 			{
-				sectors[s].damage->amount = damage;
+				sectors[s].damageamount = damage;
+				sectors[s].damageinterval = 32;
+				sectors[s].leakrate = 0;
 				sectors[s].mod = MOD_UNKNOWN;
 			}
 		}

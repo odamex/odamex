@@ -152,9 +152,9 @@ void DCeiling::RunThink ()
 			case genCeilingChgT:
 			case genCeilingChg0:
 				m_Sector->special = m_NewSpecial;
-				m_Sector->damage->amount = m_NewDamageRate;
-				m_Sector->damage->interval = m_NewDmgInterval;
-				m_Sector->damage->leakrate = m_NewLeakRate;
+				m_Sector->damageamount = m_NewDamageRate;
+				m_Sector->damageinterval = m_NewDmgInterval;
+				m_Sector->leakrate = m_NewLeakRate;
 				m_Sector->flags = m_NewFlags;
 			case genCeilingChg:
 				m_Sector->ceilingpic = m_Texture;
@@ -218,9 +218,9 @@ void DCeiling::RunThink ()
 			case genCeilingChgT:
 			case genCeilingChg0:
 				m_Sector->special = m_NewSpecial;
-				m_Sector->damage->amount = m_NewDamageRate;
-				m_Sector->damage->interval = m_NewDmgInterval;
-				m_Sector->damage->leakrate = m_NewLeakRate;
+				m_Sector->damageamount = m_NewDamageRate;
+				m_Sector->damageinterval = m_NewDmgInterval;
+				m_Sector->leakrate = m_NewLeakRate;
 				m_Sector->flags = m_NewFlags;
 			case genCeilingChg:
 				m_Sector->ceilingpic = m_Texture;
@@ -305,9 +305,9 @@ DCeiling::DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, 
 	m_Sector = sec;
 	m_Texture = sec->ceilingpic;
 	m_NewSpecial = sec->special;
-	m_NewDamageRate = sec->damage->amount;
-	m_NewDmgInterval = sec->damage->interval;
-	m_NewLeakRate = sec->damage->leakrate;
+	m_NewDamageRate = sec->damageamount;
+	m_NewDmgInterval = sec->damageinterval;
+	m_NewLeakRate = sec->leakrate;
 	m_NewFlags = sec->flags;
 	m_Tag = sec->tag;
 	m_Silent = (ceilingtype == genSilentCrusher);
@@ -348,9 +348,9 @@ DCeiling::DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, 
 	m_Sector = sec;
 	m_Texture = sec->ceilingpic;
 	m_NewSpecial = sec->special;
-	m_NewDamageRate = sec->damage->amount;
-	m_NewDmgInterval = sec->damage->interval;
-	m_NewLeakRate = sec->damage->leakrate;
+	m_NewDamageRate = sec->damageamount;
+	m_NewDmgInterval = sec->damageinterval;
+	m_NewLeakRate = sec->leakrate;
 	m_NewFlags = sec->flags;
 	m_Tag = sec->tag;
 
@@ -436,9 +436,9 @@ DCeiling::DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, 
 			{
 				m_Texture = sec->floorpic;
 				m_NewSpecial = sec->special;
-				m_NewDamageRate = sec->damage->amount;
-				m_NewDmgInterval = sec->damage->interval;
-				m_NewLeakRate = sec->damage->leakrate;
+				m_NewDamageRate = sec->damageamount;
+				m_NewDmgInterval = sec->damageinterval;
+				m_NewLeakRate = sec->leakrate;
 				m_NewFlags = sec->flags;
 				switch (change)
 				{
@@ -446,18 +446,18 @@ DCeiling::DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, 
 					newspecial_s ns;
 					P_ResetTransferSpecial(&ns);
 					m_NewSpecial = ns.special;
-					m_NewDamageRate = ns.damage.amount;
-					m_NewDmgInterval = ns.damage.interval;
-					m_NewLeakRate = ns.damage.leakrate;
+					m_NewDamageRate = ns.damageamount;
+					m_NewDmgInterval = ns.damageinterval;
+					m_NewLeakRate = ns.damageleakrate;
 					m_NewFlags = sec->flags;
 					P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
 					m_Type = genCeilingChg0;
 					break;
 				case CChgTyp: // type is copied
 					m_NewSpecial = line->frontsector->special;
-					m_NewDamageRate = line->frontsector->damage->amount;
-					m_NewDmgInterval = line->frontsector->damage->interval;
-					m_NewLeakRate = line->frontsector->damage->leakrate;
+					m_NewDamageRate = line->frontsector->damageamount;
+					m_NewDmgInterval = line->frontsector->damageinterval;
+					m_NewLeakRate = line->frontsector->leakrate;
 					m_NewFlags = line->frontsector->flags;
 					m_Type = genCeilingChgT;
 					break;
@@ -473,9 +473,9 @@ DCeiling::DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, 
 		{
 			m_Texture = line->frontsector->floorpic;
 			m_NewSpecial = line->frontsector->special;
-			m_NewDamageRate = line->frontsector->damage->amount;
-			m_NewDmgInterval = line->frontsector->damage->interval;
-			m_NewLeakRate = line->frontsector->damage->leakrate;
+			m_NewDamageRate = line->frontsector->damageamount;
+			m_NewDmgInterval = line->frontsector->damageinterval;
+			m_NewLeakRate = line->frontsector->leakrate;
 			m_NewFlags = line->frontsector->flags;
 			switch (change)
 			{
@@ -483,18 +483,18 @@ DCeiling::DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, 
 				newspecial_s ns;
 				P_ResetTransferSpecial(&ns);
 				m_NewSpecial = ns.special;
-				m_NewDamageRate = ns.damage.amount;
-				m_NewDmgInterval = ns.damage.interval;
-				m_NewLeakRate = ns.damage.leakrate;
+				m_NewDamageRate = ns.damageamount;
+				m_NewDmgInterval = ns.damageinterval;
+				m_NewLeakRate = ns.damageleakrate;
 				m_NewFlags = line->frontsector->flags;
 				P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
 				m_Type = genCeilingChg0;
 				break;
 			case CChgTyp: // type is copied
 				m_NewSpecial = line->frontsector->special;
-				m_NewDamageRate = line->frontsector->damage->amount;
-				m_NewDmgInterval = line->frontsector->damage->interval;
-				m_NewLeakRate = line->frontsector->damage->leakrate;
+				m_NewDamageRate = line->frontsector->damageamount;
+				m_NewDmgInterval = line->frontsector->damageinterval;
+				m_NewLeakRate = line->frontsector->leakrate;
 				m_NewFlags = line->frontsector->flags;
 				m_Type = genCeilingChgT;
 				break;

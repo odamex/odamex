@@ -182,3 +182,155 @@ short MapFormat::getGeneralizedMask(void)
 {
 	return map_format.generalized_mask;
 }
+
+bool P_IsSpecialBoomRepeatable(fixed_t special)
+{
+	switch (special)
+	{
+	case 1:
+	case 26:
+	case 27:
+	case 28:
+	case 42:
+	case 43:
+	case 45:
+	case 46:
+	case 60:
+	case 61:
+	case 62:
+	case 63:
+	case 64:
+	case 65:
+	case 66:
+	case 67:
+	case 68:
+	case 69:
+	case 70:
+	case 72:
+	case 73:
+	case 74:
+	case 75:
+	case 76:
+	case 77:
+	case 78:
+	case 79:
+	case 80:
+	case 81:
+	case 82:
+	case 83:
+	case 84:
+	case 86:
+	case 87:
+	case 88:
+	case 89:
+	case 90:
+	case 91:
+	case 92:
+	case 93:
+	case 94:
+	case 95:
+	case 96:
+	case 97:
+	case 98:
+	case 99:
+	case 105:
+	case 106:
+	case 107:
+	case 114:
+	case 115:
+	case 116:
+	case 117:
+	case 120:
+	case 123:
+	case 126:
+	case 128:
+	case 129:
+	case 132:
+	case 134:
+	case 136:
+	case 138:
+	case 139:
+	case 147:
+	case 148:
+	case 149:
+	case 150:
+	case 151:
+	case 152:
+	case 154:
+	case 155:
+	case 156:
+	case 157:
+	case 176:
+	case 177:
+	case 178:
+	case 179:
+	case 180:
+	case 181:
+	case 182:
+	case 183:
+	case 184:
+	case 185:
+	case 186:
+	case 187:
+	case 188:
+	case 190:
+	case 191:
+	case 192:
+	case 193:
+	case 194:
+	case 195:
+	case 196:
+	case 201:
+	case 202:
+	case 205:
+	case 206:
+	case 208:
+	case 210:
+	case 211:
+	case 212:
+	case 220:
+	case 222:
+	case 228:
+	case 230:
+	case 232:
+	case 234:
+	case 236:
+	case 238:
+	case 240:
+	case 244:
+	case 256:
+	case 257:
+	case 258:
+	case 259:
+	case 263:
+	case 265:
+	case 267:
+	case 269:
+		return true;
+		break;
+	default:
+		return false;
+		break;
+	}
+}
+
+bool P_IsExitLine(const fixed_t index)
+{
+	const int special = lines[index].special;
+
+	if (map_format.getZDoom())
+		return special == 74 || special == 75 || special == 244 || special == 243;
+
+	return special == 11 || special == 52 || special == 197 || special == 51 ||
+	       special == 124 || special == 198;
+}
+
+bool P_IsTeleportLine(const fixed_t index)
+{
+	const int special = lines[index].special;
+
+	if (map_format.getZDoom())
+		return special == 70 || special == 71 || special == 154;
+
+	return special == 39 || special == 97 || special == 125 || special == 126;
+}

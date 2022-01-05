@@ -3900,7 +3900,9 @@ void P_CopySector(sector_t *dest, sector_t *src)
 	dest->midmap				= src->midmap;
 	dest->topmap				= src->topmap;
 	dest->gravity				= src->gravity;
-	dest->damage				= src->damage;
+	dest->damageamount			= src->damageamount;
+	dest->damageinterval		= src->damageinterval;
+	dest->leakrate				= src->leakrate;
 	dest->mod					= src->mod;
 	dest->colormap				= src->colormap;
 	dest->alwaysfake			= src->alwaysfake;

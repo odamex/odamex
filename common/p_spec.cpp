@@ -150,26 +150,30 @@ void P_ResetSectorTransferFlags(unsigned int* flags)
 	*flags &= ~SECF_TRANSFERMASK;
 }
 
-static const damage_s no_damage = {0, 0, 0};
-
 void P_ResetSectorSpecial(sector_t* sector)
 {
 	sector->special = 0;
-	*sector->damage = no_damage;
+	sector->damageamount = 0;
+	sector->damageinterval = 0;
+	sector->leakrate = 0;
 	P_ResetSectorTransferFlags(&sector->flags);
 }
 
 void P_CopySectorSpecial(sector_t* dest, sector_t* source)
 {
 	dest->special = source->special;
-	dest->damage = source->damage;
+	dest->damageamount = source->damageamount;
+	dest->damageinterval = source->damageinterval;
+	dest->leakrate = source->leakrate;
 	P_TransferSectorFlags(&dest->flags, source->flags);
 }
 
 void P_ResetTransferSpecial(newspecial_s* newspecial)
 {
 	newspecial->special = 0;
-	newspecial->damage = no_damage;
+	newspecial->damageamount = 0;
+	newspecial->damageinterval = 0;
+	newspecial->damageleakrate = 0;
 	P_ResetSectorTransferFlags(&newspecial->flags);
 }
 
@@ -391,6 +395,11 @@ bool P_MovingCeilingCompleted(sector_t *sector)
 		DElevator *elevator = static_cast<DElevator *>(sector->ceilingdata);
 		return (elevator->m_Status == DElevator::destroy);
 	}
+	if (sector->ceilingdata->IsA(RUNTIME_CLASS(DWaggle)))
+	{
+		DWaggle* waggle = static_cast<DWaggle*>(sector->ceilingdata);
+		return (waggle->m_State == DWaggle::destroy);
+	}
 
 	return false;
 }
@@ -409,6 +418,11 @@ bool P_MovingFloorCompleted(sector_t *sector)
 	{
 		DFloor *floor = static_cast<DFloor *>(sector->floordata);
 		return (floor->m_Status == DFloor::destroy);
+	}
+	if (sector->floordata->IsA(RUNTIME_CLASS(DWaggle)))
+	{
+		DWaggle* waggle = static_cast<DWaggle*>(sector->floordata);
+		return (waggle->m_State == DWaggle::destroy);
 	}
 
 	return false;
@@ -1890,8 +1904,7 @@ void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
 bool P_HandleSpecialRepeat(line_t* line)
 {
 	// [SL] Don't remove specials from fragging exit line specials
-	if ((line->special == Exit_Normal || line->special == Exit_Secret ||
-	     line->special == Teleport_EndGame || line->special == Teleport_NewMap) &&
+	if (P_IsExitLine(line->special) &&
 	    (!sv_allowexit && sv_fragexitswitch))
 		return false;
 	else
@@ -1932,7 +1945,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 		if (thing->flags & MF_MISSILE)
 			return;
 
-		if (!thing->player && thing->type != MT_AVATAR &&
+		if (map_format.getZDoom() && !thing->player && thing->type != MT_AVATAR &&
 		    !(line->flags & ML_MONSTERSCANACTIVATE))
 			return;
 	}
@@ -1953,8 +1966,15 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	if(serverside)
 	{
-		P_ChangeSwitchTexture (line, line->flags & ML_REPEATSPECIAL, true);
-		OnChangedSwitchTexture (line, line->flags & ML_REPEATSPECIAL);
+		bool repeat;
+
+		if (map_format.getZDoom())
+			repeat = line->flags & ML_REPEATSPECIAL;
+		else
+			repeat = P_IsSpecialBoomRepeatable(line->special);
+
+		P_ChangeSwitchTexture(line, repeat, true);
+		OnChangedSwitchTexture(line, repeat);
 	}
 }
 
@@ -2009,8 +2029,15 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 		     !map_format.getZDoom()) &&
 		    result.switchchanged)
 		{
-			P_ChangeSwitchTexture (line, line->flags & ML_REPEATSPECIAL, true);
-			OnChangedSwitchTexture (line, line->flags & ML_REPEATSPECIAL);
+			bool repeat;
+
+			if (map_format.getZDoom())
+				repeat = line->flags & ML_REPEATSPECIAL;
+			else
+				repeat = P_IsSpecialBoomRepeatable(line->special);
+
+			P_ChangeSwitchTexture(line, repeat, true);
+			OnChangedSwitchTexture(line, repeat);
 		}
 	}
 
@@ -2070,8 +2097,15 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 
 		if(serverside)
 		{
-			P_ChangeSwitchTexture (line, line->flags & ML_REPEATSPECIAL, true);
-			OnChangedSwitchTexture (line, line->flags & ML_REPEATSPECIAL);
+			bool repeat;
+
+			if (map_format.getZDoom())
+				repeat = line->flags & ML_REPEATSPECIAL;
+			else
+				repeat = P_IsSpecialBoomRepeatable(line->special);
+
+			P_ChangeSwitchTexture(line, repeat, true);
+			OnChangedSwitchTexture(line, repeat);
 		}
 	}
 
@@ -2250,12 +2284,12 @@ void P_SetupSectorDamage(sector_t* sector, short amount, byte interval, byte lea
                          unsigned int flags)
 {
 	// Only set if damage is not yet initialized.
-	if (sector->damage->amount)
+	if (sector->damageamount)
 		return;
 
-	sector->damage->amount = amount;
-	sector->damage->interval = interval;
-	sector->damage->leakrate = leakrate;
+	sector->damageamount = amount;
+	sector->damageinterval = interval;
+	sector->leakrate = leakrate;
 	sector->flags = (sector->flags & ~SECF_DAMAGEFLAGS) | (flags & SECF_DAMAGEFLAGS);
 }
 
