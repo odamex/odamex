@@ -55,6 +55,9 @@ BOOL InScript;
 BOOL EV_MovePoly (line_t *line, int polyNum, int speed, angle_t angle, fixed_t dist, BOOL overRide);
 BOOL EV_OpenPolyDoor (line_t *line, int polyNum, int speed, angle_t angle, int delay, int distance, podoortype_t type);
 BOOL EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle, int direction, BOOL overRide);
+BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
+                       fixed_t speed2, fixed_t height, int crush, byte silent, int change,
+                       crushmode_e crushmode);
 
 //
 // P_LineSpecialMovesSector

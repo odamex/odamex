@@ -1926,7 +1926,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	if(thing)
 	{
-		if (map_format.zdoom && !(GET_SPAC(line->flags) == ML_SPAC_IMPACT))
+		if (map_format.getZDoom() && !(GET_SPAC(line->flags) == ML_SPAC_IMPACT))
 			return;
 
 		if (thing->flags & MF_MISSILE)
@@ -1939,7 +1939,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	//TeleportSide = side;
 
-	if (map_format.zdoom) // All zdoom specials can be impact activated
+	if (map_format.getZDoom()) // All zdoom specials can be impact activated
 	{
 		LineSpecials[line->special](line, thing, line->args[0], line->args[1],
 		                            line->args[2], line->args[3], line->args[4]);
@@ -1995,7 +1995,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 
 	TeleportSide = side;
 
-	if (map_format.zdoom)
+	if (map_format.getZDoom())
 		result = P_ActivateZDoomLine(line, thing, side, ML_SPAC_USE);
 	else
 		result = P_UseCompatibleSpecialLine(thing, line, side, bossaction);
@@ -2004,9 +2004,10 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 	{
 		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
 
-		if (serverside && (map_format.zdoom &&
-		     (GET_SPAC(line->flags != ML_SPAC_PUSH) || !map_format.zdoom)) &&
-		                   result.switchchanged)
+		if (serverside &&
+		    (map_format.getZDoom() && (!(GET_SPAC(line->flags) & ML_SPAC_PUSH)) ||
+		     !map_format.getZDoom()) &&
+		    result.switchchanged)
 		{
 			P_ChangeSwitchTexture (line, line->flags & ML_REPEATSPECIAL, true);
 			OnChangedSwitchTexture (line, line->flags & ML_REPEATSPECIAL);
@@ -2261,7 +2262,7 @@ void P_SetupSectorDamage(sector_t* sector, short amount, byte interval, byte lea
 void P_ClearNonGeneralizedSectorSpecial(sector_t* sector)
 {
 	// jff 3/14/98 clear non-generalized sector type
-	sector->special &= map_format.generalized_mask;
+	sector->special &= map_format.getGeneralizedMask();
 }
 
 void P_SpawnPhasedLight(sector_t* sector, int base, int index)

@@ -1103,7 +1103,7 @@ const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags)
 
 	// from zdoom-in-hexen to Odamex
 
-	result |= spac_to_flags[GET_SPAC(flags)];
+	result |= spac_to_flags[GET_HSPAC(flags)];
 
 	if (flags & HML_REPEATSPECIAL)
 		result |= ML_REPEATSPECIAL;

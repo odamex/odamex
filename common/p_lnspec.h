@@ -498,19 +498,19 @@ typedef enum
 // Line special translation structure
 typedef struct
 {
-	byte flags;
-	byte newspecial;
-	byte args[5];
+	unsigned int flags;
+	short newspecial;
+	short args[5];
 } xlat_t;
 
 #define TAG 123 // Special value that gets replaced with the line tag
 
-#define WALK ((byte)((SPAC_CROSS << ML_SPAC_SHIFT) >> 8))
-#define USE ((byte)((SPAC_USE << ML_SPAC_SHIFT) >> 8))
-#define SHOOT ((byte)((SPAC_IMPACT << ML_SPAC_SHIFT) >> 8))
-#define MONST ((byte)(ML_MONSTERSCANACTIVATE >> 8))
-#define MONWALK ((byte)((SPAC_MCROSS << ML_SPAC_SHIFT) >> 8))
-#define REP ((byte)(ML_REPEAT_SPECIAL >> 8))
+#define WALK ML_SPAC_CROSS
+#define USE ML_SPAC_USE
+#define SHOOT ML_SPAC_IMPACT
+#define MONST ML_MONSTERSCANACTIVATE
+#define MONWALK ML_SPAC_MCROSS
+#define REP ML_REPEATSPECIAL
 
 struct line_s;
 class AActor;
@@ -529,9 +529,6 @@ BOOL EV_CeilingCrushStop (int tag);
 void EV_StopPlat (int tag);
 int EV_ZDoomFloorCrushStop(int tag);
 BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
-BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
-                       fixed_t speed2, fixed_t height, int crush, byte silent, int change,
-                       crushmode_e crushmode);
 BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
 BOOL EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
                          int timer, bool ceiling);

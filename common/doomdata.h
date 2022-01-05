@@ -164,7 +164,7 @@ typedef struct
 #define HML_REPEATSPECIAL	0x0200 // special is repeatable
 #define HML_SPAC_SHIFT		10
 #define HML_SPAC_MASK		0x1c00
-#define GET_HSPAC(flags)		((flags & HML_SPAC_MASK) >> HML_SPAC_SHIFT)
+#define GET_HSPAC(flags)	((flags & HML_SPAC_MASK) >> HML_SPAC_SHIFT)
 
 // zdoom
 #define ZML_MONSTERSCANACTIVATE 0x2000 // Monsters and players can activate

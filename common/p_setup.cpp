@@ -733,7 +733,7 @@ void P_AdjustLine (line_t *ld)
 		ld->bbox[BOXTOP] = v1->y;
 	}
 
-	if (map_format.zdoom)
+	if (map_format.getZDoom())
 	{
 		// [RH] Set line id (as appropriate) here
 		if (ld->special == Line_SetIdentification || ld->special == Teleport_Line ||
@@ -791,7 +791,7 @@ void P_AdjustLine (line_t *ld)
 	if(*ld->sidenum == R_NOSIDE)
 		return;
 
-	if (map_format.zdoom)
+	if (map_format.getZDoom())
 	{
 		// killough 4/4/98: support special sidedef interpretation below
 		if ( // [RH] Save Static_Init only if it's interested in the textures

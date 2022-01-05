@@ -2750,7 +2750,7 @@ BOOL PTR_UseTraverse (intercept_t *in)
 	// (passthru on a cross or use line).  This may get augmented/changed even more in the future.
 	
 	bool eatuse = false;
-	if (map_format.zdoom)
+	if (map_format.getZDoom())
 	{
 		eatuse = (GET_SPAC(in->d.line->flags) == ML_SPAC_USE ||
 		        (GET_SPAC(in->d.line->flags) != ML_SPAC_CROSS &&

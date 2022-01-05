@@ -43,7 +43,7 @@ void P_MigrateActorInfo(void)
 	int i;
 	static bool migrated = false;
 
-	if (map_format.zdoom && !migrated)
+	if (map_format.getZDoom() && !migrated)
 	{
 		migrated = true;
 
@@ -59,7 +59,7 @@ void P_MigrateActorInfo(void)
 		mobjinfo[MT_SKULL].flags2 |= MF2_MCROSS | MF2_PUSHWALL;
 		mobjinfo[MT_PLAYER].flags2 |= MF2_WINDTHRUST | MF2_PUSHWALL;
 	}
-	else if (!map_format.zdoom && migrated)
+	else if (!map_format.getZDoom() && migrated)
 	{
 		migrated = false;
 
@@ -166,4 +166,19 @@ void MapFormat::P_ApplyDefaultMapFormat(void)
 	map_format.generalized_mask = ~31;
 
 	P_MigrateActorInfo();
+}
+
+bool MapFormat::getZDoom(void)
+{
+	return map_format.zdoom;
+}
+
+bool MapFormat::getHexen(void)
+{
+	return map_format.hexen;
+}
+
+short MapFormat::getGeneralizedMask(void)
+{
+	return map_format.generalized_mask;
 }
