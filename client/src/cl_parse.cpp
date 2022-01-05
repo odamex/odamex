@@ -1540,6 +1540,26 @@ static void CL_MovingSector(const odaproto::svc::MovingSector* msg)
 		snap.setCeilingOldDirection(ceil.ceil_old_dir());
 	}
 
+	if (ceiling_mover == SEC_WAGGLE)
+	{
+		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
+
+		// Waggle
+		snap.setCeilingMoverType(SEC_WAGGLE);
+		snap.setOriginalHeight(ceil.original_height());
+		snap.setAccumulator(ceil.accumulator());
+		snap.setAccDelta(ceil.accdelta());
+		snap.setTargetScale(ceil.targetscale());
+		snap.setScale(ceil.scale());
+		snap.setScaleDelta(ceil.scaledelta());
+		snap.setOldFloorStatus(ceil.floor_old_status());
+		snap.setFloorCrush(ceil.floor_crush());
+		snap.setFloorTag(ceil.floor_tag());
+		snap.setFloorType(ceil.floor_type());
+		snap.setFloorOffset(ceil.floor_offset());
+		snap.setFloorLip(ceil.floor_lip());
+	}
+
 	if (ceiling_mover == SEC_DOOR)
 	{
 		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
