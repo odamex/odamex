@@ -1088,7 +1088,6 @@ void WI_updateNetgameStats()
 
 void WI_drawNetgameStats()
 {
-	unsigned int x, y;
 	unsigned int nbPlayers = 0;
 
 	patch_t* pPercent = W_ResolvePatchHandle(::percent);
@@ -1099,7 +1098,7 @@ void WI_drawNetgameStats()
 	patch_t* pStar = W_ResolvePatchHandle(::star);
 	patch_t* pP = W_ResolvePatchHandle(::p);
 
-	short pwidth = pPercent->width();
+	const short pwidth = pPercent->width();
 
 	// draw animated background
 	WI_drawAnimatedBack();
@@ -1120,7 +1119,7 @@ void WI_drawNetgameStats()
 	}
 
 	// draw stats
-	y = NG_STATSY + pKills->height();
+	unsigned int y = NG_STATSY + pKills->height();
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -1137,7 +1136,7 @@ void WI_drawNetgameStats()
 		if (!it->ingame())
 			continue;
 
-		x = NG_STATSX;
+		unsigned int x = NG_STATSX;
 		// [RH] Only use one graphic for the face backgrounds
 		if (demoplayback)
 			V_ColorMap = translationref_t(translationtables + it->id * 256, it->id);
@@ -1273,20 +1272,21 @@ void WI_updateStats()
     {
 		if (acceleratestage)
 		{
-			LevelInfos& levels = getLevelInfos();
-			level_pwad_info_t& nextlevel = levels.findByName(wbs->next);
-
+			level_pwad_info_t& nextlevel = getLevelInfos().findByName(wbs->next);
 			OLumpName name = nextlevel.enterpic;
 
-			// background
-			const patch_t* bg_patch = W_CachePatch(name.c_str());
-			background_surface =
-			    I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
-			const DCanvas* canvas = background_surface->getDefaultCanvas();
+			if (nextlevel.enterpic[0])
+			{
+				// background
+				const patch_t* bg_patch = W_CachePatch(name.c_str());
+				background_surface =
+				    I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+				const DCanvas* canvas = background_surface->getDefaultCanvas();
 
-			background_surface->lock();
-			canvas->DrawPatch(bg_patch, 0, 0);
-			background_surface->unlock();
+				background_surface->lock();
+				canvas->DrawPatch(bg_patch, 0, 0);
+				background_surface->unlock();
+			}
 
 			WI_initAnimatedBack();
 
