@@ -37,6 +37,18 @@ enum door_type_t
 	door_type_multiple
 };
 
+enum triggertype
+{
+	WalkOnce,
+	WalkMany,
+	SwitchOnce,
+	SwitchMany,
+	GunOnce,
+	GunMany,
+	PushOnce,
+	PushMany
+};
+
 // Migrate some non-hexen data to hexen format
 void P_MigrateActorInfo(void)
 {
@@ -308,10 +320,28 @@ bool P_IsSpecialBoomRepeatable(fixed_t special)
 	case 269:
 		return true;
 		break;
-	default:
-		return false;
-		break;
 	}
+
+	if (special >= GenCrusherBase && special <= GenEnd)
+	{
+		switch (special & TriggerType)
+		{
+		case PushOnce:
+			return false;
+			break;
+		case PushMany:
+			return true;
+			break;
+		case SwitchOnce:
+			return false;
+			break;
+		case SwitchMany:
+			return true;
+			break;
+		}
+	}
+
+	return false;
 }
 
 bool P_IsExitLine(const fixed_t index)

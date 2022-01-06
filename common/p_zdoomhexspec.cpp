@@ -126,11 +126,6 @@ lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 	result.switchchanged = buttonSuccess;
 	result.lineexecuted = true;
 
-	if (!repeat && buttonSuccess)
-	{ // clear the special on non-retriggerable lines
-		line->special = 0;
-	}
-
 	SV_OnActivatedLine(line, mo, side, P_LineActivationTypeForSPACFlag(activationType),
 	                   false);
 

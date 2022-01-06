@@ -1970,15 +1970,15 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	if(serverside && lineresult.lineexecuted)
 	{
-		bool repeat;
-
-		if (map_format.getZDoom())
-			repeat = line->flags & ML_REPEATSPECIAL;
-		else
-			repeat = P_IsSpecialBoomRepeatable(line->special);
-
 		if (lineresult.switchchanged)
 		{
+			bool repeat;
+
+			if (map_format.getZDoom())
+				repeat = line->flags & ML_REPEATSPECIAL;
+			else
+				repeat = P_IsSpecialBoomRepeatable(line->special);
+
 			P_ChangeSwitchTexture(line, repeat, true);
 			OnChangedSwitchTexture(line, repeat);
 		}
@@ -2002,7 +2002,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 		if (!thing->player && thing->type != MT_AVATAR)
 		{
 			// not for monsters?
-			if (!(line->flags & ML_MONSTERSCANACTIVATE))
+			if (map_format.getZDoom() && !(line->flags & ML_MONSTERSCANACTIVATE))
 				return false;
 
 			// never open secret doors
@@ -2046,6 +2046,10 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 			P_ChangeSwitchTexture(line, repeat, true);
 			OnChangedSwitchTexture(line, repeat);
 		}
+	}
+	else
+	{
+		return false;
 	}
 
     return true;

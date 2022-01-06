@@ -1951,7 +1951,6 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			{
 				if (linefunc(line))
 				{
-					line->special = 0;
 					result.lineexecuted = true;
 				}
 			}

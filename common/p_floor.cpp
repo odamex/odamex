@@ -170,9 +170,6 @@ void DFloor::RunThink ()
 
 	EResult res = MoveFloor (m_Speed, m_FloorDestHeight, m_Crush, m_Direction, m_HexenCrush);
 
-	if (!(level.time & 7)) // make the floormove sound
-		PlayFloorSound();
-
 	if (res == pastdest)
 	{
 		m_Status = finished;
