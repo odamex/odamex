@@ -1952,19 +1952,23 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	//TeleportSide = side;
 
+	lineresult_s lineresult;
+
 	if (map_format.getZDoom()) // All zdoom specials can be impact activated
 	{
 		LineSpecials[line->special](line, thing, line->args[0], line->args[1],
 		                            line->args[2], line->args[3], line->args[4]);
+		lineresult.lineexecuted = false;
+		lineresult.switchchanged = false;
 	}
 	else // Only certain specials from Doom/Boom can be impact activated
 	{
-		P_ShootCompatibleSpecialLine(thing, line);
+		lineresult = P_ShootCompatibleSpecialLine(thing, line);
 	}
 
 	SV_OnActivatedLine(line, thing, 0, LineShoot, false);
 
-	if(serverside)
+	if(serverside && lineresult.lineexecuted)
 	{
 		bool repeat;
 
@@ -1973,8 +1977,11 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 		else
 			repeat = P_IsSpecialBoomRepeatable(line->special);
 
-		P_ChangeSwitchTexture(line, repeat, true);
-		OnChangedSwitchTexture(line, repeat);
+		if (lineresult.switchchanged)
+		{
+			P_ChangeSwitchTexture(line, repeat, true);
+			OnChangedSwitchTexture(line, repeat);
+		}
 	}
 }
 
@@ -2052,6 +2059,9 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 //
 bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 {
+	if (!map_format.getZDoom())
+		return false;
+
 	if (!P_CanActivateSpecials(thing, line))
 		return false;
 

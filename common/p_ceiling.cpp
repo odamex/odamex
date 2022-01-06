@@ -1151,9 +1151,8 @@ BOOL EV_DoGenCeiling(line_t* line)
 	// if not manual do all sectors tagged the same as the line
 	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
-
 	manual_genceiling:
+		sec = &sectors[secnum];
 		// Do not start another function if ceiling already moving
 		if (P_CeilingActive(sec)) // jff 2/22/98
 		{
@@ -1222,9 +1221,8 @@ BOOL EV_DoGenCrusher(line_t* line)
 	// if not manual do all sectors tagged the same as the line
 	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
-
 	manual_gencrusher:
+		sec = &sectors[secnum];
 		// Do not start another function if ceiling already moving
 		if (P_CeilingActive(sec)) // jff 2/22/98
 		{

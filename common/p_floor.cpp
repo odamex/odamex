@@ -1020,9 +1020,8 @@ BOOL EV_DoGenFloor(line_t* line)
 	secnum = -1;
 	while ((secnum = P_FindSectorFromTag(line->id, secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
-
 	manual_genfloor:
+		sec = &sectors[secnum];
 		// ALREADY MOVING?	IF SO, KEEP GOING...
 		if (sec->floordata)
 		{
@@ -1200,9 +1199,8 @@ BOOL EV_DoGenStairs(line_t* line)
 	secnum = -1;
 	while ((secnum = P_FindSectorFromTag(line->id, secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
-
 	manual_genstair:
+		sec = &sectors[secnum];
 		// ALREADY MOVING?	IF SO, KEEP GOING...
 		// jff 2/26/98 add special lockout condition to wait for entire
 		// staircase to build before retriggering

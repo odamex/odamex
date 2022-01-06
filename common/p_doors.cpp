@@ -33,6 +33,8 @@
 
 #include "p_spec.h"
 
+#include "p_mapformat.h"
+
 EXTERN_CVAR(co_zdoomsound)
 
 extern bool predicting;
@@ -615,7 +617,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 						door->PlayDoorSound();
 						return true;
 					}
-					else if (GET_SPAC(line->flags) == ML_SPAC_PUSH)
+					else if (map_format.getZDoom() && GET_SPAC(line->flags) == ML_SPAC_PUSH)
 					{
 						// [RH] activate push doors don't go back down when you
 						// run into them (otherwise opening them would be
@@ -850,8 +852,8 @@ BOOL EV_DoGenDoor(line_t* line)
 	// if not manual do all sectors tagged the same as the line
 	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
 	manual_gendoor:
+		sec = &sectors[secnum];
 		// Do not start another function if ceiling already moving
 		if (P_CeilingActive(sec)) // jff 2/22/98
 		{
@@ -918,8 +920,8 @@ BOOL EV_DoGenLockedDoor(line_t* line)
 	// if not manual do all sectors tagged the same as the line
 	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
 	manual_genlocked:
+		sec = &sectors[secnum];
 		// Do not start another function if ceiling already moving
 		if (P_CeilingActive(sec)) // jff 2/22/98
 		{
