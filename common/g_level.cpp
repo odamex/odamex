@@ -877,7 +877,7 @@ void G_InitLevelLocals()
 	::level.skypic = info.skypic;
 	if (!::level.skypic2[0])
 	{
-			::level.skypic2 =::level.skypic.c_str();
+		::level.skypic2 =::level.skypic.c_str();
 	}
 
 	if (::level.flags & LEVEL_JUMP_YES)
