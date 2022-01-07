@@ -1920,6 +1920,8 @@ void P_CrossSpecialLine(int	linenum, int side, AActor* thing, bool bossaction)
 {
     line_t*	line = &lines[linenum];
 
+	TeleportSide = side;
+
 	if (!bossaction && !P_CanActivateSpecials(thing, line))
 		return;
 

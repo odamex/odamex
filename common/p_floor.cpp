@@ -1956,7 +1956,8 @@ void DWaggle::Serialize(FArchive& arc)
 		    << m_ScaleDelta
 			<< m_Ticker
 			<< m_State
-			<< m_Ceiling;
+			<< m_Ceiling
+			<< m_StartTic;
 	}
 	else
 	{
@@ -1968,7 +1969,8 @@ void DWaggle::Serialize(FArchive& arc)
 			>> m_ScaleDelta
 			>> m_Ticker
 			>> m_State
-			>> m_Ceiling;
+			>> m_Ceiling
+			>> m_StartTic;
 	}
 }
 
@@ -1980,27 +1982,26 @@ DWaggle::DWaggle()
 DWaggle::DWaggle(sector_t* sector, int height, int speed, int offset, int timer,
                  bool ceiling)
 {
-	DWaggle* waggle = new DWaggle();
-
 	if (ceiling)
 	{
-		sector->ceilingdata = waggle;
-		waggle->m_OriginalHeight = sector->ceilingheight;
+		sector->ceilingdata = this;
+		m_OriginalHeight = sector->ceilingheight;
 	}
 	else
 	{
-		sector->floordata = waggle;
-		waggle->m_OriginalHeight = sector->floorheight;
+		sector->floordata = this;
+		m_OriginalHeight = sector->floorheight;
 	}
-	waggle->m_Sector = sector;
-	waggle->m_Accumulator = offset * FRACUNIT;
-	waggle->m_AccDelta = speed << 10;
-	waggle->m_Scale = 0;
-	waggle->m_TargetScale = height << 10;
-	waggle->m_ScaleDelta = waggle->m_TargetScale / (35 + ((3 * 35) * height) / 255);
-	waggle->m_Ticker = timer ? timer * 35 : -1;
-	waggle->m_State = expand;
-	waggle->m_Ceiling = ceiling;
+	m_Sector = sector;
+	m_Accumulator = offset * FRACUNIT;
+	m_AccDelta = speed << 10;
+	m_Scale = 0;
+	m_TargetScale = height << 10;
+	m_ScaleDelta = m_TargetScale / (35 + ((3 * 35) * height) / 255);
+	m_Ticker = timer ? timer * 35 : -1;
+	m_State = init;
+	m_Ceiling = ceiling;
+	m_StartTic = 0;
 }
 
 void DWaggle::RunThink()
@@ -2009,9 +2010,14 @@ void DWaggle::RunThink()
 	{
 	case finished:
 		Destroy();
+		m_State = destroy;
 	case destroy:
 		return;
 		break;
+	case init:
+		m_State = expand;
+		m_StartTic = ::level.time; // [Blair] Used for client side synchronization
+		// fall thru
 	case expand:
 		if ((m_Scale += m_ScaleDelta) >= m_TargetScale)
 		{
@@ -2024,11 +2030,11 @@ void DWaggle::RunThink()
 		{ // Remove
 			if (m_Ceiling)
 			{
-				m_Sector->ceilingheight = m_OriginalHeight;
+				P_SetCeilingHeight(m_Sector, m_OriginalHeight);
 			}
 			else
 			{
-				m_Sector->floorheight = m_OriginalHeight;
+				P_SetFloorHeight(m_Sector, m_OriginalHeight);
 			}
 			P_ChangeSector(m_Sector, DOOM_CRUSH);
 			m_State = finished;
@@ -2047,17 +2053,15 @@ void DWaggle::RunThink()
 	}
 
 	m_Accumulator += m_AccDelta;
+	fixed_t changeamount = m_OriginalHeight + FixedMul(FloatBobOffsets[(m_Accumulator >> FRACBITS) & 63], m_Scale);
+	
 	if (m_Ceiling)
 	{
-		m_Sector->ceilingheight =
-		    m_OriginalHeight +
-		    FixedMul(FloatBobOffsets[(m_Accumulator >> FRACBITS) & 63], m_Scale);
+		P_SetCeilingHeight(m_Sector, changeamount);
 	}
 	else
 	{
-		m_Sector->floorheight =
-		    m_OriginalHeight +
-		    FixedMul(FloatBobOffsets[(m_Accumulator >> FRACBITS) & 63], m_Scale);
+		P_SetFloorHeight(m_Sector, changeamount);
 	}
 	P_ChangeSector(m_Sector, DOOM_CRUSH);
 }

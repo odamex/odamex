@@ -1228,7 +1228,8 @@ class DWaggle : public DMover
   public:
 	enum EWaggleState
 	{
-		expand = 0,
+		init = 0,
+		expand,
 		reduce,
 		stable,
 		finished,
@@ -1249,6 +1250,7 @@ class DWaggle : public DMover
 	fixed_t m_TargetScale;
 	fixed_t m_Scale;
 	fixed_t m_ScaleDelta;
+	fixed_t m_StartTic; // [Blair] Client will predict a created (or serialized) waggle based on the start tic.
 	int m_Ticker;
 	int m_State;
 	bool m_Ceiling;

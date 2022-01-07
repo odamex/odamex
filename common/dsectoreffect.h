@@ -38,7 +38,7 @@ typedef enum
 	SEC_DOOR,
 	SEC_ELEVATOR,
 	SEC_PILLAR,
-	SEC_WAGGLE,
+//	SEC_WAGGLE,	// We don't send sector updates for these
 } movertype_t;
 
 class DSectorEffect : public DThinker

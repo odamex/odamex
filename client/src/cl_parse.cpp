@@ -1498,27 +1498,16 @@ static void CL_MovingSector(const odaproto::svc::MovingSector* msg)
 		snap.setFloorOffset(floor.floor_offset());
 		snap.setFloorLip(floor.floor_lip());
 	}
-
+	/*
 	if (floor_mover == SEC_WAGGLE)
 	{
 		const odaproto::svc::MovingSector_Snapshot& floor = msg->floor_mover();
 
 		// Waggle
 		snap.setFloorMoverType(SEC_WAGGLE);
-		snap.setOriginalHeight(floor.original_height());
 		snap.setAccumulator(floor.accumulator());
-		snap.setAccDelta(floor.accdelta());
-		snap.setTargetScale(floor.targetscale());
-		snap.setScale(floor.scale());
-		snap.setScaleDelta(floor.scaledelta());
-		snap.setOldFloorStatus(floor.floor_old_status());
-		snap.setFloorCrush(floor.floor_crush());
-		snap.setFloorTag(floor.floor_tag());
-		snap.setFloorType(floor.floor_type());
-		snap.setFloorOffset(floor.floor_offset());
-		snap.setFloorLip(floor.floor_lip());
 	}
-
+	*/
 	if (ceiling_mover == SEC_CEILING)
 	{
 		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
@@ -1539,27 +1528,16 @@ static void CL_MovingSector(const odaproto::svc::MovingSector* msg)
 		snap.setCeilingTag(ceil.ceil_tag());
 		snap.setCeilingOldDirection(ceil.ceil_old_dir());
 	}
-
+	/*
 	if (ceiling_mover == SEC_WAGGLE)
 	{
 		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
 
 		// Waggle
 		snap.setCeilingMoverType(SEC_WAGGLE);
-		snap.setOriginalHeight(ceil.original_height());
 		snap.setAccumulator(ceil.accumulator());
-		snap.setAccDelta(ceil.accdelta());
-		snap.setTargetScale(ceil.targetscale());
-		snap.setScale(ceil.scale());
-		snap.setScaleDelta(ceil.scaledelta());
-		snap.setOldFloorStatus(ceil.floor_old_status());
-		snap.setFloorCrush(ceil.floor_crush());
-		snap.setFloorTag(ceil.floor_tag());
-		snap.setFloorType(ceil.floor_type());
-		snap.setFloorOffset(ceil.floor_offset());
-		snap.setFloorLip(ceil.floor_lip());
 	}
-
+	*/
 	if (ceiling_mover == SEC_DOOR)
 	{
 		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();

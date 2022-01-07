@@ -796,14 +796,6 @@ odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector)
 		ceiling_mover = SEC_PILLAR;
 		floor_mover = SEC_INVALID;
 	}
-	if (sector.floordata && sector.floordata->IsA(RUNTIME_CLASS(DWaggle)))
-	{
-		floor_mover = SEC_WAGGLE;
-	}
-	if (sector.ceilingdata && sector.ceilingdata->IsA(RUNTIME_CLASS(DWaggle)))
-	{
-		ceiling_mover = SEC_WAGGLE;
-	}
 
 	// no moving planes?  skip it.
 	if (ceiling_mover == SEC_INVALID && floor_mover == SEC_INVALID)
@@ -846,20 +838,20 @@ odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector)
 		ceil->set_ceil_crush(Pillar->m_Crush);
 	}
 
-	if (ceiling_mover == SEC_WAGGLE)
-	{
-		DWaggle* Waggle = static_cast<DWaggle*>(sector.ceilingdata);
+	/* [Blair] Waggles are extremely chatty
+	 * network wise when sending sector updates.
+	 * So we'll only send what tic they are created,
+	 * and let the client predict the rest.
+	 
 
-		odaproto::svc::MovingSector_Snapshot* ceil = msg.mutable_ceiling_mover();
-		ceil->set_original_height(Waggle->m_OriginalHeight);
-		ceil->set_accumulator(Waggle->m_Accumulator);
-		ceil->set_accdelta(Waggle->m_AccDelta);
-		ceil->set_targetscale(Waggle->m_TargetScale);
-		ceil->set_scale(Waggle->m_Scale);
-		ceil->set_scaledelta(Waggle->m_ScaleDelta);
-		ceil->set_ticker(Waggle->m_Ticker);
-		ceil->set_state(Waggle->m_State);
-	}
+	 if (ceiling_mover == SEC_WAGGLE)
+	 {
+		 DWaggle* Waggle = static_cast<DWaggle*>(sector.ceilingdata);
+
+		 odaproto::svc::MovingSector_Snapshot* ceil = msg.mutable_ceiling_mover();
+		 ceil->set_st(Waggle->m_Type);
+	 }
+	 */
 
 	if (ceiling_mover == SEC_CEILING)
 	{
@@ -939,21 +931,16 @@ odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector)
 		floor->set_floor_lip(Plat->m_Lip);
 	}
 
-	if (floor_mover == SEC_WAGGLE)
-	{
-		DWaggle* Waggle = static_cast<DWaggle*>(sector.floordata);
-
-		odaproto::svc::MovingSector_Snapshot* floor = msg.mutable_floor_mover();
-		floor->set_original_height(Waggle->m_OriginalHeight);
-		floor->set_accumulator(Waggle->m_Accumulator);
-		floor->set_accdelta(Waggle->m_AccDelta);
-		floor->set_targetscale(Waggle->m_TargetScale);
-		floor->set_scale(Waggle->m_Scale);
-		floor->set_scaledelta(Waggle->m_ScaleDelta);
-		floor->set_ticker(Waggle->m_Ticker);
-		floor->set_state(Waggle->m_State);
-	}
-
+	/* [Blair] Waggles are extremely chatty
+	* network wise when sending sector updates.
+	* So we'll only send what tic they are created,
+	* and let the client predict the rest.
+	*
+	* if (floor_mover == SEC_WAGGLE)
+	* {
+	*
+	* }
+	*/
 	return msg;
 }
 
