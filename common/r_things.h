@@ -25,6 +25,8 @@
 #ifndef __R_THINGS__
 #define __R_THINGS__
 
+#include "r_sprites.h"
+
 // [RH] Particle details
 struct particle_s {
 	fixed_t	x,y,z;
@@ -49,7 +51,7 @@ extern TArray<WORD>     ParticlesInSubsec;
 const WORD NO_PARTICLE = 0xffff;
 
 #ifdef _MSC_VER
-__inline particle_t *NewParticle (void)
+__inline particle_t *NewParticle()
 {
 	particle_t *result = NULL;
 	if (InactiveParticles != NO_PARTICLE) {
@@ -85,10 +87,8 @@ extern fixed_t		pspritexscale;
 extern fixed_t		pspriteyscale;
 extern fixed_t		pspritexiscale;
 
-void R_CacheSprite(spritedef_t *sprite);
 void R_SortVisSprites();
 void R_AddSprites(sector_t *sec, int lightlevel, int fakeside);
-void R_InitSprites(const char** namelist);
 void R_ClearSprites();
 void R_DrawMasked();
 

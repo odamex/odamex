@@ -17,12 +17,14 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//		Refresh of things, i.e. objects represented by sprites.
+//		Loading sprites, skins.
 //
 //-----------------------------------------------------------------------------
 
 
 #include "odamex.h"
+
+#include"r_sprites.h"
 
 #include "m_alloc.h"
 
@@ -34,32 +36,24 @@
 
 #include "s_sound.h"
 
-#define MINZ							(FRACUNIT*4)
-#define BASEYCENTER 					(100)
-
-#define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
 #define SPRITE_NEEDS_INFO	MAXINT
 
 //
 // INITIALIZATION FUNCTIONS
 //
+spritedef_t* sprites;
+int numsprites;
 
-// variables used to look up
-//	and range check thing_t sprites patches
-spritedef_t*	sprites;
-int				numsprites;
-
-spriteframe_t	sprtemp[MAX_SPRITE_FRAMES];
-int 			maxframe;
-static const char*			spritename;
+spriteframe_t sprtemp[MAX_SPRITE_FRAMES];
+int maxframe;
 
 void R_CacheSprite(spritedef_t *sprite)
 {
 	DPrintf ("cache sprite %s\n",
-	         sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
+		sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
 	for (int i = 0; i < sprite->numframes; i++)
 	{
-		for (int r = 0; r < 8; r++)
+		for (int r = 0; r < 16; r++)
 		{
 			if (sprite->spriteframes[i].width[r] == SPRITE_NEEDS_INFO)
 			{
@@ -89,9 +83,9 @@ static void R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, BOOL fli
 		rotation = rot;
 	else
 		rotation = (rot >= 17) ? rot - 7 : 17;
-
+	
 	if (frame >= MAX_SPRITE_FRAMES || rotation > 16)
-		I_FatalError ("R_InstallSpriteLump: Bad frame characters in lump %i", lump);
+		I_FatalError("R_InstallSpriteLump: Bad frame characters in lump %i", lump);
 
 	if (static_cast<int>(frame) > maxframe)
 		maxframe = frame;
@@ -99,8 +93,8 @@ static void R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, BOOL fli
 	if (rotation == 0)
 	{
 		// the lump should be used for all rotations
-		// false=0, true=1, but array initialised to -1
-		// allows doom to have a "no value set yet" boolean value!
+        // false=0, true=1, but array initialised to -1
+        // allows doom to have a "no value set yet" boolean value!
 		for (int r = 14; r >= 0; r -= 2)
 		{
 			if (sprtemp[frame].lump[r] == -1)
@@ -111,13 +105,13 @@ static void R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, BOOL fli
 				sprtemp[frame].width[r] = SPRITE_NEEDS_INFO;
 			}
 		}
-
+		
 		return;
 	}
 
 	rotation = (rotation <= 8 ? (rotation - 1) * 2 : (rotation - 9) * 2 + 1);
-
-	if (sprtemp[frame].lump[--rotation] == -1)
+	
+	if (sprtemp[frame].lump[rotation] == -1)
 	{
 		// the lump is only used for one rotation
 		sprtemp[frame].lump[rotation] = static_cast<short>(lump);
@@ -228,7 +222,6 @@ static void R_InitSpriteDefs(const char **namelist)
 	// Just compare 4 characters as ints
 	for (int i = 0; i < numsprites; i++)
 	{
-		spritename = namelist[i];
 		memset (sprtemp, -1, sizeof(sprtemp));
 
 		maxframe = -1;
@@ -253,7 +246,7 @@ static void R_InitSpriteDefs(const char **namelist)
 			}
 		}
 
-		R_InstallSprite (namelist[i], i);
+		R_InstallSprite(namelist[i], i);
 	}
 }
 
@@ -262,9 +255,7 @@ static void R_InitSpriteDefs(const char **namelist)
 //
 int				MaxVisSprites;
 vissprite_t 	*vissprites;
-vissprite_t		*vissprite_p;
 vissprite_t		*lastvissprite;
-int 			newvissprite;
 
 
 
@@ -276,13 +267,13 @@ void R_InitSprites(const char **namelist)
 {
 	MaxVisSprites = 128;	// [RH] This is the initial default value. It grows as needed.
 
-    M_Free(vissprites);
+	M_Free(vissprites);
 
-	vissprites = (vissprite_t *)Malloc (MaxVisSprites * sizeof(vissprite_t));
+	vissprites = (vissprite_t *)Malloc(MaxVisSprites * sizeof(vissprite_t));
 	lastvissprite = &vissprites[MaxVisSprites];
 
 	R_InitSpriteDefs (namelist);
 }
 
-VERSION_CONTROL (r_things_cpp, "$Id$")
+VERSION_CONTROL (r_sprites_cpp, "$Id$")
 
