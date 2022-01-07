@@ -818,13 +818,15 @@ FUNC(LS_Floor_LowerToLowestTxTy)
 FUNC(LS_Floor_Waggle)
 // Floor_Waggle (tag, amplitude, frequency, delay, time)
 {
-	return EV_StartPlaneWaggle(arg0, ln, arg1, arg2, arg3, arg4, false);
+	//return EV_StartPlaneWaggle(arg0, ln, arg1, arg2, arg3, arg4, false);
+	return false;
 }
 
 FUNC(LS_Ceiling_Waggle)
 // Ceiling_Waggle (tag, amplitude, frequency, delay, time)
 {
-	return EV_StartPlaneWaggle(arg0, ln, arg1, arg2, arg3, arg4, true);
+	//return EV_StartPlaneWaggle(arg0, ln, arg1, arg2, arg3, arg4, true);
+	return false;
 }
 
 FUNC(LS_Floor_TransferTrigger)

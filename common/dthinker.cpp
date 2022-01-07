@@ -232,8 +232,7 @@ bool IndependentThinker(DThinker *thinker)
 		thinker->IsA(RUNTIME_CLASS (DFloor)) ||
 		thinker->IsA(RUNTIME_CLASS (DCeiling)) ||
 		thinker->IsA(RUNTIME_CLASS (DPlat)) ||
-		thinker->IsA(RUNTIME_CLASS (DDoor)) ||
-	    thinker->IsA(RUNTIME_CLASS (DWaggle)))
+		thinker->IsA(RUNTIME_CLASS (DDoor)))
 	{
 		// Client ticks movable sectors in prediction code
 		if (clientside)

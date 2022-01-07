@@ -1221,7 +1221,7 @@ inline FArchive &operator>> (FArchive &arc, DElevator::EElevatorState &out)
 }
 
 // Waggle
-
+/*
 class DWaggle : public DMover
 {
 	DECLARE_SERIAL(DWaggle, DMover)
@@ -1260,7 +1260,7 @@ class DWaggle : public DMover
 	friend BOOL EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed,
 	                                int offset, int timer, bool ceiling);
 };
-
+*/
 //jff 3/15/98 pure texture/type change for better generalized support
 enum EChange
 {

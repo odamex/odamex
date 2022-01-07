@@ -530,8 +530,6 @@ void EV_StopPlat (int tag);
 int EV_ZDoomFloorCrushStop(int tag);
 BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
 BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
-BOOL EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
-                         int timer, bool ceiling);
 BOOL EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int flags);
 
 bool P_LineSpecialMovesSector(byte special);

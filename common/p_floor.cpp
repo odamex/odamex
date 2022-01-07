@@ -1908,7 +1908,7 @@ static const fixed_t FloatBobOffsets[64] = {
     -370728, -405281, -435930, -462381, -484380, -501713, -514215, -521764,
     -524288, -521764, -514214, -501713, -484379, -462381, -435930, -405280,
     -370728, -332605, -291279, -247148, -200637, -152193, -102284, -51389};
-
+/*
 BOOL EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
                              int timer, bool ceiling)
 {
@@ -2001,7 +2001,7 @@ DWaggle::DWaggle(sector_t* sector, int height, int speed, int offset, int timer,
 	m_Ticker = timer ? timer * 35 : -1;
 	m_State = init;
 	m_Ceiling = ceiling;
-	m_StartTic = 0;
+	m_StartTic = ::level.time; // [Blair] Used for client side synchronization
 }
 
 void DWaggle::RunThink()
@@ -2016,7 +2016,6 @@ void DWaggle::RunThink()
 		break;
 	case init:
 		m_State = expand;
-		m_StartTic = ::level.time; // [Blair] Used for client side synchronization
 		// fall thru
 	case expand:
 		if ((m_Scale += m_ScaleDelta) >= m_TargetScale)
@@ -2080,5 +2079,5 @@ DWaggle* DWaggle::Clone(sector_t* sec) const
 
 	return ele;
 }
-
+*/
 VERSION_CONTROL (p_floor_cpp, "$Id$")
