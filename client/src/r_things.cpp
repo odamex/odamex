@@ -37,7 +37,6 @@
 
 #include "c_console.h"
 
-
 #include "v_video.h"
 
 #include "cmdlib.h"
@@ -49,10 +48,6 @@ extern fixed_t FocalLengthX, FocalLengthY;
 
 #define MINZ							(FRACUNIT*4)
 #define BASEYCENTER 					(100)
-
-//void R_DrawColumn (void);
-//void R_DrawFuzzColumn (void);
-
 
 //
 // Sprite rotation 0 is facing the viewer,
@@ -95,7 +90,7 @@ extern int				InactiveParticles;
 extern particle_t		*Particles;
 TArray<WORD>			ParticlesInSubsec;
 
-void R_CacheSprite (spritedef_t *sprite)
+void R_CacheSprite(spritedef_t *sprite)
 {
 	DPrintf ("cache sprite %s\n",
 		sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
@@ -125,28 +120,20 @@ void R_CacheSprite (spritedef_t *sprite)
 //
 //	16-rotational sprite code adapted from Doom Retro.
 //
-static void R_InstallSpriteLump (int lump, unsigned frame, unsigned rot, BOOL flipped)
+static void R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, BOOL flipped)
 {
 	unsigned rotation;
 
-	if (rot >= 0 && rot <= 9)
-	{
+	if (rot <= 9)
 		rotation = rot;
-	}
 	else
-	{
 		rotation = (rot >= 17) ? rot - 7 : 17;
-	}
 	
 	if (frame >= MAX_SPRITE_FRAMES || rotation > 16)
-	{
 		I_FatalError("R_InstallSpriteLump: Bad frame characters in lump %i", lump);
-	}
 
 	if (static_cast<int>(frame) > maxframe)
-	{
 		maxframe = frame;
-	}
 
 	if (rotation == 0)
 	{
@@ -181,7 +168,7 @@ static void R_InstallSpriteLump (int lump, unsigned frame, unsigned rot, BOOL fl
 
 
 // [RH] Seperated out of R_InitSpriteDefs()
-static void R_InstallSprite (const char *name, int num)
+static void R_InstallSprite(const char *name, int num)
 {
 	if (maxframe == -1)
 	{
@@ -264,7 +251,7 @@ static void R_InstallSprite (const char *name, int num)
 //	letter/number appended.
 // The rotation character can be 0 to signify no rotations.
 //
-void R_InitSpriteDefs (const char **namelist)
+static void R_InitSpriteDefs(const char **namelist)
 {
 	// count the number of sprite names
 	for (numsprites = 0; namelist[numsprites]; numsprites++)
@@ -280,7 +267,7 @@ void R_InitSpriteDefs (const char **namelist)
 	// Just compare 4 characters as ints
 	for (int i = 0; i < numsprites; i++)
 	{
-		spritename = static_cast<const char *>(namelist[i]);
+		spritename = namelist[i];
 		memset (sprtemp, -1, sizeof(sprtemp));
 
 		maxframe = -1;
@@ -309,7 +296,6 @@ void R_InitSpriteDefs (const char **namelist)
 	}
 }
 
-
 //
 // GAME FUNCTIONS
 //
@@ -319,11 +305,13 @@ vissprite_t		*vissprite_p;
 vissprite_t		*lastvissprite;
 int 			newvissprite;
 
+
+
 //
 // R_InitSprites
 // Called at program start.
 //
-void R_InitSprites (const char **namelist)
+void R_InitSprites(const char **namelist)
 {
 	MaxVisSprites = 128;	// [RH] This is the initial default value. It grows as needed.
 

@@ -61,10 +61,10 @@ __inline particle_t *NewParticle (void)
 	return result;
 }
 #else
-particle_t *NewParticle (void);
+particle_t *NewParticle ();
 #endif
-void R_InitParticles (void);
-void R_ClearParticles (void);
+void R_InitParticles ();
+void R_ClearParticles ();
 void R_DrawParticle(vissprite_t*);
 void R_ProjectParticle (particle_t *, const sector_t* sector, int fakeside);
 void R_FindParticleSubsectors();
@@ -85,14 +85,12 @@ extern fixed_t		pspritexscale;
 extern fixed_t		pspriteyscale;
 extern fixed_t		pspritexiscale;
 
-void R_CacheSprite (spritedef_t *sprite);
-void R_SortVisSprites (void);
-void R_AddSprites (sector_t *sec, int lightlevel, int fakeside);
-void R_AddPSprites (void);
-void R_DrawSprites (void);
-void R_InitSprites (const char** namelist);
-void R_ClearSprites (void);
-void R_DrawMasked (void);
+void R_CacheSprite(spritedef_t *sprite);
+void R_SortVisSprites();
+void R_AddSprites(sector_t *sec, int lightlevel, int fakeside);
+void R_InitSprites(const char** namelist);
+void R_ClearSprites();
+void R_DrawMasked();
 
 #endif
 
