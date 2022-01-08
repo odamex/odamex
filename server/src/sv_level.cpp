@@ -55,6 +55,7 @@
 #include "svc_message.h"
 #include "g_gametype.h"
 #include "p_hordespawn.h"
+#include "g_episode.h"
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
@@ -102,9 +103,26 @@ bool isFast = false;
 //
 static char d_mapname[9];
 
-void G_DeferedInitNew (const char *mapname)
+void G_DeferedInitNew (const char* mapname)
 {
-	strncpy (d_mapname, mapname, 8);
+	std::string mapnamestr = mapname;
+
+	if (iequals(mapnamestr.substr(0, 7).c_str(), "EndGame"))
+	{
+		if (mapname[7] == '1' ||
+			mapname[7] == '2' ||
+			mapname[7] == '3' ||
+		    mapname[7] == '4' ||
+			mapname[7] == 'C')
+		{
+			strncpy(d_mapname, EpisodeMaps[episodenum - 1], 8);
+		}
+	}
+	else
+	{
+		strncpy(d_mapname, mapname, 8);
+	}
+
 	gameaction = ga_newgame;
 
 	// sv_nextmap cvar may be overridden by a script
@@ -155,7 +173,7 @@ BOOL 			secretexit;
 EXTERN_CVAR(sv_shufflemaplist)
 
 // Returns the next map, assuming there is no maplist.
-std::string G_NextMap(void) {
+std::string G_NextMap() {
 	std::string next = level.nextmap.c_str();
 
 	if (gamestate == GS_STARTUP || sv_gametype != GM_COOP || !strlen(next.c_str())) {
