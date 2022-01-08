@@ -43,7 +43,7 @@ enum column_e
 const int MAX_COLUMNS = COL_PING + 1;
 
 ServerTable::ServerTable(int X, int Y, int W, int H, const char* l)
-    : Fl_Table(X + 5, Y + 5, W - 10, H - 10, l)
+    : Fl_Table(X, Y, W, H, l)
 {
 	rows(3);
 	cols(MAX_COLUMNS);
@@ -63,22 +63,30 @@ void ServerTable::draw_cell(TableContext context, int R, int C, int X, int Y, in
 	case CONTEXT_ROW_HEADER:
 		break;
 	case CONTEXT_COL_HEADER:
+		if (C >= ARRAY_LENGTH(::HEADER_STRINGS))
+			break;
+
 		fl_push_clip(X, Y, W, H);
 		{
-			fl_draw_box(FL_THIN_UP_BOX, X, Y, W, H, color());
-			fl_color(FL_BLACK);
-			fl_draw(HEADER_STRINGS[C], X, Y, W, H, FL_ALIGN_CENTER);
+			fl_draw_box(FL_THIN_UP_BOX, X, Y, W, H, ::FL_BACKGROUND_COLOR);
+			fl_font(::FL_HELVETICA_BOLD, 14);
+			fl_color(::FL_BLACK);
+			fl_draw(::HEADER_STRINGS[C], X, Y, W, H, ::FL_ALIGN_CENTER, 0, 0);
 		}
 		fl_pop_clip();
 		break;
 	case CONTEXT_CELL:
+		if (C >= ARRAY_LENGTH(::HEADER_STRINGS))
+			break;
+
 		fl_push_clip(X, Y, W, H);
 		{
-			fl_color(FL_WHITE);
+			fl_color(::FL_WHITE);
 			fl_rectf(X, Y, W, H);
 
-			fl_color(FL_BLACK);
-			fl_draw("BARF", X, Y, W, H, FL_ALIGN_CENTER);
+			fl_font(::FL_HELVETICA, 14);
+			fl_color(::FL_BLACK);
+			fl_draw(::HEADER_STRINGS[C], X, Y, W, H, ::FL_ALIGN_CENTER, 0, 0);
 		}
 		fl_pop_clip();
 		break;

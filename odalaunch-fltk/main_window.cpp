@@ -24,14 +24,30 @@
 
 #include "main_window.h"
 
+#include "FL//Fl_Menu_Button.H"
+#include "FL//Fl_Toggle_Button.H"
+#include "FL/Fl_Button.H"
+#include "FL/Fl_Input.H"
 #include "FL/Fl_Tabs.H"
 
-#include "server_group.h"
+#include "server_table.h"
 
 MainWindow::MainWindow(int w, int h, const char* title) : Fl_Window(w, h, title)
 {
-	Fl_Tabs* tabs = new Fl_Tabs(0, 0, w, h);
-	ServerGroup* server = new ServerGroup(0, 20, w, h - 20);
-	tabs->add(server);
-	resizable(server);
+	// Filter row
+	new Fl_Toggle_Button(5, 5, 105, 20, "Passworded");
+	new Fl_Toggle_Button(115, 5, 105, 20, "Full");
+	new Fl_Toggle_Button(225, 5, 105, 20, "Empty");
+	new Fl_Menu_Button(335, 5, 105, 20, "Ping");
+	new Fl_Input(465, 5, w - 470, 20, "@search");
+
+	// Verb row
+	new Fl_Button(w - 330, h - 25, 105, 20, "Get New List");
+	new Fl_Button(w - 220, h - 25, 105, 20, "Refresh List");
+	new Fl_Button(w - 110, h - 25, 105, 20, "Join");
+
+	// Main list - must be last or FLTK gets grouchy
+	new ServerTable(5, 30, w - 10, h - 60);
+
+	resizable(this);
 }

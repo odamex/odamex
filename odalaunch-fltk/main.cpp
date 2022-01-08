@@ -91,7 +91,7 @@ int main(int argc, char** argv)
 	}
 	atexit(odalpapi::BufferedSocket::ShutdownSocketAPI);
 
-	RefreshServers();
+	//RefreshServers();
 
 	Fl_Window* w = new MainWindow(640, 480);
 	w->show(argc, argv);
