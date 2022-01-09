@@ -2784,17 +2784,18 @@ void A_BossDeath (AActor *actor)
 			return;
 		}
 	}
-	else
+	else if (level.flags & LEVEL_SPECACTIONSMASK || level.flags & LEVEL_BRUISERSPECIAL)
 	{
-		switch (level.flags & LEVEL_SPECACTIONSMASK)
+		if (level.flags & LEVEL_SPECLOWERFLOOR || level.flags & LEVEL_BRUISERSPECIAL)
 		{
-			case LEVEL_SPECLOWERFLOOR:
-				EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
-				return;
+			EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
+			return;
+		}
 
-			case LEVEL_SPECOPENDOOR:
-				EV_DoDoor(DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
-				return;
+		if (level.flags & LEVEL_SPECOPENDOOR)
+		{
+			EV_DoDoor(DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
+			return;
 		}
 	}
 
