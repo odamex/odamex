@@ -880,12 +880,13 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
                           unsigned int flags2)
 {
 	ParseMapInfoHelper<std::string>(os, doEquals);
+	const std::string musicname = os.getToken();
 
-	if (os.getToken()[0] == '$')
+	if (musicname[0] == '$')
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(os.getToken().c_str() + 1);
+		const OString& s = GStrings(musicname.c_str() + 1);
 		if (s.empty())
 		{
 			std::string err;
@@ -904,8 +905,6 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 	}
 	else
 	{
-		MustGet<OLumpName>(os);
-		const std::string musicname = os.getToken();
 		if (W_CheckNumForName(musicname.c_str()) != -1)
 		{
 			*static_cast<OLumpName*>(data) = musicname;
