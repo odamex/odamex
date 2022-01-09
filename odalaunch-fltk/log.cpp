@@ -16,19 +16,36 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Main window
+//  A basic debugging logger.
 //
 //-----------------------------------------------------------------------------
 
-#pragma once
+#include "log.h"
 
-#include "odalaunch.h"
+#if defined(_MSC_VER)
 
-#include "FL/Fl_Window.H"
-
-class MainWindow : public Fl_Window
+static void PlatformDebugOut(const char* str)
 {
-  public:
-	MainWindow(int w, int h, const char* title = 0);
-	virtual ~MainWindow(){};
-};
+	OutputDebugStringA(str);
+}
+
+#else
+
+static void PlatformDebugOut(const char* str)
+{
+	fprintf(stderr, "%s", str);
+}
+
+#endif
+
+void Log_Debug(const char* fmt, ...)
+{
+	va_list args;
+	static char buffer[8192];
+
+	va_start(args, fmt);
+	vsnprintf(buffer, ARRAY_LENGTH(buffer), fmt, args);
+	va_end(args);
+
+	PlatformDebugOut(buffer);
+}

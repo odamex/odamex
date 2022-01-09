@@ -22,16 +22,16 @@
 
 #include "odalaunch.h"
 
-#include "main_window.h"
-
 #include <string>
 #include <vector>
 
 #include "Fl/Fl.H"
-#include "thread.h"
 
+#include "db.h"
+#include "main_window.h"
 #include "net_io.h"
 #include "net_packet.h"
+#include "thread.h"
 
 // Default list of master servers, usually official ones
 static const char* DEFAULT_MASTERS[] = {"master1.odamex.net:15000",
@@ -40,7 +40,6 @@ static const char* DEFAULT_MASTERS[] = {"master1.odamex.net:15000",
 struct globals_t
 {
 	odalpapi::MasterServer master;
-	std::vector<odalpapi::Server> servers;
 	int masterTimeout;
 	int serverTimeout;
 	bool broadcast;
@@ -63,35 +62,38 @@ static void RefreshServers()
 	::g.master.QueryMasters(::g.masterTimeout, ::g.broadcast, ::g.retries);
 
 	// Get the amount of servers found
-	const size_t count = ::g.master.GetServerCount();
-	if (count > 0)
-	{
-		::g.servers.clear();
-		::g.servers.resize(count);
-	}
-
-	for (size_t i = 0; i < ::g.servers.size(); i++)
+	for (size_t i = 0; i < ::g.master.GetServerCount(); i++)
 	{
 		std::string address;
 		uint16_t port;
 		::g.master.GetServerAddress(i, address, port);
-		::g.servers[i].SetAddress(address, port);
-
-		::g.servers[i].SetSocket(&socket);
-		::g.servers[i].Query(::g.serverTimeout);
+		DB_AddServer(address, port);
 	}
+}
+
+static void Shutdown()
+{
+	odalpapi::BufferedSocket::ShutdownSocketAPI();
+	DB_DeInit();
 }
 
 int main(int argc, char** argv)
 {
+	atexit(Shutdown);
+
+	if (!DB_Init())
+	{
+		Fl::error("Could not initialize database.");
+		return 1;
+	}
+
 	if (!odalpapi::BufferedSocket::InitializeSocketAPI())
 	{
 		Fl::error("Could not initialize sockets.");
 		return 1;
 	}
-	atexit(odalpapi::BufferedSocket::ShutdownSocketAPI);
 
-	//RefreshServers();
+	RefreshServers();
 
 	Fl_Window* w = new MainWindow(640, 480);
 	w->show(argc, argv);

@@ -22,6 +22,42 @@
 
 #pragma once
 
+// stdint.h defines
+
+#if defined(_MSC_VER)
+#if _MSC_VER >= 1600 // 2010
+#define USE_STDINT_H
+#endif
+#else
+#define USE_STDINT_H
+#endif
+
+#if defined(USE_STDINT_H)
+#include <stdint.h>
+#undef USE_STDINT_H
+#else
+#include "pstdint.h"
+#endif
+
+// snprintf/vsnprintf
+#include <stdio.h>
+#include <stdarg.h>
+
+#if defined(_MSC_VER)
+#if _MSC_VER < 1900 // 2015
+#define USE_MS_SNPRINTF
+#endif
+#endif
+
+#if defined(USE_MS_SNPRINTF)
+int __cdecl ms_snprintf(char* buffer, size_t n, const char* format, ...);
+int __cdecl ms_vsnprintf(char* s, size_t n, const char* format, va_list arg);
+#define snprintf ms_snprintf
+#define vsnprintf ms_vsnprintf
+#endif
+
+// Windows include
+
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 

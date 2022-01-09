@@ -45,7 +45,6 @@ const int MAX_COLUMNS = COL_PING + 1;
 ServerTable::ServerTable(int X, int Y, int W, int H, const char* l)
     : Fl_Table(X, Y, W, H, l)
 {
-	rows(3);
 	cols(MAX_COLUMNS);
 	col_header(1);
 	col_resize(1);
@@ -57,6 +56,8 @@ void ServerTable::draw_cell(TableContext context, int R, int C, int X, int Y, in
 	switch (context)
 	{
 	case CONTEXT_STARTPAGE:
+		DB_GetServerList(m_servers);
+		rows(m_servers.size());
 		break;
 	case CONTEXT_ENDPAGE:
 		break;
@@ -86,7 +87,34 @@ void ServerTable::draw_cell(TableContext context, int R, int C, int X, int Y, in
 
 			fl_font(::FL_HELVETICA, 14);
 			fl_color(::FL_BLACK);
-			fl_draw(::HEADER_STRINGS[C], X, Y, W, H, ::FL_ALIGN_CENTER, 0, 0);
+
+			switch (C)
+			{
+			case COL_ADDRESS:
+				fl_draw(m_servers[R].address.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
+				break;
+			case COL_SERVERNAME:
+				fl_draw(m_servers[R].servername.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0,
+				        0);
+				break;
+			case COL_GAMETYPE:
+				fl_draw(m_servers[R].gametype.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
+				break;
+			case COL_WADS:
+				fl_draw(m_servers[R].wads.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
+				break;
+			case COL_MAP:
+				fl_draw(m_servers[R].map.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
+				break;
+			case COL_PLAYERS:
+				fl_draw(m_servers[R].players.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
+				break;
+			case COL_PING:
+				fl_draw(m_servers[R].ping.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
+				break;
+			default:
+				break;
+			}
 		}
 		fl_pop_clip();
 		break;

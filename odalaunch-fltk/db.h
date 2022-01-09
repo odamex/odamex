@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Main window
+//  Server database management.
 //
 //-----------------------------------------------------------------------------
 
@@ -24,11 +24,22 @@
 
 #include "odalaunch.h"
 
-#include "FL/Fl_Window.H"
+#include <string>
+#include <vector>
 
-class MainWindow : public Fl_Window
+struct serverRow_t
 {
-  public:
-	MainWindow(int w, int h, const char* title = 0);
-	virtual ~MainWindow(){};
+	std::string address;
+	std::string servername;
+	std::string gametype;
+	std::string wads;
+	std::string map;
+	std::string players;
+	std::string ping;
 };
+typedef std::vector<serverRow_t> serverRows_t;
+
+bool DB_Init();
+void DB_AddServer(const std::string& address, const uint16_t port);
+void DB_GetServerList(serverRows_t& rows);
+void DB_DeInit();

@@ -16,19 +16,28 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Main window
+//  Global defines.
 //
 //-----------------------------------------------------------------------------
 
-#pragma once
-
 #include "odalaunch.h"
 
-#include "FL/Fl_Window.H"
+#if defined(USE_MS_SNPRINTF)
 
-class MainWindow : public Fl_Window
+int __cdecl ms_snprintf(char* buffer, size_t n, const char* format, ...)
 {
-  public:
-	MainWindow(int w, int h, const char* title = 0);
-	virtual ~MainWindow(){};
-};
+	int retval;
+	va_list argptr;
+
+	va_start(argptr, format);
+	retval = _vsnprintf(buffer, n, format, argptr);
+	va_end(argptr);
+	return retval;
+}
+
+int __cdecl ms_vsnprintf(char* s, size_t n, const char* format, va_list arg)
+{
+	return _vsnprintf(s, n, format, arg);
+}
+
+#endif

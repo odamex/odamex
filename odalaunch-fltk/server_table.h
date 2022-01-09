@@ -22,10 +22,15 @@
 
 #pragma once
 
+#include "odalaunch.h"
+
 #include "FL/Fl_Table.H"
+
+#include "db.h"
 
 class ServerTable : public Fl_Table
 {
+	serverRows_t m_servers;
   public:
 	ServerTable(int X, int Y, int W, int H, const char* l = 0);
 	void draw_cell(TableContext context, int R = 0, int C = 0, int X = 0, int Y = 0,

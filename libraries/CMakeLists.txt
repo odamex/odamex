@@ -653,6 +653,26 @@ if(BUILD_CLIENT)
   endif()
 endif()
 
+### SQLite3 ###
+
+if(BUILD_LAUNCHER)
+  file(DOWNLOAD
+    "https://www.sqlite.org/2022/sqlite-amalgamation-3370200.zip"
+    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3370200.zip"
+    EXPECTED_HASH SHA256=cb25df0fb90b77be6660f6ace641bbea88f3d0441110d394ce418f35f7561bb0)
+  execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
+    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3370200.zip"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+
+  set(SQLITE_SOURCES
+    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3370200/sqlite3.c"
+    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3370200/sqlite3.h")
+  add_library(sqlite-amalgamation INTERFACE)
+  target_sources(sqlite-amalgamation INTERFACE ${SQLITE_SOURCES})
+  target_include_directories(sqlite-amalgamation INTERFACE
+    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3370200/")
+endif()
+
 ### wxWidgets ###
 
 if(BUILD_LAUNCHER)

@@ -20,8 +20,6 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "odalaunch.h"
-
 #include "main_window.h"
 
 #include "FL//Fl_Menu_Button.H"
@@ -41,13 +39,14 @@ MainWindow::MainWindow(int w, int h, const char* title) : Fl_Window(w, h, title)
 	new Fl_Menu_Button(335, 5, 105, 20, "Ping");
 	new Fl_Input(465, 5, w - 470, 20, "@search");
 
+	// Main list
+	ServerTable* o = new ServerTable(5, 30, w - 10, h - 60);
+	o->end();
+
 	// Verb row
 	new Fl_Button(w - 330, h - 25, 105, 20, "Get New List");
 	new Fl_Button(w - 220, h - 25, 105, 20, "Refresh List");
 	new Fl_Button(w - 110, h - 25, 105, 20, "Join");
-
-	// Main list - must be last or FLTK gets grouchy
-	new ServerTable(5, 30, w - 10, h - 60);
 
 	resizable(this);
 }

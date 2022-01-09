@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Main window
+//  A basic debugging logger.
 //
 //-----------------------------------------------------------------------------
 
@@ -24,11 +24,4 @@
 
 #include "odalaunch.h"
 
-#include "FL/Fl_Window.H"
-
-class MainWindow : public Fl_Window
-{
-  public:
-	MainWindow(int w, int h, const char* title = 0);
-	virtual ~MainWindow(){};
-};
+void Log_Debug(const char* fmt, ...);
