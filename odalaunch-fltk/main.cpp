@@ -22,54 +22,12 @@
 
 #include "odalaunch.h"
 
-#include <string>
-#include <vector>
-
 #include "Fl/Fl.H"
 
 #include "db.h"
 #include "main_window.h"
 #include "net_io.h"
-#include "net_packet.h"
-#include "thread.h"
-
-// Default list of master servers, usually official ones
-static const char* DEFAULT_MASTERS[] = {"master1.odamex.net:15000",
-                                        "voxelsoft.com:15000"};
-
-struct globals_t
-{
-	odalpapi::MasterServer master;
-	int masterTimeout;
-	int serverTimeout;
-	bool broadcast;
-	int retries;
-	globals_t()
-	    : masterTimeout(500), serverTimeout(1000), broadcast(false), retries(2) { }
-} g;
-
-static void RefreshServers()
-{
-	for (size_t i = 0; i < ARRAY_LENGTH(::DEFAULT_MASTERS); i++)
-	{
-		::g.master.AddMaster(::DEFAULT_MASTERS[i]);
-	}
-
-	odalpapi::BufferedSocket socket;
-	::g.master.SetSocket(&socket);
-
-	// Query the masters with the timeout
-	::g.master.QueryMasters(::g.masterTimeout, ::g.broadcast, ::g.retries);
-
-	// Get the amount of servers found
-	for (size_t i = 0; i < ::g.master.GetServerCount(); i++)
-	{
-		std::string address;
-		uint16_t port;
-		::g.master.GetServerAddress(i, address, port);
-		DB_AddServer(address, port);
-	}
-}
+#include "work_thread.h"
 
 static void Shutdown()
 {
@@ -93,7 +51,7 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	RefreshServers();
+	Work_Init();
 
 	Fl_Window* w = new MainWindow(640, 480);
 	w->show(argc, argv);
