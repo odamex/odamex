@@ -40,8 +40,8 @@ MainWindow::MainWindow(int w, int h, const char* title) : Fl_Window(w, h, title)
 	new Fl_Input(465, 5, w - 470, 20, "@search");
 
 	// Main list
-	ServerTable* o = new ServerTable(5, 30, w - 10, h - 60);
-	o->end();
+	m_serverTable = new ServerTable(5, 30, w - 10, h - 60);
+	m_serverTable->end();
 
 	// Verb row
 	new Fl_Button(w - 330, h - 25, 105, 20, "Get New List");
@@ -49,4 +49,9 @@ MainWindow::MainWindow(int w, int h, const char* title) : Fl_Window(w, h, title)
 	new Fl_Button(w - 110, h - 25, 105, 20, "Join");
 
 	resizable(this);
+}
+
+void MainWindow::redrawServers()
+{
+	m_serverTable->redraw();
 }

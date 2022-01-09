@@ -26,9 +26,13 @@
 
 #include "FL/Fl_Window.H"
 
+class ServerTable;
+
 class MainWindow : public Fl_Window
 {
+	ServerTable* m_serverTable;
   public:
 	MainWindow(int w, int h, const char* title = 0);
 	virtual ~MainWindow(){};
+	void redrawServers();
 };

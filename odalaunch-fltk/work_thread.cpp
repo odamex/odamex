@@ -25,8 +25,17 @@
 #include "thread.h"
 #include <stddef.h>
 
+#include <FL/Fl.H>
+
 #include "db.h"
+#include "main_window.h"
 #include "net_packet.h"
+
+enum awakeMessage_e
+{
+	AWAKE_NONE,
+	AWAKE_REDRAW_SERVERS,
+};
 
 // Default list of master servers, usually official ones
 static const char* DEFAULT_MASTERS[] = {"master1.odamex.net:15000",
@@ -37,7 +46,10 @@ static const int SERVER_TIMEOUT = 1000;
 static const int USE_BROADCAST = false;
 static const int QUERY_RETRIES = 2;
 
-static void RefreshMaster()
+/**
+ * @brief [WORKER] Get a server list from the master server.
+ */
+static void WorkerRefreshMaster()
 {
 	odalpapi::MasterServer master;
 
@@ -62,13 +74,35 @@ static void RefreshMaster()
 	}
 }
 
-static int WorkerMain(void*)
+/**
+ * @brief [MAIN] Proc run on Fl::awake.
+ */
+static void AwakeProc(void* data)
 {
-	RefreshMaster();
+	switch ((ptrdiff_t)data)
+	{
+	case AWAKE_REDRAW_SERVERS:
+		::g.mainWindow->redrawServers();
+		return;
+	default:
+		return;
+	}
+}
+
+/**
+ * @brief [WORKER] Main worker thread proc.
+ */
+static int WorkerProc(void*)
+{
+	WorkerRefreshMaster();
+	Fl::awake(AwakeProc, (void*)AWAKE_REDRAW_SERVERS);
 	return 0;
 }
 
+/**
+ * @brief [MAIN] Initializes the workers.
+ */
 void Work_Init()
 {
-	thread_ptr_t worker = thread_create(WorkerMain, NULL, "WorkerMain", 8192);
+	thread_ptr_t worker = thread_create(WorkerProc, NULL, "WorkerMain", 8192);
 }

@@ -83,3 +83,15 @@ struct Bad_arg_to_ARRAY_LENGTH
 	static Is_pointer check_type(const T*, const T* const*);
 	static Is_array check_type(const void*, const void*);
 };
+
+// Global variables.
+
+class MainWindow;
+
+struct globals_t
+{
+	MainWindow* mainWindow;
+	globals_t() : mainWindow(NULL) { }
+};
+
+extern globals_t g;

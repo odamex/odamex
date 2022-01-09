@@ -29,6 +29,8 @@
 #include "net_io.h"
 #include "work_thread.h"
 
+globals_t g;
+
 static void Shutdown()
 {
 	odalpapi::BufferedSocket::ShutdownSocketAPI();
@@ -53,8 +55,8 @@ int main(int argc, char** argv)
 
 	Work_Init();
 
-	Fl_Window* w = new MainWindow(640, 480);
-	w->show(argc, argv);
+	::g.mainWindow = new MainWindow(640, 480);
+	::g.mainWindow->show(argc, argv);
 
 	Fl::run();
 	return 0;
