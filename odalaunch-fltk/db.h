@@ -27,6 +27,8 @@
 #include <string>
 #include <vector>
 
+#include "net_packet.h"
+
 struct serverRow_t
 {
 	std::string address;
@@ -41,5 +43,7 @@ typedef std::vector<serverRow_t> serverRows_t;
 
 bool DB_Init();
 void DB_AddServer(const std::string& address, const uint16_t port);
+void DB_AddServerInfo(const odalpapi::Server& server);
 void DB_GetServerList(serverRows_t& rows);
+bool DB_LockAddressForServerInfo(const size_t id, std::string& address, uint16_t& port);
 void DB_DeInit();

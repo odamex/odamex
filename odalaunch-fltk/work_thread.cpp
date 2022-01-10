@@ -28,6 +28,7 @@
 #include <FL/Fl.H>
 
 #include "db.h"
+#include "log.h"
 #include "main_window.h"
 #include "net_packet.h"
 
@@ -71,6 +72,29 @@ static void WorkerRefreshMaster()
 		uint16_t port;
 		master.GetServerAddress(i, address, port);
 		DB_AddServer(address, port);
+		Log_Debug("Added server %s:%u.\n", address.c_str(), port);
+	}
+}
+
+/**
+ * @brief Update server info for a particular address.
+ */
+static void WorkerRefreshServer(const std::string& address, const uint16_t port)
+{
+	odalpapi::Server server;
+	odalpapi::BufferedSocket socket;
+
+	server.SetSocket(&socket);
+	server.SetAddress(address, port);
+	int ok = server.Query(::SERVER_TIMEOUT);
+	if (ok)
+	{
+		DB_AddServerInfo(server);
+		Log_Debug("Added server info %s:%u.\n", address.c_str(), port);
+	}
+	else
+	{
+		Log_Debug("Could not update server info for %s:%u.\n", address.c_str(), port);
 	}
 }
 
@@ -96,6 +120,24 @@ static int WorkerProc(void*)
 {
 	WorkerRefreshMaster();
 	Fl::awake(AwakeProc, (void*)AWAKE_REDRAW_SERVERS);
+
+	std::string address;
+	uint16_t port;
+	for (;;)
+	{
+		const size_t id = reinterpret_cast<size_t>(thread_current_thread_id());
+		if (DB_LockAddressForServerInfo(id, address, port))
+		{
+			// Locked an address - let's update it.
+			WorkerRefreshServer(address, port);
+			Fl::awake(AwakeProc, (void*)AWAKE_REDRAW_SERVERS);
+		}
+		else
+		{
+			// Could not lock a server - we're done.
+			break;
+		}
+	}
 	return 0;
 }
 

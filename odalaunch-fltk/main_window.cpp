@@ -51,6 +51,9 @@ MainWindow::MainWindow(int w, int h, const char* title) : Fl_Window(w, h, title)
 	resizable(this);
 }
 
+/**
+ * @brief Redraw the servers widget.  Only call from the main thread.
+ */
 void MainWindow::redrawServers()
 {
 	m_serverTable->redraw();

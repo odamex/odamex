@@ -53,10 +53,10 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	Work_Init();
-
 	::g.mainWindow = new MainWindow(640, 480);
 	::g.mainWindow->show(argc, argv);
+
+	Work_Init();
 
 	Fl::run();
 	return 0;
