@@ -2676,7 +2676,7 @@ void A_BossDeath (AActor *actor)
 	if (level.bossactions_donothing)
 		return;
 	
-	if (!level.bossactions->empty())
+	if (!level.bossactions.empty())
 	{
 		// make sure there is a player alive for victory
 		Players::const_iterator it = players.begin();
@@ -2689,15 +2689,15 @@ void A_BossDeath (AActor *actor)
 		if (it == players.end())
 			return; // no one left alive, so do not end game
 
-		std::vector<OBossAction>::iterator ba = level.bossactions->begin();
+		std::vector<OBossAction>::iterator ba = level.bossactions.begin();
 		
 		// see if the BossAction applies to this type
-		for (; ba != level.bossactions->end(); ++ba)
+		for (; ba != level.bossactions.end(); ++ba)
 		{
 			if (ba->type == actor->type)
 				break;
 		}
-		if (ba == level.bossactions->end())
+		if (ba == level.bossactions.end())
 			return;
 
 		// scan the remaining thinkers to see if all bosses are dead
@@ -2713,9 +2713,9 @@ void A_BossDeath (AActor *actor)
 			}
 		}
 
-		ba = level.bossactions->begin();
+		ba = level.bossactions.begin();
 
-		for (; ba != level.bossactions->end(); ++ba)
+		for (; ba != level.bossactions.end(); ++ba)
 		{
 			if (ba->type == actor->type)
 			{
