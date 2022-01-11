@@ -360,7 +360,19 @@ bool P_IsTeleportLine(const fixed_t index)
 	const int special = lines[index].special;
 
 	if (map_format.getZDoom())
-		return special == 70 || special == 71 || special == 154;
+		return special == 70 || special == 71 || special == 154 || special == 215;
 
-	return special == 39 || special == 97 || special == 125 || special == 126;
+	return special == 39 || special == 97 || special == 125 || special == 126 || 
+		special == 208 || special == 243;
+}
+
+bool P_IsThingTeleportLine(const fixed_t index)
+{
+	const int special = lines[index].special;
+
+	if (map_format.getZDoom())
+		return false;
+
+	return special == 39 || special == 97 || special == 125 || special == 126 ||
+	       special == 208 || special == 243;
 }

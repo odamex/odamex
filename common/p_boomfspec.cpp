@@ -470,11 +470,12 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 39:
 		// TELEPORT! //jff 02/09/98 fix using up with wrong side crossing
-		if (EV_CompatibleTeleport(line->id, line, side, thing, TELF_VANILLA))
+		if (EV_LineTeleport(line, side, thing))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
-		}
+			// line->special = 0; // [Blair] Don't clear the line special,
+								  // we have other functions that handle that for teleports.
+		}						
 		break;
 
 	case 40:
@@ -643,11 +644,10 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 125:
 		// TELEPORT MonsterONLY
-		if (!thing->player &&
-		    (EV_CompatibleTeleport(line->id, line, side, thing, TELF_VANILLA)))
+		if (!thing->player && (EV_LineTeleport(line, side, thing)))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -827,7 +827,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 97:
 		// TELEPORT!
-		EV_CompatibleTeleport(line->id, line, side, thing, TELF_VANILLA);
+		EV_LineTeleport(line, side, thing);
 		result.lineexecuted = true;
 		break;
 
@@ -868,7 +868,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// TELEPORT MonsterONLY.
 		if (!thing->player)
 		{
-			EV_CompatibleTeleport(line->id, line, side, thing, TELF_VANILLA);
+			EV_LineTeleport(line, side, thing);
 			result.lineexecuted = true;
 		}
 		break;
@@ -978,10 +978,10 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 		case 207:
 			// killough 2/16/98: W1 silent teleporter (normal kind)
-			if (EV_CompatibleTeleport(line->id, line, side, thing, TELF_SILENT))
+			if (EV_SilentTeleport(line->id, 0, 0, 0, line, side, thing))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1086,11 +1086,10 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			break;
 
 		case 268: // jff 4/14/98 add monster-only silent
-			if (!thing->player &&
-			    EV_CompatibleTeleport(line->id, line, side, thing, TELF_SILENT))
+			if (!thing->player && EV_SilentTeleport(line->id, 0, 0, 0, line, side, thing))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1209,7 +1208,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 		case 208:
 			// killough 2/16/98: WR silent teleporter (normal kind)
-			EV_CompatibleTeleport(line->id, line, side, thing, TELF_SILENT);
+			EV_SilentTeleport(line->id, 0, 0, 0, line, side, thing);
 			result.lineexecuted = true;
 			break;
 
@@ -1296,7 +1295,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		case 269: // jff 4/14/98 add monster-only silent
 			if (!thing->player)
 			{
-				EV_CompatibleTeleport(line->id, line, side, thing, TELF_SILENT);
+				EV_SilentTeleport(line->id, 0, 0, 0, line, side, thing);
 				result.lineexecuted = true;
 			}
 			break;
@@ -2551,7 +2550,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 174:
 			// Teleport
 			// 174 S1  Teleport(side,thing)
-			if (EV_CompatibleTeleport(line->id, line, side, thing, TELF_VANILLA))
+			if (EV_LineTeleport(line, side, thing))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2604,7 +2603,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 209:
 			// killough 1/31/98: silent teleporter
 			// jff 209 S1 SilentTeleport
-			if (EV_CompatibleTeleport(line->id, line, side, thing, TELF_SILENT))
+			if (EV_SilentTeleport(line->id, 0, 0, 0, line, side, thing))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2866,7 +2865,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 195:
 			// Teleport
 			// 195 SR  Teleport(side,thing)
-			if (EV_CompatibleTeleport(line->id, line, side, thing, TELF_VANILLA))
+			if (EV_LineTeleport(line, side, thing))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2909,7 +2908,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 210:
 			// killough 1/31/98: silent teleporter
 			// jff 210 SR SilentTeleport
-			if (EV_CompatibleTeleport(line->id, line, side, thing, TELF_SILENT))
+			if (EV_LineTeleport(line, side, thing))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;

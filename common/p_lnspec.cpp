@@ -1603,12 +1603,12 @@ FUNC(LS_Teleport)
 	if(!it) return false;
 	BOOL result;
 
-	int flags = TELF_DESTFOG;
-
-	if (!arg2)
-		flags |= TELF_SOURCEFOG;
-
-	result = EV_CompatibleTeleport(arg1, ln, TeleportSide, it, flags);
+	if (map_format.getZDoom())
+		// [AM] Use ZDoom-style teleport for Hexen-format maps
+		result = EV_Teleport(arg0, arg1, arg2, TeleportSide, it, 0);
+	else
+		// [AM] Use Vanilla-style teleport for Doom-format maps
+		result = EV_LineTeleport(ln, TeleportSide, it);
 
 	return result;
 }
@@ -1617,12 +1617,7 @@ FUNC(LS_Teleport_NoStop)
 // Teleport_NoStop(tid, tag, nofog)
 {
 	if (!it) return false;
-	int flags = TELF_DESTFOG | TELF_KEEPVELOCITY;
-
-	if (!arg2)
-		flags |= TELF_SOURCEFOG;
-
-	return EV_CompatibleTeleport(arg1, ln, TeleportSide, it, flags);
+	return EV_Teleport(arg0, arg1, arg2, TeleportSide, it, 1);
 }
 
 FUNC(LS_Teleport_NoFog)
@@ -1631,32 +1626,7 @@ FUNC(LS_Teleport_NoFog)
 	if(!it)
 		return false;
 
-	int flags = 0;
-
-	switch (arg1)
-	{
-	case 0:
-		flags |= TELF_KEEPORIENTATION;
-		break;
-
-	case 2:
-		if (ln)
-			flags |= TELF_KEEPORIENTATION | TELF_ROTATEBOOM;
-		break;
-
-	case 3:
-		if (ln)
-			flags |= TELF_KEEPORIENTATION | TELF_ROTATEBOOMINVERSE;
-		break;
-
-	default:
-		break;
-	}
-
-	if (arg3)
-		flags |= TELF_KEEPHEIGHT;
-
-	return EV_CompatibleTeleport(arg2, ln, TeleportSide, it, flags);
+	return EV_SilentTeleport(arg0, arg1, arg2, arg3, ln, TeleportSide, it);
 }
 
 FUNC(LS_Teleport_EndGame)

@@ -54,6 +54,7 @@
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
 void P_SpawnAvatars();
+void P_TranslateTeleportThings();
 
 void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
 const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags);
@@ -1894,6 +1895,9 @@ void P_SetupLevel (const char *lumpname, int position)
 		P_LoadThings (lumpnum+ML_THINGS);
 	else
 		P_LoadThings2 (lumpnum+ML_THINGS, position);	// [RH] Load Hexen-style things
+
+	if (!HasBehavior)
+		P_TranslateTeleportThings(); // [RH] Assign teleport destination TIDs
 
     PO_Init ();
 
