@@ -2898,7 +2898,7 @@ static BOOL PIT_DoomRadiusAttack(AActor* thing)
 	if (dist < 0)
 		dist = 0;
 
-	if (dist >= bombdamage)
+	if (dist >= bombdistance)
 	{
 		if (bombsource && bombsource->player)
 		{
@@ -2911,8 +2911,15 @@ static BOOL PIT_DoomRadiusAttack(AActor* thing)
 
 	if (P_CheckSight(thing, bombspot))
 	{
+		int damage;
+
+		if (bombdamage == bombdistance)
+			damage = bombdamage - dist;
+		else
+			damage = (bombdamage * (bombdistance - dist) / bombdistance) + 1;
+
 		// must be in direct path
-		P_DamageMobj(thing, bombspot, bombsource, (bombdamage - dist) * sv_splashfactor, bombmod);
+		P_DamageMobj(thing, bombspot, bombsource, damage * sv_splashfactor, bombmod);
 	}
 
 	return true;
@@ -2982,7 +2989,12 @@ static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 			len = 0.0f;
 	}
 
-	float points = bombdamage - (len / FRACUNIT) + 1.0f;
+	float points;
+	if (bombdamage == bombdistance)
+		points = bombdamage - (len / FRACUNIT) + 1.0f;
+	else
+		points = (bombdamage * (bombdistance - (len / FRACUNIT)) / bombdistance) + 1.0f;
+
 	if (thing == bombsource)
 		points *= sv_splashfactor;
 
@@ -3038,10 +3050,10 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bombspot = spot;
 	bombsource = source;
 	bombdamage = damage;
+	bombdamagefloat = (float)damage;
 	bombdistance = distance;
 	bombdistancefloat = 1.f / (float)distance;
 	DamageSource = hurtSource;
-	bombdamagefloat = (float)damage;
 	bombmod = mod;
 
 	// decide which radius attack function to use

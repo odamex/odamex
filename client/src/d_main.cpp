@@ -81,7 +81,6 @@
 #include "p_ctf.h"
 #include "cl_main.h"
 #include "g_mapinfo.h"
-#include "sc_man.h"
 #include "g_horde.h"
 #include "w_ident.h"
 #include "gui_boot.h"
@@ -703,8 +702,6 @@ void STACK_ARGS D_Shutdown()
 	C_ShutdownConsoleBackground();
 
 	R_Shutdown();
-
-	SC_Close();
 
 //	Res_ShutdownTextureManager();
 

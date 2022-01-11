@@ -45,7 +45,10 @@ void OScanner::skipWhitespace()
 	while (m_position < m_scriptEnd && m_position[0] <= ' ')
 	{
 		if (m_position[0] == '\n')
+		{
+			m_crossed = true;
 			m_lineNumber += 1;
+		}
 
 		m_position += 1;
 	}
@@ -56,6 +59,7 @@ void OScanner::skipToNextLine()
 	while (m_position < m_scriptEnd && m_position[0] != '\n')
 		m_position += 1;
 
+	m_crossed = true;
 	m_position += 1;
 	m_lineNumber += 1;
 }
@@ -71,7 +75,10 @@ void OScanner::skipPastPair(char a, char b)
 		}
 
 		if (m_position[0] == '\n')
+		{
+			m_crossed = true;
 			m_lineNumber += 1;
+		}
 
 		m_position += 1;
 	}
@@ -196,6 +203,8 @@ OScanner OScanner::openBuffer(const OScannerConfig& config, const char* start,
 //
 bool OScanner::scan()
 {
+	m_crossed = false;
+
 	if (m_unScan)
 	{
 		m_unScan = false;
@@ -407,6 +416,15 @@ float OScanner::getTokenFloat() const
 bool OScanner::getTokenBool() const
 {
 	return iequals(m_token, "true");
+}
+
+//
+// Check if the last scan crossed over to a new line.
+// It returns a reference so the user can set it to false if need be.
+//
+bool &OScanner::crossed()
+{
+	return m_crossed;
 }
 
 //
