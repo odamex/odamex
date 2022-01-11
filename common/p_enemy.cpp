@@ -2670,25 +2670,25 @@ void A_Explode (AActor *thing)
 // A_BossDeath
 // Possibly trigger special effects if on a boss level
 //
-void A_BossDeath (AActor *actor)
+void A_BossDeath(AActor *actor)
 {
 	// custom boss actions for UMAPINFO
 	if (level.bossactions_donothing)
 		return;
-	
+
+	// make sure there is a player alive for victory
+	Players::const_iterator it = players.begin();
+	for (; it != players.end(); ++it)
+	{
+		if (it->ingame() && it->health > 0)
+			break;
+	}
+
+	if (it == players.end())
+		return; // no one left alive, so do not end game
+
 	if (!level.bossactions.empty())
 	{
-		// make sure there is a player alive for victory
-		Players::const_iterator it = players.begin();
-		for (; it != players.end(); ++it)
-		{
-			if (it->ingame() && it->health > 0)
-				break;
-		}
-
-		if (it == players.end())
-			return; // no one left alive, so do not end game
-
 		std::vector<OBossAction>::iterator ba = level.bossactions.begin();
 		
 		// see if the BossAction applies to this type
@@ -2745,17 +2745,6 @@ void A_BossDeath (AActor *actor)
 		;
 	else return;
 
-	// make sure there is a player alive for victory
-	Players::const_iterator it = players.begin();
-	for (;it != players.end();++it)
-	{
-		if (it->ingame() && it->health > 0)
-			break;
-	}
-
-	if (it == players.end())
-		return; // no one left alive, so do not end game
-
 	// scan the remaining thinkers to see if all bosses are dead
 	TThinkerIterator<AActor> iterator;
 	AActor *other;
@@ -2798,12 +2787,22 @@ void A_BossDeath (AActor *actor)
 			return;
 		}
 	}
+	else if (level.flags & LEVEL_CYBORGSPECIAL && actor->flags3 & MF3_E4M6BOSS)
+	{
+		EV_DoDoor(DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
+		return;
+	}
+	else if (level.flags & LEVEL_SPIDERSPECIAL && actor->flags3 & MF3_E4M8BOSS)
+	{
+		EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
+		return;
+	}
 
 	// [RH] If noexit, then don't end the level.
 	if (sv_gametype != GM_COOP && !sv_allowexit)
 		return;
 
-	G_ExitLevel (0, 1);
+	G_ExitLevel(0, 1);
 }
 
 
