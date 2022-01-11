@@ -1578,7 +1578,7 @@ void P_SpawnCompatibleExtra(int i)
 	case 271: // Regular sky
 	case 272: // Same, only flipped
 		for (s = -1; (s = P_FindSectorFromTag(lines[i].id, s)) >= 0;)
-			sectors[s].sky = i | PL_SKYFLAT;
+			sectors[s].sky = (i + 1) | PL_SKYFLAT;
 		break;
 	}
 }

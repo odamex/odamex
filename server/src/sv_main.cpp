@@ -1253,8 +1253,6 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 	sector_t* sector = &sectors[sectornum];
 
 	// Only update moveable sectors to clients
-	// [Blair] Don't update movable waggle sectors,
-	// it's handled by something other than snapshots.
 	if (sector != NULL && sector->moveable)
 	{
 		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateSector(*sector));

@@ -200,16 +200,6 @@ struct newspecial_s
 #define NO_CRUSH -1
 #define DOOM_CRUSH 10
 
-#define TELF_DESTFOG 0x01
-#define TELF_SOURCEFOG 0x02
-#define TELF_KEEPORIENTATION 0x04
-#define TELF_KEEPVELOCITY 0x08
-#define TELF_KEEPHEIGHT 0x10
-#define TELF_ROTATEBOOM 0x20
-#define TELF_ROTATEBOOMINVERSE 0x40
-#define TELF_VANILLA (TELF_SOURCEFOG | TELF_DESTFOG)
-#define TELF_SILENT (TELF_KEEPORIENTATION | TELF_ROTATEBOOM | TELF_KEEPHEIGHT)
-
 #define FLOORSPEED FRACUNIT
 
 bool P_CanUnlockZDoomDoor(player_t* player, zdoom_lock_t lock, bool remote);
