@@ -16,22 +16,37 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  A basic debugging logger.
+//  Platform-specific functions.
 //
 //-----------------------------------------------------------------------------
 
-#include "log.h"
-
 #include "plat.h"
 
-void Log_Debug(const char* fmt, ...)
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <Windows.h>
+#else
+#include <unistd.h>
+#endif
+
+void Plat_DebugOut(const char* str)
 {
-	va_list args;
-	static char buffer[8192];
+#ifdef _WIN32
+	OutputDebugStringA(str);
+#else
+	fprintf(stderr, "%s", str);
+#endif
+}
 
-	va_start(args, fmt);
-	vsnprintf(buffer, ARRAY_LENGTH(buffer), fmt, args);
-	va_end(args);
-
-	Plat_DebugOut(buffer);
+uint32_t Plat_GetCoreCount()
+{
+#ifdef _WIN32
+	SYSTEM_INFO sysinfo;
+	GetSystemInfo(&sysinfo);
+	return sysinfo.dwNumberOfProcessors;
+#else
+	// [AM] BSD uses a different mechanism.
+	return static_cast<uint32_t>(sysconf(_SC_NPROCESSORS_ONLN));
+#endif
 }

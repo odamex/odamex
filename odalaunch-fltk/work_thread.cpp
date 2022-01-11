@@ -31,6 +31,7 @@
 #include "log.h"
 #include "main_window.h"
 #include "net_packet.h"
+#include "plat.h"
 
 enum awakeMessage_e
 {
@@ -141,10 +142,20 @@ static int WorkerProc(void*)
 	return 0;
 }
 
+std::vector<thread_ptr_t> kThreads;
+
 /**
  * @brief [MAIN] Initializes the workers.
  */
 void Work_Init()
 {
-	thread_ptr_t worker = thread_create(WorkerProc, NULL, "WorkerMain", 8192);
+	const uint32_t threads = Plat_GetCoreCount();
+	for (uint32_t i = 0; i < threads; i++)
+	{
+		const thread_ptr_t worker = thread_create(WorkerProc, NULL, "WorkerMain", 8192);
+		if (worker != NULL)
+		{
+			kThreads.push_back(worker);
+		}
+	}
 }

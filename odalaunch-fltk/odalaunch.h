@@ -56,11 +56,6 @@ int __cdecl ms_vsnprintf(char* s, size_t n, const char* format, va_list arg);
 #define vsnprintf ms_vsnprintf
 #endif
 
-// Windows include
-
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
 //
 // ARRAY_LENGTH
 //
