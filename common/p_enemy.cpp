@@ -2230,8 +2230,13 @@ void A_FindTracer(AActor* actor)
 	angle_t fov;
 	int dist;
 
-	if (!actor || actor->tracer || !serverside)
+	if (!actor || (actor->tracer != AActor::AActorPtr() && actor->tracer->health > 0) ||
+	    !serverside)
 		return;
+
+	if (actor->tracer != AActor::AActorPtr() && actor->tracer->health <= 0)
+		actor->tracer = AActor::AActorPtr(); // [Blair] Clear tracer if it died, to keep
+		                                     // with MBF21 spec
 
 	fov = FixedToAngle(actor->state->args[0]);
 	dist = (actor->state->args[1]);
@@ -2670,34 +2675,34 @@ void A_Explode (AActor *thing)
 // A_BossDeath
 // Possibly trigger special effects if on a boss level
 //
-void A_BossDeath (AActor *actor)
+void A_BossDeath(AActor *actor)
 {
 	// custom boss actions for UMAPINFO
 	if (level.bossactions_donothing)
 		return;
-	
-	if (!level.bossactions->empty())
+
+	// make sure there is a player alive for victory
+	Players::const_iterator it = players.begin();
+	for (; it != players.end(); ++it)
 	{
-		// make sure there is a player alive for victory
-		Players::const_iterator it = players.begin();
-		for (; it != players.end(); ++it)
-		{
-			if (it->ingame() && it->health > 0)
-				break;
-		}
+		if (it->ingame() && it->health > 0)
+			break;
+	}
 
-		if (it == players.end())
-			return; // no one left alive, so do not end game
+	if (it == players.end())
+		return; // no one left alive, so do not end game
 
-		std::vector<OBossAction>::iterator ba = level.bossactions->begin();
+	if (!level.bossactions.empty())
+	{
+		std::vector<OBossAction>::iterator ba = level.bossactions.begin();
 		
 		// see if the BossAction applies to this type
-		for (; ba != level.bossactions->end(); ++ba)
+		for (; ba != level.bossactions.end(); ++ba)
 		{
 			if (ba->type == actor->type)
 				break;
 		}
-		if (ba == level.bossactions->end())
+		if (ba == level.bossactions.end())
 			return;
 
 		// scan the remaining thinkers to see if all bosses are dead
@@ -2713,9 +2718,9 @@ void A_BossDeath (AActor *actor)
 			}
 		}
 
-		ba = level.bossactions->begin();
+		ba = level.bossactions.begin();
 
-		for (; ba != level.bossactions->end(); ++ba)
+		for (; ba != level.bossactions.end(); ++ba)
 		{
 			if (ba->type == actor->type)
 			{
@@ -2745,17 +2750,6 @@ void A_BossDeath (AActor *actor)
 		;
 	else return;
 
-	// make sure there is a player alive for victory
-	Players::const_iterator it = players.begin();
-	for (;it != players.end();++it)
-	{
-		if (it->ingame() && it->health > 0)
-			break;
-	}
-
-	if (it == players.end())
-		return; // no one left alive, so do not end game
-
 	// scan the remaining thinkers to see if all bosses are dead
 	TThinkerIterator<AActor> iterator;
 	AActor *other;
@@ -2784,25 +2778,36 @@ void A_BossDeath (AActor *actor)
 			return;
 		}
 	}
-	else
+	else if (level.flags & LEVEL_SPECACTIONSMASK || level.flags & LEVEL_BRUISERSPECIAL)
 	{
-		switch (level.flags & LEVEL_SPECACTIONSMASK)
+		if (level.flags & LEVEL_SPECLOWERFLOOR || level.flags & LEVEL_BRUISERSPECIAL)
 		{
-			case LEVEL_SPECLOWERFLOOR:
-				EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
-				return;
-
-			case LEVEL_SPECOPENDOOR:
-				EV_DoDoor(DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
-				return;
+			EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
+			return;
 		}
+
+		if (level.flags & LEVEL_SPECOPENDOOR)
+		{
+			EV_DoDoor(DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
+			return;
+		}
+	}
+	else if (level.flags & LEVEL_CYBORGSPECIAL && actor->flags3 & MF3_E4M6BOSS)
+	{
+		EV_DoDoor(DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
+		return;
+	}
+	else if (level.flags & LEVEL_SPIDERSPECIAL && actor->flags3 & MF3_E4M8BOSS)
+	{
+		EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
+		return;
 	}
 
 	// [RH] If noexit, then don't end the level.
 	if (sv_gametype != GM_COOP && !sv_allowexit)
 		return;
 
-	G_ExitLevel (0, 1);
+	G_ExitLevel(0, 1);
 }
 
 
