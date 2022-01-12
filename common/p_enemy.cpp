@@ -2230,8 +2230,13 @@ void A_FindTracer(AActor* actor)
 	angle_t fov;
 	int dist;
 
-	if (!actor || actor->tracer || !serverside)
+	if (!actor || (actor->tracer != AActor::AActorPtr() && actor->tracer->health > 0) ||
+	    !serverside)
 		return;
+
+	if (actor->tracer != AActor::AActorPtr() && actor->tracer->health <= 0)
+		actor->tracer = AActor::AActorPtr(); // [Blair] Clear tracer if it died, to keep
+		                                     // with MBF21 spec
 
 	fov = FixedToAngle(actor->state->args[0]);
 	dist = (actor->state->args[1]);
