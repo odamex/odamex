@@ -119,15 +119,6 @@ OLumpName GetTokenOLumpName(OScanner& os)
 //////////////////////////////////////////////////////////////////////
 /// MustGet
 
-// ensure token is string
-void MustGetString(OScanner& os)
-{
-	if (!os.scan())
-	{
-		os.error("Missing string (unexpected end of file).");
-	}
-}
-
 template <typename T>
 void MustGet(OScanner& os)
 {
@@ -213,7 +204,7 @@ static bool IsIdentifier(const OScanner& os)
 
 void MustGetIdentifier(OScanner& os)
 {
-	MustGetString(os);
+	os.mustScan();
 	if (!IsIdentifier(os))
 	{
 		os.error("Expected identifier (unexpected end of file).");
@@ -232,7 +223,7 @@ bool ContainsMapInfoTopLevel(OScanner& os)
 
 void MustGetStringName(OScanner& os, const char* name)
 {
-	MustGetString(os);
+	os.mustScan();
 	if (os.compareTokenNoCase(name) == false)
 	{
 		os.error("Expected '%s', got '%s'.", name, os.getToken().c_str());
@@ -259,7 +250,7 @@ char* ParseMultiString(OScanner& os)
 
 	do
 	{
-		MustGetString(os);
+		os.mustScan();
 
 		if (build == NULL)
 			build = strdup(os.getToken().c_str());
@@ -331,7 +322,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 
 	if (!stricmp(pname, "levelname"))
 	{
-		MustGetString(os);
+		os.mustScan();
 		mape->level_name = strdup(os.getToken().c_str());
 	}
 	else if (!stricmp(pname, "next"))
@@ -744,7 +735,7 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 		if (doEquals)
 			MustGetStringName(os, ",");
 
-		MustGetString(os);
+		os.mustScan();
 	}
 	else if (os.compareTokenNoCase("EndSequence"))
 	{
@@ -752,7 +743,7 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 		if (doEquals)
 			MustGetStringName(os, ",");
 
-		MustGetString(os);
+		os.mustScan();
 	}
 	else if (os.compareTokenNoCase("endgame"))
 	{
@@ -990,7 +981,7 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 				MustGetStringName(os, ",");
 			}
 
-			MustGetString(os);
+			os.mustScan();
 			const OString& s = GStrings(os.getToken());
 			if (s.empty())
 			{
@@ -1008,7 +999,7 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 			os.unScan();
 			do
 			{
-				MustGetString(os);
+				os.mustScan();
 				ctext += os.getToken();
 				ctext += "\n";
 				os.scan();
@@ -1029,7 +1020,7 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 	{
 		if (os.compareTokenNoCase("lookup"))
 		{
-			MustGetString(os);
+			os.mustScan();
 			const OString& s = GStrings(os.getToken());
 			if (s.empty())
 			{
@@ -1310,19 +1301,19 @@ void ParseEpisodeInfo(OScanner& os)
 	bool optional = false;
 	bool extended = false;
 
-	MustGetString(os); // Map lump
+	os.mustScan(); // Map lump
 	map = os.getToken();
 
-	MustGetString(os);
+	os.mustScan();
 	if (os.compareTokenNoCase("teaser"))
 	{
 		// Teaser lump
-		MustGetString(os);
+		os.mustScan();
 		if (gameinfo.flags & GI_SHAREWARE)
 		{
 			map = os.getToken();
 		}
-		MustGetString(os);
+		os.mustScan();
 	}
 	else
 	{
@@ -1333,7 +1324,7 @@ void ParseEpisodeInfo(OScanner& os)
 	{
 		// Detected new-style MAPINFO
 		new_mapinfo = true;
-		MustGetString(os);
+		os.mustScan();
 	}
 
 	while (os.scan())
@@ -1486,7 +1477,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 		else if (os.compareTokenNoCase("map"))
 		{
 			uint32_t& levelflags = defaultinfo.flags;
-			MustGetString(os);
+			os.mustScan();
 
 			char map_name[9];
 			strncpy(map_name, os.getToken().c_str(), 8);
@@ -1514,10 +1505,10 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			info.mapname = map_name;
 
 			// Map name.
-			MustGetString(os);
+			os.mustScan();
 			if (os.compareTokenNoCase("lookup"))
 			{
-				MustGetString(os);
+				os.mustScan();
 				const OString& s = GStrings(os.getToken());
 				if (s.empty())
 				{
@@ -1572,7 +1563,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 		else if (os.compareTokenNoCase("skill"))
 		{
 			// Not implemented
-			MustGetString(os); // Name
+			os.mustScan(); // Name
 
 			MapInfoDataSetter<void> setter;
 			ParseMapInfoLower<void>(os, setter);
@@ -1589,7 +1580,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 		else if (os.compareTokenNoCase("intermission"))
 		{
 			// Not implemented
-			MustGetString(os); // Name
+			os.mustScan(); // Name
 
 			MapInfoDataSetter<void> setter;
 			ParseMapInfoLower<void>(os, setter);
