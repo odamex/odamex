@@ -36,8 +36,6 @@
 
 #include "s_sound.h"
 
-#include "oscanner.h"
-
 #define SPRITE_NEEDS_INFO	MAXINT
 
 //
@@ -259,41 +257,7 @@ int				MaxVisSprites;
 vissprite_t 	*vissprites;
 vissprite_t		*lastvissprite;
 
-//
-// R_InitSkins
-// Called at program start.
-//
-void R_InitSkins()
-{
-	int lump = -1;
 
-	while ((lump = W_FindLump("S_SKIN", lump)) != -1)
-	{
-		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
-
-		// todo - add # comments to oscanner
-		OScannerConfig config = {
-		    "S_SKIN", // lumpName
-		    true,    // semiComments
-		    true,     // cComments
-		};
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
-
-		
-
-		while (os.scan())
-		{
-			/*if (os.compareTokenNoCase("name"))
-			{
-				os.mustScan();
-				if (os.compareTokenNoCase("=") == false)
-				{
-					os.error("Expected '=', got '%s'.", os.getToken().c_str());
-				}
-			}*/
-		}
-	}
-}
 
 //
 // R_InitSprites
@@ -308,8 +272,7 @@ void R_InitSprites(const char **namelist)
 	vissprites = (vissprite_t *)Malloc(MaxVisSprites * sizeof(vissprite_t));
 	lastvissprite = &vissprites[MaxVisSprites];
 
-	R_InitSpriteDefs(namelist);
-	R_InitSkins();
+	R_InitSpriteDefs (namelist);
 }
 
 VERSION_CONTROL (r_sprites_cpp, "$Id$")
