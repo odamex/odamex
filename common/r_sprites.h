@@ -25,6 +25,14 @@
 #ifndef __R_SPRITES__
 #define __R_SPRITES__
 
+struct sprite_info_t
+{
+	std::string		name;
+	char			sprite[4];
+	char			face[3];
+	gender_t		gender;
+};
+
 extern int MaxVisSprites;
 
 extern vissprite_t *vissprites;
