@@ -313,7 +313,7 @@ struct level_locals_t
 	OLumpName		interbackdrop;
 	OLumpName		intermusic;
 	
-	std::vector<OBossAction> *bossactions;
+	std::vector<OBossAction> bossactions;
 	bool			bossactions_donothing;
 	
 	// The following is used for automatic gametype detection.

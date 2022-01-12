@@ -913,7 +913,7 @@ void G_InitLevelLocals()
 	::level.interbackdrop = info.interbackdrop;
 	::level.intermusic = info.intermusic;
 	
-	::level.bossactions = &info.bossactions;
+	::level.bossactions = info.bossactions;
 	::level.bossactions_donothing = info.bossactions_donothing;
 	
 	::level.detected_gametype = GM_COOP;

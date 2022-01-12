@@ -81,8 +81,8 @@ class OScanner
 	void assertTokenIs(const char* string) const;
 	bool compareToken(const char* string) const;
 	bool compareTokenNoCase(const char* string) const;
-	void warning(const char* message) const;
-	void error(const char* message) const;
+	void STACK_ARGS warning(const char* message, ...) const;
+	void STACK_ARGS error(const char* message, ...) const;
 };
 
 #endif // __OSCANNER_H__

@@ -124,7 +124,7 @@ void MustGetString(OScanner& os)
 {
 	if (!os.scan())
 	{
-		I_Error("Missing string (unexpected end of file).");
+		os.error("Missing string (unexpected end of file).");
 	}
 }
 
@@ -171,7 +171,7 @@ void MustGet<OLumpName>(OScanner& os)
 
 	if (os.getToken().length() > 8)
 	{
-		I_Error("Lump name \"%s\" too long. Maximum size is 8 characters.",
+		os.error("Lump name \"%s\" too long. Maximum size is 8 characters.",
 		        os.getToken().c_str());
 	}
 }
@@ -235,7 +235,7 @@ void MustGetStringName(OScanner& os, const char* name)
 	MustGetString(os);
 	if (os.compareTokenNoCase(name) == false)
 	{
-		I_Error("Expected '%s', got '%s'.", name, os.getToken().c_str());
+		os.error("Expected '%s', got '%s'.", name, os.getToken().c_str());
 	}
 }
 
@@ -253,7 +253,7 @@ char* ParseMultiString(OScanner& os)
 			return strdup("-"); // this was explicitly deleted to override the default.
 		}
 
-		// I_Error("Either 'clear' or string constant expected");
+		// os.error("Either 'clear' or string constant expected");
 	}
 	os.unScan();
 
@@ -339,7 +339,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		ParseOLumpName(os, mape->nextmap);
 		if (!ValidateMapName(mape->nextmap.c_str()))
 		{
-			I_Error("Invalid map name %s.", mape->nextmap.c_str());
+			os.error("Invalid map name %s.", mape->nextmap.c_str());
 			return 0;
 		}
 	}
@@ -348,7 +348,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		ParseOLumpName(os, mape->secretmap);
 		if (!ValidateMapName(mape->secretmap.c_str()))
 		{
-			I_Error("Invalid map name %s", mape->nextmap.c_str());
+			os.error("Invalid map name %s", mape->nextmap.c_str());
 			return 0;
 		}
 	}
@@ -501,7 +501,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			mobjtype_t i = P_NameToMobj(actor_name);
 			if (i == MT_NULL)
 			{
-				I_Error("Unknown thing type %s", os.getToken().c_str());
+				os.error("Unknown thing type %s", os.getToken().c_str());
 				return 0;
 			}
 
@@ -592,7 +592,7 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 	{
 		if (!os.compareTokenNoCase("map"))
 		{
-			I_Error("Expected map definition, got %s", os.getToken().c_str());
+			os.error("Expected map definition, got %s", os.getToken().c_str());
 		}
 
 		MustGet<OLumpName>(os);
@@ -600,7 +600,7 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 
 		if (!ValidateMapName(mapname))
 		{
-			I_Error("Invalid map name %s", mapname.c_str());
+			os.error("Invalid map name %s", mapname.c_str());
 		}
 
 		// Find the level.
@@ -880,12 +880,13 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
                           unsigned int flags2)
 {
 	ParseMapInfoHelper<std::string>(os, doEquals);
+	const std::string musicname = os.getToken();
 
-	if (os.getToken()[0] == '$')
+	if (musicname[0] == '$')
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(os.getToken().c_str() + 1);
+		const OString& s = GStrings(musicname.c_str() + 1);
 		if (s.empty())
 		{
 			std::string err;
@@ -904,8 +905,6 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 	}
 	else
 	{
-		MustGet<OLumpName>(os);
-		const std::string musicname = os.getToken();
 		if (W_CheckNumForName(musicname.c_str()) != -1)
 		{
 			*static_cast<OLumpName*>(data) = musicname;
@@ -1288,7 +1287,7 @@ void ParseMapInfoLower(OScanner& os, MapInfoDataSetter<T>& mapInfoDataSetter)
 				// able to parse all types even if we can't
 				// do anything with them.
 				//
-				I_Error("Unknown MAPINFO token \"%s\"", os.getToken().c_str());
+				os.error("Unknown MAPINFO token \"%s\"", os.getToken().c_str());
 			}
 
 			// New MAPINFO is capable of skipping past unknown
@@ -1342,14 +1341,13 @@ void ParseEpisodeInfo(OScanner& os)
 		if (os.compareToken("{"))
 		{
 			// Detected new-style MAPINFO
-			I_Error(
-			    "Detected incorrectly placed curly brace in MAPINFO episode definiton");
+			os.error("Detected incorrectly placed curly brace in MAPINFO episode definiton");
 		}
 		else if (os.compareToken("}"))
 		{
 			if (new_mapinfo == false)
 			{
-				I_Error("Detected incorrectly placed curly brace in MAPINFO episode "
+				os.error("Detected incorrectly placed curly brace in MAPINFO episode "
 				        "definiton");
 			}
 			else
@@ -1604,7 +1602,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 		}
 		else
 		{
-			I_Error("Unimplemented top-level type \"%s\"", os.getToken().c_str());
+			os.error("Unimplemented top-level type \"%s\"", os.getToken().c_str());
 		}
 	}
 }
