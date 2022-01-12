@@ -88,8 +88,10 @@ void P_PostProcessZDoomSidedefSpecial(side_t* sd, mapsidedef_t* msd, sector_t* s
 void P_PostProcessCompatibleSidedefSpecial(side_t* sd, mapsidedef_t* msd,
                                            sector_t* sec, int i);
 
-bool P_IsSpecialBoomRepeatable(const fixed_t special);
-bool P_IsExitLine(const fixed_t index);
-bool P_IsTeleportLine(const fixed_t index);
+bool P_IsSpecialBoomRepeatable(const short special);
+bool P_IsExitLine(const short special);
+bool P_IsTeleportLine(const short special);
+bool P_IsThingTeleportLine(const short special);
+bool P_IsThingNoFogTeleportLine(const short special);
 
 #endif

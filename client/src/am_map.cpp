@@ -51,6 +51,7 @@
 #include "gstrings.h"
 
 #include "am_map.h"
+#include "p_mapformat.h"
 
 argb_t CL_GetPlayerColor(player_t*);
 
@@ -1306,26 +1307,19 @@ void AM_drawWalls(void)
 				continue;
             if (!lines[i].backsector &&
                 (((am_usecustomcolors || viewactive) &&
-                lines[i].special != Exit_Normal &&
-                lines[i].special != Exit_Secret) ||
+                P_IsExitLine(lines[i].special)) ||
                 (!am_usecustomcolors && !viewactive)))
             {
 				AM_drawMline(&l, WallColor);
 			}
 			else
 			{
-				if ((lines[i].special == Teleport ||
-					lines[i].special == Teleport_NoFog ||
-				    lines[i].special == Teleport_NoStop ||
-					lines[i].special == Teleport_Line) &&
+				if ((P_IsTeleportLine(lines[i].special)) &&
 					(am_usecustomcolors || viewactive))
 				{ // teleporters
 					AM_drawMline(&l, TeleportColor);
 				}
-				else if ((lines[i].special == Teleport_NewMap ||
-						 lines[i].special == Teleport_EndGame ||
-						 lines[i].special == Exit_Normal ||
-						 lines[i].special == Exit_Secret) &&
+				else if ((P_IsExitLine(lines[i].special)) &&
 						 (am_usecustomcolors || viewactive))
 				{ // exit
 					AM_drawMline(&l, ExitColor);

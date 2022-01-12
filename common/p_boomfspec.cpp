@@ -978,7 +978,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 		case 207:
 			// killough 2/16/98: W1 silent teleporter (normal kind)
-			if (EV_SilentTeleport(line->id, 0, 0, 0, line, side, thing))
+			if (EV_SilentTeleport(1, 0, line->id, 0, line, side, thing))
 			{
 				result.lineexecuted = true;
 				//line->special = 0;
@@ -1086,7 +1086,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			break;
 
 		case 268: // jff 4/14/98 add monster-only silent
-			if (!thing->player && EV_SilentTeleport(line->id, 0, 0, 0, line, side, thing))
+			if (!thing->player && EV_SilentTeleport(1, 0, line->id, 0, line, side, thing))
 			{
 				result.lineexecuted = true;
 				//line->special = 0;
@@ -1208,7 +1208,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 		case 208:
 			// killough 2/16/98: WR silent teleporter (normal kind)
-			EV_SilentTeleport(line->id, 0, 0, 0, line, side, thing);
+			EV_SilentTeleport(1, 0, line->id, 0, line, side, thing);
 			result.lineexecuted = true;
 			break;
 
@@ -1295,7 +1295,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		case 269: // jff 4/14/98 add monster-only silent
 			if (!thing->player)
 			{
-				EV_SilentTeleport(line->id, 0, 0, 0, line, side, thing);
+				EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing);
 				result.lineexecuted = true;
 			}
 			break;
@@ -1304,6 +1304,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		break;
 	}
+	return result;
 }
 
 void P_ApplyGeneralizedSectorDamage(player_t* player, int bits)
@@ -2603,7 +2604,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 209:
 			// killough 1/31/98: silent teleporter
 			// jff 209 S1 SilentTeleport
-			if (EV_SilentTeleport(line->id, 0, 0, 0, line, side, thing))
+			if (EV_SilentTeleport(line->args[0], 0, line->id, 0, line, side, thing))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;

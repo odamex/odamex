@@ -28,6 +28,7 @@
 #include "doomdata.h"
 #include "r_data.h"
 #include "p_local.h"
+#include "p_mapformat.h"
 
 static const xlat_t SpecialTranslation[] = {
 /*   0 */ { 0 },
@@ -627,24 +628,10 @@ void P_TranslateTeleportThings()
 
 		mo->tid = 1;
 	}
-
+	
 	for (int i = 0; i < ::numlines; i++)
 	{
-		// Transfer the tag to the proper argument slot.
-		if (::lines[i].special == Teleport)
-		{
-			if (::lines[i].args[0] == 0)
-			{
-				// Untagged teleporters teleport to tid 1.
-				::lines[i].args[0] = 1;
-			}
-			else
-			{
-				::lines[i].args[1] = ::lines[i].args[0];
-				::lines[i].args[0] = 0;
-			}
-		}
-		else if (::lines[i].special == Teleport_NoFog)
+		if (P_IsThingNoFogTeleportLine(::lines[i].special))
 		{
 			if (::lines[i].args[0] == 0)
 			{
@@ -657,59 +644,8 @@ void P_TranslateTeleportThings()
 				::lines[i].args[0] = 0;
 			}
 		}
-		else if (::lines[i].special == Teleport_NoStop)
-		{
-			if (::lines[i].args[0] == 0)
-			{
-				// Untagged teleporters teleport to tid 1.
-				::lines[i].args[0] = 1;
-			}
-			else
-			{
-				::lines[i].args[1] = ::lines[i].args[0];
-				::lines[i].args[0] = 0;
-			}
-		}
 	}
-}
-
-int P_TranslateSectorSpecial (int special)
-{
-	int high, org;
-
-	org = special;
-
-	// Allow any supported sector special by or-ing 0x8000 to it in Doom format maps
-	// That's for those who like to mess around with existing maps. ;)
-	if (special & 0x8000)
-	{
-		return special & 0x7fff;
-	}
-
-	if (special == 9)
-		return SECRET_MASK;
-
-	// This supports phased lighting with specials 21-24
-	high = (special & 0xfe0) << 3;
-
-	if (special >= 32)
-	{
-		return org; // Boom generalized sectors
-	}
-
-	special &= 0x1f;
-	if (special < 21)
-	{
-		return high | (special + 64);
-	}
-	else if (special < 40)
-	{
-		return high | (special - 20);
-	}
-
-	// Unknown
-	return high | special;
-
+	
 }
 
 VERSION_CONTROL (p_xlat_cpp, "$Id$")

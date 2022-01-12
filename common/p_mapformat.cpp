@@ -195,7 +195,7 @@ short MapFormat::getGeneralizedMask(void)
 	return map_format.generalized_mask;
 }
 
-bool P_IsSpecialBoomRepeatable(fixed_t special)
+bool P_IsSpecialBoomRepeatable(const short special)
 {
 	switch (special)
 	{
@@ -344,10 +344,8 @@ bool P_IsSpecialBoomRepeatable(fixed_t special)
 	return false;
 }
 
-bool P_IsExitLine(const fixed_t index)
+bool P_IsExitLine(const short special)
 {
-	const int special = lines[index].special;
-
 	if (map_format.getZDoom())
 		return special == 74 || special == 75 || special == 244 || special == 243;
 
@@ -355,24 +353,30 @@ bool P_IsExitLine(const fixed_t index)
 	       special == 124 || special == 198;
 }
 
-bool P_IsTeleportLine(const fixed_t index)
+bool P_IsTeleportLine(const short special)
 {
-	const int special = lines[index].special;
-
 	if (map_format.getZDoom())
 		return special == 70 || special == 71 || special == 154 || special == 215;
 
-	return special == 39 || special == 97 || special == 125 || special == 126 || 
-		special == 208 || special == 243;
+	return special == 39 || special == 97 || special == 125 || special == 126 ||
+	       special == 174 || special == 195 || special == 207 || special == 208 ||
+	       special == 209 || special == 210 || special == 268 || special == 269;
 }
 
-bool P_IsThingTeleportLine(const fixed_t index)
+bool P_IsThingTeleportLine(const short special)
 {
-	const int special = lines[index].special;
-
 	if (map_format.getZDoom())
 		return false;
 
 	return special == 39 || special == 97 || special == 125 || special == 126 ||
-	       special == 208 || special == 243;
+	       special == 174 || special == 195 || special == 208 || special == 243;
+}
+
+bool P_IsThingNoFogTeleportLine(const short special)
+{
+	if (map_format.getZDoom())
+		return false;
+
+	return special == 207 || special == 208 || special == 209 || special == 210 ||
+	       special == 268 || special == 269;
 }

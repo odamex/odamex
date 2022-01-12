@@ -60,7 +60,6 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
 const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags);
 const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags);
 void P_SpawnCompatibleSectorSpecial(sector_t* sector);
-int	P_TranslateSectorSpecial (int);
 
 static void P_SetupLevelFloorPlane(sector_t *sector);
 static void P_SetupLevelCeilingPlane(sector_t *sector);
