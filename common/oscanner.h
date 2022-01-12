@@ -42,6 +42,7 @@ class OScanner
 	bool m_unScan;
 	bool m_removeEscapeCharacter;
 	bool m_isQuotedString;
+	bool m_crossed;
 
 	bool checkPair(char a, char b);
 	void skipWhitespace();
@@ -56,7 +57,7 @@ class OScanner
 	OScanner(const OScannerConfig& config)
 	    : m_config(config), m_scriptStart(NULL), m_scriptEnd(NULL), m_position(NULL),
 	      m_lineNumber(0), m_token(""), m_unScan(false), m_removeEscapeCharacter(false),
-	      m_isQuotedString(false)
+	      m_isQuotedString(false), m_crossed(false)
 	{
 	}
 
@@ -75,12 +76,13 @@ class OScanner
 	float getTokenFloat() const;
 	bool getTokenBool() const;
 
+	bool &crossed();
 	bool isQuotedString() const;
 	void assertTokenIs(const char* string) const;
 	bool compareToken(const char* string) const;
 	bool compareTokenNoCase(const char* string) const;
-	void warning(const char* message) const;
-	void error(const char* message) const;
+	void STACK_ARGS warning(const char* message, ...) const;
+	void STACK_ARGS error(const char* message, ...) const;
 };
 
 #endif // __OSCANNER_H__

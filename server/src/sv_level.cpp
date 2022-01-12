@@ -55,6 +55,7 @@
 #include "svc_message.h"
 #include "g_gametype.h"
 #include "p_hordespawn.h"
+#include "g_episode.h"
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
@@ -102,9 +103,35 @@ bool isFast = false;
 //
 static char d_mapname[9];
 
-void G_DeferedInitNew (const char *mapname)
+std::string G_NextMap();
+
+void G_DeferedInitNew (const char* mapname)
 {
-	strncpy (d_mapname, mapname, 8);
+	std::string mapnamestr = mapname;
+
+	if (iequals(mapnamestr.substr(0, 7).c_str(), "EndGame"))
+	{
+		if (mapname[7] == '1' ||
+			mapname[7] == '2' ||
+			mapname[7] == '3' ||
+		    mapname[7] == '4' ||
+			mapname[7] == 'C')
+		{
+			if (!Maplist::instance().empty())
+			{
+				G_ChangeMap();
+			}
+			else
+			{
+				G_NextMap();
+			}
+		}
+	}
+	else
+	{
+		strncpy(d_mapname, mapname, 8);
+	}
+
 	gameaction = ga_newgame;
 
 	// sv_nextmap cvar may be overridden by a script
@@ -155,28 +182,39 @@ BOOL 			secretexit;
 EXTERN_CVAR(sv_shufflemaplist)
 
 // Returns the next map, assuming there is no maplist.
-std::string G_NextMap(void) {
+std::string G_NextMap()
+{
 	std::string next = level.nextmap.c_str();
 
-	if (gamestate == GS_STARTUP || sv_gametype != GM_COOP || !strlen(next.c_str())) {
+	if (gamestate == GS_STARTUP || sv_gametype != GM_COOP || next.empty())
+	{
 		// if not coop, stay on same level
 		// [ML] 1/25/10: OR if next is empty
 		next = level.mapname.c_str();
-	} else if (secretexit && W_CheckNumForName(level.secretmap.c_str()) != -1) {
+	}
+	else if (secretexit && W_CheckNumForName(level.secretmap.c_str()) != -1)
+	{
 		// if we hit a secret exit switch, go there instead.
 		next = level.secretmap.c_str();
 	}
 
 	// NES - exiting a Doom 1 episode moves to the next episode,
 	// rather than always going back to E1M1
-	if (!strncmp(next.c_str(), "EndGame", 7) ||
-		(gamemode == retail_chex && !strncmp (level.nextmap.c_str(), "E1M6", 4))) {
+	if (iequals(next.substr(0, 7), "EndGame") ||
+	    (gamemode == retail_chex && iequals(level.nextmap.c_str(), "E1M6")))
+	{
 		if (gameinfo.flags & GI_MAPxx || gamemode == shareware ||
-			(!sv_loopepisode && ((gamemode == registered && level.cluster == 3) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && level.cluster == 4)))) {
+			(!sv_loopepisode && ((gamemode == registered && level.cluster == 3) ||
+			((gameinfo.flags & GI_MENUHACK_RETAIL) && level.cluster == 4))))
+		{
 			next = CalcMapName(1, 1);
-		} else if (sv_loopepisode) {
+		}
+		else if (sv_loopepisode)
+		{
 			next = CalcMapName(level.cluster, 1);
-		} else {
+		}
+		else
+		{
 			next = CalcMapName(level.cluster + 1, 1);
 		}
 	}
@@ -184,7 +222,8 @@ std::string G_NextMap(void) {
 }
 
 // Determine the "next map" and change to it.
-void G_ChangeMap() {
+void G_ChangeMap()
+{
 	unnatural_level_progression = false;
 
 	// Skip the maplist to go to the desired level in case of a lobby map.
@@ -194,8 +233,7 @@ void G_ChangeMap() {
 	}
 	else
 	{
-		maplist_entry_t lobby_entry;
-		lobby_entry = Maplist::instance().get_lobbymap();
+		maplist_entry_t lobby_entry = Maplist::instance().get_lobbymap();
 
 		if (!Maplist::instance().lobbyempty())
 		{
@@ -306,7 +344,7 @@ void SV_CheckTeam(player_t &pl);
 //
 // denis - rewritten so that it does not force client reconnects
 //
-void G_DoNewGame (void)
+void G_DoNewGame()
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -353,7 +391,6 @@ void SV_ServerSettingChange();
 
 void G_InitNew (const char *mapname)
 {
-	size_t i;
 	DWORD previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
@@ -370,7 +407,7 @@ void G_InitNew (const char *mapname)
 		}
 	}
 
-	int old_gametype = sv_gametype.asInt();
+	const int old_gametype = sv_gametype.asInt();
 
 	cvar_t::UnlatchCVars ();
 
@@ -390,12 +427,12 @@ void G_InitNew (const char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
+	const bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
 	if (wantFast != isFast)
 	{
 		if (wantFast)
 		{
-			for (i = 0; i < NUMSTATES; i++)
+			for (size_t i = 0; i < NUMSTATES; i++)
 			{
 				if (states[i].flags & STATEF_SKILL5FAST &&
 				    (states[i].tics != 1 || demoplayback))
@@ -404,7 +441,7 @@ void G_InitNew (const char *mapname)
 		}
 		else
 		{
-			for (i = 0; i < NUMSTATES; i++)
+			for (size_t i = 0; i < NUMSTATES; i++)
 			{
 				if (states[i].flags & STATEF_SKILL5FAST)
 					states[i].tics <<= 1; // don't change 1->0 since it causes cycles
@@ -461,7 +498,7 @@ void G_InitNew (const char *mapname)
 	// [AM] Start the WDL log on new level.
 	M_StartWDLLog(true);
 
-	G_DoLoadLevel (0);
+	G_DoLoadLevel(0);
 
 	if (::serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
 		SV_UpdatePlayerQueueLevelChange(info);
@@ -687,7 +724,7 @@ void G_DoResetLevel(bool full_reset)
 //
 // G_DoLoadLevel
 //
-extern gamestate_t 	wipegamestate;
+extern gamestate_t wipegamestate;
 extern float BaseBlendA;
 
 void G_DoLoadLevel (int position)

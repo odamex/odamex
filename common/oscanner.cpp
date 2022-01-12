@@ -45,7 +45,10 @@ void OScanner::skipWhitespace()
 	while (m_position < m_scriptEnd && m_position[0] <= ' ')
 	{
 		if (m_position[0] == '\n')
+		{
+			m_crossed = true;
 			m_lineNumber += 1;
+		}
 
 		m_position += 1;
 	}
@@ -56,6 +59,7 @@ void OScanner::skipToNextLine()
 	while (m_position < m_scriptEnd && m_position[0] != '\n')
 		m_position += 1;
 
+	m_crossed = true;
 	m_position += 1;
 	m_lineNumber += 1;
 }
@@ -71,7 +75,10 @@ void OScanner::skipPastPair(char a, char b)
 		}
 
 		if (m_position[0] == '\n')
+		{
+			m_crossed = true;
 			m_lineNumber += 1;
+		}
 
 		m_position += 1;
 	}
@@ -196,6 +203,8 @@ OScanner OScanner::openBuffer(const OScannerConfig& config, const char* start,
 //
 bool OScanner::scan()
 {
+	m_crossed = false;
+
 	if (m_unScan)
 	{
 		m_unScan = false;
@@ -410,6 +419,15 @@ bool OScanner::getTokenBool() const
 }
 
 //
+// Check if the last scan crossed over to a new line.
+// It returns a reference so the user can set it to false if need be.
+//
+bool &OScanner::crossed()
+{
+	return m_crossed;
+}
+
+//
 // Check if last token read in was a quoted string.
 //
 bool OScanner::isQuotedString() const
@@ -447,20 +465,36 @@ bool OScanner::compareTokenNoCase(const char* string) const
 	return iequals(m_token, string);
 }
 
+#define MAX_ERRORTEXT 1024
+
 //
 // Print given error message.
 //
-void OScanner::warning(const char* message) const
+void STACK_ARGS OScanner::warning(const char* message, ...) const
 {
-	Printf(PRINT_WARNING, "Script Warning: %s:%d: %s\n", m_config.lumpName, m_lineNumber, message);
+	va_list argptr;
+	char errortext[MAX_ERRORTEXT];
+
+	va_start(argptr, message);
+	vsprintf(errortext, message, argptr);
+	Printf(PRINT_WARNING, "Script Warning: %s:%d: %s\n", m_config.lumpName, m_lineNumber,
+	       errortext, argptr);
+	va_end(argptr);
 }
 
 //
 // Print given error message.
 //
-void OScanner::error(const char* message) const
+void STACK_ARGS OScanner::error(const char* message, ...) const
 {
-	I_Error("Script Error: %s:%d: %s", m_config.lumpName, m_lineNumber, message);
+	va_list argptr;
+	char errortext[MAX_ERRORTEXT];
+
+	va_start(argptr, message);
+	vsprintf(errortext, message, argptr);
+	I_Error("Script Error: %s:%d: %s", m_config.lumpName, m_lineNumber, errortext,
+	        argptr);
+	va_end(argptr);
 }
 
 VERSION_CONTROL(sc_oman_cpp, "$Id$")
