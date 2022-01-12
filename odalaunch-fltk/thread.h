@@ -1325,7 +1325,7 @@ void thread_tls_destroy( thread_tls_t tls )
     
     #elif defined( __linux__ ) || defined( __APPLE__ ) || defined( __ANDROID__ )
 
-        pthread_key_delete( (pthread_key_t) tls );
+        pthread_key_delete( (pthread_key_t) (uintptr_t) tls );
     
     #else 
         #error Unknown platform.
@@ -1341,7 +1341,7 @@ void thread_tls_set( thread_tls_t tls, void* value )
     
     #elif defined( __linux__ ) || defined( __APPLE__ ) || defined( __ANDROID__ )
 
-        pthread_setspecific( (pthread_key_t) tls, value );
+        pthread_setspecific( (pthread_key_t) (uintptr_t) tls, value );
     
     #else 
         #error Unknown platform.
@@ -1357,7 +1357,7 @@ void* thread_tls_get( thread_tls_t tls )
     
     #elif defined( __linux__ ) || defined( __APPLE__ ) || defined( __ANDROID__ )
 
-        return pthread_getspecific( (pthread_key_t) tls );
+        return pthread_getspecific( (pthread_key_t) (uintptr_t) tls );
     
     #else 
         #error Unknown platform.

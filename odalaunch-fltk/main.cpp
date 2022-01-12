@@ -22,7 +22,7 @@
 
 #include "odalaunch.h"
 
-#include "Fl/Fl.H"
+#include "FL/Fl.H"
 
 #include "db.h"
 #include "main_window.h"
