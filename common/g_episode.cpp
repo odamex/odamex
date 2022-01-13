@@ -26,7 +26,7 @@
 
 #include "g_episode.h"
 
-char EpisodeMaps[MAX_EPISODES][8];
+OLumpName EpisodeMaps[MAX_EPISODES];
 EpisodeInfo EpisodeInfos[MAX_EPISODES];
 byte episodenum = 0;
 bool episodes_modified = false;
