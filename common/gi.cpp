@@ -120,7 +120,7 @@ gameinfo_t RetailGameInfo =
 	200/35,
 	"misc/chat2",
 	"D_VICTOR",
-	"FLOOr4_8",
+	"FLOOR4_8",
 	"CREDIT",
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
@@ -202,6 +202,60 @@ gameinfo_t CommercialBFGGameInfo =
 	"GRNROCK",
 	&DoomBorder,
 	"DOOM 2: Hell on Earth (BFG Edition)"
+};
+
+static gameborder_t HereticBorder =
+{
+	4, 16,
+	"bordtl", "bordt", "bordtr",
+	"bordl",           "bordr",
+	"bordbl", "bordb", "bordbr"
+};
+
+gameinfo_t HereticGameInfo =
+{
+	GI_PAGESARERAW | GI_INFOINDEXED,
+	"TITLE",
+	"CREDIT",
+	"CREDIT",
+	"MUS_TITL",
+	280/35,
+	210/35,
+	200/35,
+	"misc/chat",
+	"MUS_CPTD",
+	"FLOOR25",
+	"CREDIT",
+	"CREDIT",
+	"CREDIT",
+	{ { "TITLE", 4 } },
+	NULL,
+	17,
+	"FLAT513",
+	&HereticBorder
+};
+
+gameinfo_t HereticSWGameInfo =
+{
+	GI_PAGESARERAW | GI_SHAREWARE | GI_INFOINDEXED,
+	"TITLE",
+	"CREDIT",
+	"ORDER",
+	"MUS_TITL",
+	280/35,
+	210/35,
+	200/35,
+	"misc/chat",
+	"MUS_CPTD",
+	"FLOOR25",
+	"ORDER",
+	"CREDIT",
+	"CREDIT",
+	{ { "TITLE", 5 } },
+	NULL,
+	17,
+	"FLOOR04",
+	&HereticBorder
 };
 
 VERSION_CONTROL (gi_cpp, "$Id$")

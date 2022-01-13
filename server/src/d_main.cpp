@@ -83,7 +83,7 @@ void C_DoCommand(const char *cmd, uint32_t key = 0);
 void daemon_init();
 #endif
 
-void D_DoomLoop (void);
+void D_DoomLoop();
 
 extern gameinfo_t SharewareGameInfo;
 extern gameinfo_t RegisteredGameInfo;
@@ -91,6 +91,8 @@ extern gameinfo_t RetailGameInfo;
 extern gameinfo_t CommercialGameInfo;
 extern gameinfo_t RetailBFGGameInfo;
 extern gameinfo_t CommercialBFGGameInfo;
+extern gameinfo_t HereticGameInfo;
+extern gameinfo_t HereticSWGameInfo;
 
 extern BOOL gameisdead;
 extern DThinker ThinkerCap;

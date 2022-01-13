@@ -62,6 +62,9 @@ extern byte *Ranges;
  */
 void V_TextInit()
 {
+	if (gamemode == registered_heretic || gamemode == shareware_heretic)
+		return;
+
 	int j, sub;
 	std::string buffer;
 

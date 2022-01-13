@@ -592,7 +592,10 @@ void W_InitMultipleFiles(const OResFiles& files)
 	// killough 1/31/98: initialize lump hash table
 	W_HashLumps();
 
-	stdisk_lumpnum = W_GetNumForName("STDISK");
+	if (W_CheckNumForName("STDISK") != -1)
+		stdisk_lumpnum = W_GetNumForName("STDISK");
+	else
+		stdisk_lumpnum = -1;
 }
 
 /**

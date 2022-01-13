@@ -62,6 +62,8 @@ struct identData_t
 #define FREEDOOM1_PREFIX "Freedoom: Phase 1"
 #define FREEDOOM2_PREFIX "Freedoom: Phase 2"
 #define FREEDM_PREFIX "FreeDM"
+#define HERETICSW_PREFIX "Heretic Shareware"
+#define HERETIC_PREFIX "Heretic"
 
 static const identData_t identdata[] = {
     // ------------------------------------------------------------------------
@@ -660,7 +662,61 @@ static const identData_t identdata[] = {
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD,                         // flags
         600,                                // weight
-    }};
+    },
+
+    // ------------------------------------------------------------------------
+    // HERETIC.WAD
+    // ------------------------------------------------------------------------
+    {
+        HERETIC_PREFIX " v1.3",             // mIdName
+        "HERETIC.WAD",                      // mFilename
+        "5B16049E",                         // mCRC32Sum
+        "66D686B1ED6D35FF103F15DBD30E0341", // mMd5Sum
+        HERETIC_PREFIX " v1.3",             // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        425,                                // weight
+    },
+    {
+        HERETIC_PREFIX " v1.2",                           // mIdName
+        "HERETIC.WAD",                                    // mFilename
+        "77482D1E",                                       // mCRC32Sum
+        "3117E399CDB4298EAA3941625F4B2923",               // mMd5Sum
+        HERETIC_PREFIX " v1.2",                           // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
+        1425,                                             // weight
+    },
+    {
+        HERETIC_PREFIX " v1.0",                           // mIdName
+        "HERETIC.WAD",                                    // mFilename
+        "54759180",                                       // mCRC32Sum
+        "1E4CB4EF075AD344DD63971637307E04",               // mMd5Sum
+        HERETIC_PREFIX " v1.0",                           // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD | IDENT_DEPRECATED, // flags
+        1425,                                             // weight
+    },
+
+    // ------------------------------------------------------------------------
+    // HERETIC1.WAD
+    // ------------------------------------------------------------------------
+    {
+        HERETICSW_PREFIX " v1.2",           // mIdName
+        "HERETIC1.WAD",                     // mFilename
+        "22D3F0CA",                         // mCRC32Sum
+        "AE779722390EC32FA37B0D361F7D82F8", // mMd5Sum
+        HERETICSW_PREFIX " v1.2",           // mGroupName
+        IDENT_IWAD,                         // flags
+        450,                                // weight
+    },
+    {
+        HERETICSW_PREFIX " v1.0",           // mIdName
+        "HERETIC1.WAD",                     // mFilename
+        "884A3E45",                         // mCRC32Sum
+        "023B52175D2F260C3BDC5528DF5D0A8C", // mMd5Sum
+        HERETICSW_PREFIX " v1.0",           // mGroupName
+        IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1450,                               // weight
+    }
+};
 
 
 // ============================================================================
@@ -1049,6 +1105,8 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	extern gameinfo_t CommercialGameInfo;
 	extern gameinfo_t RetailBFGGameInfo;
 	extern gameinfo_t CommercialBFGGameInfo;
+	extern gameinfo_t HereticGameInfo;
+	extern gameinfo_t HereticSWGameInfo;
 
 	const OString idname = identtab.identify(iwad);
 
@@ -1136,6 +1194,16 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = registered;
 		gameinfo = RegisteredGameInfo;
 		gamemission = doom;
+	}
+	else if (idname.find("HERETIC1") == 0)
+	{
+		gamemode = shareware_heretic;
+		gameinfo = HereticGameInfo;
+	}
+	else if (idname.find("HERETIC") == 0)
+	{
+		gamemode = registered_heretic;
+		gameinfo = HereticGameInfo;
 	}
 	else
 	{

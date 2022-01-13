@@ -980,6 +980,9 @@ void I_DrawLoadingIcon()
 //
 static void I_BlitLoadingIcon()
 {
+	if (W_CheckNumForName("STDISK") == -1)
+		return;
+
 	const patch_t* diskpatch = W_CachePatch("STDISK");
 	IWindowSurface* surface = I_GetPrimarySurface();
 
