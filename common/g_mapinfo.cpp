@@ -110,12 +110,6 @@ void SkipUnknownBlock(OScanner& os)
 	}
 }
 
-// return token as OLumpName
-OLumpName GetTokenOLumpName(OScanner& os)
-{
-	return os.getToken();
-}
-
 //////////////////////////////////////////////////////////////////////
 /// MustGet
 
@@ -587,7 +581,7 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 		}
 
 		MustGet<OLumpName>(os);
-		OLumpName mapname = GetTokenOLumpName(os);
+		OLumpName mapname = os.getToken();
 
 		if (!ValidateMapName(mapname))
 		{
