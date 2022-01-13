@@ -21,7 +21,6 @@
 
 #include "odamex.h"
 
-#include "cmdlib.h"
 #include "g_episode.h"
 #include "gi.h"
 #include "gstrings.h"
@@ -29,7 +28,6 @@
 #include "oscanner.h"
 #include "p_setup.h"
 #include "r_sky.h"
-#include "stringenums.h"
 #include "v_video.h"
 #include "w_wad.h"
 #include "infomap.h"
@@ -39,11 +37,6 @@ BOOL HexenHack;
 
 namespace
 {
-
-void SetLevelDefaults(level_pwad_info_t& levelinfo)
-{
-	levelinfo = level_pwad_info_t();
-}
 
 //
 // Assumes that you have munched the last parameter you know how to handle,
@@ -227,7 +220,7 @@ void MustGetStringName(OScanner& os, const char* name)
 // used for munching the strings in UMAPINFO
 char* ParseMultiString(OScanner& os)
 {
-	char* build = NULL;
+	char* build;
 
 	os.scan();
 	// TODO: properly identify identifiers so clear can be separated from regular strings
@@ -250,8 +243,8 @@ char* ParseMultiString(OScanner& os)
 			build = strdup(os.getToken().c_str());
 		else
 		{
-			size_t newlen = strlen(build) + os.getToken().length() +
-			                2; // strlen for both the existing text and the new line, plus
+			const size_t newlen = strlen(build) + os.getToken().length() +
+			                      2; // strlen for both the existing text and the new line, plus
 			                   // room for one \n and one \0
 			build = (char*)realloc(
 			    build, newlen);  // Prepare the destination memory for the below strcats
@@ -307,9 +300,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 
 	if (!IsIdentifier(os))
 	{
-		std::string buffer;
-		StrFormat(buffer, "Expected identifier, got \"%s\".", os.getToken().c_str());
-		os.error(buffer.c_str());
+		os.error("Expected identifier, got \"%s\".", os.getToken().c_str());
 	}
 	char* pname = strdup(os.getToken().c_str());
 	MustGetStringName(os, "=");
@@ -482,8 +473,8 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		}
 		else
 		{
-			std::string actor_name = os.getToken();
-			mobjtype_t i = P_NameToMobj(actor_name);
+			const std::string actor_name = os.getToken();
+			const mobjtype_t i = P_NameToMobj(actor_name);
 			if (i == MT_NULL)
 			{
 				os.error("Unknown thing type %s", os.getToken().c_str());
@@ -549,7 +540,7 @@ void MapNameToLevelNum(level_pwad_info_t& info)
 	{
 		// Try and turn the trailing digits after the "MAP" into a
 		// level number.
-		int mapnum = std::atoi(info.mapname.c_str() + 3);
+		const int mapnum = std::atoi(info.mapname.c_str() + 3);
 		if (mapnum >= 0 && mapnum <= 99)
 		{
 			info.levelnum = mapnum;
@@ -562,11 +553,10 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 	LevelInfos& levels = getLevelInfos();
 
 	level_pwad_info_t defaultinfo;
-	SetLevelDefaults(defaultinfo);
 
 	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 
-	OScannerConfig config = {
+	const OScannerConfig config = {
 	    lumpname, // lumpName
 	    false,    // semiComments
 	    true,     // cComments
@@ -709,7 +699,7 @@ void MIType_Color(OScanner& os, bool doEquals, void* data, unsigned int flags,
 {
 	ParseMapInfoHelper<std::string>(os, doEquals);
 
-	argb_t color(V_GetColorFromString(os.getToken()));
+	const argb_t color(V_GetColorFromString(os.getToken()));
 	uint8_t* ptr = static_cast<uint8_t*>(data);
 	ptr[0] = color.geta();
 	ptr[1] = color.getr();
@@ -798,7 +788,7 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 
 		if (IsNum(map_name))
 		{
-			int map = std::atoi(map_name);
+			const int map = std::atoi(map_name);
 			sprintf(map_name, "MAP%02d", map);
 		}
 		else if (os.compareTokenNoCase("EndBunny"))
@@ -825,7 +815,7 @@ void MIType_InterLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
                           unsigned int flags2)
 {
 	ParseMapInfoHelper<std::string>(os, doEquals);
-	std::string tok = os.getToken();
+	const std::string tok = os.getToken();
 	if (!tok.empty() && tok.at(0) == '$')
 	{
 		// Intermission scripts are not supported.
@@ -847,9 +837,7 @@ void MIType_$LumpName(OScanner& os, bool doEquals, void* data, unsigned int flag
 		const OString& s = GStrings(os.getToken().c_str() + 1);
 		if (s.empty())
 		{
-			std::string err;
-			StrFormat(err, "Unknown lookup string \"%s\".", os.getToken().c_str());
-			os.error(err.c_str());
+			os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
 		}
 		*static_cast<OLumpName*>(data) = s;
 	}
@@ -874,9 +862,7 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 		const OString& s = GStrings(musicname.c_str() + 1);
 		if (s.empty())
 		{
-			std::string err;
-			StrFormat(err, "Unknown lookup string \"%s\".", os.getToken().c_str());
-			os.error(err.c_str());
+			os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
 		}
 
 		// Music lumps in the stringtable do not begin
@@ -979,9 +965,7 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 			const OString& s = GStrings(os.getToken());
 			if (s.empty())
 			{
-				std::string err;
-				StrFormat(err, "Unknown lookup string \"%s\".", os.getToken().c_str());
-				os.error(err.c_str());
+				os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
 			}
 			free(*text);
 			*text = strdup(s.c_str());
@@ -1018,9 +1002,7 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 			const OString& s = GStrings(os.getToken());
 			if (s.empty())
 			{
-				std::string err;
-				StrFormat(err, "Unknown lookup string \"%s\".", os.getToken().c_str());
-				os.error(err.c_str());
+				os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
 			}
 
 			free(*text);
@@ -1331,23 +1313,17 @@ void ParseEpisodeInfo(OScanner& os)
 		else if (os.compareToken("}"))
 		{
 			if (new_mapinfo == false)
-			{
 				os.error("Detected incorrectly placed curly brace in MAPINFO episode "
 				        "definiton");
-			}
 			else
-			{
 				break;
-			}
 		}
 		else if (os.compareTokenNoCase("name"))
 		{
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
 			if (picisgfx == false)
-			{
 				pic = os.getToken();
-			}
 		}
 		else if (os.compareTokenNoCase("lookup"))
 		{
@@ -1425,13 +1401,9 @@ void ParseEpisodeInfo(OScanner& os)
 		if (i == episodenum)
 		{
 			if (episodenum == MAX_EPISODES)
-			{
 				i = episodenum - 1;
-			}
 			else
-			{
 				i = episodenum++;
-			}
 		}
 
 		EpisodeInfos[i].name = pic;
@@ -1448,11 +1420,10 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 	ClusterInfos& clusters = getClusterInfos();
 
 	level_pwad_info_t defaultinfo;
-	SetLevelDefaults(defaultinfo);
 
 	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 
-	OScannerConfig config = {
+	const OScannerConfig config = {
 	    lumpname, // lumpName
 	    false,    // semiComments
 	    true,     // cComments
@@ -1463,7 +1434,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 	{
 		if (os.compareTokenNoCase("defaultmap"))
 		{
-			SetLevelDefaults(defaultinfo);
+			defaultinfo = level_pwad_info_t();
 
 			MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
 			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
@@ -1506,10 +1477,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				const OString& s = GStrings(os.getToken());
 				if (s.empty())
 				{
-					std::string err;
-					StrFormat(err, "Unknown lookup string \"%s\".",
-					          os.getToken().c_str());
-					os.error(err.c_str());
+					os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
 				}
 				info.level_name = strdup(s.c_str());
 			}
@@ -1648,9 +1616,7 @@ void G_ParseMapInfo()
 
 	// If ZMAPINFO exists, we don't parse a normal MAPINFO
 	if (found_mapinfo == true)
-	{
 		return;
-	}
 
 	lump = -1;
 	while ((lump = W_FindLump("UMAPINFO", lump)) != -1)
@@ -1660,9 +1626,7 @@ void G_ParseMapInfo()
 
 	// If UMAPINFO exists, we don't parse a normal MAPINFO
 	if (found_mapinfo == true)
-	{
 		return;
-	}
 
 	lump = -1;
 	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
@@ -1671,8 +1635,6 @@ void G_ParseMapInfo()
 	}
 
 	if (episodenum == 0)
-	{
 		I_FatalError("You cannot use clearepisodes in a MAPINFO if you do not define any "
 		             "new episodes after it.");
-	}
 }
