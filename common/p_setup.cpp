@@ -814,11 +814,8 @@ void P_AdjustLine (line_t *ld)
 	else
 	{
 		// killough 4/4/98: support special sidedef interpretation below
-		if ( // [Blair] Save Odamex Static Inits in Boom format
-		    (ld->special == OdamexStaticInits + 1 ||
-		     (ld->special < OdamexStaticInits ||
-		      (ld->special != OdamexStaticInits &&
-		       ld->special > OdamexStaticInits + NUM_STATIC_INITS))))
+		if (ld->special >= OdamexStaticInits + 1 &&
+		    ld->special <= OdamexStaticInits + NUM_STATIC_INITS)
 		{
 			sides[*ld->sidenum].special = ld->special;
 			sides[*ld->sidenum].tag = ld->args[0];

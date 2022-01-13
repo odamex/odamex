@@ -1172,9 +1172,6 @@ BOOL EV_DoGenStairs(line_t* line)
 	int Sped = (value & StairSpeed) >> StairSpeedShift;
 	int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-	if (speed == 0)
-		return false;
-
 	// check if a manual trigger, if so do just the sector on the backside
 	if (line->id == 0)
 	{

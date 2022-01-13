@@ -1948,20 +1948,19 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	if (map_format.getZDoom()) // All zdoom specials can be impact activated
 	{
-		LineSpecials[line->special](line, thing, line->args[0], line->args[1],
+		lineresult.lineexecuted = LineSpecials[line->special](line, thing, line->args[0], line->args[1],
 		                            line->args[2], line->args[3], line->args[4]);
-		lineresult.lineexecuted = false;
-		lineresult.switchchanged = false;
+		lineresult.switchchanged = lineresult.lineexecuted;
 	}
 	else // Only certain specials from Doom/Boom can be impact activated
 	{
 		lineresult = P_ShootCompatibleSpecialLine(thing, line);
 	}
 
-	SV_OnActivatedLine(line, thing, 0, LineShoot, false);
-
 	if(serverside && lineresult.lineexecuted)
 	{
+		SV_OnActivatedLine(line, thing, 0, LineShoot, false);
+
 		if (lineresult.switchchanged)
 		{
 			bool repeat;

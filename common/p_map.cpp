@@ -424,6 +424,7 @@ BOOL PIT_CheckLine (line_t *ld)
 			{
 				CheckForPushSpecial(ld, 0, tmthing);
 			}
+
 			return false;
 		}		
     }
