@@ -1199,11 +1199,13 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	{
 		gamemode = shareware_heretic;
 		gameinfo = HereticGameInfo;
+		gamemission = heretic;
 	}
 	else if (idname.find("HERETIC") == 0)
 	{
 		gamemode = registered_heretic;
 		gameinfo = HereticGameInfo;
+		gamemission = heretic;
 	}
 	else
 	{

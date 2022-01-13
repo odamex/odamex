@@ -1635,6 +1635,9 @@ void G_ParseMapInfo()
 	case chex:
 		baseinfoname = "_CHEXNFO";
 		break;
+	case heretic:
+		baseinfoname = "_HERENFO";
+		break;
 	default:
 		I_Error("This IWAD is unknown to Odamex");
 		break;
