@@ -1029,6 +1029,9 @@ static void I_BlitLoadingIcon()
 //
 static void I_RestoreLoadingIcon()
 {
+	if (W_CheckNumForName("STDISK") == -1)
+		return;
+
 	IWindowSurface* surface = I_GetPrimarySurface();
 
 	surface->lock();

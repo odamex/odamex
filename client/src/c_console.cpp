@@ -26,8 +26,6 @@
 
 #include <stdarg.h>
 
-#include "m_alloc.h"
-#include "m_memio.h"
 #include "g_game.h"
 #include "c_console.h"
 #include "c_dispatch.h"
@@ -38,7 +36,6 @@
 #include "v_video.h"
 #include "v_text.h"
 #include "w_wad.h"
-#include "z_zone.h"
 #include "r_main.h"
 #include "st_stuff.h"
 #include "s_sound.h"
@@ -914,11 +911,26 @@ void C_ClearCommand()
 //
 void C_InitConsoleBackground()
 {
-	const patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
+	patch_t* bg_patch;
 
-	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
-	background_surface->lock();
-	background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);
+	if (gamemission == heretic)
+	{
+		bg_patch = W_CachePatch(W_GetNumForName("TITLE"));
+
+		background_surface = I_AllocateSurface(320, 200, 8);
+		background_surface->lock();
+		background_surface->getDefaultCanvas()->DrawBlock(0, 0, 320, 200,
+		                                                  (byte*)bg_patch);
+	}
+	else
+	{
+		bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
+
+		background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+		background_surface->lock();
+		background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);
+	}
+
 	background_surface->unlock();
 }
 

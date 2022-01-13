@@ -75,7 +75,7 @@ void V_TextInit()
 		StrFormat(buffer, bigfont, j++ - sub);
 
 		// Some letters of this font are missing.
-		int num = W_CheckNumForName(buffer.c_str());
+		const int num = W_CheckNumForName(buffer.c_str());
 		if (num != -1)
 			::hu_bigfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
 		else

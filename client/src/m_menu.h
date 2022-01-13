@@ -28,7 +28,10 @@
 #include "d_event.h"
 
 // Some defines...
-#define LINEHEIGHT	16
+#define ARROWXOFF -28
+#define ARROWYOFF -1
+#define LINEHEIGHT 16
+#define HTCLINEHEIGHT 20
 #define SKULLXOFF	-32
 
 //
@@ -163,7 +166,7 @@ typedef struct
 	// -1 = no cursor here, 1 = ok, 2 = arrows ok
 	short		status;
 
-	char		name[10];
+	std::string	name;
 
 	// choice = menu item #.
 	// if status = 2,
