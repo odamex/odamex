@@ -628,24 +628,6 @@ void P_TranslateTeleportThings()
 
 		mo->tid = 1;
 	}
-	
-	for (int i = 0; i < ::numlines; i++)
-	{
-		if (P_IsThingNoFogTeleportLine(::lines[i].special))
-		{
-			if (::lines[i].args[0] == 0)
-			{
-				// Untagged teleporters teleport to tid 1.
-				::lines[i].args[0] = 1;
-			}
-			else
-			{
-				::lines[i].args[2] = ::lines[i].args[0];
-				::lines[i].args[0] = 0;
-			}
-		}
-	}
-	
 }
 
 VERSION_CONTROL (p_xlat_cpp, "$Id$")

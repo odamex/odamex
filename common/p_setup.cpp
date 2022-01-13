@@ -749,7 +749,20 @@ void P_AdjustLine (line_t *ld)
 	}
 	else
 	{
-		if (ld->special >= OdamexStaticInits &&
+		if (P_IsThingNoFogTeleportLine(ld->special))
+		{
+			if (ld->id == 0)
+			{
+				// Untagged teleporters teleport to tid 1.
+				ld->args[0] = 1;
+			}
+			else
+			{
+				ld->args[2] = ld->id;
+				ld->args[0] = ld->id;
+			}
+		}
+		else if (ld->special >= OdamexStaticInits &&
 		         ld->special < OdamexStaticInits + NUM_STATIC_INITS)
 		{
 			// An Odamex Static_Init special

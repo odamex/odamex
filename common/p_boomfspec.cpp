@@ -1208,7 +1208,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 		case 208:
 			// killough 2/16/98: WR silent teleporter (normal kind)
-			EV_SilentTeleport(1, 0, line->id, 0, line, side, thing);
+			EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing);
 			result.lineexecuted = true;
 			break;
 
