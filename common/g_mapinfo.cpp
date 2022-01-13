@@ -177,11 +177,8 @@ static bool IsIdentifier(const OScanner& os)
 		if (ch >= 'a' && ch <= 'z')
 			continue;
 
-		if (it != token.begin())
-		{
-			if (ch >= '0' && ch <= '9')
-				continue;
-		}
+		if (it != token.begin() && ch >= '0' && ch <= '9')
+			continue;
 
 		return false;
 	}
@@ -218,41 +215,28 @@ void MustGetStringName(OScanner& os, const char* name)
 }
 
 // used for munching the strings in UMAPINFO
-char* ParseMultiString(OScanner& os)
+std::string ParseMultiString(OScanner& os)
 {
-	char* build;
-
 	os.scan();
-	// TODO: properly identify identifiers so clear can be separated from regular strings
+	
 	if (!os.isQuotedString())
 	{
 		if (os.compareTokenNoCase("clear"))
-		{
-			return strdup("-"); // this was explicitly deleted to override the default.
-		}
+			return "-"; // this was explicitly deleted to override the default.
 
-		// os.error("Either 'clear' or string constant expected");
+		os.error("Either 'clear' or quoted string expected");
 	}
 	os.unScan();
+
+	std::string build;
 
 	do
 	{
 		os.mustScan();
 
-		if (build == NULL)
-			build = strdup(os.getToken().c_str());
-		else
-		{
-			const size_t newlen = strlen(build) + os.getToken().length() +
-			                      2; // strlen for both the existing text and the new line, plus
-			                   // room for one \n and one \0
-			build = (char*)realloc(
-			    build, newlen);  // Prepare the destination memory for the below strcats
-			strcat(build, "\n"); // Replace the existing text's \0 terminator with a \n
-			strcat(
-			    build,
-			    os.getToken().c_str()); // Concatenate the new line onto the existing text
-		}
+		build += os.getToken(); // Concatenate the new line onto the existing text
+		build += '\n';			// Add newline
+		
 		os.scan();
 	} while (os.compareToken(","));
 	os.unScan();
@@ -308,7 +292,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	if (!stricmp(pname, "levelname"))
 	{
 		os.mustScan();
-		mape->level_name = strdup(os.getToken().c_str());
+		mape->level_name = os.getToken();
 	}
 	else if (!stricmp(pname, "next"))
 	{
@@ -401,15 +385,15 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	}
 	else if (!stricmp(pname, "intertext"))
 	{
-		char* lname = ParseMultiString(os);
-		if (!lname)
+		const std::string lname = ParseMultiString(os);
+		if (lname.empty())
 			return 0;
 		mape->intertext = lname;
 	}
 	else if (!stricmp(pname, "intertextsecret"))
 	{
-		char* lname = ParseMultiString(os);
-		if (!lname)
+		const std::string lname = ParseMultiString(os);
+		if (lname.empty())
 			return 0;
 		mape->intertextsecret = lname;
 	}
@@ -421,10 +405,9 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		MustGet<OLumpName>(os);
 		const std::string musicname = os.getToken();
+
 		if (W_CheckNumForName(musicname.c_str()) != -1)
-		{
 			mape->intermusic = musicname;
-		}
 	}
 	else if (!stricmp(pname, "episode"))
 	{
@@ -434,30 +417,26 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			episodes_modified = true;
 		}
 
-		char* lname = ParseMultiString(os);
-		if (!lname)
+		const std::string lname = ParseMultiString(os);
+		if (lname.empty())
 			return 0;
 
-		if (*lname == '-') // means "clear"
+		if (lname == "-") // means "clear"
 		{
 			episodenum = 0;
 		}
 		else
 		{
-			const char* gfx = strtok(lname, "\n");
-			const char* txt = strtok(NULL, "\n");
-			const char* alpha = strtok(NULL, "\n");
+			const StringTokens tokens = TokenizeString(lname, "\n");
 
 			if (episodenum >= 8)
-			{
 				return 0;
-			}
 
 			strncpy(EpisodeMaps[episodenum], mape->mapname.c_str(), 8);
-			EpisodeInfos[episodenum].name = gfx;
+			EpisodeInfos[episodenum].name = tokens[0];
 			EpisodeInfos[episodenum].fulltext = false;
 			EpisodeInfos[episodenum].noskillmenu = false;
-			EpisodeInfos[episodenum].key = alpha ? *alpha : 0;
+			EpisodeInfos[episodenum].key = (tokens.size() > 2) ? tokens[2][0] : 0;
 			++episodenum;
 		}
 	}
@@ -652,9 +631,7 @@ template <typename T>
 void ParseMapInfoHelper(OScanner& os, bool doEquals)
 {
 	if (doEquals)
-	{
 		MustGetStringName(os, "=");
-	}
 
 	MustGet<T>(os);
 }
