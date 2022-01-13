@@ -838,21 +838,6 @@ odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector)
 		ceil->set_ceil_crush(Pillar->m_Crush);
 	}
 
-	/* [Blair] Waggles are extremely chatty
-	 * network wise when sending sector updates.
-	 * So we'll only send what tic they are created,
-	 * and let the client predict the rest.
-	 
-
-	 if (ceiling_mover == SEC_WAGGLE)
-	 {
-		 DWaggle* Waggle = static_cast<DWaggle*>(sector.ceilingdata);
-
-		 odaproto::svc::MovingSector_Snapshot* ceil = msg.mutable_ceiling_mover();
-		 ceil->set_st(Waggle->m_Type);
-	 }
-	 */
-
 	if (ceiling_mover == SEC_CEILING)
 	{
 		DCeiling* Ceiling = static_cast<DCeiling*>(sector.ceilingdata);
@@ -931,16 +916,6 @@ odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector)
 		floor->set_floor_lip(Plat->m_Lip);
 	}
 
-	/* [Blair] Waggles are extremely chatty
-	* network wise when sending sector updates.
-	* So we'll only send what tic they are created,
-	* and let the client predict the rest.
-	*
-	* if (floor_mover == SEC_WAGGLE)
-	* {
-	*
-	* }
-	*/
 	return msg;
 }
 
