@@ -62,18 +62,14 @@ extern byte *Ranges;
  */
 void V_TextInit()
 {
-	if (gamemode == registered_heretic || gamemode == shareware_heretic)
-		return;
-
-	int j, sub;
 	std::string buffer;
+	int j = 1;
+	int sub = 0;
+	bool hu_raven = false;
 
 	const char *bigfont = "FONTB%02d";
-	const char *smallfont = "STCFN%.3d";
 
 	// Level name font, used between levels, starts at index 1.
-	j = 1;
-	sub = 0;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
 		StrFormat(buffer, bigfont, j++ - sub);
@@ -86,11 +82,39 @@ void V_TextInit()
 			::hu_bigfont[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
 	}
 
+	const char* smallfont;
+
+	// [RH] Quick hack to handle the FONTA of Heretic and Hexen
+	if (W_CheckNumForName("FONTA01") >= 0)
+	{
+		smallfont = "FONTA%02u";
+		sub = HU_FONTSTART - 1;
+		hu_raven = true;
+	}
+	else
+	{
+		smallfont = "STCFN%.3d";
+		sub = 0;
+	}
+
 	// Normal doom chat/message font, starts at index 33.
 	j = HU_FONTSTART;
-	sub = 0;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
+		// todo - less hacky solution
+		if (hu_raven)
+		{
+			if (i > 58 && i < 62)
+			{
+				j++;
+				continue;
+			}
+			if (i == HU_FONTSIZE - 1)
+			{
+				sub = sub + 4;
+			}
+		}
+
 		StrFormat(buffer, smallfont, j++ - sub);
 		::hu_smallfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
 	}
