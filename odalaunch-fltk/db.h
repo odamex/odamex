@@ -25,6 +25,7 @@
 #include "odalaunch.h"
 
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "net_packet.h"
@@ -45,5 +46,5 @@ bool DB_Init();
 void DB_AddServer(const std::string& address, const uint16_t port);
 void DB_AddServerInfo(const odalpapi::Server& server);
 void DB_GetServerList(serverRows_t& rows);
-bool DB_LockAddressForServerInfo(const size_t id, std::string& address, uint16_t& port);
+bool DB_LockAddressForServerInfo(const uint64_t id, std::string& ip, uint16_t& port);
 void DB_DeInit();

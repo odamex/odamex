@@ -185,7 +185,7 @@ bool DB_Init()
  */
 void DB_AddServer(const std::string& address, const uint16_t port)
 {
-	char buffer[64];
+	std::string buffer;
 
 	sqlite3_stmt* stmt = SQLPrepare(::ADD_SERVER);
 	if (stmt == NULL)
@@ -193,8 +193,8 @@ void DB_AddServer(const std::string& address, const uint16_t port)
 		goto cleanup;
 	}
 
-	snprintf(buffer, ARRAY_LENGTH(buffer), "%s:%u", address.c_str(), port);
-	if (!SQLBindText(stmt, ":address", buffer))
+	buffer = AddressCombine(address.c_str(), port);
+	if (!SQLBindText(stmt, ":address", buffer.c_str()))
 	{
 		goto cleanup;
 	}
@@ -338,7 +338,7 @@ cleanup:
 	return;
 }
 
-static bool GetLockedAddress(const size_t id, std::string& outAddress, uint16_t& outPort)
+static bool GetLockedAddress(const uint64_t id, std::string& outIp, uint16_t& outPort)
 {
 	int res;
 	sqlite3_stmt* stmt = SQLPrepare(::GET_LOCKED_SERVER);
@@ -365,11 +365,8 @@ static bool GetLockedAddress(const size_t id, std::string& outAddress, uint16_t&
 				          static_cast<uint32_t>(id));
 				goto cleanup;
 			}
-			outAddress = address;
-			const size_t colon = outAddress.rfind(':');
-			const std::string port = outAddress.substr(colon + 1);
-			outPort = static_cast<uint16_t>(atoi(port.c_str()));
-			outAddress = outAddress.substr(0, colon);
+
+			AddressSplit(address, outIp, outPort);
 			break;
 		}
 		case SQLITE_DONE:
@@ -394,7 +391,7 @@ cleanup:
  * @param port Output port we found.
  * @return True if we locked a row, otherwise false.
  */
-bool DB_LockAddressForServerInfo(const size_t id, std::string& address, uint16_t& port)
+bool DB_LockAddressForServerInfo(const uint64_t id, std::string& ip, uint16_t& port)
 {
 	sqlite3_stmt* stmt = SQLPrepare(::LOCK_SERVER);
 	if (!stmt)
@@ -420,7 +417,7 @@ bool DB_LockAddressForServerInfo(const size_t id, std::string& address, uint16_t
 			goto cleanup;
 		}
 
-		if (!GetLockedAddress(id, address, port))
+		if (!GetLockedAddress(id, ip, port))
 		{
 			goto cleanup;
 		}

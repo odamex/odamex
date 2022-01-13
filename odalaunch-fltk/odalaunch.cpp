@@ -41,3 +41,26 @@ int __cdecl ms_vsnprintf(char* s, size_t n, const char* format, va_list arg)
 }
 
 #endif
+
+std::string AddressCombine(const char* address, uint16_t port)
+{
+	char buffer[128];
+	snprintf(buffer, ARRAY_LENGTH(buffer), "%s:%u", address, port);
+	return buffer;
+}
+
+std::string AddressCombine(const char* address, const char* port)
+{
+	char buffer[128];
+	snprintf(buffer, ARRAY_LENGTH(buffer), "%s:%s", address, port);
+	return buffer;
+}
+
+void AddressSplit(const char* address, std::string& outIp, uint16_t& outPort)
+{
+	outIp = address;
+	const size_t colon = outIp.rfind(':');
+	const std::string port = outIp.substr(colon + 1);
+	outPort = static_cast<uint16_t>(atoi(port.c_str()));
+	outIp = outIp.substr(0, colon);
+}

@@ -25,3 +25,4 @@
 #include "odalaunch.h"
 
 void Work_Init();
+void Work_Deinit();

@@ -79,6 +79,14 @@ struct Bad_arg_to_ARRAY_LENGTH
 	static Is_array check_type(const void*, const void*);
 };
 
+// Utility functions.
+
+#include <string>
+
+std::string AddressCombine(const char* address, uint16_t port);
+std::string AddressCombine(const char* address, const char* port);
+void AddressSplit(const char* address, std::string& outIp, uint16_t& outPort);
+
 // Global variables.
 
 class MainWindow;

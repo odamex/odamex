@@ -22,9 +22,10 @@
 
 #include "work_thread.h"
 
-#include "thread.h"
 #include <stddef.h>
+#include <thread>
 
+#include "concurrentqueue.h"
 #include <FL/Fl.H>
 
 #include "db.h"
@@ -33,11 +34,35 @@
 #include "net_packet.h"
 #include "plat.h"
 
+enum class jobSignal_e
+{
+	NONE,
+	QUIT,
+	REFRESH_ALL,
+};
+
 enum awakeMessage_e
 {
 	AWAKE_NONE,
 	AWAKE_REDRAW_SERVERS,
 };
+
+struct workerMessage_t
+{
+	enum class message_e
+	{
+		NONE,
+		REFRESH_MASTER,
+		REFRESH_SERVER,
+	};
+
+	message_e msg;
+	std::string server;
+};
+
+static std::atomic<jobSignal_e> kJobSignal;
+static moodycamel::ConcurrentQueue<workerMessage_t> kJobQueue;
+static std::vector<std::thread> kThreads;
 
 // Default list of master servers, usually official ones
 static const char* DEFAULT_MASTERS[] = {"master1.odamex.net:15000",
@@ -47,6 +72,7 @@ static const int MASTER_TIMEOUT = 500;
 static const int SERVER_TIMEOUT = 1000;
 static const int USE_BROADCAST = false;
 static const int QUERY_RETRIES = 2;
+static const int WORKER_SLEEP = 50;
 
 /**
  * @brief [WORKER] Get a server list from the master server.
@@ -117,45 +143,85 @@ static void AwakeProc(void* data)
 /**
  * @brief [WORKER] Main worker thread proc.
  */
-static int WorkerProc(void*)
+static void WorkerProc()
 {
-	WorkerRefreshMaster();
-	Fl::awake(AwakeProc, (void*)AWAKE_REDRAW_SERVERS);
-
-	std::string address;
-	uint16_t port;
 	for (;;)
 	{
-		const size_t id = reinterpret_cast<size_t>(thread_current_thread_id());
-		if (DB_LockAddressForServerInfo(id, address, port))
+		workerMessage_t work;
+		if (kJobQueue.try_dequeue(work))
 		{
-			// Locked an address - let's update it.
-			WorkerRefreshServer(address, port);
-			Fl::awake(AwakeProc, (void*)AWAKE_REDRAW_SERVERS);
+			switch (work.msg)
+			{
+			case workerMessage_t::message_e::REFRESH_MASTER:
+				WorkerRefreshMaster();
+				kJobSignal.store(jobSignal_e::REFRESH_ALL);
+				Fl::awake(AwakeProc, (void*)AWAKE_REDRAW_SERVERS);
+				break;
+			case workerMessage_t::message_e::REFRESH_SERVER: {
+				std::string ip;
+				uint16_t port;
+				AddressSplit(work.server.c_str(), ip, port);
+				WorkerRefreshServer(ip, port);
+				Fl::awake(AwakeProc, (void*)AWAKE_REDRAW_SERVERS);
+				break;
+			}
+			default:
+				break;
+			}
 		}
-		else
+
+		switch (kJobSignal.load())
 		{
-			// Could not lock a server - we're done.
+		case jobSignal_e::QUIT: {
+			return;
+		}
+		case jobSignal_e::REFRESH_ALL: {
+			const uint64_t id = std::hash<std::thread::id>{}(std::this_thread::get_id());
+			std::string ip;
+			uint16_t port;
+			if (DB_LockAddressForServerInfo(id, ip, port))
+			{
+				// Locked an address - let's update it.
+				WorkerRefreshServer(ip, port);
+				Fl::awake(AwakeProc, (void*)AWAKE_REDRAW_SERVERS);
+			}
+			else
+			{
+				// Could not lock a server - we're done.
+				kJobSignal.store(jobSignal_e::NONE);
+			}
+		}
+		default:
 			break;
 		}
-	}
-	return 0;
-}
 
-std::vector<thread_ptr_t> kThreads;
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	}
+}
 
 /**
  * @brief [MAIN] Initializes the workers.
  */
 void Work_Init()
 {
-	const uint32_t threads = Plat_GetCoreCount();
+	kJobSignal.store(jobSignal_e::NONE);
+	kJobQueue.try_enqueue({workerMessage_t::message_e::REFRESH_MASTER, ""});
+
+	const unsigned threads = std::thread::hardware_concurrency();
 	for (uint32_t i = 0; i < threads; i++)
 	{
-		const thread_ptr_t worker = thread_create(WorkerProc, NULL, "WorkerMain", 8192);
-		if (worker != NULL)
-		{
-			kThreads.push_back(worker);
-		}
+		kThreads.emplace_back(WorkerProc);
+	}
+}
+
+/**
+ * @brief [MAIN] Destroys the workers.
+ */
+void Work_Deinit()
+{
+	kJobSignal.store(jobSignal_e::QUIT);
+	for (uint32_t i = 0; i < kThreads.size(); i++)
+	{
+		kThreads[i].join();
 	}
 }

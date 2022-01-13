@@ -33,6 +33,7 @@ globals_t g;
 
 static void Shutdown()
 {
+	Work_Deinit();
 	odalpapi::BufferedSocket::ShutdownSocketAPI();
 	DB_DeInit();
 }
