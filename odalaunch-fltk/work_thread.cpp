@@ -125,6 +125,7 @@ static void WorkerRefreshServer(const std::string& address)
 	}
 	else
 	{
+		DB_StrikeServer(address);
 		Log_Debug("Could not update server info for %s.\n", address.c_str(), port);
 	}
 }

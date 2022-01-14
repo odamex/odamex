@@ -69,6 +69,10 @@ static const char* GET_LOCKED_SERVER = //
     "SELECT address FROM servers "     //
     "WHERE lockid = :lockid;";         //
 
+static const char* STRIKE_SERVER = //
+    "DELETE FROM servers "         //
+    "WHERE address = :address;";   //
+
 sqlite3* kDatabase;
 
 static void SQLError(void*, int errCode, const char* msg)
@@ -179,7 +183,6 @@ bool DB_Init()
 	return true;
 }
 
-
 /**
  * @brief Close database.
  */
@@ -200,28 +203,20 @@ void DB_AddServer(const std::string& address)
 {
 	sqlite3_stmt* stmt = SQLPrepare(::ADD_SERVER);
 	if (stmt == NULL)
-	{
-		goto cleanup;
-	}
+		return;
+
+	ON_SCOPE_EXIT(sqlite3_finalize(stmt););
 
 	if (!SQLBindText(stmt, ":address", address.c_str()))
-	{
-		goto cleanup;
-	}
+		return;
 
 	for (size_t tries = 0; tries < ::SQL_TRIES; tries++)
 	{
 		if (sqlite3_step(stmt) != SQLITE_DONE)
-		{
 			continue;
-		}
 
 		break;
 	}
-
-cleanup:
-	sqlite3_finalize(stmt);
-	return;
 }
 
 void DB_AddServerInfo(const odalpapi::Server& server)
@@ -230,24 +225,18 @@ void DB_AddServerInfo(const odalpapi::Server& server)
 
 	sqlite3_stmt* stmt = SQLPrepare(::ADD_SERVER_INFO);
 	if (stmt == NULL)
-	{
-		goto cleanup;
-	}
+		return;
+
+	ON_SCOPE_EXIT(sqlite3_finalize(stmt););
 
 	if (!SQLBindText(stmt, ":address", server.GetAddress().c_str()))
-	{
-		goto cleanup;
-	}
+		return;
 
 	if (!SQLBindText(stmt, ":servername", server.Info.Name.c_str()))
-	{
-		goto cleanup;
-	}
+		return;
 
 	if (!SQLBindInt(stmt, ":gametype", server.Info.GameType))
-	{
-		goto cleanup;
-	}
+		return;
 
 	for (size_t i = 1; i < server.Info.Wads.size(); i++)
 	{
@@ -255,9 +244,7 @@ void DB_AddServerInfo(const odalpapi::Server& server)
 	}
 	wads.erase(wads.length() - 1);
 	if (!SQLBindText(stmt, ":wads", wads.c_str()))
-	{
-		goto cleanup;
-	}
+		return;
 
 	for (size_t tries = 0; tries < ::SQL_TRIES; tries++)
 	{
@@ -269,10 +256,6 @@ void DB_AddServerInfo(const odalpapi::Server& server)
 
 		break;
 	}
-
-cleanup:
-	sqlite3_finalize(stmt);
-	return;
 }
 
 /**
@@ -285,9 +268,9 @@ void DB_GetServerList(serverRows_t& rows)
 
 	sqlite3_stmt* stmt = SQLPrepare(::GET_SERVER_LIST);
 	if (!stmt)
-	{
-		goto cleanup;
-	}
+		return;
+
+	ON_SCOPE_EXIT(sqlite3_finalize(stmt););
 
 	newRowCount = 0;
 	for (size_t tries = 0; tries < ::SQL_TRIES;)
@@ -336,16 +319,12 @@ void DB_GetServerList(serverRows_t& rows)
 		case SQLITE_DONE:
 			// Resize the vector down - in case it's now too big.
 			rows.resize(newRowCount);
-			goto cleanup;
+			return;
 		default:
 			tries++;
 			break;
 		}
 	}
-
-cleanup:
-	sqlite3_finalize(stmt);
-	return;
 }
 
 static bool GetLockedAddress(const uint64_t id, std::string& outAddress)
@@ -353,14 +332,12 @@ static bool GetLockedAddress(const uint64_t id, std::string& outAddress)
 	int res;
 	sqlite3_stmt* stmt = SQLPrepare(::GET_LOCKED_SERVER);
 	if (!stmt)
-	{
-		goto cleanup;
-	}
+		return false;
+
+	ON_SCOPE_EXIT(sqlite3_finalize(stmt););
 
 	if (!SQLBindInt64(stmt, ":lockid", id))
-	{
-		goto cleanup;
-	}
+		return false;
 
 	for (size_t tries = 0; tries < ::SQL_TRIES;)
 	{
@@ -373,14 +350,13 @@ static bool GetLockedAddress(const uint64_t id, std::string& outAddress)
 			{
 				Log_Debug("Could not find address for lock %u\n",
 				          static_cast<uint32_t>(id));
-				goto cleanup;
+				return false;
 			}
 
 			outAddress = address;
 			break;
 		}
 		case SQLITE_DONE:
-			sqlite3_finalize(stmt);
 			return true;
 		default:
 			tries++;
@@ -388,8 +364,6 @@ static bool GetLockedAddress(const uint64_t id, std::string& outAddress)
 		}
 	}
 
-cleanup:
-	sqlite3_finalize(stmt);
 	return false;
 }
 
@@ -404,14 +378,12 @@ bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress)
 {
 	sqlite3_stmt* stmt = SQLPrepare(::LOCK_SERVER);
 	if (!stmt)
-	{
-		goto cleanup;
-	}
+		return false;
+
+	ON_SCOPE_EXIT(sqlite3_finalize(stmt););
 
 	if (!SQLBindInt64(stmt, ":lockid", id))
-	{
-		goto cleanup;
-	}
+		return false;
 
 	for (size_t tries = 0; tries < ::SQL_TRIES; tries++)
 	{
@@ -423,19 +395,36 @@ bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress)
 		if (!sqlite3_changes(::kDatabase))
 		{
 			Log_Debug("Lock not found for %u.\n", static_cast<uint32_t>(id));
-			goto cleanup;
+			return false;
 		}
 
 		if (!GetLockedAddress(id, outAddress))
 		{
-			goto cleanup;
+			return false;
 		}
 
-		sqlite3_finalize(stmt);
 		return true;
 	}
 
-cleanup:
-	sqlite3_finalize(stmt);
 	return false;
+}
+
+void DB_StrikeServer(const std::string& address)
+{
+	sqlite3_stmt* stmt = SQLPrepare(::STRIKE_SERVER);
+	if (stmt == NULL)
+		return;
+
+	ON_SCOPE_EXIT(sqlite3_finalize(stmt););
+
+	if (!SQLBindText(stmt, ":address", address.c_str()))
+		return;
+
+	for (size_t tries = 0; tries < ::SQL_TRIES; tries++)
+	{
+		if (sqlite3_step(stmt) != SQLITE_DONE)
+			continue;
+
+		break;
+	}
 }

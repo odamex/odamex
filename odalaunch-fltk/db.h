@@ -43,8 +43,9 @@ struct serverRow_t
 typedef std::vector<serverRow_t> serverRows_t;
 
 bool DB_Init();
+void DB_DeInit();
 void DB_AddServer(const std::string& address);
 void DB_AddServerInfo(const odalpapi::Server& server);
 void DB_GetServerList(serverRows_t& rows);
 bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress);
-void DB_DeInit();
+void DB_StrikeServer(const std::string& address);
