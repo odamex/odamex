@@ -95,33 +95,37 @@ static void WorkerRefreshMaster()
 	// Get the amount of servers found
 	for (size_t i = 0; i < master.GetServerCount(); i++)
 	{
-		std::string address;
+		std::string ip;
 		uint16_t port;
-		master.GetServerAddress(i, address, port);
-		DB_AddServer(address, port);
-		Log_Debug("Added server %s:%u.\n", address.c_str(), port);
+		master.GetServerAddress(i, ip, port);
+		DB_AddServer(AddressCombine(ip, port));
+		Log_Debug("Added server %s:%u.\n", ip.c_str(), port);
 	}
 }
 
 /**
  * @brief Update server info for a particular address.
  */
-static void WorkerRefreshServer(const std::string& address, const uint16_t port)
+static void WorkerRefreshServer(const std::string& address)
 {
 	odalpapi::Server server;
 	odalpapi::BufferedSocket socket;
 
+	std::string ip;
+	uint16_t port;
+	AddressSplit(address, ip, port);
+
 	server.SetSocket(&socket);
-	server.SetAddress(address, port);
+	server.SetAddress(ip, port);
 	int ok = server.Query(::SERVER_TIMEOUT);
 	if (ok)
 	{
 		DB_AddServerInfo(server);
-		Log_Debug("Added server info %s:%u.\n", address.c_str(), port);
+		Log_Debug("Added server info %s.\n", address, port);
 	}
 	else
 	{
-		Log_Debug("Could not update server info for %s:%u.\n", address.c_str(), port);
+		Log_Debug("Could not update server info for %s.\n", address, port);
 	}
 }
 
@@ -157,14 +161,10 @@ static void WorkerProc()
 				kJobSignal.store(jobSignal_e::REFRESH_ALL);
 				Fl::awake(AwakeProc, (void*)AWAKE_REDRAW_SERVERS);
 				break;
-			case workerMessage_t::message_e::REFRESH_SERVER: {
-				std::string ip;
-				uint16_t port;
-				AddressSplit(work.server.c_str(), ip, port);
-				WorkerRefreshServer(ip, port);
+			case workerMessage_t::message_e::REFRESH_SERVER:
+				WorkerRefreshServer(work.server.c_str());
 				Fl::awake(AwakeProc, (void*)AWAKE_REDRAW_SERVERS);
 				break;
-			}
 			default:
 				break;
 			}
@@ -177,12 +177,11 @@ static void WorkerProc()
 		}
 		case jobSignal_e::REFRESH_ALL: {
 			const uint64_t id = std::hash<std::thread::id>{}(std::this_thread::get_id());
-			std::string ip;
-			uint16_t port;
-			if (DB_LockAddressForServerInfo(id, ip, port))
+			std::string address;
+			if (DB_LockAddressForServerInfo(id, address))
 			{
 				// Locked an address - let's update it.
-				WorkerRefreshServer(ip, port);
+				WorkerRefreshServer(address);
 				Fl::awake(AwakeProc, (void*)AWAKE_REDRAW_SERVERS);
 			}
 			else
@@ -224,4 +223,19 @@ void Work_Deinit()
 	{
 		kThreads[i].join();
 	}
+}
+
+void Work_RefreshMaster()
+{
+	kJobQueue.try_enqueue({workerMessage_t::message_e::REFRESH_MASTER, ""});
+}
+
+void Work_RefreshServer(const std::string& address)
+{
+	kJobQueue.try_enqueue({workerMessage_t::message_e::REFRESH_SERVER, address});
+}
+
+void Work_RefreshAll()
+{
+	kJobSignal.store(jobSignal_e::REFRESH_ALL);
 }

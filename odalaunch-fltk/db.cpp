@@ -69,7 +69,7 @@ static const char* GET_LOCKED_SERVER = //
     "SELECT address FROM servers "     //
     "WHERE lockid = :lockid;";         //
 
-sqlite3* db;
+sqlite3* kDatabase;
 
 static void SQLError(void*, int errCode, const char* msg)
 {
@@ -79,7 +79,7 @@ static void SQLError(void*, int errCode, const char* msg)
 static sqlite3_stmt* SQLPrepare(const char* sql)
 {
 	sqlite3_stmt* rvo = NULL;
-	const int res = sqlite3_prepare_v2(::db, sql, -1, &rvo, NULL);
+	const int res = sqlite3_prepare_v2(kDatabase, sql, -1, &rvo, NULL);
 	if (res != SQLITE_OK)
 	{
 		return NULL;
@@ -148,7 +148,7 @@ static bool SQLBindText(sqlite3_stmt* stmt, const char* param, const char* data)
  */
 bool DB_Init()
 {
-	if (::db != NULL)
+	if (::kDatabase != NULL)
 	{
 		Log_Debug("Database is not NULL.\n");
 		return false;
@@ -156,22 +156,22 @@ bool DB_Init()
 
 	if (sqlite3_config(SQLITE_CONFIG_LOG, SQLError, NULL) != SQLITE_OK)
 	{
-		Log_Debug("Could not config database (%s).\n", sqlite3_errmsg(db));
+		Log_Debug("Could not config database (%s).\n", sqlite3_errmsg(kDatabase));
 		return false;
 	}
 
-	if (sqlite3_open(":memory:", &::db) != SQLITE_OK)
+	if (sqlite3_open(":memory:", &::kDatabase) != SQLITE_OK)
 	{
-		Log_Debug("Could not open database (%s).\n", sqlite3_errmsg(db));
+		Log_Debug("Could not open database (%s).\n", sqlite3_errmsg(kDatabase));
 		return false;
 	}
 
-	if (sqlite3_exec(::db, "PRAGMA integrity_check;", NULL, NULL, NULL))
+	if (sqlite3_exec(::kDatabase, "PRAGMA integrity_check;", NULL, NULL, NULL))
 	{
 		return false;
 	}
 
-	if (sqlite3_exec(::db, ::SERVERS_TABLE, NULL, NULL, NULL) != SQLITE_OK)
+	if (sqlite3_exec(::kDatabase, ::SERVERS_TABLE, NULL, NULL, NULL) != SQLITE_OK)
 	{
 		return false;
 	}
@@ -179,22 +179,32 @@ bool DB_Init()
 	return true;
 }
 
+
+/**
+ * @brief Close database.
+ */
+void DB_DeInit()
+{
+	if (kDatabase == NULL)
+		return;
+
+	sqlite3_close(kDatabase);
+	kDatabase = NULL;
+}
+
 /**
  * @brief Add a server address to the database.
  *        If the server already exists, just touch the masterupdate field.
  */
-void DB_AddServer(const std::string& address, const uint16_t port)
+void DB_AddServer(const std::string& address)
 {
-	std::string buffer;
-
 	sqlite3_stmt* stmt = SQLPrepare(::ADD_SERVER);
 	if (stmt == NULL)
 	{
 		goto cleanup;
 	}
 
-	buffer = AddressCombine(address.c_str(), port);
-	if (!SQLBindText(stmt, ":address", buffer.c_str()))
+	if (!SQLBindText(stmt, ":address", address.c_str()))
 	{
 		goto cleanup;
 	}
@@ -338,7 +348,7 @@ cleanup:
 	return;
 }
 
-static bool GetLockedAddress(const uint64_t id, std::string& outIp, uint16_t& outPort)
+static bool GetLockedAddress(const uint64_t id, std::string& outAddress)
 {
 	int res;
 	sqlite3_stmt* stmt = SQLPrepare(::GET_LOCKED_SERVER);
@@ -366,7 +376,7 @@ static bool GetLockedAddress(const uint64_t id, std::string& outIp, uint16_t& ou
 				goto cleanup;
 			}
 
-			AddressSplit(address, outIp, outPort);
+			outAddress = address;
 			break;
 		}
 		case SQLITE_DONE:
@@ -387,11 +397,10 @@ cleanup:
  * @brief Lock a row with a given id, intending to update its serverinfo.
  *
  * @param id Thread ID to use as a lock.
- * @param address Output address we found.
- * @param port Output port we found.
+ * @param outAddress Output address we found.
  * @return True if we locked a row, otherwise false.
  */
-bool DB_LockAddressForServerInfo(const uint64_t id, std::string& ip, uint16_t& port)
+bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress)
 {
 	sqlite3_stmt* stmt = SQLPrepare(::LOCK_SERVER);
 	if (!stmt)
@@ -411,13 +420,13 @@ bool DB_LockAddressForServerInfo(const uint64_t id, std::string& ip, uint16_t& p
 			continue;
 		}
 
-		if (!sqlite3_changes(::db))
+		if (!sqlite3_changes(::kDatabase))
 		{
 			Log_Debug("Lock not found for %u.\n", static_cast<uint32_t>(id));
 			goto cleanup;
 		}
 
-		if (!GetLockedAddress(id, ip, port))
+		if (!GetLockedAddress(id, outAddress))
 		{
 			goto cleanup;
 		}
@@ -429,16 +438,4 @@ bool DB_LockAddressForServerInfo(const uint64_t id, std::string& ip, uint16_t& p
 cleanup:
 	sqlite3_finalize(stmt);
 	return false;
-}
-
-/**
- * @brief Close database.
- */
-void DB_DeInit()
-{
-	if (db == NULL)
-		return;
-
-	sqlite3_close(db);
-	db = NULL;
 }

@@ -56,6 +56,12 @@ int __cdecl ms_vsnprintf(char* s, size_t n, const char* format, va_list arg);
 #define vsnprintf ms_vsnprintf
 #endif
 
+// Other global includes.
+
+#include <string>
+
+// Utility functions and classes.
+
 //
 // ARRAY_LENGTH
 //
@@ -79,13 +85,8 @@ struct Bad_arg_to_ARRAY_LENGTH
 	static Is_array check_type(const void*, const void*);
 };
 
-// Utility functions.
-
-#include <string>
-
-std::string AddressCombine(const char* address, uint16_t port);
-std::string AddressCombine(const char* address, const char* port);
-void AddressSplit(const char* address, std::string& outIp, uint16_t& outPort);
+std::string AddressCombine(const std::string& address, const uint16_t port);
+void AddressSplit(const std::string& address, std::string& outIp, uint16_t& outPort);
 
 // Global variables.
 
@@ -93,8 +94,7 @@ class MainWindow;
 
 struct globals_t
 {
-	MainWindow* mainWindow;
-	globals_t() : mainWindow(NULL) { }
+	MainWindow* mainWindow = nullptr;
 };
 
 extern globals_t g;
