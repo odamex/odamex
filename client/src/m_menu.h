@@ -163,18 +163,17 @@ typedef struct value_s {
 
 typedef struct
 {
-	// -1 = no cursor here, 1 = ok, 2 = arrows ok
-	short		status;
-
-	std::string	name;
+	
+	short		status;		// -1 = no cursor here, 1 = ok, 2 = arrows ok
+	std::string	name;		// name of either the patch to display or text to write
 
 	// choice = menu item #.
 	// if status = 2,
 	//	 choice=0:leftarrow,1:rightarrow
 	void		(*routine)(int choice);
 
-	// hotkey in menu
-	char		alphaKey;
+	char		alphaKey;	// hotkey in menu
+	bool		fulltext;	// whether to display the entry as a patch or text
 } oldmenuitem_t;
 
 typedef struct oldmenu_s

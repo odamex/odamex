@@ -1130,7 +1130,7 @@ void ST_Drawer()
 }
 
 
-static lumpHandle_t LoadFaceGraphic(char* name, int namespc)
+static lumpHandle_t LoadFaceGraphic(char* name, int namespc = ns_global)
 {
 	char othername[9];
 	int lump;
@@ -1147,21 +1147,27 @@ static lumpHandle_t LoadFaceGraphic(char* name, int namespc)
 
 static void ST_loadGraphics()
 {
-	int i, j;
-	int namespc;
-	int facenum;
 	char namebuf[9];
 
 	namebuf[8] = 0;
 
 	// Load the numbers, tall and short
-	if (gamemode == registered_heretic || gamemode == shareware_heretic)
+	if (gamemission == heretic)
 	{
-		
+		for (int i = 0; i < 10; i++)
+		{
+			sprintf(namebuf, "IN%d", i);
+			tallnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+
+			sprintf(namebuf, "SMALLIN%d", i);
+			shortnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		}
+
+		sbar = W_CachePatchHandle("STATBAR", PU_STATIC);
 	}
 	else
 	{
-		for (i = 0; i < 10; i++)
+		for (int i = 0; i < 10; i++)
 		{
 			sprintf(namebuf, "STTNUM%d", i);
 			tallnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
@@ -1175,7 +1181,7 @@ static void ST_loadGraphics()
 		tallpercent = W_CachePatchHandle("STTPRCNT", PU_STATIC);
 
 		// key cards
-		for (i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
+		for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
 		{
 			sprintf(namebuf, "STKEYS%d", i);
 			keys[i] = W_CachePatchHandle(namebuf, PU_STATIC);
@@ -1188,7 +1194,7 @@ static void ST_loadGraphics()
 		flagsbg = W_CachePatchHandle("STFLAGS", PU_STATIC);
 
 		// arms ownership widgets
-		for (i = 0; i < 6; i++)
+		for (int i = 0; i < 6; i++)
 		{
 			sprintf(namebuf, "STGNUM%d", i + 2);
 
@@ -1205,7 +1211,7 @@ static void ST_loadGraphics()
 		faceback = W_CachePatchHandle("STFBANY", PU_STATIC);
 
 		// [Nes] Classic vanilla lifebars.
-		for (i = 0; i < 4; i++)
+		for (int i = 0; i < 4; i++)
 		{
 			sprintf(namebuf, "STFB%d", i);
 			faceclassic[i] = W_CachePatchHandle(namebuf, PU_STATIC);
@@ -1215,16 +1221,16 @@ static void ST_loadGraphics()
 		sbar = W_CachePatchHandle("STBAR", PU_STATIC);
 
 		// face states
-		facenum = 0;
+		int facenum = 0;
 
 		namebuf[0] = 'S';
 		namebuf[1] = 'T';
 		namebuf[2] = 'F';
-		namespc = ns_global;
+		const int namespc = ns_global;
 
-		for (i = 0; i < ST_NUMPAINFACES; i++)
+		for (int i = 0; i < ST_NUMPAINFACES; i++)
 		{
-			for (j = 0; j < ST_NUMSTRAIGHTFACES; j++)
+			for (int j = 0; j < ST_NUMSTRAIGHTFACES; j++)
 			{
 				sprintf(namebuf + 3, "ST%d%d", i, j);
 				faces[facenum++] = LoadFaceGraphic(namebuf, namespc);
@@ -1243,7 +1249,7 @@ static void ST_loadGraphics()
 		strcpy(namebuf + 3, "GOD0");
 		faces[facenum++] = LoadFaceGraphic(namebuf, namespc);
 		strcpy(namebuf + 3, "DEAD0");
-		faces[facenum++] = LoadFaceGraphic(namebuf, namespc);
+		faces[facenum] = LoadFaceGraphic(namebuf, namespc);
 	}
 }
 

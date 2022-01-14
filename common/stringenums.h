@@ -576,6 +576,49 @@ extern const OString TXT_WEAPON_M4;
 extern const OString TXT_QUIETUS_PIECE;
 extern const OString TXT_WRAITHVERGE_PIECE;
 extern const OString TXT_BLOODSCOURGE_PIECE;
+extern const OString MNU_NEWGAME;
+extern const OString MNU_OPTIONS;
+extern const OString MNU_GAMEFILES;
+extern const OString MNU_INFO;
+extern const OString MNU_QUITGAME;
+extern const OString MNU_FIGHTER;
+extern const OString MNU_CLERIC;
+extern const OString MNU_MAGE;
+extern const OString MNU_RANDOM;
+extern const OString MNU_LOADGAME;
+extern const OString MNU_SAVEGAME;
+extern const OString MNU_COTD;
+extern const OString MNU_HELLSMAW;
+extern const OString MNU_DOME;
+extern const OString MNU_OSSUARY;
+extern const OString MNU_DEMESNE;
+extern const OString MNU_WETNURSE;
+extern const OString MNU_YELLOWBELLIES;
+extern const OString MNU_BRINGEST;
+extern const OString MNU_SMITE;
+extern const OString MNU_BLACKPLAGUE;
+extern const OString MNU_NOPICTURE;
+extern const OString MNU_DIFFVERSION;
+extern const OString MNU_NOFILES;
+extern const OString MNU_CHOOSECLASS;
+extern const OString MNU_CHOOSESKILL;
+extern const OString MNU_SQUIRE;
+extern const OString MNU_KNIGHT;
+extern const OString MNU_WARRIOR;
+extern const OString MNU_BERSERKER;
+extern const OString MNU_TITAN;
+extern const OString MNU_ALTARBOY;
+extern const OString MNU_ACOLYTE;
+extern const OString MNU_PRIEST;
+extern const OString MNU_CARDINAL;
+extern const OString MNU_POPE;
+extern const OString MNU_APPRENTICE;
+extern const OString MNU_ENCHANTER;
+extern const OString MNU_SORCERER;
+extern const OString MNU_WARLOCK;
+extern const OString MNU_ARCHMAGE;
+extern const OString MNU_PLAYERSETUP;
+extern const OString MNU_DELETESG;
 extern const OString BBA_BONED;
 extern const OString BBA_CASTRA;
 extern const OString BBA_CREAMED;
@@ -684,7 +727,7 @@ extern const OString TXT_BUDDHAON;
 extern const OString TXT_BUDDHAOFF;
 
 
-#define STRING_INDEXES_LENGTH 655
+#define STRING_INDEXES_LENGTH 698
 
 extern const OString* const stringIndexes[STRING_INDEXES_LENGTH];
 
