@@ -28,53 +28,7 @@
 #include "m_wdlstats.h"
 #include "c_cvars.h"
 #include "d_player.h"
-
-void OnChangedSwitchTexture(line_t* line, int useAgain);
-void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
-                        const LineActivationType activationType, const bool bossaction);
-BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
-                    byte speed_byte, int topwait, zdoom_lock_t lock, byte lightTag,
-                    bool boomgen, int topcountdown);
-bool EV_DoZDoomPillar(DPillar::EPillar type, line_t* line, int tag, fixed_t speed,
-                      fixed_t floordist, fixed_t ceilingdist, int crush, bool hexencrush);
-bool EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
-                       fixed_t height, int tag);
-int EV_ZDoomFloorCrushStop(int tag);
-BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
-BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
-void P_HealMobj(AActor* mo, int num);
-void EV_LightSetMinNeighbor(int tag);
-void EV_LightSetMaxNeighbor(int tag);
-void P_ApplySectorFriction(int tag, int value, bool use_thinker);
-void P_SetupSectorDamage(sector_t* sector, short amount, byte interval, byte leakrate,
-                         unsigned int flags);
-void P_AddSectorSecret(sector_t* sector);
-void P_SpawnLightFlash(sector_t* sector);
-void P_SpawnStrobeFlash(sector_t* sector, int utics, int ltics, bool inSync);
-void P_SpawnFireFlicker(sector_t* sector);
-lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
-                                     bool bossaction);
-lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
-                                 unsigned int activationType);
-void P_CollectSecretZDoom(sector_t* sector, player_t* player);
-bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
-                             unsigned int activationType);
-bool P_ExecuteZDoomLineSpecial(int special, short* args, line_t* line, int side,
-                               AActor* mo);
-BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
-                     fixed_t height, int crush, int change, bool hexencrush,
-                     bool hereticlower);
-BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
-                       fixed_t speed2, fixed_t height, int crush, byte silent, int change,
-                       crushmode_e crushmode);
-void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
-void SetTextureNoErr(short* texture, unsigned int* color, char* name);
-
-int P_Random(AActor* actor);
-const LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int activationType);
-void P_SpawnPhasedLight(sector_t* sector, int base, int index);
-void P_SpawnLightSequence(sector_t* sector);
-AActor* P_GetPushThing(int s);
+#include "p_zdoomhexspec.h"
 
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
@@ -122,37 +76,23 @@ lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 		return result;
 	}
 
-	repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
-
 	buttonSuccess = P_ExecuteZDoomLineSpecial(line->special, line->args, line, side, mo);
 
 	result.switchchanged = buttonSuccess;
 	result.lineexecuted = true;
-
-	SV_OnActivatedLine(line, mo, side, P_LineActivationTypeForSPACFlag(activationType),
-	                   false);
-
-	if (buttonSuccess && line->flags & ML_SPAC_USE | ML_SPAC_IMPACT | ML_SPAC_PUSH)
-	{
-		if (serverside)
-		{
-			P_ChangeSwitchTexture(line, repeat, true);
-			OnChangedSwitchTexture(line, repeat);
-		}
-	}
 
 	return result;
 }
 
 const LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int activationType)
 {
-	if (activationType & (ML_SPAC_CROSS | ML_SPAC_MCROSS | ML_SPAC_PCROSS))
+	if (activationType & (ML_SPAC_CROSS | ML_SPAC_MCROSS | ML_SPAC_PCROSS | ML_SPAC_CROSSTHROUGH))
 		return LineActivationType::LineCross;
 	else if (activationType & ML_SPAC_IMPACT)
 		return LineActivationType::LineShoot;
 	else if (activationType & ML_SPAC_PUSH)
 		return LineActivationType::LinePush;
-	else if (activationType & ML_SPAC_USE)
+	else if (activationType & ML_SPAC_USE | ML_SPAC_USETHROUGH)
 		return LineActivationType::LineUse;
 
 	return LineActivationType::LineUse;
@@ -170,15 +110,16 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 
 	lineActivation = line->flags & ML_SPAC_MASK;
 
-	if (line->special == Teleport && lineActivation & ML_SPAC_CROSS &&
-	    activationType == ML_SPAC_PCROSS && mo && mo->flags & MF_MISSILE)
+	if (line->special == Teleport &&
+	    (lineActivation & ML_SPAC_CROSS | ML_SPAC_CROSSTHROUGH) &&
+	    activationType & ML_SPAC_PCROSS && mo && mo->flags & MF_MISSILE)
 	{ // Let missiles use regular player teleports
 		lineActivation |= ML_SPAC_PCROSS;
 	}
 
 	if (!(lineActivation & activationType))
 	{
-		if (activationType != ML_SPAC_MCROSS || lineActivation != ML_SPAC_CROSS)
+		if (!(activationType & ML_SPAC_MCROSS) || !(lineActivation & ML_SPAC_CROSS))
 		{
 			return false;
 		}
@@ -186,7 +127,7 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 
 	if (mo && !mo->player && mo->type != MT_AVATAR && !(mo->flags & MF_MISSILE) &&
 	    !(line->flags & ML_MONSTERSCANACTIVATE) &&
-	    (activationType != ML_SPAC_MCROSS || !(lineActivation & ML_SPAC_MCROSS)))
+	    (!(activationType & ML_SPAC_MCROSS) || !(lineActivation & ML_SPAC_MCROSS)))
 	{
 		bool noway = true;
 
@@ -236,7 +177,7 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 		return !noway;
 	}
 
-	if (activationType == ML_SPAC_MCROSS && !(lineActivation & ML_SPAC_MCROSS) &&
+	if (activationType & ML_SPAC_MCROSS && !(lineActivation & ML_SPAC_MCROSS) &&
 	    !(line->flags & ML_MONSTERSCANACTIVATE))
 	{
 		return false;

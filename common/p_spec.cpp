@@ -1931,7 +1931,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	if(thing)
 	{
-		if (map_format.getZDoom() && !(GET_SPAC(line->flags) == ML_SPAC_IMPACT))
+		if (map_format.getZDoom() && !(line->flags == ML_SPAC_IMPACT))
 			return;
 
 		if (thing->flags & MF_MISSILE)
@@ -2018,19 +2018,27 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 	else
 		result = P_UseCompatibleSpecialLine(thing, line, side, bossaction);
 
-	if (result.lineexecuted)
+ 	if (result.lineexecuted)
 	{
-		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
+		if (map_format.getZDoom())
+		{
+			SV_OnActivatedLine(line, thing, side,
+			                   P_LineActivationTypeForSPACFlag(ML_SPAC_USE), false);
+		}
+		else
+		{
+			SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
+		}
 
 		if (serverside &&
-		    (map_format.getZDoom() && (!(GET_SPAC(line->flags) & ML_SPAC_PUSH)) ||
+		    (map_format.getZDoom() && (!(line->flags & ML_SPAC_PUSH)) ||
 		     !map_format.getZDoom()) &&
 		    result.switchchanged)
 		{
 			bool repeat;
 
 			if (map_format.getZDoom())
-				repeat = line->flags & ML_REPEATSPECIAL;
+				repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
 			else
 				repeat = P_IsSpecialBoomRepeatable(line->special);
 
@@ -2067,7 +2075,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 
 	if(thing)
 	{
-		if (GET_SPAC(line->flags) != ML_SPAC_PUSH)
+		if (!(line->flags & ML_SPAC_PUSH))
 			return false;
 
 		// Switches that other things can activate.

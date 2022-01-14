@@ -28,43 +28,9 @@
 #include "m_wdlstats.h"
 #include "c_cvars.h"
 #include "d_player.h"
+#include "p_boomfspec.h"
 
 EXTERN_CVAR(sv_allowexit)
-
-void G_SecretExitLevel(int position, int drawscores);
-void P_DamageMobj(AActor* target, AActor* inflictor, AActor* source, int damage, int mod,
-                  int flags);
-lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
-                                          bool bossaction);
-const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags);
-void P_ApplyGeneralizedSectorDamage(player_t* player, int bits);
-void P_CollectSecretBoom(sector_t* sector, player_t* player);
-void P_PlayerInCompatibleSector(player_t* player);
-bool P_ActorInCompatibleSector(AActor* actor);
-lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
-                                        bool bossaction);
-lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
-BOOL EV_DoGenDoor(line_t* line);
-BOOL EV_DoGenFloor(line_t* line);
-BOOL EV_DoGenCeiling(line_t* line);
-BOOL EV_DoGenLift(line_t* line);
-BOOL EV_DoGenStairs(line_t* line);
-bool P_CanUnlockGenDoor(line_t* line, player_t* player);
-BOOL EV_DoGenLockedDoor(line_t* line);
-BOOL EV_DoGenCrusher(line_t* line);
-int EV_DoDonut(line_t* line);
-void P_CollectSecretVanilla(sector_t* sector, player_t* player);
-void EV_StartLightStrobing(int tag, int upper, int lower, int utics, int ltics);
-void EV_StartLightStrobing(int tag, int utics, int ltics);
-void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
-void SetTextureNoErr(short* texture, unsigned int* color, char* name);
-void P_AddSectorSecret(sector_t* sector);
-void P_SpawnLightFlash(sector_t* sector);
-void P_SpawnStrobeFlash(sector_t* sector, int utics, int ltics, bool inSync);
-void P_SpawnFireFlicker(sector_t* sector);
-AActor* P_GetPushThing(int);
-
-extern BOOL demoplayback;
 
 //
 // P_CrossCompatibleSpecialLine - Walkover Trigger Dispatcher
@@ -978,7 +944,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 		case 207:
 			// killough 2/16/98: W1 silent teleporter (normal kind)
-			if (EV_SilentTeleport(1, 0, line->id, 0, line, side, thing))
+			if (EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing))
 			{
 				result.lineexecuted = true;
 				//line->special = 0;
@@ -1086,7 +1052,8 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			break;
 
 		case 268: // jff 4/14/98 add monster-only silent
-			if (!thing->player && EV_SilentTeleport(1, 0, line->id, 0, line, side, thing))
+			if (!thing->player &&
+			    EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing))
 			{
 				result.lineexecuted = true;
 				//line->special = 0;
@@ -2604,7 +2571,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 209:
 			// killough 1/31/98: silent teleporter
 			// jff 209 S1 SilentTeleport
-			if (EV_SilentTeleport(line->args[0], 0, line->id, 0, line, side, thing))
+			if (EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2909,7 +2876,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 210:
 			// killough 1/31/98: silent teleporter
 			// jff 210 SR SilentTeleport
-			if (EV_LineTeleport(line, side, thing))
+			if (EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;

@@ -2756,18 +2756,21 @@ BOOL PTR_UseTraverse (intercept_t *in)
 	//[ML] And NOW (8/16/10) it checks whether it's use or NOT the passthrough flags
 	// (passthru on a cross or use line).  This may get augmented/changed even more in the future.
 	
-	bool eatuse = false;
+	bool donteatuse;
 	if (map_format.getZDoom())
 	{
-		eatuse = (GET_SPAC(in->d.line->flags) == ML_SPAC_USE ||
-		        (GET_SPAC(in->d.line->flags) != ML_SPAC_CROSS &&
-		         GET_SPAC(in->d.line->flags) != ML_SPAC_USE))
-		           ? true
-		           : false;
+		donteatuse = ((in->d.line->flags & ML_SPAC_USE) ||
+		          (!(in->d.line->flags & ML_SPAC_CROSSTHROUGH) &&
+		           (!(in->d.line->flags & ML_SPAC_USETHROUGH))))
+		             ? false
+		             : true;
+	}
+	else
+	{
+		donteatuse = (in->d.line->flags & ML_PASSUSE);
 	}
 
-	return (!demoplayback && (in->d.line->flags & ML_PASSUSE) && !eatuse) ?
-          true : false;
+	return donteatuse;
 }
 
 // Returns false if a "oof" sound should be made because of a blocking

@@ -617,7 +617,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 						door->PlayDoorSound();
 						return true;
 					}
-					else if (map_format.getZDoom() && GET_SPAC(line->flags) == ML_SPAC_PUSH)
+					else if (map_format.getZDoom() && (line->flags & ML_SPAC_PUSH))
 					{
 						// [RH] activate push doors don't go back down when you
 						// run into them (otherwise opening them would be

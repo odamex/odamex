@@ -149,15 +149,17 @@ typedef struct
 
 #define ML_REPEATSPECIAL	0x00010000 // special is repeatable
 
-#define ML_SPAC_CROSS		0x00020000 // hexen activation
-#define ML_SPAC_USE			0x00040000 // hexen activation
-#define ML_SPAC_MCROSS		0x00080000 // hexen activation
-#define ML_SPAC_IMPACT		0x00100000 // hexen activation
-#define ML_SPAC_PUSH		0x00200000 // hexen activation
-#define ML_SPAC_PCROSS		0x00400000 // hexen activation
+#define ML_SPAC_CROSS			0x00020000 // hexen activation
+#define ML_SPAC_USE				0x00040000 // hexen activation
+#define ML_SPAC_MCROSS			0x00080000 // hexen activation
+#define ML_SPAC_IMPACT			0x00100000 // hexen activation
+#define ML_SPAC_PUSH			0x00200000 // hexen activation
+#define ML_SPAC_PCROSS			0x00400000 // hexen activation
+#define ML_SPAC_USETHROUGH		0x00800000 // SPAC_USE, but passes it through
+#define ML_SPAC_CROSSTHROUGH	0x01600000 // SPAC_CROSS, but passes it through
 
 #define ML_SPAC_SHIFT		10
-#define ML_SPAC_MASK (ML_SPAC_CROSS|ML_SPAC_USE|ML_SPAC_MCROSS|ML_SPAC_IMPACT|ML_SPAC_PUSH|ML_SPAC_PCROSS)
+#define ML_SPAC_MASK (ML_SPAC_CROSS|ML_SPAC_USE|ML_SPAC_MCROSS|ML_SPAC_IMPACT|ML_SPAC_PUSH|ML_SPAC_PCROSS|ML_SPAC_USETHROUGH|ML_SPAC_CROSSTHROUGH)
 #define GET_SPAC(flags)		((flags&ML_SPAC_MASK)>>ML_SPAC_SHIFT)
 
 // hexen
