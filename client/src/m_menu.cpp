@@ -920,18 +920,18 @@ void M_ReadThis2(int choice)
 
 void M_ReadThis3(int choice)
 {
-    if (gameinfo.flags & GI_SHAREWARE) {
+    if (gameinfo.flags & GI_SHAREWARE)
+	{
         choice = 0;
         drawSkull = false;
         M_SetupNextMenu(&ReadDef3);
-    } else {
-        M_FinishReadThis(0);
     }
+	else
+        M_FinishReadThis(0);
 }
 
 void M_FinishReadThis(int choice)
 {
-	choice = 0;
 	drawSkull = true;
 	MenuStackDepth = 0;
 	M_SetupNextMenu(&MainDef);
@@ -1196,7 +1196,6 @@ void M_EndGameResponse(int ch)
 
 void M_EndGame(int choice)
 {
-	choice = 0;
 	if (!usergame)
 	{
 		S_Sound(CHAN_INTERFACE, "player/male/grunt1", 1, ATTN_NONE);
@@ -1253,7 +1252,7 @@ void M_QuitDOOM(int choice)
 
 void M_QuitHERETIC(int choice)
 {
-	StrFormat(endstring, "%s\n\n", GStrings.getIndex(GStrings.toIndex(QUITMSG)));
+	StrFormat(endstring, "%s\n\n", GStrings.getIndex(GStrings.toIndex(RAVENQUITMSG)));
 	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
 }
 
@@ -1560,7 +1559,7 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 	cl_team = GetTeamInfo(team)->ColorStringUpper.c_str();
 }
 
-static void M_ChangeGender (int choice)
+static void M_ChangeGender(int choice)
 {
 	int gender = D_GenderByName(cl_gender.cstring());
 
@@ -1572,7 +1571,7 @@ static void M_ChangeGender (int choice)
 	cl_gender = genders[gender];
 }
 
-static void M_ChangeAutoAim (int choice)
+static void M_ChangeAutoAim(int choice)
 {
 	static const float ranges[] = { 0, 0.25, 0.5, 1, 2, 3, 5000 };
 	float aim = cl_autoaim;
@@ -1598,10 +1597,10 @@ static void M_ChangeAutoAim (int choice)
 		}
 	}
 
-	cl_autoaim.Set (aim);
+	cl_autoaim.Set(aim);
 }
 
-static void M_EditPlayerName (int choice)
+static void M_EditPlayerName(int choice)
 {
 	// we are going to be intercepting all chars
 	genStringEnter = 1;
@@ -1615,11 +1614,11 @@ static void M_EditPlayerName (int choice)
 	saveCharIndex = strlen(savegamestrings[0]);
 }
 
-static void M_PlayerNameChanged (int choice)
+static void M_PlayerNameChanged(int choice)
 {
 	char command[SAVESTRINGSIZE+8+2];
 
-	sprintf (command, "cl_name \"%s\"", savegamestrings[0]);
+	sprintf(command, "cl_name \"%s\"", savegamestrings[0]);
 	AddCommandString (command);
 }
 /*
@@ -1715,7 +1714,6 @@ void M_StartMessage (const char *string, void (*routine)(int), bool input)
 	messageRoutine = routine;
 	messageNeedsInput = input;
 	menuactive = true;
-	return;
 }
 
 
@@ -1736,10 +1734,9 @@ int M_StringHeight(char* string)
 	if (::hu_font[0].empty())
 		return 8;
 
-	int h;
 	const int height = W_ResolvePatchHandle(hu_font[0])->height();
 
-	h = height;
+	int h = height;
 	while (*string)
 		if ((*string++) == '\n')
 			h += height;
@@ -1758,11 +1755,9 @@ int M_StringHeight(char* string)
 //
 bool M_Responder (event_t* ev)
 {
-	int ch, ch2;
-	int i;
-	const char *cmd;
+	int ch2;
 
-	ch = ch2 = -1;
+	int ch = ch2 = -1;
 
 	// eat mouse events
 	if(menuactive)
@@ -1815,7 +1810,7 @@ bool M_Responder (event_t* ev)
 		}
 	}
 
-	cmd = Bindings.GetBind(ch).c_str();
+	const char* cmd = Bindings.GetBind(ch).c_str();
 
 	// Save Game string input
 	// [RH] and Player Name string input
@@ -1985,15 +1980,16 @@ bool M_Responder (event_t* ev)
 		}
 		else
 		{
-			if (ch2 && (ch < OKEY_JOY1)) {
-				for (i = itemOn + 1; i < currentMenu->numitems; i++)
+			if (ch2 && (ch < OKEY_JOY1))
+			{
+				for (int i = itemOn + 1; i < currentMenu->numitems; i++)
 					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
 					{
 						itemOn = i;
 						S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 						return true;
 					}
-				for (i = 0; i <= itemOn; i++)
+				for (int i = 0; i <= itemOn; i++)
 					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
 					{
 						itemOn = i;
@@ -2097,7 +2093,10 @@ void M_Drawer()
 						screen->DrawPatchClean(W_CachePatch(oldmenuitem.name.c_str()), x, y);
 				}
 
-				y += HTCLINEHEIGHT;
+				if (gamemission == heretic)
+					y += HTCLINEHEIGHT;
+				else
+					y += LINEHEIGHT;
 			}
 
 			// DRAW SKULL
