@@ -165,7 +165,7 @@ void DDoor::RunThink ()
 	case closing:
 		res = MoveCeiling(m_Speed, floorheight, -1);
 		
-        if (m_LightTag && m_TopHeight - floorheight)
+        if (m_Line && m_Line->id)
         {
             EV_LightTurnOnPartway(m_Line->id,
                 FixedDiv(ceilingheight - floorheight, m_TopHeight - floorheight));

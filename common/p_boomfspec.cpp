@@ -3414,7 +3414,12 @@ const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags)
 		const unsigned int filter = 0x03ff;
 	*/
 
-	const unsigned int filter = 0x3fff;
+	unsigned int filter;
+
+	if (demoplayback)
+		filter = 0x01ff;
+	else
+		filter = 0x3fff;
 
 	return (flags & filter);
 }

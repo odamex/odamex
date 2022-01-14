@@ -72,10 +72,6 @@
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
 
-#define SPEED(a) ((a) * (FRACUNIT / 8))
-
-#define TICS(a) (((a)*TICRATE) / 35)
-
 std::list<movingsector_t> movingsectors;
 bool s_SpecialFromServer;
 
@@ -1414,12 +1410,12 @@ int P_FindMinSurroundingLight (sector_t *sector, int max)
 
 bool P_CeilingActive(const sector_t* sec)
 {
-	return sec->ceilingdata != NULL || (demoplayback && sec->floordata != NULL);
+	return sec->ceilingdata != NULL || (sec->floordata != NULL);
 }
 
 bool P_FloorActive(const sector_t* sec)
 {
-	return sec->floordata != NULL || (demoplayback && sec->ceilingdata != NULL);
+	return sec->floordata != NULL || (sec->ceilingdata != NULL);
 }
 
 bool P_LightingActive(const sector_t* sec)
@@ -1915,9 +1911,14 @@ void P_CrossSpecialLine(int	linenum, int side, AActor* thing, bool bossaction)
 	if (!bossaction && !P_CanActivateSpecials(thing, line))
 		return;
 
-	map_format.cross_special_line(line, side, thing, bossaction);
+	lineresult_s result;
 
-	SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
+	result = map_format.cross_special_line(line, side, thing, bossaction);
+
+	if (serverside && result.lineexecuted)
+	{
+		SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
+	}
 }
 
 //

@@ -145,12 +145,13 @@ void MapFormat::spawn_extra(int i)
 		P_SpawnCompatibleExtra(i);
 }
 
-void MapFormat::cross_special_line(line_t* line, int side, AActor* thing, bool bossaction)
+lineresult_s MapFormat::cross_special_line(line_t* line, int side, AActor* thing,
+                                           bool bossaction)
 {
 	if (map_format.zdoom)
-		P_CrossZDoomSpecialLine(line, side, thing, bossaction);
+		return P_CrossZDoomSpecialLine(line, side, thing, bossaction);
 	else
-		P_CrossCompatibleSpecialLine(line, side, thing, bossaction);
+		return P_CrossCompatibleSpecialLine(line, side, thing, bossaction);
 }
 
 void MapFormat::post_process_sidedef_special(side_t* sd, mapsidedef_t* msd,

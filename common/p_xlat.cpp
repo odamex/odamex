@@ -318,7 +318,7 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 	bool passthrough = (flags & ML_PASSUSE);
 	int i;
 	
-	flags &= 0x1ff;	// Ignore flags unknown to DOOM
+	flags &= 0x01ff;	// Ignore flags unknown to DOOM
 
 	if (special <= NUM_SPECIALS)
 	{

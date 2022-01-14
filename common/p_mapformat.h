@@ -43,7 +43,7 @@ class MapFormat
 	void spawn_friction(line_t*);
 	void spawn_pusher(line_t*);
 	void spawn_extra(int);
-	void cross_special_line(line_t*, int, AActor*, bool);
+	lineresult_s cross_special_line(line_t*, int, AActor*, bool);
 	void post_process_sidedef_special(side_t*, mapsidedef_t*, sector_t*, int);
 
   protected:

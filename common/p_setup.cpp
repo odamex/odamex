@@ -931,9 +931,9 @@ void P_LoadLineDefs (const int lump)
 		// [RH] Translate old linedef special and flags to be
 		//		compatible with the new format.
 
-		ld->flags = (unsigned short int)mld->flags;
-		ld->special = mld->special;
-		ld->id = mld->tag;
+		ld->flags = (unsigned short)(short int)mld->flags;
+		ld->special = (short int)mld->special;
+		ld->id = (short int)mld->tag;
 		ld->args[0] = 0;
 		ld->args[1] = 0;
 		ld->args[2] = 0;
