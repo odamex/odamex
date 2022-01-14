@@ -121,11 +121,11 @@ static void WorkerRefreshServer(const std::string& address)
 	if (ok)
 	{
 		DB_AddServerInfo(server);
-		Log_Debug("Added server info %s.\n", address, port);
+		Log_Debug("Added server info %s.\n", address.c_str(), port);
 	}
 	else
 	{
-		Log_Debug("Could not update server info for %s.\n", address, port);
+		Log_Debug("Could not update server info for %s.\n", address.c_str(), port);
 	}
 }
 
