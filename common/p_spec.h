@@ -197,9 +197,6 @@ struct newspecial_s
 	int damageleakrate;
 };
 
-#define NO_CRUSH -1
-#define DOOM_CRUSH 10
-
 #define FLOORSPEED FRACUNIT
 
 bool P_CanUnlockZDoomDoor(player_t* player, zdoom_lock_t lock, bool remote);

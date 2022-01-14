@@ -135,7 +135,7 @@ void DPlat::RunThink ()
 	{
 	case midup:
 	case up:
-		res = MoveFloor (m_Speed, m_High, m_Crush, 1, false);
+		res = MoveFloor (m_Speed, m_High, m_Crush ? DOOM_CRUSH : NO_CRUSH, 1, false);
 
 		if (res == crushed && !m_Crush)
 		{
@@ -180,7 +180,7 @@ void DPlat::RunThink ()
 
 	case middown:
 	case down:
-		res = MoveFloor (m_Speed, m_Low, false, -1, false);
+		res = MoveFloor (m_Speed, m_Low, NO_CRUSH, -1, false);
 
 		if (res == pastdest)
 		{

@@ -66,6 +66,7 @@ static void P_SetupLevelCeilingPlane(sector_t *sector);
 static void P_SetupSlopes();
 void P_InvertPlane(plane_t *plane);
 void P_SetupWorldState();
+int P_TranslateSectorSpecial(int special);
 
 extern dyncolormap_t NormalLight;
 extern AActor* shootthing;

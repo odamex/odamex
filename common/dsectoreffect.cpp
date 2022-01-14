@@ -217,7 +217,7 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, int crush,
 					// co_boomsectortouch enables Boom behaviour where rising
 					// floor holds in place until victim moves or is crushed
 					// [ML] Now part of co_boomphys
-					if (!hexencrush && crush >= 0 && !co_boomphys)
+					if (!hexencrush && crush > NO_CRUSH && !co_boomphys)
 						return crushed;
 					P_ChangeFloorHeight(m_Sector, -speed);
 					P_ChangeSector (m_Sector, crush);
@@ -266,7 +266,7 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, int crush,
 
 				if (flag == true)
 				{
-					if (crush)
+					if (crush > NO_CRUSH)
 						return crushed;
 
 					P_SetCeilingHeight(m_Sector, lastpos);

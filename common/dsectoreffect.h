@@ -72,7 +72,7 @@ protected:
 	}
 	inline EResult MoveFloor (fixed_t speed, fixed_t dest, int direction)
 	{
-		return MovePlane(speed, dest, 0, 0, direction, false);
+		return MovePlane(speed, dest, NO_CRUSH, 0, direction, false);
 	}
 	inline EResult MoveCeiling (fixed_t speed, fixed_t dest, int crush, int direction, bool hexencrush)
 	{
@@ -80,7 +80,7 @@ protected:
 	}
 	inline EResult MoveCeiling (fixed_t speed, fixed_t dest, int direction)
 	{
-		return MovePlane (speed, dest, 0, 1, direction, false);
+		return MovePlane(speed, dest, NO_CRUSH, 1, direction, false);
 	}
 };
 

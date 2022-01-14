@@ -3165,7 +3165,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 
 	nofit = true;
 
-	if (crushchange > 0 && !(level.time&3) )
+	if (crushchange > NO_CRUSH && !(level.time&3) )
 	{
 		P_DamageMobj(thing, NULL, NULL, crushchange, MOD_CRUSH);
 

@@ -281,6 +281,9 @@ typedef struct MapThing
 #define BTF_NOTDEATHMATCH	0x0020	// (TF_SINGLE|TF_COOPERATIVE)
 #define BTF_NOTCOOPERATIVE	0x0040	// (TF_SINGLE|TF_DEATHMATCH)
 
+#define NO_CRUSH -1
+#define DOOM_CRUSH 10
+
 //
 // Texture definition.
 // Each texture is composed of one or more patches,
