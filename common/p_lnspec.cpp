@@ -628,49 +628,49 @@ FUNC(LS_Thing_Stop)
 FUNC(LS_Floor_LowerByValue)
 // Floor_LowerByValue (tag, speed, height)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerByValue, ln, arg0, arg1,
+	return EV_DoZDoomFloor(DFloor::floorLowerByValue, ln, arg0, arg1,
 	                       arg2, NO_CRUSH, P_ArgToChange(arg3), false, false);
 }
 
 FUNC(LS_Floor_LowerToLowest)
 // Floor_LowerToLowest (tag, speed)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerToLowest, ln, arg0, arg1, 0,
+	return EV_DoZDoomFloor(DFloor::floorLowerToLowest, ln, arg0, arg1, 0,
 	                       NO_CRUSH, P_ArgToChange(arg2), false, false);
 }
 
 FUNC(LS_Floor_LowerToLowestCeiling)
 // Floor_LowerToLowestCeiling (tag, speed)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerToLowestCeiling, ln, arg0, arg1, 0,
+	return EV_DoZDoomFloor(DFloor::floorLowerToLowestCeiling, ln, arg0, arg1, 0,
 	                       NO_CRUSH, P_ArgToChange(arg2), false, false);
 }
 
 FUNC(LS_Floor_LowerToHighest)
 // Floor_LowerToHighest (tag, speed, adjust)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerToHighest, ln, arg0, arg1,
+	return EV_DoZDoomFloor(DFloor::floorLowerToHighest, ln, arg0, arg1,
 	                       (int)arg2 - 128, NO_CRUSH, 0, false, arg3 == 1);
 }
 
 FUNC(LS_Floor_LowerToHighestEE)
 // Floor_LowerToHighestEE (tag, speed, adjust)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerToHighest, ln, arg0, arg1, 0,
+	return EV_DoZDoomFloor(DFloor::floorLowerToHighest, ln, arg0, arg1, 0,
 	                       NO_CRUSH, P_ArgToChange(arg2), false, false);
 }
 
 FUNC(LS_Floor_LowerToNearest)
 // Floor_LowerToNearest (tag, speed)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerToNearest, ln, arg0, arg1, 0,
+	return EV_DoZDoomFloor(DFloor::floorLowerToNearest, ln, arg0, arg1, 0,
 	                       NO_CRUSH, P_ArgToChange(arg2), false, false);
 }
 
 FUNC(LS_Floor_RaiseByValue)
 // Floor_RaiseByValue (tag, speed, height)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseByValue, ln, arg0, arg1,
+	return EV_DoZDoomFloor(DFloor::floorRaiseByValue, ln, arg0, arg1,
 	                       arg2, P_ArgToCrush(arg4), P_ArgToChange(arg3), true,
 	                       false);
 }
@@ -678,35 +678,35 @@ FUNC(LS_Floor_RaiseByValue)
 FUNC(LS_Floor_RaiseToHighest)
 // Floor_RaiseToHighest (tag, speed)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseToHighest, ln, arg0, arg1, 0,
+	return EV_DoZDoomFloor(DFloor::floorRaiseToHighest, ln, arg0, arg1, 0,
 	                       P_ArgToCrush(arg3), P_ArgToChange(arg2), true, false);
 }
 
 FUNC(LS_Floor_RaiseToNearest)
 // Floor_RaiseToNearest (tag, speed)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseToNearest, ln, arg0, arg1, 0,
+	return EV_DoZDoomFloor(DFloor::floorRaiseToNearest, ln, arg0, arg1, 0,
 	                       P_ArgToCrush(arg3), P_ArgToChange(arg2), true, false);
 }
 
 FUNC(LS_Floor_RaiseAndCrush)
 // Floor_RaiseAndCrush (tag, speed, crush, crushmode)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseAndCrush, ln, arg0, arg1, 0,
+	return EV_DoZDoomFloor(DFloor::floorRaiseAndCrush, ln, arg0, arg1, 0,
 	                       arg2, 0, P_ArgToCrushType(arg3), false);
 }
 
 FUNC(LS_Floor_RaiseAndCrushDoom)
 // Floor_RaiseAndCrushDoom (tag, speed, crush, crushmode)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseAndCrushDoom, ln, arg0, arg1,
+	return EV_DoZDoomFloor(DFloor::floorRaiseAndCrushDoom, ln, arg0, arg1,
 	                       0, arg2, 0, P_ArgToCrushType(arg3), false);
 }
 
 FUNC(LS_Floor_RaiseByValueTimes8)
 // FLoor_RaiseByValueTimes8 (tag, speed, height)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseByValue, ln, arg0, arg1,
+	return EV_DoZDoomFloor(DFloor::floorRaiseByValue, ln, arg0, arg1,
 	                       (int)arg2 * 8, P_ArgToCrush(arg4),
 	                       P_ArgToChange(arg3), true, false);
 }
@@ -714,7 +714,7 @@ FUNC(LS_Floor_RaiseByValueTimes8)
 FUNC(LS_Floor_LowerByValueTimes8)
 // Floor_LowerByValueTimes8 (tag, speed, height)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerByValue, ln, arg0, arg1,
+	return EV_DoZDoomFloor(DFloor::floorLowerByValue, ln, arg0, arg1,
 	                       (int)arg2 * 8, NO_CRUSH, P_ArgToChange(arg3), false, false);
 }
 
@@ -728,7 +728,7 @@ FUNC(LS_Floor_CrushStop)
 FUNC(LS_Floor_LowerInstant)
 // Floor_LowerInstant (tag, unused, height)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerInstant, ln, arg0, 0,
+	return EV_DoZDoomFloor(DFloor::floorLowerInstant, ln, arg0, 0,
 	                       (int)arg2 * 8, NO_CRUSH, P_ArgToChange(arg3), false,
 	                       false);
 }
@@ -736,7 +736,7 @@ FUNC(LS_Floor_LowerInstant)
 FUNC(LS_Floor_RaiseInstant)
 // Floor_RaiseInstant (tag, unused, height, crush)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseInstant, ln, arg0, 0,
+	return EV_DoZDoomFloor(DFloor::floorRaiseInstant, ln, arg0, 0,
 	                       (int)arg2 * 8, P_ArgToCrush(arg4),
 	                       P_ArgToChange(arg3), true, false);
 }
@@ -744,7 +744,7 @@ FUNC(LS_Floor_RaiseInstant)
 FUNC(LS_Floor_MoveToValue)
 // Floor_MoveToValue (tag, speed, height, negative)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorMoveToValue, ln, arg0, arg1,
+	return EV_DoZDoomFloor(DFloor::floorMoveToValue, ln, arg0, arg1,
 	                       (int)arg2 * (arg3 ? -1 : 1), NO_CRUSH,
 	                       P_ArgToChange(arg4), false, false);
 }
@@ -752,7 +752,7 @@ FUNC(LS_Floor_MoveToValue)
 FUNC(LS_Floor_MoveToValueTimes8)
 // Floor_MoveToValueTimes8 (tag, speed, height, negative)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorMoveToValue, ln, arg0, arg1,
+	return EV_DoZDoomFloor(DFloor::floorMoveToValue, ln, arg0, arg1,
 	                       (int)arg2 * 8 * (arg3 ? -1 : 1), NO_CRUSH,
 	                       P_ArgToChange(arg4), false, false);
 }
@@ -760,21 +760,21 @@ FUNC(LS_Floor_MoveToValueTimes8)
 FUNC(LS_Floor_RaiseToLowest)
 // Floor_RaiseToLowest (tag, change, crush)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseToLowest, ln, arg0, 2, 0,
+	return EV_DoZDoomFloor(DFloor::floorRaiseToLowest, ln, arg0, 2, 0,
 	                       P_ArgToCrush(arg3), P_ArgToChange(arg2), true, false);
 }
 
 FUNC(LS_Floor_ToCeilingInstant)
 // Floor_ToCeilingInstant (tag, change, crush, gap)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseToLowest, ln, arg0, 2, 0,
+	return EV_DoZDoomFloor(DFloor::floorRaiseToLowest, ln, arg0, 2, 0,
 	                       P_ArgToCrush(arg3), P_ArgToChange(arg2), true, false);
 }
 
 FUNC(LS_Floor_RaiseToLowestCeiling)
 // Floor_RaiseToLowestCeiling (tag, speed, change, crush)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseToLowestCeiling, ln, arg0,
+	return EV_DoZDoomFloor(DFloor::floorRaiseToLowestCeiling, ln, arg0,
 	                       arg1, 0, P_ArgToCrush(arg3), P_ArgToChange(arg2),
 	                       true, false);
 }
@@ -782,7 +782,7 @@ FUNC(LS_Floor_RaiseToLowestCeiling)
 FUNC(LS_Floor_RaiseToCeiling)
 // Floor_RaiseToLowestCeiling (tag, speed, change, crush, gap)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseToCeiling, ln, arg0, arg1,
+	return EV_DoZDoomFloor(DFloor::floorRaiseToCeiling, ln, arg0, arg1,
 	                       arg4, P_ArgToCrush(arg3), P_ArgToChange(arg2), true,
 	                       false);
 }
@@ -790,28 +790,28 @@ FUNC(LS_Floor_RaiseToCeiling)
 FUNC(LS_Floor_RaiseByTexture)
 // Floor_RaiseByTexture (tag, speed, change, crush)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseByTexture, ln, arg0, arg1, 0,
+	return EV_DoZDoomFloor(DFloor::floorRaiseByTexture, ln, arg0, arg1, 0,
 	                       P_ArgToCrush(arg3), P_ArgToChange(arg2), true, false);
 }
 
 FUNC(LS_Floor_LowerByTexture)
 // Floor_LowerByTexture (tag, speed, change)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerByTexture, ln, arg0, arg1, 0,
+	return EV_DoZDoomFloor(DFloor::floorLowerByTexture, ln, arg0, arg1, 0,
 	                       NO_CRUSH, P_ArgToChange(arg2), true, false);
 }
 
 FUNC(LS_Floor_RaiseByValueTxTy)
 // Floor_RaiseByValueTxTy (tag, speed, height)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorRaiseAndChange, ln, arg0, arg1,
+	return EV_DoZDoomFloor(DFloor::floorRaiseAndChange, ln, arg0, arg1,
 	                       arg2, NO_CRUSH, 0, false, false);
 }
 
 FUNC(LS_Floor_LowerToLowestTxTy)
 // Floor_LowerToLowestTxTy (tag, speed)
 {
-	return EV_DoZDoomFloor(DFloor::EFloor::floorLowerAndChange, ln, arg0, arg1,
+	return EV_DoZDoomFloor(DFloor::floorLowerAndChange, ln, arg0, arg1,
 	                       0, NO_CRUSH, 0, false, false);
 }
 
@@ -915,7 +915,7 @@ FUNC(LS_Stairs_BuildUpSync)
 FUNC(LS_Stairs_BuildUpDoom)
 // Stairs_BuildUpDoom (tag, speed, height, delay, reset)
 {
-	return EV_BuildStairs(arg0, DFloor::EStair::buildUp, ln, arg2 * FRACUNIT, SPEED(arg1),
+	return EV_BuildStairs(arg0, DFloor::buildUp, ln, arg2 * FRACUNIT, SPEED(arg1),
 	                      arg3,
 	                      arg4, 0, 0);
 }
@@ -923,7 +923,7 @@ FUNC(LS_Stairs_BuildUpDoom)
 FUNC(LS_Stairs_BuildDownDoom)
 // Stairs_BuildDownDoom (tag, speed, height, delay, reset)
 {
-	return EV_BuildStairs(arg0, DFloor::EStair::buildDown, ln, arg2 * FRACUNIT,
+	return EV_BuildStairs(arg0, DFloor::buildDown, ln, arg2 * FRACUNIT,
 	                      SPEED(arg1), arg3,
 	                      arg4, 0, 0);
 }
@@ -931,7 +931,7 @@ FUNC(LS_Stairs_BuildDownDoom)
 FUNC(LS_Stairs_BuildDownDoomSync)
 // Stairs_BuildDownDoomSync (tag, speed, height, reset)
 {
-	return EV_BuildStairs(arg0, DFloor::EStair::buildDown, ln, arg2 * FRACUNIT,
+	return EV_BuildStairs(arg0, DFloor::buildDown, ln, arg2 * FRACUNIT,
 	                      SPEED(arg1), 0, arg3,
 	                      0, 2);
 }
@@ -939,14 +939,14 @@ FUNC(LS_Stairs_BuildDownDoomSync)
 FUNC(LS_Stairs_BuildUpDoomSync)
 // Stairs_BuildUpDoomSync (tag, speed, height, reset)
 {
-	return EV_BuildStairs(arg0, DFloor::EStair::buildUp, ln, arg2 * FRACUNIT, SPEED(arg1),
+	return EV_BuildStairs(arg0, DFloor::buildUp, ln, arg2 * FRACUNIT, SPEED(arg1),
 	                      0, arg3, 0, 2);
 }
 
 FUNC(LS_Stairs_BuildUpDoomCrush)
 // Stairs_BuildUpDoomCrush (tag, speed, height, delay, reset)
 {
-	return EV_BuildStairs(arg0, DFloor::EStair::buildUp, ln, arg2 * FRACUNIT, SPEED(arg1),
+	return EV_BuildStairs(arg0, DFloor::buildUp, ln, arg2 * FRACUNIT, SPEED(arg1),
 	                      arg3, arg4, 0, 1);
 }
 
@@ -973,7 +973,7 @@ FUNC(LS_Pillar_Build)
 FUNC(LS_Pillar_BuildAndCrush)
 // Pillar_Build (tag, speed, height)
 {
-	return EV_DoZDoomPillar(DPillar::EPillar::pillarBuild, ln, arg0,
+	return EV_DoZDoomPillar(DPillar::pillarBuild, ln, arg0,
 	                        P_ArgToSpeed(arg1), arg2, 0, arg3,
 	                        P_ArgToCrushType(arg4));
 }
@@ -981,14 +981,14 @@ FUNC(LS_Pillar_BuildAndCrush)
 FUNC(LS_Pillar_Open)
 // Pillar_Open (tag, speed, f_height, c_height)
 {
-	return EV_DoZDoomPillar(DPillar::EPillar::pillarOpen, ln, arg0,
+	return EV_DoZDoomPillar(DPillar::pillarOpen, ln, arg0,
 	                        P_ArgToSpeed(arg1), arg2, arg3, NO_CRUSH, false);
 }
 
 FUNC(LS_Ceiling_LowerByValue)
 // Ceiling_LowerByValue (tag, speed, height)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerByValue, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilLowerByValue, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, arg2, NO_CRUSH, 0,
 	                         0, crushDoom);
 }
@@ -996,14 +996,14 @@ FUNC(LS_Ceiling_LowerByValue)
 FUNC(LS_Ceiling_RaiseByValue)
 // Ceiling_RaiseByValue (tag, speed, height)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseByValue, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilRaiseByValue, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, arg2, NO_CRUSH, 0, 0, crushDoom);
 }
 
 FUNC(LS_Ceiling_LowerByValueTimes8)
 // Ceiling_LowerByValueTimes8 (tag, speed, height)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerByValue, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilLowerByValue, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, (int)arg2 * 8, NO_CRUSH, 0, 0,
 	                         crushDoom);
 }
@@ -1011,7 +1011,7 @@ FUNC(LS_Ceiling_LowerByValueTimes8)
 FUNC(LS_Ceiling_RaiseByValueTimes8)
 // Ceiling_RaiseByValueTimes8 (tag, speed, height)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseByValue, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilRaiseByValue, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, (int)arg2 * 8, NO_CRUSH, 0, 0,
 	                         crushDoom);
 }
@@ -1019,7 +1019,7 @@ FUNC(LS_Ceiling_RaiseByValueTimes8)
 FUNC(LS_Ceiling_CrushAndRaise)
 // Ceiling_CrushAndRaise (tag, speed, damage [, crushmode])
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilCrushAndRaise, ln, arg0,
 	                  P_ArgToSpeed(arg1), P_ArgToSpeed(arg1) / 2, 8, arg2, 0, 0,
 	                  (crushmode_e)P_ArgToCrushMode(arg3, false));
 }
@@ -1027,7 +1027,7 @@ FUNC(LS_Ceiling_CrushAndRaise)
 FUNC(LS_Ceiling_CrushAndRaiseDist)
 // Ceiling_CrushAndRaiseDist (tag, dist, speed, damage [, crushmode])
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilCrushAndRaise, ln, arg0,
 	                  P_ArgToSpeed(arg2), P_ArgToSpeed(arg2), arg1, arg3, 0,
 	                  0, (crushmode_e)P_ArgToCrushMode(arg4, arg2 == 8));
 }
@@ -1035,7 +1035,7 @@ FUNC(LS_Ceiling_CrushAndRaiseDist)
 FUNC(LS_Ceiling_LowerAndCrush)
 // Ceiling_LowerAndCrush (tag, speed, crush [, crushmode])
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerAndCrush, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilLowerAndCrush, ln, arg0,
 	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg1), 8, arg2, 0,
 	                         0, (crushmode_e)P_ArgToCrushMode(arg3, arg1 == 8));
 }
@@ -1043,7 +1043,7 @@ FUNC(LS_Ceiling_LowerAndCrush)
 FUNC(LS_Ceiling_LowerAndCrushDist)
 // Ceiling_LowerAndCrushDist (tag, speed, crush [, dist[, crushmode]])
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerAndCrush, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilLowerAndCrush, ln, arg0,
 	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg1), arg3,
 	                         arg2, 0, 0, (crushmode_e)P_ArgToCrushMode(arg4, arg1 == 8));
 }
@@ -1057,7 +1057,7 @@ FUNC(LS_Ceiling_CrushStop)
 FUNC(LS_Ceiling_CrushRaiseAndStay)
 // Ceiling_CrushRaiseAndStay (tag, speed, crush [, crushmode])
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushRaiseAndStay, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilCrushRaiseAndStay, ln, arg0,
 	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg1) / 2, 8, arg2,
 	                         0, 0, (crushmode_e)P_ArgToCrushMode(arg3, false));
 }
@@ -1065,7 +1065,7 @@ FUNC(LS_Ceiling_CrushRaiseAndStay)
 FUNC(LS_Ceiling_MoveToValueTimes8)
 // Ceiling_MoveToValueTimes8 (tag, speed, height, negative)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilMoveToValue, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilMoveToValue, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0,
 	                         (int)arg2 * 8 * (arg3 ? -1 : 1), NO_CRUSH, 0,
 	                         0, crushDoom);
@@ -1074,7 +1074,7 @@ FUNC(LS_Ceiling_MoveToValueTimes8)
 FUNC(LS_Ceiling_MoveToValue)
 // Ceiling_MoveToValue (tag, speed, height, negative)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilMoveToValue, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilMoveToValue, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, (int)arg2 * (arg3 ? -1 : 1),
 	                         NO_CRUSH, 0, 0, crushDoom);
 }
@@ -1082,14 +1082,14 @@ FUNC(LS_Ceiling_MoveToValue)
 FUNC(LS_Ceiling_LowerToHighestFloor)
 // Ceiling_LowerToHighestFloor (tag, speed)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerToHighestFloor, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilLowerToHighestFloor, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, arg4, NO_CRUSH, 0, 0, crushDoom);
 }
 
 FUNC(LS_Ceiling_LowerInstant)
 // Ceiling_LowerInstant (tag, unused, height)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerInstant, ln, arg0, 0, 0,
+	return EV_DoZDoomCeiling(DCeiling::ceilLowerInstant, ln, arg0, 0, 0,
 	                         (int)arg2 * 8, NO_CRUSH, 0, 0,
 	                         crushDoom);
 }
@@ -1097,14 +1097,14 @@ FUNC(LS_Ceiling_LowerInstant)
 FUNC(LS_Ceiling_RaiseInstant)
 // Ceiling_RaiseInstant (tag, unused, height)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseInstant, ln, arg0, 0, 0,
+	return EV_DoZDoomCeiling(DCeiling::ceilRaiseInstant, ln, arg0, 0, 0,
 	                         (int)arg2 * 8, NO_CRUSH, 0, 0, crushDoom);
 }
 
 FUNC(LS_Ceiling_CrushRaiseAndStayA)
 // Ceiling_CrushRaiseAndStayA (tag, dnspeed, upspeed, damage[, crushmode])
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushRaiseAndStay, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilCrushRaiseAndStay, ln, arg0,
 	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg2), 0, arg3, 0, 0,
 	                         (crushmode_e)P_ArgToCrushMode(arg4, false));
 }
@@ -1112,7 +1112,7 @@ FUNC(LS_Ceiling_CrushRaiseAndStayA)
 FUNC(LS_Ceiling_CrushRaiseAndStaySilA)
 // Ceiling_CrushRaiseAndStaySilA (tag, dnspeed, upspeed, damage[, crushmode])
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushRaiseAndStay, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilCrushRaiseAndStay, ln, arg0,
 	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg2), 0, arg3, 1,
 	                         0, (crushmode_e)P_ArgToCrushMode(arg4, false));
 }
@@ -1120,7 +1120,7 @@ FUNC(LS_Ceiling_CrushRaiseAndStaySilA)
 FUNC(LS_Ceiling_CrushAndRaiseA)
 // Ceiling_CrushAndRaiseA (tag, dnspeed, upspeed, damage[, crushmode])
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilCrushAndRaise, ln, arg0,
 	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg2), 0, arg3, 0, 0,
 	                         (crushmode_e)P_ArgToCrushMode(arg4, arg1 == 8 && arg2 == 8));
 }
@@ -1128,7 +1128,7 @@ FUNC(LS_Ceiling_CrushAndRaiseA)
 FUNC(LS_Ceiling_CrushAndRaiseSilentA)
 // Ceiling_CrushAndRaiseSilentA (tag, dnspeed, upspeed, damage[, crushmode])
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilCrushAndRaise, ln, arg0,
 	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg2), 0, arg3, 1, 0,
 	                         (crushmode_e)P_ArgToCrushMode(arg4, arg1 == 8 && arg2 == 8));
 }
@@ -1136,7 +1136,7 @@ FUNC(LS_Ceiling_CrushAndRaiseSilentA)
 FUNC(LS_Ceiling_CrushAndRaiseSilentDist)
 // Ceiling_CrushAndRaiseSilentDist (tag, dist, speed, damage[, crushmode])
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilCrushAndRaise, ln, arg0,
 	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg2), 0, arg3, 1, 0,
 	                         (crushmode_e)P_ArgToCrushMode(arg4, arg1 == 8 && arg2 == 8));
 }
@@ -1144,7 +1144,7 @@ FUNC(LS_Ceiling_CrushAndRaiseSilentDist)
 FUNC(LS_Ceiling_RaiseToNearest)
 // Ceiling_RaiseToNearest (tag, speed)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseToNearest, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilRaiseToNearest, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, 0, NO_CRUSH,
 	                         0, 0, crushDoom);
 }
@@ -1152,7 +1152,7 @@ FUNC(LS_Ceiling_RaiseToNearest)
 FUNC(LS_Ceiling_RaiseToHighest)
 // Ceiling_RaiseToHighest (tag, speed, change)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseToHighest, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilRaiseToHighest, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, 0, NO_CRUSH, 0, P_ArgToChange(arg2),
 	                         crushDoom);
 }
@@ -1160,7 +1160,7 @@ FUNC(LS_Ceiling_RaiseToHighest)
 FUNC(LS_Ceiling_RaiseToHighestFloor)
 // Ceiling_RaiseToHighestFloor (tag, speed, change)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseToHighestFloor, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilRaiseToHighestFloor, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, 0, NO_CRUSH, 0, P_ArgToChange(arg2),
 	                         crushDoom);
 }
@@ -1168,7 +1168,7 @@ FUNC(LS_Ceiling_RaiseToHighestFloor)
 FUNC(LS_Ceiling_RaiseToLowest)
 // Ceiling_RaiseToLowest (tag, speed, change)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseToLowest, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilRaiseToLowest, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, 0, NO_CRUSH, 0, P_ArgToChange(arg2),
 	                         crushDoom);
 }
@@ -1176,7 +1176,7 @@ FUNC(LS_Ceiling_RaiseToLowest)
 FUNC(LS_Ceiling_RaiseByTexture)
 // Ceiling_RaiseByTexture (tag, speed, change)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseByTexture, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilRaiseByTexture, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, 0, NO_CRUSH, P_ArgToChange(arg2), 0,
 	                         crushDoom);
 }
@@ -1184,7 +1184,7 @@ FUNC(LS_Ceiling_RaiseByTexture)
 FUNC(LS_Ceiling_LowerToLowest)
 // Ceiling_LowerToLowest (tag, speed)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerToLowest, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilLowerToLowest, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, 0, NO_CRUSH, 0,
 	                         0, crushDoom);
 }
@@ -1192,7 +1192,7 @@ FUNC(LS_Ceiling_LowerToLowest)
 FUNC(LS_Ceiling_ToHighestInstant)
 // Ceiling_ToHighestInstant (tag, change, crush)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerToHighest, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilLowerToHighest, ln, arg0,
 	                         2 * FRACUNIT, 0, 0, P_ArgToCrush(arg2), 0,
 	                         P_ArgToChange(arg1), crushDoom);
 }
@@ -1200,7 +1200,7 @@ FUNC(LS_Ceiling_ToHighestInstant)
 FUNC(LS_Ceiling_ToFloorInstant)
 // Ceiling_ToFloorInstant (tag, change, crush, gap)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerToHighest, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilLowerToHighest, ln, arg0,
 	                         2 * FRACUNIT, 0, arg3, P_ArgToCrush(arg2), 0,
 	                         P_ArgToChange(arg1), crushDoom);
 }
@@ -1208,7 +1208,7 @@ FUNC(LS_Ceiling_ToFloorInstant)
 FUNC(LS_Ceiling_LowerToNearest)
 // Ceiling_LowerToNearest (tag, speed, change, crush)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerToNearest, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilLowerToNearest, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, 0, P_ArgToCrush(arg3), 0,
 	                         P_ArgToChange(arg2), crushDoom);
 }
@@ -1216,7 +1216,7 @@ FUNC(LS_Ceiling_LowerToNearest)
 FUNC(LS_Ceiling_LowerToFloor)
 // Ceiling_LowerToFloor (tag, speed)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerToFloor, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilLowerToFloor, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, NO_CRUSH, 0, 0,
 	                         0, crushDoom);
 }
@@ -1224,7 +1224,7 @@ FUNC(LS_Ceiling_LowerToFloor)
 FUNC(LS_Ceiling_LowerByTexture)
 // Ceiling_LowerByTexture (tag, speed, change, crush)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilLowerByTexture, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilLowerByTexture, ln, arg0,
 	                         P_ArgToSpeed(arg1), 0, 0, P_ArgToCrush(arg3), 0,
 	                         P_ArgToChange(arg4), crushDoom);
 }
@@ -1265,7 +1265,7 @@ FUNC(LS_Generic_Crusher)
 // Generic_Crusher (tag, dnspeed, upspeed, silent, damage)
 {
 	return EV_DoZDoomCeiling(
-	    DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0, P_ArgToSpeed(arg1),
+	    DCeiling::ceilCrushAndRaise, ln, arg0, P_ArgToSpeed(arg1),
 	    P_ArgToSpeed(arg2), 0, arg4, arg3 ? 2 : 0, 0,
 	    (arg1 <= 24 && arg2 <= 24) ? crushSlowdown : crushDoom);
 }
@@ -1273,7 +1273,7 @@ FUNC(LS_Generic_Crusher)
 FUNC(LS_Generic_Crusher2)
 // Generic_Crusher2 (tag, dnspeed, upspeed, silent, damage)
 {
-	return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilCrushAndRaise, ln, arg0,
+	return EV_DoZDoomCeiling(DCeiling::ceilCrushAndRaise, ln, arg0,
 	                         P_ArgToSpeed(arg1), P_ArgToSpeed(arg2), 0, arg4,
 	                         arg3 ? 2 : 0, 0, crushHexen);
 }
@@ -1342,13 +1342,13 @@ FUNC(LS_Plat_RaiseAndStayTx0)
 	switch (arg3)
 	{
 	case 1:
-		type = DPlat::EPlatType::platRaiseAndStay;
+		type = DPlat::platRaiseAndStay;
 		break;
 	case 2:
-		type = DPlat::EPlatType::platRaiseAndStayLockout;
+		type = DPlat::platRaiseAndStayLockout;
 		break;
 	default:
-		type = DPlat::EPlatType::platRaiseAndStay;
+		type = DPlat::platRaiseAndStay;
 		break;
 	}
 
@@ -1449,8 +1449,7 @@ FUNC(LS_Scroll_Wall)
 
 		for (s = -1; (s = P_FindLineFromTag(arg0, s)) >= 0;)
 		{
-			new DScroller(DScroller::EScrollType::sc_side, arg1, arg2, -1,
-			              lines[s].sidenum[side], 0);
+			new DScroller(DScroller::sc_side, arg1, arg2, -1, lines[s].sidenum[side], 0);
 		}
 
 		return true;
@@ -1985,14 +1984,14 @@ FUNC(LS_ACS_Terminate)
 FUNC(LS_FloorAndCeiling_LowerByValue)
 // FloorAndCeiling_LowerByValue (tag, speed, height)
 {
-	return EV_DoZDoomElevator(ln, DElevator::EElevator::elevateLower,
+	return EV_DoZDoomElevator(ln, DElevator::elevateLower,
 	                          P_ArgToSpeed(arg1), arg2, arg0);
 }
 
 FUNC(LS_FloorAndCeiling_RaiseByValue)
 // FloorAndCeiling_RaiseByValue (tag, speed, height)
 {
-	return EV_DoZDoomElevator(ln, DElevator::EElevator::elevateRaise,
+	return EV_DoZDoomElevator(ln, DElevator::elevateRaise,
 	                          P_ArgToSpeed(arg1), arg2, arg0);
 }
 
@@ -2001,39 +2000,47 @@ FUNC(LS_FloorAndCeiling_LowerRaise)
 {
 	if (arg3 == 1998)
 	{
-		return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseToHighest, ln, arg0,
-		                         P_ArgToSpeed(arg2), 0, 0, 0, 0, 0, crushDoom) ||
-		       EV_DoZDoomFloor(DFloor::EFloor::floorLowerToLowest, ln, arg0, arg1, 0,
-		                       NO_CRUSH, 0, false, crushDoom);
+		return EV_DoZDoomCeiling(DCeiling::ceilRaiseToHighest, ln, arg0,
+		                         P_ArgToSpeed(arg2), 0, 0, 0, 0, 0,
+		                         crushDoom) ||
+		       EV_DoZDoomFloor(DFloor::floorLowerToLowest, ln, arg0, arg1, 0, NO_CRUSH, 0,
+		                       false, crushDoom);
 	}
 	else
 	{
-		return EV_DoZDoomCeiling(DCeiling::ECeiling::ceilRaiseToHighest, ln, arg0,
-		                         P_ArgToSpeed(arg2), 0, 0, 0, 0, 0, crushDoom) &&
-		       EV_DoZDoomFloor(DFloor::EFloor::floorLowerToLowest, ln, arg0, arg1, 0,
-		                       NO_CRUSH, 0, false, crushDoom);
+		return EV_DoZDoomCeiling(DCeiling::ceilRaiseToHighest, ln, arg0,
+		                         P_ArgToSpeed(arg2), 0, 0, 0, 0, 0,
+		                         crushDoom) &&
+		       EV_DoZDoomFloor(DFloor::floorLowerToLowest, ln, arg0, arg1, 0, NO_CRUSH, 0,
+		                       false, crushDoom);
 	}
 }
 
 FUNC(LS_Elevator_MoveToFloor)
 // Elevator_MoveToFloor (tag, speed)
 {
-	return EV_DoZDoomElevator(ln, DElevator::EElevator::elevateCurrent,
-	                          P_ArgToSpeed(arg1), 0, arg0);
+	DElevator::EElevator type;
+
+	type = DElevator::elevateCurrent;
+	return EV_DoZDoomElevator(ln, type, P_ArgToSpeed(arg1), 0, arg0);
 }
 
 FUNC(LS_Elevator_RaiseToNearest)
 // Elevator_RaiseToNearest (tag, speed)
 {
-	return EV_DoZDoomElevator(ln, DElevator::EElevator::elevateUp,
-	                          P_ArgToSpeed(arg1), 0, arg0);
+	DElevator::EElevator type;
+
+	type = DElevator::elevateUp;
+	return EV_DoZDoomElevator(ln, type, P_ArgToSpeed(arg1), 0, arg0);
 }
 
 FUNC(LS_Elevator_LowerToNearest)
 // Elevator_LowerToNearest (tag, speed)
 {
-	return EV_DoZDoomElevator(ln, DElevator::EElevator::elevateDown,
-	                          P_ArgToSpeed(arg1), 0, arg0);
+	DElevator::EElevator type;
+
+	type = DElevator::elevateDown;
+	return EV_DoZDoomElevator(ln, type, P_ArgToSpeed(arg1), 0, arg0);
 }
 
 FUNC(LS_Light_RaiseByValue)

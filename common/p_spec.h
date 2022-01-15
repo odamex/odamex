@@ -231,6 +231,8 @@ public:
 	fixed_t GetScrollX() const { return m_dx; }
 	fixed_t GetScrollY() const { return m_dy; }
 
+	friend static BOOL LS_Scroll_Wall(line_t* line, AActor* actor, int arg1, int arg2, int arg3, int arg4, int arg5);
+
 protected:
 	EScrollType m_Type;		// Type of scroll effect
 	fixed_t m_dx, m_dy;		// (dx,dy) scroll speeds
