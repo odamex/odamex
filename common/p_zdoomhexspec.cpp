@@ -92,15 +92,15 @@ lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 const LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int activationType)
 {
 	if (activationType & (ML_SPAC_CROSS | ML_SPAC_MCROSS | ML_SPAC_PCROSS | ML_SPAC_CROSSTHROUGH))
-		return LineActivationType::LineCross;
+		return LineCross;
 	else if (activationType & ML_SPAC_IMPACT)
-		return LineActivationType::LineShoot;
+		return LineShoot;
 	else if (activationType & ML_SPAC_PUSH)
-		return LineActivationType::LinePush;
+		return LinePush;
 	else if (activationType & (ML_SPAC_USE | ML_SPAC_USETHROUGH))
-		return LineActivationType::LineUse;
+		return LineUse;
 
-	return LineActivationType::LineUse;
+	return LineUse;
 }
 
 void P_CollectSecretZDoom(sector_t* sector, player_t* player)
