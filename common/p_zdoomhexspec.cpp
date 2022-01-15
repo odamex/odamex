@@ -38,7 +38,12 @@ lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
                                      bool bossaction)
 {
 	if (!thing)
-		return lineresult_s {false, false};
+	{
+		lineresult_s res;
+		res.lineexecuted = false;
+		res.switchchanged = false;
+		return res;
+	}
 
 	if (thing->player)
 	{
@@ -92,7 +97,7 @@ const LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int acti
 		return LineActivationType::LineShoot;
 	else if (activationType & ML_SPAC_PUSH)
 		return LineActivationType::LinePush;
-	else if (activationType & ML_SPAC_USE | ML_SPAC_USETHROUGH)
+	else if (activationType & (ML_SPAC_USE | ML_SPAC_USETHROUGH))
 		return LineActivationType::LineUse;
 
 	return LineActivationType::LineUse;
