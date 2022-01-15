@@ -1113,7 +1113,7 @@ manual_ceiling:
 // jff 02/04/98 Added this routine (and file) to handle generalized
 // floor movers using bit fields in the line special type.
 //
-BOOL EV_DoGenCeiling(line_t* line)
+BOOL DCeiling::EV_DoGenCeiling(line_t* line)
 {
 	int secnum;
 	BOOL rtn;
@@ -1164,7 +1164,7 @@ BOOL EV_DoGenCeiling(line_t* line)
 		// new ceiling thinker
 		rtn = true;
 
-		DCeiling::ECeiling type = DCeiling::ECeiling::genCeiling;
+		ECeiling type = ECeiling::genCeiling;
 
 		new DCeiling(sec, type, line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
 		P_AddMovingCeiling(sec); // add this ceiling to the active list
@@ -1185,7 +1185,7 @@ BOOL EV_DoGenCeiling(line_t* line)
 // jff 02/04/98 Added this routine (and file) to handle generalized
 // floor movers using bit fields in the line special type.
 //
-BOOL EV_DoGenCrusher(line_t* line)
+BOOL DCeiling::EV_DoGenCrusher(line_t* line)
 {
 	int secnum;
 	BOOL rtn;
@@ -1234,8 +1234,8 @@ BOOL EV_DoGenCrusher(line_t* line)
 		// new ceiling thinker
 		rtn = true;
 
-		DCeiling::ECeiling type =
-		    Slnt ? DCeiling::ECeiling::genSilentCrusher : DCeiling::ECeiling::genCrusher;
+		ECeiling type =
+		    Slnt ? ECeiling::genSilentCrusher : ECeiling::genCrusher;
 
 		new DCeiling(sec, type, line, Sped);
 		P_AddMovingCeiling(sec); // add this ceiling to the active list

@@ -935,8 +935,8 @@ public:
 	DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, int speed);
 	DCeiling* Clone(sector_t* sec) const;
 	friend void P_SetCeilingDestroy(DCeiling *ceiling);
-	friend BOOL EV_DoGenCeiling(line_t* line);
-	friend BOOL EV_DoGenCrusher(line_t* line);
+	BOOL EV_DoGenCeiling(line_t* line);
+	BOOL EV_DoGenCrusher(line_t* line);
 	
 	void RunThink ();
 	void PlayCeilingSound();	
