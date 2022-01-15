@@ -21,7 +21,6 @@
 
 #include "odamex.h"
 
-#include "cmdlib.h"
 #include "g_episode.h"
 #include "gi.h"
 #include "gstrings.h"
@@ -29,7 +28,6 @@
 #include "oscanner.h"
 #include "p_setup.h"
 #include "r_sky.h"
-#include "stringenums.h"
 #include "v_video.h"
 #include "w_wad.h"
 #include "infomap.h"
@@ -39,11 +37,6 @@ BOOL HexenHack;
 
 namespace
 {
-
-void SetLevelDefaults(level_pwad_info_t& levelinfo)
-{
-	levelinfo = level_pwad_info_t();
-}
 
 //
 // Assumes that you have munched the last parameter you know how to handle,
@@ -110,23 +103,8 @@ void SkipUnknownBlock(OScanner& os)
 	}
 }
 
-// return token as OLumpName
-OLumpName GetTokenOLumpName(OScanner& os)
-{
-	return os.getToken();
-}
-
 //////////////////////////////////////////////////////////////////////
 /// MustGet
-
-// ensure token is string
-void MustGetString(OScanner& os)
-{
-	if (!os.scan())
-	{
-		os.error("Missing string (unexpected end of file).");
-	}
-}
 
 template <typename T>
 void MustGet(OScanner& os)
@@ -179,7 +157,7 @@ void MustGet<OLumpName>(OScanner& os)
 //////////////////////////////////////////////////////////////////////
 /// Misc
 
-static bool IsIdentifier(const OScanner& os)
+bool IsIdentifier(const OScanner& os)
 {
 	// [A-Za-z_]+[A-Za-z0-9_]*
 
@@ -199,11 +177,8 @@ static bool IsIdentifier(const OScanner& os)
 		if (ch >= 'a' && ch <= 'z')
 			continue;
 
-		if (it != token.begin())
-		{
-			if (ch >= '0' && ch <= '9')
-				continue;
-		}
+		if (it != token.begin() && ch >= '0' && ch <= '9')
+			continue;
 
 		return false;
 	}
@@ -213,14 +188,14 @@ static bool IsIdentifier(const OScanner& os)
 
 void MustGetIdentifier(OScanner& os)
 {
-	MustGetString(os);
+	os.mustScan();
 	if (!IsIdentifier(os))
 	{
 		os.error("Expected identifier (unexpected end of file).");
 	}
 }
 
-bool ContainsMapInfoTopLevel(OScanner& os)
+bool ContainsMapInfoTopLevel(const OScanner& os)
 {
 	return os.compareTokenNoCase("map") || os.compareTokenNoCase("defaultmap") ||
 	       os.compareTokenNoCase("cluster") || os.compareTokenNoCase("clusterdef") ||
@@ -232,7 +207,7 @@ bool ContainsMapInfoTopLevel(OScanner& os)
 
 void MustGetStringName(OScanner& os, const char* name)
 {
-	MustGetString(os);
+	os.mustScan();
 	if (os.compareTokenNoCase(name) == false)
 	{
 		os.error("Expected '%s', got '%s'.", name, os.getToken().c_str());
@@ -240,41 +215,28 @@ void MustGetStringName(OScanner& os, const char* name)
 }
 
 // used for munching the strings in UMAPINFO
-char* ParseMultiString(OScanner& os)
+std::string ParseMultiString(OScanner& os)
 {
-	char* build = NULL;
-
 	os.scan();
-	// TODO: properly identify identifiers so clear can be separated from regular strings
+	
 	if (!os.isQuotedString())
 	{
 		if (os.compareTokenNoCase("clear"))
-		{
-			return strdup("-"); // this was explicitly deleted to override the default.
-		}
+			return "-"; // this was explicitly deleted to override the default.
 
-		// os.error("Either 'clear' or string constant expected");
+		os.error("Either 'clear' or quoted string expected");
 	}
 	os.unScan();
 
+	std::string build;
+
 	do
 	{
-		MustGetString(os);
+		os.mustScan();
 
-		if (build == NULL)
-			build = strdup(os.getToken().c_str());
-		else
-		{
-			size_t newlen = strlen(build) + os.getToken().length() +
-			                2; // strlen for both the existing text and the new line, plus
-			                   // room for one \n and one \0
-			build = (char*)realloc(
-			    build, newlen);  // Prepare the destination memory for the below strcats
-			strcat(build, "\n"); // Replace the existing text's \0 terminator with a \n
-			strcat(
-			    build,
-			    os.getToken().c_str()); // Concatenate the new line onto the existing text
-		}
+		build += os.getToken(); // Concatenate the new line onto the existing text
+		build += '\n';			// Add newline
+		
 		os.scan();
 	} while (os.compareToken(","));
 	os.unScan();
@@ -322,19 +284,17 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 
 	if (!IsIdentifier(os))
 	{
-		std::string buffer;
-		StrFormat(buffer, "Expected identifier, got \"%s\".", os.getToken().c_str());
-		os.error(buffer.c_str());
+		os.error("Expected identifier, got \"%s\".", os.getToken().c_str());
 	}
-	char* pname = strdup(os.getToken().c_str());
+	std::string pname = os.getToken();
 	MustGetStringName(os, "=");
 
-	if (!stricmp(pname, "levelname"))
+	if (!stricmp(pname.c_str(), "levelname"))
 	{
-		MustGetString(os);
-		mape->level_name = strdup(os.getToken().c_str());
+		os.mustScan();
+		mape->level_name = os.getToken();
 	}
-	else if (!stricmp(pname, "next"))
+	else if (!stricmp(pname.c_str(), "next"))
 	{
 		ParseOLumpName(os, mape->nextmap);
 		if (!ValidateMapName(mape->nextmap.c_str()))
@@ -343,7 +303,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			return 0;
 		}
 	}
-	else if (!stricmp(pname, "nextsecret"))
+	else if (!stricmp(pname.c_str(), "nextsecret"))
 	{
 		ParseOLumpName(os, mape->secretmap);
 		if (!ValidateMapName(mape->secretmap.c_str()))
@@ -352,15 +312,15 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			return 0;
 		}
 	}
-	else if (!stricmp(pname, "levelpic"))
+	else if (!stricmp(pname.c_str(), "levelpic"))
 	{
 		ParseOLumpName(os, mape->pname);
 	}
-	else if (!stricmp(pname, "skytexture"))
+	else if (!stricmp(pname.c_str(), "skytexture"))
 	{
 		ParseOLumpName(os, mape->skypic);
 	}
-	else if (!stricmp(pname, "music"))
+	else if (!stricmp(pname.c_str(), "music"))
 	{
 		MustGet<OLumpName>(os);
 		const std::string musicname = os.getToken();
@@ -369,12 +329,12 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			mape->music = musicname;
 		}
 	}
-	else if (!stricmp(pname, "endpic"))
+	else if (!stricmp(pname.c_str(), "endpic"))
 	{
 		ParseOLumpName(os, mape->endpic);
 		mape->nextmap = "EndGame1";
 	}
-	else if (!stricmp(pname, "endcast"))
+	else if (!stricmp(pname.c_str(), "endcast"))
 	{
 		os.mustScanBool();
 		if (os.getTokenBool())
@@ -382,7 +342,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		else
 			mape->endpic.clear();
 	}
-	else if (!stricmp(pname, "endbunny"))
+	else if (!stricmp(pname.c_str(), "endbunny"))
 	{
 		os.mustScanBool();
 		if (os.getTokenBool())
@@ -390,7 +350,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		else
 			mape->endpic.clear();
 	}
-	else if (!stricmp(pname, "endgame"))
+	else if (!stricmp(pname.c_str(), "endgame"))
 	{
 		os.mustScanBool();
 		if (os.getTokenBool())
@@ -402,15 +362,15 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			mape->endpic.clear();
 		}
 	}
-	else if (!stricmp(pname, "exitpic"))
+	else if (!stricmp(pname.c_str(), "exitpic"))
 	{
 		ParseOLumpName(os, mape->exitpic);
 	}
-	else if (!stricmp(pname, "enterpic"))
+	else if (!stricmp(pname.c_str(), "enterpic"))
 	{
 		ParseOLumpName(os, mape->enterpic);
 	}
-	else if (!stricmp(pname, "nointermission"))
+	else if (!stricmp(pname.c_str(), "nointermission"))
 	{
 		os.mustScanBool();
 		if (os.getTokenBool())
@@ -418,39 +378,38 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			mape->flags |= LEVEL_NOINTERMISSION;
 		}
 	}
-	else if (!stricmp(pname, "partime"))
+	else if (!stricmp(pname.c_str(), "partime"))
 	{
 		os.mustScanInt();
 		mape->partime = TICRATE * os.getTokenInt();
 	}
-	else if (!stricmp(pname, "intertext"))
+	else if (!stricmp(pname.c_str(), "intertext"))
 	{
-		char* lname = ParseMultiString(os);
-		if (!lname)
+		const std::string lname = ParseMultiString(os);
+		if (lname.empty())
 			return 0;
 		mape->intertext = lname;
 	}
-	else if (!stricmp(pname, "intertextsecret"))
+	else if (!stricmp(pname.c_str(), "intertextsecret"))
 	{
-		char* lname = ParseMultiString(os);
-		if (!lname)
+		const std::string lname = ParseMultiString(os);
+		if (lname.empty())
 			return 0;
 		mape->intertextsecret = lname;
 	}
-	else if (!stricmp(pname, "interbackdrop"))
+	else if (!stricmp(pname.c_str(), "interbackdrop"))
 	{
 		ParseOLumpName(os, mape->interbackdrop);
 	}
-	else if (!stricmp(pname, "intermusic"))
+	else if (!stricmp(pname.c_str(), "intermusic"))
 	{
 		MustGet<OLumpName>(os);
 		const std::string musicname = os.getToken();
+
 		if (W_CheckNumForName(musicname.c_str()) != -1)
-		{
 			mape->intermusic = musicname;
-		}
 	}
-	else if (!stricmp(pname, "episode"))
+	else if (!stricmp(pname.c_str(), "episode"))
 	{
 		if (!episodes_modified && gamemode == commercial)
 		{
@@ -458,34 +417,30 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			episodes_modified = true;
 		}
 
-		char* lname = ParseMultiString(os);
-		if (!lname)
+		const std::string lname = ParseMultiString(os);
+		if (lname.empty())
 			return 0;
 
-		if (*lname == '-') // means "clear"
+		if (lname == "-") // means "clear"
 		{
 			episodenum = 0;
 		}
 		else
 		{
-			const char* gfx = strtok(lname, "\n");
-			const char* txt = strtok(NULL, "\n");
-			const char* alpha = strtok(NULL, "\n");
+			const StringTokens tokens = TokenizeString(lname, "\n");
 
 			if (episodenum >= 8)
-			{
 				return 0;
-			}
 
-			strncpy(EpisodeMaps[episodenum], mape->mapname.c_str(), 8);
-			EpisodeInfos[episodenum].name = gfx;
+			EpisodeMaps[episodenum] = mape->mapname;
+			EpisodeInfos[episodenum].name = tokens[0];
 			EpisodeInfos[episodenum].fulltext = false;
 			EpisodeInfos[episodenum].noskillmenu = false;
-			EpisodeInfos[episodenum].key = alpha ? *alpha : 0;
+			EpisodeInfos[episodenum].key = (tokens.size() > 2) ? tokens[2][0] : 0;
 			++episodenum;
 		}
 	}
-	else if (!stricmp(pname, "bossaction"))
+	else if (!stricmp(pname.c_str(), "bossaction"))
 	{
 		MustGetIdentifier(os);
 
@@ -497,8 +452,8 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		}
 		else
 		{
-			std::string actor_name = os.getToken();
-			mobjtype_t i = P_NameToMobj(actor_name);
+			const std::string actor_name = os.getToken();
+			const mobjtype_t i = P_NameToMobj(actor_name);
 			if (i == MT_NULL)
 			{
 				os.error("Unknown thing type %s", os.getToken().c_str());
@@ -541,7 +496,6 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 
 		} while (os.compareToken(","));
 	}
-	free(pname);
 	os.scan();
 
 	return 1;
@@ -564,7 +518,7 @@ void MapNameToLevelNum(level_pwad_info_t& info)
 	{
 		// Try and turn the trailing digits after the "MAP" into a
 		// level number.
-		int mapnum = std::atoi(info.mapname.c_str() + 3);
+		const int mapnum = std::atoi(info.mapname.c_str() + 3);
 		if (mapnum >= 0 && mapnum <= 99)
 		{
 			info.levelnum = mapnum;
@@ -576,12 +530,9 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
 
-	level_pwad_info_t defaultinfo;
-	SetLevelDefaults(defaultinfo);
-
 	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 
-	OScannerConfig config = {
+	const OScannerConfig config = {
 	    lumpname, // lumpName
 	    false,    // semiComments
 	    true,     // cComments
@@ -596,7 +547,7 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 		}
 
 		MustGet<OLumpName>(os);
-		OLumpName mapname = GetTokenOLumpName(os);
+		const OLumpName mapname = os.getToken();
 
 		if (!ValidateMapName(mapname))
 		{
@@ -677,9 +628,7 @@ template <typename T>
 void ParseMapInfoHelper(OScanner& os, bool doEquals)
 {
 	if (doEquals)
-	{
 		MustGetStringName(os, "=");
-	}
 
 	MustGet<T>(os);
 }
@@ -724,7 +673,7 @@ void MIType_Color(OScanner& os, bool doEquals, void* data, unsigned int flags,
 {
 	ParseMapInfoHelper<std::string>(os, doEquals);
 
-	argb_t color(V_GetColorFromString(os.getToken()));
+	const argb_t color(V_GetColorFromString(os.getToken()));
 	uint8_t* ptr = static_cast<uint8_t*>(data);
 	ptr[0] = color.geta();
 	ptr[1] = color.getr();
@@ -744,7 +693,7 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 		if (doEquals)
 			MustGetStringName(os, ",");
 
-		MustGetString(os);
+		os.mustScan();
 	}
 	else if (os.compareTokenNoCase("EndSequence"))
 	{
@@ -752,7 +701,7 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 		if (doEquals)
 			MustGetStringName(os, ",");
 
-		MustGetString(os);
+		os.mustScan();
 	}
 	else if (os.compareTokenNoCase("endgame"))
 	{
@@ -813,7 +762,7 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 
 		if (IsNum(map_name))
 		{
-			int map = std::atoi(map_name);
+			const int map = std::atoi(map_name);
 			sprintf(map_name, "MAP%02d", map);
 		}
 		else if (os.compareTokenNoCase("EndBunny"))
@@ -840,7 +789,7 @@ void MIType_InterLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
                           unsigned int flags2)
 {
 	ParseMapInfoHelper<std::string>(os, doEquals);
-	std::string tok = os.getToken();
+	const std::string tok = os.getToken();
 	if (!tok.empty() && tok.at(0) == '$')
 	{
 		// Intermission scripts are not supported.
@@ -862,9 +811,7 @@ void MIType_$LumpName(OScanner& os, bool doEquals, void* data, unsigned int flag
 		const OString& s = GStrings(os.getToken().c_str() + 1);
 		if (s.empty())
 		{
-			std::string err;
-			StrFormat(err, "Unknown lookup string \"%s\".", os.getToken().c_str());
-			os.error(err.c_str());
+			os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
 		}
 		*static_cast<OLumpName*>(data) = s;
 	}
@@ -889,9 +836,7 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 		const OString& s = GStrings(musicname.c_str() + 1);
 		if (s.empty())
 		{
-			std::string err;
-			StrFormat(err, "Unknown lookup string \"%s\".", os.getToken().c_str());
-			os.error(err.c_str());
+			os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
 		}
 
 		// Music lumps in the stringtable do not begin
@@ -990,13 +935,11 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 				MustGetStringName(os, ",");
 			}
 
-			MustGetString(os);
+			os.mustScan();
 			const OString& s = GStrings(os.getToken());
 			if (s.empty())
 			{
-				std::string err;
-				StrFormat(err, "Unknown lookup string \"%s\".", os.getToken().c_str());
-				os.error(err.c_str());
+				os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
 			}
 			free(*text);
 			*text = strdup(s.c_str());
@@ -1008,7 +951,7 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 			os.unScan();
 			do
 			{
-				MustGetString(os);
+				os.mustScan();
 				ctext += os.getToken();
 				ctext += "\n";
 				os.scan();
@@ -1029,13 +972,11 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 	{
 		if (os.compareTokenNoCase("lookup"))
 		{
-			MustGetString(os);
+			os.mustScan();
 			const OString& s = GStrings(os.getToken());
 			if (s.empty())
 			{
-				std::string err;
-				StrFormat(err, "Unknown lookup string \"%s\".", os.getToken().c_str());
-				os.error(err.c_str());
+				os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
 			}
 
 			free(*text);
@@ -1080,7 +1021,7 @@ struct MapInfoDataSetter
 {
 	MapInfoDataContainer mapInfoDataContainer;
 
-	MapInfoDataSetter() : mapInfoDataContainer()
+	MapInfoDataSetter()
 	{
 	}
 };
@@ -1310,19 +1251,19 @@ void ParseEpisodeInfo(OScanner& os)
 	bool optional = false;
 	bool extended = false;
 
-	MustGetString(os); // Map lump
+	os.mustScan(); // Map lump
 	map = os.getToken();
 
-	MustGetString(os);
+	os.mustScan();
 	if (os.compareTokenNoCase("teaser"))
 	{
 		// Teaser lump
-		MustGetString(os);
+		os.mustScan();
 		if (gameinfo.flags & GI_SHAREWARE)
 		{
 			map = os.getToken();
 		}
-		MustGetString(os);
+		os.mustScan();
 	}
 	else
 	{
@@ -1333,7 +1274,7 @@ void ParseEpisodeInfo(OScanner& os)
 	{
 		// Detected new-style MAPINFO
 		new_mapinfo = true;
-		MustGetString(os);
+		os.mustScan();
 	}
 
 	while (os.scan())
@@ -1346,23 +1287,17 @@ void ParseEpisodeInfo(OScanner& os)
 		else if (os.compareToken("}"))
 		{
 			if (new_mapinfo == false)
-			{
 				os.error("Detected incorrectly placed curly brace in MAPINFO episode "
 				        "definiton");
-			}
 			else
-			{
 				break;
-			}
 		}
 		else if (os.compareTokenNoCase("name"))
 		{
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
 			if (picisgfx == false)
-			{
 				pic = os.getToken();
-			}
 		}
 		else if (os.compareTokenNoCase("lookup"))
 		{
@@ -1421,10 +1356,21 @@ void ParseEpisodeInfo(OScanner& os)
 		{
 			if (i + 1 < episodenum)
 			{
-				memmove(&EpisodeMaps[i], &EpisodeMaps[i + 1],
-				        sizeof(EpisodeMaps[0]) * (episodenum - i - 1));
-				memmove(&EpisodeInfos[i], &EpisodeInfos[i + 1],
-				        sizeof(EpisodeInfos[0]) * (episodenum - i - 1));
+				const int saved_i = i;
+
+				for (; i < episodenum; ++i)
+				{
+					EpisodeMaps[i] = EpisodeMaps[i + 1];
+				}
+				EpisodeMaps[i].clear();
+
+				i = saved_i;
+
+				for (; i < episodenum; ++i)
+				{
+					EpisodeInfos[i] = EpisodeInfos[i + 1];
+				}
+				EpisodeInfos[i] = EpisodeInfo();
 			}
 			episodenum--;
 		}
@@ -1440,20 +1386,16 @@ void ParseEpisodeInfo(OScanner& os)
 		if (i == episodenum)
 		{
 			if (episodenum == MAX_EPISODES)
-			{
 				i = episodenum - 1;
-			}
 			else
-			{
 				i = episodenum++;
-			}
 		}
 
 		EpisodeInfos[i].name = pic;
-		EpisodeInfos[i].key = tolower(key);
+		EpisodeInfos[i].key = static_cast<char>(tolower(key));
 		EpisodeInfos[i].fulltext = !picisgfx;
 		EpisodeInfos[i].noskillmenu = noskillmenu;
-		strncpy(EpisodeMaps[i], map.c_str(), 8);
+		EpisodeMaps[i] = map;
 	}
 }
 
@@ -1463,11 +1405,10 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 	ClusterInfos& clusters = getClusterInfos();
 
 	level_pwad_info_t defaultinfo;
-	SetLevelDefaults(defaultinfo);
 
 	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 
-	OScannerConfig config = {
+	const OScannerConfig config = {
 	    lumpname, // lumpName
 	    false,    // semiComments
 	    true,     // cComments
@@ -1478,7 +1419,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 	{
 		if (os.compareTokenNoCase("defaultmap"))
 		{
-			SetLevelDefaults(defaultinfo);
+			defaultinfo = level_pwad_info_t();
 
 			MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
 			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
@@ -1486,7 +1427,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 		else if (os.compareTokenNoCase("map"))
 		{
 			uint32_t& levelflags = defaultinfo.flags;
-			MustGetString(os);
+			os.mustScan();
 
 			char map_name[9];
 			strncpy(map_name, os.getToken().c_str(), 8);
@@ -1514,23 +1455,20 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			info.mapname = map_name;
 
 			// Map name.
-			MustGetString(os);
+			os.mustScan();
 			if (os.compareTokenNoCase("lookup"))
 			{
-				MustGetString(os);
+				os.mustScan();
 				const OString& s = GStrings(os.getToken());
 				if (s.empty())
 				{
-					std::string err;
-					StrFormat(err, "Unknown lookup string \"%s\".",
-					          os.getToken().c_str());
-					os.error(err.c_str());
+					os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
 				}
-				info.level_name = strdup(s.c_str());
+				info.level_name = s;
 			}
 			else
 			{
-				info.level_name = strdup(os.getToken().c_str());
+				info.level_name = os.getToken();
 			}
 
 			MapInfoDataSetter<level_pwad_info_t> setter(info);
@@ -1572,7 +1510,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 		else if (os.compareTokenNoCase("skill"))
 		{
 			// Not implemented
-			MustGetString(os); // Name
+			os.mustScan(); // Name
 
 			MapInfoDataSetter<void> setter;
 			ParseMapInfoLower<void>(os, setter);
@@ -1589,7 +1527,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 		else if (os.compareTokenNoCase("intermission"))
 		{
 			// Not implemented
-			MustGetString(os); // Name
+			os.mustScan(); // Name
 
 			MapInfoDataSetter<void> setter;
 			ParseMapInfoLower<void>(os, setter);
@@ -1644,8 +1582,9 @@ void G_ParseMapInfo()
 	case chex:
 		baseinfoname = "_CHEXNFO";
 		break;
+	case none:
 	default:
-		I_Error("This IWAD is unknown to Odamex");
+		I_Error("%s: This IWAD is unknown to Odamex", __FUNCTION__);
 		break;
 	}
 
@@ -1663,9 +1602,7 @@ void G_ParseMapInfo()
 
 	// If ZMAPINFO exists, we don't parse a normal MAPINFO
 	if (found_mapinfo == true)
-	{
 		return;
-	}
 
 	lump = -1;
 	while ((lump = W_FindLump("UMAPINFO", lump)) != -1)
@@ -1675,9 +1612,7 @@ void G_ParseMapInfo()
 
 	// If UMAPINFO exists, we don't parse a normal MAPINFO
 	if (found_mapinfo == true)
-	{
 		return;
-	}
 
 	lump = -1;
 	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
@@ -1686,8 +1621,6 @@ void G_ParseMapInfo()
 	}
 
 	if (episodenum == 0)
-	{
-		I_FatalError("You cannot use clearepisodes in a MAPINFO if you do not define any "
-		             "new episodes after it.");
-	}
+		I_FatalError("%s: You cannot use clearepisodes in a MAPINFO if you do not define any "
+		             "new episodes after it.", __FUNCTION__);
 }
