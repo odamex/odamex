@@ -292,12 +292,12 @@ DCeiling::DCeiling (sector_t *sec, fixed_t speed1, fixed_t speed2, int silent)
 	m_Silent = silent;
 }
 
-DCeiling::DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, int speed)
+DCeiling::DCeiling(sector_t* sec, line_t* line, int silent, int speed)
     : DMovingCeiling(sec), m_Status(init)
 {
 	fixed_t targheight;
 
-	m_Type = ceilingtype;
+	m_Type = speed ? ECeiling::genSilentCrusher : ECeiling::genCrusher;
 	m_Crush = DOOM_CRUSH;
 	m_CrushMode = crushDoom;
 	m_Direction = -1;
@@ -309,7 +309,7 @@ DCeiling::DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, 
 	m_NewLeakRate = sec->leakrate;
 	m_NewFlags = sec->flags;
 	m_Tag = sec->tag;
-	m_Silent = (ceilingtype == genSilentCrusher);
+	m_Silent = (m_Type == genSilentCrusher);
 	m_TopHeight = sec->ceilingheight;
 	m_BottomHeight = sec->floorheight + (8 * FRACUNIT);
 
@@ -334,13 +334,13 @@ DCeiling::DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, 
 	m_Speed = m_Speed2 = m_Speed;
 }
 
-DCeiling::DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, int speed,
+DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
                    int target, int crush, int change, int direction, int model)
     : DMovingCeiling(sec), m_Status(init)
 {
 	fixed_t targheight;
 
-	m_Type = ceilingtype;
+	m_Type = ECeiling::genCeiling;
 	m_Crush = (crush ? DOOM_CRUSH : NO_CRUSH);
 	m_CrushMode = crushDoom;
 	m_Direction = direction ? 1 : -1;
@@ -1113,7 +1113,7 @@ manual_ceiling:
 // jff 02/04/98 Added this routine (and file) to handle generalized
 // floor movers using bit fields in the line special type.
 //
-BOOL DCeiling::EV_DoGenCeiling(line_t* line)
+BOOL EV_DoGenCeiling(line_t* line)
 {
 	int secnum;
 	BOOL rtn;
@@ -1164,9 +1164,7 @@ BOOL DCeiling::EV_DoGenCeiling(line_t* line)
 		// new ceiling thinker
 		rtn = true;
 
-		ECeiling type = ECeiling::genCeiling;
-
-		new DCeiling(sec, type, line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
+		new DCeiling(sec, line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
 		P_AddMovingCeiling(sec); // add this ceiling to the active list
 		if (manual)
 			return rtn;
@@ -1175,17 +1173,17 @@ BOOL DCeiling::EV_DoGenCeiling(line_t* line)
 }
 
 //
-// EV_DoGenCeiling()
+// EV_DoGenCrusher()
 //
-// Handle generalized ceiling types
+// Handle generalized crusher types
 //
-// Passed the linedef activating the ceiling function
+// Passed the linedef activating the crusher function
 // Returns true if a thinker created
 //
 // jff 02/04/98 Added this routine (and file) to handle generalized
 // floor movers using bit fields in the line special type.
 //
-BOOL DCeiling::EV_DoGenCrusher(line_t* line)
+BOOL EV_DoGenCrusher(line_t* line)
 {
 	int secnum;
 	BOOL rtn;
@@ -1234,10 +1232,7 @@ BOOL DCeiling::EV_DoGenCrusher(line_t* line)
 		// new ceiling thinker
 		rtn = true;
 
-		ECeiling type =
-		    Slnt ? ECeiling::genSilentCrusher : ECeiling::genCrusher;
-
-		new DCeiling(sec, type, line, Sped);
+		new DCeiling(sec, line, Slnt, Sped);
 		P_AddMovingCeiling(sec); // add this ceiling to the active list
 		if (manual)
 			return rtn;

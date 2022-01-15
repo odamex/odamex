@@ -930,13 +930,11 @@ public:
 
 	DCeiling (sector_t *sec);
 	DCeiling (sector_t *sec, fixed_t speed1, fixed_t speed2, int silent);
-	DCeiling (sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, int speed,
+	DCeiling (sector_t* sec, line_t* line, int speed,
 	         int target, int crush, int change, int direction, int model);
-	DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, int speed);
+	DCeiling(sector_t* sec, line_t* line, int silent, int speed);
 	DCeiling* Clone(sector_t* sec) const;
 	friend void P_SetCeilingDestroy(DCeiling *ceiling);
-	BOOL EV_DoGenCeiling(line_t* line);
-	BOOL EV_DoGenCrusher(line_t* line);
 	
 	void RunThink ();
 	void PlayCeilingSound();	
