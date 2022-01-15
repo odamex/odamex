@@ -26,6 +26,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
+#include <string.h>
 #else
 #include <unistd.h>
 #endif
@@ -39,14 +40,28 @@ void Plat_DebugOut(const char* str)
 #endif
 }
 
-uint32_t Plat_GetCoreCount()
+void Plat_ExecuteOdamex()
 {
 #ifdef _WIN32
-	SYSTEM_INFO sysinfo;
-	GetSystemInfo(&sysinfo);
-	return sysinfo.dwNumberOfProcessors;
+	STARTUPINFO si;
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+
+	PROCESS_INFORMATION pi;
+	ZeroMemory(&pi, sizeof(pi));
+
+	std::wstring path = L"";
+	std::wstring args = L"";
+
+	static wchar_t argsBuffer[32767];
+	wcsncpy(argsBuffer, args.c_str(), ARRAY_LENGTH(argsBuffer) - 1);
+
+	CreateProcess(path.c_str(), argsBuffer, nullptr, nullptr, FALSE, 0, nullptr, nullptr,
+	            &si, &pi);
+
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
 #else
-	// [AM] BSD uses a different mechanism.
-	return static_cast<uint32_t>(sysconf(_SC_NPROCESSORS_ONLN));
+
 #endif
 }

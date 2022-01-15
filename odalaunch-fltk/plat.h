@@ -23,4 +23,4 @@
 #include "odalaunch.h"
 
 void Plat_DebugOut(const char* str);
-uint32_t Plat_GetCoreCount();
+void Plat_ExecuteOdamex();

@@ -12,6 +12,7 @@ source_group("SQLite" FILES ${SQLITE_SOURCES})
 
 add_executable(odalaunch-fltk MACOSX_BUNDLE WIN32 ${LAUNCHER_SOURCES})
 odamex_target_settings(odalaunch-fltk)
+target_compile_definitions(odalaunch-fltk PUBLIC _UNICODE UNICODE)
 target_include_directories(odalaunch-fltk PUBLIC
     "${CMAKE_BINARY_DIR}/libraries/local/include")
 target_link_libraries(odalaunch-fltk odalpapi sqlite-amalgamation fltk)
