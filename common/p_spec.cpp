@@ -2806,7 +2806,7 @@ void DPusher::RunThink ()
 	// Be sure the special sector type is still turned on. If so, proceed.
 	// Else, bail out; the sector type has been changed on us.
 
-	if (!(sec->special & PUSH_MASK))
+	if (!(sec->flags & SECF_PUSH))
 		return;
 
 	// For constant pushers (wind/current) there are 3 situations:
