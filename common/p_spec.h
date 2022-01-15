@@ -935,6 +935,8 @@ public:
 	DCeiling(sector_t* sec, DCeiling::ECeiling ceilingtype, line_t* line, int speed);
 	DCeiling* Clone(sector_t* sec) const;
 	friend void P_SetCeilingDestroy(DCeiling *ceiling);
+	friend BOOL EV_DoGenCeiling(line_t* line);
+	friend BOOL EV_DoGenCrusher(line_t* line);
 	
 	void RunThink ();
 	void PlayCeilingSound();	
@@ -976,7 +978,6 @@ private:
 	friend BOOL EV_CeilingCrushStop (int tag);
 	friend void P_ActivateInStasisCeiling (int tag);
 	friend BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
-	friend BOOL EV_DoGenCeiling(line_t* line);
 };
 
 inline FArchive &operator<< (FArchive &arc, DCeiling::ECeiling type)
