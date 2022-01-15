@@ -2021,15 +2021,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 
  	if (result.lineexecuted)
 	{
-		if (map_format.getZDoom())
-		{
-			SV_OnActivatedLine(line, thing, side,
-			                   P_LineActivationTypeForSPACFlag(ML_SPAC_USE), false);
-		}
-		else
-		{
-			SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
-		}
+		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
 
 		if (serverside &&
 		    (map_format.getZDoom() && (!(line->flags & ML_SPAC_PUSH)) ||
@@ -2046,13 +2038,13 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 			P_ChangeSwitchTexture(line, repeat, true);
 			OnChangedSwitchTexture(line, repeat);
 		}
+
+		return true;
 	}
 	else
 	{
 		return false;
 	}
-
-    return true;
 }
 
 

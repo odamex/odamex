@@ -79,7 +79,7 @@ lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 	buttonSuccess = P_ExecuteZDoomLineSpecial(line->special, line->args, line, side, mo);
 
 	result.switchchanged = buttonSuccess;
-	result.lineexecuted = true;
+	result.lineexecuted = buttonSuccess;
 
 	return result;
 }

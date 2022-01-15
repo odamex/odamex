@@ -630,10 +630,8 @@ void P_TranslateTeleportThings()
 	}
 }
 
-int P_TranslateSectorSpecial(int special)
+short P_TranslateSectorSpecial(const short special)
 {
-	int high;
-
 	// Allow any supported sector special by or-ing 0x8000 to it in Doom format maps
 	// That's for those who like to mess around with existing maps. ;)
 	if (special & 0x8000)
@@ -645,19 +643,19 @@ int P_TranslateSectorSpecial(int special)
 		return SECRET_MASK;
 
 	// This supports phased lighting with specials 21-24
-	high = (special & 0xfe0) << 3;
-	special &= 0x1f;
+	const short high = (special & 0xfe0) << 3;
+	const short newspecial = (special & 0x1f);
 	if (special < 21)
 	{
-		return high | (special + 64);
+		return high | (newspecial + 64);
 	}
 	else if (special < 40)
 	{
-		return high | (special - 20);
+		return high | (newspecial - 20);
 	}
 
 	// Unknown
-	return high | special;
+	return high | newspecial;
 }
 
 VERSION_CONTROL (p_xlat_cpp, "$Id$")
