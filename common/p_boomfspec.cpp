@@ -2011,8 +2011,9 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	{
 	// Manual doors, push type with no tag
 	case 1:  // Vertical Door
-		result.lineexecuted = EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
+		EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
 		                                TICS(VDOORWAIT), NoKey);
+		result.lineexecuted = true;
 		break;
 	case 26: // Blue Door/Locked
 		result.lineexecuted = EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
@@ -2031,16 +2032,19 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		    EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0, NoKey);
 		break;
 	case 32: // Blue locked door open
-		result.lineexecuted = EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW),
+		EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW),
 		                                0, (card_t)(BCard | CardIsSkull));
+		result.lineexecuted = true;
 		break;
 	case 33: // Red locked door open
-		result.lineexecuted = EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0,
+		EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0,
 		                                (card_t)(RCard | CardIsSkull));
+		result.lineexecuted = true;
 		break;
 	case 34: // Yellow locked door open
-		result.lineexecuted = EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0,
+		EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0,
 		                                (card_t)(YCard | CardIsSkull));
+		result.lineexecuted = true;
 		break;
 
 	case 117: // Blazing door raise

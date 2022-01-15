@@ -1021,6 +1021,14 @@ void P_PlayerThink (player_t *player)
 	if (player->bonuscount)
 		player->bonuscount--;
 
+	if (player->hazardcount)
+	{
+		player->hazardcount--;
+		if (!(::level.time % player->hazardinterval) &&
+		    player->hazardcount > 16 * TICRATE)
+			P_DamageMobj(player->mo, NULL, NULL, 5);
+	}
+
 	// Handling colormaps.
 	if (displayplayer().powers[pw_invulnerability])
 	{
@@ -1317,6 +1325,8 @@ player_s::player_s() :
 	blend_color(argb_t(0, 0, 0, 0)),
 	doreborn(false),
 	QueuePosition(0),
+	hazardcount(0),
+	hazardinterval(0),
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
 	client(player_s::client_t())
