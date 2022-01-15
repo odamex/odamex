@@ -527,7 +527,6 @@ extern lnSpecFunc LineSpecials[283];
 
 BOOL EV_CeilingCrushStop (int tag);
 void EV_StopPlat (int tag);
-int EV_ZDoomFloorCrushStop(int tag);
 BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
 BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
 BOOL EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int flags);

@@ -1066,13 +1066,15 @@ public:
 	DFloor(sector_t *sec);
 	DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line, fixed_t speed,
 		   fixed_t height, bool crush, int change);
-	DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, int speed,
+	DFloor(sector_t* sec, line_t* line, int speed,
 	       int target, int crush, int change, int direction, int model);
 	DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t speed,
 	               fixed_t height, int crush, int change, bool hexencrush,
 	               bool hereticlower);
 	DFloor* Clone(sector_t* sec) const;
 	friend void P_SetFloorDestroy(DFloor *floor);
+	friend BOOL EV_DoGenFloor(line_t* line);
+	friend BOOL EV_DoGenStairs(line_t* line);
 		
 	void RunThink ();
 	void PlayFloorSound();	
@@ -1116,9 +1118,6 @@ protected:
 	friend BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag,
 	                            fixed_t speed, fixed_t height, int crush, int change,
 	                            bool hexencrush, bool hereticlower);
-	friend int EV_ZDoomFloorCrushStop(int tag);
-	friend BOOL EV_DoGenFloor(line_t* line);
-	friend BOOL EV_DoGenStairs(line_t* line);
 
   private:
 	DFloor ();

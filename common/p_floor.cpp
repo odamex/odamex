@@ -508,14 +508,14 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 }
 
 // Generalized floor init
-DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, int speed,
+DFloor::DFloor(sector_t* sec, line_t* line, int speed,
                int target, int crush, int change, int direction, int model)
     : DMovingFloor(sec), m_Status(init)
 {
 	fixed_t floorheight = P_FloorHeight(sec);
 	fixed_t ceilingheight = P_CeilingHeight(sec);
 
-	m_Type = floortype;
+	m_Type = genFloor;
 	m_Crush = crush ? DOOM_CRUSH : NO_CRUSH;
 	m_HexenCrush = false;
 	m_ResetCount = 0; // [RH]
@@ -620,7 +620,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, int speed,
 					m_NewLeakRate = ns.damageleakrate;
 					m_NewFlags = sec->flags;
 					P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
-					m_Type = DFloor::EFloor::genFloorChg0;
+					m_Type = genFloorChg0;
 					break;
 				case FChgTyp: // copy type
 					m_NewSpecial = sec->special;
@@ -628,10 +628,10 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, int speed,
 					m_NewDmgInterval = sec->damageinterval;
 					m_NewLeakRate = sec->leakrate;
 					m_NewFlags = sec->flags;
-					m_Type = DFloor::EFloor::genFloorChgT;
+					m_Type = genFloorChgT;
 					break;
 				case FChgTxt: // leave type be
-					m_Type = DFloor::EFloor::genFloorChg;
+					m_Type = genFloorChg;
 					break;
 				default:
 					break;
@@ -657,7 +657,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, int speed,
 				m_NewLeakRate = ns.damageleakrate;
 				m_NewFlags = line->frontsector->flags;
 				P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
-				m_Type = DFloor::EFloor::genFloorChg0;
+				m_Type = genFloorChg0;
 				break;
 			case FChgTyp: // copy type
 				m_NewSpecial = line->frontsector->special;
@@ -665,10 +665,10 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, int speed,
 				m_NewDmgInterval = line->frontsector->damageinterval;
 				m_NewLeakRate = line->frontsector->leakrate;
 				m_NewFlags = line->frontsector->flags;
-				m_Type = DFloor::EFloor::genFloorChgT;
+				m_Type = genFloorChgT;
 				break;
 			case FChgTxt: // leave type be
-				m_Type = DFloor::EFloor::genFloorChg;
+				m_Type = genFloorChg;
 			default:
 				break;
 			}
@@ -953,24 +953,6 @@ manual_floor:
 	return rtn;
 }
 
-int EV_ZDoomFloorCrushStop(int tag)
-{
-	int s = -1;
-
-	while ((s = P_FindSectorFromTag(tag, s)) >= 0)
-	{
-		sector_t* sec = &sectors[s];
-		DFloor* floor = (DFloor*)sec->floordata;
-
-		if (floor && floor->m_Type == DFloor::EFloor::floorRaiseAndCrush)
-		{
-			P_SetFloorDestroy(floor);
-		}
-	}
-
-	return 1;
-}
-
 //
 // EV_DoGenFloor()
 //
@@ -1028,11 +1010,9 @@ BOOL EV_DoGenFloor(line_t* line)
 				continue;
 		}
 
-		DFloor::EFloor floortype = DFloor::EFloor::genFloor;
-
 		// new floor thinker
 		rtn = true;
-		new DFloor(sec, floortype, line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
+		new DFloor(sec, line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
 		P_AddMovingFloor(sec);
 
 		if (manual)

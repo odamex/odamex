@@ -35,7 +35,6 @@ bool EV_DoZDoomPillar(DPillar::EPillar type, line_t* line, int tag, fixed_t spee
                       fixed_t floordist, fixed_t ceilingdist, int crush, bool hexencrush);
 bool EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
                         fixed_t height, int tag);
-int EV_ZDoomFloorCrushStop(int tag);
 BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
 BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
 void P_HealMobj(AActor* mo, int num);
