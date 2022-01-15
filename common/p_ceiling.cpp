@@ -297,7 +297,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int silent, int speed)
 {
 	fixed_t targheight;
 
-	m_Type = speed ? ECeiling::genSilentCrusher : ECeiling::genCrusher;
+	m_Type = speed ? genSilentCrusher : genCrusher;
 	m_Crush = DOOM_CRUSH;
 	m_CrushMode = crushDoom;
 	m_Direction = -1;
@@ -340,7 +340,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 {
 	fixed_t targheight;
 
-	m_Type = ECeiling::genCeiling;
+	m_Type = genCeiling;
 	m_Crush = (crush ? DOOM_CRUSH : NO_CRUSH);
 	m_CrushMode = crushDoom;
 	m_Direction = direction ? 1 : -1;
