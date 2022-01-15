@@ -403,10 +403,7 @@ BOOL PIT_CheckLine (line_t *ld)
 	if (!ld->backsector)
 	{ // One sided line
 		BlockingLine = ld;
-		if (map_format.getZDoom())
-		{
-			CheckForPushSpecial(ld, 0, tmthing);
-		}
+		CheckForPushSpecial(ld, 0, tmthing);
 		return false;
 	}
 
@@ -420,11 +417,7 @@ BOOL PIT_CheckLine (line_t *ld)
 		    (tmthing->player &&
 		     (ld->flags & ML_BLOCKPLAYERS))) // [Blair] Block players only
 		{
-			if (map_format.getZDoom())
-			{
-				CheckForPushSpecial(ld, 0, tmthing);
-			}
-
+			CheckForPushSpecial(ld, 0, tmthing);
 			return false;
 		}		
     }

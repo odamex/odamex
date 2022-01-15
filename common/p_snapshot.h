@@ -586,9 +586,7 @@ public:
 	void setFloorOffset(fixed_t val)		{ mFloorOffset = val; }
 	void setCeilingChange(int val)			{ mCeilingChange = val; }
 	void setFloorChange(int val)			{ mFloorChange = val; }
-
-
-		
+			
 	movertype_t	getCeilingMoverType() const	{ return mCeilingMoverType; }
 	movertype_t	getFloorMoverType() const	{ return mFloorMoverType; }	
 	sector_t* getSector() const				{ return mSector; }

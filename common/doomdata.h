@@ -135,19 +135,19 @@ typedef struct
 // making the next line flag reserved and using it to toggle off ALL extended
 // flags will preserve compatibility for such maps. I have been told this map
 // is one of the first ever created, so it may have something to do with that.
-#define ML_RESERVED			0x0800
+#define ML_RESERVED				0x0800
 
 // [Blair] MBF21 Line flags
-#define ML_BLOCKLANDMONSTERS 0x1000
+#define ML_BLOCKLANDMONSTERS	0x1000
 
-#define ML_BLOCKPLAYERS		0x2000
+#define ML_BLOCKPLAYERS			0x2000
 
 // Hexen/ZDoom stuff
 
-#define ML_MONSTERSCANACTIVATE 0x4000 // zdoom
-#define ML_BLOCKEVERYTHING	0x8000    // zdoom
+#define ML_MONSTERSCANACTIVATE	0x4000 // zdoom
+#define ML_BLOCKEVERYTHING		0x8000 // zdoom
 
-#define ML_REPEATSPECIAL	0x00010000 // special is repeatable
+#define ML_REPEATSPECIAL		0x00010000 // special is repeatable
 
 #define ML_SPAC_CROSS			0x00020000 // hexen activation
 #define ML_SPAC_USE				0x00040000 // hexen activation
@@ -281,8 +281,8 @@ typedef struct MapThing
 #define BTF_NOTDEATHMATCH	0x0020	// (TF_SINGLE|TF_COOPERATIVE)
 #define BTF_NOTCOOPERATIVE	0x0040	// (TF_SINGLE|TF_DEATHMATCH)
 
-#define NO_CRUSH -1
-#define DOOM_CRUSH 10
+#define NO_CRUSH	-1
+#define DOOM_CRUSH	10
 
 //
 // Texture definition.

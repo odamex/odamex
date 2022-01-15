@@ -208,7 +208,7 @@ int P_IsUnderDamage(AActor* actor)
 	{
 		if ((cr = (DCeiling*)seclist->m_sector->ceilingdata) && cr->m_Status == 2) // Down
 		{
-			cr->m_Crush ? dir = 1 : dir = 0;
+			cr->m_Crush > NO_CRUSH ? dir = 1 : dir = 0;
 		}
 	}
 	return dir;

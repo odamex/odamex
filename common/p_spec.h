@@ -105,7 +105,6 @@ extern bool s_SpecialFromServer;
 #define NO_TEXTURE 0;
 
 #define CEILSPEED FRACUNIT
-#define CEILWAIT 150
 
 std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector);
 void P_AddMovingCeiling(sector_t *sector);

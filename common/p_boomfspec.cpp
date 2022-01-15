@@ -1320,14 +1320,14 @@ void P_PlayerInCompatibleSector(player_t* player)
 		switch (sector->special)
 		{
 		case 5:
-			P_ApplySectorDamage(player, 10, false);
+			P_ApplySectorDamage(player, 10, 0);
 			break;
 		case 7:
-			P_ApplySectorDamage(player, 5, false);
+			P_ApplySectorDamage(player, 5, 0);
 			break;
 		case 16:
 		case 4:
-			P_ApplySectorDamage(player, 20, true);
+			P_ApplySectorDamage(player, 20, 5);
 			break;
 		case 9:
 			P_CollectSecretVanilla(sector, player);
