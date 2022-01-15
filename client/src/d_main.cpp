@@ -318,22 +318,21 @@ void D_Display()
 	// draw pause pic
 	if (paused && !menuactive)
 	{
-		patch_t *pause = W_CachePatch ("M_PAUSE");
-		int y;
+		const patch_t *pause = W_CachePatch ("M_PAUSE");
 
-		y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
+		int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
 		screen->DrawPatchCleanNoMove (pause, (I_GetSurfaceWidth()-(pause->width())*CleanXfac)/2, y);
 	}
 
 	// [RH] Draw icon, if any
 	if (D_DrawIcon)
 	{
-		int lump = W_CheckNumForName (D_DrawIcon);
+		const int lump = W_CheckNumForName (D_DrawIcon);
 
 		D_DrawIcon = NULL;
 		if (lump >= 0)
 		{
-			patch_t *p = W_CachePatch (lump);
+			const patch_t *p = W_CachePatch (lump);
 
 			screen->DrawPatchIndirect (p, 160-p->width()/2, 100-p->height()/2);
 		}
@@ -397,7 +396,8 @@ void D_PageTicker()
 void D_PageDrawer()
 {
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
-	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
+	const int surface_width = primary_surface->getWidth();
+	const int surface_height = primary_surface->getHeight();
 	primary_surface->clear();		// ensure black background in matted modes
 
 	if (page_surface)
@@ -523,23 +523,25 @@ void D_DoAdvanceDemo()
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
-		const patch_t* patch = W_CachePatch(pagename);
-
 		I_FreeSurface(page_surface);
 
 		if (gameinfo.flags & GI_PAGESARERAW)
 		{
+			void* lump = W_CacheLumpName(pagename, PU_CACHE);
+
 			page_surface = I_AllocateSurface(320, 200, 8);
-			DCanvas* canvas = page_surface->getDefaultCanvas();
+			const DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
-            canvas->DrawBlock(0, 0, 320, 200, (byte*)patch);
+			canvas->DrawBlock((byte*)lump, 0, 0, 320, 200);
 			page_surface->unlock();
 		}
 		else
 		{
+			const patch_t* patch = W_CachePatch(pagename);
+
 			page_surface = I_AllocateSurface(patch->width(), patch->height(), 8);
-			DCanvas* canvas = page_surface->getDefaultCanvas();
+			const DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
 			canvas->DrawPatch(patch, 0, 0);

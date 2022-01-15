@@ -79,7 +79,7 @@ public:
 	{	return mSurface;	}
 
 	// Draw a linear block of pixels into the view buffer.
-	void DrawBlock (int x, int y, int width, int height, const byte *src) const;
+	void DrawBlock(const byte* src, int x, int y, int width, int height) const;
 
 	// Reads a linear block of pixels from the view buffer.
 	void GetBlock (int x, int y, int width, int height, byte *dest) const;

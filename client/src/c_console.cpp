@@ -911,20 +911,17 @@ void C_ClearCommand()
 //
 void C_InitConsoleBackground()
 {
-	patch_t* bg_patch;
-
 	if (gamemission == heretic)
 	{
-		bg_patch = W_CachePatch(W_GetNumForName("TITLE"));
+		void* bg_lump = W_CacheLumpName("TITLE", PU_CACHE);
 
 		background_surface = I_AllocateSurface(320, 200, 8);
 		background_surface->lock();
-		background_surface->getDefaultCanvas()->DrawBlock(0, 0, 320, 200,
-		                                                  (byte*)bg_patch);
+		background_surface->getDefaultCanvas()->DrawBlock((byte*)bg_lump, 0, 0, 320, 200);
 	}
 	else
 	{
-		bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
+		patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
 
 		background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 		background_surface->lock();

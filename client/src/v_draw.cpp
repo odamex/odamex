@@ -836,12 +836,16 @@ void DCanvas::DrawPatchFlipped(const patch_t *patch, int x0, int y0) const
 // V_DrawBlock
 // Draw a linear block of pixels into the view buffer.
 //
-void DCanvas::DrawBlock(int x, int y, int width, int height, const byte *src) const
+void DCanvas::DrawBlock(const byte* src, int x, int y, int width, int height) const
 {
-	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
-	int surface_pitch = mSurface->getPitch();
-	int colstep = mSurface->getBytesPerPixel();
-	int line_length = surface_width * colstep;
+	if (src == NULL)
+		return;
+
+	const int surface_width = mSurface->getWidth();
+	const int surface_height = mSurface->getHeight();
+	const int surface_pitch = mSurface->getPitch();
+	const int colstep = mSurface->getBytesPerPixel();
+	const int line_length = surface_width * colstep;
 
 #ifdef RANGECHECK
 	if (x < 0 || x + width > surface_width || y < 0 || y + height > surface_height)

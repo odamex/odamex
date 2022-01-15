@@ -1260,7 +1260,7 @@ void M_QuitHERETIC(int choice)
 //		Player Setup Menu code
 // -----------------------------------------------------
 
-void M_DrawSlider (int x, int y, float min, float max, float cur);
+void M_DrawSlider(int x, int y, float min, float max, float cur);
 
 static const char *genders[3] = { "male", "female", "cyborg" };
 static state_t *PlayerState;
