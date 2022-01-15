@@ -2077,6 +2077,8 @@ void M_Drawer()
 					// todo - implement proper menu text size
 					if (oldmenuitem.fulltext)
 					{
+						V_SetFont("BIGFONT");
+
 						const char* str;
 
 						if (oldmenuitem.name[0] == '$')
@@ -2087,7 +2089,9 @@ void M_Drawer()
 						else
 							str = oldmenuitem.name.c_str();
 
-						screen->DrawText(0, x, y, str);
+						screen->DrawTextClean(0, x, y, str);
+
+						V_SetFont("SMALLFONT");
 					}
 					else
 						screen->DrawPatchClean(W_CachePatch(oldmenuitem.name.c_str()), x, y);
