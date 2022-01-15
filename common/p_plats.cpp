@@ -397,6 +397,9 @@ DPlat::DPlat(sector_t* sec, int target, int delay, int speed, int trigger)
 {
 	m_Crush = false;
 	m_Type = genLift;
+	m_Height = 0;
+	m_Lip = 0;
+	m_High = sec->floorheight;
 
 	// setup the target destination height
 	switch (target)
@@ -596,7 +599,11 @@ BOOL EV_DoGenLift(line_t* line)
 
 		// Find lowest & highest floors around sector
 		rtn = true;
-		new DPlat(sec, Targ, Dely, Sped, Trig);
+		plat = new DPlat(sec, Targ, Dely, Sped, Trig);
+
+		plat->m_Tag = line->id;
+		plat->m_Status = DPlat::down;
+
 		P_AddMovingFloor(sec);
 
 		if (manual)
