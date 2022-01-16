@@ -1067,8 +1067,15 @@ static bool P_ExplodeMissileAgainstWall(AActor* mo)
 {
 	if (mo->flags & MF_MISSILE)
 	{
+		short spe;
+
+		if (map_format.getZDoom())
+			spe = Line_Horizon;
+		else
+			spe = 337;
+
 		// [SL] 2012-01-25 - Don't explode missiles on horizon line
-		if (BlockingLine && BlockingLine->special == Line_Horizon)
+		if (BlockingLine && BlockingLine->special == spe)
 		{
 			mo->Destroy();
 			return false;

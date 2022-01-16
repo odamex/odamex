@@ -2008,8 +2008,14 @@ bool P_ShootLine(intercept_t* in)
 	if (li->special)
 		P_ShootSpecialLine(shootthing, li);
 
+	short spe;
+	if (map_format.getZDoom())
+		spe = Line_Horizon;
+	else
+		spe = 337;
+
 	// don't shoot horizon lines
-	if (li->special == Line_Horizon)
+	if (li->special == spe)
 		return false;
 
 	// [SL] 2012-02-08 - Calculates where the intercept crosses the line
