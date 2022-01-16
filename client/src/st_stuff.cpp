@@ -31,7 +31,6 @@
 #include "z_zone.h"
 #include "m_random.h"
 #include "w_wad.h"
-#include "g_game.h"
 #include "st_stuff.h"
 #include "st_lib.h"
 #include "r_local.h"
@@ -48,7 +47,6 @@
 #include "cl_demo.h"
 #include "c_console.h"
 #include "g_gametype.h"
-#include "m_cheat.h"
 
 #include "p_ctf.h"
 
@@ -80,6 +78,47 @@ extern bool simulated_connection;
 // STATUS BAR DATA
 //
 
+// [ML] From EE, another gameinfo definition
+// haleyjd 10/12/03: structure for gamemode-independent status bar interface
+
+typedef struct stbarfns_s
+{
+	// function pointers
+	void (*Ticker)(); // tic processing
+	void (*Drawer)(); // drawing
+	// void (*FSDrawer)(); // fullscreen drawer
+	void (*Start)(); // reinit
+	void (*Init)();  // initialize at startup
+} stbarfns_t;
+
+/*static void ST_DoomTicker();
+static void ST_DoomDrawer();
+static void ST_DoomStart();
+static void ST_DoomInit();
+
+static void ST_HticTicker();
+static void ST_HticDrawer();
+static void ST_HticStart();
+static void ST_HticInit();
+
+// From EE, gameinfo defined status bar
+// haleyjd 10/12/03: DOOM's status bar object
+
+stbarfns_t DoomStatusBar =
+{
+   ST_DoomTicker,
+   ST_DoomDrawer,
+   ST_DoomStart,
+   ST_DoomInit
+};
+
+stbarfns_t HticStatusBar =
+{
+   ST_HticTicker,
+   ST_HticDrawer,
+   ST_HticStart,
+   ST_HticInit,
+};*/
 
 // N/256*100% probability
 //	that the normal face state will change
@@ -428,8 +467,8 @@ cheatseq_t DoomCheats[] = {
 //
 // STATUS BAR CODE
 //
-void ST_Stop(void);
-void ST_createWidgets(void);
+void ST_Stop();
+void ST_createWidgets();
 
 int ST_StatusBarHeight(int surface_width, int surface_height)
 {
@@ -503,11 +542,9 @@ EXTERN_CVAR (sv_allowcheats)
 
 // Respond to keyboard input events, intercept cheats.
 // [RH] Cheats eatkey the last keypress used to trigger them
-bool ST_Responder (event_t *ev)
+bool ST_Responder(event_t *ev)
 {
-	player_t *plyr = &consoleplayer();
 	bool eat = false;
-	int i;
 
 	// Filter automap on/off.
 	if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
@@ -528,10 +565,8 @@ bool ST_Responder (event_t *ev)
 	// if a user keypress...
 	else if (ev->type == ev_keydown && ev->data3)
 	{
-		cheatseq_t* cheats = NULL;
-
-		cheats = DoomCheats;
-		for (i = 0; i < COUNT_CHEATS(DoomCheats); i++, cheats++)
+		cheatseq_t* cheats = DoomCheats;
+		for (int i = 0; i < COUNT_CHEATS(DoomCheats); i++, cheats++)
 		{
 			if (CHEAT_AddKey(cheats, (byte)ev->data1, &eat))
 			{
@@ -599,13 +634,13 @@ BEGIN_COMMAND (chase)
 	{
 		if (chasedemo)
 		{
-			chasedemo.Set (0.0f);
+			chasedemo.Set(0.0f);
 			for (Players::iterator it = players.begin();it != players.end();++it)
 				it->cheats &= ~CF_CHASECAM;
 		}
 		else
 		{
-			chasedemo.Set (1.0f);
+			chasedemo.Set(1.0f);
 			for (Players::iterator it = players.begin();it != players.end();++it)
 				it->cheats |= CF_CHASECAM;
 		}
@@ -624,14 +659,13 @@ END_COMMAND (chase)
 BEGIN_COMMAND (idmus)
 {
 	LevelInfos& levels = getLevelInfos();
-	char *map;
-	int l;
 
 	if (argc > 1)
 	{
+		char *map;
 		if (gameinfo.flags & GI_MAPxx)
 		{
-			l = atoi (argv[1]);
+			const int l = atoi(argv[1]);
 			if (l <= 99)
 				map = CalcMapName (0, l);
 			else
@@ -650,7 +684,7 @@ BEGIN_COMMAND (idmus)
 		{
 			if (info.music[0])
 			{
-				S_ChangeMusic(std::string(info.music.c_str(), 8), 1);
+				S_ChangeMusic(info.music.c_str(), 1);
 				Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_MUS));
 			}
 		}
@@ -670,7 +704,7 @@ BEGIN_COMMAND (give)
 	if (argc < 2)
 		return;
 
-	std::string name = C_ArgCombine(argc - 1, (const char**)(argv + 1));
+	const std::string name = C_ArgCombine(argc - 1, (const char**)(argv + 1));
 	if (name.length())
 	{
 		CHEAT_GiveTo(&consoleplayer(), name.c_str());
@@ -704,18 +738,12 @@ BEGIN_COMMAND(buddha)
 }
 END_COMMAND(buddha)
 
-int ST_calcPainOffset(void)
+int ST_calcPainOffset()
 {
-	int 		health;
 	static int	lastcalc;
 	static int	oldhealth = -1;
 
-	health = displayplayer().health;
-
-	if(health < -1)
-		health = -1;
-	else if(health > 100)
-		health = 100;
+	const int health = clamp(displayplayer().health, -1, 100);
 
 	if (health != oldhealth)
 	{
@@ -733,14 +761,11 @@ int ST_calcPainOffset(void)
 // the precedence of expressions is:
 //	dead > evil grin > turned head > straight ahead
 //
-void ST_updateFaceWidget(void)
+void ST_updateFaceWidget()
 {
 	int 		i;
-	angle_t 	badguyangle;
-	angle_t 	diffang;
 	static int	lastattackdown = -1;
 	static int	priority = 0;
-	BOOL	 	doevilgrin;
 
 	player_t *plyr = &displayplayer();
 
@@ -760,7 +785,7 @@ void ST_updateFaceWidget(void)
 		if (plyr->bonuscount)
 		{
 			// picking up bonus
-			doevilgrin = false;
+			bool doevilgrin = false;
 
 			for (i=0;i<NUMWEAPONS;i++)
 			{
@@ -778,7 +803,6 @@ void ST_updateFaceWidget(void)
 				st_faceindex = ST_calcPainOffset() + ST_EVILGRINOFFSET;
 			}
 		}
-
 	}
 
 	if (priority < 8)
@@ -797,10 +821,11 @@ void ST_updateFaceWidget(void)
 			}
 			else
 			{
-				badguyangle = R_PointToAngle2(plyr->mo->x,
-											  plyr->mo->y,
-											  plyr->attacker->x,
-											  plyr->attacker->y);
+				angle_t diffang;
+				const angle_t badguyangle = R_PointToAngle2(plyr->mo->x,
+				                                            plyr->mo->y,
+				                                            plyr->attacker->x,
+				                                            plyr->attacker->y);
 
 				if (badguyangle > plyr->mo->angle)
 				{
@@ -814,7 +839,6 @@ void ST_updateFaceWidget(void)
 					diffang = plyr->mo->angle - badguyangle;
 					i = diffang <= ANG180;
 				} // confusing, aint it?
-
 
 				st_facecount = ST_TURNCOUNT;
 				st_faceindex = ST_calcPainOffset();
@@ -855,9 +879,7 @@ void ST_updateFaceWidget(void)
 				st_facecount = ST_TURNCOUNT;
 				st_faceindex = ST_calcPainOffset() + ST_RAMPAGEOFFSET;
 			}
-
 		}
-
 	}
 
 	if (priority < 6)
@@ -877,7 +899,6 @@ void ST_updateFaceWidget(void)
 		}
 		else
 			lastattackdown = -1;
-
 	}
 
 	if (priority < 5)
@@ -890,7 +911,6 @@ void ST_updateFaceWidget(void)
 
 			st_faceindex = ST_GODFACE;
 			st_facecount = 1;
-
 		}
 	}
 
@@ -905,9 +925,9 @@ void ST_updateFaceWidget(void)
 	st_facecount--;
 }
 
-void ST_updateWidgets(void)
+void ST_updateWidgets()
 {
-	player_t *plyr = &displayplayer();
+	const player_t *plyr = &displayplayer();
 
 	if (weaponinfo[plyr->readyweapon].ammotype == am_noammo)
 		st_current_ammo = ST_DONT_DRAW_NUM;
@@ -967,7 +987,6 @@ void ST_updateWidgets(void)
 	// get rid of chat window if up because of message
 	if (!--st_msgcounter)
 		st_chat = st_oldchat;
-
 }
 
 void ST_Ticker()
@@ -988,28 +1007,28 @@ void ST_drawWidgets(bool force_refresh)
 	// used by w_frags widget
 	st_fragson = !G_IsCoopGame() && st_statusbaron;
 
-	STlib_updateNum(&w_ready, force_refresh);
+	w_ready.update(force_refresh);
 
 	for (int i = 0; i < 4; i++)
 	{
-		STlib_updateNum(&w_ammo[i], force_refresh);
-		STlib_updateNum(&w_maxammo[i], force_refresh);
+		w_ammo[i].update(force_refresh);
+		w_maxammo[i].update(force_refresh);
 	}
 
-	STlib_updatePercent(&w_health, force_refresh);
-	STlib_updatePercent(&w_armor, force_refresh);
+	w_health.update(force_refresh);
+	w_armor.update(force_refresh);
 
 	for (int i = 0; i < 6; i++)
-		STlib_updateMultIcon(&w_arms[i], force_refresh);
+		w_arms[i].update(force_refresh);
 
-	STlib_updateMultIcon(&w_faces, force_refresh);
+	w_faces.update(force_refresh);
 
 	for (int i = 0; i < 3; i++)
-		STlib_updateMultIcon(&w_keyboxes[i], force_refresh);
+		w_keyboxes[i].update(force_refresh);
 
-	STlib_updateNum(&w_frags, force_refresh);
+	w_frags.update(force_refresh);
 
-	STlib_updateNum(&w_lives, true, G_IsLivesGame() ? true : false); // Force refreshing to avoid tens
+	w_lives.update(true, G_IsLivesGame()); // Force refreshing to avoid tens
 		                                                 // to be hidden by Doomguy's face
 
 }
@@ -1022,8 +1041,8 @@ void ST_drawWidgets(bool force_refresh)
 //
 static void ST_refreshBackground()
 {
-	IWindowSurface* surface = R_GetRenderingSurface();
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	const IWindowSurface* surface = R_GetRenderingSurface();
+	const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 	// [RH] If screen is wider than the status bar, draw stuff around status bar.
 	if (surface_width > ST_WIDTH)
@@ -1034,7 +1053,7 @@ static void ST_refreshBackground()
 
 	stbar_surface->lock();
 
-	DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
+	const DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
 	stbar_canvas->DrawPatch(W_ResolvePatchHandle(sbar), 0, 0);
 
 	if (sv_gametype == GM_CTF)
@@ -1091,7 +1110,7 @@ void ST_Drawer()
 	if (st_statusbaron)
 	{
 		IWindowSurface* surface = R_GetRenderingSurface();
-		int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+		const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 		ST_WIDTH = ST_StatusBarWidth(surface_width, surface_height);
 		ST_HEIGHT = ST_StatusBarHeight(surface_width, surface_height);
@@ -1132,15 +1151,13 @@ void ST_Drawer()
 
 static lumpHandle_t LoadFaceGraphic(char* name, int namespc = ns_global)
 {
-	char othername[9];
-	int lump;
-
-	lump = W_CheckNumForName (name, namespc);
+	int lump = W_CheckNumForName(name, namespc);
 	if (lump == -1)
 	{
-		strcpy (othername, name);
+		char othername[9];
+		strcpy(othername, name);
 		othername[0] = 'S'; othername[1] = 'T'; othername[2] = 'F';
-		lump = W_GetNumForName (othername);
+		lump = W_GetNumForName(othername);
 	}
 	return W_CachePatchHandle(lump, PU_STATIC);
 }
@@ -1226,30 +1243,29 @@ static void ST_loadGraphics()
 		namebuf[0] = 'S';
 		namebuf[1] = 'T';
 		namebuf[2] = 'F';
-		const int namespc = ns_global;
 
 		for (int i = 0; i < ST_NUMPAINFACES; i++)
 		{
 			for (int j = 0; j < ST_NUMSTRAIGHTFACES; j++)
 			{
 				sprintf(namebuf + 3, "ST%d%d", i, j);
-				faces[facenum++] = LoadFaceGraphic(namebuf, namespc);
+				faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
 			}
 			sprintf(namebuf + 3, "TR%d0", i); // turn right
-			faces[facenum++] = LoadFaceGraphic(namebuf, namespc);
+			faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
 			sprintf(namebuf + 3, "TL%d0", i); // turn left
-			faces[facenum++] = LoadFaceGraphic(namebuf, namespc);
+			faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
 			sprintf(namebuf + 3, "OUCH%d", i); // ouch!
-			faces[facenum++] = LoadFaceGraphic(namebuf, namespc);
+			faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
 			sprintf(namebuf + 3, "EVL%d", i); // evil grin ;)
-			faces[facenum++] = LoadFaceGraphic(namebuf, namespc);
+			faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
 			sprintf(namebuf + 3, "KILL%d", i); // pissed off
-			faces[facenum++] = LoadFaceGraphic(namebuf, namespc);
+			faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
 		}
 		strcpy(namebuf + 3, "GOD0");
-		faces[facenum++] = LoadFaceGraphic(namebuf, namespc);
+		faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
 		strcpy(namebuf + 3, "DEAD0");
-		faces[facenum] = LoadFaceGraphic(namebuf, namespc);
+		faces[facenum] = LoadFaceGraphic(namebuf, ns_global);
 	}
 }
 
@@ -1261,10 +1277,8 @@ static void ST_loadData()
 
 static void ST_unloadGraphics()
 {
-	int i;
-
 	// unload the numbers, tall and short
-	for (i = 0; i < 10; i++)
+	for (int i = 0; i < 10; i++)
 	{
 		::tallnum[i].clear();
 		::shortnum[i].clear();
@@ -1280,13 +1294,13 @@ static void ST_unloadGraphics()
 	::flagsbg.clear();
 
 	// unload gray #'s
-	for (i = 0; i < 6; i++)
+	for (int i = 0; i < 6; i++)
 	{
 		::arms[i][0].clear();
 	}
 
 	// unload the key cards
-	for (i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
+	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
 	{
 		::keys[i].clear();
 	}
@@ -1294,7 +1308,7 @@ static void ST_unloadGraphics()
 	::sbar.clear();
 	::faceback.clear();
 
-	for (i = 0; i < ST_NUMFACES; i++)
+	for (int i = 0; i < ST_NUMFACES; i++)
 	{
 		::faces[i].clear();
 	}
@@ -1310,152 +1324,135 @@ static void ST_unloadData()
 }
 
 
-void ST_createWidgets(void)
+void ST_createWidgets()
 {
 	// ready weapon ammo
-	STlib_initNum(&w_ready,
-				  ST_AMMOX,
-				  ST_AMMOY,
-				  tallnum,
-				  &st_current_ammo,
-				  &st_statusbaron,
-				  ST_AMMOWIDTH );
+	w_ready.init(ST_AMMOX,
+				 ST_AMMOY,
+				 tallnum,
+				 &st_current_ammo,
+				 &st_statusbaron,
+				 ST_AMMOWIDTH);
 
 	// health percentage
-	STlib_initPercent(&w_health,
-					  ST_HEALTHX,
-					  ST_HEALTHY,
-					  tallnum,
-					  &st_health,
-					  &st_statusbaron,
-					  tallpercent);
+	w_health.init(ST_HEALTHX,
+				  ST_HEALTHY,
+				  tallnum,
+				  &st_health,
+				  &st_statusbaron,
+				  tallpercent);
 
 	// weapons owned
 	for (int i = 0 ; i < 6; i++)
 	{
-		STlib_initMultIcon(&w_arms[i],
-						   ST_ARMSX+(i%3)*ST_ARMSXSPACE,
-						   ST_ARMSY+(i/3)*ST_ARMSYSPACE,
-						   arms[i],
-						   &st_weaponowned[i],
-						   &st_armson);
+		w_arms[i].init(ST_ARMSX+(i%3)*ST_ARMSXSPACE,
+					   ST_ARMSY+(i/3)*ST_ARMSYSPACE,
+					   arms[i],
+					   &st_weaponowned[i],
+					   &st_armson);
 	}
 
 	// frags sum
-	STlib_initNum(&w_frags,
-				  ST_FRAGSX,
-				  ST_FRAGSY,
-				  tallnum,
-				  &st_fragscount,
-				  &st_fragson,
-				  ST_FRAGSWIDTH);
+	w_frags.init(ST_FRAGSX,
+				 ST_FRAGSY,
+				 tallnum,
+				 &st_fragscount,
+				 &st_fragson,
+				 ST_FRAGSWIDTH);
 
 	// faces
-	STlib_initMultIcon(&w_faces,
-					   ST_FACESX,
-					   ST_FACESY,
-					   faces,
-					   &st_faceindex,
-					   &st_statusbaron);
+	w_faces.init(ST_FACESX,
+				 ST_FACESY,
+				 faces,
+				 &st_faceindex,
+				 &st_statusbaron);
 
 	// armor percentage - should be colored later
-	STlib_initPercent(&w_armor,
-					  ST_ARMORX,
-					  ST_ARMORY,
-					  tallnum,
-					  &st_armor,
-					  &st_statusbaron, tallpercent);
+	w_armor.init(ST_ARMORX,
+				 ST_ARMORY,
+				 tallnum,
+				 &st_armor,
+				 &st_statusbaron, tallpercent);
 
 	// keyboxes 0-2
-	STlib_initMultIcon(&w_keyboxes[0],
-					   ST_KEY0X,
+	w_keyboxes[0].init(ST_KEY0X,
 					   ST_KEY0Y,
 					   keys,
 					   &keyboxes[0],
 					   &st_statusbaron);
 
-	STlib_initMultIcon(&w_keyboxes[1],
-					   ST_KEY1X,
+	w_keyboxes[1].init(ST_KEY1X,
 					   ST_KEY1Y,
 					   keys,
 					   &keyboxes[1],
 					   &st_statusbaron);
 
-	STlib_initMultIcon(&w_keyboxes[2],
-					   ST_KEY2X,
+	w_keyboxes[2].init(ST_KEY2X,
 					   ST_KEY2Y,
 					   keys,
 					   &keyboxes[2],
 					   &st_statusbaron);
 
 	// ammo count (all four kinds)
-	STlib_initNum(&w_ammo[0],
-				  ST_AMMO0X,
-				  ST_AMMO0Y,
-				  shortnum,
-				  &st_ammo[0],
-				  &st_statusbaron,
-				  ST_AMMO0WIDTH);
+	w_ammo[0].init(ST_AMMO0X,
+				   ST_AMMO0Y,
+				   shortnum,
+				   &st_ammo[0],
+				   &st_statusbaron,
+				   ST_AMMO0WIDTH);
 
-	STlib_initNum(&w_ammo[1],
-				  ST_AMMO1X,
-				  ST_AMMO1Y,
-				  shortnum,
-				  &st_ammo[1],
-				  &st_statusbaron,
-				  ST_AMMO1WIDTH);
+	w_ammo[1].init(ST_AMMO1X,
+				   ST_AMMO1Y,
+				   shortnum,
+				   &st_ammo[1],
+				   &st_statusbaron,
+				   ST_AMMO1WIDTH);
 
-	STlib_initNum(&w_ammo[2],
-				  ST_AMMO2X,
-				  ST_AMMO2Y,
-				  shortnum,
-				  &st_ammo[2],
-				  &st_statusbaron,
-				  ST_AMMO2WIDTH);
+	w_ammo[2].init(ST_AMMO2X,
+				   ST_AMMO2Y,
+				   shortnum,
+				   &st_ammo[2],
+				   &st_statusbaron,
+				   ST_AMMO2WIDTH);
 
-	STlib_initNum(&w_ammo[3],
-				  ST_AMMO3X,
-				  ST_AMMO3Y,
-				  shortnum,
-				  &st_ammo[3],
-				  &st_statusbaron,
-				  ST_AMMO3WIDTH);
+	w_ammo[3].init(ST_AMMO3X,
+				   ST_AMMO3Y,
+				   shortnum,
+				   &st_ammo[3],
+				   &st_statusbaron,
+				   ST_AMMO3WIDTH);
 
 	// max ammo count (all four kinds)
-	STlib_initNum(&w_maxammo[0],
-				  ST_MAXAMMO0X,
-				  ST_MAXAMMO0Y,
-				  shortnum,
-				  &st_maxammo[0],
-				  &st_statusbaron,
-				  ST_MAXAMMO0WIDTH);
+	w_maxammo[0].init(ST_MAXAMMO0X,
+					  ST_MAXAMMO0Y,
+					  shortnum,
+					  &st_maxammo[0],
+					  &st_statusbaron,
+					  ST_MAXAMMO0WIDTH);
 
-	STlib_initNum(&w_maxammo[1],
-				  ST_MAXAMMO1X,
-				  ST_MAXAMMO1Y,
-				  shortnum,
-				  &st_maxammo[1],
-				  &st_statusbaron,
-				  ST_MAXAMMO1WIDTH);
+	w_maxammo[1].init(ST_MAXAMMO1X,
+					  ST_MAXAMMO1Y,
+					  shortnum,
+					  &st_maxammo[1],
+					  &st_statusbaron,
+					  ST_MAXAMMO1WIDTH);
 
-	STlib_initNum(&w_maxammo[2],
-				  ST_MAXAMMO2X,
-				  ST_MAXAMMO2Y,
-				  shortnum,
-				  &st_maxammo[2],
-				  &st_statusbaron,
-				  ST_MAXAMMO2WIDTH);
+	w_maxammo[2].init(ST_MAXAMMO2X,
+					  ST_MAXAMMO2Y,
+					  shortnum,
+					  &st_maxammo[2],
+					  &st_statusbaron,
+					  ST_MAXAMMO2WIDTH);
 
-	STlib_initNum(&w_maxammo[3],
-				  ST_MAXAMMO3X,
-				  ST_MAXAMMO3Y,
-				  shortnum,
-				  &st_maxammo[3],
-				  &st_statusbaron,
-				  ST_MAXAMMO3WIDTH);
+	w_maxammo[3].init(ST_MAXAMMO3X,
+					  ST_MAXAMMO3Y,
+					  shortnum,
+					  &st_maxammo[3],
+					  &st_statusbaron,
+					  ST_MAXAMMO3WIDTH);
 
 	// Number of lives (not always rendered)
-	STlib_initNum(&w_lives, ST_FX + 34, ST_FY + 25, shortnum, &st_lives, &st_statusbaron,
+	w_lives.init(ST_FX + 34, ST_FY + 25, shortnum, &st_lives, &st_statusbaron,
 	              2);
 }
 
