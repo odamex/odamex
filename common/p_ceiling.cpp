@@ -241,7 +241,6 @@ void DCeiling::RunThink ()
 					PlayCeilingSound();
 				break;
 			default:
-				if (map_format.getZDoom())
 					Destroy ();
 				break;
 			}
