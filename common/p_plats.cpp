@@ -397,6 +397,7 @@ DPlat::DPlat(sector_t* sec, int target, int delay, int speed, int trigger)
 {
 	m_Crush = false;
 	m_Type = genLift;
+	m_Status = DPlat::down;
 	m_Height = 0;
 	m_Lip = 0;
 	m_High = sec->floorheight;
@@ -466,6 +467,7 @@ DPlat::DPlat(sector_t* sec, int target, int delay, int speed, int trigger)
 		m_Wait = 10 * 35;
 		break;
 	}
+	PlayPlatSound();
 }
 
 // Clones a DPlat and returns a pointer to that clone.
@@ -602,7 +604,6 @@ BOOL EV_DoGenLift(line_t* line)
 		plat = new DPlat(sec, Targ, Dely, Sped, Trig);
 
 		plat->m_Tag = line->id;
-		plat->m_Status = DPlat::down;
 
 		P_AddMovingFloor(sec);
 

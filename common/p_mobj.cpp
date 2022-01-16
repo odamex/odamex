@@ -56,7 +56,6 @@ void SV_UpdateMobjState(AActor* mo);
 
 extern bool predicting;
 extern fixed_t attackrange;
-extern bool HasBehavior;
 extern AActor *shootthing;
 
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);

@@ -36,15 +36,9 @@
 #define FUNC(a) static BOOL a (line_t *ln, AActor *it, int arg0, int arg1, \
 							   int arg2, int arg3, int arg4)
 
-#define SPEED(a)		((a)*(FRACUNIT/8))
-#define TICS(a)			(((a)*TICRATE)/35)
-#define OCTICS(a)		(((a)*TICRATE)/8)
-#define	BYTEANGLE(a)	((angle_t)((a)<<24))
-
 // Used by the teleporters to know if they were
 // activated by walking across the backside of a line.
 int TeleportSide;
-extern bool HasBehavior;
 extern bool s_SpecialFromServer;
 
 // Set true if this special was activated from inside a script.

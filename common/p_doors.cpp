@@ -832,8 +832,11 @@ BOOL EV_DoGenDoor(line_t* line)
 
 	if (line->id == 0)
 	{
-			manual = true;
-			goto manual_gendoor;
+		if (!(sec = line->backsector))
+			return true;
+		secnum = sec - sectors;
+		manual = true;
+		goto manual_gendoor;
 	}; // e6y
 	// check if a manual trigger, if so do just the sector on the backside
 	manual = false;
@@ -852,8 +855,8 @@ BOOL EV_DoGenDoor(line_t* line)
 	// if not manual do all sectors tagged the same as the line
 	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
 	{
-	manual_gendoor:
 		sec = &sectors[secnum];
+manual_gendoor:
 		// Do not start another function if ceiling already moving
 		if (P_CeilingActive(sec)) // jff 2/22/98
 		{
@@ -900,6 +903,9 @@ BOOL EV_DoGenLockedDoor(line_t* line)
 
 	if (line->id == 0)
 	{
+		if (!(sec = line->backsector))
+			return true;
+		secnum = sec - sectors;
 		manual = true;
 		goto manual_genlocked;
 	}; // e6y
@@ -920,8 +926,8 @@ BOOL EV_DoGenLockedDoor(line_t* line)
 	// if not manual do all sectors tagged the same as the line
 	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
 	{
-	manual_genlocked:
 		sec = &sectors[secnum];
+manual_genlocked:
 		// Do not start another function if ceiling already moving
 		if (P_CeilingActive(sec)) // jff 2/22/98
 		{

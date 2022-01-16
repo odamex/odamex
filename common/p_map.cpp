@@ -47,6 +47,7 @@
 #include "z_zone.h"
 #include "p_unlag.h"
 #include "m_vectors.h"
+#include "p_mapformat.h"
 #include <math.h>
 #include <set>
 
@@ -68,7 +69,6 @@ static int		ls_y;	// Lost Soul position for Lost Soul checks		// phares
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".
 BOOL 			floatok;
-extern bool 	HasBehavior;	// ZDoom in Hexen Format
 
 fixed_t 		tmfloorz;
 fixed_t 		tmceilingz;
@@ -1095,7 +1095,7 @@ void P_FakeZMovement(AActor *mo)
 
 void P_CheckPushLines(AActor *thing)
 {
-	if (!thing || !HasBehavior)
+	if (!thing || !map_format.getZDoom())
 		return;
 
 	if (!(thing->flags&(MF_TELEPORT|MF_NOCLIP)))

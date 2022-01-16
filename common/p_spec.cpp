@@ -416,7 +416,6 @@ bool P_MovingFloorCompleted(sector_t *sector)
 
 
 EXTERN_CVAR (sv_allowexit)
-extern bool	HasBehavior;
 
 IMPLEMENT_SERIAL (DScroller, DThinker)
 IMPLEMENT_SERIAL (DPusher, DThinker)

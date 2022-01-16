@@ -91,7 +91,6 @@ baseapp_t baseapp = server;
 // really only used clientside
 bool        simulated_connection = false;
 
-extern bool HasBehavior;
 extern int mapchange;
 
 bool step_mode = false;
