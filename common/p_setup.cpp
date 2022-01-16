@@ -56,7 +56,6 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position);
 void P_SpawnAvatars();
 void P_TranslateTeleportThings();
 
-void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
 const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags);
 const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags);
 void P_SpawnCompatibleSectorSpecial(sector_t* sector);
