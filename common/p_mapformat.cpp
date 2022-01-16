@@ -163,6 +163,14 @@ void MapFormat::post_process_sidedef_special(side_t* sd, mapsidedef_t* msd,
 		P_PostProcessCompatibleSidedefSpecial(sd, msd, sec, i);
 }
 
+void MapFormat::post_process_linedef_special(line_t* line)
+{
+	if (map_format.zdoom)
+		P_PostProcessZDoomLinedefSpecial(line);
+	else
+		P_PostProcessCompatibleLinedefSpecial(line);
+}
+
 void MapFormat::P_ApplyZDoomMapFormat(void)
 {
 	map_format.zdoom = true;

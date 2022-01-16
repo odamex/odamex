@@ -3427,3 +3427,31 @@ const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags)
 
 	return (flags & filter);
 }
+
+void P_PostProcessCompatibleLinedefSpecial(line_t* line)
+{
+	switch (line->special)
+	{ // killough 4/11/98: handle special types
+		int j;
+	case 260: // killough 4/11/98: translucent 2s textures
+#if 0
+				lump = sides[*ld->sidenum].special;		// translucency from sidedef
+				if (!ld->tag)							// if tag==0,
+					ld->tranlump = lump;				// affect this linedef only
+				else
+					for (j=0;j<numlines;j++)			// if tag!=0,
+						if (lines[j].tag == ld->tag)	// affect all matching linedefs
+							lines[j].tranlump = lump;
+#else
+	          // [RH] Second arg controls how opaque it is.
+		if (!line->args[0])
+			line->lucency = (byte)128;
+		else
+			for (j = 0; j < numlines; j++)
+				if (lines[j].id == line->args[0])
+					lines[j].lucency = (byte)128;
+#endif
+		line->special = 0;
+		break;
+	}
+}

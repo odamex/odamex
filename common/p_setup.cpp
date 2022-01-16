@@ -856,60 +856,7 @@ void P_FinishLoadingLineDefs (void)
 		if (ld->sidenum[1] != R_NOSIDE)
 			sides[ld->sidenum[1]].linenum = linenum;
 
-		if (map_format.getZDoom())
-		{
-			switch (ld->special)
-			{ // killough 4/11/98: handle special types
-				int j;
-			case TranslucentLine: // killough 4/11/98: translucent 2s textures
-#if 0
-				lump = sides[*ld->sidenum].special;		// translucency from sidedef
-				if (!ld->tag)							// if tag==0,
-					ld->tranlump = lump;				// affect this linedef only
-				else
-					for (j=0;j<numlines;j++)			// if tag!=0,
-						if (lines[j].tag == ld->tag)	// affect all matching linedefs
-							lines[j].tranlump = lump;
-#else
-			                      // [RH] Second arg controls how opaque it is.
-				if (!ld->args[0])
-					ld->lucency = (byte)ld->args[1];
-				else
-					for (j = 0; j < numlines; j++)
-						if (lines[j].id == ld->args[0])
-							lines[j].lucency = (byte)ld->args[1];
-#endif
-				ld->special = 0;
-				break;
-			}
-		}
-		else
-		{
-			switch (ld->special)
-			{ // killough 4/11/98: handle special types
-				int j;
-			case 260: // killough 4/11/98: translucent 2s textures
-#if 0
-				lump = sides[*ld->sidenum].special;		// translucency from sidedef
-				if (!ld->tag)							// if tag==0,
-					ld->tranlump = lump;				// affect this linedef only
-				else
-					for (j=0;j<numlines;j++)			// if tag!=0,
-						if (lines[j].tag == ld->tag)	// affect all matching linedefs
-							lines[j].tranlump = lump;
-#else
-			                      // [RH] Second arg controls how opaque it is.
-				if (!ld->args[0])
-					ld->lucency = (byte)ld->args[1];
-				else
-					for (j = 0; j < numlines; j++)
-						if (lines[j].id == ld->args[0])
-							lines[j].lucency = (byte)ld->args[1];
-#endif
-				ld->special = 0;
-				break;
-			}
-		}
+		map_format.post_process_linedef_special(ld);
 	}
 }
 

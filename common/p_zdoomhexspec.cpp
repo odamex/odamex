@@ -1065,3 +1065,31 @@ const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags)
 
 	return result;
 }
+
+void P_PostProcessZDoomLinedefSpecial(line_t* line)
+{
+	switch (line->special)
+	{ // killough 4/11/98: handle special types
+		int j;
+	case TranslucentLine: // killough 4/11/98: translucent 2s textures
+#if 0
+				lump = sides[*line->sidenum].special;		// translucency from sidedef
+				if (!line->tag)							// if tag==0,
+					line->tranlump = lump;				// affect this linedef only
+				else
+					for (j=0;j<numlines;j++)			// if tag!=0,
+						if (lines[j].tag == ld->tag)	// affect all matching linedefs
+							lines[j].tranlump = lump;
+#else
+	                      // [RH] Second arg controls how opaque it is.
+		if (!line->args[0])
+			line->lucency = (byte)line->args[1];
+		else
+			for (j = 0; j < numlines; j++)
+				if (lines[j].id == line->args[0])
+					lines[j].lucency = (byte)line->args[1];
+#endif
+		line->special = 0;
+		break;
+	}
+}

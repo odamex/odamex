@@ -58,6 +58,7 @@ void P_SpawnLightFlash(sector_t* sector);
 void P_SpawnStrobeFlash(sector_t* sector, int utics, int ltics, bool inSync);
 void P_SpawnFireFlicker(sector_t* sector);
 AActor* P_GetPushThing(int);
+void P_PostProcessCompatibleLinedefSpecial(line_t* line);
 
 extern BOOL demoplayback;
 

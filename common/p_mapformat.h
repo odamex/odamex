@@ -45,6 +45,7 @@ class MapFormat
 	void spawn_extra(int);
 	lineresult_s cross_special_line(line_t*, int, AActor*, bool);
 	void post_process_sidedef_special(side_t*, mapsidedef_t*, sector_t*, int);
+	void post_process_linedef_special(line_t* line);
 
   protected:
 	bool zdoom;
@@ -87,6 +88,9 @@ void P_PostProcessZDoomSidedefSpecial(side_t* sd, mapsidedef_t* msd, sector_t* s
                                       int i);
 void P_PostProcessCompatibleSidedefSpecial(side_t* sd, mapsidedef_t* msd,
                                            sector_t* sec, int i);
+
+void P_PostProcessZDoomLinedefSpecial(line_t* line);
+void P_PostProcessCompatibleLinedefSpecial(line_t* line);
 
 bool P_IsSpecialBoomRepeatable(const short special);
 bool P_IsExitLine(const short special);

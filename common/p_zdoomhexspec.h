@@ -71,5 +71,6 @@ const LineActivationType P_LineActivationTypeForSPACFlag(
 void P_SpawnPhasedLight(sector_t* sector, int base, int index);
 void P_SpawnLightSequence(sector_t* sector);
 AActor* P_GetPushThing(int s);
+void P_PostProcessZDoomLinedefSpecial(line_t* line);
 
 #endif
