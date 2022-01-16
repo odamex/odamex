@@ -97,5 +97,9 @@ bool P_IsExitLine(const short special);
 bool P_IsTeleportLine(const short special);
 bool P_IsThingTeleportLine(const short special);
 bool P_IsThingNoFogTeleportLine(const short special);
+bool P_IsCompatibleLockedDoorLine(const short special);
+bool P_IsCompatibleBlueDoorLine(const short special);
+bool P_IsCompatibleRedDoorLine(const short special);
+bool P_IsCompatibleYellowDoorLine(const short special)
 
 #endif

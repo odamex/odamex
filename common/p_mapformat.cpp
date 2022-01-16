@@ -389,3 +389,54 @@ bool P_IsThingNoFogTeleportLine(const short special)
 	return special == 207 || special == 208 || special == 209 || special == 210 ||
 	       special == 268 || special == 269;
 }
+
+bool P_IsCompatibleLockedDoorLine(const short special)
+{
+	if (map_format.getZDoom())
+		return false;
+
+	return special == 26 || special == 27 || special == 28 || special == 32 ||
+	       special == 33 || special == 34;
+}
+
+bool P_IsCompatibleBlueDoorLine(const short special)
+{
+	if (map_format.getZDoom())
+		return false;
+
+	int lock = (special & LockedKey) >> LockedKeyShift;
+	bool genericlock = false;
+
+	if (lock == BCard || lock == BSkull)
+		genericlock = true;
+
+	return special == 26 || special == 32;
+}
+
+bool P_IsCompatibleRedDoorLine(const short special)
+{
+	if (map_format.getZDoom())
+		return false;
+
+	int lock = (special & LockedKey) >> LockedKeyShift;
+	bool genericlock = false;
+
+	if (lock == RCard || lock == RSkull)
+		genericlock = true;
+
+	return special == 28 || special == 33;
+}
+
+bool P_IsCompatibleYellowDoorLine(const short special)
+{
+	if (map_format.getZDoom())
+		return false;
+
+	int lock = (special & LockedKey) >> LockedKeyShift;
+	bool genericlock = false;
+
+	if (lock == YCard || lock == YSkull)
+		genericlock = true;
+
+	return special == 27 || special == 34;
+}
