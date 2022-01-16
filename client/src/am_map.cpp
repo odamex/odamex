@@ -655,33 +655,32 @@ void AM_initColors (BOOL overlayed)
 //
 //
 //
-void AM_loadPics(void)
+void AM_loadPics()
 {
-	int i;
-	char namebuf[9];
-
-	for (i = 0; i < 10; i++)
+	if (gamemission == heretic)
+		;
+	else
 	{
-		sprintf(namebuf, "AMMNUM%d", i);
-		marknums[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		for (int i = 0; i < 10; i++)
+		{
+			char namebuf[9];
+			sprintf(namebuf, "AMMNUM%d", i);
+			marknums[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		}
 	}
 }
 
-void AM_unloadPics(void)
+void AM_unloadPics()
 {
-	int i;
-
-	for (i = 0; i < 10; i++)
+	for (int i = 0; i < 10; i++)
 	{
 		marknums[i].clear();
 	}
 }
 
-void AM_clearMarks(void)
+void AM_clearMarks()
 {
-	int i;
-
-	for (i = AM_NUMMARKPOINTS-1; i >= 0; i--)
+	for (int i = AM_NUMMARKPOINTS - 1; i >= 0; i--)
 		markpoints[i].x = -1; // means empty
 	markpointnum = 0;
 }
