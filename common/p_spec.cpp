@@ -1638,7 +1638,7 @@ bool P_CanUnlockGenDoor(line_t* line, player_t* player)
 	// determine for each case of lock type if player's keys are adequate
 	switch ((line->special & LockedKey) >> LockedKeyShift)
 	{
-	case AnyKey:
+	case 0: // AnyKey
 		if (!player->cards[it_redcard] && !player->cards[it_redskull] &&
 		    !player->cards[it_bluecard] && !player->cards[it_blueskull] &&
 		    !player->cards[it_yellowcard] && !player->cards[it_yellowskull])
@@ -1650,7 +1650,7 @@ bool P_CanUnlockGenDoor(line_t* line, player_t* player)
 			return true;
 		}
 		break;
-	case RCard:
+	case 1: // RCard
 		if (!player->cards[it_redcard] && (!skulliscard || !player->cards[it_redskull]))
 		{
 			msg = skulliscard ? &PD_REDK : &PD_REDC; // Ty 03/27/98 - externalized
@@ -1660,13 +1660,13 @@ bool P_CanUnlockGenDoor(line_t* line, player_t* player)
 			return true;
 		}
 		break;
-	case BCard:
+	case 2: // BCard
 		if (!player->cards[it_bluecard] && (!skulliscard || !player->cards[it_blueskull]))
 		{
 			msg = skulliscard ? &PD_BLUEK : &PD_BLUEC; // Ty 03/27/98 - externalized
 		}
 		break;
-	case YCard:
+	case 3: // YCard
 		if (!player->cards[it_yellowcard] &&
 		    (!skulliscard || !player->cards[it_yellowskull]))
 		{
@@ -1677,7 +1677,7 @@ bool P_CanUnlockGenDoor(line_t* line, player_t* player)
 			return true;
 		}
 		break;
-	case RSkull:
+	case 4: // RSkull
 		if (!player->cards[it_redskull] && (!skulliscard || !player->cards[it_redcard]))
 		{
 			msg = skulliscard ? &PD_REDK : &PD_REDS; // Ty 03/27/98 - externalized
@@ -1687,7 +1687,7 @@ bool P_CanUnlockGenDoor(line_t* line, player_t* player)
 			return true;
 		}
 		break;
-	case BSkull:
+	case 5: // BSkull
 		if (!player->cards[it_blueskull] && (!skulliscard || !player->cards[it_bluecard]))
 		{
 			msg = skulliscard ? &PD_BLUEK : &PD_BLUES; // Ty 03/27/98 - externalized
@@ -1697,7 +1697,7 @@ bool P_CanUnlockGenDoor(line_t* line, player_t* player)
 			return true;
 		}
 		break;
-	case YSkull:
+	case 6: // YSkull
 		if (!player->cards[it_yellowskull] &&
 		    (!skulliscard || !player->cards[it_yellowcard]))
 		{
@@ -1708,7 +1708,7 @@ bool P_CanUnlockGenDoor(line_t* line, player_t* player)
 			return true;
 		}
 		break;
-	case AllKeys:
+	case 7: // AllKeys
 		if (!skulliscard &&
 		    (!player->cards[it_redcard] || !player->cards[it_redskull] ||
 		     !player->cards[it_bluecard] || !player->cards[it_blueskull] ||

@@ -1270,7 +1270,9 @@ BOOL EV_DoGenStairs(line_t* line)
 				if (!Igno && tsec->floorpic != texture)
 					continue;
 
-				height += floor->m_Direction * stairsize;
+				/* jff 6/19/98 prevent double stepsize */
+				//if (compatibility_level < boom_202_compatibility)
+				//height += floor->m_Direction * stairsize;
 
 				// if sector's floor already moving, look for another
 				// jff 2/26/98 special lockout condition for retriggering
@@ -1316,6 +1318,10 @@ BOOL EV_DoGenStairs(line_t* line)
 				floor->m_OrgHeight = floorheight; // [RH] Height to reset to
 			}
 		} while (ok);
+
+		if (rtn)
+			line->special ^= StairDirection; // alternate dir on succ activations
+
 		if (manual)
 			return rtn;
 		secnum = osecnum; // jff 3/4/98 restore loop index
