@@ -130,6 +130,9 @@ void ST_unloadNew()
 
 void ST_initNew()
 {
+	if (gamemission == heretic)
+		return;
+
 	int widest = 0;
 
 	// denis - todo - security - these patches have unchecked dimensions

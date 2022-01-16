@@ -146,7 +146,7 @@ typedef struct menuitem_s {
 } menuitem_t;
 
 typedef struct menu_s {
-	char			title[9];
+	std::string		title;
 	int				lastOn;
 	int				numitems;
 	int				indent;

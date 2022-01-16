@@ -97,6 +97,7 @@ BOOL 				menuactive;
 int                 repeatKey;
 int                 repeatCount;
 
+extern IWindowSurface* page_surface;
 extern bool			sendpause;
 char				savegamestrings[10][SAVESTRINGSIZE];
 
@@ -105,8 +106,11 @@ int					MenuStackDepth;
 
 short				itemOn; 			// menu item skull is on
 short				skullAnimCounter;	// skull animation counter
+static int			SkullBaseLump;
+static int			MenuTime;			// Ticker for Heretic skulls
 short				whichSkull; 		// which skull to draw
 bool				drawSkull;			// [RH] don't always draw skull
+int					LineHeight;			// Height between each lines; varies for some gamemissions
 
 // graphic name of skulls
 char				skullName[2][9] = {"M_SKULL1", "M_SKULL2"};
@@ -350,11 +354,11 @@ oldmenuitem_t DoomNewGameMenu[]=
 
 oldmenuitem_t HereticNewGameMenu[]=
 {
-    {1, "",	M_ChooseSkill, 't', true},
-    {1, "",	M_ChooseSkill, 'y', true},
-    {1, "",	M_ChooseSkill, 'b', true},
-    {1, "",	M_ChooseSkill, 'h', true},
-    {1, "",	M_ChooseSkill, 'b', true}
+    {1, "$MNU_WETNURSE",			M_ChooseSkill, 't', true},
+    {1, "$MNU_YELLOWBELLIES",	M_ChooseSkill, 'y', true},
+    {1, "$MNU_BRINGEST",			M_ChooseSkill, 'b', true},
+    {1, "$MNU_SMITE",			M_ChooseSkill, 'h', true},
+    {1, "$MNU_BLACKPLAGUE",		M_ChooseSkill, 'b', true}
 };
 
 oldmenu_t NewDef =
@@ -960,23 +964,32 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 void M_DrawMainMenu()
 {
 	if (gamemission == heretic)
+	{
+		const int frame = (MenuTime / 3) % 18;
 		screen->DrawPatchClean(W_CachePatch("M_HTIC"), 88, 0);
+		screen->DrawPatchClean(W_CachePatch(SkullBaseLump + (17 - frame)), 40, 10);
+		screen->DrawPatchClean(W_CachePatch(SkullBaseLump + frame), 232, 10);
+	}
 	else
 		screen->DrawPatchClean(W_CachePatch("M_DOOM"), 94, 2);
 }
 
 void M_DrawNewGame()
 {
-	screen->DrawPatchClean(W_CachePatch("M_NEWG"), 96, 14);
-	screen->DrawPatchClean(W_CachePatch("M_SKILL"), 54, 38);
+	if (gamemission != heretic)
+	{
+		screen->DrawPatchClean(W_CachePatch("M_NEWG"), 96, 14);
+		screen->DrawPatchClean(W_CachePatch("M_SKILL"), 54, 38);
+	}
 
 	const int SMALLFONT_OFFSET = 8; // Line up with the skull
 
-	const char* pslabel = "Pistol Start Each Level ";
-	const int psy = NewDef.y + (LINEHEIGHT * 5) + SMALLFONT_OFFSET;
+	std::string pslabel = (gamemission == heretic) ? "Wand " : "Pistol ";
+	pslabel += "Start Each Level ";
+	const int psy = NewDef.y + (LineHeight * 5) + SMALLFONT_OFFSET;
 
-	screen->DrawTextCleanMove(CR_RED, NewDef.x, psy, pslabel);
-	screen->DrawTextCleanMove(CR_GREY, NewDef.x + V_StringWidth(pslabel), psy,
+	screen->DrawTextCleanMove(CR_RED, NewDef.x, psy, pslabel.c_str());
+	screen->DrawTextCleanMove(CR_GREY, NewDef.x + V_StringWidth(pslabel.c_str()), psy,
 	                          g_resetinvonexit ? "ON" : "OFF");
 }
 
@@ -1004,12 +1017,20 @@ void M_NewGame(int choice)
 		EpiDef.numitems = episodenum;
 
 		// Set up episode menu positioning
-		EpiDef.x = 48;
-		EpiDef.y = 63;
+		if (gamemission == heretic)
+		{
+			EpiDef.x = 48;
+			EpiDef.y = 63;
+		}
+		else
+		{
+			EpiDef.x = 80;
+			EpiDef.y = 30;
+		}
 
 		if (episodenum > 4)
 		{
-			EpiDef.y -= LINEHEIGHT;
+			EpiDef.y -= LineHeight;
 		}
 
 		epi = 0;
@@ -1033,6 +1054,9 @@ void M_NewGame(int choice)
 
 void M_DrawEpisode()
 {
+	if (gamemission == heretic)
+		return;
+
 	int y = 38;
 
 	if (episodenum > 4)
@@ -1040,10 +1064,7 @@ void M_DrawEpisode()
 		y -= (LINEHEIGHT * (episodenum - 4));
 	}
 
-	if (gamemission == heretic)
-		;
-	else
-		screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
+	screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
 }
 
 void M_VerifyNightmare(int ch)
@@ -1122,6 +1143,19 @@ void M_Episode(int choice)
 
 	epi = choice;
 
+	if (gamemission == heretic)
+	{
+		NewDef.menuitems = HereticNewGameMenu;
+		NewDef.x = 38;
+		NewDef.y = 30;
+	}
+	else
+	{
+		NewDef.menuitems = DoomNewGameMenu;
+		NewDef.x = 48;
+		NewDef.y = 63;
+	}
+
 	if (EpisodeInfos[epi].noskillmenu)
 		M_StartGame(2); // TODO: Implement defaultskillmenu
 	else
@@ -1141,8 +1175,19 @@ void M_Expansion(int choice)
 //
 void M_DrawReadThis1()
 {
-	const patch_t *p = W_CachePatch(gameinfo.info.infoPage[0]);
-	screen->DrawPatchFullScreen(p);
+	/*if (gameinfo.flags & GI_PAGESARERAW)
+	{
+		void* lump = W_CacheLumpName(gameinfo.info.infoPage[0], PU_CACHE);
+
+		page_surface->lock();
+		page_surface->getDefaultCanvas()->DrawBlock((byte*)lump, 0, 0, 320, 200);
+		page_surface->unlock();
+	}
+	else*/
+	{
+		const patch_t* p = W_CachePatch(gameinfo.info.infoPage[0]);
+		screen->DrawPatchFullScreen(p);
+	}
 }
 
 //
@@ -1168,7 +1213,10 @@ void M_DrawReadThis3()
 //
 void M_DrawOptions()
 {
-	screen->DrawPatchClean (W_CachePatch("M_OPTTTL"), 108, 15);
+	if (gamemission == heretic)
+		screen->DrawTextCleanMove(0, 108, 15, "$MNU_OPTIONS");
+	else
+		screen->DrawPatchClean(W_CachePatch("M_OPTTTL"), 108, 15);
 }
 
 void M_Options(int choice)
@@ -2020,6 +2068,7 @@ void M_StartControlPanel()
 	drawSkull = true;
 	MenuStackDepth = 0;
 	menuactive = 1;
+	MenuTime = 0;
 	currentMenu = &MainDef;
 	itemOn = currentMenu->lastOn;
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
@@ -2074,7 +2123,7 @@ void M_Drawer()
 
 				if (!oldmenuitem.name.empty())
 				{
-					// todo - implement proper menu text size
+					// todo - implement proper menu location
 					if (oldmenuitem.fulltext)
 					{
 						V_SetFont("BIGFONT");
@@ -2089,7 +2138,7 @@ void M_Drawer()
 						else
 							str = oldmenuitem.name.c_str();
 
-						screen->DrawTextClean(0, x, y, str);
+						screen->DrawTextCleanMove(0, x, y, str);
 
 						V_SetFont("SMALLFONT");
 					}
@@ -2097,10 +2146,7 @@ void M_Drawer()
 						screen->DrawPatchClean(W_CachePatch(oldmenuitem.name.c_str()), x, y);
 				}
 
-				if (gamemission == heretic)
-					y += HTCLINEHEIGHT;
-				else
-					y += LINEHEIGHT;
+				y += LineHeight;
 			}
 
 			// DRAW SKULL
@@ -2109,11 +2155,11 @@ void M_Drawer()
 				if (gamemission == heretic)
 					screen->DrawPatchClean(W_CachePatch(arrowName[whichSkull]),
 					                       x + ARROWXOFF,
-						                   currentMenu->y + itemOn * HTCLINEHEIGHT + ARROWYOFF);
+						                   currentMenu->y + itemOn * LineHeight + ARROWYOFF);
 				else
 					screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),
 					                       x + SKULLXOFF,
-					                       currentMenu->y - 5 + itemOn * LINEHEIGHT);
+					                       currentMenu->y - 5 + itemOn * LineHeight);
 			}
 		}
 	}
@@ -2197,7 +2243,9 @@ void M_Ticker()
 	}
 
 	if (currentMenu == &PSetupDef)
-		M_PlayerSetupTicker ();
+		M_PlayerSetupTicker();
+
+	MenuTime++;
 }
 
 
@@ -2222,10 +2270,13 @@ void M_Init()
 	currentMenu = &MainDef;
 	OptionsActive = false;
 	menuactive = 0;
+	MenuTime = 0;
+	SkullBaseLump = (gamemission == heretic ? W_GetNumForName("M_SKL00") : 0);
 	itemOn = currentMenu->lastOn;
-	whichSkull = 0;
 	skullAnimCounter = 10;
+	whichSkull = 0;
 	drawSkull = true;
+	LineHeight = (gamemission == heretic) ? HTCLINEHEIGHT : LINEHEIGHT;
 	screenSize = static_cast<int>(screenblocks) - 3;
 	messageToPrint = 0;
 	messageString = NULL;

@@ -248,6 +248,7 @@ char			savedescription[32];
 player_t		&consoleplayer()
 {
 	return idplayer(consoleplayer_id);
+
 }
 
 player_t		&displayplayer()

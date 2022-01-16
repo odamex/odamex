@@ -44,9 +44,10 @@
 //
 lumpHandle_t				sttminus;
 
-void STlib_init(void)
+void STlib_init()
 {
-	sttminus = W_CachePatchHandle("STTMINUS", PU_STATIC);
+	if (gamemission != heretic)
+		sttminus = W_CachePatchHandle("STTMINUS", PU_STATIC);
 }
 
 

@@ -1402,9 +1402,6 @@ void M_BuildKeyList (menuitem_t *item, int numitems)
 
 void M_SwitchMenu(menu_t* menu)
 {
-	int i, widest = 0, thiswidth;
-	menuitem_t *item;
-
 	MenuStack[MenuStackDepth].menu.newmenu = menu;
 	MenuStack[MenuStackDepth].isNewStyle = true;
 	MenuStack[MenuStackDepth].drawSkull = false;
@@ -1415,14 +1412,20 @@ void M_SwitchMenu(menu_t* menu)
 	CurrentMenu = menu;
 	CurrentItem = menu->lastOn;
 
+	if (gamemission == heretic)
+		CurrentMenu->title = "$MNU_OPTIONS";
+	else
+		CurrentMenu->title = "M_OPTTTL";
+
 	if (!menu->indent)
 	{
-		for (i = 0; i < menu->numitems; i++)
+		int widest = 0;
+		for (int i = 0; i < menu->numitems; i++)
 		{
-			item = menu->items + i;
+			menuitem_t* item = menu->items + i;
 			if (item->type != whitetext && item->type != redtext)
 			{
-				thiswidth = V_StringWidth (item->label);
+				const int thiswidth = V_StringWidth(item->label);
 				if (thiswidth > widest)
 					widest = thiswidth;
 			}
@@ -1433,7 +1436,7 @@ void M_SwitchMenu(menu_t* menu)
 	flagsvar = NULL;
 }
 
-bool M_StartOptionsMenu (void)
+bool M_StartOptionsMenu ()
 {
 	M_SwitchMenu (&OptionMenu);
 	return true;
@@ -1490,28 +1493,41 @@ int M_FindCurVal (float cur, value_t *values, int numvals)
 	return v;
 }
 
-void M_OptDrawer (void)
+void M_OptDrawer()
 {
 	int color;
 	int y, width, i, x, ytop;
-	int x1,y1,x2,y2;
 	int theight = 0;
 	menuitem_t *item;
-	patch_t *title;
 
-	x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
-	y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
+	int x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
+	int y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
 
-    x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
-	y2 = (I_GetSurfaceHeight() / 2)+(100*CleanYfac);
+    int x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
+	int y2 = (I_GetSurfaceHeight() / 2)+(100*CleanYfac);
 
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
 
-	title = W_CachePatch (CurrentMenu->title);
-	screen->DrawPatchClean (title, 160-title->width()/2, 10);
+	if (CurrentMenu->title[0] == '$')
+	{
+		V_SetFont("BIGFONT");
 
-	y = 15 + title->height();
+		// todo - uses estimate to put options in center of screen; could be better?
+		const OString& ostr = GStrings(CurrentMenu->title.c_str() + 1);
+		screen->DrawTextCleanMove(0, 160 - (12 * ostr.size()) / 2, 10, ostr.c_str());
+
+		y = 15 + 16;
+		V_SetFont("SMALLFONT");
+	}
+	else
+	{
+		patch_t *title = W_CachePatch(CurrentMenu->title.c_str());
+		screen->DrawPatchClean(title, 160 - title->width() / 2, 10);
+
+		y = 15 + title->height();
+	}
+	
 	ytop = y + CurrentMenu->scrolltop * 8;
 
 	for (i = 0; i < CurrentMenu->numitems && y <= 192 - theight; i++, y += 8)	// TIJ
