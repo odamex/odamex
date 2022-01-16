@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: 
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
@@ -17,29 +17,32 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Episode data for defining new episodes.
-// 
+//	Loading sprites, skins.
+//
 //-----------------------------------------------------------------------------
 
-#ifndef __G_EPISODE__
-#define __G_EPISODE__
 
+#ifndef __R_SPRITES__
+#define __R_SPRITES__
 
-#define MAX_EPISODES 8
+extern int MaxVisSprites;
 
-struct EpisodeInfo
-{
-	std::string name;
-	char key;
-	bool fulltext;
-	bool noskillmenu;
+extern vissprite_t *vissprites;
 
-	EpisodeInfo() : name(""), key('\0'), fulltext(false), noskillmenu(false) {}
-};
+extern spritedef_t* sprites;
+extern int numsprites;
 
-extern OLumpName EpisodeMaps[MAX_EPISODES];
-extern EpisodeInfo EpisodeInfos[MAX_EPISODES];
-extern byte episodenum;
-extern bool episodes_modified; // Used by UMAPINFO only
+#define MAX_SPRITE_FRAMES 29 // [RH] Macro-ized as in BOOM.
+
+// variables used to look up
+//	and range check thing_t sprites patches
+extern spriteframe_t sprtemp[MAX_SPRITE_FRAMES];
+extern int maxframe;
+
+extern vissprite_t* lastvissprite;
+
+void R_CacheSprite(spritedef_t *sprite);
+void R_InitSprites(const char** namelist);
 
 #endif
+
