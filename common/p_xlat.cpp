@@ -323,18 +323,18 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 	if (special <= NUM_SPECIALS)
 	{
 		// This is a regular special; translate thru LUT
-		flags = flags | (SpecialTranslation[special].flags << ML_SPAC_SHIFT);
+		flags = flags | (SpecialTranslation[special].flags);
 		if (passthrough)
 		{	
 			if (GET_SPAC(flags) == ML_SPAC_USE)
 			{
 				flags &= ~ML_SPAC_MASK;
-				flags |= ML_PASSUSE << ML_SPAC_SHIFT;
+				flags |= ML_SPAC_USETHROUGH;
 			}
 			if (GET_SPAC(flags) == ML_SPAC_CROSS)
 			{
 				flags &= ~ML_SPAC_MASK;
-				flags |= ML_PASSUSE << ML_SPAC_SHIFT;
+				flags |= ML_SPAC_CROSSTHROUGH;
 			}
 			
 			// TODO: what to do with gun-activated lines with passthrough?
@@ -420,9 +420,9 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 			flags |= ML_REPEATSPECIAL;
 		case WalkOnce:
             if (passthrough)
-				flags |= ML_PASSUSE << ML_SPAC_SHIFT;
+				flags |= ML_SPAC_CROSSTHROUGH;
             else
-                flags |= ML_SPAC_CROSS << ML_SPAC_SHIFT;
+                flags |= ML_SPAC_CROSS;
 			break;
 
 		case SwitchMany:
@@ -431,15 +431,15 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 		case SwitchOnce:
 		case PushOnce:
 			if (passthrough)
-				flags |= ML_PASSUSE << ML_SPAC_SHIFT;
+				flags |= ML_SPAC_USETHROUGH;
 			else
-				flags |= ML_SPAC_USE << ML_SPAC_SHIFT;
+				flags |= ML_SPAC_USE;
 			break;
 
 		case GunMany:
 			flags |= ML_REPEATSPECIAL;
 		case GunOnce:
-			flags |= ML_SPAC_IMPACT << ML_SPAC_SHIFT;
+			flags |= ML_SPAC_IMPACT;
 			break;
 		}
 
