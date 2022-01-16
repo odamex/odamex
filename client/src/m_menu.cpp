@@ -1109,7 +1109,7 @@ void M_StartGame(int choice)
     }
     else
     {
-        G_DeferedInitNew(EpisodeMaps[epi]);
+        G_DeferedInitNew (EpisodeMaps[epi].c_str());
     }
 
     M_ClearMenus();
