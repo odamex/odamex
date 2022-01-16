@@ -1448,7 +1448,7 @@ void G_ScreenShot(const char* filename)
 //
 char savename[256];
 
-void G_LoadGame (char* name)
+void G_LoadGame (const char* name)
 {
 	strcpy (savename, name);
 	gameaction = ga_loadgame;

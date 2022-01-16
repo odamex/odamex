@@ -694,7 +694,7 @@ void M_ReadSaveStrings()
 //
 void M_DrawLoad()
 {
-	screen->DrawPatchClean((patch_t *)W_CachePatch("M_LOADG"), 72, 28);
+	screen->DrawPatchClean(W_CachePatch("M_LOADG"), 72, 28);
 	for (int i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder(LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
@@ -709,8 +709,8 @@ void M_LoadSelect (int choice)
 {
 	std::string name;
 
-	G_BuildSaveName (name, choice);
-	G_LoadGame((char *)name.c_str());
+	G_BuildSaveName(name, choice);
+	G_LoadGame(name.c_str());
 	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
 	M_ClearMenus();
 	if (quickSaveSlot == -2)
@@ -1421,11 +1421,11 @@ static void M_PlayerSetupDrawer()
 	// Draw cursor for either of the above
 	if (genStringEnter)
 		screen->DrawTextCleanMove(CR_RED, PSetupDef.x + V_StringWidth(savegamestrings[saveSlot]) + 56,
-							PSetupDef.y + ((saveSlot == 0) ? 0 : LINEHEIGHT), "_");
+							PSetupDef.y + ((saveSlot == 0) ? 0 : LineHeight), "_");
 
 	// Draw player character
 	{
-		int x = 320 - 88 - 32, y = PSetupDef.y + LINEHEIGHT*3 - 14;
+		int x = 320 - 88 - 32, y = PSetupDef.y + LineHeight * 3 - 14;
 
 		x = (x-160)*CleanXfac+(I_GetSurfaceWidth() / 2);
 		y = (y-100)*CleanYfac+(I_GetSurfaceHeight() / 2);
@@ -1531,44 +1531,44 @@ static void M_PlayerSetupDrawer()
 		R_BuildPlayerTranslation(0, player_color);
 		V_ColorMap = translationref_t(translationtables, 0);
 
-		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
-			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
+		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]), 320 - 52 - 32,
+		                                 PSetupDef.y + LineHeight * 3 + 46);
 	}
 
 	// Draw box surrounding fire and player:
-	screen->DrawPatchClean (W_CachePatch ("M_PBOX"),
-		320 - 88 - 32 + 36, PSetupDef.y + LINEHEIGHT*3 + 22);
+	screen->DrawPatchClean (W_CachePatch ("M_PBOX"), 320 - 88 - 32 + 36,
+	                       PSetupDef.y + LineHeight * 3 + 22);
 
 	// Draw player color sliders
-	//V_DrawTextCleanMove (CR_GREY, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Color");
+	//V_DrawTextCleanMove (CR_GREY, PSetupDef.x, PSetupDef.y + LineHeight, "Color");
 
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*2, "Red");
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*3, "Green");
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Blue");
+	screen->DrawTextCleanMove(CR_RED, PSetupDef.x, PSetupDef.y + LineHeight * 2, "Red");
+	screen->DrawTextCleanMove(CR_RED, PSetupDef.x, PSetupDef.y + LineHeight * 3, "Green");
+	screen->DrawTextCleanMove(CR_RED, PSetupDef.x, PSetupDef.y + LineHeight * 4, "Blue");
 
 	{
 		const int x = V_StringWidth("Green") + 8 + PSetupDef.x;
 		const argb_t playercolor = V_GetColorFromString(cl_color);
 
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, playercolor.getr());
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, playercolor.getg());
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*4, 0.0f, 255.0f, playercolor.getb());
+		M_DrawSlider(x, PSetupDef.y + LineHeight * 2, 0.0f, 255.0f, playercolor.getr());
+		M_DrawSlider(x, PSetupDef.y + LineHeight * 3, 0.0f, 255.0f, playercolor.getg());
+		M_DrawSlider(x, PSetupDef.y + LineHeight * 4, 0.0f, 255.0f, playercolor.getb());
 	}
 
 	// Draw team setting
 	{
 		const team_t team = D_TeamByName(cl_team.cstring());
 		const int x = V_StringWidth ("Prefered Team") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Prefered Team");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LineHeight, "Prefered Team");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LineHeight, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	// Draw gender setting
 	{
 		const gender_t gender = D_GenderByName(cl_gender.cstring());
 		const int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Gender");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*5, genders[gender]);
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LineHeight * 5, "Gender");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LineHeight * 5, genders[gender]);
 	}
 
 	// Draw autoaim setting
@@ -1576,8 +1576,8 @@ static void M_PlayerSetupDrawer()
 		const int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
 		const float aim = cl_autoaim;
 
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Autoaim");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*6,
+		screen->DrawTextCleanMove(CR_RED, PSetupDef.x, PSetupDef.y + LineHeight * 6, "Autoaim");
+		screen->DrawTextCleanMove(CR_GREY, x, PSetupDef.y + LineHeight * 6,
 			aim == 0 ? "Never" :
 			aim <= 0.25 ? "Very Low" :
 			aim <= 0.5 ? "Low" :
