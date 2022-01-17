@@ -2405,4 +2405,26 @@ void P_PlayerLeavesGame(player_s* player)
 	G_AssertValidPlayerCount();
 }
 
+void P_HealMobj(AActor* mo, int num)
+{
+	player_t* player = mo->player;
+
+	if (mo->health <= 0 || (player && player->playerstate == PST_DEAD))
+		return;
+
+	if (player)
+	{
+		P_GiveBody(player, num);
+		return;
+	}
+	else
+	{
+		int max = mobjinfo[mo->type].spawnhealth;
+
+		mo->health += num;
+		if (mo->health > max)
+			mo->health = max;
+	}
+}
+
 VERSION_CONTROL (p_interaction_cpp, "$Id$")

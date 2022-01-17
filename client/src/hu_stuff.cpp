@@ -123,7 +123,6 @@ void HU_DMScores2 (player_t *player);
 void HU_TeamScores1 (player_t *player);
 void HU_TeamScores2 (player_t *player);
 
-extern bool HasBehavior;
 extern inline int V_StringWidth(const char *str);
 size_t P_NumPlayersInGame();
 static void ShoveChatStr(std::string str, byte who);

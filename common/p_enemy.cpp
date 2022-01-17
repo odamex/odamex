@@ -42,8 +42,6 @@
 #include "d_dehacked.h"
 
 
-extern bool HasBehavior;
-
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (co_zdoomphys)

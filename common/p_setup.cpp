@@ -49,19 +49,23 @@
 #include "p_mobj.h"
 #include "p_setup.h"
 #include "p_hordespawn.h"
+#include "p_mapformat.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
 void P_SpawnAvatars();
+void P_TranslateTeleportThings();
 
-void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
-void P_TranslateTeleportThings (void);
-int	P_TranslateSectorSpecial (int);
+const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags);
+const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags);
+void P_SpawnCompatibleSectorSpecial(sector_t* sector);
 
 static void P_SetupLevelFloorPlane(sector_t *sector);
 static void P_SetupLevelCeilingPlane(sector_t *sector);
 static void P_SetupSlopes();
 void P_InvertPlane(plane_t *plane);
+void P_SetupWorldState();
+int P_TranslateSectorSpecial(int special);
 
 extern dyncolormap_t NormalLight;
 extern AActor* shootthing;
@@ -322,10 +326,7 @@ void P_LoadSectors (int lump)
 		ss->floorpic = (short)R_FlatNumForName(ms->floorpic);
 		ss->ceilingpic = (short)R_FlatNumForName(ms->ceilingpic);
 		ss->lightlevel = LESHORT(ms->lightlevel);
-		if (HasBehavior)
-			ss->special = LESHORT(ms->special);
-		else	// [RH] Translate to new sector special
-			ss->special = P_TranslateSectorSpecial (LESHORT(ms->special));
+		ss->special = LESHORT(ms->special);
 		ss->secretsector = !!(ss->special&SECRET_MASK);
 		ss->tag = LESHORT(ms->tag);
 		ss->thinglist = NULL;
@@ -333,6 +334,11 @@ void P_LoadSectors (int lump)
 		ss->seqType = defSeqType;
 		ss->nextsec = -1;	//jff 2/26/98 add fields to support locking out
 		ss->prevsec = -1;	// stair retriggering until build completes
+
+		// damage
+		ss->damageamount = 0;
+		ss->damageinterval = 0;
+		ss->leakrate = 0;
 
 		// killough 3/7/98:
 		ss->floor_xoffs = 0;
@@ -732,27 +738,106 @@ void P_AdjustLine (line_t *ld)
 		ld->bbox[BOXTOP] = v1->y;
 	}
 
-	// [RH] Set line id (as appropriate) here
-	if (ld->special == Line_SetIdentification ||
-		ld->special == Teleport_Line ||
-		ld->special == TranslucentLine ||
-		ld->special == Scroll_Texture_Model) {
-		ld->id = ld->args[0];
+	if (map_format.getZDoom())
+	{
+		// [RH] Set line id (as appropriate) here
+		if (ld->special == Line_SetIdentification || ld->special == Teleport_Line ||
+		    ld->special == TranslucentLine || ld->special == Scroll_Texture_Model)
+		{
+			ld->id = ld->args[0];
+		}
+	}
+	else
+	{
+		if (P_IsThingNoFogTeleportLine(ld->special))
+		{
+			if (ld->id == 0)
+			{
+				// Untagged teleporters teleport to tid 1.
+				ld->args[0] = 1;
+			}
+			else
+			{
+				ld->args[2] = ld->id;
+				ld->args[0] = 0;
+			}
+		}
+		else if (ld->special >= OdamexStaticInits &&
+		         ld->special < OdamexStaticInits + NUM_STATIC_INITS)
+		{
+			// An Odamex Static_Init special
+			ld->args[0] = ld->id;
+			ld->args[1] = ld->special - OdamexStaticInits;
+		}
+		else if (ld->special >= 340 && ld->special <= 347)
+		{
+			// [SL] 2012-01-30 - convert to ZDoom Plane_Align special for
+			// sloping sectors
+			// [Blair] Massage this a bit to work with map_format
+			switch (ld->special)
+			{
+			case 340: // Slope the Floor in front of the line
+				ld->args[0] = 1;
+				break;
+			case 341: // Slope the Ceiling in front of the line
+				ld->args[1] = 1;
+				break;
+			case 342: // Slope the Floor+Ceiling in front of the line
+				ld->args[0] = ld->args[1] = 1;
+				break;
+			case 343: // Slope the Floor behind the line
+				ld->args[0] = 2;
+				break;
+			case 344: // Slope the Ceiling behind the line
+				ld->args[1] = 2;
+				break;
+			case 345: // Slope the Floor+Ceiling behind the line
+				ld->args[0] = ld->args[1] = 2;
+				break;
+			case 346: // Slope the Floor behind+Ceiling in front of the line
+				ld->args[0] = 2;
+				ld->args[1] = 1;
+				break;
+			case 347: // Slope the Floor in front+Ceiling behind the line
+				ld->args[0] = 1;
+				ld->args[1] = 2;
+			}
+		}
 	}
 
 	// denis - prevent buffer overrun
 	if(*ld->sidenum == R_NOSIDE)
 		return;
 
-	// killough 4/4/98: support special sidedef interpretation below
-	if (// [RH] Save Static_Init only if it's interested in the textures
-		( (ld->special == Static_Init && ld->args[1] == Init_Color)
-			|| ld->special != Static_Init) ) {
+	if (map_format.getZDoom())
+	{
+		// killough 4/4/98: support special sidedef interpretation below
+		if ( // [RH] Save Static_Init only if it's interested in the textures
+		    ((ld->special == Static_Init && ld->args[1] == Init_Color) ||
+		     ld->special != Static_Init))
+		{
 			sides[*ld->sidenum].special = ld->special;
 			sides[*ld->sidenum].tag = ld->args[0];
 		}
+		else
+		{
+			sides[*ld->sidenum].special = 0;
+		}
+	}
 	else
-		sides[*ld->sidenum].special = 0;
+	{
+		// killough 4/4/98: support special sidedef interpretation below
+		if (ld->special >= OdamexStaticInits + 1 &&
+		    ld->special <= OdamexStaticInits + NUM_STATIC_INITS)
+		{
+			sides[*ld->sidenum].special = ld->special;
+			sides[*ld->sidenum].tag = ld->args[0];
+		}
+		else
+		{
+			sides[*ld->sidenum].special = 0;
+		}
+	}
 }
 
 // killough 4/4/98: delay using sidedefs until they are loaded
@@ -770,35 +855,11 @@ void P_FinishLoadingLineDefs (void)
 		if (ld->sidenum[1] != R_NOSIDE)
 			sides[ld->sidenum[1]].linenum = linenum;
 
-		switch (ld->special)
-		{						// killough 4/11/98: handle special types
-			int j;
-
-			case TranslucentLine:			// killough 4/11/98: translucent 2s textures
-#if 0
-				lump = sides[*ld->sidenum].special;		// translucency from sidedef
-				if (!ld->tag)							// if tag==0,
-					ld->tranlump = lump;				// affect this linedef only
-				else
-					for (j=0;j<numlines;j++)			// if tag!=0,
-						if (lines[j].tag == ld->tag)	// affect all matching linedefs
-							lines[j].tranlump = lump;
-#else
-				// [RH] Second arg controls how opaque it is.
-				if (!ld->args[0])
-					ld->lucency = (byte)ld->args[1];
-				else
-					for (j = 0; j < numlines; j++)
-						if (lines[j].id == ld->args[0])
-							lines[j].lucency = (byte)ld->args[1];
-#endif
-				ld->special = 0;
-				break;
-		}
+		map_format.post_process_linedef_special(ld);
 	}
 }
 
-void P_LoadLineDefs (int lump)
+void P_LoadLineDefs (const int lump)
 {
 	byte *data;
 	int i;
@@ -812,11 +873,21 @@ void P_LoadLineDefs (int lump)
 	ld = lines;
 	for (i=0 ; i<numlines ; i++, ld++)
 	{
-		maplinedef_t *mld = ((maplinedef_t *)data) + i;
+		const maplinedef_t *mld = ((maplinedef_t *)data) + i;
 
 		// [RH] Translate old linedef special and flags to be
 		//		compatible with the new format.
-		P_TranslateLineDef (ld, mld);
+
+		ld->flags = (unsigned short)(short int)mld->flags;
+		ld->special = (short int)mld->special;
+		ld->id = (short int)mld->tag;
+		ld->args[0] = 0;
+		ld->args[1] = 0;
+		ld->args[2] = 0;
+		ld->args[3] = 0;
+		ld->args[4] = 0;
+
+		ld->flags = P_TranslateCompatibleLineFlags(ld->flags);
 
 		unsigned short v = LESHORT(mld->v1);
 
@@ -871,17 +942,19 @@ void P_LoadLineDefs2 (int lump)
 		ld->flags = LESHORT(mld->flags);
 		ld->special = mld->special;
 
+		ld->flags = P_TranslateZDoomLineFlags(ld->flags);
+
 		unsigned short v = LESHORT(mld->v1);
 
 		if(v >= numvertexes)
-			I_Error("P_LoadLineDefs: invalid vertex %d", v);
+			I_Error("P_LoadLineDefs2: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = LESHORT(mld->v2);
 
 		if(v >= numvertexes)
-			I_Error("P_LoadLineDefs: invalid vertex %d", v);
+			I_Error("P_LoadLineDefs2: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
 
@@ -946,7 +1019,7 @@ static argb_t P_GetColorFromTextureName(const char* name)
 // is an ARGB value in hexadecimal, that value is used for the appropriate
 // sector blend.
 // 
-static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
+void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 {
 	sector_t* sec = &sectors[LESHORT(msd->sector)];
 
@@ -1002,7 +1075,7 @@ static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 // 
 
 
-static void SetTextureNoErr (short *texture, unsigned int *color, char *name)
+void SetTextureNoErr (short *texture, unsigned int *color, char *name)
 {
 	if ((*texture = R_CheckTextureNumForName (name)) == -1) {
 		char name2[9];
@@ -1026,69 +1099,18 @@ void P_LoadSideDefs2 (int lump)
 	{
 		register mapsidedef_t* msd = (mapsidedef_t*)data + i;
 		register side_t* sd = sides + i;
+		register sector_t* sec;
 
 		sd->textureoffset = LESHORT(msd->textureoffset)<<FRACBITS;
 		sd->rowoffset = LESHORT(msd->rowoffset)<<FRACBITS;
 		sd->linenum = -1;
-		sd->sector = &sectors[LESHORT(msd->sector)];
+		sd->sector = sec = &sectors[LESHORT(msd->sector)];
 
 		// killough 4/4/98: allow sidedef texture names to be overloaded
 		// killough 4/11/98: refined to allow colormaps to work as wall
 		// textures if invalid as colormaps but valid as textures.
 
-		switch (sd->special)
-		{
-		  case Transfer_Heights:	// variable colormap via 242 linedef
-			  // [RH] The colormap num we get here isn't really a colormap,
-			  //	  but a packed ARGB word for blending, so we also allow
-			  //	  the blend to be specified directly by the texture names
-			  //	  instead of figuring something out from the colormap.
-			P_SetTransferHeightBlends(sd, msd);
-			break;
-
-		  case Static_Init:
-			// [RH] Set sector color and fog
-			// upper "texture" is light color
-			// lower "texture" is fog color
-			{
-				unsigned int color = 0xffffff, fog = 0x000000;
-
-				SetTextureNoErr (&sd->bottomtexture, &fog, msd->bottomtexture);
-				SetTextureNoErr (&sd->toptexture, &color, msd->toptexture);
-				sd->midtexture = R_TextureNumForName (msd->midtexture);
-
-				if (fog != 0x000000 || color != 0xffffff)
-				{
-					dyncolormap_t *colormap = GetSpecialLights(
-						((argb_t)color).getr(), ((argb_t)color).getg(), ((argb_t)color).getb(),
-						((argb_t)fog).getr(), ((argb_t)fog).getg(), ((argb_t)fog).getb());
-
-					for (int s = 0; s < numsectors; s++)
-					{
-						if (sectors[s].tag == sd->tag)
-							sectors[s].colormap = colormap;
-					}
-				}
-			}
-			break;
-
-/*
-		  case TranslucentLine:	// killough 4/11/98: apply translucency to 2s normal texture
-			sd->midtexture = strncasecmp("TRANMAP", msd->midtexture, 8) ?
-				(sd->special = W_CheckNumForName(msd->midtexture)) < 0 ||
-				W_LumpLength(sd->special) != 65536 ?
-				sd->special=0, R_TextureNumForName(msd->midtexture) :
-					(sd->special++, 0) : (sd->special=0);
-			sd->toptexture = R_TextureNumForName(msd->toptexture);
-			sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
-			break;
-*/
-		  default:			// normal cases
-			sd->midtexture = R_TextureNumForName(msd->midtexture);
-			sd->toptexture = R_TextureNumForName(msd->toptexture);
-			sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
-			break;
-		}
+		map_format.post_process_sidedef_special(sd, msd, sec, i);
 	}
 	Z_Free (data);
 }
@@ -1801,6 +1823,11 @@ void P_SetupLevel (const char *lumpname, int position)
 	if (HasBehavior)
 	{
 		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
+		map_format.P_ApplyZDoomMapFormat();
+	}
+	else
+	{
+		map_format.P_ApplyDefaultMapFormat();
 	}
 
     level.time = 0;
@@ -1855,7 +1882,7 @@ void P_SetupLevel (const char *lumpname, int position)
 		P_LoadThings2 (lumpnum+ML_THINGS, position);	// [RH] Load Hexen-style things
 
 	if (!HasBehavior)
-		P_TranslateTeleportThings ();	// [RH] Assign teleport destination TIDs
+		P_TranslateTeleportThings(); // [RH] Assign teleport destination TIDs
 
     PO_Init ();
 
@@ -1881,7 +1908,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_SpawnBrainTargets();
 
 	// set up world state
-	P_SpawnSpecials ();
+	P_SetupWorldState();
 
 	// build subsector connect matrix
 	//	UNUSED P_ConnectSubsectors ();
@@ -1903,7 +1930,6 @@ void P_Init (void)
 	R_InitSprites (sprnames);
 	InitTeamInfo();
 }
-
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)
 {
@@ -2020,7 +2046,10 @@ static void P_SetupSlopes()
 	{
 		line_t *line = &lines[i];
 
-		if (line->special == Plane_Align)
+		short spec = line->special;
+
+		if ((map_format.getZDoom() && line->special == Plane_Align) ||
+		    (line->special >= 340 && line->special <= 347))
 		{
 			line->special = 0;
 			line->id = line->args[2];

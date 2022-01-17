@@ -63,11 +63,26 @@
 #include "r_sky.h"
 #include <g_gametype.h>
 
+// [Blair] Map format
+#include "p_mapformat.h"
+
+#include "p_boomfspec.h"
+#include "p_zdoomhexspec.h"
+
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
 
 std::list<movingsector_t> movingsectors;
 bool s_SpecialFromServer;
+
+int P_FindSectorFromLineTag(int tag, int start);
+BOOL EV_DoDoor(DDoor::EVlDoor type, line_t* line, AActor* thing, int tag, int speed,
+               int delay, card_t lock);
+lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
+lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
+                                 unsigned int activationType);
+lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
+                                        bool bossaction);
 
 //
 // P_FindMovingSector
@@ -83,6 +98,31 @@ std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector)
 	return movingsectors.end();
 }
 
+fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f)
+{
+	return (arg_i << FRACBITS) + (arg_f << FRACBITS) / 100;
+}
+
+int P_ArgToCrushMode(byte arg, bool slowdown)
+{
+	static const crushmode_e map[] = {crushDoom, crushHexen, crushSlowdown};
+
+	if (arg >= 1 && arg <= 3)
+		return map[arg - 1];
+
+	return slowdown ? crushSlowdown : crushDoom;
+}
+
+int P_FindSectorFromLineTag(const line_t* line, int start)
+{
+	start = start >= 0 ? sectors[start].nexttag
+	                   : sectors[(unsigned)line->id % (unsigned)numsectors].firsttag;
+	while (start >= 0 && sectors[start].tag != line->id)
+		start = sectors[start].nexttag;
+	return start;
+}
+
+
 int P_FindLineFromLineTag(const line_t* line, int start)
 {
 	start = start >= 0 ? lines[start].nextid
@@ -90,6 +130,65 @@ int P_FindLineFromLineTag(const line_t* line, int start)
 	while (start >= 0 && lines[start].id != line->id)
 		start = lines[start].nextid;
 	return start;
+}
+
+int P_FindLineFromTag(int tag, int start)
+{
+	start = start >= 0 ? lines[start].nextid
+	                   : lines[(unsigned)tag % (unsigned)numlines].firstid;
+	while (start >= 0 && lines[start].id != tag)
+		start = lines[start].nextid;
+	return start;
+}
+
+void P_ResetSectorTransferFlags(unsigned int* flags)
+{
+	*flags &= ~SECF_TRANSFERMASK;
+}
+
+void P_ResetSectorSpecial(sector_t* sector)
+{
+	sector->special = 0;
+	sector->damageamount = 0;
+	sector->damageinterval = 0;
+	sector->leakrate = 0;
+	P_ResetSectorTransferFlags(&sector->flags);
+}
+
+void P_CopySectorSpecial(sector_t* dest, sector_t* source)
+{
+	dest->special = source->special;
+	dest->damageamount = source->damageamount;
+	dest->damageinterval = source->damageinterval;
+	dest->leakrate = source->leakrate;
+	P_TransferSectorFlags(&dest->flags, source->flags);
+}
+
+void P_ResetTransferSpecial(newspecial_s* newspecial)
+{
+	newspecial->special = 0;
+	newspecial->damageamount = 0;
+	newspecial->damageinterval = 0;
+	newspecial->damageleakrate = 0;
+	P_ResetSectorTransferFlags(&newspecial->flags);
+}
+
+void P_TransferSectorFlags(unsigned int* dest, unsigned int source)
+{
+	*dest &= ~SECF_TRANSFERMASK;
+	*dest |= source & SECF_TRANSFERMASK;
+}
+
+byte P_ArgToChange(byte arg)
+{
+	static const byte ChangeMap[8] = {0, 1, 5, 3, 7, 2, 6, 0};
+
+	return (arg < 8) ? ChangeMap[arg] : 0;
+}
+
+int P_ArgToCrush(byte arg)
+{
+	return (arg > 0) ? arg : NO_CRUSH;
 }
 
 /*
@@ -109,7 +208,7 @@ int P_IsUnderDamage(AActor* actor)
 	{
 		if ((cr = (DCeiling*)seclist->m_sector->ceilingdata) && cr->m_Status == 2) // Down
 		{
-			cr->m_Crush ? dir = 1 : dir = 0;
+			cr->m_Crush > NO_CRUSH ? dir = 1 : dir = 0;
 		}
 	}
 	return dir;
@@ -317,7 +416,6 @@ bool P_MovingFloorCompleted(sector_t *sector)
 
 
 EXTERN_CVAR (sv_allowexit)
-extern bool	HasBehavior;
 
 IMPLEMENT_SERIAL (DScroller, DThinker)
 IMPLEMENT_SERIAL (DPusher, DThinker)
@@ -400,16 +498,12 @@ static anim_t*  lastanim;
 static anim_t*  anims;
 static size_t	maxanims;
 
-
-// Factor to scale scrolling effect into mobj-carrying properties = 3/32.
-// (This is so scrolling floors and objects on them can move at same speed.)
-#define CARRYFACTOR ((fixed_t)(FRACUNIT*.09375))
-
 // killough 3/7/98: Initialize generalized scrolling
 static void P_SpawnScrollers();
 
 static void P_SpawnFriction();		// phares 3/16/98
 static void P_SpawnPushers();		// phares 3/20/98
+static void P_SpawnExtra();
 
 static void ParseAnim(OScanner &os, byte istex);
 
@@ -587,6 +681,87 @@ static void ParseAnim(OScanner &os, byte istex)
 	}
 
 	place->countdown = place->speedmin[0];
+}
+
+//
+// P_CheckTag()
+//
+// Passed a line, returns true if the tag is non-zero or the line special
+// allows no tag without harm. If compatibility, all linedef specials are
+// allowed to have zero tag.
+//
+// Note: Only line specials activated by walkover, pushing, or shooting are
+//       checked by this routine.
+//
+// jff 2/27/98 Added to check for zero tag allowed for regular special types
+//
+bool P_CheckTag(line_t* line)
+{
+	/* tag not zero, allowed, or
+	 * killough 11/98: compatibility option */
+	if (line->id) // e6y
+		return true;
+
+	switch (line->special)
+	{
+	case 1: // Manual door specials
+	case 26:
+	case 27:
+	case 28:
+	case 31:
+	case 32:
+	case 33:
+	case 34:
+	case 117:
+	case 118:
+
+	case 139: // Lighting specials
+	case 170:
+	case 79:
+	case 35:
+	case 138:
+	case 171:
+	case 81:
+	case 13:
+	case 192:
+	case 169:
+	case 80:
+	case 12:
+	case 194:
+	case 173:
+	case 157:
+	case 104:
+	case 193:
+	case 172:
+	case 156:
+	case 17:
+
+	case 195: // Thing teleporters
+	case 174:
+	case 97:
+	case 39:
+	case 126:
+	case 125:
+	case 210:
+	case 209:
+	case 208:
+	case 207:
+
+	case 11: // Exits
+	case 52:
+	case 197:
+	case 51:
+	case 124:
+	case 198:
+
+	case 48: // Scrolling walls
+	case 85:
+		return true; // zero tag allowed
+
+	default:
+		break;
+	}
+	return false; // zero tag not allowed
 }
 
 /*
@@ -1232,6 +1407,365 @@ int P_FindMinSurroundingLight (sector_t *sector, int max)
 	return min;
 }
 
+bool P_CeilingActive(const sector_t* sec)
+{
+	return sec->ceilingdata != NULL || (sec->floordata != NULL);
+}
+
+bool P_FloorActive(const sector_t* sec)
+{
+	return sec->floordata != NULL || (sec->ceilingdata != NULL);
+}
+
+bool P_LightingActive(const sector_t* sec)
+{
+	return sec->lightingdata != NULL;
+}
+
+int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start)
+{
+	if (tag == 0)
+	{
+		if (!line || !line->backsector || line->backsector - sectors == start)
+		{
+			return -1;
+		}
+
+		return line->backsector - sectors;
+	}
+	else
+	{
+		return P_FindSectorFromTag(tag, start);
+	}
+}
+
+/*
+* @brief checks to see if a ZDoom-style door can be unlocked.
+* 
+* @param player: Player to key check
+* @param lock: ZDoom lock type
+* All ZDoom lock types are supported but Odamex is missing
+* key prism types.
+*/
+bool P_CanUnlockZDoomDoor(player_t* player, zdoom_lock_t lock, bool remote)
+{
+	if (!player)
+		return false;
+
+	const OString* msg = NULL;
+
+	switch (lock)
+	{
+	case zk_none:
+		break;
+	case zk_red_card:
+		if (!player->cards[it_redcard])
+		{
+			msg = remote ? &PD_REDO : &PD_REDC;
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case zk_blue_card:
+		if (!player->cards[it_bluecard])
+		{
+			msg = remote ? &PD_BLUEO : &PD_BLUEC;
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case zk_yellow_card:
+		if (!player->cards[it_yellowcard])
+		{
+			msg = remote ? &PD_YELLOWO : &PD_YELLOWC;
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case zk_red_skull:
+		if (!player->cards[it_redskull])
+		{
+			msg = remote ? &PD_REDO : &PD_REDS;
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case zk_blue_skull:
+		if (!player->cards[it_blueskull])
+		{
+			msg = remote ? &PD_BLUEO : &PD_BLUES;
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case zk_yellow_skull:
+		if (!player->cards[it_yellowskull])
+		{
+			msg = remote ? &PD_YELLOWO : &PD_YELLOWS;
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case zk_any:
+		if (!player->cards[it_redcard] && !player->cards[it_redskull] &&
+		    !player->cards[it_bluecard] && !player->cards[it_blueskull] &&
+		    !player->cards[it_yellowcard] && !player->cards[it_yellowskull])
+		{
+			msg = &PD_ANY;
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case zk_all:
+		if (!player->cards[it_redcard] || !player->cards[it_redskull] ||
+		    !player->cards[it_bluecard] || !player->cards[it_blueskull] ||
+		    !player->cards[it_yellowcard] || !player->cards[it_yellowskull])
+		{
+			msg = &PD_ALL6;
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case zk_red:
+	case zk_redx:
+		if (!player->cards[it_redcard] && !player->cards[it_redskull])
+		{
+			msg = remote ? &PD_REDO : &PD_REDK;
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case zk_blue:
+	case zk_bluex:
+		if (!player->cards[it_bluecard] && !player->cards[it_blueskull])
+		{
+			msg = remote ? &PD_BLUEO : &PD_BLUEK;
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case zk_yellow:
+	case zk_yellowx:
+		if (!player->cards[it_yellowcard] && !player->cards[it_yellowskull])
+		{
+			msg = remote ? &PD_YELLOWO : &PD_YELLOWK;
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case zk_each_color:
+		if ((!player->cards[it_redcard] && !player->cards[it_redskull]) ||
+		    (!player->cards[it_bluecard] && !player->cards[it_blueskull]) ||
+		    (!player->cards[it_yellowcard] && !player->cards[it_yellowskull]))
+		{
+			msg = &PD_ALL3;
+		}
+		else
+		{
+			return true;
+		}
+	default:
+		break;
+	}
+
+	// If we get here, we don't have the right key,
+	// so print an appropriate message and grunt.
+	if (player->mo == consoleplayer().camera)
+	{
+		int keytrysound = S_FindSound("misc/keytry");
+		if (keytrysound > -1)
+		{
+			UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
+		}
+		else
+		{
+			UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+		}
+
+		if (msg != NULL)
+		{
+			C_MidPrint(GStrings(*msg), player);
+		}
+	}
+
+	return false;
+}
+
+//
+// P_CanUnlockGenDoor()
+//
+// Passed a generalized locked door linedef and a player, returns whether
+// the player has the keys necessary to unlock that door.
+//
+// Note: The linedef passed MUST be a generalized locked door type
+//       or results are undefined.
+//
+// jff 02/05/98 routine added to test for unlockability of
+//  generalized locked doors
+//
+bool P_CanUnlockGenDoor(line_t* line, player_t* player)
+{
+	if (!player)
+		return false;
+
+	const OString* msg = NULL;
+
+	// does this line special distinguish between skulls and keys?
+	int skulliscard = (line->special & LockedNKeys) >> LockedNKeysShift;
+
+	// determine for each case of lock type if player's keys are adequate
+	switch ((line->special & LockedKey) >> LockedKeyShift)
+	{
+	case 0: // AnyKey
+		if (!player->cards[it_redcard] && !player->cards[it_redskull] &&
+		    !player->cards[it_bluecard] && !player->cards[it_blueskull] &&
+		    !player->cards[it_yellowcard] && !player->cards[it_yellowskull])
+		{
+			msg = &PD_ANY; // Ty 03/27/98 - externalized
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case 1: // RCard
+		if (!player->cards[it_redcard] && (!skulliscard || !player->cards[it_redskull]))
+		{
+			msg = skulliscard ? &PD_REDK : &PD_REDC; // Ty 03/27/98 - externalized
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case 2: // BCard
+		if (!player->cards[it_bluecard] && (!skulliscard || !player->cards[it_blueskull]))
+		{
+			msg = skulliscard ? &PD_BLUEK : &PD_BLUEC; // Ty 03/27/98 - externalized
+		}
+		break;
+	case 3: // YCard
+		if (!player->cards[it_yellowcard] &&
+		    (!skulliscard || !player->cards[it_yellowskull]))
+		{
+			msg = skulliscard ? &PD_YELLOWK : &PD_YELLOWC; // Ty 03/27/98 - externalized
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case 4: // RSkull
+		if (!player->cards[it_redskull] && (!skulliscard || !player->cards[it_redcard]))
+		{
+			msg = skulliscard ? &PD_REDK : &PD_REDS; // Ty 03/27/98 - externalized
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case 5: // BSkull
+		if (!player->cards[it_blueskull] && (!skulliscard || !player->cards[it_bluecard]))
+		{
+			msg = skulliscard ? &PD_BLUEK : &PD_BLUES; // Ty 03/27/98 - externalized
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case 6: // YSkull
+		if (!player->cards[it_yellowskull] &&
+		    (!skulliscard || !player->cards[it_yellowcard]))
+		{
+			msg = skulliscard ? &PD_YELLOWK : &PD_YELLOWS; // Ty 03/27/98 - externalized
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	case 7: // AllKeys
+		if (!skulliscard &&
+		    (!player->cards[it_redcard] || !player->cards[it_redskull] ||
+		     !player->cards[it_bluecard] || !player->cards[it_blueskull] ||
+		     !player->cards[it_yellowcard] || !player->cards[it_yellowskull]))
+		{
+			msg = &PD_ALL6; // Ty 03/27/98 - externalized
+		}
+		else if (skulliscard &&
+		    ((!player->cards[it_redcard] && !player->cards[it_redskull]) ||
+		     (!player->cards[it_bluecard] && !player->cards[it_blueskull]) ||
+		     // e6y
+		     // Compatibility with buggy MBF behavior when 3-key door works with only 2
+		     // keys There is no more desync on 10sector.wad\ts27-137.lmp
+		     // http://www.doomworld.com/tas/ts27-137.zip
+
+		     /*
+		     (!player->cards[it_yellowcard] &&
+		      (compatibility_level == mbf_compatibility &&
+		               !prboom_comp[PC_FORCE_CORRECT_CODE_FOR_3_KEYS_DOORS_IN_MBF].state
+		           ? player->cards[it_yellowskull]
+		           : !player->cards[it_yellowskull]))))
+				   // [Blair] No MBF Compat options...yet
+			*/
+			(!player->cards[it_yellowcard] && !player->cards[it_yellowskull])))
+
+		{
+			msg = &PD_ALL3; // Ty 03/27/98 - externalized
+		}
+		else
+		{
+			return true;
+		}
+		break;
+	}
+	// If we get here, we don't have the right key,
+	// so print an appropriate message and grunt.
+	if (player->mo == consoleplayer().camera)
+	{
+		int keytrysound = S_FindSound("misc/keytry");
+		if (keytrysound > -1)
+		{
+			UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "misc/keytry", ATTN_NORM);
+		}
+		else
+		{
+			UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+		}
+
+		if (msg != NULL)
+		{
+			C_MidPrint(GStrings(*msg), player);
+		}
+	}
+
+	return false;
+}
+
 // [RH] P_CheckKeys
 //
 //	Returns true if the player has the desired key,
@@ -1352,18 +1886,15 @@ void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
 // into account special circumstances like exit specials that are
 // supposed to frag the triggering player during online play.
 //
-void P_HandleSpecialRepeat(line_t* line)
+bool P_HandleSpecialRepeat(line_t* line)
 {
 	// [SL] Don't remove specials from fragging exit line specials
-	if ((line->special == Exit_Normal || line->special == Exit_Secret ||
-		 line->special == Teleport_EndGame || line->special == Teleport_NewMap) &&
-		(!sv_allowexit && sv_fragexitswitch))
-		return;
-
-	if (!(line->flags & ML_REPEAT_SPECIAL))
-		line->special = 0;
+	if (P_IsExitLine(line->special) &&
+	    (!sv_allowexit && sv_fragexitswitch))
+		return false;
+	else
+		return true;
 }
-
 
 //
 // P_CrossSpecialLine - TRIGGER
@@ -1374,106 +1905,19 @@ void P_CrossSpecialLine(int	linenum, int side, AActor* thing, bool bossaction)
 {
     line_t*	line = &lines[linenum];
 
+	TeleportSide = side;
+
 	if (!bossaction && !P_CanActivateSpecials(thing, line))
 		return;
 
-	if(!bossaction && thing)
+	lineresult_s result;
+
+	result = map_format.cross_special_line(line, side, thing, bossaction);
+
+	if (serverside && result.lineexecuted)
 	{
-		//	Triggers that other things can activate
-		if (!thing->player && thing->type != MT_AVATAR)
-		{
-		    if (!(GET_SPAC(line->flags) == SPAC_CROSS)
-                && !(GET_SPAC(line->flags) == SPAC_MCROSS))
-                return;
-
-			// Things that should NOT trigger specials...
-			switch(thing->type)
-			{
-				case MT_ROCKET:
-				case MT_PLASMA:
-				case MT_BFG:
-				case MT_TROOPSHOT:
-				case MT_HEADSHOT:
-				case MT_BRUISERSHOT:
-				return;
-
-				default:
-				break;
-			}
-
-            // This breaks the ability for the eyes to activate the silent teleporter lines
-            // in boomedit.wad, but without it vanilla demos break.
-            switch (line->special)
-            {
-				case Teleport:
-				case Teleport_NoFog:
-			    case Teleport_NoStop:
-				case Teleport_Line:
-				break;
-
-                default:
-                    if(!(line->flags & ML_MONSTERSCANACTIVATE))
-                        return;
-                break;
-            }
-
-		}
-		else
-		{
-		    if (!(GET_SPAC(line->flags) == SPAC_CROSS) &&
-                !(GET_SPAC(line->flags) == SPAC_CROSSTHROUGH))
-                return;
-
-			// Likewise, player should not trigger monster lines
-			if(GET_SPAC(line->flags) == SPAC_MCROSS)
-				return;
-
-			// And spectators should only trigger teleporters
-			if (thing->player && thing->player->spectator)
-			{
-				switch (line->special)
-				{
-					case Teleport:
-					case Teleport_NoFog:
-					case Teleport_NewMap:
-					case Teleport_EndGame:
-				    case Teleport_NoStop:
-					case Teleport_Line:
-						break;
-					default:
-						return;
-						break;
-				}
-			}
-		}
-
-		// Do not teleport on the wrong side
-		if(side)
-		{
-			switch(line->special)
-			{
-				case Teleport:
-				case Teleport_NoFog:
-				case Teleport_NewMap:
-				case Teleport_EndGame:
-			    case Teleport_NoStop:
-				case Teleport_Line:
-					return;
-					break;
-				default: break;
-			}
-		}
+		SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
 	}
-	
-	TeleportSide = side;
-
-	LineSpecials[line->special] (line, thing, line->args[0],
-					line->args[1], line->args[2],
-					line->args[3], line->args[4]);
-
-	P_HandleSpecialRepeat(line);
-
-	SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
 }
 
 //
@@ -1487,31 +1931,48 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	if(thing)
 	{
-		if (!(GET_SPAC(line->flags) == SPAC_IMPACT))
+		if (map_format.getZDoom() && !(line->flags == ML_SPAC_IMPACT))
 			return;
 
 		if (thing->flags & MF_MISSILE)
 			return;
 
-		if (!thing->player && thing->type != MT_AVATAR &&
+		if (map_format.getZDoom() && !thing->player && thing->type != MT_AVATAR &&
 		    !(line->flags & ML_MONSTERSCANACTIVATE))
 			return;
 	}
 
 	//TeleportSide = side;
 
-	LineSpecials[line->special] (line, thing, line->args[0],
-					line->args[1], line->args[2],
-					line->args[3], line->args[4]);
+	lineresult_s lineresult;
 
-	P_HandleSpecialRepeat(line);
-
-	SV_OnActivatedLine(line, thing, 0, LineShoot, false);
-
-	if(serverside)
+	if (map_format.getZDoom()) // All zdoom specials can be impact activated
 	{
-		P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
-		OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+		lineresult.lineexecuted = LineSpecials[line->special](line, thing, line->args[0], line->args[1],
+		                            line->args[2], line->args[3], line->args[4]);
+		lineresult.switchchanged = lineresult.lineexecuted;
+	}
+	else // Only certain specials from Doom/Boom can be impact activated
+	{
+		lineresult = P_ShootCompatibleSpecialLine(thing, line);
+	}
+
+	if(serverside && lineresult.lineexecuted)
+	{
+		SV_OnActivatedLine(line, thing, 0, LineShoot, false);
+
+		if (lineresult.switchchanged)
+		{
+			bool repeat;
+
+			if (map_format.getZDoom())
+				repeat = line->flags & ML_REPEATSPECIAL;
+			else
+				repeat = P_IsSpecialBoomRepeatable(line->special);
+
+			P_ChangeSwitchTexture(line, repeat, true);
+			OnChangedSwitchTexture(line, repeat);
+		}
 	}
 }
 
@@ -1526,34 +1987,13 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 	if (!bossaction && !P_CanActivateSpecials(thing, line))
 		return false;
 
-	// Err...
-	// Use the back sides of VERY SPECIAL lines...
-	if (side)
-	{
-		switch(line->special)
-		{
-		case Exit_Secret:
-			// Sliding door open&close
-			// UNUSED?
-			break;
-
-		default:
-			return false;
-		}
-	}
-
 	if(!bossaction && thing)
 	{
-		if ((GET_SPAC(line->flags) != SPAC_USE) &&
-			(GET_SPAC(line->flags) != SPAC_PUSH) &&
-            (GET_SPAC(line->flags) != SPAC_USETHROUGH))
-			return false;
-
 		// Switches that other things can activate.
 		if (!thing->player && thing->type != MT_AVATAR)
 		{
 			// not for monsters?
-			if (!(line->flags & ML_MONSTERSCANACTIVATE))
+			if (map_format.getZDoom() && !(line->flags & ML_MONSTERSCANACTIVATE))
 				return false;
 
 			// never open secret doors
@@ -1568,25 +2008,42 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 				return false;
 		}
 	}
-	
-    TeleportSide = side;
 
-	if(LineSpecials[line->special] (line, thing, line->args[0],
-					line->args[1], line->args[2],
-					line->args[3], line->args[4]))
+	lineresult_s result;
+
+	TeleportSide = side;
+
+	if (map_format.getZDoom())
+		result = P_ActivateZDoomLine(line, thing, side, ML_SPAC_USE);
+	else
+		result = P_UseCompatibleSpecialLine(thing, line, side, bossaction);
+
+ 	if (result.lineexecuted)
 	{
-		P_HandleSpecialRepeat(line);
-
 		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
 
-		if(serverside && GET_SPAC(line->flags) != SPAC_PUSH)
+		if (serverside &&
+		    (map_format.getZDoom() && (!(line->flags & ML_SPAC_PUSH)) ||
+		     !map_format.getZDoom()) &&
+		    result.switchchanged)
 		{
-			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
-			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
-		}
-	}
+			bool repeat;
 
-    return true;
+			if (map_format.getZDoom())
+				repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
+			else
+				repeat = P_IsSpecialBoomRepeatable(line->special);
+
+			P_ChangeSwitchTexture(line, repeat, true);
+			OnChangedSwitchTexture(line, repeat);
+		}
+
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 
@@ -1597,6 +2054,9 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 //
 bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 {
+	if (!map_format.getZDoom())
+		return false;
+
 	if (!P_CanActivateSpecials(thing, line))
 		return false;
 
@@ -1607,7 +2067,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 
 	if(thing)
 	{
-		if (GET_SPAC(line->flags) != SPAC_PUSH)
+		if (!(line->flags & ML_SPAC_PUSH))
 			return false;
 
 		// Switches that other things can activate.
@@ -1642,263 +2102,64 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 
 		if(serverside)
 		{
-			P_ChangeSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL, true);
-			OnChangedSwitchTexture (line, line->flags & ML_REPEAT_SPECIAL);
+			bool repeat;
+
+			if (map_format.getZDoom())
+				repeat = line->flags & ML_REPEATSPECIAL;
+			else
+				repeat = P_IsSpecialBoomRepeatable(line->special);
+
+			P_ChangeSwitchTexture(line, repeat, true);
+			OnChangedSwitchTexture(line, repeat);
 		}
 	}
 
     return true;
 }
 
+void P_ApplySectorDamage(player_t* player, int damage, int leak)
+{
+	if (!player->powers[pw_ironfeet] || (leak && P_Random(player->mo)<leak))
+		if (!(level.time & 0x1f))
+			P_DamageMobj(player->mo, NULL, NULL, damage);
+}
 
+void P_ApplySectorDamageEndLevel(player_t* player)
+{
+	//if (comp[comp_god])
+	player->cheats &= ~CF_GODMODE;
+
+	if (!(level.time & 0x1f))
+		P_DamageMobj(player->mo, NULL, NULL, 20);
+
+	if (player->health <= 10)
+		if (sv_allowexit)
+			G_ExitLevel(0, 1);
+}
 
 #ifdef SERVER_APP
 void SV_UpdateSecret(sector_t& sector, player_t &player);
 #endif
 
-//
-// P_PlayerInSpecialSector
-// Called every tic frame
-//	that the player origin is in a special sector
-//
-void P_PlayerInSpecialSector (player_t *player)
+void P_CollectSecretCommon(sector_t* sector, player_t* player)
 {
-	// Spectators should not be affected by special sectors
-	if (player->spectator)
-		return;
+	player->secretcount++;
+	level.found_secrets++;
+	sector->flags &= ~SECF_SECRET;
 
-	sector_t *sector = player->mo->subsector->sector;
-	int special = sector->special & ~SECRET_MASK;
-
-	// Falling, not all the way down yet?
-	if (player->mo->z != P_FloorHeight(player->mo) && !player->mo->waterlevel)
-		return;
-
-	// Has hitten ground.
-	// [RH] Normal DOOM special or BOOM specialized?
-	if (special >= dLight_Flicker && special <= 255)
-	{
-		switch (special)
-		{
-		
-		// Strife's Instant Death Sector
-		case Damage_InstantDeath:
-			P_DamageMobj (player->mo, NULL, NULL, 999, MOD_UNKNOWN);
-			break;
-
-		case dDamage_Hellslime:
-			// HELLSLIME DAMAGE
-			if (!player->powers[pw_ironfeet] && !(level.time&0x1f) )
-				P_DamageMobj (player->mo, NULL, NULL, 10, MOD_SLIME);
-			break;
-
-		case dDamage_Nukage:
-		case sLight_Strobe_Hurt:
-			// NUKAGE DAMAGE
-			if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
-				P_DamageMobj (player->mo, NULL, NULL, 5, MOD_SLIME);
-			break;
-
-		case hDamage_Sludge:
-			if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
-				P_DamageMobj (player->mo, NULL, NULL, 4, MOD_SLIME);
-			break;
-
-		case dDamage_SuperHellslime:	// SUPER HELLSLIME DAMAGE
-		case dLight_Strobe_Hurt:		// STROBE HURT
-			if (!player->powers[pw_ironfeet] || (P_Random() < 5) )
-			{
-				if (!(level.time&0x1f))
-					P_DamageMobj (player->mo, NULL, NULL, 20, MOD_SLIME);
-			}
-			break;
-
-		  case dDamage_End:
-			// EXIT SUPER DAMAGE! (for E1M8 finale)
-			player->cheats &= ~CF_GODMODE;
-
-			if (!(level.time & 0x1f))
-				P_DamageMobj (player->mo, NULL, NULL, 20, MOD_UNKNOWN);
-
-			if( sv_gametype == GM_COOP || sv_allowexit )
-			{
-				if (gamestate == GS_LEVEL && player->health <= 10)
-					G_ExitLevel(0, 1);
-			}
-			break;
-
-		  case dDamage_LavaWimpy:
-		  case dScroll_EastLavaDamage:
-			if (!(level.time & 15))
-			{
-				P_DamageMobj(player->mo, NULL, NULL, 5, MOD_LAVA);
-				P_HitFloor(player->mo);
-			}
-			break;
-
-		  case dDamage_LavaHefty:
-			if (!(level.time & 15))
-			{
-				P_DamageMobj(player->mo, NULL, NULL, 8, MOD_LAVA);
-				P_HitFloor(player->mo);
-			}
-			break;
-
-		  default:
-			// [RH] Ignore unknown specials
-			break;
-		}
-	}
-	else
-	{
-		if (sector->special & DEATH_MASK) // [Blair] MBF21 sector actions
-		{
-			switch ((sector->special & 0x60) >> DAMAGE_SHIFT)
-			{
-			case 0: // Kill player unless invuln or rad suit
-				if (!player->powers[pw_invulnerability] && !player->powers[pw_ironfeet])
-				{
-					P_DamageMobj(player->mo, NULL, NULL, 10000, MOD_UNKNOWN);
-				}
-				break;
-			case 1: // Kill player with no scruples
-				P_DamageMobj(player->mo, NULL, NULL, 10000, MOD_UNKNOWN);
-				break;
-			case 2: // Kill all players and exit. There's no delay here so it may confuse some players.
-				if (serverside)
-				{
-					if (sv_allowexit)
-					{
-						for (Players::iterator it = ::players.begin();
-						     it != ::players.end(); ++it)
-						{
-							if (player->ingame() && player->health > 0)
-							{
-								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
-							}
-						}
-						G_ExitLevel(0, 1);
-					}
-					else
-					{
-						P_DamageMobj(
-						    player->mo, NULL, NULL, 10000,
-						    MOD_EXIT); // Exiting not allowed, kill only activator here
-						               // even if fragexitswitch = 0
-					}
-				}
-				break;
-			case 3: // Kill all players and secret exit. There's no delay here so it may confuse some players.
-				if (serverside)
-				{
-					if (sv_allowexit)
-					{
-						for (Players::iterator it = ::players.begin();
-						     it != ::players.end(); ++it)
-						{
-							if (player->ingame() && player->health > 0)
-							{
-								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
-							}
-						}
-						G_SecretExitLevel(0, 1);
-					}
-					else
-					{
-						P_DamageMobj(
-						    player->mo, NULL, NULL, 10000,
-						    MOD_EXIT); // Exiting not allowed, kill only activator here
-						               // even if fragexitswitch = 0
-					}
-				}
-				break;
-			}
-		}
-		else // Old Boom generalized sector actions
-		{
-			// jff 3/14/98 handle extended sector types for secrets and damage
-			int s = (sector->special & 0x60) >> 4;
-			switch (s)
-			{
-			case 0: // no damage
-				break;
-			case 1: // 2/5 damage per 31 ticks
-				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
-				{
-					P_DamageMobj(player->mo, NULL, NULL, 5, MOD_LAVA);
-				}
-				break;
-			case 2: // 5/10 damage per 31 ticks
-				if (!player->powers[pw_ironfeet] && !(level.time & 0x1f))
-				{
-					P_DamageMobj(player->mo, NULL, NULL, 10, MOD_SLIME);
-				}
-				break;
-			case 3: // 10/20 damage per 31 ticks
-				if (!player->powers[pw_ironfeet] ||
-				    (P_Random(player->mo) < 5)) // take damage even with suit
-				{
-					if (!(level.time & 0x1f))
-					{
-						P_DamageMobj(player->mo, NULL, NULL, 20, MOD_SLIME);
-					}
-				}
-				break;
-			}
-		}
-
-		// [RH] Apply any customizable damage
-		if (sector->damage) 
-		{
-			if (sector->damage < 20) {
-				if (!player->powers[pw_ironfeet] && !(level.time&0x1f))
-					P_DamageMobj (player->mo, NULL, NULL, sector->damage, sector->mod);
-			} else if (sector->damage < 50) {
-				if ((!player->powers[pw_ironfeet] || (P_Random(player->mo)<5))
-					 && !(level.time&0x1f))
-					P_DamageMobj (player->mo, NULL, NULL, sector->damage, sector->mod);
-			} else {
-				P_DamageMobj (player->mo, NULL, NULL, sector->damage, sector->mod);
-			}
-		}
-
-		if (sector->special & SECRET_MASK) {
-			player->secretcount++;
-			level.found_secrets++;
-			sector->special &= ~SECRET_MASK;
-	
 #ifdef SERVER_APP
-			SV_UpdateSecret(*sector, *player);	// Update the sector to all clients so that they don't discover an already found secret.
+	SV_UpdateSecret(*sector, *player); // Update the sector to all clients so that they
+	                                   // don't discover an already found secret.
 #else
-			if (player->mo == consoleplayer().camera)
-				C_RevealSecret();		// Display the secret revealed message
+	if (player->mo == consoleplayer().camera)
+		C_RevealSecret(); // Display the secret revealed message
 #endif
-		}
-	}
 }
 
-//
-// P_ActorInSpecialSector
-// Really only used for one function -- kill monsters sector action. 
-//
-bool P_ActorInSpecialSector(AActor* actor)
+void P_CollectSecretVanilla(sector_t* sector, player_t* player)
 {
-	if (!actor)
-		return false;
-
-	sector_t* sector = actor->subsector->sector;
-
-	if (sector && sector->special & KILL_MONSTERS_MASK && actor->z == actor->floorz &&
-	    !actor->player && actor->flags & MF_SHOOTABLE && !(actor->flags & MF_FLOAT))
-	{
-		P_DamageMobj(actor, NULL, NULL, 10000);
-
-		// must have been killed
-		if (actor->health <= 0)
-			return true;
-	}
-
-	return false;
+	sector->special = 0;
+	P_CollectSecretCommon(sector, player);
 }
 
 //
@@ -1984,164 +2245,21 @@ CVAR_FUNC_IMPL (sv_forcewater)
 	}
 }
 
-//
-// P_SpawnSpecials
-// After the map has been loaded, scan for specials
-//	that spawn thinkers
-//
-
-void P_SpawnSpecials (void)
+/*
+* @brief Sets up the world state depending on map format.
+* Sets up map sector line specials, thinkers, and other things
+* needed to make Doom interesting.
+*/
+void P_SetupWorldState(void)
 {
-	sector_t*	sector;
-	int 		i;
+	sector_t* sector;
+	int i;
 
 	//	Init special SECTORs.
 	sector = sectors;
 	for (i = 0; i < numsectors; i++, sector++)
 	{
-		if (!sector->special)
-			continue;
-
-		// [RH] All secret sectors are marked with a BOOM-ish bitfield
-		if (sector->special & SECRET_MASK)
-		{
-			sector->secretsector = true;
-			level.total_secrets++;
-		}
-
-		switch (sector->special & 0xff)
-		{
-			// [RH] Normal DOOM/Hexen specials. We clear off the special for lights
-			//	  here instead of inside the spawners.
-
-		case dLight_Flicker:
-			// FLICKERING LIGHTS
-			if (IgnoreSpecial)
-				break;
-			new DLightFlash (sector);
-			sector->special &= 0xff00;
-			break;
-
-		case dLight_StrobeFast:
-			// STROBE FAST
-			if (IgnoreSpecial)
-				break;
-			new DStrobe (sector, STROBEBRIGHT, FASTDARK, false);
-			sector->special &= 0xff00;
-			break;
-
-		case dLight_StrobeSlow:
-			// STROBE SLOW
-			if (IgnoreSpecial)
-				break;
-			new DStrobe (sector, STROBEBRIGHT, SLOWDARK, false);
-			sector->special &= 0xff00;
-			break;
-
-		case dLight_Strobe_Hurt:
-			// STROBE FAST/DEATH SLIME
-			if (IgnoreSpecial)
-				break;
-			new DStrobe (sector, STROBEBRIGHT, FASTDARK, false);
-			break;
-
-		case dLight_Glow:
-			// GLOWING LIGHT
-			if (IgnoreSpecial)
-				break;
-			new DGlow (sector);
-			sector->special &= 0xff00;
-			break;
-
-		case dSector_DoorCloseIn30:
-			if (!serverside)
-				break;
-			// DOOR CLOSE IN 30 SECONDS
-			P_SpawnDoorCloseIn30 (sector);
-			break;
-
-		case dLight_StrobeSlowSync:
-			// SYNC STROBE SLOW
-			if (IgnoreSpecial)
-				break;
-			new DStrobe (sector, STROBEBRIGHT, SLOWDARK, true);
-			sector->special &= 0xff00;
-			break;
-
-		case dLight_StrobeFastSync:
-			// SYNC STROBE FAST
-			if (IgnoreSpecial)
-				break;
-			new DStrobe (sector, STROBEBRIGHT, FASTDARK, true);
-			sector->special &= 0xff00;
-			break;
-
-		case dSector_DoorRaiseIn5Mins:
-			if (!serverside)
-				break;
-			// DOOR RAISE IN 5 MINUTES
-			P_SpawnDoorRaiseIn5Mins (sector);
-			break;
-
-		case dLight_FireFlicker:
-			// fire flickering
-			if (IgnoreSpecial)
-				break;
-			new DFireFlicker (sector);
-			sector->special &= 0xff00;
-			break;
-
-		  // [RH] Hexen-like phased lighting
-		case LightSequenceStart:
-			if (IgnoreSpecial)
-				break;
-			new DPhased (sector);
-			break;
-
-		case Light_Phased:
-			if (IgnoreSpecial)
-				break;
-			new DPhased (sector, 48, 63 - (sector->lightlevel & 63));
-			break;
-
-		case Sky2:
-			sector->sky = PL_SKYFLAT;
-			break;
-
-		default:
-			if (IgnoreSpecial)
-				break;
-			// [RH] Try for normal Hexen scroller
-			if ((sector->special & 0xff) >= Scroll_North_Slow &&
-				(sector->special & 0xff) <= Scroll_SouthWest_Fast)
-			{
-				static signed char hexenScrollies[24][2] =
-				{
-					{  0,  1 }, {  0,  2 }, {  0,  4 },
-					{ -1,  0 }, { -2,  0 }, { -4,  0 },
-					{  0, -1 }, {  0, -2 }, {  0, -4 },
-					{  1,  0 }, {  2,  0 }, {  4,  0 },
-					{  1,  1 }, {  2,  2 }, {  4,  4 },
-					{ -1,  1 }, { -2,  2 }, { -4,  4 },
-					{ -1, -1 }, { -2, -2 }, { -4, -4 },
-					{  1, -1 }, {  2, -2 }, {  4, -4 }
-				};
-				int i = (sector->special & 0xff) - Scroll_North_Slow;
-				int dx = hexenScrollies[i][0] * (FRACUNIT/2);
-				int dy = hexenScrollies[i][1] * (FRACUNIT/2);
-
-				new DScroller (DScroller::sc_floor, dx, dy, -1, sector-sectors, 0);
-				// Hexen scrolling floors cause the player to move
-				// faster than they scroll. I do this just for compatibility
-				// with Hexen and recommend using Killough's more-versatile
-				// scrollers instead.
-				dx = FixedMul (-dx, CARRYFACTOR*2);
-				dy = FixedMul (dy, CARRYFACTOR*2);
-				new DScroller (DScroller::sc_carry, dx, dy, -1, sector-sectors, 0);
-				sector->special &= 0xff00;
-			}
-		break;
-		}
+		map_format.init_sector_special(sector);
 	}
 
 	// Init other misc stuff
@@ -2149,125 +2267,103 @@ void P_SpawnSpecials (void)
 	// P_InitTagLists() must be called before P_FindSectorFromTag()
 	// or P_FindLineFromID() can be called.
 	P_SpawnScrollers(); // killough 3/7/98: Add generalized scrollers
-	P_SpawnFriction();	// phares 3/12/98: New friction model using linedefs
-	P_SpawnPushers();	// phares 3/20/98: New pusher model using linedefs
-
-	for (i=0; i<numlines; i++)
-		switch (lines[i].special)
-		{
-			int s;
-			sector_t *sec;
-
-		// killough 3/7/98:
-		// support for drawn heights coming from different sector
-		case Transfer_Heights:
-			sec = sides[*lines[i].sidenum].sector;
-			DPrintf("Sector tagged %d: TransferHeights \n",sec->tag);
-			if (sv_forcewater)
-			{
-				sec->waterzone = 2;
-			}
-			if (lines[i].args[1] & 2)
-			{
-				sec->MoreFlags |= SECF_FAKEFLOORONLY;
-			}
-			if (lines[i].args[1] & 4)
-			{
-				sec->MoreFlags |= SECF_CLIPFAKEPLANES;
-				DPrintf("Sector tagged %d: CLIPFAKEPLANES \n",sec->tag);
-			}
-			if (lines[i].args[1] & 8)
-			{
-				sec->waterzone = 1;
-				DPrintf("Sector tagged %d: Sets waterzone=1 \n",sec->tag);
-			}
-			if (lines[i].args[1] & 16)
-			{
-				sec->MoreFlags |= SECF_IGNOREHEIGHTSEC;
-				DPrintf("Sector tagged %d: IGNOREHEIGHTSEC \n",sec->tag);
-			}
-			if (lines[i].args[1] & 32)
-			{
-				sec->MoreFlags |= SECF_NOFAKELIGHT;
-				DPrintf("Sector tagged %d: NOFAKELIGHTS \n",sec->tag);
-			}
-			for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
-			{
-				sectors[s].heightsec = sec;
-			}
-
-			DPrintf("Sector tagged %d: MoreFlags: %u \n",sec->tag,sec->MoreFlags);
-			break;
-
-		// killough 3/16/98: Add support for setting
-		// floor lighting independently (e.g. lava)
-		case Transfer_FloorLight:
-			sec = sides[*lines[i].sidenum].sector;
-			for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
-				sectors[s].floorlightsec = sec;
-			break;
-
-		// killough 4/11/98: Add support for setting
-		// ceiling lighting independently
-		case Transfer_CeilingLight:
-			sec = sides[*lines[i].sidenum].sector;
-			for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
-				sectors[s].ceilinglightsec = sec;
-			break;
-
-		// [RH] ZDoom Static_Init settings
-		case Static_Init:
-			switch (lines[i].args[1])
-			{
-			case Init_Gravity:
-				{
-				if (IgnoreSpecial)
-					break;
-				float grav = ((float)P_AproxDistance (lines[i].dx, lines[i].dy)) / (FRACUNIT * 100.0f);
-				for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
-					sectors[s].gravity = grav;
-				}
-				break;
-
-			//case Init_Color:
-			// handled in P_LoadSideDefs2()
-
-			case Init_Damage:
-				{
-					if (IgnoreSpecial)
-						break;
-
-					int damage = P_AproxDistance (lines[i].dx, lines[i].dy) >> FRACBITS;
-					for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
-					{
-						sectors[s].damage = damage;
-						sectors[s].mod = MOD_UNKNOWN;
-					}
-				}
-				break;
-
-			// killough 10/98:
-			//
-			// Support for sky textures being transferred from sidedefs.
-			// Allows scrolling and other effects (but if scrolling is
-			// used, then the same sector tag needs to be used for the
-			// sky sector, the sky-transfer linedef, and the scroll-effect
-			// linedef). Still requires user to use F_SKY1 for the floor
-			// or ceiling texture, to distinguish floor and ceiling sky.
-
-			case Init_TransferSky:
-				for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0],s)) >= 0;)
-					sectors[s].sky = (i+1) | PL_SKYFLAT;
-				break;
-			}
-			break;
-		}
-
+	P_SpawnFriction();  // phares 3/12/98: New friction model using linedefs
+	P_SpawnPushers();   // phares 3/20/98: New pusher model using linedefs
+	P_SpawnExtra();		// [Blair] Finish any linedef types that affect sectors
 
 	// [RH] Start running any open scripts on this map
 	if (level.behavior != NULL)
 	{
-		level.behavior->StartTypedScripts (SCRIPT_Open, NULL, 0, 0, 0, false);
+		level.behavior->StartTypedScripts(SCRIPT_Open, NULL, 0, 0, 0, false);
+	}
+}
+
+void P_AddSectorSecret(sector_t* sector)
+{
+	sector->secretsector = true;
+	level.total_secrets++;
+	sector->flags |= SECF_SECRET | SECF_WASSECRET;
+}
+
+void P_SetupSectorDamage(sector_t* sector, short amount, byte interval, byte leakrate,
+                         unsigned int flags)
+{
+	// Only set if damage is not yet initialized.
+	if (sector->damageamount)
+		return;
+
+	sector->damageamount = amount;
+	sector->damageinterval = interval;
+	sector->leakrate = leakrate;
+	sector->flags = (sector->flags & ~SECF_DAMAGEFLAGS) | (flags & SECF_DAMAGEFLAGS);
+}
+
+void P_ClearNonGeneralizedSectorSpecial(sector_t* sector)
+{
+	// jff 3/14/98 clear non-generalized sector type
+	sector->special &= map_format.getGeneralizedMask();
+}
+
+void P_SpawnPhasedLight(sector_t* sector, int base, int index)
+{
+	int i, b;
+
+	if (index == -1)
+	{ // sector->lightlevel as the index
+		i = 63 - (sector->lightlevel & 63);
+	}
+	else
+	{
+		i = index;
+	}
+
+	b = base & 255;
+
+	new DPhased(sector, b, i);
+
+	P_ClearNonGeneralizedSectorSpecial(sector);
+}
+
+void P_SpawnLightSequence(sector_t* sector)
+{
+	new DPhased(sector);
+
+	P_ClearNonGeneralizedSectorSpecial(sector);
+}
+
+void P_SpawnGlowingLight(sector_t* sector)
+{
+	new DGlow(sector);
+
+	P_ClearNonGeneralizedSectorSpecial(sector);
+}
+
+void P_SpawnLightFlash(sector_t* sector)
+{
+	new DLightFlash(sector);
+
+	P_ClearNonGeneralizedSectorSpecial(sector);
+}
+
+void P_SpawnFireFlicker(sector_t* sector)
+{
+	new DFireFlicker(sector);
+
+	P_ClearNonGeneralizedSectorSpecial(sector);
+}
+
+void P_SpawnStrobeFlash(sector_t* sector, int utics, int ltics, bool inSync)
+{
+	new DStrobe(sector, utics, ltics, inSync);
+
+	P_ClearNonGeneralizedSectorSpecial(sector);
+}
+
+static void P_SpawnExtra()
+{
+	for (int i = 0; i < numlines; i++)
+	{
+		map_format.spawn_extra(i);
 	}
 }
 
@@ -2439,9 +2535,6 @@ DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 	m_Affectee = *l->sidenum;
 }
 
-// Amount (dx,dy) vector linedef is shifted right to get scroll amount
-#define SCROLL_SHIFT 5
-
 // Initialize the scrollers
 static void P_SpawnScrollers(void)
 {
@@ -2450,169 +2543,19 @@ static void P_SpawnScrollers(void)
 
 	for (i = 0; i < numlines; i++, l++)
 	{
-		fixed_t dx = 0;	// direction and speed of scrolling
-		fixed_t dy = 0;
-		int control = -1, accel = 0;		// no control sector or acceleration
-		int special = l->special;
-
-		// killough 3/7/98: Types 245-249 are same as 250-254 except that the
-		// first side's sector's heights cause scrolling when they change, and
-		// this linedef controls the direction and speed of the scrolling. The
-		// most complicated linedef since donuts, but powerful :)
-		//
-		// killough 3/15/98: Add acceleration. Types 214-218 are the same but
-		// are accelerative.
-
-		if (special == Scroll_Ceiling ||
-			special == Scroll_Floor ||
-			special == Scroll_Texture_Model)
-		{
-			if (l->args[1] & 3)
-			{
-				// if 1, then displacement
-				// if 2, then accelerative (also if 3)
-				control = sides[*l->sidenum].sector - sectors;
-				if (l->args[1] & 2)
-					accel = 1;
-			}
-			if (special == Scroll_Texture_Model || l->args[1] & 4)
-			{
-				// The line housing the special controls the
-				// direction and speed of scrolling.
-				dx = l->dx >> SCROLL_SHIFT;
-				dy = l->dy >> SCROLL_SHIFT;
-			}
-			else
-			{
-				// The speed and direction are parameters to the special.
-				dx = (l->args[3] - 128) * (FRACUNIT / 32);
-				dy = (l->args[4] - 128) * (FRACUNIT / 32);
-			}
-		}
-
-		switch (special)
-		{
-			register int s;
-
-			case Scroll_Ceiling:
-				if (IgnoreSpecial)
-					break;
-
-				for (s=-1; (s = P_FindSectorFromTag (l->args[0],s)) >= 0;)
-					new DScroller (DScroller::sc_ceiling, -dx, dy, control, s, accel);
-				break;
-
-			case Scroll_Floor:
-				if (IgnoreSpecial)
-					break;
-
-				if (l->args[2] != 1)
-					// scroll the floor
-					for (s=-1; (s = P_FindSectorFromTag (l->args[0],s)) >= 0;)
-						new DScroller (DScroller::sc_floor, -dx, dy, control, s, accel);
-
-				if (l->args[2] > 0) {
-					// carry objects on the floor
-					dx = FixedMul(dx,CARRYFACTOR);
-					dy = FixedMul(dy,CARRYFACTOR);
-					for (s=-1; (s = P_FindSectorFromTag (l->args[0],s)) >= 0;)
-						new DScroller (DScroller::sc_carry, dx, dy, control, s, accel);
-				}
-				break;
-
-			// killough 3/1/98: scroll wall according to linedef
-			// (same direction and speed as scrolling floors)
-			case Scroll_Texture_Model:
-				if (IgnoreSpecial)
-					break;
-
-				for (s=-1; (s = P_FindLineFromID (l->args[0],s)) >= 0;)
-					if (s != i)
-						new DScroller (dx, dy, lines+s, control, accel);
-				break;
-
-			case Scroll_Texture_Offsets:
-				if (IgnoreSpecial)
-					break;
-
-				if (l->args[0] == 0) // [Blair] Hack in generalized scrollers.
-			    {
-				    // killough 3/2/98: scroll according to sidedef offsets
-				    s = lines[i].sidenum[0];
-				    new DScroller(DScroller::sc_side, -sides[s].textureoffset,
-				                  sides[s].rowoffset, -1, s, accel);
-			    }
-			    else
-			    {
-				    if (l->id == 0)
-					    Printf(PRINT_HIGH, "Line %d is missing a tag!", i);
-
-				    if (l->args[0] > 1024)
-					    control = sides[*l->sidenum].sector - sectors;
-
-				    if (l->args[0] == 1026)
-					    accel = 1;
-
-				    s = lines[i].sidenum[0];
-				    dx = -sides[s].textureoffset / 8;
-				    dy = sides[s].rowoffset / 8;
-				    for (s = -1; (s = P_FindLineFromLineTag(l, s)) >= 0;)
-					    if (s != i)
-						    new DScroller(DScroller::sc_side, dx, dy, control,
-						                  lines[s].sidenum[0], accel);
-			    }
-				break;
-
-			case Scroll_Texture_Left:
-				if (IgnoreSpecial)
-					break;
-
-				new DScroller (DScroller::sc_side, l->args[0] * (FRACUNIT/64), 0,
-							   -1, lines[i].sidenum[0], accel);
-				break;
-
-			case Scroll_Texture_Right:
-				if (IgnoreSpecial)
-					break;
-
-				new DScroller (DScroller::sc_side, l->args[0] * (-FRACUNIT/64), 0,
-							   -1, lines[i].sidenum[0], accel);
-				break;
-
-			case Scroll_Texture_Up:
-				if (IgnoreSpecial)
-					break;
-
-				new DScroller (DScroller::sc_side, 0, l->args[0] * (FRACUNIT/64),
-							   -1, lines[i].sidenum[0], accel);
-				break;
-
-			case Scroll_Texture_Down:
-				if (IgnoreSpecial)
-					break;
-
-				new DScroller (DScroller::sc_side, 0, l->args[0] * (-FRACUNIT/64),
-							   -1, lines[i].sidenum[0], accel);
-				break;
-
-			case Scroll_Texture_Both:
-				if (IgnoreSpecial)
-					break;
-
-				if (l->args[0] == 0) {
-					dx = (l->args[1] - l->args[2]) * (FRACUNIT/64);
-					dy = (l->args[4] - l->args[3]) * (FRACUNIT/64);
-					new DScroller (DScroller::sc_side, dx, dy, -1, lines[i].sidenum[0], accel);
-				}
-				break;
-			default:
-				l->special = special;
-				break;
-		}
+		map_format.spawn_scroller(l, i);
 	}
 }
 
-// killough 3/7/98 -- end generalized scroll effects
+fixed_t P_ArgToSpeed(byte arg)
+{
+	return (fixed_t)arg * FRACUNIT / 8;
+}
+
+bool P_ArgToCrushType(byte arg)
+{
+	return arg == 2;
+}
 
 ////////////////////////////////////////////////////////////////////////////
 //
@@ -2674,59 +2617,52 @@ static void P_SpawnFriction(void)
 
 	for (i = 0 ; i < numlines ; i++,l++)
 	{
-		if (l->special == Sector_SetFriction)
-		{
-			int length, s;
-			fixed_t friction, movefactor;
+		map_format.spawn_friction(l);
+	}
+}
 
-			if (l->args[1])
-			{	// [RH] Allow setting friction amount from parameter
-				length = l->args[1] <= 200 ? l->args[1] : 200;
-			}
-			else
-			{
-				length = P_AproxDistance(l->dx,l->dy)>>FRACBITS;
-			}
-			friction = (0x1EB8*length)/0x80 + 0xD000;
+void P_ApplySectorFriction(int tag, int value, bool use_thinker)
+{
+	int friction, movefactor, s;
 
-			// killough 8/28/98: prevent odd situations
-			if (friction > FRACUNIT)
-				friction = FRACUNIT;
-			if (friction < 0)
-				friction = 0;
+	friction = (0x1EB8 * value) / 0x80 + 0xD000;
 
-			// The following check might seem odd. At the time of movement,
-			// the move distance is multiplied by 'friction/0x10000', so a
-			// higher friction value actually means 'less friction'.
+	// The following check might seem odd. At the time of movement,
+	// the move distance is multiplied by 'friction/0x10000', so a
+	// higher friction value actually means 'less friction'.
 
-			// [RH] Twiddled these values so that momentum on ice (with
-			//		friction 0xf900) is the same as in Heretic/Hexen.
-			if (friction > ORIG_FRICTION)	// ice
-//				movefactor = ((0x10092 - friction)*(0x70))/0x158;
-				movefactor = ((0x10092 - friction) * 1024) / 4352 + 568;
-			else
-				movefactor = ((friction - 0xDB34)*(0xA))/0x80;
+	if (friction > ORIG_FRICTION) // ice
+		movefactor = ((0x10092 - friction) * (0x70)) / 0x158;
+	else
+		movefactor = ((friction - 0xDB34) * (0xA)) / 0x80;
 
-			// killough 8/28/98: prevent odd situations
-			if (movefactor < 32)
-				movefactor = 32;
 
-			for (s = -1; (s = P_FindSectorFromTag(l->args[0],s)) >= 0 ; )
-			{
-				// killough 8/28/98:
-				//
-				// Instead of spawning thinkers, which are slow and expensive,
-				// modify the sector's own friction values. Friction should be
-				// a property of sectors, not objects which reside inside them.
-				// Original code scanned every object in every friction sector
-				// on every tic, adjusting its friction, putting unnecessary
-				// drag on CPU. New code adjusts friction of sector only once
-				// at level startup, and then uses this friction value.
+	// killough 8/28/98: prevent odd situations
+	if (friction > FRACUNIT)
+		friction = FRACUNIT;
+	if (friction < 0)
+		friction = 0;
+	if (movefactor < 32)
+		movefactor = 32;
 
-				sectors[s].friction = friction;
-				sectors[s].movefactor = movefactor;
-			}
-		}
+	for (s = -1; (s = P_FindSectorFromTag(tag, s)) >= 0;)
+	{
+		// killough 8/28/98:
+		//
+		// Instead of spawning thinkers, which are slow and expensive,
+		// modify the sector's own friction values. Friction should be
+		// a property of sectors, not objects which reside inside them.
+		// Original code scanned every object in every friction sector
+		// on every tic, adjusting its friction, putting unnecessary
+		// drag on CPU. New code adjusts friction of sector only once
+		// at level startup, and then uses this friction value.
+
+		// e6y: boom's friction code for boom compatibility
+		//if (use_thinker)
+		//	new DFriction(friction, movefactor, s);
+
+		sectors[s].friction = friction;
+		sectors[s].movefactor = movefactor;
 	}
 }
 
@@ -2869,7 +2805,7 @@ void DPusher::RunThink ()
 	// Be sure the special sector type is still turned on. If so, proceed.
 	// Else, bail out; the sector type has been changed on us.
 
-	if (!(sec->special & PUSH_MASK))
+	if (!(sec->flags & SECF_PUSH))
 		return;
 
 	// For constant pushers (wind/current) there are 3 situations:
@@ -3019,43 +2955,11 @@ static void P_SpawnPushers(void)
 {
 	int i;
 	line_t *l = lines;
-	register int s;
 
 	for (i = 0; i < numlines; i++, l++)
-		switch (l->special)
-		{
-		  case Sector_SetWind: // wind
-			for (s = -1; (s = P_FindSectorFromTag (l->args[0],s)) >= 0 ; )
-				new DPusher (DPusher::p_wind, l->args[3] ? l : NULL, l->args[1], l->args[2], NULL, s);
-			break;
-		  case Sector_SetCurrent: // current
-			for (s = -1; (s = P_FindSectorFromTag (l->args[0],s)) >= 0 ; )
-				new DPusher (DPusher::p_current, l->args[3] ? l : NULL, l->args[1], l->args[2], NULL, s);
-			break;
-		  case PointPush_SetForce: // push/pull
-			if (l->args[0]) {	// [RH] Find thing by sector
-				for (s = -1; (s = P_FindSectorFromTag (l->args[0], s)) >= 0 ; )
-				{
-					AActor *thing = P_GetPushThing (s);
-					if (thing) {	// No MT_P* means no effect
-						// [RH] Allow narrowing it down by tid
-						if (!l->args[1] || l->args[1] == thing->tid)
-							new DPusher (DPusher::p_push, l->args[3] ? l : NULL, l->args[2],
-										 0, thing, s);
-					}
-				}
-			} else {	// [RH] Find thing by tid
-				AActor *thing = NULL;
-
-				while ( (thing = AActor::FindByTID (thing, l->args[1])) )
-				{
-					if (thing->type == MT_PUSH || thing->type == MT_PULL)
-						new DPusher (DPusher::p_push, l->args[3] ? l : NULL, l->args[2],
-									 0, thing, thing->subsector->sector - sectors);
-				}
-			}
-			break;
-		}
+	{
+		map_format.spawn_pusher(l);
+	}
 }
 
 //
