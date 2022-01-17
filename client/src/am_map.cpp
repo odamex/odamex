@@ -51,6 +51,7 @@
 #include "gstrings.h"
 
 #include "am_map.h"
+#include "p_mapformat.h"
 
 argb_t CL_GetPlayerColor(player_t*);
 
@@ -1306,26 +1307,19 @@ void AM_drawWalls(void)
 				continue;
             if (!lines[i].backsector &&
                 (((am_usecustomcolors || viewactive) &&
-                lines[i].special != Exit_Normal &&
-                lines[i].special != Exit_Secret) ||
+                P_IsExitLine(lines[i].special)) ||
                 (!am_usecustomcolors && !viewactive)))
             {
 				AM_drawMline(&l, WallColor);
 			}
 			else
 			{
-				if ((lines[i].special == Teleport ||
-					lines[i].special == Teleport_NoFog ||
-				    lines[i].special == Teleport_NoStop ||
-					lines[i].special == Teleport_Line) &&
+				if ((P_IsTeleportLine(lines[i].special)) &&
 					(am_usecustomcolors || viewactive))
 				{ // teleporters
 					AM_drawMline(&l, TeleportColor);
 				}
-				else if ((lines[i].special == Teleport_NewMap ||
-						 lines[i].special == Teleport_EndGame ||
-						 lines[i].special == Exit_Normal ||
-						 lines[i].special == Exit_Secret) &&
+				else if ((P_IsExitLine(lines[i].special)) &&
 						 (am_usecustomcolors || viewactive))
 				{ // exit
 					AM_drawMline(&l, ExitColor);
@@ -1337,43 +1331,6 @@ void AM_drawWalls(void)
 				    else
 						AM_drawMline(&l, WallColor);
 				}
-				else if (lines[i].special == Door_LockedRaise)
-				{
-				    // NES - Locked doors glow from a predefined color to either blue, yellow, or red.
-                    r = LockedColor.rgb.getr(), g = LockedColor.rgb.getg(), b = LockedColor.rgb.getb();
-
-                    if (am_usecustomcolors)
-					{
-                        if (lines[i].args[3] == (BCard | CardIsSkull)) {
-                            rdif = (0 - r)/30;
-                            gdif = (0 - g)/30;
-                            bdif = (255 - b)/30;
-                        } else if (lines[i].args[3] == (YCard | CardIsSkull)) {
-                            rdif = (255 - r)/30;
-                            gdif = (255 - g)/30;
-                            bdif = (0 - b)/30;
-                        } else {
-                            rdif = (255 - r)/30;
-                            gdif = (0 - g)/30;
-                            bdif = (0 - b)/30;
-                        }
-
-						if (lockglow < 30)
-						{
-							r += (int)rdif * lockglow;
-							g += (int)gdif * lockglow;
-							b += (int)bdif * lockglow;
-						}
-						else if (lockglow < 60)
-						{
-							r += (int)rdif * (60 - lockglow);
-							g += (int)gdif * (60 - lockglow);
-							b += (int)bdif * (60 - lockglow);
-						}
-				    }
-
-					AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b));
-                }
 				else if (lines[i].backsector->floorheight
 					  != lines[i].frontsector->floorheight)
 				{
@@ -1387,6 +1344,101 @@ void AM_drawWalls(void)
 				else if (am_cheating)
 				{
 					AM_drawMline(&l, TSWallColor);
+				}
+
+				if (map_format.getZDoom())
+				{
+					if (lines[i].special == Door_LockedRaise)
+					{
+						// NES - Locked doors glow from a predefined color to either blue,
+						// yellow, or red.
+						r = LockedColor.rgb.getr(), g = LockedColor.rgb.getg(),
+						b = LockedColor.rgb.getb();
+
+						if (am_usecustomcolors)
+						{
+							if (lines[i].args[3] == (zk_blue_card | zk_blue))
+							{
+								rdif = (0 - r) / 30;
+								gdif = (0 - g) / 30;
+								bdif = (255 - b) / 30;
+							}
+							else if (lines[i].args[3] == (zk_yellow_card | zk_yellow))
+							{
+								rdif = (255 - r) / 30;
+								gdif = (255 - g) / 30;
+								bdif = (0 - b) / 30;
+							}
+							else
+							{
+								rdif = (255 - r) / 30;
+								gdif = (0 - g) / 30;
+								bdif = (0 - b) / 30;
+							}
+
+							if (lockglow < 30)
+							{
+								r += (int)rdif * lockglow;
+								g += (int)gdif * lockglow;
+								b += (int)bdif * lockglow;
+							}
+							else if (lockglow < 60)
+							{
+								r += (int)rdif * (60 - lockglow);
+								g += (int)gdif * (60 - lockglow);
+								b += (int)bdif * (60 - lockglow);
+							}
+						}
+
+						AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b));
+					}
+				}
+				else
+				{
+					if (P_IsCompatibleLockedDoorLine(lines[i].special))
+					{
+						// NES - Locked doors glow from a predefined color to either blue,
+						// yellow, or red.
+						r = LockedColor.rgb.getr(), g = LockedColor.rgb.getg(),
+						b = LockedColor.rgb.getb();
+
+						if (am_usecustomcolors)
+						{
+							if (P_IsCompatibleBlueDoorLine(lines[i].special))
+							{
+								rdif = (0 - r) / 30;
+								gdif = (0 - g) / 30;
+								bdif = (255 - b) / 30;
+							}
+							else if (P_IsCompatibleYellowDoorLine(lines[i].special))
+							{
+								rdif = (255 - r) / 30;
+								gdif = (255 - g) / 30;
+								bdif = (0 - b) / 30;
+							}
+							else
+							{
+								rdif = (255 - r) / 30;
+								gdif = (0 - g) / 30;
+								bdif = (0 - b) / 30;
+							}
+
+							if (lockglow < 30)
+							{
+								r += (int)rdif * lockglow;
+								g += (int)gdif * lockglow;
+								b += (int)bdif * lockglow;
+							}
+							else if (lockglow < 60)
+							{
+								r += (int)rdif * (60 - lockglow);
+								g += (int)gdif * (60 - lockglow);
+								b += (int)bdif * (60 - lockglow);
+							}
+						}
+
+						AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b));
+					}
 				}
 			}
 		}

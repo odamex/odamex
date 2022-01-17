@@ -41,6 +41,8 @@
 #include "p_snapshot.h"
 #include "g_gametype.h"
 
+#include "p_mapformat.h"
+
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
 
@@ -930,8 +932,8 @@ void P_PlayerThink (player_t *player)
 	P_MovePlayer (player);
 	P_CalcHeight (player);
 
-	if (player->mo->subsector && (player->mo->subsector->sector->special || player->mo->subsector->sector->damage))
-		P_PlayerInSpecialSector (player);
+	if (player->mo->subsector && (player->mo->subsector->sector->special || player->mo->subsector->sector->damageamount))
+		map_format.player_in_special_sector(player);
 
 	// Check for weapon change.
 
@@ -1018,6 +1020,14 @@ void P_PlayerThink (player_t *player)
 
 	if (player->bonuscount)
 		player->bonuscount--;
+
+	if (player->hazardcount)
+	{
+		player->hazardcount--;
+		if (!(::level.time % player->hazardinterval) &&
+		    player->hazardcount > 16 * TICRATE)
+			P_DamageMobj(player->mo, NULL, NULL, 5);
+	}
 
 	// Handling colormaps.
 	if (displayplayer().powers[pw_invulnerability])
@@ -1315,6 +1325,8 @@ player_s::player_s() :
 	blend_color(argb_t(0, 0, 0, 0)),
 	doreborn(false),
 	QueuePosition(0),
+	hazardcount(0),
+	hazardinterval(0),
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
 	client(player_s::client_t())

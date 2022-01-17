@@ -31,6 +31,7 @@
 #include "p_local.h"
 #include "m_random.h"
 #include "m_vectors.h"
+#include "p_mapformat.h"
 
 // State.
 #include "r_state.h"
@@ -49,7 +50,6 @@ fixed_t		t2y;
 int		sightcounts[2];
 int		sightcounts2[3];
 
-extern bool HasBehavior;
 EXTERN_CVAR (co_zdoomphys)
 
 /*
@@ -888,7 +888,7 @@ static bool P_CheckSightDoom
 
 bool P_CheckSight(const AActor* t1, const AActor* t2)
 {
-	if (co_zdoomphys || HasBehavior)
+	if (co_zdoomphys || map_format.getZDoom())
 		return P_CheckSightZDoom(t1, t2);
 	else
 		return P_CheckSightDoom(t1, t2);
@@ -934,7 +934,7 @@ bool P_CheckSightEdgesDoom
 
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost)
 {
-	if (co_zdoomphys || HasBehavior)
+	if (co_zdoomphys || map_format.getZDoom())
 		return P_CheckSightEdgesZDoom(t1, t2, radius_boost);
 	else
 		return P_CheckSightEdgesDoom(t1, t2, radius_boost);

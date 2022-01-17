@@ -275,7 +275,7 @@ v3fixed_t P_LinePlaneIntersection(const plane_t *plane, const v3fixed_t &lineorg
 
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost);
 
-bool	P_ChangeSector (sector_t* sector, bool crunch);
+bool	P_ChangeSector (sector_t* sector, int crunch);
 
 extern	AActor*	linetarget; 	// who got hit (or NULL)
 
