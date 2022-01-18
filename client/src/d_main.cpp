@@ -792,9 +792,12 @@ void D_DoomMain()
 
 	OWantFiles newwadfiles, newpatchfiles;
 
-	OWantFile file;
-	OWantFile::make(file, iwad, OFILE_WAD);
-	newwadfiles.push_back(file);
+	if (!iwad.empty())
+	{
+		OWantFile file;
+		OWantFile::make(file, iwad, OFILE_WAD);
+		newwadfiles.push_back(file);
+	}
 
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);

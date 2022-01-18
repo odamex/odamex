@@ -46,7 +46,6 @@
 #include "m_wdlstats.h"
 #include "p_mapformat.h"
 
-void SV_UpdateMobj(AActor* mo);
 void SV_UpdateMobjState(AActor* mo);
 
 #define WATER_SINK_FACTOR		3
@@ -340,8 +339,11 @@ void P_AnimationTick(AActor *mo)
 
 		// you can cycle through multiple states in a tic
 		if (!mo->tics)
-			if (!P_SetMobjState (mo, mo->state->nextstate) )
-				return;         // freed itself
+		{
+			// [AM] Do not send normal animations to client.
+			if (!P_SetMobjState(mo, mo->state->nextstate, false))
+				return; // freed itself
+		}
 	}
 }
 
@@ -950,10 +952,16 @@ int P_ThingInfoHeight(mobjinfo_t *mi)
 
 #define MOBJ_CYCLE_LIMIT 10000
 
-// P_SetMobjState
-//
-// Returns true if the mobj is still present.
-bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
+/**
+ * @brief Set the actor to the given animation state, looping through any
+ *        0-length frames and calling all codepointers.
+ * 
+ * @param mobj Actor to set state on.
+ * @param state State to set.
+ * @param cl_update True if this state should be sent to the client.
+ * @return True if the mobj is still present.
+ */
+bool P_SetMobjState(AActor *mobj, statenum_t state, const bool cl_update)
 {
 	state_t* st;
 	int cycle_counter = 0;
@@ -978,13 +986,13 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 		mobj->sprite = st->sprite;
 		mobj->frame = st->frame;
 
-#if defined(SERVER_APP)
-		// [AM] Broadcast the mobj's state after changing it but before
-		//      running the action associated with it.  Also, only update
-		//      the first state, since the client will cycle through the rest.
-		if (cl_update && !cycle_counter)
-			SV_UpdateMobjState(mobj);
-#endif
+		SERVER_ONLY({
+			// [AM] Broadcast the mobj's state after changing it but before
+			//      running the action associated with it.  Also, only update
+			//      the first state, since the client will cycle through the rest.
+			if (cl_update && !cycle_counter)
+				SV_UpdateMobjState(mobj);
+		})
 
 		// Modified handling.
 		// Call action functions when the state is set
@@ -1002,12 +1010,12 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 		}
 	} while (!mobj->tics);
 
-#if defined(SERVER_APP)
-	// [AM] Now broadcast the final state of the mobj after all actions
-	//      have run.
-	if (cl_update)
-		SV_UpdateMobj(mobj);
-#endif
+	SERVER_ONLY({
+		// [AM] Now broadcast the final state of the mobj after all actions
+		//      have run.
+		if (cl_update)
+			mobj->oflags |= MFO_DIRTY;
+	})
 
 	return true;
 }
