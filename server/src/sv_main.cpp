@@ -2803,37 +2803,22 @@ void SV_UpdateMobjState(AActor* mo)
 	}
 }
 
-// Keep tabs on monster positions and angles.
-void SV_UpdateMonsters(player_t &pl)
+// Send any monster that's "dirty" to the player.
+static void SV_UpdateDirty(player_t &pl)
 {
 	AActor *mo;
 
 	TThinkerIterator<AActor> iterator;
 	while ((mo = iterator.Next()))
 	{
-		// Ignore corpses.
-		if (mo->flags & MF_CORPSE)
+		// Ignore anything that's not dirty.
+		if ((mo->oflags & MFO_DIRTY) == 0)
 			continue;
 
-		// We don't handle updating non-monsters here.
-		if (!(mo->flags & MF_COUNTKILL || mo->type == MT_SKULL))
-			continue;
-
-		// update monster position every 7 tics
-		if ((gametic+mo->netid) % 7)
-			continue;
-
-		if (SV_IsPlayerAllowedToSee(pl, mo) && mo->target)
+		if (SV_IsPlayerAllowedToSee(pl, mo))
 		{
-			client_t *cl = &pl.client;
-
-			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*mo));
-
-			if (cl->netbuf.cursize >= 1024)
-			{
-				if (!SV_SendPacket(pl))
-					return;
-			}
+			client_t* cl = &pl.client;
+			MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
 		}
 	}
 }
@@ -2991,34 +2976,19 @@ void SV_UpdatePing(client_t* cl)
 	}
 }
 
-
-//
-// SV_UpdateDeadPlayers
-// Update player's frame while he's dying.
-//
-void SV_UpdateDeadPlayers()
+/**
+ * @brief Cleanup to attend to after writing data.
+ */
+static void SV_PostWriteCleanup()
 {
- /*   AActor *mo;
+	AActor* mo;
 
-    TThinkerIterator<AActor> iterator;
-    while ( (mo = iterator.Next() ) )
-    {
-        if (mo->type != MT_PLAYER || mo->player)
-			continue;
-
-		if (mo->oldframe != mo->frame)
-			for (size_t i = 0; i < players.size(); i++)
-			{
-				client_t *cl = &clients[i];
-
-				MSG_WriteMarker (&cl->reliablebuf, svc_mobjframe);
-				MSG_WriteUnVarint (&cl->reliablebuf, mo->netid);
-				MSG_WriteByte (&cl->reliablebuf, mo->frame);
-			}
-
-		mo->oldframe = mo->frame;
-    }
-*/
+	TThinkerIterator<AActor> iterator;
+	while ((mo = iterator.Next()))
+	{
+		// Clear the flag on the last player.
+		mo->oflags &= ~MFO_DIRTY;
+	}
 }
 
 
@@ -3145,7 +3115,7 @@ void SV_WriteCommands(void)
 
 		SV_UpdateMissiles(*it);
 
-		SV_UpdateMonsters(*it);
+		SV_UpdateDirty(*it);
 
 		SV_UpdateGametype(*it);     // update gametype stuff
 
@@ -3156,7 +3126,7 @@ void SV_WriteCommands(void)
 
 	SV_UpdateHiddenMobj();
 
-	SV_UpdateDeadPlayers(); // Update dying players.
+	SV_PostWriteCleanup();
 }
 
 void SV_PlayerTriedToCheat(player_t &player)
