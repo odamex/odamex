@@ -890,7 +890,6 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 			}
 		}
 	}
-	P_AddMovingFloor(sec);
 }
 
 // Clones a DFloor and returns a pointer to that clone.

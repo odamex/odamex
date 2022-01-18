@@ -849,7 +849,7 @@ BOOL P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 		}
 
 		ceiling->PlayCeilingSound();
-		P_AddMovingFloor(sec);
+		P_AddMovingCeiling(sec);
 
 		if (manual)
 			return rtn;
