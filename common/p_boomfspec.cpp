@@ -286,7 +286,8 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 8:
 		// Build Stairs
-		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT, SPEED(stairs::SLOW),
+		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT,
+		                   SPEED((gamemission == heretic) ? stairs::SLOW * 4 : stairs::SLOW),
 		                   TICS(0), 0, 0, 0))
 		{
 			return true;
@@ -295,6 +296,9 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		break;
 
 	case 10:
+		if (gamemission == heretic && !thing->player)
+			break;
+
 		// PlatDownWaitUp
 		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(plats::FAST),
 		              TICS(plats::WAIT), 0 * FRACUNIT, 0))
@@ -763,10 +767,24 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		return true;
 
 	case 105:
-		// Blazing Door Raise (faster than TURBO!)
-		EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(doors::FAST), TICS(doors::WAIT),
-		          NoKey);
-		return true;
+		// Walkover secret exit for Heretic
+		if (gamemission == heretic)
+		{
+			if (bossaction || ((!(thing->player && thing->player->health <= 0)) &&
+			                   CheckIfExitIsGood(thing)))
+			{
+				G_SecretExitLevel(0, 1);
+				return true;
+			}
+		}
+		else
+		{
+			// Blazing Door Raise (faster than TURBO!)
+			EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(doors::FAST),
+			          TICS(doors::WAIT), NoKey);
+			return true;
+		}
+		break;
 
 	case 106:
 		// Blazing Door Open (faster than TURBO!)
@@ -2188,7 +2206,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	// Switches (non-retriggerable)
 	case 7:
 		// Build Stairs
-		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT, SPEED(stairs::SLOW),
+		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT,
+		                   SPEED((gamemission == heretic) ? stairs::SLOW * 4 : stairs::SLOW),
 		                   0, 0, 0, 0))
 		{
 			reuse = false;
