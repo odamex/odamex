@@ -30,6 +30,7 @@
 #include "i_system.h"
 #include "c_console.h"
 #include "p_local.h"
+#include "p_mobj.h"
 #include "s_sound.h"
 #include "p_inter.h"
 #include "p_lnspec.h"
