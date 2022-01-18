@@ -78,48 +78,6 @@ extern bool simulated_connection;
 // STATUS BAR DATA
 //
 
-// [ML] From EE, another gameinfo definition
-// haleyjd 10/12/03: structure for gamemode-independent status bar interface
-
-typedef struct stbarfns_s
-{
-	// function pointers
-	void (*Ticker)(); // tic processing
-	void (*Drawer)(); // drawing
-	// void (*FSDrawer)(); // fullscreen drawer
-	void (*Start)(); // reinit
-	void (*Init)();  // initialize at startup
-} stbarfns_t;
-
-/*static void ST_DoomTicker();
-static void ST_DoomDrawer();
-static void ST_DoomStart();
-static void ST_DoomInit();
-
-static void ST_HticTicker();
-static void ST_HticDrawer();
-static void ST_HticStart();
-static void ST_HticInit();
-
-// From EE, gameinfo defined status bar
-// haleyjd 10/12/03: DOOM's status bar object
-
-stbarfns_t DoomStatusBar =
-{
-   ST_DoomTicker,
-   ST_DoomDrawer,
-   ST_DoomStart,
-   ST_DoomInit
-};
-
-stbarfns_t HticStatusBar =
-{
-   ST_HticTicker,
-   ST_HticDrawer,
-   ST_HticStart,
-   ST_HticInit,
-};*/
-
 // N/256*100% probability
 //	that the normal face state will change
 #define ST_FACEPROBABILITY		96
@@ -340,6 +298,12 @@ lumpHandle_t keys[NUMCARDS + NUMCARDS / 2];
 // face status patches [RH] no longer static
 lumpHandle_t faces[ST_NUMFACES];
 
+// negative number patch
+patch_t* negminus;
+
+// LAME graphic
+patch_t* lamenum;
+
 // face background
 static lumpHandle_t faceback;
 
@@ -413,6 +377,30 @@ static int		st_lives;
 // a random number per tick
 static int		st_randomnumber;
 
+//
+// Heretic State Variables
+//
+static int chainhealth; // current position of the gem
+static int chainwiggle; // small randomized addend for chain y coord.
+
+static patch_t* statbar;
+static patch_t* invbar;
+static patch_t* sbar_back;
+static patch_t* godeyes_left;
+static patch_t* godeyes_right;
+static patch_t* sbar_topleft;
+static patch_t* sbar_topright;
+static patch_t* chain;
+static patch_t* lifegem;
+static patch_t* ltface;
+static patch_t* rtface;
+
+// health widget
+st_number_t w_numhealth;
+
+// armor widget
+st_number_t w_numarmor;
+
 // these are now in d_dehacked.cpp
 extern byte cheat_mus_seq[9];
 extern byte cheat_choppers_seq[11];
@@ -467,6 +455,7 @@ cheatseq_t DoomCheats[] = {
 //
 // STATUS BAR CODE
 //
+
 void ST_Stop();
 void ST_createWidgets();
 
@@ -738,10 +727,14 @@ BEGIN_COMMAND(buddha)
 }
 END_COMMAND(buddha)
 
-int ST_calcPainOffset()
+/***************************************************************/
+/**				   DOOM STATUS BAR FUNCTIONS				  **/
+/***************************************************************/
+
+static int ST_calcPainOffset()
 {
-	static int	lastcalc;
-	static int	oldhealth = -1;
+	static int lastcalc;
+	static int oldhealth = -1;
 
 	const int health = clamp(displayplayer().health, -1, 100);
 
@@ -752,6 +745,75 @@ int ST_calcPainOffset()
 	}
 
 	return lastcalc;
+}
+
+
+static lumpHandle_t LoadFaceGraphic(char* name, int namespc = ns_global)
+{
+	int lump = W_CheckNumForName(name, namespc);
+	if (lump == -1)
+	{
+		char othername[9];
+		strcpy(othername, name);
+		othername[0] = 'S';
+		othername[1] = 'T';
+		othername[2] = 'F';
+		lump = W_GetNumForName(othername);
+	}
+	return W_CachePatchHandle(lump, PU_STATIC);
+}
+
+
+//
+// ST_refreshBackground
+//
+// Draws the status bar background to an off-screen 320x32 buffer.
+//
+static void ST_refreshBackground()
+{
+	const IWindowSurface* surface = R_GetRenderingSurface();
+	const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+
+	// [RH] If screen is wider than the status bar, draw stuff around status bar.
+	if (surface_width > ST_WIDTH)
+	{
+		R_DrawBorder(0, ST_Y, ST_X, surface_height);
+		R_DrawBorder(surface_width - ST_X, ST_Y, surface_width, surface_height);
+	}
+
+	stbar_surface->lock();
+
+	const DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
+	stbar_canvas->DrawPatch(W_ResolvePatchHandle(sbar), 0, 0);
+
+	if (sv_gametype == GM_CTF)
+	{
+		stbar_canvas->DrawPatch(W_ResolvePatchHandle(flagsbg), ST_FLAGSBGX, ST_FLAGSBGY);
+	}
+	else if (G_IsCoopGame())
+	{
+		stbar_canvas->DrawPatch(W_ResolvePatchHandle(armsbg), ST_ARMSBGX, ST_ARMSBGY);
+	}
+
+	if (multiplayer)
+	{
+		if (!demoplayback)
+		{
+			// [RH] Always draw faceback with the player's color
+			//		using a translation rather than a different patch.
+			V_ColorMap = translationref_t(translationtables + displayplayer_id * 256,
+			                              displayplayer_id);
+			stbar_canvas->DrawTranslatedPatch(W_ResolvePatchHandle(faceback), ST_FX,
+			                                  ST_FY);
+		}
+		else
+		{
+			stbar_canvas->DrawPatch(
+			    W_ResolvePatchHandle(faceclassic[displayplayer_id - 1]), ST_FX, ST_FY);
+		}
+	}
+
+	stbar_surface->unlock();
 }
 
 
@@ -989,12 +1051,14 @@ void ST_updateWidgets()
 		st_chat = st_oldchat;
 }
 
+
 void ST_Ticker()
 {
 	if (!multiplayer && !demoplayback && (ConsoleState == c_down || ConsoleState == c_falling))
 		return;
 	st_randomnumber = M_Random();
 	ST_updateWidgets();
+	// gameinfo.statusBar->Ticker();
 	st_oldhealth = displayplayer().health;
 }
 
@@ -1030,61 +1094,26 @@ void ST_drawWidgets(bool force_refresh)
 
 	w_lives.update(true, G_IsLivesGame()); // Force refreshing to avoid tens
 		                                                 // to be hidden by Doomguy's face
-
 }
 
 
-//
-// ST_refreshBackground
-//
-// Draws the status bar background to an off-screen 320x32 buffer.
-//
-static void ST_refreshBackground()
+
+void ST_doRefresh()
 {
-	const IWindowSurface* surface = R_GetRenderingSurface();
-	const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	st_needrefresh = false;
 
-	// [RH] If screen is wider than the status bar, draw stuff around status bar.
-	if (surface_width > ST_WIDTH)
-	{
-		R_DrawBorder(0, ST_Y, ST_X, surface_height);
-		R_DrawBorder(surface_width - ST_X, ST_Y, surface_width, surface_height);
-	}
+	// draw status bar background to off-screen buff
+	ST_refreshBackground();
 
-	stbar_surface->lock();
-
-	const DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
-	stbar_canvas->DrawPatch(W_ResolvePatchHandle(sbar), 0, 0);
-
-	if (sv_gametype == GM_CTF)
-	{
-		stbar_canvas->DrawPatch(W_ResolvePatchHandle(flagsbg), ST_FLAGSBGX, ST_FLAGSBGY);
-	}
-	else if (G_IsCoopGame())
-	{
-		stbar_canvas->DrawPatch(W_ResolvePatchHandle(armsbg), ST_ARMSBGX, ST_ARMSBGY);
-	}
-
-	if (multiplayer)
-	{
-		if (!demoplayback)
-		{
-			// [RH] Always draw faceback with the player's color
-			//		using a translation rather than a different patch.
-			V_ColorMap = translationref_t(translationtables + displayplayer_id * 256, displayplayer_id);
-			stbar_canvas->DrawTranslatedPatch(W_ResolvePatchHandle(faceback), ST_FX,
-			                                  ST_FY);
-		}
-		else
-		{
-			stbar_canvas->DrawPatch(
-			    W_ResolvePatchHandle(faceclassic[displayplayer_id - 1]), ST_FX, ST_FY);
-		}
-	}
-
-	stbar_surface->unlock();
+	// and refresh all widgets
+	ST_drawWidgets(true);
 }
 
+void ST_diffDraw()
+{
+	// update all widgets
+	ST_drawWidgets(false);
+}
 
 //
 // ST_Drawer
@@ -1135,7 +1164,7 @@ void ST_Drawer()
 		}
 		
 		// refresh all widgets
-		ST_drawWidgets(st_needrefresh);
+		gameinfo.statusBar->Drawer();
 
 		if (st_scale)
 			surface->blit(stnum_surface, 0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(),
@@ -1148,19 +1177,6 @@ void ST_Drawer()
 	}
 }
 
-
-static lumpHandle_t LoadFaceGraphic(char* name, int namespc = ns_global)
-{
-	int lump = W_CheckNumForName(name, namespc);
-	if (lump == -1)
-	{
-		char othername[9];
-		strcpy(othername, name);
-		othername[0] = 'S'; othername[1] = 'T'; othername[2] = 'F';
-		lump = W_GetNumForName(othername);
-	}
-	return W_CachePatchHandle(lump, PU_STATIC);
-}
 
 static void ST_loadGraphics()
 {
@@ -1267,12 +1283,6 @@ static void ST_loadGraphics()
 		strcpy(namebuf + 3, "DEAD0");
 		faces[facenum] = LoadFaceGraphic(namebuf, ns_global);
 	}
-}
-
-static void ST_loadData()
-{
-    lu_palette = W_GetNumForName("PLAYPAL");
-	ST_loadGraphics();
 }
 
 static void ST_unloadGraphics()
@@ -1456,6 +1466,389 @@ void ST_createWidgets()
 	              2);
 }
 
+void ST_DoomDrawer()
+{
+	if (st_needrefresh)
+		ST_doRefresh();
+	else
+		ST_diffDraw();
+}
+
+void ST_DoomTicker()
+{
+	ST_updateWidgets();
+}
+
+void ST_DoomStart()
+{
+	st_faceindex = 0;
+
+	for (int i = 0; i < NUMWEAPONS; i++)
+		oldweaponsowned[i] = consoleplayer().weaponowned[i];
+
+	ST_createWidgets();
+	st_needrefresh = true;
+}
+
+void ST_DoomInit()
+{
+	ST_loadGraphics();
+}
+
+/***************************************************************/
+/**				  HERETIC STATUS BAR FUNCTIONS				  **/
+/***************************************************************/
+
+void ST_HticCreateWidgets();
+
+//
+// ST_chainShadow
+//
+// Draws two 16x10 shaded areas on the ends of the life chain, using
+// the light-fading colormaps to darken what's already been drawn.
+//
+void ST_HticShadeChain(int left, int right, int top, int height)
+{
+	/*
+	int i;
+	int pitch;
+	int diff;
+	byte* top_p;
+
+	if (st_scale)
+	{
+
+		pitch = BG->pitch;
+		top_p = BG->buffer;
+	}
+	else
+	{
+		top += ST_Y;
+		left += ST_X;
+		right += ST_X;
+		pitch = FG->pitch;
+		top_p = FG->buffer;
+	}
+
+	top_p += top * pitch + left;
+	diff = right + 15 - left;
+
+	for (i = 0; i < 16; i++)
+	{
+		unsigned int* darkener = Col2RGB8[18 + i * 2];
+		int h = height;
+		byte* dest = top_p;
+		do
+		{
+			unsigned int lbg = darkener[*dest] | 0x1f07c1f;
+			unsigned int rbg = darkener[*(dest + diff)] | 0x1f07c1f;
+			*dest = RGB32k[0][0][lbg & (lbg >> 15)];
+			*(dest + diff) = RGB32k[0][0][rbg & (rbg >> 15)];
+			dest += pitch;
+		} while (--h);
+		top_p++;
+		diff -= 2;
+	}
+
+	STlib_scaleRect(left, top, 16, height);
+	STlib_scaleRect(right, top, 16, height);*/
+}
+
+//
+// ST_HticDrawChainWidget
+//
+// Draws the chain & gem health indicator at the bottom
+//
+void ST_HticDrawChainWidget()
+{
+	player_t* plyr = &consoleplayer();
+	int y = 32;
+	int chainpos = clamp(chainhealth, 0, 100);
+
+	// the total length between the left- and right-most gem
+	// positions is 256 pixels, so scale the chainpos by that
+	// amount (gem can range from 17 to 273)
+	chainpos = (chainpos << 8) / 100;
+
+	// jiggle y coordinate when chain is moving
+	if (plyr->health != chainhealth)
+		y += chainwiggle;
+
+	// todo - 
+	/*
+	// draw the chain -- links repeat every 17 pixels, so we
+	// wrap the chain back to the starting position every 17
+	BG->DrawPatch(chain, 2 + (chainpos % 17), y);
+
+	// draw the gem (17 is the far left pos., 273 is max)
+	// TODO: fix life gem for multiplayer modes
+	BG->DrawPatch(lifegem, 17 + chainpos, y);
+	*/
+}
+
+static void ST_HticDrawWidgets(bool refresh)
+{
+	w_numhealth.update(refresh);
+	w_ready.update(refresh);
+	w_numarmor.update(refresh);
+
+	if (sv_gametype != GM_CTF) // [Toke - CTF] Dont display keys in ctf mode
+		for (int i = 0; i < 3; i++)
+			w_keyboxes[i].update(refresh);
+
+	ST_HticDrawChainWidget();
+
+	// get surface (currently unlocked in ST_Drawer
+	IWindowSurface* surface = R_GetRenderingSurface();
+
+	if (st_scale && st_statusbaron)
+		surface->blit(stnum_surface, 0, 320, stbar_surface->getWidth(),
+		              gameinfo.statusBar->height, ST_X, ST_Y, ST_WIDTH,
+		                  ST_HEIGHT);
+
+		
+	
+}
+
+static void ST_HticRefreshBackground()
+{
+	int st_edgeheight;
+	player_t* plyr = &consoleplayer();
+
+	if (st_statusbaron)
+	{
+	/*
+		// [RH] If screen is wider than the status bar,
+		//      draw stuff around status bar.
+		if (FG->width > ST_WIDTH)
+		{
+			R_DrawBorder(0, ST_Y, ST_X, FG->height);
+			R_DrawBorder(FG->width - ST_X, ST_Y, FG->width, FG->height);
+		}
+
+		BG->DrawPatch(sbar_back, 0, 0);
+
+		// TODO: Inventory bar
+		BG->DrawPatch(statbar, 34, 2);
+
+		st_edgeheight = 200 - gameinfo.StatusBar->height - sbar_topleft->height() + 1;
+
+		// draw the tops of the faces
+		FG->DrawPatchIndirect(sbar_topleft, 0, st_edgeheight);
+		FG->DrawPatchIndirect(sbar_topright, 290, st_edgeheight);
+		*/
+		ST_HticDrawChainWidget();
+		/*
+		// draw face patches to cover over spare ends of chain
+		BG->DrawPatch(ltface, 0, 32);
+		BG->DrawPatch(rtface, 276, 32);
+
+		if ((plyr->cheats & CF_GODMODE) || plyr->powers[pw_invulnerability])
+		{
+			BG->DrawPatch(godeyes_left, 16, 9);
+			BG->DrawPatch(godeyes_right, 287, 9);
+		}
+
+		ST_HticShadeChain(19, 277, 32, 10);
+
+		BG->Blit(0, 0, 320, gameinfo.StatusBar->height, stnum_screen, 0, 0, 320,
+		         gameinfo.StatusBar->height);
+
+		if (!st_scale)
+			stnumscreen->Blit(0, 0, 320, gameinfo.StatusBar->height, FG, ST_X, ST_Y,
+			                  ST_WIDTH, ST_HEIGHT);
+	*/
+	}
+}
+
+//
+// ST_HticLoadGraphics
+//
+void ST_HticLoadGraphics()
+{
+	const std::string bignums = "IN%d";
+	const std::string smallnums = "SMALLIN%d";
+
+	// Load the numbers, tall and short
+	for (int i = 0; i < 10; i++)
+	{
+		char namebuf[9];
+		sprintf(namebuf, bignums.c_str(), i);
+		tallnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		sprintf(namebuf, smallnums.c_str(), i);
+		shortnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+	}
+
+	lamenum = W_CachePatch("LAME");
+
+	keys[0] = W_CachePatchHandle("YKEYICON", PU_STATIC);
+	keys[1] = W_CachePatchHandle("GKEYICON", PU_STATIC);
+	keys[2] = W_CachePatchHandle("BKEYICON", PU_STATIC);
+
+	negminus = W_CachePatch("NEGNUM", PU_STATIC);
+
+	// update the status bar patch for the appropriate game mode
+	statbar = W_CachePatch((multiplayer ? "STATBAR" : "LIFEBAR"));
+
+	sbar_back = W_CachePatch("BARBACK", PU_STATIC);
+	godeyes_left = W_CachePatch("GOD1", PU_STATIC);
+	godeyes_right = W_CachePatch("GOD2", PU_STATIC);
+	sbar_topleft = W_CachePatch("LTFCTOP", PU_STATIC);
+	sbar_topright = W_CachePatch("RTFCTOP", PU_STATIC);
+
+	chain = W_CachePatch("CHAIN", PU_STATIC);
+	lifegem = W_CachePatch("LIFEGEM2", PU_STATIC);
+	ltface = W_CachePatch("LTFACE", PU_STATIC);
+	rtface = W_CachePatch("RTFACE", PU_STATIC);
+}
+
+void ST_HticCreateWidgets()
+{
+	// health percentage
+	w_numhealth.init(87, 12, tallnum, &st_health, &st_statusbaron, 3);
+
+	// ready weapon ammo
+	w_ready.init(135, 4, tallnum, &st_current_ammo, &st_statusbaron, ST_AMMOWIDTH);
+
+	// armor percentage - should be colored later
+	w_numarmor.init(254, 12, tallnum, &st_armor, &st_statusbaron, 3);
+
+	// keyboxes 0-2
+	w_keyboxes[0].init(153, 6, keys, &keyboxes[0], &st_statusbaron);
+	w_keyboxes[1].init(153, 14, keys, &keyboxes[1], &st_statusbaron);
+	w_keyboxes[2].init(153, 22, keys, &keyboxes[2], &st_statusbaron);
+}
+
+void ST_HticUpdateWidgets()
+{
+	static int largeammo = 1994; // means "n/a"
+	player_t* plyr = &consoleplayer();
+
+	/*if (weaponinfo[plyr->readyweapon].ammo == am_noammo)
+		w_ready.num = &largeammo;
+	else
+		w_ready.num = &plyr->ammo[weaponinfo[plyr->readyweapon].ammo];*/ //todo
+
+	w_ready.data = plyr->readyweapon;
+
+	// update the chain health value
+	st_health = plyr->health;
+	st_armor = plyr->armorpoints;
+
+	if (st_health != chainhealth)
+	{
+		int max, min, sgn = 1;
+
+		// set lower bound to zero
+		if (st_health < 0)
+			st_health = 0;
+
+		// determine the max and min of the two values, and whether or
+		// not to add or subtract from the chain position w/sgn
+		if (st_health > chainhealth)
+		{
+			max = st_health;
+			min = chainhealth;
+		}
+		else
+		{
+			sgn = -1;
+			max = chainhealth;
+			min = st_health;
+		}
+
+		// consider 1/4th of the difference
+		int diff = (max - min) >> 2;
+
+		// don't move less than 1 or more than 8 units per tic
+		if (diff < 1)
+			diff = 1;
+		else if (diff > 8)
+			diff = 8;
+
+		chainhealth += (sgn * diff);
+	}
+
+	// update chain wiggle value
+	if (level.time & 1)
+		chainwiggle = st_randomnumber & 1;
+
+	// update keycard multiple widgets
+	for (int i = 0; i < 3; i++)
+	{
+		keyboxes[i] = plyr->cards[i] ? i : -1;
+
+		// [RH] show multiple keys per box, too
+		// if (plyr->cards[i+3])
+		//	keyboxes[i] = (keyboxes[i] == -1) ? i+3 : i+6;
+	}
+}
+
+//
+// ST_HticStart
+//
+void ST_HticStart()
+{
+	ST_HticCreateWidgets();
+
+	st_needrefresh = true;
+}
+
+//
+// ST_HticTicker
+//
+// Processing code for Heretic status bar
+//
+void ST_HticTicker()
+{
+	ST_HticUpdateWidgets();
+}
+
+void ST_HticDoRefresh()
+{
+	st_needrefresh = false;
+
+	// draw status bar background to off-screen buff
+	ST_HticRefreshBackground();
+
+	// and refresh all widgets
+	ST_HticDrawWidgets(true);
+}
+
+void ST_HticDiffDraw()
+{
+	// update all widgets
+	ST_HticDrawWidgets(false);
+}
+
+//
+// ST_HticDrawer
+//
+// Draws the Heretic status bar
+//
+void ST_HticDrawer()
+{
+	if (st_needrefresh)
+		ST_HticDoRefresh();
+	else
+		ST_HticDiffDraw();
+}
+
+//
+// ST_HticInit
+//
+// Initializes the Heretic status bar:
+// * Caches most patch graphics used throughout
+//
+void ST_HticInit()
+{
+	ST_HticLoadGraphics();
+}
+
+/***************************************************************/
+/**				   COMMON STATUS BAR FUNCTIONS				  **/
+/***************************************************************/
+
 void ST_Start()
 {
 	if (!st_stopped)
@@ -1469,8 +1862,6 @@ void ST_Start()
 	st_oldchat = st_chat = false;
 	st_cursoron = false;
 
-	st_faceindex = 0;
-
 	st_oldhealth = -1;
 
 	for (int i = 0; i < NUMWEAPONS; i++)
@@ -1481,8 +1872,8 @@ void ST_Start()
 
 	STlib_init();
 	ST_initNew();
-
-	ST_createWidgets();
+	gameinfo.statusBar->Start();
+	
 	st_stopped = false;
 }
 
@@ -1501,7 +1892,9 @@ void ST_Init()
 	if (stnum_surface == NULL)
 		stnum_surface = I_AllocateSurface(320, 32, 8);
 
-	ST_loadData();
+	lu_palette = W_GetNumForName("PLAYPAL");
+
+	gameinfo.statusBar->Init();
 }
 
 

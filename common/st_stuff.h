@@ -39,6 +39,42 @@ extern int ST_WIDTH;
 extern int ST_X;
 extern int ST_Y;
 
+//
+// STATUS BAR
+//
+
+// From EE, gameinfo defined status bar
+// haleyjd 10/12/03: DOOM's status bar object
+
+void ST_DoomTicker();
+void ST_DoomDrawer();
+void ST_DoomStart();
+void ST_DoomInit();
+
+void ST_HticTicker();
+void ST_HticDrawer();
+void ST_HticStart();
+void ST_HticInit();
+
+// [ML] From EE, another gameinfo definition
+// haleyjd 10/12/03: structure for gamemode-independent status bar interface
+
+typedef struct stbarfns_s
+{
+	// data
+	int height;
+
+	// function pointers
+	void (*Ticker)(); // tic processing
+	void (*Drawer)(); // drawing
+	// void (*FSDrawer)(void); // fullscreen drawer
+	void (*Start)(); // reinit
+	void (*Init)();  // initialize at startup
+} stbarfns_t;
+
+extern stbarfns_t DoomStatusBar;
+extern stbarfns_t HticStatusBar;
+
 int ST_StatusBarWidth(int surface_width, int surface_height);
 int ST_StatusBarHeight(int surface_width, int surface_height);
 int ST_StatusBarX(int surface_width, int surface_height);

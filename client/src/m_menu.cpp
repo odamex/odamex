@@ -2296,8 +2296,15 @@ void M_Init()
         MainDef.numitems = d2_main_end;
         MainDef.menuitems = Doom2MainMenu;
 
-        MainDef.y += 8;
+        MainDef.y = 72;
     }
+	else
+	{
+		MainDef.numitems = d1_main_end;
+		MainDef.menuitems = DoomMainMenu;
+
+		MainDef.y = 64;
+	}
 
 	M_OptInit();
 
