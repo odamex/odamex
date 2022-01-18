@@ -805,9 +805,22 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		break;
 
 	case 105:
+		// Walkover secret exit for Heretic
+		if (gamemission == heretic)
+		{
+			if (bossaction || ((!(thing->player && thing->player->health <= 0)) &&
+			                   CheckIfExitIsGood(thing)))
+			{
+				result.lineexecuted = true;
+				G_SecretExitLevel(0, 1);
+			}
+		}
 		// Blazing Door Raise (faster than TURBO!)
-		EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_FAST), TICS(VDOORWAIT),
-		          NoKey);
+		else
+		{
+			EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_FAST), TICS(VDOORWAIT),
+			          NoKey);
+		}
 		result.lineexecuted = true;
 		break;
 

@@ -174,8 +174,19 @@ void MapFormat::post_process_linedef_special(line_t* line)
 void MapFormat::P_ApplyZDoomMapFormat(void)
 {
 	map_format.zdoom = true;
+	map_format.heretic = false;
 	map_format.hexen = true;
 	map_format.generalized_mask = ~0xff;
+
+	P_MigrateActorInfo();
+}
+
+void MapFormat::P_ApplyHereticMapFormat(void)
+{
+	map_format.zdoom = false;
+	map_format.heretic = true;
+	map_format.hexen = false;
+	map_format.generalized_mask = ~31; // todo - is this correct?
 
 	P_MigrateActorInfo();
 }
@@ -183,6 +194,7 @@ void MapFormat::P_ApplyZDoomMapFormat(void)
 void MapFormat::P_ApplyDefaultMapFormat(void)
 {
 	map_format.zdoom = false;
+	map_format.heretic = false;
 	map_format.hexen = false;
 	map_format.generalized_mask = ~31;
 
@@ -192,6 +204,11 @@ void MapFormat::P_ApplyDefaultMapFormat(void)
 bool MapFormat::getZDoom(void)
 {
 	return map_format.zdoom;
+}
+
+bool MapFormat::getHeretic(void)
+{
+	return map_format.heretic;
 }
 
 bool MapFormat::getHexen(void)
@@ -206,6 +223,9 @@ short MapFormat::getGeneralizedMask(void)
 
 bool P_IsSpecialBoomRepeatable(const short special)
 {
+	if (gamemission != heretic && special == 105)
+		return true;
+
 	switch (special)
 	{
 	case 1:
@@ -254,7 +274,6 @@ bool P_IsSpecialBoomRepeatable(const short special)
 	case 97:
 	case 98:
 	case 99:
-	case 105:
 	case 106:
 	case 107:
 	case 114:
@@ -358,6 +377,9 @@ bool P_IsExitLine(const short special)
 	if (map_format.getZDoom())
 		return special == 74 || special == 75 || special == 244 || special == 243;
 
+	if (map_format.getHeretic())
+		return special == 51 || special == 52 || special == 105;
+
 	return special == 11 || special == 52 || special == 197 || special == 51 ||
 	       special == 124 || special == 198;
 }
@@ -366,6 +388,9 @@ bool P_IsTeleportLine(const short special)
 {
 	if (map_format.getZDoom())
 		return special == 70 || special == 71 || special == 154 || special == 215;
+
+	if (map_format.getHeretic())
+		return special == 39 || special == 97;
 
 	return special == 39 || special == 97 || special == 125 || special == 126 ||
 	       special == 174 || special == 195 || special == 207 || special == 208 ||
@@ -377,13 +402,16 @@ bool P_IsThingTeleportLine(const short special)
 	if (map_format.getZDoom())
 		return false;
 
+	if (map_format.getHeretic())
+		return special == 39 || special == 97;
+
 	return special == 39 || special == 97 || special == 125 || special == 126 ||
 	       special == 174 || special == 195 || special == 208 || special == 243;
 }
 
 bool P_IsThingNoFogTeleportLine(const short special)
 {
-	if (map_format.getZDoom())
+	if (map_format.getZDoom() || map_format.getHeretic())
 		return false;
 
 	return special == 207 || special == 208 || special == 209 || special == 210 ||

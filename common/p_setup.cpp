@@ -1825,6 +1825,10 @@ void P_SetupLevel (const char *lumpname, int position)
 		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
 		map_format.P_ApplyZDoomMapFormat();
 	}
+	else if (gamemission == heretic)
+	{
+		map_format.P_ApplyHereticMapFormat();
+	}
 	else
 	{
 		map_format.P_ApplyDefaultMapFormat();
