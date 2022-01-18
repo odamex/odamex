@@ -594,21 +594,21 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 	{
 		if (model) // if a numeric model change
 		{
-			sector_t* sec;
+			sector_t* chgsec = NULL;
 
 			// jff 5/23/98 find model with ceiling at target height if target
 			// is a ceiling type
-			sec = (target == FtoLnC || target == FtoC)
+			chgsec = (target == FtoLnC || target == FtoC)
 			          ? P_FindModelCeilingSector(m_FloorDestHeight, sec)
 			          : P_FindModelFloorSector(m_FloorDestHeight, sec);
-			if (sec)
+			if (chgsec)
 			{
-				m_Texture = sec->floorpic;
-				m_NewSpecial = sec->special;
-				m_NewDamageRate = sec->damageamount;
-				m_NewDmgInterval = sec->damageinterval;
-				m_NewLeakRate = sec->leakrate;
-				m_NewFlags = sec->flags;
+				m_Texture = chgsec->floorpic;
+				m_NewSpecial = chgsec->special;
+				m_NewDamageRate = chgsec->damageamount;
+				m_NewDmgInterval = chgsec->damageinterval;
+				m_NewLeakRate = chgsec->leakrate;
+				m_NewFlags = chgsec->flags;
 				switch (change)
 				{
 				case FChgZero: // zero type
@@ -618,16 +618,16 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 					m_NewDamageRate = ns.damageamount;
 					m_NewDmgInterval = ns.damageinterval;
 					m_NewLeakRate = ns.damageleakrate;
-					m_NewFlags = sec->flags;
+					m_NewFlags = chgsec->flags;
 					P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
 					m_Type = genFloorChg0;
 					break;
 				case FChgTyp: // copy type
-					m_NewSpecial = sec->special;
-					m_NewDamageRate = sec->damageamount;
-					m_NewDmgInterval = sec->damageinterval;
-					m_NewLeakRate = sec->leakrate;
-					m_NewFlags = sec->flags;
+					m_NewSpecial = chgsec->special;
+					m_NewDamageRate = chgsec->damageamount;
+					m_NewDmgInterval = chgsec->damageinterval;
+					m_NewLeakRate = chgsec->leakrate;
+					m_NewFlags = chgsec->flags;
 					m_Type = genFloorChgT;
 					break;
 				case FChgTxt: // leave type be
@@ -890,6 +890,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 			}
 		}
 	}
+	P_AddMovingFloor(sec);
 }
 
 // Clones a DFloor and returns a pointer to that clone.
