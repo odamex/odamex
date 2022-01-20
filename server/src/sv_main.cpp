@@ -2771,22 +2771,6 @@ void SV_UpdateMissiles(player_t &pl)
     }
 }
 
-// Update the given actors data immediately.
-void SV_UpdateMobj(AActor* mo)
-{
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		if (!(it->ingame()))
-			continue;
-
-		if (SV_IsPlayerAllowedToSee(*it, mo))
-		{
-			client_t* cl = &(it->client);
-			MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
-		}
-	}
-}
-
 // Update the given actors state immediately.
 void SV_UpdateMobjState(AActor* mo)
 {
@@ -2813,6 +2797,10 @@ static void SV_UpdateDirty(player_t &pl)
 	{
 		// Ignore anything that's not dirty.
 		if ((mo->oflags & MFO_DIRTY) == 0)
+			continue;
+
+		// Players don't use baseline updates (yet).
+		if (mo->type == MT_PLAYER)
 			continue;
 
 		if (SV_IsPlayerAllowedToSee(pl, mo))
