@@ -97,6 +97,8 @@ const int distfriend = 128;
 // killough 9/8/98: whether monsters are allowed to strafe or retreat
 const int monster_backing = 0;
 
+extern bool isFast;
+
 //
 // ENEMY THINKING
 // Enemies are always spawned
@@ -1339,7 +1341,6 @@ void A_SkelMissile (AActor *actor)
 
 fixed_t P_GetActorSpeed(AActor* actor)
 {
-	extern bool isFast;
 	int speed = actor->info->speed;
 
 	if (isFast)
@@ -1534,11 +1535,12 @@ void A_VileChase (AActor *actor)
 
 	if (actor->movedir != DI_NODIR)
 	{
-		fixed_t speed = P_GetActorSpeed(actor);
+		// [Blair] Ignore altspeed for vanilla demo comp purposes
+		//fixed_t speed = P_GetActorSpeed(actor);
 
 		// check for corpses to raise
-		viletryx = actor->x + speed * xspeed[actor->movedir];
-		viletryy = actor->y + speed * yspeed[actor->movedir];
+		viletryx = actor->x + actor->info->speed * xspeed[actor->movedir];
+		viletryy = actor->y + actor->info->speed * yspeed[actor->movedir];
 
 		xl = (viletryx - bmaporgx - MAXRADIUS*2)>>MAPBLOCKSHIFT;
 		xh = (viletryx - bmaporgx + MAXRADIUS*2)>>MAPBLOCKSHIFT;
