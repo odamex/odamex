@@ -531,7 +531,7 @@ BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimesp
 BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
 BOOL EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int flags);
 
-bool P_LineSpecialMovesSector(byte special);
+bool P_LineSpecialMovesSector(short special);
 bool P_CanActivateSpecials(AActor* mo, line_t* line);
 bool P_ActorInSpecialSector(AActor* actor);
 

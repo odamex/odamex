@@ -124,7 +124,7 @@ void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_s* player);
-bool P_LineSpecialMovesSector(byte special);
+bool P_LineSpecialMovesSector(short special);
 
 void SV_UpdateShareKeys(player_t& player);
 std::string V_GetTeamColor(UserInfo userinfo);
