@@ -573,30 +573,8 @@ BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t 
                        fixed_t speed2, fixed_t height, int crush, byte silent, int change,
                        crushmode_e crushmode)
 {
-	sector_t* sec;
-	int secnum = -1;
-	BOOL retcode = 0;
-
-	height *= FRACUNIT;
-
-	// check if a manual trigger, if so do just the sector on the backside
-	if (tag == 0)
-	{
-		if (!line || !(sec = line->backsector))
-			return 0;
-
-		secnum = sec - sectors;
-		// [RH] Hack to let manual crushers be retriggerable, too
-		tag ^= secnum | 0x1000000;
-		P_ActivateInStasisCeiling(tag);
-
-		if (P_CeilingActive(sec))
-			return false;
-
-		P_SpawnZDoomCeiling(type, line, tag, speed, speed2, height, crush, silent,
+		return P_SpawnZDoomCeiling(type, line, tag, speed, speed2, height, crush, silent,
 		                    change, crushmode);
-		return true;
-	}
 }
 
 //
@@ -643,7 +621,7 @@ BOOL P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 		sec = &sectors[secnum];
 	manual_ceiling:
 		// if ceiling already moving, don't start a second function on it
-		if (sec->ceilingdata)
+		if (P_CeilingActive(sec))
 		{
 			if (co_boomphys && manual)
 				return false;

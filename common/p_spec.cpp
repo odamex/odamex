@@ -1931,7 +1931,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	if(thing)
 	{
-		if (map_format.getZDoom() && !(line->flags == ML_SPAC_IMPACT))
+		if (map_format.getZDoom() && !(line->flags & ML_SPAC_IMPACT))
 			return;
 
 		if (thing->flags & MF_MISSILE)
