@@ -936,7 +936,7 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 			}
 
 			os.mustScan();
-			const OString& s = GStrings(StdStringToUpper(os.getToken().c_str()));
+			const OString& s = GStrings(StdStringToUpper(os.getToken()));
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
