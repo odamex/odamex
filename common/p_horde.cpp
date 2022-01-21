@@ -34,7 +34,6 @@
 #include "m_random.h"
 #include "p_hordespawn.h"
 #include "p_local.h"
-#include "p_mobj.h"
 #include "p_tick.h"
 #include "s_sound.h"
 #include "svc_message.h"
@@ -139,7 +138,7 @@ static void ActivateMonsters(AActors& mobjs)
 		{
 			const size_t idx = P_RandomInt(targets.count);
 			mo->target = targets.players.at(idx)->mo->ptr();
-			P_SetMobjState(mo, mo->info->seestate);
+			P_SetMobjState(mo, mo->info->seestate, true);
 		}
 
 		// Play the see sound if we have one.

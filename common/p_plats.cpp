@@ -591,7 +591,7 @@ BOOL EV_DoGenLift(line_t* line)
 	{
 	manual_genplat:
 		sec = &sectors[secnum];
-		if (sec->floordata)
+		if (P_FloorActive(sec))
 		{
 			if (co_boomphys && manual)
 				return false;

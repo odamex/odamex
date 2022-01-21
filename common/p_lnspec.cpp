@@ -60,7 +60,7 @@ BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t 
 // Returns true if the special for line will cause a DMovingFloor or
 // DMovingCeiling object to be created.
 //
-bool P_LineSpecialMovesSector(byte special)
+bool P_LineSpecialMovesSector(short special)
 {
 	static bool initialized = false;
 	static bool zdoomspecials[283];

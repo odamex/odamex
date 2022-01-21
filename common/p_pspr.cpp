@@ -33,7 +33,6 @@
 
 #include "m_random.h"
 #include "p_local.h"
-#include "p_mobj.h"
 #include "s_sound.h"
 
 #include "g_gametype.h"

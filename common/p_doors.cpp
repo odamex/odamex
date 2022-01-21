@@ -782,6 +782,7 @@ BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 		}
 
 		new DDoor(sec, line, type, speed, topwait, lightTag, topcountdown);
+		P_AddMovingCeiling(sec);
 		return true;
 	}
 	else
@@ -798,6 +799,7 @@ BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 			}
 			retcode = true;
 			new DDoor(sec, line, type, speed, topwait, lightTag, topcountdown);
+			P_AddMovingCeiling(sec);
 		}
 
 		return retcode;
@@ -818,7 +820,6 @@ BOOL EV_DoGenDoor(line_t* line)
 	bool rtn;
 	sector_t* sec;
 	bool manual;
-	DDoor* door;
 	unsigned value = (unsigned)line->special - GenDoorBase;
 
 	// parse the bit fields in the line's special type
@@ -869,6 +870,7 @@ manual_gendoor:
 		// new door thinker
 		new DDoor(sec, line, Dely, Kind, Trig, Sped);
 		rtn = true;
+		P_AddMovingCeiling(sec);
 
 		if (manual)
 			return rtn;
@@ -940,6 +942,7 @@ manual_genlocked:
 		// new door thinker
 		new DDoor(sec, line, Kind, Trig, Sped);
 		rtn = true;
+		P_AddMovingCeiling(sec);
 
 		if (manual)
 			return rtn;

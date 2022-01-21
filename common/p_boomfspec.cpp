@@ -67,7 +67,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	    }
 	}
 	*/
-	if (!thing->player && !bossaction)
+	if (thing && !thing->player && !bossaction)
 	{
 		// Things that should NOT trigger specials...
 		switch (thing->type)
@@ -947,7 +947,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing))
 			{
 				result.lineexecuted = true;
-				//line->special = 0;
+				line->special = 0;
 			}
 			break;
 
@@ -1018,7 +1018,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 		case 243: // jff 3/6/98 make fit within DCK's 256 linedef types
 			// killough 2/16/98: W1 silent teleporter (linedef-linedef kind)
-			if (EV_SilentLineTeleport(line, side, thing, line->id, false))
+			if (thing && EV_SilentLineTeleport(line, side, thing, line->id, false))
 			{
 				result.lineexecuted = true;
 				line->special = 0;
@@ -1026,7 +1026,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			break;
 
 		case 262: // jff 4/14/98 add silent line-line reversed
-			if (EV_SilentLineTeleport(line, side, thing, line->id, true))
+			if (thing && EV_SilentLineTeleport(line, side, thing, line->id, true))
 			{
 				result.lineexecuted = true;
 				line->special = 0;
@@ -1234,13 +1234,19 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 		case 244: // jff 3/6/98 make fit within DCK's 256 linedef types
 			// killough 2/16/98: WR silent teleporter (linedef-linedef kind)
-			EV_SilentLineTeleport(line, side, thing, line->id, false);
-			result.lineexecuted = true;
+			if (thing)
+			{
+				EV_SilentLineTeleport(line, side, thing, line->id, false);
+				result.lineexecuted = true;
+			}
 			break;
 
 		case 263: // jff 4/14/98 add silent line-line reversed
-			EV_SilentLineTeleport(line, side, thing, line->id, true);
-			result.lineexecuted = true;
+			if (thing)
+			{
+				EV_SilentLineTeleport(line, side, thing, line->id, true);
+				result.lineexecuted = true;
+			}
 			break;
 
 		case 265: // jff 4/14/98 add monster-only silent line-line reversed
@@ -1948,7 +1954,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		}
 
 	// Switches that other things can activate.
-	if (!thing->player && !bossaction)
+	if (thing && !thing->player && !bossaction)
 	{
 		// never open secret doors
 		if (line->flags & ML_SECRET)
@@ -3323,7 +3329,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		}
 
 	// Impacts that other things can activate.
-	if (!thing->player)
+	if (thing && !thing->player)
 	{
 		int ok = 0;
 		switch (line->special)

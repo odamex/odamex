@@ -32,7 +32,6 @@
 #include "c_dispatch.h"
 #include "d_event.h"
 #include "p_local.h"
-#include "p_mobj.h"
 #include "s_sound.h"
 #include "i_system.h"
 #include "p_tick.h"

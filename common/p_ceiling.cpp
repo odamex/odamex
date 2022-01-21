@@ -423,21 +423,21 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 	{
 		if (model) // if a numeric model change
 		{
-			sector_t* sec;
+			sector_t* chgsec = NULL;
 
 			// jff 5/23/98 find model with floor at target height if target
 			// is a floor type
-			sec = (target == CtoHnF || target == CtoF)
+			chgsec = (target == CtoHnF || target == CtoF)
 			          ? P_FindModelFloorSector(targheight, sec)
 			          : P_FindModelCeilingSector(targheight, sec);
-			if (sec)
+			if (chgsec)
 			{
-				m_Texture = sec->floorpic;
-				m_NewSpecial = sec->special;
-				m_NewDamageRate = sec->damageamount;
-				m_NewDmgInterval = sec->damageinterval;
-				m_NewLeakRate = sec->leakrate;
-				m_NewFlags = sec->flags;
+				m_Texture = chgsec->floorpic;
+				m_NewSpecial = chgsec->special;
+				m_NewDamageRate = chgsec->damageamount;
+				m_NewDmgInterval = chgsec->damageinterval;
+				m_NewLeakRate = chgsec->leakrate;
+				m_NewFlags = chgsec->flags;
 				switch (change)
 				{
 				case CChgZero: // type is zeroed
@@ -447,7 +447,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 					m_NewDamageRate = ns.damageamount;
 					m_NewDmgInterval = ns.damageinterval;
 					m_NewLeakRate = ns.damageleakrate;
-					m_NewFlags = sec->flags;
+					m_NewFlags = chgsec->flags;
 					P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
 					m_Type = genCeilingChg0;
 					break;
@@ -573,30 +573,8 @@ BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t 
                        fixed_t speed2, fixed_t height, int crush, byte silent, int change,
                        crushmode_e crushmode)
 {
-	sector_t* sec;
-	int secnum = -1;
-	BOOL retcode = 0;
-
-	height *= FRACUNIT;
-
-	// check if a manual trigger, if so do just the sector on the backside
-	if (tag == 0)
-	{
-		if (!line || !(sec = line->backsector))
-			return 0;
-
-		secnum = sec - sectors;
-		// [RH] Hack to let manual crushers be retriggerable, too
-		tag ^= secnum | 0x1000000;
-		P_ActivateInStasisCeiling(tag);
-
-		if (sec->ceilingdata)
-			return 0;
-
-		P_SpawnZDoomCeiling(type, line, tag, speed, speed2, height, crush, silent,
+		return P_SpawnZDoomCeiling(type, line, tag, speed, speed2, height, crush, silent,
 		                    change, crushmode);
-		return 1;
-	}
 }
 
 //
@@ -643,7 +621,7 @@ BOOL P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 		sec = &sectors[secnum];
 	manual_ceiling:
 		// if ceiling already moving, don't start a second function on it
-		if (sec->ceilingdata)
+		if (P_CeilingActive(sec))
 		{
 			if (co_boomphys && manual)
 				return false;
@@ -849,6 +827,7 @@ BOOL P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 		}
 
 		ceiling->PlayCeilingSound();
+		P_AddMovingCeiling(sec);
 
 		if (manual)
 			return rtn;

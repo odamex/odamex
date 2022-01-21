@@ -124,7 +124,7 @@ void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_s* player);
-bool P_LineSpecialMovesSector(byte special);
+bool P_LineSpecialMovesSector(short special);
 
 void SV_UpdateShareKeys(player_t& player);
 std::string V_GetTeamColor(UserInfo userinfo);
@@ -2803,22 +2803,37 @@ void SV_UpdateMobjState(AActor* mo)
 	}
 }
 
-// Send any monster that's "dirty" to the player.
-static void SV_UpdateDirty(player_t &pl)
+// Keep tabs on monster positions and angles.
+void SV_UpdateMonsters(player_t &pl)
 {
 	AActor *mo;
 
 	TThinkerIterator<AActor> iterator;
 	while ((mo = iterator.Next()))
 	{
-		// Ignore anything that's not dirty.
-		if ((mo->oflags & MFO_DIRTY) == 0)
+		// Ignore corpses.
+		if (mo->flags & MF_CORPSE)
 			continue;
 
-		if (SV_IsPlayerAllowedToSee(pl, mo))
+		// We don't handle updating non-monsters here.
+		if (!(mo->flags & MF_COUNTKILL || mo->type == MT_SKULL))
+			continue;
+
+		// update monster position every 7 tics
+		if ((gametic+mo->netid) % 7)
+			continue;
+
+		if (SV_IsPlayerAllowedToSee(pl, mo) && mo->target)
 		{
-			client_t* cl = &pl.client;
-			MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
+			client_t *cl = &pl.client;
+
+			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*mo));
+
+			if (cl->netbuf.cursize >= 1024)
+			{
+				if (!SV_SendPacket(pl))
+					return;
+			}
 		}
 	}
 }
@@ -2976,19 +2991,34 @@ void SV_UpdatePing(client_t* cl)
 	}
 }
 
-/**
- * @brief Cleanup to attend to after writing data.
- */
-static void SV_PostWriteCleanup()
-{
-	AActor* mo;
 
-	TThinkerIterator<AActor> iterator;
-	while ((mo = iterator.Next()))
-	{
-		// Clear the flag on the last player.
-		mo->oflags &= ~MFO_DIRTY;
-	}
+//
+// SV_UpdateDeadPlayers
+// Update player's frame while he's dying.
+//
+void SV_UpdateDeadPlayers()
+{
+ /*   AActor *mo;
+
+    TThinkerIterator<AActor> iterator;
+    while ( (mo = iterator.Next() ) )
+    {
+        if (mo->type != MT_PLAYER || mo->player)
+			continue;
+
+		if (mo->oldframe != mo->frame)
+			for (size_t i = 0; i < players.size(); i++)
+			{
+				client_t *cl = &clients[i];
+
+				MSG_WriteMarker (&cl->reliablebuf, svc_mobjframe);
+				MSG_WriteUnVarint (&cl->reliablebuf, mo->netid);
+				MSG_WriteByte (&cl->reliablebuf, mo->frame);
+			}
+
+		mo->oldframe = mo->frame;
+    }
+*/
 }
 
 
@@ -3115,7 +3145,7 @@ void SV_WriteCommands(void)
 
 		SV_UpdateMissiles(*it);
 
-		SV_UpdateDirty(*it);
+		SV_UpdateMonsters(*it);
 
 		SV_UpdateGametype(*it);     // update gametype stuff
 
@@ -3126,7 +3156,7 @@ void SV_WriteCommands(void)
 
 	SV_UpdateHiddenMobj();
 
-	SV_PostWriteCleanup();
+	SV_UpdateDeadPlayers(); // Update dying players.
 }
 
 void SV_PlayerTriedToCheat(player_t &player)

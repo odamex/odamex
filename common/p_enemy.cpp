@@ -89,6 +89,7 @@ void A_Fall (AActor *actor);
 
 
 void SV_UpdateMonsterRespawnCount();
+void SV_UpdateMobj(AActor* mo);
 void SV_Sound(AActor* mo, byte channel, const char* name, byte attenuation);
 
 // killough 8/8/98: distance friends tend to move towards players
@@ -96,6 +97,8 @@ const int distfriend = 128;
 
 // killough 9/8/98: whether monsters are allowed to strafe or retreat
 const int monster_backing = 0;
+
+extern bool isFast;
 
 //
 // ENEMY THINKING
@@ -565,10 +568,7 @@ void P_NewChaseDir (AActor *actor)
 	{
 		actor->movedir = diags[((deltay<0)<<1) + (deltax>0)];
 		if (actor->movedir != turnaround && P_TryWalk(actor))
-		{
-			actor->oflags |= MFO_DIRTY;
 			return;
-		}
 	}
 
 	// try other directions
@@ -590,7 +590,6 @@ void P_NewChaseDir (AActor *actor)
 		if (P_TryWalk (actor))
 		{
 			// either moved forward or attacked
-			actor->oflags |= MFO_DIRTY;
 			return;
 		}
 	}
@@ -600,10 +599,7 @@ void P_NewChaseDir (AActor *actor)
 		actor->movedir = d[2];
 
 		if (P_TryWalk (actor))
-		{
-			actor->oflags |= MFO_DIRTY;
 			return;
-		}
 	}
 
 	// there is no direct path to the player,
@@ -613,10 +609,7 @@ void P_NewChaseDir (AActor *actor)
 		actor->movedir = olddir;
 
 		if (P_TryWalk (actor))
-		{
-			actor->oflags |= MFO_DIRTY;
 			return;
-		}
 	}
 
 	// randomly determine direction of search
@@ -629,10 +622,7 @@ void P_NewChaseDir (AActor *actor)
 				actor->movedir = tdir;
 
 				if ( P_TryWalk(actor) )
-				{
-					actor->oflags |= MFO_DIRTY;
 					return;
-				}
 			}
 		}
 	}
@@ -645,10 +635,7 @@ void P_NewChaseDir (AActor *actor)
 				actor->movedir = tdir;
 
 				if ( P_TryWalk(actor) )
-				{
-					actor->oflags |= MFO_DIRTY;
 					return;
-				}
 			}
 		}
 	}
@@ -657,10 +644,7 @@ void P_NewChaseDir (AActor *actor)
 	{
 		actor->movedir =turnaround;
 		if ( P_TryWalk(actor) )
-		{
-			actor->oflags |= MFO_DIRTY;
 			return;
-		}
 	}
 
 	actor->movedir = DI_NODIR;	// can not move
@@ -914,7 +898,7 @@ void A_Look (AActor *actor)
 	}
 
 	if (actor->target)
-		P_SetMobjState (actor, actor->info->seestate);
+		P_SetMobjState (actor, actor->info->seestate, true);
 }
 #include "m_vectors.h"
 
@@ -973,7 +957,7 @@ void A_Chase (AActor *actor)
 
 		if (!actor->target)
 		{
-			P_SetMobjState (actor, actor->info->spawnstate); // denis - todo - this sometimes leads to a stack overflow due to infinite recursion: A_Chase->SetMobjState->A_Look->SetMobjState
+			P_SetMobjState (actor, actor->info->spawnstate, true); // denis - todo - this sometimes leads to a stack overflow due to infinite recursion: A_Chase->SetMobjState->A_Look->SetMobjState
 			return;
 		}
 	}
@@ -1001,7 +985,7 @@ void A_Chase (AActor *actor)
 				actor->goal = AActor::AActorPtr();
 
 			actor->target = AActor::AActorPtr();
-			P_SetMobjState (actor, actor->info->spawnstate);
+			P_SetMobjState (actor, actor->info->spawnstate, true);
 			return;
 		}
 		goto nomissile;
@@ -1013,7 +997,7 @@ void A_Chase (AActor *actor)
 		if (actor->info->attacksound)
 			S_Sound (actor, CHAN_WEAPON, actor->info->attacksound, 1, ATTN_NORM);
 
-		P_SetMobjState (actor, actor->info->meleestate);
+		P_SetMobjState (actor, actor->info->meleestate, true);
 		return;
 	}
 
@@ -1029,7 +1013,7 @@ void A_Chase (AActor *actor)
 		if (!P_CheckMissileRange (actor))
 			goto nomissile;
 
-		P_SetMobjState (actor, actor->info->missilestate);
+		P_SetMobjState (actor, actor->info->missilestate, true);
 		actor->flags |= MF_JUSTATTACKED;
 		return;
 	}
@@ -1191,7 +1175,7 @@ void A_CPosRefire (AActor *actor)
 		|| !P_CheckSight(actor, actor->target)
         )
 	{
-		P_SetMobjState (actor, actor->info->seestate);
+		P_SetMobjState (actor, actor->info->seestate, true);
 	}
 }
 
@@ -1209,7 +1193,7 @@ void A_SpidRefire (AActor *actor)
 		|| !P_CheckSight(actor, actor->target)
         )
 	{
-		P_SetMobjState (actor, actor->info->seestate);
+		P_SetMobjState (actor, actor->info->seestate, true);
 	}
 }
 
@@ -1339,7 +1323,6 @@ void A_SkelMissile (AActor *actor)
 
 fixed_t P_GetActorSpeed(AActor* actor)
 {
-	extern bool isFast;
 	int speed = actor->info->speed;
 
 	if (isFast)
@@ -1534,11 +1517,12 @@ void A_VileChase (AActor *actor)
 
 	if (actor->movedir != DI_NODIR)
 	{
-		fixed_t speed = P_GetActorSpeed(actor);
+		// [Blair] Ignore altspeed for vanilla demo comp purposes
+		//fixed_t speed = P_GetActorSpeed(actor);
 
 		// check for corpses to raise
-		viletryx = actor->x + speed * xspeed[actor->movedir];
-		viletryy = actor->y + speed * yspeed[actor->movedir];
+		viletryx = actor->x + actor->info->speed * xspeed[actor->movedir];
+		viletryy = actor->y + actor->info->speed * yspeed[actor->movedir];
 
 		xl = (viletryx - bmaporgx - MAXRADIUS*2)>>MAPBLOCKSHIFT;
 		xh = (viletryx - bmaporgx + MAXRADIUS*2)>>MAPBLOCKSHIFT;
@@ -1564,7 +1548,7 @@ void A_VileChase (AActor *actor)
 					A_FaceTarget (actor);
 					actor->target = temp;
 
-					P_SetMobjState (actor, S_VILE_HEAL1);
+					P_SetMobjState (actor, S_VILE_HEAL1, true);
 
 					if (!clientside)
 						SV_Sound(corpsehit, CHAN_BODY, "vile/raise", ATTN_IDLE);
@@ -1579,7 +1563,7 @@ void A_VileChase (AActor *actor)
 						SV_UpdateMonsterRespawnCount();
 					}
 
-					P_SetMobjState (corpsehit,info->raisestate);
+					P_SetMobjState (corpsehit,info->raisestate, true);
 
 					// [Nes] - Classic demo compatability: Ghost monster bug.
 					if ((co_novileghosts)) {
@@ -2178,7 +2162,7 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 					A_FaceTarget(actor);
 					actor->target = temp;
 
-					P_SetMobjState(actor, (statenum_t)healstate);
+					P_SetMobjState(actor, (statenum_t)healstate, true);
 
 					if (!clientside)
 						SV_Sound(corpsehit, CHAN_BODY, SoundMap[healsound], ATTN_IDLE);
@@ -2193,7 +2177,7 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 						SV_UpdateMonsterRespawnCount();
 					}
 
-					P_SetMobjState(corpsehit, info->raisestate);
+					P_SetMobjState(corpsehit, info->raisestate, true);
 
 					corpsehit->flags = info->flags;
 					corpsehit->health = info->spawnhealth;
@@ -2225,19 +2209,12 @@ void A_SeekTracer(AActor* actor)
 
 	if (P_SeekerMissile(actor, actor->tracer, threshold, maxturnangle, true))
 	{
-		if ((actor->flags2 & MF2_SEEKERMISSILE) == 0)
-		{
-			actor->flags2 |= MF2_SEEKERMISSILE;
-			actor->oflags |= MFO_DIRTY;
-		}
+		actor->flags2 |= MF2_SEEKERMISSILE;
+		SV_UpdateMobj(actor);
 	}
 	else
 	{
-		if (actor->flags2 & MF2_SEEKERMISSILE)
-		{
-			actor->flags2 &= ~MF2_SEEKERMISSILE;
-			actor->oflags |= MFO_DIRTY;
-		}
+		actor->flags2 &= ~MF2_SEEKERMISSILE;
 	}
 }
 
@@ -2271,11 +2248,8 @@ void A_FindTracer(AActor* actor)
 
 	actor->tracer = tracer->ptr();
 
-	if ((actor->flags2 & MF2_SEEKERMISSILE) == 0)
-	{
-		actor->flags2 |= MF2_SEEKERMISSILE;
-		actor->oflags |= MFO_DIRTY;
-	}
+	actor->flags2 |= MF2_SEEKERMISSILE;
+	SV_UpdateMobj(actor);
 }
 
 //
@@ -2289,11 +2263,8 @@ void A_ClearTracer(AActor* actor)
 
 	actor->tracer = AActor::AActorPtr();
 
-	if (actor->flags2 & MF2_SEEKERMISSILE)
-	{
-		actor->flags2 &= ~MF2_SEEKERMISSILE;
-		actor->oflags |= MFO_DIRTY;
-	}
+	actor->flags2 &= ~MF2_SEEKERMISSILE;
+	SV_UpdateMobj(actor);
 }
 
 //
@@ -2313,7 +2284,7 @@ void A_JumpIfHealthBelow(AActor* actor)
 	health = actor->state->args[1];
 
 	if (actor->health < health)
-		P_SetMobjState(actor, (statenum_t)state);
+		P_SetMobjState(actor, (statenum_t)state, true);
 }
 
 //
@@ -2339,7 +2310,7 @@ void A_JumpIfTargetInSight(AActor* actor)
 		return;
 
 	if (P_CheckSight(actor, actor->target))
-		P_SetMobjState(actor, (statenum_t)state);
+		P_SetMobjState(actor, (statenum_t)state, true);
 }
 
 
@@ -2361,7 +2332,7 @@ void A_JumpIfTargetCloser(AActor* actor)
 
 	if (distance >
 	    P_AproxDistance(actor->x - actor->target->x, actor->y - actor->target->y))
-		P_SetMobjState(actor, (statenum_t)state);
+		P_SetMobjState(actor, (statenum_t)state, true);
 }
 
 //
@@ -2390,7 +2361,7 @@ void A_JumpIfTracerInSight(AActor* actor)
 		return;
 
 	if (P_CheckSight(actor, actor->tracer))
-		P_SetMobjState(actor, (statenum_t)state);
+		P_SetMobjState(actor, (statenum_t)state, true);
 }
 
 //
@@ -2415,7 +2386,7 @@ void A_JumpIfTracerCloser(AActor* actor)
 
 	if (distance >
 		P_AproxDistance(actor->x - actor->tracer->x, actor->y - actor->tracer->y))
-		P_SetMobjState(actor, (statenum_t)state);
+		P_SetMobjState(actor, (statenum_t)state, true);
 }
 
 //
@@ -2438,7 +2409,7 @@ void A_JumpIfFlagsSet(AActor* actor)
 	flags2 = actor->state->args[2];
 
 	if ((actor->flags & flags) == flags && (actor->flags2 & flags2) == flags2)
-		P_SetMobjState(actor, (statenum_t)state);
+		P_SetMobjState(actor, (statenum_t)state, true);
 }
 
 
@@ -2923,7 +2894,7 @@ void A_BrainScream (AActor *mo)
 		th = new AActor (x,y,z, MT_ROCKET);
 		th->momz = P_Random (mo) << 9;
 
-		P_SetMobjState (th, S_BRAINEXPLODE1);
+		P_SetMobjState (th, S_BRAINEXPLODE1, true);
 
 		th->tics -= P_Random (mo) & 7;
 		if (th->tics < 1)
@@ -2946,7 +2917,7 @@ void A_BrainExplode (AActor *mo)
 	AActor *th = new AActor (x,y,z, MT_ROCKET);
 	th->momz = P_Random (mo) << 9;
 
-	P_SetMobjState (th, S_BRAINEXPLODE1);
+	P_SetMobjState (th, S_BRAINEXPLODE1, true);
 
 	th->tics -= P_Random (mo) & 7;
 	if (th->tics < 1)
@@ -3062,7 +3033,7 @@ void A_SpawnFly (AActor *mo)
 
 	newmobj = new AActor (targ->x, targ->y, targ->z, type);
 	if (P_LookForPlayers (newmobj, true))
-		P_SetMobjState (newmobj, newmobj->info->seestate);
+		P_SetMobjState (newmobj, newmobj->info->seestate, true);
 
 	// telefrag anything in this spot
 	P_TeleportMove (newmobj, newmobj->x, newmobj->y, newmobj->z, true);
