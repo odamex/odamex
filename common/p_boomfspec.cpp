@@ -307,7 +307,8 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 8:
 		// Build Stairs
-		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT, SPEED(S_SLOW),
+		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT,
+						   SPEED((gamemission == heretic) ? S_SLOW * 4 : S_SLOW),
 		                   TICS(0), 0, 0, 0))
 		{
 			result.lineexecuted = true;
@@ -316,6 +317,9 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		break;
 
 	case 10:
+		if (gamemission == heretic && !thing->player)
+			break;
+
 		// PlatDownWaitUp
 		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_FAST),
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
@@ -2072,7 +2076,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	// Switches (non-retriggerable)
 	case 7:
 		// Build Stairs
-		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT, SPEED(S_SLOW),
+		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT,
+						   SPEED((gamemission == heretic) ? S_SLOW * 4 : S_SLOW),
 		                   0, 0, 0, 0))
 		{
 			result.lineexecuted = true;
