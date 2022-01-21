@@ -2771,6 +2771,22 @@ void SV_UpdateMissiles(player_t &pl)
     }
 }
 
+// Update the given actors data immediately.
+void SV_UpdateMobj(AActor* mo)
+{
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		if (!(it->ingame()))
+			continue;
+
+		if (SV_IsPlayerAllowedToSee(*it, mo))
+		{
+			client_t* cl = &(it->client);
+			MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
+		}
+	}
+}
+
 // Update the given actors state immediately.
 void SV_UpdateMobjState(AActor* mo)
 {
@@ -2787,26 +2803,37 @@ void SV_UpdateMobjState(AActor* mo)
 	}
 }
 
-// Send any monster that's "dirty" to the player.
-static void SV_UpdateDirty(player_t &pl)
+// Keep tabs on monster positions and angles.
+void SV_UpdateMonsters(player_t &pl)
 {
 	AActor *mo;
 
 	TThinkerIterator<AActor> iterator;
 	while ((mo = iterator.Next()))
 	{
-		// Ignore anything that's not dirty.
-		if ((mo->oflags & MFO_DIRTY) == 0)
+		// Ignore corpses.
+		if (mo->flags & MF_CORPSE)
 			continue;
 
-		// Players don't use baseline updates (yet).
-		if (mo->type == MT_PLAYER)
+		// We don't handle updating non-monsters here.
+		if (!(mo->flags & MF_COUNTKILL || mo->type == MT_SKULL))
 			continue;
 
-		if (SV_IsPlayerAllowedToSee(pl, mo))
+		// update monster position every 7 tics
+		if ((gametic+mo->netid) % 7)
+			continue;
+
+		if (SV_IsPlayerAllowedToSee(pl, mo) && mo->target)
 		{
-			client_t* cl = &pl.client;
-			MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
+			client_t *cl = &pl.client;
+
+			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*mo));
+
+			if (cl->netbuf.cursize >= 1024)
+			{
+				if (!SV_SendPacket(pl))
+					return;
+			}
 		}
 	}
 }
@@ -2964,19 +2991,34 @@ void SV_UpdatePing(client_t* cl)
 	}
 }
 
-/**
- * @brief Cleanup to attend to after writing data.
- */
-static void SV_PostWriteCleanup()
-{
-	AActor* mo;
 
-	TThinkerIterator<AActor> iterator;
-	while ((mo = iterator.Next()))
-	{
-		// Clear the flag on the last player.
-		mo->oflags &= ~MFO_DIRTY;
-	}
+//
+// SV_UpdateDeadPlayers
+// Update player's frame while he's dying.
+//
+void SV_UpdateDeadPlayers()
+{
+ /*   AActor *mo;
+
+    TThinkerIterator<AActor> iterator;
+    while ( (mo = iterator.Next() ) )
+    {
+        if (mo->type != MT_PLAYER || mo->player)
+			continue;
+
+		if (mo->oldframe != mo->frame)
+			for (size_t i = 0; i < players.size(); i++)
+			{
+				client_t *cl = &clients[i];
+
+				MSG_WriteMarker (&cl->reliablebuf, svc_mobjframe);
+				MSG_WriteUnVarint (&cl->reliablebuf, mo->netid);
+				MSG_WriteByte (&cl->reliablebuf, mo->frame);
+			}
+
+		mo->oldframe = mo->frame;
+    }
+*/
 }
 
 
@@ -3103,7 +3145,7 @@ void SV_WriteCommands(void)
 
 		SV_UpdateMissiles(*it);
 
-		SV_UpdateDirty(*it);
+		SV_UpdateMonsters(*it);
 
 		SV_UpdateGametype(*it);     // update gametype stuff
 
@@ -3114,7 +3156,7 @@ void SV_WriteCommands(void)
 
 	SV_UpdateHiddenMobj();
 
-	SV_PostWriteCleanup();
+	SV_UpdateDeadPlayers(); // Update dying players.
 }
 
 void SV_PlayerTriedToCheat(player_t &player)

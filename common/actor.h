@@ -275,7 +275,7 @@ enum mobjflag_t
 
 	// --- mobj.oflags ---
 	// Odamex-specific flags
-	MFO_NOSNAPZ			= BIT(0),	// [INTERNAL] Ignore snapshot z this tic
+	MFO_NOSNAPZ			= BIT(0),	// ignore snapshot z this tic
 	MFO_HEALTHPOOL		= BIT(1),	// global health pool that tracks killed HP
 	MFO_INFIGHTINVUL	= BIT(2),	// invulnerable to infighting
 	MFO_UNFLINCHING		= BIT(3),	// monster flinching reduced to 1 in 256
@@ -286,7 +286,6 @@ enum mobjflag_t
 	MFO_FULLBRIGHT		= BIT(8),	// monster is fullbright
 	MFO_SPECTATOR		= BIT(9),	// GhostlyDeath -- thing is/was a spectator and can't be seen!
 	MFO_FALLING			= BIT(10),	// [INTERNAL] for falling
-	MFO_DIRTY			= BIT(11),	// [INTERNAL] Actor has updated and should be sent.
 };
 
 #define MF_TRANSSHIFT	0x1A
