@@ -818,7 +818,7 @@ void MIType_$LumpName(OScanner& os, bool doEquals, void* data, unsigned int flag
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(os.getToken().c_str() + 1);
+		const OString& s = GStrings(StdStringToUpper(os.getToken()).c_str() + 1);
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
@@ -843,7 +843,7 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(musicname.c_str() + 1);
+		const OString& s = GStrings(StdStringToUpper(musicname.c_str() + 1));
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
@@ -946,7 +946,7 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 			}
 
 			os.mustScan();
-			const OString& s = GStrings(os.getToken());
+			const OString& s = GStrings(StdStringToUpper(os.getToken()));
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
@@ -983,7 +983,7 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 		if (os.compareTokenNoCase("lookup"))
 		{
 			os.mustScan();
-			const OString& s = GStrings(os.getToken());
+			const OString& s = GStrings(StdStringToUpper(os.getToken()));
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
@@ -1469,7 +1469,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			if (os.compareTokenNoCase("lookup"))
 			{
 				os.mustScan();
-				const OString& s = GStrings(os.getToken());
+				const OString& s = GStrings(StdStringToUpper(os.getToken()));
 				if (s.empty())
 				{
 					os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
