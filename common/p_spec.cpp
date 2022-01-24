@@ -1912,7 +1912,15 @@ void P_CrossSpecialLine(int	linenum, int side, AActor* thing, bool bossaction)
 
 	lineresult_s result;
 
-	result = map_format.cross_special_line(line, side, thing, bossaction);
+	if (!thing)
+	{
+		result.lineexecuted = false;
+		result.switchchanged = false;
+	}
+	else
+	{
+		result = map_format.cross_special_line(line, side, thing, bossaction);
+	}
 
 	if (serverside && result.lineexecuted)
 	{
