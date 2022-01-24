@@ -850,7 +850,7 @@ void WI_drawShowNextLoc()
 
 	if (gamemode != commercial && gamemode != commercial_bfg)
 	{
-		if (wbs->epsd > 2)
+		if (wbs->epsd > 2 || strnicmp(level.nextmap.c_str(), "EndGame", 7) == 0)
 		{
 			WI_drawEL();
 			return;
