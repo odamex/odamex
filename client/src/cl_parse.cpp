@@ -1156,8 +1156,12 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 		else 
 			p->health = 0;
 	}
+
 	if (p->armorpoints < 0)
 		p->armorpoints = 0;
+
+	if (p->armorpoints == 0)
+		p->armortype = 0;
 
 	if (healthDamage > 0)
 	{

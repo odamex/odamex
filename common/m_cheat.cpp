@@ -34,7 +34,6 @@
 #include "p_inter.h"
 #include "d_items.h"
 #include "p_local.h"
-#include "p_mobj.h"
 
 extern bool simulated_connection;
 EXTERN_CVAR(sv_allowcheats)

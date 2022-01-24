@@ -660,7 +660,21 @@ static const identData_t identdata[] = {
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD,                         // flags
         600,                                // weight
-    }};
+    },
+
+    // ------------------------------------------------------------------------
+    // REKKRSA.WAD
+    // ------------------------------------------------------------------------
+    {
+        "REKKR v1.16a",                     // mIdName
+        "REKKRSA.WAD",                      // mFilename
+        "0D294CA5",                         // mCRC32Sum
+        "B6F4BB3A80F096B6045CFAEB57D4CF29", // mMd5Sum
+        "REKKR",                            // mGroupName
+        IDENT_IWAD,                         // flags
+        600,                                // weight
+    },
+};
 
 
 // ============================================================================
@@ -1052,7 +1066,13 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 
 	const OString idname = identtab.identify(iwad);
 
-	if (idname.find("HACX") == 0)
+	if (idname.find("REKKR") == 0)
+    {
+		gamemode = retail;
+		gameinfo = RetailGameInfo;
+		gamemission = doom;
+	}
+	else if (idname.find("HACX") == 0)
 	{
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
