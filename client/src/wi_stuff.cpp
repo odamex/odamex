@@ -748,8 +748,6 @@ int WI_drawNum(int n, int x, int y, int digits)
 	return x;
 }
 
-#include "hu_stuff.h"
-
 void WI_drawPercent (int p, int x, int y, int b = 0)
 {
     if (p < 0)
