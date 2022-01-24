@@ -2787,12 +2787,14 @@ void A_BossDeath(AActor *actor)
 			return;
 		}
 	}
-	else if (level.flags & LEVEL_CYBORGSPECIAL && actor->flags3 & MF3_E4M6BOSS)
+	else if (level.flags & LEVEL_CYBORGSPECIAL && actor->flags3 & MF3_E4M6BOSS &&
+	         level.mapname == "E4M6")
 	{
 		EV_DoDoor(DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
 		return;
 	}
-	else if (level.flags & LEVEL_SPIDERSPECIAL && actor->flags3 & MF3_E4M8BOSS)
+	else if (level.flags & LEVEL_SPIDERSPECIAL && actor->flags3 & MF3_E4M8BOSS &&
+	         level.mapname == "E4M8")
 	{
 		EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
 		return;
