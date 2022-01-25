@@ -584,7 +584,7 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 		    sec->floorheight + m_Direction * 24 * FRACUNIT;
 		break;
 	case Fby32:
-		m_FloorDestHeight = sec->floorheight + direction * 32 * FRACUNIT;
+		m_FloorDestHeight = sec->floorheight + m_Direction * 32 * FRACUNIT;
 		break;
 	default:
 		break;
