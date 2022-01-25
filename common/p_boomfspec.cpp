@@ -2088,7 +2088,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		/* Exit level
 		 * killough 10/98: prevent zombies from exiting levels
 		 */
-		if (!bossaction && thing->player && thing->player->health <= 0)
+		if (!bossaction && thing && thing->player && thing->player->health <= 0)
 		{
 			return result;
 		}
@@ -2212,7 +2212,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		/* Secret EXIT
 		 * killough 10/98: prevent zombies from exiting levels
 		 */
-		if (!bossaction && thing->player && thing->player->health <= 0)
+		if (!bossaction && thing && thing->player && thing->player->health <= 0)
 		{
 			return result;
 		}
@@ -3388,7 +3388,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		case 197:
 			// Exit to next level
 			// killough 10/98: prevent zombies from exiting levels
-			if (thing->player && thing->player->health <= 0)
+			if (thing && thing->player && thing->player->health <= 0)
 				break;
 			if (thing && CheckIfExitIsGood(thing))
 			{
@@ -3401,7 +3401,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		case 198:
 			// Exit to secret level
 			// killough 10/98: prevent zombies from exiting levels
-			if (thing->player && thing->player->health <= 0)
+			if (thing && thing->player && thing->player->health <= 0)
 				break;
 			if (thing && CheckIfExitIsGood(thing))
 			{
