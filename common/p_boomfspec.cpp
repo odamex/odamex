@@ -67,7 +67,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	    }
 	}
 	*/
-	if (thing && !thing->player && !bossaction)
+	if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 	{
 		// Things that should NOT trigger specials...
 		switch (thing->type)
@@ -100,7 +100,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		else if ((unsigned)line->special >= GenFloorBase)
 		{
-			if (!thing->player && !bossaction)
+			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if ((line->special & FloorChange) || !(line->special & FloorModel))
 					return result; // FloorModel is "Allow Monsters" if FloorChange is 0
 			/*
@@ -112,7 +112,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		else if ((unsigned)line->special >= GenCeilingBase)
 		{
-			if (!thing->player && !bossaction)
+			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if ((line->special & CeilingChange) || !(line->special & CeilingModel))
 					return result; // CeilingModel is "Allow Monsters" if CeilingChange is
 					               // 0
@@ -125,7 +125,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		else if ((unsigned)line->special >= GenDoorBase)
 		{
-			if (!thing->player && !bossaction)
+			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			{
 				if (!(line->special & DoorMonster))
 					return result;           // monsters disallowed from this door
@@ -141,7 +141,8 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		else if ((unsigned)line->special >= GenLockedBase)
 		{
-			if (!thing->player || bossaction) // boss actions can't handle locked doors
+			if ((!thing->player && thing->type != MT_AVATAR) ||
+			    bossaction)    // boss actions can't handle locked doors
 				return result;                // monsters disallowed from unlocking doors
 			if (((line->special & TriggerType) == WalkOnce) ||
 			    ((line->special & TriggerType) == WalkMany))
@@ -155,7 +156,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		else if ((unsigned)line->special >= GenLiftBase)
 		{
-			if (!thing->player && !bossaction)
+			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if (!(line->special & LiftMonster))
 					return result; // monsters disallowed
 			/*
@@ -167,7 +168,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		else if ((unsigned)line->special >= GenStairsBase)
 		{
-			if (!thing->player && !bossaction)
+			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if (!(line->special & StairMonster))
 					return result; // monsters disallowed
 			/*
@@ -181,7 +182,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		{
 			// haleyjd 06/09/09: This was completely forgotten in BOOM, disabling
 			// all generalized walk-over crusher types!
-			if (!thing->player && !bossaction)
+			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if (!(line->special & StairMonster))
 					return result; // monsters disallowed
 			/*
@@ -211,7 +212,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			}
 	}
 
-	if (!thing->player || bossaction)
+	if ((!thing->player && thing->type != MT_AVATAR) || bossaction)
 	{
 		ok = 0;
 		switch (line->special)
@@ -610,7 +611,8 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 125:
 		// TELEPORT MonsterONLY
-		if (!thing->player && (EV_LineTeleport(line, side, thing)))
+		if (!thing->player && thing->type != MT_AVATAR &&
+		    (EV_LineTeleport(line, side, thing)))
 		{
 			result.lineexecuted = true;
 			//line->special = 0;
@@ -832,7 +834,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 126:
 		// TELEPORT MonsterONLY.
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 		{
 			EV_LineTeleport(line, side, thing);
 			result.lineexecuted = true;
@@ -1034,7 +1036,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			break;
 
 		case 264: // jff 4/14/98 add monster-only silent line-line reversed
-			if (!thing->player &&
+			if (!thing->player && thing->type != MT_AVATAR &&
 			    EV_SilentLineTeleport(line, side, thing, line->id, true))
 			{
 				result.lineexecuted = true;
@@ -1043,7 +1045,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			break;
 
 		case 266: // jff 4/14/98 add monster-only silent line-line
-			if (!thing->player &&
+			if (!thing->player && thing->type != MT_AVATAR &&
 			    EV_SilentLineTeleport(line, side, thing, line->id, false))
 			{
 				result.lineexecuted = true;
@@ -1052,7 +1054,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			break;
 
 		case 268: // jff 4/14/98 add monster-only silent
-			if (!thing->player &&
+			if (!thing->player && thing->type != MT_AVATAR &&
 			    EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing))
 			{
 				result.lineexecuted = true;
@@ -1250,7 +1252,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			break;
 
 		case 265: // jff 4/14/98 add monster-only silent line-line reversed
-			if (!thing->player)
+			if (!thing->player && thing->type != MT_AVATAR)
 			{
 				EV_SilentLineTeleport(line, side, thing, line->id, true);
 				result.lineexecuted = true;
@@ -1258,7 +1260,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			break;
 
 		case 267: // jff 4/14/98 add monster-only silent line-line
-			if (!thing->player)
+			if (!thing->player && thing->type != MT_AVATAR)
 			{
 				EV_SilentLineTeleport(line, side, thing, line->id, false);
 				result.lineexecuted = true;
@@ -1840,7 +1842,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	}
 	else if ((unsigned)line->special >= GenFloorBase)
 	{
-		if (!thing->player && !bossaction)
+		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if ((line->special & FloorChange) || !(line->special & FloorModel))
 				return result; // FloorModel is "Allow Monsters" if FloorChange is 0
 		if (!line->id &&
@@ -1850,7 +1852,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	}
 	else if ((unsigned)line->special >= GenCeilingBase)
 	{
-		if (!thing->player && !bossaction)
+		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if ((line->special & CeilingChange) || !(line->special & CeilingModel))
 				return result; // CeilingModel is "Allow Monsters" if CeilingChange is
 					            // 0
@@ -1861,7 +1863,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	}
 	else if ((unsigned)line->special >= GenDoorBase)
 	{
-		if (!thing->player && !bossaction)
+		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 		{
 			if (!(line->special & DoorMonster))
 				return result;           // monsters disallowed from this door
@@ -1875,7 +1877,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	}
 	else if ((unsigned)line->special >= GenLockedBase)
 	{
-		if (!thing->player || bossaction)
+		if ((!thing->player && thing->type != MT_AVATAR) || bossaction)
 			return result; // monsters disallowed from unlocking doors
 		if (!P_CanUnlockGenDoor(line, thing->player))
 			return result;
@@ -1887,7 +1889,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	}
 	else if ((unsigned)line->special >= GenLiftBase)
 	{
-		if (!thing->player && !bossaction)
+		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if (!(line->special & LiftMonster))
 				return result; // monsters disallowed
 		if (!line->id &&
@@ -1897,7 +1899,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	}
 	else if ((unsigned)line->special >= GenStairsBase)
 	{
-		if (!thing->player && !bossaction)
+		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if (!(line->special & StairMonster))
 				return result; // monsters disallowed
 		if (!line->id &&
@@ -1907,7 +1909,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	}
 	else if ((unsigned)line->special >= GenCrusherBase)
 	{
-		if (!thing->player && !bossaction)
+		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if (!(line->special & CrusherMonster))
 				return result; // monsters disallowed
 		if (!line->id &&
@@ -1954,7 +1956,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		}
 
 	// Switches that other things can activate.
-	if (thing && !thing->player && !bossaction)
+	if (thing && !thing->player && thing->type != MT_AVATAR && !bossaction)
 	{
 		// never open secret doors
 		if (line->flags & ML_SECRET)
@@ -3234,7 +3236,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	}
 	else if ((unsigned)line->special >= GenFloorBase)
 	{
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 			if ((line->special & FloorChange) || !(line->special & FloorModel))
 				return result; // FloorModel is "Allow Monsters" if FloorChange is 0
 		if (!line->id)        // e6y //jff 2/27/98 all gun generalized types require tag
@@ -3244,7 +3246,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	}
 	else if ((unsigned)line->special >= GenCeilingBase)
 	{
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 			if ((line->special & CeilingChange) || !(line->special & CeilingModel))
 				return result; // CeilingModel is "Allow Monsters" if CeilingChange is 0
 		if (!line->id)        // jff 2/27/98 all gun generalized types require tag
@@ -3253,7 +3255,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	}
 	else if ((unsigned)line->special >= GenDoorBase)
 	{
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 		{
 			if (!(line->special & DoorMonster))
 				return result;           // monsters disallowed from this door
@@ -3266,7 +3268,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	}
 	else if ((unsigned)line->special >= GenLockedBase)
 	{
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 			return result; // monsters disallowed from unlocking doors
 		if (((line->special & TriggerType) == GunOnce) ||
 		    ((line->special & TriggerType) == GunMany))
@@ -3283,14 +3285,14 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	}
 	else if ((unsigned)line->special >= GenLiftBase)
 	{
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 			if (!(line->special & LiftMonster))
 				return result; // monsters disallowed
 		linefunc = EV_DoGenLift;
 	}
 	else if ((unsigned)line->special >= GenStairsBase)
 	{
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 			if (!(line->special & StairMonster))
 				return result; // monsters disallowed
 		if (!line->id)        // e6y //jff 2/27/98 all gun generalized types require tag
@@ -3299,7 +3301,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	}
 	else if ((unsigned)line->special >= GenCrusherBase)
 	{
-		if (!thing->player)
+		if (!thing->player && thing->type != MT_AVATAR)
 			if (!(line->special & StairMonster))
 				return result; // monsters disallowed
 		if (!line->id)        // e6y //jff 2/27/98 all gun generalized types require tag
@@ -3329,7 +3331,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		}
 
 	// Impacts that other things can activate.
-	if (thing && !thing->player)
+	if (thing && !thing->player && thing->type != MT_AVATAR)
 	{
 		int ok = 0;
 		switch (line->special)

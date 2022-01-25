@@ -521,6 +521,7 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 	m_ResetCount = 0; // [RH]
 	m_Sector = sec;
 	m_OrgHeight = floorheight;
+	m_Height = floorheight;
 	m_Line = line;
 	m_Direction = direction ? 1 : -1;
 	m_NewSpecial = sec->special;
@@ -560,7 +561,7 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 		break;
 	case FtoNnF:
 		m_FloorDestHeight =
-		    m_Direction ? P_FindNextHighestFloor(sec) : P_FindNextLowestFloor(sec);
+		    direction ? P_FindNextHighestFloor(sec) : P_FindNextLowestFloor(sec);
 		break;
 	case FtoLnC:
 		m_FloorDestHeight = P_FindLowestCeilingSurrounding(sec);

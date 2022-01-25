@@ -37,14 +37,6 @@ EXTERN_CVAR(sv_forcewater)
 lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
                                      bool bossaction)
 {
-	if (!thing)
-	{
-		lineresult_s res;
-		res.lineexecuted = false;
-		res.switchchanged = false;
-		return res;
-	}
-
 	if (thing->player)
 	{
 		return P_ActivateZDoomLine(line, thing, side, ML_SPAC_CROSS);
