@@ -448,7 +448,6 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		{
 			// mark level free of boss actions
 			mape->bossactions.clear();
-			mape->bossactions_donothing = true;
 		}
 		else
 		{
@@ -471,10 +470,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			if (tag != 0 || special == 11 || special == 51 || special == 52 ||
 			    special == 124)
 			{
-				if (mape->bossactions_donothing == true)
-					mape->bossactions_donothing = false;
-
-				OBossAction new_bossaction;
+				bossaction_t new_bossaction;
 
 				maplinedef_t mld;
 				mld.special = static_cast<short>(special);
@@ -990,6 +986,162 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 	}
 }
 
+// Sets the map to use the specific map07 bossactions
+void MIType_Map07Special(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                         unsigned int flags2)
+{
+	std::vector<bossaction_t>& bossactionvector =
+	    *static_cast<std::vector<bossaction_t>*>(data);
+
+	// mancubus
+	bossactionvector.push_back({});
+	std::vector<bossaction_t>::iterator it = (bossactionvector.end() - 1);
+	it->type = MT_FATSO;
+
+	maplinedef_t mld;
+	mld.special = 23;
+	mld.tag = 666;
+	P_TranslateLineDef(&it->ld, &mld);
+
+	// arachnotron
+	bossactionvector.push_back({});
+	it = (bossactionvector.end() - 1);
+	it->type = MT_BABY;
+	
+	mld.special = 30;
+	mld.tag = 667;
+	P_TranslateLineDef(&it->ld, &mld);
+}
+
+// Sets the map to use the baron bossaction
+void MIType_BaronSpecial(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                    unsigned int flags2)
+{
+	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
+
+	if (bossactionvector.size() == 0)
+		bossactionvector.push_back({});
+
+	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
+	     it != bossactionvector.end(); ++it)
+	{
+		it->type = MT_BRUISER;
+	}
+}
+
+// Sets the map to use the cyberdemon bossaction
+void MIType_CyberdemonSpecial(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                         unsigned int flags2)
+{
+	std::vector<bossaction_t>& bossactionvector =
+	    *static_cast<std::vector<bossaction_t>*>(data);
+
+	if (bossactionvector.size() == 0)
+		bossactionvector.push_back({});
+
+	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
+	     it != bossactionvector.end(); ++it)
+	{
+		it->type = MT_CYBORG;
+	}
+}
+
+// Sets the map to use the cyberdemon bossaction
+void MIType_SpiderMastermindSpecial(OScanner& os, bool doEquals, void* data,
+                                    unsigned int flags, unsigned int flags2)
+{
+	std::vector<bossaction_t>& bossactionvector =
+	    *static_cast<std::vector<bossaction_t>*>(data);
+
+	if (bossactionvector.size() == 0)
+		bossactionvector.push_back({});
+
+	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
+	     it != bossactionvector.end(); ++it)
+	{
+		it->type = MT_SPIDER;
+	}
+}
+
+//
+void MIType_SpecialAction_ExitLevel(OScanner& os, bool doEquals, void* data,
+                                    unsigned int flags, unsigned int flags2)
+{
+	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
+
+	maplinedef_t mld;
+	mld.special = 11;
+	mld.tag = 0;
+
+	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
+	     it != bossactionvector.end(); ++it)
+	{
+		if (!it->ld.PropertiesChanged)
+		{
+			P_TranslateLineDef(&it->ld, &mld);
+			return;
+		}
+	}
+
+	bossactionvector.push_back({});
+	P_TranslateLineDef(&(bossactionvector.end() - 1)->ld, &mld);
+}
+
+//
+void MIType_SpecialAction_OpenDoor(OScanner& os, bool doEquals, void* data,
+                                    unsigned int flags, unsigned int flags2)
+{
+	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
+
+	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
+	     it != bossactionvector.end(); ++it)
+	{
+		if (!it->ld.PropertiesChanged)
+		{
+			it->ld.special = 11;
+			it->ld.args[0] = 666;
+			it->ld.args[1] = 64;
+			return;
+		}
+	}
+
+	bossactionvector.push_back({});
+	(bossactionvector.end() - 1)->ld.special = 11;
+	(bossactionvector.end() - 1)->ld.args[0] = 666;
+	(bossactionvector.end() - 1)->ld.args[1] = 64;
+}
+
+//
+void MIType_SpecialAction_LowerFloor(OScanner& os, bool doEquals, void* data,
+                                    unsigned int flags, unsigned int flags2)
+{
+	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
+
+	maplinedef_t mld;
+	mld.special = 23;
+	mld.tag = 666;
+
+	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
+	     it != bossactionvector.end(); ++it)
+	{
+		if (!it->ld.PropertiesChanged)
+		{
+			P_TranslateLineDef(&it->ld, &mld);
+			return;
+		}
+	}
+
+	bossactionvector.push_back({});
+	P_TranslateLineDef(&(bossactionvector.end() - 1)->ld, &mld);
+}
+
+//
+void MIType_SpecialAction_KillMonsters(OScanner& os, bool doEquals, void* data,
+                                    unsigned int flags, unsigned int flags2)
+{
+	// todo
+}
+
 //////////////////////////////////////////////////////////////////////
 /// MapInfoData
 
@@ -1063,17 +1215,13 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY4("nosoundclipping", &MIType_SetFlag, &ref.flags, LEVEL_NOSOUNDCLIPPING)
 		ENTRY4("allowmonstertelefrags", &MIType_SetFlag, &ref.flags,
 		       LEVEL_MONSTERSTELEFRAG)
-		ENTRY4("map07special", &MIType_SetFlag, &ref.flags, LEVEL_MAP07SPECIAL)
-		ENTRY4("baronspecial", &MIType_SetFlag, &ref.flags, LEVEL_BRUISERSPECIAL)
-		ENTRY4("cyberdemonspecial", &MIType_SetFlag, &ref.flags, LEVEL_CYBORGSPECIAL)
-		ENTRY4("spidermastermindspecial", &MIType_SetFlag, &ref.flags,
-		       LEVEL_SPIDERSPECIAL)
-		ENTRY5("specialaction_exitlevel", &MIType_SCFlags, &ref.flags, 0,
-		       ~LEVEL_SPECACTIONSMASK)
-		ENTRY5("specialaction_opendoor", &MIType_SCFlags, &ref.flags, LEVEL_SPECOPENDOOR,
-		       ~LEVEL_SPECACTIONSMASK)
-		ENTRY5("specialaction_lowerfloor", &MIType_SCFlags, &ref.flags,
-		       LEVEL_SPECLOWERFLOOR, ~LEVEL_SPECACTIONSMASK)
+		ENTRY3("map07special", &MIType_Map07Special, &ref.bossactions)
+		ENTRY3("baronspecial", &MIType_BaronSpecial, &ref.bossactions)
+		ENTRY3("cyberdemonspecial", &MIType_CyberdemonSpecial, &ref.bossactions)
+		ENTRY3("spidermastermindspecial", &MIType_SpiderMastermindSpecial, &ref.bossactions)
+		ENTRY3("specialaction_exitlevel", &MIType_SpecialAction_ExitLevel, &ref.bossactions)
+		ENTRY3("specialaction_opendoor", &MIType_SpecialAction_OpenDoor, &ref.flags)
+		ENTRY3("specialaction_lowerfloor", &MIType_SpecialAction_LowerFloor, &ref.bossactions)
 		ENTRY1("lightning")
 		ENTRY3("fadetable", &MIType_LumpName, &ref.fadetable)
 		ENTRY4("evenlighting", &MIType_SetFlag, &ref.flags, LEVEL_EVENLIGHTING)

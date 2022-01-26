@@ -955,7 +955,6 @@ void WI_updateNetgameStats()
 		S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
 		ng_state = 10;
 	}
-
 	if (ng_state == 2)
 	{
 		if (!(bcnt&3))
@@ -1088,13 +1087,13 @@ void WI_drawNetgameStats()
 {
 	unsigned int nbPlayers = 0;
 
-	patch_t* pPercent = W_ResolvePatchHandle(::percent);
-	patch_t* pKills = W_ResolvePatchHandle(::kills);
-	patch_t* pItems = W_ResolvePatchHandle(::items);
-	patch_t* pScrt = W_ResolvePatchHandle(::scrt);
-	patch_t* pFrags = W_ResolvePatchHandle(::frags);
-	patch_t* pStar = W_ResolvePatchHandle(::star);
-	patch_t* pP = W_ResolvePatchHandle(::p);
+	const patch_t* pPercent = W_ResolvePatchHandle(::percent);
+	const patch_t* pKills = W_ResolvePatchHandle(::kills);
+	const patch_t* pItems = W_ResolvePatchHandle(::items);
+	const patch_t* pScrt = W_ResolvePatchHandle(::scrt);
+	const patch_t* pFrags = W_ResolvePatchHandle(::frags);
+	const patch_t* pStar = W_ResolvePatchHandle(::star);
+	const patch_t* pP = W_ResolvePatchHandle(::p);
 
 	const short pwidth = pPercent->width();
 
@@ -1129,7 +1128,7 @@ void WI_drawNetgameStats()
 		if (!demoplayback && nbPlayers > 4)
 			break;
 
-		byte i = (it->id) - 1;
+		const byte i = (it->id) - 1;
 
 		if (!it->ingame())
 			continue;
@@ -1199,7 +1198,6 @@ void WI_updateStats()
 		S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
 		sp_state = 10;
     }
-
     if (sp_state == 2)
     {
 		cnt_kills += 2;
@@ -1242,7 +1240,6 @@ void WI_updateStats()
 		    sp_state++;
 		}
     }
-
     else if (sp_state == 8)
     {
 		if (!(bcnt&3))
@@ -1309,11 +1306,11 @@ void WI_updateStats()
 
 void WI_drawStats()
 {
-	patch_t* pKills = W_ResolvePatchHandle(::kills);
-	patch_t* pItems = W_ResolvePatchHandle(::items);
-	patch_t* pSecret = W_ResolvePatchHandle(::secret);
-	patch_t* pTimepatch = W_ResolvePatchHandle(::timepatch);
-	patch_t* pPar = W_ResolvePatchHandle(::par);
+	const patch_t* pKills = W_ResolvePatchHandle(::kills);
+	const patch_t* pItems = W_ResolvePatchHandle(::items);
+	const patch_t* pSecret = W_ResolvePatchHandle(::secret);
+	const patch_t* pTimepatch = W_ResolvePatchHandle(::timepatch);
+	const patch_t* pPar = W_ResolvePatchHandle(::par);
 
 	// line height
 	const int lh = (3 * W_ResolvePatchHandle(::num[0])->height()) / 2;
@@ -1445,7 +1442,7 @@ static int WI_CalcWidth (const char *str)
 
 		if (lump != -1)
 		{
-			patch_t* p = W_CachePatch(lump);
+			const patch_t* p = W_CachePatch(lump);
 			w += p->width() - 1;
 		} else {
 			w += 12;
