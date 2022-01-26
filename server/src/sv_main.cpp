@@ -2774,6 +2774,10 @@ void SV_UpdateMissiles(player_t &pl)
 // Update the given actors data immediately.
 void SV_UpdateMobj(AActor* mo)
 {
+	// Don't use this function to update players.
+	if (mo->player)
+		return;
+
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		if (!(it->ingame()))
