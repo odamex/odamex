@@ -994,7 +994,7 @@ void MIType_Map07Special(OScanner& os, bool doEquals, void* data, unsigned int f
 	    *static_cast<std::vector<bossaction_t>*>(data);
 
 	// mancubus
-	bossactionvector.push_back({});
+	bossactionvector.push_back(bossaction_t());
 	std::vector<bossaction_t>::iterator it = (bossactionvector.end() - 1);
 	it->type = MT_FATSO;
 
@@ -1004,7 +1004,7 @@ void MIType_Map07Special(OScanner& os, bool doEquals, void* data, unsigned int f
 	P_TranslateLineDef(&it->ld, &mld);
 
 	// arachnotron
-	bossactionvector.push_back({});
+	bossactionvector.push_back(bossaction_t());
 	it = (bossactionvector.end() - 1);
 	it->type = MT_BABY;
 	
@@ -1020,7 +1020,7 @@ void MIType_BaronSpecial(OScanner& os, bool doEquals, void* data, unsigned int f
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
 
 	if (bossactionvector.size() == 0)
-		bossactionvector.push_back({});
+		bossactionvector.push_back(bossaction_t());
 
 	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
 	     it != bossactionvector.end(); ++it)
@@ -1037,7 +1037,7 @@ void MIType_CyberdemonSpecial(OScanner& os, bool doEquals, void* data, unsigned 
 	    *static_cast<std::vector<bossaction_t>*>(data);
 
 	if (bossactionvector.size() == 0)
-		bossactionvector.push_back({});
+		bossactionvector.push_back(bossaction_t());
 
 	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
 	     it != bossactionvector.end(); ++it)
@@ -1054,7 +1054,7 @@ void MIType_SpiderMastermindSpecial(OScanner& os, bool doEquals, void* data,
 	    *static_cast<std::vector<bossaction_t>*>(data);
 
 	if (bossactionvector.size() == 0)
-		bossactionvector.push_back({});
+		bossactionvector.push_back(bossaction_t());
 
 	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
 	     it != bossactionvector.end(); ++it)
@@ -1083,7 +1083,7 @@ void MIType_SpecialAction_ExitLevel(OScanner& os, bool doEquals, void* data,
 		}
 	}
 
-	bossactionvector.push_back({});
+	bossactionvector.push_back(bossaction_t());
 	P_TranslateLineDef(&(bossactionvector.end() - 1)->ld, &mld);
 }
 
@@ -1105,7 +1105,7 @@ void MIType_SpecialAction_OpenDoor(OScanner& os, bool doEquals, void* data,
 		}
 	}
 
-	bossactionvector.push_back({});
+	bossactionvector.push_back(bossaction_t());
 	(bossactionvector.end() - 1)->ld.special = 11;
 	(bossactionvector.end() - 1)->ld.args[0] = 666;
 	(bossactionvector.end() - 1)->ld.args[1] = 64;
@@ -1131,7 +1131,7 @@ void MIType_SpecialAction_LowerFloor(OScanner& os, bool doEquals, void* data,
 		}
 	}
 
-	bossactionvector.push_back({});
+	bossactionvector.push_back(bossaction_t());
 	P_TranslateLineDef(&(bossactionvector.end() - 1)->ld, &mld);
 }
 
