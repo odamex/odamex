@@ -28,8 +28,9 @@
 #define __STSTUFF_H__
 
 
-#include "d_event.h"
 #include "com_misc.h"
+
+struct event_t;
 
 // [RH] Turned these into variables
 // Size of statusbar.

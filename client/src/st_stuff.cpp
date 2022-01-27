@@ -47,6 +47,7 @@
 #include "cl_demo.h"
 #include "c_console.h"
 #include "g_gametype.h"
+#include "d_event.h"
 
 #include "p_ctf.h"
 

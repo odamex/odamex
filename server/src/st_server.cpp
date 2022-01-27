@@ -23,15 +23,15 @@
 
 #include "st_stuff.h"
 
-void ST_DoomTicker (void) {}
-void ST_DoomDrawer (void) {}
-void ST_DoomStart (void) {}
-void ST_DoomInit (void) {}
+void ST_DoomTicker() {}
+void ST_DoomDrawer() {}
+void ST_DoomStart() {}
+void ST_DoomInit() {}
 
-void ST_HticTicker (void) {}
-void ST_HticDrawer (void) {}
-void ST_HticStart (void) {}
-void ST_HticInit (void) {}
+void ST_HticTicker() {}
+void ST_HticDrawer() {}
+void ST_HticStart() {}
+void ST_HticInit() {}
 
 
 VERSION_CONTROL (st_server_cpp, "$Id$")
