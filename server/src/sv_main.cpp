@@ -2873,6 +2873,9 @@ void SV_UpdateGametype(player_t& pl)
 //
 void SV_ActorTarget(AActor *actor)
 {
+	if (actor->player)
+		return;
+
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (!(it->ingame()))
