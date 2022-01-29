@@ -653,12 +653,9 @@ void D_Init()
 //	R_InitViewBorder();
 
 	// init the status bar
-	if (gamemode != registered_heretic || shareware_heretic)
-	{
-		if (first_time)
-			Printf(PRINT_HIGH, "ST_Init: Init status bar.\n");
-		ST_Init();
-	}
+	if (first_time)
+		Printf(PRINT_HIGH, "ST_Init: Init status bar.\n");
+	ST_Init();
 
 	first_time = false;
 }

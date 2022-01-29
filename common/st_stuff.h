@@ -18,7 +18,7 @@
 //
 // DESCRIPTION:
 //	Status bar code.
-//	Does the face/direction indicator animatin.
+//	Does the face/direction indicator animation.
 //	Does palette indicators as well (red pain/berserk, bright pickup)
 //
 //-----------------------------------------------------------------------------

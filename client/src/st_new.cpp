@@ -130,6 +130,7 @@ void ST_unloadNew()
 
 void ST_initNew()
 {
+	// todo - here until proper support is included
 	if (gamemission == heretic)
 		return;
 

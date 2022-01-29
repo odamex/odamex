@@ -18,7 +18,7 @@
 //
 // DESCRIPTION:
 //		Status bar code.
-//		Does the face/direction indicator animatin.
+//		Does the face/direction indicator animation.
 //		Does palette indicators as well (red pain/berserk, bright pickup)
 //		[RH] Widget coordinates are relative to the console, not the screen!
 //
@@ -384,17 +384,17 @@ static int		st_randomnumber;
 static int chainhealth; // current position of the gem
 static int chainwiggle; // small randomized addend for chain y coord.
 
-static patch_t* statbar;
-static patch_t* invbar;
-static patch_t* sbar_back;
-static patch_t* godeyes_left;
-static patch_t* godeyes_right;
-static patch_t* sbar_topleft;
-static patch_t* sbar_topright;
-static patch_t* chain;
-static patch_t* lifegem;
-static patch_t* ltface;
-static patch_t* rtface;
+static lumpHandle_t statbar;
+static lumpHandle_t invbar;
+static lumpHandle_t sbar_back;
+static lumpHandle_t godeyes_left;
+static lumpHandle_t godeyes_right;
+static lumpHandle_t sbar_topleft;
+static lumpHandle_t sbar_topright;
+static lumpHandle_t chain;
+static lumpHandle_t lifegem;
+static lumpHandle_t ltface;
+static lumpHandle_t rtface;
 
 // health widget
 st_number_t w_numhealth;
@@ -773,7 +773,8 @@ static lumpHandle_t LoadFaceGraphic(char* name, int namespc = ns_global)
 static void ST_refreshBackground()
 {
 	const IWindowSurface* surface = R_GetRenderingSurface();
-	const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	const int surface_width = surface->getWidth();
+	const int surface_height = surface->getHeight();
 
 	// [RH] If screen is wider than the status bar, draw stuff around status bar.
 	if (surface_width > ST_WIDTH)
@@ -1103,9 +1104,6 @@ void ST_doRefresh()
 {
 	st_needrefresh = false;
 
-	// draw status bar background to off-screen buff
-	ST_refreshBackground();
-
 	// and refresh all widgets
 	ST_drawWidgets(true);
 }
@@ -1116,7 +1114,9 @@ void ST_diffDraw()
 	ST_drawWidgets(false);
 }
 
-//
+
+static void ST_HticRefreshBackground();
+    //
 // ST_Drawer
 //
 // If st_scale is disabled, the status bar is drawn directly to the rendering
@@ -1154,7 +1154,10 @@ void ST_Drawer()
 		if (st_needrefresh)
 		{
 			// draw status bar background to off-screen buffer then blit to surface
-			ST_refreshBackground();
+			if (gamemission == heretic)
+				ST_HticRefreshBackground();
+			else
+				ST_refreshBackground();
 
 			if (st_scale)
 				stnum_surface->blit(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
@@ -1182,108 +1185,91 @@ void ST_Drawer()
 static void ST_loadGraphics()
 {
 	char namebuf[9];
-
 	namebuf[8] = 0;
 
 	// Load the numbers, tall and short
-	if (gamemission == heretic)
+	for (int i = 0; i < 10; i++)
 	{
-		for (int i = 0; i < 10; i++)
-		{
-			sprintf(namebuf, "IN%d", i);
-			tallnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		sprintf(namebuf, "STTNUM%d", i);
+		tallnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 
-			sprintf(namebuf, "SMALLIN%d", i);
-			shortnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
-		}
-
-		sbar = W_CachePatchHandle("STATBAR", PU_STATIC);
+		sprintf(namebuf, "STYSNUM%d", i);
+		shortnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
-	else
+
+	// Load percent key.
+	// Note: why not load STMINUS here, too?
+	tallpercent = W_CachePatchHandle("STTPRCNT", PU_STATIC);
+
+	// key cards
+	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
 	{
-		for (int i = 0; i < 10; i++)
+		sprintf(namebuf, "STKEYS%d", i);
+		keys[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+	}
+
+	// arms background
+	armsbg = W_CachePatchHandle("STARMS", PU_STATIC);
+
+	// flags background
+	flagsbg = W_CachePatchHandle("STFLAGS", PU_STATIC);
+
+	// arms ownership widgets
+	for (int i = 0; i < 6; i++)
+	{
+		sprintf(namebuf, "STGNUM%d", i + 2);
+
+		// gray #
+		arms[i][0] = W_CachePatchHandle(namebuf, PU_STATIC);
+
+		// yellow #
+		arms[i][1] = shortnum[i + 2];
+	}
+
+	// face backgrounds for different color players
+	// [RH] only one face background used for all players
+	//		different colors are accomplished with translations
+	faceback = W_CachePatchHandle("STFBANY", PU_STATIC);
+
+	// [Nes] Classic vanilla lifebars.
+	for (int i = 0; i < 4; i++)
+	{
+		sprintf(namebuf, "STFB%d", i);
+		faceclassic[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+	}
+
+	// status bar background bits
+	sbar = W_CachePatchHandle("STBAR", PU_STATIC);
+
+	// face states
+	int facenum = 0;
+
+	namebuf[0] = 'S';
+	namebuf[1] = 'T';
+	namebuf[2] = 'F';
+
+	for (int i = 0; i < ST_NUMPAINFACES; i++)
+	{
+		for (int j = 0; j < ST_NUMSTRAIGHTFACES; j++)
 		{
-			sprintf(namebuf, "STTNUM%d", i);
-			tallnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
-
-			sprintf(namebuf, "STYSNUM%d", i);
-			shortnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
-		}
-
-		// Load percent key.
-		// Note: why not load STMINUS here, too?
-		tallpercent = W_CachePatchHandle("STTPRCNT", PU_STATIC);
-
-		// key cards
-		for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
-		{
-			sprintf(namebuf, "STKEYS%d", i);
-			keys[i] = W_CachePatchHandle(namebuf, PU_STATIC);
-		}
-
-		// arms background
-		armsbg = W_CachePatchHandle("STARMS", PU_STATIC);
-
-		// flags background
-		flagsbg = W_CachePatchHandle("STFLAGS", PU_STATIC);
-
-		// arms ownership widgets
-		for (int i = 0; i < 6; i++)
-		{
-			sprintf(namebuf, "STGNUM%d", i + 2);
-
-			// gray #
-			arms[i][0] = W_CachePatchHandle(namebuf, PU_STATIC);
-
-			// yellow #
-			arms[i][1] = shortnum[i + 2];
-		}
-
-		// face backgrounds for different color players
-		// [RH] only one face background used for all players
-		//		different colors are accomplished with translations
-		faceback = W_CachePatchHandle("STFBANY", PU_STATIC);
-
-		// [Nes] Classic vanilla lifebars.
-		for (int i = 0; i < 4; i++)
-		{
-			sprintf(namebuf, "STFB%d", i);
-			faceclassic[i] = W_CachePatchHandle(namebuf, PU_STATIC);
-		}
-
-		// status bar background bits
-		sbar = W_CachePatchHandle("STBAR", PU_STATIC);
-
-		// face states
-		int facenum = 0;
-
-		namebuf[0] = 'S';
-		namebuf[1] = 'T';
-		namebuf[2] = 'F';
-
-		for (int i = 0; i < ST_NUMPAINFACES; i++)
-		{
-			for (int j = 0; j < ST_NUMSTRAIGHTFACES; j++)
-			{
-				sprintf(namebuf + 3, "ST%d%d", i, j);
-				faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
-			}
-			sprintf(namebuf + 3, "TR%d0", i); // turn right
-			faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
-			sprintf(namebuf + 3, "TL%d0", i); // turn left
-			faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
-			sprintf(namebuf + 3, "OUCH%d", i); // ouch!
-			faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
-			sprintf(namebuf + 3, "EVL%d", i); // evil grin ;)
-			faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
-			sprintf(namebuf + 3, "KILL%d", i); // pissed off
+			sprintf(namebuf + 3, "ST%d%d", i, j);
 			faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
 		}
-		strcpy(namebuf + 3, "GOD0");
+		sprintf(namebuf + 3, "TR%d0", i); // turn right
 		faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
-		strcpy(namebuf + 3, "DEAD0");
-		faces[facenum] = LoadFaceGraphic(namebuf, ns_global);
+		sprintf(namebuf + 3, "TL%d0", i); // turn left
+		faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
+		sprintf(namebuf + 3, "OUCH%d", i); // ouch!
+		faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
+		sprintf(namebuf + 3, "EVL%d", i); // evil grin ;)
+		faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
+		sprintf(namebuf + 3, "KILL%d", i); // pissed off
+		faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
 	}
+	strcpy(namebuf + 3, "GOD0");
+	faces[facenum++] = LoadFaceGraphic(namebuf, ns_global);
+	strcpy(namebuf + 3, "DEAD0");
+	faces[facenum] = LoadFaceGraphic(namebuf, ns_global);
 }
 
 static void ST_unloadGraphics()
@@ -1338,133 +1324,66 @@ static void ST_unloadData()
 void ST_createWidgets()
 {
 	// ready weapon ammo
-	w_ready.init(ST_AMMOX,
-				 ST_AMMOY,
-				 tallnum,
-				 &st_current_ammo,
-				 &st_statusbaron,
-				 ST_AMMOWIDTH);
+	w_ready.init(ST_AMMOX, ST_AMMOY, tallnum, &st_current_ammo, &st_statusbaron,
+	             ST_AMMOWIDTH);
 
 	// health percentage
-	w_health.init(ST_HEALTHX,
-				  ST_HEALTHY,
-				  tallnum,
-				  &st_health,
-				  &st_statusbaron,
-				  tallpercent);
+	w_health.init(ST_HEALTHX, ST_HEALTHY, tallnum, &st_health, &st_statusbaron,
+	              tallpercent);
 
 	// weapons owned
-	for (int i = 0 ; i < 6; i++)
+	for (int i = 0; i < 6; i++)
 	{
-		w_arms[i].init(ST_ARMSX+(i%3)*ST_ARMSXSPACE,
-					   ST_ARMSY+(i/3)*ST_ARMSYSPACE,
-					   arms[i],
-					   &st_weaponowned[i],
-					   &st_armson);
+		w_arms[i].init(ST_ARMSX + (i % 3) * ST_ARMSXSPACE,
+		               ST_ARMSY + (i / 3) * ST_ARMSYSPACE, arms[i], &st_weaponowned[i],
+		               &st_armson);
 	}
 
 	// frags sum
-	w_frags.init(ST_FRAGSX,
-				 ST_FRAGSY,
-				 tallnum,
-				 &st_fragscount,
-				 &st_fragson,
-				 ST_FRAGSWIDTH);
+	w_frags.init(ST_FRAGSX, ST_FRAGSY, tallnum, &st_fragscount, &st_fragson,
+	             ST_FRAGSWIDTH);
 
 	// faces
-	w_faces.init(ST_FACESX,
-				 ST_FACESY,
-				 faces,
-				 &st_faceindex,
-				 &st_statusbaron);
+	w_faces.init(ST_FACESX, ST_FACESY, faces, &st_faceindex, &st_statusbaron);
 
 	// armor percentage - should be colored later
-	w_armor.init(ST_ARMORX,
-				 ST_ARMORY,
-				 tallnum,
-				 &st_armor,
-				 &st_statusbaron, tallpercent);
+	w_armor.init(ST_ARMORX, ST_ARMORY, tallnum, &st_armor, &st_statusbaron, tallpercent);
 
 	// keyboxes 0-2
-	w_keyboxes[0].init(ST_KEY0X,
-					   ST_KEY0Y,
-					   keys,
-					   &keyboxes[0],
-					   &st_statusbaron);
+	w_keyboxes[0].init(ST_KEY0X, ST_KEY0Y, keys, &keyboxes[0], &st_statusbaron);
 
-	w_keyboxes[1].init(ST_KEY1X,
-					   ST_KEY1Y,
-					   keys,
-					   &keyboxes[1],
-					   &st_statusbaron);
+	w_keyboxes[1].init(ST_KEY1X, ST_KEY1Y, keys, &keyboxes[1], &st_statusbaron);
 
-	w_keyboxes[2].init(ST_KEY2X,
-					   ST_KEY2Y,
-					   keys,
-					   &keyboxes[2],
-					   &st_statusbaron);
+	w_keyboxes[2].init(ST_KEY2X, ST_KEY2Y, keys, &keyboxes[2], &st_statusbaron);
 
 	// ammo count (all four kinds)
-	w_ammo[0].init(ST_AMMO0X,
-				   ST_AMMO0Y,
-				   shortnum,
-				   &st_ammo[0],
-				   &st_statusbaron,
-				   ST_AMMO0WIDTH);
+	w_ammo[0].init(ST_AMMO0X, ST_AMMO0Y, shortnum, &st_ammo[0], &st_statusbaron,
+	               ST_AMMO0WIDTH);
 
-	w_ammo[1].init(ST_AMMO1X,
-				   ST_AMMO1Y,
-				   shortnum,
-				   &st_ammo[1],
-				   &st_statusbaron,
-				   ST_AMMO1WIDTH);
+	w_ammo[1].init(ST_AMMO1X, ST_AMMO1Y, shortnum, &st_ammo[1], &st_statusbaron,
+	               ST_AMMO1WIDTH);
 
-	w_ammo[2].init(ST_AMMO2X,
-				   ST_AMMO2Y,
-				   shortnum,
-				   &st_ammo[2],
-				   &st_statusbaron,
-				   ST_AMMO2WIDTH);
+	w_ammo[2].init(ST_AMMO2X, ST_AMMO2Y, shortnum, &st_ammo[2], &st_statusbaron,
+	               ST_AMMO2WIDTH);
 
-	w_ammo[3].init(ST_AMMO3X,
-				   ST_AMMO3Y,
-				   shortnum,
-				   &st_ammo[3],
-				   &st_statusbaron,
-				   ST_AMMO3WIDTH);
+	w_ammo[3].init(ST_AMMO3X, ST_AMMO3Y, shortnum, &st_ammo[3], &st_statusbaron,
+	               ST_AMMO3WIDTH);
 
 	// max ammo count (all four kinds)
-	w_maxammo[0].init(ST_MAXAMMO0X,
-					  ST_MAXAMMO0Y,
-					  shortnum,
-					  &st_maxammo[0],
-					  &st_statusbaron,
-					  ST_MAXAMMO0WIDTH);
+	w_maxammo[0].init(ST_MAXAMMO0X, ST_MAXAMMO0Y, shortnum, &st_maxammo[0],
+	                  &st_statusbaron, ST_MAXAMMO0WIDTH);
 
-	w_maxammo[1].init(ST_MAXAMMO1X,
-					  ST_MAXAMMO1Y,
-					  shortnum,
-					  &st_maxammo[1],
-					  &st_statusbaron,
-					  ST_MAXAMMO1WIDTH);
+	w_maxammo[1].init(ST_MAXAMMO1X, ST_MAXAMMO1Y, shortnum, &st_maxammo[1],
+	                  &st_statusbaron, ST_MAXAMMO1WIDTH);
 
-	w_maxammo[2].init(ST_MAXAMMO2X,
-					  ST_MAXAMMO2Y,
-					  shortnum,
-					  &st_maxammo[2],
-					  &st_statusbaron,
-					  ST_MAXAMMO2WIDTH);
+	w_maxammo[2].init(ST_MAXAMMO2X, ST_MAXAMMO2Y, shortnum, &st_maxammo[2],
+	                  &st_statusbaron, ST_MAXAMMO2WIDTH);
 
-	w_maxammo[3].init(ST_MAXAMMO3X,
-					  ST_MAXAMMO3Y,
-					  shortnum,
-					  &st_maxammo[3],
-					  &st_statusbaron,
-					  ST_MAXAMMO3WIDTH);
+	w_maxammo[3].init(ST_MAXAMMO3X, ST_MAXAMMO3Y, shortnum, &st_maxammo[3],
+	                  &st_statusbaron, ST_MAXAMMO3WIDTH);
 
 	// Number of lives (not always rendered)
-	w_lives.init(ST_FX + 34, ST_FY + 25, shortnum, &st_lives, &st_statusbaron,
-	              2);
+	w_lives.init(ST_FX + 34, ST_FY + 25, shortnum, &st_lives, &st_statusbaron, 2);
 }
 
 void ST_DoomDrawer()
@@ -1510,15 +1429,14 @@ void ST_HticCreateWidgets();
 //
 void ST_HticShadeChain(int left, int right, int top, int height)
 {
-	/*
 	int i;
 	int pitch;
 	int diff;
 	byte* top_p;
 
+	/*
 	if (st_scale)
 	{
-
 		pitch = BG->pitch;
 		top_p = BG->buffer;
 	}
@@ -1562,7 +1480,7 @@ void ST_HticShadeChain(int left, int right, int top, int height)
 //
 void ST_HticDrawChainWidget()
 {
-	player_t* plyr = &consoleplayer();
+	const player_t* plyr = &consoleplayer();
 	int y = 32;
 	int chainpos = clamp(chainhealth, 0, 100);
 
@@ -1598,68 +1516,56 @@ static void ST_HticDrawWidgets(bool refresh)
 			w_keyboxes[i].update(refresh);
 
 	ST_HticDrawChainWidget();
-
-	// get surface (currently unlocked in ST_Drawer
-	IWindowSurface* surface = R_GetRenderingSurface();
-
-	if (st_scale && st_statusbaron)
-		surface->blit(stnum_surface, 0, 320, stbar_surface->getWidth(),
-		              gameinfo.statusBar->height, ST_X, ST_Y, ST_WIDTH,
-		                  ST_HEIGHT);
-
-		
-	
 }
 
 static void ST_HticRefreshBackground()
 {
-	int st_edgeheight;
-	player_t* plyr = &consoleplayer();
+	const IWindowSurface* surface = R_GetRenderingSurface();
+	const int surface_width = surface->getWidth();
+	const int surface_height = surface->getHeight();
 
-	if (st_statusbaron)
+	// [RH] If screen is wider than the status bar,
+	//      draw stuff around status bar.
+	if (surface_width > ST_WIDTH)
 	{
-	/*
-		// [RH] If screen is wider than the status bar,
-		//      draw stuff around status bar.
-		if (FG->width > ST_WIDTH)
-		{
-			R_DrawBorder(0, ST_Y, ST_X, FG->height);
-			R_DrawBorder(FG->width - ST_X, ST_Y, FG->width, FG->height);
-		}
-
-		BG->DrawPatch(sbar_back, 0, 0);
-
-		// TODO: Inventory bar
-		BG->DrawPatch(statbar, 34, 2);
-
-		st_edgeheight = 200 - gameinfo.StatusBar->height - sbar_topleft->height() + 1;
-
-		// draw the tops of the faces
-		FG->DrawPatchIndirect(sbar_topleft, 0, st_edgeheight);
-		FG->DrawPatchIndirect(sbar_topright, 290, st_edgeheight);
-		*/
-		ST_HticDrawChainWidget();
-		/*
-		// draw face patches to cover over spare ends of chain
-		BG->DrawPatch(ltface, 0, 32);
-		BG->DrawPatch(rtface, 276, 32);
-
-		if ((plyr->cheats & CF_GODMODE) || plyr->powers[pw_invulnerability])
-		{
-			BG->DrawPatch(godeyes_left, 16, 9);
-			BG->DrawPatch(godeyes_right, 287, 9);
-		}
-
-		ST_HticShadeChain(19, 277, 32, 10);
-
-		BG->Blit(0, 0, 320, gameinfo.StatusBar->height, stnum_screen, 0, 0, 320,
-		         gameinfo.StatusBar->height);
-
-		if (!st_scale)
-			stnumscreen->Blit(0, 0, 320, gameinfo.StatusBar->height, FG, ST_X, ST_Y,
-			                  ST_WIDTH, ST_HEIGHT);
-	*/
+		R_DrawBorder(0, ST_Y, ST_X, surface_height);
+		R_DrawBorder(surface_width - ST_X, ST_Y, surface_width, surface_height);
 	}
+
+	stbar_surface->lock();
+
+	const DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
+	stbar_canvas->DrawPatch(W_ResolvePatchHandle(sbar_back), 0, 0);
+
+	// TODO: Inventory bar
+	stbar_canvas->DrawPatch(W_ResolvePatchHandle(statbar), 34, 2);
+
+	const int st_edgeheight = 200 - gameinfo.statusBar->height - W_ResolvePatchHandle(sbar_topleft)->height() + 1;
+	
+	// draw the tops of the faces
+	stbar_canvas->DrawPatchIndirect(W_ResolvePatchHandle(sbar_topleft), 0, st_edgeheight);
+	stbar_canvas->DrawPatchIndirect(W_ResolvePatchHandle(sbar_topright), 290, st_edgeheight);
+	
+	ST_HticDrawChainWidget();
+	
+	// draw face patches to cover over spare ends of chain
+	stbar_canvas->DrawPatch(W_ResolvePatchHandle(ltface), 0, 32);
+	stbar_canvas->DrawPatch(W_ResolvePatchHandle(rtface), 276, 32);
+
+	player_t* plyr = &consoleplayer();
+	if ((plyr->cheats & CF_GODMODE) || plyr->powers[pw_invulnerability])
+	{
+		stbar_canvas->DrawPatch(W_ResolvePatchHandle(godeyes_left), 16, 9);
+		stbar_canvas->DrawPatch(W_ResolvePatchHandle(godeyes_right), 287, 9);
+	}
+
+	ST_HticShadeChain(19, 277, 32, 10);
+	/*
+	BG->Blit(0, 0, 320, gameinfo.StatusBar->height, stnum_screen, 0, 0, 320,
+	         gameinfo.StatusBar->height);
+	*/
+
+	stbar_surface->unlock();
 }
 
 //
@@ -1689,18 +1595,18 @@ void ST_HticLoadGraphics()
 	negminus = W_CachePatch("NEGNUM", PU_STATIC);
 
 	// update the status bar patch for the appropriate game mode
-	statbar = W_CachePatch((multiplayer ? "STATBAR" : "LIFEBAR"));
+	statbar = W_CachePatchHandle((multiplayer ? "STATBAR" : "LIFEBAR"));
 
-	sbar_back = W_CachePatch("BARBACK", PU_STATIC);
-	godeyes_left = W_CachePatch("GOD1", PU_STATIC);
-	godeyes_right = W_CachePatch("GOD2", PU_STATIC);
-	sbar_topleft = W_CachePatch("LTFCTOP", PU_STATIC);
-	sbar_topright = W_CachePatch("RTFCTOP", PU_STATIC);
+	sbar_back = W_CachePatchHandle("BARBACK", PU_STATIC);
+	godeyes_left = W_CachePatchHandle("GOD1", PU_STATIC);
+	godeyes_right = W_CachePatchHandle("GOD2", PU_STATIC);
+	sbar_topleft = W_CachePatchHandle("LTFCTOP", PU_STATIC);
+	sbar_topright = W_CachePatchHandle("RTFCTOP", PU_STATIC);
 
-	chain = W_CachePatch("CHAIN", PU_STATIC);
-	lifegem = W_CachePatch("LIFEGEM2", PU_STATIC);
-	ltface = W_CachePatch("LTFACE", PU_STATIC);
-	rtface = W_CachePatch("RTFACE", PU_STATIC);
+	chain = W_CachePatchHandle("CHAIN", PU_STATIC);
+	lifegem = W_CachePatchHandle("LIFEGEM2", PU_STATIC);
+	ltface = W_CachePatchHandle("LTFACE", PU_STATIC);
+	rtface = W_CachePatchHandle("RTFACE", PU_STATIC);
 }
 
 void ST_HticCreateWidgets()
@@ -1725,10 +1631,10 @@ void ST_HticUpdateWidgets()
 	static int largeammo = 1994; // means "n/a"
 	player_t* plyr = &consoleplayer();
 
-	/*if (weaponinfo[plyr->readyweapon].ammo == am_noammo)
+	if (weaponinfo[plyr->readyweapon].ammotype == am_noammo)
 		w_ready.num = &largeammo;
 	else
-		w_ready.num = &plyr->ammo[weaponinfo[plyr->readyweapon].ammo];*/ //todo
+		w_ready.num = &plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
 
 	w_ready.data = plyr->readyweapon;
 
@@ -1808,9 +1714,6 @@ void ST_HticTicker()
 void ST_HticDoRefresh()
 {
 	st_needrefresh = false;
-
-	// draw status bar background to off-screen buff
-	ST_HticRefreshBackground();
 
 	// and refresh all widgets
 	ST_HticDrawWidgets(true);
@@ -1901,6 +1804,7 @@ void ST_Init()
 
 void STACK_ARGS ST_Shutdown()
 {
+	// todo - heretic unloading
 	ST_unloadData();
 
 	I_FreeSurface(stbar_surface);
