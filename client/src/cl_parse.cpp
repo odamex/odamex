@@ -150,7 +150,7 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 	{
 	case LineCross:
 		if (line)
-			P_CrossSpecialLine(line - lines, side, mo, bossaction);
+			P_CrossSpecialLine(line, side, mo, bossaction);
 		break;
 	case LineUse:
 		if (line)
