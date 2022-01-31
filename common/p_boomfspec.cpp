@@ -244,7 +244,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			ok = 1;
 			break;
 		}
-		if (!ok)
+		if (!ok && !bossaction) // Bossactions can use any linedef except teleports.
 			return result;
 	}
 
