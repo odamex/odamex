@@ -1213,7 +1213,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY3("cyberdemonspecial", &MIType_CyberdemonSpecial, &ref.bossactions)
 		ENTRY3("spidermastermindspecial", &MIType_SpiderMastermindSpecial, &ref.bossactions)
 		ENTRY3("specialaction_exitlevel", &MIType_SpecialAction_ExitLevel, &ref.bossactions)
-		ENTRY3("specialaction_opendoor", &MIType_SpecialAction_OpenDoor, &ref.flags)
+		ENTRY3("specialaction_opendoor", &MIType_SpecialAction_OpenDoor, &ref.bossactions)
 		ENTRY3("specialaction_lowerfloor", &MIType_SpecialAction_LowerFloor, &ref.bossactions)
 		ENTRY1("lightning")
 		ENTRY3("fadetable", &MIType_LumpName, &ref.fadetable)
