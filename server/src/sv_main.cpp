@@ -2774,6 +2774,10 @@ void SV_UpdateMissiles(player_t &pl)
 // Update the given actors data immediately.
 void SV_UpdateMobj(AActor* mo)
 {
+	// Don't use this function to update players.
+	if (mo->player)
+		return;
+
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		if (!(it->ingame()))
@@ -2869,6 +2873,9 @@ void SV_UpdateGametype(player_t& pl)
 //
 void SV_ActorTarget(AActor *actor)
 {
+	if (actor->player)
+		return;
+
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (!(it->ingame()))
@@ -4500,7 +4507,8 @@ void SV_SendDamageMobj(AActor *target, int pain)
 		client_t *cl = &(it->client);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_DamageMobj(target, pain));
-		MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*target));
+		if (!target->player)
+			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*target));
 	}
 }
 
