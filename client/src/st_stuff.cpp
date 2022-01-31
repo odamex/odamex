@@ -300,7 +300,7 @@ lumpHandle_t keys[NUMCARDS + NUMCARDS / 2];
 lumpHandle_t faces[ST_NUMFACES];
 
 // negative number patch
-patch_t* negminus;
+lumpHandle_t negminus;
 
 // LAME graphic
 patch_t* lamenum;
@@ -851,7 +851,7 @@ void ST_updateFaceWidget()
 			// picking up bonus
 			bool doevilgrin = false;
 
-			for (i=0;i<NUMWEAPONS;i++)
+			for (i = 0; i < NUMWEAPONS; i++)
 			{
 				if (oldweaponsowned[i] != plyr->weaponowned[i])
 				{
@@ -951,7 +951,7 @@ void ST_updateFaceWidget()
 		// rapid firing
 		if (plyr->attackdown)
 		{
-			if (lastattackdown==-1)
+			if (lastattackdown == -1)
 				lastattackdown = ST_RAMPAGEDELAY;
 			else if (!--lastattackdown)
 			{
@@ -968,8 +968,7 @@ void ST_updateFaceWidget()
 	if (priority < 5)
 	{
 		// invulnerability
-		if ((plyr->cheats & CF_GODMODE)
-			|| plyr->powers[pw_invulnerability])
+		if ((plyr->cheats & CF_GODMODE) || plyr->powers[pw_invulnerability])
 		{
 			priority = 4;
 
@@ -1012,7 +1011,7 @@ void ST_updateWidgets()
 	for (int i = 0; i < 6; i++)
 	{
 		// denis - longwinded so compiler optimization doesn't skip it (fault in my gcc?)
-		if(plyr->weaponowned[i+1])
+		if(plyr->weaponowned[i + 1])
 			st_weaponowned[i] = 1;
 		else
 			st_weaponowned[i] = 0;
@@ -1025,7 +1024,7 @@ void ST_updateWidgets()
 
 		// [RH] show multiple keys per box, too
 		if (plyr->cards[i+3])
-			keyboxes[i] = (keyboxes[i] == -1) ? i+3 : i+6;
+			keyboxes[i] = (keyboxes[i] == -1) ? i+3 : i + 6;
 	}
 
 	// refresh everything if this is him coming back to life
@@ -1059,8 +1058,7 @@ void ST_Ticker()
 	if (!multiplayer && !demoplayback && (ConsoleState == c_down || ConsoleState == c_falling))
 		return;
 	st_randomnumber = M_Random();
-	ST_updateWidgets();
-	// gameinfo.statusBar->Ticker();
+	gameinfo.statusBar->Ticker();
 	st_oldhealth = displayplayer().health;
 }
 
@@ -1099,22 +1097,6 @@ void ST_drawWidgets(bool force_refresh)
 }
 
 
-
-void ST_doRefresh()
-{
-	st_needrefresh = false;
-
-	// and refresh all widgets
-	ST_drawWidgets(true);
-}
-
-void ST_diffDraw()
-{
-	// update all widgets
-	ST_drawWidgets(false);
-}
-
-
 static void ST_HticRefreshBackground();
     //
 // ST_Drawer
@@ -1140,7 +1122,8 @@ void ST_Drawer()
 	if (st_statusbaron)
 	{
 		IWindowSurface* surface = R_GetRenderingSurface();
-		const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+		const int surface_width = surface->getWidth();
+		const int surface_height = surface->getHeight();
 
 		ST_WIDTH = ST_StatusBarWidth(surface_width, surface_height);
 		ST_HEIGHT = ST_StatusBarHeight(surface_width, surface_height);
@@ -1388,10 +1371,7 @@ void ST_createWidgets()
 
 void ST_DoomDrawer()
 {
-	if (st_needrefresh)
-		ST_doRefresh();
-	else
-		ST_diffDraw();
+	ST_drawWidgets(st_needrefresh);
 }
 
 void ST_DoomTicker()
@@ -1493,16 +1473,14 @@ void ST_HticDrawChainWidget()
 	if (plyr->health != chainhealth)
 		y += chainwiggle;
 
-	// todo - 
-	/*
+	const DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
 	// draw the chain -- links repeat every 17 pixels, so we
 	// wrap the chain back to the starting position every 17
-	BG->DrawPatch(chain, 2 + (chainpos % 17), y);
+	stbar_canvas->DrawPatch(W_ResolvePatchHandle(chain), 2 + (chainpos % 17), y);
 
 	// draw the gem (17 is the far left pos., 273 is max)
 	// TODO: fix life gem for multiplayer modes
-	BG->DrawPatch(lifegem, 17 + chainpos, y);
-	*/
+	stbar_canvas->DrawPatch(W_ResolvePatchHandle(lifegem), 17 + chainpos, y);
 }
 
 static void ST_HticDrawWidgets(bool refresh)
@@ -1592,7 +1570,7 @@ void ST_HticLoadGraphics()
 	keys[1] = W_CachePatchHandle("GKEYICON", PU_STATIC);
 	keys[2] = W_CachePatchHandle("BKEYICON", PU_STATIC);
 
-	negminus = W_CachePatch("NEGNUM", PU_STATIC);
+	negminus = W_CachePatchHandle("NEGNUM", PU_STATIC);
 
 	// update the status bar patch for the appropriate game mode
 	statbar = W_CachePatchHandle((multiplayer ? "STATBAR" : "LIFEBAR"));
@@ -1628,7 +1606,7 @@ void ST_HticCreateWidgets()
 
 void ST_HticUpdateWidgets()
 {
-	static int largeammo = 1994; // means "n/a"
+	static int largeammo = ST_DONT_DRAW_NUM;
 	player_t* plyr = &consoleplayer();
 
 	if (weaponinfo[plyr->readyweapon].ammotype == am_noammo)
@@ -1711,20 +1689,6 @@ void ST_HticTicker()
 	ST_HticUpdateWidgets();
 }
 
-void ST_HticDoRefresh()
-{
-	st_needrefresh = false;
-
-	// and refresh all widgets
-	ST_HticDrawWidgets(true);
-}
-
-void ST_HticDiffDraw()
-{
-	// update all widgets
-	ST_HticDrawWidgets(false);
-}
-
 //
 // ST_HticDrawer
 //
@@ -1732,10 +1696,7 @@ void ST_HticDiffDraw()
 //
 void ST_HticDrawer()
 {
-	if (st_needrefresh)
-		ST_HticDoRefresh();
-	else
-		ST_HticDiffDraw();
+	ST_HticDrawWidgets(st_needrefresh);
 }
 
 //
@@ -1774,7 +1735,9 @@ void ST_Start()
 	for (int i = 0; i < 3; i++)
 		keyboxes[i] = -1;
 
-	STlib_init();
+	negminus =
+	    W_CachePatchHandle((gamemission == heretic) ? "NEGNUM" : "STTMINUS", PU_STATIC);
+
 	ST_initNew();
 	gameinfo.statusBar->Start();
 	

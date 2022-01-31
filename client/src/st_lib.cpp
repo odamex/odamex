@@ -26,7 +26,6 @@
 
 #include "odamex.h"
 
-#include "z_zone.h"
 #include "v_video.h"
 #include "i_video.h"
 
@@ -35,20 +34,6 @@
 #include "st_stuff.h"
 #include "st_lib.h"
 #include "r_local.h"
-
-
-
-//
-// Hack display negative frags.
-//	Loads and store the stminus lump.
-//
-lumpHandle_t negminus;
-
-void STlib_init()
-{
-	negminus = W_CachePatchHandle((gamemission == heretic) ? "NEGNUM" : "STTMINUS",
-		                              PU_STATIC);
-}
 
 
 // [RH] Routines to stretch status bar graphics depending on st_scale cvar.
@@ -243,12 +228,12 @@ void st_multicon_s::update(bool force_refresh)
 
 void st_binicon_t::init(int x_, int y_, lumpHandle_t patch, bool* val_, bool* on_)
 {
-	x			= x_;
-	y			= y_;
+	x		= x_;
+	y		= y_;
 	oldval	= 0;
 	val		= val_;
 	on		= on_;
-	p			= patch;
+	p		= patch;
 }
 
 

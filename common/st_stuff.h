@@ -29,6 +29,7 @@
 
 
 #include "com_misc.h"
+#include "w_wad.h"
 
 struct event_t;
 
@@ -75,6 +76,9 @@ typedef struct stbarfns_s
 
 extern stbarfns_t DoomStatusBar;
 extern stbarfns_t HticStatusBar;
+
+// for st_lib.cpp
+extern lumpHandle_t negminus;
 
 int ST_StatusBarWidth(int surface_width, int surface_height);
 int ST_StatusBarHeight(int surface_width, int surface_height);

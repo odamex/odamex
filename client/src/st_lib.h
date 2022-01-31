@@ -183,12 +183,6 @@ typedef st_binicon_s st_binicon_t;
 // Widget creation, access, and update routines
 //
 
-// Initializes widget library.
-// More precisely, initialize STMINUS,
-//	everything else is done somewhere else.
-//
-void STlib_init();
-
 #define ST_DONT_DRAW_NUM 1994 // means "n/a"
 
 void ST_DrawNum(int x, int y, DCanvas *scrn, int num);
