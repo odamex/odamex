@@ -324,7 +324,10 @@ const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
 struct bossaction_t
 {
 	int type;
-	line_t ld;
+	short special;
+	short tag;
+
+	bossaction_t() : type(MT_NULL), special(), tag() {}
 };
 
 struct cluster_info_t

@@ -40,9 +40,10 @@
 #include "d_player.h"
 #include "p_setup.h"
 #include "d_dehacked.h"
+#include "p_mapformat.h"
 
 
-EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_novileghosts)
@@ -2720,19 +2721,27 @@ void A_BossDeath(AActor *actor)
 		{
 			if (ba->type == actor->type)
 			{
-				if (!P_UseSpecialLine(actor, &ba->ld, 0, true))
+				line_t ld;
+				
+				if (map_format.getZDoom())
+				{
+					maplinedef_t mld;
+					mld.special = (ba->special);
+					mld.tag = (ba->tag);
+
+					P_TranslateLineDef(&ld, &mld);
+				}
+				else
+				{
+					ld.special = ba->special;
+					ld.id = ba->tag;
+				}
+
+				if (!P_UseSpecialLine(actor, &ld, 0, true))
 					P_CrossSpecialLine(0, 0, actor, true);
 			}
 		}
 	}
-
-	/*
-	// [RH] If noexit, then don't end the level.
-	if (sv_gametype != GM_COOP && !sv_allowexit)
-		return;
-
-	G_ExitLevel(0, 1);
-	*/
 }
 
 
@@ -2839,7 +2848,7 @@ void A_BrainExplode (AActor *mo)
 	int x = mo->x + P_RandomDiff (mo)*2048;
 	int y = mo->y;
 	int z = 128 + P_Random (mo)*2*FRACUNIT;
-	AActor *th = new AActor (x,y,z, MT_ROCKET);
+	AActor *th = new AActor (x, y, z, MT_ROCKET);
 	th->momz = P_Random (mo) << 9;
 
 	P_SetMobjState (th, S_BRAINEXPLODE1, true);

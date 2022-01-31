@@ -472,20 +472,9 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			    special == 124)
 			{
 				bossaction_t new_bossaction;
-
-				maplinedef_t mld;
-				mld.special = static_cast<short>(special);
-				mld.tag = static_cast<short>(tag);
-
-				if (map_format.getZDoom())
-				{
-					P_TranslateLineDef(&new_bossaction.ld, &mld);
-				}
-				else
-				{
-					new_bossaction.ld.special = mld.special;
-					new_bossaction.ld.id = mld.tag;
-				}
+				
+				new_bossaction.special = static_cast<short>(special);
+				new_bossaction.tag = static_cast<short>(tag);
 
 				new_bossaction.type = i;
 
@@ -1006,21 +995,18 @@ void MIType_Map07Special(OScanner& os, bool doEquals, void* data, unsigned int f
 	// mancubus
 	bossactionvector.push_back(bossaction_t());
 	std::vector<bossaction_t>::iterator it = (bossactionvector.end() - 1);
+	
 	it->type = MT_FATSO;
-
-	maplinedef_t mld;
-	mld.special = 23;
-	mld.tag = 666;
-	P_TranslateLineDef(&it->ld, &mld);
+	it->special = 23;
+	it->tag = 666;
 
 	// arachnotron
 	bossactionvector.push_back(bossaction_t());
 	it = (bossactionvector.end() - 1);
-	it->type = MT_BABY;
 	
-	mld.special = 30;
-	mld.tag = 667;
-	P_TranslateLineDef(&it->ld, &mld);
+	it->type = MT_BABY;
+	it->special = 30;
+	it->tag = 667;
 }
 
 // Sets the map to use the baron bossaction
@@ -1079,46 +1065,44 @@ void MIType_SpecialAction_ExitLevel(OScanner& os, bool doEquals, void* data,
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
 
-	maplinedef_t mld;
-	mld.special = 11;
-	mld.tag = 0;
-
-	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
-	     it != bossactionvector.end(); ++it)
+	std::vector<bossaction_t>::iterator it;
+	for (it = bossactionvector.begin(); it != bossactionvector.end(); ++it)
 	{
-		if (!it->ld.PropertiesChanged)
+		if (it->type == MT_NULL)
 		{
-			P_TranslateLineDef(&it->ld, &mld);
+			it->special = 11;
+			it->tag = 0;
 			return;
 		}
 	}
 
 	bossactionvector.push_back(bossaction_t());
-	P_TranslateLineDef(&(bossactionvector.end() - 1)->ld, &mld);
+	it = bossactionvector.end() - 1;
+	it->special = 11;
+	it->tag = 0;
 }
 
 //
 void MIType_SpecialAction_OpenDoor(OScanner& os, bool doEquals, void* data,
-                                    unsigned int flags, unsigned int flags2)
+                                   unsigned int flags, unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
 
-	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
-	     it != bossactionvector.end(); ++it)
+	std::vector<bossaction_t>::iterator it;
+	for (it = bossactionvector.begin(); it != bossactionvector.end(); ++it)
 	{
-		if (!it->ld.PropertiesChanged)
+		if (it->type == MT_NULL)
 		{
-			it->ld.special = 11;
-			it->ld.args[0] = 666;
-			it->ld.args[1] = 64;
+			it->special = 31;
+			it->tag = 666;
 			return;
 		}
 	}
 
 	bossactionvector.push_back(bossaction_t());
-	(bossactionvector.end() - 1)->ld.special = 11;
-	(bossactionvector.end() - 1)->ld.args[0] = 666;
-	(bossactionvector.end() - 1)->ld.args[1] = 64;
+	it = bossactionvector.end() - 1;
+	it->special = 31;
+	it->tag = 666;
 }
 
 //
@@ -1127,22 +1111,21 @@ void MIType_SpecialAction_LowerFloor(OScanner& os, bool doEquals, void* data,
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
 
-	maplinedef_t mld;
-	mld.special = 23;
-	mld.tag = 666;
-
-	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
-	     it != bossactionvector.end(); ++it)
+	std::vector<bossaction_t>::iterator it;
+	for (it = bossactionvector.begin(); it != bossactionvector.end(); ++it)
 	{
-		if (!it->ld.PropertiesChanged)
+		if (it->type == MT_NULL)
 		{
-			P_TranslateLineDef(&it->ld, &mld);
+			it->special = 23;
+			it->tag = 666;
 			return;
 		}
 	}
 
 	bossactionvector.push_back(bossaction_t());
-	P_TranslateLineDef(&(bossactionvector.end() - 1)->ld, &mld);
+	it = (bossactionvector.end() - 1);
+	it->special = 23;
+	it->tag = 666;
 }
 
 //
