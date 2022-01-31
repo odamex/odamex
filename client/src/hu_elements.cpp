@@ -44,7 +44,6 @@ size_t P_NumPlayersInGame(void);
 argb_t CL_GetPlayerColor(player_t*);
 
 extern NetDemo netdemo;
-extern bool HasBehavior;
 extern fixed_t FocalLengthX;
 extern byte* Ranges;
 

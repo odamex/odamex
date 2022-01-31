@@ -61,8 +61,11 @@ extern const fixed_t		finetangent[FINEANGLES/2];
 // Binary Angle Measument, BAM.
 #define ANG45			0x20000000
 #define ANG90			0x40000000
+#define ANG135			0x60000000
 #define ANG180			0x80000000
+#define ANG225			0xa0000000
 #define ANG270			0xc0000000
+#define ANG315			0xe0000000
 #define ANG(n)			((ANG45/45)*(n))
 
 #define ANG360  0xffffffff

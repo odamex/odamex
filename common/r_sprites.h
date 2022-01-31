@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -17,26 +17,32 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Setup a game, startup stuff.
+//	Loading sprites, skins.
 //
 //-----------------------------------------------------------------------------
 
 
-#ifndef __P_SETUP__
-#define __P_SETUP__
+#ifndef __R_SPRITES__
+#define __R_SPRITES__
 
+extern int MaxVisSprites;
 
+extern vissprite_t *vissprites;
 
-// NOT called by W_Ticker. Fixme.
-//
-// [RH] The only parameter used is mapname, so I removed playermask and skill.
-//		On September 1, 1998, I added the position to indicate which set
-//		of single-player start spots should be spawned in the level.
-void P_SetupLevel (const char *mapname, int position);
-void P_TranslateLineDef(line_t* ld, maplinedef_t* mld);
+extern spritedef_t* sprites;
+extern int numsprites;
 
-// Called by startup code.
-void P_Init (void);
+#define MAX_SPRITE_FRAMES 29 // [RH] Macro-ized as in BOOM.
+
+// variables used to look up
+//	and range check thing_t sprites patches
+extern spriteframe_t sprtemp[MAX_SPRITE_FRAMES];
+extern int maxframe;
+
+extern vissprite_t* lastvissprite;
+
+void R_CacheSprite(spritedef_t *sprite);
+void R_InitSprites(const char** namelist);
 
 #endif
 

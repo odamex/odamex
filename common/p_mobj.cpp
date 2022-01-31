@@ -44,6 +44,7 @@
 #include "p_hordespawn.h"
 #include "g_mapinfo.h"
 #include "m_wdlstats.h"
+#include "p_mapformat.h"
 
 void SV_UpdateMobj(AActor* mo);
 void SV_UpdateMobjState(AActor* mo);
@@ -55,7 +56,6 @@ void SV_UpdateMobjState(AActor* mo);
 
 extern bool predicting;
 extern fixed_t attackrange;
-extern bool HasBehavior;
 extern AActor *shootthing;
 
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
@@ -609,7 +609,7 @@ void P_MoveActor(AActor *mo)
 			}
 		}
 
-		if (!mo->player && P_ActorInSpecialSector(mo))
+		if (!mo->player && map_format.actor_in_special_sector(mo))
 			return;
 	}
 
@@ -1067,8 +1067,15 @@ static bool P_ExplodeMissileAgainstWall(AActor* mo)
 {
 	if (mo->flags & MF_MISSILE)
 	{
+		short spe;
+
+		if (map_format.getZDoom())
+			spe = Line_Horizon;
+		else
+			spe = 337;
+
 		// [SL] 2012-01-25 - Don't explode missiles on horizon line
-		if (BlockingLine && BlockingLine->special == Line_Horizon)
+		if (BlockingLine && BlockingLine->special == spe)
 		{
 			mo->Destroy();
 			return false;

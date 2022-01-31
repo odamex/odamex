@@ -59,6 +59,7 @@
 #include "st_stuff.h"
 #include "svc_map.h"
 #include "v_textcolors.h"
+#include "p_mapformat.h"
 
 // Extern data from other files.
 
@@ -129,8 +130,7 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 	// the set of recently teleported players.  This is used to flush past
 	// positions since they cannot be used for interpolation.
 	if (line && (mo && mo->player) &&
-	    (line->special == Teleport || line->special == Teleport_NoFog ||
-	     line->special == Teleport_NoStop || line->special == Teleport_Line))
+	    (P_IsTeleportLine(line->special)))
 	{
 		teleported_players.insert(mo->player->id);
 
@@ -1156,8 +1156,12 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 		else 
 			p->health = 0;
 	}
+
 	if (p->armorpoints < 0)
 		p->armorpoints = 0;
+
+	if (p->armorpoints == 0)
+		p->armortype = 0;
 
 	if (healthDamage > 0)
 	{
@@ -1683,8 +1687,14 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
 	{
 		// only playsound if we've received the full update from
 		// the server (not setting up the map from the server)
-		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL,
-		                      recv_full_update);
+		bool repeat;
+
+		if (map_format.getZDoom())
+			repeat = lines[l].flags & ML_REPEATSPECIAL;
+		else
+			repeat = P_IsSpecialBoomRepeatable(lines[l].special);
+
+		P_ChangeSwitchTexture(&lines[l], repeat, recv_full_update);
 	}
 
 	// Only accept texture change from server while receiving the full update

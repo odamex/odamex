@@ -91,7 +91,6 @@ baseapp_t baseapp = server;
 // really only used clientside
 bool        simulated_connection = false;
 
-extern bool HasBehavior;
 extern int mapchange;
 
 bool step_mode = false;
@@ -125,7 +124,7 @@ void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_s* player);
-bool P_LineSpecialMovesSector(byte special);
+bool P_LineSpecialMovesSector(short special);
 
 void SV_UpdateShareKeys(player_t& player);
 std::string V_GetTeamColor(UserInfo userinfo);
@@ -2775,6 +2774,10 @@ void SV_UpdateMissiles(player_t &pl)
 // Update the given actors data immediately.
 void SV_UpdateMobj(AActor* mo)
 {
+	// Don't use this function to update players.
+	if (mo->player)
+		return;
+
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		if (!(it->ingame()))
@@ -2870,6 +2873,9 @@ void SV_UpdateGametype(player_t& pl)
 //
 void SV_ActorTarget(AActor *actor)
 {
+	if (actor->player)
+		return;
+
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (!(it->ingame()))
@@ -4501,7 +4507,8 @@ void SV_SendDamageMobj(AActor *target, int pain)
 		client_t *cl = &(it->client);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_DamageMobj(target, pain));
-		MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*target));
+		if (!target->player)
+			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*target));
 	}
 }
 

@@ -777,11 +777,19 @@ void D_DoomMain()
 		bool shouldSkip = false;
 		for (size_t i = 0; i < ARRAY_LENGTH(skipParams); i++)
 		{
-			if (Args.CheckValue(skipParams[i]))
+			if (::Args.CheckValue(skipParams[i]))
 			{
 				shouldSkip = true;
 				break;
 			}
+		}
+
+		// Skip boot window if we pass a single argument that isn't the
+		// start of a standard parameter - it must be a path.
+		if (!shouldSkip && ::Args.NumArgs() == 2 && ::Args[1][0] != '+' &&
+		    ::Args[1][0] != '-')
+		{
+			shouldSkip = true;
 		}
 
 		if (!shouldSkip)
@@ -792,9 +800,12 @@ void D_DoomMain()
 
 	OWantFiles newwadfiles, newpatchfiles;
 
-	OWantFile file;
-	OWantFile::make(file, iwad, OFILE_WAD);
-	newwadfiles.push_back(file);
+	if (!iwad.empty())
+	{
+		OWantFile file;
+		OWantFile::make(file, iwad, OFILE_WAD);
+		newwadfiles.push_back(file);
+	}
 
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
