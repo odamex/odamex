@@ -1093,7 +1093,7 @@ void MIType_SpecialAction_OpenDoor(OScanner& os, bool doEquals, void* data,
 	{
 		if (it->type != MT_NULL)
 		{
-			it->special = 31;
+			it->special = 29;
 			it->tag = 666;
 			return;
 		}
@@ -1101,7 +1101,7 @@ void MIType_SpecialAction_OpenDoor(OScanner& os, bool doEquals, void* data,
 
 	bossactionvector.push_back(bossaction_t());
 	it = bossactionvector.end() - 1;
-	it->special = 31;
+	it->special = 29;
 	it->tag = 666;
 }
 
