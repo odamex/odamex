@@ -36,6 +36,7 @@
 class IWindowSurface;
 
 extern int CleanXfac, CleanYfac;
+extern bool am_gotbackdrop;
 
 //
 // VIDEO

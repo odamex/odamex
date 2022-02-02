@@ -574,6 +574,8 @@ void V_Init()
 	BuildTransTable(V_GetDefaultPalette()->basecolors);
 
 	vid_pillarbox_old = vid_pillarbox;
+
+	am_gotbackdrop = false;
 }
 
 

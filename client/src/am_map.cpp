@@ -24,7 +24,6 @@
 
 #include "odamex.h"
 
-
 #include "z_zone.h"
 #include "st_stuff.h"
 #include "p_local.h"
@@ -191,6 +190,10 @@ typedef struct {
 	fixed_t slp, islp;
 } islope_t;
 
+// backdrop
+static IWindowSurface* am_backdrop;
+bool am_gotbackdrop = false;
+
 
 
 //
@@ -260,7 +263,7 @@ static int 	leveljuststarted = 1; 	// kluge until AM_LevelInit() is called
 
 
 
-bool	automapactive = false;
+bool automapactive = false;
 
 // location of window on screen
 static int	f_x;
@@ -395,7 +398,7 @@ bool AM_OverlayAutomapVisible()
 //
 //
 //
-void AM_activateNewScale(void)
+void AM_activateNewScale()
 {
 	m_x += m_w/2;
 	m_y += m_h/2;
@@ -410,7 +413,7 @@ void AM_activateNewScale(void)
 //
 //
 //
-void AM_saveScaleAndLoc(void)
+void AM_saveScaleAndLoc()
 {
 	old_m_x = m_x;
 	old_m_y = m_y;
@@ -421,7 +424,7 @@ void AM_saveScaleAndLoc(void)
 //
 //
 //
-void AM_restoreScaleAndLoc(void)
+void AM_restoreScaleAndLoc()
 {
 	m_w = old_m_w;
 	m_h = old_m_h;
@@ -446,7 +449,7 @@ void AM_restoreScaleAndLoc(void)
 //
 // adds a marker at the current location
 //
-void AM_addMark(void)
+void AM_addMark()
 {
 	markpoints[markpointnum].x = m_x + m_w/2;
 	markpoints[markpointnum].y = m_y + m_h/2;
@@ -457,16 +460,12 @@ void AM_addMark(void)
 // Determines bounding box of all vertices,
 // sets global variables controlling zoom range.
 //
-void AM_findMinMaxBoundaries(void)
+void AM_findMinMaxBoundaries()
 {
-	int i;
-	fixed_t a;
-	fixed_t b;
-
 	min_x = min_y =  MAXINT;
 	max_x = max_y = -MAXINT;
 
-	for (i=0;i<numvertexes;i++) {
+	for (int i = 0;i<numvertexes;i++) {
 		if (vertexes[i].x < min_x)
 			min_x = vertexes[i].x;
 		else if (vertexes[i].x > max_x)
@@ -484,8 +483,8 @@ void AM_findMinMaxBoundaries(void)
 	min_w = 2*PLAYERRADIUS; // const? never changed?
 	min_h = 2*PLAYERRADIUS;
 
-	a = FixedDiv((I_GetSurfaceWidth())<<FRACBITS, max_w);
-	b = FixedDiv((I_GetSurfaceHeight())<<FRACBITS, max_h);
+	fixed_t a = FixedDiv((I_GetSurfaceWidth()) << FRACBITS, max_w);
+	fixed_t b = FixedDiv((I_GetSurfaceHeight()) << FRACBITS, max_h);
 
 	min_scale_mtof = a < b ? a : b;
 	max_scale_mtof = FixedDiv((I_GetSurfaceHeight())<<FRACBITS, 2*PLAYERRADIUS);
@@ -495,7 +494,7 @@ void AM_findMinMaxBoundaries(void)
 //
 //
 //
-void AM_changeWindowLoc(void)
+void AM_changeWindowLoc()
 {
 	if (m_paninc.x || m_paninc.y) {
 		am_followplayer.Set(0.0f);
@@ -523,7 +522,7 @@ void AM_changeWindowLoc(void)
 //
 //
 //
-void AM_initVariables(void)
+void AM_initVariables()
 {
 	static event_t st_notify(ev_keyup, AM_MSGENTERED, 0, 0);
 
@@ -637,19 +636,40 @@ void AM_initColors (BOOL overlayed)
 	}
 	else
 	{
-		/* Use colors corresponding to the original Doom's */
-		Background = AM_GetColorFromString(palette_colors, "00 00 00");
-		YourColor = AM_GetColorFromString(palette_colors, "FF FF FF");
-		AlmostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
-		SecretWallColor = WallColor = AM_GetColorFromString(palette_colors, "fc 00 00");
-		TSWallColor = AM_GetColorFromString(palette_colors, "80 80 80");
-		FDWallColor = AM_GetColorFromString(palette_colors, "bc 78 48");
-		LockedColor = AM_GetColorFromString(palette_colors, "fc fc 00");
-		CDWallColor = AM_GetColorFromString(palette_colors, "fc fc 00");
-		ThingColor = AM_GetColorFromString(palette_colors, "74 fc 6c");
-		GridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
-		XHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
-		NotSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
+		switch (gamemission)
+		{
+		case heretic:
+			/* Use colors corresponding to the original Heretic's */
+			Background = AM_GetColorFromString(palette_colors, "00 00 00");
+			YourColor = AM_GetColorFromString(palette_colors, "FF FF FF");
+			AlmostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
+			SecretWallColor = WallColor = AM_GetColorFromString(palette_colors, "4c 33 11");
+			TSWallColor = AM_GetColorFromString(palette_colors, "59 5e 57");
+			FDWallColor = AM_GetColorFromString(palette_colors, "d0 b0 85");
+			LockedColor = AM_GetColorFromString(palette_colors, "fc fc 00");
+			CDWallColor = AM_GetColorFromString(palette_colors, "68 3c 20");
+			ThingColor = AM_GetColorFromString(palette_colors, "38 38 38");
+			GridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
+			XHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
+			NotSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
+			break;
+
+		default:
+			/* Use colors corresponding to the original Doom's */
+			Background = AM_GetColorFromString(palette_colors, "00 00 00");
+			YourColor = AM_GetColorFromString(palette_colors, "FF FF FF");
+			AlmostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
+			SecretWallColor = WallColor = AM_GetColorFromString(palette_colors, "fc 00 00");
+			TSWallColor = AM_GetColorFromString(palette_colors, "80 80 80");
+			FDWallColor = AM_GetColorFromString(palette_colors, "bc 78 48");
+			LockedColor = AM_GetColorFromString(palette_colors, "fc fc 00");
+			CDWallColor = AM_GetColorFromString(palette_colors, "fc fc 00");
+			ThingColor = AM_GetColorFromString(palette_colors, "74 fc 6c");
+			GridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
+			XHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
+			NotSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
+			break;
+		}
 	}
 }
 
@@ -659,7 +679,14 @@ void AM_initColors (BOOL overlayed)
 void AM_loadPics()
 {
 	if (gamemission == heretic)
-		;
+	{
+		for (int i = 0; i < 10; i++)
+		{
+			char namebuf[9];
+			sprintf(namebuf, "SMALLIN%d", i);
+			marknums[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		}
+	}
 	else
 	{
 		for (int i = 0; i < 10; i++)
@@ -669,6 +696,26 @@ void AM_loadPics()
 			marknums[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 		}
 	}
+
+	// haleyjd 12/22/02: automap background support (raw format)
+	// [ML] 9/25/10: Heavily modified to use our canvases.
+	if ((W_CheckNumForName("AUTOPAGE")) != -1)
+	{
+		if (!am_gotbackdrop)
+		{
+			// allocate backdrop
+			void* bg = W_CacheLumpName("AUTOPAGE", PU_STATIC);
+			delete am_backdrop;
+
+			am_backdrop = I_AllocateSurface(320, 158, 8);
+
+			am_backdrop->lock();
+			am_backdrop->getDefaultCanvas()->DrawBlock((byte*)bg, 0, 0, 320, 158);
+			am_backdrop->unlock();
+
+			am_gotbackdrop = true;
+		}
+	}
 }
 
 void AM_unloadPics()
@@ -676,6 +723,14 @@ void AM_unloadPics()
 	for (int i = 0; i < 10; i++)
 	{
 		marknums[i].clear();
+	}
+
+	// haleyjd 12/22/02: backdrop support
+	if (am_backdrop && am_gotbackdrop)
+	{
+		I_FreeSurface(am_backdrop);
+		am_backdrop = NULL;
+		am_gotbackdrop = false;
 	}
 }
 
@@ -690,7 +745,7 @@ void AM_clearMarks()
 // should be called at the start of every level
 // right now, i figure it out myself
 //
-void AM_LevelInit(void)
+void AM_LevelInit()
 {
 	leveljuststarted = 0;
 	am_cheating = 0; // force-reset IDDT after loading a map
@@ -750,7 +805,7 @@ void AM_Start()
 //
 // set the window scale to the maximum size
 //
-void AM_minOutWindowScale(void)
+void AM_minOutWindowScale()
 {
 	scale_mtof = min_scale_mtof;
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
@@ -759,7 +814,7 @@ void AM_minOutWindowScale(void)
 //
 // set the window scale to the minimum size
 //
-void AM_maxOutWindowScale(void)
+void AM_maxOutWindowScale()
 {
 	scale_mtof = max_scale_mtof;
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
@@ -795,7 +850,7 @@ END_COMMAND (togglemap)
 //
 // Handle events (user inputs) in automap mode
 //
-BOOL AM_Responder (event_t *ev)
+BOOL AM_Responder(event_t *ev)
 {
 	if (automapactive && (ev->type == ev_keydown || ev->type == ev_keyup))
 	{
@@ -840,9 +895,8 @@ BOOL AM_Responder (event_t *ev)
 //
 // Zooming
 //
-void AM_changeWindowScale (void)
+void AM_changeWindowScale()
 {
-
 	static fixed_t	mtof_zoommul;	// how far the window zooms in each tic (map coords)
 
 	if (Actions[ACTION_AUTOMAP_ZOOMOUT]) {
@@ -872,7 +926,7 @@ void AM_changeWindowScale (void)
 //
 //
 //
-void AM_doFollowPlayer(void)
+void AM_doFollowPlayer()
 {
 	player_t &p = displayplayer();
 
@@ -891,7 +945,7 @@ void AM_doFollowPlayer(void)
 //
 // Updates on Game Tick
 //
-void AM_Ticker (void)
+void AM_Ticker()
 {
 	if (!automapactive)
 		return;
@@ -932,25 +986,36 @@ void AM_Ticker (void)
 //
 // Clear automap frame buffer.
 //
-void AM_clearFB (am_color_t color)
+void AM_clearFB(am_color_t color)
 {
-	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+	if (am_gotbackdrop && am_backdrop)
 	{
-		if (f_w == f_p)
-			memset(fb, color.index, f_w*f_h);
-		else
-			for (int y = 0; y < f_h; y++)
-				memset(fb + y * f_p, color.index, f_w);
+		m_w = FTOM(I_GetSurfaceWidth());
+		m_h = FTOM(I_GetSurfaceHeight()) - ST_HEIGHT;
+
+		I_GetPrimarySurface()->blit(am_backdrop, 0, 0, am_backdrop->getWidth(),
+		                      am_backdrop->getHeight(), 0, 0, m_w, m_h);
 	}
 	else
 	{
-		argb_t* line = (argb_t*)fb;
-
-		for (int y = 0; y < f_h; y++)
+		if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 		{
-			for (int x = 0; x < f_w; x++)
-				line[x] = color.rgb;
-			line += f_p >> 2;
+			if (f_w == f_p)
+				memset(fb, color.index, f_w * f_h);
+			else
+				for (int y = 0; y < f_h; y++)
+					memset(fb + y * f_p, color.index, f_w);
+		}
+		else
+		{
+			argb_t* line = (argb_t*)fb;
+
+			for (int y = 0; y < f_h; y++)
+			{
+				for (int x = 0; x < f_w; x++)
+					line[x] = color.rgb;
+				line += f_p >> 2;
+			}
 		}
 	}
 }
@@ -1083,15 +1148,7 @@ BOOL AM_clipMline (mline_t *ml, fline_t *fl)
 
 void AM_drawFlineP (fline_t* fl, byte color)
 {
-			register int x;
-			register int y;
-			register int dx;
-			register int dy;
-			register int sx;
-			register int sy;
-			register int ax;
-			register int ay;
-			register int d;
+	int d;
 
 
 			fl->a.x += f_x;
@@ -1099,16 +1156,16 @@ void AM_drawFlineP (fline_t* fl, byte color)
 			fl->a.y += f_y;
 			fl->b.y += f_y;
 
-			dx = fl->b.x - fl->a.x;
-			ax = 2 * (dx<0 ? -dx : dx);
-			sx = dx<0 ? -1 : 1;
+			int dx = fl->b.x - fl->a.x;
+			int ax = 2 * (dx < 0 ? -dx : dx);
+			int sx = dx < 0 ? -1 : 1;
 
-			dy = fl->b.y - fl->a.y;
-			ay = 2 * (dy<0 ? -dy : dy);
-			sy = dy<0 ? -1 : 1;
+			int dy = fl->b.y - fl->a.y;
+			int ay = 2 * (dy < 0 ? -dy : dy);
+			int sy = dy < 0 ? -1 : 1;
 
-			x = fl->a.x;
-			y = fl->a.y;
+			int x = fl->a.x;
+			int y = fl->a.y;
 
 			if (ax > ay) {
 				d = ay - ax/2;
@@ -1148,36 +1205,30 @@ void AM_drawFlineP (fline_t* fl, byte color)
 
 void AM_drawFlineD(fline_t* fl, argb_t color)
 {
-	register int x;
-	register int y;
-	register int dx;
-	register int dy;
-	register int sx;
-	register int sy;
-	register int ax;
-	register int ay;
-	register int d;
-
 	fl->a.x += f_x;
 	fl->b.x += f_x;
 	fl->a.y += f_y;
 	fl->b.y += f_y;
 
-	dx = fl->b.x - fl->a.x;
-	ax = 2 * (dx<0 ? -dx : dx);
-	sx = dx<0 ? -1 : 1;
+	const int dx = fl->b.x - fl->a.x;
+	const int ax = 2 * (dx < 0 ? -dx : dx);
+	const int sx = dx < 0 ? -1 : 1;
 
-	dy = fl->b.y - fl->a.y;
-	ay = 2 * (dy<0 ? -dy : dy);
-	sy = dy<0 ? -1 : 1;
+	const int dy = fl->b.y - fl->a.y;
+	const int ay = 2 * (dy < 0 ? -dy : dy);
+	const int sy = dy < 0 ? -1 : 1;
 
-	x = fl->a.x;
-	y = fl->a.y;
+	int x = fl->a.x;
+	int y = fl->a.y;
 
-	if (ax > ay) {
+	int d;
+
+	if (ax > ay)
+	{
 		d = ay - ax/2;
 
-		while (1) {
+		while (true)
+		{
 			PUTDOTD(x, y, color);
 			if (x == fl->b.x)
 				return;
@@ -1193,7 +1244,9 @@ void AM_drawFlineD(fline_t* fl, argb_t color)
 	else
 	{
 		d = ax - ay/2;
-		while (1) {
+
+		while (true)
+		{
 			PUTDOTD(x, y, color);
 			if (y == fl->b.y)
 				return;
@@ -1205,14 +1258,14 @@ void AM_drawFlineD(fline_t* fl, argb_t color)
 			y += sy;
 			d += ax;
 		}
-				}
+	}
 }
 
 
 //
 // Clip lines, draw visible part sof lines.
 //
-void AM_drawMline (mline_t* ml, am_color_t color)
+void AM_drawMline(mline_t* ml, am_color_t color)
 {
 	static fline_t fl;
 
@@ -1233,21 +1286,19 @@ void AM_drawMline (mline_t* ml, am_color_t color)
 //
 void AM_drawGrid(am_color_t color)
 {
-	fixed_t x, y;
-	fixed_t start, end;
 	mline_t ml;
 
 	// Figure out start of vertical gridlines
-	start = m_x;
+	fixed_t start = m_x;
 	if ((start-bmaporgx)%(MAPBLOCKUNITS<<FRACBITS))
 		start += (MAPBLOCKUNITS<<FRACBITS)
 			- ((start-bmaporgx)%(MAPBLOCKUNITS<<FRACBITS));
-	end = m_x + m_w;
+	fixed_t end = m_x + m_w;
 
 	// draw vertical gridlines
 	ml.a.y = m_y;
 	ml.b.y = m_y+m_h;
-	for (x=start; x<end; x+=(MAPBLOCKUNITS<<FRACBITS)) {
+	for (fixed_t x = start; x<end; x+=(MAPBLOCKUNITS<<FRACBITS)) {
 		ml.a.x = x;
 		ml.b.x = x;
 		if (am_rotate) {
@@ -1267,7 +1318,7 @@ void AM_drawGrid(am_color_t color)
 	// draw horizontal gridlines
 	ml.a.x = m_x;
 	ml.b.x = m_x + m_w;
-	for (y=start; y<end; y+=(MAPBLOCKUNITS<<FRACBITS)) {
+	for (fixed_t y = start; y<end; y+=(MAPBLOCKUNITS<<FRACBITS)) {
 		ml.a.y = y;
 		ml.b.y = y;
 		if (am_rotate) {
@@ -1282,14 +1333,14 @@ void AM_drawGrid(am_color_t color)
 // Determines visible lines, draws them.
 // This is LineDef based, not LineSeg based.
 //
-void AM_drawWalls(void)
+void AM_drawWalls()
 {
-	int i, r, g, b;
+	int r, g, b;
 	static mline_t l;
 	float rdif, gdif, bdif;
 	const palette_t* pal = V_GetDefaultPalette();
 
-	for (i=0;i<numlines;i++) {
+	for (int i = 0;i<numlines;i++) {
 		l.a.x = lines[i].v1->x;
 		l.a.y = lines[i].v1->y;
 		l.b.x = lines[i].v2->x;
@@ -1454,17 +1505,10 @@ void AM_drawWalls(void)
 // Rotation in 2D.
 // Used to rotate player arrow line character.
 //
-void
-AM_rotate
-( fixed_t*	x,
-  fixed_t*	y,
-  angle_t	a )
+void AM_rotate(fixed_t* x, fixed_t* y, angle_t a)
 {
-    fixed_t tmpx;
-
-    tmpx =
-	FixedMul(*x,finecosine[a>>ANGLETOFINESHIFT])
-	- FixedMul(*y,finesine[a>>ANGLETOFINESHIFT]);
+	fixed_t tmpx = FixedMul(*x, finecosine[a >> ANGLETOFINESHIFT])
+	               - FixedMul(*y, finesine[a >> ANGLETOFINESHIFT]);
 
     *y   =
 	FixedMul(*x,finesine[a>>ANGLETOFINESHIFT])
@@ -1473,7 +1517,7 @@ AM_rotate
     *x = tmpx;
 }
 
-void AM_rotatePoint (fixed_t *x, fixed_t *y)
+void AM_rotatePoint(fixed_t *x, fixed_t *y)
 {
 	player_t &p = displayplayer();
 
@@ -1494,10 +1538,9 @@ AM_drawLineCharacter
   fixed_t	x,
   fixed_t	y )
 {
-	int		i;
 	mline_t	l;
 
-	for (i=0;i<lineguylines;i++) {
+	for (int i = 0;i<lineguylines;i++) {
 		l.a.x = lineguy[i].a.x;
 		l.a.y = lineguy[i].a.y;
 
@@ -1530,7 +1573,7 @@ AM_drawLineCharacter
 	}
 }
 
-void AM_drawPlayers(void)
+void AM_drawPlayers()
 {
 	angle_t angle;
 	player_t &conplayer = displayplayer();
@@ -1605,21 +1648,18 @@ void AM_drawPlayers(void)
     }
 }
 
-void AM_drawThings (am_color_t color)
+void AM_drawThings(am_color_t color)
 {
-	int		 i;
-	AActor*	 t;
 	mpoint_t p;
-	angle_t	 angle;
 
-	for (i=0;i<numsectors;i++)
+	for (int i = 0;i<numsectors;i++)
 	{
-		t = sectors[i].thinglist;
+		AActor* t = sectors[i].thinglist;
 		while (t)
 		{
 			p.x = t->x;
 			p.y = t->y;
-			angle = t->angle;
+			angle_t angle = t->angle;
 
 			if (am_rotate)
 			{
@@ -1633,19 +1673,18 @@ void AM_drawThings (am_color_t color)
 	}
 }
 
-void AM_drawMarks (void)
+void AM_drawMarks()
 {
-	int i, fx, fy, w, h;
 	mpoint_t pt;
 
-	for (i = 0; i < AM_NUMMARKPOINTS; i++)
+	for (int i = 0; i < AM_NUMMARKPOINTS; i++)
 	{
 		if (markpoints[i].x != -1)
 		{
 			//      w = LESHORT(marknums[i]->width);
 			//      h = LESHORT(marknums[i]->height);
-			w = 5; // because something's wrong with the wad, i guess
-			h = 6; // because something's wrong with the wad, i guess
+			int w = 5; // because something's wrong with the wad, i guess
+			int h = 6; // because something's wrong with the wad, i guess
 
 			pt.x = markpoints[i].x;
 			pt.y = markpoints[i].y;
@@ -1653,8 +1692,8 @@ void AM_drawMarks (void)
 			if (am_rotate)
 				AM_rotatePoint (&pt.x, &pt.y);
 
-			fx = CXMTOF(pt.x);
-			fy = CYMTOF(pt.y) - 3;
+			int fx = CXMTOF(pt.x);
+			int fy = CYMTOF(pt.y) - 3;
 
 			if (fx >= f_x && fx <= f_w - w && fy >= f_y && fy <= f_h - h)
 			{
@@ -1664,7 +1703,7 @@ void AM_drawMarks (void)
 	}
 }
 
-void AM_drawCrosshair (am_color_t color)
+void AM_drawCrosshair(am_color_t color)
 {
 	// single point for now
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
@@ -1683,7 +1722,8 @@ void AM_Drawer()
 		return;
 
 	IWindowSurface* surface = I_GetPrimarySurface();
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	const int surface_width = surface->getWidth();
+	const int surface_height = surface->getHeight();
 
 	fb = surface->getBuffer();
 
@@ -1723,10 +1763,10 @@ void AM_Drawer()
 	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
 	{
 		char line[64+10];
-		int time = level.time / TICRATE;
+		const int time = level.time / TICRATE;
 
-		int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
-		int OV_Y = surface_height - (surface_height * 32 / 200);
+		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
+		const int OV_Y = surface_height - (surface_height * 32 / 200);
 
 		if (G_IsCoopGame())
 		{
