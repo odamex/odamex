@@ -40,9 +40,10 @@
 #include "d_player.h"
 #include "p_setup.h"
 #include "d_dehacked.h"
+#include "p_mapformat.h"
 
 
-EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_novileghosts)
@@ -2677,10 +2678,6 @@ void A_Explode (AActor *thing)
 //
 void A_BossDeath(AActor *actor)
 {
-	// custom boss actions for UMAPINFO
-	if (level.bossactions_donothing)
-		return;
-
 	// make sure there is a player alive for victory
 	Players::const_iterator it = players.begin();
 	for (; it != players.end(); ++it)
@@ -2694,7 +2691,7 @@ void A_BossDeath(AActor *actor)
 
 	if (!level.bossactions.empty())
 	{
-		std::vector<OBossAction>::iterator ba = level.bossactions.begin();
+		std::vector<bossaction_t>::iterator ba = level.bossactions.begin();
 		
 		// see if the BossAction applies to this type
 		for (; ba != level.bossactions.end(); ++ba)
@@ -2724,90 +2721,27 @@ void A_BossDeath(AActor *actor)
 		{
 			if (ba->type == actor->type)
 			{
-				if (!P_UseSpecialLine(actor, &ba->ld, 0, true))
-					P_CrossSpecialLine(0, 0, actor, true);
+				line_t ld;
+				
+				if (map_format.getZDoom())
+				{
+					maplinedef_t mld;
+					mld.special = (ba->special);
+					mld.tag = (ba->tag);
+
+					P_TranslateLineDef(&ld, &mld);
+				}
+				else
+				{
+					ld.special = ba->special;
+					ld.id = ba->tag;
+				}
+
+				if (!P_UseSpecialLine(actor, &ld, 0, true))
+					P_CrossSpecialLine(&ld, 0, actor, true);
 			}
 		}
-
-		return;
 	}
-	
-	// [RH] These all depend on the presence of level flags now
-	//		rather than being hard-coded to specific levels.
-
-	if ((level.flags & (LEVEL_MAP07SPECIAL|
-						LEVEL_BRUISERSPECIAL|
-						LEVEL_CYBORGSPECIAL|
-						LEVEL_SPIDERSPECIAL)) == 0)
-		return;
-
-	if (
-		((level.flags & LEVEL_MAP07SPECIAL) && (actor->flags3 & (MF3_MAP07BOSS1 | MF3_MAP07BOSS2))) ||
-		((level.flags & LEVEL_BRUISERSPECIAL) && (actor->flags3 & MF3_E1M8BOSS)) ||
-	    ((level.flags & LEVEL_CYBORGSPECIAL) && (actor->flags3 & (MF3_E2M8BOSS | MF3_E4M6BOSS))) ||
-	    ((level.flags & LEVEL_SPIDERSPECIAL) && (actor->flags3 & (MF3_E3M8BOSS | MF3_E4M8BOSS)))
-	   )
-		;
-	else return;
-
-	// scan the remaining thinkers to see if all bosses are dead
-	TThinkerIterator<AActor> iterator;
-	AActor *other;
-
-	while ((other = iterator.Next()))
-	{
-		if (other != actor && other->type == actor->type && other->health > 0)
-		{
-			// other boss not dead
-			return;
-		}
-	}
-
-	// victory!
-	if (level.flags & LEVEL_MAP07SPECIAL)
-	{
-		if (actor->flags3 & MF3_MAP07BOSS1)
-		{
-			EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
-			return;
-		}
-
-		if (actor->flags3 & MF3_MAP07BOSS2)
-		{
-			EV_DoFloor(DFloor::floorRaiseByTexture, NULL, 667, FRACUNIT, 0, 0, 0);
-			return;
-		}
-	}
-	else if (level.flags & LEVEL_SPECACTIONSMASK || level.flags & LEVEL_BRUISERSPECIAL)
-	{
-		if (level.flags & LEVEL_SPECLOWERFLOOR || level.flags & LEVEL_BRUISERSPECIAL)
-		{
-			EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
-			return;
-		}
-
-		if (level.flags & LEVEL_SPECOPENDOOR)
-		{
-			EV_DoDoor(DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
-			return;
-		}
-	}
-	else if (level.flags & LEVEL_CYBORGSPECIAL && actor->flags3 & MF3_E4M6BOSS)
-	{
-		EV_DoDoor(DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
-		return;
-	}
-	else if (level.flags & LEVEL_SPIDERSPECIAL && actor->flags3 & MF3_E4M8BOSS)
-	{
-		EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
-		return;
-	}
-
-	// [RH] If noexit, then don't end the level.
-	if (sv_gametype != GM_COOP && !sv_allowexit)
-		return;
-
-	G_ExitLevel(0, 1);
 }
 
 
@@ -2914,7 +2848,7 @@ void A_BrainExplode (AActor *mo)
 	int x = mo->x + P_RandomDiff (mo)*2048;
 	int y = mo->y;
 	int z = 128 + P_Random (mo)*2*FRACUNIT;
-	AActor *th = new AActor (x,y,z, MT_ROCKET);
+	AActor *th = new AActor (x, y, z, MT_ROCKET);
 	th->momz = P_Random (mo) << 9;
 
 	P_SetMobjState (th, S_BRAINEXPLODE1, true);

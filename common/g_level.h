@@ -83,7 +83,7 @@ const static levelFlags_t LEVEL_VISITED = BIT(31);
 
 struct acsdefered_s;
 class FBehavior;
-struct OBossAction;
+struct bossaction_t;
 
 struct level_info_t
 {
@@ -174,16 +174,14 @@ struct level_pwad_info_t
 	OLumpName		interbackdrop;
 	OLumpName		intermusic;
 	
-	std::vector<OBossAction> bossactions;
-	bool			bossactions_donothing;
+	std::vector<bossaction_t> bossactions;
 	
 	level_pwad_info_t()
 	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
 	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
 	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
 	      aircontrol(0.0f), exitpic(""), enterpic(""), endpic(""), intertext(""),
-	      intertextsecret(""), interbackdrop(""), intermusic(""), bossactions(),
-	      bossactions_donothing(false)
+	      intertextsecret(""), interbackdrop(""), intermusic(""), bossactions()
 	{
 		ArrayInit(fadeto_color, 0);
 		ArrayInit(level_fingerprint, 0);
@@ -199,7 +197,7 @@ struct level_pwad_info_t
 		  snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
 		  skypic2(""), gravity(0.0f), aircontrol(0.0f), exitpic(""), enterpic(""),
 		  endpic(""), intertext(""), intertextsecret(""), interbackdrop(""), intermusic(""),
-		  bossactions(), bossactions_donothing(false)
+		  bossactions()
 	{
 		ArrayInit(fadeto_color, 0);
 		ArrayInit(outsidefog_color, 0);
@@ -242,7 +240,6 @@ struct level_pwad_info_t
 		bossactions.clear();
 		std::copy(other.bossactions.begin(), other.bossactions.end(),
 		          bossactions.begin());
-		bossactions_donothing = other.bossactions_donothing;
 
 		return *this;
 	}
@@ -313,8 +310,7 @@ struct level_locals_t
 	OLumpName		interbackdrop;
 	OLumpName		intermusic;
 	
-	std::vector<OBossAction> bossactions;
-	bool			bossactions_donothing;
+	std::vector<bossaction_t> bossactions;
 	
 	// The following is used for automatic gametype detection.
 	float			detected_gametype;
@@ -325,10 +321,13 @@ typedef uint32_t clusterFlags_t;
 const static clusterFlags_t CLUSTER_HUB = BIT(0);
 const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
 
-struct OBossAction
+struct bossaction_t
 {
 	int type;
-	line_t ld;
+	short special;
+	short tag;
+
+	bossaction_t() : type(MT_NULL), special(), tag() {}
 };
 
 struct cluster_info_t
