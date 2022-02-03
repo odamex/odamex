@@ -853,7 +853,7 @@ END_COMMAND (togglemap)
 //
 // Handle events (user inputs) in automap mode
 //
-BOOL AM_Responder(event_t *ev)
+bool AM_Responder(event_t *ev)
 {
 	if (automapactive && (ev->type == ev_keydown || ev->type == ev_keyup))
 	{
@@ -900,7 +900,7 @@ BOOL AM_Responder(event_t *ev)
 //
 void AM_changeWindowScale()
 {
-	static fixed_t	mtof_zoommul;	// how far the window zooms in each tic (map coords)
+	static fixed_t mtof_zoommul; // how far the window zooms in each tic (map coords)
 
 	if (Actions[ACTION_AUTOMAP_ZOOMOUT]) {
 		mtof_zoommul = M_ZOOMOUT;
@@ -982,7 +982,6 @@ void AM_Ticker()
         lockglow++;
     else
         lockglow = 0;
-
 }
 
 
@@ -993,11 +992,11 @@ void AM_clearFB(am_color_t color)
 {
 	if (am_gotbackdrop && am_backdrop)
 	{
-		m_w = FTOM(I_GetSurfaceWidth());
-		m_h = FTOM(I_GetSurfaceHeight()) - ST_HEIGHT;
+		const int w = I_GetSurfaceWidth();
+		const int h = I_GetSurfaceHeight() - ST_HEIGHT;
 
 		I_GetPrimarySurface()->blit(am_backdrop, 0, 0, am_backdrop->getWidth(),
-		                      am_backdrop->getHeight(), 0, 0, m_w, m_h);
+		                      am_backdrop->getHeight(), 0, 0, w, h);
 	}
 	else
 	{

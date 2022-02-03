@@ -35,7 +35,7 @@
 extern int am_cheating;
 
 // Called by main loop.
-BOOL AM_Responder(event_t* ev);
+bool AM_Responder(event_t* ev);
 
 // Called by main loop.
 void AM_Ticker();
