@@ -48,6 +48,9 @@ void AM_Drawer();
 // if the level is completed while it is up.
 void AM_Stop();
 
+// Call to cleanup automap background
+void AM_Close();
+
 bool AM_ClassicAutomapVisible();
 bool AM_OverlayAutomapVisible();
 

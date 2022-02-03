@@ -50,6 +50,8 @@
 #include "gstrings.h"
 
 #include "am_map.h"
+
+#include "i_system.h"
 #include "p_mapformat.h"
 
 argb_t CL_GetPlayerColor(player_t*);
@@ -703,6 +705,8 @@ void AM_loadPics()
 	{
 		if (!am_gotbackdrop)
 		{
+			atterm(AM_Close);
+
 			// allocate backdrop
 			void* bg = W_CacheLumpName("AUTOPAGE", PU_STATIC);
 			delete am_backdrop;
@@ -724,13 +728,15 @@ void AM_unloadPics()
 	{
 		marknums[i].clear();
 	}
+}
 
+void AM_Close()
+{
 	// haleyjd 12/22/02: backdrop support
-	if (am_backdrop && am_gotbackdrop)
+	if (am_backdrop)
 	{
 		I_FreeSurface(am_backdrop);
 		am_backdrop = NULL;
-		am_gotbackdrop = false;
 	}
 }
 
@@ -1041,7 +1047,6 @@ bool AM_clipMline (mline_t *ml, fline_t *fl)
 	fpoint_t tmp = {0, 0};
 	int dx;
 	int dy;
-
 
 #define DOOUTCODE(oc, mx, my) \
 	(oc) = 0; \
@@ -1845,7 +1850,7 @@ void AM_drawWidgets()
 			sprintf(line, " %02d:%02d:%02d", time/3600, (time%3600)/60, time%60);	// Time
 
 			int x, y;
-			const int text_width = (V_StringWidth(line) + wl_x2) * CleanXfac;
+			const int text_width = (V_StringWidth(line) + wr_x2) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
 				x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
