@@ -483,8 +483,8 @@ void AM_findMinMaxBoundaries()
 	min_w = 2*PLAYERRADIUS; // const? never changed?
 	min_h = 2*PLAYERRADIUS;
 
-	fixed_t a = FixedDiv((I_GetSurfaceWidth()) << FRACBITS, max_w);
-	fixed_t b = FixedDiv((I_GetSurfaceHeight()) << FRACBITS, max_h);
+	const fixed_t a = FixedDiv((I_GetSurfaceWidth()) << FRACBITS, max_w);
+	const fixed_t b = FixedDiv((I_GetSurfaceHeight()) << FRACBITS, max_h);
 
 	min_scale_mtof = a < b ? a : b;
 	max_scale_mtof = FixedDiv((I_GetSurfaceHeight())<<FRACBITS, 2*PLAYERRADIUS);
@@ -759,9 +759,6 @@ void AM_LevelInit()
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
 }
 
-
-
-
 //
 //
 //
@@ -857,25 +854,25 @@ BOOL AM_Responder(event_t *ev)
 		if (am_followplayer)
 		{
 			// check for am_pan* and ignore in follow mode
-			std::string defbind = AutomapBindings.Binds[ev->data1];
+			const std::string defbind = AutomapBindings.Binds[ev->data1];
 			if (!strnicmp(defbind.c_str(), "+am_pan", 7))
 				return false;
 		}
 
 		if (ev->type == ev_keydown)
 		{
-			std::string defbind = Bindings.Binds[ev->data1];
+			const std::string defbind = Bindings.Binds[ev->data1];
 			// Check for automap, in order not to be stuck
 			if (!strnicmp(defbind.c_str(), "togglemap", 9))
 				return false;
 		}
 
-		bool res = C_DoKey(ev, &AutomapBindings, NULL);
+		const bool res = C_DoKey(ev, &AutomapBindings, NULL);
 		if (res && ev->type == ev_keyup)
 		{
 			// If this is a release event we also need to check if it released a button in the main Bindings
 			// so that that button does not get stuck.
-			std::string defbind = Bindings.Binds[ev->data1];
+			const std::string defbind = Bindings.Binds[ev->data1];
 
 			// Check for automap, in order not to be stuck
 			if (!strnicmp(defbind.c_str(), "togglemap", 9))
@@ -1028,7 +1025,7 @@ void AM_clearFB(am_color_t color)
 // faster reject and precalculated slopes.  If the speed is needed,
 // use a hash algorithm to handle  the common cases.
 //
-BOOL AM_clipMline (mline_t *ml, fline_t *fl)
+bool AM_clipMline (mline_t *ml, fline_t *fl)
 {
 	enum {
 		LEFT	=1,
@@ -1037,9 +1034,9 @@ BOOL AM_clipMline (mline_t *ml, fline_t *fl)
 		TOP	=8
 	};
 
-	register int outcode1 = 0;
-	register int outcode2 = 0;
-	register int outside;
+	int outcode1 = 0;
+	int outcode2 = 0;
+	int outside;
 
 	fpoint_t tmp = {0, 0};
 	int dx;
@@ -1148,56 +1145,59 @@ BOOL AM_clipMline (mline_t *ml, fline_t *fl)
 
 void AM_drawFlineP (fline_t* fl, byte color)
 {
+	fl->a.x += f_x;
+	fl->b.x += f_x;
+	fl->a.y += f_y;
+	fl->b.y += f_y;
+
+	const int dx = fl->b.x - fl->a.x;
+	const int ax = 2 * (dx < 0 ? -dx : dx);
+	const int sx = dx < 0 ? -1 : 1;
+
+	const int dy = fl->b.y - fl->a.y;
+	const int ay = 2 * (dy < 0 ? -dy : dy);
+	const int sy = dy < 0 ? -1 : 1;
+
+	int x = fl->a.x;
+	int y = fl->a.y;
+
 	int d;
 
+	if (ax > ay)
+	{
+		d = ay - ax / 2;
 
-			fl->a.x += f_x;
-			fl->b.x += f_x;
-			fl->a.y += f_y;
-			fl->b.y += f_y;
-
-			int dx = fl->b.x - fl->a.x;
-			int ax = 2 * (dx < 0 ? -dx : dx);
-			int sx = dx < 0 ? -1 : 1;
-
-			int dy = fl->b.y - fl->a.y;
-			int ay = 2 * (dy < 0 ? -dy : dy);
-			int sy = dy < 0 ? -1 : 1;
-
-			int x = fl->a.x;
-			int y = fl->a.y;
-
-			if (ax > ay) {
-				d = ay - ax/2;
-
-					while (1) {
-						PUTDOTP(x,y,(byte)color);
-						if (x == fl->b.x)
-							return;
+		while (true)
+		{
+			PUTDOTP(x, y, (byte)color);
+			if (x == fl->b.x)
+				return;
 			if (d >= 0)
 			{
-							y += sy;
-							d -= ax;
-						}
-						x += sx;
-						d += ay;
-					}
+				y += sy;
+				d -= ax;
 			}
+			x += sx;
+			d += ay;
+		}
+	}
 	else
 	{
-				d = ax - ay/2;
-					while (1) {
-						PUTDOTP(x, y, (byte)color);
-						if (y == fl->b.y)
-							return;
+		d = ax - ay / 2;
+
+		while (true)
+		{
+			PUTDOTP(x, y, (byte)color);
+			if (y == fl->b.y)
+				return;
 			if (d >= 0)
 			{
-							x += sx;
-							d -= ay;
-						}
-						y += sy;
-						d += ax;
-					}
+				x += sx;
+				d -= ay;
+			}
+			y += sy;
+			d += ax;
+		}
 	}
 }
 
@@ -1507,8 +1507,8 @@ void AM_drawWalls()
 //
 void AM_rotate(fixed_t* x, fixed_t* y, angle_t a)
 {
-	fixed_t tmpx = FixedMul(*x, finecosine[a >> ANGLETOFINESHIFT])
-	               - FixedMul(*y, finesine[a >> ANGLETOFINESHIFT]);
+	const fixed_t tmpx = FixedMul(*x, finecosine[a >> ANGLETOFINESHIFT])
+	                     - FixedMul(*y, finesine[a >> ANGLETOFINESHIFT]);
 
     *y   =
 	FixedMul(*x,finesine[a>>ANGLETOFINESHIFT])
@@ -1683,8 +1683,8 @@ void AM_drawMarks()
 		{
 			//      w = LESHORT(marknums[i]->width);
 			//      h = LESHORT(marknums[i]->height);
-			int w = 5; // because something's wrong with the wad, i guess
-			int h = 6; // because something's wrong with the wad, i guess
+			const int w = 5; // because something's wrong with the wad, i guess
+			const int h = 6; // because something's wrong with the wad, i guess
 
 			pt.x = markpoints[i].x;
 			pt.y = markpoints[i].y;
@@ -1692,8 +1692,8 @@ void AM_drawMarks()
 			if (am_rotate)
 				AM_rotatePoint (&pt.x, &pt.y);
 
-			int fx = CXMTOF(pt.x);
-			int fy = CYMTOF(pt.y) - 3;
+			const int fx = CXMTOF(pt.x);
+			const int fy = CYMTOF(pt.y) - 3;
 
 			if (fx >= f_x && fx <= f_w - w && fy >= f_y && fy <= f_h - h)
 			{
@@ -1712,6 +1712,150 @@ void AM_drawCrosshair(am_color_t color)
 		PUTDOTD(f_w/2, (f_h+1)/2, color.rgb);
 }
 
+
+//
+// AM_drawWidgets
+//
+void AM_drawWidgets()
+{
+	const IWindowSurface* surface = I_GetPrimarySurface();
+	const int surface_width = surface->getWidth();
+	const int surface_height = surface->getHeight();
+
+	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
+	{
+		char line[64+10];
+		const int time = level.time / TICRATE;
+		int wl_x1 = 0;
+		int wr_x1 = 0;
+		int wl_x2 = 0;
+		int wr_x2 = 0;
+
+		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
+		const int OV_Y = surface_height - (surface_height * 32 / 200);
+
+		if (gamemission == heretic)
+		{
+			wl_x1 = wr_x1 = 36;
+			wl_x2 = wr_x2 = 36;
+		}
+
+		if (G_IsCoopGame())
+		{
+			if (am_showmonsters)
+			{
+				sprintf(line, TEXTCOLOR_RED "MONSTERS:"
+								TEXTCOLOR_NORMAL " %d / %d",
+								level.killed_monsters, (level.total_monsters+level.respawned_monsters));
+
+				int x, y;
+				const int text_width = V_StringWidth(line) * CleanXfac;
+
+				if (AM_OverlayAutomapVisible())
+					x = surface_width - text_width, y = OV_Y - (text_height * 4) + 1;
+				else
+					x = (wl_x1 * CleanXfac), y = OV_Y - (text_height * 2) + 1;
+
+				FB->DrawTextClean(CR_GREY, x, y, line);
+			}
+
+			if (am_showsecrets)
+			{
+				sprintf(line, TEXTCOLOR_RED "SECRETS:"
+								TEXTCOLOR_NORMAL " %d / %d",
+								level.found_secrets, level.total_secrets);
+				int x, y;
+				const int text_width = (V_StringWidth(line) + wr_x1) * CleanXfac;
+
+				if (AM_OverlayAutomapVisible())
+					x = surface_width - text_width, y = OV_Y - (text_height * 3) + 1;
+				else
+					x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
+
+				FB->DrawTextClean(CR_GREY, x, y, line);
+			}
+		}
+
+		if (am_classicmapstring)
+		{
+			int firstmap;
+			int mapoffset = 1;
+			switch (gamemission)
+			{
+				case doom2:
+				case commercial_freedoom:
+				case commercial_hacx:
+					firstmap = GStrings.toIndex(HUSTR_1);
+					break;
+				case pack_plut:
+					firstmap = GStrings.toIndex(PHUSTR_1);
+					break;
+				case pack_tnt:
+					firstmap = GStrings.toIndex(THUSTR_1);
+					break;
+				case heretic:
+				    firstmap = GStrings.toIndex(HHUSTR_E1M1);
+				    mapoffset = level.cluster; // Episodes skip map numbers.
+				    break;
+				default:
+					firstmap = GStrings.toIndex(HUSTR_E1M1);
+					mapoffset = level.cluster; // Episodes skip map numbers.
+					break;
+			}
+
+			strncpy(line, GStrings.getIndex(firstmap + level.levelnum - mapoffset),
+			        ARRAY_LENGTH(line) - 1);
+
+			int x, y;
+			const int text_width = V_StringWidth(line) * CleanXfac;
+
+			if (AM_OverlayAutomapVisible())
+				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
+			else
+				x = (wl_x2 * CleanXfac), y = OV_Y - (text_height * 1) + 1;
+
+			FB->DrawTextClean(CR_RED, x, y, line);
+		}
+		else
+		{
+			strcpy(line, TEXTCOLOR_RED);
+			size_t pos = strlen(line);
+			for (int i = 0; i < 8 && level.mapname[i]; i++, pos++)
+				line[pos] = level.mapname[i];
+
+			line[pos++] = ':';
+			strcpy(line + pos, TEXTCOLOR_NORMAL);
+			pos = strlen(line);
+			line[pos++] = ' ';
+			strcpy(&line[pos], level.level_name);
+
+			int x, y;
+			const int text_width = V_StringWidth(line) * CleanXfac;
+
+			if (AM_OverlayAutomapVisible())
+				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
+			else
+				x = (wl_x2 * CleanXfac), y = OV_Y - (text_height * 1) + 1;
+
+			FB->DrawTextClean(CR_GREY, x, y, line);
+		}
+
+		if (am_showtime)
+		{
+			sprintf(line, " %02d:%02d:%02d", time/3600, (time%3600)/60, time%60);	// Time
+
+			int x, y;
+			const int text_width = (V_StringWidth(line) + wl_x2) * CleanXfac;
+
+			if (AM_OverlayAutomapVisible())
+				x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
+			else
+				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
+
+			FB->DrawTextClean(CR_GREY, x, y, line);
+		}
+	}
+}
 
 //
 // AM_Drawer
@@ -1759,126 +1903,7 @@ void AM_Drawer()
 		AM_drawCrosshair(XHairColor);
 
 	AM_drawMarks();
-
-	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
-	{
-		char line[64+10];
-		const int time = level.time / TICRATE;
-
-		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
-		const int OV_Y = surface_height - (surface_height * 32 / 200);
-
-		if (G_IsCoopGame())
-		{
-			if (am_showmonsters)
-			{
-				sprintf(line, TEXTCOLOR_RED "MONSTERS:"
-								TEXTCOLOR_NORMAL " %d / %d",
-								level.killed_monsters, (level.total_monsters+level.respawned_monsters));
-
-				int x, y;
-				int text_width = V_StringWidth(line) * CleanXfac;
-
-				if (AM_OverlayAutomapVisible())
-					x = surface_width - text_width, y = OV_Y - (text_height * 4) + 1;
-				else
-					x = 0, y = OV_Y - (text_height * 2) + 1;
-
-				FB->DrawTextClean(CR_GREY, x, y, line);
-			}
-
-			if (am_showsecrets)
-			{
-				sprintf(line, TEXTCOLOR_RED "SECRETS:"
-								TEXTCOLOR_NORMAL " %d / %d",
-								level.found_secrets, level.total_secrets);
-				int x, y;
-				int text_width = V_StringWidth(line) * CleanXfac;
-
-				if (AM_OverlayAutomapVisible())
-					x = surface_width - text_width, y = OV_Y - (text_height * 3) + 1;
-				else
-					x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
-
-				FB->DrawTextClean(CR_GREY, x, y, line);
-			}
-		}
-
-		if (am_classicmapstring)
-		{
-			int firstmap;
-			int mapoffset = 1;
-			switch (gamemission)
-			{
-				case doom2:
-				case commercial_freedoom:
-				case commercial_hacx:
-					firstmap = GStrings.toIndex(HUSTR_1);
-					break;
-				case pack_plut:
-					firstmap = GStrings.toIndex(PHUSTR_1);
-					break;
-				case pack_tnt:
-					firstmap = GStrings.toIndex(THUSTR_1);
-					break;
-				default:
-					firstmap = GStrings.toIndex(HUSTR_E1M1);
-					mapoffset = level.cluster; // Episodes skip map numbers.
-					break;
-			}
-
-			strncpy(line, GStrings.getIndex(firstmap + level.levelnum - mapoffset),
-			        ARRAY_LENGTH(line) - 1);
-
-			int x, y;
-			int text_width = V_StringWidth(line) * CleanXfac;
-
-			if (AM_OverlayAutomapVisible())
-				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
-			else
-				x = 0, y = OV_Y - (text_height * 1) + 1;
-
-			FB->DrawTextClean(CR_RED, x, y, line);
-		}
-		else
-		{
-			strcpy(line, TEXTCOLOR_RED);
-			int pos = strlen(line);
-			for (int i = 0; i < 8 && level.mapname[i]; i++, pos++)
-				line[pos] = level.mapname[i];
-
-			line[pos++] = ':';
-			strcpy(line + pos, TEXTCOLOR_NORMAL);
-			pos = strlen(line);
-			line[pos++] = ' ';
-			strcpy(&line[pos], level.level_name);
-
-			int x, y;
-			int text_width = V_StringWidth(line) * CleanXfac;
-
-			if (AM_OverlayAutomapVisible())
-				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
-			else
-				x = 0, y = OV_Y - (text_height * 1) + 1;
-
-			FB->DrawTextClean(CR_GREY, x, y, line);
-		}
-
-		if (am_showtime)
-		{
-			sprintf(line, " %02d:%02d:%02d", time/3600, (time%3600)/60, time%60);	// Time
-
-			int x, y;
-			int text_width = V_StringWidth(line) * CleanXfac;
-
-			if (AM_OverlayAutomapVisible())
-				x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
-			else
-				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
-
-			FB->DrawTextClean(CR_GREY, x, y, line);
-		}
-	}
+	AM_drawWidgets();
 }
 
 VERSION_CONTROL (am_map_cpp, "$Id$")
