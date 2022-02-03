@@ -557,7 +557,8 @@ void V_Init()
 
 	R_InitColormaps();
 
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	const int surface_width = I_GetSurfaceWidth();
+	const int surface_height = I_GetSurfaceHeight();
 
 	// This uses the smaller of the two results. It's still not ideal but at least
 	// this allows hud_scaletext to have some purpose...

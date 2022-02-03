@@ -27,6 +27,7 @@
 
 #include "olumpname.h"
 #include "st_stuff.h"
+#include "am_map.h"
 
 #define GI_MAPxx				0x00000001
 #define GI_PAGESARERAW			0x00000002
@@ -82,7 +83,12 @@ typedef struct
 	int maxSwitch;
 	char borderFlat[8];
 	gameborder_t *border;
-	stbarfns_t* statusBar; 
+	stbarfns_t* statusBar;
+
+	// automap
+	mline_t* playerArrow;   // automap player arrow
+	int plyrArrowLines;     // automap player arrow line count
+
 	char titleString[64];
 } gameinfo_t;
 

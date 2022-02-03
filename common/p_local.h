@@ -47,9 +47,6 @@
 #define MAPBTOFRAC		(MAPBLOCKSHIFT-FRACBITS)
 
 
-// player radius for movement checking
-#define PLAYERRADIUS	16*FRACUNIT
-
 // MAXRADIUS is for precalculated sector block boxes
 // the spider demon is larger,
 // but we do not have any moving sectors nearby
@@ -104,7 +101,7 @@ extern int				iquehead;
 extern int				iquetail;
 
 void 	P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move);
-void	P_RespawnSpecials (void);
+void	P_RespawnSpecials ();
 
 bool	P_SetMobjState (AActor* mobj, statenum_t state, bool cl_update = false);
 
@@ -132,7 +129,7 @@ BOOL	P_DeactivateMobj (AActor *mobj);
 // P_ENEMY
 //
 void	P_NoiseAlert (AActor* target, AActor* emmiter);
-void	P_SpawnBrainTargets(void);	// killough 3/26/98: spawn icon landings
+void	P_SpawnBrainTargets();	// killough 3/26/98: spawn icon landings
 
 extern struct brain_s {				// killough 3/26/98: global state of boss brain
 	int easy, targeton;
@@ -473,7 +470,7 @@ extern polyspawns_t *polyspawns;	// [RH] list of polyobject things to spawn
 
 BOOL PO_MovePolyobj (int num, int x, int y);
 BOOL PO_RotatePolyobj (int num, angle_t angle);
-void PO_Init (void);
+void PO_Init ();
 BOOL PO_Busy (int polyobj);
 
 bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov);

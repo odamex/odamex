@@ -28,6 +28,39 @@
 
 gameinfo_t gameinfo;
 
+//
+// The vector graphics for the automap.
+//  A line drawing of the player pointing right,
+//   starting from the middle.
+//
+#define R ((8*PLAYERRADIUS)/7)
+static mline_t player_arrow[] = {
+	{ { -R+R/8, 0 }, { R, 0 } }, // -----
+	{ { R, 0 }, { R-R/2, R/4 } },  // ----->
+	{ { R, 0 }, { R-R/2, -R/4 } },
+	{ { -R+R/8, 0 }, { -R-R/8, R/4 } }, // >---->
+	{ { -R+R/8, 0 }, { -R-R/8, -R/4 } },
+	{ { -R+3*R/8, 0 }, { -R+R/8, R/4 } }, // >>--->
+	{ { -R+3*R/8, 0 }, { -R+R/8, -R/4 } }
+};
+
+static mline_t heretic_player_arrow[] = {
+  { { -R+R/4, 0 }, { 0, 0} }, // center line.
+  { { -R+R/4, R/8 }, { R, 0} }, // blade
+  { { -R+R/4, -R/8 }, { R, 0 } },
+  { { -R+R/4, -R/4 }, { -R+R/4, R/4 } }, // crosspiece
+  { { -R+R/8, -R/4 }, { -R+R/8, R/4 } },
+  { { -R+R/8, -R/4 }, { -R+R/4, -R/4} }, //crosspiece connectors
+  { { -R+R/8, R/4 }, { -R+R/4, R/4} },
+  { { -R-R/4, R/8 }, { -R-R/4, -R/8 } }, //pommel
+  { { -R-R/4, R/8 }, { -R+R/8, R/8 } },
+  { { -R-R/4, -R/8}, { -R+R/8, -R/8 } }
+  };
+#undef R
+
+#define NUMPLYRLINES (sizeof(player_arrow)/sizeof(mline_t))
+#define NUMHTICPLYRLINES (sizeof(heretic_player_arrow)/sizeof(mline_t))
+
 static const char *doomquitsounds[8] =
 {
 	"player/male/death1",
@@ -105,6 +138,8 @@ gameinfo_t SharewareGameInfo =
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
 	&DoomStatusBar,
+	player_arrow,
+	NUMPLYRLINES,
 	"DOOM Shareware"
 };
 
@@ -130,6 +165,8 @@ gameinfo_t RegisteredGameInfo =
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
 	&DoomStatusBar,
+	player_arrow,
+	NUMPLYRLINES,
 	"DOOM Registered"
 };
 
@@ -155,6 +192,8 @@ gameinfo_t RetailGameInfo =
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
 	&DoomStatusBar,
+	player_arrow,
+	NUMPLYRLINES,
 	"The Ultimate DOOM"
 };
 
@@ -180,6 +219,8 @@ gameinfo_t RetailBFGGameInfo =
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
 	&DoomStatusBar,
+	player_arrow,
+	NUMPLYRLINES,
 	"The Ultimate DOOM (BFG Edition)"
 };
 
@@ -205,6 +246,8 @@ gameinfo_t CommercialGameInfo =
 	"GRNROCK",
 	&DoomBorder,
 	&DoomStatusBar,
+	player_arrow,
+	NUMPLYRLINES,
 	"DOOM 2: Hell on Earth"
 };
 
@@ -230,6 +273,8 @@ gameinfo_t CommercialBFGGameInfo =
 	"GRNROCK",
 	&DoomBorder,
 	&DoomStatusBar,
+	player_arrow,
+	NUMPLYRLINES,
 	"DOOM 2: Hell on Earth (BFG Edition)"
 };
 
@@ -263,6 +308,8 @@ gameinfo_t HereticGameInfo =
 	"FLAT513",
     &HereticBorder,
 	&HticStatusBar,
+	heretic_player_arrow,
+	NUMHTICPLYRLINES,
     "Heretic"
 };
 
@@ -288,6 +335,8 @@ gameinfo_t HereticSWGameInfo =
 	"FLOOR04",
     &HereticBorder,
 	&HticStatusBar,
+	heretic_player_arrow,
+	NUMHTICPLYRLINES,
 	"Heretic (Shareware)"
 };
 
