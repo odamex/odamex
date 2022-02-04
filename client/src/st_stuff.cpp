@@ -1293,12 +1293,12 @@ static void ST_unloadGraphics()
 		::faces[i].clear();
 	}
 
-	// Note: nobody ain't seen no unloading
-	//	 of stminus yet. Dude.
+	::negminus.clear();
 }
 
 static void ST_unloadData()
 {
+	// todo - heretic unloading
 	ST_unloadGraphics();
 	ST_unloadNew();
 }
@@ -1767,7 +1767,6 @@ void ST_Init()
 
 void STACK_ARGS ST_Shutdown()
 {
-	// todo - heretic unloading
 	ST_unloadData();
 
 	I_FreeSurface(stbar_surface);
