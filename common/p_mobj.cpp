@@ -46,6 +46,10 @@
 #include "m_wdlstats.h"
 #include "p_mapformat.h"
 
+#ifdef CLIENT_APP
+#include "hu_speedometer.h"
+#endif
+
 void SV_UpdateMobj(AActor* mo);
 void SV_UpdateMobjState(AActor* mo);
 
@@ -717,7 +721,20 @@ void AActor::RunThink ()
 		}
 	}
 
-	P_MoveActor(this);
+#ifdef CLIENT_APP
+	if (player && ::displayplayer_id == player->id)
+	{
+		v3double_t start, end;
+		M_ActorPositionToVec3(&start, this);
+		P_MoveActor(this);
+		M_ActorPositionToVec3(&end, this);
+		HU_AddPlayerSpeed(::displayplayer_id, start, end);
+	}
+	else
+#endif
+	{
+		P_MoveActor(this);
+	}
 
 	if(predicting)
 		return;

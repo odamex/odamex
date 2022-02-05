@@ -52,6 +52,7 @@
 #include "c_bind.h"
 #include "p_horde.h"
 #include "c_dispatch.h"
+#include "hu_speedometer.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
@@ -111,6 +112,7 @@ EXTERN_CVAR(hud_demoprotos)
 EXTERN_CVAR(hud_scale)
 EXTERN_CVAR(hud_bigfont)
 EXTERN_CVAR(hud_timer)
+EXTERN_CVAR(hud_speedometer)
 EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(hud_transparency)
 EXTERN_CVAR(hud_demobar)
@@ -847,6 +849,20 @@ void OdamexHUD() {
 
 		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
+		iy += V_LineHeight() + 1;
+
+		if (::hud_bigfont)
+			V_SetFont("SMALLFONT");
+	}
+
+	if (::hud_speedometer)
+	{
+		if (::hud_bigfont)
+			V_SetFont("BIGFONT");
+
+		StrFormat(buf, "%d" TEXTCOLOR_DARKGREY "ups", static_cast<int>(HU_GetPlayerSpeed()));
+		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
 		iy += V_LineHeight() + 1;
 
 		if (::hud_bigfont)
