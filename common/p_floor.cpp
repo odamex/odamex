@@ -1019,6 +1019,7 @@ BOOL EV_DoGenFloor(line_t* line)
 		if (manual)
 			return rtn;
 	}
+	return rtn;
 }
 
 BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,

@@ -244,7 +244,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			ok = 1;
 			break;
 		}
-		if (!ok)
+		if (!ok && !bossaction) // Bossactions can use any linedef except teleports.
 			return result;
 	}
 
@@ -1825,9 +1825,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	// e6y
 	// b.m. side test was broken in boom201
-	if (demoplayback)
-		if (side) // jff 6/1/98 fix inadvertent deletion of side test
-			return result;
+	if (side) // jff 6/1/98 fix inadvertent deletion of side test
+		return result;
 
 	// jff 02/04/98 add check here for generalized floor/ceil mover
 	
@@ -2088,7 +2087,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		/* Exit level
 		 * killough 10/98: prevent zombies from exiting levels
 		 */
-		if (!bossaction && thing->player && thing->player->health <= 0)
+		if (!bossaction && thing && thing->player && thing->player->health <= 0)
 		{
 			return result;
 		}
@@ -2212,7 +2211,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		/* Secret EXIT
 		 * killough 10/98: prevent zombies from exiting levels
 		 */
-		if (!bossaction && thing->player && thing->player->health <= 0)
+		if (!bossaction && thing && thing->player && thing->player->health <= 0)
 		{
 			return result;
 		}
@@ -3388,7 +3387,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		case 197:
 			// Exit to next level
 			// killough 10/98: prevent zombies from exiting levels
-			if (thing->player && thing->player->health <= 0)
+			if (thing && thing->player && thing->player->health <= 0)
 				break;
 			if (thing && CheckIfExitIsGood(thing))
 			{
@@ -3401,7 +3400,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		case 198:
 			// Exit to secret level
 			// killough 10/98: prevent zombies from exiting levels
-			if (thing->player && thing->player->health <= 0)
+			if (thing && thing->player && thing->player->health <= 0)
 				break;
 			if (thing && CheckIfExitIsGood(thing))
 			{

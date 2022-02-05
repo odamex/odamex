@@ -1901,10 +1901,8 @@ bool P_HandleSpecialRepeat(line_t* line)
 // Called every time a thing origin is about
 //  to cross a line with a non 0 special.
 //
-void P_CrossSpecialLine(int	linenum, int side, AActor* thing, bool bossaction)
+void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 {
-    line_t*	line = &lines[linenum];
-
 	TeleportSide = side;
 
 	if (!bossaction && !P_CanActivateSpecials(thing, line))
