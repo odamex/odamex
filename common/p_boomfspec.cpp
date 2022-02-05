@@ -1321,9 +1321,12 @@ void P_PlayerInCompatibleSector(player_t* player)
 		return;
 
 	sector_t* sector = player->mo->subsector->sector;
-
+	if (sector->special == 0 && sector->damageamount > 0) // Odamex Static Init Damage
+	{
+		P_ApplySectorDamage(player, sector->damageamount, 0);
+	}
 	// jff add if to handle old vs generalized types
-	if (sector->special < 32) // regular sector specials
+	else if (sector->special < 32) // regular sector specials
 	{
 		switch (sector->special)
 		{
@@ -1421,6 +1424,11 @@ void P_PlayerInCompatibleSector(player_t* player)
 		}
 	}
 
+	if (sector->special == 0 && sector->damageamount > 0) // Probably a static init, assign damage.
+	{
+		P_ApplySectorDamage(player, sector->damageamount, 0);
+	}
+
 	if (sector->flags & SECF_SECRET)
 	{
 		P_CollectSecretBoom(sector, player);
@@ -1514,6 +1522,8 @@ void P_SpawnCompatibleExtra(int i)
 {
 	int s;
 	sector_t* sec;
+	float grav;
+	int damage;
 
 	switch (lines[i].special)
 	{
@@ -1554,6 +1564,24 @@ void P_SpawnCompatibleExtra(int i)
 	case 272: // Same, only flipped
 		for (s = -1; (s = P_FindSectorFromTag(lines[i].id, s)) >= 0;)
 			sectors[s].sky = (i + 1) | PL_SKYFLAT;
+		break;
+
+	case OdamexStaticInits: // Gravity
+		grav =
+		    ((float)P_AproxDistance(lines[i].dx, lines[i].dy)) / (FRACUNIT * 100.0f);
+		for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0], s)) >= 0;)
+			sectors[s].gravity = grav;
+		break;
+
+	case OdamexStaticInits + 2: // Damage
+		damage = P_AproxDistance(lines[i].dx, lines[i].dy) >> FRACBITS;
+		for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0], s)) >= 0;)
+		{
+			sectors[s].damageamount = damage;
+			sectors[s].damageinterval = 32;
+			sectors[s].leakrate = 0;
+			sectors[s].mod = MOD_UNKNOWN;
+		}
 		break;
 	}
 }
