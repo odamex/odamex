@@ -1068,7 +1068,7 @@ void MIType_SpecialAction_ExitLevel(OScanner& os, bool doEquals, void* data,
 	std::vector<bossaction_t>::iterator it;
 	for (it = bossactionvector.begin(); it != bossactionvector.end(); ++it)
 	{
-		if (it->type == MT_NULL)
+		if (it->type != MT_NULL)
 		{
 			it->special = 11;
 			it->tag = 0;
@@ -1091,9 +1091,9 @@ void MIType_SpecialAction_OpenDoor(OScanner& os, bool doEquals, void* data,
 	std::vector<bossaction_t>::iterator it;
 	for (it = bossactionvector.begin(); it != bossactionvector.end(); ++it)
 	{
-		if (it->type == MT_NULL)
+		if (it->type != MT_NULL)
 		{
-			it->special = 31;
+			it->special = 29;
 			it->tag = 666;
 			return;
 		}
@@ -1101,7 +1101,7 @@ void MIType_SpecialAction_OpenDoor(OScanner& os, bool doEquals, void* data,
 
 	bossactionvector.push_back(bossaction_t());
 	it = bossactionvector.end() - 1;
-	it->special = 31;
+	it->special = 29;
 	it->tag = 666;
 }
 
@@ -1114,7 +1114,7 @@ void MIType_SpecialAction_LowerFloor(OScanner& os, bool doEquals, void* data,
 	std::vector<bossaction_t>::iterator it;
 	for (it = bossactionvector.begin(); it != bossactionvector.end(); ++it)
 	{
-		if (it->type == MT_NULL)
+		if (it->type != MT_NULL)
 		{
 			it->special = 23;
 			it->tag = 666;
