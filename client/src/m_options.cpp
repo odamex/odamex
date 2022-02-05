@@ -95,6 +95,7 @@ EXTERN_CVAR (r_teamcolor)
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_enemycolor)
 EXTERN_CVAR (cl_mouselook)
+EXTERN_CVAR (in_autosr50)
 EXTERN_CVAR (gammalevel)
 EXTERN_CVAR (language)
 EXTERN_CVAR (mute_spectators)
@@ -450,6 +451,7 @@ static menuitem_t MouseItems[] =
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ discrete,	"Always FreeLook"				, {&cl_mouselook},		{2.0},	{0.0},		{0.0},		{OnOff}},
 	{ discrete,	"Invert Mouse"					, {&invertmouse},		{2.0},	{0.0},		{0.0},		{OnOff}},
+	{ discrete, "Auto SR50 on Strafe"			, {&in_autosr50},		{2.0},	{0.0},		{0.0},		{OnOff}}, // [AM] Does not belong here
 	{ discrete, "Lookspring"					, {&lookspring},		{2.0},	{0.0},		{0.0},		{OnOff}},
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ discrete,	"Horizontal Movement"			, {&lookstrafe},		{2.0},	{0.0},		{0.0},		{OnOff}},
