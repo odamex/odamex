@@ -1424,11 +1424,6 @@ void P_PlayerInCompatibleSector(player_t* player)
 		}
 	}
 
-	if (sector->special == 0 && sector->damageamount > 0) // Probably a static init, assign damage.
-	{
-		P_ApplySectorDamage(player, sector->damageamount, 0);
-	}
-
 	if (sector->flags & SECF_SECRET)
 	{
 		P_CollectSecretBoom(sector, player);
