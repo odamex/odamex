@@ -26,6 +26,8 @@
 
 #include "hu_speedometer.h"
 
+#include <math.h>
+
 struct speedometer_t
 {
 	int lastID;
@@ -33,10 +35,17 @@ struct speedometer_t
 	speedometer_t() : lastID(-1) { ArrayInit(speeds, 0.0); }
 } gSpeedometer;
 
+/**
+ * @brief Add the given player's speed to the speedometer
+ * 
+ * @param id ID of the player to check speed for.
+ * @param start Starting position.
+ * @param end Ending position.
+ */
 void HU_AddPlayerSpeed(const int id, const v3double_t& start, const v3double_t& end)
 {
 	const size_t idx = ::gametic % TICRATE;
-	const v3double_t origin{end.x - start.x, end.y - start.y, end.z - start.z};
+	const v3double_t origin(end.x - start.x, end.y - start.y, end.z - start.z);
 	const double dist = sqrt(pow(origin.x, 2) + pow(origin.y, 2) + pow(origin.z, 2));
 
 	if (gSpeedometer.lastID != id)
@@ -47,6 +56,11 @@ void HU_AddPlayerSpeed(const int id, const v3double_t& start, const v3double_t& 
 	gSpeedometer.speeds[idx] = dist;
 }
 
+/**
+ * @brief Calculate and retrieve the current player speed.
+ * 
+ * @return Speed in map units.
+ */
 double HU_GetPlayerSpeed()
 {
 	double total = 0.0;
