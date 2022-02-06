@@ -466,9 +466,9 @@ int ST_StatusBarHeight(int surface_width, int surface_height)
 		return 0;
 
 	if (st_scale)
-		return 32 * surface_height / 200;
+		return ((gamemission == heretic) ? 42 : 32) * surface_height / 200;
 	else
-		return 32;
+		return (gamemission == heretic) ? 42 : 32;
 }
 
 int ST_StatusBarWidth(int surface_width, int surface_height)
@@ -1527,8 +1527,10 @@ static void ST_HticRefreshBackground()
 	ST_HticDrawChainWidget();
 	
 	// draw face patches to cover over spare ends of chain
-	stbar_canvas->DrawPatch(W_ResolvePatchHandle(ltface), 0, 32);
-	stbar_canvas->DrawPatch(W_ResolvePatchHandle(rtface), 276, 32);
+	stbar_canvas->DrawPatch(W_ResolvePatchHandle(ltface), 0,
+	                        (gamemission == heretic) ? 42 : 32);
+	stbar_canvas->DrawPatch(W_ResolvePatchHandle(rtface), 276,
+	                        (gamemission == heretic) ? 42 : 32);
 
 	player_t* plyr = &consoleplayer();
 	if ((plyr->cheats & CF_GODMODE) || plyr->powers[pw_invulnerability])
