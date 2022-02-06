@@ -1,0 +1,1246 @@
+// AlexMax
+define "Tangerine Skies"
+{
+	grouphealth = 150, 300
+	bosshealth = 2000, 4000
+
+	weapons = "Shotgun", "Chaingun"
+	
+	addpowerup "RocketLauncher"
+	addpowerup "GreenArmor"
+	addpowerup "HealthBonus"
+	
+	addmonster "ShotgunGuy" {
+		grouphealth = 30, 120
+	}
+	addmonster "ShotgunGuy" {
+		chance = 0.125
+		grouphealth = 180, 180
+	}
+	addmonster "DoomImp" {
+		grouphealth = 60, 240
+	}
+	addmonster "DoomImp" {
+		chance = 0.125
+		grouphealth = 360, 360
+	}
+	addmonster "Spectre" {
+		grouphealth = 150, 300
+	}
+	addmonster "Spectre" {
+		chance = 0.125
+		grouphealth = 900, 900
+	}
+	addmonster "BaronOfHell" {
+		chance = 0.0625
+		grouphealth = 1000, 1000
+	}
+	
+	addboss "BaronOfHell"
+}
+
+// AlexMax
+define "Seek Hard Cover"
+{
+	grouphealth = 150, 300
+	bosshealth = 420, 560
+
+	weapons = "Shotgun", "Chaingun", "SuperShotgun"
+
+	addpowerup "GreenArmor"
+	addpowerup "Soulsphere"
+	addpowerup "BlurSphere"
+
+	addmonster "ZombieMan" {
+		chance = 0.50
+	}
+	addmonster "ShotgunGuy"
+	addmonster "ChaingunGuy"
+
+	addboss "ChaingunGuy"
+}
+
+// AlexMax
+define "Knee Deep in Odamex"
+{
+	grouphealth = 150, 300
+	bosshealth = 2000, 4000
+
+	weapons = "Shotgun", "Chaingun", "RocketLauncher"
+
+	addpowerup "GreenArmor"
+	addpowerup "Berserk"
+
+	addmonster "ZombieMan"
+	addmonster "ShotgunGuy"
+	addmonster "DoomImp"
+	addmonster "Demon"
+	addmonster "Spectre"
+
+	addboss "BaronOfHell"
+}
+
+// Ralphis
+define "Almost Human"
+{
+	grouphealth = 150, 400
+	bosshealth = 1000, 2000
+
+	weapons = "Shotgun", "RocketLauncher"
+
+	addpowerup "Berserk"
+	addpowerup "GreenArmor"
+
+	addmonster "ZombieMan"
+	addmonster "ShotgunGuy"
+	addmonster "ChaingunGuy"
+	addmonster "Revenant" {
+		chance = 0.25
+	}
+
+	addboss "Revenant"
+}
+
+// Ralphis
+define "Death From Above"
+{
+	grouphealth = 150, 400
+	bosshealth = 1000, 2000
+
+	weapons = "Shotgun", "RocketLauncher"
+
+	addpowerup "Berserk"
+	addpowerup "GreenArmor"
+
+	addmonster "ZombieMan"
+	addmonster "Cacodemon"
+	addmonster "PainElemental"
+
+	addboss "Cacodemon"
+	addboss "LostSoul"
+}
+
+// AlexMax
+define "Top Floor Time Warp"
+{
+	grouphealth = 250, 500
+	bosshealth = 500, 1000
+	
+	weapons = "Shotgun", "SuperShotgun", "RocketLauncher"
+	
+	addpowerup "Soulsphere"
+	addpowerup "Berserk"
+	addpowerup "GreenArmor"
+	addpowerup "InvulnerabilitySphere" {
+		chance = 0.1
+	}
+	
+	addmonster "ZombieMan"
+	addmonster "ShotgunGuy"
+	addmonster "DoomImp"
+	addmonster "Demon"
+	addmonster "ChaingunGuy"
+	addmonster "Cacodemon"
+	addmonster "Revenant"
+	addmonster "HellKnight"
+	
+	addboss "Cacodemon"
+	addboss "PainElemental" {
+		chance = 0.5
+	}
+}
+
+// AlexMax
+define "No Pressure"
+{
+	grouphealth = 250, 750
+	bosshealth = 1000, 2000
+
+	weapons = "Shotgun", "Chaingun", "SuperShotgun", "RocketLauncher"
+
+	addpowerup "Soulsphere"
+	addpowerup "GreenArmor"
+
+	addmonster "DoomImp"
+	addmonster "Demon"
+	addmonster "Cacodemon"
+	addmonster "HellKnight"
+	addmonster "Fatso"
+	addmonster "Arachnotron"
+
+	addboss "BaronOfHell"
+}
+
+// Ralphis
+define "Snap, Crackle, & Pop"
+{
+	grouphealth = 250, 750
+	bosshealth = 1000, 2000
+
+	weapons = "Chainsaw", "RocketLauncher"
+
+	addpowerup "BlurSphere"
+	addpowerup "Cell"
+	addpowerup "GreenArmor"
+	addpowerup "PlasmaRifle"
+
+	addmonster "ZombieMan"
+
+	addboss "ZombieMan"
+}
+
+// Ralphis
+define "Pinkies and the Brains"
+{
+	grouphealth = 150, 800
+	bosshealth = 3000, 3000
+
+	weapons = "Shotgun", "Chaingun", "RocketLauncher"
+
+	addpowerup "GreenArmor"
+	addpowerup "Berserk"
+
+	addmonster "ZombieMan"
+	addmonster "Demon"
+	addmonster "Spectre"
+	addmonster "Arachnotron"
+
+	addboss "SpiderMastermind"
+}
+
+// Ralphis
+define "Block Party"
+{
+	grouphealth = 150, 1000
+	bosshealth = 2000, 8000
+
+	weapons = "RocketLauncher"
+
+	addpowerup "GreenArmor"
+	addpowerup "Soulsphere"
+	addpowerup "Berserk"
+
+	addmonster "Demon"
+	addmonster "Spectre"
+	addmonster "Cacodemon"
+	addmonster "PainElemental"
+	addmonster "LostSoul"
+	addmonster "HellKnight"
+
+	addboss "SpiderMastermind"
+	addboss "Cyberdemon"
+	addboss "Archvile" {
+		chance = 0.50
+	}
+}
+
+// AlexMax
+define "The Funcrusher"
+{
+	grouphealth = 600, 1200
+	bosshealth = 2000, 4000
+
+	weapons = "Shotgun", "Chaingun", "SuperShotgun", "RocketLauncher", "PlasmaRifle"
+
+	addpowerup "GreenArmor"
+	addpowerup "BlueArmor" {
+		chance = 0.5
+	}
+	addpowerup "Berserk"
+	addpowerup "Soulsphere"
+
+	addmonster "ZombieMan"
+	addmonster "ShotgunGuy"
+	addmonster "ChaingunGuy"
+	addmonster "DoomImp"
+	addmonster "LostSoul" {
+		chance = 0.5
+	}
+	addmonster "Demon"
+	addmonster "Spectre"
+	addmonster "Revenant"
+	addmonster "HellKnight"
+	addmonster "Cacodemon"
+
+	addboss "Cyberdemon"
+	addboss "SpiderMastermind"
+}
+
+// AlexMax
+define "1010011010"
+{
+	grouphealth = 600, 1440
+	bosshealth = 4000, 12000
+
+	weapons = "RocketLauncher", "PlasmaRifle"
+
+	addpowerup "GreenArmor"
+	addpowerup "BlueArmor"
+	addpowerup "Soulsphere"
+	addpowerup "Berserk"
+	addpowerup "BFG9000"
+
+	addmonster "Revenant"
+	addmonster "Fatso"
+	addmonster "Arachnotron"
+
+	addboss "Cyberdemon"
+	addboss "SpiderMastermind"
+}
+
+// Ralphis
+define "Plutonia"
+{
+	grouphealth = 600, 1500
+	bosshealth = 2000, 8000
+
+	weapons = "Shotgun", "Chaingun", "SuperShotgun", "RocketLauncher", "PlasmaRifle"
+
+	addpowerup "GreenArmor"
+	addpowerup "BlueArmor"
+	addpowerup "Berserk"
+	addpowerup "Soulsphere"
+
+	addmonster "ZombieMan"
+	addmonster "ShotgunGuy"
+	addmonster "ChaingunGuy"
+	addmonster "DoomImp"
+	addmonster "Archvile" {
+		chance = 0.2
+	}
+	addmonster "Revenant"
+	addmonster "PainElemental"
+
+	addboss "Cyberdemon" {
+		chance = .75
+	}
+	addboss "SpiderMastermind" {
+		chance = .75
+	}
+	addboss "Archvile"
+}
+
+// AlexMax - No Pressure II
+define "Shoot the Fair One"
+{
+	grouphealth = 500, 1500
+	bosshealth = 2000, 4000
+
+	weapons = "Shotgun", "Chaingun", "SuperShotgun", "RocketLauncher"
+
+	addpowerup "Soulsphere"
+	addpowerup "BlueArmor"
+	addpowerup "PlasmaRifle"
+
+	addmonster "DoomImp"
+	addmonster "Demon"
+	addmonster "Cacodemon"
+	addmonster "HellKnight"
+	addmonster "Fatso"
+	addmonster "Arachnotron"
+	addmonster "BaronOfHell"
+
+	addboss "BaronOfHell"
+	addboss "Cyberdemon"
+}
+
+// AlexMax
+define "Halfway 2 It"
+{
+	grouphealth = 1000, 2000
+	bosshealth = 4000, 8000
+
+	weapons = "Shotgun", "Chaingun", "SuperShotgun", "RocketLauncher", "PlasmaRifle"
+
+	addpowerup "BlueArmor"
+	addpowerup "Soulsphere"
+	addpowerup "InvulnerabilitySphere"
+	addpowerup "BFG9000"
+
+	addmonster "ChaingunGuy"
+	addmonster "Revenant"
+	addmonster "PainElemental" {
+		chance = 0.25
+	}
+	addmonster "BaronOfHell"
+	addmonster "Arachnotron"
+	addmonster "Fatso"
+	addmonster "Archvile" {
+		chance = 0.25
+	}
+	addmonster "Cyberdemon" {
+		chance = 0.25
+	}
+	addmonster "Cacodemon"
+
+	addboss "Cyberdemon"
+	addboss "SpiderMastermind"
+}
+
+// Ralphis
+define "Sweet Christmas"
+{
+	grouphealth = 400, 2000
+	bosshealth = 2400, 6000
+
+	weapons = "RocketLauncher", "PlasmaRifle"
+
+	addpowerup "GreenArmor"
+
+	addmonster "Cacodemon"
+
+	addboss "Cacodemon"
+}
+
+// Ralphis
+define "Bullet Sponges"
+{
+	grouphealth = 500, 2500
+	bosshealth = 1500, 3000
+
+	weapons = "Shotgun", "Chaingun"
+
+	addpowerup "Cell"
+	addpowerup "GreenArmor"
+	addpowerup "RocketLauncher"
+
+	addmonster "ZombieMan" {
+		chance = .67
+	}
+
+	addmonster "Archvile" {
+		chance = .33
+	}
+
+	addboss "HellKnight"
+	addboss "BaronOfHell"
+}
+
+// Ralphis - Misri Halek
+define "Pyramid Vendetta"
+{
+	grouphealth = 1500, 2750
+	bosshealth = 4000, 6000
+
+	weapons = "SuperShotgun", "RocketLauncher", "PlasmaRifle"
+
+	addpowerup "Berserk" {
+		chance = .2
+	}
+	addpowerup "GreenArmor"
+	addpowerup "Soulsphere"
+	addpowerup "RocketBox"
+
+	addmonster "ZombieMan" {
+		chance = .04
+	}
+	addmonster "ShotgunGuy" {
+		chance = .02
+	}
+	addmonster "ChaingunGuy" {
+		chance = .15
+	}
+	addmonster "DoomImp" {
+		chance = .30
+	}
+	addmonster "LostSoul" {
+		chance = .01
+	}
+	addmonster "Demon" {
+		chance = .07
+	}
+	addmonster "Spectre" {
+		chance = .02
+	}
+	addmonster "Revenant" {
+		chance = .11
+	}
+	addmonster "Cacodemon" {
+		chance = .04
+	}
+	addmonster "PainElemental" {
+		chance = .01
+	}
+	addmonster "HellKnight" {
+		chance = .14
+	}
+	addmonster "BaronOfHell" {
+		chance = .05
+	}
+	addmonster "Arachnotron" {
+		chance = .01
+	}
+	addmonster "Fatso" {
+		chance = .02
+	}
+	addmonster "Archvile" {
+		chance = .02
+	}
+	addmonster "SpiderMastermind" {
+		chance = .01
+	}
+	addmonster "Cyberdemon" {
+		chance = .01
+	}
+
+
+	addboss "Cyberdemon"
+}
+
+// Ralphis
+define "Dead Simple"
+{
+	grouphealth = 600, 3600
+	bosshealth = 4800, 10000
+
+	weapons = "Shotgun", "Chaingun", "SuperShotgun", "RocketLauncher"
+
+	addpowerup "GreenArmor"
+	addpowerup "Soulsphere"
+	addpowerup "BlueArmor"
+
+	addmonster "Fatso"
+	addmonster "Arachnotron"
+
+	addboss "Fatso"
+	addboss "Arachnotron"
+}
+
+// AlexMax - Post Mortem
+define "Posthumous"
+{
+	grouphealth = 1680, 3600
+	bosshealth = 16000, 24000
+	
+	weapons = "SuperShotgun", "RocketLauncher", "PlasmaRifle", "Chaingun"
+
+	addpowerup "Megasphere"
+	addpowerup "BFG9000"
+	
+	addmonster "DoomImp" {
+		chance = 0.247
+	}
+	addmonster "Demon" {
+		chance = 0.048
+	}
+	addmonster "Cacodemon" {
+		chance = 0.104
+	}
+	addmonster "BaronOfHell" {
+		chance = 0.071
+	}
+	addmonster "Cyberdemon" {
+		chance = 0.024
+	}
+	addmonster "SpiderMastermind" {
+		chance = 0.007
+	}
+	addmonster "ChaingunGuy" {
+		chance = 0.064
+	}
+	addmonster "HellKnight" {
+		chance = 0.021
+	}
+	addmonster "Revenant" {
+		chance = 0.152
+	}
+	addmonster "Fatso" {
+		chance = 0.090
+	}
+	addmonster "Arachnotron" {
+		chance = 0.028
+	}
+	addmonster "PainElemental" {
+		chance = 0.060
+	}
+	addmonster "Archvile" {
+		chance = 0.085
+	}
+	
+	addboss "Cyberdemon"
+}
+
+// AlexMax - No Guts No Glory
+define "Gutless"
+{
+	grouphealth = 1000, 4000
+	bosshealth = 8000, 16000
+
+	weapons = "Shotgun", "Chaingun", "SuperShotgun", "RocketLauncher", "PlasmaRifle", "BFG9000"
+
+	addpowerup "Berserk"
+	addpowerup "Soulsphere"
+	addpowerup "Megasphere"
+
+	addmonster "Arachnotron" {
+		chance = 0.05
+	}
+	addmonster "Archvile" {
+		chance = 0.05
+	}
+	addmonster "BaronOfHell" {
+		chance = 0.5
+	}
+	addmonster "ChaingunGuy" {
+		chance = 0.0625
+	}
+	addmonster "Cyberdemon" {
+		chance = 0.05
+	}
+	addmonster "Demon" {
+		chance = 0.5
+	}
+	addmonster "HellKnight" {
+		chance = 0.5
+	}
+	addmonster "DoomImp" {
+		chance = 0.25
+	}
+	addmonster "Fatso" {
+		chance = 0.25
+	}
+	addmonster "PainElemental" {
+		chance = 0.125
+	}
+	addmonster "Revenant"
+	addmonster "SpiderMastermind" {
+		chance = 0.0625
+	}
+
+	addboss "Archvile"
+	addboss "BaronOfHell"
+	addboss "Cyberdemon"
+	addboss "SpiderMastermind" {
+		chance = 0.25
+	}
+}
+
+// Ralphis - The Spirit World
+define "Evil Spirits"
+{
+	grouphealth = 1500, 4000
+	bosshealth = 3500, 8000
+
+	weapons = "Chainsaw", "SuperShotgun", "Chaingun", "RocketLauncher", "PlasmaRifle"
+
+	addpowerup "Berserk" {
+		chance = .2
+	}
+	addpowerup "GreenArmor"
+	addpowerup "Soulsphere"
+	addpowerup "RocketBox"
+
+	addmonster "ZombieMan" {
+		chance = .04
+	}
+	addmonster "ShotgunGuy" {
+		chance = .02
+	}
+	addmonster "ChaingunGuy" {
+		chance = .15
+	}
+	addmonster "DoomImp" {
+		chance = .30
+	}
+	addmonster "LostSoul" {
+		chance = .01
+	}
+	addmonster "Demon" {
+		chance = .07
+	}
+	addmonster "Spectre" {
+		chance = .02
+	}
+	addmonster "Revenant" {
+		chance = .11
+	}
+	addmonster "Cacodemon" {
+		chance = .04
+	}
+	addmonster "PainElemental" {
+		chance = .01
+	}
+	addmonster "HellKnight" {
+		chance = .14
+	}
+	addmonster "BaronOfHell" {
+		chance = .05
+	}
+	addmonster "Arachnotron" {
+		chance = .01
+	}
+	addmonster "Fatso" {
+		chance = .02
+	}
+	addmonster "Archvile" {
+		chance = .02
+	}
+	addmonster "SpiderMastermind" {
+		chance = .01
+	}
+	addmonster "Cyberdemon" {
+		chance = .01
+	}
+
+
+	addboss "SpiderMastermind"
+}
+
+// Ralphis - Dis
+define "The Iron City"
+{
+	grouphealth = 1600, 4000
+	bosshealth = 3000, 6000
+
+	weapons = "RocketLauncher", "PlasmaRifle"
+
+	addpowerup "GreenArmor"
+
+	addmonster "Cacodemon"
+	addmonster "BaronOfHell"
+	addmonster "SpiderMastermind" {
+		chance = .05
+	}
+
+	addboss "SpiderMastermind"
+}
+
+// AlexMax
+define "Fantastic Damage"
+{
+	grouphealth = 2000, 4000
+	bosshealth = 3000, 6000
+
+	weapons = "Shotgun", "Chaingun", "SuperShotgun"
+
+	addpowerup "Berserk"
+	addpowerup "GreenArmor"
+	addpowerup "Soulsphere"
+
+	addmonster "ZombieMan" {
+		chance = 0.25
+	}
+	addmonster "ShotgunGuy" {
+		chance = 0.50
+	}
+	addmonster "DoomImp"
+	addmonster "LostSoul" {
+		chance = 0.50
+	}
+	addmonster "Demon" {
+		chance = 0.50
+	}
+
+	addboss "HellKnight"
+}
+
+// Ralphis - Tower of Babel
+define "Radio Free Babylon"
+{
+	grouphealth = 2000, 4000
+	bosshealth = 4000, 8000
+
+	weapons = "RocketLauncher", "PlasmaRifle"
+
+	addpowerup "RocketBox"
+
+	addmonster "LostSoul"
+	addmonster "Fatso"
+	addmonster "Cyberdemon" {
+		chance = .05
+	}
+
+	addboss "Cyberdemon"
+}
+
+// Ralphis - Mount Erebus
+define "Summit in Shadow"
+{
+	grouphealth = 3468, 4335
+	bosshealth = 4000, 5000
+
+	weapons = "Shotgun", "Chaingun", "RocketLauncher", "PlasmaRifle"
+
+	addpowerup "Berserk"
+	addpowerup "GreenArmor"
+	addpowerup "Soulsphere"
+
+	addmonster "ZombieMan" {
+		chance = .06
+	}
+	addmonster "ShotgunGuy" {
+		chance = .14
+	}
+	addmonster "ChaingunGuy" {
+		chance = .00
+	}
+	addmonster "DoomImp" {
+		chance = .29
+	}
+	addmonster "LostSoul" {
+		chance = .25
+	}
+	addmonster "Demon" {
+		chance = .05
+	}
+	addmonster "Spectre" {
+		chance = .03
+	}
+	addmonster "Revenant" {
+		chance = .00
+	}
+	addmonster "Cacodemon" {
+		chance = .17
+	}
+	addmonster "PainElemental" {
+		chance = .00
+	}
+	addmonster "HellKnight" {
+		chance = .00
+	}
+	addmonster "BaronOfHell" {
+		chance = .01
+	}
+	addmonster "Arachnotron" {
+		chance = .00
+	}
+	addmonster "Fatso" {
+		chance = .00
+	}
+	addmonster "Archvile" {
+		chance = .00
+	}
+	addmonster "SpiderMastermind" {
+		chance = .00
+	}
+	addmonster "Cyberdemon" {
+		chance = .00
+	}
+
+	addboss "BaronOfHell"
+}
+
+// Ralphis - Arachnophobia
+define "Paranoid Spiderdroid"
+{
+	grouphealth = 500, 4800
+	bosshealth = 4800, 10000
+
+	weapons = "SuperShotgun", "RocketLauncher", "PlasmaRifle"
+
+	addpowerup "GreenArmor"
+	addpowerup "Soulsphere"
+	addpowerup "BlueArmor"
+ 
+	addmonster "Arachnotron"
+	addmonster "SpiderMastermind"
+
+	addboss "Arachnotron"
+	addboss "SpiderMastermind"
+}
+
+// Ralphis - The Living End
+define "End of Your Life"
+{
+	grouphealth = 4226, 5282
+	bosshealth = 5026, 6282
+
+	weapons = "SuperShotgun", "Chaingun", "PlasmaRifle"
+
+	addpowerup "Berserk"
+	addpowerup "Soulsphere"
+	addpowerup "BlueArmor"
+	addpowerup "GreenArmor"
+
+	addmonster "ZombieMan" {
+		chance = .12
+	}
+	addmonster "ShotgunGuy" {
+		chance = .20
+	}
+	addmonster "ChaingunGuy" {
+		chance = .10
+	}
+	addmonster "DoomImp" {
+		chance = .21
+	}
+	addmonster "LostSoul" {
+		chance = .00
+	}
+	addmonster "Demon" {
+		chance = .00
+	}
+	addmonster "Spectre" {
+		chance = .01
+	}
+	addmonster "Revenant" {
+		chance = .06
+	}
+	addmonster "Cacodemon" {
+		chance = .14
+	}
+	addmonster "PainElemental" {
+		chance = .04
+	}
+	addmonster "HellKnight" {
+		chance = .05
+	}
+	addmonster "BaronOfHell" {
+		chance = .03
+	}
+	addmonster "Arachnotron" {
+		chance = .00
+	}
+	addmonster "Fatso" {
+		chance = .04
+	}
+	addmonster "Archvile" {
+		chance = .01
+	}
+	addmonster "SpiderMastermind" {
+		chance = .00
+	}
+	addmonster "Cyberdemon" {
+		chance = .01
+	}
+
+	addboss "Cyberdemon"
+	addboss "Archvile"
+}
+
+// Ralphis - Tricks And Traps
+define "Octagon Illusions"
+{
+	grouphealth = 150, 6000
+	bosshealth = 4000, 8000
+
+	weapons = "Shotgun", "Chaingun", "SuperShotgun", "RocketLauncher", "PlasmaRifle", "BFG9000"
+
+	addpowerup "Soulsphere" {
+		chance = .25
+	}
+	addpowerup "Backpack" {
+		chance = .25
+	}
+	addpowerup "HealthBonus"
+	addpowerup "ArmorBonus"
+	addpowerup "Allmap"
+	addpowerup "Clip"
+	addpowerup "ExplosiveBarrel"
+
+	addmonster "ZombieMan" {
+		chance = .03
+	}
+	addmonster "ShotgunGuy" {
+		chance = .00
+	}
+	addmonster "ChaingunGuy" {
+		chance = .00
+	}
+	addmonster "DoomImp" {
+		chance = .38
+	}
+	addmonster "LostSoul" {
+		chance = .01
+	}
+	addmonster "Demon" {
+		chance = .30
+	}
+	addmonster "Spectre" {
+		chance = .02
+	}
+	addmonster "Revenant" {
+		chance = .00
+	}
+	addmonster "Cacodemon" {
+		chance = .08
+	}
+	addmonster "PainElemental" {
+		chance = .03
+	}
+	addmonster "HellKnight" {
+		chance = .00
+	}
+	addmonster "BaronOfHell" {
+		chance = .14
+	}
+	addmonster "Arachnotron" {
+		chance = .00
+	}
+	addmonster "Fatso" {
+		chance = .00
+	}
+	addmonster "Archvile" {
+		chance = .00
+	}
+	addmonster "SpiderMastermind" {
+		chance = .00
+	}
+	addmonster "Cyberdemon" {
+		chance = .01
+	}
+	addmonster "ExplosiveBarrel" {
+		chance = .02
+	}
+
+	addboss "Cyberdemon"
+}
+
+// Ralphis
+define "Happy Family"
+{
+	grouphealth = 1000, 6000
+	bosshealth = 4000, 8000
+
+	weapons = "Shotgun", "Chaingun", "SuperShotgun", "RocketLauncher", "PlasmaRifle", "BFG9000"
+
+	addpowerup "BlueArmor"
+	addpowerup "Soulsphere"
+	addpowerup "Megasphere"
+	addpowerup "Berserk"
+
+	addmonster "PainElemental"
+	addmonster "LostSoul"
+	addmonster "SpiderMastermind" {
+		chance = 0.75
+	}
+	addmonster "Arachnotron"
+	addmonster "BaronOfHell"
+	addmonster "HellKnight"
+	addmonster "Archvile" {
+		chance = 0.05
+	}
+
+	addboss "Cyberdemon"
+}
+
+// Ralphis
+define "Double Impact"
+{
+	grouphealth = 2640, 7040
+	bosshealth = 3300, 8800
+
+	weapons = "Berserk", "Shotgun", "Chaingun", "SuperShotgun", "RocketLauncher", "PlasmaRifle"
+
+	addpowerup "Soulsphere"
+	addpowerup "BlueArmor"
+	addpowerup "GreenArmor"
+
+	addmonster "ZombieMan" {
+		chance = .19
+	}
+	addmonster "ShotgunGuy" {
+		chance = .11
+	}
+	addmonster "ChaingunGuy" {
+		chance = .00
+	}
+	addmonster "DoomImp" {
+		chance = .33
+	}
+	addmonster "LostSoul" {
+		chance = .08
+	}
+	addmonster "Demon" {
+		chance = .17
+	}
+	addmonster "Spectre" {
+		chance = .03
+	}
+	addmonster "Revenant" {
+		chance = .00
+	}
+	addmonster "Cacodemon" {
+		chance = .05
+	}
+	addmonster "PainElemental" {
+		chance = .00
+	}
+	addmonster "HellKnight" {
+		chance = .00
+	}
+	addmonster "BaronOfHell" {
+		chance = .00
+	}
+	addmonster "Arachnotron" {
+		chance = .00
+	}
+	addmonster "Fatso" {
+		chance = .00
+	}
+	addmonster "Archvile" {
+		chance = .00
+	}
+	addmonster "SpiderMastermind" {
+		chance = .01
+	}
+	addmonster "Cyberdemon" {
+		chance = .03
+	}
+
+	addboss "Cyberdemon" {
+		chance = .67
+	}
+	addboss "SpiderMastermind" {
+		chance = .33
+	}
+}
+
+// Ralphis
+define "Cyberdreams"
+{
+	grouphealth = 4000, 8000
+	bosshealth = 8000, 12000
+
+	weapons = "SuperShotgun", "RocketLauncher", "PlasmaRifle", "BFG9000"
+
+	addpowerup "HealthBonus"
+	addpowerup "RocketBox"
+
+	addmonster "Cyberdemon"
+
+	addboss "Cyberdemon"
+}
+
+// Ralphis
+define "Go 2 It"
+{
+	grouphealth = 1200, 8000
+	bosshealth = 8000, 16000
+
+	weapons = "Berserk", "Shotgun", "Chaingun", "SuperShotgun", "RocketLauncher", "PlasmaRifle", "BFG9000"
+
+	addpowerup "Megasphere"
+	addpowerup "BlueArmor"
+	addpowerup "InvulnerabilitySphere"
+
+	addmonster "ZombieMan" {
+		chance = .00
+	}
+	addmonster "ShotgunGuy" {
+		chance = .00
+	}
+	addmonster "ChaingunGuy" {
+		chance = .11
+	}
+	addmonster "DoomImp" {
+		chance = .00
+	}
+	addmonster "LostSoul" {
+		chance = .00
+	}
+	addmonster "Demon" {
+		chance = .09
+	}
+	addmonster "Spectre" {
+		chance = .00
+	}
+	addmonster "Revenant" {
+		chance = .24
+	}
+	addmonster "Cacodemon" {
+		chance = .00
+	}
+	addmonster "PainElemental" {
+		chance = .05
+	}
+	addmonster "HellKnight" {
+		chance = .00
+	}
+	addmonster "BaronOfHell" {
+		chance = .09
+	}
+	addmonster "Arachnotron" {
+		chance = .13
+	}
+	addmonster "Fatso" {
+		chance = .14
+	}
+	addmonster "Archvile" {
+		chance = .09
+	}
+	addmonster "SpiderMastermind" {
+		chance = .01
+	}
+	addmonster "Cyberdemon" {
+		chance = .06
+	}
+
+	addboss "Cyberdemon" {
+		chance = .25
+	}
+	addboss "SpiderMastermind" {
+		chance = .75
+	}
+}
+
+// Ralphis
+define "God Machine"
+{
+	grouphealth = 2000, 10000
+	bosshealth = 10000, 15000
+
+	weapons = "Shotgun", "Chaingun", "SuperShotgun", "RocketLauncher", "PlasmaRifle", "BFG9000"
+
+	addpowerup "InvulnerabilitySphere" {
+		chance = .25
+	}
+	addpowerup "Megasphere"
+	addpowerup "Backpack" {
+		chance = .25
+	}
+
+	addmonster "ZombieMan" {
+		chance = .00
+	}
+	addmonster "ShotgunGuy" {
+		chance = .00
+	}
+	addmonster "ChaingunGuy" {
+		chance = .03
+	}
+	addmonster "DoomImp" {
+		chance = .25
+	}
+	addmonster "LostSoul" {
+		chance = .00
+	}
+	addmonster "Demon" {
+		chance = .01
+	}
+	addmonster "Spectre" {
+		chance = .00
+	}
+	addmonster "Revenant" {
+		chance = .28
+	}
+	addmonster "Cacodemon" {
+		chance = .02
+	}
+	addmonster "PainElemental" {
+		chance = .04
+	}
+	addmonster "HellKnight" {
+		chance = .17
+	}
+	addmonster "BaronOfHell" {
+		chance = .06
+	}
+	addmonster "Arachnotron" {
+		chance = .02
+	}
+	addmonster "Fatso" {
+		chance = .06
+	}
+	addmonster "Archvile" {
+		chance = .05
+	}
+	addmonster "SpiderMastermind" {
+		chance = .00
+	}
+	addmonster "Cyberdemon" {
+		chance = .01
+	}
+
+	addboss "Cyberdemon"
+}
