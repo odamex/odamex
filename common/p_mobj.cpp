@@ -722,13 +722,13 @@ void AActor::RunThink ()
 	}
 
 #ifdef CLIENT_APP
-	if (player && ::displayplayer_id == player->id)
+	if (player && ::consoleplayer_id == player->id)
 	{
 		v3double_t start, end;
 		M_ActorPositionToVec3(&start, this);
 		P_MoveActor(this);
 		M_ActorPositionToVec3(&end, this);
-		HU_AddPlayerSpeed(::displayplayer_id, start, end);
+		HU_AddPlayerSpeed(start, end);
 	}
 	else
 #endif

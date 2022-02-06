@@ -28,12 +28,7 @@
 
 #include <math.h>
 
-struct speedometer_t
-{
-	int lastID;
-	double speeds[TICRATE];
-	speedometer_t() : lastID(-1) { ArrayInit(speeds, 0.0); }
-} gSpeedometer;
+double gDisplaySpeed;
 
 /**
  * @brief Add the given player's speed to the speedometer
@@ -42,18 +37,11 @@ struct speedometer_t
  * @param start Starting position.
  * @param end Ending position.
  */
-void HU_AddPlayerSpeed(const int id, const v3double_t& start, const v3double_t& end)
+void HU_AddPlayerSpeed(const v3double_t& start, const v3double_t& end)
 {
-	const size_t idx = ::gametic % TICRATE;
 	const v3double_t origin(end.x - start.x, end.y - start.y, end.z - start.z);
 	const double dist = sqrt(pow(origin.x, 2) + pow(origin.y, 2) + pow(origin.z, 2));
-
-	if (gSpeedometer.lastID != id)
-	{
-		ArrayInit(gSpeedometer.speeds, 0.0);
-		gSpeedometer.lastID = id;
-	}
-	gSpeedometer.speeds[idx] = dist;
+	::gDisplaySpeed = dist * TICRATE;
 }
 
 /**
@@ -63,10 +51,5 @@ void HU_AddPlayerSpeed(const int id, const v3double_t& start, const v3double_t& 
  */
 double HU_GetPlayerSpeed()
 {
-	double total = 0.0;
-	for (size_t i = 0; i < ARRAY_LENGTH(gSpeedometer.speeds); i++)
-	{
-		total += gSpeedometer.speeds[i];
-	}
-	return total / ARRAY_LENGTH(gSpeedometer.speeds);
+	return ::gDisplaySpeed;
 }

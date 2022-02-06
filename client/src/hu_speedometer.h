@@ -26,5 +26,5 @@
 
 #include "m_vectors.h"
 
-void HU_AddPlayerSpeed(const int id, const v3double_t& start, const v3double_t& end);
+void HU_AddPlayerSpeed(const v3double_t& start, const v3double_t& end);
 double HU_GetPlayerSpeed();
