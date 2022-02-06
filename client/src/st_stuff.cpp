@@ -1755,9 +1755,9 @@ void ST_Stop()
 void ST_Init()
 {
 	if (stbar_surface == NULL)
-		stbar_surface = I_AllocateSurface(320, 32, 8);
+		stbar_surface = I_AllocateSurface(320, (gamemission == heretic) ? 42 : 32, 8);
 	if (stnum_surface == NULL)
-		stnum_surface = I_AllocateSurface(320, 32, 8);
+		stnum_surface = I_AllocateSurface(320, (gamemission == heretic) ? 42 : 32, 8);
 
 	lu_palette = W_GetNumForName("PLAYPAL");
 

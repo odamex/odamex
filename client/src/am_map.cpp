@@ -40,7 +40,6 @@
 // Needs access to LFB.
 #include "i_video.h"
 #include "v_video.h"
-
 #include "v_text.h"
 
 // State.
@@ -48,13 +47,11 @@
 
 // Data.
 #include "gstrings.h"
-
 #include "am_map.h"
-
+#include "gi.h"
 #include "i_system.h"
 #include "p_mapformat.h"
 
-#include "gi.h"
 
 #define R ((8*PLAYERRADIUS)/7)
 static mline_t cheat_player_arrow[] = {
@@ -868,8 +865,6 @@ bool AM_Responder(event_t *ev)
 			return (defbind[0] != '+'); // Let G_Responder handle button releases
 		}
 		return res;
-
-		
 	}
 	
 	return false;
