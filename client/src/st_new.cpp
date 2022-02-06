@@ -847,7 +847,7 @@ void OdamexHUD() {
 		if (::hud_bigfont)
 			V_SetFont("BIGFONT");
 
-		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
 		iy += V_LineHeight() + 1;
 
@@ -860,8 +860,9 @@ void OdamexHUD() {
 		if (::hud_bigfont)
 			V_SetFont("BIGFONT");
 
-		StrFormat(buf, "%d" TEXTCOLOR_DARKGREY "ups", static_cast<int>(HU_GetPlayerSpeed()));
-		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		StrFormat(buf, "%d" TEXTCOLOR_DARKGREY "ups",
+		          static_cast<int>(HU_GetPlayerSpeed()));
+		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
 		iy += V_LineHeight() + 1;
 
