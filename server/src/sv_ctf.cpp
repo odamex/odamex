@@ -22,17 +22,21 @@
 // ----------------------------------------------------------------------------
 
 
-#include <sstream>
-#include "sv_main.h"
-#include "m_random.h"
+#include "odamex.h"
+
 #include "p_ctf.h"
-#include "i_system.h"
+
+#include <sstream>
+
 #include "g_gametype.h"
+#include "i_system.h"
+#include "m_random.h"
+#include "m_wdlstats.h"
 #include "p_inter.h"
 #include "p_unlag.h"
+#include "sv_main.h"
+#include "svc_message.h"
 #include "v_textcolors.h"
-#include "m_wdlstats.h"
-#include "doomstat.h"
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 std::string V_GetTeamColor(UserInfo userinfo);
@@ -71,11 +75,14 @@ static int ctf_points[NUM_CTF_SCORE] =
 //	[Toke - CTF] SV_CTFEvent
 //	Sends CTF events to player
 //
-void SV_CTFEvent (team_t f, flag_score_t event, player_t &who)
+void SV_CTFEvent(team_t f, flag_score_t event, player_t& who)
 {
-	if(event == SCORE_NONE)
+	if (event <= SCORE_REFRESH || event >= NUM_CTF_SCORE)
+	{
 		return;
+	}
 
+	const TeamsView& tv = TeamQuery().execute();
 	if (validplayer(who) && G_CanScoreChange())
 	{
 		if (G_IsRoundsGame())
@@ -84,35 +91,15 @@ void SV_CTFEvent (team_t f, flag_score_t event, player_t &who)
 			who.points += ctf_points[event];
 	}
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		client_t *cl = &(it->client);
+		client_t* cl = &(it->client);
 
-		MSG_WriteMarker (&cl->reliablebuf, svc_ctfevent);
-		MSG_WriteByte (&cl->reliablebuf, event);
-		MSG_WriteByte (&cl->reliablebuf, f);
-		if (who.userinfo.team == TEAM_NONE)
-			MSG_WriteByte(&cl->reliablebuf, f);
-		else
-			MSG_WriteByte(&cl->reliablebuf, who.userinfo.team);
-
-		if(validplayer(who))
+		MSG_WriteSVC(&cl->reliablebuf, SVC_CTFEvent(event, f, who));
+		if (event == SCORE_CAPTURE)
 		{
-			MSG_WriteByte (&cl->reliablebuf, who.id);
-
-			if (G_IsRoundsGame())
-				MSG_WriteVarint(&cl->reliablebuf, who.totalpoints);
-			else
-				MSG_WriteVarint(&cl->reliablebuf, who.points);
+			MSG_WriteSVC(&cl->reliablebuf, SVC_CTFRefresh(tv, false));
 		}
-		else
-		{
-			MSG_WriteByte (&cl->reliablebuf, 0);
-			MSG_WriteVarint(&cl->reliablebuf, 0);
-		}
-
-		for(size_t j = 0; j < NUMTEAMS; j++)
-			MSG_WriteLong (&cl->reliablebuf, GetTeamInfo((team_t)j)->Points);
 	}
 }
 
@@ -124,18 +111,7 @@ void CTF_Connect(player_t &player)
 {
 	client_t *cl = &player.client;
 
-	MSG_WriteMarker (&cl->reliablebuf, svc_ctfevent);
-	MSG_WriteByte (&cl->reliablebuf, SCORE_NONE);
-
-	for(size_t i = 0; i < NUMTEAMS; i++)
-	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
-		MSG_WriteByte (&cl->reliablebuf, teamInfo->FlagData.state);
-		MSG_WriteByte (&cl->reliablebuf, teamInfo->FlagData.flagger);
-	}
-
-	// send team scores to the client
-	SV_CTFEvent ((team_t)0, SCORE_REFRESH, player);
+	MSG_WriteSVC(&cl->reliablebuf, SVC_CTFRefresh(TeamQuery().execute(), true));
 }
 
 //
@@ -167,16 +143,17 @@ ItemEquipVal SV_FlagGrab (player_t &player, team_t f, bool firstgrab)
 			teamInfo->FlagData.firstgrab = true;
 			SV_BroadcastPrintf("%s has taken the %s flag!\n", player.userinfo.netname.c_str(), teamInfo->ColorizedTeamName().c_str());
 			SV_CTFEvent (f, SCORE_FIRSTGRAB, player);
-			M_LogWDLEvent(WDL_EVENT_TOUCH, &player, NULL, 0, 0, 0);
+			M_LogWDLEvent(WDL_EVENT_TOUCH, &player, NULL, f, 0, 0, 0);
 		} else {
 			teamInfo->FlagData.firstgrab = false;
 			SV_BroadcastPrintf ("%s picked up the %s flag!\n", player.userinfo.netname.c_str(), teamInfo->ColorizedTeamName().c_str());
 			SV_CTFEvent (f, SCORE_GRAB, player);
-			M_LogWDLEvent(WDL_EVENT_PICKUPTOUCH, &player, NULL, 0, 0, 0);
+			M_LogWDLEvent(WDL_EVENT_PICKUPTOUCH, &player, NULL, f, 0, 0, 0);
 		}
 	} else {
 		SV_BroadcastPrintf ("%s is recovering the %s flag!\n", player.userinfo.netname.c_str(), teamInfo->ColorizedTeamName().c_str());
 		SV_CTFEvent (f, SCORE_MANUALRETURN, player);
+		M_LogWDLEvent(WDL_EVENT_CARRYRETURNFLAG, &player, NULL, f, 0, 0, 0);
 	}
 
 	return IEV_EquipRemove;
@@ -193,7 +170,7 @@ void SV_FlagReturn (player_t &player, team_t f)
 	CTF_SpawnFlag (f);
 
 	SV_BroadcastPrintf ("%s has returned the %s flag.\n", player.userinfo.netname.c_str(), V_GetTeamColor(f).c_str());
-	M_LogWDLEvent(WDL_EVENT_RETURNFLAG, &player, NULL, 0, 0, 0);
+	M_LogWDLEvent(WDL_EVENT_RETURNFLAG, &player, NULL, f, 0, 0, 0);
 }
 
 //
@@ -237,9 +214,9 @@ void SV_FlagScore (player_t &player, team_t f)
 						CTF_TimeMSG(time_held));
 
 	if (teamInfo->FlagData.firstgrab)
-		M_LogWDLEvent(WDL_EVENT_CAPTURE, &player, NULL, 0, 0, 0);
+		M_LogWDLEvent(WDL_EVENT_CAPTURE, &player, NULL, f, 0, 0, 0);
 	else
-		M_LogWDLEvent(WDL_EVENT_PICKUPCAPTURE, &player, NULL, 0, 0, 0);
+		M_LogWDLEvent(WDL_EVENT_PICKUPCAPTURE, &player, NULL, f, 0, 0, 0);
 
 	player.flags[f] = false; // take scoring player's flag
 	teamInfo->FlagData.flagger = 0;
@@ -379,6 +356,8 @@ void CTF_RunTics (void)
 		SV_BroadcastPrintf ("%s flag returned.\n", teamInfo->ColorizedTeamName().c_str());
 
 		CTF_SpawnFlag(teamInfo->Team);
+
+		M_LogWDLEvent(WDL_EVENT_RETURNFLAG, NULL, NULL, teamInfo->Team, 0, 0, 0);
 	}
 }
 
@@ -450,6 +429,7 @@ void CTF_RememberFlagPos (mapthing2_t *mthing)
 			teamInfo->FlagData.flaglocated = true;
 			break;
 		}
+
 	}
 }
 

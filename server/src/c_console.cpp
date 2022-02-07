@@ -22,20 +22,15 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <stdarg.h>
 
-#include "m_memio.h"
-#include "version.h"
 #include "c_console.h"
-#include "c_cvars.h"
 #include "c_dispatch.h"
-#include "v_palette.h"
 #include "sv_main.h"
-#include "doomstat.h"
-#include "gi.h"
-#include "v_textcolors.h"
+#include "svc_message.h"
 
-#include <string>
 
 static const int MAX_LINE_LENGTH = 8192;
 
@@ -133,9 +128,7 @@ int VPrintf(int printlevel, const char* format, va_list parms)
 		if (cl->allow_rcon && (printlevel == PRINT_HIGH || printlevel == PRINT_WARNING ||
 		                       printlevel == PRINT_ERROR))
 		{
-			MSG_WriteMarker(&cl->reliablebuf, svc_print);
-			MSG_WriteByte(&cl->reliablebuf, PRINT_WARNING);
-			MSG_WriteString(&cl->reliablebuf, str.c_str());
+			MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_WARNING, str));
 		}
 	}
 

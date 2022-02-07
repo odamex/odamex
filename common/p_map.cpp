@@ -22,28 +22,36 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "m_alloc.h"
 #include "m_bbox.h"
 #include "m_random.h"
 #include "i_system.h"
 
-#include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "c_effect.h"
 #include "p_mobj.h"
+#include "svc_message.h"
 
 #include "s_sound.h"
 
+#include "m_wdlstats.h"
+#include "g_gametype.h"
+#include "p_mapformat.h"
 // State.
-#include "doomstat.h"
 #include "r_state.h"
 
 #include "z_zone.h"
 #include "p_unlag.h"
 #include "m_vectors.h"
+#include "p_mapformat.h"
 #include <math.h>
 #include <set>
+
+bool P_ShouldClipPlayer(AActor* projectile, AActor* player);
 
 EXTERN_CVAR(sv_unblockplayers)
 
@@ -61,7 +69,6 @@ static int		ls_y;	// Lost Soul position for Lost Soul checks		// phares
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".
 BOOL 			floatok;
-extern bool 	HasBehavior;	// ZDoom in Hexen Format
 
 fixed_t 		tmfloorz;
 fixed_t 		tmceilingz;
@@ -210,7 +217,8 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 	validcount++;
 	spechit.clear();
 
-	StompAlwaysFrags = tmthing->player || (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
+	StompAlwaysFrags = tmthing->player || tmthing->type == MT_AVATAR ||
+	                   (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
 	// stomp on any things contacted
 	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
@@ -264,7 +272,7 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 		// friction value (muddy has precedence over icy).
 
 		for (m = mo->touching_sectorlist; m; m = m->m_tnext)
-			if ((sec = m->m_sector)->special & FRICTION_MASK &&
+			if ((sec = m->m_sector)->flags & SECF_FRICTION &&
 				(sec->friction < friction || friction == ORIG_FRICTION) &&
 				(mo->z <= P_FloorHeight(mo) ||
 				(sec->heightsec && !(sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
@@ -395,17 +403,23 @@ BOOL PIT_CheckLine (line_t *ld)
 	if (!ld->backsector)
 	{ // One sided line
 		BlockingLine = ld;
-		CheckForPushSpecial (ld, 0, tmthing);
+		CheckForPushSpecial(ld, 0, tmthing);
 		return false;
 	}
 
-    if (!(tmthing->flags & MF_MISSILE) || (ld->flags & ML_BLOCKEVERYTHING))
+    if (!(tmthing->flags & (MF_MISSILE | MF_BOUNCES)) || (ld->flags & ML_BLOCKEVERYTHING))
     {
-		if ((ld->flags & (ML_BLOCKING|ML_BLOCKEVERYTHING)) || 	// explicitly blocking everything
-			(!tmthing->player && ld->flags & ML_BLOCKMONSTERS)) {	// block monsters only
-				CheckForPushSpecial (ld, 0, tmthing);
-				return false;
-		}
+		if ((ld->flags &
+		     (ML_BLOCKING | ML_BLOCKEVERYTHING)) || // explicitly blocking everything
+		    (!tmthing->player && (ld->flags & ML_BLOCKMONSTERS)) || // block monsters only
+		    (!tmthing->player && (ld->flags & ML_BLOCKLANDMONSTERS) &&
+		     !(tmthing->flags & MF_FLOAT)) || // [Blair] Block land monsters.
+		    (tmthing->player &&
+		     (ld->flags & ML_BLOCKPLAYERS))) // [Blair] Block players only
+		{
+			CheckForPushSpecial(ld, 0, tmthing);
+			return false;
+		}		
     }
 
 	// [RH] Steep sectors count as dropoffs (unless already in one)
@@ -495,9 +509,60 @@ BOOL PIT_CheckLine (line_t *ld)
 	return true;
 }
 
+/*
+ * @brief Determines if a projectile should clip a player.
+ *
+ * @param projectile (suspected) projectile actor
+ * @param player (suspected) player actor
+ * @return true if the player should be clipped.
+ */
+bool P_ShouldClipPlayer(AActor* projectile, AActor* player)
+{
+	if (!sv_unblockplayers)
+	{
+		return true; // Clip all players all the time.
+	}
+	else if (projectile->target && projectile->target->player && player->player)
+	{
+		if (sv_friendlyfire)
+		{
+			return true; // Always clip if friendly fire is on.
+		}
+		else if (G_IsCoopGame() ||
+		    (projectile->target->player->userinfo.team == player->player->userinfo.team &&
+		     G_IsTeamGame()))
+		{
+			return false; // Friendly player
+		}
+		else
+		{
+			return true; // Enemy player
+		}
+	}
+	else
+	{
+		return true; // Not a player.
+	}
+}
+
 //
 // PIT_CheckThing
 //
+
+static bool P_ProjectileImmune(AActor* target, AActor* source)
+{
+	return ( // PG_GROUPLESS means no immunity, even to own species
+	           mobjinfo[target->type].projectile_group != PG_GROUPLESS ||
+	           target == source) &&
+	       (( // target type has default behaviour, and things are the same type
+	            mobjinfo[target->type].projectile_group == PG_DEFAULT &&
+	            source->type == target->type) ||
+	        ( // target type has special behaviour, and things have the same group
+	            mobjinfo[target->type].projectile_group != PG_DEFAULT &&
+	            mobjinfo[target->type].projectile_group ==
+	                mobjinfo[source->type].projectile_group));
+}
+
 static BOOL PIT_CheckThing (AActor *thing)
 {
 	bool solid = thing->flags & MF_SOLID;
@@ -538,7 +603,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 	if (tmthing->flags & MF_SKULLFLY)
 	{
 		int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
-		P_DamageMobj (thing, tmthing, tmthing, damage, MOD_UNKNOWN);
+		P_DamageMobj (thing, tmthing, tmthing, damage, MOD_HIT);
 		tmthing->flags &= ~MF_SKULLFLY;
 		tmthing->momx = tmthing->momy = tmthing->momz = 0;
 		P_SetMobjState (tmthing, tmthing->info->spawnstate);
@@ -548,7 +613,11 @@ static BOOL PIT_CheckThing (AActor *thing)
 	}
 
 	// missiles can hit other things
-	if (tmthing->flags & MF_MISSILE)
+	// [Blair] This emulates hexen behavior, where rockets can push
+	// dead/stationary things marked bouncy.
+	// Out of place in Doom, should fix.
+	if (tmthing->flags & MF_MISSILE || (tmthing->flags & MF_BOUNCES 
+		&& !(tmthing->flags & MF_SOLID)))
 	{
 		// see if it went over / under
 		if (tmthing->z > thing->z + thing->height)
@@ -556,10 +625,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 		if (tmthing->z+tmthing->height < thing->z)
 			return true;				// underneath
 
-		if (tmthing->target && (
-			tmthing->target->type == thing->type ||
-			(tmthing->target->type == MT_KNIGHT && thing->type == MT_BRUISER)||
-			(tmthing->target->type == MT_BRUISER && thing->type == MT_KNIGHT) ) )
+		if (tmthing->target && P_ProjectileImmune(thing, tmthing->target))
 		{
 			// Don't hit same species as originator.
 			if (thing == tmthing->target)
@@ -572,6 +638,28 @@ static BOOL PIT_CheckThing (AActor *thing)
 
 		if (!(thing->flags & MF_SHOOTABLE))
 			return !solid;		// didn't do any damage
+
+		// Don't clip the projectile unless it's not a teammate.
+		if (!P_ShouldClipPlayer(tmthing, thing))
+			return true;
+
+		if (tmthing->flags2 & MF2_RIP)
+		{
+			int damage = ((P_Random() & 3) + 2) * tmthing->info->damage;
+			if (!(thing->flags & MF_NOBLOOD))
+				P_SpawnBlood(tmthing->x, tmthing->y, tmthing->z, damage);
+			if (tmthing->info->ripsound)
+				S_Sound(tmthing, CHAN_VOICE, tmthing->info->ripsound, 1, ATTN_NORM);
+
+			P_DamageMobj(thing, tmthing, tmthing->target, damage);
+			if (thing->flags2 & MF2_PUSHABLE && !(tmthing->flags2 & MF2_CANNOTPUSH))
+			{ // Push thing
+				thing->momx += tmthing->momx >> 2;
+				thing->momy += tmthing->momy >> 2;
+			}
+
+			return true;
+		}
 
 		// damage / explode
 		if (tmthing->info->damage)
@@ -590,6 +678,16 @@ static BOOL PIT_CheckThing (AActor *thing)
 						break;
 					case MT_BFG:
 						mod = MOD_BFG_BOOM;
+						break;
+					// [AM] Monster fireballs get a special MOD.
+					case MT_ARACHPLAZ:
+					case MT_TROOPSHOT:
+					case MT_HEADSHOT:
+					case MT_BRUISERSHOT:
+					case MT_TRACER:
+					case MT_FATSHOT:
+					case MT_SPAWNSHOT:
+						mod = MOD_FIREBALL;
 						break;
 					default:
 						mod = MOD_UNKNOWN;
@@ -690,6 +788,10 @@ BOOL PIT_CheckOnmobjZ (AActor *thing)
 	if (tmthing->z > thing->z + thing->height)
 		return true;
 	else if (tmthing->z + tmthing->height <= thing->z)
+		return true;
+
+	// Don't clip the projectile unless it's not a teammate.
+	if (tmthing->flags & MF_MISSILE && !P_ShouldClipPlayer(tmthing, thing))
 		return true;
 
 	fixed_t blockdist = thing->radius+tmthing->radius;
@@ -993,7 +1095,7 @@ void P_FakeZMovement(AActor *mo)
 
 void P_CheckPushLines(AActor *thing)
 {
-	if (!thing || !HasBehavior)
+	if (!thing || !map_format.getZDoom())
 		return;
 
 	if (!(thing->flags&(MF_TELEPORT|MF_NOCLIP)))
@@ -1111,8 +1213,14 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 			return false;
 		}
 
+		bool sentient = thing->health > 0 && thing->info->seestate;
+		if (thing->flags & MF_BOUNCES && // killough 8/13/98
+		    !(thing->flags & (MF_MISSILE | MF_NOGRAVITY)) && !sentient &&
+		    tmfloorz - thing->z > 16 * FRACUNIT)
+			return false; // too big a step up for bouncers under gravity
+
 		// killough 11/98: prevent falling objects from going up too many steps
-		if (co_zdoomphys && thing->flags & MF_FALLING && tmfloorz - testz >
+		if (co_zdoomphys && thing->oflags & MFO_FALLING && tmfloorz - testz >
 			FixedMul(thing->momx, thing->momx) + FixedMul(thing->momy, thing->momy))
 		{
 			return false;
@@ -1146,7 +1254,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 			int side = P_PointOnLineSide (thing->x, thing->y, ld);
 			int oldside = P_PointOnLineSide (oldx, oldy, ld);
 			if (side != oldside && ld->special)
-				P_CrossSpecialLine (ld-lines, oldside, thing);
+				P_CrossSpecialLine (ld-lines, oldside, thing, false);
 		}
 	}
 
@@ -1275,7 +1383,7 @@ void P_ApplyTorque (AActor *mo)
 	int yh = ((tmbbox[BOXTOP] =
 			mo->y + mo->radius) - bmaporgy) >> MAPBLOCKSHIFT;
 	int bx,by;
-	int flags = mo->flags;	//Remember the current state, for gear-change
+	int flags = mo->oflags;	//Remember the current state, for gear-change
 
 	tmthing = mo;
 	++validcount; // prevents checking same line twice
@@ -1286,9 +1394,9 @@ void P_ApplyTorque (AActor *mo)
 
 	// If any momentum, mark object as 'falling' using engine-internal flags
 	if (mo->momx | mo->momy)
-		mo->flags |= MF_FALLING;
+		mo->oflags |= MFO_FALLING;
 	else  // Clear the engine-internal flag indicating falling object.
-		mo->flags &= ~MF_FALLING;
+		mo->oflags &= ~MFO_FALLING;
 
 	// If the object has been moving, step up the gear.
 	// This helps reach equilibrium and avoid oscillations.
@@ -1297,7 +1405,7 @@ void P_ApplyTorque (AActor *mo)
 	// of rotation, so we have to creatively simulate these
 	// systems somehow :)
 
-	if (!((mo->flags | flags) & MF_FALLING))	// If not falling for a while,
+	if (!((mo->oflags | flags) & MFO_FALLING))	// If not falling for a while,
 		mo->gear = 0;							// Reset it to full strength
 	else if (mo->gear < MAXGEAR)				// Else if not at max gear,
 		mo->gear++;								// move up a gear
@@ -1900,8 +2008,14 @@ bool P_ShootLine(intercept_t* in)
 	if (li->special)
 		P_ShootSpecialLine(shootthing, li);
 
+	short spe;
+	if (map_format.getZDoom())
+		spe = Line_Horizon;
+	else
+		spe = 337;
+
 	// don't shoot horizon lines
-	if (li->special == Line_Horizon)
+	if (li->special == spe)
 		return false;
 
 	// [SL] 2012-02-08 - Calculates where the intercept crosses the line
@@ -2077,7 +2191,7 @@ BOOL PTR_ShootTraverse (intercept_t* in)
 
 	if (la_damage) {
 		// [RH] try and figure out means of death;
-		int mod = MOD_UNKNOWN;
+		int mod = MOD_HITSCAN;
 
 		if (shootthing->player) {
 			switch (shootthing->player->readyweapon) {
@@ -2475,13 +2589,8 @@ void P_RailAttack (AActor *source, int damage, int offset)
 				continue;
 
 			buf_t* buf = &(it->client.netbuf);
-			MSG_WriteMarker(buf, svc_railtrail);
-			MSG_WriteShort(buf, short(start.x));
-			MSG_WriteShort(buf, short(start.y));
-			MSG_WriteShort(buf, short(start.z));
-			MSG_WriteShort(buf, short(end.x));
-			MSG_WriteShort(buf, short(end.y));
-			MSG_WriteShort(buf, short(end.z));
+
+			MSG_WriteSVC(buf, SVC_RailTrail(start, end));
 		}
 	}
 }
@@ -2636,7 +2745,7 @@ BOOL PTR_UseTraverse (intercept_t *in)
 
 	int side = (P_PointOnLineSide (usething->x, usething->y, in->d.line) == 1);
 
-    P_UseSpecialLine (usething, in->d.line, side);
+    P_UseSpecialLine (usething, in->d.line, side, false);
 
 	//WAS can't use more than one special line in a row
 	//jff 3/21/98 NOW multiple use allowed with enabling line flag
@@ -2645,9 +2754,22 @@ BOOL PTR_UseTraverse (intercept_t *in)
 	//	   it through, including SPAC_USETHROUGH.
 	//[ML] And NOW (8/16/10) it checks whether it's use or NOT the passthrough flags
 	// (passthru on a cross or use line).  This may get augmented/changed even more in the future.
-	return (GET_SPAC(in->d.line->flags) == SPAC_USE ||
-            (GET_SPAC(in->d.line->flags) != SPAC_CROSSTHROUGH &&
-             GET_SPAC(in->d.line->flags) != SPAC_USETHROUGH)) ? false : true;
+	
+	bool donteatuse;
+	if (map_format.getZDoom())
+	{
+		donteatuse = ((in->d.line->flags & ML_SPAC_USE) ||
+		          (!(in->d.line->flags & ML_SPAC_CROSSTHROUGH) &&
+		           (!(in->d.line->flags & ML_SPAC_USETHROUGH))))
+		             ? false
+		             : true;
+	}
+	else
+	{
+		donteatuse = (in->d.line->flags & ML_PASSUSE);
+	}
+
+	return donteatuse;
 }
 
 // Returns false if a "oof" sound should be made because of a blocking
@@ -2748,14 +2870,28 @@ CVAR_FUNC_IMPL(sv_splashfactor)
 //
 // "bombsource" is the creature that caused the explosion at "bombspot".
 //
+
+static bool P_SplashImmune(AActor* target, AActor* spot)
+{
+	return // not default behaviour and same group
+	    mobjinfo[target->type].splash_group != SG_DEFAULT &&
+	    mobjinfo[target->type].splash_group == mobjinfo[spot->type].splash_group;
+}
+
 static BOOL PIT_DoomRadiusAttack(AActor* thing)
 {
-	if (!serverside || !(thing->flags & MF_SHOOTABLE))
+	if (!serverside || !(thing->flags & (MF_SHOOTABLE | MF_BOUNCES)))
+		return true;
+
+	// MBF21
+	if (P_SplashImmune(thing, bombspot))
 		return true;
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if (thing->type == MT_CYBORG || thing->type == MT_SPIDER)
+	if ((thing->type == MT_CYBORG && bombsource->type == MT_CYBORG) || 
+		(thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS) && 
+		!(bombspot->flags3 & MF3_FORCERADIUSDMG)) 
 		return true;
 
 	fixed_t dx = abs(thing->x - bombspot->x);
@@ -2765,13 +2901,28 @@ static BOOL PIT_DoomRadiusAttack(AActor* thing)
 	if (dist < 0)
 		dist = 0;
 
-	if (dist >= bombdamage)
-		return true;	// out of range
+	if (dist >= bombdistance)
+	{
+		if (bombsource && bombsource->player)
+		{
+			M_LogWDLEvent(WDL_EVENT_PROJACCURACY, bombsource->player, NULL,
+			              bombsource->player->mo->angle / 4, bombmod, 0,
+			              GetMaxShotsForMod(bombmod));
+		}
+		return true; // out of range
+	}
 
 	if (P_CheckSight(thing, bombspot))
 	{
+		int damage;
+
+		if (bombdamage == bombdistance)
+			damage = bombdamage - dist;
+		else
+			damage = (bombdamage * (bombdistance - dist) / bombdistance) + 1;
+
 		// must be in direct path
-		P_DamageMobj(thing, bombspot, bombsource, (bombdamage - dist) * sv_splashfactor, bombmod);
+		P_DamageMobj(thing, bombspot, bombsource, damage * sv_splashfactor, bombmod);
 	}
 
 	return true;
@@ -2786,12 +2937,18 @@ static BOOL PIT_DoomRadiusAttack(AActor* thing)
 //
 static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 {
-	if (!serverside || !(thing->flags & MF_SHOOTABLE))
+	if (!serverside || !(thing->flags & (MF_SHOOTABLE | MF_BOUNCES)))
+		return true;
+
+	// MBF21
+	if (P_SplashImmune(thing, bombspot))
 		return true;
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if (thing->flags2 & MF2_BOSS)
+	if ((thing->type == MT_CYBORG && bombsource->type == MT_CYBORG) ||
+	   (thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS) &&
+	   !(bombspot->flags3 & MF3_FORCERADIUSDMG)) 
 		return true;
 
 	// Barrels always use the original code, since this makes
@@ -2835,7 +2992,12 @@ static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 			len = 0.0f;
 	}
 
-	float points = bombdamage - (len / FRACUNIT) + 1.0f;
+	float points;
+	if (bombdamage == bombdistance)
+		points = bombdamage - (len / FRACUNIT) + 1.0f;
+	else
+		points = (bombdamage * (bombdistance - (len / FRACUNIT)) / bombdistance) + 1.0f;
+
 	if (thing == bombsource)
 		points *= sv_splashfactor;
 
@@ -2863,6 +3025,15 @@ static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 		thing->momy = momy + (fixed_t)((thing->y - bombspot->y) * thrust);
 		thing->momz += (fixed_t)momz;
 	}
+	else
+	{
+		if (bombsource && bombsource->player)
+		{
+			M_LogWDLEvent(WDL_EVENT_PROJACCURACY, bombsource->player, NULL,
+			              bombsource->player->mo->angle / 4, bombmod, 0,
+			              GetMaxShotsForMod(bombmod));
+		}
+	}
 
 	return true;
 }
@@ -2882,10 +3053,10 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bombspot = spot;
 	bombsource = source;
 	bombdamage = damage;
+	bombdamagefloat = (float)damage;
 	bombdistance = distance;
 	bombdistancefloat = 1.f / (float)distance;
 	DamageSource = hurtSource;
-	bombdamagefloat = (float)damage;
 	bombmod = mod;
 
 	// decide which radius attack function to use
@@ -2937,13 +3108,13 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 // of all things that touch the sector.
 //
 // If anything doesn't fit anymore, true will be returned.
-// If crunch is true, they will take damage
-//  as they are being crushed.
-// If Crunch is false, you should set the sector height back
+// If crunch is greater than zero, it will crush based on its value
+// (BOOM's default crush is 10 dmg per crush)
+// If Crunch is 0 or less, you should set the sector height back
 //  the way it was and call P_ChangeSector again
 //  to undo the changes.
 //
-bool	crushchange;
+int		crushchange;
 bool 	nofit;
 
 //
@@ -2993,9 +3164,9 @@ BOOL PIT_ChangeSector (AActor *thing)
 
 	nofit = true;
 
-	if (crushchange && !(level.time&3) )
+	if (crushchange > NO_CRUSH && !(level.time&3) )
 	{
-		P_DamageMobj (thing, NULL, NULL, 10, MOD_CRUSH);
+		P_DamageMobj(thing, NULL, NULL, crushchange, MOD_CRUSH);
 
 		// spray blood in a random direction
 		if (!(thing->flags&MF_NOBLOOD))
@@ -3020,7 +3191,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 // sector. Both more accurate and faster.
 //
 
-bool P_ChangeSector (sector_t *sector, bool crunch)
+bool P_ChangeSector (sector_t *sector, int crunch)
 {
 	if (!sector)
 		return true;
@@ -3051,8 +3222,8 @@ bool P_ChangeSector (sector_t *sector, bool crunch)
 				if (!n->visited)								// unprocessed thing found
 				{
 					n->visited	= true; 						// mark thing as processed
-					if (!(n->m_thing->flags & MF_NOBLOCKMAP))	//jff 4/7/98 don't do these
-						PIT_ChangeSector(n->m_thing); 			// process it
+					if (n->m_thing && !(n->m_thing->flags & MF_NOBLOCKMAP))	// [Blair] Add nullcheck here
+						PIT_ChangeSector(n->m_thing); 						// for clients that aren't updated yet.
 					break;										// exit and start over
 				}
 		while (n);	// repeat from scratch until all things left are marked valid
@@ -3750,7 +3921,9 @@ void P_CopySector(sector_t *dest, sector_t *src)
 	dest->midmap				= src->midmap;
 	dest->topmap				= src->topmap;
 	dest->gravity				= src->gravity;
-	dest->damage				= src->damage;
+	dest->damageamount			= src->damageamount;
+	dest->damageinterval		= src->damageinterval;
+	dest->leakrate				= src->leakrate;
 	dest->mod					= src->mod;
 	dest->colormap				= src->colormap;
 	dest->alwaysfake			= src->alwaysfake;
@@ -3792,4 +3965,3 @@ void P_CopySector(sector_t *dest, sector_t *src)
 
 
 VERSION_CONTROL (p_map_cpp, "$Id$")
-

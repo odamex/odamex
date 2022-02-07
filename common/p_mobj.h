@@ -103,6 +103,26 @@ class NetIDHandler
 	}
 };
 
+// [XA] Clamped angle->slope, for convenience
+inline static fixed_t AngleToSlope(int a)
+{
+	if (a > ANG90)
+		return finetangent[0];
+	else if (-a > ANG90)
+		return finetangent[FINEANGLES / 2 - 1];
+	else
+		return finetangent[(ANG90 - a) >> ANGLETOFINESHIFT];
+}
+
+// [XA] Ditto, using fixed-point-degrees input
+inline static fixed_t DegToSlope(fixed_t a)
+{
+	if (a >= 0)
+		return AngleToSlope(FixedToAngle(a));
+	else
+		return AngleToSlope(-(int)FixedToAngle(-a));
+}
+
 extern NetIDHandler ServerNetID;
 
 void P_ClearAllNetIds();
@@ -122,10 +142,16 @@ bool P_CheckMissileSpawn(AActor* th);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
 void P_SpawnPlayerMissile(AActor *source, mobjtype_t type);
 bool P_VisibleToPlayers(AActor *mo);
+void P_SetMobjBaseline(AActor& mo);
+uint32_t P_GetMobjBaselineFlags(AActor& mo);
 
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);
+bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound);
 void SpawnFlag(mapthing2_t* mthing, team_t flag);
+
+// From MBF
+bool P_SeekerMissile(AActor* actor, AActor* seekTarget, angle_t thresh, angle_t turnMax, bool seekcenter);
 
 #endif
 

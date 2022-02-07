@@ -26,12 +26,10 @@
 #define __R_DEFS_H__
 
 // Screenwidth.
-#include "doomdef.h"
 
 // Some more or less basic data types
 // we depend on.
 #include "m_fixed.h"
-#include "m_swap.h"
 
 // We rely on the thinker data struct
 // to handle sound origins in sectors.
@@ -57,6 +55,33 @@ extern int MaxDrawSegs;
 // INTERNAL MAP TYPES
 //	used by play and refresh
 //
+
+//
+// The SECTORS record, at runtime.
+// Stores things/mobjs.
+//
+
+#define NO_TOPTEXTURES             0x00000001
+#define NO_BOTTOMTEXTURES          0x00000002
+#define SECTOR_IS_CLOSED           0x00000004
+#define NULL_SECTOR                0x00000008
+#define MISSING_TOPTEXTURES        0x00000010
+#define MISSING_BOTTOMTEXTURES     0x00000020
+
+#define SECF_SECRET                0x00000040
+#define SECF_WASSECRET             0x00000080
+#define SECF_HIDDEN                0x00000100
+#define SECF_ENDGODMODE            0x00000200
+#define SECF_ENDLEVEL              0x00000400
+#define SECF_DMGTERRAINFX          0x00000800
+#define SECF_HAZARD                0x00001000
+#define SECF_DMGUNBLOCKABLE        0x00002000
+#define SECF_FRICTION              0x00004000
+#define SECF_PUSH                  0x00008000
+#define SECF_DAMAGEFLAGS (SECF_ENDGODMODE|SECF_ENDLEVEL|SECF_DMGTERRAINFX|SECF_HAZARD|SECF_DMGUNBLOCKABLE)
+#define SECF_TRANSFERMASK (SECF_SECRET|SECF_WASSECRET|SECF_DAMAGEFLAGS|SECF_FRICTION|SECF_PUSH)
+
+#define FRICTION_LOW 0xf900
 
 //
 // Your plain vanilla vertex.
@@ -168,6 +193,7 @@ struct sector_s
 	short		tag;
 	int			nexttag,firsttag;	// killough 1/30/98: improves searches for tags.
 	bool		secretsector;		// Ch0wW : This is a secret sector !
+	unsigned int flags;				// [Blair] Let's use actual sector flags instead of shoehorning them in special
 
     // 0 = untraversed, 1,2 = sndlines -1
 	int 				soundtraversed;
@@ -240,7 +266,9 @@ struct sector_s
 	struct line_s **lines;		// [linecount] size
 
 	float gravity;		// [RH] Sector gravity (1.0 is normal)
-	short damage;		// [RH] Damage to do while standing on floor
+	int damageamount;
+	int damageinterval;
+	int leakrate;
 	short mod;			// [RH] Means-of-death for applied damage
 	struct dyncolormap_s *colormap;	// [RH] Per-sector colormap
 
@@ -317,8 +345,8 @@ struct line_s
     fixed_t	dy;
 
     // Animation related.
-    short		flags;
-	byte		special;	// [RH] specials are only one byte (like Hexen)
+    unsigned int flags;		// [Blair]MBF21 compatibility
+	short		special;    // [Blair] Change to short for compatibility
 	byte		lucency;	// <--- translucency (0-255/255=opaque)
 
 	// Visual appearance: SideDefs.
@@ -465,27 +493,87 @@ typedef struct node_s node_t;
 
 
 // posts are runs of non masked source pixels
-struct post_s
+struct post_t
 {
-	byte		topdelta;		// -1 is the last post in a column
-	byte		length; 		// length data bytes follows
+	byte topdelta; // -1 is the last post in a column
+	byte length;   // length data bytes follows
+
+	/**
+	 * @brief Return the post's absolute topdelta accounting for tall
+	 *        patches, which treat topdelta as relative.
+	 * 
+	 * @param lastAbs Last absolute topdelta.
+	 */
+	int abs(const int lastAbs) const
+	{
+		if (topdelta <= lastAbs)
+			return lastAbs + topdelta;
+		else
+			return topdelta;
+	}
+
+	/**
+	 * @brief Size of the post, including header.
+	 */
+	uint32_t size() const
+	{
+		return length + 3;
+	}
+	
+	/**
+	 * @brief Return a pointer to post data.
+	 */
+	byte* data() const
+	{
+		return (byte*)(this) + 3;
+	}
+
+	/**
+	 * @brief Return a pointer to the next post in the column.
+	 */
+	post_t* next() const
+	{
+		return (post_t*)((byte*)this + length + 4);
+	}
+
+	/**
+	 * @brief Check if the post ends the column.
+	 */
+	bool end() const
+	{
+		return topdelta == 0xFF;
+	}
 };
-typedef struct post_s post_t;
 
 // column_t is a list of 0 or more post_t, (byte)-1 terminated
 typedef post_t	column_t;
 
-struct tallpost_s
+struct tallpost_t
 {
-	unsigned short		topdelta;
-	unsigned short		length;
-	
-	byte *data() const { return (byte*)(this) + 4; }
-	tallpost_s *next() const { return (tallpost_s*)((byte*)(this) + 4 + length); }
-	bool end() const { return topdelta == 0xFFFF; }
-	void writeend() { topdelta = 0xFFFF; }
+	unsigned short topdelta;
+	unsigned short length;
+
+	uint32_t size() const
+	{
+		return length + 4;
+	}
+	byte* data() const
+	{
+		return (byte*)(this) + 4;
+	}
+	tallpost_t* next() const
+	{
+		return (tallpost_t*)((byte*)(this) + 4 + length);
+	}
+	bool end() const
+	{
+		return topdelta == 0xFFFF;
+	}
+	void writeend()
+	{
+		topdelta = 0xFFFF;
+	}
 };
-typedef struct tallpost_s tallpost_t;
 
 //
 // OTHER TYPES
@@ -529,14 +617,41 @@ private:
 	short			_topoffset;		// pixels below the origin
 
 public:
-
-	short width() const { return LESHORT(_width); }
-	short height() const { return LESHORT(_height); }
-	short leftoffset() const { return LESHORT(_leftoffset); }
-	short topoffset() const { return LESHORT(_topoffset); }
-
 	int columnofs[8]; // only [width] used
 	// the [0] is &columnofs[width]
+
+	short width() const
+	{
+		return LESHORT(_width);
+	}
+	short height() const
+	{
+		return LESHORT(_height);
+	}
+	short leftoffset() const
+	{
+		return LESHORT(_leftoffset);
+	}
+	short topoffset() const
+	{
+		return LESHORT(_topoffset);
+	}
+	uint32_t* ofs() const
+	{
+		return (uint32_t*)((byte*)this + 8);
+	}
+	uint32_t datastart() const
+	{
+		return 8 + 4 * width();
+	}
+	post_t* post(const uint32_t ofs)
+	{
+		return (post_t*)((byte*)this + ofs);
+	}
+	tallpost_t* tallpost(const uint32_t ofs)
+	{
+		return (tallpost_t*)((byte*)this + ofs);
+	}
 };
 typedef struct patch_s patch_t;
 
@@ -578,6 +693,7 @@ struct vissprite_s
     shaderef_t		colormap;
 
 	int 			mobjflags;
+	bool			spectator;		// [Blair] Mark if this visprite belongs to a spectator.
 
 	translationref_t translation;	// [RH] for translation;
 	sector_t*		heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
@@ -661,5 +777,3 @@ struct visplane_s
 typedef struct visplane_s visplane_t;
 
 #endif
-
-

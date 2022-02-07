@@ -21,14 +21,15 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "f_finale.h"
 
-#include <stdio.h>
 #include <ctype.h>
 #include <math.h>
 
 #include "i_music.h"
-#include "m_swap.h"
 #include "z_zone.h"
 #include "i_video.h"
 #include "v_video.h"
@@ -36,7 +37,6 @@
 #include "w_wad.h"
 #include "s_sound.h"
 #include "gstrings.h"
-#include "doomstat.h"
 #include "r_state.h"
 #include "hu_stuff.h"
 
@@ -78,8 +78,8 @@ void	F_CastDrawer (void);
 //
 static int F_GetWidth()
 {
-	int surface_width = I_GetPrimarySurface()->getWidth();
-	int surface_height = I_GetPrimarySurface()->getHeight();
+	const int surface_width = I_GetPrimarySurface()->getWidth();
+	const int surface_height = I_GetPrimarySurface()->getHeight();
 
 	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 		return surface_width;
@@ -99,8 +99,8 @@ static int F_GetWidth()
 //
 static int F_GetHeight()
 {
-	int surface_width = I_GetPrimarySurface()->getWidth();
-	int surface_height = I_GetPrimarySurface()->getHeight();
+	const int surface_width = I_GetPrimarySurface()->getWidth();
+	const int surface_height = I_GetPrimarySurface()->getHeight();
 
 	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 		return surface_height;
@@ -131,7 +131,7 @@ void F_StartFinale(finale_options_t& options)
 
 	if (options.music == NULL)
 	{
-		::currentmusic = ::gameinfo.finaleMusic;
+		::currentmusic = ::gameinfo.finaleMusic.c_str();
 		S_ChangeMusic(
 			::currentmusic.c_str(),
 			!(::gameinfo.flags & GI_NOLOOPFINALEMUSIC)
@@ -141,7 +141,7 @@ void F_StartFinale(finale_options_t& options)
 	{
 		::currentmusic = options.music;
 		S_ChangeMusic(
-			::currentmusic.c_str(),
+			::currentmusic,
 			!(::gameinfo.flags & GI_NOLOOPFINALEMUSIC)
 		);
 	}
@@ -159,20 +159,22 @@ void F_StartFinale(finale_options_t& options)
 	else
 	{
 		::finalelumptype = FINALE_FLAT;
-		::finalelump = gameinfo.finaleFlat;
+		::finalelump = gameinfo.finaleFlat.c_str();
 	}
 
-	if (options.text == NULL)
+	if (options.text)
 	{
-		::finaletext = "In the quiet following your last battle, you suddenly "
-			"get the feeling that something is...missing.  Like there was "
-			"supposed to be intermission text here, but somehow it couldn't "
-			"be found.\n\nNo matter.  You ready your weapon and continue on "
-			"into the chaos.";
+		::finaletext = options.text;
 	}
 	else
 	{
-		::finaletext = options.text;
+		::finaletext = "In the quiet following your last battle,\n"
+			"you suddenly get the feeling that something is\n"
+			"...missing.  Like there was supposed to be intermission\n"
+			" text here, but somehow it couldn't be found.\n"
+			"\n"
+			"No matter.  You ready your weapon and continue on \n"
+			"into the chaos.";
 	}
 
 	::finalestage = 0;
@@ -205,7 +207,7 @@ BOOL F_Responder (event_t *event)
 //
 // F_Ticker
 //
-void F_Ticker (void)
+void F_Ticker()
 {
 	// denis - do this serverside only
 	// check for skipping
@@ -226,9 +228,8 @@ void F_Ticker (void)
 			}
 			else
 			{*/
-				if (!strncmp (level.nextmap, "EndGame", 7) ||
-				(gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4)))  	// [ML] Chex mode: game is over
-				{																	// after E1M5
+				if (!strnicmp (level.nextmap.c_str(), "EndGame", 7))
+				{
 					if (level.nextmap[7] == 'C')
 					{
 						F_StartCast ();
@@ -255,8 +256,7 @@ void F_Ticker (void)
 
 	if (finalestage == 2)
 	{
-		F_CastTicker ();
-		return;
+		F_CastTicker();
 	}
 }
 
@@ -266,7 +266,7 @@ void F_Ticker (void)
 // F_TextWrite
 //
 
-void F_TextWrite (void)
+void F_TextWrite ()
 {
 	// Don't draw text without a working font.
 	if (::hu_font[0].empty())
@@ -276,10 +276,10 @@ void F_TextWrite (void)
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear();		// ensure black background in matted modes
 
-	int width = F_GetWidth();
-	int height = F_GetHeight();
-	int x = (primary_surface->getWidth() - width) / 2;
-	int y = (primary_surface->getHeight() - height) / 2;
+	const int width = F_GetWidth();
+	const int height = F_GetHeight();
+	const int x = (primary_surface->getWidth() - width) / 2;
+	const int y = (primary_surface->getHeight() - height) / 2;
 
 	int lump;
 	switch (finalelumptype)
@@ -331,9 +331,9 @@ void F_TextWrite (void)
 			continue;
 		}
 
-		patch_t* ch = W_ResolvePatchHandle(hu_font[c]);
+		const patch_t* ch = W_ResolvePatchHandle(hu_font[c]);
 
-		int w = ch->width();
+		const int w = ch->width();
 		if (cx + w > width)
 			break;
 		screen->DrawPatchClean(ch, cx, cy);
@@ -391,7 +391,7 @@ static BOOL	 		castattacking;
 extern	gamestate_t 	wipegamestate;
 
 
-void F_StartCast (void)
+void F_StartCast()
 {
 	// [RH] Set the names for the cast
 	castorder[0].name = GStrings(CC_ZOMBIE);
@@ -432,11 +432,8 @@ void F_StartCast (void)
 //
 // F_CastTicker
 //
-void F_CastTicker (void)
+void F_CastTicker()
 {
-	int st;
-	int atten;
-
 	if (--casttics > 0)
 		return; 				// not time to change state yet
 
@@ -447,8 +444,9 @@ void F_CastTicker (void)
 		castdeath = false;
 		if (castorder[castnum].name == NULL)
 			castnum = 0;
-		if (mobjinfo[castorder[castnum].type].seesound) {
-			atten = ATTN_NONE;
+		if (mobjinfo[castorder[castnum].type].seesound)
+		{
+			const int atten = ATTN_NONE;
 			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].seesound, 1, atten);
 		}
 		caststate = &states[mobjinfo[castorder[castnum].type].seestate];
@@ -462,7 +460,9 @@ void F_CastTicker (void)
 		// just advance to next state in animation
 		if (caststate == &states[S_PLAY_ATK1])
 			goto stopattack;	// Oh, gross hack!
-		st = caststate->nextstate;
+
+		const int st = caststate->nextstate;
+
 		caststate = &states[st];
 		castframes++;
 
@@ -591,10 +591,10 @@ void F_CastDrawer()
 	else
 		cast_surface->getDefaultCanvas()->DrawPatch(sprite_patch, 160, 170);
 
-	int width = F_GetWidth();
-	int height = F_GetHeight();
-	int x = (primary_surface->getWidth() - width) / 2;
-	int y = (primary_surface->getHeight() - height) / 2;
+	const int width = F_GetWidth();
+	const int height = F_GetHeight();
+	const int x = (primary_surface->getWidth() - width) / 2;
+	const int y = (primary_surface->getHeight() - height) / 2;
 
 	primary_surface->blit(cast_surface, 0, 0, 320, 200, x, y, width, height);
 
@@ -616,27 +616,27 @@ void F_CastDrawer()
 void F_DrawPatchColP(int x, const patch_t *patch, int col)
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 	// [RH] figure out how many times to repeat this column
 	// (for screens wider than 320 pixels)
-	float mul = float(surface_width) / 320.0f;
-	float fx = (float)x;
-	int repeat = (int)(floor(mul*(fx+1)) - floor(mul*fx));
+	const float mul = static_cast<float>(surface_width) / 320.0f;
+	const float fx = static_cast<float>(x);
+	const int repeat = static_cast<int>(floor(mul * (fx + 1)) - floor(mul * fx));
 	if (repeat == 0)
 		return;
 
 	// [RH] Remap virtual-x to real-x
-	x = (int)floor(mul*x);
+	x = static_cast<int>(floor(mul * x));
 
 	// [RH] Figure out per-row fixed-point step
-	unsigned int step = (200<<16) / surface_height;
-	unsigned int invstep = (surface_height<<16) / 200;
+	const unsigned int step = (200<<16) / surface_height;
+	const unsigned int invstep = (surface_height<<16) / 200;
 
-	tallpost_t *post = (tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
+	const tallpost_t *post = (tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
 	
 	byte* desttop = surface->getBuffer() + x;
-	int pitch = surface->getPitchInPixels();
+	const int pitch = surface->getPitchInPixels();
 
 	// step through the posts in a column
 	while (!post->end())
@@ -647,16 +647,19 @@ void F_DrawPatchColP(int x, const patch_t *patch, int col)
 		int c = 0;
 		palindex_t p;
 
-		switch (repeat) {
+		switch (repeat)
+		{
 			case 1:
-				do {
+				do
+				{
 					*dest = source[c>>16];
 					dest += pitch;
 					c += step;
 				} while (--count);
 				break;
 			case 2:
-				do {
+				do
+				{
 					p = source[c>>16];
 					dest[0] = p;
 					dest[1] = p;
@@ -665,7 +668,8 @@ void F_DrawPatchColP(int x, const patch_t *patch, int col)
 				} while (--count);
 				break;
 			case 3:
-				do {
+				do
+				{
 					p = source[c>>16];
 					dest[0] = p;
 					dest[1] = p;
@@ -675,7 +679,8 @@ void F_DrawPatchColP(int x, const patch_t *patch, int col)
 				} while (--count);
 				break;
 			case 4:
-				do {
+				do
+				{
 					p = source[c>>16];
 					dest[0] = p;
 					dest[1] = p;
@@ -687,11 +692,11 @@ void F_DrawPatchColP(int x, const patch_t *patch, int col)
 				break;
 			default:
 				{
-					int count2;
-
-					do {
+					do
+					{
 						p = source[c>>16];
-						for (count2 = repeat; count2; count2--) {
+						for (int count2 = repeat; count2; count2--)
+						{
 							dest[count2] = p;
 						}
 						dest += pitch;
@@ -710,28 +715,28 @@ void F_DrawPatchColP(int x, const patch_t *patch, int col)
 void F_DrawPatchColD(int x, const patch_t *patch, int col)
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 	// [RH] figure out how many times to repeat this column
 	// (for screens wider than 320 pixels)
-	float mul = float(surface_width) / 320.0f;
-	float fx = (float)x;
-	int repeat = (int)(floor(mul*(fx+1)) - floor(mul*fx));
+	const float mul = static_cast<float>(surface_width) / 320.0f;
+	const float fx = static_cast<float>(x);
+	const int repeat = static_cast<int>(floor(mul * (fx + 1)) - floor(mul * fx));
 	if (repeat == 0)
 		return;
 
 	// [RH] Remap virtual-x to real-x
-	x = (int)floor(mul*x);
+	x = static_cast<int>(floor(mul * x));
 
 	// [RH] Figure out per-row fixed-point step
-	unsigned step = (200<<16) / surface_height;
-	unsigned invstep = (surface_height<<16) / 200;
+	const unsigned step = (200<<16) / surface_height;
+	const unsigned invstep = (surface_height<<16) / 200;
 
-	tallpost_t *post = (tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
+	const tallpost_t *post = (tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
 	argb_t* desttop = (argb_t *)surface->getBuffer() + x;
-	int pitch = surface->getPitchInPixels();
+	const int pitch = surface->getPitchInPixels();
 
-	shaderef_t pal = shaderef_t(&V_GetDefaultPalette()->maps, 0);
+	const shaderef_t pal = shaderef_t(&V_GetDefaultPalette()->maps, 0);
 
 	// step through the posts in a column
 	while (!post->end())
@@ -742,16 +747,19 @@ void F_DrawPatchColD(int x, const patch_t *patch, int col)
 		int c = 0;
 		argb_t p;
 
-		switch (repeat) {
+		switch (repeat)
+		{
 			case 1:
-				do {
+				do
+				{
 					*dest = pal.shade(source[c>>16]);
 					dest += pitch;
 					c += step;
 				} while (--count);
 				break;
 			case 2:
-				do {
+				do
+				{
 					p = pal.shade(source[c>>16]);
 					dest[0] = p;
 					dest[1] = p;
@@ -760,7 +768,8 @@ void F_DrawPatchColD(int x, const patch_t *patch, int col)
 				} while (--count);
 				break;
 			case 3:
-				do {
+				do
+				{
 					p = pal.shade(source[c>>16]);
 					dest[0] = p;
 					dest[1] = p;
@@ -770,7 +779,8 @@ void F_DrawPatchColD(int x, const patch_t *patch, int col)
 				} while (--count);
 				break;
 			case 4:
-				do {
+				do
+				{
 					p = pal.shade(source[c>>16]);
 					dest[0] = p;
 					dest[1] = p;
@@ -782,11 +792,10 @@ void F_DrawPatchColD(int x, const patch_t *patch, int col)
 				break;
 			default:
 				{
-					int count2;
-
-					do {
+					do
+					{
 						p = pal.shade(source[c>>16]);
-						for (count2 = repeat; count2; count2--) {
+						for (int count2 = repeat; count2; count2--) {
 							dest[count2] = p;
 						}
 						dest += pitch;
@@ -804,22 +813,17 @@ void F_DrawPatchColD(int x, const patch_t *patch, int col)
 //
 // F_BunnyScroll
 //
-void F_BunnyScroll (void)
+void F_BunnyScroll()
 {
-	int 		scrolled;
-	int 		x;
-	patch_t*	p1;
-	patch_t*	p2;
 	char		name[10];
-	int 		stage;
 	static int	laststage;
 
-	p1 = W_CachePatch ("PFUB2");
-	p2 = W_CachePatch ("PFUB1");
+	const patch_t* p1 = W_CachePatch("PFUB2");
+	const patch_t* p2 = W_CachePatch("PFUB1");
 
 	V_MarkRect (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 
-	scrolled = 320 - (finalecount-230)/2;
+	int scrolled = 320 - (finalecount - 230) / 2;
 	if (scrolled > 320)
 		scrolled = 320;
 	if (scrolled < 0)
@@ -827,7 +831,7 @@ void F_BunnyScroll (void)
 
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
-		for ( x=0 ; x<320 ; x++)
+		for (int x = 0; x < 320; x++)
 		{
 			if (x+scrolled < 320)
 				F_DrawPatchColP(x, p1, x+scrolled);
@@ -837,12 +841,12 @@ void F_BunnyScroll (void)
 	}
 	else
 	{
-	for ( x=0 ; x<320 ; x++)
-	{
-		if (x+scrolled < 320)
-			F_DrawPatchColD(x, p1, x+scrolled);
-		else
-			F_DrawPatchColD(x, p2, x+scrolled - 320);
+		for (int x = 0; x < 320; x++)
+		{
+			if (x+scrolled < 320)
+				F_DrawPatchColD(x, p1, x+scrolled);
+			else
+				F_DrawPatchColD(x, p2, x+scrolled - 320);
 		}
 	}
 
@@ -855,7 +859,7 @@ void F_BunnyScroll (void)
 		return;
 	}
 
-	stage = (finalecount-1180) / 5;
+	int stage = (finalecount - 1180) / 5;
 	if (stage > 6)
 		stage = 6;
 	if (stage > laststage)
@@ -885,8 +889,12 @@ void F_Drawer (void)
 			{
 				default:
 				case '1':
-					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage1), 0, 0);
+				{
+					const char* page = !level.endpic.empty() ? level.endpic.c_str() : gameinfo.finalePage1;
+
+					screen->DrawPatchIndirect(W_CachePatch(page), 0, 0);
 					break;
+				}
 				case '2':
 					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage2), 0, 0);
 					break;

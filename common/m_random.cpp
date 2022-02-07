@@ -27,7 +27,11 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomstat.h"
+
+#include "odamex.h"
+
+#include <time.h>
+
 #include "m_random.h"
 #include "farchive.h"
 
@@ -119,6 +123,110 @@ int M_Random()
 	return (rndtable[++rndindex]);
 }
 
+//
+// A PRNG commonly known as "Jenkins Small Fast" by Bob Jenkins.
+// Released into the public domain.
+// http://burtleburtle.net/bob/rand/talksmall.html
+// 
+
+struct jsf32ctx_t
+{
+	uint32_t a;
+	uint32_t b;
+	uint32_t c;
+	uint32_t d;
+};
+
+static jsf32ctx_t g_rngState;
+static jsf32ctx_t g_prngState;
+
+#define ROT32(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
+
+/**
+ * @brief Run one iteration of JSF32.
+ */
+static uint32_t JSF32(jsf32ctx_t* x)
+{
+	const uint32_t e = x->a - ROT32(x->b, 27);
+	x->a = x->b ^ ROT32(x->c, 17);
+	x->b = x->c + x->d;
+	x->c = x->d + e;
+	x->d = e + x->a;
+	return x->d;
+}
+
+/**
+ * @brief Seed the JSF state.
+ */
+static void JSF32Seed(jsf32ctx_t* x, const uint32_t seed)
+{
+	x->a = 0xf1ea5eed, x->b = x->c = x->d = seed;
+	for (uint32_t i = 0; i < 20; i++)
+	{
+		(void)JSF32(x);
+	}
+}
+
+/**
+ * @brief Return a random integer that is not tied to game state.
+ *
+ * @param range One past the maximum number you want to roll.
+ * @return A random integer in the given range.
+ */
+uint32_t M_RandomInt(const uint32_t range)
+{
+	const uint32_t t = (0U - range) % range;
+	for (;;)
+	{
+		const uint32_t r = JSF32(&::g_rngState);
+		if (r >= t)
+		{
+			return r % range;
+		}
+	}
+}
+
+/**
+ * @brief Return a random integer that is tied to game state.
+ *
+ * @param range One past the maximum number you want to roll.
+ * @return A random integer in the given range.
+ */
+uint32_t P_RandomInt(const uint32_t range)
+{
+	const uint32_t t = (0U - range) % range;
+	for (;;)
+	{
+		const uint32_t r = JSF32(&::g_prngState);
+		if (r >= t)
+		{
+			return r % range;
+		}
+	}
+}
+
+/**
+ * @brief Return a random floating point number that is not tied to game state.
+ * 
+ * @return A random float in the half-open range of [0.0, 1.0).
+ */
+float M_RandomFloat()
+{
+	const uint32_t n = JSF32(&::g_rngState);
+	return static_cast<float>(n) / (static_cast<float>(0xFFFFFFFFU) + 1.0f);
+}
+
+/**
+ * @brief Return a random floating point number that is tied to game state.
+ * 
+ * @return A random float in the half-open range of [0.0, 1.0).
+ */
+float P_RandomFloat()
+{
+	const uint32_t n = JSF32(&::g_prngState);
+	return static_cast<float>(n) / (static_cast<float>(0xFFFFFFFFU) + 1.0f);
+}
+
 // Initialize all the seeds
 //
 // This initialization method is critical to maintaining demo sync.
@@ -126,23 +234,78 @@ int M_Random()
 // are added they must be added to end of pr_class_t list. killough
 //
 
-void M_ClearRandom (void)
+void M_ClearRandom()
 {
-	rndindex = prndindex = 0;
+	static bool firsttime = true;
+
+	::prndindex = 0;
+
+	// Odamex's release date.
+	JSF32Seed(&::g_prngState, 20071801U);
+
+	// Only init M_Random values once.
+	if (firsttime)
+	{
+		firsttime = false;
+		::rndindex = ::prndindex;
+
+		// [AM] Make non-playsim random unpredictable.
+		uint32_t seed = static_cast<uint32_t>(time(NULL));
+		JSF32Seed(&::g_rngState, seed);
+	}
 }
 
-void P_SerializeRNGState (FArchive &arc)
+void P_SerializeRNGState(FArchive& arc)
 {
-	if (arc.IsStoring ())
+	if (arc.IsStoring())
 	{
-		arc << prndindex;
+		arc << ::prndindex << ::g_prngState.a << ::g_prngState.b << ::g_prngState.c
+		    << ::g_prngState.d;
 	}
 	else
 	{
-		arc >> prndindex;
+		arc >> ::prndindex >> ::g_prngState.a >> ::g_prngState.b >> ::g_prngState.c >>
+		    ::g_prngState.d;
 	}
 }
 
+//
+// P_RandomHitscanAngle
+// Outputs a random angle between (-spread, spread), as an int ('cause it can be
+// negative).
+//   spread: Maximum angle (degrees, in fixed point -- not BAM!)
+//
+int P_RandomHitscanAngle(fixed_t spread)
+{
+	int t;
+	uint64_t spread_bam;
+
+	// FixedToAngle doesn't work for negative numbers,
+	// so for convenience take just the absolute value.
+	spread_bam = (spread < 0 ? FixedToAngle(-spread) : FixedToAngle(spread));
+	t = P_Random();
+	return (int)((spread_bam * (t - P_Random())) / 255);
+}
+
+//
+// P_RandomHitscanSlope
+// Outputs a random angle between (-spread, spread), converted to values used for slope
+//   spread: Maximum vertical angle (degrees, in fixed point -- not BAM!)
+//
+int P_RandomHitscanSlope(fixed_t spread)
+{
+	int angle;
+
+	angle = P_RandomHitscanAngle(spread);
+
+	// clamp it, yo
+	if (angle > ANG90)
+		return finetangent[0];
+	else if (-angle > ANG90)
+		return finetangent[FINEANGLES / 2 - 1];
+	else
+		return finetangent[(ANG90 - angle) >> ANGLETOFINESHIFT];
+}
 
 VERSION_CONTROL (m_random_cpp, "$Id$")
 

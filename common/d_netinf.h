@@ -25,8 +25,6 @@
 #ifndef __D_NETINFO_H__
 #define __D_NETINFO_H__
 
-#include "doomdef.h"
-#include "c_cvars.h"
 #include "teaminfo.h"
 
 #define MAXPLAYERNAME	15
@@ -45,6 +43,7 @@ enum weaponswitch_t
 	WPSW_NEVER,
 	WPSW_ALWAYS,
 	WPSW_PWO,
+	WPSW_PWO_ALT,	// PWO but never switch if holding +attack
 
 	WPSW_NUMTYPES
 };
@@ -86,5 +85,3 @@ void D_WriteUserInfoStrings (int player, byte **stream, bool compact=false);
 void D_ReadUserInfoStrings (int player, byte **stream, bool update);
 
 #endif //__D_NETINFO_H__
-
-

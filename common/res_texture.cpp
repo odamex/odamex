@@ -22,17 +22,18 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "i_system.h"
 #include "tables.h"
 #include "r_state.h"
-#include "g_level.h"
 #include "m_random.h"
 #include "w_wad.h"
-#include "sc_man.h"
 #include "m_memio.h"
 #include "cmdlib.h"
+#include "oscanner.h"
 
-#include <cstring>
 #include <algorithm>
 #include <math.h>
 
@@ -555,60 +556,66 @@ void TextureManager::readAnimDefLump()
 	
 	while ((lump = W_FindLump("ANIMDEFS", lump)) != -1)
 	{
-		SC_OpenLumpNum(lump, "ANIMDEFS");
+		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 
-		while (SC_GetString())
+		OScannerConfig config = {
+		    "ANIMDEFS", // lumpName
+		    false,    // semiComments
+		    true,     // cComments
+		};
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+
+		while (os.scan())
 		{
-			if (SC_Compare("flat") || SC_Compare("texture"))
+			if (os.compareToken("flat") || os.compareToken("texture"))
 			{
 				anim_t anim;
 
 				Texture::TextureSourceType texture_type = Texture::TEX_WALLTEXTURE;
-				if (SC_Compare("flat"))
+				if (os.compareToken("flat"))
 					texture_type = Texture::TEX_FLAT;
 
-				SC_MustGetString();
-				anim.basepic = texturemanager.getHandle(sc_String, texture_type);
+				os.mustScan();
+				anim.basepic = texturemanager.getHandle(os.getToken(), texture_type);
 
 				anim.curframe = 0;
 				anim.numframes = 0;
 				memset(anim.speedmin, 1, anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmin));
 				memset(anim.speedmax, 1, anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmax));
 
-				while (SC_GetString())
+				while (os.scan())
 				{
-					if (!SC_Compare("pic"))
+					if (!os.compareToken("pic"))
 					{
-						SC_UnGet();
+						os.unScan();
 						break;
 					}
 
 					if ((unsigned)anim.numframes == anim_t::MAX_ANIM_FRAMES)
-						SC_ScriptError ("Animation has too many frames");
+						os.error("Animation has too many frames");
 
 					byte min = 1, max = 1;
 					
-					SC_MustGetNumber();
-					int frame = sc_Number;
-					SC_MustGetString();
-					if (SC_Compare("tics"))
+					os.mustScanInt();
+					const int frame = os.getTokenInt();
+					os.mustScan();
+					if (os.compareToken("tics"))
 					{
-						SC_MustGetNumber();
-						sc_Number = clamp(sc_Number, 0, 255);
-						min = max = sc_Number;
+						os.mustScanInt();
+						min = max = clamp(os.getTokenInt(), 0, 255);
 					}
-					else if (SC_Compare("rand"))
+					else if (os.compareToken("rand"))
 					{
-						SC_MustGetNumber();
-						min = MAX(sc_Number, 0);
-						SC_MustGetNumber();
-						max = MIN(sc_Number, 255);
+						os.mustScanInt();
+						min = MAX(os.getTokenInt(), 0);
+						os.mustScanInt();
+						max = MIN(os.getTokenInt(), 255);
 						if (min > max)
 							min = max = 1;
 					}
 					else
 					{
-						SC_ScriptError ("Must specify a duration for animation frame");
+						os.error("Must specify a duration for animation frame");
 					}
 
 					anim.speedmin[anim.numframes] = min;
@@ -623,24 +630,23 @@ void TextureManager::readAnimDefLump()
 					anim.basepic != TextureManager::NO_TEXTURE_HANDLE)
 					mAnimDefs.push_back(anim);
 			}
-			else if (SC_Compare ("switch"))   // Don't support switchdef yet...
+			else if (os.compareToken("switch"))   // Don't support switchdef yet...
 			{
-				//P_ProcessSwitchDef ();
-//				SC_ScriptError("switchdef not supported.");
+				//P_ProcessSwitchDef();
+				//os.error("switchdef not supported.");
 			}
-			else if (SC_Compare("warp"))
+			else if (os.compareToken("warp"))
 			{
-				SC_MustGetString();
-				if (SC_Compare("flat") || SC_Compare("texture"))
+				os.mustScan();
+				if (os.compareToken("flat") || os.compareToken("texture"))
 				{
-
 					Texture::TextureSourceType texture_type = Texture::TEX_WALLTEXTURE;
-					if (SC_Compare("flat"))
+					if (os.compareToken("flat"))
 						texture_type = Texture::TEX_FLAT;
 
-					SC_MustGetString();
+					os.mustScan();
 
-					texhandle_t texhandle = texturemanager.getHandle(sc_String, texture_type);
+					const texhandle_t texhandle = texturemanager.getHandle(os.getToken(), texture_type);
 					if (texhandle == TextureManager::NOT_FOUND_TEXTURE_HANDLE ||
 						texhandle == TextureManager::NO_TEXTURE_HANDLE)
 						continue;
@@ -650,8 +656,8 @@ void TextureManager::readAnimDefLump()
 					// backup the original texture
 					warp.original_texture = getTexture(texhandle);
 
-					int width = 1 << warp.original_texture->getWidthBits();
-					int height = 1 << warp.original_texture->getHeightBits();
+					const int width = 1 << warp.original_texture->getWidthBits();
+					const int height = 1 << warp.original_texture->getHeightBits();
 
 					// create a new texture of the same size for the warped image
 					warp.warped_texture = createTexture(texhandle, width, height);
@@ -660,11 +666,10 @@ void TextureManager::readAnimDefLump()
 				}
 				else
 				{
-					SC_ScriptError(NULL, NULL);
+					os.error("Unknown error reading in ANIMDEFS");
 				}
 			}
 		}
-		SC_Close ();
 	}
 }
 

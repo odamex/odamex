@@ -22,6 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <set>
 
 #include "am_map.h"
@@ -30,9 +33,7 @@
 #include "cl_main.h"
 #include "d_event.h"
 #include "d_main.h"
-#include "doomstat.h"
 #include "f_finale.h"
-#include "g_level.h"
 #include "g_game.h"
 #include "g_levelstate.h"
 #include "gi.h"
@@ -68,6 +69,7 @@ EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_monstersrespawn)
 EXTERN_CVAR(sv_gravity)
 EXTERN_CVAR(sv_aircontrol)
+EXTERN_CVAR(g_resetinvonexit)
 
 // Start time for timing demos
 dtime_t starttime;
@@ -97,7 +99,7 @@ bool isFast = false;
 //
 static char d_mapname[9];
 
-void G_DeferedInitNew (char *mapname)
+void G_DeferedInitNew (const char *mapname)
 {
 	G_CleanupDemo();
 	strncpy (d_mapname, mapname, 8);
@@ -138,9 +140,9 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	G_LoadWadString(str);
 
 	D_StartTitle ();
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 	S_StopMusic();
-	currentmusic = gameinfo.titleMusic;
+	currentmusic = gameinfo.titleMusic.c_str();
 	
 	S_StartMusic(currentmusic.c_str());
 }
@@ -165,7 +167,7 @@ void G_DoNewGame (void)
 		D_SetupUserInfo ();
 	}
 
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	multiplayer = false;
 
@@ -234,19 +236,20 @@ void G_InitNew (const char *mapname)
 	{
 		if (wantFast)
 		{
-			for (i=S_SARG_RUN1 ; i<=S_SARG_PAIN2 ; i++)
-				states[i].tics >>= 1;
-			mobjinfo[MT_BRUISERSHOT].speed = 20*FRACUNIT;
-			mobjinfo[MT_HEADSHOT].speed = 20*FRACUNIT;
-			mobjinfo[MT_TROOPSHOT].speed = 20*FRACUNIT;
+			for (i = 0; i < NUMSTATES; i++)
+			{
+				if (states[i].flags & STATEF_SKILL5FAST &&
+				    (states[i].tics != 1 || demoplayback))
+					states[i].tics >>= 1; // don't change 1->0 since it causes cycles
+			}
 		}
 		else
 		{
-			for (i=S_SARG_RUN1 ; i<=S_SARG_PAIN2 ; i++)
-				states[i].tics <<= 1;
-			mobjinfo[MT_BRUISERSHOT].speed = 15*FRACUNIT;
-			mobjinfo[MT_HEADSHOT].speed = 10*FRACUNIT;
-			mobjinfo[MT_TROOPSHOT].speed = 10*FRACUNIT;
+			for (i = 0; i < NUMSTATES; i++)
+			{
+				if (states[i].flags & STATEF_SKILL5FAST)
+					states[i].tics <<= 1; // don't change 1->0 since it causes cycles
+			}
 		}
 		isFast = wantFast;
 	}
@@ -268,13 +271,12 @@ void G_InitNew (const char *mapname)
 
 	D_SetupUserInfo();
 	
-	strncpy (level.mapname, mapname, 8);
-	G_DoLoadLevel (0);
-
-	::levelstate.reset();
+	level.mapname = mapname;
 
 	// [AM}] WDL stats (for testing purposes)
-	M_StartWDLLog();
+	M_StartWDLLog(true);
+
+	G_DoLoadLevel (0);
 }
 
 //
@@ -353,29 +355,36 @@ void G_DoCompleted (void)
 
 	// [ML] Chex mode: they didn't even show the intermission screen
 	// after the fifth level - I checked.
-	if (gamemode == retail_chex && !strncmp(level.mapname,"E1M5",4)) {
+	if (gamemode == retail_chex && level.mapname == "E1M5")
+	{
 		G_WorldDone();
 		return;
 	}
 
 	wminfo.epsd = level.cluster - 1;		// Only used for DOOM I.
-	strncpy (wminfo.lname0, level.info->pname, 8);
-	strncpy (wminfo.current, level.mapname, 8);
+	strncpy (wminfo.lname0, level.info->pname.c_str(), 8);
+	strncpy (wminfo.current, level.mapname.c_str(), 8);
 
 	if (sv_gametype != GM_COOP && !(level.flags & LEVEL_CHANGEMAPCHEAT))
 	{
-		strncpy (wminfo.next, level.mapname, 8);
-		strncpy (wminfo.lname1, level.info->pname, 8);
+		strncpy (wminfo.next, level.mapname.c_str(), 8);
+		strncpy (wminfo.lname1, level.info->pname.c_str(), 8);
 	}
 	else
 	{
 		wminfo.next[0] = 0;
+
+		if (!level.endpic.empty() && level.flags & LEVEL_NOINTERMISSION)
+		{
+			gameaction = ga_victory;
+			return;
+		}
 		if (secretexit)
 		{
-			if (W_CheckNumForName (level.secretmap) != -1)
+			if (W_CheckNumForName (level.secretmap.c_str()) != -1)
 			{
-				strncpy(wminfo.next, level.secretmap, 8);
-				strncpy(wminfo.lname1, getLevelInfos().findByName(level.secretmap).pname, 8);
+				strncpy(wminfo.next, level.secretmap.c_str(), 8);
+				strncpy(wminfo.lname1, getLevelInfos().findByName(level.secretmap).pname.c_str(), 8);
 			}
 			else
 			{
@@ -384,8 +393,8 @@ void G_DoCompleted (void)
 		}
 		if (!wminfo.next[0])
 		{
-			strncpy(wminfo.next, level.nextmap, 8);
-			strncpy(wminfo.lname1, getLevelInfos().findByName(level.nextmap).pname, 8);
+			strncpy(wminfo.next, level.nextmap.c_str(), 8);
+			strncpy(wminfo.lname1, getLevelInfos().findByName(level.nextmap).pname.c_str(), 8);
 		}
 	}
 
@@ -449,7 +458,7 @@ void G_DoCompleted (void)
 
 		if (sv_gametype == GM_COOP)
 		{
-			if (level.flags & LEVEL_NOINTERMISSION && strnicmp(level.nextmap, "EndGame", 7) == 0)
+			if (level.flags & LEVEL_NOINTERMISSION && strnicmp(level.nextmap.c_str(), "EndGame", 7) == 0)
 			{
 				if (!multiplayer || demoplayback)
 				{
@@ -495,12 +504,12 @@ void G_DoLoadLevel (int position)
 
     Printf_Bold ("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
                  "\36\36\36\36\36\36\36\36\36\36\36\36\37\n"
-                 "%s: \"%s\"\n\n", level.mapname, level.level_name);
+                 "%s: \"%s\"\n\n", level.mapname.c_str(), level.level_name);
 
 	if (wipegamestate == GS_LEVEL)
 		wipegamestate = GS_FORCEWIPE;
 
-	bool demoscreen = (gamestate == GS_DEMOSCREEN);
+	const bool demoscreen = (gamestate == GS_DEMOSCREEN);
 
 	gamestate = GS_LEVEL;
 
@@ -524,9 +533,9 @@ void G_DoLoadLevel (int position)
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
-	sky1texture = R_TextureNumForName (level.skypic);
-	if (strlen(level.skypic2))
-		sky2texture = R_TextureNumForName (level.skypic2);
+	sky1texture = R_TextureNumForName (level.skypic.c_str());
+	if (!level.skypic2.empty())
+		sky2texture = R_TextureNumForName (level.skypic2.c_str());
 	else
 		sky2texture = 0;
 
@@ -537,8 +546,11 @@ void G_DoLoadLevel (int position)
 	{
 		if (it->ingame())
 		{
-			if (it->playerstate == PST_REBORN)
+			if (::g_resetinvonexit || it->playerstate == PST_DEAD ||
+			    it->playerstate == PST_REBORN)
+			{
 				it->doreborn = true;
+			}
 			it->playerstate = PST_ENTER;
 		}
 
@@ -568,7 +580,7 @@ void G_DoLoadLevel (int position)
 	}
 
  	SN_StopAllSequences (); // denis - todo - equivalent?
-	P_SetupLevel (level.mapname, position);
+	P_SetupLevel (level.mapname.c_str(), position);
 
 	// [AM] Prevent holding onto stale snapshots.
 	CL_ClearSectorSnapshots();
@@ -630,13 +642,15 @@ void G_DoLoadLevel (int position)
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
     P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
 
+	::levelstate.reset();
+
 	C_FlushDisplay ();
 }
 
 //
 // G_WorldDone
 //
-void G_WorldDone (void)
+void G_WorldDone()
 {
 	LevelInfos& levels = getLevelInfos();
 	ClusterInfos& clusters = getClusterInfos();
@@ -652,8 +666,13 @@ void G_WorldDone (void)
 
 	// Sort out default options to pass to F_StartFinale
 	finale_options_t options = { 0 };
-	options.music = thiscluster.messagemusic;
-	if (thiscluster.finalepic[0] != '\0')
+	options.music = !level.intermusic.empty() ? level.intermusic.c_str() : thiscluster.messagemusic.c_str();
+	
+	if (!level.interbackdrop.empty())
+	{
+		options.flat = level.interbackdrop.c_str();
+	}
+	else if (!thiscluster.finalepic.empty())
 	{
 		options.pic = &thiscluster.finalepic[0];
 	}
@@ -661,11 +680,23 @@ void G_WorldDone (void)
 	{
 		options.flat = &thiscluster.finaleflat[0];
 	}
-	options.text = thiscluster.exittext;
+	
+	if (secretexit)
+	{
+		options.text = (!level.intertextsecret.empty()) ? level.intertextsecret.c_str() : thiscluster.exittext;
+	}
+	else
+	{
+		options.text = (!level.intertext.empty()) ? level.intertext.c_str() : thiscluster.exittext;
+	}
 
-	if (!strncmp(level.nextmap, "EndGame", 7) || (gamemode == retail_chex && !strncmp(level.nextmap, "E1M6", 4)))
+	if (!strnicmp(level.nextmap.c_str(), "EndGame", 7))
 	{
 		AM_Stop();
+		if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
+		{
+			options.text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
+		}
 		F_StartFinale(options);
 	}
 	else
@@ -681,8 +712,8 @@ void G_WorldDone (void)
 			if (nextcluster.entertext)
 			{
 				// All of our options need to be from the next cluster.
-				options.music = nextcluster.messagemusic;
-				if (nextcluster.finalepic[0] != '\0')
+				options.music = nextcluster.messagemusic.c_str();
+				if (!nextcluster.finalepic.empty())
 				{
 					options.pic = &nextcluster.finalepic[0];
 				}
@@ -701,18 +732,11 @@ void G_WorldDone (void)
 				if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 				{
 					options.text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
-					F_StartFinale(options);
 				}
-				else
-				{
-					F_StartFinale(options);
-				}
+				F_StartFinale(options);
 			}
 		}
 	}
 }
-
-
-
 
 VERSION_CONTROL (g_level_cpp, "$Id$")

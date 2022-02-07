@@ -24,17 +24,31 @@
 #ifndef __W_IDENT_H__
 #define __W_IDENT_H__
 
-#include <string>
 
 #include "m_ostring.h"
 #include "m_resfile.h"
 
+struct fileIdentifier_t
+{
+	OString mIdName;
+	std::string mNiceName;
+	OString mFilename;
+	OCRC32Sum mCRC32Sum;
+	OMD5Hash mMd5Sum;
+	OString mGroupName;
+	bool mIsCommercial;
+	bool mIsIWAD;
+	bool mIsDeprecated;
+	int weight;
+};
+
 void W_SetupFileIdentifiers();
+const fileIdentifier_t* W_GameInfo(const OCRC32Sum& crc32);
 void W_ConfigureGameInfo(const OResFile& iwad);
 bool W_IsKnownIWAD(const OWantFile& file);
 bool W_IsIWAD(const OResFile& file);
 bool W_IsFilenameCommercialIWAD(const std::string& filename);
-bool W_IsFilehashCommercialIWAD(const std::string& filename);
+bool W_IsFilehashCommercialIWAD(const OMD5Hash& fileHash);
 bool W_IsFileCommercialIWAD(const std::string& filename);
 bool W_IsIWADDeprecated(const OResFile& file);
 std::vector<OString> W_GetIWADFilenames();

@@ -22,13 +22,14 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <algorithm>
 
 #include "c_dispatch.h"
 #include "d_event.h"
 #include "d_main.h"
-#include "doomstat.h"
-#include "g_level.h"
 #include "g_game.h"
 #include "gi.h"
 
@@ -53,7 +54,8 @@
 #include "m_wdlstats.h"
 #include "svc_message.h"
 #include "g_gametype.h"
-
+#include "p_hordespawn.h"
+#include "g_episode.h"
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
@@ -72,6 +74,7 @@ EXTERN_CVAR (sv_intermissionlimit)
 EXTERN_CVAR (sv_warmup)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_teamsinplay)
+EXTERN_CVAR(g_resetinvonexit)
 
 extern int mapchange;
 
@@ -100,9 +103,35 @@ bool isFast = false;
 //
 static char d_mapname[9];
 
-void G_DeferedInitNew (char *mapname)
+std::string G_NextMap();
+
+void G_DeferedInitNew (const char* mapname)
 {
-	strncpy (d_mapname, mapname, 8);
+	std::string mapnamestr = mapname;
+
+	if (iequals(mapnamestr.substr(0, 7).c_str(), "EndGame"))
+	{
+		if (mapname[7] == '1' ||
+			mapname[7] == '2' ||
+			mapname[7] == '3' ||
+		    mapname[7] == '4' ||
+			mapname[7] == 'C')
+		{
+			if (!Maplist::instance().empty())
+			{
+				G_ChangeMap();
+			}
+			else
+			{
+				G_NextMap();
+			}
+		}
+	}
+	else
+	{
+		strncpy(d_mapname, mapname, 8);
+	}
+
 	gameaction = ga_newgame;
 
 	// sv_nextmap cvar may be overridden by a script
@@ -153,28 +182,39 @@ BOOL 			secretexit;
 EXTERN_CVAR(sv_shufflemaplist)
 
 // Returns the next map, assuming there is no maplist.
-std::string G_NextMap(void) {
-	std::string next = level.nextmap;
+std::string G_NextMap()
+{
+	std::string next = level.nextmap.c_str();
 
-	if (gamestate == GS_STARTUP || sv_gametype != GM_COOP || !strlen(next.c_str())) {
+	if (gamestate == GS_STARTUP || sv_gametype != GM_COOP || next.empty())
+	{
 		// if not coop, stay on same level
 		// [ML] 1/25/10: OR if next is empty
-		next = level.mapname;
-	} else if (secretexit && W_CheckNumForName(level.secretmap) != -1) {
+		next = level.mapname.c_str();
+	}
+	else if (secretexit && W_CheckNumForName(level.secretmap.c_str()) != -1)
+	{
 		// if we hit a secret exit switch, go there instead.
-		next = level.secretmap;
+		next = level.secretmap.c_str();
 	}
 
 	// NES - exiting a Doom 1 episode moves to the next episode,
 	// rather than always going back to E1M1
-	if (!strncmp(next.c_str(), "EndGame", 7) ||
-		(gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4))) {
+	if (iequals(next.substr(0, 7), "EndGame") ||
+	    (gamemode == retail_chex && iequals(level.nextmap.c_str(), "E1M6")))
+	{
 		if (gameinfo.flags & GI_MAPxx || gamemode == shareware ||
-			(!sv_loopepisode && ((gamemode == registered && level.cluster == 3) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && level.cluster == 4)))) {
+			(!sv_loopepisode && ((gamemode == registered && level.cluster == 3) ||
+			((gameinfo.flags & GI_MENUHACK_RETAIL) && level.cluster == 4))))
+		{
 			next = CalcMapName(1, 1);
-		} else if (sv_loopepisode) {
+		}
+		else if (sv_loopepisode)
+		{
 			next = CalcMapName(level.cluster, 1);
-		} else {
+		}
+		else
+		{
 			next = CalcMapName(level.cluster + 1, 1);
 		}
 	}
@@ -182,39 +222,60 @@ std::string G_NextMap(void) {
 }
 
 // Determine the "next map" and change to it.
-void G_ChangeMap() {
+void G_ChangeMap()
+{
 	unnatural_level_progression = false;
 
 	// Skip the maplist to go to the desired level in case of a lobby map.
 	if (level.flags & LEVEL_LOBBYSPECIAL && level.nextmap[0])
 	{
-		G_DeferedInitNew(level.nextmap);
+		G_DeferedInitNew(level.nextmap.c_str());
 	}
 	else
 	{
-		size_t next_index;
-		if (!Maplist::instance().get_next_index(next_index)) {
-			// We don't have a maplist, so grab the next 'natural' map lump.
-			std::string next = G_NextMap();
-			G_DeferedInitNew((char *)next.c_str());
-		}
-		else {
-			maplist_entry_t maplist_entry;
-			Maplist::instance().get_map_by_index(next_index, maplist_entry);
+		maplist_entry_t lobby_entry = Maplist::instance().get_lobbymap();
 
+		if (!Maplist::instance().lobbyempty())
+		{
 			std::string wadstr;
-			for (size_t i = 0; i < maplist_entry.wads.size(); i++)
+			for (size_t i = 0; i < lobby_entry.wads.size(); i++)
 			{
 				if (i != 0)
 				{
 					wadstr += " ";
 				}
-				wadstr += C_QuoteString(maplist_entry.wads.at(i));
+				wadstr += C_QuoteString(lobby_entry.wads.at(i));
 			}
-			G_LoadWadString(wadstr, maplist_entry.map);
+			G_LoadWadString(wadstr, lobby_entry.map);
+		}
+		else
+		{
+			size_t next_index;
+			if (!Maplist::instance().get_next_index(next_index))
+			{
+				// We don't have a maplist, so grab the next 'natural' map lump.
+				std::string next = G_NextMap();
+				G_DeferedInitNew((char*)next.c_str());
+			}
+			else
+			{
+				maplist_entry_t maplist_entry;
+				Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-			// Set the new map as the current map
-			Maplist::instance().set_index(next_index);
+				std::string wadstr;
+				for (size_t i = 0; i < maplist_entry.wads.size(); i++)
+				{
+					if (i != 0)
+					{
+						wadstr += " ";
+					}
+					wadstr += C_QuoteString(maplist_entry.wads.at(i));
+				}
+				G_LoadWadString(wadstr, maplist_entry.map);
+
+				// Set the new map as the current map
+				Maplist::instance().set_index(next_index);
+			}
 		}
 
 		// run script at the end of each map
@@ -251,7 +312,7 @@ void G_ChangeMap(size_t index) {
 // Restart the current map.
 void G_RestartMap() {
 	// Restart the current map.
-	G_DeferedInitNew(level.mapname);
+	G_DeferedInitNew(level.mapname.c_str());
 
 	// run script at the end of each map
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
@@ -283,14 +344,15 @@ void SV_CheckTeam(player_t &pl);
 //
 // denis - rewritten so that it does not force client reconnects
 //
-void G_DoNewGame (void)
+void G_DoNewGame()
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if(!(it->ingame()))
 			continue;
 
-		SVC_LoadMap(it->client.reliablebuf, ::wadfiles, ::patchfiles, d_mapname, 0);
+		MSG_WriteSVC(&it->client.reliablebuf,
+		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname, 0));
 	}
 
 	sv_curmap.ForceSet(d_mapname);
@@ -329,7 +391,6 @@ void SV_ServerSettingChange();
 
 void G_InitNew (const char *mapname)
 {
-	size_t i;
 	DWORD previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
@@ -346,7 +407,7 @@ void G_InitNew (const char *mapname)
 		}
 	}
 
-	int old_gametype = sv_gametype.asInt();
+	const int old_gametype = sv_gametype.asInt();
 
 	cvar_t::UnlatchCVars ();
 
@@ -366,24 +427,25 @@ void G_InitNew (const char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
+	const bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
 	if (wantFast != isFast)
 	{
 		if (wantFast)
 		{
-			for (i=S_SARG_RUN1 ; i<=S_SARG_PAIN2 ; i++)
-				states[i].tics >>= 1;
-			mobjinfo[MT_BRUISERSHOT].speed = 20*FRACUNIT;
-			mobjinfo[MT_HEADSHOT].speed = 20*FRACUNIT;
-			mobjinfo[MT_TROOPSHOT].speed = 20*FRACUNIT;
+			for (size_t i = 0; i < NUMSTATES; i++)
+			{
+				if (states[i].flags & STATEF_SKILL5FAST &&
+				    (states[i].tics != 1 || demoplayback))
+					states[i].tics >>= 1; // don't change 1->0 since it causes cycles
+			}
 		}
 		else
 		{
-			for (i=S_SARG_RUN1 ; i<=S_SARG_PAIN2 ; i++)
-				states[i].tics <<= 1;
-			mobjinfo[MT_BRUISERSHOT].speed = 15*FRACUNIT;
-			mobjinfo[MT_HEADSHOT].speed = 10*FRACUNIT;
-			mobjinfo[MT_TROOPSHOT].speed = 10*FRACUNIT;
+			for (size_t i = 0; i < NUMSTATES; i++)
+			{
+				if (states[i].flags & STATEF_SKILL5FAST)
+					states[i].tics <<= 1; // don't change 1->0 since it causes cycles
+			}
 		}
 		isFast = wantFast;
 	}
@@ -431,14 +493,15 @@ void G_InitNew (const char *mapname)
 	// after loading the level.
 	WinInfo info = ::levelstate.getWinInfo();
 
-	strncpy (level.mapname, mapname, 8);
-	G_DoLoadLevel (0);
+	level.mapname = mapname;
+
+	// [AM] Start the WDL log on new level.
+	M_StartWDLLog(true);
+
+	G_DoLoadLevel(0);
 
 	if (::serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
 		SV_UpdatePlayerQueueLevelChange(info);
-
-	// [AM] Start the WDL log on new level.
-	M_StartWDLLog();
 }
 
 //
@@ -556,7 +619,7 @@ void G_DoResetLevel(bool full_reset)
 			continue;
 
 		client_t* cl = &(it->client);
-		MSG_WriteMarker(&cl->reliablebuf, svc_resetmap);
+		MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::ResetMap());
 	}
 
 	// Unserialize saved snapshot
@@ -597,7 +660,7 @@ void G_DoResetLevel(bool full_reset)
 	for (it = players.begin(); it != players.end(); ++it)
 	{
 		// Don't let players keep cards through a reset.
-		if (sv_gametype == GM_COOP)
+		if (G_IsCoopGame())
 			P_ClearPlayerCards(*it);
 
 		P_ClearPlayerPowerups(*it);
@@ -620,6 +683,9 @@ void G_DoResetLevel(bool full_reset)
 	level.time = 0;
 	level.inttimeleft = mapchange / TICRATE;
 
+	// [AM] Clear horde spawns - they will be repopulated later.
+	P_HordeClearSpawns();
+
 	// Reset the respawned monster count
 	level.respawned_monsters = 0;	
 
@@ -632,6 +698,9 @@ void G_DoResetLevel(bool full_reset)
 
 		SV_ClientFullUpdate(*it);
 	}
+
+	// No need to clear the spawn locations because we're not loading a new map.
+	M_StartWDLLog(false);
 
 	// Get queued players in the game.
 	SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
@@ -650,14 +719,12 @@ void G_DoResetLevel(bool full_reset)
 		//      a players subsector to be valid (like use) to crash the server.
 		G_DoReborn(*it);
 	}
-
-	M_StartWDLLog();
 }
 
 //
 // G_DoLoadLevel
 //
-extern gamestate_t 	wipegamestate;
+extern gamestate_t wipegamestate;
 extern float BaseBlendA;
 
 void G_DoLoadLevel (int position)
@@ -675,7 +742,7 @@ void G_DoLoadLevel (int position)
 	G_InitLevelLocals ();
 
 	if (firstmapinit) {
-		Printf_Bold ("--- %s: \"%s\" ---\n", level.mapname, level.level_name);
+		Printf_Bold ("--- %s: \"%s\" ---\n", level.mapname.c_str(), level.level_name);
 		firstmapinit = false;
 	}
 
@@ -700,15 +767,15 @@ void G_DoLoadLevel (int position)
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
-	sky1texture = R_TextureNumForName (level.skypic);
-	if (strlen(level.skypic2))
-		sky2texture = R_TextureNumForName (level.skypic2);
+	sky1texture = R_TextureNumForName (level.skypic.c_str());
+	if (!level.skypic2.empty())
+		sky2texture = R_TextureNumForName (level.skypic2.c_str());
 	else
 		sky2texture = 0;
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		if (it->ingame() && it->playerstate == PST_DEAD)
+		if (it->ingame() && (::g_resetinvonexit || it->playerstate == PST_DEAD))
 			it->playerstate = PST_REBORN;
 
 		// Properly reset Cards, Powerups, and scores.
@@ -724,7 +791,10 @@ void G_DoLoadLevel (int position)
 
 			// [AM] Make sure the clients are updated on the new ready state
 			for (Players::iterator pit = players.begin();pit != players.end();++pit)
-				SVC_PlayerMembers(pit->client.reliablebuf, *it, SVC_PM_READY);
+			{
+				MSG_WriteSVC(&pit->client.reliablebuf,
+				             SVC_PlayerMembers(*it, SVC_PM_READY));
+			}
 		}
 	}
 
@@ -767,7 +837,7 @@ void G_DoLoadLevel (int position)
 			GetTeamInfo((team_t)i)->FlagData.flaglocated = false;
 	}
 
-	P_SetupLevel (level.mapname, position);
+	P_SetupLevel (level.mapname.c_str(), position);
 
 	// Nes - CTF Post flag setup
 	if (sv_gametype == GM_CTF)
@@ -833,7 +903,7 @@ void G_WorldDone (void)
 
 	const char *finaletext = NULL;
 	cluster_info_t& thiscluster = clusters.findByCluster(level.cluster);
-	if (!strncmp (level.nextmap, "EndGame", 7) || (gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4))) {
+	if (!strnicmp (level.nextmap.c_str(), "EndGame", 7)) {
 //		F_StartFinale (thiscluster->messagemusic, thiscluster->finaleflat, thiscluster->exittext); // denis - fixme - what should happen on the server?
 		finaletext = thiscluster.exittext;
 	} else {

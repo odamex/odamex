@@ -22,11 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
-#include <cstring>
+#include "odamex.h"
 
-#include "doomtype.h"
-#include "doomdef.h"
-#include "doomstat.h"
+
 #include "cmdlib.h"
 #include "d_netinf.h"
 #include "v_video.h"
@@ -172,8 +170,8 @@ void D_SetupUserInfo(void)
 	coninfo->predict_weapons	= (cl_predictweapons != 0);
 
 	// sanitize the weapon switching choice
-	if (cl_switchweapon < 0 || cl_switchweapon > 2)
-		cl_switchweapon.ForceSet(float(WPSW_ALWAYS));
+	if (cl_switchweapon >= WPSW_NUMTYPES || cl_switchweapon < 0)
+		cl_switchweapon.ForceSet(WPSW_ALWAYS);
 	coninfo->switchweapon	= (weaponswitch_t)cl_switchweapon.asInt();
 
 	// Copies the updated cl_weaponpref* cvars to coninfo->weapon_prefs[]
@@ -262,4 +260,3 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 }
 
 VERSION_CONTROL (d_netinfo_cpp, "$Id$")
-

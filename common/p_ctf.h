@@ -46,7 +46,6 @@ enum flag_score_t
 //	Network Events
 // [CG] I'm aware having CL_* and SV_* functions in common/ is not great, I'll
 //      do more work on CTF and team-related things later.
-void CL_CTFEvent(void);
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
 ItemEquipVal SV_FlagTouch(player_t &player, team_t f, bool firstgrab);
 void SV_SocketTouch(player_t &player, team_t f);

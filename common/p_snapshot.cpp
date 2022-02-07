@@ -24,6 +24,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <math.h>
 #include "actor.h"
 #include "d_player.h"
@@ -74,7 +76,7 @@ ActorSnapshot::ActorSnapshot(int time) :
 		mX(0), mY(0), mZ(0),
 		mMomX(0), mMomY(0), mMomZ(0), mAngle(0), mPitch(0), mOnGround(true),
 		mCeilingZ(0), mFloorZ(0), mReactionTime(0), mWaterLevel(0),
-		mFlags(0), mFlags2(0), mFrame(0)
+		mFlags(0), mFlags2(0), mFlags3(0), mFrame(0)
 {
 }
 	
@@ -85,7 +87,7 @@ ActorSnapshot::ActorSnapshot(int time, const AActor *mo) :
 		mAngle(mo->angle), mPitch(mo->pitch), mOnGround(mo->onground),
 		mCeilingZ(mo->ceilingz), mFloorZ(mo->floorz),
 		mReactionTime(mo->reactiontime), mWaterLevel(mo->waterlevel),
-		mFlags(mo->flags), mFlags2(mo->flags2), mFrame(mo->frame)
+		mFlags(mo->flags), mFlags2(mo->flags2), mFlags3(mo->flags3), mFrame(mo->frame)
 {
 }
 
@@ -108,6 +110,7 @@ bool ActorSnapshot::operator==(const ActorSnapshot &other) const
 			mWaterLevel == other.mWaterLevel &&
 			mFlags == other.mFlags &&
 			mFlags2 == other.mFlags2 &&
+			mFlags3 == other.mFlags3 &&
 			mFrame == other.mFrame;
 }
 
@@ -784,7 +787,7 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 		if (sector->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
 		{
 			DCeiling *ceiling	= static_cast<DCeiling *>(sector->ceilingdata);
-			mCeilingMoverType	= SEC_CEILING;			
+			mCeilingMoverType	= SEC_CEILING;
 			mCeilingType		= ceiling->m_Type;
 			mCeilingStatus		= ceiling->m_Status;
 			mCeilingTag			= ceiling->m_Tag;
@@ -962,7 +965,7 @@ void SectorSnapshot::toSector(sector_t *sector) const
 			sector->floordata =
 				new DFloor(sector, static_cast<DFloor::EFloor>(mFloorType),
 						   mFloorLine, mFloorSpeed, mFloorOffset,
-						   mFloorCrush, mFloorChange);			
+						   mFloorCrush, mFloorChange, false); // todo - heretic may bug out?			
 		}
 		
 		DFloor *floor				= static_cast<DFloor *>(sector->floordata);
@@ -1212,7 +1215,7 @@ bool P_FloorSnapshotDone(SectorSnapshot *snap)
 		(snap->getFloorMoverType() == SEC_PILLAR &&
 		 snap->getFloorStatus() == DPillar::destroy) ||
 		(snap->getFloorMoverType() == SEC_ELEVATOR &&
-		 snap->getFloorStatus() == DElevator::destroy))
+	     snap->getFloorStatus() == DElevator::destroy))
 		return true;
 		
 	return false;

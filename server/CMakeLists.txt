@@ -45,12 +45,13 @@ endif()
 add_executable(odasrv
   ${COMMON_SOURCES} ${SERVER_SOURCES} ${SERVER_WIN32_SOURCES})
 odamex_target_settings(odasrv)
+set_property(TARGET odasrv PROPERTY CXX_STANDARD 98)
 
 target_include_directories(odasrv PRIVATE src)
 if(WIN32)
   target_include_directories(odasrv PRIVATE win32)
 endif()
-target_link_libraries(odasrv jsoncpp odamex-common)
+target_link_libraries(odasrv ZLIB::ZLIB jsoncpp odamex-common odaproto)
 
 if(USE_MINIUPNP)
   target_link_libraries(odasrv upnpc-static)

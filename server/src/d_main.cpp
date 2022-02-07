@@ -24,9 +24,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
 
-#include <vector>
+#include "odamex.h"
+
+
 #include <algorithm>
 
 #include "win32inc.h"
@@ -42,12 +43,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "errors.h"
 
 #include "m_random.h"
 #include "minilzo.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "gstrings.h"
 #include "z_zone.h"
 #include "w_wad.h"
@@ -65,8 +63,10 @@
 #include "d_dehacked.h"
 #include "s_sound.h"
 #include "gi.h"
+#include "g_mapinfo.h"
 #include "sv_main.h"
 #include "sv_banlist.h"
+#include "g_horde.h"
 
 #include "w_ident.h"
 
@@ -83,7 +83,7 @@ void C_DoCommand(const char *cmd, uint32_t key = 0);
 void daemon_init();
 #endif
 
-void D_DoomLoop (void);
+void D_DoomLoop();
 
 extern gameinfo_t SharewareGameInfo;
 extern gameinfo_t RegisteredGameInfo;
@@ -91,6 +91,8 @@ extern gameinfo_t RetailGameInfo;
 extern gameinfo_t CommercialGameInfo;
 extern gameinfo_t RetailBFGGameInfo;
 extern gameinfo_t CommercialBFGGameInfo;
+extern gameinfo_t HereticGameInfo;
+extern gameinfo_t HereticSWGameInfo;
 
 extern BOOL gameisdead;
 extern DThinker ThinkerCap;
@@ -169,21 +171,10 @@ void D_Init()
 		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
 	R_Init();
 
-	LevelInfos& levels = getLevelInfos();
-	if (levels.size() == 0)
-	{
-		levels.addDefaults();
-	}
-
-	ClusterInfos& clusters = getClusterInfos();
-	if (clusters.size() == 0)
-	{
-		clusters.addDefaults();
-	}
-	G_SetLevelStrings();
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseHordeDefs();
 
 	if (first_time)
 		Printf(PRINT_HIGH, "P_Init: Init Playloop state.\n");
@@ -228,7 +219,7 @@ void STACK_ARGS D_Shutdown()
 	NormalLight.next = NULL;
 }
 
-
+void D_Init_DEHEXTRA_Frames(void);
 
 //
 // D_DoomMain
@@ -246,6 +237,8 @@ void D_DoomMain()
 
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
+	// Initialize all extra frames
+	D_Init_DEHEXTRA_Frames();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
@@ -267,6 +260,8 @@ void D_DoomMain()
 		OWantFile::make(file, iwad_filename_cstr, OFILE_WAD);
 		newwadfiles.push_back(file);
 	}
+
+
 
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
@@ -380,8 +375,8 @@ void D_DoomMain()
 		strncpy(startmap, Args.GetArg(p + 1), 8);
 		((char*)Args.GetArg(p))[0] = '-';
 	}
-
-	strncpy(level.mapname, startmap, sizeof(level.mapname));
+	
+	level.mapname = startmap;
 
 	G_ChangeMap();
 

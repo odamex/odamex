@@ -26,11 +26,9 @@
 #ifndef __V_VIDEO_H__
 #define __V_VIDEO_H__
 
-#include <string>
 
-#include "doomtype.h"
 #include "v_palette.h"
-#include "doomdef.h"
+#include "m_vectors.h"
 
 // Needed because we are refering to patches.
 #include "r_data.h"
@@ -38,6 +36,7 @@
 class IWindowSurface;
 
 extern int CleanXfac, CleanYfac;
+extern bool am_gotbackdrop;
 
 //
 // VIDEO
@@ -81,7 +80,7 @@ public:
 	{	return mSurface;	}
 
 	// Draw a linear block of pixels into the view buffer.
-	void DrawBlock (int x, int y, int width, int height, const byte *src) const;
+	void DrawBlock(const byte* src, int x, int y, int width, int height) const;
 
 	// Reads a linear block of pixels from the view buffer.
 	void GetBlock (int x, int y, int width, int height, byte *dest) const;
@@ -98,6 +97,9 @@ public:
 
 	// Set an area to a specified color
 	void Clear(int left, int top, int right, int bottom, argb_t color) const;
+
+	// Draw a line with a specified color
+	void Line(const v2int_t src, const v2int_t dst, argb_t color) const;
 
 	// Text drawing functions
 	// Output a line of text using the console font
@@ -516,5 +518,3 @@ void V_DrawFPSWidget();
 void V_DrawFPSTicker();
 
 #endif // __V_VIDEO_H__
-
-

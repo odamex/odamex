@@ -22,12 +22,13 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "gstrings.h"
-#include "doomstat.h"
-#include "c_cvars.h"
 #include "i_system.h"
 #include "p_acs.h"
 #include "d_main.h"
+#include "g_mapinfo.h"
 
 // Game Mode - identify IWAD as shareware, retail etc.
 GameMode_t		gamemode = undetermined;
@@ -48,9 +49,6 @@ CVAR_FUNC_IMPL (language)
 
 	// Reapply DeHackEd patches on top of these strings.
 	D_LoadResolvedPatches();
-
-	// Set default level strings based on those DeHackEd patches.
-	G_SetLevelStrings();
 
 	// MAPINFO comes last, because it overrides default level strings.
 	G_ParseMapInfo();

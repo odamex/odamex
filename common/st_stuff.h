@@ -18,7 +18,7 @@
 //
 // DESCRIPTION:
 //	Status bar code.
-//	Does the face/direction indicator animatin.
+//	Does the face/direction indicator animation.
 //	Does palette indicators as well (red pain/berserk, bright pickup)
 //
 //-----------------------------------------------------------------------------
@@ -27,8 +27,11 @@
 #ifndef __STSTUFF_H__
 #define __STSTUFF_H__
 
-#include "doomtype.h"
-#include "d_event.h"
+
+#include "com_misc.h"
+#include "w_wad.h"
+
+struct event_t;
 
 // [RH] Turned these into variables
 // Size of statusbar.
@@ -37,6 +40,45 @@ extern int ST_HEIGHT;
 extern int ST_WIDTH;
 extern int ST_X;
 extern int ST_Y;
+
+//
+// STATUS BAR
+//
+
+// From EE, gameinfo defined status bar
+// haleyjd 10/12/03: DOOM's status bar object
+
+void ST_DoomTicker();
+void ST_DoomDrawer();
+void ST_DoomStart();
+void ST_DoomInit();
+
+void ST_HticTicker();
+void ST_HticDrawer();
+void ST_HticStart();
+void ST_HticInit();
+
+// [ML] From EE, another gameinfo definition
+// haleyjd 10/12/03: structure for gamemode-independent status bar interface
+
+typedef struct stbarfns_s
+{
+	// data
+	int height;
+
+	// function pointers
+	void (*Ticker)(); // tic processing
+	void (*Drawer)(); // drawing
+	// void (*FSDrawer)(void); // fullscreen drawer
+	void (*Start)(); // reinit
+	void (*Init)();  // initialize at startup
+} stbarfns_t;
+
+extern stbarfns_t DoomStatusBar;
+extern stbarfns_t HticStatusBar;
+
+// for st_lib.cpp
+extern lumpHandle_t negminus;
 
 int ST_StatusBarWidth(int surface_width, int surface_height);
 int ST_StatusBarHeight(int surface_width, int surface_height);
@@ -50,13 +92,13 @@ void ST_ForceRefresh();
 //
 
 // Called by main loop.
-bool ST_Responder (event_t* ev);
+bool ST_Responder(event_t* ev);
 
 // Called by main loop.
-void ST_Ticker (void);
+void ST_Ticker();
 
 // Called by main loop.
-void ST_Drawer (void);
+void ST_Drawer();
 
 // Called when the console player is spawned on each level.
 void ST_Start();
@@ -66,27 +108,30 @@ void ST_Init();
 
 void STACK_ARGS ST_Shutdown();
 
-// [ML] HUDified status bar
-void ST_drawStatusBar (void);
-
 namespace hud {
 
 void drawNetdemo();
 
 // [ML] New Odamex fullscreen HUD
-void OdamexHUD(void);
+void OdamexHUD();
+
+// [AM] Draw obituary and event toasts.
+void DrawToasts();
+
+// [AM] Tick toasts - removing old ones.
+void ToastTicker();
+
+// [AM] Push a toast to the screen.
+void PushToast(const toast_t& toast);
 
 // [AM] HUD for showing level state
 void LevelStateHUD();
 
 // [AM] Spectator HUD
-void SpectatorHUD(void);
-
-// [AM] Original ZDoom HUD
-void ZDoomHUD(void);
+void SpectatorHUD();
 
 // [AM] HUD drawn with the Doom Status Bar.
-void DoomHUD(void);
+void DoomHUD();
 
 }
 

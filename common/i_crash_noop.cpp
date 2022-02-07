@@ -21,9 +21,12 @@
 //
 //-----------------------------------------------------------------------------
 
+
 #if defined _WIN32 && !defined _XBOX && defined _MSC_VER && !defined _DEBUG
 #elif defined UNIX && !defined GEKKO
 #else
+
+#include "odamex.h"
 
 #include "i_crash.h"
 

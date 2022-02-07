@@ -22,6 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <limits>
 
 #include "i_sdl.h" 
@@ -70,11 +73,8 @@
 
 #include <sys/stat.h>
 
-#include "errors.h"
 
-#include "doomtype.h"
 #include "w_wad.h"
-#include "version.h"
 #include "cmdlib.h"
 #include "m_argv.h"
 #include "m_misc.h"
@@ -418,21 +418,24 @@ void I_FinishClockCalibration ()
 // Displays the text mode ending screen after the game quits
 //
 
-void I_Endoom(void)
+void I_Endoom()
 {
 #ifndef GCONSOLE // I will return to this -- Hyper_Eye
-	unsigned char *endoom_data;
-	unsigned char *screendata;
-	int y;
-	int indent;
 
-    if (!r_showendoom || Args.CheckParm ("-novideo"))
+	if (!r_showendoom || Args.CheckParm ("-novideo"))
         return;
 
     // Hack to stop crash with disk icon
     in_endoom = true;
 
-	endoom_data = (unsigned char *)W_CacheLumpName("ENDOOM", PU_STATIC);
+	const char* endlump;
+
+	if (gamemission == heretic)
+		endlump = "ENDTEXT";
+	else
+		endlump = "ENDOOM";
+
+	unsigned char* endoom_data = (unsigned char*)W_CacheLumpName(endlump, PU_STATIC);
 
 	// Set up text mode screen
 
@@ -443,13 +446,13 @@ void I_Endoom(void)
 
 	// Write the data to the screen memory
 
-	screendata = TXT_GetScreenData();
+	unsigned char* screendata = TXT_GetScreenData();
 
-    if(NULL != screendata)
+    if (NULL != screendata)
     {
-        indent = (ENDOOM_W - TXT_SCREEN_W) / 2;
+	    const int indent = (ENDOOM_W - TXT_SCREEN_W) / 2;
 
-        for (y=0; y<TXT_SCREEN_H; ++y)
+        for (int y = 0; y<TXT_SCREEN_H; ++y)
         {
             memcpy(screendata + (y * TXT_SCREEN_W * 2),
                     endoom_data + (y * ENDOOM_W + indent) * 2,
@@ -481,13 +484,13 @@ void I_Endoom(void)
 //
 static int has_exited;
 
-void STACK_ARGS I_Quit (void)
+void STACK_ARGS I_Quit()
 {
 	has_exited = 1;		/* Prevent infinitely recursive exits -- killough */
 
 	G_ClearSnapshots ();
 
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	M_SaveDefaults();
 

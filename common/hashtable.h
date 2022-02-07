@@ -24,10 +24,8 @@
 #ifndef __HASHTABLE_H__
 #define __HASHTABLE_H__
 
-#include <cstddef>
 #include <cassert>
 #include <utility>
-#include <string>
 
 // ============================================================================
 //
@@ -163,6 +161,18 @@ template <> struct hashfunc<void*>
 	}
 };
 
+template <>
+struct hashfunc<const void*>
+{
+	unsigned int operator()(const void* ptr) const
+	{
+		if (sizeof(ptrdiff_t) == 8)
+			return __hash_jenkins_64bit((ptrdiff_t)ptr);
+		else
+			return __hash_jenkins_32bit((ptrdiff_t)ptr);
+	}
+};
+
 static inline unsigned int __hash_cstring(const char* str)
 {
 	unsigned int val = 0;
@@ -207,6 +217,11 @@ private:
 	};
 
 public:
+	// Member types
+	typedef KT key_type;
+	typedef VT mapped_type;
+	typedef HashPairType value_type;
+
 	// ------------------------------------------------------------------------
 	// OHashTable::iterator & const_iterator implementation
 	// ------------------------------------------------------------------------
@@ -564,4 +579,3 @@ private:
 };
 
 #endif	// __HASHTABLE_H__
-

@@ -8,3 +8,10 @@
 [submodule "libraries/libpng"]
 	path = libraries/libpng
 	url = https://github.com/glennrp/libpng.git
+[submodule "libraries/fltk"]
+	path = libraries/fltk
+	url = https://github.com/fltk/fltk
+[submodule "libraries/protobuf"]
+	path = libraries/protobuf
+	url = https://github.com/protocolbuffers/protobuf.git
+	branch = 3.5.x

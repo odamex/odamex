@@ -22,17 +22,19 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <map>
 
-#include "doomdef.h"
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "r_state.h"
 #include "z_zone.h"
 #include "w_wad.h"
 #include "gi.h"
+#include "svc_message.h"
+#include "p_mapformat.h"
 
 EXTERN_CVAR(co_zdoomsound)
 extern int numtextures;
@@ -268,13 +270,7 @@ void P_UpdateButtons(client_t *cl)
 		// record that we acted on this line:
 		actedlines[l] = true;
 
-		MSG_WriteMarker(&cl->reliablebuf, svc_switch);
-		MSG_WriteLong(&cl->reliablebuf, l);
-		MSG_WriteByte(&cl->reliablebuf, lines[l].switchactive);
-		MSG_WriteByte(&cl->reliablebuf, lines[l].special);
-		MSG_WriteByte(&cl->reliablebuf, state);
-		MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(&lines[l]));
-		MSG_WriteLong(&cl->reliablebuf, timer);
+		MSG_WriteSVC(&cl->reliablebuf, SVC_Switch(lines[l], state, timer));
 	}
 
 	for (int l=0; l<numlines; l++)
@@ -282,13 +278,7 @@ void P_UpdateButtons(client_t *cl)
 		// update all button state except those that have actors assigned:
 		if (!actedlines[l] && lines[l].wastoggled)
 		{
-			MSG_WriteMarker(&cl->reliablebuf, svc_switch);
-			MSG_WriteLong(&cl->reliablebuf, l);
-			MSG_WriteByte(&cl->reliablebuf, lines[l].switchactive);
-			MSG_WriteByte(&cl->reliablebuf, lines[l].special);
-			MSG_WriteByte(&cl->reliablebuf, 0);
-			MSG_WriteShort(&cl->reliablebuf, P_GetButtonTexture(&lines[l]));
-			MSG_WriteLong(&cl->reliablebuf, 0);
+			MSG_WriteSVC(&cl->reliablebuf, SVC_Switch(lines[l], 0, 0));
 		}
 	}
 }
@@ -301,17 +291,18 @@ void P_ChangeSwitchTexture(line_t* line, int useAgain, bool playsound)
 {
 	const char *sound;
 
-	if (!useAgain)
-		line->special = 0;
-
 	// EXIT SWITCH?
-	if (line->special == Exit_Normal ||
-		line->special == Exit_Secret ||
-		line->special == Teleport_NewMap ||
-		line->special == Teleport_EndGame)
+	if (P_IsExitLine(line->special))
+	{
 		sound = "switches/exitbutn";
+	}
 	else
+	{
 		sound = "switches/normbutn";
+	}
+
+	if (!useAgain && P_HandleSpecialRepeat(line))
+		line->special = 0;
 
 	DActiveButton::EWhere twhere;
 	short* altTexture;
@@ -428,4 +419,3 @@ void DActiveButton::RunThink ()
 }
 
 VERSION_CONTROL (p_switch_cpp, "$Id$")
-

@@ -26,8 +26,6 @@
 #define __CMDLIB__
 
 #include <algorithm>
-#include <string>
-#include <vector>
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4244)     // MIPS
@@ -38,10 +36,7 @@
 #pragma warning(disable : 4305)     // truncate from double to float
 #endif
 
-#include "doomtype.h"
 
-#include <stdio.h>
-#include <cstring>
 #include <stdlib.h>
 #include <errno.h>
 #include <ctype.h>
@@ -49,11 +44,12 @@
 
 struct OTimespan
 {
+	int csecs;
 	int tics;
 	int seconds;
 	int minutes;
 	int hours;
-	OTimespan(): tics(0), seconds(0), minutes(0), hours(0) { }
+	OTimespan() : csecs(0), tics(0), seconds(0), minutes(0), hours(0) { }
 };
 
 int		ParseHex(const char *str);
@@ -81,6 +77,7 @@ std::string &TrimStringStart(std::string &s);
 std::string &TrimStringEnd(std::string &s);
 
 bool ValidString(const std::string&);
+bool IsHexString(const std::string& str, const size_t len);
 
 char	*COM_Parse (char *data);
 
@@ -88,10 +85,6 @@ extern	char	com_token[8192];
 extern	BOOL	com_eof;
 
 char	*copystring(const char *s);
-
-void	CRC_Init(unsigned short *crcvalue);
-void	CRC_ProcessByte(unsigned short *crcvalue, byte data);
-unsigned short CRC_Value(unsigned short crcvalue);
 
 std::vector<std::string> VectorArgs(size_t argc, char **argv);
 std::string JoinStrings(const std::vector<std::string> &pieces, const std::string &glue = "");
@@ -114,8 +107,8 @@ void ReplaceString (char** ptr, const char* str);
 
 void StripColorCodes(std::string& str);
 
-uint32_t CRC32(const uint8_t* buf, uint32_t len);
 uint32_t Log2(uint32_t n);
+float NextAfter(const float from, const float to);
 
 /**
  * @brief Initialize an array with a specific value.

@@ -22,10 +22,6 @@ set (CMAKE_GENERATOR "Unix Makefiles" CACHE INTERNAL "" FORCE)
 # Build type (Release/Debug)
 set (CMAKE_BUILD_TYPE, "Release")
 
-# Since 0.8.3, Odamex is forced to used C++98 standards.
-# Force it back to C++11 to allow the Switch to properly compile.
-set(CMAKE_CXX_STANDARD 11)
-
 # Odamex specific settings
 set (BUILD_CLIENT 1)
 set (BUILD_SERVER 0)
@@ -41,7 +37,7 @@ set (GCONSOLE 1)
 # NACP info
 set (APP_TITLE "Odamex for Nintendo Switch")
 set (APP_AUTHOR "The Odamex Team")
-set (APP_VERSION "0.9.3")
+set (APP_VERSION "10.0.0")
 
 # Compiler stuff
 set(NACP_TOOL "${DEVKITPRO}/tools/bin/nacptool"  CACHE PATH "nacp-tool")

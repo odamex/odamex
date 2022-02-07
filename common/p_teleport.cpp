@@ -23,11 +23,10 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <stdlib.h>
 
-#include "doomtype.h"
-#include "doomdef.h"
-#include "doomstat.h"
 
 #include "m_random.h"
 #include "s_sound.h"
@@ -157,6 +156,7 @@ BOOL EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop
 	player_t	*player;
 
 	// don't teleport missiles
+	// TODO: Allow projectile activated missiles to teleport
 	if (thing->flags & MF_MISSILE)
 		return false;
 
@@ -529,4 +529,3 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 }
 
 VERSION_CONTROL (p_teleport_cpp, "$Id$")
-

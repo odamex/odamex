@@ -21,23 +21,24 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 // SoM 12-24-05: yeah... I'm programming on christmas eve.
 // Removed all the DirectX crap.
 
 #include <stdlib.h>
 #include <list>
 
+#include "i_sdl.h"
 #include "win32inc.h"
 
-#include "doomstat.h"
 #include "m_argv.h"
 #include "i_input.h"
-#include "i_sdlinput.h"
 #include "i_video.h"
 #include "d_main.h"
 #include "c_bind.h"
 #include "c_console.h"
-#include "c_cvars.h"
 #include "i_system.h"
 #include "hu_stuff.h"
 
@@ -45,6 +46,12 @@
 	#include "i_xbox.h"
 #elif __SWITCH__
 	#include "nx_io.h"
+#endif
+
+#if defined(SDL12)
+#include "i_input_sdl12.h"
+#elif defined(SDL20)
+#include "i_input_sdl20.h"
 #endif
 
 #ifdef _WIN32

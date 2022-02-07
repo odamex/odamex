@@ -26,10 +26,12 @@
 #define __M_MENU_H__
 
 #include "d_event.h"
-#include "c_cvars.h"
 
 // Some defines...
-#define LINEHEIGHT	16
+#define ARROWXOFF -28
+#define ARROWYOFF -1
+#define LINEHEIGHT 16
+#define HTCLINEHEIGHT 20
 #define SKULLXOFF	-32
 
 //
@@ -86,7 +88,7 @@ void M_RefreshModesList ();
 typedef enum {
 	whitetext,
 	redtext,
-	bricktext,
+	yellowtext,
 	more,
 	slider,
 	redslider,
@@ -144,7 +146,7 @@ typedef struct menuitem_s {
 } menuitem_t;
 
 typedef struct menu_s {
-	char			title[9];
+	std::string		title;
 	int				lastOn;
 	int				numitems;
 	int				indent;
@@ -161,18 +163,17 @@ typedef struct value_s {
 
 typedef struct
 {
-	// -1 = no cursor here, 1 = ok, 2 = arrows ok
-	short		status;
-
-	char		name[10];
+	
+	short		status;		// -1 = no cursor here, 1 = ok, 2 = arrows ok
+	std::string	name;		// name of either the patch to display or text to write
 
 	// choice = menu item #.
 	// if status = 2,
 	//	 choice=0:leftarrow,1:rightarrow
 	void		(*routine)(int choice);
 
-	// hotkey in menu
-	char		alphaKey;
+	char		alphaKey;	// hotkey in menu
+	bool		fulltext;	// whether to display the entry as a patch or text
 } oldmenuitem_t;
 
 typedef struct oldmenu_s
@@ -211,5 +212,11 @@ extern short	 itemOn;
 extern oldmenu_t *currentMenu;
 
 size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length);
+
+#define MAX_EPISODES	8
+
+extern oldmenuitem_t EpisodeMenu[MAX_EPISODES];
+extern OLumpName EpisodeMaps[MAX_EPISODES];
+extern oldmenu_t EpiDef;
 
 #endif

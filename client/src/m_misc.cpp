@@ -22,21 +22,18 @@
 //-----------------------------------------------------------------------------
 
 
-#include <cstdio>
+#include "odamex.h"
+
 #include <ctime>
-#include <string>
 #include <sstream>
-#include <vector>
 
 #include "c_bind.h"
-#include "c_cvars.h"
 #include "c_dispatch.h"
-#include "doomtype.h"
+#include "g_gametype.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"
 #include "i_system.h"
-#include "version.h"
 
 // Used to identify the version of the game that saved
 // a config file to compensate for new features that get
@@ -136,6 +133,7 @@ END_COMMAND (savecfg)
 extern int cvar_defflags;
 
 EXTERN_CVAR(cl_downloadsites);
+EXTERN_CVAR(message_showobituaries);
 
 /**
  * Load a configuration file from the default configuration file.
@@ -154,10 +152,10 @@ void M_LoadDefaults(void)
 	AddCommandString(cmd);
 	cvar_defflags = 0;
 
+	bool updated = false;
+
 	if (::configver <= 90)
 	{
-		bool updated = false;
-
 		// Convert old default that had ts.chaosunleashed.net.  It's either
 		// dead or so intermittent that it slows down WAD downloading.
 
@@ -171,10 +169,32 @@ void M_LoadDefaults(void)
 			updated = true;
 			cl_downloadsites.RestoreDefault();
 		}
-
-		if (updated)
-			Printf("%s: Updating old defaults.\n", __FUNCTION__);
 	}
+	else if (::configver > 90 && ::configver <= 93)
+	{
+		// Add new defaults - dogsoft and doomshack's upload dir.
+
+		const char* cl_download_old =
+		    "https://static.allfearthesentinel.net/wads/ https://doomshack.org/wads/ "
+		    "http://grandpachuck.org/files/wads/ https://wads.doomleague.org/ "
+		    "http://files.funcrusher.net/wads/";
+
+		if (!strcmp(::cl_downloadsites.cstring(), cl_download_old))
+		{
+			updated = true;
+			::cl_downloadsites.RestoreDefault();
+		}
+	}
+	else if (::configver < 10000)
+	{
+		// Turn off message line obituaries while upgrading to 10.0
+
+		updated = true;
+		::message_showobituaries.RestoreDefault();
+	}
+
+	if (updated)
+		Printf("%s: Updating old defaults.\n", __FUNCTION__);
 
 	AddCommandString("alias ? help");	
 
@@ -183,8 +203,12 @@ void M_LoadDefaults(void)
 
 const char* GetShortGameModeString()
 {
-	if (sv_gametype == GM_COOP)
-		return multiplayer ? "COOP" : "SOLO";
+	if (G_IsHordeMode())
+		return "HORDE";
+	else if (sv_gametype == GM_COOP && !::multiplayer)
+		return "SOLO";
+	else if (sv_gametype == GM_COOP)
+		return "COOP";
 	else if (sv_gametype == GM_DM && sv_maxplayers <= 2)
 		return "DUEL";
 	else if (sv_gametype == GM_DM)
@@ -258,7 +282,7 @@ std::string M_ExpandTokens(const std::string &str)
 				}
 				break;
 			case 'm':
-				buffer << level.mapname;
+				buffer << level.mapname.c_str();
 				break;
 			case 'r':
 				buffer << "g" << GitShortHash();
@@ -304,6 +328,3 @@ bool M_FindFreeName(std::string &filename, const std::string &extension)
 }
 
 VERSION_CONTROL (m_misc_cpp, "$Id$")
-
-
-

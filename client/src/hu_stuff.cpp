@@ -21,21 +21,21 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <algorithm>
 #include <iterator>
 #include <sstream>
 
-#include "doomdef.h"
 #include "z_zone.h"
 #include "hu_stuff.h"
 #include "w_wad.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "st_stuff.h"
 #include "c_bind.h"
 #include "c_console.h"
 #include "c_dispatch.h"
-#include "c_cvars.h"
 #include "v_text.h"
 #include "g_gametype.h"
 
@@ -68,7 +68,6 @@ DCanvas *odacanvas = NULL;
 extern DCanvas *screen;
 extern byte *Ranges;
 
-EXTERN_CVAR(hud_fullhudtype)
 EXTERN_CVAR(hud_scaletext)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_timelimit)
@@ -124,7 +123,6 @@ void HU_DMScores2 (player_t *player);
 void HU_TeamScores1 (player_t *player);
 void HU_TeamScores2 (player_t *player);
 
-extern bool HasBehavior;
 extern inline int V_StringWidth(const char *str);
 size_t P_NumPlayersInGame();
 static void ShoveChatStr(std::string str, byte who);
@@ -230,6 +228,8 @@ void HU_Ticker()
 	// verify the chat mode status is valid
 	if (ConsoleState != c_up || menuactive || (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION))
 		HU_UnsetChatMode();
+
+	hud::ToastTicker();
 }
 
 void HU_ReleaseKeyStates()
@@ -491,16 +491,16 @@ void HU_Drawer()
 	{
 		bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
 
+		hud::DrawToasts();
+
 		if ((viewactive && !R_StatusBarVisible()) || spechud)
 		{
 			if (screenblocks < 12)
 			{
 				if (spechud)
 					hud::SpectatorHUD();
-				else if (hud_fullhudtype >= 1)
-					hud::OdamexHUD();
 				else
-					hud::ZDoomHUD();
+					hud::OdamexHUD();
 			}
 		}
 		else
@@ -861,26 +861,26 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 	              hud::X_LEFT, hud::Y_TOP,
 	              "Name", CR_GREY, true);
 
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
 			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "KILLS", CR_GREY, true);
+			              hud::X_RIGHT, hud::Y_TOP, "DAMAGE", CR_GREY, true);
 			hud::DrawText(140, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "LIVES", CR_GREY, true);
 		}
 		else
 		{
 			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "KILLS", CR_GREY, true);
+			              hud::X_RIGHT, hud::Y_TOP, "DAMAGE", CR_GREY, true);
 			hud::DrawText(140, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "DETHS", CR_GREY, true);
 		}
 	}
 	else
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
 			hud::DrawText(44, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "WINS", CR_GREY, true);
@@ -928,26 +928,26 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 	                   hud::X_LEFT, hud::Y_TOP,
 	                   1, limit, true);
 
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
-			hud::EAPlayerKills(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerDamage(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			hud::EAPlayerLives(140, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 		}
 		else
 		{
-			hud::EAPlayerKills(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerDamage(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			hud::EAPlayerDeaths(140, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 		}
 	}
 	else
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
 			hud::EAPlayerRoundWins(44, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                       hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit,
@@ -1384,9 +1384,9 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	              hud::X_CENTER, hud::Y_MIDDLE,
 	              hud::X_LEFT, hud::Y_TOP,
 	              "Name", CR_GREY, true);
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
 			hud::DrawText(62, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "KIL", CR_GREY, true);
@@ -1403,7 +1403,7 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	}
 	else
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
 			hud::DrawText(22, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "WIN", CR_GREY, true);
@@ -1449,26 +1449,26 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	                   hud::X_CENTER, hud::Y_MIDDLE,
 	                   hud::X_LEFT, hud::Y_TOP,
 	                   1, limit, true);
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
-			hud::EAPlayerKills(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerDamage(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			hud::EAPlayerLives(90, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 		}
 		else
 		{
-			hud::EAPlayerKills(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			hud::EAPlayerDamage(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			hud::EAPlayerDeaths(90, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 		}
 	}
 	else
 	{
-		if (g_lives)
+		if (G_IsLivesGame())
 		{
 			hud::EAPlayerRoundWins(22, y + 11, hud_scalescoreboard, hud::X_CENTER,
 			                       hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit,
@@ -1993,9 +1993,9 @@ void HU_ConsoleScores(player_t *player)
 							itplayer->GameTime / 60);
 
 					if (itplayer == player)
-						Printf_Bold(str);
+						Printf_Bold("%s", str);
 					else
-						Printf(PRINT_HIGH, str);
+						Printf("%s", str);
 				}
 			}
 		}
@@ -2050,9 +2050,9 @@ void HU_ConsoleScores(player_t *player)
 							itplayer->GameTime / 60);
 
 					if (itplayer == player)
-						Printf_Bold(str);
+						Printf_Bold("%s", str);
 					else
-						Printf(PRINT_HIGH, str);
+						Printf("%s", str);
 				}
 			}
 		}
@@ -2094,20 +2094,23 @@ void HU_ConsoleScores(player_t *player)
 					itplayer->GameTime / 60);
 
 			if (itplayer == player)
-				Printf_Bold(str);
+				Printf_Bold("%s", str);
 			else
-				Printf(PRINT_HIGH, str);
+				Printf("%s", str);
 		}
 
 	}
 
-	else if (sv_gametype == GM_COOP)
+	else if (G_IsLivesGame())
 	{
 		compare_player_kills comparison_functor;
 		sortedplayers.sort(comparison_functor);
 
 		Printf_Bold("\n--------------------------------------\n");
-		Printf_Bold("             COOPERATIVE\n");
+		if (sv_gametype == GM_COOP)
+			Printf_Bold("             COOPERATIVE\n");
+		else
+			Printf_Bold("                HORDE\n");
 		Printf_Bold("Name            Kills Deaths  K/D Time\n");
 		Printf_Bold("--------------------------------------\n");
 
@@ -2122,9 +2125,9 @@ void HU_ConsoleScores(player_t *player)
 					itplayer->GameTime / 60);
 
 			if (itplayer == player)
-				Printf_Bold(str);
+				Printf_Bold("%s", str);
 			else
-				Printf(PRINT_HIGH, str);
+				Printf("%s", str);
 		}
 	}
 
@@ -2140,9 +2143,9 @@ void HU_ConsoleScores(player_t *player)
 			const player_t* itplayer = *it;
 			sprintf(str, "%-15s\n", itplayer->userinfo.netname.c_str());
 			if (itplayer == player)
-				Printf_Bold(str);
+				Printf_Bold("%s", str);
 			else
-				Printf(PRINT_HIGH, str);
+				Printf("%s", str);
 		}
 	}
 

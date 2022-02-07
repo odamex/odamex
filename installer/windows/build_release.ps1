@@ -9,7 +9,7 @@
 # These parameters can and should be changed for new versions.
 # 
 
-Set-Variable -Name "OdamexVersion" -Value "0.9.3"
+Set-Variable -Name "OdamexVersion" -Value "10.0.0"
 Set-Variable -Name "OdamexTestSuffix" -Value "" # "-RC3"
 
 #
@@ -30,7 +30,7 @@ function BuildX64 {
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
         -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
-    cmake.exe --build . --config RelWithDebInfo --parallel
+    cmake.exe --build . --config RelWithDebInfo
 
     Set-Location -Path "${PSScriptRoot}"
 }
@@ -44,7 +44,7 @@ function BuildX86 {
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
         -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
-    cmake.exe --build . --config RelWithDebInfo --parallel
+    cmake.exe --build . --config RelWithDebInfo
 
     Set-Location -Path "${PSScriptRoot}"
 }
@@ -95,7 +95,7 @@ function CopyFiles {
         -Destination "${CommonDir}\licenses"
     Copy-Item -Force -Path "${PSScriptRoot}\BuildX64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.opusfile.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${PSScriptRoot}\BuildX64\libraries\SDL2-2.0.12\COPYING.txt" `
+    Copy-Item -Force -Path "${PSScriptRoot}\BuildX64\libraries\SDL2-2.0.18\COPYING.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2.txt"
 
     ########################################

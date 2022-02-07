@@ -20,18 +20,16 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <string>
-#include <vector>
+
+#include "odamex.h"
+
 
 #include "sv_sqp.h"
 
-#include "doomtype.h"
-#include "doomstat.h"
 #include "d_main.h"
 #include "d_player.h"
 #include "md5.h"
 #include "p_ctf.h"
-#include "version.h"
 #include "g_gametype.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);
@@ -172,7 +170,7 @@ next:
 
 	MSG_WriteHexString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
 
-	MSG_WriteString(&ml_message, level.mapname);
+	MSG_WriteString(&ml_message, level.mapname.c_str());
 
 	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
 
@@ -222,7 +220,7 @@ next:
 	{
 		MSG_WriteString(&ml_message,
 		                D_CleanseFileName(::wadfiles[i].getBasename(), "wad").c_str());
-		MSG_WriteHexString(&ml_message, ::wadfiles[i].getHash().c_str());
+		MSG_WriteHexString(&ml_message, ::wadfiles[i].getMD5().getHexCStr());
 	}
 
 	MSG_WriteByte(&ml_message, players.size());

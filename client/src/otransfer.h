@@ -23,8 +23,6 @@
 #ifndef __OTRANSFER_H__
 #define __OTRANSFER_H__
 
-#include <stddef.h>
-#include <string>
 
 #define CURL_STATICLIB
 #include "curl/curl.h"
@@ -101,7 +99,7 @@ class OTransfer
 	OTransferProgress m_progress;
 	std::string m_filename;
 	std::string m_filePart;
-	std::string m_expectHash;
+	OMD5Hash m_expectHash;
 	bool m_shouldCheckAgain;
 
 	OTransfer(const OTransfer&);
@@ -112,7 +110,7 @@ class OTransfer
 	OTransfer(OTransferDoneProc done, OTransferErrorProc err)
 	    : m_doneProc(done), m_errorProc(err), m_curlm(curl_multi_init()),
 	      m_curl(curl_easy_init()), m_file(NULL), m_progress(OTransferProgress()),
-	      m_filename(""), m_filePart(""), m_expectHash(""), m_shouldCheckAgain(true)
+	      m_filename(""), m_filePart(""), m_expectHash(), m_shouldCheckAgain(true)
 	{
 	}
 
@@ -131,7 +129,7 @@ class OTransfer
 
 	void setURL(const std::string& src);
 	int setOutputFile(const std::string& dest);
-	void setHash(const std::string& hash);
+	void setMD5(const OMD5Hash& hash);
 	bool start();
 	void stop();
 	bool tick();

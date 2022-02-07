@@ -22,16 +22,14 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
+
 #include <stdlib.h>
 
-#include "doomtype.h"
-#include "doomdef.h"
 #include "m_ostring.h"
 #include "cmdlib.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
-#include "g_level.h"
 #include "hu_stuff.h"
 #include "cl_demo.h"
 #include "d_player.h"
@@ -144,6 +142,8 @@ OBinding DefaultNetDemoBindings[] =
 	{"uparrow", "netprevmap"},
 	{"downarrow", "netnextmap"},
 	{"space", "netpause"},
+	{"pgup", "netprotoup"},
+	{"pgdn", "netprotodown"},
 	{ NULL, NULL }
 };
 
@@ -191,9 +191,11 @@ void OKeyBindings::SetBindingType(std::string cmd)
 
 void OKeyBindings::UnbindKey(const char* key)
 {
-	int keycode = I_GetKeyFromName(StdStringToLower(key));
+	std::string keyname = StdStringToLower(key);
+	int keycode = I_GetKeyFromName(keyname);
+
 	if (keycode)
-		this->Binds.erase(*key);
+		Binds.erase(keycode);
 	else
 		Printf(PRINT_WARNING, "Unknown key %s\n", C_QuoteString(key).c_str());
 }
@@ -203,7 +205,7 @@ void OKeyBindings::UnbindAll()
 	this->Binds.clear();
 }
 
-void OKeyBindings::BindAKey(size_t argc, char** argv, char* msg)
+void OKeyBindings::BindAKey(size_t argc, char** argv, const char* msg)
 {
 	if (argc > 1)
 	{
@@ -536,7 +538,7 @@ C_GetKeyStringsFromCommand
 Finds binds from a command and returns it into a std::string .
 - If TRUE, second arg returns up to 2 keys. ("x OR y")
 */
-std::string OKeyBindings::GetKeynameFromCommand(char *cmd, bool bTwoEntries)
+std::string OKeyBindings::GetKeynameFromCommand(const char* cmd, bool bTwoEntries)
 {
 	int first = -1;
 	int second = -1;

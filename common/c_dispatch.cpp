@@ -21,18 +21,17 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <string>
-#include <vector>
+
+#include "odamex.h"
+
 #include <sstream>
 #include <algorithm>
 
-#include "doomtype.h"
 #include "cmdlib.h"
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "m_argv.h"
 #include "m_fileio.h"
-#include "doomstat.h"
 #include "m_alloc.h"
 #include "d_player.h"
 #include "r_defs.h"
@@ -1022,7 +1021,7 @@ BEGIN_COMMAND (stoplog)
 }
 END_COMMAND (stoplog)
 
-bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+bool P_StartScript (AActor *who, line_t *where, int script, const char *map, int lineSide,
 					int arg0, int arg1, int arg2, int always);
 
 BEGIN_COMMAND (puke)
@@ -1042,7 +1041,7 @@ BEGIN_COMMAND (puke)
 				}
 			}
 		}
-		P_StartScript (m_Instigator, NULL, script, level.mapname, 0, arg0, arg1, arg2, false);
+		P_StartScript (m_Instigator, NULL, script, level.mapname.c_str(), 0, arg0, arg1, arg2, false);
 	}
 }
 END_COMMAND (puke)

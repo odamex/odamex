@@ -20,7 +20,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomstat.h"
+
+#include "odamex.h"
+
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "cl_main.h"
@@ -58,126 +60,7 @@ EXTERN_CVAR (sv_teamsinplay)
 //
 void CTF_Connect()
 {
-	size_t i;
 
-	// clear player flags client may have imagined
-	for (Players::iterator it = players.begin();it != players.end();++it)
-		for(size_t j = 0; j < NUMTEAMS; j++)
-			it->flags[j] = false;
-
-	for(i = 0; i < NUMTEAMS; i++)
-	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
-		teamInfo->FlagData.flagger = 0;
-		teamInfo->FlagData.flagger = 0;
-		teamInfo->FlagData.state = (flag_state_t)MSG_ReadByte();
-		byte flagger = MSG_ReadByte();
-
-		if(teamInfo->FlagData.state == flag_carried)
-		{
-			player_t &player = idplayer(flagger);
-
-			if(validplayer(player))
-				CTF_CarryFlag(player, (team_t)i);
-		}
-	}
-}
-
-//
-//	[Toke - CTF] CL_CTFEvent
-//	Deals with CTF specific network data
-//
-void CL_CTFEvent (void)
-{
-	flag_score_t event = (flag_score_t)MSG_ReadByte();
-
-	if(event == SCORE_NONE) // CTF state refresh
-	{
-		CTF_Connect();
-		return;
-	}
-
-	team_t flag = (team_t)MSG_ReadByte();
-	team_t team = (team_t)MSG_ReadByte();
-	player_t &player = idplayer(MSG_ReadByte());
-	int points = MSG_ReadVarint();
-
-	TeamInfo* teamInfo = GetTeamInfo(flag);
-
-	if (validplayer(player))
-	{
-		if (G_IsRoundsGame())
-			player.totalpoints = points;
-		else
-			player.points = points;
-	}
-
-	for(size_t i = 0; i < NUMTEAMS; i++)
-		GetTeamInfo((team_t)i)->Points = MSG_ReadLong ();
-
-	switch(event)
-	{
-		default:
-		case SCORE_NONE:
-		case SCORE_REFRESH:
-		case SCORE_KILL:
-		case SCORE_BETRAYAL:
-		case SCORE_CARRIERKILL:
-			break;
-
-		case SCORE_GRAB:
-		case SCORE_FIRSTGRAB:
-		case SCORE_MANUALRETURN:
-			if(validplayer(player))
-			{
-				CTF_CarryFlag(player, flag);
-				if (player.id == displayplayer().id)
-					player.bonuscount = BONUSADD;
-			}
-			break;
-
-		case SCORE_CAPTURE:
-			if (validplayer(player))
-			{
-				player.flags[flag] = 0;
-			}
-
-			teamInfo->FlagData.flagger = 0;
-			teamInfo->FlagData.state = flag_home;
-			if(teamInfo->FlagData.actor)
-				teamInfo->FlagData.actor->Destroy();
-			break;
-
-		case SCORE_RETURN:
-			if (validplayer(player))
-			{
-				player.flags[flag] = 0;
-			}
-
-			teamInfo->FlagData.flagger = 0;
-			teamInfo->FlagData.state = flag_home;
-			if(teamInfo->FlagData.actor)
-				teamInfo->FlagData.actor->Destroy();
-			break;
-
-		case SCORE_DROP:
-			if (validplayer(player))
-			{
-				player.flags[flag] = 0;
-			}
-
-			teamInfo->FlagData.flagger = 0;
-			teamInfo->FlagData.state = flag_dropped;
-			if(teamInfo->FlagData.actor)
-				teamInfo->FlagData.actor->Destroy();
-			break;
-	}
-
-	// [AM] Play CTF sound, moved from server.
-	CTF_Sound(flag, team, event);
-
-	// [AM] Show CTF message.
-	CTF_Message(flag, team, event);
 }
 
 //	CTF_CheckFlags

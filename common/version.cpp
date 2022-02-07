@@ -21,19 +21,135 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
+
+#include "odamex.h"
+
 
 #ifndef ODAMEX_NO_GITVER
 #include "git_describe.h"
 #endif
 
 #include <map>
-#include <string>
 #include <sstream>
 #include <memory>
 
 #include "cmdlib.h"
 #include "c_dispatch.h"
+
+/**
+ * @brief Compare two "packed" versions of Odamex to see if they are expected
+ *        to be protocol-compatible.
+ * 
+ * @param server Packed version of the server.
+ * @param client Packed version of the client.
+ * @return 0 if they are compatible, -1 if the server is on the older verison
+ *         1 if the client is on the older version.
+ */
+int VersionCompat(const int server, const int client)
+{
+	// Early-out if versions are identical.
+	if (server == client)
+		return 0;
+
+	int sv_maj, sv_min, sv_pat;
+	BREAKVER(server, sv_maj, sv_min, sv_pat);
+	int cl_maj, cl_min, cl_pat;
+	BREAKVER(client, cl_maj, cl_min, cl_pat);
+
+	// Major version must be identical, client is allowed to have a newer
+	// minor version, patch doesn't matter.  We don't need to account for
+	// 0.x's version selection because it's all incompatible anyway.
+	if (sv_maj == cl_maj && sv_min <= cl_min)
+	{
+		return 0;
+	}
+
+	// Compare all members of the patch number, even if it's redundant,
+	// because eventually the condition above might change.
+	else if (sv_maj < cl_maj)
+	{
+		return -1;
+	}
+	else if (sv_maj > cl_maj)
+	{
+		return 1;
+	}
+	else if (sv_min < cl_min)
+	{
+		return -1;
+	}
+	else if (sv_min > cl_min)
+	{
+		return 1;
+	}
+	else if (sv_pat < cl_pat)
+	{
+		return -1;
+	}
+	else if (sv_pat > cl_pat)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+/**
+ * @brief Generate a version mismatch message.
+ * 
+ * @param server Packed version of the server.
+ * @param client Packed version of the client.
+ * @param email E-mail address of server host.
+ * @return String message, or blank string if compatible.
+*/
+std::string VersionMessage(const int server, const int client, const char* email)
+{
+	std::string rvo, buf;
+
+	int cmp = VersionCompat(server, client);
+	if (!cmp)
+		return rvo;
+
+	int sv_maj, sv_min, sv_pat;
+	BREAKVER(server, sv_maj, sv_min, sv_pat);
+	int cl_maj, cl_min, cl_pat;
+	BREAKVER(client, cl_maj, cl_min, cl_pat);
+
+	StrFormat(
+	    buf,
+	    "Your version of Odamex %d.%d.%d does not match the server version %d.%d.%d.\n",
+	    cl_maj, cl_min, cl_pat, sv_maj, sv_min, sv_pat);
+	rvo += buf;
+
+	if (cmp > 0)
+	{
+		StrFormat(buf,
+		          "Please visit https://odamex.net/ to obtain Odamex %d.%d.%d or "
+		          "newer.\nIf you do not see this version available for download, "
+		          "you are likely attempting to connect to a server running a "
+		          "development version of Odamex.\n",
+		          sv_maj, sv_min, sv_pat);
+		rvo += buf;
+	}
+	else
+	{
+		StrFormat(buf, "Please allow the server admin some time to upgrade.");
+		rvo += buf;
+
+		if (email != NULL)
+		{
+			StrFormat(buf, "  If the problem persists, you can contact them at %s.\n",
+			          email);
+			rvo += buf;
+		}
+		else
+		{
+			rvo += "\n";
+		}
+	}
+
+	return rvo;
+}
 
 typedef std::map<std::string, std::string> source_files_t;
 
@@ -230,6 +346,3 @@ BEGIN_COMMAND (listsourcefiles)
 END_COMMAND(listsourcefiles)
 
 VERSION_CONTROL(version_cpp, "$Id$")
-
-
-

@@ -21,22 +21,23 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <stdio.h>
-#include <stddef.h>
+
+#include "odamex.h"
+
 #include <math.h>
 
 #include "m_mempool.h"
 
 #include "i_system.h"
 
-#include "doomdef.h"
-#include "doomstat.h"
 
 #include "p_local.h"
 #include "r_local.h"
 #include "v_video.h"
 
 #include "m_vectors.h"
+
+#include "p_mapformat.h"
 
 #include "p_lnspec.h"
 
@@ -999,7 +1000,16 @@ void R_StoreWallRange(int start, int stop)
 
 	// [SL] 2012-01-24 - Horizon line extends to infinity by scaling the wall
 	// height to 0
-	if (curline->linedef->special == Line_Horizon)
+	
+	// [Blair] Ensure Line_Horizon still works in Boom format.
+	short spe;
+
+	if (map_format.getZDoom())
+		spe = Line_Horizon;
+	else
+		spe = 337;
+
+	if (curline->linedef->special == spe)
 	{
 		rw_scale = ds_p->scale1 = ds_p->scale2 = rw_scalestep = ds_p->light = rw_light = 0;
 		midtexture = toptexture = bottomtexture = maskedtexture = 0;
@@ -1089,4 +1099,3 @@ void R_ClearOpenings()
 }
 
 VERSION_CONTROL (r_segs_cpp, "$Id$")
-

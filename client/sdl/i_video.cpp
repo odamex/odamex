@@ -21,19 +21,28 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <cstdio>
+
+#include "odamex.h"
+
 #include <cstdlib>
 #include <climits>
-#include <string>
 #include <algorithm>
+
+#include "i_sdl.h"
 
 #include "i_video.h"
 #include "v_video.h"
 
+#if defined(SDL12)
+#include "i_video_sdl12.h"
+#elif defined(SDL20)
+#include "i_video_sdl20.h"
+#else 
+#error "no video subsystem selected"
+#endif
+
 #include "i_system.h"
-#include "c_cvars.h"
 #include "m_misc.h"
-#include "i_sdlvideo.h"
 #include "i_input.h"
 #include "m_fileio.h"
 
@@ -971,6 +980,9 @@ void I_DrawLoadingIcon()
 //
 static void I_BlitLoadingIcon()
 {
+	if (W_CheckNumForName("STDISK") == -1)
+		return;
+
 	const patch_t* diskpatch = W_CachePatch("STDISK");
 	IWindowSurface* surface = I_GetPrimarySurface();
 
@@ -1017,6 +1029,9 @@ static void I_BlitLoadingIcon()
 //
 static void I_RestoreLoadingIcon()
 {
+	if (W_CheckNumForName("STDISK") == -1)
+		return;
+
 	IWindowSurface* surface = I_GetPrimarySurface();
 
 	surface->lock();
@@ -1191,5 +1206,3 @@ const PixelFormat* I_Get32bppPixelFormat()
 }
 
 VERSION_CONTROL (i_video_cpp, "$Id$")
-
-

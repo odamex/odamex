@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <algorithm>
 
 #include "cl_main.h"
@@ -35,9 +37,7 @@
 #include "z_zone.h"
 #include "m_random.h"
 #include "w_wad.h"
-#include "doomdef.h"
 #include "p_local.h"
-#include "doomstat.h"
 #include "cmdlib.h"
 #include "i_video.h"
 #include "v_video.h"
@@ -299,13 +299,15 @@ void S_Stop (void)
 //
 void S_Start (void)
 {
-	S_Stop();
+	// Kill all sound channels - but don't stop music.
+	for (size_t i = 0; i < numChannels; i++)
+		S_StopChannel(i);
 
 	// start new music for the level
 	mus_paused = 0;
 
 	// [RH] This is a lot simpler now.
-	S_ChangeMusic (std::string(level.music, 8), true);
+	S_ChangeMusic (std::string(level.music.c_str(), 8), true);
 }
 
 
@@ -1331,8 +1333,7 @@ void S_ParseSndInfo (void)
 					sndinfo = COM_Parse (sndinfo);
 					if (info.mapname[0])
 					{
-						strncpy (info.music, com_token, 9); // denis - todo -string limit?
-						std::transform(info.music, info.music + strlen(info.music), info.music, toupper);
+						info.music = com_token; // denis - todo -string limit?
 					}
 				} else {
 					Printf (PRINT_WARNING, "Unknown SNDINFO command %s\n", com_token);
@@ -1521,4 +1522,3 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 }
 
 VERSION_CONTROL (s_sound_cpp, "$Id$")
-

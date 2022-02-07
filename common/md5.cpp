@@ -55,10 +55,13 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
+
+#include "odamex.h"
+
 #include "md5.h"
 
-#include <cstring>
+// [AM] Handled by odamex.h.
+//#include <cstring>
 
 #undef BYTE_ORDER	/* 1 = big-endian, -1 = little-endian, 0 = unknown */
 #ifdef ARCH_IS_BIG_ENDIAN
@@ -387,7 +390,6 @@ md5_finish(md5_state_t *pms, md5_byte_t digest[16])
 }
 
 // denis lukianov 2006
-#include <string>
 #include <sstream>
 #include <algorithm>
 #include <cctype>
@@ -418,21 +420,4 @@ std::string MD5SUM(std::string in)
 	return MD5SUM(in.c_str(), in.length());
 }
 
-bool IsMD5SUM(const std::string& str)
-{
-	if (str.length() != 32)
-		return false;
-
-	for (std::string::const_iterator it = str.begin(); it != str.end(); ++it)
-	{
-		if (*it >= '0' && *it <= '9')
-			continue;
-		if (*it >= 'A' && *it <= 'F')
-			continue;
-		return false;
-	}
-	return true;
-}
-
 VERSION_CONTROL (md5_cpp, "$Id$")
-

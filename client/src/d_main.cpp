@@ -24,10 +24,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
 
-#include <string>
-#include <vector>
+#include "odamex.h"
+
+
 #include <algorithm>
 
 #include "win32inc.h"
@@ -42,13 +42,10 @@
 
 #include <math.h>
 
-#include "errors.h"
 
 #include "m_alloc.h"
 #include "m_random.h"
 #include "minilzo.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "gstrings.h"
 #include "z_zone.h"
 #include "w_wad.h"
@@ -83,9 +80,10 @@
 #include "stats.h"
 #include "p_ctf.h"
 #include "cl_main.h"
-#include "sc_man.h"
-
+#include "g_mapinfo.h"
+#include "g_horde.h"
 #include "w_ident.h"
+#include "gui_boot.h"
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -144,6 +142,8 @@ EXTERN_CVAR (vid_32bpp)
 EXTERN_CVAR (vid_widescreen)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_vsync)
+EXTERN_CVAR (g_resetinvonexit)
+EXTERN_CVAR (i_skipbootwin)
 
 std::string LOG_FILE;
 
@@ -318,22 +318,21 @@ void D_Display()
 	// draw pause pic
 	if (paused && !menuactive)
 	{
-		patch_t *pause = W_CachePatch ("M_PAUSE");
-		int y;
+		const patch_t *pause = W_CachePatch ("M_PAUSE");
 
-		y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
+		int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
 		screen->DrawPatchCleanNoMove (pause, (I_GetSurfaceWidth()-(pause->width())*CleanXfac)/2, y);
 	}
 
 	// [RH] Draw icon, if any
 	if (D_DrawIcon)
 	{
-		int lump = W_CheckNumForName (D_DrawIcon);
+		const int lump = W_CheckNumForName (D_DrawIcon);
 
 		D_DrawIcon = NULL;
 		if (lump >= 0)
 		{
-			patch_t *p = W_CachePatch (lump);
+			const patch_t *p = W_CachePatch (lump);
 
 			screen->DrawPatchIndirect (p, 160-p->width()/2, 100-p->height()/2);
 		}
@@ -353,9 +352,9 @@ void D_Display()
 //
 //  D_DoomLoop
 //
-void D_DoomLoop (void)
+void D_DoomLoop()
 {
-	while (1)
+	while (true)
 	{
 		try
 		{
@@ -368,7 +367,7 @@ void D_DoomLoop (void)
 			// [AM] In case an error is caused by a console command.
 			C_ClearCommand();
 
-			CL_QuitNetGame();
+			CL_QuitNetGame(NQ_SILENT);
 
 			G_ClearSnapshots();
 
@@ -385,10 +384,10 @@ void D_DoomLoop (void)
 // D_PageTicker
 // Handles timing for warped projection
 //
-void D_PageTicker (void)
+void D_PageTicker()
 {
     if (--pagetic < 0)
-		D_AdvanceDemo ();
+		D_AdvanceDemo();
 }
 
 //
@@ -397,7 +396,8 @@ void D_PageTicker (void)
 void D_PageDrawer()
 {
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
-	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
+	const int surface_width = primary_surface->getWidth();
+	const int surface_height = primary_surface->getHeight();
 	primary_surface->clear();		// ensure black background in matted modes
 
 	if (page_surface)
@@ -424,7 +424,7 @@ void D_PageDrawer()
 // D_AdvanceDemo
 // Called after each demo or intro demosequence finishes
 //
-void D_AdvanceDemo (void)
+void D_AdvanceDemo()
 {
 	advancedemo = true;
 }
@@ -432,7 +432,7 @@ void D_AdvanceDemo (void)
 //
 // This cycles through the demo sequences.
 //
-void D_DoAdvanceDemo (void)
+void D_DoAdvanceDemo()
 {
 	const char *pagename = NULL;
 
@@ -459,9 +459,9 @@ void D_DoAdvanceDemo (void)
                 pagetic = 170;
 
             gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.titlePage;
+            pagename = gameinfo.titlePage.c_str();
             
-            currentmusic = gameinfo.titleMusic;
+            currentmusic = gameinfo.titleMusic.c_str();
 
             S_StartMusic(currentmusic.c_str());
 
@@ -489,8 +489,8 @@ void D_DoAdvanceDemo (void)
 					pagetic = TICRATE * 11;
 				else
 					pagetic = 170;
-                pagename = gameinfo.titlePage;
-                currentmusic = gameinfo.titleMusic;
+                pagename = gameinfo.titlePage.c_str();
+                currentmusic = gameinfo.titleMusic.c_str();
                 
                 S_StartMusic(currentmusic.c_str());
             }
@@ -523,23 +523,25 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
-		const patch_t* patch = W_CachePatch(pagename);
-
 		I_FreeSurface(page_surface);
 
 		if (gameinfo.flags & GI_PAGESARERAW)
 		{
+			void* lump = W_CacheLumpName(pagename, PU_CACHE);
+
 			page_surface = I_AllocateSurface(320, 200, 8);
-			DCanvas* canvas = page_surface->getDefaultCanvas();
+			const DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
-            canvas->DrawBlock(0, 0, 320, 200, (byte*)patch);
+			canvas->DrawBlock((byte*)lump, 0, 0, 320, 200);
 			page_surface->unlock();
 		}
 		else
 		{
+			const patch_t* patch = W_CachePatch(pagename);
+
 			page_surface = I_AllocateSurface(patch->width(), patch->height(), 8);
-			DCanvas* canvas = page_surface->getDefaultCanvas();
+			const DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
 			canvas->DrawPatch(patch, 0, 0);
@@ -561,9 +563,9 @@ void STACK_ARGS D_Close()
 //
 // D_StartTitle
 //
-void D_StartTitle (void)
+void D_StartTitle()
 {
-	// CL_QuitNetGame();
+	// CL_QuitNetGame(NQ_SILENT);
 
 	gameaction = ga_nothing;
 	demosequence = -1;
@@ -624,22 +626,10 @@ void D_Init()
 
 	HU_Init();
 
-	LevelInfos& levels = getLevelInfos();
-	if (levels.size() == 0)
-	{
-		levels.addDefaults();
-	}
-
-	ClusterInfos& clusters = getClusterInfos();
-	if (clusters.size() == 0)
-	{
-		clusters.addDefaults();
-	}
-
-	G_SetLevelStrings();
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseHordeDefs();
 
 	// init the menu subsystem
 	if (first_time)
@@ -715,8 +705,6 @@ void STACK_ARGS D_Shutdown()
 
 	R_Shutdown();
 
-	SC_Close();
-
 //	Res_ShutdownTextureManager();
 
 //	R_ShutdownColormaps();
@@ -733,6 +721,7 @@ void STACK_ARGS D_Shutdown()
 
 
 void C_DoCommand(const char *cmd, uint32_t key);
+void D_Init_DEHEXTRA_Frames();
 
 //
 // D_DoomMain
@@ -753,6 +742,8 @@ void D_DoomMain()
 
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
+	// Initialize all extra frames
+	D_Init_DEHEXTRA_Frames();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
@@ -766,19 +757,46 @@ void D_DoomMain()
 		C_DoCommand("logfile", 0);
 
 	M_LoadDefaults();					// load before initing other systems
+
 	C_BindingsInit();					// Ch0wW : Initialize bindings
 
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
+	std::string iwad;
+	const char* iwadParam = Args.CheckValue("-iwad");
+	if (iwadParam)
+	{
+		iwad = iwadParam;
+	}
+	else if (!::i_skipbootwin)
+	{
+		// Skip boot window if any of these params are passed.
+		const char* skipParams[] = {
+		    "+connect", "+demotest", "+map",      "+netplay",  "+playdemo",
+		    "-connect", "-file",     "-playdemo", "-timedemo", "-warp",
+		};
+
+		bool shouldSkip = false;
+		for (size_t i = 0; i < ARRAY_LENGTH(skipParams); i++)
+		{
+			if (Args.CheckValue(skipParams[i]))
+			{
+				shouldSkip = true;
+				break;
+			}
+		}
+
+		if (!shouldSkip)
+		{
+			iwad = GUI_BootWindow();
+		}
+	}
+
 	OWantFiles newwadfiles, newpatchfiles;
 
-	const char* iwad_filename_cstr = Args.CheckValue("-iwad");
-	if (iwad_filename_cstr)
-	{
-		OWantFile file;
-		OWantFile::make(file, iwad_filename_cstr, OFILE_WAD);
-		newwadfiles.push_back(file);
-	}
+	OWantFile file;
+	OWantFile::make(file, iwad, OFILE_WAD);
+	newwadfiles.push_back(file);
 
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
@@ -824,6 +842,9 @@ void D_DoomMain()
 
 	// Fast
 	sv_fastmonsters = Args.CheckParm("-fast");
+
+	// Pistol start
+	g_resetinvonexit = Args.CheckParm("-pistolstart");
 
 	// get skill / episode / map from parms
 	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
@@ -963,10 +984,6 @@ void D_DoomMain()
 			// single player warp (like in g_level)
 			serverside = true;
 			sv_allowexit = "1";
-			sv_freelook = "1";
-			sv_allowjump = "1";
-			sv_allowredscreen = "1";
-			sv_gametype = GM_COOP;
 
 			players.clear();
 			players.push_back(player_t());

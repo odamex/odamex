@@ -157,6 +157,9 @@ HUSTR_29 = "level 29: the living end";
 HUSTR_30 = "level 30: icon of sin";
 HUSTR_31 = "level 31: wolfenstein";
 HUSTR_32 = "level 32: grosse";
+HUSTR_31B = "level 31: idkfa";
+HUSTR_32B = "level 32: keen";
+HUSTR_33 = "level 33: betray";
 
 PHUSTR_1 = "level 1: congo";
 PHUSTR_2 = "level 2: well of souls";
@@ -223,6 +226,12 @@ THUSTR_29 = "level 29: river styx";
 THUSTR_30 = "level 30: last call";
 THUSTR_31 = "level 31: pharaoh";
 THUSTR_32 = "level 32: caribbean";
+
+CHUSTR_E1M1 = "E1M1: Landing Zone";
+CHUSTR_E1M2 = "E1M2: Storage Facility";
+CHUSTR_E1M3 = "E1M3: Experimental Lab";
+CHUSTR_E1M4 = "E1M4: Arboretum";
+CHUSTR_E1M5 = "E1M5: Caverns of Bazoik";
 
 HUSTR_TALKTOSELF1 = "You mumble to yourself";
 HUSTR_TALKTOSELF2 = "Who's there?";
@@ -500,6 +509,23 @@ T6TEXT =
 	"\n"
 	"As you step off the transport, you hear\n"
 	"the stomp of a cyberdemon's iron shoe.";
+CE1TEXT =
+	"Mission accomplished.\n"
+	"\n"
+	"Are you prepared for the next mission?\n"
+	"\n"
+	"\n"
+	"\n"
+	"\n"
+	"\n"
+	"\n"
+	"Press the escape key to continue...";
+CE2TEXT =
+	"You've done it!";
+CE3TEXT =
+	"Wonderful Job!";
+CE4TEXT =
+	"Fantastic";
 
 // Cast list (must appear in this order)
 CC_ZOMBIE = "ZOMBIEMAN";
@@ -955,6 +981,61 @@ TXT_QUIETUS_PIECE = "SEGMENT OF QUIETUS";
 TXT_WRAITHVERGE_PIECE = "SEGMENT OF WRAITHVERGE";
 TXT_BLOODSCOURGE_PIECE = "SEGMENT OF BLOODSCOURGE";
 
+// Menu
+MNU_NEWGAME			= "NEW GAME";
+MNU_OPTIONS			= "OPTIONS";
+MNU_GAMEFILES		= "GAME FILES";
+MNU_INFO			= "INFO";
+MNU_QUITGAME		= "QUIT GAME";
+
+MNU_FIGHTER			= "FIGHTER";
+MNU_CLERIC			= "CLERIC";
+MNU_MAGE			= "MAGE";
+MNU_RANDOM			= "RANDOM";
+
+MNU_LOADGAME		= "LOAD GAME";
+MNU_SAVEGAME		= "SAVE GAME";
+
+MNU_COTD			= "CITY OF THE DAMNED";
+MNU_HELLSMAW		= "HELL'S MAW";
+MNU_DOME			= "THE DOME OF D'SPARIL";
+MNU_OSSUARY			= "THE OSSUARY";
+MNU_DEMESNE			= "THE STAGNANT DEMESNE";
+
+MNU_WETNURSE		= "THOU NEEDETH A WET-NURSE";
+MNU_YELLOWBELLIES	= "YELLOWBELLIES-R-US";
+MNU_BRINGEST		= "BRINGEST THEM ONETH";
+MNU_SMITE			= "THOU ART A SMITE-MEISTER";
+MNU_BLACKPLAGUE		= "BLACK PLAGUE POSSESSES THEE";
+
+MNU_NOPICTURE		= "No Picture";
+MNU_DIFFVERSION		= "Different\nVersion";
+MNU_NOFILES			= "No files";
+
+MNU_CHOOSECLASS		= "CHOOSE CLASS:";
+MNU_CHOOSESKILL		= "CHOOSE SKILL LEVEL:";
+
+MNU_SQUIRE			= "SQUIRE";
+MNU_KNIGHT			= "KNIGHT";
+MNU_WARRIOR			= "WARRIOR";
+MNU_BERSERKER		= "BERSERKER";
+MNU_TITAN			= "TITAN";
+                                    
+MNU_ALTARBOY		= "ALTAR BOY";
+MNU_ACOLYTE			= "ACOLYTE";
+MNU_PRIEST			= "PRIEST";
+MNU_CARDINAL		= "CARDINAL";
+MNU_POPE			= "POPE";
+                                    
+MNU_APPRENTICE		= "APPRENTICE";
+MNU_ENCHANTER		= "ENCHANTER";
+MNU_SORCERER        = "SORCERER";
+MNU_WARLOCK			= "WARLOCK";
+MNU_ARCHMAGE		= "ARCHMAGE";
+
+MNU_PLAYERSETUP		= "PLAYER SETUP";
+
+MNU_DELETESG		= "Do you really want to delete the savegame\n";
 
 // Bloodbath announcer
 
@@ -1069,6 +1150,10 @@ MUSIC_ULTIMA = "ultima";
 MUSIC_READ_M = "read_m";
 MUSIC_DM2TTL = "dm2ttl";
 MUSIC_DM2INT = "dm2int";
+
+TXT_BUDDHAON = "Buddha mode ON";
+TXT_BUDDHAOFF = "Buddha mode OFF";
+
 
 /******************************** French ********************************/
 [fr]
@@ -1443,6 +1528,63 @@ CC_ARCH = "ARCHI-INFAME";
 CC_SPIDER = "L'ARAIGNEE CERVEAU";
 CC_CYBER = "LE CYBERDEMON";
 CC_HERO = "NOTRE HEROS";
+
+// Menu
+
+MNU_NEWGAME			= "NOUVEAU JEU";
+MNU_OPTIONS			= "OPTIONS";
+MNU_GAMEFILES		= "FICHIERS DE JEU";
+MNU_INFO			= "INFO";
+MNU_QUITGAME		= "QUITTER LE JEU";
+
+MNU_FIGHTER			= "COMBATTANT";
+MNU_CLERIC			= "CLERC";
+MNU_MAGE			= "MAGICIEN";
+MNU_RANDOM			= "AU HAZARD";
+
+MNU_LOADGAME		= "CHARGEMENT";
+MNU_SAVEGAME		= "SAUVEGARDE";
+
+MNU_COTD			= "LA CITE DES DAMNES";
+MNU_HELLSMAW		= "LA BOUCHE DE L'ENFER";
+MNU_DOME			= "LE DOME DE D'SPARIL";
+MNU_OSSUARY			= "L'OSSUAIRE";
+MNU_DEMESNE			= "LE DOMAINE STAGNANT";
+
+MNU_WETNURSE		= "VOUS AVEZ BESOIN D'UNE NOURRICE";
+MNU_YELLOWBELLIES	= "UN TROUILLARD-TU-EST";
+MNU_BRINGEST		= "AMMENEZ LES MOI!";
+MNU_SMITE			= "TU EST UN MAITRE-MEUTRIER";
+MNU_BLACKPLAGUE		= "LA PESTE NOIRE ME POSSEDE";
+
+MNU_NOPICTURE		= "Pas d'image";
+MNU_DIFFVERSION		= "Version\nDifferente";
+MNU_NOFILES			= "Pas de fichier";
+
+MNU_CHOOSECLASS		= "CHOISISSEZ UNE CLASS:";
+MNU_CHOOSESKILL		= "CHOISISSEZ UN NIVEAU DE DIFICULTE:";
+
+MNU_SQUIRE			= "ECUYER";
+MNU_KNIGHT			= "CHEVALIER";
+MNU_WARRIOR			= "GUERRIER";
+MNU_BERSERKER		= "FOU-FURIEUX";
+MNU_TITAN			= "TITAN";
+                                    
+MNU_ALTARBOY		= "ENFANT DE CHOEUR";
+MNU_ACOLYTE			= "ACOLYTE";
+MNU_PRIEST			= "PRETRE";
+MNU_CARDINAL		= "CARDINALE";
+MNU_POPE			= "PAPE";
+                                    
+MNU_APPRENTICE		= "APPRENTI";
+MNU_ENCHANTER		= "ENCHANTEUR";
+MNU_SORCERER        = "SORCIER";
+MNU_WARLOCK			= "BRISEUR DE SERMENT";
+MNU_ARCHMAGE		= "ARCHIMAGICIEN";
+
+MNU_PLAYERSETUP		= "REGLAGE DU JOUEUR";
+
+MNU_DELETESG		= "Voulez vous vraiment effacer cette sauvegarde?\n";
 
 
 /******************************** Italian********************************/

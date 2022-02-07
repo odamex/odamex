@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(Odamex VERSION 0.9.3)
+project(Odamex VERSION 10.0.0)
 
 include(CMakeDependentOption)
 
@@ -47,12 +47,8 @@ cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
 set(PROJECT_COPYRIGHT "2006-2021")
-set(PROJECT_RC_VERSION "0,9,3,0")
+set(PROJECT_RC_VERSION "10,0,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
-
-# Use C++ 98/03 for all targets
-set(CMAKE_CXX_STANDARD 98)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Include early required commands for specific systems
 if (NSWITCH)
@@ -150,6 +146,7 @@ add_subdirectory(wad)
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT OR BUILD_SERVER)
   add_subdirectory(common)
+  add_subdirectory(odaproto)
 endif()
 if(BUILD_CLIENT)
   add_subdirectory(client)

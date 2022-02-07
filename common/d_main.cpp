@@ -22,11 +22,11 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
+
+#include "odamex.h"
+
 
 #include <sstream>
-#include <string>
-#include <vector>
 #include <algorithm>
 
 #include "win32inc.h"
@@ -41,10 +41,7 @@
 
 #include <stdlib.h>
 
-#include "m_alloc.h"
-#include "doomdef.h"
 #include "gstrings.h"
-#include "z_zone.h"
 #include "w_wad.h"
 #include "m_argv.h"
 #include "m_fileio.h"
@@ -697,7 +694,7 @@ static bool CheckWantedMatchesLoaded(const OWantFiles& newwadfiles,
 	     ++it)
 	{
 		size_t idx = it - newwadfiles.begin();
-		if (it->getWantedHash() != ::wadfiles.at(idx + 1).getHash())
+		if (it->getWantedMD5() != ::wadfiles.at(idx + 1).getMD5())
 		{
 			return false;
 		}
@@ -708,7 +705,7 @@ static bool CheckWantedMatchesLoaded(const OWantFiles& newwadfiles,
 	     ++it)
 	{
 		size_t idx = it - newpatchfiles.begin();
-		if (it->getWantedHash() != ::patchfiles.at(idx).getHash())
+		if (it->getWantedMD5() != ::patchfiles.at(idx).getMD5())
 		{
 			return false;
 		}
@@ -838,11 +835,12 @@ void D_AddWadCommandLineFiles(OWantFiles& out)
 //
 // D_AddDehCommandLineFiles
 //
-// Adds the DEH/BEX files specified with -deh.
+// Adds the DEH/BEX files specified with -bex or -deh.
 // Call this from D_DoomMain
 //
 void D_AddDehCommandLineFiles(OWantFiles& out)
 {
+	AddCommandLineOptionFiles(out, "-bex", OFILE_DEH);
 	AddCommandLineOptionFiles(out, "-deh", OFILE_DEH);
 }
 

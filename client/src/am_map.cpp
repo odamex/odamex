@@ -22,10 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
 
-#include "doomdef.h"
-#include "g_level.h"
+#include "d_event.h"
 #include "z_zone.h"
 #include "st_stuff.h"
 #include "p_local.h"
@@ -34,7 +33,6 @@
 #include "v_palette.h"
 #include "c_bind.h"
 
-#include "m_cheat.h"
 #include "c_dispatch.h"
 #include "cl_demo.h"
 #include "g_gametype.h"
@@ -42,36 +40,92 @@
 // Needs access to LFB.
 #include "i_video.h"
 #include "v_video.h"
-
 #include "v_text.h"
 
 // State.
-#include "doomstat.h"
 #include "r_state.h"
 
 // Data.
 #include "gstrings.h"
-
 #include "am_map.h"
+#include "gi.h"
+#include "i_system.h"
+#include "p_mapformat.h"
+
+
+#define R ((8*PLAYERRADIUS)/7)
+static mline_t cheat_player_arrow[] = {
+	{ { -R+R/8, 0 }, { R, 0 } }, // -----
+	{ { R, 0 }, { R-R/2, R/6 } },  // ----->
+	{ { R, 0 }, { R-R/2, -R/6 } },
+	{ { -R+R/8, 0 }, { -R-R/8, R/6 } }, // >----->
+	{ { -R+R/8, 0 }, { -R-R/8, -R/6 } },
+	{ { -R+3*R/8, 0 }, { -R+R/8, R/6 } }, // >>----->
+	{ { -R+3*R/8, 0 }, { -R+R/8, -R/6 } },
+	{ { -R/2, 0 }, { -R/2, -R/6 } }, // >>-d--->
+	{ { -R/2, -R/6 }, { -R/2+R/6, -R/6 } },
+	{ { -R/2+R/6, -R/6 }, { -R/2+R/6, R/4 } },
+	{ { -R/6, 0 }, { -R/6, -R/6 } }, // >>-dd-->
+	{ { -R/6, -R/6 }, { 0, -R/6 } },
+	{ { 0, -R/6 }, { 0, R/4 } },
+	{ { R/6, R/4 }, { R/6, -R/7 } }, // >>-ddt->
+	{ { R/6, -R/7 }, { R/6+R/32, -R/7-R/32 } },
+	{ { R/6+R/32, -R/7-R/32 }, { R/6+R/10, -R/7 } }
+};
+#undef R
+#define NUMCHEATPLYRLINES (sizeof(cheat_player_arrow)/sizeof(mline_t))
+
+#define R (FRACUNIT)
+// [RH] Avoid lots of warnings without compiler-specific #pragmas
+#define L(a,b,c,d) { {(fixed_t)((a)*R),(fixed_t)((b)*R)}, {(fixed_t)((c)*R),(fixed_t)((d)*R)} }
+static mline_t triangle_guy[] = {
+	L (-.867,-.5, .867,-.5),
+	L (.867,-.5, 0,1),
+	L (0,1, -.867,-.5)
+};
+#define NUMTRIANGLEGUYLINES (sizeof(triangle_guy)/sizeof(mline_t))
+
+static mline_t thintriangle_guy[] = {
+	L (-.5,-.7, 1,0),
+	L (1,0, -.5,.7),
+	L (-.5,.7, -.5,-.7)
+};
+
+#undef L
+#undef R
+#define NUMTHINTRIANGLEGUYLINES (sizeof(thintriangle_guy)/sizeof(mline_t))
 
 argb_t CL_GetPlayerColor(player_t*);
 
 EXTERN_CVAR(am_followplayer)
 
 // Group palette index and RGB value together:
-typedef struct am_color_s {
+struct am_color_t
+{
 	palindex_t  index;
 	argb_t      rgb;
-} am_color_t;
+};
 
-static am_color_t
-	Background, YourColor, WallColor, TSWallColor,
-		   FDWallColor, CDWallColor, ThingColor,
-		   SecretWallColor, GridColor, XHairColor,
-		   NotSeenColor,
-		   LockedColor,
-		   AlmostBackground,
-		   TeleportColor, ExitColor;
+struct automap_colors_t
+{
+	am_color_t background;
+	am_color_t yourColor;
+	am_color_t wallColor;
+	am_color_t TSWallColor;
+	am_color_t FDWallColor;
+	am_color_t CDWallColor;
+	am_color_t thingColor;
+	am_color_t secretWallColor;
+	am_color_t gridColor;
+	am_color_t xHairColor;
+	am_color_t notSeenColor;
+	am_color_t lockedColor;
+	am_color_t almostBackground;
+	am_color_t teleportColor;
+	am_color_t exitColor;
+};
+
+automap_colors_t CurrentAutomapColors;
 
 static int lockglow = 0;
 
@@ -172,97 +226,17 @@ EXTERN_CVAR		(screenblocks)
 #define PUTDOTP(xx,yy,cc) fb[(yy)*f_p+(xx)]=(cc)
 #define PUTDOTD(xx,yy,cc) *((argb_t *)(fb+(yy)*f_p+((xx)<<2)))=(cc)
 
-typedef struct {
-	int x, y;
-} fpoint_t;
+// backdrop
+static IWindowSurface* am_backdrop;
+bool am_gotbackdrop = false;
 
-typedef struct {
-	fpoint_t a, b;
-} fline_t;
-
-typedef struct {
-	fixed_t x,y;
-} mpoint_t;
-
-typedef struct {
-	mpoint_t a, b;
-} mline_t;
-
-typedef struct {
-	fixed_t slp, islp;
-} islope_t;
-
-
-
-//
-// The vector graphics for the automap.
-//  A line drawing of the player pointing right,
-//   starting from the middle.
-//
-#define R ((8*PLAYERRADIUS)/7)
-mline_t player_arrow[] = {
-	{ { -R+R/8, 0 }, { R, 0 } }, // -----
-	{ { R, 0 }, { R-R/2, R/4 } },  // ----->
-	{ { R, 0 }, { R-R/2, -R/4 } },
-	{ { -R+R/8, 0 }, { -R-R/8, R/4 } }, // >---->
-	{ { -R+R/8, 0 }, { -R-R/8, -R/4 } },
-	{ { -R+3*R/8, 0 }, { -R+R/8, R/4 } }, // >>--->
-	{ { -R+3*R/8, 0 }, { -R+R/8, -R/4 } }
-};
-#undef R
-#define NUMPLYRLINES (ARRAY_LENGTH(player_arrow))
-
-#define R ((8*PLAYERRADIUS)/7)
-mline_t cheat_player_arrow[] = {
-	{ { -R+R/8, 0 }, { R, 0 } }, // -----
-	{ { R, 0 }, { R-R/2, R/6 } },  // ----->
-	{ { R, 0 }, { R-R/2, -R/6 } },
-	{ { -R+R/8, 0 }, { -R-R/8, R/6 } }, // >----->
-	{ { -R+R/8, 0 }, { -R-R/8, -R/6 } },
-	{ { -R+3*R/8, 0 }, { -R+R/8, R/6 } }, // >>----->
-	{ { -R+3*R/8, 0 }, { -R+R/8, -R/6 } },
-	{ { -R/2, 0 }, { -R/2, -R/6 } }, // >>-d--->
-	{ { -R/2, -R/6 }, { -R/2+R/6, -R/6 } },
-	{ { -R/2+R/6, -R/6 }, { -R/2+R/6, R/4 } },
-	{ { -R/6, 0 }, { -R/6, -R/6 } }, // >>-dd-->
-	{ { -R/6, -R/6 }, { 0, -R/6 } },
-	{ { 0, -R/6 }, { 0, R/4 } },
-	{ { R/6, R/4 }, { R/6, -R/7 } }, // >>-ddt->
-	{ { R/6, -R/7 }, { R/6+R/32, -R/7-R/32 } },
-	{ { R/6+R/32, -R/7-R/32 }, { R/6+R/10, -R/7 } }
-};
-#undef R
-#define NUMCHEATPLYRLINES (ARRAY_LENGTH(cheat_player_arrow))
-
-#define R (FRACUNIT)
-// [RH] Avoid lots of warnings without compiler-specific #pragmas
-#define L(a,b,c,d) { {(fixed_t)((a)*R),(fixed_t)((b)*R)}, {(fixed_t)((c)*R),(fixed_t)((d)*R)} }
-mline_t triangle_guy[] = {
-	L (-.867,-.5, .867,-.5),
-	L (.867,-.5, 0,1),
-	L (0,1, -.867,-.5)
-};
-#define NUMTRIANGLEGUYLINES (ARRAY_LENGTH(triangle_guy))
-
-mline_t thintriangle_guy[] = {
-	L (-.5,-.7, 1,0),
-	L (1,0, -.5,.7),
-	L (-.5,.7, -.5,-.7)
-};
-#undef L
-#undef R
-#define NUMTHINTRIANGLEGUYLINES (ARRAY_LENGTH(thintriangle_guy))
-
-
-
-
-static int 	cheating = 0;
-static int 	grid = 0;
-static int	bigstate = 0;	// Bigmode
+int am_cheating = 0;
+static int grid = 0;
+static int bigstate = 0;	// Bigmode
 
 static int 	leveljuststarted = 1; 	// kluge until AM_LevelInit() is called
 
-static bool	automapactive = false;
+bool automapactive = false;
 
 // location of window on screen
 static int	f_x;
@@ -322,10 +296,6 @@ static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0; // next point to be assigned
 
 static bool followplayer = true; // specifies whether to follow the player around
-
-// [RH] Not static so that the DeHackEd code can reach it.
-extern byte cheat_amap_seq[5];
-cheatseq_t cheat_amap = { cheat_amap_seq, 0 };
 
 static BOOL stopped = true;
 
@@ -401,7 +371,7 @@ bool AM_OverlayAutomapVisible()
 //
 //
 //
-void AM_activateNewScale(void)
+void AM_activateNewScale()
 {
 	m_x += m_w/2;
 	m_y += m_h/2;
@@ -416,7 +386,7 @@ void AM_activateNewScale(void)
 //
 //
 //
-void AM_saveScaleAndLoc(void)
+void AM_saveScaleAndLoc()
 {
 	old_m_x = m_x;
 	old_m_y = m_y;
@@ -427,7 +397,7 @@ void AM_saveScaleAndLoc(void)
 //
 //
 //
-void AM_restoreScaleAndLoc(void)
+void AM_restoreScaleAndLoc()
 {
 	m_w = old_m_w;
 	m_h = old_m_h;
@@ -452,7 +422,7 @@ void AM_restoreScaleAndLoc(void)
 //
 // adds a marker at the current location
 //
-void AM_addMark(void)
+void AM_addMark()
 {
 	markpoints[markpointnum].x = m_x + m_w/2;
 	markpoints[markpointnum].y = m_y + m_h/2;
@@ -463,16 +433,12 @@ void AM_addMark(void)
 // Determines bounding box of all vertices,
 // sets global variables controlling zoom range.
 //
-void AM_findMinMaxBoundaries(void)
+void AM_findMinMaxBoundaries()
 {
-	int i;
-	fixed_t a;
-	fixed_t b;
-
 	min_x = min_y =  MAXINT;
 	max_x = max_y = -MAXINT;
 
-	for (i=0;i<numvertexes;i++) {
+	for (int i = 0;i<numvertexes;i++) {
 		if (vertexes[i].x < min_x)
 			min_x = vertexes[i].x;
 		else if (vertexes[i].x > max_x)
@@ -490,8 +456,8 @@ void AM_findMinMaxBoundaries(void)
 	min_w = 2*PLAYERRADIUS; // const? never changed?
 	min_h = 2*PLAYERRADIUS;
 
-	a = FixedDiv((I_GetSurfaceWidth())<<FRACBITS, max_w);
-	b = FixedDiv((I_GetSurfaceHeight())<<FRACBITS, max_h);
+	const fixed_t a = FixedDiv((I_GetSurfaceWidth()) << FRACBITS, max_w);
+	const fixed_t b = FixedDiv((I_GetSurfaceHeight()) << FRACBITS, max_h);
 
 	min_scale_mtof = a < b ? a : b;
 	max_scale_mtof = FixedDiv((I_GetSurfaceHeight())<<FRACBITS, 2*PLAYERRADIUS);
@@ -501,7 +467,7 @@ void AM_findMinMaxBoundaries(void)
 //
 //
 //
-void AM_changeWindowLoc(void)
+void AM_changeWindowLoc()
 {
 	if (m_paninc.x || m_paninc.y) {
 		am_followplayer.Set(0.0f);
@@ -529,7 +495,7 @@ void AM_changeWindowLoc(void)
 //
 //
 //
-void AM_initVariables(void)
+void AM_initVariables()
 {
 	static event_t st_notify(ev_keyup, AM_MSGENTERED, 0, 0);
 
@@ -596,37 +562,37 @@ void AM_initColors (BOOL overlayed)
 
 	if (overlayed && !am_ovshare)
 	{
-		YourColor = AM_GetColorFromString (palette_colors, am_ovyourcolor.cstring());
-		SecretWallColor =
-			WallColor= AM_GetColorFromString (palette_colors, am_ovwallcolor.cstring());
-		TSWallColor = AM_GetColorFromString (palette_colors, am_ovtswallcolor.cstring());
-		FDWallColor = AM_GetColorFromString (palette_colors, am_ovfdwallcolor.cstring());
-		CDWallColor = AM_GetColorFromString (palette_colors, am_ovcdwallcolor.cstring());
-		ThingColor = AM_GetColorFromString (palette_colors, am_ovthingcolor.cstring());
-		GridColor = AM_GetColorFromString (palette_colors, am_ovgridcolor.cstring());
-		XHairColor = AM_GetColorFromString (palette_colors, am_ovxhaircolor.cstring());
-		NotSeenColor = AM_GetColorFromString (palette_colors, am_ovnotseencolor.cstring());
-		LockedColor = AM_GetColorFromString (palette_colors, am_ovlockedcolor.cstring());
-		ExitColor = AM_GetColorFromString (palette_colors, am_ovexitcolor.cstring());
-		TeleportColor = AM_GetColorFromString (palette_colors, am_ovteleportcolor.cstring());
+		CurrentAutomapColors.yourColor = AM_GetColorFromString (palette_colors, am_ovyourcolor.cstring());
+		CurrentAutomapColors.secretWallColor = AM_GetColorFromString(palette_colors, am_ovwallcolor.cstring());
+		CurrentAutomapColors.wallColor = AM_GetColorFromString(palette_colors, am_ovwallcolor.cstring());
+		CurrentAutomapColors.TSWallColor = AM_GetColorFromString (palette_colors, am_ovtswallcolor.cstring());
+		CurrentAutomapColors.FDWallColor = AM_GetColorFromString (palette_colors, am_ovfdwallcolor.cstring());
+		CurrentAutomapColors.CDWallColor = AM_GetColorFromString (palette_colors, am_ovcdwallcolor.cstring());
+		CurrentAutomapColors.thingColor = AM_GetColorFromString (palette_colors, am_ovthingcolor.cstring());
+		CurrentAutomapColors.gridColor = AM_GetColorFromString (palette_colors, am_ovgridcolor.cstring());
+		CurrentAutomapColors.xHairColor = AM_GetColorFromString (palette_colors, am_ovxhaircolor.cstring());
+		CurrentAutomapColors.notSeenColor = AM_GetColorFromString (palette_colors, am_ovnotseencolor.cstring());
+		CurrentAutomapColors.lockedColor = AM_GetColorFromString (palette_colors, am_ovlockedcolor.cstring());
+		CurrentAutomapColors.exitColor = AM_GetColorFromString (palette_colors, am_ovexitcolor.cstring());
+		CurrentAutomapColors.teleportColor = AM_GetColorFromString (palette_colors, am_ovteleportcolor.cstring());
 	}
 	else if (am_usecustomcolors || (overlayed && am_ovshare))
 	{
 		/* Use the custom colors in the am_* cvars */
-		Background = AM_GetColorFromString(palette_colors, am_backcolor.cstring());
-		YourColor = AM_GetColorFromString(palette_colors, am_yourcolor.cstring());
-		SecretWallColor =
-			WallColor = AM_GetColorFromString(palette_colors, am_wallcolor.cstring());
-		TSWallColor = AM_GetColorFromString(palette_colors, am_tswallcolor.cstring());
-		FDWallColor = AM_GetColorFromString(palette_colors, am_fdwallcolor.cstring());
-		CDWallColor = AM_GetColorFromString(palette_colors, am_cdwallcolor.cstring());
-		ThingColor = AM_GetColorFromString(palette_colors, am_thingcolor.cstring());
-		GridColor = AM_GetColorFromString(palette_colors, am_gridcolor.cstring());
-		XHairColor = AM_GetColorFromString(palette_colors, am_xhaircolor.cstring());
-		NotSeenColor = AM_GetColorFromString(palette_colors, am_notseencolor.cstring());
-		LockedColor = AM_GetColorFromString(palette_colors, am_lockedcolor.cstring());
-		ExitColor = AM_GetColorFromString(palette_colors, am_exitcolor.cstring());
-		TeleportColor = AM_GetColorFromString(palette_colors, am_teleportcolor.cstring());
+		CurrentAutomapColors.background = AM_GetColorFromString(palette_colors, am_backcolor.cstring());
+		CurrentAutomapColors.yourColor = AM_GetColorFromString(palette_colors, am_yourcolor.cstring());
+		CurrentAutomapColors.secretWallColor = AM_GetColorFromString(palette_colors, am_wallcolor.cstring());
+		CurrentAutomapColors.wallColor = AM_GetColorFromString(palette_colors, am_wallcolor.cstring());
+		CurrentAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, am_tswallcolor.cstring());
+		CurrentAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, am_fdwallcolor.cstring());
+		CurrentAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, am_cdwallcolor.cstring());
+		CurrentAutomapColors.thingColor = AM_GetColorFromString(palette_colors, am_thingcolor.cstring());
+		CurrentAutomapColors.gridColor = AM_GetColorFromString(palette_colors, am_gridcolor.cstring());
+		CurrentAutomapColors.xHairColor = AM_GetColorFromString(palette_colors, am_xhaircolor.cstring());
+		CurrentAutomapColors.notSeenColor = AM_GetColorFromString(palette_colors, am_notseencolor.cstring());
+		CurrentAutomapColors.lockedColor = AM_GetColorFromString(palette_colors, am_lockedcolor.cstring());
+		CurrentAutomapColors.exitColor = AM_GetColorFromString(palette_colors, am_exitcolor.cstring());
+		CurrentAutomapColors.teleportColor = AM_GetColorFromString(palette_colors, am_teleportcolor.cstring());
 		{
 			argb_t ba = AM_GetColorFromString(palette_colors, am_backcolor.cstring()).rgb;
 
@@ -637,58 +603,124 @@ void AM_initColors (BOOL overlayed)
 			if (ba.getb() < 16)
 				ba.setb(ba.getb() + 32);
 
-			AlmostBackground.rgb = argb_t(ba.getr() - 16, ba.getg() - 16, ba.getb() - 16);
-			AlmostBackground.index = V_BestColor(palette_colors, AlmostBackground.rgb);
+			CurrentAutomapColors.almostBackground.rgb =
+			    argb_t(ba.getr() - 16, ba.getg() - 16, ba.getb() - 16);
+			CurrentAutomapColors.almostBackground.index =
+			    V_BestColor(palette_colors, CurrentAutomapColors.almostBackground.rgb);
 		}
 	}
 	else
 	{
-		/* Use colors corresponding to the original Doom's */
-		Background = AM_GetColorFromString(palette_colors, "00 00 00");
-		YourColor = AM_GetColorFromString(palette_colors, "FF FF FF");
-		AlmostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
-		SecretWallColor = WallColor = AM_GetColorFromString(palette_colors, "fc 00 00");
-		TSWallColor = AM_GetColorFromString(palette_colors, "80 80 80");
-		FDWallColor = AM_GetColorFromString(palette_colors, "bc 78 48");
-		LockedColor = AM_GetColorFromString(palette_colors, "fc fc 00");
-		CDWallColor = AM_GetColorFromString(palette_colors, "fc fc 00");
-		ThingColor = AM_GetColorFromString(palette_colors, "74 fc 6c");
-		GridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
-		XHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
-		NotSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
+		switch (gamemission)
+		{
+		case heretic:
+		//case hexen:
+			/* Use colors corresponding to the original Heretic's */
+			CurrentAutomapColors.background = AM_GetColorFromString(palette_colors, "00 00 00");
+			CurrentAutomapColors.yourColor = AM_GetColorFromString(palette_colors, "FF FF FF");
+			CurrentAutomapColors.almostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
+			CurrentAutomapColors.secretWallColor = AM_GetColorFromString(palette_colors, "4c 33 11");
+			CurrentAutomapColors.wallColor = AM_GetColorFromString(palette_colors, "4c 33 11");
+			CurrentAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, "59 5e 57");
+			CurrentAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, "d0 b0 85");
+			CurrentAutomapColors.lockedColor = AM_GetColorFromString(palette_colors, "fc fc 00");
+			CurrentAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, "68 3c 20");
+			CurrentAutomapColors.thingColor = AM_GetColorFromString(palette_colors, "38 38 38");
+			CurrentAutomapColors.gridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
+			CurrentAutomapColors.xHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
+			CurrentAutomapColors.notSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
+			break;
+
+		default:
+			/* Use colors corresponding to the original Doom's */
+			CurrentAutomapColors.background = AM_GetColorFromString(palette_colors, "00 00 00");
+			CurrentAutomapColors.yourColor = AM_GetColorFromString(palette_colors, "FF FF FF");
+			CurrentAutomapColors.almostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
+			CurrentAutomapColors.secretWallColor = AM_GetColorFromString(palette_colors, "fc 00 00");
+			CurrentAutomapColors.wallColor = AM_GetColorFromString(palette_colors, "fc 00 00");
+			CurrentAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, "80 80 80");
+			CurrentAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, "bc 78 48");
+			CurrentAutomapColors.lockedColor = AM_GetColorFromString(palette_colors, "fc fc 00");
+			CurrentAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, "fc fc 00");
+			CurrentAutomapColors.thingColor = AM_GetColorFromString(palette_colors, "74 fc 6c");
+			CurrentAutomapColors.gridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
+			CurrentAutomapColors.xHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
+			CurrentAutomapColors.notSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
+			break;
+		}
 	}
 }
 
 //
 //
 //
-void AM_loadPics(void)
+void AM_loadPics()
 {
-	int i;
-	char namebuf[9];
-
-	for (i = 0; i < 10; i++)
+	if (gamemission == heretic)
 	{
-		sprintf(namebuf, "AMMNUM%d", i);
-		marknums[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		for (int i = 0; i < 10; i++)
+		{
+			char namebuf[9];
+			sprintf(namebuf, "SMALLIN%d", i);
+			marknums[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		}
+	}
+	else
+	{
+		for (int i = 0; i < 10; i++)
+		{
+			char namebuf[9];
+			sprintf(namebuf, "AMMNUM%d", i);
+			marknums[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		}
+	}
+
+	// haleyjd 12/22/02: automap background support (raw format)
+	// [ML] 9/25/10: Heavily modified to use our canvases.
+
+	// todo - unload on loading other IWAD's (appears in Doom)
+	if ((W_CheckNumForName("AUTOPAGE")) != -1)
+	{
+		if (!am_backdrop)
+		{
+			atterm(AM_Close);
+
+			// allocate backdrop
+			void* bg = W_CacheLumpName("AUTOPAGE", PU_STATIC);
+			delete am_backdrop;
+
+			am_backdrop = I_AllocateSurface(320, 158, 8);
+
+			am_backdrop->lock();
+			am_backdrop->getDefaultCanvas()->DrawBlock((byte*)bg, 0, 0, 320, 158);
+			am_backdrop->unlock();
+
+			am_gotbackdrop = true;
+		}
 	}
 }
 
-void AM_unloadPics(void)
+void AM_unloadPics()
 {
-	int i;
-
-	for (i = 0; i < 10; i++)
+	for (int i = 0; i < 10; i++)
 	{
 		marknums[i].clear();
 	}
 }
 
-void AM_clearMarks(void)
+void AM_Close()
 {
-	int i;
+	// haleyjd 12/22/02: backdrop support
+	if (am_backdrop)
+	{
+		I_FreeSurface(am_backdrop);
+		am_backdrop = NULL;
+	}
+}
 
-	for (i = AM_NUMMARKPOINTS-1; i >= 0; i--)
+void AM_clearMarks()
+{
+	for (int i = AM_NUMMARKPOINTS - 1; i >= 0; i--)
 		markpoints[i].x = -1; // means empty
 	markpointnum = 0;
 }
@@ -697,9 +729,10 @@ void AM_clearMarks(void)
 // should be called at the start of every level
 // right now, i figure it out myself
 //
-void AM_LevelInit(void)
+void AM_LevelInit()
 {
 	leveljuststarted = 0;
+	am_cheating = 0; // force-reset IDDT after loading a map
 
 	AM_clearMarks();
 
@@ -709,9 +742,6 @@ void AM_LevelInit(void)
 		scale_mtof = min_scale_mtof;
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
 }
-
-
-
 
 //
 //
@@ -741,11 +771,12 @@ void AM_Start()
 
 	stopped = false;
 
+	// todo: rather than call this every time automap is opened, do this once on level init
 	static char lastmap[8] = "";
-	if (strncmp(lastmap, level.mapname, 8))
+	if (level.mapname != lastmap)
 	{
 		AM_LevelInit();
-		strncpy(lastmap, level.mapname, 8);
+		strncpy(lastmap, level.mapname.c_str(), 8);
 	}
 
 	AM_initVariables();
@@ -755,7 +786,7 @@ void AM_Start()
 //
 // set the window scale to the maximum size
 //
-void AM_minOutWindowScale(void)
+void AM_minOutWindowScale()
 {
 	scale_mtof = min_scale_mtof;
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
@@ -764,7 +795,7 @@ void AM_minOutWindowScale(void)
 //
 // set the window scale to the minimum size
 //
-void AM_maxOutWindowScale(void)
+void AM_maxOutWindowScale()
 {
 	scale_mtof = max_scale_mtof;
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
@@ -800,37 +831,32 @@ END_COMMAND (togglemap)
 //
 // Handle events (user inputs) in automap mode
 //
-BOOL AM_Responder (event_t *ev)
+bool AM_Responder(event_t *ev)
 {
 	if (automapactive && (ev->type == ev_keydown || ev->type == ev_keyup))
 	{
 		if (am_followplayer)
 		{
 			// check for am_pan* and ignore in follow mode
-			std::string defbind = AutomapBindings.Binds[ev->data1];
+			const std::string defbind = AutomapBindings.Binds[ev->data1];
 			if (!strnicmp(defbind.c_str(), "+am_pan", 7))
 				return false;
 		}
 
 		if (ev->type == ev_keydown)
 		{
-			std::string defbind = Bindings.Binds[ev->data1];
+			const std::string defbind = Bindings.Binds[ev->data1];
 			// Check for automap, in order not to be stuck
 			if (!strnicmp(defbind.c_str(), "togglemap", 9))
 				return false;
 		}
 
-		bool res = C_DoKey(ev, &AutomapBindings, NULL);
-		if (ev->type == ev_keydown && sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data3))
-		{
-			cheating = (cheating + 1) % 3;
-			return true;
-		}
+		const bool res = C_DoKey(ev, &AutomapBindings, NULL);
 		if (res && ev->type == ev_keyup)
 		{
 			// If this is a release event we also need to check if it released a button in the main Bindings
 			// so that that button does not get stuck.
-			std::string defbind = Bindings.Binds[ev->data1];
+			const std::string defbind = Bindings.Binds[ev->data1];
 
 			// Check for automap, in order not to be stuck
 			if (!strnicmp(defbind.c_str(), "togglemap", 9))
@@ -839,8 +865,6 @@ BOOL AM_Responder (event_t *ev)
 			return (defbind[0] != '+'); // Let G_Responder handle button releases
 		}
 		return res;
-
-		
 	}
 	
 	return false;
@@ -850,10 +874,9 @@ BOOL AM_Responder (event_t *ev)
 //
 // Zooming
 //
-void AM_changeWindowScale (void)
+void AM_changeWindowScale()
 {
-
-	static fixed_t	mtof_zoommul;	// how far the window zooms in each tic (map coords)
+	static fixed_t mtof_zoommul; // how far the window zooms in each tic (map coords)
 
 	if (Actions[ACTION_AUTOMAP_ZOOMOUT]) {
 		mtof_zoommul = M_ZOOMOUT;
@@ -882,7 +905,7 @@ void AM_changeWindowScale (void)
 //
 //
 //
-void AM_doFollowPlayer(void)
+void AM_doFollowPlayer()
 {
 	player_t &p = displayplayer();
 
@@ -901,7 +924,7 @@ void AM_doFollowPlayer(void)
 //
 // Updates on Game Tick
 //
-void AM_Ticker (void)
+void AM_Ticker()
 {
 	if (!automapactive)
 		return;
@@ -935,32 +958,42 @@ void AM_Ticker (void)
         lockglow++;
     else
         lockglow = 0;
-
 }
 
 
 //
 // Clear automap frame buffer.
 //
-void AM_clearFB (am_color_t color)
+void AM_clearFB()
 {
-	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+	if (am_backdrop)
 	{
-		if (f_w == f_p)
-			memset(fb, color.index, f_w*f_h);
-		else
-			for (int y = 0; y < f_h; y++)
-				memset(fb + y * f_p, color.index, f_w);
+		const int w = I_GetSurfaceWidth();
+		const int h = I_GetSurfaceHeight() - ST_HEIGHT;
+
+		I_GetPrimarySurface()->blit(am_backdrop, 0, 0, am_backdrop->getWidth(),
+		                      am_backdrop->getHeight(), 0, 0, w, h);
 	}
 	else
 	{
-		argb_t* line = (argb_t*)fb;
-
-		for (int y = 0; y < f_h; y++)
+		if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 		{
-			for (int x = 0; x < f_w; x++)
-				line[x] = color.rgb;
-			line += f_p >> 2;
+			if (f_w == f_p)
+				memset(fb, CurrentAutomapColors.background.index, f_w * f_h);
+			else
+				for (int y = 0; y < f_h; y++)
+					memset(fb + y * f_p, CurrentAutomapColors.background.index, f_w);
+		}
+		else
+		{
+			argb_t* line = (argb_t*)fb;
+
+			for (int y = 0; y < f_h; y++)
+			{
+				for (int x = 0; x < f_w; x++)
+					line[x] = CurrentAutomapColors.background.rgb;
+				line += f_p >> 2;
+			}
 		}
 	}
 }
@@ -973,7 +1006,7 @@ void AM_clearFB (am_color_t color)
 // faster reject and precalculated slopes.  If the speed is needed,
 // use a hash algorithm to handle  the common cases.
 //
-BOOL AM_clipMline (mline_t *ml, fline_t *fl)
+bool AM_clipMline (mline_t *ml, fline_t *fl)
 {
 	enum {
 		LEFT	=1,
@@ -982,14 +1015,13 @@ BOOL AM_clipMline (mline_t *ml, fline_t *fl)
 		TOP	=8
 	};
 
-	register int outcode1 = 0;
-	register int outcode2 = 0;
-	register int outside;
+	int outcode1 = 0;
+	int outcode2 = 0;
+	int outside;
 
 	fpoint_t tmp = {0, 0};
 	int dx;
 	int dy;
-
 
 #define DOOUTCODE(oc, mx, my) \
 	(oc) = 0; \
@@ -1093,64 +1125,59 @@ BOOL AM_clipMline (mline_t *ml, fline_t *fl)
 
 void AM_drawFlineP (fline_t* fl, byte color)
 {
-			register int x;
-			register int y;
-			register int dx;
-			register int dy;
-			register int sx;
-			register int sy;
-			register int ax;
-			register int ay;
-			register int d;
+	fl->a.x += f_x;
+	fl->b.x += f_x;
+	fl->a.y += f_y;
+	fl->b.y += f_y;
 
+	const int dx = fl->b.x - fl->a.x;
+	const int ax = 2 * (dx < 0 ? -dx : dx);
+	const int sx = dx < 0 ? -1 : 1;
 
-			fl->a.x += f_x;
-			fl->b.x += f_x;
-			fl->a.y += f_y;
-			fl->b.y += f_y;
+	const int dy = fl->b.y - fl->a.y;
+	const int ay = 2 * (dy < 0 ? -dy : dy);
+	const int sy = dy < 0 ? -1 : 1;
 
-			dx = fl->b.x - fl->a.x;
-			ax = 2 * (dx<0 ? -dx : dx);
-			sx = dx<0 ? -1 : 1;
+	int x = fl->a.x;
+	int y = fl->a.y;
 
-			dy = fl->b.y - fl->a.y;
-			ay = 2 * (dy<0 ? -dy : dy);
-			sy = dy<0 ? -1 : 1;
+	int d;
 
-			x = fl->a.x;
-			y = fl->a.y;
+	if (ax > ay)
+	{
+		d = ay - ax / 2;
 
-			if (ax > ay) {
-				d = ay - ax/2;
-
-					while (1) {
-						PUTDOTP(x,y,(byte)color);
-						if (x == fl->b.x)
-							return;
+		while (true)
+		{
+			PUTDOTP(x, y, (byte)color);
+			if (x == fl->b.x)
+				return;
 			if (d >= 0)
 			{
-							y += sy;
-							d -= ax;
-						}
-						x += sx;
-						d += ay;
-					}
+				y += sy;
+				d -= ax;
 			}
+			x += sx;
+			d += ay;
+		}
+	}
 	else
 	{
-				d = ax - ay/2;
-					while (1) {
-						PUTDOTP(x, y, (byte)color);
-						if (y == fl->b.y)
-							return;
+		d = ax - ay / 2;
+
+		while (true)
+		{
+			PUTDOTP(x, y, (byte)color);
+			if (y == fl->b.y)
+				return;
 			if (d >= 0)
 			{
-							x += sx;
-							d -= ay;
-						}
-						y += sy;
-						d += ax;
-					}
+				x += sx;
+				d -= ay;
+			}
+			y += sy;
+			d += ax;
+		}
 	}
 }
 
@@ -1158,36 +1185,30 @@ void AM_drawFlineP (fline_t* fl, byte color)
 
 void AM_drawFlineD(fline_t* fl, argb_t color)
 {
-	register int x;
-	register int y;
-	register int dx;
-	register int dy;
-	register int sx;
-	register int sy;
-	register int ax;
-	register int ay;
-	register int d;
-
 	fl->a.x += f_x;
 	fl->b.x += f_x;
 	fl->a.y += f_y;
 	fl->b.y += f_y;
 
-	dx = fl->b.x - fl->a.x;
-	ax = 2 * (dx<0 ? -dx : dx);
-	sx = dx<0 ? -1 : 1;
+	const int dx = fl->b.x - fl->a.x;
+	const int ax = 2 * (dx < 0 ? -dx : dx);
+	const int sx = dx < 0 ? -1 : 1;
 
-	dy = fl->b.y - fl->a.y;
-	ay = 2 * (dy<0 ? -dy : dy);
-	sy = dy<0 ? -1 : 1;
+	const int dy = fl->b.y - fl->a.y;
+	const int ay = 2 * (dy < 0 ? -dy : dy);
+	const int sy = dy < 0 ? -1 : 1;
 
-	x = fl->a.x;
-	y = fl->a.y;
+	int x = fl->a.x;
+	int y = fl->a.y;
 
-	if (ax > ay) {
+	int d;
+
+	if (ax > ay)
+	{
 		d = ay - ax/2;
 
-		while (1) {
+		while (true)
+		{
 			PUTDOTD(x, y, color);
 			if (x == fl->b.x)
 				return;
@@ -1203,7 +1224,9 @@ void AM_drawFlineD(fline_t* fl, argb_t color)
 	else
 	{
 		d = ax - ay/2;
-		while (1) {
+
+		while (true)
+		{
 			PUTDOTD(x, y, color);
 			if (y == fl->b.y)
 				return;
@@ -1215,14 +1238,14 @@ void AM_drawFlineD(fline_t* fl, argb_t color)
 			y += sy;
 			d += ax;
 		}
-				}
+	}
 }
 
 
 //
 // Clip lines, draw visible part sof lines.
 //
-void AM_drawMline (mline_t* ml, am_color_t color)
+void AM_drawMline(mline_t* ml, am_color_t color)
 {
 	static fline_t fl;
 
@@ -1241,30 +1264,28 @@ void AM_drawMline (mline_t* ml, am_color_t color)
 //
 // Draws flat (floor/ceiling tile) aligned grid lines.
 //
-void AM_drawGrid(am_color_t color)
+void AM_drawGrid()
 {
-	fixed_t x, y;
-	fixed_t start, end;
 	mline_t ml;
 
 	// Figure out start of vertical gridlines
-	start = m_x;
+	fixed_t start = m_x;
 	if ((start-bmaporgx)%(MAPBLOCKUNITS<<FRACBITS))
 		start += (MAPBLOCKUNITS<<FRACBITS)
 			- ((start-bmaporgx)%(MAPBLOCKUNITS<<FRACBITS));
-	end = m_x + m_w;
+	fixed_t end = m_x + m_w;
 
 	// draw vertical gridlines
 	ml.a.y = m_y;
 	ml.b.y = m_y+m_h;
-	for (x=start; x<end; x+=(MAPBLOCKUNITS<<FRACBITS)) {
+	for (fixed_t x = start; x<end; x+=(MAPBLOCKUNITS<<FRACBITS)) {
 		ml.a.x = x;
 		ml.b.x = x;
 		if (am_rotate) {
 			AM_rotatePoint (&ml.a.x, &ml.a.y);
 			AM_rotatePoint (&ml.b.x, &ml.b.y);
 		}
-		AM_drawMline(&ml, color);
+		AM_drawMline(&ml, CurrentAutomapColors.gridColor);
 	}
 
 	// Figure out start of horizontal gridlines
@@ -1277,14 +1298,14 @@ void AM_drawGrid(am_color_t color)
 	// draw horizontal gridlines
 	ml.a.x = m_x;
 	ml.b.x = m_x + m_w;
-	for (y=start; y<end; y+=(MAPBLOCKUNITS<<FRACBITS)) {
+	for (fixed_t y = start; y<end; y+=(MAPBLOCKUNITS<<FRACBITS)) {
 		ml.a.y = y;
 		ml.b.y = y;
 		if (am_rotate) {
 			AM_rotatePoint (&ml.a.x, &ml.a.y);
 			AM_rotatePoint (&ml.b.x, &ml.b.y);
 		}
-		AM_drawMline(&ml, color);
+		AM_drawMline(&ml, CurrentAutomapColors.gridColor);
 	}
 }
 
@@ -1292,14 +1313,14 @@ void AM_drawGrid(am_color_t color)
 // Determines visible lines, draws them.
 // This is LineDef based, not LineSeg based.
 //
-void AM_drawWalls(void)
+void AM_drawWalls()
 {
-	int i, r, g, b;
+	int r, g, b;
 	static mline_t l;
 	float rdif, gdif, bdif;
 	const palette_t* pal = V_GetDefaultPalette();
 
-	for (i=0;i<numlines;i++) {
+	for (int i = 0;i<numlines;i++) {
 		l.a.x = lines[i].v1->x;
 		l.a.y = lines[i].v1->y;
 		l.b.x = lines[i].v2->x;
@@ -1310,100 +1331,153 @@ void AM_drawWalls(void)
 			AM_rotatePoint (&l.b.x, &l.b.y);
 		}
 
-		if (cheating || (lines[i].flags & ML_MAPPED))
+		if (am_cheating || (lines[i].flags & ML_MAPPED))
 		{
-			if ((lines[i].flags & ML_DONTDRAW) && !cheating)
+			if ((lines[i].flags & ML_DONTDRAW) && !am_cheating)
 				continue;
             if (!lines[i].backsector &&
                 (((am_usecustomcolors || viewactive) &&
-                lines[i].special != Exit_Normal &&
-                lines[i].special != Exit_Secret) ||
+                P_IsExitLine(lines[i].special)) ||
                 (!am_usecustomcolors && !viewactive)))
             {
-				AM_drawMline(&l, WallColor);
+				AM_drawMline(&l, CurrentAutomapColors.wallColor);
 			}
 			else
 			{
-				if ((lines[i].special == Teleport ||
-					lines[i].special == Teleport_NoFog ||
-				    lines[i].special == Teleport_NoStop ||
-					lines[i].special == Teleport_Line) &&
+				if ((P_IsTeleportLine(lines[i].special)) &&
 					(am_usecustomcolors || viewactive))
 				{ // teleporters
-					AM_drawMline(&l, TeleportColor);
+					AM_drawMline(&l, CurrentAutomapColors.teleportColor);
 				}
-				else if ((lines[i].special == Teleport_NewMap ||
-						 lines[i].special == Teleport_EndGame ||
-						 lines[i].special == Exit_Normal ||
-						 lines[i].special == Exit_Secret) &&
+				else if ((P_IsExitLine(lines[i].special)) &&
 						 (am_usecustomcolors || viewactive))
 				{ // exit
-					AM_drawMline(&l, ExitColor);
+					AM_drawMline(&l, CurrentAutomapColors.exitColor);
 				}
 				else if (lines[i].flags & ML_SECRET)
 				{ // secret door
-					if (cheating)
-						AM_drawMline(&l, SecretWallColor);
+					if (am_cheating)
+						AM_drawMline(&l, CurrentAutomapColors.secretWallColor);
 				    else
-						AM_drawMline(&l, WallColor);
+						AM_drawMline(&l, CurrentAutomapColors.wallColor);
 				}
-				else if (lines[i].special == Door_LockedRaise)
-				{
-				    // NES - Locked doors glow from a predefined color to either blue, yellow, or red.
-                    r = LockedColor.rgb.getr(), g = LockedColor.rgb.getg(), b = LockedColor.rgb.getb();
-
-                    if (am_usecustomcolors)
-					{
-                        if (lines[i].args[3] == (BCard | CardIsSkull)) {
-                            rdif = (0 - r)/30;
-                            gdif = (0 - g)/30;
-                            bdif = (255 - b)/30;
-                        } else if (lines[i].args[3] == (YCard | CardIsSkull)) {
-                            rdif = (255 - r)/30;
-                            gdif = (255 - g)/30;
-                            bdif = (0 - b)/30;
-                        } else {
-                            rdif = (255 - r)/30;
-                            gdif = (0 - g)/30;
-                            bdif = (0 - b)/30;
-                        }
-
-						if (lockglow < 30)
-						{
-							r += (int)rdif * lockglow;
-							g += (int)gdif * lockglow;
-							b += (int)bdif * lockglow;
-						}
-						else if (lockglow < 60)
-						{
-							r += (int)rdif * (60 - lockglow);
-							g += (int)gdif * (60 - lockglow);
-							b += (int)bdif * (60 - lockglow);
-						}
-				    }
-
-					AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b));
-                }
 				else if (lines[i].backsector->floorheight
 					  != lines[i].frontsector->floorheight)
 				{
-					AM_drawMline(&l, FDWallColor); // floor level change
+					AM_drawMline(&l, CurrentAutomapColors.FDWallColor); // floor level change
 				}
 				else if (lines[i].backsector->ceilingheight
 					  != lines[i].frontsector->ceilingheight)
 				{
-					AM_drawMline(&l, CDWallColor); // ceiling level change
+					AM_drawMline(&l, CurrentAutomapColors.CDWallColor); // ceiling level change
 				}
-				else if (cheating)
+				else if (am_cheating)
 				{
-					AM_drawMline(&l, TSWallColor);
+					AM_drawMline(&l, CurrentAutomapColors.TSWallColor);
+				}
+
+				if (map_format.getZDoom())
+				{
+					if (lines[i].special == Door_LockedRaise)
+					{
+						// NES - Locked doors glow from a predefined color to either blue,
+						// yellow, or red.
+						r = CurrentAutomapColors.lockedColor.rgb.getr();
+						g = CurrentAutomapColors.lockedColor.rgb.getg();
+						b = CurrentAutomapColors.lockedColor.rgb.getb();
+
+						if (am_usecustomcolors)
+						{
+							if (lines[i].args[3] == (zk_blue_card | zk_blue))
+							{
+								rdif = (0 - r) / 30;
+								gdif = (0 - g) / 30;
+								bdif = (255 - b) / 30;
+							}
+							else if (lines[i].args[3] == (zk_yellow_card | zk_yellow))
+							{
+								rdif = (255 - r) / 30;
+								gdif = (255 - g) / 30;
+								bdif = (0 - b) / 30;
+							}
+							else
+							{
+								rdif = (255 - r) / 30;
+								gdif = (0 - g) / 30;
+								bdif = (0 - b) / 30;
+							}
+
+							if (lockglow < 30)
+							{
+								r += (int)rdif * lockglow;
+								g += (int)gdif * lockglow;
+								b += (int)bdif * lockglow;
+							}
+							else if (lockglow < 60)
+							{
+								r += (int)rdif * (60 - lockglow);
+								g += (int)gdif * (60 - lockglow);
+								b += (int)bdif * (60 - lockglow);
+							}
+						}
+
+						AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b));
+					}
+				}
+				else
+				{
+					if (P_IsCompatibleLockedDoorLine(lines[i].special))
+					{
+						// NES - Locked doors glow from a predefined color to either blue,
+						// yellow, or red.
+						r = CurrentAutomapColors.lockedColor.rgb.getr();
+						g = CurrentAutomapColors.lockedColor.rgb.getg();
+						b = CurrentAutomapColors.lockedColor.rgb.getb();
+
+						if (am_usecustomcolors)
+						{
+							if (P_IsCompatibleBlueDoorLine(lines[i].special))
+							{
+								rdif = (0 - r) / 30;
+								gdif = (0 - g) / 30;
+								bdif = (255 - b) / 30;
+							}
+							else if (P_IsCompatibleYellowDoorLine(lines[i].special))
+							{
+								rdif = (255 - r) / 30;
+								gdif = (255 - g) / 30;
+								bdif = (0 - b) / 30;
+							}
+							else
+							{
+								rdif = (255 - r) / 30;
+								gdif = (0 - g) / 30;
+								bdif = (0 - b) / 30;
+							}
+
+							if (lockglow < 30)
+							{
+								r += (int)rdif * lockglow;
+								g += (int)gdif * lockglow;
+								b += (int)bdif * lockglow;
+							}
+							else if (lockglow < 60)
+							{
+								r += (int)rdif * (60 - lockglow);
+								g += (int)gdif * (60 - lockglow);
+								b += (int)bdif * (60 - lockglow);
+							}
+						}
+
+						AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b));
+					}
 				}
 			}
 		}
 		else if (consoleplayer().powers[pw_allmap])
 		{
 			if (!(lines[i].flags & ML_DONTDRAW))
-				AM_drawMline(&l, NotSeenColor);
+				AM_drawMline(&l, CurrentAutomapColors.notSeenColor);
 		}
     }
 }
@@ -1413,17 +1487,10 @@ void AM_drawWalls(void)
 // Rotation in 2D.
 // Used to rotate player arrow line character.
 //
-void
-AM_rotate
-( fixed_t*	x,
-  fixed_t*	y,
-  angle_t	a )
+void AM_rotate(fixed_t* x, fixed_t* y, angle_t a)
 {
-    fixed_t tmpx;
-
-    tmpx =
-	FixedMul(*x,finecosine[a>>ANGLETOFINESHIFT])
-	- FixedMul(*y,finesine[a>>ANGLETOFINESHIFT]);
+	const fixed_t tmpx = FixedMul(*x, finecosine[a >> ANGLETOFINESHIFT])
+	                     - FixedMul(*y, finesine[a >> ANGLETOFINESHIFT]);
 
     *y   =
 	FixedMul(*x,finesine[a>>ANGLETOFINESHIFT])
@@ -1432,7 +1499,7 @@ AM_rotate
     *x = tmpx;
 }
 
-void AM_rotatePoint (fixed_t *x, fixed_t *y)
+void AM_rotatePoint(fixed_t *x, fixed_t *y)
 {
 	player_t &p = displayplayer();
 
@@ -1453,10 +1520,9 @@ AM_drawLineCharacter
   fixed_t	x,
   fixed_t	y )
 {
-	int		i;
 	mline_t	l;
 
-	for (i=0;i<lineguylines;i++) {
+	for (int i = 0;i<lineguylines;i++) {
 		l.a.x = lineguy[i].a.x;
 		l.a.y = lineguy[i].a.y;
 
@@ -1489,7 +1555,7 @@ AM_drawLineCharacter
 	}
 }
 
-void AM_drawPlayers(void)
+void AM_drawPlayers()
 {
 	angle_t angle;
 	player_t &conplayer = displayplayer();
@@ -1502,14 +1568,16 @@ void AM_drawPlayers(void)
 		else
 			angle = conplayer.camera->angle;
 
-		if (cheating)
+		if (am_cheating && gamemission != heretic)
 			AM_drawLineCharacter
-			(cheat_player_arrow, NUMCHEATPLYRLINES, 0,
-			 angle, YourColor, conplayer.camera->x, conplayer.camera->y);
+			(cheat_player_arrow, NUMCHEATPLYRLINES, 0, angle,
+			                     CurrentAutomapColors.yourColor, conplayer.camera->x,
+			                     conplayer.camera->y);
 		else
 			AM_drawLineCharacter
-			(player_arrow, NUMPLYRLINES, 0, angle,
-			 YourColor, conplayer.camera->x, conplayer.camera->y);
+			(gameinfo.playerArrow, gameinfo.plyrArrowLines, 0, angle,
+			                     CurrentAutomapColors.yourColor, conplayer.camera->x,
+			                     conplayer.camera->y);
 		return;
 	}
 
@@ -1530,7 +1598,7 @@ void AM_drawPlayers(void)
 
 		if (p->powers[pw_invisibility])
 		{
-			color = AlmostBackground;
+			color = CurrentAutomapColors.almostBackground;
 		}
 		else if (demoplayback)
 		{
@@ -1559,26 +1627,23 @@ void AM_drawPlayers(void)
 		}
 
 		AM_drawLineCharacter
-			(player_arrow, NUMPLYRLINES, 0, angle,
+			(gameinfo.playerArrow, gameinfo.plyrArrowLines, 0, angle,
 			 color, pt.x, pt.y);
     }
 }
 
-void AM_drawThings (am_color_t color)
+void AM_drawThings()
 {
-	int		 i;
-	AActor*	 t;
 	mpoint_t p;
-	angle_t	 angle;
 
-	for (i=0;i<numsectors;i++)
+	for (int i = 0;i<numsectors;i++)
 	{
-		t = sectors[i].thinglist;
+		AActor* t = sectors[i].thinglist;
 		while (t)
 		{
 			p.x = t->x;
 			p.y = t->y;
-			angle = t->angle;
+			angle_t angle = t->angle;
 
 			if (am_rotate)
 			{
@@ -1586,25 +1651,26 @@ void AM_drawThings (am_color_t color)
 				angle += ANG90 - displayplayer().camera->angle;
 			}
 
-			AM_drawLineCharacter(thintriangle_guy, NUMTHINTRIANGLEGUYLINES, 16<<FRACBITS, angle, color, p.x, p.y);
+			AM_drawLineCharacter(thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
+			                     16 << FRACBITS, angle, CurrentAutomapColors.thingColor,
+			                     p.x, p.y);
 			t = t->snext;
 		}
 	}
 }
 
-void AM_drawMarks (void)
+void AM_drawMarks()
 {
-	int i, fx, fy, w, h;
 	mpoint_t pt;
 
-	for (i = 0; i < AM_NUMMARKPOINTS; i++)
+	for (int i = 0; i < AM_NUMMARKPOINTS; i++)
 	{
 		if (markpoints[i].x != -1)
 		{
 			//      w = LESHORT(marknums[i]->width);
 			//      h = LESHORT(marknums[i]->height);
-			w = 5; // because something's wrong with the wad, i guess
-			h = 6; // because something's wrong with the wad, i guess
+			const int w = 5; // because something's wrong with the wad, i guess
+			const int h = 6; // because something's wrong with the wad, i guess
 
 			pt.x = markpoints[i].x;
 			pt.y = markpoints[i].y;
@@ -1612,8 +1678,8 @@ void AM_drawMarks (void)
 			if (am_rotate)
 				AM_rotatePoint (&pt.x, &pt.y);
 
-			fx = CXMTOF(pt.x);
-			fy = CYMTOF(pt.y) - 3;
+			const int fx = CXMTOF(pt.x);
+			const int fy = CYMTOF(pt.y) - 3;
 
 			if (fx >= f_x && fx <= f_w - w && fy >= f_y && fy <= f_h - h)
 			{
@@ -1623,7 +1689,7 @@ void AM_drawMarks (void)
 	}
 }
 
-void AM_drawCrosshair (am_color_t color)
+void AM_drawCrosshair(am_color_t color)
 {
 	// single point for now
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
@@ -1634,60 +1700,33 @@ void AM_drawCrosshair (am_color_t color)
 
 
 //
-// AM_Drawer
+// AM_drawWidgets
 //
-void AM_Drawer()
+void AM_drawWidgets()
 {
-	if (!AM_ClassicAutomapVisible() && !AM_OverlayAutomapVisible())
-		return;
-
-	IWindowSurface* surface = I_GetPrimarySurface();
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
-
-	fb = surface->getBuffer();
-
-	if (AM_ClassicAutomapVisible())
-	{
-		f_x = f_y = 0;
-		f_w = surface_width;
-		f_h = ST_StatusBarY(surface_width, surface_height);
-		f_p = surface->getPitch();
-
-		AM_clearFB(Background);
-	}
-	else
-	{
-		f_x = R_ViewWindowX(surface_width, surface_height);
-		f_y = R_ViewWindowY(surface_width, surface_height);
-		f_w = R_ViewWidth(surface_width, surface_height);
-		f_h = R_ViewHeight(surface_width, surface_height);
-		f_p = surface->getPitch();
-	}
-
-	AM_activateNewScale();
-
-	if (grid)
-		AM_drawGrid(GridColor);
-
-	AM_drawWalls();
-	AM_drawPlayers();
-	if (cheating==2)
-		AM_drawThings(ThingColor);
-
-	if (!(viewactive && am_overlay < 2))
-		AM_drawCrosshair(XHairColor);
-
-	AM_drawMarks();
+	const IWindowSurface* surface = I_GetPrimarySurface();
+	const int surface_width = surface->getWidth();
+	const int surface_height = surface->getHeight();
 
 	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
 	{
 		char line[64+10];
-		int time = level.time / TICRATE;
+		const int time = level.time / TICRATE;
+		int wl_x1 = 0;
+		int wr_x1 = 0;
+		int wl_x2 = 0;
+		int wr_x2 = 0;
 
-		int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
-		int OV_Y = surface_height - (surface_height * 32 / 200);
+		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
+		const int OV_Y = surface_height - (surface_height * 32 / 200);
 
-		if (sv_gametype == GM_COOP)
+		if (gamemission == heretic)
+		{
+			wl_x1 = wr_x1 = 36;
+			wl_x2 = wr_x2 = 36;
+		}
+
+		if (G_IsCoopGame())
 		{
 			if (am_showmonsters)
 			{
@@ -1696,12 +1735,12 @@ void AM_Drawer()
 								level.killed_monsters, (level.total_monsters+level.respawned_monsters));
 
 				int x, y;
-				int text_width = V_StringWidth(line) * CleanXfac;
+				const int text_width = V_StringWidth(line) * CleanXfac;
 
 				if (AM_OverlayAutomapVisible())
 					x = surface_width - text_width, y = OV_Y - (text_height * 4) + 1;
 				else
-					x = 0, y = OV_Y - (text_height * 2) + 1;
+					x = (wl_x1 * CleanXfac), y = OV_Y - (text_height * 2) + 1;
 
 				FB->DrawTextClean(CR_GREY, x, y, line);
 			}
@@ -1712,7 +1751,7 @@ void AM_Drawer()
 								TEXTCOLOR_NORMAL " %d / %d",
 								level.found_secrets, level.total_secrets);
 				int x, y;
-				int text_width = V_StringWidth(line) * CleanXfac;
+				const int text_width = (V_StringWidth(line) + wr_x1) * CleanXfac;
 
 				if (AM_OverlayAutomapVisible())
 					x = surface_width - text_width, y = OV_Y - (text_height * 3) + 1;
@@ -1740,6 +1779,10 @@ void AM_Drawer()
 				case pack_tnt:
 					firstmap = GStrings.toIndex(THUSTR_1);
 					break;
+				case heretic:
+				    firstmap = GStrings.toIndex(HHUSTR_E1M1);
+				    mapoffset = level.cluster; // Episodes skip map numbers.
+				    break;
 				default:
 					firstmap = GStrings.toIndex(HUSTR_E1M1);
 					mapoffset = level.cluster; // Episodes skip map numbers.
@@ -1750,19 +1793,19 @@ void AM_Drawer()
 			        ARRAY_LENGTH(line) - 1);
 
 			int x, y;
-			int text_width = V_StringWidth(line) * CleanXfac;
+			const int text_width = V_StringWidth(line) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
 				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
 			else
-				x = 0, y = OV_Y - (text_height * 1) + 1;
+				x = (wl_x2 * CleanXfac), y = OV_Y - (text_height * 1) + 1;
 
 			FB->DrawTextClean(CR_RED, x, y, line);
 		}
 		else
 		{
 			strcpy(line, TEXTCOLOR_RED);
-			int pos = strlen(line);
+			size_t pos = strlen(line);
 			for (int i = 0; i < 8 && level.mapname[i]; i++, pos++)
 				line[pos] = level.mapname[i];
 
@@ -1773,12 +1816,12 @@ void AM_Drawer()
 			strcpy(&line[pos], level.level_name);
 
 			int x, y;
-			int text_width = V_StringWidth(line) * CleanXfac;
+			const int text_width = V_StringWidth(line) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
 				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
 			else
-				x = 0, y = OV_Y - (text_height * 1) + 1;
+				x = (wl_x2 * CleanXfac), y = OV_Y - (text_height * 1) + 1;
 
 			FB->DrawTextClean(CR_GREY, x, y, line);
 		}
@@ -1788,7 +1831,7 @@ void AM_Drawer()
 			sprintf(line, " %02d:%02d:%02d", time/3600, (time%3600)/60, time%60);	// Time
 
 			int x, y;
-			int text_width = V_StringWidth(line) * CleanXfac;
+			const int text_width = (V_StringWidth(line) + wr_x2) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
 				x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
@@ -1798,6 +1841,55 @@ void AM_Drawer()
 			FB->DrawTextClean(CR_GREY, x, y, line);
 		}
 	}
+}
+
+//
+// AM_Drawer
+//
+void AM_Drawer()
+{
+	if (!AM_ClassicAutomapVisible() && !AM_OverlayAutomapVisible())
+		return;
+
+	IWindowSurface* surface = I_GetPrimarySurface();
+	const int surface_width = surface->getWidth();
+	const int surface_height = surface->getHeight();
+
+	fb = surface->getBuffer();
+
+	if (AM_ClassicAutomapVisible())
+	{
+		f_x = f_y = 0;
+		f_w = surface_width;
+		f_h = ST_StatusBarY(surface_width, surface_height);
+		f_p = surface->getPitch();
+
+		AM_clearFB();
+	}
+	else
+	{
+		f_x = R_ViewWindowX(surface_width, surface_height);
+		f_y = R_ViewWindowY(surface_width, surface_height);
+		f_w = R_ViewWidth(surface_width, surface_height);
+		f_h = R_ViewHeight(surface_width, surface_height);
+		f_p = surface->getPitch();
+	}
+
+	AM_activateNewScale();
+
+	if (grid)
+		AM_drawGrid();
+
+	AM_drawWalls();
+	AM_drawPlayers();
+	if (am_cheating == 2)
+		AM_drawThings();
+
+	if (!(viewactive && am_overlay < 2))
+		AM_drawCrosshair(CurrentAutomapColors.xHairColor);
+
+	AM_drawMarks();
+	AM_drawWidgets();
 }
 
 VERSION_CONTROL (am_map_cpp, "$Id$")

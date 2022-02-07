@@ -22,6 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "stringenums.h"
 
 #include "hashtable.h"
@@ -575,6 +578,49 @@ const OString TXT_WEAPON_M4 = "TXT_WEAPON_M4";
 const OString TXT_QUIETUS_PIECE = "TXT_QUIETUS_PIECE";
 const OString TXT_WRAITHVERGE_PIECE = "TXT_WRAITHVERGE_PIECE";
 const OString TXT_BLOODSCOURGE_PIECE = "TXT_BLOODSCOURGE_PIECE";
+const OString MNU_NEWGAME = "MNU_NEWGAME";
+const OString MNU_OPTIONS = "MNU_OPTIONS";
+const OString MNU_GAMEFILES = "MNU_GAMEFILES";
+const OString MNU_INFO = "MNU_INFO";
+const OString MNU_QUITGAME = "MNU_QUITGAME";
+const OString MNU_FIGHTER = "MNU_FIGHTER";
+const OString MNU_CLERIC = "MNU_CLERIC";
+const OString MNU_MAGE = "MNU_MAGE";
+const OString MNU_RANDOM = "MNU_RANDOM";
+const OString MNU_LOADGAME = "MNU_LOADGAME";
+const OString MNU_SAVEGAME = "MNU_SAVEGAME";
+const OString MNU_COTD = "MNU_COTD";
+const OString MNU_HELLSMAW = "MNU_HELLSMAW";
+const OString MNU_DOME = "MNU_DOME";
+const OString MNU_OSSUARY = "MNU_OSSUARY";
+const OString MNU_DEMESNE = "MNU_DEMESNE";
+const OString MNU_WETNURSE = "MNU_WETNURSE";
+const OString MNU_YELLOWBELLIES = "MNU_YELLOWBELLIES";
+const OString MNU_BRINGEST = "MNU_BRINGEST";
+const OString MNU_SMITE = "MNU_SMITE";
+const OString MNU_BLACKPLAGUE = "MNU_BLACKPLAGUE";
+const OString MNU_NOPICTURE = "MNU_NOPICTURE";
+const OString MNU_DIFFVERSION = "MNU_DIFFVERSION";
+const OString MNU_NOFILES = "MNU_NOFILES";
+const OString MNU_CHOOSECLASS = "MNU_CHOOSECLASS";
+const OString MNU_CHOOSESKILL = "MNU_CHOOSESKILL";
+const OString MNU_SQUIRE = "MNU_SQUIRE";
+const OString MNU_KNIGHT = "MNU_KNIGHT";
+const OString MNU_WARRIOR = "MNU_WARRIOR";
+const OString MNU_BERSERKER = "MNU_BERSERKER";
+const OString MNU_TITAN = "MNU_TITAN";
+const OString MNU_ALTARBOY = "MNU_ALTARBOY";
+const OString MNU_ACOLYTE = "MNU_ACOLYTE";
+const OString MNU_PRIEST = "MNU_PRIEST";
+const OString MNU_CARDINAL = "MNU_CARDINAL";
+const OString MNU_POPE = "MNU_POPE";
+const OString MNU_APPRENTICE = "MNU_APPRENTICE";
+const OString MNU_ENCHANTER = "MNU_ENCHANTER";
+const OString MNU_SORCERER = "MNU_SORCERER";
+const OString MNU_WARLOCK = "MNU_WARLOCK";
+const OString MNU_ARCHMAGE = "MNU_ARCHMAGE";
+const OString MNU_PLAYERSETUP = "MNU_PLAYERSETUP";
+const OString MNU_DELETESG = "MNU_DELETESG";
 const OString BBA_BONED = "BBA_BONED";
 const OString BBA_CASTRA = "BBA_CASTRA";
 const OString BBA_CREAMED = "BBA_CREAMED";
@@ -679,6 +725,9 @@ const OString MUSIC_ULTIMA = "MUSIC_ULTIMA";
 const OString MUSIC_READ_M = "MUSIC_READ_M";
 const OString MUSIC_DM2TTL = "MUSIC_DM2TTL";
 const OString MUSIC_DM2INT = "MUSIC_DM2INT";
+const OString TXT_BUDDHAON = "TXT_BUDDHAON";
+const OString TXT_BUDDHAOFF = "TXT_BUDDHAOFF";
+
 
 // Contains every original string in its proper order.
 const OString* const stringIndexes[STRING_INDEXES_LENGTH] = {
@@ -1231,6 +1280,49 @@ const OString* const stringIndexes[STRING_INDEXES_LENGTH] = {
     &TXT_QUIETUS_PIECE,
     &TXT_WRAITHVERGE_PIECE,
     &TXT_BLOODSCOURGE_PIECE,
+    &MNU_NEWGAME,
+    &MNU_OPTIONS,
+    &MNU_GAMEFILES,
+    &MNU_INFO,
+    &MNU_QUITGAME,
+    &MNU_FIGHTER,
+    &MNU_CLERIC,
+    &MNU_MAGE,
+    &MNU_RANDOM,
+    &MNU_LOADGAME,
+    &MNU_SAVEGAME,
+    &MNU_COTD,
+    &MNU_HELLSMAW,
+    &MNU_DOME,
+    &MNU_OSSUARY,
+    &MNU_DEMESNE,
+    &MNU_WETNURSE,
+    &MNU_YELLOWBELLIES,
+    &MNU_BRINGEST,
+    &MNU_SMITE,
+    &MNU_BLACKPLAGUE,
+    &MNU_NOPICTURE,
+    &MNU_DIFFVERSION,
+    &MNU_NOFILES,
+    &MNU_CHOOSECLASS,
+    &MNU_CHOOSESKILL,
+    &MNU_SQUIRE,
+    &MNU_KNIGHT,
+    &MNU_WARRIOR,
+    &MNU_BERSERKER,
+    &MNU_TITAN,
+    &MNU_ALTARBOY,
+    &MNU_ACOLYTE,
+    &MNU_PRIEST,
+    &MNU_CARDINAL,
+    &MNU_POPE,
+    &MNU_APPRENTICE,
+    &MNU_ENCHANTER,
+    &MNU_SORCERER,
+    &MNU_WARLOCK,
+    &MNU_ARCHMAGE,
+    &MNU_PLAYERSETUP,
+    &MNU_DELETESG,
     &BBA_BONED,
     &BBA_CASTRA,
     &BBA_CREAMED,
@@ -1335,4 +1427,6 @@ const OString* const stringIndexes[STRING_INDEXES_LENGTH] = {
     &MUSIC_READ_M,
     &MUSIC_DM2TTL,
     &MUSIC_DM2INT,
+    &TXT_BUDDHAON,
+    &TXT_BUDDHAOFF,
 };

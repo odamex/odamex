@@ -27,14 +27,6 @@
 #ifndef __DOOMDATA__
 #define __DOOMDATA__
 
-// The most basic types we use, portability.
-#include "doomtype.h"
-
-// Some global defines, that configure the game.
-#include "doomdef.h"
-
-
-
 //
 // Map level types.
 // The following data structures define the persistent format
@@ -55,7 +47,7 @@ enum
 	ML_NODES, 			// BSP nodes
 	ML_SECTORS,			// Sectors, from editing
 	ML_REJECT,			// LUT, sector-sector visibility
-	ML_BLOCKMAP,			// LUT, motion clipping, walls/grid element
+	ML_BLOCKMAP,		// LUT, motion clipping, walls/grid element
 	ML_BEHAVIOR			// [RH] Hexen-style scripts. If present, THINGS
 						//		and LINEDEFS are also Hexen-style.	
 };
@@ -128,29 +120,58 @@ typedef struct
 #define ML_SOUNDBLOCK		0x0040	// don't let sound cross two of these
 #define ML_DONTDRAW 		0x0080	// don't draw on the automap
 #define ML_MAPPED			0x0100	// set if already drawn in automap
-#define ML_REPEAT_SPECIAL	0x0200	// special is repeatable
+
+// jff 3/21/98 Set if line absorbs use by player
+// allow multiple push/switch triggers to be used on one push
+#define ML_PASSUSE			0x0200
+
+// Reserved by EE
+// SoM 9/02/02: 3D Middletexture flag!
+#define ML_3DMIDTEX			0x0400
+
+// haleyjd 05/02/06: Although it was believed until now that a reserved line
+// flag was unnecessary, a problem with Ultimate DOOM E2M7 has disproven this
+// theory. It has roughly 1000 linedefs with 0xFE00 masked into the flags, so
+// making the next line flag reserved and using it to toggle off ALL extended
+// flags will preserve compatibility for such maps. I have been told this map
+// is one of the first ever created, so it may have something to do with that.
+#define ML_RESERVED				0x0800
+
+// [Blair] MBF21 Line flags
+#define ML_BLOCKLANDMONSTERS	0x1000
+
+#define ML_BLOCKPLAYERS			0x2000
+
+// Hexen/ZDoom stuff
+
+#define ML_MONSTERSCANACTIVATE	0x4000 // zdoom
+#define ML_BLOCKEVERYTHING		0x8000 // zdoom
+
+#define ML_REPEATSPECIAL		0x00010000 // special is repeatable
+
+#define ML_SPAC_CROSS			0x00020000 // hexen activation
+#define ML_SPAC_USE				0x00040000 // hexen activation
+#define ML_SPAC_MCROSS			0x00080000 // hexen activation
+#define ML_SPAC_IMPACT			0x00100000 // hexen activation
+#define ML_SPAC_PUSH			0x00200000 // hexen activation
+#define ML_SPAC_PCROSS			0x00400000 // hexen activation
+#define ML_SPAC_USETHROUGH		0x00800000 // SPAC_USE, but passes it through
+#define ML_SPAC_CROSSTHROUGH	0x01600000 // SPAC_CROSS, but passes it through
+
 #define ML_SPAC_SHIFT		10
-#define ML_SPAC_MASK		0x1c00
+#define ML_SPAC_MASK (ML_SPAC_CROSS|ML_SPAC_USE|ML_SPAC_MCROSS|ML_SPAC_IMPACT|ML_SPAC_PUSH|ML_SPAC_PCROSS|ML_SPAC_USETHROUGH|ML_SPAC_CROSSTHROUGH)
 #define GET_SPAC(flags)		((flags&ML_SPAC_MASK)>>ML_SPAC_SHIFT)
 
-// Special activation types
-#define SPAC_CROSS		0	// when player crosses line
-#define SPAC_USE		1	// when player uses line
-#define SPAC_MCROSS		2	// when monster crosses line
-#define SPAC_IMPACT		3	// when projectile hits line
-#define SPAC_PUSH		4	// when player/monster pushes line
-#define SPAC_PCROSS		5	// when projectile crosses line
-#define SPAC_USETHROUGH	6	// SPAC_USE, but passes it through
-#define SPAC_CROSSTHROUGH 7 // SPAC_CROSS, but passes it through
+// hexen
+#define HML_REPEATSPECIAL	0x0200 // special is repeatable
+#define HML_SPAC_SHIFT		10
+#define HML_SPAC_MASK		0x1c00
+#define GET_HSPAC(flags)	((flags & HML_SPAC_MASK) >> HML_SPAC_SHIFT)
 
-// [RH] Monsters (as well as players) can active the line
-#define ML_MONSTERSCANACTIVATE		0x2000
-
-// [RH] BOOM's ML_PASSUSE flag (conflicts with ML_REPEATSPECIAL)
-#define ML_PASSUSE_BOOM				0x0200
-
-// [RH] Line blocks everything
-#define ML_BLOCKEVERYTHING			0x8000
+// zdoom
+#define ZML_MONSTERSCANACTIVATE 0x2000 // Monsters and players can activate
+#define ZML_BLOCKPLAYERS		0x4000 // Blocks players
+#define ZML_BLOCKEVERYTHING		0x8000 // Blocks everything
 
 // Sector definition, from editing
 typedef struct
@@ -208,6 +229,7 @@ typedef struct
 
 // Thing definition, position, orientation and type,
 // plus skill/visibility flags and attributes.
+// Thing for Doom.
 typedef struct
 {
 	short		x;
@@ -233,15 +255,16 @@ typedef struct MapThing
 	void Serialize (FArchive &);
 } mapthing2_t;
 
+#define NO_INDEX ((unsigned short)-1)
 
 // [RH] MapThing flags.
 
-/*
+
 #define MTF_EASY			0x0001	// Thing will appear on easy skill setting
 #define MTF_MEDIUM			0x0002	// Thing will appear on medium skill setting
 #define MTF_HARD			0x0004	// Thing will appear on hard skill setting
 #define MTF_AMBUSH			0x0008	// Thing is deaf
-*/
+
 #define MTF_DORMANT			0x0010	// Thing is dormant (use Thing_Activate)
 #define MTF_SINGLE			0x0100	// Thing appears in single-player games
 #define MTF_COOPERATIVE		0x0200	// Thing appears in cooperative games
@@ -257,6 +280,9 @@ typedef struct MapThing
 #define BTF_NOTSINGLE		0x0010	// (TF_COOPERATIVE|TF_DEATHMATCH)
 #define BTF_NOTDEATHMATCH	0x0020	// (TF_SINGLE|TF_COOPERATIVE)
 #define BTF_NOTCOOPERATIVE	0x0040	// (TF_SINGLE|TF_DEATHMATCH)
+
+#define NO_CRUSH	-1
+#define DOOM_CRUSH	10
 
 //
 // Texture definition.
@@ -297,5 +323,3 @@ typedef struct
 
 
 #endif					// __DOOMDATA__
-
-

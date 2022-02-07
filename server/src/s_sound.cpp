@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "m_alloc.h"
 #include "i_system.h"
 #include "s_sound.h"
@@ -29,8 +31,6 @@
 #include "z_zone.h"
 #include "m_random.h"
 #include "w_wad.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "cmdlib.h"
 #include "v_video.h"
 
@@ -418,8 +418,7 @@ void S_ParseSndInfo (void)
 					sndinfo = COM_Parse (sndinfo);
 					if (info.mapname[0])
 					{
-						strncpy (info.music, com_token, 9); // denis - todo -string limit?
-						std::transform(info.music, info.music + strlen(info.music), info.music, toupper);
+						info.music = com_token; // denis - todo -string limit?
 					}
 				} else {
 					Printf (PRINT_HIGH, "Unknown SNDINFO command %s\n", com_token);
@@ -449,4 +448,3 @@ void S_ActivateAmbient (AActor *origin, int ambient)
 }
 
 VERSION_CONTROL (s_sound_cpp, "$Id$")
-

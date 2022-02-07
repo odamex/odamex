@@ -36,12 +36,17 @@ if (GCONSOLE)
   endif()
 endif()
 
+if(NOT GCONSOLE)
+  # Only non-consoles can use the client GUI.
+  file(GLOB CLIENT_GUI_SOURCES gui/*.cpp gui/*.h)
+endif()
+
 # Tag source files with correct directories
 get_target_property(COMMON_SOURCES odamex-common INTERFACE_SOURCES)
 source_group("Client" FILES ${CLIENT_SOURCES})
 source_group("Common" FILES ${COMMON_SOURCES})
 source_group("SDL" FILES ${CLIENT_SDL_SOURCES})
-
+source_group("GUI" FILES ${CLIENT_GUI_SOURCES})
 
 # Client definitions
 include_directories(${COMMON_DIR} ${CLIENT_DIR})
@@ -115,10 +120,11 @@ endif()
 
 # Find Mac frameworks
 if(APPLE)
+  find_library(APPKIT_LIBRARY AppKit)
   find_library(CARBON_LIBRARY Carbon)
   find_library(AUDIOTBOX_LIBRARY AudioToolbox)
   find_library(AUDIOUNIT_LIBRARY AudioUnit)
-  set(APPLE_FRAMEWORKS ${CARBON_LIBRARY} ${AUDIOTBOX_LIBRARY}
+  set(APPLE_FRAMEWORKS ${APPKIT_LIBRARY} ${CARBON_LIBRARY} ${AUDIOTBOX_LIBRARY}
     ${AUDIOUNIT_LIBRARY})
 endif()
 
@@ -154,8 +160,9 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   add_executable(odamex MACOSX_BUNDLE WIN32
-    ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${COMMON_SOURCES})
+    ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${COMMON_SOURCES} ${CLIENT_GUI_SOURCES})
   odamex_target_settings(odamex)
+  set_property(TARGET odamex PROPERTY CXX_STANDARD 98)
 
   if(USE_DEFAULT_SIMD)
     if(ODAMEX_TARGET_ARCH STREQUAL "amd64")
@@ -182,8 +189,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
-
-  target_link_libraries(odamex odamex-common)
+  target_link_libraries(odamex odamex-common odaproto)
   if(TARGET SDL::SDL)
     target_link_libraries(odamex SDL::SDL)
     if(TARGET SDL::SDLmain)
@@ -198,6 +204,10 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex SDL2::mixer)
   endif()
   target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY} CURL::libcurl)
+  if(NOT GCONSOLE)
+    target_include_directories(odamex PRIVATE gui)
+    target_link_libraries(odamex fltk fltk_images)
+  endif()
 
   if(ENABLE_PORTMIDI)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})

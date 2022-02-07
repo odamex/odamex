@@ -22,10 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
 
-#include "doomtype.h"
-#include "doomstat.h"
+
 #include "d_player.h"
 #include "sv_master.h"
 #include "c_dispatch.h"
@@ -213,7 +212,7 @@ bool SV_RemoveMaster(const char *masterip)
 void SV_UpdateMasterServer(masterserver &m)
 {
 		SZ_Clear(&ml_message);
-		MSG_WriteLong(&ml_message, CHALLENGE);
+		MSG_WriteLong(&ml_message, MSG_CHALLENGE);
 
 		// send out actual port, because NAT may present an incorrect port to the master
 		if(sv_natport)
@@ -269,4 +268,3 @@ void SV_UpdateMaster(void)
 }
 
 VERSION_CONTROL (sv_master_cpp, "$Id$")
-
