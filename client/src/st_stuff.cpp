@@ -56,7 +56,6 @@ static bool st_needrefresh = true;
 
 static bool st_stopped = true;
 
-
 // lump number for PLAYPAL
 static int		lu_palette;
 
@@ -250,34 +249,34 @@ extern bool simulated_connection;
 // [RH] Turned these into variables
 // Size of statusbar.
 // Now ([RH] truly) sensitive for scaling.
-int						ST_HEIGHT;
-int						ST_WIDTH;
-int						ST_X;
-int						ST_Y;
+int ST_HEIGHT;
+int ST_WIDTH;
+int ST_X;
+int ST_Y;
 
 // used for making messages go away
-static int				st_msgcounter=0;
+static int st_msgcounter=0;
 
 // whether in automap or first-person
-static st_stateenum_t	st_gamestate;
+static st_stateenum_t st_gamestate;
 
 // whether left-side main status bar is active
-static bool			st_statusbaron;
+static bool st_statusbaron;
 
 // whether status bar chat is active
-static bool			st_chat;
+static bool st_chat;
 
 // value of st_chat before message popped up
-static bool			st_oldchat;
+static bool st_oldchat;
 
 // whether chat window has the cursor on
-static bool			st_cursoron;
+static bool st_cursoron;
 
 // !deathmatch && st_statusbaron
-static bool			st_armson;
+static bool st_armson;
 
 // !deathmatch
-static bool			st_fragson;
+static bool st_fragson;
 
 // main bar left
 static lumpHandle_t sbar;
@@ -1134,6 +1133,9 @@ void ST_Drawer()
 		stbar_surface->lock();
 		stnum_surface->lock();
 
+		if (gamemission == heretic) // hacky solution?
+			st_needrefresh = true;
+
 		if (st_needrefresh)
 		{
 			// draw status bar background to off-screen buffer then blit to surface
@@ -1409,32 +1411,29 @@ void ST_HticCreateWidgets();
 //
 void ST_HticShadeChain(int left, int right, int top, int height)
 {
-	int i;
 	int pitch;
-	int diff;
 	byte* top_p;
-
-	/*
+	
 	if (st_scale)
 	{
-		pitch = BG->pitch;
-		top_p = BG->buffer;
+		pitch = stbar_surface->getPitch();
+		top_p = stbar_surface->getBuffer();
 	}
 	else
 	{
 		top += ST_Y;
 		left += ST_X;
 		right += ST_X;
-		pitch = FG->pitch;
-		top_p = FG->buffer;
+		pitch = stbar_surface->getPitch();
+		top_p = stbar_surface->getBuffer();
 	}
-
+	
 	top_p += top * pitch + left;
-	diff = right + 15 - left;
+	int diff = right + 15 - left;
 
-	for (i = 0; i < 16; i++)
+	for (int i = 0; i < 16; i++)
 	{
-		unsigned int* darkener = Col2RGB8[18 + i * 2];
+		const argb_t* darkener = Col2RGB8[18 + i * 2];
 		int h = height;
 		byte* dest = top_p;
 		do
@@ -1448,7 +1447,7 @@ void ST_HticShadeChain(int left, int right, int top, int height)
 		top_p++;
 		diff -= 2;
 	}
-
+	/* // todo
 	STlib_scaleRect(left, top, 16, height);
 	STlib_scaleRect(right, top, 16, height);*/
 }
@@ -1473,6 +1472,8 @@ void ST_HticDrawChainWidget()
 	if (plyr->health != chainhealth)
 		y += chainwiggle;
 
+	stbar_surface->lock();
+
 	const DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
 	// draw the chain -- links repeat every 17 pixels, so we
 	// wrap the chain back to the starting position every 17
@@ -1481,19 +1482,19 @@ void ST_HticDrawChainWidget()
 	// draw the gem (17 is the far left pos., 273 is max)
 	// TODO: fix life gem for multiplayer modes
 	stbar_canvas->DrawPatch(W_ResolvePatchHandle(lifegem), 17 + chainpos, y);
+
+	stbar_surface->unlock();
 }
 
-static void ST_HticDrawWidgets(bool refresh)
+static void ST_HticDrawWidgets(bool force_refresh)
 {
-	w_numhealth.update(refresh);
-	w_ready.update(refresh);
-	w_numarmor.update(refresh);
+	w_numhealth.update(force_refresh);
+	w_ready.update(force_refresh);
+	w_numarmor.update(force_refresh);
 
 	if (sv_gametype != GM_CTF) // [Toke - CTF] Dont display keys in ctf mode
 		for (int i = 0; i < 3; i++)
-			w_keyboxes[i].update(refresh);
-
-	ST_HticDrawChainWidget();
+			w_keyboxes[i].update(force_refresh);
 }
 
 static void ST_HticRefreshBackground()
@@ -1517,20 +1518,22 @@ static void ST_HticRefreshBackground()
 
 	// TODO: Inventory bar
 	stbar_canvas->DrawPatch(W_ResolvePatchHandle(statbar), 34, 2);
+	
+	ST_HticDrawChainWidget();
 
 	const int st_edgeheight = 200 - gameinfo.statusBar->height - W_ResolvePatchHandle(sbar_topleft)->height() + 1;
 	
 	// draw the tops of the faces
-	stbar_canvas->DrawPatchIndirect(W_ResolvePatchHandle(sbar_topleft), 0, st_edgeheight);
-	stbar_canvas->DrawPatchIndirect(W_ResolvePatchHandle(sbar_topright), 290, st_edgeheight);
-	
-	ST_HticDrawChainWidget();
+	const DCanvas* stprimary_canvas = I_GetPrimaryCanvas();
+
+	stprimary_canvas->DrawPatchIndirect(W_ResolvePatchHandle(sbar_topleft), 0,
+	                                    st_edgeheight);
+	stprimary_canvas->DrawPatchIndirect(W_ResolvePatchHandle(sbar_topright), 290,
+	                                    st_edgeheight);
 	
 	// draw face patches to cover over spare ends of chain
-	stbar_canvas->DrawPatch(W_ResolvePatchHandle(ltface), 0,
-	                        (gamemission == heretic) ? 42 : 32);
-	stbar_canvas->DrawPatch(W_ResolvePatchHandle(rtface), 276,
-	                        (gamemission == heretic) ? 42 : 32);
+	stbar_canvas->DrawPatch(W_ResolvePatchHandle(ltface), 0, 32);
+	stbar_canvas->DrawPatch(W_ResolvePatchHandle(rtface), 276, 32);
 
 	player_t* plyr = &consoleplayer();
 	if ((plyr->cheats & CF_GODMODE) || plyr->powers[pw_invulnerability])
