@@ -1447,9 +1447,6 @@ void ST_HticShadeChain(int left, int right, int top, int height)
 		top_p++;
 		diff -= 2;
 	}
-	/* // todo
-	STlib_scaleRect(left, top, 16, height);
-	STlib_scaleRect(right, top, 16, height);*/
 }
 
 //
@@ -1526,9 +1523,9 @@ static void ST_HticRefreshBackground()
 	// draw the tops of the faces
 	const DCanvas* stprimary_canvas = I_GetPrimaryCanvas();
 
-	stprimary_canvas->DrawPatchIndirect(W_ResolvePatchHandle(sbar_topleft), 0,
+	stprimary_canvas->DrawPatchClean(W_ResolvePatchHandle(sbar_topleft), 0,
 	                                    st_edgeheight);
-	stprimary_canvas->DrawPatchIndirect(W_ResolvePatchHandle(sbar_topright), 290,
+	stprimary_canvas->DrawPatchClean(W_ResolvePatchHandle(sbar_topright), 290,
 	                                    st_edgeheight);
 	
 	// draw face patches to cover over spare ends of chain
@@ -1543,10 +1540,6 @@ static void ST_HticRefreshBackground()
 	}
 
 	ST_HticShadeChain(19, 277, 32, 10);
-	/*
-	BG->Blit(0, 0, 320, gameinfo.StatusBar->height, stnum_screen, 0, 0, 320,
-	         gameinfo.StatusBar->height);
-	*/
 
 	stbar_surface->unlock();
 }

@@ -2766,13 +2766,13 @@ void A_BossDeath(AActor *actor)
 	{
 		if (actor->flags3 & MF3_MAP07BOSS1)
 		{
-			EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
+			EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0, false);
 			return;
 		}
 
 		if (actor->flags3 & MF3_MAP07BOSS2)
 		{
-			EV_DoFloor(DFloor::floorRaiseByTexture, NULL, 667, FRACUNIT, 0, 0, 0);
+			EV_DoFloor(DFloor::floorRaiseByTexture, NULL, 667, FRACUNIT, 0, 0, 0, false);
 			return;
 		}
 	}
@@ -2780,7 +2780,7 @@ void A_BossDeath(AActor *actor)
 	{
 		if (level.flags & LEVEL_SPECLOWERFLOOR || level.flags & LEVEL_BRUISERSPECIAL)
 		{
-			EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
+			EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0, false);
 			return;
 		}
 
@@ -2797,7 +2797,7 @@ void A_BossDeath(AActor *actor)
 	}
 	else if (level.flags & LEVEL_SPIDERSPECIAL && actor->flags3 & MF3_E4M8BOSS)
 	{
-		EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
+		EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0, false);
 		return;
 	}
 

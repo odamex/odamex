@@ -288,7 +288,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 5:
 		// Raise Floor
 		if (EV_DoFloor(DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW),
-		               0, 0, 0))
+		               0, 0, 0, false))
 		{
 			result.lineexecuted = true;
 			line->special = 0;
@@ -363,7 +363,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 19:
 		// Lower Floor
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_SLOW),
-		               (128 - 128) * FRACUNIT, 0, 0))
+		               (128 - 128) * FRACUNIT, 0, 0, false))
 		{
 			result.lineexecuted = true;
 			line->special = 0;
@@ -394,7 +394,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Raise floor to shortest texture height
 		//  on either side of lines.
 		if (EV_DoFloor(DFloor::floorRaiseByTexture, line, line->id, SPEED(F_SLOW), 0, 0,
-		               0))
+		               0, false))
 		{
 			result.lineexecuted = true;
 			line->special = 0;
@@ -411,7 +411,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 36:
 		// Lower Floor (TURBO)
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_FAST),
-		               (136 - 128) * FRACUNIT, 0, 0))
+		               (136 - 128) * FRACUNIT, 0, 0, false))
 		{
 			result.lineexecuted = true;
 			line->special = 0;
@@ -421,7 +421,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 37:
 		// LowerAndChange
 		if (EV_DoFloor(DFloor::floorLowerAndChange, line, line->id, SPEED(F_SLOW),
-		               0 * FRACUNIT, 0, 0))
+		               0 * FRACUNIT, 0, 0, false))
 		{
 			result.lineexecuted = true;
 			line->special = 0;
@@ -430,8 +430,8 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 38:
 		// Lower Floor To Lowest
-		if (EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
-		               0))
+		if (EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0, 0,
+		               false))
 		{
 			result.lineexecuted = true;
 			line->special = 0;
@@ -452,8 +452,8 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// RaiseCeilingLowerFloor
 		EV_DoCeiling(DCeiling::ceilRaiseToHighest, line, line->id, SPEED(C_SLOW), 0, 0, 0,
 		             0, 0);
-		EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
-		           0); // jff 02/12/98 doesn't work
+		EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0, 0,
+		           false); // jff 02/12/98 doesn't work
 		result.lineexecuted = true;
 		line->special = 0;
 		break;
@@ -499,7 +499,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 56:
 		// Raise Floor Crush
 		if (EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(F_SLOW), 0, true,
-		               0))
+		               0, false))
 		{
 			result.lineexecuted = true;
 			line->special = 0;
@@ -518,7 +518,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 58:
 		// Raise Floor 24
 		if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
-		               FRACUNIT * 24, 0, 0))
+		               FRACUNIT * 24, 0, 0, false))
 		{
 			result.lineexecuted = true;
 			line->special = 0;
@@ -528,7 +528,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 59:
 		// Raise Floor 24 And Change
 		if (EV_DoFloor(DFloor::floorRaiseAndChange, line, line->id, SPEED(F_SLOW),
-		               24 * FRACUNIT, 0, 0))
+		               24 * FRACUNIT, 0, 0, false))
 		{
 			result.lineexecuted = true;
 			line->special = 0;
@@ -536,12 +536,22 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		break;
 
 	case 100:
-		// Build Stairs Turbo 16
-		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT, SPEED(S_TURBO),
-		                   TICS(0), 0, 0, 0))
+		if (gamemission == heretic)
 		{
+			// Raise Door 3x Speed
+			EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_NORMAL * 3),
+			          TICS(VDOORWAIT), NoKey);
 			result.lineexecuted = true;
-			line->special = 0;
+		}
+		else
+		{
+			// Build Stairs Turbo 16
+			if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT,
+			                   SPEED(S_TURBO), TICS(0), 0, 0, 0))
+			{
+				result.lineexecuted = true;
+				line->special = 0;
+			}
 		}
 		break;
 
@@ -583,7 +593,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 119:
 		// Raise floor to nearest surr. floor
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0,
-		               0))
+		               0, false))
 		{
 			result.lineexecuted = true;
 			line->special = 0;
@@ -624,7 +634,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 130:
 		// Raise Floor Turbo
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_FAST), 0, 0,
-		               0))
+		               0, false))
 		{
 			result.lineexecuted = true;
 			line->special = 0;
@@ -703,21 +713,22 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 82:
 		// Lower Floor To Lowest
-		EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0, 0);
+		EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0, 0,
+		           false);
 		result.lineexecuted = true;
 		break;
 
 	case 83:
 		// Lower Floor
 		EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_SLOW),
-		           (128 - 128) * FRACUNIT, 0, 0);
+		           (128 - 128) * FRACUNIT, 0, 0, false);
 		result.lineexecuted = true;
 		break;
 
 	case 84:
 		// LowerAndChange
 		EV_DoFloor(DFloor::floorLowerAndChange, line, line->id, SPEED(F_SLOW),
-		           0 * FRACUNIT, 0, 0);
+		           0 * FRACUNIT, 0, 0, false);
 		result.lineexecuted = true;
 		break;
 
@@ -735,6 +746,9 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		break;
 
 	case 88:
+		if (gamemission == heretic && !thing->player)
+			break;
+
 		// PlatDownWaitUp
 		EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_FAST),
 		          TICS(PLATWAIT), 0 * FRACUNIT, 0);
@@ -757,27 +771,28 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 91:
 		// Raise Floor
 		EV_DoFloor(DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW), 0, 0,
-		           0);
+		           0, false);
 		result.lineexecuted = true;
 		break;
 
 	case 92:
 		// Raise Floor 24
 		EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
-		           FRACUNIT * 24, 0, 0);
+		           FRACUNIT * 24, 0, 0, false);
 		result.lineexecuted = true;
 		break;
 
 	case 93:
 		// Raise Floor 24 And Change
 		EV_DoFloor(DFloor::floorRaiseAndChange, line, line->id, SPEED(F_SLOW),
-		           24 * FRACUNIT, 0, 0);
+		           24 * FRACUNIT, 0, 0, false);
 		result.lineexecuted = true;
 		break;
 
 	case 94:
 		// Raise Floor Crush
-		EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(F_SLOW), 0, true, 0);
+		EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(F_SLOW), 0, true, 0,
+		           false);
 		result.lineexecuted = true;
 		break;
 
@@ -791,7 +806,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 96:
 		// Raise floor to shortest texture height
 		// on either side of lines.
-		EV_DoFloor(DFloor::floorRaiseByTexture, line, line->id, SPEED(F_SLOW), 0, 0, 0);
+		EV_DoFloor(DFloor::floorRaiseByTexture, line, line->id, SPEED(F_SLOW), 0, 0, 0, false);
 		result.lineexecuted = true;
 		break;
 
@@ -804,7 +819,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 98:
 		// Lower Floor (TURBO)
 		EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_FAST),
-		           (136 - 128) * FRACUNIT, 0, 0);
+		           (136 - 128) * FRACUNIT, 0, 0, gamemission == heretic);
 		result.lineexecuted = true;
 		break;
 
@@ -829,15 +844,31 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		break;
 
 	case 106:
-		// Blazing Door Open (faster than TURBO!)
-		EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), 0, NoKey);
-		result.lineexecuted = true;
+		if (gamemission == heretic)
+		{
+			// Build Stairs Turbo 16
+			if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT,
+			                   SPEED(S_TURBO), TICS(0), 0, 0, 0))
+			{
+				result.lineexecuted = true;
+				line->special = 0;
+			}
+		}
+		else
+		{
+			// Blazing Door Open (faster than TURBO!)
+			EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), 0, NoKey);
+			result.lineexecuted = true;
+		}
 		break;
 
 	case 107:
-		// Blazing Door Close (faster than TURBO!)
-		EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_FAST), 0, NoKey);
-		result.lineexecuted = true;
+		if (gamemission != heretic)
+		{
+			// Blazing Door Close (faster than TURBO!)
+			EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_FAST), 0, NoKey);
+			result.lineexecuted = true;
+		}
 		break;
 
 	case 120:
@@ -858,13 +889,15 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 128:
 		// Raise To Nearest Floor
-		EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0, 0);
+		EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0, 0,
+		           false);
 		result.lineexecuted = true;
 		break;
 
 	case 129:
 		// Raise Floor Turbo
-		EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_FAST), 0, 0, 0);
+		EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_FAST), 0, 0, 0,
+		           false);
 		result.lineexecuted = true;
 		break;
 
@@ -887,7 +920,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			// Raise Floor 512
 			// 142 W1  EV_DoFloor(raiseFloor512)
 			if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
-			               FRACUNIT * 64 * 8, 0, 0))
+			               FRACUNIT * 64 * 8, 0, 0, false))
 			{
 				result.lineexecuted = true;
 				line->special = 0;
@@ -993,7 +1026,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			// Lower floor to next lower neighbor
 			// 219 W1 Lower Floor Next Lower Neighbor
 			if (EV_DoFloor(DFloor::floorLowerToNearest, line, line->id, SPEED(F_SLOW), 0,
-			               0, 0))
+			               0, 0, false))
 			{
 				result.lineexecuted = true;
 				line->special = 0;
@@ -1088,7 +1121,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			// Raise Floor 512
 			// 147 WR  EV_DoFloor(raiseFloor512)
 			EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
-			           FRACUNIT * 64 * 8, 0, 0);
+			           FRACUNIT * 64 * 8, 0, 0, false);
 			result.lineexecuted = true;
 			break;
 
@@ -1122,8 +1155,8 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			//         EV_DoFloor(lowerFloortoLowest)
 			EV_DoCeiling(DCeiling::ceilRaiseToHighest, line, line->id, SPEED(C_SLOW), 0,
 			             0, 0, 0, 0);
-			EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
-			           0);
+			EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0, 0,
+			           false);
 			result.lineexecuted = true;
 			break;
 
@@ -1222,7 +1255,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			// Lower floor to next lower neighbor
 			// 220 WR Lower Floor Next Lower Neighbor
 			EV_DoFloor(DFloor::floorLowerToNearest, line, line->id, SPEED(F_SLOW), 0, 0,
-			           0);
+			           0, false);
 			result.lineexecuted = true;
 			break;
 
@@ -1769,6 +1802,9 @@ void P_SpawnCompatibleScroller(line_t* l, int i)
 		new DScroller(DScroller::sc_side, -FRACUNIT, 0, -1, lines[i].sidenum[0], accel);
 		break;
 	}
+
+	if (gamemission == heretic && special == 99)
+		new DScroller(DScroller::sc_side, -FRACUNIT, 0, -1, lines[i].sidenum[0], accel);
 }
 
 // killough 3/7/98 -- end generalized scroll effects
@@ -1992,6 +2028,10 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	if (bossaction)
 	{
+		// BlzOpenDoor BLUE
+		if (gamemission != heretic && line->special == 99)
+			return result;
+
 		switch (line->special)
 		{
 			// 0-tag specials, locked switches and teleporters need to be blocked for boss
@@ -2006,7 +2046,6 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 135: // BlzOpenDoor RED
 		case 137: // BlzOpenDoor YEL
 
-		case 99:  // BlzOpenDoor BLUE
 		case 134: // BlzOpenDoor RED
 		case 136: // BlzOpenDoor YELLOW
 
@@ -2133,7 +2172,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	case 18:
 		// Raise Floor to next highest floor
-		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0, 0))
+		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0,
+		               0, false))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -2161,8 +2201,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	case 23:
 		// Lower Floor to Lowest
-		if (EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
-		               0))
+		if (EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0, 0,
+		               false))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -2192,7 +2232,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 71:
 		// Turbo Lower Floor
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_FAST),
-		               (136 - 128) * FRACUNIT, 0, 0))
+		               (136 - 128) * FRACUNIT, 0, 0, gamemission == heretic))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -2201,13 +2241,21 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	case 49:
 		// Ceiling Crush And Raise
-		if (EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_SLOW),
-		                 SPEED(C_SLOW), 0, true, 0, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			DCeiling::ECeiling ceil = (gamemission == heretic)
+			                              ? DCeiling::ceilLowerAndCrush
+			                              : DCeiling::ceilCrushAndRaise;
+
+			bool crush = (gamemission != heretic);
+
+			if (EV_DoCeiling(ceil, line, line->id, SPEED(C_SLOW), SPEED(C_SLOW), 0, crush,
+			                 0, 0))
+			{
+				result.lineexecuted = true;
+				result.switchchanged = true;
+			}
+			break;
 		}
-		break;
 
 	case 50:
 		// Close Door
@@ -2238,7 +2286,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 55:
 		// Raise Floor Crush
 		if (EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(F_SLOW), 0, true,
-		               0))
+		               0, false))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -2247,7 +2295,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	case 101:
 		// Raise Floor
-		if (EV_DoFloor (DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW), 0, 0, 0))
+		if (EV_DoFloor(DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW),
+		               0, 0, 0, false))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -2257,7 +2306,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 102:
 		// Lower Floor to Surrounding floor height
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_SLOW),
-		               (128 - 128) * FRACUNIT, 0, 0))
+		               (128 - 128) * FRACUNIT, 0, 0, false))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -2270,6 +2319,19 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
+		}
+		break;
+
+	case 107:
+		if (gamemission == heretic)
+		{
+			// Build Stairs Turbo 16
+			if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT,
+			                   SPEED(S_TURBO), TICS(0), 0, 0, 0))
+			{
+				result.lineexecuted = true;
+				line->special = 0;
+			}
 		}
 		break;
 
@@ -2324,7 +2386,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 131:
 		// Raise Floor Turbo
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_FAST), 0, 0,
-		               0))
+		               0, false))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -2362,7 +2424,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 140:
 		// Raise Floor 512
 		if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
-		               FRACUNIT * 64 * 8, 0, 0))
+		               FRACUNIT * 64 * 8, 0, 0, false))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -2382,7 +2444,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Raise Floor to shortest lower texture
 			// 158 S1  EV_DoFloor(raiseToTexture), CSW(0)
 			if (EV_DoFloor(DFloor::floorRaiseByTexture, line, line->id, SPEED(F_SLOW), 0,
-			               false, 0))
+			               false, 0, false))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2393,7 +2455,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Raise Floor to shortest lower texture
 			// 159 S1  EV_DoFloor(lowerAndChange)
 			if (EV_DoFloor(DFloor::floorLowerAndChange, line, line->id, SPEED(F_SLOW),
-			               0 * FRACUNIT, false, 0))
+			               0 * FRACUNIT, false, 0, false))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2404,7 +2466,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Raise Floor 24 and change
 			// 160 S1  EV_DoFloor(raiseFloor24AndChange)
 			if (EV_DoFloor(DFloor::floorRaiseAndChange, line, line->id, SPEED(F_SLOW),
-			               24 * FRACUNIT, 0, 0))
+			               24 * FRACUNIT, 0, 0, false))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2415,7 +2477,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Raise Floor 24
 			// 161 S1  EV_DoFloor(raiseFloor24)
 			if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
-			               FRACUNIT * 24, 0, 0))
+			               FRACUNIT * 24, 0, 0, false))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2469,7 +2531,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::ceilRaiseToHighest, line, line->id, SPEED(C_SLOW),
 			                 0, 0, 0, 0, 0) ||
 			    EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0,
-			               0, 0))
+			               0, 0, false))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2614,7 +2676,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Lower floor to next lowest floor
 			// 221 S1 Lower Floor To Nearest Floor
 			if (EV_DoFloor(DFloor::floorLowerToNearest, line, line->id, SPEED(F_SLOW), 0,
-			               0, 0))
+			               0, 0, false))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2683,7 +2745,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Raise Floor to shortest lower texture
 			// 177 SR  EV_DoFloor(lowerAndChange)
 			if (EV_DoFloor(DFloor::floorLowerAndChange, line, line->id, SPEED(F_SLOW),
-			               0 * FRACUNIT, 0, 0))
+			               0 * FRACUNIT, 0, 0, false))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2694,7 +2756,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Raise Floor 512
 			// 178 SR  EV_DoFloor(raiseFloor512)
 			if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
-			               FRACUNIT * 64 * 8, 0, 0))
+			               FRACUNIT * 64 * 8, 0, 0, false))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2705,7 +2767,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Raise Floor 24 and change
 			// 179 SR  EV_DoFloor(raiseFloor24AndChange)
 			if (EV_DoFloor(DFloor::floorRaiseAndChange, line, line->id, SPEED(F_SLOW),
-			               24 * FRACUNIT, 0, 0))
+			               24 * FRACUNIT, 0, 0, false))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2716,7 +2778,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Raise Floor 24
 			// 180 SR  EV_DoFloor(raiseFloor24)
 			if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
-			               FRACUNIT * 24, 0, 0))
+			               FRACUNIT * 24, 0, 0, false))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2780,7 +2842,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::ceilRaiseToHighest, line, line->id, SPEED(C_SLOW),
 			                 0, 0, 0, 0, 0) ||
 			    EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0,
-			               0, 0))
+			               0, 0, false))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -2919,7 +2981,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Lower floor to next lowest floor
 			// 222 SR Lower Floor To Nearest Floor
 			if (EV_DoFloor(DFloor::floorLowerToNearest, line, line->id, SPEED(F_SLOW), 0,
-			               0, 0))
+			               0, 0, false))
 			{
 				result.lineexecuted = true;
 				result.switchchanged = true;
@@ -3008,7 +3070,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 45:
 		// Lower Floor to Surrounding floor height
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_SLOW),
-		               (128 - 128) * FRACUNIT, 0, 0))
+		               (128 - 128) * FRACUNIT, 0, 0, false))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -3017,8 +3079,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	case 60:
 		// Lower Floor to Lowest
-		if (EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
-		               0))
+		if (EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0, 0,
+		               false))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -3057,7 +3119,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 64:
 		// Raise Floor to ceiling
 		if (EV_DoFloor(DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW),
-		               0, 0, 0))
+		               0, 0, 0, false))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -3087,7 +3149,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 65:
 		// Raise Floor Crush
 		if (EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(F_SLOW), 0, true,
-		               0))
+		               0, false))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -3107,7 +3169,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 69:
 		// Raise Floor to next highest floor
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0,
-		               0))
+		               0, false))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -3117,7 +3179,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 70:
 		// Turbo Lower Floor
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_FAST),
-		               (136 - 128) * FRACUNIT, 0, 0))
+		               (136 - 128) * FRACUNIT, 0, 0, gamemission == heretic))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -3165,7 +3227,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 132:
 		// Raise Floor Turbo
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_FAST), 0, 0,
-		               0))
+		               0, false))
 		{
 			result.lineexecuted = true;
 			result.switchchanged = true;
@@ -3173,6 +3235,9 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		break;
 
 	case 99:
+		if (gamemission == heretic)
+			break;
+
 		// BlzOpenDoor BLUE
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
 		              (card_t)(BCard | CardIsSkull)))
@@ -3363,7 +3428,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	case 24:
 		// 24 G1 raise floor to highest adjacent
 		if (EV_DoFloor(DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW),
-		               0, 0, 0) ||
+		               0, 0, 0, false) ||
 		    demoplayback)
 		{
 			result.lineexecuted = true;

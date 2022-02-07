@@ -965,7 +965,7 @@ void SectorSnapshot::toSector(sector_t *sector) const
 			sector->floordata =
 				new DFloor(sector, static_cast<DFloor::EFloor>(mFloorType),
 						   mFloorLine, mFloorSpeed, mFloorOffset,
-						   mFloorCrush, mFloorChange);			
+						   mFloorCrush, mFloorChange, false); // todo - heretic may bug out?			
 		}
 		
 		DFloor *floor				= static_cast<DFloor *>(sector->floordata);

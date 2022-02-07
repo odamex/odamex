@@ -676,8 +676,8 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 	}
 }
 
-DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
-			   fixed_t speed, fixed_t height, bool crush, int change)
+DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line, fixed_t speed,
+               fixed_t height, bool crush, int change, bool hereticlower)
 	: DMovingFloor (sec), m_Status(init)
 {
 	fixed_t floorheight = P_FloorHeight(sec);
@@ -703,7 +703,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		m_FloorDestHeight = P_FindHighestFloorSurrounding(sec);
 		// [RH] DOOM's turboLower type did this. I've just extended it
 		//		to be applicable to all LowerToHighest types.
-		if (m_FloorDestHeight != floorheight)
+		if (hereticlower || m_FloorDestHeight != floorheight)
 			m_FloorDestHeight += height;
 		break;
 
@@ -909,8 +909,8 @@ DFloor* DFloor::Clone(sector_t* sec) const
 // HANDLE FLOOR TYPES
 // [RH] Added tag, speed, height, crush, change params.
 //
-BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
-				 fixed_t speed, fixed_t height, bool crush, int change)
+BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag, fixed_t speed,
+                fixed_t height, bool crush, int change, bool hereticlower)
 {
 	int 				secnum;
 	BOOL 				rtn = false;
@@ -944,7 +944,7 @@ manual_floor:
 
 		// new floor thinker
 		rtn = true;
-		new DFloor(sec, floortype, line, speed, height, crush, change);
+		new DFloor(sec, floortype, line, speed, height, crush, change, hereticlower);
 		P_AddMovingFloor(sec);
 
 		if (manual)

@@ -1065,7 +1065,7 @@ public:
 
 	DFloor(sector_t *sec);
 	DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line, fixed_t speed,
-		   fixed_t height, bool crush, int change);
+	       fixed_t height, bool crush, int change, bool hereticlower);
 	DFloor(sector_t* sec, line_t* line, int speed,
 	       int target, int crush, int change, int direction, int model);
 	DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t speed,
@@ -1109,8 +1109,8 @@ protected:
 	friend BOOL EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
 		fixed_t stairsize, fixed_t speed, int delay, int reset, int igntxt,
 		int usespecials);
-	friend BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
-		fixed_t speed, fixed_t height, bool crush, int change);
+	friend BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag, fixed_t speed,
+	                       fixed_t height, bool crush, int change, bool hereticlower);
 	friend int EV_DoDonut (line_t* line);
 	friend BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed,
 	                            fixed_t slimespeed);
