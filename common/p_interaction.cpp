@@ -2057,9 +2057,9 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		target->momx = target->momy = target->momz = 0;
 	}
 
-	if (player && sv_skill == sk_baby)
+	if (player)
     {
-		damage >>= 1;	// take half damage in trainer mode
+		damage = static_cast<int>(static_cast<float>(damage) * SkillInfos[sv_skill.asInt() - 1].damage_factor);
     }
 
 	// [AM] Weapon and monster damage scaling.
