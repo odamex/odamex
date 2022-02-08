@@ -797,6 +797,7 @@ void AActor::Serialize (FArchive &arc)
 			<< flags
 			<< flags2
 			<< flags3
+			<< oflags
 			<< special1
 			<< special2
 			<< health
@@ -866,6 +867,7 @@ void AActor::Serialize (FArchive &arc)
 			>> flags
 			>> flags2 
 			>> flags3
+			>> oflags
 			>> special1
 			>> special2
 			>> health
