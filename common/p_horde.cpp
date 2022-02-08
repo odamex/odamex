@@ -371,6 +371,28 @@ class HordeState
 		m_waveStartHealth = info.waveStartHealth;
 	}
 
+	/**
+	 * @brief Clear the boss array and re-check all actors for boss flags.
+	 *
+	 * @detail Used for loading savegames.
+	 */
+	void rescanBosses()
+	{
+		AActor* mo;
+		TThinkerIterator<AActor> iterator;
+
+		int count = 0;
+
+		m_bosses.clear();
+		while ((mo = iterator.Next()))
+		{
+			if (mo->oflags & MFO_BOSSPOOL)
+			{
+				m_bosses.push_back(mo->ptr());
+			}
+		}
+	}
+
 	void addSpawnHealth(const int health)
 	{
 		m_spawnedHealth += health;
@@ -487,7 +509,7 @@ void HordeState::tick()
 		if (!alive)
 		{
 			// The server can have lives, and if that's the case we want
-			// to bring back dead pl
+			// to bring back dead players.
 			if (G_IsLivesGame())
 			{
 				// Give all ingame players an extra life for beating the wave.
@@ -832,6 +854,17 @@ void P_SerializeHorde(FArchive& arc)
 		info.defineID = defineID;
 		::g_HordeDirector.unserialize(info);
 	}
+}
+
+/**
+ * @brief Do last minute fixups after loading a savegame.
+ */
+void P_HordePostLoad()
+{
+	if (!G_IsHordeMode())
+		return;
+
+	::g_HordeDirector.rescanBosses();
 }
 
 BEGIN_COMMAND(hordewave)

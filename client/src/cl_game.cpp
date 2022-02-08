@@ -1545,6 +1545,8 @@ void G_DoLoadGame (void)
 
 	if (text[9] != 0x1d)
 		I_Error ("Bad savegame");
+
+	P_HordePostLoad();
 }
 
 
