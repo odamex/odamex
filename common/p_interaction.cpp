@@ -351,8 +351,8 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 		num *= SkillInfos[sv_skill.asInt() - 1].ammo_factor;
 	}
 
-	int oldammotype = player->ammo[ammotype];
-	player->ammo[ammotype] += num;
+	const int oldammotype = player->ammo[ammotype];
+	player->ammo[ammotype] += static_cast<int>(num);
 
 	if (player->ammo[ammotype] > player->maxammo[ammotype])
     {
