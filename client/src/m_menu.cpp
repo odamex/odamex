@@ -50,6 +50,7 @@
 #include "cl_responderkeys.h"
 
 #include "gi.h"
+#include "g_skill.h"
 #include "m_fileio.h"
 
 #ifdef _XBOX
@@ -1092,7 +1093,7 @@ void M_Episode (int choice)
 	epi = choice;
 
 	if (EpisodeInfos[epi].noskillmenu)
-		M_StartGame(2); // TODO: Implement defaultskillmenu
+		M_StartGame(defaultskillmenu);
 	else
 		M_SetupNextMenu(&NewDef);
 }

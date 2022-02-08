@@ -344,7 +344,7 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 	{
 		// give double ammo in trainer mode,
 		// you'll need in nightmare
-		num *= 2.f;
+		num *= SkillInfos[sv_skill.asInt() - 1].double_ammo_factor;
 	}
 	else
 	{
