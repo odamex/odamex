@@ -41,7 +41,7 @@ struct SkillInfo
 
 	bool fast_monsters;			// not implemented
 	bool slow_monsters;			// not implemented
-	bool disable_cheats;		// not implemented
+	bool disable_cheats;
 	bool auto_use_health;		// not implemented
 
 	bool easy_boss_brain;		// not implemented
@@ -60,7 +60,7 @@ struct SkillInfo
 	bool must_confirm;					// not implemented
 	std::string must_confirm_text;      // not implemented
 	char shortcut;						// not implemented
-	std::string text_color;             // not implemented
+	byte text_color[4];					// not implemented
 	//SkillActorReplacement replace;	// not implemented
 	//SkillActorReplacement replaced;	// not implemented
 	float monster_health;	// not implemented
@@ -96,7 +96,7 @@ struct SkillInfo
 		, pic_name()
 		//, menu_names_for_player_class(???)
 		, must_confirm(false)
-		, must_confirm_text("Are you sure?")
+		, must_confirm_text("$NIGHTMARE")
 		, shortcut(0)
 		, text_color("")
 		//, replace(???)
