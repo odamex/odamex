@@ -28,3 +28,4 @@
 
 SkillInfo SkillInfos[MAX_SKILLS];
 byte skillnum = 0;
+byte defaultskillmenu = 2;
