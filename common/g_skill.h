@@ -34,7 +34,7 @@ struct SkillInfo
 	float ammo_factor;
 	float double_ammo_factor;
 	float drop_ammo_factor;		// not implemented
-	float damage_factor;		// not implemented
+	float damage_factor;
 	float armor_factor;			// not implemented
 	float health_factor;		// not implemented
 	float kickback_factor;		// not implemented
@@ -44,7 +44,7 @@ struct SkillInfo
 	bool disable_cheats;
 	bool auto_use_health;		// not implemented
 
-	bool easy_boss_brain;		// not implemented
+	bool easy_boss_brain;
 	bool easy_key;				// not implemented
 	bool no_menu;				// not implemented
 	int respawn_counter;		// not implemented
