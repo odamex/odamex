@@ -663,6 +663,25 @@ void MIType_Float(OScanner& os, bool doEquals, void* data, unsigned int flags,
 	*static_cast<float*>(data) = os.getTokenFloat();
 }
 
+// Sets the inputted data as a bool (that is, if flags != 0, set to true; else false)
+void MIType_Bool(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                  unsigned int flags2)
+{
+	*static_cast<bool*>(data) = flags;
+}
+
+// Sets the inputted data as a char
+void MIType_Char(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                 unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+
+	if (os.getToken().size() > 1)
+		os.error("Expected single character string, got multi-character string");
+
+	*static_cast<char*>(data) = os.getToken()[0];
+}
+
 // Sets the inputted data as a color
 void MIType_Color(OScanner& os, bool doEquals, void* data, unsigned int flags,
                   unsigned int flags2)
@@ -1549,7 +1568,7 @@ struct MapInfoDataSetter<SkillInfo>
 
 	MapInfoDataSetter(SkillInfo& ref)
 	{
-		mapInfoDataContainer.reserve(11);
+		mapInfoDataContainer.reserve(32);
 
 		ENTRY3("ammofactor", &MIType_Float, &ref.ammo_factor)
 		ENTRY3("doubleammofactor", &MIType_Float, &ref.double_ammo_factor)
@@ -1558,10 +1577,33 @@ struct MapInfoDataSetter<SkillInfo>
 		ENTRY3("armorfactor", &MIType_Float, &ref.armor_factor)
 		ENTRY3("healthfactor", &MIType_Float, &ref.health_factor)
 		ENTRY3("kickbackfactor", &MIType_Float, &ref.kickback_factor)
-		/*ENTRY3("fastmonsters", &MIType_Float, &ref.fast_monsters)
-		ENTRY3("slowmonsters", &MIType_Float, &ref.slow_monsters)
-		ENTRY3("disablecheats", &MIType_Float, &ref.disable_cheats)
-		ENTRY3("autousehealth", &MIType_Float, &ref.auto_use_health)*/
+
+		ENTRY4("fastmonsters", &MIType_Bool, &ref.fast_monsters, true)
+		ENTRY4("slowmonsters", &MIType_Bool, &ref.slow_monsters, true)
+		ENTRY4("disablecheats", &MIType_Bool, &ref.disable_cheats, true)
+		ENTRY4("autousehealth", &MIType_Bool, &ref.auto_use_health, true)
+
+		ENTRY4("easybossbrain", &MIType_Bool, &ref.easy_boss_brain, true)
+		ENTRY4("easykey", &MIType_Bool, &ref.easy_key, true)
+		ENTRY4("nomenu", &MIType_Bool, &ref.no_menu, true)
+		ENTRY3("respawntime", &MIType_Int, &ref.respawn_counter)
+		ENTRY3("respawnlimit", &MIType_Int, &ref.respawn_limit)
+		ENTRY3("aggressiveness", &MIType_Float, &ref.aggressiveness)
+		ENTRY4("spawnmulti", &MIType_Bool, &ref.spawn_multi, true)
+		ENTRY4("instantreaction", &MIType_Bool, &ref.instant_reaction, true)
+		ENTRY3("acsreturn", &MIType_Int, &ref.ACS_return)
+		//ENTRY3("name", &???, &ref.menu_name) // todo - requires special MIType to work properly
+		//ENTRY3("picname", &??, &ref.pic_name) // todo - requires special MIType to work properly
+		//ENTRY3("playerclassname", &???, &ref.menu_names_for_player_class) // todo - requires special MIType to work properly
+		ENTRY4("mustconfirm", &MIType_Bool, &ref.must_confirm, true) // todo - requires special MIType to work properly
+		ENTRY3("key", &MIType_Char, &ref.shortcut)
+		ENTRY3("textcolor", &MIType_Color, &ref.text_color)
+		// ENTRY3("replaceactor", &???, &ref.replace) // todo - requires special MIType to work properly
+		ENTRY3("monsterhealth", &MIType_Float, &ref.monster_health)
+		ENTRY3("friendlyhealth", &MIType_Float, &ref.friendly_health)
+		ENTRY4("nopain", &MIType_Bool, &ref.no_pain, true)
+		ENTRY3("infighting", &MIType_Int, &ref.infighting)
+		ENTRY4("playerrespawn", &MIType_Bool, &ref.player_respawn, true)
 	}
 };
 
