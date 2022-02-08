@@ -407,7 +407,8 @@ void AActor::Destroy ()
 	SV_SendDestroyActor(this);
 
 	// Remove from health pool.
-	P_RemoveHealthPool(this);
+	if (!::savegamerestore)
+		P_RemoveHealthPool(this);
 
     // Add special to item respawn queue if it is destined to be respawned
 	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0)
