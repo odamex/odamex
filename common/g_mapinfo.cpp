@@ -24,6 +24,7 @@
 #include "g_episode.h"
 #include "gi.h"
 #include "gstrings.h"
+#include "g_skill.h"
 #include "i_system.h"
 #include "oscanner.h"
 #include "p_setup.h"
@@ -1540,6 +1541,30 @@ void ParseEpisodeInfo(OScanner& os)
 	}
 }
 
+// SkillInfo
+template <>
+struct MapInfoDataSetter<SkillInfo>
+{
+	MapInfoDataContainer mapInfoDataContainer;
+
+	MapInfoDataSetter(SkillInfo& ref)
+	{
+		mapInfoDataContainer.reserve(11);
+
+		ENTRY3("ammofactor", &MIType_Float, &ref.ammo_factor)
+		ENTRY3("doubleammofactor", &MIType_Float, &ref.double_ammo_factor)
+		ENTRY3("dropammofactor", &MIType_Float, &ref.drop_ammo_factor)
+		ENTRY3("damagefactor", &MIType_Float, &ref.damage_factor)
+		ENTRY3("armorfactor", &MIType_Float, &ref.armor_factor)
+		ENTRY3("healthfactor", &MIType_Float, &ref.health_factor)
+		ENTRY3("kickbackfactor", &MIType_Float, &ref.kickback_factor)
+		/*ENTRY3("fastmonsters", &MIType_Float, &ref.fast_monsters)
+		ENTRY3("slowmonsters", &MIType_Float, &ref.slow_monsters)
+		ENTRY3("disablecheats", &MIType_Float, &ref.disable_cheats)
+		ENTRY3("autousehealth", &MIType_Float, &ref.auto_use_health)*/
+	}
+};
+
 void ParseMapInfoLump(int lump, const char* lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
@@ -1650,15 +1675,28 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 		}
 		else if (os.compareTokenNoCase("skill"))
 		{
-			// Not implemented
 			os.mustScan(); // Name
 
-			MapInfoDataSetter<void> setter;
-			ParseMapInfoLower<void>(os, setter);
+			if (skillnum < MAX_SKILLS)
+			{
+				SkillInfo &info = SkillInfos[skillnum];
+
+				info.name = os.getToken();
+
+				MapInfoDataSetter<SkillInfo> setter(info);
+				ParseMapInfoLower<SkillInfo>(os, setter);
+
+				++skillnum;
+			}
+			else
+			{
+				MapInfoDataSetter<void> setter;
+				ParseMapInfoLower<void>(os, setter);
+			}
 		}
 		else if (os.compareTokenNoCase("clearskills"))
 		{
-			// Not implemented
+			skillnum = 0;
 		}
 		else if (os.compareTokenNoCase("gameinfo"))
 		{
@@ -1696,6 +1734,11 @@ void G_ParseMapInfo()
 {
 	const char* baseinfoname = NULL;
 	int lump;
+
+	//if (gamemission != heretic)
+	{
+		ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
+	}
 
 	switch (gamemission)
 	{
