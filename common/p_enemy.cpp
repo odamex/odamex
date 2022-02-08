@@ -40,6 +40,7 @@
 #include "d_player.h"
 #include "p_setup.h"
 #include "d_dehacked.h"
+#include "g_skill.h"
 #include "p_mapformat.h"
 
 
@@ -2855,7 +2856,7 @@ void A_BrainSpit (AActor *mo)
 		return;
 
 	brain.easy ^= 1;		// killough 3/26/98: use brain struct
-	if (sv_skill <= sk_easy && (!brain.easy))
+	if (SkillInfos[sv_skill.asInt() - 1].easy_boss_brain && (!brain.easy))
 		return;
 
 	// shoot a cube at current target
