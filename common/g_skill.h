@@ -54,12 +54,12 @@ struct SkillInfo
 	bool spawn_multi;			// not implemented
 	bool instant_reaction;		// not implemented
 	int ACS_return;				// not implemented
-	std::string menu_name;		// not implemented
-	std::string pic_name;		// not implemented
+	std::string menu_name;
+	std::string pic_name;
 	//SkillMenuNames menu_names_for_player_class;	// not implemented
-	bool must_confirm;					// not implemented
-	std::string must_confirm_text;      // not implemented
-	char shortcut;						// not implemented
+	bool must_confirm;
+	std::string must_confirm_text;
+	char shortcut;
 	byte text_color[4];					// not implemented
 	//SkillActorReplacement replace;	// not implemented
 	//SkillActorReplacement replaced;	// not implemented

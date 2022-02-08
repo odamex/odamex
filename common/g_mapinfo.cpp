@@ -670,6 +670,70 @@ void MIType_Bool(OScanner& os, bool doEquals, void* data, unsigned int flags,
 	*static_cast<bool*>(data) = flags;
 }
 
+// Sets the inputted data as a bool (that is, if flags != 0, set to true; else false)
+void MIType_MustConfirm(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                 unsigned int flags2)
+{
+	SkillInfo& info = *static_cast<SkillInfo*>(data);
+	info.must_confirm = true;
+
+	if (doEquals)
+	{
+		os.scan();
+		if (os.compareTokenNoCase("="))
+		{
+			info.must_confirm_text.clear();
+			
+			do
+			{
+				os.mustScan();
+				info.must_confirm_text += os.getToken();
+				info.must_confirm_text += "\n";
+				os.scan();
+			} while (os.compareToken(","));
+			os.unScan();
+
+			// Trim trailing newline.
+			if (info.must_confirm_text.length() > 0)
+			{
+				info.must_confirm_text.resize(info.must_confirm_text.length() - 1);
+			}
+		}
+		else
+		{
+			os.unScan();
+		}
+	}
+	else
+	{
+		os.scan();
+		info.must_confirm_text.clear();
+
+		if (os.isQuotedString())
+		{
+			os.unScan();
+			do
+			{
+				os.mustScan();
+				info.must_confirm_text += os.getToken();
+				info.must_confirm_text += "\n";
+				os.scan();
+			} while (os.compareToken(","));
+			os.unScan();
+
+			// Trim trailing newline.
+			if (info.must_confirm_text.length() > 0)
+			{
+				info.must_confirm_text.resize(info.must_confirm_text.length() - 1);
+			}
+		}
+		else
+		{
+			os.unScan();
+		}
+	}
+}
+
 // Sets the inputted data as a char
 void MIType_Char(OScanner& os, bool doEquals, void* data, unsigned int flags,
                  unsigned int flags2)
@@ -680,6 +744,15 @@ void MIType_Char(OScanner& os, bool doEquals, void* data, unsigned int flags,
 		os.error("Expected single character string, got multi-character string");
 
 	*static_cast<char*>(data) = os.getToken()[0];
+}
+
+// Sets the inputted data as a std::string
+void MIType_String(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                 unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+
+	*static_cast<std::string*>(data) = os.getToken();
 }
 
 // Sets the inputted data as a color
@@ -1592,10 +1665,10 @@ struct MapInfoDataSetter<SkillInfo>
 		ENTRY4("spawnmulti", &MIType_Bool, &ref.spawn_multi, true)
 		ENTRY4("instantreaction", &MIType_Bool, &ref.instant_reaction, true)
 		ENTRY3("acsreturn", &MIType_Int, &ref.ACS_return)
-		//ENTRY3("name", &???, &ref.menu_name) // todo - requires special MIType to work properly
-		//ENTRY3("picname", &??, &ref.pic_name) // todo - requires special MIType to work properly
+		ENTRY3("name", &MIType_String, &ref.menu_name)
+		ENTRY3("picname", &MIType_String, &ref.pic_name)
 		//ENTRY3("playerclassname", &???, &ref.menu_names_for_player_class) // todo - requires special MIType to work properly
-		ENTRY4("mustconfirm", &MIType_Bool, &ref.must_confirm, true) // todo - requires special MIType to work properly
+		ENTRY4("mustconfirm", &MIType_MustConfirm, &ref, true)
 		ENTRY3("key", &MIType_Char, &ref.shortcut)
 		ENTRY3("textcolor", &MIType_Color, &ref.text_color)
 		// ENTRY3("replaceactor", &???, &ref.replace) // todo - requires special MIType to work properly
