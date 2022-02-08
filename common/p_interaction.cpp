@@ -40,6 +40,7 @@
 #include "svc_message.h"
 #include "p_horde.h"
 #include "com_misc.h"
+#include "g_skill.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -313,10 +314,8 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t* player, ammotype_t ammo, int 
 	return IEV_EquipRemove;
 }
 
-ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
+ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 {
-	int oldammotype;
-
 	if (ammotype == am_noammo)
     {
 		return IEV_NotEquipped;
@@ -338,17 +337,21 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
     }
 	else
     {
-		num = clipammo[ammotype]/2;
+		num = clipammo[ammotype] / 2;
     }
 
-	if (sv_skill == sk_baby || sv_skill == sk_nightmare || sv_doubleammo)
+	if (sv_doubleammo)
 	{
 		// give double ammo in trainer mode,
 		// you'll need in nightmare
-		num <<= 1;
+		num *= 2.f;
+	}
+	else
+	{
+		num *= SkillInfos[static_cast<int>(sv_skill - 1)].ammo_factor;
 	}
 
-	oldammotype = player->ammo[ammotype];
+	int oldammotype = player->ammo[ammotype];
 	player->ammo[ammotype] += num;
 
 	if (player->ammo[ammotype] > player->maxammo[ammotype])
