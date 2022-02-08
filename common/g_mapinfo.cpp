@@ -1735,6 +1735,9 @@ void G_ParseMapInfo()
 	const char* baseinfoname = NULL;
 	int lump;
 
+	// Reset skill definitions
+	skillnum = 0;
+
 	//if (gamemission != heretic)
 	{
 		ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
