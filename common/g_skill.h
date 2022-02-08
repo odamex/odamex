@@ -39,7 +39,7 @@ struct SkillInfo
 	float health_factor;		// not implemented
 	float kickback_factor;		// not implemented
 
-	bool fast_monsters;			// not implemented
+	bool fast_monsters;
 	bool slow_monsters;			// not implemented
 	bool disable_cheats;
 	bool auto_use_health;		// not implemented

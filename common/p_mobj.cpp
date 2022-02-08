@@ -43,6 +43,7 @@
 #include "p_horde.h"
 #include "p_hordespawn.h"
 #include "g_mapinfo.h"
+#include "g_skill.h"
 #include "m_wdlstats.h"
 #include "p_mapformat.h"
 
@@ -752,7 +753,7 @@ void AActor::RunThink ()
 	}
 	else
 	{
-		bool respawnmonsters = (sv_skill == sk_nightmare || sv_monstersrespawn);
+		const bool respawnmonsters = (SkillInfos[sv_skill.asInt() - 1].respawn_counter || sv_monstersrespawn);
 
 		// check for nightmare respawn
 		if (!(flags & MF_COUNTKILL) || !respawnmonsters)
@@ -765,7 +766,7 @@ void AActor::RunThink ()
 
 		movecount++;
 
-		if (movecount < 12*TICRATE)
+		if (movecount < SkillInfos[sv_skill.asInt() - 1].respawn_counter * TICRATE)
 			return;
 
 		if (level.time & 31)
