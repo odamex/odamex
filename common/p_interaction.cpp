@@ -348,7 +348,7 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 	}
 	else
 	{
-		num *= SkillInfos[static_cast<int>(sv_skill - 1)].ammo_factor;
+		num *= SkillInfos[sv_skill.asInt() - 1].ammo_factor;
 	}
 
 	int oldammotype = player->ammo[ammotype];
