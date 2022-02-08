@@ -59,6 +59,7 @@
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
+#include "g_skill.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -429,7 +430,7 @@ void G_InitNew (const char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	const bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
+	const bool wantFast = sv_fastmonsters || SkillInfos[sv_skill.asInt() - 1].fast_monsters;
 	if (wantFast != isFast)
 	{
 		if (wantFast)
