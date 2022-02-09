@@ -251,8 +251,6 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
       rndindex(0), netid(0), tid(0), bmapnode(this), baseline_set(false)
 {
-	state_t *st;
-
 	// Fly!!! fix it in P_RespawnSpecial
 	if ((unsigned int)itype >= NUMMOBJTYPES)
 	{
@@ -277,7 +275,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 	if (multiplayer && serverside)
 		netid = ::ServerNetID.obtainNetID();
 
-	if (sv_skill != sk_nightmare)
+	if (!SkillInfos[sv_skill.asInt() - 1].instant_reaction)
 		reactiontime = info->reactiontime;
 
 	if (clientside)
@@ -287,7 +285,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 
 	// do not set the state with P_SetMobjState,
 	// because action routines can not be called yet
-	st = &states[info->spawnstate];
+	state_t* st = &states[info->spawnstate];
 	state = st;
 	tics = st->tics;
 	sprite = st->sprite;
