@@ -47,7 +47,7 @@ struct SkillInfo
 	bool easy_boss_brain;
 	bool easy_key;				// not implemented
 	bool no_menu;				// not implemented
-	int respawn_counter;		// not implemented
+	int respawn_counter;
 	int respawn_limit;			// not implemented
 	float aggressiveness;		// not implemented
 	int spawn_filter;			// not implemented

@@ -968,7 +968,7 @@ void A_Chase (AActor *actor)
 	if (actor->flags & MF_JUSTATTACKED)
 	{
 		actor->flags &= ~MF_JUSTATTACKED;
-		if ((sv_skill != sk_nightmare) && !sv_fastmonsters)
+		if (SkillInfos[sv_skill.asInt() - 1].respawn_counter && !sv_fastmonsters)
 			P_NewChaseDir (actor);
 		return;
 	}
