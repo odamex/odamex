@@ -308,9 +308,9 @@ oldmenuitem_t NewGameMenu[MAX_SKILLS + 1]=
 	{1,"\0", M_ChooseSkill,0},
 	{1,"\0", M_ChooseSkill,0},
 	{1,"\0", M_ChooseSkill,0},
-	{1,"\0", M_ChooseSkill,0},
-	{1,"\0", M_ChooseSkill,0},
-	{1,"\0", M_ChooseSkill,0}
+	//{1,"\0", M_ChooseSkill,0},
+	//{1,"\0", M_ChooseSkill,0},
+	//{1,"\0", M_ChooseSkill,0}
 };
 
 oldmenu_t NewDef =
@@ -932,7 +932,7 @@ void M_DrawNewGame()
 	const int SMALLFONT_OFFSET = 8; // Line up with the skull
 
 	const char* pslabel = "Pistol Start Each Level ";
-	const int psy = NewDef.y + (LINEHEIGHT * 5) + SMALLFONT_OFFSET;
+	const int psy = NewDef.y + (LINEHEIGHT * skillnum) + SMALLFONT_OFFSET;
 
 	screen->DrawTextCleanMove(CR_RED, NewDef.x, psy, pslabel);
 	screen->DrawTextCleanMove(CR_GREY, NewDef.x + V_StringWidth(pslabel), psy,

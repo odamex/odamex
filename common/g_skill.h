@@ -25,7 +25,7 @@
 #define __G_SKILL__
 
 
-#define MAX_SKILLS 8
+#define MAX_SKILLS 5
 
 struct SkillInfo
 {
