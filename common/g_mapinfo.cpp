@@ -1078,6 +1078,33 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 	}
 }
 
+// Sets the inputted data as a std::string
+void MIType_SpawnFilter(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                   unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+
+	if (IsNum(os.getToken().c_str()))
+	{
+		const int num = os.getTokenInt();
+		if (num > 0)
+			*static_cast<int*>(data) |= (1 << (num - 1));
+	}
+	else
+	{
+		if (os.compareTokenNoCase("baby"))
+			*static_cast<int*>(data) |= 1;
+		else if (os.compareTokenNoCase("easy"))
+			*static_cast<int*>(data) |= 1;
+		else if (os.compareTokenNoCase("normal"))
+			*static_cast<int*>(data) |= 2;
+		else if (os.compareTokenNoCase("hard"))
+			*static_cast<int*>(data) |= 4;
+		else if (os.compareTokenNoCase("nightmare"))
+			*static_cast<int*>(data) |= 4;
+	}
+}
+
 // Sets the map to use the specific map07 bossactions
 void MIType_Map07Special(OScanner& os, bool doEquals, void* data, unsigned int flags,
                          unsigned int flags2)
@@ -1641,7 +1668,7 @@ struct MapInfoDataSetter<SkillInfo>
 
 	MapInfoDataSetter(SkillInfo& ref)
 	{
-		mapInfoDataContainer.reserve(32);
+		mapInfoDataContainer.reserve(33);
 
 		ENTRY3("ammofactor", &MIType_Float, &ref.ammo_factor)
 		ENTRY3("doubleammofactor", &MIType_Float, &ref.double_ammo_factor)
@@ -1662,6 +1689,7 @@ struct MapInfoDataSetter<SkillInfo>
 		ENTRY3("respawntime", &MIType_Int, &ref.respawn_counter)
 		ENTRY3("respawnlimit", &MIType_Int, &ref.respawn_limit)
 		ENTRY3("aggressiveness", &MIType_Float, &ref.aggressiveness)
+		ENTRY3("spawnfilter", &MIType_SpawnFilter, &ref.spawn_filter)
 		ENTRY4("spawnmulti", &MIType_Bool, &ref.spawn_multi, true)
 		ENTRY4("instantreaction", &MIType_Bool, &ref.instant_reaction, true)
 		ENTRY3("acsreturn", &MIType_Int, &ref.ACS_return)

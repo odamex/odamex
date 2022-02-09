@@ -2704,9 +2704,6 @@ size_t P_GetMapThingPlayerNumber(mapthing2_t *mthing)
 void P_SpawnMapThing (mapthing2_t *mthing, int position)
 {
 	int i = -1;
-	int bit;
-	AActor *mobj;
-	fixed_t x, y, z;
 
 	if (mthing->type == 0 || mthing->type == -1)
 		return;
@@ -2838,15 +2835,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			return;
 	}
 
-	// check for apropriate skill level
-	if (sv_skill == sk_baby)
-		bit = 1;
-	else if (sv_skill == sk_nightmare)
-		bit = 4;
-	else
-		bit = 1 << (sv_skill.asInt() - 2);
-
-	if (!(mthing->flags & bit))
+	// check for appropriate skill level
+	if (!(mthing->flags & SkillInfos[sv_skill.asInt() - 1].spawn_filter))
 		return;
 
 	// [RH] sound sequence overrides
@@ -2981,8 +2971,9 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		level.total_items++;
 
 	// spawn it
-	x = mthing->x << FRACBITS;
-	y = mthing->y << FRACBITS;
+	const fixed_t x = mthing->x << FRACBITS;
+	const fixed_t y = mthing->y << FRACBITS;
+	const fixed_t z = (mobjinfo[i].flags & MF_SPAWNCEILING) ? ONCEILINGZ : ONFLOORZ;
 
 	if (i == MT_WATERZONE)
 	{
@@ -2991,12 +2982,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
-	if (mobjinfo[i].flags & MF_SPAWNCEILING)
-		z = ONCEILINGZ;
-	else
-		z = ONFLOORZ;
-
-	mobj = new AActor (x, y, z, (mobjtype_t)i);
+	AActor* mobj = new AActor(x, y, z, (mobjtype_t)i);
 
 	if (i == MT_HORDESPAWN)
 	{

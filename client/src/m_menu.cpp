@@ -1035,15 +1035,17 @@ void M_DrawEpisode()
 	screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
 }
 
+static int skillchoice = 0;
+
 void M_VerifyNightmare(int ch)
 {
 	if (ch != 'y' && !Key_IsYesKey(ch))
 	{
-	    M_ClearMenus ();
+	    M_ClearMenus();
 		return;
 	}
 
-	M_StartGame(4); // todo
+	M_StartGame(skillchoice);
 }
 
 void M_StartGame(int choice)
@@ -1092,12 +1094,15 @@ void M_ChooseSkill(int choice)
 	}
 	else if (SkillInfos[choice].must_confirm)
 	{
-		if (SkillInfos[choice].must_confirm_text[0] == '$')
-			M_StartMessage(GStrings(StdStringToUpper(SkillInfos[choice].must_confirm_text.c_str() + 1)),
+		const char* must_confirm_text = SkillInfos[choice].must_confirm_text.c_str();
+
+		if (must_confirm_text[0] == '$')
+			M_StartMessage(GStrings(StdStringToUpper(must_confirm_text + 1)),
 		               M_VerifyNightmare, true);
 		else
-			M_StartMessage(SkillInfos[choice].must_confirm_text.c_str(),
-			               M_VerifyNightmare, true);
+			M_StartMessage(must_confirm_text, M_VerifyNightmare, true);
+
+		skillchoice = choice;
 
 		return;
 	}
@@ -1111,7 +1116,7 @@ void M_Episode(int choice)
 	{
 		M_StartMessage(GStrings(SWSTRING),NULL,false);
 		//M_SetupNextMenu(&ReadDef1);
-		M_ClearMenus ();
+		M_ClearMenus();
 		return;
 	}
 
