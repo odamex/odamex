@@ -50,9 +50,9 @@ struct SkillInfo
 	int respawn_counter;
 	int respawn_limit;			// not implemented
 	float aggressiveness;		// not implemented
-	int spawn_filter;			// not implemented
+	int spawn_filter;
 	bool spawn_multi;			// not implemented
-	bool instant_reaction;		// not implemented
+	bool instant_reaction;
 	int ACS_return;				// not implemented
 	std::string menu_name;
 	std::string pic_name;

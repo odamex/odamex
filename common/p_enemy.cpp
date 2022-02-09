@@ -1006,8 +1006,7 @@ void A_Chase (AActor *actor)
 	// check for missile attack
 	if (actor->info->missilestate)
 	{
-		if (sv_skill < sk_nightmare
-			&& actor->movecount && !sv_fastmonsters)
+		if (!SkillInfos[sv_skill.asInt() - 1].fast_monsters && actor->movecount && !sv_fastmonsters)
 		{
 			goto nomissile;
 		}
