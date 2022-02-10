@@ -765,6 +765,9 @@ void AActor::RunThink ()
 
 void AActor::Serialize (FArchive &arc)
 {
+	const DWORD TLATE_NONE = 0xFFFFFFFF;
+	const DWORD TLATE_BOSS = 0xFFFFFFFE;
+
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
@@ -825,10 +828,22 @@ void AActor::Serialize (FArchive &arc)
 			<< gear;
 
 		// NOTE(jsd): This is pretty awful right here:
+		//       [AM] I am now part of the problem.
 		if (translation)
-			arc << (DWORD)(translation.getTable() - translationtables);
+		{
+			if (translation.getTable() == ::bosstable)
+			{
+				arc << TLATE_BOSS;
+			}
+			else
+			{
+				arc << (DWORD)(translation.getTable() - ::translationtables);
+			}
+		}
 		else
-			arc << (DWORD)0xffffffff;
+		{
+			arc << TLATE_NONE;
+		}
 		spawnpoint.Serialize (arc);
 		baseline.Serialize(arc);
 	}
@@ -900,14 +915,24 @@ void AActor::Serialize (FArchive &arc)
 
 		DWORD trans;
 		arc >> trans;
-		if (trans == (DWORD)0xffffffff)
+		if (trans == TLATE_NONE)
+		{
 			translation = translationref_t();
+		}
+		else if (trans == TLATE_BOSS)
+		{
+			translation = translationref_t(::bosstable);
+		}
 		else
 		{
 			if ((trans / 256) <= MAXPLAYERS)
-				translation = translationref_t(translationtables + trans, trans / 256);
+			{
+				translation = translationref_t(::translationtables + trans, trans / 256);
+			}
 			else
-				translation = translationref_t(translationtables + trans);
+			{
+				translation = translationref_t(::translationtables + trans);
+			}
 		}
 		spawnpoint.Serialize (arc);
 		baseline.Serialize(arc);
