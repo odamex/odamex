@@ -52,6 +52,7 @@
 #include "c_bind.h"
 #include "p_horde.h"
 #include "c_dispatch.h"
+#include "hu_speedometer.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
@@ -111,6 +112,7 @@ EXTERN_CVAR(hud_demoprotos)
 EXTERN_CVAR(hud_scale)
 EXTERN_CVAR(hud_bigfont)
 EXTERN_CVAR(hud_timer)
+EXTERN_CVAR(hud_speedometer)
 EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(hud_transparency)
 EXTERN_CVAR(hud_demobar)
@@ -845,8 +847,23 @@ void OdamexHUD() {
 		if (::hud_bigfont)
 			V_SetFont("BIGFONT");
 
-		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
+		iy += V_LineHeight() + 1;
+
+		if (::hud_bigfont)
+			V_SetFont("SMALLFONT");
+	}
+
+	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
+	{
+		if (::hud_bigfont)
+			V_SetFont("BIGFONT");
+
+		StrFormat(buf, "%d" TEXTCOLOR_DARKGREY "ups",
+		          static_cast<int>(HU_GetPlayerSpeed()));
+		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
 		iy += V_LineHeight() + 1;
 
 		if (::hud_bigfont)
@@ -1361,24 +1378,35 @@ void SpectatorHUD()
 // [AM] HUD drawn with the Doom Status Bar.
 void DoomHUD()
 {
-	int st_y = statusBarY();
+	int st_y = statusBarY() + 4;
 
 	// Draw warmup state or timer
 	if (hud_timer)
 	{
-		hud::DrawText(0, st_y + 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_UNTRANSLATED);
+		st_y += V_LineHeight() + 1;
+	}
+
+	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
+	{
+		std::string buf;
+		StrFormat(buf, "%d" TEXTCOLOR_DARKGREY "ups",
+		          static_cast<int>(HU_GetPlayerSpeed()));
+		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
+		st_y += V_LineHeight() + 1;
 	}
 
 	// Draw other player name, if spying
-	hud::DrawText(0, st_y + 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_UNTRANSLATED);
+	st_y += V_LineHeight() + 1;
 
 	// Draw targeted player names.
-	hud::EATargets(0, st_y + 20, hud_scale,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               1, hud_targetcount);
+	hud::EATargets(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	               hud::Y_BOTTOM, 1, hud_targetcount);
+	st_y += V_LineHeight() + 1;
 
 	// Draw gametype scoreboard
 	hud::drawGametype();
