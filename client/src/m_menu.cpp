@@ -308,8 +308,8 @@ oldmenuitem_t NewGameMenu[MAX_SKILLS + 1]=
 	{1,"\0", M_ChooseSkill,0},
 	{1,"\0", M_ChooseSkill,0},
 	{1,"\0", M_ChooseSkill,0},
-	//{1,"\0", M_ChooseSkill,0},
-	//{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
 	//{1,"\0", M_ChooseSkill,0}
 };
 
