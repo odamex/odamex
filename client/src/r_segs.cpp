@@ -24,6 +24,7 @@
 
 #include "odamex.h"
 
+#include <cmath>
 #include "m_mempool.h"
 
 #include "i_system.h"
