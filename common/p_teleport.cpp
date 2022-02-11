@@ -25,14 +25,10 @@
 
 #include "odamex.h"
 
-#include <stdlib.h>
-
-
 #include "m_random.h"
 #include "s_sound.h"
 
 #include "p_local.h"
-
 
 // State.
 #include "r_state.h"

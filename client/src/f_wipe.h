@@ -26,7 +26,7 @@
 #define __F_WIPE_H__
 
 //
-//						 SCREEN WIPE PACKAGE
+// SCREEN WIPE PACKAGE
 //
 
 void Wipe_Stop();

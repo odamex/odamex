@@ -41,7 +41,6 @@
 #include "i_music.h"
 #include "minilzo.h"
 #include "m_random.h"
-#include "p_acs.h"
 #include "p_local.h"
 #include "p_saveg.h"
 #include "p_setup.h"

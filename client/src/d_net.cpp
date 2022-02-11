@@ -22,55 +22,51 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include "odamex.h"
 
 #include "i_system.h"
-#include "g_game.h"
 #include "d_netinf.h"
-#include "p_local.h"
-#include "gi.h"
 #include "cl_main.h"
 #include "m_argv.h"
 #include "cl_demo.h"
 
 extern NetDemo netdemo;
 
-extern byte		*demo_p;		// [RH] Special "ticcmds" get recorded in demos
+extern byte *demo_p;		// [RH] Special "ticcmds" get recorded in demos
 
 //
 // NETWORKING
 //
 // gametic is the tic about to (or currently being) run
 
-int 			lastnettic;
-int 			skiptics;
+int lastnettic;
+int skiptics;
 
 bool step_mode = false;
 
-void D_ProcessEvents (void); 
-void G_BuildTiccmd (ticcmd_t *cmd); 
-void D_DoAdvanceDemo (void);
+void D_ProcessEvents(); 
+void G_BuildTiccmd(ticcmd_t *cmd); 
+void D_DoAdvanceDemo();
 
 //
 // NetUpdate
 // Builds ticcmds for console player,
 // sends out a packet
 //
-void NetUpdate (void)
+void NetUpdate()
 {
-	I_StartTic ();
-	D_ProcessEvents ();
-	G_BuildTiccmd (&consoleplayer().netcmds[gametic%BACKUPTICS]);
+	I_StartTic();
+	D_ProcessEvents();
+	G_BuildTiccmd(&consoleplayer().netcmds[gametic%BACKUPTICS]);
 }
 
 //
 // D_CheckNetGame
 // Works out player numbers among the net participants
 //
-void D_CheckNetGame (void)
+void D_CheckNetGame()
 {
-    CL_InitNetwork ();
+    CL_InitNetwork();
 
     D_SetupUserInfo();
 

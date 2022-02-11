@@ -25,7 +25,9 @@
 #ifndef __G_GAME__
 #define __G_GAME__
 
-#include "d_event.h"
+// Forward declaration
+struct event_t;
+
 #include "d_player.h"
 
 //

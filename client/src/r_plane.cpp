@@ -39,14 +39,11 @@
 #include "z_zone.h"
 #include "w_wad.h"
 
-
 #include "p_local.h"
 #include "r_local.h"
 #include "r_sky.h"
 
-#include "m_alloc.h"
 #include "i_video.h"
-#include "v_video.h"
 
 #include "m_vectors.h"
 

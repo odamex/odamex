@@ -34,7 +34,6 @@
 
 #include "odamex.h"
 
-#include "m_alloc.h"
 #include "gstrings.h"
 
 #include "z_zone.h"

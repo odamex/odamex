@@ -25,7 +25,6 @@
 #include "odamex.h"
 
 #include <algorithm>
-#include <sstream>
 #include "cmdlib.h"
 #include "teaminfo.h"
 #include "v_textcolors.h"

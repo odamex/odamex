@@ -26,8 +26,9 @@
 
 #include "f_finale.h"
 
+#include "d_event.h"
+
 #include <ctype.h>
-#include <math.h>
 
 #include "i_music.h"
 #include "z_zone.h"

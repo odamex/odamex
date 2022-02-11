@@ -25,7 +25,8 @@
 #ifndef __AMMAP_H__
 #define __AMMAP_H__
 
-#include "d_event.h"
+// Forward reference
+struct event_t;
 
 // Used by ST StatusBar stuff.
 #define AM_MSGHEADER (('a'<<24)+('m'<<16))

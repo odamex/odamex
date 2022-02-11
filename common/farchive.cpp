@@ -27,7 +27,6 @@
 #include <algorithm>
 
 #include "farchive.h"
-#include "m_alloc.h"
 #include "minilzo.h"
 #include "i_system.h"
 #include "d_player.h"

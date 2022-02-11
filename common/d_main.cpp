@@ -41,9 +41,7 @@
 
 #include <stdlib.h>
 
-#include "m_alloc.h"
 #include "gstrings.h"
-#include "z_zone.h"
 #include "w_wad.h"
 #include "m_argv.h"
 #include "m_fileio.h"

@@ -26,7 +26,6 @@
 #define __GSTRINGS_H__
 
 #include "stringtable.h"
-#include "stringenums.h"
 
 extern StringTable GStrings;
 

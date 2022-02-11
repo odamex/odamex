@@ -24,10 +24,8 @@
 
 #include "odamex.h"
 
-#include "dobject.h"
-#include "m_alloc.h"		// Ideally, DObjects can be used independant of Doom.
+#include "dobject.h"		// Ideally, DObjects can be used independent of Doom.
 #include "d_player.h"		// See p_user.cpp to find out why this doesn't work.
-#include "z_zone.h"
 
 ClassInit::ClassInit (TypeInfo *type)
 {

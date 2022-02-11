@@ -41,19 +41,14 @@
 #include "i_system.h"
 #include "i_video.h"
 #include "i_input.h"
-#include "z_zone.h"
 #include "v_video.h"
 #include "v_text.h"
 #include "w_wad.h"
 
 #include "hu_stuff.h"
 
-#include "m_memio.h"
-
 #include "s_sound.h"
 #include "i_music.h"
-#include "i_musicsystem.h"
-
 
 #include "m_misc.h"
 #include "cl_demo.h"

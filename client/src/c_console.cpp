@@ -26,8 +26,6 @@
 
 #include <stdarg.h>
 
-#include "m_alloc.h"
-#include "m_memio.h"
 #include "g_game.h"
 #include "c_console.h"
 #include "c_dispatch.h"
@@ -38,7 +36,6 @@
 #include "v_video.h"
 #include "v_text.h"
 #include "w_wad.h"
-#include "z_zone.h"
 #include "r_main.h"
 #include "st_stuff.h"
 #include "s_sound.h"

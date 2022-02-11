@@ -24,8 +24,6 @@
 #ifndef __CL_PARSE_H__
 #define __CL_PARSE_H__
 
-
-
 enum parseError_e
 {
 	PERR_OK,

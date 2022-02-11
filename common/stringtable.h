@@ -29,7 +29,6 @@
 #ifndef __STRINGTABLE_H__
 #define __STRINGTABLE_H__
 
-#include <stdlib.h>
 #include <utility>
 
 #include "hashtable.h"

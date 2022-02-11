@@ -23,8 +23,6 @@
 #ifndef __C_VOTE__
 #define __C_VOTE__
 
-
-
 /**
  * An enum used for keeping track of the state of the vote as well as
  * internally keeping track of individual player votes.

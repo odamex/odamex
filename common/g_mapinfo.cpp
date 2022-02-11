@@ -26,7 +26,6 @@
 #include "gstrings.h"
 #include "i_system.h"
 #include "oscanner.h"
-#include "p_setup.h"
 #include "r_sky.h"
 #include "v_video.h"
 #include "w_wad.h"

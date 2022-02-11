@@ -27,7 +27,6 @@
 #include "odamex.h"
 
 #include <assert.h>
-#include <math.h>
 #include <algorithm>
 
 #include "i_sdl.h"

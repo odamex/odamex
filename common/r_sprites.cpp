@@ -24,9 +24,7 @@
 
 #include "odamex.h"
 
-#include"r_sprites.h"
-
-#include "m_alloc.h"
+#include "r_sprites.h"
 
 #include "i_system.h"
 #include "z_zone.h"

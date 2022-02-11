@@ -27,9 +27,6 @@
 
 #include "odamex.h"
 
-
-#include <algorithm>
-
 #include "win32inc.h"
 #ifndef _WIN32
     #include <sys/stat.h>
@@ -40,10 +37,6 @@
 #include <dirent.h>
 #endif
 
-#include <math.h>
-
-
-#include "m_alloc.h"
 #include "m_random.h"
 #include "minilzo.h"
 #include "gstrings.h"
@@ -72,7 +65,6 @@
 #include "c_effect.h"
 #include "p_setup.h"
 #include "r_local.h"
-#include "r_sky.h"
 #include "d_main.h"
 #include "d_dehacked.h"
 #include "cl_download.h"
@@ -95,11 +87,11 @@
 
 extern size_t got_heapsize;
 
-void D_CheckNetGame (void);
-void D_ProcessEvents (void);
-void D_DoAdvanceDemo (void);
+void D_CheckNetGame();
+void D_ProcessEvents();
+void D_DoAdvanceDemo();
 
-void D_DoomLoop (void);
+void D_DoomLoop();
 
 extern int testingmode;
 extern BOOL gameisdead;

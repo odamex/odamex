@@ -2,7 +2,6 @@
 #define __TEAMINFO_H__
 
 #include "doomdata.h"
-#include "info.h"
 #include "actor.h"
 
 

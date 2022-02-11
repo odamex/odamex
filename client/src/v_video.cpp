@@ -31,7 +31,6 @@
 #include "i_video.h"
 #include "r_local.h"
 #include "r_draw.h"
-#include "r_state.h"
 
 #include "d_main.h"
 
@@ -43,7 +42,6 @@
 #include "v_video.h"
 #include "v_text.h"
 
-#include "w_wad.h"
 #include "z_zone.h"
 
 #include "c_dispatch.h"

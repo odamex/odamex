@@ -25,8 +25,6 @@
 #ifndef __M_FIXED_H__
 #define __M_FIXED_H__
 
-#include <stdlib.h>
-
 //
 // Fixed point, 32bit as 16.16.
 //

@@ -25,7 +25,6 @@
 
 #include "odamex.h"
 
-#include "m_alloc.h"
 #include "m_bbox.h"
 #include "m_random.h"
 #include "i_system.h"
@@ -41,14 +40,10 @@
 #include "m_wdlstats.h"
 #include "g_gametype.h"
 #include "p_mapformat.h"
-// State.
-#include "r_state.h"
 
 #include "z_zone.h"
 #include "p_unlag.h"
 #include "m_vectors.h"
-#include "p_mapformat.h"
-#include <math.h>
 #include <set>
 
 bool P_ShouldClipPlayer(AActor* projectile, AActor* player);

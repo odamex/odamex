@@ -46,7 +46,7 @@ struct weaponinfo_s
 	// MBF21 Specifications
 	int flags;
 };
-typedef struct weaponinfo_s weaponinfo_t;
+typedef weaponinfo_s weaponinfo_t;
 
 extern	weaponinfo_t	weaponinfo[NUMWEAPONS+1];
 
@@ -75,21 +75,21 @@ extern	weaponinfo_t	weaponinfo[NUMWEAPONS+1];
 struct gitem_s
 {
 		const char		*classname;
-		BOOL	 		(*pickup)(player_s *ent, class AActor *other);
-		void			(*use)(player_s *ent, struct gitem_s *item);
+		BOOL	 		(*pickup)(player_s *ent, AActor *other);
+		void			(*use)(player_s *ent, gitem_s *item);
 		byte			flags;
 		byte			offset; 				// For Weapon, Ammo, Armor, Key: Offset in appropriate table
 		byte			quantity;				// For Ammo: How much to pickup
 
 		const char		*pickup_name;
 };
-typedef struct gitem_s gitem_t;
+typedef gitem_s gitem_t;
 
 extern int num_items;
 
 extern gitem_t itemlist[];
 
-void InitItems (void);
+void InitItems();
 
 // FindItem
 gitem_t	*GetItemByIndex (int index);

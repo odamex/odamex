@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include <algorithm>
 #include <sstream>
 
 #include "cmdlib.h"

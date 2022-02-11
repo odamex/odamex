@@ -27,7 +27,6 @@
 #ifndef __DTHINKER_H__
 #define __DTHINKER_H__
 
-#include <stdlib.h>
 #include "dobject.h"
 
 class AActor;

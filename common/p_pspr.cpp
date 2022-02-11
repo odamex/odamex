@@ -25,11 +25,8 @@
 
 #include "odamex.h"
 
-#include <stdlib.h>
-
 #include "d_dehacked.h"
 #include "d_event.h"
-
 
 #include "m_random.h"
 #include "p_local.h"

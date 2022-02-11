@@ -25,11 +25,6 @@
 #ifndef __STLIB__
 #define __STLIB__
 
-
-// We are referring to patches.
-#include "r_defs.h"
-
-
 //
 // Background and foreground screen numbers
 //
@@ -44,7 +39,6 @@ extern IWindowSurface* stnum_surface;
 //
 
 // Number widget
-
 struct st_number_s
 {
 	// upper right-hand corner
@@ -71,7 +65,7 @@ struct st_number_s
 	int data;
 
 };
-typedef struct st_number_s st_number_t;
+typedef st_number_s st_number_t;
 
 
 
@@ -86,7 +80,7 @@ struct st_percent_s
 	lumpHandle_t p;
 
 };
-typedef struct st_percent_s st_percent_t;
+typedef st_percent_s st_percent_t;
 
 
 // Multiple Icon widget
@@ -113,7 +107,7 @@ struct st_multicon_s
 	int 				data;
 
 };
-typedef struct st_multicon_s st_multicon_t;
+typedef st_multicon_s st_multicon_t;
 
 
 
@@ -140,7 +134,7 @@ struct st_binicon_s
 	int 				data;	// user data
 
 };
-typedef struct st_binicon_s st_binicon_t;
+typedef st_binicon_s st_binicon_t;
 
 
 //
@@ -151,7 +145,7 @@ typedef struct st_binicon_s st_binicon_t;
 // More precisely, initialize STMINUS,
 //	everything else is done somewhere else.
 //
-void STlib_init(void);
+void STlib_init();
 
 
 

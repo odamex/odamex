@@ -30,7 +30,6 @@
 #include "cmdlib.h"
 #include "m_argv.h"
 #include "m_fileio.h"
-#include "md5.h"
 #include "w_ident.h"
 #include "w_wad.h"
 

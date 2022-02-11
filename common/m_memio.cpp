@@ -34,9 +34,7 @@
 
 #include "odamex.h"
 
-
 #include "m_memio.h"
-
 #include "z_zone.h"
 
 typedef enum {

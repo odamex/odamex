@@ -26,7 +26,6 @@
 #include "odamex.h"
 
 #include "i_system.h"
-#include "tables.h"
 #include "r_state.h"
 #include "m_random.h"
 #include "w_wad.h"

@@ -25,9 +25,8 @@
 
 #include "g_levelstate.h"
 
-#include <cmath>
-
 #include "c_dispatch.h"
+#include "d_player.h"
 #include "g_gametype.h"
 #include "i_system.h"
 

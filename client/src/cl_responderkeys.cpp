@@ -27,7 +27,6 @@
 
 #include "doomkeys.h"
 #include "cl_responderkeys.h"
-#include "i_input.h"
 
 //
 // Key_IsUpKey

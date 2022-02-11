@@ -29,7 +29,6 @@
 #include "d_netinf.h"
 #include "v_video.h"
 #include "r_draw.h"
-#include "r_state.h"
 #include "cl_main.h"
 
 // The default preference ordering when the player runs out of one type of ammo.

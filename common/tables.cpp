@@ -38,7 +38,6 @@
 
 #include "odamex.h"
 
-#include <math.h>
 #include "tables.h"
 
 const int finetangent[4096] =
