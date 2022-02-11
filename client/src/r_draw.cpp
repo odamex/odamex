@@ -28,6 +28,7 @@
 
 #include <assert.h>
 #include <algorithm>
+#include <cmath>
 
 #include "i_sdl.h"
 #include "r_intrin.h"
