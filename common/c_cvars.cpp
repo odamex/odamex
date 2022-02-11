@@ -24,6 +24,7 @@
 
 #include "odamex.h"
 
+#include <cmath>
 #include "cmdlib.h"
 #include "c_console.h"
 #include "c_dispatch.h"
