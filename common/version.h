@@ -78,7 +78,7 @@
 #define DOTVERSIONSTR "10.0.0"
 #define GAMEVER (MAKEVER(10, 0, 0))
 
-#define COPYRIGHTSTR "Copyright (C) 2006-2021 The Odamex Team"
+#define COPYRIGHTSTR "Copyright (C) 2006-2022 The Odamex Team"
 
 #define SERVERMAJ (VERMAJ(gameversion))
 #define SERVERMIN (VERMIN(gameversion))

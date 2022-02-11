@@ -46,7 +46,7 @@ cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_IN
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
-set(PROJECT_COPYRIGHT "2006-2021")
+set(PROJECT_COPYRIGHT "2006-2022")
 set(PROJECT_RC_VERSION "10,0,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
 
