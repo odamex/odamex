@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include "f_finale.h"
+#include <cmath>
 
 #include "d_event.h"
 
