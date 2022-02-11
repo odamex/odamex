@@ -25,6 +25,7 @@
 
 #include "odamex.h"
 
+#include <cmath>
 #include <set>
 
 #include "m_vectors.h"
