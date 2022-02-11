@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include "hu_speedometer.h"
+#include <math.h>
 
 double gDisplaySpeed;
 
