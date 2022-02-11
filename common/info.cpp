@@ -7608,27 +7608,19 @@ void D_Init_DEHEXTRA_Frames(void)
 		{
 			states[i] = boomstates[i];
 		}
-		else if (i >= EXTRASTATES && i < S_GIB0)
-		{
-			states[i].sprite = SPR_TNT1;
-			states[i].frame = 0;
-			states[i].tics = -1;
-			states[i].action = NULL;
-			states[i].nextstate = (statenum_t)(i + EXTRASTATES);
-			states[i].misc1 = 0;
-			states[i].misc2 = 0;
-		}
 		else if (i >= S_GIB0)
 		{
 			states[i] = odastates[i - S_GIB0];
 		}
 		else
 		{
+			// These cover both DEHEXTRA states and the undefined states
+			// between the MBF and DEHEXTRA blocks.
 			states[i].sprite = SPR_TNT1;
 			states[i].frame = 0;
 			states[i].tics = -1;
 			states[i].action = NULL;
-			states[i].nextstate = (statenum_t)(i + 1);
+			states[i].nextstate = (statenum_t)(i);
 			states[i].misc1 = 0;
 			states[i].misc2 = 0;
 		}
