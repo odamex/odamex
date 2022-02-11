@@ -24,6 +24,7 @@
 #include "odamex.h"
 
 #include "g_levelstate.h"
+#include <cmath>
 
 #include "c_dispatch.h"
 #include "d_player.h"
