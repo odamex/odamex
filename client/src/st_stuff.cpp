@@ -1287,7 +1287,13 @@ void ST_createWidgets()
 
 	// keyboxes 0-2
 	w_keyboxes[0].init(ST_KEY0X, ST_KEY0Y, keys, &keyboxes[0], &st_statusbaron);
+<<<<<<< HEAD
 	w_keyboxes[1].init(ST_KEY1X, ST_KEY1Y, keys, &keyboxes[1], &st_statusbaron);
+=======
+
+	w_keyboxes[1].init(ST_KEY1X, ST_KEY1Y, keys, &keyboxes[1], &st_statusbaron);
+
+>>>>>>> 471a30e32 (adjust st_lib functions to be member functions of the structs)
 	w_keyboxes[2].init(ST_KEY2X, ST_KEY2Y, keys, &keyboxes[2], &st_statusbaron);
 
 	// ammo count (all four kinds)
