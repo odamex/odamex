@@ -25,6 +25,7 @@
 
 #include "odamex.h"
 
+#include <cmath>
 #include "m_bbox.h"
 #include "m_random.h"
 #include "i_system.h"
