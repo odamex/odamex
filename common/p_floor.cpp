@@ -1534,23 +1534,18 @@ int P_SpawnDonut(int, line_t*, fixed_t, fixed_t);
 
 BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
 {
-	int secnum = -1;
 	int rtn = 0;
 
-	while ((secnum = P_FindSectorFromTagOrLine(tag, line, secnum)) >= 0)
-		rtn |= P_SpawnDonut(secnum, line, pillarspeed, slimespeed);
+	rtn = P_SpawnDonut(line->id, line, pillarspeed, slimespeed);
 
 	return rtn;
 }
 
 int EV_DoDonut(line_t* line)
 {
-	int secnum = -1;
 	int rtn = 0;
 
-	// do function on all sectors with same tag as linedef
-	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
-		rtn |= P_SpawnDonut(secnum, line, FLOORSPEED / 2, FLOORSPEED / 2);
+	rtn = P_SpawnDonut(line->id, line, FLOORSPEED / 2, FLOORSPEED / 2);
 
 	return rtn;
 }

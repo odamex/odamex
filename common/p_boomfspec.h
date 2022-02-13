@@ -59,6 +59,7 @@ void P_SpawnStrobeFlash(sector_t* sector, int utics, int ltics, bool inSync);
 void P_SpawnFireFlicker(sector_t* sector);
 AActor* P_GetPushThing(int);
 void P_PostProcessCompatibleLinedefSpecial(line_t* line);
+bool P_IsTeleportLine(const short special);
 
 extern BOOL demoplayback;
 

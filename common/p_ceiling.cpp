@@ -1131,7 +1131,7 @@ BOOL EV_DoGenCeiling(line_t* line)
 	manual_genceiling:
 		sec = &sectors[secnum];
 		// Do not start another function if ceiling already moving
-		if (P_CeilingActive(sec)) // jff 2/22/98
+		if (sec->ceilingdata) // jff 2/22/98
 		{
 			if (!manual)
 				continue;
@@ -1199,7 +1199,7 @@ BOOL EV_DoGenCrusher(line_t* line)
 	manual_gencrusher:
 		sec = &sectors[secnum];
 		// Do not start another function if ceiling already moving
-		if (P_CeilingActive(sec)) // jff 2/22/98
+		if (sec->ceilingdata) // jff 2/22/98
 		{
 			if (!manual)
 				continue;
