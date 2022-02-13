@@ -254,6 +254,15 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	// Dispatch on the line special value to the line's action routine
 	// If a once only function, and successful, clear the line special
 
+	// Do not teleport on the wrong side
+	if (side)
+	{
+		if (P_IsTeleportLine(line->special))
+		{
+			return result;
+		}
+	}
+
 	switch (line->special)
 	{
 		// Regular walk once triggers
@@ -1599,7 +1608,7 @@ void P_SpawnCompatibleSectorSpecial(sector_t* sector)
 	if (sector->special & PUSH_MASK)
 		sector->flags |= SECF_PUSH;
 
-	switch (sector->special)
+	switch (sector->special & 31)
 	{
 	case 1:
 		if (IgnoreSpecial)
