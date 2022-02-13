@@ -36,9 +36,17 @@ extern IWindowSurface* stnum_surface;
 // Typedefs of widgets
 //
 
-// Number widget
-struct st_number_s
+class StatusBarWidget
 {
+  protected:
+	void clearRect(int x, int y, int w, int h);
+	void drawPatch(int x, int y, const patch_t* p);
+};
+
+// Number widget
+class st_number_t : StatusBarWidget
+{
+  public:
 	// upper right-hand corner
 	//	of the number (right-justified)
 	int x;
@@ -59,22 +67,17 @@ struct st_number_s
 	// list of patches for 0-9
 	lumpHandle_t* p;
 
-	// user data
-	int data;
-
 	// Number widget routines
 	void init(int x, int y, lumpHandle_t* pl, int* num, bool* on, int maxdigits);
 
 	void update(bool refresh, bool cleararea = true);
-
-	void draw(bool refresh, bool cleararea = true);
 };
-typedef st_number_s st_number_t;
 
 // Percent widget ("child" of number widget,
 //	or, more precisely, contains a number widget.)
-struct st_percent_s
+class st_percent_t : StatusBarWidget
 {
+  public:
 	// number information
 	st_number_t n;
 
@@ -86,11 +89,11 @@ struct st_percent_s
 
 	void update(bool refresh);
 };
-typedef st_percent_s st_percent_t;
 
 // Multiple Icon widget
-struct st_multicon_s
+class st_multicon_t : StatusBarWidget
 {
+  public:
 	// center-justified location of icons
 	int x;
 	int y;
@@ -108,20 +111,16 @@ struct st_multicon_s
 	// list of icons
 	lumpHandle_t* p;
 
-	// user data
-	int data;
-
 	// Multiple Icon widget routines
 	void init(int x, int y, lumpHandle_t* il, int* inum, bool* on);
 
 	void update(bool refresh);
 };
-typedef st_multicon_s st_multicon_t;
 
 // Binary Icon widget
-
-struct st_binicon_s
+class st_binicon_t : StatusBarWidget
 {
+  public:
 	// center-justified location of icon
 	int x;
 	int y;
@@ -136,15 +135,14 @@ struct st_binicon_s
 	//	stating whether to update icon
 	bool* on;
 
-	lumpHandle_t p; // icon
-	int data;       // user data
+	// icon
+	lumpHandle_t p;
 
 	// Binary Icon widget routines
 	void init(int x, int y, lumpHandle_t i, bool* val, bool* on);
 
 	void update(bool refresh);
 };
-typedef st_binicon_s st_binicon_t;
 
 #define ST_DONT_DRAW_NUM 1994 // means "n/a"
 

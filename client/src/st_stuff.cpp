@@ -44,12 +44,12 @@
 
 
 // States for status bar code.
-typedef enum
+enum st_stateenum_t
 {
 	AutomapState,
 	FirstPersonState
 
-} st_stateenum_t;
+};
 
 static bool st_needrefresh = true;
 
@@ -901,8 +901,6 @@ void ST_updateWidgets()
 		st_current_ammo = ST_DONT_DRAW_NUM;
 	else
 		st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
-
-	w_ready.data = plyr->readyweapon;
 
 	st_health = plyr->health;
 	st_armor = plyr->armorpoints;
