@@ -208,33 +208,4 @@ void st_multicon_t::update(bool force_refresh)
 	}
 }
 
-void st_binicon_t::init(int x_, int y_, lumpHandle_t patch, bool* val_, bool* on_)
-{
-	x = x_;
-	y = y_;
-	oldval = false;
-	val = val_;
-	on = on_;
-	p = patch;
-}
-
-void st_binicon_t::update(bool force_refresh)
-{
-	if (*on && (force_refresh || oldval != *val))
-	{
-		const patch_t* iconp = W_ResolvePatchHandle(p);
-		const int drawx = x - iconp->leftoffset();
-		const int drawy = y - iconp->topoffset();
-		const int w = iconp->width();
-		const int h = iconp->height();
-
-		if (*val)
-			drawPatch(x, y, iconp);
-		else
-			clearRect(drawx, drawy, w, h);
-
-		oldval = *val;
-	}
-}
-
 VERSION_CONTROL (st_lib_cpp, "$Id$")
