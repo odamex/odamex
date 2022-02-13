@@ -117,33 +117,6 @@ class st_multicon_t : StatusBarWidget
 	void update(bool refresh);
 };
 
-// Binary Icon widget
-class st_binicon_t : StatusBarWidget
-{
-  public:
-	// center-justified location of icon
-	int x;
-	int y;
-
-	// last icon value
-	bool oldval;
-
-	// pointer to current icon status
-	bool* val;
-
-	// pointer to bool
-	//	stating whether to update icon
-	bool* on;
-
-	// icon
-	lumpHandle_t p;
-
-	// Binary Icon widget routines
-	void init(int x, int y, lumpHandle_t i, bool* val, bool* on);
-
-	void update(bool refresh);
-};
-
 #define ST_DONT_DRAW_NUM 1994 // means "n/a"
 
 #endif
