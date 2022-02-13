@@ -27,39 +27,34 @@
 
 #include "odamex.h"
 
-#include "i_video.h"
-#include "z_zone.h"
-#include "m_random.h"
-#include "w_wad.h"
-#include "g_game.h"
 #include "st_stuff.h"
+#include "i_video.h"
+#include "m_random.h"
 #include "st_lib.h"
-#include "r_local.h"
-#include "p_inter.h"
 #include "am_map.h"
 #include "m_cheat.h"
 #include "s_sound.h"
-#include "v_video.h"
-#include "v_text.h"
 #include "gstrings.h"
 #include "c_dispatch.h"
 #include "cl_main.h"
 #include "gi.h"
-#include "cl_demo.h"
 #include "c_console.h"
 #include "g_gametype.h"
-#include "m_cheat.h"
-
 #include "p_ctf.h"
 
 
+// States for status bar code.
+typedef enum
+{
+	AutomapState,
+	FirstPersonState
+
+} st_stateenum_t;
+
 static bool st_needrefresh = true;
 
-static bool st_stopped = true;
-
-
 // lump number for PLAYPAL
-static int		lu_palette;
+static int lu_palette;
 
 EXTERN_CVAR(sv_allowredscreen)
 EXTERN_CVAR(st_scale)
@@ -258,7 +253,7 @@ int						ST_X;
 int						ST_Y;
 
 // used for making messages go away
-static int				st_msgcounter=0;
+static int				st_msgcounter = 0;
 
 // whether in automap or first-person
 static st_stateenum_t	st_gamestate;
@@ -431,8 +426,7 @@ cheatseq_t DoomCheats[] = {
 //
 // STATUS BAR CODE
 //
-void ST_Stop(void);
-void ST_createWidgets(void);
+void ST_createWidgets();
 
 int ST_StatusBarHeight(int surface_width, int surface_height)
 {
@@ -510,7 +504,6 @@ bool ST_Responder (event_t *ev)
 {
 	player_t *plyr = &consoleplayer();
 	bool eat = false;
-	int i;
 
 	// Filter automap on/off.
 	if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
@@ -531,10 +524,8 @@ bool ST_Responder (event_t *ev)
 	// if a user keypress...
 	else if (ev->type == ev_keydown && ev->data3)
 	{
-		cheatseq_t* cheats = NULL;
-
-		cheats = DoomCheats;
-		for (i = 0; i < COUNT_CHEATS(DoomCheats); i++, cheats++)
+		cheatseq_t* cheats = DoomCheats;
+		for (int i = 0; i < COUNT_CHEATS(DoomCheats); i++, cheats++)
 		{
 			if (CHEAT_AddKey(cheats, (byte)ev->data1, &eat))
 			{
@@ -626,20 +617,17 @@ END_COMMAND (chase)
 
 BEGIN_COMMAND (idmus)
 {
-	LevelInfos& levels = getLevelInfos();
-	char *map;
-	int l;
-
 	if (argc > 1)
 	{
+		char *map;
 		if (gameinfo.flags & GI_MAPxx)
 		{
-			l = atoi (argv[1]);
+			const int l = atoi(argv[1]);
 			if (l <= 99)
 				map = CalcMapName (0, l);
 			else
 			{
-				Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
+				Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
 				return;
 			}
 		}
@@ -648,13 +636,13 @@ BEGIN_COMMAND (idmus)
 			map = CalcMapName (argv[1][0] - '0', argv[1][1] - '0');
 		}
 
-		level_pwad_info_t& info = levels.findByName(map);
+		level_pwad_info_t& info = getLevelInfos().findByName(map);
 		if (level.levelnum != 0)
 		{
 			if (info.music[0])
 			{
 				S_ChangeMusic(std::string(info.music.c_str(), 8), 1);
-				Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_MUS));
+				Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_MUS));
 			}
 		}
 		else
@@ -673,7 +661,7 @@ BEGIN_COMMAND (give)
 	if (argc < 2)
 		return;
 
-	std::string name = C_ArgCombine(argc - 1, (const char**)(argv + 1));
+	const std::string name = C_ArgCombine(argc - 1, (const char**)(argv + 1));
 	if (name.length())
 	{
 		CHEAT_GiveTo(&consoleplayer(), name.c_str());
@@ -707,13 +695,12 @@ BEGIN_COMMAND(buddha)
 }
 END_COMMAND(buddha)
 
-int ST_calcPainOffset(void)
+int ST_calcPainOffset()
 {
-	int 		health;
 	static int	lastcalc;
 	static int	oldhealth = -1;
 
-	health = displayplayer().health;
+	int health = displayplayer().health;
 
 	if(health < -1)
 		health = -1;
@@ -736,14 +723,12 @@ int ST_calcPainOffset(void)
 // the precedence of expressions is:
 //	dead > evil grin > turned head > straight ahead
 //
-void ST_updateFaceWidget(void)
+void ST_updateFaceWidget()
 {
 	int 		i;
-	angle_t 	badguyangle;
 	angle_t 	diffang;
 	static int	lastattackdown = -1;
 	static int	priority = 0;
-	BOOL	 	doevilgrin;
 
 	player_t *plyr = &displayplayer();
 
@@ -763,7 +748,7 @@ void ST_updateFaceWidget(void)
 		if (plyr->bonuscount)
 		{
 			// picking up bonus
-			doevilgrin = false;
+			bool doevilgrin = false;
 
 			for (i=0;i<NUMWEAPONS;i++)
 			{
@@ -800,10 +785,10 @@ void ST_updateFaceWidget(void)
 			}
 			else
 			{
-				badguyangle = R_PointToAngle2(plyr->mo->x,
-											  plyr->mo->y,
-											  plyr->attacker->x,
-											  plyr->attacker->y);
+				angle_t badguyangle = R_PointToAngle2(plyr->mo->x,
+				                                      plyr->mo->y,
+				                                      plyr->attacker->x,
+				                                      plyr->attacker->y);
 
 				if (badguyangle > plyr->mo->angle)
 				{
@@ -816,7 +801,7 @@ void ST_updateFaceWidget(void)
 					// whether left or right
 					diffang = plyr->mo->angle - badguyangle;
 					i = diffang <= ANG180;
-				} // confusing, aint it?
+				} // confusing, ain't it?
 
 
 				st_facecount = ST_TURNCOUNT;
@@ -908,9 +893,9 @@ void ST_updateFaceWidget(void)
 	st_facecount--;
 }
 
-void ST_updateWidgets(void)
+void ST_updateWidgets()
 {
-	player_t *plyr = &displayplayer();
+	const player_t *plyr = &displayplayer();
 
 	if (weaponinfo[plyr->readyweapon].ammotype == am_noammo)
 		st_current_ammo = ST_DONT_DRAW_NUM;
@@ -931,7 +916,7 @@ void ST_updateWidgets(void)
 	for (int i = 0; i < 6; i++)
 	{
 		// denis - longwinded so compiler optimization doesn't skip it (fault in my gcc?)
-		if(plyr->weaponowned[i+1])
+		if (plyr->weaponowned[i+1])
 			st_weaponowned[i] = 1;
 		else
 			st_weaponowned[i] = 0;
@@ -986,7 +971,7 @@ void ST_Ticker()
 void ST_drawWidgets(bool force_refresh)
 {
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && G_IsCoopGame();
+	st_armson = G_IsCoopGame() && st_statusbaron;
 
 	// used by w_frags widget
 	st_fragson = !G_IsCoopGame() && st_statusbaron;
@@ -1025,8 +1010,8 @@ void ST_drawWidgets(bool force_refresh)
 //
 static void ST_refreshBackground()
 {
-	IWindowSurface* surface = R_GetRenderingSurface();
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	const IWindowSurface* surface = R_GetRenderingSurface();
+	const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 	// [RH] If screen is wider than the status bar, draw stuff around status bar.
 	if (surface_width > ST_WIDTH)
@@ -1037,7 +1022,7 @@ static void ST_refreshBackground()
 
 	stbar_surface->lock();
 
-	DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
+	const DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
 	stbar_canvas->DrawPatch(W_ResolvePatchHandle(sbar), 0, 0);
 
 	if (sv_gametype == GM_CTF)
@@ -1094,7 +1079,7 @@ void ST_Drawer()
 	if (st_statusbaron)
 	{
 		IWindowSurface* surface = R_GetRenderingSurface();
-		int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+		const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 		ST_WIDTH = ST_StatusBarWidth(surface_width, surface_height);
 		ST_HEIGHT = ST_StatusBarHeight(surface_width, surface_height);
@@ -1133,32 +1118,28 @@ void ST_Drawer()
 }
 
 
-static lumpHandle_t LoadFaceGraphic(char* name, int namespc)
+static lumpHandle_t LoadFaceGraphic(const char* name)
 {
-	char othername[9];
-	int lump;
-
-	lump = W_CheckNumForName (name, namespc);
+	int lump = W_CheckNumForName(name, ns_global);
 	if (lump == -1)
 	{
-		strcpy (othername, name);
-		othername[0] = 'S'; othername[1] = 'T'; othername[2] = 'F';
-		lump = W_GetNumForName (othername);
+		char othername[9];
+		strcpy(othername, name);
+		othername[0] = 'S';
+		othername[1] = 'T';
+		othername[2] = 'F';
+		lump = W_GetNumForName(othername);
 	}
 	return W_CachePatchHandle(lump, PU_STATIC);
 }
 
 static void ST_loadGraphics()
 {
-	int i, j;
-	int namespc;
-	int facenum;
 	char namebuf[9];
-
 	namebuf[8] = 0;
 
 	// Load the numbers, tall and short
-	for (i=0;i<10;i++)
+	for (int i = 0; i < 10; i++)
 	{
 		sprintf(namebuf, "STTNUM%d", i);
 		tallnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
@@ -1172,7 +1153,7 @@ static void ST_loadGraphics()
 	tallpercent = W_CachePatchHandle("STTPRCNT", PU_STATIC);
 
 	// key cards
-	for (i=0;i<NUMCARDS+NUMCARDS/2;i++)
+	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
 	{
 		sprintf(namebuf, "STKEYS%d", i);
 		keys[i] = W_CachePatchHandle(namebuf, PU_STATIC);
@@ -1185,7 +1166,7 @@ static void ST_loadGraphics()
 	flagsbg = W_CachePatchHandle("STFLAGS", PU_STATIC);
 
 	// arms ownership widgets
-	for (i=0;i<6;i++)
+	for (int i = 0; i < 6; i++)
 	{
 		sprintf(namebuf, "STGNUM%d", i+2);
 
@@ -1202,7 +1183,8 @@ static void ST_loadGraphics()
 	faceback = W_CachePatchHandle("STFBANY", PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
-	for (i = 0; i < 4; i++) {
+	for (int i = 0; i < 4; i++)
+	{
 		sprintf(namebuf, "STFB%d", i);
 		faceclassic[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
@@ -1211,33 +1193,32 @@ static void ST_loadGraphics()
 	sbar = W_CachePatchHandle("STBAR", PU_STATIC);
 
 	// face states
-	facenum = 0;
+	int facenum = 0;
 
 	namebuf[0] = 'S'; namebuf[1] = 'T'; namebuf[2] = 'F';
-	namespc = ns_global;
 
-	for (i = 0; i < ST_NUMPAINFACES; i++)
+	for (int i = 0; i < ST_NUMPAINFACES; i++)
 	{
-		for (j = 0; j < ST_NUMSTRAIGHTFACES; j++)
+		for (int j = 0; j < ST_NUMSTRAIGHTFACES; j++)
 		{
 			sprintf(namebuf+3, "ST%d%d", i, j);
-			faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+			faces[facenum++] = LoadFaceGraphic(namebuf);
 		}
 		sprintf(namebuf+3, "TR%d0", i);		// turn right
-		faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+		faces[facenum++] = LoadFaceGraphic(namebuf);
 		sprintf(namebuf+3, "TL%d0", i);		// turn left
-		faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+		faces[facenum++] = LoadFaceGraphic(namebuf);
 		sprintf(namebuf+3, "OUCH%d", i);		// ouch!
-		faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+		faces[facenum++] = LoadFaceGraphic(namebuf);
 		sprintf(namebuf+3, "EVL%d", i);		// evil grin ;)
-		faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+		faces[facenum++] = LoadFaceGraphic(namebuf);
 		sprintf(namebuf+3, "KILL%d", i);		// pissed off
-		faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+		faces[facenum++] = LoadFaceGraphic(namebuf);
 	}
 	strcpy (namebuf+3, "GOD0");
-	faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+	faces[facenum++] = LoadFaceGraphic(namebuf);
 	strcpy (namebuf+3, "DEAD0");
-	faces[facenum++] = LoadFaceGraphic (namebuf, namespc);
+	faces[facenum] = LoadFaceGraphic(namebuf);
 }
 
 static void ST_loadData()
@@ -1361,9 +1342,6 @@ void ST_createWidgets()
 
 void ST_Start()
 {
-	if (!st_stopped)
-		ST_Stop();
-
 	ST_ForceRefresh();
 
 	st_gamestate = FirstPersonState;
@@ -1385,15 +1363,6 @@ void ST_Start()
 	ST_initNew();
 
 	ST_createWidgets();
-	st_stopped = false;
-}
-
-void ST_Stop()
-{
-	if (st_stopped)
-		return;
-
-	st_stopped = true;
 }
 
 void ST_Init()
@@ -1405,7 +1374,6 @@ void ST_Init()
 
 	ST_loadData();
 }
-
 
 void STACK_ARGS ST_Shutdown()
 {

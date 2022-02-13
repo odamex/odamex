@@ -27,7 +27,6 @@
 #ifndef __STSTUFF_H__
 #define __STSTUFF_H__
 
-
 // Forward declaration
 struct event_t;
 
@@ -100,15 +99,6 @@ void DoomHUD();
 
 }
 
-// States for status bar code.
-typedef enum
-{
-	AutomapState,
-	FirstPersonState
-	
-} st_stateenum_t;
-
 bool ST_Responder(event_t* ev);
-
 
 #endif
