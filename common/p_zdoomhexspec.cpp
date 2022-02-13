@@ -37,6 +37,27 @@ EXTERN_CVAR(sv_forcewater)
 lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
                                      bool bossaction)
 {
+	// Do not teleport on the wrong side
+	if (side)
+	{
+		switch (line->special)
+		{
+		case Teleport:
+		case Teleport_NoFog:
+		case Teleport_NewMap:
+		case Teleport_EndGame:
+		case Teleport_NoStop:
+		case Teleport_Line:
+			lineresult_s result;
+			result.lineexecuted = false;
+			result.switchchanged = false;
+			return result;
+			break;
+		default:
+			break;
+		}
+	}
+
 	if (thing->player)
 	{
 		return P_ActivateZDoomLine(line, thing, side, ML_SPAC_CROSS);
@@ -1022,24 +1043,6 @@ void P_PostProcessZDoomSidedefSpecial(side_t* sd, mapsidedef_t* msd, sector_t* s
 bool P_ExecuteZDoomLineSpecial(int special, short* args, line_t* line, int side,
                                    AActor* mo)
 {
-	// Do not teleport on the wrong side
-	if (side)
-	{
-		switch (line->special)
-		{
-		case Teleport:
-		case Teleport_NoFog:
-		case Teleport_NewMap:
-		case Teleport_EndGame:
-		case Teleport_NoStop:
-		case Teleport_Line:
-			return false;
-			break;
-		default:
-			break;
-		}
-	}
-
 	return LineSpecials[special](line, mo, args[0], args[1], args[2], args[3],
 		                                args[4]);
 }
