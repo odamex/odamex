@@ -3474,11 +3474,11 @@ void P_PostProcessCompatibleLinedefSpecial(line_t* line)
 							lines[j].tranlump = lump;
 #else
 	          // [RH] Second arg controls how opaque it is.
-		if (!line->args[0])
+		if (line->id == 0)
 			line->lucency = (byte)128;
 		else
 			for (j = 0; j < numlines; j++)
-				if (lines[j].id == line->args[0])
+				if (lines[j].id == line->id)
 					lines[j].lucency = (byte)128;
 #endif
 		line->special = 0;
