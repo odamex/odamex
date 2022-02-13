@@ -99,6 +99,9 @@ void StatusBarWidgetNumber::init(int x_, int y_, lumpHandle_t* pl, int* num_, bo
 //
 void StatusBarWidgetNumber::update(bool force_refresh, bool cleararea)
 {
+	if (!on)
+		return;
+
 	// [jsd]: prevent null references as hard as possible
 	if (num == NULL || on == NULL || p == NULL)
 		return;
