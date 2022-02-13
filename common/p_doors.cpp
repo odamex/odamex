@@ -854,12 +854,12 @@ BOOL EV_DoGenDoor(line_t* line)
 	rtn = false;
 
 	// if not manual do all sectors tagged the same as the line
-	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+	while ((secnum = P_FindSectorFromTagOrLine(line->id, line, secnum)) >= 0)
 	{
 		sec = &sectors[secnum];
 manual_gendoor:
 		// Do not start another function if ceiling already moving
-		if (P_CeilingActive(sec)) // jff 2/22/98
+		if (sec->ceilingdata) // jff 2/22/98
 		{
 			if (!manual)
 				continue;
