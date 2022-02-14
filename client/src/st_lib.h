@@ -36,21 +36,36 @@ extern IWindowSurface* stnum_surface;
 // Typedefs of widgets
 //
 
-class StatusBarWidget
+class StatusBarWidget_Base
 {
   protected:
+	int m_x;
+	int m_y;
+
 	void clearRect(int x, int y, int w, int h);
 	void drawPatch(int x, int y, const patch_t* p);
+
+  public:
+	int getX() const { return m_x; }
+	int getY() const { return m_y; }
+	
 };
 
 // Number widget
-class st_number_t : StatusBarWidget
+class StatusBarWidgetNumber : StatusBarWidget_Base
 {
+  protected:
+
+	void drawPatch(int x, int y, const patch_t* p)
+	{
+		StatusBarWidget_Base::drawPatch(x, y, p);
+	}
+
   public:
 	// upper right-hand corner
 	//	of the number (right-justified)
-	int x;
-	int y;
+	int getX() const { return StatusBarWidget_Base::getX(); }
+	int getY() const { return StatusBarWidget_Base::getY(); }
 
 	int maxdigits;
 
@@ -75,15 +90,12 @@ class st_number_t : StatusBarWidget
 
 // Percent widget ("child" of number widget,
 //	or, more precisely, contains a number widget.)
-class st_percent_t : StatusBarWidget
+class StatusBarWidgetPercent : StatusBarWidgetNumber
 {
-  public:
-	// number information
-	st_number_t n;
-
 	// percent sign graphic
-	lumpHandle_t p;
+	lumpHandle_t m_percentLump;
 
+  public:
 	// Percent widget routines
 	void init(int x, int y, lumpHandle_t* pl, int* num, bool* on, lumpHandle_t percent);
 
@@ -91,12 +103,12 @@ class st_percent_t : StatusBarWidget
 };
 
 // Multiple Icon widget
-class st_multicon_t : StatusBarWidget
+class StatusBarWidgetMultiIcon : StatusBarWidget_Base
 {
   public:
 	// center-justified location of icons
-	int x;
-	int y;
+	//int x;
+	//int y;
 
 	// last icon number
 	int oldinum;

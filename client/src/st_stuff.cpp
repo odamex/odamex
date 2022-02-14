@@ -315,34 +315,34 @@ static lumpHandle_t flagsbg;
 static lumpHandle_t arms[6][2];
 
 // ready-weapon widget
-static st_number_t		w_ready;
+static StatusBarWidgetNumber	w_ready;
 
- // in deathmatch only, summary of frags stats
-static st_number_t		w_frags;
+// in deathmatch only, summary of frags stats
+static StatusBarWidgetNumber	w_frags;
 
 // health widget
-static st_percent_t 	w_health;
+static StatusBarWidgetPercent 	w_health;
 
 // weapon ownership widgets
-static st_multicon_t	w_arms[6];
+static StatusBarWidgetMultiIcon	w_arms[6];
 
 // face status widget
-static st_multicon_t	w_faces;
+static StatusBarWidgetMultiIcon	w_faces;
 
 // keycard widgets
-static st_multicon_t	w_keyboxes[3];
+static StatusBarWidgetMultiIcon	w_keyboxes[3];
 
 // armor widget
-static st_percent_t 	w_armor;
+static StatusBarWidgetPercent 	w_armor;
 
 // ammo widgets
-static st_number_t		w_ammo[4];
+static StatusBarWidgetNumber	w_ammo[4];
 
 // max ammo widgets
-static st_number_t		w_maxammo[4];
+static StatusBarWidgetNumber	w_maxammo[4];
 
 // lives widget
-static st_number_t		w_lives;
+static StatusBarWidgetNumber	w_lives;
 
 // number of frags so far in deathmatch
 static int		st_fragscount;
@@ -1303,9 +1303,7 @@ void ST_createWidgets()
 
 	// keyboxes 0-2
 	w_keyboxes[0].init(ST_KEY0X, ST_KEY0Y, keys, &keyboxes[0], &st_statusbaron);
-
 	w_keyboxes[1].init(ST_KEY1X, ST_KEY1Y, keys, &keyboxes[1], &st_statusbaron);
-
 	w_keyboxes[2].init(ST_KEY2X, ST_KEY2Y, keys, &keyboxes[2], &st_statusbaron);
 
 	// ammo count (all four kinds)

@@ -25,25 +25,22 @@
 
 #include "odamex.h"
 
-#include "i_video.h"
-
-#include "w_wad.h"
-
-#include "r_local.h"
-#include "st_lib.h"
 #include "st_stuff.h"
+#include "i_video.h"	// IWindowSurface
+#include "st_lib.h"
+#include "r_local.h"	// R_GetRenderingSurface()
 
 // [RH] Routines to stretch status bar graphics depending on st_scale cvar.
 EXTERN_CVAR(st_scale)
 
 //
-// StatusBarWidget::clearRect
+// StatusBarWidget_Base::clearRect
 //
 // Copies a rectangular portion of the status bar background surface onto
 // the drawing surface. This is used prior to drawing a widget (number or patch)
 // onto the surface.
 //
-void StatusBarWidget::clearRect(int x, int y, int w, int h)
+void StatusBarWidget_Base::clearRect(int x, int y, int w, int h)
 {
 	if (st_scale)
 	{
@@ -60,12 +57,12 @@ void StatusBarWidget::clearRect(int x, int y, int w, int h)
 }
 
 //
-// StatusBarWidget::drawPatch
+// StatusBarWidget_Base::drawPatch
 //
 // Draws a patch onto the drawing surface. STlib_ClearRect should be used to
 // draw a fresh copy of the background prior to drawing the patch.
 //
-void StatusBarWidget::drawPatch(int x, int y, const patch_t* p)
+void StatusBarWidget_Base::drawPatch(int x, int y, const patch_t* p)
 {
 	if (st_scale)
 	{
@@ -82,11 +79,11 @@ void StatusBarWidget::drawPatch(int x, int y, const patch_t* p)
 	}
 }
 
-void st_number_t::init(int x_, int y_, lumpHandle_t* pl, int* num_, bool* on_,
+void StatusBarWidgetNumber::init(int x_, int y_, lumpHandle_t* pl, int* num_, bool* on_,
                        int maxdigits_)
 {
-	x = x_;
-	y = y_;
+	m_x = x_;
+	m_y = y_;
 	oldnum = 0;
 	maxdigits = maxdigits_;
 	num = num_;
@@ -100,11 +97,8 @@ void st_number_t::init(int x_, int y_, lumpHandle_t* pl, int* num_, bool* on_,
 // A fairly efficient way to draw a number based on differences from the
 // old number. Worth the trouble?
 //
-void st_number_t::update(bool force_refresh, bool cleararea)
+void StatusBarWidgetNumber::update(bool force_refresh, bool cleararea)
 {
-	if (!on)
-		return;
-
 	// [jsd]: prevent null references as hard as possible
 	if (num == NULL || on == NULL || p == NULL)
 		return;
@@ -114,11 +108,6 @@ void st_number_t::update(bool force_refresh, bool cleararea)
 		return;
 
 	int number = *num;
-
-	const patch_t* p0 = W_ResolvePatchHandle(p[0]);
-	const int w = p0->width();
-	const int h = p0->height();
-
 	oldnum = *num;
 
 	const bool negative = number < 0;
@@ -133,60 +122,64 @@ void st_number_t::update(bool force_refresh, bool cleararea)
 		number = -number;
 	}
 
+	const patch_t* p0 = W_ResolvePatchHandle(p[0]);
+	const int w = p0->width();
+	const int h = p0->height();
+
 	// clear the area
 	if (cleararea)
-		clearRect(x - w * maxdigits, y, w * maxdigits, h);
+		clearRect(m_x - w * maxdigits, m_y, w * maxdigits, h);
 
 	// if non-number, do not draw it
 	if (number == ST_DONT_DRAW_NUM)
 		return;
 
-	int drawx = x;
+	int drawx = m_x;
 
 	// in the special case of 0, you draw 0
 	if (number == 0)
-		drawPatch(drawx - w, y, p0);
+		drawPatch(drawx - w, m_y, p0);
 
 	// draw the new number
 	for (int numdigits = maxdigits; number && numdigits; numdigits--)
 	{
 		const patch_t* pnum = W_ResolvePatchHandle(p[number % 10]);
 		drawx -= w;
-		drawPatch(drawx, y, pnum);
+		drawPatch(drawx, m_y, pnum);
 		number /= 10;
 	}
 
 	// draw a minus sign if necessary
 	if (negative)
-		drawPatch(drawx - 8, y, W_ResolvePatchHandle(negminus));
+		drawPatch(drawx - 8, m_y, W_ResolvePatchHandle(negminus));
 }
 
-void st_percent_t::init(int x, int y, lumpHandle_t* pl, int* num, bool* on,
+void StatusBarWidgetPercent::init(int x, int y, lumpHandle_t* pl, int* num, bool* on,
                         lumpHandle_t percent_patch)
 {
-	n.init(x, y, pl, num, on, 3);
-	p = percent_patch;
+	StatusBarWidgetNumber::init(x, y, pl, num, on, 3);
+	m_percentLump = percent_patch;
 }
 
-void st_percent_t::update(bool force_refresh)
+void StatusBarWidgetPercent::update(bool force_refresh)
 {
-	if (force_refresh && *n.on)
-		drawPatch(n.x, n.y, W_ResolvePatchHandle(p));
+	if (force_refresh && *on)
+		drawPatch(getX(), getY(), W_ResolvePatchHandle(m_percentLump));
 
-	n.update(force_refresh);
+	StatusBarWidgetNumber::update(force_refresh);
 }
 
-void st_multicon_t::init(int x_, int y_, lumpHandle_t* il, int* inum_, bool* on_)
+void StatusBarWidgetMultiIcon::init(int x_, int y_, lumpHandle_t* il, int* inum_, bool* on_)
 {
-	x = x_;
-	y = y_;
+	m_x = x_;
+	m_y = y_;
 	oldinum = -1;
 	inum = inum_;
 	on = on_;
 	p = il;
 }
 
-void st_multicon_t::update(bool force_refresh)
+void StatusBarWidgetMultiIcon::update(bool force_refresh)
 {
 	if (on && (force_refresh || oldinum != *inum) && (*inum != -1))
 	{
@@ -194,16 +187,15 @@ void st_multicon_t::update(bool force_refresh)
 		if (oldinum != -1)
 		{
 			const patch_t* oldnum = W_ResolvePatchHandle(p[oldinum]);
-			const int drawx = x - oldnum->leftoffset();
-			const int drawy = y - oldnum->topoffset();
+			const int drawx = m_x - oldnum->leftoffset();
+			const int drawy = m_y - oldnum->topoffset();
 			const int w = oldnum->width();
 			const int h = oldnum->height();
 
 			clearRect(drawx, drawy, w, h);
 		}
 
-		const patch_t* drawinum = W_ResolvePatchHandle(p[*inum]);
-		drawPatch(x, y, drawinum);
+		drawPatch(m_x, m_y, W_ResolvePatchHandle(p[*inum]));
 		oldinum = *inum;
 	}
 }
