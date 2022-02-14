@@ -1146,9 +1146,11 @@ static void ST_loadGraphics()
 		shortnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 
-	// Load percent key.
-	//Note: why not load STMINUS here, too?
+	// Load percent key
 	tallpercent = W_CachePatchHandle("STTPRCNT", PU_STATIC);
+
+	// Load minus key
+	negminus = W_CachePatchHandle("STTMINUS", PU_STATIC);
 
 	// key cards
 	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
