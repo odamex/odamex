@@ -225,7 +225,7 @@ void DDoor::RunThink ()
 	case opening:
 		res = MoveCeiling(m_Speed, m_TopHeight, 1);
 		
-        if (m_LightTag && m_TopHeight - floorheight)
+        if (m_Line && m_LightTag && m_TopHeight - floorheight)
         {
             EV_LightTurnOnPartway(m_Line->id,
                 FixedDiv(ceilingheight - floorheight, m_TopHeight - floorheight));
@@ -258,7 +258,7 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
-			if (m_LightTag && m_TopHeight - floorheight)
+			if (m_Line && m_LightTag && m_TopHeight - floorheight)
             {
                 EV_LightTurnOnPartway(m_Line->id, FRACUNIT);
             }
@@ -695,13 +695,13 @@ void P_SpawnDoorRaiseIn5Mins (sector_t *sec)
 
 	sec->special = 0;
 
-	door->m_Type = DDoor::doorCloseWaitOpen;
+	door->m_Type = DDoor::doorRaiseIn5Mins;
 	door->m_Speed = FRACUNIT * 2;
 	door->m_TopHeight = P_FindLowestCeilingSurrounding (sec);
 	door->m_TopHeight -= 4*FRACUNIT;
 	door->m_TopWait = (150*TICRATE)/35;
 	door->m_TopCountdown = 5 * 60 * TICRATE;
-	door->m_Status = DDoor::waiting;
+	door->m_Status = DDoor::init;
 }
 
 BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
