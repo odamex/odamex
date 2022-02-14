@@ -795,8 +795,11 @@ void ST_updateFaceWidget()
 <<<<<<< HEAD
 =======
 
+<<<<<<< HEAD
 >>>>>>> bab1360fb (clean st_stuff.cpp/.h a little)
 
+=======
+>>>>>>> 8e2c6e0a8 (minor edits)
 				st_facecount = ST_TURNCOUNT;
 				st_faceindex = ST_calcPainOffset();
 
