@@ -247,34 +247,34 @@ extern bool simulated_connection;
 // [RH] Turned these into variables
 // Size of statusbar.
 // Now ([RH] truly) sensitive for scaling.
-int						ST_HEIGHT;
-int						ST_WIDTH;
-int						ST_X;
-int						ST_Y;
+int ST_HEIGHT;
+int ST_WIDTH;
+int ST_X;
+int ST_Y;
 
 // used for making messages go away
-static int				st_msgcounter = 0;
+static int st_msgcounter = 0;
 
 // whether in automap or first-person
-static st_stateenum_t	st_gamestate;
+static st_stateenum_t st_gamestate;
 
 // whether left-side main status bar is active
-static bool			st_statusbaron;
+static bool st_statusbaron;
 
 // whether status bar chat is active
-static bool			st_chat;
+static bool st_chat;
 
 // value of st_chat before message popped up
-static bool			st_oldchat;
+static bool st_oldchat;
 
 // whether chat window has the cursor on
-static bool			st_cursoron;
+static bool st_cursoron;
 
 // !deathmatch && st_statusbaron
-static bool			st_armson;
+static bool st_armson;
 
 // !deathmatch
-static bool			st_fragson;
+static bool st_fragson;
 
 // main bar left
 static lumpHandle_t sbar;
@@ -315,62 +315,62 @@ static lumpHandle_t flagsbg;
 static lumpHandle_t arms[6][2];
 
 // ready-weapon widget
-static StatusBarWidgetNumber	w_ready;
+static StatusBarWidgetNumber w_ready;
 
 // in deathmatch only, summary of frags stats
-static StatusBarWidgetNumber	w_frags;
+static StatusBarWidgetNumber w_frags;
 
 // health widget
-static StatusBarWidgetPercent 	w_health;
+static StatusBarWidgetPercent w_health;
 
 // weapon ownership widgets
-static StatusBarWidgetMultiIcon	w_arms[6];
+static StatusBarWidgetMultiIcon w_arms[6];
 
 // face status widget
-static StatusBarWidgetMultiIcon	w_faces;
+static StatusBarWidgetMultiIcon w_faces;
 
 // keycard widgets
-static StatusBarWidgetMultiIcon	w_keyboxes[3];
+static StatusBarWidgetMultiIcon w_keyboxes[3];
 
 // armor widget
-static StatusBarWidgetPercent 	w_armor;
+static StatusBarWidgetPercent w_armor;
 
 // ammo widgets
-static StatusBarWidgetNumber	w_ammo[4];
+static StatusBarWidgetNumber w_ammo[4];
 
 // max ammo widgets
-static StatusBarWidgetNumber	w_maxammo[4];
+static StatusBarWidgetNumber w_maxammo[4];
 
 // lives widget
-static StatusBarWidgetNumber	w_lives;
+static StatusBarWidgetNumber w_lives;
 
 // number of frags so far in deathmatch
-static int		st_fragscount;
+static int st_fragscount;
 
 // used to use appopriately pained face
-static int		st_oldhealth = -1;
+static int st_oldhealth = -1;
 
 // used for evil grin
-static bool		oldweaponsowned[NUMWEAPONS+1];
+static bool oldweaponsowned[NUMWEAPONS + 1];
 
- // count until face changes
-static int		st_facecount = 0;
+// count until face changes
+static int st_facecount = 0;
 
 // current face index, used by w_faces
 // [RH] not static anymore
-int				st_faceindex = 0;
+int st_faceindex = 0;
 
 // holds key-type for each key box on bar
-static int		keyboxes[3];
+static int keyboxes[3];
 
 // copy of player info
-static int		st_health, st_armor;
-static int		st_ammo[4], st_maxammo[4];
-static int		st_weaponowned[6] = {0}, st_current_ammo;
-static int		st_lives;
+static int st_health, st_armor;
+static int st_ammo[4], st_maxammo[4];
+static int st_weaponowned[6] = {0}, st_current_ammo;
+static int st_lives;
 
 // a random number per tick
-static int		st_randomnumber;
+static int st_randomnumber;
 
 // these are now in d_dehacked.cpp
 extern byte cheat_mus_seq[9];
@@ -502,13 +502,12 @@ EXTERN_CVAR (sv_allowcheats)
 // [RH] Cheats eatkey the last keypress used to trigger them
 bool ST_Responder (event_t *ev)
 {
-	player_t *plyr = &consoleplayer();
 	bool eat = false;
 
 	// Filter automap on/off.
 	if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
 	{
-		switch(ev->data1)
+		switch (ev->data1)
 		{
 		case AM_MSGENTERED:
 			st_gamestate = AutomapState;
@@ -594,13 +593,13 @@ BEGIN_COMMAND (chase)
 		if (chasedemo)
 		{
 			chasedemo.Set (0.0f);
-			for (Players::iterator it = players.begin();it != players.end();++it)
+			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 				it->cheats &= ~CF_CHASECAM;
 		}
 		else
 		{
 			chasedemo.Set (1.0f);
-			for (Players::iterator it = players.begin();it != players.end();++it)
+			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 				it->cheats |= CF_CHASECAM;
 		}
 	}
@@ -624,7 +623,7 @@ BEGIN_COMMAND (idmus)
 		{
 			const int l = atoi(argv[1]);
 			if (l <= 99)
-				map = CalcMapName (0, l);
+				map = CalcMapName(0, l);
 			else
 			{
 				Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
@@ -697,15 +696,10 @@ END_COMMAND(buddha)
 
 int ST_calcPainOffset()
 {
-	static int	lastcalc;
-	static int	oldhealth = -1;
+	static int lastcalc;
+	static int oldhealth = -1;
 
-	int health = displayplayer().health;
-
-	if(health < -1)
-		health = -1;
-	else if(health > 100)
-		health = 100;
+	const int health = clamp(displayplayer().health, -1, 100);
 
 	if (health != oldhealth)
 	{
@@ -725,12 +719,10 @@ int ST_calcPainOffset()
 //
 void ST_updateFaceWidget()
 {
-	int 		i;
-	angle_t 	diffang;
-	static int	lastattackdown = -1;
-	static int	priority = 0;
-
+	static int lastattackdown = -1;
+	static int priority = 0;
 	player_t *plyr = &displayplayer();
+	int i;
 
 	if (priority < 10)
 	{
@@ -750,7 +742,7 @@ void ST_updateFaceWidget()
 			// picking up bonus
 			bool doevilgrin = false;
 
-			for (i=0;i<NUMWEAPONS;i++)
+			for (i = 0; i < NUMWEAPONS; i++)
 			{
 				if (oldweaponsowned[i] != plyr->weaponowned[i])
 				{
@@ -766,14 +758,11 @@ void ST_updateFaceWidget()
 				st_faceindex = ST_calcPainOffset() + ST_EVILGRINOFFSET;
 			}
 		}
-
 	}
 
 	if (priority < 8)
 	{
-		if (plyr->damagecount
-			&& plyr->attacker
-			&& plyr->attacker != plyr->mo)
+		if (plyr->damagecount && plyr->attacker && plyr->attacker != plyr->mo)
 		{
 			// being attacked
 			priority = 7;
@@ -785,6 +774,7 @@ void ST_updateFaceWidget()
 			}
 			else
 			{
+				angle_t diffang;
 				angle_t badguyangle = R_PointToAngle2(plyr->mo->x,
 				                                      plyr->mo->y,
 				                                      plyr->attacker->x,
@@ -802,7 +792,6 @@ void ST_updateFaceWidget()
 					diffang = plyr->mo->angle - badguyangle;
 					i = diffang <= ANG180;
 				} // confusing, ain't it?
-
 
 				st_facecount = ST_TURNCOUNT;
 				st_faceindex = ST_calcPainOffset();
@@ -843,9 +832,7 @@ void ST_updateFaceWidget()
 				st_facecount = ST_TURNCOUNT;
 				st_faceindex = ST_calcPainOffset() + ST_RAMPAGEOFFSET;
 			}
-
 		}
-
 	}
 
 	if (priority < 6)
@@ -865,20 +852,17 @@ void ST_updateFaceWidget()
 		}
 		else
 			lastattackdown = -1;
-
 	}
 
 	if (priority < 5)
 	{
 		// invulnerability
-		if ((plyr->cheats & CF_GODMODE)
-			|| plyr->powers[pw_invulnerability])
+		if ((plyr->cheats & CF_GODMODE) || plyr->powers[pw_invulnerability])
 		{
 			priority = 4;
 
 			st_faceindex = ST_GODFACE;
 			st_facecount = 1;
-
 		}
 	}
 
@@ -953,7 +937,6 @@ void ST_updateWidgets()
 	// get rid of chat window if up because of message
 	if (!--st_msgcounter)
 		st_chat = st_oldchat;
-
 }
 
 void ST_Ticker()
@@ -997,7 +980,6 @@ void ST_drawWidgets(bool force_refresh)
 
 	w_lives.update(true, G_IsLivesGame()); // Force refreshing to avoid tens
 	                                       // to be hidden by Doomguy's face
-
 }
 
 
@@ -1201,23 +1183,23 @@ static void ST_loadGraphics()
 	{
 		for (int j = 0; j < ST_NUMSTRAIGHTFACES; j++)
 		{
-			sprintf(namebuf+3, "ST%d%d", i, j);
+			sprintf(namebuf + 3, "ST%d%d", i, j);
 			faces[facenum++] = LoadFaceGraphic(namebuf);
 		}
-		sprintf(namebuf+3, "TR%d0", i);		// turn right
+		sprintf(namebuf + 3, "TR%d0", i); // turn right
 		faces[facenum++] = LoadFaceGraphic(namebuf);
-		sprintf(namebuf+3, "TL%d0", i);		// turn left
+		sprintf(namebuf + 3, "TL%d0", i); // turn left
 		faces[facenum++] = LoadFaceGraphic(namebuf);
-		sprintf(namebuf+3, "OUCH%d", i);		// ouch!
+		sprintf(namebuf + 3, "OUCH%d", i); // ouch!
 		faces[facenum++] = LoadFaceGraphic(namebuf);
-		sprintf(namebuf+3, "EVL%d", i);		// evil grin ;)
+		sprintf(namebuf + 3, "EVL%d", i); // evil grin ;)
 		faces[facenum++] = LoadFaceGraphic(namebuf);
-		sprintf(namebuf+3, "KILL%d", i);		// pissed off
+		sprintf(namebuf + 3, "KILL%d", i); // pissed off
 		faces[facenum++] = LoadFaceGraphic(namebuf);
 	}
-	strcpy (namebuf+3, "GOD0");
+	strcpy(namebuf + 3, "GOD0");
 	faces[facenum++] = LoadFaceGraphic(namebuf);
-	strcpy (namebuf+3, "DEAD0");
+	strcpy(namebuf + 3, "DEAD0");
 	faces[facenum] = LoadFaceGraphic(namebuf);
 }
 
