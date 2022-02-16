@@ -21,7 +21,7 @@ Odamex supports the following features:
 * Removal of most vanilla Doom Static limits
 * Support for most Boom and MBF mapping features
 * The traditional old-school style of Deathmatch and a Cooperative mode, but also other game modes such as Team Deathmatch and Capture the Flag
-* Support for Survival, Last Man Standing, Last Team Standing, LMS CTF, 3-WAY CTF, and Attack & Defend game modes
+* Support for Horde, Survival, Last Man Standing, Last Team Standing, LMS CTF, 3-WAY CTF, and Attack & Defend game modes
 * Competitive-ready features, such as a warmup mode, round system, player queue, or playercolor overriding
 * Several modern ZDoom additions, such as slopes, LANGUAGEv2 or MAPINFOv2 lump support
 * An array of editing features, including the Hexen map format, DeHackEd and BEX patch support and ACS up to ZDoom 1.23
