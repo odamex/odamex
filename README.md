@@ -77,10 +77,6 @@ Before submitting a pull request, please make sure it follows [our coding standa
 
 [3]: https://odamex.net/wiki/Coding_standard
 
-For historical purposes, you can also view [our bugtracker's archive][4].
-
-[4]: https://odamex.net/bugs/
-
 External Links
 --------------
 
