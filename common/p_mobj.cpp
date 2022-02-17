@@ -275,7 +275,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 	if (multiplayer && serverside)
 		netid = ::ServerNetID.obtainNetID();
 
-	if (!SkillInfos[sv_skill.asInt() - 1].instant_reaction)
+	if (!G_GetCurrentSkill().instant_reaction)
 		reactiontime = info->reactiontime;
 
 	if (clientside)
@@ -751,7 +751,7 @@ void AActor::RunThink ()
 	}
 	else
 	{
-		const bool respawnmonsters = (SkillInfos[sv_skill.asInt() - 1].respawn_counter || sv_monstersrespawn);
+		const bool respawnmonsters = (G_GetCurrentSkill().respawn_counter || sv_monstersrespawn);
 
 		// check for nightmare respawn
 		if (!(flags & MF_COUNTKILL) || !respawnmonsters)
@@ -764,7 +764,7 @@ void AActor::RunThink ()
 
 		movecount++;
 
-		if (movecount < SkillInfos[sv_skill.asInt() - 1].respawn_counter * TICRATE)
+		if (movecount < G_GetCurrentSkill().respawn_counter * TICRATE)
 			return;
 
 		if (level.time & 31)
@@ -2834,7 +2834,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// check for appropriate skill level
-	if (!(mthing->flags & SkillInfos[sv_skill.asInt() - 1].spawn_filter))
+	if (!(mthing->flags & G_GetCurrentSkill().spawn_filter))
 		return;
 
 	// [RH] sound sequence overrides

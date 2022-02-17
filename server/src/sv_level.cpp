@@ -430,7 +430,7 @@ void G_InitNew (const char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	const bool wantFast = sv_fastmonsters || SkillInfos[sv_skill.asInt() - 1].fast_monsters;
+	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
 	if (wantFast != isFast)
 	{
 		if (wantFast)

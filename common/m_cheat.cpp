@@ -215,7 +215,7 @@ bool CHEAT_AreCheatsEnabled()
 
 	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats
 	// are disabled
-	if (!multiplayer && SkillInfos[sv_skill.asInt() - 1].disable_cheats)
+	if (!multiplayer && G_GetCurrentSkill().disable_cheats)
 		return false;
 
 	if ((multiplayer || !G_IsCoopGame()) && !sv_allowcheats)
