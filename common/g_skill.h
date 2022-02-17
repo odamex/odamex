@@ -113,6 +113,6 @@ extern SkillInfo SkillInfos[MAX_SKILLS];
 extern byte skillnum;
 extern byte defaultskillmenu;
 
-const SkillInfo& G_GetCurentSkill();
+const SkillInfo& G_GetCurrentSkill();
 
 #endif
