@@ -489,16 +489,18 @@ ItemEquipVal P_GiveBody(player_t *player, int num)
 //
 ItemEquipVal P_GiveArmor(player_t *player, int armortype)
 {
-	int hits;
-
-	hits = armortype * 100;
+	const int hits = armortype * 100;
 	if (player->armorpoints >= hits)
 	{
 		return IEV_NotEquipped;	// don't pick up
 	}
 
+	const int hits_real = static_cast<int>(static_cast<float>(hits) * G_GetCurrentSkill().armor_factor);
+
 	player->armortype = armortype;
-	player->armorpoints = hits;
+	player->armorpoints += hits_real;
+	if (player->armorpoints > hits)
+		player->armorpoints = hits;
 
 	return IEV_EquipRemove;
 }
@@ -638,11 +640,11 @@ static void P_GiveCarePack(player_t* player)
 
 		// Missle clip is a bit stingy, so we double our handouts.
 		const int lowLimit = ammomulti[ammo] * 2;
-		const int giveAmount = ammomulti[ammo] * 5;
+		const float giveAmount = static_cast<float>(ammomulti[ammo] * 5);
 
 		if (player->ammo[ammo] < ::clipammo[ammo] * lowLimit)
 		{
-			P_GiveAmmo(player, static_cast<ammotype_t>(ammo), giveAmount);
+			P_GiveAmmo(player, ammo, giveAmount);
 			blocks -= 1;
 		}
 	}
@@ -724,7 +726,7 @@ static void P_GiveCarePack(player_t* player)
 				continue;
 			}
 
-			P_GiveAmmo(player, static_cast<ammotype_t>(ammo), ammomulti[ammo]);
+			P_GiveAmmo(player, ammo, ammomulti[ammo]);
 		}
 		blocks -= 1;
 	}
@@ -839,7 +841,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             break;
 
 	    case SPR_BON2:
-            player->armorpoints++;			// can go over 100%
+            player->armorpoints += static_cast<int>(G_GetCurrentSkill().armor_factor); // can go over 100%
             if (player->armorpoints > deh.MaxArmor)
             {
                 player->armorpoints = deh.MaxArmor;
