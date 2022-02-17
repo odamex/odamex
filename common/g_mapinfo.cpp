@@ -969,15 +969,22 @@ void MIType_Sky(OScanner& os, bool doEquals, void* data, unsigned int flags,
 			return;
 		}
 	}
-	os.mustScanFloat();
-	/*if (HexenHack)
+	os.scan();
+	if (IsNum(os.getToken().c_str()))
 	{
-	    *((fixed_t *)(info + handler->data2)) = sc_Number << 8;
+		/*if (HexenHack)
+		{
+		    *((fixed_t *)(info + handler->data2)) = sc_Number << 8;
+		}
+		 else
+		{
+		    *((fixed_t *)(info + handler->data2)) = (fixed_t)(sc_Float * 65536.0f);
+		}*/
 	}
-	 else
+	else
 	{
-	    *((fixed_t *)(info + handler->data2)) = (fixed_t)(sc_Float * 65536.0f);
-	}*/
+		os.unScan();
+	}
 }
 
 // Sets a flag
