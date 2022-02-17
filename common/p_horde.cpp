@@ -560,7 +560,7 @@ void HordeState::tick()
 		}
 	}
 
-	if (::level.time > m_nextSpawn)
+	if (::level.time >= m_nextSpawn)
 	{
 		// Determine our next spawn time.  Sped up slightly in an empty level.
 		const int aliveHealth = m_spawnedHealth - m_killedHealth;
@@ -648,15 +648,13 @@ void HordeState::tick()
 	P_HordeSpawnItem();
 
 	// Always try to spawn a powerup between 30-45 seconds.
-	if (!define.powerups.empty() && ::level.time > m_nextPowerup)
+	if (!define.powerups.empty() && ::level.time >= m_nextPowerup)
 	{
 		const int offset = P_RandomInt(16) + 30;
 		m_nextPowerup = ::level.time + (offset * TICRATE);
 
 		const mobjtype_t pw = define.randomPowerup().mobj;
 		P_HordeSpawnPowerup(pw);
-
-		// Printf("Spawned powerup %s, next in %d.\n", ::mobjinfo[pw].name, offset);
 	}
 }
 
