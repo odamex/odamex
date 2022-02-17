@@ -472,7 +472,7 @@ ItemEquipVal P_GiveBody(player_t *player, int num)
 		return IEV_NotEquipped;
 	}
 
-	player->health += num;
+	player->health += static_cast<int>(static_cast<float>(num) * G_GetCurrentSkill().health_factor);
 	if (player->health > MAXHEALTH)
 	{
 		player->health = MAXHEALTH;
@@ -828,7 +828,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 
 		// bonus items
 	    case SPR_BON1:
-            player->health++;				// can go over 100%
+            player->health += static_cast<int>(G_GetCurrentSkill().health_factor); // can go over 100%
             if (player->health > deh.MaxSoulsphere)
             {
                 player->health = deh.MaxSoulsphere;
@@ -853,7 +853,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             break;
 
 	    case SPR_SOUL:
-            player->health += deh.SoulsphereHealth;
+            player->health += static_cast<int>(static_cast<float>(deh.SoulsphereHealth) * G_GetCurrentSkill().health_factor);
             if (player->health > deh.MaxSoulsphere)
             {
                 player->health = deh.MaxSoulsphere;
@@ -865,7 +865,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             break;
 
 	    case SPR_MEGA:
-            player->health = deh.MegasphereHealth;
+            player->health = static_cast<int>(static_cast<float>(deh.MegasphereHealth) * G_GetCurrentSkill().health_factor);
             player->mo->health = player->health;
             P_GiveArmor(player,deh.BlueAC);
 			msg = &GOTMSPHERE;
