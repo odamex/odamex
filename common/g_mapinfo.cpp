@@ -645,6 +645,12 @@ void MIType_EatNext(OScanner& os, bool doEquals, void* data, unsigned int flags,
 	ParseMapInfoHelper<std::string>(os, doEquals);
 }
 
+// Literally does nothing
+void MIType_DoNothing(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                    unsigned int flags2)
+{
+}
+
 // Sets the inputted data as an int
 void MIType_Int(OScanner& os, bool doEquals, void* data, unsigned int flags,
                 unsigned int flags2)
@@ -1368,12 +1374,12 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		       &ref.exitpic) // todo: add intermission script support
 		ENTRY2("interpic", &MIType_EatNext)
 		ENTRY2("translator", &MIType_EatNext)
-		ENTRY2("compat_shorttex", &MIType_EatNext)
-		ENTRY2("compat_limitpain", &MIType_EatNext)
+		ENTRY2("compat_shorttex", &MIType_DoNothing)
+		ENTRY2("compat_limitpain", &MIType_DoNothing)
 		ENTRY4("compat_dropoff", &MIType_SetFlag, &ref.flags, LEVEL_COMPAT_DROPOFF)
-		ENTRY2("compat_trace", &MIType_EatNext)
-		ENTRY2("compat_boomscroll", &MIType_EatNext)
-		ENTRY2("compat_sectorsounds", &MIType_EatNext)
+		ENTRY2("compat_trace", &MIType_DoNothing)
+		ENTRY2("compat_boomscroll", &MIType_DoNothing)
+		ENTRY2("compat_sectorsounds", &MIType_DoNothing)
 		ENTRY4("compat_nopassover", &MIType_SetFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER)
 	}
 };
