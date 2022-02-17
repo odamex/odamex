@@ -1784,7 +1784,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				const OString& s = GStrings(StdStringToUpper(os.getToken()));
 				if (s.empty())
 				{
-					os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
+					info.level_name = os.getToken();
 				}
 				info.level_name = s;
 			}
