@@ -35,8 +35,8 @@ struct SkillInfo
 	float double_ammo_factor;
 	float drop_ammo_factor;		// not implemented
 	float damage_factor;
-	float armor_factor;			// not implemented
-	float health_factor;		// not implemented
+	float armor_factor;
+	float health_factor;
 	float kickback_factor;		// not implemented
 
 	bool fast_monsters;
