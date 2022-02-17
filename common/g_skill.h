@@ -98,7 +98,7 @@ struct SkillInfo
 		, must_confirm(false)
 		, must_confirm_text("$NIGHTMARE")
 		, shortcut(0)
-		, text_color("")
+		, text_color()
 		//, replace(???)
 		//, replaced(???)
 		, monster_health(1.)
