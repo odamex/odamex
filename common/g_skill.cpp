@@ -29,3 +29,8 @@
 SkillInfo SkillInfos[MAX_SKILLS];
 byte skillnum = 0;
 byte defaultskillmenu = 2;
+
+const SkillInfo& G_GetCurrentSkill()
+{
+	return SkillInfos[sv_skill.asInt() - 1];
+}

@@ -344,11 +344,11 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 	{
 		// give double ammo in trainer mode,
 		// you'll need in nightmare
-		num *= SkillInfos[sv_skill.asInt() - 1].double_ammo_factor;
+		num *= G_GetCurrentSkill().double_ammo_factor;
 	}
 	else
 	{
-		num *= SkillInfos[sv_skill.asInt() - 1].ammo_factor;
+		num *= G_GetCurrentSkill().ammo_factor;
 	}
 
 	const int oldammotype = player->ammo[ammotype];
@@ -2059,7 +2059,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 	if (player)
     {
-		damage = static_cast<int>(static_cast<float>(damage) * SkillInfos[sv_skill.asInt() - 1].damage_factor);
+		damage = static_cast<int>(static_cast<float>(damage) * G_GetCurrentSkill().damage_factor);
     }
 
 	// [AM] Weapon and monster damage scaling.
