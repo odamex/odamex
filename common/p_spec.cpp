@@ -522,67 +522,77 @@ static void ParseAnim(OScanner &os, byte istex);
 //
 static void P_InitAnimDefs ()
 {
-	int lump = -1;
-
-	while ((lump = W_FindLump ("ANIMDEFS", lump)) != -1)
+	// [DE] this hacky try/catch is here so WADs with ZDoom ANIMDEFS extensions
+	// don't crash for now. Once TextureManager is fully implemented I'll just
+	// implement the extensions properly there
+	try
 	{
-		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+		int lump = -1;
 
-		OScannerConfig config = {
-		    "ANIMDEFS", // lumpName
-		    false,      // semiComments
-		    true,       // cComments
-		};
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
-
-		while (os.scan())
+		while ((lump = W_FindLump("ANIMDEFS", lump)) != -1)
 		{
-			if (os.compareToken("flat"))
+			const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+
+			OScannerConfig config = {
+			    "ANIMDEFS", // lumpName
+			    false,      // semiComments
+			    true,       // cComments
+			};
+			OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+
+			while (os.scan())
 			{
-				ParseAnim(os, false);
-			}
-			else if (os.compareToken("texture"))
-			{
-				ParseAnim(os, true);
-			}
-			else if (os.compareToken("switch"))   // Don't support switchdef yet...
-			{
-				//P_ProcessSwitchDef();
-				//os.error("switchdef not supported.");
-			}
-			else if (os.compareToken("warp"))
-			{
-				os.mustScan();
-				if (os.compareToken("flat"))
+				if (os.compareTokenNoCase("flat"))
+				{
+					ParseAnim(os, false);
+				}
+				else if (os.compareTokenNoCase("texture"))
+				{
+					ParseAnim(os, true);
+				}
+				else if (os.compareTokenNoCase(
+				             "switch")) // Don't support switchdef yet...
+				{
+					// P_ProcessSwitchDef();
+					// os.error("switchdef not supported.");
+				}
+				else if (os.compareTokenNoCase("warp"))
 				{
 					os.mustScan();
-					flatwarp[R_FlatNumForName(os.getToken().c_str())] = true;
-				}
-				else if (os.compareToken("texture"))
-				{
-					// TODO: Make texture warping work with wall textures
-					os.mustScan();
-					R_TextureNumForName(os.getToken().c_str());
-				}
-				else
-				{
-					os.error("Unknown error reading in ANIMDEFS");
+					if (os.compareTokenNoCase("flat"))
+					{
+						os.mustScan();
+						flatwarp[R_FlatNumForName(os.getToken().c_str())] = true;
+					}
+					else if (os.compareTokenNoCase("texture"))
+					{
+						// TODO: Make texture warping work with wall textures
+						os.mustScan();
+						R_TextureNumForName(os.getToken().c_str());
+					}
+					else
+					{
+						os.error("Unknown error reading in ANIMDEFS");
+					}
 				}
 			}
 		}
 	}
+    catch (CRecoverableError &)
+    {
+	    
+    }
 }
 
 static void ParseAnim(OScanner &os, byte istex)
 {
 	anim_t sink;
-	short picnum;
 	anim_t *place;
-	byte min, max;
 
 	os.mustScan();
-	picnum = istex ? R_CheckTextureNumForName(os.getToken().c_str())
-		: W_CheckNumForName(os.getToken().c_str(), ns_flats) - firstflat;
+	const short picnum = istex
+		                     ? R_CheckTextureNumForName(os.getToken().c_str())
+		                     : W_CheckNumForName(os.getToken().c_str(), ns_flats) - firstflat;
 
 	if (picnum == -1)
 	{ // Base pic is not present, so skip this definition
@@ -602,7 +612,7 @@ static void ParseAnim(OScanner &os, byte istex)
 			lastanim++;
 			if (lastanim > anims + maxanims)
 			{
-				const size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
+				const size_t newmax = maxanims ? maxanims * 2 : MAXANIMS;
 				anims = static_cast<anim_t*>(Realloc(anims, newmax * sizeof(*anims)));
 				place = anims + maxanims;
 				lastanim = place + 1;
@@ -626,7 +636,7 @@ static void ParseAnim(OScanner &os, byte istex)
 
 	while (os.scan())
 	{
-		/*if (os.compareToken("allowdecals"))
+		/*if (os.compareTokenNoCase("allowdecals"))
 		{
 			if (istex && picnum >= 0)
 			{
@@ -634,7 +644,7 @@ static void ParseAnim(OScanner &os, byte istex)
 			}
 			continue;
 		}
-		else*/ if (!os.compareToken("pic"))
+		else*/ if (!os.compareTokenNoCase("pic"))
 		{
 			os.unScan();
 			break;
@@ -645,7 +655,8 @@ static void ParseAnim(OScanner &os, byte istex)
 			os.error("Animation has too many frames");
 		}
 
-		min = max = 1;	// Shut up, GCC
+		byte min = 1;
+		byte max = 1;
 
 		os.mustScanInt();
 		const int frame = os.getTokenInt();
