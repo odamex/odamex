@@ -827,7 +827,7 @@ void P_AdjustLine (line_t *ld)
 	else
 	{
 		// killough 4/4/98: support special sidedef interpretation below
-		if (ld->special >= OdamexStaticInits + 1 &&
+		if (ld->special >= OdamexStaticInits + 1 ||
 		    ld->special <= OdamexStaticInits + NUM_STATIC_INITS)
 		{
 			sides[*ld->sidenum].special = ld->special;

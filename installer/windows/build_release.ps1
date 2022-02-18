@@ -116,12 +116,12 @@ function CopyFiles {
         "${PSScriptRoot}\BuildX64\client\RelWithDebInfo\SDL2_mixer.dll", `
         "${PSScriptRoot}\BuildX64\client\RelWithDebInfo\SDL2.dll", `
         "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\odalaunch.exe", `
-        "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\wxbase314u_net_vc14x_x64.dll", `
-        "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\wxbase314u_vc14x_x64.dll", `
-        "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\wxbase314u_xml_vc14x_x64.dll", `
-        "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\wxmsw314u_core_vc14x_x64.dll", `
-        "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\wxmsw314u_html_vc14x_x64.dll", `
-        "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\wxmsw314u_xrc_vc14x_x64.dll", `
+        "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\wxbase315u_net_vc14x_x64.dll", `
+        "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\wxbase315u_vc14x_x64.dll", `
+        "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\wxbase315u_xml_vc14x_x64.dll", `
+        "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\wxmsw315u_core_vc14x_x64.dll", `
+        "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\wxmsw315u_html_vc14x_x64.dll", `
+        "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\wxmsw315u_xrc_vc14x_x64.dll", `
         "${PSScriptRoot}\BuildX64\server\RelWithDebInfo\odasrv.exe" `
         -Destination "${X64Dir}\"
 
@@ -143,12 +143,12 @@ function CopyFiles {
         "${PSScriptRoot}\BuildX86\client\RelWithDebInfo\SDL2_mixer.dll", `
         "${PSScriptRoot}\BuildX86\client\RelWithDebInfo\SDL2.dll", `
         "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\odalaunch.exe", `
-        "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxbase314u_net_vc14x.dll", `
-        "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxbase314u_vc14x.dll", `
-        "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxbase314u_xml_vc14x.dll", `
-        "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxmsw314u_core_vc14x.dll", `
-        "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxmsw314u_html_vc14x.dll", `
-        "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxmsw314u_xrc_vc14x.dll", `
+        "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_net_vc14x.dll", `
+        "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_vc14x.dll", `
+        "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_xml_vc14x.dll", `
+        "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxmsw315u_core_vc14x.dll", `
+        "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxmsw315u_html_vc14x.dll", `
+        "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxmsw315u_xrc_vc14x.dll", `
         "${PSScriptRoot}\BuildX86\server\RelWithDebInfo\odasrv.exe" `
         -Destination "${X86Dir}\"
 }

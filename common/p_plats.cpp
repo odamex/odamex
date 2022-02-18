@@ -587,11 +587,11 @@ BOOL EV_DoGenLift(line_t* line)
 	}
 
 	secnum = -1;
-	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+	while ((secnum = P_FindSectorFromTagOrLine(line->id, line, secnum)) >= 0)
 	{
 	manual_genplat:
 		sec = &sectors[secnum];
-		if (P_FloorActive(sec))
+		if (sec->floordata)
 		{
 			if (co_boomphys && manual)
 				return false;
