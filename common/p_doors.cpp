@@ -165,9 +165,9 @@ void DDoor::RunThink ()
 	case closing:
 		res = MoveCeiling(m_Speed, floorheight, -1);
 		
-        if (m_Line && m_Line->id)
+        if (m_LightTag)
         {
-            EV_LightTurnOnPartway(m_Line->id,
+			EV_LightTurnOnPartway(m_LightTag,
                 FixedDiv(ceilingheight - floorheight, m_TopHeight - floorheight));
         }
 		if (res == pastdest)
@@ -198,9 +198,9 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
-            if (m_LightTag && m_TopHeight - m_Sector->floorheight)
+			if (m_LightTag && m_TopHeight - m_Sector->floorheight)
             {
-                EV_LightTurnOnPartway(m_Line->id, 0);
+				EV_LightTurnOnPartway(m_LightTag, 0);
             }
 		}
 		else if (res == crushed)
@@ -225,9 +225,9 @@ void DDoor::RunThink ()
 	case opening:
 		res = MoveCeiling(m_Speed, m_TopHeight, 1);
 		
-        if (m_Line && m_LightTag && m_TopHeight - floorheight)
+        if (m_LightTag && m_TopHeight - floorheight)
         {
-            EV_LightTurnOnPartway(m_Line->id,
+			EV_LightTurnOnPartway(m_LightTag,
                 FixedDiv(ceilingheight - floorheight, m_TopHeight - floorheight));
         }
 		if (res == pastdest)
@@ -258,9 +258,9 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
-			if (m_Line && m_LightTag && m_TopHeight - floorheight)
+			if (m_LightTag && m_TopHeight - floorheight)
             {
-                EV_LightTurnOnPartway(m_Line->id, FRACUNIT);
+				EV_LightTurnOnPartway(m_LightTag, FRACUNIT);
             }
 		}
 		break;
@@ -348,7 +348,17 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	m_TopCountdown = -1;
 	m_Speed = speed;
     m_Line = ln;
-	m_LightTag = 0; /* killough 10/98: no light effects with tagged doors */
+	/* killough 10/98: use gradual lighting changes if nonzero tag given */
+	//door->lighttag = comp[comp_doorlight] ? 0 : line->tag;
+	// [Blair] Only certain door types are allowed to have LightTags.
+	if (m_Line && P_IsLightTagDoorType(m_Line->special))
+	{
+		m_LightTag = m_Line->id;
+	}
+	else
+	{
+		m_LightTag = 0; /* killough 10/98: no light effects with tagged doors */
+	}
 
 	fixed_t ceilingheight = P_CeilingHeight(sec);
 	
