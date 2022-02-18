@@ -528,6 +528,11 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 	m_NewLeakRate = sec->leakrate;
 	m_NewFlags = sec->flags;
 
+	if (m_Direction == 1)
+		m_Status = up;
+	else if (m_Direction == -1)
+		m_Status = down;
+
 	PlayFloorSound();
 
 	switch (speed)

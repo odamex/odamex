@@ -70,7 +70,8 @@ void DDoor::Serialize (FArchive &arc)
 			<< m_TopHeight
 			<< m_Speed
 			<< m_TopWait
-			<< m_TopCountdown;
+			<< m_TopCountdown
+			<< m_LightTag;
 	}
 	else
 	{
@@ -79,7 +80,8 @@ void DDoor::Serialize (FArchive &arc)
 			>> m_TopHeight
 			>> m_Speed
 			>> m_TopWait
-			>> m_TopCountdown;
+			>> m_TopCountdown
+			>> m_LightTag;
 	}
 }
 
@@ -397,6 +399,7 @@ DDoor::DDoor(sector_t* sec, line_t* ln, int kind, int trigger, int speed)
 	m_TopWait = VDOORWAIT;
 	m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4 * FRACUNIT;
 	m_Status = opening;
+	m_TopCountdown = -1;
 
 	switch (speed)
 	{
@@ -428,6 +431,7 @@ DDoor::DDoor(sector_t* sec, line_t* ln, int delay, int kind, int trigger, int sp
     : DMovingCeiling(sec), m_Status(init)
 {
 	m_Line = ln;
+	m_TopCountdown = -1;
 
 	fixed_t ceilingheight = P_CeilingHeight(sec);
 
