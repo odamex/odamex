@@ -46,6 +46,10 @@
 #include "m_wdlstats.h"
 #include "p_mapformat.h"
 
+#ifdef CLIENT_APP
+#include "hu_speedometer.h"
+#endif
+
 void SV_UpdateMobj(AActor* mo);
 void SV_UpdateMobjState(AActor* mo);
 
@@ -407,7 +411,8 @@ void AActor::Destroy ()
 	SV_SendDestroyActor(this);
 
 	// Remove from health pool.
-	P_RemoveHealthPool(this);
+	if (!::savegamerestore)
+		P_RemoveHealthPool(this);
 
     // Add special to item respawn queue if it is destined to be respawned
 	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0)
@@ -717,7 +722,20 @@ void AActor::RunThink ()
 		}
 	}
 
-	P_MoveActor(this);
+#ifdef CLIENT_APP
+	if (player && ::consoleplayer_id == player->id)
+	{
+		v3double_t start, end;
+		M_ActorPositionToVec3(&start, this);
+		P_MoveActor(this);
+		M_ActorPositionToVec3(&end, this);
+		HU_AddPlayerSpeed(start, end);
+	}
+	else
+#endif
+	{
+		P_MoveActor(this);
+	}
 
 	if(predicting)
 		return;
@@ -764,6 +782,9 @@ void AActor::RunThink ()
 
 void AActor::Serialize (FArchive &arc)
 {
+	const DWORD TLATE_NONE = 0xFFFFFFFF;
+	const DWORD TLATE_BOSS = 0xFFFFFFFE;
+
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
@@ -796,6 +817,7 @@ void AActor::Serialize (FArchive &arc)
 			<< flags
 			<< flags2
 			<< flags3
+			<< oflags
 			<< special1
 			<< special2
 			<< health
@@ -823,10 +845,22 @@ void AActor::Serialize (FArchive &arc)
 			<< gear;
 
 		// NOTE(jsd): This is pretty awful right here:
+		//       [AM] I am now part of the problem.
 		if (translation)
-			arc << (DWORD)(translation.getTable() - translationtables);
+		{
+			if (translation.getTable() == ::bosstable)
+			{
+				arc << TLATE_BOSS;
+			}
+			else
+			{
+				arc << (DWORD)(translation.getTable() - ::translationtables);
+			}
+		}
 		else
-			arc << (DWORD)0xffffffff;
+		{
+			arc << TLATE_NONE;
+		}
 		spawnpoint.Serialize (arc);
 		baseline.Serialize(arc);
 	}
@@ -865,6 +899,7 @@ void AActor::Serialize (FArchive &arc)
 			>> flags
 			>> flags2 
 			>> flags3
+			>> oflags
 			>> special1
 			>> special2
 			>> health
@@ -897,14 +932,24 @@ void AActor::Serialize (FArchive &arc)
 
 		DWORD trans;
 		arc >> trans;
-		if (trans == (DWORD)0xffffffff)
+		if (trans == TLATE_NONE)
+		{
 			translation = translationref_t();
+		}
+		else if (trans == TLATE_BOSS)
+		{
+			translation = translationref_t(::bosstable);
+		}
 		else
 		{
 			if ((trans / 256) <= MAXPLAYERS)
-				translation = translationref_t(translationtables + trans, trans / 256);
+			{
+				translation = translationref_t(::translationtables + trans, trans / 256);
+			}
 			else
-				translation = translationref_t(translationtables + trans);
+			{
+				translation = translationref_t(::translationtables + trans);
+			}
 		}
 		spawnpoint.Serialize (arc);
 		baseline.Serialize(arc);

@@ -134,6 +134,7 @@ extern int cvar_defflags;
 
 EXTERN_CVAR(cl_downloadsites);
 EXTERN_CVAR(message_showobituaries);
+EXTERN_CVAR(vid_gammatype);
 
 /**
  * Load a configuration file from the default configuration file.
@@ -185,12 +186,14 @@ void M_LoadDefaults(void)
 			::cl_downloadsites.RestoreDefault();
 		}
 	}
-	else if (::configver < 10000)
+
+	if (::configver < 10000)
 	{
 		// Turn off message line obituaries while upgrading to 10.0
 
 		updated = true;
 		::message_showobituaries.RestoreDefault();
+		::vid_gammatype.RestoreDefault();
 	}
 
 	if (updated)

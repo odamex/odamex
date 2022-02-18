@@ -103,3 +103,4 @@ bool P_IsHordeThing(const int type);
 const hordeDefine_t::weapons_t& P_HordeWeapons();
 const hordeDefine_t::ammos_t& P_HordeAmmos();
 void P_SerializeHorde(FArchive& arc);
+void P_HordePostLoad();
