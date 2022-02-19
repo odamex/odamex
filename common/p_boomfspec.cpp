@@ -449,8 +449,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_LineTeleport(line, side, thing))
 		{
 			result.lineexecuted = true;
-			// line->special = 0; // [Blair] Don't clear the line special,
-								  // we have other functions that handle that for teleports.
+			line->special = 0;
 		}						
 		break;
 

@@ -88,6 +88,22 @@ lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 	result.lineexecuted = false;
 	result.switchchanged = false;
 
+	// Err...
+	// Use the back sides of VERY SPECIAL lines...
+	if (side && (line->flags & (ML_SPAC_PUSH | ML_SPAC_USE)))
+	{
+		switch (line->special)
+		{
+		case Exit_Secret:
+			// Sliding door open&close
+			// UNUSED?
+			break;
+
+		default:
+			return result;
+		}
+	}
+
 	if (!P_TestActivateZDoomLine(line, mo, side, activationType) ||
 	    !P_CanActivateSpecials(mo, line))
 	{
