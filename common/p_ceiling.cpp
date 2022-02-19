@@ -36,7 +36,7 @@ EXTERN_CVAR(co_boomphys)
 extern bool predicting;
 
 void P_ResetTransferSpecial(newspecial_s* newspecial);
-void P_ResetSectorTransferFlags(unsigned int* flags);
+const unsigned int P_ResetSectorTransferFlags(const unsigned int flags);
 
 //
 // CEILINGS
@@ -447,8 +447,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 					m_NewDamageRate = ns.damageamount;
 					m_NewDmgInterval = ns.damageinterval;
 					m_NewLeakRate = ns.damageleakrate;
-					m_NewFlags = chgsec->flags;
-					P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+					m_NewFlags = P_ResetSectorTransferFlags(chgsec->flags);
 					m_Type = genCeilingChg0;
 					break;
 				case CChgTyp: // type is copied
@@ -484,8 +483,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 				m_NewDamageRate = ns.damageamount;
 				m_NewDmgInterval = ns.damageinterval;
 				m_NewLeakRate = ns.damageleakrate;
-				m_NewFlags = line->frontsector->flags;
-				P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+				m_NewFlags = P_ResetSectorTransferFlags(line->frontsector->flags);
 				m_Type = genCeilingChg0;
 				break;
 			case CChgTyp: // type is copied

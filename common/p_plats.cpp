@@ -426,7 +426,7 @@ DPlat::DPlat(sector_t* sec, int target, int delay, int speed, int trigger)
 		m_High = P_FindHighestFloorSurrounding(sec);
 		if (m_High < sec->floorheight)
 			m_High = sec->floorheight;
-		m_Status = (EPlatState)(P_Random() & 1);
+		m_Status = (EPlatState)(P_Random() & 1 ? DPlat::down : DPlat::up);
 		break;
 	default:
 		break;
