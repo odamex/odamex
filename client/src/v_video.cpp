@@ -724,17 +724,22 @@ void V_DrawFPSWidget()
 		// 35fps baseline
 		const int baseY35 =
 		    ::g_GraphData.normalize(::GRAPH_CAPPED_BASELINE) * (::GRAPH_HEIGHT - 2);
-		screen->Line(v2int_t(graphBox.min.x, graphBox.max.y - baseY35),
-		             v2int_t(graphBox.max.x, graphBox.max.y - baseY35),
-		             argb_t(0xff, 0x00, 0x00));
-
+		const int offY35 = graphBox.max.y - baseY35;
+		if (offY35 > graphBox.min.y && offY35 < graphBox.max.y)
+		{
+			screen->Line(v2int_t(graphBox.min.x, offY35), v2int_t(graphBox.max.x, offY35),
+			             argb_t(0x00, 0x00, 0xff));
+		}
 
 		// 60fps Baseline
 		const int baseY60 =
 		    ::g_GraphData.normalize(::GRAPH_BASELINE) * (::GRAPH_HEIGHT - 2);
-		screen->Line(v2int_t(graphBox.min.x, graphBox.max.y - baseY60),
-		             v2int_t(graphBox.max.x, graphBox.max.y - baseY60),
-		             argb_t(0x00, 0xff, 0x00));
+		const int offY60 = graphBox.max.y - baseY60;
+		if (offY60 > graphBox.min.y && offY60 < graphBox.max.y)
+		{
+			screen->Line(v2int_t(graphBox.min.x, offY60), v2int_t(graphBox.max.x, offY60),
+			             argb_t(0x00, 0xff, 0x00));
+		}
 
 		// Box
 		screen->Box(graphBox, argb_t(0xcb, 0xcb, 0xcb));
