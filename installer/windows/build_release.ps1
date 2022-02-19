@@ -26,7 +26,7 @@ function BuildX64 {
     New-Item  -Force -ItemType "directory" -Path "${PSScriptRoot}\BuildX64"
     Set-Location -Path "${PSScriptRoot}\BuildX64"
     
-    cmake.exe -G "Visual Studio 16 2019" -A "x64" "${PSScriptRoot}\..\.." `
+    cmake.exe -G "Visual Studio 16 2022" -A "x64" "${PSScriptRoot}\..\.." `
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
         -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
@@ -40,7 +40,7 @@ function BuildX86 {
     New-Item  -Force -ItemType "directory" -Path "${PSScriptRoot}\BuildX86"
     Set-Location -Path "${PSScriptRoot}\BuildX86"
     
-    cmake.exe -G "Visual Studio 16 2019" -A "Win32" "${PSScriptRoot}\..\.." `
+    cmake.exe -G "Visual Studio 16 2022" -A "Win32" "${PSScriptRoot}\..\.." `
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
         -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
