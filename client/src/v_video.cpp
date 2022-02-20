@@ -589,6 +589,7 @@ void V_MarkRect(int x, int y, int width, int height)
 const int GRAPH_WIDTH = 140;
 const int GRAPH_HEIGHT = 80;
 const double GRAPH_BASELINE = 1000 / 60.0;
+const double GRAPH_CAPPED_BASELINE = 1000 / 35.0;
 
 struct frametimeGraph_t
 {
@@ -623,8 +624,30 @@ struct frametimeGraph_t
 				newmax = data[i];
 		}
 
-		minimum = newmin;
-		maximum = newmax;
+		// Round to nearest power of two.
+		if (newmin <= 0.0)
+		{
+			minimum = 0.0;
+		}
+		else
+		{
+			double low = ::GRAPH_BASELINE;
+			while (low > newmin)
+				low /= 2;
+			minimum = low;
+		}
+
+		if (newmax >= 1000.0)
+		{
+			newmax = 1000.0;
+		}
+		else
+		{
+			double hi = ::GRAPH_BASELINE;
+			while (hi < newmax)
+				hi *= 2;
+			maximum = hi;
+		}
 	}
 
 	void push(const double val)
@@ -679,46 +702,71 @@ void V_DrawFPSWidget()
 
 		::g_GraphData.push(delta_time_ms);
 
-		v2int_t topleft(8, I_GetSurfaceHeight() / 2 + 16);
-		v2int_t topright(topleft.x + ::GRAPH_WIDTH, topleft.y);
-		v2int_t botleft(topleft.x, topleft.y + ::GRAPH_HEIGHT);
-		v2int_t botright(topleft.x + ::GRAPH_WIDTH, topleft.y + ::GRAPH_HEIGHT);
+		const rectInt_t graphBox =
+		    M_RectFromDimensions(v2int_t(8, I_GetSurfaceHeight() / 2 + 16),
+		                         v2int_t(::GRAPH_WIDTH, ::GRAPH_HEIGHT));
 
 		// Data
 		for (size_t count = 1; count < ::GRAPH_WIDTH - 2; count++)
 		{
-			double start = ::g_GraphData.getTail(count - 1);
-			double end = ::g_GraphData.getTail(count);
+			const double start = ::g_GraphData.getTail(count - 1);
+			const double end = ::g_GraphData.getTail(count);
 
-			int startoff = ::g_GraphData.normalize(start) * (GRAPH_HEIGHT - 2);
-			int endoff = ::g_GraphData.normalize(end) * (GRAPH_HEIGHT - 2);
+			const int startoff = ::g_GraphData.normalize(start) * (::GRAPH_HEIGHT - 2);
+			const int endoff = ::g_GraphData.normalize(end) * (::GRAPH_HEIGHT - 2);
 
-			v2int_t startvec(botright.x - count, botright.y - startoff);
-			v2int_t endvec(botright.x - count - 1, botright.y - endoff);
+			const v2int_t startvec(graphBox.max.x - count, graphBox.max.y - startoff);
+			const v2int_t endvec(graphBox.max.x - count - 1, graphBox.max.y - endoff);
 
 			screen->Line(startvec, endvec, argb_t(255, 255, 255));
 		}
 
+		// 35fps baseline
+		const int baseY35 =
+		    ::g_GraphData.normalize(::GRAPH_CAPPED_BASELINE) * (::GRAPH_HEIGHT - 2);
+		const int offY35 = graphBox.max.y - baseY35;
+		if (offY35 > graphBox.min.y && offY35 < graphBox.max.y)
+		{
+			screen->Line(v2int_t(graphBox.min.x, offY35), v2int_t(graphBox.max.x, offY35),
+			             argb_t(0x00, 0x00, 0xff));
+		}
+
+		// 60fps Baseline
+		const int baseY60 =
+		    ::g_GraphData.normalize(::GRAPH_BASELINE) * (::GRAPH_HEIGHT - 2);
+		const int offY60 = graphBox.max.y - baseY60;
+		if (offY60 > graphBox.min.y && offY60 < graphBox.max.y)
+		{
+			screen->Line(v2int_t(graphBox.min.x, offY60), v2int_t(graphBox.max.x, offY60),
+			             argb_t(0x00, 0xff, 0x00));
+		}
+
 		// Box
-		screen->Line(topleft, topright, argb_t(255, 255, 255));
-		screen->Line(botleft, botright, argb_t(255, 255, 255));
-		screen->Line(topleft, botleft, argb_t(255, 255, 255));
-		screen->Line(topright, botright, argb_t(255, 255, 255));
+		screen->Box(graphBox, argb_t(0xcb, 0xcb, 0xcb));
+
+		// Box Shadow
+		screen->Line(v2int_t(graphBox.min.x + 1, graphBox.max.y + 1),
+		             v2int_t(graphBox.max.x + 1, graphBox.max.y + 1),
+		             argb_t(0x13, 0x13, 0x13));
+		screen->Line(v2int_t(graphBox.max.x + 1, graphBox.min.y + 1),
+		             v2int_t(graphBox.max.x + 1, graphBox.max.y + 1),
+		             argb_t(0x13, 0x13, 0x13));
 
 		// Min
 		StrFormat(buffer, "%4.1f", ::g_GraphData.minimum);
-		screen->PrintStr(botright.x, botright.y - 3, buffer.c_str());
+		screen->PrintStr(graphBox.max.x, graphBox.max.y - 3, buffer.c_str());
 
 		// Max
 		StrFormat(buffer, "%4.1f", ::g_GraphData.maximum);
-		screen->PrintStr(topright.x, topright.y - 3, buffer.c_str());
+		screen->PrintStr(graphBox.max.x, graphBox.min.y - 3, buffer.c_str());
 
 		// Actual
 		StrFormat(buffer, "%4.1f", delta_time_ms);
-		screen->PrintStr(topright.x, topright.y + (GRAPH_HEIGHT / 2) - 3, buffer.c_str());
+		screen->PrintStr(graphBox.max.x, graphBox.min.y + (::GRAPH_HEIGHT / 2) - 3,
+		                 buffer.c_str());
 
 		// Name
-		screen->PrintStr(topleft.x, topleft.y - 8, "Frametime (ms)");
+		screen->PrintStr(graphBox.min.x, graphBox.min.y - 8, "Frametime (ms)");
 
 		time_accum += delta_time;
 
@@ -735,7 +783,7 @@ void V_DrawFPSWidget()
 
 		// FPS counter
 		StrFormat(buffer, "FPS %5.1f", last_fps);
-		screen->PrintStr(botleft.x, botleft.y + 1, buffer.c_str());
+		screen->PrintStr(graphBox.min.x, graphBox.max.y + 1, buffer.c_str());
 	}
 	else if (vid_displayfps.asInt() == FPS_COUNTER)
 	{
@@ -1000,6 +1048,22 @@ void DCanvas::Line(const v2int_t src, const v2int_t dst, argb_t color) const
 			cur.y += sy;
 		}
 	}
+}
+
+/**
+ * @brief Draw an empty box according to a rectangle.
+ * 
+ * @param bounds Boundary of the rectangle, inclusive.
+ * @param color Color of the rectangle.
+ */
+void DCanvas::Box(const rectInt_t& bounds, const argb_t color) const
+{
+	const v2int_t topRight(bounds.max.x, bounds.min.y);
+	const v2int_t botLeft(bounds.min.x, bounds.max.y);
+	Line(bounds.min, topRight, color);
+	Line(topRight, bounds.max, color);
+	Line(bounds.min, botLeft, color);
+	Line(botLeft, bounds.max, color);
 }
 
 EXTERN_CVAR (ui_dimamount)
