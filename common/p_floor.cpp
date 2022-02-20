@@ -1863,6 +1863,8 @@ bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
 			break;
 		}
 	}
+
+	return rtn;
 }
 
 // Almost identical to the above, but height is multiplied by FRACUNIT
