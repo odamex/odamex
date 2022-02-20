@@ -21,25 +21,23 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __M_SWAP_H__
-#define __M_SWAP_H__
+#pragma once
 
 #if TARGET_CPU_X86 || TARGET_CPU_X86_64
 #ifdef __BIG_ENDIAN__
-	#undef __BIG_ENDIAN__
+#undef __BIG_ENDIAN__
 #endif
 #ifndef __LITTLE_ENDIAN__
-	#define __LITTLE_ENDIAN__
+#define __LITTLE_ENDIAN__
 #endif
 #endif
 
 #if TARGET_CPU_PPC
 #ifndef __BIG_ENDIAN__
-	#define __BIG_ENDIAN__
+#define __BIG_ENDIAN__
 #endif
 #ifdef __LITTLE_ENDIAN__
-	#undef __LITTLE_ENDIAN__
+#undef __LITTLE_ENDIAN__
 #endif
 #endif
 
@@ -50,46 +48,135 @@
 // Swap 16bit, that is, MSB and LSB byte.
 // No masking with 0xFF should be necessary.
 
-unsigned short LESHORT(unsigned short x);
-short LESHORT(short x);
+forceinline static unsigned short LESHORT(unsigned short x)
+{
+	return (unsigned short)((x >> 8) | (x << 8));
+}
 
-unsigned int LELONG(unsigned int x);
-int LELONG(int x);
+forceinline static short LESHORT(short x)
+{
+	return (short)((((unsigned short)x) >> 8) | (((unsigned short)x) << 8));
+}
 
-unsigned long LELONG(unsigned long x);
-long LELONG(long x);
+// Swapping 32bit.
+forceinline static unsigned int LELONG(unsigned int x)
+{
+	return (unsigned int)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
+	                      (x << 24));
+}
 
-unsigned short BESHORT(unsigned short x);
-short BESHORT(short x);
+forceinline static int LELONG(int x)
+{
+	return (int)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
+	             ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
+}
 
-unsigned int BELONG(unsigned int x);
-int BELONG(int x);
+forceinline static unsigned long LELONG(unsigned long x)
+{
+	return (unsigned long)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
+	                       (x << 24));
+}
 
-unsigned long BELONG(unsigned long x);
-long BELONG(long x);
+forceinline static long LELONG(long x)
+{
+	return (long)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
+	              ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
+}
+
+forceinline static unsigned short BESHORT(unsigned short x)
+{
+	return x;
+}
+
+forceinline static short BESHORT(short x)
+{
+	return x;
+}
+
+forceinline static unsigned int BELONG(unsigned int x)
+{
+	return x;
+}
+
+forceinline static int BELONG(int x)
+{
+	return x;
+}
+
+forceinline static unsigned long BELONG(unsigned long x)
+{
+	return x;
+}
+
+forceinline static long BELONG(long x)
+{
+	return x;
+}
 
 #else
 
-unsigned short LESHORT(unsigned short x);
-short LESHORT(short x);
+forceinline static unsigned short LESHORT(unsigned short x)
+{
+	return x;
+}
 
-unsigned int LELONG(unsigned int x);
-int LELONG(int x);
+forceinline static short LESHORT(short x)
+{
+	return x;
+}
 
-unsigned long LELONG(unsigned long x);
-long LELONG(long x);
+forceinline static unsigned int LELONG(unsigned int x)
+{
+	return x;
+}
 
-unsigned short BESHORT(unsigned short x);
-short BESHORT(short x);
+forceinline static int LELONG(int x)
+{
+	return x;
+}
 
-unsigned int BELONG(unsigned int x);
-int BELONG(int x);
+forceinline static unsigned long LELONG(unsigned long x)
+{
+	return x;
+}
 
-unsigned long BELONG(unsigned long x);
-long BELONG(long x);
+forceinline static long LELONG(long x)
+{
+	return x;
+}
 
-#endif // __BIG_ENDIAN__
+forceinline static unsigned short BESHORT(unsigned short x)
+{
+	return (unsigned short)((x >> 8) | (x << 8));
+}
 
-#endif // __M_SWAP_H__
+forceinline static short BESHORT(short x)
+{
+	return (short)((((unsigned short)x) >> 8) | (((unsigned short)x) << 8));
+}
 
+forceinline static unsigned int BELONG(unsigned int x)
+{
+	return (unsigned int)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
+	                      (x << 24));
+}
 
+forceinline static int BELONG(int x)
+{
+	return (int)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
+	             ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
+}
+
+forceinline static unsigned long BELONG(unsigned long x)
+{
+	return (unsigned long)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
+	                       (x << 24));
+}
+
+forceinline static long BELONG(long x)
+{
+	return (long)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
+	              ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
+}
+
+#endif
