@@ -779,14 +779,18 @@ BEGIN_COMMAND (help)
 }
 END_COMMAND (help)
 
-// [AM] Crash Odamex on purpose - with no survivors.  Used for testing crash handlers.
 BEGIN_COMMAND(errorout)
 {
-	I_FatalError("errorout was run from the console");
+	I_Error("errorout was run from the console");
 }
 END_COMMAND(errorout)
 
-// [AM] Crash Odamex on purpose - with no survivors.  Used for testing crash handlers.
+BEGIN_COMMAND(fatalout)
+{
+	I_FatalError("fatalout was run from the console");
+}
+END_COMMAND(fatalout)
+
 #if defined _WIN32
 
 BEGIN_COMMAND(crashout)
