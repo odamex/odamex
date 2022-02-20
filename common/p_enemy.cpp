@@ -1985,12 +1985,13 @@ void A_MonsterProjectile(AActor* actor)
 	// adjust angle
 	mo->angle += (angle_t)(((int64_t)angle << 16) / 360);
 	an = mo->angle >> ANGLETOFINESHIFT;
-	mo->momx = FixedMul(mo->info->speed, finecosine[an]);
-	mo->momy = FixedMul(mo->info->speed, finesine[an]);
+	fixed_t speed = P_GetActorSpeed(mo);
+	mo->momx = FixedMul(speed, finecosine[an]);
+	mo->momy = FixedMul(speed, finesine[an]);
 
 	// adjust pitch (approximated, using Doom's ye olde
 	// finetangent table; same method as monster aim)
-	mo->momz += FixedMul(mo->info->speed, pitch);
+	mo->momz += FixedMul(speed, pitch);
 
 	// adjust position
 	an = (actor->angle - ANG90) >> ANGLETOFINESHIFT;
