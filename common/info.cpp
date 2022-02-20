@@ -7641,11 +7641,6 @@ void D_Init_DEHEXTRA_Frames(void)
 	for (int i = S_SARG_RUN1; i <= S_SARG_PAIN2; ++i)
 		states[i].flags |= STATEF_SKILL5FAST;
 
-	// NIGHTMARE! Alt Speed
-	mobjinfo[MT_BRUISERSHOT].altspeed = 20;
-	mobjinfo[MT_HEADSHOT].altspeed = 20;
-	mobjinfo[MT_TROOPSHOT].altspeed = 20;
-
 	// Start all MBF21 content here.
 	for (int i = 0; i < NUMMOBJTYPES ; i++)
 	{
@@ -7657,6 +7652,11 @@ void D_Init_DEHEXTRA_Frames(void)
 		mobjinfo[i].meleerange = (64 * FRACUNIT);
 		mobjinfo[i].droppeditem = MT_NULL;
 	}
+
+	// NIGHTMARE! Alt Speed
+	mobjinfo[MT_BRUISERSHOT].altspeed = 20 * FRACUNIT;
+	mobjinfo[MT_HEADSHOT].altspeed = 20 * FRACUNIT;
+	mobjinfo[MT_TROOPSHOT].altspeed = 20 * FRACUNIT;
 
 	// Dropped items
 	mobjinfo[MT_WOLFSS].droppeditem = MT_CLIP;
