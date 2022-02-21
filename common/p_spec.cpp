@@ -1665,6 +1665,10 @@ bool P_CanUnlockGenDoor(line_t* line, player_t* player)
 		{
 			msg = skulliscard ? &PD_BLUEK : &PD_BLUEC; // Ty 03/27/98 - externalized
 		}
+		else
+		{
+			return true;
+		}
 		break;
 	case 3: // YCard
 		if (!player->cards[it_yellowcard] &&
@@ -1905,6 +1909,13 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 {
 	TeleportSide = side;
 
+	// spectators and dead players can't cross special lines
+	// [Blair] Unless they're teleport lines.
+	if (thing && thing->player &&
+	    (thing->player->spectator || thing->player->playerstate != PST_LIVE) &&
+	    !P_IsTeleportLine(line->special))
+		return;
+
 	if (!bossaction && !P_CanActivateSpecials(thing, line))
 		return;
 
@@ -1923,6 +1934,22 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 	if (serverside && result.lineexecuted)
 	{
 		SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
+
+		bool repeat;
+
+		if (map_format.getZDoom())
+			repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
+		else
+			repeat = P_IsSpecialBoomRepeatable(line->special);
+
+		if (!repeat)
+		{
+			if (!(thing->player &&
+			      (thing->player->spectator || thing->player->playerstate != PST_LIVE)))
+			{
+				line->special = 0;
+			}
+		}
 	}
 }
 
@@ -1990,7 +2017,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 //
 bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 {
-	if (!bossaction && !P_CanActivateSpecials(thing, line))
+ 	if (!bossaction && !P_CanActivateSpecials(thing, line))
 		return false;
 
 	if(!bossaction && thing)
@@ -2090,8 +2117,10 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 		else
 		{
 			// spectators and dead players can't push walls
-			if(thing->player->spectator ||
-                           thing->player->playerstate != PST_LIVE)
+			// [Blair] Unless they're teleport walls.
+			if((thing->player->spectator ||
+                thing->player->playerstate != PST_LIVE) &&
+				!P_IsTeleportLine(line->special))
 				return false;
 		}
 	}
@@ -2102,16 +2131,15 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 					line->args[1], line->args[2],
 					line->args[3], line->args[4]))
 	{
-		P_HandleSpecialRepeat(line);
-
 		SV_OnActivatedLine(line, thing, side, LinePush, false);
 
-		if(serverside)
+		if (serverside && !(thing->player && (thing->player->spectator ||
+		                                      thing->player->playerstate != PST_LIVE)))
 		{
 			bool repeat;
 
 			if (map_format.getZDoom())
-				repeat = line->flags & ML_REPEATSPECIAL;
+				repeat = line->flags & ML_REPEATSPECIAL && P_HandleSpecialRepeat(line);
 			else
 				repeat = P_IsSpecialBoomRepeatable(line->special);
 
