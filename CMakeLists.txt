@@ -122,6 +122,14 @@ if(${CMAKE_SYSTEM_NAME} MATCHES SunOS )
   set(SOLARIS 1)
 endif()
 
+include(CheckIPOSupported)
+check_ipo_supported(RESULT HAS_LTO OUTPUT HAS_LTO_ERROR)
+if(HAS_LTO)
+  message(STATUS "Link Time Optimization: ON")
+else()
+  message(STATUS "Link Time Optimization: OFF")
+endif()
+
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 # git describe
