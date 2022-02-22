@@ -1031,7 +1031,6 @@ BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t sp
 	sector_t* sec;
 	bool manual = false;
 
-	speed *= FRACUNIT / 8;
 	height *= FRACUNIT;
 
 	// check if a manual trigger; if so do just the sector on the backside
