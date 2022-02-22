@@ -1726,6 +1726,7 @@ void DElevator::RunThink ()
 
 	if (res == pastdest)	// if destination height acheived
 	{
+		m_Status = finished;
 		// make floor stop sound
 		PlayElevatorSound();
 
@@ -1817,6 +1818,7 @@ bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
 
 		elevator->m_Type = type;
 		elevator->m_Speed = speed;
+		elevator->m_Status = DElevator::init;
 		elevator->PlayElevatorSound();
 
 		sec->floordata = sec->ceilingdata = elevator;
