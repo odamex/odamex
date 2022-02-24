@@ -350,7 +350,7 @@ endif()
 ### MiniUPnPc ###
 if(BUILD_SERVER AND NOT USE_MINIUPNP)
   message(STATUS "Skipping MiniUPnPc...")
-elseif(BUILD_SERVER AND USE_MINIUPNP)
+elseif(BUILD_SERVER AND USE_MINIUPNP AND USE_INTERNAL_MINIUPNP)
   message(STATUS "Compiling MiniUPnPc...")
 
   # Figure out the correct library path to attach to our imported target
@@ -386,7 +386,7 @@ elseif(BUILD_SERVER AND USE_MINIUPNP)
   # Synthesize an imported target that can be linked against.
   add_library(upnpc-static STATIC IMPORTED GLOBAL)
   set_target_properties(upnpc-static PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${MINIUPNPC_INCLUDE_DIR}"
+    INTERFACE_COMPILE_DEFINITIONS MINIUPNP_STATICLIB
     IMPORTED_LOCATION ${MINIUPNPC_LIBRARY})
   if(WIN32)
     set_target_properties(upnpc-static PROPERTIES INTERFACE_LINK_LIBRARIES "ws2_32;iphlpapi")
