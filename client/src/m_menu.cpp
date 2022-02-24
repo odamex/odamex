@@ -1557,8 +1557,8 @@ static void M_ChangeAutoAim (int choice)
 	} else {
 		// Select a higher autoaim
 
-		for (i = 5; i >= 0; i--) {
-			if (aim >= ranges[i]) {
+		for (i = 0; i <= 5; i++) {
+			if (aim <= ranges[i]) {
 				aim = ranges[i + 1];
 				break;
 			}
