@@ -299,7 +299,7 @@ std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString
 		if (it == files.end())
 			continue;
 
-		rvo.push_back(check);
+		rvo.push_back(d_name);
 	}
 
 	return rvo;

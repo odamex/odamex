@@ -100,6 +100,9 @@ public:
 	// Draw a line with a specified color
 	void Line(const v2int_t src, const v2int_t dst, argb_t color) const;
 
+	// Draw an empty box with a specified border color
+	void Box(const rectInt_t& bounds, const argb_t color) const;
+
 	// Text drawing functions
 	// Output a line of text using the console font
 	void PrintStr(int x, int y, const char *s, int default_color = -1, bool use_color_codes = true) const;

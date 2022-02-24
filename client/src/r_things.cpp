@@ -206,6 +206,21 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		return;
 	}
 
+	// [AM] Ensure that we're not going to fall off the side of the patch.
+	const short patchWidth = W_CachePatch(vis->patch, PU_CACHE)->width();
+	const int start = vis->startfrac >> FRACBITS;
+	if (start < 0 || start > patchWidth)
+	{
+		return;
+	}
+
+	const int enditers = vis->x2 - vis->x1;
+	const int end = (vis->startfrac + (enditers * vis->xiscale)) >> FRACBITS;
+	if (end < 0 || end > patchWidth)
+	{
+		return;
+	}
+
 	dcol.colormap = vis->colormap;
 
 	if (vis->translation)
@@ -262,6 +277,14 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		spriteposts[x] = R_GetPatchColumn(vis->patch, colfrac >> FRACBITS);
 		colfrac += vis->xiscale;
 	}
+
+#if 0
+	if ((colfrac - vis->xiscale) >> FRACBITS != end)
+	{
+		Printf(PRINT_WARNING, "Bad vissprite bounds check! (pw:%d  ex:%d  act:%d)\n",
+		       patchWidth, end, colfrac >> FRACBITS);
+	}
+#endif
 
 	// TODO: change from negonearray to actual top of sprite
 	R_RenderColumnRange(vis->x1, vis->x2, negonearray, viewheightarray,

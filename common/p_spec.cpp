@@ -141,9 +141,9 @@ int P_FindLineFromTag(int tag, int start)
 	return start;
 }
 
-void P_ResetSectorTransferFlags(unsigned int* flags)
+const unsigned int P_ResetSectorTransferFlags(const unsigned int flags)
 {
-	*flags &= ~SECF_TRANSFERMASK;
+	return (flags & ~SECF_TRANSFERMASK);
 }
 
 void P_ResetSectorSpecial(sector_t* sector)
@@ -152,7 +152,7 @@ void P_ResetSectorSpecial(sector_t* sector)
 	sector->damageamount = 0;
 	sector->damageinterval = 0;
 	sector->leakrate = 0;
-	P_ResetSectorTransferFlags(&sector->flags);
+	sector->flags = P_ResetSectorTransferFlags(sector->flags);
 }
 
 void P_CopySectorSpecial(sector_t* dest, sector_t* source)
@@ -170,7 +170,7 @@ void P_ResetTransferSpecial(newspecial_s* newspecial)
 	newspecial->damageamount = 0;
 	newspecial->damageinterval = 0;
 	newspecial->damageleakrate = 0;
-	P_ResetSectorTransferFlags(&newspecial->flags);
+	newspecial->flags = P_ResetSectorTransferFlags(newspecial->flags);
 }
 
 void P_TransferSectorFlags(unsigned int* dest, unsigned int source)

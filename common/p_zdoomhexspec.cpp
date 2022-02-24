@@ -37,6 +37,27 @@ EXTERN_CVAR(sv_forcewater)
 lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
                                      bool bossaction)
 {
+	// Do not teleport on the wrong side
+	if (side)
+	{
+		switch (line->special)
+		{
+		case Teleport:
+		case Teleport_NoFog:
+		case Teleport_NewMap:
+		case Teleport_EndGame:
+		case Teleport_NoStop:
+		case Teleport_Line:
+			lineresult_s result;
+			result.lineexecuted = false;
+			result.switchchanged = false;
+			return result;
+			break;
+		default:
+			break;
+		}
+	}
+
 	if (thing->player)
 	{
 		return P_ActivateZDoomLine(line, thing, side, ML_SPAC_CROSS);
@@ -66,6 +87,22 @@ lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 
 	result.lineexecuted = false;
 	result.switchchanged = false;
+
+	// Err...
+	// Use the back sides of VERY SPECIAL lines...
+	if (side && (line->flags & (ML_SPAC_PUSH | ML_SPAC_USE)))
+	{
+		switch (line->special)
+		{
+		case Exit_Secret:
+			// Sliding door open&close
+			// UNUSED?
+			break;
+
+		default:
+			return result;
+		}
+	}
 
 	if (!P_TestActivateZDoomLine(line, mo, side, activationType) ||
 	    !P_CanActivateSpecials(mo, line))

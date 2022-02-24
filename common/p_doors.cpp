@@ -70,7 +70,8 @@ void DDoor::Serialize (FArchive &arc)
 			<< m_TopHeight
 			<< m_Speed
 			<< m_TopWait
-			<< m_TopCountdown;
+			<< m_TopCountdown
+			<< m_LightTag;
 	}
 	else
 	{
@@ -79,7 +80,8 @@ void DDoor::Serialize (FArchive &arc)
 			>> m_TopHeight
 			>> m_Speed
 			>> m_TopWait
-			>> m_TopCountdown;
+			>> m_TopCountdown
+			>> m_LightTag;
 	}
 }
 
@@ -165,9 +167,9 @@ void DDoor::RunThink ()
 	case closing:
 		res = MoveCeiling(m_Speed, floorheight, -1);
 		
-        if (m_Line && m_Line->id)
+        if (m_LightTag)
         {
-            EV_LightTurnOnPartway(m_Line->id,
+			EV_LightTurnOnPartway(m_LightTag,
                 FixedDiv(ceilingheight - floorheight, m_TopHeight - floorheight));
         }
 		if (res == pastdest)
@@ -198,9 +200,9 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
-            if (m_LightTag && m_TopHeight - m_Sector->floorheight)
+			if (m_LightTag && m_TopHeight - m_Sector->floorheight)
             {
-                EV_LightTurnOnPartway(m_Line->id, 0);
+				EV_LightTurnOnPartway(m_LightTag, 0);
             }
 		}
 		else if (res == crushed)
@@ -227,7 +229,7 @@ void DDoor::RunThink ()
 		
         if (m_LightTag && m_TopHeight - floorheight)
         {
-            EV_LightTurnOnPartway(m_Line->id,
+			EV_LightTurnOnPartway(m_LightTag,
                 FixedDiv(ceilingheight - floorheight, m_TopHeight - floorheight));
         }
 		if (res == pastdest)
@@ -260,7 +262,7 @@ void DDoor::RunThink ()
 			}
 			if (m_LightTag && m_TopHeight - floorheight)
             {
-                EV_LightTurnOnPartway(m_Line->id, FRACUNIT);
+				EV_LightTurnOnPartway(m_LightTag, FRACUNIT);
             }
 		}
 		break;
@@ -348,7 +350,17 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	m_TopCountdown = -1;
 	m_Speed = speed;
     m_Line = ln;
-	m_LightTag = 0; /* killough 10/98: no light effects with tagged doors */
+	/* killough 10/98: use gradual lighting changes if nonzero tag given */
+	//door->lighttag = comp[comp_doorlight] ? 0 : line->tag;
+	// [Blair] Only certain door types are allowed to have LightTags.
+	if (m_Line && P_IsLightTagDoorType(m_Line->special))
+	{
+		m_LightTag = m_Line->id;
+	}
+	else
+	{
+		m_LightTag = 0; /* killough 10/98: no light effects with tagged doors */
+	}
 
 	fixed_t ceilingheight = P_CeilingHeight(sec);
 	
@@ -387,6 +399,7 @@ DDoor::DDoor(sector_t* sec, line_t* ln, int kind, int trigger, int speed)
 	m_TopWait = VDOORWAIT;
 	m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4 * FRACUNIT;
 	m_Status = opening;
+	m_TopCountdown = -1;
 
 	switch (speed)
 	{
@@ -418,6 +431,7 @@ DDoor::DDoor(sector_t* sec, line_t* ln, int delay, int kind, int trigger, int sp
     : DMovingCeiling(sec), m_Status(init)
 {
 	m_Line = ln;
+	m_TopCountdown = -1;
 
 	fixed_t ceilingheight = P_CeilingHeight(sec);
 
@@ -695,13 +709,13 @@ void P_SpawnDoorRaiseIn5Mins (sector_t *sec)
 
 	sec->special = 0;
 
-	door->m_Type = DDoor::doorCloseWaitOpen;
+	door->m_Type = DDoor::doorRaiseIn5Mins;
 	door->m_Speed = FRACUNIT * 2;
 	door->m_TopHeight = P_FindLowestCeilingSurrounding (sec);
 	door->m_TopHeight -= 4*FRACUNIT;
 	door->m_TopWait = (150*TICRATE)/35;
 	door->m_TopCountdown = 5 * 60 * TICRATE;
-	door->m_Status = DDoor::waiting;
+	door->m_Status = DDoor::init;
 }
 
 BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
@@ -854,12 +868,12 @@ BOOL EV_DoGenDoor(line_t* line)
 	rtn = false;
 
 	// if not manual do all sectors tagged the same as the line
-	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+	while ((secnum = P_FindSectorFromTagOrLine(line->id, line, secnum)) >= 0)
 	{
 		sec = &sectors[secnum];
 manual_gendoor:
 		// Do not start another function if ceiling already moving
-		if (P_CeilingActive(sec)) // jff 2/22/98
+		if (sec->ceilingdata) // jff 2/22/98
 		{
 			if (!manual)
 				continue;

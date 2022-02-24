@@ -101,5 +101,6 @@ bool P_IsCompatibleLockedDoorLine(const short special);
 bool P_IsCompatibleBlueDoorLine(const short special);
 bool P_IsCompatibleRedDoorLine(const short special);
 bool P_IsCompatibleYellowDoorLine(const short special);
+bool P_IsLightTagDoorType(const short special);
 
 #endif

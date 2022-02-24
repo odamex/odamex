@@ -369,7 +369,8 @@ bool P_IsTeleportLine(const short special)
 
 	return special == 39 || special == 97 || special == 125 || special == 126 ||
 	       special == 174 || special == 195 || special == 207 || special == 208 ||
-	       special == 209 || special == 210 || special == 268 || special == 269;
+	       special == 209 || special == 210 || special == 244 || special == 268 ||
+	       special == 269;
 }
 
 bool P_IsThingTeleportLine(const short special)
@@ -439,4 +440,25 @@ bool P_IsCompatibleYellowDoorLine(const short special)
 		genericlock = true;
 
 	return special == 27 || special == 34;
+}
+
+bool P_IsLightTagDoorType(const short special)
+{
+	switch (special)
+	{
+	case 1:  // Vertical Door
+	case 26: // Blue Door/Locked
+	case 27: // Yellow Door /Locked
+	case 28: // Red Door /Locked
+
+	case 31: // Manual door open
+	case 32: // Blue locked door open
+	case 33: // Red locked door open
+	case 34: // Yellow locked door open
+
+	case 117: // Blazing door raise
+	case 118: // Blazing door open
+		return true;
+	}
+	return false;
 }

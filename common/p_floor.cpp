@@ -31,7 +31,7 @@
 #include "tables.h"
 
 void P_ResetTransferSpecial(newspecial_s* newspecial);
-void P_ResetSectorTransferFlags(unsigned int* flags);
+const unsigned int P_ResetSectorTransferFlags(const unsigned int flags);
 
 EXTERN_CVAR(co_boomphys)
 
@@ -455,8 +455,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 					m_NewDamageRate = ns.damageamount;
 					m_NewDmgInterval = ns.damageinterval;
 					m_NewLeakRate = ns.damageleakrate;
-					m_NewFlags = found->flags;
-					P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+					m_NewFlags = P_ResetSectorTransferFlags(found->flags);
 					m_Type = DFloor::genFloorChg0;
 					break;
 				case 2:
@@ -487,8 +486,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 				m_NewDamageRate = ns.damageamount;
 				m_NewDmgInterval = ns.damageinterval;
 				m_NewLeakRate = ns.damageleakrate;
-				m_NewFlags = line->frontsector->flags;
-				P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+				m_NewFlags = P_ResetSectorTransferFlags(line->frontsector->flags);
 				m_Type = DFloor::genFloorChg0;
 				break;
 			case 2:
@@ -529,6 +527,11 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 	m_NewDmgInterval = sec->damageinterval;
 	m_NewLeakRate = sec->leakrate;
 	m_NewFlags = sec->flags;
+
+	if (m_Direction == 1)
+		m_Status = up;
+	else if (m_Direction == -1)
+		m_Status = down;
 
 	PlayFloorSound();
 
@@ -619,8 +622,7 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 					m_NewDamageRate = ns.damageamount;
 					m_NewDmgInterval = ns.damageinterval;
 					m_NewLeakRate = ns.damageleakrate;
-					m_NewFlags = chgsec->flags;
-					P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+					m_NewFlags = P_ResetSectorTransferFlags(chgsec->flags);
 					m_Type = genFloorChg0;
 					break;
 				case FChgTyp: // copy type
@@ -656,8 +658,7 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 				m_NewDamageRate = ns.damageamount;
 				m_NewDmgInterval = ns.damageinterval;
 				m_NewLeakRate = ns.damageleakrate;
-				m_NewFlags = line->frontsector->flags;
-				P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+				m_NewFlags = P_ResetSectorTransferFlags(line->frontsector->flags);
 				m_Type = genFloorChg0;
 				break;
 			case FChgTyp: // copy type
@@ -1534,23 +1535,18 @@ int P_SpawnDonut(int, line_t*, fixed_t, fixed_t);
 
 BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
 {
-	int secnum = -1;
 	int rtn = 0;
 
-	while ((secnum = P_FindSectorFromTagOrLine(tag, line, secnum)) >= 0)
-		rtn |= P_SpawnDonut(secnum, line, pillarspeed, slimespeed);
+	rtn = P_SpawnDonut(line->id, line, pillarspeed, slimespeed);
 
 	return rtn;
 }
 
 int EV_DoDonut(line_t* line)
 {
-	int secnum = -1;
 	int rtn = 0;
 
-	// do function on all sectors with same tag as linedef
-	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
-		rtn |= P_SpawnDonut(secnum, line, FLOORSPEED / 2, FLOORSPEED / 2);
+	rtn = P_SpawnDonut(line->id, line, FLOORSPEED / 2, FLOORSPEED / 2);
 
 	return rtn;
 }
