@@ -385,6 +385,14 @@ static void ParseAlias(OScanner& os)
 		os.error(buffer.c_str());
 	}
 
+	if (!CheckIfDehActorDefined(otype))
+	{
+		// [Blair] DEHEXTRA monster not defined
+		std::string buffer;
+		StrFormat(buffer, "The following actor is undefined: \"%s\".", original.c_str());
+		os.error(buffer.c_str());
+	}
+
 	g_aliasMap.insert(std::make_pair(alias, otype));
 }
 
