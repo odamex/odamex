@@ -242,6 +242,16 @@ void G_InitNew (const char *mapname)
 				    (states[i].tics != 1 || demoplayback))
 					states[i].tics >>= 1; // don't change 1->0 since it causes cycles
 			}
+
+			for (i = 0; i < NUMMOBJTYPES; ++i)
+			{
+				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				{
+					int swap = mobjinfo[i].speed;
+					mobjinfo[i].speed = mobjinfo[i].altspeed;
+					mobjinfo[i].altspeed = swap;
+				}
+			}
 		}
 		else
 		{
@@ -249,6 +259,16 @@ void G_InitNew (const char *mapname)
 			{
 				if (states[i].flags & STATEF_SKILL5FAST)
 					states[i].tics <<= 1; // don't change 1->0 since it causes cycles
+			}
+
+			for (i = 0; i < NUMMOBJTYPES; ++i)
+			{
+				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				{
+					int swap = mobjinfo[i].altspeed;
+					mobjinfo[i].altspeed = mobjinfo[i].speed;
+					mobjinfo[i].speed = swap;
+				}
 			}
 		}
 		isFast = wantFast;
