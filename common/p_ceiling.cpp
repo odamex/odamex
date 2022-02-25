@@ -589,6 +589,8 @@ BOOL P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 	BOOL manual = false;
 	fixed_t targheight = 0;
 
+	height *= FRACUNIT;
+
 	rtn = false;
 
 	// check if a manual trigger, if so do just the sector on the backside
