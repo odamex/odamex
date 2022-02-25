@@ -57,21 +57,13 @@
 	#define NORETURN __attribute__ ((noreturn))
 #endif
 
-#ifndef __BYTEBOOL__
-	#define __BYTEBOOL__
-	// [RH] Some windows includes already define this
-	#if !defined(_WINDEF_) && !defined(__wtypes_h__) && !defined(GEKKO)
-	typedef int BOOL;
-	#endif
-
-	#ifndef __cplusplus
-		#define false (0)
-		#define true (1)
-	#endif
-
-	typedef unsigned char byte;
-    typedef unsigned int uint;
+// [RH] Some windows includes already define this
+#if !defined(_WINDEF_) && !defined(__wtypes_h__) && !defined(GEKKO)
+typedef int BOOL;
 #endif
+
+typedef unsigned char byte;
+typedef unsigned int uint;
 
 #if defined(_MSC_VER) || defined(__WATCOMC__)
 	#define STACK_ARGS __cdecl
