@@ -48,132 +48,132 @@
 // Swap 16bit, that is, MSB and LSB byte.
 // No masking with 0xFF should be necessary.
 
-forceinline static unsigned short LESHORT(unsigned short x)
+inline static unsigned short LESHORT(unsigned short x)
 {
 	return (unsigned short)((x >> 8) | (x << 8));
 }
 
-forceinline static short LESHORT(short x)
+inline static short LESHORT(short x)
 {
 	return (short)((((unsigned short)x) >> 8) | (((unsigned short)x) << 8));
 }
 
 // Swapping 32bit.
-forceinline static unsigned int LELONG(unsigned int x)
+inline static unsigned int LELONG(unsigned int x)
 {
 	return (unsigned int)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
 	                      (x << 24));
 }
 
-forceinline static int LELONG(int x)
+inline static int LELONG(int x)
 {
 	return (int)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
 	             ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
 }
 
-forceinline static unsigned long LELONG(unsigned long x)
+inline static unsigned long LELONG(unsigned long x)
 {
 	return (unsigned long)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
 	                       (x << 24));
 }
 
-forceinline static long LELONG(long x)
+inline static long LELONG(long x)
 {
 	return (long)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
 	              ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
 }
 
-forceinline static unsigned short BESHORT(unsigned short x)
+inline static unsigned short BESHORT(unsigned short x)
 {
 	return x;
 }
 
-forceinline static short BESHORT(short x)
+inline static short BESHORT(short x)
 {
 	return x;
 }
 
-forceinline static unsigned int BELONG(unsigned int x)
+inline static unsigned int BELONG(unsigned int x)
 {
 	return x;
 }
 
-forceinline static int BELONG(int x)
+inline static int BELONG(int x)
 {
 	return x;
 }
 
-forceinline static unsigned long BELONG(unsigned long x)
+inline static unsigned long BELONG(unsigned long x)
 {
 	return x;
 }
 
-forceinline static long BELONG(long x)
+inline static long BELONG(long x)
 {
 	return x;
 }
 
 #else
 
-forceinline static unsigned short LESHORT(unsigned short x)
+inline static unsigned short LESHORT(unsigned short x)
 {
 	return x;
 }
 
-forceinline static short LESHORT(short x)
+inline static short LESHORT(short x)
 {
 	return x;
 }
 
-forceinline static unsigned int LELONG(unsigned int x)
+inline static unsigned int LELONG(unsigned int x)
 {
 	return x;
 }
 
-forceinline static int LELONG(int x)
+inline static int LELONG(int x)
 {
 	return x;
 }
 
-forceinline static unsigned long LELONG(unsigned long x)
+inline static unsigned long LELONG(unsigned long x)
 {
 	return x;
 }
 
-forceinline static long LELONG(long x)
+inline static long LELONG(long x)
 {
 	return x;
 }
 
-forceinline static unsigned short BESHORT(unsigned short x)
+inline static unsigned short BESHORT(unsigned short x)
 {
 	return (unsigned short)((x >> 8) | (x << 8));
 }
 
-forceinline static short BESHORT(short x)
+inline static short BESHORT(short x)
 {
 	return (short)((((unsigned short)x) >> 8) | (((unsigned short)x) << 8));
 }
 
-forceinline static unsigned int BELONG(unsigned int x)
+inline static unsigned int BELONG(unsigned int x)
 {
 	return (unsigned int)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
 	                      (x << 24));
 }
 
-forceinline static int BELONG(int x)
+inline static int BELONG(int x)
 {
 	return (int)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
 	             ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
 }
 
-forceinline static unsigned long BELONG(unsigned long x)
+inline static unsigned long BELONG(unsigned long x)
 {
 	return (unsigned long)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
 	                       (x << 24));
 }
 
-forceinline static long BELONG(long x)
+inline static long BELONG(long x)
 {
 	return (long)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
 	              ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
