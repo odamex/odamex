@@ -46,6 +46,7 @@ cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_
 cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_INTERNAL_LIBS} BUILD_LAUNCHER 0 )
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
+cmake_dependent_option( USE_INTERNAL_MINIUPNP "Use internal MiniUPnP" 1 USE_MINIUPNP 0 )
 
 set(PROJECT_COPYRIGHT "2006-2022")
 set(PROJECT_RC_VERSION "10,0,0,0")

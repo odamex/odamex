@@ -58,7 +58,7 @@ const std::string& G_GametypeName()
 	static std::string name;
 	if (!g_gametypename.str().empty())
 		name = g_gametypename.str();
-	if (G_IsHordeMode() && g_lives)
+	else if (G_IsHordeMode() && g_lives)
 		name = "Survival Horde";
 	else if (G_IsHordeMode())
 		name = "Horde";
