@@ -1031,7 +1031,6 @@ BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t sp
 	sector_t* sec;
 	bool manual = false;
 
-	speed *= FRACUNIT / 8;
 	height *= FRACUNIT;
 
 	// check if a manual trigger; if so do just the sector on the backside
@@ -1726,6 +1725,7 @@ void DElevator::RunThink ()
 
 	if (res == pastdest)	// if destination height acheived
 	{
+		m_Status = finished;
 		// make floor stop sound
 		PlayElevatorSound();
 
@@ -1817,6 +1817,7 @@ bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
 
 		elevator->m_Type = type;
 		elevator->m_Speed = speed;
+		elevator->m_Status = DElevator::init;
 		elevator->PlayElevatorSound();
 
 		sec->floordata = sec->ceilingdata = elevator;
@@ -1863,6 +1864,8 @@ bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
 			break;
 		}
 	}
+
+	return rtn;
 }
 
 // Almost identical to the above, but height is multiplied by FRACUNIT

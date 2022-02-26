@@ -391,6 +391,8 @@ void SV_ServerSettingChange();
 
 void G_InitNew (const char *mapname)
 {
+	size_t i;
+
 	DWORD previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
@@ -432,19 +434,39 @@ void G_InitNew (const char *mapname)
 	{
 		if (wantFast)
 		{
-			for (size_t i = 0; i < NUMSTATES; i++)
+			for (i = 0; i < NUMSTATES; i++)
 			{
 				if (states[i].flags & STATEF_SKILL5FAST &&
 				    (states[i].tics != 1 || demoplayback))
 					states[i].tics >>= 1; // don't change 1->0 since it causes cycles
 			}
+
+			for (i = 0; i < NUMMOBJTYPES; ++i)
+			{
+				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				{
+					int swap = mobjinfo[i].speed;
+					mobjinfo[i].speed = mobjinfo[i].altspeed;
+					mobjinfo[i].altspeed = swap;
+				}
+			}
 		}
 		else
 		{
-			for (size_t i = 0; i < NUMSTATES; i++)
+			for (i = 0; i < NUMSTATES; i++)
 			{
 				if (states[i].flags & STATEF_SKILL5FAST)
 					states[i].tics <<= 1; // don't change 1->0 since it causes cycles
+			}
+
+			for (i = 0; i < NUMMOBJTYPES; ++i)
+			{
+				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				{
+					int swap = mobjinfo[i].altspeed;
+					mobjinfo[i].altspeed = mobjinfo[i].speed;
+					mobjinfo[i].speed = swap;
+				}
 			}
 		}
 		isFast = wantFast;

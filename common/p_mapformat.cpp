@@ -333,7 +333,7 @@ bool P_IsSpecialBoomRepeatable(const short special)
 
 	if (special >= GenCrusherBase && special <= GenEnd)
 	{
-		switch (special & TriggerType)
+		switch ((special & TriggerType) >> TriggerTypeShift)
 		{
 		case PushOnce:
 			return false;
@@ -347,6 +347,10 @@ bool P_IsSpecialBoomRepeatable(const short special)
 		case SwitchMany:
 			return true;
 			break;
+		case WalkOnce:
+			return false;
+		case WalkMany:
+			return true;
 		}
 	}
 
