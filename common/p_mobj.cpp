@@ -69,7 +69,6 @@ void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(AActor *);
 void SV_ExplodeMissile(AActor *);
 void SV_UpdateMonsterRespawnCount();
-fixed_t P_GetActorSpeed(AActor* actor);
 
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn) 
@@ -2333,12 +2332,11 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 
     th->angle = an;
     an >>= ANGLETOFINESHIFT;
-	fixed_t speed = P_GetActorSpeed(th);
-	th->momx = FixedMul(speed, finecosine[an]);
-	th->momy = FixedMul(speed, finesine[an]);
+	th->momx = FixedMul(th->info->speed, finecosine[an]);
+	th->momy = FixedMul(th->info->speed, finesine[an]);
 
     dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
-    dist = dist / speed;
+	dist = dist / th->info->speed;
 
     if (dist < 1)
 		dist = 1;
@@ -2396,7 +2394,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	if (co_zdoomphys)
 	{
 		v3float_t velocity;
-		float speed = FIXED2FLOAT(P_GetActorSpeed(th));
+		float speed = FIXED2FLOAT(th->info->speed);
 
 		velocity.x = FIXED2FLOAT (finecosine[an>>ANGLETOFINESHIFT]);
 		velocity.y = FIXED2FLOAT (finesine[an>>ANGLETOFINESHIFT]);
@@ -2410,11 +2408,9 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	}
 	else
 	{
-		fixed_t speed = P_GetActorSpeed(th);
-
-		th->momx = FixedMul(speed, finecosine[an>>ANGLETOFINESHIFT]);
-		th->momy = FixedMul(speed, finesine[an>>ANGLETOFINESHIFT]);
-		th->momz = FixedMul(speed, slope);
+		th->momx = FixedMul(th->info->speed, finecosine[an >> ANGLETOFINESHIFT]);
+		th->momy = FixedMul(th->info->speed, finesine[an >> ANGLETOFINESHIFT]);
+		th->momz = FixedMul(th->info->speed, slope);
 	}
 
 	P_CheckMissileSpawn (th);
@@ -2470,7 +2466,7 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 	if (co_zdoomphys)
 	{
 		v3float_t velocity;
-		float speed = FIXED2FLOAT(P_GetActorSpeed(th));
+		float speed = FIXED2FLOAT(th->info->speed);
 
 		velocity.x = FIXED2FLOAT(finecosine[an >> ANGLETOFINESHIFT]);
 		velocity.y = FIXED2FLOAT(finesine[an >> ANGLETOFINESHIFT]);
@@ -2484,11 +2480,9 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 	}
 	else
 	{
-		fixed_t speed = P_GetActorSpeed(th);
-
-		th->momx = FixedMul(speed, finecosine[an >> ANGLETOFINESHIFT]);
-		th->momy = FixedMul(speed, finesine[an >> ANGLETOFINESHIFT]);
-		th->momz = FixedMul(speed, slope);
+		th->momx = FixedMul(th->info->speed, finecosine[an >> ANGLETOFINESHIFT]);
+		th->momy = FixedMul(th->info->speed, finesine[an >> ANGLETOFINESHIFT]);
+		th->momz = FixedMul(th->info->speed, slope);
 	}
 
 	an = (th->angle - ANG90) >> ANGLETOFINESHIFT;
