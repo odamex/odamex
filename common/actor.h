@@ -560,7 +560,7 @@ public:
 
 	void SetOrigin (fixed_t x, fixed_t y, fixed_t z);
 
-	AActorPtr ptr(){ return AActorPtr(self); }
+	AActorPtr ptr(){ return self; }
 	
 	//
 	// ActorBlockMapListNode
