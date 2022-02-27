@@ -687,3 +687,11 @@ message NetDemoStop
 message NetDemoLoadSnap
 {
 }
+
+// Debug messages - should be removed at some point.
+
+// svc_debug_weapon, added 10.0
+message DebugWeapon
+{
+	Player player = 1;
+}

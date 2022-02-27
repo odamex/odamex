@@ -1617,4 +1617,16 @@ odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player)
 	return msg;
 }
 
+odaproto::svc::DebugWeapon SVC_DebugWeapon(player_t& player)
+{
+	odaproto::svc::DebugWeapon msg;
+
+	const uint32_t packedweapons = PackBoolArray(player.weaponowned, NUMWEAPONS);
+	msg.mutable_player()->set_pendingweapon(player.pendingweapon);
+	msg.mutable_player()->set_readyweapon(player.readyweapon);
+	msg.mutable_player()->set_weaponowned(packedweapons);
+
+	return msg;
+}
+
 VERSION_CONTROL(svc_message, "$Id$")

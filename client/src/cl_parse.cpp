@@ -2774,6 +2774,11 @@ static void CL_NetDemoLoadSnap(const odaproto::svc::NetDemoLoadSnap* msg)
 	AddCommandString("netprevmap");
 }
 
+static void CL_DebugWeapon(const odaproto::svc::DebugWeapon* msg)
+{
+	// This message is only for netdemo debugging.
+}
+
 //-----------------------------------------------------------------------------
 // Everything below this line is not a message parsing funciton.
 //-----------------------------------------------------------------------------
@@ -2951,6 +2956,7 @@ parseError_e CL_ParseCommand()
 		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);
+		SV_MSG(svc_debug_weapon, CL_DebugWeapon, odaproto::svc::DebugWeapon);
 		/* clang-format on */
 	default:
 		return PERR_UNKNOWN_HEADER;

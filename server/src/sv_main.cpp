@@ -3159,6 +3159,8 @@ void SV_WriteCommands(void)
 		SV_SendPingRequest(cl);     // request ping reply
 
 		SV_UpdatePing(cl);          // send the ping value of all cients to this client
+
+		MSG_WriteSVC(&cl->reliablebuf, SVC_DebugWeapon(*it));
 	}
 
 	SV_UpdateHiddenMobj();
