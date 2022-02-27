@@ -255,7 +255,7 @@ endif()
 
 ### FLTK (dep: libpng) ###
 
-if(BUILD_CLIENT)
+if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
   message(STATUS "Compiling FLTK...")
 
   set(_FLTK_BUILDGEN_PARAMS

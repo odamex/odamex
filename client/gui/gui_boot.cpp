@@ -315,12 +315,14 @@ static BootWindow* MakeBootWindow()
  */
 std::string GUI_BootWindow()
 {
+#ifdef HAVE_FLTK_SCREEN_SCALE
 	// Scale according to 1600x900.
 	Fl::screen_scale(0, MAX(Fl::h() / 900.0f, 1.0f));
 
 	// This feature is too clever by half, and in my experience just
 	// deforms the window.
 	Fl::keyboard_screen_scaling(0);
+#endif
 
 	BootWindow* win = MakeBootWindow();
 	win->initWADDirs();
