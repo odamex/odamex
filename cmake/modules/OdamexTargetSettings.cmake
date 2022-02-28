@@ -12,6 +12,11 @@ endfunction()
 function(odamex_target_settings _TARGET)
   set(ODAMEX_DLLS "")
 
+  if(HAS_LTO)
+    set_property(TARGET "${_TARGET}"
+      PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
+
   if(APPLE)
     target_compile_definitions("${_TARGET}" PRIVATE OSX UNIX)
     set_target_properties("${_TARGET}" PROPERTIES

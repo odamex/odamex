@@ -714,7 +714,7 @@ void drawNetdemo() {
 		return;
 	}
 
-	if (!hud_demobar)
+	if (!hud_demobar || R_DemoBarInvisible())
 		return;
 
 	int xscale = hud_scale ? CleanXfac : 1;
