@@ -757,6 +757,12 @@ void drawNetdemo() {
 	if (netdemo.isPaused() && ::hud_demoprotos)
 	{
 		drawProtos();
+
+		std::string buf;
+		StrFormat(buf, "pending: %d\nready: %d", displayplayer().pendingweapon,
+		          displayplayer().readyweapon);
+		hud::DrawText(0, 16, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, buf.c_str(), CR_GOLD);
 	}
 }
 
