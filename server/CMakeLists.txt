@@ -55,7 +55,7 @@ target_link_libraries(odasrv ZLIB::ZLIB jsoncpp odamex-common odaproto)
 
 if(USE_MINIUPNP)
   if(USE_INTERNAL_MINIUPNP)
-    target_link_libraries(odasrv upnpc-static)
+    target_link_libraries(odasrv miniupnpc::miniupnpc)
   else()
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(MINIUPNPC miniupnpc REQUIRED IMPORTED_TARGET)
