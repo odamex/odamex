@@ -1289,6 +1289,16 @@ bool R_StatusBarVisible()
 	return setblocks <= 10 || AM_ClassicAutomapVisible();
 }
 
+//
+// R_DemoBarVisible
+//
+// Returns true if the demo bar should not be drawn
+//
+bool R_DemoBarInvisible()
+{
+	return screenblocks == 12;
+}
+
 
 
 //
