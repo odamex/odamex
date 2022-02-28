@@ -773,13 +773,20 @@ static bool P_SpecialIsWeapon(AActor *special)
 	if (!special)
 		return false;
 
-	return (special->type == MT_CHAINGUN ||
-			special->type == MT_SHOTGUN  ||
-			special->type == MT_SUPERSHOTGUN ||
-			special->type == MT_MISC25 ||
-			special->type == MT_MISC26 ||
-			special->type == MT_MISC27 ||
-			special->type == MT_MISC28);
+	switch (special->type)
+	{
+	case MT_CHAINGUN:
+	case MT_SHOTGUN:
+	case MT_SUPERSHOTGUN:
+	case MT_MISC13: // Berserk
+	case MT_MISC25: // BFG9000
+	case MT_MISC26: // Chainsaw
+	case MT_MISC27: // Rocket Launcher
+	case MT_MISC28: // Plasma
+		return true;
+	default:
+		return false;
+	}
 }
 
 void P_PickupSound(AActor *ent, int channel, const char *name)
