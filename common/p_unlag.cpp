@@ -36,7 +36,6 @@
 
 #include "odamex.h"
 
-#include "m_vectors.h"
 #include "p_unlag.h"
 #include "p_local.h"
 

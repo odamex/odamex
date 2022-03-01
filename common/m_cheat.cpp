@@ -24,9 +24,6 @@
 
 #include "odamex.h"
 
-#include <stdlib.h>
-#include <math.h>
-
 #include "g_gametype.h"
 #include "m_cheat.h"
 #include "d_player.h"

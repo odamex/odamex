@@ -37,10 +37,9 @@
 #include "hu_drawers.h"
 #include "p_ctf.h"
 #include "v_text.h"
-#include "i_video.h"
 #include "cmdlib.h"
 
-size_t P_NumPlayersInGame(void);
+size_t P_NumPlayersInGame();
 argb_t CL_GetPlayerColor(player_t*);
 
 extern NetDemo netdemo;

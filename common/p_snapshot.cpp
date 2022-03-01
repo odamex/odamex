@@ -26,7 +26,6 @@
 
 #include "odamex.h"
 
-#include <math.h>
 #include "actor.h"
 #include "d_player.h"
 #include "p_local.h"

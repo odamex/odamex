@@ -29,7 +29,6 @@
 
 #include "v_textcolors.h"	// Ch0wW : Colorized textcodes
 #include "hu_stuff.h"
-#include "r_defs.h"
 #include "w_wad.h"
 
 struct OGlobalFont

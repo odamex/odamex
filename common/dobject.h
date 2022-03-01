@@ -25,7 +25,6 @@
 #ifndef __DOBJECT_H__
 #define __DOBJECT_H__
 
-#include <stdlib.h>
 #include "tarray.h"
 
 class FArchive;

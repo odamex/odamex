@@ -41,9 +41,6 @@
 #include "r_data.h"
 
 #include "v_palette.h"
-#include "v_video.h"
-
-#include <ctype.h>
 
 #include <algorithm>
 

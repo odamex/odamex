@@ -25,8 +25,8 @@
 #ifndef __HU_STUFF_H__
 #define __HU_STUFF_H__
 
-#include "d_event.h"
-
+// Forward declaration
+struct event_t;
 
 //
 // Globally visible constants.
@@ -42,7 +42,7 @@ void STACK_ARGS HU_Shutdown();
 
 void HU_Ticker();
 BOOL HU_Responder (event_t* ev);
-void HU_Drawer (void);
+void HU_Drawer();
 
 enum chatmode_t
 {
@@ -64,6 +64,5 @@ void OdamexEffect (int xa, int ya, int xb, int yb);
 class player_s;
 void HU_DrawScores (player_s *me);
 void HU_DisplayTimer (int x, int y, bool scale = true);
+
 #endif
-
-

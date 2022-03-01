@@ -24,12 +24,10 @@
 
 #include "odamex.h"
 
-#include <math.h>
-
+#include <cmath>
 #include "m_mempool.h"
 
 #include "i_system.h"
-
 
 #include "p_local.h"
 #include "r_local.h"

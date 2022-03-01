@@ -26,9 +26,8 @@
 
 #include "odamex.h"
 
-#include <math.h>
+#include <cmath>
 #include "m_random.h"
-#include "m_alloc.h"
 #include "i_system.h"
 #include "p_local.h"
 #include "p_lnspec.h"

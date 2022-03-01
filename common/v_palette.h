@@ -24,8 +24,6 @@
 #ifndef __V_PALETTE_H__
 #define __V_PALETTE_H__
 
-#include "r_defs.h"
-
 struct palette_t
 {
 	argb_t			basecolors[256];		// non-gamma corrected colors

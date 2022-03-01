@@ -24,8 +24,6 @@
 
 #include "odamex.h"
 
-#include "m_alloc.h"
-#include "i_system.h"
 #include "s_sound.h"
 #include "c_dispatch.h"
 #include "z_zone.h"
@@ -33,8 +31,6 @@
 #include "w_wad.h"
 #include "cmdlib.h"
 #include "v_video.h"
-
-#include <algorithm>
 
 #define NORM_PITCH				128
 #define NORM_PRIORITY			64
@@ -46,7 +42,7 @@
 //
 // [RH] Print sound debug info. Called from D_Display()
 //
-void S_NoiseDebug (void)
+void S_NoiseDebug()
 {
 }
 

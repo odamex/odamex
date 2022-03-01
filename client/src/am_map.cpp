@@ -33,7 +33,6 @@
 #include "v_palette.h"
 #include "c_bind.h"
 
-#include "m_cheat.h"
 #include "c_dispatch.h"
 #include "cl_demo.h"
 #include "g_gametype.h"

@@ -27,8 +27,6 @@
 
 #include "stringenums.h"
 
-#include "hashtable.h"
-
 const OString D_DEVSTR = "D_DEVSTR";
 const OString D_CDROM = "D_CDROM";
 const OString PRESSKEY = "PRESSKEY";

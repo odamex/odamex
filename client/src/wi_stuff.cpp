@@ -38,7 +38,6 @@
 #include "wi_stuff.h"
 #include "c_console.h"
 #include "hu_stuff.h"
-#include "v_palette.h"
 #include "c_dispatch.h"
 #include "v_text.h"
 #include "gi.h"

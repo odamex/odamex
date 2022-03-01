@@ -25,7 +25,6 @@
 #include "odamex.h"
 #include "p_local.h"
 #include "p_lnspec.h"
-#include "m_wdlstats.h"
 #include "c_cvars.h"
 #include "d_player.h"
 #include "p_zdoomhexspec.h"

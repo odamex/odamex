@@ -25,8 +25,6 @@
 #ifndef __M_ALLOC_H__
 #define __M_ALLOC_H__
 
-#include <stdlib.h>
-
 // don't use these, use the macros below instead!
 void *Malloc (size_t size);
 void *Calloc (size_t num, size_t size);

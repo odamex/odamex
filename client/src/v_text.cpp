@@ -33,7 +33,6 @@
 #include "hu_stuff.h"
 #include "w_wad.h"
 
-#include "hashtable.h"
 #include "cmdlib.h"
 
 EXTERN_CVAR(msg0color)
@@ -62,15 +61,14 @@ extern byte *Ranges;
  */
 void V_TextInit()
 {
-	int j, sub;
 	std::string buffer;
 
 	const char *bigfont = "FONTB%02d";
 	const char *smallfont = "STCFN%.3d";
 
 	// Level name font, used between levels, starts at index 1.
-	j = 1;
-	sub = 0;
+	int j = 1;
+	int sub = 0;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
 		StrFormat(buffer, bigfont, j++ - sub);

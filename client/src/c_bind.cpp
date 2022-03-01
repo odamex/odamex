@@ -24,9 +24,6 @@
 
 #include "odamex.h"
 
-#include <stdlib.h>
-
-#include "m_ostring.h"
 #include "cmdlib.h"
 #include "c_dispatch.h"
 #include "c_bind.h"

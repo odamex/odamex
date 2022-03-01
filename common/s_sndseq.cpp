@@ -24,8 +24,6 @@
 
 #include "odamex.h"
 
-
-#include "m_alloc.h"
 #include "m_random.h"
 #include "s_sound.h"
 #include "s_sndseq.h"

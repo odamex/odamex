@@ -29,7 +29,6 @@
 #include "s_sound.h"
 #include "s_sndseq.h"
 #include "r_state.h"
-#include "p_mapformat.h"
 
 EXTERN_CVAR(co_boomphys)
 

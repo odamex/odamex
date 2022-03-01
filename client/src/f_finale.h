@@ -25,20 +25,21 @@
 #ifndef __F_FINALE__
 #define __F_FINALE__
 
+// Forward declaration
+struct event_t;
 
-#include "d_event.h"
 //
 // FINALE
 //
 
 // Called by main loop.
-BOOL F_Responder (event_t* ev);
+BOOL F_Responder(event_t* ev);
 
 // Called by main loop.
-void F_Ticker (void);
+void F_Ticker();
 
 // Called by main loop.
-void F_Drawer (void);
+void F_Drawer();
 
 struct finale_options_t
 {
@@ -50,8 +51,5 @@ struct finale_options_t
 
 void F_StartFinale(finale_options_t& options);
 void STACK_ARGS F_ShutdownFinale();
-
-
-
 
 #endif

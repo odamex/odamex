@@ -23,14 +23,8 @@
 
 #include "odamex.h"
 
-
 #include "oscanner.h"
-
 #include "cmdlib.h"
-
-#include <algorithm>
-#include <stdlib.h>
-
 #include "i_system.h"
 
 static const char* SINGLE_CHAR_TOKENS = "$(),;=[]{}";

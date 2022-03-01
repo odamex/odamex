@@ -25,13 +25,9 @@
 #include "odamex.h"
 
 #include <cmath>
-#include <exception>
-
 #include "cmdlib.h"
 #include "c_console.h"
 #include "c_dispatch.h"
-#include "m_alloc.h"
-
 
 #include "d_netinf.h"
 

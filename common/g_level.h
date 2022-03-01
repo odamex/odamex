@@ -27,9 +27,7 @@
 #include "m_fixed.h"
 #include "m_resfile.h"
 #include "olumpname.h"
-#include "r_defs.h" // line_t
-
-#include <assert.h>
+#include "r_defs.h" // MT_NULL
 
 #define NUM_MAPVARS				128
 #define NUM_WORLDVARS			256

@@ -24,12 +24,11 @@
 
 #include "odamex.h"
 
-#include <math.h>
+#include <cmath>
 #include <cassert>
 
 #include "i_system.h"
 #include "v_video.h"
-#include "m_alloc.h"
 #include "r_main.h"		// For lighting constants
 #include "w_wad.h"
 #include "z_zone.h"

@@ -24,7 +24,6 @@
 #define __G_LEVELSTATE_H__
 
 
-#include "d_player.h"
 
 struct SerializedLevelState;
 

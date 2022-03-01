@@ -36,9 +36,6 @@
 
 #include "z_zone.h"
 
-// unfortunately, we still need you
-#include "cmdlib.h"
-
 #if defined(_WIN32)
 #include <direct.h> // getcwd
 #else

@@ -31,8 +31,6 @@
 #include "gstrings.h"
 #include "i_system.h"
 #include "info.h"
-#include "m_alloc.h"
-#include "m_cheat.h"
 #include "m_fileio.h"
 #include "p_local.h"
 #include "s_sound.h"

@@ -29,8 +29,6 @@
 //#define SIMULATE_LATENCY
 #include "tarray.h"
 
-#include <cfloat>
-
 /*
 ==========================================================
 

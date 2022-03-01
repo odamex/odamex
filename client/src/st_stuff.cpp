@@ -31,7 +31,6 @@
 #include "z_zone.h"
 #include "m_random.h"
 #include "w_wad.h"
-#include "g_game.h"
 #include "st_stuff.h"
 #include "st_lib.h"
 #include "r_local.h"
@@ -48,7 +47,6 @@
 #include "cl_demo.h"
 #include "c_console.h"
 #include "g_gametype.h"
-#include "m_cheat.h"
 
 #include "p_ctf.h"
 

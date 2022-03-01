@@ -27,8 +27,8 @@
 #include "odamex.h"
 
 #include <assert.h>
-#include <math.h>
 #include <algorithm>
+#include <cmath>
 
 #include "i_sdl.h"
 #include "r_intrin.h"

@@ -35,7 +35,6 @@
 #include "s_sound.h"
 #include "i_system.h"
 #include "p_tick.h"
-#include "gi.h"
 #include "m_wdlstats.h"
 
 #include "p_snapshot.h"

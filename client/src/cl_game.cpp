@@ -26,7 +26,6 @@
 #include "odamex.h"
 
 #include "minilzo.h"
-#include "m_alloc.h"
 #include "z_zone.h"
 #include "f_finale.h"
 #include "m_argv.h"
@@ -47,7 +46,6 @@
 #include "c_console.h"
 #include "c_bind.h"
 #include "c_dispatch.h"
-#include "v_video.h"
 #include "w_wad.h"
 #include "p_local.h"
 #include "s_sound.h"
@@ -68,21 +66,19 @@
 #include "i_xbox.h"
 #endif
 
-#include <math.h> // for pow()
-
 #define SAVESTRINGSIZE	24
 
 #define TURN180_TICKS	9				// [RH] # of ticks to complete a turn180
 
-BOOL	G_CheckDemoStatus (void);
-void	G_ReadDemoTiccmd ();
-void	G_WriteDemoTiccmd ();
-void	G_PlayerReborn (player_t &player);
+BOOL	G_CheckDemoStatus();
+void	G_ReadDemoTiccmd();
+void	G_WriteDemoTiccmd();
+void	G_PlayerReborn(player_t &player);
 
-void	G_DoNewGame (void);
-void	G_DoLoadGame (void);
-void	G_DoCompleted (void);
-void	G_DoWorldDone (void);
+void	G_DoNewGame();
+void	G_DoLoadGame();
+void	G_DoCompleted();
+void	G_DoWorldDone();
 void	G_DoSaveGame();
 
 bool	C_DoNetDemoKey(event_t *ev);

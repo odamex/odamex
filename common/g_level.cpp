@@ -28,7 +28,6 @@
 
 #include <set>
 
-#include "c_console.h"
 #include "c_dispatch.h"
 #include "d_event.h"
 #include "d_main.h"
@@ -40,7 +39,6 @@
 #include "p_saveg.h"
 #include "p_unlag.h"
 #include "r_data.h"
-#include "r_sky.h"
 #include "v_video.h"
 #include "w_wad.h"
 #include "w_ident.h"

@@ -22,14 +22,11 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include "odamex.h"
 
 #include <sstream>
 #include <iomanip>
 
-#include "math.h"
-#include "g_game.h"
 #include "v_video.h"
 #include "v_text.h"
 #include "cl_netgraph.h"

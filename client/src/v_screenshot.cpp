@@ -26,10 +26,7 @@
 
 #include <SDL.h>
 
-#include <stdlib.h>
-
 #include "cmdlib.h"
-#include "i_system.h"
 #include "i_video.h"
 
 #include "c_dispatch.h"

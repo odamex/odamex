@@ -36,7 +36,6 @@
 #include "c_dispatch.h"
 #include "s_sndseq.h"
 #include "i_system.h"
-#include "m_vectors.h"
 #include "p_inter.h"
 #include "gi.h"
 
