@@ -15,3 +15,7 @@
 	path = libraries/protobuf
 	url = https://github.com/protocolbuffers/protobuf.git
 	branch = 3.5.x
+[submodule "libraries/jsoncpp"]
+	path = libraries/jsoncpp
+	url = https://github.com/open-source-parsers/jsoncpp.git
+	branch = 00.11.z
