@@ -295,7 +295,7 @@ endif()
 
 ### JsonCpp ###
 
-if(BUILD_SERVER)
+if(BUILD_SERVER AND USE_INTERNAL_JSONCPP)
   message(STATUS "Compiling JsonCpp...")
 
   # Figure out the correct library path to attach to our imported target
