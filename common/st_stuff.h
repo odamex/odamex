@@ -28,8 +28,11 @@
 #define __STSTUFF_H__
 
 
-#include "d_event.h"
+// Forward declaration
+struct event_t;
+
 #include "com_misc.h"
+#include "w_wad.h"
 
 // [RH] Turned these into variables
 // Size of statusbar.
@@ -46,18 +49,21 @@ int ST_StatusBarY(int surface_width, int surface_height);
 
 void ST_ForceRefresh();
 
+// for st_lib.cpp
+extern lumpHandle_t negminus;
+
 //
 // STATUS BAR
 //
 
 // Called by main loop.
-bool ST_Responder (event_t* ev);
+bool ST_Responder(event_t* ev);
 
 // Called by main loop.
-void ST_Ticker (void);
+void ST_Ticker();
 
 // Called by main loop.
-void ST_Drawer (void);
+void ST_Drawer();
 
 // Called when the console player is spawned on each level.
 void ST_Start();
