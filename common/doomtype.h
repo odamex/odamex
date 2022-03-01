@@ -30,7 +30,16 @@
 #include "version.h"
 #include "errors.h"
 
-#include "m_swap.h"			// for __BIG_ENDIAN__ macro
+#if defined(_MSC_VER)
+#define forceinline __forceinline
+#elif defined(__GNUC__)
+#define forceinline inline __attribute__((always_inline))
+#else
+#define forceinline inline
+#endif
+
+// For __BIG_ENDIAN__ macro, requires forceinline
+#include "m_swap.h"
 
 #ifdef GEKKO
 	#include <gctypes.h>
@@ -249,14 +258,6 @@ typedef enum {
 
 	PRINT_MAXPRINT
 } printlevel_t;
-
-#if defined(_MSC_VER)
-#define forceinline __forceinline
-#elif defined(__GNUC__)
-#define forceinline inline __attribute__((always_inline))
-#else
-#define forceinline inline
-#endif
 
 //
 // MIN

@@ -200,6 +200,7 @@ IWindowSurface* R_GetRenderingSurface();
 
 bool R_BorderVisible();
 bool R_StatusBarVisible();
+bool R_DemoBarInvisible();
 
 int R_ViewWidth(int width, int height);
 int R_ViewHeight(int width, int height);
