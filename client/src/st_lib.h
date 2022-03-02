@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __STLIB__
-#define __STLIB__
+#pragma once
 
 
 // We are referring to patches.
@@ -221,5 +220,3 @@ STlib_updateBinIcon
 #define ST_DONT_DRAW_NUM 1994 			// means "n/a"
 void STlib_drawNum(st_number_t *n, bool refresh, bool cleararea=true);
 void ST_DrawNum(int x, int y, DCanvas *scrn, int num);
-
-#endif

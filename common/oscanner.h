@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __OSCANNER_H__
-#define __OSCANNER_H__
+#pragma once
 
 
 struct OScannerConfig
@@ -84,5 +83,3 @@ class OScanner
 	void STACK_ARGS warning(const char* message, ...) const;
 	void STACK_ARGS error(const char* message, ...) const;
 };
-
-#endif // __OSCANNER_H__

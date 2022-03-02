@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_CHEAT_H__
-#define __M_CHEAT_H__
+#pragma once
 
 //
 // CHEAT SEQUENCE PACKAGE
@@ -91,7 +90,3 @@ void CHEAT_Suicide (player_s *player);
 #endif
 
 bool CHEAT_AreCheatsEnabled();
-
-#endif
-
-

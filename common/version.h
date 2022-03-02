@@ -21,8 +21,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __VERSION_H__
-#define __VERSION_H__
+#pragma once
 
 
 #if defined(CLIENT_APP)
@@ -114,5 +113,3 @@ const char* GitRevCount();
 const char* GitShortHash();
 const char* NiceVersionDetails();
 const char* NiceVersion();
-
-#endif //__VERSION_H__

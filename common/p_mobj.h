@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __PMOBJ_H__
-#define __PMOBJ_H__
+#pragma once
 
 #define REMOVECORPSESTIC TICRATE*80
 
@@ -152,6 +150,3 @@ void SpawnFlag(mapthing2_t* mthing, team_t flag);
 
 // From MBF
 bool P_SeekerMissile(AActor* actor, AActor* seekTarget, angle_t thresh, angle_t turnMax, bool seekcenter);
-
-#endif
-

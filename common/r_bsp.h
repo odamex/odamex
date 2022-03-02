@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __R_BSP__
-#define __R_BSP__
+#pragma once
 
 extern const fixed_t NEARCLIP;
 

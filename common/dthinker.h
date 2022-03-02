@@ -24,8 +24,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __DTHINKER_H__
-#define __DTHINKER_H__
+#pragma once
 
 #include <stdlib.h>
 #include "dobject.h"
@@ -128,5 +127,4 @@ public:
 };
 
 bool P_ThinkerIsPlayerType(DThinker* thinker);
-
-#endif //__DTHINKER_H__
+\

@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __R_SPRITES__
-#define __R_SPRITES__
+#pragma once
 
 extern int MaxVisSprites;
 
@@ -43,6 +42,3 @@ extern vissprite_t* lastvissprite;
 
 void R_CacheSprite(spritedef_t *sprite);
 void R_InitSprites(const char** namelist);
-
-#endif
-

@@ -23,10 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __STSTUFF_H__
-#define __STSTUFF_H__
-
+#pragma once
 
 #include "d_event.h"
 #include "com_misc.h"
@@ -103,6 +100,3 @@ typedef enum
 } st_stateenum_t;
 
 bool ST_Responder(event_t* ev);
-
-
-#endif

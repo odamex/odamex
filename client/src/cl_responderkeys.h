@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __CPLATFORM_H__
-#define __CPLATFORM_H__
+#pragma once
 
         // Movement Keys
 bool Key_IsUpKey(int key);
@@ -44,5 +43,3 @@ bool Key_IsSpyPrevKey(int key);
 bool Key_IsSpyNextKey(int key);
 
 bool Key_IsTabulationKey(int key);
-
-#endif //__CPLATFORM_H__

@@ -23,8 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __P_BOOMFSPEC__
-#define __P_BOOMFSPEC__
+#pragma once
 
 void G_SecretExitLevel(int position, int drawscores);
 void P_DamageMobj(AActor* target, AActor* inflictor, AActor* source, int damage, int mod,
@@ -62,5 +61,3 @@ void P_PostProcessCompatibleLinedefSpecial(line_t* line);
 bool P_IsTeleportLine(const short special);
 
 extern BOOL demoplayback;
-
-#endif
