@@ -978,7 +978,7 @@ void MIType_Sky(OScanner& os, bool doEquals, void* data, unsigned int flags,
 		}
 	}
 	os.scan();
-	if (IsNum(os.getToken().c_str()))
+	if (IsRealNum(os.getToken().c_str()))
 	{
 		/*if (HexenHack)
 		{
