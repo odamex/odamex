@@ -779,25 +779,33 @@ void MIType_Color(OScanner& os, bool doEquals, void* data, unsigned int flags,
 void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	ParseMapInfoHelper<OLumpName>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, doEquals);
 
-	if (os.compareTokenNoCase("EndPic"))
+	if (IsIdentifier(os))
 	{
-		// todo
-		if (doEquals)
-			MustGetStringName(os, ",");
+		if (os.compareTokenNoCase("EndPic"))
+		{
+			// todo
+			if (doEquals)
+				MustGetStringName(os, ",");
 
-		os.mustScan();
-	}
-	else if (os.compareTokenNoCase("EndSequence"))
-	{
-		// todo
-		if (doEquals)
-			MustGetStringName(os, ",");
+			os.mustScan();
+		}
+		else if (os.compareTokenNoCase("EndSequence"))
+		{
+			// todo
+			if (doEquals)
+				MustGetStringName(os, ",");
 
-		os.mustScan();
+			os.mustScan();
+		}
 	}
-	else if (os.compareTokenNoCase("endgame"))
+
+	// If not identifier, check if it's a lumpname
+	os.unScan();
+	MustGet<OLumpName>(os);
+
+	if (os.compareTokenNoCase("endgame"))
 	{
 		// endgame block
 		MustGetStringName(os, "{");
