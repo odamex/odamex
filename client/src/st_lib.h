@@ -21,14 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __STLIB__
 #define __STLIB__
-
-
-// We are referring to patches.
-#include "r_defs.h"
-
 
 //
 // Background and foreground screen numbers
@@ -38,188 +32,103 @@
 extern IWindowSurface* stbar_surface;
 extern IWindowSurface* stnum_surface;
 
-
 //
 // Typedefs of widgets
 //
 
-// Number widget
-
-struct st_number_s
+class StatusBarWidget_Base
 {
+  protected:
+	int m_x;
+	int m_y;
+
+	void clearRect(int x, int y, int w, int h);
+	void drawPatch(int x, int y, const patch_t* p);
+
+  public:
+	int getX() const { return m_x; }
+	int getY() const { return m_y; }
+	
+};
+
+// Number widget
+class StatusBarWidgetNumber : StatusBarWidget_Base
+{
+  protected:
+
+	void drawPatch(int x, int y, const patch_t* p)
+	{
+		StatusBarWidget_Base::drawPatch(x, y, p);
+	}
+
+  public:
 	// upper right-hand corner
 	//	of the number (right-justified)
-	int 		x;
-	int 		y;
+	int getX() const { return StatusBarWidget_Base::getX(); }
+	int getY() const { return StatusBarWidget_Base::getY(); }
 
-	int			maxdigits;
+	int maxdigits;
 
 	// last number value
-	int 		oldnum;
+	int oldnum;
 
 	// pointer to current value
-	int*		num;
+	int* num;
 
 	// pointer to bool stating
 	//	whether to update number
-	bool*	on;
+	bool* on;
 
 	// list of patches for 0-9
 	lumpHandle_t* p;
 
-	// user data
-	int data;
+	// Number widget routines
+	void init(int x, int y, lumpHandle_t* pl, int* num, bool* on, int maxdigits);
 
+	void update(bool refresh, bool cleararea = true);
 };
-typedef struct st_number_s st_number_t;
-
-
 
 // Percent widget ("child" of number widget,
 //	or, more precisely, contains a number widget.)
-struct st_percent_s
+class StatusBarWidgetPercent : StatusBarWidgetNumber
 {
-	// number information
-	st_number_t 		n;
-
 	// percent sign graphic
-	lumpHandle_t p;
+	lumpHandle_t m_percentLump;
 
+  public:
+	// Percent widget routines
+	void init(int x, int y, lumpHandle_t* pl, int* num, bool* on, lumpHandle_t percent);
+
+	void update(bool refresh);
 };
-typedef struct st_percent_s st_percent_t;
-
 
 // Multiple Icon widget
-struct st_multicon_s
+class StatusBarWidgetMultiIcon : StatusBarWidget_Base
 {
-	 // center-justified location of icons
-	int 				x;
-	int 				y;
+  public:
+	// center-justified location of icons
+	//int x;
+	//int y;
 
 	// last icon number
-	int 				oldinum;
+	int oldinum;
 
 	// pointer to current icon
-	int*				inum;
+	int* inum;
 
 	// pointer to bool stating
 	//	whether to update icon
-	bool*				on;
+	bool* on;
 
 	// list of icons
 	lumpHandle_t* p;
 
-	// user data
-	int 				data;
+	// Multiple Icon widget routines
+	void init(int x, int y, lumpHandle_t* il, int* inum, bool* on);
 
+	void update(bool refresh);
 };
-typedef struct st_multicon_s st_multicon_t;
 
-
-
-// Binary Icon widget
-
-struct st_binicon_s
-{
-	// center-justified location of icon
-	int 				x;
-	int 				y;
-
-	// last icon value
-	bool			oldval;
-
-	// pointer to current icon status
-	bool*			val;
-
-	// pointer to bool
-	//	stating whether to update icon
-	bool*			on;
-
-
-	lumpHandle_t		p;		// icon
-	int 				data;	// user data
-
-};
-typedef struct st_binicon_s st_binicon_t;
-
-
-//
-// Widget creation, access, and update routines
-//
-
-// Initializes widget library.
-// More precisely, initialize STMINUS,
-//	everything else is done somewhere else.
-//
-void STlib_init(void);
-
-
-
-// Number widget routines
-void
-STlib_initNum
-( st_number_t*			n,
-  int					x,
-  int					y,
-  lumpHandle_t*			pl,
-  int*					num,
-  bool*				on,
-  int					maxdigits );
-
-void STlib_updateNum(st_number_t* n, bool refresh, bool cleararea=true);
-
-
-// Percent widget routines
-void
-STlib_initPercent
-( st_percent_t* 		p,
-  int					x,
-  int					y,
-  lumpHandle_t*			pl,
-  int*					num,
-  bool*				on,
-  lumpHandle_t			percent );
-
-
-void
-STlib_updatePercent
-( st_percent_t* 		per,
-  bool					refresh );
-
-
-// Multiple Icon widget routines
-void
-STlib_initMultIcon
-( st_multicon_t*		mi,
-  int					x,
-  int					y,
-  lumpHandle_t*			il,
-  int*					inum,
-  bool*				on );
-
-
-void
-STlib_updateMultIcon
-( st_multicon_t*		mi,
-  bool				refresh );
-
-// Binary Icon widget routines
-void
-STlib_initBinIcon
-( st_binicon_t* 		b,
-  int					x,
-  int					y,
-  lumpHandle_t			i,
-  bool*				val,
-  bool*				on );
-
-void
-STlib_updateBinIcon
-( st_binicon_t* 		bi,
-  bool				refresh );
-
-#define ST_DONT_DRAW_NUM 1994 			// means "n/a"
-void STlib_drawNum(st_number_t *n, bool refresh, bool cleararea=true);
-void ST_DrawNum(int x, int y, DCanvas *scrn, int num);
+#define ST_DONT_DRAW_NUM 1994 // means "n/a"
 
 #endif
