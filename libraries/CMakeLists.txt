@@ -310,7 +310,7 @@ if(BUILD_SERVER AND USE_INTERNAL_JSONCPP)
   lib_build(LIBRARY jsoncpp)
 
   find_package(jsoncpp REQUIRED)
-  set_target_properties(jsoncpp_static PROPERTIES IMPORTED_GLOBAL TRUE)
+  set_target_properties(jsoncpp_lib_static PROPERTIES IMPORTED_GLOBAL TRUE)
 endif()
 
 ### MiniUPnPc ###
