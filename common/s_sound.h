@@ -45,7 +45,7 @@ struct sfxinfo_struct
 	unsigned	looping;				// Looping sample handle
 	void*		data;
 
-	struct sfxinfo_struct *link;
+	sfxinfo_struct *link;
 
 	int 		lumpnum;				// lump number of sfx
 	unsigned int ms;					// [RH] length of sfx in milliseconds

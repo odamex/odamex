@@ -1259,7 +1259,7 @@ void S_ParseSndInfo (void)
 
 				if (!stricmp (com_token + 1, "ambient")) {
 					// $ambient <num> <logical name> [point [atten]|surround] <type> [secs] <relative volume>
-					struct AmbientSound *ambient, dummy;
+					AmbientSound *ambient, dummy;
 					int index;
 
 					sndinfo = COM_Parse (sndinfo);
@@ -1359,7 +1359,7 @@ void S_ParseSndInfo (void)
 }
 
 
-static void SetTicker (int *tics, struct AmbientSound *ambient)
+static void SetTicker(int *tics, AmbientSound *ambient)
 {
 	if ((ambient->type & CONTINUOUS) == CONTINUOUS)
 	{
@@ -1367,8 +1367,8 @@ static void SetTicker (int *tics, struct AmbientSound *ambient)
 	}
 	else if (ambient->type & RANDOM)
 	{
-		*tics = (int)(((float)rand() / (float)RAND_MAX) *
-				(float)(ambient->periodmax - ambient->periodmin)) +
+		*tics = static_cast<int>((static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) *
+		        static_cast<float>(ambient->periodmax - ambient->periodmin)) +
 				ambient->periodmin;
 	}
 	else
@@ -1382,12 +1382,12 @@ static void SetTicker (int *tics, struct AmbientSound *ambient)
 		*tics = 1;
 }
 
-void A_Ambient (AActor *actor)
+void A_Ambient(AActor *actor)
 {
 	if (!actor)
 		return;
 
-	struct AmbientSound *ambient = &Ambients[actor->args[0]];
+	AmbientSound *ambient = &Ambients[actor->args[0]];
 
 	if ((ambient->type & CONTINUOUS) == CONTINUOUS)
 	{
@@ -1427,7 +1427,7 @@ void S_ActivateAmbient (AActor *origin, int ambient)
 	if (!origin)
 		return;
 
-	struct AmbientSound *amb = &Ambients[ambient];
+	AmbientSound *amb = &Ambients[ambient];
 
 	if (!(amb->type & 3) && !amb->periodmin)
 	{

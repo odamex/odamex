@@ -134,7 +134,7 @@ public:
 
 	AActor::AActorPtr	mo;
 
-	struct ticcmd_t cmd;	// the ticcmd currently being processed
+	ticcmd_t cmd;	// the ticcmd currently being processed
 	std::queue<NetCommand> cmdqueue;	// all received ticcmds
 
 	// [RH] who is this?
@@ -388,7 +388,7 @@ public:
 		}
 	} client;
 
-	struct ticcmd_t netcmds[BACKUPTICS];
+	ticcmd_t netcmds[BACKUPTICS];
 
 	int GetPlayerNumber() const
 	{
@@ -399,8 +399,6 @@ public:
 	player_s &operator =(const player_s &other);
 	
 	~player_s();
-
-
 };
 
 typedef player_s player_t;

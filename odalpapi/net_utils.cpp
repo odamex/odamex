@@ -53,7 +53,7 @@ namespace odalpapi
 /* FILETIME of Jan 1 1970 00:00:00. */
 static const unsigned __int64 epoch = ((unsigned __int64)116444736000000000ULL);
 
-int gettimeofday(struct timeval* tp, ...)
+int gettimeofday(timeval* tp, ...)
 {
 	FILETIME file_time;
 	SYSTEMTIME system_time;
@@ -92,7 +92,7 @@ uint64_t _UnwrapTime(uint32_t now32)
 
 int32_t _Millis()
 {
-	struct timeval tp;
+	timeval tp;
 
 	gettimeofday(&tp, (struct timezone*)NULL);
 
@@ -107,23 +107,20 @@ uint64_t GetMillisNow()
 int32_t OdaAddrToComponents(const std::string& HostPort, std::string &AddrOut, 
                             uint16_t &PortOut)
 {
-	size_t colon;
-
 	if (HostPort.empty())
         return 1;
-	
-	colon = HostPort.find(':');
 
-	if(colon != std::string::npos)
+	const size_t colon = HostPort.find(':');
+
+	if (colon != std::string::npos)
     {
-        long tmp_port;
-
-        if(colon + 1 >= HostPort.length())
+	    if(colon + 1 >= HostPort.length())
             return 2;
         
         try
         {
-            std::istringstream(HostPort.substr(colon + 1)) >> tmp_port;
+	        long tmp_port;
+	        std::istringstream(HostPort.substr(colon + 1)) >> tmp_port;
             PortOut = tmp_port;
         }
         catch (...)

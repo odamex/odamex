@@ -40,8 +40,8 @@ static const int MAX_LINE_LENGTH = 8192;
 
 struct History
 {
-	struct History *Older;
-	struct History *Newer;
+	History *Older;
+	History *Newer;
 	char String[1];
 };
 
@@ -53,7 +53,7 @@ struct History
 
 static byte printxormask;
 
-static struct History *HistTail = NULL;
+static History *HistTail = NULL;
 
 #define PRINTLEVELS 5
 
@@ -64,7 +64,7 @@ char *TimeStamp()
 	static char stamp[38];
 
 	time_t ti = time(NULL);
-	struct tm *lt = localtime(&ti);
+	tm *lt = localtime(&ti);
 
 	if(lt)
 	{
@@ -196,7 +196,7 @@ FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...)
 
 BEGIN_COMMAND (history)
 {
-	struct History *hist = HistTail;
+	History *hist = HistTail;
 
 	while (hist)
 	{

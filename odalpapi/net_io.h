@@ -178,10 +178,10 @@ private:
 	bool m_Broadcast;
 
 	// local address
-	struct sockaddr_in m_LocalAddress;
+	sockaddr_in m_LocalAddress;
 
 	// outgoing address (server)
-	struct sockaddr_in m_RemoteAddress;
+	sockaddr_in m_RemoteAddress;
 
 	uint64_t m_SendPing, m_ReceivePing;
 };

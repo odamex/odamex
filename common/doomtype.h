@@ -550,7 +550,7 @@ typedef struct {
 } shademap_t;
 
 struct dyncolormap_s;
-typedef struct dyncolormap_s dyncolormap_t;
+typedef dyncolormap_s dyncolormap_t;
 
 // This represents a clean reference to a map of both 8-bit colors and 32-bit shades.
 struct shaderef_t {

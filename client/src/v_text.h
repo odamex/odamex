@@ -71,7 +71,7 @@ struct brokenlines_s {
 	int width;
 	char *string;
 };
-typedef struct brokenlines_s brokenlines_t;
+typedef brokenlines_s brokenlines_t;
 
 int V_StringWidth(const byte* str);
 inline int V_StringWidth(const char* str) { return V_StringWidth((const byte*)str); }

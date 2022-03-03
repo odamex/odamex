@@ -515,13 +515,13 @@ typedef struct
 struct line_s;
 class AActor;
 
-typedef BOOL (*lnSpecFunc)(struct line_s	*line,
-						   class AActor		*activator,
-						   int				arg1,
-						   int				arg2,
-						   int				arg3,
-						   int				arg4,
-						   int				arg5);
+typedef BOOL (*lnSpecFunc)(line_s	*line,
+						   AActor	*activator,
+						   int		arg1,
+						   int		arg2,
+						   int		arg3,
+						   int		arg4,
+						   int		arg5);
 
 extern lnSpecFunc LineSpecials[283];
 

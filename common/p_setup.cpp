@@ -1130,8 +1130,8 @@ void P_LoadSideDefs2 (int lump)
 
 typedef struct linelist_t        // type used to list lines in each block
 {
-	int		num;
-	struct	linelist_t *next;
+	int			num;
+	linelist_t *next;
 } linelist_t;
 
 //

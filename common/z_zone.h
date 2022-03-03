@@ -61,12 +61,12 @@ void Z_ChangeOwner2(void* ptr, void* user, const char* file, int line);
 
 typedef struct memblock_s
 {
-	size_t 				size;	// including the header and possibly tiny fragments
-	void**				user;	// NULL if a free block
-	int 				tag;	// PU_FREE if this is free  [ML] 12/4/06: Readded from Chocodoom
-	int 				id; 	// should be ZONEID
-	struct memblock_s*	next;
-	struct memblock_s*	prev;
+	size_t 		size;	// including the header and possibly tiny fragments
+	void**		user;	// NULL if a free block
+	int 		tag;	// PU_FREE if this is free  [ML] 12/4/06: Readded from Chocodoom
+	int 		id; 	// should be ZONEID
+	memblock_s*	next;
+	memblock_s*	prev;
 } memblock_t;
 
 inline void Z_ChangeTag2(const void* ptr, const zoneTag_e tag, const char* file, int line)

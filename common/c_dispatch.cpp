@@ -52,7 +52,7 @@ command_map_t &Commands()
 	return _Commands;
 }
 
-struct ActionBits actionbits[NUM_ACTIONS] =
+ActionBits actionbits[NUM_ACTIONS] =
 {
 	{ 0x00409, ACTION_USE,				"use" },
 	{ 0x0074d, ACTION_BACK,				"back" },
@@ -969,7 +969,7 @@ END_COMMAND (dumpactors)
 BEGIN_COMMAND(logfile)
 {
 	time_t rawtime;
-	struct tm* timeinfo;
+	tm* timeinfo;
 	const std::string default_logname =
 	    M_GetUserFileName(::serverside ? "odasrv.log" : "odamex.log");
 
@@ -1010,11 +1010,10 @@ END_COMMAND(logfile)
 BEGIN_COMMAND (stoplog)
 {
 	time_t rawtime;
-	struct tm * timeinfo;
 
 	if (LOG.is_open()) {
 		time (&rawtime);
-    	timeinfo = localtime (&rawtime);
+		const tm* timeinfo = localtime(&rawtime);
 		Printf (PRINT_HIGH, "Logging to file %s stopped %s\n", LOG_FILE.c_str(), asctime (timeinfo));
 		LOG.close();
 	}

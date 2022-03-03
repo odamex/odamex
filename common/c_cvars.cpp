@@ -449,7 +449,7 @@ static int numbackedup = 0;
 //
 void cvar_t::C_BackupCVars (unsigned int bitflag)
 {
-	struct backup_s *backup = CVarBackups;
+	backup_s *backup = CVarBackups;
 	cvar_t *cvar = ad.GetCVars();
 
 	while (cvar)
@@ -469,10 +469,9 @@ void cvar_t::C_BackupCVars (unsigned int bitflag)
 
 void cvar_t::C_RestoreCVars (void)
 {
-	struct backup_s *backup = CVarBackups;
-	int i;
+	backup_s *backup = CVarBackups;
 
-	for (i = numbackedup; i; i--, backup++)
+	for (int i = numbackedup; i; i--, backup++)
 	{
 		cvar_set (backup->name.c_str(), backup->string.c_str());
 		backup->name = backup->string = "";
@@ -483,12 +482,10 @@ void cvar_t::C_RestoreCVars (void)
 
 cvar_t *cvar_t::FindCVar (const char *var_name, cvar_t **prev)
 {
-	cvar_t *var;
-
 	if (var_name == NULL)
 		return NULL;
 
-	var = ad.GetCVars();
+	cvar_t* var = ad.GetCVars();
 	*prev = NULL;
 	while (var)
 	{
@@ -500,11 +497,9 @@ cvar_t *cvar_t::FindCVar (const char *var_name, cvar_t **prev)
 	return var;
 }
 
-void cvar_t::UnlatchCVars (void)
+void cvar_t::UnlatchCVars()
 {
-	cvar_t *var;
-
-	var = ad.GetCVars();
+	cvar_t* var = ad.GetCVars();
 	while (var)
 	{
 		if (var->m_Flags & (CVAR_MODIFIED | CVAR_LATCH))

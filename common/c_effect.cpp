@@ -80,7 +80,7 @@ static const struct ColorList {
 
 void P_InitEffects()
 {
-	const struct ColorList* color = Colors;
+	const ColorList* color = Colors;
 	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
 
 	while (color->color)

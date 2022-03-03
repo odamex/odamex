@@ -396,7 +396,7 @@ WDLPowerups M_GetWDLItemByMobjType(const mobjtype_t type)
 static std::string GenerateTimestamp()
 {
 	time_t ti = time(NULL);
-	struct tm* lt = localtime(&ti);
+	tm* lt = localtime(&ti);
 
 	char buf[128];
 	if (!strftime(&buf[0], ARRAY_LENGTH(buf), "%Y.%m.%d.%H.%M.%S", lt))

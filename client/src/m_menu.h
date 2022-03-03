@@ -39,45 +39,45 @@
 // Even when the menu is not displayed,
 // this can resize the view and change game parameters.
 // Does all the real work of the menu interaction.
-bool M_Responder (event_t *ev);
+bool M_Responder(event_t *ev);
 
 // Called by main loop,
 // only used for menu (skull cursor) animation.
-void M_Ticker (void);
+void M_Ticker();
 
 // Called by main loop,
 // draws the menus directly into the screen buffer.
-void M_Drawer (void);
+void M_Drawer();
 
 // Called by D_DoomMain,
 // loads the config file.
-void M_Init (void);
+void M_Init();
 
 // Called by intro code to force menu up upon a keypress,
 // does nothing if menu is already up.
-void M_StartControlPanel (void);
+void M_StartControlPanel();
 
 // [RH] Setup options menu
-bool M_StartOptionsMenu (void);
+bool M_StartOptionsMenu();
 
 // [RH] Handle keys for options menu
-void M_OptResponder (event_t *ev);
+void M_OptResponder(event_t *ev);
 
 // [RH] Draw options menu
-void M_OptDrawer (void);
+void M_OptDrawer();
 
 // [RH] Initialize options menu
-void M_OptInit (void);
+void M_OptInit();
 
-void M_PlayerSetup (int choice);
+void M_PlayerSetup(int choice);
 
 struct menu_s;
-void M_SwitchMenu (struct menu_s *menu);
+void M_SwitchMenu(menu_s *menu);
 
-void M_PopMenuStack (void);
+void M_PopMenuStack();
 
 // [RH] Called whenever the display mode changes
-void M_RefreshModesList ();
+void M_RefreshModesList();
 
 //
 // MENU TYPEDEFS
@@ -106,7 +106,7 @@ typedef enum {
 } itemtype;
 
 typedef void (*cvarfunc)(cvar_t *cvar, float newval);
-typedef void (*voidfunc)(void);
+typedef void (*voidfunc)();
 typedef void (*intfunc)(int);
 
 typedef struct menuitem_s {
@@ -178,7 +178,7 @@ typedef struct oldmenu_s
 {
 	short				numitems;		// # of menu items
 	oldmenuitem_t		*menuitems;		// menu items
-	void				(*routine)(void);	// draw routine
+	void				(*routine)();	// draw routine
 	short				x;
 	short				y;				// x,y of menu
 	short				lastOn; 		// last item user was on in menu

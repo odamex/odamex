@@ -16,18 +16,18 @@ typedef enum {
 
 struct sector_s;
 
-void S_ParseSndSeq (void);
+void S_ParseSndSeq ();
 void SN_StartSequence (AActor *mobj, int sequence, seqtype_t type);
 void SN_StartSequence (AActor *mobj, const char *name);
-void SN_StartSequence (struct sector_s *sector, int sequence, seqtype_t type);
-void SN_StartSequence (struct sector_s *sector, const char *name);
+void SN_StartSequence (sector_s *sector, int sequence, seqtype_t type);
+void SN_StartSequence (sector_s *sector, const char *name);
 void SN_StartSequence (fixed_t spot[3], int sequence, seqtype_t type);
 void SN_StartSequence (fixed_t spot[3], const char *name);
 void SN_StopSequence (AActor *mobj);
 void SN_StopSequence (sector_t *sector);
 void SN_StopSequence (fixed_t spot[3]);
-void SN_UpdateActiveSequences (void);
-void SN_StopAllSequences (void);
+void SN_UpdateActiveSequences ();
+void SN_StopAllSequences ();
 ptrdiff_t SN_GetSequenceOffset (int sequence, unsigned int *sequencePtr);
 void SN_ChangeNodeData (int nodeNum, int seqOffset, int delayTics,
 	float volume, int currentSoundID);
@@ -79,14 +79,14 @@ typedef struct
 
 void SN_StartSequence (AActor *mobj, int sequence, seqtype_t type);
 void SN_StartSequence (AActor *mobj, const char *name);
-void SN_StartSequence (struct sector_s *sector, int sequence, seqtype_t type);
-void SN_StartSequence (struct sector_s *sector, const char *name);
+void SN_StartSequence (sector_s *sector, int sequence, seqtype_t type);
+void SN_StartSequence (sector_s *sector, const char *name);
 void SN_StartSequence (polyobj_t *poly, int sequence, seqtype_t type);
 void SN_StartSequence (polyobj_t *poly, const char *name);
 void SN_StopSequence (AActor *mobj);
 void SN_StopSequence (sector_t *sector);
 void SN_StopSequence (polyobj_t *poly);
-void SN_UpdateActiveSequences (void);
+void SN_UpdateActiveSequences ();
 ptrdiff_t SN_GetSequenceOffset (int sequence, unsigned int *sequencePtr);
 void SN_DoStop (void *);
 void SN_ChangeNodeData (int nodeNum, int seqOffset, int delayTics,

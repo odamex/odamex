@@ -201,12 +201,11 @@ int P_ArgToCrush(byte arg)
  */
 int P_IsUnderDamage(AActor* actor)
 {
-	const struct msecnode_s* seclist;
-	const DCeiling* cr; // Crushing ceiling
 	int dir = 0;
-	for (seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
+	for (const msecnode_s* seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
 	{
-		if ((cr = (DCeiling*)seclist->m_sector->ceilingdata) && cr->m_Status == 2) // Down
+		const DCeiling* cr = static_cast<DCeiling*>(seclist->m_sector->ceilingdata);
+		if (cr && cr->m_Status == 2) // Down
 		{
 			cr->m_Crush > NO_CRUSH ? dir = 1 : dir = 0;
 		}

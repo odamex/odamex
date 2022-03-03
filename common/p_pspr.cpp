@@ -93,7 +93,7 @@ fixed_t P_BulletSlope(AActor* mo);
 //
 static weaponstate_t P_GetWeaponState(player_t* player)
 {
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	const pspdef_s* psp = &player->psprites[player->psprnum];
 
 	if (psp->state == NULL)
 		return unknownstate;
@@ -118,7 +118,7 @@ static weaponstate_t P_GetWeaponState(player_t* player)
 //
 fixed_t P_CalculateWeaponBobX(player_t* player, float scale_amount)
 {
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	const pspdef_s* psp = &player->psprites[player->psprnum];
 
 	weaponstate_t weaponstate = P_GetWeaponState(player);
 
@@ -145,7 +145,7 @@ fixed_t P_CalculateWeaponBobX(player_t* player, float scale_amount)
 //
 fixed_t P_CalculateWeaponBobY(player_t* player, float scale_amount)
 {
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	const pspdef_s* psp = &player->psprites[player->psprnum];
 
 	weaponstate_t weaponstate = P_GetWeaponState(player);
 
@@ -495,7 +495,7 @@ void P_DropWeapon(player_t* player)
 void A_WeaponReady(AActor* mo)
 {
     player_t* player = mo->player;
-    struct pspdef_s* psp = &player->psprites[player->psprnum];
+	pspdef_s* psp = &player->psprites[player->psprnum];
 
 	// get out of attack state
 	if (player->mo->state == &states[S_PLAY_ATK1] || player->mo->state == &states[S_PLAY_ATK2])
@@ -572,7 +572,7 @@ void A_CheckReload(AActor* mo)
 void A_Lower(AActor* mo)
 {
     player_t* player = mo->player;
-    struct pspdef_s* psp = &player->psprites[player->psprnum];
+	pspdef_s* psp = &player->psprites[player->psprnum];
 
 	psp->sy += LOWERSPEED;
 
@@ -609,7 +609,7 @@ void A_Lower(AActor* mo)
 void A_Raise(AActor* mo)
 {
     player_t *player = mo->player;
-    struct pspdef_s *psp = &player->psprites[player->psprnum];
+    pspdef_s *psp = &player->psprites[player->psprnum];
 
 	psp->sy -= RAISESPEED;
 
@@ -862,7 +862,7 @@ void A_FireOldBFG(AActor* mo)
 void A_WeaponJump(AActor* mo)
 {
 	player_t* player = mo->player;
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	pspdef_s* psp = &player->psprites[player->psprnum];
 
 	if (!psp->state)
 		return;
@@ -882,12 +882,11 @@ void A_WeaponJump(AActor* mo)
 void A_CheckAmmo(AActor* mo)
 {
 	int amount;
-	ammotype_t type;
 
 	player_t* player = mo->player;
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	pspdef_s* psp = &player->psprites[player->psprnum];
 
-	type = weaponinfo[player->readyweapon].ammotype;
+	const ammotype_t type = weaponinfo[player->readyweapon].ammotype;
 	if (!psp->state || type == am_noammo)
 		return;
 
@@ -909,13 +908,12 @@ void A_CheckAmmo(AActor* mo)
 void A_ConsumeAmmo(AActor* mo)
 {
 	int amount;
-	ammotype_t type;
 
 	player_t* player = mo->player;
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	const pspdef_s* psp = &player->psprites[player->psprnum];
 
 	// don't do dumb things, kids
-	type = weaponinfo[player->readyweapon].ammotype;
+	const ammotype_t type = weaponinfo[player->readyweapon].ammotype;
 	if (!psp->state || type == am_noammo)
 		return;
 
@@ -942,7 +940,7 @@ void A_ConsumeAmmo(AActor* mo)
 void A_RefireTo(AActor* mo)
 {
 	player_t* player = mo->player;
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	pspdef_s* psp = &player->psprites[player->psprnum];
 
 	if (!psp->state)
 		return;
@@ -952,7 +950,7 @@ void A_RefireTo(AActor* mo)
 	    (player->pendingweapon == wp_nochange && player->health))
 	{
 		player->refire++;
-		P_SetPspritePtr(player, psp, (statenum_t)psp->state->args[0]);
+		P_SetPspritePtr(player, psp, static_cast<statenum_t>(psp->state->args[0]));
 	}
 	else
 	{
@@ -969,7 +967,7 @@ void A_RefireTo(AActor* mo)
 void A_GunFlashTo(AActor* mo)
 {
 	player_t* player = mo->player;
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	pspdef_s* psp = &player->psprites[player->psprnum];
 
 	if (!psp->state)
 		return;
@@ -991,21 +989,17 @@ void A_GunFlashTo(AActor* mo)
 //
 void A_WeaponProjectile(AActor* mo)
 {
-	fixed_t type, angle, pitch, spawnofs_xy, spawnofs_z;
-	AActor* proj;
-	int an;
-
 	player_t* player = mo->player;
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	const pspdef_s* psp = &player->psprites[player->psprnum];
 
 	if (!psp->state || !psp->state->args[0])
 		return;
 
-	type = psp->state->args[0] - 1;
-	angle = psp->state->args[1];
-	pitch = psp->state->args[2];
-	spawnofs_xy = psp->state->args[3];
-	spawnofs_z = psp->state->args[4];
+	fixed_t type = psp->state->args[0] - 1;
+	const fixed_t angle = psp->state->args[1];
+	const fixed_t pitch = psp->state->args[2];
+	const fixed_t spawnofs_xy = psp->state->args[3];
+	const fixed_t spawnofs_z = psp->state->args[4];
 
 	if (serverside)
 		P_SpawnMBF21PlayerMissile(player->mo, (mobjtype_t)type, angle, pitch, spawnofs_xy, spawnofs_z);
@@ -1022,36 +1016,33 @@ void A_WeaponProjectile(AActor* mo)
 //
 void A_WeaponBulletAttack(AActor* mo)
 {
-	int hspread, vspread, numbullets, damagebase, damagemod;
-	int i, damage, angle, slope;
-
 	player_t* player = mo->player;
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	const pspdef_s* psp = &player->psprites[player->psprnum];
 
 	if (!psp->state)
 		return;
 
-	hspread = psp->state->args[0];
-	vspread = psp->state->args[1];
-	numbullets = psp->state->args[2];
-	damagebase = psp->state->args[3];
-	damagemod = psp->state->args[4];
+	const int hspread = psp->state->args[0];
+	const int vspread = psp->state->args[1];
+	const int numbullets = psp->state->args[2];
+	const int damagebase = psp->state->args[3];
+	const int damagemod = psp->state->args[4];
 
-	bool refire = player->refire ? true : false;
+	const bool refire = player->refire ? true : false;
 
-	angle = 0;
+	int angle = 0;
 
 	if (refire)
 		angle = P_RandomDiff(player->mo) << 18;
 
 	fixed_t bulletslope = P_BulletSlope(player->mo);
 
-	for (i = 0; i < numbullets; i++)
+	for (int i = 0; i < numbullets; i++)
 	{
 		int bangle = angle;
-		damage = (P_Random() % damagemod + 1) * damagebase;
-		bangle = angle + (int)player->mo->angle + P_RandomHitscanAngle(hspread);
-		slope = bulletslope + P_RandomHitscanSlope(vspread);
+		const int damage = (P_Random() % damagemod + 1) * damagebase;
+		bangle = angle + static_cast<int>(player->mo->angle) + P_RandomHitscanAngle(hspread);
+		const int slope = bulletslope + P_RandomHitscanSlope(vspread);
 
 		P_LineAttack(player->mo, bangle, MISSILERANGE, slope, damage);
 	}
@@ -1068,21 +1059,17 @@ void A_WeaponBulletAttack(AActor* mo)
 //
 void A_WeaponMeleeAttack(AActor* mo)
 {
-	int damagebase, damagemod, zerkfactor, hitsound, range;
-	angle_t angle;
-	int t, slope, damage;
-
 	player_t* player = mo->player;
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	const pspdef_s* psp = &player->psprites[player->psprnum];
 
 	if (!psp->state)
 		return;
 
-	damagebase = psp->state->args[0];
-	damagemod = psp->state->args[1];
-	zerkfactor = psp->state->args[2];
-	hitsound = psp->state->args[3];
-	range = psp->state->args[4];
+	const int damagebase = psp->state->args[0];
+	const int damagemod = psp->state->args[1];
+	const int zerkfactor = psp->state->args[2];
+	int hitsound = psp->state->args[3];
+	int range = psp->state->args[4];
 
 	if (hitsound >= ARRAY_LENGTH(SoundMap))
 	{
@@ -1093,18 +1080,18 @@ void A_WeaponMeleeAttack(AActor* mo)
 	if (range <= 0)
 		range = player->mo->info->meleerange;
 
-	damage = (P_Random() % damagemod + 1) * damagebase;
+	int damage = (P_Random() % damagemod + 1) * damagebase;
 	if (player->powers[pw_strength])
 		damage = (damage * zerkfactor) >> FRACBITS;
 
 	// slight randomization; weird vanillaism here. :P
-	angle = player->mo->angle;
+	angle_t angle = player->mo->angle;
 
-	t = P_Random();
+	const int t = P_Random();
 	angle += (t - P_Random()) << 18;
 
 	// make autoaim prefer enemies
-	slope = P_AimLineAttack(player->mo, angle, range);
+	int slope = P_AimLineAttack(player->mo, angle, range);
 	if (!linetarget)
 		slope = P_AimLineAttack(player->mo, angle, range);
 
@@ -1133,7 +1120,7 @@ void A_WeaponMeleeAttack(AActor* mo)
 void A_WeaponSound(AActor *mo)
 {
 	player_t* player = mo->player;
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	pspdef_s* psp = &player->psprites[player->psprnum];
 
 	if (!psp->state)
 		return;
@@ -1419,7 +1406,7 @@ void A_FireShotgun2(AActor* mo)
 void A_FireCGun(AActor* mo)
 {
     player_t *player = mo->player;
-    struct pspdef_s *psp = &player->psprites[player->psprnum];
+    const pspdef_s *psp = &player->psprites[player->psprnum];
 
 	A_FireSound (player, "weapons/chngun");
 
@@ -1433,11 +1420,11 @@ void A_FireCGun(AActor* mo)
 
 	P_SetPsprite (player,
 				  ps_flash,
-				  (statenum_t)(weaponinfo[player->readyweapon].flashstate
+				  static_cast<statenum_t>(weaponinfo[player->readyweapon].flashstate
 				  + psp->state
-				  - &states[S_CHAIN1]) );
+				  - &states[S_CHAIN1]));
 
-	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
+    const spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
 	P_FireHitscan(player, 1, accuracy);
 
 	M_LogWDLEvent(WDL_EVENT_SSACCURACY, player, NULL, player->mo->angle / 4, MOD_CHAINGUN,

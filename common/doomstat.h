@@ -212,4 +212,4 @@ struct DehInfo
 	int BFGCells;
 	int Infight;
 };
-extern struct DehInfo deh;
+extern DehInfo deh;

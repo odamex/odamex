@@ -444,7 +444,7 @@ private:
 //		of polyobject-related things.
 typedef struct polyspawns_s
 {
-	struct polyspawns_s *next;
+	polyspawns_s *next;
 	fixed_t x;
 	fixed_t y;
 	short angle;

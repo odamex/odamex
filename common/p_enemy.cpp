@@ -2737,12 +2737,12 @@ AActor **braintargets;
 int    numbraintargets_alloc;
 int    numbraintargets;
 
-struct brain_s brain;   // killough 3/26/98: global state of boss brain
+brain_s brain;   // killough 3/26/98: global state of boss brain
 
 // killough 3/26/98: initialize icon landings at level startup,
 // rather than at boss wakeup, to prevent savegame-related crashes
 
-void P_SpawnBrainTargets (void)	// killough 3/26/98: renamed old function
+void P_SpawnBrainTargets()	// killough 3/26/98: renamed old function
 {
 	AActor *other;
 	TThinkerIterator<AActor> iterator;

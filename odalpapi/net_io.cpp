@@ -61,7 +61,7 @@ BufferedSocket::BufferedSocket() :  m_BadRead(false), m_BadWrite(false),
 	m_Socket(0), m_SendPing(0), m_ReceivePing(0)
 {
 	m_Broadcast = false;
-	memset(&m_RemoteAddress, 0, sizeof(struct sockaddr_in));
+	memset(&m_RemoteAddress, 0, sizeof(sockaddr_in));
 
 	m_SocketBuffer = new byte[MAX_PAYLOAD];
 
@@ -182,7 +182,7 @@ void BufferedSocket::SetRemoteAddress(const string& Address, const uint16_t& Por
 	addrinfo  hints;
 	addrinfo* result = NULL;
 
-	memset(&hints, 0, sizeof(struct addrinfo));
+	memset(&hints, 0, sizeof(addrinfo));
 	hints.ai_flags = AI_ALL;
 	hints.ai_family = PF_INET;
 
@@ -247,7 +247,7 @@ int32_t BufferedSocket::SendData(const int32_t& Timeout)
 		return 0;
 
 	BytesSent = sendto(m_Socket, (const char*)m_SocketBuffer, m_BufferSize, 0,
-	                   (struct sockaddr*)&m_RemoteAddress, sizeof(m_RemoteAddress));
+	                   (sockaddr*)&m_RemoteAddress, sizeof(m_RemoteAddress));
 
 	// set the start ping
 	m_SendPing = GetMillisNow();
@@ -263,12 +263,11 @@ int32_t BufferedSocket::SendData(const int32_t& Timeout)
 
 int32_t BufferedSocket::GetData(const int32_t& Timeout)
 {
-	int32_t BytesReceived;
-	int32_t          res;
-	fd_set           readfds;
-	struct timeval   tv;
-	bool             DestroyMe = false;
-	socklen_t        fromlen;
+	int32_t   res;
+	fd_set    readfds;
+	timeval   tv;
+	bool      DestroyMe = false;
+	socklen_t fromlen;
 
 	// Wait for read with timeout
 	if(Timeout > 0)
@@ -296,8 +295,8 @@ int32_t BufferedSocket::GetData(const int32_t& Timeout)
 
 	fromlen = sizeof(m_RemoteAddress);
 
-	BytesReceived = recvfrom(m_Socket, (char*)m_SocketBuffer, MAX_PAYLOAD, 0,
-	                         (struct sockaddr*)&m_RemoteAddress, &fromlen);
+	const int32_t BytesReceived = recvfrom(m_Socket, (char*)m_SocketBuffer, MAX_PAYLOAD, 0,
+	                                       (sockaddr*)&m_RemoteAddress, &fromlen);
 
 	// -1 = Error; 0 = Closed Connection
 	if(BytesReceived <= 0)

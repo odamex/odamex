@@ -735,10 +735,10 @@ void M_DoSave (int slot)
 // [ML] 7 Sept 08: Bringing game saving/loading in from
 //                 zdoom 1.22 source, see MAINTAINERS
 //
-void M_SaveSelect (int choice)
+void M_SaveSelect(int choice)
 {
-	time_t     ti = time(NULL);
-	struct tm *lt = localtime(&ti);
+	const time_t ti = time(NULL);
+	const tm *lt = localtime(&ti);
 
 	// we are going to be intercepting all chars
 	genStringEnter = 1;

@@ -40,7 +40,7 @@ struct particle_s {
 	WORD	next;
 	WORD	nextinsubsector;
 };
-typedef struct particle_s particle_t;
+typedef particle_s particle_t;
 
 extern int	NumParticles;
 extern int	ActiveParticles;

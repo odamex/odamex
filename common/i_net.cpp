@@ -123,16 +123,16 @@ EXTERN_CVAR(sv_upnp_description)
 EXTERN_CVAR(sv_upnp_internalip)
 EXTERN_CVAR(sv_upnp_externalip)
 
-static struct UPNPUrls urls;
-static struct IGDdatas data;
+static UPNPUrls urls;
+static IGDdatas data;
 
 static bool is_upnp_ok = false;
 
-void init_upnp (void)
+void init_upnp ()
 {
-	struct UPNPDev * devlist;
-	struct UPNPDev * dev;
-	char * descXML;
+	UPNPDev* devlist;
+	UPNPDev* dev;
+	char* descXML;
 	int descXMLsize = 0;
 	int res = 0;
 
@@ -142,8 +142,8 @@ void init_upnp (void)
 	if (!sv_upnp)
 		return;
 
-	memset(&urls, 0, sizeof(struct UPNPUrls));
-	memset(&data, 0, sizeof(struct IGDdatas));
+	memset(&urls, 0, sizeof(UPNPUrls));
+	memset(&data, 0, sizeof(IGDdatas));
 
 	Printf(PRINT_HIGH, "UPnP: Discovering router (max 1 unit supported)\n");
 
@@ -305,7 +305,7 @@ SOCKET UDPsocket (void)
 void BindToLocalPort (SOCKET s, u_short wanted)
 {
 	int v;
-	struct sockaddr_in address;
+	sockaddr_in address;
 
 	memset (&address, 0, sizeof(address));
 	address.sin_family = AF_INET;
@@ -369,36 +369,36 @@ void CloseNetwork (void)
 
 // this is from Quake source code :)
 
-void SockadrToNetadr (struct sockaddr_in *s, netadr_t *a)
+void SockadrToNetadr(sockaddr_in *s, netadr_t *a)
 {
-	 memcpy(&(a->ip), &(s->sin_addr), sizeof(struct in_addr));
+	 memcpy(&(a->ip), &(s->sin_addr), sizeof(in_addr));
      a->port = s->sin_port;
 }
 
-void NetadrToSockadr (netadr_t *a, struct sockaddr_in *s)
+void NetadrToSockadr(netadr_t *a, sockaddr_in *s)
 {
      memset (s, 0, sizeof(*s));
      s->sin_family = AF_INET;
 
-	 memcpy(&(s->sin_addr), &(a->ip), sizeof(struct in_addr));
+	 memcpy(&(s->sin_addr), &(a->ip), sizeof(in_addr));
      s->sin_port = a->port;
 }
 
-char *NET_AdrToString (netadr_t a)
+char *NET_AdrToString(netadr_t a)
 {
-     static  char    s[64];
+     static char s[64];
 
-     sprintf (s, "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3], ntohs(a.port));
+     sprintf(s, "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3], ntohs(a.port));
 
      return s;
 }
 
-bool NET_StringToAdr (const char *s, netadr_t *a)
+bool NET_StringToAdr(const char *s, netadr_t *a)
 {
-	 struct hostent  *h;
-	 struct sockaddr_in sadr;
-	 char	*colon;
-	 char	copy[256];
+	hostent  *h;
+	sockaddr_in sadr;
+	char	*colon;
+	char	copy[256];
 
 
 	 memset (&sadr, 0, sizeof(sadr));
@@ -439,15 +439,15 @@ bool NET_CompareAdr (netadr_t a, netadr_t b)
 typedef int socklen_t;
 #endif
 
-int NET_GetPacket (void)
+int NET_GetPacket()
 {
-	int				  ret;
-	struct sockaddr_in   from;
-	socklen_t			fromlen;
+	int			ret;
+	sockaddr_in from;
+	socklen_t	fromlen;
 
 	fromlen = sizeof(from);
 	net_message.clear();
-	ret = recvfrom (inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
+	ret = recvfrom (inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (sockaddr *)&from, &fromlen);
 
 	if (ret == -1)
 	{
@@ -487,8 +487,8 @@ int NET_GetPacket (void)
 
 int NET_SendPacket (buf_t &buf, netadr_t &to)
 {
-	int				   ret;
-	struct sockaddr_in	addr;
+	int		    ret;
+	sockaddr_in addr;
 
 	// [SL] 2011-07-06 - Don't try to send a packet if we're not really connected
 	// (eg, a netdemo is being played back)
@@ -501,9 +501,9 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
 	NetadrToSockadr (&to, &addr);
 
 #ifdef GEKKO
-	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, 8);	// 8 is important for online
+	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (sockaddr *)&addr, 8);	// 8 is important for online
 #else
-	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (sockaddr *)&addr, sizeof(addr));
 #endif
 
 	buf.clear();
@@ -533,16 +533,15 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
 #define HOST_NAME_MAX 256
 #endif
 
-std::string NET_GetLocalAddress (void)
+std::string NET_GetLocalAddress()
 {
 	static char buff[HOST_NAME_MAX];
-    hostent *ent;
-    struct in_addr addr;
+	in_addr addr;
 
 	gethostname(buff, HOST_NAME_MAX);
 	buff[HOST_NAME_MAX - 1] = 0;
 
-    ent = gethostbyname(buff);
+    hostent* ent = gethostbyname(buff);
 
     // Return the first, IPv4 address
     if (ent && ent->h_addrtype == AF_INET && ent->h_addr_list[0] != NULL)
@@ -589,7 +588,7 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 // [SL] 2011-07-17 - Moved back to i_net.cpp so that it can be used by
 // both client & server code.  Client has a stub function for SV_SendPackets.
 //
-void SV_SendPackets(void);
+void SV_SendPackets();
 
 //
 // MSG_WriteMarker
@@ -597,14 +596,14 @@ void SV_SendPackets(void);
 // denis - use this function to mark the start of your client message
 // as it allows for better debugging and optimization of network code
 //
-void MSG_WriteMarker (buf_t *b, clc_t c)
+void MSG_WriteMarker(buf_t *b, clc_t c)
 {
 	if (simulated_connection)
 		return;
 	b->WriteByte((byte)c);
 }
 
-void MSG_WriteByte (buf_t *b, byte c)
+void MSG_WriteByte(buf_t *b, byte c)
 {
 	if (simulated_connection)
 		return;
@@ -612,7 +611,7 @@ void MSG_WriteByte (buf_t *b, byte c)
 }
 
 
-void MSG_WriteChunk (buf_t *b, const void *p, unsigned l)
+void MSG_WriteChunk(buf_t *b, const void *p, unsigned l)
 {
 	if (simulated_connection)
 		return;
@@ -1219,13 +1218,13 @@ void InitNetCommon(void)
 //
 bool NetWaitOrTimeout(size_t ms)
 {
-	struct timeval timeout = {0, int(1000*ms) + 1};
+	timeval timeout = {0, static_cast<int>(1000 * ms) + 1};
 	fd_set fds;
 
 	FD_ZERO(&fds);
 	FD_SET(inet_socket, &fds);
 
-	int ret = select(inet_socket + 1, &fds, NULL, NULL, &timeout);
+	const int ret = select(inet_socket + 1, &fds, NULL, NULL, &timeout);
 
 	if(ret == 1)
 		return true;

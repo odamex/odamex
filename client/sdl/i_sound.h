@@ -36,7 +36,7 @@
 void I_InitSound();
 
 // ... shut down and relase at program termination.
-void STACK_ARGS I_ShutdownSound (void);
+void STACK_ARGS I_ShutdownSound();
 
 void I_SetSfxVolume (float volume);
 
@@ -45,19 +45,13 @@ void I_SetSfxVolume (float volume);
 //
 
 // Initialize channels
-void I_SetChannels (int);
+void I_SetChannels(int);
 
 // load a sound from disk
-void I_LoadSound (struct sfxinfo_struct *sfx);
+void I_LoadSound(sfxinfo_struct *sfx);
 
 // Starts a sound in a particular sound channel.
-int
-I_StartSound
-(int			id,
- float			vol,
- int			sep,
- int			pitch,
- bool			loop);
+int I_StartSound(int id, float vol, int sep, int pitch, bool loop);
 
 // Stops a sound channel.
 void I_StopSound(int handle);

@@ -49,9 +49,9 @@ struct dyncolormap_s {
 	shaderef_t		maps;
 	argb_t			color;
 	argb_t			fade;
-	struct dyncolormap_s *next;
+	dyncolormap_s *next;
 };
-typedef struct dyncolormap_s dyncolormap_t;
+typedef dyncolormap_s dyncolormap_t;
 
 extern fargb_t baseblend;
 
