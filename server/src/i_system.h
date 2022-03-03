@@ -47,16 +47,16 @@ enum
 extern DWORD LanguageIDs[4];
 extern void SetLanguageIDs ();
 
-void I_BeginRead (void);
-void I_EndRead (void);
+void I_BeginRead();
+void I_EndRead();
 
 // Called by DoomMain.
-void I_Init (void);
+void I_Init();
 
 // Called by startup code
 // to get the ammount of memory to malloc
 // for the zone management.
-void *I_ZoneBase (size_t *size);
+void *I_ZoneBase(size_t *size);
 
 
 dtime_t I_GetTime();
@@ -72,36 +72,36 @@ void I_Sleep(dtime_t sleep_time);
 // or calls a loadable driver to build it.
 // This ticcmd will then be modified by the gameloop
 // for normal input.
-ticcmd_t *I_BaseTiccmd (void);
+ticcmd_t *I_BaseTiccmd();
 
 
 // Called by M_Responder when quit is selected.
 // Clean exit, displays sell blurb.
-void STACK_ARGS I_Quit (void);
+void STACK_ARGS I_Quit();
 
 void STACK_ARGS I_Error (const char *error, ...);
 NORETURN void STACK_ARGS I_FatalError(const char *error, ...);
 
-void addterm (void (STACK_ARGS *func)(void), const char *name);
+void addterm(void (STACK_ARGS *func)(), const char *name);
 #define atterm(t) addterm (t, #t)
 
 // Print a console string
-void I_PrintStr (int x, const char *str, int count, BOOL scroll);
+void I_PrintStr(int x, const char *str, int count, bool scroll);
 
 // Set the title string of the startup window
-void I_SetTitleString (const char *title);
+void I_SetTitleString(const char *title);
 
-std::string I_ConsoleInput (void);
+std::string I_ConsoleInput();
 
 // [RH] Returns millisecond-accurate time
-dtime_t I_MSTime (void);
+dtime_t I_MSTime();
 
-void I_Yield(void);
+void I_Yield();
 
 // [RH] Title string to display at bottom of console during startup
 extern char DoomStartupTitle[256];
 
-void I_FinishClockCalibration ();
+void I_FinishClockCalibration();
 
 // Directory searching routines
 
@@ -112,10 +112,10 @@ typedef struct
     int current;
 } findstate_t;
 
-long I_FindFirst (char *filespec, findstate_t *fileinfo);
-int I_FindNext (long handle, findstate_t *fileinfo);
-int I_FindClose (long handle);
-int I_FindAttr (findstate_t *fileinfo);
+long I_FindFirst(char *filespec, findstate_t *fileinfo);
+int I_FindNext(long handle, findstate_t *fileinfo);
+int I_FindClose(long handle);
+int I_FindAttr(findstate_t *fileinfo);
 
 #define I_FindName(a)	((a)->namelist[(a)->current]->d_name)
 

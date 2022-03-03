@@ -915,9 +915,9 @@ BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 				 fixed_t speed, fixed_t height, bool crush, int change)
 {
 	int 				secnum;
-	BOOL 				rtn = false;
+	bool 				rtn = false;
 	sector_t*			sec;
-	BOOL				manual = false;
+	bool manual = false;
 
 	// check if a manual trigger; if so do just the sector on the backside
 	if (co_boomphys && tag == 0)
@@ -969,24 +969,21 @@ manual_floor:
 BOOL EV_DoGenFloor(line_t* line)
 {
 	int secnum;
-	BOOL rtn;
-	bool manual;
 	sector_t* sec;
-	DFloor* floor;
-	unsigned value = (unsigned)line->special - GenFloorBase;
+	unsigned value = static_cast<unsigned>(line->special) - GenFloorBase;
 
 	// parse the bit fields in the line's special type
 
-	int Crsh = (value & FloorCrush) >> FloorCrushShift;
-	int ChgT = (value & FloorChange) >> FloorChangeShift;
-	int Targ = (value & FloorTarget) >> FloorTargetShift;
-	int Dirn = (value & FloorDirection) >> FloorDirectionShift;
-	int ChgM = (value & FloorModel) >> FloorModelShift;
-	int Sped = (value & FloorSpeed) >> FloorSpeedShift;
-	int Trig = (value & TriggerType) >> TriggerTypeShift;
+	const int Crsh = (value & FloorCrush) >> FloorCrushShift;
+	const int ChgT = (value & FloorChange) >> FloorChangeShift;
+	const int Targ = (value & FloorTarget) >> FloorTargetShift;
+	const int Dirn = (value & FloorDirection) >> FloorDirectionShift;
+	const int ChgM = (value & FloorModel) >> FloorModelShift;
+	const int Sped = (value & FloorSpeed) >> FloorSpeedShift;
+	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-	rtn = false;
-	manual = false;
+	bool rtn = false;
+	bool manual = false;
 
 	// check if a manual trigger; if so do just the sector on the backside
 	if (Trig == PushOnce || Trig == PushMany)
@@ -1027,7 +1024,7 @@ BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t sp
                 fixed_t height, int crush, int change, bool hexencrush, bool hereticlower)
 {
 	int secnum;
-	BOOL rtn = false;
+	bool rtn = false;
 	sector_t* sec;
 	bool manual = false;
 
@@ -1083,17 +1080,14 @@ BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t sp
 //
 BOOL EV_DoChange (line_t *line, EChange changetype, int tag)
 {
-	int			secnum;
-	BOOL		rtn;
-	sector_t	*sec;
 	sector_t	*secm;
 
-	secnum = -1;
-	rtn = false;
+	int secnum = -1;
+	bool rtn = false;
 	// change all sectors with the same tag as the linedef
 	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
+		sector_t* sec = &sectors[secnum];
 
 		rtn = true;
 
@@ -1128,10 +1122,7 @@ BOOL EV_DoGenStairs(line_t* line)
 {
 	int secnum;
 	int osecnum; // jff 3/4/98 save old loop index
-	int height;
-	int i;
 	int newsecnum = 0;
-	int texture;
 	int ok;
 	bool rtn = false;
 
@@ -1142,17 +1133,16 @@ BOOL EV_DoGenStairs(line_t* line)
 	bool manual = false;
 
 	fixed_t stairsize;
-	fixed_t speed;
 
-	unsigned value = (unsigned)line->special - GenStairsBase;
+	unsigned value = static_cast<unsigned>(line->special) - GenStairsBase;
 
 	  // parse the bit fields in the line's special type
 
-	int Igno = (value & StairIgnore) >> StairIgnoreShift;
-	int Dirn = (value & StairDirection) >> StairDirectionShift;
-	int Step = (value & StairStep) >> StairStepShift;
-	int Sped = (value & StairSpeed) >> StairSpeedShift;
-	int Trig = (value & TriggerType) >> TriggerTypeShift;
+	const int Igno = (value & StairIgnore) >> StairIgnoreShift;
+	const int Dirn = (value & StairDirection) >> StairDirectionShift;
+	const int Step = (value & StairStep) >> StairStepShift;
+	const int Sped = (value & StairSpeed) >> StairSpeedShift;
+	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
 	// check if a manual trigger, if so do just the sector on the backside
 	if (line->id == 0)
@@ -1188,7 +1178,7 @@ BOOL EV_DoGenStairs(line_t* line)
 				return rtn;
 		}
 
-		fixed_t floorheight = P_FloorHeight(sec);
+		const fixed_t floorheight = P_FloorHeight(sec);
 
 		// new floor thinker
 		rtn = true;
@@ -1235,10 +1225,10 @@ BOOL EV_DoGenStairs(line_t* line)
 			break;
 		}
 
-		speed = floor->m_Speed;
-		height = sec->floorheight + floor->m_Direction * stairsize;
+		fixed_t speed = floor->m_Speed;
+		int height = sec->floorheight + floor->m_Direction * stairsize;
 		floor->m_FloorDestHeight = height;
-		texture = sec->floorpic;
+		int texture = sec->floorpic;
 		floor->m_Crush = NO_CRUSH;
 		floor->m_Type = DFloor::genBuildStair; // jff 3/31/98 do not leave uninited
 
@@ -1255,7 +1245,7 @@ BOOL EV_DoGenStairs(line_t* line)
 		do
 		{
 			ok = 0;
-			for (i = 0; i < sec->linecount; i++)
+			for (int i = 0; i < sec->linecount; i++)
 			{
 				if (!((sec->lines[i])->backsector))
 					continue;
@@ -1343,26 +1333,21 @@ BOOL EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
 					 int usespecials)
 {
 	int 				secnum;
-	int					osecnum;	//jff 3/4/98 save old loop index
-	int 				height;
-	int 				i;
 	int 				newsecnum = 0;
-	int 				texture;
 	int 				ok;
-	int					persteptime;
-	BOOL 				rtn = false;
+	bool 				rtn = false;
 
 	sector_t*			sec = NULL;
 	sector_t*			tsec = NULL;
 	sector_t*			prev = NULL;
 
 	DFloor*				floor = NULL;
-	BOOL				manual = false;
+	bool				manual = false;
 
 	if (speed == 0)
 		return false;
 
-	persteptime = FixedDiv (stairsize, speed) >> FRACBITS;
+	const int persteptime = FixedDiv(stairsize, speed) >> FRACBITS;
 
 	// check if a manual trigger, if so do just the sector on the backside
 	if (tag == 0)
@@ -1391,7 +1376,7 @@ manual_stair:
 				return rtn;
 		}
 
-		fixed_t floorheight = P_FloorHeight(sec);
+		const fixed_t floorheight = P_FloorHeight(sec);
 
 		// new floor thinker
 		rtn = true;
@@ -1410,11 +1395,11 @@ manual_stair:
 		floor->m_Crush = (!usespecials && speed == 4*FRACUNIT) ? DOOM_CRUSH : NO_CRUSH; //jff 2/27/98 fix uninitialized crush field
 
 		floor->m_Speed = speed;
-		height = floorheight + stairsize * floor->m_Direction;
+		int height = floorheight + stairsize * floor->m_Direction;
 		floor->m_FloorDestHeight = height;
 
-		texture = sec->floorpic;
-		osecnum = secnum;				//jff 3/4/98 preserve loop index
+		const int texture = sec->floorpic;
+		const int osecnum = secnum;				//jff 3/4/98 preserve loop index
 
 		// Find next sector to raise
 		// 1.	Find 2-sided line with same sector side[0] (lowest numbered)
@@ -1448,7 +1433,7 @@ manual_stair:
 			}
 			else
 			{
-				for (i = 0; i < sec->linecount; i++)
+				for (int i = 0; i < sec->linecount; i++)
 				{
 					if ( !((sec->lines[i])->flags & ML_TWOSIDED) )
 						continue;
@@ -1774,20 +1759,15 @@ BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
                        fixed_t height, int tag)
 {
-	int secnum;
-	BOOL rtn;
-	sector_t* sec;
-	DElevator* elevator;
-
 	if (!line && (type == DElevator::elevateCurrent))
 		return false;
 
-	secnum = -1;
-	rtn = false;
+	int secnum = -1;
+	bool rtn = false;
 	// act on all sectors with the same tag as the triggering linedef
 	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
+		sector_t* sec = &sectors[secnum];
 
 		// If either floor or ceiling is already activated, skip it
 		if (sec->ceilingdata && P_MovingCeilingCompleted(sec))
@@ -1804,12 +1784,12 @@ bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
 		if (sec->floordata || sec->ceilingdata) // jff 2/22/98
 			continue;
 
-		fixed_t floorheight = P_FloorHeight(sec);
-		fixed_t ceilingheight = P_CeilingHeight(sec);
+		const fixed_t floorheight = P_FloorHeight(sec);
+		const fixed_t ceilingheight = P_CeilingHeight(sec);
 
 		// create and initialize new elevator thinker
 		rtn = true;
-		elevator = new DElevator(sec);
+		DElevator* elevator = new DElevator(sec);
 
 		// [SL] 2012-04-19 - Elevators have both moving ceilings and floors.
 		// Consider them as moving ceilings for consistency sake.

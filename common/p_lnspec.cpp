@@ -42,7 +42,7 @@ int TeleportSide;
 extern bool s_SpecialFromServer;
 
 // Set true if this special was activated from inside a script.
-BOOL InScript;
+bool InScript;
 
 // 9/11/10: Add poly action definitions here, even though they're in p_local...
 // Why are these needed here?  Linux won't compile without these definitions??
@@ -949,8 +949,8 @@ FUNC(LS_Stairs_BuildUpDoomCrush)
 FUNC(LS_Generic_Stairs)
 // Generic_Stairs (tag, speed, step, dir/igntxt, reset)
 {
-	DFloor::EStair type = (arg3 & 1) ? DFloor::buildUp : DFloor::buildDown;
-	BOOL res = EV_BuildStairs (arg0, type, ln,
+	const DFloor::EStair type = (arg3 & 1) ? DFloor::buildUp : DFloor::buildDown;
+	const bool res = EV_BuildStairs (arg0, type, ln,
 							   arg2 * FRACUNIT, SPEED(arg1), 0, arg4, arg3 & 2, 0);
 
 	if (res && ln && (ln->flags & ML_REPEATSPECIAL) && ln->special == Generic_Stairs)
@@ -1596,7 +1596,7 @@ FUNC(LS_Teleport)
 // Teleport (tid, tag, nosourcefog)
 {
 	if(!it) return false;
-	BOOL result;
+	bool result;
 
 	if (map_format.getZDoom())
 		// [AM] Use ZDoom-style teleport for Hexen-format maps
@@ -2513,7 +2513,7 @@ FUNC(LS_Line_AlignCeiling)
 // Line_AlignCeiling (lineid, side)
 {
 	int line = P_FindLineFromID (arg0, -1);
-	BOOL ret = 0;
+	bool ret = 0;
 
 	if (line < 0)
 		I_Error ("Sector_AlignCeiling: Lineid %d is undefined", arg0);
@@ -2528,7 +2528,7 @@ FUNC(LS_Line_AlignFloor)
 // Line_AlignFloor (lineid, side)
 {
 	int line = P_FindLineFromID (arg0, -1);
-	BOOL ret = 0;
+	bool ret = 0;
 
 	if (line < 0)
 		I_Error ("Sector_AlignFloor: Lineid %d is undefined", arg0);

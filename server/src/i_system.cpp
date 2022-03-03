@@ -354,7 +354,7 @@ void STACK_ARGS I_Quit (void)
 //
 // I_Error
 //
-BOOL gameisdead;
+bool gameisdead;
 
 #define MAX_ERRORTEXT	1024
 
@@ -362,24 +362,24 @@ void STACK_ARGS call_terms (void);
 
 void STACK_ARGS I_FatalError (const char *error, ...)
 {
-    static BOOL alreadyThrown = false;
+    static bool alreadyThrown = false;
     gameisdead = true;
 
     if (!alreadyThrown)         // ignore all but the first message -- killough
     {
-                alreadyThrown = true;
-                char errortext[MAX_ERRORTEXT];
-                va_list argptr;
-                va_start (argptr, error);
-                #ifdef _WIN32
-                int index = vsprintf (errortext, error, argptr);
-                sprintf (errortext + index, "\nGetLastError = %ld", GetLastError());
-				#else
-                vsprintf (errortext, error, argptr);
-				#endif
-                va_end (argptr);
+        alreadyThrown = true;
+        char errortext[MAX_ERRORTEXT];
+        va_list argptr;
+        va_start (argptr, error);
+        #ifdef _WIN32
+        int index = vsprintf (errortext, error, argptr);
+        sprintf (errortext + index, "\nGetLastError = %ld", GetLastError());
+		#else
+        vsprintf (errortext, error, argptr);
+		#endif
+        va_end (argptr);
 
-                throw CFatalError (errortext);
+        throw CFatalError (errortext);
     }
 
     if (!has_exited)    // If it hasn't exited yet, exit now -- killough
@@ -408,23 +408,21 @@ char DoomStartupTitle[256] = { 0 };
 
 void I_SetTitleString (const char *title)
 {
-    int i;
-
-    for (i = 0; title[i]; i++)
-                DoomStartupTitle[i] = title[i] | 0x80;
+	for (int i = 0; title[i]; i++)
+        DoomStartupTitle[i] = title[i] | 0x80;
 }
 
-void I_PrintStr (int xp, const char *cp, int count, BOOL scroll)
+void I_PrintStr (int xp, const char *cp, int count, bool scroll)
 {
-        char string[4096];
+    char string[4096];
 
-        memcpy (string, cp, count);
-        if (scroll)
-                string[count++] = '\n';
-        string[count] = 0;
+    memcpy (string, cp, count);
+    if (scroll)
+            string[count++] = '\n';
+    string[count] = 0;
 
-        fputs (string, stdout);
-        fflush (stdout);
+    fputs (string, stdout);
+    fflush (stdout);
 }
 
 //static const char *pattern; // [DL] todo - remove

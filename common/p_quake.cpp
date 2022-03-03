@@ -136,7 +136,7 @@ DEarthquake::DEarthquake (AActor *center, int intensity, int duration,
 BOOL P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad)
 {
 	AActor *center = NULL;
-	BOOL res = false;
+	bool res = false;
 
 	if (intensity > 9)
 		intensity = 9;

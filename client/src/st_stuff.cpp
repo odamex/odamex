@@ -733,14 +733,14 @@ int ST_calcPainOffset(void)
 // the precedence of expressions is:
 //	dead > evil grin > turned head > straight ahead
 //
-void ST_updateFaceWidget(void)
+void ST_updateFaceWidget()
 {
 	int 		i;
 	angle_t 	badguyangle;
 	angle_t 	diffang;
 	static int	lastattackdown = -1;
 	static int	priority = 0;
-	BOOL	 	doevilgrin;
+	bool	 	doevilgrin;
 
 	player_t *plyr = &displayplayer();
 

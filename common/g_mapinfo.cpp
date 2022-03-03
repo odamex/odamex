@@ -34,7 +34,7 @@
 #include "p_mapformat.h"
 
 /// Globals
-BOOL HexenHack;
+bool HexenHack;
 
 namespace
 {

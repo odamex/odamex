@@ -83,7 +83,7 @@ void C_DoCommand(const char *cmd, uint32_t key = 0);
 void daemon_init();
 #endif
 
-void D_DoomLoop (void);
+void D_DoomLoop();
 
 extern gameinfo_t SharewareGameInfo;
 extern gameinfo_t RegisteredGameInfo;
@@ -92,11 +92,11 @@ extern gameinfo_t CommercialGameInfo;
 extern gameinfo_t RetailBFGGameInfo;
 extern gameinfo_t CommercialBFGGameInfo;
 
-extern BOOL gameisdead;
+extern bool gameisdead;
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
-BOOL devparm;				// started game with -devparm
+bool devparm;				// started game with -devparm
 char startmap[8];
 event_t events[MAXEVENTS];
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
@@ -106,9 +106,9 @@ std::string LOG_FILE;
 //
 // D_DoomLoop
 //
-void D_DoomLoop (void)
+void D_DoomLoop()
 {
-	while (1)
+	while (true)
 	{
 		try
 		{

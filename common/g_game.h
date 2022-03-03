@@ -40,7 +40,7 @@ void G_DeferedPlayDemo(const char* demo, bool bIsSingleDemo = false);
 // calls P_SetupLevel or W_EnterWorld.
 void G_LoadGame(char* name);
 
-void G_DoLoadGame(void);
+void G_DoLoadGame();
 
 // Called by M_Responder.
 void G_BuildSaveName(std::string &name, int slot);
@@ -52,13 +52,13 @@ void G_PlayDemo(char* name);
 void G_DoPlayDemo(bool justStreamInput = false);
 void G_TimeDemo(const char* name);
 void G_TestDemo(const char* name);
-BOOL G_CheckDemoStatus(void);
+bool G_CheckDemoStatus();
 void G_CleanupDemo();
 
-void G_WorldDone(void);
+void G_WorldDone();
 
-void G_Ticker(void);
-BOOL G_Responder(event_t*	ev);
+void G_Ticker();
+BOOL G_Responder(event_t* ev);
 
 void G_ScreenShot(const char* filename);
 

@@ -401,10 +401,7 @@ static BOOL IsMarker (const lumpinfo_t *lump, const char *marker)
 void W_MergeLumps (const char *start, const char *end, int space)
 {
 	char ustart[8], uend[8];
-	lumpinfo_t *newlumpinfos;
-	unsigned newlumps, oldlumps;
-	BOOL insideBlock;
-	unsigned flatHack, i;
+	unsigned i;
 
 	strncpy(ustart, start, 8);
 	strncpy(uend, end, 8);
@@ -414,7 +411,7 @@ void W_MergeLumps (const char *start, const char *end, int space)
 
 	// Some pwads use an icky hack to get flats with regular Doom.
 	// This tries to detect them.
-	flatHack = 0;
+	unsigned flatHack = 0;
 	if (!strcmp ("F_START", ustart) && !Args.CheckParm ("-noflathack"))
 	{
 		int fudge = 0;
@@ -432,11 +429,11 @@ void W_MergeLumps (const char *start, const char *end, int space)
 			flatHack = 0;
 	}
 
-	newlumpinfos = new lumpinfo_t[numlumps];
+	lumpinfo_t* newlumpinfos = new lumpinfo_t[numlumps];
 
-	newlumps = 0;
-	oldlumps = 0;
-	insideBlock = false;
+	unsigned newlumps = 0;
+	unsigned oldlumps = 0;
+	bool insideBlock = false;
 
 	for (i = 0; i < numlumps; i++)
 	{

@@ -247,8 +247,8 @@ static value_t DoomOrOdamex[2] =
 menu_t  *CurrentMenu;
 int		CurrentItem;
 bool configuring_controls = false;
-static BOOL	WaitingForKey;
-static BOOL	WaitingForAxis;
+static bool	WaitingForKey;
+static bool	WaitingForAxis;
 static const char	   *OldContMessage;
 static itemtype OldContType;
 static const char	   *OldAxisMessage;

@@ -120,7 +120,7 @@ CVAR_FUNC_IMPL (snd_channels)
 
 
 // whether songs are mus_paused
-static BOOL		mus_paused;
+static bool		mus_paused;
 
 // music currently being played
 static struct mus_playing_t

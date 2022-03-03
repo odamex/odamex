@@ -115,12 +115,10 @@ CVAR_FUNC_IMPL (sv_gravity)
 //
 // PIT_StompThing
 //
-static BOOL StompAlwaysFrags;
+static bool StompAlwaysFrags;
 
 BOOL PIT_StompThing (AActor *thing)
 {
-	fixed_t blockdist;
-
 	if (!(thing->flags & MF_SHOOTABLE))
 		return true;
 
@@ -139,7 +137,7 @@ BOOL PIT_StompThing (AActor *thing)
 	if (thing == tmthing)
 		return true;
 
-	blockdist = thing->radius + tmthing->radius;
+	const fixed_t blockdist = thing->radius + tmthing->radius;
 
 	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
 	{
@@ -565,7 +563,7 @@ static bool P_ProjectileImmune(AActor* target, AActor* source)
 
 static BOOL PIT_CheckThing (AActor *thing)
 {
-	bool solid = thing->flags & MF_SOLID;
+	const bool solid = thing->flags & MF_SOLID;
 
 	// don't clip against self
 	if (thing == tmthing)
@@ -582,7 +580,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 	if (tmthing->player && thing->player && sv_unblockplayers)
 		return true;
 
-	fixed_t blockdist = thing->radius + tmthing->radius;
+	const fixed_t blockdist = thing->radius + tmthing->radius;
 	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
 	{
 		// didn't hit thing
@@ -602,7 +600,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 	// check for skulls slamming into things
 	if (tmthing->flags & MF_SKULLFLY)
 	{
-		int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
+		const int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
 		P_DamageMobj (thing, tmthing, tmthing, damage, MOD_HIT);
 		tmthing->flags &= ~MF_SKULLFLY;
 		tmthing->momx = tmthing->momy = tmthing->momz = 0;
@@ -645,7 +643,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 
 		if (tmthing->flags2 & MF2_RIP)
 		{
-			int damage = ((P_Random() & 3) + 2) * tmthing->info->damage;
+			const int damage = ((P_Random() & 3) + 2) * tmthing->info->damage;
 			if (!(thing->flags & MF_NOBLOOD))
 				P_SpawnBlood(tmthing->x, tmthing->y, tmthing->z, damage);
 			if (tmthing->info->ripsound)
@@ -664,8 +662,8 @@ static BOOL PIT_CheckThing (AActor *thing)
 		// damage / explode
 		if (tmthing->info->damage)
 		{
-			int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
 			{
+				const int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
 				// [RH] figure out the means of death
 				int mod;
 
@@ -729,8 +727,6 @@ static BOOL PIT_CheckThing (AActor *thing)
 
 BOOL Check_Sides(AActor* actor, int x, int y)
 {
-	int bx,by,xl,xh,yl,yh;
-
 	pe_x = actor->x;
 	pe_y = actor->y;
 	ls_x = x;
@@ -745,16 +741,16 @@ BOOL Check_Sides(AActor* actor, int x, int y)
 
 	// Determine which blocks to look in for blocking lines
 
-	xl = (tmbbox[BOXLEFT]   - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT]  - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP]    - bmaporgy)>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
 
 	// xl->xh, yl->yh determine the mapblock set to search
 
 	validcount++; // prevents checking same line twice
-	for (bx = xl ; bx <= xh ; bx++)
-		for (by = yl ; by <= yh ; by++)
+	for (int bx = xl ; bx <= xh ; bx++)
+		for (int by = yl ; by <= yh ; by++)
 		if (!P_BlockLinesIterator(bx,by,PIT_CrossLine))
 			return true;										//   ^
 	return(false);												//   |
