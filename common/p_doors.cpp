@@ -576,7 +576,7 @@ DDoor* DDoor::Clone(sector_t* sec) const
 BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                 int tag, int speed, int delay, card_t lock)
 {
-	BOOL		rtn = false;
+	bool		rtn = false;
 	int 		secnum;
 	sector_t*	sec;
     DDoor *door;
@@ -802,7 +802,7 @@ BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 	else
 	{
 		int secnum = -1;
-		BOOL retcode = false;
+		bool retcode = false;
 
 		while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
 		{

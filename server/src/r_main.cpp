@@ -103,7 +103,7 @@ int				lightscaleymul;
 int			extralight;
 
 // [RH] ignore extralight and fullbright
-BOOL		foggy;
+bool		foggy;
 
 fixed_t			freelookviewheight;
 

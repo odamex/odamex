@@ -74,21 +74,21 @@
 
 #define TURN180_TICKS	9				// [RH] # of ticks to complete a turn180
 
-BOOL	G_CheckDemoStatus (void);
-void	G_ReadDemoTiccmd ();
-void	G_WriteDemoTiccmd ();
-void	G_PlayerReborn (player_t &player);
+bool G_CheckDemoStatus();
+void G_ReadDemoTiccmd();
+void G_WriteDemoTiccmd();
+void G_PlayerReborn(player_t &player);
 
-void	G_DoNewGame (void);
-void	G_DoLoadGame (void);
-void	G_DoCompleted (void);
-void	G_DoWorldDone (void);
-void	G_DoSaveGame();
+void G_DoNewGame();
+void G_DoLoadGame();
+void G_DoCompleted();
+void G_DoWorldDone();
+void G_DoSaveGame();
 
-bool	C_DoNetDemoKey(event_t *ev);
-bool	C_DoSpectatorKey(event_t *ev);
+bool C_DoNetDemoKey(event_t *ev);
+bool C_DoSpectatorKey(event_t *ev);
 
-void	CL_QuitCommand();
+void CL_QuitCommand();
 
 EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (novert)
@@ -2004,7 +2004,7 @@ void G_CleanupDemo()
 ===================
 */
 
-BOOL G_CheckDemoStatus (void)
+bool G_CheckDemoStatus()
 {
 	if (demoplayback)
 	{

@@ -321,7 +321,7 @@ static int markpointnum = 0; // next point to be assigned
 
 static bool followplayer = true; // specifies whether to follow the player around
 
-static BOOL stopped = true;
+static bool stopped = true;
 
 extern NetDemo netdemo;
 
@@ -583,7 +583,7 @@ am_color_t AM_BestColor(const argb_t* palette_colors, const int r, const int g, 
 	return c;
 }
 
-void AM_initColors (BOOL overlayed)
+void AM_initColors(bool overlayed)
 {
 	// Look up the colors in the current palette:
 	const argb_t* palette_colors = V_GetDefaultPalette()->colors;
@@ -796,7 +796,7 @@ END_COMMAND (togglemap)
 //
 // Handle events (user inputs) in automap mode
 //
-BOOL AM_Responder (event_t *ev)
+BOOL AM_Responder(event_t *ev)
 {
 	if (automapactive && (ev->type == ev_keydown || ev->type == ev_keyup))
 	{
@@ -964,7 +964,7 @@ void AM_clearFB (am_color_t color)
 // faster reject and precalculated slopes.  If the speed is needed,
 // use a hash algorithm to handle  the common cases.
 //
-BOOL AM_clipMline (mline_t *ml, fline_t *fl)
+bool AM_clipMline(mline_t *ml, fline_t *fl)
 {
 	enum {
 		LEFT	=1,
@@ -973,14 +973,13 @@ BOOL AM_clipMline (mline_t *ml, fline_t *fl)
 		TOP	=8
 	};
 
-	register int outcode1 = 0;
-	register int outcode2 = 0;
-	register int outside;
+	int outcode1 = 0;
+	int outcode2 = 0;
+	int outside;
 
 	fpoint_t tmp = {0, 0};
 	int dx;
 	int dy;
-
 
 #define DOOUTCODE(oc, mx, my) \
 	(oc) = 0; \
@@ -1082,66 +1081,60 @@ BOOL AM_clipMline (mline_t *ml, fline_t *fl)
 
 // Palettized (8bpp) version:
 
-void AM_drawFlineP (fline_t* fl, byte color)
+void AM_drawFlineP(fline_t* fl, byte color)
 {
-			register int x;
-			register int y;
-			register int dx;
-			register int dy;
-			register int sx;
-			register int sy;
-			register int ax;
-			register int ay;
-			register int d;
+	fl->a.x += f_x;
+	fl->b.x += f_x;
+	fl->a.y += f_y;
+	fl->b.y += f_y;
 
+	const int dx = fl->b.x - fl->a.x;
+	const int ax = 2 * (dx < 0 ? -dx : dx);
+	const int sx = dx < 0 ? -1 : 1;
 
-			fl->a.x += f_x;
-			fl->b.x += f_x;
-			fl->a.y += f_y;
-			fl->b.y += f_y;
+	const int dy = fl->b.y - fl->a.y;
+	const int ay = 2 * (dy < 0 ? -dy : dy);
+	const int sy = dy < 0 ? -1 : 1;
 
-			dx = fl->b.x - fl->a.x;
-			ax = 2 * (dx<0 ? -dx : dx);
-			sx = dx<0 ? -1 : 1;
+	int x = fl->a.x;
+	int y = fl->a.y;
+	int d;
 
-			dy = fl->b.y - fl->a.y;
-			ay = 2 * (dy<0 ? -dy : dy);
-			sy = dy<0 ? -1 : 1;
+	if (ax > ay)
+	{
+		d = ay - ax / 2;
 
-			x = fl->a.x;
-			y = fl->a.y;
-
-			if (ax > ay) {
-				d = ay - ax/2;
-
-					while (1) {
-						PUTDOTP(x,y,(byte)color);
-						if (x == fl->b.x)
-							return;
+		while (true)
+		{
+			PUTDOTP(x, y, color);
+			if (x == fl->b.x)
+				return;
 			if (d >= 0)
 			{
-							y += sy;
-							d -= ax;
-						}
-						x += sx;
-						d += ay;
-					}
+				y += sy;
+				d -= ax;
 			}
+			x += sx;
+			d += ay;
+		}
+	}
 	else
 	{
-				d = ax - ay/2;
-					while (1) {
-						PUTDOTP(x, y, (byte)color);
-						if (y == fl->b.y)
-							return;
+		d = ax - ay / 2;
+
+		while (true)
+		{
+			PUTDOTP(x, y, color);
+			if (y == fl->b.y)
+				return;
 			if (d >= 0)
 			{
-							x += sx;
-							d -= ay;
-						}
-						y += sy;
-						d += ax;
-					}
+				x += sx;
+				d -= ay;
+			}
+			y += sy;
+			d += ax;
+		}
 	}
 }
 
@@ -1149,36 +1142,29 @@ void AM_drawFlineP (fline_t* fl, byte color)
 
 void AM_drawFlineD(fline_t* fl, argb_t color)
 {
-	register int x;
-	register int y;
-	register int dx;
-	register int dy;
-	register int sx;
-	register int sy;
-	register int ax;
-	register int ay;
-	register int d;
-
 	fl->a.x += f_x;
 	fl->b.x += f_x;
 	fl->a.y += f_y;
 	fl->b.y += f_y;
 
-	dx = fl->b.x - fl->a.x;
-	ax = 2 * (dx<0 ? -dx : dx);
-	sx = dx<0 ? -1 : 1;
+	const int dx = fl->b.x - fl->a.x;
+	const int ax = 2 * (dx < 0 ? -dx : dx);
+	const int sx = dx < 0 ? -1 : 1;
 
-	dy = fl->b.y - fl->a.y;
-	ay = 2 * (dy<0 ? -dy : dy);
-	sy = dy<0 ? -1 : 1;
+	const int dy = fl->b.y - fl->a.y;
+	const int ay = 2 * (dy < 0 ? -dy : dy);
+	const int sy = dy < 0 ? -1 : 1;
 
-	x = fl->a.x;
-	y = fl->a.y;
+	int x = fl->a.x;
+	int y = fl->a.y;
+	int d;
 
-	if (ax > ay) {
-		d = ay - ax/2;
+	if (ax > ay)
+	{
+		d = ay - ax / 2;
 
-		while (1) {
+		while (true)
+		{
 			PUTDOTD(x, y, color);
 			if (x == fl->b.x)
 				return;
@@ -1193,8 +1179,9 @@ void AM_drawFlineD(fline_t* fl, argb_t color)
 	}
 	else
 	{
-		d = ax - ay/2;
-		while (1) {
+		d = ax - ay / 2;
+		while (true)
+		{
 			PUTDOTD(x, y, color);
 			if (y == fl->b.y)
 				return;
@@ -1206,14 +1193,14 @@ void AM_drawFlineD(fline_t* fl, argb_t color)
 			y += sy;
 			d += ax;
 		}
-				}
+	}
 }
 
 
 //
 // Clip lines, draw visible part sof lines.
 //
-void AM_drawMline (mline_t* ml, am_color_t color)
+void AM_drawMline(mline_t* ml, am_color_t color)
 {
 	static fline_t fl;
 
@@ -1283,7 +1270,7 @@ void AM_drawGrid(am_color_t color)
 // Determines visible lines, draws them.
 // This is LineDef based, not LineSeg based.
 //
-void AM_drawWalls(void)
+void AM_drawWalls()
 {
 	int i, r, g, b;
 	static mline_t l;

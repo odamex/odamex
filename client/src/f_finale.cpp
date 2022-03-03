@@ -379,16 +379,16 @@ static int 			castnum;
 static int 			casttics;
 static int			castsprite;
 static state_t*		caststate;
-static BOOL	 		castdeath;
+static bool	 		castdeath;
 static int 			castframes;
 static int 			castonmelee;
-static BOOL	 		castattacking;
+static bool	 		castattacking;
 
 
 //
 // F_StartCast
 //
-extern	gamestate_t 	wipegamestate;
+extern gamestate_t 	wipegamestate;
 
 
 void F_StartCast()

@@ -813,16 +813,9 @@ BOOL PIT_AddThingIntercepts (AActor* thing)
 	fixed_t 		x2;
 	fixed_t 		y2;
 
-	int 			s1;
-	int 			s2;
-
-	BOOL 			tracepositive;
-
 	divline_t		dl;
 
-	fixed_t 		frac;
-
-	tracepositive = (trace.dx ^ trace.dy)>0;
+	const bool tracepositive = (trace.dx ^ trace.dy) > 0;
 
 	// check a corner to corner crossection for hit
 	if (tracepositive)
@@ -842,8 +835,8 @@ BOOL PIT_AddThingIntercepts (AActor* thing)
 		y2 = thing->y + thing->radius;
 	}
 
-	s1 = P_PointOnDivlineSide (x1, y1, &trace);
-	s2 = P_PointOnDivlineSide (x2, y2, &trace);
+	const int s1 = P_PointOnDivlineSide(x1, y1, &trace);
+	const int s2 = P_PointOnDivlineSide(x2, y2, &trace);
 
 	if (s1 == s2)
 		return true;			// line isn't crossed
@@ -853,7 +846,7 @@ BOOL PIT_AddThingIntercepts (AActor* thing)
 	dl.dx = x2-x1;
 	dl.dy = y2-y1;
 
-	frac = P_InterceptVector (&trace, &dl);
+	const fixed_t frac = P_InterceptVector(&trace, &dl);
 
 	if (frac < 0)
 		return true;			// behind source

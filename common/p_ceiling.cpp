@@ -583,15 +583,14 @@ BOOL P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
                   fixed_t speed2, fixed_t height, int crush, int silent, int change, crushmode_e crushmode)
 {
 	int secnum;
-	BOOL rtn;
 	sector_t* sec;
 	DCeiling* ceiling;
-	BOOL manual = false;
+	bool manual = false;
 	fixed_t targheight = 0;
 
 	height *= FRACUNIT;
 
-	rtn = false;
+	bool rtn = false;
 
 	// check if a manual trigger, if so do just the sector on the backside
 	//
@@ -845,13 +844,12 @@ BOOL EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 				   bool crush, int silent, int change)
 {
 	int 		secnum;
-	BOOL 		rtn;
 	sector_t*	sec;
 	DCeiling*	ceiling;
-	BOOL		manual = false;
+	bool		manual = false;
 	fixed_t		targheight = 0;
 
-	rtn = false;
+	bool rtn = false;
 
 	// check if a manual trigger, if so do just the sector on the backside
 	//
@@ -1094,27 +1092,23 @@ manual_ceiling:
 BOOL EV_DoGenCeiling(line_t* line)
 {
 	int secnum;
-	BOOL rtn;
-	BOOL manual;
-	fixed_t targheight;
 	sector_t* sec;
-	DCeiling* ceiling;
-	unsigned value = (unsigned)line->special - GenCeilingBase;
+	unsigned value = static_cast<unsigned>(line->special) - GenCeilingBase;
 
 	// parse the bit fields in the line's special type
 
-	int Crsh = (value & CeilingCrush) >> CeilingCrushShift;
-	int ChgT = (value & CeilingChange) >> CeilingChangeShift;
-	int Targ = (value & CeilingTarget) >> CeilingTargetShift;
-	int Dirn = (value & CeilingDirection) >> CeilingDirectionShift;
-	int ChgM = (value & CeilingModel) >> CeilingModelShift;
-	int Sped = (value & CeilingSpeed) >> CeilingSpeedShift;
-	int Trig = (value & TriggerType) >> TriggerTypeShift;
+	const int Crsh = (value & CeilingCrush) >> CeilingCrushShift;
+	const int ChgT = (value & CeilingChange) >> CeilingChangeShift;
+	const int Targ = (value & CeilingTarget) >> CeilingTargetShift;
+	const int Dirn = (value & CeilingDirection) >> CeilingDirectionShift;
+	const int ChgM = (value & CeilingModel) >> CeilingModelShift;
+	const int Sped = (value & CeilingSpeed) >> CeilingSpeedShift;
+	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-	rtn = false;
+	bool rtn = false;
 
 	// check if a manual trigger, if so do just the sector on the backside
-	manual = false;
+	bool manual = false;
 	if (Trig == PushOnce || Trig == PushMany)
 	{
 		if (!(sec = line->backsector))
@@ -1164,25 +1158,21 @@ BOOL EV_DoGenCeiling(line_t* line)
 BOOL EV_DoGenCrusher(line_t* line)
 {
 	int secnum;
-	BOOL rtn;
-	BOOL manual;
-	fixed_t targheight;
 	sector_t* sec;
-	DCeiling* ceiling;
-	unsigned value = (unsigned)line->special - GenCrusherBase;
+	unsigned value = static_cast<unsigned>(line->special) - GenCrusherBase;
 
 	// parse the bit fields in the line's special type
 
-	int Slnt = (value & CrusherSilent) >> CrusherSilentShift;
-	int Sped = (value & CrusherSpeed) >> CrusherSpeedShift;
-	int Trig = (value & TriggerType) >> TriggerTypeShift;
+	const int Slnt = (value & CrusherSilent) >> CrusherSilentShift;
+	const int Sped = (value & CrusherSpeed) >> CrusherSpeedShift;
+	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-	rtn = false;
+	bool rtn = false;
 
 	P_ActivateInStasisCeiling(line->id);
 
 	// check if a manual trigger, if so do just the sector on the backside
-	manual = false;
+	bool manual = false;
 	if (Trig == PushOnce || Trig == PushMany)
 	{
 		if (!(sec = line->backsector))
@@ -1225,7 +1215,7 @@ BOOL EV_DoGenCrusher(line_t* line)
 //
 BOOL EV_CeilingCrushStop (int tag)
 {
-	BOOL rtn = false;
+	bool rtn = false;
 	DCeiling *scan;
 	TThinkerIterator<DCeiling> iterator;
 

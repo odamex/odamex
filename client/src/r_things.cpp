@@ -666,18 +666,18 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	spritedef_t*		sprdef;
 	spriteframe_t*		sprframe;
 	int 				lump;
-	BOOL 				flip;
+	bool 				flip;
 	vissprite_t*		vis;
 	vissprite_t 		avis;
 
 
 	const float bob_amount = ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
-	fixed_t sx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
-	fixed_t sy = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
+	const fixed_t sx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
+	const fixed_t sy = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
 
 	// decide which patch to use
 #ifdef RANGECHECK
-	if ( (unsigned)psp->state->sprite >= (unsigned)numsprites) {
+	if (static_cast<unsigned>(psp->state->sprite) >= static_cast<unsigned>(numsprites)) {
 		DPrintf ("R_DrawPSprite: invalid sprite number %i\n", psp->state->sprite);
 		return;
 	}
@@ -692,7 +692,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	sprframe = &sprdef->spriteframes[ psp->state->frame & FF_FRAMEMASK ];
 
 	lump = sprframe->lump[0];
-	flip = static_cast<BOOL>(sprframe->flip[0]);
+	flip = static_cast<bool>(sprframe->flip[0]);
 
 	if (sprframe->width[0] == SPRITE_NEEDS_INFO)
 		R_CacheSprite (sprdef);	// [RH] speeds up game startup time

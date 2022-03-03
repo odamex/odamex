@@ -1795,17 +1795,16 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 		return false;
 
 	const OString* msg = NULL;
-	BOOL bc, rc, yc, bs, rs, ys;
-	BOOL equiv = lock & 0x80;
+	const bool equiv = lock & 0x80;
 
         lock = (card_t)(lock & 0x7f);
 
-	bc = p->cards[it_bluecard];
-	rc = p->cards[it_redcard];
-	yc = p->cards[it_yellowcard];
-	bs = p->cards[it_blueskull];
-	rs = p->cards[it_redskull];
-	ys = p->cards[it_yellowskull];
+	bool bc = p->cards[it_bluecard];
+	bool rc = p->cards[it_redcard];
+	bool yc = p->cards[it_yellowcard];
+	bool bs = p->cards[it_blueskull];
+	bool rs = p->cards[it_redskull];
+	bool ys = p->cards[it_yellowskull];
 
 	if (equiv) {
 		bc = bs = (bc || bs);

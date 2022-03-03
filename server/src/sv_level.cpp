@@ -87,7 +87,7 @@ int ACS_GlobalVars[NUM_GLOBALVARS];
 // [AM] Stores the reset snapshot
 FLZOMemFile	*reset_snapshot = NULL;
 
-BOOL firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
+bool firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
 
 BOOL savegamerestore;
 

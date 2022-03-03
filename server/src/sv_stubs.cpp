@@ -28,14 +28,14 @@
 #include "d_player.h"
 #include "v_palette.h"
 
-BOOL menuactive;
+bool menuactive;
 
 void R_ExitLevel() {}
-void D_SetupUserInfo (void) {}
-void D_UserInfoChanged (cvar_t *cvar) {} 
-void D_DoServerInfoChange (byte **stream) {} 
-void D_WriteUserInfoStrings (int i, byte **stream, bool compact) {} 
-void D_ReadUserInfoStrings (int i, byte **stream, bool update) {}
+void D_SetupUserInfo() {}
+void D_UserInfoChanged(cvar_t *cvar) {} 
+void D_DoServerInfoChange(byte **stream) {} 
+void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {} 
+void D_ReadUserInfoStrings(int i, byte **stream, bool update) {}
 
 argb_t V_GetColorFromString(const std::string& str)
 {
@@ -45,9 +45,9 @@ argb_t V_GetColorFromString(const std::string& str)
 void PickupMessage(AActor *toucher, const char *message) {}
 void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon) {}
 
-void AM_Stop(void) {}
+void AM_Stop() {}
 
-void RefreshPalettes (void) {}
+void RefreshPalettes() {}
 
 void V_RefreshColormaps() {}
 

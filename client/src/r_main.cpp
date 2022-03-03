@@ -121,7 +121,7 @@ int				lightscaleymul;
 int 			extralight;
 
 // [RH] ignore extralight and fullbright
-BOOL			foggy;
+bool			foggy;
 
 static bool		setsizeneeded = true;
 int				setblocks;
@@ -1029,9 +1029,9 @@ void R_RenderPlayerView(player_t* player)
 	// [SL] fill the screen with a blinking solid color to make HOM more visible
 	if (r_flashhom)
 	{
-		argb_t color = gametic & 8 ? argb_t(0, 0, 0) : argb_t(0, 0, 255);
-		int x1 = viewwindowx, y1 = viewwindowy;
-		int x2 = viewwindowx + viewwidth - 1, y2 = viewwindowy + viewheight - 1; 
+		const argb_t color = gametic & 8 ? argb_t(0, 0, 0) : argb_t(0, 0, 255);
+		const int x1 = viewwindowx, y1 = viewwindowy;
+		const int x2 = viewwindowx + viewwidth - 1, y2 = viewwindowy + viewheight - 1; 
 
 		surface->getDefaultCanvas()->Clear(x1, y1, x2, y2, color);
 	}
@@ -1058,7 +1058,7 @@ void R_RenderPlayerView(player_t* player)
 	R_DrawMasked();
 
 	// NOTE(jsd): Full-screen status color blending:
-	int blend_alpha = int(blend_color.geta() * 255.0f);
+	const int blend_alpha = static_cast<int>(blend_color.geta() * 255.0f);
 	if (surface->getBitsPerPixel() == 32 && blend_alpha > 0)
 	{
 		r_dimpatchD(surface, V_GammaCorrect(blend_color), blend_alpha,
@@ -1081,7 +1081,7 @@ static void R_InitLightTables(int surface_width, int surface_height)
 	// [RH] This just stores indices into the colormap rather than pointers to a specific one.
 	for (int i = 0; i < LIGHTLEVELS; i++)
 	{
-		int startmap = ((LIGHTLEVELS-1-i)*2) * NUMCOLORMAPS/LIGHTLEVELS;
+		const int startmap = ((LIGHTLEVELS-1-i)*2) * NUMCOLORMAPS/LIGHTLEVELS;
 		for (int j = 0; j < MAXLIGHTSCALE; j++)
 		{
 			int level = startmap - (j * surface_width) / ((viewwidth * DISTMAP));
@@ -1092,7 +1092,7 @@ static void R_InitLightTables(int surface_width, int surface_height)
 	// Calculate the light levels to use for each level / distance combination.
 	for (int i = 0; i < LIGHTLEVELS; i++)
 	{
-		int startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
+		const int startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
 		for (int j=0 ; j<MAXLIGHTZ ; j++)
 		{
 			int scale = FixedDiv(160*FRACUNIT, (j+1) << LIGHTZSHIFT);
@@ -1166,8 +1166,8 @@ static void R_InitViewWindow()
 	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 	// using a 320x200/640x400 surface or video mode
-	bool protected_res = vid_320x200 || vid_640x400
-					|| I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight());
+	const bool protected_res = vid_320x200 || vid_640x400
+	                           || I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight());
 
 	surface->lock();
 
@@ -1203,10 +1203,10 @@ static void R_InitViewWindow()
 
 	if (V_UseWidescreen() || V_UseLetterBox())
 	{
-		float am = (3.0f * I_GetSurfaceWidth()) / (4.0f * I_GetSurfaceHeight());
-		float radfov = desired_fov * PI / 180.0f;
-		float widefov = (2 * atan(am * tan(radfov / 2))) * 180.0f / PI;
-		CorrectFieldOfView = int(widefov * FINEANGLES / 360.0f);
+		const float am = (3.0f * I_GetSurfaceWidth()) / (4.0f * I_GetSurfaceHeight());
+		const float radfov = desired_fov * PI / 180.0f;
+		const float widefov = (2 * atan(am * tan(radfov / 2))) * 180.0f / PI;
+		CorrectFieldOfView = static_cast<int>(widefov * FINEANGLES / 360.0f);
 	}
 	else
  	{
@@ -1246,7 +1246,7 @@ static void R_InitViewWindow()
 	for (int i = 0; i < surface_width; i++)
 	{
 		negonearray[i] = -1;
-		viewheightarray[i] = (int)viewheight;
+		viewheightarray[i] = viewheight;
 	}
 
 	R_InitLightTables(surface_width, surface_height);

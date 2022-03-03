@@ -305,9 +305,7 @@ extern	std::vector<line_t*> spechit;
 BOOL P_Move (AActor *actor)
 {
 	fixed_t tryx, tryy, deltax, deltay, origx, origy;
-	BOOL try_ok;
-	int good;
-	int speed;
+	bool try_ok;
 	int movefactor = ORIG_FRICTION_FACTOR;
 	int friction = ORIG_FRICTION;
 
@@ -335,10 +333,10 @@ BOOL P_Move (AActor *actor)
 		}
 	}
 
-	if ((unsigned)actor->movedir >= 8)
+	if (static_cast<unsigned>(actor->movedir) >= 8)
 		I_Error ("Weird actor->movedir!");
 
-	speed = actor->info->speed;
+	int speed = actor->info->speed;
 
 	// [AM] Quick monsters are faster.
 	if (actor->oflags & MFO_QUICK)
@@ -390,7 +388,7 @@ BOOL P_Move (AActor *actor)
 			return false;
 
 		actor->movedir = DI_NODIR;
-		good = false;
+		bool good = false;
 		while (!spechit.empty())
 		{
 			line_t *ld = spechit.back();
@@ -1442,9 +1440,6 @@ int				viletryradius;
 
 BOOL PIT_VileCheck (AActor *thing)
 {
-	int 	maxdist;
-	BOOL 	check;
-
 	if (thing->oflags & MFO_NORAISE)
 		return true;	// [AM] Can't raise
 
@@ -1457,7 +1452,7 @@ BOOL PIT_VileCheck (AActor *thing)
 	if (thing->info->raisestate == S_NULL)
 		return true;	// monster doesn't have a raise state
 
-	maxdist = thing->info->radius + viletryradius;
+	const int maxdist = thing->info->radius + viletryradius;
 
 	if ( abs(thing->x - viletryx) > maxdist
 		 || abs(thing->y - viletryy) > maxdist )
@@ -1466,7 +1461,7 @@ BOOL PIT_VileCheck (AActor *thing)
 	corpsehit = thing;
 	corpsehit->momx = corpsehit->momy = 0;
 	corpsehit->height <<= 2;
-	check = P_CheckPosition (corpsehit, corpsehit->x, corpsehit->y);
+	const bool check = P_CheckPosition(corpsehit, corpsehit->x, corpsehit->y);
 	corpsehit->height >>= 2;
 
 	return !check;

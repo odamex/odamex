@@ -1183,7 +1183,7 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 {
 	char outline[MAX_LINE_LENGTH], outlinelog[MAX_LINE_LENGTH];
 
-	extern BOOL gameisdead;
+	extern bool gameisdead;
 	if (gameisdead)
 		return 0;
 

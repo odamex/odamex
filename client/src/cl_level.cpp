@@ -639,7 +639,7 @@ void G_DoLoadLevel (int position)
 
 	if (timingdemo)
 	{
-		static BOOL firstTime = true;
+		static bool firstTime = true;
 
 		if (firstTime)
 		{

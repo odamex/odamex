@@ -2034,14 +2034,12 @@ static int PatchText(int oldSize)
 	int newSize;
 	char* oldStr;
 	char* newStr;
-	char* temp;
-	BOOL good;
+	bool good;
 	int result;
-	int i;
 	const OString* name = NULL;
 
 	// Skip old size, since we already know it
-	temp = Line2;
+	char* temp = Line2;
 	while (*temp > ' ')
 	{
 		temp++;
@@ -2088,7 +2086,7 @@ static int PatchText(int oldSize)
 	good = false;
 
 	// Search through sprite names
-	for (i = 0; i < NUMSPRITES; i++)
+	for (int i = 0; i < NUMSPRITES; i++)
 	{
 		if (!strcmp(sprnames[i], oldStr))
 		{
