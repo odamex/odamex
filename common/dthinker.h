@@ -127,4 +127,3 @@ public:
 };
 
 bool P_ThinkerIsPlayerType(DThinker* thinker);
-\
