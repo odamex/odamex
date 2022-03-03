@@ -18,4 +18,5 @@
 [submodule "libraries/jsoncpp"]
 	path = libraries/jsoncpp
 	url = https://github.com/open-source-parsers/jsoncpp.git
-	branch = 00.11.z
+	branch = 0.y.z
+	ignore = dirty
