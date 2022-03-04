@@ -37,17 +37,17 @@ private:
 	byte ip[4];
 	bool mask[4];
 public:
-	IPRange(void);
+	IPRange();
 	bool check(const netadr_t &address);
 	bool check(const std::string &input);
 	void set(const netadr_t &address);
 	bool set(const std::string &input);
-	std::string string(void);
+	std::string string();
 };
 
 struct Ban
 {
-	Ban(void) : expire(0) { };
+	Ban() : expire(0) { };
 	time_t expire;
 	std::string name;
 	IPRange range;

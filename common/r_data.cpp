@@ -500,7 +500,7 @@ byte* R_GetTextureColumnData(int texnum, int colnum)
 // Initializes the texture list
 //	with the textures from the world map.
 //
-void R_InitTextures (void)
+void R_InitTextures()
 {
 	maptexture_t*		mtexture;
 	texture_t*			texture;
@@ -718,10 +718,8 @@ void R_InitTextures (void)
 //
 // R_InitFlats
 //
-void R_InitFlats (void)
+void R_InitFlats()
 {
-	int i;
-
 	firstflat = W_GetNumForName ("F_START") + 1;
 	lastflat = W_GetNumForName ("F_END") - 1;
 
@@ -735,7 +733,7 @@ void R_InitFlats (void)
 	// Create translation table for global animation.
 	flattranslation = new int[numflats+1];
 
-	for (i = 0; i < numflats; i++)
+	for (int i = 0; i < numflats; i++)
 		flattranslation[i] = i;
 
 	delete[] flatwarp;
@@ -761,7 +759,7 @@ void R_InitFlats (void)
 //	so the sprite does not need to be cached completely
 //	just for having the header info ready during rendering.
 //
-void R_InitSpriteLumps (void)
+void R_InitSpriteLumps()
 {
 	firstspritelump = W_GetNumForName ("S_START") + 1;
 	lastspritelump = W_GetNumForName ("S_END") - 1;
@@ -1083,7 +1081,7 @@ int R_TextureNumForName (const char *name)
 //
 // [RH] Rewrote this using Lee Killough's code in BOOM as an example.
 
-void R_PrecacheLevel (void)
+void R_PrecacheLevel()
 {
 	byte *hitlist;
 	int i;

@@ -64,10 +64,10 @@ const char* finaletext;
 const char* finalelump;
 finale_lump_t finalelumptype = FINALE_NONE;
 
-void	F_StartCast (void);
-void	F_CastTicker (void);
-BOOL	F_CastResponder (event_t *ev);
-void	F_CastDrawer (void);
+void F_StartCast();
+void F_CastTicker();
+BOOL F_CastResponder(event_t *ev);
+void F_CastDrawer();
 
 
 //
@@ -876,7 +876,7 @@ void F_BunnyScroll()
 //
 // F_Drawer
 //
-void F_Drawer (void)
+void F_Drawer()
 {
 	switch (finalestage)
 	{

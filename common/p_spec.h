@@ -321,13 +321,13 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote);
 BOOL	CheckIfExitIsGood (AActor *self);
 
 // at game start
-void	P_InitPicAnims (void);
+void	P_InitPicAnims ();
 
 // [Blair] ZDoom sector specials
-void	P_SpawnZDoomSectorSpecials (void);
+void	P_SpawnZDoomSectorSpecials ();
 
 // every tic
-void	P_UpdateSpecials (void);
+void	P_UpdateSpecials ();
 
 // when needed
 void    P_CrossSpecialLine (line_t* line, int side, AActor* thing, bool bossaction);
@@ -1274,8 +1274,8 @@ bool P_StartScript (AActor *who, line_t *where, int script, const char *map, int
 					int arg0, int arg1, int arg2, int always);
 void P_SuspendScript (int script, const char *map);
 void P_TerminateScript (int script, const char *map);
-void P_StartOpenScripts (void);
-void P_DoDeferedScripts (void);
+void P_StartOpenScripts ();
+void P_DoDeferedScripts ();
 
 
 //

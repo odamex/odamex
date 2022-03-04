@@ -111,7 +111,7 @@ EXTERN_CVAR (r_loadicon)
 EXTERN_CVAR (r_showendoom)
 
 ticcmd_t emptycmd;
-ticcmd_t *I_BaseTiccmd(void)
+ticcmd_t *I_BaseTiccmd()
 {
 	return &emptycmd;
 }
@@ -205,7 +205,7 @@ void I_BeginRead()
 		I_DrawLoadingIcon();
 }
 
-void I_EndRead(void)
+void I_EndRead()
 {
 }
 
@@ -404,7 +404,7 @@ void SetLanguageIDs()
 //
 // I_Init
 //
-void I_Init (void)
+void I_Init()
 {
 	I_InitSound ();
 	I_InitHardware ();
@@ -418,7 +418,7 @@ void I_FinishClockCalibration ()
 // Displays the text mode ending screen after the game quits
 //
 
-void I_Endoom(void)
+void I_Endoom()
 {
 #ifndef GCONSOLE // I will return to this -- Hyper_Eye
 	unsigned char *endoom_data;
@@ -481,7 +481,7 @@ void I_Endoom(void)
 //
 static int has_exited;
 
-void STACK_ARGS I_Quit (void)
+void STACK_ARGS I_Quit()
 {
 	has_exited = 1;		/* Prevent infinitely recursive exits -- killough */
 
@@ -506,7 +506,7 @@ bool gameisdead;
 
 #define MAX_ERRORTEXT	1024
 
-void STACK_ARGS call_terms (void);
+void STACK_ARGS call_terms();
 
 NORETURN void STACK_ARGS I_FatalError(const char* error, ...)
 {
@@ -860,7 +860,7 @@ int I_FindClose (long handle) {return 0;}
 // I_ConsoleInput
 //
 #ifdef _WIN32
-std::string I_ConsoleInput (void)
+std::string I_ConsoleInput()
 {
 	// denis - todo - implement this properly!!!
 	/* denis - this probably won't work for a gui sdl app. if it does work, please uncomment!
@@ -914,7 +914,7 @@ std::string I_ConsoleInput (void)
 
 #else
 
-std::string I_ConsoleInput (void)
+std::string I_ConsoleInput()
 {
 	std::string ret;
 	static char	 text[1024] = {0};
@@ -1025,7 +1025,7 @@ BEGIN_COMMAND(debug_userfilename)
 		return;
 	}
 
-	std::string userfile = M_GetUserFileName(argv[1]);
+	const std::string userfile = M_GetUserFileName(argv[1]);
 	Printf("Resolved to: %s\n", userfile.c_str());
 }
 END_COMMAND(debug_userfilename)

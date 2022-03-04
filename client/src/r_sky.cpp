@@ -183,7 +183,7 @@ void R_InitSkyMap()
 //
 // R_BlastSkyColumn
 //
-static inline void R_BlastSkyColumn(void (*drawfunc)(void))
+static inline void R_BlastSkyColumn(void (*drawfunc)())
 {
 	if (dcol.yl <= dcol.yh)
 	{

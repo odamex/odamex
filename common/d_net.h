@@ -29,6 +29,6 @@
 #define BACKUPTICS		12	// number of tics to remember
 
 // Create any new ticcmds and broadcast to other players.
-void NetUpdate (void);
+void NetUpdate();
 
 #endif

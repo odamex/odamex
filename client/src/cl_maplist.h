@@ -49,22 +49,22 @@ private:
 	maplist_status_t status;
 	QWORD timeout;
 	byte valid_indexes;
-	void check_complete(void);
-	void invalidate(void);
+	void check_complete();
+	void invalidate();
 	bool query(maplist_qrows_t &result);
 	bool query(const std::vector<std::string> &query, maplist_qrows_t &result);
 public:
-	MaplistCache(void) : error(""), index(0), next_index(0), size(0),
-						 status(MAPLIST_EMPTY), timeout(0),
-						 valid_indexes(0) { };
-	static MaplistCache& instance(void);
+	MaplistCache() : error(""), index(0), next_index(0), size(0),
+					 status(MAPLIST_EMPTY), timeout(0),
+					 valid_indexes(0) { };
+	static MaplistCache& instance();
 	// Events
-	void ev_tic(void);
+	void ev_tic();
 	// Getters
-	const std::string& get_error(void);
+	const std::string& get_error();
 	bool get_this_index(size_t &index);
 	bool get_next_index(size_t &index);
-	maplist_status_t get_status(void);
+	maplist_status_t get_status();
 	// Queries
 	void defer_query(query_callback_t query_callback,
 					 query_errback_t query_errback);
@@ -76,15 +76,15 @@ public:
 	bool update_status_handler(maplist_status_t status);
 	// Cache modification
 	void set_this_index(const size_t index);
-	void unset_this_index(void);
+	void unset_this_index();
 	void set_next_index(const size_t index);
 	void set_size(const size_t index);
 	void set_cache_entry(const size_t index, const maplist_entry_t &maplist_entry);
 };
 
-void CL_Maplist(void);
-void CL_MaplistIndex(void);
+void CL_Maplist();
+void CL_MaplistIndex();
 
-void Maplist_Runtic(void);
+void Maplist_Runtic();
 
 #endif

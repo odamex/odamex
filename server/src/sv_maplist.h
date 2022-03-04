@@ -41,28 +41,28 @@ private:
 	std::vector<size_t> s_maplist;
 	std::map<int, QWORD> timeout;
 	byte version;
-	void shuffle(void);
-	void update_shuffle_index(void);
+	void shuffle();
+	void update_shuffle_index();
 
 	maplist_entry_t lobbymap;
 
 public:
 	Maplist() : entered_once(false), error(""), index(0),
 				in_maplist(false), shuffled(false), s_index(0), version(0) { };
-	static Maplist& instance(void);
+	static Maplist& instance();
 	// Modifiers
 	bool add(maplist_entry_t &maplist_entry);
 	bool insert(const size_t &position, maplist_entry_t &maplist_entry);
 	bool remove(const size_t &position);
-	bool clear(void);
+	bool clear();
 
 	// Elements
-	bool empty(void);
-	std::string get_error(void);
+	bool empty();
+	std::string get_error();
 	bool get_map_by_index(const size_t &index, maplist_entry_t &maplist_entry);
 	bool get_next_index(size_t &index);
 	bool get_this_index(size_t &index);
-	byte get_version(void);
+	byte get_version();
 	bool query(std::vector<std::pair<size_t, maplist_entry_t*> > &result);
 	bool query(const std::vector<std::string> &query,
 			   std::vector<std::pair<size_t, maplist_entry_t*> > &result);

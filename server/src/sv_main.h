@@ -45,7 +45,7 @@ public:
 
 extern client_c clients;
 
-void SV_InitNetwork (void);
+void SV_InitNetwork ();
 void SV_SendDisconnectSignal();
 void SV_SendReconnectSignal();
 void SV_ExitLevel();
@@ -57,18 +57,18 @@ bool SV_IsPlayerAllowedToSee(player_t &pl, AActor *mobj);
 void STACK_ARGS SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);
 void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...);
 void STACK_ARGS SV_PlayerPrintf (int level, int who, const char *fmt, ...);
-void SV_CheckTimeouts (void);
-void SV_ConnectClient(void);
+void SV_CheckTimeouts ();
+void SV_ConnectClient();
 void SV_ConnectClient2(player_t& player);
-void SV_WriteCommands(void);
-void SV_ClearClientsBPS(void);
+void SV_WriteCommands();
+void SV_ClearClientsBPS();
 bool SV_SendPacket(player_t &pl);
 void SV_AcknowledgePacket(player_t &player);
 void SV_DisplayTics();
 void SV_RunTics();
 void SV_ParseCommands(player_t &player);
 void SV_UpdateFrags (player_t &player);
-void SV_RemoveCorpses (void);
+void SV_RemoveCorpses ();
 #define SV_DropClient(who) SV_DropClient2(who, __FILE__, __LINE__)
 void SV_DropClient2(player_t& who, const char* file, const int line);
 void SV_PlayerTriedToCheat(player_t &player);

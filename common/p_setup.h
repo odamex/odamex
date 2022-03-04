@@ -36,7 +36,7 @@ void P_SetupLevel (const char *mapname, int position);
 void P_TranslateLineDef(line_t* ld, maplinedef_t* mld);
 
 // Called by startup code.
-void P_Init (void);
+void P_Init ();
 
 #endif
 

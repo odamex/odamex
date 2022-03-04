@@ -674,7 +674,7 @@ void I_GetEvents(bool mouseOnly)
 //
 // I_StartTic
 //
-void I_StartTic (void)
+void I_StartTic()
 {
 	I_GetEvents(false);
 }

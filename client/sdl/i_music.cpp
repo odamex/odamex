@@ -213,7 +213,7 @@ void I_InitMusic(MusicSystemType musicsystem_type)
 	current_musicsystem_type = musicsystem_type;
 }
 
-void STACK_ARGS I_ShutdownMusic(void)
+void STACK_ARGS I_ShutdownMusic()
 {
 	if (musicsystem)
 	{

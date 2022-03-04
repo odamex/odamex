@@ -146,7 +146,7 @@ void D_PrepareWeaponPreferenceUserInfo()
 	}
 }
 
-void D_SetupUserInfo(void)
+void D_SetupUserInfo()
 {
 	UserInfo* coninfo = &consoleplayer().userinfo;
 

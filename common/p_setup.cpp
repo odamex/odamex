@@ -841,7 +841,7 @@ void P_AdjustLine (line_t *ld)
 }
 
 // killough 4/4/98: delay using sidedefs until they are loaded
-void P_FinishLoadingLineDefs (void)
+void P_FinishLoadingLineDefs ()
 {
 	int i, linenum;
 	register line_t *ld = lines;
@@ -1532,19 +1532,10 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 // Builds sector line lists and subsector sector numbers.
 // Finds block bounding boxes for sectors.
 //
-void P_GroupLines (void)
+void P_GroupLines ()
 {
-	line_t**			linebuffer;
-	int 				i;
-	int 				j;
-	int 				total;
-	line_t* 			li;
-	sector_t*			sector;
-	DBoundingBox		bbox;
-	int 				block;
-
 	// look up sector number for each subsector
-	for (i = 0; i < numsubsectors; i++)
+	for (int i = 0; i < numsubsectors; i++)
 	{
 		if (subsectors[i].firstline >= (unsigned int)numsegs)
 			I_Error("subsector[%d].firstline exceeds numsegs (%u)", i, numsegs);
@@ -1552,9 +1543,9 @@ void P_GroupLines (void)
 	}
 
 	// count number of lines in each sector
-	li = lines;
-	total = 0;
-	for (i = 0; i < numlines; i++, li++)
+	line_t* li = lines;
+	int total = 0;
+	for (int i = 0; i < numlines; i++, li++)
 	{
 		total++;
 		if (!li->frontsector && li->backsector)
@@ -1576,14 +1567,16 @@ void P_GroupLines (void)
 	}
 
 	// build line tables for each sector
-	linebuffer = (line_t **)Z_Malloc (total*sizeof(line_t *), PU_LEVEL, 0);
-	sector = sectors;
-	for (i=0 ; i<numsectors ; i++, sector++)
+	line_t** linebuffer = (line_t**)Z_Malloc(total*sizeof(line_t *), PU_LEVEL, 0);
+	sector_t* sector = sectors;
+	DBoundingBox bbox;
+
+	for (int i = 0; i < numsectors; i++, sector++)
 	{
 		bbox.ClearBox ();
 		sector->lines = linebuffer;
 		li = lines;
-		for (j=0 ; j<numlines ; j++, li++)
+		for (int j = 0 ; j<numlines ; j++, li++)
 		{
 			if (li->frontsector == sector || li->backsector == sector)
 			{
@@ -1600,7 +1593,7 @@ void P_GroupLines (void)
 		sector->soundorg[1] = (bbox.Top()+bbox.Bottom())/2;
 
 		// adjust bounding box to map blocks
-		block = (bbox.Top()-bmaporgy+MAXRADIUS)>>MAPBLOCKSHIFT;
+		int block = (bbox.Top() - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
 		block = block >= bmapheight ? bmapheight-1 : block;
 		sector->blockbox[BOXTOP]=block;
 
@@ -1616,7 +1609,6 @@ void P_GroupLines (void)
 		block = block < 0 ? 0 : block;
 		sector->blockbox[BOXLEFT]=block;
 	}
-
 }
 
 //
@@ -1724,7 +1716,7 @@ void P_LoadBehavior (int lumpnum)
 extern polyblock_t **PolyBlockMap;
 
 // Hash the sector tags across the sectors and linedefs.
-static void P_InitTagLists(void)
+static void P_InitTagLists()
 {
 	register int i;
 
@@ -1916,7 +1908,7 @@ void P_SetupLevel (const char *lumpname, int position)
 //
 // P_Init
 //
-void P_Init (void)
+void P_Init ()
 {
 	P_InitSwitchList ();
 	P_InitPicAnims ();

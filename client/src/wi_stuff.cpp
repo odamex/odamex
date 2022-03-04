@@ -46,7 +46,7 @@
 
 extern byte* Ranges;
 
-void WI_unloadData(void);
+void WI_unloadData();
 size_t P_NumPlayersInGame();
 
 //

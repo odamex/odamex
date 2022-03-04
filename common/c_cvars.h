@@ -180,13 +180,13 @@ public:
 
 	// Restore demo cvars. Called after demo playback to restore all cvars
 	// that might possibly have been changed during the course of demo playback.
-	static void C_RestoreCVars (void);
+	static void C_RestoreCVars ();
 
 	// Finds a named cvar
 	static cvar_t *FindCVar (const char *var_name, cvar_t **prev);
 
 	// Called from G_InitNew()
-	static void UnlatchCVars (void);
+	static void UnlatchCVars ();
 
 	// archive cvars to FILE f
 	static void C_ArchiveCVars (void *f);
@@ -244,7 +244,7 @@ private:
 	 { }
 };
 
-cvar_t* GetFirstCvar(void);
+cvar_t* GetFirstCvar();
 
 // Maximum number of cvars that can be saved.
 #define MAX_BACKUPCVARS 512

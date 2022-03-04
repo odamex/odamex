@@ -47,9 +47,9 @@ void P_AnimationTick(AActor *mo);
 //
 // P_Ticker
 //
-void P_Ticker (void)
+void P_Ticker()
 {
-	if(paused)
+	if (paused)
 		return;
 
 #ifdef CLIENT_APP

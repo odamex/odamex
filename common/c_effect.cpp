@@ -108,7 +108,6 @@ void P_DrawSplash (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, in
 
 	for (; count; count--) {
 		particle_t *p = JitterParticle (10);
-		angle_t an;
 
 		if (!p)
 			break;
@@ -120,7 +119,7 @@ void P_DrawSplash (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, in
 		p->accx += (M_Random () - 128) * 8;
 		p->accy += (M_Random () - 128) * 8;
 		p->z = z - M_Random () * 1024;
-		an = (angle + (M_Random() << 21)) >> ANGLETOFINESHIFT;
+		const angle_t an = (angle + (M_Random() << 21)) >> ANGLETOFINESHIFT;
 		p->x = x + (M_Random () & 15)*finecosine[an];
 		p->y = y + (M_Random () & 15)*finesine[an];
 	}
@@ -157,12 +156,10 @@ static void MakeFountain (AActor *actor, int color1, int color2)
 	if (!clientside)
 		return;
 
-	particle_t *particle;
-
 	if (!(level.time & 1))
 		return;
 
-	particle = JitterParticle (51);
+	particle_t* particle = JitterParticle(51);
 
 	if (particle) {
 		angle_t an = M_Random()<<(24-ANGLETOFINESHIFT);
@@ -221,7 +218,7 @@ particle_t *JitterParticle (int ttl)
 //
 // Run effects on all mobjs in world
 //
-void P_RunEffects (void)
+void P_RunEffects()
 {
 	if (!clientside)
 		return;
@@ -259,20 +256,17 @@ void P_RunEffect (AActor *actor, int effects)
 	}
 }
 
-void P_ThinkParticles (void)
+void P_ThinkParticles()
 {
 	if (!clientside)
 		return;
 
-	int i;
-	particle_t *particle, *prev;
-
-	i = ActiveParticles;
-	prev = NULL;
+	int i = ActiveParticles;
+	particle_t* prev = NULL;
 	while (i != NO_PARTICLE) {
 		byte oldtrans;
 
-		particle = Particles + i;
+		particle_t* particle = Particles + i;
 		i = particle->next;
 		oldtrans = particle->trans;
 		particle->trans -= particle->fade;
@@ -307,7 +301,7 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 	M_SubVec3(&dir, &end, &start);
 
 	double length = M_LengthVec3(&dir);
-	int steps = (int)(length*0.3333);
+	int steps = static_cast<int>(length * 0.3333);
 
 	if (!length)	// line is 0 length, so nothing to do
 		return;
@@ -320,7 +314,7 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 	// point on the slug's trail that is closest to the hearing player.
 	AActor *mo = consoleplayer().camera;
 
-	double ilength = 1.0 / length;
+	const double ilength = 1.0 / length;
 
 	if (abs(mo->x - FLOAT2FIXED(start.x)) < 20 * FRACUNIT &&
 		abs(mo->y - FLOAT2FIXED(start.y)) < 20 * FRACUNIT)
@@ -331,8 +325,8 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 	else
 	{
 		// Only consider sound in 2D (for now, anyway)
-		double r = ((start.y - FIXED2FLOAT(mo->y)) * (-dir.y) -
-				(start.x - FIXED2FLOAT(mo->x)) * (dir.x)) * ilength * ilength;
+		const double r = ((start.y - FIXED2FLOAT(mo->y)) * (-dir.y) -
+		                  (start.x - FIXED2FLOAT(mo->x)) * (dir.x)) * ilength * ilength;
 
 		M_ScaleVec3(&point, &dir, r);
 		M_AddVec3(&point, &start, &point);
@@ -421,9 +415,7 @@ void P_DisconnectEffect (AActor *actor)
 	if (!actor || !clientside)
 		return;
 
-	int i;
-
-	for (i = 64; i; i--) {
+	for (int i = 64; i; i--) {
 		particle_t *p = JitterParticle (TICRATE*2);
 
 		if (!p)

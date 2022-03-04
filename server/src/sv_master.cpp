@@ -102,7 +102,7 @@ END_COMMAND(masters)
 //
 // SV_InitMaster
 //
-void SV_InitMasters(void)
+void SV_InitMasters()
 {
 	static bool previous_sv_usemasters = (sv_usemasters == 0);
 
@@ -179,7 +179,7 @@ void SV_ArchiveMasters(FILE *fp)
 //
 // SV_ListMasters
 //
-void SV_ListMasters(void)
+void SV_ListMasters()
 {
 	Printf("Use addmaster/delmaster commands to modify this list");
 
@@ -226,16 +226,16 @@ void SV_UpdateMasterServer(masterserver &m)
 //
 // SV_UpdateMasterServers
 //
-void SV_UpdateMasterServers(void)
+void SV_UpdateMasterServers()
 {
-	for(size_t index = 0; index < masters.size(); index++)
+	for (size_t index = 0; index < masters.size(); index++)
 		SV_UpdateMasterServer(masters[index]);
 }
 
 //
 // SV_UpdateMaster
 //
-void SV_UpdateMaster(void)
+void SV_UpdateMaster()
 {
 	if (!sv_usemasters)
 		return;

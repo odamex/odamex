@@ -93,7 +93,7 @@ void SV_UpdateMobjState(AActor* mo) {}
 void CTF_RememberFlagPos(mapthing2_t *mthing) {}
 void CTF_SpawnFlag(team_t f) {}
 bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
-void SV_SendPackets(void) {}
+void SV_SendPackets() {}
 void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, int arg0,
                                int arg1, int arg2, int arg3, int arg4)
 {

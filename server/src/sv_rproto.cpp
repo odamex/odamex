@@ -34,7 +34,7 @@
 #include <chrono>
 #endif
 
-QWORD I_MSTime (void);
+QWORD I_MSTime();
 
 EXTERN_CVAR (log_packetdebug)
 #ifdef SIMULATE_LATENCY

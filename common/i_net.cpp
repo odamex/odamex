@@ -287,12 +287,10 @@ void upnp_rem_redir (int port)
 //
 // UDPsocket
 //
-SOCKET UDPsocket (void)
+SOCKET UDPsocket ()
 {
-	SOCKET s;
-
 	// allocate a socket
-	s = socket (PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	SOCKET s = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (s == INVALID_SOCKET)
      	I_FatalError ("can't create socket");
 
@@ -354,7 +352,7 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 }
 
 
-void CloseNetwork (void)
+void CloseNetwork ()
 {
 #ifdef ODA_HAVE_MINIUPNP
     upnp_rem_redir (port);
@@ -822,17 +820,17 @@ void MSG_WriteHexString(buf_t *b, const char *s)
     MSG_WriteChunk(b, output, numdigits);
 }
 
-int MSG_BytesLeft(void)
+int MSG_BytesLeft()
 {
 	return net_message.BytesLeftToRead();
 }
 
-int MSG_ReadByte (void)
+int MSG_ReadByte ()
 {
     return net_message.ReadByte();
 }
 
-int MSG_NextByte (void)
+int MSG_NextByte ()
 {
 	return net_message.NextByte();
 }
@@ -968,12 +966,12 @@ bool MSG_CompressAdaptive (huffman &huff, buf_t &buf, size_t start_offset, size_
 	return true;
 }
 
-int MSG_ReadShort (void)
+int MSG_ReadShort ()
 {
     return net_message.ReadShort();
 }
 
-int MSG_ReadLong (void)
+int MSG_ReadLong ()
 {
 	return net_message.ReadLong();
 }
@@ -992,7 +990,7 @@ int MSG_ReadVarint()
 // MSG_ReadBool
 //
 // Read a boolean value
-bool MSG_ReadBool(void)
+bool MSG_ReadBool()
 {
     int Value = net_message.ReadByte();
 
@@ -1010,7 +1008,7 @@ bool MSG_ReadBool(void)
 // MSG_ReadString
 //
 // Read a null terminated string
-const char *MSG_ReadString (void)
+const char *MSG_ReadString ()
 {
 	return net_message.ReadString();
 }
@@ -1019,7 +1017,7 @@ const char *MSG_ReadString (void)
 // MSG_ReadFloat
 //
 // Read a floating point number
-float MSG_ReadFloat(void)
+float MSG_ReadFloat()
 {
     std::stringstream StringStream;
     float Float;
@@ -1186,7 +1184,7 @@ CVAR_FUNC_IMPL(net_sndbuf)
 //
 // InitNetCommon
 //
-void InitNetCommon(void)
+void InitNetCommon()
 {
    unsigned long _true = true;
 

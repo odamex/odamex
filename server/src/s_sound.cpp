@@ -46,7 +46,7 @@
 //
 // [RH] Print sound debug info. Called from D_Display()
 //
-void S_NoiseDebug (void)
+void S_NoiseDebug ()
 {
 }
 
@@ -66,11 +66,11 @@ void S_Init (float sfxVolume, float musicVolume)
 	//NumSequences = 0;
 }
 
-void S_Start (void)
+void S_Start ()
 {
 }
 
-void S_Stop (void)
+void S_Stop ()
 {
 }
 
@@ -135,7 +135,7 @@ void S_StopSound (AActor *ent, int channel)
 {
 }
 
-void S_StopAllChannels (void)
+void S_StopAllChannels ()
 {
 }
 
@@ -158,11 +158,11 @@ bool S_GetSoundPlayingInfo (AActor *ent, int sound_id)
 //
 // Stop and resume music, during game PAUSE.
 //
-void S_PauseSound (void)
+void S_PauseSound ()
 {
 }
 
-void S_ResumeSound (void)
+void S_ResumeSound ()
 {
 }
 
@@ -198,7 +198,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 {
 }
 
-void S_StopMusic (void)
+void S_StopMusic ()
 {
 }
 
@@ -228,10 +228,9 @@ static struct AmbientSound {
 #define POSITIONAL	4
 #define SURROUND	16
 
-void S_HashSounds (void)
+void S_HashSounds ()
 {
 	int i;
-	unsigned j;
 
 	// Mark all buckets as empty
 	for (i = 0; i < numsfx; i++)
@@ -240,7 +239,7 @@ void S_HashSounds (void)
 	// Now set up the chains
 	for (i = 0; i < numsfx; i++) 
 	{
-		j = MakeKey (S_sfx[i].name) % (unsigned)numsfx;
+		unsigned j = MakeKey(S_sfx[i].name) % (unsigned)numsfx;
 		S_sfx[i].next = S_sfx[j].index;
 		S_sfx[j].index = i;
 	}
@@ -317,9 +316,8 @@ int S_AddSound (char *logicalname, char *lumpname)
 
 // S_ParseSndInfo
 // Parses all loaded SNDINFO lumps.
-void S_ParseSndInfo (void)
+void S_ParseSndInfo ()
 {
-	char *sndinfo;
 	char *data;
 
 	S_ClearSoundLumps ();
@@ -327,7 +325,7 @@ void S_ParseSndInfo (void)
 	int lump = -1;
 	while ((lump = W_FindLump ("SNDINFO", lump)) != -1)
 	{
-		sndinfo = (char *)W_CacheLumpNum (lump, PU_CACHE);
+		char* sndinfo = (char*)W_CacheLumpNum(lump, PU_CACHE);
 
 		while ( (data = COM_Parse (sndinfo)) ) {
 			if (com_token[0] == ';') {
@@ -344,7 +342,7 @@ void S_ParseSndInfo (void)
 
 				if (!stricmp (com_token + 1, "ambient")) {
 					// $ambient <num> <logical name> [point [atten]|surround] <type> [secs] <relative volume>
-					struct AmbientSound *ambient, dummy;
+					AmbientSound *ambient, dummy;
 					int index;
 
 					sndinfo = COM_Parse (sndinfo);

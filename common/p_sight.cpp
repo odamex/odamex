@@ -212,7 +212,7 @@ bool P_SightBlockLinesIterator (int x, int y)
 ====================
 */
 
-bool P_SightTraverseIntercepts ( void )
+bool P_SightTraverseIntercepts ()
 {
 	size_t  count = intercepts.Size();
 	fixed_t dist;

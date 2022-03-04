@@ -45,11 +45,11 @@ typedef void (*drawfunc_t) (int start, int stop);
 EXTERN_CVAR (r_drawflat)		// [RH] Don't texture segs?
 
 // BSP?
-void R_ClearClipSegs (void);
-void R_ReallocDrawSegs(void);
-void R_ClearDrawSegs (void);
-void R_RenderBSPNode (int bspnum);
-bool R_DoorClosed(void);	// killough 1/17/98
+void R_ClearClipSegs();
+void R_ReallocDrawSegs();
+void R_ClearDrawSegs();
+void R_RenderBSPNode(int bspnum);
+bool R_DoorClosed();	// killough 1/17/98
 
 // killough 4/13/98: fake floors/ceilings for deep water / fake ceilings:
 sector_t *R_FakeFlat(sector_t *, sector_t *, int *, int *, bool);

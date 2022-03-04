@@ -1031,11 +1031,9 @@ void R_DrawSprite (vissprite_t *spr)
 //
 // R_DrawMasked
 //
-void R_DrawMasked (void)
+void R_DrawMasked()
 {
-	drawseg_t		 *ds;
-
-	R_SortVisSprites ();
+	R_SortVisSprites();
 
 	while (vsprcount > 0)
 		R_DrawSprite(spritesorter[--vsprcount]);
@@ -1048,7 +1046,7 @@ void R_DrawMasked (void)
 
 	//		for (ds=ds_p-1 ; ds >= drawsegs ; ds--)    old buggy code
 
-	for (ds=ds_p ; ds-- > drawsegs ; )	// new -- killough
+	for (drawseg_t* ds = ds_p ; ds-- > drawsegs ; )	// new -- killough
 		if (ds->midposts)
 			R_RenderMaskedSegRange(ds, ds->x1, ds->x2);
 
@@ -1056,7 +1054,7 @@ void R_DrawMasked (void)
 	R_DrawPlayerSprites();
 }
 
-void R_InitParticles (void)
+void R_InitParticles()
 {
 	const char *i;
 
@@ -1067,14 +1065,14 @@ void R_InitParticles (void)
 	else if (NumParticles < 100)
 		NumParticles = 100;
 
-	if(Particles)
+	if (Particles)
 		delete[] Particles;
 
 	Particles = new particle_t[NumParticles * sizeof(particle_t)];
 	R_ClearParticles ();
 }
 
-void R_ClearParticles (void)
+void R_ClearParticles()
 {
 	int i;
 
@@ -1168,9 +1166,9 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 void R_DrawParticle(vissprite_t* vis)
 {
 	// Don't bother clipping each individual column
-	int x1 = vis->x1, x2 = vis->x2;
-	int y1 = MAX(vis->y1, MAX(mceilingclip[x1] + 1, mceilingclip[x2] + 1));
-	int y2 = MIN(vis->y2, MIN(mfloorclip[x1] - 1, mfloorclip[x2] - 1));
+	const int x1 = vis->x1, x2 = vis->x2;
+	const int y1 = MAX(vis->y1, MAX(mceilingclip[x1] + 1, mceilingclip[x2] + 1));
+	const int y2 = MIN(vis->y2, MIN(mfloorclip[x1] - 1, mfloorclip[x2] - 1));
 
 	dspan.x1 = vis->x1;
 	dspan.x2 = vis->x2;

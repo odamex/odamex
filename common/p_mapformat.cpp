@@ -50,7 +50,7 @@ enum triggertype
 };
 
 // Migrate some non-hexen data to hexen format
-void P_MigrateActorInfo(void)
+void P_MigrateActorInfo()
 {
 	int i;
 	static bool migrated = false;
@@ -171,7 +171,7 @@ void MapFormat::post_process_linedef_special(line_t* line)
 		P_PostProcessCompatibleLinedefSpecial(line);
 }
 
-void MapFormat::P_ApplyZDoomMapFormat(void)
+void MapFormat::P_ApplyZDoomMapFormat()
 {
 	map_format.zdoom = true;
 	map_format.hexen = true;
@@ -180,7 +180,7 @@ void MapFormat::P_ApplyZDoomMapFormat(void)
 	P_MigrateActorInfo();
 }
 
-void MapFormat::P_ApplyDefaultMapFormat(void)
+void MapFormat::P_ApplyDefaultMapFormat()
 {
 	map_format.zdoom = false;
 	map_format.hexen = false;
@@ -189,17 +189,17 @@ void MapFormat::P_ApplyDefaultMapFormat(void)
 	P_MigrateActorInfo();
 }
 
-bool MapFormat::getZDoom(void)
+bool MapFormat::getZDoom()
 {
 	return map_format.zdoom;
 }
 
-bool MapFormat::getHexen(void)
+bool MapFormat::getHexen()
 {
 	return map_format.hexen;
 }
 
-short MapFormat::getGeneralizedMask(void)
+short MapFormat::getGeneralizedMask()
 {
 	return map_format.generalized_mask;
 }

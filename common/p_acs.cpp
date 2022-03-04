@@ -3786,14 +3786,13 @@ static void SetScriptState (int script, DLevelScript::EScriptState state)
 		controller->RunningScripts[script]->SetState (state);
 }
 
-void P_DoDeferedScripts (void)
+void P_DoDeferedScripts()
 {
-	acsdefered_t *def;
 	int *scriptdata;
 	AActor *gomo = NULL;
 
 	// Handle defered scripts in this step, too
-	def = level.info->defered;
+	acsdefered_t* def = level.info->defered;
 	while (def)
 	{
 		acsdefered_t *next = def->next;
@@ -3804,7 +3803,7 @@ void P_DoDeferedScripts (void)
 			scriptdata = level.behavior->FindScript (def->script);
 			if (scriptdata)
 			{
-				if ((unsigned)def->playernum < MAXPLAYERS && idplayer(def->playernum).ingame())
+				if (static_cast<unsigned>(def->playernum) < MAXPLAYERS && idplayer(def->playernum).ingame())
 					gomo = idplayer(def->playernum).mo;
 
 				P_GetScriptGoing (gomo, NULL, def->script, scriptdata, 0, def->arg0, def->arg1, def->arg2, def->type == acsdefered_t::defexealways, true);

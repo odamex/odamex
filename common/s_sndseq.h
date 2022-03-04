@@ -67,7 +67,7 @@ private:
 
 	void ActivateSequence (int sequence);
 
-	friend void SN_StopAllSequences (void);
+	friend void SN_StopAllSequences();
 };
 
 typedef struct

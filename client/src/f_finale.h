@@ -32,13 +32,13 @@
 //
 
 // Called by main loop.
-BOOL F_Responder (event_t* ev);
+BOOL F_Responder(event_t* ev);
 
 // Called by main loop.
-void F_Ticker (void);
+void F_Ticker();
 
 // Called by main loop.
-void F_Drawer (void);
+void F_Drawer();
 
 struct finale_options_t
 {

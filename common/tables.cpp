@@ -2112,16 +2112,14 @@ const angle_t *p_tantoangle = tantoangle;
 // Initializes a more accurate tantoangle table for use outside of old demos and
 // unconditionally within the renderer using the atan2 function.
 //
-void Table_InitTanToAngle(void)
+void Table_InitTanToAngle()
 {
-   int i;
+	for (int i = 0; i <= SLOPERANGE; ++i)
+    {
+	    const double angle = atan2((double)i, (double)SLOPERANGE) / 6.28318530718;
 
-   for(i = 0; i <= SLOPERANGE; ++i)
-   {
-      double angle = atan2((double)i, (double)SLOPERANGE) / 6.28318530718;
-
-      tantoangle_acc[i] = (angle_t)(angle * ANG360);
-   }
+        tantoangle_acc[i] = static_cast<angle_t>(angle * ANG360);
+    }
 }
 
 //

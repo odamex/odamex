@@ -115,9 +115,9 @@ extern int				lightscaleymul;
 //
 // Function pointers to switch refresh/drawing functions.
 //
-extern void 			(*colfunc) (void);
-extern void 			(*spanfunc) (void);
-extern void				(*spanslopefunc) (void);
+extern void (*colfunc) ();
+extern void (*spanfunc) ();
+extern void (*spanslopefunc) ();
 
 
 //
@@ -128,18 +128,12 @@ int R_PointOnSide(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixe
 int R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t* line);
 bool R_PointOnLine(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixed_t yh);
 
-angle_t
-R_PointToAngle
-( fixed_t	x,
-  fixed_t	y );
+angle_t R_PointToAngle(fixed_t x, fixed_t y);
 
 // 2/1/10: Updated (from EE) to restore vanilla style, with tweak for overflow tolerance
 angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y);
 
-fixed_t
-R_PointToDist
-( fixed_t	x,
-  fixed_t	y );
+fixed_t R_PointToDist(fixed_t x, fixed_t y);
 
 int R_ProjectPointX(fixed_t x, fixed_t y);
 int R_ProjectPointY(fixed_t z, fixed_t y);
@@ -156,26 +150,19 @@ void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
 				int32_t lclip, int32_t rclip,
 				v2fixed_t* out1, v2fixed_t* out2);
 
-subsector_t*
-R_PointInSubsector
-( fixed_t	x,
-  fixed_t	y );
+subsector_t* R_PointInSubsector(fixed_t x, fixed_t y);
 
-void
-R_AddPointToBox
-( int		x,
-  int		y,
-  fixed_t*	box );
+void R_AddPointToBox(int x, int y, fixed_t* box);
 
-fixed_t R_PointToDist2 (fixed_t dx, fixed_t dy);
+fixed_t R_PointToDist2(fixed_t dx, fixed_t dy);
 void R_SetFOV(float fov, bool force);
-float R_GetFOV (void);
+float R_GetFOV();
 
 #define WIDE_STRETCH 0
 #define WIDE_ZOOM 1
 #define WIDE_TRUE 2
 
-int R_GetWidescreen(void);
+int R_GetWidescreen();
 
 //
 // REFRESH - the actual rendering functions.
@@ -232,7 +219,7 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 	const palindex_t range_start = 0x70;
 	const palindex_t range_stop = 0x7F;
 
-	int pid = translation.getPlayerID();
+	const int pid = translation.getPlayerID();
 
 	// Not a player color translation:
 	if (pid == -1)
@@ -260,12 +247,12 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 	// Find the shading for the custom player colors:
 	argb_t trancolor = translationRGB[pid][c - range_start];
 
-	unsigned int r = (trancolor.getr() * lightcolor.getr() * (NUMCOLORMAPS - m_mapnum) / 255
-					+ fadecolor.getr() * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
-	unsigned int g = (trancolor.getg() * lightcolor.getg() * (NUMCOLORMAPS - m_mapnum) / 255
-					+ fadecolor.getg() * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
-	unsigned int b = (trancolor.getb() * lightcolor.getb() * (NUMCOLORMAPS - m_mapnum) / 255
-					+ fadecolor.getb() * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	const unsigned int r = (trancolor.getr() * lightcolor.getr() * (NUMCOLORMAPS - m_mapnum) / 255
+	                        + fadecolor.getr() * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	const unsigned int g = (trancolor.getg() * lightcolor.getg() * (NUMCOLORMAPS - m_mapnum) / 255
+	                        + fadecolor.getg() * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	const unsigned int b = (trancolor.getb() * lightcolor.getb() * (NUMCOLORMAPS - m_mapnum) / 255
+	                        + fadecolor.getb() * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
 
 	return argb_t(gammatable[r], gammatable[g], gammatable[b]);
 }

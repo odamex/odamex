@@ -70,7 +70,7 @@ UINT TimerPeriod;
 #endif
 
 ticcmd_t emptycmd;
-ticcmd_t *I_BaseTiccmd(void)
+ticcmd_t *I_BaseTiccmd()
 {
 	return &emptycmd;
 }
@@ -151,11 +151,11 @@ void *I_ZoneBase (size_t *size)
 	return zone;
 }
 
-void I_BeginRead(void)
+void I_BeginRead()
 {
 }
 
-void I_EndRead(void)
+void I_EndRead()
 {
 }
 
@@ -320,7 +320,7 @@ void SetLanguageIDs()
 //
 // I_Init
 //
-void I_Init (void)
+void I_Init ()
 {
 }
 
@@ -334,7 +334,7 @@ void I_FinishClockCalibration ()
 //
 static int has_exited;
 
-void STACK_ARGS I_Quit (void)
+void STACK_ARGS I_Quit ()
 {
     has_exited = 1;             /* Prevent infinitely recursive exits -- killough */
 
@@ -358,7 +358,7 @@ bool gameisdead;
 
 #define MAX_ERRORTEXT	1024
 
-void STACK_ARGS call_terms (void);
+void STACK_ARGS call_terms ();
 
 void STACK_ARGS I_FatalError (const char *error, ...)
 {
@@ -454,7 +454,7 @@ int I_FindAttr (findstate_t *fileinfo)
 #ifdef _WIN32
 int ShutdownNow();
 
-std::string I_ConsoleInput (void)
+std::string I_ConsoleInput ()
 {
 	// denis - todo - implement this properly!!!
     static char     text[1024] = {0};

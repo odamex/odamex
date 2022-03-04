@@ -41,7 +41,7 @@ private:
 	byte abs;
 public:
 	VoteState() : visible(false) { };
-	static VoteState& instance(void);
+	static VoteState& instance();
 	void set(const vote_state_t &vote_state);
 	bool get(vote_state_t &vote_state);
 };

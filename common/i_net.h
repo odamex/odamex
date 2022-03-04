@@ -732,17 +732,17 @@ public:
 
 extern buf_t net_message;
 
-void CloseNetwork (void);
-void InitNetCommon(void);
+void CloseNetwork ();
+void InitNetCommon();
 void I_SetPort(netadr_t &addr, int port);
 bool NetWaitOrTimeout(size_t ms);
 
 char *NET_AdrToString (netadr_t a);
 bool NET_StringToAdr (const char *s, netadr_t *a);
 bool NET_CompareAdr (netadr_t a, netadr_t b);
-int  NET_GetPacket (void);
+int  NET_GetPacket ();
 int NET_SendPacket (buf_t &buf, netadr_t &to);
-std::string NET_GetLocalAddress (void);
+std::string NET_GetLocalAddress ();
 
 void SZ_Clear (buf_t *buf);
 void SZ_Write (buf_t *b, const void *data, int length);
@@ -764,18 +764,18 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg);
 void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& msg,
                       const int skipPlayer = -1);
 
-int MSG_BytesLeft(void);
-int MSG_NextByte (void);
+int MSG_BytesLeft();
+int MSG_NextByte();
 
-int MSG_ReadByte (void);
+int MSG_ReadByte();
 void *MSG_ReadChunk (const size_t &size);
-int MSG_ReadShort (void);
-int MSG_ReadLong (void);
+int MSG_ReadShort();
+int MSG_ReadLong();
 unsigned int MSG_ReadUnVarint();
 int MSG_ReadVarint();
-bool MSG_ReadBool(void);
-float MSG_ReadFloat(void);
-const char *MSG_ReadString (void);
+bool MSG_ReadBool();
+float MSG_ReadFloat();
+const char *MSG_ReadString();
 
 template <typename MSG>
 bool MSG_ReadProto(MSG& msg)

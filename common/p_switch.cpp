@@ -85,7 +85,7 @@ static int  numswitches;
 //
 // [RH] Rewritten to use a BOOM-style SWITCHES lump and remove the
 //		MAXSWITCHES limit.
-void P_InitSwitchList(void)
+void P_InitSwitchList()
 {
 	byte *alphSwitchList = (byte *)W_CacheLumpName ("SWITCHES", PU_STATIC);
 	byte *list_p;
@@ -155,9 +155,9 @@ static void P_StartButton (line_t *line, DActiveButton::EWhere w, int texture,
 
 short* P_GetButtonTexturePtr(line_t* line, short*& altTexture, DActiveButton::EWhere& where)
 {
-	int texTop = sides[line->sidenum[0]].toptexture;
-	int texMid = sides[line->sidenum[0]].midtexture;
-	int texBot = sides[line->sidenum[0]].bottomtexture;
+	const int texTop = sides[line->sidenum[0]].toptexture;
+	const int texMid = sides[line->sidenum[0]].midtexture;
+	const int texBot = sides[line->sidenum[0]].bottomtexture;
 	where = (DActiveButton::EWhere)0;
 	altTexture = NULL;
 
@@ -262,10 +262,9 @@ void P_UpdateButtons(client_t *cl)
 		if (button->m_Line == NULL) continue;
 
 		unsigned l = button->m_Line - lines;
-		unsigned state = 0, timer = 0;
 
-		state = button->m_Where;
-		timer = button->m_Timer;
+		const unsigned state = button->m_Where;
+		const unsigned timer = button->m_Timer;
 
 		// record that we acted on this line:
 		actedlines[l] = true;
@@ -273,7 +272,7 @@ void P_UpdateButtons(client_t *cl)
 		MSG_WriteSVC(&cl->reliablebuf, SVC_Switch(lines[l], state, timer));
 	}
 
-	for (int l=0; l<numlines; l++)
+	for (int l = 0; l < numlines; l++)
 	{
 		// update all button state except those that have actors assigned:
 		if (!actedlines[l] && lines[l].wastoggled)
@@ -313,8 +312,8 @@ void P_ChangeSwitchTexture(line_t* line, int useAgain, bool playsound)
 		// [RH] The original code played the sound at buttonlist->soundorg,
 		//		which wasn't necessarily anywhere near the switch if
 		//		it was facing a big sector.
-		fixed_t x = line->v1->x + (line->dx >> 1);
-		fixed_t y = line->v1->y + (line->dy >> 1);
+		const fixed_t x = line->v1->x + (line->dx >> 1);
+		const fixed_t y = line->v1->y + (line->dy >> 1);
 
 		if (playsound)
 		{

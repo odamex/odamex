@@ -29,12 +29,12 @@
 class MapFormat
 {
   public:
-	void P_ApplyZDoomMapFormat(void);
-	void P_ApplyDefaultMapFormat(void);
+	void P_ApplyZDoomMapFormat();
+	void P_ApplyDefaultMapFormat();
 
-	bool getZDoom(void);
-	bool getHexen(void);
-	short getGeneralizedMask(void);
+	bool getZDoom();
+	bool getHexen();
+	short getGeneralizedMask();
 
 	void init_sector_special(sector_t*);
 	void player_in_special_sector(player_t*);

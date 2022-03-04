@@ -78,7 +78,7 @@ EXTERN_CVAR (r_centerwindow)
 DArgs Args;
 
 // functions to be called at shutdown are stored in this stack
-typedef void (STACK_ARGS *term_func_t)(void);
+typedef void (STACK_ARGS *term_func_t)();
 std::stack< std::pair<term_func_t, std::string> > TermFuncs;
 
 void addterm (void (STACK_ARGS *func) (), const char *name)
@@ -86,21 +86,21 @@ void addterm (void (STACK_ARGS *func) (), const char *name)
 	TermFuncs.push(std::pair<term_func_t, std::string>(func, name));
 }
 
-void STACK_ARGS call_terms (void)
+void STACK_ARGS call_terms()
 {
 	while (!TermFuncs.empty())
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
 #ifdef __SWITCH__
-void STACK_ARGS nx_early_init (void)
+void STACK_ARGS nx_early_init()
 {
 	socketInitializeDefault();
 #ifdef ODAMEX_DEBUG
 	nxlinkStdio();
 #endif
 }
-void STACK_ARGS nx_early_deinit (void)
+void STACK_ARGS nx_early_deinit()
 {
 	socketExit();
 }

@@ -74,7 +74,7 @@ struct UserInfo
 FArchive &operator<< (FArchive &arc, UserInfo &info);
 FArchive &operator>> (FArchive &arc, UserInfo &info);
 
-void D_SetupUserInfo (void);
+void D_SetupUserInfo ();
 
 void D_UserInfoChanged (cvar_t *info);
 

@@ -90,7 +90,7 @@ extern bool recv_full_update;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
 
-void CL_CheckDisplayPlayer(void);
+void CL_CheckDisplayPlayer();
 void CL_ClearPlayerJustTeleported(player_t* player);
 void CL_ClearSectorSnapshots();
 player_t& CL_FindPlayer(size_t id);

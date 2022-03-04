@@ -102,11 +102,9 @@ size_t mem_fread(void *buf, size_t size, size_t nmemb, MEMFILE *stream)
 
 // Open a memory area for writing
 
-MEMFILE *mem_fopen_write(void)
+MEMFILE *mem_fopen_write()
 {
-	MEMFILE *file;
-
-	file = (MEMFILE *)Z_Malloc(sizeof(MEMFILE), PU_STATIC, 0);
+	MEMFILE* file = (MEMFILE*)Z_Malloc(sizeof(MEMFILE), PU_STATIC, 0);
 
 	file->alloced = 1024;
 	file->buf = (unsigned char *)Z_Malloc(file->alloced, PU_STATIC, 0);
@@ -121,8 +119,6 @@ MEMFILE *mem_fopen_write(void)
 
 size_t mem_fwrite(const void *ptr, size_t size, size_t nmemb, MEMFILE *stream)
 {
-	size_t bytes;
-
 	if (stream->mode != MODE_WRITE)
 	{
 		return 0;
@@ -131,13 +127,11 @@ size_t mem_fwrite(const void *ptr, size_t size, size_t nmemb, MEMFILE *stream)
 	// More bytes than can fit in the buffer?
 	// If so, reallocate bigger.
 
-	bytes = size * nmemb;
+	const size_t bytes = size * nmemb;
 	
 	while (bytes > stream->alloced - stream->position)
 	{
-		unsigned char *newbuf;
-
-		newbuf = (unsigned char *)Z_Malloc(stream->alloced * 2, PU_STATIC, 0);
+		unsigned char* newbuf = (unsigned char*)Z_Malloc(stream->alloced * 2, PU_STATIC, 0);
 		memcpy(newbuf, stream->buf, stream->alloced);
 		Z_Free(stream->buf);
 		stream->buf = newbuf;

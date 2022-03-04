@@ -77,20 +77,20 @@ int 			viewwindowy;
 // [RH] Pointers to the different column drawers.
 //		These get changed depending on the current
 //		screen depth.
-void (*R_DrawColumn)(void);
-void (*R_DrawFuzzColumn)(void);
-void (*R_DrawTranslucentColumn)(void);
-void (*R_DrawTranslatedColumn)(void);
-void (*R_DrawTlatedLucentColumn)(void);
-void (*R_DrawSpan)(void);
-void (*R_DrawSlopeSpan)(void);
-void (*R_FillColumn)(void);
-void (*R_FillSpan)(void);
-void (*R_FillTranslucentSpan)(void);
+void (*R_DrawColumn)();
+void (*R_DrawFuzzColumn)();
+void (*R_DrawTranslucentColumn)();
+void (*R_DrawTranslatedColumn)();
+void (*R_DrawTlatedLucentColumn)();
+void (*R_DrawSpan)();
+void (*R_DrawSlopeSpan)();
+void (*R_FillColumn)();
+void (*R_FillSpan)();
+void (*R_FillTranslucentSpan)();
 
 // Possibly vectorized functions:
-void (*R_DrawSpanD)(void);
-void (*R_DrawSlopeSpanD)(void);
+void (*R_DrawSpanD)();
+void (*R_DrawSlopeSpanD)();
 void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 // ============================================================================
@@ -345,7 +345,7 @@ void R_InitTranslationTables()
 	R_BuildFontTranslation(CR_CYAN,		argb_t(0x00, 0xF0, 0xF0), argb_t(0x00, 0x1F, 0x1F));
 }
 
-void R_FreeTranslationTables (void)
+void R_FreeTranslationTables ()
 {
     delete[] translationtablesmem;
     translationtablesmem = NULL;

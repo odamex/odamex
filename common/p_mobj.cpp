@@ -2506,14 +2506,9 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 //
 // P_RespawnSpecials
 //
-void P_RespawnSpecials (void)
+void P_RespawnSpecials()
 {
-	fixed_t 			x;
-	fixed_t 			y;
 	fixed_t 			z;
-
-	AActor* 			mo;
-	mapthing2_t* 		mthing;
 
 	int 				i;
 
@@ -2533,10 +2528,10 @@ void P_RespawnSpecials (void)
 	if (level.time - itemrespawntime[iquetail] < sv_itemrespawntime*TICRATE)
 		return;
 
-	mthing = &itemrespawnque[iquetail];
+	const mapthing2_t* mthing = &itemrespawnque[iquetail];
 
-	x = mthing->x << FRACBITS;
-	y = mthing->y << FRACBITS;
+	const fixed_t x = mthing->x << FRACBITS;
+	const fixed_t y = mthing->y << FRACBITS;
 
 	// find which type to spawn
 	for (i=0 ; i< NUMMOBJTYPES ; i++)
@@ -2568,7 +2563,7 @@ void P_RespawnSpecials (void)
 		z = ONFLOORZ;
 
 	// spawn a teleport fog at the new spot
-	mo = new AActor (x, y, z, MT_IFOG);
+	AActor* mo = new AActor(x, y, z, MT_IFOG);
 	SV_SpawnMobj(mo);
 	if (clientside)
 		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);

@@ -799,7 +799,7 @@ bool P_CheckTag(line_t* line)
  *no assumptions about how the compiler packs the animdefs array.
  *
  */
-void P_InitPicAnims (void)
+void P_InitPicAnims ()
 {
 	byte *animdefs, *anim_p;
 
@@ -2210,7 +2210,7 @@ void P_CollectSecretVanilla(sector_t* sector, player_t* player)
 // Animate planes, scroll walls, etc.
 //
 
-void P_UpdateSpecials (void)
+void P_UpdateSpecials ()
 {
 	anim_t *anim;
 	int i;
@@ -2293,14 +2293,11 @@ CVAR_FUNC_IMPL (sv_forcewater)
 * Sets up map sector line specials, thinkers, and other things
 * needed to make Doom interesting.
 */
-void P_SetupWorldState(void)
+void P_SetupWorldState()
 {
-	sector_t* sector;
-	int i;
-
 	//	Init special SECTORs.
-	sector = sectors;
-	for (i = 0; i < numsectors; i++, sector++)
+	sector_t* sector = sectors;
+	for (int i = 0; i < numsectors; i++, sector++)
 	{
 		map_format.init_sector_special(sector);
 	}
@@ -2579,12 +2576,11 @@ DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 }
 
 // Initialize the scrollers
-static void P_SpawnScrollers(void)
+static void P_SpawnScrollers()
 {
-	int i;
 	line_t *l = lines;
 
-	for (i = 0; i < numlines; i++, l++)
+	for (int i = 0; i < numlines; i++, l++)
 	{
 		map_format.spawn_scroller(l, i);
 	}
@@ -2653,12 +2649,11 @@ bool P_ArgToCrushType(byte arg)
 //
 // Initialize the sectors where friction is increased or decreased
 
-static void P_SpawnFriction(void)
+static void P_SpawnFriction()
 {
-	int i;
 	line_t *l = lines;
 
-	for (i = 0 ; i < numlines ; i++,l++)
+	for (int i = 0 ; i < numlines ; i++,l++)
 	{
 		map_format.spawn_friction(l);
 	}
@@ -2994,12 +2989,11 @@ AActor *P_GetPushThing (int s)
 // Initialize the sectors where pushers are present
 //
 
-static void P_SpawnPushers(void)
+static void P_SpawnPushers()
 {
-	int i;
 	line_t *l = lines;
 
-	for (i = 0; i < numlines; i++, l++)
+	for (int i = 0; i < numlines; i++, l++)
 	{
 		map_format.spawn_pusher(l);
 	}

@@ -217,7 +217,7 @@ void STACK_ARGS D_Shutdown()
 	NormalLight.next = NULL;
 }
 
-void D_Init_DEHEXTRA_Frames(void);
+void D_Init_DEHEXTRA_Frames();
 
 //
 // D_DoomMain

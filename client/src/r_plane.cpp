@@ -114,7 +114,7 @@ float					ixscale, iyscale;
 // R_InitPlanes
 // Only at game startup.
 //
-void R_InitPlanes (void)
+void R_InitPlanes()
 {
 	// Doh!
 }
@@ -253,7 +253,7 @@ void R_MapLevelPlane(int y, int x1, int x2)
 // R_ClearPlanes
 // At begining of frame.
 //
-void R_ClearPlanes (void)
+void R_ClearPlanes()
 {
 	// opening / clipping determination
 	memcpy(floorclip, floorclipinitial, viewwidth * sizeof(*floorclip));
@@ -588,18 +588,15 @@ void R_DrawLevelPlane(visplane_t *pl)
 //
 // At the end of each frame.
 //
-void R_DrawPlanes (void)
+void R_DrawPlanes()
 {
-	visplane_t *pl;
-	int i;
-
 	R_ResetDrawFuncs();
 
 	dspan.color = 3;
 	
-	for (i = 0; i < MAXVISPLANES; i++)
+	for (int i = 0; i < MAXVISPLANES; i++)
 	{
-		for (pl = visplanes[i]; pl; pl = pl->next)
+		for (visplane_t* pl = visplanes[i]; pl; pl = pl->next)
 		{
 			if (pl->minx > pl->maxx)
 				continue;
@@ -612,7 +609,7 @@ void R_DrawPlanes (void)
 			else
 			{
 				// regular flat
-				int useflatnum = flattranslation[pl->picnum < numflats ? pl->picnum : 0];
+				const int useflatnum = flattranslation[pl->picnum < numflats ? pl->picnum : 0];
 
 				dspan.color += 4;	// [RH] color if r_drawflat is 1
 				dspan.source = (byte *)W_CacheLumpNum (firstflat + useflatnum, PU_STATIC);
@@ -639,19 +636,19 @@ void R_DrawPlanes (void)
 
 						for (int x = 63; x >= 0; x--)
 						{
-							int yt, yf = (finesine[(timebase + ((x+17) << 7))&FINEMASK]>>13) & 63;
+							int yf = (finesine[(timebase + ((x+17) << 7))&FINEMASK]>>13) & 63;
 							byte *source = dspan.source + x;
 							byte *dest = warped + x;
-							for (yt = 64; yt; yt--, yf = (yf+1)&63, dest += 64)
+							for (int yt = 64; yt; yt--, yf = (yf+1)&63, dest += 64)
 								*dest = *(source + (yf << 6));
 						}
 						timebase = level.time*32;
 						for (int y = 63; y >= 0; y--)
 						{
-							int xt, xf = (finesine[(timebase + (y << 7))&FINEMASK]>>13) & 63;
+							int xf = (finesine[(timebase + (y << 7))&FINEMASK]>>13) & 63;
 							byte *source = warped + (y << 6);
 							byte *dest = buffer;
-							for (xt = 64; xt; xt--, xf = (xf+1) & 63)
+							for (int xt = 64; xt; xt--, xf = (xf+1) & 63)
 								*dest++ = *(source+xf);
 							memcpy (warped + (y << 6), buffer, 64);
 						}
@@ -679,8 +676,8 @@ void R_DrawPlanes (void)
 //
 bool R_PlaneInitData(IWindowSurface* surface)
 {
-	int surface_width = surface->getWidth();
-	int surface_height = surface->getHeight();
+	const int surface_width = surface->getWidth();
+	const int surface_height = surface->getHeight();
 
 	delete[] floorclip;
 	delete[] ceilingclip;
@@ -735,17 +732,17 @@ bool R_PlaneInitData(IWindowSurface* surface)
 //
 bool R_AlignFlat(int linenum, int side, int fc)
 {
-	line_t *line = lines + linenum;
+	const line_t *line = lines + linenum;
 	sector_t *sec = side ? line->backsector : line->frontsector;
 
 	if (!sec)
 		return false;
 
-	fixed_t x = line->v1->x;
-	fixed_t y = line->v1->y;
+	const fixed_t x = line->v1->x;
+	const fixed_t y = line->v1->y;
 
 	angle_t angle = R_PointToAngle2 (x, y, line->v2->x, line->v2->y);
-	angle_t norm = (angle-ANG90) >> ANGLETOFINESHIFT;
+	const angle_t norm = (angle-ANG90) >> ANGLETOFINESHIFT;
 
 	fixed_t dist = -FixedMul (finecosine[norm], x) - FixedMul (finesine[norm], y);
 

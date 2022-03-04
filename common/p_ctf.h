@@ -52,10 +52,10 @@ void SV_SocketTouch(player_t &player, team_t f);
 void CTF_Connect(player_t &player);
 
 //	Internal Events
-void CTF_DrawHud(void);
+void CTF_DrawHud();
 void CTF_CarryFlag(player_t &who, team_t flag);
-void CTF_MoveFlags(void);
-void CTF_RunTics(void);
+void CTF_MoveFlags();
+void CTF_RunTics();
 void CTF_SpawnFlag(team_t f);
 void CTF_SpawnDroppedFlag(team_t f, int x, int y, int z);
 void CTF_RememberFlagPos(mapthing2_t *mthing);

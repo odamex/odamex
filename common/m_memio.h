@@ -38,7 +38,7 @@ typedef enum
 
 MEMFILE *mem_fopen_read(void *buf, size_t buflen);
 size_t mem_fread(void *buf, size_t size, size_t nmemb, MEMFILE *stream);
-MEMFILE *mem_fopen_write(void);
+MEMFILE *mem_fopen_write();
 size_t mem_fwrite(const void *ptr, size_t size, size_t nmemb, MEMFILE *stream);
 void mem_get_buf(MEMFILE *stream, void **buf, size_t *buflen);
 void mem_fclose(MEMFILE *stream);

@@ -222,7 +222,7 @@ bool Maplist::remove(const size_t &index) {
 }
 
 // Clear the entire maplist.
-bool Maplist::clear(void) {
+bool Maplist::clear() {
 	// There's no maplist to clear.
 	if (this->maplist.empty()) {
 		this->error = "Maplist is already empty.";
@@ -237,7 +237,7 @@ bool Maplist::clear(void) {
 }
 
 // Is the maplist empty?
-bool Maplist::empty(void) {
+bool Maplist::empty() {
 	return this->maplist.empty();
 }
 

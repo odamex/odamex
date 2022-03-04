@@ -140,11 +140,9 @@ private:
 static ActionKeyTracker action_key_tracker;
 
 
-static int ListActionCommands (void)
+static int ListActionCommands()
 {
-	int i;
-
-	for (i = 0; i < NUM_ACTIONS; i++)
+	for (int i = 0; i < NUM_ACTIONS; i++)
 	{
 		Printf (PRINT_HIGH, "+%s\n", actionbits[i].name);
 		Printf (PRINT_HIGH, "-%s\n", actionbits[i].name);

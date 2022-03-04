@@ -40,11 +40,11 @@
 #include "sv_main.h"
 #include "g_spawninv.h"
 
-void	G_PlayerReborn (player_t &player);
+void G_PlayerReborn (player_t &player);
 
-void	G_DoNewGame (void);
-void	G_DoCompleted (void);
-void	G_DoWorldDone (void);
+void G_DoNewGame();
+void G_DoCompleted();
+void G_DoWorldDone();
 
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (sv_timelimit)
@@ -103,7 +103,7 @@ END_COMMAND (pause)
 //
 int mapchange;
 
-void G_Ticker (void)
+void G_Ticker()
 {
 	// do player reborns if needed
 	if (serverside)
@@ -129,7 +129,7 @@ void G_Ticker (void)
 			break;
 
 		case ga_loadlevel:
-			G_DoLoadLevel (-1);
+			G_DoLoadLevel(-1);
 			break;
 		case ga_fullresetlevel:
 			G_DoResetLevel(true);
@@ -138,10 +138,10 @@ void G_Ticker (void)
 			G_DoResetLevel(false);
 			break;
 		case ga_newgame:
-			G_DoNewGame ();
+			G_DoNewGame();
 			break;
 		case ga_completed:
-			G_DoCompleted ();
+			G_DoCompleted();
 			break;
 		case ga_worlddone:
 			break;

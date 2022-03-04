@@ -330,7 +330,7 @@ void SV_FlagDrop (player_t &player, team_t f)
 //	[Toke - CTF] CTF_RunTics
 //	Runs once per gametic when ctf is enabled
 //
-void CTF_RunTics (void)
+void CTF_RunTics()
 {
 	if (!G_CanTickGameplay() || gamestate != GS_LEVEL)
 		return;

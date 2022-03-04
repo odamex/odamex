@@ -134,9 +134,9 @@ static argb_t sector_blend_color(0, 255, 255, 255);
 // [SL] Current color blending values (including palette effects)
 fargb_t blend_color(0.0f, 255.0f, 255.0f, 255.0f);
 
-void (*colfunc) (void);
-void (*spanfunc) (void);
-void (*spanslopefunc) (void);
+void (*colfunc)();
+void (*spanfunc)();
+void (*spanslopefunc)();
 
 // [AM] Number of fineangles in a default 90 degree FOV at a 4:3 resolution.
 int FieldOfView = 2048;

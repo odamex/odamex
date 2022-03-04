@@ -138,14 +138,11 @@ size_t			numChannels;
 //
 // [RH] Print sound debug info. Called from D_Display()
 //
-void S_NoiseDebug (void)
+void S_NoiseDebug ()
 {
 	fixed_t ox, oy;
-	unsigned int i;
-	int y;
-	int color;
 
-	y = 32 * CleanYfac;
+	int y = 32 * CleanYfac;
 	if (gametic & 16)
 		screen->DrawText (CR_TAN, 0, y, "*** SOUND DEBUG INFO ***");
 	y += 8;
@@ -159,7 +156,7 @@ void S_NoiseDebug (void)
 	screen->DrawText (CR_GREY, 280, y, "chan");
 	y += 8;
 
-	for (i = 0;((i < numChannels) && (y < I_GetVideoHeight() - 16)); i++, y += 8)
+	for (unsigned int i = 0;((i < numChannels) && (y < I_GetVideoHeight() - 16)); i++, y += 8)
 	{
 		if (Channel[i].sfxinfo)
 		{
@@ -181,7 +178,7 @@ void S_NoiseDebug (void)
 				ox = Channel[i].x;
 				oy = Channel[i].y;
 			}
-			color = Channel[i].loop ? CR_BROWN : CR_GREY;
+			const int color = Channel[i].loop ? CR_BROWN : CR_GREY;
 			strcpy (temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name);
 			temp[8] = 0;
 			screen->DrawText (color, 0, y, temp);
@@ -281,7 +278,7 @@ void S_Deinit()
 //
 // Kills playing sounds
 //
-void S_Stop (void)
+void S_Stop()
 {
 	// kill all playing sounds at start of level
 	//	(trust me - a good idea)
@@ -297,7 +294,7 @@ void S_Stop (void)
 // Kills playing sounds at start of level,
 // determines music if any, changes music.
 //
-void S_Start (void)
+void S_Start()
 {
 	// Kill all sound channels - but don't stop music.
 	for (size_t i = 0; i < numChannels; i++)
@@ -878,7 +875,7 @@ void S_StopSound (AActor *ent, int channel)
 	S_StopSound (&ent->x, channel);
 }
 
-void S_StopAllChannels(void)
+void S_StopAllChannels()
 {
 	for (size_t i = 0; i < numChannels; i++)
 		S_StopChannel(i);
@@ -929,7 +926,7 @@ bool S_GetSoundPlayingInfo (AActor *ent, int sound_id)
 //
 // Stop and resume music, during game PAUSE.
 //
-void S_PauseSound (void)
+void S_PauseSound()
 {
 	if (!mus_paused)
 	{
@@ -938,7 +935,7 @@ void S_PauseSound (void)
 	}
 }
 
-void S_ResumeSound (void)
+void S_ResumeSound()
 {
 	if (mus_paused)
 	{
@@ -1111,7 +1108,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 	mus_playing.name = musicname;
 }
 
-void S_StopMusic (void)
+void S_StopMusic()
 {
 	I_StopSong();
 
@@ -1145,7 +1142,7 @@ static struct AmbientSound {
 #define POSITIONAL	4
 #define SURROUND	16
 
-void S_HashSounds (void)
+void S_HashSounds()
 {
 	int i;
 	unsigned j;
@@ -1232,9 +1229,8 @@ int S_AddSound (char *logicalname, char *lumpname)
 
 // S_ParseSndInfo
 // Parses all loaded SNDINFO lumps.
-void S_ParseSndInfo (void)
+void S_ParseSndInfo()
 {
-	char *sndinfo;
 	char *data;
 
 	S_ClearSoundLumps ();
@@ -1242,9 +1238,10 @@ void S_ParseSndInfo (void)
 	int lump = -1;
 	while ((lump = W_FindLump ("SNDINFO", lump)) != -1)
 	{
-		sndinfo = (char *)W_CacheLumpNum (lump, PU_CACHE);
+		char* sndinfo = static_cast<char*>(W_CacheLumpNum(lump, PU_CACHE));
 
-		while ( (data = COM_Parse (sndinfo)) ) {
+		while ( (data = COM_Parse (sndinfo)) )
+		{
 			if (com_token[0] == ';') {
 				// Handle comments from Hexen MAPINFO lumps
 				while (*sndinfo && *sndinfo != ';')
@@ -1283,11 +1280,9 @@ void S_ParseSndInfo (void)
 
 					sndinfo = COM_Parse (sndinfo);
 					if (!stricmp (com_token, "point")) {
-						float attenuation;
-
 						ambient->type = POSITIONAL;
 						sndinfo = COM_Parse (sndinfo);
-						attenuation = (float)atof (com_token);
+						const float attenuation = static_cast<float>(atof(com_token));
 						if (attenuation > 0)
 						{
 							ambient->attenuation = attenuation;
@@ -1308,19 +1303,19 @@ void S_ParseSndInfo (void)
 					} else if (!stricmp (com_token, "random")) {
 						ambient->type |= RANDOM;
 						sndinfo = COM_Parse (sndinfo);
-						ambient->periodmin = (int)(atof (com_token) * TICRATE);
+						ambient->periodmin = static_cast<int>(atof(com_token) * TICRATE);
 						sndinfo = COM_Parse (sndinfo);
-						ambient->periodmax = (int)(atof (com_token) * TICRATE);
+						ambient->periodmax = static_cast<int>(atof(com_token) * TICRATE);
 					} else if (!stricmp (com_token, "periodic")) {
 						ambient->type |= PERIODIC;
 						sndinfo = COM_Parse (sndinfo);
-						ambient->periodmin = (int)(atof (com_token) * TICRATE);
+						ambient->periodmin = static_cast<int>(atof(com_token) * TICRATE);
 					} else {
 						Printf (PRINT_HIGH, "Unknown ambient type (%s)\n", com_token);
 					}
 
 					sndinfo = COM_Parse (sndinfo);
-					ambient->volume = (float)atof (com_token);
+					ambient->volume = static_cast<float>(atof(com_token));
 					if (ambient->volume > 1)
 						ambient->volume = 1;
 					else if (ambient->volume < 0)

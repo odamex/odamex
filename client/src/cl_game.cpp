@@ -839,7 +839,7 @@ void CL_SimulateWorld();
 extern DCanvas *page;
 extern int connecttimeout;
 
-void G_Ticker (void)
+void G_Ticker()
 {
 	int 		buf;
 
@@ -1458,14 +1458,14 @@ void G_ScreenShot(const char* filename)
 //
 char savename[256];
 
-void G_LoadGame (char* name)
+void G_LoadGame(char* name)
 {
-	strcpy (savename, name);
+	strcpy(savename, name);
 	gameaction = ga_loadgame;
 }
 
 
-void G_DoLoadGame (void)
+void G_DoLoadGame()
 {
     unsigned int i;
 	char text[16];

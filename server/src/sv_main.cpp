@@ -302,7 +302,7 @@ client_c clients;
 void SV_UpdateConsolePlayer(player_t &player);
 
 void SV_CheckTeam (player_t & playernum);
-team_t SV_GoodTeam (void);
+team_t SV_GoodTeam ();
 
 static void SendServerSettings(player_t& pl);
 
@@ -432,7 +432,7 @@ BEGIN_COMMAND (say)
 }
 END_COMMAND (say)
 
-void STACK_ARGS call_terms (void);
+void STACK_ARGS call_terms ();
 
 void SV_QuitCommand()
 {
@@ -473,7 +473,7 @@ static void SendLevelState(SerializedLevelState sls)
 //
 // SV_InitNetwork
 //
-void SV_InitNetwork (void)
+void SV_InitNetwork ()
 {
     network_game = true;
 
@@ -510,7 +510,7 @@ void SV_InitNetwork (void)
 }
 
 //Get next free player. Will use the lowest available player id.
-Players::iterator SV_GetFreeClient(void)
+Players::iterator SV_GetFreeClient()
 {
 	if (players.size() >= sv_maxclients)
 		return players.end();
@@ -538,7 +538,7 @@ Players::iterator SV_GetFreeClient(void)
 	return --it;
 }
 
-player_t &SV_FindPlayerByAddr(void)
+player_t &SV_FindPlayerByAddr()
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -1050,7 +1050,7 @@ void SV_CheckTeam (player_t &player)
 //
 //	Finds a working team
 //
-team_t SV_GoodTeam (void)
+team_t SV_GoodTeam ()
 {
 	int teamcount = sv_teamsinplay;
 
@@ -1209,7 +1209,7 @@ bool SV_IsPlayerAllowedToSee(player_t &p, AActor *mo)
 //
 // SV_UpdateHiddenMobj
 //
-void SV_UpdateHiddenMobj(void)
+void SV_UpdateHiddenMobj()
 {
 	// denis - todo - throttle this
 	AActor *mo;
@@ -1542,7 +1542,7 @@ void SV_UpdateSecret(sector_t& sector, player_t &player)
 //	Sends server setting info
 //
 
-void SV_SendPackets(void);
+void SV_SendPackets();
 
 static void SendServerSettings(player_t& pl)
 {
@@ -2910,7 +2910,7 @@ void SV_ActorTracer(AActor *actor)
 // SV_RemoveCorpses
 // Removes some corpses
 //
-void SV_RemoveCorpses (void)
+void SV_RemoveCorpses ()
 {
 	AActor *mo;
 	int     corpses = 0;
@@ -3032,7 +3032,7 @@ void SV_UpdateDeadPlayers()
 //
 // SV_ClearClientsBPS
 //
-void SV_ClearClientsBPS(void)
+void SV_ClearClientsBPS()
 {
 	if (!P_AtInterval(TICRATE))
 		return;
@@ -3107,7 +3107,7 @@ void SV_SpyPlayer(player_t &viewer)
 //
 // SV_WriteCommands
 //
-void SV_WriteCommands(void)
+void SV_WriteCommands()
 {
 	// [SL] 2011-05-11 - Save player positions and moving sector heights so
 	// they can be reconciled later for unlagging
@@ -4091,7 +4091,7 @@ static void IntermissionTimeCheck()
 //
 //	Runs once gametic (35 per second gametic)
 //
-void SV_GameTics (void)
+void SV_GameTics ()
 {
 	if (sv_gametype == GM_CTF)
 		CTF_RunTics();
@@ -4126,7 +4126,7 @@ void SV_TouchSpecial(AActor *special, player_t *player)
 	MSG_WriteSVC(&cl->reliablebuf, SVC_TouchSpecial(special));
 }
 
-void SV_PlayerTimes (void)
+void SV_PlayerTimes ()
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{

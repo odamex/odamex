@@ -48,29 +48,29 @@ int 			skiptics;
 
 bool step_mode = false;
 
-void D_ProcessEvents (void); 
-void G_BuildTiccmd (ticcmd_t *cmd); 
-void D_DoAdvanceDemo (void);
+void D_ProcessEvents(); 
+void G_BuildTiccmd(ticcmd_t *cmd); 
+void D_DoAdvanceDemo();
 
 //
 // NetUpdate
 // Builds ticcmds for console player,
 // sends out a packet
 //
-void NetUpdate (void)
+void NetUpdate()
 {
-	I_StartTic ();
-	D_ProcessEvents ();
-	G_BuildTiccmd (&consoleplayer().netcmds[gametic%BACKUPTICS]);
+	I_StartTic();
+	D_ProcessEvents();
+	G_BuildTiccmd(&consoleplayer().netcmds[gametic % BACKUPTICS]);
 }
 
 //
 // D_CheckNetGame
 // Works out player numbers among the net participants
 //
-void D_CheckNetGame (void)
+void D_CheckNetGame()
 {
-    CL_InitNetwork ();
+    CL_InitNetwork();
 
     D_SetupUserInfo();
 

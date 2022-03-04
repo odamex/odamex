@@ -561,7 +561,7 @@ std::string OKeyBindings::GetKeynameFromCommand(const char* cmd, bool bTwoEntrie
 }
 
 
-void C_BindingsInit(void)
+void C_BindingsInit()
 {
 	Bindings.SetBindingType("bind");
 	DoubleBindings.SetBindingType("doublebind");
@@ -570,7 +570,7 @@ void C_BindingsInit(void)
 }
 
 // Bind default bindings
-void C_BindDefaults(void)
+void C_BindDefaults()
 {
 	Bindings.SetBinds(DefaultBindings);
 	AutomapBindings.SetBinds(DefaultAutomapBindings);

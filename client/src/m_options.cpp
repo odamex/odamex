@@ -129,7 +129,7 @@ EXTERN_CVAR (co_globalsound)
 EXTERN_CVAR(hud_feedobits)
 
 // [Toke - Menu] New Menu Stuff.
-void MouseSetup (void);
+void MouseSetup ();
 EXTERN_CVAR (mouse_sensitivity)
 EXTERN_CVAR (m_pitch)
 EXTERN_CVAR (novert)
@@ -148,7 +148,7 @@ EXTERN_CVAR (cl_connectalert)
 EXTERN_CVAR (cl_disconnectalert)
 
 // Joystick menu -- Hyper_Eye
-void JoystickSetup (void);
+void JoystickSetup ();
 EXTERN_CVAR (use_joystick)
 EXTERN_CVAR (joy_active)
 EXTERN_CVAR (joy_forwardaxis)
@@ -191,12 +191,12 @@ EXTERN_CVAR (cl_weaponpref_rl)
 EXTERN_CVAR (cl_weaponpref_pls)
 EXTERN_CVAR (cl_weaponpref_bfg)
 
-void M_ChangeMessages(void);
+void M_ChangeMessages();
 void M_SizeDisplay(float diff);
-void M_StartControlPanel(void);
+void M_StartControlPanel();
 
 int  M_StringHeight(char *string);
-void M_ClearMenus (void);
+void M_ClearMenus ();
 
 static bool CanScrollUp;
 static bool CanScrollDown;
@@ -260,19 +260,19 @@ static itemtype OldAxisType;
  *
  *=======================================*/
 
-static void PlayerSetup (void);
-static void CustomizeControls (void);
-static void VideoOptions (void);
-static void SoundOptions (void);
-static void CompatOptions (void);
-static void NetworkOptions (void);
-static void WeaponOptions (void);
-static void GoToConsole (void);
-static void GoToConsole (void);
-void Reset2Defaults (void);
-void Reset2Saved (void);
+static void PlayerSetup ();
+static void CustomizeControls ();
+static void VideoOptions ();
+static void SoundOptions ();
+static void CompatOptions ();
+static void NetworkOptions ();
+static void WeaponOptions ();
+static void GoToConsole ();
+static void GoToConsole ();
+void Reset2Defaults ();
+void Reset2Saved ();
 
-static void SetVidMode (void);
+static void SetVidMode ();
 
 static menuitem_t OptionItems[] =
 {
@@ -719,9 +719,9 @@ menu_t WeaponMenu = {
  *
  *=======================================*/
 static void StartHUDMenu();
-static void StartMessagesMenu (void);
-static void StartAutomapMenu (void);
-void ResetCustomColors (void);
+static void StartMessagesMenu ();
+static void StartAutomapMenu ();
+void ResetCustomColors ();
 
 EXTERN_CVAR (am_rotate)
 EXTERN_CVAR (am_overlay)
@@ -1311,7 +1311,7 @@ static void M_SlideUIGreen (int val)
 	M_SendUINewColor(color.getr(), color.getg(), color.getb());
 }
 
-static void M_SlideUIBlue (int val)
+static void M_SlideUIBlue(int val)
 {
 	argb_t color = V_GetColorFromString(ui_dimcolor);
 	color.setb(val);
@@ -1323,7 +1323,7 @@ static void M_SlideUIBlue (int val)
 //		Set some stuff up for the video modes menu
 //
 
-void M_OptInit (void)
+void M_OptInit()
 {
 	for (int i = 0; i < 22; i++)
 	{
@@ -1350,7 +1350,7 @@ void M_OptInit (void)
 //
 //		Toggle messages on/off
 //
-void M_ChangeMessages (void)
+void M_ChangeMessages()
 {
 	if (show_messages)
 	{
@@ -1370,7 +1370,7 @@ BEGIN_COMMAND (togglemessages)
 }
 END_COMMAND (togglemessages)
 
-void M_SizeDisplay (float diff)
+void M_SizeDisplay(float diff)
 {
 	// changing screenblocks automatically resizes the display
 	screenblocks.Set (screenblocks + diff);
@@ -1392,9 +1392,7 @@ END_COMMAND (sizeup)
 
 void M_BuildKeyList (menuitem_t *item, int numitems)
 {
-	int i;
-
-	for (i = 0; i < numitems; i++, item++)
+	for (int i = 0; i < numitems; i++, item++)
 	{
 		if (item->type == control)
 			Bindings.GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
@@ -1407,9 +1405,6 @@ void M_BuildKeyList (menuitem_t *item, int numitems)
 
 void M_SwitchMenu(menu_t* menu)
 {
-	int i, widest = 0, thiswidth;
-	menuitem_t *item;
-
 	MenuStack[MenuStackDepth].menu.newmenu = menu;
 	MenuStack[MenuStackDepth].isNewStyle = true;
 	MenuStack[MenuStackDepth].drawSkull = false;
@@ -1422,12 +1417,13 @@ void M_SwitchMenu(menu_t* menu)
 
 	if (!menu->indent)
 	{
-		for (i = 0; i < menu->numitems; i++)
+		int widest = 0;
+		for (int i = 0; i < menu->numitems; i++)
 		{
-			item = menu->items + i;
+			menuitem_t* item = menu->items + i;
 			if (item->type != whitetext && item->type != redtext)
 			{
-				thiswidth = V_StringWidth (item->label);
+				int thiswidth = V_StringWidth(item->label);
 				if (thiswidth > widest)
 					widest = thiswidth;
 			}
@@ -1438,20 +1434,20 @@ void M_SwitchMenu(menu_t* menu)
 	flagsvar = NULL;
 }
 
-bool M_StartOptionsMenu (void)
+bool M_StartOptionsMenu()
 {
 	M_SwitchMenu (&OptionMenu);
 	return true;
 }
 
-void M_DrawSlider (int x, int y, float leftval, float rightval, float cur)
+void M_DrawSlider(int x, int y, float leftval, float rightval, float cur)
 {
 	if (leftval < rightval)
 		cur = clamp(cur, leftval, rightval);
 	else
 		cur = clamp(cur, rightval, leftval);
 
-	float dist = (cur - leftval) / (rightval - leftval);
+	const float dist = (cur - leftval) / (rightval - leftval);
 
 	screen->DrawPatchClean (W_CachePatch ("LSLIDE"), x, y);
 	for (int i = 1; i < 11; i++)
@@ -1468,7 +1464,7 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 	else
 		cur = clamp(cur, rightval, leftval);
 
-	float dist = (cur - leftval) / (rightval - leftval);
+	const float dist = (cur - leftval) / (rightval - leftval);
 
 	screen->DrawPatchClean(W_CachePatch ("LSLIDE"), x, y);
 
@@ -1484,7 +1480,7 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + (int)(dist * 78.0), y);
 }
 
-int M_FindCurVal (float cur, value_t *values, int numvals)
+int M_FindCurVal(float cur, value_t *values, int numvals)
 {
 	int v;
 
@@ -1495,30 +1491,30 @@ int M_FindCurVal (float cur, value_t *values, int numvals)
 	return v;
 }
 
-void M_OptDrawer (void)
+void M_OptDrawer()
 {
 	int color;
-	int y, width, i, x, ytop;
-	int x1,y1,x2,y2;
+	int width;
+	int x;
 	int theight = 0;
 	menuitem_t *item;
-	patch_t *title;
 
-	x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
-	y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
+	int x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
+	int y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
 
-    x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
-	y2 = (I_GetSurfaceHeight() / 2)+(100*CleanYfac);
+    int x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
+	int y2 = (I_GetSurfaceHeight() / 2)+(100*CleanYfac);
 
 	// Background effect
-	OdamexEffect(x1,y1,x2,y2);
+	OdamexEffect(x1, y1, x2, y2);
 
-	title = W_CachePatch (CurrentMenu->title);
-	screen->DrawPatchClean (title, 160-title->width()/2, 10);
+	patch_t* title = W_CachePatch(CurrentMenu->title);
+	screen->DrawPatchClean(title, 160-title->width()/2, 10);
 
-	y = 15 + title->height();
-	ytop = y + CurrentMenu->scrolltop * 8;
+	int y = 15 + title->height();
+	int ytop = y + CurrentMenu->scrolltop * 8;
 
+	int i;
 	for (i = 0; i < CurrentMenu->numitems && y <= 192 - theight; i++, y += 8)	// TIJ
 	{
 		if (i == CurrentMenu->scrolltop)
@@ -1604,7 +1600,7 @@ void M_OptDrawer (void)
 			{
 				int v, vals;
 
-				vals = (int)item->b.leftval;
+				vals = static_cast<int>(item->b.leftval);
 				v = M_FindCurVal(item->a.cvar->value(), item->e.values, vals);
 
 				if (v == vals)
@@ -1741,13 +1737,12 @@ void M_OptDrawer (void)
 		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, 190);
 }
 
-void M_OptResponder (event_t *ev)
+void M_OptResponder(event_t *ev)
 {
-	menuitem_t *item;
-	int ch = ev->data1;
+	const int ch = ev->data1;
 	const char *cmd = Bindings.GetBind(ch).c_str();
 
-	item = CurrentMenu->items + CurrentItem;
+	menuitem_t* item = CurrentMenu->items + CurrentItem;
 
 	// Waiting on a key press for control binding
 	if (WaitingForKey)
@@ -1943,7 +1938,7 @@ void M_OptResponder (event_t *ev)
 		{
 			if (CanScrollDown)
 			{
-				int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+				const int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
 				CurrentMenu->scrollpos += pagesize;
 				if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
 				{
@@ -1993,7 +1988,7 @@ void M_OptResponder (event_t *ev)
 			else
 				memcpy(newcolor, "00 00 00", 9);
 
-			argb_t color = V_GetColorFromString(oldcolor);
+			const argb_t color = V_GetColorFromString(oldcolor);
 			int part = 0;
 
 			if (item->type == redslider)
@@ -2026,15 +2021,12 @@ void M_OptResponder (event_t *ev)
 		case cdiscrete:
 		case svdiscrete:
 		{
-			int cur;
-			int numvals;
-
 			if (item->type == svdiscrete &&
-				(multiplayer || demoplayback || netdemo.isPlaying()))
+			    (multiplayer || demoplayback || netdemo.isPlaying()))
 				break;
 
-			numvals = (int)item->b.leftval;
-			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
+			const int numvals = static_cast<int>(item->b.leftval);
+			int cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
 			if (--cur < 0)
 				cur = numvals - 1;
 
@@ -2049,9 +2041,7 @@ void M_OptResponder (event_t *ev)
 
 		case screenres:
 		{
-			int col;
-
-			col = item->a.selmode - 1;
+			const int col = item->a.selmode - 1;
 			if (col < 0)
 			{
 				if (CurrentItem > 0)
@@ -2073,13 +2063,11 @@ void M_OptResponder (event_t *ev)
 
 		case joyactive:
 		{
-			int         numjoy;
+			const int numjoy = I_GetJoystickCount();
 
-			numjoy = I_GetJoystickCount();
-
-			if ((int)item->a.cvar->value() > numjoy)
+			if (static_cast<int>(item->a.cvar->value()) > numjoy)
 				item->a.cvar->Set(0.0);
-			else if ((int)item->a.cvar->value() > 0)
+			else if (static_cast<int>(item->a.cvar->value()) > 0)
 				item->a.cvar->Set(item->a.cvar->value() - 1);
 		}
 		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
@@ -2121,7 +2109,7 @@ void M_OptResponder (event_t *ev)
 			else
 				memcpy(newcolor, "00 00 00", 9);
 
-			argb_t color = V_GetColorFromString(oldcolor);
+			const argb_t color = V_GetColorFromString(oldcolor);
 			int part = 0;
 
 			if (item->type == redslider)
@@ -2154,15 +2142,12 @@ void M_OptResponder (event_t *ev)
 		case cdiscrete:
 		case svdiscrete:
 		{
-			int cur;
-			int numvals;
-
 			if (item->type == svdiscrete &&
-				(multiplayer || demoplayback || netdemo.isPlaying()))
+			    (multiplayer || demoplayback || netdemo.isPlaying()))
 				break;
 
-			numvals = (int)item->b.leftval;
-			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
+			const int numvals = static_cast<int>(item->b.leftval);
+			int cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
 			if (++cur >= numvals)
 				cur = 0;
 
@@ -2177,9 +2162,7 @@ void M_OptResponder (event_t *ev)
 
 		case screenres:
 		{
-			int col;
-
-			col = item->a.selmode + 1;
+			const int col = item->a.selmode + 1;
 			if ((col > 2) || (col == 2 && !item->d.res3) || (col == 1 && !item->c.res2))
 			{
 				if (CurrentMenu->numitems - 1 > CurrentItem)
@@ -2204,13 +2187,11 @@ void M_OptResponder (event_t *ev)
 
 		case joyactive:
 		{
-			int         numjoy;
+			const int numjoy = I_GetJoystickCount();
 
-			numjoy = I_GetJoystickCount();
-
-			if ((int)item->a.cvar->value() >= numjoy)
+			if (static_cast<int>(item->a.cvar->value()) >= numjoy)
 				item->a.cvar->Set(0.0);
-			else if ((int)item->a.cvar->value() < (numjoy - 1))
+			else if (static_cast<int>(item->a.cvar->value()) < (numjoy - 1))
 				item->a.cvar->Set(item->a.cvar->value() + 1);
 
 		}
@@ -2264,15 +2245,12 @@ void M_OptResponder (event_t *ev)
 			else if (item->type == discrete || item->type == cdiscrete ||
 			         item->type == svdiscrete)
 			{
-				int cur;
-				int numvals;
-
 				if (item->type == svdiscrete &&
 				    (multiplayer || demoplayback || netdemo.isPlaying()))
 					return;
 
-				numvals = (int)item->b.leftval;
-				cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
+				const int numvals = static_cast<int>(item->b.leftval);
+				int cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
 				if (++cur >= numvals)
 					cur = 0;
 
@@ -2349,25 +2327,25 @@ void M_OptResponder (event_t *ev)
 		(*CurrentMenu->refreshfunc)();
 }
 
-static void GoToConsole (void)
+static void GoToConsole()
 {
 	M_ClearMenus ();
 	C_ToggleConsole ();
 }
 
-static void UpdateStuff (void)
+static void UpdateStuff()
 {
 	M_SizeDisplay (0.0);
 }
 
-void Reset2Defaults (void)
+void Reset2Defaults()
 {
 	AddCommandString ("unbindall; binddefaults");
 	cvar_t::C_SetCVarsToDefaults(CVAR_CLIENTARCHIVE);
 	UpdateStuff();
 }
 
-void Reset2Saved (void)
+void Reset2Saved()
 {
 	std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
 	AddCommandString(cmd);
@@ -2379,32 +2357,32 @@ static void StartHUDMenu()
 	M_SwitchMenu(&HUDMenu);
 }
 
-static void StartMessagesMenu (void)
+static void StartMessagesMenu()
 {
 	M_SwitchMenu (&MessagesMenu);
 }
 
-static void StartAutomapMenu (void)
+static void StartAutomapMenu()
 {
 	M_SwitchMenu (&AutomapMenu);
 }
 
-void ResetCustomColors (void)
+void ResetCustomColors()
 {
 	AddCommandString ("resetcustomcolors");
 }
 
-void MouseSetup (void) // [Toke] for mouse menu
+void MouseSetup() // [Toke] for mouse menu
 {
 	M_SwitchMenu (&MouseMenu);
 }
 
-void JoystickSetup (void)
+void JoystickSetup()
 {
 	M_SwitchMenu (&JoystickMenu);
 }
 
-static void CustomizeControls (void)
+static void CustomizeControls()
 {
 	M_BuildKeyList (ControlsMenu.items, ControlsMenu.numitems);
 	M_SwitchMenu (&ControlsMenu);
@@ -2412,7 +2390,7 @@ static void CustomizeControls (void)
 
 // [Russell] - Hack for getting to the player setup menu, doesn't
 // record the last menu though, unfortunately
-static void PlayerSetup (void)
+static void PlayerSetup()
 {
     M_ClearMenus ();
     M_StartControlPanel ();
@@ -2428,27 +2406,27 @@ BEGIN_COMMAND (menu_keys)
 }
 END_COMMAND (menu_keys)
 
-static void VideoOptions (void)
+static void VideoOptions()
 {
 	M_SwitchMenu (&VideoMenu);
 }
 
-void SoundOptions (void) // [Ralphis] for sound menu
+void SoundOptions() // [Ralphis] for sound menu
 {
 	M_SwitchMenu (&SoundMenu);
 }
 
-void CompatOptions (void) // [Ralphis] for compatibility menu
+void CompatOptions() // [Ralphis] for compatibility menu
 {
 	M_SwitchMenu (&CompatMenu);
 }
 
-void NetworkOptions (void)
+void NetworkOptions()
 {
 	M_SwitchMenu (&NetworkMenu);
 }
 
-void WeaponOptions (void)
+void WeaponOptions()
 {
 	M_SwitchMenu (&WeaponMenu);
 }

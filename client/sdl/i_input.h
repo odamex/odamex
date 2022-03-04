@@ -34,8 +34,8 @@
 #define MOUSE_DOOM 0
 #define MOUSE_ZDOOM_DI 1
 
-bool I_InitInput (void);
-void STACK_ARGS I_ShutdownInput (void);
+bool I_InitInput();
+void STACK_ARGS I_ShutdownInput();
 void I_ForceUpdateGrab();
 void I_FlushInput();
 

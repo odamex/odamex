@@ -109,7 +109,7 @@ unsigned int W_LumpNameHash(const char *s)
 // killough 1/31/98: Initialize lump hash table
 // [SL] taken from prboom-plus
 //
-void W_HashLumps(void)
+void W_HashLumps()
 {
 	for (unsigned int i = 0; i < numlumps; i++)
 		lumpinfo[i].index = -1;			// mark slots empty
@@ -120,7 +120,7 @@ void W_HashLumps(void)
 
 	for (unsigned int i = 0; i < numlumps; i++)
 	{
-		unsigned int j = W_LumpNameHash(lumpinfo[i].name) % (unsigned int)numlumps;
+		const unsigned int j = W_LumpNameHash(lumpinfo[i].name) % static_cast<unsigned int>(numlumps);
 		lumpinfo[i].next = lumpinfo[j].index;     // Prepend to list
 		lumpinfo[j].index = i;
 	}
@@ -132,7 +132,7 @@ void W_HashLumps(void)
 //
 // [RH] Copy up to 8 chars, upper-casing them in the process
 //
-void uppercopy (char *to, const char *from)
+void uppercopy(char *to, const char *from)
 {
 	int i;
 

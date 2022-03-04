@@ -913,7 +913,7 @@ void G_DoLoadLevel (int position)
 //
 // G_WorldDone
 //
-void G_WorldDone (void)
+void G_WorldDone()
 {
 	LevelInfos& levels = getLevelInfos();
 	ClusterInfos& clusters = getClusterInfos();

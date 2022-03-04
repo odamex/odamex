@@ -95,11 +95,11 @@
 
 extern size_t got_heapsize;
 
-void D_CheckNetGame (void);
-void D_ProcessEvents (void);
-void D_DoAdvanceDemo (void);
+void D_CheckNetGame();
+void D_ProcessEvents();
+void D_DoAdvanceDemo();
 
-void D_DoomLoop (void);
+void D_DoomLoop();
 
 extern int testingmode;
 extern bool gameisdead;
@@ -150,7 +150,7 @@ std::string LOG_FILE;
 void M_RestoreVideoMode();
 void M_ModeFlashTestText();
 
-void D_SetPlatform(void)
+void D_SetPlatform()
 {
 #ifdef GCONSOLE
 	#ifdef _XBOX
@@ -171,7 +171,7 @@ void D_SetPlatform(void)
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain
 //
-void D_ProcessEvents (void)
+void D_ProcessEvents()
 {
 	event_t *ev;
 
@@ -353,9 +353,9 @@ void D_Display()
 //
 //  D_DoomLoop
 //
-void D_DoomLoop (void)
+void D_DoomLoop()
 {
-	while (1)
+	while (true)
 	{
 		try
 		{
@@ -385,7 +385,7 @@ void D_DoomLoop (void)
 // D_PageTicker
 // Handles timing for warped projection
 //
-void D_PageTicker (void)
+void D_PageTicker()
 {
     if (--pagetic < 0)
 		D_AdvanceDemo ();
@@ -424,7 +424,7 @@ void D_PageDrawer()
 // D_AdvanceDemo
 // Called after each demo or intro demosequence finishes
 //
-void D_AdvanceDemo (void)
+void D_AdvanceDemo()
 {
 	advancedemo = true;
 }
@@ -432,7 +432,7 @@ void D_AdvanceDemo (void)
 //
 // This cycles through the demo sequences.
 //
-void D_DoAdvanceDemo (void)
+void D_DoAdvanceDemo()
 {
 	const char *pagename = NULL;
 
@@ -561,7 +561,7 @@ void STACK_ARGS D_Close()
 //
 // D_StartTitle
 //
-void D_StartTitle (void)
+void D_StartTitle()
 {
 	// CL_QuitNetGame(NQ_SILENT);
 
@@ -719,7 +719,7 @@ void STACK_ARGS D_Shutdown()
 
 
 void C_DoCommand(const char *cmd, uint32_t key);
-void D_Init_DEHEXTRA_Frames(void);
+void D_Init_DEHEXTRA_Frames();
 
 //
 // D_DoomMain

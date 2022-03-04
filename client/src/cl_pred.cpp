@@ -247,7 +247,7 @@ static void CL_PredictLocalPlayer(int predtic)
 //
 // Main function for client-side prediction.
 // 
-void CL_PredictWorld(void)
+void CL_PredictWorld()
 {
 	if (gamestate != GS_LEVEL)
 		return;

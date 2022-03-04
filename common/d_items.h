@@ -89,7 +89,7 @@ extern int num_items;
 
 extern gitem_t itemlist[];
 
-void InitItems (void);
+void InitItems();
 
 // FindItem
 gitem_t	*GetItemByIndex (int index);

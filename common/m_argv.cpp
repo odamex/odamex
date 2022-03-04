@@ -334,23 +334,17 @@ void DArgs::SetArgs(const char *cmdline)
 
 static long ParseCommandLine (const char *args, int *argc, char **argv);
 
-void M_FindResponseFile (void)
+void M_FindResponseFile()
 {
 	for (size_t i = 1; i < Args.NumArgs(); i++)
 	{
 		if (Args.GetArg(i)[0] == '@')
 		{
 			char	**argv;
-			char	*file;
-			int		argc;
 			int		argcinresp;
-			FILE	*handle;
-			int 	size;
-			long	argsize;
-			size_t 	index;
 
 			// READ THE RESPONSE FILE INTO MEMORY
-			handle = fopen (Args.GetArg(i) + 1,"rb");
+			FILE* handle = fopen(Args.GetArg(i) + 1, "rb");
 			if (!handle)
 			{ // [RH] Make this a warning, not an error.
 				Printf (PRINT_WARNING,"No such response file (%s)!", Args.GetArg(i) + 1);
@@ -359,9 +353,9 @@ void M_FindResponseFile (void)
 
 			Printf (PRINT_HIGH,"Found response file %s!\n", Args.GetArg(i) + 1);
 			fseek (handle, 0, SEEK_END);
-			size = ftell (handle);
+			const int size = ftell(handle);
 			fseek (handle, 0, SEEK_SET);
-			file = new char[size+1];
+			char* file = new char[size + 1];
 			size_t readlen = fread (file, size, 1, handle);
 			if (readlen < 1)
 			{
@@ -370,11 +364,12 @@ void M_FindResponseFile (void)
 			file[size] = 0;
 			fclose (handle);
 
-			argsize = ParseCommandLine (file, &argcinresp, NULL);
-			argc = argcinresp + Args.NumArgs() - 1;
+			const long argsize = ParseCommandLine(file, &argcinresp, NULL);
+			const int argc = argcinresp + Args.NumArgs() - 1;
 
 			if (argc != 0)
 			{
+				size_t index;
 				argv = (char **)Malloc (argc*sizeof(char *) + argsize);
 				argv[i] = (char *)argv + argc*sizeof(char *);
 				ParseCommandLine (file, NULL, argv+i);
@@ -385,7 +380,7 @@ void M_FindResponseFile (void)
 				for (index = i + 1, i += argcinresp; index < Args.NumArgs (); ++index)
 					argv[i++] = (char*)Args.GetArg (index);
 
-				DArgs newargs (i, argv);
+				const DArgs newargs (i, argv);
 				Args = newargs;
 				
 				M_Free(argv);
@@ -410,11 +405,8 @@ void M_FindResponseFile (void)
 
 static long ParseCommandLine (const char *args, int *argc, char **argv)
 {
-	int count;
-	char *buffplace;
-
-	count = 0;
-	buffplace = NULL;
+	int count = 0;
+	char* buffplace = NULL;
 	if (argv != NULL)
 	{
 		buffplace = argv[0];
@@ -463,11 +455,12 @@ static long ParseCommandLine (const char *args, int *argc, char **argv)
 		}
 		else
 		{ // read unquoted string
-			const char *start = args++, *end;
+			const char *start = args++;
 
 			while (*args && *args > ' ' && *args != '\"')
 				args++;
-			end = args;
+			const char* end = args;
+
 			if (argv != NULL)
 			{
 				argv[count] = buffplace;
@@ -486,7 +479,7 @@ static long ParseCommandLine (const char *args, int *argc, char **argv)
 	{
 		*argc = count;
 	}
-	return (long)(buffplace - (char *)0);
+	return static_cast<long>(buffplace - (char*)0);
 }
 
 

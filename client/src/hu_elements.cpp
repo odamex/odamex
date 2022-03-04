@@ -40,7 +40,7 @@
 #include "i_video.h"
 #include "cmdlib.h"
 
-size_t P_NumPlayersInGame(void);
+size_t P_NumPlayersInGame();
 argb_t CL_GetPlayerColor(player_t*);
 
 extern NetDemo netdemo;

@@ -892,15 +892,13 @@ void DSeqNode::RunThink ()
 	}
 }
 
-void SN_UpdateActiveSequences (void)
+void SN_UpdateActiveSequences ()
 {
-	DSeqNode *node;
-
 	if (!ActiveSequences || paused)
 	{ // No sequences currently playing/game is paused
 		return;
 	}
-	for (node = DSeqNode::FirstSequence(); node; node = node->NextSequence())
+	for (DSeqNode* node = DSeqNode::FirstSequence(); node; node = node->NextSequence())
 	{
 		node->RunThink ();
 	}
@@ -912,11 +910,9 @@ void SN_UpdateActiveSequences (void)
 //
 //==========================================================================
 
-void SN_StopAllSequences (void)
+void SN_StopAllSequences()
 {
-	DSeqNode *node;
-
-	for (node = DSeqNode::FirstSequence(); node; )
+	for (DSeqNode* node = DSeqNode::FirstSequence(); node; )
 	{
 		DSeqNode *next = node->NextSequence();
 		node->m_StopSound = -1; // don't play any stop sounds
@@ -946,11 +942,8 @@ ptrdiff_t SN_GetSequenceOffset (int sequence, unsigned int *sequencePtr)
 void SN_ChangeNodeData (int nodeNum, int seqOffset, int delayTics, float volume,
 	int currentSoundID)
 {
-	int i;
-	DSeqNode *node;
-
-	i = 0;
-	node = DSeqNode::FirstSequence();
+	int i = 0;
+	DSeqNode* node = DSeqNode::FirstSequence();
 	while (node && i < nodeNum)
 	{
 		node = node->NextSequence();

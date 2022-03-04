@@ -127,7 +127,7 @@ int P_RandomDiff (AActor *actor);
 
 
 // Fix randoms for demos.
-void M_ClearRandom(void);
+void M_ClearRandom();
 
 /**
  * @brief Get a weighted random number from a vector.

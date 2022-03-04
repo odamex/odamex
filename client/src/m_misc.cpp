@@ -53,7 +53,7 @@ extern OResFiles wadfiles;
  * @author Randy Heit
  * @return The filename of the configuration file path.
  */
-std::string M_GetConfigPath(void)
+std::string M_GetConfigPath()
 {
 	const char *p = Args.CheckValue("-config");
 
@@ -141,13 +141,13 @@ EXTERN_CVAR(vid_gammatype);
  *
  * @author Randy Heit
  */
-void M_LoadDefaults(void)
+void M_LoadDefaults()
 {
 	// Set default key bindings. These will be overridden
 	// by the bindings in the config file if it exists.
 	C_BindDefaults();
 
-	std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
+	const std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
 
 	cvar_defflags = CVAR_ARCHIVE;
 	AddCommandString(cmd);

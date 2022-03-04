@@ -139,43 +139,43 @@ void M_Sound(int choice);
 void M_FinishReadThis(int choice);
 void M_LoadSelect(int choice);
 void M_SaveSelect(int choice);
-void M_ReadSaveStrings(void);
-void M_QuickSave(void);
-void M_QuickLoad(void);
+void M_ReadSaveStrings();
+void M_QuickSave();
+void M_QuickLoad();
 
-void M_DrawMainMenu(void);
-void M_DrawReadThis1(void);
-void M_DrawReadThis2(void);
-void M_DrawReadThis3(void);
-void M_DrawNewGame(void);
-void M_DrawEpisode(void);
-void M_DrawOptions(void);
-void M_DrawSound(void);
-void M_DrawLoad(void);
-void M_DrawSave(void);
+void M_DrawMainMenu();
+void M_DrawReadThis1();
+void M_DrawReadThis2();
+void M_DrawReadThis3();
+void M_DrawNewGame();
+void M_DrawEpisode();
+void M_DrawOptions();
+void M_DrawSound();
+void M_DrawLoad();
+void M_DrawSave();
 
 void M_DrawSaveLoadBorder(int x,int y, int len);
 void M_SetupNextMenu(oldmenu_t *menudef);
 void M_DrawEmptyCell(oldmenu_t *menu,int item);
 void M_DrawSelCell(oldmenu_t *menu,int item);
 int  M_StringHeight(char *string);
-void M_StartControlPanel(void);
+void M_StartControlPanel();
 void M_StartMessage(const char *string,void (*routine)(int),bool input);
-void M_StopMessage(void);
-void M_ClearMenus (void);
+void M_StopMessage();
+void M_ClearMenus();
 
 // [RH] For player setup menu.
-static void M_PlayerSetupTicker (void);
-static void M_PlayerSetupDrawer (void);
-static void M_EditPlayerName (int choice);
-//static void M_EditPlayerTeam (int choice);
-//static void M_PlayerTeamChanged (int choice);
-static void M_PlayerNameChanged (int choice);
-static void M_SlidePlayerRed (int choice);
-static void M_SlidePlayerGreen (int choice);
-static void M_SlidePlayerBlue (int choice);
-static void M_ChangeGender (int choice);
-static void M_ChangeAutoAim (int choice);
+static void M_PlayerSetupTicker();
+static void M_PlayerSetupDrawer();
+static void M_EditPlayerName(int choice);
+//static void M_EditPlayerTeam(int choice);
+//static void M_PlayerTeamChanged(int choice);
+static void M_PlayerNameChanged(int choice);
+static void M_SlidePlayerRed(int choice);
+static void M_SlidePlayerGreen(int choice);
+static void M_SlidePlayerBlue(int choice);
+static void M_ChangeGender(int choice);
+static void M_ChangeAutoAim(int choice);
 bool M_DemoNoPlay;
 
 static IWindowSurface* fire_surface;
@@ -616,7 +616,7 @@ void M_LoadGame (int choice)
 // M_ReadSaveStrings
 //	read the strings from the savegame files
 //
-void M_ReadSaveStrings(void)
+void M_ReadSaveStrings()
 {
 	FILE *handle;
 	int i;
@@ -652,7 +652,7 @@ void M_ReadSaveStrings(void)
 //
 // M_LoadGame & Cie.
 //
-void M_DrawLoad (void)
+void M_DrawLoad()
 {
 	int i;
 
@@ -697,7 +697,7 @@ void M_LoadGame (int choice)
 // [ML] 7 Sept 08: Bringing game saving/loading in from
 //                 zdoom 1.22 source, see MAINTAINERS
 //
-void M_DrawSave(void)
+void M_DrawSave()
 {
 	int i;
 
@@ -806,7 +806,7 @@ void M_QuickSaveResponse(int ch)
 	}
 }
 
-void M_QuickSave(void)
+void M_QuickSave()
 {
 	if (multiplayer)
 	{
@@ -854,7 +854,7 @@ void M_QuickLoadResponse(int ch)
 }
 
 
-void M_QuickLoad(void)
+void M_QuickLoad()
 {
 	if (quickSaveSlot < 0)
 	{
@@ -1108,7 +1108,7 @@ void M_Expansion (int choice)
 // Read This Menus
 // Had a "quick hack to fix romero bug"
 //
-void M_DrawReadThis1 (void)
+void M_DrawReadThis1()
 {
 	patch_t *p = W_CachePatch(gameinfo.info.infoPage[0]);
 	screen->DrawPatchFullScreen(p);
@@ -1117,7 +1117,7 @@ void M_DrawReadThis1 (void)
 //
 // Read This Menus - optional second page.
 //
-void M_DrawReadThis2 (void)
+void M_DrawReadThis2()
 {
 	patch_t *p = W_CachePatch(gameinfo.info.infoPage[1]);
 	screen->DrawPatchFullScreen(p);
@@ -1126,7 +1126,7 @@ void M_DrawReadThis2 (void)
 //
 // Read This Menus - shareware third page.
 //
-void M_DrawReadThis3 (void)
+void M_DrawReadThis3()
 {
 	patch_t *p = W_CachePatch(gameinfo.info.infoPage[2]);
 	screen->DrawPatchFullScreen(p);
@@ -1135,7 +1135,7 @@ void M_DrawReadThis3 (void)
 //
 // M_Options
 //
-void M_DrawOptions(void)
+void M_DrawOptions()
 {
 	screen->DrawPatchClean (W_CachePatch("M_OPTTTL"), 108, 15);
 }
@@ -1179,7 +1179,7 @@ void M_EndGame(int choice)
 // M_QuitDOOM
 //
 
-void STACK_ARGS call_terms (void);
+void STACK_ARGS call_terms();
 
 void M_QuitResponse(int ch)
 {
@@ -1253,7 +1253,7 @@ void M_PlayerSetup(int choice)
 	R_BuildPlayerTranslation(0, player_color);
 }
 
-static void M_PlayerSetupTicker (void)
+static void M_PlayerSetupTicker()
 {
 	// Based on code in f_finale.c
 	if (--PlayerTics > 0)
@@ -1308,7 +1308,7 @@ static forceinline void R_RenderFire(int x, int y)
 	fire_surface->unlock();
 }
 
-static void M_PlayerSetupDrawer (void)
+static void M_PlayerSetupDrawer()
 {
 	int x1,x2,y1,y2;
 
@@ -1687,7 +1687,7 @@ void M_StartMessage (const char *string, void (*routine)(int), bool input)
 
 
 
-void M_StopMessage (void)
+void M_StopMessage()
 {
 	menuactive = messageLastMenuActive;
 	messageToPrint = 0;
@@ -1980,7 +1980,7 @@ bool M_Responder (event_t* ev)
 //
 // M_StartControlPanel
 //
-void M_StartControlPanel (void)
+void M_StartControlPanel()
 {
 	// intro might call this repeatedly
 	if (menuactive)
@@ -2064,7 +2064,7 @@ void M_Drawer()
 //
 // M_ClearMenus
 //
-void M_ClearMenus (void)
+void M_ClearMenus()
 {
 	I_FreeSurface(fire_surface);
 	MenuStackDepth = 0;
@@ -2091,7 +2091,7 @@ void M_SetupNextMenu (oldmenu_t *menudef)
 }
 
 
-void M_PopMenuStack (void)
+void M_PopMenuStack()
 {
 	M_DemoNoPlay = false;
 	if (MenuStackDepth > 1) {
@@ -2118,7 +2118,7 @@ void M_PopMenuStack (void)
 //
 // M_Ticker
 //
-void M_Ticker (void)
+void M_Ticker()
 {
 	if (--skullAnimCounter <= 0)
 	{
@@ -2136,11 +2136,9 @@ void M_Ticker (void)
 //
 EXTERN_CVAR (screenblocks)
 
-void M_Init (void)
+void M_Init()
 {
-	int i;
-
-    // [Russell] - Set this beforehand, because when you switch wads
+	// [Russell] - Set this beforehand, because when you switch wads
     // (ie from doom to doom2 back to doom), you will have less menu items
     {
         MainDef.numitems = d1_main_end;
@@ -2158,7 +2156,7 @@ void M_Init (void)
 	whichSkull = 0;
 	skullAnimCounter = 10;
 	drawSkull = true;
-	screenSize = (int)screenblocks - 3;
+	screenSize = static_cast<int>(screenblocks) - 3;
 	messageToPrint = 0;
 	messageString = NULL;
 	messageLastMenuActive = menuactive;
@@ -2175,7 +2173,7 @@ void M_Init (void)
 	M_OptInit ();
 
 	// [RH] Build a palette translation table for the fire
-	for (i = 0; i < 256; i++)
+	for (int i = 0; i < 256; i++)
 		FireRemap[i] = V_BestColor(V_GetDefaultPalette()->basecolors, i, 0, 0);
 }
 

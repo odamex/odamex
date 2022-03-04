@@ -158,7 +158,7 @@ EXTERN_CVAR(sv_allowjump)
 // G_DoNewGame
 // Is called whenever a new Singleplayer game will be started. 
 //
-void G_DoNewGame (void)
+void G_DoNewGame()
 {
 	if (demoplayback)
 	{
@@ -352,7 +352,7 @@ void G_SecretExitLevel (int position, int drawscores)
 	//gameaction = ga_completed;
 }
 
-void G_DoCompleted (void)
+void G_DoCompleted()
 {
 	gameaction = ga_nothing;
 

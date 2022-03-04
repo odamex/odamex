@@ -78,7 +78,7 @@ byte			solidcol[MAXWIDTH];
 //
 // R_ClearClipSegs
 //
-void R_ClearClipSegs (void)
+void R_ClearClipSegs()
 {
 	memset(solidcol, 0, viewwidth);
 }
@@ -87,7 +87,7 @@ void R_ClearClipSegs (void)
 // R_ReallocDrawSegs
 //
 // [SL] From prboom-plus. Moved out of R_StoreWallRange()
-void R_ReallocDrawSegs(void)
+void R_ReallocDrawSegs()
 {
 	if (ds_p == drawsegs+maxdrawsegs)		// killough 1/98 -- fix 2s line HOM
 	{
@@ -103,7 +103,7 @@ void R_ReallocDrawSegs(void)
 //
 // R_ClearDrawSegs
 //
-void R_ClearDrawSegs(void)
+void R_ClearDrawSegs()
 {
 	ds_p = drawsegs;
 }

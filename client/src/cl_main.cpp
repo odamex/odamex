@@ -284,7 +284,7 @@ EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 
-void CL_PlayerTimes (void);
+void CL_PlayerTimes();
 void CL_TryToConnect(DWORD server_token);
 void CL_Decompress();
 
@@ -293,9 +293,9 @@ bool M_FindFreeName(std::string &filename, const std::string &extension);
 void CL_SimulateWorld();
 
 // some doom functions (not csDoom)
-void D_Display(void);
-void D_DoAdvanceDemo(void);
-void M_Ticker(void);
+void D_Display();
+void D_DoAdvanceDemo();
+void M_Ticker();
 
 void R_InterpolationTicker();
 
@@ -333,14 +333,14 @@ static int CL_CalculateWorldIndexDriftCorrection()
 {
 	static const float CORRECTION_PERIOD = 1.0f / 16.0f;
 
-	int delta = CL_CalculateWorldIndexSync() - world_index;
+	const int delta = CL_CalculateWorldIndexSync() - world_index;
 	if (delta == 0)
 		world_index_accum = 0.0f;
 	else
 		world_index_accum += CORRECTION_PERIOD * delta;
 
 	// truncate the decimal portion of world_index_accum
-	int correction = int(world_index_accum);
+	const int correction = static_cast<int>(world_index_accum);
 
 	// reset world_index_accum if our correction will affect world_index
 	if (correction != 0)
@@ -451,7 +451,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 }
 
 
-void CL_Reconnect(void)
+void CL_Reconnect()
 {
 	recv_full_update = false;
 
@@ -478,7 +478,7 @@ void CL_Reconnect(void)
 }
 
 std::string spyplayername;
-void CL_CheckDisplayPlayer(void);
+void CL_CheckDisplayPlayer();
 
 //
 // CL_CheckDisplayPlayer
@@ -486,7 +486,7 @@ void CL_CheckDisplayPlayer(void);
 // Perfoms validation on the value of displayplayer_id based on the current
 // game state and status of the consoleplayer.
 //
-void CL_CheckDisplayPlayer(void)
+void CL_CheckDisplayPlayer()
 {
 	static byte previd = consoleplayer_id;
 	byte newid = 0;
@@ -1101,7 +1101,7 @@ BEGIN_COMMAND (spy)
 }
 END_COMMAND (spy)
 
-void STACK_ARGS call_terms (void);
+void STACK_ARGS call_terms();
 
 void CL_QuitCommand()
 {
@@ -1325,7 +1325,7 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 // CL_SendUserInfo
 //
-void CL_SendUserInfo(void)
+void CL_SendUserInfo()
 {
 	UserInfo* coninfo = &consoleplayer().userinfo;
 	D_SetupUserInfo();
@@ -1442,7 +1442,7 @@ int connecttimeout = 0;
 // [denis] CL_RequestConnectInfo
 // Do what a launcher does...
 //
-void CL_RequestConnectInfo(void)
+void CL_RequestConnectInfo()
 {
 	if (!serveraddr.ip[0])
 		return;
@@ -1796,7 +1796,7 @@ bool CL_Connect()
 //
 // CL_InitNetwork
 //
-void CL_InitNetwork (void)
+void CL_InitNetwork()
 {
     const char *v = Args.CheckValue ("-port");
     if (v)
@@ -2057,7 +2057,7 @@ void CL_ParseCommands()
 }
 
 
-void CL_SaveCmd(void)
+void CL_SaveCmd()
 {
 	NetCommand *netcmd = &localcmds[gametic % MAXSAVETICS];
 	netcmd->fromPlayer(&consoleplayer());
@@ -2070,7 +2070,7 @@ extern int outrate;
 //
 // CL_SendCmd
 //
-void CL_SendCmd(void)
+void CL_SendCmd()
 {
 	player_t *p = &consoleplayer();
 

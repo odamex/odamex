@@ -58,7 +58,7 @@ public:
 	}
 } ad;
 
-cvar_t* GetFirstCvar(void)
+cvar_t* GetFirstCvar()
 {
 	return ad.GetCVars();
 }
@@ -467,7 +467,7 @@ void cvar_t::C_BackupCVars (unsigned int bitflag)
 	numbackedup = backup - CVarBackups;
 }
 
-void cvar_t::C_RestoreCVars (void)
+void cvar_t::C_RestoreCVars()
 {
 	backup_s *backup = CVarBackups;
 

@@ -37,7 +37,7 @@ extern std::string LOG_FILE;
 // calls all startup code, parses command line options.
 // If not overrided by user input, calls N_AdvanceDemo.
 //
-void D_DoomMain(void);
+void D_DoomMain();
 
 void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles);
 bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles);
@@ -48,11 +48,11 @@ void D_PostEvent(const event_t* ev);
 //
 // BASE LEVEL
 //
-void D_PageTicker(void);
-void D_PageDrawer(void);
-void D_AdvanceDemo(void);
-void D_StartTitle(void);
-void D_DisplayTicker(void);
+void D_PageTicker();
+void D_PageDrawer();
+void D_AdvanceDemo();
+void D_StartTitle();
+void D_DisplayTicker();
 
 // [RH] Set this to something to draw an icon during the next screen refresh.
 extern const char *D_DrawIcon;

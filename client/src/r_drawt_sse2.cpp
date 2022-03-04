@@ -55,7 +55,7 @@ static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
 }
 
 
-void R_DrawSpanD_SSE2 (void)
+void R_DrawSpanD_SSE2()
 {
 #ifdef RANGECHECK
 	if (dspan.x2 < dspan.x1 || dspan.x1 < 0 || dspan.x2 >= viewwidth ||
@@ -175,7 +175,7 @@ void R_DrawSpanD_SSE2 (void)
 	}
 }
 
-void R_DrawSlopeSpanD_SSE2 (void)
+void R_DrawSlopeSpanD_SSE2()
 {
 	int count = dspan.x2 - dspan.x1 + 1;
 	if (count <= 0)

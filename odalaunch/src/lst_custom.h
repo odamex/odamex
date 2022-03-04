@@ -78,7 +78,7 @@ public:
 
 	void ApplyFilter(wxString Filter = wxEmptyString);
 
-	wxEvent* Clone(void);
+	wxEvent* Clone();
 
 private:
 	void OnCreateControl(wxWindowCreateEvent& event);
@@ -88,7 +88,7 @@ private:
 	void ColourListItem(wxListItem& info);
 	void ColourListItem(long item);
 
-	void ResetSortArrows(void);
+	void ResetSortArrows();
 	void SetSortArrow(wxInt32 Column, wxInt32 ArrowState);
 
 	void FlipRow(long Row, long NextRow);

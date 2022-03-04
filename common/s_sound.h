@@ -71,8 +71,8 @@ void S_Deinit();
 // Kills playing sounds at start of level,
 //	determines music if any, changes music.
 //
-void S_Stop(void);
-void S_Start(void);
+void S_Stop();
+void S_Start();
 
 // Start sound for thing at <ent>
 void S_Sound (int channel, const char *name, float volume, int attenuation);
@@ -118,7 +118,7 @@ void S_StopSound (fixed_t *pt, int channel);
 void S_StopSound (fixed_t *pt);
 
 // Stop sound for all channels
-void S_StopAllChannels (void);
+void S_StopAllChannels ();
 
 // Is the sound playing on one of the entity's channels?
 bool S_GetSoundPlayingInfo (AActor *ent, int sound_id);
@@ -134,11 +134,11 @@ void S_StartMusic (const char *music_name);
 void S_ChangeMusic (std::string music_name, int looping);
 
 // Stops the music fer sure.
-void S_StopMusic (void);
+void S_StopMusic ();
 
 // Stop and resume music, during game PAUSE.
-void S_PauseSound (void);
-void S_ResumeSound (void);
+void S_PauseSound ();
+void S_ResumeSound ();
 
 
 //
@@ -156,20 +156,20 @@ void S_ActivateAmbient (AActor *mobj, int ambient);
 
 
 // [RH] S_sfx "maintenance" routines
-void S_ParseSndInfo (void);
+void S_ParseSndInfo ();
 
-void S_HashSounds (void);
+void S_HashSounds ();
 int S_FindSound (const char *logicalname);
 int S_FindSoundByLump (int lump);
 int S_AddSound (char *logicalname, char *lumpname);	// Add sound by lumpname
 int S_AddSoundLump (char *logicalname, int lump);	// Add sound by lump index
-void S_ClearSoundLumps (void);
+void S_ClearSoundLumps ();
 
 void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte attenuation);
 
 // [RH] Prints sound debug info to the screen.
 //		Modelled after Hexen's noise cheat.
-void S_NoiseDebug (void);
+void S_NoiseDebug ();
 
 // The following functions work seamlessly on local clients and networked games.
 

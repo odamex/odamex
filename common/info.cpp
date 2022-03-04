@@ -7599,7 +7599,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 
 
 
-void D_Init_DEHEXTRA_Frames(void)
+void D_Init_DEHEXTRA_Frames()
 {
 	// [Blair] Combine all the state tables.
 	for (int i = 0; i < NUMSTATES; i++)

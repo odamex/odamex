@@ -394,7 +394,7 @@ void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent& event)
 	Sort();
 }
 
-void wxAdvancedListCtrl::ResetSortArrows(void)
+void wxAdvancedListCtrl::ResetSortArrows()
 {
 	for(wxInt32 i = 0; i < GetColumnCount(); ++i)
 	{

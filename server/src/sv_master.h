@@ -35,8 +35,8 @@ void SV_InitMasters();
 bool SV_AddMaster(const char *masterip);
 void SV_ListMasters ();
 bool SV_RemoveMaster (const char *masterip);
-void SV_UpdateMasterServers(void);
-void SV_UpdateMaster(void);
+void SV_UpdateMasterServers();
+void SV_UpdateMaster();
 void SV_ArchiveMasters(FILE *fp);
 
 #endif

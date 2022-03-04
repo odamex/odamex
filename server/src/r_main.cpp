@@ -111,15 +111,15 @@ fixed_t		render_lerp_amount;
 
 unsigned int	R_OldBlend = ~0;
 
-void (*colfunc) (void);
-void (*basecolfunc) (void);
-void (*fuzzcolfunc) (void);
-void (*lucentcolfunc) (void);
-void (*transcolfunc) (void);
-void (*tlatedlucentcolfunc) (void);
-void (*spanfunc) (void);
+void (*colfunc) ();
+void (*basecolfunc) ();
+void (*fuzzcolfunc) ();
+void (*lucentcolfunc) ();
+void (*transcolfunc) ();
+void (*tlatedlucentcolfunc) ();
+void (*spanfunc) ();
 
-void (*hcolfunc_pre) (void);
+void (*hcolfunc_pre) ();
 void (*hcolfunc_post1) (int hx, int sx, int yl, int yh);
 void (*hcolfunc_post2) (int hx, int sx, int yl, int yh);
 void (*hcolfunc_post4) (int sx, int yl, int yh);
@@ -222,17 +222,14 @@ angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y)
 //
 // R_PointToAngle - wrapper around R_PointToAngle2
 //
-angle_t
-R_PointToAngle
-( fixed_t	x,
-  fixed_t	y )
+angle_t R_PointToAngle(fixed_t x, fixed_t y)
 {
     return R_PointToAngle2 (viewx, viewy, x, y);
 }
 
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 {
-	int index = ang >> ANGLETOFINESHIFT;
+	const int index = ang >> ANGLETOFINESHIFT;
 	
 	tx = FixedMul(x, finecosine[index]) - FixedMul(y, finesine[index]);
 	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
@@ -244,9 +241,9 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 //
 //
 
-void R_Init (void)
+void R_Init()
 {
-	R_InitData ();
+	R_InitData();
 
 	framecount = 0;
 }

@@ -57,16 +57,16 @@ enum netQuitReason_e
 #define CL_QuitNetGame(reason) CL_QuitNetGame2(reason, __FILE__, __LINE__)
 void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line);
 void CL_Reconnect();
-void CL_InitNetwork (void);
-void CL_RequestConnectInfo(void);
+void CL_InitNetwork();
+void CL_RequestConnectInfo();
 bool CL_PrepareConnect();
-void CL_ParseCommands(void);
+void CL_ParseCommands();
 bool CL_ReadPacketHeader();
-void CL_SendCmd(void);
-void CL_SaveCmd(void);
+void CL_SendCmd();
+void CL_SaveCmd();
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
-void CL_PredictWorld(void);
-void CL_SendUserInfo(void);
+void CL_PredictWorld();
+void CL_SendUserInfo();
 bool CL_Connect();
 
 void CL_SendCheat(int cheats);

@@ -513,26 +513,24 @@ static int backupMaxAmmo[NUMAMMO];
 static int backupClipAmmo[NUMAMMO];
 static DehInfo backupDeh;
 
-static void BackupData(void)
+static void BackupData()
 {
-	int i;
-
 	if (BackedUpData)
 	{
 		return;
 	}
 
-	//	for (i = 0; i < numsfx; i++)
+	//	for (int i = 0; i < numsfx; i++)
 	// {
 	//		OrgSfxNames[i] = S_sfx[i].name;
 	// }
 
-	for (i = 0; i < NUMSPRITES; i++)
+	for (int i = 0; i < NUMSPRITES; i++)
 	{
 		OrgSprNames[i] = sprnames[i];
 	}
 
-	for (i = 0; i < NUMSTATES; i++)
+	for (int i = 0; i < NUMSTATES; i++)
 	{
 		OrgActionPtrs[i] = states[i].action;
 	}
@@ -726,10 +724,8 @@ static void stripwhite(char* str)
 	end[1] = '\0';
 }
 
-static char* igets(void)
+static char* igets()
 {
-	char* line;
-
 	if (!PatchPt || IS_AT_PATCH_SIZE)
 	{
 		return NULL;
@@ -740,7 +736,7 @@ static char* igets(void)
 		return NULL;
 	}
 
-	line = PatchPt;
+	char* line = PatchPt;
 
 	while (*PatchPt != '\n' && *PatchPt != '\0')
 	{
@@ -755,9 +751,9 @@ static char* igets(void)
 	return line;
 }
 
-static int GetLine(void)
+static int GetLine()
 {
-	char *line, *line2;
+	char *line;
 
 	do
 	{
@@ -781,8 +777,9 @@ static int GetLine(void)
 	line = strchr(Line1, '=');
 
 	if (line)
-	{ // We have an '=' in the input line
-		line2 = line;
+	{
+		// We have an '=' in the input line
+		char* line2 = line;
 		while (--line2 >= Line1)
 		{
 			if (*line2 > ' ')

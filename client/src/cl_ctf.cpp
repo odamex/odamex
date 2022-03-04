@@ -191,7 +191,7 @@ static void TintScreen(argb_t color)
 //	[Toke - CTF] CTF_RunTics
 //	Runs once per gametic when ctf is enabled
 //
-void CTF_RunTics (void)
+void CTF_RunTics()
 {
 	// NES - Glowing effect on screen tint.
 	if (tintglow < 90)
@@ -226,9 +226,8 @@ void CTF_RunTics (void)
 //	[Toke - CTF - Hud] CTF_DrawHud
 //	Draws the CTF Hud, duH
 //
-void CTF_DrawHud (void)
+void CTF_DrawHud()
 {
-    int tintglowtype = 0;
 	team_t yourFlag = NUMTEAMS;
 	team_t enemyFlag = NUMTEAMS;
 
@@ -251,6 +250,7 @@ void CTF_DrawHud (void)
 
 	if ((yourFlag != NUMTEAMS || enemyFlag != NUMTEAMS) && hud_heldflag > 0)
 	{
+		int tintglowtype = 0;
 		if (hud_heldflag_flash == 1)
 		{
 			if (tintglow < 15)

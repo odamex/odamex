@@ -595,7 +595,7 @@ gitem_t itemlist[] = {
     }
 };
 
-void InitItems (void)
+void InitItems()
 {
 	num_items = sizeof(itemlist)/sizeof(itemlist[0]) - 1;
 }

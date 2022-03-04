@@ -85,7 +85,7 @@ extern angle_t tantoangle_acc[2049];
 
 extern const angle_t *p_tantoangle;
 
-void Table_InitTanToAngle(void);
+void Table_InitTanToAngle();
 void Table_SetTanToAngle(int version);
 
 // More utility functions, courtesy of Quasar (James Haley).

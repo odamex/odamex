@@ -53,28 +53,28 @@ void STACK_ARGS C_ShutdownConCharsFont();
 void C_ClearCommand();
 
 // Adjust the console for a new screen mode
-void C_NewModeAdjust (void);
+void C_NewModeAdjust ();
 
-void C_Ticker (void);
+void C_Ticker ();
 
 int PrintString (int printlevel, const char *string);
 int STACK_ARGS Printf_Bold (const char *format, ...);
 
 void C_AddNotifyString (int printlevel, const char *s);
-void C_DrawConsole (void);
-void C_ToggleConsole (void);
-void C_FullConsole (void);
-void C_HideConsole (void);
-void C_AdjustBottom (void);
-void C_FlushDisplay (void);
+void C_DrawConsole ();
+void C_ToggleConsole ();
+void C_FullConsole ();
+void C_HideConsole ();
+void C_AdjustBottom ();
+void C_FlushDisplay ();
 
 void C_InitTicker (const char *label, unsigned int max);
 void C_SetTicker (unsigned int at);
 
 void C_MidPrint (const char *msg, player_t *p = NULL, int msgtime=0);
-void C_DrawMid (void);
+void C_DrawMid ();
 void C_GMidPrint(const char* msg, int color, int msgtime);
-void C_DrawGMid (void);
+void C_DrawGMid ();
 
 BOOL C_Responder (event_t *ev);
 
