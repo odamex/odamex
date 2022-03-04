@@ -55,12 +55,12 @@ typedef struct
 {
 	int flags;
 	OLumpName titlePage;
-	char creditPage1[8];
-	char creditPage2[8];
+	OLumpName creditPage1;
+	OLumpName creditPage2;
 	OLumpName titleMusic;
-	float titleTime;
-	float advisoryTime;
-	float pageTime;
+	int titleTime;
+	int advisoryTime;
+	int pageTime;
 	char chatSound[16];
 	OLumpName finaleMusic;
 	OLumpName finaleFlat;

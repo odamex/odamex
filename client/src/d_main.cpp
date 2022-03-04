@@ -453,10 +453,7 @@ void D_DoAdvanceDemo (void)
     switch (demosequence)
     {
         case 0:
-            if (gameinfo.flags & GI_MAPxx)
-                pagetic = TICRATE * 11;
-            else
-                pagetic = 170;
+            pagetic = gameinfo.titleTime * TICRATE;
 
             gamestate = GS_DEMOSCREEN;
             pagename = gameinfo.titlePage.c_str();
@@ -471,9 +468,9 @@ void D_DoAdvanceDemo (void)
 
             break;
         case 2:
-            pagetic = 200;
+		    pagetic = gameinfo.pageTime * TICRATE;
             gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.creditPage1;
+            pagename = gameinfo.creditPage1.c_str();
 
             break;
         case 3:
@@ -485,10 +482,8 @@ void D_DoAdvanceDemo (void)
 
             if ((gameinfo.flags & GI_MAPxx) || (gameinfo.flags & GI_MENUHACK_RETAIL))
             {
-				if (gameinfo.flags & GI_MAPxx)
-					pagetic = TICRATE * 11;
-				else
-					pagetic = 170;
+			    pagetic = gameinfo.titleTime * TICRATE;
+
                 pagename = gameinfo.titlePage.c_str();
                 currentmusic = gameinfo.titleMusic.c_str();
                 
@@ -496,11 +491,8 @@ void D_DoAdvanceDemo (void)
             }
             else
             {
-                pagetic = 200;
-				if (gamemode == retail_chex)	// [ML] Chex mode just cycles this screen
-					pagename = gameinfo.creditPage1;
-				else
-					pagename = gameinfo.creditPage2;
+                pagetic = gameinfo.pageTime * TICRATE;
+				pagename = gameinfo.creditPage2.c_str();
             }
 
             break;
@@ -509,9 +501,9 @@ void D_DoAdvanceDemo (void)
 
             break;
         case 6:
-            pagetic = 200;
+		    pagetic = gameinfo.pageTime * TICRATE;
             gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.creditPage2;
+            pagename = gameinfo.creditPage2.c_str();
 
             break;
         case 7:
