@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __SVCMAP_H__
-#define __SVCMAP_H__
+#pragma once
 
 #include "i_net.h"
 
@@ -35,5 +34,3 @@ class Descriptor;
 
 const google::protobuf::Descriptor* SVC_ResolveHeader(const byte header);
 svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc);
-
-#endif // __SVCMAP_H__

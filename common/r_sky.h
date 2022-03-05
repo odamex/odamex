@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __R_SKY_H__
-#define __R_SKY_H__
+#pragma once
 
 
 // SKY, store the number for name.
@@ -46,5 +44,3 @@ EXTERN_CVAR (r_stretchsky)
 void R_InitSkyMap		();
 
 void R_RenderSkyRange(visplane_t* pl);
-
-#endif //__R_SKY_H__

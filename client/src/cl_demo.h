@@ -1,5 +1,4 @@
-#ifndef __CL_DEMO_H__
-#define __CL_DEMO_H__
+#pragma once
 
 #include "i_net.h"
 #include <list>
@@ -141,8 +140,3 @@ private:
 	int					netdemotic;
 	int					pause_netdemotic;
 };
-
-
-
-
-#endif

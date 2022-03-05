@@ -32,13 +32,8 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef MUS2MID_H
-#define MUS2MID_H
+#pragma once
 
 #include "m_memio.h"
 
 QWORD mus2mid(MEMFILE *musinput, MEMFILE *midioutput);
-
-#endif /* #ifndef MUS2MID_H */
-
-

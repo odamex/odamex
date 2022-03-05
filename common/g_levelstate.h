@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __G_LEVELSTATE_H__
-#define __G_LEVELSTATE_H__
+#pragma once
 
 
 #include "d_player.h"
@@ -117,5 +116,3 @@ struct SerializedLevelState
 };
 
 extern LevelState levelstate;
-
-#endif

@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __R_DRAW__
-#define __R_DRAW__
+#pragma once
 
 #include "r_intrin.h"
 #include "r_defs.h"
@@ -223,8 +221,3 @@ void R_BuildClassicPlayerTranslation(int player, int color);
 // If the view size is not full screen, draws a border around it.
 void R_DrawViewBorder (void);
 void R_DrawBorder (int x1, int y1, int x2, int y2);
-
-
-#endif
-
-

@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __AMMAP_H__
-#define __AMMAP_H__
+#pragma once
 
 #include "d_event.h"
 
@@ -50,6 +49,3 @@ void AM_Stop();
 
 bool AM_ClassicAutomapVisible();
 bool AM_OverlayAutomapVisible();
-
-
-#endif
