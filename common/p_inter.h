@@ -23,8 +23,7 @@
 
 // [AM] Seems like this header should be "p_interaction.h"...
 
-#ifndef __P_INTER__
-#define __P_INTER__
+#pragma once
 
 #include "d_player.h"
 
@@ -46,5 +45,3 @@ ItemEquipVal P_GiveCard(player_t* player, card_t card);
 ItemEquipVal P_GivePower(player_t* player, int /*powertype_t*/ power);
 void P_KillMobj(AActor* source, AActor* target, AActor* inflictor, bool joinkill);
 void P_HealMobj(AActor* mo, int num);
-
-#endif

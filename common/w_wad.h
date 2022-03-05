@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __W_WAD__
-#define __W_WAD__
+#pragma once
 
 #include "z_zone.h"
 #include "r_defs.h"
@@ -156,5 +155,3 @@ int W_GetLumpFile (unsigned lump);
 
 // [RH] Put a lump in a certain namespace
 //void W_SetLumpNamespace (unsigned lump, int nmspace);
-
-#endif

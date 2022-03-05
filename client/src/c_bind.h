@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __C_BINDINGS_H__
-#define __C_BINDINGS_H__
+#pragma once
 
 
 #include "hashtable.h"
@@ -63,8 +62,8 @@ public :
 	void ArchiveBindings(FILE* f);
 };
 
-void C_BindingsInit(void);
-void C_BindDefaults(void);
+void C_BindingsInit();
+void C_BindDefaults();
 
 // DoKey now have a binding responder, used to switch between Binds and Automap binds
 bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds);
@@ -73,5 +72,3 @@ void C_ReleaseKeys();
 
 
 extern OKeyBindings Bindings, DoubleBindings, AutomapBindings, NetDemoBindings;
-
-#endif //__C_BINDINGS_H__

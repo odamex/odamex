@@ -21,13 +21,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __G_SPAWNINV_H__
-#define __G_SPAWNINV_H__
+#pragma once
 
 #include "d_player.h"
 
 void G_SetupSpawnInventory();
 void G_GiveSpawnInventory(player_t& player);
 void G_GiveBetweenInventory(player_t& player);
-
-#endif
