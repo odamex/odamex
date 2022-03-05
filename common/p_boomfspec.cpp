@@ -3458,10 +3458,8 @@ const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, cons
 
 	unsigned int filter;
 
-	if (demoplayback)
+	if (demoplayback || reserved)
 		filter = 0x01ff;
-	else if (reserved)
-		filter = 0x03ff;
 	else
 		filter = 0x3fff;
 
