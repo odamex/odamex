@@ -874,11 +874,9 @@ void P_LoadLineDefs (const int lump)
 	// E2M7 has flags masked in that interfere with MBF21 flags.
 	// Boom fixes this with the comp flag comp_reservedlineflag
 	// We'll fix this for now by just checking for the E2M7 FarmHash
-	const char e2m7hash[33] = "43ffa244f5ae923b7df59dbf511c0468";
+	const std::string e2m7hash = "43ffa244f5ae923b7df59dbf511c0468";
 
-	char levelHash[33];
-
-	ArrayInit(levelHash, '0');
+	std::string levelHash;
 
 	// [Blair] Serialize the hashes before reading.
 	uint64_t reconsthash1 = (uint64_t)(::level.level_fingerprint[0]) |
@@ -899,9 +897,9 @@ void P_LoadLineDefs (const int lump)
 	                        (uint64_t)(::level.level_fingerprint[14]) << 48 |
 	                        (uint64_t)(::level.level_fingerprint[15]) << 56;
 
-	sprintf(levelHash, "%16llx%16llx", reconsthash1, reconsthash2);
+	StrFormat(levelHash, "%16llx%16llx", reconsthash1, reconsthash2);
 
-	bool isE2M7 = std::equal(levelHash, levelHash + sizeof levelHash / sizeof *levelHash, e2m7hash);
+	bool isE2M7 = (levelHash == e2m7hash);
 
 	ld = lines;
 	for (i=0 ; i<numlines ; i++, ld++)
