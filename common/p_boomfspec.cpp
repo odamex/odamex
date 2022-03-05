@@ -3447,7 +3447,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	return result;
 }
 
-const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags)
+const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved)
 {
 	/*
 	if (mbf21)
@@ -3460,6 +3460,8 @@ const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags)
 
 	if (demoplayback)
 		filter = 0x01ff;
+	else if (reserved)
+		filter = 0x03ff;
 	else
 		filter = 0x3fff;
 
