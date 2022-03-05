@@ -55,8 +55,7 @@ typedef struct
 {
 	int flags;
 	OLumpName titlePage;
-	OLumpName creditPage1;
-	OLumpName creditPage2;
+	OLumpName creditPages[2];
 	OLumpName titleMusic;
 	int titleTime;
 	int advisoryTime;

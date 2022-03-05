@@ -470,7 +470,7 @@ void D_DoAdvanceDemo (void)
         case 2:
 		    pagetic = gameinfo.pageTime * TICRATE;
             gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.creditPage1.c_str();
+            pagename = gameinfo.creditPages[0].c_str();
 
             break;
         case 3:
@@ -492,7 +492,7 @@ void D_DoAdvanceDemo (void)
             else
             {
                 pagetic = gameinfo.pageTime * TICRATE;
-				pagename = gameinfo.creditPage2.c_str();
+			    pagename = gameinfo.creditPages[1].c_str();
             }
 
             break;
@@ -503,7 +503,7 @@ void D_DoAdvanceDemo (void)
         case 6:
 		    pagetic = gameinfo.pageTime * TICRATE;
             gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.creditPage2.c_str();
+		    pagename = gameinfo.creditPages[1].c_str();
 
             break;
         case 7:

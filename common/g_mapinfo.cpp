@@ -287,7 +287,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		os.error("Expected identifier, got \"%s\".", os.getToken().c_str());
 	}
-	std::string pname = os.getToken();
+	const std::string pname = os.getToken();
 	MustGetStringName(os, "=");
 
 	if (!stricmp(pname.c_str(), "levelname"))
@@ -985,6 +985,33 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 	}
 }
 
+// Sets the credit pages from a gameinfo lump
+void MIType_CreditPages(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                        unsigned int flags2)
+{
+	ParseMapInfoHelper<OLumpName>(os, doEquals);
+
+	const std::string creditPage = os.getToken();
+	static_cast<OLumpName*>(data)[0] = creditPage;
+
+	os.scan();
+	if (os.compareToken(","))
+	{
+		os.mustScan();
+		if (os.isQuotedString())
+			static_cast<OLumpName*>(data)[1] = os.getToken();
+		else
+			os.error("Trailing comma in CreditPage definition; expected lump name");
+	}
+	else
+	{
+		os.unScan();
+		static_cast<OLumpName*>(data)[1] = creditPage;
+	}
+
+	SkipUnknownType(os);
+}
+
 // Sets the map to use the specific map07 bossactions
 void MIType_Map07Special(OScanner& os, bool doEquals, void* data, unsigned int flags,
                          unsigned int flags2)
@@ -1290,6 +1317,7 @@ struct MapInfoDataSetter<gameinfo_t>
 
 		ENTRY3("advisorytime", &MIType_Float, &gameinfo.advisoryTime)
 		// ENTRY3("chatsound",			)
+		ENTRY3("creditpage", &MIType_CreditPages, &gameinfo.creditPages)
 		ENTRY3("pagetime", &MIType_Float, &gameinfo.pageTime)
 		ENTRY3("finaleflat", &MIType_LumpName, &gameinfo.finaleFlat)
 		ENTRY3("finalemusic", &MIType_$LumpName, &gameinfo.finaleMusic)
