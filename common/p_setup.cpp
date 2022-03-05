@@ -50,6 +50,7 @@
 #include "p_setup.h"
 #include "p_hordespawn.h"
 #include "p_mapformat.h"
+#include <cinttypes>
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
@@ -897,7 +898,8 @@ void P_LoadLineDefs (const int lump)
 	                        (uint64_t)(::level.level_fingerprint[14]) << 48 |
 	                        (uint64_t)(::level.level_fingerprint[15]) << 56;
 
-	StrFormat(levelHash, "%16llx%16llx", reconsthash1, reconsthash2);
+	StrFormat(levelHash, "%" PRIx64 "%" PRIx64, reconsthash1,
+	          reconsthash2);
 
 	bool isE2M7 = (levelHash == e2m7hash);
 
