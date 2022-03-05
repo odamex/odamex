@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __CMDLIB__
-#define __CMDLIB__
+#pragma once
 
 #include <algorithm>
 
@@ -142,5 +140,3 @@ static void ArrayCopy(A1& dst, const A2& src)
 	for (size_t i = 0; i < ARRAY_LENGTH(src); i++)
 		dst[i] = src[i];
 }
-
-#endif

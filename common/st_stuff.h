@@ -23,9 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __STSTUFF_H__
-#define __STSTUFF_H__
+#pragma once
 
 // Forward declaration
 struct event_t;
@@ -100,5 +98,3 @@ void DoomHUD();
 }
 
 bool ST_Responder(event_t* ev);
-
-#endif

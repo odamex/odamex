@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __HU_ELEMENTS_H__
-#define __HU_ELEMENTS_H__
+#pragma once
 
 
 namespace hud {
@@ -158,5 +157,3 @@ void EATargets(int x, int y, const float scale,
                const short padding, const short limit,
                const bool force_opaque = false);
 }
-
-#endif

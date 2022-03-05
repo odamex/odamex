@@ -29,8 +29,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_VECTORS_H__
-#define __M_VECTORS_H__
+#pragma once
 
 #include "tables.h"
 #include "m_fixed.h"
@@ -280,6 +279,3 @@ void M_TranslateVec3f(v3float_t *vec, const v3float_t *origin, angle_t ang);
 void M_TranslateVec3(v3double_t *vec, const v3double_t *origin, angle_t ang);
 
 rectInt_t M_RectFromDimensions(const v2int_t& origin, const v2int_t& dims);
-
-#endif //__M_VECTORS_H__
-

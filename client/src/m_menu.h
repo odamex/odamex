@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_MENU_H__
-#define __M_MENU_H__
+#pragma once
 
 #include "d_event.h"
 
@@ -216,5 +215,3 @@ size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length);
 extern oldmenuitem_t EpisodeMenu[MAX_EPISODES];
 extern OLumpName EpisodeMaps[MAX_EPISODES];
 extern oldmenu_t EpiDef;
-
-#endif

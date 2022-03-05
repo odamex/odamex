@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_ARGV_H__
-#define __M_ARGV_H__
+#pragma once
 
 #include "dobject.h"
 
@@ -74,5 +73,3 @@ void M_FindResponseFile(void);
 int M_GetParmValue(const char* name);
 
 extern bool DefaultsLoaded; 
-
-#endif //__M_ARGV_H__

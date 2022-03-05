@@ -34,8 +34,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __TABLES_H__
-#define __TABLES_H__
+#pragma once
 
 #include "m_fixed.h"
 
@@ -94,8 +93,3 @@ inline static angle_t FixedToAngle(fixed_t a)
 {
 	return (angle_t)(((uint64_t)a * ANG(1)) >> FRACBITS);
 }
-
-
-#endif // __TABLES_H__
-
-

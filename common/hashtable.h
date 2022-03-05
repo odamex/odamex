@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __HASHTABLE_H__
-#define __HASHTABLE_H__
+#pragma once
 
 #include <cassert>
 #include <utility>
@@ -577,5 +576,3 @@ private:
 
 	HF				mHashFunc;		// hash key generation functor
 };
-
-#endif	// __HASHTABLE_H__
