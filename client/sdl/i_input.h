@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __I_INPUT_H__
-#define __I_INPUT_H__
+#pragma once
 
 #include <SDL.h>
 #include "win32inc.h"
@@ -221,5 +220,3 @@ private:
 
 typedef OHashTable<int, std::string> KeyNameTable;
 extern KeyNameTable key_names;
-
-#endif  // __I_INPUT_H__

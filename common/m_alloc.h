@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_ALLOC_H__
-#define __M_ALLOC_H__
+#pragma once
 
 #include <stdlib.h>
 
@@ -42,7 +41,3 @@ void M_Free2 (void **memblock);
         M_Free2((void **)&p); \
     else \
         (void)0
-
-#endif //__M_ALLOC_H__
-
-

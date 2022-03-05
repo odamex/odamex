@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __C_BINDINGS_H__
-#define __C_BINDINGS_H__
+#pragma once
 
 
 #include "hashtable.h"
@@ -73,5 +72,3 @@ void C_ReleaseKeys();
 
 
 extern OKeyBindings Bindings, DoubleBindings, AutomapBindings, NetDemoBindings;
-
-#endif //__C_BINDINGS_H__

@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __G_GAMETYPE_H__
-#define __G_GAMETYPE_H__
+#pragma once
 
 
 #include "g_levelstate.h"
@@ -79,5 +78,3 @@ void G_TeamFragsCheckEndGame();
 void G_TeamScoreCheckEndGame();
 void G_LivesCheckEndGame();
 bool G_RoundsShouldEndGame();
-
-#endif // __G_GAMETYPE_H__

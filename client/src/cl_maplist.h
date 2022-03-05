@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __CL_MAPLIST__
-#define __CL_MAPLIST__
+#pragma once
 
 #include <map>
 
@@ -86,5 +85,3 @@ void CL_Maplist();
 void CL_MaplistIndex();
 
 void Maplist_Runtic();
-
-#endif

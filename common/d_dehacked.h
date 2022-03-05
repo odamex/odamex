@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __D_DEHACK_H__
-#define __D_DEHACK_H__
+#pragma once
 
 #include "m_resfile.h"
 
@@ -227,5 +226,3 @@ static const char* SoundMap[] = { NULL,
 void D_UndoDehPatch();
 void D_PostProcessDeh();
 bool D_DoDehPatch(const OResFile* patchfile, const int lump);
-
-#endif //__D_DEHACK_H__

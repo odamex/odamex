@@ -24,13 +24,9 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __I_SOUND__
-#define __I_SOUND__
-
+#pragma once
 
 #include "s_sound.h"
-
-
 
 // Init at program start...
 void I_InitSound();
@@ -64,5 +60,3 @@ int I_SoundIsPlaying(int handle);
 // Updates the volume, separation,
 //	and pitch of a sound channel.
 void I_UpdateSoundParams(int handle, float vol, int sep, int pitch);
-
-#endif

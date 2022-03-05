@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __SVMASTER_H__
-#define __SVMASTER_H__
+#pragma once
 
 #include "d_player.h"
 #include "p_local.h"
@@ -38,5 +36,3 @@ bool SV_RemoveMaster (const char *masterip);
 void SV_UpdateMasterServers();
 void SV_UpdateMaster();
 void SV_ArchiveMasters(FILE *fp);
-
-#endif

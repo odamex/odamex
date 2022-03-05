@@ -21,10 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __M_FILEIO__
-#define __M_FILEIO__
-
-
+#pragma once
 
 #include "d_main.h"
 
@@ -139,5 +136,3 @@ std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString
  * @return True if the path was made absolute successfully.
  */
 bool M_GetAbsPath(const std::string& path, std::string& out);
-
-#endif

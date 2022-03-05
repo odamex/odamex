@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __P_LOCAL__
-#define __P_LOCAL__
+#pragma once
 
 #ifndef __R_LOCAL__
 #include "r_local.h"
@@ -485,7 +483,3 @@ bool P_IsTeamMate(AActor* actor, AActor* player);
 // P_SPEC
 //
 #include "p_spec.h"
-
-#endif	// __P_LOCAL__
-
-

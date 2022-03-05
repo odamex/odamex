@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __P_TICK__
-#define __P_TICK__
+#pragma once
 
 
 
@@ -33,7 +31,3 @@
 void P_Ticker();
 
 bool P_AtInterval(int interval);
-
-
-#endif
-
