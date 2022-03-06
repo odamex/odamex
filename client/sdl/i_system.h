@@ -131,7 +131,7 @@ void I_ErrorMessageBox(const char* message);
 
 // Directory searching routines
 
-typedef _finddata_t findstate_t;
+typedef struct _finddata_t findstate_t;
 
 long I_FindFirst (char *filespec, findstate_t *fileinfo);
 int I_FindNext (long handle, findstate_t *fileinfo);
