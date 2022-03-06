@@ -22,8 +22,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __I_VIDEO_H__
-#define __I_VIDEO_H__
+#pragma once
 
 #include "v_pixelformat.h"
 
@@ -672,6 +671,3 @@ private:
 
 	IWindow*						mWindow;
 };
-
-
-#endif // __I_VIDEO_H__

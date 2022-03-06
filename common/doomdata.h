@@ -23,9 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __DOOMDATA__
-#define __DOOMDATA__
+#pragma once
 
 //
 // Map level types.
@@ -318,8 +316,3 @@ typedef struct
 	short		patchcount;
 	mappatch_t	patches[1];
 } maptexture_t;
-
-
-
-
-#endif					// __DOOMDATA__

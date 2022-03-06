@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __WDLSTATS_H__
-#define __WDLSTATS_H__
+#pragma once
 
 #include "d_player.h"
 
@@ -132,5 +131,3 @@ void M_HandleWDLNameChange(team_t team, std::string oldname, std::string newname
 int GetMaxShotsForMod(int mod);
 void M_CommitWDLLog();
 WDLPowerups M_GetWDLItemByMobjType(const mobjtype_t type);
-
-#endif

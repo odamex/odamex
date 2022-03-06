@@ -1305,11 +1305,10 @@ void AM_drawWalls(void)
 		{
 			if ((lines[i].flags & ML_DONTDRAW) && !am_cheating)
 				continue;
-            if (!lines[i].backsector &&
-                (((am_usecustomcolors || viewactive) &&
-                P_IsExitLine(lines[i].special)) ||
-                (!am_usecustomcolors && !viewactive)))
-            {
+			if (!lines[i].backsector &&
+				((am_usecustomcolors || viewactive) ||
+				(!am_usecustomcolors && !viewactive)))
+			{
 				AM_drawMline(&l, WallColor);
 			}
 			else

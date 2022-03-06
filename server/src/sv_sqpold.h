@@ -23,10 +23,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __SV_SQPOLD_H__
-#define __SV_SQPOLD_H__
+#pragma once
 
 void SV_SendServerInfo ();
 bool SV_IsValidToken(DWORD token);
-
-#endif // __SV_SQPOLD_H__

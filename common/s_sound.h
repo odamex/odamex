@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __S_SOUND__
-#define __S_SOUND__
+#pragma once
 
 #include "m_fixed.h"
 
@@ -195,5 +194,3 @@ static void S_PlayerSound(player_t* pl, AActor* mo, const byte channel, const ch
 	S_Sound(mo, channel, name, 1, attenuation);
 #endif
 }
-
-#endif

@@ -89,7 +89,7 @@ static lumpHandle_t ToastIcon[NUMMODS];
 
 static int		NameUp = -1;
 
-extern lumpHandle_t sttminus;
+extern lumpHandle_t negminus;
 extern lumpHandle_t tallnum[10];
 extern lumpHandle_t faces[];
 extern int st_faceindex;
@@ -197,7 +197,7 @@ void ST_initNew()
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 {
 	char digits[11], *d;
-	patch_t* minus = W_ResolvePatchHandle(sttminus);
+	patch_t* minus = W_ResolvePatchHandle(negminus);
 
 	if (num < 0)
 	{
@@ -247,7 +247,7 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 	} while (d /= 10);
 
 	if (num < 0)
-		x -= W_ResolvePatchHandle(sttminus)->width() * xscale;
+		x -= W_ResolvePatchHandle(negminus)->width() * xscale;
 
 	ST_DrawNum (x, y, scrn, num);
 }
@@ -715,7 +715,7 @@ void drawNetdemo() {
 		return;
 	}
 
-	if (!hud_demobar)
+	if (!hud_demobar || R_DemoBarInvisible())
 		return;
 
 	int xscale = hud_scale ? CleanXfac : 1;

@@ -272,7 +272,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -281,7 +281,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -291,7 +291,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		              TICS(VDOORWAIT), NoKey))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -301,7 +301,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               0, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -311,7 +311,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		                 SPEED(C_NORMAL), 0, true, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -321,7 +321,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		                   TICS(0), 0, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -331,7 +331,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -339,14 +339,14 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Light Turn On - brightest near
 		EV_LightTurnOn(line->id, -1);
 		result.lineexecuted = true;
-		line->special = 0;
+		//line->special = 0;
 		break;
 
 	case 13:
 		// Light Turn On 255
 		EV_LightTurnOn(line->id, 255);
 		result.lineexecuted = true;
-		line->special = 0;
+		//line->special = 0;
 		break;
 
 	case 16:
@@ -355,7 +355,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		              OCTICS(240), NoKey))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -363,7 +363,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Start Light Strobing
 		EV_StartLightStrobing(line->id, TICS(5), TICS(35));
 		result.lineexecuted = true;
-		line->special = 0;
+		//line->special = 0;
 		break;
 
 	case 19:
@@ -372,7 +372,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               (128 - 128) * FRACUNIT, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -382,7 +382,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		              1))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -392,7 +392,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		                 SPEED(C_SLOW), 0, true, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -403,7 +403,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -411,7 +411,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Lights Very Dark
 		EV_LightTurnOn(line->id, 35);
 		result.lineexecuted = true;
-		line->special = 0;
+		//line->special = 0;
 		break;
 
 	case 36:
@@ -420,7 +420,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               (136 - 128) * FRACUNIT, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -430,7 +430,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               0 * FRACUNIT, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -440,7 +440,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -449,8 +449,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_LineTeleport(line, side, thing))
 		{
 			result.lineexecuted = true;
-			// line->special = 0; // [Blair] Don't clear the line special,
-								  // we have other functions that handle that for teleports.
+			//line->special = 0;
 		}						
 		break;
 
@@ -461,7 +460,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
 		           0); // jff 02/12/98 doesn't work
 		result.lineexecuted = true;
-		line->special = 0;
+		//line->special = 0;
 		break;
 
 	case 44:
@@ -470,7 +469,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		                 SPEED(C_SLOW) / 2, 0, true, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -491,7 +490,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -499,7 +498,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Platform Stop
 		EV_StopPlat(line->id);
 		result.lineexecuted = true;
-		line->special = 0;
+		//line->special = 0;
 		break;
 
 	case 56:
@@ -508,7 +507,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -517,7 +516,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_CeilingCrushStop(line->id))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -527,7 +526,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               FRACUNIT * 24, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -537,7 +536,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               24 * FRACUNIT, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -547,7 +546,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		                   TICS(0), 0, 0, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -555,7 +554,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Turn lights off in sector(tag)
 		EV_TurnTagLightsOff(line->id);
 		result.lineexecuted = true;
-		line->special = 0;
+		//line->special = 0;
 		break;
 
 	case 108:
@@ -564,7 +563,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		              TICS(VDOORWAIT), NoKey))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -573,7 +572,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -582,7 +581,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -592,7 +591,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -602,7 +601,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -634,7 +633,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		               0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -644,7 +643,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		                 SPEED(C_SLOW), 0, true, 1, 0))
 		{
 			result.lineexecuted = true;
-			line->special = 0;
+			//line->special = 0;
 		}
 		break;
 
@@ -884,7 +883,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			               FRACUNIT * 64 * 8, 0, 0))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -895,7 +894,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			              SPEED(P_SLOW / 2), 0, 0, 2))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -906,7 +905,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			              SPEED(P_SLOW / 2), 0, 0, 2))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -917,7 +916,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                 0, 0, 0, 0))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -927,7 +926,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoDonut(line))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -938,7 +937,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                 0, 0, 0, 0, 0))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -949,7 +948,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                 SPEED(C_SLOW), 0, 0, 0, 0, 0))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -958,7 +957,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -969,7 +968,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoChange(line, trigChangeOnly, line->id))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -979,7 +978,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoChange(line, numChangeOnly, line->id))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -990,7 +989,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			               0, 0))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1001,7 +1000,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                  line->id))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1012,7 +1011,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                  line->id))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1023,7 +1022,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			                  line->id))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1032,7 +1031,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (thing && EV_SilentLineTeleport(line, side, thing, line->id, false))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1040,7 +1039,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (thing && EV_SilentLineTeleport(line, side, thing, line->id, true))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1049,7 +1048,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			    EV_SilentLineTeleport(line, side, thing, line->id, true))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -1058,7 +1057,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			    EV_SilentLineTeleport(line, side, thing, line->id, false))
 			{
 				result.lineexecuted = true;
-				line->special = 0;
+				//line->special = 0;
 			}
 			break;
 
@@ -3448,7 +3447,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	return result;
 }
 
-const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags)
+const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved)
 {
 	/*
 	if (mbf21)
@@ -3459,7 +3458,7 @@ const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags)
 
 	unsigned int filter;
 
-	if (demoplayback)
+	if (demoplayback || reserved)
 		filter = 0x01ff;
 	else
 		filter = 0x3fff;
