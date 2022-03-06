@@ -79,7 +79,7 @@ gameinfo_t SharewareGameInfo =
 	{ { "HELP1", "HELP2", "CREDIT" } },
 	quitsounds,
 	1,
-	{ 'F','L','O','O','R','7','_','2' },
+	"FLOOR7_2",
 	&DoomBorder,
 	"DOOM Shareware"
 };
@@ -103,7 +103,7 @@ gameinfo_t RegisteredGameInfo =
 	{ { "HELP1", "HELP2", "CREDIT" } },
 	quitsounds,
 	2,
-	{ 'F','L','O','O','R','7','_','2' },
+	"FLOOR7_2",
 	&DoomBorder,
 	"DOOM Registered"
 };
@@ -120,14 +120,14 @@ gameinfo_t RetailGameInfo =
 	200/35,
 	"misc/chat2",
 	"D_VICTOR",
-	"FLOOr4_8",
+	"FLOOR4_8",
 	"CREDIT",
 	"VICTORY2",
 	"ENDPIC",
 	{ { "HELP1", "CREDIT", "CREDIT"  } },
 	quitsounds,
 	2,
-	{ 'F','L','O','O','R','7','_','2' },
+	"FLOOR7_2",
 	&DoomBorder,
 	"The Ultimate DOOM"
 };
@@ -144,14 +144,14 @@ gameinfo_t RetailBFGGameInfo =
 	200/35,
 	"misc/chat2",
 	"D_VICTOR",
-	"FLOOr4_8",
+	"FLOOR4_8",
 	"CREDIT",
 	"VICTORY2",
 	"ENDPIC",
 	{ { "HELP1", "CREDIT", "CREDIT"  } },
 	quitsounds,
 	2,
-	{ 'F','L','O','O','R','7','_','2' },
+	"FLOOR7_2",
 	&DoomBorder,
 	"The Ultimate DOOM (BFG Edition)"
 };

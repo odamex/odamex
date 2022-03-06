@@ -75,7 +75,7 @@ typedef struct
 	} info;
 	const char **quitSounds;
 	int maxSwitch;
-	char borderFlat[8];
+	OLumpName borderFlat;
 	gameborder_t *border;
 
 	char titleString[64];

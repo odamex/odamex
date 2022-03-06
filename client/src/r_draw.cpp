@@ -1410,10 +1410,10 @@ void R_DrawBorder(int x1, int y1, int x2, int y2)
 	IWindowSurface* surface = R_GetRenderingSurface();
 	DCanvas* canvas = surface->getDefaultCanvas();
 
-	int lumpnum = W_CheckNumForName(gameinfo.borderFlat, ns_flats);
+	const int lumpnum = W_CheckNumForName(gameinfo.borderFlat.c_str(), ns_flats);
 	if (lumpnum >= 0)
 	{
-		const byte* patch_data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
+		const byte* patch_data = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_CACHE));
 		canvas->FlatFill(x1, y1, x2, y2, patch_data);
 	}
 	else

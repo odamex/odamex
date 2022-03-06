@@ -1011,14 +1011,14 @@ void MIType_Pages(OScanner& os, bool doEquals, void* data, unsigned int flags,
 			{
 				os.mustScan();
 				if (os.isQuotedString())
-					static_cast<OLumpName*>(data)[1] = os.getToken();
+					static_cast<OLumpName*>(data)[2] = os.getToken();
 				else
 					os.error("Trailing comma in Page definition; expected lump name");
 			}
 			else
 			{
 				os.unScan();
-				static_cast<OLumpName*>(data)[1] = page;
+				static_cast<OLumpName*>(data)[2] = page;
 			}
 		}
 	}
@@ -1026,9 +1026,37 @@ void MIType_Pages(OScanner& os, bool doEquals, void* data, unsigned int flags,
 	{
 		os.unScan();
 		static_cast<OLumpName*>(data)[1] = page;
+		static_cast<OLumpName*>(data)[2] = page;
 	}
 
 	SkipUnknownType(os);
+}
+
+// Sets multiple lumpnames in a vector
+void MIType_$VectorLumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                  unsigned int flags2)
+{
+	ParseMapInfoHelper<OLumpName>(os, doEquals);
+
+	const std::string page = os.getToken();
+	static_cast<std::vector<OLumpName>*>(data)->push_back(page);
+	
+	while (os.scan())
+	{
+		if (os.compareToken(","))
+		{
+			os.mustScan();
+			if (os.isQuotedString())
+				static_cast<OLumpName*>(data)[1] = os.getToken();
+			else
+				os.error("Unexpected trailing comma; expected lump name");
+		}
+		else
+		{
+			os.unScan();
+			break;
+		}
+	}
 }
 
 // Sets the map to use the specific map07 bossactions
@@ -1332,9 +1360,10 @@ struct MapInfoDataSetter<gameinfo_t>
 
 	MapInfoDataSetter()
 	{
-		mapInfoDataContainer.reserve(7);
+		mapInfoDataContainer.reserve(10);
 
 		ENTRY3("advisorytime", &MIType_Float, &gameinfo.advisoryTime)
+		ENTRY3("borderflat", &MIType_LumpName, &gameinfo.borderFlat)
 		// ENTRY3("chatsound",			)
 		ENTRY3("creditpage", &MIType_Pages, &gameinfo.creditPages)
 		ENTRY3("pagetime", &MIType_Float, &gameinfo.pageTime)
