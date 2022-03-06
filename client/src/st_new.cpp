@@ -1109,7 +1109,7 @@ static std::string WinToColorString(const WinInfo& win)
 struct levelStateLines_t
 {
 	std::string title;
-	std::string subtitle[3];
+	std::string subtitle[4];
 	float lucent;
 	levelStateLines_t() : lucent(0.0f) { }
 };
@@ -1148,12 +1148,13 @@ static void LevelStateHorde(levelStateLines_t& lines)
 			StrFormat(lines.title, "Wave " TEXTCOLOR_YELLOW "%d", info.wave);
 		}
 
-		StrFormat(lines.subtitle[0], "\"%s\"", define.name.c_str());
+		StrFormat(lines.subtitle[0], "\"" TEXTCOLOR_YELLOW "%s" TEXTCOLOR_GREY "\"",
+		          define.name.c_str());
 
 		const char* difficulty = NULL;
 		if (define.maxGroupHealth < 500)
 		{
-			difficulty = TEXTCOLOR_BLUE "E";
+			difficulty = TEXTCOLOR_LIGHTBLUE "E";
 		}
 		else if (define.maxGroupHealth < 1000)
 		{
@@ -1177,15 +1178,47 @@ static void LevelStateHorde(levelStateLines_t& lines)
 		}
 		StrFormat(lines.subtitle[1], "Difficulty: %s", difficulty);
 
+		// Detect when there are new weapons to pick up.
+		if (!consoleplayer().spectator)
+		{
+			bool newWeapons = false;
+			const hordeDefine_t::weapons_t& weapons = P_HordeWeapons();
+			for (size_t i = 0; i < weapons.size(); i++)
+			{
+				switch (weapons[i])
+				{
+				case wp_none:
+					if (!consoleplayer().weaponowned[weapons[i]])
+						newWeapons = true;
+					break;
+				case wp_chainsaw:
+				case wp_shotgun:
+				case wp_supershotgun:
+				case wp_chaingun:
+				case wp_missile:
+				case wp_plasma:
+				case wp_bfg:
+					if (!consoleplayer().weaponowned[weapons[i]])
+						newWeapons = true;
+					break;
+				}
+			}
+
+			if (newWeapons)
+			{
+				lines.subtitle[3] =  TEXTCOLOR_GREEN "New Weapons Are Available";
+			}
+		}
+
 		tics = ::level.time - info.waveTime;
 	}
 
-	// Only render the wave message if it's less than 2 seconds in.
-	if (tics < TICRATE * 2)
+	// Only render the wave message if it's less than 3 seconds in.
+	if (tics < TICRATE * 3)
 	{
 		lines.lucent = 1.0f;
 	}
-	else if (tics < TICRATE * 3)
+	else if (tics < TICRATE * 4)
 	{
 		tics %= TICRATE;
 		lines.lucent = static_cast<float>(TICRATE - tics) / TICRATE;
@@ -1359,7 +1392,7 @@ void LevelStateHUD()
 	V_SetFont("SMALLFONT");
 	int height = V_StringHeight("M") + 1;
 
-	for (size_t i = 0; i < 3; i++)
+	for (size_t i = 0; i < ARRAY_LENGTH(lines.subtitle); i++)
 	{
 		w = V_StringWidth(lines.subtitle[i].c_str()) * ::CleanYfac;
 		h = 8 * ::CleanYfac;
