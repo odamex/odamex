@@ -41,6 +41,7 @@
 #include "p_horde.h"
 #include "com_misc.h"
 #include "g_skill.h"
+#include "p_mapformat.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -2102,10 +2103,16 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	// player specific
 	if (player)
 	{
+		short special = 11;
+		if (map_format.getZDoom())
+		{
+			special = dDamage_End;
+		}
+
 		// end of game hell hack
 		if (sv_gametype == GM_COOP || sv_allowexit)
 		{
-			if ((target->subsector->sector->special & 255) == dDamage_End
+			if ((target->subsector->sector->special & 255) == special
 				&& damage >= target->health)
 			{
 				damage = target->health - 1;
