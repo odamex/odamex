@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __R_THINGS__
-#define __R_THINGS__
+#pragma once
 
 #include "r_sprites.h"
 
@@ -91,6 +90,3 @@ void R_SortVisSprites();
 void R_AddSprites(sector_t *sec, int lightlevel, int fakeside);
 void R_ClearSprites();
 void R_DrawMasked();
-
-#endif
-

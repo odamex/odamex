@@ -1,7 +1,6 @@
 // p_acs.h: ACS Script Stuff
 
-#ifndef __P_ACS_H__
-#define __P_ACS_H__
+#pragma once
 
 #include "dobject.h"
 #include "r_defs.h"
@@ -565,6 +564,3 @@ typedef acsdefered_s acsdefered_t;
 
 FArchive &operator<< (FArchive &arc, acsdefered_s *defer);
 FArchive &operator>> (FArchive &arc, acsdefered_s* &defer);
-
-#endif //__P_ACS_H__
-

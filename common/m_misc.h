@@ -22,10 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_MISC__
-#define __M_MISC__
-
-
+#pragma once
 
 void M_LoadDefaults();
 
@@ -33,5 +30,3 @@ void STACK_ARGS M_SaveDefaults(std::string filename = "");
 
 std::string M_GetConfigPath();
 std::string M_ExpandTokens(const std::string &str);
-
-#endif

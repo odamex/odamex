@@ -20,9 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __WI_STUFF__
-#define __WI_STUFF__
+#pragma once
 
 #include "d_player.h"
 
@@ -48,4 +46,3 @@ void WI_Start (wbstartstruct_t *wbstartstruct);
 
 void WI_drawLF();
 
-#endif

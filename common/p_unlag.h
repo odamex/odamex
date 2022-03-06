@@ -25,8 +25,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __PUNLAG_H__
-#define __PUNLAG_H__
+#pragma once
 
 #include <map>
 #include "m_fixed.h"
@@ -121,6 +120,3 @@ private:
 
 	void debugReconciliation(byte shooter_id);
 };
-
-
-#endif

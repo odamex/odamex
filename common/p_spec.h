@@ -24,9 +24,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __P_SPEC__
-#define __P_SPEC__
+#pragma once
 
 #include <list>
 #include "dsectoreffect.h"
@@ -1285,5 +1283,3 @@ BOOL P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad
 
 // [AM] Trigger actor specials.
 bool A_TriggerAction(AActor *mo, AActor *triggerer, int activationType);
-
-#endif

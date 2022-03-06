@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __SARRAY_H__
-#define __SARRAY_H__
+#pragma once
 
 #include <algorithm>
 #include <iterator>
@@ -731,5 +730,3 @@ private:
 	SlotNumber		mFreeHead;
 	unsigned int	mIdKey;
 };
-
-#endif	// __SARRAY_H__

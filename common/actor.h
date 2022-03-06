@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __ACTOR_H__
-#define __ACTOR_H__
+#pragma once
 
 // Basics.
 #include "tables.h"
@@ -646,5 +644,3 @@ public:
 		return static_cast<T *>(actor);
 	}
 };
-
-#endif

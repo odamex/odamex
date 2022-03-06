@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __STLIB__
-#define __STLIB__
+#pragma once
 
 //
 // Background and foreground screen numbers
@@ -130,5 +129,3 @@ class StatusBarWidgetMultiIcon : StatusBarWidget_Base
 };
 
 #define ST_DONT_DRAW_NUM 1994 // means "n/a"
-
-#endif

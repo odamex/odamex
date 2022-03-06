@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __R_DEFS_H__
-#define __R_DEFS_H__
+#pragma once
 
 // Screenwidth.
 
@@ -775,5 +773,3 @@ struct visplane_s
 	unsigned int top[3];			//		visplane.
 };
 typedef visplane_s visplane_t;
-
-#endif

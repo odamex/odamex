@@ -21,9 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#pragma once
 
-#ifndef __C_CVARS_H__
-#define __C_CVARS_H__
 //Uncomment to allow for latency simulation - see sv_latency in sv_cvarlist.cpp
 //Note: When compiling for linux you will have link against pthread manually
 //#define SIMULATE_LATENCY
@@ -268,5 +267,3 @@ cvar_t* GetFirstCvar();
 #define CVAR_FUNC_IMPL(name) \
     EXTERN_CVAR(name) \
     void cvarfunc_##name(cvar_t &var)
-
-#endif //__C_CVARS_H__

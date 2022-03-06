@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __P_LNSPEC_H__
-#define __P_LNSPEC_H__
+#pragma once
 
 #include "r_defs.h"
 
@@ -544,6 +542,3 @@ void EV_LightSetMinNeighbor(int tag);
 void EV_LightSetMaxNeighbor(int tag);
 
 extern int TeleportSide;
-
-#endif //__P_LNSPEC_H__
-
