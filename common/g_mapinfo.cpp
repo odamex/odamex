@@ -986,13 +986,13 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 }
 
 // Sets the credit pages from a gameinfo lump
-void MIType_CreditPages(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Pages(OScanner& os, bool doEquals, void* data, unsigned int flags,
                         unsigned int flags2)
 {
 	ParseMapInfoHelper<OLumpName>(os, doEquals);
 
-	const std::string creditPage = os.getToken();
-	static_cast<OLumpName*>(data)[0] = creditPage;
+	const std::string page = os.getToken();
+	static_cast<OLumpName*>(data)[0] = page;
 
 	os.scan();
 	if (os.compareToken(","))
@@ -1001,12 +1001,31 @@ void MIType_CreditPages(OScanner& os, bool doEquals, void* data, unsigned int fl
 		if (os.isQuotedString())
 			static_cast<OLumpName*>(data)[1] = os.getToken();
 		else
-			os.error("Trailing comma in CreditPage definition; expected lump name");
+			os.error("Trailing comma in Page definition; expected lump name");
+
+		// Do a third page if finalePages instead of creditPages
+		if (flags)
+		{
+			os.scan();
+			if (os.compareToken(","))
+			{
+				os.mustScan();
+				if (os.isQuotedString())
+					static_cast<OLumpName*>(data)[1] = os.getToken();
+				else
+					os.error("Trailing comma in Page definition; expected lump name");
+			}
+			else
+			{
+				os.unScan();
+				static_cast<OLumpName*>(data)[1] = page;
+			}
+		}
 	}
 	else
 	{
 		os.unScan();
-		static_cast<OLumpName*>(data)[1] = creditPage;
+		static_cast<OLumpName*>(data)[1] = page;
 	}
 
 	SkipUnknownType(os);
@@ -1317,10 +1336,11 @@ struct MapInfoDataSetter<gameinfo_t>
 
 		ENTRY3("advisorytime", &MIType_Float, &gameinfo.advisoryTime)
 		// ENTRY3("chatsound",			)
-		ENTRY3("creditpage", &MIType_CreditPages, &gameinfo.creditPages)
+		ENTRY3("creditpage", &MIType_Pages, &gameinfo.creditPages)
 		ENTRY3("pagetime", &MIType_Float, &gameinfo.pageTime)
 		ENTRY3("finaleflat", &MIType_LumpName, &gameinfo.finaleFlat)
 		ENTRY3("finalemusic", &MIType_$LumpName, &gameinfo.finaleMusic)
+		ENTRY4("finalepage", &MIType_Pages, &gameinfo.finalePages, 1)
 		ENTRY3("titlemusic", &MIType_$LumpName, &gameinfo.titleMusic)
 		ENTRY3("titlepage", &MIType_LumpName, &gameinfo.titlePage)
 		ENTRY3("titletime", &MIType_Float, &gameinfo.titleTime)

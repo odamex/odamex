@@ -63,9 +63,7 @@ typedef struct
 	char chatSound[16];
 	OLumpName finaleMusic;
 	OLumpName finaleFlat;
-	char finalePage1[8];
-	char finalePage2[8];
-	char finalePage3[8];
+	OLumpName finalePages[3];
 	union
 	{
 		char infoPage[3][8];
