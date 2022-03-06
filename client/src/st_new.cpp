@@ -1108,9 +1108,10 @@ static std::string WinToColorString(const WinInfo& win)
 
 struct levelStateLines_t
 {
-	std::string first;
-	std::string second;
+	std::string title;
+	std::string subtitle[3];
 	float lucent;
+	levelStateLines_t() : lucent(0.0f) { }
 };
 
 static void LevelStateHorde(levelStateLines_t& lines)
@@ -1123,13 +1124,13 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	{
 		if (gametic % 18 < 9)
 		{
-			lines.first = TEXTCOLOR_RED "!! WARNING !!";
+			lines.title = TEXTCOLOR_RED "!! WARNING !!";
 		}
 		else
 		{
-			lines.first = TEXTCOLOR_RED "WARNING";
+			lines.title = TEXTCOLOR_RED "WARNING";
 		}
-		lines.second =
+		lines.subtitle[0] =
 		    "Defeat the " TEXTCOLOR_YELLOW "boss " TEXTCOLOR_GREY "to win the wave";
 		tics = info.bossTic();
 	}
@@ -1137,17 +1138,45 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	{
 		if (::g_horde_waves.asInt() != 0)
 		{
-			StrFormat(lines.first,
+			StrFormat(lines.title,
 			          "Wave " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "of " TEXTCOLOR_YELLOW
 			          "%d",
 			          info.wave, ::g_horde_waves.asInt());
 		}
 		else
 		{
-			StrFormat(lines.first, "Wave " TEXTCOLOR_YELLOW "%d", info.wave);
+			StrFormat(lines.title, "Wave " TEXTCOLOR_YELLOW "%d", info.wave);
 		}
 
-		StrFormat(lines.second, "\"%s\"", define.name.c_str());
+		StrFormat(lines.subtitle[0], "\"%s\"", define.name.c_str());
+
+		const char* difficulty = NULL;
+		if (define.maxGroupHealth < 500)
+		{
+			difficulty = TEXTCOLOR_BLUE "E";
+		}
+		else if (define.maxGroupHealth < 1000)
+		{
+			difficulty = TEXTCOLOR_GREEN "D";
+		}
+		else if (define.maxGroupHealth < 2000)
+		{
+			difficulty = TEXTCOLOR_GOLD "C";
+		}
+		else if (define.maxGroupHealth < 3000)
+		{
+			difficulty = TEXTCOLOR_ORANGE "B";
+		}
+		else if (define.maxGroupHealth < 5000)
+		{
+			difficulty = TEXTCOLOR_RED "A";
+		}
+		else
+		{
+			difficulty = TEXTCOLOR_DARKRED "X";
+		}
+		StrFormat(lines.subtitle[1], "Difficulty: %s", difficulty);
+
 		tics = ::level.time - info.waveTime;
 	}
 
@@ -1175,7 +1204,7 @@ void LevelStateHUD()
 		return;
 	}
 
-	levelStateLines_t lines = {"", "", 1.0f};
+	levelStateLines_t lines;
 	switch (::levelstate.getState())
 	{
 	case LevelState::WARMUP: {
@@ -1184,17 +1213,17 @@ void LevelStateHUD()
 			break;
 		}
 
-		lines.first = "Warmup";
+		lines.title = "Warmup";
 
 		if (::sv_warmup)
 		{
 			if (consoleplayer().ready)
 			{
-				lines.second = "Waiting for other players to ready up...";
+				lines.subtitle[0] = "Waiting for other players to ready up...";
 			}
 			else
 			{
-				StrFormat(lines.second,
+				StrFormat(lines.subtitle[0],
 				          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
 				          " when ready to play",
 				          ::Bindings.GetKeynameFromCommand("ready").c_str());
@@ -1202,21 +1231,21 @@ void LevelStateHUD()
 		}
 		else
 		{
-			lines.second = "Waiting for other players to join...";
+			lines.subtitle[0] = "Waiting for other players to join...";
 		}
 
 		break;
 	}
 	case LevelState::WARMUP_COUNTDOWN:
 	case LevelState::WARMUP_FORCED_COUNTDOWN: {
-		StrFormat(lines.first, "%s", G_GametypeName().c_str());
-		StrFormat(lines.second, "Match begins in " TEXTCOLOR_GREEN "%d",
+		StrFormat(lines.title, "%s", G_GametypeName().c_str());
+		StrFormat(lines.subtitle[0], "Match begins in " TEXTCOLOR_GREEN "%d",
 		          ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::PREROUND_COUNTDOWN: {
-		StrFormat(lines.first, "Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
-		StrFormat(lines.second, "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
+		StrFormat(lines.title, "Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
+		StrFormat(lines.subtitle[0], "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
 		          ::levelstate.getCountdown());
 		break;
 	}
@@ -1231,28 +1260,28 @@ void LevelStateHUD()
 			{
 				if (G_IsDefendingTeam(consoleplayer().userinfo.team))
 				{
-					lines.first = TEXTCOLOR_YELLOW "DEFEND!";
-					lines.second = "Defend the flag!";
+					lines.title = TEXTCOLOR_YELLOW "DEFEND!";
+					lines.subtitle[0] = "Defend the flag!";
 				}
 				else
 				{
-					lines.first = TEXTCOLOR_GREEN "CAPTURE!";
-					lines.second = "Capture the flag!";
+					lines.title = TEXTCOLOR_GREEN "CAPTURE!";
+					lines.subtitle[0] = "Capture the flag!";
 				}
 			}
 			else if (G_IsCoopGame())
 			{
-				lines.first = "GO!\n";
+				lines.title = "GO!\n";
 				if (G_IsRoundsGame() && g_roundlimit)
 				{
-					StrFormat(lines.second,
+					StrFormat(lines.subtitle[0],
 					          TEXTCOLOR_GREEN "%d" TEXTCOLOR_GREY " attempts left",
 					          g_roundlimit.asInt() - ::levelstate.getRound() + 1);
 				}
 			}
 			else
 			{
-				lines.first = "FIGHT!\n";
+				lines.title = "FIGHT!\n";
 			}
 
 			// Only render the "FIGHT" message if it's less than 2 seconds in.
@@ -1274,35 +1303,36 @@ void LevelStateHUD()
 		break;
 	}
 	case LevelState::ENDROUND_COUNTDOWN: {
-		StrFormat(lines.first,
+		StrFormat(lines.title,
 		          "Round " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
 		          ::levelstate.getRound());
 
 		WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
-			StrFormat(lines.second, "Tied at the end of the round");
+			StrFormat(lines.subtitle[0], "Tied at the end of the round");
 		else if (win.type == WinInfo::WIN_PLAYER)
-			StrFormat(lines.second, "%s wins the round", WinToColorString(win).c_str());
+			StrFormat(lines.subtitle[0], "%s wins the round",
+			          WinToColorString(win).c_str());
 		else if (win.type == WinInfo::WIN_TEAM)
-			StrFormat(lines.second, "%s team wins the round",
+			StrFormat(lines.subtitle[0], "%s team wins the round",
 			          WinToColorString(win).c_str());
 		else
-			StrFormat(lines.second, "Next round in " TEXTCOLOR_GREEN "%d",
+			StrFormat(lines.subtitle[0], "Next round in " TEXTCOLOR_GREEN "%d",
 			          ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::ENDGAME_COUNTDOWN: {
-		StrFormat(lines.first, "Match complete");
+		StrFormat(lines.title, "Match complete");
 
 		WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
-			StrFormat(lines.second, "The game ends in a tie");
+			StrFormat(lines.subtitle[0], "The game ends in a tie");
 		else if (win.type == WinInfo::WIN_PLAYER)
-			StrFormat(lines.second, "%s wins!", WinToColorString(win).c_str());
+			StrFormat(lines.subtitle[0], "%s wins!", WinToColorString(win).c_str());
 		else if (win.type == WinInfo::WIN_TEAM)
-			StrFormat(lines.second, "%s team wins!", WinToColorString(win).c_str());
+			StrFormat(lines.subtitle[0], "%s team wins!", WinToColorString(win).c_str());
 		else
-			StrFormat(lines.second, "Intermission in " TEXTCOLOR_GREEN "%d",
+			StrFormat(lines.subtitle[0], "Intermission in " TEXTCOLOR_GREEN "%d",
 			          ::levelstate.getCountdown());
 		break;
 	}
@@ -1313,7 +1343,7 @@ void LevelStateHUD()
 	V_SetFont("BIGFONT");
 
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(lines.first.c_str()) * CleanYfac;
+	int w = V_StringWidth(lines.title.c_str()) * CleanYfac;
 	int h = 12 * CleanYfac;
 
 	const float oldtrans = ::hud_transparency;
@@ -1322,19 +1352,25 @@ void LevelStateHUD()
 	if (::hud_transparency > 0.0f)
 	{
 		::screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
-		                               surface_height / 4 - h / 2, lines.first.c_str(),
+		                               surface_height / 4 - h / 2, lines.title.c_str(),
 		                               ::CleanYfac, ::CleanYfac);
 	}
 
 	V_SetFont("SMALLFONT");
+	int height = V_StringHeight("M") + 1;
 
-	w = V_StringWidth(lines.second.c_str()) * ::CleanYfac;
-	h = 8 * ::CleanYfac;
-	if (::hud_transparency > 0.0f)
+	for (size_t i = 0; i < 3; i++)
 	{
-		::screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
-		                               (surface_height / 4 - h / 2) + (12 * ::CleanYfac),
-		                               lines.second.c_str(), ::CleanYfac, ::CleanYfac);
+		w = V_StringWidth(lines.subtitle[i].c_str()) * ::CleanYfac;
+		h = 8 * ::CleanYfac;
+		if (::hud_transparency > 0.0f)
+		{
+			::screen->DrawTextStretchedLuc(
+			    CR_GREY, surface_width / 2 - w / 2,
+			    (surface_height / 4 - h / 2) + (12 * ::CleanYfac) +
+			        (i * height * ::CleanYfac),
+			    lines.subtitle[i].c_str(), ::CleanYfac, ::CleanYfac);
+		}
 	}
 
 	::hud_transparency.ForceSet(oldtrans);
