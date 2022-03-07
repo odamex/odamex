@@ -43,6 +43,7 @@
 #include "p_horde.h"
 #include "p_hordespawn.h"
 #include "g_mapinfo.h"
+#include "g_skill.h"
 #include "m_wdlstats.h"
 #include "p_mapformat.h"
 
@@ -250,8 +251,6 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
       rndindex(0), netid(0), tid(0), bmapnode(this), baseline_set(false)
 {
-	state_t *st;
-
 	// Fly!!! fix it in P_RespawnSpecial
 	if ((unsigned int)itype >= NUMMOBJTYPES)
 	{
@@ -276,7 +275,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 	if (multiplayer && serverside)
 		netid = ::ServerNetID.obtainNetID();
 
-	if (sv_skill != sk_nightmare)
+	if (!G_GetCurrentSkill().instant_reaction)
 		reactiontime = info->reactiontime;
 
 	if (clientside)
@@ -286,7 +285,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 
 	// do not set the state with P_SetMobjState,
 	// because action routines can not be called yet
-	st = &states[info->spawnstate];
+	state_t* st = &states[info->spawnstate];
 	state = st;
 	tics = st->tics;
 	sprite = st->sprite;
@@ -752,7 +751,7 @@ void AActor::RunThink ()
 	}
 	else
 	{
-		bool respawnmonsters = (sv_skill == sk_nightmare || sv_monstersrespawn);
+		const bool respawnmonsters = (G_GetCurrentSkill().respawn_counter || sv_monstersrespawn);
 
 		// check for nightmare respawn
 		if (!(flags & MF_COUNTKILL) || !respawnmonsters)
@@ -765,7 +764,7 @@ void AActor::RunThink ()
 
 		movecount++;
 
-		if (movecount < 12*TICRATE)
+		if (movecount < G_GetCurrentSkill().respawn_counter * TICRATE)
 			return;
 
 		if (level.time & 31)
@@ -2703,9 +2702,6 @@ size_t P_GetMapThingPlayerNumber(mapthing2_t *mthing)
 void P_SpawnMapThing (mapthing2_t *mthing, int position)
 {
 	int i = -1;
-	int bit;
-	AActor *mobj;
-	fixed_t x, y, z;
 
 	if (mthing->type == 0 || mthing->type == -1)
 		return;
@@ -2837,15 +2833,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			return;
 	}
 
-	// check for apropriate skill level
-	if (sv_skill == sk_baby)
-		bit = 1;
-	else if (sv_skill == sk_nightmare)
-		bit = 4;
-	else
-		bit = 1 << (sv_skill.asInt() - 2);
-
-	if (!(mthing->flags & bit))
+	// check for appropriate skill level
+	if (!(mthing->flags & G_GetCurrentSkill().spawn_filter))
 		return;
 
 	// [RH] sound sequence overrides
@@ -2980,8 +2969,9 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		level.total_items++;
 
 	// spawn it
-	x = mthing->x << FRACBITS;
-	y = mthing->y << FRACBITS;
+	const fixed_t x = mthing->x << FRACBITS;
+	const fixed_t y = mthing->y << FRACBITS;
+	const fixed_t z = (mobjinfo[i].flags & MF_SPAWNCEILING) ? ONCEILINGZ : ONFLOORZ;
 
 	if (i == MT_WATERZONE)
 	{
@@ -2990,12 +2980,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
-	if (mobjinfo[i].flags & MF_SPAWNCEILING)
-		z = ONCEILINGZ;
-	else
-		z = ONFLOORZ;
-
-	mobj = new AActor (x, y, z, (mobjtype_t)i);
+	AActor* mobj = new AActor(x, y, z, (mobjtype_t)i);
 
 	if (i == MT_HORDESPAWN)
 	{

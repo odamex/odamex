@@ -1,9 +1,9 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
+// $Id: 
 //
-// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
+// Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -17,41 +17,20 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//      Put all global state variables here.
-//
+//   Skill data for defining new skills.
+// 
 //-----------------------------------------------------------------------------
 
 
 #include "odamex.h"
 
-#include "gstrings.h"
-#include "i_system.h"
-#include "p_acs.h"
-#include "d_main.h"
-#include "g_mapinfo.h"
+#include "g_skill.h"
 
-// Game Mode - identify IWAD as shareware, retail etc.
-GameMode_t		gamemode = undetermined;
-GameMission_t	gamemission = doom;
+SkillInfo SkillInfos[MAX_SKILLS];
+byte skillnum = 0;
+byte defaultskillmenu = 2;
 
-// Language.
-CVAR_FUNC_IMPL (language)
+const SkillInfo& G_GetCurrentSkill()
 {
-	SetLanguageIDs();
-	if (level.behavior != NULL)
-	{
-		level.behavior->PrepLocale (LanguageIDs[0], LanguageIDs[1],
-			LanguageIDs[2], LanguageIDs[3]);
-	}
-
-	// Reload LANGUAGE strings.
-	::GStrings.loadStrings(false);
-
-	// Reapply DeHackEd patches on top of these strings.
-	D_LoadResolvedPatches();
+	return SkillInfos[sv_skill.asInt() - 1];
 }
-
-// Set if homebrew PWAD stuff has been added.
-BOOL			modifiedgame;
-
-VERSION_CONTROL (doomstat_cpp, "$Id$")
