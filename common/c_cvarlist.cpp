@@ -127,7 +127,7 @@ CVAR_RANGE(			sv_skill,"3", "Sets the skill level, values are:\n" \
 					"// 3 - Hurt Me Plenty\n" \
 					"// 4 - Ultra-Violence\n" \
 					"// 5 - Nightmare",
-					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 5.0f)
+					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 7.0f)
 
 CVAR_RANGE(sv_timelimit, "0", "Sets the time limit for the game to end (in minutes)",
            CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,

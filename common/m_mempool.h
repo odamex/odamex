@@ -26,8 +26,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_MEMPOOL__
-#define __M_MEMPOOL__
+#pragma once
 
 
 template <typename T>
@@ -119,5 +118,3 @@ private:
 	byte**		data_block;
 	byte*		free_block;
 };
-
-#endif // __M_MEMPOOL__

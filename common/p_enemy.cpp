@@ -40,6 +40,7 @@
 #include "d_player.h"
 #include "p_setup.h"
 #include "d_dehacked.h"
+#include "g_skill.h"
 #include "p_mapformat.h"
 
 
@@ -967,7 +968,7 @@ void A_Chase (AActor *actor)
 	if (actor->flags & MF_JUSTATTACKED)
 	{
 		actor->flags &= ~MF_JUSTATTACKED;
-		if ((sv_skill != sk_nightmare) && !sv_fastmonsters)
+		if (G_GetCurrentSkill().respawn_counter && !sv_fastmonsters)
 			P_NewChaseDir (actor);
 		return;
 	}
@@ -1005,8 +1006,7 @@ void A_Chase (AActor *actor)
 	// check for missile attack
 	if (actor->info->missilestate)
 	{
-		if (sv_skill < sk_nightmare
-			&& actor->movecount && !sv_fastmonsters)
+		if (!G_GetCurrentSkill().fast_monsters && actor->movecount && !sv_fastmonsters)
 		{
 			goto nomissile;
 		}
@@ -2848,23 +2848,20 @@ void A_BrainSpit (AActor *mo)
 	if(!serverside)
 		return;
 
-	AActor* 	targ;
-	AActor* 	newmobj;
-
 	// [RH] Do nothing if there are no brain targets.
 	if (numbraintargets == 0)
 		return;
 
 	brain.easy ^= 1;		// killough 3/26/98: use brain struct
-	if (sv_skill <= sk_easy && (!brain.easy))
+	if (G_GetCurrentSkill().easy_boss_brain && (!brain.easy))
 		return;
 
 	// shoot a cube at current target
-	targ = braintargets[brain.targeton++];	// killough 3/26/98:
+	AActor* targ = braintargets[brain.targeton++];	// killough 3/26/98:
 	brain.targeton %= numbraintargets;		// Use brain struct for targets
 
 	// spawn brain missile
-	newmobj = P_SpawnMissile (mo, targ, MT_SPAWNSHOT);
+	AActor* newmobj = P_SpawnMissile(mo, targ, MT_SPAWNSHOT);
 
 	if(newmobj)
 	{

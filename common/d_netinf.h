@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __D_NETINFO_H__
-#define __D_NETINFO_H__
+#pragma once
 
 #include "teaminfo.h"
 
@@ -83,5 +81,3 @@ void D_DoServerInfoChange (byte **stream);
 
 void D_WriteUserInfoStrings (int player, byte **stream, bool compact=false);
 void D_ReadUserInfoStrings (int player, byte **stream, bool update);
-
-#endif //__D_NETINFO_H__

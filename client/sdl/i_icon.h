@@ -19,8 +19,7 @@
 // Window Manager Icon routines
 //-----------------------------------------------------------------------------
 
-#ifndef __I_ICON_H__
-#define __I_ICON_H__
+#pragma once
 
 #include "i_sdl.h"
 #include "win32inc.h"
@@ -8631,5 +8630,3 @@ static const struct {
 };
 
 #endif	// SDL20
-
-#endif	//  __I_ICON_H__

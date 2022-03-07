@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __I_SDL_H__
-#define __I_SDL_H__
+#pragma once
 
 #include <SDL.h>
 
@@ -35,5 +34,3 @@
 #if (SDL_VERSION > SDL_VERSIONNUM(1, 2, 7))
 	#include "SDL_cpuinfo.h"
 #endif
-
-#endif  // __I_SDL_H__

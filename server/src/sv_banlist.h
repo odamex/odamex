@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __SV_BANLIST__
-#define __SV_BANLIST__
+#pragma once
 
 #include <sstream>
 
@@ -98,5 +97,3 @@ private:
 void SV_InitBanlist();
 bool SV_BanCheck(client_t* cl);
 void SV_BanlistTics();
-
-#endif

@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __DSECTOREFFECT_H__
-#define __DSECTOREFFECT_H__
+#pragma once
 
 #include "dobject.h"
 #include "dthinker.h"
@@ -101,6 +100,3 @@ public:
 protected:
 	DMovingCeiling ();
 };
-
-#endif //__DSECTOREFFECT_H__
-

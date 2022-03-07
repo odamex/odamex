@@ -22,8 +22,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __HU_MOUSEGRAPH_H__
-#define __HU_MOUSEGRAPH_H__
+#pragma once
 
 class MouseGraph {
 public:
@@ -46,5 +45,3 @@ private:
 };
 
 extern MouseGraph mousegraph;
-
-#endif
