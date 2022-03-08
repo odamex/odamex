@@ -88,22 +88,9 @@ typedef unsigned int uint;
 #if (defined _XBOX || defined _MSC_VER)
 	#define DBL_EPSILON 2.2204460492503131e-016
 	#define FLT_EPSILON 1.192092896e-07F
-
-	#define PRI_SIZE_PREFIX "I"
 #else
 	#include <float.h>
-
-	#define PRI_SIZE_PREFIX "z"
 #endif
-
-// Format constants for ssize_t/size_t.
-
-#define PRIdSIZE PRI_SIZE_PREFIX "d"
-#define PRIiSIZE PRI_SIZE_PREFIX "i"
-#define PRIuSIZE PRI_SIZE_PREFIX "u"
-#define PRIoSIZE PRI_SIZE_PREFIX "o"
-#define PRIxSIZE PRI_SIZE_PREFIX "x"
-#define PRIXSIZE PRI_SIZE_PREFIX "X"
 
 #ifdef UNIX
 	#define stricmp strcasecmp

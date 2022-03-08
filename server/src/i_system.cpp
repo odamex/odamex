@@ -360,48 +360,35 @@ BOOL gameisdead;
 
 void STACK_ARGS call_terms (void);
 
-void STACK_ARGS I_FatalError (const char *error, ...)
+NORETURN void I_FatalError(fmt::CStringRef format, fmt::ArgList args)
 {
-    static BOOL alreadyThrown = false;
-    gameisdead = true;
+	static BOOL alreadyThrown = false;
+	gameisdead = true;
 
-    if (!alreadyThrown)         // ignore all but the first message -- killough
-    {
-                alreadyThrown = true;
-                char errortext[MAX_ERRORTEXT];
-                va_list argptr;
-                va_start (argptr, error);
-                #ifdef _WIN32
-                int index = vsprintf (errortext, error, argptr);
-                sprintf (errortext + index, "\nGetLastError = %ld", GetLastError());
-				#else
-                vsprintf (errortext, error, argptr);
-				#endif
-                va_end (argptr);
+	if (!alreadyThrown) // ignore all but the first message -- killough
+	{
+		alreadyThrown = true;
+		std::string errortext = fmt::sprintf(format, args);
+#ifdef _WIN32
+		errortext += fmt::format("\nGetLastError = {}", GetLastError());
+#endif
+		throw CFatalError(errortext);
+	}
 
-                throw CFatalError (errortext);
-    }
+	if (!has_exited) // If it hasn't exited yet, exit now -- killough
+	{
+		has_exited = 1; // Prevent infinitely recursive exits -- killough
 
-    if (!has_exited)    // If it hasn't exited yet, exit now -- killough
-    {
-        has_exited = 1; // Prevent infinitely recursive exits -- killough
+		call_terms();
 
-        call_terms();
-
-        exit(EXIT_FAILURE);
-    }
+		exit(EXIT_FAILURE);
+	}
 }
 
-void STACK_ARGS I_Error (const char *error, ...)
+void I_Error(fmt::CStringRef format, fmt::ArgList args)
 {
-    va_list argptr;
-    char errortext[MAX_ERRORTEXT];
-
-    va_start (argptr, error);
-    vsprintf (errortext, error, argptr);
-    va_end (argptr);
-
-    throw CRecoverableError (errortext);
+	const std::string errortext = fmt::sprintf(format, args);
+	throw CRecoverableError(errortext);
 }
 
 char DoomStartupTitle[256] = { 0 };

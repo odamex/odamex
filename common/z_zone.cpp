@@ -159,8 +159,8 @@ class OZone
 		if (ptr == NULL)
 		{
 			// Don't format these bytes, the byte formatter allocates.
-			I_Error("%s: Could not allocate %" PRI_SIZE_PREFIX "u bytes at %s:%i.",
-			        __FUNCTION__, size, info.shortFile(), info.line);
+			I_Error("%s: Could not allocate %zu bytes at %s:%i.", __FUNCTION__, size,
+			        info.shortFile(), info.line);
 		}
 
 		// Construct the memory block.
@@ -254,13 +254,13 @@ class OZone
 		for (MemoryBlockTable::iterator it = m_heap.begin(); it != m_heap.end(); ++it)
 		{
 			total += it->second.size;
-			Printf("0x%p | size:%" PRIuSIZE " tag:%s user:0x%p %s:%d\n", (void*)it->first,
+			Printf("0x%p | size:%" "zu" " tag:%s user:0x%p %s:%d\n", (void*)it->first,
 			       it->second.size, TagStr(it->second.tag), (void*)it->second.user,
 			       it->second.fileLine.shortFile(), it->second.fileLine.line);
 		}
 
 		std::string buf;
-		Printf("  allocation count: %" PRIuSIZE "\n", m_heap.size());
+		Printf("  allocation count: %" "zu" "\n", m_heap.size());
 
 		StrFormatBytes(buf, total);
 		Printf("  allocs size: %s\n", buf.c_str());

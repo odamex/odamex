@@ -90,9 +90,12 @@ ticcmd_t *I_BaseTiccmd (void);
 // Clean exit, displays sell blurb.
 void STACK_ARGS I_Quit (void);
 
-void STACK_ARGS I_Warning(const char *warning, ...);
-void STACK_ARGS I_Error (const char *error, ...);
-NORETURN void STACK_ARGS I_FatalError(const char *error, ...);
+void I_Warning(fmt::CStringRef format, fmt::ArgList args);
+FMT_VARIADIC(void, I_Warning, fmt::CStringRef)
+void I_Error(fmt::CStringRef format, fmt::ArgList args);
+FMT_VARIADIC(void, I_Error, fmt::CStringRef)
+NORETURN void I_FatalError(fmt::CStringRef format, fmt::ArgList args);
+FMT_VARIADIC(void, I_FatalError, fmt::CStringRef)
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);
 #define atterm(t) addterm (t, #t)

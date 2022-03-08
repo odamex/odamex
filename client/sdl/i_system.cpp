@@ -508,10 +508,10 @@ BOOL gameisdead;
 
 void STACK_ARGS call_terms (void);
 
-NORETURN void STACK_ARGS I_FatalError(const char* error, ...)
+NORETURN void I_FatalError(fmt::CStringRef format, fmt::ArgList args)
 {
-	char errortext[MAX_ERRORTEXT];
-	char messagetext[MAX_ERRORTEXT];
+	std::string errortext;
+	std::string messagetext;
 
 	static BOOL alreadyThrown = false;
 	gameisdead = true;
@@ -519,20 +519,17 @@ NORETURN void STACK_ARGS I_FatalError(const char* error, ...)
 	if (!alreadyThrown) // ignore all but the first message -- killough
 	{
 		alreadyThrown = true;
-		va_list argptr;
-		va_start(argptr, error);
-		int index = vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
+		errortext = fmt::sprintf(format, args);
 		if (SDL_GetError()[0] != '\0')
 		{
-			snprintf(messagetext, ARRAY_LENGTH(messagetext), "%s\nLast SDL Error:\n%s\n",
-			         errortext, SDL_GetError());
+			messagetext =
+			    fmt::sprintf("%s\nLast SDL Error:\n%s\n", errortext, SDL_GetError());
 			SDL_ClearError();
 		}
 		else
 		{
-			snprintf(messagetext, ARRAY_LENGTH(messagetext), "%s\n", errortext);
+			messagetext = fmt::sprintf("%s\n", errortext);
 		}
-		va_end(argptr);
 
 		throw CFatalError(messagetext);
 	}
@@ -547,36 +544,28 @@ NORETURN void STACK_ARGS I_FatalError(const char* error, ...)
 	}
 
 	// Recursive atterm, we've used up all our chances.
-	va_list argptr;
-	va_start(argptr, error);
-	int index = vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
+	errortext = fmt::sprintf(format, args);
 	if (SDL_GetError()[0] != '\0')
 	{
-		snprintf(messagetext, ARRAY_LENGTH(messagetext),
-		         "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n",
-		         errortext, SDL_GetError());
+		messagetext = fmt::sprintf(
+		    "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n", errortext,
+		    SDL_GetError());
 	}
 	else
 	{
-		snprintf(messagetext, ARRAY_LENGTH(messagetext),
-		         "Error while shutting down, aborting:\n%s\n", errortext);
+		messagetext =
+		    fmt::sprintf("Error while shutting down, aborting:\n%s\n", errortext);
 	}
-	va_end(argptr);
 
-	I_ErrorMessageBox(messagetext);
+	I_ErrorMessageBox(messagetext.c_str());
 
 	abort();
 }
 
-void STACK_ARGS I_Error(const char* error, ...)
+void I_Error(fmt::CStringRef format, fmt::ArgList args)
 {
-	va_list argptr;
-	char errortext[MAX_ERRORTEXT];
-	char messagetext[MAX_ERRORTEXT];
-
-	va_start(argptr, error);
-	vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
-	va_end(argptr);
+	std::string errortext = fmt::sprintf(format, args);
+	std::string messagetext;
 
 	if (!has_exited)
 	{
@@ -586,31 +575,25 @@ void STACK_ARGS I_Error(const char* error, ...)
 	// Recursive atterm, we've used up all our chances.
 	if (SDL_GetError()[0] != '\0')
 	{
-		snprintf(messagetext, ARRAY_LENGTH(messagetext),
-		         "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n",
-		         errortext, SDL_GetError());
+		messagetext = fmt::sprintf(
+		    "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n", errortext,
+		    SDL_GetError());
 	}
 	else
 	{
-		snprintf(messagetext, ARRAY_LENGTH(messagetext),
-		         "Error while shutting down, aborting:\n%s\n", errortext);
+		messagetext =
+		    fmt::sprintf("Error while shutting down, aborting:\n%s\n", errortext);
 	}
 
-	I_ErrorMessageBox(messagetext);
+	I_ErrorMessageBox(messagetext.c_str());
 
 	abort();
 }
 
-void STACK_ARGS I_Warning(const char *warning, ...)
+void I_Warning(fmt::CStringRef format, fmt::ArgList args)
 {
-	va_list argptr;
-	char warningtext[MAX_ERRORTEXT];
-
-	va_start (argptr, warning);
-	vsprintf (warningtext, warning, argptr);
-	va_end (argptr);
-
-	Printf (PRINT_WARNING, "\n%s\n", warningtext);
+	std::string warningtext = fmt::sprintf(format, args);
+	Printf(PRINT_WARNING, "\n%s\n", warningtext);
 }
 
 char DoomStartupTitle[256] = { 0 };
