@@ -37,6 +37,7 @@
 #include "g_game.h"
 #include "g_levelstate.h"
 #include "gi.h"
+#include "g_skill.h"
 #include "i_system.h"
 #include "i_music.h"
 #include "minilzo.h"
@@ -231,7 +232,7 @@ void G_InitNew (const char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
+	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
 	if (wantFast != isFast)
 	{
 		if (wantFast)

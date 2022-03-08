@@ -33,6 +33,7 @@
 #include "gstrings.h"
 #include "p_inter.h"
 #include "d_items.h"
+#include "g_skill.h"
 #include "p_local.h"
 
 extern bool simulated_connection;
@@ -214,7 +215,7 @@ bool CHEAT_AreCheatsEnabled()
 
 	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats
 	// are disabled
-	if (!multiplayer && sv_skill == sk_nightmare)
+	if (!multiplayer && G_GetCurrentSkill().disable_cheats)
 		return false;
 
 	if ((multiplayer || !G_IsCoopGame()) && !sv_allowcheats)
