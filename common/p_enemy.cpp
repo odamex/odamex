@@ -2696,7 +2696,6 @@ void A_BossDeath(AActor *actor)
 			if (ba->type == actor->type)
 			{
 				line_t ld;
-				ld.sidenum[0] = NULL;
 				
 				if (map_format.getZDoom())
 				{
