@@ -2078,8 +2078,11 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 			else
 				repeat = P_IsSpecialBoomRepeatable(line->special);
 
-			P_ChangeSwitchTexture(line, repeat, true);
-			OnChangedSwitchTexture(line, repeat);
+			if (!bossaction)
+			{
+				P_ChangeSwitchTexture(line, repeat, true);
+				OnChangedSwitchTexture(line, repeat);
+			}
 		}
 
 		return true;
