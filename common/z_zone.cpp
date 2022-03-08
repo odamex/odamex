@@ -254,8 +254,8 @@ class OZone
 		for (MemoryBlockTable::iterator it = m_heap.begin(); it != m_heap.end(); ++it)
 		{
 			total += it->second.size;
-			Printf("0x%p | size:%" PRIuSIZE " tag:%s user:0x%p %s:%d\n", it->first,
-			       it->second.size, TagStr(it->second.tag), it->second.user,
+			Printf("0x%p | size:%" PRIuSIZE " tag:%s user:0x%p %s:%d\n", (void*)it->first,
+			       it->second.size, TagStr(it->second.tag), (void*)it->second.user,
 			       it->second.fileLine.shortFile(), it->second.fileLine.line);
 		}
 

@@ -45,6 +45,9 @@
 #include <string>
 #include <vector>
 
+#include "fmt/format.h"
+#include "fmt/printf.h"
+
 #include "doomtype.h"
 #include "doomdef.h"
 #include "doomstat.h"
