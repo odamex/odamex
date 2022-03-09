@@ -45,6 +45,7 @@
 #include "m_vectors.h"
 #include "m_fileio.h"
 #include "gi.h"
+#include "oscanner.h"
 
 #define NORM_PITCH		128
 #define NORM_PRIORITY	64
@@ -120,7 +121,7 @@ CVAR_FUNC_IMPL (snd_channels)
 
 
 // whether songs are mus_paused
-static BOOL		mus_paused;
+static BOOL mus_paused;
 
 // music currently being played
 static struct mus_playing_t
@@ -138,7 +139,7 @@ size_t			numChannels;
 //
 // [RH] Print sound debug info. Called from D_Display()
 //
-void S_NoiseDebug (void)
+void S_NoiseDebug()
 {
 	fixed_t ox, oy;
 	unsigned int i;
@@ -236,7 +237,7 @@ static bool S_UseMap8Volume()
 //
 // Internals.
 //
-static void S_StopChannel (unsigned int cnum);
+static void S_StopChannel(unsigned int cnum);
 
 
 //
@@ -244,7 +245,7 @@ static void S_StopChannel (unsigned int cnum);
 // Sets channels, SFX and music volume,
 // allocates channel buffer, sets S_sfx lookup.
 //
-void S_Init (float sfxVolume, float musicVolume)
+void S_Init(float sfxVolume, float musicVolume)
 {
 	SoundCurve = (byte *)W_CacheLumpNum(W_GetNumForName("SNDCURVE"), PU_STATIC);
 
@@ -281,7 +282,7 @@ void S_Deinit()
 //
 // Kills playing sounds
 //
-void S_Stop (void)
+void S_Stop()
 {
 	// kill all playing sounds at start of level
 	//	(trust me - a good idea)
@@ -297,7 +298,7 @@ void S_Stop (void)
 // Kills playing sounds at start of level,
 // determines music if any, changes music.
 //
-void S_Start (void)
+void S_Start()
 {
 	// Kill all sound channels - but don't stop music.
 	for (size_t i = 0; i < numChannels; i++)
@@ -570,7 +571,7 @@ int S_CalculateSoundPriority(const fixed_t* pt, int channel, int attenuation)
 // a bit of a whore of a funtion but she works ok
 //
 static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
-	                  int sfx_id, float volume, int attenuation, bool looping)
+	                     int sfx_id, float volume, int attenuation, bool looping)
 {
 	int		sep;
 
@@ -687,17 +688,17 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	Channel[cnum].start_time = gametic;
 }
 
-void S_SoundID (int channel, int sound_id, float volume, int attenuation)
+void S_SoundID(int channel, int sound_id, float volume, int attenuation)
 {
-	S_StartSound ((fixed_t *)NULL, 0, 0, channel, sound_id, volume, attenuation, false);
+	S_StartSound((fixed_t *)NULL, 0, 0, channel, sound_id, volume, attenuation, false);
 }
 
-void S_SoundID (fixed_t x, fixed_t y, int channel, int sound_id, float volume, int attenuation)
+void S_SoundID(fixed_t x, fixed_t y, int channel, int sound_id, float volume, int attenuation)
 {
-	S_StartSound ((fixed_t *)NULL, x, y, channel, sound_id, volume, attenuation, false);
+	S_StartSound((fixed_t *)NULL, x, y, channel, sound_id, volume, attenuation, false);
 }
 
-void S_SoundID (AActor *ent, int channel, int sound_id, float volume, int attenuation)
+void S_SoundID(AActor *ent, int channel, int sound_id, float volume, int attenuation)
 {
 	if (!ent)
 		return;
@@ -708,12 +709,12 @@ void S_SoundID (AActor *ent, int channel, int sound_id, float volume, int attenu
 	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, attenuation, false);
 }
 
-void S_SoundID (fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
+void S_SoundID(fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
 {
-	S_StartSound (pt, 0, 0, channel, sound_id, volume, attenuation, false);
+	S_StartSound(pt, 0, 0, channel, sound_id, volume, attenuation, false);
 }
 
-void S_LoopedSoundID (AActor *ent, int channel, int sound_id, float volume, int attenuation)
+void S_LoopedSoundID(AActor *ent, int channel, int sound_id, float volume, int attenuation)
 {
 	if (!ent)
 		return;
@@ -721,16 +722,16 @@ void S_LoopedSoundID (AActor *ent, int channel, int sound_id, float volume, int 
 	if (ent->subsector && ent->subsector->sector &&
 		ent->subsector->sector->MoreFlags & SECF_SILENT)
 		return;
-	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, attenuation, true);
+	S_StartSound(&ent->x, 0, 0, channel, sound_id, volume, attenuation, true);
 }
 
-void S_LoopedSoundID (fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
+void S_LoopedSoundID(fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
 {
-	S_StartSound (pt, 0, 0, channel, sound_id, volume, attenuation, true);
+	S_StartSound(pt, 0, 0, channel, sound_id, volume, attenuation, true);
 }
 
-static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, int channel,
-                               const char *name, float volume, int attenuation, bool looping)
+static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, int channel,
+                              const char *name, float volume, int attenuation, bool looping)
 {
 	int sfx_id = -1;
 
@@ -778,21 +779,21 @@ static void S_StartNamedSound (AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, i
 		DPrintf ("Unknown sound %s\n", name);
 
 	if (ent && ent != (AActor *)(~0))
-		S_StartSound (&ent->x, x, y, channel, sfx_id, volume, attenuation, looping);
+		S_StartSound(&ent->x, x, y, channel, sfx_id, volume, attenuation, looping);
 	else if (pt)
-		S_StartSound (pt, x, y, channel, sfx_id, volume, attenuation, looping);
+		S_StartSound(pt, x, y, channel, sfx_id, volume, attenuation, looping);
 	else
-		S_StartSound ((fixed_t *)ent, x, y, channel, sfx_id, volume, attenuation, looping);
+		S_StartSound((fixed_t *)ent, x, y, channel, sfx_id, volume, attenuation, looping);
 }
 
 // [Russell] - Hack to stop multiple plat stop sounds
-void S_PlatSound (fixed_t *pt, int channel, const char *name, float volume, int attenuation)
+void S_PlatSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
     if (!predicting)
         S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, attenuation, false);
 }
 
-void S_Sound (int channel, const char *name, float volume, int attenuation)
+void S_Sound(int channel, const char *name, float volume, int attenuation)
 {
 	// [SL] 2011-05-27 - This particular S_Sound() function is only used for sounds
 	// that should be full volume regardless of location.  Ignore the specified
@@ -800,30 +801,30 @@ void S_Sound (int channel, const char *name, float volume, int attenuation)
 	S_StartNamedSound ((AActor *)NULL, NULL, 0, 0, channel, name, volume, ATTN_NONE, false);
 }
 
-void S_Sound (AActor *ent, int channel, const char *name, float volume, int attenuation)
+void S_Sound(AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
 	if(!co_globalsound && channel == CHAN_ITEM && ent != listenplayer().camera)
 		return;
 
-	S_StartNamedSound (ent, NULL, 0, 0, channel, name, volume, attenuation, false);
+	S_StartNamedSound(ent, NULL, 0, 0, channel, name, volume, attenuation, false);
 }
 
-void S_Sound (fixed_t *pt, int channel, const char *name, float volume, int attenuation)
+void S_Sound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, attenuation, false);
+	S_StartNamedSound(NULL, pt, 0, 0, channel, name, volume, attenuation, false);
 }
 
-void S_LoopedSound (AActor *ent, int channel, const char *name, float volume, int attenuation)
+void S_LoopedSound(AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
 	S_StartNamedSound (ent, NULL, 0, 0, channel, name, volume, attenuation, true);
 }
 
-void S_LoopedSound (fixed_t *pt, int channel, const char *name, float volume, int attenuation)
+void S_LoopedSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
 	S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, attenuation, true);
 }
 
-void S_Sound (fixed_t x, fixed_t y, int channel, const char *name, float volume, int attenuation)
+void S_Sound(fixed_t x, fixed_t y, int channel, const char *name, float volume, int attenuation)
 {
 	S_StartNamedSound ((AActor *)(~0), NULL, x, y, channel, name, volume, attenuation, false);
 }
@@ -852,7 +853,7 @@ static void S_StopChannel(unsigned int cnum)
 }
 
 
-void S_StopSound (fixed_t *pt)
+void S_StopSound(fixed_t *pt)
 {
 	for (unsigned int i = 0; i < numChannels; i++)
 		if (Channel[i].sfxinfo && (Channel[i].pt == pt))
@@ -861,7 +862,7 @@ void S_StopSound (fixed_t *pt)
 		}
 }
 
-void S_StopSound (fixed_t *pt, int channel)
+void S_StopSound(fixed_t *pt, int channel)
 {
 	if (::Channel == NULL)
 		return;
@@ -873,12 +874,12 @@ void S_StopSound (fixed_t *pt, int channel)
 			S_StopChannel(i);
 }
 
-void S_StopSound (AActor *ent, int channel)
+void S_StopSound(AActor *ent, int channel)
 {
 	S_StopSound (&ent->x, channel);
 }
 
-void S_StopAllChannels(void)
+void S_StopAllChannels()
 {
 	for (size_t i = 0; i < numChannels; i++)
 		S_StopChannel(i);
@@ -887,7 +888,7 @@ void S_StopAllChannels(void)
 
 // Moves all the sounds from one thing to another. If the destination is
 // NULL, then the sound becomes a positioned sound.
-void S_RelinkSound (AActor *from, AActor *to)
+void S_RelinkSound(AActor *from, AActor *to)
 {
 	if (::Channel == NULL)
 		return;
@@ -909,7 +910,7 @@ void S_RelinkSound (AActor *from, AActor *to)
 	}
 }
 
-bool S_GetSoundPlayingInfo (fixed_t *pt, int sound_id)
+bool S_GetSoundPlayingInfo(fixed_t *pt, int sound_id)
 {
 	unsigned int i;
 
@@ -921,7 +922,7 @@ bool S_GetSoundPlayingInfo (fixed_t *pt, int sound_id)
 	return false;
 }
 
-bool S_GetSoundPlayingInfo (AActor *ent, int sound_id)
+bool S_GetSoundPlayingInfo(AActor *ent, int sound_id)
 {
 	return S_GetSoundPlayingInfo (ent ? &ent->x : NULL, sound_id);
 }
@@ -929,7 +930,7 @@ bool S_GetSoundPlayingInfo (AActor *ent, int sound_id)
 //
 // Stop and resume music, during game PAUSE.
 //
-void S_PauseSound (void)
+void S_PauseSound()
 {
 	if (!mus_paused)
 	{
@@ -938,7 +939,7 @@ void S_PauseSound (void)
 	}
 }
 
-void S_ResumeSound (void)
+void S_ResumeSound()
 {
 	if (mus_paused)
 	{
@@ -1034,7 +1035,7 @@ void S_UpdateMusic()
 	I_UpdateMusic();
 }
 
-void S_SetMusicVolume (float volume)
+void S_SetMusicVolume(float volume)
 {
 	if (volume < 0.0 || volume > 1.0)
 		Printf (PRINT_HIGH, "Attempt to set music volume at %f\n", volume);
@@ -1042,7 +1043,7 @@ void S_SetMusicVolume (float volume)
 		I_SetMusicVolume (volume);
 }
 
-void S_SetSfxVolume (float volume)
+void S_SetSfxVolume(float volume)
 {
 	if (volume < 0.0 || volume > 1.0)
 		Printf (PRINT_HIGH, "Attempt to set sfx volume at %f\n", volume);
@@ -1053,14 +1054,14 @@ void S_SetSfxVolume (float volume)
 //
 // Starts some music with the music id found in sounds.h.
 //
-void S_StartMusic (const char *m_id)
+void S_StartMusic(const char *m_id)
 {
 	S_ChangeMusic (m_id, false);
 }
 
 // [RH] S_ChangeMusic() now accepts the name of the music lump.
 // It's up to the caller to figure out what that name is.
-void S_ChangeMusic (std::string musicname, int looping)
+void S_ChangeMusic(std::string musicname, int looping)
 {
 	
 	// [SL] Avoid caching music lumps if we're not playing music
@@ -1097,7 +1098,6 @@ void S_ChangeMusic (std::string musicname, int looping)
     }
     else
 	{
-		lumpnum = -1;
 		length = M_FileLength(f);
 		data = static_cast<byte*>(Malloc(length));
 		size_t result = fread(data, length, 1, f);
@@ -1111,7 +1111,7 @@ void S_ChangeMusic (std::string musicname, int looping)
 	mus_playing.name = musicname;
 }
 
-void S_StopMusic (void)
+void S_StopMusic()
 {
 	I_StopSong();
 
@@ -1145,7 +1145,7 @@ static struct AmbientSound {
 #define POSITIONAL	4
 #define SURROUND	16
 
-void S_HashSounds (void)
+void S_HashSounds()
 {
 	int i;
 	unsigned j;
@@ -1162,7 +1162,7 @@ void S_HashSounds (void)
 	}
 }
 
-int S_FindSound (const char *logicalname)
+int S_FindSound(const char *logicalname)
 {
 	if(!numsfx)
 		return -1;
@@ -1175,7 +1175,7 @@ int S_FindSound (const char *logicalname)
 	return i;
 }
 
-int S_FindSoundByLump (int lump)
+int S_FindSoundByLump(int lump)
 {
 	if (lump != -1) {
 		int i;
@@ -1187,7 +1187,7 @@ int S_FindSoundByLump (int lump)
 	return -1;
 }
 
-int S_AddSoundLump (char *logicalname, int lump)
+int S_AddSoundLump(char *logicalname, int lump)
 {
 	if (numsfx == maxsfx) {
 		maxsfx = maxsfx ? maxsfx*2 : 128;
@@ -1210,7 +1210,7 @@ void S_ClearSoundLumps()
 	maxsfx = 0;
 }
 
-int S_AddSound (char *logicalname, char *lumpname)
+int S_AddSound(char *logicalname, const char *lumpname)
 {
 	int sfxid;
 
@@ -1232,134 +1232,161 @@ int S_AddSound (char *logicalname, char *lumpname)
 
 // S_ParseSndInfo
 // Parses all loaded SNDINFO lumps.
-void S_ParseSndInfo (void)
+void S_ParseSndInfo()
 {
-	char *sndinfo;
-	char *data;
-
-	S_ClearSoundLumps ();
+	S_ClearSoundLumps();
 
 	int lump = -1;
-	while ((lump = W_FindLump ("SNDINFO", lump)) != -1)
+	while ((lump = W_FindLump("SNDINFO", lump)) != -1)
 	{
-		sndinfo = (char *)W_CacheLumpNum (lump, PU_CACHE);
+		char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_CACHE));
 
-		while ( (data = COM_Parse (sndinfo)) ) {
-			if (com_token[0] == ';') {
-				// Handle comments from Hexen MAPINFO lumps
-				while (*sndinfo && *sndinfo != ';')
-					sndinfo++;
-				while (*sndinfo && *sndinfo != '\n')
-					sndinfo++;
-				continue;
-			}
-			sndinfo = data;
-			if (com_token[0] == '$') {
-				// com_token is a command
+		const OScannerConfig config = {
+		    "SNDINFO", // lumpName
+		    true,      // semiComments
+		    true,      // cComments
+		};
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
 
-				if (!stricmp (com_token + 1, "ambient")) {
-					// $ambient <num> <logical name> [point [atten]|surround] <type> [secs] <relative volume>
-					struct AmbientSound *ambient, dummy;
-					int index;
+		while (os.scan())
+		{
+			std::string tok = os.getToken();
 
-					sndinfo = COM_Parse (sndinfo);
-					index = atoi (com_token);
-					if (index < 0 || index > 255) {
-						Printf (PRINT_HIGH, "Bad ambient index (%d)\n", index);
+			// check if token is a command
+			if (tok[0] == '$')
+			{
+				os.mustScan();
+				if (os.compareTokenNoCase("ambient"))
+				{
+					// $ambient <num> <logical name> [point [atten]|surround] <type>
+					// [secs] <relative volume>
+					AmbientSound *ambient, dummy;
+
+					os.mustScanInt();
+					const int index = os.getTokenInt();
+					if (index < 0 || index > 255)
+					{
+						Printf(PRINT_HIGH, "Bad ambient index (%d)\n", index);
 						ambient = &dummy;
-					} else {
+					}
+					else
+					{
 						ambient = Ambients + index;
 					}
-                    
-                    ambient->type = 0;
-                    ambient->periodmin = 0;
-                    ambient->periodmax = 0;
-                    ambient->volume = 0.0f;
 
-					sndinfo = COM_Parse (sndinfo);
-					strncpy (ambient->sound, com_token, MAX_SNDNAME);
+					ambient->type = 0;
+					ambient->periodmin = 0;
+					ambient->periodmax = 0;
+					ambient->volume = 0.0f;
+
+					os.mustScan();
+					strncpy(ambient->sound, os.getToken().c_str(), MAX_SNDNAME);
 					ambient->sound[MAX_SNDNAME] = 0;
 					ambient->attenuation = 0.0f;
 
-					sndinfo = COM_Parse (sndinfo);
-					if (!stricmp (com_token, "point")) {
-						float attenuation;
-
+					os.mustScan();
+					if (os.compareTokenNoCase("point"))
+					{
 						ambient->type = POSITIONAL;
-						sndinfo = COM_Parse (sndinfo);
-						attenuation = (float)atof (com_token);
+						os.mustScanFloat();
+						const float attenuation = os.getTokenFloat();
 						if (attenuation > 0)
 						{
 							ambient->attenuation = attenuation;
-							sndinfo = COM_Parse (sndinfo);
+							os.mustScan();
 						}
 						else
 						{
 							ambient->attenuation = 1;
 						}
-					} else if (!stricmp (com_token, "surround")) {
+					}
+					else if (os.compareTokenNoCase("surround"))
+					{
 						ambient->type = SURROUND;
-						sndinfo = COM_Parse (sndinfo);
+						os.mustScan();
 						ambient->attenuation = -1;
 					}
 
-					if (!stricmp (com_token, "continuous")) {
+					if (os.compareTokenNoCase("continuous"))
+					{
 						ambient->type |= CONTINUOUS;
-					} else if (!stricmp (com_token, "random")) {
+					}
+					else if (os.compareTokenNoCase("random"))
+					{
 						ambient->type |= RANDOM;
-						sndinfo = COM_Parse (sndinfo);
-						ambient->periodmin = (int)(atof (com_token) * TICRATE);
-						sndinfo = COM_Parse (sndinfo);
-						ambient->periodmax = (int)(atof (com_token) * TICRATE);
-					} else if (!stricmp (com_token, "periodic")) {
+						os.mustScanFloat();
+						ambient->periodmin = static_cast<int>(os.getTokenFloat() * TICRATE);
+						os.mustScanFloat();
+						ambient->periodmax = static_cast<int>(os.getTokenFloat() * TICRATE);
+					}
+					else if (os.compareTokenNoCase("periodic"))
+					{
 						ambient->type |= PERIODIC;
-						sndinfo = COM_Parse (sndinfo);
-						ambient->periodmin = (int)(atof (com_token) * TICRATE);
-					} else {
-						Printf (PRINT_HIGH, "Unknown ambient type (%s)\n", com_token);
+						os.mustScanFloat();
+						ambient->periodmin = static_cast<int>(os.getTokenFloat() * TICRATE);
+					}
+					else
+					{
+						os.warning("Unknown ambient type (%s)\n", os.getToken().c_str());
 					}
 
-					sndinfo = COM_Parse (sndinfo);
-					ambient->volume = (float)atof (com_token);
+					os.mustScanFloat();
+					ambient->volume = os.getTokenFloat();
 					if (ambient->volume > 1)
 						ambient->volume = 1;
 					else if (ambient->volume < 0)
 						ambient->volume = 0;
-				} else if (!stricmp (com_token + 1, "map")) {
+				}
+				else if (os.compareTokenNoCase("map"))
+				{
 					// Hexen-style $MAP command
-					sndinfo = COM_Parse (sndinfo);
-					sprintf (com_token, "MAP%02d", atoi (com_token));
-					level_pwad_info_t& info = getLevelInfos().findByName(com_token);
-					sndinfo = COM_Parse (sndinfo);
+					char* mapname = NULL;
+
+					os.mustScanInt();
+					sprintf(mapname, "MAP%02d", os.getTokenInt());
+					level_pwad_info_t& info = getLevelInfos().findByName(mapname);
+					os.mustScan();
 					if (info.mapname[0])
 					{
-						info.music = com_token; // denis - todo -string limit?
+						info.music = os.getToken();
 					}
-				} else {
-					Printf (PRINT_WARNING, "Unknown SNDINFO command %s\n", com_token);
-					while (*sndinfo != '\n' && *sndinfo != '\0')
-						sndinfo++;
 				}
-			} else {
-				// com_token is a logical sound mapping
-				char name[MAX_SNDNAME+1];
+				/*else if (os.compareTokenNoCase("random"))
+				{
+					
+				}*/
+				else
+				{
+					os.warning("Unknown SNDINFO command %s\n", os.getToken().c_str());
+					while (os.scan())
+						if (os.crossed())
+						{
+							os.unScan();
+							break;
+						}
+				}
+			}
+			else
+			{
+				// token is a logical sound mapping
+				char name[MAX_SNDNAME + 1];
 
-				strncpy (name, com_token, MAX_SNDNAME);
+				strncpy(name, tok.c_str(), MAX_SNDNAME);
 				name[MAX_SNDNAME] = 0;
-				sndinfo = COM_Parse (sndinfo);
-				S_AddSound (name, com_token);
+				os.mustScan();
+				S_AddSound(name, os.getToken().c_str());
 			}
 		}
 	}
-	S_HashSounds ();
+	S_HashSounds();
 
-	sfx_empty = W_CheckNumForName ("dsempty");
-	sfx_noway = S_FindSoundByLump (W_CheckNumForName ("dsnoway"));
-	sfx_oof = S_FindSoundByLump (W_CheckNumForName ("dsoof"));
+	sfx_empty = W_CheckNumForName("dsempty");
+	sfx_noway = S_FindSoundByLump(W_CheckNumForName("dsnoway"));
+	sfx_oof = S_FindSoundByLump(W_CheckNumForName("dsoof"));
 }
 
 
-static void SetTicker (int *tics, struct AmbientSound *ambient)
+static void SetTicker(int *tics, AmbientSound *ambient)
 {
 	if ((ambient->type & CONTINUOUS) == CONTINUOUS)
 	{
@@ -1382,12 +1409,12 @@ static void SetTicker (int *tics, struct AmbientSound *ambient)
 		*tics = 1;
 }
 
-void A_Ambient (AActor *actor)
+void A_Ambient(AActor *actor)
 {
 	if (!actor)
 		return;
 
-	struct AmbientSound *ambient = &Ambients[actor->args[0]];
+	AmbientSound *ambient = &Ambients[actor->args[0]];
 
 	if ((ambient->type & CONTINUOUS) == CONTINUOUS)
 	{
@@ -1422,12 +1449,12 @@ void A_Ambient (AActor *actor)
 	}
 }
 
-void S_ActivateAmbient (AActor *origin, int ambient)
+void S_ActivateAmbient(AActor *origin, int ambient)
 {
 	if (!origin)
 		return;
 
-	struct AmbientSound *amb = &Ambients[ambient];
+	AmbientSound *amb = &Ambients[ambient];
 
 	if (!(amb->type & 3) && !amb->periodmin)
 	{
@@ -1516,7 +1543,7 @@ END_COMMAND (changemus)
 // UV_SoundAvoidCl
 // Sends a sound to clients, but doesn't send it to client 'player'.
 //
-void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte attenuation)
+void UV_SoundAvoidPlayer(AActor *mo, byte channel, const char *name, byte attenuation)
 {
 	S_Sound(mo, channel, name, 1, attenuation);
 }
