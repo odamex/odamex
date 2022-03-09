@@ -44,8 +44,14 @@
 
 EXTERN_CVAR(g_horde_waves)
 EXTERN_CVAR(g_lives)
+EXTERN_CVAR(g_horde_spawnempty_min)
+EXTERN_CVAR(g_horde_spawnempty_max)
+EXTERN_CVAR(g_horde_spawnfull_min)
+EXTERN_CVAR(g_horde_spawnfull_max)
 
 void A_PainDie(AActor* actor);
+
+const int HORDE_STARTING_TICS = TICRATE * 3;
 
 /**
  * @brief Garbage-collector for Horde corpses.
@@ -423,7 +429,9 @@ class HordeState
 		return m_defineID;
 	}
 
+	int getAliveHealth() const { return m_spawnedHealth - m_killedHealth; }
 	void changeState();
+	void getNextSpawnTime(int& min, int& max);
 	void tick();
 } g_HordeDirector;
 
@@ -453,11 +461,6 @@ void HordeState::changeState()
 			// We reached the goal, spawn the boss.
 			setState(HS_WANTBOSS);
 		}
-		else if (aliveHealth > define.maxTotalHealth())
-		{
-			// There's enough monsters in the level, back off.
-			setState(HS_RELAX);
-		}
 		return;
 	}
 	case HS_RELAX: {
@@ -466,7 +469,7 @@ void HordeState::changeState()
 			// We reached the goal, spawn the boss.
 			setState(HS_WANTBOSS);
 		}
-		else if (aliveHealth < define.minTotalHealth())
+		else
 		{
 			// There's not enough monsters in the level, add more.
 			setState(HS_PRESSURE);
@@ -477,7 +480,7 @@ void HordeState::changeState()
 		{
 			// Doesn't matter which state we enter, but we're more likely
 			// to be in the relax state after spawning a big hunk of HP.
-			setState(HS_RELAX);
+			setState(HS_PRESSURE);
 		}
 		return;
 	}
@@ -485,6 +488,44 @@ void HordeState::changeState()
 	default:
 		return;
 	}
+}
+
+/**
+ * @brief Calculate the next spawn time for a monster group.
+ *
+ * @param min Minimum spawn time, in seconds.
+ * @param max Maximum spawn time, in seconds.
+ */
+void HordeState::getNextSpawnTime(int& min, int& max)
+{
+	const hordeDefine_t& define = G_HordeDefine(::g_HordeDirector.getDefineID());
+
+	const double EMPTY_MIN_SPAWN = g_horde_spawnempty_min;
+	const double EMPTY_MAX_SPAWN = g_horde_spawnempty_max;
+	const double FULL_MIN_SPAWN = g_horde_spawnfull_min;
+	const double FULL_MAX_SPAWN = g_horde_spawnfull_max;
+
+	// Minimum/maximum monster spawn time.
+	double minf = Remap(getAliveHealth(), define.minTotalHealth(),
+	                    define.maxTotalHealth(), EMPTY_MIN_SPAWN, EMPTY_MAX_SPAWN);
+	double maxf = Remap(getAliveHealth(), define.minTotalHealth(),
+	                    define.maxTotalHealth(), FULL_MIN_SPAWN, FULL_MAX_SPAWN);
+
+	// Don't absolutely pound the players in the first minute.
+	const int FALLOFF_TIME = m_waveTime + ::HORDE_STARTING_TICS + TICRATE * 60;
+	if (::level.time < FALLOFF_TIME)
+	{
+		const double falloff = Remap(::level.time, m_waveTime, FALLOFF_TIME, 1.0, 0.0);
+		const double floormin = Remap(falloff, 0.0, 1.0, 0.0, EMPTY_MIN_SPAWN);
+		const double floormax = Remap(falloff, 0.0, 1.0, 0.0, EMPTY_MAX_SPAWN);
+		minf = MAX(minf, floormin);
+		maxf = MAX(maxf, floormax);
+	}
+
+	// Turn into integers.
+	min = MAX(int(round(minf)), 1);
+	max = MAX(int(round(maxf)), 1);
+	max = MAX(max, min);
 }
 
 /**
@@ -560,12 +601,13 @@ void HordeState::tick()
 		}
 	}
 
-	if (::level.time >= m_nextSpawn)
+	if (::level.time >= m_nextSpawn && getAliveHealth() <= define.maxTotalHealth())
 	{
-		// Determine our next spawn time.  Sped up slightly in an empty level.
-		const int aliveHealth = m_spawnedHealth - m_killedHealth;
-		const int nextMax = aliveHealth < define.minTotalHealth() ? 3 : 5;
-		const int offset = P_RandomInt(nextMax) + 1;
+		int min, max;
+		getNextSpawnTime(min, max);
+
+		// Randomly select our next spawn time.
+		const int offset = P_RandomInt(max - min + 1) + min;
 		m_nextSpawn = ::level.time + (offset * TICRATE);
 
 		// Should we spawn a monster?
@@ -945,8 +987,23 @@ BEGIN_COMMAND(hordeinfo)
 		break;
 	}
 
+	int min, max;
+	::g_HordeDirector.getNextSpawnTime(min, max);
+
 	Printf("[Wave: %d]\n", ::g_HordeDirector.serialize().wave);
 	Printf("State: %s\n", stateStr);
+
+	if (::g_HordeDirector.getAliveHealth() <= define.maxTotalHealth())
+	{
+		Printf("Current Spawn Rate: %d-%dsec\n", min, max);
+	}
+	else
+	{
+		Printf("Current Spawn Rate: PAUSED (Above Max Health)\n");
+	}
+	Printf("Empty/Full Spawn Rate: %d-%dsec, %d-%dsec\n", g_horde_spawnempty_min.asInt(),
+	       g_horde_spawnempty_max.asInt(), g_horde_spawnfull_min.asInt(),
+	       g_horde_spawnfull_max.asInt());
 	Printf("Alive Health: %d\n", ::g_HordeDirector.serialize().alive());
 	Printf("Killed Health: %d\n", ::g_HordeDirector.serialize().killed());
 	Printf("Boss Health: %d\n", ::g_HordeDirector.serialize().bossHealth);
