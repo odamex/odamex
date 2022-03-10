@@ -333,6 +333,7 @@ int S_AddSound(const char *logicalname, const char *lumpname)
 void S_AddRandomSound(int owner, std::vector<int>& list)
 {
 	S_rnd[owner] = list;
+	S_sfx[owner].link = owner;
 	S_sfx[owner].israndom = true;
 }
 
