@@ -211,6 +211,7 @@ void S_StopMusic()
 // =============================== [RH]
 
 std::vector<sfxinfo_t> S_sfx; // [RH] This is no longer defined in sounds.c
+std::map<int, std::vector<int>> S_rnd;
 
 static struct AmbientSound {
 	unsigned	type;		// type of ambient sound
@@ -455,12 +456,12 @@ void S_ParseSndInfo()
 					os.mustScan();
 					S_sfx[sfxfrom - 1].link = FindSoundTentative(os.getToken().c_str());
 				}
-				/*else if (os.compareTokenNoCase("random"))
+				else if (os.compareTokenNoCase("random"))
 				{
 					os.mustScan();
 
 
-				}*/
+				}
 				else
 				{
 					os.warning("Unknown SNDINFO command %s\n", os.getToken().c_str());

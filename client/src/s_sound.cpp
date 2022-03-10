@@ -585,6 +585,16 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 
 	sfxinfo_t* sfxinfo = &S_sfx[sfx_id];
 
+	if (sfxinfo->link != sfxinfo_t::NO_LINK)
+		sfxinfo = &S_sfx[sfxinfo->link];
+
+	if (!sfxinfo->data)
+	{
+		I_LoadSound(sfxinfo);
+		if (sfxinfo->link != sfxinfo_t::NO_LINK)
+			sfxinfo = &S_sfx[sfxinfo->link];
+	}
+
   	// check for bogus sound lump
 	if (sfxinfo->lumpnum < 0 || sfxinfo->lumpnum > static_cast<int>(numlumps))
 	{
@@ -600,16 +610,6 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	{
 		x = pt[0];
 		y = pt[1];
-	}
-
-	if (sfxinfo->link != sfxinfo_t::NO_LINK)
-		sfxinfo = &S_sfx[sfxinfo->link];
-
-	if (!sfxinfo->data)
-	{
-		I_LoadSound(sfxinfo);
-		if (sfxinfo->link != sfxinfo_t::NO_LINK)
-			sfxinfo = &S_sfx[sfxinfo->link];
 	}
 
 	if (sfxinfo->lumpnum == sfx_empty)
@@ -1120,6 +1120,7 @@ void S_StopMusic()
 // =============================== [RH]
 
 std::vector<sfxinfo_t> S_sfx;	// [RH] This is no longer defined in sounds.c
+std::map<int, std::vector<int>> S_rnd;
 
 static struct AmbientSound {
 	unsigned	type;		// type of ambient sound
@@ -1191,6 +1192,7 @@ int S_AddSoundLump(const char *logicalname, int lump)
 void S_ClearSoundLumps()
 {
 	S_sfx.clear();
+	S_rnd.clear();
 }
 
 int FindSoundNoHash(const char* logicalname)
@@ -1225,11 +1227,22 @@ int S_AddSound(const char *logicalname, const char *lumpname)
 
 		sfx.lumpnum = lump;
 		sfx.link = sfxinfo_t::NO_LINK;
+		if (sfx.israndom)
+		{
+			S_rnd.erase(sfxid);
+			sfx.israndom = false;
+		}
 	}
 	else
 		sfxid = S_AddSoundLump(logicalname, lump);
 
 	return sfxid;
+}
+
+void S_AddRandomSound(int owner, std::vector<int>& list)
+{
+	S_rnd[owner] = list;
+	S_sfx[owner - 1].israndom = true;
 }
 
 // S_ParseSndInfo
@@ -1358,21 +1371,40 @@ void S_ParseSndInfo()
 					os.mustScan();
 					const int sfxfrom = S_AddSound(os.getToken().c_str(), NULL);
 					os.mustScan();
-					S_sfx[sfxfrom - 1].link = FindSoundTentative(os.getToken().c_str());
+					S_sfx[sfxfrom].link = FindSoundTentative(os.getToken().c_str());
 				}
-				//else if (os.compareTokenNoCase("random"))
-				//{
-				//	// create random list
-				//	os.mustScan();
+				else if (os.compareTokenNoCase("random"))
+				{
+					std::vector<int> list;
 
+					os.mustScan();
+					const int owner = S_AddSound(os.getToken().c_str(), NULL);
 
-				//	os.mustScan();
-				//	os.assertTokenIs("{");
-				//	while (os.scan() && !os.compareToken("}"))
-				//	{
-				//		
-				//	}
-				//}
+					os.mustScan();
+					os.assertTokenIs("{");
+					while (os.scan() && !os.compareToken("}"))
+					{
+						const int sfxto = FindSoundTentative(os.getToken().c_str());
+
+						if (owner == sfxto)
+						{
+							os.warning("Definition of random sound '%s' refers to itself "
+							       "recursively.\n", os.getToken().c_str());
+							continue;
+						}
+
+						list.push_back(sfxto);
+					}
+					if (list.size() == 1)
+					{
+						// only one sound; treat as alias
+						S_sfx[owner - 1].link = list[0];
+					}
+					else if (list.size() > 1)
+					{
+						S_AddRandomSound(owner, list);
+					}
+				}
 				else
 				{
 					os.warning("Unknown SNDINFO command %s\n", os.getToken().c_str());
