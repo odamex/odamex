@@ -602,14 +602,14 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 		y = pt[1];
 	}
 
-	if (sfxinfo->link)
-		sfxinfo = sfxinfo->link;
+	if (sfxinfo->link != sfxinfo_t::NO_LINK)
+		sfxinfo = &S_sfx[sfxinfo->link];
 
 	if (!sfxinfo->data)
 	{
 		I_LoadSound(sfxinfo);
-		if (sfxinfo->link)
-			sfxinfo = sfxinfo->link;
+		if (sfxinfo->link != sfxinfo_t::NO_LINK)
+			sfxinfo = &S_sfx[sfxinfo->link];
 	}
 
 	if (sfxinfo->lumpnum == sfx_empty)
@@ -973,7 +973,7 @@ void S_UpdateSounds(void* listener_p)
 
 				float volume = maxvolume;
 
-				if (sfx->link)
+				if (sfx->link != sfxinfo_t::NO_LINK)
 				{
 					volume += Channel[cnum].volume;
 
@@ -1183,7 +1183,7 @@ int S_AddSoundLump(const char *logicalname, int lump)
 	// logicalname MUST be < MAX_SNDNAME chars long
 	strcpy(new_sfx.name, logicalname);
 	new_sfx.data = NULL;
-	new_sfx.link = NULL;
+	new_sfx.link = sfxinfo_t::NO_LINK;
 	new_sfx.lumpnum = lump;
 	return S_sfx.size();
 }
@@ -1193,22 +1193,41 @@ void S_ClearSoundLumps()
 	S_sfx.clear();
 }
 
+int FindSoundNoHash(const char* logicalname)
+{
+	for (size_t i = 0; i < S_sfx.size(); i++)
+		if (iequals(logicalname, S_sfx[i].name))
+			return i;
+	
+	return S_sfx.size();
+}
+
+int FindSoundTentative(const char* name)
+{
+	int id = FindSoundNoHash(name);
+	if (id == S_sfx.size())
+	{
+		id = S_AddSoundLump(name, -1);
+	}
+	return id;
+}
+
 int S_AddSound(const char *logicalname, const char *lumpname)
 {
-	int sfxid;
+	int sfxid = FindSoundNoHash(logicalname);
 
-	// If the sound has already been defined, change the old definition.
-	for (sfxid = 0; sfxid < S_sfx.size(); sfxid++)
-		if (iequals(logicalname, S_sfx[sfxid].name))
-			break;
-
-	const int lump = W_CheckNumForName(lumpname);
+	const int lump = lumpname ? W_CheckNumForName(lumpname) : -1;
 
 	// Otherwise, prepare a new one.
-	if (sfxid == S_sfx.size())
-		sfxid = S_AddSoundLump(logicalname, lump);
+	if (sfxid != S_sfx.size())
+	{
+		sfxinfo_t& sfx = S_sfx[sfxid];
+
+		sfx.lumpnum = lump;
+		sfx.link = sfxinfo_t::NO_LINK;
+	}
 	else
-		S_sfx[sfxid].lumpnum = lump;
+		sfxid = S_AddSoundLump(logicalname, lump);
 
 	return sfxid;
 }
@@ -1337,23 +1356,23 @@ void S_ParseSndInfo()
 				else if (os.compareTokenNoCase("alias"))
 				{
 					os.mustScan();
-					std::string alias = os.getToken();
-					S_AddSound(os.getToken().c_str(), NULL);
+					const int sfxfrom = S_AddSound(os.getToken().c_str(), NULL);
 					os.mustScan();
-					std::string orig = os.getToken();
+					S_sfx[sfxfrom - 1].link = FindSoundTentative(os.getToken().c_str());
 				}
-				else if (os.compareTokenNoCase("random"))
-				{
-					os.mustScan();
-					// do thing
+				//else if (os.compareTokenNoCase("random"))
+				//{
+				//	// create random list
+				//	os.mustScan();
 
-					os.mustScan();
-					os.assertTokenIs("{");
-					while (os.scan() && !os.compareToken("}"))
-					{
-						
-					}
-				}
+
+				//	os.mustScan();
+				//	os.assertTokenIs("{");
+				//	while (os.scan() && !os.compareToken("}"))
+				//	{
+				//		
+				//	}
+				//}
 				else
 				{
 					os.warning("Unknown SNDINFO command %s\n", os.getToken().c_str());
@@ -1494,8 +1513,8 @@ END_COMMAND (snd_soundlist)
 BEGIN_COMMAND (snd_soundlinks)
 {
 	for (unsigned i = 0; i < S_sfx.size(); i++)
-		if (S_sfx[i].link)
-			Printf (PRINT_HIGH, "%s -> %s\n", S_sfx[i].name, S_sfx[i].link->name);
+		if (S_sfx[i].link != sfxinfo_t::NO_LINK)
+			Printf(PRINT_HIGH, "%s -> %s\n", S_sfx[i].name, S_sfx[S_sfx[i].link].name);
 }
 END_COMMAND (snd_soundlinks)
 

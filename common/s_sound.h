@@ -43,7 +43,8 @@ struct sfxinfo_struct
 	unsigned looping;           // Looping sample handle
 	void* data;
 
-	sfxinfo_struct* link;
+	unsigned int link = NO_LINK;
+	enum { NO_LINK = 0xffffffff };
 
 	int lumpnum;              // lump number of sfx
 	unsigned int ms;          // [RH] length of sfx in milliseconds
@@ -54,9 +55,6 @@ struct sfxinfo_struct
 
 // the complete set of sound effects
 extern std::vector<sfxinfo_t> S_sfx;
-
-// [RH] Number of defined sounds
-extern int numsfx;
 
 // Initializes sound stuff, including volume
 // Sets channels, SFX and music volume,
