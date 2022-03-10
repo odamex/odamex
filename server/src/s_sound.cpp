@@ -211,7 +211,7 @@ void S_StopMusic()
 // =============================== [RH]
 
 std::vector<sfxinfo_t> S_sfx; // [RH] This is no longer defined in sounds.c
-std::map<int, std::vector<int>> S_rnd;
+std::map<int, std::vector<int> > S_rnd;
 
 static struct AmbientSound {
 	unsigned	type;		// type of ambient sound

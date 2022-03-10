@@ -58,7 +58,7 @@ struct sfxinfo_struct
 extern std::vector<sfxinfo_t> S_sfx;
 
 // map of every sound id for sounds that have randomized variants
-extern std::map<int, std::vector<int>> S_rnd;
+extern std::map<int, std::vector<int> > S_rnd;
 
 // Initializes sound stuff, including volume
 // Sets channels, SFX and music volume,
