@@ -585,14 +585,20 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 
 	sfxinfo_t* sfxinfo = &S_sfx[sfx_id];
 
-	if (sfxinfo->link != sfxinfo_t::NO_LINK)
+	while (sfxinfo->link != sfxinfo_t::NO_LINK)
+	{
+		sfx_id = sfxinfo->link;
 		sfxinfo = &S_sfx[sfxinfo->link];
+	}
 
 	if (!sfxinfo->data)
 	{
 		I_LoadSound(sfxinfo);
-		if (sfxinfo->link != sfxinfo_t::NO_LINK)
+		while (sfxinfo->link != sfxinfo_t::NO_LINK)
+		{
+			sfx_id = sfxinfo->link;
 			sfxinfo = &S_sfx[sfxinfo->link];
+		}
 	}
 
   	// check for bogus sound lump
@@ -1186,7 +1192,7 @@ int S_AddSoundLump(const char *logicalname, int lump)
 	new_sfx.data = NULL;
 	new_sfx.link = sfxinfo_t::NO_LINK;
 	new_sfx.lumpnum = lump;
-	return S_sfx.size();
+	return S_sfx.size() - 1;
 }
 
 void S_ClearSoundLumps()
@@ -1398,7 +1404,7 @@ void S_ParseSndInfo()
 					if (list.size() == 1)
 					{
 						// only one sound; treat as alias
-						S_sfx[owner - 1].link = list[0];
+						S_sfx[owner].link = list[0];
 					}
 					else if (list.size() > 1)
 					{
