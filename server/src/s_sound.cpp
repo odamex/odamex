@@ -32,6 +32,7 @@
 #include "m_random.h"
 #include "w_wad.h"
 #include "cmdlib.h"
+#include "oscanner.h"
 #include "v_video.h"
 
 #include <algorithm>
@@ -295,7 +296,7 @@ void S_ClearSoundLumps()
 	maxsfx = 0;
 }
 
-int S_AddSound(char *logicalname, char *lumpname)
+int S_AddSound(char *logicalname, const char *lumpname)
 {
 	int sfxid;
 
@@ -304,7 +305,7 @@ int S_AddSound(char *logicalname, char *lumpname)
 		if (0 == stricmp (logicalname, S_sfx[sfxid].name))
 			break;
 
-	int lump = W_CheckNumForName (lumpname);
+	const int lump = W_CheckNumForName (lumpname);
 
 	// Otherwise, prepare a new one.
 	if (sfxid == numsfx)
@@ -319,42 +320,39 @@ int S_AddSound(char *logicalname, char *lumpname)
 // Parses all loaded SNDINFO lumps.
 void S_ParseSndInfo()
 {
-	char* data;
-
 	S_ClearSoundLumps();
 
 	int lump = -1;
 	while ((lump = W_FindLump("SNDINFO", lump)) != -1)
 	{
-		char* sndinfo = static_cast<char*>(W_CacheLumpNum(lump, PU_CACHE));
+		char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_CACHE));
 
-		while ((data = COM_Parse(sndinfo)))
+		const OScannerConfig config = {
+		    "SNDINFO", // lumpName
+		    true,      // semiComments
+		    true,      // cComments
+		};
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+
+		while (os.scan())
 		{
-			if (com_token[0] == ';')
-			{
-				// Handle comments from Hexen MAPINFO lumps
-				while (*sndinfo && *sndinfo != ';')
-					sndinfo++;
-				while (*sndinfo && *sndinfo != '\n')
-					sndinfo++;
-				continue;
-			}
-			sndinfo = data;
-			if (com_token[0] == '$')
-			{
-				// com_token is a command
+			std::string tok = os.getToken();
 
-				if (!stricmp(com_token + 1, "ambient"))
+			// check if token is a command
+			if (tok[0] == '$')
+			{
+				os.mustScan();
+				if (os.compareTokenNoCase("ambient"))
 				{
 					// $ambient <num> <logical name> [point [atten]|surround] <type>
 					// [secs] <relative volume>
 					AmbientSound *ambient, dummy;
 
-					sndinfo = COM_Parse(sndinfo);
-					int index = atoi(com_token);
+					os.mustScanInt();
+					const int index = os.getTokenInt();
 					if (index < 0 || index > 255)
 					{
-						Printf(PRINT_HIGH, "Bad ambient index (%d)\n", index);
+						os.warning("Bad ambient index (%d)\n", index);
 						ambient = &dummy;
 					}
 					else
@@ -367,92 +365,106 @@ void S_ParseSndInfo()
 					ambient->periodmax = 0;
 					ambient->volume = 0.0f;
 
-					sndinfo = COM_Parse(sndinfo);
-					strncpy(ambient->sound, com_token, MAX_SNDNAME);
+					os.mustScan();
+					strncpy(ambient->sound, os.getToken().c_str(), MAX_SNDNAME);
 					ambient->sound[MAX_SNDNAME] = 0;
 					ambient->attenuation = 0.0f;
 
-					sndinfo = COM_Parse(sndinfo);
-					if (!stricmp(com_token, "point"))
+					os.mustScan();
+					if (os.compareTokenNoCase("point"))
 					{
 						ambient->type = POSITIONAL;
-						sndinfo = COM_Parse(sndinfo);
-						float attenuation = (float)atof(com_token);
-						if (attenuation > 0)
+						os.mustScan();
+
+						if (IsRealNum(os.getToken().c_str()))
 						{
-							ambient->attenuation = attenuation;
-							sndinfo = COM_Parse(sndinfo);
+							ambient->attenuation =
+							    (os.getTokenFloat() > 0) ? os.getTokenFloat() : 1;
+							os.mustScan();
 						}
 						else
 						{
 							ambient->attenuation = 1;
 						}
 					}
-					else if (!stricmp(com_token, "surround"))
+					else if (os.compareTokenNoCase("surround"))
 					{
 						ambient->type = SURROUND;
-						sndinfo = COM_Parse(sndinfo);
+						os.mustScan();
 						ambient->attenuation = -1;
 					}
+					// else if (os.compareTokenNoCase("world"))
+					//{
+					// todo
+					//}
 
-					if (!stricmp(com_token, "continuous"))
+					if (os.compareTokenNoCase("continuous"))
 					{
 						ambient->type |= CONTINUOUS;
 					}
-					else if (!stricmp(com_token, "random"))
+					else if (os.compareTokenNoCase("random"))
 					{
 						ambient->type |= RANDOM;
-						sndinfo = COM_Parse(sndinfo);
-						ambient->periodmin = (int)(atof(com_token) * TICRATE);
-						sndinfo = COM_Parse(sndinfo);
-						ambient->periodmax = (int)(atof(com_token) * TICRATE);
+						os.mustScanFloat();
+						ambient->periodmin =
+						    static_cast<int>(os.getTokenFloat() * TICRATE);
+						os.mustScanFloat();
+						ambient->periodmax =
+						    static_cast<int>(os.getTokenFloat() * TICRATE);
 					}
-					else if (!stricmp(com_token, "periodic"))
+					else if (os.compareTokenNoCase("periodic"))
 					{
 						ambient->type |= PERIODIC;
-						sndinfo = COM_Parse(sndinfo);
-						ambient->periodmin = (int)(atof(com_token) * TICRATE);
+						os.mustScanFloat();
+						ambient->periodmin =
+						    static_cast<int>(os.getTokenFloat() * TICRATE);
 					}
 					else
 					{
-						Printf(PRINT_HIGH, "Unknown ambient type (%s)\n", com_token);
+						os.warning("Unknown ambient type (%s)\n", os.getToken().c_str());
 					}
 
-					sndinfo = COM_Parse(sndinfo);
-					ambient->volume = (float)atof(com_token);
-					if (ambient->volume > 1)
-						ambient->volume = 1;
-					else if (ambient->volume < 0)
-						ambient->volume = 0;
+					os.mustScanFloat();
+					ambient->volume = clamp(os.getTokenFloat(), 0.0f, 1.0f);
 				}
-				else if (!stricmp(com_token + 1, "map"))
+				else if (os.compareTokenNoCase("map"))
 				{
 					// Hexen-style $MAP command
-					sndinfo = COM_Parse(sndinfo);
-					sprintf(com_token, "MAP%02d", atoi(com_token));
-					level_pwad_info_t& info = getLevelInfos().findByName(com_token);
-					sndinfo = COM_Parse(sndinfo);
+					char mapname[8];
+
+					os.mustScanInt();
+					sprintf(mapname, "MAP%02d", os.getTokenInt());
+					level_pwad_info_t& info = getLevelInfos().findByName(mapname);
+					os.mustScan();
 					if (info.mapname[0])
 					{
-						info.music = com_token; // denis - todo -string limit?
+						info.music = os.getToken();
 					}
 				}
+				/*else if (os.compareTokenNoCase("random"))
+				{
+
+				}*/
 				else
 				{
-					Printf(PRINT_HIGH, "Unknown SNDINFO command %s\n", com_token);
-					while (*sndinfo != '\n' && *sndinfo != '\0')
-						sndinfo++;
+					os.warning("Unknown SNDINFO command %s\n", os.getToken().c_str());
+					while (os.scan())
+						if (os.crossed())
+						{
+							os.unScan();
+							break;
+						}
 				}
 			}
 			else
 			{
-				// com_token is a logical sound mapping
+				// token is a logical sound mapping
 				char name[MAX_SNDNAME + 1];
 
-				strncpy(name, com_token, MAX_SNDNAME);
+				strncpy(name, tok.c_str(), MAX_SNDNAME);
 				name[MAX_SNDNAME] = 0;
-				sndinfo = COM_Parse(sndinfo);
-				S_AddSound(name, com_token);
+				os.mustScan();
+				S_AddSound(name, os.getToken().c_str());
 			}
 		}
 	}

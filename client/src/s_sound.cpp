@@ -1216,10 +1216,10 @@ int S_AddSound(char *logicalname, const char *lumpname)
 
 	// If the sound has already been defined, change the old definition.
 	for (sfxid = 0; sfxid < numsfx; sfxid++)
-		if (0 == stricmp (logicalname, S_sfx[sfxid].name))
+		if (0 == stricmp(logicalname, S_sfx[sfxid].name))
 			break;
 
-	int lump = W_CheckNumForName (lumpname);
+	const int lump = W_CheckNumForName (lumpname);
 
 	// Otherwise, prepare a new one.
 	if (sfxid == numsfx)
@@ -1266,7 +1266,7 @@ void S_ParseSndInfo()
 					const int index = os.getTokenInt();
 					if (index < 0 || index > 255)
 					{
-						Printf(PRINT_HIGH, "Bad ambient index (%d)\n", index);
+						os.warning("Bad ambient index (%d)\n", index);
 						ambient = &dummy;
 					}
 					else
@@ -1288,11 +1288,11 @@ void S_ParseSndInfo()
 					if (os.compareTokenNoCase("point"))
 					{
 						ambient->type = POSITIONAL;
-						os.mustScanFloat();
-						const float attenuation = os.getTokenFloat();
-						if (attenuation > 0)
+						os.mustScan();
+
+						if (IsRealNum(os.getToken().c_str()))
 						{
-							ambient->attenuation = attenuation;
+							ambient->attenuation = (os.getTokenFloat() > 0) ? os.getTokenFloat() : 1;
 							os.mustScan();
 						}
 						else
@@ -1306,6 +1306,10 @@ void S_ParseSndInfo()
 						os.mustScan();
 						ambient->attenuation = -1;
 					}
+					//else if (os.compareTokenNoCase("world"))
+					//{
+						// todo
+					//}
 
 					if (os.compareTokenNoCase("continuous"))
 					{
@@ -1331,16 +1335,12 @@ void S_ParseSndInfo()
 					}
 
 					os.mustScanFloat();
-					ambient->volume = os.getTokenFloat();
-					if (ambient->volume > 1)
-						ambient->volume = 1;
-					else if (ambient->volume < 0)
-						ambient->volume = 0;
+					ambient->volume = clamp(os.getTokenFloat(), 0.0f, 1.0f);
 				}
 				else if (os.compareTokenNoCase("map"))
 				{
 					// Hexen-style $MAP command
-					char* mapname = NULL;
+					char mapname[8];
 
 					os.mustScanInt();
 					sprintf(mapname, "MAP%02d", os.getTokenInt());
