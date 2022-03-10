@@ -560,6 +560,22 @@ int S_CalculateSoundPriority(const fixed_t* pt, int channel, int attenuation)
 	return priority;
 }
 
+static int ResolveSound(int soundid)
+{
+	const sfxinfo_t& sfx = S_sfx[soundid];
+
+	if (sfx.israndom)
+	{
+		while (S_sfx[soundid].israndom)
+		{
+			std::vector<int>& list = S_rnd[soundid];
+			soundid = list[P_Random() % static_cast<int>(list.size())];
+		}
+		return soundid;
+	}
+
+	return sfx.link;
+}
 
 //
 // S_StartSound
@@ -587,8 +603,8 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 
 	while (sfxinfo->link != sfxinfo_t::NO_LINK)
 	{
-		sfx_id = sfxinfo->link;
-		sfxinfo = &S_sfx[sfxinfo->link];
+		sfx_id = ResolveSound(sfxinfo->link);
+		sfxinfo = &S_sfx[sfx_id];
 	}
 
 	if (!sfxinfo->data)
@@ -596,8 +612,8 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 		I_LoadSound(sfxinfo);
 		while (sfxinfo->link != sfxinfo_t::NO_LINK)
 		{
-			sfx_id = sfxinfo->link;
-			sfxinfo = &S_sfx[sfxinfo->link];
+			sfx_id = ResolveSound(sfxinfo->link);
+			sfxinfo = &S_sfx[sfx_id];
 		}
 	}
 
@@ -1248,7 +1264,7 @@ int S_AddSound(const char *logicalname, const char *lumpname)
 void S_AddRandomSound(int owner, std::vector<int>& list)
 {
 	S_rnd[owner] = list;
-	S_sfx[owner - 1].israndom = true;
+	S_sfx[owner].israndom = true;
 }
 
 // S_ParseSndInfo
@@ -1486,7 +1502,7 @@ void A_Ambient(AActor *actor)
 		}
 		else
 		{
-			actor->Destroy ();
+			actor->Destroy();
 		}
 	}
 	else

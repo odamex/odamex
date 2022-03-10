@@ -277,12 +277,13 @@ int S_AddSoundLump(const char *logicalname, int lump)
 	new_sfx.data = NULL;
 	new_sfx.link = sfxinfo_t::NO_LINK;
 	new_sfx.lumpnum = lump;
-	return S_sfx.size();
+	return S_sfx.size() - 1;
 }
 
 void S_ClearSoundLumps()
 {
 	S_sfx.clear();
+	S_rnd.clear();
 }
 
 int FindSoundNoHash(const char* logicalname)
@@ -317,11 +318,22 @@ int S_AddSound(const char *logicalname, const char *lumpname)
 
 		sfx.lumpnum = lump;
 		sfx.link = sfxinfo_t::NO_LINK;
+		if (sfx.israndom)
+		{
+			S_rnd.erase(sfxid);
+			sfx.israndom = false;
+		}
 	}
 	else
 		sfxid = S_AddSoundLump(logicalname, lump);
 
 	return sfxid;
+}
+
+void S_AddRandomSound(int owner, std::vector<int>& list)
+{
+	S_rnd[owner] = list;
+	S_sfx[owner].israndom = true;
 }
 
 // S_ParseSndInfo
@@ -454,13 +466,40 @@ void S_ParseSndInfo()
 					os.mustScan();
 					const int sfxfrom = S_AddSound(os.getToken().c_str(), NULL);
 					os.mustScan();
-					S_sfx[sfxfrom - 1].link = FindSoundTentative(os.getToken().c_str());
+					S_sfx[sfxfrom].link = FindSoundTentative(os.getToken().c_str());
 				}
 				else if (os.compareTokenNoCase("random"))
 				{
+					std::vector<int> list;
+
 					os.mustScan();
+					const int owner = S_AddSound(os.getToken().c_str(), NULL);
 
+					os.mustScan();
+					os.assertTokenIs("{");
+					while (os.scan() && !os.compareToken("}"))
+					{
+						const int sfxto = FindSoundTentative(os.getToken().c_str());
 
+						if (owner == sfxto)
+						{
+							os.warning("Definition of random sound '%s' refers to itself "
+							           "recursively.\n",
+							           os.getToken().c_str());
+							continue;
+						}
+
+						list.push_back(sfxto);
+					}
+					if (list.size() == 1)
+					{
+						// only one sound; treat as alias
+						S_sfx[owner].link = list[0];
+					}
+					else if (list.size() > 1)
+					{
+						S_AddRandomSound(owner, list);
+					}
 				}
 				else
 				{
