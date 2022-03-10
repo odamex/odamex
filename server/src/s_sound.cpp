@@ -210,9 +210,7 @@ void S_StopMusic()
 //
 // =============================== [RH]
 
-sfxinfo_t *S_sfx;	// [RH] This is no longer defined in sounds.c
-static int maxsfx;	// [RH] Current size of S_sfx array.
-int numsfx;			// [RH] Current number of sfx defined.
+std::vector<sfxinfo_t> S_sfx; // [RH] This is no longer defined in sounds.c
 
 static struct AmbientSound {
 	unsigned	type;		// type of ambient sound
@@ -231,17 +229,14 @@ static struct AmbientSound {
 
 void S_HashSounds()
 {
-	int i;
-	unsigned j;
-
 	// Mark all buckets as empty
-	for (i = 0; i < numsfx; i++)
+	for (unsigned i = 0; i < S_sfx.size(); i++)
 		S_sfx[i].index = ~0;
 
 	// Now set up the chains
-	for (i = 0; i < numsfx; i++) 
+	for (unsigned i = 0; i < S_sfx.size(); i++)
 	{
-		j = MakeKey (S_sfx[i].name) % (unsigned)numsfx;
+		const unsigned j = MakeKey(S_sfx[i].name) % static_cast<unsigned>(S_sfx.size() - 1);
 		S_sfx[i].next = S_sfx[j].index;
 		S_sfx[j].index = i;
 	}
@@ -249,12 +244,12 @@ void S_HashSounds()
 
 int S_FindSound(const char *logicalname)
 {
-	if(!numsfx)
+	if (S_sfx.empty())
 		return -1;
 
-	int i = S_sfx[MakeKey (logicalname) % (unsigned)numsfx].index;
+	int i = S_sfx[MakeKey(logicalname) % static_cast<unsigned>(S_sfx.size() - 1)].index;
 
-	while ((i != -1) && strnicmp (S_sfx[i].name, logicalname, MAX_SNDNAME))
+	while ((i != -1) && strnicmp(S_sfx[i].name, logicalname, MAX_SNDNAME))
 		i = S_sfx[i].next;
 
 	return i;
@@ -264,51 +259,44 @@ int S_FindSoundByLump(int lump)
 {
 	if (lump != -1) 
 	{
-		int i;
-
-		for (i = 0; i < numsfx; i++)
+		for (unsigned i = 0; i < S_sfx.size(); i++)
 			if (S_sfx[i].lumpnum == lump)
 				return i;
 	}
 	return -1;
 }
 
-int S_AddSoundLump(char *logicalname, int lump)
+int S_AddSoundLump(const char *logicalname, int lump)
 {
-	if (numsfx == maxsfx) {
-		maxsfx = maxsfx ? maxsfx*2 : 128;
-		S_sfx = (sfxinfo_struct *)Realloc (S_sfx, maxsfx * sizeof(*S_sfx));
-	}
+	S_sfx.push_back(sfxinfo_t());
+	sfxinfo_t& new_sfx = S_sfx[S_sfx.size() - 1];
 
 	// logicalname MUST be < MAX_SNDNAME chars long
-	strcpy (S_sfx[numsfx].name, logicalname);
-	S_sfx[numsfx].data = NULL;
-	S_sfx[numsfx].link = NULL;
-	S_sfx[numsfx].lumpnum = lump;
-	return numsfx++;
+	strcpy(new_sfx.name, logicalname);
+	new_sfx.data = NULL;
+	new_sfx.link = NULL;
+	new_sfx.lumpnum = lump;
+	return S_sfx.size();
 }
 
 void S_ClearSoundLumps()
 {
-	M_Free(S_sfx);
-
-	numsfx = 0;
-	maxsfx = 0;
+	S_sfx.clear();
 }
 
-int S_AddSound(char *logicalname, const char *lumpname)
+int S_AddSound(const char *logicalname, const char *lumpname)
 {
 	int sfxid;
 
 	// If the sound has already been defined, change the old definition.
-	for (sfxid = 0; sfxid < numsfx; sfxid++)
-		if (0 == stricmp (logicalname, S_sfx[sfxid].name))
+	for (sfxid = 0; sfxid < S_sfx.size(); sfxid++)
+		if (iequals(logicalname, S_sfx[sfxid].name))
 			break;
 
 	const int lump = W_CheckNumForName (lumpname);
 
 	// Otherwise, prepare a new one.
-	if (sfxid == numsfx)
+	if (sfxid == S_sfx.size())
 		sfxid = S_AddSoundLump (logicalname, lump);
 	else
 		S_sfx[sfxid].lumpnum = lump;
@@ -441,10 +429,12 @@ void S_ParseSndInfo()
 						info.music = os.getToken();
 					}
 				}
-				/*else if (os.compareTokenNoCase("random"))
+				else if (os.compareTokenNoCase("random"))
 				{
+					os.mustScan();
 
-				}*/
+
+				}
 				else
 				{
 					os.warning("Unknown SNDINFO command %s\n", os.getToken().c_str());

@@ -134,7 +134,7 @@ EXTERN_CVAR (co_globalsound)
 EXTERN_CVAR (co_zdoomsound)
 EXTERN_CVAR (snd_musicsystem)
 
-size_t			numChannels;
+size_t numChannels;
 
 //
 // [RH] Print sound debug info. Called from D_Display()
@@ -142,11 +142,8 @@ size_t			numChannels;
 void S_NoiseDebug()
 {
 	fixed_t ox, oy;
-	unsigned int i;
-	int y;
-	int color;
 
-	y = 32 * CleanYfac;
+	int y = 32 * CleanYfac;
 	if (gametic & 16)
 		screen->DrawText (CR_TAN, 0, y, "*** SOUND DEBUG INFO ***");
 	y += 8;
@@ -160,7 +157,7 @@ void S_NoiseDebug()
 	screen->DrawText (CR_GREY, 280, y, "chan");
 	y += 8;
 
-	for (i = 0;((i < numChannels) && (y < I_GetVideoHeight() - 16)); i++, y += 8)
+	for (unsigned int i = 0; ((i < numChannels) && (y < I_GetVideoHeight() - 16)); i++, y += 8)
 	{
 		if (Channel[i].sfxinfo)
 		{
@@ -182,7 +179,7 @@ void S_NoiseDebug()
 				ox = Channel[i].x;
 				oy = Channel[i].y;
 			}
-			color = Channel[i].loop ? CR_BROWN : CR_GREY;
+			const int color = Channel[i].loop ? CR_BROWN : CR_GREY;
 			strcpy (temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name);
 			temp[8] = 0;
 			screen->DrawText (color, 0, y, temp);
@@ -251,10 +248,10 @@ void S_Init(float sfxVolume, float musicVolume)
 
 	// [RH] Read in sound sequences
 	NumSequences = 0;
-	S_ParseSndSeq ();
+	S_ParseSndSeq();
 
-	S_SetSfxVolume (sfxVolume);
-	S_SetMusicVolume (musicVolume);
+	S_SetSfxVolume(sfxVolume);
+	S_SetMusicVolume(musicVolume);
 
 	// Allocating the internal channels for mixing
 	// (the maximum numer of sounds rendered
@@ -264,7 +261,7 @@ void S_Init(float sfxVolume, float musicVolume)
 	for (size_t i = 0; i < numChannels; i++)
 		Channel[i].clear();
 
-	I_SetChannels (numChannels);
+	I_SetChannels(numChannels);
 
 	// no sounds are playing, and they are not mus_paused
 	mus_paused = 0;
@@ -286,7 +283,7 @@ void S_Stop()
 {
 	// kill all playing sounds at start of level
 	//	(trust me - a good idea)
-	for (size_t i = 0; i < numChannels; i++)
+	for (unsigned i = 0; i < numChannels; i++)
 		S_StopChannel(i);
 
 	S_StopMusic();
@@ -301,7 +298,7 @@ void S_Stop()
 void S_Start()
 {
 	// Kill all sound channels - but don't stop music.
-	for (size_t i = 0; i < numChannels; i++)
+	for (unsigned i = 0; i < numChannels; i++)
 		S_StopChannel(i);
 
 	// start new music for the level
@@ -361,7 +358,7 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 	tempchan.volume = volume;
 	tempchan.start_time = gametic;
 
-	int sound_id = S_FindSound(sfxinfo->name);
+	const int sound_id = S_FindSound(sfxinfo->name);
 
 	// Limit the number of identical sounds playing at once
 	// tries to keep the plasma rifle from hogging all the channels
@@ -402,7 +399,7 @@ static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
 {
 	static const fixed_t MAX_SND_DIST = 2025 * FRACUNIT;
 	static const fixed_t MIN_SND_DIST = 1 * FRACUNIT;
-	int approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
+	const int approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
 
 	if (approx_dist > MAX_SND_DIST)
 	{
@@ -416,7 +413,7 @@ static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
 	}
 	else
 	{
-		float attenuation = float(SoundCurve[approx_dist >> FRACBITS]) / 128.0f;
+		const float attenuation = static_cast<float>(SoundCurve[approx_dist >> FRACBITS]) / 128.0f;
 		
 		*vol = snd_sfxvolume * attenuation;
 
@@ -573,8 +570,6 @@ int S_CalculateSoundPriority(const fixed_t* pt, int channel, int attenuation)
 static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	                     int sfx_id, float volume, int attenuation, bool looping)
 {
-	int		sep;
-
 	if (volume <= 0.0f)
 		return;
 
@@ -582,7 +577,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 		return;
 
   	// check for bogus sound #
-	if (sfx_id < 1 || sfx_id > numsfx)
+	if (sfx_id < 1 || sfx_id > S_sfx.size() - 1)
 	{
 		DPrintf("Bad sfx #: %d\n", sfx_id);
 		return;
@@ -591,7 +586,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	sfxinfo_t* sfxinfo = &S_sfx[sfx_id];
 
   	// check for bogus sound lump
-	if (sfxinfo->lumpnum < 0 || sfxinfo->lumpnum > (int)numlumps)
+	if (sfxinfo->lumpnum < 0 || sfxinfo->lumpnum > static_cast<int>(numlumps))
 	{
 		DPrintf("Bad sfx lump #: %d\n", sfxinfo->lumpnum);
 		return;
@@ -620,6 +615,8 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	if (sfxinfo->lumpnum == sfx_empty)
 		return;
 
+	int sep;
+
 	if (listenplayer().camera && attenuation != ATTN_NONE)
 	{
   		// Check to see if it is audible, and if not, modify the params
@@ -636,7 +633,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 			volume = snd_sfxvolume;
 	}
 
-	int priority = S_CalculateSoundPriority(pt, channel, attenuation);
+	const int priority = S_CalculateSoundPriority(pt, channel, attenuation);
 
 	// joek - hack for silent bfg - stop player's weapon sounds if grunting
 	if (sfx_id == sfx_noway || sfx_id == sfx_oof)
@@ -656,10 +653,10 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 
 	// How many instances of the same sfx can be playing concurrently
 	// Allow 3 of all sounds except announcer sfx
-	unsigned int max_instances = (channel == CHAN_ANNOUNCER) ? 1 : 3;
+	const unsigned int max_instances = (channel == CHAN_ANNOUNCER) ? 1 : 3;
 
 	// try to find a channel
-	int cnum = S_GetChannel(sfxinfo, volume, priority, max_instances);
+	const int cnum = S_GetChannel(sfxinfo, volume, priority, max_instances);
 
 	// no channel found
 	if (cnum < 0)
@@ -668,7 +665,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	// make sure the channel isn't playing anything
 	S_StopChannel(cnum);
 
-	int handle = I_StartSound(sfx_id, volume, sep, NORM_PITCH, looping);
+	const int handle = I_StartSound(sfx_id, volume, sep, NORM_PITCH, looping);
 
 	// I_StartSound can not find an empty channel
 	if (handle < 0)
@@ -733,8 +730,6 @@ void S_LoopedSoundID(fixed_t *pt, int channel, int sound_id, float volume, int a
 static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, int channel,
                               const char *name, float volume, int attenuation, bool looping)
 {
-	int sfx_id = -1;
-
 	if (!consoleplayer().mo && channel != CHAN_INTERFACE)
 		return;
 
@@ -744,6 +739,8 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 	{
 		return;
 	}
+
+	int sfx_id = -1;
 
 	if (*name == '*')
 	{
@@ -763,17 +760,17 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 			if (sfx_id == -1)
 			{
 				sprintf(nametemp, templat, genders[player->userinfo.gender], name + 1);
-				sfx_id = S_FindSound (nametemp);
+				sfx_id = S_FindSound(nametemp);
 			}
 		}
 		if (sfx_id == -1)
 		{
 			sprintf(nametemp, templat, "male", name + 1);
-			sfx_id = S_FindSound (nametemp);
+			sfx_id = S_FindSound(nametemp);
 		}
 	}
 	else
-		sfx_id = S_FindSound (name);
+		sfx_id = S_FindSound(name);
 
 	if (sfx_id == -1)
 		DPrintf ("Unknown sound %s\n", name);
@@ -790,7 +787,7 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 void S_PlatSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
     if (!predicting)
-        S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, attenuation, false);
+        S_StartNamedSound(NULL, pt, 0, 0, channel, name, volume, attenuation, false);
 }
 
 void S_Sound(int channel, const char *name, float volume, int attenuation)
@@ -798,7 +795,7 @@ void S_Sound(int channel, const char *name, float volume, int attenuation)
 	// [SL] 2011-05-27 - This particular S_Sound() function is only used for sounds
 	// that should be full volume regardless of location.  Ignore the specified
 	// attenuation and use ATTN_NONE instead.
-	S_StartNamedSound ((AActor *)NULL, NULL, 0, 0, channel, name, volume, ATTN_NONE, false);
+	S_StartNamedSound((AActor *)NULL, NULL, 0, 0, channel, name, volume, ATTN_NONE, false);
 }
 
 void S_Sound(AActor *ent, int channel, const char *name, float volume, int attenuation)
@@ -816,17 +813,17 @@ void S_Sound(fixed_t *pt, int channel, const char *name, float volume, int atten
 
 void S_LoopedSound(AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound (ent, NULL, 0, 0, channel, name, volume, attenuation, true);
+	S_StartNamedSound(ent, NULL, 0, 0, channel, name, volume, attenuation, true);
 }
 
 void S_LoopedSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound (NULL, pt, 0, 0, channel, name, volume, attenuation, true);
+	S_StartNamedSound(NULL, pt, 0, 0, channel, name, volume, attenuation, true);
 }
 
 void S_Sound(fixed_t x, fixed_t y, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound ((AActor *)(~0), NULL, x, y, channel, name, volume, attenuation, false);
+	S_StartNamedSound((AActor *)(~0), NULL, x, y, channel, name, volume, attenuation, false);
 }
 
 
@@ -876,12 +873,12 @@ void S_StopSound(fixed_t *pt, int channel)
 
 void S_StopSound(AActor *ent, int channel)
 {
-	S_StopSound (&ent->x, channel);
+	S_StopSound(&ent->x, channel);
 }
 
 void S_StopAllChannels()
 {
-	for (size_t i = 0; i < numChannels; i++)
+	for (unsigned i = 0; i < numChannels; i++)
 		S_StopChannel(i);
 }
 
@@ -893,16 +890,16 @@ void S_RelinkSound(AActor *from, AActor *to)
 	if (::Channel == NULL)
 		return;
 
-	unsigned int i;
-
 	if (!from)
 		return;
 
-	fixed_t *frompt = &from->x;
+	const fixed_t *frompt = &from->x;
 	fixed_t *topt = to ? &to->x : NULL;
 
-	for (i = 0; i < numChannels; i++) {
-		if (Channel[i].pt == frompt) {
+	for (unsigned int i = 0; i < numChannels; i++)
+	{
+		if (Channel[i].pt == frompt)
+		{
 			Channel[i].pt = topt;
 			Channel[i].x = frompt[0];
 			Channel[i].y = frompt[1];
@@ -912,9 +909,7 @@ void S_RelinkSound(AActor *from, AActor *to)
 
 bool S_GetSoundPlayingInfo(fixed_t *pt, int sound_id)
 {
-	unsigned int i;
-
-	for (i = 0; i < numChannels; i++)
+	for (unsigned int i = 0; i < numChannels; i++)
 	{
 		if (Channel[i].pt == pt && Channel[i].sound_id == sound_id)
 			return true;
@@ -960,8 +955,8 @@ void S_UpdateSounds(void* listener_p)
 	AActor* listener = (AActor*)listener_p;
 	for (int cnum = 0; cnum < (int)numChannels; cnum++)
 	{
-		channel_t* c = &Channel[cnum];
-		sfxinfo_t* sfx = c->sfxinfo;
+		const channel_t* c = &Channel[cnum];
+		const sfxinfo_t* sfx = c->sfxinfo;
 
 		if (c->sfxinfo)
 		{
@@ -1063,7 +1058,6 @@ void S_StartMusic(const char *m_id)
 // It's up to the caller to figure out what that name is.
 void S_ChangeMusic(std::string musicname, int looping)
 {
-	
 	// [SL] Avoid caching music lumps if we're not playing music
 	if (snd_musicsystem == MS_NONE)
 		return;
@@ -1074,18 +1068,17 @@ void S_ChangeMusic(std::string musicname, int looping)
 	if (!musicname.length() || musicname[0] == 0)
 	{
 		// Don't choke if the map doesn't have a song attached
-		S_StopMusic ();
+		S_StopMusic();
 		return;
 	}
 
 	byte* data = NULL;
 	size_t length = 0;
-	int lumpnum;
 	FILE *f;
-
 
 	if (!(f = fopen (musicname.c_str(), "rb")))
 	{
+		int lumpnum;
 		if ((lumpnum = W_CheckNumForName (musicname.c_str())) == -1)
 		{
 			Printf (PRINT_HIGH, "Music lump \"%s\" not found\n", musicname.c_str());
@@ -1100,7 +1093,7 @@ void S_ChangeMusic(std::string musicname, int looping)
 	{
 		length = M_FileLength(f);
 		data = static_cast<byte*>(Malloc(length));
-		size_t result = fread(data, length, 1, f);
+		const size_t result = fread(data, length, 1, f);
 		fclose(f);
 
 		if (result == 1)
@@ -1126,9 +1119,7 @@ void S_StopMusic()
 //
 // =============================== [RH]
 
-sfxinfo_t *S_sfx;	// [RH] This is no longer defined in sounds.c
-static int maxsfx;	// [RH] Current size of S_sfx array.
-int numsfx;			// [RH] Current number of sfx defined.
+std::vector<sfxinfo_t> S_sfx;	// [RH] This is no longer defined in sounds.c
 
 static struct AmbientSound {
 	unsigned	type;		// type of ambient sound
@@ -1147,16 +1138,14 @@ static struct AmbientSound {
 
 void S_HashSounds()
 {
-	int i;
-	unsigned j;
-
 	// Mark all buckets as empty
-	for (i = 0; i < numsfx; i++)
+	for (unsigned i = 0; i < S_sfx.size(); i++)
 		S_sfx[i].index = ~0;
 
 	// Now set up the chains
-	for (i = 0; i < numsfx; i++) {
-		j = MakeKey (S_sfx[i].name) % (unsigned)numsfx;
+	for (unsigned i = 0; i < S_sfx.size(); i++)
+	{
+		const unsigned j = MakeKey(S_sfx[i].name) % static_cast<unsigned>(S_sfx.size() - 1);
 		S_sfx[i].next = S_sfx[j].index;
 		S_sfx[j].index = i;
 	}
@@ -1164,12 +1153,12 @@ void S_HashSounds()
 
 int S_FindSound(const char *logicalname)
 {
-	if(!numsfx)
+	if (S_sfx.empty())
 		return -1;
 
-	int i = S_sfx[MakeKey (logicalname) % (unsigned)numsfx].index;
+	int i = S_sfx[MakeKey(logicalname) % static_cast<unsigned>(S_sfx.size() - 1)].index;
 
-	while ((i != -1) && strnicmp (S_sfx[i].name, logicalname, MAX_SNDNAME))
+	while ((i != -1) && strnicmp(S_sfx[i].name, logicalname, MAX_SNDNAME))
 		i = S_sfx[i].next;
 
 	return i;
@@ -1177,53 +1166,47 @@ int S_FindSound(const char *logicalname)
 
 int S_FindSoundByLump(int lump)
 {
-	if (lump != -1) {
-		int i;
-
-		for (i = 0; i < numsfx; i++)
+	if (lump != -1)
+	{
+		for (unsigned i = 0; i < S_sfx.size(); i++)
 			if (S_sfx[i].lumpnum == lump)
 				return i;
 	}
 	return -1;
 }
 
-int S_AddSoundLump(char *logicalname, int lump)
+int S_AddSoundLump(const char *logicalname, int lump)
 {
-	if (numsfx == maxsfx) {
-		maxsfx = maxsfx ? maxsfx*2 : 128;
-		S_sfx = (sfxinfo_struct *)Realloc (S_sfx, maxsfx * sizeof(*S_sfx));
-	}
+	S_sfx.push_back(sfxinfo_t());
+	sfxinfo_t& new_sfx = S_sfx[S_sfx.size() - 1];
 
 	// logicalname MUST be < MAX_SNDNAME chars long
-	strcpy (S_sfx[numsfx].name, logicalname);
-	S_sfx[numsfx].data = NULL;
-	S_sfx[numsfx].link = NULL;
-	S_sfx[numsfx].lumpnum = lump;
-	return numsfx++;
+	strcpy(new_sfx.name, logicalname);
+	new_sfx.data = NULL;
+	new_sfx.link = NULL;
+	new_sfx.lumpnum = lump;
+	return S_sfx.size();
 }
 
 void S_ClearSoundLumps()
 {
-	M_Free(S_sfx);
-
-	numsfx = 0;
-	maxsfx = 0;
+	S_sfx.clear();
 }
 
-int S_AddSound(char *logicalname, const char *lumpname)
+int S_AddSound(const char *logicalname, const char *lumpname)
 {
 	int sfxid;
 
 	// If the sound has already been defined, change the old definition.
-	for (sfxid = 0; sfxid < numsfx; sfxid++)
-		if (0 == stricmp(logicalname, S_sfx[sfxid].name))
+	for (sfxid = 0; sfxid < S_sfx.size(); sfxid++)
+		if (iequals(logicalname, S_sfx[sfxid].name))
 			break;
 
-	const int lump = W_CheckNumForName (lumpname);
+	const int lump = W_CheckNumForName(lumpname);
 
 	// Otherwise, prepare a new one.
-	if (sfxid == numsfx)
-		sfxid = S_AddSoundLump (logicalname, lump);
+	if (sfxid == S_sfx.size())
+		sfxid = S_AddSoundLump(logicalname, lump);
 	else
 		S_sfx[sfxid].lumpnum = lump;
 
@@ -1351,10 +1334,26 @@ void S_ParseSndInfo()
 						info.music = os.getToken();
 					}
 				}
-				/*else if (os.compareTokenNoCase("random"))
+				else if (os.compareTokenNoCase("alias"))
 				{
-					
-				}*/
+					os.mustScan();
+					std::string alias = os.getToken();
+					S_AddSound(os.getToken().c_str(), NULL);
+					os.mustScan();
+					std::string orig = os.getToken();
+				}
+				else if (os.compareTokenNoCase("random"))
+				{
+					os.mustScan();
+					// do thing
+
+					os.mustScan();
+					os.assertTokenIs("{");
+					while (os.scan() && !os.compareToken("}"))
+					{
+						
+					}
+				}
 				else
 				{
 					os.warning("Unknown SNDINFO command %s\n", os.getToken().c_str());
@@ -1458,11 +1457,11 @@ void S_ActivateAmbient(AActor *origin, int ambient)
 
 	if (!(amb->type & 3) && !amb->periodmin)
 	{
-		int sndnum = S_FindSound(amb->sound);
+		const int sndnum = S_FindSound(amb->sound);
 		if (sndnum == 0)
 			return;
 
-		sfxinfo_t *sfx = S_sfx + sndnum;
+		sfxinfo_t *sfx = &S_sfx[sndnum];
 
 		// Make sure the sound has been loaded so we know how long it is
 		if (!sfx->data)
@@ -1479,10 +1478,9 @@ void S_ActivateAmbient(AActor *origin, int ambient)
 BEGIN_COMMAND (snd_soundlist)
 {
 	char lumpname[9];
-	int i;
 
 	lumpname[8] = 0;
-	for (i = 0; i < numsfx; i++)
+	for (unsigned i = 0; i < S_sfx.size(); i++)
 		if (S_sfx[i].lumpnum != -1)
 		{
 			strncpy (lumpname, lumpinfo[S_sfx[i].lumpnum].name, 8);
@@ -1495,9 +1493,7 @@ END_COMMAND (snd_soundlist)
 
 BEGIN_COMMAND (snd_soundlinks)
 {
-	int i;
-
-	for (i = 0; i < numsfx; i++)
+	for (unsigned i = 0; i < S_sfx.size(); i++)
 		if (S_sfx[i].link)
 			Printf (PRINT_HIGH, "%s -> %s\n", S_sfx[i].name, S_sfx[i].link->name);
 }
@@ -1512,8 +1508,6 @@ END_COMMAND (snd_restart)
 
 BEGIN_COMMAND (changemus)
 {
-	int loopmus;
-
 	if (argc == 1)
 	{
 	    Printf(PRINT_HIGH, "Usage: changemus lumpname [loop]");
@@ -1529,7 +1523,7 @@ BEGIN_COMMAND (changemus)
 
 	if (argc > 2)
 	{
-		loopmus = (atoi(argv[2]) != 0);
+		const int loopmus = (atoi(argv[2]) != 0);
 		S_ChangeMusic(musicname, loopmus);
 	}
 	else if (argc == 2)
