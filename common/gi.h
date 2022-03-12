@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "am_map.h"
 #include "olumpname.h"
 
 #define GI_MAPxx				0x00000001
@@ -79,6 +80,9 @@ typedef struct
 	int maxSwitch;
 	char borderFlat[8];
 	gameborder_t *border;
+
+	// automap features
+	am_colors_t automapColors;
 
 	char titleString[64];
 } gameinfo_t;

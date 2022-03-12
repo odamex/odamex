@@ -31,6 +31,34 @@
 #define AM_MSGENTERED (AM_MSGHEADER | ('e'<<8))
 #define AM_MSGEXITED (AM_MSGHEADER | ('x'<<8))
 
+// Group palette index and RGB value together:
+typedef struct am_color_s
+{
+	palindex_t index;
+	argb_t rgb;
+} am_color_t;
+
+typedef struct am_colors_s
+{
+	am_color_t Background;
+	am_color_t YourColor;
+	am_color_t WallColor;
+	am_color_t TSWallColor;
+	am_color_t FDWallColor;
+	am_color_t CDWallColor;
+	am_color_t ThingColor;
+	am_color_t SecretWallColor;
+	am_color_t GridColor;
+	am_color_t XHairColor;
+	am_color_t NotSeenColor;
+	am_color_t LockedColor;
+	am_color_t AlmostBackground;
+	am_color_t TeleportColor;
+	am_color_t ExitColor;
+} am_colors_t;
+
+extern am_colors_t AutomapDefaultColors;
+
 extern int am_cheating;
 
 // Called by main loop.
