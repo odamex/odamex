@@ -563,7 +563,7 @@ am_color_t AM_BestColor(const argb_t* palette_colors, const int r, const int g,
 void AM_SetBaseColorDoom()
 {
 	// Look up the colors in the current palette:
-	const argb_t* palette_colors = V_GetDefaultPalette()->colors;
+	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
 
 	gameinfo.defaultAutomapColors.Background = AM_GetColorFromString(palette_colors, "00 00 00");
 	gameinfo.defaultAutomapColors.YourColor = AM_GetColorFromString(palette_colors, "ff ff ff");
@@ -583,7 +583,7 @@ void AM_SetBaseColorDoom()
 void AM_SetBaseColorRaven()
 {
 	// Look up the colors in the current palette:
-	const argb_t* palette_colors = V_GetDefaultPalette()->colors;
+	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
 
 	gameinfo.defaultAutomapColors.Background = AM_GetColorFromString(palette_colors, "00 00 00");
 	gameinfo.defaultAutomapColors.YourColor = AM_GetColorFromString(palette_colors, "ff ff ff");
@@ -603,7 +603,7 @@ void AM_SetBaseColorRaven()
 void AM_SetBaseColorStrife()
 {
 	// Look up the colors in the current palette:
-	const argb_t* palette_colors = V_GetDefaultPalette()->colors;
+	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
 
 	gameinfo.defaultAutomapColors.Background = AM_GetColorFromString(palette_colors, "00 00 00");
 	gameinfo.defaultAutomapColors.YourColor = AM_GetColorFromString(palette_colors, "ef ef 00");
