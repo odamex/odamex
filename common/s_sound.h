@@ -43,7 +43,7 @@ struct sfxinfo_struct
 	unsigned looping;           // Looping sample handle
 	void* data;
 
-	int link = NO_LINK;
+	int link;
 	enum { NO_LINK = 0xffffffff };
 
 	int lumpnum;              // lump number of sfx
