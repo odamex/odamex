@@ -82,7 +82,8 @@ typedef struct
 	gameborder_t *border;
 
 	// automap features
-	am_colors_t automapColors;
+	am_colors_t defaultAutomapColors;
+	am_colors_t currentAutomapColors;
 
 	char titleString[64];
 } gameinfo_t;

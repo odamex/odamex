@@ -560,6 +560,66 @@ am_color_t AM_BestColor(const argb_t* palette_colors, const int r, const int g,
 	return c;
 }
 
+void AM_SetBaseColorDoom()
+{
+	// Look up the colors in the current palette:
+	const argb_t* palette_colors = V_GetDefaultPalette()->colors;
+
+	gameinfo.defaultAutomapColors.Background = AM_GetColorFromString(palette_colors, "00 00 00");
+	gameinfo.defaultAutomapColors.YourColor = AM_GetColorFromString(palette_colors, "ff ff ff");
+	gameinfo.defaultAutomapColors.AlmostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
+	gameinfo.defaultAutomapColors.SecretWallColor = gameinfo.defaultAutomapColors.WallColor =
+	    AM_GetColorFromString(palette_colors, "fc 00 00");
+	gameinfo.defaultAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, "80 80 80");
+	gameinfo.defaultAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, "bc 78 48");
+	gameinfo.defaultAutomapColors.LockedColor = AM_GetColorFromString(palette_colors, "fc fc 00");
+	gameinfo.defaultAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, "fc fc 00");
+	gameinfo.defaultAutomapColors.ThingColor = AM_GetColorFromString(palette_colors, "74 fc 6c");
+	gameinfo.defaultAutomapColors.GridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
+	gameinfo.defaultAutomapColors.XHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
+	gameinfo.defaultAutomapColors.NotSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
+}
+
+void AM_SetBaseColorRaven()
+{
+	// Look up the colors in the current palette:
+	const argb_t* palette_colors = V_GetDefaultPalette()->colors;
+
+	gameinfo.defaultAutomapColors.Background = AM_GetColorFromString(palette_colors, "00 00 00");
+	gameinfo.defaultAutomapColors.YourColor = AM_GetColorFromString(palette_colors, "ff ff ff");
+	gameinfo.defaultAutomapColors.AlmostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
+	gameinfo.defaultAutomapColors.SecretWallColor = gameinfo.defaultAutomapColors.WallColor =
+	    AM_GetColorFromString(palette_colors, "4c 33 11");
+	gameinfo.defaultAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, "59 5e 57");
+	gameinfo.defaultAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, "d0 b0 85");
+	gameinfo.defaultAutomapColors.LockedColor = AM_GetColorFromString(palette_colors, "fc fc 00");
+	gameinfo.defaultAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, "68 3c 20");
+	gameinfo.defaultAutomapColors.ThingColor = AM_GetColorFromString(palette_colors, "38 38 38");
+	gameinfo.defaultAutomapColors.GridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
+	gameinfo.defaultAutomapColors.XHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
+	gameinfo.defaultAutomapColors.NotSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
+}
+
+void AM_SetBaseColorStrife()
+{
+	// Look up the colors in the current palette:
+	const argb_t* palette_colors = V_GetDefaultPalette()->colors;
+
+	gameinfo.defaultAutomapColors.Background = AM_GetColorFromString(palette_colors, "00 00 00");
+	gameinfo.defaultAutomapColors.YourColor = AM_GetColorFromString(palette_colors, "ef ef 00");
+	gameinfo.defaultAutomapColors.AlmostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
+	gameinfo.defaultAutomapColors.SecretWallColor = gameinfo.defaultAutomapColors.WallColor =
+		AM_GetColorFromString(palette_colors, "c7 c3 c3");
+	gameinfo.defaultAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, "77 73 73");
+	gameinfo.defaultAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, "37 3B 5B");
+	gameinfo.defaultAutomapColors.LockedColor = AM_GetColorFromString(palette_colors, "77 73 73");
+	gameinfo.defaultAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, "77 73 73");
+	gameinfo.defaultAutomapColors.ThingColor = AM_GetColorFromString(palette_colors, "fc 00 00");
+	gameinfo.defaultAutomapColors.GridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
+	gameinfo.defaultAutomapColors.XHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
+	gameinfo.defaultAutomapColors.NotSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
+}
+
 void AM_initColors(const bool overlayed)
 {
 	// Look up the colors in the current palette:
@@ -567,38 +627,38 @@ void AM_initColors(const bool overlayed)
 
 	if (overlayed && !am_ovshare)
 	{
-		gameinfo.automapColors.YourColor = AM_GetColorFromString(palette_colors, am_ovyourcolor.cstring());
-		gameinfo.automapColors.SecretWallColor = gameinfo.automapColors.WallColor =
+		gameinfo.currentAutomapColors.YourColor = AM_GetColorFromString(palette_colors, am_ovyourcolor.cstring());
+		gameinfo.currentAutomapColors.SecretWallColor = gameinfo.currentAutomapColors.WallColor =
 		    AM_GetColorFromString(palette_colors, am_ovwallcolor.cstring());
-		gameinfo.automapColors.TSWallColor = AM_GetColorFromString(palette_colors, am_ovtswallcolor.cstring());
-		gameinfo.automapColors.FDWallColor = AM_GetColorFromString(palette_colors, am_ovfdwallcolor.cstring());
-		gameinfo.automapColors.CDWallColor = AM_GetColorFromString(palette_colors, am_ovcdwallcolor.cstring());
-		gameinfo.automapColors.ThingColor = AM_GetColorFromString(palette_colors, am_ovthingcolor.cstring());
-		gameinfo.automapColors.GridColor = AM_GetColorFromString(palette_colors, am_ovgridcolor.cstring());
-		gameinfo.automapColors.XHairColor = AM_GetColorFromString(palette_colors, am_ovxhaircolor.cstring());
-		gameinfo.automapColors.NotSeenColor = AM_GetColorFromString(palette_colors, am_ovnotseencolor.cstring());
-		gameinfo.automapColors.LockedColor = AM_GetColorFromString(palette_colors, am_ovlockedcolor.cstring());
-		gameinfo.automapColors.ExitColor = AM_GetColorFromString(palette_colors, am_ovexitcolor.cstring());
-		gameinfo.automapColors.TeleportColor =
+		gameinfo.currentAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, am_ovtswallcolor.cstring());
+		gameinfo.currentAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, am_ovfdwallcolor.cstring());
+		gameinfo.currentAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, am_ovcdwallcolor.cstring());
+		gameinfo.currentAutomapColors.ThingColor = AM_GetColorFromString(palette_colors, am_ovthingcolor.cstring());
+		gameinfo.currentAutomapColors.GridColor = AM_GetColorFromString(palette_colors, am_ovgridcolor.cstring());
+		gameinfo.currentAutomapColors.XHairColor = AM_GetColorFromString(palette_colors, am_ovxhaircolor.cstring());
+		gameinfo.currentAutomapColors.NotSeenColor = AM_GetColorFromString(palette_colors, am_ovnotseencolor.cstring());
+		gameinfo.currentAutomapColors.LockedColor = AM_GetColorFromString(palette_colors, am_ovlockedcolor.cstring());
+		gameinfo.currentAutomapColors.ExitColor = AM_GetColorFromString(palette_colors, am_ovexitcolor.cstring());
+		gameinfo.currentAutomapColors.TeleportColor =
 		    AM_GetColorFromString(palette_colors, am_ovteleportcolor.cstring());
 	}
 	else if (am_usecustomcolors || (overlayed && am_ovshare))
 	{
 		/* Use the custom colors in the am_* cvars */
-		gameinfo.automapColors.Background = AM_GetColorFromString(palette_colors, am_backcolor.cstring());
-		gameinfo.automapColors.YourColor = AM_GetColorFromString(palette_colors, am_yourcolor.cstring());
-		gameinfo.automapColors.SecretWallColor = gameinfo.automapColors.WallColor =
+		gameinfo.currentAutomapColors.Background = AM_GetColorFromString(palette_colors, am_backcolor.cstring());
+		gameinfo.currentAutomapColors.YourColor = AM_GetColorFromString(palette_colors, am_yourcolor.cstring());
+		gameinfo.currentAutomapColors.SecretWallColor = gameinfo.currentAutomapColors.WallColor =
 		    AM_GetColorFromString(palette_colors, am_wallcolor.cstring());
-		gameinfo.automapColors.TSWallColor = AM_GetColorFromString(palette_colors, am_tswallcolor.cstring());
-		gameinfo.automapColors.FDWallColor = AM_GetColorFromString(palette_colors, am_fdwallcolor.cstring());
-		gameinfo.automapColors.CDWallColor = AM_GetColorFromString(palette_colors, am_cdwallcolor.cstring());
-		gameinfo.automapColors.ThingColor = AM_GetColorFromString(palette_colors, am_thingcolor.cstring());
-		gameinfo.automapColors.GridColor = AM_GetColorFromString(palette_colors, am_gridcolor.cstring());
-		gameinfo.automapColors.XHairColor = AM_GetColorFromString(palette_colors, am_xhaircolor.cstring());
-		gameinfo.automapColors.NotSeenColor = AM_GetColorFromString(palette_colors, am_notseencolor.cstring());
-		gameinfo.automapColors.LockedColor = AM_GetColorFromString(palette_colors, am_lockedcolor.cstring());
-		gameinfo.automapColors.ExitColor = AM_GetColorFromString(palette_colors, am_exitcolor.cstring());
-		gameinfo.automapColors.TeleportColor = AM_GetColorFromString(palette_colors, am_teleportcolor.cstring());
+		gameinfo.currentAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, am_tswallcolor.cstring());
+		gameinfo.currentAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, am_fdwallcolor.cstring());
+		gameinfo.currentAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, am_cdwallcolor.cstring());
+		gameinfo.currentAutomapColors.ThingColor = AM_GetColorFromString(palette_colors, am_thingcolor.cstring());
+		gameinfo.currentAutomapColors.GridColor = AM_GetColorFromString(palette_colors, am_gridcolor.cstring());
+		gameinfo.currentAutomapColors.XHairColor = AM_GetColorFromString(palette_colors, am_xhaircolor.cstring());
+		gameinfo.currentAutomapColors.NotSeenColor = AM_GetColorFromString(palette_colors, am_notseencolor.cstring());
+		gameinfo.currentAutomapColors.LockedColor = AM_GetColorFromString(palette_colors, am_lockedcolor.cstring());
+		gameinfo.currentAutomapColors.ExitColor = AM_GetColorFromString(palette_colors, am_exitcolor.cstring());
+		gameinfo.currentAutomapColors.TeleportColor = AM_GetColorFromString(palette_colors, am_teleportcolor.cstring());
 		{
 			argb_t ba = AM_GetColorFromString(palette_colors, am_backcolor.cstring()).rgb;
 
@@ -609,26 +669,13 @@ void AM_initColors(const bool overlayed)
 			if (ba.getb() < 16)
 				ba.setb(ba.getb() + 32);
 
-			gameinfo.automapColors.AlmostBackground.rgb = argb_t(ba.getr() - 16, ba.getg() - 16, ba.getb() - 16);
-			gameinfo.automapColors.AlmostBackground.index = V_BestColor(palette_colors, gameinfo.automapColors.AlmostBackground.rgb);
+			gameinfo.currentAutomapColors.AlmostBackground.rgb = argb_t(ba.getr() - 16, ba.getg() - 16, ba.getb() - 16);
+			gameinfo.currentAutomapColors.AlmostBackground.index = V_BestColor(palette_colors, gameinfo.currentAutomapColors.AlmostBackground.rgb);
 		}
 	}
 	else
 	{
-		/* Use colors corresponding to the original Doom's */
-		gameinfo.automapColors.Background = AM_GetColorFromString(palette_colors, "00 00 00");
-		gameinfo.automapColors.YourColor = AM_GetColorFromString(palette_colors, "FF FF FF");
-		gameinfo.automapColors.AlmostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
-		gameinfo.automapColors.SecretWallColor = gameinfo.automapColors.WallColor =
-		    AM_GetColorFromString(palette_colors, "fc 00 00");
-		gameinfo.automapColors.TSWallColor = AM_GetColorFromString(palette_colors, "80 80 80");
-		gameinfo.automapColors.FDWallColor = AM_GetColorFromString(palette_colors, "bc 78 48");
-		gameinfo.automapColors.LockedColor = AM_GetColorFromString(palette_colors, "fc fc 00");
-		gameinfo.automapColors.CDWallColor = AM_GetColorFromString(palette_colors, "fc fc 00");
-		gameinfo.automapColors.ThingColor = AM_GetColorFromString(palette_colors, "74 fc 6c");
-		gameinfo.automapColors.GridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
-		gameinfo.automapColors.XHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
-		gameinfo.automapColors.NotSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
+		gameinfo.currentAutomapColors = gameinfo.defaultAutomapColors;
 	}
 }
 
@@ -916,7 +963,7 @@ void AM_clearFB(am_color_t color)
 	}
 	else
 	{
-		argb_t* line = (argb_t*)fb;
+		argb_t* line = reinterpret_cast<argb_t*>(fb);
 
 		for (int y = 0; y < f_h; y++)
 		{
@@ -1084,13 +1131,10 @@ void AM_drawFlineP(fline_t* fl, byte color)
 	int x = fl->a.x;
 	int y = fl->a.y;
 
-	int d;
-
 	if (ax > ay)
 	{
-		d = ay - ax / 2;
-
-		while (1)
+		int d = ay - ax / 2;
+		while (true)
 		{
 			PUTDOTP(x, y, (byte)color);
 			if (x == fl->b.x)
@@ -1106,8 +1150,8 @@ void AM_drawFlineP(fline_t* fl, byte color)
 	}
 	else
 	{
-		d = ax - ay / 2;
-		while (1)
+		int d = ax - ay / 2;
+		while (true)
 		{
 			PUTDOTP(x, y, (byte)color);
 			if (y == fl->b.y)
@@ -1149,7 +1193,7 @@ void AM_drawFlineD(fline_t* fl, argb_t color)
 	{
 		d = ay - ax / 2;
 
-		while (1)
+		while (true)
 		{
 			PUTDOTD(x, y, color);
 			if (x == fl->b.x)
@@ -1166,7 +1210,7 @@ void AM_drawFlineD(fline_t* fl, argb_t color)
 	else
 	{
 		d = ax - ay / 2;
-		while (1)
+		while (true)
 		{
 			PUTDOTD(x, y, color);
 			if (y == fl->b.y)
@@ -1204,8 +1248,6 @@ void AM_drawMline(mline_t* ml, am_color_t color)
 //
 void AM_drawGrid(am_color_t color)
 {
-	mline_t ml;
-
 	// Figure out start of vertical gridlines
 	fixed_t start = m_x;
 	if ((start - bmaporgx) % (MAPBLOCKUNITS << FRACBITS))
@@ -1214,6 +1256,8 @@ void AM_drawGrid(am_color_t color)
 	fixed_t end = m_x + m_w;
 
 	// draw vertical gridlines
+	mline_t ml;
+
 	ml.a.y = m_y;
 	ml.b.y = m_y + m_h;
 	for (fixed_t x = start; x < end; x += (MAPBLOCKUNITS << FRACBITS))
@@ -1282,40 +1326,40 @@ void AM_drawWalls()
 			if (!lines[i].backsector && ((am_usecustomcolors || viewactive) ||
 			                             (!am_usecustomcolors && !viewactive)))
 			{
-				AM_drawMline(&l, gameinfo.automapColors.WallColor);
+				AM_drawMline(&l, gameinfo.currentAutomapColors.WallColor);
 			}
 			else
 			{
 				if ((P_IsTeleportLine(lines[i].special)) &&
 				    (am_usecustomcolors || viewactive))
 				{ // teleporters
-					AM_drawMline(&l, gameinfo.automapColors.TeleportColor);
+					AM_drawMline(&l, gameinfo.currentAutomapColors.TeleportColor);
 				}
 				else if ((P_IsExitLine(lines[i].special)) &&
 				         (am_usecustomcolors || viewactive))
 				{ // exit
-					AM_drawMline(&l, gameinfo.automapColors.ExitColor);
+					AM_drawMline(&l, gameinfo.currentAutomapColors.ExitColor);
 				}
 				else if (lines[i].flags & ML_SECRET)
 				{ // secret door
 					if (am_cheating)
-						AM_drawMline(&l, gameinfo.automapColors.SecretWallColor);
+						AM_drawMline(&l, gameinfo.currentAutomapColors.SecretWallColor);
 					else
-						AM_drawMline(&l, gameinfo.automapColors.WallColor);
+						AM_drawMline(&l, gameinfo.currentAutomapColors.WallColor);
 				}
 				else if (lines[i].backsector->floorheight !=
 				         lines[i].frontsector->floorheight)
 				{
-					AM_drawMline(&l, gameinfo.automapColors.FDWallColor); // floor level change
+					AM_drawMline(&l, gameinfo.currentAutomapColors.FDWallColor); // floor level change
 				}
 				else if (lines[i].backsector->ceilingheight !=
 				         lines[i].frontsector->ceilingheight)
 				{
-					AM_drawMline(&l, gameinfo.automapColors.CDWallColor); // ceiling level change
+					AM_drawMline(&l, gameinfo.currentAutomapColors.CDWallColor); // ceiling level change
 				}
 				else if (am_cheating)
 				{
-					AM_drawMline(&l, gameinfo.automapColors.TSWallColor);
+					AM_drawMline(&l, gameinfo.currentAutomapColors.TSWallColor);
 				}
 
 				if (map_format.getZDoom())
@@ -1324,9 +1368,9 @@ void AM_drawWalls()
 					{
 						// NES - Locked doors glow from a predefined color to either blue,
 						// yellow, or red.
-						r = gameinfo.automapColors.LockedColor.rgb.getr();
-						g = gameinfo.automapColors.LockedColor.rgb.getg();
-						b = gameinfo.automapColors.LockedColor.rgb.getb();
+						r = gameinfo.currentAutomapColors.LockedColor.rgb.getr();
+						g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
+						b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
 
 						if (am_usecustomcolors)
 						{
@@ -1372,9 +1416,9 @@ void AM_drawWalls()
 					{
 						// NES - Locked doors glow from a predefined color to either blue,
 						// yellow, or red.
-						r = gameinfo.automapColors.LockedColor.rgb.getr();
-						g = gameinfo.automapColors.LockedColor.rgb.getg();
-						b = gameinfo.automapColors.LockedColor.rgb.getb();
+						r = gameinfo.currentAutomapColors.LockedColor.rgb.getr();
+						g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
+						b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
 
 						if (am_usecustomcolors)
 						{
@@ -1419,7 +1463,7 @@ void AM_drawWalls()
 		else if (consoleplayer().powers[pw_allmap])
 		{
 			if (!(lines[i].flags & ML_DONTDRAW))
-				AM_drawMline(&l, gameinfo.automapColors.NotSeenColor);
+				AM_drawMline(&l, gameinfo.currentAutomapColors.NotSeenColor);
 		}
 	}
 }
@@ -1430,10 +1474,8 @@ void AM_drawWalls()
 //
 void AM_rotate(fixed_t* x, fixed_t* y, angle_t a)
 {
-	fixed_t tmpx;
-
-	tmpx = FixedMul(*x, finecosine[a >> ANGLETOFINESHIFT]) -
-	       FixedMul(*y, finesine[a >> ANGLETOFINESHIFT]);
+	const fixed_t tmpx = FixedMul(*x, finecosine[a >> ANGLETOFINESHIFT]) -
+	                     FixedMul(*y, finesine[a >> ANGLETOFINESHIFT]);
 
 	*y = FixedMul(*x, finesine[a >> ANGLETOFINESHIFT]) +
 	     FixedMul(*y, finecosine[a >> ANGLETOFINESHIFT]);
@@ -1455,10 +1497,9 @@ void AM_rotatePoint(fixed_t* x, fixed_t* y)
 void AM_drawLineCharacter(mline_t* lineguy, int lineguylines, fixed_t scale,
                           angle_t angle, am_color_t color, fixed_t x, fixed_t y)
 {
-	int i;
 	mline_t l;
 
-	for (i = 0; i < lineguylines; i++)
+	for (int i = 0; i < lineguylines; i++)
 	{
 		l.a.x = lineguy[i].a.x;
 		l.a.y = lineguy[i].a.y;
@@ -1509,11 +1550,11 @@ void AM_drawPlayers()
 
 		if (am_cheating)
 			AM_drawLineCharacter(cheat_player_arrow, NUMCHEATPLYRLINES, 0, angle,
-			                     gameinfo.automapColors.YourColor, 
+			                     gameinfo.currentAutomapColors.YourColor, 
 								 conplayer.camera->x, conplayer.camera->y);
 		else
 			AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 0, angle,
-			                     gameinfo.automapColors.YourColor,
+			                     gameinfo.currentAutomapColors.YourColor,
 			                     conplayer.camera->x, conplayer.camera->y);
 		return;
 	}
@@ -1536,7 +1577,7 @@ void AM_drawPlayers()
 
 		if (p->powers[pw_invisibility])
 		{
-			color = gameinfo.automapColors.AlmostBackground;
+			color = gameinfo.currentAutomapColors.AlmostBackground;
 		}
 		else if (demoplayback)
 		{
@@ -1663,7 +1704,7 @@ void AM_Drawer()
 		f_h = ST_StatusBarY(surface_width, surface_height);
 		f_p = surface->getPitch();
 
-		AM_clearFB(gameinfo.automapColors.Background);
+		AM_clearFB(gameinfo.currentAutomapColors.Background);
 	}
 	else
 	{
@@ -1677,15 +1718,15 @@ void AM_Drawer()
 	AM_activateNewScale();
 
 	if (grid)
-		AM_drawGrid(gameinfo.automapColors.GridColor);
+		AM_drawGrid(gameinfo.currentAutomapColors.GridColor);
 
 	AM_drawWalls();
 	AM_drawPlayers();
 	if (am_cheating == 2)
-		AM_drawThings(gameinfo.automapColors.ThingColor);
+		AM_drawThings(gameinfo.currentAutomapColors.ThingColor);
 
 	if (!(viewactive && am_overlay < 2))
-		AM_drawCrosshair(gameinfo.automapColors.XHairColor);
+		AM_drawCrosshair(gameinfo.currentAutomapColors.XHairColor);
 
 	AM_drawMarks();
 

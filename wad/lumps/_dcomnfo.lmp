@@ -51,3 +51,8 @@ skill nightmare
 	MustConfirm
 	Key = "n"
 }
+
+automap
+{
+	base = "doom"
+}

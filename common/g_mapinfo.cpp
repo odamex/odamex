@@ -1276,6 +1276,22 @@ void MIType_SpecialAction_KillMonsters(OScanner& os, bool doEquals, void* data,
 	// todo
 }
 
+//
+void MIType_AutomapBase(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                        unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+
+	if (os.compareTokenNoCase("doom"))
+		AM_SetBaseColorDoom();
+	else if (os.compareTokenNoCase("raven"))
+		AM_SetBaseColorRaven();
+	else if (os.compareTokenNoCase("strife"))
+		AM_SetBaseColorStrife();
+	else
+		os.warning("base expected \"doom\", \"heretic\", or \"strife\"; got %s", os.getToken().c_str());
+}
+
 //////////////////////////////////////////////////////////////////////
 /// MapInfoData
 
@@ -1729,6 +1745,20 @@ struct MapInfoDataSetter<SkillInfo>
 	}
 };
 
+struct automap_dummy {};
+
+// Automap
+template <>
+struct MapInfoDataSetter<automap_dummy>
+{
+	MapInfoDataContainer mapInfoDataContainer;
+
+	MapInfoDataSetter()
+	{
+		ENTRY2("base", &MIType_AutomapBase)
+	}
+};
+
 void ParseMapInfoLump(int lump, const char* lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
@@ -1877,6 +1907,11 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			ParseMapInfoLower<void>(os, setter);
 		}
 		else if (os.compareTokenNoCase("automap"))
+		{
+			MapInfoDataSetter<automap_dummy> setter;
+			ParseMapInfoLower<automap_dummy>(os, setter);
+		}
+		else if (os.compareTokenNoCase("automap_overlay"))
 		{
 			// Not implemented
 			MapInfoDataSetter<void> setter;

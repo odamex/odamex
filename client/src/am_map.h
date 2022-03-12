@@ -77,3 +77,7 @@ void AM_Stop();
 
 bool AM_ClassicAutomapVisible();
 bool AM_OverlayAutomapVisible();
+
+void AM_SetBaseColorDoom();
+void AM_SetBaseColorRaven();
+void AM_SetBaseColorStrife();
