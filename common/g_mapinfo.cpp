@@ -894,6 +894,7 @@ void MIType_InterLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 	const std::string tok = os.getToken();
 	if (!tok.empty() && tok.at(0) == '$')
 	{
+		os.mustScan();
 		// Intermission scripts are not supported.
 		return;
 	}
