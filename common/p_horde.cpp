@@ -23,6 +23,8 @@
 
 #include "odamex.h"
 
+#include <math.h>
+
 #include "p_horde.h"
 
 #include "c_dispatch.h"
