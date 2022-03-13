@@ -130,8 +130,6 @@ END_COMMAND(resetcustomcolors)
 EXTERN_CVAR(screenblocks)
 
 // drawing stuff
-#define FB (screen)
-
 #define AM_NUMMARKPOINTS 10
 
 // scale on entry
@@ -149,27 +147,18 @@ EXTERN_CVAR(screenblocks)
 // translates between frame-buffer and map distances
 #define FTOM(x) FixedMul(((x) << 16), scale_ftom)
 #define MTOF(x) (FixedMul((x), scale_mtof) >> 16)
-// translates between frame-buffer and map coordinates
-#define CXMTOF(x) (MTOF((x)-m_x) /* - f_x*/)
-#define CYMTOF(y) (f_h - MTOF((y)-m_y) /* + f_y*/)
 
 #define PUTDOTP(xx, yy, cc) fb[(yy)*f_p + (xx)] = (cc)
 #define PUTDOTD(xx, yy, cc) *((argb_t*)(fb + (yy)*f_p + ((xx) << 2))) = (cc)
 
-typedef struct
-{
-	int x, y;
-} fpoint_t;
+typedef v2int_t fpoint_t;
 
 typedef struct
 {
 	fpoint_t a, b;
 } fline_t;
 
-typedef struct
-{
-	fixed_t x, y;
-} mpoint_t;
+typedef v2fixed_t mpoint_t;
 
 typedef struct
 {
@@ -243,8 +232,7 @@ static int leveljuststarted = 1; // kluge until AM_LevelInit() is called
 bool automapactive = false;
 
 // location of window on screen
-static int f_x;
-static int f_y;
+static v2int_t f;
 
 // size of window on screen
 static int f_w;
@@ -257,34 +245,24 @@ static int amclock;
 static mpoint_t m_paninc;    // how far the window pans each tic (map coords)
 static fixed_t ftom_zoommul; // how far the window zooms in each tic (fb coords)
 
-static fixed_t m_x, m_y;   // LL x,y where the window is on the map (map coords)
-static fixed_t m_x2, m_y2; // UR x,y where the window is on the map (map coords)
+static v2fixed_t m_ll;   // LL x,y where the window is on the map (map coords)
+static v2fixed_t m_ur; // UR x,y where the window is on the map (map coords)
 
 //
 // width/height of window on map (map coords)
 //
-static fixed_t m_w;
-static fixed_t m_h;
+static v2fixed_t m_wh;
 
 // based on level size
-static fixed_t min_x;
-static fixed_t min_y;
-static fixed_t max_x;
-static fixed_t max_y;
-
-static fixed_t max_w; // max_x-min_x,
-static fixed_t max_h; // max_y-min_y
-
-// based on player size
-static fixed_t min_w;
-static fixed_t min_h;
+static v2fixed_t min;
+static v2fixed_t max;
 
 static fixed_t min_scale_mtof; // used to tell when to stop zooming out
 static fixed_t max_scale_mtof; // used to tell when to stop zooming in
 
 // old stuff for recovery later
-static fixed_t old_m_w, old_m_h;
-static fixed_t old_m_x, old_m_y;
+static v2fixed_t old_m_wh;
+static v2fixed_t old_m_ll;
 
 // old location used by the Follower routine
 static mpoint_t f_oldloc;
@@ -361,7 +339,18 @@ BEGIN_COMMAND(am_togglefollow)
 }
 END_COMMAND(am_togglefollow)
 
-void AM_rotatePoint(fixed_t* x, fixed_t* y);
+void AM_rotatePoint(mpoint_t& pt);
+
+// translates between frame-buffer and map coordinates
+int CXMTOF(int x)
+{
+	return (MTOF((x)-m_ll.x) /* - f_x*/);
+}
+
+int CYMTOF(int y)
+{
+	return (f_h - MTOF((y)-m_ll.y) /* + f_y*/);
+}
 
 bool AM_ClassicAutomapVisible()
 {
@@ -378,14 +367,12 @@ bool AM_OverlayAutomapVisible()
 //
 void AM_activateNewScale()
 {
-	m_x += m_w / 2;
-	m_y += m_h / 2;
-	m_w = FTOM(f_w);
-	m_h = FTOM(f_h);
-	m_x -= m_w / 2;
-	m_y -= m_h / 2;
-	m_x2 = m_x + m_w;
-	m_y2 = m_y + m_h;
+	m_ll.x += m_wh.x / 2;
+	m_ll.y += m_wh.y / 2;
+	M_SetVec2Fixed(&m_wh, FTOM(f_w), FTOM(f_h));
+	m_ll.x -= m_wh.x / 2;
+	m_ll.y -= m_wh.y / 2;
+	M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
 }
 
 //
@@ -393,10 +380,8 @@ void AM_activateNewScale()
 //
 void AM_saveScaleAndLoc()
 {
-	old_m_x = m_x;
-	old_m_y = m_y;
-	old_m_w = m_w;
-	old_m_h = m_h;
+	old_m_ll = m_ll;
+	old_m_wh = m_wh;
 }
 
 //
@@ -404,23 +389,20 @@ void AM_saveScaleAndLoc()
 //
 void AM_restoreScaleAndLoc()
 {
-	m_w = old_m_w;
-	m_h = old_m_h;
+	m_wh = old_m_wh;
 	if (!am_followplayer)
 	{
-		m_x = old_m_x;
-		m_y = old_m_y;
+		m_ll = old_m_ll;
 	}
 	else
 	{
-		m_x = displayplayer().camera->x - m_w / 2;
-		m_y = displayplayer().camera->y - m_h / 2;
+		M_SetVec2Fixed(&m_ll, displayplayer().camera->x - m_wh.x / 2,
+			                  displayplayer().camera->y - m_wh.y / 2);
 	}
-	m_x2 = m_x + m_w;
-	m_y2 = m_y + m_h;
+	M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
 
 	// Change the scaling multipliers
-	scale_mtof = FixedDiv(f_w << FRACBITS, m_w);
+	scale_mtof = FixedDiv(f_w << FRACBITS, m_wh.x);
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
 }
 
@@ -429,8 +411,8 @@ void AM_restoreScaleAndLoc()
 //
 void AM_addMark()
 {
-	markpoints[markpointnum].x = m_x + m_w / 2;
-	markpoints[markpointnum].y = m_y + m_h / 2;
+	markpoints[markpointnum].x = m_ll.x + m_wh.x / 2;
+	markpoints[markpointnum].y = m_ll.y + m_wh.y / 2;
 	markpointnum = (markpointnum + 1) % AM_NUMMARKPOINTS;
 }
 
@@ -440,27 +422,24 @@ void AM_addMark()
 //
 void AM_findMinMaxBoundaries()
 {
-	min_x = min_y = MAXINT;
-	max_x = max_y = -MAXINT;
+	M_SetVec2Fixed(&min, MAXINT, MAXINT);
+	M_SetVec2Fixed(&max, -MAXINT, -MAXINT);
 
 	for (int i = 0; i < numvertexes; i++)
 	{
-		if (vertexes[i].x < min_x)
-			min_x = vertexes[i].x;
-		else if (vertexes[i].x > max_x)
-			max_x = vertexes[i].x;
+		if (vertexes[i].x < min.x)
+			min.x = vertexes[i].x;
+		else if (vertexes[i].x > max.x)
+			max.x = vertexes[i].x;
 
-		if (vertexes[i].y < min_y)
-			min_y = vertexes[i].y;
-		else if (vertexes[i].y > max_y)
-			max_y = vertexes[i].y;
+		if (vertexes[i].y < min.y)
+			min.y = vertexes[i].y;
+		else if (vertexes[i].y > max.y)
+			max.y = vertexes[i].y;
 	}
 
-	max_w = max_x - min_x;
-	max_h = max_y - min_y;
-
-	min_w = 2 * PLAYERRADIUS; // const? never changed?
-	min_h = 2 * PLAYERRADIUS;
+	const fixed_t max_w = max.x - min.x;
+	const fixed_t max_h = max.y - min.y;
 
 	const fixed_t a = FixedDiv((I_GetSurfaceWidth()) << FRACBITS, max_w);
 	const fixed_t b = FixedDiv((I_GetSurfaceHeight()) << FRACBITS, max_h);
@@ -479,22 +458,20 @@ void AM_changeWindowLoc()
 		am_followplayer.Set(0.0f);
 		f_oldloc.x = MAXINT;
 	}
+	
+	M_AddVec2Fixed(&m_ll, &m_paninc, &m_paninc);
 
-	m_x += m_paninc.x;
-	m_y += m_paninc.y;
+	if (m_ll.x + m_wh.x / 2 > max.x)
+		m_ll.x = max.x - m_wh.x / 2;
+	else if (m_ll.x + m_wh.x / 2 < min.x)
+		m_ll.x = min.x - m_wh.x / 2;
 
-	if (m_x + m_w / 2 > max_x)
-		m_x = max_x - m_w / 2;
-	else if (m_x + m_w / 2 < min_x)
-		m_x = min_x - m_w / 2;
-
-	if (m_y + m_h / 2 > max_y)
-		m_y = max_y - m_h / 2;
-	else if (m_y + m_h / 2 < min_y)
-		m_y = min_y - m_h / 2;
-
-	m_x2 = m_x + m_w;
-	m_y2 = m_y + m_h;
+	if (m_ll.y + m_wh.y / 2 > max.y)
+		m_ll.y = max.y - m_wh.y / 2;
+	else if (m_ll.y + m_wh.y / 2 < min.y)
+		m_ll.y = min.y - m_wh.y / 2;
+	
+	M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
 }
 
 //
@@ -508,9 +485,8 @@ void AM_initVariables()
 
 	f_oldloc.x = MAXINT;
 	amclock = 0;
-
-	m_w = FTOM(I_GetSurfaceWidth());
-	m_h = FTOM(I_GetSurfaceHeight());
+	
+	M_SetVec2Fixed(&m_wh, FTOM(I_GetSurfaceWidth()), FTOM(I_GetSurfaceHeight()));
 
 	// find player to center on initially
 	player_t* pl = &displayplayer();
@@ -529,15 +505,11 @@ void AM_initVariables()
 	if (!pl->camera)
 		return;
 
-	m_x = pl->camera->x - m_w / 2;
-	m_y = pl->camera->y - m_h / 2;
+	m_ll.x = pl->camera->x - m_wh.x / 2;
+	m_ll.y = pl->camera->y - m_wh.y / 2;
 	AM_changeWindowLoc();
-
-	// for saving & restoring
-	old_m_x = m_x;
-	old_m_y = m_y;
-	old_m_w = m_w;
-	old_m_h = m_h;
+	
+	AM_saveScaleAndLoc();
 
 	// inform the status bar of the change
 	ST_Responder(&st_notify);
@@ -754,11 +726,11 @@ void AM_Start()
 
 	// todo: rather than call this every time automap is opened, do this once on level
 	// init
-	static char lastmap[8] = "";
+	static OLumpName lastmap = "";
 	if (level.mapname != lastmap)
 	{
 		AM_LevelInit();
-		strncpy(lastmap, level.mapname.c_str(), 8);
+		lastmap = level.mapname;
 	}
 
 	AM_initVariables();
@@ -893,12 +865,10 @@ void AM_doFollowPlayer()
 
 	if (f_oldloc.x != p.camera->x || f_oldloc.y != p.camera->y)
 	{
-		m_x = FTOM(MTOF(p.camera->x)) - m_w / 2;
-		m_y = FTOM(MTOF(p.camera->y)) - m_h / 2;
-		m_x2 = m_x + m_w;
-		m_y2 = m_y + m_h;
-		f_oldloc.x = p.camera->x;
-		f_oldloc.y = p.camera->y;
+		M_SetVec2Fixed(&m_ll, FTOM(MTOF(p.camera->x)) - m_wh.x / 2,
+		                      FTOM(MTOF(p.camera->y)) - m_wh.y / 2);
+		M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
+		M_SetVec2Fixed(&f_oldloc, p.camera->x, p.camera->y);
 	}
 }
 
@@ -918,8 +888,7 @@ void AM_Ticker()
 	}
 	else
 	{
-		m_paninc.x = 0;
-		m_paninc.y = 0;
+		M_ZeroVec2Fixed(&m_paninc);
 
 		// pan according to the direction
 		if (Actions[ACTION_AUTOMAP_PANLEFT])
@@ -1011,27 +980,27 @@ bool AM_clipMline(mline_t* ml, fline_t* fl)
 		(oc) |= RIGHT;
 
 	// do trivial rejects and outcodes
-	if (ml->a.y > m_y2)
+	if (ml->a.y > m_ur.y)
 		outcode1 = TOP;
-	else if (ml->a.y < m_y)
+	else if (ml->a.y < m_ll.y)
 		outcode1 = BOTTOM;
 
-	if (ml->b.y > m_y2)
+	if (ml->b.y > m_ur.y)
 		outcode2 = TOP;
-	else if (ml->b.y < m_y)
+	else if (ml->b.y < m_ll.y)
 		outcode2 = BOTTOM;
 
 	if (outcode1 & outcode2)
 		return false; // trivially outside
 
-	if (ml->a.x < m_x)
+	if (ml->a.x < m_ll.x)
 		outcode1 |= LEFT;
-	else if (ml->a.x > m_x2)
+	else if (ml->a.x > m_ur.x)
 		outcode1 |= RIGHT;
 
-	if (ml->b.x < m_x)
+	if (ml->b.x < m_ll.x)
 		outcode2 |= LEFT;
-	else if (ml->b.x > m_x2)
+	else if (ml->b.x > m_ur.x)
 		outcode2 |= RIGHT;
 
 	if (outcode1 & outcode2)
@@ -1115,10 +1084,10 @@ bool AM_clipMline(mline_t* ml, fline_t* fl)
 
 void AM_drawFlineP(fline_t* fl, byte color)
 {
-	fl->a.x += f_x;
-	fl->b.x += f_x;
-	fl->a.y += f_y;
-	fl->b.y += f_y;
+	fl->a.x += f.x;
+	fl->a.y += f.y;
+	fl->b.x += f.x;
+	fl->b.y += f.y;
 
 	const int dx = fl->b.x - fl->a.x;
 	const int ax = 2 * (dx < 0 ? -dx : dx);
@@ -1171,10 +1140,10 @@ void AM_drawFlineP(fline_t* fl, byte color)
 
 void AM_drawFlineD(fline_t* fl, argb_t color)
 {
-	fl->a.x += f_x;
-	fl->b.x += f_x;
-	fl->a.y += f_y;
-	fl->b.y += f_y;
+	fl->a.x += f.x;
+	fl->b.x += f.x;
+	fl->a.y += f.y;
+	fl->b.y += f.y;
 
 	const int dx = fl->b.x - fl->a.x;
 	const int ax = 2 * (dx < 0 ? -dx : dx);
@@ -1249,47 +1218,47 @@ void AM_drawMline(mline_t* ml, am_color_t color)
 void AM_drawGrid(am_color_t color)
 {
 	// Figure out start of vertical gridlines
-	fixed_t start = m_x;
+	fixed_t start = m_ll.x;
 	if ((start - bmaporgx) % (MAPBLOCKUNITS << FRACBITS))
 		start += (MAPBLOCKUNITS << FRACBITS) -
 		         ((start - bmaporgx) % (MAPBLOCKUNITS << FRACBITS));
-	fixed_t end = m_x + m_w;
+	fixed_t end = m_ll.x + m_wh.x;
 
 	// draw vertical gridlines
 	mline_t ml;
 
-	ml.a.y = m_y;
-	ml.b.y = m_y + m_h;
+	ml.a.y = m_ll.y;
+	ml.b.y = m_ll.y + m_wh.y;
 	for (fixed_t x = start; x < end; x += (MAPBLOCKUNITS << FRACBITS))
 	{
 		ml.a.x = x;
 		ml.b.x = x;
 		if (am_rotate)
 		{
-			AM_rotatePoint(&ml.a.x, &ml.a.y);
-			AM_rotatePoint(&ml.b.x, &ml.b.y);
+			AM_rotatePoint(ml.a);
+			AM_rotatePoint(ml.b);
 		}
 		AM_drawMline(&ml, color);
 	}
 
 	// Figure out start of horizontal gridlines
-	start = m_y;
+	start = m_ll.y;
 	if ((start - bmaporgy) % (MAPBLOCKUNITS << FRACBITS))
 		start += (MAPBLOCKUNITS << FRACBITS) -
 		         ((start - bmaporgy) % (MAPBLOCKUNITS << FRACBITS));
-	end = m_y + m_h;
+	end = m_ll.y + m_wh.y;
 
 	// draw horizontal gridlines
-	ml.a.x = m_x;
-	ml.b.x = m_x + m_w;
+	ml.a.x = m_ll.x;
+	ml.b.x = m_ll.x + m_wh.x;
 	for (fixed_t y = start; y < end; y += (MAPBLOCKUNITS << FRACBITS))
 	{
 		ml.a.y = y;
 		ml.b.y = y;
 		if (am_rotate)
 		{
-			AM_rotatePoint(&ml.a.x, &ml.a.y);
-			AM_rotatePoint(&ml.b.x, &ml.b.y);
+			AM_rotatePoint(ml.a);
+			AM_rotatePoint(ml.b);
 		}
 		AM_drawMline(&ml, color);
 	}
@@ -1308,15 +1277,13 @@ void AM_drawWalls()
 
 	for (int i = 0; i < numlines; i++)
 	{
-		l.a.x = lines[i].v1->x;
-		l.a.y = lines[i].v1->y;
-		l.b.x = lines[i].v2->x;
-		l.b.y = lines[i].v2->y;
+		M_SetVec2Fixed(&l.a, lines[i].v1->x, lines[i].v1->y);
+		M_SetVec2Fixed(&l.b, lines[i].v2->x, lines[i].v2->y);
 
 		if (am_rotate)
 		{
-			AM_rotatePoint(&l.a.x, &l.a.y);
-			AM_rotatePoint(&l.b.x, &l.b.y);
+			AM_rotatePoint(l.a);
+			AM_rotatePoint(l.b);
 		}
 
 		if (am_cheating || (lines[i].flags & ML_MAPPED))
@@ -1472,61 +1439,52 @@ void AM_drawWalls()
 // Rotation in 2D.
 // Used to rotate player arrow line character.
 //
-void AM_rotate(fixed_t* x, fixed_t* y, angle_t a)
+void AM_rotate(mpoint_t& pt, angle_t a)
 {
-	const fixed_t tmpx = FixedMul(*x, finecosine[a >> ANGLETOFINESHIFT]) -
-	                     FixedMul(*y, finesine[a >> ANGLETOFINESHIFT]);
+	const fixed_t tmpx = FixedMul(pt.x, finecosine[a >> ANGLETOFINESHIFT]) -
+	                     FixedMul(pt.y, finesine[a >> ANGLETOFINESHIFT]);
 
-	*y = FixedMul(*x, finesine[a >> ANGLETOFINESHIFT]) +
-	     FixedMul(*y, finecosine[a >> ANGLETOFINESHIFT]);
+	pt.y = FixedMul(pt.x, finesine[a >> ANGLETOFINESHIFT]) +
+	       FixedMul(pt.y, finecosine[a >> ANGLETOFINESHIFT]);
 
-	*x = tmpx;
+	pt.x = tmpx;
 }
 
-void AM_rotatePoint(fixed_t* x, fixed_t* y)
+void AM_rotatePoint(mpoint_t& pt)
 {
-	player_t& p = displayplayer();
+	player_t& pl = displayplayer();
 
-	*x -= p.camera->x;
-	*y -= p.camera->y;
-	AM_rotate(x, y, ANG90 - p.camera->angle);
-	*x += p.camera->x;
-	*y += p.camera->y;
+	pt.x -= pl.camera->x;
+	pt.y -= pl.camera->y;
+	AM_rotate(pt, ANG90 - pl.camera->angle);
+	pt.x += pl.camera->x;
+	pt.y += pl.camera->y;
 }
 
 void AM_drawLineCharacter(mline_t* lineguy, int lineguylines, fixed_t scale,
                           angle_t angle, am_color_t color, fixed_t x, fixed_t y)
 {
-	mline_t l;
-
 	for (int i = 0; i < lineguylines; i++)
 	{
-		l.a.x = lineguy[i].a.x;
-		l.a.y = lineguy[i].a.y;
+		mline_t l;
+		l.a = lineguy[i].a;
 
 		if (scale)
-		{
-			l.a.x = FixedMul(scale, l.a.x);
-			l.a.y = FixedMul(scale, l.a.y);
-		}
+			M_ScaleVec2Fixed(&l.a, &l.a, scale);
 
 		if (angle)
-			AM_rotate(&l.a.x, &l.a.y, angle);
+			AM_rotate(l.a, angle);
 
 		l.a.x += x;
 		l.a.y += y;
 
-		l.b.x = lineguy[i].b.x;
-		l.b.y = lineguy[i].b.y;
+		l.b = lineguy[i].b;
 
 		if (scale)
-		{
-			l.b.x = FixedMul(scale, l.b.x);
-			l.b.y = FixedMul(scale, l.b.y);
-		}
+			M_ScaleVec2Fixed(&l.b, &l.b, scale);
 
 		if (angle)
-			AM_rotate(&l.b.x, &l.b.y, angle);
+			AM_rotate(l.b, angle);
 
 		l.b.x += x;
 		l.b.y += y;
@@ -1605,13 +1563,12 @@ void AM_drawPlayers()
 			color.index = V_BestColor(V_GetDefaultPalette()->basecolors, color.rgb);
 		}
 
-		pt.x = p->mo->x;
-		pt.y = p->mo->y;
+		M_SetVec2Fixed(&pt, p->mo->x, p->mo->y);
 		angle = p->mo->angle;
 
 		if (am_rotate)
 		{
-			AM_rotatePoint(&pt.x, &pt.y);
+			AM_rotatePoint(pt);
 			angle -= conplayer.camera->angle - ANG90;
 		}
 
@@ -1621,20 +1578,18 @@ void AM_drawPlayers()
 
 void AM_drawThings(am_color_t color)
 {
-	mpoint_t p;
-
 	for (int i = 0; i < numsectors; i++)
 	{
 		AActor* t = sectors[i].thinglist;
 		while (t)
 		{
-			p.x = t->x;
-			p.y = t->y;
+			mpoint_t p;
+			M_SetVec2Fixed(&p, t->x, t->y);
 			angle_t angle = t->angle;
 
 			if (am_rotate)
 			{
-				AM_rotatePoint(&p.x, &p.y);
+				AM_rotatePoint(p);
 				angle += ANG90 - displayplayer().camera->angle;
 			}
 
@@ -1647,29 +1602,28 @@ void AM_drawThings(am_color_t color)
 
 void AM_drawMarks()
 {
-	mpoint_t pt;
-
 	for (int i = 0; i < AM_NUMMARKPOINTS; i++)
 	{
 		if (markpoints[i].x != -1)
 		{
+			mpoint_t pt;
+			pt.x = markpoints[i].x;
+			pt.y = markpoints[i].y;
+
+			if (am_rotate)
+				AM_rotatePoint(pt);
+
+			const int fx = CXMTOF(pt.x);
+			const int fy = CYMTOF(pt.y) - 3;
+
 			//      w = LESHORT(marknums[i]->width);
 			//      h = LESHORT(marknums[i]->height);
 			const int w = 5; // because something's wrong with the wad, i guess
 			const int h = 6; // because something's wrong with the wad, i guess
 
-			pt.x = markpoints[i].x;
-			pt.y = markpoints[i].y;
-
-			if (am_rotate)
-				AM_rotatePoint(&pt.x, &pt.y);
-
-			const int fx = CXMTOF(pt.x);
-			const int fy = CYMTOF(pt.y) - 3;
-
-			if (fx >= f_x && fx <= f_w - w && fy >= f_y && fy <= f_h - h)
+			if (fx >= f.x && fx <= f_w - w && fy >= f.y && fy <= f_h - h)
 			{
-				FB->DrawPatchCleanNoMove(W_ResolvePatchHandle(marknums[i]), fx, fy);
+				screen->DrawPatchCleanNoMove(W_ResolvePatchHandle(marknums[i]), fx, fy);
 			}
 		}
 	}
@@ -1699,7 +1653,7 @@ void AM_Drawer()
 
 	if (AM_ClassicAutomapVisible())
 	{
-		f_x = f_y = 0;
+		f.x = f.y = 0;
 		f_w = surface_width;
 		f_h = ST_StatusBarY(surface_width, surface_height);
 		f_p = surface->getPitch();
@@ -1708,8 +1662,8 @@ void AM_Drawer()
 	}
 	else
 	{
-		f_x = R_ViewWindowX(surface_width, surface_height);
-		f_y = R_ViewWindowY(surface_width, surface_height);
+		f.x = R_ViewWindowX(surface_width, surface_height);
+		f.y = R_ViewWindowY(surface_width, surface_height);
 		f_w = R_ViewWidth(surface_width, surface_height);
 		f_h = R_ViewHeight(surface_width, surface_height);
 		f_p = surface->getPitch();
@@ -1750,11 +1704,17 @@ void AM_Drawer()
 				const int text_width = V_StringWidth(line) * CleanXfac;
 
 				if (AM_OverlayAutomapVisible())
-					x = surface_width - text_width, y = OV_Y - (text_height * 4) + 1;
+				{
+					x = surface_width - text_width;
+					y = OV_Y - (text_height * 4) + 1;
+				}
 				else
-					x = 0, y = OV_Y - (text_height * 2) + 1;
+				{
+					x = 0;
+					y = OV_Y - (text_height * 2) + 1;
+				}
 
-				FB->DrawTextClean(CR_GREY, x, y, line);
+				screen->DrawTextClean(CR_GREY, x, y, line);
 			}
 
 			if (am_showsecrets)
@@ -1765,11 +1725,17 @@ void AM_Drawer()
 				const int text_width = V_StringWidth(line) * CleanXfac;
 
 				if (AM_OverlayAutomapVisible())
-					x = surface_width - text_width, y = OV_Y - (text_height * 3) + 1;
+				{
+					x = surface_width - text_width;
+					y = OV_Y - (text_height * 3) + 1;
+				}
 				else
-					x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
+				{
+					x = surface_width - text_width;
+					y = OV_Y - (text_height * 2) + 1;
+				}
 
-				FB->DrawTextClean(CR_GREY, x, y, line);
+				screen->DrawTextClean(CR_GREY, x, y, line);
 			}
 		}
 
@@ -1803,11 +1769,17 @@ void AM_Drawer()
 			const int text_width = V_StringWidth(line) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
-				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
+			{
+				x = surface_width - text_width;
+				y = OV_Y - (text_height * 1) + 1;
+			}
 			else
-				x = 0, y = OV_Y - (text_height * 1) + 1;
+			{
+				x = 0;
+				y = OV_Y - (text_height * 1) + 1;
+			}
 
-			FB->DrawTextClean(CR_RED, x, y, line);
+			screen->DrawTextClean(CR_RED, x, y, line);
 		}
 		else
 		{
@@ -1826,11 +1798,17 @@ void AM_Drawer()
 			const int text_width = V_StringWidth(line) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
-				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
+			{
+				x = surface_width - text_width;
+				y = OV_Y - (text_height * 1) + 1;
+			}
 			else
-				x = 0, y = OV_Y - (text_height * 1) + 1;
+			{
+				x = 0;
+				y = OV_Y - (text_height * 1) + 1;
+			}
 
-			FB->DrawTextClean(CR_GREY, x, y, line);
+			screen->DrawTextClean(CR_GREY, x, y, line);
 		}
 
 		if (am_showtime)
@@ -1842,11 +1820,17 @@ void AM_Drawer()
 			const int text_width = V_StringWidth(line) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
-				x = surface_width - text_width, y = OV_Y - (text_height * 2) + 1;
+			{
+				x = surface_width - text_width;
+				y = OV_Y - (text_height * 2) + 1;
+			}
 			else
-				x = surface_width - text_width, y = OV_Y - (text_height * 1) + 1;
+			{
+				x = surface_width - text_width;
+				y = OV_Y - (text_height * 1) + 1;
+			}
 
-			FB->DrawTextClean(CR_GREY, x, y, line);
+			screen->DrawTextClean(CR_GREY, x, y, line);
 		}
 	}
 }
