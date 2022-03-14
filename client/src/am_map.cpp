@@ -439,10 +439,10 @@ void AM_initVariables()
 	ml.a.x = L(1);
 	ml.a.y = L(0);
 	ml.b.x = L(-.5);
-	ml.b.y = L(-.7);
+	ml.b.y = L(.7);
 	thintriangle_guy.push_back(ml);
 	ml.a.x = L(-.5);
-	ml.a.y = L(-.7);
+	ml.a.y = L(.7);
 	ml.b.x = L(-.5);
 	ml.b.y = L(-.7);
 	thintriangle_guy.push_back(ml);
