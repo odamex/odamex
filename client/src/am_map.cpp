@@ -222,7 +222,8 @@ mline_t thintriangle_guy[] = {L(-.5, -.7, 1, 0), L(1, 0, -.5, .7), L(-.5, .7, -.
 #undef R
 #define NUMTHINTRIANGLEGUYLINES (ARRAY_LENGTH(thintriangle_guy))
 
-am_colors_t AutomapDefaultColors;
+am_default_colors_t AutomapDefaultColors;
+am_colors_t AutomapDefaultCurrentColors;
 int am_cheating = 0;
 static int grid = 0;
 static int bigstate = 0; // Bigmode
@@ -534,62 +535,53 @@ am_color_t AM_BestColor(const argb_t* palette_colors, const int r, const int g,
 
 void AM_SetBaseColorDoom()
 {
-	// Look up the colors in the current palette:
-	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
-
-	gameinfo.defaultAutomapColors.Background = AM_GetColorFromString(palette_colors, "00 00 00");
-	gameinfo.defaultAutomapColors.YourColor = AM_GetColorFromString(palette_colors, "ff ff ff");
-	gameinfo.defaultAutomapColors.AlmostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
-	gameinfo.defaultAutomapColors.SecretWallColor = gameinfo.defaultAutomapColors.WallColor =
-	    AM_GetColorFromString(palette_colors, "fc 00 00");
-	gameinfo.defaultAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, "80 80 80");
-	gameinfo.defaultAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, "bc 78 48");
-	gameinfo.defaultAutomapColors.LockedColor = AM_GetColorFromString(palette_colors, "fc fc 00");
-	gameinfo.defaultAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, "fc fc 00");
-	gameinfo.defaultAutomapColors.ThingColor = AM_GetColorFromString(palette_colors, "74 fc 6c");
-	gameinfo.defaultAutomapColors.GridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
-	gameinfo.defaultAutomapColors.XHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
-	gameinfo.defaultAutomapColors.NotSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
+	gameinfo.defaultAutomapColors.Background		= "00 00 00";
+	gameinfo.defaultAutomapColors.YourColor			= "ff ff ff";
+	gameinfo.defaultAutomapColors.AlmostBackground	= "10 10 10";
+	gameinfo.defaultAutomapColors.SecretWallColor	= "fc 00 00";
+	gameinfo.defaultAutomapColors.WallColor			= "fc 00 00";
+	gameinfo.defaultAutomapColors.TSWallColor		= "80 80 80";
+	gameinfo.defaultAutomapColors.FDWallColor		= "bc 78 48";
+	gameinfo.defaultAutomapColors.LockedColor		= "fc fc 00";
+	gameinfo.defaultAutomapColors.CDWallColor		= "fc fc 00";
+	gameinfo.defaultAutomapColors.ThingColor		= "74 fc 6c";
+	gameinfo.defaultAutomapColors.GridColor			= "4c 4c 4c";
+	gameinfo.defaultAutomapColors.XHairColor		= "80 80 80";
+	gameinfo.defaultAutomapColors.NotSeenColor		= "6c 6c 6c";
 }
 
 void AM_SetBaseColorRaven()
 {
-	// Look up the colors in the current palette:
-	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
-
-	gameinfo.defaultAutomapColors.Background = AM_GetColorFromString(palette_colors, "00 00 00");
-	gameinfo.defaultAutomapColors.YourColor = AM_GetColorFromString(palette_colors, "ff ff ff");
-	gameinfo.defaultAutomapColors.AlmostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
-	gameinfo.defaultAutomapColors.SecretWallColor = gameinfo.defaultAutomapColors.WallColor =
-	    AM_GetColorFromString(palette_colors, "4c 33 11");
-	gameinfo.defaultAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, "59 5e 57");
-	gameinfo.defaultAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, "d0 b0 85");
-	gameinfo.defaultAutomapColors.LockedColor = AM_GetColorFromString(palette_colors, "fc fc 00");
-	gameinfo.defaultAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, "68 3c 20");
-	gameinfo.defaultAutomapColors.ThingColor = AM_GetColorFromString(palette_colors, "38 38 38");
-	gameinfo.defaultAutomapColors.GridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
-	gameinfo.defaultAutomapColors.XHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
-	gameinfo.defaultAutomapColors.NotSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
+	gameinfo.defaultAutomapColors.Background		= "00 00 00";
+	gameinfo.defaultAutomapColors.YourColor			= "ff ff ff";
+	gameinfo.defaultAutomapColors.AlmostBackground	= "10 10 10";
+	gameinfo.defaultAutomapColors.SecretWallColor	= "4c 33 11";
+	gameinfo.defaultAutomapColors.WallColor			= "4c 33 11";
+	gameinfo.defaultAutomapColors.TSWallColor		= "59 5e 57";
+	gameinfo.defaultAutomapColors.FDWallColor		= "d0 b0 85";
+	gameinfo.defaultAutomapColors.LockedColor		= "fc fc 00";
+	gameinfo.defaultAutomapColors.CDWallColor		= "68 3c 20";
+	gameinfo.defaultAutomapColors.ThingColor		= "38 38 38";
+	gameinfo.defaultAutomapColors.GridColor			= "4c 4c 4c";
+	gameinfo.defaultAutomapColors.XHairColor		= "80 80 80";
+	gameinfo.defaultAutomapColors.NotSeenColor		= "6c 6c 6c";
 }
 
 void AM_SetBaseColorStrife()
 {
-	// Look up the colors in the current palette:
-	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
-
-	gameinfo.defaultAutomapColors.Background = AM_GetColorFromString(palette_colors, "00 00 00");
-	gameinfo.defaultAutomapColors.YourColor = AM_GetColorFromString(palette_colors, "ef ef 00");
-	gameinfo.defaultAutomapColors.AlmostBackground = AM_GetColorFromString(palette_colors, "10 10 10");
-	gameinfo.defaultAutomapColors.SecretWallColor = gameinfo.defaultAutomapColors.WallColor =
-		AM_GetColorFromString(palette_colors, "c7 c3 c3");
-	gameinfo.defaultAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, "77 73 73");
-	gameinfo.defaultAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, "37 3B 5B");
-	gameinfo.defaultAutomapColors.LockedColor = AM_GetColorFromString(palette_colors, "77 73 73");
-	gameinfo.defaultAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, "77 73 73");
-	gameinfo.defaultAutomapColors.ThingColor = AM_GetColorFromString(palette_colors, "fc 00 00");
-	gameinfo.defaultAutomapColors.GridColor = AM_GetColorFromString(palette_colors, "4c 4c 4c");
-	gameinfo.defaultAutomapColors.XHairColor = AM_GetColorFromString(palette_colors, "80 80 80");
-	gameinfo.defaultAutomapColors.NotSeenColor = AM_GetColorFromString(palette_colors, "6c 6c 6c");
+	gameinfo.defaultAutomapColors.Background		= "00 00 00";
+	gameinfo.defaultAutomapColors.YourColor			= "ef ef 00";
+	gameinfo.defaultAutomapColors.AlmostBackground	= "10 10 10";
+	gameinfo.defaultAutomapColors.SecretWallColor	= "c7 c3 c3";
+	gameinfo.defaultAutomapColors.WallColor			= "c7 c3 c3";
+	gameinfo.defaultAutomapColors.TSWallColor		= "77 73 73";
+	gameinfo.defaultAutomapColors.FDWallColor		= "37 3B 5B";
+	gameinfo.defaultAutomapColors.LockedColor		= "77 73 73";
+	gameinfo.defaultAutomapColors.CDWallColor		= "77 73 73";
+	gameinfo.defaultAutomapColors.ThingColor		= "fc 00 00";
+	gameinfo.defaultAutomapColors.GridColor			= "4c 4c 4c";
+	gameinfo.defaultAutomapColors.XHairColor		= "80 80 80";
+	gameinfo.defaultAutomapColors.NotSeenColor		= "6c 6c 6c";
 }
 
 void AM_initColors(const bool overlayed)
@@ -647,7 +639,32 @@ void AM_initColors(const bool overlayed)
 	}
 	else
 	{
-		gameinfo.currentAutomapColors = gameinfo.defaultAutomapColors;
+		gameinfo.currentAutomapColors.Background = 
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.Background.c_str());
+		gameinfo.currentAutomapColors.YourColor = 
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.YourColor.c_str());
+		gameinfo.currentAutomapColors.AlmostBackground = 
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.AlmostBackground.c_str());
+		gameinfo.currentAutomapColors.SecretWallColor = 
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.SecretWallColor.c_str());
+		gameinfo.currentAutomapColors.WallColor = 
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.WallColor.c_str());
+		gameinfo.currentAutomapColors.TSWallColor = 
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.TSWallColor.c_str());
+		gameinfo.currentAutomapColors.FDWallColor = 
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.FDWallColor.c_str());
+		gameinfo.currentAutomapColors.LockedColor = 
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.LockedColor.c_str());
+		gameinfo.currentAutomapColors.CDWallColor = 
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.CDWallColor.c_str());
+		gameinfo.currentAutomapColors.ThingColor = 
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor.c_str());
+		gameinfo.currentAutomapColors.GridColor = 
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.GridColor.c_str());
+		gameinfo.currentAutomapColors.XHairColor = 
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.XHairColor.c_str());
+		gameinfo.currentAutomapColors.NotSeenColor = 
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.NotSeenColor.c_str());
 	}
 }
 

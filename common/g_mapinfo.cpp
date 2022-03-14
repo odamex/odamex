@@ -1757,6 +1757,22 @@ struct MapInfoDataSetter<automap_dummy>
 	MapInfoDataSetter()
 	{
 		ENTRY2("base", &MIType_AutomapBase)
+		ENTRY3("showlocks", &MIType_Bool, &gameinfo.showLocks)
+		ENTRY3("background", &MIType_String, &gameinfo.defaultAutomapColors.Background)
+		ENTRY3("yourcolor", &MIType_String, &gameinfo.defaultAutomapColors.YourColor)
+		ENTRY3("wallcolor", &MIType_String, &gameinfo.defaultAutomapColors.WallColor)
+		ENTRY3("twosidedwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.TSWallColor)
+		ENTRY3("floordiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.FDWallColor)
+		ENTRY3("ceilingdiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.CDWallColor)
+		ENTRY3("thingcolor", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor)
+		ENTRY3("secretwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.SecretWallColor)
+		ENTRY3("gridcolor", &MIType_String, &gameinfo.defaultAutomapColors.GridColor)
+		ENTRY3("xhaircolor", &MIType_String, &gameinfo.defaultAutomapColors.XHairColor)
+		ENTRY3("notseencolor", &MIType_String, &gameinfo.defaultAutomapColors.NotSeenColor)
+		ENTRY3("lockedcolor", &MIType_String, &gameinfo.defaultAutomapColors.LockedColor)
+		ENTRY3("almostbackgroundcolor", &MIType_String, &gameinfo.defaultAutomapColors.AlmostBackground)
+		ENTRY3("intrateleportcolor", &MIType_String, &gameinfo.defaultAutomapColors.TeleportColor)
+		ENTRY3("exitcolor", &MIType_String, &gameinfo.defaultAutomapColors.ExitColor)
 	}
 };
 

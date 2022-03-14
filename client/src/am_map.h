@@ -57,7 +57,27 @@ typedef struct am_colors_s
 	am_color_t ExitColor;
 } am_colors_t;
 
-extern am_colors_t AutomapDefaultColors;
+typedef struct am_default_colors_s
+{
+	std::string Background;
+	std::string YourColor;
+	std::string WallColor;
+	std::string TSWallColor;
+	std::string FDWallColor;
+	std::string CDWallColor;
+	std::string ThingColor;
+	std::string SecretWallColor;
+	std::string GridColor;
+	std::string XHairColor;
+	std::string NotSeenColor;
+	std::string LockedColor;
+	std::string AlmostBackground;
+	std::string TeleportColor;
+	std::string ExitColor;
+} am_default_colors_t;
+
+extern am_default_colors_t AutomapDefaultColors;
+extern am_colors_t AutomapDefaultCurrentColors;
 
 extern int am_cheating;
 

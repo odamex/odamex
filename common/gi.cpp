@@ -82,7 +82,7 @@ gameinfo_t SharewareGameInfo =
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
 	AutomapDefaultColors,
-	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
 	"DOOM Shareware"
 };
 
@@ -108,7 +108,7 @@ gameinfo_t RegisteredGameInfo =
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
 	AutomapDefaultColors,
-	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
 	"DOOM Registered"
 };
 
@@ -134,7 +134,7 @@ gameinfo_t RetailGameInfo =
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
 	AutomapDefaultColors,
-	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
 	"The Ultimate DOOM"
 };
 
@@ -160,7 +160,7 @@ gameinfo_t RetailBFGGameInfo =
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
 	AutomapDefaultColors,
-	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
 	"The Ultimate DOOM (BFG Edition)"
 };
 
@@ -186,7 +186,7 @@ gameinfo_t CommercialGameInfo =
 	"GRNROCK",
 	&DoomBorder,
 	AutomapDefaultColors,
-	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
 	"DOOM 2: Hell on Earth"
 };
 
@@ -212,7 +212,7 @@ gameinfo_t CommercialBFGGameInfo =
 	"GRNROCK",
 	&DoomBorder,
 	AutomapDefaultColors,
-	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
 	"DOOM 2: Hell on Earth (BFG Edition)"
 };
 
