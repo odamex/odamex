@@ -951,7 +951,8 @@ bool AM_clipMline(mline_t* ml, fline_t* fl)
 
 	fpoint_t tmp;
 
-	tmp = {0, 0};
+	tmp.x = 0;
+	tmp.y = 0;
 	int dx;
 	int dy;
 
