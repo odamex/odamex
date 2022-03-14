@@ -1234,20 +1234,33 @@ void AM_drawMline(mline_t* ml, am_color_t color)
 //
 void AM_drawGrid(am_color_t color)
 {
-	// Figure out start of vertical gridlines
-	fixed_t start = m_ll.x;
-	if ((start - bmaporgx) % (MAPBLOCKUNITS << FRACBITS))
-		start += (MAPBLOCKUNITS << FRACBITS) -
-		         ((start - bmaporgx) % (MAPBLOCKUNITS << FRACBITS));
-	fixed_t end = m_ll.x + m_wh.x;
+	// find maximum distance lines should be drawn from center of screen in world coordinates
+	v2fixed_t distVec;
+	M_SubVec2Fixed(&distVec, &m_ll, &m_ur);
+	const fixed_t dist = P_AproxDistance(distVec.x, distVec.y);
+	const fixed_t half_dist = FixedDiv(dist, INT2FIXED(2));
 
-	// draw vertical gridlines
+	// find center point of screen in world coordinates
+	v2fixed_t centerp;
+	centerp.x = FixedDiv(m_ur.x + m_ll.x, INT2FIXED(2));
+	centerp.y = FixedDiv(m_ur.y + m_ll.y, INT2FIXED(2));
+
+	const fixed_t w = INT2FIXED(MAPBLOCKUNITS);
+	const fixed_t minimum_x = centerp.x - half_dist;
+	const fixed_t maximum_x = centerp.x + half_dist;
+	const fixed_t minimum_y = centerp.y - half_dist;
+	const fixed_t maximum_y = centerp.y + half_dist;
+
+	fixed_t start = w + minimum_x - ((minimum_x % w) + w) % w;
+
 	mline_t ml;
-
-	ml.a.y = m_ll.y;
-	ml.b.y = m_ll.y + m_wh.y;
-	for (fixed_t x = start; x < end; x += (MAPBLOCKUNITS << FRACBITS))
+	
+	// draw vertical gridlines
+	for (fixed_t x = start; x < maximum_x; x += INT2FIXED(MAPBLOCKUNITS))
 	{
+		ml.a.y = minimum_y;
+		ml.b.y = maximum_y;
+
 		ml.a.x = x;
 		ml.b.x = x;
 		if (am_rotate)
@@ -1258,18 +1271,14 @@ void AM_drawGrid(am_color_t color)
 		AM_drawMline(&ml, color);
 	}
 
-	// Figure out start of horizontal gridlines
-	start = m_ll.y;
-	if ((start - bmaporgy) % (MAPBLOCKUNITS << FRACBITS))
-		start += (MAPBLOCKUNITS << FRACBITS) -
-		         ((start - bmaporgy) % (MAPBLOCKUNITS << FRACBITS));
-	end = m_ll.y + m_wh.y;
+	start = w + minimum_y - ((minimum_y % w) + w) % w;
 
 	// draw horizontal gridlines
-	ml.a.x = m_ll.x;
-	ml.b.x = m_ll.x + m_wh.x;
-	for (fixed_t y = start; y < end; y += (MAPBLOCKUNITS << FRACBITS))
+	for (fixed_t y = start; y < maximum_y; y += INT2FIXED(MAPBLOCKUNITS))
 	{
+		ml.a.x = minimum_x;
+		ml.b.x = maximum_x;
+
 		ml.a.y = y;
 		ml.b.y = y;
 		if (am_rotate)
