@@ -55,11 +55,6 @@ void AM_SetBaseColorStrife()
 	
 }
 
-void AM_Stop()
-{
-	
-}
-
 void AM_Start()
 {
 	
