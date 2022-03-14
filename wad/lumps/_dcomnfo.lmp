@@ -1,4 +1,8 @@
-
+gameinfo
+{
+	MapArrow = "DOOMARRO", "DDTARROW"
+	CheatKey = "CHEATKEY"
+}
 
 skill baby
 {

@@ -60,6 +60,8 @@ static gameborder_t DoomBorder =
 	"brdr_bl", "brdr_b", "brdr_br"
 };
 
+std::vector<mline_t> EmptyLineContainer;
+
 gameinfo_t SharewareGameInfo =
 {
 	GI_SHAREWARE | GI_NOCRAZYDEATH,
@@ -83,6 +85,11 @@ gameinfo_t SharewareGameInfo =
 	&DoomBorder,
 	AutomapDefaultColors,
 	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"DOOM Shareware"
 };
 
@@ -109,6 +116,11 @@ gameinfo_t RegisteredGameInfo =
 	&DoomBorder,
 	AutomapDefaultColors,
 	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"DOOM Registered"
 };
 
@@ -135,6 +147,11 @@ gameinfo_t RetailGameInfo =
 	&DoomBorder,
 	AutomapDefaultColors,
 	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"The Ultimate DOOM"
 };
 
@@ -161,6 +178,11 @@ gameinfo_t RetailBFGGameInfo =
 	&DoomBorder,
 	AutomapDefaultColors,
 	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"The Ultimate DOOM (BFG Edition)"
 };
 
@@ -187,6 +209,11 @@ gameinfo_t CommercialGameInfo =
 	&DoomBorder,
 	AutomapDefaultColors,
 	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"DOOM 2: Hell on Earth"
 };
 
@@ -213,6 +240,11 @@ gameinfo_t CommercialBFGGameInfo =
 	&DoomBorder,
 	AutomapDefaultColors,
 	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"DOOM 2: Hell on Earth (BFG Edition)"
 };
 

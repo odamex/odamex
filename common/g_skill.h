@@ -21,9 +21,7 @@
 // 
 //-----------------------------------------------------------------------------
 
-#ifndef __G_SKILL__
-#define __G_SKILL__
-
+#pragma once
 
 #define MAX_SKILLS 7
 
@@ -114,5 +112,3 @@ extern byte skillnum;
 extern byte defaultskillmenu;
 
 const SkillInfo& G_GetCurrentSkill();
-
-#endif

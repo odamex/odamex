@@ -76,6 +76,13 @@ typedef struct am_default_colors_s
 	std::string ExitColor;
 } am_default_colors_t;
 
+typedef v2fixed_t mpoint_t;
+
+typedef struct
+{
+	mpoint_t a, b;
+} mline_t;
+
 extern am_default_colors_t AutomapDefaultColors;
 extern am_colors_t AutomapDefaultCurrentColors;
 

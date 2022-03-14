@@ -1293,6 +1293,112 @@ void MIType_AutomapBase(OScanner& os, bool doEquals, void* data, unsigned int fl
 		os.warning("base expected \"doom\", \"heretic\", or \"strife\"; got %s", os.getToken().c_str());
 }
 
+//
+bool ScanAndCompareString(OScanner& os, std::string cmp)
+{
+	os.scan();
+	if (!os.compareToken(cmp.c_str()))
+	{
+		os.warning("Expected \"%s\", got \"%s\". Aborting parsing", cmp.c_str(), os.getToken().c_str());
+		return false;
+	}
+
+	return true;
+}
+
+//
+bool ScanAndSetRealNum(OScanner& os, fixed_t& num)
+{
+	os.scan();
+	if (!IsRealNum(os.getToken().c_str()))
+	{
+		os.warning("Expected number, got \"%s\". Aborting parsing", os.getToken().c_str());
+		return false;
+	}
+	num = FLOAT2FIXED(os.getTokenFloat());
+	
+	return true;
+}
+
+// Scans through and interprets a file of lines
+bool InterpretLines(const std::string& name, std::vector<mline_t>& lines)
+{
+	lines.clear();
+
+	const int lump = W_FindLump(name.c_str(), 0);
+	if (lump != -1)
+	{
+		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+
+		const OScannerConfig config = {
+		    name.c_str(), // lumpName
+		    false,        // semiComments
+		    true,         // cComments
+		};
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+		
+		while (os.scan())
+		{
+			os.unScan();
+			mline_t ml;
+			
+			if (!ScanAndCompareString(os, "(")) break;
+			if (!ScanAndSetRealNum(os, ml.a.x)) break;
+			if (!ScanAndCompareString(os, ",")) break;
+			if (!ScanAndSetRealNum(os, ml.a.y)) break;
+			if (!ScanAndCompareString(os, ")")) break;
+			if (!ScanAndCompareString(os, ",")) break;
+			if (!ScanAndCompareString(os, "(")) break;
+			if (!ScanAndSetRealNum(os, ml.b.x)) break;
+			if (!ScanAndCompareString(os, ",")) break;
+			if (!ScanAndSetRealNum(os, ml.b.y)) break;
+			if (!ScanAndCompareString(os, ")")) break;
+
+			lines.push_back(ml);
+		}
+	}
+	else
+		return false;
+
+	return true;
+}
+
+//
+void MIType_MapArrows(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                      unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+
+	std::string maparrow = os.getToken();
+
+	if (!InterpretLines(maparrow, gameinfo.mapArrow))
+		os.warning("Map arrow lump \"%s\" could not be found", maparrow.c_str());
+
+	os.scan();
+	if (os.compareToken(","))
+	{
+		os.mustScan();
+		maparrow = os.getToken();
+
+		if (!InterpretLines(maparrow, gameinfo.mapArrowCheat))
+			os.warning("Map arrow lump \"%s\" could not be found", maparrow.c_str());
+	}
+	else
+	{
+		os.unScan();
+	}
+}
+
+//
+void MIType_MapKey(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                      unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+
+	const std::string name = os.getToken();
+	InterpretLines(name, *static_cast<std::vector<mline_t>*>(data));
+}
+
 //////////////////////////////////////////////////////////////////////
 /// MapInfoData
 
@@ -1454,6 +1560,9 @@ struct MapInfoDataSetter<gameinfo_t>
 		ENTRY3("titlemusic", &MIType_$LumpName, &gameinfo.titleMusic)
 		ENTRY3("titlepage", &MIType_LumpName, &gameinfo.titlePage)
 		ENTRY3("titletime", &MIType_Float, &gameinfo.titleTime)
+		ENTRY2("maparrow", &MIType_MapArrows)
+		ENTRY3("cheatkey", &MIType_MapKey, &gameinfo.cheatKey)
+		ENTRY3("easykey", &MIType_MapKey, &gameinfo.easyKey)
 	}
 };
 

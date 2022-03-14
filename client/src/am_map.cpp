@@ -158,69 +158,13 @@ typedef struct
 	fpoint_t a, b;
 } fline_t;
 
-typedef v2fixed_t mpoint_t;
-
-typedef struct
-{
-	mpoint_t a, b;
-} mline_t;
-
 typedef struct
 {
 	fixed_t slp, islp;
 } islope_t;
 
-//
-// The vector graphics for the automap.
-//  A line drawing of the player pointing right,
-//   starting from the middle.
-//
-#define R ((8 * PLAYERRADIUS) / 7)
-mline_t player_arrow[] = {{{-R + R / 8, 0}, {R, 0}},    // -----
-                          {{R, 0}, {R - R / 2, R / 4}}, // ----->
-                          {{R, 0}, {R - R / 2, -R / 4}},
-                          {{-R + R / 8, 0}, {-R - R / 8, R / 4}}, // >---->
-                          {{-R + R / 8, 0}, {-R - R / 8, -R / 4}},
-                          {{-R + 3 * R / 8, 0}, {-R + R / 8, R / 4}}, // >>--->
-                          {{-R + 3 * R / 8, 0}, {-R + R / 8, -R / 4}}};
-#undef R
-#define NUMPLYRLINES (ARRAY_LENGTH(player_arrow))
-
-#define R ((8 * PLAYERRADIUS) / 7)
-mline_t cheat_player_arrow[] = {
-    {{-R + R / 8, 0}, {R, 0}},    // -----
-    {{R, 0}, {R - R / 2, R / 6}}, // ----->
-    {{R, 0}, {R - R / 2, -R / 6}},
-    {{-R + R / 8, 0}, {-R - R / 8, R / 6}}, // >----->
-    {{-R + R / 8, 0}, {-R - R / 8, -R / 6}},
-    {{-R + 3 * R / 8, 0}, {-R + R / 8, R / 6}}, // >>----->
-    {{-R + 3 * R / 8, 0}, {-R + R / 8, -R / 6}},
-    {{-R / 2, 0}, {-R / 2, -R / 6}}, // >>-d--->
-    {{-R / 2, -R / 6}, {-R / 2 + R / 6, -R / 6}},
-    {{-R / 2 + R / 6, -R / 6}, {-R / 2 + R / 6, R / 4}},
-    {{-R / 6, 0}, {-R / 6, -R / 6}}, // >>-dd-->
-    {{-R / 6, -R / 6}, {0, -R / 6}},
-    {{0, -R / 6}, {0, R / 4}},
-    {{R / 6, R / 4}, {R / 6, -R / 7}}, // >>-ddt->
-    {{R / 6, -R / 7}, {R / 6 + R / 32, -R / 7 - R / 32}},
-    {{R / 6 + R / 32, -R / 7 - R / 32}, {R / 6 + R / 10, -R / 7}}};
-#undef R
-#define NUMCHEATPLYRLINES (ARRAY_LENGTH(cheat_player_arrow))
-
-#define R (FRACUNIT)
-// [RH] Avoid lots of warnings without compiler-specific #pragmas
-#define L(a, b, c, d)                                                                \
-	{                                                                                \
-		{(fixed_t)((a)*R), (fixed_t)((b)*R)}, { (fixed_t)((c)*R), (fixed_t)((d)*R) } \
-	}
-mline_t triangle_guy[] = {L(-.867, -.5, .867, -.5), L(.867, -.5, 0, 1),
-                          L(0, 1, -.867, -.5)};
-#define NUMTRIANGLEGUYLINES (ARRAY_LENGTH(triangle_guy))
-
-mline_t thintriangle_guy[] = {L(-.5, -.7, 1, 0), L(1, 0, -.5, .7), L(-.5, .7, -.5, -.7)};
-#undef L
-#undef R
-#define NUMTHINTRIANGLEGUYLINES (ARRAY_LENGTH(thintriangle_guy))
+// vector graphics for the automap for things.
+std::vector<mline_t> thintriangle_guy;
 
 am_default_colors_t AutomapDefaultColors;
 am_colors_t AutomapDefaultCurrentColors;
@@ -481,6 +425,20 @@ void AM_changeWindowLoc()
 void AM_initVariables()
 {
 	static event_t st_notify(ev_keyup, AM_MSGENTERED, 0, 0);
+
+	thintriangle_guy.clear();
+#define R (FRACUNIT)
+#define L(a, b) { (fixed_t)((a)*R), (fixed_t)((b)*R)}
+	
+	mline_t ml = {L(-.5, -.7), L(1, 0)};
+	thintriangle_guy.push_back(ml);
+	ml = {L(1, 0), L(-.5, .7)};
+	thintriangle_guy.push_back(ml);
+	ml = {L(-.5, -.7), L(-.5, .7)};
+	thintriangle_guy.push_back(ml);
+
+#undef L
+#undef R
 
 	automapactive = true;
 
@@ -981,7 +939,9 @@ bool AM_clipMline(mline_t* ml, fline_t* fl)
 	int outcode2 = 0;
 	int outside;
 
-	fpoint_t tmp = {0, 0};
+	fpoint_t tmp;
+
+	tmp = {0, 0};
 	int dx;
 	int dy;
 
@@ -1487,10 +1447,10 @@ void AM_rotatePoint(mpoint_t& pt)
 	pt.y += pl.camera->y;
 }
 
-void AM_drawLineCharacter(mline_t* lineguy, int lineguylines, fixed_t scale,
+void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed_t scale,
                           angle_t angle, am_color_t color, fixed_t x, fixed_t y)
 {
-	for (int i = 0; i < lineguylines; i++)
+	for (int i = 0; i < lineguy.size(); i++)
 	{
 		mline_t l;
 		l.a = lineguy[i].a;
@@ -1533,11 +1493,11 @@ void AM_drawPlayers()
 			angle = conplayer.camera->angle;
 
 		if (am_cheating)
-			AM_drawLineCharacter(cheat_player_arrow, NUMCHEATPLYRLINES, 0, angle,
+			AM_drawLineCharacter(gameinfo.mapArrowCheat, INT2FIXED(16), angle,
 			                     gameinfo.currentAutomapColors.YourColor, 
 								 conplayer.camera->x, conplayer.camera->y);
 		else
-			AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 0, angle,
+			AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED(16), angle,
 			                     gameinfo.currentAutomapColors.YourColor,
 			                     conplayer.camera->x, conplayer.camera->y);
 		return;
@@ -1598,7 +1558,7 @@ void AM_drawPlayers()
 			angle -= conplayer.camera->angle - ANG90;
 		}
 
-		AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 0, angle, color, pt.x, pt.y);
+		AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED(16), angle, color, pt.x, pt.y);
 	}
 }
 
@@ -1619,8 +1579,7 @@ void AM_drawThings(am_color_t color)
 				angle += ANG90 - displayplayer().camera->angle;
 			}
 
-			AM_drawLineCharacter(thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
-			                     16 << FRACBITS, angle, color, p.x, p.y);
+			AM_drawLineCharacter(thintriangle_guy, INT2FIXED(16), angle, color, p.x, p.y);
 			t = t->snext;
 		}
 	}
