@@ -428,13 +428,23 @@ void AM_initVariables()
 
 	thintriangle_guy.clear();
 #define R (FRACUNIT)
-#define L(a, b) { (fixed_t)((a)*R), (fixed_t)((b)*R)}
-	
-	mline_t ml = {L(-.5, -.7), L(1, 0)};
+#define L(a) (fixed_t)((a)*R)
+
+	mline_t ml;
+	ml.a.x = L(-.5);
+	ml.a.y = L(-.7);
+	ml.b.x = L(1);
+	ml.b.y = L(0);
 	thintriangle_guy.push_back(ml);
-	ml = {L(1, 0), L(-.5, .7)};
+	ml.a.x = L(1);
+	ml.a.y = L(0);
+	ml.b.x = L(-.5);
+	ml.b.y = L(-.7);
 	thintriangle_guy.push_back(ml);
-	ml = {L(-.5, -.7), L(-.5, .7)};
+	ml.a.x = L(-.5);
+	ml.a.y = L(-.7);
+	ml.b.x = L(-.5);
+	ml.b.y = L(-.7);
 	thintriangle_guy.push_back(ml);
 
 #undef L
