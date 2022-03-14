@@ -1460,10 +1460,10 @@ void AM_rotatePoint(mpoint_t& pt)
 void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed_t scale,
                           angle_t angle, am_color_t color, fixed_t x, fixed_t y)
 {
-	for (int i = 0; i < lineguy.size(); i++)
+	for (std::vector<mline_t>::const_iterator it = lineguy.begin(); it != lineguy.end(); ++it)
 	{
 		mline_t l;
-		l.a = lineguy[i].a;
+		l.a = it->a;
 
 		if (scale)
 			M_ScaleVec2Fixed(&l.a, &l.a, scale);
@@ -1474,7 +1474,7 @@ void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed_t scale,
 		l.a.x += x;
 		l.a.y += y;
 
-		l.b = lineguy[i].b;
+		l.b = it->b;
 
 		if (scale)
 			M_ScaleVec2Fixed(&l.b, &l.b, scale);
