@@ -1256,7 +1256,7 @@ void AM_drawGrid(am_color_t color)
 	mline_t ml;
 	
 	// draw vertical gridlines
-	for (fixed_t x = start; x < maximum_x; x += INT2FIXED(MAPBLOCKUNITS))
+	for (fixed_t x = start; x < maximum_x; x += w)
 	{
 		ml.a.y = minimum_y;
 		ml.b.y = maximum_y;
@@ -1274,7 +1274,7 @@ void AM_drawGrid(am_color_t color)
 	start = w + minimum_y - ((minimum_y % w) + w) % w;
 
 	// draw horizontal gridlines
-	for (fixed_t y = start; y < maximum_y; y += INT2FIXED(MAPBLOCKUNITS))
+	for (fixed_t y = start; y < maximum_y; y += w)
 	{
 		ml.a.x = minimum_x;
 		ml.b.x = maximum_x;
