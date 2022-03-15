@@ -51,6 +51,7 @@
 #include "am_map.h"
 
 #include "gi.h"
+#include "g_skill.h"
 #include "p_mapformat.h"
 
 argb_t CL_GetPlayerColor(player_t*);
@@ -1550,7 +1551,6 @@ void AM_drawPlayers()
 {
 	angle_t angle;
 	player_t& conplayer = displayplayer();
-	const argb_t* palette = V_GetDefaultPalette()->colors;
 
 	if (!multiplayer)
 	{
@@ -1574,7 +1574,6 @@ void AM_drawPlayers()
 	{
 		player_t* p = &*it;
 		am_color_t color;
-		mpoint_t pt;
 
 		if (!(it->ingame()) || !p->mo ||
 		    (((G_IsFFAGame() && p != &conplayer) ||
@@ -1592,6 +1591,8 @@ void AM_drawPlayers()
 		}
 		else if (demoplayback)
 		{
+			const argb_t* palette = V_GetDefaultPalette()->colors;
+
 			switch (it->id)
 			{
 			case 1:
@@ -1616,6 +1617,7 @@ void AM_drawPlayers()
 			color.index = V_BestColor(V_GetDefaultPalette()->basecolors, color.rgb);
 		}
 
+		mpoint_t pt;
 		M_SetVec2Fixed(&pt, p->mo->x, p->mo->y);
 		angle = p->mo->angle;
 
@@ -1629,6 +1631,53 @@ void AM_drawPlayers()
 	}
 }
 
+bool AM_actorIsKey(AActor* t)
+{
+	if (t->sprite == SPR_BKEY || t->sprite == SPR_YKEY || t->sprite == SPR_RKEY ||
+	    t->sprite == SPR_BSKU || t->sprite == SPR_YSKU || t->sprite == SPR_RSKU)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+am_color_t AM_getKeyColor(AActor *t)
+{
+	am_color_t color = gameinfo.currentAutomapColors.ThingColor;
+	const argb_t* palette = V_GetDefaultPalette()->colors;
+
+	if (t->sprite == SPR_BKEY || t->sprite == SPR_BSKU)
+		color = AM_GetColorFromString(palette, "blue");
+	if (t->sprite == SPR_YKEY || t->sprite == SPR_YSKU)
+		color = AM_GetColorFromString(palette, "yellow");
+	if (t->sprite == SPR_RKEY || t->sprite == SPR_RSKU)
+		color = AM_GetColorFromString(palette, "red");
+
+	return color;
+}
+
+void AM_drawEasyKeys()
+{
+	for (int i = 0; i < numsectors; i++)
+	{
+		AActor* t = sectors[i].thinglist;
+		while (t)
+		{
+			if (AM_actorIsKey(t))
+			{
+				mpoint_t p;
+				M_SetVec2Fixed(&p, t->x, t->y);
+
+				const am_color_t key_color = AM_getKeyColor(t);
+
+				AM_drawLineCharacter(gameinfo.easyKey, t->radius, 0, key_color, p.x, p.y);
+			}
+			t = t->snext;
+		}
+	}
+}
+
 void AM_drawThings()
 {
 	for (int i = 0; i < numsectors; i++)
@@ -1638,8 +1687,8 @@ void AM_drawThings()
 		{
 			mpoint_t p;
 			M_SetVec2Fixed(&p, t->x, t->y);
-			angle_t triangle_angle = t->angle;
 			angle_t rotate_angle = 0;
+			angle_t triangle_angle = t->angle;
 
 			if (am_rotate)
 			{
@@ -1648,32 +1697,47 @@ void AM_drawThings()
 				triangle_angle += rotate_angle;
 			}
 
-			am_color_t color = gameinfo.currentAutomapColors.ThingColor;
-
-			AM_drawLineCharacter(thintriangle_guy, t->radius, triangle_angle, color, p.x, p.y);
-
-			if (t->flags & MF_MISSILE)
+			if (AM_actorIsKey(t))
 			{
-				color = gameinfo.currentAutomapColors.ThingColor_Projectile;
-			}
-			else if (t->flags & MF_SPECIAL)
-			{
-				if (t->flags & MF_COUNTITEM)
-					color = gameinfo.currentAutomapColors.ThingColor_CountItem;
-				else
-					color = gameinfo.currentAutomapColors.ThingColor_Item;
-			}
-			else if (t->flags & MF_SOLID && t->flags & MF_SHOOTABLE)
-			{
-				if (t->flags & MF_FRIEND)
-					color = gameinfo.currentAutomapColors.ThingColor_Friend;
-				else if (t->flags & MF_COUNTKILL)
-					color = gameinfo.currentAutomapColors.ThingColor_Monster;
-				else
-					color = gameinfo.currentAutomapColors.ThingColor_NoCountMonster;
-			}
+				if (!G_GetCurrentSkill().easy_key)
+				{
+					const am_color_t key_color = AM_getKeyColor(t);
 
-			AM_drawLineCharacter(thinrectangle_guy, t->radius, rotate_angle, color, p.x, p.y);
+					AM_drawLineCharacter(gameinfo.cheatKey, t->radius, 0, key_color, p.x,
+					                     p.y);
+				}
+			}
+			else
+			{
+				am_color_t color = gameinfo.currentAutomapColors.ThingColor;
+
+				AM_drawLineCharacter(thintriangle_guy, t->radius, triangle_angle, color,
+				                     p.x, p.y);
+
+				if (t->flags & MF_MISSILE)
+				{
+					color = gameinfo.currentAutomapColors.ThingColor_Projectile;
+				}
+				else if (t->flags & MF_SPECIAL)
+				{
+					if (t->flags & MF_COUNTITEM)
+						color = gameinfo.currentAutomapColors.ThingColor_CountItem;
+					else
+						color = gameinfo.currentAutomapColors.ThingColor_Item;
+				}
+				else if (t->flags & MF_SOLID && t->flags & MF_SHOOTABLE)
+				{
+					if (t->flags & MF_FRIEND)
+						color = gameinfo.currentAutomapColors.ThingColor_Friend;
+					else if (t->flags & MF_COUNTKILL)
+						color = gameinfo.currentAutomapColors.ThingColor_Monster;
+					else
+						color = gameinfo.currentAutomapColors.ThingColor_NoCountMonster;
+				}
+
+				AM_drawLineCharacter(thinrectangle_guy, t->radius, rotate_angle, color,
+				                     p.x, p.y);
+			}
 			t = t->snext;
 		}
 	}
@@ -1755,6 +1819,8 @@ void AM_Drawer()
 
 	AM_drawWalls();
 	AM_drawPlayers();
+	if (G_GetCurrentSkill().easy_key)
+		AM_drawEasyKeys();
 	if (am_cheating == 2)
 		AM_drawThings();
 

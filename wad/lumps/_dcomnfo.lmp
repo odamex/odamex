@@ -2,6 +2,7 @@ gameinfo
 {
 	MapArrow = "DOOMARRO", "DDTARROW"
 	CheatKey = "CHEATKEY"
+	EasyKey = "EASYKEY"
 }
 
 skill baby
