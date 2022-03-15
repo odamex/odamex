@@ -1437,14 +1437,10 @@ void R_DrawViewBorder()
 
 	IWindowSurface* surface = R_GetRenderingSurface();
 	DCanvas* canvas = surface->getDefaultCanvas();
-	int surface_width = surface->getWidth();
-	int surface_height = surface->getHeight();
-	int top = 0, bottom = ST_StatusBarY(surface_width, surface_height);
-	int left = 0, right = surface_width;
-
-	const gameborder_t* border = gameinfo.border;
-	const int offset = border->offset;
-	const int size = border->size;
+	const int surface_width = surface->getWidth();
+	const int surface_height = surface->getHeight();
+	const int top = 0, bottom = ST_StatusBarY(surface_width, surface_height);
+	const int left = 0, right = surface_width;
 
 	// draw top border
 	R_DrawBorder(left, top, right, viewwindowy);
@@ -1455,25 +1451,32 @@ void R_DrawViewBorder()
 	// draw right border
 	R_DrawBorder(viewwindowx + viewwidth, viewwindowy, right, viewwindowy + viewheight);
 
+	const gameborder_t& border = gameinfo.border;
+	const int offset = border.offset;
+	const int size = border.size;
+
+	if (size == 0)
+		return;
+
 	// draw beveled edge for the viewing window's top and bottom edges
 	for (int x = viewwindowx; x < viewwindowx + viewwidth; x += size)
 	{
-		canvas->DrawPatch(W_CachePatch(border->t), x, viewwindowy - offset);
-		canvas->DrawPatch(W_CachePatch(border->b), x, viewwindowy + viewheight);
+		canvas->DrawPatch(W_CachePatch(border.t.c_str()), x, viewwindowy - offset);
+		canvas->DrawPatch(W_CachePatch(border.b.c_str()), x, viewwindowy + viewheight);
 	}
 
 	// draw beveled edge for the viewing window's left and right edges
 	for (int y = viewwindowy; y < viewwindowy + viewheight; y += size)
 	{
-		canvas->DrawPatch(W_CachePatch(border->l), viewwindowx - offset, y);
-		canvas->DrawPatch(W_CachePatch(border->r), viewwindowx + viewwidth, y);
+		canvas->DrawPatch(W_CachePatch(border.l.c_str()), viewwindowx - offset, y);
+		canvas->DrawPatch(W_CachePatch(border.r.c_str()), viewwindowx + viewwidth, y);
 	}
 
 	// draw beveled edge for the viewing window's corners
-	canvas->DrawPatch(W_CachePatch(border->tl), viewwindowx - offset, viewwindowy - offset);
-	canvas->DrawPatch(W_CachePatch(border->tr), viewwindowx + viewwidth, viewwindowy - offset);
-	canvas->DrawPatch(W_CachePatch(border->bl), viewwindowx - offset, viewwindowy + viewheight);
-	canvas->DrawPatch(W_CachePatch(border->br), viewwindowx + viewwidth, viewwindowy + viewheight);
+	canvas->DrawPatch(W_CachePatch(border.tl.c_str()), viewwindowx - offset, viewwindowy - offset);
+	canvas->DrawPatch(W_CachePatch(border.tr.c_str()), viewwindowx + viewwidth, viewwindowy - offset);
+	canvas->DrawPatch(W_CachePatch(border.bl.c_str()), viewwindowx - offset, viewwindowy + viewheight);
+	canvas->DrawPatch(W_CachePatch(border.br.c_str()), viewwindowx + viewwidth, viewwindowy + viewheight);
 
 	V_MarkRect(left, top, right, bottom);
 }

@@ -40,14 +40,14 @@ typedef struct
 {
 	byte offset;
 	byte size;
-	char tl[8];
-	char t[8];
-	char tr[8];
-	char l[8];
-	char r[8];
-	char bl[8];
-	char b[8];
-	char br[8];
+	OLumpName tl;
+	OLumpName t;
+	OLumpName tr;
+	OLumpName l;
+	OLumpName r;
+	OLumpName bl;
+	OLumpName b;
+	OLumpName br;
 } gameborder_t;
 
 typedef struct
@@ -75,9 +75,9 @@ typedef struct
 	const char **quitSounds;
 	int maxSwitch;
 	OLumpName borderFlat;
-	gameborder_t *border;
+	gameborder_t border;
 
-	char titleString[64];
+	std::string titleString;
 } gameinfo_t;
 
 extern gameinfo_t gameinfo;

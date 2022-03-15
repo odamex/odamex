@@ -1,4 +1,8 @@
 
+gameinfo
+{
+	Border = "DoomBorder"
+}
 
 skill baby
 {

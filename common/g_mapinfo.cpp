@@ -1351,6 +1351,74 @@ void MIType_SpecialAction_KillMonsters(OScanner& os, bool doEquals, void* data,
 	// todo
 }
 
+// border around smaller screen sizes
+void MIType_Border(OScanner& os, bool doEquals, void* data,
+                                       unsigned int flags, unsigned int flags2)
+{
+	if (doEquals)
+		MustGetStringName(os, "=");
+
+	os.mustScan(); // can be string or int
+
+	if (IsNum(os.getToken().c_str()))
+	{
+		gameborder_t& border = gameinfo.border;
+
+		border.offset = os.getTokenInt();
+
+		os.mustScanInt();
+		border.offset = os.getTokenInt();
+
+		os.mustScan(); border.tl = os.getToken();
+		os.mustScan(); border.t  = os.getToken();
+		os.mustScan(); border.tr = os.getToken();
+		os.mustScan(); border.l  = os.getToken();
+		os.mustScan(); border.r  = os.getToken();
+		os.mustScan(); border.bl = os.getToken();
+		os.mustScan(); border.b  = os.getToken();
+		os.mustScan(); border.br = os.getToken();
+	}
+	else
+	{
+		if (os.compareTokenNoCase("doomborder"))
+		{
+			static const gameborder_t DoomBorder =
+			{
+				8, 8,
+				"brdr_tl", "brdr_t", "brdr_tr",
+				"brdr_l",			 "brdr_r",
+				"brdr_bl", "brdr_b", "brdr_br"
+			};
+
+			gameinfo.border = DoomBorder;
+		}
+		else if (os.compareTokenNoCase("hereticborder"))
+		{
+			static const gameborder_t HereticBorder =
+			{
+				4, 16,
+				"bordtl", "bordt", "bordtr",
+				"bordl",           "bordr",
+				"bordbl", "bordb", "bordbr"
+			};
+
+			gameinfo.border = HereticBorder;
+		}
+		else if (os.compareTokenNoCase("strifeborder"))
+		{
+			static const gameborder_t StrifeBorder =
+			{
+				8, 8,
+				"brdr_tl", "brdr_t", "brdr_tr",
+				"brdr_l",			 "brdr_r",
+				"brdr_bl", "brdr_b", "brdr_br"
+			};
+
+			gameinfo.border = StrifeBorder;
+		}
+	}
+}
+
 //////////////////////////////////////////////////////////////////////
 /// MapInfoData
 
@@ -1505,6 +1573,7 @@ struct MapInfoDataSetter<gameinfo_t>
 		mapInfoDataContainer.reserve(10);
 
 		ENTRY3("advisorytime", &MIType_Float, &gameinfo.advisoryTime)
+		ENTRY2("border", &MIType_Border)
 		ENTRY3("borderflat", &MIType_LumpName, &gameinfo.borderFlat)
 		// ENTRY3("chatsound",			)
 		ENTRY3("creditpage", &MIType_Pages, &gameinfo.creditPages)

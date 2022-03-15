@@ -52,13 +52,7 @@ static const char *quitsounds2[8] =
 	"demon/melee"
 };
 
-static gameborder_t DoomBorder =
-{
-	8, 8,
-	"brdr_tl", "brdr_t", "brdr_tr",
-	"brdr_l",			 "brdr_r",
-	"brdr_bl", "brdr_b", "brdr_br"
-};
+static gameborder_t DefaultBorder;
 
 gameinfo_t SharewareGameInfo =
 {
@@ -80,7 +74,7 @@ gameinfo_t SharewareGameInfo =
 	quitsounds,
 	1,
 	"FLOOR7_2",
-	&DoomBorder,
+	DefaultBorder,
 	"DOOM Shareware"
 };
 
@@ -104,7 +98,7 @@ gameinfo_t RegisteredGameInfo =
 	quitsounds,
 	2,
 	"FLOOR7_2",
-	&DoomBorder,
+	DefaultBorder,
 	"DOOM Registered"
 };
 
@@ -128,7 +122,7 @@ gameinfo_t RetailGameInfo =
 	quitsounds,
 	2,
 	"FLOOR7_2",
-	&DoomBorder,
+	DefaultBorder,
 	"The Ultimate DOOM"
 };
 
@@ -152,7 +146,7 @@ gameinfo_t RetailBFGGameInfo =
 	quitsounds,
 	2,
 	"FLOOR7_2",
-	&DoomBorder,
+	DefaultBorder,
 	"The Ultimate DOOM (BFG Edition)"
 };
 
@@ -176,7 +170,7 @@ gameinfo_t CommercialGameInfo =
 	quitsounds2,
 	3,
 	"GRNROCK",
-	&DoomBorder,
+	DefaultBorder,
 	"DOOM 2: Hell on Earth"
 };
 
@@ -200,7 +194,7 @@ gameinfo_t CommercialBFGGameInfo =
 	quitsounds2,
 	3,
 	"GRNROCK",
-	&DoomBorder,
+	DefaultBorder,
 	"DOOM 2: Hell on Earth (BFG Edition)"
 };
 
