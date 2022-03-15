@@ -1559,7 +1559,7 @@ void AM_drawPlayers()
 		else
 			angle = conplayer.camera->angle;
 
-		if (am_cheating)
+		if (am_cheating && !gameinfo.mapArrowCheat.empty())
 			AM_drawLineCharacter(gameinfo.mapArrowCheat, INT2FIXED(16), angle,
 			                     gameinfo.currentAutomapColors.YourColor, 
 								 conplayer.camera->x, conplayer.camera->y);
