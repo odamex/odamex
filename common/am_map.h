@@ -52,6 +52,7 @@ typedef struct am_colors_s
 	am_color_t ThingColor_Monster;
 	am_color_t ThingColor_NoCountMonster;
 	am_color_t ThingColor_Friend;
+	am_color_t ThingColor_Projectile;
 	am_color_t SecretWallColor;
 	am_color_t GridColor;
 	am_color_t XHairColor;
@@ -76,6 +77,7 @@ typedef struct am_default_colors_s
 	std::string ThingColor_Monster;
 	std::string ThingColor_NoCountMonster;
 	std::string ThingColor_Friend;
+	std::string ThingColor_Projectile;
 	std::string SecretWallColor;
 	std::string GridColor;
 	std::string XHairColor;

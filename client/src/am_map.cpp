@@ -75,6 +75,12 @@ EXTERN_CVAR(am_tswallcolor)
 EXTERN_CVAR(am_fdwallcolor)
 EXTERN_CVAR(am_cdwallcolor)
 EXTERN_CVAR(am_thingcolor)
+EXTERN_CVAR(am_thingcolor_item)
+EXTERN_CVAR(am_thingcolor_countitem)
+EXTERN_CVAR(am_thingcolor_monster)
+EXTERN_CVAR(am_thingcolor_nocountmonster)
+EXTERN_CVAR(am_thingcolor_friend)
+EXTERN_CVAR(am_thingcolor_projectile)
 EXTERN_CVAR(am_gridcolor)
 EXTERN_CVAR(am_xhaircolor)
 EXTERN_CVAR(am_notseencolor)
@@ -88,6 +94,12 @@ EXTERN_CVAR(am_ovtswallcolor)
 EXTERN_CVAR(am_ovfdwallcolor)
 EXTERN_CVAR(am_ovcdwallcolor)
 EXTERN_CVAR(am_ovthingcolor)
+EXTERN_CVAR(am_ovthingcolor_item)
+EXTERN_CVAR(am_ovthingcolor_countitem)
+EXTERN_CVAR(am_ovthingcolor_monster)
+EXTERN_CVAR(am_ovthingcolor_nocountmonster)
+EXTERN_CVAR(am_ovthingcolor_friend)
+EXTERN_CVAR(am_ovthingcolor_projectile)
 EXTERN_CVAR(am_ovgridcolor)
 EXTERN_CVAR(am_ovxhaircolor)
 EXTERN_CVAR(am_ovnotseencolor)
@@ -520,6 +532,7 @@ void AM_SetBaseColorDoom()
 	gameinfo.defaultAutomapColors.ThingColor_Monster		= "74 fc 6c";
 	gameinfo.defaultAutomapColors.ThingColor_NoCountMonster	= "yellow";
 	gameinfo.defaultAutomapColors.ThingColor_Friend			= "dark green";
+	gameinfo.defaultAutomapColors.ThingColor_Projectile		= "orange";
 	gameinfo.defaultAutomapColors.GridColor			= "4c 4c 4c";
 	gameinfo.defaultAutomapColors.XHairColor		= "80 80 80";
 	gameinfo.defaultAutomapColors.NotSeenColor		= "6c 6c 6c";
@@ -537,11 +550,12 @@ void AM_SetBaseColorRaven()
 	gameinfo.defaultAutomapColors.LockedColor		= "fc fc 00";
 	gameinfo.defaultAutomapColors.CDWallColor		= "68 3c 20";
 	gameinfo.defaultAutomapColors.ThingColor		= "38 38 38";
-	gameinfo.defaultAutomapColors.ThingColor_Item			= "38 38 38";
-	gameinfo.defaultAutomapColors.ThingColor_CountItem		= "38 38 38";
-	gameinfo.defaultAutomapColors.ThingColor_Monster		= "38 38 38";
-	gameinfo.defaultAutomapColors.ThingColor_NoCountMonster	= "38 38 38";
-	gameinfo.defaultAutomapColors.ThingColor_Friend			= "38 38 38";
+	gameinfo.defaultAutomapColors.ThingColor_Item			= "38 38 38"; // todo
+	gameinfo.defaultAutomapColors.ThingColor_CountItem		= "38 38 38"; // todo
+	gameinfo.defaultAutomapColors.ThingColor_Monster		= "38 38 38"; // todo
+	gameinfo.defaultAutomapColors.ThingColor_NoCountMonster	= "38 38 38"; // todo
+	gameinfo.defaultAutomapColors.ThingColor_Friend			= "38 38 38"; // todo
+	gameinfo.defaultAutomapColors.ThingColor_Projectile		= "38 38 38"; // todo
 	gameinfo.defaultAutomapColors.GridColor			= "4c 4c 4c";
 	gameinfo.defaultAutomapColors.XHairColor		= "80 80 80";
 	gameinfo.defaultAutomapColors.NotSeenColor		= "6c 6c 6c";
@@ -559,11 +573,12 @@ void AM_SetBaseColorStrife()
 	gameinfo.defaultAutomapColors.LockedColor		= "77 73 73";
 	gameinfo.defaultAutomapColors.CDWallColor		= "77 73 73";
 	gameinfo.defaultAutomapColors.ThingColor		= "fc 00 00";
-	gameinfo.defaultAutomapColors.ThingColor_Item			= "fc 00 00";
-	gameinfo.defaultAutomapColors.ThingColor_CountItem		= "fc 00 00";
-	gameinfo.defaultAutomapColors.ThingColor_Monster		= "fc 00 00";
-	gameinfo.defaultAutomapColors.ThingColor_NoCountMonster	= "fc 00 00";
-	gameinfo.defaultAutomapColors.ThingColor_Friend			= "fc 00 00";
+	gameinfo.defaultAutomapColors.ThingColor_Item			= "fc 00 00"; // todo
+	gameinfo.defaultAutomapColors.ThingColor_CountItem		= "fc 00 00"; // todo
+	gameinfo.defaultAutomapColors.ThingColor_Monster		= "fc 00 00"; // todo
+	gameinfo.defaultAutomapColors.ThingColor_NoCountMonster	= "fc 00 00"; // todo
+	gameinfo.defaultAutomapColors.ThingColor_Friend			= "fc 00 00"; // todo
+	gameinfo.defaultAutomapColors.ThingColor_Projectile		= "fc 00 00"; // todo
 	gameinfo.defaultAutomapColors.GridColor			= "4c 4c 4c";
 	gameinfo.defaultAutomapColors.XHairColor		= "80 80 80";
 	gameinfo.defaultAutomapColors.NotSeenColor		= "6c 6c 6c";
@@ -583,11 +598,12 @@ void AM_initColors(const bool overlayed)
 		gameinfo.currentAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, am_ovfdwallcolor.cstring());
 		gameinfo.currentAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, am_ovcdwallcolor.cstring());
 		gameinfo.currentAutomapColors.ThingColor = AM_GetColorFromString(palette_colors, am_ovthingcolor.cstring());
-		gameinfo.currentAutomapColors.ThingColor_Item = AM_GetColorFromString(palette_colors, am_ovthingcolor.cstring()); // todo
-		gameinfo.currentAutomapColors.ThingColor_CountItem = AM_GetColorFromString(palette_colors, am_ovthingcolor.cstring());
-		gameinfo.currentAutomapColors.ThingColor_Monster = AM_GetColorFromString(palette_colors, am_ovthingcolor.cstring());
-		gameinfo.currentAutomapColors.ThingColor_NoCountMonster = AM_GetColorFromString(palette_colors, am_ovthingcolor.cstring());
-		gameinfo.currentAutomapColors.ThingColor_Friend = AM_GetColorFromString(palette_colors, am_ovthingcolor.cstring());
+		gameinfo.currentAutomapColors.ThingColor_Item = AM_GetColorFromString(palette_colors, am_ovthingcolor_item.cstring());
+		gameinfo.currentAutomapColors.ThingColor_CountItem = AM_GetColorFromString(palette_colors, am_ovthingcolor_countitem.cstring());
+		gameinfo.currentAutomapColors.ThingColor_Monster = AM_GetColorFromString(palette_colors, am_ovthingcolor_monster.cstring());
+		gameinfo.currentAutomapColors.ThingColor_NoCountMonster = AM_GetColorFromString(palette_colors, am_ovthingcolor_nocountmonster.cstring());
+		gameinfo.currentAutomapColors.ThingColor_Friend = AM_GetColorFromString(palette_colors, am_ovthingcolor_friend.cstring());
+		gameinfo.currentAutomapColors.ThingColor_Projectile = AM_GetColorFromString(palette_colors, am_ovthingcolor_projectile.cstring());
 		gameinfo.currentAutomapColors.GridColor = AM_GetColorFromString(palette_colors, am_ovgridcolor.cstring());
 		gameinfo.currentAutomapColors.XHairColor = AM_GetColorFromString(palette_colors, am_ovxhaircolor.cstring());
 		gameinfo.currentAutomapColors.NotSeenColor = AM_GetColorFromString(palette_colors, am_ovnotseencolor.cstring());
@@ -607,11 +623,12 @@ void AM_initColors(const bool overlayed)
 		gameinfo.currentAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, am_fdwallcolor.cstring());
 		gameinfo.currentAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, am_cdwallcolor.cstring());
 		gameinfo.currentAutomapColors.ThingColor = AM_GetColorFromString(palette_colors, am_thingcolor.cstring());
-		gameinfo.currentAutomapColors.ThingColor_Item = AM_GetColorFromString(palette_colors, am_thingcolor.cstring()); // todo
-		gameinfo.currentAutomapColors.ThingColor_CountItem = AM_GetColorFromString(palette_colors, am_thingcolor.cstring());
-		gameinfo.currentAutomapColors.ThingColor_Monster = AM_GetColorFromString(palette_colors, am_thingcolor.cstring());
-		gameinfo.currentAutomapColors.ThingColor_NoCountMonster = AM_GetColorFromString(palette_colors, am_thingcolor.cstring());
-		gameinfo.currentAutomapColors.ThingColor_Friend = AM_GetColorFromString(palette_colors, am_thingcolor.cstring());
+		gameinfo.currentAutomapColors.ThingColor_Item = AM_GetColorFromString(palette_colors, am_thingcolor_item.cstring());
+		gameinfo.currentAutomapColors.ThingColor_CountItem = AM_GetColorFromString(palette_colors, am_thingcolor_countitem.cstring());
+		gameinfo.currentAutomapColors.ThingColor_Monster = AM_GetColorFromString(palette_colors, am_thingcolor_monster.cstring());
+		gameinfo.currentAutomapColors.ThingColor_NoCountMonster = AM_GetColorFromString(palette_colors, am_thingcolor_nocountmonster.cstring());
+		gameinfo.currentAutomapColors.ThingColor_Friend = AM_GetColorFromString(palette_colors, am_thingcolor_friend.cstring());
+		gameinfo.currentAutomapColors.ThingColor_Projectile = AM_GetColorFromString(palette_colors, am_thingcolor_projectile.cstring());
 		gameinfo.currentAutomapColors.GridColor = AM_GetColorFromString(palette_colors, am_gridcolor.cstring());
 		gameinfo.currentAutomapColors.XHairColor = AM_GetColorFromString(palette_colors, am_xhaircolor.cstring());
 		gameinfo.currentAutomapColors.NotSeenColor = AM_GetColorFromString(palette_colors, am_notseencolor.cstring());
@@ -664,6 +681,8 @@ void AM_initColors(const bool overlayed)
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_NoCountMonster.c_str());
 		gameinfo.currentAutomapColors.ThingColor_Friend = 
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Friend.c_str());
+		gameinfo.currentAutomapColors.ThingColor_Projectile = 
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Projectile.c_str());
 		gameinfo.currentAutomapColors.GridColor = 
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.GridColor.c_str());
 		gameinfo.currentAutomapColors.XHairColor = 
@@ -1631,7 +1650,11 @@ void AM_drawThings()
 
 			AM_drawLineCharacter(thintriangle_guy, t->radius, angle, color, p.x, p.y);
 
-			if (t->flags & MF_SPECIAL)
+			if (t->flags & MF_MISSILE)
+			{
+				color = gameinfo.currentAutomapColors.ThingColor_Projectile;
+			}
+			else if (t->flags & MF_SPECIAL)
 			{
 				if (t->flags & MF_COUNTITEM)
 					color = gameinfo.currentAutomapColors.ThingColor_CountItem;

@@ -1879,6 +1879,7 @@ struct MapInfoDataSetter<automap_dummy>
 		ENTRY3("thingcolor_monster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Monster)
 		ENTRY3("thingcolor_nocountmonster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_NoCountMonster)
 		ENTRY3("thingcolor_friend", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Friend)
+		ENTRY3("thingcolor_projectile", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Projectile)
 		ENTRY3("secretwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.SecretWallColor)
 		ENTRY3("gridcolor", &MIType_String, &gameinfo.defaultAutomapColors.GridColor)
 		ENTRY3("xhaircolor", &MIType_String, &gameinfo.defaultAutomapColors.XHairColor)
