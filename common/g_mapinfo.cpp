@@ -1100,7 +1100,6 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 	}
 }
 
-<<<<<<< HEAD
 // Sets the credit pages from a gameinfo lump
 void MIType_Pages(OScanner& os, bool doEquals, void* data, unsigned int flags,
                         unsigned int flags2)
@@ -1150,13 +1149,13 @@ void MIType_Pages(OScanner& os, bool doEquals, void* data, unsigned int flags,
 
 // Sets multiple lumpnames in a vector
 void MIType_$VectorLumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
-                  unsigned int flags2)
+                            unsigned int flags2)
 {
 	ParseMapInfoHelper<OLumpName>(os, doEquals);
 
 	const std::string page = os.getToken();
 	static_cast<std::vector<OLumpName>*>(data)->push_back(page);
-	
+
 	while (os.scan())
 	{
 		if (os.compareToken(","))
@@ -1172,7 +1171,9 @@ void MIType_$VectorLumpName(OScanner& os, bool doEquals, void* data, unsigned in
 			os.unScan();
 			break;
 		}
-=======
+	}
+}
+
 // Sets the inputted data as a std::string
 void MIType_SpawnFilter(OScanner& os, bool doEquals, void* data, unsigned int flags,
                    unsigned int flags2)
@@ -1197,7 +1198,6 @@ void MIType_SpawnFilter(OScanner& os, bool doEquals, void* data, unsigned int fl
 			*static_cast<int*>(data) |= 4;
 		else if (os.compareTokenNoCase("nightmare"))
 			*static_cast<int*>(data) |= 4;
->>>>>>> odamex/stable
 	}
 }
 
