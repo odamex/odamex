@@ -18,3 +18,8 @@
 [submodule "libraries/miniupnp"]
 	path = libraries/miniupnp
 	url = https://github.com/miniupnp/miniupnp.git
+[submodule "libraries/jsoncpp"]
+	path = libraries/jsoncpp
+	url = https://github.com/open-source-parsers/jsoncpp.git
+	branch = 0.y.z
+	ignore = dirty

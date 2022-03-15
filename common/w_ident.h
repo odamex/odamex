@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __W_IDENT_H__
-#define __W_IDENT_H__
+#pragma once
 
 
 #include "m_ostring.h"
@@ -52,5 +51,3 @@ bool W_IsFilehashCommercialIWAD(const OMD5Hash& fileHash);
 bool W_IsFileCommercialIWAD(const std::string& filename);
 bool W_IsIWADDeprecated(const OResFile& file);
 std::vector<OString> W_GetIWADFilenames();
-
-#endif // __W_IDENT_H__

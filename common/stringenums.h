@@ -22,8 +22,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef ___STRINGENUMS_H__
-#define ___STRINGENUMS_H__
+#pragma once
 
 #include "m_ostring.h"
 
@@ -687,5 +686,3 @@ extern const OString TXT_BUDDHAOFF;
 #define STRING_INDEXES_LENGTH 655
 
 extern const OString* const stringIndexes[STRING_INDEXES_LENGTH];
-
-#endif //__STRINGENUMS_H__

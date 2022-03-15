@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
+// $Id: 
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
@@ -17,34 +17,20 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	F_FINALE
-//    
+//   Skill data for defining new skills.
+// 
 //-----------------------------------------------------------------------------
 
-#pragma once
 
+#include "odamex.h"
 
-#include "d_event.h"
-//
-// FINALE
-//
+#include "g_skill.h"
 
-// Called by main loop.
-BOOL F_Responder (event_t* ev);
+SkillInfo SkillInfos[MAX_SKILLS];
+byte skillnum = 0;
+byte defaultskillmenu = 2;
 
-// Called by main loop.
-void F_Ticker (void);
-
-// Called by main loop.
-void F_Drawer (void);
-
-struct finale_options_t
+const SkillInfo& G_GetCurrentSkill()
 {
-	const char* music;
-	const char* flat;
-	const char* text;
-	const char* pic;
-};
-
-void F_StartFinale(finale_options_t& options);
-void STACK_ARGS F_ShutdownFinale();
+	return SkillInfos[sv_skill.asInt() - 1];
+}
