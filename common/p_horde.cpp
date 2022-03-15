@@ -508,9 +508,17 @@ void HordeState::getNextSpawnTime(int& min, int& max)
 	const double FULL_MAX_SPAWN = g_horde_spawnfull_max;
 
 	// Minimum/maximum monster spawn time.
-	double minf = Remap(getAliveHealth(), define.minTotalHealth(),
+	int alive = getAliveHealth();
+
+	// Slow down the spawn rate if we have bosses.
+	if (!m_bosses.empty())
+	{
+		alive += (define.maxTotalHealth() - alive) / 2;
+	}
+
+	double minf = Remap(alive, define.minTotalHealth(),
 	                    define.maxTotalHealth(), EMPTY_MIN_SPAWN, EMPTY_MAX_SPAWN);
-	double maxf = Remap(getAliveHealth(), define.minTotalHealth(),
+	double maxf = Remap(alive, define.minTotalHealth(),
 	                    define.maxTotalHealth(), FULL_MIN_SPAWN, FULL_MAX_SPAWN);
 
 	// Don't absolutely pound the players in the first minute.
@@ -977,14 +985,17 @@ BEGIN_COMMAND(hordeinfo)
 	Printf("[Define: %s]\n", define.name.c_str());
 	Printf("Min Group Health: %d\n", define.minGroupHealth);
 	Printf("Max Group Health: %d (Difficulty: %s)\n", define.maxGroupHealth, difficulty);
-	Printf("Min Total Health: %d = maxGroup:%d * cvar:%s * skill:%0.2f\n",
+	Printf("Min Total Health: %d = waveMaxGroup:%d * g_horde_mintotalhp:%s * "
+	       "skillLevel:%0.2f\n",
 	       define.minTotalHealth(), define.maxGroupHealth, ::g_horde_mintotalhp.cstring(),
 	       skillScaler);
-	Printf("Max Total Health: %d = maxGroup:%d * cvar:%s * skill:%0.2f\n",
+	Printf("Max Total Health: %d = waveMaxGroup:%d * g_horde_maxtotalhp:%s * "
+	       "skillLevel:%0.2f\n",
 	       define.maxTotalHealth(), define.maxGroupHealth, ::g_horde_maxtotalhp.cstring(),
 	       skillScaler);
-	Printf("Goal Health: %d = maxGroup:%d * cvar:%s * skill:%0.2f\n", define.goalHealth(),
-	       define.maxGroupHealth, ::g_horde_goalhp.cstring(), skillScaler);
+	Printf("Goal Health: %d = waveMaxGroup:%d * g_horde_goalhp:%s * skillLevel:%0.2f\n",
+	       define.goalHealth(), define.maxGroupHealth, ::g_horde_goalhp.cstring(),
+	       skillScaler);
 
 	const char* stateStr = NULL;
 	switch (::g_HordeDirector.serialize().state)

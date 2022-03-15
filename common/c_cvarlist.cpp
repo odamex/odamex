@@ -280,7 +280,7 @@ CVAR_RANGE(g_horde_spawnfull_min, "2",
            CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
            60)
 
-CVAR_RANGE(g_horde_spawnfull_max, "5",
+CVAR_RANGE(g_horde_spawnfull_max, "6",
            "Maximum number of seconds it takes to spawn a monster in a full horde map",
            CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
            60)
