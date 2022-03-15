@@ -1638,17 +1638,19 @@ void AM_drawThings()
 		{
 			mpoint_t p;
 			M_SetVec2Fixed(&p, t->x, t->y);
-			angle_t angle = t->angle;
+			angle_t triangle_angle = t->angle;
+			angle_t box_angle = t->angle;
 
 			if (am_rotate)
 			{
 				AM_rotatePoint(p);
-				angle += ANG90 - displayplayer().camera->angle;
+				box_angle = ANG90 - displayplayer().camera->angle;
+				triangle_angle += box_angle;
 			}
 
 			am_color_t color = gameinfo.currentAutomapColors.ThingColor;
 
-			AM_drawLineCharacter(thintriangle_guy, t->radius, angle, color, p.x, p.y);
+			AM_drawLineCharacter(thintriangle_guy, t->radius, triangle_angle, color, p.x, p.y);
 
 			if (t->flags & MF_MISSILE)
 			{
@@ -1671,7 +1673,7 @@ void AM_drawThings()
 					color = gameinfo.currentAutomapColors.ThingColor_NoCountMonster;
 			}
 
-			AM_drawLineCharacter(thinrectangle_guy, t->radius, 0, color, p.x, p.y);
+			AM_drawLineCharacter(thinrectangle_guy, t->radius, box_angle, color, p.x, p.y);
 			t = t->snext;
 		}
 	}
