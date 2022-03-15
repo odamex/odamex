@@ -47,6 +47,11 @@ typedef struct am_colors_s
 	am_color_t FDWallColor;
 	am_color_t CDWallColor;
 	am_color_t ThingColor;
+	am_color_t ThingColor_Item;
+	am_color_t ThingColor_CountItem;
+	am_color_t ThingColor_Monster;
+	am_color_t ThingColor_NoCountMonster;
+	am_color_t ThingColor_Friend;
 	am_color_t SecretWallColor;
 	am_color_t GridColor;
 	am_color_t XHairColor;
@@ -66,6 +71,11 @@ typedef struct am_default_colors_s
 	std::string FDWallColor;
 	std::string CDWallColor;
 	std::string ThingColor;
+	std::string ThingColor_Item;
+	std::string ThingColor_CountItem;
+	std::string ThingColor_Monster;
+	std::string ThingColor_NoCountMonster;
+	std::string ThingColor_Friend;
 	std::string SecretWallColor;
 	std::string GridColor;
 	std::string XHairColor;
