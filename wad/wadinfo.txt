@@ -18,6 +18,7 @@ _TNTNFO
 _D1SWNFO
 _BFGNFO
 _CHEXNFO
+_HERENFO
 
 # List of Sounds (prevent conversion)
 DSEMPTY
