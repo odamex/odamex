@@ -890,19 +890,19 @@ void F_Drawer (void)
 				default:
 				case '1':
 				{
-					const char* page = !level.endpic.empty() ? level.endpic.c_str() : gameinfo.finalePages[0].c_str();
+					const char* page = !level.endpic.empty() ? level.endpic.c_str() : gameinfo.finalePage[0].c_str();
 
 					screen->DrawPatchIndirect(W_CachePatch(page), 0, 0);
 					break;
 				}
 				case '2':
-					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePages[1].c_str()), 0, 0);
+					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage[1].c_str()), 0, 0);
 					break;
 				case '3':
 					F_BunnyScroll ();
 					break;
 				case '4':
-					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePages[2].c_str()), 0, 0);
+					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage[2].c_str()), 0, 0);
 					break;
 			}
 			break;

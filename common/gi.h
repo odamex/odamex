@@ -62,16 +62,8 @@ typedef struct
 	char chatSound[16];
 	OLumpName finaleMusic;
 	OLumpName finaleFlat;
-	OLumpName finalePages[3];
-	union
-	{
-		char infoPage[3][8];
-		struct
-		{
-			char basePage[8];
-			int numPages;
-		} indexed;
-	} info;
+	OLumpName finalePage[3];
+	OLumpName infoPage[3];
 	const char **quitSounds;
 	int maxSwitch;
 	OLumpName borderFlat;

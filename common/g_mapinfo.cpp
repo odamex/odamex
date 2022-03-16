@@ -1118,7 +1118,7 @@ void MIType_Pages(OScanner& os, bool doEquals, void* data, unsigned int flags,
 		else
 			os.error("Trailing comma in Page definition; expected lump name");
 
-		// Do a third page if finalePages instead of creditPages
+		// Do a third page if finalePage/infoPage instead of creditPages
 		if (flags)
 		{
 			os.scan();
@@ -1572,18 +1572,19 @@ struct MapInfoDataSetter<gameinfo_t>
 	{
 		mapInfoDataContainer.reserve(10);
 
-		ENTRY3("advisorytime", &MIType_Float, &gameinfo.advisoryTime)
+		ENTRY3("advisorytime", &MIType_Int, &gameinfo.advisoryTime)
 		ENTRY2("border", &MIType_Border)
 		ENTRY3("borderflat", &MIType_LumpName, &gameinfo.borderFlat)
 		// ENTRY3("chatsound",			)
 		ENTRY3("creditpage", &MIType_Pages, &gameinfo.creditPages)
-		ENTRY3("pagetime", &MIType_Float, &gameinfo.pageTime)
+		ENTRY3("pagetime", &MIType_Int, &gameinfo.pageTime)
 		ENTRY3("finaleflat", &MIType_LumpName, &gameinfo.finaleFlat)
-		ENTRY3("finalemusic", &MIType_$LumpName, &gameinfo.finaleMusic)
-		ENTRY4("finalepage", &MIType_Pages, &gameinfo.finalePages, 1)
-		ENTRY3("titlemusic", &MIType_$LumpName, &gameinfo.titleMusic)
+		ENTRY3("finalemusic", &MIType_MusicLumpName, &gameinfo.finaleMusic)
+		ENTRY4("finalepage", &MIType_Pages, &gameinfo.finalePage, 1)
+		ENTRY4("infopage", &MIType_Pages, &gameinfo.infoPage, 1)
+		ENTRY3("titlemusic", &MIType_MusicLumpName, &gameinfo.titleMusic)
 		ENTRY3("titlepage", &MIType_LumpName, &gameinfo.titlePage)
-		ENTRY3("titletime", &MIType_Float, &gameinfo.titleTime)
+		ENTRY3("titletime", &MIType_Int, &gameinfo.titleTime)
 	}
 };
 
