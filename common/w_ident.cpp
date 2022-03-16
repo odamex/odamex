@@ -1071,48 +1071,56 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = retail;
 		gameinfo = RetailGameInfo;
 		gamemission = doom;
+		gameinfo.titleString = "REKKR";
 	}
 	else if (idname.find("HACX") == 0)
 	{
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = commercial_hacx;
+		gameinfo.titleString = "HACX";
 	}
 	else if (idname.find(OStringToUpper(OString(PLUTONIA_PREFIX))) == 0)
 	{
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = pack_plut;
+		gameinfo.titleString = "DOOM 2: Plutonia Experiment";
 	}
 	else if (idname.find(OStringToUpper(OString(TNT_PREFIX))) == 0)
 	{
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = pack_tnt;
+		gameinfo.titleString = "DOOM 2: TNT - Evilution";
 	}
 	else if (idname.find("CHEX QUEST") == 0)
 	{
 		gamemission = chex;
 		gamemode = retail_chex;
 		gameinfo = RetailGameInfo;
+		gameinfo.titleString = "Chex Quest";
 	}
 	else if (idname.find(OStringToUpper(OString(FREEDOOM1_PREFIX))) == 0)
 	{
 		gamemode = retail;
 		gameinfo = RetailGameInfo;
 		gamemission = retail_freedoom;
+		gameinfo.titleString = "FreeDoom: Phase 1";
 	}
 	else if (idname.find("FREEDOOM") == 0)
 	{
 		gamemode = commercial;
 		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
+		gameinfo.titleString = "FreeDoom: Phase 2";
 	}
 	else if (idname.find(OStringToUpper(OString(FREEDOOM2_PREFIX))) == 0)
 	{
 		gamemode = commercial;
 		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
+		gameinfo.titleString = "FreeDoom: Phase 2";
 	}
 
 	else if (idname.find(OStringToUpper(OString(FREEDM_PREFIX))) == 0)
@@ -1120,48 +1128,56 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = commercial;
 		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
+		gameinfo.titleString = "FreeDM";
 	}	
 	else if (idname.find(OStringToUpper(OString(DOOMSW_PREFIX))) == 0)
 	{
 		gamemode = shareware;
 		gameinfo = SharewareGameInfo;
 		gamemission = doom;
+		gameinfo.titleString = "DOOM Shareware";
 	}
 	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX " BFG"))) == 0)
 	{
 		gamemode = retail_bfg;
 		gameinfo = RetailBFGGameInfo;
 		gamemission = doom;
+		gameinfo.titleString = "The Ultimate DOOM (BFG Edition)";
 	}
 	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX))) == 0)
 	{
 		gamemode = retail;
 		gameinfo = RetailGameInfo;
 		gamemission = doom;
+		gameinfo.titleString = "The Ultimate DOOM";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX " BFG"))) == 0)
 	{
 		gameinfo = CommercialBFGGameInfo;
 		gamemode = commercial_bfg;
 		gamemission = doom2;
+		gameinfo.titleString = "DOOM 2: Hell on Earth (BFG Edition)";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX))) == 0)
 	{
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = doom2;
+		gameinfo.titleString = "DOOM 2: Hell on Earth";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM_PREFIX))) == 0)
 	{
 		gamemode = registered;
 		gameinfo = RegisteredGameInfo;
 		gamemission = doom;
+		gameinfo.titleString = "DOOM Registered";
 	}
 	else
 	{
 		gamemode = undetermined;
 		gameinfo = SharewareGameInfo;
 		gamemission = doom;
+		gameinfo.titleString = "Unknown IWAD";
 	}
 }
 

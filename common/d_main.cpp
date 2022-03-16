@@ -367,22 +367,6 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 //
 std::string D_GetTitleString()
 {
-	switch (gamemission)
-	{
-	case pack_tnt:
-		return "DOOM 2: TNT - Evilution";
-	case pack_plut:
-		return "DOOM 2: Plutonia Experiment";
-	case chex:
-		return "Chex Quest";
-	case retail_freedoom:
-		return "FreeDoom: Phase 1";
-	case commercial_freedoom:
-		return "FreeDoom: Phase 2";
-	case commercial_hacx:
-		return "HACX";
-	}
-
 	return gameinfo.titleString;
 }
 
