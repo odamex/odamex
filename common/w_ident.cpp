@@ -1057,6 +1057,7 @@ const fileIdentifier_t* W_GameInfo(const OCRC32Sum& crc32)
 //
 void W_ConfigureGameInfo(const OResFile& iwad)
 {
+	extern gameinfo_t DefaultGameInfo; 
 	extern gameinfo_t SharewareGameInfo;
 	extern gameinfo_t RegisteredGameInfo;
 	extern gameinfo_t RetailGameInfo;
@@ -1065,6 +1066,8 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	extern gameinfo_t CommercialBFGGameInfo;
 
 	const OString idname = identtab.identify(iwad);
+
+    gameinfo = DefaultGameInfo;
 
 	if (idname.find("REKKR") == 0)
     {

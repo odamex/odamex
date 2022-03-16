@@ -54,6 +54,30 @@ static const char *quitsounds2[8] =
 
 static gameborder_t DefaultBorder;
 
+gameinfo_t DefaultGameInfo =
+{
+	0,
+	"",
+	"",
+	"",
+	"",
+	0,
+	0,
+	0,
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	{ "", "", "" },
+	NULL,
+	1,
+	"0",
+	DefaultBorder,
+	"Unknown IWAD"
+};
+
 gameinfo_t SharewareGameInfo =
 {
 	GI_SHAREWARE | GI_NOCRAZYDEATH,
