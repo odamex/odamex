@@ -84,6 +84,7 @@
 #include "g_horde.h"
 #include "w_ident.h"
 #include "gui_boot.h"
+#include "g_episode.h"
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -848,7 +849,7 @@ void D_DoomMain()
 	g_resetinvonexit = Args.CheckParm("-pistolstart");
 
 	// get skill / episode / map from parms
-	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+	strcpy(startmap, EpisodeMaps[0].c_str());
 
 	const char* val = Args.CheckValue("-skill");
 	if (val)
