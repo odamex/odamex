@@ -710,6 +710,11 @@ void HordeState::tick()
 	}
 }
 
+void P_NextSpawnTime(int& min, int& max)
+{
+	::g_HordeDirector.getNextSpawnTime(min, max);
+}
+
 hordeInfo_t P_HordeInfo()
 {
 	return ::g_HordeDirector.serialize();

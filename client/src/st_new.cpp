@@ -124,6 +124,7 @@ EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(hud_feedobits)
 EXTERN_CVAR(g_horde_waves)
 EXTERN_CVAR(g_roundlimit)
+EXTERN_CVAR(hud_hordeinfo_debug)
 
 void ST_unloadNew()
 {
@@ -636,6 +637,31 @@ static void drawHordeGametype()
 	            killColor);
 	hud::DrawText(SCREEN_BORDER, y + LINE_SPACING + BAR_BORDER, ::hud_scale, hud::X_RIGHT,
 	              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY);
+
+	if (hud_hordeinfo_debug)
+	{
+		V_SetFont("DIGFONT");
+
+		int min, max;
+		P_NextSpawnTime(min, max);
+
+		std::string buf, buf2;
+		if (info.alive() > define.maxTotalHealth())
+		{
+			buf2 = "PAUSED";
+		}
+		else
+		{
+			StrFormat(buf2, "%d-%d sec", min, max);
+		}
+		StrFormat(buf, "Min HP: %d\nAlive HP: %d\nMax HP: %d\nSpawn: %s",
+		          define.minTotalHealth(), info.alive(), define.maxTotalHealth(),
+		          buf2.c_str());
+		hud::DrawText(SCREEN_BORDER, 64, ::hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+		              hud::X_LEFT, hud::Y_BOTTOM, buf.c_str(), CR_GREY);
+
+		V_SetFont("SMALLFONT");
+	}
 }
 
 static void drawGametype()
