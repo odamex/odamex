@@ -111,7 +111,7 @@ gameinfo_t RetailGameInfo =
 	"D_INTRO",
 	5,
 	0,
-	200/35,
+	5,
 	"misc/chat2",
 	"D_VICTOR",
 	"FLOOR4_8",

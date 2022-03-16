@@ -1071,6 +1071,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = retail;
 		gameinfo = RetailGameInfo;
 		gamemission = doom;
+		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
 		gameinfo.titleString = "REKKR";
 	}
 	else if (idname.find("HACX") == 0)
@@ -1078,6 +1079,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = commercial_hacx;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.titleString = "HACX";
 	}
 	else if (idname.find(OStringToUpper(OString(PLUTONIA_PREFIX))) == 0)
@@ -1085,6 +1087,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = pack_plut;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.titleString = "DOOM 2: Plutonia Experiment";
 	}
 	else if (idname.find(OStringToUpper(OString(TNT_PREFIX))) == 0)
@@ -1092,6 +1095,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = pack_tnt;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.titleString = "DOOM 2: TNT - Evilution";
 	}
 	else if (idname.find("CHEX QUEST") == 0)
@@ -1099,6 +1103,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemission = chex;
 		gamemode = retail_chex;
 		gameinfo = RetailGameInfo;
+		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
 		gameinfo.titleString = "Chex Quest";
 	}
 	else if (idname.find(OStringToUpper(OString(FREEDOOM1_PREFIX))) == 0)
@@ -1106,6 +1111,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = retail;
 		gameinfo = RetailGameInfo;
 		gamemission = retail_freedoom;
+		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
 		gameinfo.titleString = "FreeDoom: Phase 1";
 	}
 	else if (idname.find("FREEDOOM") == 0)
@@ -1113,6 +1119,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = commercial;
 		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.titleString = "FreeDoom: Phase 2";
 	}
 	else if (idname.find(OStringToUpper(OString(FREEDOOM2_PREFIX))) == 0)
@@ -1120,6 +1127,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = commercial;
 		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.titleString = "FreeDoom: Phase 2";
 	}
 
@@ -1128,6 +1136,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = commercial;
 		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.titleString = "FreeDM";
 	}	
 	else if (idname.find(OStringToUpper(OString(DOOMSW_PREFIX))) == 0)
@@ -1135,6 +1144,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = shareware;
 		gameinfo = SharewareGameInfo;
 		gamemission = doom;
+		gameinfo.flags = GI_SHAREWARE | GI_NOCRAZYDEATH;
 		gameinfo.titleString = "DOOM Shareware";
 	}
 	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX " BFG"))) == 0)
@@ -1142,6 +1152,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = retail_bfg;
 		gameinfo = RetailBFGGameInfo;
 		gamemission = doom;
+		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
 		gameinfo.titleString = "The Ultimate DOOM (BFG Edition)";
 	}
 	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX))) == 0)
@@ -1149,6 +1160,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = retail;
 		gameinfo = RetailGameInfo;
 		gamemission = doom;
+		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
 		gameinfo.titleString = "The Ultimate DOOM";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX " BFG"))) == 0)
@@ -1156,6 +1168,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo = CommercialBFGGameInfo;
 		gamemode = commercial_bfg;
 		gamemission = doom2;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.titleString = "DOOM 2: Hell on Earth (BFG Edition)";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX))) == 0)
@@ -1163,6 +1176,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = doom2;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.titleString = "DOOM 2: Hell on Earth";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM_PREFIX))) == 0)
@@ -1170,6 +1184,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = registered;
 		gameinfo = RegisteredGameInfo;
 		gamemission = doom;
+		gameinfo.flags = GI_NOCRAZYDEATH;
 		gameinfo.titleString = "DOOM Registered";
 	}
 	else
@@ -1177,6 +1192,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = undetermined;
 		gameinfo = SharewareGameInfo;
 		gamemission = doom;
+		gameinfo.flags = GI_SHAREWARE | GI_NOCRAZYDEATH;
 		gameinfo.titleString = "Unknown IWAD";
 	}
 }
