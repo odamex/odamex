@@ -2061,6 +2061,12 @@ void G_ParseMapInfo()
 	case doom:
 	case retail_freedoom:
 		baseinfoname = "_D1NFO";
+		if (gamemode == shareware)
+		{
+			lump = W_GetNumForName(baseinfoname);
+			ParseMapInfoLump(lump, baseinfoname);
+			baseinfoname = "_D1SWNFO";
+		}
 		break;
 	case doom2:
 	case commercial_freedoom:
