@@ -676,6 +676,21 @@ void MIType_Bool(OScanner& os, bool doEquals, void* data, unsigned int flags,
 	*static_cast<bool*>(data) = flags;
 }
 
+// Sets the inputted data as a bool from a string
+void MIType_BoolString(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                 unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+
+	if (os.compareTokenNoCase("true"))
+		*static_cast<bool*>(data) = true;
+	else if (os.compareTokenNoCase("false"))
+		*static_cast<bool*>(data) = false;
+	else
+		os.error("Expected \"true\" or \"false\" in boolean statement, got \"%s\"",
+		         os.getToken().c_str());
+}
+
 // Sets the inputted data as a bool (that is, if flags != 0, set to true; else false)
 void MIType_MustConfirm(OScanner& os, bool doEquals, void* data, unsigned int flags,
                  unsigned int flags2)
@@ -1577,6 +1592,7 @@ struct MapInfoDataSetter<gameinfo_t>
 		ENTRY3("borderflat", &MIType_LumpName, &gameinfo.borderFlat)
 		// ENTRY3("chatsound",			)
 		ENTRY3("creditpage", &MIType_Pages, &gameinfo.creditPages)
+		ENTRY3("intermissioncounter", &MIType_BoolString, &gameinfo.intermissionCounter)
 		ENTRY3("intermissionmusic", &MIType_MusicLumpName, &gameinfo.intermissionMusic)
 		ENTRY3("pagetime", &MIType_Int, &gameinfo.pageTime)
 		ENTRY3("finaleflat", &MIType_LumpName, &gameinfo.finaleFlat)

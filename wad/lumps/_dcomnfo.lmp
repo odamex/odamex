@@ -7,6 +7,7 @@ gameinfo
 	chatsound = "misc/chat"
 	creditpage = "CREDIT"
 	pagetime = 5
+	intermissioncounter = true
 	intermissionmusic = "$MUSIC_DM2INT"
 	quitsound = "menu/quit2"
 	finaleflat = "SLIME16"

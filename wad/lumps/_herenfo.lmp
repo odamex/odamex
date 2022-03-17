@@ -8,6 +8,7 @@ gameinfo
 	chatsound = "misc/chat"
 	creditpage = "CREDIT"
 	pagetime = 5
+	intermissioncounter = false
 	intermissionmusic = "mus_intr"
 	quitsound = ""
 	finaleflat = "FLOOR25"

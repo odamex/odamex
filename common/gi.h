@@ -69,6 +69,7 @@ typedef struct //gameinfo_s
 	int maxSwitch;
 	OLumpName borderFlat;
 	gameborder_t border;
+	bool intermissionCounter; 
 	OLumpName intermissionMusic;
 
 	std::string titleString;
@@ -90,6 +91,7 @@ typedef struct //gameinfo_s
 		, maxSwitch(1)
 		, borderFlat("")
 		, border()
+		, intermissionCounter(true)
 		, intermissionMusic("")
 		, titleString("Unknown IWAD")
 	{}*/
