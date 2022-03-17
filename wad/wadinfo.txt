@@ -19,6 +19,7 @@ _D1SWNFO
 _BFGNFO
 _CHEXNFO
 _HERENFO
+_HESWNFO
 
 # List of Sounds (prevent conversion)
 DSEMPTY
