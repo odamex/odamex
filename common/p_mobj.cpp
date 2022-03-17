@@ -1856,7 +1856,7 @@ void P_NightmareRespawn (AActor *mobj)
 	mo = new AActor(
         mobj->x,
         mobj->y,
-        P_FloorHeight(mobj),
+        P_FloorHeight(mobj) + INT2FIXED(gameinfo.telefogHeight),
         MT_TFOG
     );
 	// initiate teleport sound
@@ -1867,7 +1867,7 @@ void P_NightmareRespawn (AActor *mobj)
     ss = P_PointInSubsector (x,y);
 
 	// spawn a teleport fog at the new spot
-    mo = new AActor (x, y,  P_FloorHeight(x, y, ss->sector), MT_TFOG);
+    mo = new AActor (x, y,  P_FloorHeight(x, y, ss->sector) + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
     if (clientside)
         S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 

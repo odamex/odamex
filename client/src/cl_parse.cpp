@@ -1078,7 +1078,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	p->viewz = z + VIEWHEIGHT;
 
 	// spawn a teleport fog
-	// tfog = new AActor (x, y, z, MT_TFOG);
+	// tfog = new AActor (x, y, z + gameinfo.telefogHeight, MT_TFOG);
 
 	// setup gun psprite
 	P_SetupPsprites(p);

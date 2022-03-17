@@ -15,6 +15,7 @@ gameinfo
 	finalemusic = "MUS_CPTD"
 	finalepage = "CREDIT"
 	infopage = "HELP1", "HELP2", "CREDIT"
+	telefogheight = 32
 	titlemusic = "MUS_TITL"
 	titlepage = "TITLE"
 	titletime = 8

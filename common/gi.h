@@ -75,6 +75,7 @@ typedef struct //gameinfo_s
 	OLumpName endoom;
 	OLumpName pauseSign;
 	float gibFactor;
+	int telefogHeight;
 
 	std::string titleString;
 

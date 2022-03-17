@@ -1600,6 +1600,7 @@ struct MapInfoDataSetter<gameinfo_t>
 		ENTRY3("finalemusic", &MIType_MusicLumpName, &gameinfo.finaleMusic)
 		ENTRY4("finalepage", &MIType_Pages, &gameinfo.finalePage, 1)
 		ENTRY4("infopage", &MIType_Pages, &gameinfo.infoPage, 1)
+		ENTRY3("telefogheight", &MIType_Int, &gameinfo.telefogHeight)
 		ENTRY3("titlemusic", &MIType_MusicLumpName, &gameinfo.titleMusic)
 		ENTRY3("titlepage", &MIType_LumpName, &gameinfo.titlePage)
 		ENTRY3("titletime", &MIType_Int, &gameinfo.titleTime)

@@ -29,6 +29,7 @@
 
 #include "actor.h"
 #include "c_effect.h"
+#include "gi.h"
 #include "m_random.h"
 #include "p_hordedefine.h"
 #include "p_local.h"
@@ -100,7 +101,7 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 			// Spawn a teleport fog if it's not an ambush.
 			if ((spawn.mo->flags & MF_AMBUSH) == 0)
 			{
-				AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
+				AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
 				SV_SpawnMobj(tele);
 				S_NetSound(tele, CHAN_VOICE, "misc/teleport", ATTN_NORM);
 			}

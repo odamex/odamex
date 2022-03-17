@@ -33,6 +33,7 @@
 #include "i_system.h"
 #include "p_tick.h"
 #include "c_dispatch.h"
+#include "gi.h"
 #include "p_local.h"
 #include "s_sound.h"
 #include "r_data.h"
@@ -371,7 +372,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 			}
 		}
 
-		mo = new AActor (x+20*xa, y+20*ya, z, MT_TFOG);
+		mo = new AActor(x + 20 * xa, y + 20 * ya, z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
 
 		// send new object
 		SV_SpawnMobj(mo);
