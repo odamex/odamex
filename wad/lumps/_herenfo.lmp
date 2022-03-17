@@ -3,11 +3,12 @@
 gameinfo
 {
 	advisorytime = 6
-	border = "HereticBorder"
+	border = HereticBorder
 	borderflat = "FLAT513"
 	chatsound = "misc/chat"
 	creditpage = "CREDIT"
 	pagetime = 5
+	intermissionmusic = "mus_intr"
 	quitsound = ""
 	finaleflat = "FLOOR25"
 	finalemusic = "MUS_CPTD"

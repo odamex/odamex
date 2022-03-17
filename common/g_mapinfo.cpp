@@ -1577,6 +1577,7 @@ struct MapInfoDataSetter<gameinfo_t>
 		ENTRY3("borderflat", &MIType_LumpName, &gameinfo.borderFlat)
 		// ENTRY3("chatsound",			)
 		ENTRY3("creditpage", &MIType_Pages, &gameinfo.creditPages)
+		ENTRY3("intermissionmusic", &MIType_MusicLumpName, &gameinfo.intermissionMusic)
 		ENTRY3("pagetime", &MIType_Int, &gameinfo.pageTime)
 		ENTRY3("finaleflat", &MIType_LumpName, &gameinfo.finaleFlat)
 		ENTRY3("finalemusic", &MIType_MusicLumpName, &gameinfo.finaleMusic)

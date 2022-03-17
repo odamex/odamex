@@ -2,11 +2,12 @@
 gameinfo
 {
 	advisorytime = 0
-	border = "DoomBorder"
+	border = DoomBorder
 	borderflat = "GRNROCK"
 	chatsound = "misc/chat"
 	creditpage = "CREDIT"
 	pagetime = 5
+	intermissionmusic = "$MUSIC_DM2INT"
 	quitsound = "menu/quit2"
 	finaleflat = "SLIME16"
 	finalemusic = "$MUSIC_READ_M"

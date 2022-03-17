@@ -25,6 +25,7 @@
 #pragma once
 
 #include "olumpname.h"
+#include "s_sound.h"
 
 #define GI_MAPxx				0x00000001
 #define GI_PAGESARERAW			0x00000002
@@ -50,7 +51,7 @@ typedef struct
 	OLumpName br;
 } gameborder_t;
 
-typedef struct
+typedef struct //gameinfo_s
 {
 	int flags;
 	OLumpName titlePage;
@@ -59,7 +60,7 @@ typedef struct
 	int titleTime;
 	int advisoryTime;
 	int pageTime;
-	char chatSound[16];
+	char chatSound[MAX_SNDNAME + 1];
 	OLumpName finaleMusic;
 	OLumpName finaleFlat;
 	OLumpName finalePage[3];
@@ -68,8 +69,31 @@ typedef struct
 	int maxSwitch;
 	OLumpName borderFlat;
 	gameborder_t border;
+	OLumpName intermissionMusic;
 
 	std::string titleString;
+
+	/*gameinfo_s()
+		: flags(0)
+		, titlePage("")
+		, creditPages()
+		, titleMusic("")
+		, titleTime(0)
+		, advisoryTime(0)
+		, pageTime(0)
+		, chatSound("")
+		, finaleMusic("")
+		, finaleFlat("")
+		, finalePage()
+		, infoPage()
+		, quitSounds()
+		, maxSwitch(1)
+		, borderFlat("")
+		, border()
+		, intermissionMusic("")
+		, titleString("Unknown IWAD")
+	{}*/
+
 } gameinfo_t;
 
 extern gameinfo_t gameinfo;

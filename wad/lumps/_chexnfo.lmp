@@ -2,11 +2,12 @@
 
 gameinfo
 {
-	border = "DoomBorder"
+	border = DoomBorder
 	borderflat = "CEIL5_1"
 	chatsound = "misc/chat2"
 	creditpage = "CREDIT", "HELP1"
 	pagetime = 5
+	intermissionmusic = "$MUSIC_INTER"
 	quitsound = "menu/quit1"
 	finaleflat = "FLOOR4_8"
 	finalemusic = "$MUSIC_VICTOR"

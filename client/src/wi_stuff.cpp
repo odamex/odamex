@@ -1381,10 +1381,7 @@ void WI_Ticker()
 	if (bcnt == 1)
 	{
 		// intermission music
-		if ((gameinfo.flags & GI_MAPxx))
-			S_ChangeMusic ("d_dm2int", true);
-		else
-			S_ChangeMusic ("d_inter", true);
+		S_ChangeMusic(gameinfo.intermissionMusic.c_str(), true);
 	}
 
     WI_checkForAccelerate();
