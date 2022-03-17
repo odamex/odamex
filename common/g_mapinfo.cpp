@@ -1594,6 +1594,7 @@ struct MapInfoDataSetter<gameinfo_t>
 		ENTRY3("creditpage", &MIType_Pages, &gameinfo.creditPages)
 		ENTRY3("intermissioncounter", &MIType_BoolString, &gameinfo.intermissionCounter)
 		ENTRY3("intermissionmusic", &MIType_MusicLumpName, &gameinfo.intermissionMusic)
+		ENTRY3("noloopfinalemusic", &MIType_BoolString, &gameinfo.noLoopFinaleMusic)
 		ENTRY3("pagetime", &MIType_Int, &gameinfo.pageTime)
 		ENTRY3("finaleflat", &MIType_LumpName, &gameinfo.finaleFlat)
 		ENTRY3("finalemusic", &MIType_MusicLumpName, &gameinfo.finaleMusic)

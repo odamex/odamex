@@ -132,18 +132,12 @@ void F_StartFinale(finale_options_t& options)
 	if (options.music == NULL)
 	{
 		::currentmusic = ::gameinfo.finaleMusic.c_str();
-		S_ChangeMusic(
-			::currentmusic.c_str(),
-			!(::gameinfo.flags & GI_NOLOOPFINALEMUSIC)
-		);
+		S_ChangeMusic(::currentmusic, !::gameinfo.noLoopFinaleMusic);
 	}
 	else
 	{
 		::currentmusic = options.music;
-		S_ChangeMusic(
-			::currentmusic,
-			!(::gameinfo.flags & GI_NOLOOPFINALEMUSIC)
-		);
+		S_ChangeMusic(::currentmusic, !::gameinfo.noLoopFinaleMusic);
 	}
 
 	if (options.pic != NULL)
