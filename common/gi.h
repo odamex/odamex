@@ -59,6 +59,7 @@ typedef struct //gameinfo_s
 	OLumpName titleMusic;
 	int titleTime;
 	int advisoryTime;
+	bool noLoopFinaleMusic; 
 	int pageTime;
 	char chatSound[MAX_SNDNAME + 1];
 	OLumpName finaleMusic;
@@ -71,6 +72,9 @@ typedef struct //gameinfo_s
 	gameborder_t border;
 	bool intermissionCounter; 
 	OLumpName intermissionMusic;
+	OLumpName endoom;
+	OLumpName pauseSign;
+	float gibFactor;
 
 	std::string titleString;
 
@@ -93,6 +97,9 @@ typedef struct //gameinfo_s
 		, border()
 		, intermissionCounter(true)
 		, intermissionMusic("")
+		, endoom("")
+		, pauseSign("")
+		, gibFactor(1)
 		, titleString("Unknown IWAD")
 	{}*/
 

@@ -319,24 +319,24 @@ void D_Display()
 	// draw pause pic
 	if (paused && !menuactive)
 	{
-		patch_t *pause = W_CachePatch ("M_PAUSE");
-		int y;
+		const patch_t* pause = W_CachePatch(gameinfo.pauseSign.c_str());
 
-		y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
+		// todo: properly center "PAUSED" graphic for Heretic
+		const int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
 		screen->DrawPatchCleanNoMove (pause, (I_GetSurfaceWidth()-(pause->width())*CleanXfac)/2, y);
 	}
 
 	// [RH] Draw icon, if any
 	if (D_DrawIcon)
 	{
-		int lump = W_CheckNumForName (D_DrawIcon);
+		const int lump = W_CheckNumForName(D_DrawIcon);
 
 		D_DrawIcon = NULL;
 		if (lump >= 0)
 		{
-			patch_t *p = W_CachePatch (lump);
+			const patch_t *p = W_CachePatch(lump);
 
-			screen->DrawPatchIndirect (p, 160-p->width()/2, 100-p->height()/2);
+			screen->DrawPatchIndirect(p, 160-p->width()/2, 100-p->height()/2);
 		}
 		NoWipe = 10;
 	}
@@ -354,9 +354,9 @@ void D_Display()
 //
 //  D_DoomLoop
 //
-void D_DoomLoop (void)
+void D_DoomLoop()
 {
-	while (1)
+	while (true)
 	{
 		try
 		{
@@ -386,10 +386,10 @@ void D_DoomLoop (void)
 // D_PageTicker
 // Handles timing for warped projection
 //
-void D_PageTicker (void)
+void D_PageTicker()
 {
     if (--pagetic < 0)
-		D_AdvanceDemo ();
+		D_AdvanceDemo();
 }
 
 //

@@ -87,6 +87,7 @@
 #include "i_system.h"
 #include "c_dispatch.h"
 #include "cl_main.h"
+#include "gi.h"
 #include "m_fileio.h"
 
 #ifdef _XBOX
@@ -393,7 +394,7 @@ void SetLanguageIDs()
 	{
 		char slang[4] = {'\0', '\0', '\0', '\0'};
 		strncpy(slang, langid, ARRAY_LENGTH(slang) - 1);
-		uint32_t lang = MAKE_ID(slang[0], slang[1], slang[2], slang[3]);
+		const uint32_t lang = MAKE_ID(slang[0], slang[1], slang[2], slang[3]);
 		LanguageIDs[0] = lang;
 		LanguageIDs[1] = lang;
 		LanguageIDs[2] = lang;
@@ -404,13 +405,13 @@ void SetLanguageIDs()
 //
 // I_Init
 //
-void I_Init (void)
+void I_Init()
 {
 	I_InitSound ();
 	I_InitHardware ();
 }
 
-void I_FinishClockCalibration ()
+void I_FinishClockCalibration()
 {
 }
 
@@ -418,21 +419,18 @@ void I_FinishClockCalibration ()
 // Displays the text mode ending screen after the game quits
 //
 
-void I_Endoom(void)
+void I_Endoom()
 {
 #ifndef GCONSOLE // I will return to this -- Hyper_Eye
-	unsigned char *endoom_data;
-	unsigned char *screendata;
-	int y;
-	int indent;
 
-    if (!r_showendoom || Args.CheckParm ("-novideo"))
+	if (!r_showendoom || Args.CheckParm ("-novideo"))
         return;
 
     // Hack to stop crash with disk icon
     in_endoom = true;
 
-	endoom_data = (unsigned char *)W_CacheLumpName("ENDOOM", PU_STATIC);
+	unsigned char* endoom_data = (unsigned char*)W_CacheLumpName(gameinfo.endoom.c_str(),
+		PU_STATIC);
 
 	// Set up text mode screen
 
@@ -443,13 +441,13 @@ void I_Endoom(void)
 
 	// Write the data to the screen memory
 
-	screendata = TXT_GetScreenData();
+	unsigned char* screendata = TXT_GetScreenData();
 
-    if(NULL != screendata)
+    if (NULL != screendata)
     {
-        indent = (ENDOOM_W - TXT_SCREEN_W) / 2;
+        int indent = (ENDOOM_W - TXT_SCREEN_W) / 2;
 
-        for (y=0; y<TXT_SCREEN_H; ++y)
+        for (int y = 0; y<TXT_SCREEN_H; ++y)
         {
             memcpy(screendata + (y * TXT_SCREEN_W * 2),
                     endoom_data + (y * ENDOOM_W + indent) * 2,

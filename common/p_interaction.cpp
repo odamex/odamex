@@ -40,6 +40,7 @@
 #include "svc_message.h"
 #include "p_horde.h"
 #include "com_misc.h"
+#include "gi.h"
 #include "g_skill.h"
 #include "p_mapformat.h"
 
@@ -1846,7 +1847,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	P_RemoveHealthPool(target);
 	P_QueueCorpseForDestroy(target);
 
-    if (target->info->xdeathstate && target->health < target->info->gibhealth)
+    if (target->info->xdeathstate &&
+		static_cast<float>(target->health) < static_cast<float>(target->info->gibhealth) * gameinfo.gibFactor)
     {
         P_SetMobjState(target, target->info->xdeathstate);
     }

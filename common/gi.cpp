@@ -78,6 +78,9 @@ gameinfo_t DefaultGameInfo =
 	DefaultBorder,
 	true,
 	"",
+	"",
+	"",
+	1.f,
 	"Unknown IWAD"
 };
 
@@ -105,6 +108,9 @@ gameinfo_t SharewareGameInfo =
 	DefaultBorder,
 	true,
 	"",
+	"",
+	"",
+	1.f,
 	"DOOM Shareware"
 };
 
@@ -132,6 +138,9 @@ gameinfo_t RegisteredGameInfo =
 	DefaultBorder,
 	true,
 	"",
+	"",
+	"",
+	1.f,
 	"DOOM Registered"
 };
 
@@ -159,6 +168,9 @@ gameinfo_t RetailGameInfo =
 	DefaultBorder,
 	true,
 	"",
+	"",
+	"",
+	1.f,
 	"The Ultimate DOOM"
 };
 
@@ -186,6 +198,9 @@ gameinfo_t RetailBFGGameInfo =
 	DefaultBorder,
 	true,
 	"",
+	"",
+	"",
+	1.f,
 	"The Ultimate DOOM (BFG Edition)"
 };
 
@@ -213,6 +228,9 @@ gameinfo_t CommercialGameInfo =
 	DefaultBorder,
 	true,
 	"",
+	"",
+	"",
+	1.f,
 	"DOOM 2: Hell on Earth"
 };
 
@@ -240,6 +258,9 @@ gameinfo_t CommercialBFGGameInfo =
 	DefaultBorder,
 	true,
 	"",
+	"",
+	"",
+	1.f,
 	"DOOM 2: Hell on Earth (BFG Edition)"
 };
 

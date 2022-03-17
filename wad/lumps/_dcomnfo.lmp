@@ -17,6 +17,8 @@ gameinfo
 	titlemusic = "$MUSIC_DM2TTL"
 	titlepage = "TITLEPIC"
 	titletime = 11
+	endoom = "ENDOOM"
+	pausesign = "M_PAUSE"
 }
 
 skill baby

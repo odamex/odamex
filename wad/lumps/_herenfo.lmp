@@ -18,6 +18,9 @@ gameinfo
 	titlemusic = "MUS_TITL"
 	titlepage = "TITLE"
 	titletime = 8
+	endoom = "ENDTEXT"
+	pausesign = "PAUSED"
+	gibfactor = 0.5
 }
 
 skill baby
