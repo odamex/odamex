@@ -61,7 +61,7 @@ enum finale_lump_t
 };
 
 const char* finaletext;
-const char* finalelump;
+OLumpName finalelump;
 finale_lump_t finalelumptype = FINALE_NONE;
 
 void	F_StartCast (void);
@@ -129,23 +129,23 @@ void F_StartFinale(finale_options_t& options)
 	//  determined in G_WorldDone() based on data in
 	//  a level_info_t and a cluster_info_t.
 
-	if (options.music == NULL)
+	if (options.music.empty())
 	{
 		::currentmusic = ::gameinfo.finaleMusic.c_str();
 		S_ChangeMusic(::currentmusic, !::gameinfo.noLoopFinaleMusic);
 	}
 	else
 	{
-		::currentmusic = options.music;
+		::currentmusic = options.music.c_str();
 		S_ChangeMusic(::currentmusic, !::gameinfo.noLoopFinaleMusic);
 	}
 
-	if (options.pic != NULL)
+	if (!options.pic.empty())
 	{
 		::finalelumptype = FINALE_GRAPHIC;
 		::finalelump = options.pic;
 	}
-	else if (options.flat != NULL)
+	else if (!options.flat.empty())
 	{
 		::finalelumptype = FINALE_FLAT;
 		::finalelump = options.flat;
@@ -153,7 +153,7 @@ void F_StartFinale(finale_options_t& options)
 	else
 	{
 		::finalelumptype = FINALE_FLAT;
-		::finalelump = gameinfo.finaleFlat.c_str();
+		::finalelump = gameinfo.finaleFlat;
 	}
 
 	if (options.text)
@@ -279,14 +279,14 @@ void F_TextWrite ()
 	switch (finalelumptype)
 	{
 	case FINALE_GRAPHIC:
-		lump = W_CheckNumForName(finalelump, ns_global);
+		lump = W_CheckNumForName(finalelump.c_str(), ns_global);
 		if (lump >= 0)
 		{
 			screen->DrawPatchFullScreen(W_CachePatch(lump, PU_CACHE));
 		}
 		break;
 	case FINALE_FLAT:
-		lump = W_CheckNumForName(finalelump, ns_flats);
+		lump = W_CheckNumForName(finalelump.c_str(), ns_flats);
 		if (lump >= 0)
 		{
 			screen->FlatFill(x, y, width + x, height + y, (byte*)W_CacheLumpNum(lump, PU_CACHE));

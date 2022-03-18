@@ -49,20 +49,29 @@ OLumpName::OLumpName()
 
 OLumpName::OLumpName(const OLumpName& other)
 {
-	memcpy(m_data, other.m_data, 8);
-	MakeDataPresentable();
+	if (other.m_data)
+	{
+		memcpy(m_data, other.m_data, 8);
+		MakeDataPresentable();
+	}
 }
 
 OLumpName::OLumpName(const char* other)
 {
-	strncpy(m_data, other, 8);
-	MakeDataPresentable();
+	if (other)
+	{
+		strncpy(m_data, other, 8);
+		MakeDataPresentable();
+	}
 }
 
 OLumpName::OLumpName(const std::string& other)
 {
-	strncpy(m_data, other.data(), 8);
-	MakeDataPresentable();
+	if (!other.empty())
+	{
+		strncpy(m_data, other.data(), 8);
+		MakeDataPresentable();
+	}
 }
 
 OLumpName& OLumpName::operator=(const OLumpName& other)
