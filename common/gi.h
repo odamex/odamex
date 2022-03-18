@@ -72,6 +72,7 @@ typedef struct //gameinfo_s
 	gameborder_t border;
 	bool intermissionCounter; 
 	OLumpName intermissionMusic;
+	int defKickback;
 	OLumpName endoom;
 	OLumpName pauseSign;
 	float gibFactor;
@@ -100,6 +101,7 @@ typedef struct //gameinfo_s
 		, border()
 		, intermissionCounter(true)
 		, intermissionMusic("")
+		, defKickback("")
 		, endoom("")
 		, pauseSign("")
 		, gibFactor(1)

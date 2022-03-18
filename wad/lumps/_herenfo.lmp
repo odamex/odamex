@@ -19,6 +19,7 @@ gameinfo
 	titlemusic = "MUS_TITL"
 	titlepage = "TITLE"
 	titletime = 8
+	defkickback = 150
 	endoom = "ENDTEXT"
 	pausesign = "PAUSED"
 	gibfactor = 0.5

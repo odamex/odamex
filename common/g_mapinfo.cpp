@@ -1604,6 +1604,7 @@ struct MapInfoDataSetter<gameinfo_t>
 		ENTRY3("titlemusic", &MIType_MusicLumpName, &gameinfo.titleMusic)
 		ENTRY3("titlepage", &MIType_LumpName, &gameinfo.titlePage)
 		ENTRY3("titletime", &MIType_Int, &gameinfo.titleTime)
+		ENTRY3("defkickback", &MIType_Int, &gameinfo.defKickback)
 		ENTRY3("endoom", &MIType_LumpName, &gameinfo.endoom)
 		ENTRY3("pausesign", &MIType_LumpName, &gameinfo.pauseSign)
 		ENTRY3("gibfactor", &MIType_Float, &gameinfo.gibFactor)
