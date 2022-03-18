@@ -1585,7 +1585,7 @@ struct MapInfoDataSetter<gameinfo_t>
 
 	MapInfoDataSetter()
 	{
-		mapInfoDataContainer.reserve(10);
+		mapInfoDataContainer.reserve(20);
 
 		ENTRY3("advisorytime", &MIType_Int, &gameinfo.advisoryTime)
 		ENTRY2("border", &MIType_Border)
@@ -1607,6 +1607,8 @@ struct MapInfoDataSetter<gameinfo_t>
 		ENTRY3("endoom", &MIType_LumpName, &gameinfo.endoom)
 		ENTRY3("pausesign", &MIType_LumpName, &gameinfo.pauseSign)
 		ENTRY3("gibfactor", &MIType_Float, &gameinfo.gibFactor)
+		ENTRY3("textscreenx", &MIType_Int, &gameinfo.textScreenX)
+		ENTRY3("textscreeny", &MIType_Int, &gameinfo.textScreenY)
 	}
 };
 

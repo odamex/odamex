@@ -22,6 +22,8 @@ gameinfo
 	endoom = "ENDTEXT"
 	pausesign = "PAUSED"
 	gibfactor = 0.5
+	textscreenx = 20
+	textscreeny = 5
 }
 
 skill baby

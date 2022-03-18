@@ -19,6 +19,8 @@ gameinfo
 	titletime = 11
 	endoom = "ENDOOM"
 	pausesign = "M_PAUSE"
+	textscreenx = 10
+	textscreeny = 10
 }
 
 skill baby

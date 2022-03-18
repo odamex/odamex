@@ -76,6 +76,8 @@ typedef struct //gameinfo_s
 	OLumpName pauseSign;
 	float gibFactor;
 	int telefogHeight;
+	int textScreenX;
+	int textScreenY;
 
 	std::string titleString;
 
@@ -101,6 +103,8 @@ typedef struct //gameinfo_s
 		, endoom("")
 		, pauseSign("")
 		, gibFactor(1)
+		, textScreenX(0)
+		, textScreenY(0)
 		, titleString("Unknown IWAD")
 	{}*/
 

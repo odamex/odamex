@@ -282,7 +282,7 @@ void F_TextWrite ()
 		lump = W_CheckNumForName(finalelump, ns_global);
 		if (lump >= 0)
 		{
-			screen->DrawPatchFullScreen((patch_t*)W_CachePatch(lump, PU_CACHE));
+			screen->DrawPatchFullScreen(W_CachePatch(lump, PU_CACHE));
 		}
 		break;
 	case FINALE_FLAT:
@@ -299,22 +299,22 @@ void F_TextWrite ()
 	V_MarkRect(x, y, width, height);
 
 	// draw some of the text onto the screen
-	int cx = 10, cy = 10;
+	int cx = gameinfo.textScreenX, cy = gameinfo.textScreenY;
 	const char* ch = finaletext;
 
-	if (finalecount < 11)
+	if (finalecount < gameinfo.textScreenY + 1)
 		return;
 
 	int count = (finalecount - 10) / TEXTSPEED;
-	for ( ; count ; count-- )
+	for ( ; count; count-- )
 	{
 		int c = *ch++;
 		if (!c)
 			break;
 		if (c == '\n')
 		{
-			cx = 10;
-			cy += 11;
+			cx = gameinfo.textScreenX;
+			cy += 11; // (gamemission == heretic) ? 10 : 11;
 			continue;
 		}
 
@@ -325,15 +325,14 @@ void F_TextWrite ()
 			continue;
 		}
 
-		const patch_t* ch = W_ResolvePatchHandle(hu_font[c]);
+		const patch_t* chr = W_ResolvePatchHandle(hu_font[c]);
 
-		const int w = ch->width();
+		const int w = chr->width();
 		if (cx + w > width)
 			break;
-		screen->DrawPatchClean(ch, cx, cy);
+		screen->DrawPatchClean(chr, cx, cy);
 		cx += w;
 	}
-
 }
 
 //
@@ -347,7 +346,7 @@ typedef struct
 	mobjtype_t	type;
 } castinfo_t;
 
-castinfo_t		castorder[] = {
+castinfo_t castorder[] = {
 	{NULL, MT_POSSESSED},
 	{NULL, MT_SHOTGUY},
 	{NULL, MT_CHAINGUY},
@@ -369,14 +368,14 @@ castinfo_t		castorder[] = {
 	{NULL, MT_UNKNOWNTHING}
 };
 
-static int 			castnum;
-static int 			casttics;
-static int			castsprite;
-static state_t*		caststate;
-static BOOL	 		castdeath;
-static int 			castframes;
-static int 			castonmelee;
-static BOOL	 		castattacking;
+static int 		castnum;
+static int 		casttics;
+static int		castsprite;
+static state_t*	caststate;
+static bool	 	castdeath;
+static int 		castframes;
+static int 		castonmelee;
+static bool	 	castattacking;
 
 
 //
