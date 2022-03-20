@@ -453,8 +453,31 @@ static void ParseHordeDefs()
 		return;
 	}
 
-	// [AM] Must be stable for wave ID's to be the same on client and server.
+	// Must be stable for wave ID's to be the same on client and server.
 	std::stable_sort(::WAVE_DEFINES.begin(), ::WAVE_DEFINES.end(), CmpHordeDefs);
+
+	// Dedupe wave defines.  Note that this has a gigantic hack for 10.0 that keeps
+	// track of the original wave ID so it can be sent to 10.0 clients.  This hack
+	// should be removed in 11.0 at the soonest.
+
+	for (size_t i = 0; i < ::WAVE_DEFINES.size(); i++)
+	{
+		::WAVE_DEFINES[i].legacyID = i;
+	}
+
+	for (std::vector<hordeDefine_t>::iterator it = ::WAVE_DEFINES.begin();
+	     it != ::WAVE_DEFINES.end(); ++it)
+	{
+		std::vector<hordeDefine_t>::iterator next = it;
+		++next;
+		if (next == ::WAVE_DEFINES.end())
+			continue;
+
+		if (next->name != it->name)
+			continue;
+
+		it = ::WAVE_DEFINES.erase(it);
+	}
 }
 
 /**

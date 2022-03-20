@@ -43,6 +43,7 @@ struct hordeInfo_t
 	int waveTime;
 	int bossTime;
 	uint64_t defineID;
+	uint64_t legacyID;
 	int spawnedHealth;
 	int killedHealth;
 	int bossHealth;

@@ -354,6 +354,7 @@ class HordeState
 		info.waveTime = m_waveTime;
 		info.bossTime = m_bossTime;
 		info.defineID = m_defineID;
+		info.legacyID = G_HordeDefine(m_defineID).legacyID;
 		info.spawnedHealth = m_spawnedHealth;
 		info.killedHealth = m_killedHealth;
 		info.bossHealth = m_bossHealth;
