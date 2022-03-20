@@ -1137,7 +1137,24 @@ struct levelStateLines_t
 	std::string title;
 	std::string subtitle[4];
 	float lucent;
-	levelStateLines_t() : lucent(0.0f) { }
+	levelStateLines_t() : lucent(1.0f) { }
+
+	void lucentFade(int tics, const int start, const int end)
+	{
+		if (tics < start)
+		{
+			lucent = 1.0f;
+		}
+		else if (tics < end)
+		{
+			tics %= TICRATE;
+			lucent = static_cast<float>(TICRATE - tics) / TICRATE;
+		}
+		else
+		{
+			lucent = 0.0f;
+		}
+	}
 };
 
 static void LevelStateHorde(levelStateLines_t& lines)
@@ -1240,19 +1257,7 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	}
 
 	// Only render the wave message if it's less than 3 seconds in.
-	if (tics < TICRATE * 3)
-	{
-		lines.lucent = 1.0f;
-	}
-	else if (tics < TICRATE * 4)
-	{
-		tics %= TICRATE;
-		lines.lucent = static_cast<float>(TICRATE - tics) / TICRATE;
-	}
-	else
-	{
-		lines.lucent = 0.0f;
-	}
+	lines.lucentFade(tics, TICRATE * 3, TICRATE * 4);
 }
 
 void LevelStateHUD()
@@ -1327,6 +1332,10 @@ void LevelStateHUD()
 					lines.title = TEXTCOLOR_GREEN "CAPTURE!";
 					lines.subtitle[0] = "Capture the flag!";
 				}
+
+				// Only render the message if it's less than 2 seconds in.
+				lines.lucentFade(::level.time - ::levelstate.getIngameStartTime(),
+				                 TICRATE * 2, TICRATE * 3);
 			}
 			else if (G_IsCoopGame())
 			{
@@ -1344,20 +1353,8 @@ void LevelStateHUD()
 			}
 
 			// Only render the "FIGHT" message if it's less than 2 seconds in.
-			int tics = ::level.time - ::levelstate.getIngameStartTime();
-			if (tics < TICRATE * 2)
-			{
-				lines.lucent = 1.0f;
-			}
-			else if (tics < TICRATE * 3)
-			{
-				tics %= TICRATE;
-				lines.lucent = static_cast<float>(TICRATE - tics) / TICRATE;
-			}
-			else
-			{
-				lines.lucent = 0.0f;
-			}
+			lines.lucentFade(::level.time - ::levelstate.getIngameStartTime(),
+			                 TICRATE * 2, TICRATE * 3);
 		}
 		break;
 	}
