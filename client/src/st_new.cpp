@@ -1236,7 +1236,7 @@ static void LevelStateHorde(levelStateLines_t& lines)
 					break;
 				case wp_chainsaw:
 					if (!consoleplayer().weaponowned[weapons[i]])
-						weapList.push_back("1!");
+						weapList.push_back("1+");
 					break;
 				case wp_shotgun:
 					if (!consoleplayer().weaponowned[weapons[i]])
@@ -1244,7 +1244,7 @@ static void LevelStateHorde(levelStateLines_t& lines)
 					break;
 				case wp_supershotgun:
 					if (!consoleplayer().weaponowned[weapons[i]])
-						weapList.push_back("3!");
+						weapList.push_back("3+");
 					break;
 				case wp_chaingun:
 					if (!consoleplayer().weaponowned[weapons[i]])
