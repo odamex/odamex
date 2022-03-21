@@ -51,7 +51,7 @@ typedef struct
 	OLumpName br;
 } gameborder_t;
 
-typedef struct //gameinfo_s
+typedef struct gameinfo_s
 {
 	int flags;
 	OLumpName titlePage;
@@ -82,34 +82,35 @@ typedef struct //gameinfo_s
 
 	std::string titleString;
 
-	/*gameinfo_s()
+	gameinfo_s()
 		: flags(0)
 		, titlePage("")
 		, creditPages()
 		, titleMusic("")
 		, titleTime(0)
 		, advisoryTime(0)
+		, noLoopFinaleMusic(false)
 		, pageTime(0)
 		, chatSound("")
 		, finaleMusic("")
 		, finaleFlat("")
 		, finalePage()
 		, infoPage()
-		, quitSounds()
+		, quitSound("")
 		, maxSwitch(1)
 		, borderFlat("")
 		, border()
 		, intermissionCounter(true)
 		, intermissionMusic("")
-		, defKickback("")
+		, defKickback(100)
 		, endoom("")
 		, pauseSign("")
-		, gibFactor(1)
+		, gibFactor(1.f)
 		, telefogHeight(0)
 		, textScreenX(0)
 		, textScreenY(0)
 		, titleString("Unknown IWAD")
-	{}*/
+	{}
 
 } gameinfo_t;
 

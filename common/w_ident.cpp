@@ -1057,22 +1057,13 @@ const fileIdentifier_t* W_GameInfo(const OCRC32Sum& crc32)
 //
 void W_ConfigureGameInfo(const OResFile& iwad)
 {
-	extern gameinfo_t DefaultGameInfo; 
-	extern gameinfo_t SharewareGameInfo;
-	extern gameinfo_t RegisteredGameInfo;
-	extern gameinfo_t RetailGameInfo;
-	extern gameinfo_t CommercialGameInfo;
-	extern gameinfo_t RetailBFGGameInfo;
-	extern gameinfo_t CommercialBFGGameInfo;
-
 	const OString idname = identtab.identify(iwad);
 
-    gameinfo = DefaultGameInfo;
+    gameinfo = gameinfo_t();
 
 	if (idname.find("REKKR") == 0)
     {
 		gamemode = retail;
-		gameinfo = RetailGameInfo;
 		gamemission = doom;
 		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
 		gameinfo.maxSwitch = 2;
@@ -1080,7 +1071,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	}
 	else if (idname.find("HACX") == 0)
 	{
-		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = commercial_hacx;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
@@ -1089,7 +1079,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	}
 	else if (idname.find(OStringToUpper(OString(PLUTONIA_PREFIX))) == 0)
 	{
-		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = pack_plut;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
@@ -1098,7 +1087,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	}
 	else if (idname.find(OStringToUpper(OString(TNT_PREFIX))) == 0)
 	{
-		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = pack_tnt;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
@@ -1109,7 +1097,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	{
 		gamemission = chex;
 		gamemode = retail_chex;
-		gameinfo = RetailGameInfo;
 		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "Chex Quest";
@@ -1117,7 +1104,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	else if (idname.find(OStringToUpper(OString(FREEDOOM1_PREFIX))) == 0)
 	{
 		gamemode = retail;
-		gameinfo = RetailGameInfo;
 		gamemission = retail_freedoom;
 		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
 		gameinfo.maxSwitch = 2;
@@ -1126,7 +1112,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	else if (idname.find("FREEDOOM") == 0)
 	{
 		gamemode = commercial;
-		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.maxSwitch = 3;
@@ -1135,7 +1120,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	else if (idname.find(OStringToUpper(OString(FREEDOOM2_PREFIX))) == 0)
 	{
 		gamemode = commercial;
-		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.maxSwitch = 3;
@@ -1145,7 +1129,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	else if (idname.find(OStringToUpper(OString(FREEDM_PREFIX))) == 0)
 	{
 		gamemode = commercial;
-		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.maxSwitch = 3;
@@ -1154,7 +1137,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	else if (idname.find(OStringToUpper(OString(DOOMSW_PREFIX))) == 0)
 	{
 		gamemode = shareware;
-		gameinfo = SharewareGameInfo;
 		gamemission = doom;
 		gameinfo.flags = GI_SHAREWARE | GI_NOCRAZYDEATH;
 		gameinfo.maxSwitch = 1;
@@ -1163,7 +1145,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX " BFG"))) == 0)
 	{
 		gamemode = retail_bfg;
-		gameinfo = RetailBFGGameInfo;
 		gamemission = doom;
 		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
 		gameinfo.maxSwitch = 2;
@@ -1172,7 +1153,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX))) == 0)
 	{
 		gamemode = retail;
-		gameinfo = RetailGameInfo;
 		gamemission = doom;
 		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
 		gameinfo.maxSwitch = 2;
@@ -1180,7 +1160,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX " BFG"))) == 0)
 	{
-		gameinfo = CommercialBFGGameInfo;
 		gamemode = commercial_bfg;
 		gamemission = doom2;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
@@ -1189,7 +1168,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX))) == 0)
 	{
-		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = doom2;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
@@ -1199,7 +1177,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	else if (idname.find(OStringToUpper(OString(DOOM_PREFIX))) == 0)
 	{
 		gamemode = registered;
-		gameinfo = RegisteredGameInfo;
 		gamemission = doom;
 		gameinfo.flags = GI_NOCRAZYDEATH;
 		gameinfo.maxSwitch = 2;
@@ -1208,7 +1185,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	else
 	{
 		gamemode = undetermined;
-		gameinfo = SharewareGameInfo;
 		gamemission = doom;
 		gameinfo.flags = GI_SHAREWARE | GI_NOCRAZYDEATH;
 		gameinfo.maxSwitch = 1;

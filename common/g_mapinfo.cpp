@@ -975,6 +975,16 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 	}
 }
 
+// Sets inputted data as a sound name
+void MIType_SoundName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                      unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+	const std::string soundname = os.getToken();
+
+	strncpy(static_cast<char*>(data), soundname.c_str(), MAX_SNDNAME);
+}
+
 // Sets the sky texture with an OLumpName
 void MIType_Sky(OScanner& os, bool doEquals, void* data, unsigned int flags,
                 unsigned int flags2)
@@ -1628,12 +1638,13 @@ struct MapInfoDataSetter<gameinfo_t>
 		ENTRY3("advisorytime", &MIType_Int, &gameinfo.advisoryTime)
 		ENTRY2("border", &MIType_Border)
 		ENTRY3("borderflat", &MIType_LumpName, &gameinfo.borderFlat)
-		// ENTRY3("chatsound",			)
+		ENTRY3("chatsound", &MIType_SoundName, &gameinfo.chatSound)
 		ENTRY3("creditpage", &MIType_Pages, &gameinfo.creditPages)
 		ENTRY3("intermissioncounter", &MIType_BoolString, &gameinfo.intermissionCounter)
 		ENTRY3("intermissionmusic", &MIType_MusicLumpName, &gameinfo.intermissionMusic)
 		ENTRY3("noloopfinalemusic", &MIType_BoolString, &gameinfo.noLoopFinaleMusic)
 		ENTRY3("pagetime", &MIType_Int, &gameinfo.pageTime)
+		ENTRY3("quitsound", &MIType_SoundName, &gameinfo.quitSound)
 		ENTRY3("finaleflat", &MIType_LumpName, &gameinfo.finaleFlat)
 		ENTRY3("finalemusic", &MIType_MusicLumpName, &gameinfo.finaleMusic)
 		ENTRY4("finalepage", &MIType_Pages, &gameinfo.finalePage, 1)
