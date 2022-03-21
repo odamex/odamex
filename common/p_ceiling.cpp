@@ -432,7 +432,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 			          : P_FindModelCeilingSector(targheight, sec);
 			if (chgsec)
 			{
-				m_Texture = chgsec->floorpic;
+				m_Texture = chgsec->ceilingpic;
 				m_NewSpecial = chgsec->special;
 				m_NewDamageRate = chgsec->damageamount;
 				m_NewDmgInterval = chgsec->damageinterval;
@@ -468,7 +468,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 		}
 		else // else if a trigger model change
 		{
-			m_Texture = line->frontsector->floorpic;
+			m_Texture = line->frontsector->ceilingpic;
 			m_NewSpecial = line->frontsector->special;
 			m_NewDamageRate = line->frontsector->damageamount;
 			m_NewDmgInterval = line->frontsector->damageinterval;
