@@ -682,6 +682,9 @@ static void P_GiveCarePack(player_t* player)
 				message = "You found a weapon in this supply cache!";
 				switch (weapons.at(i))
 				{
+				case wp_chainsaw:
+					midmessage = "Got Chainsaw";
+					break;
 				case wp_pistol:
 					midmessage = "Got Pistol";
 					break;

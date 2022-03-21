@@ -1224,7 +1224,7 @@ static void LevelStateHorde(levelStateLines_t& lines)
 		// Detect when there are new weapons to pick up.
 		if (!consoleplayer().spectator)
 		{
-			bool newWeapons = false;
+			StringTokens weapList;
 			const hordeDefine_t::weapons_t& weapons = P_HordeWeapons();
 			for (size_t i = 0; i < weapons.size(); i++)
 			{
@@ -1232,24 +1232,44 @@ static void LevelStateHorde(levelStateLines_t& lines)
 				{
 				case wp_none:
 					if (!consoleplayer().weaponowned[weapons[i]])
-						newWeapons = true;
+						weapList.push_back("BSK");
 					break;
 				case wp_chainsaw:
+					if (!consoleplayer().weaponowned[weapons[i]])
+						weapList.push_back("1!");
+					break;
 				case wp_shotgun:
+					if (!consoleplayer().weaponowned[weapons[i]])
+						weapList.push_back("3");
+					break;
 				case wp_supershotgun:
+					if (!consoleplayer().weaponowned[weapons[i]])
+						weapList.push_back("3!");
+					break;
 				case wp_chaingun:
+					if (!consoleplayer().weaponowned[weapons[i]])
+						weapList.push_back("4");
+					break;
 				case wp_missile:
+					if (!consoleplayer().weaponowned[weapons[i]])
+						weapList.push_back("5");
+					break;
 				case wp_plasma:
+					if (!consoleplayer().weaponowned[weapons[i]])
+						weapList.push_back("6");
+					break;
 				case wp_bfg:
 					if (!consoleplayer().weaponowned[weapons[i]])
-						newWeapons = true;
+						weapList.push_back("7");
 					break;
 				}
 			}
 
-			if (newWeapons)
+			if (!weapList.empty())
 			{
-				lines.subtitle[3] =  TEXTCOLOR_GREEN "New Weapons Are Available";
+				StrFormat(lines.subtitle[3],
+				          TEXTCOLOR_GREY "New Weapons: " TEXTCOLOR_GREEN "%s",
+				          JoinStrings(weapList, " ").c_str());
 			}
 		}
 
