@@ -6,6 +6,7 @@ file(GLOB MASTER_SOURCES *.cpp *.h)
 # Master target
 add_executable(odamast ${MASTER_SOURCES})
 odamex_target_settings(odamast)
+set_property(TARGET odamast PROPERTY CXX_STANDARD 98)
 
 if(WIN32)
   target_link_libraries(odamast wsock32)

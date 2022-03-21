@@ -66,7 +66,7 @@ typedef struct //gameinfo_s
 	OLumpName finaleFlat;
 	OLumpName finalePage[3];
 	OLumpName infoPage[3];
-	const char **quitSounds;
+	char quitSound[MAX_SNDNAME + 1];
 	int maxSwitch;
 	OLumpName borderFlat;
 	gameborder_t border;
@@ -105,6 +105,7 @@ typedef struct //gameinfo_s
 		, endoom("")
 		, pauseSign("")
 		, gibFactor(1)
+		, telefogHeight(0)
 		, textScreenX(0)
 		, textScreenY(0)
 		, titleString("Unknown IWAD")

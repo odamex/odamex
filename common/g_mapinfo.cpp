@@ -1018,6 +1018,44 @@ void MIType_SetFlag(OScanner& os, bool doEquals, void* data, unsigned int flags,
 	*static_cast<DWORD*>(data) |= flags;
 }
 
+// Sets a compatibility flag for maps
+void MIType_CompatFlag(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                       unsigned int flags2)
+{
+	os.scan();
+	if (doEquals)
+	{
+		if (os.compareToken("="))
+		{
+			os.getTokenInt();
+			if (os.getTokenInt())
+				*static_cast<DWORD*>(data) |= flags;
+			else
+				*static_cast<DWORD*>(data) &= ~flags;
+		}
+		else
+		{
+			os.unScan();
+			if (os.getTokenInt())
+				*static_cast<DWORD*>(data) |= flags;
+			else
+				*static_cast<DWORD*>(data) &= ~flags;
+		}
+	}
+	else
+	{
+		if (IsNum(os.getToken().c_str()))
+		{
+			*static_cast<DWORD*>(data) |= os.getTokenInt() ? flags : 0;
+		}
+		else
+		{
+			os.unScan();
+			*static_cast<DWORD*>(data) |= flags;
+		}
+	}
+}
+
 // Sets an SC flag
 void MIType_SCFlags(OScanner& os, bool doEquals, void* data, unsigned int flags,
                     unsigned int flags2)
@@ -1547,13 +1585,13 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		       &ref.exitpic) // todo: add intermission script support
 		ENTRY2("interpic", &MIType_EatNext)
 		ENTRY2("translator", &MIType_EatNext)
-		ENTRY2("compat_shorttex", &MIType_DoNothing)
-		ENTRY2("compat_limitpain", &MIType_DoNothing)
-		ENTRY4("compat_dropoff", &MIType_SetFlag, &ref.flags, LEVEL_COMPAT_DROPOFF)
-		ENTRY2("compat_trace", &MIType_DoNothing)
-		ENTRY2("compat_boomscroll", &MIType_DoNothing)
-		ENTRY2("compat_sectorsounds", &MIType_DoNothing)
-		ENTRY4("compat_nopassover", &MIType_SetFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER)
+		ENTRY3("compat_shorttex", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY3("compat_limitpain", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY4("compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF)
+		ENTRY3("compat_trace", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY3("compat_boomscroll", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY3("compat_sectorsounds", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY4("compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER)
 	}
 };
 
@@ -1913,7 +1951,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 
 	const OScannerConfig config = {
 	    lumpname, // lumpName
-	    false,    // semiComments
+	    true,     // semiComments
 	    true,     // cComments
 	};
 	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));

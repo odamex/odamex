@@ -1213,10 +1213,9 @@ void M_QuitResponse(int ch)
 	
 	if (!multiplayer)
 	{
-		if (gameinfo.quitSounds)
+		if (gameinfo.quitSound[0])
 		{
-			S_Sound(CHAN_INTERFACE,
-					gameinfo.quitSounds[(gametic>>2)&7], 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, gameinfo.quitSound, 1, ATTN_NONE);
 			I_WaitVBL (105);
 		}
 	}

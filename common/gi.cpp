@@ -28,30 +28,6 @@
 
 gameinfo_t gameinfo;
 
-static const char *quitsounds[8] =
-{
-	"player/male/death1",
-	"demon/pain",
-	"grunt/pain",
-	"misc/gibbed",
-	"misc/teleport",
-	"grunt/sight1",
-	"grunt/sight3",
-	"demon/melee"
-};
-
-static const char *quitsounds2[8] =
-{
-	"vile/active",
-	"misc/p_pkup",
-	"brain/cube",
-	"misc/gibbed",
-	"skeleton/swing",
-	"knight/death",
-	"baby/active",
-	"demon/melee"
-};
-
 static gameborder_t DefaultBorder;
 
 gameinfo_t DefaultGameInfo =
@@ -106,7 +82,7 @@ gameinfo_t SharewareGameInfo =
 	"VICTORY2",
 	"ENDPIC",
 	{ "HELP1", "HELP2", "CREDIT" },
-	quitsounds,
+	"menu/quit1",
 	1,
 	"FLOOR7_2",
 	DefaultBorder,
@@ -140,7 +116,7 @@ gameinfo_t RegisteredGameInfo =
 	"VICTORY2",
 	"ENDPIC",
 	{ "HELP1", "HELP2", "CREDIT" },
-	quitsounds,
+	"menu/quit1",
 	2,
 	"FLOOR7_2",
 	DefaultBorder,
@@ -174,7 +150,7 @@ gameinfo_t RetailGameInfo =
 	"VICTORY2",
 	"ENDPIC",
 	{ "HELP1", "CREDIT", "CREDIT"  },
-	quitsounds,
+	"menu/quit1",
 	2,
 	"FLOOR7_2",
 	DefaultBorder,
@@ -208,7 +184,7 @@ gameinfo_t RetailBFGGameInfo =
 	"VICTORY2",
 	"ENDPIC",
 	{ "HELP1", "CREDIT", "CREDIT"  },
-	quitsounds,
+	"menu/quit1",
 	2,
 	"FLOOR7_2",
 	DefaultBorder,
@@ -242,7 +218,7 @@ gameinfo_t CommercialGameInfo =
 	"CREDIT",
 	"CREDIT",
 	{ "HELP", "CREDIT", "CREDIT" },
-	quitsounds2,
+	"menu/quit2",
 	3,
 	"GRNROCK",
 	DefaultBorder,
@@ -276,7 +252,7 @@ gameinfo_t CommercialBFGGameInfo =
 	"CREDIT",
 	"CREDIT",
 	{ "HELP", "CREDIT", "CREDIT" },
-	quitsounds2,
+	"menu/quit2",
 	3,
 	"GRNROCK",
 	DefaultBorder,
