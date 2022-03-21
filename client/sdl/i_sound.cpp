@@ -427,7 +427,7 @@ void I_UpdateSoundParams (int handle, float vol, int sep, int pitch)
 	Mix_SetPanning(handle, sep, 255-sep);
 }
 
-void I_LoadSound (struct sfxinfo_struct *sfx)
+void I_LoadSound (sfxinfo_struct *sfx)
 {
 	if (!sound_initialized)
 		return;

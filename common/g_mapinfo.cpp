@@ -1779,7 +1779,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 
 	const OScannerConfig config = {
 	    lumpname, // lumpName
-	    false,    // semiComments
+	    true,     // semiComments
 	    true,     // cComments
 	};
 	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
