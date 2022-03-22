@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "am_map.h"
 #include "olumpname.h"
 #include "s_sound.h"
 
@@ -80,6 +81,15 @@ typedef struct
 	int maxSwitch;
 	char borderFlat[8];
 	gameborder_t *border;
+
+	// automap features
+	am_default_colors_t defaultAutomapColors;
+	am_colors_t currentAutomapColors;
+	bool showLocks; // not implemented
+	std::vector<mline_t> mapArrow;
+	std::vector<mline_t> mapArrowCheat;
+	std::vector<mline_t> cheatKey;
+	std::vector<mline_t> easyKey;
 
 	char titleString[64];
 } gameinfo_t;
