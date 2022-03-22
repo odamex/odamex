@@ -25,6 +25,9 @@ gameinfo
 	gibfactor = 0.5
 	textscreenx = 20
 	textscreeny = 5
+	maparrow = "DAGGER"
+	cheatkey = "CHEATKEY"
+	easykey = "EASYKEY"
 }
 
 skill baby
