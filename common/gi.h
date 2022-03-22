@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "am_map.h"
 #include "olumpname.h"
 #include "s_sound.h"
 
@@ -80,6 +81,15 @@ typedef struct gameinfo_s
 	int textScreenX;
 	int textScreenY;
 
+	// automap features
+	am_default_colors_t defaultAutomapColors;
+	am_colors_t currentAutomapColors;
+	bool showLocks; // not implemented
+	std::vector<mline_t> mapArrow;
+	std::vector<mline_t> mapArrowCheat;
+	std::vector<mline_t> cheatKey;
+	std::vector<mline_t> easyKey;
+
 	std::string titleString;
 
 	gameinfo_s()
@@ -111,7 +121,7 @@ typedef struct gameinfo_s
 		, textScreenY(0)
 		, titleString("Unknown IWAD")
 	{}
-
+	
 } gameinfo_t;
 
 extern gameinfo_t gameinfo;

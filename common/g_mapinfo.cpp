@@ -1037,7 +1037,7 @@ void MIType_CompatFlag(OScanner& os, bool doEquals, void* data, unsigned int fla
 	{
 		if (os.compareToken("="))
 		{
-			os.getTokenInt();
+			os.mustScanInt();
 			if (os.getTokenInt())
 				*static_cast<DWORD*>(data) |= flags;
 			else
@@ -1482,6 +1482,128 @@ void MIType_Border(OScanner& os, bool doEquals, void* data,
 	}
 }
 
+//
+void MIType_AutomapBase(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                        unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+
+	if (os.compareTokenNoCase("doom"))
+		AM_SetBaseColorDoom();
+	else if (os.compareTokenNoCase("raven"))
+		AM_SetBaseColorRaven();
+	else if (os.compareTokenNoCase("strife"))
+		AM_SetBaseColorStrife();
+	else
+		os.warning("base expected \"doom\", \"heretic\", or \"strife\"; got %s", os.getToken().c_str());
+}
+
+//
+bool ScanAndCompareString(OScanner& os, std::string cmp)
+{
+	os.scan();
+	if (!os.compareToken(cmp.c_str()))
+	{
+		os.warning("Expected \"%s\", got \"%s\". Aborting parsing", cmp.c_str(), os.getToken().c_str());
+		return false;
+	}
+
+	return true;
+}
+
+//
+bool ScanAndSetRealNum(OScanner& os, fixed_t& num)
+{
+	os.scan();
+	if (!IsRealNum(os.getToken().c_str()))
+	{
+		os.warning("Expected number, got \"%s\". Aborting parsing", os.getToken().c_str());
+		return false;
+	}
+	num = FLOAT2FIXED(os.getTokenFloat());
+	
+	return true;
+}
+
+// Scans through and interprets a file of lines
+bool InterpretLines(const std::string& name, std::vector<mline_t>& lines)
+{
+	lines.clear();
+
+	const int lump = W_FindLump(name.c_str(), 0);
+	if (lump != -1)
+	{
+		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+
+		const OScannerConfig config = {
+		    name.c_str(), // lumpName
+		    false,        // semiComments
+		    true,         // cComments
+		};
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+		
+		while (os.scan())
+		{
+			os.unScan();
+			mline_t ml;
+			
+			if (!ScanAndCompareString(os, "(")) break;
+			if (!ScanAndSetRealNum(os, ml.a.x)) break;
+			if (!ScanAndCompareString(os, ",")) break;
+			if (!ScanAndSetRealNum(os, ml.a.y)) break;
+			if (!ScanAndCompareString(os, ")")) break;
+			if (!ScanAndCompareString(os, ",")) break;
+			if (!ScanAndCompareString(os, "(")) break;
+			if (!ScanAndSetRealNum(os, ml.b.x)) break;
+			if (!ScanAndCompareString(os, ",")) break;
+			if (!ScanAndSetRealNum(os, ml.b.y)) break;
+			if (!ScanAndCompareString(os, ")")) break;
+
+			lines.push_back(ml);
+		}
+	}
+	else
+		return false;
+
+	return true;
+}
+
+//
+void MIType_MapArrows(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                      unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+
+	std::string maparrow = os.getToken();
+
+	if (!InterpretLines(maparrow, gameinfo.mapArrow))
+		os.warning("Map arrow lump \"%s\" could not be found", maparrow.c_str());
+
+	os.scan();
+	if (os.compareToken(","))
+	{
+		os.mustScan();
+		maparrow = os.getToken();
+
+		if (!InterpretLines(maparrow, gameinfo.mapArrowCheat))
+			os.warning("Map arrow lump \"%s\" could not be found", maparrow.c_str());
+	}
+	else
+	{
+		os.unScan();
+	}
+}
+
+//
+void MIType_MapKey(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                      unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+
+	const std::string name = os.getToken();
+	InterpretLines(name, *static_cast<std::vector<mline_t>*>(data));
+}
+
 //////////////////////////////////////////////////////////////////////
 /// MapInfoData
 
@@ -1659,6 +1781,9 @@ struct MapInfoDataSetter<gameinfo_t>
 		ENTRY3("gibfactor", &MIType_Float, &gameinfo.gibFactor)
 		ENTRY3("textscreenx", &MIType_Int, &gameinfo.textScreenX)
 		ENTRY3("textscreeny", &MIType_Int, &gameinfo.textScreenY)
+		ENTRY2("maparrow", &MIType_MapArrows)
+		ENTRY3("cheatkey", &MIType_MapKey, &gameinfo.cheatKey)
+		ENTRY3("easykey", &MIType_MapKey, &gameinfo.easyKey)
 	}
 };
 
@@ -1951,6 +2076,42 @@ struct MapInfoDataSetter<SkillInfo>
 	}
 };
 
+struct automap_dummy {};
+
+// Automap
+template <>
+struct MapInfoDataSetter<automap_dummy>
+{
+	MapInfoDataContainer mapInfoDataContainer;
+
+	MapInfoDataSetter()
+	{
+		ENTRY2("base", &MIType_AutomapBase)
+		ENTRY3("showlocks", &MIType_Bool, &gameinfo.showLocks)
+		ENTRY3("background", &MIType_String, &gameinfo.defaultAutomapColors.Background)
+		ENTRY3("yourcolor", &MIType_String, &gameinfo.defaultAutomapColors.YourColor)
+		ENTRY3("wallcolor", &MIType_String, &gameinfo.defaultAutomapColors.WallColor)
+		ENTRY3("twosidedwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.TSWallColor)
+		ENTRY3("floordiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.FDWallColor)
+		ENTRY3("ceilingdiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.CDWallColor)
+		ENTRY3("thingcolor", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor)
+		ENTRY3("thingcolor_item", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Item)
+		ENTRY3("thingcolor_countitem", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_CountItem)
+		ENTRY3("thingcolor_monster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Monster)
+		ENTRY3("thingcolor_nocountmonster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_NoCountMonster)
+		ENTRY3("thingcolor_friend", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Friend)
+		ENTRY3("thingcolor_projectile", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Projectile)
+		ENTRY3("secretwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.SecretWallColor)
+		ENTRY3("gridcolor", &MIType_String, &gameinfo.defaultAutomapColors.GridColor)
+		ENTRY3("xhaircolor", &MIType_String, &gameinfo.defaultAutomapColors.XHairColor)
+		ENTRY3("notseencolor", &MIType_String, &gameinfo.defaultAutomapColors.NotSeenColor)
+		ENTRY3("lockedcolor", &MIType_String, &gameinfo.defaultAutomapColors.LockedColor)
+		ENTRY3("almostbackgroundcolor", &MIType_String, &gameinfo.defaultAutomapColors.AlmostBackground)
+		ENTRY3("intrateleportcolor", &MIType_String, &gameinfo.defaultAutomapColors.TeleportColor)
+		ENTRY3("exitcolor", &MIType_String, &gameinfo.defaultAutomapColors.ExitColor)
+	}
+};
+
 void ParseMapInfoLump(int lump, const char* lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
@@ -2099,6 +2260,11 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			ParseMapInfoLower<void>(os, setter);
 		}
 		else if (os.compareTokenNoCase("automap"))
+		{
+			MapInfoDataSetter<automap_dummy> setter;
+			ParseMapInfoLower<automap_dummy>(os, setter);
+		}
+		else if (os.compareTokenNoCase("automap_overlay"))
 		{
 			// Not implemented
 			MapInfoDataSetter<void> setter;

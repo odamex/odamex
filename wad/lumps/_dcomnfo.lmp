@@ -1,4 +1,3 @@
-
 gameinfo
 {
 	advisorytime = 0
@@ -21,6 +20,9 @@ gameinfo
 	pausesign = "M_PAUSE"
 	textscreenx = 10
 	textscreeny = 10
+	maparrow = "DOOMARRO", "DDTARROW"
+	cheatkey = "CHEATKEY"
+	easykey = "EASYKEY"
 }
 
 skill baby
@@ -73,4 +75,9 @@ skill nightmare
 	Name = "$SKILL_NIGHTMARE"
 	MustConfirm
 	Key = "n"
+}
+
+automap
+{
+	base = "doom"
 }
