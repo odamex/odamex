@@ -1012,7 +1012,7 @@ void MIType_CompatFlag(OScanner& os, bool doEquals, void* data, unsigned int fla
 	{
 		if (os.compareToken("="))
 		{
-			os.getTokenInt();
+			os.mustScanInt();
 			if (os.getTokenInt())
 				*static_cast<DWORD*>(data) |= flags;
 			else
