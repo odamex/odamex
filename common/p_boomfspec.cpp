@@ -307,7 +307,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 6:
 		// Fast Ceiling Crush & Raise
-		if (EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_NORMAL),
+		if (EV_DoCeiling(DCeiling::fastCrushAndRaise, line, line->id, SPEED(C_NORMAL),
 		                 SPEED(C_NORMAL), 0, true, 0, 0))
 		{
 			result.lineexecuted = true;
@@ -388,7 +388,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 25:
 		// Ceiling Crush and Raise
-		if (EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_SLOW),
+		if (EV_DoCeiling(DCeiling::crushAndRaise, line, line->id, SPEED(C_SLOW),
 		                 SPEED(C_SLOW), 0, true, 0, 0))
 		{
 			result.lineexecuted = true;
@@ -465,7 +465,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 44:
 		// Ceiling Crush
-		if (EV_DoCeiling(DCeiling::ceilLowerAndCrush, line, line->id, SPEED(C_SLOW),
+		if (EV_DoCeiling(DCeiling::lowerAndCrush, line, line->id, SPEED(C_SLOW),
 		                 SPEED(C_SLOW) / 2, 0, true, 0, 0))
 		{
 			result.lineexecuted = true;
@@ -639,7 +639,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 141:
 		// Silent Ceiling Crush & Raise
-		if (EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_SLOW),
+		if (EV_DoCeiling(DCeiling::silentCrushAndRaise, line, line->id, SPEED(C_SLOW),
 		                 SPEED(C_SLOW), 0, true, 1, 0))
 		{
 			result.lineexecuted = true;
@@ -651,14 +651,14 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 72:
 		// Ceiling Crush
-		EV_DoCeiling(DCeiling::ceilLowerAndCrush, line, line->id, SPEED(C_SLOW),
+		EV_DoCeiling(DCeiling::lowerAndCrush, line, line->id, SPEED(C_SLOW),
 		             SPEED(C_SLOW) / 2, 0, true, 0, 0);
 		result.lineexecuted = true;
 		break;
 
 	case 73:
 		// Ceiling Crush and Raise
-		EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_SLOW),
+		EV_DoCeiling(DCeiling::crushAndRaise, line, line->id, SPEED(C_SLOW),
 		             SPEED(C_SLOW), 0, true, 0, 0);
 		result.lineexecuted = true;
 		break;
@@ -684,7 +684,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 77:
 		// Fast Ceiling Crush & Raise
-		EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_NORMAL),
+		EV_DoCeiling(DCeiling::fastCrushAndRaise, line, line->id, SPEED(C_NORMAL),
 		             SPEED(C_NORMAL), 0, true, 0, 0);
 		result.lineexecuted = true;
 		break;
@@ -1104,7 +1104,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		case 150:
 			// Start slow silent crusher
 			// 150 WR  EV_DoCeiling(silentCrushAndRaise)
-			EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_SLOW),
+			EV_DoCeiling(DCeiling::silentCrushAndRaise, line, line->id, SPEED(C_SLOW),
 			             SPEED(C_SLOW), 0, true, 1, 0);
 			result.lineexecuted = true;
 			break;
@@ -2221,7 +2221,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	case 49:
 		// Ceiling Crush And Raise
-		if (EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_SLOW),
+		if (EV_DoCeiling(DCeiling::crushAndRaise, line, line->id, SPEED(C_SLOW),
 		                 SPEED(C_SLOW), 0, true, 0, 0))
 		{
 			result.lineexecuted = true;
@@ -2464,7 +2464,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 164:
 			// Start fast crusher
 			// 164 S1  EV_DoCeiling(fastCrushAndRaise)
-			if (EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_NORMAL),
+			if (EV_DoCeiling(DCeiling::fastCrushAndRaise, line, line->id, SPEED(C_NORMAL),
 			                 SPEED(C_NORMAL), 0, true, 0, 0))
 			{
 				result.lineexecuted = true;
@@ -2475,7 +2475,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 165:
 			// Start slow silent crusher
 			// 165 S1  EV_DoCeiling(silentCrushAndRaise)
-			if (EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_SLOW),
+			if (EV_DoCeiling(DCeiling::silentCrushAndRaise, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW), 0, true, 1, 0))
 			{
 				result.lineexecuted = true;
@@ -2499,7 +2499,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 167:
 			// Lower ceiling and Crush
 			// 167 S1 EV_DoCeiling(lowerAndCrush)
-			if (EV_DoCeiling(DCeiling::ceilLowerAndCrush, line, line->id, SPEED(C_SLOW),
+			if (EV_DoCeiling(DCeiling::lowerAndCrush, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW) / 2, 0, true, 0, 0))
 			{
 				result.lineexecuted = true;
@@ -2764,7 +2764,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 183:
 			// Start fast crusher
 			// 183 SR  EV_DoCeiling(fastCrushAndRaise)
-			if (EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_NORMAL),
+			if (EV_DoCeiling(DCeiling::fastCrushAndRaise, line, line->id, SPEED(C_NORMAL),
 			                 SPEED(C_NORMAL), 0, true, 0, 0))
 			{
 				result.lineexecuted = true;
@@ -2775,7 +2775,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 184:
 			// Start slow crusher
 			// 184 SR  EV_DoCeiling(crushAndRaise)
-			if (EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_SLOW),
+			if (EV_DoCeiling(DCeiling::crushAndRaise, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW), 0, true, 0, 0))
 			{
 				result.lineexecuted = true;
@@ -2786,7 +2786,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 185:
 			// Start slow silent crusher
 			// 185 SR  EV_DoCeiling(silentCrushAndRaise)
-			if (EV_DoCeiling(DCeiling::ceilCrushAndRaise, line, line->id, SPEED(C_SLOW),
+			if (EV_DoCeiling(DCeiling::silentCrushAndRaise, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW), 0, true, 0, 0))
 			{
 				result.lineexecuted = true;
@@ -2810,7 +2810,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 187:
 			// Lower ceiling and Crush
 			// 187 SR EV_DoCeiling(lowerAndCrush)
-			if (EV_DoCeiling(DCeiling::ceilLowerAndCrush, line, line->id, SPEED(C_SLOW),
+			if (EV_DoCeiling(DCeiling::lowerAndCrush, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW) / 2, 0, true, 0, 0))
 			{
 				result.lineexecuted = true;
