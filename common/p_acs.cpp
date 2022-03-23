@@ -1535,9 +1535,11 @@ void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
 	{
 		if (floorOrCeiling == false)
+		{
 			sectors[secnum].floor_res_id = res_id;
 		}
 		else
+		{
 			sectors[secnum].ceiling_res_id = res_id;
 		}
 		sectors[secnum].SectorChanges |= SPC_FlatPic;
