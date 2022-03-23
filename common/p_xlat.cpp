@@ -21,102 +21,14 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomtype.h"
+
+#include "odamex.h"
+
 #include "p_lnspec.h"
 #include "doomdata.h"
 #include "r_data.h"
-#include "m_swap.h"
 #include "p_local.h"
-
-// Speeds for ceilings/crushers (x/8 units per tic)
-//	(Hexen crushers go up at half the speed that they go down)
-#define C_SLOW			8
-#define C_NORMAL		16
-#define C_FAST			32
-#define C_TURBO			64
-
-#define CEILWAIT		150
-
-// Speeds for floors (x/8 units per tic)
-#define F_SLOW			8
-#define F_NORMAL		16
-#define F_FAST			32
-#define F_TURBO			64
-
-// Speeds for doors (x/8 units per tic)
-#define D_SLOW			16
-#define D_NORMAL		32
-#define D_FAST			64
-#define D_TURBO			128
-
-#define VDOORWAIT		150
-
-// Speeds for stairs (x/8 units per tic)
-#define S_SLOW			2
-#define S_NORMAL		4
-#define S_FAST			16
-#define S_TURBO			32
-
-// Speeds for plats (Hexen plats stop 8 units above the floor)
-#define P_SLOW			8
-#define P_NORMAL		16
-#define P_FAST			32
-#define P_TURBO			64
-
-#define PLATWAIT		105
-
-#define ELEVATORSPEED	32
-
-// Speeds for donut slime and pillar (x/8 units per tic)
-#define DORATE			4
-
-// Texture scrollers operate at a rate of x/64 units per tic.
-#define SCROLL_UNIT		64
-
-
-//Define masks, shifts, for fields in generalized linedef types
-// (from BOOM's p_psec.h file)
-
-#define GenFloorBase          (0x6000)
-#define GenCeilingBase        (0x4000)
-#define GenDoorBase           (0x3c00)
-#define GenLockedBase         (0x3800)
-#define GenLiftBase           (0x3400)
-#define GenStairsBase         (0x3000)
-#define GenCrusherBase        (0x2F80)
-
-#define OdamexStaticInits      (333)
-
-// define names for the TriggerType field of the general linedefs
-
-typedef enum
-{
-  WalkOnce,
-  WalkMany,
-  SwitchOnce,
-  SwitchMany,
-  GunOnce,
-  GunMany,
-  PushOnce,
-  PushMany
-} triggertype_e;
-
-
-// Line special translation structure
-typedef struct {
-	byte	flags;
-	byte	newspecial;
-	byte	args[5];
-} xlat_t;
-
-#define TAG	123		// Special value that gets replaced with the line tag
-
-#define WALK	((byte)((SPAC_CROSS<<ML_SPAC_SHIFT)>>8))
-#define USE		((byte)((SPAC_USE<<ML_SPAC_SHIFT)>>8))
-#define SHOOT	((byte)((SPAC_IMPACT<<ML_SPAC_SHIFT)>>8))
-#define MONST	((byte)(ML_MONSTERSCANACTIVATE>>8))
-#define MONWALK ((byte)((SPAC_MCROSS<<ML_SPAC_SHIFT)>>8))
-#define REP		((byte)(ML_REPEAT_SPECIAL>>8))
+#include "p_mapformat.h"
 
 static const xlat_t SpecialTranslation[] = {
 /*   0 */ { 0 },
@@ -400,10 +312,10 @@ static const xlat_t SpecialTranslation[] = {
 
 void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 {
-	short special = LESHORT(mld->special);
-	short tag = LESHORT(mld->tag);
-	short flags = LESHORT(mld->flags);
-	bool passthrough = (flags & ML_PASSUSE_BOOM);
+	short special = mld->special;
+	short tag = mld->tag;
+	unsigned int flags = (unsigned short)mld->flags;
+	bool passthrough = (flags & ML_PASSUSE);
 	int i;
 	
 	flags &= 0x01ff;	// Ignore flags unknown to DOOM
@@ -411,23 +323,22 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 	if (special <= NUM_SPECIALS)
 	{
 		// This is a regular special; translate thru LUT
-		flags = flags | (SpecialTranslation[special].flags << 8);
+		flags = flags | (SpecialTranslation[special].flags);
 		if (passthrough)
 		{	
-			if (GET_SPAC(flags) == SPAC_USE)
+			if (GET_SPAC(flags) == ML_SPAC_USE)
 			{
 				flags &= ~ML_SPAC_MASK;
-				flags |= SPAC_USETHROUGH << ML_SPAC_SHIFT;
+				flags |= ML_SPAC_USETHROUGH;
 			}
-			if (GET_SPAC(flags) == SPAC_CROSS)
+			if (GET_SPAC(flags) == ML_SPAC_CROSS)
 			{
 				flags &= ~ML_SPAC_MASK;
-				flags |= SPAC_CROSSTHROUGH << ML_SPAC_SHIFT;
+				flags |= ML_SPAC_CROSSTHROUGH;
 			}
 			
 			// TODO: what to do with gun-activated lines with passthrough?
 		}
-
 		ld->special = SpecialTranslation[special].newspecial;
 		for (i = 0; i < 5; i++)
 			ld->args[i] = SpecialTranslation[special].args[i] == TAG ? tag :
@@ -478,6 +389,12 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 			ld->args[1] = 2;
 		}
 	}
+	else if (special >= 1024 && special <= 1026) // [Blair] Boom generalized scroller workaround
+	{
+		ld->special = Scroll_Texture_Offsets;
+		ld->args[0] = special;
+		ld->id = tag;
+	}
 	else if (special <= GenCrusherBase)
 	{
 		if (special >= OdamexStaticInits && special < OdamexStaticInits + NUM_STATIC_INITS)
@@ -500,29 +417,29 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 		switch (special & 0x0007)
 		{
 		case WalkMany:
-			flags |= ML_REPEAT_SPECIAL;
+			flags |= ML_REPEATSPECIAL;
 		case WalkOnce:
             if (passthrough)
-                flags |= SPAC_CROSSTHROUGH << ML_SPAC_SHIFT;
+				flags |= ML_SPAC_CROSSTHROUGH;
             else
-                flags |= SPAC_CROSS << ML_SPAC_SHIFT;
+                flags |= ML_SPAC_CROSS;
 			break;
 
 		case SwitchMany:
 		case PushMany:
-			flags |= ML_REPEAT_SPECIAL;
+			flags |= ML_REPEATSPECIAL;
 		case SwitchOnce:
 		case PushOnce:
 			if (passthrough)
-				flags |= SPAC_USETHROUGH << ML_SPAC_SHIFT;
+				flags |= ML_SPAC_USETHROUGH;
 			else
-				flags |= SPAC_USE << ML_SPAC_SHIFT;
+				flags |= ML_SPAC_USE;
 			break;
 
 		case GunMany:
-			flags |= ML_REPEAT_SPECIAL;
+			flags |= ML_REPEATSPECIAL;
 		case GunOnce:
-			flags |= SPAC_IMPACT << ML_SPAC_SHIFT;
+			flags |= ML_SPAC_IMPACT;
 			break;
 		}
 
@@ -692,79 +609,25 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 // that their TIDs be set to the tags of their containing sectors. We
 // do that after the rest of the level has been loaded.
 
-void P_TranslateTeleportThings (void)
+void P_TranslateTeleportThings()
 {
-	int i, j;
+	AActor* mo;
+	TThinkerIterator<AActor> iterator;
 
-	for (i = 0; i < numlines; i++)
+	// [AM] All teleport destinations in zero-tagged sectors get a destination
+	//      tid of 1.
+	while ((mo = iterator.Next()))
 	{
-		if (lines[i].special == Teleport ||
-			lines[i].special == Teleport_NoFog)
-		{
-			// The sector tag hash table hasn't been set up yet,
-			// so we need to use this linear search.
-			for (j = 0; j < numsectors; j++)
-			{
-				if (sectors[j].tag == lines[i].args[0])
-				{
-					AActor *other;
-					TThinkerIterator<AActor> iterator;
+		// not a teleportman
+		if (mo->type != MT_TELEPORTMAN && mo->type != MT_TELEPORTMAN2)
+			continue;
 
-					while ( (other = iterator.Next ()) )
-					{
-						// not a teleportman
-						if (other->type != MT_TELEPORTMAN && other->type != MT_TELEPORTMAN2)
-							continue;
+		// wrong tag
+		if (mo->subsector->sector->tag != 0)
+			continue;
 
-						// wrong sector
-						if (other->subsector->sector - sectors != j)
-							continue;
-
-						// It's a teleportman, so set it's tid to match
-						// the sector's tag.
-						other->tid = lines[i].args[0];
-						other->AddToHash ();
-
-						// We only bother with the first teleportman
-						break;
-					}
-					if (other)
-						break;
-				}
-			}
-		}
+		mo->tid = 1;
 	}
-}
-
-int P_TranslateSectorSpecial (int special)
-{
-	int high;
-
-	// Allow any supported sector special by or-ing 0x8000 to it in Doom format maps
-	// That's for those who like to mess around with existing maps. ;)
-	if (special & 0x8000)
-	{
-		return special & 0x7fff;
-	}
-
-	if (special == 9)
-		return SECRET_MASK;
-
-	// This supports phased lighting with specials 21-24
-	high = (special & 0xfe0) << 3;
-	special &= 0x1f;
-	if (special < 21)
-	{
-		return high | (special + 64);
-	}
-	else if (special < 40)
-	{
-		return high | (special - 20);
-	}
-
-	// Unknown
-	return high | special;
-
 }
 
 VERSION_CONTROL (p_xlat_cpp, "$Id$")

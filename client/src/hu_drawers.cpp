@@ -20,6 +20,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "hu_drawers.h"
 #include "i_video.h"
 #include "v_video.h"
@@ -145,6 +148,15 @@ void Clear(int x, int y,
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
+
+	int maxHeight = I_GetSurfaceHeight();
+	int maxWidth = I_GetSurfaceWidth();
+
+	if (x + (w * x_scale) > maxWidth)
+		return;
+	if (y + (h * y_scale) > maxHeight)
+		return;
+
 	screen->Clear(x, y, x + (w * x_scale), y + (h * y_scale), color);
 }
 
@@ -175,7 +187,7 @@ void DrawText(int x, int y, const float scale,
 
 	// Calculate width and height of string
 	unsigned short w = V_StringWidth(str);
-	unsigned short h = 7;
+	unsigned short h = V_LineHeight();
 
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
@@ -195,6 +207,9 @@ void DrawTexture(int x, int y, const float scale,
                const Texture* texture, const bool force_opaque,
                const bool use_patch_offsets)
 {
+	if (patch == NULL)
+		return;
+
 	// Calculate width and height of patch
 	unsigned short w = texture->mWidth;
 	unsigned short h = texture->mHeight;
@@ -223,6 +238,9 @@ void DrawTranslatedTexture(int x, int y, const float scale,
                          const Texture* texture, byte* translation,
                          const bool force_opaque, const bool use_patch_offsets)
 {
+	if (patch == NULL)
+		return;
+
 	// Calculate width and height of patch
 	unsigned short w = texture->mWidth;
 	unsigned short h = texture->mHeight;
@@ -256,6 +274,9 @@ void DrawTextureStretched(int x, int y,
                         const Texture* texture, const bool force_opaque,
                         const bool use_patch_offsets)
 {
+	if (patch == NULL)
+		return;
+
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
@@ -282,6 +303,9 @@ void DrawTextureScaled(const int x, const int y,
                      const Texture* texture, const bool force_opaque,
                      const bool use_patch_offsets)
 {
+	if (patch == NULL)
+		return;
+
 	// Calculate aspect ratios of patch and destination.
 	float patch_aspect = float(texture->mWidth) / float(texture->mHeight);
 	float dest_aspect = w / (float)h;

@@ -1,0 +1,47 @@
+// This file is encoded as Windows 1252 to ensure the copyright symbol appears
+
+#define VFT_APP 0x00000001L
+#define VOS_NT  0x00040000L
+#define VS_FF_DEBUG 0x00000001L
+
+#define ODALAUNCH_DESC "Odamex Launcher"
+#define ODALAUNCH_EXE "odalaunch.exe"
+#define ODALAUNCH_INTERNAL "odalaunch"
+#define ODALAUNCH_NAME "Odamex Launcher"
+
+1 ICON "@CMAKE_SOURCE_DIR@/odalaunch/res/odalaunch.ico"
+
+1 VERSIONINFO
+FILEVERSION @PROJECT_RC_VERSION@
+PRODUCTVERSION @PROJECT_RC_VERSION@
+FILEFLAGSMASK 0
+#ifdef _DEBUG
+FILEFLAGS VS_FF_DEBUG
+#else
+FILEFLAGS 0
+#endif
+FILEOS VOS_NT
+FILETYPE VFT_APP
+FILESUBTYPE 0
+{
+  BLOCK "StringFileInfo"
+  {
+    // US English, Windows MultiLingual characterset
+    BLOCK "040904E4"
+    {
+      VALUE "CompanyName", "@PROJECT_COMPANY@"
+      VALUE "FileDescription", ODALAUNCH_DESC
+      VALUE "FileVersion", "@PROJECT_VERSION@"
+      VALUE "InternalName", ODALAUNCH_INTERNAL
+      VALUE "LegalCopyright", "ODAMEX and its likeness are Copyright © @PROJECT_COPYRIGHT@ by @PROJECT_COMPANY@."
+      VALUE "OriginalFilename", ODALAUNCH_EXE
+      VALUE "ProductName", ODALAUNCH_NAME
+      VALUE "ProductVersion", "@PROJECT_VERSION@"
+    }
+  }
+  BLOCK "VarFileInfo"
+  {
+    // U.S. English, Multilingual
+    VALUE "Translation", 0x0409, 1252
+  }
+}

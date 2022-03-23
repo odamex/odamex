@@ -21,17 +21,17 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <string>
-#include <vector>
+
+#include "odamex.h"
+
 #include <sstream>
 #include <algorithm>
 
-#include "doomtype.h"
 #include "cmdlib.h"
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "m_argv.h"
-#include "doomstat.h"
+#include "m_fileio.h"
 #include "m_alloc.h"
 #include "d_player.h"
 #include "r_defs.h"
@@ -54,24 +54,31 @@ command_map_t &Commands()
 
 struct ActionBits actionbits[NUM_ACTIONS] =
 {
-	{ 0x00409, ACTION_USE,		  "use" },
-	{ 0x0074d, ACTION_BACK,		  "back" },
-	{ 0x007e4, ACTION_LEFT,		  "left" },
-	{ 0x00816, ACTION_JUMP,		  "jump" },
-	{ 0x0106d, ACTION_KLOOK,	  "klook" },
-	{ 0x0109d, ACTION_MLOOK,	  "mlook" },
-	{ 0x010d8, ACTION_RIGHT,	  "right" },
-	{ 0x0110a, ACTION_SPEED,	  "speed" },
-	{ 0x01fc5, ACTION_ATTACK,	  "attack" },
-	{ 0x021ae, ACTION_LOOKUP,	  "lookup" },
-	{ 0x021fe, ACTION_MOVEUP,	  "moveup" },
-	{ 0x02315, ACTION_STRAFE,	  "strafe" },
-	{ 0x041c4, ACTION_FORWARD,	  "forward" },
-	{ 0x08788, ACTION_LOOKDOWN,	  "lookdown" },
-	{ 0x088c4, ACTION_MOVELEFT,	  "moveleft" },
-	{ 0x088c8, ACTION_MOVEDOWN,	  "movedown" },
-	{ 0x11268, ACTION_MOVERIGHT,  "moveright" },
-	{ 0x2314d, ACTION_SHOWSCORES, "showscores" }
+	{ 0x00409, ACTION_USE,				"use" },
+	{ 0x0074d, ACTION_BACK,				"back" },
+	{ 0x007e4, ACTION_LEFT,				"left" },
+	{ 0x00816, ACTION_JUMP,				"jump" },
+	{ 0x0106d, ACTION_KLOOK,			"klook" },
+	{ 0x0109d, ACTION_MLOOK,			"mlook" },
+	{ 0x010d8, ACTION_RIGHT,			"right" },
+	{ 0x0110a, ACTION_SPEED,			"speed" },
+	{ 0x01fc5, ACTION_ATTACK,			"attack" },
+	{ 0x021ae, ACTION_LOOKUP,			"lookup" },
+	{ 0x021fe, ACTION_MOVEUP,			"moveup" },
+	{ 0x02315, ACTION_STRAFE,			"strafe" },
+	{ 0x041c4, ACTION_FORWARD,			"forward" },
+	{ 0x07cfa, ACTION_AUTOMAP_PANUP,	"am_panup" },
+	{ 0x08126, ACTION_FASTTURN,   		"fastturn"},
+    { 0x08788, ACTION_LOOKDOWN,			"lookdown"},
+	{ 0x088c4, ACTION_MOVELEFT,			"moveleft" },
+	{ 0x088c8, ACTION_MOVEDOWN,			"movedown" },
+	{ 0x0fc5c, ACTION_AUTOMAP_ZOOMIN,	"am_zoomin" },
+	{ 0x11268, ACTION_MOVERIGHT,		"moveright" },
+	{ 0x1f4b4, ACTION_AUTOMAP_PANLEFT,	"am_panleft" },
+	{ 0x1f4b8, ACTION_AUTOMAP_PANDOWN,	"am_pandown" },
+	{ 0x1f952, ACTION_AUTOMAP_ZOOMOUT,	"am_zoomout" },
+	{ 0x2314d, ACTION_SHOWSCORES,		"showscores" },
+	{ 0x3ea48, ACTION_AUTOMAP_PANRIGHT, "am_panright" },
 };
 byte Actions[NUM_ACTIONS];
 
@@ -313,13 +320,13 @@ void C_DoCommand(const char *cmd, uint32_t key)
 						com->Run();
 					}
 					else
-						Printf(PRINT_HIGH, "get command not found\n");
+						Printf(PRINT_WARNING, "get command not found\n");
 				}
 			}
 			else
 			{
 				// We don't know how to handle this command
-				Printf (PRINT_HIGH, "Unknown command \"%s\"\n", argv[0]);
+				Printf (PRINT_WARNING, "Unknown command \"%s\"\n", argv[0]);
 			}
 		}
 		delete[] argv;
@@ -437,11 +444,17 @@ BEGIN_COMMAND (exec)
 		return;
 	}
 
-	std::ifstream ifs(argv[1]);
+	std::string found = M_FindUserFileName(argv[1], ".cfg");
+	if (found.empty())
+	{
+		Printf(PRINT_WARNING, "Could not find \"%s\"\n", argv[1]);
+		return;
+	}
 
+	std::ifstream ifs(argv[1]);
 	if(ifs.fail())
 	{
-		Printf (PRINT_HIGH, "Could not open \"%s\"\n", argv[1]);
+		Printf(PRINT_WARNING, "Could not open \"%s\"\n", argv[1]);
 		return;
 	}
 
@@ -948,43 +961,51 @@ BEGIN_COMMAND (dumpactors)
 	Printf (PRINT_HIGH, "Actors at level.time == %d:\n", level.time);
 	while ( (mo = iterator.Next ()) )
 	{
-		Printf (PRINT_HIGH, "%s (%x, %x, %x | %x) state: %d tics: %d\n", mobjinfo[mo->type].name, mo->x, mo->y, mo->z, mo->angle, mo->state - states, mo->tics);
+		Printf (PRINT_HIGH, "%s (%x, %x, %x | %x) state: %" PRIdSIZE " tics: %d\n", mobjinfo[mo->type].name, mo->x, mo->y, mo->z, mo->angle, mo->state - states, mo->tics);
 	}
 }
 END_COMMAND (dumpactors)
 
-BEGIN_COMMAND (logfile)
+BEGIN_COMMAND(logfile)
 {
 	time_t rawtime;
-	struct tm * timeinfo;
-	const char* DEFAULT_LOG_FILE = (serverside ? "odasrv.log" : "odamex.log");
+	struct tm* timeinfo;
+	const std::string default_logname =
+	    M_GetUserFileName(::serverside ? "odasrv.log" : "odamex.log");
 
-	if (LOG.is_open()) {
-		if ((argc == 1 && LOG_FILE == DEFAULT_LOG_FILE) || (argc > 1 && LOG_FILE == argv[1])) {
-			Printf (PRINT_HIGH, "Log file %s already in use\n", LOG_FILE);
+	if (::LOG.is_open())
+	{
+		if ((argc == 1 && ::LOG_FILE == default_logname) ||
+		    (argc > 1 && ::LOG_FILE == argv[1]))
+		{
+			Printf("Log file %s already in use\n", ::LOG_FILE.c_str());
 			return;
 		}
 
-    	time (&rawtime);
-    	timeinfo = localtime (&rawtime);
-    	Printf (PRINT_HIGH, "Log file %s closed on %s\n", LOG_FILE, asctime (timeinfo));
-		LOG.close();
+		time(&rawtime);
+		timeinfo = localtime(&rawtime);
+		Printf("Log file %s closed on %s\n", ::LOG_FILE.c_str(), asctime(timeinfo));
+		::LOG.close();
 	}
 
-	LOG_FILE = (argc > 1 ? argv[1] : DEFAULT_LOG_FILE);
-	LOG.open (LOG_FILE, std::ios::app);
+	::LOG_FILE = (argc > 1 ? argv[1] : default_logname);
+	::LOG.open(::LOG_FILE.c_str(), std::ios::app);
 
-	if (!LOG.is_open())
-		Printf (PRINT_HIGH, "Unable to create logfile: %s\n", LOG_FILE);
-	else {
-		time (&rawtime);
-    	timeinfo = localtime (&rawtime);
-    	LOG.flush();
-    	LOG << std::endl;
-		Printf (PRINT_HIGH, "Logging in file %s started %s\n", LOG_FILE, asctime (timeinfo));
-    }
+	if (!::LOG.is_open())
+	{
+		Printf(PRINT_HIGH, "Unable to create logfile: %s\n", ::LOG_FILE.c_str());
+	}
+	else
+	{
+		time(&rawtime);
+		timeinfo = localtime(&rawtime);
+		::LOG.flush();
+		::LOG << std::endl;
+		Printf(PRINT_HIGH, "Logging in file %s started %s\n", ::LOG_FILE.c_str(),
+		       asctime(timeinfo));
+	}
 }
-END_COMMAND (logfile)
+END_COMMAND(logfile)
 
 BEGIN_COMMAND (stoplog)
 {
@@ -994,13 +1015,13 @@ BEGIN_COMMAND (stoplog)
 	if (LOG.is_open()) {
 		time (&rawtime);
     	timeinfo = localtime (&rawtime);
-		Printf (PRINT_HIGH, "Logging to file %s stopped %s\n", LOG_FILE, asctime (timeinfo));
+		Printf (PRINT_HIGH, "Logging to file %s stopped %s\n", LOG_FILE.c_str(), asctime (timeinfo));
 		LOG.close();
 	}
 }
 END_COMMAND (stoplog)
 
-bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+bool P_StartScript (AActor *who, line_t *where, int script, const char *map, int lineSide,
 					int arg0, int arg1, int arg2, int always);
 
 BEGIN_COMMAND (puke)
@@ -1020,7 +1041,7 @@ BEGIN_COMMAND (puke)
 				}
 			}
 		}
-		P_StartScript (m_Instigator, NULL, script, level.mapname, 0, arg0, arg1, arg2, false);
+		P_StartScript (m_Instigator, NULL, script, level.mapname.c_str(), 0, arg0, arg1, arg2, false);
 	}
 }
 END_COMMAND (puke)
@@ -1033,4 +1054,3 @@ BEGIN_COMMAND (error)
 END_COMMAND (error)
 
 VERSION_CONTROL (c_dispatch_cpp, "$Id$")
-

@@ -20,6 +20,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <sstream>
 
 #include "c_vote.h"
@@ -93,7 +96,7 @@ void CMD_MapVoteErrback(const std::string &error) {
 	Printf(PRINT_HIGH, "callvote failed: %s\n", error.c_str());
 }
 
-void CMD_MapVoteCallback(const query_result_t &result) {
+void CMD_MapVoteCallback(const maplist_qrows_t &result) {
 	if (result.empty()) {
 		CMD_MapVoteErrback("No maps were found that match your requested map.");
 		return;
@@ -118,7 +121,7 @@ void CMD_RandmapVoteErrback(const std::string &error) {
 	Printf(PRINT_HIGH, "callvote failed: %s\n", error.c_str());
 }
 
-void CMD_RandmapVoteCallback(const query_result_t &result) {
+void CMD_RandmapVoteCallback(const maplist_qrows_t &result) {
 	if (result.empty()) {
 		CMD_MapVoteErrback("Maplist is empty.");
 		return;
@@ -234,39 +237,35 @@ BEGIN_COMMAND(callvote) {
 /**
  * Sends a "yes" vote to the server.
  */
-BEGIN_COMMAND(vote_yes) {
-	if (!connected) {
+BEGIN_COMMAND(vote_yes)
+{
+	if (!connected)
+	{
 		Printf(PRINT_HIGH, "vote failed: You are not connected to a server.\n");
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_vote);
-	MSG_WriteBool(&net_buffer, true);
-} END_COMMAND(vote_yes)
+	MSG_WriteMarker(&net_buffer, clc_netcmd);
+	MSG_WriteString(&net_buffer, "vote");
+	MSG_WriteByte(&net_buffer, 1);
+	MSG_WriteString(&net_buffer, "yes");
+}
+END_COMMAND(vote_yes)
 
 /**
  * Sends a "no" vote to the server.
  */
-BEGIN_COMMAND(vote_no) {
-	if (!connected) {
+BEGIN_COMMAND(vote_no)
+{
+	if (!connected)
+	{
 		Printf(PRINT_HIGH, "vote failed: You are not connected to a server.\n");
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_vote);
-	MSG_WriteBool(&net_buffer, false);
-} END_COMMAND(vote_no)
-
-void CL_VoteUpdate(void) {
-	vote_state_t vote_state;
-	vote_state.result = (vote_result_t)MSG_ReadByte();
-	vote_state.votestring = MSG_ReadString();
-	vote_state.countdown = MSG_ReadShort();
-	vote_state.yes = MSG_ReadByte();
-	vote_state.yes_needed = MSG_ReadByte();
-	vote_state.no = MSG_ReadByte();
-	vote_state.no_needed = MSG_ReadByte();
-	vote_state.abs = MSG_ReadByte();
-
-	VoteState::instance().set(vote_state);
+	MSG_WriteMarker(&net_buffer, clc_netcmd);
+	MSG_WriteString(&net_buffer, "vote");
+	MSG_WriteByte(&net_buffer, 1);
+	MSG_WriteString(&net_buffer, "no");
 }
+END_COMMAND(vote_no)

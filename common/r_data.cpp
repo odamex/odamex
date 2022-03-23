@@ -23,13 +23,21 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
+#include "i_system.h"
 #include "z_zone.h"
 
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
 
-#include "doomdef.h"
+#include "w_wad.h"
+
 #include "r_local.h"
+
+#include "r_sky.h"
+
 #include "cmdlib.h"
 
 #include "v_palette.h"
@@ -288,4 +296,3 @@ unsigned int SlopeDiv (unsigned int num, unsigned int den)
 }
 
 VERSION_CONTROL (r_data_cpp, "$Id$")
-

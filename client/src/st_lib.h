@@ -163,10 +163,7 @@ STlib_initNum
   bool*				on,
   int					maxdigits );
 
-void
-STlib_updateNum
-( st_number_t*			n,
-  bool				refresh );
+void STlib_updateNum(st_number_t* n, bool refresh, bool cleararea=true);
 
 
 // Percent widget routines
@@ -217,8 +214,9 @@ void
 STlib_updateBinIcon
 ( st_binicon_t* 		bi,
   bool				refresh );
-  
-void STlib_drawNum(st_number_t *n, bool refresh);
+
+#define ST_DONT_DRAW_NUM 1994 			// means "n/a"
+void STlib_drawNum(st_number_t *n, bool refresh, bool cleararea=true);
 void ST_DrawNum(int x, int y, DCanvas *scrn, int num);
 
 #endif

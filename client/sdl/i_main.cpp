@@ -23,6 +23,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 // denis - todo - remove
 #include "win32inc.h"
 #ifdef _WIN32
@@ -38,15 +40,14 @@
 // for getuid and geteuid
 #include <unistd.h>
 #include <sys/types.h>
+#ifdef __SWITCH__
+#include "nx_system.h"
+#endif
 #endif
 
 #include <new>
 #include <stack>
 #include <iostream>
-
-#ifdef OSX
-#include <CoreFoundation/CoreFoundation.h>
-#endif
 
 #include "i_sdl.h" 
 #include "i_crash.h"
@@ -55,15 +56,13 @@
 #undef main
 #endif // WIN32
 
-#include "errors.h"
 
-#include "doomtype.h"
 #include "m_argv.h"
+#include "m_fileio.h"
 #include "d_main.h"
 #include "i_system.h"
 #include "c_console.h"
 #include "z_zone.h"
-#include "version.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -93,27 +92,82 @@ void STACK_ARGS call_terms (void)
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
-#ifdef GCONSOLE
+#ifdef __SWITCH__
+void STACK_ARGS nx_early_init (void)
+{
+	socketInitializeDefault();
+#ifdef ODAMEX_DEBUG
+	nxlinkStdio();
+#endif
+}
+void STACK_ARGS nx_early_deinit (void)
+{
+	socketExit();
+}
+#endif
+
+
+#if defined GCONSOLE && !defined __SWITCH__ 
 int I_Main(int argc, char *argv[])
 #else
 int main(int argc, char *argv[])
 #endif
 {
 	// [AM] Set crash callbacks, so we get something useful from crashes.
+#ifdef NDEBUG
 	I_SetCrashCallbacks();
+#endif
 
 	try
 	{
-#if defined(UNIX) && !defined(GEKKO)
+
+#if defined(__SWITCH__)
+		nx_early_init();
+		atterm(nx_early_deinit);
+#endif
+
+#if defined(UNIX) && !defined(GCONSOLE)
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 #endif
 
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
-		Args.SetArgs (argc, argv);
+		::Args.SetArgs(argc, argv);
 
-		const char *CON_FILE = Args.CheckValue("-confile");
-		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
+		if (::Args.CheckParm("--version"))
+		{
+#ifdef _WIN32
+			FILE* fh = fopen("odamex-version.txt", "w");
+			if (!fh)
+				exit(EXIT_FAILURE);
+
+			const int ok = fprintf(fh, "Odamex %s\n", NiceVersion());
+			if (!ok)
+				exit(EXIT_FAILURE);
+
+			fclose(fh);
+#else
+			printf("Odamex %s\n", NiceVersion());
+#endif
+			exit(EXIT_SUCCESS);
+		}
+
+		const char* crashdir = ::Args.CheckValue("-crashdir");
+		if (crashdir)
+		{
+			I_SetCrashDir(crashdir);
+		}
+		else
+		{
+			std::string writedir = M_GetWriteDir();
+			I_SetCrashDir(writedir.c_str());
+		}
+
+		const char* CON_FILE = ::Args.CheckValue("-confile");
+		if (CON_FILE)
+		{
+			CON.open(CON_FILE, std::ios::in);
+		}
 
 		// denis - if argv[1] starts with "odamex://"
 		if(argc == 2 && argv && argv[1])
@@ -238,10 +292,6 @@ int main(int argc, char *argv[])
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
 
-		// Figure out what directory the program resides in.
-		progdir = I_GetBinaryDir();
-		startdir = I_GetCWD();
-
 		D_DoomMain(); // Usually does not return
 
 		// If D_DoomMain does return (as is the case with the +demotest parameter)
@@ -251,23 +301,12 @@ int main(int argc, char *argv[])
 	catch (CDoomError &error)
 	{
 		if (LOG.is_open())
-        {
-            LOG << error.GetMsg() << std::endl;
-            LOG << std::endl;
-        }
+		{
+			LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
+		}
 
-#ifdef OSX
-		std::string errorMessage = error.GetMsg();
-		CFStringRef macErrorMessage = CFStringCreateWithCString(NULL, errorMessage.c_str(), kCFStringEncodingMacRoman);
-		CFUserNotificationDisplayAlert(0, 0, NULL, NULL, NULL, CFSTR("Odamex Error"), macErrorMessage, CFSTR("OK"), NULL, NULL, NULL);
-		CFRelease(macErrorMessage);
-#elif !defined(WIN32)
-            fprintf(stderr, "%s\n", error.GetMsg().c_str());
-#elif _XBOX
-		// Use future Xbox error message handling.    -- Hyper_Eye
-#else
-		MessageBox(NULL, error.GetMsg().c_str(), "Odamex Error", MB_OK);
-#endif
+		I_ErrorMessageBox(error.GetMsg().c_str());
+
 		call_terms();
 		exit(EXIT_FAILURE);
 	}

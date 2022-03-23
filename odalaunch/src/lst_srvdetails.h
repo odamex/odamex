@@ -23,6 +23,8 @@
 #ifndef __LST_SRVDETAILS_H__
 #define __LST_SRVDETAILS_H__
 
+#include "odalaunch.h"
+
 #include "net_packet.h"
 
 #include <wx/listctrl.h>

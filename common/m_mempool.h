@@ -29,8 +29,6 @@
 #ifndef __M_MEMPOOL__
 #define __M_MEMPOOL__
 
-#include "doomtype.h"
-#include <cstring>
 
 template <typename T>
 class Pool

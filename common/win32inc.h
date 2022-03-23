@@ -53,10 +53,10 @@
         #undef DrawText
     #endif
 
-    // LoadMenu macros in winuser.h interfere with m_menu.cpp
-    #ifdef LoadMenu
-        #undef LoadMenu
-    #endif  // LoadMenu
+    // Same with PlaySound
+    #ifdef PlaySound
+        #undef PlaySound
+    #endif
 
     // POSIX functions
 	#include <ctime>

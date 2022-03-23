@@ -22,12 +22,14 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomstat.h"
+
+#include "odamex.h"
+
 #include "m_fixed.h"
 #include "r_state.h"
 #include "p_local.h"
+#include "cl_demo.h"
 
-#include <vector>
 
 typedef std::pair<fixed_t, unsigned int> fixed_uint_pair;
 
@@ -35,6 +37,8 @@ static std::vector<fixed_uint_pair> prev_ceilingheight;
 static std::vector<fixed_uint_pair> saved_ceilingheight;
 static std::vector<fixed_uint_pair> prev_floorheight;
 static std::vector<fixed_uint_pair> saved_floorheight;
+
+extern NetDemo netdemo;
 
 //
 // R_InterpolationTicker
@@ -73,6 +77,12 @@ void R_ResetInterpolation()
 	prev_floorheight.clear();
 	saved_ceilingheight.clear();
 	saved_floorheight.clear();
+	::localview.angle = 0;
+	::localview.setangle = false;
+	::localview.skipangle = false;
+	::localview.pitch = 0;
+	::localview.setpitch = false;
+	::localview.skippitch = false;
 }
 
 
@@ -156,22 +166,34 @@ void R_EndInterpolation()
 // of the camera. If not using uncapped framerate / interpolation,
 // render_lerp_amount will be FRACUNIT.
 //
+
 void R_InterpolateCamera(fixed_t amount)
 {
 	if (gamestate == GS_LEVEL && camera)
 	{
-		// interpolate amount/FRACUNIT percent between previous value and current value
-		viewangle = camera->prevangle + FixedMul(amount, camera->angle - camera->prevangle);
+		player_t& consolePlayer = consoleplayer();
+
+		if (!::localview.skipangle && consolePlayer.id == displayplayer().id &&
+		    consolePlayer.health > 0 && !consolePlayer.mo->reactiontime && 
+			(!netdemo.isPlaying() && !demoplayback))
+		{
+			viewangle = camera->angle + ::localview.angle;
+		}
+		else
+		{
+			// Only interpolate if we are spectating
+			// interpolate amount/FRACUNIT percent between previous value and current value
+			viewangle = camera->prevangle + FixedMul(amount, camera->angle - camera->prevangle);
+		}
+
 		viewx = camera->prevx + FixedMul(amount, camera->x - camera->prevx);
 		viewy = camera->prevy + FixedMul(amount, camera->y - camera->prevy);
+
 		if (camera->player)
-			viewz = camera->player->prevviewz +
-					FixedMul(amount, camera->player->viewz - camera->player->prevviewz);
+			viewz = camera->player->prevviewz + FixedMul(amount, camera->player->viewz - camera->player->prevviewz);
 		else
-			viewz = camera->prevz +
-					FixedMul(amount, camera->z - camera->prevz);
+			viewz = camera->prevz + FixedMul(amount, camera->z - camera->prevz);
 	}
 }
 
 VERSION_CONTROL (r_interp_cpp, "$Id$")
-

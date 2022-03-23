@@ -22,15 +22,16 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "m_alloc.h"
 #include "i_system.h"
 #include "s_sound.h"
 #include "c_dispatch.h"
 #include "z_zone.h"
 #include "m_random.h"
+#include "w_wad.h"
 #include "resources/res_main.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "cmdlib.h"
 #include "v_video.h"
 
@@ -428,16 +429,13 @@ void S_ParseSndInfo()
 				else if (stricmp(com_token + 1, "map") == 0)
 				{
 					// Hexen-style $MAP command
-					level_info_t *info;
-
-					sndinfo = COM_Parse(sndinfo);
-					sprintf(com_token, "MAP%02d", atoi(com_token));
-					info = FindLevelInfo(com_token);
-					sndinfo = COM_Parse(sndinfo);
-					if (info->mapname[0])
+					sndinfo = COM_Parse (sndinfo);
+					sprintf (com_token, "MAP%02d", atoi (com_token));
+					level_pwad_info_t& info = getLevelInfos().findByName(com_token);
+					sndinfo = COM_Parse (sndinfo);
+					if (info.mapname[0])
 					{
-						strncpy(info->music, com_token, 9); // denis - todo -string limit?
-						std::transform(info->music, info->music + strlen(info->music), info->music, toupper);
+						info.music = com_token; // denis - todo -string limit?
 					}
 				}
 				else
@@ -472,4 +470,3 @@ void S_ActivateAmbient (AActor *origin, int ambient)
 }
 
 VERSION_CONTROL (s_sound_cpp, "$Id$")
-

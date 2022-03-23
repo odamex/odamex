@@ -27,13 +27,15 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "odamex.h"
+
 #include "gstrings.h"
 #include "minilzo.h"
 
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
+#include "cl_responderkeys.h"
 #include "cmdlib.h"
 
 #include "i_system.h"
@@ -48,11 +50,12 @@
 #include "m_memio.h"
 
 #include "s_sound.h"
+#include "i_music.h"
 #include "i_musicsystem.h"
 
-#include "doomstat.h"
 
 #include "m_misc.h"
+#include "cl_demo.h"
 
 #include "resources/res_texture.h"
 
@@ -77,6 +80,9 @@ extern bool				OptionsActive;
 extern int				screenSize;
 extern short			skullAnimCounter;
 
+extern NetDemo netdemo;
+
+EXTERN_CVAR (i_skipbootwin)
 EXTERN_CVAR (cl_run)
 EXTERN_CVAR (invertmouse)
 EXTERN_CVAR (lookspring)
@@ -90,8 +96,12 @@ EXTERN_CVAR (r_teamcolor)
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_enemycolor)
 EXTERN_CVAR (cl_mouselook)
+EXTERN_CVAR (in_autosr50)
 EXTERN_CVAR (gammalevel)
 EXTERN_CVAR (language)
+EXTERN_CVAR (mute_spectators)
+EXTERN_CVAR (mute_enemies)
+
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (hud_targetnames)
@@ -99,13 +109,15 @@ EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_scalescoreboard)
 EXTERN_CVAR (hud_timer)
+EXTERN_CVAR (hud_speedometer)
+EXTERN_CVAR (hud_bigfont)
 EXTERN_CVAR (hud_heldflag)
 EXTERN_CVAR (hud_heldflag_flash)
 EXTERN_CVAR (hud_transparency)
 EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
-EXTERN_CVAR (wi_newintermission)
+EXTERN_CVAR (wi_oldintermission)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_zdoomsound)
 EXTERN_CVAR (co_fixweaponimpacts)
@@ -114,6 +126,8 @@ EXTERN_CVAR (co_fineautoaim)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (co_boomphys)			// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_blockmapfix)
+EXTERN_CVAR (co_globalsound)
+EXTERN_CVAR(hud_feedobits)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -143,8 +157,10 @@ EXTERN_CVAR (joy_strafeaxis)
 EXTERN_CVAR (joy_turnaxis)
 EXTERN_CVAR (joy_lookaxis)
 EXTERN_CVAR (joy_sensitivity)
+EXTERN_CVAR (joy_fastsensitivity)
 EXTERN_CVAR (joy_invert)
 EXTERN_CVAR (joy_freelook)
+EXTERN_CVAR (joy_deadzone)
 
 // Network Options
 EXTERN_CVAR (cl_interp)
@@ -162,7 +178,7 @@ EXTERN_CVAR(cl_autorecord_deathmatch)
 EXTERN_CVAR(cl_autorecord_duel)
 EXTERN_CVAR(cl_autorecord_teamdm)
 EXTERN_CVAR(cl_autorecord_ctf)
-
+EXTERN_CVAR(cl_autorecord_horde)
 
 // Weapon Preferences
 EXTERN_CVAR (cl_switchweapon)
@@ -202,6 +218,11 @@ value_t OnOff[2] = {
 	{ 1.0, "On" }
 };
 
+value_t HideShow[2] = {
+	{ 0.0, "Hide" },
+	{ 1.0, "Show" }
+};
+
 value_t OffOn[2] = {
 	{ 0.0, "On" },
 	{ 1.0, "Off" }
@@ -218,17 +239,10 @@ value_t DemoRestrictions[2] = {
 	{ 1.0, "Allow" }
 };
 
-static value_t FlagHelds[] =
-{
-	{ 0.0, "Off" },
-	{ 1.0, "Complete" },
-	{ 2.0, "Simple" }
-};
-
 static value_t DoomOrOdamex[2] =
 {
-	{ 0.0, "Doom" },
-	{ 1.0, "Odamex" }
+	{ 0.0, "Odamex" },
+	{ 1.0, "Doom" }
 };
 
 menu_t  *CurrentMenu;
@@ -278,7 +292,7 @@ static menuitem_t OptionItems[] =
 	{ more,		"Go To Console",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)GoToConsole} },
     { redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete,	"Always Run",			{&cl_run},				{2.0}, {0.0},	{0.0}, {OnOff} },
- 	{ discrete, "Lookspring",			{&lookspring},			{2.0}, {0.0},	{0.0}, {OnOff} },
+ 	{ discrete, "Skip Boot Window",		{&i_skipbootwin},		{2.0}, {0.0},	{0.0}, {OnOff} },
  	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
  	{ more,		"Reset to defaults",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Defaults} },
  	{ more,		"Reset to last saved",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Saved} }
@@ -308,7 +322,7 @@ static menuitem_t ControlsItems[] = {
 	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 #endif
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Basic Movement",		{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,"Basic Movement",		{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
 	{ control,	"Move backward",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+back"} },
 	{ control,	"Strafe left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveleft"} },
@@ -319,15 +333,15 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
 	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
 	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"turn180"} },
+	{ control,	"Alternate Turn",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+fastturn"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
 	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
-	{ control,	"Toggle Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglemap"} },
 	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
 	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Weapons",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,"Weapons",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fist/Chainsaw",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 1"} },
 	{ control,	"Pistol",       		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 2"} },
 	{ control,	"Shotgun/SSG",  		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 3"} },
@@ -337,7 +351,21 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"BFG",          		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 7"} },
 	{ control,	"Chainsaw",     		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 8"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Advanced Movement",    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,	"Automap Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ control,		"Toggle Automap",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"togglemap"} },
+	{ mapcontrol,	"Follow Player",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_togglefollow"} },
+	{ mapcontrol,	"Toggle Grid",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_grid"} },
+	{ mapcontrol,	"Add Marker",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_setmark"} },
+	{ mapcontrol,	"Clear Markers",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_clearmarks"} },
+	{ mapcontrol,	"Big Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_big"} },
+	{ mapcontrol,	"Zoom In",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_zoomin"} },
+	{ mapcontrol,	"Zoom Out",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_zoomout"} },
+	{ mapcontrol,	"Pan Up",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panup"} },
+	{ mapcontrol,	"Pan Down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_pandown"} },
+	{ mapcontrol,	"Pan Left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panleft"} },
+	{ mapcontrol,	"Pan Right",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panright"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,"Advanced Movement",    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fly / Swim up",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+moveup"} },
 	{ control,	"Fly / Swim down",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+movedown"} },
 	{ control,	"Toggle flying",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"fly"} },
@@ -347,7 +375,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+mlook"} },
 	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+klook"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Multiplayer",		    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,"Multiplayer",		    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode"} },
 	{ control,	"Team say",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode2"} },
 	{ control,	"Ready",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"ready"} },
@@ -358,7 +386,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Vote Yes", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"vote_yes"} },
 	{ control,	"Vote No", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"vote_no"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Menus",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,"Menus",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,  "Main menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_main"} },
 	{ control,	"Help menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_help"} },
 	{ control,	"Save menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_save"} },
@@ -369,7 +397,14 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Configure controls",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_keys"} },
 	{ control,	"Change resolution",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_video"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,	"Netdemo Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ netdemocontrol,"Pause Netdemo",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netpause"} },
+    { netdemocontrol, "Fast Forward", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netff"}},
+    { netdemocontrol, "Rewind", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netrew"}},
+    { netdemocontrol, "Next map", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netnextmap"}},
+	{ netdemocontrol,	"Previous map",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netprevmap"} },
+	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
     { control,	"Increase screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizeup"} },
 	{ control,	"Reduce screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizedown"} },
 	{ control,	"Chasecam",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"chase"} },
@@ -377,6 +412,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,  "Open console",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleconsole"} },
 	{ control,  "End current game",     {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_endgame"} },
 	{ control,  "Quit Odamex",	        {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_quit"} }
+
 };
 
 menu_t ControlsMenu = {
@@ -411,12 +447,14 @@ void M_ResetMouseValues()
 
 static menuitem_t MouseItems[] =
 {
-	{ slider,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.25},	{2.5},		{0.1},		{NULL}},
-	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.25},	{2.5},		{0.1},		{NULL}},
+	{ slider,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.05},	{2.5},		{0.05},		{NULL}},
+	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.05},	{2.5},		{0.05},		{NULL}},
 
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ discrete,	"Always FreeLook"				, {&cl_mouselook},		{2.0},	{0.0},		{0.0},		{OnOff}},
 	{ discrete,	"Invert Mouse"					, {&invertmouse},		{2.0},	{0.0},		{0.0},		{OnOff}},
+	{ discrete, "Auto SR50 on Strafe"			, {&in_autosr50},		{2.0},	{0.0},		{0.0},		{OnOff}}, // [AM] Does not belong here
+	{ discrete, "Lookspring"					, {&lookspring},		{2.0},	{0.0},		{0.0},		{OnOff}},
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ discrete,	"Horizontal Movement"			, {&lookstrafe},		{2.0},	{0.0},		{0.0},		{OnOff}},
 	{ discrete,	"Vertical Movement"				, {&novert},			{2.0},	{0.0},		{0.0},		{OffOn}},
@@ -453,13 +491,19 @@ static menuitem_t JoystickItems[] =
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ discrete	,	"Always FreeLook"						, {&joy_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Invert Look Axis"						, {&joy_invert},		{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
+	{ whitetext	,	"Sensitivity Settings"					, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} 						},
 	{ slider	,	"Turn Sensitivity"						, {&joy_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
+	{ slider	,	"Alt. Turn Sensitivity"					, {&joy_fastsensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
+	{ slider	,	"Joystick Deadzone"						, {&joy_deadzone},		{0.0},		{0.75},		{0.05},		{NULL}						},
+#ifdef SDL12
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ whitetext	,	"Press ENTER to change"					, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} 						},
 	{ joyaxis	,	"Walk Analog Axis"						, {&joy_forwardaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ joyaxis	,	"Strafe Analog Axis"					, {&joy_strafeaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ joyaxis	,	"Turn Analog Axis"						, {&joy_turnaxis},		{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ joyaxis	,	"Look Analog Axis"						, {&joy_lookaxis},		{0.0},		{0.0},		{0.0},		{NULL}						},
+#endif
 };
 
 menu_t JoystickMenu = {
@@ -496,11 +540,19 @@ static value_t VoxType[] = {
 	{ 2.0,			"Possessive" }
 };
 
+static value_t ChatSndType[] = {
+	{ 0.0,			"Disabled" },
+	{ 1.0,			"Enabled" },
+	{ 2.0,			"Teamchat only" }
+};
+
 static float num_mussys = static_cast<float>(ARRAY_LENGTH(MusSys));
+
+EXTERN_CVAR(cl_chatsounds)
 
 static menuitem_t SoundItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext ,   "Sound Levels"                      , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ yellowtext ,   "Sound Levels"                      , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ slider    ,	"Music Volume"                      , {&snd_musicvolume},	{0.0},      	{1.0},	    {0.015625},      {NULL} },
 	{ slider    ,	"Sound Volume"                      , {&snd_sfxvolume},		{0.0},      	{1.0},	    {0.015625},      {NULL} },
 	{ slider    ,	"Announcer Volume"             		, {&snd_announcervolume},	{0.0},      {1.0},	    {0.015625},      {NULL} },
@@ -508,11 +560,13 @@ static menuitem_t SoundItems[] = {
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
-	{ bricktext ,   "Sound Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ yellowtext ,   "Sound Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete  ,   "Game SFX"                          , {&snd_gamesfx},		{2.0},			{0.0},		{0.0},		{OnOff} },
 	{ discrete  ,   "Announcer Type"                    , {&snd_voxtype},		{3.0},			{0.0},		{0.0},		{VoxType} },
 	{ discrete  ,   "Player Connect Alert"              , {&cl_connectalert},	{2.0},			{0.0},		{0.0},		{OnOff} },
-	{ discrete  ,   "Player Disconnect Alert"           , {&cl_disconnectalert},{2.0},			{0.0},		{0.0},		{OnOff} }
+	{ discrete  ,   "Player Disconnect Alert"           , {&cl_disconnectalert},{2.0},			{0.0},		{0.0},		{OnOff} },
+    { discrete  ,	"Chat sounds"						, {&cl_chatsounds},		{3.0},			{0.0},		{0.0},		{ChatSndType}},
+
  };
 
 menu_t SoundMenu = {
@@ -533,23 +587,23 @@ menu_t SoundMenu = {
  *
  *=======================================*/
 static menuitem_t CompatItems[] ={
-	{bricktext, "Gameplay",                        {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Camera follows killer on death",  {&cl_deathcam},          {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Finer-precision Autoaim",         {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Fix hit detection at grid edges", {&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
-	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{bricktext, "Items and Decoration",            {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Fix invisible puffs under skies", {&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Items can be walked over/under",  {&co_realactorheight},   {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "Items can drop off ledges",       {&co_allowdropoff},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{bricktext, "Engine Compatibility",            {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "BOOM actor/sector/line checks",   {&co_boomphys},		    {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "ZDOOM 1.23 physics",              {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
-	{redtext,   " ",                               {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{bricktext, "Sound",                           {NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Fix silent west spawns",          {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
-	{discrete,  "ZDoom Sound Response",        		{&co_zdoomsound},     {2.0}, {0.0}, {0.0}, {OnOff}},
+	{yellowtext, "Gameplay",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{svdiscrete, "Finer-precision Autoaim",        {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Fix hit detection at grid edges",{&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
+	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{yellowtext, "Items and Decoration",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{svdiscrete, "Fix invisible puffs under skies",{&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Items can be walked over/under", {&co_realactorheight},   {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Items can drop off ledges",      {&co_allowdropoff},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{yellowtext, "Engine Compatibility",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{svdiscrete, "BOOM actor/sector/line checks",  {&co_boomphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "ZDOOM 1.23 physics",             {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
+	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{yellowtext, "Sound",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
+	{svdiscrete, "Fix silent west spawns",         {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "ZDoom Sound Response",			{&co_zdoomsound},		 {2.0}, {0.0}, {0.0}, {OnOff}},
+    {svdiscrete, "Global Pickup Sounds",			{&co_globalsound},		 {2.0}, {0.0}, {0.0}, {OnOff}},
 };
 
 menu_t CompatMenu = {
@@ -578,7 +632,7 @@ static value_t PredictSectors[] = {
 
 static menuitem_t NetworkItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ yellowtext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ slider,		"Interpolation time",			{&cl_interp},		{0.0},		{4.0},		{1.0},		{NULL} },
 	{ slider,		"Smooth collisions",			{&cl_prednudge},	{1.0},		{0.1},		{-0.1},		{NULL} },
 	{ discrete,		"Predict weapon pickups",		{&cl_predictpickup},{2.0},		{0.0},		{0.0},		{OnOff} },
@@ -587,17 +641,19 @@ static menuitem_t NetworkItems[] = {
 	{ redtext,		" ",							{NULL},				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },
 	{ discrete, 	"Download From Server", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} },
 
-	 { redtext,	" ",								{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,	"Netdemo Settings",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ yellowtext,	"Netdemo Settings",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete,		"Autorecord demos",				{&cl_autorecord},	{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete,		"Split every map",					{&cl_splitnetdemos},	{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ redtext,	" ",								{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ bricktext,	"Autorecord filters",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
+	{ discrete,		"Split every map",				{&cl_splitnetdemos},	{2.0},		{0.0},		{0.0},		{OnOff} },
+
+	{ redtext,		" ",							{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext,	"Autorecord filters",			{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete,		"Cooperation",					{&cl_autorecord_coop},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 	{ discrete,		"Deathmatch",					{&cl_autorecord_deathmatch},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 	{ discrete,		"Duel",							{&cl_autorecord_duel},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 	{ discrete,		"Team Deathmatch",				{&cl_autorecord_teamdm},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 	{ discrete,		"Capture the Flag",				{&cl_autorecord_ctf},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
+	{ discrete,		"Horde",						{&cl_autorecord_horde},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
 };
 
 menu_t NetworkMenu = {
@@ -621,16 +677,17 @@ menu_t NetworkMenu = {
 static value_t WeapSwitch[] = {
 	{ 0.0,			"Never" },
 	{ 1.0,			"Always" },
-	{ 2.0,			"By Preference" }
+	{ 2.0,			"By Preference" },
+    { 3.0,			"Attack Cancels PWO"}
 };
 
 extern const char *weaponnames[];
 
 static menuitem_t WeaponItems[] = {
-	{bricktext, "Weapon Preferences",  {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Switch on pickup",    {&cl_switchweapon},   {3.0}, {0.0}, {0.0}, {WeapSwitch}},
+	{yellowtext, "Weapon Preferences",  {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
+	{discrete,  "Switch on pickup",    {&cl_switchweapon},   {4.0}, {0.0}, {0.0}, {WeapSwitch}},
 	{redtext,   " ",                   {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{bricktext, "Weapon Switch Order", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
+	{yellowtext, "Weapon Switch Order", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{slider,    weaponnames[0],        {&cl_weaponpref_fst}, {0.0}, {8.0}, {1.0}, {NULL}},
 	{slider,    weaponnames[7],        {&cl_weaponpref_csw}, {0.0}, {8.0}, {1.0}, {NULL}},
 	{slider,    weaponnames[1],        {&cl_weaponpref_pis}, {0.0}, {8.0}, {1.0}, {NULL}},
@@ -662,6 +719,7 @@ menu_t WeaponMenu = {
  * Display Options Menu
  *
  *=======================================*/
+static void StartHUDMenu();
 static void StartMessagesMenu (void);
 static void StartAutomapMenu (void);
 void ResetCustomColors (void);
@@ -686,26 +744,8 @@ EXTERN_CVAR (r_painintensity)
 EXTERN_CVAR (cl_movebob)
 EXTERN_CVAR (cl_showspawns)
 EXTERN_CVAR (hud_show_scoreboard_ondeath)
-EXTERN_CVAR (hud_fullhudtype)
 EXTERN_CVAR (hud_demobar)
-
-static value_t Crosshairs[] =
-{
-	{ 0.0, "None" },
-	{ 1.0, "Cross 1" },
-	{ 2.0, "Cross 2" },
-	{ 3.0, "X" },
-	{ 4.0, "Diamond" },
-	{ 5.0, "Dot" },
-	{ 6.0, "Box" },
-	{ 7.0, "Angle" },
-	{ 8.0, "Big Thing" }
-};
-
-static value_t HUDStyles[] = {
-	{ 0.0, "ZDoom" },
-	{ 1.0, "Odamex" },
-};
+EXTERN_CVAR(hud_targetnames)
 
 static value_t Wipes[] = {
 	{ 0.0, "None" },
@@ -744,6 +784,7 @@ CVAR_FUNC_IMPL (ui_transblue)
 }
 
 static menuitem_t VideoItems[] = {
+    {more, "Heads-up display", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)StartHUDMenu}},
 	{ more,		"Messages",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartMessagesMenu} },
 	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartAutomapMenu} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
@@ -751,24 +792,8 @@ static menuitem_t VideoItems[] = {
 	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {8.0},	{1.0},  {NULL} },
 	{ slider,	"Red Pain Intensity",		{&r_painintensity},		{0.0}, {1.0},	{0.1},  {NULL} },
 	{ slider,	"Movement bobbing",			{&cl_movebob},			{0.0}, {1.0},	{0.1},	{NULL} },
-	{ discrete,	"Visible Spawn Points",		{&cl_showspawns},		{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete, "Scale status bar",	        {&st_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "Scale HUD",	            {&hud_scale},			{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "New HUD Style",	        {&hud_fullhudtype},		{2.0}, {0.0},	{0.0},  {HUDStyles} },
-	{ slider,   "HUD Visibility",           {&hud_transparency},    {0.0}, {1.0},   {0.1},  {NULL} },
-	{ discrete, "Display Time Left",		{&hud_timer},           {2.0}, {0.0},   {0.0},  {OnOff} },
 	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
-	{ slider,   "Scale scoreboard",         {&hud_scalescoreboard}, {0.0}, {1.0},   {0.125},{NULL} },
-	{ discrete, "Held Flag Border",         {&hud_heldflag},        {3.0}, {0.0},   {0.0},  {FlagHelds} },
-	{ discrete, "Held Flag Flashes",        {&hud_heldflag_flash}, {2.0}, {0.0},   {0.0},   {OnOff} },
-	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete,	"Crosshair",			    {&hud_crosshair},		{9.0}, {0.0},	{0.0},  {Crosshairs} },
-	{ discrete, "Scale crosshair",			{&hud_crosshairscale},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ redslider,   "Crosshair Red",         {&hud_crosshaircolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ greenslider, "Crosshair Green",       {&hud_crosshaircolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ blueslider,  "Crosshair Blue",        {&hud_crosshaircolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ discrete, "Crosshair health",			{&hud_crosshairhealth},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete,	"Visible Spawn Points",		{&cl_showspawns},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Force Team Color",			{&r_forceteamcolor},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redslider,   "Team Color Red",        {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
@@ -785,12 +810,11 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "UI Background Blue",       {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
 	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete, "Show Scores on Death",		{&hud_show_scoreboard_ondeath},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Show Netdemo infos",		{&hud_demobar},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "See killer on Death",			{&cl_deathcam},   {2.0}, {0.0}, {0.0}, {OnOff}},
 	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
-	{ discrete, "Multiplayer Intermissions",{&wi_newintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
+	{ discrete, "Multiplayer Intermissions",{&wi_oldintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
 	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },
     { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{2.0}, {0.0},	{0.0},  {OnOff} },
 
@@ -814,9 +838,83 @@ menu_t VideoMenu = {
 	ARRAY_LENGTH(VideoItems),
 	0,
 	VideoItems,
-	3,
+	4,
 	0,
 	&M_UpdateDisplayOptions
+};
+
+/*=======================================
+ *
+ * HUD Menu
+ *
+ *=======================================*/
+
+static value_t SecretOptions[] = {
+    {0.0, "Off"},
+    {1.0, "On (with sounds)"},
+    {2.0, "On (w/o sounds)"},
+    {3.0, "Own only"},
+};
+
+static value_t TimerStyles[] = {
+    {0.0, "No Timer"}, {1.0, "Count Down"}, {2.0, "Count Up"}};
+
+static value_t FlagHelds[] = {{0.0, "Off"}, {1.0, "Complete"}, {2.0, "Simple"}};
+
+static value_t Crosshairs[] = {{0.0, "None"}, {1.0, "Cross 1"}, {2.0, "Cross 2"},
+                               {3.0, "X"},    {4.0, "Diamond"}, {5.0, "Dot"},
+                               {6.0, "Box"},  {7.0, "Angle"},   {8.0, "Big Thing"}};
+
+static menuitem_t HUDItems[] = {
+    {yellowtext, "Status Bar", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {discrete, "Scale status bar", {&st_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {yellowtext, "Floating HUD elements", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {discrete, "Scale HUD elements", {&hud_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {slider, "HUD Transparency", {&hud_transparency}, {0.0}, {1.0}, {0.1}, {NULL}},
+    {discrete, "Bigger font in HUD", {&hud_bigfont}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    // clang-format off
+    {discrete, "Show Secret Messages", {&hud_revealsecrets}, {4.0}, {0.0}, {0.0}, {SecretOptions}},
+    {discrete, "Player target names", {&hud_targetnames}, {2.0}, {0.0}, {0.0}, {HideShow}},
+    // clang-format on
+    {discrete, "Timer Type", {&hud_timer}, {3.0}, {0.0}, {0.0}, {TimerStyles}},
+    {discrete, "Speedometer", {&hud_speedometer}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {discrete, "Killfeed", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {discrete, "Netdemo infos", {&hud_demobar}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+
+    {yellowtext, "Scoreboard", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {slider, "Scale scoreboard", {&hud_scalescoreboard}, {0.0}, {1.0}, {0.125}, {NULL}},
+    // clang-format off
+	{discrete, "Scores on Death", {&hud_show_scoreboard_ondeath}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    // clang-format on
+    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+
+    {yellowtext, "Capture the Flag", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {discrete, "Event Message Type", {&hud_gamemsgtype}, {3.0}, {0.0}, {0.0}, {VoxType}},
+    {discrete, "Held Flag Border", {&hud_heldflag}, {3.0}, {0.0}, {0.0}, {FlagHelds}},
+    {discrete, "Held Flag Flashes", {&hud_heldflag_flash}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+
+    {yellowtext, "Crosshair", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {discrete, "Crosshair type", {&hud_crosshair}, {9.0}, {0.0}, {0.0}, {Crosshairs}},
+    {discrete, "Scale crosshair", {&hud_crosshairscale}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {discrete, "Crosshair health", {&hud_crosshairhealth}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {redslider, "Crosshair Red", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {greenslider, "Crosshair Green", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {blueslider, "Crosshair Blue", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+};
+
+menu_t HUDMenu = {
+    "M_VIDEO",              // title
+    1,                      // lastOn
+    ARRAY_LENGTH(HUDItems), // numitems
+    0,                      // indent
+    HUDItems,               // items
+    0,                      // scrolltop
+    0,                      // scrollpos
+    NULL,                   // refreshfunc
 };
 
 /*=======================================
@@ -824,6 +922,9 @@ menu_t VideoMenu = {
  * Messages Menu
  *
  *=======================================*/
+EXTERN_CVAR(message_showpickups)
+EXTERN_CVAR(message_showobituaries)
+EXTERN_CVAR (con_coloredmessages)
 EXTERN_CVAR (hud_scaletext)
 EXTERN_CVAR (msg0color)
 EXTERN_CVAR (msg1color)
@@ -831,7 +932,6 @@ EXTERN_CVAR (msg2color)
 EXTERN_CVAR (msg3color)
 EXTERN_CVAR (msg4color)
 EXTERN_CVAR (msgmidcolor)
-EXTERN_CVAR (msglevel)
 
 static value_t TextColors[] =
 {
@@ -858,12 +958,6 @@ static value_t TextColors[] =
 	{ CR_CYAN,		"cyan" }
 };
 
-static value_t MessageLevels[] = {
-	{ 0.0, "Item Pickup" },
-	{ 1.0, "Obituaries" },
-	{ 2.0, "Critical Messages" }
-};
-
 // TODO: Put all language info in one array, auto detect what's in the lump?
 static value_t Languages[] = {
 	{ 0.0, "Auto" },
@@ -873,14 +967,20 @@ static value_t Languages[] = {
 };
 
 static menuitem_t MessagesItems[] = {
+#if 0
 	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
-	{ discrete, "Minimum message level", {&msglevel},		   	{3.0}, {0.0},   {0.0}, {MessageLevels} },
+#endif
 	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },
-    { discrete,	"Show player target names",	{&hud_targetnames},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ discrete ,"Game Message Type",    {&hud_gamemsgtype},		{3.0}, {0.0},   {0.0}, {VoxType} },
-	{ discrete, "Reveal Secrets",       {&hud_revealsecrets},	{2.0}, {0.0},   {0.0}, {OnOff} },
+	{ discrete,	"Colorize messages",	{&con_coloredmessages},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ bricktext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ yellowtext,"Display settings",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ discrete,	"Show pickup messages",	{&message_showpickups},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete,	"Show death messages",	{&message_showobituaries},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete,	"Hide spectator messages",	{&mute_spectators},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete,	"Hide enemies messages",	{&mute_enemies},	{2.0}, {0.0},   {0.0},	{OnOff} },
+
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ yellowtext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
 	{ cdiscrete, "Obituaries",			{&msg1color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
 	{ cdiscrete, "Critical Messages",	{&msg2color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
@@ -921,7 +1021,7 @@ static menuitem_t AutomapItems[] = {
     { discrete, "Map name style",       {&am_classicmapstring},	{2.0}, {0.0},	{0.0},  {ClassicMapStringTypes} },
 
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ bricktext, "Automap Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ yellowtext, "Automap Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete, "Custom map colors",	{&am_usecustomcolors},	{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ more,     "Reset custom map colors",  {NULL},             {0.0}, {0.0},   {0.0},  {(value_t *)ResetCustomColors} },
 };
@@ -1001,8 +1101,8 @@ static value_t VidFPSCaps[] = {
 
 static value_t FullScreenOptions[] = {
 	{ WINDOW_Windowed,			"Window" },
-	{ WINDOW_DesktopFullscreen,	"Full Screen Window" },
-	{ WINDOW_Fullscreen,		"Full Screen Exclusive" }
+	{ WINDOW_Fullscreen,		"Full Screen Exclusive" },
+	{ WINDOW_DesktopFullscreen,	"Full Screen Window" }
 };
 
 
@@ -1027,7 +1127,7 @@ static menuitem_t ModesItems[] = {
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ whitetext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ bricktext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ yellowtext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} }
 };
 
@@ -1064,7 +1164,7 @@ static void BuildModesList(int hiwidth, int hiheight)
 
 	MenuModeList::const_iterator mode_it = menumodelist.begin();
 
-    const char** str = NULL;
+	char** str = NULL;
 
 	for (int i = VM_RESSTART; ModesItems[i].type == screenres; i++)
 	{
@@ -1093,7 +1193,7 @@ static void BuildModesList(int hiwidth, int hiheight)
 			}
 			else
 			{
-				*str = NULL;
+				str = NULL;
 			}
 		}
 	}
@@ -1297,11 +1397,15 @@ void M_BuildKeyList (menuitem_t *item, int numitems)
 	for (i = 0; i < numitems; i++, item++)
 	{
 		if (item->type == control)
-			C_GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
+			Bindings.GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
+		if (item->type == mapcontrol)
+			AutomapBindings.GetKeysForCommand(item->e.command, &item->b.key1, &item->c.key2);
+		if (item->type == netdemocontrol)
+			NetDemoBindings.GetKeysForCommand(item->e.command, &item->b.key1, &item->c.key2);
 	}
 }
 
-void M_SwitchMenu (menu_t *menu)
+void M_SwitchMenu(menu_t* menu)
 {
 	int i, widest = 0, thiswidth;
 	menuitem_t *item;
@@ -1488,9 +1592,9 @@ void M_OptDrawer (void)
 				color = CR_GREY;
 				break;
 
-			case bricktext:
+			case yellowtext:
 				x = 160 - width / 2;
-				color = CR_BRICK;
+				color = CR_YELLOW;
 				break;
 
 			case listelement:
@@ -1509,6 +1613,7 @@ void M_OptDrawer (void)
 			{
 			case discrete:
 			case cdiscrete:
+			case svdiscrete:
 			{
 				int v, vals;
 
@@ -1561,8 +1666,22 @@ void M_OptDrawer (void)
 
 			case control:
 			{
-				std::string desc = C_NameKeys (item->b.key1, item->c.key2);
+				std::string desc = Bindings.GetNameKeys(item->b.key1, item->c.key2);
 				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+			}
+			break;
+
+			case mapcontrol:
+			{
+				std::string desc = AutomapBindings.GetNameKeys(item->b.key1, item->c.key2);
+				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+			}
+			break;
+
+			case netdemocontrol:
+			{
+				std::string desc = NetDemoBindings.GetNameKeys(item->b.key1, item->c.key2);
+				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
 
@@ -1646,7 +1765,7 @@ void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;
-	const char *cmd = C_GetBinding(ch);
+	const char *cmd = Bindings.GetBind(ch).c_str();
 
 	item = CurrentMenu->items + CurrentItem;
 
@@ -1655,13 +1774,14 @@ void M_OptResponder (event_t *ev)
 	{
 		if (ev->type == ev_keydown)
 		{
-#ifdef _XBOX
-			if (ch != KEY_ESCAPE && ch != KEY_JOY9)
-#else
-			if (ch != KEY_ESCAPE)
-#endif
+			if (!Key_IsMenuKey(ch))
 			{
-				C_ChangeBinding (item->e.command, ch);
+				if (item->type == control)
+					Bindings.ChangeBinding (item->e.command, ch);
+				else if (item->type == mapcontrol)
+					AutomapBindings.ChangeBinding(item->e.command, ch);
+				else if (item->type == netdemocontrol)
+					NetDemoBindings.ChangeBinding(item->e.command, ch);
 				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
 			}
 
@@ -1678,7 +1798,7 @@ void M_OptResponder (event_t *ev)
 	{
 		if(ev->type == ev_keydown)
 		{
-			if(ch == KEY_ESCAPE)
+			if (Key_IsCancelKey(ch))
 			{
 				WaitingForAxis = false;
 				CurrentMenu->items[8].label = OldAxisMessage;
@@ -1717,7 +1837,7 @@ void M_OptResponder (event_t *ev)
 	}
 
 	if (item->type == bitflag && flagsvar &&
-		(ch == KEY_LEFTARROW || ch == KEY_RIGHTARROW || ch == KEY_ENTER)
+	    (Key_IsLeftKey(ch) || Key_IsRightKey(ch) || Key_IsAcceptKey(ch))
 		&& !demoplayback)
 	{
 			int newflags = *item->e.flagint ^ item->a.flagmask;
@@ -1738,404 +1858,494 @@ void M_OptResponder (event_t *ev)
 		}
 	}
 
-	switch (ch)
+	// Handle Keys
 	{
-		case KEY_HAT3:
-		case KEY_DOWNARROW:
+		if (Key_IsDownKey(ch))
+		{
+			int modecol;
+
+			if (item->type == screenres)
 			{
-				int modecol;
-
-				if (item->type == screenres)
-				{
-					modecol = item->a.selmode;
-					item->a.selmode = -1;
-				}
-				else
-				{
-					modecol = 0;
-				}
-
-				do
-				{
-					CurrentItem++;
-					if (CanScrollDown && CurrentItem == VisBottom)
-					{
-						CurrentMenu->scrollpos++;
-						VisBottom++;
-					}
-					if (CurrentItem == CurrentMenu->numitems)
-					{
-						CurrentMenu->scrollpos = 0;
-						CurrentItem = 0;
-					}
-				} while (CurrentMenu->items[CurrentItem].type == redtext ||
-						 CurrentMenu->items[CurrentItem].type == whitetext ||
-						 CurrentMenu->items[CurrentItem].type == bricktext ||
-						 (CurrentMenu->items[CurrentItem].type == screenres &&
-						  !CurrentMenu->items[CurrentItem].b.res1));
-
-				if (CurrentMenu->items[CurrentItem].type == screenres)
-					CurrentMenu->items[CurrentItem].a.selmode = modecol;
-
-				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				modecol = item->a.selmode;
+				item->a.selmode = -1;
 			}
-			break;
-
-		case KEY_HAT1:
-		case KEY_UPARROW:
+			else
 			{
-				int modecol;
-
-				if (item->type == screenres)
-				{
-					modecol = item->a.selmode;
-					item->a.selmode = -1;
-				}
-				else
-				{
-					modecol = 0;
-				}
-
-				do
-				{
-					CurrentItem--;
-					if (CanScrollUp &&
-						CurrentItem == CurrentMenu->scrolltop + CurrentMenu->scrollpos)
-					{
-						CurrentMenu->scrollpos--;
-                        if (CurrentMenu->scrollpos < 0)
-                            CurrentMenu->scrollpos = 0;
-					}
-					if (CurrentItem < 0)
-					{
-						CurrentMenu->scrollpos = MAX (0,CurrentMenu->numitems - 22 + CurrentMenu->scrolltop);
-						CurrentItem = CurrentMenu->numitems - 1;
-					}
-				} while (CurrentMenu->items[CurrentItem].type == redtext ||
-						 CurrentMenu->items[CurrentItem].type == whitetext ||
-						 CurrentMenu->items[CurrentItem].type == bricktext ||
-						 (CurrentMenu->items[CurrentItem].type == screenres &&
-						  !CurrentMenu->items[CurrentItem].b.res1));
-
-				if (CurrentMenu->items[CurrentItem].type == screenres)
-					CurrentMenu->items[CurrentItem].a.selmode = modecol;
-
-				S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				modecol = 0;
 			}
-			break;
 
-		case KEY_PGUP:
+			do
 			{
-				if (CanScrollUp)
+				CurrentItem++;
+				if (CanScrollDown && CurrentItem == VisBottom)
 				{
-					CurrentMenu->scrollpos -= VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+					CurrentMenu->scrollpos++;
+					VisBottom++;
+				}
+				if (CurrentItem == CurrentMenu->numitems)
+				{
+					CurrentMenu->scrollpos = 0;
+					CurrentItem = 0;
+				}
+			} while (CurrentMenu->items[CurrentItem].type == redtext ||
+				CurrentMenu->items[CurrentItem].type == whitetext ||
+				CurrentMenu->items[CurrentItem].type == yellowtext ||
+				(CurrentMenu->items[CurrentItem].type == screenres &&
+					!CurrentMenu->items[CurrentItem].b.res1));
+
+			if (CurrentMenu->items[CurrentItem].type == screenres)
+				CurrentMenu->items[CurrentItem].a.selmode = modecol;
+
+			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		}
+		else if (Key_IsUpKey(ch))
+		{
+			int modecol;
+
+			if (item->type == screenres)
+			{
+				modecol = item->a.selmode;
+				item->a.selmode = -1;
+			}
+			else
+			{
+				modecol = 0;
+			}
+
+			do
+			{
+				CurrentItem--;
+				if (CanScrollUp &&
+					CurrentItem == CurrentMenu->scrolltop + CurrentMenu->scrollpos)
+				{
+					CurrentMenu->scrollpos--;
 					if (CurrentMenu->scrollpos < 0)
-					{
 						CurrentMenu->scrollpos = 0;
-					}
-					CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
-					while (CurrentMenu->items[CurrentItem].type == redtext ||
-						   CurrentMenu->items[CurrentItem].type == whitetext ||
-						   CurrentMenu->items[CurrentItem].type == bricktext ||
-						   (CurrentMenu->items[CurrentItem].type == screenres &&
-							!CurrentMenu->items[CurrentItem].b.res1))
-					{
-						++CurrentItem;
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 				}
-			}
-			break;
-
-		case KEY_PGDN:
-			{
-				if (CanScrollDown)
+				if (CurrentItem < 0)
 				{
-					int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
-					CurrentMenu->scrollpos += pagesize;
-					if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
+					CurrentMenu->scrollpos = MAX(0, CurrentMenu->numitems - 22 + CurrentMenu->scrolltop);
+					CurrentItem = CurrentMenu->numitems - 1;
+				}
+			} while (CurrentMenu->items[CurrentItem].type == redtext ||
+				CurrentMenu->items[CurrentItem].type == whitetext ||
+				CurrentMenu->items[CurrentItem].type == yellowtext ||
+				(CurrentMenu->items[CurrentItem].type == screenres &&
+					!CurrentMenu->items[CurrentItem].b.res1));
+
+			if (CurrentMenu->items[CurrentItem].type == screenres)
+				CurrentMenu->items[CurrentItem].a.selmode = modecol;
+
+			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		}
+		else if (Key_IsPageUpKey(ch))
+		{
+			if (CanScrollUp)
+			{
+				CurrentMenu->scrollpos -= VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+				if (CurrentMenu->scrollpos < 0)
+				{
+					CurrentMenu->scrollpos = 0;
+				}
+				CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
+				while (CurrentMenu->items[CurrentItem].type == redtext ||
+					CurrentMenu->items[CurrentItem].type == whitetext ||
+					CurrentMenu->items[CurrentItem].type == yellowtext ||
+					(CurrentMenu->items[CurrentItem].type == screenres &&
+						!CurrentMenu->items[CurrentItem].b.res1))
+				{
+					++CurrentItem;
+				}
+				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			}
+		}
+		else if (Key_IsPageDownKey(ch)) 
+		{
+			if (CanScrollDown)
+			{
+				int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+				CurrentMenu->scrollpos += pagesize;
+				if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
+				{
+					CurrentMenu->scrollpos = CurrentMenu->numitems - CurrentMenu->scrolltop - pagesize;
+				}
+				CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
+				while (CurrentMenu->items[CurrentItem].type == redtext ||
+					CurrentMenu->items[CurrentItem].type == whitetext ||
+					CurrentMenu->items[CurrentItem].type == yellowtext ||
+					(CurrentMenu->items[CurrentItem].type == screenres &&
+						!CurrentMenu->items[CurrentItem].b.res1))
+				{
+					++CurrentItem;
+				}
+				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			}
+		}
+		else if (Key_IsLeftKey(ch))
+		{
+		switch (item->type)
+		{
+		case slider:
+		{
+			float newval = item->a.cvar->value() - item->d.step;
+
+			if (item->b.leftval < item->c.rightval)
+				newval = MAX(newval, item->b.leftval);
+			else
+				newval = MIN(newval, item->b.leftval);
+
+			if (item->e.cfunc)
+				item->e.cfunc(item->a.cvar, newval);
+			else
+				item->a.cvar->Set(newval);
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+		case redslider:
+		case greenslider:
+		case blueslider:
+		{
+			const char* oldcolor = item->a.cvar->cstring();
+			char newcolor[9];
+
+			if (strlen(oldcolor) == 8)
+				memcpy(newcolor, oldcolor, 9);
+			else
+				memcpy(newcolor, "00 00 00", 9);
+
+			argb_t color = V_GetColorFromString(oldcolor);
+			int part = 0;
+
+			if (item->type == redslider)
+				part = color.getr();
+			else if (item->type == greenslider)
+				part = color.getg();
+			else if (item->type == blueslider)
+				part = color.getb();
+
+			if (part > 0x00)
+				part -= 0x11;
+			if (part < 0x00)
+				part = 0x00;
+
+			char singlecolor[3];
+			sprintf(singlecolor, "%02x", part);
+
+			if (item->type == redslider)
+				memcpy(newcolor, singlecolor, 2);
+			else if (item->type == greenslider)
+				memcpy(newcolor + 3, singlecolor, 2);
+			else if (item->type == blueslider)
+				memcpy(newcolor + 6, singlecolor, 2);
+
+			item->a.cvar->Set(newcolor);
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+		case discrete:
+		case cdiscrete:
+		case svdiscrete:
+		{
+			int cur;
+			int numvals;
+
+			if (item->type == svdiscrete &&
+				(multiplayer || demoplayback || netdemo.isPlaying()))
+				break;
+
+			numvals = (int)item->b.leftval;
+			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
+			if (--cur < 0)
+				cur = numvals - 1;
+
+			item->a.cvar->Set(item->e.values[cur].value);
+
+			// Hack hack. Rebuild list of resolutions
+			if (item->e.values == Depths)
+				BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+
+		case screenres:
+		{
+			int col;
+
+			col = item->a.selmode - 1;
+			if (col < 0)
+			{
+				if (CurrentItem > 0)
+				{
+					if (CurrentMenu->items[CurrentItem - 1].type == screenres)
 					{
-						CurrentMenu->scrollpos = CurrentMenu->numitems - CurrentMenu->scrolltop - pagesize;
+						item->a.selmode = -1;
+						CurrentMenu->items[--CurrentItem].a.selmode = 2;
 					}
-					CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
-					while (CurrentMenu->items[CurrentItem].type == redtext ||
-						   CurrentMenu->items[CurrentItem].type == whitetext ||
-						   CurrentMenu->items[CurrentItem].type == bricktext ||
-						   (CurrentMenu->items[CurrentItem].type == screenres &&
-							!CurrentMenu->items[CurrentItem].b.res1))
-					{
-						++CurrentItem;
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 				}
 			}
-			break;
-
-		case KEY_HAT4:
-		case KEY_LEFTARROW:
-			switch (item->type)
+			else
 			{
-				case slider:
-					{
-						float newval = item->a.cvar->value() - item->d.step;
-
-						if (item->b.leftval < item->c.rightval)
-							newval = MAX(newval, item->b.leftval);
-						else
-							newval = MIN(newval, item->b.leftval);
-
-						if (item->e.cfunc)
-							item->e.cfunc (item->a.cvar, newval);
-						else
-							item->a.cvar->Set (newval);
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-				case redslider:
-				case greenslider:
-				case blueslider:
-					{
-						const char* oldcolor = item->a.cvar->cstring();
-						char newcolor[9];
-
-						if (strlen(oldcolor) == 8)
-							memcpy(newcolor, oldcolor, 9);
-						else
-							memcpy(newcolor, "00 00 00", 9);
-
-						argb_t color = V_GetColorFromString(oldcolor);
-						int part = 0;
-
-						if (item->type == redslider)
-							part = color.getr();
-						else if (item->type == greenslider)
-							part = color.getg();
-						else if (item->type == blueslider)
-							part = color.getb();
-
-						if (part > 0x00)
-							part -= 0x11;
-						if (part < 0x00)
-							part = 0x00;
-
-						char singlecolor[3];
-						sprintf(singlecolor, "%02x", part);
-
-						if (item->type == redslider)
-							memcpy(newcolor, singlecolor, 2);
-						else if (item->type == greenslider)
-							memcpy(newcolor + 3, singlecolor, 2);
-						else if (item->type == blueslider)
-							memcpy(newcolor + 6, singlecolor, 2);
-
-						item->a.cvar->Set(newcolor);
-					}
-					S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-				case discrete:
-				case cdiscrete:
-					{
-						int cur;
-						int numvals;
-
-						numvals = (int)item->b.leftval;
-						cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
-						if (--cur < 0)
-							cur = numvals - 1;
-
-						item->a.cvar->Set (item->e.values[cur].value);
-
-						// Hack hack. Rebuild list of resolutions
-						if (item->e.values == Depths)
-							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-
-				case screenres:
-					{
-						int col;
-
-						col = item->a.selmode - 1;
-						if (col < 0)
-						{
-							if (CurrentItem > 0)
-							{
-								if (CurrentMenu->items[CurrentItem - 1].type == screenres)
-								{
-									item->a.selmode = -1;
-									CurrentMenu->items[--CurrentItem].a.selmode = 2;
-								}
-							}
-						}
-						else
-						{
-							item->a.selmode = col;
-						}
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-					break;
-
-				case joyactive:
-					{
-						int         numjoy;
-
-						numjoy = I_GetJoystickCount();
-
-						if((int)item->a.cvar->value() > numjoy)
-							item->a.cvar->Set(0.0);
-						else if((int)item->a.cvar->value() > 0)
-							item->a.cvar->Set(item->a.cvar->value() - 1);
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-
-				default:
-					break;
+				item->a.selmode = col;
 			}
-			break;
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		break;
 
-		case KEY_HAT2:
-		case KEY_RIGHTARROW:
-			switch (item->type)
+		case joyactive:
+		{
+			int         numjoy;
+
+			numjoy = I_GetJoystickCount();
+
+			if ((int)item->a.cvar->value() > numjoy)
+				item->a.cvar->Set(0.0);
+			else if ((int)item->a.cvar->value() > 0)
+				item->a.cvar->Set(item->a.cvar->value() - 1);
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+
+		default:
+			break;
+		}
+		}
+		else if (Key_IsRightKey(ch))
+		{
+		switch (item->type)
+		{
+		case slider:
+		{
+			float newval = item->a.cvar->value() + item->d.step;
+
+			if (item->b.leftval < item->c.rightval)
+				newval = MIN(newval, item->c.rightval);
+			else
+				newval = MAX(newval, item->c.rightval);
+
+			if (item->e.cfunc)
+				item->e.cfunc(item->a.cvar, newval);
+			else
+				item->a.cvar->Set(newval);
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+		case redslider:
+		case greenslider:
+		case blueslider:
+		{
+			const char* oldcolor = item->a.cvar->cstring();
+			char newcolor[9];
+
+			if (strlen(oldcolor) == 8)
+				memcpy(newcolor, oldcolor, 9);
+			else
+				memcpy(newcolor, "00 00 00", 9);
+
+			argb_t color = V_GetColorFromString(oldcolor);
+			int part = 0;
+
+			if (item->type == redslider)
+				part = color.getr();
+			else if (item->type == greenslider)
+				part = color.getg();
+			else if (item->type == blueslider)
+				part = color.getb();
+
+			if (part < 0xff)
+				part += 0x11;
+			if (part > 0xff)
+				part = 0xff;
+
+			char singlecolor[3];
+			sprintf(singlecolor, "%02x", part);
+
+			if (item->type == redslider)
+				memcpy(newcolor, singlecolor, 2);
+			else if (item->type == greenslider)
+				memcpy(newcolor + 3, singlecolor, 2);
+			else if (item->type == blueslider)
+				memcpy(newcolor + 6, singlecolor, 2);
+
+			item->a.cvar->Set(newcolor);
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+		case discrete:
+		case cdiscrete:
+		case svdiscrete:
+		{
+			int cur;
+			int numvals;
+
+			if (item->type == svdiscrete &&
+				(multiplayer || demoplayback || netdemo.isPlaying()))
+				break;
+
+			numvals = (int)item->b.leftval;
+			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
+			if (++cur >= numvals)
+				cur = 0;
+
+			item->a.cvar->Set(item->e.values[cur].value);
+
+			// Hack hack. Rebuild list of resolutions
+			if (item->e.values == Depths)
+				BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+
+		case screenres:
+		{
+			int col;
+
+			col = item->a.selmode + 1;
+			if ((col > 2) || (col == 2 && !item->d.res3) || (col == 1 && !item->c.res2))
 			{
-				case slider:
+				if (CurrentMenu->numitems - 1 > CurrentItem)
+				{
+					if (CurrentMenu->items[CurrentItem + 1].type == screenres)
 					{
-						float newval = item->a.cvar->value() + item->d.step;
-
-						if (item->b.leftval < item->c.rightval)
-							newval = MIN(newval, item->c.rightval);
-						else
-							newval = MAX(newval, item->c.rightval);
-
-						if (item->e.cfunc)
-							item->e.cfunc (item->a.cvar, newval);
-						else
-							item->a.cvar->Set (newval);
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-				case redslider:
-				case greenslider:
-				case blueslider:
-					{
-						const char* oldcolor = item->a.cvar->cstring();
-						char newcolor[9];
-
-						if (strlen(oldcolor) == 8)
-							memcpy(newcolor, oldcolor, 9);
-						else
-							memcpy(newcolor, "00 00 00", 9);
-
-						argb_t color = V_GetColorFromString(oldcolor);
-						int part = 0;
-
-						if (item->type == redslider)
-							part = color.getr();
-						else if (item->type == greenslider)
-							part = color.getg();
-						else if (item->type == blueslider)
-							part = color.getb();
-
-						if (part < 0xff)
-							part += 0x11;
-						if (part > 0xff)
-							part = 0xff;
-
-						char singlecolor[3];
-						sprintf(singlecolor, "%02x", part);
-
-						if (item->type == redslider)
-							memcpy(newcolor, singlecolor, 2);
-						else if (item->type == greenslider)
-							memcpy(newcolor + 3, singlecolor, 2);
-						else if (item->type == blueslider)
-							memcpy(newcolor + 6, singlecolor, 2);
-
-						item->a.cvar->Set(newcolor);
-					}
-					S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-				case discrete:
-				case cdiscrete:
-					{
-						int cur;
-						int numvals;
-
-						numvals = (int)item->b.leftval;
-						cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
-						if (++cur >= numvals)
-							cur = 0;
-
-						item->a.cvar->Set (item->e.values[cur].value);
-
-						// Hack hack. Rebuild list of resolutions
-						if (item->e.values == Depths)
-							BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-
-				case screenres:
-					{
-						int col;
-
-						col = item->a.selmode + 1;
-						if ((col > 2) || (col == 2 && !item->d.res3) || (col == 1 && !item->c.res2))
+						if (CurrentMenu->items[CurrentItem + 1].b.res1)
 						{
-							if (CurrentMenu->numitems - 1 > CurrentItem)
-							{
-								if (CurrentMenu->items[CurrentItem + 1].type == screenres)
-								{
-									if (CurrentMenu->items[CurrentItem + 1].b.res1)
-									{
-										item->a.selmode = -1;
-										CurrentMenu->items[++CurrentItem].a.selmode = 0;
-									}
-								}
-							}
-						}
-						else
-						{
-							item->a.selmode = col;
+							item->a.selmode = -1;
+							CurrentMenu->items[++CurrentItem].a.selmode = 0;
 						}
 					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-					break;
-
-				case joyactive:
-					{
-						int         numjoy;
-
-						numjoy = I_GetJoystickCount();
-
-						if((int)item->a.cvar->value() >= numjoy)
-							item->a.cvar->Set(0.0);
-						else if((int)item->a.cvar->value() < (numjoy - 1))
-							item->a.cvar->Set(item->a.cvar->value() + 1);
-
-					}
-					S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-					break;
-
-				default:
-					break;
+				}
 			}
-			break;
+			else
+			{
+				item->a.selmode = col;
+			}
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		break;
 
-#ifdef _XBOX
-		case KEY_JOY9: // Start button
-#endif
-		case KEY_BACKSPACE:
+		case joyactive:
+		{
+			int         numjoy;
+
+			numjoy = I_GetJoystickCount();
+
+			if ((int)item->a.cvar->value() >= numjoy)
+				item->a.cvar->Set(0.0);
+			else if ((int)item->a.cvar->value() < (numjoy - 1))
+				item->a.cvar->Set(item->a.cvar->value() + 1);
+
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+
+		default:
+			break;
+		}
+		}
+		else if (Key_IsUnbindKey(ch))
+		{
 			if (item->type == control)
 			{
-				C_UnbindACommand (item->e.command);
+				Bindings.UnbindACommand (item->e.command);
 				item->b.key1 = item->c.key2 = 0;
 			}
-			break;
+			else if (item->type == mapcontrol)
+			{
+				AutomapBindings.UnbindACommand(item->e.command);
+				item->b.key1 = item->c.key2 = 0;
+			}
+			else if (item->type == netdemocontrol)
+			{
+				NetDemoBindings.UnbindACommand(item->e.command);
+				item->b.key1 = item->c.key2 = 0;
+			}
+		}
+		else if (Key_IsAcceptKey(ch))
+		{
+			if (CurrentMenu == &ModesMenu)
+			{
+				int width, height;
 
-		case KEY_JOY1:
-		case KEY_ENTER:
+				if (!(item->type == screenres &&
+				      GetSelectedSize(CurrentItem, &width, &height)))
+				{
+					width = I_GetVideoWidth();
+					height = I_GetVideoHeight();
+				}
+
+				M_SetVideoMode(width, height);
+				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			}
+			else if (item->type == more && item->e.mfunc)
+			{
+				CurrentMenu->lastOn = CurrentItem;
+				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				item->e.mfunc();
+			}
+			else if (item->type == discrete || item->type == cdiscrete ||
+			         item->type == svdiscrete)
+			{
+				int cur;
+				int numvals;
+
+				if (item->type == svdiscrete &&
+				    (multiplayer || demoplayback || netdemo.isPlaying()))
+					return;
+
+				numvals = (int)item->b.leftval;
+				cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
+				if (++cur >= numvals)
+					cur = 0;
+
+				item->a.cvar->Set(item->e.values[cur].value);
+
+				// Hack hack. Rebuild list of resolutions
+				if (item->e.values == Depths)
+					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
+				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+			}
+			else if (item->type == control || item->type == mapcontrol || item->type == netdemocontrol)
+			{
+				configuring_controls = true;
+				WaitingForKey = true;
+				OldContMessage = CurrentMenu->items[0].label;
+				OldContType = CurrentMenu->items[0].type;
+				CurrentMenu->items[0].label =
+				    "Press new key for control or ESC to cancel";
+				CurrentMenu->items[0].type = redtext;
+			}
+			else if (item->type == listelement)
+			{
+				CurrentMenu->lastOn = CurrentItem;
+				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				item->e.lfunc(CurrentItem);
+			}
+			else if (item->type == joyaxis)
+			{
+				WaitingForAxis = true;
+				OldAxisMessage = CurrentMenu->items[8].label;
+				OldAxisType = CurrentMenu->items[8].type;
+				CurrentMenu->items[8].label =
+				    "Activate desired analog axis or ESC to cancel";
+				CurrentMenu->items[8].type = redtext;
+			}
+			else if (item->type == screenres)
+			{
+			}
+		}
+		else if (Key_IsCancelKey(ch))
+		{
+			CurrentMenu->lastOn = CurrentItem;
+			M_PopMenuStack();
+		}
+		else
+		{
+#ifdef _XBOX
+		if (ev->data3 == 't' || ev->data1 == OKEY_JOY3)
+#else
+		if (ev->data3 == 't')
+#endif
+		{
+			// Test selected resolution
 			if (CurrentMenu == &ModesMenu)
 			{
 				int width, height;
@@ -2146,92 +2356,13 @@ void M_OptResponder (event_t *ev)
 					height = I_GetVideoHeight();
 				}
 
+				testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
 				M_SetVideoMode(width, height);
-				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+
+				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 			}
-			else if (item->type == more && item->e.mfunc)
-			{
-				CurrentMenu->lastOn = CurrentItem;
-				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-				item->e.mfunc();
-			}
-			else if (item->type == discrete || item->type == cdiscrete)
-			{
-				int cur;
-				int numvals;
-
-				numvals = (int)item->b.leftval;
-				cur = M_FindCurVal (item->a.cvar->value(), item->e.values, numvals);
-				if (++cur >= numvals)
-					cur = 0;
-
-				item->a.cvar->Set (item->e.values[cur].value);
-
-				// Hack hack. Rebuild list of resolutions
-				if (item->e.values == Depths)
-					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-
-				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			}
-			else if (item->type == control)
-			{
-				configuring_controls = true;
-				WaitingForKey = true;
-				OldContMessage = CurrentMenu->items[0].label;
-				OldContType = CurrentMenu->items[0].type;
-				CurrentMenu->items[0].label = "Press new key for control or ESC to cancel";
-				CurrentMenu->items[0].type = redtext;
-			}
-			else if (item->type == listelement)
-			{
-				CurrentMenu->lastOn = CurrentItem;
-				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-				item->e.lfunc (CurrentItem);
-			}
-			else if (item->type == joyaxis)
-			{
-				WaitingForAxis = true;
-				OldAxisMessage = CurrentMenu->items[8].label;
-				OldAxisType = CurrentMenu->items[8].type;
-				CurrentMenu->items[8].label = "Activate desired analog axis or ESC to cancel";
-				CurrentMenu->items[8].type = redtext;
-			}
-			else if (item->type == screenres)
-			{
-			}
-			break;
-
-		case KEY_JOY2:
-		case KEY_ESCAPE:
-			CurrentMenu->lastOn = CurrentItem;
-			M_PopMenuStack ();
-			break;
-
-		default:
-#ifdef _XBOX
-			if (ev->data3 == 't' || ev->data1 == KEY_JOY3)
-#else
-			if (ev->data3 == 't')
-#endif
-			{
-				// Test selected resolution
-				if (CurrentMenu == &ModesMenu)
-				{
-					int width, height;
-
-					if (!(item->type == screenres && GetSelectedSize(CurrentItem, &width, &height)))
-					{
-						width = I_GetVideoWidth();
-						height = I_GetVideoHeight();
-					}
-
-					testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
-					M_SetVideoMode(width, height);
-
-					S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-				}
-			}
-			break;
+		}
+		}
 	}
 
 	if (CurrentMenu->refreshfunc)
@@ -2252,7 +2383,7 @@ static void UpdateStuff (void)
 void Reset2Defaults (void)
 {
 	AddCommandString ("unbindall; binddefaults");
-	cvar_t::C_SetCVarsToDefaults(CVAR_ARCHIVE | CVAR_CLIENTARCHIVE);
+	cvar_t::C_SetCVarsToDefaults(CVAR_CLIENTARCHIVE);
 	UpdateStuff();
 }
 
@@ -2261,6 +2392,11 @@ void Reset2Saved (void)
 	std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
 	AddCommandString(cmd);
 	UpdateStuff();
+}
+
+static void StartHUDMenu()
+{
+	M_SwitchMenu(&HUDMenu);
 }
 
 static void StartMessagesMenu (void)

@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <stack>
 #include <iostream>
 
@@ -36,7 +39,6 @@
 #endif
 
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "i_crash.h"
 #include "m_argv.h"
@@ -44,8 +46,8 @@
 #include "i_system.h"
 #include "c_console.h"
 #include "z_zone.h"
-#include "errors.h"
 #include "i_net.h"
+#include "m_fileio.h"
 
 using namespace std;
 
@@ -80,6 +82,12 @@ int PrintString(int printlevel, char const* str)
 	printf("%s", sanitized_str.c_str());
 	fflush(stdout);
 
+	if (LOG.is_open())
+	{
+		LOG << sanitized_str;
+		LOG.flush();
+	}
+
 	return sanitized_str.length();
 }
 
@@ -100,7 +108,9 @@ BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
 int __cdecl main(int argc, char *argv[])
 {
 	// [AM] Set crash callbacks, so we get something useful from crashes.
+#ifdef NDEBUG
 	I_SetCrashCallbacks();
+#endif
 
     try
     {
@@ -125,7 +135,24 @@ int __cdecl main(int argc, char *argv[])
         #endif
 
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
-		Args.SetArgs (argc, argv);
+		::Args.SetArgs(argc, argv);
+
+		if (::Args.CheckParm("--version"))
+		{
+			printf("Odamex %s\n", NiceVersion());
+			exit(EXIT_SUCCESS);
+		}
+
+		const char* crashdir = ::Args.CheckValue("-crashdir");
+		if (crashdir)
+		{
+			I_SetCrashDir(crashdir);
+		}
+		else
+		{
+			std::string writedir = M_GetWriteDir();
+			I_SetCrashDir(writedir.c_str());
+		}
 
 		const char *CON_FILE = Args.CheckValue("-confile");
 		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
@@ -147,50 +174,28 @@ int __cdecl main(int argc, char *argv[])
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
 
-		progdir = I_GetBinaryDir();
-		startdir = I_GetCWD();
-
 		D_DoomMain();
-    }
-    catch (CDoomError &error)
-    {
+	}
+	catch (CDoomError& error)
+	{
 		if (LOG.is_open())
-        {
-            LOG << error.GetMsg() << std::endl;
-            LOG << std::endl;
-        }
-        else
-        {
-            MessageBox(NULL, error.GetMsg().c_str(), "Odasrv Error", MB_OK);
-        }
+		{
+			LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
+		}
 
+		fprintf(stderr, "=== ERROR: %s ===\n\n", error.GetMsg().c_str());
+
+		call_terms();
 		exit(EXIT_FAILURE);
-    }
-    catch (...)
-    {
-		call_terms ();
+	}
+	catch (...)
+	{
+		call_terms();
 		throw;
-    }
-    return 0;
+	}
+	return 0;
 }
 #else
-
-// cleanup handling -- killough:
-static void handler (int s)
-{
-    char buf[64];
-
-    signal(s,SIG_IGN);  // Ignore future instances of this signal.
-
-    strcpy(buf,
-		   s==SIGSEGV ? "Segmentation Violation" :
-		   s==SIGINT  ? "Interrupted by User" :
-		   s==SIGILL  ? "Illegal Instruction" :
-		   s==SIGFPE  ? "Floating Point Exception" :
-		   s==SIGTERM ? "Killed" : "Terminated by signal %s");
-
-    I_FatalError (buf, s);
-}
 
 //
 // daemon_init
@@ -225,7 +230,9 @@ void daemon_init(void)
 int main (int argc, char **argv)
 {
 	// [AM] Set crash callbacks, so we get something useful from crashes.
+#ifdef NDEBUG
 	I_SetCrashCallbacks();
+#endif
 
     try
     {
@@ -237,10 +244,28 @@ int main (int argc, char **argv)
 		if(r_euid < 0)
 			perror(NULL);
 
-		Args.SetArgs (argc, argv);
+		::Args.SetArgs(argc, argv);
 
-		const char *CON_FILE = Args.CheckValue("-confile");
-		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
+		if (::Args.CheckParm("--version"))
+		{
+			printf("Odamex %s\n", NiceVersion());
+			exit(EXIT_SUCCESS);
+		}
+
+		const char* crashdir = ::Args.CheckValue("-crashdir");
+		if (crashdir)
+		{
+			I_SetCrashDir(crashdir);
+		}
+		else
+		{
+			std::string writedir = M_GetWriteDir();
+			I_SetCrashDir(writedir.c_str());
+		}
+
+		const char* CON_FILE = Args.CheckValue("-confile");
+		if (CON_FILE)
+			CON.open(CON_FILE, std::ios::in);
 
 		/*
 		  killough 1/98:
@@ -265,39 +290,33 @@ int main (int argc, char **argv)
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
 
-		signal(SIGSEGV, handler);
-		signal(SIGTERM, handler);
-		signal(SIGILL,  handler);
-		signal(SIGFPE,  handler);
-		signal(SIGINT,  handler);	// killough 3/6/98: allow CTRL-BRK during init
-		signal(SIGABRT, handler);
-
-		progdir = I_GetBinaryDir();
+		// [AM] There used to be a signal handler here that attempted to
+		//      shut the server off gracefully.  I'm not sure masking the
+		//      signal is a good idea, and it stomped over the crashlog handler
+		//      I set earlier.
 
 		D_DoomMain();
-    }
-    catch (CDoomError &error)
-    {
-	fprintf (stderr, "%s\n", error.GetMsg().c_str());
+	}
+	catch (CDoomError& error)
+	{
+		if (LOG.is_open())
+		{
+			LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
+		}
 
-	if (LOG.is_open())
-        {
-            LOG << error.GetMsg() << std::endl;
-            LOG << std::endl;
-        }
+		fprintf(stderr, "=== ERROR: %s ===\n\n", error.GetMsg().c_str());
 
-	call_terms();
-	exit(EXIT_FAILURE);
-    }
-    catch (...)
-    {
-		call_terms ();
+		call_terms();
+		exit(EXIT_FAILURE);
+	}
+	catch (...)
+	{
+		call_terms();
 		throw;
-    }
-    return 0;
+	}
+	return 0;
 }
 
 #endif
 
 VERSION_CONTROL (i_main_cpp, "$Id$")
-

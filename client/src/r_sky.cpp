@@ -25,13 +25,13 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomstat.h"
+
+#include "odamex.h"
+
 #include "m_fixed.h"
 #include "r_data.h"
 #include "r_draw.h"
 #include "r_main.h"
-#include "c_cvars.h"
-#include "g_level.h"
 #include "r_sky.h"
 #include "i_system.h"
 

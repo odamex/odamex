@@ -23,11 +23,10 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <stdlib.h>
 
-#include "doomtype.h"
-#include "doomdef.h"
-#include "doomstat.h"
 
 #include "m_random.h"
 #include "s_sound.h"
@@ -147,7 +146,7 @@ static AActor* SelectTeleDest(int tid, int tag)
 //
 // TELEPORTATION
 //
-BOOL EV_Teleport(int tid, int tag, int side, AActor *thing)
+BOOL EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop)
 {
 	AActor *m;
 	unsigned	an;
@@ -157,6 +156,7 @@ BOOL EV_Teleport(int tid, int tag, int side, AActor *thing)
 	player_t	*player;
 
 	// don't teleport missiles
+	// TODO: Allow projectile activated missiles to teleport
 	if (thing->flags & MF_MISSILE)
 		return false;
 
@@ -196,21 +196,37 @@ BOOL EV_Teleport(int tid, int tag, int side, AActor *thing)
 		player->viewz = thing->z + thing->player->viewheight;
 
 	// spawn teleport fog at source and destination
+	// [RK] but account for nosourcefog and nostop fog arguments
 	if(serverside && !(player && player->spectator))
 	{
-		S_Sound (new AActor (oldx, oldy, oldz, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+		if (arg0 == 0)
+			S_Sound (new AActor (oldx, oldy, oldz, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+		
 		an = m->angle >> ANGLETOFINESHIFT;
 		// emit sound at new spot
-		S_Sound (new AActor (m->x+20*finecosine[an], m->y+20*finesine[an], thing->z, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+		// [RK] reduce the fog flicker during no stop
+		if (nostop == 1)
+			S_Sound(new AActor(m->x+5*finecosine[an], m->y+5*finesine[an], thing->z, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+		else
+			S_Sound(new AActor(m->x+20*finecosine[an], m->y+20*finesine[an], thing->z, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 	}
 
 	// don't move for a bit
+	// [RK] except for nostop teleports
 	if (player && !player->spectator)
-		thing->reactiontime = 18;
+	{
+		if (nostop == 1)
+			thing->reactiontime = 0;
+		else
+			thing->reactiontime = 18;
+	}
 
 	thing->momx = thing->momy = thing->momz = 0;
 	thing->angle = m->angle;
-	thing->pitch = 0;
+	
+	// [RK] we keep the player's pitch if it's a no stop teleport
+	if(nostop == 0)
+		thing->pitch = 0;
 
 	return true;
 }
@@ -264,7 +280,12 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 				oldy = thing->y;
 				oldz = thing->z;
 
-				fixed_t destz = (m->type == MT_TELEPORTMAN) ? P_FloorHeight(m) : m->z;
+				fixed_t destz;
+
+				if (demoplayback && (gamemission == pack_tnt || gamemission == pack_plut || gamemission == chex))
+					destz = m->z;	// Make sure we have the original Z-Height bug on Final Doom.
+				else
+					destz = (m->type == MT_TELEPORTMAN) ? P_FloorHeight(m) : m->z;
 
 				if (!P_TeleportMove (thing, m->x, m->y, destz, false))
 					return false;
@@ -311,7 +332,8 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 // [RH] Changed to find destination by tid rather than sector
 //
 
-BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing)
+BOOL EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* line,
+                       int side, AActor* thing)
 {
 	AActor    *m;
 
@@ -323,10 +345,10 @@ BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing)
 	if (thing->flags & MF_MISSILE || !line)
 		return false;
 
-	// [AM] TODO: Change this to use SelectTeleDest.
-	if (NULL == (m = AActor::FindGoal (NULL, tid, MT_TELEPORTMAN)))
-		if (NULL == (m = AActor::FindGoal (NULL, tid, MT_TELEPORTMAN2)))
-			return false;
+	// [AM] Use modern ZDoom teleport destination selection.
+	m = SelectTeleDest(tid, tag);
+	if (m == NULL)
+		return false;
 
 	// Height of thing above ground, in case of mid-air teleports:
 	fixed_t z = thing->z - thing->floorz;
@@ -507,4 +529,3 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 }
 
 VERSION_CONTROL (p_teleport_cpp, "$Id$")
-

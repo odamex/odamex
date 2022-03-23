@@ -24,6 +24,8 @@
 #ifndef __CTRL_INFOBAR__
 #define __CTRL_INFOBAR__
 
+#include "odalaunch.h"
+
 #include <wx/window.h>
 #include <wx/infobar.h>
 #include <wx/string.h>

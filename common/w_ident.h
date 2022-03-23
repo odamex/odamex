@@ -22,10 +22,25 @@
 //-----------------------------------------------------------------------------
 
 #ifndef __W_IDENT_H__
-#define  __W_IDENT_H__
+#define __W_IDENT_H__
+
 
 #include "m_ostring.h"
-#include <string>
+#include "m_resfile.h"
+
+struct fileIdentifier_t
+{
+	OString mIdName;
+	std::string mNiceName;
+	OString mFilename;
+	OCRC32Sum mCRC32Sum;
+	OMD5Hash mMd5Sum;
+	OString mGroupName;
+	bool mIsCommercial;
+	bool mIsIWAD;
+	bool mIsDeprecated;
+	int weight;
+};
 
 // [RH] Compare wad header as ints instead of chars
 #define IWAD_ID (('I')|('W'<<8)|('A'<<16)|('D'<<24))
@@ -58,4 +73,4 @@ bool W_IsIWADDeprecated(const std::string& filename);
 bool W_IsIWADShareware(const std::string& filename);
 std::vector<OString> W_GetIWADFilenames();
 
-#endif	// __W_IDENT_H__
+#endif // __W_IDENT_H__

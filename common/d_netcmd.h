@@ -24,7 +24,6 @@
 #ifndef __D_NETCMD__
 #define __D_NETCMD__
 
-#include "doomtype.h"
 #include "i_net.h"
 #include "m_fixed.h"
  

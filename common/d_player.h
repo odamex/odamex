@@ -26,7 +26,6 @@
 #define __D_PLAYER_H__
 
 #include <list>
-#include <vector>
 #include <queue>
 
 #include <time.h>
@@ -36,7 +35,6 @@
 // as commands per game tick.
 #include "d_ticcmd.h"
 
-#include "d_net.h"
 
 // The player data structure depends on a number
 // of other structs: items (internal inventory),
@@ -96,25 +94,21 @@ typedef enum
 //
 typedef enum
 {
-	// No clipping, walk through barriers.
-	CF_NOCLIP			= 1,
-	// No damage, no health loss.
-	CF_GODMODE			= 2,
-	// Not really a cheat, just a debug aid.
-	CF_NOMOMENTUM		= 4,
-	// [RH] Monsters don't target
-	CF_NOTARGET			= 8,
-	// [RH] Flying player
-	CF_FLY				= 16,
-	// [RH] Put camera behind player
-	CF_CHASECAM			= 32,
-	// [RH] Don't let the player move
-	CF_FROZEN			= 64,
-	// [RH] Stick camera in player's head if he moves
-	CF_REVERTPLEASE		= 128
+	CF_NOCLIP =			(1 << 0), // No clipping, walk through barriers.
+	CF_GODMODE =		(1 << 1), // No damage, no health loss.
+	CF_NOMOMENTUM =		(1 << 2), // Not really a cheat, just a debug aid.
+	CF_NOTARGET =		(1 << 3), // [RH] Monsters don't target
+	CF_FLY =			(1 << 4), // [RH] Flying player
+	CF_CHASECAM =		(1 << 5), // [RH] Put camera behind player
+	CF_FROZEN =			(1 << 6), // [RH] Don't let the player move
+	CF_REVERTPLEASE =	(1 << 7), // [RH] Stick camera in player's head if he moves
+	CF_BUDDHA =			(1 << 8), // [Ch0wW] Buddha Cheatcode
 } cheat_t;
 
 #define MAX_PLAYER_SEE_MOBJ	0x7F
+
+static const int ReJoinDelay = TICRATE * 5;
+static const int SuicideDelay = TICRATE * 10;
 
 //
 // Extended player object info: player_t
@@ -170,15 +164,25 @@ public:
 	bool		cards[NUMCARDS];
 	bool		backpack;
 
+	// [AM] Lives left.
+	int			lives;
+	// [AM] Rounds won in round-based games.
+	int			roundwins;
 	// [Toke - CTF] Points in a special game mode
 	int			points;
 	// [Toke - CTF - Carry] Remembers the flag when grabbed
-	bool		flags[NUMFLAGS];
+	bool		flags[NUMTEAMS];
 
     // Frags, deaths, monster kills
 	int			fragcount;
 	int			deathcount;
+	int			monsterdmgcount;
 	int			killcount, itemcount, secretcount;		// for intermission
+
+	// Total points/frags that aren't reset after rounds. Used for LMS/TLMS/LMSCTF.
+	int totalpoints;
+	// Total Deaths that are seen only on Rounds without lives.
+	int totaldeaths;	
 
     // Is wp_nochange if not changing.
 	weapontype_t	pendingweapon;
@@ -193,7 +197,7 @@ public:
 
 	// Bit flags, for cheats and debug.
     // See cheat_t, above.
-	int			cheats;
+	uint32_t cheats;
 
 	// Refired shots are less accurate.
 	short		refire;
@@ -217,7 +221,7 @@ public:
 	int			jumpTics;				// delay the next jump for a moment
 
 	int			death_time;				// [SL] Record time of death to enforce respawn delay if needed 
-	int			suicide_time;			// Ch0wW - Time between 2 suicides.
+	int			suicidedelay;			// Ch0wW - Time between 2 suicides.
 	fixed_t		oldvelocity[3];			// [RH] Used for falling damage
 
 	AActor::AActorPtr camera;			// [RH] Whose eyes this player sees through
@@ -236,7 +240,7 @@ public:
 	byte		spying;					// [SL] id of player being spynext'd by this player
 	bool		spectator;				// [GhostlyDeath] spectating?
 //	bool		deadspectator;			// [tm512] spectating as a dead player?
-	int			joinafterspectatortime; // Nes - Join after spectator time.
+	int			joindelay;			// Number of tics to delay player from rejoining
 	int			timeout_callvote;       // [AM] Tic when a vote last finished.
 	int			timeout_vote;           // [AM] Tic when a player last voted.
 
@@ -247,6 +251,12 @@ public:
 
 	argb_t		blend_color;			// blend color for the sector the player is in
 	bool		doreborn;
+
+	byte        QueuePosition;            //Queue position to join game. 0 means not in queue
+
+	// zdoom
+	int hazardcount;
+	byte hazardinterval;
 
 	// For flood protection
 	struct LastMessage_s
@@ -261,6 +271,23 @@ public:
 	// denis - client structure is here now for a 1:1
 	struct client_t
 	{
+		struct oldPacket_t
+		{
+			int		sequence;
+			buf_t	data;
+
+			oldPacket_t() : sequence(-1)
+			{
+				data.resize(0);
+			}
+
+			oldPacket_t(const oldPacket_t& other)
+			{
+				sequence = other.sequence;
+				data = other.data;
+			}
+		};
+
 		netadr_t    address;
 
 		buf_t       netbuf;
@@ -268,14 +295,11 @@ public:
 
 		// protocol version supported by the client
 		short		version;
-		short		majorversion;	// GhostlyDeath -- Major
-		short		minorversion;	// GhostlyDeath -- Minor
+		int			packedversion;
 
 		// for reliable protocol
-		buf_t       relpackets; // save reliable packets here
-		int         packetbegin[256]; // the beginning of a packet
-		int         packetsize[256]; // the size of a packet
-		int         packetseq[256];
+		oldPacket_t oldpackets[256];
+
 		int         sequence;
 		int         last_sequence;
 		byte        packetnum;
@@ -310,13 +334,11 @@ public:
 			// GhostlyDeath -- Initialize to Zero
 			memset(&address, 0, sizeof(netadr_t));
 			version = 0;
-			majorversion = 0;
-			minorversion = 0;
-			for (size_t i = 0; i < 256; i++)
+			packedversion = 0;
+			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
 			{
-				packetbegin[i] = 0;
-				packetsize[i] = 0;
-				packetseq[i] = 0;
+				oldpackets[i].sequence = -1;
+				oldpackets[i].data.resize(MAX_UDP_PACKET);
 			}
 			sequence = 0;
 			last_sequence = 0;
@@ -332,7 +354,6 @@ public:
 			// GhostlyDeath -- done with the {}
 			netbuf = MAX_UDP_PACKET;
 			reliablebuf = MAX_UDP_PACKET;
-			relpackets = MAX_UDP_PACKET*50;
 			digest = "";
 			allow_rcon = false;
 			displaydisconnect = true;
@@ -344,9 +365,7 @@ public:
 			netbuf(other.netbuf),
 			reliablebuf(other.reliablebuf),
 			version(other.version),
-			majorversion(other.majorversion),
-			minorversion(other.minorversion),
-			relpackets(other.relpackets),
+			packedversion(other.packedversion),
 			sequence(other.sequence),
 			last_sequence(other.last_sequence),
 			packetnum(other.packetnum),
@@ -362,9 +381,10 @@ public:
 			compressor(other.compressor),
 			download(other.download)
 		{
-				memcpy(packetbegin, other.packetbegin, sizeof(packetbegin));
-				memcpy(packetsize, other.packetsize, sizeof(packetsize));
-				memcpy(packetseq, other.packetseq, sizeof(packetseq));
+			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
+			{
+				oldpackets[i] = other.oldpackets[i];
+			}
 		}
 	} client;
 
@@ -397,6 +417,234 @@ player_t		&listenplayer();
 player_t		&idplayer(byte id);
 player_t		&nameplayer(const std::string &netname);
 bool			validplayer(player_t &ref);
+
+/**
+ * @brief A collection of pointers to players, commonly called a "view".
+ */
+typedef std::vector<player_t*> PlayersView;
+
+/**
+ * @brief Results of a PlayerQuery.
+*/
+struct PlayerResults
+{
+	/**
+	 * @brief Number of results returned.
+	 */
+	int count;
+
+	/**
+	 * @brief Number of results returned per team.
+	 */
+	int teamCount[NUMTEAMS];
+
+	/**
+	 * @brief Total number of players scanned.
+	 */
+	int total;
+
+	/**
+	 * @brief Total number of players per team.
+	 */
+	int teamTotal[NUMTEAMS];
+
+	/**
+	 * @brief A view containing player pointers that satisfy the query.
+	 */
+	PlayersView players;
+
+	PlayerResults() : count(0), total(0)
+	{
+		for (size_t i = 0; i < ARRAY_LENGTH(teamCount); i++)
+			teamCount[i] = 0;
+		for (size_t i = 0; i < ARRAY_LENGTH(teamTotal); i++)
+			teamTotal[i] = 0;
+	}
+};
+
+class PlayerQuery
+{
+	enum SortTypes
+	{
+		SORT_NONE,
+		SORT_FRAGS,
+		SORT_LIVES,
+		SORT_WINS,
+	};
+
+	enum SortFilters
+	{
+		SFILTER_NONE,
+		SFILTER_MAX,
+		SFILTER_NOT_MAX,
+	};
+
+	bool m_ready;
+	bool m_health;
+	bool m_lives;
+	bool m_notLives;
+	team_t m_team;
+	SortTypes m_sort;
+	SortFilters m_sortFilter;
+
+  public:
+	PlayerQuery()
+	    : m_ready(false), m_health(false), m_lives(false), m_notLives(false),
+	      m_team(TEAM_NONE), m_sort(SORT_NONE), m_sortFilter(SFILTER_NONE)
+	{
+	}
+
+	/**
+	 * @brief Check for ready players only.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& isReady()
+	{
+		m_ready = true;
+		return *this;
+	}
+
+	/**
+	 * @brief Check for players with health left.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& hasHealth()
+	{
+		m_health = true;
+		return *this;
+	}
+
+	/**
+	 * @brief Check for players with lives left.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& hasLives()
+	{
+		m_lives = true;
+		return *this;
+	}
+
+	/**
+	 * @brief Check for players with no lives left.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& notHasLives()
+	{
+		m_notLives = true;
+		return *this;
+	}
+
+	/**
+	 * @brief Filter players by a specific team.
+	 *
+	 * @param team Team to filter by.
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& onTeam(team_t team)
+	{
+		m_team = team;
+		return *this;
+	}
+
+	/**
+	 * @brief Return players with the top frag count, whatever that may be.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& sortFrags()
+	{
+		m_sort = SORT_FRAGS;
+		return *this;
+	}
+
+	/**
+	 * @brief Return players with the top lives count, whomever that may be.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& sortLives()
+	{
+		m_sort = SORT_LIVES;
+		return *this;
+	}
+
+	/**
+	 * @brief Return players with the top win count, whatever that may be.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& sortWins()
+	{
+		m_sort = SORT_WINS;
+		return *this;
+	}
+
+	/**
+	 * @brief Given a sort, filter so only the top item remains.  In the case
+	 *        of a tie, multiple items are returned.
+	 * 
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& filterSortMax()
+	{
+		m_sortFilter = SFILTER_MAX;
+		return *this;
+	}
+
+	/**
+	 * @brief Given a sort, filter so only things other than the top item
+	 *        remains.
+	 *
+	 * @return A mutated PlayerQuery to chain off of.
+	 */
+	PlayerQuery& filterSortNotMax()
+	{
+		m_sortFilter = SFILTER_NOT_MAX;
+		return *this;
+	}
+
+	PlayerResults execute();
+};
+
+class SpecQuery
+{
+	bool m_onlyInQueue;
+
+  public:
+	SpecQuery() : m_onlyInQueue(false) { }
+
+	/**
+	 * @brief Filter out players who are not in the queue.
+	 *
+	 * @return A mutated SpecQuery to chain off of.
+	 */
+	SpecQuery& onlyInQueue()
+	{
+		m_onlyInQueue = true;
+		return *this;
+	}
+
+	PlayersView execute();
+};
+
+enum
+{
+	SCORES_CLEAR_WINS = (1<<0),
+	SCORES_CLEAR_POINTS = (1<<1),
+	SCORES_CLEAR_TOTALPOINTS = (1<<2),
+	SCORES_CLEAR_ALL = (0xFF),
+};
+
+void P_ClearPlayerCards(player_t& p);
+void P_ClearPlayerPowerups(player_t& p);
+void P_ClearPlayerScores(player_t& p, byte flags);
+size_t P_NumPlayersInGame();
+size_t P_NumReadyPlayersInGame();
+size_t P_NumPlayersOnTeam(team_t team);
 
 extern byte consoleplayer_id;
 extern byte displayplayer_id;
@@ -445,6 +693,3 @@ typedef struct wbstartstruct_s
 } wbstartstruct_t;
 
 #endif // __D_PLAYER_H__
-
-
-

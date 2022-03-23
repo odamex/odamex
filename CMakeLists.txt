@@ -1,7 +1,20 @@
-# use unquoted #defines
-if(COMMAND cmake_policy)
-  cmake_policy(SET CMP0005 NEW)
-endif(COMMAND cmake_policy)
+# CMake 3.13 needed for -S and -B params in library compilation.
+#
+# Note that if you are running Linux, there are many ways to get newer
+# versions of CMake.
+# 
+# - Kitware offers binary downloads direct from their website, which you can
+#   extract to /usr/local or ~/.local.
+# - Ubuntu LTS users can install the CMake snap, and Kitware also runs an
+#   official Ubuntu CMake apt repository.
+# - Debian users can get a new version through backports.
+# - CentOS users can get a new version through EPEL.
+# - If you have Python installed, you can install CMake through pip.
+#
+
+cmake_minimum_required(VERSION 3.13)
+
+project(Odamex VERSION 11.0.0)
 
 include(CMakeDependentOption)
 
@@ -13,163 +26,122 @@ include(GNUInstallDirs OPTIONAL)
 add_definitions(-DINSTALL_BINDIR="${CMAKE_INSTALL_BINDIR}")
 add_definitions(-DINSTALL_DATADIR="${CMAKE_INSTALL_DATADIR}")
 
+if(WIN32)
+  set(USE_INTERNAL_LIBS 1)
+else()
+  set(USE_INTERNAL_LIBS 0)
+endif()
+
 # options
 option(BUILD_CLIENT "Build client target" 1)
 option(BUILD_SERVER "Build server target" 1)
-option(BUILD_MASTER "Build master server target" 1)
-option(BUILD_ODALAUNCH "Build odalaunch target" 1)
+option(BUILD_LAUNCHER "Build launcher target" 1)
+option(BUILD_MASTER "Build master server target" 0)
+option(BUILD_OR_FAIL "Must build the BUILD_* targets or else generation will fail" 0)
+option(USE_INTERNAL_DEUTEX "Use internal DeuTex" ${USE_INTERNAL_LIBS})
+cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
+cmake_dependent_option( USE_INTERNAL_PNG "Use internal libpng" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
+cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
+cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_INTERNAL_LIBS} BUILD_LAUNCHER 0 )
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 
-project(Odamex)
-cmake_minimum_required(VERSION 3.1)
+set(PROJECT_COPYRIGHT "2006-2022")
+set(PROJECT_RC_VERSION "11,0,0,0")
+set(PROJECT_COMPANY "The Odamex Team")
 
-set(PROJECT_VERSION 0.8.2)
-set(PROJECT_COPYRIGHT "2006-2020")
+# Include early required commands for specific systems
+if (NSWITCH)
+	include("switch.cmake" REQUIRED)  # Nintendo Switch
+elseif(VWII)
+  include("wii.cmake" REQUIRED)     # Wii/vWii
+endif()
 
-# Use C++ 98/03 for all targets
-set(CMAKE_CXX_STANDARD 98)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Ensure that we can use folders in projects.
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # identify the target CPU
 # adapted from the FindJNI.cmake module included with the CMake distribution
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-  set(target_arch "amd64")
+  set(ODAMEX_TARGET_ARCH "amd64")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^i[3-9]86$")
-  set(target_arch "i386")
+  set(ODAMEX_TARGET_ARCH "i386")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^alpha")
-  set(target_arch "alpha")
+  set(ODAMEX_TARGET_ARCH "alpha")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
-  set(target_arch "arm")
+  set(ODAMEX_TARGET_ARCH "arm")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)64")
-  set(target_arch "ppc64")
+  set(ODAMEX_TARGET_ARCH "ppc64")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)")
-  set(target_arch "ppc")
+  set(ODAMEX_TARGET_ARCH "ppc")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^sparc")
   # Both flavors can run on the same processor
-  set(target_arch "${CMAKE_SYSTEM_PROCESSOR}" "sparc" "sparcv9")
+  set(ODAMEX_TARGET_ARCH "${CMAKE_SYSTEM_PROCESSOR}" "sparc" "sparcv9")
 else()
-  set(target_arch "${CMAKE_SYSTEM_PROCESSOR}")
+  set(ODAMEX_TARGET_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
-list(REMOVE_DUPLICATES target_arch)
-message("Using target architecture " ${target_arch})
+list(REMOVE_DUPLICATES ODAMEX_TARGET_ARCH)
+message(STATUS "Target architecture: ${ODAMEX_TARGET_ARCH}")
 
 # Default build type
-if(NOT MSVC)
+if(NOT CMAKE_CONFIGURATION_TYPES)
   if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
-      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
-      FORCE)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo)
+  endif()
+  message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
+  set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING
+    "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+    FORCE)
+endif()
+
+if(NOT CMAKE_EXPORT_COMPILE_COMMANDS)
+  # Export compile commands unless we're generating a modern project.
+  if(CMAKE_GENERATOR MATCHES "Make" OR CMAKE_GENERATOR MATCHES "Ninja")
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+  else()
+    set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
   endif()
 endif()
+message(STATUS "Export Compile Commands: ${CMAKE_EXPORT_COMPILE_COMMANDS}")
+set(CMAKE_EXPORT_COMPILE_COMMANDS "${CMAKE_EXPORT_COMPILE_COMMANDS}" CACHE BOOL
+  "Export compile commands for use in supported editors."
+  FORCE)
 
 # Global compile options as shown in a GUI.
 if(NOT MSVC)
-  set(USE_COLOR_DIAGNOSTICS "No" CACHE STRING
+  set(USE_COLOR_DIAGNOSTICS ON CACHE BOOL
     "Force the use of color diagnostics, necessary to get color output with Ninja.")
-  set_property(CACHE USE_COLOR_DIAGNOSTICS PROPERTY STRINGS Yes No)
-
-  set(USE_STATIC_STDLIB "No" CACHE STRING
+  set(USE_STATIC_STDLIB OFF CACHE BOOL
     "Statically link against the C and C++ Standard Library.")
-  set_property(CACHE USE_STATIC_STDLIB PROPERTY STRINGS Yes No)
-
-  set(USE_SANITIZE_ADDRESS "No" CACHE STRING
+  set(USE_SANITIZE_ADDRESS OFF CACHE BOOL
     "Turn on Address Sanitizer in Debug builds, requires GCC >= 4.8 or Clang >= 3.1")
-  set_property(CACHE USE_SANITIZE_ADDRESS PROPERTY STRINGS Yes No)
-endif()
-
-# Global compile options.  Useful defines for any Odamex project.
-macro(global_compile_options)
-  if(NOT MSVC)
-    set(GLOBAL_CXX_FLAGS "-Wall")
-    if(USE_GPROF)
-      set(GLOBAL_CXX_FLAGS "${GLOBAL_CXX_FLAGS} -p")
-    endif()
-    if(USE_COLOR_DIAGNOSTICS)
-      if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(GLOBAL_CXX_FLAGS "${GLOBAL_CXX_FLAGS} -fcolor-diagnostics")
-      else()
-        set(GLOBAL_CXX_FLAGS "${GLOBAL_CXX_FLAGS} -fdiagnostics-color=always")
-      endif()
-    endif()
-
-    set(CMAKE_CXX_FLAGS_DEBUG "${GLOBAL_CXX_FLAGS} -g")
-    set(CMAKE_CXX_FLAGS_RELEASE "${GLOBAL_CXX_FLAGS} -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${GLOBAL_CXX_FLAGS} -g -DNDEBUG -O2")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL "${GLOBAL_CXX_FLAGS} -DNDEBUG -Os")
-
-    if(USE_STATIC_STDLIB)
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
-    endif()
-    if(USE_SANITIZE_ADDRESS)
-      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls")
-    endif()    
-    if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-      add_definitions(-DODAMEX_DEBUG)
-    endif()
-  endif()
-endmacro(global_compile_options)
-
-# Output the G++ CXX flags
-macro(print_cxx_flags)
-  if(NOT MSVC)
-    if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_DEBUG}")
-    elseif(${CMAKE_BUILD_TYPE} STREQUAL "Release")
-      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_RELEASE}")
-    elseif(${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
-      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
-    elseif(${CMAKE_BUILD_TYPE} STREQUAL "MinSizeRel")
-      message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS_MINSIZEREL}")
-    endif()
-  endif()
-endmacro(print_cxx_flags)
-
-# jsd: hide warnings about using insecure crt functions:
-if(MSVC)
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES SunOS )
   set(SOLARIS 1)
 endif()
 
-# Platform definitions
-# [AM] TODO: Eliminate redundant defines
-macro(define_platform)
-  if(APPLE)
-    add_definitions(-DOSX -DUNIX )
-  elseif(SOLARIS)
-    add_definitions(-DSOLARIS -DUNIX -DBSD_COMP -gstabs+)
-  elseif(UNIX)
-    add_definitions(-DUNIX)
-    find_package(X11)
-    if(X11_FOUND)
-      add_definitions(-DX11)
-      INCLUDE_DIRECTORIES ( ${X11_INCLUDE_DIR} )
-      LINK_LIBRARIES ( ${X11_LIBRARIES} )
-      MESSAGE ( STATUS " X11_INCLUDE_DIR: " ${X11_INCLUDE_DIR} )
-      MESSAGE ( STATUS " X11_LIBRARIES: " ${X11_LIBRARIES} )
-    endif()
-  endif()
-endmacro(define_platform)
-
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 # git describe
+#
+# Grabs the git hash and branch a few different ways.
+include(GetGitBranch)
 include(GetGitRevisionDescription)
-git_describe(GIT_DESCRIBE --tags --always)
+include(GetGitRevisionNumber)
+get_git_head_revision(HEAD GIT_HASH)
+git_describe(GIT_DESCRIBE --all --long --abbrev=4)
+git_rev_count(HEAD GIT_REV_COUNT)
+git_branch(HEAD GIT_BRANCH)
+string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
+  "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
-# MiniUPnPc
-if (USE_MINIUPNP)
-  set(UPNPC_BUILD_STATIC ON CACHE INTERNAL "" FORCE)
-  set(UPNPC_BUILD_SHARED OFF CACHE INTERNAL "" FORCE)
-  set(UPNPC_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
-  set(UPNPC_INSTALL OFF CACHE INTERNAL "" FORCE)
-  mark_as_advanced(FORCE UPNPC_INSTALL)
-  add_subdirectory(libraries/libminiupnpc)
-endif()
+# Libraries
+add_subdirectory(libraries)
+
+# WAD building
+add_subdirectory(wad)
 
 if(BUILD_CLIENT OR BUILD_SERVER)
   # zlib configuration
@@ -209,6 +181,10 @@ if(BUILD_CLIENT OR BUILD_SERVER)
 endif()
 
 # Subdirectories for Odamex projects
+if(BUILD_CLIENT OR BUILD_SERVER)
+  add_subdirectory(common)
+  add_subdirectory(odaproto)
+endif()
 if(BUILD_CLIENT)
   add_subdirectory(client)
 endif()
@@ -218,10 +194,10 @@ endif()
 if(BUILD_MASTER)
   add_subdirectory(master)
 endif()
-if(BUILD_ODALAUNCH)
+if(BUILD_LAUNCHER)
   add_subdirectory(odalaunch)
 endif()
-if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER)
+if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER AND NOT BUILD_LAUNCHER)
   message(FATAL_ERROR "No target chosen, doing nothing.")
 endif()
 
@@ -246,8 +222,6 @@ if(NOT APPLE)
   set(CPACK_COMPONENT_ODALAUNCH_DEPENDS client)
   set(CPACK_COMPONENT_ODALAUNCH_DISPLAY_NAME "Odalaunch Odamex Server Browser and Launcher")
   set(CPACK_COMPONENT_COMMON_DISPLAY_NAME "Support files")
-
-  add_subdirectory(wad)
 
   file(GLOB CONFIG_SAMPLES config-samples/*.cfg)
   if(WIN32)

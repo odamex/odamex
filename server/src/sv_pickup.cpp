@@ -21,12 +21,12 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <algorithm>
 #include <sstream>
-#include <vector>
 
-#include "doomstat.h"
-#include "c_cvars.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "m_fixed.h"
@@ -37,11 +37,12 @@
 #include "p_local.h"
 
 EXTERN_CVAR(sv_gametype)
+EXTERN_CVAR(sv_teamsinplay)
 
 // Distribute X number of players between teams.
 bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	// This function shouldn't do anything unless you're in a teamgame.
-	if (!(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)) {
+	if (!G_IsTeamGame()) {
 		error = "Server is not in a team game.";
 		return false;
 	}
@@ -80,17 +81,17 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	// onto alternating teams.
 	team_t dest_team = TEAM_BLUE;
 	size_t i = 0;
+	int teamCount = sv_teamsinplay.asInt();
 	for (std::vector<player_t*>::iterator it = eligible.begin();it != eligible.end();++it,++i) {
 		player_t &player = **it;
 
 		// Force-join the player if he's spectating.
 		SV_SetPlayerSpec(player, false, true);
 
-		// Is the last player an odd-one-out?  Randomize
-		// the team he is put on.
-		if ((eligible.size() % 2) == 1 && i == (eligible.size() - 1)) {
-			dest_team = (team_t)(P_Random() % NUMTEAMS);
-		}
+		// Is the last player an odd-one-out?  Randomize the team he is put on.
+		// Do not randomize if num_players = teamCount for randcaps (3 way ctf) 
+		if (num_players != teamCount && (eligible.size() % 2) == 1 && i == (eligible.size() - 1))
+			dest_team = (team_t)(P_Random() % teamCount);
 
 		// Switch player to the proper team, ensure the correct color,
 		// and then update everyone else in the game about it.
@@ -106,11 +107,9 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 			SV_SendUserInfo(player, &(pit->client));
 		}
 
-		if (dest_team == TEAM_BLUE) {
-			dest_team = TEAM_RED;
-		} else {
-			dest_team = TEAM_BLUE;
-		}
+		int iTeam = dest_team;
+		iTeam = ++iTeam % teamCount;
+		dest_team = (team_t)iTeam;
 	}
 
 	// Force-spectate everyone who is not eligible.

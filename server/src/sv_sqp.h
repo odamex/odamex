@@ -23,20 +23,6 @@
 #ifndef __SV_SQP_H__
 #define __SV_SQP_H__
 
-#include "version.h"
-#include "doomtype.h"
-
-#define ASSEMBLEVERSION(MAJOR,MINOR,PATCH) ((MAJOR) * 256 + (MINOR)(PATCH))
-#define DISECTVERSION(VERSION,MAJOR,MINOR,PATCH) \
-        { \
-            MAJOR = (VERSION / 256); \
-            MINOR = ((VERSION % 256) / 10); \
-            PATCH = ((VERSION % 256) % 10); \
-        }
-        
-#define VERSIONMAJOR(VERSION) (VERSION / 256)
-#define VERSIONMINOR(VERSION) ((VERSION % 256) / 10)
-#define VERSIONPATCH(VERSION) ((VERSION % 256) % 10)
 
 DWORD SV_QryParseEnquiry(const DWORD &Tag);
 

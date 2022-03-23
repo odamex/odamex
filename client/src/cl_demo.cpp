@@ -22,20 +22,21 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomtype.h"
+
+#include "odamex.h"
+
 #include "cl_main.h"
 #include "p_ctf.h"
 #include "d_player.h"
 #include "m_argv.h"
 #include "c_console.h"
 #include "m_fileio.h"
-#include "d_net.h"
 #include "cl_demo.h"
-#include "m_swap.h"
 #include "p_saveg.h"
-#include "version.h"
 #include "st_stuff.h"
 #include "p_mobj.h"
+#include "svc_message.h"
+#include "g_gametype.h"
 #include "g_level.h"
 #include "resources/res_main.h"
 #include "resources/res_filelib.h"
@@ -45,15 +46,35 @@ EXTERN_CVAR(sv_maxplayers)
 
 extern std::string server_host;
 extern std::string digest;
+extern OResFiles wadfiles;
 
-argb_t CL_GetPlayerColor(player_t*);
-
-
-NetDemo::NetDemo() :
-	state(st_stopped), oldstate(st_stopped), filename(""),
-	demofp(NULL)
+/**
+ * @brief Map demo versions to the latest Odamex version that can read them.
+ * 
+ * @param version Demo version to check.
+ * @return Latest Odamex version for that demo in packed format, or 0 if
+ *         the demo version is unknown to us.
+ */
+int LatestDemoVersion(const int version)
 {
-    memset(&header, 0, sizeof(header));
+	switch (version)
+	{
+	case 3:
+		return GAMEVER;
+	case 2:
+		return MAKEVER(0, 6, 0);
+	case 1:
+		return MAKEVER(0, 5, 3);
+	default:
+		return 0;
+	}
+}
+
+NetDemo::NetDemo()
+    : state(st_stopped), oldstate(st_stopped), filename(""), demofp(NULL), netdemotic(0),
+      pause_netdemotic(0)
+{
+	memset(&header, 0, sizeof(header));
 }
 
 NetDemo::~NetDemo()
@@ -127,6 +148,7 @@ void NetDemo::cleanUp()
 	snapshot_index.clear();
 	map_index.clear();
 	state = oldstate = NetDemo::st_stopped;
+	netdemotic = pause_netdemotic = 0;
 }
 
 /**
@@ -456,14 +478,15 @@ bool NetDemo::startRecording(const std::string &filename)
 		capture(&tempbuf);
 		writeMessages();
 
-		// Record any additional messages (usually a full update if auto-recording))
-		capture(&net_message);
-		writeMessages();
-		
 		SZ_Clear(&tempbuf);
-		MSG_WriteMarker(&tempbuf, svc_netdemoloadsnap);
+		MSG_WriteSVC(&tempbuf, odaproto::svc::NetDemoLoadSnap());
 		capture(&tempbuf);
 		writeMessages();
+
+		// Record any additional messages (usually a full update if auto-recording))
+		// Do not write this message immediately because it needs to be written after
+		// the map snapshot.
+		capture(&net_message);
 	}
 
 	return true;
@@ -510,10 +533,29 @@ bool NetDemo::startPlaying(const std::string &filename)
 		return false;
 	}
 
-    if (header.version != NETDEMOVER)
-    {
-        // Do nothing since there is only one version of netdemo files currently
-    }
+	if (header.version != NETDEMOVER)
+	{
+		std::string buffer;
+		const int latestVersion = LatestDemoVersion(header.version);
+		if (latestVersion)
+		{
+			int maj, min, patch;
+			BREAKVER(latestVersion, maj, min, patch);
+			StrFormat(buffer,
+			          "This demo is too old to play in this version of Odamex.  Please "
+			          "visit https://odamex.net/ to obtain Odamex %d.%d.%d or older.",
+			          maj, min, patch);
+		}
+		else
+		{
+			StrFormat(buffer,
+			          "This demo is too new to play in this version of Odamex.  Please "
+			          "visit https://odamex.net/ to obtain a newer version of Odamex.");
+		}
+
+		error(buffer);
+		return false;
+	}
 
 	// read the demo's index
 	if (fseek(demofp, header.snapshot_index_offset, SEEK_SET) != 0)
@@ -604,9 +646,9 @@ bool NetDemo::stopRecording()
 	// write any remaining messages that have been captured
 	writeMessages();
 
-	// write the end-of-demo marker
-	byte marker = svc_netdemostop;
-	writeChunk(&marker, sizeof(marker), NetDemo::msg_packet);
+	// write the end-of-demo marker - header + size
+	byte stopdata[2] = {svc_netdemostop, 0};
+	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::msg_packet);
 
 	// write the number of the last gametic in the recording
 	header.ending_gametic = gametic;
@@ -660,7 +702,7 @@ bool NetDemo::stopPlaying()
 {
 	state = NetDemo::st_stopped;
 	SZ_Clear(&net_message);
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	if (demofp)
 	{
@@ -690,30 +732,7 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 
 	AActor *mo = player->mo;
 
-	MSG_WriteByte(netbuffer, svc_netdemocap);
-	MSG_WriteByte(netbuffer, player->cmd.buttons);
-	MSG_WriteByte(netbuffer, player->cmd.impulse);
-	MSG_WriteShort(netbuffer, player->cmd.yaw);
-	MSG_WriteShort(netbuffer, player->cmd.forwardmove);
-	MSG_WriteShort(netbuffer, player->cmd.sidemove);
-	MSG_WriteShort(netbuffer, player->cmd.upmove);
-	MSG_WriteShort(netbuffer, player->cmd.pitch);
-
-	MSG_WriteByte(netbuffer, mo->waterlevel);
-	MSG_WriteLong(netbuffer, mo->x);
-	MSG_WriteLong(netbuffer, mo->y);
-	MSG_WriteLong(netbuffer, mo->z);
-	MSG_WriteLong(netbuffer, mo->momx);
-	MSG_WriteLong(netbuffer, mo->momy);
-	MSG_WriteLong(netbuffer, mo->momz);
-	MSG_WriteLong(netbuffer, mo->angle);
-	MSG_WriteLong(netbuffer, mo->pitch);
-	MSG_WriteLong(netbuffer, player->viewheight);
-	MSG_WriteLong(netbuffer, player->deltaviewheight);
-	MSG_WriteLong(netbuffer, player->jumpTics);
-	MSG_WriteLong(netbuffer, mo->reactiontime);
-	MSG_WriteByte(netbuffer, player->readyweapon);
-	MSG_WriteByte(netbuffer, player->pendingweapon);
+	MSG_WriteSVC(netbuffer, SVC_NetdemoCap(player));
 }
 
 
@@ -764,6 +783,12 @@ bool NetDemo::atSnapshotInterval()
 void NetDemo::ticker()
 {
 	netdemotic++;
+	if (netdemotic == pause_netdemotic)
+	{
+		pause_netdemotic = netdemotic - 1;
+		pause();
+		::paused = true;
+	}
 }
 
 //
@@ -782,11 +807,10 @@ void NetDemo::writeMessages()
 
 	if (atSnapshotInterval())
 	{
-		size_t length;
-		writeSnapshotData(snapbuf, length);
+		writeSnapshotData(snapbuf);
 		writeSnapshotIndexEntry();
 			
-		writeChunk(snapbuf, length, NetDemo::msg_snapshot);
+		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_snapshot);
 	}
 
 	if (connected)
@@ -884,7 +908,7 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 	if (!connected)
 	{
 		int type = MSG_ReadLong();
-		if (type == CHALLENGE)
+		if (type == MSG_CHALLENGE)
 		{
 			CL_PrepareConnect();
 		}
@@ -957,12 +981,6 @@ void NetDemo::capture(const buf_t* inputbuffer)
 		return;
 	}
 
-	if (gamestate == GS_DOWNLOAD)
-	{
-		// NullPoint: I think this will skip the downloading process
-		return;
-	}
-
 	if (inputbuffer->size() > 0)
 	{
 		captured.push_back(*inputbuffer);
@@ -983,7 +1001,7 @@ void NetDemo::capture(const buf_t* inputbuffer)
 void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 {
 	// Server sends launcher info
-	MSG_WriteLong	(netbuffer, CHALLENGE);
+	MSG_WriteLong	(netbuffer, PROTO_CHALLENGE);
 	MSG_WriteLong	(netbuffer, 0);		// server_token
 	
 	// get sv_hostname and write it
@@ -997,17 +1015,24 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	}
 	MSG_WriteByte	(netbuffer, playersingame);
 	MSG_WriteByte	(netbuffer, 0);				// sv_maxclients
-	MSG_WriteString	(netbuffer, level.mapname);
+	MSG_WriteString	(netbuffer, level.mapname.c_str());
 
 	// names of all the resource files on the server	
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
 	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
 
 	size_t resource_file_count = resource_file_names.size();
-	MSG_WriteByte	(netbuffer, resource_file_count - 1);
+	MSG_WriteByte(netbuffer, resource_file_count - 1);
+	for (size_t n = 1; n < numwads; n++)
+	{
+		// Don't use absolute paths, as they present a security risk.
+		MSG_WriteString(netbuffer, ::wadfiles[n].getBasename().c_str());
+	}
 
 	for (size_t i = 1; i < resource_file_count; i++)
+	{
 		MSG_WriteString(netbuffer, Res_CleanseFilename(resource_file_names[i]).c_str());
+	}
 		
 	MSG_WriteBool	(netbuffer, 0);		// deathmatch?
 	MSG_WriteByte	(netbuffer, 0);		// sv_skill
@@ -1026,13 +1051,20 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 		}
 	}
 
-	// MD5 hash sums for all the resource files on the server
+	// MD5 hash sums for all the wadfiles on the server
+	for (size_t n = 1; n < numwads; n++)
+	{
+		MSG_WriteString(netbuffer, ::wadfiles[n].getMD5().getHexCStr());
+	}
+
 	for (size_t i = 1; i < resource_file_count; i++)
+	{
 		MSG_WriteString(netbuffer, resource_file_hashes[i].c_str());
+	}
 
 	MSG_WriteString	(netbuffer, "");	// sv_website.cstring()
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		MSG_WriteLong	(netbuffer, 0);		// sv_scorelimit
 		for (size_t n = 0; n < NUMTEAMS; n++)
@@ -1099,7 +1131,6 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	MSG_WriteByte	(netbuffer, 0);  // patchfiles.size()
 }
 
-
 //
 // writeConnectionSequence()
 //
@@ -1110,48 +1141,33 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 {
 	// The packet sequence id
-	MSG_WriteLong	(netbuffer, 0);
-	
+	MSG_WriteLong(netbuffer, 0);
+
+	// Flags for our fake packet (none)
+	MSG_WriteByte(netbuffer, 0);
+
 	// Server sends our player id and digest
-	MSG_WriteMarker	(netbuffer, svc_consoleplayer);
-	MSG_WriteByte	(netbuffer, consoleplayer().id);
-	MSG_WriteString	(netbuffer, digest.c_str());
+	MSG_WriteSVC(netbuffer, SVC_ConsolePlayer(consoleplayer(), digest));
 
 	// our userinfo
-	MSG_WriteMarker	(netbuffer, svc_userinfo);
-	MSG_WriteByte	(netbuffer, consoleplayer().id);
-	MSG_WriteString	(netbuffer, consoleplayer().userinfo.netname.c_str());
-	MSG_WriteByte	(netbuffer, consoleplayer().userinfo.team);
-	MSG_WriteLong	(netbuffer, consoleplayer().userinfo.gender);
-
-	for (int i = 3; i >= 0; i--)
-		MSG_WriteByte(netbuffer, consoleplayer().userinfo.color[i]);
-
-	MSG_WriteString	(netbuffer, "");	// [SL] place holder for deprecated skins
-	MSG_WriteShort	(netbuffer, consoleplayer().GameTime);
+	MSG_WriteSVC(netbuffer, SVC_UserInfo(consoleplayer(), consoleplayer().GameTime));
 	
 	// Server sends its settings
-	MSG_WriteMarker	(netbuffer, svc_serversettings);
 	cvar_t *var = GetFirstCvar();
 	while (var)
 	{
 		if (var->flags() & CVAR_SERVERINFO)
 		{
-			MSG_WriteByte	(netbuffer, 1);
-			MSG_WriteString	(netbuffer,	var->name());
-			MSG_WriteString	(netbuffer,	var->cstring());
+			MSG_WriteSVC(netbuffer, SVC_ServerSettings(*var));
 		}
 		var = var->GetNext();
 	}
-	MSG_WriteByte	(netbuffer, 2);		// end of server settings marker
 
 	// Server tells everyone if we're a spectator
-	MSG_WriteMarker	(netbuffer, svc_spectate);
-	MSG_WriteByte	(netbuffer, consoleplayer().id);
-	MSG_WriteByte	(netbuffer, consoleplayer().spectator);
+	MSG_WriteSVC(netbuffer, SVC_PlayerMembers(consoleplayer(), SVC_PM_SPECTATOR));
 
 	// Server sends wads & map name
-	MSG_WriteMarker	(netbuffer, svc_loadmap);
+	MSG_WriteSVC(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname.c_str(), level.time));
 
 	// send list of wads (skip over resource_file_names[0] == odamex.wad)  
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
@@ -1173,27 +1189,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteString(netbuffer, level.mapname);
 
 	// Server spawns the player
-	MSG_WriteMarker	(netbuffer, svc_spawnplayer);
-	MSG_WriteByte	(netbuffer, consoleplayer().id);
-	if (consoleplayer().mo)
-	{
-		MSG_WriteShort	(netbuffer, consoleplayer().mo->netid);
-		MSG_WriteLong	(netbuffer, consoleplayer().mo->angle);
-		MSG_WriteLong	(netbuffer, consoleplayer().mo->x);
-		MSG_WriteLong	(netbuffer, consoleplayer().mo->y);
-		MSG_WriteLong	(netbuffer, consoleplayer().mo->z);
-	}
-	else
-	{
-		// The client hasn't yet received his own position from the server
-		// This happens with cl_autorecord
-		// Just fake a position for now
-		MSG_WriteShort	(netbuffer, MAXSHORT);
-		MSG_WriteLong	(netbuffer, 0);
-		MSG_WriteLong	(netbuffer, 0);
-		MSG_WriteLong	(netbuffer, 0);
-		MSG_WriteLong	(netbuffer, 0);
-	}
+	MSG_WriteSVC(netbuffer, SVC_SpawnPlayer(consoleplayer()));
 }
 
 
@@ -1258,6 +1254,20 @@ int NetDemo::getCurrentMapIndex() const
 	return header.map_index_size - 1;
 }
 
+//
+// nextTic()
+//
+//		Advance to the next gametic.
+//
+void NetDemo::nextTic()
+{
+	if (!isPaused())
+		return;
+
+	pause_netdemotic = netdemotic + 1;
+	resume();
+	::paused = false;
+}
 
 //
 // nextSnapshot()
@@ -1357,21 +1367,19 @@ void NetDemo::readSnapshot(const netdemo_index_entry_t *snap)
 	netdemo_message_t type;
 	uint32_t len = 0, tic = 0;
 	readMessageHeader(type, len, tic);
+	
+	// Clear the snapshot buffer and read into it.
+	snapbuf.clear();
+	snapbuf.resize(len);
 
-	if (len > NetDemo::MAX_SNAPSHOT_SIZE)
-	{
-		fatalError("Snapshot too large to read");
-		return;
-	}
-		
-	size_t cnt = fread(snapbuf, 1, len, demofp);
+	size_t cnt = fread(snapbuf.data(), 1, len, demofp);
 	if (cnt < len)
 	{
 		fatalError("Unable to read snapshot from data file");
 		return;
 	}
 
-	readSnapshotData(snapbuf, len);
+	readSnapshotData(snapbuf);
 	netdemotic = snap->ticnum - header.starting_gametic;
 }
 
@@ -1427,12 +1435,11 @@ void NetDemo::writeMapChange()
 {
 	if (connected && gamestate == GS_LEVEL)
 	{
-		size_t length;
-		writeSnapshotData(snapbuf, length);
+		writeSnapshotData(snapbuf);
 		writeMapIndexEntry();
 		writeSnapshotIndexEntry();
 		
-		writeChunk(snapbuf, length, NetDemo::msg_snapshot);
+		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_snapshot);
 	}
 }
 
@@ -1440,11 +1447,10 @@ void NetDemo::writeIntermission()
 {
 	if (connected && gamestate == GS_INTERMISSION)
 	{
-		size_t length;
-		writeSnapshotData(snapbuf, length);
+		writeSnapshotData(snapbuf);
 		writeSnapshotIndexEntry();
 		
-		writeChunk(snapbuf, length, NetDemo::msg_snapshot);
+		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_snapshot);
 	}
 }
 
@@ -1456,7 +1462,7 @@ void NetDemo::writeIntermission()
 //   writing the connection sequence at the start of a netdemo.
 //
 
-void NetDemo::writeSnapshotData(byte *buf, size_t &length)
+void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 {
 	G_SnapshotLevel();
 
@@ -1473,6 +1479,21 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 	arc.WriteCount(vars_p - vars);
 	arc.Write(vars, vars_p - vars);
 
+	// write wad info
+	arc << (byte)(wadfiles.size() - 1);
+	for (size_t i = 1; i < wadfiles.size(); i++)
+	{
+		arc << D_CleanseFileName(::wadfiles[i].getBasename()).c_str();
+		arc << ::wadfiles[i].getMD5().getHexCStr();
+	}
+
+	arc << (byte)patchfiles.size();
+	for (size_t i = 0; i < patchfiles.size(); i++)
+	{
+		arc << D_CleanseFileName(::patchfiles[i].getBasename()).c_str();
+		arc << ::patchfiles[i].getMD5().getHexCStr();
+	}
+
 	// write resource file info
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
 
@@ -1486,20 +1507,21 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 	arc << (byte)0;
 
 	// write map info
-	arc << level.mapname;
+	arc << level.mapname.c_str();
 	arc << (BYTE)(gamestate == GS_INTERMISSION);
 
 	G_SerializeSnapshots(arc);
 	P_SerializeRNGState(arc);
 	P_SerializeACSDefereds(arc);
+	P_SerializeHorde(arc);
 
 	// Save the status of the flags in CTF
-	for (int i = 0; i < NUMFLAGS; i++)
-		arc << CTFdata[i];
+	for (int i = 0; i < NUMTEAMS; i++)
+		arc << GetTeamInfo((team_t)i)->FlagData;
 
 	// Save team points
 	for (int i = 0; i < NUMTEAMS; i++)
-		arc << TEAMpoints[i];
+		arc << GetTeamInfo((team_t)i)->Points;
 	
 	arc << level.time;
 
@@ -1516,9 +1538,9 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 
 	arc.Close();
 
-	// get the size of the snapshot data	
-	length = memfile.Length();
-	memfile.WriteToBuffer(buf, NetDemo::MAX_SNAPSHOT_SIZE);
+	// Resize the snapshot buffer to hold our snapshot size.
+	buf.resize(memfile.Length());
+	memfile.WriteToBuffer(buf.data(), buf.size());
 			
     if (level.info->snapshot != NULL)
     {
@@ -1528,7 +1550,7 @@ void NetDemo::writeSnapshotData(byte *buf, size_t &length)
 }
 
 
-void NetDemo::readSnapshotData(byte *buf, size_t length)
+void NetDemo::readSnapshotData(std::vector<byte>& buf)
 {
 	byte cid = consoleplayer_id;
 	byte did = displayplayer_id;
@@ -1548,8 +1570,7 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	
 	FLZOMemFile memfile;
 	
-	length = 0;
-	memfile.Open(buf);		// open for reading
+	memfile.Open(buf.data()); // open for reading
 
 	FArchive arc(memfile);
 
@@ -1560,6 +1581,39 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	arc.Read(vars, len);
 	cvar_t::C_ReadCVars(&vars_p);
 
+	// read wad info
+	OWantFiles newwadfiles, newpatchfiles;
+	byte numwads, numpatches;
+	std::string res, hashStr;
+
+	arc >> numwads;
+	for (size_t i = 0; i < numwads; i++)
+	{
+		arc >> res;
+		arc >> hashStr;
+
+		OMD5Hash hash;
+		OMD5Hash::makeFromHexStr(hash, hashStr);
+
+		OWantFile want;
+		OWantFile::makeWithHash(want, res, OFILE_WAD, hash);
+		newwadfiles.push_back(want);
+	}
+
+	arc >> numpatches;
+	for (size_t i = 0; i < numpatches; i++)
+	{
+		arc >> res;
+		arc >> hashStr;
+
+		OMD5Hash hash;
+		OMD5Hash::makeFromHexStr(hash, hashStr);
+
+		OWantFile want;
+		OWantFile::makeWithHash(want, res, OFILE_DEH, hash);
+		newpatchfiles.push_back(want);
+	}
+
 	// read resource file info
 	std::vector<std::string> resource_filenames;
 	byte resource_file_count;
@@ -1567,7 +1621,7 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	for (size_t i = 0; i < resource_file_count; i++)
 	{
 		arc >> filename;
-		resource_filenames.push_back(filename);	
+		resource_filenames.push_back(filename);
 	}
 
 	// [SL] DEH/BEX patch file names used to be saved separately.
@@ -1588,14 +1642,15 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	G_SerializeSnapshots(arc);
 	P_SerializeRNGState(arc);
 	P_SerializeACSDefereds(arc);
+	P_SerializeHorde(arc);
 
 	// Read the status of flags in CTF
-	for (int i = 0; i < NUMFLAGS; i++)
-		arc >> CTFdata[i];
+	for (int i = 0; i < NUMTEAMS; i++)
+		arc >> GetTeamInfo((team_t)i)->FlagData;
 
 	// Read team points
 	for (int i = 0; i < NUMTEAMS; i++)
-		arc >> TEAMpoints[i];	
+		arc >> GetTeamInfo((team_t)i)->Points;
 
 	arc >> level.time;
 
@@ -1662,10 +1717,12 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 	TThinkerIterator<AActor> flagiterator;
 	while ( (mo = flagiterator.Next() ) )
 	{
-		if (mo->type == MT_BDWN || mo->type == MT_BCAR)
-			CTFdata[it_blueflag].actor = mo->ptr();
-		if (mo->type == MT_RDWN || mo->type == MT_RCAR)
-			CTFdata[it_redflag].actor = mo->ptr();
+		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		{
+			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+			if (mo->sprite == teamInfo->FlagDownSprite || mo->sprite == teamInfo->FlagCarrySprite)
+				teamInfo->FlagData.actor = mo->ptr();
+		}
 	}
 
 	// Make sure the status bar is displayed correctly

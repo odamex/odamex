@@ -30,7 +30,6 @@
 // Needed for action function pointer handling.
 #include "dthinker.h"
 #include "farchive.h"
-#include "doomdef.h"
 
 typedef enum
 {
@@ -173,6 +172,28 @@ typedef enum
 	SPR_TLMP,
 	SPR_TLP2,
 	SPR_TNT1,
+
+	SPR_DOGS, // killough 7/19/98: Marine's best friend :)
+
+	SPR_PLS1, // killough 7/19/98: first  of two plasma fireballs in the beta
+	SPR_PLS2, // killough 7/19/98: second of two plasma fireballs in the beta
+	SPR_BON3, // killough 7/11/98: evil sceptre in beta version
+	SPR_BON4, // killough 7/11/98: unholy bible in beta version
+
+    // [BH] blood splats, [crispy] unused
+    SPR_BLD2,
+    // [BH] 100 extra sprite names to use in dehacked patches
+    SPR_SP00, SPR_SP01, SPR_SP02, SPR_SP03, SPR_SP04, SPR_SP05, SPR_SP06, SPR_SP07, SPR_SP08, SPR_SP09,
+    SPR_SP10, SPR_SP11, SPR_SP12, SPR_SP13, SPR_SP14, SPR_SP15, SPR_SP16, SPR_SP17, SPR_SP18, SPR_SP19,
+    SPR_SP20, SPR_SP21, SPR_SP22, SPR_SP23, SPR_SP24, SPR_SP25, SPR_SP26, SPR_SP27, SPR_SP28, SPR_SP29,
+    SPR_SP30, SPR_SP31, SPR_SP32, SPR_SP33, SPR_SP34, SPR_SP35, SPR_SP36, SPR_SP37, SPR_SP38, SPR_SP39,
+    SPR_SP40, SPR_SP41, SPR_SP42, SPR_SP43, SPR_SP44, SPR_SP45, SPR_SP46, SPR_SP47, SPR_SP48, SPR_SP49,
+    SPR_SP50, SPR_SP51, SPR_SP52, SPR_SP53, SPR_SP54, SPR_SP55, SPR_SP56, SPR_SP57, SPR_SP58, SPR_SP59,
+    SPR_SP60, SPR_SP61, SPR_SP62, SPR_SP63, SPR_SP64, SPR_SP65, SPR_SP66, SPR_SP67, SPR_SP68, SPR_SP69,
+    SPR_SP70, SPR_SP71, SPR_SP72, SPR_SP73, SPR_SP74, SPR_SP75, SPR_SP76, SPR_SP77, SPR_SP78, SPR_SP79,
+    SPR_SP80, SPR_SP81, SPR_SP82, SPR_SP83, SPR_SP84, SPR_SP85, SPR_SP86, SPR_SP87, SPR_SP88, SPR_SP89,
+    SPR_SP90, SPR_SP91, SPR_SP92, SPR_SP93, SPR_SP94, SPR_SP95, SPR_SP96, SPR_SP97, SPR_SP98, SPR_SP99,
+
 	// [RH] Gibs
 	SPR_GIB0,
 	SPR_GIB1,
@@ -194,9 +215,20 @@ typedef enum
 	SPR_RDWN,
 	SPR_BCAR,
 	SPR_RCAR,
+
+	SPR_GSOK,
+	SPR_GFLG,
+	SPR_GDWN,
+	SPR_GCAR,
 	
 	SPR_TLGL,
-	
+
+	SPR_WPBF,
+	SPR_WPRF,
+	SPR_WPGF,
+
+	SPR_CARE,
+
 	NUMSPRITES
 
 } spritenum_t;
@@ -1173,9 +1205,91 @@ typedef enum
 	S_TECH2LAMP2,
 	S_TECH2LAMP3,
 	S_TECH2LAMP4,
-	S_TNT1,
+
+	S_TNT1, // add state for invisible sprite         // phares 3/8/98 
+
+	S_GRENADE,   // killough 8/9/98: grenade launcher
+	S_DETONATE,  // killough 8/9/98: detonation of objects
+	S_DETONATE2,
+	S_DETONATE3,
+
+	S_DOGS_STND,      // killough 7/19/98: Marine's best friend :)
+	S_DOGS_STND2,
+	S_DOGS_RUN1,
+	S_DOGS_RUN2,
+	S_DOGS_RUN3,
+	S_DOGS_RUN4,
+	S_DOGS_RUN5,
+	S_DOGS_RUN6,
+	S_DOGS_RUN7,
+	S_DOGS_RUN8,
+	S_DOGS_ATK1,
+	S_DOGS_ATK2,
+	S_DOGS_ATK3,
+	S_DOGS_PAIN,
+	S_DOGS_PAIN2,
+	S_DOGS_DIE1,
+	S_DOGS_DIE2,
+	S_DOGS_DIE3,
+	S_DOGS_DIE4,
+	S_DOGS_DIE5,
+	S_DOGS_DIE6,
+	S_DOGS_RAISE1,
+	S_DOGS_RAISE2,
+	S_DOGS_RAISE3,
+	S_DOGS_RAISE4,
+	S_DOGS_RAISE5,
+	S_DOGS_RAISE6,
+	
+	S_OLDBFG1,  // killough 7/11/98: the old BFG's 43 firing frames
+	S_OLDBFG42 = S_OLDBFG1 + 41,
+	S_OLDBFG43,
+	
+
+	S_PLS1BALL,      // killough 7/19/98: first plasma fireball in the beta
+	S_PLS1BALL2,
+	S_PLS1EXP,
+	S_PLS1EXP2,
+	S_PLS1EXP3,
+	S_PLS1EXP4,
+	S_PLS1EXP5,
+
+	S_PLS2BALL,     // killough 7/19/98: second plasma fireball in the beta
+	S_PLS2BALL2,
+	S_PLS2BALLX1,
+	S_PLS2BALLX2,
+	S_PLS2BALLX3,
+	S_BON3, // killough 7/11/98: evil sceptre in beta version
+	S_BON4, // killough 7/11/98: unholy bible in beta version
+
+	// killough 10/98: beta lost souls were different from their modern cousins
+	S_BSKUL_STND,
+	S_BSKUL_RUN1,
+	S_BSKUL_RUN2,
+	S_BSKUL_RUN3,
+	S_BSKUL_RUN4,
+	S_BSKUL_ATK1,
+	S_BSKUL_ATK2,
+	S_BSKUL_ATK3,
+	S_BSKUL_PAIN1,
+	S_BSKUL_PAIN2,
+	S_BSKUL_PAIN3,
+	S_BSKUL_DIE1,
+	S_BSKUL_DIE2,
+	S_BSKUL_DIE3,
+	S_BSKUL_DIE4,
+	S_BSKUL_DIE5,
+	S_BSKUL_DIE6,
+	S_BSKUL_DIE7,
+	S_BSKUL_DIE8,
+
+	S_MUSHROOM,  // killough 10/98: mushroom explosion effect
+
+	EXTRASTATES = 1089,
+
+
 	// [RH] gibs
-	S_GIB0,
+	S_GIB0 = 4000,
 	S_GIB1,
 	S_GIB2,
 	S_GIB3,
@@ -1217,20 +1331,48 @@ typedef enum
 	S_RDWN,	// Red Flag
 	S_BCAR,	// Blue Flag
 	S_RCAR,	// Red Flag
+
+	S_GSOK,
+	S_GFLG,
+	S_GFLG2,
+	S_GFLG3,
+	S_GFLG4,
+	S_GFLG5,
+	S_GFLG6,
+	S_GFLG7,
+	S_GFLG8,
+	S_GDWN,
+	S_GCAR,
+
 	// -----------------------------------
 	S_BRIDGE1,
 	S_BRIDGE2,
 	S_BRIDGE3,
 	S_BRIDGE4,
 	S_BRIDGE5,
+
+	S_WPBF1, // Waypoint - Blue flag
+	S_WPBF2,
+	S_WPRF1, // Waypoint - Red flag
+	S_WPRF2,
+	S_WPGF1, // Waypoint - Green flag
+	S_WPGF2,
+
+	S_CARE, // Horde - Care Package
+
 	S_NOWEAPONUP,
 	S_NOWEAPONDOWN,
 	S_NOWEAPON,
+
 	NUMSTATES
 } statenum_t;
 
 inline FArchive &operator<< (FArchive &arc, statenum_t i) { DWORD out; out = i; return arc << out; }
 inline FArchive &operator>> (FArchive &arc, statenum_t &i) { DWORD in; arc >> in; i = (statenum_t)in; return arc; }
+
+
+#define MAXSTATEARGS 8
+typedef long statearg_t;
 
 typedef struct
 {
@@ -1240,7 +1382,11 @@ typedef struct
 	actionf_p1 	action;
 	statenum_t	nextstate;
 	int			misc1, misc2;
-/*
+
+	// MBF21
+	statearg_t args[MAXSTATEARGS]; // [XA] mbf21 args
+	int flags;
+	/*
 	DState (spritenum_t sprite, int frame, int tics, acp2, statenum_t nextstate);
 	DState (spritenum_t sprite, int frame, int tics, acp2, statenum_t nextstate, int misc1, int misc2);
 	DState (spritenum_t sprite, int frame, int tics, acp1, statenum_t nextstate);
@@ -1249,6 +1395,9 @@ typedef struct
 
 extern state_t states[NUMSTATES];
 extern const char *sprnames[NUMSPRITES+1];
+
+#define STATEF_NONE 0
+#define STATEF_SKILL5FAST BIT(0) // tics halve on nightmare skill
 
 inline FArchive &operator<< (FArchive &arc, state_t *state)
 {
@@ -1270,6 +1419,7 @@ inline FArchive &operator>> (FArchive &arc, state_t *&state)
 }
 
 typedef enum {
+	MT_NULL = -1, // ferk: null/invalid mobj (zero is reserved for MT_PLAYER)
 	MT_PLAYER,
 	MT_POSSESSED,
 	MT_SHOTGUY,
@@ -1407,6 +1557,42 @@ typedef enum {
 	MT_MISC84,
 	MT_MISC85,
 	MT_MISC86,
+	MT_PUSH,    // controls push source                     // phares
+	MT_PULL,    // controls pull source                     // phares 3/20/98
+
+	MT_DOGS,    // killough 7/19/98: Marine's best friend
+
+	MT_PLASMA1, // killough 7/11/98: first  of alternating beta plasma fireballs
+	MT_PLASMA2, // killough 7/11/98: second of alternating beta plasma fireballs
+	MT_SCEPTRE, // killough 7/11/98: evil sceptre in beta version
+	MT_BIBLE,   // killough 7/11/98: unholy bible in beta version
+
+				// [crispy] support MUSINFO lump (dynamic music changing)
+	MT_MUSICSOURCE,
+
+    // [BH] 100 extra mobjs to use in dehacked patches
+    MT_EXTRA00 = 150, MT_EXTRA01, MT_EXTRA02, MT_EXTRA03, MT_EXTRA04,
+    MT_EXTRA05, MT_EXTRA06, MT_EXTRA07, MT_EXTRA08, MT_EXTRA09,
+    MT_EXTRA10, MT_EXTRA11, MT_EXTRA12, MT_EXTRA13, MT_EXTRA14,
+    MT_EXTRA15, MT_EXTRA16, MT_EXTRA17, MT_EXTRA18, MT_EXTRA19,
+    MT_EXTRA20, MT_EXTRA21, MT_EXTRA22, MT_EXTRA23, MT_EXTRA24,
+    MT_EXTRA25, MT_EXTRA26, MT_EXTRA27, MT_EXTRA28, MT_EXTRA29,
+    MT_EXTRA30, MT_EXTRA31, MT_EXTRA32, MT_EXTRA33, MT_EXTRA34,
+    MT_EXTRA35, MT_EXTRA36, MT_EXTRA37, MT_EXTRA38, MT_EXTRA39,
+    MT_EXTRA40, MT_EXTRA41, MT_EXTRA42, MT_EXTRA43, MT_EXTRA44,
+    MT_EXTRA45, MT_EXTRA46, MT_EXTRA47, MT_EXTRA48, MT_EXTRA49,
+    MT_EXTRA50, MT_EXTRA51, MT_EXTRA52, MT_EXTRA53, MT_EXTRA54,
+    MT_EXTRA55, MT_EXTRA56, MT_EXTRA57, MT_EXTRA58, MT_EXTRA59,
+    MT_EXTRA60, MT_EXTRA61, MT_EXTRA62, MT_EXTRA63, MT_EXTRA64,
+    MT_EXTRA65, MT_EXTRA66, MT_EXTRA67, MT_EXTRA68, MT_EXTRA69,
+    MT_EXTRA70, MT_EXTRA71, MT_EXTRA72, MT_EXTRA73, MT_EXTRA74,
+    MT_EXTRA75, MT_EXTRA76, MT_EXTRA77, MT_EXTRA78, MT_EXTRA79,
+    MT_EXTRA80, MT_EXTRA81, MT_EXTRA82, MT_EXTRA83, MT_EXTRA84,
+    MT_EXTRA85, MT_EXTRA86, MT_EXTRA87, MT_EXTRA88, MT_EXTRA89,
+    MT_EXTRA90, MT_EXTRA91, MT_EXTRA92, MT_EXTRA93, MT_EXTRA94,
+    MT_EXTRA95, MT_EXTRA96, MT_EXTRA97, MT_EXTRA98, MT_EXTRA99,
+
+
 	// [RH] Gibs (code is disabled)
 	MT_GIB0,
 	MT_GIB1,
@@ -1418,8 +1604,6 @@ typedef enum {
 	MT_GIB7,
 	// [RH] Miscellaneous things
 	MT_UNKNOWNTHING,
-	MT_PUSH,		// Boom's push thing
-	MT_PULL,		// Boom's pull thing
 	MT_PATHNODE,
 	MT_AMBIENT,		// Ambient sounds
 	MT_TELEPORTMAN2,// Teleport destination that pays attention to its height
@@ -1462,8 +1646,17 @@ typedef enum {
 	MT_SECACTEYESBELOWC,
 	MT_SECACTEYESABOVEC,
 
-	// FIXME: Has no info.cpp entry.
-	MT_MUSICCHANGE,
+	MT_GSOK,
+	MT_GFLG,
+	MT_GDWN,
+	MT_GCAR,
+
+	MT_WPBFLAG,
+	MT_WPRFLAG,
+	MT_WPGFLAG,
+	MT_AVATAR,
+	MT_HORDESPAWN,
+	MT_CAREPACK,
 
 	NUMMOBJTYPES
 
@@ -1472,11 +1665,33 @@ typedef enum {
 inline FArchive &operator<< (FArchive &arc, mobjtype_t i) { DWORD out; out = i; return arc << out; }
 inline FArchive &operator>> (FArchive &arc, mobjtype_t &i) { DWORD in; arc >> in; i = (mobjtype_t)in; return arc; }
 
+typedef enum
+{
+	IG_DEFAULT,
+	// IG_CENTAUR,	// UNUSED
+	IG_END
+} infighting_group_t;
+
+typedef enum
+{
+	PG_GROUPLESS = -1,
+	PG_DEFAULT,
+	PG_BARON,
+	PG_END
+} projectile_group_t;
+
+typedef enum
+{
+	SG_DEFAULT,
+	SG_END
+} splash_group_t;
+
 typedef struct
 {
 	int doomednum;
 	statenum_t spawnstate;
 	int spawnhealth;
+	int gibhealth;				// Doom Retro's GibHealth feature
 	statenum_t seestate;
 	const char *seesound;		// [RH] not int
 	int reactiontime;
@@ -1502,7 +1717,19 @@ typedef struct
 	int translucency;
 	const char *name;
 
+	// MBF21 STUFF HERE
+	int altspeed;
+	int meleerange;
+	int infighting_group;
+	int projectile_group;
+	int splash_group;
+	int flags3;
+	const char* ripsound;
+	mobjtype_t droppeditem;
+
 } mobjinfo_t;
+
+#define NO_ALTSPEED -1
 
 extern mobjinfo_t mobjinfo[NUMMOBJTYPES];
 
@@ -1526,6 +1753,3 @@ inline FArchive &operator>> (FArchive &arc, mobjinfo_t *&info)
 }
 
 #endif	// __INFO_H__
-
-
-

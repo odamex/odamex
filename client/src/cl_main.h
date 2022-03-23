@@ -26,10 +26,10 @@
 #define __I_CLMAIN_H__
 
 #include "i_net.h"
+#include "d_player.h"
 #include "d_ticcmd.h"
 #include "r_defs.h"
 #include "cl_demo.h"
-#include <string>
 
 extern netadr_t  serveraddr;
 extern BOOL      connected;
@@ -46,25 +46,38 @@ extern NetDemo	netdemo;
 
 extern bool predicting;
 
-void CL_QuitNetGame(void);
+enum netQuitReason_e
+{
+	NQ_SILENT,     // Don't print a message.
+	NQ_DISCONNECT, // Generic message for "typical" forced disconnects initiated by the client.
+	NQ_ABORT,      // Connection attempt was aborted
+	NQ_PROTO,      // Encountered something unexpected in the protocol
+};
+
+#define CL_QuitNetGame(reason) CL_QuitNetGame2(reason, __FILE__, __LINE__)
+void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line);
+void CL_Reconnect();
 void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);
-bool CL_PrepareConnect(void);
+bool CL_PrepareConnect();
 void CL_ParseCommands(void);
-void CL_ReadPacketHeader(void);
+bool CL_ReadPacketHeader();
 void CL_SendCmd(void);
 void CL_SaveCmd(void);
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictWorld(void);
 void CL_SendUserInfo(void);
-bool CL_Connect(void);
+bool CL_Connect();
+
+void CL_SendCheat(int cheats);
+void CL_SendGiveCheat(const char* item);
 
 void CL_DisplayTics();
 void CL_RunTics();
 
 bool CL_SectorIsPredicting(sector_t *sector);
+argb_t CL_GetPlayerColor(player_t* player);
 
 std::string M_ExpandTokens(const std::string &str);
 
 #endif
-

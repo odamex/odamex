@@ -43,7 +43,69 @@ typedef struct movingsector_s
 	bool		moving_floor;
 } movingsector_t;
 
+enum motionspeed_e
+{
+	SpeedSlow,
+	SpeedNormal,
+	SpeedFast,
+	SpeedTurbo,
+};
+
+enum doorkind_e
+{
+	OdCDoor,
+	ODoor,
+	CdODoor,
+	CDoor,
+};
+
+enum floortarget_e
+{
+	FtoHnF,
+	FtoLnF,
+	FtoNnF,
+	FtoLnC,
+	FtoC,
+	FbyST,
+	Fby24,
+	Fby32,
+};
+
+enum floorchange_e
+{
+	FNoChg,
+	FChgZero,
+	FChgTxt,
+	FChgTyp,
+};
+
+enum ceilingtarget_e
+{
+	CtoHnC,
+	CtoLnC,
+	CtoNnC,
+	CtoHnF,
+	CtoF,
+	CbyST,
+	Cby24,
+	Cby32,
+};
+
+enum ceilingchange_e
+{
+	CNoChg,
+	CChgZero,
+	CChgTxt,
+	CChgTyp,
+};
+
 extern std::list<movingsector_t> movingsectors;
+extern bool s_SpecialFromServer;
+
+#define IgnoreSpecial !serverside && !s_SpecialFromServer
+#define NO_TEXTURE 0;
+
+#define CEILSPEED FRACUNIT
 
 std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector);
 void P_AddMovingCeiling(sector_t *sector);
@@ -52,6 +114,26 @@ void P_RemoveMovingCeiling(sector_t *sector);
 void P_RemoveMovingFloor(sector_t *sector);
 bool P_MovingCeilingCompleted(sector_t *sector);
 bool P_MovingFloorCompleted(sector_t *sector);
+bool P_HandleSpecialRepeat(line_t* line);
+void P_ApplySectorDamage(player_t* player, int damage, int leak);
+void P_ApplySectorDamageEndLevel(player_t* player);
+void P_CollectSecretCommon(sector_t* sector, player_t* player);
+int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start);
+int P_FindLineFromTag(int tag, int start);
+bool P_FloorActive(const sector_t* sec);
+bool P_LightingActive(const sector_t* sec);
+bool P_CeilingActive(const sector_t* sec);
+fixed_t P_ArgToSpeed(byte arg);
+bool P_ArgToCrushType(byte arg);
+void P_ResetSectorSpecial(sector_t* sector);
+void P_CopySectorSpecial(sector_t* dest, sector_t* source);
+byte P_ArgToChange(byte arg);
+int P_ArgToCrush(byte arg);
+int P_FindSectorFromLineTag(const line_t* line, int start);
+int P_ArgToCrushMode(byte arg, bool slowdown);
+fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f);
+bool P_CheckTag(line_t* line);
+void P_TransferSectorFlags(unsigned int*, unsigned int);
 
 //jff 2/23/98 identify the special classes that can share sectors
 
@@ -61,6 +143,63 @@ typedef enum
 	ceiling_special,
 	lighting_special
 } special_e;
+
+enum crushmode_e
+{
+	crushDoom = 0,
+	crushHexen = 1,
+	crushSlowdown = 2,
+};
+
+enum lifttarget_e
+{
+	F2LnF,
+	F2NnF,
+	F2LnC,
+	LnF2HnF,
+};
+
+enum LineActivationType
+{
+	LineCross,
+	LineUse,
+	LineShoot,
+	LinePush,
+	LineACS,
+};
+
+enum zdoom_lock_t
+{
+	zk_none = 0,
+	zk_red_card = 1,
+	zk_blue_card = 2,
+	zk_yellow_card = 3,
+	zk_red_skull = 4,
+	zk_blue_skull = 5,
+	zk_yellow_skull = 6,
+	zk_any = 100,
+	zk_all = 101,
+	zk_red = 129,
+	zk_blue = 130,
+	zk_yellow = 131,
+	zk_redx = 132, // not sure why these redundant ones exist
+	zk_bluex = 133,
+	zk_yellowx = 134,
+	zk_each_color = 229,
+};
+
+struct newspecial_s
+{
+	short special;
+	unsigned int flags;
+	int damageamount;
+	int damageinterval;
+	int damageleakrate;
+};
+
+#define FLOORSPEED FRACUNIT
+
+bool P_CanUnlockZDoomDoor(player_t* player, zdoom_lock_t lock, bool remote);
 
 // killough 3/7/98: Add generalized scroll effects
 
@@ -88,6 +227,10 @@ public:
 	void SetRate (fixed_t dx, fixed_t dy) { m_dx = dx; m_dy = dy; }
 	bool IsType(EScrollType type) const { return type == m_Type; }
 	int GetAffectee() const { return m_Affectee; }
+
+	EScrollType GetType() const { return m_Type; }
+	fixed_t GetScrollX() const { return m_dx; }
+	fixed_t GetScrollY() const { return m_dy; }
 
 protected:
 	EScrollType m_Type;		// Type of scroll effect
@@ -178,30 +321,23 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote);
 //		it returns true, and the player is allowed to live.
 BOOL	CheckIfExitIsGood (AActor *self);
 
-// at map load
-void	P_SpawnSpecials (void);
+// at game start
+void	P_InitPicAnims (void);
+
+// [Blair] ZDoom sector specials
+void	P_SpawnZDoomSectorSpecials (void);
 
 // every tic
 void	P_UpdateSpecials (void);
 
 // when needed
-void    P_CrossSpecialLine (int linenum, int side, AActor*	thing, bool FromServer = false);
-void    P_ShootSpecialLine (AActor* thing, line_t*	line, bool FromServer = false);
-bool    P_UseSpecialLine (AActor* thing, line_t* line, int	side, bool FromServer = false);
-bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side, bool FromServer = false);
+void    P_CrossSpecialLine (line_t* line, int side, AActor* thing, bool bossaction);
+void    P_ShootSpecialLine (AActor* thing, line_t* line);
+bool    P_UseSpecialLine (AActor* thing, line_t* line, int side, bool bossaction);
+bool    P_PushSpecialLine (AActor* thing, line_t* line, int	side);
 
-void    P_PlayerInSpecialSector (player_t *player);
-
-//
-// getSide()
-// Will return a side_t*
-//	given the number of the current sector,
-//	the line number, and the side (0/1) that you want.
-//
-inline side_t *getSide (sector_t *sec, int line, int side)
-{
-	return &sides[ (sec->lines[line])->sidenum[side] ];
-}
+void    P_PlayerInZDoomSector (player_t *player);
+void P_ApplySectorFriction(int tag, int value, bool use_thinker);
 
 //
 // getSector()
@@ -216,16 +352,6 @@ inline sector_t *getSector (int currentSector, int line, int side)
 
 
 //
-// twoSided()
-// Given the sector number and the line number,
-//	it will tell you whether the line is two-sided or not.
-//
-inline int twoSided (sector_t *sec, int line)
-{
-	return (sec->lines[line])->flags & ML_TWOSIDED;
-}
-
-//
 // getNextSector()
 // Return sector_t * of sector next to current.
 // NULL if not two-sided line
@@ -235,9 +361,8 @@ inline sector_t *getNextSector (line_t *line, sector_t *sec)
 	if (!(line->flags & ML_TWOSIDED))
 		return NULL;
 
-	return (line->frontsector == sec) ? line->backsector : line->frontsector;
-
-	return line->frontsector;
+	return line->frontsector == sec ? (line->backsector != sec ? line->backsector : NULL)
+	                                : line->frontsector;
 }
 
 
@@ -288,6 +413,8 @@ public:
 	DFireFlicker (sector_t *sector);
 	DFireFlicker (sector_t *sector, int upper, int lower);
 	void		RunThink ();
+	int GetMaxLight() const { return m_MaxLight; }
+	int GetMinLight() const { return m_MinLight; }
 protected:
 	int 		m_Count;
 	int 		m_MaxLight;
@@ -302,6 +429,8 @@ class DFlicker : public DLighting
 public:
 	DFlicker (sector_t *sector, int upper, int lower);
 	void		RunThink ();
+	int GetMaxLight() const { return m_MaxLight; }
+	int GetMinLight() const { return m_MinLight; }
 protected:
 	int 		m_Count;
 	int 		m_MaxLight;
@@ -317,6 +446,8 @@ public:
 	DLightFlash (sector_t *sector);
 	DLightFlash (sector_t *sector, int min, int max);
 	void		RunThink ();
+	int GetMaxLight() const { return m_MaxLight; }
+	int GetMinLight() const { return m_MinLight; }
 protected:
 	int 		m_Count;
 	int 		m_MaxLight;
@@ -334,6 +465,12 @@ public:
 	DStrobe (sector_t *sector, int utics, int ltics, bool inSync);
 	DStrobe (sector_t *sector, int upper, int lower, int utics, int ltics);
 	void		RunThink ();
+	int GetMaxLight() const { return m_MaxLight; }
+	int GetMinLight() const { return m_MinLight; }
+	int GetDarkTime() const { return m_DarkTime; }
+	int GetBrightTime() const { return m_BrightTime; }
+	int GetCount() const { return m_Count; }
+	void SetCount(int count) { m_Count = count; }
 protected:
 	int 		m_Count;
 	int 		m_MinLight;
@@ -365,6 +502,10 @@ class DGlow2 : public DLighting
 public:
 	DGlow2 (sector_t *sector, int start, int end, int tics, bool oneshot);
 	void		RunThink ();
+	int GetStart() const { return m_Start; }
+	int GetEnd() const { return m_End; }
+	int GetMaxTics() const { return m_MaxTics; }
+	bool GetOneShot() const { return m_OneShot; }
 protected:
 	int			m_Start;
 	int			m_End;
@@ -383,6 +524,8 @@ public:
 	DPhased (sector_t *sector);
 	DPhased (sector_t *sector, int baselevel, int phase);
 	void		RunThink ();
+	byte GetBaseLevel() const { return m_BaseLevel; }
+	byte GetPhase() const { return m_Phase; }
 protected:
 	byte		m_BaseLevel;
 	byte		m_Phase;
@@ -422,6 +565,8 @@ typedef struct
 
 } switchlist_t;
 
+#define STAIR_USE_SPECIALS 1
+#define STAIR_SYNC 2
 
 // 1 second, in ticks.
 #define BUTTONTIME		TICRATE
@@ -432,6 +577,7 @@ void	P_InitSwitchList ();
 
 void	P_ProcessSwitchDef ();
 
+short P_GetButtonTexture(line_t* line);
 bool	P_GetButtonInfo (const line_t *line, unsigned &state, unsigned &time);
 bool	P_SetButtonInfo (line_t *line, unsigned state, unsigned time);
 const ResourceId P_GetButtonTexture(const line_t* line);
@@ -461,8 +607,18 @@ public:
 
 	enum EPlatType
 	{
+		perpetualRaise,
+		downWaitUpStay,
+		raiseAndChange,
+		raiseToNearestAndChange,
+		blazeDWUS,
+		genLift, // jff added to support generalized Plat types
+		genPerpetual,
+		toggleUpDn, // jff 3/14/98 added to support instant toggle type
 		platPerpetualRaise,
 		platDownWaitUpStay,
+		platDownWaitUpStayStone,
+		platUpNearestWaitDownStay,
 		platUpWaitDownStay,
 		platDownByValue,
 		platUpByValue,
@@ -470,7 +626,8 @@ public:
 		platRaiseAndStay,
 		platToggle,
 		platDownToNearestFloor,
-		platDownToLowestCeiling
+		platDownToLowestCeiling,
+		platRaiseAndStayLockout
 	};
 
 	void RunThink ();
@@ -480,6 +637,7 @@ public:
 
 	DPlat(sector_t *sector);
 	DPlat(sector_t *sector, DPlat::EPlatType type, fixed_t height, int speed, int delay, fixed_t lip);
+	DPlat(sector_t* sector, int target, int delay, int speed, int trigger); // [Blair] Boom Generic Plat type
 	DPlat* Clone(sector_t* sec) const;
 	friend void P_SetPlatDestroy(DPlat *plat);
 	
@@ -510,6 +668,7 @@ private:
 						   fixed_t height, int speed, int delay, fixed_t lip, int change);
 	friend void EV_StopPlat (int tag);
 	friend void P_ActivateInStasis (int tag);
+	friend BOOL EV_DoGenLift(line_t* line);
 };
 
 inline FArchive &operator<< (FArchive &arc, DPlat::EPlatType type)
@@ -554,11 +713,13 @@ public:
 	};
 
 	DPillar ();
-
-	DPillar (sector_t *sector, EPillar type, fixed_t speed, fixed_t height,
-			 fixed_t height2, bool crush);
+	DPillar(sector_t* sector, EPillar type, fixed_t speed, fixed_t height,
+	        fixed_t height2, int crush, bool hexencrush);
 	DPillar* Clone(sector_t* sec) const;
 	friend void P_SetPillarDestroy(DPillar *pillar);	
+	friend bool EV_DoZDoomPillar(DPillar::EPillar type, line_t* line, int tag,
+	                             fixed_t speed, fixed_t floordist, fixed_t ceilingdist,
+	                             int crush, bool hexencrush);
 	
 	void RunThink ();
 	void PlayPillarSound();
@@ -568,7 +729,8 @@ public:
 	fixed_t		m_CeilingSpeed;
 	fixed_t		m_FloorTarget;
 	fixed_t		m_CeilingTarget;
-	bool		m_Crush;
+	int			m_Crush;
+	bool		m_HexenCrush;
 	
 	EPillarState m_Status;
 
@@ -609,7 +771,23 @@ public:
 		doorOpen,
 		doorRaise,
 		doorRaiseIn5Mins,
-		doorCloseWaitOpen
+		doorCloseWaitOpen,
+		close30ThenOpen,
+		blazeRaise,
+		blazeOpen,
+		blazeClose,
+		waitRaiseDoor,
+		waitCloseDoor,
+
+		// jff 02/05/98 add generalize door types
+		genRaise,
+		genBlazeRaise,
+		genOpen,
+		genBlazeOpen,
+		genClose,
+		genBlazeClose,
+		genCdO,
+		genBlazeCdO,
 	};
 
 	enum EDoorState
@@ -625,8 +803,16 @@ public:
 	};
 
 	DDoor (sector_t *sector);
-	// DDoor (sector_t *sec, EVlDoor type, fixed_t speed, int delay);
+	// Boom Generic Door
+	DDoor(sector_t* sec, line_t* ln, int delay, int time, int trigger,
+	      int speed);
+	// Boom Generic Locked Door
+	DDoor(sector_t* sec, line_t* ln, int kind, int trigger, int speed);
+	// Boom Compatible DDoor
     DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
+	// ZDoom Compatible DDoor
+	DDoor(sector_t* sec, line_t* ln, EVlDoor type, fixed_t speed, int topwait,
+	      byte lighttag, int topcountdown);
 	DDoor* Clone(sector_t* sec) const;
 
 	friend void P_SetDoorDestroy(DDoor *door);
@@ -648,9 +834,14 @@ public:
 
     line_t      *m_Line;
 
+	int			m_LightTag; // ZDoom compat
+
 protected:
 	friend BOOL	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                                    int tag, int speed, int delay, card_t lock);
+    friend BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
+	                         byte speed_byte, int topwait, zdoom_lock_t lock,
+	                         byte lightTag, bool boomgen, int topcountdown);
 	friend void P_SpawnDoorCloseIn30 (sector_t *sec);
 	friend void P_SpawnDoorRaiseIn5Mins (sector_t *sec);
 
@@ -698,6 +889,15 @@ public:
 	
 	enum ECeiling
 	{
+		lowerToFloor,
+		raiseToHighest,
+		lowerToLowest,
+		lowerToMaxFloor,
+		lowerAndCrush,
+		crushAndRaise,
+		fastCrushAndRaise,
+		silentCrushAndRaise,
+
 		ceilLowerByValue,
 		ceilRaiseByValue,
 		ceilMoveToValue,
@@ -721,13 +921,20 @@ public:
 		ceilRaiseByTexture,
 		ceilLowerByTexture,
 
+		genCeiling,
 		genCeilingChg0,
 		genCeilingChgT,
-		genCeilingChg
+		genCeilingChg,
+
+		genCrusher,
+		genSilentCrusher,
 	};
 
 	DCeiling (sector_t *sec);
 	DCeiling (sector_t *sec, fixed_t speed1, fixed_t speed2, int silent);
+	DCeiling (sector_t* sec, line_t* line, int speed,
+	         int target, int crush, int change, int direction, int model);
+	DCeiling(sector_t* sec, line_t* line, int silent, int speed);
 	DCeiling* Clone(sector_t* sec) const;
 	friend void P_SetCeilingDestroy(DCeiling *ceiling);
 	
@@ -735,18 +942,23 @@ public:
 	void PlayCeilingSound();	
 	
 	ECeiling	m_Type;
+	crushmode_e m_CrushMode;
 	fixed_t 	m_BottomHeight;
 	fixed_t 	m_TopHeight;
 	fixed_t 	m_Speed;
 	fixed_t		m_Speed1;		// [RH] dnspeed of crushers
 	fixed_t		m_Speed2;		// [RH] upspeed of crushers
-	bool 		m_Crush;
+	int 		m_Crush;
 	int			m_Silent;
 	int 		m_Direction;	// 1 = up, 0 = waiting, -1 = down
 
 	// [RH] Need these for BOOM-ish transferring ceilings
 	ResourceId	m_Texture;
-	int			m_NewSpecial;
+	short		m_NewSpecial;
+	DWORD		m_NewFlags;
+	short		m_NewDamageRate;
+	byte		m_NewLeakRate;
+	byte		m_NewDmgInterval;
 
 	// ID
 	int 		m_Tag;
@@ -765,6 +977,7 @@ private:
 		bool crush, int silent, int change);
 	friend BOOL EV_CeilingCrushStop (int tag);
 	friend void P_ActivateInStasisCeiling (int tag);
+	friend BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
 };
 
 inline FArchive &operator<< (FArchive &arc, DCeiling::ECeiling type)
@@ -814,6 +1027,7 @@ public:
 		floorRaiseToHighest,
 		floorRaiseToNearest,
 		floorRaiseAndCrush,
+		floorRaiseAndCrushDoom,
 		floorCrushStop,
 		floorLowerInstant,
 		floorRaiseInstant,
@@ -832,11 +1046,13 @@ public:
 
 		donutRaise,
 
+		genBuildStair,
 		buildStair,
 		waitStair,
 		resetStair,
 
 		// Not to be used as parameters to EV_DoFloor()
+		genFloor,
 		genFloorChg0,
 		genFloorChgT,
 		genFloorChg
@@ -852,17 +1068,29 @@ public:
 	DFloor(sector_t *sec);
 	DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line, fixed_t speed,
 		   fixed_t height, bool crush, int change);
+	DFloor(sector_t* sec, line_t* line, int speed,
+	       int target, int crush, int change, int direction, int model);
+	DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t speed,
+	               fixed_t height, int crush, int change, bool hexencrush,
+	               bool hereticlower);
 	DFloor* Clone(sector_t* sec) const;
 	friend void P_SetFloorDestroy(DFloor *floor);
+	friend BOOL EV_DoGenFloor(line_t* line);
+	friend BOOL EV_DoGenStairs(line_t* line);
 		
 	void RunThink ();
 	void PlayFloorSound();	
 
 	EFloor	 	m_Type;
 	EFloorState	m_Status;
-	bool 		m_Crush;
+	int 		m_Crush;
+	bool		m_HexenCrush;
 	int 		m_Direction;
-	short 		m_NewSpecial;
+	short		m_NewSpecial;
+	DWORD		m_NewFlags;
+	short		m_NewDamageRate;
+	byte		m_NewLeakRate;
+	byte		m_NewDmgInterval;
 	ResourceId	m_Texture;
 	fixed_t 	m_FloorDestHeight;
 	fixed_t 	m_Speed;
@@ -885,8 +1113,15 @@ protected:
 		int usespecials);
 	friend BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 		fixed_t speed, fixed_t height, bool crush, int change);
-	friend int EV_DoDonut (int tag, fixed_t pillarspeed, fixed_t slimespeed);
-private:
+	friend int EV_DoDonut (line_t* line);
+	friend BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed,
+	                            fixed_t slimespeed);
+	friend int P_SpawnDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
+	friend BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag,
+	                            fixed_t speed, fixed_t height, int crush, int change,
+	                            bool hexencrush, bool hereticlower);
+
+  private:
 	DFloor ();
 };
 
@@ -947,6 +1182,9 @@ public:
 protected:
 	friend BOOL EV_DoElevator (line_t *line, DElevator::EElevator type, fixed_t speed,
 		fixed_t height, int tag);
+    friend bool EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
+	                        fixed_t height, int tag);
+
 private:
 	DElevator ();
 };
@@ -968,6 +1206,47 @@ inline FArchive &operator>> (FArchive &arc, DElevator::EElevatorState &out)
 	BYTE in; arc >> in; out = (DElevator::EElevatorState)in; return arc;
 }
 
+// Waggle
+/*
+class DWaggle : public DMover
+{
+	DECLARE_SERIAL(DWaggle, DMover)
+  public:
+	enum EWaggleState
+	{
+		init = 0,
+		expand,
+		reduce,
+		stable,
+		finished,
+		destroy,
+		state_size
+	};
+	DWaggle(sector_t* sec);
+	DWaggle(sector_t* sector, int height, int speed, int offset, int timer,
+	                 bool ceiling);
+	DWaggle* Clone(sector_t* sec) const;
+	friend void P_SetWaggleDestroy(DWaggle* waggle);
+
+	void RunThink();
+
+	fixed_t m_OriginalHeight;
+	fixed_t m_Accumulator;
+	fixed_t m_AccDelta;
+	fixed_t m_TargetScale;
+	fixed_t m_Scale;
+	fixed_t m_ScaleDelta;
+	fixed_t m_StartTic; // [Blair] Client will predict a created (or serialized) waggle based on the start tic.
+	int m_Ticker;
+	int m_State;
+	bool m_Ceiling;
+	DWaggle();
+
+  protected:
+	friend BOOL EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed,
+	                                int offset, int timer, bool ceiling);
+};
+*/
 //jff 3/15/98 pure texture/type change for better generalized support
 enum EChange
 {
@@ -982,9 +1261,10 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag);
 //
 // P_TELEPT
 //
-BOOL EV_Teleport (int tid, int tag, int side, AActor *thing);
+BOOL EV_Teleport (int tid, int tag, int arg0, int side, AActor *thing, int nostop);
 BOOL EV_LineTeleport (line_t *line, int side, AActor *thing);
-BOOL EV_SilentTeleport (int tid, line_t *line, int side, AActor *thing);
+BOOL EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* line,
+                       int side, AActor* thing);
 BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 							BOOL reverse);
 
@@ -992,10 +1272,10 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 // [RH] ACS (see also p_acs.h)
 //
 
-bool P_StartScript (AActor *who, line_t *where, int script, char *map, int lineSide,
+bool P_StartScript (AActor *who, line_t *where, int script, const char *map, int lineSide,
 					int arg0, int arg1, int arg2, int always);
-void P_SuspendScript (int script, char *map);
-void P_TerminateScript (int script, char *map);
+void P_SuspendScript (int script, const char *map);
+void P_TerminateScript (int script, const char *map);
 void P_StartOpenScripts (void);
 void P_DoDeferedScripts (void);
 

@@ -26,7 +26,6 @@
 #define __F_FINALE__
 
 
-#include "doomtype.h"
 #include "d_event.h"
 //
 // FINALE
@@ -41,8 +40,15 @@ void F_Ticker (void);
 // Called by main loop.
 void F_Drawer (void);
 
+struct finale_options_t
+{
+	const char* music;
+	const char* flat;
+	const char* text;
+	const char* pic;
+};
 
-void F_StartFinale(char *music, char *flat, const char *text);
+void F_StartFinale(finale_options_t& options);
 void STACK_ARGS F_ShutdownFinale();
 
 

@@ -25,7 +25,47 @@
 #ifndef __V_TEXT_H__
 #define __V_TEXT_H__
 
-#include "doomtype.h"
+#include <stdexcept>
+
+#include "v_textcolors.h"	// Ch0wW : Colorized textcodes
+#include "hu_stuff.h"
+#include "r_defs.h"
+#include "w_wad.h"
+
+struct OGlobalFont
+{
+	lumpHandle_t operator[](const size_t idx) const
+	{
+		return m_fontData[idx];
+	}
+	lumpHandle_t at(const size_t idx) const
+	{
+		if (idx < 0 || idx >= HU_FONTSIZE)
+			throw std::out_of_range("Out-of-bounds font char");
+
+		return m_fontData[idx];
+	}
+	void setFont(const lumpHandle_t* font, const int lineHeight)
+	{
+		m_fontData = font;
+		m_lineHeight = lineHeight;
+	}
+	int lineHeight() const
+	{
+		return m_lineHeight;
+	}
+  private:
+	const lumpHandle_t* m_fontData;
+	int m_lineHeight;
+};
+
+extern OGlobalFont hu_font;
+
+void V_TextInit();
+void V_TextShutdown();
+void V_SetFont(const char* fontname);
+int V_TextScaleXAmount();
+int V_TextScaleYAmount();
 
 struct brokenlines_s {
 	int width;
@@ -33,67 +73,10 @@ struct brokenlines_s {
 };
 typedef struct brokenlines_s brokenlines_t;
 
-enum EColorRange
-{
-	CR_BRICK,
-	CR_TAN,
-	CR_GRAY,
-	CR_GREY = CR_GRAY,
-	CR_GREEN,
-	CR_BROWN,
-	CR_GOLD,
-	CR_RED,
-	CR_BLUE,
-	CR_ORANGE,
-	CR_WHITE,
-	CR_YELLOW,
-
-	CR_UNTRANSLATED,
-	CR_BLACK,
-	CR_LIGHTBLUE,
-	CR_CREAM,
-	CR_OLIVE,
-	CR_DARKGREEN,
-	CR_DARKRED,
-	CR_DARKBROWN,
-	CR_PURPLE,
-	CR_DARKGRAY,
-	CR_DARKGREY = CR_DARKGRAY,
-	CR_CYAN,
-	NUM_TEXT_COLORS
-};
-
-#define TEXTCOLOR_BRICK			"\\ca"
-#define TEXTCOLOR_TAN			"\\cb"
-#define TEXTCOLOR_GRAY			"\\cc"
-#define TEXTCOLOR_GREY			"\\cc"
-#define TEXTCOLOR_GREEN			"\\cd"
-#define TEXTCOLOR_BROWN			"\\ce"
-#define TEXTCOLOR_GOLD			"\\cf"
-#define TEXTCOLOR_RED			"\\cg"
-#define TEXTCOLOR_BLUE			"\\ch"
-#define TEXTCOLOR_ORANGE		"\\ci"
-#define TEXTCOLOR_WHITE			"\\cj"
-#define TEXTCOLOR_YELLOW		"\\ck"
-
-#define TEXTCOLOR_UNTRANSLATED	"\\cl"
-#define TEXTCOLOR_BLACK			"\\cm"
-#define TEXTCOLOR_LIGHTBLUE		"\\cn"
-#define TEXTCOLOR_CREAM			"\\co"
-#define TEXTCOLOR_OLIVE			"\\cp"
-#define TEXTCOLOR_DARKGREEN		"\\cq"
-#define TEXTCOLOR_DARKRED		"\\cr"
-#define TEXTCOLOR_DARKBROWN		"\\cs"
-#define TEXTCOLOR_PURPLE		"\\ct"
-#define TEXTCOLOR_DARKGRAY		"\\cu"
-#define TEXTCOLOR_DARKGREY		"\\cu"
-#define TEXTCOLOR_CYAN			"\\cv"
-
-#define TEXTCOLOR_NORMAL		"\\c-"
-#define TEXTCOLOR_BOLD			"\\c+"
-
 int V_StringWidth(const byte* str);
 inline int V_StringWidth(const char* str) { return V_StringWidth((const byte*)str); }
+int V_StringHeight(const char* str);
+int V_LineHeight();
 
 brokenlines_t *V_BreakLines (int maxwidth, const byte *str);
 void V_FreeBrokenLines (brokenlines_t *lines);
@@ -102,4 +85,3 @@ inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_Br
 int V_GetTextColor(const char* str);
 
 #endif //__V_TEXT_H__
-

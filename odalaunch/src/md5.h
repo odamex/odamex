@@ -54,6 +54,8 @@
 #ifndef md5_INCLUDED
 #define md5_INCLUDED
 
+#include "odalaunch.h"
+
 //-----------------------------------------------------------------------------
 // This package supports both compile-time and run-time determination of CPU
 // byte order.  If ARCH_IS_BIG_ENDIAN is defined as 0, the code will be

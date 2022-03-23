@@ -21,86 +21,130 @@
 //
 //-----------------------------------------------------------------------------
 
+#pragma once
 
-#ifndef __G_LEVEL_H__
-#define __G_LEVEL_H__
-
-#include "doomtype.h"
-#include "doomdef.h"
+#include "cmdlib.h"
 #include "m_fixed.h"
+#include "m_resfile.h"
+#include "olumpname.h"
+#include "r_defs.h" // line_t
 
-#include <string>
-#include <vector>
+#include <assert.h>
 
 #define NUM_MAPVARS				128
 #define NUM_WORLDVARS			256
 #define NUM_GLOBALVARS			64
 
-#define LEVEL_NOINTERMISSION	0x00000001u
-#define LEVEL_EPISODEENDHACK	0x00000002u	// Ch0wW : UGLY HACK UNTIL SOMEONE FINDS A WAY NOT TO SKIP THE EPISODES
-#define	LEVEL_DOUBLESKY			0x00000004u
-#define LEVEL_NOSOUNDCLIPPING	0x00000008u
+/**
+ * @brief Level flag bitfield.
+ */
+typedef uint32_t levelFlags_t;
 
-#define LEVEL_MAP07SPECIAL		0x00000010u
-#define LEVEL_BRUISERSPECIAL	0x00000020u
-#define LEVEL_CYBORGSPECIAL		0x00000040u
-#define LEVEL_SPIDERSPECIAL		0x00000080u
+const static levelFlags_t LEVEL_NOINTERMISSION = BIT(0);
+const static levelFlags_t LEVEL_DOUBLESKY = BIT(2);
+const static levelFlags_t LEVEL_NOSOUNDCLIPPING = BIT(3);
 
-#define LEVEL_SPECLOWERFLOOR	0x00000100u
-#define LEVEL_SPECOPENDOOR		0x00000200u
-#define LEVEL_SPECACTIONSMASK	0x00000300u
+const static levelFlags_t LEVEL_MAP07SPECIAL = BIT(4);
+const static levelFlags_t LEVEL_BRUISERSPECIAL = BIT(5);
+const static levelFlags_t LEVEL_CYBORGSPECIAL = BIT(6);
+const static levelFlags_t LEVEL_SPIDERSPECIAL = BIT(7);
 
-#define LEVEL_MONSTERSTELEFRAG	0x00000400u
-#define LEVEL_EVENLIGHTING		0x00000800u
-#define LEVEL_SNDSEQTOTALCTRL	0x00001000u
-#define LEVEL_FORCENOSKYSTRETCH	0x00002000u
+const static levelFlags_t LEVEL_SPECLOWERFLOOR = BIT(8);
+const static levelFlags_t LEVEL_SPECOPENDOOR = BIT(9);
+const static levelFlags_t LEVEL_SPECACTIONSMASK = BIT_MASK(LEVEL_SPECLOWERFLOOR, LEVEL_SPECOPENDOOR);
+const static levelFlags_t LEVEL_MONSTERSTELEFRAG = BIT(10);
+const static levelFlags_t LEVEL_EVENLIGHTING = BIT(11);
 
-#define LEVEL_JUMP_NO			0x00004000u
-#define LEVEL_JUMP_YES			0x00008000u
-#define LEVEL_FREELOOK_NO		0x00010000u
-#define LEVEL_FREELOOK_YES		0x00020000u
+const static levelFlags_t LEVEL_SNDSEQTOTALCTRL = BIT(12);
+const static levelFlags_t LEVEL_FORCENOSKYSTRETCH = BIT(13);
+const static levelFlags_t LEVEL_JUMP_NO = BIT(14);
+const static levelFlags_t LEVEL_JUMP_YES = BIT(15);
 
-#define LEVEL_STARTLIGHTNING	0x01000000u	// Automatically start lightning
-#define LEVEL_FILTERSTARTS		0x02000000u	// Apply mapthing filtering to player starts
-#define LEVEL_LOBBYSPECIAL		0x04000000u	// That level is a lobby, and has a few priorities
+const static levelFlags_t LEVEL_FREELOOK_NO = BIT(16);
+const static levelFlags_t LEVEL_FREELOOK_YES = BIT(17);
+const static levelFlags_t LEVEL_COMPAT_DROPOFF = BIT(18);
+const static levelFlags_t LEVEL_COMPAT_NOPASSOVER = BIT(19);
 
-#define LEVEL_DEFINEDINMAPINFO	0x20000000u	// Level was defined in a MAPINFO lump
-#define LEVEL_CHANGEMAPCHEAT	0x40000000u	// Don't display cluster messages
-#define LEVEL_VISITED			0x80000000u	// Used for intermission map
+ // Automatically start lightning
+const static levelFlags_t LEVEL_STARTLIGHTNING = BIT(24);
+// Apply mapthing filtering to player starts
+const static levelFlags_t LEVEL_FILTERSTARTS = BIT(25);
+// That level is a lobby, and has a few priorities
+const static levelFlags_t LEVEL_LOBBYSPECIAL = BIT(26);
+// Player spawns will have z-height
+const static levelFlags_t LEVEL_USEPLAYERSTARTZ = BIT(27);
 
+ // Level was defined in a MAPINFO lump
+const static levelFlags_t LEVEL_DEFINEDINMAPINFO = BIT(29);
+// Don't display cluster messages
+const static levelFlags_t LEVEL_CHANGEMAPCHEAT = BIT(30);
+// Used for intermission map
+const static levelFlags_t LEVEL_VISITED = BIT(31);
 
 struct acsdefered_s;
 class FBehavior;
+struct bossaction_t;
 
-struct level_info_t {
-	char			mapname[9];
+struct level_info_t
+{
+	OLumpName		mapname;
 	int				levelnum;
-	const char*		level_name;
-	char			pname[9];
-	char			nextmap[9];
-	char			secretmap[9];
+	std::string		level_name;
+	byte			level_fingerprint[16];
+	OLumpName		pname;
+	OLumpName		nextmap;
+	OLumpName		secretmap;
 	int				partime;
-	char			skypic[9];
-	char			music[9];
-	DWORD			flags;
+	OLumpName		skypic;
+	OLumpName		music;
+	uint32_t		flags;
 	int				cluster;
 	FLZOMemFile*	snapshot;
 	acsdefered_s*	defered;
+
+	level_info_t()
+	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
+	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
+	      defered(NULL)
+	{
+		ArrayInit(level_fingerprint, 0);
+	}
+
+	bool exists() const
+	{
+		return !this->mapname.empty();
+	}
+};
+
+// struct that contains a FarmHash 128-bit fingerprint.
+struct fhfprint_s
+{
+	byte fingerprint[16];
+
+	fhfprint_s() : fingerprint()
+	{
+		ArrayInit(fingerprint, 0);
+	}
+	bool operator==(const fhfprint_s& other)
+	{
+		return fingerprint == other.fingerprint;
+	}
 };
 
 struct level_pwad_info_t
 {
 	// level_info_t
-	char			mapname[9];
+	OLumpName		mapname;
 	int				levelnum;
-	const char*		level_name;
-	char			pname[9];
-	char			nextmap[9];
-	char			secretmap[9];
+	std::string		level_name;
+	byte			level_fingerprint[16];
+	OLumpName		pname;
+	OLumpName		nextmap;
+	OLumpName		secretmap;
 	int				partime;
-	char			skypic[9];
-	char			music[9];
-	DWORD			flags;
+	OLumpName		skypic;
+	OLumpName		music;
+	uint32_t		flags;
 	int				cluster;
 	FLZOMemFile*	snapshot;
 	acsdefered_s*	defered;
@@ -115,27 +159,114 @@ struct level_pwad_info_t
 	byte			fadeto_color[4];
 	byte			outsidefog_color[4];
 
-	char			fadetable[8];
-	char			skypic2[9];
+	OLumpName		fadetable;
+	OLumpName		skypic2;
 	float			gravity;
 	float			aircontrol;
+
+	// The following are necessary for UMAPINFO compatibility
+	OLumpName		exitpic;
+	OLumpName		enterpic;
+	OLumpName		endpic;
+
+	std::string		intertext;
+	std::string		intertextsecret;
+	OLumpName		interbackdrop;
+	OLumpName		intermusic;
+	
+	std::vector<bossaction_t> bossactions;
+	
+	level_pwad_info_t()
+	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
+	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
+	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
+	      aircontrol(0.0f), exitpic(""), enterpic(""), endpic(""), intertext(""),
+	      intertextsecret(""), interbackdrop(""), intermusic(""), bossactions()
+	{
+		ArrayInit(fadeto_color, 0);
+		ArrayInit(level_fingerprint, 0);
+		ArrayInit(outsidefog_color, 0);
+		outsidefog_color[0] = 0xFF; // special token signaling to not handle it specially
+	}
+
+	level_pwad_info_t(const level_info_t& other)
+	    : mapname(other.mapname), levelnum(other.levelnum), level_name(other.level_name),
+	      pname(other.pname), nextmap(other.nextmap),
+		  secretmap(other.secretmap), partime(other.partime), skypic(other.skypic),
+		  music(other.music), flags(other.flags), cluster(other.cluster),
+		  snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
+		  skypic2(""), gravity(0.0f), aircontrol(0.0f), exitpic(""), enterpic(""),
+		  endpic(""), intertext(""), intertextsecret(""), interbackdrop(""), intermusic(""),
+		  bossactions()
+	{
+		ArrayInit(fadeto_color, 0);
+		ArrayInit(outsidefog_color, 0);
+		ArrayInit(level_fingerprint, 0);
+		outsidefog_color[0] = 0xFF; // special token signaling to not handle it specially
+	}
+
+	level_pwad_info_t& operator=(const level_pwad_info_t& other)
+	{
+		if (this == &other)
+			return *this;
+
+		mapname = other.mapname;
+		levelnum = other.levelnum;
+		level_name = other.level_name;
+		pname = other.pname;
+		nextmap = other.nextmap;
+		secretmap = other.secretmap;
+		partime = other.partime;
+		skypic = other.skypic;
+		music = other.music;
+		flags = other.flags;
+		cluster = other.cluster;
+		snapshot = other.snapshot;
+		defered = other.defered;
+		ArrayCopy(fadeto_color, other.fadeto_color);
+		ArrayCopy(outsidefog_color, other.outsidefog_color);
+		ArrayCopy(level_fingerprint, other.level_fingerprint);
+		fadetable = other.fadetable;
+		skypic2 = other.skypic2;
+		gravity = other.gravity;
+		aircontrol = other.aircontrol;
+		exitpic = other.exitpic;
+		enterpic = other.enterpic;
+		endpic = other.endpic;
+		intertext = other.intertext;
+		intertextsecret = other.intertextsecret;
+		interbackdrop = other.interbackdrop;
+		intermusic = other.intermusic;
+		bossactions.clear();
+		std::copy(other.bossactions.begin(), other.bossactions.end(),
+		          bossactions.begin());
+
+		return *this;
+	}
+
+	bool exists() const
+	{
+		return !this->mapname.empty();
+	}
 };
 
 
-struct level_locals_t {
+struct level_locals_t
+{
 	int				time;
 	int				starttime;
 	int				partime;
-	int				timeleft;
 	unsigned int	inttimeleft;
 
 	level_info_t*	info;
 	int				cluster;
 	int				levelnum;
 	char			level_name[64];			// the descriptive name (Outer Base, etc)
-	char			mapname[8];				// the server name (base1, etc)
-	char			nextmap[8];				// go here when sv_fraglimit is hit
-	char			secretmap[8];			// map to go to when used secret exit
+	byte			level_fingerprint[16];	// [Blair] 128-bit FarmHash fingerprint generated for the level to describe it uniquely
+											// so it can besingled out if it's out of its host wad, like in a compilation wad. Contains a 16-byte array.
+	OLumpName		mapname;                // the server name (base1, etc)
+	OLumpName		nextmap;				// go here when sv_fraglimit is hit
+	OLumpName		secretmap;				// map to go to when used secret exit
 
 	DWORD			flags;
 
@@ -147,9 +278,9 @@ struct level_locals_t {
 	byte			fadeto_color[4];		// The color the palette fades to (usually black)
 	byte			outsidefog_color[4];	// The fog for sectors with sky ceilings
 
-	char			music[8];
-	char			skypic[8];
-	char			skypic2[8];
+	OLumpName		music;
+	OLumpName		skypic;
+	OLumpName		skypic2;
 
 	int				total_secrets;
 	int				found_secrets;
@@ -159,6 +290,7 @@ struct level_locals_t {
 
 	int				total_monsters;
 	int				killed_monsters;
+	int				respawned_monsters;	// Ch0wW - Keep track of respawned monsters
 
 	float			gravity;
 	fixed_t			aircontrol;
@@ -167,34 +299,107 @@ struct level_locals_t {
 	// The following are all used for ACS scripting
 	FBehavior*		behavior;
 	SDWORD			vars[NUM_MAPVARS];
+
+	// The following are used for UMAPINFO
+	OLumpName		exitpic;
+	OLumpName		enterpic;
+	OLumpName		endpic;
+
+	std::string		intertext;
+	std::string		intertextsecret;
+	OLumpName		interbackdrop;
+	OLumpName		intermusic;
+	
+	std::vector<bossaction_t> bossactions;
+	
+	// The following is used for automatic gametype detection.
+	float			detected_gametype;
 };
 
-struct cluster_info_t {
+typedef uint32_t clusterFlags_t;
+
+const static clusterFlags_t CLUSTER_HUB = BIT(0);
+const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
+
+struct bossaction_t
+{
+	int type;
+	short special;
+	short tag;
+
+	bossaction_t() : type(MT_NULL), special(), tag() {}
+};
+
+struct cluster_info_t
+{
 	int				cluster;
-	char			messagemusic[9];
-	char			finaleflat[9];
-	const char*		exittext;
-	const char*		entertext;
+	OLumpName		messagemusic;
+	OLumpName		finaleflat;
+	char*			exittext;
+	char*			entertext;
 	int				flags;
-};
+	OLumpName		finalepic;
 
-// Only one cluster flag right now
-#define CLUSTER_HUB		0x00000001
+	cluster_info_t()
+	    : cluster(0), messagemusic(""), finaleflat(""), exittext(NULL), entertext(NULL),
+	      flags(0)
+	{
+	}
+
+	bool exists() const
+	{
+		return this->cluster != 0;
+	}
+};
 
 extern level_locals_t level;
-extern level_info_t LevelInfos[];
-extern cluster_info_t ClusterInfos[];
+
+class LevelInfos
+{
+	typedef std::vector<level_pwad_info_t> _LevelInfoArray;
+	const level_info_t* m_defaultInfos;
+	std::vector<level_pwad_info_t> m_infos;
+public:
+	LevelInfos(const level_info_t* levels);
+	~LevelInfos();
+	void addDefaults();
+	level_pwad_info_t& at(size_t i);
+	level_pwad_info_t& create();
+	void clear();
+	void clearSnapshots();
+	level_pwad_info_t& findByName(const char* mapname);
+	level_pwad_info_t& findByName(const std::string& mapname);
+	level_pwad_info_t& findByName(const OLumpName& mapname);
+	level_pwad_info_t& findByNum(int levelnum);
+	size_t size();
+	void zapDeferreds();
+};
+
+class ClusterInfos
+{
+	typedef std::vector<cluster_info_t> _ClusterInfoArray;
+	const cluster_info_t* m_defaultInfos;
+	std::vector<cluster_info_t> m_infos;
+public:
+	ClusterInfos(const cluster_info_t* clusters);
+	~ClusterInfos();
+	void addDefaults();
+	cluster_info_t& at(size_t i);
+	void clear();
+	cluster_info_t& create();
+	cluster_info_t& findByCluster(int i);
+	size_t size() const;
+};
 
 extern int ACS_WorldVars[NUM_WORLDVARS];
 extern int ACS_GlobalVars[NUM_GLOBALVARS];
 
 extern BOOL savegamerestore;
-extern BOOL HexenHack;		// Semi-Hexen-compatibility mode
 
 void G_InitNew(const std::string& mapname);
-void G_ChangeMap (void);
-void G_ChangeMap (size_t index);
-void G_RestartMap (void);
+void G_ChangeMap();
+void G_ChangeMap(size_t index);
+void G_RestartMap();
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1,
@@ -205,41 +410,38 @@ void G_DeferedInitNew(const std::string& mapname);
 void G_DeferedFullReset();
 void G_DeferedReset();
 
-void G_ExitLevel (int position, int drawscores);
-void G_SecretExitLevel (int position, int drawscores);
+void G_ExitLevel(int position, int drawscores);
+void G_SecretExitLevel(int position, int drawscores);
 
-void G_DoLoadLevel (int position);
-void G_DoResetLevel (bool full_reset);
+void G_DoLoadLevel(int position);
+void G_DoResetLevel(bool full_reset);
 
-void G_InitLevelLocals (void);
+void G_InitLevelLocals();
 
-void G_AirControlChanged ();
+void G_AirControlChanged();
 
-void G_SetLevelStrings (void);
+char *CalcMapName(int episode, int level);
 
-cluster_info_t *FindClusterInfo (int cluster);
-level_info_t *FindLevelInfo (char *mapname);
-level_info_t *FindLevelByNum (int num);
+void G_ParseMusInfo();
 
-char *CalcMapName (int episode, int level);
-
-void G_ParseMapInfo (void);
-void G_ParseMusInfo (void);
-
-void G_ClearSnapshots (void);
-void G_SnapshotLevel (void);
-void G_UnSnapshotLevel (bool keepPlayers);
-void G_SerializeSnapshots (FArchive &arc);
+void G_ClearSnapshots();
+void G_SnapshotLevel();
+void G_UnSnapshotLevel(bool keepPlayers);
+void G_SerializeSnapshots(FArchive &arc);
 
 void cmd_maplist(const std::vector<std::string> &arguments, std::vector<std::string> &response);
 
 extern bool unnatural_level_progression;
 
-void P_RemoveDefereds (void);
-int FindWadLevelInfo (char *name);
-int FindWadClusterInfo (int cluster);
+void P_RemoveDefereds();
 
-level_info_t *FindDefLevelInfo (char *mapname);
-cluster_info_t *FindDefClusterInfo (int cluster);
+bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
+               const std::string& mapname = "");
+bool G_LoadWadString(const std::string& str, const std::string& mapname = "");
 
-#endif //__G_LEVEL_H__
+LevelInfos& getLevelInfos();
+ClusterInfos& getClusterInfos();
+
+// Compatibility flags
+bool P_AllowDropOff();
+bool P_AllowPassover();

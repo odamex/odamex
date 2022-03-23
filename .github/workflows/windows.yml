@@ -3,41 +3,94 @@ name: Windows
 on: [push, pull_request]
 
 jobs:
+  pre_job:
+    name: Build Preparation
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.check_skip.outputs.should_skip }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+      - name: Check for build skip
+        id: check_skip
+        run: bash ci/check-skip.sh
   build:
-    name: Build
+    name: Build (Visual Studio)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: windows-latest
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install Python packages
+      uses: BSFishy/pip-action@v1
+      with:
+        packages: |
+          b2sdk
     - name: Prepare build
-      run: .\ci-build.ps1
+      run: .\ci\win-buildgen.ps1
+    - name: Turn on problem matcher
+      uses: ammaraskar/msvc-problem-matcher@master
     - name: Run build
       run: cmake --build .\build\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
-      run: .\ci-artifact.ps1
-    - name: Upload artifact
+      run: .\ci\win-artifact.ps1
+    - name: Upload artifact to B2
+      run: python .\ci\upload-b2.py .\build\archive Win-x64
+      env:
+        B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
+        B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+    - name: Upload artifact to Github
       uses: actions/upload-artifact@v2
       with:
         name: Odamex-Win-x64
         path: 'build/artifact/*'
-  build-odalaunch:
-    name: Build Odalaunch
+  build-x32:
+    name: Build (Visual Studio, 32-bit)
     runs-on: windows-latest
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install Python packages
+      uses: BSFishy/pip-action@v1
+      with:
+        packages: |
+          b2sdk
+    - name: Prepare build
+      run: .\ci\win-x32-buildgen.ps1
+    - name: Run build
+      run: cmake --build .\build-x32\ --config RelWithDebInfo --parallel
+    - name: Prepare artifact
+      run: .\ci\win-x32-artifact.ps1
+    - name: Upload artifact to B2
+      run: python .\ci\upload-b2.py .\build-x32\archive Win-x32
+      env:
+        B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
+        B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+    - name: Upload artifact to Github
+      uses: actions/upload-artifact@v2
+      with:
+        name: Odamex-Win-x32
+        path: 'build/artifact/*'
+  build-mingw:
+    name: Build (MinGW)
+    runs-on: windows-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
     - name: Install packages
       uses: crazy-max/ghaction-chocolatey@v1
       with:
         args: install ninja
     - name: Prepare build
-      run: .\ci-build-odalaunch.ps1
+      run: .\ci\win-mingw-buildgen.ps1
     - name: Run build
-      run: cmake --build .\build-gcc\ --target odalaunch
-    - name: Prepare artifact
-      run: .\ci-artifact-odalaunch.ps1
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: Odamex-Win-x64
-        path: 'build-gcc/artifact/*'
+      run: cmake --build .\build-gcc\

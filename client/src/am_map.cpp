@@ -22,10 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
 
-#include "doomdef.h"
-#include "g_level.h"
+
 #include "z_zone.h"
 #include "st_stuff.h"
 #include "hu_stuff.h"
@@ -34,10 +33,12 @@
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
 #include "v_palette.h"
+#include "c_bind.h"
 
 #include "m_cheat.h"
 #include "c_dispatch.h"
 #include "cl_demo.h"
+#include "g_gametype.h"
 
 // Needs access to LFB.
 #include "i_video.h"
@@ -46,15 +47,17 @@
 #include "v_text.h"
 
 // State.
-#include "doomstat.h"
 #include "r_state.h"
 
 // Data.
 #include "gstrings.h"
 
 #include "am_map.h"
+#include "p_mapformat.h"
 
 argb_t CL_GetPlayerColor(player_t*);
+
+EXTERN_CVAR(am_followplayer)
 
 // Group palette index and RGB value together:
 typedef struct am_color_s {
@@ -145,20 +148,6 @@ EXTERN_CVAR		(screenblocks)
 
 // drawing stuff
 #define	FB		(screen)
-
-#define AM_PANDOWNKEY	KEY_DOWNARROW
-#define AM_PANUPKEY		KEY_UPARROW
-#define AM_PANRIGHTKEY	KEY_RIGHTARROW
-#define AM_PANLEFTKEY	KEY_LEFTARROW
-#define AM_ZOOMINKEY	KEY_EQUALS
-#define AM_ZOOMINKEY2	0x4e	// DIK_ADD
-#define AM_ZOOMOUTKEY	KEY_MINUS
-#define AM_ZOOMOUTKEY2	0x4a	// DIK_SUBTRACT
-#define AM_GOBIGKEY		0x0b	// DIK_0
-#define AM_FOLLOWKEY	'f'
-#define AM_GRIDKEY		'g'
-#define AM_MARKKEY		'm'
-#define AM_CLEARMARKKEY	'c'
 
 #define AM_NUMMARKPOINTS 10
 
@@ -265,15 +254,15 @@ mline_t thintriangle_guy[] = {
 #undef R
 #define NUMTHINTRIANGLEGUYLINES (ARRAY_LENGTH(thintriangle_guy))
 
-
-
-
-static int 	cheating = 0;
+int am_cheating = 0;
 static int 	grid = 0;
+static int	bigstate = 0;	// Bigmode
 
 static int 	leveljuststarted = 1; 	// kluge until AM_LevelInit() is called
 
-static bool	automapactive = false;
+
+
+bool	automapactive = false;
 
 // location of window on screen
 static int	f_x;
@@ -288,7 +277,6 @@ static byte *fb;				// pseudo-frame buffer
 static int	amclock;
 
 static mpoint_t	m_paninc;		// how far the window pans each tic (map coords)
-static fixed_t	mtof_zoommul;	// how far the window zooms in each tic (map coords)
 static fixed_t	ftom_zoommul;	// how far the window zooms in each tic (fb coords)
 
 static fixed_t	m_x, m_y;		// LL x,y where the window is on the map (map coords)
@@ -335,13 +323,15 @@ static int markpointnum = 0; // next point to be assigned
 
 static bool followplayer = true; // specifies whether to follow the player around
 
-// [RH] Not static so that the DeHackEd code can reach it.
-extern byte cheat_amap_seq[5];
-cheatseq_t cheat_amap = { cheat_amap_seq, 0 };
-
 static BOOL stopped = true;
 
 extern NetDemo netdemo;
+
+void AM_clearMarks();
+void AM_addMark();
+void AM_saveScaleAndLoc();
+void AM_restoreScaleAndLoc();
+void AM_minOutWindowScale();
 
 #define NUMALIASES		3
 #define WALLCOLORS		-1
@@ -353,6 +343,43 @@ extern NetDemo netdemo;
 #define NUMWEIGHTS		(1<<WEIGHTBITS)
 #define WEIGHTMASK		(NUMWEIGHTS-1)
 
+BEGIN_COMMAND(am_grid)
+{
+	grid = !grid;
+	Printf(PRINT_HIGH, "%s\n", grid ? GStrings(AMSTR_GRIDON) : GStrings(AMSTR_GRIDOFF));
+} END_COMMAND(am_grid)
+
+
+BEGIN_COMMAND(am_setmark)
+{
+	AM_addMark();
+	Printf(PRINT_HIGH, "%s %d\n", GStrings(AMSTR_MARKEDSPOT), markpointnum);
+} END_COMMAND(am_setmark)
+
+BEGIN_COMMAND(am_clearmarks)
+{
+	AM_clearMarks();
+	Printf(PRINT_HIGH, "%s\n", GStrings(AMSTR_MARKSCLEARED));
+} END_COMMAND(am_clearmarks)
+
+BEGIN_COMMAND(am_big)
+{
+	bigstate = !bigstate;
+	if (bigstate)
+	{
+		AM_saveScaleAndLoc();
+		AM_minOutWindowScale();
+	}
+	else
+		AM_restoreScaleAndLoc();
+} END_COMMAND(am_big)
+
+BEGIN_COMMAND(am_togglefollow)
+{
+	am_followplayer = !am_followplayer;
+	f_oldloc.x = MAXINT;
+	Printf(PRINT_HIGH, "%s\n", am_followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
+} END_COMMAND(am_togglefollow)
 
 void AM_rotatePoint (fixed_t *x, fixed_t *y);
 
@@ -400,7 +427,7 @@ void AM_restoreScaleAndLoc(void)
 {
 	m_w = old_m_w;
 	m_h = old_m_h;
-	if (!followplayer)
+	if (!am_followplayer)
 	{
 		m_x = old_m_x;
 		m_y = old_m_y;
@@ -473,7 +500,7 @@ void AM_findMinMaxBoundaries(void)
 void AM_changeWindowLoc(void)
 {
 	if (m_paninc.x || m_paninc.y) {
-		followplayer = 0;
+		am_followplayer.Set(0.0f);
 		f_oldloc.x = MAXINT;
 	}
 
@@ -506,10 +533,6 @@ void AM_initVariables(void)
 
 	f_oldloc.x = MAXINT;
 	amclock = 0;
-
-	m_paninc.x = m_paninc.y = 0;
-	ftom_zoommul = FRACUNIT;
-	mtof_zoommul = FRACUNIT;
 
 	m_w = FTOM(I_GetSurfaceWidth());
 	m_h = FTOM(I_GetSurfaceHeight());
@@ -651,11 +674,7 @@ void AM_unloadPics(void)
 
 	for (i = 0; i < 10; i++)
 	{
-		if (marknums[i])
-		{
-			Z_ChangeTag (marknums[i], PU_CACHE);
-			marknums[i] = NULL;
-		}
+		marknums[i].clear();
 	}
 }
 
@@ -675,6 +694,7 @@ void AM_clearMarks(void)
 void AM_LevelInit(void)
 {
 	leveljuststarted = 0;
+	am_cheating = 0; // force-reset IDDT after loading a map
 
 	AM_clearMarks();
 
@@ -716,11 +736,12 @@ void AM_Start()
 
 	stopped = false;
 
+	// todo: rather than call this every time automap is opened, do this once on level init
 	static char lastmap[8] = "";
-	if (strncmp(lastmap, level.mapname, 8))
+	if (level.mapname != lastmap)
 	{
 		AM_LevelInit();
-		strncpy(lastmap, level.mapname, 8);
+		strncpy(lastmap, level.mapname.c_str(), 8);
 	}
 
 	AM_initVariables();
@@ -777,118 +798,43 @@ END_COMMAND (togglemap)
 //
 BOOL AM_Responder (event_t *ev)
 {
-	int rc;
-	static int bigstate = 0;
-
-	rc = false;
-
-	if (automapactive && ev->type == ev_keydown)
+	if (automapactive && (ev->type == ev_keydown || ev->type == ev_keyup))
 	{
-		rc = true;
-		switch(ev->data1)
+		if (am_followplayer)
 		{
-		case AM_PANRIGHTKEY: // pan right
-			if (!followplayer)
-				m_paninc.x = FTOM(F_PANINC);
-			else
-				rc = false;
-			break;
-		case AM_PANLEFTKEY: // pan left
-			if (!followplayer)
-				m_paninc.x = -FTOM(F_PANINC);
-			else
-				rc = false;
-			break;
-		case AM_PANUPKEY: // pan up
-			if (!followplayer)
-				m_paninc.y = FTOM(F_PANINC);
-			else
-				rc = false;
-			break;
-		case AM_PANDOWNKEY: // pan down
-			if (!followplayer)
-				m_paninc.y = -FTOM(F_PANINC);
-			else
-				rc = false;
-			break;
-		case AM_ZOOMOUTKEY: // zoom out
-		case AM_ZOOMOUTKEY2:
-			mtof_zoommul = M_ZOOMOUT;
-			ftom_zoommul = M_ZOOMIN;
-			break;
-		case AM_ZOOMINKEY: // zoom in
-		case AM_ZOOMINKEY2:
-			mtof_zoommul = M_ZOOMIN;
-			ftom_zoommul = M_ZOOMOUT;
-			break;
-		case AM_GOBIGKEY:
-			bigstate = !bigstate;
-			if (bigstate)
-			{
-				AM_saveScaleAndLoc();
-				AM_minOutWindowScale();
-			}
-			else
-				AM_restoreScaleAndLoc();
-			break;
-		default:
-			switch (ev->data3)
-			{
-			case AM_FOLLOWKEY:
-				followplayer = !followplayer;
-				f_oldloc.x = MAXINT;
-				Printf (PRINT_HIGH, "%s\n", followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
-				break;
-			case AM_GRIDKEY:
-				grid = !grid;
-				Printf (PRINT_HIGH, "%s\n", grid ? GStrings(AMSTR_GRIDON) : GStrings(AMSTR_GRIDOFF));
-				break;
-			case AM_MARKKEY:
-				Printf (PRINT_HIGH, "%s %d\n",  GStrings(AMSTR_MARKEDSPOT), markpointnum);
-				AM_addMark();
-				break;
-			case AM_CLEARMARKKEY:
-				AM_clearMarks();
-				Printf (PRINT_HIGH, "%s\n", GStrings(AMSTR_MARKSCLEARED));
-				break;
-			default:
-				rc = false;
-			}
+			// check for am_pan* and ignore in follow mode
+			std::string defbind = AutomapBindings.Binds[ev->data1];
+			if (!strnicmp(defbind.c_str(), "+am_pan", 7))
+				return false;
 		}
-		if (sv_gametype == GM_COOP && cht_CheckCheat(&cheat_amap, (char)ev->data3))
-		{
-			rc = true;	// [RH] Eat last keypress of cheat sequence
-			cheating = (cheating+1) % 3;
-		}
-	}
-	else if (ev->type == ev_keyup)
-	{
-		rc = false;
-		switch (ev->data1)
-		{
-		case AM_PANRIGHTKEY:
-			if (!followplayer) m_paninc.x = 0;
-			break;
-		case AM_PANLEFTKEY:
-			if (!followplayer) m_paninc.x = 0;
-			break;
-		case AM_PANUPKEY:
-			if (!followplayer) m_paninc.y = 0;
-			break;
-		case AM_PANDOWNKEY:
-			if (!followplayer) m_paninc.y = 0;
-			break;
-		case AM_ZOOMOUTKEY:
-		case AM_ZOOMOUTKEY2:
-		case AM_ZOOMINKEY:
-		case AM_ZOOMINKEY2:
-			mtof_zoommul = FRACUNIT;
-			ftom_zoommul = FRACUNIT;
-			break;
-		}
-	}
 
-	return rc;
+		if (ev->type == ev_keydown)
+		{
+			std::string defbind = Bindings.Binds[ev->data1];
+			// Check for automap, in order not to be stuck
+			if (!strnicmp(defbind.c_str(), "togglemap", 9))
+				return false;
+		}
+
+		bool res = C_DoKey(ev, &AutomapBindings, NULL);
+		if (res && ev->type == ev_keyup)
+		{
+			// If this is a release event we also need to check if it released a button in the main Bindings
+			// so that that button does not get stuck.
+			std::string defbind = Bindings.Binds[ev->data1];
+
+			// Check for automap, in order not to be stuck
+			if (!strnicmp(defbind.c_str(), "togglemap", 9))
+				return false;
+
+			return (defbind[0] != '+'); // Let G_Responder handle button releases
+		}
+		return res;
+
+		
+	}
+	
+	return false;
 }
 
 
@@ -897,6 +843,22 @@ BOOL AM_Responder (event_t *ev)
 //
 void AM_changeWindowScale (void)
 {
+
+	static fixed_t	mtof_zoommul;	// how far the window zooms in each tic (map coords)
+
+	if (Actions[ACTION_AUTOMAP_ZOOMOUT]) {
+		mtof_zoommul = M_ZOOMOUT;
+		ftom_zoommul = M_ZOOMIN;
+	}
+	else if (Actions[ACTION_AUTOMAP_ZOOMIN]) {
+		mtof_zoommul = M_ZOOMIN;
+		ftom_zoommul = M_ZOOMOUT;
+	}
+	else {
+		mtof_zoommul = FRACUNIT;
+		ftom_zoommul = FRACUNIT;
+	}
+
 	// Change the scaling multipliers
 	scale_mtof = FixedMul(scale_mtof, mtof_zoommul);
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
@@ -937,11 +899,22 @@ void AM_Ticker (void)
 
 	amclock++;
 
-	if (followplayer)
+	if (am_followplayer) {
 		AM_doFollowPlayer();
+	}
+	else {
+		m_paninc.x = 0;
+		m_paninc.y = 0;
+
+		// pan according to the direction
+		if (Actions[ACTION_AUTOMAP_PANLEFT])m_paninc.x = -FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANRIGHT])m_paninc.x = FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANUP])m_paninc.y = FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANDOWN])m_paninc.y = -FTOM(F_PANINC);
+	}
 
 	// Change the zoom if necessary
-	if (ftom_zoommul != FRACUNIT)
+	if (ftom_zoommul != FRACUNIT || Actions[ACTION_AUTOMAP_ZOOMIN] || Actions[ACTION_AUTOMAP_ZOOMOUT])
 		AM_changeWindowScale();
 
 	// Change x,y location
@@ -1328,79 +1301,36 @@ void AM_drawWalls(void)
 			AM_rotatePoint (&l.b.x, &l.b.y);
 		}
 
-		if (cheating || (lines[i].flags & ML_MAPPED))
+		if (am_cheating || (lines[i].flags & ML_MAPPED))
 		{
-			if ((lines[i].flags & ML_DONTDRAW) && !cheating)
+			if ((lines[i].flags & ML_DONTDRAW) && !am_cheating)
 				continue;
             if (!lines[i].backsector &&
                 (((am_usecustomcolors || viewactive) &&
-                lines[i].special != Exit_Normal &&
-                lines[i].special != Exit_Secret) ||
+                P_IsExitLine(lines[i].special)) ||
                 (!am_usecustomcolors && !viewactive)))
             {
 				AM_drawMline(&l, WallColor);
 			}
 			else
 			{
-				if ((lines[i].special == Teleport ||
-					lines[i].special == Teleport_NoFog ||
-					lines[i].special == Teleport_Line) &&
+				if ((P_IsTeleportLine(lines[i].special)) &&
 					(am_usecustomcolors || viewactive))
 				{ // teleporters
 					AM_drawMline(&l, TeleportColor);
 				}
-				else if ((lines[i].special == Teleport_NewMap ||
-						 lines[i].special == Teleport_EndGame ||
-						 lines[i].special == Exit_Normal ||
-						 lines[i].special == Exit_Secret) &&
+				else if ((P_IsExitLine(lines[i].special)) &&
 						 (am_usecustomcolors || viewactive))
 				{ // exit
 					AM_drawMline(&l, ExitColor);
 				}
 				else if (lines[i].flags & ML_SECRET)
 				{ // secret door
-					if (cheating)
+					if (am_cheating)
 						AM_drawMline(&l, SecretWallColor);
 				    else
 						AM_drawMline(&l, WallColor);
 				}
-				else if (lines[i].special == Door_LockedRaise)
-				{
-				    // NES - Locked doors glow from a predefined color to either blue, yellow, or red.
-                    r = LockedColor.rgb.getr(), g = LockedColor.rgb.getg(), b = LockedColor.rgb.getb();
-
-                    if (am_usecustomcolors)
-					{
-                        if (lines[i].args[3] == (BCard | CardIsSkull)) {
-                            rdif = (0 - r)/30;
-                            gdif = (0 - g)/30;
-                            bdif = (255 - b)/30;
-                        } else if (lines[i].args[3] == (YCard | CardIsSkull)) {
-                            rdif = (255 - r)/30;
-                            gdif = (255 - g)/30;
-                            bdif = (0 - b)/30;
-                        } else {
-                            rdif = (255 - r)/30;
-                            gdif = (0 - g)/30;
-                            bdif = (0 - b)/30;
-                        }
-
-						if (lockglow < 30)
-						{
-							r += (int)rdif * lockglow;
-							g += (int)gdif * lockglow;
-							b += (int)bdif * lockglow;
-						}
-						else if (lockglow < 60)
-						{
-							r += (int)rdif * (60 - lockglow);
-							g += (int)gdif * (60 - lockglow);
-							b += (int)bdif * (60 - lockglow);
-						}
-				    }
-
-					AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b));
-                }
 				else if (lines[i].backsector->floorheight
 					  != lines[i].frontsector->floorheight)
 				{
@@ -1411,9 +1341,104 @@ void AM_drawWalls(void)
 				{
 					AM_drawMline(&l, CDWallColor); // ceiling level change
 				}
-				else if (cheating)
+				else if (am_cheating)
 				{
 					AM_drawMline(&l, TSWallColor);
+				}
+
+				if (map_format.getZDoom())
+				{
+					if (lines[i].special == Door_LockedRaise)
+					{
+						// NES - Locked doors glow from a predefined color to either blue,
+						// yellow, or red.
+						r = LockedColor.rgb.getr(), g = LockedColor.rgb.getg(),
+						b = LockedColor.rgb.getb();
+
+						if (am_usecustomcolors)
+						{
+							if (lines[i].args[3] == (zk_blue_card | zk_blue))
+							{
+								rdif = (0 - r) / 30;
+								gdif = (0 - g) / 30;
+								bdif = (255 - b) / 30;
+							}
+							else if (lines[i].args[3] == (zk_yellow_card | zk_yellow))
+							{
+								rdif = (255 - r) / 30;
+								gdif = (255 - g) / 30;
+								bdif = (0 - b) / 30;
+							}
+							else
+							{
+								rdif = (255 - r) / 30;
+								gdif = (0 - g) / 30;
+								bdif = (0 - b) / 30;
+							}
+
+							if (lockglow < 30)
+							{
+								r += (int)rdif * lockglow;
+								g += (int)gdif * lockglow;
+								b += (int)bdif * lockglow;
+							}
+							else if (lockglow < 60)
+							{
+								r += (int)rdif * (60 - lockglow);
+								g += (int)gdif * (60 - lockglow);
+								b += (int)bdif * (60 - lockglow);
+							}
+						}
+
+						AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b));
+					}
+				}
+				else
+				{
+					if (P_IsCompatibleLockedDoorLine(lines[i].special))
+					{
+						// NES - Locked doors glow from a predefined color to either blue,
+						// yellow, or red.
+						r = LockedColor.rgb.getr(), g = LockedColor.rgb.getg(),
+						b = LockedColor.rgb.getb();
+
+						if (am_usecustomcolors)
+						{
+							if (P_IsCompatibleBlueDoorLine(lines[i].special))
+							{
+								rdif = (0 - r) / 30;
+								gdif = (0 - g) / 30;
+								bdif = (255 - b) / 30;
+							}
+							else if (P_IsCompatibleYellowDoorLine(lines[i].special))
+							{
+								rdif = (255 - r) / 30;
+								gdif = (255 - g) / 30;
+								bdif = (0 - b) / 30;
+							}
+							else
+							{
+								rdif = (255 - r) / 30;
+								gdif = (0 - g) / 30;
+								bdif = (0 - b) / 30;
+							}
+
+							if (lockglow < 30)
+							{
+								r += (int)rdif * lockglow;
+								g += (int)gdif * lockglow;
+								b += (int)bdif * lockglow;
+							}
+							else if (lockglow < 60)
+							{
+								r += (int)rdif * (60 - lockglow);
+								g += (int)gdif * (60 - lockglow);
+								b += (int)bdif * (60 - lockglow);
+							}
+						}
+
+						AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b));
+					}
 				}
 			}
 		}
@@ -1519,7 +1544,7 @@ void AM_drawPlayers(void)
 		else
 			angle = conplayer.camera->angle;
 
-		if (cheating)
+		if (am_cheating)
 			AM_drawLineCharacter
 			(cheat_player_arrow, NUMCHEATPLYRLINES, 0,
 			 angle, YourColor, conplayer.camera->x, conplayer.camera->y);
@@ -1537,8 +1562,8 @@ void AM_drawPlayers(void)
 		mpoint_t pt;
 
 		if (!(it->ingame()) || !p->mo ||
-			(((sv_gametype == GM_DM && p != &conplayer) ||
-			((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) && p->userinfo.team != conplayer.userinfo.team))
+			(((G_IsFFAGame() && p != &conplayer) ||
+			(G_IsTeamGame() && p->userinfo.team != conplayer.userinfo.team))
 			&& !(netdemo.isPlaying() || netdemo.isPaused())
 			&& !demoplayback && !(conplayer.spectator)) || p->spectator)
 		{
@@ -1686,7 +1711,7 @@ void AM_Drawer()
 
 	AM_drawWalls();
 	AM_drawPlayers();
-	if (cheating==2)
+	if (am_cheating == 2)
 		AM_drawThings(ThingColor);
 
 	if (!(viewactive && am_overlay < 2))
@@ -1694,7 +1719,7 @@ void AM_Drawer()
 
 	AM_drawMarks();
 
-	if (!(viewactive && am_overlay < 2))
+	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
 	{
 		char line[64+10];
 		int time = level.time / TICRATE;
@@ -1702,13 +1727,13 @@ void AM_Drawer()
 		int text_height = (hu_font[0]->mHeight + 1) * CleanYfac;
 		int OV_Y = surface_height - (surface_height * 32 / 200);
 
-		if (sv_gametype == GM_COOP)
+		if (G_IsCoopGame())
 		{
 			if (am_showmonsters)
 			{
 				sprintf(line, TEXTCOLOR_RED "MONSTERS:"
 								TEXTCOLOR_NORMAL " %d / %d",
-								level.killed_monsters, level.total_monsters);
+								level.killed_monsters, (level.total_monsters+level.respawned_monsters));
 
 				int x, y;
 				int text_width = V_StringWidth(line) * CleanXfac;
@@ -1747,21 +1772,22 @@ void AM_Drawer()
 				case doom2:
 				case commercial_freedoom:
 				case commercial_hacx:
-					firstmap = HUSTR_1;
+					firstmap = GStrings.toIndex(HUSTR_1);
 					break;
 				case pack_plut:
-					firstmap = PHUSTR_1;
+					firstmap = GStrings.toIndex(PHUSTR_1);
 					break;
 				case pack_tnt:
-					firstmap = THUSTR_1;
+					firstmap = GStrings.toIndex(THUSTR_1);
 					break;
 				default:
-					firstmap = HUSTR_E1M1;
+					firstmap = GStrings.toIndex(HUSTR_E1M1);
 					mapoffset = level.cluster; // Episodes skip map numbers.
 					break;
 			}
 
-			strcpy(line, GStrings(firstmap + level.levelnum - mapoffset));
+			strncpy(line, GStrings.getIndex(firstmap + level.levelnum - mapoffset),
+			        ARRAY_LENGTH(line) - 1);
 
 			int x, y;
 			int text_width = V_StringWidth(line) * CleanXfac;

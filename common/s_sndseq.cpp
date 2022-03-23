@@ -21,11 +21,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <cstring>
 
-#include "doomtype.h"
-#include "doomstat.h"
-#include "sc_man.h"
+#include "odamex.h"
+
+
 #include "m_alloc.h"
 #include "m_random.h"
 #include "s_sound.h"
@@ -34,6 +33,8 @@
 #include "i_system.h"
 #include "cmdlib.h"
 #include "p_local.h"
+#include "g_mapinfo.h"
+#include "oscanner.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -137,8 +138,8 @@ private:
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 static void VerifySeqPtr (int pos, int need);
-static void AssignTranslations (int seq, seqtype_t type);
-static void AssignHexenTranslations (void);
+static void AssignTranslations (OScanner &os, int seq, seqtype_t type);
+static void AssignHexenTranslations ();
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -330,19 +331,19 @@ static void VerifySeqPtr (int pos, int need)
 //
 //==========================================================================
 
-static void AssignTranslations (int seq, seqtype_t type)
+static void AssignTranslations (OScanner &os, int seq, seqtype_t type)
 {
-	sc_Crossed = false;
+	os.crossed() = false;
 
-	while (SC_GetString () && !sc_Crossed)
+	while (os.scan() && !os.crossed())
 	{
-		if (IsNum (sc_String))
+		if (IsNum(os.getToken().c_str()))
 		{
-			SeqTrans[(atoi(sc_String) & 63) + type * 64] = seq;
+			SeqTrans[(os.getTokenInt() & 63) + type * 64] = seq;
 		}
 	}
 
-	SC_UnGet ();
+	os.unScan();
 }
 
 //==========================================================================
@@ -351,7 +352,7 @@ static void AssignTranslations (int seq, seqtype_t type)
 //
 //==========================================================================
 
-static void AssignHexenTranslations (void)
+static void AssignHexenTranslations()
 {
 	int i, j, seq;
 
@@ -387,7 +388,24 @@ static void AssignHexenTranslations (void)
 //
 //==========================================================================
 
-void S_ParseSndSeq (void)
+static int MustMatchString(OScanner &os, const char **strings)
+{
+	if (!strings)
+		os.error("No strings inputted!");
+
+	for (int i = 0; *strings != NULL; i++)
+	{
+		if (os.compareTokenNoCase(*strings++))
+		{
+			return i;
+		}
+	}
+
+	os.error("Invalid string inputted!");
+	return -1;
+}
+
+void S_ParseSndSeq()
 {
 	char name[MAX_SNDNAME+1];
 	int stopsound;
@@ -414,17 +432,32 @@ void S_ParseSndSeq (void)
 	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/SNDSEQ"));
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
+		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+
+		OScannerConfig config = {
+		    "SNDSEQ", // lumpName
+		    false,    // semiComments
+		    true,     // cComments
+		};
+
+		// TODO: Reconcile these
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
 		SC_OpenResourceLump(res_ids[i]);
-		while (SC_GetString())
+		
+		while (os.scan())
 		{
-			if (*sc_String == ':')
+			std::string str = os.getToken();
+
+			if (str[0] == ':')
 			{
 				if (curseq != -1)
-					SC_ScriptError ("S_ParseSndSeq: Nested Script Error");
-				strncpy (name, sc_String + 1, MAX_SNDNAME);
+				{
+					os.error("S_ParseSndSeq: Nested Script Error");
+				}
+				strncpy(name, str.substr(1).c_str(), MAX_SNDNAME);
 				for (curseq = 0; curseq < NumSequences; curseq++)
 				{
-					if (stricmp (Sequences[curseq]->name, name) == 0)
+					if (iequals(Sequences[curseq]->name, name))
 					{
 						Z_Free (Sequences[curseq]);
 						Sequences[curseq] = NULL;
@@ -447,67 +480,70 @@ void S_ParseSndSeq (void)
 			{
 				continue;
 			}
-			switch (SC_MustMatchString (SSStrings))
+
+
+
+			switch (MustMatchString(os, SSStrings))
 			{
 				case SS_STRING_PLAYUNTILDONE:
 					VerifySeqPtr (cursize, 2);
-					SC_MustGetString ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAY, S_FindSound (sc_String));
+					os.mustScan();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAY, S_FindSound (os.getToken().c_str()));
 					ScriptTemp[cursize++] = SS_CMD_WAITUNTILDONE << 24;
 					break;
 
 				case SS_STRING_PLAY:
 					VerifySeqPtr (cursize, 1);
-					SC_MustGetString ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAY, S_FindSound (sc_String));
+				    os.mustScan();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAY, S_FindSound (os.getToken().c_str()));
 					break;
 
 				case SS_STRING_PLAYTIME:
 					VerifySeqPtr (cursize, 2);
-					SC_MustGetString ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAY, S_FindSound (sc_String));
-					SC_MustGetNumber ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_DELAY, sc_Number);
+				    os.mustScan();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAY, S_FindSound (os.getToken().c_str()));
+				    os.mustScanInt();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_DELAY, os.getTokenInt());
 					break;
 
 				case SS_STRING_PLAYREPEAT:
 					VerifySeqPtr (cursize, 1);
-					SC_MustGetString ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAYREPEAT, S_FindSound (sc_String));
+				    os.mustScan();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAYREPEAT, S_FindSound (os.getToken().c_str()));
 					break;
 
 				case SS_STRING_PLAYLOOP:
 					VerifySeqPtr (cursize, 2);
-					SC_MustGetString ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAYLOOP, S_FindSound (sc_String));
-					SC_MustGetNumber ();
-					ScriptTemp[cursize++] = sc_Number;
+				    os.mustScan();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_PLAYLOOP, S_FindSound (os.getToken().c_str()));
+				    os.mustScanInt();
+				    ScriptTemp[cursize++] = os.getTokenInt();
 					break;
 
 				case SS_STRING_DELAY:
 					VerifySeqPtr (cursize, 1);
-					SC_MustGetNumber ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_DELAY, sc_Number);
+				    os.mustScanInt();
+				    ScriptTemp[cursize++] = MakeCommand(SS_CMD_DELAY, os.getTokenInt());
 					break;
 
 				case SS_STRING_DELAYRAND:
 					VerifySeqPtr (cursize, 2);
-					SC_MustGetNumber ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_DELAYRAND, sc_Number);
-					SC_MustGetNumber ();
-					ScriptTemp[cursize++] = sc_Number;
+				    os.mustScanInt();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_DELAYRAND, os.getTokenInt());
+				    os.mustScanInt();
+				    ScriptTemp[cursize++] = os.getTokenInt();
 					break;
 
 				case SS_STRING_VOLUME:
 					VerifySeqPtr (cursize, 1);
-					SC_MustGetNumber ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_VOLUME, sc_Number);
+				    os.mustScanInt();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_VOLUME, os.getTokenInt());
 					break;
 
 				case SS_STRING_STOPSOUND:
 					VerifySeqPtr (cursize, 1);
-					SC_MustGetString ();
-					stopsound = S_FindSound (sc_String);
+				    os.mustScan();
+					stopsound = S_FindSound (os.getToken().c_str());
 					ScriptTemp[cursize++] = SS_CMD_STOPSOUND << 24;
 					break;
 
@@ -519,9 +555,8 @@ void S_ParseSndSeq (void)
 
 				case SS_STRING_ATTENUATION:
 					VerifySeqPtr (cursize, 1);
-					SC_MustGetString ();
-					ScriptTemp[cursize++] = MakeCommand (SS_CMD_ATTENUATION,
-											SC_MustMatchString (Attenuations));
+				    os.mustScan();
+					ScriptTemp[cursize++] = MakeCommand (SS_CMD_ATTENUATION, MustMatchString(os, Attenuations));
 					break;
 
 				case SS_STRING_END:
@@ -534,19 +569,22 @@ void S_ParseSndSeq (void)
 					break;
 
 				case SS_STRING_PLATFORM:
-					AssignTranslations (curseq, SEQ_PLATFORM);
+					AssignTranslations (os, curseq, SEQ_PLATFORM);
 					break;
 
 				case SS_STRING_DOOR:
-					AssignTranslations (curseq, SEQ_DOOR);
+					AssignTranslations (os, curseq, SEQ_DOOR);
 					break;
 
 				case SS_STRING_ENVIRONMENT:
-					AssignTranslations (curseq, SEQ_ENVIRONMENT);
+					AssignTranslations (os, curseq, SEQ_ENVIRONMENT);
+					break;
+
+				default:
+				    os.error("Invalid SNDSEQ string");
 					break;
 			}
 		}
-		SC_Close ();
 	}
 
 	free (ScriptTemp);

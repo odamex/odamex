@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 /* [Petteri] Check if compiling for Win32:	*/
 //#if defined(__WINDOWS__) || defined(__NT__) || defined(_MSC_VER) || defined(WIN32)
 //#	define WIN32
@@ -29,8 +31,6 @@
 /* Follow #ifdef __WIN32__ marks */
 
 #include <stdlib.h>
-#include <cstring>
-#include <stdio.h>
 
 #include <sstream>
 
@@ -74,12 +74,13 @@ typedef int SOCKET;
 #define SETSOCKOPTCAST(x) ((const void *)(x))
 #endif
 
-#include "doomtype.h"
+#include <google/protobuf/message.h>
+
 
 #include "i_system.h"
-
-#include "doomstat.h"
 #include "i_net.h"
+#include "svc_map.h"
+#include "d_player.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -113,8 +114,8 @@ lzo_byte wrkmem[LZO1X_1_MEM_COMPRESS];
 
 EXTERN_CVAR(port)
 
-msg_info_t clc_info[clc_max];
-msg_info_t svc_info[svc_max];
+msg_info_t clc_info[clc_max + 1];
+msg_info_t svc_info[svc_max + 1];
 
 #ifdef ODA_HAVE_MINIUPNP
 EXTERN_CVAR(sv_upnp)
@@ -155,9 +156,9 @@ void init_upnp (void)
 
 
 	if (!devlist || res != UPNPDISCOVER_SUCCESS)
-	{
-		Printf(PRINT_HIGH, "UPnP: Router not found or timed out, error %d\n",
-			res);
+    {
+		Printf(PRINT_WARNING, "UPnP: Router not found or timed out, error %d\n",
+            res);
 
 		is_upnp_ok = false;
 
@@ -319,7 +320,7 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 
 		v = bind (s, (sockaddr *)&address, sizeof(address));
 
-		if(next > wanted + 16)
+		if(next > wanted + 32)
 		{
 			I_FatalError ("BindToPort: error");
 			return;
@@ -500,7 +501,11 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
 
 	NetadrToSockadr (&to, &addr);
 
-	ret = sendto (inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+#ifdef GEKKO
+	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, 8);	// 8 is important for online
+#else
+	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+#endif
 
 	buf.clear();
 
@@ -587,15 +592,6 @@ void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
 //
 void SV_SendPackets(void);
 
-void MSG_WriteMarker (buf_t *b, svc_t c)
-{
-	//[Spleen] final check to prevent huge packets from being sent to players
-	if (b->cursize > 600)
-		SV_SendPackets();
-
-	b->WriteByte((byte)c);
-}
-
 //
 // MSG_WriteMarker
 //
@@ -624,6 +620,101 @@ void MSG_WriteChunk (buf_t *b, const void *p, unsigned l)
 	b->WriteChunk((const char *)p, l);
 }
 
+void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
+{
+	if (simulated_connection)
+		return;
+
+	static std::string buffer;
+	if (!msg.SerializeToString(&buffer))
+	{
+		Printf(
+		    PRINT_WARNING,
+		    "WARNING: Could not serialize message \"%s\".  This is most likely a bug.\n",
+		    msg.GetDescriptor()->full_name().c_str());
+		return;
+	}
+
+	// Do we actaully have room for this upcoming message?
+	const size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
+	if (b->cursize + MAX_HEADER_SIZE + msg.ByteSize() >= MAX_UDP_SIZE)
+		SV_SendPackets();
+
+	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	if (header == svc_noop)
+	{
+		Printf(PRINT_WARNING,
+		       "WARNING: Could not find svc header for message \"%s\".  This is most "
+		       "likely a bug.\n",
+		       msg.GetDescriptor()->full_name().c_str());
+		return;
+	}
+
+#if 0
+	Printf("%s (%d)\n, %s\n",
+		::svc_info[header].getName(), msg.ByteSize(),
+		msg.ShortDebugString().c_str());
+#endif
+
+	b->WriteByte(header);
+	b->WriteUnVarint(buffer.size());
+	b->WriteChunk(buffer.data(), buffer.size());
+}
+
+/**
+ * @brief Broadcast message to all players.
+ * 
+ * @param buf Type of buffer to broadcast in, per player.
+ * @param msg Message to broadcast to all players.
+ * @param skip If passed, skip this player id.
+ */
+void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& msg,
+                      const int skipPlayer)
+{
+	if (simulated_connection)
+		return;
+
+	static std::string buffer;
+	if (!msg.SerializeToString(&buffer))
+	{
+		Printf(
+		    PRINT_WARNING,
+		    "WARNING: Could not serialize message \"%s\".  This is most likely a bug.\n",
+		    msg.GetDescriptor()->full_name().c_str());
+		return;
+	}
+
+	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	if (header == svc_noop)
+	{
+		Printf(PRINT_WARNING,
+		       "WARNING: Could not find svc header for message \"%s\".  This is most "
+		       "likely a bug.\n",
+		       msg.GetDescriptor()->full_name().c_str());
+		return;
+	}
+
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	{
+		if (!it->ingame())
+			continue;
+
+		if (static_cast<int>(it->id) == skipPlayer)
+			continue;
+
+		// Select the correct buffer.
+		buf_t* b = buf == CLBUF_RELIABLE ? &it->client.reliablebuf : &it->client.netbuf;
+
+		// Do we actaully have room for this upcoming message?
+		const size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
+		if (b->cursize + MAX_HEADER_SIZE + msg.ByteSize() >= MAX_UDP_SIZE)
+			SV_SendPackets();
+
+		b->WriteByte(header);
+		b->WriteUnVarint(buffer.size());
+		b->WriteChunk(buffer.data(), buffer.size());
+	}
+}
 
 void MSG_WriteShort (buf_t *b, short c)
 {
@@ -649,6 +740,20 @@ void MSG_WriteResourceId(buf_t* b, const ResourceId res_id)
 		b->WriteShort(0xFFFF);
 	else
 		b->WriteShort((uint32_t)res_id & 0xFFFF);
+}
+
+void MSG_WriteUnVarint(buf_t* b, unsigned int uv)
+{
+	if (simulated_connection)
+		return;
+	b->WriteUnVarint(uv);
+}
+
+void MSG_WriteVarint(buf_t* b, int v)
+{
+	if (simulated_connection)
+		return;
+	b->WriteVarint(v);
 }
 
 //
@@ -886,6 +991,16 @@ int MSG_ReadLong (void)
 	return net_message.ReadLong();
 }
 
+unsigned int MSG_ReadUnVarint()
+{
+	return net_message.ReadUnVarint();
+}
+
+int MSG_ReadVarint()
+{
+	return net_message.ReadVarint();
+}
+
 const ResourceId MSG_ReadResourceId()
 {
 	uint16_t value = net_message.ReadShort();
@@ -937,129 +1052,136 @@ float MSG_ReadFloat(void)
     return Float;
 }
 
+/**
+ * @brief Initialize a svc_info member.
+ * 
+ * @detail do-while is used to force a semicolon afterwards.
+ */
+#define SVC_INFO(n)                    \
+	do                                 \
+	{                                  \
+		::svc_info[n].id = n;          \
+		::svc_info[n].msgName = #n;    \
+		::svc_info[n].msgFormat = "x"; \
+	} while (false)
+
+/**
+ * @brief Initialize a clc_info member.
+ *
+ * @detail do-while is used to force a semicolon afterwards.
+ */
+#define CLC_INFO(n)                    \
+	do                                 \
+	{                                  \
+		::clc_info[n].id = n;          \
+		::clc_info[n].msgName = #n;    \
+		::clc_info[n].msgFormat = "x"; \
+	} while (false)
+
 //
 // InitNetMessageFormats
 //
-void InitNetMessageFormats()
+static void InitNetMessageFormats()
 {
-#define MSG(name, format) {name, #name, format}
-   msg_info_t clc_messages[] = {
-      MSG(clc_abort,              "x"),
-      MSG(clc_reserved1,          "x"),
-      MSG(clc_disconnect,         "x"),
-      MSG(clc_say,                "bs"),
-      MSG(clc_move,               "x"),
-      MSG(clc_userinfo,           "x"),
-      MSG(clc_pingreply,          "N"),
-      MSG(clc_rate,               "N"),
-      MSG(clc_ack,                "x"),
-      MSG(clc_rcon,               "s"),
-      MSG(clc_rcon_password,      "x"),
-      MSG(clc_changeteam,         "b"),
-      MSG(clc_ctfcommand,         "x"),
-      MSG(clc_spectate,           "b"),
-      MSG(clc_wantwad,            "ssN"),
-      MSG(clc_kill,               "x"),
-      MSG(clc_cheat,              "x"),
-      MSG(clc_cheatpulse,         "x"),
-      MSG(clc_callvote,           "x"),
-      MSG(clc_vote,               "x"),
-      MSG(clc_maplist,            "x"),
-      MSG(clc_getplayerinfo,      "x"),
-      MSG(clc_launcher_challenge, "x"),
-      MSG(clc_challenge,          "x"),
-      MSG(clc_spy,                "x"),
-      MSG(clc_privmsg,            "x")
-   };
+	// Server Messages.
+	SVC_INFO(svc_noop);
+	SVC_INFO(svc_disconnect);
+	SVC_INFO(svc_playerinfo);
+	SVC_INFO(svc_moveplayer);
+	SVC_INFO(svc_updatelocalplayer);
+	SVC_INFO(svc_levellocals);
+	SVC_INFO(svc_pingrequest);
+	SVC_INFO(svc_updateping);
+	SVC_INFO(svc_spawnmobj);
+	SVC_INFO(svc_disconnectclient);
+	SVC_INFO(svc_loadmap);
+	SVC_INFO(svc_consoleplayer);
+	SVC_INFO(svc_explodemissile);
+	SVC_INFO(svc_removemobj);
+	SVC_INFO(svc_userinfo);
+	SVC_INFO(svc_updatemobj);
+	SVC_INFO(svc_spawnplayer);
+	SVC_INFO(svc_damageplayer);
+	SVC_INFO(svc_killmobj);
+	SVC_INFO(svc_fireweapon);
+	SVC_INFO(svc_updatesector);
+	SVC_INFO(svc_print);
+	SVC_INFO(svc_playermembers);
+	SVC_INFO(svc_teammembers);
+	SVC_INFO(svc_activateline);
+	SVC_INFO(svc_movingsector);
+	SVC_INFO(svc_playsound);
+	SVC_INFO(svc_reconnect);
+	SVC_INFO(svc_exitlevel);
+	SVC_INFO(svc_touchspecial);
+	SVC_INFO(svc_forceteam);
+	SVC_INFO(svc_switch);
+	SVC_INFO(svc_say);
+	SVC_INFO(svc_spawnhiddenplayer);
+	SVC_INFO(svc_updatedeaths);
+	SVC_INFO(svc_ctfrefresh);
+	SVC_INFO(svc_ctfevent);
+	SVC_INFO(svc_serversettings);
+	SVC_INFO(svc_connectclient);
+    SVC_INFO(svc_midprint);
+	SVC_INFO(svc_servergametic);
+	SVC_INFO(svc_inttimeleft);
+	SVC_INFO(svc_fullupdatedone);
+	SVC_INFO(svc_railtrail);
+	SVC_INFO(svc_playerstate);
+	SVC_INFO(svc_levelstate);
+	SVC_INFO(svc_resetmap);
+	SVC_INFO(svc_playerqueuepos);
+	SVC_INFO(svc_fullupdatestart);
+	SVC_INFO(svc_lineupdate);
+	SVC_INFO(svc_sectorproperties);
+	SVC_INFO(svc_linesideupdate);
+	SVC_INFO(svc_mobjstate);
+	SVC_INFO(svc_damagemobj);
+	SVC_INFO(svc_executelinespecial);
+	SVC_INFO(svc_executeacsspecial);
+	SVC_INFO(svc_thinkerupdate);
+	SVC_INFO(svc_netdemocap);
+	SVC_INFO(svc_netdemostop);
+	SVC_INFO(svc_netdemoloadsnap);
+	SVC_INFO(svc_vote_update);
+	SVC_INFO(svc_maplist);
+	SVC_INFO(svc_maplist_update);
+	SVC_INFO(svc_maplist_index);
+	SVC_INFO(svc_toast);
+	SVC_INFO(svc_hordeinfo);
+	SVC_INFO(svc_max);
 
-   msg_info_t svc_messages[] = {
-	MSG(svc_abort,              "x"),
-	MSG(svc_full,               "x"),
-	MSG(svc_disconnect,         "x"),
-	MSG(svc_reserved3,          "x"),
-	MSG(svc_playerinfo,         "x"),
-	MSG(svc_moveplayer,         "x"),
-	MSG(svc_updatelocalplayer,  "x"),
-	MSG(svc_pingrequest,        "x"),
-	MSG(svc_updateping,         "x"),
-	MSG(svc_spawnmobj,          "x"),
-	MSG(svc_disconnectclient,   "x"),
-	MSG(svc_loadmap,            "x"),
-	MSG(svc_consoleplayer,      "x"),
-	MSG(svc_mobjspeedangle,     "x"),
-	MSG(svc_explodemissile,     "x"),
-	MSG(svc_removemobj,         "x"),
-	MSG(svc_userinfo,           "x"),
-	MSG(svc_movemobj,           "x"),
-	MSG(svc_spawnplayer,        "x"),
-	MSG(svc_damageplayer,       "x"),
-	MSG(svc_killmobj,           "x"),
-	MSG(svc_firepistol,         "x"),
-	MSG(svc_fireshotgun,        "x"),
-	MSG(svc_firessg,            "x"),
-	MSG(svc_firechaingun,       "x"),
-	MSG(svc_fireweapon,         "x"),
-	MSG(svc_sector,             "x"),
-	MSG(svc_print,              "x"),
-	MSG(svc_mobjinfo,           "x"),
-	MSG(svc_updatefrags,        "x"),
-	MSG(svc_teampoints,         "x"),
-	MSG(svc_activateline,       "x"),
-	MSG(svc_movingsector,       "x"),
-	MSG(svc_startsound,         "x"),
-	MSG(svc_reconnect,          "x"),
-	MSG(svc_exitlevel,          "x"),
-	MSG(svc_touchspecial,       "x"),
-	MSG(svc_changeweapon,       "x"),
-	MSG(svc_reserved42,         "x"),
-	MSG(svc_corpse,             "x"),
-	MSG(svc_missedpacket,       "x"),
-	MSG(svc_soundorigin,        "x"),
-	MSG(svc_reserved46,         "x"),
-	MSG(svc_reserved47,         "x"),
-	MSG(svc_forceteam,          "x"),
-	MSG(svc_switch,             "x"),
-	MSG(svc_say,                "x"),
-	MSG(svc_reserved51,         "x"),
-	MSG(svc_spawnhiddenplayer,  "x"),
-	MSG(svc_updatedeaths,       "x"),
-	MSG(svc_ctfevent,           "x"),
-	MSG(svc_serversettings,     "x"),
-	MSG(svc_spectate,           "x"),
-	MSG(svc_mobjstate,          "x"),
-	MSG(svc_actor_movedir,      "x"),
-	MSG(svc_actor_target,       "x"),
-	MSG(svc_actor_tracer,       "x"),
-	MSG(svc_damagemobj,         "x"),
-	MSG(svc_wadinfo,            "x"),
-	MSG(svc_wadchunk,           "x"),
-	MSG(svc_compressed,         "x"),
-	MSG(svc_launcher_challenge, "x"),
-	MSG(svc_challenge,          "x"),
-	MSG(svc_connectclient,		"x"),
- 	MSG(svc_midprint,           "x"),
- 	MSG(svc_svgametic,          "x"),
-	MSG(svc_timeleft,			"x"),
-	MSG(svc_inttimeleft,		"x"),
-	MSG(svc_mobjtranslation,	"x"),
-	MSG(svc_fullupdatedone,		"x"),
-	MSG(svc_railtrail,			"x"),
-	MSG(svc_playerstate,		"x")
-   };
-
-   size_t i;
-
-   for(i = 0; i < ARRAY_LENGTH(clc_messages); i++)
-   {
-      clc_info[clc_messages[i].id] = clc_messages[i];
-   }
-
-   for(i = 0; i < ARRAY_LENGTH(svc_messages); i++)
-   {
-      svc_info[svc_messages[i].id] = svc_messages[i];
-   }
+	// Client Messages.
+	CLC_INFO(clc_abort);
+	CLC_INFO(clc_reserved1);
+	CLC_INFO(clc_disconnect);
+	CLC_INFO(clc_say);
+	CLC_INFO(clc_move);
+	CLC_INFO(clc_userinfo);
+	CLC_INFO(clc_pingreply);
+	CLC_INFO(clc_rate);
+	CLC_INFO(clc_ack);
+	CLC_INFO(clc_rcon);
+	CLC_INFO(clc_rcon_password);
+	CLC_INFO(clc_changeteam);
+	CLC_INFO(clc_ctfcommand);
+	CLC_INFO(clc_spectate);
+	CLC_INFO(clc_wantwad);
+	CLC_INFO(clc_kill);
+	CLC_INFO(clc_cheat);
+	CLC_INFO(clc_callvote);
+	CLC_INFO(clc_maplist);
+	CLC_INFO(clc_maplist_update);
+	CLC_INFO(clc_getplayerinfo);
+	CLC_INFO(clc_netcmd);
+	CLC_INFO(clc_spy);
+	CLC_INFO(clc_privmsg);
+	CLC_INFO(clc_max);
 }
 
+#undef SVC_INFO
+#undef CLC_INFO
 
 CVAR_FUNC_IMPL(net_rcvbuf)
 {
@@ -1101,7 +1223,7 @@ void InitNetCommon(void)
     #endif
 
    BindToLocalPort (inet_socket, localport);
-   if (ioctlsocket (inet_socket, FIONBIO, &_true) == -1)
+   if (ioctlsocket(inet_socket, FIONBIO, &_true) == -1)
        I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
 
 	// enter message information into message info structs

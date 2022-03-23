@@ -20,8 +20,10 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <algorithm>
-#include "doomtype.h"
 #include "m_memio.h"
 #include "i_midi.h"
 
@@ -361,7 +363,7 @@ static std::list<MidiEvent*> *I_ReadMidiTrack(MEMFILE *mf)
 		
 	if (chunkheader.chunk_id != cTrackChunkId)
 	{
-		Printf(PRINT_HIGH, "I_ReadMidiTrack: Unexpected chunk header ID\n");
+		Printf(PRINT_WARNING, "I_ReadMidiTrack: Unexpected chunk header ID\n");
 		return NULL;
 	}
 	
@@ -374,7 +376,7 @@ static std::list<MidiEvent*> *I_ReadMidiTrack(MEMFILE *mf)
 		
 		if (!newevent)
 		{
-			Printf(PRINT_HIGH, "I_ReadMidiTrack: Unable to read MIDI event\n");
+			Printf(PRINT_WARNING, "I_ReadMidiTrack: Unable to read MIDI event\n");
 			
 			I_ClearMidiEventList(eventlist);
 			delete eventlist;
@@ -458,7 +460,7 @@ void MidiSong::_ParseSong(MEMFILE *mf)
 		
 	if (chunkheader.chunk_id != cHeaderChunkId)
 	{
-		Printf(PRINT_HIGH, "MidiSong::_ParseSong: Unexpected file header ID\n");
+		Printf(PRINT_WARNING, "MidiSong::_ParseSong: Unexpected file header ID\n");
 		return;
 	}
 
@@ -473,7 +475,7 @@ void MidiSong::_ParseSong(MEMFILE *mf)
 
 	if (fileheader.format_type != 0 && fileheader.format_type != 1)
 	{
-		Printf(PRINT_HIGH, "MidiSong::_ParseSong: Only type 0 or type 1 MIDI files are supported.\n");
+		Printf(PRINT_WARNING, "MidiSong::_ParseSong: Only type 0 or type 1 MIDI files are supported.\n");
 		return;
 	}
 	
@@ -483,7 +485,7 @@ void MidiSong::_ParseSong(MEMFILE *mf)
 		std::list<MidiEvent*> *eventlist = I_ReadMidiTrack(mf);
 		if (!eventlist)
 		{
-			Printf(PRINT_HIGH, "MidiSong::_ParseSong: Error reading track %d.\n", i + 1);
+			Printf(PRINT_WARNING, "MidiSong::_ParseSong: Error reading track %d.\n", i + 1);
 			return;
 		}
 		

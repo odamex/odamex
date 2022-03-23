@@ -26,8 +26,6 @@
 #define __CMDLIB__
 
 #include <algorithm>
-#include <string>
-#include <vector>
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4244)     // MIPS
@@ -38,18 +36,21 @@
 #pragma warning(disable : 4305)     // truncate from double to float
 #endif
 
-#include "doomtype.h"
 
-#include <stdio.h>
-#include <cstring>
 #include <stdlib.h>
 #include <errno.h>
 #include <ctype.h>
 #include <stdarg.h>
 
-extern std::string progdir, startdir;
-
-void	FixPathSeparator (std::string &path);
+struct OTimespan
+{
+	int csecs;
+	int tics;
+	int seconds;
+	int minutes;
+	int hours;
+	OTimespan() : csecs(0), tics(0), seconds(0), minutes(0), hours(0) { }
+};
 
 int		ParseHex(const char *str);
 int 	ParseNum(const char *str);
@@ -76,6 +77,7 @@ std::string &TrimStringStart(std::string &s);
 std::string &TrimStringEnd(std::string &s);
 
 bool ValidString(const std::string&);
+bool IsHexString(const std::string& str, const size_t len);
 
 char	*COM_Parse (char *data);
 
@@ -84,29 +86,61 @@ extern	BOOL	com_eof;
 
 char	*copystring(const char *s);
 
-void	CRC_Init(unsigned short *crcvalue);
-void	CRC_ProcessByte(unsigned short *crcvalue, byte data);
-unsigned short CRC_Value(unsigned short crcvalue);
-
 std::vector<std::string> VectorArgs(size_t argc, char **argv);
 std::string JoinStrings(const std::vector<std::string> &pieces, const std::string &glue = "");
 
 typedef std::vector<std::string> StringTokens;
 StringTokens TokenizeString(const std::string& str, const std::string& delim);
 
-void STACK_ARGS StrFormat(std::string& out, const char* fmt, ...);
+FORMAT_PRINTF(2, 3) void STACK_ARGS StrFormat(std::string& out, const char* fmt, ...);
 void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va);
 
+void StrFormatBytes(std::string& out, size_t bytes);
 bool StrFormatISOTime(std::string& s, const tm* utc_tm);
 bool StrParseISOTime(const std::string& s, tm* utc_tm);
 bool StrToTime(std::string str, time_t &tim);
 
+void TicsToTime(OTimespan& span, int time, bool ceilsec = false);
+
 bool CheckWildcards (const char *pattern, const char *text);
-void ReplaceString (const char **ptr, const char *str);
+void ReplaceString (char** ptr, const char* str);
 
 void StripColorCodes(std::string& str);
 
-uint32_t CRC32(const uint8_t* buf, uint32_t len);
 uint32_t Log2(uint32_t n);
+float NextAfter(const float from, const float to);
+
+/**
+ * @brief Initialize an array with a specific value.
+ * 
+ * @tparam A Array type to initialize.
+ * @tparam T Value type to initialize with.
+ * @param dst Array to initialize.
+ * @param val Value to initialize with.
+ */
+template <typename A, typename T>
+static void ArrayInit(A& dst, const T& val)
+{
+	for (size_t i = 0; i < ARRAY_LENGTH(dst); i++)
+		dst[i] = val;
+}
+
+/**
+ * @brief Copy the complete contents of an array from one to the other.
+ * 
+ * @detail Both params are templated in case the destination's type doesn't
+ *         line up 100% with the source.
+ * 
+ * @tparam A1 Destination array type.
+ * @tparam A2 Source array type.
+ * @param dst Destination array to write to.
+ * @param src Source array to write from.
+ */
+template <typename A1, typename A2>
+static void ArrayCopy(A1& dst, const A2& src)
+{
+	for (size_t i = 0; i < ARRAY_LENGTH(src); i++)
+		dst[i] = src[i];
+}
 
 #endif

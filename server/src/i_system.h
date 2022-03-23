@@ -52,10 +52,6 @@ void I_EndRead (void);
 
 // Called by DoomMain.
 void I_Init (void);
-std::string I_GetCWD();
-std::string I_GetBinaryDir();
-std::string I_GetUserFileName (const char *file);
-void I_ExpandHomeDir (std::string &path);
 
 // Called by startup code
 // to get the ammount of memory to malloc
@@ -84,7 +80,7 @@ ticcmd_t *I_BaseTiccmd (void);
 void STACK_ARGS I_Quit (void);
 
 void STACK_ARGS I_Error (const char *error, ...);
-void STACK_ARGS I_FatalError (const char *error, ...);
+NORETURN void STACK_ARGS I_FatalError(const char *error, ...);
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);
 #define atterm(t) addterm (t, #t)
@@ -130,6 +126,3 @@ int I_FindAttr (findstate_t *fileinfo);
 #define FA_ARCH		16
 
 #endif
-
-
-

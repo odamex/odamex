@@ -1,9 +1,10 @@
+include(OdamexCopyWad)
+include(OdamexTargetSettings)
+
 # use unquoted #defines
 if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
 endif(COMMAND cmake_policy)
-
-global_compile_options()
 
 # Server flags. [AM] TODO: Test -O3 again sometime.
 if(NOT MSVC)
@@ -19,43 +20,26 @@ file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h ${COMMON_DIR}/resources/*.h)
 file(GLOB COMMON_SOURCES ${COMMON_DIR}/*.cpp ${COMMON_DIR}/resources/*.cpp)
 
 # Server
-set(SERVER_DIR src)
-file(GLOB SERVER_HEADERS ${SERVER_DIR}/*.h)
-file(GLOB SERVER_SOURCES ${SERVER_DIR}/*.cpp)
+file(GLOB SERVER_SOURCES src/*.cpp src/*.h)
 if(WIN32)
-  set(SERVER_WIN32_DIR win32)
-  file(GLOB SERVER_WIN32_HEADERS ${SERVER_WIN32_DIR}/*.h)
-  set(SERVER_WIN32_RESOURCES ${SERVER_WIN32_DIR}/server.rc)
+  file(GLOB SERVER_WIN32_SOURCES win32/*.h)
+  configure_file(win32/server.rc.in "${CMAKE_CURRENT_BINARY_DIR}/server.rc" @ONLY)
+  list(APPEND SERVER_WIN32_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/server.rc")
 endif()
 
-# JsonCpp
-set(JSONCPP_DIR ../libraries/jsoncpp)
-file(GLOB JSONCPP_HEADERS ${JSONCPP_DIR}/json/*.h)
-set(JSONCPP_SOURCE ${JSONCPP_DIR}/jsoncpp.cpp)
-
-# git describe
-set_source_files_properties(${COMMON_DIR}/version.cpp PROPERTIES COMPILE_FLAGS -DGIT_DESCRIBE=\\"${GIT_DESCRIBE}\\")
-
-# Platform definitions
-define_platform()
+# Tag source files with correct directories
+get_target_property(COMMON_SOURCES odamex-common INTERFACE_SOURCES)
+source_group("Common" FILES ${COMMON_SOURCES})
+source_group("Server" FILES ${SERVER_SOURCES})
+source_group("Win32" FILES ${SERVER_WIN32_SOURCES})
 
 # Server definitions
-add_definitions(-DJSON_IS_AMALGAMATION)
-
-if (USE_MINIUPNP)
+if(USE_MINIUPNP)
   add_definitions(-DODA_HAVE_MINIUPNP)
 endif()
 
 if(WIN32 AND NOT MSVC)
   add_definitions(-DWINVER=0x0500)
-endif()
-include_directories(${JSONCPP_DIR} ${COMMON_DIR} ${SERVER_DIR} ${SERVER_WIN32_DIR})
-
-# MiniUPnPc
-if (USE_MINIUPNP)
-  set(MINIUPNPC_DIR ../libraries/libminiupnpc)
-  set(MINIUPNPC_STATIC_LIBRARIES upnpc-static)
-  include_directories(${MINIUPNPC_DIR})
 endif()
 
 # Set up FHS installation path
@@ -64,19 +48,22 @@ if(NOT APPLE AND NOT WIN32)
 endif()
 
 add_executable(odasrv
-  ${JSONCPP_SOURCE} ${JSONCPP_HEADERS}
-  ${COMMON_SOURCES} ${COMMON_HEADERS}
-  ${SERVER_SOURCES} ${SERVER_HEADERS}
-  ${SERVER_WIN32_HEADERS} ${SERVER_WIN32_RESOURCES})
+  ${COMMON_SOURCES} ${SERVER_SOURCES} ${SERVER_WIN32_SOURCES})
+odamex_target_settings(odasrv)
+set_property(TARGET odasrv PROPERTY CXX_STANDARD 98)
 
-target_link_libraries(odasrv ${ZLIB_LIBRARY})
-  
-if (USE_MINIUPNP)
-  target_link_libraries(odasrv ${MINIUPNPC_STATIC_LIBRARIES})
+target_include_directories(odasrv PRIVATE src)
+if(WIN32)
+  target_include_directories(odasrv PRIVATE win32)
+endif()
+target_link_libraries(odasrv ZLIB::ZLIB jsoncpp odamex-common odaproto)
+
+if(USE_MINIUPNP)
+  target_link_libraries(odasrv upnpc-static)
 endif()
 
 if(WIN32)
-  target_link_libraries(odasrv winmm wsock32)
+  target_link_libraries(odasrv winmm wsock32 shlwapi)
 elseif(SOLARIS)
   target_link_libraries(odasrv socket nsl)
 elseif(UNIX)
@@ -87,6 +74,8 @@ endif()
 if(UNIX AND NOT APPLE)
   target_link_libraries(odasrv rt)
 endif()
+
+odamex_copy_wad(odasrv)
 
 if(APPLE)
 elseif(WIN32)
@@ -99,4 +88,7 @@ else()
     COMPONENT server)
 endif()
 
-print_cxx_flags()
+# [AM] Not needed right now, but could be in the future...
+if(BUILD_OR_FAIL AND NOT TARGET odasrv)
+  message(FATAL_ERROR "Odasrv target could not be generated")
+endif()

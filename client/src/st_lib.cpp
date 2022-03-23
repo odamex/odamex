@@ -23,6 +23,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "z_zone.h"
 #include "v_video.h"
 #include "i_video.h"
@@ -114,7 +117,7 @@ void STlib_initNum(st_number_t* n, int x, int y, const Texture** pl, int* num, b
 // A fairly efficient way to draw a number based on differences from the
 // old number. Worth the trouble?
 //
-void STlib_drawNum(st_number_t* n, bool force_refresh)
+void STlib_drawNum(st_number_t* n, bool force_refresh, bool cleararea)
 {
 	// [jsd]: prevent null references as hard as possible
 	if (n == NULL)
@@ -151,10 +154,11 @@ void STlib_drawNum(st_number_t* n, bool force_refresh)
 	}
 
 	// clear the area
-	STlib_ClearRect(n->x - w * n->maxdigits, n->y, w * n->maxdigits, h);
+	if (cleararea)
+		STlib_ClearRect(n->x - w * n->maxdigits, n->y, w * n->maxdigits, h);
 
 	// if non-number, do not draw it
-	if (num == 1994)
+	if (num == ST_DONT_DRAW_NUM)
 		return;
 
 	x = n->x;
@@ -166,6 +170,7 @@ void STlib_drawNum(st_number_t* n, bool force_refresh)
 	// draw the new number
 	for (int numdigits = n->maxdigits; num && numdigits; numdigits--)
 	{
+		patch_t* pnum = W_ResolvePatchHandle(n->p[num % 10]);
 		x -= w;
 		STlib_DrawTexture(x, n->y, n->p[num % 10]);
 		num /= 10;
@@ -177,10 +182,10 @@ void STlib_drawNum(st_number_t* n, bool force_refresh)
 }
 
 
-void STlib_updateNum(st_number_t* n, bool force_refresh)
+void STlib_updateNum(st_number_t* n, bool force_refresh, bool cleararea)
 {
 	if (*n->on)
-		STlib_drawNum(n, force_refresh);
+		STlib_drawNum(n, force_refresh, cleararea);
 }
 
 

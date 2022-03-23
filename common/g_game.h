@@ -25,10 +25,8 @@
 #ifndef __G_GAME__
 #define __G_GAME__
 
-#include "doomdef.h"
 #include "d_event.h"
 #include "d_player.h"
-#include "g_level.h"
 
 //
 // GAME
@@ -66,8 +64,10 @@ void G_ScreenShot(const char* filename);
 
 void G_PlayerFinishLevel(player_t &player);
 
-extern std::vector<level_pwad_info_t> wadlevelinfos;
-extern std::vector<cluster_info_t> wadclusterinfos;
+void G_AddViewAngle(int yaw);
+void G_AddViewPitch(int pitch);
+bool G_ShouldIgnoreMouseInput();
+
 extern int mapchange;
 
 extern bool timingdemo;

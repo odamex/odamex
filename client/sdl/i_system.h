@@ -33,7 +33,6 @@
 #include "d_ticcmd.h"
 #include "d_event.h"
 
-#include <string>
 
 // Index values into the LanguageIDs array
 enum
@@ -52,10 +51,6 @@ void I_EndRead (void);
 // Called by DoomMain.
 void I_Init (void);
 void I_Endoom(void);
-std::string I_GetCWD();
-std::string I_GetBinaryDir();
-std::string I_GetUserFileName (const char *file);
-void I_ExpandHomeDir (std::string &path);
 
 // Called by startup code
 // to get the ammount of memory to malloc
@@ -98,7 +93,7 @@ void STACK_ARGS I_Quit (void);
 
 void STACK_ARGS I_Warning(const char *warning, ...);
 void STACK_ARGS I_Error (const char *error, ...);
-void STACK_ARGS I_FatalError (const char *error, ...);
+NORETURN void STACK_ARGS I_FatalError(const char *error, ...);
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);
 #define atterm(t) addterm (t, #t)
@@ -126,6 +121,13 @@ extern char DoomStartupTitle[256];
 void I_FinishClockCalibration ();
 
 std::string I_GetClipboardText();
+
+/**
+ * @brief Show an error message box.
+ *
+ * @param message Contents of the message box.
+ */
+void I_ErrorMessageBox(const char* message);
 
 // Directory searching routines
 

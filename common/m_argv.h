@@ -26,10 +26,7 @@
 #define __M_ARGV_H__
 
 #include "dobject.h"
-#include "doomtype.h"
 
-#include <string>
-#include <vector>
 
 //
 // MISC
@@ -50,7 +47,7 @@ public:
 	void AppendArg (const char *arg);
 	void SetArgs (unsigned int argc, char **argv);
 	void SetArgs(const char *cmdline);
-	DArgs GatherFiles (const char *param, const char *extension, bool acceptNoExt) const;
+	DArgs GatherFiles(const char* param) const;
 	void SetArg (unsigned int argnum, const char *arg);
 
 
@@ -79,4 +76,3 @@ int M_GetParmValue(const char* name);
 extern bool DefaultsLoaded; 
 
 #endif //__M_ARGV_H__
-

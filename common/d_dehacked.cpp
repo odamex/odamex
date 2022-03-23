@@ -21,44 +21,41 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "odamex.h"
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <cstring>
-#include <stddef.h>
 
-#include "doomtype.h"
-#include "doomstat.h"
-#include "info.h"
-#include "d_dehacked.h"
-#include "s_sound.h"
-#include "d_items.h"
-#include "g_level.h"
-#include "m_cheat.h"
 #include "cmdlib.h"
+#include "d_dehacked.h"
+#include "d_items.h"
 #include "gstrings.h"
+#include "i_system.h"
+#include "info.h"
 #include "m_alloc.h"
+#include "m_cheat.h"
 #include "m_fileio.h"
 #include "p_local.h"
+#include "s_sound.h"
+#include "w_wad.h"
 
 // Miscellaneous info that used to be constant
 struct DehInfo deh = {
-	100,	// .StartHealth
-	 50,	// .StartBullets
-	100,	// .MaxHealth
-	200,	// .MaxArmor
-	  1,	// .GreenAC
-	  2,	// .BlueAC
-	200,	// .MaxSoulsphere
-	100,	// .SoulsphereHealth
-	200,	// .MegasphereHealth
-	100,	// .GodHealth
-	200,	// .FAArmor
-	  2,	// .FAAC
-	200,	// .KFAArmor
-	  2,	// .KFAAC
-	 40,	// .BFGCells (No longer used)
-	  0,	// .Infight
+    100, // .StartHealth
+    50,  // .StartBullets
+    100, // .MaxHealth
+    200, // .MaxArmor
+    1,   // .GreenAC
+    2,   // .BlueAC
+    200, // .MaxSoulsphere
+    100, // .SoulsphereHealth
+    200, // .MegasphereHealth
+    100, // .GodHealth
+    200, // .FAArmor
+    2,   // .FAAC
+    200, // .KFAArmor
+    2,   // .KFAAC
+    40,  // .BFGCells (No longer used)
+    0,   // .Infight
 };
 
 // These are the original heights of every Doom 2 thing. They are used if a patch
@@ -66,32 +63,27 @@ struct DehInfo deh = {
 // a height for the thing, since these are the heights it probably wants.
 
 static byte OrgHeights[] = {
-	56, 56, 56, 56, 16, 56, 8, 16, 64, 8, 56, 56,
-	56, 56, 56, 64, 8, 64, 56, 100, 64, 110, 56, 56,
-	72, 16, 32, 32, 32, 16, 42, 8, 8, 8,
-	8, 8, 8, 16, 16, 16, 16, 16, 16, 16,
-	16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-	16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-	16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-	16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-	16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-	16, 16, 16, 16, 16, 16, 16, 68, 84, 84,
-	68, 52, 84, 68, 52, 52, 68, 16, 16, 16,
-	16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-	16, 16, 16, 16, 88, 88, 64, 64, 64, 64,
-	16, 16, 16
-};
+    56, 56,  56, 56, 16, 56, 8,  16, 64, 8,  56, 56, 56, 56, 56, 64, 8,  64, 56, 100,
+    64, 110, 56, 56, 72, 16, 32, 32, 32, 16, 42, 8,  8,  8,  8,  8,  8,  16, 16, 16,
+    16, 16,  16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16,  16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16,  16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 68,  84, 84, 68, 52, 84, 68, 52, 52, 68, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+    16, 16,  16, 16, 16, 16, 16, 16, 88, 88, 64, 64, 64, 64, 16, 16, 16};
 
 #define LINESIZE 2048
 
-#define CHECKKEY(a,b)		if (!stricmp (Line1, (a))) (b) = atoi(Line2);
+#define CHECKKEY(a, b)        \
+	if (!stricmp(Line1, (a))) \
+		(b) = atoi(Line2);
 
 static char *patch_data, *read_ptr;
 static char *Line1, *Line2;
-static int	 dversion, pversion;
-static BOOL  including, includenotext;
+static int dversion, pversion;
+static BOOL including, includenotext;
 
-static const char *unknown_str = "Unknown key %s encountered in %s %d.\n";
+// English strings for DeHackEd replacement.
+static StringTable ENGStrings;
 
 // This is an offset to be used for computing the text stuff.
 // Straight from the DeHackEd source which was
@@ -101,199 +93,75 @@ static int toff[] = {129044, 129044, 129044, 129284, 129380};
 // A conversion array to convert from the 448 code pointers to the 966
 // Frames that exist.
 // Again taken from the DeHackEd source.
-static short codepconv[448] = {  1,    2,   3,   4,    6,   9,  10,   11,  12,  14,
-							  16,   17,  18,  19,   20,  22,  29,   30,  31,  32,
-							  33,	 34,  36,  38,	 39,  41,  43,	 44,  47,  48,
-							  49,	50,  51,  52,	 53,  54,  55,	 56,  57,  58,
-							  59,	60,  61,  62,	 63,  65,  66,	 67,  68,  69,
-							  70,    71,  72,  73,	 74,  75,  76,	 77,  78,  79,
-							  80,	 81,  82,  83,  84,  85,  86,	 87,  88,  89,
-							 119,	127, 157, 159,	160, 166, 167,	174, 175, 176,
-							 177,	178, 179, 180,	181, 182, 183,	184, 185, 188,
-							 190,	191, 195, 196,	207, 208, 209,	210, 211, 212,
-							 213,	214, 215, 216,	217, 218, 221,	223, 224, 228,
-							 229,	241, 242, 243,	244, 245, 246,	247, 248, 249,
-							 250,	251, 252, 253,	254, 255, 256,  257, 258, 259,
-							 260,	261, 262, 263,	264, 270, 272,	273, 281, 282,
-							 283,	284, 285, 286, 287, 288, 289,	290, 291, 292,
-							 293,	294, 295, 296,	297, 298, 299,	300, 301, 302,
-							 303,	304, 305, 306,	307, 308, 309,	310, 316, 317,
-							 321,	322, 323, 324,	325, 326, 327,	328, 329, 330,
-							 331,	332, 333, 334, 335, 336, 337,	338, 339, 340,
-							 341, 342, 344, 347,	348, 362, 363,	364, 365, 366,
-							 367, 368, 369, 370,	371, 372, 373,  374, 375, 376,
-							 377, 378, 379, 380,	381, 382, 383,	384, 385, 387,
-							 389, 390, 397, 406,	407, 408, 409,	410, 411, 412,
-							 413, 414, 415, 416,	417, 418, 419,	421, 423, 424,
-							 430, 431, 442, 443,	444, 445, 446,	447, 448, 449,
-							 450, 451, 452, 453,	454, 456, 458,	460, 463, 465,
-							 475, 476, 477, 478,	479, 480, 481,	482, 483, 484,
-							 485, 486, 487, 489,	491, 493, 502,	503, 504, 505,
-							 506, 508, 511, 514,	527, 528, 529,	530, 531, 532,
-							 533, 534, 535, 536,	537, 538, 539,	541, 543, 545,
-							 548, 556, 557, 558,	559, 560, 561,	562, 563, 564,
-							 565, 566, 567, 568,	570, 572, 574,	585, 586, 587,
-							 588, 589, 590, 594,	596, 598, 601,	602, 603, 604,
-							 605, 606, 607, 608,	609, 610, 611,	612, 613, 614,
-							 615, 616, 617, 618,	620, 621, 622,	631, 632, 633,
-							 635, 636, 637, 638,	639, 640, 641,	642, 643, 644,
-							 645, 646, 647, 648,	650, 652, 653,	654, 659, 674,
-							 675, 676, 677, 678,	679, 680, 681,	682, 683, 684,
-							 685, 686, 687, 688,	689, 690, 692,	696, 700, 701,
-							 702, 703, 704, 705,	706, 707, 708,	709, 710, 711,
-							 713, 715, 718, 726,	727, 728, 729,	730, 731, 732,
-							 733, 734, 735, 736,	737, 738, 739,	740, 741, 743,
-							 745, 746, 750, 751,	766, 774, 777,	779, 780, 783,
-							 784, 785, 786, 787,	788, 789, 790,	791, 792, 793,
-							 794, 795, 796, 797,	798, 801, 809,	811};
+static short codepconv[522] = {
+    1, 2, 3, 4, 6, 9, 10, 11, 12, 14, 16, 17, 18, 19, 20, 22, 29, 30, 31, 32, 33, 34, 36,
+    38, 39, 41, 43, 44, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62,
+    63, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84,
+    85, 86, 87, 88, 89, 119, 127, 157, 159, 160, 166, 167, 174, 175, 176, 177, 178, 179,
+    180, 181, 182, 183, 184, 185, 188, 190, 191, 195, 196, 207, 208, 209, 210, 211, 212,
+    213, 214, 215, 216, 217, 218, 221, 223, 224, 228, 229, 241, 242, 243, 244, 245, 246,
+    247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263,
+    264, 270, 272, 273, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293,
+    294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310,
+    316, 317, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335,
+    336, 337, 338, 339, 340, 341, 342, 344, 347, 348, 362, 363, 364, 365, 366, 367, 368,
+    369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385,
+    387, 389, 390, 397, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418,
+    419, 421, 423, 424, 430, 431, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452,
+    453, 454, 456, 458, 460, 463, 465, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484,
+    485, 486, 487, 489, 491, 493, 502, 503, 504, 505, 506, 508, 511, 514, 527, 528, 529,
+    530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 541, 543, 545, 548, 556, 557, 558,
+    559, 560, 561, 562, 563, 564, 565, 566, 567, 568, 570, 572, 574, 585, 586, 587, 588,
+    589, 590, 594, 596, 598, 601, 602, 603, 604, 605, 606, 607, 608, 609, 610, 611, 612,
+    613, 614, 615, 616, 617, 618, 620, 621, 622, 631, 632, 633, 635, 636, 637, 638, 639,
+    640, 641, 642, 643, 644, 645, 646, 647, 648, 650, 652, 653, 654, 659, 674, 675, 676,
+    677, 678, 679, 680, 681, 682, 683, 684, 685, 686, 687, 688, 689, 690, 692, 696, 700,
+    701, 702, 703, 704, 705, 706, 707, 708, 709, 710, 711, 713, 715, 718, 726, 727, 728,
+    729, 730, 731, 732, 733, 734, 735, 736, 737, 738, 739, 740, 741, 743, 745, 746, 750,
+    751, 766, 774, 777, 779, 780, 783, 784, 785, 786, 787, 788, 789, 790, 791, 792, 793,
+    794, 795, 796, 797, 798, 801, 809, 811,
+
+    // Now for the 74 MBF states with code pointers
+    968, 969, 970, 972, 973, 974, 975, 976, 977, 978, 979, 980, 981, 982, 983, 984, 986,
+    988, 990, 999, 1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011,
+    1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022, 1023, 1024, 1025,
+    1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1034, 1035, 1036, 1037, 1038, 1039,
+    1040, 1041, 1056, 1057, 1058, 1059, 1060, 1061, 1062, 1065, 1071, 1073, 1074,
+    1075 // Total: 522
+};
 
 static bool BackedUpData = false;
 // This is the original data before it gets replaced by a patch.
-static const char *OrgSprNames[NUMSPRITES];
+static const char* OrgSprNames[NUMSPRITES];
 static actionf_p1 OrgActionPtrs[NUMSTATES];
 
-// Sound equivalences. When a patch tries to change a sound,
-// use these sound names.
-static const char *SoundMap[] = {
-	NULL,
-	"weapons/pistol",
-	"weapons/shotgf",
-	"weapons/shotgr",
-	"weapons/sshotf",
-	"weapons/sshoto",
-	"weapons/sshotc",
-	"weapons/sshotl",
-	"weapons/plasmaf",
-	"weapons/bfgf",
-	"weapons/sawup",
-	"weapons/sawidle",
-	"weapons/sawfull",
-	"weapons/sawhit",
-	"weapons/rocklf",
-	"weapons/bfgx",
-	"imp/attack",
-	"imp/shotx",
-	"plats/pt1_strt",
-	"plats/pt1_stop",
-	"doors/dr1_open",
-	"doors/dr1_clos",
-	"plats/pt1_mid",
-	"switches/normbutn",
-	"switches/exitbutn",
-	"*pain100_1",
-	"demon/pain",
-	"grunt/pain",
-	"vile/pain",
-	"fatso/pain",
-	"pain/pain",
-	"misc/gibbed",
-	"misc/i_pkup",
-	"misc/w_pkup",
-	"*land1",
-	"misc/teleport",
-	"grunt/sight1",
-	"grunt/sight2",
-	"grunt/sight3",
-	"imp/sight1",
-	"imp/sight2",
-	"demon/sight",
-	"caco/sight",
-	"baron/sight",
-	"cyber/sight",
-	"spider/sight",
-	"baby/sight",
-	"knight/sight",
-	"vile/sight",
-	"fatso/sight",
-	"pain/sight",
-	"skull/melee",
-	"demon/melee",
-	"skeleton/melee",
-	"vile/start",
-	"imp/melee",
-	"skeleton/swing",
-	"*death1",
-	"*xdeath1",
-	"grunt/death1",
-	"grunt/death2",
-	"grunt/death3",
-	"imp/death1",
-	"imp/death2",
-	"demon/death",
-	"caco/death",
-	"misc/unused",
-	"baron/death",
-	"cyber/death",
-	"spider/death",
-	"baby/death",
-	"vile/death",
-	"knight/death",
-	"pain/death",
-	"skeleton/death",
-	"grunt/active",
-	"imp/active",
-	"demon/active",
-	"baby/active",
-	"baby/walk",
-	"vile/active",
-	"*grunt1",
-	"world/barrelx",
-	"*fist",
-	"cyber/hoof",
-	"spider/walk",
-	"weapons/chngun",
-	"misc/chat2",
-	"doors/dr2_open",
-	"doors/dr2_clos",
-	"misc/spawn",
-	"vile/firecrkl",
-	"vile/firestrt",
-	"misc/p_pkup",
-	"brain/spit",
-	"brain/cube",
-	"brain/sight",
-	"brain/pain",
-	"brain/death",
-	"fatso/attack",
-	"gatso/death",
-	"wolfss/sight",
-	"wolfss/death",
-	"keen/pain",
-	"keen/death",
-	"skeleton/active",
-	"skeleton/sight",
-	"skeleton/attack",
-	"misc/chat",
-	"misc/teamchat"
-};
-
 // Functions used in a .bex [CODEPTR] chunk
-void A_FireRailgun(AActor *);
-void A_FireRailgunLeft(AActor *);
-void A_FireRailgunRight(AActor *);
-void A_RailWait(AActor *);
-void A_Light0(AActor *);
-void A_WeaponReady(AActor *);
-void A_Lower(AActor *);
-void A_Raise(AActor *);
-void A_Punch(AActor *);
-void A_ReFire(AActor *);
-void A_FirePistol(AActor *);
-void A_Light1(AActor *);
-void A_FireShotgun(AActor *);
-void A_Light2(AActor *);
-void A_FireShotgun2(AActor *);
-void A_CheckReload(AActor *);
-void A_OpenShotgun2(AActor *);
-void A_LoadShotgun2(AActor *);
-void A_CloseShotgun2(AActor *);
-void A_FireCGun(AActor *);
-void A_GunFlash(AActor *);
-void A_FireMissile(AActor *);
-void A_Saw(AActor *);
-void A_FirePlasma(AActor *);
-void A_BFGsound(AActor *);
-void A_FireBFG(AActor *);
+void A_FireRailgun(AActor*);
+void A_FireRailgunLeft(AActor*);
+void A_FireRailgunRight(AActor*);
+void A_RailWait(AActor*);
+void A_Light0(AActor*);
+void A_WeaponReady(AActor*);
+void A_Lower(AActor*);
+void A_Raise(AActor*);
+void A_Punch(AActor*);
+void A_ReFire(AActor*);
+void A_FirePistol(AActor*);
+void A_Light1(AActor*);
+void A_FireShotgun(AActor*);
+void A_Light2(AActor*);
+void A_FireShotgun2(AActor*);
+void A_CheckReload(AActor*);
+void A_OpenShotgun2(AActor*);
+void A_LoadShotgun2(AActor*);
+void A_CloseShotgun2(AActor*);
+void A_FireCGun(AActor*);
+void A_GunFlash(AActor*);
+void A_FireMissile(AActor*);
+void A_Saw(AActor*);
+void A_FirePlasma(AActor*);
+void A_BFGsound(AActor*);
+void A_FireBFG(AActor*);
 void A_BFGSpray(AActor*);
 void A_Explode(AActor*);
 void A_Pain(AActor*);
@@ -347,286 +215,327 @@ void A_SpawnSound(AActor*);
 void A_SpawnFly(AActor*);
 void A_BrainExplode(AActor*);
 void A_MonsterRail(AActor*);
-void A_Die(AActor*);
 void A_Detonate(AActor*);
 void A_Mushroom(AActor*);
+void A_Die(AActor*);
+void A_Spawn(AActor*);
+void A_Turn(AActor*);
+void A_Face(AActor*);
+void A_Scratch(AActor*);
+void A_PlaySound(AActor*);
+void A_RandomJump(AActor*);
+void A_LineEffect(AActor*);
+void A_BetaSkullAttack(AActor* actor);
 
-struct CodePtr {
-	const char *name;
+// MBF21
+void A_SpawnObject(AActor*);
+void A_MonsterProjectile(AActor* actor);
+void A_MonsterBulletAttack(AActor* actor);
+void A_MonsterMeleeAttack(AActor* actor);
+void A_RadiusDamage(AActor* actor);
+void A_NoiseAlert(AActor* actor);
+void A_HealChase(AActor* actor);
+void A_SeekTracer(AActor* actor);
+void A_FindTracer(AActor* actor);
+void A_ClearTracer(AActor* actor);
+void A_JumpIfHealthBelow(AActor* actor);
+void A_JumpIfTargetInSight(AActor* actor);
+void A_JumpIfTargetCloser(AActor* actor);
+void A_JumpIfTracerInSight(AActor* actor);
+void A_JumpIfTracerCloser(AActor* actor);
+void A_JumpIfFlagsSet(AActor* actor);
+void A_AddFlags(AActor* actor);
+void A_RemoveFlags(AActor* actor);
+// MBF21 Weapons
+void A_ConsumeAmmo(AActor* mo);
+void A_CheckAmmo(AActor* mo);
+void A_WeaponJump(AActor* mo);
+void A_WeaponProjectile(AActor* mo);
+void A_WeaponBulletAttack(AActor* actor);
+void A_WeaponMeleeAttack(AActor* actor);
+void A_WeaponAlert(AActor* actor);
+void A_WeaponSound(AActor* actor);
+void A_RefireTo(AActor* mo);
+void A_GunFlashTo(AActor* mo);
+
+struct CodePtr
+{
+	const char* name;
 	actionf_p1 func;
+	int argcount;
+	long default_args[MAXSTATEARGS];
 };
 
 static const struct CodePtr CodePtrs[] = {
-	{ "NULL",			NULL },
-	{ "MonsterRail",	A_MonsterRail },
-	{ "FireRailgun",	A_FireRailgun },
-	{ "FireRailgunLeft", A_FireRailgunLeft },
-	{ "FireRailgunRight",A_FireRailgunRight },
-	{ "RailWait",		A_RailWait },	
-	{ "Light0",			A_Light0 },
-	{ "WeaponReady",	A_WeaponReady },
-	{ "Lower",			A_Lower },
-	{ "Raise",			A_Raise },
-	{ "Punch",			A_Punch },
-	{ "ReFire",			A_ReFire },
-	{ "FirePistol",		A_FirePistol },
-	{ "Light1",			A_Light1 },
-	{ "FireShotgun",	A_FireShotgun },
-	{ "Light2",			A_Light2 },
-	{ "FireShotgun2",	A_FireShotgun2 },
-	{ "CheckReload",	A_CheckReload },
-	{ "OpenShotgun2",	A_OpenShotgun2 },
-	{ "LoadShotgun2",	A_LoadShotgun2 },
-	{ "CloseShotgun2",	A_CloseShotgun2 },
-	{ "FireCGun",		A_FireCGun },
-	{ "GunFlash",		A_GunFlash },
-	{ "FireMissile",	A_FireMissile },
-	{ "Saw",			A_Saw },
-	{ "FirePlasma",		A_FirePlasma },
-	{ "BFGsound",		A_BFGsound },
-	{ "FireBFG",		A_FireBFG },
-	{ "BFGSpray",		A_BFGSpray },
-	{ "Explode",		A_Explode },
-	{ "Pain",			A_Pain },
-	{ "PlayerScream",	A_PlayerScream },
-	{ "Fall",			A_Fall },
-	{ "XScream",		A_XScream },
-	{ "Look",			A_Look },
-	{ "Chase",			A_Chase },
-	{ "FaceTarget",		A_FaceTarget },
-	{ "PosAttack",		A_PosAttack },
-	{ "Scream",			A_Scream },
-	{ "SPosAttack",		A_SPosAttack },
-	{ "VileChase",		A_VileChase },
-	{ "VileStart",		A_VileStart },
-	{ "VileTarget",		A_VileTarget },
-	{ "VileAttack",		A_VileAttack },
-	{ "StartFire",		A_StartFire },
-	{ "Fire",			A_Fire },
-	{ "FireCrackle",	A_FireCrackle },
-	{ "Tracer",			A_Tracer },
-	{ "SkelWhoosh",		A_SkelWhoosh },
-	{ "SkelFist",		A_SkelFist },
-	{ "SkelMissile",	A_SkelMissile },
-	{ "FatRaise",		A_FatRaise },
-	{ "FatAttack1",		A_FatAttack1 },
-	{ "FatAttack2",		A_FatAttack2 },
-	{ "FatAttack3",		A_FatAttack3 },
-	{ "BossDeath",		A_BossDeath },
-	{ "CPosAttack",		A_CPosAttack },
-	{ "CPosRefire",		A_CPosRefire },
-	{ "TroopAttack",	A_TroopAttack },
-	{ "SargAttack",		A_SargAttack },
-	{ "HeadAttack",		A_HeadAttack },
-	{ "BruisAttack",	A_BruisAttack },
-	{ "SkullAttack",	A_SkullAttack },
-	{ "Metal",			A_Metal },
-	{ "SpidRefire",		A_SpidRefire },
-	{ "BabyMetal",		A_BabyMetal },
-	{ "BspiAttack",		A_BspiAttack },
-	{ "Hoof",			A_Hoof },
-	{ "CyberAttack",	A_CyberAttack },
-	{ "PainAttack",		A_PainAttack },
-	{ "PainDie",		A_PainDie },
-	{ "KeenDie",		A_KeenDie },
-	{ "BrainPain",		A_BrainPain },
-	{ "BrainScream",	A_BrainScream },
-	{ "BrainDie",		A_BrainDie },
-	{ "BrainAwake",		A_BrainAwake },
-	{ "BrainSpit",		A_BrainSpit },
-	{ "SpawnSound",		A_SpawnSound },
-	{ "SpawnFly",		A_SpawnFly },
-	{ "BrainExplode",	A_BrainExplode },
-	{ "Die",	        A_Die },
-	{ "Detonate",	    A_Detonate },
-    { "Mushroom",	    A_Mushroom },
-	{ NULL, NULL }
-};
+    {"NULL", NULL},
+    {"MonsterRail", A_MonsterRail},
+    {"FireRailgun", A_FireRailgun},
+    {"FireRailgunLeft", A_FireRailgunLeft},
+    {"FireRailgunRight", A_FireRailgunRight},
+    {"RailWait", A_RailWait},
+    {"Light0", A_Light0},
+    {"WeaponReady", A_WeaponReady},
+    {"Lower", A_Lower},
+    {"Raise", A_Raise},
+    {"Punch", A_Punch},
+    {"ReFire", A_ReFire},
+    {"FirePistol", A_FirePistol},
+    {"Light1", A_Light1},
+    {"FireShotgun", A_FireShotgun},
+    {"Light2", A_Light2},
+    {"FireShotgun2", A_FireShotgun2},
+    {"CheckReload", A_CheckReload},
+    {"OpenShotgun2", A_OpenShotgun2},
+    {"LoadShotgun2", A_LoadShotgun2},
+    {"CloseShotgun2", A_CloseShotgun2},
+    {"FireCGun", A_FireCGun},
+    {"GunFlash", A_GunFlash},
+    {"FireMissile", A_FireMissile},
+    {"Saw", A_Saw},
+    {"FirePlasma", A_FirePlasma},
+    {"BFGsound", A_BFGsound},
+    {"FireBFG", A_FireBFG},
+    {"BFGSpray", A_BFGSpray},
+    {"Explode", A_Explode},
+    {"Pain", A_Pain},
+    {"PlayerScream", A_PlayerScream},
+    {"Fall", A_Fall},
+    {"XScream", A_XScream},
+    {"Look", A_Look},
+    {"Chase", A_Chase},
+    {"FaceTarget", A_FaceTarget},
+    {"PosAttack", A_PosAttack},
+    {"Scream", A_Scream},
+    {"SPosAttack", A_SPosAttack},
+    {"VileChase", A_VileChase},
+    {"VileStart", A_VileStart},
+    {"VileTarget", A_VileTarget},
+    {"VileAttack", A_VileAttack},
+    {"StartFire", A_StartFire},
+    {"Fire", A_Fire},
+    {"FireCrackle", A_FireCrackle},
+    {"Tracer", A_Tracer},
+    {"SkelWhoosh", A_SkelWhoosh},
+    {"SkelFist", A_SkelFist},
+    {"SkelMissile", A_SkelMissile},
+    {"FatRaise", A_FatRaise},
+    {"FatAttack1", A_FatAttack1},
+    {"FatAttack2", A_FatAttack2},
+    {"FatAttack3", A_FatAttack3},
+    {"BossDeath", A_BossDeath},
+    {"CPosAttack", A_CPosAttack},
+    {"CPosRefire", A_CPosRefire},
+    {"TroopAttack", A_TroopAttack},
+    {"SargAttack", A_SargAttack},
+    {"HeadAttack", A_HeadAttack},
+    {"BruisAttack", A_BruisAttack},
+    {"SkullAttack", A_SkullAttack},
+    {"Metal", A_Metal},
+    {"SpidRefire", A_SpidRefire},
+    {"BabyMetal", A_BabyMetal},
+    {"BspiAttack", A_BspiAttack},
+    {"Hoof", A_Hoof},
+    {"CyberAttack", A_CyberAttack},
+    {"PainAttack", A_PainAttack},
+    {"PainDie", A_PainDie},
+    {"KeenDie", A_KeenDie},
+    {"BrainPain", A_BrainPain},
+    {"BrainScream", A_BrainScream},
+    {"BrainDie", A_BrainDie},
+    {"BrainAwake", A_BrainAwake},
+    {"BrainSpit", A_BrainSpit},
+    {"SpawnSound", A_SpawnSound},
+    {"SpawnFly", A_SpawnFly},
+    {"BrainExplode", A_BrainExplode},
+    {"Detonate", A_Detonate},     // killough 8/9/98
+    {"Mushroom", A_Mushroom},     // killough 10/98
+    {"Die", A_Die},               // killough 11/98
+    {"Spawn", A_Spawn},           // killough 11/98
+    {"Turn", A_Turn},             // killough 11/98
+    {"Face", A_Face},             // killough 11/98
+    {"Scratch", A_Scratch},       // killough 11/98
+    {"PlaySound", A_PlaySound},   // killough 11/98
+    {"RandomJump", A_RandomJump}, // killough 11/98
+    {"LineEffect", A_LineEffect}, // killough 11/98
+    {"BetaSkullAttack", A_BetaSkullAttack},
 
-struct Key {
-	const char *name;
+    // MBF21 Pointers
+    {"SpawnObject", A_SpawnObject, 8},
+    {"MonsterProjectile", A_MonsterProjectile, 5},
+    {"MonsterBulletAttack", A_MonsterBulletAttack, 5, {0, 0, 1, 3, 5}},
+    {"MonsterMeleeAttack", A_MonsterMeleeAttack, 4, {3, 8, 0, 0}},
+    {"RadiusDamage", A_RadiusDamage, 2},
+    {"NoiseAlert", A_NoiseAlert, 0},
+    {"HealChase", A_HealChase, 2},
+    {"SeekTracer", A_SeekTracer, 2},
+    {"FindTracer", A_FindTracer, 2, {0, 10}},
+    {"ClearTracer", A_ClearTracer, 0},
+    {"JumpIfHealthBelow", A_JumpIfHealthBelow, 2},
+    {"JumpIfTargetInSight", A_JumpIfTargetInSight, 2},
+    {"JumpIfTargetCloser", A_JumpIfTargetCloser, 2},
+    {"JumpIfTracerInSight", A_JumpIfTracerInSight, 2},
+    {"JumpIfTracerCloser", A_JumpIfTracerCloser, 2},
+    {"JumpIfFlagsSet", A_JumpIfFlagsSet, 3},
+    {"AddFlags", A_AddFlags, 2},
+    {"RemoveFlags", A_RemoveFlags, 2},
+    // MBF21 Weapon Pointers
+    {"WeaponProjectile", A_WeaponProjectile, 5},
+    {"WeaponBulletAttack", A_WeaponBulletAttack, 5, {0, 0, 1, 5, 3}},
+    {"WeaponMeleeAttack", A_WeaponMeleeAttack, 5, {2, 10, 1 * FRACUNIT, 0, 0}},
+    {"WeaponSound", A_WeaponSound, 2},
+    {"WeaponAlert", A_WeaponAlert, 0},
+    {"WeaponJump", A_WeaponJump, 2},
+    {"ConsumeAmmo", A_ConsumeAmmo, 1},
+    {"CheckAmmo", A_CheckAmmo, 2},
+    {"RefireTo", A_RefireTo, 2},
+    {"GunFlashTo", A_GunFlashTo, 2},
+
+    {NULL, NULL}};
+
+struct Key
+{
+	const char* name;
 	ptrdiff_t offset;
 };
 
-// Massive bunches of cheat shit
-//	to keep it from being easy to figure them out.
-// Yeah, right...
-unsigned char	cheat_mus_seq[] =
+static int PatchThing(int);
+static int PatchSound(int);
+static int PatchFrame(int);
+static int PatchSprite(int);
+static int PatchAmmo(int);
+static int PatchWeapon(int);
+static int PatchPointer(int);
+static int PatchCheats(int);
+static int PatchMisc(int);
+static int PatchText(int);
+static int PatchStrings(int);
+static int PatchPars(int);
+static int PatchCodePtrs(int);
+static int PatchMusic(int);
+static int DoInclude(int);
+
+static const struct
 {
-	0xb2, 0x26, 0xb6, 0xae, 0xea, 1, 0, 0, 0xff // idmus
-};
-
-unsigned char	cheat_choppers_seq[] =
-{
-	0xb2, 0x26, 0xe2, 0x32, 0xf6, 0x2a, 0x2a, 0xa6, 0x6a, 0xea, 0xff // id...
-};
-
-unsigned char	cheat_god_seq[] =
-{
-	0xb2, 0x26, 0x26, 0xaa, 0x26, 0xff	// iddqd
-};
-
-unsigned char	cheat_ammo_seq[] =
-{
-	0xb2, 0x26, 0xf2, 0x66, 0xa2, 0xff	// idkfa
-};
-
-unsigned char	cheat_ammonokey_seq[] =
-{
-	0xb2, 0x26, 0x66, 0xa2, 0xff		// idfa
-};
-
-// Smashing Pumpkins Into Small Piles Of Putrid Debris.
-unsigned char	cheat_noclip_seq[] =
-{
-	0xb2, 0x26, 0xea, 0x2a, 0xb2,		// idspispopd
-	0xea, 0x2a, 0xf6, 0x2a, 0x26, 0xff
-};
-
-//
-unsigned char	cheat_commercial_noclip_seq[] =
-{
-	0xb2, 0x26, 0xe2, 0x36, 0xb2, 0x2a, 0xff	// idclip
-};
-
-unsigned char	cheat_powerup_seq[7][10] =
-{
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6e, 0xff }, 	// beholdv
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xea, 0xff }, 	// beholds
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xb2, 0xff }, 	// beholdi
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6a, 0xff }, 	// beholdr
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xa2, 0xff }, 	// beholda
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x36, 0xff }, 	// beholdl
-	{ 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xff }			// behold
-};
-
-unsigned char cheat_clev_seq[] =
-{
-	0xb2, 0x26, 0xe2, 0x36, 0xa6, 0x6e, 1, 0, 0, 0xff	// idclev
-};
-
-
-// my position cheat
-unsigned char cheat_mypos_seq[] =
-{
-	0xb2, 0x26, 0xb6, 0xba, 0x2a, 0xf6, 0xea, 0xff		// idmypos
-};
-
-unsigned char cheat_amap_seq[] = { 0xb2, 0x26, 0x26, 0x2e, 0xff };
-
-static int PatchThing (int);
-static int PatchSound (int);
-static int PatchFrame (int);
-static int PatchSprite (int);
-static int PatchAmmo (int);
-static int PatchWeapon (int);
-static int PatchPointer (int);
-static int PatchCheats (int);
-static int PatchMisc (int);
-static int PatchText (int);
-static int PatchStrings (int);
-static int PatchPars (int);
-static int PatchCodePtrs (int);
-static int DoInclude (int);
-
-static const struct {
-	const char *name;
+	const char* name;
 	int (*func)(int);
 } Modes[] = {
-	// These appear in .deh and .bex files
-	{ "Thing",		PatchThing },
-	{ "Sound",		PatchSound },
-	{ "Frame",		PatchFrame },
-	{ "Sprite",		PatchSprite },
-	{ "Ammo",		PatchAmmo },
-	{ "Weapon",		PatchWeapon },
-	{ "Pointer",	PatchPointer },
-	{ "Cheat",		PatchCheats },
-	{ "Misc",		PatchMisc },
-	{ "Text",		PatchText },
-	// These appear in .bex files
-/*	{ "include",	DoInclude }, */
-	{ "[STRINGS]",	PatchStrings },
-	{ "[PARS]",		PatchPars },
-	{ "[CODEPTR]",	PatchCodePtrs },
-	{ NULL, NULL},
+    // https://eternity.youfailit.net/wiki/DeHackEd_/_BEX_Reference
+
+    // These appear in .deh and .bex files
+    {"Thing", PatchThing},
+    {"Sound", PatchSound},
+    {"Frame", PatchFrame},
+    {"Sprite", PatchSprite},
+    {"Ammo", PatchAmmo},
+    {"Weapon", PatchWeapon},
+    {"Pointer", PatchPointer},
+    {"Cheat", PatchCheats},
+    {"Misc", PatchMisc},
+    {"Text", PatchText},
+    // These appear in .bex files
+    {"include", DoInclude},
+    {"[STRINGS]", PatchStrings},
+    {"[PARS]", PatchPars},
+    {"[CODEPTR]", PatchCodePtrs},
+    // Eternity engine added a few more features to BEX
+    {"[MUSIC]", PatchMusic},
+    {NULL, NULL},
 };
 
-static int HandleMode (const char *mode, int num);
-static BOOL HandleKey (const struct Key *keys, void *structure, const char *key, int value, const int structsize = 0);
-static void BackupData (void);
-static void ChangeCheat (char *newcheat, byte *cheatseq, BOOL needsval);
-static BOOL ReadChars (char **stuff, int size);
-static char *igets (void);
-static int GetLine (void);
+static int HandleMode(const char* mode, int num);
+static BOOL HandleKey(const struct Key* keys, void* structure, const char* key, int value,
+                      const int structsize = 0);
+static void BackupData(void);
+static BOOL ReadChars(char** stuff, int size);
+static char* igets(void);
+static int GetLine(void);
 
-static size_t patch_length = 0;	// Be quiet, gcc
+static size_t filelen = 0; // Be quiet, gcc
 
 #define IS_AT_PATCH_SIZE ((size_t)((read_ptr - 1) - patch_data) == patch_length)
 
+static void PrintUnknown(const char* key, const char* loc, const size_t idx)
+{
+	DPrintf("Unknown key %s encountered in %s (%" PRIuSIZE ").\n", key, loc, idx);
+}
 
-static int HandleMode (const char *mode, int num)
+static int HandleMode(const char* mode, int num)
 {
 	int i = 0;
 
-	while (Modes[i].name && stricmp (Modes[i].name, mode))
+	while (Modes[i].name && stricmp(Modes[i].name, mode))
+	{
 		i++;
+	}
 
 	if (Modes[i].name)
-		return Modes[i].func (num);
+	{
+		return Modes[i].func(num);
+	}
 
 	// Handle unknown or unimplemented data
-	DPrintf ("Unknown chunk %s encountered. Skipping.\n", mode);
+	DPrintf("Unknown chunk %s encountered. Skipping.\n", mode);
 	do
-		i = GetLine ();
-	while (i == 1);
+	{
+		i = GetLine();
+	} while (i == 1);
 
 	return i;
 }
 
-static BOOL HandleKey (const struct Key *keys, void *structure, const char *key, int value, const int structsize)
+static BOOL HandleKey(const struct Key* keys, void* structure, const char* key, int value,
+                      const int structsize)
 {
-	while (keys->name && stricmp (keys->name, key))
+	while (keys->name && stricmp(keys->name, key))
 		keys++;
 
-	if(structsize && keys->offset + (int)sizeof(int) > structsize)
+	if (structsize && keys->offset + (int)sizeof(int) > structsize)
 	{
 		// Handle unknown or unimplemented data
-		DPrintf ("DeHackEd: Cannot apply key %s, offset would overrun.\n", keys->name);
+		DPrintf("DeHackEd: Cannot apply key %s, offset would overrun.\n", keys->name);
 		return false;
 	}
 
-	if (keys->name) {
-		*((int *)(((byte *)structure) + keys->offset)) = value;
+	if (keys->name)
+	{
+		*((int*)(((byte*)structure) + keys->offset)) = value;
 		return false;
 	}
 
 	return true;
 }
 
-static state_t		backupStates[NUMSTATES];
-static mobjinfo_t	backupMobjInfo[NUMMOBJTYPES];
-static mobjinfo_t	backupWeaponInfo[NUMWEAPONS];
-static char		*backupSprnames[NUMSPRITES+1];
-static int		backupMaxAmmo[NUMAMMO];
-static int		backupClipAmmo[NUMAMMO];
-static DehInfo		backupDeh;
+static state_t backupStates[NUMSTATES];
+static mobjinfo_t backupMobjInfo[NUMMOBJTYPES];
+static mobjinfo_t backupWeaponInfo[NUMWEAPONS];
+static char* backupSprnames[NUMSPRITES + 1];
+static int backupMaxAmmo[NUMAMMO];
+static int backupClipAmmo[NUMAMMO];
+static DehInfo backupDeh;
 
-static void BackupData (void)
+static void BackupData(void)
 {
 	int i;
 
 	if (BackedUpData)
+	{
 		return;
+	}
 
-//	for (i = 0; i < NUMSFX; i++)
-//		OrgSfxNames[i] = S_sfx[i].name;
+	//	for (i = 0; i < numsfx; i++)
+	// {
+	//		OrgSfxNames[i] = S_sfx[i].name;
+	// }
 
 	for (i = 0; i < NUMSPRITES; i++)
+	{
 		OrgSprNames[i] = sprnames[i];
+	}
 
 	for (i = 0; i < NUMSTATES; i++)
+	{
 		OrgActionPtrs[i] = states[i].action;
+	}
 
 	memcpy(backupStates, states, sizeof(states));
 	memcpy(backupMobjInfo, mobjinfo, sizeof(mobjinfo));
@@ -639,21 +548,29 @@ static void BackupData (void)
 	BackedUpData = true;
 }
 
-void UndoDehPatch ()
+void D_UndoDehPatch()
 {
 	int i;
 
 	if (!BackedUpData)
+	{
 		return;
+	}
 
-//	for (i = 0; i < NUMSFX; i++)
-//		OrgSfxNames[i] = S_sfx[i].name;
+	//	for (i = 0; i < NUMSFX; i++)
+	// {
+	//		OrgSfxNames[i] = S_sfx[i].name;
+	// }
 
 	for (i = 0; i < NUMSPRITES; i++)
-		OrgSprNames[i] = sprnames[i];
+	{
+		::sprnames[i] = ::OrgSprNames[i];
+	}
 
 	for (i = 0; i < NUMSTATES; i++)
-		OrgActionPtrs[i] = states[i].action;
+	{
+		::states[i].action = ::OrgActionPtrs[i];
+	}
 
 	memcpy(states, backupStates, sizeof(states));
 
@@ -668,37 +585,26 @@ void UndoDehPatch ()
 	deh = backupDeh;
 }
 
-static void ChangeCheat (char *newcheat, byte *cheatseq, BOOL needsval)
+static BOOL ReadChars(char** stuff, int size)
 {
-	while (*cheatseq != 0xff && *cheatseq != 1 && *newcheat) {
-		*cheatseq++ = SCRAMBLE(*newcheat);
-		newcheat++;
-	}
+	char* str = *stuff;
 
-	if (needsval) {
-		*cheatseq++ = 1;
-		*cheatseq++ = 0;
-		*cheatseq++ = 0;
-	}
-
-	*cheatseq = 0xff;
-}
-
-static BOOL ReadChars (char **stuff, int size)
-{
-	char *str = *stuff;
-
-	if (!size) {
+	if (!size)
+	{
 		*str = 0;
 		return true;
 	}
 
-	do {
+	do
+	{
 		// Ignore carriage returns
 		if (*read_ptr != '\r')
 			*str++ = *read_ptr;
+		}
 		else
+		{
 			size++;
+		}
 
 		read_ptr++;
 	} while (--size);
@@ -707,68 +613,87 @@ static BOOL ReadChars (char **stuff, int size)
 	return true;
 }
 
-static void ReplaceSpecialChars (char *str)
+static void ReplaceSpecialChars(char* str)
 {
 	char *p = str, c;
 	int i;
 
-	while ( (c = *p++) ) {
-		if (c != '\\') {
+	while ((c = *p++))
+	{
+		if (c != '\\')
+		{
 			*str++ = c;
-		} else {
-			switch (*p) {
-				case 'n':
-				case 'N':
-					*str++ = '\n';
-					break;
-				case 't':
-				case 'T':
-					*str++ = '\t';
-					break;
-				case 'r':
-				case 'R':
-					*str++ = '\r';
-					break;
-				case 'x':
-				case 'X':
-					c = 0;
+		}
+		else
+		{
+			switch (*p)
+			{
+			case 'n':
+			case 'N':
+				*str++ = '\n';
+				break;
+			case 't':
+			case 'T':
+				*str++ = '\t';
+				break;
+			case 'r':
+			case 'R':
+				*str++ = '\r';
+				break;
+			case 'x':
+			case 'X':
+				c = 0;
+				p++;
+				for (i = 0; i < 2; i++)
+				{
+					c <<= 4;
+					if (*p >= '0' && *p <= '9')
+					{
+						c += *p - '0';
+					}
+					else if (*p >= 'a' && *p <= 'f')
+					{
+						c += 10 + *p - 'a';
+					}
+					else if (*p >= 'A' && *p <= 'F')
+					{
+						c += 10 + *p - 'A';
+					}
+					else
+					{
+						break;
+					}
 					p++;
-					for (i = 0; i < 2; i++) {
-						c <<= 4;
-						if (*p >= '0' && *p <= '9')
-							c += *p-'0';
-						else if (*p >= 'a' && *p <= 'f')
-							c += 10 + *p-'a';
-						else if (*p >= 'A' && *p <= 'F')
-							c += 10 + *p-'A';
-						else
-							break;
-						p++;
+				}
+				*str++ = c;
+				break;
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+				c = 0;
+				for (i = 0; i < 3; i++)
+				{
+					c <<= 3;
+					if (*p >= '0' && *p <= '7')
+					{
+						c += *p - '0';
 					}
-					*str++ = c;
-					break;
-				case '0':
-				case '1':
-				case '2':
-				case '3':
-				case '4':
-				case '5':
-				case '6':
-				case '7':
-					c = 0;
-					for (i = 0; i < 3; i++) {
-						c <<= 3;
-						if (*p >= '0' && *p <= '7')
-							c += *p-'0';
-						else
-							break;
-						p++;
+					else
+					{
+						break;
 					}
-					*str++ = c;
-					break;
-				default:
-					*str++ = *p;
-					break;
+					p++;
+				}
+				*str++ = c;
+				break;
+			default:
+				*str++ = *p;
+				break;
 			}
 			p++;
 		}
@@ -776,96 +701,129 @@ static void ReplaceSpecialChars (char *str)
 	*str = 0;
 }
 
-static char *skipwhite (char *str)
+static char* skipwhite(char* str)
 {
 	if (str)
+	{
 		while (*str && isspace(*str))
+		{
 			str++;
+		}
+	}
 	return str;
 }
 
-static void stripwhite (char *str)
+static void stripwhite(char* str)
 {
-	char *end = str + strlen(str) - 1;
+	char* end = str + strlen(str) - 1;
 
 	while (end >= str && isspace(*end))
+	{
 		end--;
+	}
 
 	end[1] = '\0';
 }
 
-static char *igets (void)
+static char* igets(void)
 {
-	char *line;
+	char* line;
 
 	if(!read_ptr || IS_AT_PATCH_SIZE)
 		return NULL;
+	}
 
 	if (*read_ptr == '\0')
 		return NULL;
+	}
 
 	line = read_ptr;
 
 	while (*read_ptr != '\n' && *read_ptr != '\0')
 		read_ptr++;
+	}
 
 	if (*read_ptr == '\n')
 		*read_ptr++ = 0;
+	}
 
 	return line;
 }
 
-static int GetLine (void)
+static int GetLine(void)
 {
 	char *line, *line2;
 
-	do {
-		while ( (line = igets ()) )
-			if (line[0] != '#')		// Skip comment lines
+	do
+	{
+		while ((line = igets()))
+		{
+			if (line[0] != '#') // Skip comment lines
+			{
 				break;
+			}
+		}
 
-
-		Line1 = skipwhite (line);
-	} while (Line1 && *Line1 == 0);	// Loop until we get a line with
-									// more than just whitespace.
+		Line1 = skipwhite(line);
+	} while (Line1 && *Line1 == 0); // Loop until we get a line with
+	                                // more than just whitespace.
 
 	if (!Line1)
-        return 0;
+	{
+		return 0;
+	}
 
-    line = strchr (Line1, '=');
+	line = strchr(Line1, '=');
 
-	if (line) {					// We have an '=' in the input line
+	if (line)
+	{ // We have an '=' in the input line
 		line2 = line;
 		while (--line2 >= Line1)
+		{
 			if (*line2 > ' ')
+			{
 				break;
+			}
+		}
 
 		if (line2 < Line1)
-			return 0;			// Nothing before '='
+		{
+			return 0; // Nothing before '='
+		}
 
 		*(line2 + 1) = 0;
 
 		line++;
 		while (*line && *line <= ' ')
+		{
 			line++;
+		}
 
 		if (*line == 0)
-			return 0;			// Nothing after '='
+		{
+			return 0; // Nothing after '='
+		}
 
 		Line2 = line;
 
 		return 1;
-	} else {					// No '=' in input line
+	}
+	else
+	{ // No '=' in input line
 		line = Line1 + 1;
 		while (*line > ' ')
-			line++;				// Get beyond first word
+		{
+			line++; // Get beyond first word
+		}
 
 		*line++ = 0;
 		while (*line && *line <= ' ')
-			line++;				// Skip white space
+		{
+			line++; // Skip white space
+		}
 
 		//.bex files don't have this restriction
-		//if (*line == 0)
+		// if (*line == 0)
 		//	return 0;			// No second word
 
 		Line2 = line;
@@ -874,232 +832,617 @@ static int GetLine (void)
 	}
 }
 
-static int PatchThing (int thingy)
+static int PatchThing(int thingy)
 {
-    size_t thingNum = (size_t)thingy;
 
-	static const struct Key keys[] = {
-		{ "ID #",				offsetof(mobjinfo_t,doomednum) },
-		{ "Initial frame",		offsetof(mobjinfo_t,spawnstate) },
-		{ "Hit points",			offsetof(mobjinfo_t,spawnhealth) },
-		{ "First moving frame",	offsetof(mobjinfo_t,seestate) },
-		{ "Reaction time",		offsetof(mobjinfo_t,reactiontime) },
-		{ "Injury frame",		offsetof(mobjinfo_t,painstate) },
-		{ "Pain chance",		offsetof(mobjinfo_t,painchance) },
-		{ "Close attack frame",	offsetof(mobjinfo_t,meleestate) },
-		{ "Far attack frame",	offsetof(mobjinfo_t,missilestate) },
-		{ "Death frame",		offsetof(mobjinfo_t,deathstate) },
-		{ "Exploding frame",	offsetof(mobjinfo_t,xdeathstate) },
-		{ "Speed",				offsetof(mobjinfo_t,speed) },
-		{ "Width",				offsetof(mobjinfo_t,radius) },
-		{ "Height",				offsetof(mobjinfo_t,height) },
-		{ "Mass",				offsetof(mobjinfo_t,mass) },
-		{ "Missile damage",		offsetof(mobjinfo_t,damage) },
-		{ "Respawn frame",		offsetof(mobjinfo_t,raisestate) },
-		{ "Translucency",		offsetof(mobjinfo_t,translucency) },
-		{ NULL, 0}
+	enum
+	{
+		// Boom flags
+		MF_TRANSLATION = 0x0c000000, // if 0x4 0x8 or 0xc, use a translation
+		// MF_TRANSSHIFT = 26,       // table for player colormaps
+		// A couple of Boom flags that don't exist in ZDoom
+		MF_SLIDE = 0x00002000,       // Player: keep info about sliding along walls.
+		MF_TRANSLUCENT = 0x80000000, // Translucent sprite?
+		                             // MBF flags: TOUCHY is remapped to flags6, FRIEND is
+		                             // turned into FRIENDLY, and finally BOUNCES is
+		                             // replaced by bouncetypes with the BOUNCES_MBF bit.
 	};
+
+	size_t thingNum = thingy;
 
 	// flags can be specified by name (a .bex extension):
-	static const struct {
-		short bit;
-		short whichflags;
-		const char *name;
-	} bitnames[] = {
-		{ 0, 0, "SPECIAL"},
-		{ 1, 0, "SOLID"},
-		{ 2, 0, "SHOOTABLE"},
-		{ 3, 0, "NOSECTOR"},
-		{ 4, 0, "NOBLOCKMAP"},
-		{ 5, 0, "AMBUSH"},
-		{ 6, 0, "JUSTHIT"},
-		{ 7, 0, "JUSTATTACKED"},
-		{ 8, 0, "SPAWNCEILING"},
-		{ 9, 0, "NOGRAVITY"},
-		{10, 0, "DROPOFF"},
-		{11, 0, "PICKUP"},
-		{12, 0, "NOCLIP"},
-		{14, 0, "FLOAT"},
-		{15, 0, "TELEPORT"},
-		{16, 0, "MISSILE"},
-		{17, 0, "DROPPED"},
-		{18, 0, "SHADOW"},
-		{19, 0, "NOBLOOD"},
-		{20, 0, "CORPSE"},
-		{21, 0, "INFLOAT"},
-		{22, 0, "COUNTKILL"},
-		{23, 0, "COUNTITEM"},
-		{24, 0, "SKULLFLY"},
-		{25, 0, "NOTDMATCH"},
-		{26, 0, "TRANSLATION1"},
-		{26, 0, "TRANSLATION"},		// BOOM compatibility
-		{27, 0, "TRANSLATION2"},
-		{27, 0, "UNUSED1"},			// BOOM compatibility
-		{28, 0, "STEALTH"},
-		{28, 0, "UNUSED2"},			// BOOM compatibility
-		{29, 0, "TRANSLUC25"},
-		{29, 0, "UNUSED3"},			// BOOM compatibility
-		{30, 0, "TRANSLUC50"},
-		{(29<<8)|30, 0, "TRANSLUC75"},
-		{30, 0, "UNUSED4"},			// BOOM compatibility
-		{30, 0, "TRANSLUCENT"},		// BOOM compatibility?
-		{31, 0, "RESERVED"},
-
-		// Names for flags2
-		{ 0, 1, "LOGRAV"},
-		{ 1, 1, "WINDTHRUST"},
-		{ 2, 1, "FLOORBOUNCE"},
-		{ 3, 1, "BLASTED"},
-		{ 4, 1, "FLY"},
-		{ 5, 1, "FLOORCLIP"},
-		{ 6, 1, "SPAWNFLOAT"},
-		{ 7, 1, "NOTELEPORT"},
-		{ 8, 1, "RIP"},
-		{ 9, 1, "PUSHABLE"},
-		{10, 1, "CANSLIDE"},			// Avoid conflict with SLIDE from BOOM
-		{11, 1, "ONMOBJ"},
-		{12, 1, "PASSMOBJ"},
-		{13, 1, "CANNOTPUSH"},
-		{14, 1, "DROPPED"},
-		{15, 1, "BOSS"},
-		{16, 1, "FIREDAMAGE"},
-		{17, 1, "NODMGTHRUST"},
-		{18, 1, "TELESTOMP"},
-		{19, 1, "FLOATBOB"},
-		{20, 1, "DONTDRAW"},
-		{21, 1, "IMPACT"},
-		{22, 1, "PUSHWALL"},
-		{23, 1, "MCROSS"},
-		{24, 1, "PCROSS"},
-		{25, 1, "CANTLEAVEFLOORPIC"},
-		{26, 1, "NONSHOOTABLE"},
-		{27, 1, "INVULNERABLE"},
-		{28, 1, "DORMANT"},
-		{29, 1, "ICEDAMAGE"},
-		{30, 1, "SEEKERMISSILE"},
-		{31, 1, "REFLECTIVE"}
+	struct flagsystem_t
+	{
+		short Bit;
+		short WhichFlags;
+		const char* Name;
 	};
+
+	flagsystem_t bitnames[73] = {
+	    {0, 0, "SPECIAL"},
+	    {1, 0, "SOLID"},
+	    {2, 0, "SHOOTABLE"},
+	    {3, 0, "NOSECTOR"},
+	    {4, 0, "NOBLOCKMAP"},
+	    {5, 0, "AMBUSH"},
+	    {6, 0, "JUSTHIT"},
+	    {7, 0, "JUSTATTACKED"},
+	    {8, 0, "SPAWNCEILING"},
+	    {9, 0, "NOGRAVITY"},
+	    {10, 0, "DROPOFF"},
+	    {11, 0, "PICKUP"},
+	    {12, 0, "NOCLIP"},
+	    {13, 0, "SLIDE"}, // UNUSED FOR NOW
+	    {14, 0, "FLOAT"},
+	    {15, 0, "TELEPORT"},
+	    {16, 0, "MISSILE"},
+	    {17, 0, "DROPPED"},
+	    {18, 0, "SHADOW"},
+	    {19, 0, "NOBLOOD"},
+	    {20, 0, "CORPSE"},
+	    {21, 0, "INFLOAT"},
+	    {22, 0, "COUNTKILL"},
+	    {23, 0, "COUNTITEM"},
+	    {24, 0, "SKULLFLY"},
+	    {25, 0, "NOTDMATCH"},
+	    {26, 0, "TRANSLATION1"},
+	    {26, 0, "TRANSLATION"}, // BOOM compatibility
+	    {27, 0, "TRANSLATION2"},
+	    {27, 0, "UNUSED1"}, // BOOM compatibility
+	    {28, 0, "UNUSED2"}, // BOOM compatibility
+	    {29, 0, "UNUSED3"}, // BOOM compatibility
+	    {30, 0, "UNUSED4"}, // BOOM compatibility
+	    {28, 0, "TOUCHY"},  // UNUSED FOR NOW
+	    {29, 0, "BOUNCES"}, // UNUSED FOR NOW
+	    {30, 0, "FRIEND"},
+	    {31, 0, "TRANSLUCENT"}, // BOOM compatibility
+	    {30, 0, "STEALTH"},
+
+	    // TRANSLUCENT... HACKY BUT HEH.
+	    {0, 2, "TRANSLUC25"},
+	    {1, 2, "TRANSLUC50"},
+	    {2, 2, "TRANSLUC75"},
+
+	    // Names for flags2
+	    {0, 1, "LOGRAV"},
+	    {1, 1, "WINDTHRUST"},
+	    {2, 1, "FLOORBOUNCE"},
+	    {3, 1, "BLASTED"},
+	    {4, 1, "FLY"},
+	    {5, 1, "FLOORCLIP"},
+	    {6, 1, "SPAWNFLOAT"},
+	    {7, 1, "NOTELEPORT"},
+	    {8, 1, "RIP"},
+	    {9, 1, "PUSHABLE"},
+	    {10, 1, "CANSLIDE"}, // Avoid conflict with SLIDE from BOOM
+	    {11, 1, "ONMOBJ"},
+	    {12, 1, "PASSMOBJ"},
+	    {13, 1, "CANNOTPUSH"},
+	    {14, 1, "DROPPED"},
+	    {15, 1, "BOSS"},
+	    {16, 1, "FIREDAMAGE"},
+	    {17, 1, "NODMGTHRUST"},
+	    {18, 1, "TELESTOMP"},
+	    {19, 1, "FLOATBOB"},
+	    {20, 1, "DONTDRAW"},
+	    {21, 1, "IMPACT"},
+	    {22, 1, "PUSHWALL"},
+	    {23, 1, "MCROSS"},
+	    {24, 1, "PCROSS"},
+	    {25, 1, "CANTLEAVEFLOORPIC"},
+	    {26, 1, "NONSHOOTABLE"},
+	    {27, 1, "INVULNERABLE"},
+	    {28, 1, "DORMANT"},
+	    {29, 1, "ICEDAMAGE"},
+	    {30, 1, "SEEKERMISSILE"},
+	    {31, 1, "REFLECTIVE"},
+	};
+
+	// MBF21 Bitname system
+	flagsystem_t mbf_bitnames[19] = {
+	    {0, 1, "LOGRAV"},         {1, 3, "SHORTMRANGE"},    {2, 3, "DMGIGNORED"},
+	    {3, 3, "NORADIUSDMG"},    {4, 3, "FORCERADIUSDMG"}, {5, 3, "HIGHERMPROB"},
+	    {6, 3, "RANGEHALF"},      {17, 1, "NOTHRESHOLD"},   {8, 3, "LONGMELEE"},
+	    {15, 1, "BOSS"},          {10, 3, "MAP07BOSS1"},    {11, 3, "MAP07BOSS2"},
+	    {12, 3, "E1M8BOSS"},      {13, 3, "E2M8BOSS"},      {14, 3, "E3M8BOSS"},
+	    {15, 3, "E4M6BOSS"},      {16, 3, "E4M8BOSS"},      {8, 1, "RIP"},
+	    {18, 3, "FULLVOLSOUNDS"},
+	};
+
 	int result;
+	int oldflags;
+	bool hadTranslucency = false;
 	mobjinfo_t *info, dummy;
-	BOOL hadHeight = false;
+	int *ednum, dummyed;
+	bool hadHeight = false;
+	bool gibhealth = false;
+
+	info = &dummy;
+	ednum = &dummyed;
 
 	thingNum--;
-	if (thingNum < NUMMOBJTYPES) {
+	if (thingNum < 0 || thingNum >= NUMMOBJTYPES)
+	{
+		DPrintf("Thing %" PRIuSIZE " out of range.\n", thingNum);
+	}
+	else
+	{
 		info = &mobjinfo[thingNum];
-		DPrintf ("Thing %d\n", thingNum);
-	} else {
-		info = &dummy;
-		DPrintf ("Thing %d out of range.\n", thingNum + 1);
+		*ednum = *&info->doomednum;
+#if defined _DEBUG
+		DPrintf("Thing %" PRIuSIZE " found.\n", thingNum);
+#endif
 	}
 
-	while ((result = GetLine ()) == 1) {
-		size_t sndmap = atoi (Line2);
+	oldflags = info->flags;
 
-		if (sndmap >= sizeof(SoundMap))
+	while ((result = GetLine()) == 1)
+	{
+		size_t sndmap = atoi(Line2);
+
+		if (sndmap >= ARRAY_LENGTH(SoundMap))
+		{
 			sndmap = 0;
+		}
 
-		if (HandleKey (keys, info, Line1, atoi (Line2))) {
-			if (!stricmp (Line1, "Alert sound"))
-				info->seesound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Attack sound"))
-				info->attacksound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Pain sound"))
-				info->painsound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Death sound"))
-				info->deathsound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Action sound"))
-				info->activesound = SoundMap[sndmap];
-			else if (!stricmp (Line1, "Bits"))
+		size_t val = atoi(Line2);
+		int linelen = strlen(Line1);
+
+		if (stricmp(Line1 + linelen - 6, " frame") == 0)
+		{
+			statenum_t state = (statenum_t)val;
+
+			if (!strnicmp(Line1, "Initial", 7))
 			{
-				int value = 0, value2 = 0;
-				BOOL vchanged = false, v2changed = false;
-				char *strval;
-
-				for (strval = Line2; (strval = strtok (strval, ",+| \t\f\r")); strval = NULL)
-				{
-					size_t iy;
-
-					if (IsNum (strval))
-					{
-						// Force the top 4 bits to 0 so that the user is forced
-						// to use the mnemonics to change them.
-						value |= (atoi(strval) & 0x0fffffff);
-						vchanged = true;
-					}
-					else
-					{
-						for (iy = 0; iy < ARRAY_LENGTH(bitnames); iy++)
-						{
-							if (!stricmp (strval, bitnames[iy].name))
-							{
-								if (bitnames[iy].whichflags)
-								{
-									v2changed = true;
-									if (bitnames[iy].bit & 0xff00)
-										value2 |= 1 << (bitnames[iy].bit >> 8);
-									value2 |= 1 << (bitnames[iy].bit & 0xff);
-								}
-								else
-								{
-									vchanged = true;
-									if (bitnames[iy].bit & 0xff00)
-										value |= 1 << (bitnames[iy].bit >> 8);
-									value |= 1 << (bitnames[iy].bit & 0xff);
-								}
-								break;
-							}
-						}
-						if (iy >= ARRAY_LENGTH(bitnames))
-							DPrintf("Unknown bit mnemonic %s\n", strval);
-					}
-				}
-				if (vchanged)
-				{
-					info->flags = value;
-					// Bit flags are no longer used to specify translucency.
-					// This is just a temporary hack.
-					if (info->flags & 0x60000000)
-						info->translucency = (info->flags & 0x60000000) >> 15;
-				}
-				if (v2changed)
-					info->flags2 = value2;
+				info->spawnstate = state;
 			}
-			else DPrintf (unknown_str, Line1, "Thing", thingNum);
-		} else if (!stricmp (Line1, "Height")) {
+			else if (!strnicmp(Line1, "First moving", 12))
+			{
+				info->seestate = state;
+			}
+			else if (!strnicmp(Line1, "Injury", 6))
+			{
+				info->painstate = state;
+			}
+			else if (!strnicmp(Line1, "Close attack", 12))
+			{
+				info->meleestate = state;
+			}
+			else if (!strnicmp(Line1, "Far attack", 10))
+			{
+				info->missilestate = state;
+			}
+			else if (!strnicmp(Line1, "Death", 5))
+			{
+				info->deathstate = state;
+			}
+			else if (!strnicmp(Line1, "Exploding", 9))
+			{
+				info->xdeathstate = state;
+			}
+			else if (!strnicmp(Line1, "Respawn", 7))
+			{
+				info->raisestate = state;
+			}
+		}
+		else if (stricmp(Line1 + linelen - 6, " sound") == 0)
+		{
+			char* snd;
+
+			if (val == 0 || val >= ARRAY_LENGTH(SoundMap))
+			{
+				val = 0;
+			}
+
+			snd = (char*)SoundMap[val];
+
+			if (!strnicmp(Line1, "Alert", 5))
+			{
+				info->seesound = snd;
+			}
+			else if (!strnicmp(Line1, "Attack", 6))
+			{
+				info->attacksound = snd;
+			}
+			else if (!strnicmp(Line1, "Pain", 4))
+			{
+				info->painsound = snd;
+			}
+			else if (!strnicmp(Line1, "Death", 5))
+			{
+				info->deathsound = snd;
+			}
+			else if (!strnicmp(Line1, "Action", 6))
+			{
+				info->activesound = snd;
+			}
+			else if (!strnicmp(Line1, "Rip", 3))
+			{
+				info->ripsound = snd;
+			}
+		}
+		else if (stricmp(Line1, "Projectile group") == 0)
+		{
+			info->projectile_group = val;
+
+			if (info->projectile_group < 0)
+			{
+				info->projectile_group = PG_GROUPLESS;
+			}
+			else
+			{
+				info->projectile_group = val + PG_END;
+			}
+		}
+		else if (stricmp(Line1, "Infighting group") == 0)
+		{
+			info->infighting_group = val;
+
+			if (info->infighting_group < 0)
+			{
+				I_Error("Infighting groups must be >= 0 (check your DEHacked "
+				        "entry, and correct it!)\n");
+			}
+			info->infighting_group = val + IG_END;
+		}
+		else if (stricmp(Line1, "Missile damage") == 0)
+		{
+			info->damage = val;
+		}
+		else if (stricmp(Line1, "Reaction time") == 0)
+		{
+			info->reactiontime = val;
+		}
+		else if (stricmp(Line1, "Translucency") == 0)
+		{
+			info->translucency = val;
+			hadTranslucency = true;
+		}
+		else if (stricmp(Line1, "Dropped item") == 0)
+		{
+			if (val - 1 < 0 || val - 1 >= NUMMOBJTYPES)
+			{
+				I_Error("Dropped item out of range. Check your dehacked.\n");
+			}
+			info->droppeditem = (mobjtype_t)(int)(val - 1); // deh is mobj + 1
+		}
+		else if (stricmp(Line1, "Splash group") == 0)
+		{
+			info->splash_group = val;
+			if (info->splash_group < 0)
+			{
+				I_Error("Splash groups must be >= 0 (check your DEHacked entry, "
+				        "and correct it!)\n");
+			}
+			info->splash_group = val + SG_END;
+		}
+		else if (stricmp(Line1, "Pain chance") == 0)
+		{
+			info->painchance = (SWORD)val;
+		}
+		else if (stricmp(Line1, "Melee range") == 0)
+		{
+			info->meleerange = val;
+		}
+		else if (stricmp(Line1, "Hit points") == 0)
+		{
+			info->spawnhealth = val;
+		}
+		else if (stricmp(Line1, "Fast speed") == 0)
+		{
+			info->altspeed = val;
+		}
+		else if (stricmp(Line1, "Gib health") == 0)
+		{
+			gibhealth = true;
+			info->gibhealth = val;
+
+			// Special hack: DEH values are always positive, and since a gib is
+			// always negative, a positive value will thus become negative.
+			if (info->gibhealth > 0)
+				info->gibhealth = -info->gibhealth;
+		}
+		else if (stricmp(Line1, "MBF21 Bits") == 0)
+		{
+			int value[4] = {0, 0, 0};
+			bool vchanged[4] = {false, false, false};
+			char* strval;
+
+			for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r")); strval = NULL)
+			{
+				if (IsNum(strval))
+				{
+					int tempval = atoi(strval);
+
+					if (tempval & MF2_LOGRAV)
+					{
+						info->flags2 |= MF2_LOGRAV;
+					}
+
+					if (tempval & MF3_SHORTMRANGE)
+					{
+						info->flags3 |= MF3_SHORTMRANGE;
+					}
+
+					if (tempval & MF3_DMGIGNORED)
+					{
+						info->flags3 |= MF3_DMGIGNORED;
+					}
+
+					if (tempval & MF3_NORADIUSDMG)
+					{
+						info->flags3 |= MF3_NORADIUSDMG;
+					}
+
+					if (tempval & MF3_FORCERADIUSDMG)
+					{
+						info->flags3 |= MF3_FORCERADIUSDMG;
+					}
+
+					if (tempval & MF3_HIGHERMPROB)
+					{
+						info->flags3 |= MF3_HIGHERMPROB;
+					}
+
+					if (tempval & MF3_RANGEHALF)
+					{
+						info->flags3 |= MF3_RANGEHALF;
+					}
+
+					if (tempval & MF3_NOTHRESHOLD)
+					{
+						info->flags3 |= MF3_NOTHRESHOLD;
+					}
+
+					if (tempval & MF3_LONGMELEE)
+					{
+						info->flags3 |= MF3_LONGMELEE;
+					}
+
+					if (tempval & MF2_BOSS)
+					{
+						info->flags2 |= MF2_BOSS;
+					}
+
+					if (tempval & MF3_MAP07BOSS1)
+					{
+						info->flags3 |= MF3_MAP07BOSS1;
+					}
+
+					if (tempval & MF3_MAP07BOSS2)
+					{
+						info->flags3 |= MF3_MAP07BOSS2;
+					}
+
+					if (tempval & MF3_E1M8BOSS)
+					{
+						info->flags3 |= MF3_E1M8BOSS;
+					}
+
+					if (tempval & MF3_E2M8BOSS)
+					{
+						info->flags3 |= MF3_E2M8BOSS;
+					}
+
+					if (tempval & MF3_E3M8BOSS)
+					{
+						info->flags3 |= MF3_E3M8BOSS;
+					}
+
+					if (tempval & MF3_E4M6BOSS)
+					{
+						info->flags3 |= MF3_E4M6BOSS;
+					}
+
+					if (tempval & MF3_E4M8BOSS)
+					{
+						info->flags3 |= MF3_E4M8BOSS;
+					}
+
+					if (tempval & MF3_FULLVOLSOUNDS)
+					{
+						info->flags3 |= MF3_FULLVOLSOUNDS;
+					}
+
+					if (tempval & MF2_NODMGTHRUST)
+					{
+						info->flags2 |= MF2_NODMGTHRUST;
+					}
+
+					if (tempval & MF2_RIP)
+					{
+						info->flags2 |= MF2_RIP;
+					}
+
+					value[3] |= atoi(strval);
+					vchanged[3] = true;
+				}
+				else
+				{
+					size_t i;
+
+					for (i = 0; i < ARRAY_LENGTH(mbf_bitnames); i++)
+					{
+						if (!stricmp(strval, mbf_bitnames[i].Name))
+						{
+							vchanged[mbf_bitnames[i].WhichFlags] = true;
+							value[mbf_bitnames[i].WhichFlags] |= 1
+							                                     << (mbf_bitnames[i].Bit);
+							break;
+						}
+					}
+
+					if (i == ARRAY_LENGTH(mbf_bitnames))
+					{
+						DPrintf("Unknown bit mnemonic %s\n", strval);
+					}
+				}
+			}
+			if (vchanged[3])
+			{
+				info->flags3 = value[3];
+			}
+		}
+		else if (stricmp(Line1, "Height") == 0)
+		{
+			info->height = val;
 			hadHeight = true;
 		}
+		else if (!stricmp(Line1, "Speed"))
+		{
+			info->speed = val;
+		}
+		else if (stricmp(Line1, "Width") == 0)
+		{
+			info->radius = val;
+		}
+		else if (!stricmp(Line1, "Bits"))
+		{
+			int value[4] = {0, 0, 0};
+			bool vchanged[4] = {false, false, false};
+			char* strval;
+
+			for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r")); strval = NULL)
+			{
+				if (IsNum(strval))
+				{
+					// Force the top 4 bits to 0 so that the user is forced
+					// to use the mnemonics to change them.
+
+					// I have no idea why everyone insists on using strtol here
+					// even though it fails dismally if a value is parsed where
+					// the highest bit it set. Do people really use negative
+					// values here? Let's better be safe and check both.
+					value[0] |= atoi(strval);
+					vchanged[0] = true;
+				}
+				else
+				{
+					size_t i;
+
+					for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+					{
+						if (!stricmp(strval, bitnames[i].Name))
+						{
+							vchanged[bitnames[i].WhichFlags] = true;
+							value[bitnames[i].WhichFlags] |= 1 << (bitnames[i].Bit);
+							break;
+						}
+					}
+
+					if (i == ARRAY_LENGTH(bitnames))
+						DPrintf("Unknown bit mnemonic %s\n", strval);
+				}
+			}
+			if (vchanged[0])
+			{
+				if (value[0] & MF_TRANSLUCENT)
+				{
+					info->translucency =
+					    TRANSLUC50; // Correct value should be 0.66 (BOOM)...
+					hadTranslucency = true;
+				}
+
+				// Unsupported flags have to be announced for developers...
+				if (value[0] & MF_TOUCHY)
+				{
+					DPrintf("[DEH Bits] Unsupported MBF flag TOUCHY.\n");
+					value[0] &= ~MF_TOUCHY;
+				}
+
+				if (value[0] & MF_BOUNCES)
+					DPrintf("[DEH Bits] MBF flag BOUNCES is partially supported. Use "
+					        "it at your own risk!\n");
+
+				if (value[0] & MF_FRIEND)
+				{
+					DPrintf("[DEH Bits] Unsupported MBF flag FRIEND.\n");
+					value[0] &= ~MF_FRIEND;
+				}
+
+				info->flags = value[0];
+			}
+			if (vchanged[1])
+			{
+				info->flags2 = value[1];
+			}
+			if (vchanged[2])
+			{
+				if (value[2] & 7)
+				{
+					hadTranslucency = true;
+
+					if (value[2] & 1)
+						info->translucency = TRANSLUC25;
+					else if (value[2] & 2)
+						info->translucency = TRANSLUC50;
+					else if (value[2] & 4)
+						info->translucency = TRANSLUC75;
+				}
+			}
+			if (vchanged[3])
+			{
+				info->flags3 = value[3];
+			}
+		}
+		else if (stricmp(Line1, "ID #") == 0)
+		{
+			*&info->doomednum = (SDWORD)val;
+		}
+		else if (stricmp(Line1, "Mass") == 0)
+		{
+			info->mass = val;
+		}
+		else
+		{
+			PrintUnknown(Line1, "Thing", thingNum);
+		}
 	}
-	
+
 	// [ML] Set a thing's "real world height" to what's being offered here,
 	// so it's consistent from the patch
-	if (hadHeight && thingNum < sizeof(OrgHeights))
-		info->cdheight = info->height;
+	if (info != &dummy)
+	{
+		if (hadHeight && thingNum < sizeof(OrgHeights))
+		{
+			info->cdheight = info->height;
+		}
 
-	if (info->flags & MF_SPAWNCEILING && !hadHeight && thingNum < sizeof(OrgHeights))
-		info->height = OrgHeights[thingNum] * FRACUNIT;
+		if (info->flags & MF_SPAWNCEILING && !hadHeight && thingNum < sizeof(OrgHeights))
+		{
+			info->height = OrgHeights[thingNum] * FRACUNIT;
+		}
+
+		// Set a default gibhealth if none was assigned.
+		if (!gibhealth && info->spawnhealth && !info->gibhealth)
+		{
+			info->gibhealth = -info->spawnhealth;
+		}
+	}
 
 	return result;
 }
 
-static int PatchSound (int soundNum)
+static int PatchSound(int soundNum)
 {
 	int result;
 
-	DPrintf ("Sound %d (no longer supported)\n", soundNum);
-/*
-	sfxinfo_t *info, dummy;
-	int offset = 0;
-	if (soundNum >= 1 && soundNum <= NUMSFX) {
-		info = &S_sfx[soundNum];
-	} else {
-		info = &dummy;
-		DPrintf ("Sound %d out of range.\n");
-	}
-*/
-	while ((result = GetLine ()) == 1) {
+	DPrintf("Sound %d (no longer supported)\n", soundNum);
+	/*
+	    sfxinfo_t *info, dummy;
+	    int offset = 0;
+	    if (soundNum >= 1 && soundNum <= NUMSFX) {
+	        info = &S_sfx[soundNum];
+	    } else {
+	        info = &dummy;
+	        DPrintf ("Sound %d out of range.\n");
+	    }
+	*/
+	while ((result = GetLine()) == 1)
+	{
 		/*
 		if (!stricmp  ("Offset", Line1))
-			offset = atoi (Line2);
+		    offset = atoi (Line2);
 		else CHECKKEY ("Zero/One",			info->singularity)
 		else CHECKKEY ("Value",				info->priority)
 		else CHECKKEY ("Zero 1",			info->link)
@@ -1108,257 +1451,410 @@ static int PatchSound (int soundNum)
 		else CHECKKEY ("Zero 2",			info->data)
 		else CHECKKEY ("Zero 3",			info->usefulness)
 		else CHECKKEY ("Zero 4",			info->lumpnum)
-		else DPrintf (unknown_str, Line1, "Sound", soundNum);
+		else PrintUnknown(Line1, "Sound", soundNum);
 		*/
 	}
-/*
-	if (offset) {
-		// Calculate offset from start of sound names
-		offset -= toff[dversion] + 21076;
+	/*
+	    if (offset) {
+	        // Calculate offset from start of sound names
+	        offset -= toff[dversion] + 21076;
 
-		if (offset <= 64)			// pistol .. bfg
-			offset >>= 3;
-		else if (offset <= 260)		// sawup .. oof
-			offset = (offset + 4) >> 3;
-		else						// telept .. skeatk
-			offset = (offset + 8) >> 3;
+	        if (offset <= 64)			// pistol .. bfg
+	            offset >>= 3;
+	        else if (offset <= 260)		// sawup .. oof
+	            offset = (offset + 4) >> 3;
+	        else						// telept .. skeatk
+	            offset = (offset + 8) >> 3;
 
-		if (offset >= 0 && offset < NUMSFX) {
-			S_sfx[soundNum].name = OrgSfxNames[offset + 1];
-		} else {
-			DPrintf ("Sound name %d out of range.\n", offset + 1);
-		}
-	}
-*/
+	        if (offset >= 0 && offset < NUMSFX) {
+	            S_sfx[soundNum].name = OrgSfxNames[offset + 1];
+	        } else {
+	            DPrintf ("Sound name %d out of range.\n", offset + 1);
+	        }
+	    }
+	*/
 	return result;
 }
 
-static int PatchFrame (int frameNum)
+static int PatchFrame(int frameNum)
 {
-	static const struct Key keys[] = {
-		{ "Sprite number",		offsetof(state_t,sprite) },
-		{ "Sprite subnumber",	offsetof(state_t,frame) },
-		{ "Duration",			offsetof(state_t,tics) },
-		{ "Next frame",			offsetof(state_t,nextstate) },
-		{ "Unknown 1",			offsetof(state_t,misc1) },
-		{ "Unknown 2",			offsetof(state_t,misc2) },
-		{ NULL, 0 }
-	};
+	static const struct Key keys[] = {{"Sprite number", offsetof(state_t, sprite)},
+	                                  {"Sprite subnumber", offsetof(state_t, frame)},
+	                                  {"Duration", offsetof(state_t, tics)},
+	                                  {"Next frame", offsetof(state_t, nextstate)},
+	                                  {"Unknown 1", offsetof(state_t, misc1)},
+	                                  {"Unknown 2", offsetof(state_t, misc2)},
+	                                  {"Args1", offsetof(state_t, args[0])},
+	                                  {"Args2", offsetof(state_t, args[1])},
+	                                  {"Args3", offsetof(state_t, args[2])},
+	                                  {"Args4", offsetof(state_t, args[3])},
+	                                  {"Args5", offsetof(state_t, args[4])},
+	                                  {"Args6", offsetof(state_t, args[5])},
+	                                  {"Args7", offsetof(state_t, args[6])},
+	                                  {"Args8", offsetof(state_t, args[7])},
+	                                  {NULL, 0}};
 	int result;
 	state_t *info, dummy;
 
-	if (frameNum >= 0 && frameNum < NUMSTATES) {
+	static const struct
+	{
+		short Bit;
+		const char* Name;
+	} bitnames[] = {
+	    {1, "SKILL5FAST"},
+	};
+
+	if (frameNum >= 0 && frameNum < NUMSTATES)
+	{
 		info = &states[frameNum];
-		DPrintf ("Frame %d\n", frameNum);
-	} else {
+		DPrintf("Frame %d\n", frameNum);
+	}
+	else
+	{
 		info = &dummy;
-		DPrintf ("Frame %d out of range\n", frameNum);
+		DPrintf("Frame %d out of range\n", frameNum);
 	}
 
-	while ((result = GetLine ()) == 1)
-		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
-			DPrintf (unknown_str, Line1, "Frame", frameNum);
+	while ((result = GetLine()) == 1)
+	{
+		size_t val = atoi(Line2);
+		int linelen = strlen(Line1);
+
+		if (HandleKey(keys, info, Line1, val, sizeof(*info)))
+		{
+			if (linelen == 10)
+			{
+				if (stricmp(Line1, "MBF21 Bits") == 0)
+				{
+					int value = 0;
+					bool vchanged = false;
+					char* strval;
+
+					for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
+					     strval = NULL)
+					{
+						if (IsNum(strval))
+						{
+							// Force the top 4 bits to 0 so that the user is forced
+							// to use the mnemonics to change them.
+
+							// I have no idea why everyone insists on using strtol here
+							// even though it fails dismally if a value is parsed where
+							// the highest bit it set. Do people really use negative
+							// values here? Let's better be safe and check both.
+							value |= atoi(strval);
+							vchanged = true;
+						}
+						else
+						{
+							size_t i;
+
+							for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+							{
+								if (!stricmp(strval, bitnames[i].Name))
+								{
+									vchanged = true;
+									value |= 1 << (bitnames[i].Bit);
+									break;
+								}
+							}
+
+							if (i == ARRAY_LENGTH(bitnames))
+							{
+								DPrintf("Unknown bit mnemonic %s\n", strval);
+							}
+						}
+					}
+					if (vchanged)
+					{
+						info->flags = value; // Weapon Flags
+					}
+				}
+			}
+			else
+			{
+				PrintUnknown(Line1, "Frame", frameNum);
+			}
+		}
+	}
+#if defined _DEBUG
+	Printf("FRAME %d: Duration: %d, Next: %d, SprNum: %d(%s), SprSub: %d\n", frameNum,
+	       info->tics, info->nextstate, info->sprite, sprnames[info->sprite],
+	       info->frame);
+#endif
 
 	return result;
 }
 
-static int PatchSprite (int sprNum)
+static int PatchSprite(int sprNum)
 {
 	int result;
 	int offset = 0;
 
-	if (sprNum >= 0 && sprNum < NUMSPRITES) {
-		DPrintf ("Sprite %d\n", sprNum);
-	} else {
-		DPrintf ("Sprite %d out of range.\n", sprNum);
+	if (sprNum >= 0 && sprNum < NUMSPRITES)
+	{
+#if defined _DEBUG
+		DPrintf("Sprite %d\n", sprNum);
+#endif
+	}
+	else
+	{
+		DPrintf("Sprite %d out of range.\n", sprNum);
 		sprNum = -1;
 	}
-
-	while ((result = GetLine ()) == 1) {
-		if (!stricmp ("Offset", Line1))
-			offset = atoi (Line2);
-		else DPrintf (unknown_str, Line1, "Sprite", sprNum);
+	while ((result = GetLine()) == 1)
+	{
+		if (!stricmp("Offset", Line1))
+		{
+			offset = atoi(Line2);
+		}
+		else
+		{
+			PrintUnknown(Line1, "Sprite", sprNum);
+		}
 	}
 
-	if (offset > 0 && sprNum != -1) {
+	if (offset > 0 && sprNum != -1)
+	{
 		// Calculate offset from beginning of sprite names.
 		offset = (offset - toff[dversion] - 22044) / 8;
 
-		if (offset >= 0 && offset < NUMSPRITES) {
+		if (offset >= 0 && offset < NUMSPRITES)
+		{
 			sprnames[sprNum] = OrgSprNames[offset];
-		} else {
-			DPrintf ("Sprite name %d out of range.\n", offset);
+		}
+		else
+		{
+			DPrintf("Sprite name %d out of range.\n", offset);
 		}
 	}
 
 	return result;
 }
 
-static int PatchAmmo (int ammoNum)
+static int PatchAmmo(int ammoNum)
 {
 	extern int clipammo[NUMAMMO];
 
 	int result;
-	int *max;
-	int *per;
+	int* max;
+	int* per;
 	int dummy;
 
-	if (ammoNum >= 0 && ammoNum < NUMAMMO) {
-		DPrintf ("Ammo %d.\n", ammoNum);
+	if (ammoNum >= 0 && ammoNum < NUMAMMO)
+	{
+#if defined _DEBUG
+		DPrintf("Ammo %d.\n", ammoNum);
+#endif
 		max = &maxammo[ammoNum];
 		per = &clipammo[ammoNum];
-	} else {
-		DPrintf ("Ammo %d out of range.\n", ammoNum);
+	}
+	else
+	{
+		DPrintf("Ammo %d out of range.\n", ammoNum);
 		max = per = &dummy;
 	}
 
-	while ((result = GetLine ()) == 1) {
-			 CHECKKEY ("Max ammo", *max)
-		else CHECKKEY ("Per ammo", *per)
-		else DPrintf (unknown_str, Line1, "Ammo", ammoNum);
+	while ((result = GetLine()) == 1)
+	{
+		CHECKKEY("Max ammo", *max)
+		else CHECKKEY("Per ammo", *per) else PrintUnknown(Line1, "Ammo", ammoNum);
 	}
 
 	return result;
 }
 
-static int PatchWeapon (int weapNum)
+static int PatchWeapon(int weapNum)
 {
 	static const struct Key keys[] = {
-		{ "Ammo type",			offsetof(weaponinfo_t,ammotype) },
-		{ "Deselect frame",		offsetof(weaponinfo_t,upstate) },
-		{ "Select frame",		offsetof(weaponinfo_t,downstate) },
-		{ "Bobbing frame",		offsetof(weaponinfo_t,readystate) },
-		{ "Shooting frame",		offsetof(weaponinfo_t,atkstate) },
-		{ "Firing frame",		offsetof(weaponinfo_t,flashstate) },
-		{ "Ammo use",			offsetof(weaponinfo_t,ammouse) },		// ZDoom 1.23b33
-		{ "Ammo per shot",		offsetof(weaponinfo_t,ammouse) },		// Eternity
-		{ "Min ammo",			offsetof(weaponinfo_t,minammo) },		// ZDoom 1.23b33
-		{ NULL, 0}
+	    {"Ammo type", offsetof(weaponinfo_t, ammotype)},
+	    {"Deselect frame", offsetof(weaponinfo_t, upstate)},
+	    {"Select frame", offsetof(weaponinfo_t, downstate)},
+	    {"Bobbing frame", offsetof(weaponinfo_t, readystate)},
+	    {"Shooting frame", offsetof(weaponinfo_t, atkstate)},
+	    {"Firing frame", offsetof(weaponinfo_t, flashstate)},
+	    {"Ammo use", offsetof(weaponinfo_t, ammouse)},      // ZDoom 1.23b33
+	    {"Ammo per shot", offsetof(weaponinfo_t, ammouse)}, // Eternity
+	    {"Min ammo", offsetof(weaponinfo_t, minammo)},      // ZDoom 1.23b33
+	    {NULL, 0}};
+
+	static const struct
+	{
+		short Bit;
+		const char* Name;
+	} bitnames[] = {
+	    {1, "NOTHRUST"},  {2, "SILENT"},          {4, "NOAUTOFIRE"},
+	    {8, "FLEEMELEE"}, {16, "AUTOSWITCHFROM"}, {32, "NOAUTOSWITCHTO"},
 	};
+
 	int result;
 	weaponinfo_t *info, dummy;
 
-	if (weapNum >= 0 && weapNum < NUMWEAPONS) {
+	if (weapNum >= 0 && weapNum < NUMWEAPONS)
+	{
 		info = &weaponinfo[weapNum];
-		DPrintf ("Weapon %d\n", weapNum);
-	} else {
+#if defined _DEBUG
+		DPrintf("Weapon %d\n", weapNum);
+#endif
+	}
+	else
+	{
 		info = &dummy;
-		DPrintf ("Weapon %d out of range.\n", weapNum);
+		DPrintf("Weapon %d out of range.\n", weapNum);
 	}
-
-	while ((result = GetLine ()) == 1)
-		if (HandleKey (keys, info, Line1, atoi (Line2), sizeof(*info)))
-			DPrintf (unknown_str, Line1, "Weapon", weapNum);
-
-	return result;
-}
-
-static int PatchPointer (int ptrNum)
-{
-	int result;
-
-	if (ptrNum >= 0 && ptrNum < 448) {
-		DPrintf ("Pointer %d\n", ptrNum);
-	} else {
-		DPrintf ("Pointer %d out of range.\n", ptrNum);
-		ptrNum = -1;
-	}
-
-	while ((result = GetLine ()) == 1) {
-		if ((ptrNum != -1) && (!stricmp (Line1, "Codep Frame")))
-		{
-		    int i = atoi (Line2);
-
-		    if (i >= NUMSTATES)
-            {
-                DPrintf ("Pointer %d overruns static array (max: %d wanted: %d)."
-                         "\n",
-                         ptrNum,
-                         NUMSTATES,
-                         i);
-            }
-		    else
-                states[codepconv[ptrNum]].action = OrgActionPtrs[i];
-		}
-		else DPrintf (unknown_str, Line1, "Pointer", ptrNum);
-	}
-	return result;
-}
-
-static int PatchCheats (int dummy)
-{
-	static const struct {
-		const char *name;
-		byte *cheatseq;
-		BOOL needsval;
-	} keys[] = {
-		{ "Change music",		cheat_mus_seq,				 true },
-		{ "Chainsaw",			cheat_choppers_seq,			 false },
-		{ "God mode",			cheat_god_seq,				 false },
-		{ "Ammo & Keys",		cheat_ammo_seq,				 false },
-		{ "Ammo",				cheat_ammonokey_seq,		 false },
-		{ "No Clipping 1",		cheat_noclip_seq,			 false },
-		{ "No Clipping 2",		cheat_commercial_noclip_seq, false },
-		{ "Invincibility",		cheat_powerup_seq[0],		 false },
-		{ "Berserk",			cheat_powerup_seq[1],		 false },
-		{ "Invisibility",		cheat_powerup_seq[2],		 false },
-		{ "Radiation Suit",		cheat_powerup_seq[3],		 false },
-		{ "Auto-map",			cheat_powerup_seq[4],		 false },
-		{ "Lite-Amp Goggles",	cheat_powerup_seq[5],		 false },
-		{ "BEHOLD menu",		cheat_powerup_seq[6],		 false },
-		{ "Level Warp",			cheat_clev_seq,				 true },
-		{ "Player Position",	cheat_mypos_seq,			 false },
-		{ "Map cheat",			cheat_amap_seq,				 false },
-		{ NULL, NULL, false}
-	};
-	int result;
-
-	DPrintf ("Cheats\n");
-
-	while ((result = GetLine ()) == 1) {
-		int i = 0;
-		while (keys[i].name && stricmp (keys[i].name, Line1))
-			i++;
-
-		if (!keys[i].name)
-			DPrintf ("Unknown cheat %s.\n", Line2);
-		else
-			ChangeCheat (Line2, keys[i].cheatseq, keys[i].needsval);
-	}
-	return result;
-}
-
-static int PatchMisc (int dummy)
-{
-	static const struct Key keys[] = {
-		{ "Initial Health",			offsetof(struct DehInfo,StartHealth) },
-		{ "Initial Bullets",		offsetof(struct DehInfo,StartBullets) },
-		{ "Max Health",				offsetof(struct DehInfo,MaxHealth) },
-		{ "Max Armor",				offsetof(struct DehInfo,MaxArmor) },
-		{ "Green Armor Class",		offsetof(struct DehInfo,GreenAC) },
-		{ "Blue Armor Class",		offsetof(struct DehInfo,BlueAC) },
-		{ "Max Soulsphere",			offsetof(struct DehInfo,MaxSoulsphere) },
-		{ "Soulsphere Health",		offsetof(struct DehInfo,SoulsphereHealth) },
-		{ "Megasphere Health",		offsetof(struct DehInfo,MegasphereHealth) },
-		{ "God Mode Health",		offsetof(struct DehInfo,GodHealth) },
-		{ "IDFA Armor",				offsetof(struct DehInfo,FAArmor) },
-		{ "IDFA Armor Class",		offsetof(struct DehInfo,FAAC) },
-		{ "IDKFA Armor",			offsetof(struct DehInfo,KFAArmor) },
-		{ "IDKFA Armor Class",		offsetof(struct DehInfo,KFAAC) },
-		{ "BFG Cells/Shot",			offsetof(struct DehInfo,BFGCells) },
-		{ "Monsters Infight",		offsetof(struct DehInfo,Infight) },
-		{ NULL, 0 }
-	};
-	int result;
-	gitem_t *item;
-
-	DPrintf ("Misc\n");
 
 	while ((result = GetLine()) == 1)
 	{
-		if (HandleKey (keys, &deh, Line1, atoi (Line2)))
-			DPrintf ("Unknown miscellaneous info %s.\n", Line2);
-		
+		size_t val = atoi(Line2);
+		int linelen = strlen(Line1);
+
+		if (HandleKey(keys, info, Line1, val, sizeof(*info)))
+		{
+			if (linelen == 10)
+			{
+				if (stricmp(Line1, "MBF21 Bits") == 0)
+				{
+					int value = 0;
+					bool vchanged = false;
+					char* strval;
+
+					for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
+					     strval = NULL)
+					{
+						if (IsNum(strval))
+						{
+							// Force the top 4 bits to 0 so that the user is forced
+							// to use the mnemonics to change them.
+
+							// I have no idea why everyone insists on using strtol here
+							// even though it fails dismally if a value is parsed where
+							// the highest bit it set. Do people really use negative
+							// values here? Let's better be safe and check both.
+							value |= atoi(strval);
+							vchanged = true;
+						}
+						else
+						{
+							size_t i;
+
+							for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+							{
+								if (!stricmp(strval, bitnames[i].Name))
+								{
+									vchanged = true;
+									value |= 1 << (bitnames[i].Bit);
+									break;
+								}
+							}
+
+							if (i == ARRAY_LENGTH(bitnames))
+							{
+								DPrintf("Unknown bit mnemonic %s\n", strval);
+							}
+						}
+					}
+					if (vchanged)
+					{
+						info->flags = value; // Weapon Flags
+					}
+				}
+			}
+			else
+			{
+				PrintUnknown(Line1, "Weapon", weapNum);
+			}
+		}
+	}
+	return result;
+}
+
+static int PatchPointer(int ptrNum)
+{
+	int result;
+
+	if (ptrNum >= 0 && ptrNum < 448)
+	{
+#if defined _DEBUG
+		DPrintf("Pointer %d\n", ptrNum);
+#endif
+	}
+	else
+	{
+		DPrintf("Pointer %d out of range.\n", ptrNum);
+		ptrNum = -1;
+	}
+
+	while ((result = GetLine()) == 1)
+	{
+		if ((ptrNum != -1) && (!stricmp(Line1, "Codep Frame")))
+		{
+			int i = atoi(Line2);
+
+			if (i >= NUMSTATES)
+			{
+				DPrintf("Pointer %d overruns static array (max: %d wanted: %d)."
+				        "\n",
+				        ptrNum, NUMSTATES, i);
+			}
+			else
+			{
+				states[codepconv[ptrNum]].action = OrgActionPtrs[i];
+			}
+		}
+		else
+		{
+			PrintUnknown(Line1, "Pointer", ptrNum);
+		}
+	}
+	return result;
+}
+
+static int PatchCheats(int dummy)
+{
+	int result;
+
+	DPrintf("[DEHacked] Cheats support is depreciated. Ignoring these lines...\n");
+
+	// Fake our work (don't do anything !)
+	while ((result = GetLine()) == 1)
+	{
+	}
+
+	return result;
+}
+
+static int PatchMisc(int dummy)
+{
+	static const struct Key keys[] = {
+	    {"Initial Health", offsetof(struct DehInfo, StartHealth)},
+	    {"Initial Bullets", offsetof(struct DehInfo, StartBullets)},
+	    {"Max Health", offsetof(struct DehInfo, MaxHealth)},
+	    {"Max Armor", offsetof(struct DehInfo, MaxArmor)},
+	    {"Green Armor Class", offsetof(struct DehInfo, GreenAC)},
+	    {"Blue Armor Class", offsetof(struct DehInfo, BlueAC)},
+	    {"Max Soulsphere", offsetof(struct DehInfo, MaxSoulsphere)},
+	    {"Soulsphere Health", offsetof(struct DehInfo, SoulsphereHealth)},
+	    {"Megasphere Health", offsetof(struct DehInfo, MegasphereHealth)},
+	    {"God Mode Health", offsetof(struct DehInfo, GodHealth)},
+	    {"IDFA Armor", offsetof(struct DehInfo, FAArmor)},
+	    {"IDFA Armor Class", offsetof(struct DehInfo, FAAC)},
+	    {"IDKFA Armor", offsetof(struct DehInfo, KFAArmor)},
+	    {"IDKFA Armor Class", offsetof(struct DehInfo, KFAAC)},
+	    {"BFG Cells/Shot", offsetof(struct DehInfo, BFGCells)},
+	    {"Monsters Infight", offsetof(struct DehInfo, Infight)},
+	    {NULL, 0}};
+	int result;
+	gitem_t* item;
+#if defined _DEBUG
+	DPrintf("Misc\n");
+#endif
+	while ((result = GetLine()) == 1)
+	{
+		if (HandleKey(keys, &deh, Line1, atoi(Line2)))
+		{
+			DPrintf("Unknown miscellaneous info %s.\n", Line2);
+		}
+
 		// [SL] manually check if BFG Cells/Shot is being changed and
 		// update weaponinfo accordingly. BFGCells should be considered depricated.
 		if (Line1 != NULL && stricmp(Line1, "BFG Cells/Shot") == 0)
@@ -1368,11 +1864,15 @@ static int PatchMisc (int dummy)
 		}
 	}
 
-	if ( (item = FindItem ("Basic Armor")) )
+	if ((item = FindItem("Basic Armor")))
+	{
 		item->offset = deh.GreenAC;
+	}
 
-	if ( (item = FindItem ("Mega Armor")) )
+	if ((item = FindItem("Mega Armor")))
+	{
 		item->offset = deh.BlueAC;
+	}
 
 	// 0xDD == enable infighting
 	deh.Infight = deh.Infight == 0xDD ? 1 : 0;
@@ -1380,90 +1880,119 @@ static int PatchMisc (int dummy)
 	return result;
 }
 
-static int PatchPars (int dummy)
+static int PatchPars(int dummy)
 {
 	char *space, mapname[8], *moredata;
-	level_info_t *info;
 	int result, par;
-
-	DPrintf ("[Pars]\n");
-
-	while ( (result = GetLine()) ) {
+#if defined _DEBUG
+	DPrintf("[Pars]\n");
+#endif
+	while ((result = GetLine()))
+	{
 		// Argh! .bex doesn't follow the same rules as .deh
-		if (result == 1) {
-			DPrintf ("Unknown key in [PARS] section: %s\n", Line1);
+		if (result == 1)
+		{
+			DPrintf("Unknown key in [PARS] section: %s\n", Line1);
 			continue;
 		}
-		if (stricmp ("par", Line1))
+		if (stricmp("par", Line1))
+		{
 			return result;
+		}
 
-		space = strchr (Line2, ' ');
+		space = strchr(Line2, ' ');
 
-		if (!space) {
-			DPrintf ("Need data after par.\n");
+		if (!space)
+		{
+			DPrintf("Need data after par.\n");
 			continue;
 		}
 
 		*space++ = '\0';
 
 		while (*space && isspace(*space))
+		{
 			space++;
-
-		moredata = strchr (space, ' ');
-
-		if (moredata) {
-			// At least 3 items on this line, must be E?M? format
-			sprintf (mapname, "E%cM%c", *Line2, *space);
-			par = atoi (moredata + 1);
-		} else {
-			// Only 2 items, must be MAP?? format
-			sprintf (mapname, "MAP%02d", atoi(Line2) % 100);
-			par = atoi (space);
 		}
 
-		if (!(info = FindLevelInfo (mapname)) ) {
-			DPrintf ("No map %s\n", mapname);
+		moredata = strchr(space, ' ');
+
+		if (moredata)
+		{
+			// At least 3 items on this line, must be E?M? format
+			sprintf(mapname, "E%cM%c", *Line2, *space);
+			par = atoi(moredata + 1);
+		}
+		else
+		{
+			// Only 2 items, must be MAP?? format
+			sprintf(mapname, "MAP%02d", atoi(Line2) % 100);
+			par = atoi(space);
+		}
+
+		LevelInfos& levels = getLevelInfos();
+		level_pwad_info_t& info = levels.findByName(mapname);
+
+		if (!info.exists())
+		{
+			DPrintf("No map %s\n", mapname);
 			continue;
 		}
 
-		info->partime = par;
-		DPrintf ("Par for %s changed to %d\n", mapname, par);
+		info.partime = par;
+#if defined _DEBUG
+		DPrintf("Par for %s changed to %d\n", mapname, par);
+#endif
 	}
 	return result;
 }
 
-static int PatchCodePtrs (int dummy)
+static int PatchCodePtrs(int dummy)
 {
 	int result;
+#if defined _DEBUG
+	DPrintf("[CodePtr]\n");
+#endif
+	while ((result = GetLine()) == 1)
+	{
+		if (!strnicmp("Frame", Line1, 5) && isspace(Line1[5]))
+		{
+			int frame = atoi(Line1 + 5);
 
-	DPrintf ("[CodePtr]\n");
-
-	while ((result = GetLine()) == 1) {
-		if (!strnicmp ("Frame", Line1, 5) && isspace(Line1[5])) {
-			int frame = atoi (Line1 + 5);
-
-			if (frame < 0 || frame >= NUMSTATES) {
-				DPrintf ("Frame %d out of range\n", frame);
-			} else {
+			if (frame < 0 || frame >= NUMSTATES)
+			{
+				DPrintf("Frame %d out of range\n", frame);
+			}
+			else
+			{
 				int i = 0;
-				char *data;
+				char* data;
 
-				COM_Parse (Line2);
+				COM_Parse(Line2);
 
 				if ((com_token[0] == 'A' || com_token[0] == 'a') && com_token[1] == '_')
+				{
 					data = com_token + 2;
+				}
 				else
+				{
 					data = com_token;
+				}
 
-				while (CodePtrs[i].name && stricmp (CodePtrs[i].name, data))
+				while (CodePtrs[i].name && stricmp(CodePtrs[i].name, data))
+				{
 					i++;
+				}
 
-				if (CodePtrs[i].name) {
+				if (CodePtrs[i].name)
+				{
 					states[frame].action = CodePtrs[i].func;
-					DPrintf ("Frame %d set to %s\n", frame, CodePtrs[i].name);
-				} else {
+					DPrintf("Frame %d set to %s\n", frame, CodePtrs[i].name);
+				}
+				else
+				{
 					states[frame].action = NULL;
-					DPrintf ("Unknown code pointer: %s\n", com_token);
+					DPrintf("Unknown code pointer: %s\n", com_token);
 				}
 			}
 		}
@@ -1471,131 +2000,176 @@ static int PatchCodePtrs (int dummy)
 	return result;
 }
 
-static int PatchText (int oldSize)
+static int PatchMusic(int dummy)
 {
+	int result;
+	char keystring[128];
+#if defined _DEBUG
+	DPrintf("[Music]\n");
+#endif
+	while ((result = GetLine()) == 1)
+	{
+		const char* newname = skipwhite(Line2);
+
+		snprintf(keystring, ARRAY_LENGTH(keystring), "MUSIC_%s", Line1);
+		if (GStrings.hasString(keystring))
+		{
+			GStrings.setString(keystring, newname);
+			DPrintf("Music %s set to:\n%s\n", keystring, newname);
+		}
+	}
+
+	return result;
+}
+
+static int PatchText(int oldSize)
+{
+	LevelInfos& levels = getLevelInfos();
+
 	int newSize;
-	char *oldStr;
-	char *newStr;
-	char *temp;
+	char* oldStr;
+	char* newStr;
+	char* temp;
 	BOOL good;
 	int result;
 	int i;
+	const OString* name = NULL;
 
 	// Skip old size, since we already know it
 	temp = Line2;
 	while (*temp > ' ')
+	{
 		temp++;
+	}
 	while (*temp && *temp <= ' ')
+	{
 		temp++;
+	}
 
 	if (*temp == 0)
 	{
-		Printf (PRINT_HIGH,"Text chunk is missing size of new string.\n");
+		Printf(PRINT_HIGH, "Text chunk is missing size of new string.\n");
 		return 2;
 	}
-	newSize = atoi (temp);
+	newSize = atoi(temp);
 
 	oldStr = new char[oldSize + 1];
 	newStr = new char[newSize + 1];
 
 	if (!oldStr || !newStr)
 	{
-		Printf (PRINT_HIGH,"Out of memory.\n");
+		Printf(PRINT_HIGH, "Out of memory.\n");
 		goto donewithtext;
 	}
 
-	good = ReadChars (&oldStr, oldSize);
-	good += ReadChars (&newStr, newSize);
+	good = ReadChars(&oldStr, oldSize);
+	good += ReadChars(&newStr, newSize);
 
 	if (!good)
 	{
 		delete[] newStr;
 		delete[] oldStr;
-		Printf (PRINT_HIGH,"Unexpected end-of-file.\n");
+		Printf(PRINT_HIGH, "Unexpected end-of-file.\n");
 		return 0;
 	}
 
 	if (includenotext)
 	{
-		Printf (PRINT_HIGH,"Skipping text chunk in included patch.\n");
+		Printf(PRINT_HIGH, "Skipping text chunk in included patch.\n");
 		goto donewithtext;
 	}
 
-	DPrintf ("Searching for text:\n%s\n", oldStr);
+	DPrintf("Searching for text:\n%s\n", oldStr);
 	good = false;
 
 	// Search through sprite names
-	for (i = 0; i < NUMSPRITES; i++) {
-		if (!strcmp (sprnames[i], oldStr)) {
-			sprnames[i] = copystring (newStr);
+	for (i = 0; i < NUMSPRITES; i++)
+	{
+		if (!strcmp(sprnames[i], oldStr))
+		{
+			sprnames[i] = copystring(newStr);
 			good = true;
 			// See above.
 		}
 	}
 
 	if (good)
+	{
 		goto donewithtext;
-
-	// Search through music names.
-	if (oldSize < 7)
-	{		// Music names are never >6 chars
-		char musname[9];
-		level_info_t *info = LevelInfos;
-		sprintf (musname, "d_%s", oldStr);
-
-		while (info->level_name)
-		{
-			if (stricmp (info->music, musname) == 0)
-			{
-				good = true;
-				strcpy (info->music, musname);
-			}
-			info++;
-		}
 	}
 
+	// Search through music names.
+	// [AM] Disabled because it relies on an extern wadlevelinfos
+	/*if (oldSize < 7)
+	{		// Music names are never >6 chars
+	    char musname[9];
+	    snprintf(musname, ARRAY_LENGTH(musname), "D_%s", oldStr);
+
+	    for (size_t i = 0; i < levels.size(); i++)
+	    {
+	        level_pwad_info_t& level = levels.at(0);
+	        if (stricmp(level.music, musname) == 0)
+	        {
+	            good = true;
+	            uppercopy(level.music, musname);
+	        }
+	    }
+	}*/
+
 	if (good)
-		goto donewithtext;
-	
-	// Search through most other texts
-	i = GStrings.MatchString (oldStr);
-	if (i != -1)
 	{
-		GStrings.SetString (i, newStr);
+		goto donewithtext;
+	}
+
+	// Search through most other texts
+	name = &ENGStrings.matchString(oldStr);
+	if (name != NULL && !name->empty())
+	{
+		GStrings.setString(*name, newStr);
 		good = true;
 	}
 
 	if (!good)
-		DPrintf ("   (Unmatched)\n");
+	{
+		DPrintf("   (Unmatched)\n");
+	}
 
 donewithtext:
 	if (newStr)
+	{
 		delete[] newStr;
+	}
 	if (oldStr)
+	{
 		delete[] oldStr;
+	}
 
 	// Ensure that we've munched the entire line in the case of an incomplete
 	// substitution.
 	if (!(*read_ptr == '\0' || *read_ptr == '\n'))
 		igets();
+	}
 
 	// Fetch next identifier for main loop
-	while ((result = GetLine ()) == 1)
-		;
+	while ((result = GetLine()) == 1)
+	{
+	}
 
 	return result;
 }
 
-static int PatchStrings (int dummy)
+static int PatchStrings(int dummy)
 {
 	static size_t maxstrlen = 128;
-	static char *holdstring;
+	static char* holdstring;
 	int result;
-
-	DPrintf ("[Strings]\n");
-
+#if defined _DEBUG
+	DPrintf("[Strings]\n");
+#endif
 	if (!holdstring)
-		holdstring = (char *)Malloc (maxstrlen);
+	{
+		holdstring = (char*)Malloc(maxstrlen);
+	}
 
 	while ((result = GetLine()) == 1)
 	{
@@ -1604,91 +2178,110 @@ static int PatchStrings (int dummy)
 		*holdstring = '\0';
 		do
 		{
-			while (maxstrlen < strlen (holdstring) + strlen (Line2) + 8)
+			while (maxstrlen < strlen(holdstring) + strlen(Line2) + 8)
 			{
 				maxstrlen += 128;
-				holdstring = (char *)Realloc (holdstring, maxstrlen);
+				holdstring = (char*)Realloc(holdstring, maxstrlen);
 			}
-			strcat (holdstring, skipwhite (Line2));
-			stripwhite (holdstring);
-			if (holdstring[strlen(holdstring)-1] == '\\')
+			strcat(holdstring, skipwhite(Line2));
+			stripwhite(holdstring);
+			if (holdstring[strlen(holdstring) - 1] == '\\')
 			{
-				holdstring[strlen(holdstring)-1] = '\0';
-				Line2 = igets ();
-			} else
+				holdstring[strlen(holdstring) - 1] = '\0';
+				Line2 = igets();
+			}
+			else
 				Line2 = NULL;
 		} while (Line2 && *Line2);
 
-		i = GStrings.FindString (Line1);
-
+		i = GStrings.toIndex(Line1);
 		if (i == -1)
 		{
-			Printf (PRINT_HIGH,"Unknown string: %s\n", Line1);
+			Printf(PRINT_HIGH, "Unknown string: %s\n", Line1);
 		}
 		else
 		{
-			ReplaceSpecialChars (holdstring);
-			if ((i >= OB_SUICIDE && i <= OB_DEFAULT &&
-				strstr (holdstring, "%o") == NULL) ||
-				(i >= OB_FRIENDLY1 && i <= OB_FRIENDLY4 &&
-				strstr (holdstring, "%k") == NULL))
+
+			ReplaceSpecialChars(holdstring);
+			if ((i >= GStrings.toIndex(OB_SUICIDE) && i <= GStrings.toIndex(OB_DEFAULT) &&
+			     strstr(holdstring, "%o") == NULL) ||
+			    (i >= GStrings.toIndex(OB_FRIENDLY1) &&
+			     i <= GStrings.toIndex(OB_FRIENDLY4) && strstr(holdstring, "%k") == NULL))
 			{
-				int len = strlen (holdstring);
-				memmove (holdstring+3, holdstring, len);
+				int len = strlen(holdstring);
+				memmove(holdstring + 3, holdstring, len);
 				holdstring[0] = '%';
-				holdstring[1] = i <= OB_DEFAULT ? 'o' : 'k';
+				holdstring[1] = i <= GStrings.toIndex(OB_DEFAULT) ? 'o' : 'k';
 				holdstring[2] = ' ';
-				holdstring[3+len] = '.';
-				holdstring[4+len] = 0;
-				if (i >= OB_MPFIST && i <= OB_RAILGUN)
+				holdstring[3 + len] = '.';
+				holdstring[4 + len] = 0;
+				if (i >= GStrings.toIndex(OB_MPFIST) && i <= GStrings.toIndex(OB_RAILGUN))
 				{
-					char *spot = strstr (holdstring, "%s");
+					char* spot = strstr(holdstring, "%s");
 					if (spot != NULL)
 					{
 						spot[1] = 'k';
 					}
 				}
 			}
-			GStrings.SetString (i, holdstring);
-			DPrintf ("%s set to:\n%s\n", Line1, holdstring);
+			GStrings.setString(Line1, holdstring);
+			DPrintf("%s set to:\n%s\n", Line1, holdstring);
 		}
 	}
 
 	return result;
 }
 
-
-#if 0
-static int DoInclude (int dummy)
+static int DoInclude(int dummy)
 {
-	char *data;
+	char* data;
 	int savedversion, savepversion;
 	char *savepatchfile, *savepatchpt;
+	OWantFile want;
+	OResFile res;
 
-	if (including) {
-		DPrintf ("Sorry, can't nest includes\n");
+	if (including)
+	{
+		DPrintf("Sorry, can't nest includes\n");
 		goto endinclude;
 	}
 
-	data = COM_Parse (Line2);
-	if (!stricmp (com_token, "notext")) {
+	data = COM_Parse(Line2);
+	if (!stricmp(com_token, "notext"))
+	{
 		includenotext = true;
-		data = COM_Parse (data);
+		data = COM_Parse(data);
 	}
 
-	if (!com_token[0]) {
+	if (!com_token[0])
+	{
 		includenotext = false;
-		DPrintf ("Include directive is missing filename\n");
+		DPrintf("Include directive is missing filename\n");
 		goto endinclude;
 	}
-
-	DPrintf ("Including %s\n", com_token);
+#if defined _DEBUG
+	DPrintf("Including %s\n", com_token);
+#endif
 	savepatchfile = patch_data;
 	savepatchpt = read_ptr;
 	savedversion = dversion;
 	savepversion = pversion;
 	including = true;
 
+	// TODO: Reconcile
+	if (!OWantFile::make(want, com_token, OFILE_DEH))
+	{
+		Printf(PRINT_WARNING, "Could not find BEX include \"%s\"\n", com_token);
+		goto endinclude;
+	}
+
+	if (!M_ResolveWantedFile(res, want))
+	{
+		Printf(PRINT_WARNING, "Could not resolve BEX include \"%s\"\n", com_token);
+		goto endinclude;
+	}
+
+	D_DoDehPatch(&res, -1);
 	DoDehPatch(com_token, false);
 
 	DPrintf ("Done with include\n");
@@ -1704,6 +2297,11 @@ endinclude:
 }
 #endif
 
+/**
+ * @brief Attempt to load a DeHackEd file.
+ *
+ * @param res_id File to attempt to load, NULL if not a file.
+ */
 bool D_LoadDehLump(const ResourceId res_id)
 {
 	const char* lump_name = Res_GetResourceName(res_id).c_str();
@@ -1723,7 +2321,7 @@ bool D_LoadDehLump(const ResourceId res_id)
 
 	BackupData();
 
-	dversion = pversion = -1;
+	::dversion = pversion = -1;
 
 	int cont = 0;
 
@@ -1789,7 +2387,169 @@ bool D_LoadDehLump(const ResourceId res_id)
 
 	Printf (PRINT_HIGH, "DeHackEd patch %s in file %s installed\n", lump_name, file_name);
 
-    return true;
+	D_PostProcessDeh();
+
+	return true;
 }
 
-VERSION_CONTROL (d_dehacked_cpp, "$Id$")
+static CodePtr null_bexptr = {"(NULL)", NULL};
+
+/*
+ * @brief Check loaded deh files for any problems prior
+ * to launching the game.
+ *
+ * (Credit to DSDADoom for the inspiration for this)
+ */
+
+void D_PostProcessDeh()
+{
+	int i, j;
+	const CodePtr* bexptr_match;
+
+	for (i = 0; i < NUMSTATES; i++)
+	{
+		bexptr_match = &null_bexptr;
+
+		for (j = 1; CodePtrs[j].func != NULL; ++j)
+		{
+			if (states[i].action == CodePtrs[j].func)
+			{
+				bexptr_match = &CodePtrs[j];
+				break;
+			}
+		}
+
+		// ensure states don't use more mbf21 args than their
+		// action pointer expects, for future-proofing's sake
+		for (j = MAXSTATEARGS - 1; j >= bexptr_match->argcount; j--)
+		{
+			if (states[i].args[j] != 0)
+			{
+				I_Error("Action %s on state %d expects no more than %d nonzero args (%d "
+				        "found). Check your dehacked.",
+				        bexptr_match->name, i, bexptr_match->argcount, j + 1);
+			}
+		}
+
+		// replace unset fields with default values
+		for (; j >= 0; j--)
+		{
+			if (states[i].args[j] == 0 && bexptr_match->default_args[j])
+			{
+				states[i].args[j] = bexptr_match->default_args[j];
+			}
+		}
+	}
+}
+
+#include "c_dispatch.h"
+
+static const char* ActionPtrString(actionf_p1 func)
+{
+	int i = 0;
+	while (::CodePtrs[i].name != NULL && ::CodePtrs[i].func != func)
+	{
+		i++;
+	}
+
+	if (::CodePtrs[i].name == NULL)
+	{
+		return "NULL";
+	}
+
+	return ::CodePtrs[i].name;
+}
+
+static void PrintState(int index)
+{
+	if (index < 0 || index >= NUMSTATES)
+	{
+		return;
+	}
+
+	// Print this state.
+	state_t& state = ::states[index];
+	Printf("%4d | s:%s f:%d t:%d a:%s m1:%d m2:%d\n", index, ::sprnames[state.sprite],
+	       state.frame, state.tics, ActionPtrString(state.action), state.misc1,
+	       state.misc2);
+}
+
+BEGIN_COMMAND(stateinfo)
+{
+	if (argc < 2)
+	{
+		Printf("Must pass one or two state indexes. (0 to %d)\n", NUMSTATES - 1);
+		return;
+	}
+
+	int index1 = atoi(argv[1]);
+	if (index1 < 0 || index1 >= NUMSTATES)
+	{
+		Printf("Not a valid index.\n");
+		return;
+	}
+	int index2 = index1;
+
+	if (argc == 3)
+	{
+		index2 = atoi(argv[2]);
+		if (index2 < 0 || index2 >= NUMSTATES)
+		{
+			Printf("Not a valid index.\n");
+			return;
+		}
+	}
+
+	// Swap arguments if need be.
+	if (index2 < index1)
+	{
+		int tmp = index1;
+		index1 = index2;
+		index2 = tmp;
+	}
+
+	for (int i = index1; i <= index2; i++)
+	{
+		PrintState(i);
+	}
+}
+END_COMMAND(stateinfo)
+
+BEGIN_COMMAND(playstate)
+{
+	if (argc < 2)
+	{
+		Printf("Must pass state index. (0 to %d)\n", NUMSTATES - 1);
+		return;
+	}
+
+	int index = atoi(argv[1]);
+	if (index < 0 || index >= NUMSTATES)
+	{
+		Printf("Not a valid index.\n");
+		return;
+	}
+
+	OHashTable<int, bool> visited;
+	for (;;)
+	{
+		// Check if we looped back, and exit if so.
+		OHashTable<int, bool>::iterator it = visited.find(index);
+		if (it != visited.end())
+		{
+			Printf("Looped back to %d\n", index);
+			return;
+		}
+
+		PrintState(index);
+
+		// Mark as visited.
+		visited.insert(std::pair<int, bool>(index, true));
+
+		// Next state.
+		index = ::states[index].nextstate;
+	}
+}
+END_COMMAND(playstate)
+
+VERSION_CONTROL(d_dehacked_cpp, "$Id$")

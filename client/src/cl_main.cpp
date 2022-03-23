@@ -23,12 +23,11 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomtype.h"
-#include "doomstat.h"
+#include "odamex.h"
+
 #include "gstrings.h"
 #include "d_player.h"
 #include "g_game.h"
-#include "d_net.h"
 #include "p_local.h"
 #include "p_tick.h"
 #include "s_sound.h"
@@ -59,17 +58,22 @@
 #include "cl_netgraph.h"
 #include "p_pspr.h"
 #include "d_netcmd.h"
-#include "g_warmup.h"
+#include "g_levelstate.h"
 #include "v_text.h"
 #include "hu_stuff.h"
 #include "p_acs.h"
+#include "i_input.h"
 #include "resources/res_filelib.h"
 
-#include <string>
-#include <vector>
+#include "g_gametype.h"
+#include "cl_parse.h"
+
+#include <bitset>
 #include <map>
 #include <set>
 #include <sstream>
+
+#include "server.pb.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -82,6 +86,8 @@
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
 baseapp_t baseapp = client;
+
+gameplatform_t platform;
 
 extern bool step_mode;
 
@@ -112,8 +118,8 @@ BOOL      connected;
 netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
 
-int       packetseq[256];
-byte      packetnum;
+const static size_t PACKET_SEQ_MASK = 0xFF;
+static int packetseq[256];
 
 // denis - unique session key provided by the server
 std::string digest;
@@ -140,6 +146,10 @@ std::set<byte> teleported_players;
 std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 EXTERN_CVAR (sv_weaponstay)
+EXTERN_CVAR (sv_teamsinplay)
+
+EXTERN_CVAR (sv_downloadsites)
+EXTERN_CVAR (cl_downloadsites)
 
 EXTERN_CVAR (cl_predictsectors)
 
@@ -155,6 +165,10 @@ EXTERN_CVAR (cl_forcedownload)
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_forceteamcolor)
+
+EXTERN_CVAR (hud_revealsecrets)
+EXTERN_CVAR(debug_disconnect)
+
 static argb_t enemycolor, teamcolor;
 
 void P_PlayerLeavesGame(player_s* player);
@@ -174,7 +188,6 @@ argb_t CL_ShadePlayerColor(argb_t base_color, argb_t shade_color)
 	return V_HSVtoRGB(color);
 }
 
-
 //
 // CL_GetPlayerColor
 //
@@ -190,17 +203,14 @@ argb_t CL_GetPlayerColor(player_t *player)
 	argb_t shade_color = base_color;
 	
 	bool teammate = false;
-	if (sv_gametype == GM_COOP)
+	if (G_IsCoopGame())
 		teammate = true;
-	if (sv_gametype == GM_DM)
+	if (G_IsFFAGame())
 		teammate = false;
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		teammate = P_AreTeammates(consoleplayer(), *player);
-		if (player->userinfo.team == TEAM_BLUE)
-			base_color = argb_t(255, 0, 0, 255);
-		else if (player->userinfo.team == TEAM_RED)
-			base_color = argb_t(255, 255, 0, 0);
+		base_color = GetTeamInfo(player->userinfo.team)->Color;
 	}
 	if (player->id != consoleplayer_id && !consoleplayer().spectator)
 	{
@@ -212,6 +222,7 @@ argb_t CL_GetPlayerColor(player_t *player)
 
 	return CL_ShadePlayerColor(base_color, shade_color);
 }
+
 
 
 static void CL_RebuildAllPlayerTranslations()
@@ -250,6 +261,9 @@ CVAR_FUNC_IMPL (r_forceteamcolor)
 
 CVAR_FUNC_IMPL (cl_team)
 {
+	if (var.asInt() >= sv_teamsinplay)
+		var.Set(sv_teamsinplay.asInt() - 1);
+	
 	CL_RebuildAllPlayerTranslations();
 }
 
@@ -262,38 +276,22 @@ EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_allowredscreen)
 EXTERN_CVAR (sv_scorelimit)
-EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_allowcheats)
 EXTERN_CVAR (sv_allowtargetnames)
 EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (cl_mouselook)
 EXTERN_CVAR (sv_freelook)
-EXTERN_CVAR (cl_connectalert)
 EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
-EXTERN_CVAR (cl_autorecord)
-EXTERN_CVAR (cl_autorecord_coop)
-EXTERN_CVAR (cl_autorecord_deathmatch)
-EXTERN_CVAR (cl_autorecord_duel)
-EXTERN_CVAR (cl_autorecord_teamdm)
-EXTERN_CVAR (cl_autorecord_ctf)
-EXTERN_CVAR (cl_splitnetdemos)
 
 void CL_PlayerTimes (void);
-void CL_GetServerSettings(void);
-void CL_RequestDownload(std::string filename, std::string filehash = "");
 void CL_TryToConnect(DWORD server_token);
-void CL_Decompress(int sequence);
+void CL_Decompress();
 
-void CL_LocalDemoTic(void);
-void CL_NetDemoStop(void);
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
 void CL_SimulateWorld();
-
-//	[Toke - CTF]
-void CalcTeamFrags (void);
 
 // some doom functions (not csDoom)
 void D_Display(void);
@@ -304,13 +302,11 @@ void R_InterpolationTicker();
 
 size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
-void CL_SpawnPlayer ();
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 void P_SetPsprite (player_t *player, int position, statenum_t stnum);
 void P_ExplodeMissile (AActor* mo);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
-void CL_SetMobjSpeedAndAngle(void);
 
 void P_PlayerLookUpDown (player_t *p);
 team_t D_TeamByName (const char *team);
@@ -360,7 +356,7 @@ static int CL_CalculateWorldIndexDriftCorrection()
 // Recalculate world_index based and resets world_index_accum, which keeps
 // track of how much the sync has drifted.
 //
-static void CL_ResyncWorldIndex()
+void CL_ResyncWorldIndex()
 {
 	world_index = CL_CalculateWorldIndexSync();
 	world_index_accum = 0.0f;
@@ -368,11 +364,11 @@ static void CL_ResyncWorldIndex()
 
 void Host_EndGame(const char *msg)
 {
-    Printf(PRINT_HIGH, "%s", msg);
-	CL_QuitNetGame();
+    Printf("%s", msg);
+	CL_QuitNetGame(NQ_SILENT);
 }
 
-void CL_QuitNetGame(void)
+void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line)
 {
 	if(connected)
 	{
@@ -429,15 +425,30 @@ void CL_QuitNetGame(void)
 	if (netdemo.isPlaying())
 		netdemo.stopPlaying();
 
-	if (demorecording)
-		G_CleanupDemo();	// Cleanup in case of a vanilla demo
-
 	demoplayback = false;
 
 	// Reset the palette to default
 	V_ResetPalette();
 
 	cvar_t::C_RestoreCVars();
+
+	switch (reason)
+	{
+	default: // Also NQ_SILENT
+		break;
+	case NQ_DISCONNECT:
+		Printf("Disconnected from server\n");
+		break;
+	case NQ_ABORT:
+		Printf("Connection attempt aborted\n");
+		break;
+	case NQ_PROTO:
+		Printf("Disconnected from server: Unrecoverable protocol error\n");
+		break;
+	}
+
+	if (::debug_disconnect)
+		Printf("  (%s:%d)\n", file, line);
 }
 
 
@@ -469,25 +480,6 @@ void CL_Reconnect(void)
 
 std::string spyplayername;
 void CL_CheckDisplayPlayer(void);
-
-//
-// CL_ConnectClient
-//
-void CL_ConnectClient(void)
-{
-	player_t &player = idplayer(MSG_ReadByte());
-
-	CL_CheckDisplayPlayer();
-
-	if (!cl_connectalert)
-		return;
-
-	// GhostlyDeath <August 1, 2008> -- Play connect sound
-	if (&player == &consoleplayer())
-		return;
-
-	S_Sound (CHAN_INTERFACE, "misc/pljoin", 1, ATTN_NONE);
-}
 
 //
 // CL_CheckDisplayPlayer
@@ -605,42 +597,6 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 	} while (it != sentinal);
 }
 
-//
-// CL_DisconnectClient
-//
-void CL_DisconnectClient(void)
-{
-	player_t &player = idplayer(MSG_ReadByte());
-	if (players.empty() || !validplayer(player))
-		return;
-
-	if (player.mo)
-	{
-		P_DisconnectEffect(player.mo);
-
-		// [AM] Destroying the player mobj is not our responsibility.  However, we do want to
-		//      make sure that the mobj->player doesn't point to an invalid player.
-		player.mo->player = NULL;
-	}
-
-	// Remove the player from the players list.
-	for (Players::iterator it = players.begin();it != players.end();++it)
-	{
-		if (it->id == player.id)
-		{
-			if (cl_disconnectalert && &player != &consoleplayer())
-				S_Sound(CHAN_INTERFACE, "misc/plpart", 1, ATTN_NONE);
-			if (!it->spectator)
-				P_PlayerLeavesGame(&(*it));
-			players.erase(it);
-			break;
-		}
-	}
-
-	// if this was our displayplayer, update camera
-	CL_CheckDisplayPlayer();
-}
-
 extern BOOL advancedemo;
 QWORD nextstep = 0;
 int canceltics = 0;
@@ -670,6 +626,8 @@ void CL_StepTics(unsigned int count)
 		if (sv_gametype == GM_CTF)
 			CTF_RunTics ();
 
+		::levelstate.tic();
+
 		Maplist_Runtic();
 
 		R_InterpolationTicker();
@@ -688,6 +646,7 @@ void CL_StepTics(unsigned int count)
 //
 void CL_DisplayTics()
 {
+	I_GetEvents(true);
 	D_Display();
 }
 
@@ -723,10 +682,10 @@ void CL_RunTics()
 			// debugging output
 			extern unsigned char prndindex;
 			if (!(players.empty()) && players.begin()->mo)
-				Printf(PRINT_HIGH, "level.time %d, prndindex %d, %d %d %d\n",
+				Printf("level.time %d, prndindex %d, %d %d %d\n",
 				       level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
 			else
- 				Printf(PRINT_HIGH, "level.time %d, prndindex %d\n", level.time, prndindex);
+ 				Printf("level.time %d, prndindex %d\n", level.time, prndindex);
 		}
 	}
 	else
@@ -762,12 +721,12 @@ BEGIN_COMMAND (connect)
 {
 	if (argc == 1)
 	{
-	    Printf(PRINT_HIGH, "Usage: connect ip[:port] [password]\n");
-	    Printf(PRINT_HIGH, "\n");
-	    Printf(PRINT_HIGH, "Connect to a server, with optional port number");
-	    Printf(PRINT_HIGH, " and/or password\n");
-	    Printf(PRINT_HIGH, "eg: connect 127.0.0.1\n");
-	    Printf(PRINT_HIGH, "eg: connect 192.168.0.1:12345 secretpass\n");
+	    Printf("Usage: connect ip[:port] [password]\n");
+	    Printf("\n");
+	    Printf("Connect to a server, with optional port number");
+	    Printf(" and/or password\n");
+	    Printf("eg: connect 127.0.0.1\n");
+	    Printf("eg: connect 192.168.0.1:12345 secretpass\n");
 
 	    return;
 	}
@@ -777,7 +736,7 @@ BEGIN_COMMAND (connect)
 	C_FullConsole();
 	gamestate = GS_CONNECTING;
 
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	if (argc > 1)
 	{
@@ -802,7 +761,7 @@ BEGIN_COMMAND (connect)
 		}
 		else
 		{
-			Printf(PRINT_HIGH, "Could not resolve host %s\n", target.c_str());
+			Printf("Could not resolve host %s\n", target.c_str());
 			memset(&serveraddr, 0, sizeof(serveraddr));
 		}
 	}
@@ -814,7 +773,7 @@ END_COMMAND (connect)
 
 BEGIN_COMMAND (disconnect)
 {
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 }
 END_COMMAND (disconnect)
 
@@ -836,11 +795,11 @@ BEGIN_COMMAND (players)
 	}
 
 	// Print them, ordered by player id.
-	Printf(PRINT_HIGH, "PLAYERS IN GAME:\n");
+	Printf("PLAYERS IN GAME:\n");
 	for (std::map<int, std::string>::iterator it = mplayers.begin();it != mplayers.end();++it) {
-		Printf(PRINT_HIGH, "%3d. %s\n", (*it).first, (*it).second.c_str());
+		Printf("%3d. %s\n", (*it).first, (*it).second.c_str());
 	}
-	Printf(PRINT_HIGH, "%d %s\n", mplayers.size(), mplayers.size() == 1 ? "PLAYER" : "PLAYERS");
+	Printf("%d %s\n", mplayers.size(), mplayers.size() == 1 ? "PLAYER" : "PLAYERS");
 }
 END_COMMAND (players)
 
@@ -855,7 +814,7 @@ BEGIN_COMMAND (playerinfo)
 
 		if (!validplayer(p))
 		{
-			Printf (PRINT_HIGH, "Bad player number\n");
+			Printf ("Bad player number\n");
 			return;
 		}
 		else
@@ -864,7 +823,7 @@ BEGIN_COMMAND (playerinfo)
 
 	if (!validplayer(*player))
 	{
-		Printf (PRINT_HIGH, "Not a valid player\n");
+		Printf ("Not a valid player\n");
 		return;
 	}
 
@@ -872,15 +831,13 @@ BEGIN_COMMAND (playerinfo)
 	sprintf(color, "#%02X%02X%02X",
 			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
 
-	char team[5] = { 0 };
-	if (player->userinfo.team == TEAM_BLUE)
-		sprintf(team, "BLUE");
-	else if (player->userinfo.team == TEAM_RED)
-		sprintf(team, "RED");
-
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
 	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
-	Printf(PRINT_HIGH, " userinfo.team    - %s \n",		team);
+
+	if (sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) {
+		Printf(PRINT_HIGH, " userinfo.team    - %s \n",
+		       GetTeamInfo(player->userinfo.team)->ColorizedTeamName().c_str());
+	}
 	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
 	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
 	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
@@ -894,10 +851,10 @@ END_COMMAND (playerinfo)
 
 BEGIN_COMMAND (kill)
 {
-    if (sv_allowcheats || sv_gametype == GM_COOP)
+    if (sv_allowcheats || G_IsCoopGame())
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
-        Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
+        Printf ("You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
 }
 END_COMMAND (kill)
 
@@ -930,7 +887,7 @@ BEGIN_COMMAND (serverinfo)
 	std::sort(server_cvars.begin(), server_cvars.end());
 
     // Heading
-    Printf (PRINT_HIGH,	"\n%*s - Value\n", MaxFieldLength, "Name");
+    Printf ("\n%*s - Value\n", MaxFieldLength, "Name");
 
     // Data
 	for (size_t i = 0; i < server_cvars.size(); i++)
@@ -938,14 +895,13 @@ BEGIN_COMMAND (serverinfo)
 		cvar_t *dummy;
 		Cvar = cvar_t::FindCVar(server_cvars[i].c_str(), &dummy);
 
-		Printf(PRINT_HIGH,
-				"%*s - %s\n",
+		Printf( "%*s - %s\n",
 				MaxFieldLength,
 				Cvar->name(),
 				Cvar->cstring());
 	}
 
-    Printf (PRINT_HIGH,	"\n");
+    Printf ("\n");
 }
 END_COMMAND (serverinfo)
 
@@ -997,45 +953,93 @@ END_COMMAND (rcon_logout)
 
 BEGIN_COMMAND (playerteam)
 {
-	Printf (PRINT_MEDIUM, "Your Team is %d \n", consoleplayer().userinfo.team);
+	if (G_IsTeamGame())
+		Printf("Your are in the %s team.\n", V_GetTeamColor(consoleplayer().userinfo.team).c_str());
+	else
+		Printf("You need to play a team-based gamemode in order to use this command.\n");
 }
 END_COMMAND (playerteam)
 
 BEGIN_COMMAND (changeteams)
 {
-	if (consoleplayer().userinfo.team == TEAM_BLUE)
-		cl_team.Set("RED");
-	else if (consoleplayer().userinfo.team == TEAM_RED)
-		cl_team.Set("BLUE");
+	int iTeam = (int)consoleplayer().userinfo.team;
+	iTeam = ++iTeam % sv_teamsinplay.asInt();
+	cl_team.Set(GetTeamInfo((team_t)iTeam)->ColorStringUpper.c_str());
 }
 END_COMMAND (changeteams)
 
 BEGIN_COMMAND (spectate)
 {
-	if (consoleplayer().spectator)
+	bool spectator = consoleplayer().spectator;
+
+	if (spectator)
 	{
-		// reset camera to self, do not send any messages
+		// reset camera to self
 		displayplayer_id = consoleplayer_id;
 		CL_CheckDisplayPlayer();
-		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_spectate);
-	MSG_WriteByte(&net_buffer, true);
+	// Only send message if currently not a spectator, or to remove from play queue
+	if (!spectator || consoleplayer().QueuePosition > 0)
+	{
+		MSG_WriteMarker(&net_buffer, clc_spectate);
+		MSG_WriteByte(&net_buffer, true);
+	}
 }
 END_COMMAND (spectate)
 
-BEGIN_COMMAND (ready) {
-	MSG_WriteMarker(&net_buffer, clc_ready);
-} END_COMMAND (ready)
+BEGIN_COMMAND(ready)
+{
+	MSG_WriteMarker(&net_buffer, clc_netcmd);
+	MSG_WriteString(&net_buffer, "ready");
+	MSG_WriteByte(&net_buffer, 0);
+}
+END_COMMAND(ready)
+
+static void NetCmdHelp()
+{
+	Printf(PRINT_HIGH,
+	       "netcmd - Send an arbitrary string command to a server\n\n"
+	       "Common commands:\n"
+	       "  ] netcmd help\n"
+	       "  Check to see if the server has any server-specific netcmd's.\n\n"
+	       "  ] netcmd motd\n"
+	       "  Ask the server for the MOTD.\n\n"
+	       "  ] netcmd ready\n"
+	       "  Set yourself as ready or unready.\n\n"
+	       "  ] netcmd vote <\"yes\"|\"no\">\n"
+	       "  Vote \"yes\" or \"no\" in an ongoing vote.\n");
+}
+
+BEGIN_COMMAND(netcmd)
+{
+	if (argc < 2)
+	{
+		NetCmdHelp();
+		return;
+	}
+
+	MSG_WriteMarker(&net_buffer, clc_netcmd);
+	MSG_WriteString(&net_buffer, argv[1]);
+
+	// Pass additional arguments as separate strings.  Avoids argument
+	// parsing at the opposite end.
+	byte netargc = MIN<size_t>(argc - 2, 0xFF);
+	MSG_WriteByte(&net_buffer, netargc);
+	for (size_t i = 0; i < netargc; i++)
+	{
+		MSG_WriteString(&net_buffer, argv[i + 2]);
+	}
+}
+END_COMMAND(netcmd)
 
 BEGIN_COMMAND (join)
 {
-	if (P_NumPlayersInGame() >= sv_maxplayers)
-	{
-		C_MidPrint("The game is currently full", NULL);
-		return;
-	}
+	//if (P_NumPlayersInGame() >= sv_maxplayers)
+	//{
+	//	C_MidPrint("The game is currently full", NULL);
+	//	return;
+	//}
 
 	MSG_WriteMarker(&net_buffer, clc_spectate);
 	MSG_WriteByte(&net_buffer, false);
@@ -1048,7 +1052,7 @@ BEGIN_COMMAND (flagnext)
 	{
 		for (int i = 0; i < NUMTEAMS; i++)
 		{
-			byte id = CTFdata[i].flagger;
+			byte id = GetTeamInfo((team_t)i)->FlagData.flagger;
 			if (id != 0 && displayplayer_id != id)
 			{
 				displayplayer_id = id;
@@ -1138,7 +1142,7 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 {
 	const std::string expanded_filename(M_ExpandTokens(filename));
 	std::string newfilename(expanded_filename);
-	newfilename = I_GetUserFileName(newfilename.c_str());
+	newfilename = M_GetUserFileName(newfilename.c_str());
 
 	// keep trying to find a filename that doesn't yet exist
 	if (!M_FindFreeName(newfilename, "odd"))
@@ -1150,7 +1154,7 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 	return newfilename;
 }
 
-void CL_NetDemoStop()
+void CL_NetDemoPlay(const std::string& filename)
 {
 	netdemo.stopPlaying();
 }
@@ -1170,14 +1174,23 @@ void CL_NetDemoPlay(const std::string &filename)
 
 	if (!M_FileExists(newfilename))
 	{
+		std::string found = M_FindUserFileName(filename, ".odd");
+		if (found.empty())
+		{
+			Printf(PRINT_WARNING, "Could not find demo %s.\n", filename.c_str());
+			return;
+		}
+
 		// try adding .odd to the end of the file name
 		std::string ext;
 		M_ExtractFileExtension(newfilename, ext);
 		if (!iequals(ext, ".odd"))
+		{
 			newfilename = M_AppendExtension(newfilename, ".odd", false);
+		}
 	}
 
-	netdemo.startPlaying(newfilename);
+	netdemo.startPlaying(found);
 }
 
 BEGIN_COMMAND(stopnetdemo)
@@ -1249,7 +1262,7 @@ BEGIN_COMMAND(netplay)
  		G_CheckDemoStatus();	// cleans up vanilla demo or single player game
 	}
 
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 	connected = false;
 
 	std::string filename = argv[1];
@@ -1284,6 +1297,8 @@ BEGIN_COMMAND(netff)
 {
 	if (netdemo.isPlaying())
 		netdemo.nextSnapshot();
+	else if (netdemo.isPaused());
+		netdemo.nextTic();
 }
 END_COMMAND(netff)
 
@@ -1307,11 +1322,6 @@ BEGIN_COMMAND(netprevmap)
 		netdemo.prevMap();
 }
 END_COMMAND(netprevmap)
-
-void CL_NetDemoLoadSnap()
-{
-	AddCommandString("netprevmap");
-}
 
 //
 // CL_MoveThing
@@ -1393,123 +1403,65 @@ player_t &CL_FindPlayer(size_t id)
 	return *p;
 }
 
-//
-// CL_SetupUserInfo
-//
-void CL_SetupUserInfo(void)
+/**
+ * @brief Update a player's spectate setting and do any necessary busywork for it.
+ * 
+ * @param player Plyaer to update.
+ * @param spectate New spectate setting.
+*/
+void CL_SpectatePlayer(player_t& player, bool spectate)
 {
-	byte who = MSG_ReadByte();
-	player_t *p = &CL_FindPlayer(who);
+	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
+	bool wasspectator = player.spectator;
+	player.spectator = spectate;
 
-	p->userinfo.netname = MSG_ReadString();
-	p->userinfo.team	= (team_t)MSG_ReadByte();
-	p->userinfo.gender	= (gender_t)MSG_ReadLong();
+	if (player.spectator && wasalive)
+		P_DisconnectEffect(player.mo);
+	if (player.spectator && player.mo && !wasspectator)
+		P_PlayerLeavesGame(&player);
 
-	for (int i = 3; i >= 0; i--)
-		p->userinfo.color[i] = MSG_ReadByte();
+	// [tm512 2014/04/11] Do as the server does when unspectating a player.
+	// If the player has a "valid" mo upon going to PST_LIVE, any enemies
+	// that are still targeting the spectating player will cause a stack
+	// overflow in P_SetMobjState.
 
-	// [SL] place holder for deprecated skins
-	MSG_ReadString();
+	if (!player.spectator && !wasalive)
+	{
+		if (player.mo)
+			P_KillMobj(NULL, player.mo, NULL, true);
 
-	p->GameTime			= MSG_ReadShort();
+		player.playerstate = PST_REBORN;
+	}
 
-	if(p->userinfo.gender >= NUMGENDER)
-		p->userinfo.gender = GENDER_NEUTER;
+	if (&player == &consoleplayer())
+	{
+		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
 
-	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p));
+		if (player.spectator)
+		{
+			player.playerstate = PST_LIVE;				// Resurrect dead spectators
+			player.cheats |= CF_FLY;					// Make players fly by default
+			player.deltaviewheight = 1000 << FRACBITS;	// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
 
-	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
-	// to the other team?
-	// [SL] 2012-05-24 - Were we spectating a teammate before we changed teams?
+			movingsectors.clear(); // Clear all moving sectors, otherwise client side prediction will not move active sectors
+		}
+		else
+		{
+			displayplayer_id = consoleplayer_id; // get out of spynext
+			player.cheats &= ~CF_FLY;	// remove flying ability
+		}
+
+		CL_RebuildAllPlayerTranslations();
+	}
+	else
+	{
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
+	}
+
+	P_ClearPlayerPowerups(player);	// Remove all current powerups
+
+	// GhostlyDeath -- If the player matches our display player...
 	CL_CheckDisplayPlayer();
-}
-
-
-//
-// CL_UpdateFrags
-//
-void CL_UpdateFrags(void)
-{
-	player_t &p = CL_FindPlayer(MSG_ReadByte());
-
-	if(sv_gametype != GM_COOP)
-		p.fragcount = MSG_ReadShort();
-	else
-		p.killcount = MSG_ReadShort();
-	p.deathcount = MSG_ReadShort();
-	p.points = MSG_ReadShort();
-}
-
-//
-// [deathz0r] Receive team frags/captures
-//
-void CL_TeamPoints (void)
-{
-	for(size_t i = 0; i < NUMTEAMS; i++)
-		TEAMpoints[i] = MSG_ReadShort();
-}
-
-//
-// CL_MoveMobj
-//
-void CL_MoveMobj(void)
-{
-	AActor  *mo;
-	int      netid;
-	fixed_t  x, y, z;
-
-	netid = MSG_ReadShort();
-	mo = P_FindThingById (netid);
-
-	byte rndindex = MSG_ReadByte();
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
-
-	if (!mo)
-		return;
-
-	if (mo->player)
-	{
-		// [SL] 2013-07-21 - Save the position information to a snapshot
-		int snaptime = last_svgametic;
-		PlayerSnapshot newsnap(snaptime);
-		newsnap.setAuthoritative(true);
-
-		newsnap.setX(x);
-		newsnap.setY(y);
-		newsnap.setZ(z);
-
-		mo->player->snapshots.addSnapshot(newsnap);
-	}
-	else
-	{
-		CL_MoveThing (mo, x, y, z);
-		mo->rndindex = rndindex;
-	}
-}
-
-//
-// CL_DamageMobj
-//
-void CL_DamageMobj()
-{
-	AActor  *mo;
-	int      netid, health, pain;
-
-	netid = MSG_ReadShort();
-	health = MSG_ReadShort();
-	pain = MSG_ReadByte();
-
-	mo = P_FindThingById (netid);
-
-	if (!mo)
-		return;
-
-	mo->health = health;
-
-	if(pain < mo->info->painchance)
-		P_SetMobjState(mo, mo->info->painstate);
 }
 
 int connecttimeout = 0;
@@ -1523,14 +1475,13 @@ void CL_RequestConnectInfo(void)
 	if (!serveraddr.ip[0])
 		return;
 
-	if(gamestate != GS_DOWNLOAD)
-		gamestate = GS_CONNECTING;
+	gamestate = GS_CONNECTING;
 
 	if(!connecttimeout)
 	{
 		connecttimeout = 140;
 
-		Printf(PRINT_HIGH, "connecting to %s\n", NET_AdrToString(serveraddr));
+		Printf(PRINT_HIGH, "Connecting to %s...\n", NET_AdrToString(serveraddr));
 
 		SZ_Clear(&net_buffer);
 		MSG_WriteLong(&net_buffer, LAUNCHER_CHALLENGE);
@@ -1540,6 +1491,80 @@ void CL_RequestConnectInfo(void)
 	connecttimeout--;
 }
 
+/**
+ * @brief Quit the network game while attempting to download a file.
+ *
+ * @param missing_file Missing file to attempt to download.
+ */
+void CL_QuitAndTryDownload(const OWantFile& missing_file)
+{
+	// Need to set this here, otherwise we render a frame of wild pointers
+	// filled with garbage data.
+	gamestate = GS_FULLCONSOLE;
+
+	if (missing_file.getBasename().empty())
+	{
+		Printf(PRINT_WARNING,
+		       "Tried to download an empty file.  This is probably a bug "
+		       "in the client where an empty file is considered missing.\n",
+		       missing_file.getBasename().c_str());
+		CL_QuitNetGame(NQ_DISCONNECT);
+		return;
+	}
+
+	if (!cl_serverdownload)
+	{
+		// Downloading is disabled client-side
+		Printf(PRINT_WARNING,
+		       "Unable to find \"%s\". Downloading is disabled on your client.  Go to "
+		       "Options > Network Options to enable downloading.\n",
+		       missing_file.getBasename().c_str());
+		CL_QuitNetGame(NQ_DISCONNECT);
+		return;
+	}
+
+	if (netdemo.isPlaying())
+	{
+		// Playing a netdemo and unable to download from the server
+		Printf(PRINT_WARNING,
+		       "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
+		       missing_file.getBasename().c_str());
+		CL_QuitNetGame(NQ_DISCONNECT);
+		return;
+	}
+
+	if (sv_downloadsites.str().empty() && cl_downloadsites.str().empty())
+	{
+		// Nobody has any download sites configured.
+		Printf("Unable to find \"%s\".  Both your client and the server have no "
+		       "download sites configured.\n",
+		       missing_file.getBasename().c_str());
+		CL_QuitNetGame(NQ_DISCONNECT);
+		return;
+	}
+
+	// Gather our server and client sites.
+	StringTokens serversites = TokenizeString(sv_downloadsites.str(), " ");
+	StringTokens clientsites = TokenizeString(cl_downloadsites.str(), " ");
+
+	// Shuffle the sites so we evenly distribute our requests.
+	std::random_shuffle(serversites.begin(), serversites.end());
+	std::random_shuffle(clientsites.begin(), clientsites.end());
+
+	// Combine them into one big site list.
+	Websites downloadsites;
+	downloadsites.reserve(serversites.size() + clientsites.size());
+	downloadsites.insert(downloadsites.end(), serversites.begin(), serversites.end());
+	downloadsites.insert(downloadsites.end(), clientsites.begin(), clientsites.end());
+
+	// Disconnect from the server before we start the download.
+	Printf(PRINT_HIGH, "Need to download \"%s\", disconnecting from server...\n",
+	       missing_file.getBasename().c_str());
+	CL_QuitNetGame(NQ_SILENT);
+
+	// Start the download.
+	CL_StartDownload(downloadsites, missing_file, DL_RECONNECT);
+}
 
 //
 // CL_LoadResourceFiles
@@ -1613,7 +1638,7 @@ static bool CL_LoadResourceFiles(
 // [denis] CL_PrepareConnect
 // Process server info and switch to the right wads...
 //
-bool CL_PrepareConnect(void)
+bool CL_PrepareConnect()
 {
 	G_CleanupDemo();	// stop demos from playing before wiping out Zone memory
 
@@ -1632,26 +1657,54 @@ bool CL_PrepareConnect(void)
 
 	size_t resource_file_count = MSG_ReadByte();
 
-	Printf(PRINT_HIGH, "\n");
-	Printf(PRINT_HIGH, "> Server: %s\n", server_host.c_str());
-	Printf(PRINT_HIGH, "> Map: %s\n", server_map.c_str());
+	// TODO: Reconcile
+	std::vector<std::string> newwadnames;
+	newwadnames.reserve(server_wads);
+	for (byte i = 0; i < server_wads; i++)
+	{
+		newwadnames.push_back(MSG_ReadString());
+	}
 
 	// store the resource file name list
 	std::vector<std::string> resource_filenames;
 	for (size_t i = 0; i < resource_file_count; i++)
+	{
 		resource_filenames.push_back(MSG_ReadString());
+	}
 
 	MSG_ReadBool();							// deathmatch
 	MSG_ReadByte();							// skill
 	recv_teamplay_stats |= MSG_ReadBool();	// teamplay
 	recv_teamplay_stats |= MSG_ReadBool();	// ctf
 
-	for (size_t i = 0; i < playercount; i++)
+	for (byte i = 0; i < playercount; i++)
 	{
 		MSG_ReadString();
 		MSG_ReadShort();
 		MSG_ReadLong();
 		MSG_ReadByte();
+	}
+
+	// TODO: Reconcile
+	OWantFiles newwadfiles;
+	newwadfiles.resize(server_wads);
+	for (byte i = 0; i < server_wads; i++)
+	{
+		OWantFile& file = newwadfiles.at(i);
+		const std::string hashStr = MSG_ReadString();
+		OMD5Hash hash;
+		OMD5Hash::makeFromHexStr(hash, hashStr);
+		if (!OWantFile::makeWithHash(file, newwadnames.at(i), OFILE_WAD, hash))
+		{
+			Printf(PRINT_WARNING,
+			       "Could not construct wanted file \"%s\" that server requested.\n",
+			       newwadnames.at(i).c_str());
+			CL_QuitNetGame(NQ_ABORT);
+			return false;
+		}
+
+		Printf("> %s\n   %s\n", file.getBasename().c_str(),
+		       file.getWantedMD5().getHexCStr());
 	}
 
 	// store the MD5SUMS for the resource file name list
@@ -1660,11 +1713,12 @@ bool CL_PrepareConnect(void)
 	{
 		resource_filehashes.push_back(MSG_ReadString());
 		Printf(PRINT_HIGH, "> %s\n   %s\n",
-					resource_filenames[i].c_str(),
-					resource_filehashes[i].c_str());
+			resource_filenames[i].c_str(),
+			resource_filehashes[i].c_str());
 	}
 
-	MSG_ReadString();
+	// Download website - needed for HTTP downloading to work.
+	sv_downloadsites.Set(MSG_ReadString());
 
 	// Receive conditional teamplay information
 	if (recv_teamplay_stats)
@@ -1678,10 +1732,9 @@ bool CL_PrepareConnect(void)
 		}
 	}
 
+	Printf("> Map: %s\n", server_map.c_str());
+
 	version = MSG_ReadShort();
-
-	Printf(PRINT_HIGH, "> Server protocol version: %i\n", version);
-
 	if(version > VERSION)
 		version = VERSION;
 	if(version < 62)
@@ -1721,11 +1774,74 @@ bool CL_PrepareConnect(void)
 			gameversiontosend = 40;
 		}
 
-		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", gameversion / 256,
-						(gameversion % 256) / 10, (gameversion % 256) % 10);
+		int major, minor, patch;
+		BREAKVER(gameversion, major, minor, patch);
+		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", major, minor, patch);
+
+		std::string msg = VersionMessage(::gameversion, GAMEVER, NULL);
+		if (!msg.empty())
+		{
+			Printf(PRINT_WARNING, "%s", msg.c_str());
+			CL_QuitNetGame(NQ_ABORT);
+			return false;
+		}
+	}
+	else
+	{
+		// [AM] Not worth sorting out what version it actually is.
+		std::string msg = VersionMessage(MAKEVER(0, 3, 0), GAMEVER, NULL);
+		Printf(PRINT_WARNING, "%s", msg.c_str());
+		CL_QuitNetGame(NQ_ABORT);
+		return false;
 	}
 
-    Printf(PRINT_HIGH, "\n");
+	// DEH/BEX Patch files
+	size_t patch_count = MSG_ReadByte();
+
+	OWantFiles newpatchfiles;
+	newpatchfiles.resize(patch_count);
+	for (byte i = 0; i < patch_count; ++i)
+	{
+		OWantFile& file = newpatchfiles.at(i);
+		std::string filename = MSG_ReadString();
+		if (!OWantFile::make(file, filename, OFILE_DEH))
+		{
+			Printf(PRINT_WARNING,
+			       "Could not construct wanted file \"%s\" that server requested.\n",
+			       filename.c_str());
+			CL_QuitNetGame(NQ_ABORT);
+			return false;
+		}
+
+		Printf("> %s\n", file.getBasename().c_str());
+	}
+
+	// TODO: Allow deh/bex file downloads
+	Printf("\n");
+	bool ok = D_DoomWadReboot(newwadfiles, newpatchfiles);
+	if (!ok && missingfiles.empty())
+	{
+		Printf(PRINT_WARNING, "Could not load required set of WAD files.\n");
+		CL_QuitNetGame(NQ_ABORT);
+		return false;
+	}
+	else if (!ok && !missingfiles.empty() || cl_forcedownload)
+	{
+		OWantFile missing_file;
+		if (missingfiles.empty())				// cl_forcedownload
+		{
+			missing_file = newwadfiles.back();
+		}
+		else									// client is really missing a file
+		{
+			missing_file = missingfiles.front();
+		}
+
+		CL_QuitAndTryDownload(missing_file);
+		return false;
+	}
+
+	Printf(PRINT_HIGH, "\n");
 
 	// [SL] DEH/BEX patch file names used to be sent separately.
 	// Read and ignore them (dummy should be zero anyways).
@@ -1748,18 +1864,22 @@ bool CL_PrepareConnect(void)
 //
 //  Connecting to a server...
 //
-bool CL_Connect(void)
+bool CL_Connect()
 {
 	players.clear();
 
-	memset(packetseq, -1, sizeof(packetseq) );
-	packetnum = 0;
+	memset(packetseq, -1, sizeof(packetseq));
 
+	// [AM] This needs to go out ASAP so the server can start sending us
+	//      messages.
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
+	NET_SendPacket(::net_buffer, ::serveraddr);
+	Printf("Requesting server state...\n");
 
-	if (gamestate == GS_DOWNLOAD && !missing_resource_filename.empty())
-		CL_RequestDownload(missing_resource_filename, missing_resource_filehash);
+	// TODO: Reconcile
+	//if (gamestate == GS_DOWNLOAD && !missing_resource_filename.empty())
+	//	CL_RequestDownload(missing_resource_filename, missing_resource_filehash);
 
 	compressor.reset();
 
@@ -1769,7 +1889,16 @@ bool CL_Connect(void)
 	serverside = false;
 	simulated_connection = netdemo.isPlaying();
 
-	CL_Decompress(0);
+	byte flags = MSG_ReadByte();
+	if (flags & SVF_UNUSED_MASK)
+	{
+		Printf(PRINT_WARNING, "Protocol flag bits (%u) were not understood.", flags);
+		CL_QuitNetGame(NQ_PROTO);
+	}
+	else if (flags & SVF_COMPRESSED)
+	{
+		CL_Decompress();
+	}
 	CL_ParseCommands();
 
 	if (gameaction == ga_fullconsole) // Host_EndGame was called
@@ -1784,8 +1913,7 @@ bool CL_Connect(void)
 	noservermsgs = false;
 	last_received = gametic;
 
-	if (gamestate != GS_DOWNLOAD)
-        gamestate = GS_CONNECTED;
+	gamestate = GS_CONNECTED;
 
 	return true;
 }
@@ -1847,17 +1975,13 @@ void CL_TryToConnect(DWORD server_token)
 	{
 		connecttimeout = 140; // 140 tics = 4 seconds
 
-		Printf(PRINT_HIGH, "challenging %s\n", NET_AdrToString(serveraddr));
+		Printf("Joining server...\n");
 
 		SZ_Clear(&net_buffer);
-		MSG_WriteLong(&net_buffer, CHALLENGE); // send challenge
+		MSG_WriteLong(&net_buffer, PROTO_CHALLENGE); // send challenge
 		MSG_WriteLong(&net_buffer, server_token); // confirm server token
 		MSG_WriteShort(&net_buffer, version); // send client version
-
-		if(gamestate == GS_DOWNLOAD)
-			MSG_WriteByte(&net_buffer, 1); // send type of connection (play/spectate/rcon/download)
-		else
-			MSG_WriteByte(&net_buffer, 0); // send type of connection (play/spectate/rcon/download)
+		MSG_WriteByte(&net_buffer, 0); // send type of connection (play/spectate/rcon/download)
 
 		// GhostlyDeath -- Send more version info
 		if (gameversiontosend)
@@ -1879,96 +2003,6 @@ void CL_TryToConnect(DWORD server_token)
 	}
 
 	connecttimeout--;
-}
-
-EXTERN_CVAR (show_messages)
-
-//
-// CL_Print
-//
-void CL_Print (void)
-{
-	byte level = MSG_ReadByte();
-	const char *str = MSG_ReadString();
-
-	if (level == PRINT_CHAT)
-		Printf(level, "\\c*%s", str);
-	else if (level == PRINT_TEAMCHAT)
-		Printf(level, "\\c!%s", str);
-	else if (level == PRINT_SERVERCHAT)
-		Printf(level, "\\ck%s", str);
-	else
-		Printf(level, "%s", str);
-
-	if (show_messages)
-	{
-		if (level == PRINT_CHAT || level == PRINT_SERVERCHAT)
-			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
-		else if (level == PRINT_TEAMCHAT)
-			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
-	}
-}
-
-// Print a message in the middle of the screen
-void CL_MidPrint (void)
-{
-    const char *str = MSG_ReadString();
-    int msgtime = MSG_ReadShort();
-
-    C_MidPrint(str,NULL,msgtime);
-}
-
-/**
- * Handle the svc_say server message, which contains a message from another
- * client with a player id attached to it.
- */
-void CL_Say()
-{
-	byte message_visibility = MSG_ReadByte();
-	byte player_id = MSG_ReadByte();
-	const char* message = MSG_ReadString();
-
-	player_t &player = idplayer(player_id);
-
-	if (!validplayer(player))
-		return;
-
-	bool spectator = player.spectator || player.playerstate == PST_DOWNLOAD;
-
-	if (consoleplayer().id != player.id)
-	{
-		if (spectator && mute_spectators)
-			return;
-
-		if (mute_enemies && !spectator &&
-		    (sv_gametype == GM_DM ||
-		    ((sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF) &&
-		     player.userinfo.team != consoleplayer().userinfo.team)))
-			return;
-	}
-
-	const char* name = player.userinfo.netname.c_str();
-
-	if (message_visibility == 0)
-	{
-		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_CHAT, "* %s %s\n", name, &message[4]);
-		else
-			Printf(PRINT_CHAT, "%s: %s\n", name, message);
-
-		if (show_messages)
-			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
-	}
-	else if (message_visibility == 1)
-	{
-		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(PRINT_TEAMCHAT, "* %s %s\n", name, &message[4]);
-		else
-			Printf(PRINT_TEAMCHAT, "%s: %s\n", name, message);
-
-		if (show_messages)
-			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
-	}
 }
 
 //
@@ -1994,831 +2028,7 @@ void CL_ClearPlayerJustTeleported(player_t *player)
 		teleported_players.erase(player->id);
 }
 
-void CL_UpdatePlayer()
-{
-	byte who = MSG_ReadByte();
-	player_t *p = &idplayer(who);
-
-	MSG_ReadLong();	// Read and ignore for now
-
-	fixed_t x = MSG_ReadLong();
-	fixed_t y = MSG_ReadLong();
-	fixed_t z = MSG_ReadLong();
-
-	angle_t angle = MSG_ReadShort() << FRACBITS;
-	angle_t pitch = MSG_ReadShort() << FRACBITS;
-
-	int frame = MSG_ReadByte();
-	fixed_t momx = MSG_ReadLong();
-	fixed_t momy = MSG_ReadLong();
-	fixed_t momz = MSG_ReadLong();
-
-	int invisibility = MSG_ReadByte();
-
-	if	(!validplayer(*p) || !p->mo)
-		return;
-
-	// Mark the gametic this update arrived in for prediction code
-	p->tic = gametic;
-
-	// GhostlyDeath -- Servers will never send updates on spectators
-	if (p->spectator && (p != &consoleplayer()))
-		p->spectator = 0;
-
-	// [Russell] - hack, read and set invisibility flag
-	p->powers[pw_invisibility] = invisibility;
-	if (p->powers[pw_invisibility])
-		p->mo->flags |= MF_SHADOW;
-	else
-		p->mo->flags &= ~MF_SHADOW;
-
-	// This is a very bright frame. Looks cool :)
-	if (frame == PLAYER_FULLBRIGHTFRAME)
-		frame = 32773;
-
-	// denis - fixme - security
-	if(!p->mo->sprite || (p->mo->frame&FF_FRAMEMASK) >= sprites[p->mo->sprite].numframes)
-		return;
-
-	p->last_received = gametic;
-	last_player_update = gametic;
-
-	// [SL] 2012-02-21 - Save the position information to a snapshot
-	int snaptime = last_svgametic;
-	PlayerSnapshot newsnap(snaptime);
-	newsnap.setAuthoritative(true);
-
-	newsnap.setX(x);
-	newsnap.setY(y);
-	newsnap.setZ(z);
-	newsnap.setMomX(momx);
-	newsnap.setMomY(momy);
-	newsnap.setMomZ(momz);
-	newsnap.setAngle(angle);
-	newsnap.setPitch(pitch);
-	newsnap.setFrame(frame);
-
-	// Mark the snapshot as continuous unless the player just teleported
-	// and lerping should be disabled
-	newsnap.setContinuous(!CL_PlayerJustTeleported(p));
-	CL_ClearPlayerJustTeleported(p);
-
-	p->snapshots.addSnapshot(newsnap);
-}
-
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
-
-void CL_UpdatePlayerState(void)
-{
-	byte id				= MSG_ReadByte();
-	short health		= MSG_ReadShort();
-	byte armortype		= MSG_ReadByte();
-	short armorpoints	= MSG_ReadShort();
-
-	weapontype_t weap	= static_cast<weapontype_t>(MSG_ReadByte());
-
-	short ammo[NUMAMMO];
-	for (int i = 0; i < NUMAMMO; i++)
-		ammo[i] = MSG_ReadShort();
-
-	statenum_t stnum[NUMPSPRITES];
-	for (int i = 0; i < NUMPSPRITES; i++)
-	{
-		int n = MSG_ReadByte();
-		if (n == 0xFF)
-			stnum[i] = S_NULL;
-		else
-			stnum[i] = static_cast<statenum_t>(n);
-	}
-
-	player_t &player = idplayer(id);
-	if (!validplayer(player) || !player.mo)
-		return;
-
-	player.health = player.mo->health = health;
-	player.armortype = armortype;
-	player.armorpoints = armorpoints;
-
-	player.readyweapon = weap;
-	player.pendingweapon = wp_nochange;
-
-	if (!player.weaponowned[weap])
-		P_GiveWeapon(&player, weap, false);
-
-	for (int i = 0; i < NUMAMMO; i++)
-		player.ammo[i] = ammo[i];
-
-	for (int i = 0; i < NUMPSPRITES; i++)
-		P_SetPsprite(&player, i, stnum[i]);
-}
-
-//
-// CL_UpdateLocalPlayer
-//
-void CL_UpdateLocalPlayer(void)
-{
-	player_t &p = consoleplayer();
-
-	// The server has processed the ticcmd that the local client sent
-	// during the the tic referenced below
-	p.tic = MSG_ReadLong();
-
-	fixed_t x = MSG_ReadLong();
-	fixed_t y = MSG_ReadLong();
-	fixed_t z = MSG_ReadLong();
-
-	fixed_t momx = MSG_ReadLong();
-	fixed_t momy = MSG_ReadLong();
-	fixed_t momz = MSG_ReadLong();
-
-	byte waterlevel = MSG_ReadByte();
-
-	int snaptime = last_svgametic;
-	PlayerSnapshot newsnapshot(snaptime);
-	newsnapshot.setAuthoritative(true);
-	newsnapshot.setX(x);
-	newsnapshot.setY(y);
-	newsnapshot.setZ(z);
-	newsnapshot.setMomX(momx);
-	newsnapshot.setMomY(momy);
-	newsnapshot.setMomZ(momz);
-	newsnapshot.setWaterLevel(waterlevel);
-
-	// Mark the snapshot as continuous unless the player just teleported
-	// and lerping should be disabled
-	newsnapshot.setContinuous(!CL_PlayerJustTeleported(&p));
-	CL_ClearPlayerJustTeleported(&p);
-
-	consoleplayer().snapshots.addSnapshot(newsnapshot);
-}
-
-
-//
-// CL_SaveSvGametic
-//
-// Receives the server's gametic at the time the packet was sent.  It will be
-// sent back to the server with the next cmd.
-//
-// [SL] 2011-05-11
-void CL_SaveSvGametic(void)
-{
-	byte t = MSG_ReadByte();
-
-	int newtic = (last_svgametic & 0xFFFFFF00) + t;
-
-	if (last_svgametic > newtic + 127)
-		newtic += 256;
-
-	last_svgametic = newtic;
-
-	#ifdef _WORLD_INDEX_DEBUG_
-	Printf(PRINT_HIGH, "Gametic %i, received world index %i\n", gametic, last_svgametic);
-	#endif	// _WORLD_INDEX_DEBUG_
-}
-
-//
-// CL_SendPingReply
-//
-// Replies to a server's ping request
-//
-// [SL] 2011-05-11 - Changed from CL_ResendSvGametic to CL_SendPingReply
-// for clarity since it sends timestamps, not gametics.
-//
-void CL_SendPingReply(void)
-{
-	int svtimestamp = MSG_ReadLong();
-	MSG_WriteMarker (&net_buffer, clc_pingreply);
-	MSG_WriteLong (&net_buffer, svtimestamp);
-}
-
-//
-// CL_UpdatePing
-// Update ping value
-//
-void CL_UpdatePing(void)
-{
-	player_t &p = idplayer(MSG_ReadByte());
-	p.ping = MSG_ReadLong();
-}
-
-
-//
-// CL_UpdateTimeLeft
-// Changes the value of level.timeleft
-//
-void CL_UpdateTimeLeft(void)
-{
-	level.timeleft = MSG_ReadShort() * TICRATE;	// convert from seconds to tics
-}
-
-//
-// CL_UpdateIntTimeLeft
-// Changes the value of level.inttimeleft
-//
-void CL_UpdateIntTimeLeft(void)
-{
-	level.inttimeleft = MSG_ReadShort();	// convert from seconds to tics
-}
-
-
-//
-// CL_SpawnMobj
-//
-void CL_SpawnMobj()
-{
-	AActor  *mo;
-
-	fixed_t x = MSG_ReadLong();
-	fixed_t y = MSG_ReadLong();
-	fixed_t z = MSG_ReadLong();
-	angle_t angle = MSG_ReadLong();
-
-	unsigned short type = MSG_ReadShort();
-	unsigned short netid = MSG_ReadShort();
-	byte rndindex = MSG_ReadByte();
-	SWORD state = MSG_ReadShort();
-
-	if(type >= NUMMOBJTYPES)
-		return;
-
-	P_ClearId(netid);
-
-	mo = new AActor (x, y, z, (mobjtype_t)type);
-
-	// denis - puff hack
-	if(mo->type == MT_PUFF)
-	{
-		mo->momz = FRACUNIT;
-		mo->tics -= M_Random () & 3;
-		if (mo->tics < 1)
-			mo->tics = 1;
-	}
-
-	mo->angle = angle;
-	P_SetThingId(mo, netid);
-	mo->rndindex = rndindex;
-
-	if (state < NUMSTATES)
-		P_SetMobjState(mo, (statenum_t)state);
-
-	if(mo->flags & MF_MISSILE)
-	{
-		AActor *target = P_FindThingById(MSG_ReadShort());
-		if(target)
-			mo->target = target->ptr();
-		CL_SetMobjSpeedAndAngle();
-	}
-
-    if (mo->flags & MF_COUNTKILL)
-		level.total_monsters++;
-
-	if (connected && (mo->flags & MF_MISSILE ) && mo->info->seesound)
-		S_Sound (mo, CHAN_VOICE, mo->info->seesound, 1, ATTN_NORM);
-
-	if (mo->type == MT_IFOG)
-		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
-
-	if (mo->type == MT_TFOG)
-	{
-		if (level.time)	// don't play sound on first tic of the level
-			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
-	}
-
-	if (type == MT_FOUNTAIN)
-	{
-		mo->effects = int(MSG_ReadByte()) << FX_FOUNTAINSHIFT;
-	}
-
-	if (type == MT_ZDOOMBRIDGE)
-	{
-		mo->radius = int(MSG_ReadByte()) << FRACBITS;
-		mo->height = int(MSG_ReadByte()) << FRACBITS;
-	}
-}
-
-//
-// CL_Corpse
-// Called after killed thing is created.
-//
-void CL_Corpse(void)
-{
-	AActor *mo = P_FindThingById(MSG_ReadShort());
-	int frame = MSG_ReadByte();
-	int tics = MSG_ReadByte();
-
-	if(tics == 0xFF)
-		tics = -1;
-
-	// already spawned as gibs?
-	if (!mo || mo->state - states == S_GIBS)
-		return;
-
-	if((frame&FF_FRAMEMASK) >= sprites[mo->sprite].numframes)
-		return;
-
-	mo->frame = frame;
-	mo->tics = tics;
-
-	// from P_KillMobj
-	mo->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
-	mo->flags |= MF_CORPSE|MF_DROPOFF;
-	mo->height >>= 2;
-	mo->flags &= ~MF_SOLID;
-
-	if (mo->player)
-		mo->player->playerstate = PST_DEAD;
-
-    if (mo->flags & MF_COUNTKILL)
-		level.killed_monsters++;
-}
-
-//
-// CL_TouchSpecialThing
-//
-void CL_TouchSpecialThing (void)
-{
-	AActor *mo = P_FindThingById(MSG_ReadShort());
-
-	if(!consoleplayer().mo || !mo)
-		return;
-
-	P_GiveSpecial(&consoleplayer(), mo);
-}
-
-
-//
-// CL_SpawnPlayer
-//
-void CL_SpawnPlayer()
-{
-	byte		playernum;
-	player_t	*p;
-	AActor		*mobj;
-	fixed_t		x = 0, y = 0, z = 0;
-	unsigned short netid;
-	angle_t		angle = 0;
-	int			i;
-
-	playernum = MSG_ReadByte();
-	netid = MSG_ReadShort();
-	p = &CL_FindPlayer(playernum);
-
-	angle = MSG_ReadLong();
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
-
-	P_ClearId(netid);
-
-	// first disassociate the corpse
-	if (p->mo)
-	{
-		p->mo->player = NULL;
-		p->mo->health = 0;
-	}
-
-	G_PlayerReborn (*p);
-
-	mobj = new AActor (x, y, z, MT_PLAYER);
-
-	mobj->momx = mobj->momy = mobj->momz = 0;
-
-	// set color translations for player sprites
-	mobj->translation = translationref_t(translationtables + 256*playernum, playernum);
-	mobj->angle = angle;
-	mobj->pitch = 0;
-	mobj->player = p;
-	mobj->health = p->health;
-	P_SetThingId(mobj, netid);
-
-	p->mo = p->camera = mobj->ptr();
-	p->fov = 90.0f;
-	p->playerstate = PST_LIVE;
-	p->refire = 0;
-	p->damagecount = 0;
-	p->bonuscount = 0;
-	p->extralight = 0;
-	p->fixedcolormap = 0;
-
-	p->xviewshift = 0;
-	p->viewheight = VIEWHEIGHT;
-
-	p->attacker = AActor::AActorPtr();
-	p->viewz = z + VIEWHEIGHT;
-
-	// spawn a teleport fog
-	// tfog = new AActor (x, y, z, MT_TFOG);
-
-	// setup gun psprite
-	P_SetupPsprites (p);
-
-	// give all cards in death match mode
-	if(sv_gametype != GM_COOP)
-		for (i = 0; i < NUMCARDS; i++)
-			p->cards[i] = true;
-
-	if(p->id == consoleplayer_id)
-	{
-		// denis - if this concerns the local player, restart the status bar
-		ST_Start ();
-
-		// [SL] 2012-04-23 - Clear predicted sectors
-		movingsectors.clear();
-	}
-
-	if (p->id == displayplayer().id)
-	{
-		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
-		// about players/sectors jumping to new positions when the displayplayer spawns
-		CL_ResyncWorldIndex();
-	}
-
-	if (level.behavior && !p->spectator && p->playerstate == PST_LIVE)
-	{
-		if (p->deathcount)
-			level.behavior->StartTypedScripts(SCRIPT_Respawn, p->mo);
-		else
-			level.behavior->StartTypedScripts(SCRIPT_Enter, p->mo);
-	}
-
-	int snaptime = last_svgametic;
-	PlayerSnapshot newsnap(snaptime, p);
-	newsnap.setAuthoritative(true);
-	newsnap.setContinuous(false);
-	p->snapshots.clearSnapshots();
-	p->snapshots.addSnapshot(newsnap);
-}
-
-//
-// CL_PlayerInfo
-// denis - your personal arsenal, as supplied by the server
-//
-void CL_PlayerInfo(void)
-{
-	player_t *p = &consoleplayer();
-
-	uint16_t booleans = MSG_ReadShort();
-
-	for (int i = 0; i < NUMWEAPONS; i++)
-		p->weaponowned[i] = booleans & 1 << i;
-	for (int i = 0; i < NUMCARDS; i++)
-		p->cards[i] = booleans & 1 << (i + NUMWEAPONS);
-	p->backpack = booleans & 1 << (NUMWEAPONS + NUMCARDS);
-
-	for (int i = 0; i < NUMAMMO; i++)
-	{
-		p->maxammo[i] = MSG_ReadShort();
-		p->ammo[i] = MSG_ReadShort();
-	}
-
-	p->health = MSG_ReadByte();
-	p->armorpoints = MSG_ReadByte();
-	p->armortype = MSG_ReadByte();
-
-	weapontype_t newweapon = static_cast<weapontype_t>(MSG_ReadByte());
-	if (newweapon >= NUMWEAPONS)	// bad weapon number, choose something else
-		newweapon = wp_fist;
-
-	if (newweapon != p->readyweapon)
-		p->pendingweapon = newweapon;
-
-	for (int i = 0; i < NUMPOWERS; i++)
-		p->powers[i] = MSG_ReadShort();
-}
-
-//
-// CL_SetMobjSpeedAndAngle
-//
-void CL_SetMobjSpeedAndAngle(void)
-{
-	AActor *mo;
-	int     netid;
-
-	netid = MSG_ReadShort();
-	mo = P_FindThingById(netid);
-
-	angle_t angle = MSG_ReadLong();
-	fixed_t momx = MSG_ReadLong();
-	fixed_t momy = MSG_ReadLong();
-	fixed_t momz = MSG_ReadLong();
-
-	if (!mo)
-		return;
-
-	if (mo->player)
-	{
-		// [SL] 2013-07-21 - Save the position information to a snapshot
-		int snaptime = last_svgametic;
-		PlayerSnapshot newsnap(snaptime);
-		newsnap.setAuthoritative(true);
-
-		newsnap.setMomX(momx);
-		newsnap.setMomY(momy);
-		newsnap.setMomZ(momz);
-
-		mo->player->snapshots.addSnapshot(newsnap);
-	}
-	else
-	{
-		mo->angle = angle;
-		mo->momx = momx;
-		mo->momy = momy;
-		mo->momz = momz;
-	}
-}
-
-//
-// CL_ExplodeMissile
-//
-void CL_ExplodeMissile(void)
-{
-    AActor *mo;
-	int     netid;
-
-	netid = MSG_ReadShort();
-	mo = P_FindThingById(netid);
-
-	if (!mo)
-		return;
-
-	P_ExplodeMissile(mo);
-}
-
-
-//
-// CL_RailTrail
-//
-void CL_RailTrail()
-{
-	v3double_t start, end;
-
-	start.x = double(MSG_ReadShort());
-	start.y = double(MSG_ReadShort());
-	start.z = double(MSG_ReadShort());
-	end.x = double(MSG_ReadShort());
-	end.y = double(MSG_ReadShort());
-	end.z = double(MSG_ReadShort());
-
-	P_DrawRailTrail(start, end);
-}
-
-//
-// CL_UpdateMobjInfo
-//
-void CL_UpdateMobjInfo(void)
-{
-	int netid = MSG_ReadShort();
-	int flags = MSG_ReadLong();
-	//int flags2 = MSG_ReadLong();
-
-	AActor *mo = P_FindThingById(netid);
-
-	if (!mo)
-		return;
-
-	mo->flags = flags;
-	//mo->flags2 = flags2;
-}
-
-
-//
-// CL_RemoveMobj
-//
-void CL_RemoveMobj(void)
-{
-	int netid = MSG_ReadShort();
-
-	AActor *mo = P_FindThingById(netid);
-	if (mo && mo->player && mo->player->id == displayplayer_id)
-		displayplayer_id = consoleplayer_id;
-
-	P_ClearId(netid);
-}
-
-
-//
-// CL_DamagePlayer
-//
-void CL_DamagePlayer(void)
-{
-	player_t *p;
-	int       health;
-	int       damage;
-
-	p = &idplayer(MSG_ReadByte());
-
-	p->armorpoints = MSG_ReadByte();
-	health         = MSG_ReadShort();
-
-	if(!p->mo)
-		return;
-
-	damage = p->health - health;
-	p->mo->health = p->health = health;
-
-	if (p->health < 0)
-		p->health = 0;
-
-	if (damage < 0)  // can't be!
-		return;
-
-	if (damage > 0) {
-		p->damagecount += damage;
-
-		if (p->damagecount > 100)
-			p->damagecount = 100;
-
-		if(p->mo->info->painstate)
-			P_SetMobjState(p->mo, p->mo->info->painstate);
-	}
-}
-
-extern int MeansOfDeath;
-
-//
-// CL_KillMobj
-//
-void CL_KillMobj(void)
-{
- 	AActor *source = P_FindThingById (MSG_ReadShort() );
-	AActor *target = P_FindThingById (MSG_ReadShort() );
-	AActor *inflictor = P_FindThingById (MSG_ReadShort() );
-	int health = MSG_ReadShort();
-
-	MeansOfDeath = MSG_ReadLong();
-
-	bool joinkill = ((MSG_ReadByte()) != 0);
-
-	if (!target)
-		return;
-
-	target->health = health;
-
-    if (!serverside && target->flags & MF_COUNTKILL)
-		level.killed_monsters++;
-
-	if (target->player == &consoleplayer())
-		for (size_t i = 0; i < MAXSAVETICS; i++)
-			localcmds[i].clear();
-
-	P_KillMobj (source, target, inflictor, joinkill);
-}
-
-
-///////////////////////////////////////////////////////////
-///// CL_Fire* called when someone uses a weapon  /////////
-///////////////////////////////////////////////////////////
-
-// [tm512] attempt at squashing weapon desyncs.
-// The server will send us what weapon we fired, and if that
-// doesn't match the weapon we have up at the moment, fix it
-// and request that we get a full update of playerinfo - apr 14 2012
-void CL_FireWeapon (void)
-{
-	player_t *p = &consoleplayer ();
-	weapontype_t firedweap = (weapontype_t) MSG_ReadByte ();
-	int servertic = MSG_ReadLong ();
-
-	if (firedweap != p->readyweapon)
-	{
-		DPrintf("CL_FireWeapon: weapon misprediction\n");
-		A_ForceWeaponFire(p->mo, firedweap, servertic);
-
-		// Request the player's ammo status from the server
-		MSG_WriteMarker (&net_buffer, clc_getplayerinfo);
-	}
-
-}
-
-//
-// CL_FirePistol
-//
-void CL_FirePistol(void)
-{
-	player_t &p = idplayer(MSG_ReadByte());
-
-	if(!validplayer(p))
-		return;
-
-	if(!p.mo)
-		return;
-
-	if (&p != &consoleplayer())
-		S_Sound (p.mo, CHAN_WEAPON, "weapons/pistol", 1, ATTN_NORM);
-}
-
-//
-// CL_FireShotgun
-//
-void CL_FireShotgun(void)
-{
-	player_t &p = idplayer(MSG_ReadByte());
-
-	if(!validplayer(p))
-		return;
-
-	if(!p.mo)
-		return;
-
-	if (&p != &consoleplayer())
-		S_Sound (p.mo, CHAN_WEAPON,  "weapons/shotgf", 1, ATTN_NORM);
-}
-
-//
-// CL_FireSSG
-//
-void CL_FireSSG(void)
-{
-	player_t &p = idplayer(MSG_ReadByte());
-
-	if(!validplayer(p))
-		return;
-
-	if(!p.mo)
-		return;
-
-	if (&p != &consoleplayer())
-		S_Sound (p.mo, CHAN_WEAPON, "weapons/sshotf", 1, ATTN_NORM);
-}
-
-
-//
-// CL_FireChainGun
-//
-void CL_FireChainGun(void)
-{
-	player_t &p = idplayer(MSG_ReadByte());
-
-	if(!validplayer(p))
-		return;
-
-	if(!p.mo)
-		return;
-
-	if (&p != &consoleplayer())
-		S_Sound (p.mo, CHAN_WEAPON, "weapons/chngun", 1, ATTN_NORM);
-}
-
-//
-// CL_ChangeWeapon
-// [ML] From Zdaemon .99
-//
-void CL_ChangeWeapon (void)
-{
-	player_t *player = &consoleplayer();
-	weapontype_t newweapon = (weapontype_t)MSG_ReadByte();
-
-	// ensure that the client has the weapon
-	player->weaponowned[newweapon] = true;
-
-	// [SL] 2011-09-22 - Only change the weapon if the client doesn't already
-	// have that weapon up.
-	if (player->readyweapon != newweapon)
-		player->pendingweapon = newweapon;
-}
-
-
-//
-// CL_Sound
-//
-void CL_Sound(void)
-{
-	int netid = MSG_ReadShort();
-	int x = MSG_ReadLong();
-	int y = MSG_ReadLong();
-	byte channel = MSG_ReadByte();
-	byte sfx_id = MSG_ReadByte();
-	byte attenuation = MSG_ReadByte();
-	byte vol = MSG_ReadByte();
-
-	AActor *mo = P_FindThingById (netid);
-
-	float volume = vol/(float)255;
-
-	if(mo)
-		S_SoundID (mo, channel, sfx_id, volume, attenuation); // play at thing location
-	else
-		S_SoundID (x, y, channel, sfx_id, volume, attenuation); // play at approximate thing location
-}
-
-void CL_SoundOrigin(void)
-{
-	int x = MSG_ReadLong();
-	int y = MSG_ReadLong();
-	byte channel = MSG_ReadByte();
-	byte sfx_id = MSG_ReadByte();
-	byte attenuation = MSG_ReadByte();
-	byte vol = MSG_ReadByte();
-
-	float volume = vol/(float)255;
-
-	AActor *mo = consoleplayer().mo;
-
-	if(!mo)
-		return;
-
-	S_SoundID (x, y, channel, sfx_id, volume, attenuation);
-}
 
 //
 // CL_ClearSectorSnapshots
@@ -2830,660 +2040,57 @@ void CL_ClearSectorSnapshots()
 	sector_snaps.clear();
 }
 
-//
-// CL_UpdateSector
-// Updates floorheight and ceilingheight of a sector.
-//
-void CL_UpdateSector(void)
-{
-	unsigned short sectornum = (unsigned short)MSG_ReadShort();
-	unsigned short floorheight = MSG_ReadShort();
-	unsigned short ceilingheight = MSG_ReadShort();
-
-	const ResourceId floor_res_id = MSG_ReadResourceId();
-	const ResourceId ceiling_res_id = MSG_ReadResourceId();
-	short special = MSG_ReadShort();
-
-	if (!sectors || sectornum >= numsectors)
-		return;
-
-	sector_t *sector = &sectors[sectornum];
-	P_SetCeilingHeight(sector, ceilingheight << FRACBITS);
-	P_SetFloorHeight(sector, floorheight << FRACBITS);
-
-	sector->floor_res_id = floor_res_id;
-
-	sector->ceiling_res_id = ceiling_res_id;
-	sector->special = special;
-	sector->moveable = true;
-
-	P_ChangeSector(sector, false);
-
-	SectorSnapshot snap(last_svgametic, sector);
-	sector_snaps[sectornum].addSnapshot(snap);
-}
-
-//
-// CL_UpdateMovingSector
-// Updates floorheight and ceilingheight of a sector.
-//
-void CL_UpdateMovingSector(void)
-{
-	unsigned short sectornum = (unsigned short)MSG_ReadShort();
-
-    fixed_t ceilingheight = MSG_ReadShort() << FRACBITS;
-    fixed_t floorheight = MSG_ReadShort() << FRACBITS;
-
-	byte movers = MSG_ReadByte();
-	movertype_t ceiling_mover = static_cast<movertype_t>(movers & 0x0F);
-	movertype_t floor_mover = static_cast<movertype_t>((movers & 0xF0) >> 4);
-
-	if (ceiling_mover == SEC_ELEVATOR)
-		floor_mover = SEC_INVALID;
-	if (ceiling_mover == SEC_PILLAR)
-		floor_mover = SEC_INVALID;
-
-	SectorSnapshot snap(last_svgametic);
-
-	snap.setCeilingHeight(ceilingheight);
-	snap.setFloorHeight(floorheight);
-
-	if (floor_mover == SEC_FLOOR)
-	{
-		// Floors/Stairbuilders
-		snap.setFloorMoverType(SEC_FLOOR);
-		snap.setFloorType(static_cast<DFloor::EFloor>(MSG_ReadByte()));
-		snap.setFloorStatus(MSG_ReadByte());
-		snap.setFloorCrush(MSG_ReadBool());
-		snap.setFloorDirection(char(MSG_ReadByte()));
-		snap.setFloorSpecial(MSG_ReadShort());
-		snap.setFloorTexture(MSG_ReadShort());
-		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
-		snap.setFloorSpeed(MSG_ReadLong());
-		snap.setResetCounter(MSG_ReadLong());
-		snap.setOrgHeight(MSG_ReadShort() << FRACBITS);
-		snap.setDelay(MSG_ReadLong());
-		snap.setPauseTime(MSG_ReadLong());
-		snap.setStepTime(MSG_ReadLong());
-		snap.setPerStepTime(MSG_ReadLong());
-		snap.setFloorOffset(MSG_ReadShort() << FRACBITS);
-		snap.setFloorChange(MSG_ReadByte());
-
-		int LineIndex = MSG_ReadLong();
-
-		if (!lines || LineIndex >= numlines || LineIndex < 0)
-			snap.setFloorLine(NULL);
-		else
-			snap.setFloorLine(&lines[LineIndex]);
-	}
-
-	if (floor_mover == SEC_PLAT)
-	{
-		// Platforms/Lifts
-		snap.setFloorMoverType(SEC_PLAT);
-		snap.setFloorSpeed(MSG_ReadLong());
-		snap.setFloorLow(MSG_ReadShort() << FRACBITS);
-		snap.setFloorHigh(MSG_ReadShort() << FRACBITS);
-		snap.setFloorWait(MSG_ReadLong());
-		snap.setFloorCounter(MSG_ReadLong());
-		snap.setFloorStatus(MSG_ReadByte());
-		snap.setOldFloorStatus(MSG_ReadByte());
-		snap.setFloorCrush(MSG_ReadBool());
-		snap.setFloorTag(MSG_ReadShort());
-		snap.setFloorType(MSG_ReadByte());
-		snap.setFloorOffset(MSG_ReadShort() << FRACBITS);
-		snap.setFloorLip(MSG_ReadShort() << FRACBITS);
-	}
-
-	if (ceiling_mover == SEC_CEILING)
-	{
-		// Ceilings / Crushers
-		snap.setCeilingMoverType(SEC_CEILING);
-		snap.setCeilingType(MSG_ReadByte());
-		snap.setCeilingLow(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingHigh(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadLong());
-		snap.setCrusherSpeed1(MSG_ReadLong());
-		snap.setCrusherSpeed2(MSG_ReadLong());
-		snap.setCeilingCrush(MSG_ReadBool());
-		snap.setSilent(MSG_ReadBool());
-		snap.setCeilingDirection(char(MSG_ReadByte()));
-		snap.setCeilingTexture(MSG_ReadShort());
-		snap.setCeilingSpecial(MSG_ReadShort());
-		snap.setCeilingTag(MSG_ReadShort());
-		snap.setCeilingOldDirection(char(MSG_ReadByte()));
-    }
-
-	if (ceiling_mover == SEC_DOOR)
-	{
-		// Doors
-		snap.setCeilingMoverType(SEC_DOOR);
-		snap.setCeilingType(static_cast<DDoor::EVlDoor>(MSG_ReadByte()));
-		snap.setCeilingHigh(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadLong());
-		snap.setCeilingWait(MSG_ReadLong());
-		snap.setCeilingCounter(MSG_ReadLong());
-		snap.setCeilingStatus(MSG_ReadByte());
-
-		int LineIndex = MSG_ReadLong();
-
-		// If the moving sector's line is -1, it is likely a type 666 door
-		if (!lines || LineIndex >= numlines || LineIndex < 0)
-			snap.setCeilingLine(NULL);
-		else
-			snap.setCeilingLine(&lines[LineIndex]);
-	}
-
-	if (ceiling_mover == SEC_ELEVATOR)
-    {
-		// Elevators
-		snap.setCeilingMoverType(SEC_ELEVATOR);
-		snap.setFloorMoverType(SEC_ELEVATOR);
-		snap.setCeilingType(static_cast<DElevator::EElevator>(MSG_ReadByte()));
-		snap.setFloorType(snap.getCeilingType());
-		snap.setCeilingStatus(MSG_ReadByte());
-		snap.setFloorStatus(snap.getCeilingStatus());
-		snap.setCeilingDirection(char(MSG_ReadByte()));
-		snap.setFloorDirection(snap.getCeilingDirection());
-		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingDestination(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingSpeed(MSG_ReadLong());
-		snap.setFloorSpeed(snap.getCeilingSpeed());
-	}
-
-	if (ceiling_mover == SEC_PILLAR)
-	{
-		// Pillars
-		snap.setCeilingMoverType(SEC_PILLAR);
-		snap.setFloorMoverType(SEC_PILLAR);
-		snap.setCeilingType(static_cast<DPillar::EPillar>(MSG_ReadByte()));
-		snap.setFloorType(snap.getCeilingType());
-		snap.setCeilingStatus(MSG_ReadByte());
-		snap.setFloorStatus(snap.getCeilingStatus());
-		snap.setFloorSpeed(MSG_ReadLong());
-		snap.setCeilingSpeed(MSG_ReadLong());
-		snap.setFloorDestination(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingDestination(MSG_ReadShort() << FRACBITS);
-		snap.setCeilingCrush(MSG_ReadBool());
-		snap.setFloorCrush(snap.getCeilingCrush());
-	}
-
-	if (!sectors || sectornum >= numsectors)
-		return;
-
-	snap.setSector(&sectors[sectornum]);
-
-	sector_snaps[sectornum].addSnapshot(snap);
-}
-
-
-//
-// CL_CheckMissedPacket
-//
-void CL_CheckMissedPacket(void)
-{
-	int    sequence;
-	short  size;
-
-	sequence = MSG_ReadLong();
-	size = MSG_ReadShort();
-
-	for (int n=0; n<256; n++)
-	{
-		// skip a duplicated packet
-		if (packetseq[n] == sequence)
-		{
-            MSG_ReadChunk(size);
-
-			#ifdef _DEBUG
-                Printf (PRINT_LOW, "warning: duplicate packet\n");
-			#endif
-			return;
-		}
-	}
-}
-
 // Decompress the packet sequence
 // [Russell] - reason this was failing is because of huffman routines, so just
 // use minilzo for now (cuts a packet size down by roughly 45%), huffman is the
 // if 0'd sections
-void CL_Decompress(int sequence)
+void CL_Decompress()
 {
-	if(!MSG_BytesLeft() || MSG_NextByte() != svc_compressed)
+	if(!MSG_BytesLeft())
 		return;
-	else
-		MSG_ReadByte();
 
-	byte method = MSG_ReadByte();
-
-#if 0
-	if(method & adaptive_mask)
-		MSG_DecompressAdaptive(compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0));
-	else
-	{
-		// otherwise compressed packets can still contain codec updates
-		compressor.codec_for_received(method & adaptive_select_mask ? 1 : 0);
-	}
-#endif
-
-	if(method & minilzo_mask)
-		MSG_DecompressMinilzo();
-#if 0
-	if(method & adaptive_record_mask)
-		compressor.ack_sent(net_message.ptr(), MSG_BytesLeft());
-#endif
+	MSG_DecompressMinilzo();
 }
 
-//
-// CL_ReadPacketHeader
-//
-void CL_ReadPacketHeader(void)
+/**
+ * @brief Read the header of the packet and prepare the rest of it for reading.
+ * 
+ * @return False if the packet was scuttled, otherwise true.
+ */
+bool CL_ReadPacketHeader()
 {
-	unsigned int sequence = MSG_ReadLong();
+	// Packet sequence number.
+	int sequence = MSG_ReadLong();
+	int oldsequence = ::packetseq[sequence & PACKET_SEQ_MASK];
 
+	if (sequence == oldsequence)
+	{
+		// Duplicate packet, burn it and return early.
+		SZ_Clear(&::net_message);
+		return false;
+	}
+
+	// Not a dupe, keep it in our array of known received packets.
+	::packetseq[sequence & PACKET_SEQ_MASK] = sequence;
+
+	// Send an ACK to the server.
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, sequence);
 
-	CL_Decompress(sequence);
-
-	packetseq[packetnum] = sequence;
-	packetnum++;
+	// Flag bits.
+	byte flags = MSG_ReadByte();
+	if (flags & SVF_UNUSED_MASK)
+	{
+		Printf(PRINT_WARNING, "Protocol flag bits (%u) were not understood.", flags);
+		CL_QuitNetGame(NQ_PROTO);
+	}
+	else if (flags & SVF_COMPRESSED)
+	{
+		CL_Decompress();
+	}
 
 	netgraph.addPacketIn();
-}
-
-void CL_GetServerSettings(void)
-{
-	cvar_t *var = NULL, *prev = NULL;
-
-	// TODO: REMOVE IN 0.7 - We don't need this loop anymore
-	while (MSG_ReadByte() != 2)
-	{
-		std::string CvarName = MSG_ReadString();
-		std::string CvarValue = MSG_ReadString();
-
-		var = cvar_t::FindCVar(CvarName.c_str(), &prev);
-
-		// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it
-		if (var)
-		{
-			if (var->flags() & CVAR_SERVERINFO)
-				var->Set(CvarValue.c_str());
-		}
-		else
-		{
-			// [Russell] - create a new "temporary" cvar, CVAR_AUTO marks it
-			// for cleanup on program termination
-			// [AM] We have no way of telling of cvars are CVAR_NOENABLEDISABLE,
-			//      so let's set it on all cvars.
-			var = new cvar_t(CvarName.c_str(), NULL, "", CVARTYPE_NONE,
-			                 CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE |
-			                 CVAR_NOENABLEDISABLE);
-			var->Set(CvarValue.c_str());
-		}
-	}
-
-	// Nes - update the skies in case sv_freelook is changed.
-	R_InitSkyMap();
-}
-
-//
-// CL_FinishedFullUpdate
-//
-// Takes care of any business that needs to be done once the client has a full
-// view of the game world.
-//
-void CL_FinishedFullUpdate()
-{
-	recv_full_update = true;
-}
-
-//
-// CL_SetMobjState
-//
-void CL_SetMobjState()
-{
-	AActor *mo = P_FindThingById (MSG_ReadShort() );
-	SWORD s = MSG_ReadShort();
-
-	if (!mo || s >= NUMSTATES)
-		return;
-
-	P_SetMobjState (mo, (statenum_t)s);
-}
-
-// ---------------------------------------------------------------------------------------------------------
-//	CL_ForceSetTeam
-//	Allows server to force set a players team setting
-// ---------------------------------------------------------------------------------------------------------
-
-void CL_ForceSetTeam (void)
-{
-	unsigned int t = MSG_ReadShort ();
-
-	if(t < NUMTEAMS || t == TEAM_NONE)
-		consoleplayer().userinfo.team = (team_t)t;
-
-	// Setting the cl_team will send a playerinfo packet back to the server.
-	// Unfortunately, this is unavoidable until we rework the team system.
-	switch (consoleplayer().userinfo.team) {
-	case TEAM_BLUE:
-		cl_team.Set("BLUE");
-		break;
-	case TEAM_RED:
-		cl_team.Set("RED");
-		break;
-	default:
-		cl_team.Set("NONE");
-		break;
-	}
-}
-
-//
-// CL_Actor_Movedir
-//
-void CL_Actor_Movedir()
-{
-	AActor *actor = P_FindThingById (MSG_ReadShort());
-	BYTE movedir = MSG_ReadByte();
-    SDWORD movecount = MSG_ReadLong();
-
-	if (!actor || movedir >= 8)
-		return;
-
-	actor->movedir = movedir;
-	actor->movecount = movecount;
-}
-
-//
-// CL_Actor_Target
-//
-void CL_Actor_Target()
-{
-	AActor *actor = P_FindThingById (MSG_ReadShort());
-	AActor *target = P_FindThingById (MSG_ReadShort());
-
-	if (!actor || !target)
-		return;
-
-	actor->target = target->ptr();
-}
-
-//
-// CL_Actor_Tracer
-//
-void CL_Actor_Tracer()
-{
-	AActor *actor = P_FindThingById (MSG_ReadShort());
-	AActor *tracer = P_FindThingById (MSG_ReadShort());
-
-	if (!actor || !tracer)
-		return;
-
-	actor->tracer = tracer->ptr();
-}
-
-//
-// CL_MobjTranslation
-//
-void CL_MobjTranslation()
-{
-	AActor *mo = P_FindThingById(MSG_ReadShort());
-	byte table = MSG_ReadByte();
-
-	if (!mo)
-		return;
-
-	if (table <= MAXPLAYERS)
-		mo->translation = translationref_t(translationtables + 256 * table, table);
-	else
-		mo->translation = translationref_t(translationtables + 256 * table);
-}
-
-void P_SetButtonTexture(line_t* line, const ResourceId res_id);
-
-//
-// CL_Switch
-// denis - switch state and timing
-// Note: this will also be called for doors
-void CL_Switch()
-{
-	unsigned l = MSG_ReadLong();
-	byte switchactive = MSG_ReadByte();
-	byte special = MSG_ReadByte();
-	byte state = MSG_ReadByte(); //DActiveButton::EWhere
-	ResourceId res_id = MSG_ReadResourceId();;
-	unsigned time = MSG_ReadLong();
-
-	if (!lines || l >= (unsigned)numlines || state >= 3)
-		return;
-
-	if(!P_SetButtonInfo(&lines[l], state, time) && switchactive) // denis - fixme - security
-		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL, recv_full_update); //only playsound if we've received the full update from the server (not setting up the map from the server)
-
-	// Only accept texture change from server while receiving the full update - this is to fix warmup switch desyncs
-	if (!recv_full_update && res_id != ResourceId::INVALID_ID)
-		P_SetButtonTexture(&lines[l], res_id);
-
-	lines[l].special = special;
-}
-
-void CL_ActivateLine(void)
-{
-	unsigned l = MSG_ReadLong();
-	AActor *mo = P_FindThingById(MSG_ReadShort());
-	byte side = MSG_ReadByte();
-	byte activationType = MSG_ReadByte();
-
-	if (!lines || l >= (unsigned)numlines)
-		return;
-
-	// [SL] 2012-03-07 - If this is a player teleporting, add this player to
-	// the set of recently teleported players.  This is used to flush past
-	// positions since they cannot be used for interpolation.
-	if ((mo && mo->player) &&
-		(lines[l].special == Teleport || lines[l].special == Teleport_NoFog ||
-		 lines[l].special == Teleport_Line))
-	{
-		teleported_players.insert(mo->player->id);
-
-		// [SL] 2012-03-21 - Server takes care of moving players that teleport.
-		// Don't allow client to process it since it screws up interpolation.
-		return;
-	}
-
-	// [SL] 2012-04-25 - Clients will receive updates for sectors so they do not
-	// need to create moving sectors on their own in response to svc_activateline
-	if (P_LineSpecialMovesSector(&lines[l]))
-		return;
-
-	switch (activationType)
-	{
-	case 0:
-		P_CrossSpecialLine(l, side, mo, true);
-		break;
-	case 1:
-		P_UseSpecialLine(mo, &lines[l], side, true);
-		break;
-	case 2:
-		P_ShootSpecialLine(mo, &lines[l], true);
-		break;
-    case 3:
-		P_PushSpecialLine(mo, &lines[l], side, true);
-		break;
-	}
-}
-
-void CL_ConsolePlayer(void)
-{
-	displayplayer_id = consoleplayer_id = MSG_ReadByte();
-	digest = MSG_ReadString();
-}
-
-
-//
-// CL_LoadMap
-//
-// Read resource files names and map name from the server and loads
-// the appropriate resources.
-//
-void CL_LoadMap()
-{
-	bool splitnetdemo = (netdemo.isRecording() && cl_splitnetdemos) || forcenetdemosplit;
-	forcenetdemosplit = false;
-
-	if (splitnetdemo)
-		netdemo.stopRecording();
-
-	size_t resource_file_count = MSG_ReadByte();
-
-	std::vector<std::string> resource_filenames, resource_filehashes;
-
-	while (resource_file_count--)
-	{
-		resource_filenames.push_back(MSG_ReadString());
-		resource_filehashes.push_back(MSG_ReadString());
-	}
-
-	// [SL] DEH/BEX patch file names used to be sent separately.
-	// Read and ignore them (dummy should be zero anyways).
-	byte dummy = MSG_ReadByte();
-	while (dummy--)
-	{	
-		MSG_ReadString();
-		MSG_ReadString();
-	}
-
-	const char* mapname = MSG_ReadString();
-
-	// load the resource files
-	if (gamestate == GS_DOWNLOAD || !CL_LoadResourceFiles(resource_filenames, resource_filehashes))
-	{
-		// reconnect to re-initiate download sequence
-		CL_Reconnect();
-		return;
-	}
-
-	// [SL] 2012-12-02 - Force the music to stop when the new map uses
-	// the same music lump name that is currently playing. Otherwise,
-	// the music from the old wad continues to play...
-	S_StopMusic();
-
-	G_InitNew(mapname);
-
-	movingsectors.clear();
-	teleported_players.clear();
-
-	CL_ClearSectorSnapshots();
-	for (Players::iterator it = players.begin();it != players.end();++it)
-		it->snapshots.clearSnapshots();
-
-	// reset the world_index (force it to sync)
-	CL_ResyncWorldIndex();
-	last_svgametic = 0;
-
-	CTF_CheckFlags(consoleplayer());
-
-	gameaction = ga_nothing;
-
-	// Autorecord netdemo or continue recording in a new file
-	if (!(netdemo.isPlaying() || netdemo.isRecording() || netdemo.isPaused()))
-	{
-		std::string filename;
-
-		bool bCanAutorecord = (sv_gametype == GM_COOP && cl_autorecord_coop) 
-		|| (sv_gametype == GM_DM && sv_maxplayers > 2 && cl_autorecord_deathmatch)
-		|| (sv_gametype == GM_DM && sv_maxplayers == 2 && cl_autorecord_duel)
-		|| (sv_gametype == GM_TEAMDM && cl_autorecord_teamdm)
-		|| (sv_gametype == GM_CTF && cl_autorecord_ctf);
-
-		size_t param = Args.CheckParm("-netrecord");
-		if (param && Args.GetArg(param + 1))
-			filename = Args.GetArg(param + 1);
-
-		if (((splitnetdemo || cl_autorecord) && bCanAutorecord) || param)
-		{
-			if (filename.empty())
-				filename = CL_GenerateNetDemoFileName();
-			else
-				filename = CL_GenerateNetDemoFileName(filename);
-
-			// NOTE(jsd): Presumably a warning is already printed.
-			if (filename.empty())
-			{
-				netdemo.stopRecording();
-				return;
-			}
-
-			netdemo.startRecording(filename);
-		}
-	}
-
-	// write the map index to the netdemo
-	if (netdemo.isRecording())
-		netdemo.writeMapChange();
-}
-
-void P_ResetSwitch(line_t* line);
-
-void CL_ResetMap()
-{
-	// Destroy every actor with a netid that isn't a player.  We're going to
-	// get the contents of the map with a full update later on anyway.
-	AActor* mo;
-	TThinkerIterator<AActor> iterator;
-	while ((mo = iterator.Next()))
-	{
-		if (mo->netid && mo->type != MT_PLAYER)
-		{
-			mo->Destroy();
-		}
-	}
-
-	//destroy all moving sector effects and sounds
-	for (int i = 0; i < numsectors; i++)
-	{
-		if (sectors[i].floordata)
-		{
-			S_StopSound(sectors[i].soundorg);
-			sectors[i].floordata->Destroy();
-		}
-
-		if (sectors[i].ceilingdata)
-		{
-			S_StopSound(sectors[i].soundorg);
-			sectors[i].ceilingdata->Destroy();
-		}
-	}
-
-	// write the map index to the netdemo
-	if (netdemo.isRecording() && recv_full_update)
-		netdemo.writeMapChange();
-}
-
-void CL_EndGame()
-{
-	Host_EndGame ("\nServer disconnected\n");
-}
-
-void CL_FullGame()
-{
-	Host_EndGame ("Server is full\n");
-}
-
-void CL_ExitLevel()
-{
-	if(gamestate != GS_DOWNLOAD) {
-		gameaction = ga_completed;
-
-		if (netdemo.isRecording())
-			netdemo.writeIntermission();
-	}
-}
-
-void CL_Noop()
-{
-	// Nothing to see here. Move along.
+	return true;
 }
 
 void CL_Clear()
@@ -3492,238 +2099,86 @@ void CL_Clear()
 	MSG_ReadChunk(left);
 }
 
-void CL_Spectate()
+static std::string SVCName(byte header)
 {
-	player_t &player = CL_FindPlayer(MSG_ReadByte());
-
-	bool wasalive = !player.spectator && player.mo && player.mo->health > 0;
-	bool wasspectator = player.spectator;
-	player.spectator = ((MSG_ReadByte()) != 0);
-
-	if (player.spectator && wasalive)
-		P_DisconnectEffect(player.mo);
-	if (player.spectator && player.mo && !wasspectator)
-		P_PlayerLeavesGame(&player);
-
-	// [tm512 2014/04/11] Do as the server does when unspectating a player.
-	// If the player has a "valid" mo upon going to PST_LIVE, any enemies
-	// that are still targeting the spectating player will cause a stack
-	// overflow in P_SetMobjState.
-
-	if (!player.spectator && !wasalive)
+	std::string svc = ::svc_info[header].getName();
+	if (svc.empty())
 	{
-		if (player.mo)
-			P_KillMobj(NULL, player.mo, NULL, true);
-
-		player.playerstate = PST_REBORN;
+		StrFormat(svc, "svc_%u", header);
 	}
-
-	if (&player == &consoleplayer())
-	{
-		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
-
-		if (player.spectator)
-		{
-			player.playerstate = PST_LIVE;				// Resurrect dead spectators
-			player.cheats |= CF_FLY;					// Make players fly by default
-			player.deltaviewheight = 1000 << FRACBITS;	// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
-
-			movingsectors.clear(); // Clear all moving sectors, otherwise client side prediction will not move active sectors
-		}
-		else
-		{
-			displayplayer_id = consoleplayer_id; // get out of spynext
-			player.cheats &= ~CF_FLY;	// remove flying ability
-		}
-
-		CL_RebuildAllPlayerTranslations();
-	}
-	else
-	{
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
-	}
-
-	// GhostlyDeath -- If the player matches our display player...
-	CL_CheckDisplayPlayer();
-}
-
-void CL_ReadyState() {
-	player_t &player = CL_FindPlayer(MSG_ReadByte());
-	player.ready = MSG_ReadBool();
-}
-
-// Set local warmup state.
-void CL_WarmupState()
-{
-	warmup.set_client_status(static_cast<Warmup::status_t>(MSG_ReadByte()));
-	if (warmup.get_status() == Warmup::COUNTDOWN ||
-	    warmup.get_status() == Warmup::FORCE_COUNTDOWN)
-	{
-		// Read an extra countdown number off the wire
-		short count = MSG_ReadShort();
-		std::ostringstream buffer;
-		buffer << "Match begins in " << count << "...";
-		C_GMidPrint(buffer.str().c_str(), CR_GREEN, 0);
-	}
-	else
-	{
-		// Clear the midprint in other cases.
-		C_GMidPrint("", CR_GREY, 0);
-	}
-}
-
-// client source (once)
-typedef void (*client_callback)();
-typedef std::map<svc_t, client_callback> cmdmap;
-cmdmap cmds;
-
-//
-// CL_AllowPackets
-//
-void CL_InitCommands(void)
-{
-	cmds[svc_abort]				= &CL_EndGame;
-	cmds[svc_loadmap]			= &CL_LoadMap;
-	cmds[svc_resetmap]			= &CL_ResetMap;
-	cmds[svc_playerinfo]		= &CL_PlayerInfo;
-	cmds[svc_consoleplayer]		= &CL_ConsolePlayer;
-	cmds[svc_updatefrags]		= &CL_UpdateFrags;
-	cmds[svc_moveplayer]		= &CL_UpdatePlayer;
-	cmds[svc_updatelocalplayer]	= &CL_UpdateLocalPlayer;
-	cmds[svc_userinfo]			= &CL_SetupUserInfo;
-	cmds[svc_teampoints]		= &CL_TeamPoints;
-	cmds[svc_playerstate]		= &CL_UpdatePlayerState;
-
-	cmds[svc_updateping]		= &CL_UpdatePing;
-	cmds[svc_spawnmobj]			= &CL_SpawnMobj;
-	cmds[svc_mobjspeedangle]	= &CL_SetMobjSpeedAndAngle;
-	cmds[svc_mobjinfo]			= &CL_UpdateMobjInfo;
-	cmds[svc_explodemissile]	= &CL_ExplodeMissile;
-	cmds[svc_removemobj]		= &CL_RemoveMobj;
-
-	cmds[svc_killmobj]			= &CL_KillMobj;
-	cmds[svc_movemobj]			= &CL_MoveMobj;
-	cmds[svc_damagemobj]		= &CL_DamageMobj;
-	cmds[svc_corpse]			= &CL_Corpse;
-	cmds[svc_spawnplayer]		= &CL_SpawnPlayer;
-//	cmds[svc_spawnhiddenplayer]	= &CL_SpawnHiddenPlayer;
-	cmds[svc_damageplayer]		= &CL_DamagePlayer;
-	cmds[svc_firepistol]		= &CL_FirePistol;
-	cmds[svc_fireweapon]		= &CL_FireWeapon;
-
-	cmds[svc_fireshotgun]		= &CL_FireShotgun;
-	cmds[svc_firessg]			= &CL_FireSSG;
-	cmds[svc_firechaingun]		= &CL_FireChainGun;
-	cmds[svc_changeweapon]		= &CL_ChangeWeapon;
-	cmds[svc_railtrail]			= &CL_RailTrail;
-	cmds[svc_connectclient]		= &CL_ConnectClient;
-	cmds[svc_disconnectclient]	= &CL_DisconnectClient;
-	cmds[svc_activateline]		= &CL_ActivateLine;
-	cmds[svc_sector]			= &CL_UpdateSector;
-	cmds[svc_movingsector]		= &CL_UpdateMovingSector;
-	cmds[svc_switch]			= &CL_Switch;
-	cmds[svc_print]				= &CL_Print;
-    cmds[svc_midprint]          = &CL_MidPrint;
-	cmds[svc_say]				= &CL_Say;
-    cmds[svc_pingrequest]       = &CL_SendPingReply;
-	cmds[svc_svgametic]			= &CL_SaveSvGametic;
-	cmds[svc_mobjtranslation]	= &CL_MobjTranslation;
-	cmds[svc_timeleft]			= &CL_UpdateTimeLeft;
-	cmds[svc_inttimeleft]		= &CL_UpdateIntTimeLeft;
-
-	cmds[svc_startsound]		= &CL_Sound;
-	cmds[svc_soundorigin]		= &CL_SoundOrigin;
-	cmds[svc_mobjstate]			= &CL_SetMobjState;
-	cmds[svc_actor_movedir]		= &CL_Actor_Movedir;
-	cmds[svc_actor_target]		= &CL_Actor_Target;
-	cmds[svc_actor_tracer]		= &CL_Actor_Tracer;
-	cmds[svc_missedpacket]		= &CL_CheckMissedPacket;
-	cmds[svc_forceteam]			= &CL_ForceSetTeam;
-
-	cmds[svc_ctfevent]			= &CL_CTFEvent;
-	cmds[svc_serversettings]	= &CL_GetServerSettings;
-	cmds[svc_disconnect]		= &CL_EndGame;
-	cmds[svc_full]				= &CL_FullGame;
-	cmds[svc_reconnect]			= &CL_Reconnect;
-	cmds[svc_exitlevel]			= &CL_ExitLevel;
-
-	cmds[svc_wadinfo]			= &CL_DownloadStart;
-	cmds[svc_wadchunk]			= &CL_Download;
-
-	cmds[svc_challenge]			= &CL_Clear;
-	cmds[svc_launcher_challenge]= &CL_Clear;
-
-	cmds[svc_spectate]   		= &CL_Spectate;
-	cmds[svc_readystate]		= &CL_ReadyState;
-	cmds[svc_warmupstate]		= &CL_WarmupState;
-
-	cmds[svc_touchspecial]      = &CL_TouchSpecialThing;
-
-	cmds[svc_netdemocap]        = &CL_LocalDemoTic;
-	cmds[svc_netdemostop]       = &CL_NetDemoStop;
-	cmds[svc_netdemoloadsnap]	= &CL_NetDemoLoadSnap;
-	cmds[svc_fullupdatedone]	= &CL_FinishedFullUpdate;
-
-	cmds[svc_vote_update] = &CL_VoteUpdate;
-	cmds[svc_maplist] = &CL_Maplist;
-	cmds[svc_maplist_update] = &CL_MaplistUpdate;
-	cmds[svc_maplist_index] = &CL_MaplistIndex;
+	return svc;
 }
 
 //
 // CL_ParseCommands
 //
-void CL_ParseCommands(void)
+void CL_ParseCommands()
 {
-	std::vector<svc_t>	history;
-	svc_t				cmd = svc_abort;
-
-	static bool once = true;
-	if(once)CL_InitCommands();
-	once = false;
-
-	while(connected)
+	while (connected)
 	{
-		size_t byteStart = net_message.BytesRead();
-
-		cmd = (svc_t)MSG_ReadByte();
-		history.push_back(cmd);
-
-		if(cmd == (svc_t)-1)
-			break;
-
-		cmdmap::iterator i = cmds.find(cmd);
-		if(i == cmds.end())
+		if (::net_message.BytesLeftToRead() == 0)
 		{
-			CL_QuitNetGame();
-			Printf(PRINT_HIGH, "CL_ParseCommands: Unknown server message %d following: \n", (int)cmd);
-
-			for(size_t j = 0; j < history.size(); j++)
-				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j, history[j], svc_info[history[j]].getName());
-			Printf(PRINT_HIGH, "\n");
 			break;
 		}
 
-		i->second();
-
-		if (net_message.overflowed)
+		size_t byteStart = ::net_message.BytesRead();
+		parseError_e res = CL_ParseCommand();
+		if (res != PERR_OK || ::net_message.overflowed)
 		{
-			CL_QuitNetGame();
-			Printf(PRINT_HIGH, "CL_ParseCommands: Bad server message\n");
-			Printf(PRINT_HIGH, "CL_ParseCommands: %d(%s) overflowed\n",
-					   (int)cmd,
-					   svc_info[cmd].getName());
-			Printf(PRINT_HIGH, "CL_ParseCommands: It was command number %d in the packet\n",
-                                           (int)history.back());
-			for(size_t j = 0; j < history.size(); j++)
-				Printf(PRINT_HIGH, "CL_ParseCommands: message #%d [%d %s]\n", j, history[j], svc_info[history[j]].getName());
+			const Protos& protos = CL_GetTicProtos();
+
+			std::string err;
+			if (res == PERR_UNKNOWN_HEADER)
+			{
+				err = "Unknown message header";
+			}
+			else if (res == PERR_UNKNOWN_MESSAGE)
+			{
+				err = "Message is not known to message decoder";
+			}
+			else if (res == PERR_BAD_DECODE)
+			{
+				err = "Could not decode message";
+			}
+			else if (::net_message.overflowed)
+			{
+				err = "Message overflowed";
+			}
+			else
+			{
+				err = "Unknown error";
+			}
+
+			if (!protos.empty())
+			{
+				Printf(PRINT_WARNING, "CL_ParseCommands: %s\n", err.c_str());
+
+				for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
+				{
+					char latest = (it == protos.end() - 1) ? '>' : ' ';
+					ptrdiff_t idx = it - protos.begin() + 1;
+					std::string svc = SVCName(it->header);
+					size_t siz = it->size;
+					Printf(PRINT_WARNING, "%c %2" PRIdSIZE " [%s] %" PRIuSIZE "b\n",
+					       latest, idx, svc.c_str(), siz);
+				}
+			}
+			else
+			{
+				Printf(PRINT_WARNING, "CL_ParseCommands: %s\n", err.c_str());
+			}
+
+			CL_QuitNetGame(NQ_PROTO);
 		}
 
 		// Measure length of each message, so we can keep track of bandwidth.
-		if (net_message.BytesRead() < byteStart)
-			Printf(PRINT_HIGH, "CL_ParseCommands: end byte (%d) < start byte (%d)\n", net_message.BytesRead(), byteStart);
+		if (::net_message.BytesRead() < byteStart)
+		{
+			Printf("CL_ParseCommands: end byte (%d) < start byte (%d)\n",
+			       ::net_message.BytesRead(), byteStart);
+		}
 
-		netgraph.addTrafficIn(net_message.BytesRead() - byteStart);
+		::netgraph.addTrafficIn(::net_message.BytesRead() - byteStart);
 	}
 }
 
@@ -3768,10 +2223,16 @@ void CL_SendCmd(void)
 	// need to be used for client's positional prediction.
     MSG_WriteLong(&net_buffer, gametic);
 
-	NetCommand *netcmd;
 	for (int i = 9; i >= 0; i--)
 	{
-		netcmd = &localcmds[(gametic - i) % MAXSAVETICS];
+		NetCommand blank_netcmd;
+		NetCommand* netcmd;
+
+		if (gametic >= i)
+			netcmd = &localcmds[(gametic - i) % MAXSAVETICS];
+		else
+			netcmd = &blank_netcmd;		// write a blank netcmd since not enough gametics have passed
+
 		netcmd->write(&net_buffer);
 	}
 
@@ -3794,6 +2255,27 @@ void CL_PlayerTimes()
 	}
 }
 
+//
+// CL_SendCheat
+//
+void CL_SendCheat(int cheats)
+{
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, 0);
+	MSG_WriteShort(&net_buffer, cheats);
+}
+
+//
+// CL_SendCheat
+//
+void CL_SendGiveCheat(const char* item)
+{
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, 1);
+	MSG_WriteString(&net_buffer, item);
+}
+
+
 void PickupMessage (AActor *toucher, const char *message)
 {
 	// Some maps have multiple items stacked on top of each other.
@@ -3806,7 +2288,7 @@ void PickupMessage (AActor *toucher, const char *message)
 	{
 		lastmessagetic = gametic;
 		lastmessage = message;
-		Printf (PRINT_LOW, "%s\n", message);
+		Printf (PRINT_PICKUP, "%s\n", message);
 	}
 }
 
@@ -3864,60 +2346,6 @@ void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
         default:
         break;
     }
-}
-
-void CL_LocalDemoTic()
-{
-	player_t* clientPlayer = &consoleplayer();
-	fixed_t x, y, z;
-	fixed_t momx, momy, momz;
-	fixed_t pitch, viewheight, deltaviewheight;
-	angle_t angle;
-	int jumpTics, reactiontime;
-	byte waterlevel;
-
-	clientPlayer->cmd.clear();
-	clientPlayer->cmd.buttons = MSG_ReadByte();
-	clientPlayer->cmd.impulse = MSG_ReadByte();
-	clientPlayer->cmd.yaw = MSG_ReadShort();
-	clientPlayer->cmd.forwardmove = MSG_ReadShort();
-	clientPlayer->cmd.sidemove = MSG_ReadShort();
-	clientPlayer->cmd.upmove = MSG_ReadShort();
-	clientPlayer->cmd.pitch = MSG_ReadShort();
-
-	waterlevel = MSG_ReadByte();
-	x = MSG_ReadLong();
-	y = MSG_ReadLong();
-	z = MSG_ReadLong();
-	momx = MSG_ReadLong();
-	momy = MSG_ReadLong();
-	momz = MSG_ReadLong();
-	angle = MSG_ReadLong();
-	pitch = MSG_ReadLong();
-	viewheight = MSG_ReadLong();
-	deltaviewheight = MSG_ReadLong();
-	jumpTics = MSG_ReadLong();
-	reactiontime = MSG_ReadLong();
-	clientPlayer->readyweapon = static_cast<weapontype_t>(MSG_ReadByte());
-	clientPlayer->pendingweapon = static_cast<weapontype_t>(MSG_ReadByte());
-
-	if(clientPlayer->mo)
-	{
-		clientPlayer->mo->x = x;
-		clientPlayer->mo->y = y;
-		clientPlayer->mo->z = z;
-		clientPlayer->mo->momx = momx;
-		clientPlayer->mo->momy = momy;
-		clientPlayer->mo->momz = momz;
-		clientPlayer->mo->angle = angle;
-		clientPlayer->mo->pitch = pitch;
-		clientPlayer->viewheight = viewheight;
-		clientPlayer->deltaviewheight = deltaviewheight;
-		clientPlayer->jumpTics = jumpTics;
-		clientPlayer->mo->reactiontime = reactiontime;
-		clientPlayer->mo->waterlevel = waterlevel;
-	}
-
 }
 
 void CL_RemoveCompletedMovingSectors()
@@ -4144,6 +2572,9 @@ void CL_SimulateWorld()
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
-void OnActivatedLine (line_t *line, AActor *mo, int side, int activationType) {}
+void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
+                        const LineActivationType activationType, const bool bossaction)
+{
+}
 
 VERSION_CONTROL (cl_main_cpp, "$Id$")

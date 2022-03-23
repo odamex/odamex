@@ -26,7 +26,6 @@
 #define __M_MENU_H__
 
 #include "d_event.h"
-#include "c_cvars.h"
 
 // Some defines...
 #define LINEHEIGHT	16
@@ -86,7 +85,7 @@ void M_RefreshModesList ();
 typedef enum {
 	whitetext,
 	redtext,
-	bricktext,
+	yellowtext,
 	more,
 	slider,
 	redslider,
@@ -94,7 +93,10 @@ typedef enum {
 	greenslider,
 	discrete,
 	cdiscrete,
+	svdiscrete,		// Ch0wW : serverside discrete
 	control,
+	mapcontrol,		// Ch0wW : Automap bindings
+	netdemocontrol,	// Ch0wW : Netdemo bindings
 	screenres,
 	bitflag,
 	listelement,
@@ -118,16 +120,16 @@ typedef struct menuitem_s {
 	union {
 		float			  leftval;		/* aka numvalues aka invflag */
 		int				  key1;
-		const char			 *res1;
+		char			 *res1;
 	} b;
 	union {
 		float			  rightval;
 		int				  key2;
-		const char			 *res2;
+		char			 *res2;
 	} c;
 	union {
 		float			  step;
-		const char			 *res3;
+		char			 *res3;
 	} d;
 	union {
 		struct value_s		*values;
@@ -208,5 +210,11 @@ extern short	 itemOn;
 extern oldmenu_t *currentMenu;
 
 size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length);
+
+#define MAX_EPISODES	8
+
+extern oldmenuitem_t EpisodeMenu[MAX_EPISODES];
+extern OLumpName EpisodeMaps[MAX_EPISODES];
+extern oldmenu_t EpiDef;
 
 #endif

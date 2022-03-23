@@ -21,11 +21,12 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomtype.h"
+
+#include "odamex.h"
+
 #include "v_video.h"
 #include "i_video.h"
 #include "r_main.h"
-#include "m_swap.h"
 
 #include "i_system.h"
 
@@ -139,6 +140,9 @@ void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int p
 	if (count <= 0 || !hud_transparency)
 		return;
 
+	if (::hud_transparency >= 1.0)
+		return DrawPatchP(source, dest, count, pitch);
+
 	argb_t *fg2rgb, *bg2rgb;
 
 	{
@@ -173,6 +177,9 @@ void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int 
 {
 	if (count <= 0 || !hud_transparency)
 		return;
+
+	if (::hud_transparency >= 1.0)
+		return DrawPatchSP(source, dest, count, pitch, yinc);
 
 	argb_t *fg2rgb, *bg2rgb;
 	int c = 0;
@@ -250,6 +257,9 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 	if (count <= 0 || !hud_transparency)
 		return;
 
+	if (::hud_transparency >= 1.0)
+		return DrawTranslatedPatchP(source, dest, count, pitch);
+
 	argb_t *fg2rgb, *bg2rgb;
 
 	{
@@ -284,6 +294,9 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 {
 	if (count <= 0 || !hud_transparency)
 		return;
+
+	if (::hud_transparency >= 1.0)
+		return DrawTranslatedPatchSP(source, dest, count, pitch, yinc);
 
 	int c = 0;
 	argb_t *fg2rgb, *bg2rgb;
@@ -344,6 +357,9 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 {
 	if (count <= 0 || !hud_transparency)
 		return;
+
+	if (::hud_transparency >= 1.0)
+		return DrawColoredPatchP(source, dest, count, pitch);
 
 	argb_t *bg2rgb;
 
@@ -417,6 +433,9 @@ void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int p
 	if (count <= 0 || !hud_transparency)
 		return;
 
+	if (::hud_transparency >= 1.0)
+		return DrawPatchD(source, dest, count, pitch);
+
 	int alpha = (int)(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
@@ -438,6 +457,9 @@ void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int 
 {
 	if (count <= 0 || !hud_transparency)
 		return;
+
+	if (::hud_transparency >= 1.0)
+		return DrawPatchSD(source, dest, count, pitch, yinc);
 
 	int alpha = (int)(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
@@ -503,6 +525,9 @@ void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count,
 	if (count <= 0 || !hud_transparency)
 		return;
 
+	if (::hud_transparency >= 1.0)
+		return DrawTranslatedPatchD(source, dest, count, pitch);
+
 	int alpha = (int)(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
@@ -524,6 +549,9 @@ void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count
 {
 	if (count <= 0 || !hud_transparency)
 		return;
+
+	if (::hud_transparency >= 1.0)
+		return DrawTranslatedPatchSD(source, dest, count, pitch, yinc);
 
 	int alpha = (int)(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
@@ -572,6 +600,9 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 	if (count <= 0 || !hud_transparency)
 		return;
 
+	if (::hud_transparency >= 1.0)
+		return DrawColoredPatchD(source, dest, count, pitch);
+
 	int alpha = (int)(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
@@ -593,12 +624,19 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 /*							  */
 /******************************/
 
-//
-// V_DrawWrapper
-// Masks a column based masked pic to the screen.
-//
+/**
+ * @brief Masks a column based masked pic to the screen.
+ *
+ * @param drawer Draw code to use.
+ * @param Texture Patch to draw.  Attempting to draw a NULL patch will have no effect.
+ * @param x X coordinate of patch.
+ * @param y Y coordinate of patch.
+ */
 void DCanvas::DrawWrapper(EWrapperCode drawer, const Texture* texture, int x, int y) const
 {
+	if (patch == NULL)
+		return;
+
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
 	int colstep = mSurface->getBytesPerPixel();
@@ -635,12 +673,17 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const Texture* texture, int x, in
 	}
 }
 
-//
-// V_DrawSWrapper
-// Masks a column based masked pic to the screen
-// stretching it to fit the given dimensions.
-//
-void DCanvas::DrawSWrapper(EWrapperCode drawer, const Texture* texture, int x0, int y0,
+/**
+ * @brief Masks a column based masked pic to the screen stretching it to fit the given dimensions.
+ *
+ * @param drawer Draw code to use.
+ * @param patch
+ * @param x0
+ * @param y0
+ * @param destwidth
+ * @param destheight
+ */
+void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, int y0,
                            const int destwidth, const int destheight) const
 {
 	if (!texture || texture->mWidth <= 0 || texture->mHeight <= 0 || destwidth <= 0 || destheight <= 0)
@@ -710,6 +753,9 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const Texture* texture, int x0, 
 //
 void DCanvas::DrawIWrapper(EWrapperCode drawer, const Texture* texture, int x0, int y0) const
 {
+	if (patch == NULL)
+		return;
+
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	if (surface_width == 320 && surface_height == 200)
@@ -726,6 +772,9 @@ void DCanvas::DrawIWrapper(EWrapperCode drawer, const Texture* texture, int x0, 
 //
 void DCanvas::DrawCWrapper(EWrapperCode drawer, const Texture* texture, int x0, int y0) const
 {
+	if (patch == NULL)
+		return;
+
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	if (CleanXfac == 1 && CleanYfac == 1)
@@ -742,6 +791,9 @@ void DCanvas::DrawCWrapper(EWrapperCode drawer, const Texture* texture, int x0, 
 //
 void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const Texture* texture, int x0, int y0) const
 {
+	if (patch == NULL)
+		return;
+
 	if (CleanXfac == 1 && CleanYfac == 1)
 		DrawWrapper(drawer, texture, x0, y0);
 	else
@@ -768,6 +820,9 @@ void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const Texture* texture, int x0
 //
 void DCanvas::DrawTextureFlipped(const Texture* texture, int x0, int y0) const
 {
+	if (patch == NULL)
+		return;
+
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
 	int colstep = mSurface->getBytesPerPixel();

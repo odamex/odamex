@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "gi.h"
 
 gameinfo_t gameinfo;
@@ -60,7 +63,7 @@ static gameborder_t DoomBorder =
 gameinfo_t SharewareGameInfo =
 {
 	GI_SHAREWARE | GI_NOCRAZYDEATH,
-	{ 'T','I','T','L','E','P','I','C' },
+	"TITLEPIC",
 	"CREDIT",
 	"HELP2",
 	"D_INTRO",
@@ -68,8 +71,8 @@ gameinfo_t SharewareGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	{ 'D','_','V','I','C','T','O','R' },
-	{ 'F','L','O','O','R','4','_','8' },
+	"D_VICTOR",
+	"FLOOR4_8",
 	"HELP2",
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
@@ -84,7 +87,7 @@ gameinfo_t SharewareGameInfo =
 gameinfo_t RegisteredGameInfo =
 {
 	GI_NOCRAZYDEATH,
-	{ 'T','I','T','L','E','P','I','C' },
+	"TITLEPIC",
 	"CREDIT",
 	"HELP2",
 	"D_INTRO",
@@ -92,8 +95,8 @@ gameinfo_t RegisteredGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	{ 'D','_','V','I','C','T','O','R' },
-	{ 'F','L','O','O','R','4','_','8' },
+	"D_VICTOR",
+	"FLOOR4_8",
 	"HELP2",
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
@@ -108,7 +111,7 @@ gameinfo_t RegisteredGameInfo =
 gameinfo_t RetailGameInfo =
 {
 	GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH,
-	{ 'T','I','T','L','E','P','I','C' },
+	"TITLEPIC",
 	"CREDIT",
 	"CREDIT",
 	"D_INTRO",
@@ -116,8 +119,8 @@ gameinfo_t RetailGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	{ 'D','_','V','I','C','T','O','R' },
-	{ 'F','L','O','O','R','4','_','8' },
+	"D_VICTOR",
+	"FLOOr4_8",
 	"CREDIT",
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
@@ -132,7 +135,7 @@ gameinfo_t RetailGameInfo =
 gameinfo_t RetailBFGGameInfo =
 {
 	GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH,
-	{ 'T','I','T','L','E','P','I','C' },
+	"TITLEPIC",
 	"CREDIT",
 	"CREDIT",
 	"D_INTRO",
@@ -140,8 +143,8 @@ gameinfo_t RetailBFGGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	{ 'D','_','V','I','C','T','O','R' },
-	{ 'F','L','O','O','R','4','_','8' },
+	"D_VICTOR",
+	"FLOOr4_8",
 	"CREDIT",
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
@@ -156,15 +159,15 @@ gameinfo_t RetailBFGGameInfo =
 gameinfo_t CommercialGameInfo =
 {
 	GI_MAPxx | GI_MENUHACK_COMMERCIAL,
-	{ 'T','I','T','L','E','P','I','C' },
+	"TITLEPIC",
 	"CREDIT",
 	"CREDIT",
-	{ 'D','_','D','M','2','T','T','L' },
+	"D_DM2TTL",
 	11,
 	0,
 	200/35,
 	"misc/chat",
-	{ 'D','_','R','E','A','D','_','M' },
+	"D_READ_M",
 	"SLIME16",
 	"CREDIT",
 	"CREDIT",
@@ -180,15 +183,15 @@ gameinfo_t CommercialGameInfo =
 gameinfo_t CommercialBFGGameInfo =
 {
 	GI_MAPxx | GI_MENUHACK_COMMERCIAL,
-	{ 'I','N','T','E','R','P','I','C' },
+	"INTERPIC",
 	"CREDIT",
 	"CREDIT",
-	{ 'D','_','D','M','2','T','T','L' },
+	"D_DM2TTL",
 	11,
 	0,
 	200/35,
 	"misc/chat",
-	{ 'D','_','R','E','A','D','_','M' },
+	"D_READ_M",
 	"SLIME16",
 	"CREDIT",
 	"CREDIT",

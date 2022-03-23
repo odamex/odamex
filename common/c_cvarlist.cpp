@@ -21,19 +21,24 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "c_cvars.h"
+
+#include "odamex.h"
+
 
 // Server settings
 // ---------------
 
 // Game mode
-CVAR_RANGE(			sv_gametype, "0", "Sets the game mode, values are:\n" \
-					"// 0 = Cooperative\n" \
-					"// 1 = Deathmatch\n" \
-					"// 2 = Team Deathmatch\n" \
-					"// 3 = Capture The Flag",
-					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE,
-					0.0f, 3.0f)
+CVAR_RANGE(sv_gametype, "0",
+           "Sets the game mode, values are:\n"
+           "// 0 = Cooperative\n"
+           "// 1 = Deathmatch\n"
+           "// 2 = Team Deathmatch\n"
+           "// 3 = Capture The Flag\n"
+           "// 4 = Horde\n",
+           CVARTYPE_BYTE,
+           CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f,
+           4.0f)
 
 CVAR(				sv_friendlyfire, "1", "When set, players can injure others on the same team, " \
 					"it is ignored in deathmatch",
@@ -44,6 +49,10 @@ CVAR_RANGE(			sv_scorelimit, "5", "Game ends when team score is reached in Teamp
 
 CVAR(				sv_teamspawns, "1", "When disabled, treat team spawns like normal deathmatch " \
 					"spawns in Teamplay/CTF",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
+
+CVAR(				sv_playerbeacons, "0",	"When enabled, print player beacons in WDL events." \
+					"This will take effect on map change.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 
 CVAR(				sv_allowcheats, "0", "Allow usage of cheats in all game modes",
@@ -120,9 +129,9 @@ CVAR_RANGE(			sv_skill,"3", "Sets the skill level, values are:\n" \
 					"// 5 - Nightmare",
 					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 5.0f)
 
-
-CVAR_RANGE_FUNC_DECL(sv_timelimit, "0", "Sets the time limit for the game to end (in minutes)",
-					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 32768.0f)
+CVAR_RANGE(sv_timelimit, "0", "Sets the time limit for the game to end (in minutes)",
+           CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
+           0.0f, 1440.0f)
 
 CVAR_RANGE_FUNC_DECL(sv_intermissionlimit, "10", "Sets the time limit for the intermission to end (in seconds).",
 					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 60.0f)
@@ -163,22 +172,114 @@ CVAR_RANGE(			sv_forcerespawntime, "30", "Force a player to respawn after a set 
 CVAR_RANGE(			sv_spawndelaytime, "0.0", "Force a player to wait a period (in seconds) before respawning",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 32768.0f)
 
-CVAR(				sv_unblockplayers, "0", "Allows players to walk through other players",
+CVAR(				sv_unblockplayers, "0", "Allows players to walk through other players, and player projectiles to pass through teammates.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 
 CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
 					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
-					
-CVAR(				sv_coopspawnvoodoodolls, "1", "Spawn voodoo dolls in cooperative mode", 
-					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_LATCH)
-					
-CVAR(				sv_coopunassignedvoodoodolls, "1", "", 
-					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_LATCH)
-					
-CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "", 
-					CVARTYPE_WORD, CVAR_SERVERINFO | CVAR_LATCH)
-	
+CVAR(sv_downloadsites, "",
+     "A list of websites to download WAD files from, separated by spaces",
+     CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+
+// Game mode options
+// -----------------
+
+CVAR(g_gametypename, "",
+     "A custom name for the gametype.  If blank, a default name is used based on "
+     "currently set cvars.",
+     CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
+
+CVAR_FUNC_DECL(g_spawninv, "default",
+               "The default inventory a player should spawn with.  See the \"spawninv\" "
+               "console command.",
+               CVARTYPE_STRING,
+               CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
+
+CVAR(g_ctf_notouchreturn, "0",
+     "Prevents touch-return of the flag, forcing the player to wait for it to timeout",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
+
+CVAR(g_rounds, "0",
+     "Turns on rounds - if enabled, reaching the gametype's win condition only wins a "
+     "single round, and a player or team must win a certain number of rounds to win the "
+     "game",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH);
+
+CVAR(g_sides, "0",
+     "Turns on offensive vs defensive sides for team-based game modes - "
+     "teams on offense don't have to defend any team objective, teams on defense win "
+     "if time expires, and if rounds are enabled the team on defense changes every round",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+CVAR(g_roundlimit, "0",
+     "Number of total rounds the game can go on for before the game ends", CVARTYPE_INT,
+     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_lives, "0",
+     "Number of lives a player has before they can no longer respawn - this can result "
+     "in a game loss depending on the gametype",
+     CVARTYPE_INT,
+     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+
+CVAR(g_lives_jointimer, "0",
+     "When players have limited lives, this is the number of seconds after the round or "
+     "game started that new players can join - if set to zero, players need to queue and "
+     "wait until the next round to join",
+     CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_winlimit, "0",
+     "Number of times a round must be won before a player or team wins the game",
+     CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_winnerstays, "0", "After a match winners stay in the game, losers get spectated.",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+CVAR(g_preroundtime, "5", "Amount of time before a round where you can't shoot",
+     CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(g_postroundtime, "3", "Amount of time after a round before the next round/endgame",
+     CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE(g_coopthingfilter, "0", "Removes cooperative things of the map. Values are:\n" \
+	"// 0 - All Coop things are retained (default).\n" \
+	"// 1 - Only Coop weapons are removed.\n" \
+        "// 2 - All Coop things are removed.",
+           CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_LATCH,
+           0.0f, 2.0f)
+
+CVAR(g_resetinvonexit, "0",
+     "Always reset players to their starting inventory on level exit", CVARTYPE_BOOL,
+     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_horde_waves, "5", "Number of horde waves per map", CVARTYPE_INT,
+     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_horde_mintotalhp, "4.0", "Multiplier for minimum spawned health at a time",
+     CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_horde_maxtotalhp, "10.0", "Multiplier for maximum spawned health at a time",
+     CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_horde_goalhp, "8.0", "Goal health multiplier for a given round", CVARTYPE_FLOAT,
+     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+// Game mode options commonized from the server
+//     At some point, replace "sv_" with "g_"
+// -------------------------------------------------------------------------
+
+CVAR(sv_warmup, "0", "Enable a 'warmup mode' before the match starts.", CVARTYPE_BOOL,
+     CVAR_SERVERINFO | CVAR_SERVERARCHIVE | CVAR_LATCH)
+CVAR_RANGE(sv_warmup_autostart, "1.0",
+           "Ratio of players needed for warmup to automatically start the game.",
+           CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f,
+           1.0f)
+CVAR_RANGE(sv_countdown, "5",
+           "Number of seconds to wait before starting the game from "
+           "warmup or restarting the game.",
+           CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f,
+           60.0f)
 
 // Compatibility options
 // ---------------------------------
@@ -205,6 +306,9 @@ CVAR(				sv_coopunassignedvoodoodollsfornplayers, "255", "",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	CVAR(			co_allowdropoff, "0", "Allow monsters can get pushed or thrusted off of ledges",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+	CVAR(			co_novileghosts, "0", "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 
@@ -262,8 +366,11 @@ CVAR(               cl_waddownloaddir, "", "Set custom WAD download directory",
 CVAR(				developer, "0", "Debugging mode",
 					CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR_RANGE_FUNC_DECL(language, "0", "",
-					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 256.0f)
+CVAR(debug_disconnect, "0", "Show source file:line where a disconnect happens",
+     CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_FUNC_DECL(		language, "auto", "Language to use for ingame strings",
+					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(				port, "0", "Display currently used network port number",
 					CVARTYPE_INT, CVAR_NOSET | CVAR_NOENABLEDISABLE)
@@ -291,5 +398,7 @@ CVAR_RANGE_FUNC_DECL(net_sndbuf, "131072", "Net send buffer size in bytes",
 // Experimental settings (all categories)
 // =======================================
 
+CVAR(				sv_weapondrop, "0", "Enable/disable weapon drop.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 VERSION_CONTROL (c_cvarlist_cpp, "$Id$")

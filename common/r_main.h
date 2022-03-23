@@ -26,7 +26,6 @@
 #define __R_MAIN_H__
 
 #include "d_player.h"
-#include "g_level.h"
 #include "r_data.h"
 #include "v_palette.h"
 #include "m_vectors.h"
@@ -216,7 +215,7 @@ void R_SetLucentDrawFuncs();
 void R_SetTranslatedDrawFuncs();
 void R_SetTranslatedLucentDrawFuncs();
 
-inline const byte shaderef_t::ramp() const
+inline byte shaderef_t::ramp() const
 {
 	if (m_mapnum >= NUMCOLORMAPS)
 		return 0;

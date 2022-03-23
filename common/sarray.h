@@ -442,7 +442,7 @@ public:
 	// a reference to an item obtained through the get accessor results in
 	// undefined behavior.
 	//
-	inline const SArrayId getId(const VT& item) const
+	inline SArrayId getId(const VT& item) const
 	{
 		assert(getSlot(item) != NOT_FOUND);
 		return mItemRecords[getSlot(item)].mId;
@@ -454,7 +454,7 @@ public:
 	// Inserts an uninitialized item into the container and returns the ID for
 	// the item.
 	//
-	inline const SArrayId insert()
+	inline SArrayId insert()
 	{
 		SlotNumber slot = insertSlot();
 		return mItemRecords[slot].mId;
@@ -466,7 +466,7 @@ public:
 	// Inserts a copy of the given item into the container and returns the ID
 	// for the item.
 	//
-	inline const SArrayId insert(const VT& item)
+	inline SArrayId insert(const VT& item)
 	{
 		SlotNumber slot = insertSlot();
 		mItemRecords[slot].mItem = item;
@@ -592,7 +592,7 @@ private:
 	// Creates a new ID number from a combination of mIdKey and the
 	// given slot number. mIdKey is then incremented, handling wrap-around.
 	//
-	inline const SArrayId generateId(SlotNumber slot)
+	inline SArrayId generateId(SlotNumber slot)
 	{
 		assert(slot < mSize);
 		SArrayId id = (mIdKey << SLOT_BITS) | slot;
@@ -733,4 +733,3 @@ private:
 };
 
 #endif	// __SARRAY_H__
-

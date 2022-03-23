@@ -50,67 +50,85 @@
 // to avoid reassigning a recently freed netid to a different actor.  Otherwise
 // clients can get confused when packets are dropped.
 
-#include "i_system.h"
-#include <queue>
+// [AM] 2021-03-05
+// Changed NetID system to not "give back" NetID's.  This was causing issues
+// when resetting the level too many times.
 
-#define MAX_NETID 0xFFFF
+#include "i_system.h"
+
+#define MAX_NETID 0xFFFFFFFF
 
 class NetIDHandler
 {
-	private:
+  private:
+	uint32_t m_nextID;
 
-	size_t NumAllocated;
-	std::queue<int> free_ids;
-	const size_t ChunkSize;
-
-	public:
-
-	NetIDHandler(size_t chunk_size = 512)
-		: NumAllocated(0), ChunkSize(chunk_size)
-	{}
+  public:
+	NetIDHandler() : m_nextID(1)
+	{
+	}
 
 	~NetIDHandler()
 	{
 	}
 
-	int ObtainNetID()
+	uint32_t peekNetID()
 	{
-		if (free_ids.empty())
+		return m_nextID;
+	}
+
+	/**
+	 * @brief Obtain a netID for an AActor.
+	 */
+	uint32_t obtainNetID()
+	{
+		if (m_nextID == MAX_NETID)
 		{
-			if(NumAllocated >= MAX_NETID - 1)
-				I_Error("Exceeded maximum number of netids");
-
-			int OldAllocated = NumAllocated;
-			NumAllocated += ChunkSize;
-
-			if(NumAllocated >= MAX_NETID - 1)
-				NumAllocated = MAX_NETID - 1;
-
-			for (size_t i = OldAllocated + 1; i <= NumAllocated; i++)
-				free_ids.push(i);
+			I_Error("Exceeded maximum number of netids (%u)", MAX_NETID);
 		}
 
-		int netid = free_ids.front();
-		free_ids.pop();
-	
-		return netid;
+		m_nextID += 1;
+		return m_nextID - 1;
 	}
 
-	void ReleaseNetID(int NetID)
+	/**
+	 * @brief Reset the netID back to 1.
+	 *
+	 * @detail Probably not a good idea to call this method in the middle
+	 *         of a level, reusing netID's doesn't tend to go very well.
+	 */
+	void resetNetIDs()
 	{
-		if (!NetID || NetID > (int)NumAllocated)
-			I_Error("Released a non-existant netid %d", NetID);
-
-		free_ids.push(NetID);
+		m_nextID = 1;
 	}
 };
+
+// [XA] Clamped angle->slope, for convenience
+inline static fixed_t AngleToSlope(int a)
+{
+	if (a > ANG90)
+		return finetangent[0];
+	else if (-a > ANG90)
+		return finetangent[FINEANGLES / 2 - 1];
+	else
+		return finetangent[(ANG90 - a) >> ANGLETOFINESHIFT];
+}
+
+// [XA] Ditto, using fixed-point-degrees input
+inline static fixed_t DegToSlope(fixed_t a)
+{
+	if (a >= 0)
+		return AngleToSlope(FixedToAngle(a));
+	else
+		return AngleToSlope(-(int)FixedToAngle(-a));
+}
 
 extern NetIDHandler ServerNetID;
 
 void P_ClearAllNetIds();
-AActor* P_FindThingById(size_t id);
-void P_SetThingId(AActor *mo, size_t newnetid);
-void P_ClearId(size_t id);
+AActor* P_FindThingById(uint32_t id);
+void P_SetThingId(AActor* mo, uint32_t newnetid);
+void P_ClearId(uint32_t id);
 
 bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update);
 void P_XYMovement(AActor *mo);
@@ -124,9 +142,16 @@ bool P_CheckMissileSpawn(AActor* th);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
 void P_SpawnPlayerMissile(AActor *source, mobjtype_t type);
 bool P_VisibleToPlayers(AActor *mo);
+void P_SetMobjBaseline(AActor& mo);
+uint32_t P_GetMobjBaselineFlags(AActor& mo);
 
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);
+bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound);
+void SpawnFlag(mapthing2_t* mthing, team_t flag);
+
+// From MBF
+bool P_SeekerMissile(AActor* actor, AActor* seekTarget, angle_t thresh, angle_t turnMax, bool seekcenter);
 
 #endif
 

@@ -22,28 +22,32 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <ctype.h>
-#include <stdio.h>
 
 #include "z_zone.h"
 #include "m_random.h"
 #include "i_video.h"
 #include "g_game.h"
-#include "g_level.h"
 #include "r_local.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
-#include "doomstat.h"
 #include "v_video.h"
 #include "wi_stuff.h"
 #include "c_console.h"
 #include "hu_stuff.h"
 #include "v_palette.h"
 #include "c_dispatch.h"
+#include "v_text.h"
 #include "resources/res_texture.h"
 #include "gi.h"
+#include "v_textcolors.h"
+
+extern byte* Ranges;
 
 void WI_unloadData(void);
+size_t P_NumPlayersInGame();
 
 //
 // Data needed to add patches to full screen intermission pics.
@@ -357,7 +361,7 @@ static const char*		lnametexts[2];
 static IWindowSurface*	background_surface;
 
 EXTERN_CVAR (sv_maxplayers)
-EXTERN_CVAR (wi_newintermission)
+EXTERN_CVAR (wi_oldintermission)
 EXTERN_CVAR (cl_autoscreenshot)
 //
 // CODE
@@ -372,8 +376,8 @@ EXTERN_CVAR (cl_autoscreenshot)
 //
 static int WI_GetWidth()
 {
-	int surface_width = I_GetPrimarySurface()->getWidth();
-	int surface_height = I_GetPrimarySurface()->getHeight();
+	const int surface_width = I_GetPrimarySurface()->getWidth();
+	const int surface_height = I_GetPrimarySurface()->getHeight();
 
 	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 		return surface_width;
@@ -393,8 +397,8 @@ static int WI_GetWidth()
 //
 static int WI_GetHeight()
 {
-	int surface_width = I_GetPrimarySurface()->getWidth();
-	int surface_height = I_GetPrimarySurface()->getHeight();
+	const int surface_width = I_GetPrimarySurface()->getWidth();
+	const int surface_height = I_GetPrimarySurface()->getHeight();
 
 	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 		return surface_height;
@@ -409,14 +413,14 @@ static int WI_GetHeight()
 // slam background
 // UNUSED static unsigned char *background=0;
 
-void WI_slamBackground (void)
+void WI_slamBackground()
 {
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear();		// ensure black background in matted modes
 
 	background_surface->lock();
 
-	int destw = WI_GetWidth(), desth = WI_GetHeight();
+	const int destw = WI_GetWidth(), desth = WI_GetHeight();
 
 	primary_surface->blit(background_surface, 0, 0, background_surface->getWidth(), background_surface->getHeight(),
 				(primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
@@ -429,8 +433,10 @@ static int WI_DrawName (const char *str, int x, int y)
 {
 	char charname[9];
 
+	::V_ColorMap = translationref_t(::Ranges + CR_GREY * 256);
 	while (*str)
 	{
+		char charname[9];
 		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
 		const ResourceId res_id = Res_GetTextureResourceId(charname, PATCH);
 		if (res_id != ResourceId::INVALID_ID)
@@ -450,19 +456,42 @@ static int WI_DrawName (const char *str, int x, int y)
 	return (5 * (texture->mHeight - texture->mOffsetY)) / 4;
 }
 
+static int WI_DrawSmallName(const char* str, int x, int y)
+{
+	patch_t* p = NULL;
 
+	while (*str)
+	{
+		char charname[9];
+		sprintf(charname, "STCFN%.3d", HU_FONTSTART + (toupper(*str) - 32) - 1);
+		int lump = W_CheckNumForName(charname);
+
+		if (lump != -1)
+		{
+			p = W_CachePatch(lump);
+			screen->DrawPatchClean(p, x, y);
+			x += p->width() - 1;
+		}
+		else
+		{
+			x += 12;
+		}
+		str++;
+	}
+
+	p = W_CachePatch("FONTB39");
+	return (5 * (p->height() - p->topoffset())) / 4;
+}
 
 //Draws "<Levelname> Finished!"
-void WI_drawLF (void)
+void WI_drawLF()
 {
-	int y;
-
-	if (!lnames[0] && !lnamewidths[0])
+	if (lnames[0].empty() && !lnamewidths[0])
 		return;
 
-	y = WI_TITLEY;
+	int y = WI_TITLEY;
 
-	if (lnames[0])
+	if (!lnames[0].empty())
 	{
 		// draw <LevelName>
 		screen->DrawTextureClean(lnames[0], (320 - lnames[0]->mWidth)/2, y);
@@ -482,14 +511,15 @@ void WI_drawLF (void)
 
 
 // Draws "Entering <LevelName>"
-void WI_drawEL (void)
+void WI_drawEL()
 {
-	int y = WI_TITLEY;
-
-	if (!lnames[1] && !lnamewidths[1])
+	if (lnames[1].empty() && !lnamewidths[1])
 		return;
 
-	y = WI_TITLEY;
+	int y = WI_TITLEY;
+
+	patch_t* ent = W_ResolvePatchHandle(entering);
+	patch_t* lnames1 = W_ResolvePatchHandle(lnames[1]);
 
 	// draw "Entering"
 	screen->DrawTextureClean(entering, (320 - entering->mWidth)/2, y);
@@ -497,7 +527,7 @@ void WI_drawEL (void)
 	// [RH] Changed to adjust by height of entering patch instead of title
 	y += (5*entering->mHeight)/4;
 
-	if (lnames[1])
+	if (lnames1)
 	{
 		// draw level
 		screen->DrawTextureClean(lnames[1], (320 - lnames[1]->mWidth)/2, y);
@@ -518,6 +548,7 @@ int WI_MapToIndex (char *map)
 		if (!strnicmp(names[wbs->epsd][i], map, 8))
 			break;
 	}
+
 	return i;
 }
 
@@ -536,21 +567,17 @@ int WI_MapToIndex (char *map)
 // intermission change
 void WI_drawOnLnode (int n, const Texture* c[], int numpatches)
 {
+	int i = 0;
+	bool fits = false;
 
-	int 	i;
-	int 	left;
-	int 	top;
-	int 	right;
-	int 	bottom;
-	BOOL 	fits = false;
-
-	i = 0;
 	do
 	{
-		left = lnodes[wbs->epsd][n].x - c[i]->mOffsetX;
-		top = lnodes[wbs->epsd][n].y - c[i]->mOffsetY;
-		right = left + c[i]->mWidth;
-		bottom = top + c[i]->mHeight;
+
+
+		int left = lnodes[wbs->epsd][n].x - ch->leftoffset();
+		int top = lnodes[wbs->epsd][n].y - ch->topoffset();
+		int right = left + ch->width();
+		int bottom = top + ch->height();
 
 		if (left >= 0 && right < WI_GetWidth() &&
             top >= 0 && bottom < WI_GetHeight())
@@ -576,17 +603,14 @@ void WI_drawOnLnode (int n, const Texture* c[], int numpatches)
 
 
 
-void WI_initAnimatedBack (void)
+void WI_initAnimatedBack()
 {
-	int i;
-	animinfo_t *a;
-
 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
 		return;
 
-	for (i = 0; i < NUMANIMS[wbs->epsd]; i++)
+	for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
 	{
-		a = &anims[wbs->epsd][i];
+		animinfo_t* a = &anims[wbs->epsd][i];
 
 		// init variables
 		a->ctr = -1;
@@ -597,20 +621,16 @@ void WI_initAnimatedBack (void)
 		else if (a->type == ANIM_LEVEL)
 			a->nexttic = bcnt + 1;
 	}
-
 }
 
-void WI_updateAnimatedBack (void)
+void WI_updateAnimatedBack()
 {
-	int i;
-	animinfo_t *a;
-
 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
 		return;
 
-	for (i = 0; i < NUMANIMS[wbs->epsd]; i++)
+	for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
 	{
-		a = &anims[wbs->epsd][i];
+		animinfo_t* a = &anims[wbs->epsd][i];
 
 		if (bcnt == a->nexttic)
 		{
@@ -647,9 +667,7 @@ void WI_updateAnimatedBack (void)
 				break;
 			}
 		}
-
 	}
-
 }
 
 void WI_drawAnimatedBack()
@@ -690,7 +708,7 @@ int WI_drawNum(int n, int x, int y, int digits)
 		{
 			// figure out # of digits in #
 			digits = 0;
-			temp = n;
+			int temp = n;
 
 			while (temp)
 			{
@@ -700,13 +718,15 @@ int WI_drawNum(int n, int x, int y, int digits)
 		}
 	}
 
-	neg = n < 0;
+	const bool neg = n < 0;
     if (neg)
 		n = -n;
 
 	// if non-number, do not draw it
 	if (n == 1994)
 		return 0;
+
+	const int fontwidth = W_ResolvePatchHandle(num[0])->width();
 
 	// draw the new number
 	while (digits--)
@@ -739,20 +759,16 @@ void WI_drawPercent (int p, int x, int y, int b = 0)
 
 void WI_drawTime (int t, int x, int y)
 {
+	if (t < 0)
+		return;
 
-    int		div;
-    int		n;
-
-    if (t<0)
-	return;
-
-    if (t <= 61*59)
+    if (t <= 61 * 59)
     {
-	div = 1;
+	    int div = 1;
 
 	do
 	{
-	    n = (t / div) % 60;
+	    const int n = (t / div) % 60;
 	    x = WI_drawNum(n, x, y, 2) - colon->mWidth;
 	    div *= 60;
 
@@ -760,7 +776,7 @@ void WI_drawTime (int t, int x, int y)
 	    if (div==60 || t / div)
 		screen->DrawTextureClean(colon, x, y);
 
-	} while (t / div);
+		} while (t / div);
     }
     else
     {
@@ -776,19 +792,19 @@ void WI_End()
 	I_FreeSurface(background_surface);
 }
 
-void WI_initNoState (void)
+void WI_initNoState()
 {
 	state = NoState;
 	acceleratestage = 0;
 	cnt = 10;
 }
 
-void WI_updateNoState (void)
+void WI_updateNoState()
 {
 	WI_updateAnimatedBack();
 
 	// denis - let the server decide when to load the next map
-	if(serverside)
+	if (serverside)
 	{
 		if (!--cnt)
 		{
@@ -798,18 +814,16 @@ void WI_updateNoState (void)
 	}
 }
 
-static BOOL snl_pointeron = false;
+static bool snl_pointeron = false;
 
-void WI_initShowNextLoc (void)
+void WI_initShowNextLoc()
 {
 	state = ShowNextLoc;
 	acceleratestage = 0;
 	cnt = SHOWNEXTLOCDELAY * TICRATE;
-
-	WI_initAnimatedBack();
 }
 
-void WI_updateShowNextLoc (void)
+void WI_updateShowNextLoc()
 {
 	WI_updateAnimatedBack();
 
@@ -822,25 +836,27 @@ void WI_updateShowNextLoc (void)
 	}
 }
 
-void WI_drawShowNextLoc (void)
+void WI_drawShowNextLoc()
 {
-	int i;
-
 	// draw animated background
 	WI_drawAnimatedBack();
 
 	if (gamemode != commercial && gamemode != commercial_bfg)
 	{
-		if (wbs->epsd > 2)
+		if (wbs->epsd > 2 || strnicmp(level.nextmap.c_str(), "EndGame", 7) == 0)
 		{
 			WI_drawEL();
 			return;
 		}
 
 		// draw a splat on taken cities.
-		for (i=0; i < NUMMAPS; i++) {
-			if (FindLevelInfo (names[wbs->epsd][i])->flags & LEVEL_VISITED)
+		LevelInfos& levels = getLevelInfos();
+		for (int i = 0; i < NUMMAPS; i++)
+		{
+			if (levels.findByName(names[wbs->epsd][i]).flags & LEVEL_VISITED)
+			{
 				WI_drawOnLnode(i, &splat, 1);
+			}
 		}
 
 		// draw flashing ptr
@@ -853,7 +869,7 @@ void WI_drawShowNextLoc (void)
 
 }
 
-void WI_drawNoState (void)
+void WI_drawNoState()
 {
 	snl_pointeron = true;
 	WI_drawShowNextLoc();
@@ -908,8 +924,7 @@ void WI_initNetgameStats()
 void WI_updateNetgameStats()
 {
 	unsigned int i;
-	int fsum;
-	BOOL stillticking;
+	bool stillticking;
 
 	WI_updateAnimatedBack();
 
@@ -933,7 +948,6 @@ void WI_updateNetgameStats()
 		S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
 		ng_state = 10;
 	}
-
 	if (ng_state == 2)
 	{
 		if (!(bcnt&3))
@@ -1015,6 +1029,7 @@ void WI_updateNetgameStats()
 	}
 	else if (ng_state == 8)
 	{
+		int fsum;
 		if (!(bcnt&3))
 			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
@@ -1061,8 +1076,21 @@ void WI_updateNetgameStats()
 	}
 }
 
-void WI_drawNetgameStats(void)
+void WI_drawNetgameStats()
 {
+	unsigned int nbPlayers = 0;
+
+	// TODO: Reconcile
+	// Convert to Texture
+	const patch_t* pPercent = W_ResolvePatchHandle(::percent);
+	const patch_t* pKills = W_ResolvePatchHandle(::kills);
+	const patch_t* pItems = W_ResolvePatchHandle(::items);
+	const patch_t* pScrt = W_ResolvePatchHandle(::scrt);
+	const patch_t* pFrags = W_ResolvePatchHandle(::frags);
+	const patch_t* pStar = W_ResolvePatchHandle(::star);
+	const patch_t* pP = W_ResolvePatchHandle(::p);
+
+	const short pwidth = pPercent->width();
 	unsigned int x, y;
 	short pwidth = percent->mWidth;
 
@@ -1078,34 +1106,53 @@ void WI_drawNetgameStats(void)
 
 	screen->DrawTextureClean(scrt, NG_STATSX+3*NG_SPACINGX-scrt->mWidth, NG_STATSY);
 
-	if (dofrags)
-		screen->DrawTextureClean(frags, NG_STATSX+4*NG_SPACINGX-frags->mWidth, NG_STATSY);
+	if (::dofrags)
+	{
+		screen->DrawTextureClean(frags, NG_STATSX + 4 * NG_SPACINGX - frags->mWidth, NG_STATSY);
+	}
 
 	// draw stats
 	y = NG_STATSY + kills->mHeight;
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		// [RH] Quick hack: Only show the first four players.
-		if (it->id > 4)
+		// Make sure while demoplaybacking that we're not exceeding the hardlimit of 4 players.
+		if (demoplayback && it->id > 4)
 			break;
 
-		byte i = (it->id) - 1;
+		// Break it anyway if we count more than 4 ACTIVE players in our session.
+		if (!demoplayback && nbPlayers > 4)
+			break;
+
+		const byte i = (it->id) - 1;
 
 		if (!it->ingame())
 			continue;
 
-		x = NG_STATSX;
+		unsigned int x = NG_STATSX;
 		// [RH] Only use one graphic for the face backgrounds
-		V_ColorMap = translationref_t(translationtables + i * 256, i);
-        screen->DrawTranslatedTextureClean(p, x - p->mWidth, y);
+		if (demoplayback)
+			V_ColorMap = translationref_t(translationtables + it->id * 256, it->id);
+		else
+			V_ColorMap = translationref_t(translationtables + i * 256, i);
+		
+		screen->DrawTranslatedTextureClean(p, x - p->mWidth, y);
 		// classic face background colour
 		//screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
 
 		if (i == me)
 			screen->DrawTextureClean(star, x-p->mWidth, y);
 
+		// Display player names online!
+		if (!demoplayback)
+		{
+			std::string str;
+			StrFormat(str, "%s", it->userinfo.netname.c_str());
+			WI_DrawSmallName(str.c_str(), x+10, y+24);
+		}
+
 		x += NG_SPACINGX;
+
 		WI_drawPercent (cnt_kills_c[i], x-pwidth, y+10, wbs->maxkills);	x += NG_SPACINGX;
 		WI_drawPercent (cnt_items_c[i], x-pwidth, y+10, wbs->maxitems);	x += NG_SPACINGX;
 		WI_drawPercent (cnt_secret_c[i], x-pwidth, y+10, wbs->maxsecret); x += NG_SPACINGX;
@@ -1113,13 +1160,14 @@ void WI_drawNetgameStats(void)
 		if (dofrags)
 			WI_drawNum(cnt_frags_c[i], x, y+10, -1);
 
-		y += WI_SPACINGY;
+		y += WI_SPACINGY+4;
+		nbPlayers++;
 	}
 }
 
-static int	sp_state;
+static int sp_state;
 
-void WI_initStats(void)
+void WI_initStats()
 {
     state = StatCount;
     acceleratestage = 0;
@@ -1131,120 +1179,145 @@ void WI_initStats(void)
     WI_initAnimatedBack();
 }
 
-void WI_updateStats(void)
+void WI_updateStats()
 {
-
     WI_updateAnimatedBack();
 
     if (acceleratestage && sp_state != 10)
     {
-	acceleratestage = 0;
-	cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
-	cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
-	cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
-	cnt_time = (plrs[me].stime) ? plrs[me].stime / TICRATE : level.time / TICRATE;
-	cnt_par = wminfo.partime / TICRATE;
-	S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-	sp_state = 10;
+		acceleratestage = 0;
+		cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
+		cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
+		cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
+		cnt_time = (plrs[me].stime) ? plrs[me].stime / TICRATE : level.time / TICRATE;
+		cnt_par = wminfo.partime / TICRATE;
+		S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+		sp_state = 10;
     }
-
     if (sp_state == 2)
     {
-	cnt_kills += 2;
+		cnt_kills += 2;
 
-	if (!(bcnt&3))
-	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+		if (!(bcnt&3))
+		    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-	if (!wminfo.maxkills || cnt_kills >= (level.killed_monsters * 100) / wminfo.maxkills)
-	{
-	    cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
-	    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-	    sp_state++;
-	}
+		if (!wminfo.maxkills || cnt_kills >= (level.killed_monsters * 100) / wminfo.maxkills)
+		{
+		    cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
+		    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+		    sp_state++;
+		}
     }
     else if (sp_state == 4)
     {
-	cnt_items += 2;
+		cnt_items += 2;
 
-	if (!(bcnt&3))
-	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+		if (!(bcnt&3))
+		    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-	if (!wminfo.maxitems || cnt_items >= (level.found_items * 100) / wminfo.maxitems)
-	{
-	    cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
-	    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-	    sp_state++;
-	}
+		if (!wminfo.maxitems || cnt_items >= (level.found_items * 100) / wminfo.maxitems)
+		{
+		    cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
+		    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+		    sp_state++;
+		}
     }
     else if (sp_state == 6)
     {
-	cnt_secret += 2;
+		cnt_secret += 2;
 
-	if (!(bcnt&3))
-	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+		if (!(bcnt&3))
+		    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-	if (!wminfo.maxsecret || cnt_secret >= (level.found_secrets * 100) / wminfo.maxsecret)
-	{
-	    cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
-	    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-	    sp_state++;
-	}
+		if (!wminfo.maxsecret || cnt_secret >= (level.found_secrets * 100) / wminfo.maxsecret)
+		{
+		    cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
+		    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+		    sp_state++;
+		}
     }
-
     else if (sp_state == 8)
     {
-	if (!(bcnt&3))
-	    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+		if (!(bcnt&3))
+		    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-	cnt_time += 3;
+		cnt_time += 3;
 
-	if (cnt_time >= plrs[me].stime / TICRATE)
-	    cnt_time = plrs[me].stime / TICRATE;
+		if (cnt_time >= plrs[me].stime / TICRATE)
+		    cnt_time = plrs[me].stime / TICRATE;
 
-	cnt_par += 3;
+		cnt_par += 3;
 
-	if (cnt_par >= wminfo.partime / TICRATE)
-	{
-	    cnt_par = wminfo.partime / TICRATE;
+		if (cnt_par >= wminfo.partime / TICRATE)
+		{
+		    cnt_par = wminfo.partime / TICRATE;
 
-	    if (cnt_time >= plrs[me].stime / TICRATE)
-	    {
-		S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-		sp_state++;
-	    }
-	}
+		    if (cnt_time >= plrs[me].stime / TICRATE)
+		    {
+			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			sp_state++;
+		    }
+		}
     }
     else if (sp_state == 10)
     {
-	if (acceleratestage)
-	{
-	    S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
+		if (acceleratestage)
+		{
+			level_pwad_info_t& nextlevel = getLevelInfos().findByName(wbs->next);
+			OLumpName name = nextlevel.enterpic;
 
-	    if ((gameinfo.flags & GI_MAPxx))
-		WI_initNoState();
-	    else
-		WI_initShowNextLoc();
-	}
+			if (nextlevel.enterpic[0])
+			{
+				// background
+				const patch_t* bg_patch = W_CachePatch(name.c_str());
+				background_surface =
+				    I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+				const DCanvas* canvas = background_surface->getDefaultCanvas();
+
+				background_surface->lock();
+				canvas->DrawPatch(bg_patch, 0, 0);
+				background_surface->unlock();
+			}
+
+			WI_initAnimatedBack();
+
+		    S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
+
+		    if ((gameinfo.flags & GI_MAPxx))
+			WI_initNoState();
+		    else
+			WI_initShowNextLoc();
+		}
     }
     else if (sp_state & 1)
     {
-	if (!--cnt_pause)
-	{
-	    sp_state++;
-	    cnt_pause = TICRATE;
-	}
+		if (!--cnt_pause)
+		{
+		    sp_state++;
+		    cnt_pause = TICRATE;
+		}
     }
 
 }
 
-void WI_drawStats (void)
+void WI_drawStats()
 {
+	// TODO: Reconcile
+	// Convert to Texture
+	const patch_t* pKills = W_ResolvePatchHandle(::kills);
+	const patch_t* pItems = W_ResolvePatchHandle(::items);
+	const patch_t* pSecret = W_ResolvePatchHandle(::secret);
+	const patch_t* pTimepatch = W_ResolvePatchHandle(::timepatch);
+	const patch_t* pPar = W_ResolvePatchHandle(::par);
+
+	// line height
+	const int lh = (3 * W_ResolvePatchHandle(::num[0])->height()) / 2;
     // line height
     int lh = (3*num[0]->mHeight)/2;
 
-    // draw animated background
-    WI_drawAnimatedBack();
-    WI_drawLF();
+	// draw animated background
+	WI_drawAnimatedBack();
+	WI_drawLF();
 
     screen->DrawTextureClean(kills, SP_STATSX, SP_STATSY);
     WI_drawPercent(cnt_kills, 320 - SP_STATSX, SP_STATSY);
@@ -1265,11 +1338,11 @@ void WI_drawStats (void)
     }
 }
 
-void WI_checkForAccelerate(void)
+void WI_checkForAccelerate()
 {
 	if (!serverside)
 		return;
-
+		
 	// check for button presses to skip delays
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -1300,7 +1373,7 @@ void WI_checkForAccelerate(void)
 
 
 // Updates stuff each tick
-void WI_Ticker (void)
+void WI_Ticker()
 {
 	// counter for general background animation
 	bcnt++;
@@ -1319,12 +1392,19 @@ void WI_Ticker (void)
 	switch (state)
 	{
 		case StatCount:
-			if (multiplayer && sv_maxplayers > 1)
+			if (multiplayer)
 			{
-				if (sv_gametype == 0 && !wi_newintermission && sv_maxplayers < 5)
-					WI_updateNetgameStats();
-				else
-					WI_updateNoState();
+			    if (demoplayback)
+			    {
+				    WI_updateNetgameStats();
+				}
+			    else
+			    {
+				    if (sv_gametype == 0 && wi_oldintermission && P_NumPlayersInGame() < 5)
+					    WI_updateNetgameStats();
+				    else
+					    WI_updateNoState();
+				}
 			}
 			else
 				WI_updateStats();
@@ -1369,13 +1449,16 @@ static int WI_CalcWidth(const char *str)
 	return w;
 }
 
-void WI_loadData (void)
+void WI_loadData()
 {
-	int i, j;
-	char name[17];
-	animinfo_t *a;
+	LevelInfos& levels = getLevelInfos();
+	level_pwad_info_t& currentlevel = levels.findByName(wbs->current);
 
-	if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
+	char name[17];
+
+	if (currentlevel.exitpic[0] != '\0')
+		strcpy(name, currentlevel.exitpic.c_str());
+	else if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
 		strcpy(name, "INTERPIC");
 	else
 		sprintf(name, "WIMAP%d", wbs->epsd);
@@ -1389,7 +1472,7 @@ void WI_loadData (void)
 	canvas->DrawTexture(texture, 0, 0);
 	background_surface->unlock();
 
-	for (i = 0; i < 2; i++)
+	for (int i = 0, j; i < 2; i++)
 	{
 		char *lname = (i == 0 ? wbs->lname0 : wbs->lname1);
 		const ResourceId res_id = lname ? Res_GetTextureResourceId(lname, PATCH) : ResourceId::INVALID_ID;
@@ -1399,8 +1482,8 @@ void WI_loadData (void)
 		}
 		else
 		{
-			lnames[i] = NULL;
-			lnametexts[i] = FindLevelInfo (i == 0 ? wbs->current : wbs->next)->level_name;
+			lnames[i].clear();
+			lnametexts[i] = levels.findByName(i == 0 ? wbs->current : wbs->next).level_name.c_str();
 			lnamewidths[i] = WI_CalcWidth (lnametexts[i]);
 		}
 	}
@@ -1418,10 +1501,10 @@ void WI_loadData (void)
 
 		if (wbs->epsd < 3)
 		{
-			for (j=0;j<NUMANIMS[wbs->epsd];j++)
+			for (int j = 0; j < NUMANIMS[wbs->epsd]; j++)
 			{
-				a = &anims[wbs->epsd][j];
-				for (i=0;i<a->nanims;i++)
+				animinfo_t* a = &anims[wbs->epsd][j];
+				for (int i = 0; i < a->nanims; i++)
 				{
 					// MONDO HACK!
 					if (wbs->epsd != 1 || j != 8)
@@ -1440,9 +1523,9 @@ void WI_loadData (void)
 		}
 	}
 
-	for (i=0;i<10;i++)
-    {
-		 // numbers 0-9
+	for (int i = 0; i < 10; i++)
+	{
+		// numbers 0-9
 		sprintf(name, "WINUM%d", i);
 		num[i] = Res_CacheTexture(name, PATCH, PU_STATIC);
     }
@@ -1497,13 +1580,14 @@ void WI_loadData (void)
 	p = Res_CacheTexture("STPBANY", PATCH, PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
-	for (i = 0; i < 4; i++) {
+	for (int i = 0; i < 4; i++)
+	{
 		sprintf(name, "STPB%d", i);
 		faceclassic[i] = Res_CacheTexture(name, PATCH, PU_STATIC);
 	}
 }
 
-void WI_unloadData (void)
+void WI_unloadData()
 {
 /*	int i, j;
 
@@ -1542,33 +1626,31 @@ void WI_unloadData (void)
 
 	Z_ChangeTag (p, PU_CACHE);*/
 
-	int i;
+	for (int i = 0; i < 10; i++)
+		num[i].clear();
 
-	for (i=0 ; i<10 ; i++)
-		Z_ChangeTag(num[i], PU_CACHE);
-
-	Z_ChangeTag(wiminus, PU_CACHE);
-    Z_ChangeTag(percent, PU_CACHE);
-    Z_ChangeTag(colon, PU_CACHE);
-	Z_ChangeTag(kills, PU_CACHE);
-	Z_ChangeTag(secret, PU_CACHE);
-	Z_ChangeTag(frags, PU_CACHE);
-	Z_ChangeTag(items, PU_CACHE);
-    Z_ChangeTag(finished, PU_CACHE);
-    Z_ChangeTag(entering, PU_CACHE);
-    Z_ChangeTag(timepatch, PU_CACHE);
-    Z_ChangeTag(sucks, PU_CACHE);
-    Z_ChangeTag(par, PU_CACHE);
-	Z_ChangeTag (total, PU_CACHE);
+	wiminus.clear();
+	percent.clear();
+	colon.clear();
+	kills.clear();
+	secret.clear();
+	frags.clear();
+	items.clear();
+	finished.clear();
+	entering.clear();
+	timepatch.clear();
+	sucks.clear();
+	par.clear();
+	total.clear();
 	//	Z_ChangeTag(star, PU_CACHE);
 	//	Z_ChangeTag(bstar, PU_CACHE);
-    Z_ChangeTag(p, PU_CACHE);
+	p.clear();
 
-	for (i=0 ; i<4 ; i++)
-		Z_ChangeTag(faceclassic[i], PU_CACHE);
+	for (int i = 0; i < 4; i++)
+		faceclassic[i ].clear();
 }
 
-void WI_Drawer (void)
+void WI_Drawer()
 {
 	C_MidPrint(NULL);	// Don't midprint anything during intermission
 
@@ -1579,13 +1661,19 @@ void WI_Drawer (void)
 		switch (state)
 		{
 		case StatCount:
-			if (multiplayer && sv_maxplayers > 1)
+			if (multiplayer)
 			{
-				// TODO: Fix classic coop scoreboard
-				//if (sv_gametype == 0 && !wi_newintermission && sv_maxplayers < 5)
-					//WI_drawNetgameStats();
-				//else
-					WI_drawDeathmatchStats();
+				if (demoplayback)
+				{
+					WI_drawNetgameStats();
+				}
+				else
+				{
+					if (sv_gametype == 0 && wi_oldintermission && P_NumPlayersInGame() < 5)
+						WI_drawNetgameStats();
+					else
+						WI_drawDeathmatchStats();
+				}
 			}
 			else
 				WI_drawStats();

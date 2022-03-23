@@ -25,11 +25,11 @@
 #ifndef __D_MAIN__
 #define __D_MAIN__
 
-#include "doomstat.h"
-#include "d_event.h"
 
-#include <vector>
-#include <string>
+#include "d_event.h"
+#include "m_resfile.h"
+
+extern std::string LOG_FILE;
 
 //
 // D_DoomMain()

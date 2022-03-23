@@ -24,6 +24,8 @@
 #ifndef DLG_MAIN_H
 #define DLG_MAIN_H
 
+#include "odalaunch.h"
+
 #include "lst_players.h"
 #include "lst_servers.h"
 #include "lst_srvdetails.h"

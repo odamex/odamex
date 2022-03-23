@@ -23,22 +23,28 @@
 #ifndef __C_VOTE__
 #define __C_VOTE__
 
+
+
 /**
  * An enum used for keeping track of the state of the vote as well as
  * internally keeping track of individual player votes.
  */
-typedef enum {
+enum vote_result_t
+{
 	VOTE_UNDEC,
 	VOTE_NO,
 	VOTE_YES,
 	VOTE_INTERRUPT,
 	VOTE_ABANDON
-} vote_result_t;
+};
+
+#define NUMVOTERESULTS (VOTE_ABANDON + 1)
 
 /**
  * An enum used for sending the vote type over the wire.
  */
-typedef enum {
+enum vote_type_t
+{
 	VOTE_NONE, // Reserved
 	VOTE_KICK,
 	VOTE_FORCESPEC,
@@ -54,7 +60,20 @@ typedef enum {
 	VOTE_TIMELIMIT,
 	VOTE_COINFLIP,
 	VOTE_MAX // Reserved
-} vote_type_t;
+};
+
+// A struct to pass around voting state
+struct vote_state_t
+{
+	vote_result_t result;
+	std::string votestring;
+	short countdown;
+	byte yes;
+	byte yes_needed;
+	byte no;
+	byte no_needed;
+	byte abs;
+};
 
 extern const char* vote_type_cmd[];
 

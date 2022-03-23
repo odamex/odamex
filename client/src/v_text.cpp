@@ -22,7 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
+
 #include <ctype.h>
 
 #include "v_text.h"
@@ -32,7 +33,8 @@
 #include "hu_stuff.h"
 #include "resources/res_texture.h"
 
-#include "doomstat.h"
+#include "hashtable.h"
+#include "cmdlib.h"
 
 EXTERN_CVAR(msg0color)
 EXTERN_CVAR(msg1color)
@@ -42,9 +44,123 @@ EXTERN_CVAR(msg4color)
 
 EXTERN_CVAR(hud_scaletext)
 
-byte *ConChars;
+// TODO: Reconcile?
+OGlobalFont hu_font;
 
+static lumpHandle_t hu_bigfont[HU_FONTSIZE];
+static lumpHandle_t hu_smallfont[HU_FONTSIZE];
+static lumpHandle_t hu_digfont[HU_FONTSIZE];
+
+static int hu_bigfont_height;
+static int hu_smallfont_height;
+static int hu_digfont_height;
+
+byte *ConChars;
 extern byte *Ranges;
+
+/**
+ * @brief Initialize fonts.
+ */
+void V_TextInit()
+{
+	int j, sub;
+	std::string buffer;
+
+	const char *bigfont = "FONTB%02d";
+	const char *smallfont = "STCFN%.3d";
+
+	// Level name font, used between levels, starts at index 1.
+	j = 1;
+	sub = 0;
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		StrFormat(buffer, bigfont, j++ - sub);
+
+		// Some letters of this font are missing.
+		int num = W_CheckNumForName(buffer.c_str());
+		if (num != -1)
+			::hu_bigfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+		else
+			::hu_bigfont[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
+	}
+
+	// Normal doom chat/message font, starts at index 33.
+	j = HU_FONTSTART;
+	sub = 0;
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		StrFormat(buffer, smallfont, j++ - sub);
+		::hu_smallfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+	}
+
+	const char* digfont = "DIG%02d";
+	const char* digfont_literal = "DIG%c";
+
+	// BOOM "Dig" font, way more complicated than it needed to be.  Letters
+	// and numbers are themselves, other characters are their ASCII values.
+	j = HU_FONTSTART;
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		if ((j >= '0' && j <= '9') || (j >= 'A' && j <= 'Z'))
+		{
+			StrFormat(buffer, digfont_literal, j++);
+		}
+		else
+		{
+			StrFormat(buffer, digfont, j++);
+		}
+
+		// Some letters of this font might be missing.
+		int num = W_CheckNumForName(buffer.c_str());
+		if (num != -1)
+		{
+			::hu_digfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+		}
+		else
+		{
+			::hu_digfont[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
+		}
+	}
+
+	// Font heights.
+	::hu_bigfont_height =
+	    W_ResolvePatchHandle(::hu_bigfont['M' - HU_FONTSTART])->height();
+	::hu_smallfont_height =
+	    W_ResolvePatchHandle(::hu_smallfont['M' - HU_FONTSTART])->height();
+	::hu_digfont_height =
+	    W_ResolvePatchHandle(::hu_digfont['M' - HU_FONTSTART])->height();
+
+	// Default font is SMALLFONT.
+	V_SetFont("SMALLFONT");
+}
+
+/**
+ * @brief Shut down and free fonts.
+ */
+void V_TextShutdown()
+{
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		::hu_bigfont[i].clear();
+		::hu_smallfont[i].clear();
+		::hu_digfont[i].clear();
+	}
+}
+
+/**
+ * @brief Set the current font.
+ * 
+ * @param fontname Font name, can be one of "BIGFONT" or "SMALLFONT".
+ */
+void V_SetFont(const char* fontname)
+{
+	if (!stricmp(fontname, "BIGFONT"))
+		::hu_font.setFont(::hu_bigfont, ::hu_bigfont_height);
+	else if (!stricmp(fontname, "SMALLFONT"))
+		::hu_font.setFont(::hu_smallfont, ::hu_smallfont_height);
+	else if (!stricmp(fontname, "DIGFONT"))
+		::hu_font.setFont(::hu_digfont, ::hu_digfont_height);
+}
 
 int V_TextScaleXAmount()
 {
@@ -99,11 +215,11 @@ int V_GetTextColor(const char* str)
 		initialized = true;
 	}
 
-	if (str[0] == '\\' && str[1] == 'c' && str[2] < 128)
+	if (str[0] == TEXTCOLOR_ESCAPE && str[1] < 128)
 	{
-		int c = str[2];
+		int c = str[1];
 		if (c == '-')
-			return CR_GRAY;			// use print color
+			return msg2color;		// use print color
 		if (c == '+')
 			return CR_GREEN;		// use print bold color
 		if (c == '*')
@@ -122,6 +238,10 @@ int V_GetTextColor(const char* str)
 //
 void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool use_color_codes) const
 {
+	// Don't try and print a string without conchars loaded.
+	if (::ConChars == NULL)
+		return;
+
 	if (default_color < 0)
 		default_color = CR_GRAY;
 
@@ -157,7 +277,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 	    }
 
 		// [SL] parse color escape codes (\cX)
-		if (use_color_codes && str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+		if (use_color_codes && str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
 			int new_color = V_GetTextColor(str);
 			if (new_color == -1)
@@ -165,7 +285,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 
 			trans = translationref_t(Ranges + new_color * 256);
 
-			str += 3;
+			str += 2;
 			continue;
 		}
 
@@ -232,6 +352,9 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 							const byte *string, int scalex, int scaley) const
 {
+	if (::hu_font[0].empty())
+		return;
+
 	if (normalcolor < 0 || normalcolor > NUM_TEXT_COLORS)
 		normalcolor = CR_RED;
 
@@ -247,18 +370,18 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 		if (str[0] == '\0')
 			break;
 
-		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
 			int new_color = V_GetTextColor(str);
 			V_ColorMap = translationref_t(Ranges + new_color * 256);
-			str += 3;	
+			str += 2;	
 			continue;
 		}
 
 		if (str[0] == '\n')
 		{
 			cx = x;
-			cy += 9 * scalex;
+			cy += V_LineHeight() * scalex;
 			str++;
 			continue;
 		}
@@ -272,10 +395,15 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 			continue;
 		}
 
+		// TODO: Reconcile
+		patch_t* ch = W_ResolvePatchHandle(hu_font[c]);
+
+		int w = ch->width() * scalex;
 		int w = hu_font[c]->mWidth * scalex;
 		if (cx + w > I_GetSurfaceWidth())
 			break;
 
+        DrawSWrapper(drawer, ch, cx, cy, ch->width() * scalex, ch->height() * scaley);
         DrawSWrapper(drawer, hu_font[c], cx, cy, hu_font[c]->mWidth * scalex, hu_font[c]->mHeight * scaley);
 
 		cx += w;
@@ -287,25 +415,62 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 //
 int V_StringWidth(const byte* str)
 {
+	// Default width without a font loaded is 8.
+	if (::hu_font[0].empty())
+		return 8;
+
 	int width = 0;
 	
 	while (*str)
 	{
 		// skip over color markup escape codes
-		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
-			str += 3;
+			str += 2;
 			continue;
 		}
 
 		int c = toupper((*str++) & 0x7f) - HU_FONTSTART;
 		if (c < 0 || c >= HU_FONTSIZE)
+		{
 			width += 4;
+		}
 		else
-			width += hu_font[c]->mWidth;
+		{
+			// TODO: Resolve
+			width += W_ResolvePatchHandle(hu_font[c])->width();
+			//width += hu_font[c]->mWidth;
+		}
 	}
 
 	return width;
+}
+
+int V_StringHeight(const char* str)
+{
+	// Default width without a font loaded is 8.
+	if (::hu_font[0].empty())
+		return 8;
+
+	int lineheight = V_LineHeight();
+	int height = lineheight;
+
+	while (str[0] != '\0')
+	{
+		// skip over color markup escape codes
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			str += 2;
+			continue;
+		}
+
+		if (str[0] == '\n')
+			height += lineheight;
+
+		str += 1;
+	}
+
+	return height;
 }
 
 //
@@ -329,8 +494,16 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 	line->width = V_StringWidth(line->string);
 }
 
+int V_LineHeight()
+{
+	return ::hu_font.lineHeight();
+}
+
 brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 {
+	if (::hu_font[0].empty())
+		return NULL;
+
 	brokenlines_t lines[128];	// Support up to 128 lines (should be plenty)
 
 	const byte* space = NULL;
@@ -344,10 +517,10 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 
 	while (*str)
 	{
-		if (str[0] == '\\' && str[1] == 'c' && str[2] != '\0')
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
-			sprintf(color_code_str, "\\c%c", str[2]);
-			str += 3;
+			sprintf(color_code_str, "\034%c", str[1]);
+			str += 2;
 			continue;
 		}
 
@@ -367,9 +540,15 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 		}
 
 		if (c < HU_FONTSTART || c >= HU_FONTSTART + HU_FONTSIZE)
+		{
 			nw = 4;
+		}
 		else
-			nw = hu_font[c - HU_FONTSTART]->mWidth;
+		{
+			// TODO: Reconcile
+			nw = W_ResolvePatchHandle(hu_font[c - HU_FONTSTART])->width();
+			//nw = hu_font[c - HU_FONTSTART]->mWidth;
+		}
 
 		if (w + nw > maxwidth || c == '\n')
 		{
@@ -444,4 +623,3 @@ void V_FreeBrokenLines(brokenlines_t* lines)
 
 
 VERSION_CONTROL (v_text_cpp, "$Id$")
-

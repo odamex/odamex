@@ -1,4 +1,6 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8.12)
+
+project (miniupnpc C)
 
 set (MINIUPNPC_VERSION 1.9)
 set (MINIUPNPC_API_VERSION 12)
@@ -90,9 +92,7 @@ if (WIN32)
 endif (WIN32)
 
 if (WIN32)
-  find_library (WINSOCK2_LIBRARY NAMES ws2_32 WS2_32 Ws2_32)
-  find_library (IPHLPAPI_LIBRARY NAMES iphlpapi)
-  set (LDLIBS ${WINSOCK2_LIBRARY} ${IPHLPAPI_LIBRARY} ${LDLIBS})
+  set (LDLIBS ws2_32 iphlpapi ${LDLIBS})
 #elseif (CMAKE_SYSTEM_NAME STREQUAL "Solaris")
 #  find_library (SOCKET_LIBRARY NAMES socket)
 #  find_library (NSL_LIBRARY NAMES nsl)

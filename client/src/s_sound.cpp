@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <algorithm>
 
 #include "cl_main.h"
@@ -34,10 +36,9 @@
 #include "c_dispatch.h"
 #include "z_zone.h"
 #include "m_random.h"
+#include "w_wad.h"
 #include "resources/res_main.h"
-#include "doomdef.h"
 #include "p_local.h"
-#include "doomstat.h"
 #include "cmdlib.h"
 #include "i_video.h"
 #include "v_video.h"
@@ -271,6 +272,14 @@ void S_Init (float sfxVolume, float musicVolume)
 	mus_paused = 0;
 }
 
+/**
+ * @brief Run cleanup assuming zone memory has been freed.
+ */
+void S_Deinit()
+{
+	::SoundCurve = NULL;
+	::Channel = NULL;
+}
 
 //
 // Kills playing sounds
@@ -293,13 +302,15 @@ void S_Stop (void)
 //
 void S_Start (void)
 {
-	S_Stop();
+	// Kill all sound channels - but don't stop music.
+	for (size_t i = 0; i < numChannels; i++)
+		S_StopChannel(i);
 
 	// start new music for the level
 	mus_paused = 0;
 
 	// [RH] This is a lot simpler now.
-	S_ChangeMusic (std::string(level.music, 8), true);
+	S_ChangeMusic (std::string(level.music.c_str(), 8), true);
 }
 
 
@@ -338,7 +349,7 @@ bool S_CompareChannels(const channel_t &a, const channel_t &b)
 int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_instances)
 {
 	// not a valid sound
-	if (!sfxinfo)
+	if (::Channel == NULL || sfxinfo == NULL)
 		return -1;
 
 	// Sort the sound channels by descending priority levels
@@ -371,7 +382,7 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 			return i;
 
 	// Find a channel with lower priority
-	for (size_t i = numChannels - 1; i >= 0; i--)
+	for (size_t i = numChannels - 1; i-- > 0;)
 		if (S_CompareChannels(tempchan, Channel[i]))
 			return i;
 
@@ -385,23 +396,22 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 // Utilizes the sndcurve lump to mimic volume and stereo separation
 // calculations from ZDoom 1.22
 //
-bool S_AdjustSoundParamsZDoom(	const AActor*	listener,
-								fixed_t			x,
-								fixed_t			y,
-								float*			vol,
-								int*			sep)
+// [AM] We always play sounds now - even if they're out of range, since we
+//      might step back in range during the sound.
+//
+static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
+                                   float* vol, int* sep)
 {
 	static const fixed_t MAX_SND_DIST = 2025 * FRACUNIT;
 	static const fixed_t MIN_SND_DIST = 1 * FRACUNIT;
 	int approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
 
-	if (S_UseMap8Volume())
-		approx_dist = MIN(approx_dist, MAX_SND_DIST);
-
 	if (approx_dist > MAX_SND_DIST)
-		return false;
-
-	if (approx_dist < MIN_SND_DIST)
+	{
+		*vol = 0;
+		*sep = NORM_SEP;
+	}
+	else if (approx_dist < MIN_SND_DIST)
 	{
 		*vol = snd_sfxvolume;
 		*sep = NORM_SEP;
@@ -409,10 +419,8 @@ bool S_AdjustSoundParamsZDoom(	const AActor*	listener,
 	else
 	{
 		float attenuation = float(SoundCurve[approx_dist >> FRACBITS]) / 128.0f;
-		if (S_UseMap8Volume())
-			*vol = 1.0f + (snd_sfxvolume - 1.0f) * attenuation;
-		else
-			*vol = snd_sfxvolume * attenuation;
+		
+		*vol = snd_sfxvolume * attenuation;
 
 		// angle of source to listener
 		angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
@@ -422,10 +430,10 @@ bool S_AdjustSoundParamsZDoom(	const AActor*	listener,
 			angle = angle + (0xffffffff - listener->angle);
 
 		// stereo separation
-		*sep = NORM_SEP - (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
+		*sep =
+		    NORM_SEP -
+		    (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
 	}
-
-	return (*vol > 0.0f);
 }
 
 
@@ -440,11 +448,11 @@ bool S_AdjustSoundParamsZDoom(	const AActor*	listener,
 // [SL] 2011-05-26 - Changed function parameters to accept x, y instead
 // of a fixed_t* for the sound origin
 //
-bool S_AdjustSoundParamsDoom(	const AActor*	listener,
-								fixed_t			x,
-								fixed_t			y,
-								float*			vol,
-								int*			sep)
+// [AM] We always play sounds now - even if they're out of range, since we
+//      might step back in range during the sound.
+//
+static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
+                                  float* vol, int* sep)
 {
 	static const fixed_t S_CLIPPING_DIST = 1200 * FRACUNIT;
 	static const fixed_t S_CLOSE_DIST = 200 * FRACUNIT;
@@ -454,20 +462,27 @@ bool S_AdjustSoundParamsDoom(	const AActor*	listener,
 		approx_dist = MIN(approx_dist, S_CLIPPING_DIST);
 
 	if (approx_dist > S_CLIPPING_DIST)
-		return false;
-
-	if (approx_dist < S_CLOSE_DIST)
+	{
+		*vol = 0;
+		*sep = NORM_SEP;
+	}
+	else if (approx_dist < S_CLOSE_DIST)
 	{
 		*vol = snd_sfxvolume;
 		*sep = NORM_SEP;
 	}
 	else
 	{
-		float attenuation = FIXED2FLOAT(FixedDiv(S_CLIPPING_DIST - approx_dist, S_CLIPPING_DIST - S_CLOSE_DIST));
-		if (S_UseMap8Volume())
-			*vol = 1.0f + (snd_sfxvolume - 1.0f) * attenuation;
-		else
-			*vol = snd_sfxvolume * attenuation;
+		float attenuation = FIXED2FLOAT(
+		    FixedDiv(S_CLIPPING_DIST - approx_dist, S_CLIPPING_DIST - S_CLOSE_DIST));
+
+		// HACKY STUFF: We want to leave the attenuation, but not to make everything LOUDER.
+		// On MAP 8, Doom makes a minimum volume of sounds which is 15/128 (0.192).
+		// We then set that value as the strict minimum for those maps.
+		if (S_UseMap8Volume() && attenuation < 0.192)
+			attenuation = 0.192;
+
+		*vol = snd_sfxvolume * attenuation;
 
 		// angle of source to listener
 		angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
@@ -477,10 +492,10 @@ bool S_AdjustSoundParamsDoom(	const AActor*	listener,
 			angle = angle + (0xffffffff - listener->angle);
 
 		// stereo separation
-		*sep = NORM_SEP - (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
+		*sep =
+		    NORM_SEP -
+		    (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
 	}
-
-	return (*vol > 0.0f);
 }
 
 
@@ -488,11 +503,8 @@ bool S_AdjustSoundParamsDoom(	const AActor*	listener,
 //
 // S_AdjustSoundParams
 //
-bool S_AdjustSoundParams(	const AActor*	listener,
-		  					fixed_t			x,
-		  					fixed_t			y,
-		  					float*			vol,
-		  					int*			sep)
+static bool AdjustSoundParams(const AActor* listener, fixed_t x, fixed_t y, float* vol,
+                              int* sep)
 {
 	*vol = 0.0f;
 	*sep = NORM_SEP;
@@ -501,9 +513,11 @@ bool S_AdjustSoundParams(	const AActor*	listener,
 		return false;
 
 	if (co_zdoomsound)
-		return S_AdjustSoundParamsZDoom(listener, x, y, vol, sep);
+		AdjustSoundParamsZDoom(listener, x, y, vol, sep);
 	else
-		return S_AdjustSoundParamsDoom(listener, x, y, vol, sep);
+		AdjustSoundParamsDoom(listener, x, y, vol, sep);
+
+	return true;
 }
 
 
@@ -611,7 +625,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	if (listenplayer().camera && attenuation != ATTN_NONE)
 	{
   		// Check to see if it is audible, and if not, modify the params
-		if (!S_AdjustSoundParams(listenplayer().camera, x, y, &volume, &sep))
+		if (!AdjustSoundParams(listenplayer().camera, x, y, &volume, &sep))
 			return;
 	}
 	else
@@ -822,6 +836,9 @@ void S_Sound (fixed_t x, fixed_t y, int channel, const char *name, float volume,
 //
 static void S_StopChannel(unsigned int cnum)
 {
+	if (::Channel == NULL)
+		return;
+
 	if (cnum >= numChannels)
 	{
 		DPrintf("Trying to stop invalid channel %d\n", cnum);
@@ -848,6 +865,9 @@ void S_StopSound (fixed_t *pt)
 
 void S_StopSound (fixed_t *pt, int channel)
 {
+	if (::Channel == NULL)
+		return;
+
 	for (unsigned int i = 0; i < numChannels; i++)
 		if (Channel[i].sfxinfo
 			&& Channel[i].pt == pt // denis - fixme - security - wouldn't this cause invalid access elsewhere, if an object was destroyed?
@@ -871,6 +891,9 @@ void S_StopAllChannels(void)
 // NULL, then the sound becomes a positioned sound.
 void S_RelinkSound (AActor *from, AActor *to)
 {
+	if (::Channel == NULL)
+		return;
+
 	unsigned int i;
 
 	if (!from)
@@ -930,27 +953,23 @@ void S_ResumeSound (void)
 // Updates music & sounds
 //
 // joek - from choco again
-void S_UpdateSounds (void *listener_p)
+void S_UpdateSounds(void* listener_p)
 {
-	int		cnum;
-	float		volume;
-	int		sep;
-	sfxinfo_t*	sfx;
-	channel_t*	c;
+	if (::Channel == NULL)
+		return;
 
-	AActor *listener = (AActor *)listener_p;
-
-	for (cnum=0 ; cnum < (int)numChannels ; cnum++)
+	AActor* listener = (AActor*)listener_p;
+	for (int cnum = 0; cnum < (int)numChannels; cnum++)
 	{
-		c = &Channel[cnum];
-		sfx = c->sfxinfo;
+		channel_t* c = &Channel[cnum];
+		sfxinfo_t* sfx = c->sfxinfo;
 
 		if (c->sfxinfo)
 		{
 			if (I_SoundIsPlaying(c->handle))
 			{
 				// initialize parameters
-				sep = NORM_SEP;
+				int sep = NORM_SEP;
 
 				float maxvolume;
 				if (Channel[cnum].entchannel == CHAN_ANNOUNCER)
@@ -958,7 +977,7 @@ void S_UpdateSounds (void *listener_p)
 				else
 					maxvolume = snd_sfxvolume;
 
-				volume = maxvolume;
+				float volume = maxvolume;
 
 				if (sfx->link)
 				{
@@ -980,10 +999,10 @@ void S_UpdateSounds (void *listener_p)
 				if (listener && &(listener->x) != c->pt && c->attenuation != ATTN_NONE)
 				{
 					fixed_t x, y;
-					if (c->pt)		// [SL] 2011-05-29
+					if (c->pt) // [SL] 2011-05-29
 					{
-						x = c->pt[0];	// update the sound coorindates
-						y = c->pt[1];	// for moving actors
+						x = c->pt[0]; // update the sound coorindates
+						y = c->pt[1]; // for moving actors
 					}
 					else
 					{
@@ -991,7 +1010,7 @@ void S_UpdateSounds (void *listener_p)
 						y = c->y;
 					}
 
-					if (S_AdjustSoundParams(listener, x, y, &volume, &sep))
+					if (AdjustSoundParams(listener, x, y, &volume, &sep))
 						I_UpdateSoundParams(c->handle, volume, sep, NORM_PITCH);
 					else
 						S_StopChannel(cnum);
@@ -999,17 +1018,17 @@ void S_UpdateSounds (void *listener_p)
 			}
 			else
 			{
-			// if channel is allocated but sound has stopped,
-			// free it
+				// if channel is allocated but sound has stopped,
+				// free it
 				S_StopChannel(cnum);
 			}
 		}
 	}
-    // kill music if it is a single-play && finished
-    // if (	mus_playing
-    //      && !I_QrySongPlaying(mus_playing->handle)
-    //      && !mus_paused )
-    // S_StopMusic();
+	// kill music if it is a single-play && finished
+	// if (	mus_playing
+	//      && !I_QrySongPlaying(mus_playing->handle)
+	//      && !mus_paused )
+	// S_StopMusic();
 }
 
 void S_UpdateMusic()
@@ -1326,21 +1345,16 @@ void S_ParseSndInfo()
 				else if (stricmp(com_token + 1, "map") == 0)
 				{
 					// Hexen-style $MAP command
-					level_info_t *info;
-
-					sndinfo = COM_Parse(sndinfo);
-					sprintf(com_token, "MAP%02d", atoi(com_token));
-					info = FindLevelInfo(com_token);
-					sndinfo = COM_Parse(sndinfo);
-					if (info->mapname[0])
+					sndinfo = COM_Parse (sndinfo);
+					sprintf (com_token, "MAP%02d", atoi (com_token));
+					level_pwad_info_t& info = getLevelInfos().findByName(com_token);
+					sndinfo = COM_Parse (sndinfo);
+					if (info.mapname[0])
 					{
-						strncpy(info->music, com_token, 9); // denis - todo -string limit?
-						std::transform(info->music, info->music + strlen(info->music), info->music, toupper);
+						info.music = com_token; // denis - todo -string limit?
 					}
-				}
-				else
-				{
-					Printf (PRINT_HIGH, "Unknown SNDINFO command %s\n", com_token);
+				} else {
+					Printf (PRINT_WARNING, "Unknown SNDINFO command %s\n", com_token);
 					while (*sndinfo != '\n' && *sndinfo != '\0')
 						sndinfo++;
 				}
@@ -1527,4 +1541,3 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 }
 
 VERSION_CONTROL (s_sound_cpp, "$Id$")
-

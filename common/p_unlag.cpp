@@ -34,8 +34,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
-#include "doomstat.h"
+#include "odamex.h"
+
 #include "m_vectors.h"
 #include "p_unlag.h"
 #include "p_local.h"
@@ -652,10 +652,9 @@ void Unlag::debugReconciliation(byte shooter_id)
 
 			if (deltaangle < 3 * FRACUNIT)
 			{
-				DPrintf("Unlag (%03d): would have hit player %d at gametic %d (%d tics ago)\n",
+				DPrintf("Unlag (%03d): would have hit player %d at gametic %d (%" PRIuSIZE " tics ago)\n",
 						gametic & 0xFF, player_history[i].player->id, (gametic - n) & 0xFF, n);
 			}
 		}
 	}
 }
-

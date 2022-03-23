@@ -24,9 +24,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
 
-#include <vector>
+#include "odamex.h"
+
+
 #include <algorithm>
 
 #include "win32inc.h"
@@ -42,12 +43,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "errors.h"
 
 #include "m_random.h"
 #include "minilzo.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "gstrings.h"
 #include "z_zone.h"
 #include "v_video.h"
@@ -64,8 +62,10 @@
 #include "d_dehacked.h"
 #include "s_sound.h"
 #include "gi.h"
+#include "g_mapinfo.h"
 #include "sv_main.h"
 #include "sv_banlist.h"
+#include "g_horde.h"
 
 #include "resources/res_filelib.h"
 #include "resources/res_texture.h"
@@ -93,7 +93,6 @@ extern gameinfo_t RetailBFGGameInfo;
 extern gameinfo_t CommercialBFGGameInfo;
 
 extern BOOL gameisdead;
-extern BOOL demorecording;
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
@@ -102,7 +101,7 @@ char startmap[9];
 event_t events[MAXEVENTS];
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 
-const char *LOG_FILE;
+std::string LOG_FILE;
 
 //
 // D_DoomLoop
@@ -117,8 +116,8 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf (PRINT_HIGH, "ERROR: %s\n", error.GetMsg().c_str());
-			Printf (PRINT_HIGH, "sleeping for 10 seconds before map reload...");
+			Printf ("ERROR: %s\n", error.GetMsg().c_str());
+			Printf ("sleeping for 10 seconds before map reload...");
 
 			// denis - drop clients
 			SV_SendDisconnectSignal();
@@ -142,6 +141,7 @@ void D_DoomLoop (void)
 //
 void D_Init(const std::vector<std::string>& resource_file_names)
 {
+	argb_t::setChannels(3, 2, 1, 0);
 	// only print init messages during startup, not when changing WADs
 	static bool first_time = true;
 
@@ -153,8 +153,7 @@ void D_Init(const std::vector<std::string>& resource_file_names)
 	srand(time(NULL));
 
 	// start the Zone memory manager
-	bool use_zone = !Args.CheckParm("-nozone");
-	Z_Init(use_zone);
+	Z_Init();
 	if (first_time)
 		Printf(PRINT_HIGH, "Z_Init: Heapsize: %u megabytes\n", got_heapsize);
 	
@@ -164,15 +163,18 @@ void D_Init(const std::vector<std::string>& resource_file_names)
 	V_InitPalette("PLAYPAL");
 	R_InitColormaps();
 
+	// [RH] Initialize localizable strings.
+	::GStrings.loadStrings(false);
+
 	// init the renderer
 	if (first_time)
 		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
 	R_Init();
 
-	G_SetLevelStrings();
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseHordeDefs();
 
 	if (first_time)
 		Printf(PRINT_HIGH, "P_Init: Init Playloop state.\n");
@@ -194,26 +196,15 @@ void STACK_ARGS D_Shutdown()
 		G_ExitLevel(0, 0);
 
 	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
-	for (size_t i = 0; i < wadlevelinfos.size(); i++)
-	{
-		if (wadlevelinfos[i].snapshot)
-		{
-			delete wadlevelinfos[i].snapshot;
-			wadlevelinfos[i].snapshot = NULL;
-		}
-	}
-
-	wadlevelinfos.clear();
-	wadclusterinfos.clear();
+	getLevelInfos().clear();
+	getClusterInfos().clear();
 
 	// stop sound effects and music
 	S_Stop();
 	
 	DThinker::DestroyAllThinkers();
 
-	UndoDehPatch();
-
-	GStrings.FreeData();
+	D_UndoDehPatch();
 
 	R_ShutdownColormaps();
 
@@ -227,7 +218,7 @@ void STACK_ARGS D_Shutdown()
 	NormalLight.next = NULL;
 }
 
-
+void D_Init_DEHEXTRA_Frames(void);
 
 //
 // D_DoomMain
@@ -243,6 +234,8 @@ void D_DoomMain()
 
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
+	// Initialize all extra frames
+	D_Init_DEHEXTRA_Frames();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
@@ -363,8 +356,8 @@ void D_DoomMain()
 		strncpy(startmap, Args.GetArg(p + 1), 8);
 		((char*)Args.GetArg(p))[0] = '-';
 	}
-
-	strncpy(level.mapname, startmap, sizeof(level.mapname));
+	
+	level.mapname = startmap;
 
 	G_ChangeMap();
 

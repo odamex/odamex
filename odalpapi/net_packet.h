@@ -43,7 +43,18 @@
 #include "typedefs.h"
 #include "threads/mutex_factory.h"
 
-#define ASSEMBLEVERSION(MAJOR,MINOR,PATCH) ((MAJOR) * 256 + (MINOR)(PATCH))
+/**
+ * @brief Construct a packed integer from major, minor and patch version
+ *        numbers.
+ *
+ * @param major Major version number.
+ * @param minor Minor version number - must be between 0 and 25.
+ * @param patch Patch version number - must be between 0 and 9.
+ */
+#define MAKEVER(major, minor, patch) ((major)*256 + ((minor)*10) + (patch))
+
+// [AM] TODO: Bring over other macros from Odamex proper.
+
 #define DISECTVERSION(V,MAJOR,MINOR,PATCH) \
 { \
     MAJOR = (V / 256); \
@@ -55,7 +66,7 @@
 #define VERSIONMINOR(V) ((V % 256) / 10)
 #define VERSIONPATCH(V) ((V % 256) % 10)
 
-#define VERSION (0*256+82)
+#define VERSION (MAKEVER(11, 0, 0))
 #define PROTOCOL_VERSION 8
 
 #define TAG_ID 0xAD0
@@ -136,11 +147,12 @@ struct Player_t
 
 enum GameType_t
 {
-	GT_Cooperative = 0
-    ,GT_Deathmatch
-	,GT_TeamDeathmatch
-	,GT_CaptureTheFlag
-	,GT_Max
+	GT_Cooperative = 0,
+	GT_Deathmatch,
+	GT_TeamDeathmatch,
+	GT_CaptureTheFlag,
+	GT_Horde,
+	GT_Max
 };
 
 struct ServerInfo_t
@@ -168,6 +180,8 @@ struct ServerInfo_t
 	uint8_t                  VersionPatch;
 	uint8_t                  MaxClients; // Launcher specific: Maximum clients
 	uint8_t                  MaxPlayers; // Launcher specific: Maximum players
+	uint16_t                 Lives;
+	uint16_t                 Sides;
 };
 
 class ServerBase  // [Russell] - Defines an abstract class for all packets

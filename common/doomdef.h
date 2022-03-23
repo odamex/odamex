@@ -23,11 +23,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __DOOMDEF_H__
-#define __DOOMDEF_H__
-
-#include <stdio.h>
-#include <cstring>
+#pragma once
 
 // GhostlyDeath -- MSVC++ 8+, remove "deprecated" warnings
 #if _MSC_VER >= 1400
@@ -68,6 +64,47 @@ enum baseapp_t
 };
 
 extern baseapp_t baseapp;
+
+// [AM] These macros exist so function calls to CL/SV functions can exist
+//      without having to create a stub for them.
+
+#if defined(CLIENT_APP)
+/**
+ * @brief The passed expression only appears on the client.
+ */
+#define CLIENT_ONLY(expr) expr
+#else
+/**
+ * @brief The passed expression only appears on the client.
+ */
+#define CLIENT_ONLY(expr)
+#endif
+
+#if defined(SERVER_APP)
+/**
+ * @brief The passed expression only appears on the server.
+ */
+#define SERVER_ONLY(expr) expr
+#else
+/**
+ * @brief The passed expression only appears on the server.
+ */
+#define SERVER_ONLY(expr)
+#endif
+
+// 
+// Environment Platform
+// 
+enum gameplatform_t 
+{
+	PF_PC,
+	PF_XBOX,
+	PF_WII,			//	Wii/vWii
+	PF_SWITCH,		// 	Nintendo Switch
+	PF_UNKNOWN,		//	Unknown platform yet
+};
+
+extern gameplatform_t platform;
 
 //
 // Global parameters/defines.
@@ -117,6 +154,193 @@ enum GameMission_t
 // State updates, number of tics / second.
 #define TICRATE 		35
 
+#define SPEED(a) ((a) * (FRACUNIT / 8))
+#define TICS(a) (((a)*TICRATE) / 35)
+#define OCTICS(a) (((a)*TICRATE) / 8)
+#define BYTEANGLE(a) ((angle_t)((a) << 24))
+
+// [RH] Equivalents for BOOM's generalized sector types
+
+#define DAMAGE_MASK 0x60
+#define DAMAGE_SHIFT 5
+#define SECRET_MASK 0x80
+#define SECRET_SHIFT 7
+#define FRICTION_MASK 0x100
+#define FRICTION_SHIFT 8
+#define PUSH_MASK 0x200
+#define PUSH_SHIFT 9
+
+// mbf21
+#define DEATH_MASK 0x1000         // bit 12
+#define KILL_MONSTERS_MASK 0x2000 // bit 13
+
+// Define masks, shifts, for fields in generalized linedef types
+// (from BOOM's p_psec.h file)
+
+#define GenEnd (0x8000)
+#define GenFloorBase (0x6000)
+#define GenCeilingBase (0x4000)
+#define GenDoorBase (0x3c00)
+#define GenLockedBase (0x3800)
+#define GenLiftBase (0x3400)
+#define GenStairsBase (0x3000)
+#define GenCrusherBase (0x2F80)
+
+#define TriggerType 0x0007
+#define TriggerTypeShift 0
+
+#define OdamexStaticInits (333)
+
+// define masks and shifts for the floor type fields
+
+#define FloorCrush 0x1000
+#define FloorChange 0x0c00
+#define FloorTarget 0x0380
+#define FloorDirection 0x0040
+#define FloorModel 0x0020
+#define FloorSpeed 0x0018
+
+#define FloorCrushShift 12
+#define FloorChangeShift 10
+#define FloorTargetShift 7
+#define FloorDirectionShift 6
+#define FloorModelShift 5
+#define FloorSpeedShift 3
+
+// define masks and shifts for the ceiling type fields
+
+#define CeilingCrush 0x1000
+#define CeilingChange 0x0c00
+#define CeilingTarget 0x0380
+#define CeilingDirection 0x0040
+#define CeilingModel 0x0020
+#define CeilingSpeed 0x0018
+
+#define CeilingCrushShift 12
+#define CeilingChangeShift 10
+#define CeilingTargetShift 7
+#define CeilingDirectionShift 6
+#define CeilingModelShift 5
+#define CeilingSpeedShift 3
+
+// define masks and shifts for the lift type fields
+
+#define LiftTarget 0x0300
+#define LiftDelay 0x00c0
+#define LiftMonster 0x0020
+#define LiftSpeed 0x0018
+
+#define LiftTargetShift 8
+#define LiftDelayShift 6
+#define LiftMonsterShift 5
+#define LiftSpeedShift 3
+
+// define masks and shifts for the stairs type fields
+
+#define StairIgnore 0x0200
+#define StairDirection 0x0100
+#define StairStep 0x00c0
+#define StairMonster 0x0020
+#define StairSpeed 0x0018
+
+#define StairIgnoreShift 9
+#define StairDirectionShift 8
+#define StairStepShift 6
+#define StairMonsterShift 5
+#define StairSpeedShift 3
+
+// define masks and shifts for the crusher type fields
+
+#define CrusherSilent 0x0040
+#define CrusherMonster 0x0020
+#define CrusherSpeed 0x0018
+
+#define CrusherSilentShift 6
+#define CrusherMonsterShift 5
+#define CrusherSpeedShift 3
+
+// define masks and shifts for the door type fields
+
+#define DoorDelay 0x0300
+#define DoorMonster 0x0080
+#define DoorKind 0x0060
+#define DoorSpeed 0x0018
+
+#define DoorDelayShift 8
+#define DoorMonsterShift 7
+#define DoorKindShift 5
+#define DoorSpeedShift 3
+
+// define masks and shifts for the locked door type fields
+
+#define LockedNKeys 0x0200
+#define LockedKey 0x01c0
+#define LockedKind 0x0020
+#define LockedSpeed 0x0018
+
+#define LockedNKeysShift 9
+#define LockedKeyShift 6
+#define LockedKindShift 5
+#define LockedSpeedShift 3
+
+#define ZDOOM_DAMAGE_MASK 0x0300
+#define ZDOOM_SECRET_MASK 0x0400
+#define ZDOOM_FRICTION_MASK 0x0800
+#define ZDOOM_PUSH_MASK 0x1000
+
+// Speeds for ceilings/crushers (x/8 units per tic)
+//	(Hexen crushers go up at half the speed that they go down)
+#define C_SLOW 8
+#define C_NORMAL 16
+#define C_FAST 32
+#define C_TURBO 64
+
+#define CEILWAIT 150
+
+// Speeds for floors (x/8 units per tic)
+#define F_SLOW 8
+#define F_NORMAL 16
+#define F_FAST 32
+#define F_TURBO 64
+
+// Speeds for doors (x/8 units per tic)
+#define D_SLOW 16
+#define D_NORMAL 32
+#define D_FAST 64
+#define D_TURBO 128
+
+#define VDOORWAIT 150
+#define VDOORSPEED (FRACUNIT * 2)
+
+// Speeds for stairs (x/8 units per tic)
+#define S_SLOW 2
+#define S_NORMAL 4
+#define S_FAST 16
+#define S_TURBO 32
+
+// Speeds for plats (Hexen plats stop 8 units above the floor)
+#define P_SLOW 8
+#define P_NORMAL 16
+#define P_FAST 32
+#define P_TURBO 64
+
+#define PLATWAIT 105
+#define PLATSPEED FRACUNIT
+
+#define ELEVATORSPEED 32
+
+// Speeds for donut slime and pillar (x/8 units per tic)
+#define DORATE 4
+
+// Texture scrollers operate at a rate of x/64 units per tic.
+#define SCROLL_UNIT 64
+
+struct lineresult_s
+{
+	bool switchchanged;
+	bool lineexecuted;
+};
+
 // The current state of the game: whether we are
 // playing, gazing at the intermission screen,
 // the game final animation, or a demo.
@@ -129,7 +353,6 @@ enum gamestate_t
 	GS_FULLCONSOLE,		// [RH]	Fullscreen console
 	GS_HIDECONSOLE,		// [RH] The menu just did something that should hide fs console
 	GS_STARTUP,			// [RH] Console is fullscreen, and game is just starting
-	GS_DOWNLOAD,		// denis - wad downloading
 	GS_CONNECTING,		// denis - replace the old global "tryingtoconnect"
 	GS_CONNECTED,       // [ML] - For that brief time before GS_LEVEL But after GS_CONNECTING should be done
 
@@ -139,14 +362,6 @@ enum gamestate_t
 //
 // Difficulty/skill settings/filters.
 //
-
-// Skill flags.
-#define MTF_EASY				1
-#define MTF_NORMAL				2
-#define MTF_HARD				4
-
-// Deaf monsters/do not react to sound.
-#define MTF_AMBUSH				8
 
 // Gravity
 #define GRAVITY		FRACUNIT
@@ -192,17 +407,6 @@ enum card_t
         CardIsSkull = 128
 };
 
-//
-//	[Toke - CTF] CTF Flags
-//
-enum flag_t
-{
-	it_blueflag,
-	it_redflag,
-
-	NUMFLAGS
-};
-
 enum ItemEquipVal
 {
 	IEV_NotEquipped, //was not equipped, item should stay
@@ -226,6 +430,7 @@ inline FArchive &operator>> (FArchive &arc, card_t &i)
 //	user has not changed weapon.
 enum weapontype_t
 {
+	wp_none = -1,
 	wp_fist,
 	wp_pistol,
 	wp_shotgun,
@@ -310,6 +515,9 @@ inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 // [ML] Default intermission length
 #define DEFINTSECS	10
 
+// Amount (dx,dy) vector linedef is shifted right to get scroll amount
+#define SCROLL_SHIFT 5
+
 // phares 3/20/98:
 //
 // Player friction is variable, based on controlling
@@ -321,12 +529,23 @@ inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 #define ORIG_FRICTION_FACTOR	2048	// original value
 #define FRICTION_FLY			0xeb00
 
+// Factor to scale scrolling effect into mobj-carrying properties = 3/32.
+// (This is so scrolling floors and objects on them can move at same speed.)
+#define CARRYFACTOR ((fixed_t)(FRACUNIT * .09375))
+
 #ifndef __BIG_ENDIAN__
 #define MAKE_ID(a,b,c,d)	((a)|((b)<<8)|((c)<<16)|((d)<<24))
 #else
 #define MAKE_ID(a,b,c,d)	((d)|((c)<<8)|((b)<<16)|((a)<<24))
 #endif
 
+static inline void UNMAKE_ID(char* out, uint32_t id)
+{
+	out[0] = id & 0xFF;
+	out[1] = (id >> 8) & 0xFF;
+	out[2] = (id >> 16) & 0xFF;
+	out[3] = (id >> 24) & 0xFF;
+}
 
 //==========================================================================
 //
@@ -429,6 +648,3 @@ IndexType BinarySearchFlexible (IndexType max, const KeyType key, IndexType noIn
 	}
 	return noIndex;
 }
-
-
-#endif	// __DOOMDEF_H__

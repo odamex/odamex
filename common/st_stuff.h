@@ -27,8 +27,9 @@
 #ifndef __STSTUFF_H__
 #define __STSTUFF_H__
 
-#include "doomtype.h"
+
 #include "d_event.h"
+#include "com_misc.h"
 
 // [RH] Turned these into variables
 // Size of statusbar.
@@ -66,30 +67,30 @@ void ST_Init();
 
 void STACK_ARGS ST_Shutdown();
 
-// Draw the HUD (only if old status bar is not drawn)
-void ST_newDraw (void);
-
-// Called on init
-void ST_loadGraphics (void);
-
-// [ML] HUDified status bar
-void ST_drawStatusBar (void);
-
 namespace hud {
 
 void drawNetdemo();
 
 // [ML] New Odamex fullscreen HUD
-void OdamexHUD(void);
+void OdamexHUD();
+
+// [AM] Draw obituary and event toasts.
+void DrawToasts();
+
+// [AM] Tick toasts - removing old ones.
+void ToastTicker();
+
+// [AM] Push a toast to the screen.
+void PushToast(const toast_t& toast);
+
+// [AM] HUD for showing level state
+void LevelStateHUD();
 
 // [AM] Spectator HUD
-void SpectatorHUD(void);
-
-// [AM] Original ZDoom HUD
-void ZDoomHUD(void);
+void SpectatorHUD();
 
 // [AM] HUD drawn with the Doom Status Bar.
-void DoomHUD(void);
+void DoomHUD();
 
 }
 
@@ -105,5 +106,3 @@ bool ST_Responder(event_t* ev);
 
 
 #endif
-
-

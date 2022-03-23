@@ -20,13 +20,15 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "i_sdl.h"
 #include "r_intrin.h"
 
 #ifdef __SSE2__
 
 #include <assert.h>
-#include <stdio.h>
 #include <emmintrin.h>
 
 #ifdef _MSC_VER
@@ -35,8 +37,6 @@
 #define SSE2_ALIGNED(x) x __attribute__((aligned(16)))
 #endif
 
-#include "doomtype.h"
-#include "doomdef.h"
 #include "i_system.h"
 #include "r_defs.h"
 #include "r_draw.h"

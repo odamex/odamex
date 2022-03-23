@@ -22,11 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
-#include <cstring>
+#include "odamex.h"
 
-#include "doomtype.h"
-#include "doomdef.h"
-#include "doomstat.h"
+
 #include "cmdlib.h"
 #include "d_netinf.h"
 #include "v_video.h"
@@ -103,13 +101,21 @@ gender_t D_GenderByName (const char *gender)
 //
 team_t D_TeamByName (const char *team)
 {
-	if (!stricmp (team, "blue"))
+	for (int i = 0; i < NUMTEAMS; i++)
+	{
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		if (stricmp(team, teamInfo->ColorString.c_str()) == 0)
+			return (team_t)i;
+	}
+
+	if (strcmp(team, "0") == 0)
 		return TEAM_BLUE;
-
-	else if (!stricmp (team, "red"))
+	else if (strcmp(team, "1") == 0)
 		return TEAM_RED;
+	else if (strcmp(team, "2") == 0)
+		return TEAM_GREEN;
 
-	else return TEAM_NONE;
+	return TEAM_NONE;
 }
 
 
@@ -150,15 +156,22 @@ void D_SetupUserInfo(void)
 	if (netname.length() > MAXPLAYERNAME)
 		netname.erase(MAXPLAYERNAME);
 
+	team_t newteam = D_TeamByName(cl_team.cstring());
+	if (newteam == TEAM_NONE){
+		cl_team.RestoreDefault();
+		newteam = TEAM_BLUE;
+	}
+
+
 	coninfo->netname			= netname;
-	coninfo->team				= D_TeamByName (cl_team.cstring()); // [Toke - Teams]
+	coninfo->team				= newteam; // [Toke - Teams]
 	coninfo->gender				= D_GenderByName (cl_gender.cstring());
 	coninfo->aimdist			= (fixed_t)(cl_autoaim * 16384.0);
 	coninfo->predict_weapons	= (cl_predictweapons != 0);
 
 	// sanitize the weapon switching choice
-	if (cl_switchweapon < 0 || cl_switchweapon > 2)
-		cl_switchweapon.ForceSet(float(WPSW_ALWAYS));
+	if (cl_switchweapon >= WPSW_NUMTYPES || cl_switchweapon < 0)
+		cl_switchweapon.ForceSet(WPSW_ALWAYS);
 	coninfo->switchweapon	= (weaponswitch_t)cl_switchweapon.asInt();
 
 	// Copies the updated cl_weaponpref* cvars to coninfo->weapon_prefs[]
@@ -247,4 +260,3 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 }
 
 VERSION_CONTROL (d_netinfo_cpp, "$Id$")
-
