@@ -94,10 +94,9 @@ message LoadMap
 		string hash = 2;
 	}	
 
-	repeated Resource wadnames = 1;
-	repeated Resource patchnames = 2;
-	string mapname = 3;
-	int32 time = 4;	
+	repeated Resource resnames = 1;
+	string mapname = 2;
+	int32 time = 3;	
 }
 
 // svc_consoleplayer

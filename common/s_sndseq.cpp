@@ -432,7 +432,7 @@ void S_ParseSndSeq()
 	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/SNDSEQ"));
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
-		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+		const char* buffer = static_cast<const char*>(Res_LoadResource(res_ids[i], PU_STATIC));
 
 		OScannerConfig config = {
 		    "SNDSEQ", // lumpName
@@ -440,9 +440,7 @@ void S_ParseSndSeq()
 		    true,     // cComments
 		};
 
-		// TODO: Reconcile these
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
-		SC_OpenResourceLump(res_ids[i]);
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_ids[i]));
 		
 		while (os.scan())
 		{

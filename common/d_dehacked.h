@@ -228,5 +228,6 @@ static const char* SoundMap[] = { NULL,
 void D_UndoDehPatch();
 void D_PostProcessDeh();
 bool D_LoadDehLump(const ResourceId res_id);
+static int EndInclude();
 
 #endif //__D_DEHACK_H__

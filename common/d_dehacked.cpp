@@ -452,7 +452,7 @@ static int GetLine(void);
 
 static size_t filelen = 0; // Be quiet, gcc
 
-#define IS_AT_PATCH_SIZE ((size_t)((read_ptr - 1) - patch_data) == patch_length)
+#define IS_AT_PATCH_SIZE ((size_t)((read_ptr - 1) - patch_data) == (int)filelen)
 
 static void PrintUnknown(const char* key, const char* loc, const size_t idx)
 {
@@ -599,6 +599,7 @@ static BOOL ReadChars(char** stuff, int size)
 	{
 		// Ignore carriage returns
 		if (*read_ptr != '\r')
+		{
 			*str++ = *read_ptr;
 		}
 		else
@@ -730,20 +731,24 @@ static char* igets(void)
 	char* line;
 
 	if(!read_ptr || IS_AT_PATCH_SIZE)
+	{
 		return NULL;
 	}
 
 	if (*read_ptr == '\0')
+	{
 		return NULL;
 	}
 
 	line = read_ptr;
 
 	while (*read_ptr != '\n' && *read_ptr != '\0')
+	{
 		read_ptr++;
 	}
 
 	if (*read_ptr == '\n')
+	{
 		*read_ptr++ = 0;
 	}
 
@@ -2147,6 +2152,7 @@ donewithtext:
 	// Ensure that we've munched the entire line in the case of an incomplete
 	// substitution.
 	if (!(*read_ptr == '\0' || *read_ptr == '\n'))
+	{
 		igets();
 	}
 
@@ -2237,13 +2243,12 @@ static int DoInclude(int dummy)
 	char* data;
 	int savedversion, savepversion;
 	char *savepatchfile, *savepatchpt;
-	OWantFile want;
-	OResFile res;
+	ResourceId res_id;
 
 	if (including)
 	{
 		DPrintf("Sorry, can't nest includes\n");
-		goto endinclude;
+		return EndInclude();
 	}
 
 	data = COM_Parse(Line2);
@@ -2257,7 +2262,7 @@ static int DoInclude(int dummy)
 	{
 		includenotext = false;
 		DPrintf("Include directive is missing filename\n");
-		goto endinclude;
+		return EndInclude();
 	}
 #if defined _DEBUG
 	DPrintf("Including %s\n", com_token);
@@ -2268,21 +2273,15 @@ static int DoInclude(int dummy)
 	savepversion = pversion;
 	including = true;
 
-	// TODO: Reconcile
-	if (!OWantFile::make(want, com_token, OFILE_DEH))
+	res_id = Res_GetResourceId(com_token, global_directory_name);
+
+	if (!Res_CheckResource(res_id))
 	{
 		Printf(PRINT_WARNING, "Could not find BEX include \"%s\"\n", com_token);
-		goto endinclude;
+		return EndInclude();
 	}
 
-	if (!M_ResolveWantedFile(res, want))
-	{
-		Printf(PRINT_WARNING, "Could not resolve BEX include \"%s\"\n", com_token);
-		goto endinclude;
-	}
-
-	D_DoDehPatch(&res, -1);
-	DoDehPatch(com_token, false);
+	D_LoadDehLump(res_id);
 
 	DPrintf ("Done with include\n");
 	patch_data = savepatchfile;
@@ -2290,12 +2289,15 @@ static int DoInclude(int dummy)
 	dversion = savedversion;
 	pversion = savepversion;
 
-endinclude:
+	return EndInclude();
+}
+
+static int EndInclude()
+{
 	including = false;
 	includenotext = false;
 	return GetLine();
 }
-#endif
 
 /**
  * @brief Attempt to load a DeHackEd file.
@@ -2313,8 +2315,8 @@ bool D_LoadDehLump(const ResourceId res_id)
 		return false;
 	}
 	
-	patch_length = Res_GetResourceSize(res_id);
-	patch_data = (char*)Res_LoadResource(res_id, PU_STATIC);
+	uint32_t patch_length = Res_GetResourceSize(res_id);
+	char* patch_data = (char*)Res_LoadResource(res_id, PU_STATIC);
 
 	// terminate a NULL for our parser
 	patch_data[patch_length] = 0;

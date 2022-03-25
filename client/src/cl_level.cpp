@@ -136,12 +136,10 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
 
 	C_HideConsole();
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	G_LoadWadString(str);
 
-	// TODO: Reconcile
 	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromString(JoinStrings(VectorArgs(argc, argv), " "));
 	D_ReloadResourceFiles(resource_filenames);
 
@@ -208,19 +206,12 @@ void G_InitNew(const std::string& mapname)
 	// [RH] Mark all levels as not visited
 	if (!savegamerestore)
 	{
-		// TODO: Reconcile
 		LevelInfos& levels = getLevelInfos();
 		for (size_t i = 0; i < levels.size(); i++)
 		{
 			level_pwad_info_t& level = levels.at(i);
 			level.flags &= ~LEVEL_VISITED;
 		}
-
-		for (size_t i = 0; i < wadlevelinfos.size(); i++)
-			wadlevelinfos[i].flags &= ~LEVEL_VISITED;
-
-		for (size_t i = 0; LevelInfos[i].mapname[0]; i++)
-			LevelInfos[i].flags &= ~LEVEL_VISITED;
 	}
 
 	cvar_t::UnlatchCVars ();
@@ -244,7 +235,7 @@ void G_InitNew(const std::string& mapname)
 	{
 		if (wantFast)
 		{
-			for (i = 0; i < NUMSTATES; i++)
+			for (size_t i = 0; i < NUMSTATES; i++)
 			{
 				if (states[i].flags & STATEF_SKILL5FAST &&
 				    (states[i].tics != 1 || demoplayback))
@@ -253,7 +244,7 @@ void G_InitNew(const std::string& mapname)
 		}
 		else
 		{
-			for (i = 0; i < NUMSTATES; i++)
+			for (size_t i = 0; i < NUMSTATES; i++)
 			{
 				if (states[i].flags & STATEF_SKILL5FAST)
 					states[i].tics <<= 1; // don't change 1->0 since it causes cycles
@@ -388,8 +379,7 @@ void G_DoCompleted (void)
 		}
 		if (secretexit)
 		{
-			// TODO: Reconcile
-			if (W_CheckNumForName (level.secretmap.c_str()) != -1 || Res_CheckMap(level.secretmap))
+			if (Res_CheckMap(level.secretmap.c_str()))
 			{
 				strncpy(wminfo.next, level.secretmap.c_str(), 8);
 				strncpy(wminfo.lname1, getLevelInfos().findByName(level.secretmap).pname.c_str(), 8);
@@ -535,7 +525,7 @@ void G_DoLoadLevel (int position)
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
 	// [RH] Set up details about sky rendering
-	R_SetSkyTextures(level.skypic, level.skypic2);
+	R_SetSkyTextures(level.skypic.c_str(), level.skypic2.c_str());
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -690,7 +680,9 @@ void G_WorldDone()
 		AM_Stop();
 		if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 		{
-			options.text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
+			ResourceId res =
+			    Res_GetResourceId(thiscluster.exittext, global_directory_name);
+			options.text = static_cast<const char*>(Res_LoadResource(thiscluster.exittext, PU_STATIC));
 		}
 		F_StartFinale(options);
 	}
@@ -726,7 +718,9 @@ void G_WorldDone()
 				AM_Stop();
 				if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 				{
-					options.text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
+					ResourceId res =
+					    Res_GetResourceId(thiscluster.exittext, global_directory_name);
+					options.text = static_cast<const char*>(Res_LoadResource(thiscluster.exittext, PU_STATIC));
 				}
 				F_StartFinale(options);
 			}

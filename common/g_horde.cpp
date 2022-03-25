@@ -32,6 +32,7 @@
 #include "infomap.h"
 #include "oscanner.h"
 #include "w_wad.h"
+#include "resources/res_main.h"
 
 extern std::vector<hordeDefine_t> WAVE_DEFINES;
 
@@ -388,16 +389,17 @@ static void ParseAlias(OScanner& os)
 	g_aliasMap.insert(std::make_pair(alias, otype));
 }
 
-static void ParseHordeDef(const int lump, const char* name)
+static void ParseHordeDef(const ResourceId res)
 {
-	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+	const char* name = Res_GetResourceName(res).c_str();
+	const char* buffer = static_cast<const char*>(Res_LoadResource(res, PU_STATIC));
 
 	OScannerConfig config = {
 	    name,  // lumpName
 	    false, // semiComments
 	    true,  // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res));
 
 	// Right now we only understand one top-level token - "define".
 	while (os.scan())
@@ -434,10 +436,11 @@ static bool CmpHordeDefs(const hordeDefine_t& a, const hordeDefine_t& b)
 
 static void ParseHordeDefs()
 {
-	int lump = -1;
-	while ((lump = W_FindLump("HORDEDEF", lump)) != -1)
+	const ResourceIdList hordedef_res_ids =
+	    Res_GetAllResourceIds(ResourcePath("/GLOBAL/HORDEDEF"));
+	for (size_t i = 0; i < hordedef_res_ids.size(); i++)
 	{
-		ParseHordeDef(lump, "HORDEDEF");
+		ParseHordeDef(hordedef_res_ids[i]);
 	}
 
 	if (::WAVE_DEFINES.empty())

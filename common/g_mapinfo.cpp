@@ -32,6 +32,7 @@
 #include "w_wad.h"
 #include "infomap.h"
 #include "p_mapformat.h"
+#include "resources/res_main.h"
 
 /// Globals
 BOOL HexenHack;
@@ -325,7 +326,8 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		MustGet<OLumpName>(os);
 		const std::string musicname = os.getToken();
-		if (W_CheckNumForName(musicname.c_str()) != -1)
+		ResourceId music_res_id = Res_GetResourceId(musicname, music_directory_name);
+		if (Res_CheckResource(music_res_id))
 		{
 			mape->music = musicname;
 		}
@@ -406,8 +408,9 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		MustGet<OLumpName>(os);
 		const std::string musicname = os.getToken();
+		ResourceId music_res_id = Res_GetResourceId(musicname, music_directory_name);
 
-		if (W_CheckNumForName(musicname.c_str()) != -1)
+		if (Res_CheckResource(music_res_id))
 			mape->intermusic = musicname;
 	}
 	else if (!stricmp(pname.c_str(), "episode"))
@@ -521,18 +524,19 @@ void MapNameToLevelNum(level_pwad_info_t& info)
 	}
 }
 
-void ParseUMapInfoLump(int lump, const char* lumpname)
+void ParseUMapInfoLump(ResourceId res)
 {
 	LevelInfos& levels = getLevelInfos();
+	const char* lumpname = Res_GetResourceName(res).c_str();
 
-	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+	const char* buffer = static_cast<char*>((char*)Res_LoadResource(res, PU_STATIC));
 
 	const OScannerConfig config = {
 	    lumpname, // lumpName
 	    false,    // semiComments
 	    true,     // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res));
 
 	while (os.scan())
 	{
@@ -838,14 +842,16 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 		// with a D_, so we must add it.
 		char lumpname[9];
 		snprintf(lumpname, ARRAY_LENGTH(lumpname), "D_%s", s.c_str());
-		if (W_CheckNumForName(lumpname) != -1)
+		ResourceId lumpid = Res_GetResourceId(lumpname, music_directory_name);
+		if (Res_CheckResource(lumpid))
 		{
 			*static_cast<OLumpName*>(data) = lumpname;
 		}
 	}
 	else
 	{
-		if (W_CheckNumForName(musicname.c_str()) != -1)
+		ResourceId lumpid = Res_GetResourceId(musicname.c_str(), music_directory_name);
+		if (Res_CheckResource(lumpid))
 		{
 			*static_cast<OLumpName*>(data) = musicname;
 		}
@@ -1489,8 +1495,10 @@ void ParseEpisodeInfo(OScanner& os)
 			break;
 	}
 
-	if (remove || (optional && W_CheckNumForName(map.c_str()) == -1) ||
-	    (extended && W_CheckNumForName("EXTENDED") == -1))
+	ResourceId ex_res_id = Res_GetResourceId("EXTENDED", global_directory_name);
+
+	if (remove || (optional && Res_CheckMap(map.c_str())) ||
+	    (extended && Res_CheckResource(ex_res_id)))
 	{
 		// If the remove property is given for an episode, remove it.
 		if (i < episodenum)
@@ -1540,21 +1548,22 @@ void ParseEpisodeInfo(OScanner& os)
 	}
 }
 
-void ParseMapInfoLump(int lump, const char* lumpname)
+void ParseMapInfoLump(ResourceId res)
 {
 	LevelInfos& levels = getLevelInfos();
 	ClusterInfos& clusters = getClusterInfos();
+	const char* lumpname = Res_GetResourceName(res).c_str();
 
 	level_pwad_info_t defaultinfo;
 
-	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+	const char* buffer = static_cast<char*>((char*)Res_LoadResource(res, PU_STATIC));
 
 	const OScannerConfig config = {
 	    lumpname, // lumpName
 	    false,    // semiComments
 	    true,     // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res));
 
 	while (os.scan())
 	{
@@ -1579,7 +1588,8 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				const int map = std::atoi(map_name);
 
 				sprintf(map_name, "MAP%02d", map);
-				SKYFLATNAME[5] = 0;
+				::level.skypic = "";
+				::level.skypic2 = "";
 				HexenHack = true;
 				// Hexen levels are automatically nointermission
 				// and even lighting and no auto sound sequences
@@ -1695,7 +1705,6 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 void G_ParseMapInfo()
 {
 	const char* baseinfoname = NULL;
-	int lump;
 
 	switch (gamemission)
 	{
@@ -1709,8 +1718,8 @@ void G_ParseMapInfo()
 		baseinfoname = "_D2NFO";
 		if (gamemode == commercial_bfg)
 		{
-			lump = W_GetNumForName(baseinfoname);
-			ParseMapInfoLump(lump, baseinfoname);
+			ResourceId res = Res_GetResourceId(baseinfoname, global_directory_name);
+			ParseMapInfoLump(res);
 			baseinfoname = "_BFGNFO";
 		}
 		break;
@@ -1729,36 +1738,36 @@ void G_ParseMapInfo()
 		break;
 	}
 
-	lump = W_GetNumForName(baseinfoname);
-	ParseMapInfoLump(lump, baseinfoname);
+	ResourceId res = Res_GetResourceId(baseinfoname, global_directory_name);
+	ParseMapInfoLump(res);
 
+	const ResourceIdList zmapinfo_res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/ZMAPINFO"));
 	bool found_mapinfo = false;
-	lump = -1;
 
-	while ((lump = W_FindLump("ZMAPINFO", lump)) != -1)
+	for (size_t i = 0; i < zmapinfo_res_ids.size(); i++)
 	{
 		found_mapinfo = true;
-		ParseMapInfoLump(lump, "ZMAPINFO");
+		ParseMapInfoLump(zmapinfo_res_ids[i]);
 	}
 
 	// If ZMAPINFO exists, we don't parse a normal MAPINFO
 	if (found_mapinfo == true)
 		return;
 
-	lump = -1;
-	while ((lump = W_FindLump("UMAPINFO", lump)) != -1)
+	const ResourceIdList umapinfo_res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/UMAPINFO"));
+	for (size_t i = 0; i < umapinfo_res_ids.size(); i++)
 	{
-		ParseUMapInfoLump(lump, "UMAPINFO");
+		ParseUMapInfoLump(umapinfo_res_ids[i]);
 	}
 
 	// If UMAPINFO exists, we don't parse a normal MAPINFO
 	if (found_mapinfo == true)
 		return;
 
-	lump = -1;
-	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
+	const ResourceIdList mapinfo_res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/MAPINFO"));
+	for (size_t i = 0; i < mapinfo_res_ids.size(); i++)
 	{
-		ParseMapInfoLump(lump, "MAPINFO");
+		ParseMapInfoLump(mapinfo_res_ids[i]);
 	}
 
 	if (episodenum == 0)

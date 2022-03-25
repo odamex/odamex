@@ -596,7 +596,7 @@ std::string M_CleanPath(std::string path)
 	// Turn empty string into "."
 	if (out.length() == 0)
 		out.push_back('.');
-
+}
 
 //
 // M_IsDirectory

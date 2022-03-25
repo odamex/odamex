@@ -164,6 +164,7 @@ std::string M_GetUserFileName(const std::string& file)
 #endif
 }
 
+/*
 std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
                                 const std::vector<std::string>& exts,
                                 const OMD5Hash& hash)
@@ -234,6 +235,7 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
 	FindClose(hFind);
 	return found;
 }
+*/
 
 std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString> files)
 {

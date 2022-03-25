@@ -51,15 +51,27 @@ class StringTable
 		// In some cases, we need to
 		int pass;
 
-	void LoadStrings(byte* data, size_t length, int expectedSize, bool enuOnly);
+		// Index of string.
+		//
+		// The old strings implementation used an enum to name all of the
+		// strings, and there were (and still are) several places in the
+		// code that used comparison operators on the enum index.  This
+		// index is -1 if it's a custom string.
+		int index;
+	};
+	typedef OHashTable<OString, TableEntry> StringHash;
+	StringHash _stringHash;
 
-	int FindString(const char* stringName) const;
-	int MatchString(const char* string) const;
+	bool canSetPassString(int pass, const std::string& name) const;
+	void clearStrings();
+	void loadLanguage(const char* code, bool exactMatch, int pass, char* lump,
+	                  size_t lumpLen);
+	void loadStringsLump(const uint32_t language_res_id, const bool engOnly);
+	void prepareIndexes();
+	void replaceEscapes(std::string& str);
 
   public:
-	StringTable() : _stringHash()
-	{
-	}
+	StringTable() : _stringHash() { }
 
 	//
 	// Obtain a string by name.

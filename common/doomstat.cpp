@@ -31,6 +31,7 @@
 #include "d_main.h"
 #include "g_mapinfo.h"
 #include "resources/res_main.h"
+#include "d_dehacked.h"
 
 // Game Mode - identify IWAD as shareware, retail etc.
 GameMode_t		gamemode = undetermined;
@@ -43,19 +44,13 @@ CVAR_FUNC_IMPL(language)
 	if (level.behavior != NULL)
 		level.behavior->PrepLocale(LanguageIDs[0], LanguageIDs[1], LanguageIDs[2], LanguageIDs[3]);
 
-	const ResourceId language_res_id = Res_GetResourceId("LANGUAGE", global_directory_name);
-	byte* language_data = (byte*)Res_LoadResource(language_res_id, PU_CACHE);
-	::GStrings.FreeData();
-	::GStrings.LoadStrings(language_data, Res_GetResourceSize(language_res_id), STRING_TABLE_SIZE, false);
-	::GStrings.Compact();
-
-	G_SetLevelStrings();
+	::GStrings.loadStrings(false);
 
 	// Reapply DeHackEd patches on top of these strings.
-	D_LoadResolvedPatches();
-
-	// MAPINFO comes last, because it overrides default level strings.
-	G_ParseMapInfo();
+	const ResourceIdList dehacked_res_ids =
+	    Res_GetAllResourceIds(ResourcePath("/GLOBAL/DEHACKED"));
+	for (size_t i = 0; i < dehacked_res_ids.size(); i++)
+		D_LoadDehLump(dehacked_res_ids[i]);
 }
 
 // Set if homebrew PWAD stuff has been added.

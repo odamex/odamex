@@ -89,6 +89,7 @@ extern NetCommand localcmds[MAXSAVETICS];
 extern bool recv_full_update;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
+extern int numtextures;
 
 void CL_CheckDisplayPlayer(void);
 void CL_ClearPlayerJustTeleported(player_t* player);
@@ -754,29 +755,6 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 		newwadfiles.push_back(file);
 	}
 
-	size_t patchcount = msg->patchnames_size();
-	OWantFiles newpatchfiles;
-	newpatchfiles.reserve(patchcount);
-	for (size_t i = 0; i < patchcount; i++)
-	{
-		std::string name = msg->patchnames().Get(i).name();
-		std::string hashStr = msg->patchnames().Get(i).hash();
-
-		OMD5Hash hash;
-		OMD5Hash::makeFromHexStr(hash, hashStr);
-
-		OWantFile file;
-		if (!OWantFile::makeWithHash(file, name, OFILE_DEH, hash))
-		{
-			Printf(PRINT_WARNING,
-			       "Could not construct wanted patch \"%s\" that server requested.\n",
-			       name.c_str());
-			CL_QuitNetGame(NQ_DISCONNECT);
-			return;
-		}
-		newpatchfiles.push_back(file);
-	}
-
 	std::string mapname = msg->mapname();
 	int server_level_time = msg->time();
 
@@ -1294,15 +1272,15 @@ static void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 	P_SetCeilingHeight(sector, ceilingheight);
 	P_SetFloorHeight(sector, floorheight);
 
-	if (floorpic >= ::numflats)
-		floorpic = ::numflats;
+	if (floorpic >= ::numtextures)
+		floorpic = ::numtextures;
 
-	sector->floorpic = floorpic;
+	sector->floor_res_id = floorpic;
 
-	if (ceilingpic >= ::numflats)
-		ceilingpic = ::numflats;
+	if (ceilingpic >= ::numtextures)
+		ceilingpic = ::numtextures;
 
-	sector->ceilingpic = ceilingpic;
+	sector->ceiling_res_id = ceilingpic;
 	sector->special = special;
 	sector->moveable = true;
 
@@ -2259,8 +2237,8 @@ static void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
 		switch (prop)
 		{
 		case SPC_FlatPic:
-			sector->floorpic = msg->sector().floorpic();
-			sector->ceilingpic = msg->sector().ceilingpic();
+			sector->floor_res_id = msg->sector().floorpic();
+			sector->ceiling_res_id = msg->sector().ceilingpic();
 			break;
 		case SPC_LightLevel:
 			sector->lightlevel = msg->sector().lightlevel();

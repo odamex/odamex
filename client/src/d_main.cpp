@@ -615,12 +615,7 @@ void D_Init(const std::vector<std::string>& resource_file_names)
 //	Res_InitTextureManager();
 
 	// [RH] Initialize localizable strings.
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
-	GStrings.Compact();
-
-	// [RH] Initialize localizable strings.
-	GStrings.LoadStrings(W_GetNumForName("LANGUAGE"), STRING_TABLE_SIZE, false);
-	GStrings.Compact();
+	GStrings.loadStrings(false);
 
 	// init the renderer
 	if (first_time)
@@ -711,8 +706,6 @@ void STACK_ARGS D_Shutdown()
 
 	R_Shutdown();
 
-	GStrings.FreeData();
-
 //	Res_ShutdownTextureManager();
 
 //	R_ShutdownColormaps();
@@ -769,8 +762,6 @@ void D_DoomMain()
 
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
-	std::vector<std::string> newwadfiles, newpatchfiles;
-
 	std::string iwad;
 	const char* iwadParam = Args.CheckValue("-iwad");
 	if (iwadParam)
@@ -808,25 +799,6 @@ void D_DoomMain()
 			iwad = GUI_BootWindow();
 		}
 	}
-
-	OWantFiles newwadfiles, newpatchfiles;
-
-	if (!iwad.empty())
-	{
-		OWantFile file;
-		OWantFile::make(file, iwad, OFILE_WAD);
-		newwadfiles.push_back(file);
-	}
-
-	D_AddWadCommandLineFiles(newwadfiles);
-	D_AddDehCommandLineFiles(newpatchfiles);
-
-	D_LoadResourceFiles(newwadfiles, newpatchfiles);
-
-	D_AddWadCommandLineFiles(newwadfiles);
-	D_AddDehCommandLineFiles(newpatchfiles);
-
-	D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
 	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
 	atterm(I_ShutdownHardware);

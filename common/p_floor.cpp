@@ -380,7 +380,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 		m_FloorDestHeight = floorheight + height;
 		if (line)
 		{
-			sec->floorpic = line->frontsector->floorpic;
+			sec->floor_res_id = line->frontsector->floor_res_id;
 			P_CopySectorSpecial(sec, line->frontsector);
 		}
 		else
@@ -392,7 +392,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 	case DFloor::floorLowerAndChange:
 		m_Direction = -1;
 		m_FloorDestHeight = P_FindLowestFloorSurrounding(sec);
-		m_Texture = sec->floorpic;
+		m_Texture = sec->floor_res_id;
 		// jff 1/24/98 make sure m_NewSpecial gets initialized
 		// in case no surrounding sector is at floordestheight
 		// --> should not affect compatibility <--
@@ -406,7 +406,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 		sec = P_FindModelFloorSector(m_FloorDestHeight, sec);
 		if (sec)
 		{
-			m_Texture = sec->floorpic;
+			m_Texture = sec->floor_res_id;
 			m_NewSpecial = sec->special;
 			m_NewDamageRate = sec->damageamount;
 			m_NewDmgInterval = sec->damageinterval;
@@ -445,7 +445,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 
 			if (found != NULL)
 			{
-				m_Texture = found->floorpic;
+				m_Texture = found->floor_res_id;
 				switch (change & 3)
 				{
 				case 1:
@@ -476,7 +476,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 		else if (line != NULL)
 		{
 			// Trigger model change
-			m_Texture = line->frontsector->floorpic;
+			m_Texture = line->frontsector->floor_res_id;
 
 			switch (change & 3)
 			{
@@ -604,7 +604,7 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 			          : P_FindModelFloorSector(m_FloorDestHeight, sec);
 			if (chgsec)
 			{
-				m_Texture = chgsec->floorpic;
+				m_Texture = chgsec->floor_res_id;
 				m_NewSpecial = chgsec->special;
 				m_NewDamageRate = chgsec->damageamount;
 				m_NewDmgInterval = chgsec->damageinterval;
@@ -641,7 +641,7 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 		}
 		else // else if a trigger model change
 		{
-			m_Texture = line->frontsector->floorpic;
+			m_Texture = line->frontsector->floor_res_id;
 			m_NewSpecial = line->frontsector->special;
 			m_NewDamageRate = line->frontsector->damageamount;
 			m_NewDmgInterval = line->frontsector->damageinterval;
@@ -855,7 +855,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 
 			if (found != NULL)
 			{
-				m_Texture = tmpsec->floor_res_id;
+				m_Texture = found->floor_res_id;
 				switch (change & 3)
 				{
 				case 1:
@@ -1239,7 +1239,7 @@ BOOL EV_DoGenStairs(line_t* line)
 		speed = floor->m_Speed;
 		height = sec->floorheight + floor->m_Direction * stairsize;
 		floor->m_FloorDestHeight = height;
-		texture = sec->floorpic;
+		texture = sec->floor_res_id;
 		floor->m_Crush = NO_CRUSH;
 		floor->m_Type = DFloor::genBuildStair; // jff 3/31/98 do not leave uninited
 
@@ -1270,7 +1270,7 @@ BOOL EV_DoGenStairs(line_t* line)
 				tsec = (sec->lines[i])->backsector;
 				newsecnum = tsec - sectors;
 
-				if (!Igno && tsec->floorpic != texture)
+				if (!Igno && tsec->floor_res_id != texture)
 					continue;
 
 				/* jff 6/19/98 prevent double stepsize */

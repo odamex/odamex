@@ -45,6 +45,7 @@
 #include "w_wad.h"
 #include "w_ident.h"
 #include "z_zone.h"
+#include "resources/res_main.h"
 
 level_locals_t level;			// info about current level
 
@@ -162,7 +163,7 @@ level_pwad_info_t& LevelInfos::findByNum(int levelnum)
 {
 	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
 	{
-		if (it->levelnum == levelnum && W_CheckNumForName(it->mapname.c_str()) != -1)
+		if (it->levelnum == levelnum && Res_CheckMap(it->mapname.c_str()))
 		{
 			return *it;
 		}
@@ -346,135 +347,6 @@ char *CalcMapName(int episode, int level)
 		lumpname[4] = 0;
 	}
 	return lumpname;
-}
-
-level_info_t* FindDefLevelInfo(char* mapname)
-{
-	level_info_t *i;
-
-	i = LevelInfos;
-	while (i->level_name) {
-		if (!strnicmp (i->mapname, mapname, 8))
-			break;
-		i++;
-	}
-	return i;
-}
-
-level_info_t *FindLevelInfo (char *mapname)
-{
-	int i;
-
-	if ((i = FindWadLevelInfo (mapname)) > -1)
-		return (level_info_t *)(&wadlevelinfos[i]);
-	else
-		return FindDefLevelInfo (mapname);
-}
-
-level_info_t *FindLevelByNum(int num)
-{
-	for (size_t i = 0; i < wadlevelinfos.size(); i++)
-		if (wadlevelinfos[i].levelnum == num)
-			return (level_info_t*)(&wadlevelinfos[i]);
-
-	for (level_info_t* i = LevelInfos; i->level_name; i++)
-		if (i->levelnum == num && Res_CheckMap(i->mapname))
-			return i;
-
-	return NULL;
-}
-
-cluster_info_t *FindDefClusterInfo (int cluster)
-{
-	cluster_info_t *i;
-
-	i = ClusterInfos;
-	while (i->cluster && i->cluster != cluster)
-		i++;
-
-	return i;
-}
-
-cluster_info_t *FindClusterInfo (int cluster)
-{
-	int i;
-
-	if ((i = FindWadClusterInfo (cluster)) > -1)
-		return &wadclusterinfos[i];
-	else
-		return FindDefClusterInfo (cluster);
-}
-
-void G_SetLevelStrings (void)
-{
-	char temp[8];
-	const char *namepart;
-	int i, start;
-
-	temp[0] = '0';
-	temp[1] = ':';
-	temp[2] = 0;
-	for (i = HUSTR_E1M1; i <= HUSTR_E4M9; ++i)
-	{
-		if (temp[0] < '9')
-			temp[0]++;
-		else
-			temp[0] = '1';
-
-		if ( (namepart = strstr (GStrings(i), temp)) )
-		{
-			namepart += 2;
-			while (*namepart && *namepart <= ' ')
-				namepart++;
-		}
-		else
-		{
-			namepart = GStrings(i);
-		}
-
-		ReplaceString (&LevelInfos[i-HUSTR_E1M1].level_name, namepart);
-		//ReplaceString (&LevelInfos[i-HUSTR_E1M1].music, Musics1[i-HUSTR_E1M1]);
-	}
-
-	for (i = 0; i < 4; i++)
-		ReplaceString (&ClusterInfos[i].exittext, GStrings(E1TEXT+i));
-
-	if (gamemission == pack_plut)
-		start = PHUSTR_1;
-	else if (gamemission == pack_tnt)
-		start = THUSTR_1;
-	else
-		start = HUSTR_1;
-
- 	for (i = 0; i < 32; i++) {
- 		sprintf (temp, "%d:", i + 1);
-		if ( (namepart = strstr (GStrings(i+start), temp)) ) {
- 			namepart += strlen (temp);
- 			while (*namepart && *namepart <= ' ')
- 				namepart++;
- 		} else {
-			namepart = GStrings(i+start);
- 		}
- 		ReplaceString (&LevelInfos[36+i].level_name, namepart);
- 	}
-
-	if (gamemission == pack_plut)
-		start = P1TEXT;		// P1TEXT
-	else if (gamemission == pack_tnt)
-		start = T1TEXT;		// T1TEXT
-	else
-		start = C1TEXT;		// C1TEXT
-
-	for (i = 0; i < 4; i++)
-		ReplaceString (&ClusterInfos[4 + i].exittext, GStrings(start+i));
-	for (; i < 6; i++)
-		ReplaceString (&ClusterInfos[4 + i].entertext, GStrings(start+i));
-
-	//for (i = 0; i < 15; i++)
-	//	ReplaceString (&ClusterInfos[i].messagemusic, Musics4[i]);
-
-	if (level.info)
-		strncpy (level.level_name, level.info->level_name, 63);
 }
 
 

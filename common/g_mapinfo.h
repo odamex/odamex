@@ -21,6 +21,8 @@
 #ifndef __G_MAPINFO_H__
 #define __G_MAPINFO_H__
 
+#include <doomtype.h>
+
 extern BOOL HexenHack; // Semi-Hexen-compatibility mode
 
 void G_ParseMapInfo();

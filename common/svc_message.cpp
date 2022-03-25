@@ -40,6 +40,7 @@
 #include "p_local.h"
 #include "p_mobj.h"
 #include "p_unlag.h"
+#include "resources/res_filelib.h"
 
 /**
  * @brief Pack an array of booleans into a bitfield.
@@ -401,28 +402,23 @@ odaproto::svc::DisconnectClient SVC_DisconnectClient(player_t& player)
  * @brief Sends a message to a player telling them to change to the specified
  *        WAD and DEH patch files and load a map.
  */
-odaproto::svc::LoadMap SVC_LoadMap(const OResFiles& wadnames, const OResFiles& patchnames,
+odaproto::svc::LoadMap SVC_LoadMap(const std::vector<std::string>& resource_files,
+                                   const std::vector<std::string>& resource_hashes,
                                    const std::string& mapname, int time)
 {
 	odaproto::svc::LoadMap msg;
 
 	// send list of wads (skip over wadnames[0] == odamex.wad)
-	size_t wadcount = wadnames.size() - 1;
-	for (size_t i = 1; i < wadcount + 1; i++)
+	size_t rescount = resource_files.size() - 1;
+	for (size_t i = 1; i < rescount + 1; i++)
 	{
 		odaproto::svc::LoadMap_Resource* wad = msg.add_wadnames();
-		wad->set_name(wadnames[i].getBasename());
-		wad->set_hash(wadnames[i].getMD5().getHexStr());
+		wad->set_name(Res_CleanseFilename(resource_files[i]).c_str());
+		wad->set_hash(resource_hashes[i].c_str());
 	}
 
-	// send list of DEH/BEX patches
-	size_t patchcount = patchnames.size();
-	for (size_t i = 0; i < patchcount; i++)
-	{
-		odaproto::svc::LoadMap_Resource* patch = msg.add_patchnames();
-		patch->set_name(patchnames[i].getBasename());
-		patch->set_hash(patchnames[i].getMD5().getHexStr());
-	}
+	// [SL] DEH/BEX patch file names used to be sent separately.
+	// Just send nothing now.
 
 	msg.set_mapname(mapname);
 	msg.set_time(time);
@@ -654,8 +650,8 @@ odaproto::svc::UpdateSector SVC_UpdateSector(sector_t& sector)
 
 	secmsg->set_floor_height(P_FloorHeight(&sector));
 	secmsg->set_ceiling_height(P_CeilingHeight(&sector));
-	secmsg->set_floorpic(sector.floorpic);
-	secmsg->set_ceilingpic(sector.ceilingpic);
+	secmsg->set_floorpic(sector.floor_res_id);
+	secmsg->set_ceilingpic(sector.ceiling_res_id);
 	secmsg->set_special(sector.special);
 
 	return msg;
@@ -1217,8 +1213,8 @@ odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector)
 		switch (prop)
 		{
 		case SPC_FlatPic:
-			secmsg->set_floorpic(sector.floorpic);
-			secmsg->set_ceilingpic(sector.ceilingpic);
+			secmsg->set_floorpic(sector.floor_res_id);
+			secmsg->set_ceilingpic(sector.ceiling_res_id);
 			break;
 		case SPC_LightLevel:
 			secmsg->set_lightlevel(sector.lightlevel);
@@ -1515,7 +1511,7 @@ odaproto::svc::MaplistUpdate SVC_MaplistUpdate(const maplist_status_t status,
 			     itr != it->second->wads.end(); ++itr)
 			{
 				// Push an indexed WAD into the message.
-				std::string filename = D_CleanseFileName(*itr);
+				std::string filename = Res_CleanseFilename(*itr);
 				const uint32_t wadidx = indexer.getIndex(filename);
 				row->add_wads(wadidx);
 			}

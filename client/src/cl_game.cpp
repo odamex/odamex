@@ -1716,38 +1716,6 @@ void G_DeferedPlayDemo (const char *name, bool bIsSingleDemo)
 	gameaction = ga_playdemo;
 }
 
-static void G_RecordCommand(int argc, char** argv, demoversion_t ver)
-{
-	if (argc > 2)
-	{
-		demoversion = ver;
-		longtics = (demoversion == LMP_DOOM_1_9_1);
-
-		if (gamestate != GS_STARTUP)
-		{
-			// Ch0wW : don't crash the engine if the mapname isn't found.
-			if (!Res_CheckMap(argv[1]))
-			{
-				Printf(PRINT_HIGH, "Map %s not found.\n", argv[1]);
-				return;
-			}
-			G_RecordDemo(argv[1], argv[2]);
-		}
-		else
-		{
-			strncpy(startmap, argv[1], 8);
-			demorecordfile = argv[2];
-			autostart = true;
-			autorecord = true;
-		}
-	}
-	else
-	{
-		Printf(PRINT_HIGH, "Usage: record%s map file\n",
-				ver == LMP_DOOM_1_9_1 ? "longtics" : "vanilla");
-	}
-}
-
 BEGIN_COMMAND(stopdemo)
 {
 	G_CheckDemoStatus ();

@@ -301,7 +301,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int silent, int speed)
 	m_CrushMode = crushDoom;
 	m_Direction = -1;
 	m_Sector = sec;
-	m_Texture = sec->ceilingpic;
+	m_Texture = sec->ceiling_res_id;
 	m_NewSpecial = sec->special;
 	m_NewDamageRate = sec->damageamount;
 	m_NewDmgInterval = sec->damageinterval;
@@ -344,7 +344,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 	m_CrushMode = crushDoom;
 	m_Direction = direction ? 1 : -1;
 	m_Sector = sec;
-	m_Texture = sec->ceilingpic;
+	m_Texture = sec->ceiling_res_id;
 	m_NewSpecial = sec->special;
 	m_NewDamageRate = sec->damageamount;
 	m_NewDmgInterval = sec->damageinterval;
@@ -432,7 +432,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 			          : P_FindModelCeilingSector(targheight, sec);
 			if (chgsec)
 			{
-				m_Texture = chgsec->floorpic;
+				m_Texture = chgsec->ceiling_res_id;
 				m_NewSpecial = chgsec->special;
 				m_NewDamageRate = chgsec->damageamount;
 				m_NewDmgInterval = chgsec->damageinterval;
@@ -469,7 +469,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 		}
 		else // else if a trigger model change
 		{
-			m_Texture = line->frontsector->floorpic;
+			m_Texture = line->frontsector->ceiling_res_id;
 			m_NewSpecial = line->frontsector->special;
 			m_NewDamageRate = line->frontsector->damageamount;
 			m_NewDmgInterval = line->frontsector->damageinterval;
@@ -789,7 +789,7 @@ BOOL P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 
 				if (found != NULL)
 				{
-					ceiling->m_Texture = found->ceilingpic;
+					ceiling->m_Texture = found->ceiling_res_id;
 					switch (change & 3)
 					{
 					case 1: // type is zeroed
@@ -808,7 +808,7 @@ BOOL P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 			}
 			else if (line != NULL) // else if a trigger model change
 			{
-				ceiling->m_Texture = line->frontsector->ceilingpic;
+				ceiling->m_Texture = line->frontsector->ceiling_res_id;
 				switch (change & 3)
 				{
 				case 1: // type is zeroed

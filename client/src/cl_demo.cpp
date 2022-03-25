@@ -46,7 +46,6 @@ EXTERN_CVAR(sv_maxplayers)
 
 extern std::string server_host;
 extern std::string digest;
-extern OResFiles wadfiles;
 
 /**
  * @brief Map demo versions to the latest Odamex version that can read them.
@@ -1023,14 +1022,10 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 
 	size_t resource_file_count = resource_file_names.size();
 	MSG_WriteByte(netbuffer, resource_file_count - 1);
-	for (size_t n = 1; n < numwads; n++)
-	{
-		// Don't use absolute paths, as they present a security risk.
-		MSG_WriteString(netbuffer, ::wadfiles[n].getBasename().c_str());
-	}
 
 	for (size_t i = 1; i < resource_file_count; i++)
 	{
+		// Don't use absolute paths, as they present a security risk.
 		MSG_WriteString(netbuffer, Res_CleanseFilename(resource_file_names[i]).c_str());
 	}
 		
@@ -1052,11 +1047,6 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	}
 
 	// MD5 hash sums for all the wadfiles on the server
-	for (size_t n = 1; n < numwads; n++)
-	{
-		MSG_WriteString(netbuffer, ::wadfiles[n].getMD5().getHexCStr());
-	}
-
 	for (size_t i = 1; i < resource_file_count; i++)
 	{
 		MSG_WriteString(netbuffer, resource_file_hashes[i].c_str());
@@ -1186,7 +1176,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	// Just output zero now.
     MSG_WriteByte(netbuffer, 0);
 
-	MSG_WriteString(netbuffer, level.mapname);
+	MSG_WriteString(netbuffer, level.mapname.c_str());
 
 	// Server spawns the player
 	MSG_WriteSVC(netbuffer, SVC_SpawnPlayer(consoleplayer()));
@@ -1479,21 +1469,6 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	arc.WriteCount(vars_p - vars);
 	arc.Write(vars, vars_p - vars);
 
-	// write wad info
-	arc << (byte)(wadfiles.size() - 1);
-	for (size_t i = 1; i < wadfiles.size(); i++)
-	{
-		arc << D_CleanseFileName(::wadfiles[i].getBasename()).c_str();
-		arc << ::wadfiles[i].getMD5().getHexCStr();
-	}
-
-	arc << (byte)patchfiles.size();
-	for (size_t i = 0; i < patchfiles.size(); i++)
-	{
-		arc << D_CleanseFileName(::patchfiles[i].getBasename()).c_str();
-		arc << ::patchfiles[i].getMD5().getHexCStr();
-	}
-
 	// write resource file info
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
 
@@ -1580,39 +1555,6 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	size_t len = arc.ReadCount ();
 	arc.Read(vars, len);
 	cvar_t::C_ReadCVars(&vars_p);
-
-	// read wad info
-	OWantFiles newwadfiles, newpatchfiles;
-	byte numwads, numpatches;
-	std::string res, hashStr;
-
-	arc >> numwads;
-	for (size_t i = 0; i < numwads; i++)
-	{
-		arc >> res;
-		arc >> hashStr;
-
-		OMD5Hash hash;
-		OMD5Hash::makeFromHexStr(hash, hashStr);
-
-		OWantFile want;
-		OWantFile::makeWithHash(want, res, OFILE_WAD, hash);
-		newwadfiles.push_back(want);
-	}
-
-	arc >> numpatches;
-	for (size_t i = 0; i < numpatches; i++)
-	{
-		arc >> res;
-		arc >> hashStr;
-
-		OMD5Hash hash;
-		OMD5Hash::makeFromHexStr(hash, hashStr);
-
-		OWantFile want;
-		OWantFile::makeWithHash(want, res, OFILE_DEH, hash);
-		newpatchfiles.push_back(want);
-	}
 
 	// read resource file info
 	std::vector<std::string> resource_filenames;
