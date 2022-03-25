@@ -1299,6 +1299,16 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 	if (!serverside && (!cl_predictpickup || !P_SpecialIsWeapon(special)))
 		return;
 
+	// [Blair] Execute ZDoom thing specials on items that are picked up.
+	// (Then remove the special.)
+	if (map_format.getZDoom() && special->special)
+	{
+		LineSpecials[special->special](NULL, toucher, special->args[0], special->args[1],
+		                               special->args[2], special->args[3],
+		                               special->args[4]);
+		special->special = 0;
+	}
+
 	if (toucher->type == MT_AVATAR)
 	{
 		PlayersView pr = PlayerQuery().execute().players;
