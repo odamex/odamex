@@ -440,6 +440,13 @@ static bool CmpHordeDefs(const hordeDefine_t& a, const hordeDefine_t& b)
 	return a.maxGroupHealth < b.maxGroupHealth;
 }
 
+struct FindHordeDef
+{
+	std::string name;
+	FindHordeDef(const std::string& name) : name(name) { }
+	bool operator()(const hordeDefine_t& def) { return def.name == name; }
+};
+
 static void ParseHordeDefs()
 {
 	int lump = -1;
@@ -465,17 +472,25 @@ static void ParseHordeDefs()
 		::WAVE_DEFINES[i].legacyID = i;
 	}
 
+	int i = -1;
 	for (std::vector<hordeDefine_t>::iterator it = ::WAVE_DEFINES.begin();
 	     it != ::WAVE_DEFINES.end(); ++it)
 	{
-		std::vector<hordeDefine_t>::iterator next = it;
-		++next;
-		if (next == ::WAVE_DEFINES.end())
+		std::vector<hordeDefine_t>::iterator after = it;
+		after++;
+
+		// No need to search if we're at the end.
+		if (after == ::WAVE_DEFINES.end())
 			continue;
 
-		if (next->name != it->name)
+		std::vector<hordeDefine_t>::iterator found =
+		    std::find_if(after, ::WAVE_DEFINES.end(), FindHordeDef(it->name));
+
+		// If we didn't find any matches, don't remove.
+		if (found == ::WAVE_DEFINES.end())
 			continue;
 
+		// Erase and set our iterator to the one after it.
 		it = ::WAVE_DEFINES.erase(it);
 	}
 }
