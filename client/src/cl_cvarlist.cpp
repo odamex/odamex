@@ -75,7 +75,25 @@ CVAR(					am_fdwallcolor, "1a 1a 8a", "",
 CVAR(					am_cdwallcolor, "00 00 5a", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR(					am_thingcolor, "9f d3 ff", "",
+CVAR(					am_thingcolor, "dark grey", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_item, "navy", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_countitem, "sky blue", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_monster, "74 fc 6c", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_nocountmonster, "yellow", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_friend, "dark green", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_projectile, "orange", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(					am_gridcolor, "44 44 88", "",
@@ -111,7 +129,25 @@ CVAR(					am_ovfdwallcolor, "1a 1a 8a", "",
 CVAR(					am_ovcdwallcolor, "00 00 5a", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR(					am_ovthingcolor, "9f d3 ff", "",
+CVAR(					am_ovthingcolor, "dark grey", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_item, "navy", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_countitem, "sky blue", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_monster, "74 fc 6c", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_nocountmonster, "yellow", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_friend, "dark green", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_projectile, "orange", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(					am_ovgridcolor, "44 44 88", "",

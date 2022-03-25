@@ -1,4 +1,9 @@
-
+gameinfo
+{
+	MapArrow = "DOOMARRO", "DDTARROW"
+	CheatKey = "CHEATKEY"
+	EasyKey = "EASYKEY"
+}
 
 skill baby
 {
@@ -50,4 +55,9 @@ skill nightmare
 	Name = "$SKILL_NIGHTMARE"
 	MustConfirm
 	Key = "n"
+}
+
+automap
+{
+	base = "doom"
 }
