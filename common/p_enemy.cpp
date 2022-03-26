@@ -968,7 +968,7 @@ void A_Chase (AActor *actor)
 	if (actor->flags & MF_JUSTATTACKED)
 	{
 		actor->flags &= ~MF_JUSTATTACKED;
-		if (G_GetCurrentSkill().respawn_counter && !sv_fastmonsters)
+		if (G_GetCurrentSkill().respawn_counter != 0 && !sv_fastmonsters)
 			P_NewChaseDir (actor);
 		return;
 	}
