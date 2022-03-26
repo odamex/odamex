@@ -1301,7 +1301,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 
 	// [Blair] Execute ZDoom thing specials on items that are picked up.
 	// (Then remove the special.)
-	if (map_format.getZDoom() && special->special)
+	if (special->special)
 	{
 		LineSpecials[special->special](NULL, toucher, special->args[0], special->args[1],
 		                               special->args[2], special->args[3],
