@@ -755,7 +755,9 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 	if (!consoleplayer().mo && channel != CHAN_INTERFACE)
 		return;
 
-	if (name == NULL || strlen(name) == 0 ||
+	const std::string soundname = name ? name : "";
+
+	if (soundname.empty() ||
 			(ent && ent != (AActor *)(~0) && ent->subsector && ent->subsector->sector &&
 			ent->subsector->sector->MoreFlags & SECF_SILENT))
 	{
@@ -764,7 +766,7 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 
 	int sfx_id = -1;
 
-	if (*name == '*')
+	if (soundname[0] == '*')
 	{
 		// Sexed sound
 		char nametemp[128];
@@ -777,26 +779,26 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 		sfx_id = -1;
 		if (ent && ent != (AActor *)(~0) && (player = ent->player))
 		{
-			sprintf(nametemp, templat, "base", name + 1);
+			sprintf(nametemp, templat, "base", soundname.substr(1).c_str());
 			sfx_id = S_FindSound(nametemp);
 			if (sfx_id == -1)
 			{
-				sprintf(nametemp, templat, genders[player->userinfo.gender], name + 1);
+				sprintf(nametemp, templat, genders[player->userinfo.gender], soundname.substr(1).c_str());
 				sfx_id = S_FindSound(nametemp);
 			}
 		}
 		if (sfx_id == -1)
 		{
-			sprintf(nametemp, templat, "male", name + 1);
+			sprintf(nametemp, templat, "male", soundname.substr(1).c_str());
 			sfx_id = S_FindSound(nametemp);
 		}
 	}
 	else
-		sfx_id = S_FindSound(name);
+		sfx_id = S_FindSound(soundname.c_str());
 
 	if (sfx_id == -1)
 	{
-		DPrintf("Unknown sound %s\n", name);
+		DPrintf("Unknown sound %s\n", soundname.c_str());
 		return;
 	}
 
