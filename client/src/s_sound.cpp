@@ -121,7 +121,7 @@ CVAR_FUNC_IMPL (snd_channels)
 
 
 // whether songs are mus_paused
-static BOOL mus_paused;
+static bool mus_paused;
 
 // music currently being played
 static struct mus_playing_t
@@ -264,7 +264,7 @@ void S_Init(float sfxVolume, float musicVolume)
 	I_SetChannels(numChannels);
 
 	// no sounds are playing, and they are not mus_paused
-	mus_paused = 0;
+	mus_paused = false;
 }
 
 /**
@@ -302,7 +302,7 @@ void S_Start()
 		S_StopChannel(i);
 
 	// start new music for the level
-	mus_paused = 0;
+	mus_paused = false;
 
 	// [RH] This is a lot simpler now.
 	S_ChangeMusic (std::string(level.music.c_str(), 8), true);
@@ -795,7 +795,10 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 		sfx_id = S_FindSound(name);
 
 	if (sfx_id == -1)
-		DPrintf ("Unknown sound %s\n", name);
+	{
+		DPrintf("Unknown sound %s\n", name);
+		return;
+	}
 
 	if (ent && ent != (AActor *)(~0))
 		S_StartSound(&ent->x, x, y, channel, sfx_id, volume, attenuation, looping);
