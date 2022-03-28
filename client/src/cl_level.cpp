@@ -537,7 +537,7 @@ void G_DoLoadLevel (int position)
 	//	a flat. The data is in the WAD only because
 	//	we look for an actual index, instead of simply
 	//	setting one.
-	skyflatnum = R_FlatNumForName ( SKYFLATNAME );
+	skyflatnum = R_FlatNumForName ( SKYFLATNAME.c_str() );
 
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
@@ -640,7 +640,7 @@ void G_DoLoadLevel (int position)
 
 	if (timingdemo)
 	{
-		static BOOL firstTime = true;
+		static bool firstTime = true;
 
 		if (firstTime)
 		{

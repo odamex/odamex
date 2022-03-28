@@ -102,13 +102,13 @@ bool isFast = false;
 // Can be called by the startup code or the menu task,
 // consoleplayer, displayplayer, should be set.
 //
-static char d_mapname[9];
+static OLumpName d_mapname;
 
 std::string G_NextMap();
 
 void G_DeferedInitNew (const char* mapname)
 {
-	std::string mapnamestr = mapname;
+	const std::string mapnamestr = mapname;
 
 	if (iequals(mapnamestr.substr(0, 7).c_str(), "EndGame"))
 	{
@@ -130,13 +130,13 @@ void G_DeferedInitNew (const char* mapname)
 	}
 	else
 	{
-		strncpy(d_mapname, mapname, 8);
+		d_mapname = mapname;
 	}
 
 	gameaction = ga_newgame;
 
 	// sv_nextmap cvar may be overridden by a script
-	sv_nextmap.ForceSet(d_mapname);
+	sv_nextmap.ForceSet(d_mapname.c_str());
 }
 
 void G_DeferedFullReset()
@@ -353,12 +353,12 @@ void G_DoNewGame()
 			continue;
 
 		MSG_WriteSVC(&it->client.reliablebuf,
-		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname, 0));
+		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
 	}
 
-	sv_curmap.ForceSet(d_mapname);
+	sv_curmap.ForceSet(d_mapname.c_str());
 
-	G_InitNew (d_mapname);
+	G_InitNew (d_mapname.c_str());
 	gameaction = ga_nothing;
 
 	// run script at the start of each map

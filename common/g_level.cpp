@@ -370,7 +370,7 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 		D_DoomWadReboot(newwadfiles, newpatchfiles);
 		if (!missingfiles.empty())
 		{
-			G_DeferedInitNew(startmap);
+			G_DeferedInitNew(startmap.c_str());
 			return false;
 		}
 	}
@@ -384,11 +384,11 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
         else
         {
             Printf_Bold("map %s not found, loading start map instead", mapname.c_str());
-            G_DeferedInitNew(startmap);
+			G_DeferedInitNew(startmap.c_str());
         }
 	}
 	else
-		G_DeferedInitNew(startmap);
+		G_DeferedInitNew(startmap.c_str());
 
 	return true;
 }
@@ -580,7 +580,6 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad)
 	}
 	else
 	{
-		unsigned int playernum;
 		arc >> level.flags
 			>> level.fadeto_color[0] >> level.fadeto_color[1] >> level.fadeto_color[2] >> level.fadeto_color[3]
 			>> level.found_secrets
@@ -596,6 +595,7 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad)
 
 		if (!arc.IsReset())
 		{
+			unsigned int playernum;
 			arc >> playernum;
 			players.resize(playernum);
 		}

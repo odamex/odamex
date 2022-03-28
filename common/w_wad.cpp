@@ -774,7 +774,7 @@ bool W_CheckLumpName (unsigned lump, const char *name)
 //
 // W_GetLumpName
 //
-void W_GetLumpName (char *to, unsigned  lump)
+void W_GetLumpName(char *to, unsigned lump)
 {
 	if (lump >= numlumps)
 		*to = 0;
@@ -784,6 +784,17 @@ void W_GetLumpName (char *to, unsigned  lump)
 		to[8] = '\0';
 		std::transform(to, to + strlen(to), to, toupper);
 	}
+}
+
+//
+// W_GetLumpName
+//
+void W_GetOLumpName(OLumpName& to, unsigned lump)
+{
+	if (lump >= numlumps)
+		to.clear();
+	else
+		to = lumpinfo[lump].name;
 }
 
 //

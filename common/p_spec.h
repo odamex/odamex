@@ -556,8 +556,8 @@ void	EV_StartLightFading (int tag, int value, int tics);
 //
 typedef struct
 {
-	char		name1[9];
-	char		name2[9];
+	OLumpName	name1;
+	OLumpName	name2;
 	short		episode;
 
 } switchlist_t;

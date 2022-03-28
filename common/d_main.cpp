@@ -751,7 +751,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 		D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
 		// get skill / episode / map from parms
-		strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+		startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
 
 		D_Init();
 	}
@@ -776,7 +776,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 			LoadResolvedFiles(oldwadfiles, oldpatchfiles);
 
 			// get skill / episode / map from parms
-			strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+			startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
 
 			D_Init();
 		}

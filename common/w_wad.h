@@ -148,7 +148,10 @@ void	W_MergeLumps (const char *start, const char *end, int);
 void uppercopy (char *to, const char *from);
 
 // [RH] Copies the lump name to to using uppercopy
-void W_GetLumpName (char *to, unsigned lump);
+void W_GetLumpName(char* to, unsigned lump);
+
+// [RH] Copies the lump name to to using uppercopy
+void W_GetOLumpName(OLumpName& to, unsigned lump);
 
 // [RH] Returns file handle for specified lump
 int W_GetLumpFile (unsigned lump);

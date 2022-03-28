@@ -1022,16 +1022,14 @@ void P_LoadSideDefs (int lump)
 static argb_t P_GetColorFromTextureName(const char* name)
 {
 	// work around name not being a properly terminated string
-	char name2[9];
-	strncpy(name2, name, 8);
-	name2[8] = '\0';
+	const OLumpName name2 = name;
 
-	unsigned long value = strtoul(name2, NULL, 16);
+	unsigned long value = strtoul(name2.c_str(), NULL, 16);
 
-	int a = (value >> 24) & 0xFF;
-	int r = (value >> 16) & 0xFF;
-	int g = (value >> 8) & 0xFF;
-	int b = value & 0xFF;
+	const int a = (value >> 24) & 0xFF;
+	const int r = (value >> 16) & 0xFF;
+	const int g = (value >> 8) & 0xFF;
+	const int b = value & 0xFF;
 
 	return argb_t(a, r, g, b);
 }
