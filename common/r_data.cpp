@@ -805,13 +805,13 @@ void R_ForceDefaultColormap(const char* name)
 	BuildDefaultShademap(V_GetDefaultPalette(), realcolormaps);
 #endif
 
-	fakecmaps[0].name = StdStringToUpper(name, 8); 	// denis - todo - string limit?
+	fakecmaps[0].name = name;
 	fakecmaps[0].blend_color = argb_t(0, 255, 255, 255);
 }
 
 void R_SetDefaultColormap(const char* name)
 {
-	if (strnicmp(fakecmaps[0].name.c_str(), name, 8) != 0)
+	if (fakecmaps[0].name == name)
 		R_ForceDefaultColormap(name);
 }
 
