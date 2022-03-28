@@ -358,7 +358,7 @@ void G_DoNewGame()
 
 	sv_curmap.ForceSet(d_mapname.c_str());
 
-	G_InitNew (d_mapname.c_str());
+	G_InitNew(d_mapname);
 	gameaction = ga_nothing;
 
 	// run script at the start of each map
@@ -390,7 +390,7 @@ EXTERN_CVAR (sv_maxplayers)
 void G_PlayerReborn (player_t &player);
 void SV_ServerSettingChange();
 
-void G_InitNew (const char *mapname)
+void G_InitNew(const char *mapname)
 {
 	size_t i;
 

@@ -1000,7 +1000,7 @@ void D_DoomMain()
 			consoleplayer_id = displayplayer_id = players.back().id = 1;
 		}
 
-		G_InitNew(startmap.c_str());
+		G_InitNew(startmap);
 	}
 	else if (gamestate != GS_CONNECTING)
 	{

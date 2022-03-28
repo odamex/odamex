@@ -397,6 +397,7 @@ extern int ACS_GlobalVars[NUM_GLOBALVARS];
 extern BOOL savegamerestore;
 
 void G_InitNew(const char *mapname);
+inline void G_InitNew(const OLumpName& mapname) { G_InitNew(mapname.c_str()); }
 void G_ChangeMap();
 void G_ChangeMap(size_t index);
 void G_RestartMap();

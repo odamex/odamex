@@ -1537,7 +1537,7 @@ void G_DoLoadGame (void)
 	// load a base level
 	savegamerestore = true;		// Use the player actors in the savegame
 	serverside = true;
-	G_InitNew (text);
+	G_InitNew(text);
 	displayplayer_id = consoleplayer_id = 1;
 	savegamerestore = false;
 

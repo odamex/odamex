@@ -98,12 +98,12 @@ bool isFast = false;
 // Can be called by the startup code or the menu task,
 // consoleplayer, displayplayer, should be set.
 //
-static char d_mapname[9];
+static OLumpName d_mapname;
 
 void G_DeferedInitNew (const char *mapname)
 {
 	G_CleanupDemo();
-	strncpy (d_mapname, mapname, 8);
+	d_mapname = mapname;
 	gameaction = ga_newgame;
 }
 
@@ -180,7 +180,7 @@ void G_DoNewGame (void)
 	players.front().doreborn = true;
 	consoleplayer_id = displayplayer_id = players.back().id = 1;
 
-	G_InitNew (d_mapname);
+	G_InitNew(d_mapname);
 	gameaction = ga_nothing;
 }
 
