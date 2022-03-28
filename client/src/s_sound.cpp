@@ -1551,15 +1551,13 @@ void S_ActivateAmbient(AActor *origin, int ambient)
 
 BEGIN_COMMAND (snd_soundlist)
 {
-	char lumpname[9];
-
-	lumpname[8] = 0;
 	for (unsigned i = 0; i < S_sfx.size(); i++)
 		if (S_sfx[i].lumpnum != -1)
 		{
-			strncpy (lumpname, lumpinfo[S_sfx[i].lumpnum].name, 8);
-			Printf (PRINT_HIGH, "%3d. %s (%s)\n", i+1, S_sfx[i].name, lumpname);
+			const OLumpName lumpname = lumpinfo[S_sfx[i].lumpnum].name;
+			Printf(PRINT_HIGH, "%3d. %s (%s)\n", i+1, S_sfx[i].name, lumpname.c_str());
 		}
+		// todo: check if sounds are multiple lumps rather than just one (i.e. random sounds)
 		else
 			Printf (PRINT_HIGH, "%3d. %s **not present**\n", i+1, S_sfx[i].name);
 }
