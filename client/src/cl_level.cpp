@@ -537,16 +537,16 @@ void G_DoLoadLevel (int position)
 	//	a flat. The data is in the WAD only because
 	//	we look for an actual index, instead of simply
 	//	setting one.
-	skyflatnum = R_FlatNumForName ( SKYFLATNAME.c_str() );
+	skyflatnum = R_FlatNumForName(SKYFLATNAME);
 
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
-	sky1texture = R_TextureNumForName (level.skypic.c_str());
+	sky1texture = R_TextureNumForName (level.skypic);
 	if (!level.skypic2.empty())
-		sky2texture = R_TextureNumForName (level.skypic2.c_str());
+		sky2texture = R_TextureNumForName (level.skypic2);
 	else
 		sky2texture = 0;
 

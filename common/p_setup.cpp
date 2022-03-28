@@ -295,31 +295,22 @@ void P_LoadSubsectors(int lump)
 //
 void P_LoadSectors (int lump)
 {
-	byte*				data;
-	int 				i;
-	mapsector_t*		ms;
-	sector_t*			ss;
-	int					defSeqType;
-
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
 	delete[] sectors;
 
-	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
+	numsectors = W_LumpLength(lump) / sizeof(mapsector_t);
 
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
 	memset(sectors, 0, sizeof(sector_t)*numsectors);
 
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	byte* data = (byte*)W_CacheLumpNum(lump, PU_STATIC);
 
-	if (level.flags & LEVEL_SNDSEQTOTALCTRL)
-		defSeqType = 0;
-	else
-		defSeqType = -1;
+	const int defSeqType = (level.flags & LEVEL_SNDSEQTOTALCTRL) ? 0 : -1;
 
-	ms = (mapsector_t *)data;
-	ss = sectors;
-	for (i = 0; i < numsectors; i++, ss++, ms++)
+	mapsector_t* ms = (mapsector_t*)data;
+	sector_t* ss = sectors;
+	for (int i = 0; i < numsectors; i++, ss++, ms++)
 	{
 		ss->floorheight = LESHORT(ms->floorheight)<<FRACBITS;
 		ss->ceilingheight = LESHORT(ms->ceilingheight)<<FRACBITS;
