@@ -677,7 +677,7 @@ void HordeState::tick()
 			{
 				// Adjust the count based on how many bosses we've spawned.
 				recipe = m_bossRecipe;
-				recipe.count = m_bossRecipe.count - m_bosses.size();
+				recipe.count = m_bossRecipe.count - int(m_bosses.size());
 			}
 
 			// Spawn a boss if we don't have one.
@@ -974,23 +974,11 @@ BEGIN_COMMAND(hordeinfo)
 
 	const hordeDefine_t& define = G_HordeDefine(::g_HordeDirector.getDefineID());
 
-	const char* difficulty = NULL;
-	if (define.maxGroupHealth < 500)
-		difficulty = "E";
-	else if (define.maxGroupHealth < 1000)
-		difficulty = "D";
-	else if (define.maxGroupHealth < 2000)
-		difficulty = "C";
-	else if (define.maxGroupHealth < 3000)
-		difficulty = "B";
-	else if (define.maxGroupHealth < 5000)
-		difficulty = "A";
-	else
-		difficulty = "X";
-
 	Printf("[Define: %s]\n", define.name.c_str());
+	Printf("Weapons: %s\n", JoinStrings(define.weaponStrings(NULL), " ").c_str());
 	Printf("Min Group Health: %d\n", define.minGroupHealth);
-	Printf("Max Group Health: %d (Difficulty: %s)\n", define.maxGroupHealth, difficulty);
+	Printf("Max Group Health: %d (Difficulty: %s)\n", define.maxGroupHealth,
+	       define.difficulty(false));
 	Printf("Min Total Health: %d = waveMaxGroup:%d * g_horde_mintotalhp:%s * "
 	       "skillLevel:%0.2f\n",
 	       define.minTotalHealth(), define.maxGroupHealth, ::g_horde_mintotalhp.cstring(),

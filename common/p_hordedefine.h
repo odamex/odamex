@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "info.h"
+#include "d_player.h"
 
 struct hordeRecipe_t
 {
@@ -125,6 +126,8 @@ struct hordeDefine_t
 	int minTotalHealth() const;
 	int maxTotalHealth() const;
 	int goalHealth() const;
+	const char* difficulty(const bool colored) const;
+	StringTokens weaponStrings(player_t* player) const;
 };
 
 void G_ParseHordeDefs();

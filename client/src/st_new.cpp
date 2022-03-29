@@ -1194,83 +1194,24 @@ static void LevelStateHorde(levelStateLines_t& lines)
 		StrFormat(lines.subtitle[0], "\"" TEXTCOLOR_YELLOW "%s" TEXTCOLOR_GREY "\"",
 		          define.name.c_str());
 
-		const char* difficulty = NULL;
-		if (define.maxGroupHealth < 500)
+		StrFormat(lines.subtitle[1], "Difficulty: %s", define.difficulty(true));
+
+		// Detect when there are new weapons to pick up.
+		StringTokens weapList;
+		if (!consoleplayer().spectator)
 		{
-			difficulty = TEXTCOLOR_LIGHTBLUE "E";
-		}
-		else if (define.maxGroupHealth < 1000)
-		{
-			difficulty = TEXTCOLOR_GREEN "D";
-		}
-		else if (define.maxGroupHealth < 2000)
-		{
-			difficulty = TEXTCOLOR_GOLD "C";
-		}
-		else if (define.maxGroupHealth < 3000)
-		{
-			difficulty = TEXTCOLOR_ORANGE "B";
-		}
-		else if (define.maxGroupHealth < 5000)
-		{
-			difficulty = TEXTCOLOR_RED "A";
+			weapList = define.weaponStrings(&consoleplayer());
 		}
 		else
 		{
-			difficulty = TEXTCOLOR_DARKRED "X";
+			// Spectators can see all weapons in a wave.
+			weapList = define.weaponStrings(NULL);
 		}
-		StrFormat(lines.subtitle[1], "Difficulty: %s", difficulty);
 
-		// Detect when there are new weapons to pick up.
-		if (!consoleplayer().spectator)
+		if (!weapList.empty())
 		{
-			StringTokens weapList;
-			const hordeDefine_t::weapons_t& weapons = P_HordeWeapons();
-			for (size_t i = 0; i < weapons.size(); i++)
-			{
-				switch (weapons[i])
-				{
-				case wp_none:
-					if (!consoleplayer().weaponowned[weapons[i]])
-						weapList.push_back("BSK");
-					break;
-				case wp_chainsaw:
-					if (!consoleplayer().weaponowned[weapons[i]])
-						weapList.push_back("1+");
-					break;
-				case wp_shotgun:
-					if (!consoleplayer().weaponowned[weapons[i]])
-						weapList.push_back("3");
-					break;
-				case wp_supershotgun:
-					if (!consoleplayer().weaponowned[weapons[i]])
-						weapList.push_back("3+");
-					break;
-				case wp_chaingun:
-					if (!consoleplayer().weaponowned[weapons[i]])
-						weapList.push_back("4");
-					break;
-				case wp_missile:
-					if (!consoleplayer().weaponowned[weapons[i]])
-						weapList.push_back("5");
-					break;
-				case wp_plasma:
-					if (!consoleplayer().weaponowned[weapons[i]])
-						weapList.push_back("6");
-					break;
-				case wp_bfg:
-					if (!consoleplayer().weaponowned[weapons[i]])
-						weapList.push_back("7");
-					break;
-				}
-			}
-
-			if (!weapList.empty())
-			{
-				StrFormat(lines.subtitle[3],
-				          TEXTCOLOR_GREY "New Weapons: " TEXTCOLOR_GREEN "%s",
-				          JoinStrings(weapList, " ").c_str());
-			}
+			StrFormat(lines.subtitle[3], TEXTCOLOR_GREY "Weapons: " TEXTCOLOR_GREEN "%s",
+			          JoinStrings(weapList, " ").c_str());
 		}
 
 		tics = ::level.time - info.waveTime;
