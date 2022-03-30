@@ -8,7 +8,6 @@ define "Tangerine Skies"
 	
 	addpowerup "RocketLauncher"
 	addpowerup "GreenArmor"
-	addpowerup "HealthBonus"
 	
 	addmonster "ShotgunGuy" {
 		grouphealth = 30, 120

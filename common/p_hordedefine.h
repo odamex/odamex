@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "info.h"
+#include "d_player.h"
 
 struct hordeRecipe_t
 {
@@ -101,6 +102,7 @@ struct hordeDefine_t
 	typedef std::vector<powerup_t> powerups_t;
 	typedef std::vector<monster_t> monsters_t;
 
+	uint32_t legacyID;	 // ID of wave assuming no deduplication.  Remove me.
 	std::string name;    // Name of the wave.
 	weapons_t weapons;   // Weapons we can spawn this wave.
 	ammos_t ammos;       // Ammos we can replenish this wave.
@@ -112,7 +114,8 @@ struct hordeDefine_t
 	int maxBossHealth;  // Maximum health of a group of bosses to spawn.
 
 	hordeDefine_t()
-	    : minGroupHealth(-1), maxGroupHealth(-1), minBossHealth(-1), maxBossHealth(-1)
+	    : legacyID(0), minGroupHealth(-1), maxGroupHealth(-1), minBossHealth(-1),
+	      maxBossHealth(-1)
 	{
 	}
 
@@ -123,6 +126,8 @@ struct hordeDefine_t
 	int minTotalHealth() const;
 	int maxTotalHealth() const;
 	int goalHealth() const;
+	const char* difficulty(const bool colored) const;
+	StringTokens weaponStrings(player_t* player) const;
 };
 
 void G_ParseHordeDefs();
