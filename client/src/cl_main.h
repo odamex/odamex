@@ -68,6 +68,8 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictWorld(void);
 void CL_SendUserInfo(void);
 bool CL_Connect();
+bool CL_LoadResourceFiles(const std::vector<std::string>& resource_filenames,
+                          const std::vector<std::string>& resource_filehashes);
 
 void CL_SendCheat(int cheats);
 void CL_SendGiveCheat(const char* item);

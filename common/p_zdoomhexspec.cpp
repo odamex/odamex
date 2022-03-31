@@ -29,6 +29,7 @@
 #include "c_cvars.h"
 #include "d_player.h"
 #include "p_zdoomhexspec.h"
+#include "resources/res_texture.h"
 
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
@@ -982,7 +983,7 @@ void P_PostProcessZDoomSidedefSpecial(side_t* sd, mapsidedef_t* msd, sector_t* s
 
 			SetTextureNoErr(&sd->bottomtexture, &fog, msd->bottomtexture);
 			SetTextureNoErr(&sd->toptexture, &color, msd->toptexture);
-			sd->midtexture = R_TextureNumForName(msd->midtexture);
+			sd->midtexture = Res_GetTextureResourceId(msd->midtexture, WALL);
 
 			if (fog != 0x000000 || color != 0xffffff)
 			{
@@ -1012,9 +1013,9 @@ void P_PostProcessZDoomSidedefSpecial(side_t* sd, mapsidedef_t* msd, sector_t* s
 		            break;
 		*/
 	default: // normal cases
-		sd->midtexture = R_TextureNumForName(msd->midtexture);
-		sd->toptexture = R_TextureNumForName(msd->toptexture);
-		sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
+		sd->midtexture = Res_GetTextureResourceId(msd->midtexture, WALL);
+		sd->toptexture = Res_GetTextureResourceId(msd->toptexture, WALL);
+		sd->bottomtexture = Res_GetTextureResourceId(msd->bottomtexture, WALL);
 		break;
 	}
 }

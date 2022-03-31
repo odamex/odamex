@@ -78,8 +78,6 @@ EXTERN_CVAR (r_particles)
 //	and range check thing_t sprites patches
 
 static const palindex_t* spriteposts[MAXWIDTH];
-spriteframe_t	sprtemp[MAX_SPRITE_FRAMES];
-int 			maxframe;
 
 // [RH] particle globals
 extern int				NumParticles;
@@ -87,29 +85,6 @@ extern int				ActiveParticles;
 extern int				InactiveParticles;
 extern particle_t		*Particles;
 TArray<WORD>			ParticlesInSubsec;
-void R_CacheSprite(spritedef_t* sprite)
-{
-	DPrintf ("cache sprite %s\n", sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
-
-	for (int i = 0; i < sprite->numframes; i++)
-	{
-		for (int r = 0; r < 8; r++)
-		{
-			if (sprite->spriteframes[i].width[r] == SPRITE_NEEDS_INFO)
-			{
-				if (sprite->spriteframes[i].resource[r] == ResourceId::INVALID_ID)
-					I_Error ("Sprite %d, rotation %d has no lump", i, r);
-
-				const ResourceId res_id = sprite->spriteframes[i].resource[r];
-				const Texture* texture = Res_CacheTexture(res_id, PU_CACHE);
-
-				sprite->spriteframes[i].width[r] = texture->mWidth << FRACBITS;
-				sprite->spriteframes[i].offset[r] = texture->mOffsetX << FRACBITS;
-				sprite->spriteframes[i].topoffset[r] = texture->mOffsetY << FRACBITS;
-			}
-		}
-	}
-}
 
 
 //
@@ -884,7 +859,6 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 //
 void R_DrawPlayerSprites()
 {
-	int 		lightnum;
 	pspdef_t*	psp;
 	static sector_t tempsec;
 	int			floorlight, ceilinglight;

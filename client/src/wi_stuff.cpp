@@ -687,7 +687,6 @@ void WI_drawAnimatedBack()
 int WI_drawNum(int n, int x, int y, int digits)
 {
     int		fontwidth = num[0]->mWidth;
-    int		neg;
     int		temp;
 
 	if (digits < 0)
@@ -1284,8 +1283,6 @@ void WI_drawStats()
 {
 	// line height
 	const int lh = (3 * ::num[0]->mHeight) / 2;
-    // line height
-    int lh = (3*num[0]->mHeight)/2;
 
 	// draw animated background
 	WI_drawAnimatedBack();

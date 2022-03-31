@@ -34,6 +34,7 @@
 #include "r_main.h"
 #include "r_sky.h"
 #include "i_system.h"
+#include "g_mapinfo.h"
 
 #include "resources/res_main.h"
 #include "resources/res_texture.h"

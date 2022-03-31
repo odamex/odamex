@@ -34,6 +34,7 @@
 #include "w_ident.h"
 #include "w_wad.h"
 #include "resources/res_filelib.h"
+#include "resources/res_main.h"
 
 EXTERN_CVAR(cl_waddownloaddir)
 EXTERN_CVAR(waddirs)
@@ -372,10 +373,13 @@ std::string M_GetCurrentWadHashes()
 {
 	std::string builder = "";
 
-	for (OResFiles::const_iterator it = ::resource_files.begin(); it != ::resource_files.end(); ++it)
+	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
+	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
+
+	for (int i = 0; i < resource_file_names.size(); i++)
 	{
-		std::string base = it->getBasename().c_str();
-		std::string hash = it->getMD5().getHexCStr();
+		std::string base = resource_file_names[i];
+		std::string hash = resource_file_hashes[i];
 		std::string line = base + ',' + hash + '\n';
 
 		builder += line;
@@ -407,11 +411,13 @@ END_COMMAND(whereis)
 
 BEGIN_COMMAND(loaded)
 {
-	for (OResFiles::const_iterator it = ::resource_files.begin(); it != ::resource_files.end(); ++it)
+	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
+	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
+
+	for (int i = 0; i < resource_file_names.size(); i++)
 	{
-		Printf("%s\n", it->getBasename().c_str());
-		Printf("  PATH: %s\n", it->getFullpath().c_str());
-		Printf("  MD5:  %s\n", it->getMD5().getHexCStr());
+		Printf("%s\n", resource_file_names[i].c_str());
+		Printf("  MD5:  %s\n", resource_file_hashes[i].c_str());
 	}
 }
 END_COMMAND(loaded)

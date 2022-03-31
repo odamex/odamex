@@ -50,12 +50,12 @@
 #include "sv_maplist.h"
 #include "z_zone.h"
 #include "g_levelstate.h"
+#include "g_level.h"
 #include "m_wdlstats.h"
 #include "svc_message.h"
 #include "g_gametype.h"
 #include "p_hordespawn.h"
 #include "g_episode.h"
-#include "g_warmup.h"
 #include "d_main.h"
 #include "resources/res_filelib.h"
 
@@ -171,7 +171,7 @@ std::string G_NextMap()
 		// [ML] 1/25/10: OR if next is empty
 		next = level.mapname.c_str();
 	}
-	else if (secretexit && Res_CheckMap(level.secretmap))
+	else if (secretexit && Res_CheckMap(level.secretmap.c_str()))
 	{
 		// if we hit a secret exit switch, go there instead.
 		next = level.secretmap.c_str();
@@ -225,7 +225,10 @@ void G_ChangeMap()
 				}
 				wadstr += C_QuoteString(lobby_entry.wads.at(i));
 			}
-			G_LoadWadString(wadstr, lobby_entry.map);
+			std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromString(wadstr);
+
+			D_ReloadResourceFiles(resource_filenames);
+			G_DeferedInitNew(lobby_entry.map);
 		}
 		else
 		{
@@ -241,14 +244,16 @@ void G_ChangeMap()
 				maplist_entry_t maplist_entry;
 				Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-			std::string maplist_str = JoinStrings(maplist_entry.wads, " ");
-			std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromString(maplist_str);
-			D_ReloadResourceFiles(resource_filenames);
+				std::string maplist_str = JoinStrings(maplist_entry.wads, " ");
+				std::vector<std::string> resource_filenames =
+				    Res_GatherResourceFilesFromString(maplist_str);
+				D_ReloadResourceFiles(resource_filenames);
 
-			G_DeferedInitNew(maplist_entry.map);
+				G_DeferedInitNew(maplist_entry.map);
 
-			// Set the new map as the current map
-			Maplist::instance().set_index(next_index);
+				// Set the new map as the current map
+				Maplist::instance().set_index(next_index);
+			}
 		}
 
 		// run script at the end of each map
@@ -273,8 +278,6 @@ void G_ChangeMap(size_t index)
 
 	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromString(JoinStrings(maplist_entry.wads, " "));
 	D_ReloadResourceFiles(resource_filenames);
-
-	G_DeferedInitNew(maplist_entry.map);
 
 	// Set the new map as the current map
 	Maplist::instance().set_index(index);
@@ -736,7 +739,7 @@ void G_DoLoadLevel (int position)
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
-	R_SetSkyTextures(level.skypic, level.skypic2);
+	R_SetSkyTextures(level.skypic.c_str(), level.skypic2.c_str());
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{

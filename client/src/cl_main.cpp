@@ -1549,9 +1549,6 @@ void CL_QuitAndTryDownload(const std::string& missing_file)
 // Returns false if any of the required resource files are missing.
 //
 
-// Globals to store the filename and hash to download
-static std::string missing_resource_filename, missing_resource_filehash;
-
 static bool CL_LoadResourceFiles(
 			const std::vector<std::string>& resource_filenames,
 			const std::vector<std::string>& resource_filehashes)

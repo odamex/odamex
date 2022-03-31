@@ -1719,12 +1719,12 @@ void AM_Drawer()
 
 	AM_drawMarks();
 
-	if (!(viewactive && am_overlay < 2) && hu_font[0])
+	if (!(viewactive && am_overlay < 2) && hu_font.isFontLoaded())
 	{
 		char line[64+10];
 		int time = level.time / TICRATE;
 
-		int text_height = (hu_font[0]->mHeight + 1) * CleanYfac;
+		int text_height = (hu_font[0].mHeight + 1) * CleanYfac;
 		int OV_Y = surface_height - (surface_height * 32 / 200);
 
 		if (G_IsCoopGame())

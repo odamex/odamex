@@ -408,11 +408,11 @@ odaproto::svc::LoadMap SVC_LoadMap(const std::vector<std::string>& resource_file
 {
 	odaproto::svc::LoadMap msg;
 
-	// send list of wads (skip over wadnames[0] == odamex.wad)
+	// send list of resources (skip over resnames[0] == odamex.wad)
 	size_t rescount = resource_files.size() - 1;
 	for (size_t i = 1; i < rescount + 1; i++)
 	{
-		odaproto::svc::LoadMap_Resource* wad = msg.add_wadnames();
+		odaproto::svc::LoadMap_Resource* wad = msg.add_resnames();
 		wad->set_name(Res_CleanseFilename(resource_files[i]).c_str());
 		wad->set_hash(resource_hashes[i].c_str());
 	}

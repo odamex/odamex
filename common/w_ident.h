@@ -72,7 +72,7 @@ bool W_IsIWADCommercial(const std::string& filename);
 bool W_IsFilenameCommercialIWAD(const std::string& filename);
 bool W_IsFilehashCommercialIWAD(const OMD5Hash& fileHash);
 bool W_IsIWADDeprecated(const std::string& filename);
-bool W_IsIWADShareware(const std::string& filename);
+bool W_IsIWADShareware(const OResFile& file);
 const FileIdentifier* W_GameInfo(const OCRC32Sum& crc32);
 std::vector<OString> W_GetIWADFilenames();
 

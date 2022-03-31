@@ -292,12 +292,12 @@ class BootWindow : public Fl_Window
 	/**
 	 * @brief Initialize WAD directories from CVar.
 	 */
-	void initWADDirs() { m_WADDirs = TokenizeString(::waddirs.str(), PATHLISTSEP); }
+	void initWADDirs() { m_WADDirs = TokenizeString(::waddirs.str(), PATHSEP); }
 
 	/**
 	 * @brief Update the CVar from WAD directories list.
 	 */
-	void setWADDirs() { ::waddirs.Set(JoinStrings(m_WADDirs, PATHLISTSEP).c_str()); }
+	void setWADDirs() { ::waddirs.Set(JoinStrings(m_WADDirs, PATHSEP).c_str()); }
 };
 
 /**

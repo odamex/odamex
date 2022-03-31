@@ -1897,7 +1897,8 @@ void SV_ConnectClient2(player_t& player)
 	}
 
 	// send a map name
-	SV_SendLoadMap(Res_GetResourceFileNames(), Res_GetResourceFileHashes(), level.mapname, player);
+	SV_SendLoadMap(Res_GetResourceFileNames(), Res_GetResourceFileHashes(),
+	               level.mapname.c_str(), &player);
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
@@ -4285,7 +4286,9 @@ void SV_RunTics()
 				}
 				wadstr += C_QuoteString(lobby_entry.wads.at(i));
 			}
-			G_LoadWadString(wadstr, lobby_entry.map);
+			std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromString(wadstr);
+			D_ReloadResourceFiles(resource_filenames);
+			G_InitNew(lobby_entry.map);
 		}
 		else
 		{

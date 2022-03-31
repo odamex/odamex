@@ -46,18 +46,27 @@ struct OGlobalFont
 
 		return m_fontData[idx];
 	}
-	void setFont(const Texture* font, const int lineHeight)
+	void setFont(const Texture font[HU_FONTSIZE], const int lineHeight)
 	{
-		m_fontData = font;
+		for (int i = 0; i < HU_FONTSIZE; i++)
+		{
+			m_fontData[i] = font[i];
+		}
 		m_lineHeight = lineHeight;
+		m_fontLoaded = true;
 	}
 	int lineHeight() const
 	{
 		return m_lineHeight;
 	}
+	bool isFontLoaded() const
+	{
+		return m_fontLoaded;
+	}
   private:
-	const Texture* m_fontData;
+	Texture m_fontData[HU_FONTSIZE];
 	int m_lineHeight;
+	bool m_fontLoaded = false;
 };
 
 void V_TextInit();
@@ -82,5 +91,7 @@ void V_FreeBrokenLines (brokenlines_t *lines);
 inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_BreakLines (maxwidth, (const byte *)str); }
 
 int V_GetTextColor(const char* str);
+
+extern OGlobalFont hu_font;
 
 #endif //__V_TEXT_H__

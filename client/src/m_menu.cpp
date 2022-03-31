@@ -1711,11 +1711,11 @@ void M_StopMessage (void)
 int M_StringHeight(char* string)
 {
 	// Default height without a working font is 8.
-	if (!::hu_font[0])
+	if (!::hu_font.isFontLoaded())
 		return 8;
 
 	int h;
-	int height = hu_font[0]->mHeight;
+	int height = hu_font[0].mHeight;
 
 	h = height;
 	while (*string)
@@ -2013,19 +2013,19 @@ void M_StartControlPanel (void)
 //
 void M_Drawer()
 {
-	if (messageToPrint && ::hu_font[0])
+	if (messageToPrint && ::hu_font.isFontLoaded())
 	{
 		// Horiz. & Vertically center string and print it.
 		brokenlines_t *lines = V_BreakLines (320, messageString);
 		int y = 100;
 
 		for (int i = 0; lines[i].width != -1; i++)
-			y -= hu_font[0]->mHeight / 2;
+			y -= hu_font[0].mHeight / 2;
 
 		for (int i = 0; lines[i].width != -1; i++)
 		{
 			screen->DrawTextCleanMove(CR_RED, 160 - lines[i].width/2, y, lines[i].string);
-			y += hu_font[0]->mHeight;
+			y += hu_font[0].mHeight;
 		}
 
 		V_FreeBrokenLines (lines);

@@ -46,7 +46,7 @@ EXTERN_CVAR(msg4color)
 EXTERN_CVAR(hud_scaletext)
 
 
-Texture* hu_font;
+OGlobalFont hu_font;
 
 static Texture* hu_bigfont;
 static Texture* hu_smallfont;
@@ -55,8 +55,6 @@ static Texture* hu_digfont;
 static int hu_bigfont_height;
 static int hu_smallfont_height;
 static int hu_digfont_height;
-
-static int hu_curfont_height;
 
 byte *ConChars;
 extern byte *Ranges;
@@ -156,18 +154,15 @@ void V_SetFont(const char* fontname)
 {
 	if (!stricmp(fontname, "BIGFONT"))
 	{
-		::hu_font = ::hu_bigfont;
-		::hu_curfont_height = hu_bigfont_height;
+		::hu_font.setFont(::hu_bigfont, hu_bigfont_height);
 	}
 	else if (!stricmp(fontname, "SMALLFONT"))
 	{
-		::hu_font = ::hu_smallfont;
-		::hu_curfont_height = hu_smallfont_height;
+		::hu_font.setFont(::hu_smallfont, hu_smallfont_height);
 	}
 	else if (!stricmp(fontname, "DIGFONT"))
 	{
-		::hu_font = ::hu_digfont;
-		::hu_curfont_height = hu_digfont_height;
+		::hu_font.setFont(::hu_digfont, hu_digfont_height);
 	}
 }
 
@@ -408,7 +403,9 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 		if (cx + w > I_GetSurfaceWidth())
 			break;
 
-        DrawSWrapper(drawer, &::hu_font[c], cx, cy, hu_font[c].mWidth * scalex,
+		const Texture ch = hu_font[c];
+
+        DrawSWrapper(drawer, &ch, cx, cy, hu_font[c].mWidth * scalex,
 		             hu_font[c].mHeight * scaley);
 
 		cx += w;
@@ -499,7 +496,7 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 
 int V_LineHeight()
 {
-	return ::hu_curfont_height;
+	return ::hu_font.lineHeight();
 }
 
 brokenlines_t* V_BreakLines(int maxwidth, const byte* str)

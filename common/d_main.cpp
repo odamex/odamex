@@ -79,14 +79,8 @@ float maxfps = 35.0f;
 
 extern bool step_mode;
 
-OResFiles resource_files;
-OWantFiles missingfiles;
-
-bool lastWadRebootSuccess = true;
-extern bool step_mode;
-
-bool capfps = true;
-float maxfps = 35.0f;
+// Globals to store the filename and hash to download
+static std::string missing_resource_filename, missing_resource_filehash;
 
 //
 // D_GetTitleString

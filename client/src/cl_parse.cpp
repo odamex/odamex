@@ -732,40 +732,19 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	if (splitnetdemo)
 		netdemo.stopRecording();
 
-	size_t wadcount = msg->wadnames_size();
-	OWantFiles newwadfiles;
-	newwadfiles.reserve(wadcount);
-	for (size_t i = 0; i < wadcount; i++)
-	{
-		std::string name = msg->wadnames().Get(i).name();
-		std::string hashStr = msg->wadnames().Get(i).hash();
-
-		OMD5Hash hash;
-		OMD5Hash::makeFromHexStr(hash, hashStr);
-
-		OWantFile file;
-		if (!OWantFile::makeWithHash(file, name, OFILE_WAD, hash))
-		{
-			Printf(PRINT_WARNING,
-			       "Could not construct wanted file \"%s\" that server requested.\n",
-			       name.c_str());
-			CL_QuitNetGame(NQ_DISCONNECT);
-			return;
-		}
-		newwadfiles.push_back(file);
-	}
+	size_t rescount = msg->resnames_size();
+	std::vector<std::string> resource_filenames, resource_filehashes;
 
 	std::string mapname = msg->mapname();
 	int server_level_time = msg->time();
 
 	// Load the specified WAD and DEH files and change the level.
 	// if any WADs are missing, reconnect to begin downloading.
-	G_LoadWad(newwadfiles, newpatchfiles);
+	CL_LoadResourceFiles(resource_filenames, resource_filehashes);
 
-	if (!missingfiles.empty())
+	if (!missing_resource_filename.empty())
 	{
-		OWantFile missing_file = missingfiles.front();
-		CL_QuitAndTryDownload(missing_file);
+		CL_QuitAndTryDownload(&missing_resource_filename[0]);
 		return;
 	}
 

@@ -34,6 +34,7 @@
 #include "v_video.h"
 
 #include "s_sound.h"
+#include "resources/res_texture.h"
 
 #define SPRITE_NEEDS_INFO	MAXINT
 
@@ -46,10 +47,30 @@ int numsprites;
 spriteframe_t sprtemp[MAX_SPRITE_FRAMES];
 int maxframe;
 
-void R_CacheSprite(spritedef_t *sprite)
+void R_CacheSprite(spritedef_t* sprite)
 {
-}
+	DPrintf("cache sprite %s\n",
+	        sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
 
+	for (int i = 0; i < sprite->numframes; i++)
+	{
+		for (int r = 0; r < 8; r++)
+		{
+			if (sprite->spriteframes[i].width[r] == SPRITE_NEEDS_INFO)
+			{
+				if (sprite->spriteframes[i].resource[r] == ResourceId::INVALID_ID)
+					I_Error("Sprite %d, rotation %d has no lump", i, r);
+
+				const ResourceId res_id = sprite->spriteframes[i].resource[r];
+				const Texture* texture = Res_CacheTexture(res_id, PU_CACHE);
+
+				sprite->spriteframes[i].width[r] = texture->mWidth << FRACBITS;
+				sprite->spriteframes[i].offset[r] = texture->mOffsetX << FRACBITS;
+				sprite->spriteframes[i].topoffset[r] = texture->mOffsetY << FRACBITS;
+			}
+		}
+	}
+}
 
 //
 // R_InstallSpriteLump
@@ -58,7 +79,7 @@ void R_CacheSprite(spritedef_t *sprite)
 // [RH] Removed checks for coexistance of rotation 0 with other
 //		rotations and made it look more like BOOM's version.
 //
-static void R_InstallSpriteLump(const ResourceId res_id, uint32_t frame, uint32_t rotation, bool flipped)
+static void R_InstallSpriteLump(const ResourceId res_id, uint32_t frame, uint32_t rot, bool flipped)
 {
 	unsigned rotation;
 
@@ -94,7 +115,7 @@ static void R_InstallSpriteLump(const ResourceId res_id, uint32_t frame, uint32_
 
 	rotation = (rotation <= 8 ? (rotation - 1) * 2 : (rotation - 9) * 2 + 1);
 	
-	else if (sprtemp[frame].resource[--rotation] == ResourceId::INVALID_ID)
+	if (sprtemp[frame].resource[--rotation] == ResourceId::INVALID_ID)
 	{
 		// the lump is only used for one rotation
 		sprtemp[frame].resource[rotation] = res_id;

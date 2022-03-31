@@ -858,7 +858,7 @@ fixed_t P_FindShortestTextureAround(sector_t *sec)
 	{
 		if (sec->lines[i]->flags & ML_TWOSIDED)
 		{
-			side = getSide (sec, i, 0);
+			side = &sides[(sec->lines[i])->sidenum[0]];
 			if (side->bottomtexture != ResourceId::INVALID_ID)
 			{
 				const Texture* texture = Res_CacheTexture(side->bottomtexture);
@@ -868,7 +868,7 @@ fixed_t P_FindShortestTextureAround(sector_t *sec)
 			{
 				minsize = std::min<int>(minsize, default_texture_height);
 			}
-			side = getSide (sec, i, 1);
+			side = &sides[(sec->lines[i])->sidenum[1]];
 			if (side->bottomtexture != ResourceId::INVALID_ID)
 			{
 				const Texture* texture = Res_CacheTexture(side->bottomtexture);
@@ -905,7 +905,7 @@ fixed_t P_FindShortestUpperAround(sector_t *sec)
 	{
 		if (sec->lines[i]->flags & ML_TWOSIDED)
 		{
-			side = getSide (sec, i, 0);
+			side = &sides[(sec->lines[i])->sidenum[0]];
 			if (side->toptexture != ResourceId::INVALID_ID)
 			{
 				const Texture* texture = Res_CacheTexture(side->toptexture);
@@ -915,7 +915,7 @@ fixed_t P_FindShortestUpperAround(sector_t *sec)
 			{
 				minsize = std::min<int>(minsize, default_texture_height);
 			}
-			side = getSide (sec, i, 1);
+			side = &sides[(sec->lines[i])->sidenum[1]];
 			if (side->toptexture != ResourceId::INVALID_ID)
 			{
 				const Texture* texture = Res_CacheTexture(side->toptexture);

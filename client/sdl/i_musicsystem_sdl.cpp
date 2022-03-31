@@ -30,6 +30,7 @@
 
 #include "i_music.h"
 #include "mus2midi.h"
+#include "resources/res_identifier.h"
 
 // [Russell] - define a temporary midi file, for consistency
 // SDL < 1.2.7
@@ -184,7 +185,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 {
 	_UnregisterSong();
 
-	if (S_MusicIsMus(data, length))
+	if (Res_MusicIsMus(data, length))
 	{
 		MEMFILE* mus = mem_fopen_read(data, length);
 		m_registeredSong.Mem = mem_fopen_write();

@@ -1031,6 +1031,7 @@ public:
 	mutable FileMd5SumCache		mFileMd5SumCache;
 };
 
+static FileIdentificationManager identtab;
 
 //
 // W_SetupFileIdentifiers
@@ -1057,9 +1058,6 @@ const FileIdentifier* W_GameInfo(const OCRC32Sum& crc32)
 {
 	return ::identtab.lookupByCRC32Sum(crc32);
 }
-
-
-static FileIdentificationManager identtab;
 
 
 //
@@ -1264,23 +1262,15 @@ std::vector<OString> W_GetIWADFilenames()
 	return identtab.getFilenames();
 }
 
-/**
- * @brief Return the gameinfo associated with the given CRC32.
- */
-const FileIdentifier* W_GameInfo(const OCRC32Sum& crc32)
-{
-	return ::identtab.lookupByCRC32Sum(crc32);
-}
-
 
 //
 // W_IsIWADShareware
 //
 // Checks to see whether a given file is a shareware IWAD
 //
-bool W_IsIWADShareware(const std::string& filename)
+bool W_IsIWADShareware(const OResFile& file)
 {
-	const OString idname = identtab.identify(filename);
+	const OString idname = identtab.identify(file);
 	return idname.find("DOOM SHAREWARE") == 0;
 }
 

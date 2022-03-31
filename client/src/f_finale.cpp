@@ -269,10 +269,6 @@ void F_Ticker()
 
 void F_TextWrite ()
 {
-	// Don't draw text without a working font.
-	if (!::hu_font[0])
-		return;
-
 	// erase the entire screen to a tiled background
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear();		// ensure black background in matted modes
@@ -333,10 +329,13 @@ void F_TextWrite ()
 			continue;
 		}
 
-		int w = hu_font[c]->mWidth;
+		int w = hu_font[c].mWidth;
 		if (cx + w > width)
 			break;
-		screen->DrawTextureClean(hu_font[c], cx, cy);
+
+		const Texture ch = hu_font[c];
+
+		screen->DrawTextureClean(&ch, cx, cy);
 		cx += w;
 	}
 

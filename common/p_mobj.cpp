@@ -1713,7 +1713,7 @@ void P_ApplyBouncyPhysics(AActor *mo)
 			mo->z = mo->ceilingz - mo->height;
 			if (mo->momz > 0)
 			{
-				if (mo->subsector->sector->ceilingpic != skyflatnum)
+				if (R_ResourceIdIsSkyFlat(mo->subsector->sector->ceiling_res_id))
 					mo->momz = -mo->momz; // always bounce off non-sky ceiling
 				else if (mo->flags & MF_MISSILE)
 					mo->Destroy(); // missiles don't bounce off skies
@@ -1736,7 +1736,7 @@ void P_ApplyBouncyPhysics(AActor *mo)
 		if (mo->flags & MF_MISSILE)
 		{
 			if (ceilingline && ceilingline->backsector &&
-			    ceilingline->backsector->ceilingpic == skyflatnum &&
+			    R_ResourceIdIsSkyFlat(ceilingline->backsector->ceiling_res_id) &&
 			    mo->z > ceilingline->backsector->ceilingheight)
 				mo->Destroy();
 			else
