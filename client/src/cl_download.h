@@ -38,7 +38,7 @@ typedef std::vector<std::string> Websites;
 void CL_DownloadInit();
 void CL_DownloadShutdown();
 bool CL_IsDownloading();
-bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned flags);
+bool CL_StartDownload(const Websites& urls, const std::string& filename, unsigned flags);
 bool CL_StopDownload();
 void CL_DownloadTick();
 std::string CL_DownloadFilename();

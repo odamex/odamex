@@ -61,6 +61,7 @@ extern const char *D_DrawIcon;
 extern bool capfps;
 extern float maxfps;
 void STACK_ARGS D_ClearTaskSchedulers();
+void D_AddPlatformSearchDirs(std::vector<std::string>& dirs);
 void D_RunTics(void (*sim_func)(), void(*display_func)());
 
 std::string D_GetTitleString();

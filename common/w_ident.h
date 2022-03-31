@@ -28,7 +28,7 @@
 #include "m_ostring.h"
 #include "m_resfile.h"
 
-struct fileIdentifier_t
+struct FileIdentifier
 {
 	OString mIdName;
 	std::string mNiceName;
@@ -69,8 +69,11 @@ typedef struct
 void W_ConfigureGameInfo(const std::string& iwad_filename);
 bool W_IsIWAD(const std::string& filename);
 bool W_IsIWADCommercial(const std::string& filename);
+bool W_IsFilenameCommercialIWAD(const std::string& filename);
+bool W_IsFilehashCommercialIWAD(const OMD5Hash& fileHash);
 bool W_IsIWADDeprecated(const std::string& filename);
 bool W_IsIWADShareware(const std::string& filename);
+const FileIdentifier* W_GameInfo(const OCRC32Sum& crc32);
 std::vector<OString> W_GetIWADFilenames();
 
 #endif // __W_IDENT_H__

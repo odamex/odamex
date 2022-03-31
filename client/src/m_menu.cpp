@@ -61,8 +61,6 @@
 
 EXTERN_CVAR(g_resetinvonexit)
 
-extern patch_t* 	hu_font[HU_FONTSIZE];
-
 // temp for screenblocks (0-9)
 int 				screenSize;
 
@@ -939,7 +937,6 @@ void M_DrawMainMenu()
 
 void M_DrawNewGame()
 {
-	// TODO: Reconcile
 	const Texture* new_texture = Res_CacheTexture("M_NEWG", PATCH);
 	const Texture* skill_texture = Res_CacheTexture("M_SKILL", PATCH);
 	screen->DrawTextureClean(new_texture, 96, 14);
@@ -1714,13 +1711,11 @@ void M_StopMessage (void)
 int M_StringHeight(char* string)
 {
 	// Default height without a working font is 8.
-	if (::hu_font[0].empty())
+	if (!::hu_font[0])
 		return 8;
 
 	int h;
-	// TODO: Resolve
-	//int height = hu_font[0]->mHeight;
-	int height = W_ResolvePatchHandle(hu_font[0])->height();
+	int height = hu_font[0]->mHeight;
 
 	h = height;
 	while (*string)
@@ -2018,21 +2013,19 @@ void M_StartControlPanel (void)
 //
 void M_Drawer()
 {
-	if (messageToPrint && !::hu_font[0].empty())
+	if (messageToPrint && ::hu_font[0])
 	{
 		// Horiz. & Vertically center string and print it.
 		brokenlines_t *lines = V_BreakLines (320, messageString);
 		int y = 100;
 
-		patch_t* ch = W_ResolvePatchHandle(hu_font[0]);
-
 		for (int i = 0; lines[i].width != -1; i++)
-			y -= ch->mHeight / 2;
+			y -= hu_font[0]->mHeight / 2;
 
 		for (int i = 0; lines[i].width != -1; i++)
 		{
 			screen->DrawTextCleanMove(CR_RED, 160 - lines[i].width/2, y, lines[i].string);
-			y += ch->mHeight;
+			y += hu_font[0]->mHeight;
 		}
 
 		V_FreeBrokenLines (lines);

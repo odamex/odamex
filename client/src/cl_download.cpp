@@ -172,7 +172,7 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 		return false;
 	}
 
-	if (W_IsFilenameCommercialIWAD(filename.getBasename()))
+	if (W_IsIWADCommercial(filename.getBasename()))
 	{
 		Printf(PRINT_WARNING, "Refusing to download commercial IWAD file.\n");
 		return false;
@@ -307,24 +307,14 @@ static StringTokens GetDownloadDirs()
 {
 	StringTokens dirs;
 
-	// Add all of the sources.
-	D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), PATHLISTSEPCHAR);
-
-		// These folders should only work on PC versions
+	// These folders should only work on PC versions
 #ifndef GCONSOLE
-	D_AddSearchDir(dirs, Args.CheckValue("-waddir"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
 	Res_AddSearchDir(dirs, Args.CheckValue("-waddir"), SEARCHPATHSEPCHAR);
 	Res_AddSearchDir(dirs, getenv("DOOMWADDIR"), SEARCHPATHSEPCHAR);
 	Res_AddSearchDir(dirs, getenv("DOOMWADPATH"), SEARCHPATHSEPCHAR);
 #endif
 	Res_AddSearchDir(dirs, cl_waddownloaddir.cstring(), SEARCHPATHSEPCHAR);
 	Res_AddSearchDir(dirs, waddirs.cstring(), SEARCHPATHSEPCHAR);
-	// TODO: Reconcile
-	D_AddSearchDir(dirs, waddirs.cstring(), PATHLISTSEPCHAR);
-	dirs.push_back(startdir);
-	dirs.push_back(progdir);
 	dirs.push_back(M_GetUserDir());
 
 #ifdef __SWITCH__
@@ -527,8 +517,7 @@ BEGIN_COMMAND(download)
 		std::random_shuffle(clientsites.begin(), clientsites.end());
 
 		// Attach the website to the file and download it.
-		OWantFile file;
-		OWantFile::make(file, argv[2], OFILE_UNKNOWN);
+		std::string file = argv[2];
 		CL_StartDownload(clientsites, file, 0);
 		return;
 	}

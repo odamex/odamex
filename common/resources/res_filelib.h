@@ -26,7 +26,7 @@
 
 #include <string>
 
-std::string Res_MD5(const std::string& filename);
+OMD5Hash Res_MD5(const std::string& filename);
 
 std::string Res_CleanseFilename(const std::string& filename);
 

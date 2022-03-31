@@ -46,6 +46,11 @@
   #include <dirent.h>
 #endif
 
+#if defined(_WIN32)
+#include <direct.h> // getcwd
+#else
+#include <unistd.h> // getcwd
+#endif
 
 // Simple logging
 std::ofstream LOG;

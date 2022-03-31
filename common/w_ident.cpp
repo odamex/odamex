@@ -42,7 +42,7 @@ static const uint32_t IDENT_COMMERCIAL = BIT(0);
 static const uint32_t IDENT_IWAD = BIT(1);
 static const uint32_t IDENT_DEPRECATED = BIT(2);
 
-std::string Res_MD5(const std::string& filename);
+OMD5Hash Res_MD5(const std::string& filename);
 class FileIdentificationManager;
 static void W_SetupFileIdentifiers(FileIdentificationManager& identtab);
 
@@ -778,7 +778,8 @@ public:
 		OMD5Hash::makeFromHexStr(md5Hash, md5);
 
 		IdType id = mIdentifiers.insert();
-		fileIdentifier_t* file = &mIdentifiers.get(id);
+		FileIdentifier* file = &mIdentifiers.get(id);
+
 		file->mIdName = OStringToUpper(idname);
 		file->mNiceName = idname;
 		file->mFilename = OStringToUpper(filename);
@@ -835,28 +836,29 @@ public:
 
 	bool isCommercial(const OMD5Hash& hash) const
 	{
-		const fileIdentifier_t* file = lookupByMd5Sum(hash);
+		const FileIdentifier* file = lookupByMd5Sum(hash);
 		return file && file->mIsCommercial;
 	}
 
 	bool isKnownIWAD(const OMD5Hash& hash) const
 	{
-		const fileIdentifier_t* file = lookupByMd5Sum(hash);
+		const FileIdentifier* file = lookupByMd5Sum(hash);
 		return file && file->mIsIWAD;
 	}
 
 	bool isDeprecated(const OMD5Hash& hash) const
 	{
-		const fileIdentifier_t* file = lookupByMd5Sum(hash);
+		const FileIdentifier* file = lookupByMd5Sum(hash);
 		return file && file->mIsDeprecated;
 	}
 
 	bool isIWAD(const OResFile& file) const
 	{
-		const OString md5sum = getMd5Sum(filename);
-		const FileIdentifier* file = lookupByMd5Sum(md5sum);
-		if (file)
-			return file->mIsIWAD;
+		const OMD5Hash& md5sum(file.getMD5());
+		const FileIdentifier* ident = lookupByMd5Sum(md5sum);
+
+		if (ident)
+			return ident->mIsIWAD;
 
 		// [SL] not an offical IWAD.
 		// Check for lumps that are required by vanilla Doom.
@@ -879,8 +881,8 @@ public:
 
 	bool areCompatible(const OMD5Hash& hash1, const OMD5Hash& hash2) const
 	{
-		const fileIdentifier_t* file1 = lookupByMd5Sum(hash1);
-		const fileIdentifier_t* file2 = lookupByMd5Sum(hash2);
+		const FileIdentifier* file1 = lookupByMd5Sum(hash1);
+		const FileIdentifier* file2 = lookupByMd5Sum(hash2);
 
 		if (!file1 || !file2)
 			return false;
@@ -888,25 +890,9 @@ public:
 		return file1->mGroupName == file2->mGroupName;
 	}
 
-	const OString getMd5Sum(const OString& filename) const
+	const OString identify(const OResFile& file)
 	{
-		FileMd5SumCache::const_iterator it = mFileMd5SumCache.find(filename);
-		if (it == mFileMd5SumCache.end())
-		{
-			const OString md5sum = Res_MD5(filename);
-			mFileMd5SumCache.insert(std::make_pair(filename, md5sum));
-			return md5sum;
-		}
-		else
-		{
-			return it->second;
-		}
-	}
-
-	const OString identify(const OString& filename)
-	{
-		const OString md5sum = getMd5Sum(filename);
-		const FileIdentifier* file = lookupByMd5Sum(md5sum);
+		const FileIdentifier* fileid = lookupByMd5Sum(file.getMD5());
 
 		if (fileid != NULL)
 			return fileid->mIdName;
@@ -1010,7 +996,7 @@ public:
 		}
 	}
 
-	const fileIdentifier_t* lookupByCRC32Sum(const OCRC32Sum& crc32sum) const
+	const FileIdentifier* lookupByCRC32Sum(const OCRC32Sum& crc32sum) const
 	{
 		CRC32SumLookupTable::const_iterator it = mCRC32SumLookup.find(crc32sum);
 		if (it != mCRC32SumLookup.end())
@@ -1018,7 +1004,7 @@ public:
 		return NULL;
 	}
 
-	const fileIdentifier_t* lookupByMd5Sum(const OMD5Hash& md5sum) const
+	const FileIdentifier* lookupByMd5Sum(const OMD5Hash& md5sum) const
 	{
 		Md5SumLookupTable::const_iterator it = mMd5SumLookup.find(md5sum);
 		if (it != mMd5SumLookup.end())
@@ -1029,7 +1015,7 @@ public:
   private:
 	typedef unsigned int IdType;
 
-	typedef SArray<fileIdentifier_t> IdentifierTable;
+	typedef SArray<FileIdentifier> IdentifierTable;
 	IdentifierTable			mIdentifiers;
 
 	typedef OHashTable<OCRC32Sum, IdType> CRC32SumLookupTable;
@@ -1067,7 +1053,7 @@ static void W_SetupFileIdentifiers(FileIdentificationManager& identtab)
 /**
  * @brief Return the gameinfo associated with the given CRC32.
  */
-const fileIdentifier_t* W_GameInfo(const OCRC32Sum& crc32)
+const FileIdentifier* W_GameInfo(const OCRC32Sum& crc32)
 {
 	return ::identtab.lookupByCRC32Sum(crc32);
 }
@@ -1237,7 +1223,7 @@ bool W_IsFilenameCommercialIWAD(const std::string& filename)
 
 
 //
-// W_IsFilenameCommercialIWAD
+// W_IsFilhashCommercialIWAD
 //
 // Checks to see whether a given hash belongs to an IWAD flagged as "commercial"
 //
@@ -1254,7 +1240,7 @@ bool W_IsFilehashCommercialIWAD(const OMD5Hash& fileHash)
 //
 bool W_IsFileCommercialIWAD(const std::string& filename)
 {
-	const OString md5sum = Res_MD5(filename);
+	const OMD5Hash md5sum = Res_MD5(filename);
 	return identtab.isCommercial(md5sum);
 }
 
@@ -1266,8 +1252,7 @@ bool W_IsFileCommercialIWAD(const std::string& filename)
 //
 bool W_IsIWADDeprecated(const OResFile& file)
 {
-	const OString md5sum = Res_MD5(filename);
-	return identtab.isDeprecated(md5sum);
+	return identtab.isDeprecated(file.getMD5());
 }
 
 
@@ -1277,6 +1262,14 @@ bool W_IsIWADDeprecated(const OResFile& file)
 std::vector<OString> W_GetIWADFilenames()
 {
 	return identtab.getFilenames();
+}
+
+/**
+ * @brief Return the gameinfo associated with the given CRC32.
+ */
+const FileIdentifier* W_GameInfo(const OCRC32Sum& crc32)
+{
+	return ::identtab.lookupByCRC32Sum(crc32);
 }
 
 

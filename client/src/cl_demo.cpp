@@ -1156,13 +1156,14 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	// Server tells everyone if we're a spectator
 	MSG_WriteSVC(netbuffer, SVC_PlayerMembers(consoleplayer(), SVC_PM_SPECTATOR));
 
-	// Server sends wads & map name
-	MSG_WriteSVC(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname.c_str(), level.time));
-
-	// send list of wads (skip over resource_file_names[0] == odamex.wad)  
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
 	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
 
+	// Server sends wads & map name
+	MSG_WriteSVC(netbuffer, SVC_LoadMap(resource_file_names, resource_file_hashes,
+	                                    level.mapname.c_str(), level.time));
+
+	// send list of wads (skip over resource_file_names[0] == odamex.wad)  
 	size_t resource_file_count = resource_file_names.size();
 	MSG_WriteByte(netbuffer, resource_file_count - 1);
 

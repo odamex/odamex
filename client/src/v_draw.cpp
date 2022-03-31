@@ -634,9 +634,6 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
  */
 void DCanvas::DrawWrapper(EWrapperCode drawer, const Texture* texture, int x, int y) const
 {
-	if (patch == NULL)
-		return;
-
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
 	int colstep = mSurface->getBytesPerPixel();
@@ -683,7 +680,7 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const Texture* texture, int x, in
  * @param destwidth
  * @param destheight
  */
-void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, int y0,
+void DCanvas::DrawSWrapper(EWrapperCode drawer, const Texture* texture, int x0, int y0,
                            const int destwidth, const int destheight) const
 {
 	if (!texture || texture->mWidth <= 0 || texture->mHeight <= 0 || destwidth <= 0 || destheight <= 0)
@@ -753,9 +750,6 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 //
 void DCanvas::DrawIWrapper(EWrapperCode drawer, const Texture* texture, int x0, int y0) const
 {
-	if (patch == NULL)
-		return;
-
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	if (surface_width == 320 && surface_height == 200)
@@ -772,9 +766,6 @@ void DCanvas::DrawIWrapper(EWrapperCode drawer, const Texture* texture, int x0, 
 //
 void DCanvas::DrawCWrapper(EWrapperCode drawer, const Texture* texture, int x0, int y0) const
 {
-	if (patch == NULL)
-		return;
-
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	if (CleanXfac == 1 && CleanYfac == 1)
@@ -791,9 +782,6 @@ void DCanvas::DrawCWrapper(EWrapperCode drawer, const Texture* texture, int x0, 
 //
 void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const Texture* texture, int x0, int y0) const
 {
-	if (patch == NULL)
-		return;
-
 	if (CleanXfac == 1 && CleanYfac == 1)
 		DrawWrapper(drawer, texture, x0, y0);
 	else
@@ -820,9 +808,6 @@ void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const Texture* texture, int x0
 //
 void DCanvas::DrawTextureFlipped(const Texture* texture, int x0, int y0) const
 {
-	if (patch == NULL)
-		return;
-
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
 	int colstep = mSurface->getBytesPerPixel();

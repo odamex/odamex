@@ -458,19 +458,17 @@ static int WI_DrawName (const char *str, int x, int y)
 
 static int WI_DrawSmallName(const char* str, int x, int y)
 {
-	patch_t* p = NULL;
-
 	while (*str)
 	{
 		char charname[9];
 		sprintf(charname, "STCFN%.3d", HU_FONTSTART + (toupper(*str) - 32) - 1);
-		int lump = W_CheckNumForName(charname);
+		const ResourceId res_id = Res_GetTextureResourceId(charname, PATCH);
 
-		if (lump != -1)
+		if (res_id != ResourceId::INVALID_ID)
 		{
-			p = W_CachePatch(lump);
-			screen->DrawPatchClean(p, x, y);
-			x += p->width() - 1;
+			const Texture* texture = Res_CacheTexture(res_id, PU_CACHE);
+			screen->DrawTextureClean(p, x, y);
+			x += texture->mWidth - 1;
 		}
 		else
 		{
@@ -479,19 +477,19 @@ static int WI_DrawSmallName(const char* str, int x, int y)
 		str++;
 	}
 
-	p = W_CachePatch("FONTB39");
-	return (5 * (p->height() - p->topoffset())) / 4;
+	const Texture* texture = Res_CacheTexture("FONTB39", PATCH);
+	return (5 * (texture->mHeight - texture->mOffsetY)) / 4;
 }
 
 //Draws "<Levelname> Finished!"
 void WI_drawLF()
 {
-	if (lnames[0].empty() && !lnamewidths[0])
+	if (!lnames[0] && !lnamewidths[0])
 		return;
 
 	int y = WI_TITLEY;
 
-	if (!lnames[0].empty())
+	if (lnames[0])
 	{
 		// draw <LevelName>
 		screen->DrawTextureClean(lnames[0], (320 - lnames[0]->mWidth)/2, y);
@@ -513,13 +511,10 @@ void WI_drawLF()
 // Draws "Entering <LevelName>"
 void WI_drawEL()
 {
-	if (lnames[1].empty() && !lnamewidths[1])
+	if (!lnames[1] && !lnamewidths[1])
 		return;
 
 	int y = WI_TITLEY;
-
-	patch_t* ent = W_ResolvePatchHandle(entering);
-	patch_t* lnames1 = W_ResolvePatchHandle(lnames[1]);
 
 	// draw "Entering"
 	screen->DrawTextureClean(entering, (320 - entering->mWidth)/2, y);
@@ -527,7 +522,7 @@ void WI_drawEL()
 	// [RH] Changed to adjust by height of entering patch instead of title
 	y += (5*entering->mHeight)/4;
 
-	if (lnames1)
+	if (lnames[1])
 	{
 		// draw level
 		screen->DrawTextureClean(lnames[1], (320 - lnames[1]->mWidth)/2, y);
@@ -572,12 +567,10 @@ void WI_drawOnLnode (int n, const Texture* c[], int numpatches)
 
 	do
 	{
-
-
-		int left = lnodes[wbs->epsd][n].x - ch->leftoffset();
-		int top = lnodes[wbs->epsd][n].y - ch->topoffset();
-		int right = left + ch->width();
-		int bottom = top + ch->height();
+		int left = lnodes[wbs->epsd][n].x - c[i]->mOffsetX;
+		int top = lnodes[wbs->epsd][n].y - c[i]->mOffsetY;
+		int right = left + c[i]->mWidth;
+		int bottom = top + c[i]->mHeight;
 
 		if (left >= 0 && right < WI_GetWidth() &&
             top >= 0 && bottom < WI_GetHeight())
@@ -725,8 +718,6 @@ int WI_drawNum(int n, int x, int y, int digits)
 	// if non-number, do not draw it
 	if (n == 1994)
 		return 0;
-
-	const int fontwidth = W_ResolvePatchHandle(num[0])->width();
 
 	// draw the new number
 	while (digits--)
@@ -1080,19 +1071,8 @@ void WI_drawNetgameStats()
 {
 	unsigned int nbPlayers = 0;
 
-	// TODO: Reconcile
-	// Convert to Texture
-	const patch_t* pPercent = W_ResolvePatchHandle(::percent);
-	const patch_t* pKills = W_ResolvePatchHandle(::kills);
-	const patch_t* pItems = W_ResolvePatchHandle(::items);
-	const patch_t* pScrt = W_ResolvePatchHandle(::scrt);
-	const patch_t* pFrags = W_ResolvePatchHandle(::frags);
-	const patch_t* pStar = W_ResolvePatchHandle(::star);
-	const patch_t* pP = W_ResolvePatchHandle(::p);
-
-	const short pwidth = pPercent->width();
 	unsigned int x, y;
-	short pwidth = percent->mWidth;
+	const short pwidth = percent->mWidth;
 
 	// draw animated background
 	WI_drawAnimatedBack();
@@ -1100,19 +1080,19 @@ void WI_drawNetgameStats()
 	WI_drawLF();
 
 	// draw stat titles (top line)
-	screen->DrawTextureClean(kills, NG_STATSX+NG_SPACINGX-kills->mWidth, NG_STATSY);
+	screen->DrawTextureClean(::kills, NG_STATSX+NG_SPACINGX-::kills->mWidth, NG_STATSY);
 
-	screen->DrawTextureClean(items, NG_STATSX+2*NG_SPACINGX-items->mWidth, NG_STATSY);
+	screen->DrawTextureClean(::items, NG_STATSX+2*NG_SPACINGX-::items->mWidth, NG_STATSY);
 
-	screen->DrawTextureClean(scrt, NG_STATSX+3*NG_SPACINGX-scrt->mWidth, NG_STATSY);
+	screen->DrawTextureClean(::scrt, NG_STATSX+3*NG_SPACINGX-::scrt->mWidth, NG_STATSY);
 
 	if (::dofrags)
 	{
-		screen->DrawTextureClean(frags, NG_STATSX + 4 * NG_SPACINGX - frags->mWidth, NG_STATSY);
+		screen->DrawTextureClean(::frags, NG_STATSX + 4 * NG_SPACINGX - ::frags->mWidth, NG_STATSY);
 	}
 
 	// draw stats
-	y = NG_STATSY + kills->mHeight;
+	y = NG_STATSY + ::kills->mHeight;
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -1141,7 +1121,7 @@ void WI_drawNetgameStats()
 		//screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
 
 		if (i == me)
-			screen->DrawTextureClean(star, x-p->mWidth, y);
+			screen->DrawTextureClean(::star, x-p->mWidth, y);
 
 		// Display player names online!
 		if (!demoplayback)
@@ -1269,13 +1249,13 @@ void WI_updateStats()
 			if (nextlevel.enterpic[0])
 			{
 				// background
-				const patch_t* bg_patch = W_CachePatch(name.c_str());
+				const Texture* bg_patch = Res_CacheTexture(name.c_str(), PATCH);
 				background_surface =
-				    I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+				    I_AllocateSurface(bg_patch->mWidth, bg_patch->mHeight, 8);
 				const DCanvas* canvas = background_surface->getDefaultCanvas();
 
 				background_surface->lock();
-				canvas->DrawPatch(bg_patch, 0, 0);
+				canvas->DrawTexture(bg_patch, 0, 0);
 				background_surface->unlock();
 			}
 
@@ -1302,16 +1282,8 @@ void WI_updateStats()
 
 void WI_drawStats()
 {
-	// TODO: Reconcile
-	// Convert to Texture
-	const patch_t* pKills = W_ResolvePatchHandle(::kills);
-	const patch_t* pItems = W_ResolvePatchHandle(::items);
-	const patch_t* pSecret = W_ResolvePatchHandle(::secret);
-	const patch_t* pTimepatch = W_ResolvePatchHandle(::timepatch);
-	const patch_t* pPar = W_ResolvePatchHandle(::par);
-
 	// line height
-	const int lh = (3 * W_ResolvePatchHandle(::num[0])->height()) / 2;
+	const int lh = (3 * ::num[0]->mHeight) / 2;
     // line height
     int lh = (3*num[0]->mHeight)/2;
 
@@ -1482,7 +1454,7 @@ void WI_loadData()
 		}
 		else
 		{
-			lnames[i].clear();
+			lnames[i] = NULL;
 			lnametexts[i] = levels.findByName(i == 0 ? wbs->current : wbs->next).level_name.c_str();
 			lnamewidths[i] = WI_CalcWidth (lnametexts[i]);
 		}
@@ -1627,27 +1599,27 @@ void WI_unloadData()
 	Z_ChangeTag (p, PU_CACHE);*/
 
 	for (int i = 0; i < 10; i++)
-		num[i].clear();
+	Z_ChangeTag(num[i], PU_CACHE);
 
-	wiminus.clear();
-	percent.clear();
-	colon.clear();
-	kills.clear();
-	secret.clear();
-	frags.clear();
-	items.clear();
-	finished.clear();
-	entering.clear();
-	timepatch.clear();
-	sucks.clear();
-	par.clear();
-	total.clear();
+	Z_ChangeTag(wiminus, PU_CACHE);
+	Z_ChangeTag(percent, PU_CACHE);
+	Z_ChangeTag(colon, PU_CACHE);
+	Z_ChangeTag(kills, PU_CACHE);
+	Z_ChangeTag(secret, PU_CACHE);
+	Z_ChangeTag(frags, PU_CACHE);
+	Z_ChangeTag(items, PU_CACHE);
+	Z_ChangeTag(finished, PU_CACHE);
+	Z_ChangeTag(entering, PU_CACHE);
+	Z_ChangeTag(timepatch, PU_CACHE);
+	Z_ChangeTag(sucks, PU_CACHE);
+	Z_ChangeTag(par, PU_CACHE);
+	Z_ChangeTag(total, PU_CACHE);
 	//	Z_ChangeTag(star, PU_CACHE);
 	//	Z_ChangeTag(bstar, PU_CACHE);
-	p.clear();
+	Z_ChangeTag(p, PU_CACHE);
 
 	for (int i = 0; i < 4; i++)
-		faceclassic[i ].clear();
+		Z_ChangeTag(faceclassic[i], PU_CACHE);
 }
 
 void WI_Drawer()

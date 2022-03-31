@@ -30,6 +30,7 @@
 #include "m_fileio.h"
 #include "w_ident.h"
 #include "w_wad.h"
+#include "resources/res_filelib.h"
 
 const char* ODAMEX_USERAGENT = "Odamex/" DOTVERSIONSTR;
 
@@ -415,7 +416,7 @@ bool OTransfer::tick()
 
 	// Verify that the file is what the server wants and is not a renamed
 	// commercial IWAD.
-	OMD5Hash actualHash = W_MD5(m_filePart);
+	OMD5Hash actualHash = Res_MD5(m_filePart);
 	if (W_IsFilehashCommercialIWAD(actualHash))
 	{
 		remove(m_filePart.c_str());

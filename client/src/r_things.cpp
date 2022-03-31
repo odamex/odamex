@@ -77,12 +77,9 @@ EXTERN_CVAR (r_particles)
 // variables used to look up
 //	and range check thing_t sprites patches
 
-static tallpost_t* spriteposts[MAXWIDTH];
+static const palindex_t* spriteposts[MAXWIDTH];
 spriteframe_t	sprtemp[MAX_SPRITE_FRAMES];
 int 			maxframe;
-
-static const palindex_t* spriteposts[MAXWIDTH];
-static tallpost_t* spriteposts[MAXWIDTH];
 
 // [RH] particle globals
 extern int				NumParticles;
@@ -666,7 +663,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	const spritedef_t* sprdef = &sprites[thing->sprite];
 
 #ifdef RANGECHECK
-	if ( (thing->frame & FF_FRAMEMASK) >= sprdef->numframes )
+	if ((thing->frame & FF_FRAMEMASK) >= sprdef->numframes)
 	{
 		DPrintf ("R_ProjectSprite: invalid sprite frame %i : %i\n ", thing->sprite, thing->frame);
 		return;
@@ -677,6 +674,8 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 
 	int frame_index = 0;
 	// choose a different rotation based on player view (if supported by the sprite)
+	if (sprframe->rotate)
+	{
 		frame_index = (R_PointToAngle(thingx, thingy) - thing->angle + (unsigned)(ANG45/2)*9) >> 29;
 	}
 
@@ -778,7 +777,7 @@ fixed_t P_CalculateWeaponBobY(player_t* player, float scale_amount);
 // R_DrawPSprite
 //
 void R_DrawPSprite(pspdef_t* psp, unsigned flags)
-
+{
 	// decide which patch to use
 #ifdef RANGECHECK
 	if ( (unsigned)psp->state->sprite >= (unsigned)numsprites) {
@@ -788,7 +787,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 #endif
 	const spritedef_t* sprdef = &sprites[psp->state->sprite];
 #ifdef RANGECHECK
-	if ( (psp->state->frame & FF_FRAMEMASK) >= sprdef->numframes) {
+	if ((psp->state->frame & FF_FRAMEMASK) >= sprdef->numframes) {
 		DPrintf ("R_DrawPSprite: invalid sprite frame %i : %i\n", psp->state->sprite, psp->state->frame);
 		return;
 	}
@@ -835,7 +834,6 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	vis.translation = translationref_t();		// [RH] Use default colors
 	vis.translucency = r_drawplayersprites * FRACUNIT;
 	vis.mo = NULL;
-	vis->mo = NULL;
 
 	if (sprframe->flip[0])
 	{
@@ -885,10 +883,9 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 // R_DrawPlayerSprites
 //
 void R_DrawPlayerSprites()
+{
 	int 		lightnum;
 	pspdef_t*	psp;
-	sector_t*	sec;
-	sector_t*	sec;
 	static sector_t tempsec;
 	int			floorlight, ceilinglight;
 
@@ -934,7 +931,6 @@ void R_DrawPlayerSprites()
 		centeryfrac = centery << FRACBITS;
 
 		// add all active psprites
-		int i;
 		for (i=0, psp=camera->player->psprites; i<NUMPSPRITES; i++,psp++)
 		{
 			if (psp->state)

@@ -1156,38 +1156,11 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 
 void CL_NetDemoPlay(const std::string& filename)
 {
-	netdemo.stopPlaying();
-}
-
-void CL_NetDemoPlay(const std::string &filename)
-{
-	std::string newfilename;
-
-	std::string dir;
-	M_ExtractFilePath(filename, dir);
-
-	// if no path is supplied, check the default path
-	if (dir.empty())
-		newfilename = I_GetUserFileName(filename.c_str());
-	else
-		newfilename = filename;
-
-	if (!M_FileExists(newfilename))
+	std::string found = M_FindUserFileName(filename, ".odd");
+	if (found.empty())
 	{
-		std::string found = M_FindUserFileName(filename, ".odd");
-		if (found.empty())
-		{
-			Printf(PRINT_WARNING, "Could not find demo %s.\n", filename.c_str());
-			return;
-		}
-
-		// try adding .odd to the end of the file name
-		std::string ext;
-		M_ExtractFileExtension(newfilename, ext);
-		if (!iequals(ext, ".odd"))
-		{
-			newfilename = M_AppendExtension(newfilename, ".odd", false);
-		}
+		Printf(PRINT_WARNING, "Could not find demo %s.\n", filename.c_str());
+		return;
 	}
 
 	netdemo.startPlaying(found);
@@ -1496,18 +1469,18 @@ void CL_RequestConnectInfo(void)
  *
  * @param missing_file Missing file to attempt to download.
  */
-void CL_QuitAndTryDownload(const OWantFile& missing_file)
+void CL_QuitAndTryDownload(const std::string& missing_file)
 {
 	// Need to set this here, otherwise we render a frame of wild pointers
 	// filled with garbage data.
 	gamestate = GS_FULLCONSOLE;
 
-	if (missing_file.getBasename().empty())
+	if (missing_file.empty())
 	{
 		Printf(PRINT_WARNING,
 		       "Tried to download an empty file.  This is probably a bug "
 		       "in the client where an empty file is considered missing.\n",
-		       missing_file.getBasename().c_str());
+		       missing_file.c_str());
 		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
@@ -1518,7 +1491,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 		Printf(PRINT_WARNING,
 		       "Unable to find \"%s\". Downloading is disabled on your client.  Go to "
 		       "Options > Network Options to enable downloading.\n",
-		       missing_file.getBasename().c_str());
+		       missing_file.c_str());
 		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
@@ -1528,7 +1501,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 		// Playing a netdemo and unable to download from the server
 		Printf(PRINT_WARNING,
 		       "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
-		       missing_file.getBasename().c_str());
+		       missing_file.c_str());
 		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
@@ -1538,7 +1511,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 		// Nobody has any download sites configured.
 		Printf("Unable to find \"%s\".  Both your client and the server have no "
 		       "download sites configured.\n",
-		       missing_file.getBasename().c_str());
+		       missing_file.c_str());
 		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
@@ -1559,7 +1532,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 
 	// Disconnect from the server before we start the download.
 	Printf(PRINT_HIGH, "Need to download \"%s\", disconnecting from server...\n",
-	       missing_file.getBasename().c_str());
+	       missing_file.c_str());
 	CL_QuitNetGame(NQ_SILENT);
 
 	// Start the download.
@@ -1613,18 +1586,17 @@ static bool CL_LoadResourceFiles(
 			// Playing a netdemo and unable to download from the server
 			Printf(PRINT_HIGH, "Unable to find resource file \"%s\".  Cannot download while playing a netdemo.\n",
 								missing_resource_filename.c_str());
-			CL_QuitNetGame();
+			CL_QuitNetGame(NQ_ABORT);
 		}
 		else if (!cl_serverdownload)
 		{
 			// Playing a netdemo and unable to download from the server
 			Printf(PRINT_HIGH, "Unable to find \"%s\". Downloading is disabled on your client.  Go to Options > Network Options to enable downloading.\n",
 								missing_resource_filename.c_str());
-			CL_QuitNetGame();
+			CL_QuitNetGame(NQ_ABORT);
 		}
 		else
 		{
-			gamestate = GS_DOWNLOAD;
 			Printf(PRINT_HIGH, "Will download resource file \"%s\" from server\n",
 								missing_resource_filename.c_str());
 		}
@@ -1657,14 +1629,6 @@ bool CL_PrepareConnect()
 
 	size_t resource_file_count = MSG_ReadByte();
 
-	// TODO: Reconcile
-	std::vector<std::string> newwadnames;
-	newwadnames.reserve(server_wads);
-	for (byte i = 0; i < server_wads; i++)
-	{
-		newwadnames.push_back(MSG_ReadString());
-	}
-
 	// store the resource file name list
 	std::vector<std::string> resource_filenames;
 	for (size_t i = 0; i < resource_file_count; i++)
@@ -1683,28 +1647,6 @@ bool CL_PrepareConnect()
 		MSG_ReadShort();
 		MSG_ReadLong();
 		MSG_ReadByte();
-	}
-
-	// TODO: Reconcile
-	OWantFiles newwadfiles;
-	newwadfiles.resize(server_wads);
-	for (byte i = 0; i < server_wads; i++)
-	{
-		OWantFile& file = newwadfiles.at(i);
-		const std::string hashStr = MSG_ReadString();
-		OMD5Hash hash;
-		OMD5Hash::makeFromHexStr(hash, hashStr);
-		if (!OWantFile::makeWithHash(file, newwadnames.at(i), OFILE_WAD, hash))
-		{
-			Printf(PRINT_WARNING,
-			       "Could not construct wanted file \"%s\" that server requested.\n",
-			       newwadnames.at(i).c_str());
-			CL_QuitNetGame(NQ_ABORT);
-			return false;
-		}
-
-		Printf("> %s\n   %s\n", file.getBasename().c_str(),
-		       file.getWantedMD5().getHexCStr());
 	}
 
 	// store the MD5SUMS for the resource file name list
@@ -1795,46 +1737,25 @@ bool CL_PrepareConnect()
 		return false;
 	}
 
-	// DEH/BEX Patch files
-	size_t patch_count = MSG_ReadByte();
-
-	OWantFiles newpatchfiles;
-	newpatchfiles.resize(patch_count);
-	for (byte i = 0; i < patch_count; ++i)
-	{
-		OWantFile& file = newpatchfiles.at(i);
-		std::string filename = MSG_ReadString();
-		if (!OWantFile::make(file, filename, OFILE_DEH))
-		{
-			Printf(PRINT_WARNING,
-			       "Could not construct wanted file \"%s\" that server requested.\n",
-			       filename.c_str());
-			CL_QuitNetGame(NQ_ABORT);
-			return false;
-		}
-
-		Printf("> %s\n", file.getBasename().c_str());
-	}
-
 	// TODO: Allow deh/bex file downloads
 	Printf("\n");
-	bool ok = D_DoomWadReboot(newwadfiles, newpatchfiles);
-	if (!ok && missingfiles.empty())
+	bool ok = CL_LoadResourceFiles(resource_filenames, resource_filehashes);
+	if (!ok && missing_resource_filename.empty())
 	{
 		Printf(PRINT_WARNING, "Could not load required set of WAD files.\n");
 		CL_QuitNetGame(NQ_ABORT);
 		return false;
 	}
-	else if (!ok && !missingfiles.empty() || cl_forcedownload)
+	else if (!ok && !missing_resource_filename.empty() || cl_forcedownload)
 	{
-		OWantFile missing_file;
-		if (missingfiles.empty())				// cl_forcedownload
+		std::string missing_file;
+		if (missing_resource_filename.empty()) // cl_forcedownload
 		{
-			missing_file = newwadfiles.back();
+			missing_file = missing_resource_filename.back();
 		}
 		else									// client is really missing a file
 		{
-			missing_file = missingfiles.front();
+			missing_file = missing_resource_filename.front();
 		}
 
 		CL_QuitAndTryDownload(missing_file);
@@ -1848,10 +1769,6 @@ bool CL_PrepareConnect()
 	byte dummy = MSG_ReadByte();
 	while (dummy--)
 		MSG_ReadString();
-
-	// load the resource files
-	if (!CL_LoadResourceFiles(resource_filenames, resource_filehashes) && gamestate != GS_DOWNLOAD)
-		return false;
 
 	recv_full_update = false;
 

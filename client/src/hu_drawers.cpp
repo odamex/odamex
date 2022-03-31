@@ -207,9 +207,6 @@ void DrawTexture(int x, int y, const float scale,
                const Texture* texture, const bool force_opaque,
                const bool use_patch_offsets)
 {
-	if (patch == NULL)
-		return;
-
 	// Calculate width and height of patch
 	unsigned short w = texture->mWidth;
 	unsigned short h = texture->mHeight;
@@ -238,9 +235,6 @@ void DrawTranslatedTexture(int x, int y, const float scale,
                          const Texture* texture, byte* translation,
                          const bool force_opaque, const bool use_patch_offsets)
 {
-	if (patch == NULL)
-		return;
-
 	// Calculate width and height of patch
 	unsigned short w = texture->mWidth;
 	unsigned short h = texture->mHeight;
@@ -274,9 +268,6 @@ void DrawTextureStretched(int x, int y,
                         const Texture* texture, const bool force_opaque,
                         const bool use_patch_offsets)
 {
-	if (patch == NULL)
-		return;
-
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
@@ -303,9 +294,6 @@ void DrawTextureScaled(const int x, const int y,
                      const Texture* texture, const bool force_opaque,
                      const bool use_patch_offsets)
 {
-	if (patch == NULL)
-		return;
-
 	// Calculate aspect ratios of patch and destination.
 	float patch_aspect = float(texture->mWidth) / float(texture->mHeight);
 	float dest_aspect = w / (float)h;

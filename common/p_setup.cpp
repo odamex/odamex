@@ -591,9 +591,9 @@ static void P_LoadDoomThings(const OString& mapname)
 	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadDoomThings: unable to find THINGS lump for map %s\n", mapname.c_str());
 
-	P_HordeClearSpawns();
 	byte* data = (byte*)Res_LoadResource(res_id, PU_STATIC);
 
+	P_HordeClearSpawns();
 	playerstarts.clear();
 	voodoostarts.clear();
 	DeathMatchStarts.clear();
@@ -1541,33 +1541,68 @@ static void P_LoadBlockMap(const OString& mapname)
 * @param maplumpnum - Lump offset number of the specified map 
 * If it is, use it as part of the map calculation.
 */
-void P_GenerateUniqueMapFingerPrint(int maplumpnum)
+void P_GenerateUniqueMapFingerPrint(const OString& mapname)
 {
 	unsigned int length = 0;
 
 	typedef std::vector<byte> LevelLumps;
 	static LevelLumps levellumps;
 
-	const byte* thingbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
-	const byte* lindefbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
-	const byte* sidedefbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
-	const byte* vertexbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
-	const byte* segsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
-	const byte* ssectorsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
-	const byte* sectorsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
+	const ResourceId thing_res_id = Res_GetMapResourceId("THINGS", mapname);
+	if (!Res_CheckResource(thing_res_id))
+		I_Error("P_LoadDoomThings: unable to find THINGS lump for map %s\n",
+		        mapname.c_str());
 
-	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_THINGS), *thingbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_LINEDEFS), *lindefbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SIDEDEFS), *sidedefbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_VERTEXES), *vertexbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SEGS), *segsbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SSECTORS), *ssectorsbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SECTORS), *sectorsbytes);
+	const ResourceId linedef_res_id = Res_GetMapResourceId("LINEDEFS", mapname);
+	if (!Res_CheckResource(linedef_res_id))
+		I_Error("P_LoadDoomThings: unable to find LINEDEFS lump for map %s\n",
+		        mapname.c_str());
 
-	length = W_LumpLength(maplumpnum+ML_THINGS) + W_LumpLength(maplumpnum+ML_LINEDEFS) +
-	         W_LumpLength(maplumpnum+ML_SIDEDEFS) + W_LumpLength(maplumpnum+ML_VERTEXES) +
-			 W_LumpLength(maplumpnum + ML_SEGS) + W_LumpLength(maplumpnum + ML_SSECTORS) +
-			 W_LumpLength(maplumpnum + ML_SECTORS);
+	const ResourceId sidedef_res_id = Res_GetMapResourceId("SIDEDEFS", mapname);
+	if (!Res_CheckResource(sidedef_res_id))
+		I_Error("P_LoadDoomThings: unable to find SIDEDEFS lump for map %s\n",
+		        mapname.c_str());
+
+	const ResourceId vertexes_res_id = Res_GetMapResourceId("VERTEXES", mapname);
+	if (!Res_CheckResource(vertexes_res_id))
+		I_Error("P_LoadDoomThings: unable to find VERTEXES lump for map %s\n",
+		        mapname.c_str());
+
+	const ResourceId segs_res_id = Res_GetMapResourceId("SEGS", mapname);
+	if (!Res_CheckResource(segs_res_id))
+		I_Error("P_LoadDoomThings: unable to find SEGS lump for map %s\n",
+		        mapname.c_str());
+
+	const ResourceId ssectors_res_id = Res_GetMapResourceId("SSECTORS", mapname);
+	if (!Res_CheckResource(ssectors_res_id))
+		I_Error("P_LoadDoomThings: unable to find SSECTORS lump for map %s\n",
+		        mapname.c_str());
+
+	const ResourceId sectors_res_id = Res_GetMapResourceId("SECTORS", mapname);
+	if (!Res_CheckResource(sectors_res_id))
+		I_Error("P_LoadDoomThings: unable to find SECTORS lump for map %s\n",
+		        mapname.c_str());
+
+	const byte* thingbytes = const_cast<const byte*>((const byte*)Res_LoadResource(thing_res_id, PU_STATIC));
+	const byte* lindefbytes = const_cast<const byte*>((const byte*)Res_LoadResource(linedef_res_id, PU_STATIC));
+	const byte* sidedefbytes = const_cast<const byte*>((const byte*)Res_LoadResource(sidedef_res_id, PU_STATIC));
+	const byte* vertexbytes = const_cast<const byte*>((const byte*)Res_LoadResource(vertexes_res_id, PU_STATIC));
+	const byte* segsbytes = const_cast<const byte*>((const byte*)Res_LoadResource(segs_res_id, PU_STATIC));
+	const byte* ssectorsbytes = const_cast<const byte*>((const byte*)Res_LoadResource(ssectors_res_id, PU_STATIC));
+	const byte* sectorsbytes = const_cast<const byte*>((const byte*)Res_LoadResource(sectors_res_id, PU_STATIC));
+
+	levellumps.insert(levellumps.end(), Res_GetResourceSize(thing_res_id), *thingbytes);
+	levellumps.insert(levellumps.end(), Res_GetResourceSize(linedef_res_id), *lindefbytes);
+	levellumps.insert(levellumps.end(), Res_GetResourceSize(sidedef_res_id), *sidedefbytes);
+	levellumps.insert(levellumps.end(), Res_GetResourceSize(vertexes_res_id), *vertexbytes);
+	levellumps.insert(levellumps.end(), Res_GetResourceSize(segs_res_id), *segsbytes);
+	levellumps.insert(levellumps.end(), Res_GetResourceSize(ssectors_res_id), *ssectorsbytes);
+	levellumps.insert(levellumps.end(), Res_GetResourceSize(sectors_res_id), *sectorsbytes);
+
+	length = Res_GetResourceSize(thing_res_id) + Res_GetResourceSize(linedef_res_id) +
+	         Res_GetResourceSize(sidedef_res_id) + Res_GetResourceSize(vertexes_res_id) +
+	         Res_GetResourceSize(segs_res_id) + Res_GetResourceSize(ssectors_res_id) +
+	         Res_GetResourceSize(sectors_res_id);
 
 	fhfprint_s fingerprint = W_FarmHash128(levellumps.data(), length);
 
@@ -1828,8 +1863,6 @@ static void P_InitTagLists(void)
 //
 void P_SetupLevel(const OString& mapname, int position)
 {
-	size_t lumpnum;
-
 	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
 		wminfo.maxfrags = 0;
@@ -1841,8 +1874,6 @@ void P_SetupLevel(const OString& mapname, int position)
 		for (Players::iterator it = players.begin();it != players.end();++it)
 			it->killcount = it->secretcount = it->itemcount = 0;
 	}
-
-	// To use the correct nodes for 
 
 	// Initial height of PointOfView will be set by player think.
 	consoleplayer().viewz = 1;
@@ -1863,16 +1894,13 @@ void P_SetupLevel(const OString& mapname, int position)
 	shootthing = NULL;
 
 	DThinker::DestroyAllThinkers ();
-	Z_FreeTags (PU_LEVEL, PU_LEVELMAX);
+	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL);
 	NormalLight.next = NULL;	// [RH] Z_FreeTags frees all the custom colormaps
 
 	// [AM] Every new level starts with fresh netids.
 	P_ClearAllNetIds();
 
 	// UNUSED W_Profile ();
-
-	// find map num
-	lumpnum = W_GetNumForName (lumpname);
 
 	// [RH] Check if this map is Hexen-style.
 	//		LINEDEFS and THINGS need to be handled accordingly.
@@ -1889,7 +1917,7 @@ void P_SetupLevel(const OString& mapname, int position)
 
 	if (HasBehavior)
 	{
-		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
+		P_LoadBehavior(mapname);
 		map_format.P_ApplyZDoomMapFormat();
 	}
 	else
@@ -1911,7 +1939,7 @@ void P_SetupLevel(const OString& mapname, int position)
 	P_LoadBlockMap(mapname);
 
 	// [Blair] Create map fingerprint
-	P_GenerateUniqueMapFingerPrint(lumpnum);
+	P_GenerateUniqueMapFingerPrint(mapname);
 	
 	const ResourceId nodes_res_id = Res_GetMapResourceId("NODES", mapname);
 	if (Res_GetResourceSize(nodes_res_id) >= 4)
@@ -1997,14 +2025,7 @@ void P_Init (void)
 	P_InitSwitchList ();
 	Res_ReadAnimationDefinitions();
 	R_InitSprites(sprnames);
-}
-
-
-// [ML] Do stuff when the timelimit is reset
-// Where else can I put this??
-CVAR_FUNC_IMPL(sv_timelimit)
-{
-	level.timeleft = var * TICRATE * 60;
+	InitTeamInfo();
 }
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)

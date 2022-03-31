@@ -423,7 +423,7 @@ std::string I_GetCWD ()
 	if(cwd)
 		ret = cwd;
 
-	FixPathSeparator(ret);
+	M_FixPathSep(ret);
 
 	return ret;
 }
@@ -508,7 +508,7 @@ std::string I_GetUserFileName (const char *file)
 	path += file;
 #endif
 
-	FixPathSeparator(path);
+	M_FixPathSep(path);
 
 	return path;
 }
@@ -590,9 +590,15 @@ std::string I_GetBinaryDir()
 	}
 #endif
 
-	FixPathSeparator(ret);
+		M_FixPathSep(ret);
 
 	size_t slash = ret.find_last_of(PATHSEPCHAR);
+
+	if (slash == std::string::npos)
+		return "";
+	else
+		return ret.substr(0, slash);
+}
 
 void I_FinishClockCalibration ()
 {

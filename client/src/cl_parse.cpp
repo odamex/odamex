@@ -98,7 +98,7 @@ player_t& CL_FindPlayer(size_t id);
 std::string CL_GenerateNetDemoFileName(
     const std::string& filename = cl_netdemoname.cstring());
 bool CL_PlayerJustTeleported(player_t* player);
-void CL_QuitAndTryDownload(const OWantFile& missing_file);
+void CL_QuitAndTryDownload(const std::string& missing_file);
 void CL_ResyncWorldIndex();
 void CL_SpectatePlayer(player_t& player, bool spectate);
 void G_PlayerReborn(player_t& p); // [Toke - todo] clean this function

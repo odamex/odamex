@@ -60,10 +60,13 @@ const char* ParseString2(const char* data);
 
 
 // denis - Standard MD5SUM
-std::string Res_MD5(const std::string& filename)
+OMD5Hash Res_MD5(const std::string& filename)
 {
+	OMD5Hash rvo;
+
 	const int file_chunk_size = 8192;
 	FILE *fp = fopen(filename.c_str(), "rb");
+
 	if (!fp)
 		return "";
 
@@ -85,7 +88,8 @@ std::string Res_MD5(const std::string& filename)
 	for (int i = 0; i < 16; i++)
 		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << (short)digest[i];
 
-	return hash.str();
+	OMD5Hash::makeFromHexStr(rvo, hashStr.str());
+	return rvo;
 }
 
 

@@ -200,12 +200,6 @@ void HU_Init()
 
 	V_TextInit();
 
-	for (int i = 0; i < HU_FONTSIZE; i++)
-	{
-		sprintf(buffer, tplate, j++ - sub);
-		hu_font[i] = Res_CacheTexture(buffer, PATCH, PU_STATIC);
-	}
-
 	// Load the status bar line
 	::sbline = Res_CacheTexture("SBLINE", PATCH, PU_STATIC);
 
@@ -415,7 +409,7 @@ static void HU_DrawCrosshair()
 static void HU_DrawChatPrompt()
 {
 	// Don't draw the chat prompt without a valid font.
-	if (::hu_font[0].empty())
+	if (!::hu_font[0])
 		return;
 
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
@@ -454,9 +448,7 @@ static void HU_DrawChatPrompt()
 		prompt = "Say: ";
 
 	int promptwidth = V_StringWidth(prompt) * scaledxfac;
-	// TODO: Reconcile
 	int x = hu_font['_' - HU_FONTSTART]->mWidth * scaledxfac * 2 + promptwidth;
-	int x = W_ResolvePatchHandle(hu_font['_' - HU_FONTSTART])->width() * scaledxfac * 2 + promptwidth;
 
 	// figure out if the text is wider than the screen->
 	// if so, only draw the right-most portion of it.
@@ -470,9 +462,7 @@ static void HU_DrawChatPrompt()
 		}
 		else
 		{
-			// TODO: Reconcile
 			x += hu_font[c]->mWidth * scaledxfac;
-			x += W_ResolvePatchHandle(hu_font[c])->width() * scaledxfac;
 		}
 	}
 
@@ -859,11 +849,6 @@ void drawHeader(player_t *player, int y)
 
 	// Line
 	for (short xi = -236 + 1;xi < 236;xi += 2) {
-		// TODO: Reconcile
-		hud::DrawTranslatedPatch(xi, y + yOffset + 8, hud_scalescoreboard, hud::X_CENTER,
-		                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP,
-		                         W_ResolvePatchHandle(sbline), Ranges + CR_GREY * 256,
-		                         true);
 		hud::DrawTranslatedTexture(xi, y + 24, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
@@ -930,12 +915,7 @@ void drawScores(player_t *player, int y, byte extra_rows) {
 	              "PING", CR_GREY, true);
 
 	// Line
-	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 	for (short xi = -236 + 1;xi < 236;xi += 2) {
-		// TODO: Reconcile
-		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard, hud::X_CENTER,
-		                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP, pSBLine,
-		                         Ranges + CR_GREY * 256, true);
 		hud::DrawTranslatedTexture(xi, y + 8, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
@@ -1088,16 +1068,8 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 
 		color = V_GetTextColor(GetTeamInfo((team_t)i)->TextColor.c_str());
 
-		// TODO: Reconcile
-		patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 		for (short xi = xOffset; xi < xOffset + 232; xi += 2)
 		{
-			hud::DrawTranslatedPatch(xi, yOffset + y + 8, hud_scalescoreboard,
-			                         hud::X_CENTER, hud::Y_MIDDLE, hud::X_LEFT,
-			                         hud::Y_TOP, pSBLine, Ranges + color * 256, true);
-			hud::DrawTranslatedPatch(xi, yOffset + y + 19, hud_scalescoreboard,
-			                         hud::X_CENTER, hud::Y_MIDDLE, hud::X_LEFT,
-			                         hud::Y_TOP, pSBLine, Ranges + color * 256, true);
 			hud::DrawTranslatedTexture(xi, y + 8, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_LEFT, hud::Y_TOP,
@@ -1233,13 +1205,7 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 void drawSpectators(player_t *player, int y, byte extra_rows) {
 	static short tx[3] = {-236, -79, 78};
 
-	// Line
-	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 	for (short xi = -236 + 1;xi < 236;xi += 2) {
-		// TODO: Reconcile
-		hud::DrawTranslatedPatch(xi, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-		                         hud::X_CENTER, hud::Y_TOP, pSBLine,
-		                         Ranges + CR_GREY * 256, true);
 		hud::DrawTranslatedTexture(xi, y, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
@@ -1405,13 +1371,7 @@ void drawLowHeader(player_t *player, int y) {
 	              hud::X_CENTER, hud::Y_TOP,
 	              str.c_str(), CR_GOLD, true);
 
-	// Line
-	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 	for (short xi = -146 + 1;xi < 146;xi += 2) {
-		// TODO: Reconcile
-		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard, hud::X_CENTER,
-		                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP, pSBLine,
-		                         Ranges + CR_GREY * 256, true);
 		hud::DrawTranslatedTexture(xi, y + 8, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
@@ -1475,17 +1435,11 @@ void drawLowScores(player_t *player, int y, byte extra_rows) {
 	              hud::X_RIGHT, hud::Y_TOP,
 	              "PNG", CR_GREY, true);
 
-	// Line
-	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 	for (short xi = -146 + 1;xi < 146;xi += 2) {
-		// TODO: Reconcile
 		hud::DrawTranslatedTexture(xi, y + 8, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
 		                         sbline, Ranges + CR_GREY * 256, true);
-		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard, hud::X_CENTER,
-		                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP, pSBLine,
-		                         Ranges + CR_GREY * 256, true);
 	}
 
 	// Ingame Players
@@ -1607,18 +1561,16 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 
 	int yOffset = 8;
 
-	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
 		color = V_GetTextColor(GetTeamInfo((team_t)i)->TextColor.c_str());
 
-	for (byte i = 0;i < 2;i++) {
 		for (short xi = -146 + 1;xi < 146;xi += 2) {
-			hud::DrawTranslatedTexture(xi, y + ty[i], hud_scalescoreboard,
+			hud::DrawTranslatedTexture(xi, y + yOffset, hud_scalescoreboard,
 			                         hud::X_CENTER, hud::Y_MIDDLE,
 			                         hud::X_CENTER, hud::Y_TOP,
 			                         sbline, Ranges + color * 256, true);
-			hud::DrawTranslatedTexture(xi, y + ty[i] + 11, hud_scalescoreboard,
+			hud::DrawTranslatedTexture(xi, y + yOffset + 11, hud_scalescoreboard,
 			                         hud::X_CENTER, hud::Y_MIDDLE,
 			                         hud::X_CENTER, hud::Y_TOP,
 			                         sbline, Ranges + color * 256, true);
@@ -1772,16 +1724,11 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 void drawLowSpectators(player_t *player, int y, byte extra_rows) {
 	static short tx[2] = {-146, 1};
 
-	// Line
-	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 	for (short xi = -146 + 1;xi < 146;xi += 2) {
 		hud::DrawTranslatedTexture(xi, y, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
 		                         sbline, Ranges + CR_GREY * 256, true);
-		hud::DrawTranslatedPatch(xi, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-		                         hud::X_CENTER, hud::Y_TOP, pSBLine,
-		                         Ranges + CR_GREY * 256, true);
 	}
 
 	byte specs = hud::CountSpectators();

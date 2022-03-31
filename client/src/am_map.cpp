@@ -674,7 +674,7 @@ void AM_unloadPics(void)
 
 	for (i = 0; i < 10; i++)
 	{
-		marknums[i].clear();
+		marknums[i] = NULL;
 	}
 }
 
@@ -1719,7 +1719,7 @@ void AM_Drawer()
 
 	AM_drawMarks();
 
-	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
+	if (!(viewactive && am_overlay < 2) && hu_font[0])
 	{
 		char line[64+10];
 		int time = level.time / TICRATE;

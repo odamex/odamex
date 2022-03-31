@@ -45,8 +45,6 @@ static CVAR (configver, CONFIGVERSIONSTR, "", CVARTYPE_STRING, CVAR_ARCHIVE | CV
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (sv_maxplayers)
 
-extern OResFiles wadfiles;
-
 /**
  * Get configuration file path.  This file contains commands to set all
  * archived cvars, bind commands to keys, and set other general game
@@ -249,7 +247,7 @@ std::string M_ExpandTokens(const std::string &str)
 			case 'd':
 			{
 				// Date
-				time_t now = time(NULL);
+			    time_t now = time(NULL);
 				char date[11] = {0};
 				strftime(date, sizeof(date), "%Y%m%d", localtime(&now));
 				buffer << date;
@@ -258,7 +256,7 @@ std::string M_ExpandTokens(const std::string &str)
 			case 't':
 			{
 				// Time
-				time_t now = time(NULL);
+			    time_t now = time(NULL);
 				char date[9] = {0};
 				strftime(date, sizeof(date), "%H%M%S", localtime(&now));
 				buffer << date;
@@ -268,13 +266,10 @@ std::string M_ExpandTokens(const std::string &str)
 				buffer << cl_name.cstring();
 				break;
 			case 'g':
-			{
 				buffer << GetShortGameModeString();
 				break;
-			}
 			case 'w':
 			{
-				// TODO: Reconcile
 				const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
 
 				if (resource_file_names.size() == 2)		// an IWAD map
@@ -283,14 +278,6 @@ std::string M_ExpandTokens(const std::string &str)
 					buffer << M_ExtractFileName(resource_file_names[2]);
 				break;
 			}
-				if (wadfiles.size() == 2) {
-					// We're playing an IWAD map
-					buffer << wadfiles[1].getBasename();
-				} else if (wadfiles.size() > 2) {
-					// We're playing a PWAD map
-					buffer << wadfiles[2].getBasename();
-				}
-				break;
 			case 'm':
 				buffer << level.mapname.c_str();
 				break;

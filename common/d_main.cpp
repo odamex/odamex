@@ -79,6 +79,15 @@ float maxfps = 35.0f;
 
 extern bool step_mode;
 
+OResFiles resource_files;
+OWantFiles missingfiles;
+
+bool lastWadRebootSuccess = true;
+extern bool step_mode;
+
+bool capfps = true;
+float maxfps = 35.0f;
+
 //
 // D_GetTitleString
 //

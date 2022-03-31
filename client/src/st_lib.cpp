@@ -170,7 +170,6 @@ void STlib_drawNum(st_number_t* n, bool force_refresh, bool cleararea)
 	// draw the new number
 	for (int numdigits = n->maxdigits; num && numdigits; numdigits--)
 	{
-		patch_t* pnum = W_ResolvePatchHandle(n->p[num % 10]);
 		x -= w;
 		STlib_DrawTexture(x, n->y, n->p[num % 10]);
 		num /= 10;

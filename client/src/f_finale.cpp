@@ -270,7 +270,7 @@ void F_Ticker()
 void F_TextWrite ()
 {
 	// Don't draw text without a working font.
-	if (::hu_font[0].empty())
+	if (!::hu_font[0])
 		return;
 
 	// erase the entire screen to a tiled background
@@ -282,8 +282,27 @@ void F_TextWrite ()
 	const int x = (primary_surface->getWidth() - width) / 2;
 	const int y = (primary_surface->getHeight() - height) / 2;
 
-	const Texture* background_texture = Res_CacheTexture(finaleflat, FLOOR);
-    screen->FlatFill(background_texture, x, y, width + x, height + y);
+	ResourceId lump;
+	switch (finalelumptype)
+	{
+	case FINALE_GRAPHIC:
+		lump = Res_GetResourceId(finalelump, global_directory_name);
+		if (lump >= 0)
+		{
+			screen->DrawTextureFullScreen(Res_CacheTexture(lump, PU_CACHE));
+		}
+		break;
+	case FINALE_FLAT:
+		lump = Res_GetResourceId(finalelump, flats_directory_name);
+		if (lump >= 0)
+		{
+			screen->FlatFill(Res_CacheTexture(lump, PU_CACHE), x, y, width + x,
+			                 height + y);
+		}
+		break;
+	default:
+		break;
+	}
 
 	V_MarkRect(x, y, width, height);
 
@@ -613,8 +632,6 @@ void F_DrawTextureColP(int x, const Texture* texture, int col)
 	// [RH] Figure out per-row fixed-point step
 	const unsigned int step = (200<<16) / surface_height;
 	const unsigned int invstep = (surface_height<<16) / 200;
-
-	const tallpost_t *post = (tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
 	
 	byte* desttop = surface->getBuffer() + x;
 	const int pitch = surface->getPitchInPixels();
@@ -704,7 +721,6 @@ void F_DrawTextureColD(int x, const Texture* texture, int col)
 	const unsigned step = (200<<16) / surface_height;
 	const unsigned invstep = (surface_height<<16) / 200;
 
-	const tallpost_t *post = (tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
 	argb_t* desttop = (argb_t *)surface->getBuffer() + x;
 	const int pitch = surface->getPitchInPixels();
 
@@ -777,7 +793,6 @@ void F_DrawTextureColD(int x, const Texture* texture, int col)
 //
 void F_BunnyScroll()
 {
-	int 		scrolled;
 	int 		x;
 	char		name[10];
 	static int	laststage;

@@ -52,7 +52,7 @@ void P_CollectSecretVanilla(sector_t* sector, player_t* player);
 void EV_StartLightStrobing(int tag, int upper, int lower, int utics, int ltics);
 void EV_StartLightStrobing(int tag, int utics, int ltics);
 void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
-void SetTextureNoErr(short* texture, unsigned int* color, char* name);
+void SetTextureNoErr(ResourceId* res_id_ptr, unsigned int* color, char* name);
 void P_AddSectorSecret(sector_t* sector);
 void P_SpawnLightFlash(sector_t* sector);
 void P_SpawnStrobeFlash(sector_t* sector, int utics, int ltics, bool inSync);

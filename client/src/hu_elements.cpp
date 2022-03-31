@@ -47,14 +47,14 @@ extern NetDemo netdemo;
 extern fixed_t FocalLengthX;
 extern byte* Ranges;
 
-extern lumpHandle_t line_leftempty;
-extern lumpHandle_t line_leftfull;
-extern lumpHandle_t line_centerempty;
-extern lumpHandle_t line_centerleft;
-extern lumpHandle_t line_centerright;
-extern lumpHandle_t line_centerfull;
-extern lumpHandle_t line_rightempty;
-extern lumpHandle_t line_rightfull;
+extern Texture* line_leftempty;
+extern Texture* line_leftfull;
+extern Texture* line_centerempty;
+extern Texture* line_centerleft;
+extern Texture* line_centerright;
+extern Texture* line_centerfull;
+extern Texture* line_rightempty;
+extern Texture* line_rightfull;
 
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_gametype)
@@ -843,17 +843,8 @@ void EleBar(const int x, const int y, const int w, const float scale,
             const x_align_t x_align, const y_align_t y_align, const x_align_t x_origin,
             const y_align_t y_origin, const float pct, const EColorRange color)
 {
-	patch_t* leftempty = W_ResolvePatchHandle(::line_leftempty);
-	patch_t* leftfull = W_ResolvePatchHandle(::line_leftfull);
-	patch_t* centerempty = W_ResolvePatchHandle(::line_centerempty);
-	patch_t* centerleft = W_ResolvePatchHandle(::line_centerleft);
-	patch_t* centerright = W_ResolvePatchHandle(::line_centerright);
-	patch_t* centerfull = W_ResolvePatchHandle(::line_centerfull);
-	patch_t* rightempty = W_ResolvePatchHandle(::line_rightempty);
-	patch_t* rightfull = W_ResolvePatchHandle(::line_rightfull);
-
 	// We assume that all parts of the bar are identical width.
-	const int UNIT_WIDTH = centerfull->width();
+	const int UNIT_WIDTH = ::line_centerfull->mWidth;
 
 	// Number of things to draw.
 	const int UNITS = w / UNIT_WIDTH;
@@ -868,7 +859,7 @@ void EleBar(const int x, const int y, const int w, const float scale,
 		return;
 	}
 
-	std::vector<patch_t*> lineHandles;
+	std::vector<Texture*> lineHandles;
 	lineHandles.reserve(UNITS);
 	for (int i = 0; i < UNITS; i++)
 	{
@@ -877,12 +868,12 @@ void EleBar(const int x, const int y, const int w, const float scale,
 			if (pct <= (0.0 + FLT_EPSILON))
 			{
 				// Completely empty.
-				lineHandles.push_back(leftempty);
+				lineHandles.push_back(::line_leftempty);
 			}
 			else
 			{
 				// The smallest amount of progress.
-				lineHandles.push_back(leftfull);
+				lineHandles.push_back(::line_leftfull);
 			}
 		}
 		else if (i == UNITS - 1)
@@ -890,12 +881,12 @@ void EleBar(const int x, const int y, const int w, const float scale,
 			if (pct >= (1.0 - FLT_EPSILON))
 			{
 				// Completely full.
-				lineHandles.push_back(rightfull);
+				lineHandles.push_back(::line_rightfull);
 			}
 			else
 			{
 				// Anything short of 100% - epsilon.
-				lineHandles.push_back(rightempty);
+				lineHandles.push_back(::line_rightempty);
 			}
 		}
 		else
@@ -909,17 +900,17 @@ void EleBar(const int x, const int y, const int w, const float scale,
 			if (scaled < static_cast<float>(idx) + 0.5f)
 			{
 				// Empty.
-				lineHandles.push_back(centerempty);
+				lineHandles.push_back(::line_centerempty);
 			}
 			else if (scaled < static_cast<float>(idx) + 1.0f)
 			{
 				// Half full.
-				lineHandles.push_back(centerleft);
+				lineHandles.push_back(::line_centerleft);
 			}
 			else
 			{
 				// Full.
-				lineHandles.push_back(centerfull);
+				lineHandles.push_back(::line_centerfull);
 			}
 		}
 	}
@@ -938,8 +929,8 @@ void EleBar(const int x, const int y, const int w, const float scale,
 
 	for (size_t i = 0; i < lineHandles.size(); i++)
 	{
-		patch_t* patch = lineHandles.at(i);
-		hud::DrawTranslatedPatch(drawX, y, scale, x_align, y_align, x_origin, y_origin,
+		Texture* patch = lineHandles.at(i);
+		hud::DrawTranslatedTexture(drawX, y, scale, x_align, y_align, x_origin, y_origin,
 		                         patch, ::Ranges + color * 256);
 
 		if (x_align == hud::X_RIGHT)

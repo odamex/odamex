@@ -1033,17 +1033,14 @@ static void ST_refreshBackground()
 	stbar_surface->lock();
 
 	DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
-	// TODO: Reconcile
 	stbar_canvas->DrawTexture(sbar, 0, 0);
 
 	if (sv_gametype == GM_CTF)
 	{
-		// TODO: Reconcile
 		stbar_canvas->DrawTexture(flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
 	}
 	else if (G_IsCoopGame())
 	{
-		// TODO: Reconcile
 		stbar_canvas->DrawTexture(armsbg, ST_ARMSBGX, ST_ARMSBGY);
 	}
 
@@ -1243,37 +1240,37 @@ static void ST_unloadGraphics()
 	// unload the numbers, tall and short
 	for (i = 0; i < 10; i++)
 	{
-		::tallnum[i].clear();
-		::shortnum[i].clear();
+		::tallnum[i] = NULL;
+		::shortnum[i] = NULL;
 	}
 
 	// unload tall percent
-	::tallpercent.clear();
+	::tallpercent = NULL;
 
 	// unload arms background
-	::armsbg.clear();
+	::armsbg = NULL;
 
 	// unload flags background
-	::flagsbg.clear();
+	::flagsbg = NULL;
 
 	// unload gray #'s
 	for (i = 0; i < 6; i++)
 	{
-		::arms[i][0].clear();
+		::arms[i][0] = NULL;
 	}
 
 	// unload the key cards
 	for (i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
 	{
-		::keys[i].clear();
+		::keys[i] = NULL;
 	}
 
-	::sbar.clear();
-	::faceback.clear();
+	::sbar = NULL;
+	::faceback = NULL;
 
 	for (i = 0; i < ST_NUMFACES; i++)
 	{
-		::faces[i].clear();
+		::faces[i] = NULL;
 	}
 
 	// Note: nobody ain't seen no unloading
