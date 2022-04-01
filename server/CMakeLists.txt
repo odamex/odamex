@@ -14,11 +14,6 @@ endif()
 # #define SERVER_APP for use in the source code
 add_definitions(-DSERVER_APP)
 
-# Common
-set(COMMON_DIR ../common)
-file(GLOB COMMON_HEADERS ${COMMON_DIR}/*.h ${COMMON_DIR}/resources/*.h)
-file(GLOB COMMON_SOURCES ${COMMON_DIR}/*.cpp ${COMMON_DIR}/resources/*.cpp)
-
 # Server
 file(GLOB SERVER_SOURCES src/*.cpp src/*.h)
 if(WIN32)

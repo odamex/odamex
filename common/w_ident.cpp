@@ -846,16 +846,17 @@ public:
 		return file && file->mIsIWAD;
 	}
 
-	bool isDeprecated(const OMD5Hash& hash) const
+	bool isDeprecated(const std::string& filename) const
 	{
+		const OMD5Hash hash = Res_MD5(filename);
 		const FileIdentifier* file = lookupByMd5Sum(hash);
 		return file && file->mIsDeprecated;
 	}
 
-	bool isIWAD(const OResFile& file) const
+	bool isIWAD(const std::string& filename) const
 	{
-		const OMD5Hash& md5sum(file.getMD5());
-		const FileIdentifier* ident = lookupByMd5Sum(md5sum);
+		const OMD5Hash hash = Res_MD5(filename);
+		const FileIdentifier* ident = lookupByMd5Sum(hash);
 
 		if (ident)
 			return ident->mIsIWAD;
@@ -872,7 +873,7 @@ public:
 		    {'S', 'T', 'D', 'I', 'S', 'K'}            // 5
 		};
 
-		WadFileLumpFinder lumps(file.getFullpath());
+		WadFileLumpFinder lumps(filename);
 		for (int i = 0; i < NUM_CHECKLUMPS; i++)
 			if (!lumps.exists(std::string(checklumps[i], 8)))
 				return false;
@@ -890,9 +891,10 @@ public:
 		return file1->mGroupName == file2->mGroupName;
 	}
 
-	const OString identify(const OResFile& file)
+	const OString identify(const std::string& filename)
 	{
-		const FileIdentifier* fileid = lookupByMd5Sum(file.getMD5());
+		const OMD5Hash md5sum = Res_MD5(filename);
+		const FileIdentifier* fileid = lookupByMd5Sum(md5sum);
 
 		if (fileid != NULL)
 			return fileid->mIdName;
@@ -918,7 +920,7 @@ public:
 
 		bool lumpsfound[NUM_CHECKLUMPS] = { 0 };
 
-		WadFileLumpFinder lumps(file.getFullpath());
+		WadFileLumpFinder lumps(filename);
 		for (int i = 0; i < NUM_CHECKLUMPS; i++)
 			if (lumps.exists(std::string(checklumps[i], 8)))
 				lumpsfound[i] = true;
@@ -960,7 +962,9 @@ public:
 				{
 					// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
 					// iwad.  It's ultimate doom with their stuff replacing most things.
-					if (iequals(file.getBasename(), "chex.wad"))
+					std::string base_filename;
+					M_ExtractFileName(filename, base_filename);
+					if (iequals(filename, "chex.wad"))
 					{
 						return "CHEX QUEST UNKNOWN";
 					}
@@ -1070,7 +1074,7 @@ const FileIdentifier* W_GameInfo(const OCRC32Sum& crc32)
 // gamemode will be set to undetermined if the file is not a valid IWAD.
 //
 //
-void W_ConfigureGameInfo(const OResFile& iwad)
+void W_ConfigureGameInfo(const std::string& iwad_filename)
 {
 	extern gameinfo_t SharewareGameInfo;
 	extern gameinfo_t RegisteredGameInfo;
@@ -1079,7 +1083,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	extern gameinfo_t RetailBFGGameInfo;
 	extern gameinfo_t CommercialBFGGameInfo;
 
-	const OString idname = identtab.identify(iwad);
+	const OString idname = identtab.identify(iwad_filename);
 
 	if (idname.find("REKKR") == 0)
     {
@@ -1203,9 +1207,9 @@ bool W_IsKnownIWAD(const OWantFile& file)
 //
 // Returns true if the given file is an IWAD file.
 //
-bool W_IsIWAD(const OResFile& file)
+bool W_IsIWAD(const std::string& filename)
 {
-	return ::identtab.isIWAD(file);
+	return ::identtab.isIWAD(filename);
 }
 
 
@@ -1248,9 +1252,9 @@ bool W_IsFileCommercialIWAD(const std::string& filename)
 //
 // Checks to see whether a given file is an IWAD flagged as "deprecated"
 //
-bool W_IsIWADDeprecated(const OResFile& file)
+bool W_IsIWADDeprecated(const std::string& filename)
 {
-	return identtab.isDeprecated(file.getMD5());
+	return identtab.isDeprecated(filename);
 }
 
 
@@ -1268,9 +1272,9 @@ std::vector<OString> W_GetIWADFilenames()
 //
 // Checks to see whether a given file is a shareware IWAD
 //
-bool W_IsIWADShareware(const OResFile& file)
+bool W_IsIWADShareware(const std::string& filename)
 {
-	const OString idname = identtab.identify(file);
+	const OString idname = identtab.identify(filename);
 	return idname.find("DOOM SHAREWARE") == 0;
 }
 

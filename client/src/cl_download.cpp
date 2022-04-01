@@ -172,7 +172,7 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 		return false;
 	}
 
-	if (W_IsIWADCommercial(filename.getBasename()))
+	if (W_IsFilenameCommercialIWAD(filename.getBasename()))
 	{
 		Printf(PRINT_WARNING, "Refusing to download commercial IWAD file.\n");
 		return false;
@@ -517,7 +517,8 @@ BEGIN_COMMAND(download)
 		std::random_shuffle(clientsites.begin(), clientsites.end());
 
 		// Attach the website to the file and download it.
-		std::string file = argv[2];
+		OWantFile file;
+		OWantFile::make(file, argv[2], OFILE_UNKNOWN);
 		CL_StartDownload(clientsites, file, 0);
 		return;
 	}

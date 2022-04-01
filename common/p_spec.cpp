@@ -551,7 +551,86 @@ fixed_t P_FindLowestFloorSurrounding (sector_t* sec)
 	return height;
 }
 
+//
+// P_CheckTag()
+//
+// Passed a line, returns true if the tag is non-zero or the line special
+// allows no tag without harm. If compatibility, all linedef specials are
+// allowed to have zero tag.
+//
+// Note: Only line specials activated by walkover, pushing, or shooting are
+//       checked by this routine.
+//
+// jff 2/27/98 Added to check for zero tag allowed for regular special types
+//
+bool P_CheckTag(line_t* line)
+{
+	/* tag not zero, allowed, or
+	 * killough 11/98: compatibility option */
+	if (line->id) // e6y
+		return true;
 
+	switch (line->special)
+	{
+	case 1: // Manual door specials
+	case 26:
+	case 27:
+	case 28:
+	case 31:
+	case 32:
+	case 33:
+	case 34:
+	case 117:
+	case 118:
+
+	case 139: // Lighting specials
+	case 170:
+	case 79:
+	case 35:
+	case 138:
+	case 171:
+	case 81:
+	case 13:
+	case 192:
+	case 169:
+	case 80:
+	case 12:
+	case 194:
+	case 173:
+	case 157:
+	case 104:
+	case 193:
+	case 172:
+	case 156:
+	case 17:
+
+	case 195: // Thing teleporters
+	case 174:
+	case 97:
+	case 39:
+	case 126:
+	case 125:
+	case 210:
+	case 209:
+	case 208:
+	case 207:
+
+	case 11: // Exits
+	case 52:
+	case 197:
+	case 51:
+	case 124:
+	case 198:
+
+	case 48: // Scrolling walls
+	case 85:
+		return true; // zero tag allowed
+
+	default:
+		break;
+	}
+	return false; // zero tag not allowed
+}
 
 //
 // P_FindHighestFloorSurrounding()

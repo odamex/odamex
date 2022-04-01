@@ -403,7 +403,7 @@ odaproto::svc::DisconnectClient SVC_DisconnectClient(player_t& player)
  *        WAD and DEH patch files and load a map.
  */
 odaproto::svc::LoadMap SVC_LoadMap(const std::vector<std::string>& resource_files,
-                                   const std::vector<std::string>& resource_hashes,
+                                   const std::vector<OMD5Hash>& resource_hashes,
                                    const std::string& mapname, int time)
 {
 	odaproto::svc::LoadMap msg;
@@ -414,7 +414,7 @@ odaproto::svc::LoadMap SVC_LoadMap(const std::vector<std::string>& resource_file
 	{
 		odaproto::svc::LoadMap_Resource* wad = msg.add_resnames();
 		wad->set_name(Res_CleanseFilename(resource_files[i]).c_str());
-		wad->set_hash(resource_hashes[i].c_str());
+		wad->set_hash(resource_hashes[i].getHexCStr());
 	}
 
 	// [SL] DEH/BEX patch file names used to be sent separately.

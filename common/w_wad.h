@@ -26,6 +26,5 @@
 
 unsigned	W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen);
 fhfprint_s  W_FarmHash128(const byte* lumpdata, int length);
-OCRC32Sum W_CRC32(const std::string& filename);
 
 #endif

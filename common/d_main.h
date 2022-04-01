@@ -31,8 +31,6 @@
 
 extern std::string LOG_FILE;
 
-extern std::string missing_resource_filename, missing_resource_filehash;
-
 //
 // D_DoomMain()
 // Not a globally visible function, just included for source reference,

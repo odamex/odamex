@@ -1497,7 +1497,8 @@ void ParseEpisodeInfo(OScanner& os)
 
 	ResourceId ex_res_id = Res_GetResourceId("EXTENDED", global_directory_name);
 
-	if (remove || (optional && Res_CheckMap(map.c_str())) ||
+	std::string mapname = map.c_str();
+	if (remove || (optional && Res_CheckMap(mapname)) ||
 	    (extended && Res_CheckResource(ex_res_id)))
 	{
 		// If the remove property is given for an episode, remove it.

@@ -41,6 +41,7 @@
 //	tied to animation frames.
 // Needs precompiled tables/data structures.
 #include "info.h"
+#include "doomdef.h"
 
 #include "szp.h"
 

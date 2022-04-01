@@ -27,6 +27,7 @@
 #include <string>
 
 OMD5Hash Res_MD5(const std::string& filename);
+OCRC32Sum Res_CRC32(const std::string& filename);
 
 std::string Res_CleanseFilename(const std::string& filename);
 

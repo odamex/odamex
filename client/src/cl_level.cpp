@@ -321,7 +321,8 @@ void G_ExitLevel (int position, int drawscores)
 void G_SecretExitLevel (int position, int drawscores)
 {
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
-	if ((gameinfo.flags & GI_MAPxx) && !Res_CheckMap("MAP31"))
+	std::string secretmapname = "MAP31";
+	if ((gameinfo.flags & GI_MAPxx) && !Res_CheckMap(secretmapname))
 		secretexit = false;
 	else
 		secretexit = true;
@@ -379,7 +380,8 @@ void G_DoCompleted (void)
 		}
 		if (secretexit)
 		{
-			if (Res_CheckMap(level.secretmap.c_str()))
+			OString o(StdStringToUpper(level.secretmap.c_str()));
+			if (Res_CheckMap(o))
 			{
 				strncpy(wminfo.next, level.secretmap.c_str(), 8);
 				strncpy(wminfo.lname1, getLevelInfos().findByName(level.secretmap).pname.c_str(), 8);

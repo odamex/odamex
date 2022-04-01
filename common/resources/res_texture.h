@@ -32,9 +32,8 @@
 #include <vector>
 
 #include "m_ostring.h"
-#include "hashtable.h"
+#include "oscanner.h"
 
-#include "r_defs.h"
 #include "resources/res_resourcepath.h"
 #include "resources/res_container.h"
 
@@ -68,9 +67,11 @@ const ResourceId Res_GetAnimatedTextureResourceId(const ResourceId res_id);
 //
 // Res_CacheTexture
 //
-const Texture* Res_CacheTexture(ResourceId res_id, int tag = PU_CACHE);
-const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering ordering, int tag = PU_CACHE);
-const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& directory, int tag = PU_CACHE);
+const Texture* Res_CacheTexture(ResourceId res_id, zoneTag_e tag = PU_CACHE);
+const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering ordering, zoneTag_e tag = PU_CACHE);
+const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& directory, zoneTag_e tag = PU_CACHE);
+
+static void ParseAnim(OScanner& os, byte istex);
 
 
 // ============================================================================
@@ -292,6 +293,7 @@ private:
 
 	void addWarpedTexture(const ResourceId res_id);
 	void copyTexture(Texture* destination_texture, const Texture* source_texture) const;
+	friend void ParseAnim(OScanner& os, byte istex);
 
 	typedef OHashTable<ResourceId, ResourceId> ResourceIdMap;
 	ResourceIdMap		mTextureTranslation;
@@ -300,14 +302,14 @@ private:
 	struct anim_t
 	{
 		static const unsigned int MAX_ANIM_FRAMES = 32;
-		ResourceId		basepic;
-		short			numframes;
-		bool			uniqueframes;
-		byte			countdown;
-		byte			curframe;
-		byte 			speedmin[MAX_ANIM_FRAMES];
-		byte			speedmax[MAX_ANIM_FRAMES];
-		ResourceId		framepic[MAX_ANIM_FRAMES];
+		ResourceId basepic;
+		short numframes;
+		bool uniqueframes;
+		byte countdown;
+		byte curframe;
+		byte speedmin[MAX_ANIM_FRAMES];
+		byte speedmax[MAX_ANIM_FRAMES];
+		ResourceId framepic[MAX_ANIM_FRAMES];
 	};
 
 	std::vector<AnimatedTextureManager::anim_t> mAnimDefs;
@@ -317,6 +319,7 @@ private:
 		Texture* original_texture;
 		Texture* working_texture;
 	};
+
 	std::vector<AnimatedTextureManager::warp_t> mWarpedTextures;
 };
 

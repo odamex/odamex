@@ -225,13 +225,13 @@ next:
 
 	// resource files
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
-	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
+	const std::vector<OMD5Hash>& resource_file_hashes = Res_GetResourceFileHashes();
 
 	MSG_WriteByte(&ml_message, resource_file_names.size());
 	for(size_t i = 0; i < resource_file_names.size(); i++)
 	{
 		MSG_WriteString(&ml_message, Res_CleanseFilename(resource_file_names[i]).c_str());
-		MSG_WriteHexString(&ml_message, resource_file_hashes[i].c_str());
+		MSG_WriteHexString(&ml_message, resource_file_hashes[i].getHexCStr());
 	}
 
 	MSG_WriteByte(&ml_message, players.size());

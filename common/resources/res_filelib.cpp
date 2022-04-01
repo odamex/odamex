@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomtype.h"
-#include "cmdlib.h"
+#include "odamex.h"
 #include "m_fileio.h"
 #include "i_system.h"
 #include "md5.h"
@@ -46,6 +45,7 @@
 #ifdef _WIN32
 	#include "win32inc.h"
 #endif
+#include "crc32.h"
 
 EXTERN_CVAR(waddirs)
 
@@ -68,7 +68,7 @@ OMD5Hash Res_MD5(const std::string& filename)
 	FILE *fp = fopen(filename.c_str(), "rb");
 
 	if (!fp)
-		return "";
+		return rvo;
 
 	md5_state_t state;
 	md5_init(&state);
@@ -88,10 +88,42 @@ OMD5Hash Res_MD5(const std::string& filename)
 	for (int i = 0; i < 16; i++)
 		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << (short)digest[i];
 
-	OMD5Hash::makeFromHexStr(rvo, hashStr.str());
+	OMD5Hash::makeFromHexStr(rvo, hash.str());
 	return rvo;
 }
 
+/**
+ * @brief Calculate a CRC32 hash from a file.
+ *
+ * @param filename Filename of file to hash.
+ * @return Output hash, or blank if file could not be found.
+ */
+OCRC32Sum Res_CRC32(const std::string& filename)
+{
+	OCRC32Sum rvo;
+
+	const int file_chunk_size = 8192;
+	FILE* fp = fopen(filename.c_str(), "rb");
+
+	if (!fp)
+		return rvo;
+
+	unsigned n = 0;
+	unsigned char buf[file_chunk_size];
+	uint32_t crc = 0;
+
+	while ((n = fread(buf, 1, sizeof(buf), fp)))
+	{
+		crc = crc32_fast(buf, n, crc);
+	}
+
+	std::string hashStr;
+
+	StrFormat(hashStr, "%08X", crc);
+
+	OCRC32Sum::makeFromHexStr(rvo, hashStr);
+	return rvo; // bubble up failure
+}
 
 //
 // Res_CleanseFilename
@@ -442,7 +474,7 @@ static std::string Res_BaseFileSearchDir(
 
 		if (iequals(filename, local_base_filename))
 		{
-			if (hash.empty() || iequals(hash, Res_MD5(local_filename))) 
+			if (hash.empty() || iequals(hash, Res_MD5(local_filename).getHexCStr())) 
 			{
 				found = local_filename; 
 				break;

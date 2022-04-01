@@ -42,6 +42,8 @@
 #include <ctype.h>
 #include <stdarg.h>
 
+extern std::string progdir, startdir;
+
 struct OTimespan
 {
 	int csecs;
@@ -106,6 +108,7 @@ bool CheckWildcards (const char *pattern, const char *text);
 void ReplaceString (char** ptr, const char* str);
 
 void StripColorCodes(std::string& str);
+void FixPathSeparator(std::string& path);
 
 uint32_t Log2(uint32_t n);
 float NextAfter(const float from, const float to);

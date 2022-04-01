@@ -24,8 +24,6 @@
 #ifndef __res_cache_h__
 #define __res_cache_h__
 
-#include "resources/res_resourceid.h"
-#include "resources/res_resourceloader.h"
 #include "z_zone.h"
 
 class ResourceCache
@@ -51,7 +49,7 @@ public:
 			releaseData(ResourceId(i));
 	}
 
-	void cacheData(const ResourceId res_id, void** data, uint32_t size, int tag = PU_STATIC)
+	void cacheData(const ResourceId res_id, void** data, uint32_t size, zoneTag_e tag = PU_STATIC)
 	{
 		assert(res_id != ResourceId::INVALID_ID && res_id < mResourceCount);
 		assert(data != NULL);
@@ -76,7 +74,7 @@ private:
 	size_t				mResourceCount;
 	void**				mData;
 
-	void* allocMemory(size_t size, int tag, void** owner)
+	void* allocMemory(size_t size, zoneTag_e tag, void** owner)
 	{
 		// From the C99 Standard:
 		// If the size of the space requested is zero, the behavior is implementation-

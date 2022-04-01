@@ -24,7 +24,7 @@
 #ifndef __CL_PARSE_H__
 #define __CL_PARSE_H__
 
-
+extern std::string missing_resource_filename, missing_resource_filehash;
 
 enum parseError_e
 {

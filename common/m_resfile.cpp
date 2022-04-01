@@ -344,7 +344,7 @@ std::vector<scannedIWAD_t> M_ScanIWADs()
 			const std::string fullpath = dirs[i] + PATHSEP + files[j];
 
 			// Check to see if we got a real IWAD.
-			const OCRC32Sum crc32 = W_CRC32(fullpath);
+			const OCRC32Sum crc32 = Res_CRC32(fullpath);
 			if (crc32.empty())
 				continue;
 
@@ -374,12 +374,12 @@ std::string M_GetCurrentWadHashes()
 	std::string builder = "";
 
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
-	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
+	const std::vector<OMD5Hash>& resource_file_hashes = Res_GetResourceFileHashes();
 
 	for (int i = 0; i < resource_file_names.size(); i++)
 	{
 		std::string base = resource_file_names[i];
-		std::string hash = resource_file_hashes[i];
+		std::string hash = resource_file_hashes[i].getHexCStr();
 		std::string line = base + ',' + hash + '\n';
 
 		builder += line;
@@ -401,7 +401,7 @@ BEGIN_COMMAND(whereis)
 	{
 		Printf("basename: %s\nfullpath: %s\nCRC32: %s\nMD5: %s\n",
 		       res.getBasename().c_str(), res.getFullpath().c_str(),
-		       W_CRC32(res.getFullpath()).getHexCStr(), res.getMD5().getHexCStr());
+		       Res_CRC32(res.getFullpath()).getHexCStr(), res.getMD5().getHexCStr());
 		return;
 	}
 
@@ -412,12 +412,12 @@ END_COMMAND(whereis)
 BEGIN_COMMAND(loaded)
 {
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
-	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
+	const std::vector<OMD5Hash>& resource_file_hashes = Res_GetResourceFileHashes();
 
 	for (int i = 0; i < resource_file_names.size(); i++)
 	{
 		Printf("%s\n", resource_file_names[i].c_str());
-		Printf("  MD5:  %s\n", resource_file_hashes[i].c_str());
+		Printf("  MD5:  %s\n", resource_file_hashes[i].getHexCStr());
 	}
 }
 END_COMMAND(loaded)

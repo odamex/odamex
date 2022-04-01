@@ -24,7 +24,7 @@
 
 
 #include "odamex.h"
-
+#include "resources/res_main.h"
 
 #include <set>
 
@@ -45,7 +45,6 @@
 #include "w_wad.h"
 #include "w_ident.h"
 #include "z_zone.h"
-#include "resources/res_main.h"
 
 level_locals_t level;			// info about current level
 
@@ -163,7 +162,8 @@ level_pwad_info_t& LevelInfos::findByNum(int levelnum)
 {
 	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
 	{
-		if (it->levelnum == levelnum && Res_CheckMap(it->mapname.c_str()))
+		std::string s = StdStringToUpper(it->mapname.c_str());
+		if (it->levelnum == levelnum && Res_CheckMap(s))
 		{
 			return *it;
 		}
@@ -288,7 +288,7 @@ BEGIN_COMMAND(map)
 {
 	if (argc > 1)
 	{
-		OString mapname(StdStringToUpper(argv[1]));
+		std::string mapname = StdStringToUpper(argv[1]);
 
 		if (!Res_CheckMap(mapname) && isdigit(argv[1][0]))
 		{

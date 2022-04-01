@@ -1535,9 +1535,16 @@ void CL_QuitAndTryDownload(const std::string& missing_file)
 	       missing_file.c_str());
 	CL_QuitNetGame(NQ_SILENT);
 
+	// Attach the website to the file and download it.
+	OWantFile file;
+	OWantFile::make(file, missing_file, OFILE_UNKNOWN);
+
 	// Start the download.
-	CL_StartDownload(downloadsites, missing_file, DL_RECONNECT);
+	CL_StartDownload(downloadsites, file, DL_RECONNECT);
 }
+
+// Globals to store the filename and hash to download
+static std::string missing_resource_filename, missing_resource_filehash;
 
 //
 // CL_LoadResourceFiles
@@ -1549,7 +1556,7 @@ void CL_QuitAndTryDownload(const std::string& missing_file)
 // Returns false if any of the required resource files are missing.
 //
 
-static bool CL_LoadResourceFiles(
+bool CL_LoadResourceFiles(
 			const std::vector<std::string>& resource_filenames,
 			const std::vector<std::string>& resource_filehashes)
 {

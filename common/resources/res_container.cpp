@@ -21,15 +21,12 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "odamex.h"
 #include "resources/res_container.h"
 #include "resources/res_main.h"
-#include "resources/res_resourcepath.h"
 #include "resources/res_fileaccessor.h"
 #include "resources/res_identifier.h"
 
-#include "m_ostring.h"
-#include "w_ident.h"
-#include "cmdlib.h"
 #include "i_system.h"
 
 #include "zlib.h"

@@ -51,6 +51,16 @@
 char		com_token[8192];
 BOOL		com_eof;
 
+std::string progdir, startdir; // denis - todo - maybe move this into Args
+
+void FixPathSeparator(std::string& path)
+{
+	// Use the platform appropriate path separator
+	for (size_t i = 0; i < path.length(); i++)
+		if (path[i] == '\\' || path[i] == '/')
+			path[i] = PATHSEPCHAR;
+}
+
 char *copystring (const char *s)
 {
 	char *b;

@@ -513,33 +513,6 @@ std::string I_GetUserFileName (const char *file)
 	return path;
 }
 
-void I_ExpandHomeDir (std::string &path)
-{
-#if defined(UNIX) && !defined(GEKKO)
-	if(!path.length())
-		return;
-
-	if(path[0] != '~')
-		return;
-
-	std::string user;
-
-	size_t slash_pos = path.find_first_of(PATHSEPCHAR);
-	size_t end_pos = path.length();
-
-	if(slash_pos == std::string::npos)
-		slash_pos = end_pos;
-
-	if(path.length() != 1 && slash_pos != 1)
-		user = path.substr(1, slash_pos - 1);
-
-	if(slash_pos != end_pos)
-		slash_pos++;
-
-	path = I_GetHomeDir(user) + path.substr(slash_pos, end_pos - slash_pos);
-#endif
-}
-
 std::string I_GetBinaryDir()
 {
 	std::string ret;
@@ -755,6 +728,33 @@ NORETURN void STACK_ARGS I_FatalError(const char* error, ...)
 	I_ErrorMessageBox(messagetext);
 
 	abort();
+}
+
+void I_ExpandHomeDir(std::string& path)
+{
+#if defined(UNIX) && !defined(GEKKO)
+	if (!path.length())
+		return;
+
+	if (path[0] != '~')
+		return;
+
+	std::string user;
+
+	size_t slash_pos = path.find_first_of(PATHSEPCHAR);
+	size_t end_pos = path.length();
+
+	if (slash_pos == std::string::npos)
+		slash_pos = end_pos;
+
+	if (path.length() != 1 && slash_pos != 1)
+		user = path.substr(1, slash_pos - 1);
+
+	if (slash_pos != end_pos)
+		slash_pos++;
+
+	path = I_GetHomeDir(user) + path.substr(slash_pos, end_pos - slash_pos);
+#endif
 }
 
 void STACK_ARGS I_Error(const char* error, ...)

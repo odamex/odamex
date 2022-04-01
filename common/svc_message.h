@@ -92,7 +92,7 @@ odaproto::svc::UpdatePing SVC_UpdatePing(player_t& player);
 odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo);
 odaproto::svc::DisconnectClient SVC_DisconnectClient(player_t& player);
 odaproto::svc::LoadMap SVC_LoadMap(const std::vector<std::string>& resource_files,
-                                   const std::vector<std::string>& resource_hashes,
+                                   const std::vector<OMD5Hash>& resource_hashes,
                                    const std::string& mapname, int time);
 odaproto::svc::ConsolePlayer SVC_ConsolePlayer(player_t& player,
                                                const std::string& digest);

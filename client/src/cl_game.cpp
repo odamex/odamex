@@ -1784,9 +1784,8 @@ void G_DoPlayDemo(bool justStreamInput)
 	else
 	{
 		// [RH] Allow for demos not loaded as lumps
-		// TODO: Reconcile
-		//FixPathSeparator(defdemoname);
-		//defdemoname = M_AppendExtension(defdemoname, ".lmp");
+		FixPathSeparator(defdemoname);
+		defdemoname = M_AppendExtension(defdemoname, ".lmp");
 		std::string found = M_FindUserFileName(::defdemoname, ".lmp"); 
 		if (found.empty())
 		{

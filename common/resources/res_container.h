@@ -29,8 +29,6 @@
 #include <string.h>
 
 #include <vector>
-#include "m_ostring.h"
-#include "hashtable.h"
 
 #include "resources/res_resourceid.h"
 #include "resources/res_resourcepath.h"

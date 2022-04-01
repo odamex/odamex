@@ -29,25 +29,18 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <stdlib.h>
 #include "resources/res_main.h"
+#include "resources/res_texture.h"
 #include "resources/res_fileaccessor.h"
 #include "resources/res_filelib.h"
 #include "resources/res_identifier.h"
 #include "resources/res_container.h"
-#include "resources/res_texture.h"
 #include "resources/res_cache.h"
 #include "resources/res_resourceloader.h"
 
-#include "m_ostring.h"
-#include "hashtable.h"
-#include <vector>
-#include "m_fileio.h"
-#include "cmdlib.h"
 #include "c_dispatch.h"
 
 #include "i_system.h"
-#include "z_zone.h"
 
 static ResourceManager resource_manager;
 
@@ -378,7 +371,7 @@ uint32_t ResourceManager::getResourceSize(const ResourceId res_id) const
 // container and then post-processed. Then the post-processed resource data
 // is cached for re-use.
 //
-const void* ResourceManager::loadResourceData(const ResourceId res_id, int tag)
+const void* ResourceManager::loadResourceData(const ResourceId res_id, zoneTag_e tag)
 {
 	const void* data = NULL;
 	if (validateResourceId(res_id))
@@ -431,7 +424,7 @@ void ResourceManager::releaseResourceData(const ResourceId res_id)
 //
 // ResourceManager::releaseResourceData
 //
-const std::vector<std::string>& ResourceManager::getResourceFileHashes() const
+const std::vector<OMD5Hash>& ResourceManager::getResourceFileHashes() const
 {
 	if (mResourceFileHashes.size() != mResourceFileNames.size())
 	{
@@ -525,7 +518,7 @@ const std::vector<std::string>& Res_GetResourceFileNames()
 // Returns a vector of string representations of the MD5SUM for each of the
 // currently open resource files.
 //
-const std::vector<std::string>& Res_GetResourceFileHashes()
+const std::vector<OMD5Hash>& Res_GetResourceFileHashes()
 {
 	return resource_manager.getResourceFileHashes();
 }
@@ -679,7 +672,7 @@ const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& m
 // The tag parameter is used to specify the allocation tag type to pass
 // to Z_Malloc.
 //
-const void* Res_LoadResource(const ResourceId res_id, int tag)
+const void* Res_LoadResource(const ResourceId res_id, zoneTag_e tag)
 {
 	return resource_manager.loadResourceData(res_id, tag);
 }

@@ -24,7 +24,6 @@
 #ifndef __RES_RESOURCEID_H__
 #define __RES_RESOURCEID_H__
 
-#include "doomtype.h"
 #include <vector>
 #include "hashtable.h"
 

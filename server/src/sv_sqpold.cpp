@@ -168,7 +168,7 @@ void SV_SendServerInfo()
 	MSG_WriteString(&ml_message, level.mapname.c_str());
 
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
-	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
+	const std::vector<OMD5Hash>& resource_file_hashes = Res_GetResourceFileHashes();
 
 	size_t resource_file_count = std::min<size_t>(resource_file_names.size(), 255);
 
@@ -198,7 +198,7 @@ void SV_SendServerInfo()
 	}
 
 	for (i = 1; i < resource_file_count; ++i)
-		MSG_WriteString(&ml_message, resource_file_hashes[i].c_str());
+		MSG_WriteString(&ml_message, resource_file_hashes[i].getHexCStr());
 
 	// [AM] Used to be sv_website - sv_downloadsites can have multiple sites.
 	MSG_WriteString(&ml_message, sv_downloadsites.cstring());

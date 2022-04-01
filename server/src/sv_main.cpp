@@ -2068,7 +2068,7 @@ void SV_ExitLevel()
 // and DEH patch files and load a map.
 //
 void SV_SendLoadMap(const std::vector<std::string>& resource_files,
-					const std::vector<std::string>& resource_hashes,
+					const std::vector<OMD5Hash>& resource_hashes,
 					const std::string &mapname, player_t *player)
 {
 	if (!player)
@@ -2084,7 +2084,7 @@ void SV_SendLoadMap(const std::vector<std::string>& resource_files,
 	for (size_t i = 1; i < resource_files.size(); i++)
 	{
 		MSG_WriteString(buf, Res_CleanseFilename(resource_files[i]).c_str());
-		MSG_WriteString(buf, resource_hashes[i].c_str());
+		MSG_WriteString(buf, resource_hashes[i].getHexCStr());
 	}
 
 	// [SL] DEH/BEX patch file names used to be sent separately.

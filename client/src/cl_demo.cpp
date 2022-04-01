@@ -1018,7 +1018,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 
 	// names of all the resource files on the server	
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
-	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
+	const std::vector<OMD5Hash>& resource_file_hashes = Res_GetResourceFileHashes();
 
 	size_t resource_file_count = resource_file_names.size();
 	MSG_WriteByte(netbuffer, resource_file_count - 1);
@@ -1049,7 +1049,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	// MD5 hash sums for all the wadfiles on the server
 	for (size_t i = 1; i < resource_file_count; i++)
 	{
-		MSG_WriteString(netbuffer, resource_file_hashes[i].c_str());
+		MSG_WriteString(netbuffer, resource_file_hashes[i].getHexCStr());
 	}
 
 	MSG_WriteString	(netbuffer, "");	// sv_website.cstring()
@@ -1157,7 +1157,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteSVC(netbuffer, SVC_PlayerMembers(consoleplayer(), SVC_PM_SPECTATOR));
 
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
-	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
+	const std::vector<OMD5Hash>& resource_file_hashes = Res_GetResourceFileHashes();
 
 	// Server sends wads & map name
 	MSG_WriteSVC(netbuffer, SVC_LoadMap(resource_file_names, resource_file_hashes,
@@ -1170,7 +1170,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	for (size_t i = 1; i < resource_file_count; i++)
 	{
 		MSG_WriteString(netbuffer, Res_CleanseFilename(resource_file_names[i]).c_str());
-		MSG_WriteString(netbuffer, resource_file_hashes[i].c_str());
+		MSG_WriteString(netbuffer, resource_file_hashes[i].getHexCStr());
 	}
 
 	// [SL] DEH/BEX patch file names used to be stored separately.

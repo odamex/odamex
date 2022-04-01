@@ -41,6 +41,7 @@
 #include "i_system.h"
 #include "m_ostring.h"
 #include "w_wad.h"
+#include "resources/res_filelib.h"
 
 std::string M_GetBinaryDir()
 {
@@ -164,7 +165,7 @@ std::string M_GetUserFileName(const std::string& file)
 #endif
 }
 
-/*
+
 std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
                                 const std::vector<std::string>& exts,
                                 const OMD5Hash& hash)
@@ -209,7 +210,7 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
 		if (this_it < found_it)
 		{
 			const std::string local_file(dir + PATHSEP + FindFileData.cFileName);
-			const OMD5Hash local_hash = W_MD5(local_file);
+			const OMD5Hash local_hash = Res_MD5(local_file);
 
 			if (hash.empty() || hash == local_hash)
 			{
@@ -235,7 +236,7 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
 	FindClose(hFind);
 	return found;
 }
-*/
+
 
 std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString> files)
 {

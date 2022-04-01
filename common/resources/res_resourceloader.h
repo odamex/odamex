@@ -26,9 +26,7 @@
 #ifndef __RES_RESOURCELOADER_H__
 #define __RES_RESOURCELOADER_H__
 
-#include "doomtype.h"
 #include "resources/res_resourceid.h"
-#include "resources/res_texture.h"
 
 class RawResourceAccessor;
 
