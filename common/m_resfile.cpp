@@ -248,7 +248,7 @@ std::vector<std::string> M_FileSearchDirs()
 #endif
 
 	// [AM] Search additional paths based on platform
-	D_AddPlatformSearchDirs(dirs);
+	Res_AddPlatformSearchDirs(dirs);
 
 	// Get rid of any dupes.
 	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());

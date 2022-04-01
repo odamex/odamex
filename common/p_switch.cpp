@@ -39,7 +39,6 @@
 #include "resources/res_texture.h"
 
 EXTERN_CVAR(co_zdoomsound)
-extern int numtextures;
 
 //
 // CHANGE THE TEXTURE OF A WALL SWITCH TO ITS OPPOSITE

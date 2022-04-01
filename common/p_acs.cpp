@@ -1722,15 +1722,15 @@ void DLevelScript::SetLineTexture(int lineid, int side, int position, int name)
 		switch (position)
 		{
 			case TEXTURE_TOP:
-				sidedef->toptexture = res_id;
+				currentSideDef->toptexture = res_id;
 				currentSideDef->SidedefChanges |= SDPC_TexTop;
 				break;
 			case TEXTURE_MIDDLE:
-				sidedef->midtexture = res_id;
+				currentSideDef->midtexture = res_id;
 				currentSideDef->SidedefChanges |= SDPC_TexMid;
 				break;
 			case TEXTURE_BOTTOM:
-				sidedef->bottomtexture = res_id;
+				currentSideDef->bottomtexture = res_id;
 				currentSideDef->SidedefChanges |= SDPC_TexBottom;
 				break;
 			default:

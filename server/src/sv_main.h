@@ -121,10 +121,6 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect);
 void SV_SendPlayerQueuePosition(player_t* source, player_t* dest);
 void SV_ClearPlayerQueue();
-void SV_SendLoadMap(const std::vector<std::string>& resource_files,
-                    const std::vector<OMD5Hash>& resource_hashes,
-                    const std::string &mapname, player_t *player);
-
 
 void SV_UpdateSecretCount(player_t & player);
 void SV_UpdateMonsterRespawnCount();

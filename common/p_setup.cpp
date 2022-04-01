@@ -1103,7 +1103,7 @@ void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 // 
 
 
-static void SetTextureNoErr(ResourceId* res_id_ptr, unsigned int *color, char *name)
+void SetTextureNoErr(ResourceId* res_id_ptr, unsigned int *color, char *name)
 {
 	*res_id_ptr = Res_GetTextureResourceId(OStringToUpper(name, 8), WALL);
 	if (*res_id_ptr == ResourceId::INVALID_ID)

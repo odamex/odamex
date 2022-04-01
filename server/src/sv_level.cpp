@@ -333,7 +333,8 @@ void G_DoNewGame()
 		if (!(it->ingame()))
 			continue;
 
-		SV_SendLoadMap(Res_GetResourceFileNames(), Res_GetResourceFileHashes(), d_mapname, &*it);
+		MSG_WriteSVC(&it->client.reliablebuf,
+			SVC_LoadMap(Res_GetResourceFileNames(), Res_GetResourceFileHashes(), d_mapname, 0));
 	}
 
 	sv_curmap.ForceSet(d_mapname.c_str());

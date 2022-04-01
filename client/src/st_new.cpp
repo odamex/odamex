@@ -56,15 +56,15 @@
 #include "resources/res_texture.h"
 
 static int		widestnum, numheight;
-static const Texture* flagiconteam;
-static const Texture* line_leftempty;
-static const Texture* line_leftfull;
-static const Texture* line_centerempty;
-static const Texture* line_centerleft;
-static const Texture* line_centerright;
-static const Texture* line_centerfull;
-static const Texture* line_rightempty;
-static const Texture* line_rightfull;
+Texture* flagiconteam;
+Texture* line_leftempty;
+Texture* line_leftfull;
+Texture* line_centerempty;
+Texture* line_centerleft;
+Texture* line_centerright;
+Texture* line_centerfull;
+Texture* line_rightempty;
+Texture* line_rightfull;
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
 static const char* ammopatches[] = {"CLIPA0", "SHELA0", "CELLA0", "ROCKA0"};
@@ -179,18 +179,18 @@ void ST_initNew()
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
 		NameUp = level.time + 2 * TICRATE;
 
-	::flagiconteam = Res_CacheTexture("FLAGIT", SPRITE, PU_STATIC);
+	::flagiconteam = (Texture*)Res_CacheTexture("FLAGIT", SPRITE, PU_STATIC);
 	::flagiconteamoffense = (Texture*)Res_CacheTexture("FLAGITO", SPRITE, PU_STATIC);
 	::flagiconteamdefense = (Texture*)Res_CacheTexture("FLAGITD", SPRITE, PU_STATIC);
 
-	::line_leftempty = Res_CacheTexture("ODABARLE", SPRITE, PU_STATIC);
-	::line_leftfull = Res_CacheTexture("ODABARLF", SPRITE, PU_STATIC);
-	::line_centerempty = Res_CacheTexture("ODABARCE", SPRITE, PU_STATIC);
-	::line_centerleft = Res_CacheTexture("ODABARCL", SPRITE, PU_STATIC);
-	::line_centerright = Res_CacheTexture("ODABARCR", SPRITE, PU_STATIC);
-	::line_centerfull = Res_CacheTexture("ODABARCF", SPRITE, PU_STATIC);
-	::line_rightempty = Res_CacheTexture("ODABARRE", SPRITE, PU_STATIC);
-	::line_rightfull = Res_CacheTexture("ODABARRF", SPRITE, PU_STATIC);
+	::line_leftempty = (Texture*)Res_CacheTexture("ODABARLE", SPRITE, PU_STATIC);
+	::line_leftfull = (Texture*)Res_CacheTexture("ODABARLF", SPRITE, PU_STATIC);
+	::line_centerempty = (Texture*)Res_CacheTexture("ODABARCE", SPRITE, PU_STATIC);
+	::line_centerleft = (Texture*)Res_CacheTexture("ODABARCL", SPRITE, PU_STATIC);
+	::line_centerright = (Texture*)Res_CacheTexture("ODABARCR", SPRITE, PU_STATIC);
+	::line_centerfull = (Texture*)Res_CacheTexture("ODABARCF", SPRITE, PU_STATIC);
+	::line_rightempty = (Texture*)Res_CacheTexture("ODABARRE", SPRITE, PU_STATIC);
+	::line_rightfull = (Texture*)Res_CacheTexture("ODABARRF", SPRITE, PU_STATIC);
 
 	std::string buffer;
 	for (size_t i = 0; i < NUMMODS; i++)

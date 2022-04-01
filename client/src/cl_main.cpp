@@ -1544,7 +1544,7 @@ void CL_QuitAndTryDownload(const std::string& missing_file)
 }
 
 // Globals to store the filename and hash to download
-static std::string missing_resource_filename, missing_resource_filehash;
+std::string missing_resource_filename, missing_resource_filehash;
 
 //
 // CL_LoadResourceFiles

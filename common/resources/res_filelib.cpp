@@ -167,7 +167,7 @@ void Res_AddSearchDir(std::vector<std::string>& search_dirs, const char* dir, co
 			continue;
 
 		FixPathSeparator(segment);
-		I_ExpandHomeDir(segment);
+		M_ExpandHomeDir(segment);
 
 		if (segment[segment.length() - 1] != PATHSEPCHAR)
 			segment += PATHSEP;
@@ -309,7 +309,7 @@ static char* GetRegistryString(registry_value_t *reg_val)
 //
 // [AM] Add platform-sepcific search directories
 //
-static void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
+void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 {
 #if defined(_WIN32) && !defined(_XBOX)
 	#define arrlen(array) (sizeof(array) / sizeof(*array))

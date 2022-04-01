@@ -89,7 +89,7 @@ extern NetCommand localcmds[MAXSAVETICS];
 extern bool recv_full_update;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
-extern int numtextures;
+int numtextures;
 
 void CL_CheckDisplayPlayer(void);
 void CL_ClearPlayerJustTeleported(player_t* player);
@@ -106,7 +106,7 @@ void P_DestroyButtonThinkers();
 void P_ExplodeMissile(AActor* mo);
 void P_PlayerLeavesGame(player_s* player);
 void P_SetPsprite(player_t* player, int position, statenum_t stnum);
-void P_SetButtonTexture(line_t* line, short texture);
+void P_SetButtonTexture(line_t* line, const ResourceId new_res_id);
 
 /**
  * @brief Unpack a bitfield into an array of booleans.
@@ -1633,7 +1633,7 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
 	byte switchactive = msg->switch_active();
 	byte special = msg->special();
 	unsigned int state = msg->state(); // DActiveButton::EWhere
-	short texture = msg->button_texture();
+	ResourceId texture = msg->button_texture();
 	unsigned int time = msg->timer();
 
 	if (!::lines || l < 0 || l >= ::numlines || state >= 3)

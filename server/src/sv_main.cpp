@@ -1897,8 +1897,9 @@ void SV_ConnectClient2(player_t& player)
 	}
 
 	// send a map name
-	SV_SendLoadMap(Res_GetResourceFileNames(), Res_GetResourceFileHashes(),
-	               level.mapname.c_str(), &player);
+	MSG_WriteSVC(&player.client.reliablebuf,
+	    SVC_LoadMap(Res_GetResourceFileNames(), Res_GetResourceFileHashes(),
+	                level.mapname.c_str(), level.time));
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
@@ -2057,41 +2058,10 @@ void SV_SendReconnectSignal()
 //
 void SV_ExitLevel()
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
-		MSG_WriteMarker(&(it->client.reliablebuf), svc_exitlevel);
-}
-
-//
-// SV_SendLoadMap
-//
-// Sends a message to a player telling them to change to the specified WAD
-// and DEH patch files and load a map.
-//
-void SV_SendLoadMap(const std::vector<std::string>& resource_files,
-					const std::vector<OMD5Hash>& resource_hashes,
-					const std::string &mapname, player_t *player)
-{
-	if (!player)
-		return;
-
-	buf_t* buf = &(player->client.reliablebuf);
-	MSG_WriteMarker(buf, svc_loadmap);
-
-	// send list of wads (skip over resource_files[0] == odamex.wad)
-	MSG_WriteByte(buf, resource_files.size() - 1);
-
-	// start from resource_files[1], skipping odamex.wad (resource_files[0])
-	for (size_t i = 1; i < resource_files.size(); i++)
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		MSG_WriteString(buf, Res_CleanseFilename(resource_files[i]).c_str());
-		MSG_WriteString(buf, resource_hashes[i].getHexCStr());
+		MSG_WriteSVC(&(it->client.reliablebuf), odaproto::svc::ExitLevel());
 	}
-
-	// [SL] DEH/BEX patch file names used to be sent separately.
-	// Just send 0 now.
-	MSG_WriteByte(buf, 0);
-
-	MSG_WriteString(buf, mapname.c_str());
 }
 
 //
