@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __D_PLAYER_H__
-#define __D_PLAYER_H__
+#pragma once
 
 #include <list>
 #include <queue>
@@ -691,5 +689,3 @@ typedef struct wbstartstruct_s
 
 	std::vector<wbplayerstruct_s> plyr;
 } wbstartstruct_t;
-
-#endif // __D_PLAYER_H__

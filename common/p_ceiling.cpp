@@ -36,7 +36,7 @@ EXTERN_CVAR(co_boomphys)
 extern bool predicting;
 
 void P_ResetTransferSpecial(newspecial_s* newspecial);
-void P_ResetSectorTransferFlags(unsigned int* flags);
+const unsigned int P_ResetSectorTransferFlags(const unsigned int flags);
 
 //
 // CEILINGS
@@ -139,8 +139,11 @@ void DCeiling::RunThink ()
 
 		if (res == pastdest)
 		{
-			S_StopSound (m_Sector->soundorg);
-			S_Sound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
+			if (m_Silent <= 1)
+			{
+				S_StopSound(m_Sector->soundorg);
+				S_Sound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
+			}
 
 			switch (m_Type)
 			{
@@ -187,8 +190,11 @@ void DCeiling::RunThink ()
 
 		if (res == pastdest)
 		{
-			S_StopSound (m_Sector->soundorg);
-			S_Sound (m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
+			if (m_Silent <= 1)
+			{
+				S_StopSound(m_Sector->soundorg);
+				S_Sound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_stop", 1, ATTN_NORM);
+			}
 
 			switch (m_Type)
 			{
@@ -264,6 +270,7 @@ void DCeiling::RunThink ()
 					break;
 				case ceilCrushAndRaise:
 				case ceilLowerAndCrush:
+				case ceilCrushRaiseAndStay:
 					if (m_CrushMode == crushSlowdown)
 						m_Speed = CEILSPEED / 8;
 					break;
@@ -296,7 +303,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int silent, int speed)
 {
 	fixed_t targheight;
 
-	m_Type = speed ? genSilentCrusher : genCrusher;
+	m_Type = silent ? genSilentCrusher : genCrusher;
 	m_Crush = DOOM_CRUSH;
 	m_CrushMode = crushDoom;
 	m_Direction = -1;
@@ -308,7 +315,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int silent, int speed)
 	m_NewLeakRate = sec->leakrate;
 	m_NewFlags = sec->flags;
 	m_Tag = sec->tag;
-	m_Silent = (m_Type == genSilentCrusher);
+	m_Silent = m_Type == genSilentCrusher ? 2 : 1;
 	m_TopHeight = sec->ceilingheight;
 	m_BottomHeight = sec->floorheight + (8 * FRACUNIT);
 
@@ -330,7 +337,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int silent, int speed)
 	default:
 		break;
 	}
-	m_Speed = m_Speed2 = m_Speed;
+	m_Speed2 = m_Speed;
 }
 
 DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
@@ -432,7 +439,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 			          : P_FindModelCeilingSector(targheight, sec);
 			if (chgsec)
 			{
-				m_Texture = chgsec->floorpic;
+				m_Texture = chgsec->ceilingpic;
 				m_NewSpecial = chgsec->special;
 				m_NewDamageRate = chgsec->damageamount;
 				m_NewDmgInterval = chgsec->damageinterval;
@@ -447,8 +454,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 					m_NewDamageRate = ns.damageamount;
 					m_NewDmgInterval = ns.damageinterval;
 					m_NewLeakRate = ns.damageleakrate;
-					m_NewFlags = chgsec->flags;
-					P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+					m_NewFlags = P_ResetSectorTransferFlags(chgsec->flags);
 					m_Type = genCeilingChg0;
 					break;
 				case CChgTyp: // type is copied
@@ -469,7 +475,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 		}
 		else // else if a trigger model change
 		{
-			m_Texture = line->frontsector->floorpic;
+			m_Texture = line->frontsector->ceilingpic;
 			m_NewSpecial = line->frontsector->special;
 			m_NewDamageRate = line->frontsector->damageamount;
 			m_NewDmgInterval = line->frontsector->damageinterval;
@@ -484,8 +490,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 				m_NewDamageRate = ns.damageamount;
 				m_NewDmgInterval = ns.damageinterval;
 				m_NewLeakRate = ns.damageleakrate;
-				m_NewFlags = line->frontsector->flags;
-				P_ResetSectorTransferFlags((unsigned int*)m_NewFlags);
+				m_NewFlags = P_ResetSectorTransferFlags(line->frontsector->flags);
 				m_Type = genCeilingChg0;
 				break;
 			case CChgTyp: // type is copied
@@ -590,6 +595,8 @@ BOOL P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 	DCeiling* ceiling;
 	BOOL manual = false;
 	fixed_t targheight = 0;
+
+	height *= FRACUNIT;
 
 	rtn = false;
 
@@ -869,7 +876,7 @@ BOOL EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 
 	//	Reactivate in-stasis ceilings...for certain types.
 	// This restarts a crusher after it has been stopped
-	if (type == DCeiling::ceilCrushAndRaise)
+	if (type == DCeiling::crushAndRaise)
 	{
 		P_ActivateInStasisCeiling (tag);
 	}
@@ -899,10 +906,12 @@ manual_ceiling:
 
 		switch (type)
 		{
-		case DCeiling::ceilCrushAndRaise:
+		case DCeiling::fastCrushAndRaise:
+		case DCeiling::crushAndRaise:
+		case DCeiling::silentCrushAndRaise:
 		case DCeiling::ceilCrushRaiseAndStay:
 			ceiling->m_TopHeight = ceilingheight;
-		case DCeiling::ceilLowerAndCrush:
+		case DCeiling::lowerAndCrush:
 			ceiling->m_Crush = crush ? DOOM_CRUSH : NO_CRUSH;
 			targheight = ceiling->m_BottomHeight = floorheight + 8*FRACUNIT;
 			ceiling->m_Direction = -1;
@@ -1131,7 +1140,7 @@ BOOL EV_DoGenCeiling(line_t* line)
 	manual_genceiling:
 		sec = &sectors[secnum];
 		// Do not start another function if ceiling already moving
-		if (P_CeilingActive(sec)) // jff 2/22/98
+		if (sec->ceilingdata) // jff 2/22/98
 		{
 			if (!manual)
 				continue;
@@ -1199,7 +1208,7 @@ BOOL EV_DoGenCrusher(line_t* line)
 	manual_gencrusher:
 		sec = &sectors[secnum];
 		// Do not start another function if ceiling already moving
-		if (P_CeilingActive(sec)) // jff 2/22/98
+		if (sec->ceilingdata) // jff 2/22/98
 		{
 			if (!manual)
 				continue;

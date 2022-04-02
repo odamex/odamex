@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __ACTOR_H__
-#define __ACTOR_H__
+#pragma once
 
 // Basics.
 #include "tables.h"
@@ -560,7 +558,7 @@ public:
 
 	void SetOrigin (fixed_t x, fixed_t y, fixed_t z);
 
-	AActorPtr ptr(){ return AActorPtr(self); }
+	AActorPtr ptr(){ return self; }
 	
 	//
 	// ActorBlockMapListNode
@@ -646,5 +644,3 @@ public:
 		return static_cast<T *>(actor);
 	}
 };
-
-#endif

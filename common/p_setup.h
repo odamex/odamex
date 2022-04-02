@@ -21,11 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __P_SETUP__
-#define __P_SETUP__
-
-
+#pragma once
 
 // NOT called by W_Ticker. Fixme.
 //
@@ -36,7 +32,4 @@ void P_SetupLevel (const char *mapname, int position);
 void P_TranslateLineDef(line_t* ld, maplinedef_t* mld);
 
 // Called by startup code.
-void P_Init (void);
-
-#endif
-
+void P_Init();

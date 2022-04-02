@@ -20,10 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __C_VOTE__
-#define __C_VOTE__
-
-
+#pragma once
 
 /**
  * An enum used for keeping track of the state of the vote as well as
@@ -76,5 +73,3 @@ struct vote_state_t
 };
 
 extern const char* vote_type_cmd[];
-
-#endif

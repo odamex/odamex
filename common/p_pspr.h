@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __P_PSPR_H__
-#define __P_PSPR_H__
+#pragma once
 
 // Basic data types.
 // Needs fixed point, and BAM angles.
@@ -82,7 +80,3 @@ typedef struct pspdef_s
 
 FArchive &operator<< (FArchive &, pspdef_t &);
 FArchive &operator>> (FArchive &, pspdef_t &);
-
-#endif	// __P_PSPR_H__
-
-

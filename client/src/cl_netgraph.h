@@ -22,8 +22,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __CL_NETGRAPH_H__
-#define __CL_NETGRAPH_H__
+#pragma once
 
 class NetGraph
 {
@@ -66,6 +65,3 @@ private:
 	int		mTrafficOut[NetGraph::MAX_HISTORY_TICS];
 	int		mPacketsIn[NetGraph::MAX_HISTORY_TICS];
 };
-
-#endif // __CL_NETGRAPH_H__
-

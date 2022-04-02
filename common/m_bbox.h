@@ -25,8 +25,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_BBOX_H__
-#define __M_BBOX_H__
+#pragma once
 
 #include "dobject.h"
 #include "m_fixed.h"
@@ -59,8 +58,3 @@ public:
 protected:
 	fixed_t m_Box[4];
 };
-
-
-#endif //__M_BBOX_H__
-
-

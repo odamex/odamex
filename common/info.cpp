@@ -1538,7 +1538,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_TRACEEXP1,		// deathstate
 	S_NULL,		// xdeathstate
 	"skeleton/tracex",		// deathsound
-	10,		// speed
+	10*FRACUNIT,		// speed
 	11*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -1631,7 +1631,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_FATSHOTX1,		// deathstate
 	S_NULL,		// xdeathstate
 	"fatso/shotx",		// deathsound
-	20,		// speed
+	20*FRACUNIT,		// speed
 	6*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -1848,7 +1848,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_BRBALLX1,		// deathstate
 	S_NULL,		// xdeathstate
 	"baron/shotx",		// deathsound
-	15,		// speed
+	15*FRACUNIT,		// speed
 	6*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -2220,7 +2220,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_NULL,		// deathstate
 	S_NULL,		// xdeathstate
 	"brain/spawn",		// deathsound
-	10,		// speed
+	10*FRACUNIT,		// speed
 	6*FRACUNIT,		// radius
 	32*FRACUNIT,		// height
 	32*FRACUNIT,	// cdheight
@@ -2313,7 +2313,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_TBALLX1,		// deathstate
 	S_NULL,		// xdeathstate
 	"imp/shotx",		// deathsound
-	10,		// speed
+	10*FRACUNIT,		// speed
 	6*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -2344,7 +2344,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_RBALLX1,		// deathstate
 	S_NULL,		// xdeathstate
 	"caco/shotx",		// deathsound
-	10,		// speed
+	10*FRACUNIT,		// speed
 	6*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -2375,7 +2375,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_EXPLODE1,		// deathstate
 	S_NULL,		// xdeathstate
 	"weapons/rocklx",		// deathsound
-	20,		// speed
+	20*FRACUNIT,		// speed
 	11*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -2406,7 +2406,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_PLASEXP,		// deathstate
 	S_NULL,		// xdeathstate
 	"weapons/plasmax",		// deathsound
-	25,		// speed
+	25*FRACUNIT,		// speed
 	13*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -2437,7 +2437,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_BFGLAND,		// deathstate
 	S_NULL,		// xdeathstate
 	"weapons/bfgx",		// deathsound
-	25,		// speed
+	25*FRACUNIT,		// speed
 	13*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -2468,7 +2468,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_ARACH_PLEX,		// deathstate
 	S_NULL,		// xdeathstate
 	"baby/shotx",		// deathsound
-	25,		// speed
+	25*FRACUNIT,		// speed
 	13*FRACUNIT,		// radius
 	8*FRACUNIT,		// height
 	8*FRACUNIT,	// cdheight
@@ -7608,27 +7608,19 @@ void D_Init_DEHEXTRA_Frames(void)
 		{
 			states[i] = boomstates[i];
 		}
-		else if (i >= EXTRASTATES && i < S_GIB0)
-		{
-			states[i].sprite = SPR_TNT1;
-			states[i].frame = 0;
-			states[i].tics = -1;
-			states[i].action = NULL;
-			states[i].nextstate = (statenum_t)(i + EXTRASTATES);
-			states[i].misc1 = 0;
-			states[i].misc2 = 0;
-		}
 		else if (i >= S_GIB0)
 		{
 			states[i] = odastates[i - S_GIB0];
 		}
 		else
 		{
+			// These cover both DEHEXTRA states and the undefined states
+			// between the MBF and DEHEXTRA blocks.
 			states[i].sprite = SPR_TNT1;
 			states[i].frame = 0;
 			states[i].tics = -1;
 			states[i].action = NULL;
-			states[i].nextstate = (statenum_t)(i + 1);
+			states[i].nextstate = (statenum_t)(i);
 			states[i].misc1 = 0;
 			states[i].misc2 = 0;
 		}
@@ -7649,11 +7641,6 @@ void D_Init_DEHEXTRA_Frames(void)
 	for (int i = S_SARG_RUN1; i <= S_SARG_PAIN2; ++i)
 		states[i].flags |= STATEF_SKILL5FAST;
 
-	// NIGHTMARE! Alt Speed
-	mobjinfo[MT_BRUISERSHOT].altspeed = 20;
-	mobjinfo[MT_HEADSHOT].altspeed = 20;
-	mobjinfo[MT_TROOPSHOT].altspeed = 20;
-
 	// Start all MBF21 content here.
 	for (int i = 0; i < NUMMOBJTYPES ; i++)
 	{
@@ -7665,6 +7652,11 @@ void D_Init_DEHEXTRA_Frames(void)
 		mobjinfo[i].meleerange = (64 * FRACUNIT);
 		mobjinfo[i].droppeditem = MT_NULL;
 	}
+
+	// NIGHTMARE! Alt Speed
+	mobjinfo[MT_BRUISERSHOT].altspeed = 20 * FRACUNIT;
+	mobjinfo[MT_HEADSHOT].altspeed = 20 * FRACUNIT;
+	mobjinfo[MT_TROOPSHOT].altspeed = 20 * FRACUNIT;
 
 	// Dropped items
 	mobjinfo[MT_WOLFSS].droppeditem = MT_CLIP;
