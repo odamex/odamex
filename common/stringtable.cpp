@@ -300,8 +300,8 @@ bool StringTable::hasString(const OString& name) const
 void StringTable::loadStringsLump(const uint32_t language_res_id, const bool engOnly)
 {
 	// Can't use Z_Malloc this early, so we use raw new/delete.
-	size_t len = Res_GetResourceSize(language_res_id);
 	char* language_data = (char*)Res_LoadResource(language_res_id, PU_CACHE);
+	size_t len = Res_GetResourceSize(language_res_id);
 	language_data[len] = '\0';
 
 	// String replacement pass.  Strings in an later pass can be replaced
@@ -335,7 +335,8 @@ void StringTable::loadStringsLump(const uint32_t language_res_id, const bool eng
 	// Load string defaults.
 	loadLanguage("**", true, pass++, language_data, len);
 
-	delete[] language_data;
+	Res_ReleaseResource(language_data);
+	language_data = NULL;
 }
 
 void StringTable::loadStrings(const bool engOnly)

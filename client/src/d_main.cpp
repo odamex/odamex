@@ -752,7 +752,7 @@ void D_DoomMain()
 		I_FatalError("Could not initialize LZO routines");
 
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
-
+	
 	if (!LOG.is_open())
 		C_DoCommand("logfile", 0);
 

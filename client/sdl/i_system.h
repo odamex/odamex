@@ -138,6 +138,7 @@ typedef struct _finddata_t findstate_t;
 long I_FindFirst (char *filespec, findstate_t *fileinfo);
 int I_FindNext (long handle, findstate_t *fileinfo);
 int I_FindClose (long handle);
+std::string I_GetCWD();
 
 #define I_FindName(a)	((a)->name)
 #define I_FindAttr(a)	((a)->attrib)

@@ -7608,27 +7608,19 @@ void D_Init_DEHEXTRA_Frames(void)
 		{
 			states[i] = boomstates[i];
 		}
-		else if (i >= EXTRASTATES && i < S_GIB0)
-		{
-			states[i].sprite = SPR_TNT1;
-			states[i].frame = 0;
-			states[i].tics = -1;
-			states[i].action = NULL;
-			states[i].nextstate = (statenum_t)(i + EXTRASTATES);
-			states[i].misc1 = 0;
-			states[i].misc2 = 0;
-		}
 		else if (i >= S_GIB0)
 		{
 			states[i] = odastates[i - S_GIB0];
 		}
 		else
 		{
+			// These cover both DEHEXTRA states and the undefined states
+			// between the MBF and DEHEXTRA blocks.
 			states[i].sprite = SPR_TNT1;
 			states[i].frame = 0;
 			states[i].tics = -1;
 			states[i].action = NULL;
-			states[i].nextstate = (statenum_t)(i + 1);
+			states[i].nextstate = (statenum_t)(i);
 			states[i].misc1 = 0;
 			states[i].misc2 = 0;
 		}
@@ -7649,13 +7641,8 @@ void D_Init_DEHEXTRA_Frames(void)
 	for (int i = S_SARG_RUN1; i <= S_SARG_PAIN2; ++i)
 		states[i].flags |= STATEF_SKILL5FAST;
 
-	// NIGHTMARE! Alt Speed
-	mobjinfo[MT_BRUISERSHOT].altspeed = 20;
-	mobjinfo[MT_HEADSHOT].altspeed = 20;
-	mobjinfo[MT_TROOPSHOT].altspeed = 20;
-
 	// Start all MBF21 content here.
-	for (int i = 0; i < NUMMOBJTYPES ; i++)
+	for (int i = 0; i < NUMMOBJTYPES; i++)
 	{
 		mobjinfo[i].altspeed = NO_ALTSPEED;
 		mobjinfo[i].infighting_group = IG_DEFAULT;
@@ -7666,6 +7653,11 @@ void D_Init_DEHEXTRA_Frames(void)
 		mobjinfo[i].droppeditem = MT_NULL;
 	}
 
+	// NIGHTMARE! Alt Speed
+	mobjinfo[MT_BRUISERSHOT].altspeed = 20 * FRACUNIT;
+	mobjinfo[MT_HEADSHOT].altspeed = 20 * FRACUNIT;
+	mobjinfo[MT_TROOPSHOT].altspeed = 20 * FRACUNIT;
+
 	// Dropped items
 	mobjinfo[MT_WOLFSS].droppeditem = MT_CLIP;
 	mobjinfo[MT_POSSESSED].droppeditem = MT_CLIP;
@@ -7673,10 +7665,12 @@ void D_Init_DEHEXTRA_Frames(void)
 	mobjinfo[MT_CHAINGUY].droppeditem = MT_CHAINGUN;
 
 	mobjinfo[MT_VILE].flags3 = MF3_SHORTMRANGE | MF3_DMGIGNORED | MF3_NOTHRESHOLD;
-	mobjinfo[MT_CYBORG].flags3 = MF3_NORADIUSDMG | MF3_HIGHERMPROB | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E2M8BOSS | MF3_E4M6BOSS;
-	mobjinfo[MT_SPIDER].flags3 = MF3_NORADIUSDMG | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E3M8BOSS | MF3_E4M8BOSS;
+	mobjinfo[MT_CYBORG].flags3 = MF3_NORADIUSDMG | MF3_HIGHERMPROB | MF3_RANGEHALF |
+	                             MF3_FULLVOLSOUNDS | MF3_E2M8BOSS | MF3_E4M6BOSS;
+	mobjinfo[MT_SPIDER].flags3 =
+	    MF3_NORADIUSDMG | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E3M8BOSS | MF3_E4M8BOSS;
 	mobjinfo[MT_SKULL].flags3 = MF3_RANGEHALF;
-    mobjinfo[MT_FATSO].flags3 = MF3_MAP07BOSS1;
+	mobjinfo[MT_FATSO].flags3 = MF3_MAP07BOSS1;
 	mobjinfo[MT_BABY].flags3 = MF3_MAP07BOSS2;
 	mobjinfo[MT_BRUISER].flags3 = MF3_E1M8BOSS;
 	mobjinfo[MT_UNDEAD].flags3 = MF3_LONGMELEE | MF3_RANGEHALF;

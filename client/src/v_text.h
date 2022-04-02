@@ -35,18 +35,18 @@
 
 struct OGlobalFont
 {
-	Texture operator[](const size_t idx) const
+	const Texture* operator[](const size_t idx)
 	{
 		return m_fontData[idx];
 	}
-	Texture at(const size_t idx) const
+	const Texture* at(const size_t idx)
 	{
 		if (idx < 0 || idx >= HU_FONTSIZE)
 			throw std::out_of_range("Out-of-bounds font char");
 
 		return m_fontData[idx];
 	}
-	void setFont(const Texture font[HU_FONTSIZE], const int lineHeight)
+	void setFont(const Texture* font[HU_FONTSIZE], const int lineHeight)
 	{
 		for (int i = 0; i < HU_FONTSIZE; i++)
 		{
@@ -64,7 +64,7 @@ struct OGlobalFont
 		return m_fontLoaded;
 	}
   private:
-	Texture m_fontData[HU_FONTSIZE];
+	const Texture* m_fontData[HU_FONTSIZE];
 	int m_lineHeight;
 	bool m_fontLoaded = false;
 };

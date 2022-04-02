@@ -48,9 +48,9 @@ EXTERN_CVAR(hud_scaletext)
 
 OGlobalFont hu_font;
 
-static Texture* hu_bigfont;
-static Texture* hu_smallfont;
-static Texture* hu_digfont;
+const Texture* hu_bigfont[HU_FONTSIZE];
+const Texture* hu_smallfont[HU_FONTSIZE];
+const Texture* hu_digfont[HU_FONTSIZE];
 
 static int hu_bigfont_height;
 static int hu_smallfont_height;
@@ -80,9 +80,9 @@ void V_TextInit()
 		// Some letters of this font are missing.
 		int num = Res_GetTextureResourceId(buffer.c_str(), PATCH);
 		if (Res_CheckResource(num))
-			::hu_bigfont[i] = *Res_CacheTexture(num, PU_STATIC);
+			::hu_bigfont[i] = Res_CacheTexture(num, PU_STATIC);
 		else
-			::hu_bigfont[i] = *Res_CacheTexture("TNT1A0", PATCH, PU_STATIC);
+			::hu_bigfont[i] = Res_CacheTexture("TNT1A0", PATCH, PU_STATIC);
 	}
 
 	// Normal doom chat/message font, starts at index 33.
@@ -91,7 +91,7 @@ void V_TextInit()
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
 		StrFormat(buffer, smallfont, j++ - sub);
-		::hu_smallfont[i] = *Res_CacheTexture(buffer.c_str(), PATCH, PU_STATIC);
+		::hu_smallfont[i] = Res_CacheTexture(buffer.c_str(), PATCH, PU_STATIC);
 	}
 
 	const char* digfont = "DIG%02d";
@@ -115,18 +115,18 @@ void V_TextInit()
 		int num = Res_GetTextureResourceId(buffer.c_str(), PATCH);
 		if (Res_CheckResource(num))
 		{
-			::hu_digfont[i] = *Res_CacheTexture(num, PU_STATIC);
+			::hu_digfont[i] = Res_CacheTexture(num, PU_STATIC);
 		}
 		else
 		{
-			::hu_digfont[i] = *Res_CacheTexture("TNT1A0", PATCH, PU_STATIC);
+			::hu_digfont[i] = Res_CacheTexture("TNT1A0", PATCH, PU_STATIC);
 		}
 	}
 
 	// Font heights.
-	::hu_bigfont_height = ::hu_bigfont['M' - HU_FONTSTART].mHeight;
-	::hu_smallfont_height = ::hu_smallfont['M' - HU_FONTSTART].mHeight;
-	::hu_digfont_height = ::hu_digfont['M' - HU_FONTSTART].mHeight;
+	::hu_bigfont_height = ::hu_bigfont['M' - HU_FONTSTART]->mHeight;
+	::hu_smallfont_height = ::hu_smallfont['M' - HU_FONTSTART]->mHeight;
+	::hu_digfont_height = ::hu_digfont['M' - HU_FONTSTART]->mHeight;
 
 	// Default font is SMALLFONT.
 	V_SetFont("SMALLFONT");
@@ -139,9 +139,9 @@ void V_TextShutdown()
 {
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		delete ::hu_bigfont[i].mData;
-		delete ::hu_smallfont[i].mData;
-		delete ::hu_digfont[i].mData;
+		::hu_bigfont[i] = NULL;
+		::hu_smallfont[i] = NULL;
+		::hu_digfont[i] = NULL;
 	}
 }
 
@@ -356,7 +356,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 							const byte *string, int scalex, int scaley) const
 {
-	if (!::hu_font[0].mData)
+	if (!::hu_font[0])
 		return;
 
 	if (normalcolor < 0 || normalcolor > NUM_TEXT_COLORS)
@@ -399,14 +399,12 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 			continue;
 		}
 
-		int w = hu_font[c].mWidth * scalex;
+		int w = hu_font[c]->mWidth * scalex;
 		if (cx + w > I_GetSurfaceWidth())
 			break;
 
-		const Texture ch = hu_font[c];
-
-        DrawSWrapper(drawer, &ch, cx, cy, hu_font[c].mWidth * scalex,
-		             hu_font[c].mHeight * scaley);
+        DrawSWrapper(drawer, hu_font[c], cx, cy, hu_font[c]->mWidth * scalex,
+		             hu_font[c]->mHeight * scaley);
 
 		cx += w;
 	}
@@ -418,7 +416,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 int V_StringWidth(const byte* str)
 {
 	// Default width without a font loaded is 8.
-	if (!::hu_font[0].mData)
+	if (!::hu_font[0])
 		return 8;
 
 	int width = 0;
@@ -439,7 +437,7 @@ int V_StringWidth(const byte* str)
 		}
 		else
 		{
-			width += hu_font[c].mWidth;
+			width += hu_font[c]->mWidth;
 		}
 	}
 
@@ -449,7 +447,7 @@ int V_StringWidth(const byte* str)
 int V_StringHeight(const char* str)
 {
 	// Default width without a font loaded is 8.
-	if (!::hu_font[0].mData)
+	if (!::hu_font[0])
 		return 8;
 
 	int lineheight = V_LineHeight();
@@ -501,7 +499,7 @@ int V_LineHeight()
 
 brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 {
-	if (!::hu_font[0].mData)
+	if (!::hu_font[0])
 		return NULL;
 
 	brokenlines_t lines[128];	// Support up to 128 lines (should be plenty)
@@ -545,7 +543,7 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 		}
 		else
 		{
-			nw = hu_font[c - HU_FONTSTART].mWidth;
+			nw = hu_font[c - HU_FONTSTART]->mWidth;
 		}
 
 		if (w + nw > maxwidth || c == '\n')

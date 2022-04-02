@@ -408,7 +408,7 @@ static void HU_DrawCrosshair()
 static void HU_DrawChatPrompt()
 {
 	// Don't draw the chat prompt without a valid font.
-	if (!::hu_font[0].mData)
+	if (!::hu_font[0])
 		return;
 
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
@@ -447,7 +447,7 @@ static void HU_DrawChatPrompt()
 		prompt = "Say: ";
 
 	int promptwidth = V_StringWidth(prompt) * scaledxfac;
-	int x = hu_font['_' - HU_FONTSTART].mWidth * scaledxfac * 2 + promptwidth;
+	int x = hu_font['_' - HU_FONTSTART]->mWidth * scaledxfac * 2 + promptwidth;
 
 	// figure out if the text is wider than the screen->
 	// if so, only draw the right-most portion of it.
@@ -461,7 +461,7 @@ static void HU_DrawChatPrompt()
 		}
 		else
 		{
-			x += hu_font[c].mWidth * scaledxfac;
+			x += hu_font[c]->mWidth * scaledxfac;
 		}
 	}
 
