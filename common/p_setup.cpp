@@ -135,6 +135,7 @@ AActor**		blocklinks;		// for thing chains
 //	used as a PVS lookup as well.
 //
 byte*			rejectmatrix;
+BOOL			rejectempty;
 
 
 // Maintain single and multi player starting spots.
@@ -652,7 +653,6 @@ static void P_LoadDoomThings(const OString& mapname)
 
 	P_SpawnAvatars();
 
-	Z_Free (data);
 	Res_ReleaseResource(res_id);
 }
 
@@ -934,7 +934,6 @@ static void P_LoadDoomLineDefs(const OString& mapname)
 		P_AdjustLine(ld);
 	}
 
-	Z_Free(data);
 	Res_ReleaseResource(res_id);
 }
 
@@ -1150,7 +1149,6 @@ static void P_LoadSideDefs2(const OString& mapname)
 		map_format.post_process_sidedef_special(sd, msd, sec, i);
 	}
 
-	Z_Free (data);
 	Res_ReleaseResource(res_id);
 }
 
@@ -1550,37 +1548,37 @@ void P_GenerateUniqueMapFingerPrint(const OString& mapname)
 
 	const ResourceId thing_res_id = Res_GetMapResourceId("THINGS", mapname);
 	if (!Res_CheckResource(thing_res_id))
-		I_Error("P_LoadDoomThings: unable to find THINGS lump for map %s\n",
+		I_Error("P_GenerateUniqueMapFingerPrint: unable to find THINGS lump for map %s\n",
 		        mapname.c_str());
 
 	const ResourceId linedef_res_id = Res_GetMapResourceId("LINEDEFS", mapname);
 	if (!Res_CheckResource(linedef_res_id))
-		I_Error("P_LoadDoomThings: unable to find LINEDEFS lump for map %s\n",
+		I_Error("P_GenerateUniqueMapFingerPrint: unable to find LINEDEFS lump for map %s\n",
 		        mapname.c_str());
 
 	const ResourceId sidedef_res_id = Res_GetMapResourceId("SIDEDEFS", mapname);
 	if (!Res_CheckResource(sidedef_res_id))
-		I_Error("P_LoadDoomThings: unable to find SIDEDEFS lump for map %s\n",
+		I_Error("P_GenerateUniqueMapFingerPrint: unable to find SIDEDEFS lump for map %s\n",
 		        mapname.c_str());
 
 	const ResourceId vertexes_res_id = Res_GetMapResourceId("VERTEXES", mapname);
 	if (!Res_CheckResource(vertexes_res_id))
-		I_Error("P_LoadDoomThings: unable to find VERTEXES lump for map %s\n",
+		I_Error("P_GenerateUniqueMapFingerPrint: unable to find VERTEXES lump for map %s\n",
 		        mapname.c_str());
 
 	const ResourceId segs_res_id = Res_GetMapResourceId("SEGS", mapname);
 	if (!Res_CheckResource(segs_res_id))
-		I_Error("P_LoadDoomThings: unable to find SEGS lump for map %s\n",
+		I_Error("P_GenerateUniqueMapFingerPrint: unable to find SEGS lump for map %s\n",
 		        mapname.c_str());
 
 	const ResourceId ssectors_res_id = Res_GetMapResourceId("SSECTORS", mapname);
 	if (!Res_CheckResource(ssectors_res_id))
-		I_Error("P_LoadDoomThings: unable to find SSECTORS lump for map %s\n",
+		I_Error("P_GenerateUniqueMapFingerPrint: unable to find SSECTORS lump for map %s\n",
 		        mapname.c_str());
 
 	const ResourceId sectors_res_id = Res_GetMapResourceId("SECTORS", mapname);
 	if (!Res_CheckResource(sectors_res_id))
-		I_Error("P_LoadDoomThings: unable to find SECTORS lump for map %s\n",
+		I_Error("P_GenerateUniqueMapFingerPrint: unable to find SECTORS lump for map %s\n",
 		        mapname.c_str());
 
 	const byte* thingbytes = const_cast<const byte*>((const byte*)Res_LoadResource(thing_res_id, PU_STATIC));
@@ -1793,16 +1791,26 @@ static void P_LoadReject(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("REJECT", mapname);
 	if (!Res_CheckResource(res_id))
-		I_Error("P_LoadReject: unable to find REJECT lump for map %s\n", mapname.c_str());
-
-	rejectmatrix = NULL;
+	{
+		DPrintf("P_LoadReject: unable to find REJECT lump for map %s\n", mapname.c_str());
+		rejectmatrix = NULL;
+		rejectempty = true;
+		return;
+	}
 
 	// [SL] 2011-07-01 - Check to see if the reject table is of the proper size.
 	// If it's too short, the reject table should be ignored when calling P_CheckSight.
-	if (Res_GetResourceSize(res_id) < (unsigned)(numsectors * numsectors + 7) / 8)
+	if (Res_GetResourceSize(res_id) <
+	    ((unsigned int)ceil((float)(numsectors * numsectors / 8))))
+	{
 		DPrintf("Reject matrix is not valid and will be ignored.\n");
+		rejectempty = true;
+	}
 	else
+	{
 		rejectmatrix = (byte*)Res_LoadResource(res_id, PU_LEVEL);
+		rejectempty = false;
+	}
 }
 
 
@@ -1915,6 +1923,9 @@ void P_SetupLevel(const OString& mapname, int position)
 		level.behavior = NULL;
 	}
 
+	// [Blair] Create map fingerprint
+	P_GenerateUniqueMapFingerPrint(mapname);
+
 	if (HasBehavior)
 	{
 		P_LoadBehavior(mapname);
@@ -1927,6 +1938,8 @@ void P_SetupLevel(const OString& mapname, int position)
 
 	level.time = 0;
 
+	P_LoadVertexes(mapname);
+	P_LoadSectors(mapname);
 	P_LoadSideDefs(mapname);
 
 	if (HasBehavior)
@@ -1937,9 +1950,6 @@ void P_SetupLevel(const OString& mapname, int position)
 	P_LoadSideDefs2(mapname);
 	P_FinishLoadingLineDefs();
 	P_LoadBlockMap(mapname);
-
-	// [Blair] Create map fingerprint
-	P_GenerateUniqueMapFingerPrint(mapname);
 	
 	const ResourceId nodes_res_id = Res_GetMapResourceId("NODES", mapname);
 	if (Res_GetResourceSize(nodes_res_id) >= 4)

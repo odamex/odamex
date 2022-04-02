@@ -301,6 +301,7 @@ BOOL	Check_Sides(AActor *, int, int);					// phares
 // P_SETUP
 //
 extern byte*			rejectmatrix;	// for fast sight rejection
+extern BOOL				rejectempty;
 extern int*				blockmaplump;	// offsets in blockmap are from here
 extern int*				blockmap;
 extern int				bmapwidth;

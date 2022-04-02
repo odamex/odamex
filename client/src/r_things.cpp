@@ -180,8 +180,6 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 	if (vis->yscale <= 0)
 		return;
 
-	dcol.textureheight = 256 << FRACBITS;
-
 	if (vis->spectator)
 		return;
 
@@ -648,6 +646,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	vis.translation = translationref_t();		// [RH] Use default colors
 	vis.translucency = r_drawplayersprites * FRACUNIT;
 	vis.mo = NULL;
+	vis.spectator = false;
 
 	if (sprframe->flip[0])
 	{
