@@ -25,30 +25,11 @@
 
 #include "odamex.h"
 
-#include "z_zone.h"
-#include "v_video.h"
-#include "i_video.h"
-
 #include "st_stuff.h"
 #include "i_video.h"	// IWindowSurface
 #include "st_lib.h"
 #include "r_local.h"	// R_GetRenderingSurface()
-
-#include "c_cvars.h"
 #include "resources/res_texture.h"
-
-
-//
-// Hack display negative frags.
-//	Loads and store the stminus lump.
-//
-const Texture* sttminus;
-
-void STlib_init(void)
-{
-	sttminus = Res_CacheTexture("STTMINUS", PATCH, PU_STATIC);
-}
-
 
 // [RH] Routines to stretch status bar graphics depending on st_scale cvar.
 EXTERN_CVAR(st_scale)
@@ -77,29 +58,30 @@ void StatusBarWidget_Base::clearRect(int x, int y, int w, int h)
 }
 
 //
-// STlib_DrawTexture
+// StatusBarWidget_Base::drawPatch
 //
 // Draws a patch onto the drawing surface. STlib_ClearRect should be used to
 // draw a fresh copy of the background prior to drawing the patch.
 //
-static void STlib_DrawTexture(int x, int y, const Texture* texture)
+void StatusBarWidget_Base::drawPatch(int x, int y, const Texture* t)
 {
 	if (st_scale)
 	{
 		// draw onto stnum_surface, which will be stretched and blitted
 		// onto the rendering surface at the end of the frame.
-		DCanvas* canvas = stnum_surface->getDefaultCanvas();
-		canvas->DrawTexture(texture, x, y);
+		const DCanvas* canvas = stnum_surface->getDefaultCanvas();
+		canvas->DrawTexture(t, x, y);
 	}
 	else
 	{
 		// draw directly onto the rendering surface since stretching isn't being used.
-		DCanvas* canvas = R_GetRenderingSurface()->getDefaultCanvas();
-		canvas->DrawTexture(texture, x + ST_X, y + ST_Y);
+		const DCanvas* canvas = R_GetRenderingSurface()->getDefaultCanvas();
+		canvas->DrawTexture(t, x + ST_X, y + ST_Y);
 	}
 }
 
-void STlib_initNum(st_number_t* n, int x, int y, const Texture** pl, int* num, bool* on, int maxdigits)
+void StatusBarWidgetNumber::init(int x_, int y_, const Texture** pl, int* num_, bool* on_,
+                                 int maxdigits_)
 {
 	m_x = x_;
 	m_y = y_;
@@ -129,10 +111,6 @@ void StatusBarWidgetNumber::update(bool force_refresh, bool cleararea)
 	int number = *num;
 	oldnum = *num;
 
-	int 		w = n->p[0]->mWidth;
-	int 		h = n->p[0]->mHeight;
-	int 		x = n->x;
-
 	const bool negative = number < 0;
 
 	if (negative)
@@ -145,9 +123,9 @@ void StatusBarWidgetNumber::update(bool force_refresh, bool cleararea)
 		number = -number;
 	}
 
-	const patch_t* p0 = W_ResolvePatchHandle(p[0]);
-	const int w = p0->width();
-	const int h = p0->height();
+	const Texture* p0 = p[0];
+	const int w = p0->mWidth;
+	const int h = p0->mHeight;
 
 	// clear the area
 	if (cleararea)
@@ -160,47 +138,39 @@ void StatusBarWidgetNumber::update(bool force_refresh, bool cleararea)
 	int drawx = m_x;
 
 	// in the special case of 0, you draw 0
-	if (num == 0)
-		STlib_DrawTexture(x - w, n->y, n->p[0]);
+	if (number == 0)
+		drawPatch(drawx - w, m_y, p0);
 
 	// draw the new number
 	for (int numdigits = maxdigits; number && numdigits; numdigits--)
 	{
-		x -= w;
-		STlib_DrawTexture(x, n->y, n->p[num % 10]);
-		num /= 10;
+		drawx -= w;
+		drawPatch(drawx, m_y, p[number % 10]);
+		number /= 10;
 	}
 
 	// draw a minus sign if necessary
 	if (negative)
-		STlib_DrawTexture(x - 8, n->y, sttminus);
+		drawPatch(drawx - 8, m_y, negminus);
 }
 
-
-void STlib_updateNum(st_number_t* n, bool force_refresh, bool cleararea)
+void StatusBarWidgetPercent::init(int x, int y, const Texture** pl, int* num, bool* on,
+                                  const Texture* percent_patch)
 {
-	if (*n->on)
-		STlib_drawNum(n, force_refresh, cleararea);
-}
-
-
-void STlib_initPercent(st_percent_t* p, int x, int y, const Texture** pl, int* num, bool* on, const Texture* percent_texture)
-{
-	STlib_initNum(&p->n, x, y, pl, num, on, 3);
-	p->p = percent_texture;
+	StatusBarWidgetNumber::init(x, y, pl, num, on, 3);
+	m_percentTex = percent_patch;
 }
 
 void StatusBarWidgetPercent::update(bool force_refresh)
 {
-	if (force_refresh && *percent->n.on)
-		STlib_DrawTexture(percent->n.x, percent->n.y, percent->p);
+	if (force_refresh && *on)
+		drawPatch(getX(), getY(), m_percentTex);
 
 	StatusBarWidgetNumber::update(force_refresh);
 }
 
-
-
-void STlib_initMultIcon(st_multicon_t* icon, int x, int y, const Texture** il, int* inum, bool* on)
+void StatusBarWidgetMultiIcon::init(int x_, int y_, const Texture** il, int* inum_,
+                                    bool* on_)
 {
 	m_x = x_;
 	m_y = y_;
@@ -217,48 +187,16 @@ void StatusBarWidgetMultiIcon::update(bool force_refresh)
 		// clear the background area
 		if (oldinum != -1)
 		{
-			int x = icon->x - icon->p[icon->oldinum]->mOffsetX;
-			int y = icon->y - icon->p[icon->oldinum]->mOffsetY;
-			int w = icon->p[icon->oldinum]->mWidth;
-			int h = icon->p[icon->oldinum]->mHeight;
+			const int drawx = m_x - p[oldinum]->mOffsetX;
+			const int drawy = m_y - p[oldinum]->mOffsetY;
+			const int w = p[oldinum]->mWidth;
+			const int h = p[oldinum]->mHeight;
 
-			STlib_ClearRect(x, y, w, h);
+			clearRect(drawx, drawy, w, h);
 		}
 
-		STlib_DrawTexture(icon->x, icon->y, icon->p[*icon->inum]);
-		icon->oldinum = *icon->inum;
-	}
-}
-
-
-
-void STlib_initBinIcon(st_binicon_t* icon, int x, int y, const Texture* texture, bool* val, bool* on)
-{
-	icon->x			= x;
-	icon->y			= y;
-	icon->oldval	= 0;
-	icon->val		= val;
-	icon->on		= on;
-	icon->p			= texture;
-}
-
-
-
-void STlib_updateBinIcon(st_binicon_t* icon, bool force_refresh)
-{
-	if (*icon->on && (force_refresh || icon->oldval != *icon->val))
-	{
-		int x = icon->x - icon->p->mOffsetX;
-		int y = icon->y - icon->p->mOffsetY;
-		int w = icon->p->mWidth;
-		int h = icon->p->mHeight;
-
-		if (*icon->val)
-			STlib_DrawTexture(icon->x, icon->y, icon->p);
-		else
-			STlib_ClearRect(x, y, w, h);
-
-		icon->oldval = *icon->val;
+		drawPatch(m_x, m_y, p[*inum]);
+		oldinum = *inum;
 	}
 }
 

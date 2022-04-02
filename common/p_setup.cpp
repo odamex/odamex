@@ -920,8 +920,8 @@ static void P_LoadDoomLineDefs(const OString& mapname)
 
 	bool isE2M7 = (levelHash == e2m7hash);
 
-	ld = lines;
-	for (i=0 ; i<numlines ; i++, ld++)
+	line_t* ld = lines;
+	for (size_t i=0 ; i<numlines ; i++, ld++)
 	{
 		const maplinedef_t *mld = ((maplinedef_t *)data) + i;
 

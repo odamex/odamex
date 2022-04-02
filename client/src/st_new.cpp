@@ -91,7 +91,6 @@ static Texture* ToastIcon[NUMMODS];
 
 static int		NameUp = -1;
 
-extern const Texture*	sttminus;
 extern const Texture*	tallnum[10];
 extern const Texture*	faces[];
 extern int		st_faceindex;
@@ -209,13 +208,13 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 	{
 		if (hud_scale)
 		{
-			scrn->DrawLucentTextureCleanNoMove(sttminus, x, y);
-			x += CleanXfac * sttminus->mWidth;
+			scrn->DrawLucentTextureCleanNoMove(negminus, x, y);
+			x += CleanXfac * negminus->mWidth;
 		}
 		else
 		{
-			scrn->DrawLucentTexture(sttminus, x, y);
-			x += sttminus->mWidth;
+			scrn->DrawLucentTexture(negminus, x, y);
+			x += negminus->mWidth;
 		}
 		num = -num;
 	}
@@ -252,7 +251,7 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 	} while (d /= 10);
 
 	if (num < 0)
-		x -= sttminus->mWidth * xscale;
+		x -= negminus->mWidth * xscale;
 
 	ST_DrawNum (x, y, scrn, num);
 }

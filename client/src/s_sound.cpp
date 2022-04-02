@@ -180,7 +180,8 @@ void S_NoiseDebug()
 				ox = Channel[i].x;
 				oy = Channel[i].y;
 			}
-			color = Channel[i].loop ? CR_BROWN : CR_GREY;
+
+			const int color = Channel[i].loop ? CR_BROWN : CR_GREY;
 
 			const OString& lump_name(Res_GetResourcePath(Channel[i].sfxinfo->res_id).last());
 			strcpy(temp, lump_name.c_str());
@@ -635,16 +636,6 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	{
 		x = pt[0];
 		y = pt[1];
-	}
-
-	if (sfxinfo->link)
-		sfxinfo = sfxinfo->link;
-
-	if (!sfxinfo->data)
-	{
-		I_LoadSound(sfxinfo);
-		if (sfxinfo->link)
-			sfxinfo = sfxinfo->link;
 	}
 
 	if (sfxinfo->res_id == sfx_empty)
@@ -1208,24 +1199,24 @@ int S_FindSoundByResourceId(const ResourceId res_id)
 {
 	if (Res_CheckResource(res_id))
 	{
-		for (int i = 0; i < numsfx; i++)
+		for (int i = 0; i < S_sfx.size(); i++)
 			if (S_sfx[i].res_id == res_id)
 				return i;
 	}
 	return -1;
 }
 
-int S_AddSoundLump (char *logicalname, const ResourceId res_id)
+int S_AddSoundLump (const char *logicalname, const ResourceId res_id)
 {
 	S_sfx.push_back(sfxinfo_t());
 	sfxinfo_t& new_sfx = S_sfx[S_sfx.size() - 1];
 
 	// logicalname MUST be < MAX_SNDNAME chars long
-	strcpy (S_sfx[numsfx].name, logicalname);
-	S_sfx[numsfx].data = NULL;
-	S_sfx[numsfx].link = NULL;
-	S_sfx[numsfx].res_id = res_id;
-	return numsfx++;
+	strcpy(new_sfx.name, logicalname);
+	new_sfx.data = NULL;
+	new_sfx.link = sfxinfo_t::NO_LINK;
+	new_sfx.res_id = res_id;
+	return S_sfx.size() - 1;
 }
 
 void S_ClearSoundLumps()
@@ -1257,13 +1248,23 @@ int S_AddSound(const char *logicalname, const char *lumpname)
 {
 	int sfxid = FindSoundNoHash(logicalname);
 
-	const ResourceId res_id = Res_GetResourceId(lumpname, sounds_directory_name);
+	const ResourceId res_id = lumpname ? Res_GetResourceId(lumpname, sounds_directory_name) : ResourceId::INVALID_ID;
 
 	// Otherwise, prepare a new one.
-	if (sfxid == numsfx)
-		sfxid = S_AddSoundLump(logicalname, res_id);
+	if (sfxid != S_sfx.size())
+	{
+		sfxinfo_t& sfx = S_sfx[sfxid];
+
+		sfx.res_id = res_id;
+		sfx.link = sfxinfo_t::NO_LINK;
+		if (sfx.israndom)
+		{
+			S_rnd.erase(sfxid);
+			sfx.israndom = false;
+		}
+	}
 	else
-		S_sfx[sfxid].res_id = res_id;
+		sfxid = S_AddSoundLump(logicalname, res_id);
 
 	return sfxid;
 }
@@ -1281,19 +1282,17 @@ void S_ParseSndInfo()
 {
 	S_ClearSoundLumps();
 
-	S_ClearSoundLumps ();
-
 	const ResourceIdList res_ids = Res_GetAllResourceIds("/GLOBAL/SNDINFO");
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
-		sndinfo = (char*)Res_LoadResource(res_ids[i], PU_CACHE);
+		const char* buffer = static_cast<const char*>(Res_LoadResource(res_ids[i], PU_CACHE));
 
 		const OScannerConfig config = {
 		    "SNDINFO", // lumpName
 		    true,      // semiComments
 		    true,      // cComments
 		};
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_ids[i]));
 
 		while (os.scan())
 		{
@@ -1561,7 +1560,7 @@ void S_ActivateAmbient(AActor *origin, int ambient)
 
 BEGIN_COMMAND (snd_soundlist)
 {
-	for (int i = 0; i < numsfx; i++)
+	for (int i = 0; i < S_sfx.size(); i++)
 	{
 		if (Res_CheckResource(S_sfx[i].res_id))
 		{

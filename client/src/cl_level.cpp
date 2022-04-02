@@ -243,7 +243,7 @@ void G_InitNew(const std::string& mapname)
 					states[i].tics >>= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (i = 0; i < NUMMOBJTYPES; ++i)
+			for (size_t i = 0; i < NUMMOBJTYPES; ++i)
 			{
 				if (mobjinfo[i].altspeed != NO_ALTSPEED)
 				{
@@ -261,7 +261,7 @@ void G_InitNew(const std::string& mapname)
 					states[i].tics <<= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (i = 0; i < NUMMOBJTYPES; ++i)
+			for (size_t i = 0; i < NUMMOBJTYPES; ++i)
 			{
 				if (mobjinfo[i].altspeed != NO_ALTSPEED)
 				{

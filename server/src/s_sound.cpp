@@ -261,24 +261,24 @@ int S_FindSoundByResourceId(const ResourceId res_id)
 {
 	if (Res_CheckResource(res_id))
 	{
-		for (int i = 0; i < numsfx; i++)
+		for (int i = 0; i < S_sfx.size(); i++)
 			if (S_sfx[i].res_id == res_id)
 				return i;
 	}
 	return -1;
 }
 
-int S_AddSoundLump(char *logicalname, const ResourceId res_id)
+int S_AddSoundLump(const char *logicalname, const ResourceId res_id)
 {
 	S_sfx.push_back(sfxinfo_t());
 	sfxinfo_t& new_sfx = S_sfx[S_sfx.size() - 1];
 
 	// logicalname MUST be < MAX_SNDNAME chars long
-	strcpy (S_sfx[numsfx].name, logicalname);
-	S_sfx[numsfx].data = NULL;
-	S_sfx[numsfx].link = NULL;
-	S_sfx[numsfx].res_id = res_id;
-	return numsfx++;
+	strcpy(S_sfx[S_sfx.size()].name, logicalname);
+	new_sfx.data = NULL;
+	new_sfx.link = sfxinfo_t::NO_LINK;
+	new_sfx.res_id = res_id;
+	return S_sfx.size() - 1;
 }
 
 void S_ClearSoundLumps()
@@ -310,10 +310,10 @@ int S_AddSound(const char *logicalname, const char *lumpname)
 {
 	int sfxid = FindSoundNoHash(logicalname);
 
-	const ResourceId res_id = Res_GetResourceId(lumpname, sounds_directory_name);
+	const ResourceId res_id = lumpname ? Res_GetResourceId(lumpname, sounds_directory_name) : ResourceId::INVALID_ID;
 
 	// Otherwise, prepare a new one.
-	if (sfxid == numsfx)
+	if (sfxid == S_sfx.size())
 		sfxid = S_AddSoundLump(logicalname, res_id);
 	else
 		S_sfx[sfxid].res_id = res_id;
@@ -339,14 +339,14 @@ void S_ParseSndInfo()
 	const ResourceIdList res_ids = Res_GetAllResourceIds("/GLOBAL/SNDINFO");
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
-		sndinfo = (char*)Res_LoadResource(res_ids[i], PU_CACHE);
+		const char* buffer = static_cast<const char*>(Res_LoadResource(res_ids[i], PU_CACHE));
 
 		const OScannerConfig config = {
 		    "SNDINFO", // lumpName
 		    true,      // semiComments
 		    true,      // cComments
 		};
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_ids[i]));
 
 		while (os.scan())
 		{

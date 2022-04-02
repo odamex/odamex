@@ -190,7 +190,7 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 	}
 
 	// [AM] Ensure that we're not going to fall off the side of the patch.
-	const short patchWidth = W_CachePatch(vis->patch, PU_CACHE)->width();
+	const short patchWidth = vis->texture->mWidth;
 	const int start = vis->startfrac >> FRACBITS;
 	if (start < 0 || start > patchWidth)
 	{

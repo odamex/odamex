@@ -1369,17 +1369,17 @@ bool InterpretLines(const std::string& name, std::vector<mline_t>& lines)
 {
 	lines.clear();
 
-	const int lump = W_FindLump(name.c_str(), 0);
-	if (lump != -1)
+	const ResourceId res = Res_GetResourceId(name.c_str(), global_directory_name);
+	if (Res_CheckResource(res))
 	{
-		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+		const char* buffer = static_cast<const char*>(Res_LoadResource(res, PU_STATIC));
 
 		const OScannerConfig config = {
 		    name.c_str(), // lumpName
 		    false,        // semiComments
 		    true,         // cComments
 		};
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res));
 		
 		while (os.scan())
 		{
@@ -2120,7 +2120,7 @@ void G_ParseMapInfo()
 
 	//if (gamemission != heretic)
 	{
-		ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
+		ParseMapInfoLump(Res_GetResourceId("_DCOMNFO", global_directory_name));
 	}
 
 	switch (gamemission)

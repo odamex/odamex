@@ -30,6 +30,7 @@ struct event_t;
 
 #include "com_misc.h"
 #include "w_wad.h"
+#include "resources/res_texture.h"
 
 // [RH] Turned these into variables
 // Size of statusbar.
@@ -47,7 +48,7 @@ int ST_StatusBarY(int surface_width, int surface_height);
 void ST_ForceRefresh();
 
 // for st_lib.cpp
-extern lumpHandle_t negminus;
+extern const Texture* negminus;
 
 //
 // STATUS BAR

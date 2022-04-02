@@ -1744,7 +1744,6 @@ int M_StringHeight(char* string)
 	if (!::hu_font.isFontLoaded())
 		return 8;
 
-	int h;
 	int height = hu_font[0]->mHeight;
 
 	int h = height;

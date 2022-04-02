@@ -54,6 +54,7 @@ struct sfxinfo_struct
 	unsigned int next, index;			// [RH] For hashing
 	unsigned int frequency;				// [RH] Preferred playback rate
 	unsigned int length;				// [RH] Length of the sound in bytes
+	bool israndom; // [DE] Whether or not this is an alias for a set of random sounds
 };
 
 // the complete set of sound effects
@@ -166,8 +167,8 @@ void S_ParseSndInfo();
 void S_HashSounds (void);
 int S_FindSound (const char *logicalname);
 int S_FindSoundByResourceId(const ResourceId res_id);
-int S_AddSound (char *logicalname, char *lumpname);	// Add sound by lumpname
-int S_AddSoundLump (char *logicalname, const ResourceId res_id);	// Add sound by ResourceId
+int S_AddSound (const char *logicalname, const char *lumpname);	// Add sound by lumpname
+int S_AddSoundLump (const char *logicalname, const ResourceId res_id);	// Add sound by ResourceId
 void S_ClearSoundLumps (void);
 
 void UV_SoundAvoidPlayer(AActor* mo, byte channel, const char* name, byte attenuation);

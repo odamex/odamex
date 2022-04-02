@@ -44,7 +44,7 @@ class StatusBarWidget_Base
 	int m_y;
 
 	void clearRect(int x, int y, int w, int h);
-	void drawPatch(int x, int y, const patch_t* p);
+	void drawPatch(int x, int y, const Texture* p);
 
   public:
 	int getX() const { return m_x; }
@@ -57,7 +57,7 @@ class StatusBarWidgetNumber : StatusBarWidget_Base
 {
   protected:
 
-	void drawPatch(int x, int y, const patch_t* p)
+	void drawPatch(int x, int y, const Texture* p)
 	{
 		StatusBarWidget_Base::drawPatch(x, y, p);
 	}
@@ -84,7 +84,7 @@ class StatusBarWidgetNumber : StatusBarWidget_Base
 	const Texture** p;
 
 	// Number widget routines
-	void init(int x, int y, lumpHandle_t* pl, int* num, bool* on, int maxdigits);
+	void init(int x, int y, const Texture** pl, int* num, bool* on, int maxdigits);
 
 	void update(bool refresh, bool cleararea = true);
 };
@@ -94,11 +94,11 @@ class StatusBarWidgetNumber : StatusBarWidget_Base
 class StatusBarWidgetPercent : StatusBarWidgetNumber
 {
 	// percent sign graphic
-	const Texture* p;
+	const Texture* m_percentTex;
 
   public:
 	// Percent widget routines
-	void init(int x, int y, Texture* pl, int* num, bool* on, Texture percent);
+	void init(int x, int y, const Texture** pl, int* num, bool* on, const Texture* percent);
 
 	void update(bool refresh);
 };
@@ -125,11 +125,9 @@ class StatusBarWidgetMultiIcon : StatusBarWidget_Base
 	const Texture**		p;
 
 	// Multiple Icon widget routines
-	void init(int x, int y, Texture* il, int* inum, bool* on);
+	void init(int x, int y, const Texture** il, int* inum, bool* on);
 
 	void update(bool refresh);
 };
 
 #define ST_DONT_DRAW_NUM 1994 // means "n/a"
-
-#endif

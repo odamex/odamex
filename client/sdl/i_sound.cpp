@@ -262,8 +262,6 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
 
 static void getsfx(sfxinfo_struct *sfx)
 {
-    Uint32 samplerate;
-	Uint32 length ,expanded_length;
 	Uint32 new_size = 0;
 	Mix_Chunk *chunk;
 

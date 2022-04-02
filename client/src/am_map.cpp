@@ -23,12 +23,10 @@
 
 #include "odamex.h"
 
-
-#include "z_zone.h"
-#include "st_stuff.h"
-#include "hu_stuff.h"
-#include "p_local.h"
+#include "c_bind.h"
 #include "p_lnspec.h"
+#include "p_local.h"
+#include "st_stuff.h"
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
 #include "v_palette.h"
@@ -1771,8 +1769,8 @@ void AM_drawMarks()
 			const int w = 5; // because something's wrong with the wad, i guess
 			const int h = 6; // because something's wrong with the wad, i guess
 
-			if (fx >= f_x && fx <= f_w - w && fy >= f_y && fy <= f_h - h)
-				FB->DrawTextureCleanNoMove(marknums[i], fx, fy);
+			if (fx >= f.x && fx <= f_w - w && fy >= f.y && fy <= f_h - h)
+				screen->DrawTextureCleanNoMove(marknums[i], fx, fy);
 		}
 	}
 }

@@ -297,7 +297,7 @@ const Texture* 			keys[NUMCARDS+NUMCARDS/2];
 const Texture* 				faces[ST_NUMFACES];
 
 // negative number patch
-lumpHandle_t negminus;
+const Texture*				negminus;
 
 // face background
 static const Texture* 		faceback;
@@ -1111,7 +1111,6 @@ static const Texture* LoadFaceGraphic(const char* name)
 static void ST_loadGraphics()
 {
 	int i, j;
-	int facenum;
 	char namebuf[9];
 	namebuf[8] = 0;
 
@@ -1126,11 +1125,10 @@ static void ST_loadGraphics()
 	}
 
 	// Load percent key.
-	//Note: why not load STMINUS here, too?
 	tallpercent = Res_CacheTexture("STTPRCNT", sprites_directory_name, PU_STATIC);
 
 	// Load minus key
-	negminus = W_CachePatchHandle("STTMINUS", PU_STATIC);
+	negminus = Res_CacheTexture("STTMINUS", sprites_directory_name, PU_STATIC);
 
 	// key cards
 	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
@@ -1244,7 +1242,7 @@ static void ST_unloadGraphics()
 		::faces[i] = NULL;
 	}
 
-	::negminus.clear();
+	::negminus = NULL;
 }
 
 static void ST_unloadData()
