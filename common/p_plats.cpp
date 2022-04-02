@@ -426,7 +426,7 @@ DPlat::DPlat(sector_t* sec, int target, int delay, int speed, int trigger)
 		m_High = P_FindHighestFloorSurrounding(sec);
 		if (m_High < sec->floorheight)
 			m_High = sec->floorheight;
-		m_Status = (EPlatState)(P_Random() & 1);
+		m_Status = (EPlatState)(P_Random() & 1 ? DPlat::down : DPlat::up);
 		break;
 	default:
 		break;
@@ -587,11 +587,11 @@ BOOL EV_DoGenLift(line_t* line)
 	}
 
 	secnum = -1;
-	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+	while ((secnum = P_FindSectorFromTagOrLine(line->id, line, secnum)) >= 0)
 	{
 	manual_genplat:
 		sec = &sectors[secnum];
-		if (P_FloorActive(sec))
+		if (sec->floordata)
 		{
 			if (co_boomphys && manual)
 				return false;

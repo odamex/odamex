@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __DOOMKEYS_H__
-#define __DOOMKEYS_H__
+#pragma once
 
 //
 // DOOM keyboard definition.
@@ -146,5 +145,3 @@
 #define OKEY_HAT6            0x20000035
 #define OKEY_HAT7            0x20000036
 #define OKEY_HAT8			 0x20000037
-
-#endif	// __DOOMKEYS_H__

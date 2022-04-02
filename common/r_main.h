@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __R_MAIN_H__
-#define __R_MAIN_H__
+#pragma once
 
 #include "d_player.h"
 #include "r_data.h"
@@ -200,6 +198,7 @@ IWindowSurface* R_GetRenderingSurface();
 
 bool R_BorderVisible();
 bool R_StatusBarVisible();
+bool R_DemoBarInvisible();
 
 int R_ViewWidth(int width, int height);
 int R_ViewHeight(int width, int height);
@@ -271,5 +270,3 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 
 
 void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color);
-
-#endif // __R_MAIN_H__

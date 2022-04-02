@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __F_WIPE_H__
-#define __F_WIPE_H__
+#pragma once
 
 //
 //						 SCREEN WIPE PACKAGE
@@ -35,6 +34,3 @@ bool Wipe_Ticker();
 void Wipe_Drawer();
 
 extern int NoWipe;
-
-#endif
-

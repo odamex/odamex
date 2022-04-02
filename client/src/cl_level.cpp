@@ -37,6 +37,7 @@
 #include "g_game.h"
 #include "g_levelstate.h"
 #include "gi.h"
+#include "g_skill.h"
 #include "i_system.h"
 #include "i_music.h"
 #include "minilzo.h"
@@ -231,7 +232,7 @@ void G_InitNew (const char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
+	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
 	if (wantFast != isFast)
 	{
 		if (wantFast)
@@ -242,6 +243,16 @@ void G_InitNew (const char *mapname)
 				    (states[i].tics != 1 || demoplayback))
 					states[i].tics >>= 1; // don't change 1->0 since it causes cycles
 			}
+
+			for (i = 0; i < NUMMOBJTYPES; ++i)
+			{
+				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				{
+					int swap = mobjinfo[i].speed;
+					mobjinfo[i].speed = mobjinfo[i].altspeed;
+					mobjinfo[i].altspeed = swap;
+				}
+			}
 		}
 		else
 		{
@@ -249,6 +260,16 @@ void G_InitNew (const char *mapname)
 			{
 				if (states[i].flags & STATEF_SKILL5FAST)
 					states[i].tics <<= 1; // don't change 1->0 since it causes cycles
+			}
+
+			for (i = 0; i < NUMMOBJTYPES; ++i)
+			{
+				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				{
+					int swap = mobjinfo[i].altspeed;
+					mobjinfo[i].altspeed = mobjinfo[i].speed;
+					mobjinfo[i].speed = swap;
+				}
 			}
 		}
 		isFast = wantFast;
@@ -334,8 +355,6 @@ void G_SecretExitLevel (int position, int drawscores)
 
 void G_DoCompleted (void)
 {
-	size_t i;
-
 	gameaction = ga_nothing;
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
@@ -352,14 +371,6 @@ void G_DoCompleted (void)
 	}
 
 	AM_Stop();
-
-	// [ML] Chex mode: they didn't even show the intermission screen
-	// after the fifth level - I checked.
-	if (gamemode == retail_chex && level.mapname == "E1M5")
-	{
-		G_WorldDone();
-		return;
-	}
 
 	wminfo.epsd = level.cluster - 1;		// Only used for DOOM I.
 	strncpy (wminfo.lname0, level.info->pname.c_str(), 8);
@@ -406,7 +417,7 @@ void G_DoCompleted (void)
 
 	wminfo.plyr.resize(players.size());
 
-	i = 0;
+	size_t i = 0;
 	for (Players::iterator it = players.begin();it != players.end();++it,++i)
 	{
 		wminfo.plyr[i].in = it->ingame();

@@ -23,15 +23,14 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __P_BOOMFSPEC__
-#define __P_BOOMFSPEC__
+#pragma once
 
 void G_SecretExitLevel(int position, int drawscores);
 void P_DamageMobj(AActor* target, AActor* inflictor, AActor* source, int damage, int mod,
                   int flags);
 lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
                                           bool bossaction);
-const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags);
+const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved);
 void P_ApplyGeneralizedSectorDamage(player_t* player, int bits);
 void P_CollectSecretBoom(sector_t* sector, player_t* player);
 void P_PlayerInCompatibleSector(player_t* player);
@@ -59,7 +58,6 @@ void P_SpawnStrobeFlash(sector_t* sector, int utics, int ltics, bool inSync);
 void P_SpawnFireFlicker(sector_t* sector);
 AActor* P_GetPushThing(int);
 void P_PostProcessCompatibleLinedefSpecial(line_t* line);
+bool P_IsTeleportLine(const short special);
 
 extern BOOL demoplayback;
-
-#endif

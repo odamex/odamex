@@ -127,7 +127,7 @@ CVAR_RANGE(			sv_skill,"3", "Sets the skill level, values are:\n" \
 					"// 3 - Hurt Me Plenty\n" \
 					"// 4 - Ultra-Violence\n" \
 					"// 5 - Nightmare",
-					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 5.0f)
+					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 7.0f)
 
 CVAR_RANGE(sv_timelimit, "0", "Sets the time limit for the game to end (in minutes)",
            CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
@@ -264,6 +264,26 @@ CVAR(g_horde_maxtotalhp, "10.0", "Multiplier for maximum spawned health at a tim
 
 CVAR(g_horde_goalhp, "8.0", "Goal health multiplier for a given round", CVARTYPE_FLOAT,
      CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE(g_horde_spawnempty_min, "1",
+           "Minimum number of seconds it takes to spawn a monster in an empty horde map",
+           CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
+           60)
+
+CVAR_RANGE(g_horde_spawnempty_max, "3",
+           "Maximum number of seconds it takes to spawn a monster in an empty horde map",
+           CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
+           60)
+
+CVAR_RANGE(g_horde_spawnfull_min, "2",
+           "Minimum number of seconds it takes to spawn a monster in a full horde map",
+           CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
+           60)
+
+CVAR_RANGE(g_horde_spawnfull_max, "6",
+           "Maximum number of seconds it takes to spawn a monster in a full horde map",
+           CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
+           60)
 
 // Game mode options commonized from the server
 //     At some point, replace "sv_" with "g_"

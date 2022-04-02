@@ -155,6 +155,9 @@ static void P_StartButton (line_t *line, DActiveButton::EWhere w, int texture,
 
 short* P_GetButtonTexturePtr(line_t* line, short*& altTexture, DActiveButton::EWhere& where)
 {
+	if (!line->sidenum[0])
+		return NULL;
+
 	int texTop = sides[line->sidenum[0]].toptexture;
 	int texMid = sides[line->sidenum[0]].midtexture;
 	int texBot = sides[line->sidenum[0]].bottomtexture;

@@ -25,8 +25,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __V_TEXTCOLORS_H__
-#define __V_TEXTCOLORS_H__
+#pragma once
 
 enum EColorRange
 {
@@ -88,6 +87,3 @@ enum EColorRange
 
 #define TEXTCOLOR_NORMAL		"\034-"
 #define TEXTCOLOR_BOLD			"\034+"
-
-#endif //__V_TEXTCOLORS_H__
-

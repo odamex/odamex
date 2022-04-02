@@ -40,6 +40,8 @@
 #include "svc_message.h"
 #include "p_horde.h"
 #include "com_misc.h"
+#include "g_skill.h"
+#include "p_mapformat.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -313,10 +315,8 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t* player, ammotype_t ammo, int 
 	return IEV_EquipRemove;
 }
 
-ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
+ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 {
-	int oldammotype;
-
 	if (ammotype == am_noammo)
     {
 		return IEV_NotEquipped;
@@ -338,18 +338,22 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, int num)
     }
 	else
     {
-		num = clipammo[ammotype]/2;
+		num = clipammo[ammotype] / 2;
     }
 
-	if (sv_skill == sk_baby || sv_skill == sk_nightmare || sv_doubleammo)
+	if (sv_doubleammo)
 	{
 		// give double ammo in trainer mode,
 		// you'll need in nightmare
-		num <<= 1;
+		num *= G_GetCurrentSkill().double_ammo_factor;
+	}
+	else
+	{
+		num *= G_GetCurrentSkill().ammo_factor;
 	}
 
-	oldammotype = player->ammo[ammotype];
-	player->ammo[ammotype] += num;
+	const int oldammotype = player->ammo[ammotype];
+	player->ammo[ammotype] += static_cast<int>(num);
 
 	if (player->ammo[ammotype] > player->maxammo[ammotype])
     {
@@ -469,7 +473,7 @@ ItemEquipVal P_GiveBody(player_t *player, int num)
 		return IEV_NotEquipped;
 	}
 
-	player->health += num;
+	player->health += static_cast<int>(static_cast<float>(num) * G_GetCurrentSkill().health_factor);
 	if (player->health > MAXHEALTH)
 	{
 		player->health = MAXHEALTH;
@@ -486,16 +490,18 @@ ItemEquipVal P_GiveBody(player_t *player, int num)
 //
 ItemEquipVal P_GiveArmor(player_t *player, int armortype)
 {
-	int hits;
-
-	hits = armortype * 100;
+	const int hits = armortype * 100;
 	if (player->armorpoints >= hits)
 	{
 		return IEV_NotEquipped;	// don't pick up
 	}
 
+	const int hits_real = static_cast<int>(static_cast<float>(hits) * G_GetCurrentSkill().armor_factor);
+
 	player->armortype = armortype;
-	player->armorpoints = hits;
+	player->armorpoints += hits_real;
+	if (player->armorpoints > hits)
+		player->armorpoints = hits;
 
 	return IEV_EquipRemove;
 }
@@ -635,11 +641,11 @@ static void P_GiveCarePack(player_t* player)
 
 		// Missle clip is a bit stingy, so we double our handouts.
 		const int lowLimit = ammomulti[ammo] * 2;
-		const int giveAmount = ammomulti[ammo] * 5;
+		const float giveAmount = static_cast<float>(ammomulti[ammo] * 5);
 
 		if (player->ammo[ammo] < ::clipammo[ammo] * lowLimit)
 		{
-			P_GiveAmmo(player, static_cast<ammotype_t>(ammo), giveAmount);
+			P_GiveAmmo(player, ammo, giveAmount);
 			blocks -= 1;
 		}
 	}
@@ -676,6 +682,9 @@ static void P_GiveCarePack(player_t* player)
 				message = "You found a weapon in this supply cache!";
 				switch (weapons.at(i))
 				{
+				case wp_chainsaw:
+					midmessage = "Got Chainsaw";
+					break;
 				case wp_pistol:
 					midmessage = "Got Pistol";
 					break;
@@ -721,7 +730,7 @@ static void P_GiveCarePack(player_t* player)
 				continue;
 			}
 
-			P_GiveAmmo(player, static_cast<ammotype_t>(ammo), ammomulti[ammo]);
+			P_GiveAmmo(player, ammo, ammomulti[ammo]);
 		}
 		blocks -= 1;
 	}
@@ -825,7 +834,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 
 		// bonus items
 	    case SPR_BON1:
-            player->health++;				// can go over 100%
+            player->health += static_cast<int>(G_GetCurrentSkill().health_factor); // can go over 100%
             if (player->health > deh.MaxSoulsphere)
             {
                 player->health = deh.MaxSoulsphere;
@@ -836,7 +845,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             break;
 
 	    case SPR_BON2:
-            player->armorpoints++;			// can go over 100%
+            player->armorpoints += static_cast<int>(G_GetCurrentSkill().armor_factor); // can go over 100%
             if (player->armorpoints > deh.MaxArmor)
             {
                 player->armorpoints = deh.MaxArmor;
@@ -850,7 +859,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             break;
 
 	    case SPR_SOUL:
-            player->health += deh.SoulsphereHealth;
+            player->health += static_cast<int>(static_cast<float>(deh.SoulsphereHealth) * G_GetCurrentSkill().health_factor);
             if (player->health > deh.MaxSoulsphere)
             {
                 player->health = deh.MaxSoulsphere;
@@ -862,7 +871,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
             break;
 
 	    case SPR_MEGA:
-            player->health = deh.MegasphereHealth;
+            player->health = static_cast<int>(static_cast<float>(deh.MegasphereHealth) * G_GetCurrentSkill().health_factor);
             player->mo->health = player->health;
             P_GiveArmor(player,deh.BlueAC);
 			msg = &GOTMSPHERE;
@@ -1292,6 +1301,16 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 	// Only allow clients to predict touching weapons, not health, armor, etc
 	if (!serverside && (!cl_predictpickup || !P_SpecialIsWeapon(special)))
 		return;
+
+	// [Blair] Execute ZDoom thing specials on items that are picked up.
+	// (Then remove the special.)
+	if (special->special)
+	{
+		LineSpecials[special->special](NULL, toucher, special->args[0], special->args[1],
+		                               special->args[2], special->args[3],
+		                               special->args[4]);
+		special->special = 0;
+	}
 
 	if (toucher->type == MT_AVATAR)
 	{
@@ -2054,9 +2073,9 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		target->momx = target->momy = target->momz = 0;
 	}
 
-	if (player && sv_skill == sk_baby)
+	if (player)
     {
-		damage >>= 1;	// take half damage in trainer mode
+		damage = static_cast<int>(static_cast<float>(damage) * G_GetCurrentSkill().damage_factor);
     }
 
 	// [AM] Weapon and monster damage scaling.
@@ -2097,10 +2116,16 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	// player specific
 	if (player)
 	{
+		short special = 11;
+		if (map_format.getZDoom())
+		{
+			special = dDamage_End;
+		}
+
 		// end of game hell hack
 		if (sv_gametype == GM_COOP || sv_allowexit)
 		{
-			if ((target->subsector->sector->special & 255) == dDamage_End
+			if ((target->subsector->sector->special & 255) == special
 				&& damage >= target->health)
 			{
 				damage = target->health - 1;

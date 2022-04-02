@@ -59,6 +59,7 @@
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
+#include "g_skill.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -391,6 +392,8 @@ void SV_ServerSettingChange();
 
 void G_InitNew (const char *mapname)
 {
+	size_t i;
+
 	DWORD previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
@@ -427,24 +430,44 @@ void G_InitNew (const char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	const bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
+	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
 	if (wantFast != isFast)
 	{
 		if (wantFast)
 		{
-			for (size_t i = 0; i < NUMSTATES; i++)
+			for (i = 0; i < NUMSTATES; i++)
 			{
 				if (states[i].flags & STATEF_SKILL5FAST &&
 				    (states[i].tics != 1 || demoplayback))
 					states[i].tics >>= 1; // don't change 1->0 since it causes cycles
 			}
+
+			for (i = 0; i < NUMMOBJTYPES; ++i)
+			{
+				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				{
+					int swap = mobjinfo[i].speed;
+					mobjinfo[i].speed = mobjinfo[i].altspeed;
+					mobjinfo[i].altspeed = swap;
+				}
+			}
 		}
 		else
 		{
-			for (size_t i = 0; i < NUMSTATES; i++)
+			for (i = 0; i < NUMSTATES; i++)
 			{
 				if (states[i].flags & STATEF_SKILL5FAST)
 					states[i].tics <<= 1; // don't change 1->0 since it causes cycles
+			}
+
+			for (i = 0; i < NUMMOBJTYPES; ++i)
+			{
+				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				{
+					int swap = mobjinfo[i].altspeed;
+					mobjinfo[i].altspeed = mobjinfo[i].speed;
+					mobjinfo[i].speed = swap;
+				}
 			}
 		}
 		isFast = wantFast;

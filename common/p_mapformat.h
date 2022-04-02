@@ -21,8 +21,8 @@
 //  (Props to DSDA-Doom for the inspiration.)
 //
 //-----------------------------------------------------------------------------
-#ifndef __P_MAPFORMAT__
-#define __P_MAPFORMAT__
+
+#pragma once
 
 #include "p_local.h"
 
@@ -101,5 +101,4 @@ bool P_IsCompatibleLockedDoorLine(const short special);
 bool P_IsCompatibleBlueDoorLine(const short special);
 bool P_IsCompatibleRedDoorLine(const short special);
 bool P_IsCompatibleYellowDoorLine(const short special);
-
-#endif
+bool P_IsLightTagDoorType(const short special);

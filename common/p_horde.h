@@ -43,6 +43,7 @@ struct hordeInfo_t
 	int waveTime;
 	int bossTime;
 	uint64_t defineID;
+	uint64_t legacyID;
 	int spawnedHealth;
 	int killedHealth;
 	int bossHealth;
@@ -91,6 +92,7 @@ struct hordeInfo_t
 	}
 };
 
+void P_NextSpawnTime(int& min, int& max);
 hordeInfo_t P_HordeInfo();
 void P_SetHordeInfo(const hordeInfo_t& info);
 void P_AddHealthPool(AActor* mo);

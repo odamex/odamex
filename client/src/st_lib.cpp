@@ -23,44 +23,24 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include "odamex.h"
 
-#include "z_zone.h"
-#include "v_video.h"
-#include "i_video.h"
-
-#include "w_wad.h"
-
 #include "st_stuff.h"
+#include "i_video.h"	// IWindowSurface
 #include "st_lib.h"
-#include "r_local.h"
-
-
-
-//
-// Hack display negative frags.
-//	Loads and store the stminus lump.
-//
-lumpHandle_t				sttminus;
-
-void STlib_init(void)
-{
-	sttminus = W_CachePatchHandle("STTMINUS", PU_STATIC);
-}
-
+#include "r_local.h"	// R_GetRenderingSurface()
 
 // [RH] Routines to stretch status bar graphics depending on st_scale cvar.
-EXTERN_CVAR (st_scale)
+EXTERN_CVAR(st_scale)
 
 //
-// STlib_ClearRect
+// StatusBarWidget_Base::clearRect
 //
 // Copies a rectangular portion of the status bar background surface onto
 // the drawing surface. This is used prior to drawing a widget (number or patch)
 // onto the surface.
 //
-static void STlib_ClearRect(int x, int y, int w, int h)
+void StatusBarWidget_Base::clearRect(int x, int y, int w, int h)
 {
 	if (st_scale)
 	{
@@ -71,207 +51,152 @@ static void STlib_ClearRect(int x, int y, int w, int h)
 	else
 	{
 		// draw directly onto the rendering surface since stretching isn't being used.
-		R_GetRenderingSurface()->blit(stbar_surface, x, y, w, h, x + ST_X, y + ST_Y, w, h);
+		R_GetRenderingSurface()->blit(stbar_surface, x, y, w, h, x + ST_X, y + ST_Y, w,
+		                              h);
 	}
 }
 
-
 //
-// STlib_DrawPatch
+// StatusBarWidget_Base::drawPatch
 //
 // Draws a patch onto the drawing surface. STlib_ClearRect should be used to
 // draw a fresh copy of the background prior to drawing the patch.
 //
-static void STlib_DrawPatch(int x, int y, patch_t* p)
+void StatusBarWidget_Base::drawPatch(int x, int y, const patch_t* p)
 {
 	if (st_scale)
 	{
 		// draw onto stnum_surface, which will be stretched and blitted
 		// onto the rendering surface at the end of the frame.
-		DCanvas* canvas = stnum_surface->getDefaultCanvas();
+		const DCanvas* canvas = stnum_surface->getDefaultCanvas();
 		canvas->DrawPatch(p, x, y);
 	}
 	else
 	{
 		// draw directly onto the rendering surface since stretching isn't being used.
-		DCanvas* canvas = R_GetRenderingSurface()->getDefaultCanvas();
+		const DCanvas* canvas = R_GetRenderingSurface()->getDefaultCanvas();
 		canvas->DrawPatch(p, x + ST_X, y + ST_Y);
 	}
 }
 
-void STlib_initNum(st_number_t* n, int x, int y, lumpHandle_t* pl, int* num, bool* on, int maxdigits)
+void StatusBarWidgetNumber::init(int x_, int y_, lumpHandle_t* pl, int* num_, bool* on_,
+                       int maxdigits_)
 {
-	n->x			= x;
-	n->y			= y;
-	n->oldnum		= 0;
-	n->maxdigits	= maxdigits;
-	n->num			= num;
-	n->on			= on;
-	n->p			= pl;
+	m_x = x_;
+	m_y = y_;
+	oldnum = 0;
+	maxdigits = maxdigits_;
+	num = num_;
+	on = on_;
+	p = pl;
 }
 
-
 //
-// STlib_drawNum
+// st_number_s::update
 //
 // A fairly efficient way to draw a number based on differences from the
 // old number. Worth the trouble?
 //
-void STlib_drawNum(st_number_t* n, bool force_refresh, bool cleararea)
+void StatusBarWidgetNumber::update(bool force_refresh, bool cleararea)
 {
 	// [jsd]: prevent null references as hard as possible
-	if (n == NULL)
-		return;
-	if (n->num == NULL)
-		return;
-	if (n->on == NULL)
-		return;
-	if (n->p == NULL)
+	if (num == NULL || on == NULL || p == NULL)
 		return;
 
 	// only draw if the number is different or refresh is forced
-	if (!(force_refresh || n->oldnum != *n->num) || !*n->on)
+	if (!(force_refresh || oldnum != *num) || !*on)
 		return;
 
-	int 		num = *n->num;
+	int number = *num;
+	oldnum = *num;
 
-	patch_t* p0 = W_ResolvePatchHandle(n->p[0]);
-	int 		w = p0->width();
-	int 		h = p0->height();
-	int 		x = n->x;
-
-	n->oldnum = *n->num;
-
-	bool negative = num < 0;
+	const bool negative = number < 0;
 
 	if (negative)
 	{
-		if (n->maxdigits == 2 && num < -9)
-			num = -9;
-		else if (n->maxdigits == 3 && num < -99)
-			num = -99;
+		if (maxdigits == 2 && number < -9)
+			number = -9;
+		else if (maxdigits == 3 && number < -99)
+			number = -99;
 
-		num = -num;
+		number = -number;
 	}
+
+	const patch_t* p0 = W_ResolvePatchHandle(p[0]);
+	const int w = p0->width();
+	const int h = p0->height();
 
 	// clear the area
 	if (cleararea)
-		STlib_ClearRect(n->x - w * n->maxdigits, n->y, w * n->maxdigits, h);
+		clearRect(m_x - w * maxdigits, m_y, w * maxdigits, h);
 
 	// if non-number, do not draw it
-	if (num == ST_DONT_DRAW_NUM)
+	if (number == ST_DONT_DRAW_NUM)
 		return;
 
-	x = n->x;
+	int drawx = m_x;
 
 	// in the special case of 0, you draw 0
-	if (num == 0)
-		STlib_DrawPatch(x - w, n->y, p0);
+	if (number == 0)
+		drawPatch(drawx - w, m_y, p0);
 
 	// draw the new number
-	for (int numdigits = n->maxdigits; num && numdigits; numdigits--)
+	for (int numdigits = maxdigits; number && numdigits; numdigits--)
 	{
-		patch_t* pnum = W_ResolvePatchHandle(n->p[num % 10]);
-		x -= w;
-		STlib_DrawPatch(x, n->y, pnum);
-		num /= 10;
+		const patch_t* pnum = W_ResolvePatchHandle(p[number % 10]);
+		drawx -= w;
+		drawPatch(drawx, m_y, pnum);
+		number /= 10;
 	}
 
 	// draw a minus sign if necessary
 	if (negative)
-		STlib_DrawPatch(x - 8, n->y, W_ResolvePatchHandle(sttminus));
+		drawPatch(drawx - 8, m_y, W_ResolvePatchHandle(negminus));
 }
 
-
-void STlib_updateNum(st_number_t* n, bool force_refresh, bool cleararea)
+void StatusBarWidgetPercent::init(int x, int y, lumpHandle_t* pl, int* num, bool* on,
+                        lumpHandle_t percent_patch)
 {
-	if (*n->on)
-		STlib_drawNum(n, force_refresh, cleararea);
+	StatusBarWidgetNumber::init(x, y, pl, num, on, 3);
+	m_percentLump = percent_patch;
 }
 
-
-void STlib_initPercent(st_percent_t* p, int x, int y, lumpHandle_t* pl, int* num, bool* on, lumpHandle_t percent_patch)
+void StatusBarWidgetPercent::update(bool force_refresh)
 {
-	STlib_initNum(&p->n, x, y, pl, num, on, 3);
-	p->p = percent_patch;
+	if (force_refresh && *on)
+		drawPatch(getX(), getY(), W_ResolvePatchHandle(m_percentLump));
+
+	StatusBarWidgetNumber::update(force_refresh);
 }
 
-
-void STlib_updatePercent(st_percent_t* percent, bool force_refresh)
+void StatusBarWidgetMultiIcon::init(int x_, int y_, lumpHandle_t* il, int* inum_, bool* on_)
 {
-	if (force_refresh && *percent->n.on)
-		STlib_DrawPatch(percent->n.x, percent->n.y, W_ResolvePatchHandle(percent->p));
-
-	STlib_updateNum(&percent->n, force_refresh);
+	m_x = x_;
+	m_y = y_;
+	oldinum = -1;
+	inum = inum_;
+	on = on_;
+	p = il;
 }
 
-
-
-void STlib_initMultIcon(st_multicon_t* icon, int x, int y, lumpHandle_t* il, int* inum, bool* on)
+void StatusBarWidgetMultiIcon::update(bool force_refresh)
 {
-	icon->x			= x;
-	icon->y			= y;
-	icon->oldinum	= -1;
-	icon->inum 		= inum;
-	icon->on		= on;
-	icon->p			= il;
-}
-
-
-
-void STlib_updateMultIcon(st_multicon_t* icon, bool force_refresh)
-{
-	if (*icon->on && (force_refresh || icon->oldinum != *icon->inum)
-		&& (*icon->inum != -1))
+	if (on && (force_refresh || oldinum != *inum) && (*inum != -1))
 	{
 		// clear the background area
-		if (icon->oldinum != -1)
+		if (oldinum != -1)
 		{
-			patch_t* oldnum = W_ResolvePatchHandle(icon->p[icon->oldinum]);
-			int x = icon->x - oldnum->leftoffset();
-			int y = icon->y - oldnum->topoffset();
-			int w = oldnum->width();
-			int h = oldnum->height();
+			const patch_t* oldnum = W_ResolvePatchHandle(p[oldinum]);
+			const int drawx = m_x - oldnum->leftoffset();
+			const int drawy = m_y - oldnum->topoffset();
+			const int w = oldnum->width();
+			const int h = oldnum->height();
 
-			STlib_ClearRect(x, y, w, h);
+			clearRect(drawx, drawy, w, h);
 		}
 
-		patch_t* inum = W_ResolvePatchHandle(icon->p[*icon->inum]);
-		STlib_DrawPatch(icon->x, icon->y, inum);
-		icon->oldinum = *icon->inum;
-	}
-}
-
-
-
-void STlib_initBinIcon(st_binicon_t* icon, int x, int y, lumpHandle_t patch, bool* val, bool* on)
-{
-	icon->x			= x;
-	icon->y			= y;
-	icon->oldval	= 0;
-	icon->val		= val;
-	icon->on		= on;
-	icon->p			= patch;
-}
-
-
-
-void STlib_updateBinIcon(st_binicon_t* icon, bool force_refresh)
-{
-	if (*icon->on && (force_refresh || icon->oldval != *icon->val))
-	{
-		patch_t* iconp = W_ResolvePatchHandle(icon->p);
-		int x = icon->x - iconp->leftoffset();
-		int y = icon->y - iconp->topoffset();
-		int w = iconp->width();
-		int h = iconp->height();
-
-		if (*icon->val)
-			STlib_DrawPatch(icon->x, icon->y, iconp);
-		else
-			STlib_ClearRect(x, y, w, h);
-
-		icon->oldval = *icon->val;
+		drawPatch(m_x, m_y, W_ResolvePatchHandle(p[*inum]));
+		oldinum = *inum;
 	}
 }
 
