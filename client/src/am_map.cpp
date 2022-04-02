@@ -1832,7 +1832,7 @@ void AM_Drawer()
 
 	AM_drawMarks();
 
-	if (!(viewactive && am_overlay < 2) && hu_font.isFontLoaded())
+	if (!(viewactive && am_overlay < 2) && ::hu_font[0])
 	{
 		char line[64 + 10];
 		const int time = level.time / TICRATE;

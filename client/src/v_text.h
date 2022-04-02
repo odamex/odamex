@@ -52,20 +52,14 @@ struct OGlobalFont
 			m_fontData[i] = font[i];
 		}
 		m_lineHeight = lineHeight;
-		m_fontLoaded = true;
 	}
 	int lineHeight() const
 	{
 		return m_lineHeight;
 	}
-	bool isFontLoaded() const
-	{
-		return m_fontLoaded;
-	}
   private:
 	const Texture* m_fontData[HU_FONTSIZE];
 	int m_lineHeight;
-	bool m_fontLoaded = false;
 };
 
 void V_TextInit();
