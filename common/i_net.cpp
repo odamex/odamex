@@ -93,10 +93,9 @@ typedef int SOCKET;
 #include "minilzo.h"
 
 #ifdef ODA_HAVE_MINIUPNP
-#define MINIUPNP_STATICLIB
-#include "miniwget.h"
-#include "miniupnpc.h"
-#include "upnpcommands.h"
+#include "miniupnpc/miniwget.h"
+#include "miniupnpc/miniupnpc.h"
+#include "miniupnpc/upnpcommands.h"
 #endif
 
 unsigned int	inet_socket;

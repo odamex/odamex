@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __V_TEXT_H__
-#define __V_TEXT_H__
+#pragma once
 
 #include <stdexcept>
 
@@ -93,5 +92,3 @@ inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_Br
 int V_GetTextColor(const char* str);
 
 extern OGlobalFont hu_font;
-
-#endif //__V_TEXT_H__

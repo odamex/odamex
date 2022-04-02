@@ -1,5 +1,4 @@
-#ifndef __C_PCH__
-#define __C_PCH__
+#pragma once
 
 #include "actor.h"
 #include "cmdlib.h"          
@@ -81,5 +80,3 @@
 #include "v_palette.h"       
 #include "v_video.h"         
 #include "z_zone.h"
-
-#endif // __C_PCH__

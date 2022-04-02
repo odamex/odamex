@@ -23,8 +23,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __V_VIDEO_H__
-#define __V_VIDEO_H__
+#pragma once
 
 
 #include "v_palette.h"
@@ -99,6 +98,9 @@ public:
 
 	// Draw a line with a specified color
 	void Line(const v2int_t src, const v2int_t dst, argb_t color) const;
+
+	// Draw an empty box with a specified border color
+	void Box(const rectInt_t& bounds, const argb_t color) const;
 
 	// Text drawing functions
 	// Output a line of text using the console font
@@ -514,5 +516,3 @@ forceinline argb_t alphablend2a(const argb_t from, const int froma, const argb_t
 
 void V_DrawFPSWidget();
 void V_DrawFPSTicker();
-
-#endif // __V_VIDEO_H__

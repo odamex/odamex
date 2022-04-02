@@ -142,9 +142,6 @@ def main():
     CMAKERC_REPL = f'"{NEW_VERSION[0]},{NEW_VERSION[1]},{NEW_VERSION[2]},0"'
     re_replace("CMakeLists.txt", CMAKERC_RE, CMAKERC_REPL)
 
-    if OLD_VERSION == NEW_VERSION:
-        return
-
     # CMake PROJECT_COPYRIGHT
     re_replace("CMakeLists.txt", f'"{OLD_YEAR}"', f'"{NEW_YEAR}"')
 

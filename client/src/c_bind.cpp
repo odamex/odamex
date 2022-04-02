@@ -426,11 +426,9 @@ void C_ReleaseKeys()
 
 void OKeyBindings::ArchiveBindings(FILE* f)
 {
-	int i;
-
 	for (BindingTable::const_iterator it = Binds.begin(); it != Binds.end(); ++it)
 	{
-		int key = it->first;
+		const int key = it->first;
 		const std::string& binding = it->second;
 		if (!binding.empty())
 			fprintf(f, "%s %s %s\n", command.c_str(), C_QuoteString(I_GetKeyName(key)).c_str(), C_QuoteString(binding).c_str());

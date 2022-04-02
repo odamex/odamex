@@ -30,7 +30,16 @@
 #include "version.h"
 #include "errors.h"
 
-#include "m_swap.h"			// for __BIG_ENDIAN__ macro
+#if defined(_MSC_VER)
+#define forceinline __forceinline
+#elif defined(__GNUC__)
+#define forceinline inline __attribute__((always_inline))
+#else
+#define forceinline inline
+#endif
+
+// For __BIG_ENDIAN__ macro, requires forceinline
+#include "m_swap.h"
 
 #ifdef GEKKO
 	#include <gctypes.h>
@@ -48,21 +57,13 @@
 	#define NORETURN __attribute__ ((noreturn))
 #endif
 
-#ifndef __BYTEBOOL__
-	#define __BYTEBOOL__
-	// [RH] Some windows includes already define this
-	#if !defined(_WINDEF_) && !defined(__wtypes_h__) && !defined(GEKKO)
-	typedef int BOOL;
-	#endif
-
-	#ifndef __cplusplus
-		#define false (0)
-		#define true (1)
-	#endif
-
-	typedef unsigned char byte;
-    typedef unsigned int uint;
+// [RH] Some windows includes already define this
+#if !defined(_WINDEF_) && !defined(__wtypes_h__) && !defined(GEKKO)
+typedef int BOOL;
 #endif
+
+typedef unsigned char byte;
+typedef unsigned int uint;
 
 #if defined(_MSC_VER) || defined(__WATCOMC__)
 	#define STACK_ARGS __cdecl
@@ -257,14 +258,6 @@ typedef enum {
 
 	PRINT_MAXPRINT
 } printlevel_t;
-
-#if defined(_MSC_VER)
-#define forceinline __forceinline
-#elif defined(__GNUC__)
-#define forceinline inline __attribute__((always_inline))
-#else
-#define forceinline inline
-#endif
 
 //
 // MIN

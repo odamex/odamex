@@ -23,8 +23,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __I_SYSTEM__
-#define __I_SYSTEM__
+#pragma once
 
 #ifdef _WIN32
 #include <io.h>
@@ -148,5 +147,3 @@ std::string I_GetCWD();
 #define FA_SYSTEM	_A_SYSTEM
 #define FA_DIREC	_A_SUBDIR
 #define FA_ARCH		_A_ARCH
-
-#endif

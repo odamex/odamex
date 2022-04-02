@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __CMDLIB__
-#define __CMDLIB__
+#pragma once
 
 #include <algorithm>
 
@@ -110,6 +108,8 @@ void ReplaceString (char** ptr, const char* str);
 void StripColorCodes(std::string& str);
 void FixPathSeparator(std::string& path);
 
+double Remap(const double value, const double low1, const double high1, const double low2,
+             const double high2);
 uint32_t Log2(uint32_t n);
 float NextAfter(const float from, const float to);
 
@@ -145,5 +145,3 @@ static void ArrayCopy(A1& dst, const A2& src)
 	for (size_t i = 0; i < ARRAY_LENGTH(src); i++)
 		dst[i] = src[i];
 }
-
-#endif

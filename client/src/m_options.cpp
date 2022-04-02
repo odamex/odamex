@@ -1054,6 +1054,7 @@ EXTERN_CVAR (vid_maxfps)
 EXTERN_CVAR (vid_overscan)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_32bpp)
+EXTERN_CVAR(vid_vsync)
 
 static uint16_t old_width, old_height;
 
@@ -1112,29 +1113,29 @@ static menuitem_t ModesItems[] = {
 #else
 	{ discrete, "Fullscreen",			{&vid_fullscreen},		{3.0}, {0.0},	{0.0}, {FullScreenOptions} },
 #endif
-	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
+	{ discrete,	"VSync",				{&vid_vsync},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ discrete, "Framerate",			{&vid_maxfps},			{5.0}, {0.0},	{0.0}, {VidFPSCaps} },
+	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
+	{ redtext,	"",						{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ whitetext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ yellowtext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} }
 };
 
 #define VM_DEPTHITEM	0
-#define VM_RESSTART		5
-#define VM_ENTERLINE	14
-#define VM_TESTLINE		16
+#define VM_RESSTART		6
+#define VM_ENTERLINE	15
+#define VM_TESTLINE		17
 
 menu_t ModesMenu = {
 	"M_VIDMOD",

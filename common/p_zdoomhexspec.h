@@ -22,8 +22,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __P_ZDOOMHEXSPEC__
-#define __P_ZDOOMHEXSPEC__
+#pragma once
 
 void OnChangedSwitchTexture(line_t* line, int useAgain);
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
@@ -72,5 +71,3 @@ void P_SpawnPhasedLight(sector_t* sector, int base, int index);
 void P_SpawnLightSequence(sector_t* sector);
 AActor* P_GetPushThing(int s);
 void P_PostProcessZDoomLinedefSpecial(line_t* line);
-
-#endif

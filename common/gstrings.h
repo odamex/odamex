@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __GSTRINGS_H__
-#define __GSTRINGS_H__
+#pragma once
 
 #include "stringtable.h"
 #include "stringenums.h"
@@ -34,6 +33,3 @@ extern StringTable GStrings;
 #define NUM_QUITMESSAGES   15
 
 extern const char *endmsg[];
-
-
-#endif //__GSTRINGS_H__

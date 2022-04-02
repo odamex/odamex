@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __I_MUSIC_H__
-#define __I_MUSIC_H__
+#pragma once
 
 #include <SDL_mixer.h>
 
@@ -67,5 +66,3 @@ void I_PlaySong(byte* data, size_t length, bool loop);
 void I_StopSong();
 void I_UpdateMusic();
 void I_ResetMidiVolume();
-
-#endif //__I_MUSIC_H__

@@ -23,7 +23,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include "odamex.h"
 
 #include "z_zone.h"
@@ -31,8 +30,9 @@
 #include "i_video.h"
 
 #include "st_stuff.h"
+#include "i_video.h"	// IWindowSurface
 #include "st_lib.h"
-#include "r_local.h"
+#include "r_local.h"	// R_GetRenderingSurface()
 
 #include "c_cvars.h"
 #include "resources/res_texture.h"
@@ -51,16 +51,16 @@ void STlib_init(void)
 
 
 // [RH] Routines to stretch status bar graphics depending on st_scale cvar.
-EXTERN_CVAR (st_scale)
+EXTERN_CVAR(st_scale)
 
 //
-// STlib_ClearRect
+// StatusBarWidget_Base::clearRect
 //
 // Copies a rectangular portion of the status bar background surface onto
 // the drawing surface. This is used prior to drawing a widget (number or patch)
 // onto the surface.
 //
-static void STlib_ClearRect(int x, int y, int w, int h)
+void StatusBarWidget_Base::clearRect(int x, int y, int w, int h)
 {
 	if (st_scale)
 	{
@@ -71,10 +71,10 @@ static void STlib_ClearRect(int x, int y, int w, int h)
 	else
 	{
 		// draw directly onto the rendering surface since stretching isn't being used.
-		R_GetRenderingSurface()->blit(stbar_surface, x, y, w, h, x + ST_X, y + ST_Y, w, h);
+		R_GetRenderingSurface()->blit(stbar_surface, x, y, w, h, x + ST_X, y + ST_Y, w,
+		                              h);
 	}
 }
-
 
 //
 // STlib_DrawTexture
@@ -101,74 +101,70 @@ static void STlib_DrawTexture(int x, int y, const Texture* texture)
 
 void STlib_initNum(st_number_t* n, int x, int y, const Texture** pl, int* num, bool* on, int maxdigits)
 {
-	n->x			= x;
-	n->y			= y;
-	n->oldnum		= 0;
-	n->maxdigits	= maxdigits;
-	n->num			= num;
-	n->on			= on;
-	n->p			= pl;
+	m_x = x_;
+	m_y = y_;
+	oldnum = 0;
+	maxdigits = maxdigits_;
+	num = num_;
+	on = on_;
+	p = pl;
 }
 
-
 //
-// STlib_drawNum
+// st_number_s::update
 //
 // A fairly efficient way to draw a number based on differences from the
 // old number. Worth the trouble?
 //
-void STlib_drawNum(st_number_t* n, bool force_refresh, bool cleararea)
+void StatusBarWidgetNumber::update(bool force_refresh, bool cleararea)
 {
 	// [jsd]: prevent null references as hard as possible
-	if (n == NULL)
-		return;
-	if (n->num == NULL)
-		return;
-	if (n->on == NULL)
-		return;
-	if (n->p == NULL)
+	if (num == NULL || on == NULL || p == NULL)
 		return;
 
 	// only draw if the number is different or refresh is forced
-	if (!(force_refresh || n->oldnum != *n->num) || !*n->on)
+	if (!(force_refresh || oldnum != *num) || !*on)
 		return;
 
-	int 		num = *n->num;
+	int number = *num;
+	oldnum = *num;
 
 	int 		w = n->p[0]->mWidth;
 	int 		h = n->p[0]->mHeight;
 	int 		x = n->x;
 
-	n->oldnum = *n->num;
-
-	bool negative = num < 0;
+	const bool negative = number < 0;
 
 	if (negative)
 	{
-		if (n->maxdigits == 2 && num < -9)
-			num = -9;
-		else if (n->maxdigits == 3 && num < -99)
-			num = -99;
+		if (maxdigits == 2 && number < -9)
+			number = -9;
+		else if (maxdigits == 3 && number < -99)
+			number = -99;
 
-		num = -num;
+		number = -number;
 	}
+
+	const patch_t* p0 = W_ResolvePatchHandle(p[0]);
+	const int w = p0->width();
+	const int h = p0->height();
 
 	// clear the area
 	if (cleararea)
-		STlib_ClearRect(n->x - w * n->maxdigits, n->y, w * n->maxdigits, h);
+		clearRect(m_x - w * maxdigits, m_y, w * maxdigits, h);
 
 	// if non-number, do not draw it
-	if (num == ST_DONT_DRAW_NUM)
+	if (number == ST_DONT_DRAW_NUM)
 		return;
 
-	x = n->x;
+	int drawx = m_x;
 
 	// in the special case of 0, you draw 0
 	if (num == 0)
 		STlib_DrawTexture(x - w, n->y, n->p[0]);
 
 	// draw the new number
-	for (int numdigits = n->maxdigits; num && numdigits; numdigits--)
+	for (int numdigits = maxdigits; number && numdigits; numdigits--)
 	{
 		x -= w;
 		STlib_DrawTexture(x, n->y, n->p[num % 10]);
@@ -194,36 +190,32 @@ void STlib_initPercent(st_percent_t* p, int x, int y, const Texture** pl, int* n
 	p->p = percent_texture;
 }
 
-
-void STlib_updatePercent(st_percent_t* percent, bool force_refresh)
+void StatusBarWidgetPercent::update(bool force_refresh)
 {
 	if (force_refresh && *percent->n.on)
 		STlib_DrawTexture(percent->n.x, percent->n.y, percent->p);
 
-	STlib_updateNum(&percent->n, force_refresh);
+	StatusBarWidgetNumber::update(force_refresh);
 }
 
 
 
 void STlib_initMultIcon(st_multicon_t* icon, int x, int y, const Texture** il, int* inum, bool* on)
 {
-	icon->x			= x;
-	icon->y			= y;
-	icon->oldinum	= -1;
-	icon->inum 		= inum;
-	icon->on		= on;
-	icon->p			= il;
+	m_x = x_;
+	m_y = y_;
+	oldinum = -1;
+	inum = inum_;
+	on = on_;
+	p = il;
 }
 
-
-
-void STlib_updateMultIcon(st_multicon_t* icon, bool force_refresh)
+void StatusBarWidgetMultiIcon::update(bool force_refresh)
 {
-	if (*icon->on && (force_refresh || icon->oldinum != *icon->inum)
-		&& (*icon->inum != -1))
+	if (on && (force_refresh || oldinum != *inum) && (*inum != -1))
 	{
 		// clear the background area
-		if (icon->oldinum != -1)
+		if (oldinum != -1)
 		{
 			int x = icon->x - icon->p[icon->oldinum]->mOffsetX;
 			int y = icon->y - icon->p[icon->oldinum]->mOffsetY;

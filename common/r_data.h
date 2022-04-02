@@ -22,8 +22,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __R_DATA__
-#define __R_DATA__
+#pragma once
 
 #include "r_defs.h"
 #include "r_state.h"
@@ -58,5 +57,3 @@ extern shademap_t realcolormaps;				// [RH] make the colormaps externally visibl
 extern size_t numfakecmaps;
 
 unsigned int SlopeDiv(unsigned int num, unsigned int den);
-
-#endif

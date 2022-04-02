@@ -663,7 +663,13 @@ void G_InitLevelLocals()
 				begin = info.level_name.substr(pos + search.length());
 			else
 				begin = info.level_name;
-		}		
+		}
+		else
+		{
+			begin = info.level_name;
+		}
+
+
 		if (!begin.empty())
 		{
 			std::string level_name(begin);

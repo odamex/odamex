@@ -26,8 +26,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __STRINGTABLE_H__
-#define __STRINGTABLE_H__
+#pragma once
 
 #include <stdlib.h>
 #include <utility>
@@ -135,5 +134,3 @@ class StringTable
 	void setPassString(int pass, const OString& name, const OString& string);
 	size_t size() const;
 };
-
-#endif //__STRINGTABLE_H__

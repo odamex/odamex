@@ -260,7 +260,7 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
     return ret_data;
 }
 
-static void getsfx (struct sfxinfo_struct *sfx)
+static void getsfx(sfxinfo_struct *sfx)
 {
     Uint32 samplerate;
 	Uint32 length ,expanded_length;
@@ -297,14 +297,14 @@ static void getsfx (struct sfxinfo_struct *sfx)
         return;
     }
 
-	samplerate = (data[3] << 8) | data[2];
-    length = (data[5] << 8) | data[4];
+	const Uint32 samplerate = (data[3] << 8) | data[2];
+    Uint32 length = (data[5] << 8) | data[4];
 
     // [Russell] - Ignore doom's sound format length info
     // if the lump is longer than the value, fixes exec.wad's ssg
     length = (sfx->length - 8 > length) ? sfx->length - 8 : length;
 
-    expanded_length = (uint32_t) ((((uint64_t) length) * mixer_freq) / samplerate);
+    Uint32 expanded_length = (uint32_t)((((uint64_t)length) * mixer_freq) / samplerate);
 
     // Double up twice: 8 -> 16 bit and mono -> stereo
 
@@ -425,7 +425,7 @@ void I_UpdateSoundParams (int handle, float vol, int sep, int pitch)
 	Mix_SetPanning(handle, sep, 255-sep);
 }
 
-void I_LoadSound (struct sfxinfo_struct *sfx)
+void I_LoadSound (sfxinfo_struct *sfx)
 {
 	if (!sound_initialized)
 		return;

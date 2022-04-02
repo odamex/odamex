@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __R_STATE_H__
-#define __R_STATE_H__
+#pragma once
 
 // Need data structure definitions.
 #include "d_player.h"
@@ -134,5 +133,3 @@ extern visplane_t*		skyplane;
 extern int				FieldOfView;
 // [AM] Corrected (for widescreen) Field of View
 extern int				CorrectFieldOfView;
-
-#endif // __R_STATE_H__

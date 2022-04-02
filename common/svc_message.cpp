@@ -1573,6 +1573,7 @@ odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde)
 	msg.set_wave_time(horde.waveTime);
 	msg.set_boss_time(horde.bossTime);
 	msg.set_define_id(horde.defineID);
+	msg.set_legacy_id(horde.legacyID);
 	msg.set_spawned_health(horde.spawnedHealth);
 	msg.set_killed_health(horde.killedHealth);
 	msg.set_boss_health(horde.bossHealth);

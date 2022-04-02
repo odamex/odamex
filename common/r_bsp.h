@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __R_BSP__
-#define __R_BSP__
+#pragma once
 
 extern const fixed_t NEARCLIP;
 
@@ -53,8 +51,3 @@ bool R_DoorClosed(void);	// killough 1/17/98
 
 // killough 4/13/98: fake floors/ceilings for deep water / fake ceilings:
 sector_t *R_FakeFlat(sector_t *, sector_t *, int *, int *, bool);
-
-
-#endif
-
-

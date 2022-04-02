@@ -21,9 +21,7 @@
 // 
 //-----------------------------------------------------------------------------
 
-#ifndef __G_EPISODE__
-#define __G_EPISODE__
-
+#pragma once
 
 #define MAX_EPISODES 8
 
@@ -41,5 +39,3 @@ extern OLumpName EpisodeMaps[MAX_EPISODES];
 extern EpisodeInfo EpisodeInfos[MAX_EPISODES];
 extern byte episodenum;
 extern bool episodes_modified; // Used by UMAPINFO only
-
-#endif

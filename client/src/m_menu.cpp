@@ -53,6 +53,7 @@
 #include "resources/res_filelib.h"
 
 #include "gi.h"
+#include "g_skill.h"
 #include "m_fileio.h"
 
 #ifdef _XBOX
@@ -301,34 +302,27 @@ oldmenu_t ExpDef =
 //
 // NEW GAME
 //
-enum newgame_t
-{
-	killthings,
-	toorough,
-	hurtme,
-	violence,
-	nightmare,
-	pistolstart,
-	newg_end
-} newgame_e;
 
-oldmenuitem_t NewGameMenu[]=
+oldmenuitem_t NewGameMenu[MAX_SKILLS + 1]=
 {
-	{1,"M_JKILL",		M_ChooseSkill, 'i'},
-	{1,"M_ROUGH",		M_ChooseSkill, 'h'},
-	{1,"M_HURT",		M_ChooseSkill, 'h'},
-	{1,"M_ULTRA",		M_ChooseSkill, 'u'},
-	{1,"M_NMARE",		M_ChooseSkill, 'n'},
-	{1,"\0",			M_ChooseSkill, 'p'}
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	//{1,"\0", M_ChooseSkill,0}
 };
 
 oldmenu_t NewDef =
 {
-	newg_end,			// # of menu items
+	0,			// # of menu items
 	NewGameMenu,		// oldmenuitem_t ->
 	M_DrawNewGame,		// drawing routine ->
 	48,63,				// x,y
-	hurtme				// lastOn
+	0				// lastOn
 };
 
 //
@@ -638,7 +632,7 @@ void M_ReadSaveStrings(void)
 		}
 		else
 		{
-			size_t readlen = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			const size_t readlen = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
 			if (readlen < 1)
 			{
 				printf("M_Read_SaveStrings(): Failed to read handle.\n");
@@ -740,8 +734,8 @@ void M_DoSave (int slot)
 //
 void M_SaveSelect (int choice)
 {
-	time_t     ti = time(NULL);
-	struct tm *lt = localtime(&ti);
+	const time_t     ti = time(NULL);
+	const struct tm *lt = localtime(&ti);
 
 	// we are going to be intercepting all chars
 	genStringEnter = 1;
@@ -944,7 +938,7 @@ void M_DrawNewGame()
 	const int SMALLFONT_OFFSET = 8; // Line up with the skull
 
 	const char* pslabel = "Pistol Start Each Level ";
-	const int psy = NewDef.y + (LINEHEIGHT * 5) + SMALLFONT_OFFSET;
+	const int psy = NewDef.y + (LINEHEIGHT * skillnum) + SMALLFONT_OFFSET;
 
 	screen->DrawTextCleanMove(CR_RED, NewDef.x, psy, pslabel);
 	screen->DrawTextCleanMove(CR_GREY, NewDef.x + V_StringWidth(pslabel), psy,
@@ -969,6 +963,29 @@ namespace
 			EpisodeMenu[i].alphaKey = EpisodeInfos[i].key;
 		}
 	}
+
+	void SetupSkillList()
+	{
+	    NewDef.lastOn = defaultskillmenu;
+
+	    int i = 0;
+	    for (; i < skillnum; ++i)
+	    {
+		    if (SkillInfos[i].pic_name.empty())
+		    {
+			    strncpy(NewGameMenu[i].name, SkillInfos[i].menu_name.c_str(), 8);
+		    }
+		    else
+		    {
+			    strncpy(NewGameMenu[i].name, SkillInfos[i].pic_name.c_str(), 8);
+		    }
+
+			NewGameMenu[i].alphaKey = SkillInfos[i].shortcut;
+	    }
+
+		strncpy(NewGameMenu[i].name, "\0", 1);
+	    NewGameMenu[i].alphaKey = 'p';
+	}
 }
 
 void M_NewGame(int choice)
@@ -992,6 +1009,8 @@ void M_NewGame(int choice)
 
 		epi = 0;
 
+		NewDef.numitems = skillnum + 1;
+
 		if (episodenum > 1)
 		{
 			SetupEpisodeList();
@@ -999,6 +1018,7 @@ void M_NewGame(int choice)
 		}
 		else
 		{
+			SetupSkillList();
 			M_SetupNextMenu(&NewDef);
 		}
 	}
@@ -1021,15 +1041,17 @@ void M_DrawEpisode()
 	screen->DrawTextureClean(texture, 54, y);
 }
 
+static int skillchoice = 0;
+
 void M_VerifyNightmare(int ch)
 {
 	if (ch != 'y' && !Key_IsYesKey(ch))
 	{
-	    M_ClearMenus ();
+	    M_ClearMenus();
 		return;
 	}
 
-	M_StartGame(nightmare);
+	M_StartGame(skillchoice);
 }
 
 void M_StartGame(int choice)
@@ -1077,41 +1099,54 @@ void M_StartGame(int choice)
 
 void M_ChooseSkill(int choice)
 {
-	if (choice == pistolstart)
+	if (choice == skillnum)
 	{
 		g_resetinvonexit = !g_resetinvonexit;
 		return;
 	}
-	else if (choice == nightmare)
+	else if (SkillInfos[choice].must_confirm)
 	{
-		M_StartMessage(GStrings(NIGHTMARE),M_VerifyNightmare,true);
+		const char* must_confirm_text = SkillInfos[choice].must_confirm_text.c_str();
+
+		if (must_confirm_text[0] == '$')
+			M_StartMessage(GStrings(StdStringToUpper(must_confirm_text + 1)),
+		               M_VerifyNightmare, true);
+		else
+			M_StartMessage(must_confirm_text, M_VerifyNightmare, true);
+
+		skillchoice = choice;
+
 		return;
 	}
 
 	M_StartGame(choice);
 }
 
-void M_Episode (int choice)
+void M_Episode(int choice)
 {
 	if ((gameinfo.flags & GI_SHAREWARE) && choice)
 	{
 		M_StartMessage(GStrings(SWSTRING),NULL,false);
 		//M_SetupNextMenu(&ReadDef1);
-		M_ClearMenus ();
+		M_ClearMenus();
 		return;
 	}
 
 	epi = choice;
 
 	if (EpisodeInfos[epi].noskillmenu)
-		M_StartGame(2); // TODO: Implement defaultskillmenu
+		M_StartGame(defaultskillmenu);
 	else
+	{
+		SetupSkillList();
 		M_SetupNextMenu(&NewDef);
+	}
 }
 
-void M_Expansion (int choice)
+void M_Expansion(int choice)
 {
 	epi = choice;
+	SetupSkillList();
 	M_SetupNextMenu(&NewDef);
 }
 
@@ -1120,7 +1155,7 @@ void M_Expansion (int choice)
 // Read This Menus
 // Had a "quick hack to fix romero bug"
 //
-void M_DrawReadThis1 (void)
+void M_DrawReadThis1()
 {
 	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[0], PATCH);
 	screen->DrawTextureFullScreen(texture);
@@ -1129,7 +1164,7 @@ void M_DrawReadThis1 (void)
 //
 // Read This Menus - optional second page.
 //
-void M_DrawReadThis2 (void)
+void M_DrawReadThis2()
 {
 	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[1], PATCH);
 	screen->DrawTextureFullScreen(texture);
@@ -1138,7 +1173,7 @@ void M_DrawReadThis2 (void)
 //
 // Read This Menus - shareware third page.
 //
-void M_DrawReadThis3 (void)
+void M_DrawReadThis3()
 {
 	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[2], PATCH);
 	screen->DrawTextureFullScreen(texture);
@@ -1147,7 +1182,7 @@ void M_DrawReadThis3 (void)
 //
 // M_Options
 //
-void M_DrawOptions(void)
+void M_DrawOptions()
 {
 	const Texture* texture = Res_CacheTexture("M_OPTTL", PATCH);
 	screen->DrawTextureClean(texture, 108, 15);
@@ -1192,7 +1227,7 @@ void M_EndGame(int choice)
 // M_QuitDOOM
 //
 
-void STACK_ARGS call_terms (void);
+void STACK_ARGS call_terms();
 
 void M_QuitResponse(int ch)
 {
@@ -1207,10 +1242,9 @@ void M_QuitResponse(int ch)
 	
 	if (!multiplayer)
 	{
-		if (gameinfo.quitSounds)
+		if (gameinfo.quitSound[0])
 		{
-			S_Sound(CHAN_INTERFACE,
-					gameinfo.quitSounds[(gametic>>2)&7], 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, gameinfo.quitSound, 1, ATTN_NONE);
 			I_WaitVBL (105);
 		}
 	}
@@ -1262,11 +1296,11 @@ void M_PlayerSetup(int choice)
 		fire_surface = I_AllocateSurface(fire_surface_width, fire_surface_height, 8);
 
 	// [Nes] Intialize the player preview color.
-	argb_t player_color = CL_GetPlayerColor(&consoleplayer());
+	const argb_t player_color = CL_GetPlayerColor(&consoleplayer());
 	R_BuildPlayerTranslation(0, player_color);
 }
 
-static void M_PlayerSetupTicker (void)
+static void M_PlayerSetupTicker()
 {
 	// Based on code in f_finale.c
 	if (--PlayerTics > 0)
@@ -1321,15 +1355,13 @@ static forceinline void R_RenderFire(int x, int y)
 	fire_surface->unlock();
 }
 
-static void M_PlayerSetupDrawer (void)
+static void M_PlayerSetupDrawer()
 {
-	int x1,x2,y1,y2;
+	const int x1 = (I_GetSurfaceWidth() / 2) - (160 * CleanXfac);
+	const int y1 = (I_GetSurfaceHeight() / 2) - (100 * CleanYfac);
 
-	x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
-	y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
-
-    x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
-	y2 = (I_GetSurfaceHeight() / 2)+(100*CleanYfac);
+	const int x2 = (I_GetSurfaceWidth() / 2) + (160 * CleanXfac);
+	const int y2 = (I_GetSurfaceHeight() / 2) + (100 * CleanYfac);
 
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
@@ -1358,7 +1390,7 @@ static void M_PlayerSetupDrawer (void)
 		y = (y-100)*CleanYfac+(I_GetSurfaceHeight() / 2);
 		if (!fire_surface)
 		{
-			argb_t color = V_GetDefaultPalette()->basecolors[34];
+			const argb_t color = V_GetDefaultPalette()->basecolors[34];
 			screen->Clear(x, y, x + fire_surface_width * CleanXfac, y + fire_surface_height * CleanYfac, color);
 		}
 		else
@@ -1367,7 +1399,7 @@ static void M_PlayerSetupDrawer (void)
 			int a, b;
 
 			fire_surface->lock();
-			int pitch = fire_surface->getPitch();
+			const int pitch = fire_surface->getPitch();
 
 			palindex_t* from = (palindex_t*)fire_surface->getBuffer() + (fire_surface_height - 3) * pitch;
 			for (a = 0; a < fire_surface_width; a++, from++)
@@ -1451,12 +1483,12 @@ static void M_PlayerSetupDrawer (void)
 		}
 	}
 	{
-		int spritenum = states[mobjinfo[MT_PLAYER].spawnstate].sprite;
-		spriteframe_t* sprframe = &sprites[spritenum].spriteframes[PlayerState->frame & FF_FRAMEMASK];
+		const int spritenum = states[mobjinfo[MT_PLAYER].spawnstate].sprite;
+		const spriteframe_t* sprframe = &sprites[spritenum].spriteframes[PlayerState->frame & FF_FRAMEMASK];
 
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
 		// of the table of the current player color. (Which is different in single, demo, and team)
-		argb_t player_color = CL_GetPlayerColor(&consoleplayer());
+		const argb_t player_color = CL_GetPlayerColor(&consoleplayer());
 		R_BuildPlayerTranslation(0, player_color);
 		V_ColorMap = translationref_t(translationtables, 0);
 
@@ -1478,8 +1510,8 @@ static void M_PlayerSetupDrawer (void)
 	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Blue");
 
 	{
-		int x = V_StringWidth("Green") + 8 + PSetupDef.x;
-		argb_t playercolor = V_GetColorFromString(cl_color);
+		const int x = V_StringWidth("Green") + 8 + PSetupDef.x;
+		const argb_t playercolor = V_GetColorFromString(cl_color);
 
 		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, playercolor.getr());
 		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, playercolor.getg());
@@ -1488,24 +1520,24 @@ static void M_PlayerSetupDrawer (void)
 
 	// Draw team setting
 	{
-		team_t team = D_TeamByName(cl_team.cstring());
-		int x = V_StringWidth ("Prefered Team") + 8 + PSetupDef.x;
+		const team_t team = D_TeamByName(cl_team.cstring());
+		const int x = V_StringWidth ("Prefered Team") + 8 + PSetupDef.x;
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Prefered Team");
 		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	// Draw gender setting
 	{
-		gender_t gender = D_GenderByName(cl_gender.cstring());
-		int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
+		const gender_t gender = D_GenderByName(cl_gender.cstring());
+		const int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Gender");
 		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*5, genders[gender]);
 	}
 
 	// Draw autoaim setting
 	{
-		int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
-		float aim = cl_autoaim;
+		const int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
+		const float aim = cl_autoaim;
 
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Autoaim");
 		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*6,
@@ -1554,12 +1586,11 @@ static void M_ChangeAutoAim (int choice)
 {
 	static const float ranges[] = { 0, 0.25, 0.5, 1, 2, 3, 5000 };
 	float aim = cl_autoaim;
-	int i;
 
 	if (!choice) {
 		// Select a lower autoaim
 
-		for (i = 6; i >= 1; i--) {
+		for (int i = 6; i >= 1; i--) {
 			if (aim >= ranges[i]) {
 				aim = ranges[i - 1];
 				break;
@@ -1568,7 +1599,7 @@ static void M_ChangeAutoAim (int choice)
 	} else {
 		// Select a higher autoaim
 
-		for (i = 5; i >= 0; i--) {
+		for (int i = 5; i >= 0; i--) {
 			if (aim >= ranges[i]) {
 				aim = ranges[i + 1];
 				break;
@@ -1632,7 +1663,7 @@ static void SendNewColor(int red, int green, int blue)
 static void M_SlidePlayerRed(int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setr(std::max(0, int(color.getr()) - 1 - accel));
@@ -1645,7 +1676,7 @@ static void M_SlidePlayerRed(int choice)
 static void M_SlidePlayerGreen (int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setg(std::max(0, int(color.getg()) - 1 - accel));
@@ -1658,7 +1689,7 @@ static void M_SlidePlayerGreen (int choice)
 static void M_SlidePlayerBlue (int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setb(std::max(0, int(color.getb()) - 1 - accel));
@@ -1693,12 +1724,11 @@ void M_StartMessage(const char *string, void (*routine)(int), bool input)
 	messageRoutine = routine;
 	messageNeedsInput = input;
 	menuactive = true;
-	return;
 }
 
 
 
-void M_StopMessage (void)
+void M_StopMessage()
 {
 	menuactive = messageLastMenuActive;
 	messageToPrint = 0;
@@ -1717,7 +1747,7 @@ int M_StringHeight(char* string)
 	int h;
 	int height = hu_font[0]->mHeight;
 
-	h = height;
+	int h = height;
 	while (*string)
 		if ((*string++) == '\n')
 			h += height;
@@ -1737,8 +1767,6 @@ int M_StringHeight(char* string)
 bool M_Responder (event_t* ev)
 {
 	int ch, ch2;
-	int i;
-	const char *cmd;
 
 	ch = ch2 = -1;
 
@@ -1793,7 +1821,7 @@ bool M_Responder (event_t* ev)
 		}
 	}
 
-	cmd = Bindings.GetBind(ch).c_str();
+	const char* cmd = Bindings.GetBind(ch).c_str();
 
 	// Save Game string input
 	// [RH] and Player Name string input
@@ -1961,15 +1989,16 @@ bool M_Responder (event_t* ev)
 		}
 		else
 		{
-			if (ch2 && (ch < OKEY_JOY1)) {
-				for (i = itemOn + 1; i < currentMenu->numitems; i++)
+			if (ch2 && (ch < OKEY_JOY1))
+			{
+				for (int i = itemOn + 1; i < currentMenu->numitems; i++)
 					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
 					{
 						itemOn = i;
 						S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 						return true;
 					}
-				for (i = 0; i <= itemOn; i++)
+				for (int i = 0; i <= itemOn; i++)
 					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
 					{
 						itemOn = i;
@@ -2045,9 +2074,9 @@ void M_Drawer()
 				currentMenu->routine(); 		// call Draw routine
 
 			// DRAW MENU
-			int x = currentMenu->x;
+			const int x = currentMenu->x;
 			int y = currentMenu->y;
-			int max = currentMenu->numitems;
+			const int max = currentMenu->numitems;
 
 			for (int i = 0; i < max; i++)
 			{

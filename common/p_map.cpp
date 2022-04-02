@@ -3061,6 +3061,12 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	DamageSource = hurtSource;
 	bombmod = mod;
 
+	// [Blair] Prevent crash from barrels hit by crushers
+	if (bombsource == NULL && bombspot != NULL)
+	{
+		bombsource = bombspot;
+	}
+
 	// decide which radius attack function to use
 	BOOL (*pAttackFunc)(AActor*) = co_zdoomphys ?
 		PIT_ZDoomRadiusAttack : PIT_DoomRadiusAttack;

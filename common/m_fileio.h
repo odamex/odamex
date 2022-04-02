@@ -21,10 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __M_FILEIO__
-#define __M_FILEIO__
-
-
+#pragma once
 
 #include "d_main.h"
 
@@ -145,5 +142,3 @@ bool M_GetAbsPath(const std::string& path, std::string& out);
 bool M_IsDirectory(const std::string& path);
 bool M_IsFile(const std::string& path);
 std::vector<std::string> M_ListDirectoryContents(const std::string& path, size_t max_depth = 1);
-
-#endif

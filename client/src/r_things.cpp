@@ -189,6 +189,21 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 		return;
 	}
 
+	// [AM] Ensure that we're not going to fall off the side of the patch.
+	const short patchWidth = W_CachePatch(vis->patch, PU_CACHE)->width();
+	const int start = vis->startfrac >> FRACBITS;
+	if (start < 0 || start > patchWidth)
+	{
+		return;
+	}
+
+	const int enditers = vis->x2 - vis->x1;
+	const int end = (vis->startfrac + (enditers * vis->xiscale)) >> FRACBITS;
+	if (end < 0 || end > patchWidth)
+	{
+		return;
+	}
+
 	dcol.colormap = vis->colormap;
 
 	if (vis->translation)
@@ -1081,4 +1096,5 @@ void R_DrawParticle(vissprite_t* vis)
 	for (dspan.y = y1; dspan.y <= y2; dspan.y++)
 		R_FillTranslucentSpan();
 }
+
 VERSION_CONTROL (r_things_cpp, "$Id$")

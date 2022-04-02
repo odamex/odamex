@@ -40,6 +40,7 @@
 #include "d_player.h"
 #include "p_setup.h"
 #include "d_dehacked.h"
+#include "g_skill.h"
 #include "p_mapformat.h"
 
 
@@ -967,7 +968,7 @@ void A_Chase (AActor *actor)
 	if (actor->flags & MF_JUSTATTACKED)
 	{
 		actor->flags &= ~MF_JUSTATTACKED;
-		if ((sv_skill != sk_nightmare) && !sv_fastmonsters)
+		if (G_GetCurrentSkill().respawn_counter == 0 && !sv_fastmonsters)
 			P_NewChaseDir (actor);
 		return;
 	}
@@ -1005,8 +1006,7 @@ void A_Chase (AActor *actor)
 	// check for missile attack
 	if (actor->info->missilestate)
 	{
-		if (sv_skill < sk_nightmare
-			&& actor->movecount && !sv_fastmonsters)
+		if (!G_GetCurrentSkill().fast_monsters && actor->movecount && !sv_fastmonsters)
 		{
 			goto nomissile;
 		}
@@ -1322,22 +1322,6 @@ void A_SkelMissile (AActor *actor)
 
 #define TRACEANGLE (0xc000000)
 
-fixed_t P_GetActorSpeed(AActor* actor)
-{
-	int speed = actor->info->speed;
-
-	if (isFast)
-	{
-		if (actor->info->altspeed != NO_ALTSPEED)
-			speed = actor->info->altspeed;
-	}
-
-	if (speed < 256)
-		return speed * FRACUNIT;
-
-	return speed;
-}
-
 void A_Tracer (AActor *actor)
 {
 	// killough 1/18/98: this is why some missiles do not have smoke
@@ -1401,16 +1385,14 @@ void A_Tracer (AActor *actor)
 
 	exact = actor->angle>>ANGLETOFINESHIFT;
 
-	fixed_t speed = P_GetActorSpeed(actor);
-
-	actor->momx = FixedMul(speed, finecosine[exact]);
-	actor->momy = FixedMul(speed, finesine[exact]);
+	actor->momx = FixedMul(actor->info->speed, finecosine[exact]);
+	actor->momy = FixedMul(actor->info->speed, finesine[exact]);
 
 	// change slope
 	fixed_t dist = P_AproxDistance (dest->x - actor->x,
 							dest->y - actor->y);
 
-	dist = dist / speed;
+	dist = dist / actor->info->speed;
 
 	if (dist < 1)
 		dist = 1;
@@ -1518,9 +1500,6 @@ void A_VileChase (AActor *actor)
 
 	if (actor->movedir != DI_NODIR)
 	{
-		// [Blair] Ignore altspeed for vanilla demo comp purposes
-		//fixed_t speed = P_GetActorSpeed(actor);
-
 		// check for corpses to raise
 		viletryx = actor->x + actor->info->speed * xspeed[actor->movedir];
 		viletryy = actor->y + actor->info->speed * yspeed[actor->movedir];
@@ -1728,13 +1707,11 @@ void A_FatAttack1 (AActor *actor)
 
 		P_SpawnMissile (actor, actor->target, MT_FATSHOT);
 		AActor *mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
-		
-		fixed_t speed = P_GetActorSpeed(mo);	// Get speed of actor spawned
 
 		mo->angle += FATSPREAD;
 		int an = mo->angle >> ANGLETOFINESHIFT;
-		mo->momx = FixedMul(speed, finecosine[an]);
-		mo->momy = FixedMul(speed, finesine[an]);
+		mo->momx = FixedMul(mo->info->speed, finecosine[an]);
+		mo->momy = FixedMul(mo->info->speed, finesine[an]);
 	}
 }
 
@@ -1753,12 +1730,11 @@ void A_FatAttack2 (AActor *actor)
 		P_SpawnMissile (actor, actor->target, MT_FATSHOT);
 
 		AActor *mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
-	    fixed_t speed = P_GetActorSpeed(mo); // Get speed of actor spawned
 
 		mo->angle -= FATSPREAD*2;
 		int an = mo->angle >> ANGLETOFINESHIFT;
-		mo->momx = FixedMul(speed, finecosine[an]);
-		mo->momy = FixedMul(speed, finesine[an]);
+		mo->momx = FixedMul(mo->info->speed, finecosine[an]);
+		mo->momy = FixedMul(mo->info->speed, finesine[an]);
 	}
 }
 
@@ -1776,16 +1752,14 @@ void A_FatAttack3 (AActor *actor)
 		mo->angle -= FATSPREAD/2;
 		int an = mo->angle >> ANGLETOFINESHIFT;
 
-		fixed_t speed = P_GetActorSpeed(mo);	// Get speed of actor spawned
-		mo->momx = FixedMul(speed, finecosine[an]);
-		mo->momy = FixedMul(speed, finesine[an]);
+		mo->momx = FixedMul(mo->info->speed, finecosine[an]);
+		mo->momy = FixedMul(mo->info->speed, finesine[an]);
 
 		mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
-		speed = P_GetActorSpeed(mo); // Get speed of actor spawned
 		mo->angle += FATSPREAD/2;
 		an = mo->angle >> ANGLETOFINESHIFT;
-		mo->momx = FixedMul(speed, finecosine[an]);
-		mo->momy = FixedMul(speed, finesine[an]);
+		mo->momx = FixedMul(mo->info->speed, finecosine[an]);
+		mo->momy = FixedMul(mo->info->speed, finesine[an]);
 	}
 }
 
@@ -2873,23 +2847,20 @@ void A_BrainSpit (AActor *mo)
 	if(!serverside)
 		return;
 
-	AActor* 	targ;
-	AActor* 	newmobj;
-
 	// [RH] Do nothing if there are no brain targets.
 	if (numbraintargets == 0)
 		return;
 
 	brain.easy ^= 1;		// killough 3/26/98: use brain struct
-	if (sv_skill <= sk_easy && (!brain.easy))
+	if (G_GetCurrentSkill().easy_boss_brain && (!brain.easy))
 		return;
 
 	// shoot a cube at current target
-	targ = braintargets[brain.targeton++];	// killough 3/26/98:
+	AActor* targ = braintargets[brain.targeton++];	// killough 3/26/98:
 	brain.targeton %= numbraintargets;		// Use brain struct for targets
 
 	// spawn brain missile
-	newmobj = P_SpawnMissile (mo, targ, MT_SPAWNSHOT);
+	AActor* newmobj = P_SpawnMissile(mo, targ, MT_SPAWNSHOT);
 
 	if(newmobj)
 	{

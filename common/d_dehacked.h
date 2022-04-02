@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __D_DEHACK_H__
-#define __D_DEHACK_H__
+#pragma once
 
 #include "m_resfile.h"
 #include "resources/res_main.h"
@@ -229,5 +228,3 @@ void D_UndoDehPatch();
 void D_PostProcessDeh();
 bool D_LoadDehLump(const ResourceId res_id);
 static int EndInclude();
-
-#endif //__D_DEHACK_H__

@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __DARCHIVE_H__
-#define __DARCHIVE_H__
+#pragma once
 
 #include "dobject.h"
 #include "resources/res_resourceid.h"
@@ -249,5 +248,3 @@ class player_s;
 
 FArchive &operator<< (FArchive& arc, player_s* p);
 FArchive &operator>> (FArchive& arc, player_s* &p);
-
-#endif //__DARCHIVE_H__
