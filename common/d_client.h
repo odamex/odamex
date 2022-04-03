@@ -34,12 +34,6 @@ struct oldPacket_s
 	oldPacket_s() : sequence(-1) { data.resize(0); }
 };
 
-struct oldMessage_s
-{
-	uint16_t sequence;
-	std::string message;
-};
-
 struct client_s
 {
 	netadr_t address;
@@ -75,11 +69,33 @@ struct client_s
 
 	client_s();
 	client_s(const client_s& other);
-	oldMessage_s* getOldMessage(const uint16_t seq);
-	void setOldMessage(const uint16_t seq, const std::string& msg);
+
+	void queueReliable(const google::protobuf::Message& msg);
+	bool queuePacket();
 
   private:
-	oldMessage_s m_oldMessages[1024];
+	struct sentPacket_s
+	{
+		uint16_t packetID;
+		uint16_t size;
+		std::vector<uint32_t> messages;
+	} m_sentPackets[1024];
+	uint16_t m_nextPacketID = 0;
+
+	struct queuedMessage_s
+	{
+		uint32_t messageID;
+		dtime_t lastSent;
+		svc_t header;
+		std::string data;
+	} m_queuedMessages[1024];
+	uint32_t m_nextMessageID = 0;
+	uint32_t m_oldestMessageNoACK = 0;
+
+	sentPacket_s& sentPacket(const uint16_t id);
+	sentPacket_s* validSentPacket(const uint16_t id);
+	queuedMessage_s& queuedMessage(const uint32_t id);
+	queuedMessage_s* validQueuedMessage(const uint32_t id);
 };
 
 typedef client_s client_t;

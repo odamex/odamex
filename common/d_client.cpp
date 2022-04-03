@@ -25,6 +25,11 @@
 
 #include "d_client.h"
 
+#include <google/protobuf/message.h>
+
+#include "i_system.h"
+#include "svc_map.h"
+
 client_s::client_s()
     : version(0), packedversion(0), sequence(0), last_sequence(0), packetnum(0), rate(0),
       reliable_bps(0), unreliable_bps(0), last_received(0), lastcmdtic(0),
@@ -58,25 +63,81 @@ client_s::client_s(const client_s& other)
 	}
 }
 
-/**
- * @brief Get the old message for the given sequence, or NULL if that sequence
- *        does not exist in the buffer.
- */
-oldMessage_s* client_s::getOldMessage(const uint16_t seq)
+void client_s::queueReliable(const google::protobuf::Message& msg)
 {
-	const uint16_t idx = seq % ARRAY_LENGTH(m_oldMessages);
-	if (m_oldMessages[idx].sequence != seq)
-		return NULL;
+	// Queue the message.
+	queuedMessage_s& queued = queuedMessage(m_nextMessageID);
+	queued.messageID = m_nextMessageID;
+	queued.lastSent = I_MSTime();
+	queued.header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	msg.SerializeToString(&queued.data);
 
-	return &m_oldMessages[idx];
+	// Advance Message ID.
+	m_nextMessageID += 1;
 }
 
 /**
- * @brief Insert a message into the old messages buffer.
+ * @brief Given the state of messages, construct a single packet to be sent.
+ * 
+ * @return True if a packet was queued, false if no viable messages made it in.
  */
-void client_s::setOldMessage(const uint16_t seq, const std::string& msg)
+bool client_s::queuePacket()
 {
-	const uint16_t idx = seq % ARRAY_LENGTH(m_oldMessages);
-	m_oldMessages[idx].sequence = seq;
-	m_oldMessages[idx].message = msg;
+	const dtime_t TIME = I_MSTime();
+
+	// Queue the packet for sending.
+	sentPacket_s& sent = sentPacket(m_nextPacketID);
+	sent.packetID = m_nextPacketID;
+	sent.size = 0;
+	sent.messages.clear();
+
+	// Walk the message array starting with the oldest un-acked.
+	const uint32_t LENGTH = m_nextMessageID - m_oldestMessageNoACK;
+	for (uint32_t i = 0; i < LENGTH; i++)
+	{
+		client_s::queuedMessage_s* queue = validQueuedMessage(m_oldestMessageNoACK + i);
+		if (queue == NULL)
+			continue; // Invalid message.
+
+		if (queue->lastSent + 100 >= TIME)
+			continue; // Don't rapid-fire resends.
+
+		if (sent.size + 1 + queue->data.size() > MAX_UDP_SIZE)
+			continue; // Too big to fit.
+
+		sent.size += 1 + queue->data.size();
+		sent.messages.push_back(queue->messageID);
+	}
+
+	if (sent.size == 0)
+		return false; // No messages were queued.
+
+	m_nextPacketID += 1;
+	return true;
+}
+
+client_s::sentPacket_s& client_s::sentPacket(const uint16_t id)
+{
+	return m_sentPackets[id % ARRAY_LENGTH(m_sentPackets)];
+}
+
+client_s::sentPacket_s* client_s::validSentPacket(const uint16_t id)
+{
+	sentPacket_s* sent = &sentPacket(id);
+	if (sent->packetID != id)
+		return NULL;
+	return sent;
+}
+
+client_s::queuedMessage_s& client_s::queuedMessage(const uint32_t id)
+{
+	return m_queuedMessages[id % ARRAY_LENGTH(m_queuedMessages)];
+}
+
+client_s::queuedMessage_s* client_s::validQueuedMessage(const uint32_t id)
+{
+	queuedMessage_s* sent = &queuedMessage(id);
+	if (sent->messageID != id)
+		return NULL;
+	return sent;
 }
