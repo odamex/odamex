@@ -44,6 +44,7 @@
 // In addition, the player is just a special
 // case of the generic moving object/actor.
 #include "actor.h"
+#include "d_client.h"
 
 #include "d_netinf.h"
 #include "i_net.h"
@@ -266,113 +267,7 @@ public:
 	// denis - things that are pending to be sent to this player
 	std::queue<AActor::AActorPtr> to_spawn;
 
-	// denis - client structure is here now for a 1:1
-	struct client_t
-	{
-		struct oldPacket_t
-		{
-			int		sequence;
-			buf_t	data;
-
-			oldPacket_t() : sequence(-1)
-			{
-				data.resize(0);
-			}
-
-			oldPacket_t(const oldPacket_t& other)
-			{
-				sequence = other.sequence;
-				data = other.data;
-			}
-		};
-
-		netadr_t    address;
-
-		buf_t       netbuf;
-		buf_t       reliablebuf;
-
-		// protocol version supported by the client
-		short		version;
-		int			packedversion;
-
-		// for reliable protocol
-		oldPacket_t oldpackets[256];
-
-		int         sequence;
-		int         last_sequence;
-		byte        packetnum;
-
-		int         rate;
-		int         reliable_bps;	// bytes per second
-		int         unreliable_bps;
-
-		int			last_received;	// for timeouts
-
-		int			lastcmdtic, lastclientcmdtic;
-
-		std::string	digest;			// randomly generated string that the client must use for any hashes it sends back
-		bool        allow_rcon;     // allow remote admin
-		bool		displaydisconnect; // display disconnect message when disconnecting
-
-		huffman_server	compressor;	// denis - adaptive huffman compression
-
-		client_t()
-		{
-			// GhostlyDeath -- Initialize to Zero
-			memset(&address, 0, sizeof(netadr_t));
-			version = 0;
-			packedversion = 0;
-			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
-			{
-				oldpackets[i].sequence = -1;
-				oldpackets[i].data.resize(MAX_UDP_PACKET);
-			}
-			sequence = 0;
-			last_sequence = 0;
-			packetnum = 0;
-			rate = 0;
-			reliable_bps = 0;
-			unreliable_bps = 0;
-			last_received = 0;
-			lastcmdtic = 0;
-			lastclientcmdtic = 0;
-
-
-			// GhostlyDeath -- done with the {}
-			netbuf = MAX_UDP_PACKET;
-			reliablebuf = MAX_UDP_PACKET;
-			digest = "";
-			allow_rcon = false;
-			displaydisconnect = true;
-		/*
-		huffman_server	compressor;	// denis - adaptive huffman compression*/
-		}
-		client_t(const client_t &other)
-			: address(other.address),
-			netbuf(other.netbuf),
-			reliablebuf(other.reliablebuf),
-			version(other.version),
-			packedversion(other.packedversion),
-			sequence(other.sequence),
-			last_sequence(other.last_sequence),
-			packetnum(other.packetnum),
-			rate(other.rate),
-			reliable_bps(other.reliable_bps),
-			unreliable_bps(other.unreliable_bps),
-			last_received(other.last_received),
-			lastcmdtic(other.lastcmdtic),
-			lastclientcmdtic(other.lastclientcmdtic),
-			digest(other.digest),
-			allow_rcon(false),
-			displaydisconnect(true),
-			compressor(other.compressor)
-		{
-			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
-			{
-				oldpackets[i] = other.oldpackets[i];
-			}
-		}
-	} client;
+	client_t client;
 
 	struct ticcmd_t netcmds[BACKUPTICS];
 
@@ -390,7 +285,6 @@ public:
 };
 
 typedef player_s player_t;
-typedef player_t::client_t client_t;
 
 // Bookkeeping on players - state.
 typedef std::list<player_t> Players;

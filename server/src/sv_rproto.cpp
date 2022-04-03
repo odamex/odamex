@@ -156,7 +156,7 @@ bool SV_SendPacket(player_t &pl)
 
 	// save the reliable message 
 	// it will be retransmited, if it's missed
-	client_t::oldPacket_t& old = cl->oldpackets[cl->sequence & PACKET_OLD_MASK];
+	oldPacket_s& old = cl->oldpackets[cl->sequence & PACKET_OLD_MASK];
 
 	old.data.clear();
 	if (cl->reliablebuf.cursize)
@@ -235,7 +235,7 @@ static void SendOldPacket(player_t& pl, const int sequence)
 	send.clear();
 
 	client_t& cl = pl.client;
-	client_t::oldPacket_t& old = cl.oldpackets[sequence & PACKET_OLD_MASK];
+	oldPacket_s& old = cl.oldpackets[sequence & PACKET_OLD_MASK];
 
 	// This is a lot simpler than a fresh send.  Just send the data we have
 	// have saved out.
