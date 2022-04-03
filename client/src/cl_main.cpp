@@ -1752,17 +1752,7 @@ bool CL_PrepareConnect()
 	}
 	else if (!ok && !missing_resource_filename.empty() || cl_forcedownload)
 	{
-		std::string missing_file;
-		if (missing_resource_filename.empty()) // cl_forcedownload
-		{
-			missing_file = missing_resource_filename.back();
-		}
-		else									// client is really missing a file
-		{
-			missing_file = missing_resource_filename.front();
-		}
-
-		CL_QuitAndTryDownload(missing_file);
+		CL_QuitAndTryDownload(missing_resource_filename);
 		return false;
 	}
 
