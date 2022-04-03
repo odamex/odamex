@@ -29,6 +29,7 @@
 #include "c_cvars.h"
 #include "resources/res_main.h"
 #include "w_ident.h"
+#include "cmdlib.h"
 
 #include <string>
 #include <vector>
@@ -445,7 +446,7 @@ static std::string Res_BaseFileSearchDir(
 
 		if (iequals(filename, local_base_filename))
 		{
-			if (hash.empty() || iequals(hash, Res_MD5(local_filename))) 
+			if (hash.empty() || iequals(hash, Res_MD5(local_filename).getHexCStr())) 
 			{
 				found = local_filename;
 				break;
