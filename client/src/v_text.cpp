@@ -156,6 +156,7 @@ void V_TextShutdown()
 		{
 			ResourceId res_id = Res_GetTextureResourceId(hu_bigfont_name[i], PATCH);
 			Res_ReleaseResource(res_id);
+			hu_bigfont_name[i] = "";
 		}
 		::hu_bigfont[i] = NULL;
 
@@ -163,6 +164,7 @@ void V_TextShutdown()
 		{
 			ResourceId res_id = Res_GetTextureResourceId(hu_smallfont_name[i], PATCH);
 			Res_ReleaseResource(res_id);
+			hu_smallfont_name[i] = "";
 		}
 		::hu_smallfont[i] = NULL;
 
@@ -170,6 +172,7 @@ void V_TextShutdown()
 		{
 			ResourceId res_id = Res_GetTextureResourceId(hu_digfont_name[i], PATCH);
 			Res_ReleaseResource(res_id);
+			hu_digfont_name[i] = "";
 		}
 		::hu_digfont[i] = NULL;
 	}
