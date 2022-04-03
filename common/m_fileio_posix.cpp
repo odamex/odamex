@@ -250,7 +250,7 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
 		if (this_it < found_it)
 		{
 			const std::string local_file(dir + PATHSEP + d_name);
-			const OMD5Hash local_hash(W_MD5(local_file));
+			const OMD5Hash local_hash(Res_MD5(local_file));
 
 			if (hash.empty() || hash == local_hash)
 			{
