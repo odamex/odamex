@@ -24,8 +24,6 @@
 #include <assert.h>
 #include "resources/res_nametranslator.h"
 
-#include "hashtable.h"
-
 static const size_t default_initial_resource_count = 2048;
 
 // ============================================================================
