@@ -21,6 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "odamex.h"
+
 #include <assert.h>
 #include "resources/res_nametranslator.h"
 

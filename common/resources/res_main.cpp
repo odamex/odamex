@@ -29,6 +29,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "odamex.h"
+
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
 #include "resources/res_fileaccessor.h"
