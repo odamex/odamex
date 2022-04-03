@@ -31,6 +31,7 @@
 #include "odamex.h"
 
 #include "m_fileio.h"
+#include "resources/res_filelib.h"
 
 #include <sstream>
 
