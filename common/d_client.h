@@ -34,6 +34,12 @@ struct oldPacket_s
 	oldPacket_s() : sequence(-1) { data.resize(0); }
 };
 
+struct oldMessage_s
+{
+	uint16_t sequence;
+	std::string message;
+};
+
 struct client_s
 {
 	netadr_t address;
@@ -67,38 +73,13 @@ struct client_s
 
 	huffman_server compressor; // denis - adaptive huffman compression
 
-	client_s()
-	    : version(0), packedversion(0), sequence(0), last_sequence(0), packetnum(0),
-	      rate(0), reliable_bps(0), unreliable_bps(0), last_received(0), lastcmdtic(0),
-	      lastclientcmdtic(0), netbuf(MAX_UDP_PACKET), reliablebuf(MAX_UDP_PACKET),
-	      allow_rcon(false), displaydisconnect(true)
-	{
-		ArrayInit(address.ip, 0);
-		address.port = 0;
-		address.pad = 0;
+	client_s();
+	client_s(const client_s& other);
+	oldMessage_s* getOldMessage(const uint16_t seq);
+	void setOldMessage(const uint16_t seq, const std::string& msg);
 
-		for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
-		{
-			oldpackets[i].sequence = -1;
-			oldpackets[i].data.resize(MAX_UDP_PACKET);
-		}
-	}
-
-	client_s(const client_s& other)
-	    : address(other.address), netbuf(other.netbuf), reliablebuf(other.reliablebuf),
-	      version(other.version), packedversion(other.packedversion),
-	      sequence(other.sequence), last_sequence(other.last_sequence),
-	      packetnum(other.packetnum), rate(other.rate), reliable_bps(other.reliable_bps),
-	      unreliable_bps(other.unreliable_bps), last_received(other.last_received),
-	      lastcmdtic(other.lastcmdtic), lastclientcmdtic(other.lastclientcmdtic),
-	      digest(other.digest), allow_rcon(false), displaydisconnect(true),
-	      compressor(other.compressor)
-	{
-		for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
-		{
-			oldpackets[i] = other.oldpackets[i];
-		}
-	}
+  private:
+	oldMessage_s m_oldMessages[1024];
 };
 
 typedef client_s client_t;
