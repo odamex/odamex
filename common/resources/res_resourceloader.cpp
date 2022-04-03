@@ -23,6 +23,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "odamex.h"
+
 #include <cmath>
 
 #include "resources/res_main.h"
