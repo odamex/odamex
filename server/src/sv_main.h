@@ -60,7 +60,7 @@ void SV_ConnectClient(void);
 void SV_ConnectClient2(player_t& player);
 void SV_WriteCommands(void);
 void SV_ClearClientsBPS(void);
-bool SV_SendPacket(player_t &pl);
+bool SV_SendPacket(player_t& pl);
 void SV_AcknowledgePacket(player_t &player);
 void SV_DisplayTics();
 void SV_RunTics();

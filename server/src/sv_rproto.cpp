@@ -131,12 +131,15 @@ void SV_SendPacketDelayed(buf_t& packet, player_t& pl)
 //
 // SV_SendPacket
 //
-bool SV_SendPacket(player_t &pl)
+bool SV_SendPacket(player_t& pl)
 {
 	// [AM] Most of the hard work of assembling the packet is done in the client.
 	//      struct.  Here, we just set some flags and send the netbuf.
 	
 	client_t& client = pl.client;
+
+	if (client.netbuf.size() <= PACKET_HEADER_SIZE)
+		return false; // Can't send a packet this small.
 
 	// compress the packet, but not the sequence id
 	if (client.netbuf.size() > PACKET_HEADER_SIZE)

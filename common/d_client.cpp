@@ -65,20 +65,17 @@ client_s::client_s(const client_s& other)
 
 void client_s::queueReliable(const google::protobuf::Message& msg)
 {
-	// Queue the message.
-	queuedMessage_s& queued = queuedMessage(m_nextMessageID);
-	queued.messageID = m_nextMessageID;
-	queued.lastSent = I_MSTime();
-	queued.header = SVC_ResolveDescriptor(msg.GetDescriptor());
-	msg.SerializeToString(&queued.data);
+	baseQueueMessage(msg, true);
+}
 
-	// Advance Message ID.
-	m_nextMessageID += 1;
+void client_s::queueUnreliable(const google::protobuf::Message& msg)
+{
+	baseQueueMessage(msg, false);
 }
 
 /**
  * @brief Given the state of messages, construct and write a single packet to the buffer.
- * 
+ *
  * @param buf Buffer to write to.
  * @return True if a packet was queued, false if no viable messages made it in.
  */
@@ -116,11 +113,8 @@ bool client_s::writePacket(buf_t& buf)
 	if (sent.size == 0)
 		return false; // No messages were queued.
 
-	// Assemble and send the message.
+	// Assemble the message for sending.
 	buf.clear();
-
-	const size_t HEADER_SIZE = sizeof(int) + sizeof(byte);
-
 	buf.WriteLong(int(m_nextPacketID)); // Packet ID
 	buf.WriteByte(0);                   // Empty space for flags.
 
@@ -160,4 +154,18 @@ client_s::queuedMessage_s* client_s::validQueuedMessage(const uint32_t id)
 	if (sent->messageID != id)
 		return NULL;
 	return sent;
+}
+
+void client_s::baseQueueMessage(const google::protobuf::Message& msg, const bool reliable)
+{
+	// Queue the message.
+	queuedMessage_s& queued = queuedMessage(m_nextMessageID);
+	queued.messageID = m_nextMessageID;
+	queued.reliable = true;
+	queued.lastSent = I_MSTime();
+	queued.header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	msg.SerializeToString(&queued.data);
+
+	// Advance Message ID.
+	m_nextMessageID += 1;
 }

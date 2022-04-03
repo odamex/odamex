@@ -71,12 +71,13 @@ struct client_s
 	client_s(const client_s& other);
 
 	void queueReliable(const google::protobuf::Message& msg);
+	void queueUnreliable(const google::protobuf::Message& msg);
 	bool writePacket(buf_t& buf);
 
   private:
 	struct sentPacket_s
 	{
-		uint16_t packetID;
+		uint32_t packetID;
 		size_t size;
 		std::vector<uint32_t> messages;
 	} m_sentPackets[1024];
@@ -85,6 +86,7 @@ struct client_s
 	struct queuedMessage_s
 	{
 		uint32_t messageID;
+		bool reliable;
 		dtime_t lastSent;
 		svc_t header;
 		std::string data;
@@ -96,6 +98,7 @@ struct client_s
 	sentPacket_s* validSentPacket(const uint16_t id);
 	queuedMessage_s& queuedMessage(const uint32_t id);
 	queuedMessage_s* validQueuedMessage(const uint32_t id);
+	void baseQueueMessage(const google::protobuf::Message& msg, const bool reliable);
 };
 
 typedef client_s client_t;
