@@ -23,15 +23,14 @@
 
 #pragma once
 
-#include "ohash.h"
-
-#include <stdlib.h>
 #include <vector>
 #include <string>
 
 #include "resources/res_nametranslator.h"
 
 #include "z_zone.h"
+
+#include "ohash.h"
 
 // Forward class declarations
 class ResourceManager;

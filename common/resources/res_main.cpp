@@ -34,7 +34,6 @@
 #include "resources/res_fileaccessor.h"
 #include "resources/res_filelib.h"
 #include "resources/res_identifier.h"
-#include "resources/res_container.h"
 #include "resources/res_cache.h"
 #include "resources/res_resourceloader.h"
 
