@@ -316,17 +316,6 @@ public:
 
 		huffman_server	compressor;	// denis - adaptive huffman compression
 
-		class download_t
-		{
-		public:
-			std::string name;
-			std::string md5;
-			unsigned int next_offset;
-
-			download_t() : name(""), md5(""), next_offset(0) {}
-			download_t(const download_t& other) : name(other.name), md5(other.md5), next_offset(other.next_offset) {}
-		} download;
-
 		client_t()
 		{
 			// GhostlyDeath -- Initialize to Zero
@@ -376,8 +365,7 @@ public:
 			digest(other.digest),
 			allow_rcon(false),
 			displaydisconnect(true),
-			compressor(other.compressor),
-			download(other.download)
+			compressor(other.compressor)
 		{
 			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
 			{

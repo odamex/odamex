@@ -1876,9 +1876,6 @@ void SV_ConnectClient2(player_t& player)
 
 	cl->displaydisconnect = true;
 
-	cl->download.name = "";
-	cl->download.md5 = "";
-
 	SV_BroadcastUserInfo(player);
 
 	// Newly connected players get ENTER state.
