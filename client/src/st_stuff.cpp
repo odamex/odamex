@@ -24,41 +24,42 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "i_video.h"
-#include "z_zone.h"
-#include "m_random.h"
-#include "doomdef.h"
-#include "g_game.h"
+
+#include "odamex.h"
+
 #include "st_stuff.h"
+#include "i_video.h"
+#include "m_random.h"
 #include "st_lib.h"
-#include "r_local.h"
-#include "p_inter.h"
 #include "am_map.h"
 #include "m_cheat.h"
 #include "s_sound.h"
-#include "v_video.h"
-#include "v_text.h"
-#include "doomstat.h"
 #include "gstrings.h"
-#include "c_cvars.h"
 #include "c_dispatch.h"
-#include "version.h"
 #include "cl_main.h"
 #include "gi.h"
-#include "cl_demo.h"
 #include "c_console.h"
+#include "g_gametype.h"
+#include "m_cheat.h"
+
 #include "resources/res_texture.h"
 #include "p_ctf.h"
 
 
+// States for status bar code.
+enum st_stateenum_t
+{
+	AutomapState,
+	FirstPersonState
+
+};
+
 static bool st_needrefresh = true;
-
-static bool st_stopped = true;
-
 
 EXTERN_CVAR(sv_allowredscreen)
 EXTERN_CVAR(st_scale)
 EXTERN_CVAR(screenblocks)
+EXTERN_CVAR(g_lives)
 
 // [RH] Status bar background
 IWindowSurface* stbar_surface;
@@ -66,9 +67,7 @@ IWindowSurface* stnum_surface;
 
 // functions in st_new.c
 void ST_initNew();
-void ST_unloadNew (void);
-void ST_newDraw (void);
-void ST_newDrawCTF (void);
+void ST_unloadNew();
 
 extern bool simulated_connection;
 
@@ -248,34 +247,34 @@ extern bool simulated_connection;
 // [RH] Turned these into variables
 // Size of statusbar.
 // Now ([RH] truly) sensitive for scaling.
-int						ST_HEIGHT;
-int						ST_WIDTH;
-int						ST_X;
-int						ST_Y;
+int ST_HEIGHT;
+int ST_WIDTH;
+int ST_X;
+int ST_Y;
 
 // used for making messages go away
-static int				st_msgcounter=0;
+static int st_msgcounter = 0;
 
 // whether in automap or first-person
-static st_stateenum_t	st_gamestate;
+static st_stateenum_t st_gamestate;
 
 // whether left-side main status bar is active
-static bool			st_statusbaron;
+static bool st_statusbaron;
 
 // whether status bar chat is active
-static bool			st_chat;
+static bool st_chat;
 
 // value of st_chat before message popped up
-static bool			st_oldchat;
+static bool st_oldchat;
 
 // whether chat window has the cursor on
-static bool			st_cursoron;
+static bool st_cursoron;
 
 // !deathmatch && st_statusbaron
-static bool			st_armson;
+static bool st_armson;
 
 // !deathmatch
-static bool			st_fragson;
+static bool st_fragson;
 
 // main bar left
 static const Texture*	sbar;
@@ -297,6 +296,9 @@ const Texture* 			keys[NUMCARDS+NUMCARDS/2];
 // face status patches [RH] no longer static
 const Texture* 				faces[ST_NUMFACES];
 
+// negative number patch
+const Texture*				negminus;
+
 // face background
 static const Texture* 		faceback;
 
@@ -313,58 +315,62 @@ static const Texture* 		flagsbg;
 static const Texture* 		arms[6][2];
 
 // ready-weapon widget
-static st_number_t		w_ready;
+static StatusBarWidgetNumber w_ready;
 
- // in deathmatch only, summary of frags stats
-static st_number_t		w_frags;
+// in deathmatch only, summary of frags stats
+static StatusBarWidgetNumber w_frags;
 
 // health widget
-static st_percent_t 	w_health;
+static StatusBarWidgetPercent w_health;
 
 // weapon ownership widgets
-static st_multicon_t	w_arms[6];
+static StatusBarWidgetMultiIcon w_arms[6];
 
 // face status widget
-static st_multicon_t	w_faces;
+static StatusBarWidgetMultiIcon w_faces;
 
 // keycard widgets
-static st_multicon_t	w_keyboxes[3];
+static StatusBarWidgetMultiIcon w_keyboxes[3];
 
 // armor widget
-static st_percent_t 	w_armor;
+static StatusBarWidgetPercent w_armor;
 
 // ammo widgets
-static st_number_t		w_ammo[4];
+static StatusBarWidgetNumber w_ammo[4];
 
 // max ammo widgets
-static st_number_t		w_maxammo[4];
+static StatusBarWidgetNumber w_maxammo[4];
+
+// lives widget
+static StatusBarWidgetNumber w_lives;
 
 // number of frags so far in deathmatch
-static int		st_fragscount;
+static int st_fragscount;
 
 // used to use appopriately pained face
-static int		st_oldhealth = -1;
+static int st_oldhealth = -1;
 
 // used for evil grin
-static bool		oldweaponsowned[NUMWEAPONS+1];
+static bool oldweaponsowned[NUMWEAPONS + 1];
 
- // count until face changes
-static int		st_facecount = 0;
+// count until face changes
+static int st_facecount = 0;
 
 // current face index, used by w_faces
 // [RH] not static anymore
-int				st_faceindex = 0;
+int st_faceindex = 0;
 
 // holds key-type for each key box on bar
-static int		keyboxes[3];
+static int keyboxes[3];
 
 // copy of player info
-static int		st_health, st_armor;
-static int		st_ammo[4], st_maxammo[4];
-static int		st_weaponowned[6] = {0}, st_current_ammo;
+static int st_health, st_armor;
+static int st_ammo[4], st_maxammo[4];
+static int st_weaponowned[6] = {0}, st_current_ammo;
+static int st_lives;
 
 // a random number per tick
-static int		st_randomnumber;
+static int st_randomnumber;
 
 // these are now in d_dehacked.cpp
 extern byte cheat_mus_seq[9];
@@ -378,38 +384,49 @@ extern byte cheat_powerup_seq[7][10];
 extern byte cheat_clev_seq[10];
 extern byte cheat_mypos_seq[8];
 
-// CTF...
-extern flagdata CTFdata[NUMFLAGS];
-
 // Now what?
-cheatseq_t		cheat_mus = { cheat_mus_seq, 0 };
-cheatseq_t		cheat_god = { cheat_god_seq, 0 };
-cheatseq_t		cheat_ammo = { cheat_ammo_seq, 0 };
-cheatseq_t		cheat_ammonokey = { cheat_ammonokey_seq, 0 };
-cheatseq_t		cheat_noclip = { cheat_noclip_seq, 0 };
-cheatseq_t		cheat_commercial_noclip = { cheat_commercial_noclip_seq, 0 };
+static byte CheatNoclip[] = {'i', 'd', 's', 'p', 'i', 's', 'p', 'o', 'p', 'd', 255};
+static byte CheatNoclip2[] = {'i', 'd', 'c', 'l', 'i', 'p', 255};
+static byte CheatMus[] = {'i', 'd', 'm', 'u', 's', 0, 0, 255};
+static byte CheatChoppers[] = {'i', 'd', 'c', 'h', 'o', 'p', 'p', 'e', 'r', 's', 255};
+static byte CheatGod[] = {'i', 'd', 'd', 'q', 'd', 255};
+static byte CheatAmmo[] = {'i', 'd', 'k', 'f', 'a', 255};
+static byte CheatAmmoNoKey[] = {'i', 'd', 'f', 'a', 255};
+static byte CheatClev[] = {'i', 'd', 'c', 'l', 'e', 'v', 0, 0, 255};
+static byte CheatMypos[] = {'i', 'd', 'm', 'y', 'p', 'o', 's', 255};
+static byte CheatAmap[] = {'i', 'd', 'd', 't', 255};
 
-cheatseq_t		cheat_powerup[7] =
-{
-	{ cheat_powerup_seq[0], 0 },
-	{ cheat_powerup_seq[1], 0 },
-	{ cheat_powerup_seq[2], 0 },
-	{ cheat_powerup_seq[3], 0 },
-	{ cheat_powerup_seq[4], 0 },
-	{ cheat_powerup_seq[5], 0 },
-	{ cheat_powerup_seq[6], 0 }
-};
+static byte CheatPowerup[7][10] = {{'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 'v', 255},
+                                   {'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 's', 255},
+                                   {'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 'i', 255},
+                                   {'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 'r', 255},
+                                   {'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 'a', 255},
+                                   {'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 'l', 255},
+                                   {'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 255}};
 
-cheatseq_t		cheat_choppers = { cheat_choppers_seq, 0 };
-cheatseq_t		cheat_clev = { cheat_clev_seq, 0 };
-cheatseq_t		cheat_mypos = { cheat_mypos_seq, 0 };
-
+cheatseq_t DoomCheats[] = {
+    {CheatMus, 0, 1, 0, {0, 0}, CHEAT_ChangeMusic},
+    {CheatPowerup[6], 0, 1, 0, {0, 0}, CHEAT_BeholdMenu},
+    {CheatMypos, 0, 1, 0, {0, 0}, CHEAT_IdMyPos},
+    {CheatAmap, 0, 0, 0, {0, 0}, CHEAT_AutoMap},
+    {CheatGod, 0, 0, 0, {CHT_IDDQD, 0}, CHEAT_SetGeneric},
+    {CheatAmmo, 0, 0, 0, {CHT_IDKFA, 0}, CHEAT_SetGeneric},
+    {CheatAmmoNoKey, 0, 0, 0, {CHT_IDFA, 0}, CHEAT_SetGeneric},
+    {CheatNoclip, 0, 0, 0, {CHT_NOCLIP, 0}, CHEAT_SetGeneric},  // Special check given !
+    {CheatNoclip2, 0, 0, 0, {CHT_NOCLIP, 1}, CHEAT_SetGeneric}, // Special Check given !
+    {CheatPowerup[0], 0, 0, 0, {CHT_BEHOLDV, 0}, CHEAT_SetGeneric},
+    {CheatPowerup[1], 0, 0, 0, {CHT_BEHOLDS, 0}, CHEAT_SetGeneric},
+    {CheatPowerup[2], 0, 0, 0, {CHT_BEHOLDI, 0}, CHEAT_SetGeneric},
+    {CheatPowerup[3], 0, 0, 0, {CHT_BEHOLDR, 0}, CHEAT_SetGeneric},
+    {CheatPowerup[4], 0, 0, 0, {CHT_BEHOLDA, 0}, CHEAT_SetGeneric},
+    {CheatPowerup[5], 0, 0, 0, {CHT_BEHOLDL, 0}, CHEAT_SetGeneric},
+    {CheatChoppers, 0, 0, 0, {CHT_CHAINSAW, 0}, CHEAT_SetGeneric},
+    {CheatClev, 0, 0, 0, {0, 0}, CHEAT_ChangeLevel}};
 
 //
 // STATUS BAR CODE
 //
-void ST_Stop(void);
-void ST_createWidgets(void);
+void ST_createWidgets();
 
 int ST_StatusBarHeight(int surface_width, int surface_height)
 {
@@ -481,43 +498,16 @@ CVAR_FUNC_IMPL (st_scale)
 
 EXTERN_CVAR (sv_allowcheats)
 
-// Checks whether cheats are enabled or not, returns true if they're NOT enabled
-// and false if they ARE enabled (stupid huh? not my work [Russell])
-BOOL CheckCheatmode (void)
-{
-	// [SL] 2012-04-04 - Don't allow cheat codes to be entered while playing
-	// back a netdemo
-	if (simulated_connection)
-		return true;
-
-	// [Russell] - Allow vanilla style "no message" in singleplayer when cheats
-	// are disabled
-	if (sv_skill == sk_nightmare && !multiplayer)
-        return true;
-
-	if ((multiplayer || sv_gametype != GM_COOP) && !sv_allowcheats)
-	{
-		Printf (PRINT_HIGH, "You must run the server with '+set sv_allowcheats 1' to enable this command.\n");
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
 // Respond to keyboard input events, intercept cheats.
 // [RH] Cheats eatkey the last keypress used to trigger them
 bool ST_Responder (event_t *ev)
 {
-	player_t *plyr = &consoleplayer();
-	bool eatkey = false;
-	int i;
+	bool eat = false;
 
 	// Filter automap on/off.
 	if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
 	{
-		switch(ev->data1)
+		switch (ev->data1)
 		{
 		case AM_MSGENTERED:
 			st_gamestate = AutomapState;
@@ -533,269 +523,64 @@ bool ST_Responder (event_t *ev)
 	// if a user keypress...
 	else if (ev->type == ev_keydown && ev->data3)
 	{
-		char key = ev->data3;
-
-        // 'dqd' cheat for toggleable god mode
-        if (cht_CheckCheat(&cheat_god, key))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            // [Russell] - give full health
-            plyr->mo->health = deh.StartHealth;
-            plyr->health = deh.StartHealth;
-
-            AddCommandString("god");
-
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_IDDQD);
-            eatkey = true;
-        }
-
-        // 'fa' cheat for killer fucking arsenal
-        else if (cht_CheckCheat(&cheat_ammonokey, key))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            Printf(PRINT_HIGH, "Ammo (No keys) Added\n");
-
-            plyr->armorpoints = deh.FAArmor;
-            plyr->armortype = deh.FAAC;
-
-            weapontype_t pendweap = plyr->pendingweapon;
-            for (i = 0; i<NUMWEAPONS; i++)
-                P_GiveWeapon (plyr, (weapontype_t)i, false);
-            plyr->pendingweapon = pendweap;
-
-            for (i=0; i<NUMAMMO; i++)
-                plyr->ammo[i] = plyr->maxammo[i];
-
-            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
-            MSG_WriteByte(&net_buffer, 1);
-
-            eatkey = true;
-        }
-
-        // 'kfa' cheat for key full ammo
-        else if (cht_CheckCheat(&cheat_ammo, key))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            Printf(PRINT_HIGH, "Very Happy Ammo Added\n");
-
-            plyr->armorpoints = deh.KFAArmor;
-            plyr->armortype = deh.KFAAC;
-
-            weapontype_t pendweap = plyr->pendingweapon;
-            for (i = 0; i<NUMWEAPONS; i++)
-                P_GiveWeapon (plyr, (weapontype_t)i, false);
-            plyr->pendingweapon = pendweap;
-
-            for (i=0; i<NUMAMMO; i++)
-                plyr->ammo[i] = plyr->maxammo[i];
-
-            for (i=0; i<NUMCARDS; i++)
-                plyr->cards[i] = true;
-
-            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
-            MSG_WriteByte(&net_buffer, 2);
-
-            eatkey = true;
-        }
-        // [Russell] - Only doom 1/registered can have idspispopd and
-        // doom 2/final can have idclip
-        else if (cht_CheckCheat(&cheat_noclip, key))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            if (gamemode != shareware && gamemode != registered &&
-                gamemode != retail && gamemode != retail_bfg)
-                return false;
-
-            AddCommandString("noclip");
-
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_NOCLIP);
-            eatkey = true;
-        }
-        else if (cht_CheckCheat(&cheat_commercial_noclip, key))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            if (gamemode != commercial && gamemode != commercial_bfg)
-                return false;
-
-            AddCommandString("noclip");
-
-            // Net_WriteByte (DEM_GENERICCHEAT);
-            // Net_WriteByte (CHT_NOCLIP);
-            eatkey = true;
-        }
-        // 'behold?' power-up cheats
-        for (i=0; i<6; i++)
-        {
-            if (cht_CheckCheat(&cheat_powerup[i], key))
-            {
-                if (CheckCheatmode ())
-                    return false;
-
-                Printf(PRINT_HIGH, "Power-up toggled\n");
-                if (!plyr->powers[i])
-                    P_GivePower( plyr, i);
-                else if (i!=pw_strength)
-                    plyr->powers[i] = 1;
-                else
-                    plyr->powers[i] = 0;
-
-                MSG_WriteMarker(&net_buffer, clc_cheatpulse);
-                MSG_WriteByte(&net_buffer, 3);
-                MSG_WriteByte(&net_buffer, (byte)i);
-
-                eatkey = true;
-            }
-        }
-
-        // 'behold' power-up menu
-        if (cht_CheckCheat(&cheat_powerup[6], key))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_BEHOLD));
-
-        }
-
-        // 'choppers' invulnerability & chainsaw
-        else if (cht_CheckCheat(&cheat_choppers, key))
-        {
-            if (CheckCheatmode ())
-                return false;
-
-            Printf(PRINT_HIGH, "... Doesn't suck - GM\n");
-            plyr->weaponowned[wp_chainsaw] = true;
-
-            MSG_WriteMarker(&net_buffer, clc_cheatpulse);
-            MSG_WriteByte(&net_buffer, 4);
-
-            eatkey = true;
-        }
-
-        // 'clev' change-level cheat
-        else if (cht_CheckCheat(&cheat_clev, key))
-        {
-            char buf[11];
-			//char *bb;
-
-            cht_GetParam(&cheat_clev, buf);
-            buf[2] = 0;
-
-			// [ML] Chex mode: always set the episode number to 1.
-			// FIXME: This is probably a horrible hack, it sure looks like one at least
-			if (gamemode == retail_chex)
-				sprintf(buf,"1%c",buf[1]);
-
-            sprintf (buf + 3, "map %.2s\n", buf);
-            AddCommandString (buf + 3);
-            eatkey = true;
-        }
-
-        // 'mypos' for player position
-        else if (cht_CheckCheat(&cheat_mypos, key))
-        {
-            AddCommandString ("toggle idmypos");
-            eatkey = true;
-        }
-
-        // 'idmus' change-music cheat
-        else if (cht_CheckCheat(&cheat_mus, key))
-        {
-            char buf[16];
-
-            cht_GetParam(&cheat_mus, buf);
-            buf[2] = 0;
-
-            sprintf (buf + 3, "idmus %.5s\n", buf);
-            AddCommandString (buf + 3);
-            eatkey = true;
-        }
+		cheatseq_t* cheats = DoomCheats;
+		for (int i = 0; i < COUNT_CHEATS(DoomCheats); i++, cheats++)
+		{
+			if (CHEAT_AddKey(cheats, (byte)ev->data1, &eat))
+			{
+				if (cheats->DontCheck || CHEAT_AreCheatsEnabled())
+				{
+					eat |= cheats->Handler(cheats);
+				}
+			}
+		}
     }
 
-    return eatkey;
+    return eat;
 }
 
 // Console cheats
 BEGIN_COMMAND (god)
 {
-	if (CheckCheatmode ())
+	if (!CHEAT_AreCheatsEnabled())
 		return;
 
-	consoleplayer().cheats ^= CF_GODMODE;
-
-	if (consoleplayer().cheats & CF_GODMODE)
-		Printf(PRINT_HIGH, "Degreelessness mode on\n");
-	else
-		Printf(PRINT_HIGH, "Degreelessness mode off\n");
-
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+	CHEAT_DoCheat(&consoleplayer(), CHT_GOD);
+	CL_SendCheat(CHT_GOD);
 }
 END_COMMAND (god)
 
 BEGIN_COMMAND (notarget)
 {
-	if (CheckCheatmode () || connected)
+	if (!CHEAT_AreCheatsEnabled())
 		return;
 
-	consoleplayer().cheats ^= CF_NOTARGET;
-
-	if (consoleplayer().cheats & CF_NOTARGET)
-		Printf(PRINT_HIGH, "Notarget on\n");
-	else
-		Printf(PRINT_HIGH, "Notarget off\n");
-
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+	CHEAT_DoCheat(&consoleplayer(), CHT_NOTARGET);
+	CL_SendCheat(CHT_NOTARGET);
 }
 END_COMMAND (notarget)
 
 BEGIN_COMMAND (fly)
 {
-	if (!consoleplayer().spectator && CheckCheatmode ())
+	if (!consoleplayer().spectator && !CHEAT_AreCheatsEnabled())
 		return;
 
-	consoleplayer().cheats ^= CF_FLY;
-
-	if (consoleplayer().cheats & CF_FLY)
-		Printf(PRINT_HIGH, "Fly mode on\n");
-	else
-		Printf(PRINT_HIGH, "Fly mode off\n");
+	CHEAT_DoCheat(&consoleplayer(), CHT_FLY);
 
 	if (!consoleplayer().spectator)
 	{
-		MSG_WriteMarker(&net_buffer, clc_cheat);
-		MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+		CL_SendCheat(CHT_FLY);
 	}
 }
 END_COMMAND (fly)
 
 BEGIN_COMMAND (noclip)
 {
-	if (CheckCheatmode ())
+	if (!CHEAT_AreCheatsEnabled())
 		return;
 
-	consoleplayer().cheats ^= CF_NOCLIP;
-
-	if (consoleplayer().cheats & CF_NOCLIP)
-		Printf(PRINT_HIGH, "No clipping mode on\n");
-	else
-		Printf(PRINT_HIGH, "No clipping mode off\n");
-
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+	CHEAT_DoCheat(&consoleplayer(), CHT_NOCLIP);
+	CL_SendCheat(CHT_NOCLIP);
 }
 END_COMMAND (noclip)
 
@@ -808,45 +593,40 @@ BEGIN_COMMAND (chase)
 		if (chasedemo)
 		{
 			chasedemo.Set (0.0f);
-			for (Players::iterator it = players.begin();it != players.end();++it)
+			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 				it->cheats &= ~CF_CHASECAM;
 		}
 		else
 		{
 			chasedemo.Set (1.0f);
-			for (Players::iterator it = players.begin();it != players.end();++it)
+			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 				it->cheats |= CF_CHASECAM;
 		}
 	}
 	else
 	{
-		if (CheckCheatmode ())
+		if (!CHEAT_AreCheatsEnabled())
 			return;
 
-		consoleplayer().cheats ^= CF_CHASECAM;
-
-		MSG_WriteMarker(&net_buffer, clc_cheat);
-		MSG_WriteByte(&net_buffer, consoleplayer().cheats);
+		CHEAT_DoCheat(&consoleplayer(), CHT_CHASECAM);
+		
 	}
 }
 END_COMMAND (chase)
 
 BEGIN_COMMAND (idmus)
 {
-	level_info_t *info;
-	char *map;
-	int l;
-
 	if (argc > 1)
 	{
+		char *map;
 		if (gameinfo.flags & GI_MAPxx)
 		{
-			l = atoi (argv[1]);
+			const int l = atoi(argv[1]);
 			if (l <= 99)
-				map = CalcMapName (0, l);
+				map = CalcMapName(0, l);
 			else
 			{
-				Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
+				Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
 				return;
 			}
 		}
@@ -855,44 +635,47 @@ BEGIN_COMMAND (idmus)
 			map = CalcMapName (argv[1][0] - '0', argv[1][1] - '0');
 		}
 
-		if ( (info = FindLevelInfo (map)) )
+		level_pwad_info_t& info = getLevelInfos().findByName(map);
+		if (level.levelnum != 0)
 		{
-			if (info->music[0])
+			if (info.music[0])
 			{
-				S_ChangeMusic (std::string(info->music, 8), 1);
-				Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_MUS));
+				S_ChangeMusic(std::string(info.music.c_str(), 8), 1);
+				Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_MUS));
 			}
-		} else
-			Printf (PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
+		}
+		else
+		{
+			Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
+		}
 	}
 }
 END_COMMAND (idmus)
 
 BEGIN_COMMAND (give)
 {
-	if (CheckCheatmode ())
+	if (!CHEAT_AreCheatsEnabled())
 		return;
 
 	if (argc < 2)
 		return;
 
-	std::string name = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+	const std::string name = C_ArgCombine(argc - 1, (const char**)(argv + 1));
 	if (name.length())
 	{
-		//Net_WriteByte (DEM_GIVECHEAT);
-		//Net_WriteString (name.c_str());
-		// todo
+		CHEAT_GiveTo(&consoleplayer(), name.c_str());
+		CL_SendGiveCheat(name.c_str());
 	}
 }
 END_COMMAND (give)
 
 BEGIN_COMMAND (fov)
 {
-	if (CheckCheatmode () || !m_Instigator)
+	if (!CHEAT_AreCheatsEnabled() || !m_Instigator)
 		return;
 
 	if (argc != 2)
-		Printf(PRINT_HIGH, "fov is %g\n", m_Instigator->player->fov);
+		Printf(PRINT_HIGH, "FOV is %g\n", m_Instigator->player->fov);
 	else
 	{
 		m_Instigator->player->fov = clamp((float)atof(argv[1]), 45.0f, 135.0f);
@@ -901,19 +684,22 @@ BEGIN_COMMAND (fov)
 }
 END_COMMAND (fov)
 
-
-int ST_calcPainOffset(void)
+BEGIN_COMMAND(buddha)
 {
-	int 		health;
-	static int	lastcalc;
-	static int	oldhealth = -1;
+	if (!CHEAT_AreCheatsEnabled())
+		return;
 
-	health = displayplayer().health;
+	CHEAT_DoCheat(&consoleplayer(), CHT_BUDDHA);
+	CL_SendCheat(CHT_BUDDHA);
+}
+END_COMMAND(buddha)
 
-	if(health < -1)
-		health = -1;
-	else if(health > 100)
-		health = 100;
+int ST_calcPainOffset()
+{
+	static int lastcalc;
+	static int oldhealth = -1;
+
+	const int health = clamp(displayplayer().health, -1, 100);
 
 	if (health != oldhealth)
 	{
@@ -931,16 +717,12 @@ int ST_calcPainOffset(void)
 // the precedence of expressions is:
 //	dead > evil grin > turned head > straight ahead
 //
-void ST_updateFaceWidget(void)
+void ST_updateFaceWidget()
 {
-	int 		i;
-	angle_t 	badguyangle;
-	angle_t 	diffang;
-	static int	lastattackdown = -1;
-	static int	priority = 0;
-	BOOL	 	doevilgrin;
-
+	static int lastattackdown = -1;
+	static int priority = 0;
 	player_t *plyr = &displayplayer();
+	int i;
 
 	if (priority < 10)
 	{
@@ -958,9 +740,9 @@ void ST_updateFaceWidget(void)
 		if (plyr->bonuscount)
 		{
 			// picking up bonus
-			doevilgrin = false;
+			bool doevilgrin = false;
 
-			for (i=0;i<NUMWEAPONS;i++)
+			for (i = 0; i < NUMWEAPONS; i++)
 			{
 				if (oldweaponsowned[i] != plyr->weaponowned[i])
 				{
@@ -976,14 +758,11 @@ void ST_updateFaceWidget(void)
 				st_faceindex = ST_calcPainOffset() + ST_EVILGRINOFFSET;
 			}
 		}
-
 	}
 
 	if (priority < 8)
 	{
-		if (plyr->damagecount
-			&& plyr->attacker
-			&& plyr->attacker != plyr->mo)
+		if (plyr->damagecount && plyr->attacker && plyr->attacker != plyr->mo)
 		{
 			// being attacked
 			priority = 7;
@@ -995,10 +774,11 @@ void ST_updateFaceWidget(void)
 			}
 			else
 			{
-				badguyangle = R_PointToAngle2(plyr->mo->x,
-											  plyr->mo->y,
-											  plyr->attacker->x,
-											  plyr->attacker->y);
+				angle_t diffang;
+				angle_t badguyangle = R_PointToAngle2(plyr->mo->x,
+				                                      plyr->mo->y,
+				                                      plyr->attacker->x,
+				                                      plyr->attacker->y);
 
 				if (badguyangle > plyr->mo->angle)
 				{
@@ -1011,8 +791,7 @@ void ST_updateFaceWidget(void)
 					// whether left or right
 					diffang = plyr->mo->angle - badguyangle;
 					i = diffang <= ANG180;
-				} // confusing, aint it?
-
+				} // confusing, ain't it?
 
 				st_facecount = ST_TURNCOUNT;
 				st_faceindex = ST_calcPainOffset();
@@ -1053,9 +832,7 @@ void ST_updateFaceWidget(void)
 				st_facecount = ST_TURNCOUNT;
 				st_faceindex = ST_calcPainOffset() + ST_RAMPAGEOFFSET;
 			}
-
 		}
-
 	}
 
 	if (priority < 6)
@@ -1075,20 +852,17 @@ void ST_updateFaceWidget(void)
 		}
 		else
 			lastattackdown = -1;
-
 	}
 
 	if (priority < 5)
 	{
 		// invulnerability
-		if ((plyr->cheats & CF_GODMODE)
-			|| plyr->powers[pw_invulnerability])
+		if ((plyr->cheats & CF_GODMODE) || plyr->powers[pw_invulnerability])
 		{
 			priority = 4;
 
 			st_faceindex = ST_GODFACE;
 			st_facecount = 1;
-
 		}
 	}
 
@@ -1103,18 +877,14 @@ void ST_updateFaceWidget(void)
 	st_facecount--;
 }
 
-void ST_updateWidgets(void)
+void ST_updateWidgets()
 {
-	static int DONT_DRAW_NUM = 1994; 			// means "n/a"
-
-	player_t *plyr = &displayplayer();
+	const player_t *plyr = &displayplayer();
 
 	if (weaponinfo[plyr->readyweapon].ammotype == am_noammo)
-		w_ready.num = &DONT_DRAW_NUM;
+		st_current_ammo = ST_DONT_DRAW_NUM;
 	else
-		w_ready.num = &plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
-
-	w_ready.data = plyr->readyweapon;
+		st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
 
 	st_health = plyr->health;
 	st_armor = plyr->armorpoints;
@@ -1128,13 +898,11 @@ void ST_updateWidgets(void)
 	for (int i = 0; i < 6; i++)
 	{
 		// denis - longwinded so compiler optimization doesn't skip it (fault in my gcc?)
-		if(plyr->weaponowned[i+1])
+		if (plyr->weaponowned[i+1])
 			st_weaponowned[i] = 1;
 		else
 			st_weaponowned[i] = 0;
 	}
-
-	st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
 
 	// update keycard multiple widgets
 	for (int i = 0; i < 3; i++)
@@ -1150,21 +918,25 @@ void ST_updateWidgets(void)
 	ST_updateFaceWidget();
 
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && sv_gametype == GM_COOP;
+	st_armson = st_statusbaron && G_IsCoopGame();
 
 	// used by w_frags widget
-	st_fragson = sv_gametype != GM_COOP && st_statusbaron;
+	st_fragson = !G_IsCoopGame() && st_statusbaron;
 
 	//	[Toke - CTF]
 	if (sv_gametype == GM_CTF)
-		st_fragscount = TEAMpoints[plyr->userinfo.team]; // denis - todo - scoring for ctf
+		st_fragscount = GetTeamInfo(plyr->userinfo.team)->Points; // denis - todo - scoring for ctf
 	else
 		st_fragscount = plyr->fragcount;	// [RH] Just use cumulative total
+
+	if (G_IsLivesGame())
+		st_lives = plyr->lives;
+	else
+		st_lives = ST_DONT_DRAW_NUM;
 
 	// get rid of chat window if up because of message
 	if (!--st_msgcounter)
 		st_chat = st_oldchat;
-
 }
 
 void ST_Ticker()
@@ -1180,31 +952,34 @@ void ST_Ticker()
 void ST_drawWidgets(bool force_refresh)
 {
 	// used by w_arms[] widgets
-	st_armson = st_statusbaron && sv_gametype == GM_COOP;
+	st_armson = G_IsCoopGame() && st_statusbaron;
 
 	// used by w_frags widget
-	st_fragson = sv_gametype != GM_COOP && st_statusbaron;
+	st_fragson = !G_IsCoopGame() && st_statusbaron;
 
-	STlib_updateNum(&w_ready, force_refresh);
+	w_ready.update(force_refresh);
 
 	for (int i = 0; i < 4; i++)
 	{
-		STlib_updateNum(&w_ammo[i], force_refresh);
-		STlib_updateNum(&w_maxammo[i], force_refresh);
+		w_ammo[i].update(force_refresh);
+		w_maxammo[i].update(force_refresh);
 	}
 
-	STlib_updatePercent(&w_health, force_refresh);
-	STlib_updatePercent(&w_armor, force_refresh);
+	w_health.update(force_refresh);
+	w_armor.update(force_refresh);
 
 	for (int i = 0; i < 6; i++)
-		STlib_updateMultIcon(&w_arms[i], force_refresh);
+		w_arms[i].update(force_refresh);
 
-	STlib_updateMultIcon(&w_faces, force_refresh);
+	w_faces.update(force_refresh);
 
 	for (int i = 0; i < 3; i++)
-		STlib_updateMultIcon(&w_keyboxes[i], force_refresh);
+		w_keyboxes[i].update(force_refresh);
 
-	STlib_updateNum(&w_frags, force_refresh);
+	w_frags.update(force_refresh);
+
+	w_lives.update(true, G_IsLivesGame()); // Force refreshing to avoid tens
+	                                       // to be hidden by Doomguy's face
 }
 
 
@@ -1215,8 +990,8 @@ void ST_drawWidgets(bool force_refresh)
 //
 static void ST_refreshBackground()
 {
-	IWindowSurface* surface = R_GetRenderingSurface();
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	const IWindowSurface* surface = R_GetRenderingSurface();
+	const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 	// [RH] If screen is wider than the status bar, draw stuff around status bar.
 	if (surface_width > ST_WIDTH)
@@ -1234,7 +1009,7 @@ static void ST_refreshBackground()
 	{
 		stbar_canvas->DrawTexture(flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
 	}
-	else if (sv_gametype == GM_COOP)
+	else if (G_IsCoopGame())
 	{
 		stbar_canvas->DrawTexture(armsbg, ST_ARMSBGX, ST_ARMSBGY);
 	}
@@ -1282,7 +1057,7 @@ void ST_Drawer()
 	if (st_statusbaron)
 	{
 		IWindowSurface* surface = R_GetRenderingSurface();
-		int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+		const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 		ST_WIDTH = ST_StatusBarWidth(surface_width, surface_height);
 		ST_HEIGHT = ST_StatusBarHeight(surface_width, surface_height);
@@ -1333,16 +1108,14 @@ static const Texture* LoadFaceGraphic(const char* name)
 	return Res_CacheTexture(othername, SPRITE, PU_STATIC);
 }
 
-void ST_loadGraphics(void)
+static void ST_loadGraphics()
 {
 	int i, j;
-	int facenum;
 	char namebuf[9];
-
 	namebuf[8] = 0;
 
 	// Load the numbers, tall and short
-	for (i=0;i<10;i++)
+	for (int i = 0; i < 10; i++)
 	{
 		sprintf(namebuf, "STTNUM%d", i);
 		tallnum[i] = Res_CacheTexture(namebuf, SPRITE, PU_STATIC);
@@ -1352,11 +1125,13 @@ void ST_loadGraphics(void)
 	}
 
 	// Load percent key.
-	//Note: why not load STMINUS here, too?
 	tallpercent = Res_CacheTexture("STTPRCNT", sprites_directory_name, PU_STATIC);
 
+	// Load minus key
+	negminus = Res_CacheTexture("STTMINUS", sprites_directory_name, PU_STATIC);
+
 	// key cards
-	for (i=0;i<NUMCARDS+NUMCARDS/2;i++)
+	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
 	{
 		sprintf(namebuf, "STKEYS%d", i);
 		keys[i] = Res_CacheTexture(namebuf, sprites_directory_name, PU_STATIC);
@@ -1369,7 +1144,7 @@ void ST_loadGraphics(void)
 	flagsbg = Res_CacheTexture("STFLAGS", sprites_directory_name, PU_STATIC);
 
 	// arms ownership widgets
-	for (i=0;i<6;i++)
+	for (int i = 0; i < 6; i++)
 	{
 		sprintf(namebuf, "STGNUM%d", i+2);
 
@@ -1386,7 +1161,8 @@ void ST_loadGraphics(void)
 	faceback = Res_CacheTexture("STFBANY", sprites_directory_name, PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
-	for (i = 0; i < 4; i++) {
+	for (int i = 0; i < 4; i++)
+	{
 		sprintf(namebuf, "STFB%d", i);
 		faceclassic[i] = Res_CacheTexture(namebuf, sprites_directory_name, PU_STATIC);
 	}
@@ -1395,13 +1171,13 @@ void ST_loadGraphics(void)
 	sbar = Res_CacheTexture("STBAR", sprites_directory_name, PU_STATIC);
 
 	// face states
-	facenum = 0;
+	int facenum = 0;
 
 	namebuf[0] = 'S'; namebuf[1] = 'T'; namebuf[2] = 'F';
 
-	for (i = 0; i < ST_NUMPAINFACES; i++)
+	for (int i = 0; i < ST_NUMPAINFACES; i++)
 	{
-		for (j = 0; j < ST_NUMSTRAIGHTFACES; j++)
+		for (int j = 0; j < ST_NUMSTRAIGHTFACES; j++)
 		{
 			sprintf(namebuf+3, "ST%d%d", i, j);
 			faces[facenum++] = LoadFaceGraphic(namebuf);
@@ -1423,209 +1199,124 @@ void ST_loadGraphics(void)
 	faces[facenum++] = LoadFaceGraphic(namebuf);
 }
 
-void ST_loadData()
+static void ST_loadData()
 {
 	ST_loadGraphics();
 }
 
-void ST_unloadGraphics (void)
+static void ST_unloadGraphics()
 {
-
-	int i;
-
 	// unload the numbers, tall and short
-	for (i=0;i<10;i++)
+	for (int i = 0; i < 10; i++)
 	{
-		Z_ChangeTag(tallnum[i], PU_CACHE);
-		Z_ChangeTag(shortnum[i], PU_CACHE);
+		::tallnum[i] = NULL;
+		::shortnum[i] = NULL;
 	}
+
 	// unload tall percent
-	Z_ChangeTag(tallpercent, PU_CACHE);
+	::tallpercent = NULL;
 
 	// unload arms background
-	Z_ChangeTag(armsbg, PU_CACHE);
+	::armsbg = NULL;
 
 	// unload flags background
-	Z_ChangeTag(flagsbg, PU_CACHE);
+	::flagsbg = NULL;
 
 	// unload gray #'s
-	for (i=0;i<6;i++)
-		Z_ChangeTag(arms[i][0], PU_CACHE);
+	for (int i = 0; i < 6; i++)
+	{
+		::arms[i][0] = NULL;
+	}
 
 	// unload the key cards
-	for (i=0;i<NUMCARDS+NUMCARDS/2;i++)
-		Z_ChangeTag(keys[i], PU_CACHE);
+	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
+	{
+		::keys[i] = NULL;
+	}
 
-	Z_ChangeTag(sbar, PU_CACHE);
-	Z_ChangeTag(faceback, PU_CACHE);
+	::sbar = NULL;
+	::faceback = NULL;
 
-	for (i=0;i<ST_NUMFACES;i++)
-		Z_ChangeTag(faces[i], PU_CACHE);
+	for (int i = 0; i < ST_NUMFACES; i++)
+	{
+		::faces[i] = NULL;
+	}
 
-	// Note: nobody ain't seen no unloading
-	//	 of stminus yet. Dude.
-
-
+	::negminus = NULL;
 }
 
-void ST_unloadData(void)
+static void ST_unloadData()
 {
 	ST_unloadGraphics();
 	ST_unloadNew();
 }
 
 
-void ST_createWidgets(void)
+void ST_createWidgets()
 {
 	// ready weapon ammo
-	STlib_initNum(&w_ready,
-				  ST_AMMOX,
-				  ST_AMMOY,
-				  tallnum,
-				  &st_current_ammo,
-				  &st_statusbaron,
-				  ST_AMMOWIDTH );
+	w_ready.init(ST_AMMOX, ST_AMMOY, tallnum, &st_current_ammo, &st_statusbaron,
+	             ST_AMMOWIDTH);
 
 	// health percentage
-	STlib_initPercent(&w_health,
-					  ST_HEALTHX,
-					  ST_HEALTHY,
-					  tallnum,
-					  &st_health,
-					  &st_statusbaron,
-					  tallpercent);
+	w_health.init(ST_HEALTHX, ST_HEALTHY, tallnum, &st_health, &st_statusbaron,
+	              tallpercent);
 
 	// weapons owned
-	for (int i = 0 ; i < 6; i++)
+	for (int i = 0; i < 6; i++)
 	{
-		STlib_initMultIcon(&w_arms[i],
-						   ST_ARMSX+(i%3)*ST_ARMSXSPACE,
-						   ST_ARMSY+(i/3)*ST_ARMSYSPACE,
-						   arms[i],
-						   &st_weaponowned[i],
-						   &st_armson);
+		w_arms[i].init(ST_ARMSX + (i % 3) * ST_ARMSXSPACE,
+		               ST_ARMSY + (i / 3) * ST_ARMSYSPACE, arms[i], &st_weaponowned[i],
+		               &st_armson);
 	}
 
 	// frags sum
-	STlib_initNum(&w_frags,
-				  ST_FRAGSX,
-				  ST_FRAGSY,
-				  tallnum,
-				  &st_fragscount,
-				  &st_fragson,
-				  ST_FRAGSWIDTH);
+	w_frags.init(ST_FRAGSX, ST_FRAGSY, tallnum, &st_fragscount, &st_fragson,
+	             ST_FRAGSWIDTH);
 
 	// faces
-	STlib_initMultIcon(&w_faces,
-					   ST_FACESX,
-					   ST_FACESY,
-					   faces,
-					   &st_faceindex,
-					   &st_statusbaron);
+	w_faces.init(ST_FACESX, ST_FACESY, faces, &st_faceindex, &st_statusbaron);
 
 	// armor percentage - should be colored later
-	STlib_initPercent(&w_armor,
-					  ST_ARMORX,
-					  ST_ARMORY,
-					  tallnum,
-					  &st_armor,
-					  &st_statusbaron, tallpercent);
+	w_armor.init(ST_ARMORX, ST_ARMORY, tallnum, &st_armor, &st_statusbaron, tallpercent);
 
 	// keyboxes 0-2
-	STlib_initMultIcon(&w_keyboxes[0],
-					   ST_KEY0X,
-					   ST_KEY0Y,
-					   keys,
-					   &keyboxes[0],
-					   &st_statusbaron);
-
-	STlib_initMultIcon(&w_keyboxes[1],
-					   ST_KEY1X,
-					   ST_KEY1Y,
-					   keys,
-					   &keyboxes[1],
-					   &st_statusbaron);
-
-	STlib_initMultIcon(&w_keyboxes[2],
-					   ST_KEY2X,
-					   ST_KEY2Y,
-					   keys,
-					   &keyboxes[2],
-					   &st_statusbaron);
+	w_keyboxes[0].init(ST_KEY0X, ST_KEY0Y, keys, &keyboxes[0], &st_statusbaron);
+	w_keyboxes[1].init(ST_KEY1X, ST_KEY1Y, keys, &keyboxes[1], &st_statusbaron);
+	w_keyboxes[2].init(ST_KEY2X, ST_KEY2Y, keys, &keyboxes[2], &st_statusbaron);
 
 	// ammo count (all four kinds)
-	STlib_initNum(&w_ammo[0],
-				  ST_AMMO0X,
-				  ST_AMMO0Y,
-				  shortnum,
-				  &st_ammo[0],
-				  &st_statusbaron,
-				  ST_AMMO0WIDTH);
+	w_ammo[0].init(ST_AMMO0X, ST_AMMO0Y, shortnum, &st_ammo[0], &st_statusbaron,
+	               ST_AMMO0WIDTH);
 
-	STlib_initNum(&w_ammo[1],
-				  ST_AMMO1X,
-				  ST_AMMO1Y,
-				  shortnum,
-				  &st_ammo[1],
-				  &st_statusbaron,
-				  ST_AMMO1WIDTH);
+	w_ammo[1].init(ST_AMMO1X, ST_AMMO1Y, shortnum, &st_ammo[1], &st_statusbaron,
+	               ST_AMMO1WIDTH);
 
-	STlib_initNum(&w_ammo[2],
-				  ST_AMMO2X,
-				  ST_AMMO2Y,
-				  shortnum,
-				  &st_ammo[2],
-				  &st_statusbaron,
-				  ST_AMMO2WIDTH);
+	w_ammo[2].init(ST_AMMO2X, ST_AMMO2Y, shortnum, &st_ammo[2], &st_statusbaron,
+	               ST_AMMO2WIDTH);
 
-	STlib_initNum(&w_ammo[3],
-				  ST_AMMO3X,
-				  ST_AMMO3Y,
-				  shortnum,
-				  &st_ammo[3],
-				  &st_statusbaron,
-				  ST_AMMO3WIDTH);
+	w_ammo[3].init(ST_AMMO3X, ST_AMMO3Y, shortnum, &st_ammo[3], &st_statusbaron,
+	               ST_AMMO3WIDTH);
 
 	// max ammo count (all four kinds)
-	STlib_initNum(&w_maxammo[0],
-				  ST_MAXAMMO0X,
-				  ST_MAXAMMO0Y,
-				  shortnum,
-				  &st_maxammo[0],
-				  &st_statusbaron,
-				  ST_MAXAMMO0WIDTH);
+	w_maxammo[0].init(ST_MAXAMMO0X, ST_MAXAMMO0Y, shortnum, &st_maxammo[0],
+	                  &st_statusbaron, ST_MAXAMMO0WIDTH);
 
-	STlib_initNum(&w_maxammo[1],
-				  ST_MAXAMMO1X,
-				  ST_MAXAMMO1Y,
-				  shortnum,
-				  &st_maxammo[1],
-				  &st_statusbaron,
-				  ST_MAXAMMO1WIDTH);
+	w_maxammo[1].init(ST_MAXAMMO1X, ST_MAXAMMO1Y, shortnum, &st_maxammo[1],
+	                  &st_statusbaron, ST_MAXAMMO1WIDTH);
 
-	STlib_initNum(&w_maxammo[2],
-				  ST_MAXAMMO2X,
-				  ST_MAXAMMO2Y,
-				  shortnum,
-				  &st_maxammo[2],
-				  &st_statusbaron,
-				  ST_MAXAMMO2WIDTH);
+	w_maxammo[2].init(ST_MAXAMMO2X, ST_MAXAMMO2Y, shortnum, &st_maxammo[2],
+	                  &st_statusbaron, ST_MAXAMMO2WIDTH);
 
-	STlib_initNum(&w_maxammo[3],
-				  ST_MAXAMMO3X,
-				  ST_MAXAMMO3Y,
-				  shortnum,
-				  &st_maxammo[3],
-				  &st_statusbaron,
-				  ST_MAXAMMO3WIDTH);
+	w_maxammo[3].init(ST_MAXAMMO3X, ST_MAXAMMO3Y, shortnum, &st_maxammo[3],
+	                  &st_statusbaron, ST_MAXAMMO3WIDTH);
 
+	// Number of lives (not always rendered)
+	w_lives.init(ST_FX + 34, ST_FY + 25, shortnum, &st_lives, &st_statusbaron, 2);
 }
 
 void ST_Start()
 {
-	if (!st_stopped)
-		ST_Stop();
-
 	ST_ForceRefresh();
 
 	st_gamestate = FirstPersonState;
@@ -1643,20 +1334,10 @@ void ST_Start()
 
 	for (int i = 0; i < 3; i++)
 		keyboxes[i] = -1;
-
-	STlib_init();
+	
 	ST_initNew();
 
 	ST_createWidgets();
-	st_stopped = false;
-}
-
-void ST_Stop()
-{
-	if (st_stopped)
-		return;
-
-	st_stopped = true;
 }
 
 void ST_Init()
@@ -1669,14 +1350,13 @@ void ST_Init()
 	ST_loadData();
 }
 
-
 void STACK_ARGS ST_Shutdown()
 {
+	ST_unloadData();
+
 	I_FreeSurface(stbar_surface);
 	I_FreeSurface(stnum_surface);
 }
 
 
 VERSION_CONTROL (st_stuff_cpp, "$Id$")
-
-

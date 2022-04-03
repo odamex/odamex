@@ -21,7 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "c_cvars.h"
+
+#include "odamex.h"
+
 
 #ifdef SIMULATE_LATENCY
 CVAR(sv_latency, "80", "Latency simulation", CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE) //number of miliseconds to delay packet send, this will cause ping to be ~ sv_latency + network latency
@@ -43,9 +45,6 @@ CVAR(			sv_motd, "Welcome to Odamex", "Message Of The Day to display to clients 
 				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 CVAR(			sv_email, "email@domain.com", "Administrator email address",
-				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-
-CVAR(			sv_website, "http://odamex.net/", "Server or Admin website",
 				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 CVAR(			sv_waddownload,	"0", "Allow downloading of WAD files from this server",
@@ -138,7 +137,7 @@ CVAR(			sv_upnp_externalip, "", "Set to the router IP address",
 // =================
 
 CVAR_RANGE(		sv_teamsinplay, "2", "Teams that are enabled",
-				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 2.0f, 3.0f)
 
 CVAR(			ctf_manualreturn, "0", "Flags dropped must be returned manually", 
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
@@ -226,17 +225,6 @@ CVAR(			sv_callvote_scorelimit, "0", "Clients can vote a new scorelimit.",
 CVAR(			sv_callvote_timelimit, "0", "Clients can vote a new timelimit.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
-// Warmup mode
-CVAR(			sv_warmup, "0", "Enable a 'warmup mode' before the match starts.",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
-
-CVAR_RANGE(		sv_warmup_autostart, "1.0", "Ratio of players needed for warmup to automatically start the game.",
-				CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
-
-CVAR_RANGE(		sv_countdown, "5", "Number of seconds to wait before starting the game from " \
-				"warmup or restarting the game.",
-				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 60.0f)
-
 // Experimental settings (all categories)
 // =======================================
 
@@ -253,4 +241,3 @@ CVAR(sv_download_test, "0", "Experimental download optimization testing",
 // None currently
 
 VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")
-

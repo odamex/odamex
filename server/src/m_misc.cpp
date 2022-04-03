@@ -23,17 +23,15 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
 
-#include "c_cvars.h"
+
 #include "c_dispatch.h"
-#include "doomtype.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"
 #include "i_system.h"
 #include "z_zone.h"
-#include "version.h"
 #include "sv_main.h"
 #include "sv_master.h"
 
@@ -58,7 +56,7 @@ std::string M_GetConfigPath(void)
 	if (p)
 		return p;
 
-	return I_GetUserFileName("odasrv.cfg");
+	return M_GetUserFileName("odasrv.cfg");
 }
 
 // [RH] Don't write a config file if M_LoadDefaults hasn't been called.

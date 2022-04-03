@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "p_local.h"
 #include "dsectoreffect.h"
 
@@ -136,8 +138,8 @@ void DMovingCeiling::Serialize (FArchive &arc)
 // [RH] Crush specifies the actual amount of crushing damage inflictable.
 //		(Use -1 to prevent it from trying to crush)
 //
-DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
-								   int floorOrCeiling, int direction)
+DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, int crush,
+								   int floorOrCeiling, int direction, bool hexencrush)
 {
 	bool	 	flag;
 	fixed_t 	lastpos;
@@ -215,7 +217,7 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 					// co_boomsectortouch enables Boom behaviour where rising
 					// floor holds in place until victim moves or is crushed
 					// [ML] Now part of co_boomphys
-					if (crush && !co_boomphys)
+					if (!hexencrush && crush > NO_CRUSH && !co_boomphys)
 						return crushed;
 					P_ChangeFloorHeight(m_Sector, -speed);
 					P_ChangeSector (m_Sector, crush);
@@ -264,7 +266,7 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, bool crush,
 
 				if (flag == true)
 				{
-					if (crush)
+					if (crush > NO_CRUSH)
 						return crushed;
 
 					P_SetCeilingHeight(m_Sector, lastpos);

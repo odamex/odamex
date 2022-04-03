@@ -22,6 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <limits>
 
 #include "i_sdl.h" 
@@ -31,34 +34,32 @@
 	#include <mach/clock.h>
 	#include <mach/mach.h>
 	#include <Carbon/Carbon.h>
+	#include <CoreFoundation/CoreFoundation.h>
 #endif
 
 #include "win32inc.h"
 #ifdef _WIN32
-    #include <io.h>
-    #include <direct.h>
-    #include <process.h>
+#include <direct.h>
+#include <io.h>
+#include <process.h>
 
-    #ifdef _XBOX
-        #include <xtl.h>
-    #else
-        #include <shlwapi.h>
-		#include <winsock2.h>
-		#include <mmsystem.h>
-    #endif // !_XBOX
+#ifdef _XBOX
+#include <xtl.h>
+#else
+#include <shlwapi.h>
+#include <winsock2.h>
+#include <mmsystem.h>
+#include <shlobj.h>
+#endif // !_XBOX
 #endif // WIN32
 
 #ifdef UNIX
-	#define HAVE_PWD_H
-	// for getuid and geteuid
-	#include <unistd.h>
-	#include <sys/types.h>
-	#include <limits.h>
-	#include <time.h>
-#endif
-
-#ifdef HAVE_PWD_H
-	#include <pwd.h>
+// for getuid and geteuid
+#include <unistd.h>
+#include <sys/types.h>
+#include <limits.h>
+#include <time.h>
+#include <pwd.h>
 #endif
 
 #include <sstream>
@@ -72,8 +73,8 @@
 
 #include <sys/stat.h>
 
-#include "errors.h"
 
+#include "w_wad.h"
 #include "doomtype.h"
 #include "resources/res_main.h"
 #include "version.h"
@@ -89,6 +90,7 @@
 #include "i_system.h"
 #include "c_dispatch.h"
 #include "cl_main.h"
+#include "m_fileio.h"
 
 #ifdef _XBOX
 	#include "i_xbox.h"
@@ -119,7 +121,7 @@ ticcmd_t *I_BaseTiccmd(void)
 
 /* [Russell] - Modified to accomodate a minimal allowable heap size */
 // These values are in megabytes
-#ifdef GCONSOLE
+#if defined(GCONSOLE) && !defined(__SWITCH__)
 size_t def_heapsize = 16;
 #else
 size_t def_heapsize = 128;
@@ -370,41 +372,31 @@ static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 }
 #endif
 
-//
-// SetLanguageIDs
-//
-static const char *langids[] = {
-	"auto",
-	"enu",
-	"fr",
-	"it"
-};
+EXTERN_CVAR(language)
 
-EXTERN_CVAR (language)
-void SetLanguageIDs ()
+void SetLanguageIDs()
 {
-	unsigned int langid = language.asInt();
+	const char* langid = language.cstring();
 
-	if (langid == 0 || langid > 3)
+	if (strcmp(langid, "auto") == 0)
 	{
-    #if defined _WIN32 && !defined _XBOX
-		memset (LanguageIDs, 0, sizeof(LanguageIDs));
-		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
-		SubsetLanguageIDs (LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
-		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
-		SubsetLanguageIDs (LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
-    #else
-        langid = 1;     // Default to US English on non-windows systems
-    #endif
+#if defined _WIN32 && !defined _XBOX
+		memset(LanguageIDs, 0, sizeof(LanguageIDs));
+		SubsetLanguageIDs(LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
+		SubsetLanguageIDs(LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
+		SubsetLanguageIDs(LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
+		SubsetLanguageIDs(LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
+#else
+		// Default to US English on non-windows systems
+		// FIXME: Use SDL Locale support if available.
+		langid = "enu";
+#endif
 	}
 	else
 	{
-		DWORD lang = 0;
-		const char *langtag = langids[langid];
-
-		((BYTE *)&lang)[0] = (langtag)[0];
-		((BYTE *)&lang)[1] = (langtag)[1];
-		((BYTE *)&lang)[2] = (langtag)[2];
+		char slang[4] = {'\0', '\0', '\0', '\0'};
+		strncpy(slang, langid, ARRAY_LENGTH(slang) - 1);
+		uint32_t lang = MAKE_ID(slang[0], slang[1], slang[2], slang[3]);
 		LanguageIDs[0] = lang;
 		LanguageIDs[1] = lang;
 		LanguageIDs[2] = lang;
@@ -431,7 +423,7 @@ std::string I_GetCWD ()
 	if(cwd)
 		ret = cwd;
 
-	FixPathSeparator(ret);
+	M_FixPathSep(ret);
 
 	return ret;
 }
@@ -516,36 +508,9 @@ std::string I_GetUserFileName (const char *file)
 	path += file;
 #endif
 
-	FixPathSeparator(path);
+	M_FixPathSep(path);
 
 	return path;
-}
-
-void I_ExpandHomeDir (std::string &path)
-{
-#if defined(UNIX) && !defined(GEKKO)
-	if(!path.length())
-		return;
-
-	if(path[0] != '~')
-		return;
-
-	std::string user;
-
-	size_t slash_pos = path.find_first_of(PATHSEPCHAR);
-	size_t end_pos = path.length();
-
-	if(slash_pos == std::string::npos)
-		slash_pos = end_pos;
-
-	if(path.length() != 1 && slash_pos != 1)
-		user = path.substr(1, slash_pos - 1);
-
-	if(slash_pos != end_pos)
-		slash_pos++;
-
-	path = I_GetHomeDir(user) + path.substr(slash_pos, end_pos - slash_pos);
-#endif
 }
 
 std::string I_GetBinaryDir()
@@ -598,11 +563,11 @@ std::string I_GetBinaryDir()
 	}
 #endif
 
-	FixPathSeparator(ret);
+		M_FixPathSep(ret);
 
 	size_t slash = ret.find_last_of(PATHSEPCHAR);
 
-	if(slash == std::string::npos)
+	if (slash == std::string::npos)
 		return "";
 	else
 		return ret.substr(0, slash);
@@ -684,7 +649,7 @@ void STACK_ARGS I_Quit (void)
 
 	G_ClearSnapshots ();
 
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 
 	M_SaveDefaults();
 
@@ -705,44 +670,97 @@ BOOL gameisdead;
 
 void STACK_ARGS call_terms (void);
 
-void STACK_ARGS I_FatalError (const char *error, ...)
+NORETURN void STACK_ARGS I_FatalError(const char* error, ...)
 {
+	char errortext[MAX_ERRORTEXT];
+	char messagetext[MAX_ERRORTEXT];
+
 	static BOOL alreadyThrown = false;
 	gameisdead = true;
 
-	if (!alreadyThrown)		// ignore all but the first message -- killough
+	if (!alreadyThrown) // ignore all but the first message -- killough
 	{
 		alreadyThrown = true;
-		char errortext[MAX_ERRORTEXT];
 		va_list argptr;
-		va_start (argptr, error);
-		int index = vsprintf (errortext, error, argptr);
-		sprintf (errortext + index, "\nSDL_GetError = \"%s\"", SDL_GetError());
-		va_end (argptr);
+		va_start(argptr, error);
+		int index = vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
+		if (SDL_GetError()[0] != '\0')
+		{
+			snprintf(messagetext, ARRAY_LENGTH(messagetext), "%s\nLast SDL Error:\n%s\n",
+			         errortext, SDL_GetError());
+			SDL_ClearError();
+		}
+		else
+		{
+			snprintf(messagetext, ARRAY_LENGTH(messagetext), "%s\n", errortext);
+		}
+		va_end(argptr);
 
-		throw CFatalError (errortext);
+		throw CFatalError(messagetext);
 	}
 
-	if (!has_exited)	// If it hasn't exited yet, exit now -- killough
+	if (!has_exited) // If it hasn't exited yet, exit now -- killough
 	{
-		has_exited = 1;	// Prevent infinitely recursive exits -- killough
+		has_exited = 1; // Prevent infinitely recursive exits -- killough
 
 		call_terms();
 
 		exit(EXIT_FAILURE);
 	}
+
+	// Recursive atterm, we've used up all our chances.
+	va_list argptr;
+	va_start(argptr, error);
+	int index = vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
+	if (SDL_GetError()[0] != '\0')
+	{
+		snprintf(messagetext, ARRAY_LENGTH(messagetext),
+		         "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n",
+		         errortext, SDL_GetError());
+	}
+	else
+	{
+		snprintf(messagetext, ARRAY_LENGTH(messagetext),
+		         "Error while shutting down, aborting:\n%s\n", errortext);
+	}
+	va_end(argptr);
+
+	I_ErrorMessageBox(messagetext);
+
+	abort();
 }
 
-void STACK_ARGS I_Error (const char *error, ...)
+void STACK_ARGS I_Error(const char* error, ...)
 {
 	va_list argptr;
 	char errortext[MAX_ERRORTEXT];
+	char messagetext[MAX_ERRORTEXT];
 
-	va_start (argptr, error);
-	vsprintf (errortext, error, argptr);
-	va_end (argptr);
+	va_start(argptr, error);
+	vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
+	va_end(argptr);
 
-	throw CRecoverableError (errortext);
+	if (!has_exited)
+	{
+		throw CRecoverableError(errortext);
+	}
+
+	// Recursive atterm, we've used up all our chances.
+	if (SDL_GetError()[0] != '\0')
+	{
+		snprintf(messagetext, ARRAY_LENGTH(messagetext),
+		         "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n",
+		         errortext, SDL_GetError());
+	}
+	else
+	{
+		snprintf(messagetext, ARRAY_LENGTH(messagetext),
+		         "Error while shutting down, aborting:\n%s\n", errortext);
+	}
+
+	I_ErrorMessageBox(messagetext);
+
+	abort();
 }
 
 void STACK_ARGS I_Warning(const char *warning, ...)
@@ -754,7 +772,7 @@ void STACK_ARGS I_Warning(const char *warning, ...)
 	vsprintf (warningtext, warning, argptr);
 	va_end (argptr);
 
-	Printf_Bold ("\n%s\n", warningtext);
+	Printf (PRINT_WARNING, "\n%s\n", warningtext);
 }
 
 char DoomStartupTitle[256] = { 0 };
@@ -1123,6 +1141,57 @@ bool I_IsHeadless()
 	return headless;
 }
 
+const char* ODAMEX_ERROR_TITLE = "Odamex " DOTVERSIONSTR " Fatal Error";
+
+#if defined(SDL20)
+
+void I_ErrorMessageBox(const char* message)
+{
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, ODAMEX_ERROR_TITLE, message, NULL);
+}
+
+#elif defined(WIN32) && !defined(_XBOX)
+
+void I_ErrorMessageBox(const char* message)
+{
+	MessageBoxA(NULL, message, ODAMEX_ERROR_TITLE, MB_OK);
+}
+
+#elif OSX
+
+void I_ErrorMessageBox(const char* message)
+{
+	CFStringRef macErrorMessage =
+	    CFStringCreateWithCString(NULL, message, kCFStringEncodingMacRoman);
+	CFUserNotificationDisplayAlert(0, 0, NULL, NULL, NULL, CFSTR(ODAMEX_ERROR_TITLE),
+	                               macErrorMessage, CFSTR("OK"), NULL, NULL, NULL);
+	CFRelease(macErrorMessage);
+}
+
+#else
+
+void I_ErrorMessageBox(const char* message)
+{
+	fprintf(stderr, "%s\n%s\n", ODAMEX_ERROR_TITLE, message);
+}
+
+#endif
+
+#if defined(_DEBUG)
+
+BEGIN_COMMAND(debug_userfilename)
+{
+	if (argc < 2)
+	{
+		Printf("debug_userfilename: needs a path to check.\n");
+		return;
+	}
+
+	std::string userfile = M_GetUserFileName(argv[1]);
+	Printf("Resolved to: %s\n", userfile.c_str());
+}
+END_COMMAND(debug_userfilename)
+
+#endif
 
 VERSION_CONTROL (i_system_cpp, "$Id$")
-

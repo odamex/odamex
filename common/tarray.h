@@ -22,11 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __TARRAY_H__
-#define __TARRAY_H__
+#pragma once
 
 #include <stdlib.h>
-#include <cstring>
 #include "m_alloc.h"
 
 template <class T>
@@ -128,7 +126,3 @@ private:
 	size_t Most;
 	size_t Count;
 };
-
-#endif //__TARRAY_H__
-
-

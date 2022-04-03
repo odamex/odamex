@@ -22,10 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __ERRORS_H__
-#define __ERRORS_H__
+#pragma once
 
-#include <string>
 
 class CDoomError
 {
@@ -48,6 +46,3 @@ class CFatalError : public CDoomError
 public:
 	CFatalError(std::string message) : CDoomError(message) {}
 };
-
-#endif //__ERRORS_H__
-

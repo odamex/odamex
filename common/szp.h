@@ -36,10 +36,8 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __SZP_H__
-#define __SZP_H__
+#pragma once
 
-#include "errors.h"
 
 
 template <typename T>
@@ -166,7 +164,3 @@ public:
 		unlink();
 	}
 };
-
-#endif // __SZP_H__
-
-

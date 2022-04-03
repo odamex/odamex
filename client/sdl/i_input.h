@@ -20,10 +20,8 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __I_INPUT_H__
-#define __I_INPUT_H__
+#pragma once
 
-#include "doomtype.h"
 #include <SDL.h>
 #include "win32inc.h"
 
@@ -46,6 +44,8 @@ bool I_OpenJoystick();
 void I_CloseJoystick();
 std::string I_GetKeyName(int key);
 int I_GetKeyFromName(const std::string& name);
+
+void I_GetEvents(bool mouseOnly);
 
 
 // ============================================================================
@@ -134,6 +134,7 @@ public:
 	{	return mEvents.empty() == false;	}
 
 	virtual void gatherEvents();
+	virtual void gatherMouseEvents();
 	virtual void getEvent(event_t* ev);
 
 	virtual std::vector<IInputDeviceInfo> getKeyboardDevices() const = 0; 
@@ -217,5 +218,5 @@ private:
 	IInputDevice*		mJoystickInputDevice;
 };
 
-
-#endif  // __I_INPUT_H__
+typedef OHashTable<int, std::string> KeyNameTable;
+extern KeyNameTable key_names;

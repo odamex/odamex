@@ -21,33 +21,12 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "gi.h"
 
 gameinfo_t gameinfo;
-
-static const char *quitsounds[8] =
-{
-	"player/male/death1",
-	"demon/pain",
-	"grunt/pain",
-	"misc/gibbed",
-	"misc/teleport",
-	"grunt/sight1",
-	"grunt/sight3",
-	"demon/melee"
-};
-
-static const char *quitsounds2[8] =
-{
-	"vile/active",
-	"misc/p_pkup",
-	"brain/cube",
-	"misc/gibbed",
-	"skeleton/swing",
-	"knight/death",
-	"baby/active",
-	"demon/melee"
-};
 
 static gameborder_t DoomBorder =
 {
@@ -57,10 +36,12 @@ static gameborder_t DoomBorder =
 	"brdr_bl", "brdr_b", "brdr_br"
 };
 
+std::vector<mline_t> EmptyLineContainer;
+
 gameinfo_t SharewareGameInfo =
 {
 	GI_SHAREWARE | GI_NOCRAZYDEATH,
-	{ 'T','I','T','L','E','P','I','C' },
+	"TITLEPIC",
 	"CREDIT",
 	"HELP2",
 	"D_INTRO",
@@ -68,23 +49,30 @@ gameinfo_t SharewareGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	{ 'D','_','V','I','C','T','O','R' },
-	{ 'F','L','O','O','R','4','_','8' },
+	"D_VICTOR",
+	"FLOOR4_8",
 	"HELP2",
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
 	{ { "HELP1", "HELP2", "CREDIT" } },
-	quitsounds,
+	"menu/quit1",
 	1,
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
+	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"DOOM Shareware"
 };
 
 gameinfo_t RegisteredGameInfo =
 {
 	GI_NOCRAZYDEATH,
-	{ 'T','I','T','L','E','P','I','C' },
+	"TITLEPIC",
 	"CREDIT",
 	"HELP2",
 	"D_INTRO",
@@ -92,23 +80,30 @@ gameinfo_t RegisteredGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	{ 'D','_','V','I','C','T','O','R' },
-	{ 'F','L','O','O','R','4','_','8' },
+	"D_VICTOR",
+	"FLOOR4_8",
 	"HELP2",
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
 	{ { "HELP1", "HELP2", "CREDIT" } },
-	quitsounds,
+	"menu/quit1",
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
+	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"DOOM Registered"
 };
 
 gameinfo_t RetailGameInfo =
 {
 	GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH,
-	{ 'T','I','T','L','E','P','I','C' },
+	"TITLEPIC",
 	"CREDIT",
 	"CREDIT",
 	"D_INTRO",
@@ -116,23 +111,30 @@ gameinfo_t RetailGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	{ 'D','_','V','I','C','T','O','R' },
-	{ 'F','L','O','O','R','4','_','8' },
+	"D_VICTOR",
+	"FLOOr4_8",
 	"CREDIT",
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
 	{ { "HELP1", "CREDIT", "CREDIT"  } },
-	quitsounds,
+	"menu/quit1",
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
+	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"The Ultimate DOOM"
 };
 
 gameinfo_t RetailBFGGameInfo =
 {
 	GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH,
-	{ 'T','I','T','L','E','P','I','C' },
+	"TITLEPIC",
 	"CREDIT",
 	"CREDIT",
 	"D_INTRO",
@@ -140,64 +142,85 @@ gameinfo_t RetailBFGGameInfo =
 	0,
 	200/35,
 	"misc/chat2",
-	{ 'D','_','V','I','C','T','O','R' },
-	{ 'F','L','O','O','R','4','_','8' },
+	"D_VICTOR",
+	"FLOOr4_8",
 	"CREDIT",
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
 	{ { "HELP1", "CREDIT", "CREDIT"  } },
-	quitsounds,
+	"menu/quit1",
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
+	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"The Ultimate DOOM (BFG Edition)"
 };
 
 gameinfo_t CommercialGameInfo =
 {
 	GI_MAPxx | GI_MENUHACK_COMMERCIAL,
-	{ 'T','I','T','L','E','P','I','C' },
+	"TITLEPIC",
 	"CREDIT",
 	"CREDIT",
-	{ 'D','_','D','M','2','T','T','L' },
+	"D_DM2TTL",
 	11,
 	0,
 	200/35,
 	"misc/chat",
-	{ 'D','_','R','E','A','D','_','M' },
+	"D_READ_M",
 	"SLIME16",
 	"CREDIT",
 	"CREDIT",
 	"CREDIT",
 	{ { "HELP", "CREDIT", "CREDIT" } },
-	quitsounds2,
+	"menu/quit2",
 	3,
 	"GRNROCK",
 	&DoomBorder,
+	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"DOOM 2: Hell on Earth"
 };
 
 gameinfo_t CommercialBFGGameInfo =
 {
 	GI_MAPxx | GI_MENUHACK_COMMERCIAL,
-	{ 'I','N','T','E','R','P','I','C' },
+	"INTERPIC",
 	"CREDIT",
 	"CREDIT",
-	{ 'D','_','D','M','2','T','T','L' },
+	"D_DM2TTL",
 	11,
 	0,
 	200/35,
 	"misc/chat",
-	{ 'D','_','R','E','A','D','_','M' },
+	"D_READ_M",
 	"SLIME16",
 	"CREDIT",
 	"CREDIT",
 	"CREDIT",
 	{ { "HELP", "CREDIT", "CREDIT" } },
-	quitsounds2,
+	"menu/quit2",
 	3,
 	"GRNROCK",
 	&DoomBorder,
+	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"DOOM 2: Hell on Earth (BFG Edition)"
 };
 

@@ -24,9 +24,9 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
 
-#include "doomstat.h"
+
 #include "dthinker.h"
 #include "z_zone.h"
 #include "stats.h"
@@ -47,17 +47,15 @@ void DThinker::Serialize (FArchive &arc)
 	// constructor handles them for us.
 }
 
-void DThinker::SerializeAll (FArchive &arc, bool hubLoad, bool noStorePlayers)
+void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 {
 	DThinker *thinker;
-	if (arc.IsStoring () && noStorePlayers)
+	if (arc.IsStoring ())
 	{
 		thinker = FirstThinker;
 		while (thinker)
 		{
-			// Don't store player mobjs.
-			if (!(thinker->IsKindOf(RUNTIME_CLASS(AActor)) &&
-			    static_cast<AActor *>(thinker)->type == MT_PLAYER))
+			if (!(arc.IsReset() && P_ThinkerIsPlayerType(thinker)))
 			{
 				arc << (BYTE)1;
 				arc << thinker;
@@ -66,20 +64,9 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad, bool noStorePlayers)
 		}
 		arc << (BYTE)0;
 	}
-	else if (arc.IsStoring ())
-	{
-		thinker = FirstThinker;
-		while (thinker)
-		{
-			arc << (BYTE)1;
-			arc << thinker;
-			thinker = thinker->m_Next;
-		}
-		arc << (BYTE)0;
-	}
 	else
 	{
-		if (hubLoad || noStorePlayers)
+		if (hubLoad)
 			DestroyMostThinkers ();
 		else
 			DestroyAllThinkers ();
@@ -283,5 +270,13 @@ void DThinker::operator delete (void *mem)
 	Z_Free (mem);
 }
 
-VERSION_CONTROL (dthinker_cpp, "$Id$")
+bool P_ThinkerIsPlayerType(DThinker* thinker)
+{
+	if (thinker == NULL)
+		return false;
 
+	return thinker->IsKindOf(RUNTIME_CLASS(AActor)) &&
+	       static_cast<AActor*>(thinker)->type == MT_PLAYER;
+}
+
+VERSION_CONTROL (dthinker_cpp, "$Id$")

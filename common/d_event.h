@@ -21,13 +21,7 @@
 //    
 //-----------------------------------------------------------------------------
 
-
-#ifndef __D_EVENT__
-#define __D_EVENT__
-
-
-#include "doomtype.h"
-
+#pragma once
 
 //
 // Event handling.
@@ -135,8 +129,3 @@ extern	int 			eventhead;
 extern	int 			eventtail;
 
 extern	gameaction_t	gameaction;
-
-
-#endif
-
-

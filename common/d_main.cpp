@@ -22,11 +22,11 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
+
+#include "odamex.h"
+
 
 #include <sstream>
-#include <string>
-#include <vector>
 #include <algorithm>
 
 #include "win32inc.h"
@@ -42,7 +42,6 @@
 #include <stdlib.h>
 
 #include "m_alloc.h"
-#include "doomdef.h"
 #include "gstrings.h"
 #include "z_zone.h"
 #include "m_argv.h"
@@ -50,12 +49,14 @@
 #include "c_console.h"
 #include "i_system.h"
 #include "g_game.h"
+#include "g_spawninv.h"
 #include "r_main.h"
 #include "d_main.h"
 #include "d_dehacked.h"
 #include "s_sound.h"
 #include "gi.h"
 #include "w_ident.h"
+#include "m_resfile.h"
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -166,12 +167,8 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
-	const ResourceId language_res_id = Res_GetResourceId("LANGUAGE", global_directory_name);
-	byte* language_data = (byte*)Res_LoadResource(language_res_id, PU_CACHE);
 
-	GStrings.FreeData();
-	GStrings.LoadStrings(language_data, Res_GetResourceSize(language_res_id), STRING_TABLE_SIZE, false);
-	GStrings.Compact();
+	::GStrings.loadStrings(false);
 
 	// Load all DeHackEd files
 	const ResourceIdList dehacked_res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/DEHACKED"));
@@ -193,7 +190,6 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	// get skill / episode / map from parms
 	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 }
-
 
 //
 // D_ReloadResourceFiles

@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __R_STATE_H__
-#define __R_STATE_H__
+#pragma once
 
 // Need data structure definitions.
 #include "d_player.h"
@@ -101,6 +100,15 @@ inline FArchive &operator>> (FArchive &arc, line_t *&line)
 	return arc;
 }
 
+struct LocalView
+{
+	angle_t angle;
+	bool setangle;
+	bool skipangle;
+	int pitch;
+	bool setpitch;
+	bool skippitch;
+};
 
 //
 // POV data.
@@ -110,6 +118,7 @@ extern fixed_t			viewy;
 extern fixed_t			viewz;
 
 extern angle_t			viewangle;
+extern LocalView		localview;
 extern AActor*			camera;		// [RH] camera instead of viewplayer
 
 extern angle_t			clipangle;
@@ -124,5 +133,3 @@ extern visplane_t*		skyplane;
 extern int				FieldOfView;
 // [AM] Corrected (for widescreen) Field of View
 extern int				CorrectFieldOfView;
-
-#endif // __R_STATE_H__

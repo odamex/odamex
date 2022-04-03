@@ -23,12 +23,14 @@
 //
 //-----------------------------------------------------------------------------
 
+#pragma once
 
-#ifndef __STSTUFF_H__
-#define __STSTUFF_H__
+// Forward declaration
+struct event_t;
 
-#include "doomtype.h"
-#include "d_event.h"
+#include "com_misc.h"
+#include "w_wad.h"
+#include "resources/res_texture.h"
 
 // [RH] Turned these into variables
 // Size of statusbar.
@@ -45,18 +47,21 @@ int ST_StatusBarY(int surface_width, int surface_height);
 
 void ST_ForceRefresh();
 
+// for st_lib.cpp
+extern const Texture* negminus;
+
 //
 // STATUS BAR
 //
 
 // Called by main loop.
-bool ST_Responder (event_t* ev);
+bool ST_Responder(event_t* ev);
 
 // Called by main loop.
-void ST_Ticker (void);
+void ST_Ticker();
 
 // Called by main loop.
-void ST_Drawer (void);
+void ST_Drawer();
 
 // Called when the console player is spawned on each level.
 void ST_Start();
@@ -66,44 +71,31 @@ void ST_Init();
 
 void STACK_ARGS ST_Shutdown();
 
-// Draw the HUD (only if old status bar is not drawn)
-void ST_newDraw (void);
-
-// Called on init
-void ST_loadGraphics (void);
-
-// [ML] HUDified status bar
-void ST_drawStatusBar (void);
-
 namespace hud {
 
 void drawNetdemo();
 
 // [ML] New Odamex fullscreen HUD
-void OdamexHUD(void);
+void OdamexHUD();
+
+// [AM] Draw obituary and event toasts.
+void DrawToasts();
+
+// [AM] Tick toasts - removing old ones.
+void ToastTicker();
+
+// [AM] Push a toast to the screen.
+void PushToast(const toast_t& toast);
+
+// [AM] HUD for showing level state
+void LevelStateHUD();
 
 // [AM] Spectator HUD
-void SpectatorHUD(void);
-
-// [AM] Original ZDoom HUD
-void ZDoomHUD(void);
+void SpectatorHUD();
 
 // [AM] HUD drawn with the Doom Status Bar.
-void DoomHUD(void);
+void DoomHUD();
 
 }
 
-// States for status bar code.
-typedef enum
-{
-	AutomapState,
-	FirstPersonState
-	
-} st_stateenum_t;
-
 bool ST_Responder(event_t* ev);
-
-
-#endif
-
-

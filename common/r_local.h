@@ -22,15 +22,12 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __R_LOCAL_H__
-#define __R_LOCAL_H__
+#pragma once
 
 // Binary Angles, sine/cosine/atan lookups.
 #include "tables.h"
 
 // Screen size related parameters.
-#include "doomdef.h"
 
 // Include the refresh/render data structs.
 #include "r_data.h"
@@ -44,7 +41,3 @@
 #include "r_plane.h"
 #include "r_things.h"
 #include "r_draw.h"
-
-#endif // __R_LOCAL_H__
-
-

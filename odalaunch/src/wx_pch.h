@@ -29,6 +29,8 @@
 #define WX_PRECOMP
 #endif // USE_PCH
 
+#include "odalaunch.h"
+
 // basic wxWidgets headers
 #include <wx/wxprec.h>
 

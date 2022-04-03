@@ -22,21 +22,18 @@
 //-----------------------------------------------------------------------------
 
 
-#include <cstdio>
+#include "odamex.h"
+
 #include <ctime>
-#include <string>
 #include <sstream>
-#include <vector>
 
 #include "c_bind.h"
-#include "c_cvars.h"
 #include "c_dispatch.h"
-#include "doomtype.h"
+#include "g_gametype.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"
 #include "i_system.h"
-#include "version.h"
 
 #include "resources/res_main.h"
 
@@ -63,7 +60,7 @@ std::string M_GetConfigPath(void)
 	if (p)
 		return p;
 
-	return I_GetUserFileName("odamex.cfg");
+	return M_GetUserFileName("odamex.cfg");
 }
 
 // [RH] Don't write a config file if M_LoadDefaults hasn't been called.
@@ -101,7 +98,13 @@ void STACK_ARGS M_SaveDefaults(std::string filename)
 
 		// Archive all active key bindings
 		fprintf(f, "// --- Key Bindings ---\n\n");
-		C_ArchiveBindings(f);
+		fprintf(f, "unbindall\n");
+		Bindings.ArchiveBindings(f);
+		DoubleBindings.ArchiveBindings(f);
+
+		fprintf(f, "\n// --- Automap Bindings ---\n\n");
+		fprintf(f, "unambind all\n");
+		AutomapBindings.ArchiveBindings(f);
 
 		// Archive all aliases
 		fprintf(f, "\n// --- Aliases ---\n\n");
@@ -124,6 +127,10 @@ END_COMMAND (savecfg)
 
 extern int cvar_defflags;
 
+EXTERN_CVAR(cl_downloadsites);
+EXTERN_CVAR(message_showobituaries);
+EXTERN_CVAR(vid_gammatype);
+
 /**
  * Load a configuration file from the default configuration file.
  *
@@ -131,11 +138,9 @@ extern int cvar_defflags;
  */
 void M_LoadDefaults(void)
 {
-	extern char DefBindings[];
-
 	// Set default key bindings. These will be overridden
 	// by the bindings in the config file if it exists.
-	AddCommandString(DefBindings);
+	C_BindDefaults();
 
 	std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
 
@@ -143,9 +148,75 @@ void M_LoadDefaults(void)
 	AddCommandString(cmd);
 	cvar_defflags = 0;
 
+	bool updated = false;
+
+	if (::configver <= 90)
+	{
+		// Convert old default that had ts.chaosunleashed.net.  It's either
+		// dead or so intermittent that it slows down WAD downloading.
+
+		const char* cl_download_old =
+		    "https://static.allfearthesentinel.net/wads/ https://doomshack.org/wads/ "
+		    "http://grandpachuck.org/files/wads/ http://ts.chaosunleashed.net/ "
+		    "https://wads.doomleague.org/ http://files.funcrusher.net/wads/";
+
+		if (!strcmp(::cl_downloadsites.cstring(), cl_download_old))
+		{
+			updated = true;
+			cl_downloadsites.RestoreDefault();
+		}
+	}
+	else if (::configver > 90 && ::configver <= 93)
+	{
+		// Add new defaults - dogsoft and doomshack's upload dir.
+
+		const char* cl_download_old =
+		    "https://static.allfearthesentinel.net/wads/ https://doomshack.org/wads/ "
+		    "http://grandpachuck.org/files/wads/ https://wads.doomleague.org/ "
+		    "http://files.funcrusher.net/wads/";
+
+		if (!strcmp(::cl_downloadsites.cstring(), cl_download_old))
+		{
+			updated = true;
+			::cl_downloadsites.RestoreDefault();
+		}
+	}
+
+	if (::configver < 10000)
+	{
+		// Turn off message line obituaries while upgrading to 10.0
+
+		updated = true;
+		::message_showobituaries.RestoreDefault();
+		::vid_gammatype.RestoreDefault();
+	}
+
+	if (updated)
+		Printf("%s: Updating old defaults.\n", __FUNCTION__);
+
 	AddCommandString("alias ? help");	
 
 	DefaultsLoaded = true;
+}
+
+const char* GetShortGameModeString()
+{
+	if (G_IsHordeMode())
+		return "HORDE";
+	else if (sv_gametype == GM_COOP && !::multiplayer)
+		return "SOLO";
+	else if (sv_gametype == GM_COOP)
+		return "COOP";
+	else if (sv_gametype == GM_DM && sv_maxplayers <= 2)
+		return "DUEL";
+	else if (sv_gametype == GM_DM)
+		return "DM";
+	else if (sv_gametype == GM_TEAMDM)
+		return "TDM";
+	else if (sv_gametype == GM_CTF)
+		return "CTF";
+
+	return "";
 }
 
 // Expands tokens that could be passed to a filename
@@ -176,7 +247,7 @@ std::string M_ExpandTokens(const std::string &str)
 			case 'd':
 			{
 				// Date
-				time_t now = time(NULL);
+			    time_t now = time(NULL);
 				char date[11] = {0};
 				strftime(date, sizeof(date), "%Y%m%d", localtime(&now));
 				buffer << date;
@@ -185,7 +256,7 @@ std::string M_ExpandTokens(const std::string &str)
 			case 't':
 			{
 				// Time
-				time_t now = time(NULL);
+			    time_t now = time(NULL);
 				char date[9] = {0};
 				strftime(date, sizeof(date), "%H%M%S", localtime(&now));
 				buffer << date;
@@ -195,31 +266,8 @@ std::string M_ExpandTokens(const std::string &str)
 				buffer << cl_name.cstring();
 				break;
 			case 'g':
-			{
-				switch (sv_gametype.asInt())
-				{
-					case (int)(GM_COOP):
-						if (!multiplayer)
-							buffer << "SOLO";
-						else
-							buffer << "COOP";
-						break;
-					case (int)(GM_DM):
-						if (sv_maxplayers == 2)
-							buffer << "DUEL";
-						else
-							buffer << "DM";
-						break;
-					case (int)(GM_TEAMDM):
-						buffer << "TDM";
-						break;
-					case (int)(GM_CTF):
-						buffer << "CTF";
-						break;
-				}
-
+				buffer << GetShortGameModeString();
 				break;
-			}
 			case 'w':
 			{
 				const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
@@ -231,10 +279,10 @@ std::string M_ExpandTokens(const std::string &str)
 				break;
 			}
 			case 'm':
-				buffer << level.mapname;
+				buffer << level.mapname.c_str();
 				break;
 			case 'r':
-				buffer << "r" << GitDescribe();
+				buffer << "g" << GitShortHash();
 				break;
 			case '%':
 				// Literal percent
@@ -277,6 +325,3 @@ bool M_FindFreeName(std::string &filename, const std::string &extension)
 }
 
 VERSION_CONTROL (m_misc_cpp, "$Id$")
-
-
-

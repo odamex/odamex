@@ -20,27 +20,32 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "cmdlib.h"
-#include "c_dispatch.h"
-#include "d_player.h"
-#include "g_warmup.h"
-#include "sv_main.h"
-#include "sv_maplist.h"
-#include "sv_pickup.h"
+
+#include "odamex.h"
+
 #include "sv_vote.h"
-#include "d_main.h"
-#include "resources/res_filelib.h"
 
 #include <algorithm>
 #include <cmath>
 #include <sstream>
-#include <vector>
+
+#include "cmdlib.h"
+#include "c_dispatch.h"
+#include "d_player.h"
+#include "g_levelstate.h"
+#include "sv_main.h"
+#include "sv_maplist.h"
+#include "sv_pickup.h"
+#include "d_main.h"
+#include "svc_message.h"
+#include "resources/res_filelib.h"
 
 EXTERN_CVAR(sv_gametype)
 
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(sv_timelimit)
+EXTERN_CVAR(sv_teamsinplay)
 
 EXTERN_CVAR(sv_vote_countabs)
 EXTERN_CVAR(sv_vote_majority)
@@ -62,6 +67,8 @@ EXTERN_CVAR(sv_callvote_restart)
 EXTERN_CVAR(sv_callvote_fraglimit)
 EXTERN_CVAR(sv_callvote_scorelimit)
 EXTERN_CVAR(sv_callvote_timelimit)
+
+static void SV_GlobalVoteUpdate();
 
 // Vote class goes here
 Vote *vote = 0;
@@ -93,11 +100,11 @@ public:
 		this->votestring = "coinflip";
 		return true;
 	}
-	bool exec(void)
+	bool exec()
 	{
 		std::string result;
 		CMD_CoinFlip(result);
-		SV_BroadcastPrintf(PRINT_HIGH, "%s\n", result.c_str());
+		SV_BroadcastPrintf("%s\n", result.c_str());
 		return true;
 	}
 };
@@ -157,7 +164,7 @@ public:
 		}
 		return true;
 	}
-	bool exec(void)
+	bool exec()
 	{
 		SV_SetPlayerSpec(idplayer(this->id), true);
 		return true;
@@ -173,7 +180,7 @@ public:
 		if (!Vote::setup_check_cvar())
 			return false;
 
-		if (warmup.get_status() != Warmup::WARMUP)
+		if (::levelstate.getState() != LevelState::WARMUP)
 		{
 			this->error = "Game is not in warmup mode.";
 			return false;
@@ -184,7 +191,7 @@ public:
 	}
 	bool tic()
 	{
-		if (warmup.get_status() != Warmup::WARMUP)
+		if (::levelstate.getState() != LevelState::WARMUP)
 		{
 			this->error = "No need to force start, game is about to start.";
 			return false;
@@ -192,7 +199,7 @@ public:
 
 		return true;
 	}
-	bool exec(void)
+	bool exec()
 	{
 		AddCommandString("forcestart");
 		return true;
@@ -243,7 +250,7 @@ public:
 		this->votestring = vote_string.str();
 		return true;
 	}
-	bool exec(void)
+	bool exec()
 	{
 		sv_fraglimit.Set(this->fraglimit);
 		return true;
@@ -305,7 +312,7 @@ public:
 		}
 		return true;
 	}
-	bool exec(void)
+	bool exec()
 	{
 		std::ostringstream buffer;
 		if (this->reason.empty())
@@ -375,7 +382,7 @@ public:
 		this->votestring = vsbuffer.str();
 		return true;
 	}
-	bool tic(void)
+	bool tic()
 	{
 		if (this->version != Maplist::instance().get_version())
 		{
@@ -384,7 +391,7 @@ public:
 		}
 		return true;
 	}
-	bool exec(void)
+	bool exec()
 	{
 		G_ChangeMap(this->index);
 		return true;
@@ -405,7 +412,7 @@ public:
 		this->votestring = "nextmap";
 		return true;
 	}
-	bool exec(void)
+	bool exec()
 	{
 		G_ChangeMap();
 		return true;
@@ -425,9 +432,9 @@ public:
 		this->votestring = "randcaps";
 		return true;
 	}
-	bool exec(void)
+	bool exec()
 	{
-		return Pickup_DistributePlayers(2, this->error);
+		return Pickup_DistributePlayers(sv_teamsinplay, this->error);
 	}
 };
 
@@ -452,7 +459,7 @@ public:
 		this->votestring = "randmap";
 		return true;
 	}
-	bool tic(void)
+	bool tic()
 	{
 		if (Maplist::instance().empty())
 		{
@@ -461,7 +468,7 @@ public:
 		}
 		return true;
 	}
-	bool exec(void)
+	bool exec()
 	{
 		return CMD_Randmap(this->error);
 	}
@@ -503,7 +510,7 @@ public:
 		this->votestring = buffer.str();
 		return true;
 	}
-	bool exec(void)
+	bool exec()
 	{
 		return Pickup_DistributePlayers(this->num_players, this->error);
 	}
@@ -523,13 +530,13 @@ public:
 		this->votestring = "restart";
 		return true;
 	}
-	bool exec(void)
+	bool exec()
 	{
 		// When in warmup mode, we would rather not catch players off guard.
-		warmup.reset(level);
+		::levelstate.reset();
 
 		// Do a countdown-led restart.
-		warmup.restart();
+		::levelstate.restart();
 
 		return true;
 	}
@@ -585,7 +592,7 @@ public:
 		this->votestring = vote_string.str();
 		return true;
 	}
-	bool exec(void)
+	bool exec()
 	{
 		sv_scorelimit.Set(this->scorelimit);
 		return true;
@@ -642,7 +649,7 @@ public:
 		this->votestring = vote_string.str();
 		return true;
 	}
-	bool exec(void)
+	bool exec()
 	{
 		sv_timelimit.Set(this->timelimit);
 		return true;
@@ -652,7 +659,7 @@ public:
 //////// VOTING FUNCTIONS ////////
 
 // Returns if the result of a vote is a forgone conclusion.
-vote_result_t Vote::check(void)
+vote_result_t Vote::check()
 {
 	// Does the tally have any entries in it?
 	if (this->tally.empty())
@@ -705,7 +712,7 @@ vote_result_t Vote::check(void)
 }
 
 // Tally up the number of players who are voting for the current callvote.
-size_t Vote::count_yes(void)
+size_t Vote::count_yes() const
 {
 	// Does the tally have any entries in it?
 	if (this->tally.empty())
@@ -714,7 +721,7 @@ size_t Vote::count_yes(void)
 	}
 
 	int count = 0;
-	std::map<int, vote_result_t>::iterator it;
+	std::map<int, vote_result_t>::const_iterator it;
 
 	// Count the for votes.
 	for (it = this->tally.begin(); it != this->tally.end(); ++it)
@@ -730,7 +737,7 @@ size_t Vote::count_yes(void)
 
 // Calculate the number of players needed for the vote to pass.  Pass true
 // for the first param if you don't want to count absent voters.
-size_t Vote::calc_yes(const bool noabs)
+size_t Vote::calc_yes(const bool noabs) const
 {
 	size_t size;
 
@@ -753,7 +760,7 @@ size_t Vote::calc_yes(const bool noabs)
 }
 
 // Tally up the number of players who are voting against the current callvote.
-size_t Vote::count_no(void)
+size_t Vote::count_no() const
 {
 	// Does the tally have any entries in it?
 	if (this->tally.empty())
@@ -762,7 +769,7 @@ size_t Vote::count_no(void)
 	}
 
 	int count = 0;
-	std::map<int, vote_result_t>::iterator it;
+	std::map<int, vote_result_t>::const_iterator it;
 
 	// Count the against votes.
 	for (it = this->tally.begin(); it != this->tally.end(); ++it)
@@ -777,7 +784,7 @@ size_t Vote::count_no(void)
 }
 
 // Calculate the number of players needed for the vote to fail.
-size_t Vote::calc_no(void)
+size_t Vote::calc_no() const
 {
 	float f_calc = this->tally.size() * (1.0f - sv_vote_majority);
 	size_t i_calc = (int)floor(f_calc + 0.5f);
@@ -788,9 +795,25 @@ size_t Vote::calc_no(void)
 	return (int)ceil(f_calc);
 }
 
-size_t Vote::count_abs(void)
+size_t Vote::count_abs() const
 {
 	return this->tally.size() - this->count_yes() - this->count_no();
+}
+
+vote_state_t Vote::serialize() const
+{
+	vote_state_t state;
+
+	state.result = this->get_result();
+	state.votestring = this->get_votestring();
+	state.countdown = this->get_countdown();
+	state.yes = this->count_yes();
+	state.yes_needed = this->calc_yes();
+	state.no = this->count_no();
+	state.no_needed = this->calc_no();
+	state.abs = this->count_abs();
+
+	return state;
 }
 
 // Handle disconnecting players.
@@ -867,11 +890,9 @@ bool Vote::init(const std::vector<std::string> &args, const player_t &player)
 			this->tally[it->id] = VOTE_UNDEC;
 	}
 
-	SV_BroadcastPrintf(PRINT_HIGH, "%s has called a vote for %s.\n", player.userinfo.netname.c_str(), this->get_votestring().c_str());
+	SV_BroadcastPrintf("%s has called a vote for %s.\n", player.userinfo.netname.c_str(), this->get_votestring().c_str());
 	return true;
 }
-
-void SVC_GlobalVoteUpdate(void);
 
 // Pass or fail the vote.  Most of the time this method adheres to the result
 // of the check method, but can also be used to 'force pass' or 'force fail' a
@@ -880,14 +901,14 @@ void Vote::parse(vote_result_t vote_result)
 {
 	// Make sure the clients have the final state of the vote
 	// before we do anything else.
-	SVC_GlobalVoteUpdate();
+	SV_GlobalVoteUpdate();
 	for (Players::iterator it = players.begin();it != players.end();++it)
 		if (validplayer(*it))
 			SV_SendPacket(*it);
 
 	if (this->tally.empty() || vote_result == VOTE_ABANDON)
 	{
-		SV_BroadcastPrintf(PRINT_HIGH, "Vote %s abandoned!\n", this->votestring.c_str());
+		SV_BroadcastPrintf("Vote %s abandoned!\n", this->votestring.c_str());
 		return;
 	}
 
@@ -897,13 +918,13 @@ void Vote::parse(vote_result_t vote_result)
 
 	if (vote_result == VOTE_INTERRUPT)
 	{
-		SV_BroadcastPrintf(PRINT_HIGH, "Vote %s interrupted! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
+		SV_BroadcastPrintf("Vote %s interrupted! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
 		return;
 	}
 
 	if (vote_result != VOTE_YES)
 	{
-		SV_BroadcastPrintf(PRINT_HIGH, "Vote %s failed! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
+		SV_BroadcastPrintf("Vote %s failed! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
 
 		// Only set the timeout tic if the vote failed.
 		player_t caller = idplayer(this->caller_id);
@@ -915,7 +936,7 @@ void Vote::parse(vote_result_t vote_result)
 		return;
 	}
 
-	SV_BroadcastPrintf(PRINT_HIGH, "Vote %s passed! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
+	SV_BroadcastPrintf("Vote %s passed! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
 
 	// NOTE: This can return false if there is an error, but we're already
 	//       catching errors in Vote_Runtic by seeing if the error is
@@ -926,7 +947,7 @@ void Vote::parse(vote_result_t vote_result)
 
 // Runs tic by tic operations for the vote.  Returns true if the vote should
 // continue, otherwise returns false if the vote should be destroyed.
-bool Vote::ev_tic(void)
+bool Vote::ev_tic()
 {
 	// Check to see if the vote has passed.
 	this->result = this->check();
@@ -1001,32 +1022,24 @@ bool Vote::vote(player_t &player, bool ballot)
 //////// COMMANDS TO CLIENT ////////
 
 // Send a full vote update to a specific player
-void SVC_VoteUpdate(player_t &player)
+static void SV_VoteUpdate(player_t &player)
 {
 	// Keep us from segfaulting on a non-existant vote
-	if (vote == 0)
+	if (::vote == NULL)
 	{
 		return;
 	}
 
 	client_t* cl = &player.client;
 
-	MSG_WriteMarker(&cl->netbuf, svc_vote_update);
-	MSG_WriteByte(&cl->netbuf, vote->get_result());
-	MSG_WriteString(&cl->netbuf, vote->get_votestring().c_str());
-	MSG_WriteShort(&cl->netbuf, vote->get_countdown());
-	MSG_WriteByte(&cl->netbuf, vote->count_yes());
-	MSG_WriteByte(&cl->netbuf, vote->calc_yes());
-	MSG_WriteByte(&cl->netbuf, vote->count_no());
-	MSG_WriteByte(&cl->netbuf, vote->calc_no());
-	MSG_WriteByte(&cl->netbuf, vote->count_abs());
+	MSG_WriteSVC(&cl->netbuf, SVC_VoteUpdate(::vote->serialize()));
 }
 
 // Send a full vote update to everybody
-void SVC_GlobalVoteUpdate(void)
+static void SV_GlobalVoteUpdate()
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
-		SVC_VoteUpdate(*it);
+		SV_VoteUpdate(*it);
 }
 
 //////// COMMANDS FROM CLIENT ////////
@@ -1146,13 +1159,34 @@ void SV_Callvote(player_t &player)
 	}
 
 	// Broadcast the vote state to every player
-	SVC_GlobalVoteUpdate();
+	SV_GlobalVoteUpdate();
 }
 
 // Handle vote commands from the client.
-void SV_Vote(player_t &player)
+void SV_VoteCmd(player_t& player, const std::vector<std::string>& args)
 {
-	bool ballot = MSG_ReadBool();
+	if (args.size() < 2)
+	{
+		SV_PlayerPrintf(PRINT_HIGH, player.id,
+		                "Invalid vote, must be \"yes\" or \"no\".\n");
+		return;
+	}
+
+	bool ballot;
+	if (args.at(1) == "yes")
+	{
+		ballot = true;
+	}
+	else if (args.at(1) == "no")
+	{
+		ballot = false;
+	}
+	else
+	{
+		SV_PlayerPrintf(PRINT_HIGH, player.id,
+		                "Invalid vote, must be \"yes\" or \"no\".\n");
+		return;
+	}
 
 	// Is there even a vote going on?
 	if (vote == 0)
@@ -1164,8 +1198,9 @@ void SV_Vote(player_t &player)
 	// Did the player actually change his vote?
 	if (vote->vote(player, ballot))
 	{
-		SV_BroadcastPrintf(PRINT_HIGH, "%s voted %s.\n", player.userinfo.netname.c_str(), ballot == true ? "Yes" : "No");
-		SVC_GlobalVoteUpdate();
+		SV_BroadcastPrintf("%s voted %s.\n", player.userinfo.netname.c_str(),
+		                   ballot == true ? "Yes" : "No");
+		SV_GlobalVoteUpdate();
 	}
 }
 
@@ -1218,7 +1253,7 @@ void Vote_Runtic()
 		// If there is an error message, display it.
 		if (!vote->get_error().empty())
 		{
-			SV_BroadcastPrintf(PRINT_HIGH, "%s\n", vote->get_error().c_str());
+			SV_BroadcastPrintf("%s\n", vote->get_error().c_str());
 		}
 
 		delete vote;
@@ -1230,6 +1265,6 @@ void Vote_Runtic()
 	if (vote->get_countdown() % (TICRATE * 5) == 0 &&
 	        vote->get_countdown() != ((unsigned int)sv_vote_timelimit.asInt() * TICRATE))
 	{
-		SVC_GlobalVoteUpdate();
+		SV_GlobalVoteUpdate();
 	}
 }

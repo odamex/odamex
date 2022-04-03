@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include <algorithm>
 
 #include "cmdlib.h"
@@ -194,12 +196,13 @@ static size_t FindNextParamArg(const char* param, const std::vector<std::string>
 //
 // DArgs::GatherFiles
 //
-// Collects all of the arguments entered after param and returns them
-// if their file extension matches ext or if they have no extension and
-// acceptNoExt is true. This can handle param being specified multiple times
-// on the command lien.
+// Collects all of the arguments entered after param.
 //
-DArgs DArgs::GatherFiles(const char* param, const char* ext, bool acceptNoExt) const
+// [AM] This used to be smarter but since we now properly deal with file
+//      types higher up the stack we don't need to filter by extension
+//      anymore.
+//
+DArgs DArgs::GatherFiles(const char* param) const
 {
 	DArgs out;
 
@@ -211,15 +214,7 @@ DArgs DArgs::GatherFiles(const char* param, const char* ext, bool acceptNoExt) c
 		i = FindNextParamArg(param, args, i);
 		if (i < args.size())
 		{
-			std::string argext;
-			M_ExtractFileExtension(args[i], argext);
-
-			if (ext[0] == '.' && stricmp(ext + 1, argext.c_str()) == 0)
-				out.AppendArg(args[i].c_str());
-			else if (ext[0] == 0 && argext.empty())
-				out.AppendArg(args[i].c_str());
-			else if (acceptNoExt && argext.empty())
-				out.AppendArg(args[i].c_str());
+			out.AppendArg(args[i].c_str());
 		}
 	}
 
@@ -358,7 +353,7 @@ void M_FindResponseFile (void)
 			handle = fopen (Args.GetArg(i) + 1,"rb");
 			if (!handle)
 			{ // [RH] Make this a warning, not an error.
-				Printf (PRINT_HIGH,"No such response file (%s)!", Args.GetArg(i) + 1);
+				Printf (PRINT_WARNING,"No such response file (%s)!", Args.GetArg(i) + 1);
 				continue;
 			}
 
@@ -399,7 +394,7 @@ void M_FindResponseFile (void)
 			delete[] file;
 		
 			// DISPLAY ARGS
-			Printf (PRINT_HIGH,"%d command-line args:\n", Args.NumArgs ());
+			Printf("%" PRIuSIZE " command-line args:\n", Args.NumArgs());
 			for (size_t k = 1; k < Args.NumArgs (); k++)
 				Printf (PRINT_HIGH,"%s\n", Args.GetArg (k));
 
@@ -509,4 +504,3 @@ int M_GetParmValue(const char* name)
 }
 
 VERSION_CONTROL (m_argv_cpp, "$Id$")
-

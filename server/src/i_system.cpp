@@ -21,12 +21,13 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <sstream>
 #include <limits>
 
 #include <stdlib.h>
-#include <stdio.h>
-#include <cstring>
 #include <stdarg.h>
 
 #ifdef OSX
@@ -47,20 +48,14 @@
 #endif
 
 #ifdef UNIX
-#define HAVE_PWD_H
-
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <pwd.h>
 #include <unistd.h>
 #include <limits.h>
-
 #endif
 
-#include "errors.h"
 
-#include "doomtype.h"
-#include "version.h"
 #include "cmdlib.h"
 #include "m_argv.h"
 
@@ -310,27 +305,12 @@ static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 }
 #endif
 
-//
-// SetLanguageIDs
-//
-static const char *langids[] = {
-	"auto",
-	"enu",
-	"fr",
-	"it"
-};
-
-EXTERN_CVAR (language)
+EXTERN_CVAR(language)
 
 // Force the language to English (default)
-void SetLanguageIDs ()
+void SetLanguageIDs()
 {
-	DWORD lang = 0;
-	const char *langtag = langids[1];	// Forces ENGLISH as language.
-
-	((BYTE *)&lang)[0] = (langtag)[0];
-	((BYTE *)&lang)[1] = (langtag)[1];
-	((BYTE *)&lang)[2] = (langtag)[2];
+	uint32_t lang = MAKE_ID('*', '*', '\0', '\0');
 	LanguageIDs[0] = lang;
 	LanguageIDs[1] = lang;
 	LanguageIDs[2] = lang;
@@ -342,170 +322,6 @@ void SetLanguageIDs ()
 //
 void I_Init (void)
 {
-}
-
-std::string I_GetCWD()
-{
-	char tmp[4096] = {0};
-	std::string ret = "./";
-
-	const char *cwd = getcwd(tmp, sizeof(tmp));
-	if(cwd)
-		ret = cwd;
-
-	FixPathSeparator(ret);
-
-	return ret;
-}
-
-#ifdef UNIX
-std::string I_GetHomeDir(std::string user = "")
-{
-	const char *envhome = getenv("HOME");
-	std::string home = envhome ? envhome : "";
-
-	if (!home.length())
-	{
-#ifdef HAVE_PWD_H
-		// try the uid way
-		passwd *p = user.length() ? getpwnam(user.c_str()) : getpwuid(getuid());
-		if(p && p->pw_dir)
-			home = p->pw_dir;
-#endif
-
-		if (!home.length())
-			I_FatalError ("Please set your HOME variable");
-	}
-
-	if(home[home.length() - 1] != PATHSEPCHAR)
-		home += PATHSEP;
-
-	return home;
-}
-#endif
-
-std::string I_GetUserFileName (const char *file)
-{
-#ifdef UNIX
-	std::string path = I_GetHomeDir();
-
-	if(path[path.length() - 1] != PATHSEPCHAR)
-		path += PATHSEP;
-
-	path += ".odamex";
-
-	struct stat info;
-	if (stat (path.c_str(), &info) == -1)
-	{
-		if (mkdir (path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR) == -1)
-		{
-			I_FatalError ("Failed to create %s directory:\n%s",
-						  path.c_str(), strerror (errno));
-		}
-	}
-	else
-	{
-		if (!S_ISDIR(info.st_mode))
-		{
-			I_FatalError ("%s must be a directory", path.c_str());
-		}
-	}
-
-	path += PATHSEP;
-	path += file;
-#endif
-
-#ifdef _WIN32
-	std::string path = I_GetBinaryDir();
-
-	if(path[path.length() - 1] != PATHSEPCHAR)
-		path += PATHSEP;
-
-	path += file;
-#endif
-
-	return path;
-}
-
-void I_ExpandHomeDir (std::string &path)
-{
-#ifdef UNIX
-	if(!path.length())
-		return;
-
-	if(path[0] != '~')
-		return;
-
-	std::string user;
-
-	size_t slash_pos = path.find_first_of(PATHSEPCHAR);
-	size_t end_pos = path.length();
-
-	if(slash_pos == std::string::npos)
-		slash_pos = end_pos;
-
-	if(path.length() != 1 && slash_pos != 1)
-		user = path.substr(1, slash_pos - 1);
-
-	if(slash_pos != end_pos)
-		slash_pos++;
-
-	path = I_GetHomeDir(user) + path.substr(slash_pos, end_pos - slash_pos);
-#endif
-}
-
-std::string I_GetBinaryDir()
-{
-	std::string ret;
-
-#ifdef _WIN32
-	char tmp[MAX_PATH]; // denis - todo - make separate function
-	GetModuleFileName (NULL, tmp, sizeof(tmp));
-	ret = tmp;
-#else
-	if(!Args[0])
-		return "./";
-
-	char realp[PATH_MAX];
-	if(realpath(Args[0], realp))
-		ret = realp;
-	else
-	{
-		// search through $PATH
-		const char *path = getenv("PATH");
-		if(path)
-		{
-			std::stringstream ss(path);
-			std::string segment;
-
-			while(ss)
-			{
-				std::getline(ss, segment, SEARCHPATHSEPCHAR);
-
-				if(!segment.length())
-					continue;
-
-				if(segment[segment.length() - 1] != PATHSEPCHAR)
-					segment += PATHSEP;
-				segment += Args[0];
-
-				if(realpath(segment.c_str(), realp))
-				{
-					ret = realp;
-					break;
-				}
-			}
-		}
-	}
-#endif
-
-	FixPathSeparator(ret);
-
-	size_t slash = ret.find_last_of(PATHSEPCHAR);
-	if(slash == std::string::npos)
-		return "";
-	else
-		return ret.substr(0, slash);
 }
 
 void I_FinishClockCalibration ()

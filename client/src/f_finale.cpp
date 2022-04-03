@@ -22,19 +22,20 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
+
+#include "f_finale.h"
+
 #include <ctype.h>
 #include <math.h>
 
 #include "i_music.h"
-#include "m_swap.h"
 #include "z_zone.h"
 #include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
 #include "s_sound.h"
 #include "gstrings.h"
-#include "doomstat.h"
 #include "r_state.h"
 #include "hu_stuff.h"
 #include "resources/res_main.h"
@@ -53,8 +54,16 @@ int	finalecount;
 #define TEXTSPEED		2
 #define TEXTWAIT		250
 
-static const char*	finaletext;
-static const char*	finaleflat;
+enum finale_lump_t
+{
+	FINALE_NONE,
+	FINALE_FLAT,
+	FINALE_GRAPHIC,
+};
+
+const char* finaletext;
+const char* finalelump;
+finale_lump_t finalelumptype = FINALE_NONE;
 
 void	F_StartCast (void);
 void	F_CastTicker (void);
@@ -70,8 +79,8 @@ void	F_CastDrawer (void);
 //
 static int F_GetWidth()
 {
-	int surface_width = I_GetPrimarySurface()->getWidth();
-	int surface_height = I_GetPrimarySurface()->getHeight();
+	const int surface_width = I_GetPrimarySurface()->getWidth();
+	const int surface_height = I_GetPrimarySurface()->getHeight();
 
 	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 		return surface_width;
@@ -91,8 +100,8 @@ static int F_GetWidth()
 //
 static int F_GetHeight()
 {
-	int surface_width = I_GetPrimarySurface()->getWidth();
-	int surface_height = I_GetPrimarySurface()->getHeight();
+	const int surface_width = I_GetPrimarySurface()->getWidth();
+	const int surface_height = I_GetPrimarySurface()->getHeight();
 
 	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 		return surface_height;
@@ -107,11 +116,11 @@ static int F_GetHeight()
 //
 // F_StartFinale
 //
-void F_StartFinale (char *music, char *flat, const char *text)
+void F_StartFinale(finale_options_t& options)
 {
-	gameaction = ga_nothing;
-	gamestate = GS_FINALE;
-	viewactive = false;
+	::gameaction = ga_nothing;
+	::gamestate = GS_FINALE;
+	::viewactive = false;
 
 	// Okay - IWAD dependend stuff.
 	// This has been changed severly, and
@@ -121,29 +130,57 @@ void F_StartFinale (char *music, char *flat, const char *text)
 	//  determined in G_WorldDone() based on data in
 	//  a level_info_t and a cluster_info_t.
 
-	if (*music == 0) {
-		currentmusic = gameinfo.finaleMusic;
-		S_ChangeMusic (currentmusic.c_str(),
-			!(gameinfo.flags & GI_NOLOOPFINALEMUSIC));
+	if (options.music == NULL)
+	{
+		::currentmusic = ::gameinfo.finaleMusic.c_str();
+		S_ChangeMusic(
+			::currentmusic.c_str(),
+			!(::gameinfo.flags & GI_NOLOOPFINALEMUSIC)
+		);
 	}
-	else {
-		currentmusic = music;			
-		S_ChangeMusic (currentmusic.c_str(), !(gameinfo.flags & GI_NOLOOPFINALEMUSIC));
+	else
+	{
+		::currentmusic = options.music;
+		S_ChangeMusic(
+			::currentmusic,
+			!(::gameinfo.flags & GI_NOLOOPFINALEMUSIC)
+		);
 	}
 
-	if (*flat == 0)
-		finaleflat = gameinfo.finaleFlat;
+	if (options.pic != NULL)
+	{
+		::finalelumptype = FINALE_GRAPHIC;
+		::finalelump = options.pic;
+	}
+	else if (options.flat != NULL)
+	{
+		::finalelumptype = FINALE_FLAT;
+		::finalelump = options.flat;
+	}
 	else
-		finaleflat = flat;
+	{
+		::finalelumptype = FINALE_FLAT;
+		::finalelump = gameinfo.finaleFlat.c_str();
+	}
 
-	if (text)
-		finaletext = text;
+	if (options.text)
+	{
+		::finaletext = options.text;
+	}
 	else
-		finaletext = "Empty message";
+	{
+		::finaletext = "In the quiet following your last battle,\n"
+			"you suddenly get the feeling that something is\n"
+			"...missing.  Like there was supposed to be intermission\n"
+			" text here, but somehow it couldn't be found.\n"
+			"\n"
+			"No matter.  You ready your weapon and continue on \n"
+			"into the chaos.";
+	}
 
-	finalestage = 0;
-	finalecount = 0;
-	S_StopAllChannels ();
+	::finalestage = 0;
+	::finalecount = 0;
+	S_StopAllChannels();
 }
 
 
@@ -171,7 +208,7 @@ BOOL F_Responder (event_t *event)
 //
 // F_Ticker
 //
-void F_Ticker (void)
+void F_Ticker()
 {
 	// denis - do this serverside only
 	// check for skipping
@@ -192,9 +229,8 @@ void F_Ticker (void)
 			}
 			else
 			{*/
-				if (!strncmp (level.nextmap, "EndGame", 7) ||
-				(gamemode == retail_chex && !strncmp (level.nextmap, "E1M6", 4)))  	// [ML] Chex mode: game is over
-				{																	// after E1M5
+				if (!strnicmp (level.nextmap.c_str(), "EndGame", 7))
+				{
 					if (level.nextmap[7] == 'C')
 					{
 						F_StartCast ();
@@ -221,8 +257,7 @@ void F_Ticker (void)
 
 	if (finalestage == 2)
 	{
-		F_CastTicker ();
-		return;
+		F_CastTicker();
 	}
 }
 
@@ -231,19 +266,42 @@ void F_Ticker (void)
 //
 // F_TextWrite
 //
-void F_TextWrite (void)
+
+void F_TextWrite ()
 {
+	if (!::hu_font[0])
+		return;
+
 	// erase the entire screen to a tiled background
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear();		// ensure black background in matted modes
 
-	int width = F_GetWidth();
-	int height = F_GetHeight();
-	int x = (primary_surface->getWidth() - width) / 2;
-	int y = (primary_surface->getHeight() - height) / 2;
+	const int width = F_GetWidth();
+	const int height = F_GetHeight();
+	const int x = (primary_surface->getWidth() - width) / 2;
+	const int y = (primary_surface->getHeight() - height) / 2;
 
-	const Texture* background_texture = Res_CacheTexture(finaleflat, FLOOR);
-    screen->FlatFill(background_texture, x, y, width + x, height + y);
+	ResourceId lump;
+	switch (finalelumptype)
+	{
+	case FINALE_GRAPHIC:
+		lump = Res_GetResourceId(finalelump, global_directory_name);
+		if (lump >= 0)
+		{
+			screen->DrawTextureFullScreen(Res_CacheTexture(lump, PU_CACHE));
+		}
+		break;
+	case FINALE_FLAT:
+		lump = Res_GetResourceId(finalelump, flats_directory_name);
+		if (lump >= 0)
+		{
+			screen->FlatFill(Res_CacheTexture(lump, PU_CACHE), x, y, width + x,
+			                 height + y);
+		}
+		break;
+	default:
+		break;
+	}
 
 	V_MarkRect(x, y, width, height);
 
@@ -277,6 +335,7 @@ void F_TextWrite (void)
 		int w = hu_font[c]->mWidth;
 		if (cx + w > width)
 			break;
+
 		screen->DrawTextureClean(hu_font[c], cx, cy);
 		cx += w;
 	}
@@ -332,7 +391,7 @@ static BOOL	 		castattacking;
 extern	gamestate_t 	wipegamestate;
 
 
-void F_StartCast (void)
+void F_StartCast()
 {
 	// [RH] Set the names for the cast
 	castorder[0].name = GStrings(CC_ZOMBIE);
@@ -373,11 +432,8 @@ void F_StartCast (void)
 //
 // F_CastTicker
 //
-void F_CastTicker (void)
+void F_CastTicker()
 {
-	int st;
-	int atten;
-
 	if (--casttics > 0)
 		return; 				// not time to change state yet
 
@@ -388,8 +444,9 @@ void F_CastTicker (void)
 		castdeath = false;
 		if (castorder[castnum].name == NULL)
 			castnum = 0;
-		if (mobjinfo[castorder[castnum].type].seesound) {
-			atten = ATTN_NONE;
+		if (mobjinfo[castorder[castnum].type].seesound)
+		{
+			const int atten = ATTN_NONE;
 			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].seesound, 1, atten);
 		}
 		caststate = &states[mobjinfo[castorder[castnum].type].seestate];
@@ -403,7 +460,9 @@ void F_CastTicker (void)
 		// just advance to next state in animation
 		if (caststate == &states[S_PLAY_ATK1])
 			goto stopattack;	// Oh, gross hack!
-		st = caststate->nextstate;
+
+		const int st = caststate->nextstate;
+
 		caststate = &states[st];
 		castframes++;
 
@@ -532,10 +591,10 @@ void F_CastDrawer()
 	else
 		cast_surface->getDefaultCanvas()->DrawTexture(sprite_texture, 160, 170);
 
-	int width = F_GetWidth();
-	int height = F_GetHeight();
-	int x = (primary_surface->getWidth() - width) / 2;
-	int y = (primary_surface->getHeight() - height) / 2;
+	const int width = F_GetWidth();
+	const int height = F_GetHeight();
+	const int x = (primary_surface->getWidth() - width) / 2;
+	const int y = (primary_surface->getHeight() - height) / 2;
 
 	primary_surface->blit(cast_surface, 0, 0, 320, 200, x, y, width, height);
 
@@ -557,26 +616,25 @@ void F_CastDrawer()
 void F_DrawTextureColP(int x, const Texture* texture, int col)
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 	// [RH] figure out how many times to repeat this column
 	// (for screens wider than 320 pixels)
-	float mul = float(surface_width) / 320.0f;
-	float fx = (float)x;
-	int repeat = (int)(floor(mul*(fx+1)) - floor(mul*fx));
+	const float mul = static_cast<float>(surface_width) / 320.0f;
+	const float fx = static_cast<float>(x);
+	const int repeat = static_cast<int>(floor(mul * (fx + 1)) - floor(mul * fx));
 	if (repeat == 0)
 		return;
 
 	// [RH] Remap virtual-x to real-x
-	x = (int)floor(mul*x);
+	x = static_cast<int>(floor(mul * x));
 
 	// [RH] Figure out per-row fixed-point step
-	unsigned int step = (200<<16) / surface_height;
-	unsigned int invstep = (surface_height<<16) / 200;
-
+	const unsigned int step = (200<<16) / surface_height;
+	const unsigned int invstep = (surface_height<<16) / 200;
 	
 	byte* desttop = surface->getBuffer() + x;
-	int pitch = surface->getPitchInPixels();
+	const int pitch = surface->getPitchInPixels();
 
 	// step through the posts in a column
 
@@ -646,27 +704,27 @@ void F_DrawTextureColP(int x, const Texture* texture, int col)
 void F_DrawTextureColD(int x, const Texture* texture, int col)
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
-	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+	const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
 	// [RH] figure out how many times to repeat this column
 	// (for screens wider than 320 pixels)
-	float mul = float(surface_width) / 320.0f;
-	float fx = (float)x;
-	int repeat = (int)(floor(mul*(fx+1)) - floor(mul*fx));
+	const float mul = static_cast<float>(surface_width) / 320.0f;
+	const float fx = static_cast<float>(x);
+	const int repeat = static_cast<int>(floor(mul * (fx + 1)) - floor(mul * fx));
 	if (repeat == 0)
 		return;
 
 	// [RH] Remap virtual-x to real-x
-	x = (int)floor(mul*x);
+	x = static_cast<int>(floor(mul * x));
 
 	// [RH] Figure out per-row fixed-point step
-	unsigned step = (200<<16) / surface_height;
-	unsigned invstep = (surface_height<<16) / 200;
+	const unsigned step = (200<<16) / surface_height;
+	const unsigned invstep = (surface_height<<16) / 200;
 
 	argb_t* desttop = (argb_t *)surface->getBuffer() + x;
-	int pitch = surface->getPitchInPixels();
+	const int pitch = surface->getPitchInPixels();
 
-	shaderef_t pal = shaderef_t(&V_GetDefaultPalette()->maps, 0);
+	const shaderef_t pal = shaderef_t(&V_GetDefaultPalette()->maps, 0);
 
 	const byte* source = texture->getColumn(col);
 	argb_t* dest = desttop;
@@ -733,12 +791,10 @@ void F_DrawTextureColD(int x, const Texture* texture, int col)
 //
 // F_BunnyScroll
 //
-void F_BunnyScroll (void)
+void F_BunnyScroll()
 {
-	int 		scrolled;
 	int 		x;
 	char		name[10];
-	int 		stage;
 	static int	laststage;
 
 	const Texture* texture1 = Res_CacheTexture("PFUB2", PATCH);
@@ -746,7 +802,7 @@ void F_BunnyScroll (void)
 
 	V_MarkRect (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 
-	scrolled = 320 - (finalecount-230)/2;
+	int scrolled = 320 - (finalecount - 230) / 2;
 	if (scrolled > 320)
 		scrolled = 320;
 	if (scrolled < 0)
@@ -754,7 +810,7 @@ void F_BunnyScroll (void)
 
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
-		for ( x=0 ; x<320 ; x++)
+		for (int x = 0; x < 320; x++)
 		{
 			if (x+scrolled < 320)
 				F_DrawTextureColP(x, texture1, x+scrolled);
@@ -784,7 +840,7 @@ void F_BunnyScroll (void)
 		return;
 	}
 
-	stage = (finalecount-1180) / 5;
+	int stage = (finalecount - 1180) / 5;
 	if (stage > 6)
 		stage = 6;
 	if (stage > laststage)
@@ -847,4 +903,3 @@ void F_Drawer (void)
 }
 
 VERSION_CONTROL (f_finale_cpp, "$Id$")
-

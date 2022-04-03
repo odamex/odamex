@@ -23,16 +23,17 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
+
 #include <stdlib.h>
+#include <math.h>
 
 #include <algorithm>
 #include <sstream>
 
-#include "doomtype.h"
-#include "doomdef.h"
-#include "doomstat.h"
+#include "cmdlib.h"
 #include "cl_demo.h"
+#include "cl_main.h"
 #include "d_items.h"
 #include "i_video.h"
 #include "v_video.h"
@@ -42,155 +43,161 @@
 #include "st_stuff.h"
 #include "hu_drawers.h"
 #include "hu_elements.h"
-#include "c_cvars.h"
 #include "p_ctf.h"
+#include "cl_parse.h"
 #include "cl_vote.h"
+#include "g_levelstate.h"
+#include "g_gametype.h"
+#include "c_bind.h"
+#include "p_horde.h"
+#include "c_dispatch.h"
+#include "hu_speedometer.h"
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
 
 static int		widestnum, numheight;
-static const Texture* medi[2];
-static const Texture* armors[2];
-static const Texture* ammos[4];
-static const Texture* bigammos[4];
-static const Texture* flagiconteam;
-static const Texture* flagiconbhome;
-static const Texture* flagiconrhome;
-static const Texture* flagiconbtakenbyb;
-static const Texture* flagiconbtakenbyr;
-static const Texture* flagiconrtakenbyb;
-static const Texture* flagiconrtakenbyr;
-static const Texture* flagicongtakenbyb;
-static const Texture* flagicongtakenbyr;
-static const Texture* flagiconbdropped;
-static const Texture* flagiconrdropped;
-static const Texture* line_leftempty;
-static const Texture* line_leftfull;
-static const Texture* line_centerempty;
-static const Texture* line_centerleft;
-static const Texture* line_centerright;
-static const Texture* line_centerfull;
-static const Texture* line_rightempty;
-static const Texture* line_rightfull;
+Texture* flagiconteam;
+Texture* line_leftempty;
+Texture* line_leftfull;
+Texture* line_centerempty;
+Texture* line_centerleft;
+Texture* line_centerright;
+Texture* line_centerfull;
+Texture* line_rightempty;
+Texture* line_rightfull;
+static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
+static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
+static const char* ammopatches[] = {"CLIPA0", "SHELA0", "CELLA0", "ROCKA0"};
+static const char* bigammopatches[] = {"AMMOA0", "SBOXA0", "CELPA0", "BROKA0"};
+static const char* flaghomepatches[NUMTEAMS] = {"FLAGIC2B", "FLAGIC2R", "FLAGIC2G"};
+static const char* flagtakenpatches[NUMTEAMS] = {"FLAGIC3B", "FLAGIC3R", "FLAGIC3G"};
+static const char* flagreturnpatches[NUMTEAMS] = {"FLAGIC4B", "FLAGIC4R", "FLAGIC4G"};
+static const char* flagdroppatches[NUMTEAMS] = {"FLAGIC5B", "FLAGIC5R", "FLAGIC5G"};
+static const char* livespatches[NUMTEAMS] = {"ODALIVEB", "ODALIVER", "ODALIVEG"};
 
-static const char medipatches[2][8] = { "MEDIA0", "PSTRA0" };
-static const char ammopatches[4][8] = {"CLIPA0", "SHELA0", "CELLA0", "ROCKA0"};
-static const char bigammopatches[4][8] = {"AMMOA0", "SBOXA0", "CELPA0", "BROKA0"};
+static int widest_num, num_height;
+static Texture* medi[ARRAY_LENGTH(::medipatches)];
+static Texture* armors[ARRAY_LENGTH(::armorpatches)];
+static Texture* ammos[ARRAY_LENGTH(::ammopatches)];
+static Texture* bigammos[ARRAY_LENGTH(::bigammopatches)];
+static Texture* flagiconteamoffense;
+static Texture* flagiconteamdefense;
+static Texture* FlagIconHome[NUMTEAMS];
+static Texture* FlagIconReturn[NUMTEAMS];
+static Texture* FlagIconTaken[NUMTEAMS];
+static Texture* FlagIconDropped[NUMTEAMS];
+static Texture* LivesIcon[NUMTEAMS];
+static Texture* ToastIcon[NUMMODS];
 
 static int		NameUp = -1;
 
-extern const Texture*	sttminus;
 extern const Texture*	tallnum[10];
 extern const Texture*	faces[];
 extern int		st_faceindex;
 extern const Texture*	keys[NUMCARDS+NUMCARDS/2];
 extern byte		*Ranges;
-extern flagdata CTFdata[NUMFLAGS];
 
 extern NetDemo netdemo;
+
+typedef std::vector<const Texture**> PathFreeList;
+
+/**
+ * @brief Stores pointers to status bar objects that should be freed on shutdown. 
+ */
+PathFreeList freelist;
 
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
 
-EXTERN_CVAR (hud_scale)
-EXTERN_CVAR (hud_timer)
-EXTERN_CVAR (hud_targetcount)
-EXTERN_CVAR (hud_demobar)
-EXTERN_CVAR (sv_fraglimit)
+EXTERN_CVAR(hud_demoprotos)
+EXTERN_CVAR(hud_scale)
+EXTERN_CVAR(hud_bigfont)
+EXTERN_CVAR(hud_timer)
+EXTERN_CVAR(hud_speedometer)
+EXTERN_CVAR(hud_targetcount)
+EXTERN_CVAR(hud_transparency)
+EXTERN_CVAR(hud_demobar)
+EXTERN_CVAR(sv_fraglimit)
+EXTERN_CVAR(sv_teamsinplay)
+EXTERN_CVAR(g_lives)
+EXTERN_CVAR(sv_scorelimit);
+EXTERN_CVAR(sv_warmup)
+EXTERN_CVAR(hud_feedobits)
+EXTERN_CVAR(g_horde_waves)
+EXTERN_CVAR(g_roundlimit)
+EXTERN_CVAR(hud_hordeinfo_debug)
 
-void ST_unloadNew (void)
+void ST_unloadNew()
 {
-	int i;
-
-	Z_ChangeTag (flagiconteam, PU_CACHE);
-	Z_ChangeTag (flagiconbhome, PU_CACHE);
-	Z_ChangeTag (flagiconrhome, PU_CACHE);
-	Z_ChangeTag (flagiconbtakenbyb, PU_CACHE);
-	Z_ChangeTag (flagiconbtakenbyr, PU_CACHE);
-	Z_ChangeTag (flagiconrtakenbyb, PU_CACHE);
-	Z_ChangeTag (flagiconrtakenbyr, PU_CACHE);
-	Z_ChangeTag (flagicongtakenbyb, PU_CACHE);
-	Z_ChangeTag (flagicongtakenbyr, PU_CACHE);
-	Z_ChangeTag (flagiconbdropped, PU_CACHE);
-	Z_ChangeTag (flagiconrdropped, PU_CACHE);
-	Z_ChangeTag (line_leftempty, PU_CACHE);
-	Z_ChangeTag (line_leftfull, PU_CACHE);
-	Z_ChangeTag (line_centerempty, PU_CACHE);
-	Z_ChangeTag (line_centerleft, PU_CACHE);
-	Z_ChangeTag (line_centerright, PU_CACHE);
-	Z_ChangeTag (line_centerfull, PU_CACHE);
-	Z_ChangeTag (line_rightempty, PU_CACHE);
-	Z_ChangeTag (line_rightfull, PU_CACHE);
-
-	for (i = 0; i < 2; i++)
-	{
-		Z_ChangeTag(medi[i], PU_CACHE);
-		Z_ChangeTag(armors[i], PU_CACHE);
-	}
-
-	for (i = 0; i < 4; i++)
-		Z_ChangeTag (ammos[i], PU_CACHE);
+	// Do nothing - let our handles stale on their own.
 }
 
-void ST_initNew (void)
+void ST_initNew()
 {
-	int i;
 	int widest = 0;
-	char name[8];
 
 	// denis - todo - security - these patches have unchecked dimensions
 	// ie, if a patch has a 0 width/height, it may cause a divide by zero
 	// somewhere else in the code. we download wads, so this is an issue!
 
-	for (i = 0; i < 10; i++) {
-		if (tallnum[i]->mWidth > widest)
-			widest = tallnum[i]->mWidth;
-	}
-
-	strcpy (name, "ARM1A0");
-	for (i = 0; i < 2; i++) {
-		name[3] = i + '1';
-		if (Res_CheckResource(name, sprites_directory_name))
-			armors[i] = Res_CacheTexture(name, SPRITE, PU_STATIC);
-	}
-
-	for (i = 0; i < 4; i++) {
-		if (Res_CheckResource(ammopatches[i], sprites_directory_name))
-			ammos[i] = Res_CacheTexture(ammopatches[i], sprites_directory_name, PU_STATIC);
-		if (Res_CheckResource(bigammopatches[i], sprites_directory_name))
-			bigammos[i] = Res_CacheTexture(bigammopatches[i], SPRITE, PU_STATIC);
-	}
-
-	for (i = 0; i < 2; i++)
+	for (size_t i = 0; i < ARRAY_LENGTH(::tallnum); i++)
 	{
-		if (Res_CheckResource(medipatches[i], sprites_directory_name))
-			medi[i] = Res_CacheTexture(medipatches[i], SPRITE, PU_STATIC);
+		std::string namebuf;
+		StrFormat(namebuf, "STTNUM%d", i);
+
+		::tallnum[i] = Res_CacheTexture(namebuf, SPRITE, PU_STATIC);
+
+		if (::tallnum[i]->mWidth > widest)
+			widest = ::tallnum[i]->mWidth;
 	}
 
-	flagiconteam = Res_CacheTexture("FLAGIT", SPRITE, PU_STATIC);
-	flagiconbhome = Res_CacheTexture("FLAGIC2B", SPRITE, PU_STATIC);
-	flagiconrhome = Res_CacheTexture("FLAGIC2R", SPRITE, PU_STATIC);
-	flagiconbtakenbyb = Res_CacheTexture("FLAGI3BB", SPRITE, PU_STATIC);
-	flagiconbtakenbyr = Res_CacheTexture("FLAGI3BR", SPRITE, PU_STATIC);
-	flagiconrtakenbyb = Res_CacheTexture("FLAGI3RB", SPRITE, PU_STATIC);
-	flagiconrtakenbyr = Res_CacheTexture("FLAGI3RR", SPRITE, PU_STATIC);
-	flagiconbdropped = Res_CacheTexture("FLAGIC4B", SPRITE, PU_STATIC);
-	flagiconrdropped = Res_CacheTexture("FLAGIC4R", SPRITE, PU_STATIC);
+	for (size_t i = 0; i < ARRAY_LENGTH(::medipatches); i++)
+		::medi[i] = (Texture*)Res_CacheTexture(medipatches[i], SPRITE, PU_STATIC);
 
-	widestnum = widest;
-	numheight = tallnum[0]->mHeight;
+	for (size_t i = 0; i < ARRAY_LENGTH(::armorpatches); i++)
+		::armors[i] = (Texture*)Res_CacheTexture(armorpatches[i], SPRITE, PU_STATIC);
 
+	for (size_t i = 0; i < ARRAY_LENGTH(::ammopatches); i++)
+	{
+		::ammos[i] = (Texture*)Res_CacheTexture(ammopatches[i], SPRITE, PU_STATIC);
+		::bigammos[i] = (Texture*)Res_CacheTexture(bigammopatches[i], SPRITE, PU_STATIC);
+	}
+
+	for (size_t i = 0; i < NUMTEAMS; i++)
+	{
+		::FlagIconHome[i] = (Texture*)Res_CacheTexture(::flaghomepatches[i], SPRITE, PU_STATIC);
+		::FlagIconTaken[i] = (Texture*)Res_CacheTexture(::flagtakenpatches[i], SPRITE, PU_STATIC);
+		::FlagIconReturn[i] = (Texture*)Res_CacheTexture(::flagreturnpatches[i], SPRITE, PU_STATIC);
+		::FlagIconDropped[i] = (Texture*)Res_CacheTexture(::flagdroppatches[i], SPRITE, PU_STATIC);
+		::LivesIcon[i] = (Texture*)Res_CacheTexture(::livespatches[i], SPRITE, PU_STATIC);
+	}
+
+	::widest_num = widest;
+	::num_height = ::tallnum[0]->mHeight;
+
+	// [AM] FIXME: What does this do, exactly?
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
-		NameUp = level.time + 2*TICRATE;
+		NameUp = level.time + 2 * TICRATE;
 
-	line_leftempty = Res_CacheTexture("ODABARLE", SPRITE, PU_STATIC);
-	line_leftfull = Res_CacheTexture("ODABARLF", SPRITE, PU_STATIC);
-	line_centerempty = Res_CacheTexture("ODABARCE", SPRITE, PU_STATIC);
-	line_centerleft = Res_CacheTexture("ODABARCL", SPRITE, PU_STATIC);
-	line_centerright = Res_CacheTexture("ODABARCR", SPRITE, PU_STATIC);
-	line_centerfull = Res_CacheTexture("ODABARCF", SPRITE, PU_STATIC);
-	line_rightempty = Res_CacheTexture("ODABARRE", SPRITE, PU_STATIC);
-	line_rightfull = Res_CacheTexture("ODABARRF", SPRITE, PU_STATIC);
+	::flagiconteam = (Texture*)Res_CacheTexture("FLAGIT", SPRITE, PU_STATIC);
+	::flagiconteamoffense = (Texture*)Res_CacheTexture("FLAGITO", SPRITE, PU_STATIC);
+	::flagiconteamdefense = (Texture*)Res_CacheTexture("FLAGITD", SPRITE, PU_STATIC);
+
+	::line_leftempty = (Texture*)Res_CacheTexture("ODABARLE", SPRITE, PU_STATIC);
+	::line_leftfull = (Texture*)Res_CacheTexture("ODABARLF", SPRITE, PU_STATIC);
+	::line_centerempty = (Texture*)Res_CacheTexture("ODABARCE", SPRITE, PU_STATIC);
+	::line_centerleft = (Texture*)Res_CacheTexture("ODABARCL", SPRITE, PU_STATIC);
+	::line_centerright = (Texture*)Res_CacheTexture("ODABARCR", SPRITE, PU_STATIC);
+	::line_centerfull = (Texture*)Res_CacheTexture("ODABARCF", SPRITE, PU_STATIC);
+	::line_rightempty = (Texture*)Res_CacheTexture("ODABARRE", SPRITE, PU_STATIC);
+	::line_rightfull = (Texture*)Res_CacheTexture("ODABARRF", SPRITE, PU_STATIC);
+
+	std::string buffer;
+	for (size_t i = 0; i < NUMMODS; i++)
+	{
+		StrFormat(buffer, "ODAMOD%d", i);
+		::ToastIcon[i] = (Texture*)Res_CacheTexture(buffer.c_str(), SPRITE, PU_STATIC);
+	}
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
@@ -201,13 +208,13 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 	{
 		if (hud_scale)
 		{
-			scrn->DrawLucentTextureCleanNoMove(sttminus, x, y);
-			x += CleanXfac * sttminus->mWidth;
+			scrn->DrawLucentTextureCleanNoMove(negminus, x, y);
+			x += CleanXfac * negminus->mWidth;
 		}
 		else
 		{
-			scrn->DrawLucentTexture(sttminus, x, y);
-			x += sttminus->mWidth;
+			scrn->DrawLucentTexture(negminus, x, y);
+			x += negminus->mWidth;
 		}
 		num = -num;
 	}
@@ -244,7 +251,7 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 	} while (d /= 10);
 
 	if (num < 0)
-		x -= sttminus->mWidth * xscale;
+		x -= negminus->mWidth * xscale;
 
 	ST_DrawNum (x, y, scrn, num);
 }
@@ -441,87 +448,293 @@ void ST_voteDraw (int y) {
 
 namespace hud {
 
-// [AM] Draw CTF scoreboard
-void drawCTF() {
-	if (sv_gametype != GM_CTF) {
-		return;
-	}
+/**
+ * @brief This is the number of pixels of viewable space, taking into account
+ *        the status bar.  We need to convert this into scaled pixels as
+ *        best we can.
+ */
+static int statusBarY()
+{
+	const int surfaceWidth = I_GetSurfaceWidth();
+	const int surfaceHeight = I_GetSurfaceHeight();
 
-	player_t *plyr = &consoleplayer();
+	int stY = surfaceHeight - ST_StatusBarY(surfaceWidth, surfaceHeight);
+	if (::hud_scale)
+		stY /= ::CleanYfac;
+
+	return stY;
+}
+
+/**
+ * @brief Sometimes we want the HUD to show round wins and not current round points.
+ */
+static bool TeamHUDShowsRoundWins()
+{
+	// If it's not a rounds game, obviously don't show it.
+	if (!G_IsRoundsGame())
+		return false;
+
+	// If score is a wincon and it's 1, we don't want to display the in-round
+	// score since it's always 0-0 except past the end.
+	if (G_UsesScorelimit() && ::sv_scorelimit.asInt() == 1)
+		return true;
+
+	// In TLMS if there's no fraglimit there's no reason to display frags
+	// since team frags are usually an alterantive win condition for when
+	// time runs out.
+	if (G_IsLivesGame() && G_UsesFraglimit() && ::sv_fraglimit.asInt() == 0)
+		return true;
+
+	return false;
+}
+
+/**
+ * @brief Draw gametype-specific scoreboard, such as flags and lives.
+ */
+static void drawTeamGametype()
+{
+	const int SCREEN_BORDER = 4;
+	const int FLAG_ICON_HEIGHT = 18;
+	const int LIVES_HEIGHT = 12;
+
+	std::string buffer;
+	player_t* plyr = &consoleplayer();
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
-	const Texture* flagbluepatch = flagiconbhome;
-	const Texture* flagredpatch = flagiconrhome;
 
-	switch (CTFdata[it_blueflag].state) {
-		case flag_carried:
-			if (CTFdata[it_blueflag].flagger) {
-				player_t &player = idplayer(CTFdata[it_blueflag].flagger);
-				if (player.userinfo.team == TEAM_BLUE) {
-					flagbluepatch = flagiconbtakenbyb;
-				} else if (player.userinfo.team == TEAM_RED) {
-					flagbluepatch = flagiconbtakenbyr;
+	int patchPosY = ::hud_bigfont ? 53 : 43;
+
+	bool shouldShowScores = G_IsTeamGame();
+	bool shouldShowLives = G_IsLivesGame();
+
+	if (shouldShowScores)
+	{
+		patchPosY += sv_teamsinplay.asInt() * FLAG_ICON_HEIGHT;
+	}
+	if (shouldShowLives)
+	{
+		patchPosY += sv_teamsinplay.asInt() * LIVES_HEIGHT;
+	}
+
+	for (int i = 0; i < sv_teamsinplay; i++)
+	{
+		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		if (shouldShowScores)
+		{
+			patchPosY -= FLAG_ICON_HEIGHT;
+
+			const Texture* drawPatch = ::FlagIconTaken[i];
+
+			if (sv_gametype == GM_CTF && G_IsDefendingTeam(teamInfo->Team))
+			{
+				switch (teamInfo->FlagData.state)
+				{
+				case flag_home:
+					drawPatch = ::FlagIconHome[i];
+					break;
+				case flag_carried:
+					if (idplayer(teamInfo->FlagData.flagger).userinfo.team == i)
+						drawPatch = ::FlagIconReturn[i];
+					else
+						drawPatch = ::FlagIconTaken[i];
+					break;
+				case flag_dropped:
+					drawPatch = ::FlagIconDropped[i];
+					break;
+				default:
+					break;
 				}
 			}
-			break;
-		case flag_dropped:
-			flagbluepatch = flagiconbdropped;
-			break;
-		default:
-			break;
-	}
 
-	switch (CTFdata[it_redflag].state) {
-		case flag_carried:
-			if (CTFdata[it_redflag].flagger) {
-				player_t &player = idplayer(CTFdata[it_redflag].flagger);
-				if (player.userinfo.team == TEAM_BLUE) {
-					flagredpatch = flagiconrtakenbyb;
-				} else if (player.userinfo.team == TEAM_RED) {
-					flagredpatch = flagiconrtakenbyr;
-				}
+			if (drawPatch != NULL)
+			{
+				hud::DrawTexture(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
+				                 hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, drawPatch);
 			}
-			break;
-		case flag_dropped:
-			flagredpatch = flagiconrdropped;
-			break;
-		default:
-			break;
+
+			if (plyr->userinfo.team == i)
+			{
+				const Texture* itpatch = ::flagiconteam;
+				if (G_IsSidesGame())
+				{
+					// Sides games show offense/defense.
+					if (G_IsDefendingTeam(consoleplayer().userinfo.team))
+						itpatch = ::flagiconteamdefense;
+					else
+						itpatch = ::flagiconteamoffense;
+				}
+				hud::DrawTexture(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
+				                 hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, itpatch);
+			}
+
+			if (TeamHUDShowsRoundWins())
+			{
+				ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale,
+				                I_GetSurfaceHeight() - (patchPosY + 17) * yscale,
+				                ::screen, teamInfo->RoundWins);
+			}
+			else
+			{
+				ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale,
+				                I_GetSurfaceHeight() - (patchPosY + 17) * yscale,
+				                ::screen, teamInfo->Points);
+			}
+		}
+
+		if (shouldShowLives)
+		{
+			patchPosY -= LIVES_HEIGHT;
+			hud::DrawTexture(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
+			               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM,
+			               ::LivesIcon[i]);
+
+			StrFormat(buffer, "%d", teamInfo->LivesPool());
+			int color = (i % 2) ? CR_GOLD : CR_GREY;
+			hud::DrawText(SCREEN_BORDER + 12, patchPosY + 3, hud_scale, hud::X_RIGHT,
+			              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, buffer.c_str(),
+			              color);
+		}
+	}
+}
+
+static void drawHordeGametype()
+{
+	const int SCREEN_BORDER = 4;
+	const int ABOVE_AMMO = 24;
+	const int LINE_SPACING = V_LineHeight() + 1;
+	const int BAR_BORDER = 5;
+
+	const hordeInfo_t& info = P_HordeInfo();
+	const hordeDefine_t& define = G_HordeDefine(info.defineID);
+
+	std::string waverow, killrow;
+	if (::g_horde_waves.asInt() != 0)
+	{
+		StrFormat(waverow, "WAVE:%d/%d", info.wave, ::g_horde_waves.asInt());
+	}
+	else
+	{
+		StrFormat(waverow, "WAVE:%d", info.wave);
 	}
 
-	// Draw base flag patches
-	hud::DrawTexture(4, 61, hud_scale,
-	               hud::X_RIGHT, hud::Y_BOTTOM,
-	               hud::X_RIGHT, hud::Y_BOTTOM,
-	               flagbluepatch);
-	hud::DrawTexture(4, 43, hud_scale,
-	               hud::X_RIGHT, hud::Y_BOTTOM,
-	               hud::X_RIGHT, hud::Y_BOTTOM,
-	               flagredpatch);
-
-	// Draw team border
-	switch (plyr->userinfo.team) {
-		case TEAM_BLUE:
-			hud::DrawTexture(4, 61, hud_scale,
-			               hud::X_RIGHT, hud::Y_BOTTOM,
-			               hud::X_RIGHT, hud::Y_BOTTOM,
-			               flagiconteam);
-			break;
-		case TEAM_RED:
-			hud::DrawTexture(4, 43, hud_scale,
-			               hud::X_RIGHT, hud::Y_BOTTOM,
-			               hud::X_RIGHT, hud::Y_BOTTOM,
-			               flagiconteam);
-			break;
-		default:
-			break;
+	float killPct = 0.0f;
+	EColorRange killColor = CR_BRICK;
+	if (info.bossHealth)
+	{
+		killPct = static_cast<float>(info.bossHealth - info.bossDamage) / info.bossHealth;
+		killrow = "BOSS";
+		killColor = CR_GOLD;
+	}
+	else
+	{
+		killPct = static_cast<float>(info.killed()) / define.goalHealth();
+		killrow = "HORDE";
+		killColor = CR_GREEN;
 	}
 
-	// Draw team scores
-	ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, I_GetSurfaceHeight() - (62 + 16) * yscale,
-	                screen, TEAMpoints[TEAM_BLUE]);
-	ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, I_GetSurfaceHeight() - (44 + 16) * yscale,
-	                screen, TEAMpoints[TEAM_RED]);
+	const int y = R_StatusBarVisible() ? statusBarY() + SCREEN_BORDER : ABOVE_AMMO;
+	hud::DrawText(SCREEN_BORDER, y, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+	              hud::X_RIGHT, hud::Y_BOTTOM, waverow.c_str(), CR_GREY);
+	hud::EleBar(SCREEN_BORDER, y + LINE_SPACING, V_StringWidth("WAVE:0/0"), ::hud_scale,
+	            hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, killPct,
+	            killColor);
+	hud::DrawText(SCREEN_BORDER, y + LINE_SPACING + BAR_BORDER, ::hud_scale, hud::X_RIGHT,
+	              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY);
+
+	if (hud_hordeinfo_debug)
+	{
+		V_SetFont("DIGFONT");
+
+		int min, max;
+		P_NextSpawnTime(min, max);
+
+		std::string buf, buf2;
+		if (info.alive() > define.maxTotalHealth())
+		{
+			buf2 = "PAUSED";
+		}
+		else
+		{
+			StrFormat(buf2, "%d-%d sec", min, max);
+		}
+		StrFormat(buf, "Min HP: %d\nAlive HP: %d\nMax HP: %d\nSpawn: %s",
+		          define.minTotalHealth(), info.alive(), define.maxTotalHealth(),
+		          buf2.c_str());
+		hud::DrawText(SCREEN_BORDER, 64, ::hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+		              hud::X_LEFT, hud::Y_BOTTOM, buf.c_str(), CR_GREY);
+
+		V_SetFont("SMALLFONT");
+	}
+}
+
+static void drawGametype()
+{
+	if (G_IsTeamGame())
+	{
+		drawTeamGametype();
+		return;
+	}
+	else if (G_IsHordeMode())
+	{
+		drawHordeGametype();
+		return;
+	}
+}
+
+size_t proto_selected;
+
+/**
+ * @brief Draw protocol buffer packets
+ */
+void drawProtos()
+{
+	const Protos& protos = CL_GetTicProtos();
+	if (protos.size() == 0)
+		return;
+
+	V_SetFont("DIGFONT");
+
+	proto_selected = clamp(proto_selected, (size_t)0, protos.size() - 1);
+
+	// Starting y is five rows from the top.
+	int y = 7 * 5;
+
+	const double scale = 0.75;
+	const int indent = V_StringWidth(" >");
+
+	for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
+	{
+		bool selected = proto_selected == (it - protos.begin());
+
+		if (selected)
+		{
+			// Draw arrow
+			hud::DrawText(0, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
+			              " >", CR_GOLD, true);
+		}
+
+		// Give each protocol header its own unique color.
+		int rowColor = it->header % (NUM_TEXT_COLORS - 2);
+		if (rowColor >= CR_WHITE)
+			rowColor++;
+		if (rowColor >= CR_UNTRANSLATED)
+			rowColor++;
+
+		// Draw name
+		hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
+		              it->name.c_str(), rowColor, true);
+		y += V_StringHeight(it->name.c_str());
+
+		if (selected)
+		{
+			// Draw data
+			hud::DrawText(indent, y, 0.75, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT,
+			              hud::Y_TOP, it->data.c_str(), CR_WHITE, true);
+			y += V_StringHeight(it->data.c_str());
+		}
+	}
+
+	V_SetFont("SMALLFONT");
 }
 
 // [AM] Draw netdemo state
@@ -531,17 +744,30 @@ void drawNetdemo() {
 		return;
 	}
 
-	if (!hud_demobar)
+	if (!hud_demobar || R_DemoBarInvisible())
 		return;
 
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
 
+	V_SetFont("DIGFONT");
+
+	int color = CR_GOLD;
+	if (netdemo.isPlaying())
+	{
+		color = CR_GREEN;
+	}
+
+	// Dim the background.
+	hud::Dim(1, 41, 74, 13, ::hud_scale,
+		hud::X_LEFT, hud::Y_BOTTOM,
+		hud::X_LEFT, hud::Y_BOTTOM);
+
 	// Draw demo elapsed time
 	hud::DrawText(2, 47, hud_scale,
 	              hud::X_LEFT, hud::Y_BOTTOM,
 	              hud::X_LEFT, hud::Y_BOTTOM,
-	              hud::NetdemoElapsed().c_str(), CR_GREY);
+	              hud::NetdemoElapsed().c_str(), color);
 
 	// Draw map number/total
 	hud::DrawText(74, 47, hud_scale,
@@ -549,19 +775,23 @@ void drawNetdemo() {
 	              hud::X_RIGHT, hud::Y_BOTTOM,
 	              hud::NetdemoMaps().c_str(), CR_BRICK);
 
+	V_SetFont("SMALLFONT");
+
 	// Draw the bar.
 	// TODO: Once status bar notches have been implemented, put map
 	//       change times in as notches.
-	int color = CR_GOLD;
-	if (netdemo.isPlaying()) {
-		color = CR_GREEN;
-	}
 	ST_DrawBar(color, netdemo.calculateTimeElapsed(), netdemo.calculateTotalTime(),
 	           2 * xscale, I_GetSurfaceHeight() - 46 * yscale, 72 * xscale);
+
+	if (netdemo.isPaused() && ::hud_demoprotos)
+	{
+		drawProtos();
+	}
 }
 
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
 void OdamexHUD() {
+	std::string buf;
 	player_t *plyr = &displayplayer();
 
 	// TODO: I can probably get rid of these invocations once I put a
@@ -569,7 +799,7 @@ void OdamexHUD() {
 	unsigned int y, xscale, yscale;
 	xscale = hud_scale ? CleanXfac : 1;
 	yscale = hud_scale ? CleanYfac : 1;
-	y = I_GetSurfaceHeight() - (numheight + 4) * yscale;
+	y = I_GetSurfaceHeight() - (num_height + 4) * yscale;
 
 	// Draw Armor if the player has any
 	if (plyr->armortype && plyr->armorpoints) {
@@ -595,6 +825,18 @@ void OdamexHUD() {
 	                     hud::X_CENTER, hud::Y_BOTTOM,
 	                     faces[st_faceindex]);
 	ST_DrawNumRight(48 * xscale, y, screen, plyr->health);
+
+	if (g_lives)
+	{
+		// Lives are next to doomguy.  Supposed to be vertically-centered with his head.
+		int lives_color = CR_GREY;
+		if (plyr->lives <= 0)
+			lives_color = CR_DARKGREY;
+
+		StrFormat(buf, "x%d", plyr->lives);
+		hud::DrawText(48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+		              hud::X_LEFT, hud::Y_MIDDLE, buf.c_str(), lives_color, false);
+	}
 
 	// Draw Ammo
 	ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
@@ -628,53 +870,61 @@ void OdamexHUD() {
 
 	int color;
 	std::string str;
+	int iy = 4;
 
-	// Draw warmup state or timer
-	str = hud::Warmup(color);
-	if (!str.empty())
+	if (::hud_timer)
 	{
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
+		if (::hud_bigfont)
+			V_SetFont("BIGFONT");
+
+		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
+		iy += V_LineHeight() + 1;
+
+		if (::hud_bigfont)
+			V_SetFont("SMALLFONT");
 	}
-	else if (hud_timer)
+
+	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
 	{
-		str = hud::Timer(color);
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
+		if (::hud_bigfont)
+			V_SetFont("BIGFONT");
+
+		StrFormat(buf, "%d" TEXTCOLOR_DARKGREY "ups",
+		          static_cast<int>(HU_GetPlayerSpeed()));
+		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
+		iy += V_LineHeight() + 1;
+
+		if (::hud_bigfont)
+			V_SetFont("SMALLFONT");
 	}
 
 	// Draw other player name, if spying
-	str = hud::SpyPlayerName(color);
-	hud::DrawText(0, 12, hud_scale,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              str.c_str(), color);
+	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_GREY);
+	iy += V_LineHeight() + 1;
 
 	// Draw targeted player names.
-	hud::EATargets(0, 20, hud_scale,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               1, hud_targetcount);
+	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	               hud::Y_BOTTOM, 1, hud_targetcount);
+	iy += V_LineHeight() + 1;
 
 	// Draw stat lines.  Vertically aligned with the bottom of the armor
 	// number on the other side of the screen.
-	str = hud::PersonalSpread(color);
-	hud::DrawText(4, 32, hud_scale,
-	              hud::X_RIGHT, hud::Y_BOTTOM,
-	              hud::X_RIGHT, hud::Y_BOTTOM,
-	              str.c_str(), color);
-	str = hud::PersonalScore(color);
-	hud::DrawText(4, 24, hud_scale,
-	              hud::X_RIGHT, hud::Y_BOTTOM,
-	              hud::X_RIGHT, hud::Y_BOTTOM,
-	              str.c_str(), color);
+	if (::hud_bigfont)
+		V_SetFont("BIGFONT");
+
+	hud::DrawText(4, 24 + V_LineHeight() + 1, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+	              hud::X_RIGHT, hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY);
+	hud::DrawText(4, 24, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_GREY);
+
+	if (::hud_bigfont)
+		V_SetFont("SMALLFONT");
 
 	// Draw keys in coop
-	if (sv_gametype == GM_COOP) {
+	if (G_IsCoopGame()) {
 		for (byte i = 0;i < NUMCARDS;i++) {
 			if (plyr->cards[i]) {
 				hud::DrawTexture(4 + (i * 10), 24, hud_scale,
@@ -685,224 +935,558 @@ void OdamexHUD() {
 		}
 	}
 
-	// Draw CTF scoreboard
-	hud::drawCTF();
+	// Draw gametype scoreboard
+	hud::drawGametype();
 }
 
-// [AM] Spectator HUD.
-void SpectatorHUD() {
-	int color;
-	std::string str;
+struct drawToast_t
+{
+	int tic;
+	int pid_highlight;
+	std::string left;
+	Texture* icon;
+	std::string right;
+};
 
-	// Draw warmup state or timer
-	str = hud::Warmup(color);
-	if (!str.empty()) {
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
-	} else if (hud_timer) {
-		str = hud::Timer(color);
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
+typedef std::vector<drawToast_t> drawToasts_t;
+
+drawToasts_t g_Toasts;
+
+void DrawToasts()
+{
+	if (!hud_feedobits)
+		return;
+
+	V_SetFont("DIGFONT");
+	const int TOAST_HEIGHT = V_LineHeight() + 2;
+
+	std::string buffer;
+	int y = 0;
+
+	const float oldtrans = ::hud_transparency;
+	for (drawToasts_t::const_iterator it = g_Toasts.begin(); it != g_Toasts.end(); ++it)
+	{
+		// Only render the message if it's less than 2 seconds in.
+		int tics = ::gametic - it->tic;
+		if (tics < TICRATE * 2)
+		{
+			::hud_transparency.ForceSet(1.0);
+		}
+		else if (tics < TICRATE * 3)
+		{
+			tics %= TICRATE;
+			float trans = static_cast<float>(TICRATE - tics) / TICRATE;
+			::hud_transparency.ForceSet(trans);
+		}
+		else
+		{
+			::hud_transparency.ForceSet(0.0);
+		}
+
+		int x = 1;
+
+		// Right-hand side.
+		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
+		              hud::Y_TOP, it->right.c_str(), CR_GREY);
+		x += V_StringWidth(it->right.c_str()) + 1;
+
+		// Icon
+		const double yoff =
+		    (static_cast<double>(TOAST_HEIGHT) - static_cast<double>(it->icon->mHeight)) /
+		    2.0;
+
+		hud::DrawTexture(x, y + ceil(yoff), hud_scale, hud::X_RIGHT, hud::Y_TOP,
+		               hud::X_RIGHT, hud::Y_TOP, it->icon, false, true);
+		x += it->icon->mWidth + 1;
+
+		// Left-hand side.
+		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
+		              hud::Y_TOP, it->left.c_str(), CR_GREY);
+
+		y += TOAST_HEIGHT;
 	}
+	::hud_transparency.ForceSet(oldtrans);
 
-	// Draw other player name, if spying
-	str = hud::SpyPlayerName(color);
-	hud::DrawText(0, 12, hud_scale,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              str.c_str(), color);
-
-	// Draw help text if there's no other player name
-	if (str.empty()) {
-		hud::DrawText(0, 12, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::HelpText().c_str(), CR_GREY);
-	}
-
-	// Draw targeted player names.
-	hud::EATargets(0, 20, hud_scale,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               1, 0);
-
-	// Draw CTF scoreboard
-	hud::drawCTF();
+	V_SetFont("SMALLFONT");
 }
 
-// [AM] Original ZDoom HUD
-void ZDoomHUD() {
-	player_t *plyr = &displayplayer();
-	int y, i;
-	ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
-	int xscale = hud_scale ? CleanXfac : 1;
-	int yscale = hud_scale ? CleanYfac : 1;
-
-	y = I_GetSurfaceHeight() - (numheight + 4) * yscale;
-
-	// Draw health
+void ToastTicker()
+{
+	// Remove stale toasts in a loop.
+	drawToasts_t::iterator it = g_Toasts.begin();
+	while (it != g_Toasts.end())
 	{
-		const Texture* curr_powerup = medi[0];
-		int xPos = 20;
-		int yPos = 2;
+		int tics = ::gametic - it->tic;
 
-		if (plyr->powers[pw_strength])
+		if (tics >= TICRATE * 3)
 		{
-			curr_powerup = medi[1];
-			xPos -= 1;	// the x position of the Berzerk is 1 pixel to the right compared to the Medikit.
-			yPos += 4;	// the y position of the Berzerk is slightly lowered by 4. So make it the same y position as the medikit.
+			it = g_Toasts.erase(it);
 		}
-
-		if (hud_scale)
-			screen->DrawLucentTextureCleanNoMove(curr_powerup, xPos * CleanXfac, I_GetSurfaceHeight() - yPos * CleanYfac);
 		else
-			screen->DrawLucentTexture(curr_powerup, xPos, I_GetSurfaceHeight() - yPos);
-		ST_DrawNum(40 * xscale, y, screen, plyr->health);
-	}
-
-	// Draw armor
-	if (plyr->armortype && plyr->armorpoints)
-	{
-		const Texture* current_armor = armors[1];
-		if (plyr->armortype == 1)
-			current_armor = armors[0];
-
-		if (current_armor)
 		{
-			if (hud_scale)
-				screen->DrawLucentTextureCleanNoMove (current_armor, 20 * CleanXfac, y - 4*CleanYfac);
-			else
-				screen->DrawLucentTexture (current_armor, 20, y - 4);
+			++it;
 		}
-		ST_DrawNum (40*xscale, y - (armors[0]->mHeight + 3) * yscale, screen, plyr->armorpoints);
 	}
+}
 
-	// Draw ammo
-	if (ammotype < NUMAMMO)
+void PushToast(const toast_t& toast)
+{
+	std::string buffer;
+
+	drawToast_t drawToast;
+	drawToast.tic = ::gametic;
+	drawToast.pid_highlight = -1;
+
+	if (toast.flags & toast_t::LEFT_PID)
 	{
-		const Texture* ammopatch = ammos[weaponinfo[plyr->readyweapon].ammotype];
-
-		if (hud_scale)
-			screen->DrawLucentTextureCleanNoMove(ammopatch, I_GetSurfaceWidth() - 14 * CleanXfac, I_GetSurfaceHeight() - 4 * CleanYfac);
+		std::string netname = idplayer(toast.left_pid).userinfo.netname;
+		if (consoleplayer().id == toast.left_pid)
+		{
+			buffer += TEXTCOLOR_GOLD + netname;
+		}
+		else if (G_IsTeamGame())
+		{
+			TeamInfo* info = GetTeamInfo(idplayer(toast.left_pid).userinfo.team);
+			buffer += info->ToastColor + netname;
+		}
 		else
-			screen->DrawLucentTexture(ammopatch, I_GetSurfaceWidth() - 14, I_GetSurfaceHeight() - 4);
-
-		ST_DrawNumRight(I_GetSurfaceWidth() - 25 * xscale, y, screen, plyr->ammo[ammotype]);
+		{
+			buffer += netname;
+		}
+	}
+	else if (toast.flags & toast_t::LEFT)
+	{
+		buffer += toast.left;
 	}
 
-	// Draw top-right info. (Keys/Frags/Score)
-    if (sv_gametype == GM_CTF)
-    {
-		hud::drawCTF();
-    }
-	else if (sv_gametype != GM_COOP)
+	if (!buffer.empty())
 	{
-		// Draw frags (in DM)
-		ST_DrawNumRight(I_GetSurfaceWidth() - (2 * xscale), 2 * yscale, screen, plyr->fragcount);
+		drawToast.left = buffer;
+	}
+
+	if (toast.flags & toast_t::ICON)
+	{
+		drawToast.icon = ::ToastIcon[toast.icon];
+	}
+
+	buffer.clear();
+	if (toast.flags & toast_t::RIGHT_PID)
+	{
+		std::string netname = idplayer(toast.right_pid).userinfo.netname;
+		if (consoleplayer().id == toast.right_pid)
+		{
+			buffer += TEXTCOLOR_GOLD + netname;
+		}
+		else if (G_IsTeamGame())
+		{
+			TeamInfo* info = GetTeamInfo(idplayer(toast.right_pid).userinfo.team);
+			buffer += info->ToastColor + netname;
+		}
+		else
+		{
+			buffer += netname;
+		}
+	}
+	else if (toast.flags & toast_t::RIGHT)
+	{
+		buffer += toast.right;
+	}
+
+	if (!buffer.empty())
+	{
+		drawToast.right = buffer;
+	}
+
+	g_Toasts.push_back(drawToast);
+}
+
+static std::string WinToColorString(const WinInfo& win)
+{
+	std::string buf;
+	if (win.type == WinInfo::WIN_PLAYER)
+	{
+		const player_t& pl = idplayer(win.id);
+		if (pl.userinfo.netname.empty())
+		{
+			StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+		}
+		else
+		{
+			StrFormat(buf, TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL,
+			          pl.userinfo.netname.c_str());
+		}
+		return buf;
+	}
+	else if (win.type == WinInfo::WIN_TEAM)
+	{
+		const TeamInfo& tm = *GetTeamInfo((team_t)win.id);
+		if (tm.Team == TEAM_NONE)
+		{
+			StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+		}
+		else
+		{
+			StrFormat(buf, "%s%s" TEXTCOLOR_NORMAL, tm.TextColor.c_str(),
+			          tm.ColorString.c_str());
+		}
+		return buf;
+	}
+
+	StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+	return buf;
+}
+
+struct levelStateLines_t
+{
+	std::string title;
+	std::string subtitle[4];
+	float lucent;
+	levelStateLines_t() : lucent(1.0f) { }
+
+	void lucentFade(int tics, const int start, const int end)
+	{
+		if (tics < start)
+		{
+			lucent = 1.0f;
+		}
+		else if (tics < end)
+		{
+			tics %= TICRATE;
+			lucent = static_cast<float>(TICRATE - tics) / TICRATE;
+		}
+		else
+		{
+			lucent = 0.0f;
+		}
+	}
+};
+
+static void LevelStateHorde(levelStateLines_t& lines)
+{
+	const hordeInfo_t& info = P_HordeInfo();
+	const hordeDefine_t& define = G_HordeDefine(info.defineID);
+
+	int tics = 0;
+	if (info.hasBoss())
+	{
+		if (gametic % 18 < 9)
+		{
+			lines.title = TEXTCOLOR_RED "!! WARNING !!";
+		}
+		else
+		{
+			lines.title = TEXTCOLOR_RED "WARNING";
+		}
+		lines.subtitle[0] =
+		    "Defeat the " TEXTCOLOR_YELLOW "boss " TEXTCOLOR_GREY "to win the wave";
+		tics = info.bossTic();
 	}
 	else
 	{
-		// Draw keys (not DM)
-		y = CleanYfac;
-		for (i = 0; i < 6; i++)
+		if (::g_horde_waves.asInt() != 0)
 		{
-			if (plyr->cards[i])
-			{
-				if (hud_scale)
-					screen->DrawLucentTextureCleanNoMove(keys[i], I_GetSurfaceWidth() - 10*CleanXfac, y);
-				else
-					screen->DrawLucentTexture(keys[i], I_GetSurfaceWidth() - 10, y);
+			StrFormat(lines.title,
+			          "Wave " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "of " TEXTCOLOR_YELLOW
+			          "%d",
+			          info.wave, ::g_horde_waves.asInt());
+		}
+		else
+		{
+			StrFormat(lines.title, "Wave " TEXTCOLOR_YELLOW "%d", info.wave);
+		}
 
-				y += (8 + (i < 3 ? 0 : 2)) * yscale;
+		StrFormat(lines.subtitle[0], "\"" TEXTCOLOR_YELLOW "%s" TEXTCOLOR_GREY "\"",
+		          define.name.c_str());
+
+		StrFormat(lines.subtitle[1], "Difficulty: %s", define.difficulty(true));
+
+		// Detect when there are new weapons to pick up.
+		StringTokens weapList;
+		if (!consoleplayer().spectator)
+		{
+			weapList = define.weaponStrings(&consoleplayer());
+		}
+		else
+		{
+			// Spectators can see all weapons in a wave.
+			weapList = define.weaponStrings(NULL);
+		}
+
+		if (!weapList.empty())
+		{
+			StrFormat(lines.subtitle[3], TEXTCOLOR_GREY "Weapons: " TEXTCOLOR_GREEN "%s",
+			          JoinStrings(weapList, " ").c_str());
+		}
+
+		tics = ::level.time - info.waveTime;
+	}
+
+	// Only render the wave message if it's less than 3 seconds in.
+	lines.lucentFade(tics, TICRATE * 3, TICRATE * 4);
+}
+
+void LevelStateHUD()
+{
+	// Don't bother with levelstate information in lobbies.
+	if (::level.flags & ::LEVEL_LOBBYSPECIAL)
+	{
+		return;
+	}
+
+	levelStateLines_t lines;
+	switch (::levelstate.getState())
+	{
+	case LevelState::WARMUP: {
+		if (consoleplayer().spectator)
+		{
+			break;
+		}
+
+		lines.title = "Warmup";
+
+		if (::sv_warmup)
+		{
+			if (consoleplayer().ready)
+			{
+				lines.subtitle[0] = "Waiting for other players to ready up...";
 			}
+			else
+			{
+				StrFormat(lines.subtitle[0],
+				          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
+				          " when ready to play",
+				          ::Bindings.GetKeynameFromCommand("ready").c_str());
+			}
+		}
+		else
+		{
+			lines.subtitle[0] = "Waiting for other players to join...";
+		}
+
+		break;
+	}
+	case LevelState::WARMUP_COUNTDOWN:
+	case LevelState::WARMUP_FORCED_COUNTDOWN: {
+		StrFormat(lines.title, "%s", G_GametypeName().c_str());
+		StrFormat(lines.subtitle[0], "Match begins in " TEXTCOLOR_GREEN "%d",
+		          ::levelstate.getCountdown());
+		break;
+	}
+	case LevelState::PREROUND_COUNTDOWN: {
+		StrFormat(lines.title, "Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
+		StrFormat(lines.subtitle[0], "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
+		          ::levelstate.getCountdown());
+		break;
+	}
+	case LevelState::INGAME: {
+		if (G_IsHordeMode())
+		{
+			LevelStateHorde(lines);
+		}
+		else if (G_CanShowFightMessage())
+		{
+			if (G_IsSidesGame())
+			{
+				if (G_IsDefendingTeam(consoleplayer().userinfo.team))
+				{
+					lines.title = TEXTCOLOR_YELLOW "DEFEND!";
+					lines.subtitle[0] = "Defend the flag!";
+				}
+				else
+				{
+					lines.title = TEXTCOLOR_GREEN "CAPTURE!";
+					lines.subtitle[0] = "Capture the flag!";
+				}
+
+				// Only render the message if it's less than 2 seconds in.
+				lines.lucentFade(::level.time - ::levelstate.getIngameStartTime(),
+				                 TICRATE * 2, TICRATE * 3);
+			}
+			else if (G_IsCoopGame())
+			{
+				lines.title = "GO!\n";
+				if (G_IsRoundsGame() && g_roundlimit)
+				{
+					StrFormat(lines.subtitle[0],
+					          TEXTCOLOR_GREEN "%d" TEXTCOLOR_GREY " attempts left",
+					          g_roundlimit.asInt() - ::levelstate.getRound() + 1);
+				}
+			}
+			else
+			{
+				lines.title = "FIGHT!\n";
+			}
+
+			// Only render the "FIGHT" message if it's less than 2 seconds in.
+			lines.lucentFade(::level.time - ::levelstate.getIngameStartTime(),
+			                 TICRATE * 2, TICRATE * 3);
+		}
+		break;
+	}
+	case LevelState::ENDROUND_COUNTDOWN: {
+		StrFormat(lines.title,
+		          "Round " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
+		          ::levelstate.getRound());
+
+		WinInfo win = ::levelstate.getWinInfo();
+		if (win.type == WinInfo::WIN_DRAW)
+			StrFormat(lines.subtitle[0], "Tied at the end of the round");
+		else if (win.type == WinInfo::WIN_PLAYER)
+			StrFormat(lines.subtitle[0], "%s wins the round",
+			          WinToColorString(win).c_str());
+		else if (win.type == WinInfo::WIN_TEAM)
+			StrFormat(lines.subtitle[0], "%s team wins the round",
+			          WinToColorString(win).c_str());
+		else
+			StrFormat(lines.subtitle[0], "Next round in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
+		break;
+	}
+	case LevelState::ENDGAME_COUNTDOWN: {
+		StrFormat(lines.title, "Match complete");
+
+		WinInfo win = ::levelstate.getWinInfo();
+		if (win.type == WinInfo::WIN_DRAW)
+			StrFormat(lines.subtitle[0], "The game ends in a tie");
+		else if (win.type == WinInfo::WIN_PLAYER)
+			StrFormat(lines.subtitle[0], "%s wins!", WinToColorString(win).c_str());
+		else if (win.type == WinInfo::WIN_TEAM)
+			StrFormat(lines.subtitle[0], "%s team wins!", WinToColorString(win).c_str());
+		else
+			StrFormat(lines.subtitle[0], "Intermission in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
+		break;
+	}
+	default:
+		break;
+	}
+
+	V_SetFont("BIGFONT");
+
+	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	int w = V_StringWidth(lines.title.c_str()) * CleanYfac;
+	int h = 12 * CleanYfac;
+
+	const float oldtrans = ::hud_transparency;
+	::hud_transparency = lines.lucent;
+
+	if (::hud_transparency > 0.0f)
+	{
+		::screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
+		                               surface_height / 4 - h / 2, lines.title.c_str(),
+		                               ::CleanYfac, ::CleanYfac);
+	}
+
+	V_SetFont("SMALLFONT");
+	int height = V_StringHeight("M") + 1;
+
+	for (size_t i = 0; i < ARRAY_LENGTH(lines.subtitle); i++)
+	{
+		w = V_StringWidth(lines.subtitle[i].c_str()) * ::CleanYfac;
+		h = 8 * ::CleanYfac;
+		if (::hud_transparency > 0.0f)
+		{
+			::screen->DrawTextStretchedLuc(
+			    CR_GREY, surface_width / 2 - w / 2,
+			    (surface_height / 4 - h / 2) + (12 * ::CleanYfac) +
+			        (i * height * ::CleanYfac),
+			    lines.subtitle[i].c_str(), ::CleanYfac, ::CleanYfac);
 		}
 	}
 
+	::hud_transparency.ForceSet(oldtrans);
+}
+
+// [AM] Spectator HUD.
+void SpectatorHUD()
+{
 	int color;
-	std::string str;
+	int iy = 4;
+
+	const Texture* curr_powerup = medi[0];
+	int xPos = 20;
+	int yPos = 2;
 
 	// Draw warmup state or timer
-	str = hud::Warmup(color);
-	if (!str.empty()) {
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
-	} else if (hud_timer) {
-		str = hud::Timer(color);
-		hud::DrawText(0, 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
+	if (::hud_timer)
+	{
+		if (::hud_bigfont)
+		{
+			V_SetFont("BIGFONT");
+		}
+
+		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
+		iy += V_LineHeight() + 1;
+
+		if (::hud_bigfont)
+			V_SetFont("SMALLFONT");
 	}
 
-	// Draw other player name, if spying
-	str = hud::SpyPlayerName(color);
-	hud::DrawText(0, 12, hud_scale,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              str.c_str(), color);
+	// Draw help text - spy player name is handled elsewhere.
+	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, hud::HelpText().c_str(), CR_GREY);
+	iy += V_LineHeight() + 1;
 
 	// Draw targeted player names.
-	hud::EATargets(0, 20, hud_scale,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               1, 0);
+	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	               hud::Y_BOTTOM, 1, 0);
+
+	// Draw gametype scoreboard
+	hud::drawGametype();
 }
 
 // [AM] HUD drawn with the Doom Status Bar.
 void DoomHUD()
 {
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-
-	// ST_Y is the number of pixels of viewable space, taking into account the
-	// status bar.  We need to convert this into scaled pixels as best we can.
-	int st_y = surface_height - ST_StatusBarY(surface_width, surface_height);
-	if (hud_scale)
-		st_y /= CleanYfac;
-
-	int color;
-	std::string str;
+	int st_y = statusBarY() + 4;
 
 	// Draw warmup state or timer
-	str = hud::Warmup(color);
-	if (!str.empty())
+	if (hud_timer)
 	{
-		hud::DrawText(0, st_y + 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
+		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_UNTRANSLATED);
+		st_y += V_LineHeight() + 1;
 	}
-	else if (hud_timer)
+
+	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
 	{
-		str = hud::Timer(color);
-		hud::DrawText(0, st_y + 4, hud_scale,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              hud::X_CENTER, hud::Y_BOTTOM,
-		              str.c_str(), color);
+		std::string buf;
+		StrFormat(buf, "%d" TEXTCOLOR_DARKGREY "ups",
+		          static_cast<int>(HU_GetPlayerSpeed()));
+		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
+		st_y += V_LineHeight() + 1;
 	}
 
 	// Draw other player name, if spying
-	str = hud::SpyPlayerName(color);
-	hud::DrawText(0, st_y + 12, hud_scale,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              hud::X_CENTER, hud::Y_BOTTOM,
-	              str.c_str(), color);
+	hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_UNTRANSLATED);
+	st_y += V_LineHeight() + 1;
 
 	// Draw targeted player names.
-	hud::EATargets(0, st_y + 20, hud_scale,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               1, hud_targetcount);
+	hud::EATargets(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	               hud::Y_BOTTOM, 1, hud_targetcount);
+	st_y += V_LineHeight() + 1;
 
-	// Draw CTF scoreboard
-	hud::drawCTF();
+	// Draw gametype scoreboard
+	hud::drawGametype();
 }
 
 }
+
+BEGIN_COMMAND(netprotoup)
+{
+	if (hud::proto_selected > 0)
+		hud::proto_selected -= 1;
+}
+END_COMMAND(netprotoup)
+
+BEGIN_COMMAND(netprotodown)
+{
+	// Rely on clamp in drawer
+	hud::proto_selected += 1;
+}
+END_COMMAND(netprotodown)
 
 VERSION_CONTROL (st_new_cpp, "$Id$")

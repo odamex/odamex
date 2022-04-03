@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __R_PLANE_H__
-#define __R_PLANE_H__
+#pragma once
 
 #include "r_data.h"
 #include "resources/res_resourceid.h"
@@ -77,8 +75,3 @@ visplane_t *R_CheckPlane (visplane_t *pl, int start, int stop);
 
 // [RH] Added for multires support
 bool R_PlaneInitData(IWindowSurface* surface);
-
-
-#endif // __R_PLANE_H__
-
-

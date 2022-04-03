@@ -22,18 +22,16 @@
 //-----------------------------------------------------------------------------
 
 
-#include <cstring>
+#include "odamex.h"
+
 #include <cmath>
 #include <exception>
-#include <stdio.h>
 
 #include "cmdlib.h"
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "m_alloc.h"
 
-#include "doomstat.h"
-#include "c_cvars.h"
 
 #include "d_netinf.h"
 
@@ -781,11 +779,37 @@ BEGIN_COMMAND (help)
 }
 END_COMMAND (help)
 
-// [AM] Crash Odamex on purpose - with no survivors.  Used for testing crash handlers.
+BEGIN_COMMAND(errorout)
+{
+	I_Error("errorout was run from the console");
+}
+END_COMMAND(errorout)
+
+BEGIN_COMMAND(fatalout)
+{
+	I_FatalError("fatalout was run from the console");
+}
+END_COMMAND(fatalout)
+
+#if defined _WIN32
+
 BEGIN_COMMAND(crashout)
 {
 	std::terminate();
 }
 END_COMMAND(crashout)
+
+#elif defined UNIX
+
+#include <signal.h>
+#include <unistd.h>
+
+BEGIN_COMMAND(crashout)
+{
+	kill(getpid(), SIGSEGV);
+}
+END_COMMAND(crashout)
+
+#endif
 
 VERSION_CONTROL (c_cvars_cpp, "$Id$")

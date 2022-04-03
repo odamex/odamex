@@ -34,8 +34,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __TABLES_H__
-#define __TABLES_H__
+#pragma once
 
 #include "m_fixed.h"
 
@@ -61,8 +60,11 @@ extern const fixed_t		finetangent[FINEANGLES/2];
 // Binary Angle Measument, BAM.
 #define ANG45			0x20000000
 #define ANG90			0x40000000
+#define ANG135			0x60000000
 #define ANG180			0x80000000
+#define ANG225			0xa0000000
 #define ANG270			0xc0000000
+#define ANG315			0xe0000000
 #define ANG(n)			((ANG45/45)*(n))
 
 #define ANG360  0xffffffff
@@ -85,8 +87,9 @@ extern const angle_t *p_tantoangle;
 void Table_InitTanToAngle(void);
 void Table_SetTanToAngle(int version);
 
-
-
-#endif // __TABLES_H__
-
-
+// More utility functions, courtesy of Quasar (James Haley).
+// These are straight from Eternity so demos stay in sync.
+inline static angle_t FixedToAngle(fixed_t a)
+{
+	return (angle_t)(((uint64_t)a * ANG(1)) >> FRACBITS);
+}

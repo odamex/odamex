@@ -23,11 +23,10 @@
 #ifndef __C_MAPLIST__
 #define __C_MAPLIST__
 
-#include <string>
-#include <vector>
 
 // Maplist statuses
-typedef enum {
+enum maplist_status_t
+{
 	// The maplist cache is waiting on a status update from the server.
 	MAPLIST_WAIT,
 	// The maplist cache is out-of-date and is currently being updated.
@@ -42,7 +41,8 @@ typedef enum {
 	MAPLIST_TIMEOUT,
 	// The maplist cache tried to update but was throttled by the server.
 	MAPLIST_THROTTLED
-} maplist_status_t;
+};
+#define NUM_MAPLIST_STATUS (MAPLIST_THROTTLED + 1)
 
 // Map list entry structure
 typedef struct {
@@ -51,6 +51,7 @@ typedef struct {
 } maplist_entry_t;
 
 // Query result
-typedef std::vector<std::pair<size_t, maplist_entry_t*> > query_result_t;
+typedef std::pair<size_t, maplist_entry_t*> maplist_qrow_t;
+typedef std::vector<maplist_qrow_t> maplist_qrows_t;
 
 #endif

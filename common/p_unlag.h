@@ -25,12 +25,9 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __PUNLAG_H__
-#define __PUNLAG_H__
+#pragma once
 
-#include <vector>
 #include <map>
-#include "doomtype.h"
 #include "m_fixed.h"
 #include "actor.h"
 #include "d_player.h"
@@ -123,7 +120,3 @@ private:
 
 	void debugReconciliation(byte shooter_id);
 };
-
-
-#endif
-

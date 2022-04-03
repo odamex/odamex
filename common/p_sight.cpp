@@ -24,12 +24,14 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomdef.h"
+#include "odamex.h"
+
 
 #include "i_system.h"
 #include "p_local.h"
 #include "m_random.h"
 #include "m_vectors.h"
+#include "p_mapformat.h"
 
 // State.
 #include "r_state.h"
@@ -48,7 +50,6 @@ fixed_t		t2y;
 int		sightcounts[2];
 int		sightcounts2[3];
 
-extern bool HasBehavior;
 EXTERN_CVAR (co_zdoomphys)
 
 /*
@@ -408,7 +409,7 @@ bool P_CheckSightZDoom(const AActor *t1, const AActor *t2)
 	//
 	// check for trivial rejection
 	//
-	if (rejectmatrix && rejectmatrix[pnum >> 3] & (1 << (pnum & 7)))
+	if (!rejectempty && rejectmatrix[pnum >> 3] & (1 << (pnum & 7)))
 	{
 		sightcounts2[0]++;
 		return false;			// can't possibly be connected
@@ -469,7 +470,7 @@ bool P_CheckSightEdgesZDoom(const AActor *t1, const AActor *t2, float radius_boo
 	//
 	// check for trivial rejection
 	//
-	if (rejectmatrix && rejectmatrix[pnum >> 3] & (1 << (pnum & 7)))
+	if (!rejectempty && rejectmatrix[pnum >> 3] & (1 << (pnum & 7)))
 	{
 		sightcounts2[0]++;
 		return false;                   // can't possibly be connected
@@ -803,7 +804,7 @@ bool P_CheckSightDoom(const AActor* t1, const AActor* t2)
     bitnum = 1 << (pnum & 7);
 	
     // Check in REJECT table.
-    if (rejectmatrix && rejectmatrix[bytenum] & bitnum)
+	if (!rejectempty && rejectmatrix[bytenum] & bitnum)
     {
 		sightcounts[0]++;
 		
@@ -858,7 +859,7 @@ static bool P_CheckSightDoom
     bitnum = 1 << (pnum & 7);
 	
     // Check in REJECT table.
-    if (rejectmatrix && rejectmatrix[bytenum] & bitnum)
+	if (!rejectempty && rejectmatrix[bytenum] & bitnum)
     {
 		sightcounts[0]++;
 		
@@ -889,7 +890,7 @@ static bool P_CheckSightDoom
 
 bool P_CheckSight(const AActor* t1, const AActor* t2)
 {
-	if (co_zdoomphys || HasBehavior)
+	if (co_zdoomphys || map_format.getZDoom())
 		return P_CheckSightZDoom(t1, t2);
 	else
 		return P_CheckSightDoom(t1, t2);
@@ -935,11 +936,31 @@ bool P_CheckSightEdgesDoom
 
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost)
 {
-	if (co_zdoomphys || HasBehavior)
+	if (co_zdoomphys || map_format.getZDoom())
 		return P_CheckSightEdgesZDoom(t1, t2, radius_boost);
 	else
 		return P_CheckSightEdgesDoom(t1, t2, radius_boost);
 }
 
-VERSION_CONTROL (p_sight_cpp, "$Id$")
 
+//
+// P_CheckFov
+// Returns true if t2 is within t1's field of view.
+// Not directly related to P_CheckSight, but often
+// used in tandem.
+//
+// Adapted from Eternity, so big thanks to Quasar
+//
+bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov)
+{
+	angle_t angle, minang, maxang;
+
+	angle = R_PointToAngle2(t1->x, t1->y, t2->x, t2->y);
+	minang = t1->angle - fov / 2;
+	maxang = t1->angle + fov / 2;
+
+	return ((minang > maxang) ? angle >= minang || angle <= maxang
+	                          : angle >= minang && angle <= maxang);
+}
+
+VERSION_CONTROL (p_sight_cpp, "$Id$")

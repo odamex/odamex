@@ -21,17 +21,13 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __R_DEFS_H__
-#define __R_DEFS_H__
+#pragma once
 
 // Screenwidth.
-#include "doomdef.h"
 
 // Some more or less basic data types
 // we depend on.
 #include "m_fixed.h"
-#include "m_swap.h"
 
 // We rely on the thinker data struct
 // to handle sound origins in sectors.
@@ -51,14 +47,41 @@
 
 extern int MaxDrawSegs;
 
-// [AM] The size of a Macbook Pro Retina display.
-#define MAXWIDTH				2880
-#define MAXHEIGHT				1800
+// The size of an 8K 4:3 display.
+#define MAXWIDTH				8192
+#define MAXHEIGHT				6144
 
 //
 // INTERNAL MAP TYPES
 //	used by play and refresh
 //
+
+//
+// The SECTORS record, at runtime.
+// Stores things/mobjs.
+//
+
+#define NO_TOPTEXTURES             0x00000001
+#define NO_BOTTOMTEXTURES          0x00000002
+#define SECTOR_IS_CLOSED           0x00000004
+#define NULL_SECTOR                0x00000008
+#define MISSING_TOPTEXTURES        0x00000010
+#define MISSING_BOTTOMTEXTURES     0x00000020
+
+#define SECF_SECRET                0x00000040
+#define SECF_WASSECRET             0x00000080
+#define SECF_HIDDEN                0x00000100
+#define SECF_ENDGODMODE            0x00000200
+#define SECF_ENDLEVEL              0x00000400
+#define SECF_DMGTERRAINFX          0x00000800
+#define SECF_HAZARD                0x00001000
+#define SECF_DMGUNBLOCKABLE        0x00002000
+#define SECF_FRICTION              0x00004000
+#define SECF_PUSH                  0x00008000
+#define SECF_DAMAGEFLAGS (SECF_ENDGODMODE|SECF_ENDLEVEL|SECF_DMGTERRAINFX|SECF_HAZARD|SECF_DMGUNBLOCKABLE)
+#define SECF_TRANSFERMASK (SECF_SECRET|SECF_WASSECRET|SECF_DAMAGEFLAGS|SECF_FRICTION|SECF_PUSH)
+
+#define FRICTION_LOW 0xf900
 
 //
 // Your plain vanilla vertex.
@@ -69,7 +92,7 @@ struct vertex_s
 {
 	fixed_t x, y;
 };
-typedef struct vertex_s vertex_t;
+typedef vertex_s vertex_t;
 
 // Forward of LineDefs, for Sectors.
 struct line_s;
@@ -120,6 +143,28 @@ enum
 	FAKED_AboveCeiling
 };
 
+enum SectorPropChanges
+{
+	SPC_FlatPic = 1,
+	SPC_LightLevel = 2,
+	SPC_Color = 4,
+	SPC_Fade = 8,
+	SPC_Gravity = 16,
+	SPC_Panning = 32,
+	SPC_Scale = 64,
+	SPC_Rotation = 128,
+	SPC_AlignBase = 256,
+	SPC_Max = 512,
+};
+
+enum SideDefPropChanges
+{
+	SDPC_TexTop = 1,
+	SDPC_TexMid = 2,
+	SDPC_TexBottom = 4,
+	SDPC_Max = 8,
+};
+
 //
 // Plane
 //
@@ -132,7 +177,7 @@ struct plane_s
 	fixed_t		texx, texy;
 	sector_s	*sector;
 };
-typedef struct plane_s plane_t;
+typedef plane_s plane_t;
 
 struct dyncolormap_s;
 
@@ -150,6 +195,8 @@ struct sector_s
 	short		special;
 	short		tag;
 	int			nexttag,firsttag;	// killough 1/30/98: improves searches for tags.
+	bool		secretsector;		// Ch0wW : This is a secret sector !
+	unsigned int flags;				// [Blair] Let's use actual sector flags instead of shoehorning them in special
 
     // 0 = untraversed, 1,2 = sndlines -1
 	int 				soundtraversed;
@@ -205,10 +252,10 @@ struct sector_s
 	fixed_t base_floor_angle, base_floor_yoffs;
 
 	// killough 3/7/98: support flat heights drawn at another sector's heights
-	struct sector_s *heightsec;		// other sector, or NULL if no other sector
+	sector_s *heightsec;		// other sector, or NULL if no other sector
 
 	// killough 4/11/98: support for lightlevels coming from another sector
-	struct sector_s *floorlightsec, *ceilinglightsec;
+	sector_s *floorlightsec, *ceilinglightsec;
 
 	argb_t bottommap, midmap, topmap; // killough 4/4/98: dynamic colormaps
 											// [RH] these can also be blend values if
@@ -216,15 +263,17 @@ struct sector_s
 
 	// list of mobjs that are at least partially in the sector
 	// thinglist is a subset of touching_thinglist
-	struct msecnode_s *touching_thinglist;				// phares 3/14/98
+	msecnode_s *touching_thinglist;				// phares 3/14/98
 
 	int linecount;
-	struct line_s **lines;		// [linecount] size
+	line_s **lines;		// [linecount] size
 
 	float gravity;		// [RH] Sector gravity (1.0 is normal)
-	short damage;		// [RH] Damage to do while standing on floor
+	int damageamount;
+	int damageinterval;
+	int leakrate;
 	short mod;			// [RH] Means-of-death for applied damage
-	struct dyncolormap_s *colormap;	// [RH] Per-sector colormap
+	dyncolormap_s *colormap;	// [RH] Per-sector colormap
 
 	bool alwaysfake;	// [RH] Always apply heightsec modifications?
 	byte waterzone;		// [RH] Sector is underwater?
@@ -239,8 +288,9 @@ struct sector_s
 
 	// [SL] 2012-01-16 - planes for sloping ceilings/floors
 	plane_t floorplane, ceilingplane;
+	int SectorChanges;
 };
-typedef struct sector_s sector_t;
+typedef sector_s sector_t;
 
 
 //
@@ -267,8 +317,9 @@ struct side_s
 	short		linenum;
 	short		special;
 	short		tag;
+	int SidedefChanges;
 };
-typedef struct side_s side_t;
+typedef side_s side_t;
 
 
 //
@@ -295,8 +346,8 @@ struct line_s
     fixed_t	dy;
 
     // Animation related.
-    short		flags;
-	byte		special;	// [RH] specials are only one byte (like Hexen)
+    unsigned int flags;		// [Blair]MBF21 compatibility
+	short		special;    // [Blair] Change to short for compatibility
 	byte		lucency;	// <--- translucency (0-255/255=opaque)
 
 	// Visual appearance: SideDefs.
@@ -325,8 +376,10 @@ struct line_s
 	int			firstid, nextid;
 	bool wastoggled;
 	bool switchactive;
+	bool PropertiesChanged;
+	bool SidedefChanged;
 };
-typedef struct line_s line_t;
+typedef line_s line_t;
 
 // phares 3/14/98
 //
@@ -348,10 +401,10 @@ typedef struct msecnode_s
 {
 	sector_t			*m_sector;	// a sector containing this object
 	AActor				*m_thing;	// this object
-	struct msecnode_s	*m_tprev;	// prev msecnode_t for this thing
-	struct msecnode_s	*m_tnext;	// next msecnode_t for this thing
-	struct msecnode_s	*m_sprev;	// prev msecnode_t for this sector
-	struct msecnode_s	*m_snext;	// next msecnode_t for this sector
+	msecnode_s	*m_tprev;	// prev msecnode_t for this thing
+	msecnode_s	*m_tnext;	// next msecnode_t for this thing
+	msecnode_s	*m_sprev;	// prev msecnode_t for this sector
+	msecnode_s	*m_snext;	// next msecnode_t for this sector
 	BOOL visited;	// killough 4/4/98, 4/7/98: used in search algorithms
 } msecnode_t;
 
@@ -377,7 +430,7 @@ struct seg_s
 
 	fixed_t		length;
 };
-typedef struct seg_s seg_t;
+typedef seg_s seg_t;
 
 // ===== Polyobj data =====
 typedef struct FPolyObj
@@ -400,8 +453,8 @@ typedef struct FPolyObj
 typedef struct polyblock_s
 {
 	polyobj_t *polyobj;
-	struct polyblock_s *prev;
-	struct polyblock_s *next;
+	polyblock_s *prev;
+	polyblock_s *next;
 } polyblock_t;
 
 //
@@ -436,8 +489,92 @@ struct node_s
 	fixed_t			bbox[2][4];		// Bounding box for each child.
 	unsigned int	children[2];	// If NF_SUBSECTOR its a subsector.
 };
-typedef struct node_s node_t;
+typedef node_s node_t;
 
+
+
+// posts are runs of non masked source pixels
+struct post_t
+{
+	byte topdelta; // -1 is the last post in a column
+	byte length;   // length data bytes follows
+
+	/**
+	 * @brief Return the post's absolute topdelta accounting for tall
+	 *        patches, which treat topdelta as relative.
+	 * 
+	 * @param lastAbs Last absolute topdelta.
+	 */
+	int abs(const int lastAbs) const
+	{
+		if (topdelta <= lastAbs)
+			return lastAbs + topdelta;
+		else
+			return topdelta;
+	}
+
+	/**
+	 * @brief Size of the post, including header.
+	 */
+	uint32_t size() const
+	{
+		return length + 3;
+	}
+	
+	/**
+	 * @brief Return a pointer to post data.
+	 */
+	byte* data() const
+	{
+		return (byte*)(this) + 3;
+	}
+
+	/**
+	 * @brief Return a pointer to the next post in the column.
+	 */
+	post_t* next() const
+	{
+		return (post_t*)((byte*)this + length + 4);
+	}
+
+	/**
+	 * @brief Check if the post ends the column.
+	 */
+	bool end() const
+	{
+		return topdelta == 0xFF;
+	}
+};
+
+// column_t is a list of 0 or more post_t, (byte)-1 terminated
+typedef post_t	column_t;
+
+struct tallpost_t
+{
+	unsigned short topdelta;
+	unsigned short length;
+
+	uint32_t size() const
+	{
+		return length + 4;
+	}
+	byte* data() const
+	{
+		return (byte*)(this) + 4;
+	}
+	tallpost_t* next() const
+	{
+		return (tallpost_t*)((byte*)(this) + 4 + length);
+	}
+	bool end() const
+	{
+		return topdelta == 0xFFFF;
+	}
+	void writeend()
+	{
+		topdelta = 0xFFFF;
+	}
+};
 
 //
 // OTHER TYPES
@@ -465,7 +602,7 @@ struct drawseg_s
     const int*		sprbottomclip;
 	const palindex_t**	midposts;
 };
-typedef struct drawseg_s drawseg_t;
+typedef drawseg_s drawseg_t;
 
 
 // A vissprite_t is a thing
@@ -504,6 +641,7 @@ struct vissprite_s
     shaderef_t		colormap;
 
 	int 			mobjflags;
+	bool			spectator;		// [Blair] Mark if this visprite belongs to a spectator.
 
 	translationref_t translation;	// [RH] for translation;
 	sector_t*		heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
@@ -512,7 +650,7 @@ struct vissprite_s
 
 	AActor*			mo;
 };
-typedef struct vissprite_s vissprite_t;
+typedef vissprite_s vissprite_t;
 
 //
 // Sprites are patches with a special naming convention
@@ -539,8 +677,8 @@ struct spriteframe_s
     // Lump to use for view angles 0-7.
 	ResourceId resource[8];
 
-    // Flip bit (1 = flip) to use for view angles 0-7.
-    byte	flip[8];
+    // Flip bit (1 = flip) to use for view angles 0-15.
+    byte	flip[16];
 
 	// [RH] Move some data out of spritewidth, spriteoffset,
 	//		and spritetopoffset arrays.
@@ -549,7 +687,7 @@ struct spriteframe_s
 	fixed_t		topoffset[8];
 	fixed_t		offset[8];
 };
-typedef struct spriteframe_s spriteframe_t;
+typedef spriteframe_s spriteframe_t;
 
 //
 // A sprite definition:
@@ -560,14 +698,14 @@ struct spritedef_s
 	int 			numframes;
 	spriteframe_t	*spriteframes;
 };
-typedef struct spritedef_s spritedef_t;
+typedef spritedef_s spritedef_t;
 
 //
 // The infamous visplane
 //
 struct visplane_s
 {
-	struct visplane_s *next;		// Next visplane in hash chain -- killough
+	visplane_s *next;		// Next visplane in hash chain -- killough
 
 	plane_t		secplane;
 
@@ -587,6 +725,4 @@ struct visplane_s
 	unsigned int pad;				//		allocated immediately after the
 	unsigned int top[3];			//		visplane.
 };
-typedef struct visplane_s visplane_t;
-
-#endif
+typedef visplane_s visplane_t;

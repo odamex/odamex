@@ -21,16 +21,13 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __RES_CONTAINER_H__
-#define __RES_CONTAINER_H__
+#pragma once
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <vector>
-#include "m_ostring.h"
-#include "hashtable.h"
 
 #include "resources/res_resourceid.h"
 #include "resources/res_resourcepath.h"
@@ -461,6 +458,3 @@ private:
 	uint32_t loadEntryData(const ZipDirectoryEntry* entry, void* data, uint32_t size) const;
     uint32_t calculateEntryOffset(const ZipDirectoryEntry* entry) const;
 };
-
-
-#endif	// __RES_CONTAINER_H__

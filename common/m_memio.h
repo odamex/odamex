@@ -22,11 +22,7 @@
 //    
 //-----------------------------------------------------------------------------
 
-
-#ifndef MEMIO_H
-#define MEMIO_H
-
-#include <stdio.h>
+#pragma once
 
 typedef struct _MEMFILE MEMFILE;
 
@@ -47,5 +43,4 @@ long mem_ftell(MEMFILE *stream);
 int mem_fseek(MEMFILE *stream, signed long offset, mem_rel_t whence);
 size_t mem_fsize(MEMFILE *stream); // [Russell] - get size of stream
 char *mem_fgetbuf(MEMFILE *stream); // [Russell] - return stream buffer
-#endif /* #ifndef MEMIO_H */
 	  

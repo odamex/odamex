@@ -21,20 +21,14 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __RES_MAIN_H__
-#define __RES_MAIN_H__
+#pragma once
 
-#include "doomtype.h"
-#include <stdlib.h>
-#include "m_ostring.h"
-#include "hashtable.h"
 #include <vector>
 #include <string>
 
-#include "resources/res_resourceid.h"
-#include "resources/res_resourcepath.h"
+#include "ohash.h"
+
 #include "resources/res_nametranslator.h"
-#include "resources/res_container.h"
 
 #include "z_zone.h"
 
@@ -120,7 +114,7 @@ public:
 		return mResourceFileNames;
 	}
 
-	const std::vector<std::string>& getResourceFileHashes() const;
+	const std::vector<OMD5Hash>& getResourceFileHashes() const;
 
 	void addResourceContainer(
 				ResourceContainer* container,
@@ -165,7 +159,7 @@ public:
 
 	uint32_t getResourceSize(const ResourceId res_id) const;
 
-	const void* loadResourceData(const ResourceId res_id, int tag = PU_CACHE);
+	const void* loadResourceData(const ResourceId res_id, zoneTag_e tag = PU_CACHE);
 
 	void releaseResourceData(const ResourceId res_id);
 
@@ -181,6 +175,8 @@ public:
 		return validateResourceId(res_id1) && validateResourceId(res_id2) &&
 				getResourceContainer(res_id1) == getResourceContainer(res_id2);
 	}
+
+	friend uint32_t Res_GetResourceSize(const ResourceId res_id);
 
 private:
 	struct ResourceRecord
@@ -272,7 +268,7 @@ private:
 	void openResourceFile(const OString& filename);
 
 	std::vector<std::string>			mResourceFileNames;
-	mutable std::vector<std::string>	mResourceFileHashes;
+	mutable std::vector<OMD5Hash>	mResourceFileHashes;
 
 	typedef OHashTable<size_t, OString> ResourceContainerFileNameLookup;
 	ResourceContainerFileNameLookup		mResourceContainerFileNames;
@@ -309,7 +305,7 @@ void Res_OpenResourceFiles(const std::vector<std::string>& filename);
 void Res_CloseAllResourceFiles();
 
 const std::vector<std::string>& Res_GetResourceFileNames();
-const std::vector<std::string>& Res_GetResourceFileHashes();
+const std::vector<OMD5Hash>& Res_GetResourceFileHashes();
 
 
 const ResourcePathList Res_ListResourceDirectory(const ResourcePath& path);
@@ -352,9 +348,9 @@ static inline uint32_t Res_GetResourceSize(const OString& name, const ResourcePa
 // Res_LoadResource
 // ----------------------------------------------------------------------------
 
-const void* Res_LoadResource(const ResourceId res_id, int tag = PU_CACHE);
+const void* Res_LoadResource(const ResourceId res_id, zoneTag_e tag = PU_CACHE);
 
-static inline const void* Res_LoadResource(const OString& name, int tag = PU_CACHE)
+static inline const void* Res_LoadResource(const OString& name, zoneTag_e tag = PU_CACHE)
 {
 	return Res_LoadResource(Res_GetResourceId(name, global_directory_name), tag);
 }
@@ -381,6 +377,3 @@ const std::string& Res_GetResourceContainerFileName(const ResourceId res_id);
 
 bool Res_CheckMap(const OString& mapname);
 const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname);
-
-
-#endif	// __RES_MAIN_H__

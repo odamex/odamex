@@ -1,7 +1,5 @@
-#ifndef __S_SNDSEQ_H__
-#define __S_SNDSEQ_H__
+#pragma once
 
-#include <stddef.h>
 #include "actor.h"
 #include "s_sound.h"
 #include "r_defs.h"
@@ -96,6 +94,3 @@ void SN_ChangeNodeData (int nodeNum, int seqOffset, int delayTics,
 extern sndseq_t **Sequences;
 extern int ActiveSequences;
 extern int NumSequences;
-
-#endif //__S_SNDSEQ_H__
-

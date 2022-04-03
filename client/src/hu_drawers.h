@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __HU_DRAWERS_H__
-#define __HU_DRAWERS_H__
+#pragma once
 
 #include "r_defs.h"
 
@@ -81,5 +80,3 @@ void DrawTextureScaled(const int x, const int y,
                      const Texture* texture, const bool force_opaque = false,
                      const bool use_patch_offsets = false);
 }
-
-#endif

@@ -27,10 +27,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __D_STATE__
-#define __D_STATE__
-
-#include <vector>
+#pragma once
 
 #include "doomdata.h"
 #include "d_net.h"
@@ -38,6 +35,7 @@
 
 // We also need the definition of a cvar
 #include "c_cvars.h"
+#include "d_netinf.h"
 
 // ------------------------
 // Command line parameters.
@@ -66,9 +64,6 @@ extern	BOOL 			autostart;
 // Selected by user.
 EXTERN_CVAR (sv_skill)
 
-// Nightmare mode flag, single player.
-extern	BOOL 			respawnmonsters;
-
 // Bot game? Like netgame, but doesn't involve network communication.
 extern	BOOL			multiplayer;
 
@@ -76,12 +71,17 @@ extern BOOL            network_game;
 
 // Game mode
 EXTERN_CVAR (sv_gametype)
+EXTERN_CVAR (sv_maxplayers)
 
 #define GM_COOP		0.0f
 #define GM_DM		1.0f
 #define GM_TEAMDM	2.0f
 #define GM_CTF		3.0f
+#define GM_HORDE	4.0f
 
+#define FPS_NONE	0
+#define FPS_FULL	1
+#define FPS_COUNTER	2
 
 // -------------------------
 // Internal parameters for sound rendering.
@@ -130,9 +130,6 @@ extern level_locals_t level;
 extern	BOOL			usergame;
 
 extern	BOOL			demoplayback;
-extern	BOOL			demorecording;
-extern	BOOL			autorecord;
-extern	std::string		demorecordfile;
 
 // Quit after playing a demo from cmdline.
 extern	BOOL			singledemo;
@@ -156,27 +153,12 @@ extern	gamestate_t 	gamestate;
 extern	int 			gametic;
 
 // Player spawn spots for deathmatch.
-extern	int				MaxDeathmatchStarts;
-extern	mapthing2_t		*deathmatchstarts;
-extern	mapthing2_t*	deathmatch_p;
+extern std::vector<mapthing2_t> DeathMatchStarts;
 
 // Player spawn spots.
 #define MAXPLAYERSTARTS		64
 extern std::vector<mapthing2_t> playerstarts;
 extern std::vector<mapthing2_t> voodoostarts;
-
-// ----------------------------------------------
-//	[Toke - CTF - starts]
-
-		// Blue team starts
-extern	mapthing2_t		*blueteamstarts;
-extern	size_t			MaxBlueTeamStarts;
-extern	mapthing2_t*	blueteam_p;
-
-		// Red team starts
-extern	mapthing2_t		*redteamstarts;
-extern	size_t			MaxRedTeamStarts;
-extern	mapthing2_t*	redteam_p;
 
 // ----------------------------------------------
 
@@ -226,8 +208,3 @@ struct DehInfo
 	int Infight;
 };
 extern struct DehInfo deh;
-
-#endif
-
-
-

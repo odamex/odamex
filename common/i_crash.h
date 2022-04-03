@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __I_CRASH_H__
-#define __I_CRASH_H__
+#pragma once
 
 void I_SetCrashCallbacks();
-
-#endif
+void I_SetCrashDir(const char* crashdir);

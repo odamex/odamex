@@ -21,15 +21,10 @@
 //
 //-----------------------------------------------------------------------------
 
+#pragma once
 
-#ifndef __C_CONSOLE__
-#define __C_CONSOLE__
-
-#include <stdio.h>
 #include <stdarg.h>
 
-#include "doomtype.h"
-#include "doomdef.h"
 #include "d_event.h"
 #include "cmdlib.h"
 #include "d_player.h"
@@ -52,6 +47,8 @@ void STACK_ARGS C_ShutdownConsoleBackground();
 
 void C_InitConCharsFont();
 void STACK_ARGS C_ShutdownConCharsFont();
+
+void C_ClearCommand();
 
 // Adjust the console for a new screen mode
 void C_NewModeAdjust (void);
@@ -83,7 +80,3 @@ void C_AddTabCommand (const char *name);
 void C_RemoveTabCommand (const char *name);
 
 void C_RevealSecret ();
-
-#endif
-
-

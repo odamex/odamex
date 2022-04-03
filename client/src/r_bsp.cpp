@@ -21,9 +21,11 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <math.h>
 #include "m_alloc.h"
-#include "doomdef.h"
 #include "m_bbox.h"
 #include "i_system.h"
 #include "r_main.h"
@@ -35,7 +37,6 @@
 #include "m_vectors.h"
 
 // State.
-#include "doomstat.h"
 #include "r_state.h"
 #include "v_palette.h"
 
@@ -709,8 +710,9 @@ void R_Subsector (int num)
 					) : NULL;
 
 	// [RH] set foggy flag
-	foggy = level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] || level.fadeto_color[3]
-				|| frontsector->colormap->fade;
+	foggy = level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] ||
+	        level.fadeto_color[3] || frontsector->colormap->fade.getr() ||
+	        frontsector->colormap->fade.getg() || frontsector->colormap->fade.getb();
 
 	// killough 9/18/98: Fix underwater slowdown, by passing real sector
 	// instead of fake one. Improve sprite lighting by basing sprite
@@ -769,4 +771,3 @@ void R_RenderBSPNode (int bspnum)
 
 
 VERSION_CONTROL (r_bsp_cpp, "$Id$")
-

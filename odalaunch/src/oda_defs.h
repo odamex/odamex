@@ -23,6 +23,8 @@
 #ifndef __ODA_DEFS_H__
 #define __ODA_DEFS_H__
 
+#include "odalaunch.h"
+
 // User interface
 // --------------
 

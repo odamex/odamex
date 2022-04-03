@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __WIN32INC_H__
-#define __WIN32INC_H__
+#pragma once
 
 #ifdef _WIN32
 
@@ -53,10 +52,10 @@
         #undef DrawText
     #endif
 
-    // LoadMenu macros in winuser.h interfere with m_menu.cpp
-    #ifdef LoadMenu
-        #undef LoadMenu
-    #endif  // LoadMenu
+    // Same with PlaySound
+    #ifdef PlaySound
+        #undef PlaySound
+    #endif
 
     // POSIX functions
 	#include <ctime>
@@ -84,5 +83,3 @@
         #define va_copy(d,s)((d) = (s))
     #endif
 #endif // WIN32
-
-#endif  // __WIN32INC_H__

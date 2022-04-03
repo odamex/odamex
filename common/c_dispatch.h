@@ -21,14 +21,10 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __C_DISPATCH_H__
-#define __C_DISPATCH_H__
+#pragma once
 
 #include "dobject.h"
 
-#include <string>
-#include <vector>
 
 void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 
@@ -102,25 +98,39 @@ protected:
 };
 
 // Actions
-#define ACTION_MLOOK		0
-#define ACTION_KLOOK		1
-#define ACTION_USE			2
-#define ACTION_ATTACK		3
-#define ACTION_SPEED		4
-#define ACTION_MOVERIGHT	5
-#define ACTION_MOVELEFT		6
-#define ACTION_STRAFE		7
-#define ACTION_LOOKDOWN		8
-#define ACTION_LOOKUP		9
-#define ACTION_BACK			10
-#define ACTION_FORWARD		11
-#define ACTION_RIGHT		12
-#define ACTION_LEFT			13
-#define ACTION_MOVEDOWN		14
-#define ACTION_MOVEUP		15
-#define ACTION_JUMP			16
-#define ACTION_SHOWSCORES	17
-#define NUM_ACTIONS			18
+enum {
+	ACTION_MLOOK = 0,
+	ACTION_KLOOK,
+	ACTION_USE,
+	ACTION_ATTACK,
+	ACTION_SPEED,
+	ACTION_MOVERIGHT,
+	ACTION_MOVELEFT,
+	ACTION_STRAFE,
+	ACTION_LOOKDOWN,
+	ACTION_LOOKUP,
+	ACTION_BACK,
+	ACTION_FORWARD,
+	ACTION_RIGHT,
+	ACTION_LEFT,
+	ACTION_MOVEDOWN,
+	ACTION_MOVEUP,
+	ACTION_JUMP,
+	ACTION_SHOWSCORES,
+
+	// Joystick actions
+	ACTION_FASTTURN,
+
+	// Automap actions
+	ACTION_AUTOMAP_PANUP,
+	ACTION_AUTOMAP_PANLEFT,
+	ACTION_AUTOMAP_PANDOWN,
+	ACTION_AUTOMAP_PANRIGHT,
+	ACTION_AUTOMAP_ZOOMIN,
+	ACTION_AUTOMAP_ZOOMOUT,
+	// NUM
+	NUM_ACTIONS
+};
 
 extern byte Actions[NUM_ACTIONS];
 
@@ -132,5 +142,3 @@ struct ActionBits
 };
 
 extern unsigned int MakeKey (const char *s);
-
-#endif //__C_DISPATCH_H__

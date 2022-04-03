@@ -23,18 +23,25 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <limits.h>
 
 #include "cmdlib.h"
-#include "doomdef.h"
+#include "c_dispatch.h"
 #include "d_event.h"
 #include "p_local.h"
-#include "doomstat.h"
 #include "s_sound.h"
 #include "i_system.h"
+#include "p_tick.h"
 #include "gi.h"
+#include "m_wdlstats.h"
 
 #include "p_snapshot.h"
+#include "g_gametype.h"
+
+#include "p_mapformat.h"
 
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 		32
@@ -54,6 +61,7 @@ EXTERN_CVAR (cl_deathcam)
 EXTERN_CVAR (sv_forcerespawn)
 EXTERN_CVAR (sv_forcerespawntime)
 EXTERN_CVAR (sv_spawndelaytime)
+EXTERN_CVAR (g_lives)
 
 extern bool predicting, step_mode;
 
@@ -104,6 +112,226 @@ bool validplayer(player_t &ref)
 	return true;
 }
 
+/**
+ * @brief Clear all cards from a player.
+ * 
+ * @param p Player to clear.
+*/
+void P_ClearPlayerCards(player_t& p)
+{
+	for (size_t i = 0; i < NUMCARDS; i++)
+		p.cards[i] = false;
+}
+
+/**
+ * @brief Clear all powerups from a player.
+ *
+ * @param p Player to clear.
+ */
+void P_ClearPlayerPowerups(player_t& p)
+{
+	for (size_t i = 0; i < NUMPOWERS; i++)
+		p.powers[i] = 0;
+}
+
+/**
+ * @brief Clear all scores from a player.
+ * 
+ * @param p Player to clear.
+ * @param wins True if a player's wins should be cleared as well - should
+ *             usually be True unless it's a reset across rounds.
+ */
+void P_ClearPlayerScores(player_t& p, byte flags)
+{
+	if (flags & SCORES_CLEAR_WINS)
+		p.roundwins = 0;
+
+	if (flags & SCORES_CLEAR_POINTS)
+	{
+		p.lives = g_lives.asInt();
+		p.fragcount = 0;
+		p.itemcount = 0;
+		p.secretcount = 0;
+		p.deathcount = 0; // [Toke - Scores - deaths]
+		p.monsterdmgcount = 0;
+		p.killcount = 0;  // [deathz0r] Coop kills
+		p.points = 0;
+	}
+
+	if (flags & SCORES_CLEAR_TOTALPOINTS)
+	{
+		p.totalpoints = 0;
+		p.totaldeaths = 0;
+	}
+}
+
+static bool cmpFrags(player_t* a, player_t* b)
+{
+	return a->fragcount < b->fragcount;
+}
+
+static bool cmpLives(player_t* a, player_t* b)
+{
+	return a->lives < b->lives;
+}
+
+static bool cmpWins(player_t* a, const player_t* b)
+{
+	return a->roundwins < b->roundwins;
+}
+
+/**
+ * @brief Execute the query.
+ *
+ * @return Results of the query.
+ */
+PlayerResults PlayerQuery::execute()
+{
+	PlayerResults results;
+	int maxscore = 0;
+
+	// Construct a base result set from all ingame players, possibly filtered.
+	for (Players::iterator it = ::players.begin(); it != players.end(); ++it)
+	{
+		if (!it->ingame() || it->spectator)
+			continue;
+
+		results.total += 1;
+		results.teamTotal[it->userinfo.team] += 1;
+
+		if (m_ready && !it->ready)
+			continue;
+
+		if (m_health && it->health <= 0)
+			continue;
+
+		if (m_lives && it->lives <= 0)
+			continue;
+
+		if (m_notLives && it->lives > 0)
+			continue;
+
+		if (m_team != TEAM_NONE && it->userinfo.team != m_team)
+			continue;
+
+		results.players.push_back(&*it);
+	}
+
+	// We have no filtered players, we have our totals, there is no more
+	// useful work to be done.
+	if (results.players.size() == 0)
+	{
+		return results;
+	}
+
+	// Sort our list of players if needed.
+	switch (m_sort)
+	{
+	case SORT_NONE:
+		break;
+	case SORT_FRAGS:
+		std::sort(results.players.rbegin(), results.players.rend(), cmpFrags);
+		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
+		{
+			// Since it's sorted, we know the top fragger is at the front.
+			int top = results.players.at(0)->fragcount;
+			for (PlayersView::iterator it = results.players.begin();
+			     it != results.players.end();)
+			{
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->fragcount != top
+				                                         : (*it)->fragcount == top;
+				if (cmp)
+				{
+					it = results.players.erase(it);
+				}
+				else
+				{
+					++it;
+				}
+			}
+		}
+		break;
+	case SORT_LIVES:
+		std::sort(results.players.rbegin(), results.players.rend(), cmpLives);
+		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
+		{
+			// Since it's sorted, we know the top fragger is at the front.
+			int top = results.players.at(0)->lives;
+			for (PlayersView::iterator it = results.players.begin();
+			     it != results.players.end();)
+			{
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->lives != top
+				                                         : (*it)->lives == top;
+				if (cmp)
+				{
+					it = results.players.erase(it);
+				}
+				else
+				{
+					++it;
+				}
+			}
+		}
+		break;
+	case SORT_WINS:
+		std::sort(results.players.rbegin(), results.players.rend(), cmpWins);
+		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
+		{
+			// Since it's sorted, we know the top winner is at the front.
+			int top = results.players.at(0)->roundwins;
+			for (PlayersView::iterator it = results.players.begin();
+			     it != results.players.end();)
+			{
+				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->roundwins != top
+				                                         : (*it)->roundwins == top;
+				if (cmp)
+				{
+					it = results.players.erase(it);
+				}
+				else
+				{
+					++it;
+				}
+			}
+		}
+		break;
+	}
+
+	// Get the final totals.
+	for (PlayersView::iterator it = results.players.begin(); it != results.players.end();
+	     ++it)
+	{
+		results.count += 1;
+		results.teamCount[(*it)->userinfo.team] += 1;
+	}
+
+	return results;
+}
+
+/**
+ * @brief Execute the query.
+ *
+ * @return Results of the query.
+ */
+PlayersView SpecQuery::execute()
+{
+	PlayersView rvo;
+
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	{
+		if (!it->ingame() || !it->spectator)
+			continue;
+
+		if (m_onlyInQueue && it->QueuePosition == 0)
+			continue;
+
+		rvo.push_back(&*it);
+	}
+
+	return rvo;
+}
+
+
 //
 // P_NumPlayersInGame()
 //
@@ -112,13 +340,7 @@ bool validplayer(player_t &ref)
 //
 size_t P_NumPlayersInGame()
 {
-	size_t num_players = 0;
-
-	for (Players::const_iterator it = players.begin();it != players.end();++it)
-		if (it->ingame() && !it->spectator)
-			num_players++;
-
-	return num_players;
+	return PlayerQuery().execute().count;
 }
 
 //
@@ -129,13 +351,7 @@ size_t P_NumPlayersInGame()
 //
 size_t P_NumReadyPlayersInGame()
 {
-	size_t num_players = 0;
-
-	for (Players::const_iterator it = players.begin();it != players.end();++it)
-		if (it->ingame() && !it->spectator && it->ready)
-			num_players++;
-
-	return num_players;
+	return PlayerQuery().isReady().execute().count;
 }
 
 // P_NumPlayersOnTeam()
@@ -143,13 +359,7 @@ size_t P_NumReadyPlayersInGame()
 // Returns the number of active players on a team.  No specs or downloaders.
 size_t P_NumPlayersOnTeam(team_t team)
 {
-	size_t num_players = 0;
-
-	for (Players::const_iterator it = players.begin();it != players.end();++it)
-		if (it->ingame() && !it->spectator && it->userinfo.team == team)
-			num_players++;
-
-	return num_players;
+	return PlayerQuery().onTeam(team).execute().teamTotal[team];
 }
 
 //
@@ -577,9 +787,24 @@ void P_DeathThink (player_t *player)
 		bool delay_respawn =	(!clientside && level.time < respawn_time);
 
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() && ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn))
+		if (player->ingame() &&
+		    ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn) &&
+		    ((g_lives && player->lives > 0) || !g_lives))
 		{
 			player->playerstate = PST_REBORN;
+		}
+	}
+
+	if (clientside)
+	{
+		// [AM] If the player runs out of lives in an LMS gamemode, having
+		//      them spectate another player after a beat is expected.
+		if (::g_lives && player->lives < 1 && &consoleplayer() == &displayplayer() &&
+		    level.time >= player->death_time + (TICRATE * 2))
+		{
+			// CL_SpyCycle is located in cl and templated, so we use this
+			// instead.
+			AddCommandString("spynext");
 		}
 	}
 }
@@ -590,9 +815,9 @@ bool P_AreTeammates(player_t &a, player_t &b)
 	if (a.id == b.id)
 		return false;
 
-	return (sv_gametype == GM_COOP) ||
+	return G_IsCoopGame() ||
 		  ((a.userinfo.team == b.userinfo.team) &&
-		   (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF));
+		   G_IsTeamGame());
 }
 
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
@@ -605,12 +830,48 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 	if (!other.mo || other.spectator)
 		return false;
 
-	// Demo-watchers and spectators can view anybody.
-	if (demo || viewer.spectator)
+	// Demo-watchers can view anybody.
+	if (demo)
 		return true;
 
-	// A teammate can see their other teammates
-	if (P_AreTeammates(viewer, other))
+	// Is the player a teammate?
+	bool isTeammate = false;
+	if (G_IsCoopGame())
+	{
+		// You are everyone's teammate in a coop game.
+		isTeammate = true;
+	}
+	else if (G_IsTeamGame())
+	{
+		if (viewer.userinfo.team == other.userinfo.team)
+		{
+			// You are on the same team.
+			isTeammate = true;
+		}
+		else if (G_IsLivesGame())
+		{
+			PlayerResults pr =
+			    PlayerQuery().hasLives().onTeam(viewer.userinfo.team).execute();
+			if (pr.count == 0)
+			{
+				// You are on a different team but your teammates are dead, so
+				// it doesn't really matter if you spectate them.
+				isTeammate = true;
+			}
+		}
+	}
+
+	if (isTeammate || viewer.spectator)
+	{
+		// If a player has no more lives, don't show him.
+		if (::g_lives && other.lives < 1)
+			return false;
+
+		return true;
+	}
+
+	// A player who is out of lives in LMS can see everyone else
+	if (::sv_gametype == GM_DM && ::g_lives && viewer.lives < 1)
 		return true;
 
 	return false;
@@ -671,8 +932,11 @@ void P_PlayerThink (player_t *player)
 	P_MovePlayer (player);
 	P_CalcHeight (player);
 
-	if (player->mo->subsector && (player->mo->subsector->sector->special || player->mo->subsector->sector->damage))
-		P_PlayerInSpecialSector (player);
+	if (player->mo->subsector &&
+		(player->mo->subsector->sector->special ||
+		player->mo->subsector->sector->damageamount ||
+		player->mo->subsector->sector->flags & SECF_SECRET))
+		map_format.player_in_special_sector(player);
 
 	// Check for weapon change.
 
@@ -699,8 +963,7 @@ void P_PlayerThink (player_t *player)
 				newweapon = wp_chainsaw;
 			}
 
-			if ((gameinfo.flags & GI_MAPxx)
-				&& newweapon == wp_shotgun
+			if (newweapon == wp_shotgun
 				&& player->weaponowned[wp_supershotgun]
 				&& player->readyweapon != wp_supershotgun)
 			{
@@ -761,6 +1024,14 @@ void P_PlayerThink (player_t *player)
 	if (player->bonuscount)
 		player->bonuscount--;
 
+	if (player->hazardcount)
+	{
+		player->hazardcount--;
+		if (!(::level.time % player->hazardinterval) &&
+		    player->hazardcount > 16 * TICRATE)
+			P_DamageMobj(player->mo, NULL, NULL, 5);
+	}
+
 	// Handling colormaps.
 	if (displayplayer().powers[pw_invulnerability])
 	{
@@ -793,7 +1064,95 @@ void P_PlayerThink (player_t *player)
 	{
 		P_DamageMobj (player->mo, NULL, NULL, 2 + 2*((level.time-player->air_finished)/TICRATE), MOD_WATER, DMG_NO_ARMOR);
 	}
+
+	// [BC] Handle WDL Beacon
+	if (serverside && player->ingame() && !player->spectator && player->mo->health > 0)
+	{
+		if (P_AtInterval(5))
+		{
+			M_LogWDLEvent(WDL_EVENT_PLAYERBEACON, player, NULL, player->mo->angle / 4, 0,
+			              0, 0);
+		}
+	}
 }
+
+#define CASE_STR(str) case str : return #str
+
+const char* PlayerState(size_t state)
+{
+	statenum_t st = static_cast<statenum_t>(state);
+
+	switch (st)
+	{
+		CASE_STR(S_PLAY);
+		CASE_STR(S_PLAY_RUN1);
+		CASE_STR(S_PLAY_RUN2);
+		CASE_STR(S_PLAY_RUN3);
+		CASE_STR(S_PLAY_RUN4);
+		CASE_STR(S_PLAY_ATK1);
+		CASE_STR(S_PLAY_ATK2);
+		CASE_STR(S_PLAY_PAIN);
+		CASE_STR(S_PLAY_PAIN2);
+		CASE_STR(S_PLAY_DIE1);
+		CASE_STR(S_PLAY_DIE2);
+		CASE_STR(S_PLAY_DIE3);
+		CASE_STR(S_PLAY_DIE4);
+		CASE_STR(S_PLAY_DIE5);
+		CASE_STR(S_PLAY_DIE6);
+		CASE_STR(S_PLAY_DIE7);
+		CASE_STR(S_PLAY_XDIE1);
+		CASE_STR(S_PLAY_XDIE2);
+		CASE_STR(S_PLAY_XDIE3);
+		CASE_STR(S_PLAY_XDIE4);
+		CASE_STR(S_PLAY_XDIE5);
+		CASE_STR(S_PLAY_XDIE6);
+		CASE_STR(S_PLAY_XDIE7);
+		CASE_STR(S_PLAY_XDIE8);
+		CASE_STR(S_PLAY_XDIE9);
+	default:
+		return "Unknown";
+	}
+}
+
+#define STATE_NUM(mo) (mo -> state - states)
+
+BEGIN_COMMAND(cheat_players)
+{
+	Printf("== PLAYERS ==");
+
+	int dead = 0;
+
+	AActor* mo;
+	TThinkerIterator<AActor> iterator;
+	while ((mo = iterator.Next()))
+	{
+
+		if (mo->type == MT_PLAYER)
+		{
+			if (STATE_NUM(mo) == S_PLAY_DIE7 || STATE_NUM(mo) == S_PLAY_XDIE9)
+			{
+				dead += 1;
+				continue;
+			}
+
+			if (mo->player)
+			{
+				Printf("%.3u: %s\n", mo->player->id,
+				       mo->player->userinfo.netname.c_str());
+			}
+			else
+			{
+				Printf("???: ???\n");
+			}
+			Printf("State: %s\n", PlayerState(mo->state - states));
+			Printf("%f, %f, %f\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
+			       FIXED2FLOAT(mo->z));
+		}
+	}
+
+	Printf("== Skipped %d dead players ==\n", dead);
+}
+END_COMMAND(cheat_players)
 
 void player_s::Serialize (FArchive &arc)
 {
@@ -815,6 +1174,8 @@ void player_s::Serialize (FArchive &arc)
 			<< armorpoints
 			<< armortype
 			<< backpack
+			<< lives
+			<< roundwins
 			<< fragcount
 			<< readyweapon
 			<< pendingweapon
@@ -866,6 +1227,8 @@ void player_s::Serialize (FArchive &arc)
 			>> armorpoints
 			>> armortype
 			>> backpack
+			>> lives
+			>> roundwins
 			>> fragcount
 			>> readyweapon
 			>> pendingweapon
@@ -923,9 +1286,12 @@ player_s::player_s() :
 	armorpoints(0),
 	armortype(0),
 	backpack(false),
+	lives(0),
+	roundwins(0),
 	points(0),
 	fragcount(0),
 	deathcount(0),
+	monsterdmgcount(0),
 	killcount(0),
 	itemcount(0),
 	secretcount(0),
@@ -943,7 +1309,7 @@ player_s::player_s() :
 	psprnum(0),
 	jumpTics(0),
 	death_time(0),
-	suicide_time(0),
+	suicidedelay(0),
 	camera(AActor::AActorPtr()),
 	air_finished(0),
 	GameTime(0),
@@ -954,49 +1320,40 @@ player_s::player_s() :
 	snapshots(PlayerSnapshotManager()),
 	spying(0),
 	spectator(false),
-	joinafterspectatortime(level.time - TICRATE * 5),
+	joindelay(0),
 	timeout_callvote(0),
 	timeout_vote(0),
 	ready(false),
 	timeout_ready(0),
 	blend_color(argb_t(0, 0, 0, 0)),
 	doreborn(false),
+	QueuePosition(0),
+	hazardcount(0),
+	hazardinterval(0),
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
 	client(player_s::client_t())
 {
 	cmd.clear();
-	for (size_t i = 0; i < ARRAY_LENGTH(powers); i++)
-		powers[i] = 0;
-	for (size_t i = 0; i < ARRAY_LENGTH(cards); i++)
-		cards[i] = false;
-	for (size_t i = 0; i < ARRAY_LENGTH(flags); i++)
-		flags[i] = false;
-	for (size_t i = 0; i < ARRAY_LENGTH(weaponowned); i++)
-		weaponowned[i] = false;
-	for (size_t i = 0; i < ARRAY_LENGTH(ammo); i++)
-		ammo[i] = false;
-	for (size_t i = 0; i < ARRAY_LENGTH(maxammo); i++)
-		maxammo[i] = false;
+	ArrayInit(powers, 0);
+	ArrayInit(cards, false);
+	ArrayInit(flags, false);
+	ArrayInit(weaponowned, false);
+	ArrayInit(ammo, false);
+	ArrayInit(maxammo, false);
 
 	// Can't put this in initializer list?
 	attacker = AActor::AActorPtr();
 
 	pspdef_t zeropsp = { NULL, 0, 0, 0 };
-	for (size_t i = 0; i < ARRAY_LENGTH(psprites); i++)
-		psprites[i] = zeropsp;
-	for (size_t i = 0; i < ARRAY_LENGTH(oldvelocity); i++)
-		oldvelocity[i] = 0;
-	for (size_t i = 0; i < ARRAY_LENGTH(prefcolor); i++)
-		prefcolor[i] = 0;
+	ArrayInit(psprites, zeropsp);
+	ArrayInit(oldvelocity, 0);
+	ArrayInit(prefcolor, 0);
 
 	LastMessage.Time = 0;
 	LastMessage.Message = "";
 
-	for (size_t i = 0; i < ARRAY_LENGTH(netcmds); i++)
-	{
-		netcmds[i] = ticcmd_t();
-	}
+	ArrayInit(netcmds, ticcmd_t());
 }
 
 player_s &player_s::operator =(const player_s &other)
@@ -1019,31 +1376,30 @@ player_s &player_s::operator =(const player_s &other)
 	armorpoints = other.armorpoints;
 	armortype = other.armortype;
 
-	for(i = 0; i < NUMPOWERS; i++)
-		powers[i] = other.powers[i];
+	ArrayCopy(powers, other.powers);
+	ArrayCopy(cards, other.cards);
 
-	for(i = 0; i < NUMCARDS; i++)
-		cards[i] = other.cards[i];
+	lives = other.lives;
+	roundwins = other.roundwins;
 
-	for(i = 0; i < NUMFLAGS; i++)
-		flags[i] = other.flags[i];
+	ArrayCopy(flags, other.flags);
 
 	points = other.points;
 	backpack = other.backpack;
 
 	fragcount = other.fragcount;
 	deathcount = other.deathcount;
+	monsterdmgcount = other.monsterdmgcount;
 	killcount = other.killcount;
+	totalpoints = other.totalpoints;
+	totaldeaths = other.totaldeaths;
 
 	pendingweapon = other.pendingweapon;
 	readyweapon = other.readyweapon;
 
-	for(i = 0; i < NUMWEAPONS; i++)
-		weaponowned[i] = other.weaponowned[i];
-	for(i = 0; i < NUMAMMO; i++)
-		ammo[i] = other.ammo[i];
-	for(i = 0; i < NUMAMMO; i++)
-		maxammo[i] = other.maxammo[i];
+	ArrayCopy(weaponowned, other.weaponowned);
+	ArrayCopy(ammo, other.ammo);
+	ArrayCopy(maxammo, other.maxammo);
 
 	attackdown = other.attackdown;
 	usedown = other.usedown;
@@ -1062,14 +1418,13 @@ player_s &player_s::operator =(const player_s &other)
 
 	xviewshift = other.xviewshift;
 
-	for(i = 0; i < NUMPSPRITES; i++)
-		psprites[i] = other.psprites[i];
+	ArrayCopy(psprites, other.psprites);
 
     jumpTics = other.jumpTics;
 
 	death_time = other.death_time;
 
-	memcpy(oldvelocity, other.oldvelocity, sizeof(oldvelocity));
+	ArrayCopy(oldvelocity, other.oldvelocity);
 
 	camera = other.camera;
 	air_finished = other.air_finished;
@@ -1084,17 +1439,15 @@ player_s &player_s::operator =(const player_s &other)
 	spying = other.spying;
 	spectator = other.spectator;
 //	deadspectator = other.deadspectator;
-	joinafterspectatortime = other.joinafterspectatortime;
+	joindelay = other.joindelay;
 	timeout_callvote = other.timeout_callvote;
 	timeout_vote = other.timeout_vote;
 
 	ready = other.ready;
 	timeout_ready = other.timeout_ready;
 
-	memcpy(prefcolor, other.prefcolor, 4);
-
-	for(i = 0; i < BACKUPTICS; i++)
-		netcmds[i] = other.netcmds[i];
+	ArrayCopy(prefcolor, other.prefcolor);
+	ArrayCopy(netcmds, other.netcmds);
 
     LastMessage.Time = other.LastMessage.Time;
 	LastMessage.Message = other.LastMessage.Message;
@@ -1108,6 +1461,7 @@ player_s &player_s::operator =(const player_s &other)
 	to_spawn = other.to_spawn;
 
 	doreborn = other.doreborn;
+	QueuePosition = other.QueuePosition;
 
 	return *this;
 }

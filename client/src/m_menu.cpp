@@ -22,7 +22,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "doomdef.h"
+
+#include "odamex.h"
+
 #include "gstrings.h"
 #include "c_console.h"
 #include "c_dispatch.h"
@@ -33,10 +35,10 @@
 #include "v_video.h"
 #include "r_local.h"
 #include "hu_stuff.h"
+#include "g_episode.h"
 #include "g_game.h"
 #include "m_random.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "m_menu.h"
 #include "v_text.h"
 #include "st_stuff.h"
@@ -44,17 +46,21 @@
 #include "r_sky.h"
 #include "cl_main.h"
 #include "c_bind.h"
+#include "cl_responderkeys.h"
 #include "g_level.h"
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
 #include "resources/res_filelib.h"
 
 #include "gi.h"
+#include "g_skill.h"
 #include "m_fileio.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
 #endif
+
+EXTERN_CVAR(g_resetinvonexit)
 
 // temp for screenblocks (0-9)
 int 				screenSize;
@@ -76,7 +82,7 @@ int 				messageLastMenuActive;
 bool				messageNeedsInput;
 
 void	(*messageRoutine)(int response);
-void	CL_SendUserInfo(void);
+void	CL_SendUserInfo();
 void	M_ChangeTeam (int choice);
 team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
@@ -99,8 +105,6 @@ int                 repeatCount;
 
 extern bool			sendpause;
 char				savegamestrings[10][SAVESTRINGSIZE];
-
-char				endstring[160];
 
 menustack_t			MenuStack[16];
 int					MenuStackDepth;
@@ -245,31 +249,29 @@ oldmenu_t MainDef =
 //
 // EPISODE SELECT
 //
-enum episodes_t
-{
-	ep1,
-	ep2,
-	ep3,
-	ep4,
-	ep_end
-} episodes_e;
 
-oldmenuitem_t EpisodeMenu[]=
+oldmenuitem_t EpisodeMenu[MAX_EPISODES] =
 {
-	{1,"M_EPI1", M_Episode,'k'},
-	{1,"M_EPI2", M_Episode,'t'},
-	{1,"M_EPI3", M_Episode,'i'},
-	{1,"M_EPI4", M_Episode,'t'}
+	{1,"\0", M_Episode,0},
+	{1,"\0", M_Episode,0},
+	{1,"\0", M_Episode,0},
+	{1,"\0", M_Episode,0},
+	{1,"\0", M_Episode,0},
+	{1,"\0", M_Episode,0},
+	{1,"\0", M_Episode,0},
+	{1,"\0", M_Episode,0}
 };
 
 oldmenu_t EpiDef =
 {
-	ep4,	 			// # of menu items
+	0,
 	EpisodeMenu,		// oldmenuitem_t ->
 	M_DrawEpisode,		// drawing routine ->
 	48,63,				// x,y
-	ep1 				// lastOn
+	0	 				// lastOn
 };
+
+int epi;
 
 //
 // EXPANSION SELECT (DOOM2 BFG)
@@ -300,32 +302,27 @@ oldmenu_t ExpDef =
 //
 // NEW GAME
 //
-enum newgame_t
-{
-	killthings,
-	toorough,
-	hurtme,
-	violence,
-	nightmare,
-	newg_end
-} newgame_e;
 
-oldmenuitem_t NewGameMenu[]=
+oldmenuitem_t NewGameMenu[MAX_SKILLS + 1]=
 {
-	{1,"M_JKILL",		M_ChooseSkill, 'i'},
-	{1,"M_ROUGH",		M_ChooseSkill, 'h'},
-	{1,"M_HURT",		M_ChooseSkill, 'h'},
-	{1,"M_ULTRA",		M_ChooseSkill, 'u'},
-	{1,"M_NMARE",		M_ChooseSkill, 'n'}
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	//{1,"\0", M_ChooseSkill,0}
 };
 
 oldmenu_t NewDef =
 {
-	newg_end,			// # of menu items
+	0,			// # of menu items
 	NewGameMenu,		// oldmenuitem_t ->
 	M_DrawNewGame,		// drawing routine ->
 	48,63,				// x,y
-	hurtme				// lastOn
+	0				// lastOn
 };
 
 //
@@ -461,7 +458,7 @@ enum load_t
 	load_end
 } load_e;
 
-oldmenuitem_t LoadMenu[]=
+static oldmenuitem_t LoadSavegameMenu[]=
 {
 	{1,"", M_LoadSelect,'1'},
 	{1,"", M_LoadSelect,'2'},
@@ -476,7 +473,7 @@ oldmenuitem_t LoadMenu[]=
 oldmenu_t LoadDef =
 {
 	load_end,
-	LoadMenu,
+	LoadSavegameMenu,
 	M_DrawLoad,
 	80,54,
 	0
@@ -531,7 +528,7 @@ BEGIN_COMMAND (menu_save)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_SaveGame (0);
-	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Saving is not available at this time.\n");
 }
 END_COMMAND (menu_save)
 
@@ -541,7 +538,7 @@ BEGIN_COMMAND (menu_load)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_LoadGame (0);
-	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Loading is not available at this time.\n");
 }
 END_COMMAND (menu_load)
 
@@ -560,7 +557,7 @@ BEGIN_COMMAND (quicksave)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickSave ();
-	//Printf (PRINT_HIGH, "Saving is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Saving is not available at this time.\n");
 }
 END_COMMAND (quicksave)
 
@@ -578,7 +575,7 @@ BEGIN_COMMAND (quickload)
 	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_QuickLoad ();
-	//Printf (PRINT_HIGH, "Loading is not available at this time.\n");
+	//Printf (PRINT_WARNING, "Loading is not available at this time.\n");
 }
 END_COMMAND (quickload)
 
@@ -631,11 +628,11 @@ void M_ReadSaveStrings(void)
 		if (handle == NULL)
 		{
 			strcpy (&savegamestrings[i][0], GStrings(EMPTYSTRING));
-			LoadMenu[i].status = 0;
+			LoadSavegameMenu[i].status = 0;
 		}
 		else
 		{
-			size_t readlen = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			const size_t readlen = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
 			if (readlen < 1)
 			{
 				printf("M_Read_SaveStrings(): Failed to read handle.\n");
@@ -643,7 +640,7 @@ void M_ReadSaveStrings(void)
 				return;
 			}
 			fclose (handle);
-			LoadMenu[i].status = 1;
+			LoadSavegameMenu[i].status = 1;
 		}
 	}
 }
@@ -737,8 +734,8 @@ void M_DoSave (int slot)
 //
 void M_SaveSelect (int choice)
 {
-	time_t     ti = time(NULL);
-	struct tm *lt = localtime(&ti);
+	const time_t     ti = time(NULL);
+	const struct tm *lt = localtime(&ti);
 
 	// we are going to be intercepting all chars
 	genStringEnter = 1;
@@ -751,7 +748,7 @@ void M_SaveSelect (int choice)
 	// If on a game console, auto-fill with date and time to save name
 
 #ifndef GCONSOLE
-	if (!LoadMenu[choice].status)
+	if (!LoadSavegameMenu[choice].status)
 #endif
 	{
 		strncpy(savegamestrings[choice], asctime(lt) + 4, 20);
@@ -799,7 +796,7 @@ char	tempstring[80];
 
 void M_QuickSaveResponse(int ch)
 {
-	if (ch == 'y' || ch == KEY_JOY4)
+	if (ch == 'y' || Key_IsYesKey(ch))
 	{
 		M_DoSave (quickSaveSlot);
 		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
@@ -846,7 +843,7 @@ void M_QuickSave(void)
 //
 void M_QuickLoadResponse(int ch)
 {
-	if (ch == 'y' || ch == KEY_JOY4)
+	if (ch == 'y' || Key_IsYesKey(ch))
 	{
 		M_LoadSelect(quickSaveSlot);
 		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
@@ -926,75 +923,140 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 // M_DrawMainMenu
 //
-void M_DrawMainMenu (void)
+void M_DrawMainMenu()
 {
 	const Texture* texture = Res_CacheTexture("M_DOOM", PATCH);
 	screen->DrawTextureClean(texture, 94, 2);
 }
 
-void M_DrawNewGame(void)
+void M_DrawNewGame()
 {
 	const Texture* new_texture = Res_CacheTexture("M_NEWG", PATCH);
 	const Texture* skill_texture = Res_CacheTexture("M_SKILL", PATCH);
 	screen->DrawTextureClean(new_texture, 96, 14);
 	screen->DrawTextureClean(skill_texture, 54, 38);
+	const int SMALLFONT_OFFSET = 8; // Line up with the skull
+
+	const char* pslabel = "Pistol Start Each Level ";
+	const int psy = NewDef.y + (LINEHEIGHT * skillnum) + SMALLFONT_OFFSET;
+
+	screen->DrawTextCleanMove(CR_RED, NewDef.x, psy, pslabel);
+	screen->DrawTextCleanMove(CR_GREY, NewDef.x + V_StringWidth(pslabel), psy,
+	                          g_resetinvonexit ? "ON" : "OFF");
+}
+
+namespace
+{
+	void SetupEpisodeList()
+	{
+		for (int i = 0; i < episodenum; ++i)
+		{
+			if (EpisodeInfos[i].fulltext)
+			{
+				// Not implemented
+			}
+			else
+			{
+				strncpy(EpisodeMenu[i].name, EpisodeInfos[i].name.c_str(), 8);
+			}
+
+			EpisodeMenu[i].alphaKey = EpisodeInfos[i].key;
+		}
+	}
+
+	void SetupSkillList()
+	{
+	    NewDef.lastOn = defaultskillmenu;
+
+	    int i = 0;
+	    for (; i < skillnum; ++i)
+	    {
+		    if (SkillInfos[i].pic_name.empty())
+		    {
+			    strncpy(NewGameMenu[i].name, SkillInfos[i].menu_name.c_str(), 8);
+		    }
+		    else
+		    {
+			    strncpy(NewGameMenu[i].name, SkillInfos[i].pic_name.c_str(), 8);
+		    }
+
+			NewGameMenu[i].alphaKey = SkillInfos[i].shortcut;
+	    }
+
+		strncpy(NewGameMenu[i].name, "\0", 1);
+	    NewGameMenu[i].alphaKey = 'p';
+	}
 }
 
 void M_NewGame(int choice)
 {
-	if (gameinfo.flags & GI_MAPxx)
+	if (gamemode == commercial_bfg)
     {
-        if (gamemode == commercial_bfg)
-        {
-            M_SetupNextMenu(&ExpDef);
-        }
-        else
-        {
-            M_SetupNextMenu(&NewDef);
-        }
+        M_SetupNextMenu(&ExpDef);
     }
-	else if (gamemode == retail_chex)			// [ML] Don't show the episode selection in chex mode
-    {
-        M_SetupNextMenu(&NewDef);
-    }
-    else if (gamemode == retail || gamemode == retail_bfg)
-	{
-	    EpiDef.numitems = ep_end;
-	    M_SetupNextMenu(&EpiDef);
-	}
 	else
 	{
-		EpiDef.numitems = ep4;
-		M_SetupNextMenu(&EpiDef);
-	}
+		EpiDef.numitems = episodenum;
 
+		// Set up episode menu positioning
+		EpiDef.x = 48;
+		EpiDef.y = 63;
+
+		if (episodenum > 4)
+		{
+			EpiDef.y -= LINEHEIGHT;
+		}
+
+		epi = 0;
+
+		NewDef.numitems = skillnum + 1;
+
+		if (episodenum > 1)
+		{
+			SetupEpisodeList();
+			M_SetupNextMenu(&EpiDef);
+		}
+		else
+		{
+			SetupSkillList();
+			M_SetupNextMenu(&NewDef);
+		}
+	}
 }
 
 
 //
 //		M_Episode
 //
-int 	epi;
 
-void M_DrawEpisode(void)
+void M_DrawEpisode()
 {
+	int y = 38;
+
+	if (episodenum > 4)
+	{
+		y -= (LINEHEIGHT * (episodenum - 4));
+	}
 	const Texture* texture = Res_CacheTexture("M_EPISOD", PATCH);
-	screen->DrawTextureClean(texture, 54, 38);
+	screen->DrawTextureClean(texture, 54, y);
 }
+
+static int skillchoice = 0;
 
 void M_VerifyNightmare(int ch)
 {
-	if (ch != 'y' && ch != KEY_JOY4) {
-	    M_ClearMenus ();
+	if (ch != 'y' && !Key_IsYesKey(ch))
+	{
+	    M_ClearMenus();
 		return;
 	}
 
-	M_StartGame(nightmare);
+	M_StartGame(skillchoice);
 }
 
 void M_StartGame(int choice)
 {
-	sv_skill.Set ((float)(choice+1));
+	sv_skill.Set (static_cast<float>(choice + 1));
 	sv_gametype = GM_COOP;
 
 	if (gamemode == commercial_bfg)     // Funky external loading madness fun time (DOOM 2 BFG)
@@ -1037,32 +1099,54 @@ void M_StartGame(int choice)
 
 void M_ChooseSkill(int choice)
 {
-	if (choice == nightmare)
+	if (choice == skillnum)
 	{
-		M_StartMessage(GStrings(NIGHTMARE),M_VerifyNightmare,true);
+		g_resetinvonexit = !g_resetinvonexit;
+		return;
+	}
+	else if (SkillInfos[choice].must_confirm)
+	{
+		const char* must_confirm_text = SkillInfos[choice].must_confirm_text.c_str();
+
+		if (must_confirm_text[0] == '$')
+			M_StartMessage(GStrings(StdStringToUpper(must_confirm_text + 1)),
+		               M_VerifyNightmare, true);
+		else
+			M_StartMessage(must_confirm_text, M_VerifyNightmare, true);
+
+		skillchoice = choice;
+
 		return;
 	}
 
 	M_StartGame(choice);
 }
 
-void M_Episode (int choice)
+void M_Episode(int choice)
 {
 	if ((gameinfo.flags & GI_SHAREWARE) && choice)
 	{
 		M_StartMessage(GStrings(SWSTRING),NULL,false);
 		//M_SetupNextMenu(&ReadDef1);
-		M_ClearMenus ();
+		M_ClearMenus();
 		return;
 	}
 
 	epi = choice;
-	M_SetupNextMenu(&NewDef);
+
+	if (EpisodeInfos[epi].noskillmenu)
+		M_StartGame(defaultskillmenu);
+	else
+	{
+		SetupSkillList();
+		M_SetupNextMenu(&NewDef);
+	}
 }
 
-void M_Expansion (int choice)
+void M_Expansion(int choice)
 {
 	epi = choice;
+	SetupSkillList();
 	M_SetupNextMenu(&NewDef);
 }
 
@@ -1071,7 +1155,7 @@ void M_Expansion (int choice)
 // Read This Menus
 // Had a "quick hack to fix romero bug"
 //
-void M_DrawReadThis1 (void)
+void M_DrawReadThis1()
 {
 	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[0], PATCH);
 	screen->DrawTextureFullScreen(texture);
@@ -1080,7 +1164,7 @@ void M_DrawReadThis1 (void)
 //
 // Read This Menus - optional second page.
 //
-void M_DrawReadThis2 (void)
+void M_DrawReadThis2()
 {
 	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[1], PATCH);
 	screen->DrawTextureFullScreen(texture);
@@ -1089,7 +1173,7 @@ void M_DrawReadThis2 (void)
 //
 // Read This Menus - shareware third page.
 //
-void M_DrawReadThis3 (void)
+void M_DrawReadThis3()
 {
 	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[2], PATCH);
 	screen->DrawTextureFullScreen(texture);
@@ -1098,7 +1182,7 @@ void M_DrawReadThis3 (void)
 //
 // M_Options
 //
-void M_DrawOptions(void)
+void M_DrawOptions()
 {
 	const Texture* texture = Res_CacheTexture("M_OPTTL", PATCH);
 	screen->DrawTextureClean(texture, 108, 15);
@@ -1115,7 +1199,8 @@ void M_Options(int choice)
 //
 void M_EndGameResponse(int ch)
 {
-	if ((!isascii(ch) || toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
+	if ((!isascii(ch) || toupper(ch) != 'Y') && !Key_IsYesKey(ch))
+	{
 	    M_ClearMenus ();
 		return;
 	}
@@ -1123,7 +1208,7 @@ void M_EndGameResponse(int ch)
 	currentMenu->lastOn = itemOn;
 	M_ClearMenus ();
 	D_StartTitle ();
-	CL_QuitNetGame();
+	CL_QuitNetGame(NQ_SILENT);
 }
 
 void M_EndGame(int choice)
@@ -1142,11 +1227,12 @@ void M_EndGame(int choice)
 // M_QuitDOOM
 //
 
-void STACK_ARGS call_terms (void);
+void STACK_ARGS call_terms();
 
 void M_QuitResponse(int ch)
 {
-	if ((!isascii(ch) || toupper(ch) != 'Y') && ch != KEY_JOY4 ) {
+	if ((!isascii(ch) || toupper(ch) != 'Y') && !Key_IsYesKey(ch))
+	{
 	    M_ClearMenus ();
 		return;
 	}
@@ -1156,10 +1242,9 @@ void M_QuitResponse(int ch)
 	
 	if (!multiplayer)
 	{
-		if (gameinfo.quitSounds)
+		if (gameinfo.quitSound[0])
 		{
-			S_Sound(CHAN_INTERFACE,
-					gameinfo.quitSounds[(gametic>>2)&7], 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, gameinfo.quitSound, 1, ATTN_NONE);
 			I_WaitVBL (105);
 		}
 	}
@@ -1169,18 +1254,18 @@ void M_QuitResponse(int ch)
 	exit(EXIT_SUCCESS);
 }
 
-void M_QuitDOOM (int choice)
+void M_QuitDOOM(int choice)
 {
+	static std::string endstring;
+
 	// We pick index 0 which is language sensitive,
 	//  or one at random, between 1 and maximum number.
-	sprintf (endstring, "%s\n\n%s",
-		GStrings(QUITMSG + (gametic % NUM_QUITMESSAGES)), GStrings(DOSY));
+	StrFormat(endstring, "%s\n\n%s",
+	          GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
+	          GStrings(DOSY));
 
-	M_StartMessage(endstring,M_QuitResponse,true);
+	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
 }
-
-
-
 
 // -----------------------------------------------------
 //		Player Setup Menu code
@@ -1211,11 +1296,11 @@ void M_PlayerSetup(int choice)
 		fire_surface = I_AllocateSurface(fire_surface_width, fire_surface_height, 8);
 
 	// [Nes] Intialize the player preview color.
-	argb_t player_color = CL_GetPlayerColor(&consoleplayer());
+	const argb_t player_color = CL_GetPlayerColor(&consoleplayer());
 	R_BuildPlayerTranslation(0, player_color);
 }
 
-static void M_PlayerSetupTicker (void)
+static void M_PlayerSetupTicker()
 {
 	// Based on code in f_finale.c
 	if (--PlayerTics > 0)
@@ -1270,15 +1355,13 @@ static forceinline void R_RenderFire(int x, int y)
 	fire_surface->unlock();
 }
 
-static void M_PlayerSetupDrawer (void)
+static void M_PlayerSetupDrawer()
 {
-	int x1,x2,y1,y2;
+	const int x1 = (I_GetSurfaceWidth() / 2) - (160 * CleanXfac);
+	const int y1 = (I_GetSurfaceHeight() / 2) - (100 * CleanYfac);
 
-	x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
-	y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
-
-    x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
-	y2 = (I_GetSurfaceHeight() / 2)+(100*CleanYfac);
+	const int x2 = (I_GetSurfaceWidth() / 2) + (160 * CleanXfac);
+	const int y2 = (I_GetSurfaceHeight() / 2) + (100 * CleanYfac);
 
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
@@ -1307,7 +1390,7 @@ static void M_PlayerSetupDrawer (void)
 		y = (y-100)*CleanYfac+(I_GetSurfaceHeight() / 2);
 		if (!fire_surface)
 		{
-			argb_t color = V_GetDefaultPalette()->basecolors[34];
+			const argb_t color = V_GetDefaultPalette()->basecolors[34];
 			screen->Clear(x, y, x + fire_surface_width * CleanXfac, y + fire_surface_height * CleanYfac, color);
 		}
 		else
@@ -1316,7 +1399,7 @@ static void M_PlayerSetupDrawer (void)
 			int a, b;
 
 			fire_surface->lock();
-			int pitch = fire_surface->getPitch();
+			const int pitch = fire_surface->getPitch();
 
 			palindex_t* from = (palindex_t*)fire_surface->getBuffer() + (fire_surface_height - 3) * pitch;
 			for (a = 0; a < fire_surface_width; a++, from++)
@@ -1400,12 +1483,12 @@ static void M_PlayerSetupDrawer (void)
 		}
 	}
 	{
-		int spritenum = states[mobjinfo[MT_PLAYER].spawnstate].sprite;
-		spriteframe_t* sprframe = &sprites[spritenum].spriteframes[PlayerState->frame & FF_FRAMEMASK];
+		const int spritenum = states[mobjinfo[MT_PLAYER].spawnstate].sprite;
+		const spriteframe_t* sprframe = &sprites[spritenum].spriteframes[PlayerState->frame & FF_FRAMEMASK];
 
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
 		// of the table of the current player color. (Which is different in single, demo, and team)
-		argb_t player_color = CL_GetPlayerColor(&consoleplayer());
+		const argb_t player_color = CL_GetPlayerColor(&consoleplayer());
 		R_BuildPlayerTranslation(0, player_color);
 		V_ColorMap = translationref_t(translationtables, 0);
 
@@ -1427,8 +1510,8 @@ static void M_PlayerSetupDrawer (void)
 	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Blue");
 
 	{
-		int x = V_StringWidth("Green") + 8 + PSetupDef.x;
-		argb_t playercolor = V_GetColorFromString(cl_color);
+		const int x = V_StringWidth("Green") + 8 + PSetupDef.x;
+		const argb_t playercolor = V_GetColorFromString(cl_color);
 
 		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, playercolor.getr());
 		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, playercolor.getg());
@@ -1437,24 +1520,24 @@ static void M_PlayerSetupDrawer (void)
 
 	// Draw team setting
 	{
-		team_t team = D_TeamByName(cl_team.cstring());
-		int x = V_StringWidth ("Prefered Team") + 8 + PSetupDef.x;
+		const team_t team = D_TeamByName(cl_team.cstring());
+		const int x = V_StringWidth ("Prefered Team") + 8 + PSetupDef.x;
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Prefered Team");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : team_names[team]);
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	// Draw gender setting
 	{
-		gender_t gender = D_GenderByName(cl_gender.cstring());
-		int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
+		const gender_t gender = D_GenderByName(cl_gender.cstring());
+		const int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Gender");
 		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*5, genders[gender]);
 	}
 
 	// Draw autoaim setting
 	{
-		int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
-		float aim = cl_autoaim;
+		const int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
+		const float aim = cl_autoaim;
 
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Autoaim");
 		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*6,
@@ -1471,29 +1554,20 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 {
 	team_t team = D_TeamByName(cl_team.cstring());
 
-	if(choice)
+	int iTeam = (int)team;
+	if (choice)
 	{
-		switch(team)
-		{
-			case TEAM_NONE: team = TEAM_BLUE; break;
-			case TEAM_BLUE: team = TEAM_RED; break;
-			case TEAM_RED: team = TEAM_BLUE; break;
-			default:
-			team = TEAM_NONE; break;
-		}
+		iTeam = ++iTeam % NUMTEAMS;
 	}
 	else
 	{
-		switch(team)
-		{
-			case TEAM_NONE: team = TEAM_RED; break;
-			case TEAM_RED: team = TEAM_BLUE; break;
-			default:
-			case TEAM_BLUE: team = TEAM_NONE; break;
-		}
+		iTeam--;
+		if (iTeam < 0)
+			iTeam = NUMTEAMS - 1;
 	}
+	team = (team_t)iTeam;
 
-	cl_team = (team == TEAM_NONE) ? "" : team_names[team];
+	cl_team = GetTeamInfo(team)->ColorStringUpper.c_str();
 }
 
 static void M_ChangeGender (int choice)
@@ -1512,12 +1586,11 @@ static void M_ChangeAutoAim (int choice)
 {
 	static const float ranges[] = { 0, 0.25, 0.5, 1, 2, 3, 5000 };
 	float aim = cl_autoaim;
-	int i;
 
 	if (!choice) {
 		// Select a lower autoaim
 
-		for (i = 6; i >= 1; i--) {
+		for (int i = 6; i >= 1; i--) {
 			if (aim >= ranges[i]) {
 				aim = ranges[i - 1];
 				break;
@@ -1526,7 +1599,7 @@ static void M_ChangeAutoAim (int choice)
 	} else {
 		// Select a higher autoaim
 
-		for (i = 5; i >= 0; i--) {
+		for (int i = 5; i >= 0; i--) {
 			if (aim >= ranges[i]) {
 				aim = ranges[i + 1];
 				break;
@@ -1590,7 +1663,7 @@ static void SendNewColor(int red, int green, int blue)
 static void M_SlidePlayerRed(int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setr(std::max(0, int(color.getr()) - 1 - accel));
@@ -1603,7 +1676,7 @@ static void M_SlidePlayerRed(int choice)
 static void M_SlidePlayerGreen (int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setg(std::max(0, int(color.getg()) - 1 - accel));
@@ -1616,7 +1689,7 @@ static void M_SlidePlayerGreen (int choice)
 static void M_SlidePlayerBlue (int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setb(std::max(0, int(color.getb()) - 1 - accel));
@@ -1651,12 +1724,11 @@ void M_StartMessage(const char *string, void (*routine)(int), bool input)
 	messageRoutine = routine;
 	messageNeedsInput = input;
 	menuactive = true;
-	return;
 }
 
 
 
-void M_StopMessage (void)
+void M_StopMessage()
 {
 	menuactive = messageLastMenuActive;
 	messageToPrint = 0;
@@ -1668,10 +1740,13 @@ void M_StopMessage (void)
 //
 int M_StringHeight(char* string)
 {
-	int h;
+	// Default height without a working font is 8.
+	if (!::hu_font[0])
+		return 8;
+
 	int height = hu_font[0]->mHeight;
 
-	h = height;
+	int h = height;
 	while (*string)
 		if ((*string++) == '\n')
 			h += height;
@@ -1691,8 +1766,6 @@ int M_StringHeight(char* string)
 bool M_Responder (event_t* ev)
 {
 	int ch, ch2;
-	int i;
-	const char *cmd;
 
 	ch = ch2 = -1;
 
@@ -1728,77 +1801,65 @@ bool M_Responder (event_t* ev)
 	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
 		return false;
 
+	// Transfer any action to the Options Menu Responder 
+	// if we're not on the main menu.
 	if (menuactive && OptionsActive) {
 		M_OptResponder (ev);
 		return true;
 	}
 
 	// Handle Repeat
-	switch(ch)
+	if (Key_IsLeftKey(ch) || Key_IsRightKey(ch))
 	{
-	  case KEY_HAT4:
-	  case KEY_LEFTARROW:
-	  case KEY_HAT2:
-	  case KEY_RIGHTARROW:
-	  case KEYP_4:
-	  case KEYP_6:
-		if(repeatKey == ch)
+		if (repeatKey == ch)
 			repeatCount++;
 		else
 		{
 			repeatKey = ch;
 			repeatCount = 0;
 		}
-		break;
-	  default:
-		break;
 	}
 
-
-	cmd = C_GetBinding (ch);
+	const char* cmd = Bindings.GetBind(ch).c_str();
 
 	// Save Game string input
 	// [RH] and Player Name string input
 	if (genStringEnter)
 	{
-		switch(ch)
+		if (ch == OKEY_BACKSPACE)
 		{
-		  case KEY_BACKSPACE:
 			if (saveCharIndex > 0)
 			{
 				saveCharIndex--;
 				savegamestrings[saveSlot][saveCharIndex] = 0;
 			}
-			break;
-
-		  case KEY_JOY2:
-		  case KEY_ESCAPE:
+		} 
+		else if (Key_IsCancelKey(ch))
+		{
 			genStringEnter = 0;
-			M_ClearMenus ();
-			strcpy(&savegamestrings[saveSlot][0],saveOldString);
-			break;
-
-		  case KEY_JOY1:
-		  case KEY_ENTER:
-		  case KEYP_ENTER:
+			M_ClearMenus();
+			strcpy(&savegamestrings[saveSlot][0], saveOldString);
+		}
+		else if (Key_IsAcceptKey(ch))
+		{
 			genStringEnter = 0;
-			M_ClearMenus ();
+			M_ClearMenus();
 			if (savegamestrings[saveSlot][0])
 				genStringEnd(saveSlot);	// [RH] Function to call when enter is pressed
-			break;
-
-		  default:
+		}
+		else 
+		{ 
 			ch = ev->data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
 				V_StringWidth(savegamestrings[saveSlot]) <
-				(genStringLen-1)*8)
+				(genStringLen - 1) * 8)
 			{
 				savegamestrings[saveSlot][saveCharIndex++] = ch;
 				savegamestrings[saveSlot][saveCharIndex] = 0;
 			}
-			break;
 		}
+
 		return true;
 	}
 
@@ -1806,26 +1867,28 @@ bool M_Responder (event_t* ev)
 	if (messageToPrint)
 	{
 		if (messageNeedsInput &&
-			(!(ch2 == ' ' || ch == KEY_ESCAPE || ch == KEY_JOY2 || ch == KEY_JOY4 ||
-			 (isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')))))
+		    (!(ch2 == ' ' || Key_IsMenuKey(ch) || Key_IsYesKey(ch) || Key_IsNoKey(ch) || 
+			(isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y'))))) 
 			return true;
 
 		menuactive = messageLastMenuActive;
 		messageToPrint = 0;
 		if (messageRoutine)
-			messageRoutine(ch2);
+		{
+			if (ch == NULL && ch2 != NULL)
+				messageRoutine(ch2);
+			else
+				messageRoutine(ch);
+		}
 
 		menuactive = false;
 		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
 		return true;
 	}
 
-	// [RH] F-Keys are now just normal keys that can be bound,
-	//		so they aren't checked here anymore.
-
 	// If devparm is set, pressing F1 always takes a screenshot no matter
 	// what it's bound to. (for those who don't bother to read the docs)
-	if (devparm && ch == KEY_F1) {
+	if (devparm && ch == OKEY_F1) {
 		G_ScreenShot (NULL);
 		return true;
 	}
@@ -1833,12 +1896,7 @@ bool M_Responder (event_t* ev)
 	// Pop-up menu?
 	if (!menuactive)
 	{
-		// [ML] This is a regular binding now too!
-#ifdef _XBOX
-		if (ch == KEY_ESCAPE || ch == KEY_JOY9)
-#else
-		if (ch == KEY_ESCAPE)
-#endif
+		if (Key_IsMenuKey(ch))
 		{
 			AddCommandString("menu_main");
 			return true;
@@ -1857,104 +1915,97 @@ bool M_Responder (event_t* ev)
 	}
 
 	// Keys usable within menu
-	switch (ch)
 	{
-	  case KEY_HAT3:
-	  case KEY_DOWNARROW:
-	  case KEYP_2:
-		do
+		if (Key_IsDownKey(ch))
 		{
-			if (itemOn+1 > currentMenu->numitems-1)
-				itemOn = 0;
-			else
-				itemOn++;
-			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-		} while(currentMenu->menuitems[itemOn].status==-1);
-		return true;
-
-	  case KEY_HAT1:
-	  case KEY_UPARROW:
-	  case KEYP_8:
-		do
-		{
-			if (!itemOn)
-				itemOn = currentMenu->numitems-1;
-			else
-				itemOn--;
-			S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-		} while(currentMenu->menuitems[itemOn].status==-1);
-		return true;
-
-	  case KEY_HAT4:
-	  case KEY_LEFTARROW:
-	  case KEYP_4:
-		if (currentMenu->menuitems[itemOn].routine &&
-			currentMenu->menuitems[itemOn].status == 2)
-		{
-			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			currentMenu->menuitems[itemOn].routine(0);
+			do {
+				if (itemOn + 1 > currentMenu->numitems - 1)
+					itemOn = 0;
+				else
+					itemOn++;
+				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			} while (currentMenu->menuitems[itemOn].status == -1);
+			return true;
 		}
-		return true;
-
-	  case KEY_HAT2:
-	  case KEY_RIGHTARROW:
-	  case KEYP_6:
-		if (currentMenu->menuitems[itemOn].routine &&
-			currentMenu->menuitems[itemOn].status == 2)
+		else if (Key_IsUpKey(ch))
 		{
-			S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			currentMenu->menuitems[itemOn].routine(1);
+			do {
+				if (!itemOn)
+					itemOn = currentMenu->numitems - 1;
+				else
+					itemOn--;
+				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			} while (currentMenu->menuitems[itemOn].status == -1);
+			return true;
 		}
-		return true;
-
-	  case KEY_JOY1:
-	  case KEY_ENTER:
-	  case KEYP_ENTER:
-		if (currentMenu->menuitems[itemOn].routine &&
-			currentMenu->menuitems[itemOn].status)
+		else if (Key_IsLeftKey(ch))
 		{
+			if (currentMenu->menuitems[itemOn].routine &&
+				currentMenu->menuitems[itemOn].status == 2)
+			{
+				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				currentMenu->menuitems[itemOn].routine(0);
+			}
+			return true;
+		}
+		else if (Key_IsRightKey(ch))
+		{
+			if (currentMenu->menuitems[itemOn].routine &&
+				currentMenu->menuitems[itemOn].status == 2)
+			{
+				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				currentMenu->menuitems[itemOn].routine(1);
+			}
+			return true;
+		}
+		else if (Key_IsAcceptKey(ch))
+		{
+			if (currentMenu->menuitems[itemOn].routine &&
+				currentMenu->menuitems[itemOn].status)
+			{
+				currentMenu->lastOn = itemOn;
+				if (currentMenu->menuitems[itemOn].status == 2)
+				{
+					currentMenu->menuitems[itemOn].routine(1);		// right arrow
+					S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				}
+				else
+				{
+					currentMenu->menuitems[itemOn].routine(itemOn);
+					S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				}
+			}
+			return true;
+		}
+		else if (Key_IsCancelKey(ch))
+		{
+			// [RH] Escaping now moves back one menu instead of
+			//	  quitting the menu system. Thus, backspace
+			//	  is now ignored.
 			currentMenu->lastOn = itemOn;
-			if (currentMenu->menuitems[itemOn].status == 2)
+			M_PopMenuStack();
+			return true;
+		}
+		else
+		{
+			if (ch2 && (ch < OKEY_JOY1))
 			{
-				currentMenu->menuitems[itemOn].routine(1);		// right arrow
-				S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-			}
-			else
-			{
-				currentMenu->menuitems[itemOn].routine(itemOn);
-				S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				for (int i = itemOn + 1; i < currentMenu->numitems; i++)
+					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
+					{
+						itemOn = i;
+						S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+						return true;
+					}
+				for (int i = 0; i <= itemOn; i++)
+					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
+					{
+						itemOn = i;
+						S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+						return true;
+					}
 			}
 		}
-		return true;
-
-	  // [RH] Escape now moves back one menu instead of
-	  //	  quitting the menu system. Thus, backspace
-	  //	  is now ignored.
-	  case KEY_JOY2:
-	  case KEY_ESCAPE:
-		currentMenu->lastOn = itemOn;
-		M_PopMenuStack ();
-		return true;
-
-	  default:
-		if (ch2 && (ch < KEY_JOY1)) {
-			for (i = itemOn+1;i < currentMenu->numitems;i++)
-				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
-				{
-					itemOn = i;
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-					return true;
-				}
-			for (i = 0;i <= itemOn;i++)
-				if (currentMenu->menuitems[i].alphaKey == toupper(ch2))
-				{
-					itemOn = i;
-					S_Sound (CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-					return true;
-				}
-		}
-		break;
-
 	}
 
 	// [RH] Menu now eats all keydown events while active
@@ -1963,7 +2014,6 @@ bool M_Responder (event_t* ev)
 	else
 		return false;
 }
-
 
 
 //
@@ -1991,7 +2041,10 @@ void M_StartControlPanel (void)
 //
 void M_Drawer()
 {
-	if (messageToPrint)
+	if (!hu_font[0])
+		return;
+
+	if (messageToPrint && ::hu_font[0])
 	{
 		// Horiz. & Vertically center string and print it.
 		brokenlines_t *lines = V_BreakLines (320, messageString);
@@ -2020,9 +2073,9 @@ void M_Drawer()
 				currentMenu->routine(); 		// call Draw routine
 
 			// DRAW MENU
-			int x = currentMenu->x;
+			const int x = currentMenu->x;
 			int y = currentMenu->y;
-			int max = currentMenu->numitems;
+			const int max = currentMenu->numitems;
 
 			for (int i = 0; i < max; i++)
 			{
@@ -2190,5 +2243,3 @@ size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length)
 
 
 VERSION_CONTROL (m_menu_cpp, "$Id$")
-
-

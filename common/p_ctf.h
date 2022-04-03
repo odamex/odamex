@@ -20,55 +20,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __P_CTF_H__
-#define __P_CTF_H__
+#pragma once
 
 #include "d_netinf.h"
 #include "p_local.h"
-
-//	Map ID for flags
-#define	ID_BLUE_FLAG	5130
-#define	ID_RED_FLAG		5131
-// Reserve for maintaining the DOOM CTF standard.
-//#define ID_NEUTRAL_FLAG	5132
-//#define ID_TEAM3_FLAG	5133
-//#define ID_TEAM4_FLAG	5134
-
-// flags can only be in one of these states
-enum flag_state_t
-{
-	flag_home,
-	flag_dropped,
-	flag_carried,
-
-	NUMFLAGSTATES
-};
-
-// data associated with a flag
-struct flagdata
-{
-	// Does this flag have a spawn yet?
-	bool flaglocated;
-
-	// Actor when being carried by a player, follows player
-	AActor::AActorPtr actor;
-
-	// Integer representation of WHO has each flag (player id)
-	byte flagger;
-	int	pickup_time;
-
-	// Flag locations
-	int x, y, z;
-
-	// Flag Timout Counters
-	int timeout;
-
-	// True when a flag has been dropped
-	flag_state_t state;
-
-	// Used for the blinking flag indicator on the statusbar
-	int sb_tick;
-};
 
 // events
 enum flag_score_t
@@ -90,40 +45,24 @@ enum flag_score_t
 //	Network Events
 // [CG] I'm aware having CL_* and SV_* functions in common/ is not great, I'll
 //      do more work on CTF and team-related things later.
-void CL_CTFEvent(void);
-void SV_CTFEvent(flag_t f, flag_score_t event, player_t &who);
-ItemEquipVal SV_FlagTouch(player_t &player, flag_t f, bool firstgrab);
-void SV_SocketTouch(player_t &player, flag_t f);
+void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
+ItemEquipVal SV_FlagTouch(player_t &player, team_t f, bool firstgrab);
+void SV_SocketTouch(player_t &player, team_t f);
 void CTF_Connect(player_t &player);
 
 //	Internal Events
 void CTF_DrawHud(void);
-void CTF_CarryFlag(player_t &who, flag_t flag);
+void CTF_CarryFlag(player_t &who, team_t flag);
 void CTF_MoveFlags(void);
 void CTF_RunTics(void);
-void CTF_SpawnFlag(flag_t f);
-void CTF_SpawnDroppedFlag(flag_t f, int x, int y, int z);
+void CTF_SpawnFlag(team_t f);
+void CTF_SpawnDroppedFlag(team_t f, int x, int y, int z);
 void CTF_RememberFlagPos(mapthing2_t *mthing);
 void CTF_CheckFlags(player_t &player);
-void CTF_Sound(flag_t f, flag_score_t event);
-void CTF_Message(flag_t f, flag_score_t event);
-// void CTF_TossFlag(player_t &player);  [ML] 04/4/06: Removed buggy flagtoss
-// void CTF_SpawnPlayer(player_t &player);	// denis - todo - where's the implementation!?
-
-//	Externals
-// EXTERN_CVAR (sv_scorelimit)
-
-// CTF Game Data
-extern flagdata CTFdata[NUMFLAGS];
-extern int TEAMpoints[NUMFLAGS];
-extern const char *team_names[NUMTEAMS+2];
+void CTF_Sound(team_t f, team_t t, flag_score_t event);
+void CTF_Message(team_t f, team_t t, flag_score_t event);
+bool CTF_ShouldSpawnHomeFlag(mobjtype_t type);
+void CTF_ReplaceFlagWithWaypoint(AActor* mo);
 
 FArchive &operator<< (FArchive &arc, flagdata &flag);
 FArchive &operator>> (FArchive &arc, flagdata &flag);
-
-//	Colors
-#define	BLUECOLOR		200
-#define	REDCOLOR		176
-
-#endif
-

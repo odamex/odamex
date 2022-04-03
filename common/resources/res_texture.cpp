@@ -22,17 +22,20 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "i_system.h"
+#include "odamex.h"
+#include "m_fixed.h"
+
 #include "tables.h"
 #include "g_level.h"
 #include "m_random.h"
-#include "sc_man.h"
 #include "cmdlib.h"
 
 #include "resources/res_texture.h"
 #include "resources/res_main.h"
 #include "resources/res_resourceloader.h"
 #include "resources/res_identifier.h"
+
+#include "i_system.h"
 
 
 //
@@ -523,7 +526,7 @@ void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 		if (!Res_CheckResource(start_res_id) || !Res_CheckResource(end_res_id))
 			continue;
 
-		AnimatedTextureManager::anim_t anim;
+		anim_t anim;
 		anim.basepic = start_res_id;
 		anim.numframes = end_res_id - start_res_id + 1;
 		anim.uniqueframes = false;
@@ -555,99 +558,69 @@ void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 //
 void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 {
-	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/ANIMDEFS"));
-	for (size_t i = 0; i < res_ids.size(); i++)
+	try
 	{
-		SC_OpenResourceLump(res_ids[i]);
+		const ResourceIdList res_ids =
+		    Res_GetAllResourceIds(ResourcePath("/GLOBAL/ANIMDEFS"));
 
-		while (SC_GetString())
+		for (size_t i = 0; i < res_ids.size(); i++)
 		{
-			bool is_wall = SC_Compare("texture");
-			bool is_floor = SC_Compare("flat");
-			if (is_wall || is_floor)
+			const char* name = Res_GetResourceName(res_ids[i]).c_str();
+			const char* buffer =
+			    static_cast<const char*>(Res_LoadResource(res_ids[i], PU_STATIC));
+
+			OScannerConfig config = {
+			    name,  // lumpName
+			    false, // semiComments
+			    true,  // cComments
+			};
+			OScanner os = OScanner::openBuffer(config, buffer,
+			                                   buffer + Res_GetResourceSize(res_ids[i]));
+
+			while (os.scan())
 			{
-				SC_MustGetString();
-
-				AnimatedTextureManager::anim_t anim;
-				anim.basepic = Res_GetTextureResourceId(OString(sc_String), is_wall ? WALL : FLOOR);
-				anim.curframe = 0;
-				anim.numframes = 0;
-				anim.uniqueframes = true;
-				memset(anim.speedmin, 1, AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmin));
-				memset(anim.speedmax, 1, AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmax));
-
-				while (SC_GetString())
+				if (os.compareTokenNoCase("flat"))
 				{
-					if (!SC_Compare("pic"))
+					ParseAnim(os, false);
+				}
+				else if (os.compareTokenNoCase("texture"))
+				{
+					ParseAnim(os, true);
+				}
+				else if (os.compareTokenNoCase(
+				             "switch")) // Don't support switchdef yet...
+				{
+					// P_ProcessSwitchDef();
+					// os.error("switchdef not supported.");
+				}
+				else if (os.compareTokenNoCase("warp"))
+				{
+					os.mustScan();
+					if (os.compareTokenNoCase("flat"))
 					{
-						SC_UnGet();
-						break;
+						os.mustScan();
+						const ResourceId res_id = Res_GetTextureResourceId(
+						    OString(os.getToken().c_str()), FLOOR);
+						addWarpedTexture(res_id);
 					}
-
-					if ((unsigned)anim.numframes == AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
-						SC_ScriptError("Animation has too many frames");
-
-					byte min = 1, max = 1;
-					
-					SC_MustGetNumber();
-					int frame = sc_Number;
-					SC_MustGetString();
-					if (SC_Compare("tics"))
+					else if (os.compareTokenNoCase("texture"))
 					{
-						SC_MustGetNumber();
-						sc_Number = clamp(sc_Number, 0, 255);
-						min = max = sc_Number;
-					}
-					else if (SC_Compare("rand"))
-					{
-						SC_MustGetNumber();
-						min = MAX(sc_Number, 0);
-						SC_MustGetNumber();
-						max = MIN(sc_Number, 255);
+						os.mustScan();
+						const ResourceId res_id = Res_GetTextureResourceId(
+						    OString(os.getToken().c_str()), WALL);
+						addWarpedTexture(res_id);
 					}
 					else
 					{
-						SC_ScriptError("Must specify a duration for animation frame");
+						os.error("Unknown error reading in ANIMDEFS");
 					}
-
-					anim.speedmin[anim.numframes] = min;
-					anim.speedmax[anim.numframes] = max;
-					anim.framepic[anim.numframes] = anim.basepic + frame - 1;
-					anim.numframes++;
-				}
-
-				anim.countdown = anim.speedmin[0];
-
-				if (anim.numframes < 2)
-					SC_ScriptError("Animation needs at least 2 frames");
-				else if (anim.basepic != ResourceId::INVALID_ID)
-					// TODO: check for duplicate anim_t definitions
-					mAnimDefs.push_back(anim);
-			}
-			else if (SC_Compare("switch"))
-			{
-				// Switchdef not supported.
-			}
-			else if (SC_Compare("warp"))
-			{
-				SC_MustGetString();
-
-				bool is_wall = SC_Compare("texture");
-				bool is_floor = SC_Compare("flat");
-
-				if (is_wall || is_floor)
-				{
-					SC_MustGetString();
-					const ResourceId res_id = Res_GetTextureResourceId(OString(sc_String), is_wall ? WALL : FLOOR);
-					addWarpedTexture(res_id);
-				}
-				else
-				{
-					SC_ScriptError(NULL, NULL);
 				}
 			}
 		}
-		SC_Close();
+	}
+	catch (CRecoverableError&)
+	{
+
 	}
 }
 
@@ -683,7 +656,7 @@ void AnimatedTextureManager::updateAnimatedTextures()
 	// cycle the animdef textures
 	for (size_t i = 0; i < mAnimDefs.size(); i++)
 	{
-		AnimatedTextureManager::anim_t* anim = &mAnimDefs[i];
+		anim_t* anim = &mAnimDefs[i];
 		if (--anim->countdown == 0)
 		{
 			anim->curframe = (anim->numframes) ? (anim->curframe + 1) % anim->numframes : 0;
@@ -810,7 +783,7 @@ const ResourceId Res_GetAnimatedTextureResourceId(const ResourceId res_id)
 //
 // Res_CacheTexture
 //
-const Texture* Res_CacheTexture(ResourceId res_id, int tag)
+const Texture* Res_CacheTexture(ResourceId res_id, zoneTag_e tag)
 {
 	if (res_id == ResourceId::INVALID_ID)
 		return static_cast<const Texture*>(NULL);
@@ -821,7 +794,7 @@ const Texture* Res_CacheTexture(ResourceId res_id, int tag)
 //
 // Res_CacheTexture
 //
-const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering ordering, int tag)
+const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering ordering, zoneTag_e tag)
 {
 	return Res_CacheTexture(Res_GetTextureResourceId(lump_name, ordering), tag);
 }
@@ -830,7 +803,8 @@ const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering 
 //
 // Res_CacheTexture
 //
-const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& directory, int tag)
+const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& directory,
+                                zoneTag_e tag)
 {
 	if (directory == textures_directory_name)
 		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, WALL), tag);
@@ -841,6 +815,85 @@ const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& di
 	if (directory == sprites_directory_name)
 		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, SPRITE), tag);
 	return NULL;
+}
+
+static void ParseAnim(OScanner& os, byte istex)
+{
+	AnimatedTextureManager::anim_t sink;
+	AnimatedTextureManager::anim_t* place;
+
+	os.mustScan();
+
+	AnimatedTextureManager::anim_t anim;
+	anim.basepic =
+	    Res_GetTextureResourceId(OString(os.getToken().c_str()), istex ? WALL : FLOOR);
+	anim.curframe = 0;
+	anim.numframes = 0;
+	anim.uniqueframes = true;
+	memset(anim.speedmin, 1,
+	       AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmin));
+	memset(anim.speedmax, 1,
+	       AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmax));
+
+	while (os.scan())
+	{
+		/*if (os.compareTokenNoCase("allowdecals"))
+		{
+		    if (istex && picnum >= 0)
+		    {
+		        texturenodecals[picnum] = 0;
+		    }
+		    continue;
+		}
+		else*/
+		if (!os.compareTokenNoCase("pic"))
+		{
+			os.unScan();
+			break;
+		}
+
+		if (place->numframes == AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
+		{
+			os.error("Animation has too many frames");
+		}
+
+		byte min = 1;
+		byte max = 1;
+
+		os.mustScanInt();
+		const int frame = os.getTokenInt();
+		os.mustScan();
+		if (os.compareToken("tics"))
+		{
+			os.mustScanInt();
+			min = max = clamp(os.getTokenInt(), 0, 255);
+		}
+		else if (os.compareToken("rand"))
+		{
+			os.mustScanInt();
+			int num = os.getTokenInt();
+			min = num >= 0 ? num : 0;
+			os.mustScanInt();
+			num = os.getTokenInt();
+			max = num <= 255 ? num : 255;
+		}
+		else
+		{
+			os.error("Must specify a duration for animation frame");
+		}
+
+		place->speedmin[place->numframes] = min;
+		place->speedmax[place->numframes] = max;
+		place->framepic[place->numframes] = frame + anim.basepic - 1;
+		place->numframes++;
+	}
+
+	if (place->numframes < 2)
+	{
+		os.error("Animation needs at least 2 frames");
+	}
+
+	place->countdown = place->speedmin[0];
 }
 
 

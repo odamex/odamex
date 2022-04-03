@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __R_DRAW__
-#define __R_DRAW__
+#pragma once
 
 #include "r_intrin.h"
 #include "r_defs.h"
@@ -118,6 +116,8 @@ extern void (*R_DrawTranslucentColumn)(void);
 //	Green/Red/Blue/Indigo shirts.
 extern void (*R_DrawTranslatedColumn)(void);
 
+extern void (*R_DrawTlatedLucentColumn)(void);
+
 // Span blitting for rows, floor/ceiling.
 // No Sepctre effect needed.
 extern void (*R_DrawSpan)(void);
@@ -146,7 +146,6 @@ void	R_DrawTranslucentColumnD (void);
 void	R_DrawTranslatedColumnD (void);
 
 void	R_DrawTlatedLucentColumnP (void);
-#define R_DrawTlatedLucentColumn R_DrawTlatedLucentColumnP
 void	R_StretchColumnP (void);
 #define R_StretchColumn R_StretchColumnP
 
@@ -189,6 +188,7 @@ extern void (*R_DrawSpanD)(void);
 extern void (*R_DrawSlopeSpanD)(void);
 extern void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
+extern byte bosstable[256];
 extern byte*			translationtables;
 extern argb_t           translationRGB[MAXPLAYERS+1][16];
 
@@ -225,6 +225,3 @@ void R_BuildClassicPlayerTranslation(int player, int color);
 // If the view size is not full screen, draws a border around it.
 void R_DrawViewBorder (void);
 void R_DrawBorder (int x1, int y1, int x2, int y2);
-
-
-#endif

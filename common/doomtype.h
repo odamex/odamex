@@ -23,38 +23,47 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __DOOMTYPE__
-#define __DOOMTYPE__
+#pragma once
+
+// Standard libc/STL includes we use in countless places
 
 #include "version.h"
 #include "errors.h"
 
-#include "m_swap.h"			// for __BIG_ENDIAN__ macro
+#if defined(_MSC_VER)
+#define forceinline __forceinline
+#elif defined(__GNUC__)
+#define forceinline inline __attribute__((always_inline))
+#else
+#define forceinline inline
+#endif
+
+// For __BIG_ENDIAN__ macro, requires forceinline
+#include "m_swap.h"
 
 #ifdef GEKKO
 	#include <gctypes.h>
 #endif
 
-#ifndef __BYTEBOOL__
-	#define __BYTEBOOL__
-	// [RH] Some windows includes already define this
-	#if !defined(_WINDEF_) && !defined(__wtypes_h__) && !defined(GEKKO)
-	typedef int BOOL;
-	#endif
-
-	#ifndef __cplusplus
-		#define false (0)
-		#define true (1)
-	#endif
-
-	typedef unsigned char byte;
-#endif
-
-#ifdef __cplusplus
-	typedef bool dboolean;
+#ifdef _MSC_VER
+	#define FORMAT_PRINTF(index, first_arg)
 #else
-	typedef enum {false, true} dboolean;
+	#define FORMAT_PRINTF(index, first_arg) __attribute__ ((format(printf, index, first_arg)))
 #endif
+
+#ifdef _MSC_VER
+	#define NORETURN __declspec(noreturn)
+#else
+	#define NORETURN __attribute__ ((noreturn))
+#endif
+
+// [RH] Some windows includes already define this
+#if !defined(_WINDEF_) && !defined(__wtypes_h__) && !defined(GEKKO)
+typedef int BOOL;
+#endif
+
+typedef unsigned char byte;
+typedef unsigned int uint;
 
 #if defined(_MSC_VER) || defined(__WATCOMC__)
 	#define STACK_ARGS __cdecl
@@ -77,17 +86,24 @@
 #endif
 
 #if (defined _XBOX || defined _MSC_VER)
-	typedef signed   __int8   int8_t;
-	typedef signed   __int16  int16_t;
-	typedef signed   __int32  int32_t;
-	typedef signed   __int64  int64_t;
-	typedef unsigned __int8   uint8_t;
-	typedef unsigned __int16  uint16_t;
-	typedef unsigned __int32  uint32_t;
-	typedef unsigned __int64  uint64_t;
+	#define DBL_EPSILON 2.2204460492503131e-016
+	#define FLT_EPSILON 1.192092896e-07F
+
+	#define PRI_SIZE_PREFIX "I"
 #else
-	#include <stdint.h>
+	#include <float.h>
+
+	#define PRI_SIZE_PREFIX "z"
 #endif
+
+// Format constants for ssize_t/size_t.
+
+#define PRIdSIZE PRI_SIZE_PREFIX "d"
+#define PRIiSIZE PRI_SIZE_PREFIX "i"
+#define PRIuSIZE PRI_SIZE_PREFIX "u"
+#define PRIoSIZE PRI_SIZE_PREFIX "o"
+#define PRIxSIZE PRI_SIZE_PREFIX "x"
+#define PRIXSIZE PRI_SIZE_PREFIX "X"
 
 #ifdef UNIX
 	#define stricmp strcasecmp
@@ -103,7 +119,10 @@
 
 // Max pos 32-bit int.
 #ifndef MAXINT
-	#define MAXINT			((int)0x7fffffff)
+	#define MAXINT			(0x7fffffff)
+#endif
+#ifndef MAXUINT
+	#define MAXUINT			(0xffffffff)
 #endif
 
 #ifndef MAXLONG
@@ -170,34 +189,75 @@ typedef uint64_t			dtime_t;
 	#define SEARCHPATHSEPCHAR ':'
 #endif
 
+/**
+ * @brief Returns a bitfield with a specific bit set.
+ */
+#define BIT(a) (1U << (a))
+
+/**
+ * @brief Returns a bitfield with a range of bits set from a to b, inclusive.
+ * 
+ * @param a Low bit in the mask.
+ * @param b High bit in the mask. 
+ */
+static inline uint32_t BIT_MASK(uint32_t a, uint32_t b)
+{
+    return (static_cast<uint32_t>(-1) >> (31 - b)) & ~(BIT(a) - 1);
+}
+
 // [RH] This gets used all over; define it here:
-int STACK_ARGS Printf (int printlevel, const char *, ...);
+FORMAT_PRINTF(1, 2) int STACK_ARGS Printf(const char* format, ...);
+FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...);
 // [Russell] Prints a bold green message to the console
-int STACK_ARGS Printf_Bold (const char *format, ...);
+FORMAT_PRINTF(1, 2) int STACK_ARGS Printf_Bold(const char* format, ...);
 // [RH] Same here:
-int STACK_ARGS DPrintf (const char *, ...);
+FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...);
 
-// Simple log file
-#include <fstream>
+/**
+ * @brief Print to all clients in a server, or to the local player offline.
+ *
+ * @note This could really use a new name, like "ServerPrintf".
+ *
+ * @param format printf-style format string.
+ * @param ... printf-style arguments.
+ */
+void STACK_ARGS SV_BroadcastPrintf(const char* format, ...) FORMAT_PRINTF(1, 2);
 
-extern std::ofstream LOG;
-extern const char *LOG_FILE; //  Default is "odamex.log"
+/**
+ * @brief Print to all clients in a server, or to the local player offline.
+ *
+ * @note This could really use a new name, like "ServerPrintf".
+ *
+ * @param printlevel PRINT_* constant designating what kind of print this is.
+ * @param format printf-style format string.
+ * @param ... printf-style arguments.
+ */
+void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
+    FORMAT_PRINTF(2, 3);
 
-extern std::ifstream CON;
+#ifdef SERVER_APP
+void STACK_ARGS SV_BroadcastPrintfButPlayer(int printlevel, int player_id, const char* format, ...);
+#endif
 
 // game print flags
-#define	PRINT_LOW			0		// pickup messages
-#define	PRINT_MEDIUM		1		// death messages
-#define	PRINT_HIGH			2		// critical messages
-#define	PRINT_CHAT			3		// chat messages
-#define PRINT_TEAMCHAT		4		// chat messages from a teammate
-#define PRINT_SERVERCHAT	5		// chat messages from the server
+typedef enum {
+	PRINT_PICKUP,		// Pickup messages
+	PRINT_OBITUARY,		// Death messages
+	PRINT_HIGH,			// Regular messages
 
-#ifdef __forceinline
-	#define forceinline __forceinline
-#else
-	#define forceinline inline
-#endif
+	PRINT_CHAT,			// Chat messages
+	PRINT_TEAMCHAT,		// Chat messages from a teammate
+	PRINT_SERVERCHAT,	// Chat messages from the server
+
+	PRINT_WARNING,		// Warning messages
+	PRINT_ERROR,		// Fatal error messages
+
+	PRINT_NORCON,		// Do NOT send the message to any rcon client.
+
+	PRINT_FILTERCHAT,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)		
+
+	PRINT_MAXPRINT
+} printlevel_t;
 
 //
 // MIN
@@ -449,14 +509,14 @@ public:
 	translationref_t(const palindex_t *table);
 	translationref_t(const palindex_t *table, const int player_id);
 
-	const palindex_t tlate(const byte c) const;
-	const int getPlayerID() const;
+	palindex_t tlate(const byte c) const;
+	int getPlayerID() const;
 	const palindex_t *getTable() const;
 
 	operator bool() const;
 };
 
-forceinline const palindex_t translationref_t::tlate(const byte c) const
+forceinline palindex_t translationref_t::tlate(const byte c) const
 {
 	#if ODAMEX_DEBUG
 	if (m_table == NULL)
@@ -465,7 +525,7 @@ forceinline const palindex_t translationref_t::tlate(const byte c) const
 	return m_table[c];
 }
 
-forceinline const int translationref_t::getPlayerID() const
+forceinline int translationref_t::getPlayerID() const
 {
 	return m_player_id;
 }
@@ -516,8 +576,8 @@ public:
 	palindex_t  index(const byte c) const;
 	argb_t      shade(const byte c) const;
 	const shademap_t *map() const;
-	const int mapnum() const;
-	const byte ramp() const;
+	int mapnum() const;
+	byte ramp() const;
 
 	argb_t tlate(const translationref_t &translation, const byte c) const;
 
@@ -564,7 +624,7 @@ forceinline const shademap_t *shaderef_t::map() const
 	return m_colors;
 }
 
-forceinline const int shaderef_t::mapnum() const
+forceinline int shaderef_t::mapnum() const
 {
 	return m_mapnum;
 }
@@ -632,5 +692,3 @@ forceinline argb_t rt_tlatecolor<argb_t>(const shaderef_t &pal, const translatio
 {
 	return pal.tlate(translation, c);
 }
-
-#endif

@@ -22,15 +22,15 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <string>
-#include <vector>
 
-#include "doomtype.h"
-#include "doomstat.h"
+#include "odamex.h"
+
+
 #include "d_main.h"
 #include "d_player.h"
 #include "i_system.h"
 #include "p_ctf.h"
+#include "g_gametype.h"
 #include "resources/res_main.h"
 #include "resources/res_filelib.h"
 
@@ -67,7 +67,7 @@ EXTERN_CVAR (sv_teamsinplay)
 
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (join_password)
-EXTERN_CVAR (sv_website)
+EXTERN_CVAR (sv_downloadsites)
 
 EXTERN_CVAR (sv_natport)
 
@@ -146,7 +146,7 @@ void SV_SendServerInfo()
 
 	SZ_Clear(&ml_message);
 	
-	MSG_WriteLong(&ml_message, CHALLENGE);
+	MSG_WriteLong(&ml_message, MSG_CHALLENGE);
 	MSG_WriteLong(&ml_message, SV_NewToken());
 
 	// if master wants a key to be presented, present it we will
@@ -165,10 +165,10 @@ void SV_SendServerInfo()
 	MSG_WriteByte(&ml_message, playersingame);
 	MSG_WriteByte(&ml_message, sv_maxclients.asInt());
 
-	MSG_WriteString(&ml_message, level.mapname);
+	MSG_WriteString(&ml_message, level.mapname.c_str());
 
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
-	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
+	const std::vector<OMD5Hash>& resource_file_hashes = Res_GetResourceFileHashes();
 
 	size_t resource_file_count = std::min<size_t>(resource_file_names.size(), 255);
 
@@ -190,7 +190,7 @@ void SV_SendServerInfo()
 			MSG_WriteShort(&ml_message, it->fragcount);
 			MSG_WriteLong(&ml_message, it->ping);
 
-			if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+			if (G_IsTeamGame())
 				MSG_WriteByte(&ml_message, it->userinfo.team);
 			else
 				MSG_WriteByte(&ml_message, TEAM_NONE);
@@ -198,11 +198,12 @@ void SV_SendServerInfo()
 	}
 
 	for (i = 1; i < resource_file_count; ++i)
-		MSG_WriteString(&ml_message, resource_file_hashes[i].c_str());
+		MSG_WriteString(&ml_message, resource_file_hashes[i].getHexCStr());
 
-	MSG_WriteString(&ml_message, sv_website.cstring());
+	// [AM] Used to be sv_website - sv_downloadsites can have multiple sites.
+	MSG_WriteString(&ml_message, sv_downloadsites.cstring());
 
-	if (sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if (G_IsTeamGame())
 	{
 		MSG_WriteLong(&ml_message, sv_scorelimit.asInt());
 		
@@ -210,7 +211,7 @@ void SV_SendServerInfo()
 		{
 			if ((sv_gametype == GM_CTF && i < 2) || (sv_gametype != GM_CTF && i < sv_teamsinplay)) {
 				MSG_WriteByte(&ml_message, 1);
-				MSG_WriteLong(&ml_message, TEAMpoints[i]);
+				MSG_WriteLong(&ml_message, GetTeamInfo((team_t)i)->Points);
 			} else {
 				MSG_WriteByte(&ml_message, 0);
 			}

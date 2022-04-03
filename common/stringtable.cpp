@@ -17,291 +17,410 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	String Abstraction Layer (FStringTable)
+//	String Abstraction Layer (StringTable)
 //
 //-----------------------------------------------------------------------------
-//
 
+
+#include "odamex.h"
 #include <cstring>
 #include <stddef.h>
 
 #include "stringtable.h"
-#include "doomdef.h"
+
+
 #include "cmdlib.h"
 #include "m_swap.h"
 #include "i_system.h"
-#include "errors.h"
+#include "oscanner.h"
+#include "stringenums.h"
+#include "w_wad.h"
+#include <resources/res_main.h>
 
-struct FStringTable::Header
+/**
+ * @brief Map a ZDoom game name to Odamex's internals and returns true if
+ *        the current game is the passed string.
+ * 
+ * @param str String to check against.
+ * @return True if the game matches the passed string, otherwise false.
+ */
+static bool IfGameZDoom(const std::string& str)
 {
-	uint32_t FileSize;
-	uint16_t NameCount;
-	uint16_t NameLen;
-};
+	if (!stricmp(str.c_str(), "doom") && ::gamemode != retail_chex &&
+	    ::gamemode != undetermined)
+	{
+		return true;
+	}
 
-void FStringTable::FreeData()
-{
-	if (Strings != NULL)
-		FreeStrings();
+	if (!stricmp(str.c_str(), "chex") && ::gamemode == retail_chex)
+	{
+		return true;
+	}
 
-	delete [] StringStatus;
-	delete [] Strings;
-	delete [] Names;
-
-	StringStatus = NULL;
-	Strings = NULL;
-	Names = NULL;
-	NumStrings = 0;
+	// We don't support anything else.
+	return false;
 }
 
-void FStringTable::FreeStrings()
+bool StringTable::canSetPassString(int pass, const std::string& name) const
 {
-	for (int i = 0; i < NumStrings; ++i)
-	{
-		if (Strings[i] < CompactBase || Strings[i] >= CompactBase + CompactSize)
-			delete[] Strings[i];
-	}
-	if (CompactBase)
-	{
-		delete[] CompactBase;
-		CompactBase = NULL;
-		CompactSize = 0;
-	}
+	StringHash::const_iterator it = _stringHash.find(name);
+
+	// New string?
+	if (it == _stringHash.end())
+		return true;
+
+	// Found an entry, does the string exist?
+	if ((*it).second.string.first == false)
+		return true;
+
+	// Was the string set with a less exact pass?
+	if ((*it).second.pass >= pass)
+		return true;
+
+	return false;
 }
 
-void FStringTable::FreeStandardStrings()
+void StringTable::clearStrings()
 {
-	if (Strings != NULL)
+	_stringHash.clear();
+}
+
+//
+// Loads a language
+//
+void StringTable::loadLanguage(const char* code, bool exactMatch, int pass, char* lump,
+                               size_t lumpLen)
+{
+	OScannerConfig config = {
+	    "LANGUAGE", // lumpName
+	    false,      // semiComments
+	    true,       // cComments
+	};
+	OScanner os = OScanner::openBuffer(config, lump, lump + lumpLen);
+	while (os.scan())
 	{
-		for (int i = 0; i < NumStrings; ++i)
+		// Parse a language section.
+		bool shouldParseSection = false;
+
+		os.assertTokenIs("[");
+		while (os.scan())
 		{
-			if ((StringStatus[i/8] & (1<<(i&7))) == 0)
+			// Code to check against.
+			char checkCode[4] = {'\0', '\0', '\0', '\0'};
+
+			if (os.compareToken("]"))
 			{
-				if (Strings[i] < CompactBase || Strings[i] >= CompactBase + CompactSize)
-					delete [] Strings[i];
-				Strings[i] = NULL;
+				break;
 			}
-		}
-	}
-}
-
-void FStringTable::LoadStrings(byte* data, size_t length, int expectedSize, bool enuOnly)
-{
-	const char lumpname[] = "LANGUAGE";
-
-	// data is not long enough for the expected header
-	if (length < 8)
-	{
-		Printf(PRINT_HIGH, "Warning: unsupported string table %s.\n", lumpname);
-		return;
-	}
-
-	// or the given length doesn't match the lump's header
-	uint32_t header_length = LELONG(*(uint32_t*)(data + 0));
-	if (length != header_length) 
-	{
-		Printf(PRINT_HIGH, "Warning: unsupported string table %s.\n", lumpname);
-		return;
-	}
-
-	int name_count = LESHORT(*(uint16_t*)(data + 4));
-	int name_length = LESHORT(*(uint16_t*)(data + 6));
-
-	int languageStart = 8 + name_count*4 + name_length;
-	languageStart += (4 - languageStart) & 3;
-
-	if (expectedSize >= 0 && name_count != expectedSize)
-	{
-		I_FatalError("%s had %d strings.\nThis version of Odamex expects it to have %d.",
-			lumpname, name_count, expectedSize);
-	}
-
-	FreeStandardStrings();
-
-	NumStrings = name_count;
-
-	if (Strings == NULL)
-	{
-		Strings = new char*[name_count];
-		StringStatus = new byte[(name_count+7)/8];
-		memset(StringStatus, 0, (name_count+7)/8);	// 0 means: from wad (standard)
-		memset(Strings, 0, sizeof(char*)*name_count);
-	}
-
-	byte* start = data + languageStart;
-	byte* end = data + length;
-
-	int loaded_count = 0;
-
-	for (int i = 0; i < NumStrings; ++i)
-	{
-		if (Strings[i] != NULL)
-			++loaded_count;
-	}
-
-	if (!enuOnly)
-	{
-		for (int i = 0; i < 4 && loaded_count != name_count; ++i)
-		{
-			loaded_count += LoadLanguage(LanguageIDs[i], true, start, end);
-			loaded_count += LoadLanguage(LanguageIDs[i] & MAKE_ID(0xff,0xff,0,0), true, start, end);
-			loaded_count += LoadLanguage(LanguageIDs[i], false, start, end);
-		}
-	}
-
-	// Fill in any missing strings with the default language (enu)
-	if (loaded_count != name_count)
-		loaded_count += LoadLanguage(MAKE_ID('e','n','u',0), true, start, end);
-
-	DoneLoading(start, end);
-
-	if (loaded_count != name_count)
-		I_FatalError("Loaded %d strings (expected %d)", loaded_count, name_count);
-
-	delete[] Names;
-	Names = NULL;
-
-	Names = new byte[name_length + 4 * NumStrings];
-	memcpy(Names, data + 8, name_length + 4 * NumStrings);
-}
-
-int FStringTable::LoadLanguage(uint32_t code, bool exactMatch, byte* start, byte* end)
-{
-	const uint32_t orMask = exactMatch ? 0 : MAKE_ID(0,0,0xff,0);
-	int count = 0;
-
-	code |= orMask;
-
-	while (start < end)
-	{
-		const uint32_t langLen = LELONG(*(uint32_t*)&start[4]);
-
-		if (((*(uint32_t*)start) | orMask) == code)
-		{
-			start[3] = 1;
-
-			const byte* probe = start + 8;
-
-			while (probe < start + langLen)
+			else if (os.compareToken("default"))
 			{
-				int index = probe[0] | (probe[1]<<8);
+				// Default has a speical ID.
+				strncpy(checkCode, "**", 3);
+			}
+			else
+			{
+				// Turn the language into an ID.
+				const std::string& lang = os.getToken();
 
-				if (Strings[index] == NULL)
+				if (lang.length() == 2 || lang.length() == 3)
 				{
-					Strings[index] = copystring((const char*)(probe + 2));
-					++count;
+					strncpy(checkCode, lang.c_str(), lang.length());
 				}
-				probe += 3 + strlen((const char*)(probe + 2));
+				else
+				{
+					os.error("Language identifier must be 2 or 3 characters");
+				}
+			}
+
+			if (exactMatch && strncmp(code, checkCode, 3) == 0)
+			{
+				shouldParseSection = true;
+			}
+			else if (!exactMatch && strncmp(code, checkCode, 2) == 0)
+			{
+				shouldParseSection = true;
 			}
 		}
 
-		start += langLen + 8;
-		start += (4 - (ptrdiff_t)start) & 3;
-	}
-	return count;
-}
+		if (shouldParseSection)
+		{
+			// Parse all of the strings in this section.
+			while (os.scan())
+			{
+				if (os.compareToken("["))
+				{
+					// We reached the end of the section.
+					os.unScan();
+					break;
+				}
 
-void FStringTable::DoneLoading(byte* start, byte* end)
-{
-	while (start < end)
-	{
-		start[3] = 0;
-		start += LELONG(*(uint32_t*)&start[4]) + 8;
-		start += (4 - (ptrdiff_t)start) & 3;
-	}
-}
+				// $ifgame() does not appear to be documented in the wiki,
+				// but it causes the next string to only be set it the game
+				// matches up.
+				bool skip = false;
+				if (os.compareToken("$"))
+				{
+					os.scan();
+					os.assertTokenIs("ifgame");
+					os.scan();
+					os.assertTokenIs("(");
+					os.scan();
+					skip = !IfGameZDoom(os.getToken());
+					os.scan();
+					os.assertTokenIs(")");
+					os.scan();
+				}
 
-void FStringTable::SetString(int index, const char* newString)
-{
-	if (index >= 0 && index < NumStrings)
-	{
-		if (Strings[index] < CompactBase || Strings[index] >= CompactBase + CompactSize)
-			delete[] Strings[index];
+				// String name
+				const std::string& name = os.getToken();
 
-		Strings[index] = copystring(newString);
-		StringStatus[index/8] |= 1<<(index&7);
-	}
-}
+				// If we can find the token, skip past the string
+				if (!canSetPassString(pass, name))
+				{
+					while (os.scan())
+					{
+						if (os.compareToken(";"))
+							break;
+					}
+					continue;
+				}
 
-// Compact all strings into a single block of memory
-void FStringTable::Compact()
-{
-	if (NumStrings == 0)
-		return;
+				os.scan();
+				os.assertTokenIs("=");
 
-	int len = SumStringSizes();
-	char* newspace = new char[len];
-	char* pos = newspace;
-	int i;
+				// Grab the string value.
+				std::string value;
+				while (os.scan())
+				{
+					const std::string piece = os.getToken();
+					if (piece.compare(";") == 0)
+					{
+						// Found the end of the string, next batter up.
+						break;
+					}
 
-	for (i = 0; i < NumStrings; ++i)
-	{
-		strcpy(pos, Strings[i]);
-		pos += strlen(pos) + 1;
-	}
+					value += piece;
+				}
 
-	FreeStrings();
-
-	pos = newspace;
-	for (i = 0; i < NumStrings; ++i)
-	{
-		Strings[i] = pos;
-		pos += strlen(pos) + 1;
-	}
-
-	CompactBase = newspace;
-	CompactSize = len;
-}
-
-int FStringTable::SumStringSizes() const
-{
-	int len;
-	int i;
-
-	for (i = len = 0; i < NumStrings; ++i)
-	{
-		len += strlen(Strings[i]) + 1;
-	}
-	return len;
-}
-
-
-// Find a string by name
-int FStringTable::FindString(const char* name) const
-{
-	if (NumStrings == 0)
-		return -1;
-
-	const uint16_t* nameOfs = (uint16_t*)Names;
-	const char* nameBase = (char*)Names + NumStrings*4;
-
-	int min = 0;
-	int max = NumStrings-1;
-
-	while (min <= max)
-	{
-		const int mid = (min + max) / 2;
-		const char* const tablename = LESHORT(nameOfs[mid*2]) + nameBase;
-		const int lex = stricmp(name, tablename);
-		if (lex == 0)
-			return nameOfs[mid*2+1];
-		else if (lex < 0)
-			max = mid - 1;
+				replaceEscapes(value);
+				if (skip)
+				{
+					continue;
+				}
+				setPassString(pass, name, value);
+			}
+		}
 		else
-			min = mid + 1;
+		{
+			// Skip past all of the strings in this section.
+			while (os.scan())
+			{
+				if (os.compareToken("["))
+				{
+					// Found another section, parse it.
+					os.unScan();
+					break;
+				}
+			}
+		}
 	}
-	return -1;
 }
 
-// Find a string with the same text
-int FStringTable::MatchString(const char* string) const
+void StringTable::prepareIndexes()
 {
-	for (int i = 0; i < NumStrings; i++)
+	// All of the default strings have index numbers that represent their
+	// position in the now-removed enumeration.  This function simply sets
+	// them all up.
+	for (size_t i = 0; i < ARRAY_LENGTH(::stringIndexes); i++)
 	{
-		if (strcmp(Strings[i], string) == 0)
-			return i;
+		OString name = *(::stringIndexes[i]);
+		StringHash::iterator it = _stringHash.find(name);
+		if (it == _stringHash.end())
+		{
+			TableEntry entry = {std::make_pair(false, ""), 0xFF, i};
+			_stringHash.insert(std::make_pair(name, entry));
+		}
 	}
-	return -1;
 }
 
-VERSION_CONTROL (stringtable_cpp, "$Id$")
+void StringTable::replaceEscapes(std::string& str)
+{
+	size_t index = 0;
+
+	for (;;)
+	{
+		// Find the initial slash.
+		index = str.find("\\", index);
+		if (index == std::string::npos || index == str.length() - 1)
+			break;
+
+		// Substitute the escape string.
+		switch (str.at(index + 1))
+		{
+		case 'n':
+			str.replace(index, 2, "\n");
+			break;
+		case '\\':
+			str.replace(index, 2, "\\");
+			break;
+		}
+		index += 1;
+	}
+}
+
+//
+// Dump all strings to the console.
+//
+// Sometimes a blunt instrument is what is necessary.
+//
+void StringTable::dumpStrings()
+{
+	StringHash::const_iterator it = _stringHash.begin();
+	for (; it != _stringHash.end(); ++it)
+	{
+		Printf(PRINT_HIGH, "%s (pass: %d, index: %d) = %s\n", (*it).first.c_str(),
+		       (*it).second.pass, (*it).second.index, (*it).second.string.second.c_str());
+	}
+}
+
+//
+// See if a string exists in the table.
+//
+bool StringTable::hasString(const OString& name) const
+{
+	StringHash::const_iterator it = _stringHash.find(name);
+	if (it == _stringHash.end())
+		return false;
+	if ((*it).second.string.first == false)
+		return false;
+
+	return true;
+}
+
+void StringTable::loadStringsLump(const uint32_t language_res_id, const bool engOnly)
+{
+	// Can't use Z_Malloc this early, so we use raw new/delete.
+	char* language_data = (char*)Res_LoadResource(language_res_id, PU_CACHE);
+	size_t len = Res_GetResourceSize(language_res_id);
+	language_data[len] = '\0';
+
+	// String replacement pass.  Strings in an later pass can be replaced
+	// by a string in an earlier pass from another lump.
+	int pass = 1;
+
+	if (!engOnly)
+	{
+		// Load language-specific strings.
+		for (size_t i = 0; i < ARRAY_LENGTH(::LanguageIDs); i++)
+		{
+			// Deconstruct code into something less confusing.
+			char code[4];
+			UNMAKE_ID(code, ::LanguageIDs[i]);
+
+			// Language codes are up to three letters long.
+			code[3] = '\0';
+
+			// Try the full language code (enu).
+			loadLanguage(code, true, pass++, language_data, len);
+
+			// Try the partial language code (en).
+			code[2] = '\0';
+			loadLanguage(code, true, pass++, language_data, len);
+
+			// Try an inexact match for all languages in the same family (en_).
+			loadLanguage(code, false, pass++, language_data, len);
+		}
+	}
+
+	// Load string defaults.
+	loadLanguage("**", true, pass++, language_data, len);
+
+	Res_ReleaseResource(language_data);
+	language_data = NULL;
+}
+
+void StringTable::loadStrings(const bool engOnly)
+{
+	clearStrings();
+	prepareIndexes();
+
+	const ResourceIdList language_res_ids =
+	    Res_GetAllResourceIds(ResourcePath("/GLOBAL/LANGUAGE"));
+	for (size_t i = 0; i < language_res_ids.size(); i++)
+	{
+		loadStringsLump(language_res_ids[i], engOnly);
+	}
+}
+
+//
+// Find a string with the same text.
+//
+const OString& StringTable::matchString(const OString& string) const
+{
+	for (StringHash::const_iterator it = _stringHash.begin(); it != _stringHash.end();
+	     ++it)
+	{
+		if ((*it).second.string.first == false)
+			continue;
+		if ((*it).second.string.second == string)
+			return (*it).first;
+	}
+
+	static OString empty = "";
+	return empty;
+}
+
+//
+// Set a string to something specific by name.
+//
+// Overrides the existing string, if it exists.
+//
+void StringTable::setString(const OString& name, const OString& string)
+{
+	StringHash::iterator it = _stringHash.find(name);
+	if (it == _stringHash.end())
+	{
+		// Stringtable entry does nto exist, insert it.
+		TableEntry entry = {std::make_pair(true, string), 0, -1};
+		_stringHash.insert(std::make_pair(name, entry));
+	}
+	else
+	{
+		// Stringtable entry exists, update it.
+		(*it).second.string.first = true;
+		(*it).second.string.second = string;
+	}
+}
+
+//
+// Set a string to something specific by name.
+//
+// Does not set the string if it already exists.
+//
+void StringTable::setPassString(int pass, const OString& name, const OString& string)
+{
+	StringHash::iterator it = _stringHash.find(name);
+	if (it == _stringHash.end())
+	{
+		// Stringtable entry does not exist.
+		TableEntry entry = {std::make_pair(true, string), pass, -1};
+		_stringHash.insert(std::make_pair(name, entry));
+	}
+	else
+	{
+		// Stringtable entry exists, but has not been set yet.
+		(*it).second.string.first = true;
+		(*it).second.string.second = string;
+		(*it).second.pass = pass;
+	}
+}
+
+//
+// Number of entries in the stringtable.
+//
+size_t StringTable::size() const
+{
+	return _stringHash.size();
+}
+
+VERSION_CONTROL(stringtable_cpp, "$Id$")

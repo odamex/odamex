@@ -24,11 +24,14 @@
 //  
 //-----------------------------------------------------------------------------
 
-#include "doomstat.h"
+
+#include "odamex.h"
 #include "g_level.h"
 #include "i_system.h"
 #include "resources/res_resourceid.h"
 #include "resources/res_texture.h"
+#include "r_data.h"
+#include "g_mapinfo.h"
 
 // [ML] 5/11/06 - Remove sky2
 fixed_t		sky1pos=0,		sky1speed=0;

@@ -23,7 +23,8 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include "odamex.h"
+
 #include <stdlib.h>
 #include <math.h>
 #include <set>
@@ -32,20 +33,23 @@
 #include "m_vectors.h"
 #include "m_argv.h"
 #include "z_zone.h"
-#include "m_swap.h"
 #include "m_bbox.h"
 #include "g_game.h"
 #include "i_system.h"
-#include "doomdef.h"
+#include "w_wad.h"
 #include "p_local.h"
 #include "p_acs.h"
 #include "s_sound.h"
-#include "doomstat.h"
 #include "p_lnspec.h"
 #include "v_palette.h"
 #include "c_console.h"
+#include "p_horde.h"
+#include "g_gametype.h"
 
+#include "p_mobj.h"
 #include "p_setup.h"
+#include "p_hordespawn.h"
+#include "p_mapformat.h"
 #include "r_sky.h"
 
 
@@ -55,18 +59,24 @@
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
+void P_SpawnAvatars();
+void P_TranslateTeleportThings();
 
-void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
-void P_TranslateTeleportThings (void);
-int	P_TranslateSectorSpecial (int);
+const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved);
+const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags);
+void P_SpawnCompatibleSectorSpecial(sector_t* sector);
 
 static void P_SetupLevelFloorPlane(sector_t *sector);
 static void P_SetupLevelCeilingPlane(sector_t *sector);
 static void P_SetupSlopes();
 void P_InvertPlane(plane_t *plane);
+void P_SetupWorldState();
+int P_TranslateSectorSpecial(int special);
 
 extern dyncolormap_t NormalLight;
 extern AActor* shootthing;
+
+EXTERN_CVAR(g_coopthingfilter)
 
 //
 // MAP related Lookup tables.
@@ -125,25 +135,13 @@ AActor**		blocklinks;		// for thing chains
 //	used as a PVS lookup as well.
 //
 byte*			rejectmatrix;
+BOOL			rejectempty;
 
 
 // Maintain single and multi player starting spots.
-int				MaxDeathmatchStarts;
-mapthing2_t		*deathmatchstarts;
-mapthing2_t		*deathmatch_p;
-
+std::vector<mapthing2_t> DeathMatchStarts;
 std::vector<mapthing2_t> playerstarts;
 std::vector<mapthing2_t> voodoostarts;
-
-//	[Toke - CTF - starts] Teamplay starts
-size_t			MaxBlueTeamStarts;
-size_t			MaxRedTeamStarts;
-
-mapthing2_t		*blueteamstarts;
-mapthing2_t		*redteamstarts;
-
-mapthing2_t		*blueteam_p;
-mapthing2_t		*redteam_p;
 
 //
 // P_LoadVertexes
@@ -330,10 +328,8 @@ static void P_LoadSectors(const OString& mapname)
 		ss->ceiling_res_id = Res_GetTextureResourceId(OString(ms->ceilingpic, 8), FLOOR); 
 
 		ss->lightlevel = LESHORT(ms->lightlevel);
-		if (HasBehavior)
-			ss->special = LESHORT(ms->special);
-		else	// [RH] Translate to new sector special
-			ss->special = P_TranslateSectorSpecial(LESHORT(ms->special));
+		ss->special = LESHORT(ms->special);
+		ss->secretsector = !!(ss->special&SECRET_MASK);
 		ss->tag = LESHORT(ms->tag);
 		ss->thinglist = NULL;
 		ss->touching_thinglist = NULL;
@@ -341,6 +337,12 @@ static void P_LoadSectors(const OString& mapname)
 		ss->nextsec = -1;	//jff 2/26/98 add fields to support locking out
 		ss->prevsec = -1;	// stair retriggering until build completes
 
+		// damage
+		ss->damageamount = 0;
+		ss->damageinterval = 0;
+		ss->leakrate = 0;
+
+		// killough 3/7/98:
 		ss->floor_xoffs = 0;
 		ss->floor_yoffs = 0;	// floor and ceiling flats offsets
 		ss->ceiling_xoffs = 0;
@@ -592,8 +594,12 @@ static void P_LoadDoomThings(const OString& mapname)
 
 	byte* data = (byte*)Res_LoadResource(res_id, PU_STATIC);
 
+	P_HordeClearSpawns();
 	playerstarts.clear();
 	voodoostarts.clear();
+	DeathMatchStarts.clear();
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		GetTeamInfo((team_t)iTeam)->Starts.clear();
 
 	// [RH] ZDoom now uses Hexen-style maps as its native format. // denis - growwwwl
 	//		Since this is the only place where Doom-style Things are ever
@@ -606,6 +612,12 @@ static void P_LoadDoomThings(const OString& mapname)
 
 	for ( ; mt < lastmt; mt++)
 	{
+		// [AM] Ensure that we get a fresh mapthing every iteration - sometimes
+		//      P_SpawnMapThing mutates a part of the mapthing that the map
+		//      data doesn't care about, and we don't want it to carry over
+		//      between iterations.
+		memset(&mt2, 0, sizeof(mt2));
+
 		// [RH] At this point, monsters unique to Doom II were weeded out
 		//		if the IWAD wasn't for Doom II. R_SpawnMapThing() can now
 		//		handle these and more cases better, so we just pass it
@@ -614,7 +626,20 @@ static void P_LoadDoomThings(const OString& mapname)
 		// [RH] Need to translate the spawn flags to Hexen format.
 		short flags = LESHORT(mt->options);
 		mt2.flags = (short)((flags & 0xf) | 0x7e0);
-		if (flags & BTF_NOTSINGLE)			mt2.flags &= ~MTF_SINGLE;
+		if (flags & BTF_NOTSINGLE)
+		{
+			#ifdef SERVER_APP
+			if (G_IsCoopGame())
+			{ 
+				if (g_coopthingfilter == 1)
+					mt2.flags |= MTF_FILTER_COOPWPN;
+				else if (g_coopthingfilter == 2)
+					mt2.flags &= ~MTF_COOPERATIVE;
+			}
+			else
+			#endif
+				mt2.flags &= ~MTF_SINGLE;
+		}
 		if (flags & BTF_NOTDEATHMATCH)		mt2.flags &= ~MTF_DEATHMATCH;
 		if (flags & BTF_NOTCOOPERATIVE)		mt2.flags &= ~MTF_COOPERATIVE;
 
@@ -625,6 +650,8 @@ static void P_LoadDoomThings(const OString& mapname)
 
 		P_SpawnMapThing(&mt2, 0);
 	}
+
+	P_SpawnAvatars();
 
 	Res_ReleaseResource(res_id);
 }
@@ -643,10 +670,14 @@ static void P_LoadHexenThings(const OString& mapname, int position)
 	if (!Res_CheckResource(res_id))
 		I_Error("P_LoadHexenThings: unable to find THINGS lump for map %s\n", mapname.c_str());
 
+	P_HordeClearSpawns();
 	byte* data = (byte*)Res_LoadResource(res_id, PU_STATIC);
 
 	playerstarts.clear();
 	voodoostarts.clear();
+	DeathMatchStarts.clear();
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		GetTeamInfo((team_t)iTeam)->Starts.clear();
 
 	mapthing2_t* mt = (mapthing2_t*)data;
 	mapthing2_t* lastmt = (mapthing2_t*)(data + Res_GetResourceSize(res_id));
@@ -721,27 +752,106 @@ void P_AdjustLine (line_t *ld)
 		ld->bbox[BOXTOP] = v1->y;
 	}
 
-	// [RH] Set line id (as appropriate) here
-	if (ld->special == Line_SetIdentification ||
-		ld->special == Teleport_Line ||
-		ld->special == TranslucentLine ||
-		ld->special == Scroll_Texture_Model) {
-		ld->id = ld->args[0];
+	if (map_format.getZDoom())
+	{
+		// [RH] Set line id (as appropriate) here
+		if (ld->special == Line_SetIdentification || ld->special == Teleport_Line ||
+		    ld->special == TranslucentLine || ld->special == Scroll_Texture_Model)
+		{
+			ld->id = ld->args[0];
+		}
+	}
+	else
+	{
+		if (P_IsThingNoFogTeleportLine(ld->special))
+		{
+			if (ld->id == 0)
+			{
+				// Untagged teleporters teleport to tid 1.
+				ld->args[0] = 1;
+			}
+			else
+			{
+				ld->args[2] = ld->id;
+				ld->args[0] = 0;
+			}
+		}
+		else if (ld->special >= OdamexStaticInits &&
+		         ld->special < OdamexStaticInits + NUM_STATIC_INITS)
+		{
+			// An Odamex Static_Init special
+			ld->args[0] = ld->id;
+			ld->args[1] = ld->special - OdamexStaticInits;
+		}
+		else if (ld->special >= 340 && ld->special <= 347)
+		{
+			// [SL] 2012-01-30 - convert to ZDoom Plane_Align special for
+			// sloping sectors
+			// [Blair] Massage this a bit to work with map_format
+			switch (ld->special)
+			{
+			case 340: // Slope the Floor in front of the line
+				ld->args[0] = 1;
+				break;
+			case 341: // Slope the Ceiling in front of the line
+				ld->args[1] = 1;
+				break;
+			case 342: // Slope the Floor+Ceiling in front of the line
+				ld->args[0] = ld->args[1] = 1;
+				break;
+			case 343: // Slope the Floor behind the line
+				ld->args[0] = 2;
+				break;
+			case 344: // Slope the Ceiling behind the line
+				ld->args[1] = 2;
+				break;
+			case 345: // Slope the Floor+Ceiling behind the line
+				ld->args[0] = ld->args[1] = 2;
+				break;
+			case 346: // Slope the Floor behind+Ceiling in front of the line
+				ld->args[0] = 2;
+				ld->args[1] = 1;
+				break;
+			case 347: // Slope the Floor in front+Ceiling behind the line
+				ld->args[0] = 1;
+				ld->args[1] = 2;
+			}
+		}
 	}
 
 	// denis - prevent buffer overrun
 	if(*ld->sidenum == R_NOSIDE)
 		return;
 
-	// killough 4/4/98: support special sidedef interpretation below
-	if (// [RH] Save Static_Init only if it's interested in the textures
-		( (ld->special == Static_Init && ld->args[1] == Init_Color)
-			|| ld->special != Static_Init) ) {
+	if (map_format.getZDoom())
+	{
+		// killough 4/4/98: support special sidedef interpretation below
+		if ( // [RH] Save Static_Init only if it's interested in the textures
+		    ((ld->special == Static_Init && ld->args[1] == Init_Color) ||
+		     ld->special != Static_Init))
+		{
 			sides[*ld->sidenum].special = ld->special;
 			sides[*ld->sidenum].tag = ld->args[0];
 		}
+		else
+		{
+			sides[*ld->sidenum].special = 0;
+		}
+	}
 	else
-		sides[*ld->sidenum].special = 0;
+	{
+		// killough 4/4/98: support special sidedef interpretation below
+		if (ld->special >= OdamexStaticInits + 1 ||
+		    ld->special <= OdamexStaticInits + NUM_STATIC_INITS)
+		{
+			sides[*ld->sidenum].special = ld->special;
+			sides[*ld->sidenum].tag = ld->args[0];
+		}
+		else
+		{
+			sides[*ld->sidenum].special = 0;
+		}
+	}
 }
 
 // killough 4/4/98: delay using sidedefs until they are loaded
@@ -758,18 +868,7 @@ void P_FinishLoadingLineDefs()
 		if (ld->sidenum[1] != R_NOSIDE)
 			sides[ld->sidenum[1]].linenum = linenum;
 
-		switch (ld->special)
-		{						// killough 4/11/98: handle special types
-			case TranslucentLine:			// killough 4/11/98: translucent 2s textures
-				// [RH] Second arg controls how opaque it is.
-				if (!ld->args[0])
-					ld->lucency = (byte)ld->args[1];
-				else
-					for (int j = 0; j < numlines; j++)
-						if (lines[j].id == ld->args[0])
-							lines[j].lucency = (byte)ld->args[1];
-				break;
-		}
+		map_format.post_process_linedef_special(ld);
 	}
 }
 
@@ -790,15 +889,52 @@ static void P_LoadDoomLineDefs(const OString& mapname)
 	memset(lines, 0, numlines * sizeof(line_t));
 	byte* data = (byte*)Res_LoadResource(res_id, PU_STATIC);
 
+	// [Blair] Don't mind me, just hackin'
+	// E2M7 has flags masked in that interfere with MBF21 flags.
+	// Boom fixes this with the comp flag comp_reservedlineflag
+	// We'll fix this for now by just checking for the E2M7 FarmHash
+	const std::string e2m7hash = "43ffa244f5ae923b7df59dbf511c0468";
+
+	std::string levelHash;
+
+	// [Blair] Serialize the hashes before reading.
+	uint64_t reconsthash1 = (uint64_t)(::level.level_fingerprint[0]) |
+	                        (uint64_t)(::level.level_fingerprint[1]) << 8 |
+	                        (uint64_t)(::level.level_fingerprint[2]) << 16 |
+	                        (uint64_t)(::level.level_fingerprint[3]) << 24 |
+	                        (uint64_t)(::level.level_fingerprint[4]) << 32 |
+	                        (uint64_t)(::level.level_fingerprint[5]) << 40 |
+	                        (uint64_t)(::level.level_fingerprint[6]) << 48 |
+	                        (uint64_t)(::level.level_fingerprint[7]) << 56;
+
+	uint64_t reconsthash2 = (uint64_t)(::level.level_fingerprint[8]) |
+	                        (uint64_t)(::level.level_fingerprint[9]) << 8 |
+	                        (uint64_t)(::level.level_fingerprint[10]) << 16 |
+	                        (uint64_t)(::level.level_fingerprint[11]) << 24 |
+	                        (uint64_t)(::level.level_fingerprint[12]) << 32 |
+	                        (uint64_t)(::level.level_fingerprint[13]) << 40 |
+	                        (uint64_t)(::level.level_fingerprint[14]) << 48 |
+	                        (uint64_t)(::level.level_fingerprint[15]) << 56;
+
+	StrFormat(levelHash, "%16llx%16llx", reconsthash1, reconsthash2);
+
+	bool isE2M7 = (levelHash == e2m7hash);
+
 	line_t* ld = lines;
-
-	for (int i = 0; i < numlines; i++, ld++)
+	for (size_t i=0 ; i<numlines ; i++, ld++)
 	{
-		maplinedef_t* mld = ((maplinedef_t*)data) + i;
+		const maplinedef_t *mld = ((maplinedef_t *)data) + i;
 
-		// [RH] Translate old linedef special and flags to be
-		//		compatible with the new format.
-		P_TranslateLineDef(ld, mld);
+		ld->flags = (unsigned short)(short int)mld->flags;
+		ld->special = (short int)mld->special;
+		ld->id = (short int)mld->tag;
+		ld->args[0] = 0;
+		ld->args[1] = 0;
+		ld->args[2] = 0;
+		ld->args[3] = 0;
+		ld->args[4] = 0;
+
+		ld->flags = P_TranslateCompatibleLineFlags(ld->flags, isE2M7);
 
 		unsigned short v = LESHORT(mld->v1);
 
@@ -856,6 +992,8 @@ static void P_LoadHexenLineDefs(const OString& mapname)
 
 		ld->flags = LESHORT(mld->flags);
 		ld->special = mld->special;
+
+		ld->flags = P_TranslateZDoomLineFlags(ld->flags);
 
 		unsigned short v = LESHORT(mld->v1);
 
@@ -936,7 +1074,7 @@ static argb_t P_GetColorFromTextureName(const char* name)
 // is an ARGB value in hexadecimal, that value is used for the appropriate
 // sector blend.
 // 
-static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
+void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 {
 	sector_t* sec = &sectors[LESHORT(msd->sector)];
 
@@ -988,8 +1126,10 @@ static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 	}
 }
 
+// 
 
-static void SetTextureNoErr(ResourceId* res_id_ptr, unsigned int *color, char *name)
+
+void SetTextureNoErr(ResourceId* res_id_ptr, unsigned int *color, char *name)
 {
 	*res_id_ptr = Res_GetTextureResourceId(OStringToUpper(name, 8), WALL);
 	if (*res_id_ptr == ResourceId::INVALID_ID)
@@ -1022,60 +1162,18 @@ static void P_LoadSideDefs2(const OString& mapname)
 	{
 		register mapsidedef_t* msd = (mapsidedef_t*)data + i;
 		register side_t* sd = sides + i;
+		register sector_t* sec;
 
 		sd->textureoffset = LESHORT(msd->textureoffset) << FRACBITS;
 		sd->rowoffset = LESHORT(msd->rowoffset) << FRACBITS;
 		sd->linenum = -1;
-		sd->sector = &sectors[LESHORT(msd->sector)];
+		sd->sector = sec = &sectors[LESHORT(msd->sector)];
 
 		// killough 4/4/98: allow sidedef texture names to be overloaded
 		// killough 4/11/98: refined to allow colormaps to work as wall
 		// textures if invalid as colormaps but valid as textures.
 
-		switch (sd->special)
-		{
-			case Transfer_Heights:	// variable colormap via 242 linedef
-				// [RH] The colormap num we get here isn't really a colormap,
-				//	  but a packed ARGB word for blending, so we also allow
-				//	  the blend to be specified directly by the texture names
-				//	  instead of figuring something out from the colormap.
-				P_SetTransferHeightBlends(sd, msd);
-				break;
-
-		  	case Static_Init:
-			{
-				// [RH] Set sector color and fog
-				// upper "texture" is light color
-				// lower "texture" is fog color
-				unsigned int color = 0xffffff, fog = 0x000000;
-
-				SetTextureNoErr (&sd->bottomtexture, &fog, msd->bottomtexture);
-				SetTextureNoErr (&sd->toptexture, &color, msd->toptexture);
-				sd->midtexture = Res_GetTextureResourceId(msd->midtexture, WALL);
-
-				if (fog != 0x000000 || color != 0xffffff)
-				{
-					dyncolormap_t *colormap = GetSpecialLights(
-						((argb_t)color).getr(), ((argb_t)color).getg(), ((argb_t)color).getb(),
-						((argb_t)fog).getr(), ((argb_t)fog).getg(), ((argb_t)fog).getb());
-
-					for (int s = 0; s < numsectors; s++)
-					{
-						if (sectors[s].tag == sd->tag)
-							sectors[s].colormap = colormap;
-					}
-				}
-				break;
-			}
-
-			default:			// normal cases
-			{
-				sd->midtexture = Res_GetTextureResourceId(OStringToUpper(msd->midtexture, 8), WALL);
-				sd->toptexture = Res_GetTextureResourceId(OStringToUpper(msd->toptexture, 8), WALL);
-				sd->bottomtexture = Res_GetTextureResourceId(OStringToUpper(msd->bottomtexture, 8), WALL);
-				break;
-			}
-		}
+		map_format.post_process_sidedef_special(sd, msd, sec, i);
 	}
 
 	Res_ReleaseResource(res_id);
@@ -1459,8 +1557,82 @@ static void P_LoadBlockMap(const OString& mapname)
 	blockmap = blockmaplump + 4;
 }
 
+/*
+* @brief P_GenerateUniqueMapFingerPrint
+* 
+* Creates a unique map fingerprint used to identify a unique map.
+* Based on a few key lumps that makes a map unique.
+* 
+* @param maplumpnum - Lump offset number of the specified map 
+* If it is, use it as part of the map calculation.
+*/
+void P_GenerateUniqueMapFingerPrint(const OString& mapname)
+{
+	unsigned int length = 0;
 
+	typedef std::vector<byte> LevelLumps;
+	static LevelLumps levellumps;
 
+	const ResourceId thing_res_id = Res_GetMapResourceId("THINGS", mapname);
+	if (!Res_CheckResource(thing_res_id))
+		I_Error("P_GenerateUniqueMapFingerPrint: unable to find THINGS lump for map %s\n",
+		        mapname.c_str());
+
+	const ResourceId linedef_res_id = Res_GetMapResourceId("LINEDEFS", mapname);
+	if (!Res_CheckResource(linedef_res_id))
+		I_Error("P_GenerateUniqueMapFingerPrint: unable to find LINEDEFS lump for map %s\n",
+		        mapname.c_str());
+
+	const ResourceId sidedef_res_id = Res_GetMapResourceId("SIDEDEFS", mapname);
+	if (!Res_CheckResource(sidedef_res_id))
+		I_Error("P_GenerateUniqueMapFingerPrint: unable to find SIDEDEFS lump for map %s\n",
+		        mapname.c_str());
+
+	const ResourceId vertexes_res_id = Res_GetMapResourceId("VERTEXES", mapname);
+	if (!Res_CheckResource(vertexes_res_id))
+		I_Error("P_GenerateUniqueMapFingerPrint: unable to find VERTEXES lump for map %s\n",
+		        mapname.c_str());
+
+	const ResourceId segs_res_id = Res_GetMapResourceId("SEGS", mapname);
+	if (!Res_CheckResource(segs_res_id))
+		I_Error("P_GenerateUniqueMapFingerPrint: unable to find SEGS lump for map %s\n",
+		        mapname.c_str());
+
+	const ResourceId ssectors_res_id = Res_GetMapResourceId("SSECTORS", mapname);
+	if (!Res_CheckResource(ssectors_res_id))
+		I_Error("P_GenerateUniqueMapFingerPrint: unable to find SSECTORS lump for map %s\n",
+		        mapname.c_str());
+
+	const ResourceId sectors_res_id = Res_GetMapResourceId("SECTORS", mapname);
+	if (!Res_CheckResource(sectors_res_id))
+		I_Error("P_GenerateUniqueMapFingerPrint: unable to find SECTORS lump for map %s\n",
+		        mapname.c_str());
+
+	const byte* thingbytes = const_cast<const byte*>((const byte*)Res_LoadResource(thing_res_id, PU_STATIC));
+	const byte* lindefbytes = const_cast<const byte*>((const byte*)Res_LoadResource(linedef_res_id, PU_STATIC));
+	const byte* sidedefbytes = const_cast<const byte*>((const byte*)Res_LoadResource(sidedef_res_id, PU_STATIC));
+	const byte* vertexbytes = const_cast<const byte*>((const byte*)Res_LoadResource(vertexes_res_id, PU_STATIC));
+	const byte* segsbytes = const_cast<const byte*>((const byte*)Res_LoadResource(segs_res_id, PU_STATIC));
+	const byte* ssectorsbytes = const_cast<const byte*>((const byte*)Res_LoadResource(ssectors_res_id, PU_STATIC));
+	const byte* sectorsbytes = const_cast<const byte*>((const byte*)Res_LoadResource(sectors_res_id, PU_STATIC));
+
+	levellumps.insert(levellumps.end(), Res_GetResourceSize(thing_res_id), *thingbytes);
+	levellumps.insert(levellumps.end(), Res_GetResourceSize(linedef_res_id), *lindefbytes);
+	levellumps.insert(levellumps.end(), Res_GetResourceSize(sidedef_res_id), *sidedefbytes);
+	levellumps.insert(levellumps.end(), Res_GetResourceSize(vertexes_res_id), *vertexbytes);
+	levellumps.insert(levellumps.end(), Res_GetResourceSize(segs_res_id), *segsbytes);
+	levellumps.insert(levellumps.end(), Res_GetResourceSize(ssectors_res_id), *ssectorsbytes);
+	levellumps.insert(levellumps.end(), Res_GetResourceSize(sectors_res_id), *sectorsbytes);
+
+	length = Res_GetResourceSize(thing_res_id) + Res_GetResourceSize(linedef_res_id) +
+	         Res_GetResourceSize(sidedef_res_id) + Res_GetResourceSize(vertexes_res_id) +
+	         Res_GetResourceSize(segs_res_id) + Res_GetResourceSize(ssectors_res_id) +
+	         Res_GetResourceSize(sectors_res_id);
+
+	fhfprint_s fingerprint = W_FarmHash128(levellumps.data(), length);
+
+	ArrayCopy(::level.level_fingerprint, fingerprint.fingerprint);
+}
 //
 // P_GroupLines
 // Builds sector line lists and subsector sector numbers.
@@ -1646,16 +1818,26 @@ static void P_LoadReject(const OString& mapname)
 {
 	const ResourceId res_id = Res_GetMapResourceId("REJECT", mapname);
 	if (!Res_CheckResource(res_id))
-		I_Error("P_LoadReject: unable to find REJECT lump for map %s\n", mapname.c_str());
-
-	rejectmatrix = NULL;
+	{
+		DPrintf("P_LoadReject: unable to find REJECT lump for map %s\n", mapname.c_str());
+		rejectmatrix = NULL;
+		rejectempty = true;
+		return;
+	}
 
 	// [SL] 2011-07-01 - Check to see if the reject table is of the proper size.
 	// If it's too short, the reject table should be ignored when calling P_CheckSight.
-	if (Res_GetResourceSize(res_id) < (unsigned)(numsectors * numsectors + 7) / 8)
+	if (Res_GetResourceSize(res_id) <
+	    ((unsigned int)ceil((float)(numsectors * numsectors / 8))))
+	{
 		DPrintf("Reject matrix is not valid and will be ignored.\n");
+		rejectempty = true;
+	}
 	else
+	{
 		rejectmatrix = (byte*)Res_LoadResource(res_id, PU_LEVEL);
+		rejectempty = false;
+	}
 }
 
 
@@ -1678,35 +1860,6 @@ static void P_LoadBehavior(const OString& mapname)
 		delete level.behavior;
 		level.behavior = NULL;
 	}
-}
-
-
-//
-// P_AllocStarts
-//
-void P_AllocStarts(void)
-{
-	if (!deathmatchstarts)
-	{
-		MaxDeathmatchStarts = 16;	// [RH] Default. Increased as needed.
-		deathmatchstarts = (mapthing2_t *)Malloc (MaxDeathmatchStarts * sizeof(mapthing2_t));
-	}
-	deathmatch_p = deathmatchstarts;
-
-	//	[Toke - CTF]
-	if (!blueteamstarts) // [Toke - CTF - starts]
-	{
-		MaxBlueTeamStarts = 16;
-		blueteamstarts = (mapthing2_t *)Malloc (MaxBlueTeamStarts * sizeof(mapthing2_t));
-	}
-	blueteam_p = blueteamstarts;
-
-	if (!redteamstarts) // [Toke - CTF - starts]
-	{
-		MaxRedTeamStarts = 16;
-		redteamstarts = (mapthing2_t *)Malloc (MaxRedTeamStarts * sizeof(mapthing2_t));
-	}
-	redteam_p = redteamstarts;
 }
 
 extern polyblock_t **PolyBlockMap;
@@ -1745,9 +1898,10 @@ static void P_InitTagLists(void)
 //
 void P_SetupLevel(const OString& mapname, int position)
 {
-	level.total_monsters = level.total_items = level.total_secrets =
+	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
 		wminfo.maxfrags = 0;
+	ArrayInit(level.level_fingerprint, 0);
 	wminfo.partime = 180;
 
 	if (!savegamerestore)
@@ -1775,10 +1929,13 @@ void P_SetupLevel(const OString& mapname, int position)
 	shootthing = NULL;
 
 	DThinker::DestroyAllThinkers ();
-	Z_FreeTags (PU_LEVEL, PU_PURGELEVEL-1);
+	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL);
 	NormalLight.next = NULL;	// [RH] Z_FreeTags frees all the custom colormaps
 
-    level.time = 0;
+	// [AM] Every new level starts with fresh netids.
+	P_ClearAllNetIds();
+
+	// UNUSED W_Profile ();
 
 	// [RH] Check if this map is Hexen-style.
 	//		LINEDEFS and THINGS need to be handled accordingly.
@@ -1793,12 +1950,23 @@ void P_SetupLevel(const OString& mapname, int position)
 		level.behavior = NULL;
 	}
 
+	// [Blair] Create map fingerprint
+	P_GenerateUniqueMapFingerPrint(mapname);
+
 	if (HasBehavior)
+	{
 		P_LoadBehavior(mapname);
+		map_format.P_ApplyZDoomMapFormat();
+	}
+	else
+	{
+		map_format.P_ApplyDefaultMapFormat();
+	}
+
+	level.time = 0;
 
 	P_LoadVertexes(mapname);
 	P_LoadSectors(mapname);
-
 	P_LoadSideDefs(mapname);
 
 	if (HasBehavior)
@@ -1809,7 +1977,7 @@ void P_SetupLevel(const OString& mapname, int position)
 	P_LoadSideDefs2(mapname);
 	P_FinishLoadingLineDefs();
 	P_LoadBlockMap(mapname);
-
+	
 	const ResourceId nodes_res_id = Res_GetMapResourceId("NODES", mapname);
 	if (Res_GetResourceSize(nodes_res_id) >= 4)
 	{
@@ -1833,14 +2001,12 @@ void P_SetupLevel(const OString& mapname, int position)
 	P_GroupLines();
 
 	// [SL] don't move seg vertices if compatibility is cruical
-	if (!demoplayback && !demorecording)
+	if (!demoplayback)
 		P_RemoveSlimeTrails();
 
 	P_SetupSlopes();
 
     po_NumPolyobjs = 0;
-
-	P_AllocStarts();
 
 	P_InitTagLists();   // killough 1/30/98: Create xref tables for tags
 
@@ -1876,7 +2042,7 @@ void P_SetupLevel(const OString& mapname, int position)
 	P_SpawnBrainTargets();
 
 	// set up world state
-	P_SpawnSpecials ();
+	P_SetupWorldState();
 
 	// build subsector connect matrix
 	//	UNUSED P_ConnectSubsectors ();
@@ -1896,19 +2062,12 @@ void P_Init (void)
 	P_InitSwitchList ();
 	Res_ReadAnimationDefinitions();
 	R_InitSprites(sprnames);
-}
-
-
-// [ML] Do stuff when the timelimit is reset
-// Where else can I put this??
-CVAR_FUNC_IMPL(sv_timelimit)
-{
-	level.timeleft = var * TICRATE * 60;
+	InitTeamInfo();
 }
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)
 {
-	if (sv_gametype == GM_COOP && var < 10) {
+	if (G_IsCoopGame() && var < 10) {
 		var.Set(10.0);	// Force to 10 seconds minimum
 	} else if (var < 1) {
 		var.RestoreDefault();
@@ -2021,7 +2180,10 @@ static void P_SetupSlopes()
 	{
 		line_t *line = &lines[i];
 
-		if (line->special == Plane_Align)
+		short spec = line->special;
+
+		if ((map_format.getZDoom() && line->special == Plane_Align) ||
+		    (line->special >= 340 && line->special <= 347))
 		{
 			line->special = 0;
 			line->id = line->args[2];
@@ -2048,4 +2210,3 @@ static void P_SetupSlopes()
 
 
 VERSION_CONTROL (p_setup_cpp, "$Id$")
-

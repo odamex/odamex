@@ -29,13 +29,23 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_VECTORS_H__
-#define __M_VECTORS_H__
+#pragma once
 
 #include "tables.h"
 #include "m_fixed.h"
 
 class AActor;
+
+struct v2int_t
+{
+	v2int_t() { }
+
+	v2int_t(const int x_, const int y_) : x(x_), y(y_) { }
+
+	v2int_t(const v2int_t& other) : x(other.x), y(other.y) { }
+
+	int x, y;
+};
 
 struct v2fixed_t
 {
@@ -81,6 +91,21 @@ struct v3double_t
 	double x, y, z;
 };
 
+struct rectInt_t
+{
+	rectInt_t() : min(0, 0), max(0, 0) { }
+
+	rectInt_t(const v2int_t min, const v2int_t max) : min(min), max(max) { }
+
+	rectInt_t(const int x1, const int y1, const int x2, const int y2)
+	    : min(x1, y1), max(x2, y2)
+	{
+	}
+
+	rectInt_t(const rectInt_t& other) : min(other.min), max(other.max) { }
+
+	v2int_t min, max;
+};
 
 //
 // M_SetVec3f
@@ -253,5 +278,4 @@ void M_RotatePointAroundVector(v3double_t *dest, const v3double_t *dir, const v3
 void M_TranslateVec3f(v3float_t *vec, const v3float_t *origin, angle_t ang);
 void M_TranslateVec3(v3double_t *vec, const v3double_t *origin, angle_t ang);
 
-#endif //__M_VECTORS_H__
-
+rectInt_t M_RectFromDimensions(const v2int_t& origin, const v2int_t& dims);

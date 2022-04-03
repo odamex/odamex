@@ -1,12 +1,39 @@
-#include <cmath>
-#include "cmdlib.h"
-#include "i_system.h"
-#include "v_palette.h"
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// $Id$
+//
+// Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2015 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//
+// Loads a resource from a ResourceContainer, performing any necessary data
+// conversion and caching the resulting instance in the Zone memory system.
+//
+//-----------------------------------------------------------------------------
 
-#include "resources/res_resourceloader.h"
+#include "odamex.h"
+
+#include <cmath>
+
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
+
+#include "resources/res_resourceloader.h"
 #include "resources/res_identifier.h"
+
+#include "v_palette.h"
 
 #ifdef USE_PNG
 	#define PNG_SKIP_SETJMP_CHECK
@@ -16,7 +43,6 @@
 	#include <png.h>
 	#include "m_memio.h"		// used for MEMFILE
 #endif	// USE_PNG
-
 
 //
 // Res_TransposeImage

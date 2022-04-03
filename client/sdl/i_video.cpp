@@ -21,19 +21,28 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <cstdio>
+
+#include "odamex.h"
+
 #include <cstdlib>
 #include <climits>
-#include <string>
 #include <algorithm>
+
+#include "i_sdl.h"
 
 #include "i_video.h"
 #include "v_video.h"
 
+#if defined(SDL12)
+#include "i_video_sdl12.h"
+#elif defined(SDL20)
+#include "i_video_sdl20.h"
+#else 
+#error "no video subsystem selected"
+#endif
+
 #include "i_system.h"
-#include "c_cvars.h"
 #include "m_misc.h"
-#include "i_sdlvideo.h"
 #include "i_input.h"
 #include "m_fileio.h"
 
@@ -79,6 +88,7 @@ static IWindowSurface* loading_icon_background_surface = NULL;
 EXTERN_CVAR(vid_32bpp)
 EXTERN_CVAR(vid_fullscreen)
 EXTERN_CVAR(vid_vsync)
+EXTERN_CVAR(vid_filter)
 EXTERN_CVAR(vid_overscan)
 EXTERN_CVAR(vid_320x200)
 EXTERN_CVAR(vid_640x400)
@@ -446,8 +456,8 @@ std::string I_GetVideoModeString(const IVideoMode& mode)
 {
 	const char window_strs[][25] = {
 		"window",
-		"full screen window",
-		"full screen exclusive"
+		"full screen exclusive",
+		"full screen window"
 	};
 
 	std::string str;
@@ -554,6 +564,8 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 {
 	// ensure the requested mode is valid
 	IVideoMode validated_mode = I_ValidateVideoMode(requested_mode);
+	validated_mode.vsync = bool(vid_vsync.asInt());
+	validated_mode.stretch_mode = std::string(vid_filter);
 	assert(validated_mode.isValid());
 
 	IWindow* window = I_GetWindow();
@@ -1112,7 +1124,7 @@ void I_SetWindowCaption(const std::string& caption)
 	// [Russell] - A basic version string that will eventually get replaced
 
 	std::string title("Odamex ");
-	title += DOTVERSIONSTR;
+	title += NiceVersion();
 
 	if (!caption.empty())
 		title += " - " + caption;
@@ -1190,5 +1202,3 @@ const PixelFormat* I_Get32bppPixelFormat()
 }
 
 VERSION_CONTROL (i_video_cpp, "$Id$")
-
-

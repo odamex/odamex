@@ -21,12 +21,13 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __RES_FILELIB_H__
-#define __RES_FILELIB_H__
+#pragma once
 
 #include <string>
 
-std::string Res_MD5(const std::string& filename);
+void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs);
+OMD5Hash Res_MD5(const std::string& filename);
+OCRC32Sum Res_CRC32(const std::string& filename);
 
 std::string Res_CleanseFilename(const std::string& filename);
 
@@ -48,5 +49,3 @@ void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
 								std::vector<std::string>& missing_resource_filenames);
 
 void Res_AddSearchDir(std::vector<std::string>& search_dirs, const char* dir, const char separator);
-
-#endif	// __RES_FILELIB_H__

@@ -24,10 +24,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "version.h"
 
-#include <string>
-#include <vector>
+#include "odamex.h"
+
+
 #include <algorithm>
 
 #include "win32inc.h"
@@ -42,13 +42,10 @@
 
 #include <math.h>
 
-#include "errors.h"
 
 #include "m_alloc.h"
 #include "m_random.h"
 #include "minilzo.h"
-#include "doomdef.h"
-#include "doomstat.h"
 #include "gstrings.h"
 #include "z_zone.h"
 #include "s_sound.h"
@@ -60,6 +57,7 @@
 #include "m_misc.h"
 #include "m_menu.h"
 #include "c_console.h"
+#include "c_bind.h"
 #include "c_dispatch.h"
 #include "i_system.h"
 #include "i_music.h"
@@ -81,6 +79,10 @@
 #include "stats.h"
 #include "p_ctf.h"
 #include "cl_main.h"
+#include "g_mapinfo.h"
+#include "g_horde.h"
+#include "w_ident.h"
+#include "gui_boot.h"
 
 #include "resources/res_texture.h"
 #include "resources/res_filelib.h"
@@ -103,7 +105,6 @@ void D_DoomLoop (void);
 
 extern int testingmode;
 extern BOOL gameisdead;
-extern BOOL demorecording;
 extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
@@ -114,8 +115,6 @@ static bool wiping_screen = false;
 
 char startmap[9];
 BOOL autostart;
-BOOL autorecord;
-std::string demorecordfile;
 BOOL advancedemo;
 event_t events[MAXEVENTS];
 int eventhead;
@@ -145,11 +144,30 @@ EXTERN_CVAR (vid_32bpp)
 EXTERN_CVAR (vid_widescreen)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_vsync)
+EXTERN_CVAR (g_resetinvonexit)
+EXTERN_CVAR (i_skipbootwin)
 
-const char *LOG_FILE;
+std::string LOG_FILE;
 
 void M_RestoreVideoMode();
 void M_ModeFlashTestText();
+
+void D_SetPlatform(void)
+{
+#ifdef GCONSOLE
+	#ifdef _XBOX
+		platform = PF_XBOX;
+	#elif GEKKO
+		platform = PF_WII;
+	#elif __SWITCH__
+		platform = PF_SWITCH;
+	#else
+		platform = PF_UNKNOWN;
+	#endif
+#else
+	platform = PF_PC;
+#endif
+}
 
 //
 // D_ProcessEvents
@@ -187,6 +205,13 @@ void D_ProcessEvents (void)
 //
 void D_PostEvent (const event_t* ev)
 {
+	if (ev->type == ev_mouse && !menuactive && gamestate == GS_LEVEL &&
+		!paused && ConsoleState != c_down && ConsoleState != c_falling)
+	{
+		G_Responder((event_t*)ev);
+		return;
+	}
+
 	events[eventhead] = *ev;
 
 	if(++eventhead >= MAXEVENTS)
@@ -235,11 +260,13 @@ void D_Display()
 		wiping_screen = true;
 	}
 
+	// We always want to service downloads, even outside of a specific
+	// download gamestate.
+	CL_DownloadTick();
+
 	switch (gamestate)
 	{
 		case GS_FULLCONSOLE:
-		case GS_DOWNLOAD:
-		    CL_DownloadTicker();
 		case GS_CONNECTING:
         case GS_CONNECTED:
 			C_DrawConsole();
@@ -330,17 +357,20 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf_Bold ("\n%s\n", error.GetMsg().c_str());
+			Printf(PRINT_ERROR, "\nERROR: %s\n", error.GetMsg().c_str());
 
-			CL_QuitNetGame ();
+			// [AM] In case an error is caused by a console command.
+			C_ClearCommand();
 
-			G_ClearSnapshots ();
+			CL_QuitNetGame(NQ_SILENT);
+
+			G_ClearSnapshots();
 
 			DThinker::DestroyAllThinkers();
 
-			players.clear();
+			::players.clear();
 
-			gameaction = ga_fullconsole;
+			::gameaction = ga_fullconsole;
 		}
 	}
 }
@@ -425,9 +455,9 @@ void D_DoAdvanceDemo (void)
                 pagetic = 170;
 
             gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.titlePage;
+            pagename = gameinfo.titlePage.c_str();
             
-            currentmusic = gameinfo.titleMusic;
+            currentmusic = gameinfo.titleMusic.c_str();
 
             S_StartMusic(currentmusic.c_str());
 
@@ -455,8 +485,8 @@ void D_DoAdvanceDemo (void)
 					pagetic = TICRATE * 11;
 				else
 					pagetic = 170;
-                pagename = gameinfo.titlePage;
-                currentmusic = gameinfo.titleMusic;
+                pagename = gameinfo.titlePage.c_str();
+                currentmusic = gameinfo.titleMusic.c_str();
                 
                 S_StartMusic(currentmusic.c_str());
             }
@@ -529,7 +559,7 @@ void STACK_ARGS D_Close()
 //
 void D_StartTitle (void)
 {
-	// CL_QuitNetGame();
+	// CL_QuitNetGame(NQ_SILENT);
 
 	gameaction = ga_nothing;
 	demosequence = -1;
@@ -559,15 +589,16 @@ void D_Init(const std::vector<std::string>& resource_file_names)
 	// only print init messages during startup, not when changing WADs
 	static bool first_time = true;
 
+	D_SetPlatform();
+
 	SetLanguageIDs();
 
 	M_ClearRandom();
 
 	// start the Zone memory manager
-	bool use_zone = !Args.CheckParm("-nozone");
-	Z_Init(use_zone);
+	Z_Init();
 	if (first_time)
-		Printf(PRINT_HIGH, "Z_Init: Heapsize: %u megabytes\n", got_heapsize);
+		Printf("Z_Init: Using native allocator with OZone bookkeeping.\n");
 
 	// Temporarily set the ARGB memory layout so that palette manipulations can
 	// be done before the video mode is initialized.
@@ -578,6 +609,13 @@ void D_Init(const std::vector<std::string>& resource_file_names)
 
 	// Load palette and set up colormaps
 	V_Init();
+
+//	if (first_time)
+//		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
+//	Res_InitTextureManager();
+
+	// [RH] Initialize localizable strings.
+	GStrings.loadStrings(false);
 
 	// init the renderer
 	if (first_time)
@@ -592,10 +630,10 @@ void D_Init(const std::vector<std::string>& resource_file_names)
 
 	HU_Init();
 
-	G_SetLevelStrings();
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseHordeDefs();
 
 	// init the menu subsystem
 	if (first_time)
@@ -638,18 +676,8 @@ void STACK_ARGS D_Shutdown()
 	if (gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
 
-	// [ML] 9/11/10: Reset custom wad level information from MAPINFO et al.
-	for (size_t i = 0; i < wadlevelinfos.size(); i++)
-	{
-		if (wadlevelinfos[i].snapshot)
-		{
-			delete wadlevelinfos[i].snapshot;
-			wadlevelinfos[i].snapshot = NULL;
-		}
-	}
-
-	wadlevelinfos.clear();
-	wadclusterinfos.clear();
+	getLevelInfos().clear();
+	getClusterInfos().clear();
 
 	F_ShutdownFinale();
 
@@ -659,13 +687,14 @@ void STACK_ARGS D_Shutdown()
 
 	// stop sound effects and music
 	S_Stop();
+	S_Deinit();
 	
 	// shutdown automap
 	AM_Stop();
 
 	DThinker::DestroyAllThinkers();
 
-	UndoDehPatch();
+	D_UndoDehPatch();
 
 //	V_UnloadFonts();
 
@@ -677,7 +706,7 @@ void STACK_ARGS D_Shutdown()
 
 	R_Shutdown();
 
-	GStrings.FreeData();
+//	Res_ShutdownTextureManager();
 
 //	R_ShutdownColormaps();
 
@@ -693,6 +722,9 @@ void STACK_ARGS D_Shutdown()
 	NormalLight.next = NULL;
 }
 
+
+void C_DoCommand(const char *cmd, uint32_t key);
+void D_Init_DEHEXTRA_Frames(void);
 
 //
 // D_DoomMain
@@ -711,6 +743,8 @@ void D_DoomMain()
 
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
+	// Initialize all extra frames
+	D_Init_DEHEXTRA_Frames();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
@@ -718,9 +752,53 @@ void D_DoomMain()
 		I_FatalError("Could not initialize LZO routines");
 
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
+	
+	if (!LOG.is_open())
+		C_DoCommand("logfile", 0);
 
 	M_LoadDefaults();					// load before initing other systems
+
+	C_BindingsInit();					// Ch0wW : Initialize bindings
+
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
+
+	std::string iwad;
+	const char* iwadParam = Args.CheckValue("-iwad");
+	if (iwadParam)
+	{
+		iwad = iwadParam;
+	}
+	else if (!::i_skipbootwin)
+	{
+		// Skip boot window if any of these params are passed.
+		const char* skipParams[] = {
+		    "+connect", "+demotest", "+map",      "+netplay",  "+playdemo",
+		    "-connect", "-file",     "-playdemo", "-timedemo", "-warp",
+		};
+
+		bool shouldSkip = false;
+		for (size_t i = 0; i < ARRAY_LENGTH(skipParams); i++)
+		{
+			if (::Args.CheckValue(skipParams[i]))
+			{
+				shouldSkip = true;
+				break;
+			}
+		}
+
+		// Skip boot window if we pass a single argument that isn't the
+		// start of a standard parameter - it must be a path.
+		if (!shouldSkip && ::Args.NumArgs() == 2 && ::Args[1][0] != '+' &&
+		    ::Args[1][0] != '-')
+		{
+			shouldSkip = true;
+		}
+
+		if (!shouldSkip)
+		{
+			iwad = GUI_BootWindow();
+		}
+	}
 
 	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
 	atterm(I_ShutdownHardware);
@@ -764,6 +842,9 @@ void D_DoomMain()
 	// Fast
 	sv_fastmonsters = Args.CheckParm("-fast");
 
+	// Pistol start
+	g_resetinvonexit = Args.CheckParm("-pistolstart");
+
 	// get skill / episode / map from parms
 	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 
@@ -806,6 +887,10 @@ void D_DoomMain()
 
 	I_FinishClockCalibration();
 
+	// Initialize HTTP subsystem
+	CL_DownloadInit();
+	atterm(CL_DownloadShutdown);
+
 	Printf(PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
 	D_CheckNetGame();
 
@@ -822,18 +907,6 @@ void D_DoomMain()
 	// shorttics (quantize yaw like recording a vanilla demo)
 	extern bool longtics;
 	longtics = !(Args.CheckParm("-shorttics"));
-
-	// Record a vanilla demo
-	p = Args.CheckParm("-record");
-	if (p && p < Args.NumArgs() - 1)
-	{
-		autorecord = true;
-		autostart = true;
-		demorecordfile = Args.GetArg(p + 1);
-
-		// extended vanilla demo format
-		longtics = Args.CheckParm("-longtics");
-	}
 
 	// Check for -playdemo, play a single demo then quit.
 	p = Args.CheckParm("-playdemo");
@@ -905,36 +978,37 @@ void D_DoomMain()
 	}
 	else if (autostart)
 	{
-		if (autostart)
-		{
-			// single player warp (like in g_level)
-			serverside = true;
-			sv_allowexit = "1";
-			sv_freelook = "1";
-			sv_allowjump = "1";
-			sv_allowredscreen = "1";
-			sv_gametype = GM_COOP;
+		// single player warp (like in g_level)
+		serverside = true;
 
-			players.clear();
-			players.push_back(player_t());
-			players.back().playerstate = PST_REBORN;
-			consoleplayer_id = displayplayer_id = players.back().id = 1;
-		}
+		// Enable serverside settings to make them fully client-controlled.
+		sv_freelook = 1;
+		sv_allowjump = 1;
+		sv_allowexit = 1;
+		sv_allowredscreen = 1;
+
+		players.clear();
+		players.push_back(player_t());
+		players.back().playerstate = PST_REBORN;
+		consoleplayer_id = displayplayer_id = players.back().id = 1;
 
 		G_InitNew(startmap);
-		if (autorecord)
-			G_RecordDemo(startmap, demorecordfile);
 	}
 	else if (gamestate != GS_CONNECTING)
 	{
 		C_HideConsole();
 		D_StartTitle();		// start up intro loop
 
+
 		if (gamemode == commercial_bfg) // DOOM 2 BFG Edtion
 			AddCommandString("menu_main");
-    }
+	}
 
 	D_DoomLoop();		// never returns
 }
+VERSION_CONTROL(d_main_cpp, "$Id$")
 
-VERSION_CONTROL (d_main_cpp, "$Id$")
+
+
+
+

@@ -26,11 +26,8 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_MEMPOOL__
-#define __M_MEMPOOL__
+#pragma once
 
-#include "doomtype.h"
-#include <cstring>
 
 template <typename T>
 class Pool
@@ -121,5 +118,3 @@ private:
 	byte**		data_block;
 	byte*		free_block;
 };
-
-#endif // __M_MEMPOOL__

@@ -23,6 +23,8 @@
 #ifndef __DLG_ABOUT_H__
 #define __DLG_ABOUT_H__
 
+#include "odalaunch.h"
+
 #include <wx/dialog.h>
 #include <wx/textctrl.h>
 #include <wx/stattext.h>

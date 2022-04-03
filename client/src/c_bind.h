@@ -22,30 +22,53 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __C_BINDINGS_H__
-#define __C_BINDINGS_H__
+#pragma once
 
-#include <string>
 
-#include "doomtype.h"
+#include "hashtable.h"
 #include "d_event.h"
-#include <stdio.h>
 
-BOOL C_DoKey (event_t *ev);
-void C_ArchiveBindings (FILE *f);
+struct OBinding
+{
+	const char* Key;
+	const char* Bind;
+};
 
-// Stuff used by the customize controls menu
-int  C_GetKeysForCommand (const char *cmd, int *first, int *second);
-std::string C_NameKeys (int first, int second);
-void C_UnbindACommand (const char *str);
-void C_ChangeBinding (const char *str, int newone);
+class OKeyBindings
+{
+private:
+	typedef OHashTable<int, std::string> BindingTable;
 
-// Returns string bound to given key (NULL if none)
-const char *C_GetBinding (int key);
+public :
+	BindingTable Binds;
+	std::string command;
+
+	void SetBindingType(std::string cmd);
+	void SetBinds(const OBinding* binds);
+	void BindAKey(size_t argc, char** argv, const char* msg);
+	void DoBind(const char* key, const char* bind);
+
+	void UnbindKey(const char* key);
+	void UnbindACommand(const char* str);
+	void UnbindAll();
+
+	void ChangeBinding(const char* str, int newone);	// Stuff used by the customize controls menu
+
+	const std::string &GetBind(int key);			// Returns string bound to given key (NULL if none)
+	std::string GetNameKeys(int first, int second);
+	int  GetKeysForCommand(const char* cmd, int* first, int* second);
+	std::string GetKeynameFromCommand(const char* cmd, bool bTwoEntries = false);
+
+	void ArchiveBindings(FILE* f);
+};
+
+void C_BindingsInit();
+void C_BindDefaults();
+
+// DoKey now have a binding responder, used to switch between Binds and Automap binds
+bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds);
 
 void C_ReleaseKeys();
 
-std::string C_GetKeyStringsFromCommand(const char *cmd, bool bTwoEntries = false);
 
-#endif //__C_BINDINGS_H__
-
+extern OKeyBindings Bindings, DoubleBindings, AutomapBindings, NetDemoBindings;

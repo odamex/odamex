@@ -21,9 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __W_WAD__
-#define __W_WAD__
+
+#pragma once
 
 unsigned	W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen);
-
-#endif
+fhfprint_s  W_FarmHash128(const byte* lumpdata, int length);

@@ -23,15 +23,16 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <stdlib.h>
 #include <math.h>
-#include "doomstat.h"
 #include "m_random.h"
 #include "p_local.h"
 #include "r_local.h"
 #include "r_sky.h"
 #include "st_stuff.h"
-#include "c_cvars.h"
 #include "v_video.h"
 #include "stats.h"
 #include "z_zone.h"
@@ -95,6 +96,7 @@ fixed_t 		viewy;
 fixed_t 		viewz;
 
 angle_t 		viewangle;
+LocalView		localview;
 
 fixed_t 		viewcos;
 fixed_t 		viewsin;
@@ -861,9 +863,19 @@ void R_SetupFrame (player_t *player)
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
 	}
 
-	// [RH] freelook stuff
-	fixed_t pitch = camera->prevpitch + FixedMul(render_lerp_amount, camera->pitch - camera->prevpitch);
-	R_ViewShear(pitch); 
+	player_t& consolePlayer = consoleplayer();
+
+	if (!::localview.skippitch && consolePlayer.id == displayplayer().id &&
+	    consolePlayer.health > 0 && !consolePlayer.mo->reactiontime)
+	{
+		R_ViewShear(clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));
+	}
+	else
+	{
+		// Only interpolate if we are spectating
+		fixed_t pitch = camera->prevpitch + FixedMul(render_lerp_amount, camera->pitch - camera->prevpitch);
+		R_ViewShear(pitch);
+	}
 
 	// [RH] Hack to make windows into underwater areas possible
 	r_fakingunderwater = false;
@@ -1277,6 +1289,16 @@ bool R_StatusBarVisible()
 	return setblocks <= 10 || AM_ClassicAutomapVisible();
 }
 
+//
+// R_DemoBarVisible
+//
+// Returns true if the demo bar should not be drawn
+//
+bool R_DemoBarInvisible()
+{
+	return screenblocks == 12;
+}
+
 
 
 //
@@ -1297,5 +1319,3 @@ void R_ExitLevel()
 }
 
 VERSION_CONTROL (r_main_cpp, "$Id$")
-
-

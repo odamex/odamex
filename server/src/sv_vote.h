@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __SV_VOTE__
-#define __SV_VOTE__
+#pragma once
 
 #include "c_vote.h"
 #include "d_player.h"
@@ -40,30 +39,31 @@ public:
 	virtual ~Vote() { };
 	const char* name;
 	const cvar_t* cvar;
-	unsigned int get_countdown(void)
+	unsigned int get_countdown() const
 	{
 		return this->countdown;
 	}
-	std::string get_error(void)
+	std::string get_error() const
 	{
 		return this->error;
 	}
-	vote_result_t get_result(void)
+	vote_result_t get_result() const
 	{
 		return this->result;
 	}
-	std::string get_votestring(void)
+	std::string get_votestring() const
 	{
 		return this->votestring;
 	}
-	vote_result_t check(void);
-	size_t count_yes(void);
-	size_t count_no(void);
-	size_t count_abs(void);
-	size_t calc_yes(const bool noabs = false);
-	size_t calc_no(void);
+	vote_result_t check();
+	size_t count_yes() const;
+	size_t count_no() const;
+	size_t count_abs() const;
+	size_t calc_yes(const bool noabs = false) const;
+	size_t calc_no() const;
+	vote_state_t serialize() const;
 	void ev_disconnect(player_t &player);
-	bool ev_tic(void);
+	bool ev_tic();
 	bool init(const std::vector<std::string> &args, const player_t &player);
 	void parse(vote_result_t vote_result);
 	bool vote(player_t &player, bool ballot);
@@ -79,22 +79,19 @@ public:
 	// Subclass this method with checks that should run every tic.  If the
 	// vote should be aborted, set an error and return false.  Otherwise,
 	// return true.
-	virtual bool tic(void)
+	virtual bool tic()
 	{
 		return true;
 	}
 	// Subclass this method with the actual commands that should be executed
 	// if the vote passes.
-	virtual bool exec(void)
+	virtual bool exec()
 	{
 		return true;
 	}
 };
 
 void SV_Callvote(player_t &player);
-void SV_Vote(player_t &player);
-
+void SV_VoteCmd(player_t& player, const std::vector<std::string>& args);
 void Vote_Disconnect(player_t &player);
-void Vote_Runtic(void);
-
-#endif
+void Vote_Runtic();

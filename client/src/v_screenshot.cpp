@@ -21,59 +21,60 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include <SDL.h>
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <string>
 
-#include "doomtype.h"
+#include "cmdlib.h"
+#include "i_system.h"
 #include "i_video.h"
 
 #include "c_dispatch.h"
 #include "m_misc.h"
+#include "m_fileio.h"
 #include "g_game.h"
 
-#ifdef USE_PNG
-	#define PNG_SKIP_SETJMP_CHECK
-	#include <setjmp.h>		// used for error handling by libpng
+#define PNG_SKIP_SETJMP_CHECK
+#include <setjmp.h>		// used for error handling by libpng
 
-	#include <zlib.h>
-	#include <png.h>
+#include <zlib.h>
+#include <png.h>
 
-	#if (PNG_LIBPNG_VER < 10400)
-		// [SL] add data types to support versions of libpng prior to 1.4.0
+#if (PNG_LIBPNG_VER < 10400)
+	// [SL] add data types to support versions of libpng prior to 1.4.0
 
-		/* png_alloc_size_t is guaranteed to be no smaller than png_size_t,
-		 * and no smaller than png_uint_32.  Casts from png_size_t or png_uint_32
-		 * to png_alloc_size_t are not necessary; in fact, it is recommended
-		 * not to use them at all so that the compiler can complain when something
-		 * turns out to be problematic.
-		 * Casts in the other direction (from png_alloc_size_t to png_size_t or
-		 * png_uint_32) should be explicitly applied; however, we do not expect
-		 * to encounter practical situations that require such conversions.
-		 */
+	/* png_alloc_size_t is guaranteed to be no smaller than png_size_t,
+		* and no smaller than png_uint_32.  Casts from png_size_t or png_uint_32
+		* to png_alloc_size_t are not necessary; in fact, it is recommended
+		* not to use them at all so that the compiler can complain when something
+		* turns out to be problematic.
+		* Casts in the other direction (from png_alloc_size_t to png_size_t or
+		* png_uint_32) should be explicitly applied; however, we do not expect
+		* to encounter practical situations that require such conversions.
+		*/
 
-		#if defined(__TURBOC__) && !defined(__FLAT__)
-		   typedef unsigned long png_alloc_size_t;
-		#else
-		#  if defined(_MSC_VER) && defined(MAXSEG_64K)
-			 typedef unsigned long    png_alloc_size_t;
-		#  else
-			 /* This is an attempt to detect an old Windows system where (int) is
-			  * actually 16 bits, in that case png_malloc must have an argument with a
-			  * bigger size to accomodate the requirements of the library.
-			  */
-		#    if (defined(_Windows) || defined(_WINDOWS) || defined(_WINDOWS_)) && \
-				(!defined(INT_MAX) || INT_MAX <= 0x7ffffffeL)
-			   typedef DWORD         png_alloc_size_t;
-		#    else
-			   typedef png_size_t    png_alloc_size_t;
-		#    endif
-		#  endif
-		#endif
-	#endif	// PNG_LIBPNG_VER < 10400
-#endif	// USE_PNG
+	#if defined(__TURBOC__) && !defined(__FLAT__)
+		typedef unsigned long png_alloc_size_t;
+	#else
+	#  if defined(_MSC_VER) && defined(MAXSEG_64K)
+			typedef unsigned long    png_alloc_size_t;
+	#  else
+			/* This is an attempt to detect an old Windows system where (int) is
+			* actually 16 bits, in that case png_malloc must have an argument with a
+			* bigger size to accomodate the requirements of the library.
+			*/
+	#    if (defined(_Windows) || defined(_WINDOWS) || defined(_WINDOWS_)) && \
+			(!defined(INT_MAX) || INT_MAX <= 0x7ffffffeL)
+			typedef DWORD         png_alloc_size_t;
+	#    else
+			typedef png_size_t    png_alloc_size_t;
+	#    endif
+	#  endif
+	#endif
+#endif	// PNG_LIBPNG_VER < 10400
 
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
@@ -97,8 +98,6 @@ BEGIN_COMMAND(screenshot)
 END_COMMAND(screenshot)
 
 
-#ifdef USE_PNG	// was libpng included in the build?
-
 //
 // V_SetPNGPalette
 //
@@ -110,7 +109,7 @@ static void V_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const argb_
 {
 	if (png_get_color_type(png_ptr, info_ptr) != 3)
 	{
-		Printf(PRINT_HIGH, "I_SetPNGPalette: Cannot create PNG PLTE chunk in 32-bit mode\n");
+		Printf(PRINT_WARNING, "I_SetPNGPalette: Cannot create PNG PLTE chunk in 32-bit mode\n");
 		return;
 	}
 
@@ -126,62 +125,75 @@ static void V_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const argb_
 	png_set_PLTE(png_ptr, info_ptr, pngpalette, 256);
 }
 
+typedef std::vector<std::string> PNGStrings;
 
-//
-// V_SetPNGComments
-//
-// Write comment lines to PNG file's tEXt chunk
-//
-static void V_SetPNGComments(png_struct *png_ptr, png_info *info_ptr, time_t* now)
+/**
+ * @brief Write comment lines to PNG file's tEXt chunk.
+ *
+ * @param out Storage for non-static strings.  Must be kept alive until the
+ *            info struct or the entire PNG file is written, after which you
+ *            can clear or discard the vector.
+ * @param png_ptr PNG to write to.
+ * @param info_ptr PNG info to write to.
+ * @param now Time to write.
+ */
+static void SetPNGComments(PNGStrings& out, png_struct* png_ptr, png_info* info_ptr,
+                           time_t* now)
 {
-	#ifdef PNG_TEXT_SUPPORTED
+#ifndef PNG_TEXT_SUPPORTED
+	Printf(PRINT_HIGH, "SetPNGComments: Skipping PNG tEXt chunk\n");
+	return;
+#endif
+
+	std::string strbuf;
 	const int PNG_TEXT_LINES = 6;
 	png_text pngtext[PNG_TEXT_LINES];
 	int text_line = 0;
-	
+
+	// If we don't pre-allocate our vector, a resize will destroy our c_str
+	// pointers before we write the file.
+	out.resize(PNG_TEXT_LINES);
+
 	// write text lines uncompressed
 	for (int i = 0; i < PNG_TEXT_LINES; i++)
 		pngtext[i].compression = PNG_TEXT_COMPRESSION_NONE;
-	
-	pngtext[text_line].key = (png_charp)"Description";
+
+	pngtext[text_line].key = (png_charp) "Description";
 	pngtext[text_line].text = (png_charp)("Odamex " DOTVERSIONSTR " Screenshot");
 	text_line++;
-	
-	char datebuf[80];
-	const char *dateformat = "%A, %B %d, %Y, %I:%M:%S %p GMT";
-	strftime(datebuf, ARRAY_LENGTH(datebuf), dateformat, gmtime(now));
-	
-	pngtext[text_line].key = (png_charp)"Created Time";
-	pngtext[text_line].text = (png_charp)datebuf;
-	text_line++;
-	
-	pngtext[text_line].key = (png_charp)"Game Mode";
-	pngtext[text_line].text = (png_charp)(M_ExpandTokens("%g").c_str());
-	text_line++;
-	
-	pngtext[text_line].key = (png_charp)"In-Game Video Mode";
-	pngtext[text_line].text = (I_GetPrimarySurface()->getBitsPerPixel() == 8)
-				? (png_charp)"8bpp" : (png_charp)"32bpp";
-	text_line++;
-	
-	char gammabuf[20];	// large enough to not overflow with three digits of precision
-	sprintf(gammabuf, "%#.3f", gammalevel.value());
-	
-	pngtext[text_line].key = (png_charp)"In-game Gamma Correction Level";
-	pngtext[text_line].text = (png_charp)gammabuf;
-	text_line++;
-	
-	pngtext[text_line].key = (png_charp)"In-Game Gamma Correction Type";
-	pngtext[text_line].text =
-		(vid_gammatype == 0) ? (png_charp)"Classic Doom" : (png_charp)"ZDoom";
-	text_line++;
-	
-	png_set_text(png_ptr, info_ptr, pngtext, PNG_TEXT_LINES);
-	#else
-	Printf(PRINT_HIGH, "I_SetPNGComments: Skipping PNG tEXt chunk\n");
-	#endif // PNG_TEXT_SUPPORTED
-}
 
+	char datebuf[80];
+	const char* dateformat = "%A, %B %d, %Y, %I:%M:%S %p GMT";
+	strftime(datebuf, ARRAY_LENGTH(datebuf), dateformat, gmtime(now));
+	out.at(text_line) = datebuf;
+	pngtext[text_line].key = (png_charp) "Created Time";
+	pngtext[text_line].text = (png_charp)out.at(text_line).c_str();
+	text_line++;
+
+	out.at(text_line) = M_ExpandTokens("%g");
+	pngtext[text_line].key = (png_charp) "Game Mode";
+	pngtext[text_line].text = (png_charp)out.at(text_line).c_str();
+	text_line++;
+
+	pngtext[text_line].key = (png_charp) "In-Game Video Mode";
+	pngtext[text_line].text = (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+	                              ? (png_charp) "8bpp"
+	                              : (png_charp) "32bpp";
+	text_line++;
+
+	StrFormat(strbuf, "%#.3f", gammalevel.value());
+	out.at(text_line) = strbuf;
+	pngtext[text_line].key = (png_charp) "In-game Gamma Correction Level";
+	pngtext[text_line].text = (png_charp)out.at(text_line).c_str();
+	text_line++;
+
+	pngtext[text_line].key = (png_charp) "In-Game Gamma Correction Type";
+	pngtext[text_line].text =
+	    (vid_gammatype == 0) ? (png_charp) "Classic Doom" : (png_charp) "ZDoom";
+	text_line++;
+
+	png_set_text(png_ptr, info_ptr, pngtext, PNG_TEXT_LINES);
+}
 
 //
 // V_SavePNG
@@ -198,7 +210,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 
 	if (fp == NULL)
 	{
-		Printf(PRINT_HIGH, "I_SavePNG: Could not open %s for writing\n", filename.c_str());
+		Printf(PRINT_WARNING, "I_SavePNG: Could not open %s for writing\n", filename.c_str());
 		return -1;
 	}
 
@@ -207,7 +219,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	if (png_ptr == NULL)
 	{
 		fclose(fp);
-		Printf(PRINT_HIGH, "I_SavePNG: png_create_write_struct failed\n");
+		Printf(PRINT_WARNING, "I_SavePNG: png_create_write_struct failed\n");
 		return -1;
 	}
 
@@ -230,7 +242,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	{
 		fclose(fp);
 		png_destroy_write_struct(&png_ptr, &info_ptr);
-		Printf(PRINT_HIGH, "I_SavePNG: setjmp failed with error code %d\n", setjmp_result);
+		Printf(PRINT_WARNING, "I_SavePNG: setjmp failed with error code %d\n", setjmp_result);
 		return -1;
 	}
 	#endif // PNG_SETJMP_SUPPORTED
@@ -274,7 +286,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 			png_destroy_write_struct(&png_ptr, &info_ptr);
 			fclose(fp);
 			
-			Printf(PRINT_HIGH, "I_SavePNG: Not enough RAM to create PNG file\n");
+			Printf(PRINT_WARNING, "I_SavePNG: Not enough RAM to create PNG file\n");
 			return -1;
 		}
 	}
@@ -332,8 +344,11 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	// commit PNG image data to file
 	surface->unlock();
 	png_init_io(png_ptr, fp);
-	V_SetPNGComments(png_ptr, info_ptr, &now);
-	
+
+	// Holds the text strings until the file is written.
+	PNGStrings png_strings;
+	SetPNGComments(png_strings, png_ptr, info_ptr, &now);
+
 	// set PNG timestamp
 	#ifdef PNG_tIME_SUPPORTED
 	png_time pngtime;
@@ -357,59 +372,6 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	return 0;
 }
 
-#endif	// USE_PNG
-
-
-#ifndef USE_PNG	// not using libpng?
-//
-// V_SaveBMP
-//
-// Converts the surface to BMP format and saves it to filename.
-// Note: this uses SDL 1.2 for writing to BMP format and may be deprecated
-// in the future.
-//
-static int V_SaveBMP(const std::string& filename, IWindowSurface* surface)
-{
-	surface->lock();
-	
-	SDL_Surface* sdlsurface = SDL_CreateRGBSurfaceFrom(surface->getBuffer(),
-								surface->getWidth(), surface->getHeight(),
-								surface->getBitsPerPixel(), surface->getPitch(),
-								0, 0, 0, 0);
-
-	surface->unlock();
-
-	if (sdlsurface == NULL)
-	{
-		Printf(PRINT_HIGH, "CreateRGBSurfaceFrom failed: %s\n", SDL_GetError());
-		return -1;
-	}
-
-	if (surface->getBitsPerPixel() == 8)
-	{
-		const argb_t* palette = surface->getPalette();
-		SDL_Color colors[256];
-
-		for (int i = 0; i < 256; i ++, palette++)
-		{
-			colors[i].r = palette->getr();
-			colors[i].g = palette->getg();
-			colors[i].b = palette->getb();
-			colors[i].unused = 0;
-		}
-
-		SDL_SetColors(sdlsurface, colors, 0, 256);
-	}
-
-	int result = SDL_SaveBMP(sdlsurface, filename.c_str());
-
-	if (result != 0)
-		Printf(PRINT_HIGH, "SDL_SaveBMP failed: %s\n", SDL_GetError());
-
-	return result;
-}
-#endif	// !USE_PNG
-
 
 //
 // V_ScreenShot
@@ -419,50 +381,37 @@ static int V_SaveBMP(const std::string& filename, IWindowSurface* surface)
 //
 void V_ScreenShot(std::string filename)
 {
-	// is PNG supported?
-	#ifdef USE_PNG
 	const std::string extension("png");
-	#else
-	const std::string extension("bmp");
-	#endif	// USE_PNG
 
 	// If no filename was passed, use the screenshot format variable.
 	if (filename.empty())
-		filename = cl_screenshotname.cstring();
+		filename = cl_screenshotname.str();
 
 	// Expand tokens
-	filename = M_ExpandTokens(filename).c_str();
+	filename = M_ExpandTokens(filename);
+
+	// Turn filename into complete path.
+	std::string pathname = M_GetUserFileName(filename);
 
 	// If the file already exists, append numbers.
-	if (!M_FindFreeName(filename, extension))
+	if (!M_FindFreeName(pathname, extension))
 	{
-		Printf(PRINT_HIGH, "I_ScreenShot: Delete some screenshots\n");
+		Printf(PRINT_WARNING, "I_ScreenShot: Delete some screenshots\n");
 		return;
 	}
 
 	// Create an SDL_Surface object from our screen buffer
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 
-	#ifdef USE_PNG
-	int result = V_SavePNG(filename, primary_surface); 
+	int result = V_SavePNG(pathname, primary_surface);
 	if (result != 0)
 	{
-		Printf(PRINT_HIGH, "I_SavePNG Error: Returned error code %d\n", result);
+		Printf(PRINT_WARNING, "I_SavePNG Error: Returned error code %d\n", result);
 		return;
 	}
-	#else
-	int result = V_SaveBMP(filename, primary_surface); 
-	if (result != 0)
-	{
-		Printf(PRINT_HIGH, "I_SaveBMP Error: Returned error code %d\n", result);
-		return;
-	}
-	#endif	// USE_PNG
 
-	Printf(PRINT_HIGH, "Screenshot taken: %s\n", filename.c_str());
+	Printf(PRINT_HIGH, "Screenshot taken: %s.%s\n", filename.c_str(), extension.c_str());
 }
 
 
 VERSION_CONTROL (v_screenshot_cpp, "$Id$")
-
-

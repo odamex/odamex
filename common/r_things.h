@@ -22,8 +22,9 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __R_THINGS__
-#define __R_THINGS__
+#pragma once
+
+#include "r_sprites.h"
 
 // [RH] Particle details
 struct particle_s {
@@ -49,7 +50,7 @@ extern TArray<WORD>     ParticlesInSubsec;
 const WORD NO_PARTICLE = 0xffff;
 
 #ifdef _MSC_VER
-__inline particle_t *NewParticle (void)
+__inline particle_t *NewParticle()
 {
 	particle_t *result = NULL;
 	if (InactiveParticles != NO_PARTICLE) {
@@ -61,10 +62,10 @@ __inline particle_t *NewParticle (void)
 	return result;
 }
 #else
-particle_t *NewParticle (void);
+particle_t *NewParticle ();
 #endif
-void R_InitParticles (void);
-void R_ClearParticles (void);
+void R_InitParticles ();
+void R_ClearParticles ();
 void R_DrawParticle(vissprite_t*);
 void R_ProjectParticle (particle_t *, const sector_t* sector, int fakeside);
 void R_FindParticleSubsectors();
@@ -85,14 +86,7 @@ extern fixed_t		pspritexscale;
 extern fixed_t		pspriteyscale;
 extern fixed_t		pspritexiscale;
 
-void R_CacheSprite (spritedef_t *sprite);
-void R_SortVisSprites (void);
-void R_AddSprites (sector_t *sec, int lightlevel, int fakeside);
-void R_AddPSprites (void);
-void R_DrawSprites (void);
-void R_InitSprites (const char** namelist);
-void R_ClearSprites (void);
-void R_DrawMasked (void);
-
-#endif
-
+void R_SortVisSprites();
+void R_AddSprites(sector_t *sec, int lightlevel, int fakeside);
+void R_ClearSprites();
+void R_DrawMasked();

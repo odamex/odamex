@@ -19,6 +19,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "odamex.h"
 #include <stdlib.h>
 #include <string.h>
 #include "resources/res_identifier.h"

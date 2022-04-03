@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __P_LOCAL__
-#define __P_LOCAL__
+#pragma once
 
 #ifndef __R_LOCAL__
 #include "r_local.h"
@@ -111,6 +109,8 @@ bool	P_SetMobjState (AActor* mobj, statenum_t state, bool cl_update = false);
 void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage);
 AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
 void	P_SpawnPlayerMissile (AActor* source, mobjtype_t type);
+void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle,
+                               fixed_t pitch, fixed_t xyofs, fixed_t zofs);
 
 void	P_RailAttack (AActor *source, int damage, int offset);	// [RH] Shoot a railgun
 bool	P_HitFloor (AActor *thing);
@@ -172,6 +172,7 @@ fixed_t P_AproxDistance2 (AActor *mo, fixed_t x, fixed_t y);
 fixed_t P_AproxDistance2 (AActor *a, AActor *b);
 
 bool P_ActorInFOV(AActor* origin, AActor* mo , float f, fixed_t dist);
+AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance);
 
 int 	P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line);
@@ -272,7 +273,7 @@ v3fixed_t P_LinePlaneIntersection(const plane_t *plane, const v3fixed_t &lineorg
 
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost);
 
-bool	P_ChangeSector (sector_t* sector, bool crunch);
+bool	P_ChangeSector (sector_t* sector, int crunch);
 
 extern	AActor*	linetarget; 	// who got hit (or NULL)
 
@@ -298,6 +299,7 @@ BOOL	Check_Sides(AActor *, int, int);					// phares
 // P_SETUP
 //
 extern byte*			rejectmatrix;	// for fast sight rejection
+extern BOOL				rejectempty;
 extern int*				blockmaplump;	// offsets in blockmap are from here
 extern int*				blockmap;
 extern int				bmapwidth;
@@ -347,6 +349,10 @@ void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage
 #define MOD_SPLASH			21
 #define MOD_HIT				22
 #define MOD_RAILGUN			23
+#define MOD_FIREBALL		24 // Odamex-specific - monster fireball.
+#define MOD_HITSCAN			25 // Odamex-specific - monster hitscan.
+#define MOD_VILEFIRE		26 // Odamex-specific - vile fire.
+#define NUMMODS				(MOD_VILEFIRE + 1)
 #define MOD_FRIENDLY_FIRE	0x80000000
 
 extern	int MeansOfDeath;
@@ -468,12 +474,12 @@ BOOL PO_RotatePolyobj (int num, angle_t angle);
 void PO_Init (void);
 BOOL PO_Busy (int polyobj);
 
+bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov);
+bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest);
+bool P_IsTeamMate(AActor* actor, AActor* player);
+
+
 //
 // P_SPEC
 //
 #include "p_spec.h"
-
-
-#endif	// __P_LOCAL__
-
-

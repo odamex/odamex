@@ -3,20 +3,28 @@ name: macOS
 on: [push, pull_request]
 
 jobs:
+  pre_job:
+    name: Build Preparation
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.check_skip.outputs.should_skip }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+      - name: Check for build skip
+        id: check_skip
+        run: bash ci/check-skip.sh
   build:
     name: Build
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: macos-latest
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
     - name: Prepare build
-      run: bash ci-build.sh
+      run: bash ci/macos-buildgen.sh
     - name: Run build
       run: cmake --build ./build/
-    - name: Prepare artifact
-      run: bash ci-artifact.sh
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: Odamex-macOS
-        path: 'build/artifact/*'

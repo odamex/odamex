@@ -21,30 +21,82 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __VERSION_H__
-#define __VERSION_H__
+#pragma once
+
+
+#if defined(CLIENT_APP)
+#define GAMEEXE "odamex"
+#elif defined(SERVER_APP)
+#define GAMEEXE "odasrv"
+#else
+#error "Odamex is not client or server"
+#endif
+
+/**
+ * @brief Construct a packed integer from major, minor and patch version
+ *        numbers.
+ *
+ * @param major Major version number.
+ * @param minor Minor version number - must be between 0 and 25.
+ * @param patch Patch version number - must be between 0 and 9.
+ */
+#define MAKEVER(major, minor, patch) ((major)*256 + ((minor)*10) + (patch))
+
+/**
+ * @brief Given a packed version integer, return the major version.
+ */
+#define VERMAJ(v) ((v) / 256)
+
+/**
+ * @brief Given a packed version integer, return the minor version.
+ */
+#define VERMIN(v) (((v) % 256) / 10)
+
+/**
+ * @brief Given a packed version integer, return the patch version.
+ */
+#define VERPATCH(v) (((v) % 256) % 10)
+
+/**
+ * @brief Break version into three output variables.
+ */
+#define BREAKVER(v, outmaj, outmin, outpat) \
+	{                                       \
+		outmaj = VERMAJ(v);                 \
+		outmin = VERMIN(v);                 \
+		outpat = VERPATCH(v);               \
+	}
 
 // Lots of different representations for the version number
-#define CONFIGVERSIONSTR "82"
-#define GAMEVER (0*256+82)
 
-#define DOTVERSIONSTR "0.8.2"
+// Used by configuration files.  upversion.py will update thie field
+// deterministically and unambiguously so newer versions always compare
+// greater.
+#define CONFIGVERSIONSTR "011000"
 
-#define COPYRIGHTSTR "Copyright (C) 2006-2020 The Odamex Team"
+#define DOTVERSIONSTR "11.0.0"
+#define GAMEVER (MAKEVER(11, 0, 0))
 
-#define SERVERMAJ (gameversion / 256)
-#define SERVERMIN ((gameversion % 256) / 10)
-#define SERVERREL ((gameversion % 256) % 10)
-#define CLIENTMAJ (GAMEVER / 256)
-#define CLIENTMIN ((GAMEVER % 256) / 10)
-#define CLIENTREL ((GAMEVER % 256) % 10)
+#define COPYRIGHTSTR "Copyright (C) 2006-2022 The Odamex Team"
+
+#define SERVERMAJ (VERMAJ(gameversion))
+#define SERVERMIN (VERMIN(gameversion))
+#define SERVERREL (VERPAT(gameversion))
+#define CLIENTMAJ (VERMAJ(GAMEVER))
+#define CLIENTMIN (VERMIN(GAMEVER))
+#define CLIENTREL (VERPAT(GAMEVER))
 
 // SAVESIG is the save game signature. It should be the minimum version
 // whose savegames this version is compatible with, which could be
-// earlier than this version.
-#define SAVESIG "ODAMEXSAVE082   "	// Needs to be exactly 16 chars long
+// earlier than this version.  Needs to be exactly 16 chars long.
+// 
+// upversion.py will update thie field deterministically and unambiguously.
+#define SAVESIG "ODAMEXSAVE011000"
 
 #define NETDEMOVER 3
+
+int VersionCompat(const int server, const int client);
+std::string VersionMessage(const int server, const int client, const char* email);
 
 // denis - per-file svn version stamps
 class file_version
@@ -55,8 +107,9 @@ public:
 
 #define VERSION_CONTROL(uid, id) static file_version file_version_unique_##uid(#uid, id, __FILE__, __LINE__, __TIME__, __DATE__);
 
-const char* GitDescribe();
-
-#endif //__VERSION_H__
-
-
+const char* GitHash();
+const char* GitBranch();
+const char* GitRevCount();
+const char* GitShortHash();
+const char* NiceVersionDetails();
+const char* NiceVersion();

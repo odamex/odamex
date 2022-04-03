@@ -22,9 +22,10 @@
 //-----------------------------------------------------------------------------
 
 
+#include "odamex.h"
+
 #include "m_random.h"
 
-#include "doomdef.h"
 #include "p_local.h"
 
 #include "p_lnspec.h"
@@ -158,6 +159,9 @@ DFlicker::DFlicker (sector_t *sector, int upper, int lower)
 
 void EV_StartLightFlickering (int tag, int upper, int lower)
 {
+	if (IgnoreSpecial)
+		return;
+
 	int secnum;
 		
 	secnum = -1;
@@ -312,6 +316,9 @@ DStrobe::DStrobe (sector_t *sector, int utics, int ltics, bool inSync)
 //
 void EV_StartLightStrobing (int tag, int upper, int lower, int utics, int ltics)
 {
+	if (IgnoreSpecial)
+		return;
+
 	int secnum;
 		
 	secnum = -1;
@@ -327,6 +334,9 @@ void EV_StartLightStrobing (int tag, int upper, int lower, int utics, int ltics)
 
 void EV_StartLightStrobing (int tag, int utics, int ltics)
 {
+	if (IgnoreSpecial)
+		return;
+
 	int secnum;
 		
 	secnum = -1;
@@ -365,6 +375,7 @@ void EV_TurnTagLightsOff (int tag)
 				min = tsec->lightlevel;
 		}
 		sector->lightlevel = min;
+		sector->SectorChanges |= SPC_LightLevel;
 	}
 }
 
@@ -402,6 +413,7 @@ void EV_LightTurnOn (int tag, int bright)
 			}
 		}
 		sector->lightlevel = CLIPLIGHT(bright);
+		sector->SectorChanges |= SPC_LightLevel;
 	}
 }
 
@@ -456,6 +468,7 @@ int EV_LightTurnOnPartway(int tag, int level)
         // Set level in-between extremes
         sector->lightlevel =
             (level * bright + (FRACUNIT-level) * min) >> FRACBITS;
+		sector->SectorChanges |= SPC_LightLevel;
     }
     return 1;
 }
@@ -473,6 +486,51 @@ void EV_LightChange (int tag, int value)
 	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0) {
 		int newlight = sectors[secnum].lightlevel + value;
 		sectors[secnum].lightlevel = CLIPLIGHT(newlight);
+		sectors[secnum].SectorChanges |= SPC_LightLevel;
+	}
+}
+
+void EV_LightSetMinNeighbor(int tag)
+{
+	int s = -1;
+
+	while ((s = P_FindSectorFromTag(tag, s)) >= 0)
+	{
+		int i;
+		short level;
+		sector_t *temp, *sector;
+
+		sector = &sectors[s];
+		level = sector->lightlevel;
+
+		for (i = 0; i < sector->linecount; i++)
+			if ((temp = getNextSector(sector->lines[i], sector)) &&
+			    temp->lightlevel < level)
+				level = temp->lightlevel;
+
+		sector->lightlevel = level;
+	}
+}
+
+void EV_LightSetMaxNeighbor(int tag)
+{
+	int s = -1;
+
+	while ((s = P_FindSectorFromTag(tag, s)) >= 0)
+	{
+		int i;
+		short level;
+		sector_t *temp, *sector;
+
+		sector = &sectors[s];
+		level = 0;
+
+		for (i = 0; i < sector->linecount; i++)
+			if ((temp = getNextSector(sector->lines[i], sector)) &&
+			    temp->lightlevel > level)
+				level = temp->lightlevel;
+
+		sector->lightlevel = level;
 	}
 }
 
@@ -583,6 +641,9 @@ DGlow2::DGlow2 (sector_t *sector, int start, int end, int tics, bool oneshot)
 
 void EV_StartLightGlowing (int tag, int upper, int lower, int tics)
 {
+	if (IgnoreSpecial)
+		return;
+
 	int secnum;
 
 	if (upper < lower) {
@@ -597,13 +658,15 @@ void EV_StartLightGlowing (int tag, int upper, int lower, int tics)
 		sector_t *sec = &sectors[secnum];
 		if (sec->lightingdata)
 			continue;
-		
 		new DGlow2 (sec, upper, lower, tics, false);
 	}
 }
 
 void EV_StartLightFading (int tag, int value, int tics)
 {
+	if (IgnoreSpecial)
+		return;
+
 	int secnum;
 		
 	secnum = -1;
@@ -682,8 +745,6 @@ int DPhased::PhaseHelper (sector_t *sector, int index, int light, sector_t *prev
 				index + 1, l->m_BaseLevel, sector);
 		l->m_Phase = ((numsteps - index - 1) * 64) / numsteps;
 
-		sector->special &= 0xff00;
-
 		return numsteps;
 	}
 }
@@ -705,7 +766,5 @@ DPhased::DPhased (sector_t *sector, int baselevel, int phase)
 {
 	m_BaseLevel = baselevel;
 	m_Phase = phase;
-	sector->special &= 0xff00;
 }
 VERSION_CONTROL (p_lights_cpp, "$Id$")
-

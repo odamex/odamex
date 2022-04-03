@@ -24,17 +24,12 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __M_OSTRING_H__
-#define __M_OSTRING_H__
+#pragma once
 
-#include <cstddef>
-#include <string>
 #include <iostream>
 #include <memory>
 #include <cassert>
-#include <stdio.h>
 
-#include "doomtype.h"
 #include "sarray.h"
 #include "hashtable.h"
 
@@ -683,6 +678,3 @@ OString OStringToUpper(const char* s, size_t n = OString::npos);
 OString OStringToUpper(const OString& str);
 OString OStringToLower(const char* s, size_t n = OString::npos);
 OString OStringToLower(const OString& str);
-
-#endif	// __M_OSTRING_H__
-

@@ -21,10 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __D_NETCMD__
-#define __D_NETCMD__
+#pragma once
 
-#include "doomtype.h"
 #include "i_net.h"
 #include "m_fixed.h"
  
@@ -174,5 +172,3 @@ private:
 			mFields |= flag;
 	}
 };
-
-#endif	// __D_NETCMD__

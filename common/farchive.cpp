@@ -22,15 +22,12 @@
 //-----------------------------------------------------------------------------
 
 
-#include <stdio.h>
-#include <stddef.h>
-#include <cstring>
+#include "odamex.h"
+
 #include <algorithm>
 
-#include "doomtype.h"
 #include "farchive.h"
 #include "m_alloc.h"
-#include "m_swap.h"
 #include "minilzo.h"
 #include "i_system.h"
 #include "d_player.h"
@@ -293,7 +290,8 @@ void FLZOFile::Implode()
 		}
 		else
 		{
-			DPrintf("LZOFile shrunk from %u to %u bytes\n", input_len, compressed_len);
+			// A comment inside LZO says "lzo_uint must match size_t".
+			DPrintf("LZOFile shrunk from %u to %" PRIuSIZE" bytes\n", input_len, compressed_len);
 		}
 	}
 
@@ -507,10 +505,11 @@ void FLZOMemFile::WriteToBuffer(void* buf, size_t length) const
 //
 //============================================
 
-FArchive::FArchive(FFile& file)
+FArchive::FArchive(FFile& file, uint32_t flags)
 {
 	int i;
 
+	m_Reset = flags & FA_RESET;
 	m_HubTravel = false;
 	m_File = &file;
 	m_MaxObjectCount = m_ObjectCount = 0;
@@ -576,9 +575,12 @@ void FArchive::Close()
 
 void FArchive::WriteCount(DWORD count)
 {
+	// [AM] Hoisted out of loop due to MSVC/ASan detecting as
+	//      use-after-scope.
+	byte out = 0;
 	do
 	{
-		byte out = count & 0x7f;
+		out = count & 0x7f;
 		if (count >= 0x80)
 			out |= 0x80;
 		Write(&out, sizeof(byte));
@@ -1038,4 +1040,3 @@ FArchive &operator>> (FArchive &arc, player_s *&p)
 }
 
 VERSION_CONTROL (farchive_cpp, "$Id$")
-

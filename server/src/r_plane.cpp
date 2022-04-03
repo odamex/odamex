@@ -21,6 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+
+#include "odamex.h"
+
 #include "r_local.h"
 
 BOOL R_AlignFlat (int linenum, int side, int fc)
@@ -49,11 +52,13 @@ BOOL R_AlignFlat (int linenum, int side, int fc)
 	{
 		sec->base_ceiling_angle = 0-angle;
 		sec->base_ceiling_yoffs = dist & ((1<<(FRACBITS+8))-1);
+		sec->SectorChanges |= SPC_AlignBase;
 	}
 	else
 	{
 		sec->base_floor_angle = 0-angle;
 		sec->base_floor_yoffs = dist & ((1<<(FRACBITS+8))-1);
+		sec->SectorChanges |= SPC_AlignBase;
 	}
 
 	return true;

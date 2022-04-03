@@ -3,8 +3,6 @@
 //
 // $Id$
 //
-// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -18,15 +16,29 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	File downloads
+//	HTTP Downloading.
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __CL_DOWNLOAD__
-#define __CL_DOWNLOAD__
+#pragma once
 
-void CL_DownloadStart();
-void CL_DownloadTicker();
-void CL_Download();
 
-#endif // __CL_DOWNLOAD__
+#include "otransfer.h"
+#include "m_resfile.h"
+
+/**
+ * @brief Set if the client should reconnect to the last server upon completion
+ *        of the download.
+ */
+#define DL_RECONNECT (1 << 0)
+
+typedef std::vector<std::string> Websites;
+
+void CL_DownloadInit();
+void CL_DownloadShutdown();
+bool CL_IsDownloading();
+bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned flags);
+bool CL_StopDownload();
+void CL_DownloadTick();
+std::string CL_DownloadFilename();
+OTransferProgress CL_DownloadProgress();

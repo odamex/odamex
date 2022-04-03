@@ -20,17 +20,17 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <string>
-#include <vector>
+
+#include "odamex.h"
+
 
 #include "sv_sqp.h"
 
-#include "doomtype.h"
-#include "doomstat.h"
 #include "d_main.h"
 #include "d_player.h"
 #include "md5.h"
 #include "p_ctf.h"
+#include "g_gametype.h"
 #include "version.h"
 #include "resources/res_main.h"
 #include "resources/res_filelib.h"
@@ -39,6 +39,7 @@ static buf_t ml_message(MAX_UDP_PACKET);
 
 EXTERN_CVAR(join_password)
 EXTERN_CVAR(sv_timelimit)
+EXTERN_CVAR(sv_teamsinplay)
 
 struct CvarField_t
 {
@@ -90,10 +91,13 @@ static void IntQryBuildInformation(const DWORD& EqProtocolVersion,
 	// TODO: Remove guard before next release
 	QRYNEWINFO(7)
 	{
-		MSG_WriteString(&ml_message, GitDescribe());
+		// Send the detailed version - version number was in PROTOCOL_VERSION.
+		MSG_WriteString(&ml_message, NiceVersionDetails());
 	}
 	else
+	{
 		MSG_WriteLong(&ml_message, -1);
+	}
 
 	cvar_t* var = GetFirstCvar();
 
@@ -169,7 +173,7 @@ next:
 
 	MSG_WriteHexString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
 
-	MSG_WriteString(&ml_message, level.mapname);
+	MSG_WriteString(&ml_message, level.mapname.c_str());
 
 	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
 
@@ -188,19 +192,19 @@ next:
 		MSG_WriteShort(&ml_message, timeleft);
 	
 	// Teams
-	if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+	if(G_IsTeamGame())
 	{
 		// Team data
-		MSG_WriteByte(&ml_message, 2);
+		int teams = sv_teamsinplay.asInt();
+		MSG_WriteByte(&ml_message, teams);
 
-		// Blue
-		MSG_WriteString(&ml_message, "Blue");
-		MSG_WriteLong(&ml_message, 0x000000FF);
-		MSG_WriteShort(&ml_message, (short)TEAMpoints[it_blueflag]);
-
-		MSG_WriteString(&ml_message, "Red");
-		MSG_WriteLong(&ml_message, 0x00FF0000);
-		MSG_WriteShort(&ml_message, (short)TEAMpoints[it_redflag]);
+		for (int i = 0; i < teams; i++)
+		{
+			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			MSG_WriteString(&ml_message, teamInfo->ColorString.c_str());
+			MSG_WriteLong(&ml_message, teamInfo->Color);
+			MSG_WriteShort(&ml_message, teamInfo->Points);
+		}
 	}
 
 	// TODO: When real dynamic teams are implemented
@@ -221,13 +225,13 @@ next:
 
 	// resource files
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
-	const std::vector<std::string>& resource_file_hashes = Res_GetResourceFileHashes();
+	const std::vector<OMD5Hash>& resource_file_hashes = Res_GetResourceFileHashes();
 
 	MSG_WriteByte(&ml_message, resource_file_names.size());
 	for(size_t i = 0; i < resource_file_names.size(); i++)
 	{
 		MSG_WriteString(&ml_message, Res_CleanseFilename(resource_file_names[i]).c_str());
-		MSG_WriteHexString(&ml_message, resource_file_hashes[i].c_str());
+		MSG_WriteHexString(&ml_message, resource_file_hashes[i].getHexCStr());
 	}
 
 	MSG_WriteByte(&ml_message, players.size());
@@ -240,7 +244,7 @@ next:
 		for (int i = 3; i >= 0; i--)
 			MSG_WriteByte(&ml_message, it->userinfo.color[i]);
 
-		if(sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF)
+		if(G_IsTeamGame())
 			MSG_WriteByte(&ml_message, it->userinfo.team);
 
 		MSG_WriteShort(&ml_message, it->ping);
@@ -355,8 +359,8 @@ static DWORD IntQrySendResponse(const WORD& TagId,
 	}
 
 	// Override other packet types for older enquirer version response
-	if(VERSIONMAJOR(EqVersion) < VERSIONMAJOR(GAMEVER) ||
-	        (VERSIONMAJOR(EqVersion) <= VERSIONMAJOR(GAMEVER) && VERSIONMINOR(EqVersion) < VERSIONMINOR(GAMEVER)))
+	if (VERMAJ(EqVersion) < VERMAJ(GAMEVER) ||
+	    (VERMAJ(EqVersion) <= VERMAJ(GAMEVER) && VERMIN(EqVersion) < VERMIN(GAMEVER)))
 	{
 		RePacketType = 2;
 	}

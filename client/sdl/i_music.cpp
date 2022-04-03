@@ -20,28 +20,27 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <stdio.h>
+
+#include "odamex.h"
 
 #include "win32inc.h"
 #if defined(_WIN32) && !defined(_XBOX)
-	#include <mmsystem.h>
+#include <mmsystem.h>
 #endif
 
-#ifndef OSX
-	#ifdef UNIX
-		#include <sys/stat.h>
-	#endif
-#endif
-
-#include "doomtype.h"
 #include "m_argv.h"
 #include "i_music.h"
 #include "i_system.h"
 #include "resources/res_identifier.h"
 
-#include <SDL_mixer.h>
-#include "mus2midi.h"
 #include "i_musicsystem.h"
+#ifdef OSX
+#include "i_musicsystem_au.h"
+#endif
+#ifdef PORTMIDI
+#include "i_musicsystem_portmidi.h"
+#endif
+#include "i_musicsystem_sdl.h"
 
 MusicSystem* musicsystem = NULL;
 MusicSystemType current_musicsystem_type = MS_NONE;
@@ -161,10 +160,10 @@ CVAR_FUNC_IMPL (snd_musicsystem)
 	}
 	I_InitMusic();
 	
-	if (!level.music || level.music[0] == 0)
+	if (level.music.empty())
 		S_ChangeMusic(currentmusic.c_str(), true);	
 	else
-		S_ChangeMusic(std::string(level.music, 8), true);
+		S_ChangeMusic(std::string(level.music.c_str(), 8), true);
 }
 
 //

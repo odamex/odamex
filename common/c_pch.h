@@ -1,16 +1,13 @@
-#ifndef __C_PCH__
-#define __C_PCH__
+#pragma once
 
 #include "actor.h"
 #include "cmdlib.h"          
 #include "c_console.h"       
-#include "c_cvars.h"
 #include "c_dispatch.h"
 #include "c_effect.h"
 #include "c_vote.h"
 #include "dobject.h"         
 #include "doomdata.h"        
-#include "doomdef.h"
 #include "doomkeys.h"        
 #include "doomstat.h"        
 #include "doomtype.h"        
@@ -25,11 +22,9 @@
 #include "d_netinf.h"
 #include "d_player.h"        
 #include "d_ticcmd.h"        
-#include "errors.h"
 #include "farchive.h"        
 #include "gi.h"             
 #include "g_game.h"          
-#include "g_level.h"
 #include "huffman.h"         
 #include "info.h"            
 #include "i_net.h"
@@ -71,8 +66,7 @@
 #include "r_segs.h"          
 #include "r_sky.h"
 #include "r_state.h"         
-#include "r_things.h"        
-#include "sc_man.h"          
+#include "r_things.h"     
 #include "stats.h"
 #include "stringenums.h"
 #include "stringtable.h"
@@ -83,9 +77,6 @@
 #include "tables.h"          
 #include "tarray.h"          
 #include "m_vectors.h"         
-#include "version.h"
 #include "v_palette.h"       
 #include "v_video.h"         
 #include "z_zone.h"
-
-#endif // __C_PCH__

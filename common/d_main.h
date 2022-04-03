@@ -21,15 +21,12 @@
 //
 //-----------------------------------------------------------------------------
 
+#pragma once
 
-#ifndef __D_MAIN__
-#define __D_MAIN__
-
-#include "doomstat.h"
 #include "d_event.h"
+#include "m_resfile.h"
 
-#include <vector>
-#include <string>
+extern std::string LOG_FILE;
 
 //
 // D_DoomMain()
@@ -67,5 +64,3 @@ std::string D_GetTitleString();
 
 void D_Init(const std::vector<std::string>& resource_file_names);
 void STACK_ARGS D_Shutdown();
-
-#endif
