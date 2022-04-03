@@ -42,6 +42,8 @@
 
 #include "i_system.h"
 
+#include "hashtable.h"
+
 static ResourceManager resource_manager;
 
 //
