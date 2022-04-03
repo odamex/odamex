@@ -102,10 +102,13 @@ bool client_s::queuePacket()
 		if (queue->lastSent + 100 >= TIME)
 			continue; // Don't rapid-fire resends.
 
-		if (sent.size + 1 + queue->data.size() > MAX_UDP_SIZE)
+		// Size of data plus header.
+		const size_t TOTAL_SIZE = 1 + queue->data.size();
+
+		if (sent.size + TOTAL_SIZE > MAX_UDP_SIZE)
 			continue; // Too big to fit.
 
-		sent.size += 1 + queue->data.size();
+		sent.size += TOTAL_SIZE;
 		sent.messages.push_back(queue->messageID);
 	}
 

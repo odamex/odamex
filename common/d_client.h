@@ -77,7 +77,7 @@ struct client_s
 	struct sentPacket_s
 	{
 		uint16_t packetID;
-		uint16_t size;
+		size_t size;
 		std::vector<uint32_t> messages;
 	} m_sentPackets[1024];
 	uint16_t m_nextPacketID = 0;
