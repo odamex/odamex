@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __RES_IDENTIFIER_H__
-#define __RES_IDENTIFIER_H__
+#pragma once
 
 #include <stdint.h>
 #include "resources/res_resourcepath.h"
@@ -57,6 +56,3 @@ public:
 
 private:
 };
-
-#endif // __RES_IDENTIFIER_H__
-

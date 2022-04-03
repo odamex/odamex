@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __RES_CONTAINER_H__
-#define __RES_CONTAINER_H__
+#pragma once
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -459,6 +458,3 @@ private:
 	uint32_t loadEntryData(const ZipDirectoryEntry* entry, void* data, uint32_t size) const;
     uint32_t calculateEntryOffset(const ZipDirectoryEntry* entry) const;
 };
-
-
-#endif	// __RES_CONTAINER_H__

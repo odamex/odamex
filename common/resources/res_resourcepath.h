@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __RES_RESOURCEPATH_H__
-#define __RES_RESOURCEPATH_H__
+#pragma once
 
 #include <stdlib.h>
 #include "m_ostring.h"
@@ -255,5 +254,3 @@ static inline bool Res_DoesPathStartWithBase(const ResourcePath& base, const Res
 			return false;
 	return true;
 }
-
-#endif	// __RES_RESOURCEPATH_H__

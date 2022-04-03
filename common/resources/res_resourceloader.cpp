@@ -28,8 +28,8 @@
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
 
-#include "resources/res_identifier.h"
 #include "resources/res_resourceloader.h"
+#include "resources/res_identifier.h"
 
 #include "v_palette.h"
 

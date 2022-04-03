@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __RES_MAIN_H__
-#define __RES_MAIN_H__
+#pragma once
 
 #include "ohash.h"
 
@@ -379,6 +378,3 @@ const std::string& Res_GetResourceContainerFileName(const ResourceId res_id);
 
 bool Res_CheckMap(const OString& mapname);
 const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname);
-
-
-#endif	// __RES_MAIN_H__

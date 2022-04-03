@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __res_cache_h__
-#define __res_cache_h__
+#pragma once
 
 #include "z_zone.h"
 
@@ -114,5 +113,3 @@ private:
 			Z_Free(data);
 	}
 };
-
-#endif	// __res_cache_h__

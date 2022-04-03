@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __RES_NAMETRANSLATOR_H__
-#define __RES_NAMETRANSLATOR_H__
+#pragma once
 
 #include <vector>
 
@@ -60,5 +59,3 @@ private:
 	typedef OHashTable<ResourcePath, ResourceIdList> ResourceIdLookupTable;
 	ResourceIdLookupTable			mResourceIdLookup;
 };
-
-#endif	// __RES_NAMETRANSLATOR_H__

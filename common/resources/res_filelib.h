@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __RES_FILELIB_H__
-#define __RES_FILELIB_H__
+#pragma once
 
 #include <string>
 
@@ -50,5 +49,3 @@ void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
 								std::vector<std::string>& missing_resource_filenames);
 
 void Res_AddSearchDir(std::vector<std::string>& search_dirs, const char* dir, const char separator);
-
-#endif	// __RES_FILELIB_H__

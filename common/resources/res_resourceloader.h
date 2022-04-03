@@ -23,8 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __RES_RESOURCELOADER_H__
-#define __RES_RESOURCELOADER_H__
+#pragma once
 
 #include "resources/res_resourceid.h"
 
@@ -240,6 +239,3 @@ protected:
 	uint16_t			mWidth;
 	uint16_t			mHeight;
 };
-
-
-#endif	// __RES_RESOURCELOADER_H__

@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __RES_RESOURCEID_H__
-#define __RES_RESOURCEID_H__
+#pragma once
 
 #include <vector>
 #include "hashtable.h"
@@ -63,6 +62,3 @@ typedef std::vector<ResourceId> ResourceIdList;
 
 template <> struct hashfunc<ResourceId>
 {   size_t operator()(const ResourceId res_id) const { return uint32_t(res_id); } };
-
-#endif	// __RES_RESOURCEID_H__
-

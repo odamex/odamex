@@ -22,8 +22,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __RES_FILEACCESSOR_H__
-#define __RES_FILEACCESSOR_H__
+#pragma once
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -236,6 +235,3 @@ private:
 	mutable size_t		mSeekPos;
 	const OString		mFileName;
 };
-
-#endif	// __RES_FILEACCESSOR_H__
-

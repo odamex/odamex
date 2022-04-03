@@ -22,8 +22,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __RES_TEXTURE_H__
-#define __RES_TEXTURE_H__
+#pragma once
 
 #include "doomtype.h"
 #include "m_fixed.h"
@@ -322,5 +321,3 @@ private:
 
 	std::vector<AnimatedTextureManager::warp_t> mWarpedTextures;
 };
-
-#endif // __RES_TEXTURE_H__
