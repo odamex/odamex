@@ -21,6 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "odamex.h"
+
 #include "resources/res_resourceid.h"
 
 // Just initialize static member variables
