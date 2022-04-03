@@ -324,7 +324,8 @@ BEGIN_COMMAND(map)
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "The current map is %s: \"%s\"\n", level.mapname, level.level_name);
+		Printf(PRINT_HIGH, "The current map is %s: \"%s\"\n", level.mapname.c_str(),
+		       level.level_name);
 	}
 }
 END_COMMAND(map)
