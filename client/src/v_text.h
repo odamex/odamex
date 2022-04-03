@@ -57,6 +57,13 @@ struct OGlobalFont
 	{
 		return m_lineHeight;
 	}
+	void clear()
+	{
+		for (size_t i = 0; i < HU_FONTSIZE; i++)
+		{
+			m_fontData[i] = NULL;
+		}
+	}
   private:
 	const Texture* m_fontData[HU_FONTSIZE];
 	int m_lineHeight;

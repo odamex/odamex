@@ -216,6 +216,8 @@ void STACK_ARGS HU_Shutdown()
 	ResourceId res_id = Res_GetTextureResourceId("SBLINE", PATCH);
 	Res_ReleaseResource(res_id);
 	sbline = NULL;
+
+	V_TextShutdown();
 }
 
 

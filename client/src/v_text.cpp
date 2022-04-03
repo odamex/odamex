@@ -56,6 +56,10 @@ static int hu_bigfont_height;
 static int hu_smallfont_height;
 static int hu_digfont_height;
 
+static std::string hu_bigfont_name[HU_FONTSIZE];
+static std::string hu_smallfont_name[HU_FONTSIZE];
+static std::string hu_digfont_name[HU_FONTSIZE];
+
 byte *ConChars;
 extern byte *Ranges;
 
@@ -80,9 +84,15 @@ void V_TextInit()
 		// Some letters of this font are missing.
 		int num = Res_GetTextureResourceId(buffer.c_str(), PATCH);
 		if (Res_CheckResource(num))
+		{
 			::hu_bigfont[i] = Res_CacheTexture(num, PU_STATIC);
+			::hu_bigfont_name[i] = buffer.c_str();
+		}
 		else
+		{
 			::hu_bigfont[i] = Res_CacheTexture("TNT1A0", PATCH, PU_STATIC);
+			::hu_bigfont_name[i] = "";
+		}
 	}
 
 	// Normal doom chat/message font, starts at index 33.
@@ -92,6 +102,7 @@ void V_TextInit()
 	{
 		StrFormat(buffer, smallfont, j++ - sub);
 		::hu_smallfont[i] = Res_CacheTexture(buffer.c_str(), PATCH, PU_STATIC);
+		::hu_smallfont_name[i] = buffer.c_str();
 	}
 
 	const char* digfont = "DIG%02d";
@@ -116,10 +127,12 @@ void V_TextInit()
 		if (Res_CheckResource(num))
 		{
 			::hu_digfont[i] = Res_CacheTexture(num, PU_STATIC);
+			::hu_digfont_name[i] = buffer.c_str();
 		}
 		else
 		{
 			::hu_digfont[i] = Res_CacheTexture("TNT1A0", PATCH, PU_STATIC);
+			::hu_digfont_name[i] = buffer.c_str();
 		}
 	}
 
@@ -139,10 +152,29 @@ void V_TextShutdown()
 {
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
+		if (!::hu_bigfont_name[i].empty())
+		{
+			ResourceId res_id = Res_GetTextureResourceId(hu_bigfont_name[i], PATCH);
+			Res_ReleaseResource(res_id);
+		}
 		::hu_bigfont[i] = NULL;
+
+		if (!::hu_smallfont_name[i].empty())
+		{
+			ResourceId res_id = Res_GetTextureResourceId(hu_smallfont_name[i], PATCH);
+			Res_ReleaseResource(res_id);
+		}
 		::hu_smallfont[i] = NULL;
+
+		if (!::hu_digfont_name[i].empty())
+		{
+			ResourceId res_id = Res_GetTextureResourceId(hu_digfont_name[i], PATCH);
+			Res_ReleaseResource(res_id);
+		}
 		::hu_digfont[i] = NULL;
 	}
+
+	::hu_font.clear();
 }
 
 /**
