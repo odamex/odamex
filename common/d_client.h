@@ -71,7 +71,7 @@ struct client_s
 	client_s(const client_s& other);
 
 	void queueReliable(const google::protobuf::Message& msg);
-	bool queuePacket();
+	bool writePacket(buf_t& buf);
 
   private:
 	struct sentPacket_s

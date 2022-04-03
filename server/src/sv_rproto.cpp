@@ -133,91 +133,26 @@ void SV_SendPacketDelayed(buf_t& packet, player_t& pl)
 //
 bool SV_SendPacket(player_t &pl)
 {
-	int				bps = 0; // bytes per second, not bits per second
-
-	client_t *cl = &pl.client;
-
-	if (cl->reliablebuf.overflowed)
-	{ 
-		SZ_Clear(&cl->netbuf);
-		SZ_Clear(&cl->reliablebuf);
-	    SV_DropClient(pl);
-		return false;
-	}
-	else
-		if (cl->netbuf.overflowed)
-			SZ_Clear(&cl->netbuf);
-
-	// [SL] 2012-05-04 - Don't send empty packets - they still have overhead
-	if (cl->reliablebuf.cursize + cl->netbuf.cursize == 0)
-		return true;
-
-	sendd.clear();
-
-	// save the reliable message 
-	// it will be retransmited, if it's missed
-	oldPacket_s& old = cl->oldpackets[cl->sequence & PACKET_OLD_MASK];
-
-	old.data.clear();
-	if (cl->reliablebuf.cursize)
-	{
-		// copy the reliable data into the buffer.
-		old.sequence = cl->sequence;
-		SZ_Write(&old.data, cl->reliablebuf.data, cl->reliablebuf.cursize);
-	}
-	else
-	{
-		old.sequence = -1;
-	}
-
-	cl->packetnum++; // packetnum will never be more than 255
-	                 // because sizeof(packetnum) == 1. Don't need
-	                 // to use &0xff. Cool, eh? ;-)
-
-	// copy sequence
-	MSG_WriteLong(&sendd, cl->sequence++);
-	MSG_WriteByte(&sendd, 0); // Flags, filled out later.
-
-	// copy the reliable message to the packet first
-    if (cl->reliablebuf.cursize)
-    {
-		SZ_Write (&sendd, cl->reliablebuf.data, cl->reliablebuf.cursize);
-		cl->reliable_bps += cl->reliablebuf.cursize;
-    }
-
-	// add the unreliable part if space is available and rate value
-	// allows it
-	if (gametic % 35)
-	    bps = (int)((double)( (cl->unreliable_bps + cl->reliable_bps) * TICRATE)/(double)(gametic%35));
-
-    if (bps < cl->rate*1000)
-
-	  if (cl->netbuf.cursize && (sendd.maxsize() - sendd.cursize > cl->netbuf.cursize) )
-	  {
-         SZ_Write (&sendd, cl->netbuf.data, cl->netbuf.cursize);
-	     cl->unreliable_bps += cl->netbuf.cursize;
-	  }
-    
-	SZ_Clear(&cl->netbuf);
-	SZ_Clear(&cl->reliablebuf);
+	// [AM] Most of the hard work of assembling the packet is done in the client.
+	//      struct.  Here, we just set some flags and send the netbuf.
 	
+	client_t& client = pl.client;
+
 	// compress the packet, but not the sequence id
-	if (sendd.size() > PACKET_HEADER_SIZE)
+	if (client.netbuf.size() > PACKET_HEADER_SIZE)
 	{
-		CompressPacket(sendd, PACKET_HEADER_SIZE, cl);
+		CompressPacket(client.netbuf, PACKET_HEADER_SIZE, &client);
 	}
 
 	if (log_packetdebug)
 	{
-		Printf(PRINT_HIGH, "ply %03u, pkt %06u, size %04u, tic %07u, time %011u\n",
-			   pl.id, cl->sequence - 1, sendd.cursize, gametic, I_MSTime());
+		// [AM] TODO: What can we put here?
 	}
 
 #ifdef SIMULATE_LATENCY
 	SV_SendPacketDelayed(sendd, pl);
 #else
-
-	NET_SendPacket(sendd, cl->address);
+	NET_SendPacket(client.netbuf, client.address);
 #endif
 	return true;
 }

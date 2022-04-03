@@ -77,11 +77,12 @@ void client_s::queueReliable(const google::protobuf::Message& msg)
 }
 
 /**
- * @brief Given the state of messages, construct a single packet to be sent.
+ * @brief Given the state of messages, construct and write a single packet to the buffer.
  * 
+ * @param buf Buffer to write to.
  * @return True if a packet was queued, false if no viable messages made it in.
  */
-bool client_s::queuePacket()
+bool client_s::writePacket(buf_t& buf)
 {
 	const dtime_t TIME = I_MSTime();
 
@@ -114,6 +115,22 @@ bool client_s::queuePacket()
 
 	if (sent.size == 0)
 		return false; // No messages were queued.
+
+	// Assemble and send the message.
+	buf.clear();
+
+	const size_t HEADER_SIZE = sizeof(int) + sizeof(byte);
+
+	buf.WriteLong(int(m_nextPacketID)); // Packet ID
+	buf.WriteByte(0);                   // Empty space for flags.
+
+	// Write out the individual messages.
+	for (size_t i = 0; i < sent.messages.size(); i++)
+	{
+		client_s::queuedMessage_s& msg = queuedMessage(sent.messages[i]);
+		buf.WriteByte(msg.header);
+		buf.WriteChunk(msg.data.data(), msg.data.size());
+	}
 
 	m_nextPacketID += 1;
 	return true;

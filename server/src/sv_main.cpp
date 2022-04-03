@@ -3069,7 +3069,15 @@ void SV_SendPackets()
 	{
 		// [AM] Don't send packets to players who haven't acked packet 0
 		if (it->playerstate != PST_CONTACT)
-			SV_SendPacket(*it);
+		{
+			for (;;)
+			{
+				if (!it->client.writePacket(it->client.netbuf))
+					break;
+
+				SV_SendPacket(*it);
+			}
+		}
 
 		++it;
 		if (it == players.end())
