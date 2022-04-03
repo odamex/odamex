@@ -24,16 +24,14 @@
 
 #pragma once
 
+#include <vector>
+
 #include "doomtype.h"
 #include "m_fixed.h"
 #include "z_zone.h"
 
-#include <vector>
-
-#include "m_ostring.h"
 #include "oscanner.h"
 
-#include "resources/res_resourcepath.h"
 #include "resources/res_container.h"
 
 class ResourceLoader;

@@ -26,11 +26,11 @@
 #include <vector>
 #include <string>
 
+#include "ohash.h"
+
 #include "resources/res_nametranslator.h"
 
 #include "z_zone.h"
-
-#include "ohash.h"
 
 // Forward class declarations
 class ResourceManager;
