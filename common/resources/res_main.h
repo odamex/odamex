@@ -178,6 +178,8 @@ public:
 				getResourceContainer(res_id1) == getResourceContainer(res_id2);
 	}
 
+	friend uint32_t Res_GetResourceSize(const ResourceId res_id);
+
 private:
 	struct ResourceRecord
 	{
