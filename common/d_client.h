@@ -25,6 +25,7 @@
 
 #include "huffman.h"
 #include "i_net.h"
+#include "ocircularbuffer.h"
 
 struct oldPacket_s
 {
@@ -80,8 +81,8 @@ struct client_s
 		uint32_t packetID;
 		size_t size;
 		std::vector<uint32_t> messages;
-	} m_sentPackets[1024];
-	uint16_t m_nextPacketID = 0;
+	};
+	OCircularBuffer<sentPacket_s, BIT(10)> m_sentPackets;
 
 	struct queuedMessage_s
 	{
@@ -90,12 +91,15 @@ struct client_s
 		dtime_t lastSent;
 		svc_t header;
 		std::string data;
-	} m_queuedMessages[1024];
-	uint32_t m_nextMessageID = 0;
-	uint32_t m_oldestMessageNoACK = 0;
+	};
+	OCircularBuffer<queuedMessage_s, BIT(10)> m_queuedMessages;
 
-	sentPacket_s& sentPacket(const uint16_t id);
-	sentPacket_s* validSentPacket(const uint16_t id);
+	uint32_t m_nextPacketID;
+	uint32_t m_nextMessageID;
+	uint32_t m_oldestMessageNoACK;
+
+	sentPacket_s& sentPacket(const uint32_t id);
+	sentPacket_s* validSentPacket(const uint32_t id);
 	queuedMessage_s& queuedMessage(const uint32_t id);
 	queuedMessage_s* validQueuedMessage(const uint32_t id);
 	void baseQueueMessage(const google::protobuf::Message& msg, const bool reliable);

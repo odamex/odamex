@@ -34,7 +34,8 @@ client_s::client_s()
     : version(0), packedversion(0), sequence(0), last_sequence(0), packetnum(0), rate(0),
       reliable_bps(0), unreliable_bps(0), last_received(0), lastcmdtic(0),
       lastclientcmdtic(0), netbuf(MAX_UDP_PACKET), reliablebuf(MAX_UDP_PACKET),
-      allow_rcon(false), displaydisconnect(true)
+      allow_rcon(false), displaydisconnect(true), m_nextPacketID(0), m_nextMessageID(0),
+      m_oldestMessageNoACK(0)
 {
 	ArrayInit(address.ip, 0);
 	address.port = 0;
@@ -55,7 +56,9 @@ client_s::client_s(const client_s& other)
       unreliable_bps(other.unreliable_bps), last_received(other.last_received),
       lastcmdtic(other.lastcmdtic), lastclientcmdtic(other.lastclientcmdtic),
       digest(other.digest), allow_rcon(false), displaydisconnect(true),
-      compressor(other.compressor)
+      compressor(other.compressor), m_sentPackets(other.m_sentPackets),
+      m_queuedMessages(other.m_queuedMessages), m_nextPacketID(0), m_nextMessageID(0),
+      m_oldestMessageNoACK(0)
 {
 	for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
 	{
@@ -130,12 +133,12 @@ bool client_s::writePacket(buf_t& buf)
 	return true;
 }
 
-client_s::sentPacket_s& client_s::sentPacket(const uint16_t id)
+client_s::sentPacket_s& client_s::sentPacket(const uint32_t id)
 {
-	return m_sentPackets[id % ARRAY_LENGTH(m_sentPackets)];
+	return m_sentPackets[id];
 }
 
-client_s::sentPacket_s* client_s::validSentPacket(const uint16_t id)
+client_s::sentPacket_s* client_s::validSentPacket(const uint32_t id)
 {
 	sentPacket_s* sent = &sentPacket(id);
 	if (sent->packetID != id)
@@ -145,7 +148,7 @@ client_s::sentPacket_s* client_s::validSentPacket(const uint16_t id)
 
 client_s::queuedMessage_s& client_s::queuedMessage(const uint32_t id)
 {
-	return m_queuedMessages[id % ARRAY_LENGTH(m_queuedMessages)];
+	return m_queuedMessages[id];
 }
 
 client_s::queuedMessage_s* client_s::validQueuedMessage(const uint32_t id)
@@ -161,7 +164,7 @@ void client_s::baseQueueMessage(const google::protobuf::Message& msg, const bool
 	// Queue the message.
 	queuedMessage_s& queued = queuedMessage(m_nextMessageID);
 	queued.messageID = m_nextMessageID;
-	queued.reliable = true;
+	queued.reliable = reliable;
 	queued.lastSent = I_MSTime();
 	queued.header = SVC_ResolveDescriptor(msg.GetDescriptor());
 	msg.SerializeToString(&queued.data);

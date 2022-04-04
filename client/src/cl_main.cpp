@@ -1926,6 +1926,46 @@ void CL_Decompress()
 	MSG_DecompressMinilzo();
 }
 
+class ackManager_s
+{
+	// Sequence IDs of acked packets.
+	OCircularBuffer<uint32_t, BIT(10)> m_ackedPackets;
+
+	// Most recently acked packet ID.
+	uint32_t m_recentPacketID;
+
+  public:
+	ackManager_s() : m_recentPacketID(UINT32_MAX), m_ackedPackets() { }
+
+	void ack(const uint32_t id)
+	{
+		// Compare id relative to the current packet ID, to avoid wrapping weirdness.
+		if (int32_t(id - m_recentPacketID) > 0)
+			m_recentPacketID = id;
+
+		m_ackedPackets[id] = id;
+	}
+
+	uint32_t getRecentAck() { return m_recentPacketID; }
+
+	uint32_t getAckBits()
+	{
+		uint32_t bits = 0;
+		uint32_t id = m_recentPacketID - 1;
+
+		for (size_t i = 0; i < 32; i++)
+		{
+			if (m_ackedPackets[id] == id)
+			{
+				bits |= BIT(i);
+			}
+			id -= 1;
+		}
+
+		return bits;
+	}
+} g_AckManager;
+
 /**
  * @brief Read the header of the packet and prepare the rest of it for reading.
  * 
@@ -1934,22 +1974,14 @@ void CL_Decompress()
 bool CL_ReadPacketHeader()
 {
 	// Packet sequence number.
-	int sequence = MSG_ReadLong();
-	int oldsequence = ::packetseq[sequence & PACKET_SEQ_MASK];
-
-	if (sequence == oldsequence)
-	{
-		// Duplicate packet, burn it and return early.
-		SZ_Clear(&::net_message);
-		return false;
-	}
-
-	// Not a dupe, keep it in our array of known received packets.
-	::packetseq[sequence & PACKET_SEQ_MASK] = sequence;
+	const uint32_t packetID = MSG_ReadLong();
 
 	// Send an ACK to the server.
+	g_AckManager.ack(packetID);
+
 	MSG_WriteMarker(&net_buffer, clc_ack);
-	MSG_WriteLong(&net_buffer, sequence);
+	MSG_WriteLong(&net_buffer, int(g_AckManager.getRecentAck()));
+	MSG_WriteLong(&net_buffer, int(g_AckManager.getAckBits()));
 
 	// Flag bits.
 	byte flags = MSG_ReadByte();
