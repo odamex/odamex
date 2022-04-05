@@ -1674,7 +1674,7 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
 {
 	int l = msg->linenum();
 	byte switchactive = msg->switch_active();
-	byte special = msg->special();
+	unsigned int special = msg->special();
 	unsigned int state = msg->state(); // DActiveButton::EWhere
 	short texture = msg->button_texture();
 	unsigned int time = msg->timer();
