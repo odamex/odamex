@@ -57,7 +57,7 @@ client_s::client_s(const client_s& other)
       lastcmdtic(other.lastcmdtic), lastclientcmdtic(other.lastclientcmdtic),
       digest(other.digest), allow_rcon(false), displaydisconnect(true),
       compressor(other.compressor), m_sentPackets(other.m_sentPackets),
-      m_queuedMessages(other.m_queuedMessages), m_nextPacketID(0), m_nextMessageID(0),
+      m_reliableMessages(other.m_reliableMessages), m_nextPacketID(0), m_nextMessageID(0),
       m_oldestMessageNoACK(0)
 {
 	for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
@@ -66,14 +66,32 @@ client_s::client_s(const client_s& other)
 	}
 }
 
+/**
+ * @brief Queue a reliable message to be sent.
+ */
 void client_s::queueReliable(const google::protobuf::Message& msg)
 {
-	baseQueueMessage(msg, true);
+	// Queue the message.
+	reliableMessage_s& queued = reliableMessage(m_nextMessageID);
+	queued.acked = false;
+	queued.messageID = m_nextMessageID;
+	queued.lastSent = I_MSTime();
+	queued.header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	msg.SerializeToString(&queued.data);
+
+	// Advance Message ID.
+	m_nextMessageID += 1;
 }
 
+/**
+ * @brief Queue an unreliable message to be sent.
+ */
 void client_s::queueUnreliable(const google::protobuf::Message& msg)
 {
-	baseQueueMessage(msg, false);
+	unreliableMessage_s queued = m_unreliableMessages.push();
+	queued.sent = false;
+	queued.header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	msg.SerializeToString(&queued.data);
 }
 
 /**
@@ -90,13 +108,13 @@ bool client_s::writePacket(buf_t& buf)
 	sentPacket_s& sent = sentPacket(m_nextPacketID);
 	sent.packetID = m_nextPacketID;
 	sent.size = 0;
-	sent.messages.clear();
+	sent.reliableIDs.clear();
 
 	// Walk the message array starting with the oldest un-acked.
 	const uint32_t LENGTH = m_nextMessageID - m_oldestMessageNoACK;
 	for (uint32_t i = 0; i < LENGTH; i++)
 	{
-		client_s::queuedMessage_s* queue = validQueuedMessage(m_oldestMessageNoACK + i);
+		client_s::reliableMessage_s* queue = validQueuedMessage(m_oldestMessageNoACK + i);
 		if (queue == NULL)
 			continue; // Invalid message.
 
@@ -110,7 +128,47 @@ bool client_s::writePacket(buf_t& buf)
 			continue; // Too big to fit.
 
 		sent.size += TOTAL_SIZE;
-		sent.messages.push_back(queue->messageID);
+		sent.reliableIDs.push_back(queue->messageID);
+	}
+
+	// See if we can fit in any other unreliable messages.
+	for (size_t i = 0; i < m_unreliableMessages.size(); i++)
+	{
+		unreliableMessage_s& msg = m_unreliableMessages[i];
+		if (msg.sent)
+			continue; // Already sent.
+
+		// Size of data plus header.
+		const size_t TOTAL_SIZE = 1 + msg.data.size();
+		if (sent.size + TOTAL_SIZE > MAX_UDP_SIZE)
+			continue; // Too big to fit.
+
+		sent.size += TOTAL_SIZE;
+		sent.unreliables.push_back(&msg);
+	}
+
+	// If there is a contiguous string of unreliable messages at the start
+	// of the queue, pop them so we can reduce the iteration length next time.
+	while (!m_unreliableMessages.empty() && m_unreliableMessages.front().sent)
+		m_unreliableMessages.pop();
+
+	for (uint32_t i = 0; i < LENGTH; i++)
+	{
+		client_s::reliableMessage_s* queue = validQueuedMessage(m_oldestMessageNoACK + i);
+		if (queue == NULL)
+			continue; // Invalid message.
+
+		if (queue->lastSent + 100 >= TIME)
+			continue; // Don't rapid-fire resends.
+
+		// Size of data plus header.
+		const size_t TOTAL_SIZE = 1 + queue->data.size();
+
+		if (sent.size + TOTAL_SIZE > MAX_UDP_SIZE)
+			continue; // Too big to fit.
+
+		sent.size += TOTAL_SIZE;
+		sent.reliableIDs.push_back(queue->messageID);
 	}
 
 	if (sent.size == 0)
@@ -122,14 +180,43 @@ bool client_s::writePacket(buf_t& buf)
 	buf.WriteByte(0);                   // Empty space for flags.
 
 	// Write out the individual messages.
-	for (size_t i = 0; i < sent.messages.size(); i++)
+	for (size_t i = 0; i < sent.reliableIDs.size(); i++)
 	{
-		client_s::queuedMessage_s& msg = queuedMessage(sent.messages[i]);
+		client_s::reliableMessage_s& msg = reliableMessage(sent.reliableIDs[i]);
 		buf.WriteByte(msg.header);
-		buf.WriteChunk(msg.data.data(), msg.data.size());
+		buf.WriteChunk(msg.data.data(), uint32_t(msg.data.size()));
 	}
 
 	m_nextPacketID += 1;
+	return true;
+}
+
+/**
+ * @brief Process package acknowledgements from the client.
+ * 
+ * @param packetAck Most recent packet acknowledged.
+ * @param packetAckBits Bitfield of packets previous to packetAck that
+ *                      have also been acked.
+ * @return False if ack was sent from new connection, otherwise true.
+ */
+bool client_s::clientAck(const uint32_t packetAck, const uint32_t packetAckBits)
+{
+	if (packetAck == 0 && packetAckBits == 0)
+		return false;
+
+	// See if we have a packet in the system that matches.
+	client_s::sentPacket_s* packet = validSentPacket(packetAck);
+	if (!packet)
+		return true;
+
+	// We do - ack the packet and all messages attached to it.
+	for (size_t i = 0; i < packet->reliableIDs.size(); i++)
+	{
+		const uint32_t msgID = packet->reliableIDs[i];
+		client_s::reliableMessage_s* msg = validQueuedMessage(msgID);
+		msg->acked = true;
+	}
+
 	return true;
 }
 
@@ -146,29 +233,15 @@ client_s::sentPacket_s* client_s::validSentPacket(const uint32_t id)
 	return sent;
 }
 
-client_s::queuedMessage_s& client_s::queuedMessage(const uint32_t id)
+client_s::reliableMessage_s& client_s::reliableMessage(const uint32_t id)
 {
-	return m_queuedMessages[id];
+	return m_reliableMessages[id];
 }
 
-client_s::queuedMessage_s* client_s::validQueuedMessage(const uint32_t id)
+client_s::reliableMessage_s* client_s::validQueuedMessage(const uint32_t id)
 {
-	queuedMessage_s* sent = &queuedMessage(id);
-	if (sent->messageID != id)
+	reliableMessage_s* sent = &reliableMessage(id);
+	if (sent->messageID != id || sent->acked)
 		return NULL;
 	return sent;
-}
-
-void client_s::baseQueueMessage(const google::protobuf::Message& msg, const bool reliable)
-{
-	// Queue the message.
-	queuedMessage_s& queued = queuedMessage(m_nextMessageID);
-	queued.messageID = m_nextMessageID;
-	queued.reliable = reliable;
-	queued.lastSent = I_MSTime();
-	queued.header = SVC_ResolveDescriptor(msg.GetDescriptor());
-	msg.SerializeToString(&queued.data);
-
-	// Advance Message ID.
-	m_nextMessageID += 1;
 }

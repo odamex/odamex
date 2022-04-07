@@ -1752,6 +1752,7 @@ bool CL_Connect()
 	//      messages.
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
+	MSG_WriteLong(&net_buffer, 0);
 	NET_SendPacket(::net_buffer, ::serveraddr);
 	Printf("Requesting server state...\n");
 

@@ -202,36 +202,13 @@ static void SendOldPacket(player_t& pl, const int sequence)
 //
 void SV_AcknowledgePacket(player_t &player)
 {
-	client_t *cl = &player.client;
+	client_t& cl = player.client;
 
-	int sequence = MSG_ReadLong();
+	const uint32_t packetAck = uint32_t(MSG_ReadLong());
+	const uint32_t packetAckBits = uint32_t(MSG_ReadLong());
+	const bool connected = cl.clientAck(packetAck, packetAckBits);
 
-	cl->compressor.packet_acked(sequence);
-
-	// packet is missed
-	if (sequence - cl->last_sequence > 1)
-	{
-		// resend
-		for (int seq = cl->last_sequence+1; seq < sequence; seq++)
-		{
-			int  n;
-			bool needfullupdate = true;
-
-			if (cl->oldpackets[seq & PACKET_OLD_MASK].sequence != seq)
-			{
-				// do full update
-				DPrintf("need full update\n");
-				cl->last_sequence = sequence;
-				return;
-			}
-
-			SendOldPacket(player, seq);
-		}
-	}
-
-	cl->last_sequence = sequence;
-
-	if (cl->last_sequence == 0)
+	if (!connected)
 	{
 		// [AM] Finish our connection sequence.
 		SV_ConnectClient2(player);

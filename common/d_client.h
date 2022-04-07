@@ -74,25 +74,41 @@ struct client_s
 	void queueReliable(const google::protobuf::Message& msg);
 	void queueUnreliable(const google::protobuf::Message& msg);
 	bool writePacket(buf_t& buf);
+	bool clientAck(const uint32_t packetAck, const uint32_t packetAckBits);
 
   private:
+	struct reliableMessage_s
+	{
+		uint16_t messageID;
+		bool acked;
+		dtime_t lastSent;
+		svc_t header;
+		std::string data;
+		reliableMessage_s()
+		    : messageID(0), acked(true), lastSent(0), header(svc_noop), data()
+		{
+		}
+	};
+	OCircularBuffer<reliableMessage_s, BIT(10)> m_reliableMessages;
+
+	struct unreliableMessage_s
+	{
+		bool sent;
+		svc_t header;
+		std::string data;
+		unreliableMessage_s() : sent(false), header(svc_noop), data() { }
+	};
+	OCircularQueue<unreliableMessage_s, BIT(10)> m_unreliableMessages;
+
 	struct sentPacket_s
 	{
 		uint32_t packetID;
 		size_t size;
-		std::vector<uint32_t> messages;
+		std::vector<uint32_t> reliableIDs;
+		std::vector<unreliableMessage_s*> unreliables;
+		sentPacket_s() : packetID(0), size(0), reliableIDs() { }
 	};
 	OCircularBuffer<sentPacket_s, BIT(10)> m_sentPackets;
-
-	struct queuedMessage_s
-	{
-		uint32_t messageID;
-		bool reliable;
-		dtime_t lastSent;
-		svc_t header;
-		std::string data;
-	};
-	OCircularBuffer<queuedMessage_s, BIT(10)> m_queuedMessages;
 
 	uint32_t m_nextPacketID;
 	uint32_t m_nextMessageID;
@@ -100,9 +116,8 @@ struct client_s
 
 	sentPacket_s& sentPacket(const uint32_t id);
 	sentPacket_s* validSentPacket(const uint32_t id);
-	queuedMessage_s& queuedMessage(const uint32_t id);
-	queuedMessage_s* validQueuedMessage(const uint32_t id);
-	void baseQueueMessage(const google::protobuf::Message& msg, const bool reliable);
+	reliableMessage_s& reliableMessage(const uint32_t id);
+	reliableMessage_s* validQueuedMessage(const uint32_t id);
 };
 
 typedef client_s client_t;

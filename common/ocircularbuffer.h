@@ -55,3 +55,45 @@ class OCircularBuffer
 		return m_buffer[(size_t(0) + idx) & m_mask];
 	}
 };
+
+/**
+ * @brief A circular queue built on top of OCircularBuffer that conforms
+ *        to enough of std::queue to satisfy the author.
+ */
+template <typename TYPE, size_t SIZE>
+class OCircularQueue
+{
+	OCircularBuffer<TYPE, SIZE> m_queue;
+	ptrdiff_t m_head;
+	ptrdiff_t m_tail;
+
+  public:
+	OCircularQueue() : m_queue(), m_head(0), m_tail(0) { }
+	TYPE& front() { return m_queue[m_head]; }
+	const TYPE& front() const { return m_queue[m_head]; }
+	TYPE& back() { return m_queue[m_tail - 1]; }
+	const TYPE& back() const { return m_queue[m_tail - 1]; }
+	bool empty() const { return m_head == m_tail; }
+	size_t size() const { return size_t(m_head - m_tail); }
+
+	TYPE& push()
+	{
+		TYPE& rvo = m_queue[m_tail];
+		m_tail += 1;
+
+		// Swallow up the head if the circular buffer can't hold it.
+		if (size() > SIZE)
+			m_head += 1;
+
+		return rvo;
+	}
+
+	void pop()
+	{
+		if (!empty())
+			m_head += 1;
+	}
+
+	TYPE& operator[](const size_t pos) { return m_queue[m_head + pos]; }
+	const TYPE& operator[](const size_t pos) const { m_queue[m_head + pos]; }
+};
