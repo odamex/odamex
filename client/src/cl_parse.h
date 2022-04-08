@@ -44,4 +44,4 @@ struct Proto
 typedef std::vector<Proto> Protos;
 
 const Protos& CL_GetTicProtos();
-parseError_e CL_ParseCommand();
+parseError_e CL_ParseMessage();

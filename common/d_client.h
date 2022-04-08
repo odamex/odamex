@@ -104,20 +104,20 @@ struct client_s
 	{
 		uint32_t packetID;
 		size_t size;
-		std::vector<uint32_t> reliableIDs;
+		std::vector<uint16_t> reliableIDs;
 		std::vector<unreliableMessage_s*> unreliables;
 		sentPacket_s() : packetID(0), size(0), reliableIDs() { }
 	};
 	OCircularBuffer<sentPacket_s, BIT(10)> m_sentPackets;
 
 	uint32_t m_nextPacketID;
-	uint32_t m_nextMessageID;
-	uint32_t m_oldestMessageNoACK;
+	uint16_t m_nextReliableID;
+	uint32_t m_reliableNoAck;
 
 	sentPacket_s& sentPacket(const uint32_t id);
 	sentPacket_s* validSentPacket(const uint32_t id);
-	reliableMessage_s& reliableMessage(const uint32_t id);
-	reliableMessage_s* validQueuedMessage(const uint32_t id);
+	reliableMessage_s& reliableMessage(const uint16_t id);
+	reliableMessage_s* validReliableMessage(const uint16_t id);
 };
 
 typedef client_s client_t;

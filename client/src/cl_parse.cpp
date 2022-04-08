@@ -2825,8 +2825,8 @@ const Protos& CL_GetTicProtos()
  * @param size Length of the buffer to parse.
  * @return Error condition, or OK (0) if successful.
  */
-parseError_e CL_ParseMessage(google::protobuf::Message*& out, const byte cmd,
-                             const void* buffer, const size_t size)
+parseError_e CL_ParseMessageToProto(google::protobuf::Message*& out, const byte cmd,
+                                    const void* buffer, const size_t size)
 {
 	// A message factory + Descriptor gives us the proper message.
 	google::protobuf::MessageFactory* factory =
@@ -2860,13 +2860,31 @@ parseError_e CL_ParseMessage(google::protobuf::Message*& out, const byte cmd,
 		func(static_cast<const type*>(msg)); \
 		break
 
+#include "ocircularbuffer.h"
+
+struct clientReliable_s
+{
+	std::string data;
+};
+OCircularBuffer<clientReliable_s, BIT(10)> m_clientReliables;
+
 /**
  * @brief Read a server message off the wire.
  */
-parseError_e CL_ParseCommand()
+parseError_e CL_ParseMessage()
 {
+	svc_t svc = svc_noop;
+	bool reliable = false;
+	uint16_t reliableID = 0;
+
 	// What type of message we have.
-	byte cmd = MSG_ReadByte();
+	const byte cmd = MSG_ReadByte();
+	svc::FromByte(cmd, svc, reliable);
+	if (reliable)
+	{
+		// Read the message ID.
+		reliableID = MSG_ReadShort();
+	}
 
 	// Size of the message.
 	size_t size = MSG_ReadUnVarint();
@@ -2876,7 +2894,7 @@ parseError_e CL_ParseCommand()
 
 	// Turn the message into a protobuf.
 	google::protobuf::Message* msg = NULL;
-	parseError_e err = CL_ParseMessage(msg, cmd, data, size);
+	parseError_e err = CL_ParseMessageToProto(msg, cmd, data, size);
 	if (err)
 	{
 		return err;

@@ -34,8 +34,8 @@ client_s::client_s()
     : version(0), packedversion(0), sequence(0), last_sequence(0), packetnum(0), rate(0),
       reliable_bps(0), unreliable_bps(0), last_received(0), lastcmdtic(0),
       lastclientcmdtic(0), netbuf(MAX_UDP_PACKET), reliablebuf(MAX_UDP_PACKET),
-      allow_rcon(false), displaydisconnect(true), m_nextPacketID(0), m_nextMessageID(0),
-      m_oldestMessageNoACK(0)
+      allow_rcon(false), displaydisconnect(true), m_nextPacketID(0), m_nextReliableID(0),
+      m_reliableNoAck(0)
 {
 	ArrayInit(address.ip, 0);
 	address.port = 0;
@@ -57,8 +57,8 @@ client_s::client_s(const client_s& other)
       lastcmdtic(other.lastcmdtic), lastclientcmdtic(other.lastclientcmdtic),
       digest(other.digest), allow_rcon(false), displaydisconnect(true),
       compressor(other.compressor), m_sentPackets(other.m_sentPackets),
-      m_reliableMessages(other.m_reliableMessages), m_nextPacketID(0), m_nextMessageID(0),
-      m_oldestMessageNoACK(0)
+      m_reliableMessages(other.m_reliableMessages), m_nextPacketID(0),
+      m_nextReliableID(0), m_reliableNoAck(0)
 {
 	for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
 	{
@@ -72,15 +72,15 @@ client_s::client_s(const client_s& other)
 void client_s::queueReliable(const google::protobuf::Message& msg)
 {
 	// Queue the message.
-	reliableMessage_s& queued = reliableMessage(m_nextMessageID);
+	reliableMessage_s& queued = reliableMessage(m_nextReliableID);
 	queued.acked = false;
-	queued.messageID = m_nextMessageID;
+	queued.messageID = m_nextReliableID;
 	queued.lastSent = I_MSTime();
 	queued.header = SVC_ResolveDescriptor(msg.GetDescriptor());
 	msg.SerializeToString(&queued.data);
 
 	// Advance Message ID.
-	m_nextMessageID += 1;
+	m_nextReliableID += 1;
 }
 
 /**
@@ -111,10 +111,10 @@ bool client_s::writePacket(buf_t& buf)
 	sent.reliableIDs.clear();
 
 	// Walk the message array starting with the oldest un-acked.
-	const uint32_t LENGTH = m_nextMessageID - m_oldestMessageNoACK;
+	const uint32_t LENGTH = m_nextReliableID - m_reliableNoAck;
 	for (uint32_t i = 0; i < LENGTH; i++)
 	{
-		client_s::reliableMessage_s* queue = validQueuedMessage(m_oldestMessageNoACK + i);
+		client_s::reliableMessage_s* queue = validReliableMessage(m_reliableNoAck + i);
 		if (queue == NULL)
 			continue; // Invalid message.
 
@@ -154,7 +154,7 @@ bool client_s::writePacket(buf_t& buf)
 
 	for (uint32_t i = 0; i < LENGTH; i++)
 	{
-		client_s::reliableMessage_s* queue = validQueuedMessage(m_oldestMessageNoACK + i);
+		client_s::reliableMessage_s* queue = validReliableMessage(m_reliableNoAck + i);
 		if (queue == NULL)
 			continue; // Invalid message.
 
@@ -182,10 +182,23 @@ bool client_s::writePacket(buf_t& buf)
 	// Write out the individual messages.
 	for (size_t i = 0; i < sent.reliableIDs.size(); i++)
 	{
-		client_s::reliableMessage_s& msg = reliableMessage(sent.reliableIDs[i]);
-		buf.WriteByte(msg.header);
+		const client_s::reliableMessage_s& msg = reliableMessage(sent.reliableIDs[i]);
+		const byte header = svc::ToByte(msg.header, true);
+		buf.WriteByte(header);
+		buf.WriteShort(
+		    uint16_t(msg.messageID)); // Message ID is only for reliable messages.
 		buf.WriteChunk(msg.data.data(), uint32_t(msg.data.size()));
 	}
+
+	// Write out the individual messages.
+	for (size_t i = 0; i < sent.unreliables.size(); i++)
+	{
+		const client_s::unreliableMessage_s& msg = *sent.unreliables[i];
+		const byte header = svc::ToByte(msg.header, false);
+		buf.WriteByte(header);
+		buf.WriteChunk(msg.data.data(), uint32_t(msg.data.size()));
+	}
+	sent.unreliables.clear(); // No need to keep wild pointers around.
 
 	m_nextPacketID += 1;
 	return true;
@@ -193,7 +206,7 @@ bool client_s::writePacket(buf_t& buf)
 
 /**
  * @brief Process package acknowledgements from the client.
- * 
+ *
  * @param packetAck Most recent packet acknowledged.
  * @param packetAckBits Bitfield of packets previous to packetAck that
  *                      have also been acked.
@@ -213,7 +226,7 @@ bool client_s::clientAck(const uint32_t packetAck, const uint32_t packetAckBits)
 	for (size_t i = 0; i < packet->reliableIDs.size(); i++)
 	{
 		const uint32_t msgID = packet->reliableIDs[i];
-		client_s::reliableMessage_s* msg = validQueuedMessage(msgID);
+		client_s::reliableMessage_s* msg = validReliableMessage(msgID);
 		msg->acked = true;
 	}
 
@@ -233,12 +246,12 @@ client_s::sentPacket_s* client_s::validSentPacket(const uint32_t id)
 	return sent;
 }
 
-client_s::reliableMessage_s& client_s::reliableMessage(const uint32_t id)
+client_s::reliableMessage_s& client_s::reliableMessage(const uint16_t id)
 {
 	return m_reliableMessages[id];
 }
 
-client_s::reliableMessage_s* client_s::validQueuedMessage(const uint32_t id)
+client_s::reliableMessage_s* client_s::validReliableMessage(const uint16_t id)
 {
 	reliableMessage_s* sent = &reliableMessage(id);
 	if (sent->messageID != id || sent->acked)

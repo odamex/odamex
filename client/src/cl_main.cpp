@@ -2021,15 +2021,15 @@ static std::string SVCName(byte header)
 //
 void CL_ParseCommands()
 {
-	while (connected)
+	while (::connected)
 	{
 		if (::net_message.BytesLeftToRead() == 0)
 		{
 			break;
 		}
 
-		size_t byteStart = ::net_message.BytesRead();
-		parseError_e res = CL_ParseCommand();
+		const size_t byteStart = ::net_message.BytesRead();
+		const parseError_e res = CL_ParseMessage();
 		if (res != PERR_OK || ::net_message.overflowed)
 		{
 			const Protos& protos = CL_GetTicProtos();
