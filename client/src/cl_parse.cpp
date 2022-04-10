@@ -2778,7 +2778,29 @@ static void CL_NetDemoLoadSnap(const odaproto::svc::NetDemoLoadSnap* msg)
 // Everything below this line is not a message parsing funciton.
 //-----------------------------------------------------------------------------
 
-Protos protos;
+#include "cl_netgraph.h"
+#include "ocircularbuffer.h"
+
+struct clientReliable_s
+{
+	svc_t svc;
+	uint16_t reliableID;
+	std::string data;
+	clientReliable_s() : svc(svc_noop), reliableID(UINT16_MAX), data() { }
+};
+static OCircularBuffer<clientReliable_s, BIT(10)> g_ClientReliables;
+static uint16_t g_NextReliableID = 0;
+
+struct clientUnreliable_s
+{
+	svc_t svc;
+	std::string data;
+	clientUnreliable_s() : svc(svc_noop), data() { }
+};
+static OCircularQueue<clientUnreliable_s, BIT(10)> g_ClientUnreliables;
+
+static Protos g_Protos;
+extern NetGraph netgraph;
 
 static void RecordProto(const svc_t header, google::protobuf::Message* msg)
 {
@@ -2786,7 +2808,7 @@ static void RecordProto(const svc_t header, google::protobuf::Message* msg)
 
 	if (protostic != ::level.time)
 	{
-		::protos.clear();
+		::g_Protos.clear();
 		protostic = ::level.time;
 	}
 
@@ -2808,12 +2830,12 @@ static void RecordProto(const svc_t header, google::protobuf::Message* msg)
 		}
 		TrimStringEnd(proto.data);
 	}
-	::protos.push_back(proto);
+	::g_Protos.push_back(proto);
 }
 
 const Protos& CL_GetTicProtos()
 {
-	return ::protos;
+	return ::g_Protos;
 }
 
 /**
@@ -2821,12 +2843,11 @@ const Protos& CL_GetTicProtos()
  *
  * @param out Output message - will not be modified unless successful.
  * @param cmd Command to parse out.
- * @param buffer Buffer to parse, not including the header or initial size.
- * @param size Length of the buffer to parse.
+ * @param data Data to parse.
  * @return Error condition, or OK (0) if successful.
  */
-parseError_e CL_ParseMessageToProto(google::protobuf::Message*& out, const byte cmd,
-                                    const void* buffer, const size_t size)
+static parseError_e ParseMessageBody(google::protobuf::Message*& out, const byte cmd,
+                                 const std::string& data)
 {
 	// A message factory + Descriptor gives us the proper message.
 	google::protobuf::MessageFactory* factory =
@@ -2846,7 +2867,7 @@ parseError_e CL_ParseMessageToProto(google::protobuf::Message*& out, const byte 
 
 	// Allocated with "new" - can't be null, and we own it.
 	google::protobuf::Message* msg = defmsg->New();
-	if (!msg->ParseFromArray(buffer, size))
+	if (!msg->ParseFromString(data))
 	{
 		return PERR_BAD_DECODE;
 	}
@@ -2855,23 +2876,10 @@ parseError_e CL_ParseMessageToProto(google::protobuf::Message*& out, const byte 
 	return PERR_OK;
 }
 
-#define SV_MSG(header, func, type)           \
-	case header:                             \
-		func(static_cast<const type*>(msg)); \
-		break
-
-#include "ocircularbuffer.h"
-
-struct clientReliable_s
-{
-	std::string data;
-};
-OCircularBuffer<clientReliable_s, BIT(10)> m_clientReliables;
-
 /**
  * @brief Read a server message off the wire.
  */
-parseError_e CL_ParseMessage()
+static void ReadMessage()
 {
 	svc_t svc = svc_noop;
 	bool reliable = false;
@@ -2892,13 +2900,66 @@ parseError_e CL_ParseMessage()
 	// The message itself.
 	void* data = MSG_ReadChunk(size);
 
+	// Put the unparsed message into the proper queue.  Don't parse the message yet
+	// since at that point we have to worry about lifetimes, which doesn't mix well
+	// with a circular queue that is unaware of ctors/dtors.
+	if (reliableID)
+	{
+		clientReliable_s& msg = g_ClientReliables[reliableID];
+		msg.svc = svc;
+		msg.reliableID = reliableID;
+		msg.data.assign((char*)data, size);
+	}
+	else
+	{
+		clientUnreliable_s& msg = g_ClientUnreliables.push();
+		msg.svc = svc;
+		msg.data.assign((char*)data, size);
+	}
+}
+
+void CL_ReadMessages()
+{
+	for (;;)
+	{
+		if (!::connected || ::net_message.BytesLeftToRead() == 0)
+		{
+			break;
+		}
+
+		const size_t byteStart = ::net_message.BytesRead();
+		ReadMessage();
+		if (::net_message.overflowed)
+		{
+			Printf(PRINT_WARNING, "%s: Message overflowed\n", __FUNCTION__);
+			CL_QuitNetGame(NQ_PROTO);
+		}
+
+		// Measure length of each message, so we can keep track of bandwidth.
+		if (::net_message.BytesRead() < byteStart)
+		{
+			Printf("%s: end byte (%d) < start byte (%d)\n", __FUNCTION__,
+			       ::net_message.BytesRead(), byteStart);
+		}
+
+		::netgraph.addTrafficIn(::net_message.BytesRead() - byteStart);
+	}
+}
+
+parseError_e ParseMessage(const svc_t cmd, const std::string& data)
+{
 	// Turn the message into a protobuf.
 	google::protobuf::Message* msg = NULL;
-	parseError_e err = CL_ParseMessageToProto(msg, cmd, data, size);
+	parseError_e err = ParseMessageBody(msg, cmd, data);
 	if (err)
 	{
 		return err;
 	}
+
+#define SV_MSG(header, func, type)           \
+	case header:                             \
+		func(static_cast<const type*>(msg)); \
+		break
 
 	// Run the proper message function.
 	switch (cmd)
@@ -2976,4 +3037,101 @@ parseError_e CL_ParseMessage()
 
 	RecordProto(static_cast<svc_t>(cmd), msg);
 	return PERR_OK;
+
+#undef SV_MSG
+}
+
+static std::string SVCName(byte header)
+{
+	std::string svc = ::svc_info[header].getName();
+	if (svc.empty())
+	{
+		StrFormat(svc, "svc_%u", header);
+	}
+	return svc;
+}
+
+static void PrintRecentProtos()
+{
+	const Protos& protos = CL_GetTicProtos();
+	for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
+	{
+		char latest = (it == protos.end() - 1) ? '>' : ' ';
+		ptrdiff_t idx = it - protos.begin() + 1;
+		std::string svc = SVCName(it->header);
+		size_t siz = it->size;
+		Printf(PRINT_WARNING, "%c %2" PRIdSIZE " [%s] %" PRIuSIZE "b\n", latest, idx,
+		       svc.c_str(), siz);
+	}
+}
+
+/**
+ * @brief Parse as many reliable messages as we can, as well as all
+ *        unreliable messages.
+ */
+void CL_ParseMessages()
+{
+	int reliableCount = 1;
+	int unreliableCount = 1;
+	for (;;)
+	{
+		clientReliable_s& msg = g_ClientReliables[g_NextReliableID];
+		if (msg.reliableID != g_NextReliableID)
+			break; // Haven't got this message yet.
+
+		g_NextReliableID += 1;
+
+		// Parse the message body.
+		const parseError_e res = ParseMessage(msg.svc, msg.data);
+		if (res != PERR_OK)
+		{
+			std::string err;
+			if (res == PERR_UNKNOWN_HEADER)
+			{
+				err = "Unknown message header";
+			}
+			else if (res == PERR_UNKNOWN_MESSAGE)
+			{
+				err = "Message is not known to message decoder";
+			}
+			else if (res == PERR_BAD_DECODE)
+			{
+				err = "Could not decode message";
+			}
+			Printf(PRINT_WARNING, "%s: %s (reliable #%d)\n", __FUNCTION__, err.c_str(),
+			       reliableCount);
+			PrintRecentProtos();
+		}
+		reliableCount += 1;
+	}
+
+	while (!g_ClientUnreliables.empty())
+	{
+		// Pop an unreliable off the queue.
+		clientUnreliable_s& msg = g_ClientUnreliables.front();
+		g_ClientUnreliables.pop();
+
+		// Parse the message body.
+		const parseError_e res = ParseMessage(msg.svc, msg.data);
+		if (res != PERR_OK)
+		{
+			std::string err;
+			if (res == PERR_UNKNOWN_HEADER)
+			{
+				err = "Unknown message header";
+			}
+			else if (res == PERR_UNKNOWN_MESSAGE)
+			{
+				err = "Message is not known to message decoder";
+			}
+			else if (res == PERR_BAD_DECODE)
+			{
+				err = "Could not decode message";
+			}
+			Printf(PRINT_WARNING, "%s: %s (unreliable #%d)\n", __FUNCTION__, err.c_str(),
+			       unreliableCount);
+			PrintRecentProtos();
+		}
+		unreliableCount += 1;
+	}
 }

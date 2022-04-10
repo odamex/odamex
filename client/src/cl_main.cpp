@@ -1774,7 +1774,7 @@ bool CL_Connect()
 	{
 		CL_Decompress();
 	}
-	CL_ParseCommands();
+	CL_ReadAndParseMessages();
 
 	if (gameaction == ga_fullconsole) // Host_EndGame was called
 		return false;
@@ -2006,89 +2006,14 @@ void CL_Clear()
 	MSG_ReadChunk(left);
 }
 
-static std::string SVCName(byte header)
-{
-	std::string svc = ::svc_info[header].getName();
-	if (svc.empty())
-	{
-		StrFormat(svc, "svc_%u", header);
-	}
-	return svc;
-}
-
 //
-// CL_ParseCommands
+// CL_ReadAndParseMessages
 //
-void CL_ParseCommands()
+void CL_ReadAndParseMessages()
 {
-	while (::connected)
-	{
-		if (::net_message.BytesLeftToRead() == 0)
-		{
-			break;
-		}
-
-		const size_t byteStart = ::net_message.BytesRead();
-		const parseError_e res = CL_ParseMessage();
-		if (res != PERR_OK || ::net_message.overflowed)
-		{
-			const Protos& protos = CL_GetTicProtos();
-
-			std::string err;
-			if (res == PERR_UNKNOWN_HEADER)
-			{
-				err = "Unknown message header";
-			}
-			else if (res == PERR_UNKNOWN_MESSAGE)
-			{
-				err = "Message is not known to message decoder";
-			}
-			else if (res == PERR_BAD_DECODE)
-			{
-				err = "Could not decode message";
-			}
-			else if (::net_message.overflowed)
-			{
-				err = "Message overflowed";
-			}
-			else
-			{
-				err = "Unknown error";
-			}
-
-			if (!protos.empty())
-			{
-				Printf(PRINT_WARNING, "CL_ParseCommands: %s\n", err.c_str());
-
-				for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
-				{
-					char latest = (it == protos.end() - 1) ? '>' : ' ';
-					ptrdiff_t idx = it - protos.begin() + 1;
-					std::string svc = SVCName(it->header);
-					size_t siz = it->size;
-					Printf(PRINT_WARNING, "%c %2" PRIdSIZE " [%s] %" PRIuSIZE "b\n",
-					       latest, idx, svc.c_str(), siz);
-				}
-			}
-			else
-			{
-				Printf(PRINT_WARNING, "CL_ParseCommands: %s\n", err.c_str());
-			}
-
-			CL_QuitNetGame(NQ_PROTO);
-		}
-
-		// Measure length of each message, so we can keep track of bandwidth.
-		if (::net_message.BytesRead() < byteStart)
-		{
-			Printf("CL_ParseCommands: end byte (%d) < start byte (%d)\n",
-			       ::net_message.BytesRead(), byteStart);
-		}
-
-		::netgraph.addTrafficIn(::net_message.BytesRead() - byteStart);
-	}
+	CL_ReadMessages();
+	CL_ParseMessages();
 }
-
 
 void CL_SaveCmd(void)
 {

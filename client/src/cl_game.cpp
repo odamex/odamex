@@ -965,7 +965,7 @@ void G_Ticker (void)
 			if (netdemo.isRecording())
 				netdemo.capture(&net_message);
 
-			CL_ParseCommands();
+			CL_ReadAndParseMessages();
 
 			if (gameaction == ga_fullconsole) // Host_EndGame was called
 				return;

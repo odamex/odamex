@@ -23,7 +23,7 @@
 
 #pragma once
 
-
+#include "i_net.h"
 
 enum parseError_e
 {
@@ -44,4 +44,5 @@ struct Proto
 typedef std::vector<Proto> Protos;
 
 const Protos& CL_GetTicProtos();
-parseError_e CL_ParseMessage();
+void CL_ReadMessages();
+void CL_ParseMessages();

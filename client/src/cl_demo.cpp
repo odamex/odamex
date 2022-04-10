@@ -920,7 +920,7 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 		noservermsgs = false;
 		// Since packets are captured after the header is read, we do not
 		// have to read the packet header
-		CL_ParseCommands();
+		CL_ReadAndParseMessages();
 		CL_SaveCmd();
 		if (gametic - last_received > 65)
 		{
