@@ -9,7 +9,7 @@ New-Item -Name "demotester" -ItemType "directory" | Out-Null
 Invoke-WebRequest -Uri $DemoTesterPath -OutFile .\odatests.zip
 Invoke-WebRequest -Uri $DemoResourcePath -OutFile .\odatests-resources.zip
 
-Expand-Archive .\odatests.zip -Destination .\demotester
-Expand-Archive .\odatests-resources.zip -Destination .\demotester
+7z.exe e odatests.zip -o./demotester
+7z.exe e odatests-resources.zip -o./demotester
 
 Set-Location ..
