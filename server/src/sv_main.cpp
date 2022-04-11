@@ -138,8 +138,8 @@ CVAR_FUNC_IMPL (sv_maxclients)
 	{
 		if (count <= 0)
 		{
-			MSG_WriteSVC(
-			    &it->client.reliablebuf,
+			SV_QueueReliable(
+			    it->client,
 			    SVC_Print(PRINT_CHAT,
 			              "Client limit reduced. Please try connecting again later.\n"));
 
@@ -179,13 +179,14 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 
 				for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 				{
-					MSG_WriteSVC(&pit->client.reliablebuf,
-					             SVC_PlayerMembers(*it, SVC_PM_SPECTATOR));
+					SV_QueueReliable(pit->client,
+					                 SVC_PlayerMembers(*it, SVC_PM_SPECTATOR));
 				}
 
-				SV_BroadcastPrintf ("%s became a spectator.\n", it->userinfo.netname.c_str());
-				MSG_WriteSVC(
-				    &it->client.reliablebuf,
+				SV_BroadcastPrintf("%s became a spectator.\n",
+				                   it->userinfo.netname.c_str());
+				SV_QueueReliable(
+				    it->client,
 				    SVC_Print(PRINT_CHAT,
 				              "Active player limit reduced. You are now a spectator!\n"));
 			}
@@ -466,9 +467,10 @@ static void SendLevelState(SerializedLevelState sls)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		client_t& cl = it->client;
-		MSG_WriteSVC(&cl.reliablebuf, SVC_LevelState(sls));
+		SV_QueueReliable(cl, SVC_LevelState(sls));
 	}
 }
+
 
 //
 // SV_InitNetwork
@@ -651,7 +653,7 @@ void SV_MidPrint(const char* msg, player_t* p, int msgtime)
 {
 	client_t* cl = &p->client;
 
-	MSG_WriteSVC(&cl->reliablebuf, SVC_MidPrint(msg, msgtime));
+	SV_QueueReliable(*cl, SVC_MidPrint(msg, msgtime));
 }
 
 //
@@ -681,8 +683,8 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 	{
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
-		                                             1.0f, attenuation));
+		SV_QueueReliable(
+		    *cl, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f, attenuation));
 	}
 }
 
@@ -708,8 +710,8 @@ void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
 
 	client_t *cl = &pl.client;
 
-	MSG_WriteSVC(&cl->reliablebuf,
-	             SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f, attenuation));
+	SV_QueueReliable(
+	    *cl, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f, attenuation));
 }
 
 //
@@ -741,8 +743,8 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
-		                                             1.0f, attenuation));
+		SV_QueueReliable(
+		    *cl, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f, attenuation));
 	}
 }
 
@@ -770,8 +772,8 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 		{
 			cl = &(it->client);
 
-			MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(), channel, sfx_id,
-			                                             1.0f, attenuation));
+			SV_QueueReliable(
+			    *cl, SVC_PlaySound(PlaySoundType(), channel, sfx_id, 1.0f, attenuation));
 		}
 	}
 }
@@ -796,8 +798,8 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 
 		cl = &(it->client);
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id,
-		                                             1.0f, attenuation));
+		SV_QueueReliable(
+		    *cl, SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id, 1.0f, attenuation));
 	}
 }
 
@@ -809,7 +811,7 @@ void SV_UpdateFrags(player_t &player)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		client_t *cl = &(it->client);
-		MSG_WriteSVC(&cl->reliablebuf, SVC_PlayerMembers(player, SVC_PM_SCORE));
+		SV_QueueReliable(*cl, SVC_PlayerMembers(player, SVC_PM_SCORE));
 	}
 }
 
@@ -819,7 +821,7 @@ void SV_UpdateFrags(player_t &player)
 void SV_SendUserInfo (player_t &player, client_t* cl)
 {
 	player_t *p = &player;
-	MSG_WriteSVC(&cl->reliablebuf, SVC_UserInfo(*p, time(NULL) - p->JoinTime));
+	SV_QueueReliable(*cl, SVC_UserInfo(*p, time(NULL) - p->JoinTime));
 }
 
 /**
@@ -1031,7 +1033,7 @@ void SV_ForceSetTeam (player_t &who, team_t team)
 	who.userinfo.team = team;
 	Printf (PRINT_HIGH, "Forcing %s to %s team\n", who.userinfo.netname.c_str(), team == TEAM_NONE ? "NONE" : V_GetTeamColor(team).c_str());
 
-	MSG_WriteSVC(&cl->reliablebuf, SVC_ForceTeam(team));
+	SV_QueueReliable(*cl, SVC_ForceTeam(team));
 }
 
 //
@@ -1088,7 +1090,7 @@ void SV_SendMobjToClient(AActor *mo, client_t *cl)
 	if (!mo)
 		return;
 
-	MSG_WriteSVC(&cl->reliablebuf, SVC_SpawnMobj(mo));
+	SV_QueueReliable(*cl, SVC_SpawnMobj(mo));
 }
 
 //
@@ -1146,7 +1148,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 	{
 		mo->players_aware.unset(player.id);
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_RemoveMobj(*mo));
+		SV_QueueReliable(*cl, SVC_RemoveMobj(*mo));
 
 		return true;
 	}
@@ -1160,7 +1162,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		}
 		else
 		{
-			MSG_WriteSVC(&cl->reliablebuf, SVC_SpawnPlayer(*mo->player));
+			SV_QueueReliable(cl, SVC_SpawnPlayer(*mo->player));
 		}
 
 		return true;
@@ -1254,7 +1256,7 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 	// Only update moveable sectors to clients
 	if (sector != NULL && sector->moveable)
 	{
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateSector(*sector));
+		SV_QueueReliable(*cl, SVC_UpdateSector(*sector));
 	}
 }
 
@@ -1278,7 +1280,7 @@ void SV_UpdateSectors(client_t* cl)
 		if (!sector.SectorChanges)
 			continue;
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_SectorProperties(sector));
+		SV_QueueReliable(cl, SVC_SectorProperties(sector));
 	}
 }
 
@@ -1339,7 +1341,7 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
 		// No movers in the packet, don't send.
 		return;
 	}
-	MSG_WriteSVC(netbuf, msg);
+	SV_QueueUnreliable(player.client, msg);
 }
 
 //
@@ -1367,7 +1369,7 @@ void SV_UpdateMovingSectors(player_t &player)
 void SV_SendGametic(client_t* cl)
 {
 	byte tic = static_cast<byte>(gametic & 0xFF);
-	MSG_WriteSVC(&cl->netbuf, SVC_ServerGametic(tic));
+	SV_QueueUnreliable(*cl, SVC_ServerGametic(tic));
 }
 
 void SV_LineStateUpdate(client_t *cl)
@@ -1378,7 +1380,7 @@ void SV_LineStateUpdate(client_t *cl)
 
 		if (line->PropertiesChanged)
 		{
-			MSG_WriteSVC(&cl->reliablebuf, SVC_LineUpdate(*line));
+			SV_QueueReliable(*cl, SVC_LineUpdate(*line));
 		}
 
 		if (!line->SidedefChanged)
@@ -1392,7 +1394,7 @@ void SV_LineStateUpdate(client_t *cl)
 				if (!currentSideDef->SidedefChanges)
 					continue;
 
-				MSG_WriteSVC(&cl->reliablebuf, SVC_LineSideUpdate(*line, sideNum));
+				SV_QueueReliable(*cl, SVC_LineSideUpdate(*line, sideNum));
 			}
 		}
 	}
@@ -1404,56 +1406,56 @@ void SV_ThinkerUpdate(client_t* cl)
 	DScroller* scroller;
 	while ((scroller = scrollIter.Next()))
 	{
-		MSG_WriteSVC(&cl->reliablebuf, SVC_ThinkerUpdate(scroller));
+		SV_QueueReliable(*cl, SVC_ThinkerUpdate(scroller));
 	}
 
 	TThinkerIterator<DFireFlicker> fireIter;
 	DFireFlicker* fireFlicker;
 	while ((fireFlicker = fireIter.Next()))
 	{
-		MSG_WriteSVC(&cl->reliablebuf, SVC_ThinkerUpdate(fireFlicker));
+		SV_QueueReliable(*cl, SVC_ThinkerUpdate(fireFlicker));
 	}
 
 	TThinkerIterator<DFlicker> flickerIter;
 	DFlicker* flicker;
 	while ((flicker = flickerIter.Next()))
 	{
-		MSG_WriteSVC(&cl->reliablebuf, SVC_ThinkerUpdate(flicker));
+		SV_QueueReliable(*cl, SVC_ThinkerUpdate(flicker));
 	}
 
 	TThinkerIterator<DLightFlash> lightFlashIter;
 	DLightFlash* lightFlash;
 	while ((lightFlash = lightFlashIter.Next()))
 	{
-		MSG_WriteSVC(&cl->reliablebuf, SVC_ThinkerUpdate(lightFlash));
+		SV_QueueReliable(*cl, SVC_ThinkerUpdate(lightFlash));
 	}
 
 	TThinkerIterator<DStrobe> strobeIter;
 	DStrobe* strobe;
 	while ((strobe = strobeIter.Next()))
 	{
-		MSG_WriteSVC(&cl->reliablebuf, SVC_ThinkerUpdate(strobe));
+		SV_QueueReliable(*cl, SVC_ThinkerUpdate(strobe));
 	}
 
 	TThinkerIterator<DGlow> glowIter;
 	DGlow* glow;
 	while ((glow = glowIter.Next()))
 	{
-		MSG_WriteSVC(&cl->reliablebuf, SVC_ThinkerUpdate(glow));
+		SV_QueueReliable(*cl, SVC_ThinkerUpdate(glow));
 	}
 
 	TThinkerIterator<DGlow2> glow2Iter;
 	DGlow2* glow2;
 	while ((glow2 = glow2Iter.Next()))
 	{
-		MSG_WriteSVC(&cl->reliablebuf, SVC_ThinkerUpdate(glow2));
+		SV_QueueReliable(*cl, SVC_ThinkerUpdate(glow2));
 	}
 
 	TThinkerIterator<DPhased> phasedIter;
 	DPhased* phased;
 	while ((phased = phasedIter.Next()))
 	{
-		MSG_WriteSVC(&cl->reliablebuf, SVC_ThinkerUpdate(phased));
+		SV_QueueReliable(*cl, SVC_ThinkerUpdate(phased));
 	}
 }
 
@@ -1464,10 +1466,10 @@ void SV_ClientFullUpdate(player_t &pl)
 {
 	client_t *cl = &pl.client;
 
-	MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::FullUpdateStart());
+	SV_QueueReliable(*cl, odaproto::svc::FullUpdateStart());
 
 	// Send the player all level locals.
-	MSG_WriteSVC(&cl->reliablebuf, SVC_LevelLocals(::level, SVC_MSG_ALL));
+	SV_QueueReliable(*cl, SVC_LevelLocals(::level, SVC_MSG_ALL));
 
 	// send player's info to the client
 	for (Players::iterator it = players.begin();it != players.end();++it)
@@ -1479,17 +1481,21 @@ void SV_ClientFullUpdate(player_t &pl)
 	}
 
 	// update levelstate
-	MSG_WriteSVC(&cl->reliablebuf, SVC_LevelState(::levelstate.serialize()));
+	SV_QueueReliable(*cl, SVC_LevelState(::levelstate.serialize()));
 
 	// update all player members
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		MSG_WriteSVC(&cl->reliablebuf, SVC_PlayerMembers(*it, SVC_MSG_ALL));
+	{
+		SV_QueueReliable(*cl, SVC_PlayerMembers(*it, SVC_MSG_ALL));
+	}
 
 	// [deathz0r] send team frags/captures if teamplay is enabled
 	if (G_IsTeamGame())
 	{
 		for (int i = 0; i < NUMTEAMS; i++)
-			MSG_WriteSVC(&cl->reliablebuf, SVC_TeamMembers(static_cast<team_t>(i)));
+		{
+			SV_QueueReliable(*cl, SVC_TeamMembers(static_cast<team_t>(i)));
+		}
 	}
 
 	SV_UpdateHiddenMobj();
@@ -1506,7 +1512,7 @@ void SV_ClientFullUpdate(player_t &pl)
 
 	SV_ThinkerUpdate(cl);
 
-	MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::FullUpdateDone());
+	SV_QueueReliable(*cl, odaproto::svc::FullUpdateDone());
 
 	SV_SendPacket(pl);
 }
@@ -1525,14 +1531,16 @@ void SV_UpdateSecret(sector_t& sector, player_t &player)
 	{
 		client_t* cl = &(it->client);
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_LevelLocals(::level, SVC_LL_SECRETS));
-		MSG_WriteSVC(&cl->reliablebuf, SVC_PlayerMembers(player, SVC_PM_SCORE));
+		SV_QueueReliable(*cl, SVC_LevelLocals(::level, SVC_LL_SECRETS));
+		SV_QueueReliable(*cl, SVC_PlayerMembers(player, SVC_PM_SCORE));
 
 		if (&*it == &player)
 			continue;
 
 		if (!(sector.special & SECRET_MASK) && sector.secretsector)
-			MSG_WriteSVC(&cl->reliablebuf, SVC_SecretEvent(player, sector));
+		{
+			SV_QueueReliable(*cl, SVC_SecretEvent(player, sector));
+		}
 	}
 }
 
@@ -1563,7 +1571,7 @@ static void SendServerSettings(player_t& pl)
 				SV_SendPacket(pl);
 			}
 
-			MSG_WriteSVC(&cl->reliablebuf, settings);
+			SV_QueueReliable(*cl, settings);
 		}
 
 		var = var->GetNext();
@@ -1653,10 +1661,8 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 		// GhostlyDeath -- Now we tell them our built up message and boot em
 		cl->displaydisconnect = false;	// Don't spam the players
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_WARNING, msg));
-
-		MSG_WriteSVC(&cl->reliablebuf, SVC_Disconnect());
-
+		SV_QueueReliable(*cl, SVC_Print(PRINT_WARNING, msg));
+		SV_QueueReliable(*cl, SVC_Disconnect());
 		SV_SendPacket(*it);
 
 		// GhostlyDeath -- And we tell the server
@@ -1848,18 +1854,17 @@ void SV_ConnectClient()
 	{
 		Printf("%s disconnected (password failed).\n", NET_AdrToString(net_from));
 
-		MSG_WriteSVC(
-		    &cl->reliablebuf,
+		SV_QueueReliable(
+		    *cl,
 		    SVC_Print(PRINT_HIGH,
 		              "Server is passworded, no password specified or bad password.\n"));
-
 		SV_SendPacket(*player);
 		SV_DropClient(*player);
 		return;
 	}
 
 	// send consoleplayer number
-	MSG_WriteSVC(&cl->reliablebuf, SVC_ConsolePlayer(*player, cl->digest));
+	SV_QueueReliable(*cl, SVC_ConsolePlayer(*player, cl->digest));
 	SV_SendPacket(*player);
 }
 
@@ -1887,19 +1892,18 @@ void SV_ConnectClient2(player_t& player)
 		player.spectator = true;
 		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 		{
-			MSG_WriteSVC(&pit->client.reliablebuf,
-			             SVC_PlayerMembers(player, SVC_PM_SPECTATOR));
+			SV_QueueReliable(pit->client, SVC_PlayerMembers(player, SVC_PM_SPECTATOR));
 		}
 	}
 
 	// Send a map name
-	MSG_WriteSVC(&player.client.reliablebuf,
-	             SVC_LoadMap(::wadfiles, ::patchfiles, level.mapname.c_str(), level.time));
+	SV_QueueReliable(player.client, SVC_LoadMap(::wadfiles, ::patchfiles,
+	                                            level.mapname.c_str(), level.time));
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
 	{
-		MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::ExitLevel());
+		SV_QueueReliable(*cl, odaproto::svc::ExitLevel());
 	}
 
 	G_DoReborn(player);
@@ -1910,7 +1914,7 @@ void SV_ConnectClient2(player_t& player)
 	// tell others clients about it
 	for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 	{
-		MSG_WriteSVC(&pit->client.reliablebuf, SVC_ConnectClient(player));
+		SV_QueueReliable(pit->client, SVC_ConnectClient(player));
 	}
 
 	// Notify this player of other player's queue positions
@@ -1918,6 +1922,22 @@ void SV_ConnectClient2(player_t& player)
 
 	// Send out the server's MOTD.
 	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
+}
+
+/**
+ * @brief Queue a reliable message for the client.
+ */
+void SV_QueueReliable(client_t& cl, const google::protobuf::Message& msg)
+{
+	cl.msg.queueReliable(msg);
+}
+
+/**
+ * @brief Queue an unreliable message for the client.
+ */
+void SV_QueueUnreliable(client_t& cl, const google::protobuf::Message& msg)
+{
+	cl.msg.queueUnreliable(msg);
 }
 
 //
@@ -1936,7 +1956,7 @@ void SV_DisconnectClient(player_t &who)
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		client_t &cl = it->client;
-		MSG_WriteSVC(&cl.reliablebuf, SVC_DisconnectClient(who));
+		SV_QueueReliable(cl, SVC_DisconnectClient(who));
 	}
 
 	Maplist_Disconnect(who);
@@ -1999,7 +2019,7 @@ void SV_DropClient2(player_t &who, const char* file, const int line)
 {
 	client_t *cl = &who.client;
 
-	MSG_WriteSVC(&cl->reliablebuf, SVC_Disconnect());
+	SV_QueueReliable(*cl, SVC_Disconnect());
 
 	SV_SendPacket(who);
 
@@ -2018,7 +2038,7 @@ void SV_SendDisconnectSignal()
 	{
 		client_t *cl = &(it->client);
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_Disconnect("Shutting down\n"));
+		SV_QueueReliable(*cl, SVC_Disconnect("Shutting down\n"));
 		SV_SendPacket(*it);
 
 		if (it->mo)
@@ -2037,7 +2057,7 @@ void SV_SendReconnectSignal()
 	// tell others clients about it
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		MSG_WriteSVC(&(it->client.reliablebuf), odaproto::svc::Reconnect());
+		SV_QueueReliable(it->client, odaproto::svc::Reconnect());
 		SV_SendPacket(*it);
 
 		if (it->mo)
@@ -2055,7 +2075,7 @@ void SV_ExitLevel()
 {
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		MSG_WriteSVC(&(it->client.reliablebuf), odaproto::svc::ExitLevel());
+		SV_QueueReliable(it->client, odaproto::svc::ExitLevel());
 	}
 }
 
@@ -2379,10 +2399,8 @@ void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		cl = &(it->client);
-
-		MSG_WriteSVC(&cl->reliablebuf,
-		             SVC_Print(static_cast<printlevel_t>(printlevel), string));
+		SV_QueueReliable(it->client,
+		                 SVC_Print(static_cast<printlevel_t>(printlevel), string));
 	}
 }
 
@@ -2425,8 +2443,7 @@ void STACK_ARGS SV_BroadcastPrintfButPlayer(int printlevel, int player_id, const
 		if (cl == excluded_client)
 			continue;
 
-		MSG_WriteSVC(&cl->reliablebuf,
-		             SVC_Print(static_cast<printlevel_t>(printlevel), string));
+		SV_QueueReliable(*cl, SVC_Print(static_cast<printlevel_t>(printlevel), string));
 	}
 }
 
@@ -2450,8 +2467,7 @@ void STACK_ARGS SV_SpectatorPrintf(int level, const char *fmt, ...)
 		bool spectator = it->spectator || !it->ingame();
 		if (spectator)
 		{
-			MSG_WriteSVC(&cl->reliablebuf,
-			             SVC_Print(static_cast<printlevel_t>(level), string));
+			SV_QueueReliable(*cl, SVC_Print(static_cast<printlevel_t>(level), string));
 		}
 	}
 }
@@ -2466,7 +2482,7 @@ void STACK_ARGS SV_ClientPrintf(client_t *cl, int level, const char *fmt, ...)
 	vsprintf(string, fmt, argptr);
 	va_end(argptr);
 
-	MSG_WriteSVC(&cl->reliablebuf, SVC_Print(static_cast<printlevel_t>(level), string));
+	SV_QueueReliable(*cl, SVC_Print(static_cast<printlevel_t>(level), string));
 }
 
 // Print directly to a specific player.
@@ -2479,8 +2495,8 @@ void STACK_ARGS SV_PlayerPrintf(int level, int player_id, const char *fmt, ...)
 	vsprintf(string, fmt,argptr);
 	va_end(argptr);
 
-	client_t* cl = &idplayer(player_id).client;
-	MSG_WriteSVC(&cl->reliablebuf, SVC_Print(static_cast<printlevel_t>(level), string));
+	SV_QueueReliable(idplayer(player_id).client,
+	                 SVC_Print(static_cast<printlevel_t>(level), string));
 }
 
 void STACK_ARGS SV_TeamPrintf(int level, int who, const char *fmt, ...)
@@ -2513,8 +2529,7 @@ void STACK_ARGS SV_TeamPrintf(int level, int who, const char *fmt, ...)
 		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
 			continue;
 
-		MSG_WriteSVC(&cl->reliablebuf,
-		             SVC_Print(static_cast<printlevel_t>(level), string));
+		SV_QueueReliable(*cl, SVC_Print(static_cast<printlevel_t>(level), string));
 	}
 }
 
@@ -2540,7 +2555,7 @@ void SVC_TeamSay(player_t &player, const char* message)
 		if (spectator || it->userinfo.team != player.userinfo.team)
 			continue;
 
-		MSG_WriteSVC(&it->client.reliablebuf, SVC_Say(true, player.id, message));
+		SV_QueueReliable(it->client, SVC_Say(true, player.id, message));
 	}
 }
 
@@ -2568,7 +2583,7 @@ void SVC_SpecSay(player_t &player, const char* message)
 		if (!spectator)
 			continue;
 
-		MSG_WriteSVC(&it->client.reliablebuf, SVC_Say(true, player.id, message));
+		SV_QueueReliable(it->client, SVC_Say(true, player.id, message));
 	}
 }
 
@@ -2591,7 +2606,7 @@ void SVC_Say(player_t &player, const char* message)
 		if (!validplayer(*it))
 			continue;
 
-		MSG_WriteSVC(&it->client.reliablebuf, SVC_Say(false, player.id, message));
+		SV_QueueReliable(it->client, SVC_Say(false, player.id, message));
 	}
 }
 
@@ -2611,13 +2626,13 @@ void SVC_PrivMsg(player_t &player, player_t &dplayer, const char* message)
 		Printf(PRINT_CHAT, "<PRIVMSG> %s (to %s): %s\n",
 				player.userinfo.netname.c_str(), dplayer.userinfo.netname.c_str(), message);
 
-	MSG_WriteSVC(&dplayer.client.reliablebuf, SVC_Say(true, player.id, message));
+	SV_QueueReliable(dplayer.client, SVC_Say(true, player.id, message));
 
 	// [AM] Send a duplicate message to the sender, so he knows the message
 	//      went through.
 	if (player.id != dplayer.id)
 	{
-		MSG_WriteSVC(&player.client.reliablebuf, SVC_Say(true, player.id, message));
+		SV_QueueReliable(player.client, SVC_Say(true, player.id, message));
 	}
 }
 
@@ -2759,7 +2774,7 @@ void SV_UpdateMissiles(player_t &pl)
 		{
 			client_t *cl = &pl.client;
 
-			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*mo));
+			SV_QueueUnreliable(*cl, SVC_UpdateMobj(*mo));
 
             if (cl->netbuf.cursize >= 1024)
                 if(!SV_SendPacket(pl))
@@ -2782,8 +2797,7 @@ void SV_UpdateMobj(AActor* mo)
 
 		if (SV_IsPlayerAllowedToSee(*it, mo))
 		{
-			client_t* cl = &(it->client);
-			MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
+			SV_QueueReliable(it->client, SVC_UpdateMobj(*mo));
 		}
 	}
 }
@@ -2798,8 +2812,7 @@ void SV_UpdateMobjState(AActor* mo)
 
 		if (SV_IsPlayerAllowedToSee(*it, mo))
 		{
-			client_t* cl = &(it->client);
-			MSG_WriteSVC(&cl->reliablebuf, SVC_MobjState(mo));
+			SV_QueueReliable(it->client, SVC_MobjState(mo));
 		}
 	}
 }
@@ -2828,7 +2841,7 @@ void SV_UpdateMonsters(player_t &pl)
 		{
 			client_t *cl = &pl.client;
 
-			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*mo));
+			SV_QueueUnreliable(*cl, SVC_UpdateMobj(*mo));
 
 			if (cl->netbuf.cursize >= 1024)
 			{
@@ -2860,7 +2873,7 @@ void SV_UpdateGametype(player_t& pl)
 		// Send it if we're on the tic it mutated on or to a fresh player.
 		if (ticsent == ::gametic || (pl.GameTime == 0 && pl.ingame()))
 		{
-			MSG_WriteSVC(&pl.client.netbuf, SVC_HordeInfo(lastInfo));
+			SV_QueueUnreliable(pl.client, SVC_HordeInfo(lastInfo));
 		}
 	}
 }
@@ -2883,7 +2896,7 @@ void SV_ActorTarget(AActor *actor)
 		if(!SV_IsPlayerAllowedToSee(*it, actor))
 			continue;
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor));
+		SV_QueueReliable(*cl, SVC_UpdateMobj(*actor));
 	}
 }
 
@@ -2899,7 +2912,7 @@ void SV_ActorTracer(AActor *actor)
 
 		client_t *cl = &(it->client);
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor));
+		SV_QueueReliable(*cl, SVC_UpdateMobj(*actor));
 	}
 }
 
@@ -2950,7 +2963,7 @@ void SV_SendPingRequest(client_t* cl)
 	if (!P_AtInterval(100))
 		return;
 
-	MSG_WriteSVC(&cl->reliablebuf, SVC_PingRequest());
+	SV_QueueReliable(*cl, SVC_PingRequest());
 }
 
 void SV_UpdateMonsterRespawnCount()
@@ -2960,8 +2973,7 @@ void SV_UpdateMonsterRespawnCount()
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		client_t* cl = &(it->client);
-		MSG_WriteSVC(&cl->reliablebuf, SVC_LevelLocals(::level, SVC_LL_MONSTER_RESPAWNS));
+		SV_QueueReliable(it->client, SVC_LevelLocals(::level, SVC_LL_MONSTER_RESPAWNS));
 	}
 }
 
@@ -2991,7 +3003,7 @@ void SV_UpdatePing(client_t* cl)
 		if (!(it->ingame()))
 			continue;
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdatePing(*it));
+		SV_QueueReliable(*cl, SVC_UpdatePing(*it));
 	}
 }
 
@@ -3094,7 +3106,7 @@ void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
 	if (!client || !player || !player->mo)
 		return;
 
-	MSG_WriteSVC(&client->netbuf, SVC_PlayerState(*player));
+	SV_QueueUnreliable(*client, SVC_PlayerState(*player));
 }
 
 void SV_SpyPlayer(player_t &viewer)
@@ -3145,7 +3157,7 @@ void SV_WriteCommands(void)
 			if(!SV_IsPlayerAllowedToSee(*it, pit->mo))
 				continue;
 
-			MSG_WriteSVC(&cl->netbuf, SVC_MovePlayer(*pit, it->tic));
+			SV_QueueUnreliable(*cl, SVC_MovePlayer(*pit, it->tic));
 		}
 
 		// [SL] Send client info about player he is spying on
@@ -3354,7 +3366,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 	}
 
 	// client player will update his position if packets were missed
-	MSG_WriteSVC(&cl->netbuf, SVC_UpdateLocalPlayer(*mo, player.tic));
+	SV_QueueUnreliable(*cl, SVC_UpdateLocalPlayer(*mo, player.tic));
     SV_UpdateMovingSectors(player);
 }
 
@@ -3517,7 +3529,7 @@ void SV_JoinPlayer(player_t& player, bool silent)
 		if (!it->ingame())
 			continue;
 
-		MSG_WriteSVC(&it->client.reliablebuf, SVC_PlayerMembers(player, SVC_MSG_ALL));
+		SV_QueueReliable(it->client, SVC_PlayerMembers(player, SVC_MSG_ALL));
 	}
 
 	// Everything is set, now warn everyone the player joined.
@@ -3552,8 +3564,7 @@ void SV_SpecPlayer(player_t &player, bool silent)
 	player.spectator = true;
 	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
 	{
-		MSG_WriteSVC(&it->client.reliablebuf,
-		             SVC_PlayerMembers(player, SVC_PM_SPECTATOR));
+		SV_QueueReliable(it->client, SVC_PlayerMembers(player, SVC_PM_SPECTATOR));
 	}
 
 	// [AM] Set player unready if we're in warmup mode.
@@ -3667,8 +3678,7 @@ void SV_SetReady(player_t &player, bool setting, bool silent)
 		// Broadcast the new ready state to all connected players.
 		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
-			MSG_WriteSVC(&it->client.reliablebuf,
-			             SVC_PlayerMembers(player, SVC_PM_READY));
+			SV_QueueReliable(it->client, SVC_PlayerMembers(player, SVC_PM_READY));
 		}
 	}
 
@@ -3827,7 +3837,7 @@ void SV_RConPassword (player_t &player)
 	else
 	{
 		Printf(PRINT_HIGH, "RCON login failure from %s - %s", player.userinfo.netname.c_str(), NET_AdrToString(cl->address));
-		MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_HIGH, "Bad password\n"));
+		SV_QueueReliable(*cl, SVC_Print(PRINT_HIGH, "Bad password\n"));
 	}
 }
 
@@ -3903,8 +3913,7 @@ void SV_WantWad(player_t &player)
 	MSG_ReadString();
 	MSG_ReadLong();
 
-	MSG_WriteSVC(&cl->reliablebuf,
-		            SVC_Print(PRINT_HIGH, "Server: Downloading is disabled\n"));
+	SV_QueueReliable(*cl, SVC_Print(PRINT_HIGH, "Server: Downloading is disabled\n"));
 
 	SV_DropClient(player);
 	return;
@@ -4072,7 +4081,9 @@ static void TimeCheck()
 	if (P_AtInterval(1 * TICRATE)) // every second
 	{
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
-			MSG_WriteSVC(&it->client.netbuf, SVC_LevelLocals(level, SVC_LL_TIME));
+		{
+			SV_QueueUnreliable(it->client, SVC_LevelLocals(level, SVC_LL_TIME));
+		}
 	}
 }
 
@@ -4086,7 +4097,7 @@ static void IntermissionTimeCheck()
 	{
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
-			MSG_WriteSVC(&(it->client.netbuf), SVC_IntTimeLeft(level.inttimeleft));
+			SV_QueueUnreliable(it->client, SVC_IntTimeLeft(level.inttimeleft));
 		}
 	}
 }
@@ -4128,7 +4139,7 @@ void SV_TouchSpecial(AActor *special, player_t *player)
     if (cl == NULL || special == NULL)
         return;
 
-	MSG_WriteSVC(&cl->reliablebuf, SVC_TouchSpecial(special));
+	SV_QueueReliable(*cl, SVC_TouchSpecial(special));
 }
 
 void SV_PlayerTimes (void)
@@ -4470,7 +4481,7 @@ void OnChangedSwitchTexture (line_t *line, int useAgain)
 	{
 		client_t *cl = &(it->client);
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_Switch(*line, state, time));
+		SV_QueueReliable(*cl, SVC_Switch(*line, state, time));
 	}
 }
 
@@ -4487,7 +4498,7 @@ void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
 
 		client_t *cl = &(it->client);
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_ActivateLine(line, mo, side, activationType));
+		SV_QueueReliable(*cl, SVC_ActivateLine(line, mo, side, activationType));
 	}
 }
 
@@ -4497,8 +4508,8 @@ void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, 
 	{
 		client_t *cl = &(it->client);
 
-		MSG_WriteSVC(&cl->reliablebuf,
-		             SVC_DamagePlayer(*player, inflictor, healthDamage, armorDamage));
+		SV_QueueReliable(*cl,
+		                 SVC_DamagePlayer(*player, inflictor, healthDamage, armorDamage));
 	}
 }
 
@@ -4511,9 +4522,11 @@ void SV_SendDamageMobj(AActor *target, int pain)
 	{
 		client_t *cl = &(it->client);
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_DamageMobj(target, pain));
+		SV_QueueReliable(*cl, SVC_DamageMobj(target, pain));
 		if (!target->player)
-			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*target));
+		{
+			SV_QueueUnreliable(*cl, SVC_UpdateMobj(*target));
+		}
 	}
 }
 
@@ -4530,8 +4543,8 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 		if (!SV_IsPlayerAllowedToSee(*it, target))
 			continue;
 
-		MSG_WriteSVC(&cl->reliablebuf,
-		             SVC_KillMobj(source, target, inflictor, ::MeansOfDeath, joinkill));
+		SV_QueueReliable(
+		    *cl, SVC_KillMobj(source, target, inflictor, ::MeansOfDeath, joinkill));
 	}
 }
 
@@ -4549,7 +4562,7 @@ void SV_SendDestroyActor(AActor *mo)
 				// denis - todo - need a queue for destroyed (lost awareness)
 				// objects, as a flood of destroyed things could easily overflow a
 				// buffer
-				MSG_WriteSVC(&cl->reliablebuf, SVC_RemoveMobj(*mo));
+				SV_QueueReliable(*cl, SVC_RemoveMobj(*mo));
 			}
 		}
 	}
@@ -4565,8 +4578,8 @@ void SV_ExplodeMissile(AActor *mo)
 		if (!SV_IsPlayerAllowedToSee(*it, mo))
 			continue;
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
-		MSG_WriteSVC(&cl->reliablebuf, SVC_ExplodeMissile(*mo));
+		SV_QueueReliable(*cl, SVC_UpdateMobj(*mo));
+		SV_QueueReliable(*cl, SVC_ExplodeMissile(*mo));
 	}
 }
 
@@ -4578,7 +4591,7 @@ void SV_ExplodeMissile(AActor *mo)
 void SV_SendPlayerInfo(player_t &player)
 {
 	client_t *cl = &player.client;
-	MSG_WriteSVC(&cl->reliablebuf, SVC_PlayerInfo(player));
+	SV_QueueReliable(*cl, SVC_PlayerInfo(player));
 }
 
 //
@@ -4749,7 +4762,7 @@ void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect)
 
 void SV_SendPlayerQueuePosition(player_t* source, player_t* dest)
 {
-	MSG_WriteSVC(&(dest->client.reliablebuf), SVC_PlayerQueuePos(*source));
+	SV_QueueReliable(dest->client, SVC_PlayerQueuePos(*source));
 }
 
 bool CompareQueuePosition(const player_t* p1, const player_t* p2)
@@ -4780,8 +4793,7 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, in
 		client_t* cl = &it->client;
 
 		int args[5] = { arg0, arg1, arg2, arg3, arg4 };
-		MSG_WriteSVC(&cl->reliablebuf,
-		             SVC_ExecuteLineSpecial(special, line, activator, args));
+		SV_QueueReliable(*cl, SVC_ExecuteLineSpecial(special, line, activator, args));
 	}
 }
 
@@ -4803,8 +4815,7 @@ void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
 
 		client_t* cl = &it->client;
 
-		MSG_WriteSVC(&cl->reliablebuf,
-		             SVC_ExecuteACSSpecial(special, activator, print, args));
+		SV_QueueReliable(*cl, SVC_ExecuteACSSpecial(special, activator, print, args));
 	}
 }
 
