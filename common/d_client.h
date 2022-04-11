@@ -35,6 +35,59 @@ struct oldPacket_s
 	oldPacket_s() : sequence(-1) { data.resize(0); }
 };
 
+class SVCMessages
+{
+	struct reliableMessage_s
+	{
+		uint16_t messageID;
+		bool acked;
+		dtime_t lastSent;
+		svc_t header;
+		std::string data;
+		reliableMessage_s()
+		    : messageID(0), acked(true), lastSent(0), header(svc_noop), data()
+		{
+		}
+	};
+	struct unreliableMessage_s
+	{
+		bool sent;
+		svc_t header;
+		std::string data;
+		unreliableMessage_s() : sent(false), header(svc_noop), data() { }
+	};
+	struct sentPacket_s
+	{
+		uint32_t packetID;
+		size_t size;
+		std::vector<uint16_t> reliableIDs;
+		std::vector<unreliableMessage_s*> unreliables;
+		sentPacket_s() : packetID(0), size(0), reliableIDs() { }
+	};
+
+	OCircularBuffer<reliableMessage_s, BIT(10)> m_reliableMessages;
+	OCircularQueue<unreliableMessage_s, BIT(10)> m_unreliableMessages;
+	OCircularBuffer<sentPacket_s, BIT(10)> m_sentPackets;
+
+	uint32_t m_nextPacketID;
+	uint16_t m_nextReliableID;
+	uint32_t m_reliableNoAck;
+
+	sentPacket_s& sentPacket(const uint32_t id);
+	sentPacket_s* validSentPacket(const uint32_t id);
+	reliableMessage_s& reliableMessage(const uint16_t id);
+	reliableMessage_s* validReliableMessage(const uint16_t id);
+
+  public:
+	SVCMessages();
+	SVCMessages(const SVCMessages& other);
+	void clear();
+	void queueReliable(const google::protobuf::Message& msg);
+	void queueUnreliable(const google::protobuf::Message& msg);
+	bool writePacket(buf_t& buf);
+	bool clientAck(const uint32_t packetAck, const uint32_t packetAckBits);
+};
+
 struct client_s
 {
 	netadr_t address;
@@ -68,56 +121,10 @@ struct client_s
 
 	huffman_server compressor; // denis - adaptive huffman compression
 
+	SVCMessages msg;
+
 	client_s();
 	client_s(const client_s& other);
-
-	void queueReliable(const google::protobuf::Message& msg);
-	void queueUnreliable(const google::protobuf::Message& msg);
-	bool writePacket(buf_t& buf);
-	bool clientAck(const uint32_t packetAck, const uint32_t packetAckBits);
-
-  private:
-	struct reliableMessage_s
-	{
-		uint16_t messageID;
-		bool acked;
-		dtime_t lastSent;
-		svc_t header;
-		std::string data;
-		reliableMessage_s()
-		    : messageID(0), acked(true), lastSent(0), header(svc_noop), data()
-		{
-		}
-	};
-	OCircularBuffer<reliableMessage_s, BIT(10)> m_reliableMessages;
-
-	struct unreliableMessage_s
-	{
-		bool sent;
-		svc_t header;
-		std::string data;
-		unreliableMessage_s() : sent(false), header(svc_noop), data() { }
-	};
-	OCircularQueue<unreliableMessage_s, BIT(10)> m_unreliableMessages;
-
-	struct sentPacket_s
-	{
-		uint32_t packetID;
-		size_t size;
-		std::vector<uint16_t> reliableIDs;
-		std::vector<unreliableMessage_s*> unreliables;
-		sentPacket_s() : packetID(0), size(0), reliableIDs() { }
-	};
-	OCircularBuffer<sentPacket_s, BIT(10)> m_sentPackets;
-
-	uint32_t m_nextPacketID;
-	uint16_t m_nextReliableID;
-	uint32_t m_reliableNoAck;
-
-	sentPacket_s& sentPacket(const uint32_t id);
-	sentPacket_s* validSentPacket(const uint32_t id);
-	reliableMessage_s& reliableMessage(const uint16_t id);
-	reliableMessage_s* validReliableMessage(const uint16_t id);
 };
 
 typedef client_s client_t;

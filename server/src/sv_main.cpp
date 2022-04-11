@@ -3072,7 +3072,7 @@ void SV_SendPackets()
 		{
 			for (;;)
 			{
-				if (!it->client.writePacket(it->client.netbuf))
+				if (!it->client.msg.writePacket(it->client.netbuf))
 					break;
 
 				SV_SendPacket(*it);
