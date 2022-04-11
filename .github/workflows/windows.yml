@@ -37,6 +37,25 @@ jobs:
       run: cmake --build .\build\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
       run: .\ci\win-artifact.ps1
+    - name: Download DemoTester
+      run: .\ci\win-get-demotester.ps1
+      continue-on-error: true
+    - name: Decrypt IWADs
+      run: |
+        python .\build\demotester\secret.py decrypt plutonia
+        python .\build\demotester\secret.py decrypt tnt
+        python .\build\demotester\secret.py decrypt doom
+        python .\build\demotester\secret.py decrypt doom1
+        python .\build\demotester\secret.py decrypt doom2
+        python .\build\demotester\secret.py decrypt hacx
+      env:
+        SECRET_KEY: ${{ secrets.DEMOTESTER_IWAD_KEY }}
+      continue-on-error: true
+    - name: Run DemoTester
+      run: python -m unittest .\build\demotester\odatestcases.py
+      env:
+        ODAMEX_BIN: .\build\artifact\client\RelWithDebInfo\odamex.exe
+      continue-on-error: true
     - name: Upload artifact to B2
       run: python .\ci\upload-b2.py .\build\archive Win-x64
       env:
