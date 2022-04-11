@@ -6,10 +6,10 @@ $DemoResourcePath = "https://github.com/bcahue/odatests-resources/releases/downl
 Set-Location "build"
 New-Item -Name "demotester" -ItemType "directory" | Out-Null
 
-Invoke-WebRequest -Uri $DemoTesterPath -OutFile .
-Invoke-WebRequest -Uri $DemoResourcePath -OutFile .
+Invoke-WebRequest -Uri $DemoTesterPath -OutFile .\odatests.zip
+Invoke-WebRequest -Uri $DemoResourcePath -OutFile .\odatests-resources.zip
 
-Expand-Archive $DemoTesterPath -Destination .demotester/
-Expand-Archive $DemoResourcePath -Destination .demotester/
+Expand-Archive .\odatests.zip -Destination .\demotester
+Expand-Archive .\odatests-resources.zip -Destination .\demotester
 
 Set-Location ..
