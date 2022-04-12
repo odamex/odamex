@@ -57,7 +57,6 @@ jobs:
       run: python -m unittest odatestcases.py
       env:
         ODAMEX_BIN: ..\artifact\odamex.exe
-        MAX_ODAMEX_PROCS: 8
       working-directory: .\build\demotester
       continue-on-error: true
     - name: Upload artifact to B2
