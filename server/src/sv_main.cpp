@@ -1162,7 +1162,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		}
 		else
 		{
-			SV_QueueReliable(cl, SVC_SpawnPlayer(*mo->player));
+			SV_QueueReliable(*cl, SVC_SpawnPlayer(*mo->player));
 		}
 
 		return true;
@@ -1280,7 +1280,7 @@ void SV_UpdateSectors(client_t* cl)
 		if (!sector.SectorChanges)
 			continue;
 
-		SV_QueueReliable(cl, SVC_SectorProperties(sector));
+		SV_QueueReliable(*cl, SVC_SectorProperties(sector));
 	}
 }
 
@@ -1770,10 +1770,12 @@ void SV_ConnectClient()
 	{
 		Printf("%s disconnected (server full).\n", NET_AdrToString (net_from));
 
-		static buf_t smallbuf(1024);
-		MSG_WriteLong(&smallbuf, 0);
-		MSG_WriteSVC(&smallbuf, SVC_Disconnect("Server is full\n"));
-		NET_SendPacket(smallbuf, net_from);
+		SVCMessages msg;
+		buf_t buffer(MAX_UDP_SIZE);
+		msg.queueUnreliable(SVC_Disconnect("Server is full\n"));
+		msg.writePacket(buffer);
+
+		NET_SendPacket(buffer, ::net_from);
 		return;
 	}
 

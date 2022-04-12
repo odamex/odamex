@@ -32,6 +32,10 @@
 #include "m_wdlstats.h"
 #include "svc_message.h"
 
+#if defined(SERVER_APP)
+#include "sv_main.h"
+#endif
+
 EXTERN_CVAR(g_gametypename)
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(g_sides)
@@ -516,17 +520,15 @@ static void GiveWins(player_t& player, int wins)
 {
 	player.roundwins += wins;
 
-	// If we're not a server, we're done.
-	if (!::serverside || ::clientside)
-		return;
-
+#if defined(SERVER_APP)
 	// Send information about the new round wins to all players.
 	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
 	{
 		if (!it->ingame())
 			continue;
-		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(player, SVC_PM_SCORE));
+		SV_QueueUnreliable(it->client, SVC_PlayerMembers(player, SVC_PM_SCORE));
 	}
+#endif
 }
 
 static void GiveTeamWins(team_t team, int wins)
@@ -534,19 +536,20 @@ static void GiveTeamWins(team_t team, int wins)
 	TeamInfo* info = GetTeamInfo(team);
 	if (info->Team >= NUMTEAMS)
 		return;
+
 	info->RoundWins += wins;
 
-	// If we're not a server, we're done.
-	if (!::serverside || ::clientside)
-		return;
+#if defined(SERVER_APP)
 
 	// Send information about the new team round wins to all players.
 	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
 	{
 		if (!it->ingame())
 			continue;
-		MSG_WriteSVC(&it->client.netbuf, SVC_TeamMembers(team));
+
+		SV_QueueUnreliable(it->client, SVC_TeamMembers(team));
 	}
+#endif
 }
 
 /**

@@ -584,14 +584,16 @@ void HordeState::tick()
 					if ((*it)->lives < g_lives)
 					{
 						(*it)->lives += 1;
-						MSG_WriteSVC(&(*it)->client.reliablebuf, SVC_PlayerInfo(**it));
+#if defined(SERVER_APP)
+						SV_QueueReliable((*it)->client, SVC_PlayerInfo(**it));
 						MSG_BroadcastSVC(CLBUF_RELIABLE,
 						                 SVC_PlayerMembers(**it, SVC_PM_LIVES),
 						                 (*it)->id);
+#endif
 					}
 				}
 
-#ifdef SERVER_APP
+#if defined(SERVER_APP)
 				// Service the join queue and give all of the freshly-ingame
 				// players a single life to start with.
 				PlayersView queued = SpecQuery().onlyInQueue().execute();
@@ -599,7 +601,7 @@ void HordeState::tick()
 				for (PlayersView::iterator it = queued.begin(); it != queued.end(); ++it)
 				{
 					(*it)->lives = 1;
-					MSG_WriteSVC(&(*it)->client.reliablebuf, SVC_PlayerInfo(**it));
+					SV_QueueReliable((*it)->client, SVC_PlayerInfo(**it));
 					MSG_BroadcastSVC(CLBUF_RELIABLE,
 					                 SVC_PlayerMembers(**it, SVC_PM_LIVES), (*it)->id);
 				}

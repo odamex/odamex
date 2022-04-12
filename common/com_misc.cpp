@@ -31,6 +31,7 @@
 #include "v_textcolors.h"
 
 #if defined(SERVER_APP)
+#include "sv_main.h"
 #include "svc_message.h"
 #else
 #include "st_stuff.h"
@@ -41,7 +42,7 @@ void COM_PushToast(const toast_t& toast)
 #if defined(SERVER_APP)
 	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
 	{
-		MSG_WriteSVC(&it->client.reliablebuf, SVC_Toast(toast));
+		SV_QueueReliable(it->client, SVC_Toast(toast));
 	}
 #else
 	hud::PushToast(toast);

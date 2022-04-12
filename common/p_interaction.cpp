@@ -43,7 +43,7 @@
 #include "g_skill.h"
 #include "p_mapformat.h"
 
-#ifdef SERVER_APP
+#if defined(SERVER_APP)
 #include "sv_main.h"
 #endif
 
@@ -95,18 +95,21 @@ void SV_ShareKeys(card_t card, player_t& player);
 
 static void PersistPlayerDamage(player_t& p)
 {
+#if defined(SERVER_APP)
 	// Send this information to everybody.
 	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
 	{
 		if (!it->ingame())
 			continue;
 
-		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, SVC_PM_DAMAGE));
+		SV_QueueUnreliable(it->client, SVC_PlayerMembers(p, SVC_PM_DAMAGE));
 	}
+#endif
 }
 
 static void PersistPlayerScore(player_t& p, const bool lives, const bool score)
 {
+#if defined(SERVER_APP)
 	// Only run this on the server.
 	if (!::serverside || ::clientside)
 		return;
@@ -128,12 +131,14 @@ static void PersistPlayerScore(player_t& p, const bool lives, const bool score)
 		if (!it->ingame())
 			continue;
 
-		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, flags));
+		SV_QueueUnreliable(it->client, SVC_PlayerMembers(p, flags));
 	}
+#endif
 }
 
 static void PersistTeamScore(team_t team)
 {
+#if defined(SERVER_APP)
 	// Only run this on the server.
 	if (!::serverside || ::clientside)
 		return;
@@ -143,8 +148,9 @@ static void PersistTeamScore(team_t team)
 	{
 		if (!it->ingame())
 			continue;
-		MSG_WriteSVC(&it->client.netbuf, SVC_TeamMembers(team));
+		SV_QueueUnreliable(it->client, SVC_TeamMembers(team));
 	}
+#endif
 }
 
 //
@@ -754,19 +760,19 @@ static void P_GiveCarePack(player_t* player)
 	if (message.empty())
 		message = "Picked up a supply cache full of health and ammo!";
 
-	if (!::clientside)
+#if defined(SERVER_APP)
 	{
 		// [AM] FIXME: This gives players their inventory, with no
 		//             background flash.
-		MSG_WriteSVC(&player->client.reliablebuf, SVC_PlayerInfo(*player));
-		MSG_WriteSVC(&player->client.reliablebuf, SVC_Print(PRINT_PICKUP, message + "\n"));
+		SV_QueueReliable(player->client, SVC_PlayerInfo(*player));
+		SV_QueueReliable(player->client, SVC_Print(PRINT_PICKUP, message + "\n"));
 		if (!midmessage.empty())
 		{
 			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
-			MSG_WriteSVC(&player->client.reliablebuf, SVC_MidPrint(buf, 0));
+			SV_QueueReliable(player->client, SVC_MidPrint(buf, 0));
 		}
 	}
-	else
+#else
 	{
 		Printf(PRINT_PICKUP, "%s\n", message.c_str());
 		if (!midmessage.empty())
@@ -775,6 +781,7 @@ static void P_GiveCarePack(player_t* player)
 			C_MidPrint(buf.c_str(), NULL, 0);
 		}
 	}
+#endif
 }
 
 static bool P_SpecialIsWeapon(AActor *special)
