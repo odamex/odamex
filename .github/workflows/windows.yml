@@ -59,10 +59,6 @@ jobs:
         ODAMEX_BIN: ..\artifact\odamex.exe
       working-directory: .\build\demotester
       continue-on-error: true
-    - name: Run Odamex Demo Test without Tester
-      run: ..\artifact\odamex.exe -iwad wads\doom2.wad +demotest .\demos\impmiss.lmp
-      working-directory: .\build\demotester
-      continue-on-error: true
     - name: Upload artifact to B2
       run: python .\ci\upload-b2.py .\build\archive Win-x64
       env:
