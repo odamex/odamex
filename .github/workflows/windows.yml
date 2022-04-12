@@ -43,14 +43,15 @@ jobs:
       continue-on-error: true
     - name: Decrypt IWADs
       run: |
-        python .\build\demotester\secret.py decrypt plutonia
-        python .\build\demotester\secret.py decrypt tnt
-        python .\build\demotester\secret.py decrypt doom
-        python .\build\demotester\secret.py decrypt doom1
-        python .\build\demotester\secret.py decrypt doom2
-        python .\build\demotester\secret.py decrypt hacx
+        python .\secret.py decrypt plutonia
+        python .\secret.py decrypt tnt
+        python .\secret.py decrypt doom
+        python .\secret.py decrypt doom1
+        python .\secret.py decrypt doom2
+        python .\secret.py decrypt hacx
       env:
         SECRET_KEY: ${{ secrets.DEMOTESTER_IWAD_KEY }}
+      working-directory: .\build\demotester
       continue-on-error: true
     - name: Run DemoTester
       run: python -m unittest odatestcases.py
