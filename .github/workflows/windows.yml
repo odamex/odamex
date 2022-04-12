@@ -56,7 +56,7 @@ jobs:
     - name: Run DemoTester
       run: python -m unittest odatestcases.py
       env:
-        ODAMEX_BIN: ..\..\build\artifact\client\RelWithDebInfo\odamex.exe
+        ODAMEX_BIN: ..\artifact\client\RelWithDebInfo\odamex.exe
       working-directory: .\build\demotester
       continue-on-error: true
     - name: Upload artifact to B2
