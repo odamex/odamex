@@ -29,6 +29,7 @@ jobs:
       with:
         packages: |
           b2sdk
+          PyNaCl
     - name: Prepare build
       run: .\ci\win-buildgen.ps1
     - name: Turn on problem matcher
