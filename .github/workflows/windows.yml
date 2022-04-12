@@ -59,7 +59,7 @@ jobs:
         ODAMEX_BIN: ..\artifact\client\RelWithDebInfo\odamex.exe
       working-directory: .\build\demotester
       continue-on-error: true
-    - name: Run DemoTester
+    - name: Run Odamex Demo Test without Tester
       run: ..\artifact\client\RelWithDebInfo\odamex.exe -iwad wads\doom2.wad +demotest .\demos\impmiss.lmp
       working-directory: .\build\demotester
       continue-on-error: true
