@@ -54,7 +54,7 @@ jobs:
       working-directory: .\build\demotester
       continue-on-error: true
     - name: Run DemoTester
-      run: python -m unittest odatestcases.py
+      run: python .\odatestcases.py
       env:
         ODAMEX_BIN: ..\artifact\odamex.exe
         MAX_ODAMEX_PROCS: 8
