@@ -1,6 +1,6 @@
 Set-PSDebug -Trace 1
 
-$DemoTesterPath = "https://github.com/bcahue/odatests/releases/download/1.0.0/odatests-v1.0.0.zip"
+$DemoTesterPath = "https://github.com/bcahue/odatests/releases/download/1.0.1/OdaTests-v1.0.1.zip"
 $DemoResourcePath = "https://github.com/bcahue/odatests-resources/releases/download/1.0.0/odatests-resources-v1.0.0.zip"
 
 Set-Location "build"
