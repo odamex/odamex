@@ -494,15 +494,13 @@ bool Maplist::lobbyempty()
 // Clue the client in on if the maplist is outdated or not and if they're
 // allowed to retrieve the entire maplist yet.
 void SV_Maplist(player_t &player, maplist_status_t status) {
-	client_t *cl = &player.client;
-
 	switch (status) {
 	case MAPLIST_EMPTY:
 	case MAPLIST_OUTDATED:
 	case MAPLIST_OK:
 		// Valid statuses
 		DPrintf("SV_Maplist: Sending status %d to pid %d\n", status, player.id);
-		MSG_WriteSVC(&cl->reliablebuf, SVC_Maplist(status));
+		SV_QueueReliable(player.client, SVC_Maplist(status));
 	default:
 		// Invalid statuses
 		return;
@@ -527,19 +525,17 @@ void SV_MaplistIndex(player_t &player) {
 		}
 	}
 
-	MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistIndex(count, next_index, this_index));
+	SV_QueueReliable(*cl, SVC_MaplistIndex(count, next_index, this_index));
 }
 
 // Send a full maplist update to a specific player
 void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
-	client_t *cl = &player.client;
-
 	switch (status) {
 	case MAPLIST_EMPTY:
 	case MAPLIST_TIMEOUT:
 		// Valid statuses that don't require the packet logic
 		DPrintf("SV_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
-		MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistUpdate(status, NULL));
+		SV_QueueReliable(player.client, SVC_MaplistUpdate(status, NULL));
 		return;
 	case MAPLIST_OUTDATED:
 		// Valid statuses that need the packet logic
@@ -553,13 +549,7 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 	maplist_qrows_t maplist;
 	Maplist::instance().query(maplist);
 
-	odaproto::svc::MaplistUpdate update = SVC_MaplistUpdate(MAPLIST_OUTDATED, &maplist);
-
-	// Attempt to make room on the wire if we're running out.
-	if (cl->reliablebuf.size() + update.ByteSizeLong() >= MAX_UDP_SIZE)
-		SV_SendPacket(player);
-
-	MSG_WriteSVC(&cl->reliablebuf, update);
+	SV_QueueReliable(player.client, SVC_MaplistUpdate(MAPLIST_OUTDATED, &maplist));
 
 	// Update the timeout to ensure the player doesn't abuse the server
 	Maplist::instance().set_timeout(player.id);

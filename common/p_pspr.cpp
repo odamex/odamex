@@ -38,6 +38,10 @@
 #include "g_gametype.h"
 #include "svc_message.h"
 
+#if defined(SERVER_APP)
+#include "sv_main.h"
+#endif
+
 // State.
 #include "p_pspr.h"
 
@@ -462,10 +466,9 @@ void P_FireWeapon(player_t* player)
 
 	// [tm512] Send the client the weapon they just fired so
 	// that they can fix any weapon desyncs that they get - apr 14 2012
-	if (serverside && !clientside)
-	{
-		MSG_WriteSVC(&player->client.reliablebuf, SVC_FireWeapon(*player));
-	}
+#if defined(SERVER_APP)
+	SV_QueueReliable(player->client, SVC_FireWeapon(*player));
+#endif
 
 	P_SetMobjState(player->mo, S_PLAY_ATK1);
 	statenum_t newstatenum = weaponinfo[player->readyweapon].atkstate;

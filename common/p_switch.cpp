@@ -36,6 +36,10 @@
 #include "svc_message.h"
 #include "p_mapformat.h"
 
+#if defined(SERVER_APP)
+#include "sv_main.h"
+#endif
+
 EXTERN_CVAR(co_zdoomsound)
 extern int numtextures;
 
@@ -273,17 +277,21 @@ void P_UpdateButtons(client_t *cl)
 		// record that we acted on this line:
 		actedlines[l] = true;
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_Switch(lines[l], state, timer));
+#if defined(SERVER_APP)
+		SV_QueueReliable(*cl, SVC_Switch(lines[l], state, timer));
+#endif
 	}
 
+#if defined(SERVER_APP)
 	for (int l=0; l<numlines; l++)
 	{
 		// update all button state except those that have actors assigned:
 		if (!actedlines[l] && lines[l].wastoggled)
 		{
-			MSG_WriteSVC(&cl->reliablebuf, SVC_Switch(lines[l], 0, 0));
+			SV_QueueReliable(*cl, SVC_Switch(lines[l], 0, 0));
 		}
 	}
+#endif
 }
 
 //

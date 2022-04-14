@@ -93,12 +93,10 @@ void SV_CTFEvent(team_t f, flag_score_t event, player_t& who)
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		client_t* cl = &(it->client);
-
-		MSG_WriteSVC(&cl->reliablebuf, SVC_CTFEvent(event, f, who));
+		SV_QueueReliable(it->client, SVC_CTFEvent(event, f, who));
 		if (event == SCORE_CAPTURE)
 		{
-			MSG_WriteSVC(&cl->reliablebuf, SVC_CTFRefresh(tv, false));
+			SV_QueueReliable(it->client, SVC_CTFRefresh(tv, false));
 		}
 	}
 }
@@ -109,9 +107,7 @@ void SV_CTFEvent(team_t f, flag_score_t event, player_t& who)
 //
 void CTF_Connect(player_t &player)
 {
-	client_t *cl = &player.client;
-
-	MSG_WriteSVC(&cl->reliablebuf, SVC_CTFRefresh(TeamQuery().execute(), true));
+	SV_QueueReliable(player.client, SVC_CTFRefresh(TeamQuery().execute(), true));
 }
 
 //

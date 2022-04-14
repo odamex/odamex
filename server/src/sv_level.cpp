@@ -352,8 +352,7 @@ void G_DoNewGame()
 		if(!(it->ingame()))
 			continue;
 
-		MSG_WriteSVC(&it->client.reliablebuf,
-		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname, 0));
+		SV_QueueReliable(it->client, SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname, 0));
 	}
 
 	sv_curmap.ForceSet(d_mapname);
@@ -641,8 +640,7 @@ void G_DoResetLevel(bool full_reset)
 		if (!(it->ingame()))
 			continue;
 
-		client_t* cl = &(it->client);
-		MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::ResetMap());
+		SV_QueueReliable(it->client, odaproto::svc::ResetMap());
 	}
 
 	// Unserialize saved snapshot
@@ -815,8 +813,7 @@ void G_DoLoadLevel (int position)
 			// [AM] Make sure the clients are updated on the new ready state
 			for (Players::iterator pit = players.begin();pit != players.end();++pit)
 			{
-				MSG_WriteSVC(&pit->client.reliablebuf,
-				             SVC_PlayerMembers(*it, SVC_PM_READY));
+				SV_QueueReliable(pit->client, SVC_PlayerMembers(*it, SVC_PM_READY));
 			}
 		}
 	}

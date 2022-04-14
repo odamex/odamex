@@ -1029,9 +1029,7 @@ static void SV_VoteUpdate(player_t &player)
 		return;
 	}
 
-	client_t* cl = &player.client;
-
-	MSG_WriteSVC(&cl->netbuf, SVC_VoteUpdate(::vote->serialize()));
+	SV_QueueUnreliable(player.client, SVC_VoteUpdate(::vote->serialize()));
 }
 
 // Send a full vote update to everybody

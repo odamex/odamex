@@ -2578,9 +2578,11 @@ void P_RailAttack (AActor *source, int damage, int offset)
 		}
 	}
 
-	if (clientside)
-		P_DrawRailTrail (start, end);
-	else
+#if defined(CLIENT_APP)
+	{
+		P_DrawRailTrail(start, end);
+	}
+#else
 	{
 		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
@@ -2588,11 +2590,10 @@ void P_RailAttack (AActor *source, int damage, int offset)
 			if (!mo || mo == source)
 				continue;
 
-			buf_t* buf = &(it->client.netbuf);
-
-			MSG_WriteSVC(buf, SVC_RailTrail(start, end));
+			SV_QueueUnreliable(it->client, SVC_RailTrail(start, end));
 		}
 	}
+#endif
 }
 
 //
