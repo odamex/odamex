@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include <exception>
+
 template <typename TYPE, size_t SIZE>
 class OCircularBuffer
 {
