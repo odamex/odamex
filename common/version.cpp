@@ -320,7 +320,7 @@ BEGIN_COMMAND (version)
 	if (argc == 1)
 	{
 		// distribution
-		PrintFmt(PRINT_HIGH, "Odamex v{} - {}\n", NiceVersion(), COPYRIGHTSTR);
+		PrintFmt("Odamex v{} - {}\n", NiceVersion(), COPYRIGHTSTR);
 	}
 	else
 	{
