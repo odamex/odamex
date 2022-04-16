@@ -508,63 +508,13 @@ BOOL gameisdead;
 
 void STACK_ARGS call_terms (void);
 
-NORETURN void I_FatalError(fmt::CStringRef format, fmt::ArgList args)
+void I_BaseWarning(const std::string& warningtext)
 {
-	std::string errortext;
-	std::string messagetext;
-
-	static BOOL alreadyThrown = false;
-	gameisdead = true;
-
-	if (!alreadyThrown) // ignore all but the first message -- killough
-	{
-		alreadyThrown = true;
-		errortext = fmt::sprintf(format, args);
-		if (SDL_GetError()[0] != '\0')
-		{
-			messagetext =
-			    fmt::sprintf("%s\nLast SDL Error:\n%s\n", errortext, SDL_GetError());
-			SDL_ClearError();
-		}
-		else
-		{
-			messagetext = fmt::sprintf("%s\n", errortext);
-		}
-
-		throw CFatalError(messagetext);
-	}
-
-	if (!has_exited) // If it hasn't exited yet, exit now -- killough
-	{
-		has_exited = 1; // Prevent infinitely recursive exits -- killough
-
-		call_terms();
-
-		exit(EXIT_FAILURE);
-	}
-
-	// Recursive atterm, we've used up all our chances.
-	errortext = fmt::sprintf(format, args);
-	if (SDL_GetError()[0] != '\0')
-	{
-		messagetext = fmt::sprintf(
-		    "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n", errortext,
-		    SDL_GetError());
-	}
-	else
-	{
-		messagetext =
-		    fmt::sprintf("Error while shutting down, aborting:\n%s\n", errortext);
-	}
-
-	I_ErrorMessageBox(messagetext.c_str());
-
-	abort();
+	Printf(PRINT_WARNING, "\n%s\n", warningtext);
 }
 
-void I_Error(fmt::CStringRef format, fmt::ArgList args)
+void I_BaseError(const std::string& errortext)
 {
-	std::string errortext = fmt::sprintf(format, args);
 	std::string messagetext;
 
 	if (!has_exited)
@@ -590,10 +540,55 @@ void I_Error(fmt::CStringRef format, fmt::ArgList args)
 	abort();
 }
 
-void I_Warning(fmt::CStringRef format, fmt::ArgList args)
+NORETURN void I_BaseFatalError(const std::string& errortext)
 {
-	std::string warningtext = fmt::sprintf(format, args);
-	Printf(PRINT_WARNING, "\n%s\n", warningtext);
+	std::string messagetext;
+
+	static BOOL alreadyThrown = false;
+	gameisdead = true;
+
+	if (!alreadyThrown) // ignore all but the first message -- killough
+	{
+		alreadyThrown = true;
+		if (SDL_GetError()[0] != '\0')
+		{
+			messagetext =
+			    fmt::sprintf("%s\nLast SDL Error:\n%s\n", errortext, SDL_GetError());
+			SDL_ClearError();
+		}
+		else
+		{
+			messagetext = fmt::sprintf("%s\n", errortext);
+		}
+
+		throw CFatalError(messagetext);
+	}
+
+	if (!has_exited) // If it hasn't exited yet, exit now -- killough
+	{
+		has_exited = 1; // Prevent infinitely recursive exits -- killough
+
+		call_terms();
+
+		exit(EXIT_FAILURE);
+	}
+
+	// Recursive atterm, we've used up all our chances.
+	if (SDL_GetError()[0] != '\0')
+	{
+		messagetext = fmt::sprintf(
+		    "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n", errortext,
+		    SDL_GetError());
+	}
+	else
+	{
+		messagetext =
+		    fmt::sprintf("Error while shutting down, aborting:\n%s\n", errortext);
+	}
+
+	I_ErrorMessageBox(messagetext.c_str());
+
+	abort();
 }
 
 char DoomStartupTitle[256] = { 0 };

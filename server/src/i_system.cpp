@@ -360,7 +360,12 @@ BOOL gameisdead;
 
 void STACK_ARGS call_terms (void);
 
-NORETURN void I_FatalError(fmt::CStringRef format, fmt::ArgList args)
+void I_BaseError(const std::string& errortext)
+{
+	throw CRecoverableError(errortext);
+}
+
+NORETURN void I_BaseFatalError(const std::string& errortext)
 {
 	static BOOL alreadyThrown = false;
 	gameisdead = true;
@@ -368,11 +373,11 @@ NORETURN void I_FatalError(fmt::CStringRef format, fmt::ArgList args)
 	if (!alreadyThrown) // ignore all but the first message -- killough
 	{
 		alreadyThrown = true;
-		std::string errortext = fmt::sprintf(format, args);
+		std::string error = errortext;
 #ifdef _WIN32
-		errortext += fmt::format("\nGetLastError = {}", GetLastError());
+		error += fmt::format("\nGetLastError = {}", GetLastError());
 #endif
-		throw CFatalError(errortext);
+		throw CFatalError(error);
 	}
 
 	if (!has_exited) // If it hasn't exited yet, exit now -- killough
@@ -383,12 +388,6 @@ NORETURN void I_FatalError(fmt::CStringRef format, fmt::ArgList args)
 
 		exit(EXIT_FAILURE);
 	}
-}
-
-void I_Error(fmt::CStringRef format, fmt::ArgList args)
-{
-	const std::string errortext = fmt::sprintf(format, args);
-	throw CRecoverableError(errortext);
 }
 
 char DoomStartupTitle[256] = { 0 };

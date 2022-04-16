@@ -113,8 +113,9 @@ static int PrintString(int printlevel, const std::string& str)
 
 extern BOOL gameisdead;
 
-static int BasePrint(const int printlevel, const std::string& str)
+int C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
 {
+	(void)color_code;
 	if (gameisdead)
 		return 0;
 
@@ -144,33 +145,6 @@ static int BasePrint(const int printlevel, const std::string& str)
 	}
 
 	return PrintString(printlevel, newStr);
-}
-
-int Printf(fmt::CStringRef format, fmt::ArgList args)
-{
-	return BasePrint(PRINT_HIGH, fmt::sprintf(format, args));
-}
-
-int Printf(const int printlevel, fmt::CStringRef format, fmt::ArgList args)
-{
-	return BasePrint(printlevel, fmt::sprintf(format, args));
-}
-
-int Printf_Bold(fmt::CStringRef format, fmt::ArgList args)
-{
-	return BasePrint(PRINT_NORCON, fmt::sprintf(format, args));
-}
-
-int DPrintf(fmt::CStringRef format, fmt::ArgList args)
-{
-	if (developer || devparm)
-	{
-		return BasePrint(PRINT_WARNING, fmt::sprintf(format, args));
-	}
-	else
-	{
-		return 0;
-	}
 }
 
 BEGIN_COMMAND (history)

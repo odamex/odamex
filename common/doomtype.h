@@ -192,18 +192,6 @@ static inline uint32_t BIT_MASK(uint32_t a, uint32_t b)
     return (static_cast<uint32_t>(-1) >> (31 - b)) & ~(BIT(a) - 1);
 }
 
-// [RH] This gets used all over; define it here:
-int Printf(fmt::CStringRef format, fmt::ArgList args);
-FMT_VARIADIC(int, Printf, fmt::CStringRef)
-int Printf(const int printlevel, fmt::CStringRef format, fmt::ArgList args);
-FMT_VARIADIC(const int, Printf, int, fmt::CStringRef)
-// [Russell] Prints a bold green message to the console
-int Printf_Bold(fmt::CStringRef format, fmt::ArgList args);
-FMT_VARIADIC(int, Printf_Bold, fmt::CStringRef)
-// [RH] Same here:
-int DPrintf(fmt::CStringRef format, fmt::ArgList args);
-FMT_VARIADIC(int, DPrintf, fmt::CStringRef)
-
 /**
  * @brief Print to all clients in a server, or to the local player offline.
  *

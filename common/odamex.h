@@ -38,3 +38,4 @@
 #include "doomtype.h"
 #include "doomdef.h"
 #include "doomstat.h"
+#include "doomfunc.h"

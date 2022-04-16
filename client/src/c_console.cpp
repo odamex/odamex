@@ -1179,7 +1179,7 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 	return strlen(outline);
 }
 
-static int BasePrint(const int printlevel, const char* color_code, const std::string& str)
+int C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
 {
 	extern BOOL gameisdead;
 	if (gameisdead)
@@ -1247,31 +1247,6 @@ static int BasePrint(const int printlevel, const char* color_code, const std::st
 #endif
 
 	return newStr.length();
-}
-
-int Printf(fmt::CStringRef format, fmt::ArgList args)
-{
-	return BasePrint(PRINT_HIGH, TEXTCOLOR_NORMAL, fmt::sprintf(format, args));
-}
-
-int Printf(const int printlevel, fmt::CStringRef format, fmt::ArgList args)
-{
-	return BasePrint(printlevel, TEXTCOLOR_NORMAL, fmt::sprintf(format, args));
-}
-
-int Printf_Bold(fmt::CStringRef format, fmt::ArgList args)
-{
-	return BasePrint(PRINT_HIGH, TEXTCOLOR_BOLD, fmt::sprintf(format, args));
-}
-
-int DPrintf(fmt::CStringRef format, fmt::ArgList args)
-{
-	if (developer || devparm)
-	{
-		return BasePrint(PRINT_WARNING, TEXTCOLOR_NORMAL, fmt::sprintf(format, args));
-	}
-
-	return 0;
 }
 
 void C_FlushDisplay()

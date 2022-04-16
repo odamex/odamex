@@ -90,12 +90,27 @@ ticcmd_t *I_BaseTiccmd (void);
 // Clean exit, displays sell blurb.
 void STACK_ARGS I_Quit (void);
 
-void I_Warning(fmt::CStringRef format, fmt::ArgList args);
-FMT_VARIADIC(void, I_Warning, fmt::CStringRef)
-void I_Error(fmt::CStringRef format, fmt::ArgList args);
-FMT_VARIADIC(void, I_Error, fmt::CStringRef)
-NORETURN void I_FatalError(fmt::CStringRef format, fmt::ArgList args);
-FMT_VARIADIC(void, I_FatalError, fmt::CStringRef)
+void I_BaseWarning(const std::string& errortext);
+void I_BaseError(const std::string& errortext);
+NORETURN void I_BaseFatalError(const std::string& errortext);
+
+template <typename... ARGS>
+void I_Warning(const fmt::string_view format, const ARGS&... args)
+{
+	I_BaseWarning(fmt::sprintf(format, args...));
+}
+
+template <typename... ARGS>
+void I_Error(const fmt::string_view format, const ARGS&... args)
+{
+	I_BaseError(fmt::sprintf(format, args...));
+}
+
+template <typename... ARGS>
+void I_FatalError(const fmt::string_view format, const ARGS&... args)
+{
+	I_BaseFatalError(fmt::sprintf(format, args...));
+}
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);
 #define atterm(t) addterm (t, #t)
