@@ -1925,7 +1925,7 @@ void DLevelScript::SetThingSpecial(AActor* actor, int special, int arg1, int arg
 
 	if (serverside)
 	{
-		int argv[] = {actor->netid, special, arg1, arg2, arg3, arg4, arg5};
+		int argv[] = {int(actor->netid), special, arg1, arg2, arg3, arg4, arg5};
 		std::vector<int> args = ArgvToArgs(argv);
 		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETTHINGSPECIAL, actor, NULL, false, args));
 	}
@@ -1959,7 +1959,7 @@ void DLevelScript::StartSoundSequence(sector_t* sec, int index)
 
 	if (serverside)
 	{
-		int argv[] = {sec - sectors, index};
+		int argv[] = {int(sec - sectors), index};
 		std::vector<int> args = ArgvToArgs(argv);
 		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SOUNDSEQUENCE, NULL, NULL, false, args));
 	}

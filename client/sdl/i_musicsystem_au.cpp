@@ -363,7 +363,7 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 	if (MusicSequenceLoadSMFDataWithFlags(m_sequence, (CFDataRef)m_cfd, 0) != noErr)
 #endif
 #else /* MusicSequenceFileLoadData() requires 10.5 or later. */
-	if (MusicSequenceFileLoadData(m_sequence, (CFDataRef)m_cfd, 0, 0) != noErr)
+	if (MusicSequenceFileLoadData(m_sequence, (CFDataRef)m_cfd, (MusicSequenceFileTypeID)0, 0) != noErr)
 #endif
 	{
 		DisposeMusicSequence(m_sequence);

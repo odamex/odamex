@@ -46,12 +46,6 @@ add_executable(odasrv
   ${COMMON_SOURCES} ${SERVER_SOURCES} ${SERVER_WIN32_SOURCES})
 odamex_target_settings(odasrv)
 
-if(USE_INTERNAL_JSONCPP)
-  set_property(TARGET odasrv PROPERTY CXX_STANDARD 98)
-else()
-  set_property(TARGET odasrv PROPERTY CXX_STANDARD 11)
-endif()
-
 target_include_directories(odasrv PRIVATE src)
 if(WIN32)
   target_include_directories(odasrv PRIVATE win32)

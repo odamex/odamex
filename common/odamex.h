@@ -23,20 +23,7 @@
 
 #pragma once
 
-#if defined(_MSC_VER)
-	#if _MSC_VER >= 1600
-		#define USE_STDINT_H
-	#endif
-#else
-	#define USE_STDINT_H
-#endif
-
-#if defined(USE_STDINT_H)
-	#include <stdint.h>
-	#undef USE_STDINT_H
-#else
-	#include "pstdint.h"
-#endif
+#include <stdint.h>
 
 #include <stddef.h>
 #include <stdio.h>
