@@ -55,3 +55,15 @@ int DPrintf(const fmt::string_view format, const ARGS&... args)
 
 	return 0;
 }
+
+template <typename... ARGS>
+int PrintFmt(const fmt::string_view format, const ARGS&... args)
+{
+	return C_BasePrint(PRINT_HIGH, TEXTCOLOR_NORMAL, fmt::format(format, args...));
+}
+
+template <typename... ARGS>
+int PrintFmt(const int printlevel, const fmt::string_view format, const ARGS&... args)
+{
+	return C_BasePrint(printlevel, TEXTCOLOR_NORMAL, fmt::format(format, args...));
+}
