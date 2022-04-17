@@ -1273,7 +1273,7 @@ void AM_drawGrid(am_color_t color)
 	centerp.x = FixedDiv(m_ur.x + m_ll.x, INT2FIXED(2));
 	centerp.y = FixedDiv(m_ur.y + m_ll.y, INT2FIXED(2));
 
-	const fixed_t w = INT2FIXED(MAPBLOCKUNITS);
+	constexpr fixed_t w = INT2FIXED(MAPBLOCKUNITS);
 	const fixed_t minimum_x = centerp.x - half_dist;
 	const fixed_t maximum_x = centerp.x + half_dist;
 	const fixed_t minimum_y = centerp.y - half_dist;

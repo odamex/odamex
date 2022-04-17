@@ -123,7 +123,7 @@ size_t def_heapsize = 16;
 #else
 size_t def_heapsize = 128;
 #endif
-const size_t min_heapsize = 8;
+constexpr size_t min_heapsize = 8;
 
 // The size we got back from I_ZoneBase in megabytes
 size_t got_heapsize = 0;
@@ -273,7 +273,7 @@ dtime_t I_GetTime()
 #else
 	// [SL] use SDL_GetTicks, but account for the fact that after
 	// 49 days, it wraps around since it returns a 32-bit int
-	static const uint64_t mask = 0xFFFFFFFFLL;
+	static constexpr uint64_t mask = 0xFFFFFFFFLL;
 	static uint64_t last_time = 0LL;
 	uint64_t current_time = SDL_GetTicks();
 

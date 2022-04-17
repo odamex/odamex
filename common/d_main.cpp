@@ -1035,16 +1035,16 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 		return;
 
 	// Sleep until the next scheduled task.
-	dtime_t simulation_wake_time = simulation_scheduler->getNextTime();
-	dtime_t display_wake_time = display_scheduler->getNextTime();
-	dtime_t wake_time = std::min<dtime_t>(simulation_wake_time, display_wake_time);
+	const dtime_t simulation_wake_time = simulation_scheduler->getNextTime();
+	const dtime_t display_wake_time = display_scheduler->getNextTime();
+	const dtime_t wake_time = std::min<dtime_t>(simulation_wake_time, display_wake_time);
 
-	const dtime_t max_sleep_amount = 1000LL * 1000LL;	// 1ms
+	constexpr dtime_t max_sleep_amount = 1000LL * 1000LL;	// 1ms
 
 	// Sleep in 1ms increments until the next scheduled task
 	for (dtime_t now = I_GetTime(); wake_time > now; now = I_GetTime())
 	{
-		dtime_t sleep_amount = std::min<dtime_t>(max_sleep_amount, wake_time - now);
+		const dtime_t sleep_amount = std::min<dtime_t>(max_sleep_amount, wake_time - now);
 		I_Sleep(sleep_amount);
 	}
 }

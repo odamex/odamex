@@ -139,7 +139,7 @@ public:
 	virtual void flushEvents();
 
 private:
-	static const int JOY_DEADZONE = 6000;
+	static constexpr int JOY_DEADZONE = 6000;
 
 	bool			mActive;
 

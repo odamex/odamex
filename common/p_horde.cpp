@@ -53,7 +53,7 @@ EXTERN_CVAR(g_horde_spawnfull_max)
 
 void A_PainDie(AActor* actor);
 
-const int HORDE_STARTING_TICS = TICRATE * 3;
+constexpr int HORDE_STARTING_TICS = TICRATE * 3;
 
 /**
  * @brief Garbage-collector for Horde corpses.

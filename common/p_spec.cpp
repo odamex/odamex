@@ -181,7 +181,7 @@ void P_TransferSectorFlags(unsigned int* dest, unsigned int source)
 
 byte P_ArgToChange(byte arg)
 {
-	static const byte ChangeMap[8] = {0, 1, 5, 3, 7, 2, 6, 0};
+	static constexpr byte ChangeMap[8] = {0, 1, 5, 3, 7, 2, 6, 0};
 
 	return (arg < 8) ? ChangeMap[arg] : 0;
 }

@@ -146,7 +146,7 @@ static void SetPNGComments(PNGStrings& out, png_struct* png_ptr, png_info* info_
 #endif
 
 	std::string strbuf;
-	const int PNG_TEXT_LINES = 6;
+	constexpr int PNG_TEXT_LINES = 6;
 	png_text pngtext[PNG_TEXT_LINES];
 	int text_line = 0;
 

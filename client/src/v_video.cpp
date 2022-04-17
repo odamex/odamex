@@ -127,10 +127,10 @@ static int vid_pillarbox_old = -1;
 
 static IVideoMode V_GetRequestedVideoMode()
 {
-	int surface_bpp = vid_32bpp ? 32 : 8;
-	EWindowMode window_mode = (EWindowMode)vid_fullscreen.asInt();
-	bool vsync = (vid_vsync != 0.0f);
-	const std::string stretch_mode(vid_filter);
+	const int surface_bpp = vid_32bpp ? 32 : 8;
+	const EWindowMode window_mode = (EWindowMode)vid_fullscreen.asInt();
+	const bool vsync = (vid_vsync != 0.0f);
+	const std::string& stretch_mode(vid_filter);
 
 	return IVideoMode(vid_defwidth.asInt(), vid_defheight.asInt(), surface_bpp, window_mode, vsync, stretch_mode);
 }
@@ -145,7 +145,7 @@ bool V_CheckModeAdjustment()
 	if (V_GetRequestedVideoMode() != window->getVideoMode())
 		return true;
 
-	bool using_widescreen = I_IsWideResolution();
+	const bool using_widescreen = I_IsWideResolution();
 	if (vid_widescreen && sv_allowwidescreen != using_widescreen)
 		return true;
 
@@ -252,7 +252,7 @@ CVAR_FUNC_IMPL(vid_pillarbox)
 //
 static bool CheckWideModeAdjustment()
 {
-	bool using_widescreen = I_IsWideResolution();
+	const bool using_widescreen = I_IsWideResolution();
 	if (vid_widescreen && sv_allowwidescreen != using_widescreen)
 		return true;
 
@@ -410,7 +410,7 @@ END_COMMAND (vid_setmode)
 //
 bool V_UsePillarBox()
 {
-	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
+	const int width = I_GetVideoWidth(), height = I_GetVideoHeight();
 
 	if (width == 0 || height == 0)
 		return false;
@@ -434,7 +434,7 @@ bool V_UsePillarBox()
 //
 bool V_UseLetterBox()
 {
-	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
+	const int width = I_GetVideoWidth(), height = I_GetVideoHeight();
 
 	if (width == 0 || height == 0)
 		return false;
@@ -455,7 +455,7 @@ bool V_UseLetterBox()
 //
 bool V_UseWidescreen()
 {
-	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
+	const int width = I_GetVideoWidth(), height = I_GetVideoHeight();
 
 	if (width == 0 || height == 0)
 		return false;
@@ -557,7 +557,7 @@ void V_Init()
 
 	R_InitColormaps();
 
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
 	// This uses the smaller of the two results. It's still not ideal but at least
 	// this allows hud_scaletext to have some purpose...
@@ -788,8 +788,8 @@ void V_DrawFPSWidget()
 	else if (vid_displayfps.asInt() == FPS_COUNTER)
 	{
 		static double last_fps = 0.0;
-		v2int_t topleft(8, I_GetSurfaceHeight() / 2 + 16);
-		v2int_t botleft(topleft.x, topleft.y + ::GRAPH_HEIGHT);
+		const v2int_t topleft(8, I_GetSurfaceHeight() / 2 + 16);
+		const v2int_t botleft(topleft.x, topleft.y + ::GRAPH_HEIGHT);
 
 		time_accum += delta_time;
 
@@ -841,16 +841,16 @@ static void V_DrawTickerDot(IWindowSurface* surface, int n, PIXEL_T color)
 //
 void V_DrawFPSTicker()
 {
-	int current_tic = int(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
+	const int current_tic = int(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
 	static int last_tic = current_tic;
-	
-	int tics = clamp(current_tic - last_tic, 0, 20);
+
+	const int tics = clamp(current_tic - last_tic, 0, 20);
 	last_tic = current_tic;
 
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
-		const palindex_t oncolor = 255;
-		const palindex_t offcolor = 0;
+		constexpr palindex_t oncolor = 255;
+		constexpr palindex_t offcolor = 0;
 
 		int n = 0;
 		for (n = 0; n < tics; n++)
@@ -898,7 +898,7 @@ int DCanvas::getCleanY(int y) const
 //		right and bottom are one pixel *past* the boundaries they describe.
 void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src) const
 {
-	int surface_advance = mSurface->getPitchInPixels() - right + left;
+	const int surface_advance = mSurface->getPitchInPixels() - right + left;
 
 	if (mSurface->getBitsPerPixel() == 8)
 	{
@@ -909,7 +909,7 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 			int x = left;
 			while (x < right)
 			{
-				int amount = std::min(64 - (x & 63), right - x);
+				const int amount = std::min(64 - (x & 63), right - x);
 				memcpy(dest, src + ((y & 63) << 6) + (x & 63), amount);
 				dest += amount;
 				x += amount;
@@ -940,7 +940,7 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
 {
 	mSurface->clear();
 
-	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	const int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	int destw, desth;
 
@@ -960,8 +960,8 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
 		desth = surface_width * 3 / 4;
 	}
 
-	int x = (surface_width - destw) / 2;
-	int y = (surface_height - desth) / 2;
+	const int x = (surface_width - destw) / 2;
+	const int y = (surface_height - desth) / 2;
 
 	DrawPatchStretched(patch, x, y, destw, desth);
 }
@@ -970,14 +970,14 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
 // [RH] Set an area to a specified color
 void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) const
 {
-	int surface_pitch_pixels = mSurface->getPitchInPixels();
+	const int surface_pitch_pixels = mSurface->getPitchInPixels();
 
 	if (mSurface->getBitsPerPixel() == 8)
 	{
-		palindex_t color_index = V_BestColor(V_GetDefaultPalette()->basecolors, color);
+		const palindex_t color_index = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + top * surface_pitch_pixels + left;
 
-		int line_length = (right - left) * sizeof(palindex_t);
+		const int line_length = (right - left) * sizeof(palindex_t);
 		for (int y = top; y < bottom; y++)
 		{
 			memset(dest, color_index, line_length);
@@ -1012,8 +1012,8 @@ void DCanvas::Line(const v2int_t src, const v2int_t dst, argb_t color) const
 	const palindex_t pal_color = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 	const argb_t full_color = V_GammaCorrect(color);
 
-	int dx = abs(dst.x - src.x), sx = src.x < dst.x ? 1 : -1;
-	int dy = -abs(dst.y - src.y), sy = src.y < dst.y ? 1 : -1;
+	const int dx = abs(dst.x - src.x), sx = src.x < dst.x ? 1 : -1;
+	const int dy = -abs(dst.y - src.y), sy = src.y < dst.y ? 1 : -1;
 
 	int err = dx + dy;
 
@@ -1071,8 +1071,8 @@ EXTERN_CVAR (ui_dimcolor)
 
 void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float famount) const
 {
-	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
-	int surface_pitch_pixels = mSurface->getPitchInPixels();
+	const int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	const int surface_pitch_pixels = mSurface->getPitchInPixels();
 
 	if (x1 < 0 || x1 + w > surface_width || y1 < 0 || y1 + h > surface_height)
 		return;
@@ -1087,18 +1087,18 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 		int bg;
 		int x, y;
 
-		int amount = (int)(famount * 64.0f);
-		argb_t *fg2rgb = Col2RGB8[amount];
-		argb_t *bg2rgb = Col2RGB8[64-amount];
+		const int amount = (int)(famount * 64.0f);
+		const argb_t *fg2rgb = Col2RGB8[amount];
+		const argb_t *bg2rgb = Col2RGB8[64-amount];
 
-		argb_t color = V_GetColorFromString(color_str);
-		unsigned int fg = fg2rgb[V_BestColor(V_GetDefaultPalette()->basecolors, color)];
+		const argb_t color = V_GetColorFromString(color_str);
+		const unsigned int fg = fg2rgb[V_BestColor(V_GetDefaultPalette()->basecolors, color)];
 
 		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + y1 * surface_pitch_pixels + x1;
-		int advance = surface_pitch_pixels - w;
+		const int advance = surface_pitch_pixels - w;
 
-		int xcount = w / 4;
-		int xcount_remainder = w % 4;
+		const int xcount = w / 4;
+		const int xcount_remainder = w % 4;
 
 		for (y = h; y > 0; y--)
 		{
@@ -1133,7 +1133,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 	}
 	else
 	{
-		argb_t color = V_GammaCorrect(V_GetColorFromString(color_str));
+		const argb_t color = V_GammaCorrect(V_GetColorFromString(color_str));
 
 		r_dimpatchD(mSurface, color, (int)(famount * 256.0f), x1, y1, w, h);
 	}
