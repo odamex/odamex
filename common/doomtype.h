@@ -268,7 +268,7 @@ typedef enum {
 	#undef MIN
 #endif
 template<class T>
-forceinline const T MIN (const T a, const T b)
+forceinline constexpr T MIN(const T a, const T b)
 {
 	return a < b ? a : b;
 }
@@ -282,7 +282,7 @@ forceinline const T MIN (const T a, const T b)
 	#undef MAX
 #endif
 template<class T>
-forceinline const T MAX (const T a, const T b)
+forceinline constexpr T MAX (const T a, const T b)
 {
 	return a > b ? a : b;
 }
@@ -299,7 +299,7 @@ forceinline const T MAX (const T a, const T b)
 	#undef clamp
 #endif
 template<class T>
-forceinline T clamp (const T in, const T min, const T max)
+forceinline constexpr T clamp(const T in, const T min, const T max)
 {
 	return in <= min ? min : in >= max ? max : in;
 }

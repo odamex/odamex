@@ -446,7 +446,7 @@ void F_CastTicker()
 			castnum = 0;
 		if (mobjinfo[castorder[castnum].type].seesound)
 		{
-			const int atten = ATTN_NONE;
+			constexpr int atten = ATTN_NONE;
 			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].seesound, 1, atten);
 		}
 		caststate = &states[mobjinfo[castorder[castnum].type].seestate];

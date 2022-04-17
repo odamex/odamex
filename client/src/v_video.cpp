@@ -586,10 +586,10 @@ void V_MarkRect(int x, int y, int width, int height)
 	dirtybox.AddToBox(x + width - 1, y + height - 1);
 }
 
-const int GRAPH_WIDTH = 140;
-const int GRAPH_HEIGHT = 80;
-const double GRAPH_BASELINE = 1000 / 60.0;
-const double GRAPH_CAPPED_BASELINE = 1000 / 35.0;
+constexpr int GRAPH_WIDTH = 140;
+constexpr int GRAPH_HEIGHT = 80;
+constexpr double GRAPH_BASELINE = 1000 / 60.0;
+constexpr double GRAPH_CAPPED_BASELINE = 1000 / 35.0;
 
 struct frametimeGraph_t
 {

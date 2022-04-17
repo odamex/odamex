@@ -211,17 +211,17 @@ public:
 class DoomGammaStrategy : public GammaStrategy
 {
 public:
-	float min() const
+	float min() const override
 	{
 		return 0.0f;
 	}
 
-	float max() const
+	float max() const override
 	{
 		return 7.0f;
 	}
 
-	float increment(float level) const
+	float increment(float level) const override
 	{
 		level += 1.0f;
 		if (level > max())
@@ -229,7 +229,7 @@ public:
 		return level;
 	}
 
-	void generateGammaTable(byte* table, float level) const
+	void generateGammaTable(byte* table, float level) const override
 	{
 		// [SL] Use vanilla Doom's gamma table
 		//
@@ -250,17 +250,17 @@ public:
 class ZDoomGammaStrategy : public GammaStrategy
 {
 public:
-	float min() const
+	float min() const override
 	{
 		return 0.5f;
 	}
 
-	float max() const
+	float max() const override
 	{
 		return 3.0f;
 	}
 
-	float increment(float level) const
+	float increment(float level) const override
 	{
 		level += 0.1f;
 		if (level > max())
@@ -268,14 +268,14 @@ public:
 		return level;
 	}
 
-	void generateGammaTable(byte* table, float level) const
+	void generateGammaTable(byte* table, float level) const override
 	{
 		// [SL] Use ZDoom 1.22 gamma correction
 
 		// [RH] I found this formula on the web at
 		// http://panda.mostang.com/sane/sane-gamma.html
 
-		double invgamma = 1.0 / level;
+		const double invgamma = 1.0 / level;
 
 		for (int i = 0; i < 256; i++)
 			table[i] = (byte)(255.0 * pow(double(i) / 255.0, invgamma));

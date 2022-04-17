@@ -141,7 +141,7 @@ void ST_initNew()
 
 	for (size_t i = 0; i < ARRAY_LENGTH(::tallnum); i++)
 	{
-		patch_t* talli = W_ResolvePatchHandle(::tallnum[i]);
+		const patch_t* talli = W_ResolvePatchHandle(::tallnum[i]);
 		if (talli->width() > widest)
 			widest = talli->width();
 	}
@@ -198,7 +198,7 @@ void ST_initNew()
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 {
 	char digits[11], *d;
-	patch_t* minus = W_ResolvePatchHandle(negminus);
+	const patch_t* minus = W_ResolvePatchHandle(negminus);
 
 	if (num < 0)
 	{
@@ -222,7 +222,7 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 	{
 		if (*d >= '0' && *d <= '9')
 		{
-			patch_t* numpatch = W_ResolvePatchHandle(tallnum[*d - '0']);
+			const patch_t* numpatch = W_ResolvePatchHandle(tallnum[*d - '0']);
 			if (hud_scale)
 			{
 				scrn->DrawLucentPatchCleanNoMove(numpatch, x, y);
@@ -241,7 +241,7 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 {
 	int d = abs(num);
-	int xscale = hud_scale ? CleanXfac : 1;
+	const int xscale = hud_scale ? CleanXfac : 1;
 
 	do {
 		x -= W_ResolvePatchHandle(tallnum[d % 10])->width() * xscale;
@@ -269,7 +269,7 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 				 int x, int y, int width, bool reverse = false,
 				 bool cutleft = false, bool cutright = false) {
-	int xscale = hud_scale ? CleanXfac : 1;
+	const int xscale = hud_scale ? CleanXfac : 1;
 
 	if (normalcolor > NUM_TEXT_COLORS || normalcolor == CR_GREY) {
 		normalcolor = CR_RED;
@@ -280,7 +280,7 @@ void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 	}
 	width -= (width % (2 * xscale));
 
-	int bar_width = width / (2 * xscale);
+	const int bar_width = width / (2 * xscale);
 
 	int bar_filled;
 	if (value == 0) {
@@ -349,7 +349,7 @@ void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 			}
 		}
 
-		int xi = x + (i * xscale * 2);
+		const int xi = x + (i * xscale * 2);
 		if (hud_scale) {
 			screen->DrawTranslatedPatchCleanNoMove(linepatch, xi, y);
 		} else {
@@ -490,19 +490,19 @@ static bool TeamHUDShowsRoundWins()
  */
 static void drawTeamGametype()
 {
-	const int SCREEN_BORDER = 4;
-	const int FLAG_ICON_HEIGHT = 18;
-	const int LIVES_HEIGHT = 12;
+	constexpr int SCREEN_BORDER = 4;
+	constexpr int FLAG_ICON_HEIGHT = 18;
+	constexpr int LIVES_HEIGHT = 12;
 
 	std::string buffer;
-	player_t* plyr = &consoleplayer();
-	int xscale = hud_scale ? CleanXfac : 1;
-	int yscale = hud_scale ? CleanYfac : 1;
+	const player_t* plyr = &consoleplayer();
+	const int xscale = hud_scale ? CleanXfac : 1;
+	const int yscale = hud_scale ? CleanYfac : 1;
 
 	int patchPosY = ::hud_bigfont ? 53 : 43;
 
-	bool shouldShowScores = G_IsTeamGame();
-	bool shouldShowLives = G_IsLivesGame();
+	const bool shouldShowScores = G_IsTeamGame();
+	const bool shouldShowLives = G_IsLivesGame();
 
 	if (shouldShowScores)
 	{
@@ -586,7 +586,7 @@ static void drawTeamGametype()
 			               W_ResolvePatchHandle(::LivesIcon[i]));
 
 			StrFormat(buffer, "%d", teamInfo->LivesPool());
-			int color = (i % 2) ? CR_GOLD : CR_GREY;
+			const int color = (i % 2) ? CR_GOLD : CR_GREY;
 			hud::DrawText(SCREEN_BORDER + 12, patchPosY + 3, hud_scale, hud::X_RIGHT,
 			              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, buffer.c_str(),
 			              color);
@@ -596,10 +596,10 @@ static void drawTeamGametype()
 
 static void drawHordeGametype()
 {
-	const int SCREEN_BORDER = 4;
-	const int ABOVE_AMMO = 24;
+	constexpr int SCREEN_BORDER = 4;
+	constexpr int ABOVE_AMMO = 24;
 	const int LINE_SPACING = V_LineHeight() + 1;
-	const int BAR_BORDER = 5;
+	constexpr int BAR_BORDER = 5;
 
 	const hordeInfo_t& info = P_HordeInfo();
 	const hordeDefine_t& define = G_HordeDefine(info.defineID);
@@ -696,12 +696,12 @@ void drawProtos()
 	// Starting y is five rows from the top.
 	int y = 7 * 5;
 
-	const double scale = 0.75;
 	const int indent = V_StringWidth(" >");
 
 	for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
 	{
-		bool selected = proto_selected == (it - protos.begin());
+		constexpr double scale = 0.75;
+		const bool selected = proto_selected == (it - protos.begin());
 
 		if (selected)
 		{
@@ -744,8 +744,8 @@ void drawNetdemo() {
 	if (!hud_demobar || R_DemoBarInvisible())
 		return;
 
-	int xscale = hud_scale ? CleanXfac : 1;
-	int yscale = hud_scale ? CleanYfac : 1;
+	const int xscale = hud_scale ? CleanXfac : 1;
+	const int yscale = hud_scale ? CleanYfac : 1;
 
 	V_SetFont("DIGFONT");
 
@@ -789,7 +789,7 @@ void drawNetdemo() {
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
 void OdamexHUD() {
 	std::string buf;
-	player_t *plyr = &displayplayer();
+	const player_t *plyr = &displayplayer();
 
 	// TODO: I can probably get rid of these invocations once I put a
 	//       copy of ST_DrawNumRight into the hud namespace. -AM
@@ -835,7 +835,7 @@ void OdamexHUD() {
 	}
 
 	// Draw Ammo
-	ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
+	const ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
 	if (ammotype < NUMAMMO) {
 		const patch_t *ammopatch;
 		// Use big ammo if the player has a backpack.
@@ -970,7 +970,7 @@ void DrawToasts()
 		else if (tics < TICRATE * 3)
 		{
 			tics %= TICRATE;
-			float trans = static_cast<float>(TICRATE - tics) / TICRATE;
+			const float trans = static_cast<float>(TICRATE - tics) / TICRATE;
 			::hud_transparency.ForceSet(trans);
 		}
 		else
@@ -986,7 +986,7 @@ void DrawToasts()
 		x += V_StringWidth(it->right.c_str()) + 1;
 
 		// Icon
-		patch_t* icon = W_ResolvePatchHandle(it->icon);
+		const patch_t* icon = W_ResolvePatchHandle(it->icon);
 		const double yoff =
 		    (static_cast<double>(TOAST_HEIGHT) - static_cast<double>(icon->height())) /
 		    2.0;
@@ -1012,7 +1012,7 @@ void ToastTicker()
 	drawToasts_t::iterator it = g_Toasts.begin();
 	while (it != g_Toasts.end())
 	{
-		int tics = ::gametic - it->tic;
+		const int tics = ::gametic - it->tic;
 
 		if (tics >= TICRATE * 3)
 		{
@@ -1324,7 +1324,7 @@ void LevelStateHUD()
 		          "Round " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
 		          ::levelstate.getRound());
 
-		WinInfo win = ::levelstate.getWinInfo();
+		const WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
 			StrFormat(lines.subtitle[0], "Tied at the end of the round");
 		else if (win.type == WinInfo::WIN_PLAYER)
@@ -1341,7 +1341,7 @@ void LevelStateHUD()
 	case LevelState::ENDGAME_COUNTDOWN: {
 		StrFormat(lines.title, "Match complete");
 
-		WinInfo win = ::levelstate.getWinInfo();
+		const WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
 			StrFormat(lines.subtitle[0], "The game ends in a tie");
 		else if (win.type == WinInfo::WIN_PLAYER)
@@ -1359,7 +1359,7 @@ void LevelStateHUD()
 
 	V_SetFont("BIGFONT");
 
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 	int w = V_StringWidth(lines.title.c_str()) * CleanYfac;
 	int h = 12 * CleanYfac;
 
@@ -1374,7 +1374,7 @@ void LevelStateHUD()
 	}
 
 	V_SetFont("SMALLFONT");
-	int height = V_StringHeight("M") + 1;
+	const int height = V_StringHeight("M") + 1;
 
 	for (size_t i = 0; i < ARRAY_LENGTH(lines.subtitle); i++)
 	{

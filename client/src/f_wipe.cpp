@@ -170,7 +170,7 @@ static int voop;
 
 static void Wipe_StartBurn()
 {
-	const size_t array_size = FIREWIDTH * (FIREHEIGHT + 5);
+	constexpr size_t array_size = FIREWIDTH * (FIREHEIGHT + 5);
 	burnarray = new byte[array_size];
 	memset(burnarray, 0, array_size);
 	density = 4;

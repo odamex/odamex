@@ -53,8 +53,8 @@ EXTERN_CVAR(waddirs);
 
 const scannedIWAD_t* g_SelectedIWAD;
 
-const int WINDOW_WIDTH = 320;
-const int WINDOW_HEIGHT = 240;
+constexpr int WINDOW_WIDTH = 320;
+constexpr int WINDOW_HEIGHT = 240;
 
 class BootWindow : public Fl_Window
 {

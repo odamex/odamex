@@ -213,7 +213,7 @@ ConsoleLine ConsoleLine::split(size_t max_width)
 		else if (*s == '-')
 			break_pos = s + 1 - text.c_str();
 
-		const size_t character_width = 8;
+		constexpr size_t character_width = 8;
 		if (width + character_width > max_width)
 		{
 			// Is this word is too long to fit on the line?
@@ -634,7 +634,7 @@ tabcommand_map_t& TabCommands()
 
 void C_AddTabCommand(const char* name)
 {
-	tabcommand_map_t::iterator it = TabCommands().find(StdStringToLower(name));
+	const tabcommand_map_t::iterator it = TabCommands().find(StdStringToLower(name));
 
 	if (it != TabCommands().end())
 		TabCommands()[name]++;
@@ -644,7 +644,7 @@ void C_AddTabCommand(const char* name)
 
 void C_RemoveTabCommand(const char* name)
 {
-	tabcommand_map_t::iterator it = TabCommands().find(StdStringToLower(name));
+	const tabcommand_map_t::iterator it = TabCommands().find(StdStringToLower(name));
 
 	if (it != TabCommands().end())
 		if (!--it->second)
@@ -709,13 +709,13 @@ static void TabComplete(TabCompleteDirection dir)
 	{
 		if (dir == TAB_COMPLETE_FORWARD)
 		{
-			size_t index = ::NextCycleIndex;
+			const size_t index = ::NextCycleIndex;
 			::CmdLine.replaceString(::CmdCompletions.at(index));
 			TabCycleSet(index);
 		}
 		else if (dir == TAB_COMPLETE_BACKWARD)
 		{
-			size_t index = ::PrevCycleIndex;
+			const size_t index = ::PrevCycleIndex;
 			::CmdLine.replaceString(::CmdCompletions.at(index));
 			TabCycleSet(index);
 		}
@@ -732,14 +732,14 @@ static void TabComplete(TabCompleteDirection dir)
 	size_t tabEnd = ::CmdLine.text.find(' ', 0);
 	if (tabEnd == std::string::npos)
 		tabEnd = ::CmdLine.text.length();
-	size_t tabLen = tabEnd - tabStart;
+	const size_t tabLen = tabEnd - tabStart;
 
 	// Don't complete if the cursor is past the command.
 	if (::CmdLine.cursor_position >= tabEnd + 1)
 		return;
 
 	// Find all substrings.
-	std::string sTabPos = StdStringToLower(::CmdLine.text.substr(tabStart, tabLen));
+	const std::string sTabPos = StdStringToLower(::CmdLine.text.substr(tabStart, tabLen));
 	const char* cTabPos = sTabPos.c_str();
 	tabcommand_map_t::iterator it = TabCommands().lower_bound(sTabPos);
 	for (; it != TabCommands().end(); ++it)
@@ -751,7 +751,7 @@ static void TabComplete(TabCompleteDirection dir)
 	if (::CmdCompletions.size() > 1)
 	{
 		// Get common substring of all completions.
-		std::string common = ::CmdCompletions.getCommon();
+		const std::string common = ::CmdCompletions.getCommon();
 		::CmdLine.replaceString(common);
 	}
 	else if (::CmdCompletions.size() == 1)
@@ -828,7 +828,7 @@ void C_InitConCharsFont()
 		memset(temp_surface->getBuffer() + y * temp_surface->getPitchInPixels(), transcolor, 128);
 
 	// paste the patch into the linear byte bufer
-	DCanvas* canvas = temp_surface->getDefaultCanvas();
+	const DCanvas* canvas = temp_surface->getDefaultCanvas();
 	canvas->DrawPatch(W_CachePatch("CONCHARS"), 0, 0);
 
 	ConChars = new byte[256*8*8*2];
@@ -843,7 +843,7 @@ void C_InitConCharsFont()
 			{
 				for (int a = 0; a < 8; a++)
 				{
-					byte val = source[a];
+					const byte val = source[a];
 					if (val == transcolor)
 					{
 						dest[a] = 0x00;
@@ -1030,7 +1030,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	char work[MAX_LINE_LENGTH];
 	brokenlines_t *lines;
 
-	int len = strlen(source);
+	const int len = strlen(source);
 
 	if ((printlevel != 128 && !show_messages) || len == 0 ||
 		(gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) )
@@ -1040,7 +1040,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	if (printlevel == PRINT_FILTERCHAT)
 		return;
 
-	int width = I_GetSurfaceWidth() / V_TextScaleXAmount();
+	const int width = I_GetSurfaceWidth() / V_TextScaleXAmount();
 
 	if (addtype == APPENDLINE && NotifyStrings[NUMNOTIFIES-1].printlevel == printlevel)
 	{
@@ -1148,7 +1148,7 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 		strncpy(str, line_start, len);
 		str[len] = '\0';
 
-		bool wrap_new_line = *line_end != '\n';
+		const bool wrap_new_line = *line_end != '\n';
 		ConsoleLine new_line(str, color_code, wrap_new_line); 
 		
 		// Add a new line to ConsoleLineList if the last line in ConsoleLineList
@@ -1159,7 +1159,7 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 			Lines.push_back(new_line);
  
 		// Wrap the current line if it's too long.
-		unsigned int line_width = C_StringWidth(Lines.back().text.c_str());
+		const unsigned int line_width = C_StringWidth(Lines.back().text.c_str());
 		if (line_width > ConCols*8)
 		{
 			new_line = Lines.back().split(ConCols*8);
@@ -1192,7 +1192,7 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	// ToDo: there may be more characters not allowed on a consoleprint, 
 	// maybe restrict a few ASCII stuff later on ?
-	int len = strlen(outline);
+	const int len = strlen(outline);
 	for (int i = 0; i < len; i++)
 	{
 		if (outline[i] == 0x07)
@@ -1218,7 +1218,7 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 		// We need to know if there were any new lines being printed
 		// in our string.
 
-		int newLineCount = std::count(outline, outline + strlen(outline), '\n');
+		const int newLineCount = std::count(outline, outline + strlen(outline), '\n');
 
 		if (ConRows < (unsigned int)con_buffersize.asInt())
 			ConRows += (newLineCount > 1) ? newLineCount + 1 : 1;
@@ -1271,7 +1271,7 @@ FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ..
 	va_list argptr;
 
 	va_start(argptr, format);
-	int count = VPrintf(printlevel, TEXTCOLOR_NORMAL, format, argptr);
+	const int count = VPrintf(printlevel, TEXTCOLOR_NORMAL, format, argptr);
 	va_end(argptr);
 
 	return count;
@@ -1282,7 +1282,7 @@ FORMAT_PRINTF(1, 2) int STACK_ARGS Printf_Bold(const char* format, ...)
 	va_list argptr;
 
 	va_start(argptr, format);
-	int count = VPrintf(PRINT_HIGH, TEXTCOLOR_BOLD, format, argptr);
+	const int count = VPrintf(PRINT_HIGH, TEXTCOLOR_BOLD, format, argptr);
 	va_end(argptr);
 
 	return count;
@@ -1295,7 +1295,7 @@ FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...)
 		va_list argptr;
 
 		va_start(argptr, format);
-		int count = VPrintf(PRINT_WARNING, TEXTCOLOR_NORMAL, format, argptr);
+		const int count = VPrintf(PRINT_WARNING, TEXTCOLOR_NORMAL, format, argptr);
 		va_end(argptr);
 		return count;
 	}
@@ -1311,7 +1311,7 @@ void C_FlushDisplay()
 
 void C_Ticker()
 {
-	int surface_height = I_GetSurfaceHeight();
+	const int surface_height = I_GetSurfaceHeight();
 
 	static int lasttic = 0;
 
@@ -1463,7 +1463,7 @@ static bool C_UseFullConsole()
 //
 void C_AdjustBottom()
 {
-	int surface_height = I_GetSurfaceHeight();
+	const int surface_height = I_GetSurfaceHeight();
 
 	if (C_UseFullConsole())
 		ConBottom = surface_height; 
@@ -1484,7 +1484,7 @@ void C_AdjustBottom()
 //
 void C_NewModeAdjust()
 {
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
 	if (I_VideoInitialized())
 		C_SetConsoleDimensions(surface_width, surface_height);
@@ -1541,7 +1541,7 @@ void C_ToggleConsole()
 	if (C_UseFullConsole())
 		return;
 
-	bool bring_console_down =
+	const bool bring_console_down =
 				(ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull);
 
 	if (bring_console_down)
@@ -1840,7 +1840,7 @@ void C_DrawConsole()
 
 static bool C_HandleKey(const event_t* ev)
 {
-	int ch = ev->data1;
+	const int ch = ev->data1;
 	const char* cmd = Bindings.GetBind(ev->data1).c_str();
 
 	if (Key_IsMenuKey(ch) || (cmd && stricmp(cmd, "toggleconsole") == 0))
@@ -2101,7 +2101,7 @@ BEGIN_COMMAND(echo)
 {
 	if (argc > 1)
 	{
-		std::string str = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		const std::string str = C_ArgCombine(argc - 1, (const char **)(argv + 1));
 		Printf(PRINT_HIGH, "%s\n", str.c_str());
 	}
 }
@@ -2169,17 +2169,17 @@ void C_DrawMid()
 {
 	if (MidMsg)
 	{
-		int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
-		int xscale = V_TextScaleXAmount();
-		int yscale = V_TextScaleYAmount();
+		const int xscale = V_TextScaleXAmount();
+		const int yscale = V_TextScaleYAmount();
 
 		const int line_height = 8 * yscale;
 
-		int bottom = R_StatusBarVisible()
-			? ST_StatusBarY(surface_width, surface_height) : surface_height;
+		const int bottom = R_StatusBarVisible()
+			                   ? ST_StatusBarY(surface_width, surface_height) : surface_height;
 
-		int x = surface_width / 2;
+		const int x = surface_width / 2;
 		int y = (bottom - line_height * MidLines) / 2;
 
 		for (int i = 0; i < MidLines; i++, y += line_height)
@@ -2252,17 +2252,17 @@ void C_DrawGMid()
 {
 	if (GameMsg)
 	{
-		int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
-		int xscale = V_TextScaleXAmount();
-		int yscale = V_TextScaleYAmount();
+		const int xscale = V_TextScaleXAmount();
+		const int yscale = V_TextScaleYAmount();
 
 		const int line_height = 8 * yscale;
 
-		int bottom = R_StatusBarVisible()
-			? ST_StatusBarY(surface_width, surface_height) : surface_height;
+		const int bottom = R_StatusBarVisible()
+			                   ? ST_StatusBarY(surface_width, surface_height) : surface_height;
 
-		int x = surface_width / 2;
+		const int x = surface_width / 2;
 		int y = (bottom / 2 - line_height * GameLines) / 2;
 
 		for (int i = 0; i < GameLines; i++, y += line_height)

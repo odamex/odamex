@@ -929,7 +929,7 @@ void M_DrawNewGame()
 	screen->DrawPatchClean((patch_t*)W_CachePatch("M_NEWG"), 96, 14);
 	screen->DrawPatchClean((patch_t*)W_CachePatch("M_SKILL"), 54, 38);
 
-	const int SMALLFONT_OFFSET = 8; // Line up with the skull
+	constexpr int SMALLFONT_OFFSET = 8; // Line up with the skull
 
 	const char* pslabel = "Pistol Start Each Level ";
 	const int psy = NewDef.y + (LINEHEIGHT * skillnum) + SMALLFONT_OFFSET;

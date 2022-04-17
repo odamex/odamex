@@ -1761,8 +1761,8 @@ void AM_drawMarks()
 
 			//      w = LESHORT(marknums[i]->width);
 			//      h = LESHORT(marknums[i]->height);
-			const int w = 5; // because something's wrong with the wad, i guess
-			const int h = 6; // because something's wrong with the wad, i guess
+			constexpr int w = 5; // because something's wrong with the wad, i guess
+			constexpr int h = 6; // because something's wrong with the wad, i guess
 
 			if (fx >= f.x && fx <= f_w - w && fy >= f.y && fy <= f_h - h)
 			{

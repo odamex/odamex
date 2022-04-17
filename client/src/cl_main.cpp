@@ -117,7 +117,7 @@ BOOL      connected;
 netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
 
-const static size_t PACKET_SEQ_MASK = 0xFF;
+constexpr static size_t PACKET_SEQ_MASK = 0xFF;
 static int packetseq[256];
 
 // denis - unique session key provided by the server
@@ -1867,7 +1867,7 @@ void CL_TryToConnect(DWORD server_token)
 
 		// [SL] The "rate" CVAR has been deprecated. Now just send a hard-coded
 		// maximum rate that the server will ignore.
-		const int rate = 0xFFFF;
+		constexpr int rate = 0xFFFF;
 		MSG_WriteLong(&net_buffer, rate); 
 
         MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());

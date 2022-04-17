@@ -124,8 +124,8 @@ public:
 		// [SL] quickly convert the table value (-1 or 1) into (-pitch or pitch).
 		// [AM] Replaced with a multiply that returns accurate results.  Hopefully
 		//      we can find a way to improve upon an imul someday.
-		int pitch = R_GetRenderingSurface()->getPitchInPixels();
-		int value = table[pos];
+		const int pitch = R_GetRenderingSurface()->getPitchInPixels();
+		const int value = table[pos];
 		return pitch * value;
 	}
 
@@ -216,8 +216,8 @@ byte bosstable[256];
 
 static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
 {
-	const palindex_t start_index = 0xB0;
-	const palindex_t end_index = 0xBF;
+	constexpr palindex_t start_index = 0xB0;
+	constexpr palindex_t end_index = 0xBF;
 	const int index_range = end_index - start_index + 1;
 
 	palindex_t* dest = (palindex_t*)Ranges + color_num * 256;
@@ -225,19 +225,19 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 	for (int index = 0; index < start_index; index++)
 		dest[index] = index;
 	for (int index = end_index + 1; index < 256; index++)
-		dest[index] = index;	
+		dest[index] = index;
 
-	int r_diff = end_color.getr() - start_color.getr();
-	int g_diff = end_color.getg() - start_color.getg();
-	int b_diff = end_color.getb() - start_color.getb();
+	const int r_diff = end_color.getr() - start_color.getr();
+	const int g_diff = end_color.getg() - start_color.getg();
+	const int b_diff = end_color.getb() - start_color.getb();
 
 	for (palindex_t index = start_index; index <= end_index; index++)
 	{
-		int i = index - start_index;
+		const int i = index - start_index;
 
-		int r = start_color.getr() + i * r_diff / index_range;
-		int g = start_color.getg() + i * g_diff / index_range;
-		int b = start_color.getb() + i * b_diff / index_range;
+		const int r = start_color.getr() + i * r_diff / index_range;
+		const int g = start_color.getg() + i * g_diff / index_range;
+		const int b = start_color.getb() + i * b_diff / index_range;
 
 		dest[index] = V_BestColor(V_GetDefaultPalette()->basecolors, r, g, b);
 	}
@@ -275,7 +275,7 @@ void R_InitTranslationTables()
     R_FreeTranslationTables();
 
 	// Boss translation is a yellow tint.
-	argb_t top(0xff, 0xff, 0x73);
+    const argb_t top(0xff, 0xff, 0x73);
 	for (size_t i = 0; i < ARRAY_LENGTH(::bosstable); i++)
 	{
 		const argb_t bot = V_GetDefaultPalette()->basecolors[i];
@@ -393,8 +393,9 @@ void R_BuildPlayerTranslation(int player, argb_t dest_color)
 	const palette_t* pal = V_GetDefaultPalette();
 	byte* table = &translationtables[player * 256];
 
-	fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
-	float h = hsv_temp.geth(), s = hsv_temp.gets(), v = hsv_temp.getv();
+	const fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
+	const float h = hsv_temp.geth();
+	float s = hsv_temp.gets(), v = hsv_temp.getv();
 
 	s -= 0.23f;
 	if (s < 0.0f)
@@ -408,7 +409,7 @@ void R_BuildPlayerTranslation(int player, argb_t dest_color)
 
 	for (int i = 0x70; i < 0x80; i++)
 	{
-		argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
+		const argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
 
 		// Set up RGB values for 32bpp translation:
 		translationRGB[player][i - 0x70] = color;
@@ -616,7 +617,7 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 			colorfunc(source[(frac >> FRACBITS) & mask], dest);
 			dest += pitch; frac += fracstep;
 			colorfunc(source[(frac >> FRACBITS) & mask], dest);
-			dest += pitch; frac += fracstep;
+			dest += pitch;
 		}
 	}
 }
@@ -759,8 +760,8 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 		const float uend = iu * mulend;
 		const float vend = iv * mulend;
 
-		fixed_t ustep = (fixed_t)((uend - ustart) * INTERPSTEP);
-		fixed_t vstep = (fixed_t)((vend - vstart) * INTERPSTEP);
+		const fixed_t ustep = (fixed_t)((uend - ustart) * INTERPSTEP);
+		const fixed_t vstep = (fixed_t)((vend - vstart) * INTERPSTEP);
 
 		int incount = SPANJUMP;
 		while (incount--)
@@ -795,8 +796,8 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 		const float uend = iu * mulend;
 		const float vend = iv * mulend;
 
-		fixed_t ustep = (fixed_t)((uend - ustart) / count);
-		fixed_t vstep = (fixed_t)((vend - vstart) / count);
+		const fixed_t ustep = (fixed_t)((uend - ustart) / count);
+		const fixed_t vstep = (fixed_t)((vend - vstart) / count);
 
 		int incount = count;
 		while (incount--)
@@ -805,7 +806,7 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 
 			const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
 			colorfunc(source[spot], dest);
-			dest++;
+			++dest;
 			ufrac += ustep;
 			vfrac += vstep;
 		}
@@ -1170,7 +1171,7 @@ public:
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
-		argb_t work = dest[fuzztable.getValue()];
+		const argb_t work = dest[fuzztable.getValue()];
 		*dest = work - ((work >> 2) & 0x3f3f3f);
 		fuzztable.incrementRow();
 	}
@@ -1193,8 +1194,8 @@ public:
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
-		argb_t fg = colormap.shade(c);
-		argb_t bg = *dest;
+		const argb_t fg = colormap.shade(c);
+		const argb_t bg = *dest;
 		*dest = alphablend2a(bg, bga, fg, fga);	
 	}
 
@@ -1408,9 +1409,9 @@ void R_DrawSlopeSpanD_c()
 void R_DrawBorder(int x1, int y1, int x2, int y2)
 {
 	IWindowSurface* surface = R_GetRenderingSurface();
-	DCanvas* canvas = surface->getDefaultCanvas();
+	const DCanvas* canvas = surface->getDefaultCanvas();
 
-	int lumpnum = W_CheckNumForName(gameinfo.borderFlat, ns_flats);
+	const int lumpnum = W_CheckNumForName(gameinfo.borderFlat, ns_flats);
 	if (lumpnum >= 0)
 	{
 		const byte* patch_data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
@@ -1436,11 +1437,11 @@ void R_DrawViewBorder()
 		return;
 
 	IWindowSurface* surface = R_GetRenderingSurface();
-	DCanvas* canvas = surface->getDefaultCanvas();
-	int surface_width = surface->getWidth();
-	int surface_height = surface->getHeight();
-	int top = 0, bottom = ST_StatusBarY(surface_width, surface_height);
-	int left = 0, right = surface_width;
+	const DCanvas* canvas = surface->getDefaultCanvas();
+	const int surface_width = surface->getWidth();
+	const int surface_height = surface->getHeight();
+	const int top = 0, bottom = ST_StatusBarY(surface_width, surface_height);
+	const int left = 0, right = surface_width;
 
 	const gameborder_t* border = gameinfo.border;
 	const int offset = border->offset;
