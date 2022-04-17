@@ -60,7 +60,7 @@
 #	define snprintf  _snprintf
 #endif
 
-static const int MAX_LINE_LENGTH = 8192;
+static constexpr int MAX_LINE_LENGTH = 8192;
 
 static bool ShouldTabCycle = false;
 static size_t NextCycleIndex = 0;
@@ -452,7 +452,7 @@ public:
 	void dump();
 
 private:
-	static const size_t MAX_HISTORY_ITEMS = 50;
+	static constexpr size_t MAX_HISTORY_ITEMS = 50;
 
 	typedef std::list<std::string> ConsoleHistoryList;
 	ConsoleHistoryList					history;

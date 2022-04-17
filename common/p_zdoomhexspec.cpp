@@ -240,10 +240,10 @@ void P_PlayerInZDoomSector(player_t* player)
 
 	sector_t* sector = player->mo->subsector->sector;
 
-	static const int heretic_carry[5] = {2048 * 5, 2048 * 10, 2048 * 25, 2048 * 30,
-	                                     2048 * 35};
+	static constexpr int heretic_carry[5] = {2048 * 5, 2048 * 10, 2048 * 25, 2048 * 30,
+	                                         2048 * 35};
 
-	static const int hexen_carry[3] = {2048 * 5, 2048 * 10, 2048 * 25};
+	static constexpr int hexen_carry[3] = {2048 * 5, 2048 * 10, 2048 * 25};
 
 	if (sector->damageamount > 0)
 	{

@@ -39,13 +39,13 @@ typedef unsigned int dsfixed_t;		// fixedpt used by span drawer
 //
 inline float FIXED2FLOAT(fixed_t x)
 {
-	static const float factor = 1.0f / float(FRACUNIT);
+	static constexpr float factor = 1.0f / float(FRACUNIT);
 	return x * factor;
 }
 
 inline double FIXED2DOUBLE(fixed_t x)
 {
-	static const double factor = 1.0 / double(FRACUNIT);
+	static constexpr double factor = 1.0 / double(FRACUNIT);
 	return x * factor;
 }
 

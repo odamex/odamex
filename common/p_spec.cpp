@@ -105,7 +105,7 @@ fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f)
 
 int P_ArgToCrushMode(byte arg, bool slowdown)
 {
-	static const crushmode_e map[] = {crushDoom, crushHexen, crushSlowdown};
+	static constexpr crushmode_e map[] = {crushDoom, crushHexen, crushSlowdown};
 
 	if (arg >= 1 && arg <= 3)
 		return map[arg - 1];

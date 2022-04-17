@@ -1883,7 +1883,7 @@ bool EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
 /// Waggle
 ///////////////////////////////////////
 
-static const fixed_t FloatBobOffsets[64] = {
+static constexpr fixed_t FloatBobOffsets[64] = {
     0,       51389,   102283,  152192,  200636,  247147,  291278,  332604,
     370727,  405280,  435929,  462380,  484378,  501712,  514213,  521763,
     524287,  521763,  514213,  501712,  484378,  462380,  435929,  405280,

@@ -44,16 +44,16 @@ private:
 	void drawTrafficOut(int x, int y);
 	void drawPackets(int x, int y);
 
-	static const int BAR_HEIGHT_WORLD_INDEX = 4;
-	static const int BAR_WIDTH_WORLD_INDEX = 2;
+	static constexpr int BAR_HEIGHT_WORLD_INDEX = 4;
+	static constexpr int BAR_WIDTH_WORLD_INDEX = 2;
 	
-	static const int BAR_HEIGHT_MISPREDICTION = 2;
-	static const int BAR_WIDTH_MISPREDICTION = 2;
+	static constexpr int BAR_HEIGHT_MISPREDICTION = 2;
+	static constexpr int BAR_WIDTH_MISPREDICTION = 2;
 
-	static const int MAX_WORLD_INDEX = 6;
-	static const int MIN_WORLD_INDEX = -6;
+	static constexpr int MAX_WORLD_INDEX = 6;
+	static constexpr int MIN_WORLD_INDEX = -6;
 	
-	static const size_t MAX_HISTORY_TICS = 64;
+	static constexpr size_t MAX_HISTORY_TICS = 64;
 
 	int		mX;
 	int		mY;

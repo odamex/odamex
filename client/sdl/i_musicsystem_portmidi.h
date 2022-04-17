@@ -43,7 +43,7 @@ class PortMidiMusicSystem : public MidiMusicSystem
 	virtual void playEvent(MidiEvent* event, int time = 0);
 
   private:
-	static const int cLatency = 80;
+	static constexpr int cLatency = 80;
 
 	bool m_isInitialized;
 

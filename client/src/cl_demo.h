@@ -119,11 +119,11 @@ private:
 		byte		reserved[36];   		// for future use
 	} netdemo_header_t;
 	
-	static const size_t HEADER_SIZE = 64;
-	static const size_t MESSAGE_HEADER_SIZE = 9;
-	static const size_t INDEX_ENTRY_SIZE = 8;
+	static constexpr size_t HEADER_SIZE = 64;
+	static constexpr size_t MESSAGE_HEADER_SIZE = 9;
+	static constexpr size_t INDEX_ENTRY_SIZE = 8;
 
-	static const uint16_t SNAPSHOT_SPACING = 20 * TICRATE;
+	static constexpr uint16_t SNAPSHOT_SPACING = 20 * TICRATE;
 
 	netdemo_state_t		state;
 	netdemo_state_t		oldstate;	// used when unpausing

@@ -130,12 +130,12 @@ public:
 	}
 
 private:
-	static const size_t size = 64;
+	static constexpr size_t size = 64;
 	static const int table[FuzzTable::size];
 	int pos;
 };
 
-const int FuzzTable::table[FuzzTable::size] = {
+constexpr int FuzzTable::table[FuzzTable::size] = {
 		1,-1, 1,-1, 1, 1,-1, 1,
 		1,-1, 1, 1, 1,-1, 1, 1,
 		1,-1,-1,-1,-1, 1,-1,-1,

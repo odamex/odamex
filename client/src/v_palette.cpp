@@ -680,15 +680,14 @@ static void V_DoBlending(argb_t* dest, const argb_t* source, argb_t color)
 }
 
 
-static const float lightScale(float a)
+static float lightScale(float a)
 {
 	// NOTE(jsd): Revised inverse logarithmic scale; near-perfect match to COLORMAP lump's scale
 	// 1 - ((Exp[1] - Exp[a*2 - 1]) / (Exp[1] - Exp[-1]))
 	static float e1 = exp(1.0f);
 	static float e1sube0 = e1 - exp(-1.0f);
-
-	float newa = clamp(1.0f - (e1 - (float)exp(a * 2.0f - 1.0f)) / e1sube0, 0.0f, 1.0f);
-	return newa;
+	
+	return clamp(1.0f - (e1 - (float)exp(a * 2.0f - 1.0f)) / e1sube0, 0.0f, 1.0f);
 }
 
 void BuildLightRamp (shademap_t &maps)
@@ -1184,9 +1183,9 @@ void V_DoPaletteEffects()
 				red_amount = MIN(red_amount, 56.0f);
 				float alpha = (red_amount + 8.0f) / 72.0f;
 
-				static const float red = 255.0f / 255.0f;
-				static const float green = 0.0f;
-				static const float blue = 0.0f;
+				static constexpr float red = 255.0f / 255.0f;
+				static constexpr float green = 0.0f;
+				static constexpr float blue = 0.0f;
 				V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 			}
 		}
@@ -1200,9 +1199,9 @@ void V_DoPaletteEffects()
 				bonus_amount = MIN(bonus_amount, 24.0f);
 				float alpha = (bonus_amount + 8.0f) / 64.0f;				
 
-				static const float red = 215.0f / 255.0f;
-				static const float green = 186.0f / 255.0f;
-				static const float blue = 69.0f / 255.0f;
+				static constexpr float red = 215.0f / 255.0f;
+				static constexpr float green = 186.0f / 255.0f;
+				static constexpr float blue = 69.0f / 255.0f;
 				V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 			}
 		}
@@ -1210,10 +1209,10 @@ void V_DoPaletteEffects()
 		// green tint for radiation suit
 		if (plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet] & 8)
 		{
-			static const float alpha = 1.0f / 8.0f;
-			static const float red = 0.0f;
-			static const float green = 255.0f / 255.0f;
-			static const float blue = 0.0f;
+			static constexpr float alpha = 1.0f / 8.0f;
+			static constexpr float red = 0.0f;
+			static constexpr float green = 255.0f / 255.0f;
+			static constexpr float blue = 0.0f;
 			V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 		}
 
@@ -1233,7 +1232,7 @@ void V_ResetPalette()
 	{
 		game_palette = default_palette;
 		I_SetPalette(game_palette.colors);
-		fargb_t blend(0.0f, 0.0f, 0.0f, 0.0f);
+		const fargb_t blend(0.0f, 0.0f, 0.0f, 0.0f);
 		V_SetBlend(blend);
 	}
 }

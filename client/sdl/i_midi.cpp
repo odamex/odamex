@@ -79,11 +79,11 @@ typedef struct
     unsigned int	buffer_size;
 }  midi_file_t;
 
-static const uint32_t	cHeaderChunkId = 0x4D546864;
-static const uint32_t	cTrackChunkId = 0x4D54726B;
-static const size_t		cHeaderSize = 6;
-static const size_t		cTrackHeaderSize = 8;
-static const size_t		cMaxSysexSize = 8192;
+static constexpr uint32_t	cHeaderChunkId = 0x4D546864;
+static constexpr uint32_t	cTrackChunkId = 0x4D54726B;
+static constexpr size_t		cHeaderSize = 6;
+static constexpr size_t		cTrackHeaderSize = 8;
+static constexpr size_t		cMaxSysexSize = 8192;
 
 // ============================================================================
 //
@@ -400,10 +400,10 @@ double I_GetTempoChange(MidiMetaEvent *event)
 		if (length == 3)
 		{
 			const byte* data = event->getData();
-			static const double microsecondsperminute = 60.0 * 1000000.0;
-			double microsecondsperbeat =	int(data[0]) << 16 | 
-											int(data[1]) << 8 |
-											int(data[2]);
+			static constexpr double microsecondsperminute = 60.0 * 1000000.0;
+			const double microsecondsperbeat =	int(data[0]) << 16 | 
+			                                    int(data[1]) << 8 |
+			                                    int(data[2]);
 			return microsecondsperminute / microsecondsperbeat;
 		}
 	}

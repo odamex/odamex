@@ -54,7 +54,7 @@ public:
 									fixed_t &x, fixed_t &y, fixed_t &z);
 	static bool enabled();
 private:
-	static const size_t MAX_HISTORY_TICS = TICRATE;
+	static constexpr size_t MAX_HISTORY_TICS = TICRATE;
 		
 	typedef struct {
 		byte		player_id;

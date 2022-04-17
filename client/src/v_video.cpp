@@ -661,13 +661,13 @@ struct frametimeGraph_t
 		tail = (tail + 1) & 0xFF;
 	}
 
-	double getTail(const size_t i)
+	double getTail(const size_t i) const
 	{
-		size_t idx = (tail - 1 - i) & 0xFF;
+		const size_t idx = (tail - 1 - i) & 0xFF;
 		return data[idx];
 	}
 
-	double normalize(const double n)
+	double normalize(const double n) const
 	{
 		return (n - minimum) / (maximum - minimum);
 	}
@@ -684,8 +684,8 @@ void V_DrawFPSWidget()
 	static dtime_t time_accum = 0;
 	static unsigned int frame_count = 0;
 
-	dtime_t current_time = I_GetTime();
-	dtime_t delta_time = current_time - last_time;
+	const dtime_t current_time = I_GetTime();
+	const dtime_t delta_time = current_time - last_time;
 	last_time = current_time;
 	frame_count++;
 

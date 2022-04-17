@@ -161,7 +161,7 @@ static void Wipe_DrawMelt()
 // on the Westside...
 
 // [RH] Fire Wipe
-static const int FIREWIDTH = 64, FIREHEIGHT = 64;
+static constexpr int FIREWIDTH = 64, FIREHEIGHT = 64;
 
 static byte *burnarray = NULL;
 static int density;

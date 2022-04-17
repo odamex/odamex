@@ -30,7 +30,7 @@
 class player_s;
 typedef player_s player_t;
 
-static const short CENTERVIEW = -32768;
+static constexpr short CENTERVIEW = -32768;
 //
 // NetCommand
 //
@@ -139,15 +139,15 @@ public:
 	void fromPlayer(player_t *player);
 
 private:
-	static const int CMD_BUTTONS		= 0x0001;
-	static const int CMD_ANGLE			= 0x0002;
-	static const int CMD_PITCH			= 0x0004;
-	static const int CMD_FORWARD		= 0x0008;
-	static const int CMD_SIDE			= 0x0010;
-	static const int CMD_UP				= 0x0020;
-	static const int CMD_IMPULSE		= 0x0040;
-	static const int CMD_DELTAYAW		= 0x0080;
-	static const int CMD_DELTAPITCH		= 0x0100;
+	static constexpr int CMD_BUTTONS		= 0x0001;
+	static constexpr int CMD_ANGLE			= 0x0002;
+	static constexpr int CMD_PITCH			= 0x0004;
+	static constexpr int CMD_FORWARD		= 0x0008;
+	static constexpr int CMD_SIDE			= 0x0010;
+	static constexpr int CMD_UP				= 0x0020;
+	static constexpr int CMD_IMPULSE		= 0x0040;
+	static constexpr int CMD_DELTAYAW		= 0x0080;
+	static constexpr int CMD_DELTAPITCH		= 0x0100;
 
 	int			mTic;
 	int			mWorldIndex;

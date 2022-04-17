@@ -3565,7 +3565,7 @@ double P_PlaneZ(double x, double y, const plane_t *plane)
 	if (!plane)
 		return MAXINT / 65536.0;
 
-	static const double m = 1.0 / (65536.0 * 65536.0);
+	static constexpr double m = 1.0 / (65536.0 * 65536.0);
 
 	// Is the plane level?  (Z value is constant for entire plane)
 	if (P_IsPlaneLevel(plane))
@@ -3691,7 +3691,7 @@ v3fixed_t P_LinePlaneIntersection(const plane_t *plane,
 
 bool P_PointOnPlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z)
 {
-	static const fixed_t threshold = FRACUNIT >> 6;
+	static constexpr fixed_t threshold = FRACUNIT >> 6;
 
 	if (!plane)
 		return false;

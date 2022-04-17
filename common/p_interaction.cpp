@@ -1345,7 +1345,7 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 		{ "she", "her", "her" },
 		{ "it",  "it",  "its" }
 	};
-	static const int gendershift[3][3] =
+	static constexpr int gendershift[3][3] =
 	{
 		{ 2, 3, 3 },
 		{ 3, 3, 3 },

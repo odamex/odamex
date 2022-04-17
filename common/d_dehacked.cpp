@@ -266,7 +266,7 @@ struct CodePtr
 	long default_args[MAXSTATEARGS];
 };
 
-static const struct CodePtr CodePtrs[] = {
+static const CodePtr CodePtrs[] = {
     {"NULL", NULL},
     {"MonsterRail", A_MonsterRail},
     {"FireRailgun", A_FireRailgun},
@@ -1483,21 +1483,21 @@ static int PatchSound(int soundNum)
 
 static int PatchFrame(int frameNum)
 {
-	static const struct Key keys[] = {{"Sprite number", offsetof(state_t, sprite)},
-	                                  {"Sprite subnumber", offsetof(state_t, frame)},
-	                                  {"Duration", offsetof(state_t, tics)},
-	                                  {"Next frame", offsetof(state_t, nextstate)},
-	                                  {"Unknown 1", offsetof(state_t, misc1)},
-	                                  {"Unknown 2", offsetof(state_t, misc2)},
-	                                  {"Args1", offsetof(state_t, args[0])},
-	                                  {"Args2", offsetof(state_t, args[1])},
-	                                  {"Args3", offsetof(state_t, args[2])},
-	                                  {"Args4", offsetof(state_t, args[3])},
-	                                  {"Args5", offsetof(state_t, args[4])},
-	                                  {"Args6", offsetof(state_t, args[5])},
-	                                  {"Args7", offsetof(state_t, args[6])},
-	                                  {"Args8", offsetof(state_t, args[7])},
-	                                  {NULL, 0}};
+	static const Key keys[] = {{"Sprite number", offsetof(state_t, sprite)},
+	                             {"Sprite subnumber", offsetof(state_t, frame)},
+	                             {"Duration", offsetof(state_t, tics)},
+	                             {"Next frame", offsetof(state_t, nextstate)},
+	                             {"Unknown 1", offsetof(state_t, misc1)},
+	                             {"Unknown 2", offsetof(state_t, misc2)},
+	                             {"Args1", offsetof(state_t, args[0])},
+	                             {"Args2", offsetof(state_t, args[1])},
+	                             {"Args3", offsetof(state_t, args[2])},
+	                             {"Args4", offsetof(state_t, args[3])},
+	                             {"Args5", offsetof(state_t, args[4])},
+	                             {"Args6", offsetof(state_t, args[5])},
+	                             {"Args7", offsetof(state_t, args[6])},
+	                             {"Args8", offsetof(state_t, args[7])},
+	                             {NULL, 0}};
 	int result;
 	state_t *info, dummy;
 
@@ -1671,7 +1671,7 @@ static int PatchAmmo(int ammoNum)
 
 static int PatchWeapon(int weapNum)
 {
-	static const struct Key keys[] = {
+	static const Key keys[] = {
 	    {"Ammo type", offsetof(weaponinfo_t, ammotype)},
 	    {"Deselect frame", offsetof(weaponinfo_t, upstate)},
 	    {"Select frame", offsetof(weaponinfo_t, downstate)},
@@ -1830,7 +1830,7 @@ static int PatchCheats(int dummy)
 
 static int PatchMisc(int dummy)
 {
-	static const struct Key keys[] = {
+	static const Key keys[] = {
 	    {"Initial Health", offsetof(struct DehInfo, StartHealth)},
 	    {"Initial Bullets", offsetof(struct DehInfo, StartBullets)},
 	    {"Max Health", offsetof(struct DehInfo, MaxHealth)},

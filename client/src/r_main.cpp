@@ -360,7 +360,7 @@ void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
 //
 bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipdist, int32_t& lclip, int32_t& rclip)
 {
-	static const int32_t CLIPUNIT = 1 << 30;
+	static constexpr int32_t CLIPUNIT = 1 << 30;
 	v2fixed_t p1 = *v1, p2 = *v2;
 
 	lclip = 0;

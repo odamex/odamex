@@ -331,7 +331,7 @@ static int CL_CalculateWorldIndexSync()
 //
 static int CL_CalculateWorldIndexDriftCorrection()
 {
-	static const float CORRECTION_PERIOD = 1.0f / 16.0f;
+	static constexpr float CORRECTION_PERIOD = 1.0f / 16.0f;
 
 	int delta = CL_CalculateWorldIndexSync() - world_index;
 	if (delta == 0)
@@ -2342,7 +2342,7 @@ void CL_SimulatePlayers()
 							world_index, dist >> FRACBITS);
 					#endif	// _SNAPSHOT_DEBUG_
 
-					static const fixed_t correction_amount = FRACUNIT * 0.80f;
+					static constexpr fixed_t correction_amount = FRACUNIT * 0.80f;
 					M_ScaleVec3Fixed(&offset, &offset, correction_amount);
 
 					// Apply a smoothing offset to the current snapshot
@@ -2386,8 +2386,8 @@ void CL_SimulateWorld()
 		return;
 
 	// if the world_index falls outside this range, resync it
-	static const int MAX_BEHIND = 16;
-	static const int MAX_AHEAD = 16;
+	static constexpr int MAX_BEHIND = 16;
+	static constexpr int MAX_AHEAD = 16;
 
 	int lower_sync_limit = CL_CalculateWorldIndexSync() - MAX_BEHIND;
 	int upper_sync_limit = CL_CalculateWorldIndexSync() + MAX_AHEAD;

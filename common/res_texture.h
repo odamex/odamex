@@ -73,8 +73,8 @@ public:
 		TEX_PNG,
 	} TextureSourceType;
 
-	static const unsigned int MAX_TEXTURE_WIDTH			= 2048;
-	static const unsigned int MAX_TEXTURE_HEIGHT		= 2048;
+	static constexpr unsigned int MAX_TEXTURE_WIDTH			= 2048;
+	static constexpr unsigned int MAX_TEXTURE_HEIGHT		= 2048;
 
 	texhandle_t getHandle() const
 	{	return mHandle;	}
@@ -201,18 +201,18 @@ public:
 	texhandle_t createCustomHandle();
 	void freeCustomHandle(texhandle_t texhandle);
 
-	static const texhandle_t NO_TEXTURE_HANDLE			= 0x0;
-	static const texhandle_t NOT_FOUND_TEXTURE_HANDLE	= 0x1;
+	static constexpr texhandle_t NO_TEXTURE_HANDLE			= 0x0;
+	static constexpr texhandle_t NOT_FOUND_TEXTURE_HANDLE	= 0x1;
 	static const texhandle_t GARBAGE_TEXTURE_HANDLE;
 
 private:
-	static const unsigned int FLAT_HANDLE_MASK			= 0x00010000ul;
-	static const unsigned int PATCH_HANDLE_MASK			= 0x00020000ul;
-	static const unsigned int SPRITE_HANDLE_MASK		= 0x00040000ul;
-	static const unsigned int WALLTEXTURE_HANDLE_MASK	= 0x00080000ul;
-	static const unsigned int RAW_HANDLE_MASK			= 0x000A0000ul;
-	static const unsigned int PNG_HANDLE_MASK			= 0x00100000ul;
-	static const unsigned int CUSTOM_HANDLE_MASK		= 0x01000000ul;
+	static constexpr unsigned int FLAT_HANDLE_MASK			= 0x00010000ul;
+	static constexpr unsigned int PATCH_HANDLE_MASK			= 0x00020000ul;
+	static constexpr unsigned int SPRITE_HANDLE_MASK		= 0x00040000ul;
+	static constexpr unsigned int WALLTEXTURE_HANDLE_MASK	= 0x00080000ul;
+	static constexpr unsigned int RAW_HANDLE_MASK			= 0x000A0000ul;
+	static constexpr unsigned int PNG_HANDLE_MASK			= 0x00100000ul;
+	static constexpr unsigned int CUSTOM_HANDLE_MASK		= 0x01000000ul;
 
 	// initialization routines
 	void clear();
@@ -288,7 +288,7 @@ private:
 	TextureNameTranslationMap	mTextureNameTranslationMap;
 
 	// handle management for the creation of new handles
-	static const unsigned int MAX_CUSTOM_HANDLES = 1024;
+	static constexpr unsigned int MAX_CUSTOM_HANDLES = 1024;
 	unsigned int				mFreeCustomHandlesHead;
 	unsigned int				mFreeCustomHandlesTail;
 	texhandle_t					mFreeCustomHandles[MAX_CUSTOM_HANDLES];
@@ -296,7 +296,7 @@ private:
 	// animated textures
 	struct anim_t
 	{
-		static const unsigned int MAX_ANIM_FRAMES = 32;
+		static constexpr unsigned int MAX_ANIM_FRAMES = 32;
 		texhandle_t		basepic;
 		short			numframes;
 		byte			countdown;

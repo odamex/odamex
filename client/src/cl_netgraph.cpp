@@ -177,7 +177,7 @@ void NetGraph::drawMispredictions(int x, int y)
 
 void NetGraph::drawTrafficIn(int x, int y)
 {
-	static const int textcolor = CR_GREY;
+	static constexpr int textcolor = CR_GREY;
 
 	int totalTraffic = 0;
 	for (int i = 0;i < TICRATE;i++)
@@ -197,7 +197,7 @@ void NetGraph::drawTrafficIn(int x, int y)
 
 void NetGraph::drawTrafficOut(int x, int y)
 {
-	static const int textcolor = CR_GREY;
+	static constexpr int textcolor = CR_GREY;
 
 	int totalTraffic = 0;
 	for (int i = 0;i < TICRATE;i++)
@@ -217,7 +217,7 @@ void NetGraph::drawTrafficOut(int x, int y)
 
 void NetGraph::drawPackets(int x, int y)
 {
-	static const int textcolor = CR_GREY;
+	static constexpr int textcolor = CR_GREY;
 
 	int maxPackets = 0;
 
@@ -241,8 +241,8 @@ void NetGraph::drawPackets(int x, int y)
 
 void NetGraph::draw()
 {
-	static const int textcolor = CR_GREY;
-	static const int fontheight = 8;
+	static constexpr int textcolor = CR_GREY;
+	static constexpr int fontheight = 8;
 
     screen->DrawText(textcolor, mX, mY, "World Index Sync");
 	drawWorldIndexSync(mX, mY + fontheight);

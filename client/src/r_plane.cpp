@@ -56,8 +56,8 @@ planefunction_t 		ceilingfunc;
 // Here comes the obnoxious "visplane".
 #define MAXVISPLANES 128    /* must be a power of 2 */
 
-static const float flatwidth = 64.0f;
-static const float flatheight = 64.0f;
+static constexpr float flatwidth = 64.0f;
+static constexpr float flatheight = 64.0f;
 
 static visplane_t		*visplanes[MAXVISPLANES];	// killough
 static visplane_t		*freetail;					// killough
