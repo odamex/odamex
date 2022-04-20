@@ -37,7 +37,7 @@ class OCircularBuffer
 	OCircularBuffer()
 	{
 		// Check if SIZE is power of two.
-		if (SIZE && !(SIZE & (SIZE - 1)))
+		if (!SIZE || (SIZE & (SIZE - 1)))
 			throw std::logic_error("circular buffer size is not power of 2");
 
 		ArrayInit(m_buffer, TYPE());
