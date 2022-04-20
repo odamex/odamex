@@ -7,5 +7,5 @@ IFS=$'\n\t'
 
 set -x
 
-docker build -t odamex -f ci/centos.Dockerfile .
+docker build -t odamex -f ci/fedora.Dockerfile .
 docker run --rm odamex

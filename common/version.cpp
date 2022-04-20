@@ -29,7 +29,7 @@
 #include "git_describe.h"
 #endif
 
-#include <map>
+#include <unordered_map>
 #include <sstream>
 #include <memory>
 
@@ -151,14 +151,13 @@ std::string VersionMessage(const int server, const int client, const char* email
 	return rvo;
 }
 
-typedef std::map<std::string, std::string> source_files_t;
+using source_files_t = std::unordered_map<std::string, std::string>;
 
 source_files_t &get_source_files()
 {
-	static std::auto_ptr<source_files_t> source_files(new source_files_t);
+	static auto source_files = std::make_unique<source_files_t>();
 	return *source_files.get();
 }
-
 
 file_version::file_version(const char *uid, const char *id, const char *pp, int l, const char *t, const char *d)
 {
@@ -338,10 +337,11 @@ END_COMMAND (version)
 
 BEGIN_COMMAND (listsourcefiles)
 {
-	for (source_files_t::const_iterator it = get_source_files().begin(); it != get_source_files().end(); ++it)
-		Printf(PRINT_HIGH, "%s\n", it->first.c_str());
-		
-	Printf(PRINT_HIGH, "End of list\n");
+	for (source_files_t::const_iterator it = get_source_files().begin();
+	     it != get_source_files().end(); ++it)
+	{
+		Printf(PRINT_HIGH, "%s %s\n", it->first.c_str(), it->second.c_str());
+	}
 }
 END_COMMAND(listsourcefiles)
 
