@@ -2879,7 +2879,7 @@ static parseError_e ParseMessageBody(google::protobuf::Message*& out, const byte
 /**
  * @brief Read a server message off the wire.
  */
-static void ReadMessage()
+static bool ReadMessage()
 {
 	svc_t svc = svc_noop;
 	bool reliable = false;
@@ -2899,6 +2899,8 @@ static void ReadMessage()
 
 	// The message itself.
 	void* data = MSG_ReadChunk(size);
+	if (data == nullptr || ::net_message.overflowed)
+		return false;
 
 	// Put the unparsed message into the proper queue.  Don't parse the message yet
 	// since at that point we have to worry about lifetimes, which doesn't mix well
@@ -2918,21 +2920,27 @@ static void ReadMessage()
 	}
 }
 
+/**
+ * @brief Read all messages off the wire.
+ * 
+ * @return True if the messages were read correctly, otherwise false. 
+ */
 void CL_ReadMessages()
 {
 	for (;;)
 	{
-		if (!::connected || ::net_message.BytesLeftToRead() == 0)
-		{
-			break;
-		}
+		if (!::connected)
+			return;
+
+		if (::net_message.BytesLeftToRead() == 0)
+			return;
 
 		const size_t byteStart = ::net_message.BytesRead();
-		ReadMessage();
-		if (::net_message.overflowed)
+		if (!ReadMessage())
 		{
 			Printf(PRINT_WARNING, "%s: Message overflowed\n", __FUNCTION__);
 			CL_QuitNetGame(NQ_PROTO);
+			return;
 		}
 
 		// Measure length of each message, so we can keep track of bandwidth.
@@ -3101,6 +3109,9 @@ void CL_ParseMessages()
 			Printf(PRINT_WARNING, "%s: %s (reliable #%d)\n", __FUNCTION__, err.c_str(),
 			       reliableCount);
 			PrintRecentProtos();
+
+			CL_QuitNetGame(NQ_PROTO);
+			return;
 		}
 		reliableCount += 1;
 	}
@@ -3131,6 +3142,9 @@ void CL_ParseMessages()
 			Printf(PRINT_WARNING, "%s: %s (unreliable #%d)\n", __FUNCTION__, err.c_str(),
 			       unreliableCount);
 			PrintRecentProtos();
+
+			CL_QuitNetGame(NQ_PROTO);
+			return;
 		}
 		unreliableCount += 1;
 	}
