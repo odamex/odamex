@@ -133,6 +133,8 @@ bool SVCMessages::writePacket(buf_t& buf)
 
 		sent.size += TOTAL_SIZE;
 		sent.reliableIDs.push_back(queue->messageID);
+
+		queue->lastSent = TIME;
 	}
 
 	// See if we can fit in any other unreliable messages.
@@ -154,7 +156,9 @@ bool SVCMessages::writePacket(buf_t& buf)
 	// If there is a contiguous string of unreliable messages at the start
 	// of the queue, pop them so we can reduce the iteration length next time.
 	while (!m_unreliableMessages.empty() && m_unreliableMessages.front().sent)
+	{
 		m_unreliableMessages.pop();
+	}
 
 	for (uint32_t i = 0; i < LENGTH; i++)
 	{
