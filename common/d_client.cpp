@@ -134,6 +134,7 @@ bool SVCMessages::writePacket(buf_t& buf)
 		sent.size += TOTAL_SIZE;
 		sent.reliableIDs.push_back(queue->messageID);
 
+		// Ensure we don't resend immediately.
 		queue->lastSent = TIME;
 	}
 

@@ -839,6 +839,99 @@ void CL_SimulateWorld();
 extern DCanvas *page;
 extern int connecttimeout;
 
+/**
+ * @brief Tick the network game while connected.
+ * 
+ * @return True if we should continue, false if we need to early-return.
+ */
+static bool TickConnected()
+{
+	static int realrate = 0;
+	int packet_size;
+
+	while ((packet_size = NET_GetPacket()))
+	{
+		// denis - don't accept candy from strangers
+		if (!NET_CompareAdr(serveraddr, net_from))
+			break;
+
+		realrate += packet_size;
+		last_received = gametic;
+		noservermsgs = false;
+
+		if (!CL_ReadPacketHeader())
+			continue;
+
+		if (netdemo.isRecording())
+			netdemo.capture(&net_message);
+
+		CL_ReadAndParseMessages();
+
+		if (gameaction == ga_fullconsole) // Host_EndGame was called
+			return false;
+	}
+
+	if (!(gametic % TICRATE))
+	{
+		netin = realrate;
+		realrate = 0;
+	}
+
+	CL_SaveCmd(); // save console commands
+	if (!noservermsgs)
+		CL_SendCmd(); // send console commands to the server
+
+	if (!(gametic % TICRATE))
+	{
+		netout = outrate;
+		outrate = 0;
+	}
+
+	if (gametic - last_received > 65)
+		noservermsgs = true;
+
+	return true;
+}
+
+/**
+ * @brief Tick connection sequence.
+ */
+void TickConnecting()
+{
+	if (!NET_GetPacket())
+		return;
+
+	// denis - don't accept candy from strangers
+	if (gamestate != GS_CONNECTING || !NET_CompareAdr(serveraddr, net_from))
+		return;
+
+	if (netdemo.isRecording())
+		netdemo.capture(&net_message);
+
+	int type = MSG_ReadLong();
+
+	if (type == MSG_CHALLENGE)
+	{
+		CL_PrepareConnect();
+	}
+	else if (type == 0)
+	{
+		if (!CL_Connect())
+			memset(&serveraddr, 0, sizeof(serveraddr));
+
+		connecttimeout = 0;
+	}
+	else
+	{
+		// we are already connected to this server, quit first
+		MSG_WriteMarker(&net_buffer, clc_disconnect);
+		NET_SendPacket(net_buffer, serveraddr);
+
+		Printf(PRINT_WARNING,
+		       "Got unknown challenge %d while connecting, disconnecting.\n", type);
+	}
+}
+
 void G_Ticker (void)
 {
 	int 		buf;
@@ -936,8 +1029,6 @@ void G_Ticker (void)
     buf = gametic%BACKUPTICS;
 	memcpy (&consoleplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
 
-    static int realrate = 0;
-    int packet_size;
 
 	if (demoplayback)
 		G_ReadDemoTiccmd(); // play all player commands
@@ -947,79 +1038,16 @@ void G_Ticker (void)
 		netdemo.readMessages(&net_message);
 	}
 
-	if (connected && !simulated_connection)
+	if (!::simulated_connection)
 	{
-		while ((packet_size = NET_GetPacket()) )
+		if (::connected)
 		{
-			// denis - don't accept candy from strangers
-			if(!NET_CompareAdr(serveraddr, net_from))
-				break;
-
-			realrate += packet_size;
-			last_received = gametic;
-			noservermsgs = false;
-
-			if (!CL_ReadPacketHeader())
-				continue;
-
-			if (netdemo.isRecording())
-				netdemo.capture(&net_message);
-
-			CL_ReadAndParseMessages();
-
-			if (gameaction == ga_fullconsole) // Host_EndGame was called
+			if (!TickConnected())
 				return;
 		}
-
-		if (!(gametic%TICRATE))
+		else
 		{
-			netin = realrate;
-			realrate = 0;
-		}
-
-		CL_SaveCmd();      // save console commands
-		if (!noservermsgs)
-			CL_SendCmd();  // send console commands to the server
-
-		if (!(gametic%TICRATE))
-		{
-			netout = outrate;
-			outrate = 0;
-		}
-
-		if (gametic - last_received > 65)
-			noservermsgs = true;
-	}
-	else if (NET_GetPacket() && !simulated_connection)
-	{
-		// denis - don't accept candy from strangers
-		if (gamestate == GS_CONNECTING && NET_CompareAdr(serveraddr, net_from))
-		{
-			if (netdemo.isRecording())
-				netdemo.capture(&net_message);
-
-			int type = MSG_ReadLong();
-
-			if(type == MSG_CHALLENGE)
-			{
-				CL_PrepareConnect();
-			}
-			else if(type == 0)
-			{
-				if (!CL_Connect())
-					memset (&serveraddr, 0, sizeof(serveraddr));
-
-				connecttimeout = 0;
-			}
-			else
-			{
-				// we are already connected to this server, quit first
-				MSG_WriteMarker(&net_buffer, clc_disconnect);
-				NET_SendPacket(net_buffer, serveraddr);
-
-				Printf(PRINT_WARNING,
-				       "Got unknown challenge %d while connecting, disconnecting.\n", type);
-			}
+			TickConnecting();
 		}
 	}
 
