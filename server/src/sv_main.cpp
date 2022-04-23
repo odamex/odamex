@@ -1513,8 +1513,6 @@ void SV_ClientFullUpdate(player_t &pl)
 	SV_ThinkerUpdate(cl);
 
 	SV_QueueReliable(*cl, odaproto::svc::FullUpdateDone());
-
-	SV_SendPacket(pl);
 }
 
 //===========================
@@ -1564,14 +1562,7 @@ static void SendServerSettings(player_t& pl)
 	{
 		if (var->flags() & CVAR_SERVERINFO)
 		{
-			odaproto::svc::ServerSettings settings = SVC_ServerSettings(*var);
-
-			if (settings.ByteSizeLong() > MAX_UDP_SIZE - cl->reliablebuf.size())
-			{
-				SV_SendPacket(pl);
-			}
-
-			SV_QueueReliable(*cl, settings);
+			SV_QueueReliable(*cl, SVC_ServerSettings(*var));
 		}
 
 		var = var->GetNext();
@@ -1663,7 +1654,7 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 
 		SV_QueueReliable(*cl, SVC_Print(PRINT_WARNING, msg));
 		SV_QueueReliable(*cl, SVC_Disconnect());
-		SV_SendPacket(*it);
+		SV_SendQueuedPackets(*cl);
 
 		// GhostlyDeath -- And we tell the server
 		Printf("%s disconnected (version mismatch %s).\n", NET_AdrToString(::net_from),
@@ -1860,14 +1851,19 @@ void SV_ConnectClient()
 		    *cl,
 		    SVC_Print(PRINT_HIGH,
 		              "Server is passworded, no password specified or bad password.\n"));
-		SV_SendPacket(*player);
+		SV_SendQueuedPackets(*cl);
 		SV_DropClient(*player);
 		return;
 	}
 
 	// send consoleplayer number
 	SV_QueueReliable(*cl, SVC_ConsolePlayer(*player, cl->digest));
-	SV_SendPacket(*player);
+	if (!SV_SendQueuedPackets(*cl))
+	{
+		Printf("%s disconnected (queued server packet contains no data).\n", NET_AdrToString(net_from));
+		SV_DropClient(*player);
+		return;
+	}
 }
 
 void SV_ConnectClient2(player_t& player)
@@ -2017,18 +2013,17 @@ void SV_DisconnectClient(player_t &who)
 // SV_DropClient
 // Called when the player is leaving the server unwillingly.
 //
-void SV_DropClient2(player_t &who, const char* file, const int line)
+void SV_DropClient2(player_t& who, const char* file, const int line)
 {
-	client_t *cl = &who.client;
-
-	SV_QueueReliable(*cl, SVC_Disconnect());
-
-	SV_SendPacket(who);
+	SV_QueueReliable(who.client, SVC_Disconnect());
+	SV_SendQueuedPackets(who.client);
 
 	SV_DisconnectClient(who);
 
 	if (::debug_disconnect)
+	{
 		Printf("  (%s:%d)\n", file, line);
+	}
 }
 
 //
@@ -2036,18 +2031,18 @@ void SV_DropClient2(player_t &who, const char* file, const int line)
 //
 void SV_SendDisconnectSignal()
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : ::players)
 	{
-		client_t *cl = &(it->client);
+		SV_QueueReliable(player.client, SVC_Disconnect("Shutting down\n"));
+		SV_SendQueuedPackets(player.client);
 
-		SV_QueueReliable(*cl, SVC_Disconnect("Shutting down\n"));
-		SV_SendPacket(*it);
-
-		if (it->mo)
-			it->mo->Destroy();
+		if (player.mo)
+		{
+			player.mo->Destroy();
+		}
 	}
 
-	players.clear();
+	::players.clear();
 }
 
 //
@@ -2057,16 +2052,18 @@ void SV_SendDisconnectSignal()
 void SV_SendReconnectSignal()
 {
 	// tell others clients about it
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : ::players)
 	{
-		SV_QueueReliable(it->client, odaproto::svc::Reconnect());
-		SV_SendPacket(*it);
+		SV_QueueReliable(player.client, odaproto::svc::Reconnect());
+		SV_SendQueuedPackets(player.client);
 
-		if (it->mo)
-			it->mo->Destroy();
+		if (player.mo)
+		{
+			player.mo->Destroy();
+		}
 	}
 
-	players.clear();
+	::players.clear();
 }
 
 //
@@ -2075,9 +2072,9 @@ void SV_SendReconnectSignal()
 //
 void SV_ExitLevel()
 {
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : ::players)
 	{
-		SV_QueueReliable(it->client, odaproto::svc::ExitLevel());
+		SV_QueueReliable(player.client, odaproto::svc::ExitLevel());
 	}
 }
 
@@ -2774,13 +2771,7 @@ void SV_UpdateMissiles(player_t &pl)
 
 		if(SV_IsPlayerAllowedToSee(pl, mo))
 		{
-			client_t *cl = &pl.client;
-
-			SV_QueueUnreliable(*cl, SVC_UpdateMobj(*mo));
-
-            if (cl->netbuf.cursize >= 1024)
-                if(!SV_SendPacket(pl))
-                    return;
+			SV_QueueUnreliable(pl.client, SVC_UpdateMobj(*mo));
 		}
     }
 }
@@ -2841,15 +2832,7 @@ void SV_UpdateMonsters(player_t &pl)
 
 		if (SV_IsPlayerAllowedToSee(pl, mo) && mo->target)
 		{
-			client_t *cl = &pl.client;
-
-			SV_QueueUnreliable(*cl, SVC_UpdateMobj(*mo));
-
-			if (cl->netbuf.cursize >= 1024)
-			{
-				if (!SV_SendPacket(pl))
-					return;
-			}
+			SV_QueueUnreliable(pl.client, SVC_UpdateMobj(*mo));
 		}
 	}
 }
@@ -3084,13 +3067,7 @@ void SV_SendPackets()
 		// [AM] Don't send packets to players who haven't acked packet 0
 		if (it->playerstate != PST_CONTACT)
 		{
-			for (;;)
-			{
-				if (!it->client.msg.writePacket(it->client.netbuf))
-					break;
-
-				SV_SendPacket(*it);
-			}
+			SV_SendQueuedPackets(it->client);
 		}
 
 		++it;

@@ -902,8 +902,12 @@ void Vote::parse(vote_result_t vote_result)
 	// before we do anything else.
 	SV_GlobalVoteUpdate();
 	for (Players::iterator it = players.begin();it != players.end();++it)
+	{
 		if (validplayer(*it))
-			SV_SendPacket(*it);
+		{
+			SV_SendQueuedPackets(it->client);
+		}
+	}
 
 	if (this->tally.empty() || vote_result == VOTE_ABANDON)
 	{

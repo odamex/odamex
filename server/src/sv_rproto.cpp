@@ -128,36 +128,48 @@ void SV_SendPacketDelayed(buf_t& packet, player_t& pl)
 }
 #endif
 
-//
-// SV_SendPacket
-//
-bool SV_SendPacket(player_t& pl)
+/**
+ * @brief Send all queued packets for a client.
+ * 
+ * @param client Client to send packets for.
+ * @return True if at least one packet was sent.
+ */
+bool SV_SendQueuedPackets(client_t& client)
 {
-	// [AM] Most of the hard work of assembling the packet is done in the client.
-	//      struct.  Here, we just set some flags and send the netbuf.
-	
-	client_t& client = pl.client;
-
-	if (client.netbuf.size() <= PACKET_HEADER_SIZE)
-		return false; // Can't send a packet this small.
-
-	// compress the packet, but not the sequence id
-	if (client.netbuf.size() > PACKET_HEADER_SIZE)
+	size_t count = 0;
+	for (;;)
 	{
-		CompressPacket(client.netbuf, PACKET_HEADER_SIZE, &client);
-	}
+		if (!client.msg.writePacket(client.netbuf))
+			break;
 
-	if (log_packetdebug)
-	{
-		// [AM] TODO: What can we put here?
-	}
+		// [AM] Most of the hard work of assembling the packet is done in the client.
+		//      struct.  Here, we just set some flags and send the netbuf.
+		if (client.netbuf.size() <= PACKET_HEADER_SIZE)
+		{
+			// Can't send a packet this small.
+			break;
+		}
+
+		// compress the packet, but not the sequence id
+		if (client.netbuf.size() > PACKET_HEADER_SIZE)
+		{
+			CompressPacket(client.netbuf, PACKET_HEADER_SIZE, &client);
+		}
+
+		if (log_packetdebug)
+		{
+			// [AM] TODO: What can we put here?
+		}
 
 #ifdef SIMULATE_LATENCY
-	SV_SendPacketDelayed(sendd, pl);
+		SV_SendPacketDelayed(sendd, pl);
 #else
-	NET_SendPacket(client.netbuf, client.address);
+		NET_SendPacket(client.netbuf, client.address);
 #endif
-	return true;
+		count += 1;
+	}
+
+	return count > 0;
 }
 
 /**
