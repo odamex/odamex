@@ -30,29 +30,47 @@
 #include "i_system.h"
 #include "svc_map.h"
 
+static const dtime_t RELIABLE_TIMEOUT = 100;
+static const size_t RELIABLE_HEADER_SIZE = sizeof(byte) + sizeof(uint16_t);
+static const size_t UNRELIABLE_HEADER_SIZE = sizeof(byte);
+
+/**
+ * @brief Return a sent packet for a given packet ID, with no error checking.
+ */
 SVCMessages::sentPacket_s& SVCMessages::sentPacket(const uint32_t id)
 {
 	return m_sentPackets[id];
 }
 
+/**
+ * @brief Return a sent packet for a given packet ID, or null if there is
+ *        no matching packet.
+ */
 SVCMessages::sentPacket_s* SVCMessages::validSentPacket(const uint32_t id)
 {
 	sentPacket_s* sent = &sentPacket(id);
 	if (sent->packetID != id)
-		return NULL;
+		return nullptr;
 	return sent;
 }
 
+/**
+ * @brief Return a reliable message for a given reliable ID, with no error checking.
+ */
 SVCMessages::reliableMessage_s& SVCMessages::reliableMessage(const uint16_t id)
 {
 	return m_reliableMessages[id];
 }
 
+/**
+ * @brief Return a reliable message for a given message ID, or null if there
+ *        is no matching message.
+ */
 SVCMessages::reliableMessage_s* SVCMessages::validReliableMessage(const uint16_t id)
 {
 	reliableMessage_s* sent = &reliableMessage(id);
 	if (sent->messageID != id || sent->acked)
-		return NULL;
+		return nullptr;
 	return sent;
 }
 
@@ -71,6 +89,22 @@ SVCMessages::SVCMessages(const SVCMessages& other)
 }
 
 /**
+ * @brief Clear the message container.
+ */
+void SVCMessages::clear()
+{
+	auto reliableMessages = decltype(m_reliableMessages)();
+	std::swap(m_reliableMessages, reliableMessages);
+	auto unreliableMessages = decltype(m_unreliableMessages)();
+	std::swap(m_unreliableMessages, unreliableMessages);
+	auto sentPackets = decltype(m_sentPackets)();
+	std::swap(m_sentPackets, sentPackets);
+	m_nextPacketID = 0;
+	m_nextReliableID = 0;
+	m_reliableNoAck = 0;
+}
+
+/**
  * @brief Queue a reliable message to be sent.
  */
 void SVCMessages::queueReliable(const google::protobuf::Message& msg)
@@ -79,7 +113,7 @@ void SVCMessages::queueReliable(const google::protobuf::Message& msg)
 	reliableMessage_s& queued = reliableMessage(m_nextReliableID);
 	queued.acked = false;
 	queued.messageID = m_nextReliableID;
-	queued.lastSent = I_MSTime();
+	queued.lastSent = 0ULL - RELIABLE_TIMEOUT;
 	queued.header = SVC_ResolveDescriptor(msg.GetDescriptor());
 	msg.SerializeToString(&queued.data);
 
@@ -120,16 +154,32 @@ bool SVCMessages::writePacket(buf_t& buf)
 	{
 		reliableMessage_s* queue = validReliableMessage(m_reliableNoAck + i);
 		if (queue == NULL)
-			continue; // Invalid message.
+		{
+			Printf("%d: Invalid message\n", m_reliableNoAck + i);
 
-		if (queue->lastSent + 100 >= TIME)
-			continue; // Don't rapid-fire resends.
+			// Invalid message.
+			continue;
+		}
+
+		if (queue->lastSent + RELIABLE_TIMEOUT >= TIME)
+		{
+			Printf("%d: Too soon (ls:%llu t:%llu)\n", m_reliableNoAck + i,
+			       queue->lastSent + RELIABLE_TIMEOUT, TIME);
+
+			// Don't rapid-fire resends.
+			continue;
+		}
 
 		// Size of data plus header.
-		const size_t TOTAL_SIZE = 1 + queue->data.size();
-
+		const size_t TOTAL_SIZE = RELIABLE_HEADER_SIZE + queue->data.size();
 		if (sent.size + TOTAL_SIZE > MAX_UDP_SIZE)
-			continue; // Too big to fit.
+		{
+			Printf("%d: Too big (sz:%zu, max:%zu)\n", m_reliableNoAck + i,
+			       sent.size + TOTAL_SIZE, MAX_UDP_SIZE);
+
+			// Too big to fit.
+			continue;
+		}
 
 		sent.size += TOTAL_SIZE;
 		sent.reliableIDs.push_back(queue->messageID);
@@ -143,12 +193,18 @@ bool SVCMessages::writePacket(buf_t& buf)
 	{
 		unreliableMessage_s& msg = m_unreliableMessages[i];
 		if (msg.sent)
-			continue; // Already sent.
+		{
+			// Already sent.
+			continue;
+		}
 
 		// Size of data plus header.
-		const size_t TOTAL_SIZE = 1 + msg.data.size();
+		const size_t TOTAL_SIZE = UNRELIABLE_HEADER_SIZE + msg.data.size();
 		if (sent.size + TOTAL_SIZE > MAX_UDP_SIZE)
-			continue; // Too big to fit.
+		{
+			// Too big to fit.
+			continue;
+		}
 
 		sent.size += TOTAL_SIZE;
 		sent.unreliables.push_back(&msg);
@@ -161,45 +217,28 @@ bool SVCMessages::writePacket(buf_t& buf)
 		m_unreliableMessages.pop();
 	}
 
-	for (uint32_t i = 0; i < LENGTH; i++)
-	{
-		reliableMessage_s* queue = validReliableMessage(m_reliableNoAck + i);
-		if (queue == NULL)
-			continue; // Invalid message.
-
-		if (queue->lastSent + 100 >= TIME)
-			continue; // Don't rapid-fire resends.
-
-		// Size of data plus header.
-		const size_t TOTAL_SIZE = 1 + queue->data.size();
-
-		if (sent.size + TOTAL_SIZE > MAX_UDP_SIZE)
-			continue; // Too big to fit.
-
-		sent.size += TOTAL_SIZE;
-		sent.reliableIDs.push_back(queue->messageID);
-	}
-
 	if (sent.size == 0)
-		return false; // No messages were queued.
+	{
+		// No messages were queued.
+		return false;
+	}
 
 	// Assemble the message for sending.
 	buf.clear();
 	buf.WriteLong(int(m_nextPacketID)); // Packet ID
 	buf.WriteByte(0);                   // Empty space for flags.
 
-	// Write out the individual messages.
+	// Write out the individual reliable messages.
 	for (size_t i = 0; i < sent.reliableIDs.size(); i++)
 	{
 		const reliableMessage_s& msg = reliableMessage(sent.reliableIDs[i]);
 		const byte header = svc::ToByte(msg.header, true);
 		buf.WriteByte(header);
-		buf.WriteShort(
-		    uint16_t(msg.messageID)); // Message ID is only for reliable messages.
+		buf.WriteShort(uint16_t(msg.messageID)); // reliable only
 		buf.WriteChunk(msg.data.data(), uint32_t(msg.data.size()));
 	}
 
-	// Write out the individual messages.
+	// Write out the individual unreliable messages.
 	for (size_t i = 0; i < sent.unreliables.size(); i++)
 	{
 		const unreliableMessage_s& msg = *sent.unreliables[i];

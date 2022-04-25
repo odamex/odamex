@@ -56,7 +56,7 @@ void STACK_ARGS SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);
 void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...);
 void STACK_ARGS SV_PlayerPrintf (int level, int who, const char *fmt, ...);
 void SV_CheckTimeouts (void);
-void SV_ConnectClient(void);
+void SV_ConnectClient();
 void SV_ConnectClient2(player_t& player);
 void SV_QueueReliable(client_t& cl, const google::protobuf::Message& msg);
 void SV_QueueUnreliable(client_t& cl, const google::protobuf::Message& msg);

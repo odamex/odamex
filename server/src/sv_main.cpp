@@ -1782,6 +1782,7 @@ void SV_ConnectClient()
 	cl->lastclientcmdtic = 0;
 	cl->allow_rcon = false;
 	cl->displaydisconnect = false;
+	cl->msg.clear();
 
 	SZ_Clear(&cl->netbuf);
 	SZ_Clear(&cl->reliablebuf);
