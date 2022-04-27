@@ -539,15 +539,18 @@ int32_t Server::TranslateResponse(const uint16_t& TagId,
 		return 0;
 	}
 
-	if((VERSIONMAJOR(SvVersion) < VERSIONMAJOR(VERSION)) ||
-	        (VERSIONMAJOR(SvVersion) <= VERSIONMAJOR(VERSION) && VERSIONMINOR(SvVersion) < VERSIONMINOR(VERSION)))
+	int svmaj, svmin, svpat, olmaj, olmin, olpat;
+	DISECTVERSION(SvVersion, svmaj, svmin, svpat);
+	DISECTVERSION(SvVersion, olmaj, olmin, olpat);
+
+	// [AM] Show current major and next major versions.  This allows a natural
+	//      upgrade path without signing us up for supporting every version of
+	//      the SQP in perpituity.
+	if (svmaj < olmaj || svmaj > olmaj + 1)
 	{
-		// Server is an older version
 		NET_ReportError("Server %s is version %d.%d.%d which is not supported\n",
 		                Socket->GetRemoteAddress().c_str(),
-		                VERSIONMAJOR(SvVersion),
-		                VERSIONMINOR(SvVersion),
-		                VERSIONPATCH(SvVersion));
+		                svmaj, svmin, svpat);
 
 		return 0;
 	}
