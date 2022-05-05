@@ -815,6 +815,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		// in case no surrounding sector is at floordestheight
 		// --> should not affect compatibility <--
 		m_NewSpecial = sec->special;
+		m_NewFlags = sec->flags;
 
 		//jff 5/23/98 use model subroutine to unify fixes and handling
 		sec = P_FindModelFloorSector (m_FloorDestHeight,sec);
@@ -822,6 +823,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		{
 			m_Texture = sec->floorpic;
 			m_NewSpecial = sec->special;
+			m_NewFlags = sec->flags;
 		}
 		break;
 
@@ -860,10 +862,12 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 				{
 				case 1:
 					m_NewSpecial = 0;
+					m_NewFlags = 0;
 					m_Type = DFloor::genFloorChg0;
 					break;
 				case 2:
 					m_NewSpecial = found->special;
+					m_NewFlags = found->flags;
 					m_Type = DFloor::genFloorChgT;
 					break;
 				case 3:
@@ -880,10 +884,12 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 			switch (change & 3) {
 				case 1:
 					m_NewSpecial = 0;
+				    m_NewFlags = 0;
 					m_Type = DFloor::genFloorChg0;
 					break;
 				case 2:
-					m_NewSpecial = sec->special;
+				    m_NewSpecial = line->frontsector->special;
+				    m_NewFlags = line->frontsector->flags;
 					m_Type = DFloor::genFloorChgT;
 					break;
 				case 3:
