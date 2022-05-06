@@ -1748,33 +1748,20 @@ bool CL_Connect()
 
 	memset(packetseq, -1, sizeof(packetseq));
 
-	// [AM] This needs to go out ASAP so the server can start sending us
-	//      messages.
-	MSG_WriteMarker(&net_buffer, clc_ack);
-	MSG_WriteLong(&net_buffer, 0);
-	MSG_WriteLong(&net_buffer, 0);
-	NET_SendPacket(::net_buffer, ::serveraddr);
-	Printf("Requesting server state...\n");
-
 	compressor.reset();
 
 	connected = true;
-    multiplayer = true;
-    network_game = true;
+	multiplayer = true;
+	network_game = true;
 	serverside = false;
 	simulated_connection = netdemo.isPlaying();
 
-	byte flags = MSG_ReadByte();
-	if (flags & SVF_UNUSED_MASK)
-	{
-		Printf(PRINT_WARNING, "Protocol flag bits (%u) were not understood.", flags);
-		CL_QuitNetGame(NQ_PROTO);
-	}
-	else if (flags & SVF_COMPRESSED)
-	{
-		CL_Decompress();
-	}
-	CL_ReadAndParseMessages();
+	net_buffer.readpos = 0; // Rewind so we can start again.
+	if (!CL_ReadPacketHeader())
+		return false;
+
+	if (!CL_ReadAndParseMessages())
+		return false;
 
 	if (gameaction == ga_fullconsole) // Host_EndGame was called
 		return false;
@@ -1990,6 +1977,7 @@ bool CL_ReadPacketHeader()
 	{
 		Printf(PRINT_WARNING, "Protocol flag bits (%u) were not understood.", flags);
 		CL_QuitNetGame(NQ_PROTO);
+		return false;
 	}
 	else if (flags & SVF_COMPRESSED)
 	{
@@ -2009,10 +1997,15 @@ void CL_Clear()
 //
 // CL_ReadAndParseMessages
 //
-void CL_ReadAndParseMessages()
+bool CL_ReadAndParseMessages()
 {
-	CL_ReadMessages();
-	CL_ParseMessages();
+	if (!CL_ReadMessages())
+		return false;
+
+	if (!CL_ParseMessages())
+		return false;
+
+	return true;
 }
 
 void CL_SaveCmd(void)

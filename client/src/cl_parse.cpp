@@ -2925,22 +2925,22 @@ static bool ReadMessage()
  * 
  * @return True if the messages were read correctly, otherwise false. 
  */
-void CL_ReadMessages()
+bool CL_ReadMessages()
 {
 	for (;;)
 	{
 		if (!::connected)
-			return;
+			return false;
 
 		if (::net_message.BytesLeftToRead() == 0)
-			return;
+			return true;
 
 		const size_t byteStart = ::net_message.BytesRead();
 		if (!ReadMessage())
 		{
 			Printf(PRINT_WARNING, "%s: Message overflowed\n", __FUNCTION__);
 			CL_QuitNetGame(NQ_PROTO);
-			return;
+			return false;
 		}
 
 		// Measure length of each message, so we can keep track of bandwidth.
@@ -3077,7 +3077,7 @@ static void PrintRecentProtos()
  * @brief Parse as many reliable messages as we can, as well as all
  *        unreliable messages.
  */
-void CL_ParseMessages()
+bool CL_ParseMessages()
 {
 	int reliableCount = 1;
 	int unreliableCount = 1;
@@ -3111,7 +3111,7 @@ void CL_ParseMessages()
 			PrintRecentProtos();
 
 			CL_QuitNetGame(NQ_PROTO);
-			return;
+			return false;
 		}
 		reliableCount += 1;
 	}
@@ -3144,8 +3144,10 @@ void CL_ParseMessages()
 			PrintRecentProtos();
 
 			CL_QuitNetGame(NQ_PROTO);
-			return;
+			return false;
 		}
 		unreliableCount += 1;
 	}
+
+	return true;
 }

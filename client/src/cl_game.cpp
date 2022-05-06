@@ -865,7 +865,8 @@ static bool TickConnected()
 		if (netdemo.isRecording())
 			netdemo.capture(&net_message);
 
-		CL_ReadAndParseMessages();
+		if (!CL_ReadAndParseMessages())
+			return false;
 
 		if (gameaction == ga_fullconsole) // Host_EndGame was called
 			return false;

@@ -155,17 +155,12 @@ bool SVCMessages::writePacket(buf_t& buf)
 		reliableMessage_s* queue = validReliableMessage(m_reliableNoAck + i);
 		if (queue == NULL)
 		{
-			Printf("%d: Invalid message\n", m_reliableNoAck + i);
-
 			// Invalid message.
 			continue;
 		}
 
 		if (queue->lastSent + RELIABLE_TIMEOUT >= TIME)
 		{
-			Printf("%d: Too soon (ls:%llu t:%llu)\n", m_reliableNoAck + i,
-			       queue->lastSent + RELIABLE_TIMEOUT, TIME);
-
 			// Don't rapid-fire resends.
 			continue;
 		}
@@ -174,9 +169,6 @@ bool SVCMessages::writePacket(buf_t& buf)
 		const size_t TOTAL_SIZE = RELIABLE_HEADER_SIZE + queue->data.size();
 		if (sent.size + TOTAL_SIZE > MAX_UDP_SIZE)
 		{
-			Printf("%d: Too big (sz:%zu, max:%zu)\n", m_reliableNoAck + i,
-			       sent.size + TOTAL_SIZE, MAX_UDP_SIZE);
-
 			// Too big to fit.
 			continue;
 		}
@@ -229,6 +221,7 @@ bool SVCMessages::writePacket(buf_t& buf)
 	buf.WriteByte(0);                   // Empty space for flags.
 
 	// Write out the individual reliable messages.
+	StringTokens debugRels, debugUnrels;
 	for (size_t i = 0; i < sent.reliableIDs.size(); i++)
 	{
 		const reliableMessage_s& msg = reliableMessage(sent.reliableIDs[i]);
@@ -236,6 +229,9 @@ bool SVCMessages::writePacket(buf_t& buf)
 		buf.WriteByte(header);
 		buf.WriteShort(uint16_t(msg.messageID)); // reliable only
 		buf.WriteChunk(msg.data.data(), uint32_t(msg.data.size()));
+
+		// DEBUG!
+		debugRels.push_back(svc_info[msg.header].msgName);
 	}
 
 	// Write out the individual unreliable messages.
@@ -245,8 +241,14 @@ bool SVCMessages::writePacket(buf_t& buf)
 		const byte header = svc::ToByte(msg.header, false);
 		buf.WriteByte(header);
 		buf.WriteChunk(msg.data.data(), uint32_t(msg.data.size()));
+
+		// DEBUG!
+		debugUnrels.push_back(svc_info[msg.header].msgName);
 	}
 	sent.unreliables.clear(); // No need to keep wild pointers around.
+
+	Printf("[%u] sz:%zu R:%s U:%s\n", m_nextPacketID, buf.cursize,
+	       JoinStrings(debugRels, ", ").c_str(), JoinStrings(debugUnrels, ", ").c_str());
 
 	m_nextPacketID += 1;
 	return true;

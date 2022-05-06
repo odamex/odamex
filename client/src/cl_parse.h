@@ -44,5 +44,5 @@ struct Proto
 typedef std::vector<Proto> Protos;
 
 const Protos& CL_GetTicProtos();
-void CL_ReadMessages();
-void CL_ParseMessages();
+bool CL_ReadMessages();
+bool CL_ParseMessages();

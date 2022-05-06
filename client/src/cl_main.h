@@ -59,7 +59,7 @@ void CL_Reconnect();
 void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);
 bool CL_PrepareConnect();
-void CL_ReadAndParseMessages(void);
+bool CL_ReadAndParseMessages();
 bool CL_ReadPacketHeader();
 void CL_SendCmd(void);
 void CL_SaveCmd(void);
