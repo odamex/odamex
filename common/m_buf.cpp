@@ -319,12 +319,12 @@ void buf_t::resize(size_t len, bool clearbuf /* = true */)
 
 byte* buf_t::GetSpace(size_t length)
 {
-	if (cursize + length >= allocsize)
+	if (cursize + length > allocsize)
 	{
 		clear();
 		overflowed = true;
 #if defined(ODAMEX_DEBUG)
-		Printf(PRINT_HIGH, "SZ_GetSpace: overflow\n");
+		Printf(PRINT_HIGH, "buf_t::GetSpace: overflow\n");
 #endif
 	}
 
@@ -333,3 +333,54 @@ byte* buf_t::GetSpace(size_t length)
 
 	return ret;
 }
+
+std::string buf_t::debugString()
+{
+	std::string all;
+	std::string buf;
+	for (size_t i = 0; i < cursize; i++)
+	{
+		if (readpos == i)
+			all += "[";
+		else if (readpos == i - 1)
+			all += "]";
+		else
+			all += " ";
+
+		StrFormat(buf, "%02x", data[i]);
+		all += buf;
+	}
+
+	if (readpos == cursize - 1)
+		all += "]";
+	else
+		all += ";";
+
+	return all;
+}
+
+#if defined(ODAMEX_DEBUG)
+
+#include "c_dispatch.h"
+
+BEGIN_COMMAND(test_buf)
+{
+	buf_t buf{8};
+
+	buf.WriteByte(8);
+	buf.WriteShort(1234);
+	buf.WriteLong(1234567);
+	buf.WriteByte(255);
+
+	Printf("%s\n", buf.debugString().c_str());
+	buf.ReadLong();
+	buf.ReadByte();
+	buf.ReadByte();
+	buf.ReadByte();
+	Printf("%s\n", buf.debugString().c_str());
+	buf.ReadByte();
+	Printf("%s\n", buf.debugString().c_str());
+}
+END_COMMAND(test_buf)
+
+#endif

@@ -123,4 +123,5 @@ class buf_t
 	size_t SetOffset(const size_t& offset, const seek_loc_t& loc);
 	void resize(size_t len, bool clearbuf = true);
 	byte* GetSpace(size_t length);
+	std::string debugString();
 };
