@@ -263,7 +263,7 @@ BOOL P_CheckMissileRange (AActor *actor)
 	if (!actor->info->meleestate)
 		dist -= 128*FRACUNIT;	// no melee attack, so fire more
 
-	dist >>= FRACBITS;
+	dist >>= 16;
 
 	if (actor->flags3 & MF3_SHORTMRANGE)
 	{
@@ -276,6 +276,7 @@ BOOL P_CheckMissileRange (AActor *actor)
 	{
 		if (dist < 196)
 			return false;		// close for fist attack
+		dist >>= 1;
 	}
 
 
