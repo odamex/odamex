@@ -3070,11 +3070,7 @@ void A_PlaySound(AActor* mo)
 		sndmap = 0;
 	}
 
-	if (!clientside)
-		SV_Sound(mo, CHAN_BODY, SoundMap[sndmap],
-		         (mo->state->misc2 ? ATTN_NONE : ATTN_NORM));
-	else
-		S_Sound(mo, CHAN_BODY, SoundMap[sndmap], 1,
+	S_Sound(mo, CHAN_BODY, SoundMap[sndmap], 1,
 		        (mo->state->misc2 ? ATTN_NONE : ATTN_NORM));
 }
 
