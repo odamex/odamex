@@ -111,6 +111,15 @@ function(lib_build)
   endif()
 endfunction()
 
+### tiny libraries ###
+
+#file(GLOB TINYLIB_HEADERS_NONSTD "tinylibs/include/nonstd/*.hpp")
+#list(APPEND TINYLIB_HEADERS ${TINYLIB_HEADERS_NONSTD})
+
+add_library(tinylibs INTERFACE)
+#target_sources(tinylibs INTERFACE ${TINYLIB_HEADERS})
+target_include_directories(tinylibs INTERFACE . "tinylibs/include")
+
 ### zlib ###
 
 if(BUILD_CLIENT OR BUILD_SERVER)
