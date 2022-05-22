@@ -157,7 +157,7 @@ set(ODAWAD_SOURCES
   graphics/litldn.gif
   graphics/litlup.gif
   graphics/lslide.gif
-  graphics/m_automap.gif
+  graphics/m_automp.gif
   graphics/m_compat.gif
   graphics/m_contro.gif
   graphics/m_gmplay.gif
