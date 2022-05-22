@@ -32,6 +32,8 @@
 #include <string>
 #include <vector>
 
+#include <nonstd/span.hpp>
+
 #include "doomtype.h"
 #include "doomdef.h"
 #include "doomstat.h"
