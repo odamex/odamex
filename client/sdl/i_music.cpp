@@ -262,7 +262,7 @@ static MusicSystemType I_SelectMusicSystem(byte *data, size_t length)
 	return MS_SDLMIXER;
 }
 
-void I_PlaySong(nonstd::span<byte> data, bool loop)
+void I_PlaySong(const OByteSpan data, const bool loop)
 {
 	if (!musicsystem)
 		return;

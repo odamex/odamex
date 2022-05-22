@@ -67,7 +67,7 @@ void I_ResumeSong();
 //  plays a song, and when the song is done,
 //  starts playing it again in an endless loop.
 // Horrible thing to do, considering.
-void I_PlaySong(nonstd::span<byte> data, bool loop);
+void I_PlaySong(const OByteSpan data, const bool loop);
 // Stops a song over 3 seconds.
 void I_StopSong();
 void I_UpdateMusic();

@@ -27,6 +27,8 @@
 
 #include <limits>
 
+#include "nonstd/scope.hpp"
+
 #include "i_sdl.h" 
 #include <stdlib.h>
 
@@ -806,19 +808,19 @@ std::string I_GetClipboardText()
 #endif	// OSX < 1050
 
 #ifdef SDL20
-    char* textp = SDL_GetClipboardText();
+	char* textp = SDL_GetClipboardText();
+	auto textpExit = nonstd::make_scope_exit([&]() { SDL_free(textp); });
 
-    if(NULL == textp)
-    {
-        Printf(PRINT_HIGH, "SDL_GetClipboardText error: %s", SDL_GetError());
-        return "";
-    }
+	if (NULL == textp)
+	{
+		Printf(PRINT_HIGH, "SDL_GetClipboardText error: %s", SDL_GetError());
+		return "";
+	}
 
-    std::string clipText(textp);
-    SDL_free(textp);
+	std::string clipText(textp);
 
 	return clipText;
-#endif  // SDL20
+#endif // SDL20
 
 	return "";
 }
