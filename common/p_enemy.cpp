@@ -2154,6 +2154,18 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 
 					P_SetMobjState(corpsehit, info->raisestate, true);
 
+					// [Nes] - Classic demo compatability: Ghost monster bug.
+					if ((co_novileghosts))
+					{
+						corpsehit->height =
+						    P_ThingInfoHeight(info);      // [RH] Use real mobj height
+						corpsehit->radius = info->radius; // [RH] Use real radius
+					}
+					else
+					{
+						corpsehit->height <<= 2;
+					}
+
 					corpsehit->flags = info->flags;
 					corpsehit->health = info->spawnhealth;
 					corpsehit->target = AActor::AActorPtr();
