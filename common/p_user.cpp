@@ -197,7 +197,10 @@ PlayerResults PlayerQuery::execute()
 			continue;
 
 		results.total += 1;
-		results.teamTotal[it->userinfo.team] += 1;
+		if (it->userinfo.team != TEAM_NONE)
+		{
+			results.teamTotal[it->userinfo.team] += 1;
+		}
 
 		if (m_ready && !it->ready)
 			continue;
