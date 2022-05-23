@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "i_system.h"
 
 struct OScannerConfig
 {
@@ -80,6 +81,18 @@ class OScanner
 	void assertTokenIs(const char* string) const;
 	bool compareToken(const char* string) const;
 	bool compareTokenNoCase(const char* string) const;
-	void STACK_ARGS warning(const char* message, ...) const;
-	void STACK_ARGS error(const char* message, ...) const;
+
+	template <typename... ARGS>
+	void warning(const fmt::string_view format, const ARGS&... args) const
+	{
+		Printf(PRINT_WARNING, "Script Warning: %s:%d: %s\n", m_config.lumpName,
+		       m_lineNumber, fmt::sprintf(format, args...));
+	}
+
+	template <typename... ARGS>
+	void error(const fmt::string_view format, const ARGS&... args) const
+	{
+		I_Error("Script Error: %s:%d: %s", m_config.lumpName, m_lineNumber,
+		        fmt::sprintf(format, args...));
+	}
 };
