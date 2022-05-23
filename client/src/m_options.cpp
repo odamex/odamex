@@ -1026,7 +1026,7 @@ static menuitem_t AutomapItems[] = {
 };
 
 menu_t AutomapMenu = {
-	"M_MESS",
+	"M_AUTOMP",
 	0,
 	ARRAY_LENGTH(AutomapItems),
 	0,
