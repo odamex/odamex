@@ -111,6 +111,11 @@ function(lib_build)
   endif()
 endfunction()
 
+### tiny libraries ###
+
+add_library(tinylibs INTERFACE)
+target_include_directories(tinylibs INTERFACE . "tinylibs/include")
+
 ### zlib ###
 
 if(BUILD_CLIENT OR BUILD_SERVER)
