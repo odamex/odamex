@@ -1098,7 +1098,7 @@ BEGIN_COMMAND(wdlinfo)
 	if (stricmp(argv[1], "size") == 0)
 	{
 		// Count total events.
-		Printf(PRINT_HIGH, "%" PRIuSIZE " events found\n", ::wdlevents.size());
+		Printf(PRINT_HIGH, "%zu events found\n", ::wdlevents.size());
 		return;
 	}
 	else if (stricmp(argv[1], "state") == 0)
@@ -1124,7 +1124,7 @@ BEGIN_COMMAND(wdlinfo)
 		if (it < ::wdlevents.begin())
 			it = wdlevents.begin();
 
-		Printf(PRINT_HIGH, "Showing last %" PRIdSIZE " events:\n",
+		Printf(PRINT_HIGH, "Showing last %zd events:\n",
 		       ::wdlevents.end() - it);
 		for (; it != ::wdlevents.end(); ++it)
 			PrintWDLEvent(*it);

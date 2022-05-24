@@ -56,7 +56,7 @@ BEGIN_COMMAND(stringinfo)
 
 	if (stricmp(argv[1], "size") == 0)
 	{
-		Printf("%" PRIuSIZE " strings found\n", GStrings.size());
+		Printf("%zu strings found\n", GStrings.size());
 		return;
 	}
 	else if (stricmp(argv[1], "dump") == 0)

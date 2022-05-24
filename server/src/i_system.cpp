@@ -360,48 +360,34 @@ BOOL gameisdead;
 
 void STACK_ARGS call_terms (void);
 
-void STACK_ARGS I_FatalError (const char *error, ...)
+void I_BaseError(const std::string& errortext)
 {
-    static BOOL alreadyThrown = false;
-    gameisdead = true;
-
-    if (!alreadyThrown)         // ignore all but the first message -- killough
-    {
-                alreadyThrown = true;
-                char errortext[MAX_ERRORTEXT];
-                va_list argptr;
-                va_start (argptr, error);
-                #ifdef _WIN32
-                int index = vsprintf (errortext, error, argptr);
-                sprintf (errortext + index, "\nGetLastError = %ld", GetLastError());
-				#else
-                vsprintf (errortext, error, argptr);
-				#endif
-                va_end (argptr);
-
-                throw CFatalError (errortext);
-    }
-
-    if (!has_exited)    // If it hasn't exited yet, exit now -- killough
-    {
-        has_exited = 1; // Prevent infinitely recursive exits -- killough
-
-        call_terms();
-
-        exit(EXIT_FAILURE);
-    }
+	throw CRecoverableError(errortext);
 }
 
-void STACK_ARGS I_Error (const char *error, ...)
+NORETURN void I_BaseFatalError(const std::string& errortext)
 {
-    va_list argptr;
-    char errortext[MAX_ERRORTEXT];
+	static BOOL alreadyThrown = false;
+	gameisdead = true;
 
-    va_start (argptr, error);
-    vsprintf (errortext, error, argptr);
-    va_end (argptr);
+	if (!alreadyThrown) // ignore all but the first message -- killough
+	{
+		alreadyThrown = true;
+		std::string error = errortext;
+#ifdef _WIN32
+		error += fmt::format("\nGetLastError = {}", GetLastError());
+#endif
+		throw CFatalError(error);
+	}
 
-    throw CRecoverableError (errortext);
+	if (!has_exited) // If it hasn't exited yet, exit now -- killough
+	{
+		has_exited = 1; // Prevent infinitely recursive exits -- killough
+
+		call_terms();
+
+		exit(EXIT_FAILURE);
+	}
 }
 
 char DoomStartupTitle[256] = { 0 };

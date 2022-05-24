@@ -1674,7 +1674,7 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
 {
 	int l = msg->linenum();
 	byte switchactive = msg->switch_active();
-	byte special = msg->special();
+	unsigned int special = msg->special();
 	unsigned int state = msg->state(); // DActiveButton::EWhere
 	short texture = msg->button_texture();
 	unsigned int time = msg->timer();
@@ -3068,8 +3068,7 @@ static void PrintRecentProtos()
 		ptrdiff_t idx = it - protos.begin() + 1;
 		std::string svc = SVCName(it->header);
 		size_t siz = it->size;
-		Printf(PRINT_WARNING, "%c %2" PRIdSIZE " [%s] %" PRIuSIZE "b\n", latest, idx,
-		       svc.c_str(), siz);
+		PrintFmt(PRINT_WARNING, "{} {:2} {} {}\n", latest, idx, svc, siz);
 	}
 }
 

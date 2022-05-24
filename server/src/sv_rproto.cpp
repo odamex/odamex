@@ -76,7 +76,7 @@ static void CompressPacket(buf_t& send, const size_t reserved, client_t* cl)
 	}
 
 	send.ptr()[PACKET_FLAG_INDEX] |= method;
-	DPrintf("CompressPacket %x " PRIuSIZE "\n", method, send.size());
+	DPrintf("CompressPacket %x " "zu" "\n", method, send.size());
 }
 
 #ifdef SIMULATE_LATENCY
