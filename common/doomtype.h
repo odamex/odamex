@@ -90,22 +90,9 @@ using OByteSpan = nonstd::span<byte>;
 #if (defined _XBOX || defined _MSC_VER)
 	#define DBL_EPSILON 2.2204460492503131e-016
 	#define FLT_EPSILON 1.192092896e-07F
-
-	#define PRI_SIZE_PREFIX "I"
 #else
 	#include <float.h>
-
-	#define PRI_SIZE_PREFIX "z"
 #endif
-
-// Format constants for ssize_t/size_t.
-
-#define PRIdSIZE PRI_SIZE_PREFIX "d"
-#define PRIiSIZE PRI_SIZE_PREFIX "i"
-#define PRIuSIZE PRI_SIZE_PREFIX "u"
-#define PRIoSIZE PRI_SIZE_PREFIX "o"
-#define PRIxSIZE PRI_SIZE_PREFIX "x"
-#define PRIXSIZE PRI_SIZE_PREFIX "X"
 
 #ifdef UNIX
 	#define stricmp strcasecmp
@@ -206,14 +193,6 @@ static inline uint32_t BIT_MASK(uint32_t a, uint32_t b)
 {
     return (static_cast<uint32_t>(-1) >> (31 - b)) & ~(BIT(a) - 1);
 }
-
-// [RH] This gets used all over; define it here:
-FORMAT_PRINTF(1, 2) int STACK_ARGS Printf(const char* format, ...);
-FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...);
-// [Russell] Prints a bold green message to the console
-FORMAT_PRINTF(1, 2) int STACK_ARGS Printf_Bold(const char* format, ...);
-// [RH] Same here:
-FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...);
 
 /**
  * @brief Print to all clients in a server, or to the local player offline.

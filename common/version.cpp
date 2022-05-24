@@ -320,17 +320,20 @@ BEGIN_COMMAND (version)
 	if (argc == 1)
 	{
 		// distribution
-		Printf(PRINT_HIGH, "Odamex v%s - %s\n", NiceVersion(), COPYRIGHTSTR);
+		PrintFmt("Odamex v{} - {}\n", NiceVersion(), COPYRIGHTSTR);
 	}
 	else
 	{
 		// specific file version
-		source_files_t::const_iterator it = get_source_files().find(argv[1]);
-
+		const auto it = get_source_files().find(argv[1]);
 		if (it == get_source_files().end())
-			Printf(PRINT_WARNING, "no such file: %s", argv[1]);
+		{
+			PrintFmt(PRINT_WARNING, "no such file: {}", argv[1]);
+		}
 		else
-			Printf(PRINT_HIGH, "%s", it->second.c_str());
+		{
+			PrintFmt("{}", it->second.c_str());
+		}
 	}
 }
 END_COMMAND (version)
