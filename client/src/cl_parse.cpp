@@ -2900,12 +2900,23 @@ static bool ReadMessage()
 	// The message itself.
 	void* data = MSG_ReadChunk(size);
 	if (data == nullptr || ::net_message.overflowed)
+	{
+		PrintFmt(PRINT_WARNING, "{}: Message overflowed\n", __FUNCTION__);
+		PrintFmt(PRINT_WARNING, "    Command: {}, {}\n", ::svc_info[svc].getName(),
+		         reliable ? "Reliable" : "Unreliable");
+		PrintFmt(PRINT_WARNING, "    Wanted {} bytes but only found {} bytes\n", size,
+		         ::net_message.cursize - ::net_message.readpos);
+		PrintFmt(PRINT_WARNING, "    Data: {}\n", ::net_message.debugString());
 		return false;
+	}
+
+	PrintFmt("Read {} bytes for a {}, {}\n", size, ::svc_info[svc].getName(),
+	         reliable ? "Reliable" : "Unreliable");
 
 	// Put the unparsed message into the proper queue.  Don't parse the message yet
 	// since at that point we have to worry about lifetimes, which doesn't mix well
 	// with a circular queue that is unaware of ctors/dtors.
-	if (reliableID)
+	if (reliable)
 	{
 		clientReliable_s& msg = g_ClientReliables[reliableID];
 		msg.svc = svc;
@@ -2918,6 +2929,8 @@ static bool ReadMessage()
 		msg.svc = svc;
 		msg.data.assign((char*)data, size);
 	}
+
+	return true;
 }
 
 /**
@@ -2938,7 +2951,6 @@ bool CL_ReadMessages()
 		const size_t byteStart = ::net_message.BytesRead();
 		if (!ReadMessage())
 		{
-			Printf(PRINT_WARNING, "%s: Message overflowed\n", __FUNCTION__);
 			CL_QuitNetGame(NQ_PROTO);
 			return false;
 		}

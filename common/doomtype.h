@@ -189,7 +189,7 @@ typedef uint64_t			dtime_t;
  * @param a Low bit in the mask.
  * @param b High bit in the mask. 
  */
-static inline uint32_t BIT_MASK(uint32_t a, uint32_t b)
+static constexpr uint32_t BIT_MASK(const uint32_t a, const uint32_t b)
 {
     return (static_cast<uint32_t>(-1) >> (31 - b)) & ~(BIT(a) - 1);
 }

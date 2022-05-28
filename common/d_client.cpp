@@ -228,6 +228,7 @@ bool SVCMessages::writePacket(buf_t& buf)
 		const byte header = svc::ToByte(msg.header, true);
 		buf.WriteByte(header);
 		buf.WriteShort(uint16_t(msg.messageID)); // reliable only
+		buf.WriteUnVarint(msg.data.size());
 		buf.WriteChunk(msg.data.data(), uint32_t(msg.data.size()));
 
 		// DEBUG!
@@ -240,6 +241,7 @@ bool SVCMessages::writePacket(buf_t& buf)
 		const unreliableMessage_s& msg = *sent.unreliables[i];
 		const byte header = svc::ToByte(msg.header, false);
 		buf.WriteByte(header);
+		buf.WriteUnVarint(msg.data.size());
 		buf.WriteChunk(msg.data.data(), uint32_t(msg.data.size()));
 
 		// DEBUG!
@@ -247,8 +249,9 @@ bool SVCMessages::writePacket(buf_t& buf)
 	}
 	sent.unreliables.clear(); // No need to keep wild pointers around.
 
-	Printf("[%u] sz:%zu R:%s U:%s\n", m_nextPacketID, buf.cursize,
-	       JoinStrings(debugRels, ", ").c_str(), JoinStrings(debugUnrels, ", ").c_str());
+	PrintFmt("[{}] sz:{} R:{} U:{}\n", m_nextPacketID, buf.cursize,
+	         JoinStrings(debugRels, ", "), JoinStrings(debugUnrels, ", "));
+	PrintFmt("[{}] d:{}\n", m_nextPacketID, buf.debugString());
 
 	m_nextPacketID += 1;
 	return true;

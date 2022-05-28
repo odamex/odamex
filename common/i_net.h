@@ -261,15 +261,18 @@ static const size_t svc_max = 0x7F;
 
 namespace svc
 {
+
 static void FromByte(const byte b, svc_t& outSVC, bool& outReliable)
 {
 	outSVC = svc_t(b & BIT_MASK(0, 6));
 	outReliable = (b & BIT(7)) != 0;
 }
+
 static byte ToByte(const svc_t svc, const bool reliable)
 {
 	return svc | (reliable ? BIT(7) : 0);
 }
+
 } // namespace svc
 
 enum ThinkerType
