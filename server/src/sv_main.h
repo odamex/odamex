@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <functional>
 
 #include "actor.h"
 #include "d_player.h"
@@ -30,6 +31,8 @@
 #include "g_gametype.h"
 
 #include <json/json.h>
+
+using broadcastFunc_t = std::function<bool(const player_t&)>;
 
 extern bool keysfound[NUMCARDS];
 
@@ -60,6 +63,12 @@ void SV_ConnectClient();
 void SV_ConnectClient2(player_t& player);
 void SV_QueueReliable(client_t& cl, const google::protobuf::Message& msg);
 void SV_QueueUnreliable(client_t& cl, const google::protobuf::Message& msg);
+broadcastFunc_t BroadcastAll();
+broadcastFunc_t BroadcastExceptPID(const int pid);
+void SV_BroadcastReliable(const google::protobuf::Message& msg,
+                          broadcastFunc_t shouldSend = BroadcastAll());
+void SV_BroadcastUnreliable(const google::protobuf::Message& msg,
+                            broadcastFunc_t shouldSend = BroadcastAll());
 void SV_WriteCommands(void);
 void SV_ClearClientsBPS(void);
 bool SV_SendQueuedPackets(client_t& client);

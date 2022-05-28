@@ -47,15 +47,6 @@
 #define VERSION 65                // GhostlyDeath -- this should remain static from now on
 
 /**
- * @brief Types of client buffers.
- */
-enum clientBuf_e
-{
-	CLBUF_RELIABLE,
-	CLBUF_NET,
-};
-
-/**
  * @brief Compression is enabled for this packet
  */
 #define SVF_COMPRESSED BIT(0)
@@ -369,8 +360,6 @@ void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteHexString(buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
 void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg);
-void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& msg,
-                      const int skipPlayer = -1);
 
 int MSG_BytesLeft(void);
 int MSG_NextByte (void);

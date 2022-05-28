@@ -586,9 +586,8 @@ void HordeState::tick()
 						(*it)->lives += 1;
 #if defined(SERVER_APP)
 						SV_QueueReliable((*it)->client, SVC_PlayerInfo(**it));
-						MSG_BroadcastSVC(CLBUF_RELIABLE,
-						                 SVC_PlayerMembers(**it, SVC_PM_LIVES),
-						                 (*it)->id);
+						SV_BroadcastReliable(SVC_PlayerMembers(**it, SVC_PM_LIVES),
+						                     BroadcastExceptPID((*it)->id));
 #endif
 					}
 				}
@@ -602,8 +601,8 @@ void HordeState::tick()
 				{
 					(*it)->lives = 1;
 					SV_QueueReliable((*it)->client, SVC_PlayerInfo(**it));
-					MSG_BroadcastSVC(CLBUF_RELIABLE,
-					                 SVC_PlayerMembers(**it, SVC_PM_LIVES), (*it)->id);
+					SV_BroadcastReliable(SVC_PlayerMembers(**it, SVC_PM_LIVES),
+					                     BroadcastExceptPID((*it)->id));
 				}
 #endif
 			}

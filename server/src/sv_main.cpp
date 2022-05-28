@@ -1939,6 +1939,59 @@ void SV_QueueUnreliable(client_t& cl, const google::protobuf::Message& msg)
 	cl.msg.queueUnreliable(msg);
 }
 
+/**
+ * @brief Instruct brodcast function to broadcast to all players.
+ * 
+ * @return A function to pass to the Broadcast functions.
+ */
+broadcastFunc_t BroadcastAll()
+{
+	return [](const player_t& who) { return true; };
+}
+
+/**
+ * @brief Instruct brodcast function to broadcast to all players save for one.
+ *
+ * @param pid PID of player to skip.
+ * @return A function to pass to the Broadcast functions.
+ */
+broadcastFunc_t BroadcastExceptPID(const int pid)
+{
+	return [&pid](const player_t& who) { return who.id != pid; };
+}
+
+/**
+ * @brief Broadcast a reliable message.
+ * 
+ * @param msg Message to broadcast.
+ * @param shouldSend Function that designates who to send to.
+ */
+void SV_BroadcastReliable(const google::protobuf::Message& msg,
+                          broadcastFunc_t shouldSend)
+{
+	for (auto& pl : ::players)
+	{
+		if (shouldSend(pl))
+			pl.client.msg.queueReliable(msg);
+	}
+}
+
+/**
+ * @brief Broadcast an unreliable message.
+ *
+ * @param msg Message to broadcast.
+ * @param shouldSend Function that designates who to send to.
+ */
+void SV_BroadcastUnreliable(const google::protobuf::Message& msg,
+                            broadcastFunc_t shouldSend)
+{
+	for (auto& pl : ::players)
+	{
+		if (shouldSend(pl))
+			pl.client.msg.queueUnreliable(msg);
+	}
+}
+
 //
 // SV_DisconnectClient
 //
