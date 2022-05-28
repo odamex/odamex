@@ -283,7 +283,7 @@ bool SVCMessages::clientAck(const uint32_t packetAck, const uint32_t packetAckBi
 	return true;
 }
 
-client_s::client_s()
+client_t::client_t()
     : version(0), packedversion(0), sequence(0), last_sequence(0), packetnum(0), rate(0),
       reliable_bps(0), unreliable_bps(0), last_received(0), lastcmdtic(0),
       lastclientcmdtic(0), netbuf(MAX_UDP_PACKET), reliablebuf(MAX_UDP_PACKET),
@@ -300,7 +300,7 @@ client_s::client_s()
 	}
 }
 
-client_s::client_s(const client_s& other)
+client_t::client_t(const client_t& other)
     : address(other.address), netbuf(other.netbuf), reliablebuf(other.reliablebuf),
       version(other.version), packedversion(other.packedversion),
       sequence(other.sequence), last_sequence(other.last_sequence),

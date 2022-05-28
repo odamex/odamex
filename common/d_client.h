@@ -88,7 +88,7 @@ class SVCMessages
 	bool clientAck(const uint32_t packetAck, const uint32_t packetAckBits);
 };
 
-struct client_s
+struct client_t
 {
 	netadr_t address;
 
@@ -123,8 +123,6 @@ struct client_s
 
 	SVCMessages msg;
 
-	client_s();
-	client_s(const client_s& other);
+	client_t();
+	client_t(const client_t& other);
 };
-
-typedef client_s client_t;
