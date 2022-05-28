@@ -345,8 +345,8 @@ bool NetWaitOrTimeout(size_t ms);
 char *NET_AdrToString (netadr_t a);
 bool NET_StringToAdr (const char *s, netadr_t *a);
 bool NET_CompareAdr (netadr_t a, netadr_t b);
-int  NET_GetPacket (void);
-int NET_SendPacket (buf_t &buf, netadr_t &to);
+int NET_GetPacket(buf_t& outBuffer, netadr_t& outFrom);
+int NET_SendPacket(buf_t& buf, netadr_t& to);
 std::string NET_GetLocalAddress (void);
 
 void SZ_Clear (buf_t *buf);

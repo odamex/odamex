@@ -439,15 +439,13 @@ bool NET_CompareAdr (netadr_t a, netadr_t b)
 typedef int socklen_t;
 #endif
 
-int NET_GetPacket (void)
+int NET_GetPacket(buf_t& outBuffer, netadr_t& outFrom)
 {
-	int				  ret;
-	struct sockaddr_in   from;
-	socklen_t			fromlen;
-
-	fromlen = sizeof(from);
-	net_message.clear();
-	ret = recvfrom (inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
+	struct sockaddr_in from;
+	socklen_t fromlen = sizeof(from);
+	outBuffer.clear();
+	int ret = recvfrom(inet_socket, (char*)outBuffer.ptr(), outBuffer.maxsize(), 0,
+	                   (struct sockaddr*)&from, &fromlen);
 
 	if (ret == -1)
 	{
@@ -462,12 +460,12 @@ int NET_GetPacket (void)
 
 		if (errno == WSAEMSGSIZE)
 		{
-			 Printf (PRINT_HIGH, "Warning:  Oversize packet from %s\n",
-							 NET_AdrToString (net_from));
-			 return false;
+			Printf(PRINT_HIGH, "Warning:  Oversize packet from %s\n",
+			       NET_AdrToString(net_from));
+			return false;
 		}
 
-		Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
+		Printf(PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
 		return false;
 #else
 		if (errno == EWOULDBLOCK)
@@ -475,12 +473,12 @@ int NET_GetPacket (void)
 		if (errno == ECONNREFUSED)
 			return false;
 
-		Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
+		Printf(PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
 		return false;
 #endif
 	}
-	net_message.setcursize(ret);
-	SockadrToNetadr (&from, &net_from);
+	outBuffer.setcursize(ret);
+	SockadrToNetadr(&from, &outFrom);
 
 	return ret;
 }

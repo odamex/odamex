@@ -847,10 +847,13 @@ extern int connecttimeout;
 static bool TickConnected()
 {
 	static int realrate = 0;
-	int packet_size;
 
-	while ((packet_size = NET_GetPacket()))
+	for (;;)
 	{
+		const int packet_size = NET_GetPacket(net_message, net_from);
+		if (packet_size == 0)
+			break;
+
 		// denis - don't accept candy from strangers
 		if (!NET_CompareAdr(serveraddr, net_from))
 			break;
@@ -899,7 +902,7 @@ static bool TickConnected()
  */
 void TickConnecting()
 {
-	if (!NET_GetPacket())
+	if (!NET_GetPacket(::net_message, ::net_from))
 		return;
 
 	// denis - don't accept candy from strangers
