@@ -1762,7 +1762,7 @@ bool CL_Connect()
 	serverside = false;
 	simulated_connection = netdemo.isPlaying();
 
-	net_buffer.readpos = 0; // Rewind so we can start again.
+	MSG_SetOffset(0, buf_t::BT_SSET);
 	if (!CL_ReadPacketHeader())
 		return false;
 
