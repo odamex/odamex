@@ -86,7 +86,7 @@ void CTF_CheckFlags (player_t &player)
 /* [ML] 04/4/06: Remove flagtossing, too buggy
 void CTF_TossFlag (void)
 {
-	MSG_WriteMarker (&net_buffer, clc_ctfcommand);
+	MSG_WriteMarker (&write_buffer, clc_ctfcommand);
 
 	if (CTFdata.BlueScreen)	CTFdata.BlueScreen	= false;
 	if (CTFdata.RedScreen)	CTFdata.RedScreen	= false;

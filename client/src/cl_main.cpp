@@ -95,7 +95,8 @@ short version = 0;
 int gameversion = 0;				// GhostlyDeath -- Bigger Game Version
 int gameversiontosend = 0;		// If the server is 0.4, let's fake our client info
 
-buf_t     net_buffer(MAX_UDP_PACKET);
+buf_t net_buffer(MAX_UDP_PACKET);
+buf_t write_buffer(MAX_UDP_PACKET);
 
 bool      noservermsgs;
 int       last_received;
@@ -371,10 +372,10 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 {
 	if(connected)
 	{
-		SZ_Clear(&net_buffer);
-		MSG_WriteMarker(&net_buffer, clc_disconnect);
-		NET_SendPacket(net_buffer, serveraddr);
-		SZ_Clear(&net_buffer);
+		SZ_Clear(&write_buffer);
+		MSG_WriteMarker(&write_buffer, clc_disconnect);
+		NET_SendPacket(write_buffer, serveraddr);
+		SZ_Clear(&write_buffer);
 		sv_gametype = GM_COOP;
 	}
 
@@ -460,9 +461,9 @@ void CL_Reconnect(void)
 
 	if (connected)
 	{
-		MSG_WriteMarker(&net_buffer, clc_disconnect);
-		NET_SendPacket(net_buffer, serveraddr);
-		SZ_Clear(&net_buffer);
+		MSG_WriteMarker(&write_buffer, clc_disconnect);
+		NET_SendPacket(write_buffer, serveraddr);
+		SZ_Clear(&write_buffer);
 		connected = false;
 		gameaction = ga_fullconsole;
 
@@ -515,8 +516,8 @@ void CL_CheckDisplayPlayer(void)
 	{
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
-		MSG_WriteMarker(&net_buffer, clc_spy);
-		MSG_WriteByte(&net_buffer, newid);
+		MSG_WriteMarker(&write_buffer, clc_spy);
+		MSG_WriteByte(&write_buffer, newid);
 		displayplayer_id = newid;
 
 		// Changing display player can sometimes affect status bar visibility
@@ -848,14 +849,19 @@ BEGIN_COMMAND (playerinfo)
 END_COMMAND (playerinfo)
 
 
-BEGIN_COMMAND (kill)
+BEGIN_COMMAND(kill)
 {
-    if (sv_allowcheats || G_IsCoopGame())
-        MSG_WriteMarker(&net_buffer, clc_kill);
-    else
-        Printf ("You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
+	if (sv_allowcheats || G_IsCoopGame())
+	{
+		MSG_WriteMarker(&write_buffer, clc_kill);
+	}
+	else
+	{
+		Printf("You must run the server with '+set sv_allowcheats 1' or disable "
+		       "sv_keepkeys to enable this command.\n");
+	}
 }
-END_COMMAND (kill)
+END_COMMAND(kill)
 
 
 BEGIN_COMMAND (serverinfo)
@@ -905,49 +911,49 @@ BEGIN_COMMAND (serverinfo)
 END_COMMAND (serverinfo)
 
 
-BEGIN_COMMAND (rcon)
+BEGIN_COMMAND(rcon)
 {
 	if (connected && argc > 1)
 	{
-		char  command[256];
+		char command[256];
 
 		strncpy(command, args, ARRAY_LENGTH(command) - 1);
-		command[255] = '\0';		
+		command[255] = '\0';
 
-		MSG_WriteMarker(&net_buffer, clc_rcon);
-		MSG_WriteString(&net_buffer, command);
+		MSG_WriteMarker(&write_buffer, clc_rcon);
+		MSG_WriteString(&write_buffer, command);
 	}
 }
-END_COMMAND (rcon)
+END_COMMAND(rcon)
 
 
-BEGIN_COMMAND (rcon_password)
+BEGIN_COMMAND(rcon_password)
 {
 	if (connected && argc > 1)
 	{
 		bool login = true;
 
-		MSG_WriteMarker(&net_buffer, clc_rcon_password);
-		MSG_WriteByte(&net_buffer, login);
+		MSG_WriteMarker(&write_buffer, clc_rcon_password);
+		MSG_WriteByte(&write_buffer, login);
 
 		std::string password = argv[1];
-		MSG_WriteString(&net_buffer, MD5SUM(password + digest).c_str());
+		MSG_WriteString(&write_buffer, MD5SUM(password + digest).c_str());
 	}
 }
-END_COMMAND (rcon_password)
+END_COMMAND(rcon_password)
 
-BEGIN_COMMAND (rcon_logout)
+BEGIN_COMMAND(rcon_logout)
 {
 	if (connected)
 	{
 		bool login = false;
 
-		MSG_WriteMarker(&net_buffer, clc_rcon_password);
-		MSG_WriteByte(&net_buffer, login);
-		MSG_WriteString(&net_buffer, "");
+		MSG_WriteMarker(&write_buffer, clc_rcon_password);
+		MSG_WriteByte(&write_buffer, login);
+		MSG_WriteString(&write_buffer, "");
 	}
 }
-END_COMMAND (rcon_logout)
+END_COMMAND(rcon_logout)
 
 
 BEGIN_COMMAND (playerteam)
@@ -981,17 +987,17 @@ BEGIN_COMMAND (spectate)
 	// Only send message if currently not a spectator, or to remove from play queue
 	if (!spectator || consoleplayer().QueuePosition > 0)
 	{
-		MSG_WriteMarker(&net_buffer, clc_spectate);
-		MSG_WriteByte(&net_buffer, true);
+		MSG_WriteMarker(&write_buffer, clc_spectate);
+		MSG_WriteByte(&write_buffer, true);
 	}
 }
 END_COMMAND (spectate)
 
 BEGIN_COMMAND(ready)
 {
-	MSG_WriteMarker(&net_buffer, clc_netcmd);
-	MSG_WriteString(&net_buffer, "ready");
-	MSG_WriteByte(&net_buffer, 0);
+	MSG_WriteMarker(&write_buffer, clc_netcmd);
+	MSG_WriteString(&write_buffer, "ready");
+	MSG_WriteByte(&write_buffer, 0);
 }
 END_COMMAND(ready)
 
@@ -1018,16 +1024,16 @@ BEGIN_COMMAND(netcmd)
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_netcmd);
-	MSG_WriteString(&net_buffer, argv[1]);
+	MSG_WriteMarker(&write_buffer, clc_netcmd);
+	MSG_WriteString(&write_buffer, argv[1]);
 
 	// Pass additional arguments as separate strings.  Avoids argument
 	// parsing at the opposite end.
 	byte netargc = MIN<size_t>(argc - 2, 0xFF);
-	MSG_WriteByte(&net_buffer, netargc);
+	MSG_WriteByte(&write_buffer, netargc);
 	for (size_t i = 0; i < netargc; i++)
 	{
-		MSG_WriteString(&net_buffer, argv[i + 2]);
+		MSG_WriteString(&write_buffer, argv[i + 2]);
 	}
 }
 END_COMMAND(netcmd)
@@ -1040,8 +1046,8 @@ BEGIN_COMMAND (join)
 	//	return;
 	//}
 
-	MSG_WriteMarker(&net_buffer, clc_spectate);
-	MSG_WriteByte(&net_buffer, false);
+	MSG_WriteMarker(&write_buffer, clc_spectate);
+	MSG_WriteByte(&write_buffer, false);
 }
 END_COMMAND (join)
 
@@ -1330,24 +1336,24 @@ void CL_SendUserInfo(void)
 	UserInfo* coninfo = &consoleplayer().userinfo;
 	D_SetupUserInfo();
 
-	MSG_WriteMarker	(&net_buffer, clc_userinfo);
-	MSG_WriteString	(&net_buffer, coninfo->netname.c_str());
-	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
-	MSG_WriteLong	(&net_buffer, coninfo->gender);
+	MSG_WriteMarker(&write_buffer, clc_userinfo);
+	MSG_WriteString(&write_buffer, coninfo->netname.c_str());
+	MSG_WriteByte(&write_buffer, coninfo->team); // [Toke]
+	MSG_WriteLong(&write_buffer, coninfo->gender);
 
 	for (int i = 3; i >= 0; i--)
-		MSG_WriteByte(&net_buffer, coninfo->color[i]);
+		MSG_WriteByte(&write_buffer, coninfo->color[i]);
 
 	// [SL] place holder for deprecated skins
-	MSG_WriteString	(&net_buffer, "");
+	MSG_WriteString(&write_buffer, "");
 
-	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
-	MSG_WriteBool	(&net_buffer, true);	// [SL] deprecated "cl_unlag" CVAR
-	MSG_WriteBool	(&net_buffer, coninfo->predict_weapons);
-	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
+	MSG_WriteLong(&write_buffer, coninfo->aimdist);
+	MSG_WriteBool(&write_buffer, true); // [SL] deprecated "cl_unlag" CVAR
+	MSG_WriteBool(&write_buffer, coninfo->predict_weapons);
+	MSG_WriteByte(&write_buffer, (char)coninfo->switchweapon);
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
-		MSG_WriteByte (&net_buffer, coninfo->weapon_prefs[i]);
+		MSG_WriteByte(&write_buffer, coninfo->weapon_prefs[i]);
 	}
 
 	CL_RebuildAllPlayerTranslations();	// Refresh Player Translations AFTER sending the new status to the server.
@@ -1455,9 +1461,9 @@ void CL_RequestConnectInfo(void)
 
 		Printf(PRINT_HIGH, "Connecting to %s...\n", NET_AdrToString(serveraddr));
 
-		SZ_Clear(&net_buffer);
-		MSG_WriteLong(&net_buffer, LAUNCHER_CHALLENGE);
-		NET_SendPacket(net_buffer, serveraddr);
+		SZ_Clear(&write_buffer);
+		MSG_WriteLong(&write_buffer, LAUNCHER_CHALLENGE);
+		NET_SendPacket(write_buffer, serveraddr);
 	}
 
 	connecttimeout--;
@@ -1798,7 +1804,7 @@ void CL_InitNetwork (void)
     // set up a socket and net_message buffer
     InitNetCommon();
 
-    SZ_Clear(&net_buffer);
+    SZ_Clear(&write_buffer);
 
     size_t ParamIndex = Args.CheckParm ("-connect");
 
@@ -1839,29 +1845,30 @@ void CL_TryToConnect(DWORD server_token)
 
 		Printf("Joining server...\n");
 
-		SZ_Clear(&net_buffer);
-		MSG_WriteLong(&net_buffer, PROTO_CHALLENGE); // send challenge
-		MSG_WriteLong(&net_buffer, server_token); // confirm server token
-		MSG_WriteShort(&net_buffer, version); // send client version
-		MSG_WriteByte(&net_buffer, 0); // send type of connection (play/spectate/rcon/download)
+		SZ_Clear(&write_buffer);
+		MSG_WriteLong(&write_buffer, PROTO_CHALLENGE); // send challenge
+		MSG_WriteLong(&write_buffer, server_token);    // confirm server token
+		MSG_WriteShort(&write_buffer, version);        // send client version
+		MSG_WriteByte(&write_buffer,
+		              0); // send type of connection (play/spectate/rcon/download)
 
 		// GhostlyDeath -- Send more version info
 		if (gameversiontosend)
-			MSG_WriteLong(&net_buffer, gameversiontosend);
+			MSG_WriteLong(&write_buffer, gameversiontosend);
 		else
-			MSG_WriteLong(&net_buffer, GAMEVER);
+			MSG_WriteLong(&write_buffer, GAMEVER);
 
 		CL_SendUserInfo(); // send userinfo
 
 		// [SL] The "rate" CVAR has been deprecated. Now just send a hard-coded
 		// maximum rate that the server will ignore.
 		const int rate = 0xFFFF;
-		MSG_WriteLong(&net_buffer, rate); 
+		MSG_WriteLong(&write_buffer, rate); 
 
-        MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());
+        MSG_WriteString(&write_buffer, (char*)connectpasshash.c_str());
 
-		NET_SendPacket(net_buffer, serveraddr);
-		SZ_Clear(&net_buffer);
+		NET_SendPacket(write_buffer, serveraddr);
+		SZ_Clear(&write_buffer);
 	}
 
 	connecttimeout--;
@@ -1967,9 +1974,9 @@ bool CL_ReadPacketHeader()
 	// Send an ACK to the server.
 	g_AckManager.ack(packetID);
 
-	MSG_WriteMarker(&net_buffer, clc_ack);
-	MSG_WriteLong(&net_buffer, int(g_AckManager.getRecentAck()));
-	MSG_WriteLong(&net_buffer, int(g_AckManager.getAckBits()));
+	MSG_WriteMarker(&write_buffer, clc_ack);
+	MSG_WriteLong(&write_buffer, int(g_AckManager.getRecentAck()));
+	MSG_WriteLong(&write_buffer, int(g_AckManager.getAckBits()));
 
 	// Flag bits.
 	byte flags = MSG_ReadByte();
@@ -2034,19 +2041,19 @@ void CL_SendCmd(void)
 	// GhostlyDeath -- If we are spectating, tell the server of our new position
 	if (p->spectator)
 	{
-		MSG_WriteMarker(&net_buffer, clc_spectate);
-		MSG_WriteByte(&net_buffer, 5);
-		MSG_WriteLong(&net_buffer, p->mo->x);
-		MSG_WriteLong(&net_buffer, p->mo->y);
-		MSG_WriteLong(&net_buffer, p->mo->z);
+		MSG_WriteMarker(&write_buffer, clc_spectate);
+		MSG_WriteByte(&write_buffer, 5);
+		MSG_WriteLong(&write_buffer, p->mo->x);
+		MSG_WriteLong(&write_buffer, p->mo->y);
+		MSG_WriteLong(&write_buffer, p->mo->z);
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_move);
+	MSG_WriteMarker(&write_buffer, clc_move);
 
 	// Write current client-tic.  Server later sends this back to client
 	// when sending svc_updatelocalplayer so the client knows which ticcmds
 	// need to be used for client's positional prediction.
-    MSG_WriteLong(&net_buffer, gametic);
+	MSG_WriteLong(&write_buffer, gametic);
 
 	for (int i = 9; i >= 0; i--)
 	{
@@ -2058,14 +2065,14 @@ void CL_SendCmd(void)
 		else
 			netcmd = &blank_netcmd;		// write a blank netcmd since not enough gametics have passed
 
-		netcmd->write(&net_buffer);
+		netcmd->write(&write_buffer);
 	}
 
-	int bytesWritten = NET_SendPacket(net_buffer, serveraddr);
+	int bytesWritten = NET_SendPacket(write_buffer, serveraddr);
 	netgraph.addTrafficOut(bytesWritten);
 
-	outrate += net_buffer.size();
-    SZ_Clear(&net_buffer);
+	outrate += write_buffer.size();
+	SZ_Clear(&write_buffer);
 }
 
 //
@@ -2085,9 +2092,9 @@ void CL_PlayerTimes()
 //
 void CL_SendCheat(int cheats)
 {
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, 0);
-	MSG_WriteShort(&net_buffer, cheats);
+	MSG_WriteMarker(&write_buffer, clc_cheat);
+	MSG_WriteByte(&write_buffer, 0);
+	MSG_WriteShort(&write_buffer, cheats);
 }
 
 //
@@ -2095,9 +2102,9 @@ void CL_SendCheat(int cheats)
 //
 void CL_SendGiveCheat(const char* item)
 {
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, 1);
-	MSG_WriteString(&net_buffer, item);
+	MSG_WriteMarker(&write_buffer, clc_cheat);
+	MSG_WriteByte(&write_buffer, 1);
+	MSG_WriteString(&write_buffer, item);
 }
 
 

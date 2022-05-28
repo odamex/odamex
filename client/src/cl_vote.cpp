@@ -111,10 +111,10 @@ void CMD_MapVoteCallback(const maplist_qrows_t &result) {
 	std::ostringstream index;
 	index << result[0].first;
 
-	MSG_WriteMarker(&net_buffer, clc_callvote);
-	MSG_WriteByte(&net_buffer, VOTE_MAP);
-	MSG_WriteByte(&net_buffer, 1);
-	MSG_WriteString(&net_buffer, index.str().c_str());
+	MSG_WriteMarker(&write_buffer, clc_callvote);
+	MSG_WriteByte(&write_buffer, VOTE_MAP);
+	MSG_WriteByte(&write_buffer, 1);
+	MSG_WriteString(&write_buffer, index.str().c_str());
 }
 
 void CMD_RandmapVoteErrback(const std::string &error) {
@@ -132,9 +132,9 @@ void CMD_RandmapVoteCallback(const maplist_qrows_t &result) {
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_callvote);
-	MSG_WriteByte(&net_buffer, VOTE_RANDMAP);
-	MSG_WriteByte(&net_buffer, 0);
+	MSG_WriteMarker(&write_buffer, clc_callvote);
+	MSG_WriteByte(&write_buffer, VOTE_RANDMAP);
+	MSG_WriteByte(&write_buffer, 0);
 }
 
 //////// CONSOLE COMMANDS ////////
@@ -225,12 +225,12 @@ BEGIN_COMMAND(callvote) {
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_callvote);
-	MSG_WriteByte(&net_buffer, (byte)votecmd);
-	MSG_WriteByte(&net_buffer, (byte)(arguments.size()));
+	MSG_WriteMarker(&write_buffer, clc_callvote);
+	MSG_WriteByte(&write_buffer, (byte)votecmd);
+	MSG_WriteByte(&write_buffer, (byte)(arguments.size()));
 	for (std::vector<std::string>::iterator it = arguments.begin();
 		 it != arguments.end();++it) {
-		MSG_WriteString(&net_buffer, it->c_str());
+		MSG_WriteString(&write_buffer, it->c_str());
 	}
 } END_COMMAND(callvote)
 
@@ -245,10 +245,10 @@ BEGIN_COMMAND(vote_yes)
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_netcmd);
-	MSG_WriteString(&net_buffer, "vote");
-	MSG_WriteByte(&net_buffer, 1);
-	MSG_WriteString(&net_buffer, "yes");
+	MSG_WriteMarker(&write_buffer, clc_netcmd);
+	MSG_WriteString(&write_buffer, "vote");
+	MSG_WriteByte(&write_buffer, 1);
+	MSG_WriteString(&write_buffer, "yes");
 }
 END_COMMAND(vote_yes)
 
@@ -263,9 +263,9 @@ BEGIN_COMMAND(vote_no)
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_netcmd);
-	MSG_WriteString(&net_buffer, "vote");
-	MSG_WriteByte(&net_buffer, 1);
-	MSG_WriteString(&net_buffer, "no");
+	MSG_WriteMarker(&write_buffer, clc_netcmd);
+	MSG_WriteString(&write_buffer, "vote");
+	MSG_WriteByte(&write_buffer, 1);
+	MSG_WriteString(&write_buffer, "no");
 }
 END_COMMAND(vote_no)

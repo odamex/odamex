@@ -928,8 +928,8 @@ void TickConnecting()
 	else
 	{
 		// we are already connected to this server, quit first
-		MSG_WriteMarker(&net_buffer, clc_disconnect);
-		NET_SendPacket(net_buffer, serveraddr);
+		MSG_WriteMarker(&write_buffer, clc_disconnect);
+		NET_SendPacket(write_buffer, serveraddr);
 
 		Printf(PRINT_WARNING,
 		       "Got unknown challenge %d while connecting, disconnecting.\n", type);

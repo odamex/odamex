@@ -38,6 +38,7 @@ extern bool      noservermsgs;
 extern int       last_received;
 
 extern buf_t     net_buffer;
+extern buf_t     write_buffer;
 
 extern NetDemo	netdemo;
 
