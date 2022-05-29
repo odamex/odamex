@@ -145,6 +145,48 @@ std::set<byte> teleported_players;
 // [SL] 2012-04-06 - moving sector snapshots received from the server
 std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
+class ackManager_t
+{
+	// Sequence IDs of acked packets.
+	OCircularBuffer<uint32_t, BIT(10)> m_ackedPackets;
+
+	// Most recently acked packet ID.
+	uint32_t m_recentPacketID;
+
+  public:
+	ackManager_t() : m_recentPacketID(UINT32_MAX), m_ackedPackets() { }
+
+	void ack(const uint32_t id)
+	{
+		// Compare id relative to the current packet ID, to avoid wrapping weirdness.
+		if (int32_t(id - m_recentPacketID) > 0)
+			m_recentPacketID = id;
+
+		m_ackedPackets[id] = id;
+	}
+
+	uint32_t getRecentAck() { return m_recentPacketID; }
+
+	uint32_t getAckBits()
+	{
+		uint32_t bits = 0;
+		uint32_t id = m_recentPacketID - 1;
+
+		for (size_t i = 0; i < 32; i++)
+		{
+			if (m_ackedPackets[id] == id)
+			{
+				bits |= BIT(i);
+			}
+			id -= 1;
+		}
+
+		return bits;
+	}
+};
+
+static ackManager_t g_AckManager;
+
 EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (sv_teamsinplay)
 
@@ -1766,6 +1808,13 @@ bool CL_Connect()
 	if (!CL_ReadPacketHeader())
 		return false;
 
+	// Parsing the header means we acked the first packet, send that off.
+	MSG_WriteMarker(&write_buffer, clc_ack);
+	MSG_WriteLong(&write_buffer, int(g_AckManager.getRecentAck()));
+	MSG_WriteLong(&write_buffer, int(g_AckManager.getAckBits()));
+	NET_SendPacket(write_buffer, serveraddr);
+	SZ_Clear(&write_buffer);
+
 	if (!CL_ReadAndParseMessages())
 		return false;
 
@@ -1921,46 +1970,6 @@ void CL_Decompress()
 	MSG_DecompressMinilzo();
 }
 
-class ackManager_s
-{
-	// Sequence IDs of acked packets.
-	OCircularBuffer<uint32_t, BIT(10)> m_ackedPackets;
-
-	// Most recently acked packet ID.
-	uint32_t m_recentPacketID;
-
-  public:
-	ackManager_s() : m_recentPacketID(UINT32_MAX), m_ackedPackets() { }
-
-	void ack(const uint32_t id)
-	{
-		// Compare id relative to the current packet ID, to avoid wrapping weirdness.
-		if (int32_t(id - m_recentPacketID) > 0)
-			m_recentPacketID = id;
-
-		m_ackedPackets[id] = id;
-	}
-
-	uint32_t getRecentAck() { return m_recentPacketID; }
-
-	uint32_t getAckBits()
-	{
-		uint32_t bits = 0;
-		uint32_t id = m_recentPacketID - 1;
-
-		for (size_t i = 0; i < 32; i++)
-		{
-			if (m_ackedPackets[id] == id)
-			{
-				bits |= BIT(i);
-			}
-			id -= 1;
-		}
-
-		return bits;
-	}
-} g_AckManager;
-
 /**
  * @brief Read the header of the packet and prepare the rest of it for reading.
  * 
@@ -1971,12 +1980,8 @@ bool CL_ReadPacketHeader()
 	// Packet sequence number.
 	const uint32_t packetID = MSG_ReadLong();
 
-	// Send an ACK to the server.
+	// Acknowledge packet - for next clc_ack.
 	g_AckManager.ack(packetID);
-
-	MSG_WriteMarker(&write_buffer, clc_ack);
-	MSG_WriteLong(&write_buffer, int(g_AckManager.getRecentAck()));
-	MSG_WriteLong(&write_buffer, int(g_AckManager.getAckBits()));
 
 	// Flag bits.
 	byte flags = MSG_ReadByte();
@@ -2037,6 +2042,11 @@ void CL_SendCmd(void)
 
 	if (!p->mo || gametic < 1 )
 		return;
+
+	// Resolve acks first.
+	MSG_WriteMarker(&write_buffer, clc_ack);
+	MSG_WriteLong(&write_buffer, int(g_AckManager.getRecentAck()));
+	MSG_WriteLong(&write_buffer, int(g_AckManager.getAckBits()));
 
 	// GhostlyDeath -- If we are spectating, tell the server of our new position
 	if (p->spectator)
