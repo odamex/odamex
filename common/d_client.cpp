@@ -218,18 +218,14 @@ bool SVCMessages::writePacket(buf_t& buf)
 	buf.WriteByte(0);                   // Empty space for flags.
 
 	// Write out the individual reliable messages.
-	StringTokens debugRels, debugUnrels;
 	for (size_t i = 0; i < sent.reliableIDs.size(); i++)
 	{
 		const reliableMessage_s& msg = reliableMessage(sent.reliableIDs[i]);
 		const byte header = svc::ToByte(msg.header, true);
 		buf.WriteByte(header);
 		buf.WriteShort(uint16_t(msg.messageID)); // reliable only
-		buf.WriteUnVarint(msg.data.size());
+		buf.WriteUnVarint(uint32_t(msg.data.size()));
 		buf.WriteChunk(msg.data.data(), uint32_t(msg.data.size()));
-
-		// DEBUG!
-		debugRels.push_back(svc_info[msg.header].msgName);
 	}
 
 	// Write out the individual unreliable messages.
@@ -238,19 +234,13 @@ bool SVCMessages::writePacket(buf_t& buf)
 		const unreliableMessage_s& msg = *sent.unreliables[i];
 		const byte header = svc::ToByte(msg.header, false);
 		buf.WriteByte(header);
-		buf.WriteUnVarint(msg.data.size());
+		buf.WriteUnVarint(uint32_t(msg.data.size()));
 		buf.WriteChunk(msg.data.data(), uint32_t(msg.data.size()));
-
-		// DEBUG!
-		debugUnrels.push_back(svc_info[msg.header].msgName);
 	}
+
 	sent.unreliables.clear(); // No need to keep wild pointers around.
-
-	PrintFmt("[{}] sz:{} R:{} U:{}\n", m_nextPacketID, buf.cursize,
-	         JoinStrings(debugRels, ", "), JoinStrings(debugUnrels, ", "));
-	PrintFmt("[{}] d:{}\n", m_nextPacketID, buf.debugString());
-
 	m_nextPacketID += 1;
+
 	return true;
 }
 

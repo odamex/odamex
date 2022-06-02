@@ -77,7 +77,7 @@ class OCircularQueue
 	TYPE& back() { return m_queue[m_tail - 1]; }
 	const TYPE& back() const { return m_queue[m_tail - 1]; }
 	bool empty() const { return m_head == m_tail; }
-	size_t size() const { return size_t(m_head - m_tail); }
+	size_t size() const { return size_t(m_tail - m_head); }
 
 	void clear()
 	{
