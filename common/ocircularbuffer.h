@@ -25,21 +25,20 @@
 
 #include "odamex.h"
 
-#include <exception>
+#include "nonstd/bit.hpp"
 
 template <typename TYPE, size_t SIZE>
 class OCircularBuffer
 {
+	static_assert(nonstd::has_single_bit(SIZE),
+	              "circular buffer size must be power of 2");
+
 	static const size_t m_mask = SIZE - 1;
 	TYPE m_buffer[SIZE];
 
   public:
 	OCircularBuffer()
 	{
-		// Check if SIZE is power of two.
-		if (!SIZE || (SIZE & (SIZE - 1)))
-			throw std::logic_error("circular buffer size is not power of 2");
-
 		ArrayInit(m_buffer, TYPE());
 	}
 
@@ -50,6 +49,8 @@ class OCircularBuffer
 			m_buffer[i] = other.m_buffer[i];
 		}
 	}
+
+	void clear() { ArrayInit(m_buffer, TYPE()); }
 
 	TYPE& operator[](const ptrdiff_t idx)
 	{
@@ -66,17 +67,24 @@ template <typename TYPE, size_t SIZE>
 class OCircularQueue
 {
 	OCircularBuffer<TYPE, SIZE> m_queue;
-	ptrdiff_t m_head;
-	ptrdiff_t m_tail;
+	ptrdiff_t m_head = 0;
+	ptrdiff_t m_tail = 0;
 
   public:
-	OCircularQueue() : m_queue(), m_head(0), m_tail(0) { }
+	OCircularQueue() { }
 	TYPE& front() { return m_queue[m_head]; }
 	const TYPE& front() const { return m_queue[m_head]; }
 	TYPE& back() { return m_queue[m_tail - 1]; }
 	const TYPE& back() const { return m_queue[m_tail - 1]; }
 	bool empty() const { return m_head == m_tail; }
 	size_t size() const { return size_t(m_head - m_tail); }
+
+	void clear()
+	{
+		m_queue.clear();
+		m_head = 0;
+		m_tail = 0;
+	}
 
 	TYPE& push()
 	{

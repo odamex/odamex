@@ -93,12 +93,9 @@ SVCMessages::SVCMessages(const SVCMessages& other)
  */
 void SVCMessages::clear()
 {
-	auto reliableMessages = decltype(m_reliableMessages)();
-	std::swap(m_reliableMessages, reliableMessages);
-	auto unreliableMessages = decltype(m_unreliableMessages)();
-	std::swap(m_unreliableMessages, unreliableMessages);
-	auto sentPackets = decltype(m_sentPackets)();
-	std::swap(m_sentPackets, sentPackets);
+	m_reliableMessages.clear();
+	m_unreliableMessages.clear();
+	m_sentPackets.clear();
 	m_nextPacketID = 0;
 	m_nextReliableID = 0;
 	m_reliableNoAck = 0;
@@ -280,6 +277,9 @@ bool SVCMessages::clientAck(const uint32_t packetAck, const uint32_t packetAckBi
 	{
 		const uint32_t msgID = packet->reliableIDs[i];
 		reliableMessage_s* msg = validReliableMessage(msgID);
+		if (!msg)
+			continue;
+
 		msg->acked = true;
 	}
 
