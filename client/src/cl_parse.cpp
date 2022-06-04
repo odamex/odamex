@@ -27,6 +27,7 @@
 #include "cl_parse.h"
 
 #include <bitset>
+#include <nonstd/scope.hpp>
 
 #include "server.pb.h"
 
@@ -3096,18 +3097,19 @@ bool CL_ParseMessages()
 			std::string err;
 			if (res == PERR_UNKNOWN_HEADER)
 			{
-				err = "Unknown message header";
+				err = fmt::format("Unknown message header {}", msg.svc);
 			}
 			else if (res == PERR_UNKNOWN_MESSAGE)
 			{
-				err = "Message is not known to message decoder";
+				err = fmt::format("Message {} is not known to message decoder", msg.svc);
 			}
 			else if (res == PERR_BAD_DECODE)
 			{
-				err = "Could not decode message";
+				err = fmt::format("Could not decode message {}",
+				                  ::svc_info[msg.svc].getName());
 			}
-			Printf(PRINT_WARNING, "%s: %s (reliable #%d)\n", __FUNCTION__, err.c_str(),
-			       reliableCount);
+			PrintFmt(PRINT_WARNING, "{}: {} (reliable #{})\n", __FUNCTION__, err,
+			         reliableCount);
 			PrintRecentProtos();
 
 			CL_QuitNetGame(NQ_PROTO);
@@ -3120,7 +3122,9 @@ bool CL_ParseMessages()
 	{
 		// Pop an unreliable off the queue.
 		clientUnreliable_s& msg = g_ClientUnreliables.front();
-		g_ClientUnreliables.pop();
+		auto onExit = nonstd::make_scope_exit([]() {
+			g_ClientUnreliables.pop();
+		});
 
 		// Parse the message body.
 		const parseError_e res = ParseMessage(msg.svc, msg.data);
@@ -3129,18 +3133,19 @@ bool CL_ParseMessages()
 			std::string err;
 			if (res == PERR_UNKNOWN_HEADER)
 			{
-				err = "Unknown message header";
+				err = fmt::format("Unknown message header {}", msg.svc);
 			}
 			else if (res == PERR_UNKNOWN_MESSAGE)
 			{
-				err = "Message is not known to message decoder";
+				err = fmt::format("Message {} is not known to message decoder", msg.svc);
 			}
 			else if (res == PERR_BAD_DECODE)
 			{
-				err = "Could not decode message";
+				err = fmt::format("Could not decode message {}",
+				                  ::svc_info[msg.svc].getName());
 			}
-			Printf(PRINT_WARNING, "%s: %s (unreliable #%d)\n", __FUNCTION__, err.c_str(),
-			       unreliableCount);
+			PrintFmt(PRINT_WARNING, "{}: {} (unreliable #{})\n", __FUNCTION__, err,
+			         unreliableCount);
 			PrintRecentProtos();
 
 			CL_QuitNetGame(NQ_PROTO);
