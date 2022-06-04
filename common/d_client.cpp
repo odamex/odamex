@@ -197,6 +197,9 @@ bool SVCMessages::writePacket(buf_t& buf)
 
 		sent.size += TOTAL_SIZE;
 		sent.unreliables.push_back(&msg);
+
+		// Ensure we don't send again.
+		msg.sent = true;
 	}
 
 	// If there is a contiguous string of unreliable messages at the start
