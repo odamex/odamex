@@ -39,30 +39,35 @@ class SVCMessages
 {
 	struct reliableMessage_s
 	{
-		uint16_t messageID;
-		bool acked;
-		dtime_t lastSent;
-		svc_t header;
+		uint16_t messageID = 0;
+		bool acked = true;
+		dtime_t lastSent = 0;
+		svc_t header = svc_noop;
 		std::string data;
-		reliableMessage_s()
-		    : messageID(0), acked(true), lastSent(0), header(svc_noop), data()
-		{
-		}
 	};
+
 	struct unreliableMessage_s
 	{
-		bool sent;
-		svc_t header;
+		bool sent = false;
+		svc_t header = svc_noop;
 		std::string data;
-		unreliableMessage_s() : sent(false), header(svc_noop), data() { }
 	};
+
 	struct sentPacket_s
 	{
-		uint32_t packetID;
-		size_t size;
+		uint32_t packetID = 0;
+		bool acked = true;
+		size_t size = 0;
 		std::vector<uint16_t> reliableIDs;
 		std::vector<unreliableMessage_s*> unreliables;
-		sentPacket_s() : packetID(0), size(0), reliableIDs() { }
+		void clear()
+		{
+			packetID = 0;
+			acked = true;
+			size = 0;
+			reliableIDs.clear();
+			unreliables.clear();
+		}
 	};
 
 	OCircularBuffer<reliableMessage_s, BIT(10)> m_reliableMessages;

@@ -49,7 +49,7 @@ SVCMessages::sentPacket_s& SVCMessages::sentPacket(const uint32_t id)
 SVCMessages::sentPacket_s* SVCMessages::validSentPacket(const uint32_t id)
 {
 	sentPacket_s* sent = &sentPacket(id);
-	if (sent->packetID != id)
+	if (sent->packetID != id || sent->acked)
 		return nullptr;
 	return sent;
 }
@@ -108,6 +108,7 @@ void SVCMessages::queueReliable(const google::protobuf::Message& msg)
 {
 	// Queue the message.
 	reliableMessage_s& queued = reliableMessage(m_nextReliableID);
+
 	queued.acked = false;
 	queued.messageID = m_nextReliableID;
 	queued.lastSent = 0ULL - RELIABLE_TIMEOUT;
@@ -124,6 +125,7 @@ void SVCMessages::queueReliable(const google::protobuf::Message& msg)
 void SVCMessages::queueUnreliable(const google::protobuf::Message& msg)
 {
 	unreliableMessage_s queued = m_unreliableMessages.push();
+
 	queued.sent = false;
 	queued.header = SVC_ResolveDescriptor(msg.GetDescriptor());
 	msg.SerializeToString(&queued.data);
@@ -141,9 +143,7 @@ bool SVCMessages::writePacket(buf_t& buf)
 
 	// Queue the packet for sending.
 	sentPacket_s& sent = sentPacket(m_nextPacketID);
-	sent.packetID = m_nextPacketID;
-	sent.size = 0;
-	sent.reliableIDs.clear();
+	sent.clear();
 
 	// Walk the message array starting with the oldest un-acked.
 	const uint32_t LENGTH = m_nextReliableID - m_reliableNoAck;
@@ -260,20 +260,34 @@ bool SVCMessages::clientAck(const uint32_t packetAck, const uint32_t packetAckBi
 	if (packetAck == 0 && packetAckBits == 0)
 		return false;
 
-	// See if we have a packet in the system that matches.
-	sentPacket_s* packet = validSentPacket(packetAck);
-	if (!packet)
-		return true;
-
-	// We do - ack the packet and all messages attached to it.
-	for (size_t i = 0; i < packet->reliableIDs.size(); i++)
+	// Loop through past 33 packets.
+	for (uint32_t i = 0; i < 33; i++)
 	{
-		const uint32_t msgID = packet->reliableIDs[i];
-		reliableMessage_s* msg = validReliableMessage(msgID);
-		if (!msg)
+		const uint32_t checkAck = packetAck - i;
+
+		// See if we have a packet in the system that matches.
+		sentPacket_s* packet = validSentPacket(checkAck);
+		if (!packet || packet->acked)
 			continue;
 
-		msg->acked = true;
+		// Ack the packet!
+		packet->acked = true;
+
+		// First packet should always be checked, subsequent only if they
+		// haven't been acked.
+		if (i == 0 || BIT(i - 1) != 0)
+		{
+			// Ack all messages attached to the packet.
+			for (size_t i = 0; i < packet->reliableIDs.size(); i++)
+			{
+				const uint32_t msgID = packet->reliableIDs[i];
+				reliableMessage_s* msg = validReliableMessage(msgID);
+				if (!msg)
+					continue;
+
+				msg->acked = true;
+			}
+		}
 	}
 
 	return true;
