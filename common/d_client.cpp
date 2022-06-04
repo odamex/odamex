@@ -241,9 +241,11 @@ bool SVCMessages::writePacket(buf_t& buf)
 		buf.WriteChunk(msg.data.data(), uint32_t(msg.data.size()));
 	}
 
+	sent.packetID = m_nextPacketID;
+	sent.acked = false;
 	sent.unreliables.clear(); // No need to keep wild pointers around.
-	m_nextPacketID += 1;
 
+	m_nextPacketID += 1;
 	return true;
 }
 
