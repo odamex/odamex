@@ -175,13 +175,6 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 }
 
 /**
- * @brief svc_noop - Nothing to see here. Move along.
- */
-static void CL_Noop(const odaproto::svc::Noop* msg)
-{
-}
-
-/**
  * @brief svc_disconnect - Disconnect a client from the server.
  */
 static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
@@ -2786,7 +2779,7 @@ struct clientReliable_s
 	svc_t svc;
 	uint16_t reliableID;
 	std::string data;
-	clientReliable_s() : svc(svc_noop), reliableID(UINT16_MAX), data() { }
+	clientReliable_s() : svc(svc_invalid), reliableID(UINT16_MAX), data() { }
 };
 static OCircularBuffer<clientReliable_s, BIT(10)> g_ClientReliables;
 static uint16_t g_NextReliableID = 0;
@@ -2795,7 +2788,7 @@ struct clientUnreliable_s
 {
 	svc_t svc;
 	std::string data;
-	clientUnreliable_s() : svc(svc_noop), data() { }
+	clientUnreliable_s() : svc(svc_invalid), data() { }
 };
 static OCircularQueue<clientUnreliable_s, BIT(10)> g_ClientUnreliables;
 
@@ -2881,7 +2874,7 @@ static parseError_e ParseMessageBody(google::protobuf::Message*& out, const byte
  */
 static bool ReadMessage()
 {
-	svc_t svc = svc_noop;
+	svc_t svc = svc_invalid;
 	bool reliable = false;
 	uint16_t reliableID = 0;
 
@@ -2909,9 +2902,6 @@ static bool ReadMessage()
 		PrintFmt(PRINT_WARNING, "    Data: {}\n", ::net_message.debugString());
 		return false;
 	}
-
-	PrintFmt("Read {} bytes for a {}, {}\n", size, ::svc_info[svc].getName(),
-	         reliable ? "Reliable" : "Unreliable");
 
 	// Put the unparsed message into the proper queue.  Don't parse the message yet
 	// since at that point we have to worry about lifetimes, which doesn't mix well
@@ -2985,7 +2975,6 @@ parseError_e ParseMessage(const svc_t cmd, const std::string& data)
 	switch (cmd)
 	{
 		/* clang-format off */
-		SV_MSG(svc_noop, CL_Noop, odaproto::svc::Noop);
 		SV_MSG(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
 		SV_MSG(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
 		SV_MSG(svc_moveplayer, CL_MovePlayer, odaproto::svc::MovePlayer);

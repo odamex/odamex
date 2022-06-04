@@ -47,7 +47,6 @@ static void MapProto(const svc_t header, const google::protobuf::Descriptor* des
  */
 static void InitMap()
 {
-	MapProto(svc_noop, odaproto::svc::Noop::descriptor());
 	MapProto(svc_disconnect, odaproto::svc::Disconnect::descriptor());
 	MapProto(svc_playerinfo, odaproto::svc::PlayerInfo::descriptor());
 	MapProto(svc_moveplayer, odaproto::svc::MovePlayer::descriptor());
@@ -134,7 +133,7 @@ const google::protobuf::Descriptor* SVC_ResolveHeader(const byte header)
 }
 
 /**
- * @brief Given a message Descriptor, return the packet header, or svc_noop
+ * @brief Given a message Descriptor, return the packet header, or svc_invalid
  *        if the descriptor is invalid.
  */
 svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc)
@@ -147,7 +146,7 @@ svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc)
 	SVCDescMap::iterator it = ::g_SVCDescMap.find(desc);
 	if (it == ::g_SVCDescMap.end())
 	{
-		return svc_noop;
+		return svc_invalid;
 	}
 	return it->second;
 }

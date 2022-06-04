@@ -177,7 +177,7 @@ struct msg_info_t
 // network messages
 enum svc_t
 {
-	svc_noop,
+	svc_invalid, // [AM] Not a real message - used as a null value.
 	svc_disconnect,
 	svc_playerinfo, // weapons, ammo, maxammo, raisedweapon for local player
 	svc_moveplayer,

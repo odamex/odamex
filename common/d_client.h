@@ -42,14 +42,14 @@ class SVCMessages
 		uint16_t messageID = 0;
 		bool acked = true;
 		dtime_t lastSent = 0;
-		svc_t header = svc_noop;
+		svc_t header = svc_invalid;
 		std::string data;
 	};
 
 	struct unreliableMessage_s
 	{
 		bool sent = false;
-		svc_t header = svc_noop;
+		svc_t header = svc_invalid;
 		std::string data;
 	};
 
