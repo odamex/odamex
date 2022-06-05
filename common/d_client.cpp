@@ -124,7 +124,7 @@ void SVCMessages::queueReliable(const google::protobuf::Message& msg)
  */
 void SVCMessages::queueUnreliable(const google::protobuf::Message& msg)
 {
-	unreliableMessage_s queued = m_unreliableMessages.push();
+	unreliableMessage_s& queued = m_unreliableMessages.push();
 
 	queued.sent = false;
 	queued.header = SVC_ResolveDescriptor(msg.GetDescriptor());
@@ -221,9 +221,11 @@ bool SVCMessages::writePacket(buf_t& buf)
 	buf.WriteByte(0);                   // Empty space for flags.
 
 	// Write out the individual reliable messages.
-	for (size_t i = 0; i < sent.reliableIDs.size(); i++)
+	for (const auto id : sent.reliableIDs)
 	{
-		const reliableMessage_s& msg = reliableMessage(sent.reliableIDs[i]);
+		const reliableMessage_s& msg = reliableMessage(id);
+		assert(msg.header != svc_invalid);
+
 		const byte header = svc::ToByte(msg.header, true);
 		buf.WriteByte(header);
 		buf.WriteShort(uint16_t(msg.messageID)); // reliable only
@@ -235,6 +237,8 @@ bool SVCMessages::writePacket(buf_t& buf)
 	for (size_t i = 0; i < sent.unreliables.size(); i++)
 	{
 		const unreliableMessage_s& msg = *sent.unreliables[i];
+		assert(msg.header != svc_invalid);
+
 		const byte header = svc::ToByte(msg.header, false);
 		buf.WriteByte(header);
 		buf.WriteUnVarint(uint32_t(msg.data.size()));

@@ -48,7 +48,7 @@ class SVCMessages
 
 	struct unreliableMessage_s
 	{
-		bool sent = false;
+		bool sent = true;
 		svc_t header = svc_invalid;
 		std::string data;
 	};
