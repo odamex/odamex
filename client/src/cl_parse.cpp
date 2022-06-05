@@ -2777,19 +2777,17 @@ static void CL_NetDemoLoadSnap(const odaproto::svc::NetDemoLoadSnap* msg)
 
 struct clientReliable_s
 {
-	svc_t svc;
-	uint16_t reliableID;
+	svc_t svc = svc_invalid;
+	uint16_t reliableID = UINT16_MAX;
 	std::string data;
-	clientReliable_s() : svc(svc_invalid), reliableID(UINT16_MAX), data() { }
 };
 static OCircularBuffer<clientReliable_s, BIT(10)> g_ClientReliables;
 static uint16_t g_NextReliableID = 0;
 
 struct clientUnreliable_s
 {
-	svc_t svc;
+	svc_t svc = svc_invalid;
 	std::string data;
-	clientUnreliable_s() : svc(svc_invalid), data() { }
 };
 static OCircularQueue<clientUnreliable_s, BIT(10)> g_ClientUnreliables;
 
@@ -2881,15 +2879,63 @@ static bool ReadMessage()
 
 	// What type of message we have.
 	const byte cmd = MSG_ReadByte();
+	if (::net_message.overflowed)
+	{
+		PrintFmt(PRINT_WARNING, "{}: Message overflowed\n", __FUNCTION__);
+		PrintFmt(PRINT_WARNING, "    Could not read message type\n");
+		PrintFmt(PRINT_WARNING, "    Size: {} bytes\n", ::net_message.cursize);
+		PrintFmt(PRINT_WARNING, "    Data: {}\n", ::net_message.debugString());
+		return false;
+	}
+
 	svc::FromByte(cmd, svc, reliable);
+	if (::net_message.overflowed)
+	{
+		PrintFmt(PRINT_WARNING, "{}: Message overflowed\n", __FUNCTION__);
+		PrintFmt(PRINT_WARNING, "    Could not read message type\n");
+		PrintFmt(PRINT_WARNING, "    Size: {} bytes\n", ::net_message.cursize);
+		PrintFmt(PRINT_WARNING, "    Data: {}\n", ::net_message.debugString());
+		return false;
+	}
+	else if (svc == svc_invalid)
+	{
+		// There are many potential invalid messages, but svc_invalid is
+		// always invalid.
+		PrintFmt(PRINT_WARNING, "{}: Invalid {} message\n", __FUNCTION__,
+		         reliable ? "reliable" : "unreliable");
+		PrintFmt(PRINT_WARNING, "    Size: {} bytes\n", ::net_message.cursize);
+		PrintFmt(PRINT_WARNING, "    Data: {}\n", ::net_message.debugString());
+		return false;
+	}
+
 	if (reliable)
 	{
 		// Read the message ID.
 		reliableID = MSG_ReadShort();
+		if (::net_message.overflowed)
+		{
+			PrintFmt(PRINT_WARNING, "{}: Message overflowed\n", __FUNCTION__);
+			PrintFmt(PRINT_WARNING, "    Command: {}, {}\n", ::svc_info[svc].getName(),
+			         reliable ? "Reliable" : "Unreliable");
+			PrintFmt(PRINT_WARNING, "    Could not read reliable message ID\n");
+			PrintFmt(PRINT_WARNING, "    Size: {} bytes\n", ::net_message.cursize);
+			PrintFmt(PRINT_WARNING, "    Data: {}\n", ::net_message.debugString());
+			return false;
+		}
 	}
 
 	// Size of the message.
 	size_t size = MSG_ReadUnVarint();
+	if (::net_message.overflowed)
+	{
+		PrintFmt(PRINT_WARNING, "{}: Message overflowed\n", __FUNCTION__);
+		PrintFmt(PRINT_WARNING, "    Command: {}, {}\n", ::svc_info[svc].getName(),
+		         reliable ? "Reliable" : "Unreliable");
+		PrintFmt(PRINT_WARNING, "    Could not read message size\n");
+		PrintFmt(PRINT_WARNING, "    Size: {} bytes\n", ::net_message.cursize);
+		PrintFmt(PRINT_WARNING, "    Data: {}\n", ::net_message.debugString());
+		return false;
+	}
 
 	// The message itself.
 	void* data = MSG_ReadChunk(size);
@@ -2900,6 +2946,7 @@ static bool ReadMessage()
 		         reliable ? "Reliable" : "Unreliable");
 		PrintFmt(PRINT_WARNING, "    Wanted {} bytes but only found {} bytes\n", size,
 		         ::net_message.cursize - ::net_message.readpos);
+		PrintFmt(PRINT_WARNING, "    Size: {} bytes\n", ::net_message.cursize);
 		PrintFmt(PRINT_WARNING, "    Data: {}\n", ::net_message.debugString());
 		return false;
 	}

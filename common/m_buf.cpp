@@ -336,27 +336,7 @@ byte* buf_t::GetSpace(size_t length)
 
 std::string buf_t::debugString()
 {
-	std::string all;
-	std::string buf;
-	for (size_t i = 0; i < cursize; i++)
-	{
-		if (readpos == i)
-			all += "[";
-		else if (readpos == i - 1)
-			all += "]";
-		else
-			all += " ";
-
-		StrFormat(buf, "%02x", data[i]);
-		all += buf;
-	}
-
-	if (readpos == cursize - 1)
-		all += "]";
-	else
-		all += ";";
-
-	return all;
+	return DebugByteString(&data[0], &data[cursize], &data[readpos]);
 }
 
 #if defined(ODAMEX_DEBUG)

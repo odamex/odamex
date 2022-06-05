@@ -55,6 +55,41 @@ int 	ParseNum(const char *str);
 bool	IsNum(const char* str);		// [RH] added
 bool	IsRealNum(const char* str);
 
+/**
+ * @brief Print a debug hex string for a given range.
+ *
+ * @tparam IT A const_iterator for a data structure, or a pointer.
+ * @param first First position in range.
+ * @param last Last position in range.
+ * @param pos Position in range to highlight.
+ * @return Resulting debug string.
+ */
+template <typename IT>
+std::string DebugByteString(const IT first, const IT last, const IT pos)
+{
+	std::string all;
+	std::string buf;
+	for (IT it = first; it != last; ++it)
+	{
+		if (it == pos)
+			all += "[";
+		else if (it - 1 == pos)
+			all += "]";
+		else
+			all += " ";
+
+		buf = fmt::format("{:02x}", *it);
+		all += buf;
+	}
+
+	if (pos == last - 1)
+		all += "]";
+	else
+		all += ";";
+
+	return all;
+}
+
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
 bool iequals(const std::string &, const std::string &);
