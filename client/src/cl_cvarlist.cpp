@@ -559,6 +559,8 @@ CVAR(hud_demoprotos, "0", "Debug protocol messages while demo is paused.", CVART
 CVAR(hud_feedobits, "1", "Show obituaries in the event feed.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
 
+CVAR(hud_hordeinfo_debug, "0", "Show debugging information for horde.", CVARTYPE_BOOL, CVAR_NULL)
+
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                       // A
 CVAR (chatmacro1, "I'm ready to kick butt!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)   // B

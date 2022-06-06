@@ -968,7 +968,7 @@ void A_Chase (AActor *actor)
 	if (actor->flags & MF_JUSTATTACKED)
 	{
 		actor->flags &= ~MF_JUSTATTACKED;
-		if (G_GetCurrentSkill().respawn_counter && !sv_fastmonsters)
+		if (G_GetCurrentSkill().respawn_counter == 0 && !sv_fastmonsters)
 			P_NewChaseDir (actor);
 		return;
 	}
@@ -2154,6 +2154,18 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 
 					P_SetMobjState(corpsehit, info->raisestate, true);
 
+					// [Nes] - Classic demo compatability: Ghost monster bug.
+					if ((co_novileghosts))
+					{
+						corpsehit->height =
+						    P_ThingInfoHeight(info);      // [RH] Use real mobj height
+						corpsehit->radius = info->radius; // [RH] Use real radius
+					}
+					else
+					{
+						corpsehit->height <<= 2;
+					}
+
 					corpsehit->flags = info->flags;
 					corpsehit->health = info->spawnhealth;
 					corpsehit->target = AActor::AActorPtr();
@@ -3058,11 +3070,7 @@ void A_PlaySound(AActor* mo)
 		sndmap = 0;
 	}
 
-	if (!clientside)
-		SV_Sound(mo, CHAN_BODY, SoundMap[sndmap],
-		         (mo->state->misc2 ? ATTN_NONE : ATTN_NORM));
-	else
-		S_Sound(mo, CHAN_BODY, SoundMap[sndmap], 1,
+	S_Sound(mo, CHAN_BODY, SoundMap[sndmap], 1,
 		        (mo->state->misc2 ? ATTN_NONE : ATTN_NORM));
 }
 

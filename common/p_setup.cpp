@@ -1517,7 +1517,7 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 	unsigned int length = 0;
 
 	typedef std::vector<byte> LevelLumps;
-	static LevelLumps levellumps;
+	LevelLumps levellumps;
 
 	const byte* thingbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
 	const byte* lindefbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
