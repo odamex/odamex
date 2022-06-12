@@ -370,7 +370,7 @@ if(BUILD_CLIENT OR BUILD_SERVER)
 
   lib_buildgen(
     LIBRARY protobuf
-    SRCDIR "${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake"
+    SRCDIR "${CMAKE_CURRENT_SOURCE_DIR}/protobuf"
     PARAMS ${_PROTOBUF_BUILDGEN_PARAMS})
   lib_build(LIBRARY protobuf)
 endif()
