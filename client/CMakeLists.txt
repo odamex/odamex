@@ -188,7 +188,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
-  target_link_libraries(odamex odamex-common odaproto)
+  target_link_libraries(odamex odamex-common odaproto tinylibs)
   if(TARGET SDL::SDL)
     target_link_libraries(odamex SDL::SDL)
     if(TARGET SDL::SDLmain)
@@ -212,7 +212,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})
   endif()
 
-  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG)
+  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG fmt::fmt)
 
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 shlwapi)

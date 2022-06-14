@@ -291,7 +291,7 @@ void FLZOFile::Implode()
 		else
 		{
 			// A comment inside LZO says "lzo_uint must match size_t".
-			DPrintf("LZOFile shrunk from %u to %" PRIuSIZE" bytes\n", input_len, compressed_len);
+			DPrintf("LZOFile shrunk from %u to %zu bytes\n", input_len, compressed_len);
 		}
 	}
 
