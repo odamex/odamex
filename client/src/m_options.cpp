@@ -1444,7 +1444,7 @@ bool M_StartOptionsMenu (void)
 	return true;
 }
 
-void M_DrawSlider (int x, int y, float leftval, float rightval, float cur)
+void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float step)
 {
 	if (leftval < rightval)
 		cur = clamp(cur, leftval, rightval);
@@ -1459,6 +1459,17 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur)
 	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
 
 	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
+
+	std::string buf;
+	if (step == 0.0f)
+		return;
+	else if (step >= 1.0f)
+		StrFormat(buf, "%.0f", cur);
+	else if (step >= 0.1f)
+		StrFormat(buf, "%.1f", cur);
+	else
+		StrFormat(buf, "%.2f", cur);
+	screen->DrawTextCleanMove(CR_GREY, x + 96, y, buf.c_str());
 }
 
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
@@ -1629,7 +1640,7 @@ void M_OptDrawer (void)
 				break;
 
 			case slider:
-				M_DrawSlider (CurrentMenu->indent + 8, y, item->b.leftval, item->c.rightval, item->a.cvar->value());
+				M_DrawSlider (CurrentMenu->indent + 8, y, item->b.leftval, item->c.rightval, item->a.cvar->value(), item->d.step);
 				break;
 
 			case redslider:
