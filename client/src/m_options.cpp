@@ -127,6 +127,7 @@ EXTERN_CVAR (co_boomphys)			// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (co_globalsound)
 EXTERN_CVAR(hud_feedobits)
+EXTERN_CVAR(hud_feedtime)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -878,7 +879,8 @@ static menuitem_t HUDItems[] = {
     // clang-format on
     {discrete, "Timer Type", {&hud_timer}, {3.0}, {0.0}, {0.0}, {TimerStyles}},
     {discrete, "Speedometer", {&hud_speedometer}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {discrete, "Killfeed", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {slider, "Feed Timeout", {&hud_feedtime}, {1.0}, {10.0}, {0.25}, {NULL}},
+    {discrete, "Feed Obits", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {discrete, "Netdemo infos", {&hud_demobar}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 
