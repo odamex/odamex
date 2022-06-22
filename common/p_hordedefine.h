@@ -32,6 +32,7 @@ struct hordeRecipe_t
 {
 	mobjtype_t type;
 	int count;
+	int limit;
 	bool isBoss;
 
 	hordeRecipe_t() : type(MT_NULL), count(0), isBoss(false) { }
@@ -43,6 +44,7 @@ struct hordeRecipe_t
 
 		type = other.type;
 		count = other.count;
+		limit = other.limit;
 		isBoss = other.isBoss;
 
 		return *this;
@@ -52,6 +54,7 @@ struct hordeRecipe_t
 	{
 		type = MT_NULL;
 		count = 0;
+		limit = 0;
 		isBoss = false;
 	}
 
@@ -86,6 +89,7 @@ struct hordeDefine_t
 	{
 		int minGroupHealth;
 		int maxGroupHealth;
+		int limit;
 		float chance;
 		monConfig_t() : minGroupHealth(-1), maxGroupHealth(-1), chance(1.0f) { }
 	};

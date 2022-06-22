@@ -61,6 +61,29 @@ static bool CmpDist(const SpawnPointWeight& a, const SpawnPointWeight& b)
 }
 
 /**
+ * @brief counts number of monsters of type
+ *
+ * @param type Type of monster to search for
+ */
+int countMobjType(mobjtype_t type)
+{
+	AActor* mo;
+	TThinkerIterator<AActor> iterator;
+
+	int count = 0;
+
+	while ((mo = iterator.Next()))
+	{
+		if (mo->type == type)
+		{
+			count++;
+		}
+	}
+
+	return count;
+}
+
+/**
  * @brief Spawn a monster.
  *
  * @param point Spawn point of the monster.
@@ -76,7 +99,11 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 	                        recipe.type);
 	if (mo)
 	{
-		if (P_TestMobjLocation(mo))
+		if (recipe.limit > 0 && countMobjType(recipe.type) >= recipe.limit) {
+			// spawn blocked by limit
+			mo->Destroy();
+		}
+		else if (P_TestMobjLocation(mo))
 		{
 			// Don't respawn
 			mo->flags |= MF_DROPPED;
