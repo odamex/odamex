@@ -63,9 +63,9 @@ static bool CmpDist(const SpawnPointWeight& a, const SpawnPointWeight& b)
 /**
  * @brief counts number of monsters of type
  *
- * @param type Type of monster to search for
+ * @param type Type of monster to count
  */
-int countMobjType(mobjtype_t type)
+static int countMobjType(mobjtype_t type)
 {
 	AActor* mo;
 	TThinkerIterator<AActor> iterator;
@@ -74,7 +74,7 @@ int countMobjType(mobjtype_t type)
 
 	while ((mo = iterator.Next()))
 	{
-		if (mo->type == type)
+		if ((mo->type == type) && (mo->health > 0))
 		{
 			count++;
 		}
@@ -99,7 +99,7 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 	                        recipe.type);
 	if (mo)
 	{
-		if (recipe.limit > 0 && countMobjType(recipe.type) >= recipe.limit) {
+		if (recipe.limit > 0 && countMobjType(recipe.type) > recipe.limit) {
 			// spawn blocked by limit
 			mo->Destroy();
 		}
