@@ -295,6 +295,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 
 	out.type = outType;
 	out.count = outCount;
+	out.limit = config->limit;
 	out.isBoss = outIsBoss;
 
 	return true;

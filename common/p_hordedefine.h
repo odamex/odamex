@@ -35,7 +35,7 @@ struct hordeRecipe_t
 	int limit;
 	bool isBoss;
 
-	hordeRecipe_t() : type(MT_NULL), count(0), isBoss(false) { }
+	hordeRecipe_t() : type(MT_NULL), count(0), limit(0), isBoss(false) { }
 
 	hordeRecipe_t& operator=(const hordeRecipe_t& other)
 	{
