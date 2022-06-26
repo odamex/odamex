@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <unordered_map>
+
 #include "actor.h"
 #include "p_hordedefine.h"
 
@@ -74,6 +76,6 @@ void P_HordeAddSpawns();
 bool P_HordeHasSpawns();
 void P_HordeClearSpawns();
 hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe);
-AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe);
+AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe, std::unordered_map<mobjtype_t, int>& monsterCounts);
 void P_HordeSpawnItem();
 void P_HordeSpawnPowerup(const mobjtype_t pw);

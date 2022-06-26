@@ -24,6 +24,7 @@
 #include "odamex.h"
 
 #include <math.h>
+#include <unordered_map>
 
 #include "p_horde.h"
 
@@ -202,6 +203,7 @@ class HordeState
 	int m_nextSpawn;
 	int m_nextPowerup;
 	corpseCollector_t m_corpses;
+	std::unordered_map<mobjtype_t, int> m_monsterCounts;
 
 	/**
 	 * @brief Set the given state.
@@ -224,7 +226,7 @@ class HordeState
 	    : m_state(HS_STARTING), m_wave(0), m_waveTime(0), m_bossTime(0), m_defineID(0),
 	      m_spawnedHealth(0), m_killedHealth(0), m_bossHealth(0), m_bossDamage(0),
 	      m_waveStartHealth(0), m_bossRecipe(hordeRecipe_t()), m_nextSpawn(0),
-	      m_nextPowerup(0)
+	      m_nextPowerup(0), m_monsterCounts()
 	{
 	}
 
@@ -248,6 +250,7 @@ class HordeState
 		m_nextSpawn = ::level.time;
 		m_nextPowerup = ::level.time + (30 * TICRATE);
 		m_corpses.clear();
+		m_monsterCounts.clear();
 
 		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
 		                   G_HordeDefine(m_defineID).name.c_str());
@@ -295,6 +298,7 @@ class HordeState
 		m_bosses.clear();
 		m_bossRecipe.clear();
 		m_corpses.startWave();
+		m_monsterCounts.clear();
 
 		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
 		                   G_HordeDefine(m_defineID).name.c_str());
@@ -402,6 +406,27 @@ class HordeState
 		}
 	}
 
+	/**
+	 * @brief Re-count all monsters
+	 *
+	 * @detail Used for loading savegames.
+	 */
+	void recountMonsters()
+	{
+		AActor* mo;
+		TThinkerIterator<AActor> iterator;
+
+		m_monsterCounts.clear();
+		while ((mo = iterator.Next()))
+		{
+			if (m_monsterCounts.count(mo->type)) {
+				m_monsterCounts[mo->type] += 1;
+			} else {
+				m_monsterCounts[mo->type] = 1;
+			}
+		}
+	}
+
 	void addSpawnHealth(const int health)
 	{
 		m_spawnedHealth += health;
@@ -425,6 +450,12 @@ class HordeState
 	void addCorpse(AActor* mo)
 	{
 		m_corpses.pushCorpse(mo);
+	}
+
+	void decrementCount(mobjtype_t type) {
+		if (m_monsterCounts.count(type)) {
+			m_monsterCounts[type] -= 1;
+		}
 	}
 
 	size_t getDefineID() const
@@ -647,7 +678,8 @@ void HordeState::tick()
 			DPrintf("Spawning %d %s (%d hp) at a %s spawn\n", recipe.count,
 			        ::mobjinfo[recipe.type].name, hp, HordeThingStr(spawn->type));
 
-			AActors mobjs = P_HordeSpawn(*spawn, recipe);
+			AActors mobjs = P_HordeSpawn(*spawn, recipe, m_monsterCounts);
+			m_monsterCounts;
 			ActivateMonsters(mobjs);
 			break;
 		}
@@ -689,7 +721,8 @@ void HordeState::tick()
 				break;
 			}
 
-			AActors mobjs = P_HordeSpawn(*spawn, recipe);
+			AActors mobjs = P_HordeSpawn(*spawn, recipe, m_monsterCounts);
+			m_monsterCounts;
 			m_bosses.insert(m_bosses.end(), mobjs.begin(), mobjs.end());
 			ActivateMonsters(mobjs);
 			break;
@@ -756,6 +789,8 @@ void P_RemoveHealthPool(AActor* mo)
 
 	// Unset the flag - we only get one try.
 	mo->oflags &= ~MFO_HEALTHPOOL;
+
+	::g_HordeDirector.decrementCount(mo->type);
 
 	::g_HordeDirector.addKilledHealth(::mobjinfo[mo->type].spawnhealth);
 }
