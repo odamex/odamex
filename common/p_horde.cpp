@@ -956,6 +956,7 @@ void P_HordePostLoad()
 		return;
 
 	::g_HordeDirector.rescanBosses();
+	::g_HordeDirector.recountMonsters();
 }
 
 BEGIN_COMMAND(hordewave)
