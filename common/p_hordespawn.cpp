@@ -81,15 +81,13 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 	                        recipe.type);
 	if (mo)
 	{
-		if (recipe.limit > 0 && count >= recipe.limit) {
+		if (recipe.limit > 0 && count >= recipe.limit) 
+		{
 			// spawn blocked by limit
 			mo->Destroy();
 		}
 		else if (P_TestMobjLocation(mo))
 		{
-			// update current count
-			monsterCounts[recipe.type] = count + 1;
-
 			// Don't respawn
 			mo->flags |= MF_DROPPED;
 
@@ -106,6 +104,10 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 				mo->flags2 = MF2_BOSS;
 
 				mo->flags3 = MF3_FULLVOLSOUNDS | MF3_DMGIGNORED;
+			} else 
+			{
+				// update current count if not boss
+				monsterCounts[recipe.type] = count + 1;
 			}
 			SV_SpawnMobj(mo);
 

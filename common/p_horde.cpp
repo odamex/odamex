@@ -419,10 +419,14 @@ class HordeState
 		m_monsterCounts.clear();
 		while ((mo = iterator.Next()))
 		{
-			if (m_monsterCounts.count(mo->type)) {
-				m_monsterCounts[mo->type] += 1;
-			} else {
-				m_monsterCounts[mo->type] = 1;
+			if (!mo->oflags & MFO_BOSSPOOL) {
+				if (m_monsterCounts.count(mo->type)) 
+				{
+					m_monsterCounts[mo->type] += 1;
+				} else 
+				{
+					m_monsterCounts[mo->type] = 1;
+				}
 			}
 		}
 	}
@@ -452,9 +456,9 @@ class HordeState
 		m_corpses.pushCorpse(mo);
 	}
 
-	void decrementCount(mobjtype_t type) {
-		if (m_monsterCounts.count(type)) {
-			m_monsterCounts[type] -= 1;
+	void decrementCount(AActor* mo) {
+		if (m_monsterCounts.count(mo->type) && !(mo->oflags & MFO_BOSSPOOL)) {
+			m_monsterCounts[mo->type] -= 1;
 		}
 	}
 
@@ -790,7 +794,7 @@ void P_RemoveHealthPool(AActor* mo)
 	// Unset the flag - we only get one try.
 	mo->oflags &= ~MFO_HEALTHPOOL;
 
-	::g_HordeDirector.decrementCount(mo->type);
+	::g_HordeDirector.decrementCount(mo);
 
 	::g_HordeDirector.addKilledHealth(::mobjinfo[mo->type].spawnhealth);
 }
