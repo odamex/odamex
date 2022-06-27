@@ -683,7 +683,6 @@ void HordeState::tick()
 			        ::mobjinfo[recipe.type].name, hp, HordeThingStr(spawn->type));
 
 			AActors mobjs = P_HordeSpawn(*spawn, recipe, m_monsterCounts);
-			m_monsterCounts;
 			ActivateMonsters(mobjs);
 			break;
 		}
@@ -726,7 +725,6 @@ void HordeState::tick()
 			}
 
 			AActors mobjs = P_HordeSpawn(*spawn, recipe, m_monsterCounts);
-			m_monsterCounts;
 			m_bosses.insert(m_bosses.end(), mobjs.begin(), mobjs.end());
 			ActivateMonsters(mobjs);
 			break;
