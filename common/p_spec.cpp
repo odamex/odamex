@@ -1942,9 +1942,12 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 		result = map_format.cross_special_line(line, side, thing, bossaction);
 	}
 
-	if (serverside && result.lineexecuted)
+	if (result.lineexecuted)
 	{
-		SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
+		if (serverside)
+		{
+			SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
+		}
 
 		bool repeat;
 
