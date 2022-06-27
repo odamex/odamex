@@ -1689,6 +1689,10 @@ void P_SpawnCompatibleSectorSpecial(sector_t* sector)
 
 void P_SpawnCompatibleScroller(line_t* l, int i)
 {
+	// [Blair] don't run scrolling on clients to prevent desyncs
+	if (IgnoreSpecial)
+		return;
+
 	fixed_t dx = l->dx >> SCROLL_SHIFT; // direction and speed of scrolling
 	fixed_t dy = l->dy >> SCROLL_SHIFT;
 	int control = -1, accel = 0; // no control sector or acceleration
