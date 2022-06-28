@@ -1674,7 +1674,7 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
 {
 	int l = msg->linenum();
 	byte switchactive = msg->switch_active();
-	byte special = msg->special();
+	unsigned int special = msg->special();
 	unsigned int state = msg->state(); // DActiveButton::EWhere
 	short texture = msg->button_texture();
 	unsigned int time = msg->timer();
@@ -2887,6 +2887,10 @@ parseError_e CL_ParseCommand()
 	{
 		return err;
 	}
+
+	// Delete pointer on scope exit.
+	// [AM] Should be unique_ptr as of C++11.
+	std::auto_ptr<google::protobuf::Message> autoMSG(msg);
 
 	// Run the proper message function.
 	switch (cmd)

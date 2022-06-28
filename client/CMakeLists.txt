@@ -162,7 +162,6 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${COMMON_SOURCES} ${CLIENT_GUI_SOURCES})
   odamex_target_settings(odamex)
-  set_property(TARGET odamex PROPERTY CXX_STANDARD 98)
 
   if(USE_DEFAULT_SIMD)
     if(ODAMEX_TARGET_ARCH STREQUAL "amd64")
@@ -189,7 +188,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
-  target_link_libraries(odamex odamex-common odaproto)
+  target_link_libraries(odamex odamex-common odaproto tinylibs)
   if(TARGET SDL::SDL)
     target_link_libraries(odamex SDL::SDL)
     if(TARGET SDL::SDLmain)
@@ -213,7 +212,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})
   endif()
 
-  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG)
+  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG fmt::fmt)
 
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 shlwapi)

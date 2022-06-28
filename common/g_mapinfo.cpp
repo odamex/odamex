@@ -1473,15 +1473,6 @@ struct MapInfoDataSetter
 	}
 };
 
-// macro to make up for lack of initializer lists in C++98
-#define ENTRY1(x1) mapInfoDataContainer.push_back(MapInfoData(x1));
-#define ENTRY2(x1, x2) mapInfoDataContainer.push_back(MapInfoData(x1, x2));
-#define ENTRY3(x1, x2, x3) mapInfoDataContainer.push_back(MapInfoData(x1, x2, x3));
-#define ENTRY4(x1, x2, x3, x4) \
-	mapInfoDataContainer.push_back(MapInfoData(x1, x2, x3, x4));
-#define ENTRY5(x1, x2, x3, x4, x5) \
-	mapInfoDataContainer.push_back(MapInfoData(x1, x2, x3, x4, x5));
-
 // level_pwad_info_t
 template <>
 struct MapInfoDataSetter<level_pwad_info_t>
@@ -1490,73 +1481,70 @@ struct MapInfoDataSetter<level_pwad_info_t>
 
 	MapInfoDataSetter(level_pwad_info_t& ref)
 	{
-		mapInfoDataContainer.reserve(
-		    70); // [DE] some random number, i'm not counting all these
-
-		ENTRY3("levelnum", &MIType_Int, &ref.levelnum)
-		ENTRY3("next", &MIType_MapName, &ref.nextmap)
-		ENTRY3("secretnext", &MIType_MapName, &ref.secretmap)
-		ENTRY3("secret", &MIType_MapName, &ref.secretmap)
-		ENTRY3("cluster", &MIType_Cluster, &ref.cluster)
-		ENTRY3("sky1", &MIType_Sky, &ref.skypic)
-		ENTRY3("sky2", &MIType_Sky, &ref.skypic2)
-		ENTRY3("fade", &MIType_Color, &ref.fadeto_color)
-		ENTRY3("outsidefog", &MIType_Color, &ref.outsidefog_color)
-		ENTRY3("titlepatch", &MIType_LumpName, &ref.pname)
-		ENTRY3("par", &MIType_Int, &ref.partime)
-		ENTRY3("music", &MIType_MusicLumpName, &ref.music)
-		ENTRY4("nointermission", &MIType_SetFlag, &ref.flags, LEVEL_NOINTERMISSION)
-		ENTRY4("doublesky", &MIType_SetFlag, &ref.flags, LEVEL_DOUBLESKY)
-		ENTRY4("nosoundclipping", &MIType_SetFlag, &ref.flags, LEVEL_NOSOUNDCLIPPING)
-		ENTRY4("allowmonstertelefrags", &MIType_SetFlag, &ref.flags,
-		       LEVEL_MONSTERSTELEFRAG)
-		ENTRY3("map07special", &MIType_Map07Special, &ref.bossactions)
-		ENTRY3("baronspecial", &MIType_BaronSpecial, &ref.bossactions)
-		ENTRY3("cyberdemonspecial", &MIType_CyberdemonSpecial, &ref.bossactions)
-		ENTRY3("spidermastermindspecial", &MIType_SpiderMastermindSpecial, &ref.bossactions)
-		ENTRY3("specialaction_exitlevel", &MIType_SpecialAction_ExitLevel, &ref.bossactions)
-		ENTRY3("specialaction_opendoor", &MIType_SpecialAction_OpenDoor, &ref.bossactions)
-		ENTRY3("specialaction_lowerfloor", &MIType_SpecialAction_LowerFloor, &ref.bossactions)
-		ENTRY1("lightning")
-		ENTRY3("fadetable", &MIType_LumpName, &ref.fadetable)
-		ENTRY4("evenlighting", &MIType_SetFlag, &ref.flags, LEVEL_EVENLIGHTING)
-		ENTRY4("noautosequences", &MIType_SetFlag, &ref.flags, LEVEL_SNDSEQTOTALCTRL)
-		ENTRY4("forcenoskystretch", &MIType_SetFlag, &ref.flags, LEVEL_FORCENOSKYSTRETCH)
-		ENTRY5("allowfreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_YES,
-		       ~LEVEL_FREELOOK_NO)
-		ENTRY5("nofreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_NO,
-		       ~LEVEL_FREELOOK_YES)
-		ENTRY5("allowjump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO)
-		ENTRY5("nojump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES)
-		ENTRY2("cdtrack", &MIType_EatNext)
-		ENTRY2("cd_start_track", &MIType_EatNext)
-		ENTRY2("cd_end1_track", &MIType_EatNext)
-		ENTRY2("cd_end2_track", &MIType_EatNext)
-		ENTRY2("cd_end3_track", &MIType_EatNext)
-		ENTRY2("cd_intermission_track", &MIType_EatNext)
-		ENTRY2("cd_title_track", &MIType_EatNext)
-		ENTRY2("warptrans", &MIType_EatNext)
-		ENTRY3("gravity", &MIType_Float, &ref.gravity)
-		ENTRY3("aircontrol", &MIType_Float, &ref.aircontrol)
-		ENTRY4("islobby", &MIType_SetFlag, &ref.flags, LEVEL_LOBBYSPECIAL)
-		ENTRY4("lobby", &MIType_SetFlag, &ref.flags, LEVEL_LOBBYSPECIAL)
-		ENTRY1("nocrouch")
-		ENTRY2("intermusic", &MIType_EatNext)
-		ENTRY3("par", &MIType_Int, &ref.partime)
-		ENTRY2("sucktime", &MIType_EatNext)
-		ENTRY3("enterpic", &MIType_InterLumpName,
-		       &ref.enterpic) // todo: add intermission script support
-		ENTRY3("exitpic", &MIType_InterLumpName,
-		       &ref.exitpic) // todo: add intermission script support
-		ENTRY2("interpic", &MIType_EatNext)
-		ENTRY2("translator", &MIType_EatNext)
-		ENTRY3("compat_shorttex", &MIType_CompatFlag, &ref.flags) // todo: not implemented
-		ENTRY3("compat_limitpain", &MIType_CompatFlag, &ref.flags) // todo: not implemented
-		ENTRY4("compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF)
-		ENTRY3("compat_trace", &MIType_CompatFlag, &ref.flags) // todo: not implemented
-		ENTRY3("compat_boomscroll", &MIType_CompatFlag, &ref.flags) // todo: not implemented
-		ENTRY3("compat_sectorsounds", &MIType_CompatFlag, &ref.flags) // todo: not implemented
-		ENTRY4("compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER)
+		mapInfoDataContainer = {
+			{ "levelnum", &MIType_Int, &ref.levelnum},
+	        { "next", &MIType_MapName, &ref.nextmap},
+	        { "secretnext", &MIType_MapName, &ref.secretmap},
+			{ "secret", &MIType_MapName, &ref.secretmap },
+			{ "cluster", &MIType_Cluster, &ref.cluster },
+			{ "sky1", &MIType_Sky, &ref.skypic },
+			{ "sky2", &MIType_Sky, &ref.skypic2 },
+			{ "fade", &MIType_Color, &ref.fadeto_color },
+			{ "outsidefog", &MIType_Color, &ref.outsidefog_color },
+			{ "titlepatch", &MIType_LumpName, &ref.pname },
+			{ "par", &MIType_Int, &ref.partime },
+			{ "music", &MIType_MusicLumpName, &ref.music },
+			{ "nointermission", &MIType_SetFlag, &ref.flags, LEVEL_NOINTERMISSION },
+			{ "doublesky", &MIType_SetFlag, &ref.flags, LEVEL_DOUBLESKY },
+			{ "nosoundclipping", &MIType_SetFlag, &ref.flags, LEVEL_NOSOUNDCLIPPING },
+			{ "allowmonstertelefrags", &MIType_SetFlag, &ref.flags,
+		       LEVEL_MONSTERSTELEFRAG },
+			{ "map07special", &MIType_Map07Special, &ref.bossactions },
+			{ "baronspecial", &MIType_BaronSpecial, &ref.bossactions },
+			{ "cyberdemonspecial", &MIType_CyberdemonSpecial, &ref.bossactions },
+			{ "spidermastermindspecial", &MIType_SpiderMastermindSpecial, &ref.bossactions },
+			{ "specialaction_exitlevel", &MIType_SpecialAction_ExitLevel, &ref.bossactions },
+			{ "specialaction_opendoor", &MIType_SpecialAction_OpenDoor, &ref.bossactions },
+			{ "specialaction_lowerfloor", &MIType_SpecialAction_LowerFloor, &ref.bossactions },
+			{ "lightning" },
+			{ "fadetable", &MIType_LumpName, &ref.fadetable },
+			{ "evenlighting", &MIType_SetFlag, &ref.flags, LEVEL_EVENLIGHTING },
+			{ "noautosequences", &MIType_SetFlag, &ref.flags, LEVEL_SNDSEQTOTALCTRL },
+			{ "forcenoskystretch", &MIType_SetFlag, &ref.flags, LEVEL_FORCENOSKYSTRETCH },
+			{ "allowfreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_YES,
+		       ~LEVEL_FREELOOK_NO },
+			{ "nofreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_NO,
+		       ~LEVEL_FREELOOK_YES },
+			{ "allowjump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
+			{ "nojump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
+			{ "cdtrack", &MIType_EatNext },
+			{ "cd_start_track", &MIType_EatNext },
+			{ "cd_end1_track", &MIType_EatNext },
+			{ "cd_end2_track", &MIType_EatNext },
+			{ "cd_end3_track", &MIType_EatNext },
+			{ "cd_intermission_track", &MIType_EatNext },
+			{ "cd_title_track", &MIType_EatNext },
+			{ "warptrans", &MIType_EatNext },
+			{ "gravity", &MIType_Float, &ref.gravity },
+			{ "aircontrol", &MIType_Float, &ref.aircontrol },
+			{ "islobby", &MIType_SetFlag, &ref.flags, LEVEL_LOBBYSPECIAL },
+			{ "lobby", &MIType_SetFlag, &ref.flags, LEVEL_LOBBYSPECIAL },
+			{ "nocrouch" },
+			{ "intermusic", &MIType_EatNext },
+			{ "par", &MIType_Int, &ref.partime },
+			{ "sucktime", &MIType_EatNext },
+			{ "enterpic", &MIType_InterLumpName, &ref.enterpic }, // todo: add intermission script support
+			{ "exitpic", &MIType_InterLumpName, &ref.exitpic }, // todo: add intermission script support
+			{ "interpic", &MIType_EatNext },
+			{ "translator", &MIType_EatNext },
+			{ "compat_shorttex", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
+			{ "compat_limitpain", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
+			{ "compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF },
+			{ "compat_trace", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
+			{ "compat_boomscroll", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
+			{ "compat_sectorsounds", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
+			{ "compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER }
+		};
 	}
 };
 
@@ -1568,15 +1556,15 @@ struct MapInfoDataSetter<cluster_info_t>
 
 	MapInfoDataSetter(cluster_info_t& ref)
 	{
-		mapInfoDataContainer.reserve(7);
-
-		ENTRY3("entertext", &MIType_ClusterString, &ref.entertext)
-		ENTRY3("exittext", &MIType_ClusterString, &ref.exittext)
-		ENTRY4("exittextislump", &MIType_SetFlag, &ref.flags, CLUSTER_EXITTEXTISLUMP)
-		ENTRY3("music", &MIType_MusicLumpName, &ref.messagemusic)
-		ENTRY3("flat", &MIType_$LumpName, &ref.finaleflat)
-		ENTRY4("hub", &MIType_SetFlag, &ref.flags, CLUSTER_HUB)
-		ENTRY3("pic", &MIType_$LumpName, &ref.finalepic)
+	    mapInfoDataContainer = {
+			{ "entertext", &MIType_ClusterString, &ref.entertext },
+			{ "exittext", &MIType_ClusterString, &ref.exittext },
+			{ "exittextislump", &MIType_SetFlag, &ref.flags, CLUSTER_EXITTEXTISLUMP },
+			{ "music", &MIType_MusicLumpName, &ref.messagemusic },
+			{ "flat", &MIType_$LumpName, &ref.finaleflat },
+			{ "hub", &MIType_SetFlag, &ref.flags, CLUSTER_HUB },
+			{ "pic", &MIType_$LumpName, &ref.finalepic }
+	    };
 	}
 };
 
@@ -1584,31 +1572,26 @@ struct MapInfoDataSetter<cluster_info_t>
 template <>
 struct MapInfoDataSetter<gameinfo_t>
 {
-	MapInfoDataContainer mapInfoDataContainer;
-
-	MapInfoDataSetter()
-	{
-		mapInfoDataContainer.reserve(7);
-
-		ENTRY3("advisorytime", &MIType_Float, &gameinfo.advisoryTime)
-		// ENTRY3("chatsound",			)
-		ENTRY3("pagetime", &MIType_Float, &gameinfo.pageTime)
-		ENTRY3("finaleflat", &MIType_LumpName, &gameinfo.finaleFlat)
-		ENTRY3("finalemusic", &MIType_$LumpName, &gameinfo.finaleMusic)
-		ENTRY3("titlemusic", &MIType_$LumpName, &gameinfo.titleMusic)
-		ENTRY3("titlepage", &MIType_LumpName, &gameinfo.titlePage)
-		ENTRY3("titletime", &MIType_Float, &gameinfo.titleTime)
-		ENTRY2("maparrow", &MIType_MapArrows)
-		ENTRY3("cheatkey", &MIType_MapKey, &gameinfo.cheatKey)
-		ENTRY3("easykey", &MIType_MapKey, &gameinfo.easyKey)
-	}
+	MapInfoDataContainer mapInfoDataContainer = {
+	    { "advisorytime", &MIType_Float, &gameinfo.advisoryTime },
+	    //{ "chatsound" },
+	    { "pagetime", &MIType_Float, &gameinfo.pageTime },
+	    { "finaleflat", &MIType_LumpName, &gameinfo.finaleFlat },
+	    { "finalemusic", &MIType_$LumpName, &gameinfo.finaleMusic },
+	    { "titlemusic", &MIType_$LumpName, &gameinfo.titleMusic },
+	    { "titlepage", &MIType_LumpName, &gameinfo.titlePage },
+	    { "titletime", &MIType_Float, &gameinfo.titleTime },
+	    { "maparrow", &MIType_MapArrows },
+	    { "cheatkey", &MIType_MapKey, &gameinfo.cheatKey },
+	    { "easykey", &MIType_MapKey, &gameinfo.easyKey }
+	};
 };
 
 //
 // Parse a MAPINFO block
 //
 // NULL pointers can be passed if the block is unimplemented.  However, if
-// the block you want to stub out is compatible with old MAPINFO, you need
+// the block you want to stub out is compatible with o ld MAPINFO, you need
 // to parse the block anyway, even if you throw away the values.  This is
 // done by passing in a strings pointer, and leaving the others NULL.
 //
@@ -1853,43 +1836,43 @@ struct MapInfoDataSetter<SkillInfo>
 
 	MapInfoDataSetter(SkillInfo& ref)
 	{
-		mapInfoDataContainer.reserve(33);
+		mapInfoDataContainer = {
+			{ "ammofactor", &MIType_Float, &ref.ammo_factor },
+			{ "doubleammofactor", &MIType_Float, &ref.double_ammo_factor },
+			{ "dropammofactor", &MIType_Float, &ref.drop_ammo_factor },
+			{ "damagefactor", &MIType_Float, &ref.damage_factor },
+			{ "armorfactor", &MIType_Float, &ref.armor_factor },
+			{ "healthfactor", &MIType_Float, &ref.health_factor },
+			{ "kickbackfactor", &MIType_Float, &ref.kickback_factor },
 
-		ENTRY3("ammofactor", &MIType_Float, &ref.ammo_factor)
-		ENTRY3("doubleammofactor", &MIType_Float, &ref.double_ammo_factor)
-		ENTRY3("dropammofactor", &MIType_Float, &ref.drop_ammo_factor)
-		ENTRY3("damagefactor", &MIType_Float, &ref.damage_factor)
-		ENTRY3("armorfactor", &MIType_Float, &ref.armor_factor)
-		ENTRY3("healthfactor", &MIType_Float, &ref.health_factor)
-		ENTRY3("kickbackfactor", &MIType_Float, &ref.kickback_factor)
+			{ "fastmonsters", &MIType_Bool, &ref.fast_monsters, true },
+			{ "slowmonsters", &MIType_Bool, &ref.slow_monsters, true },
+			{ "disablecheats", &MIType_Bool, &ref.disable_cheats, true },
+			{ "autousehealth", &MIType_Bool, &ref.auto_use_health, true },
 
-		ENTRY4("fastmonsters", &MIType_Bool, &ref.fast_monsters, true)
-		ENTRY4("slowmonsters", &MIType_Bool, &ref.slow_monsters, true)
-		ENTRY4("disablecheats", &MIType_Bool, &ref.disable_cheats, true)
-		ENTRY4("autousehealth", &MIType_Bool, &ref.auto_use_health, true)
-
-		ENTRY4("easybossbrain", &MIType_Bool, &ref.easy_boss_brain, true)
-		ENTRY4("easykey", &MIType_Bool, &ref.easy_key, true)
-		ENTRY4("nomenu", &MIType_Bool, &ref.no_menu, true)
-		ENTRY3("respawntime", &MIType_Int, &ref.respawn_counter)
-		ENTRY3("respawnlimit", &MIType_Int, &ref.respawn_limit)
-		ENTRY3("aggressiveness", &MIType_Float, &ref.aggressiveness)
-		ENTRY3("spawnfilter", &MIType_SpawnFilter, &ref.spawn_filter)
-		ENTRY4("spawnmulti", &MIType_Bool, &ref.spawn_multi, true)
-		ENTRY4("instantreaction", &MIType_Bool, &ref.instant_reaction, true)
-		ENTRY3("acsreturn", &MIType_Int, &ref.ACS_return)
-		ENTRY3("name", &MIType_String, &ref.menu_name)
-		ENTRY3("picname", &MIType_String, &ref.pic_name)
-		//ENTRY3("playerclassname", &???, &ref.menu_names_for_player_class) // todo - requires special MIType to work properly
-		ENTRY4("mustconfirm", &MIType_MustConfirm, &ref, true)
-		ENTRY3("key", &MIType_Char, &ref.shortcut)
-		ENTRY3("textcolor", &MIType_Color, &ref.text_color)
-		// ENTRY3("replaceactor", &???, &ref.replace) // todo - requires special MIType to work properly
-		ENTRY3("monsterhealth", &MIType_Float, &ref.monster_health)
-		ENTRY3("friendlyhealth", &MIType_Float, &ref.friendly_health)
-		ENTRY4("nopain", &MIType_Bool, &ref.no_pain, true)
-		ENTRY3("infighting", &MIType_Int, &ref.infighting)
-		ENTRY4("playerrespawn", &MIType_Bool, &ref.player_respawn, true)
+			{ "easybossbrain", &MIType_Bool, &ref.easy_boss_brain, true },
+			{ "easykey", &MIType_Bool, &ref.easy_key, true },
+			{ "nomenu", &MIType_Bool, &ref.no_menu, true },
+			{ "respawntime", &MIType_Int, &ref.respawn_counter },
+			{ "respawnlimit", &MIType_Int, &ref.respawn_limit },
+			{ "aggressiveness", &MIType_Float, &ref.aggressiveness },
+			{ "spawnfilter", &MIType_SpawnFilter, &ref.spawn_filter },
+			{ "spawnmulti", &MIType_Bool, &ref.spawn_multi, true },
+			{ "instantreaction", &MIType_Bool, &ref.instant_reaction, true },
+			{ "acsreturn", &MIType_Int, &ref.ACS_return },
+			{ "name", &MIType_String, &ref.menu_name },
+			{ "picname", &MIType_String, &ref.pic_name },
+			// { "playerclassname", &???, &ref.menu_names_for_player_class } // todo - requires special MIType to work properly
+			{ "mustconfirm", &MIType_MustConfirm, &ref, true },
+			{ "key", &MIType_Char, &ref.shortcut },
+			{ "textcolor", &MIType_Color, &ref.text_color },
+			// { "replaceactor", &???, &ref.replace) } // todo - requires special MIType to work properly
+			{ "monsterhealth", &MIType_Float, &ref.monster_health },
+			{ "friendlyhealth", &MIType_Float, &ref.friendly_health },
+			{ "nopain", &MIType_Bool, &ref.no_pain, true },
+			{ "infighting", &MIType_Int, &ref.infighting },
+			{ "playerrespawn", &MIType_Bool, &ref.player_respawn, true }
+		};
 	}
 };
 
@@ -1903,29 +1886,31 @@ struct MapInfoDataSetter<automap_dummy>
 
 	MapInfoDataSetter()
 	{
-		ENTRY2("base", &MIType_AutomapBase)
-		ENTRY3("showlocks", &MIType_Bool, &gameinfo.showLocks)
-		ENTRY3("background", &MIType_String, &gameinfo.defaultAutomapColors.Background)
-		ENTRY3("yourcolor", &MIType_String, &gameinfo.defaultAutomapColors.YourColor)
-		ENTRY3("wallcolor", &MIType_String, &gameinfo.defaultAutomapColors.WallColor)
-		ENTRY3("twosidedwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.TSWallColor)
-		ENTRY3("floordiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.FDWallColor)
-		ENTRY3("ceilingdiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.CDWallColor)
-		ENTRY3("thingcolor", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor)
-		ENTRY3("thingcolor_item", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Item)
-		ENTRY3("thingcolor_countitem", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_CountItem)
-		ENTRY3("thingcolor_monster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Monster)
-		ENTRY3("thingcolor_nocountmonster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_NoCountMonster)
-		ENTRY3("thingcolor_friend", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Friend)
-		ENTRY3("thingcolor_projectile", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Projectile)
-		ENTRY3("secretwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.SecretWallColor)
-		ENTRY3("gridcolor", &MIType_String, &gameinfo.defaultAutomapColors.GridColor)
-		ENTRY3("xhaircolor", &MIType_String, &gameinfo.defaultAutomapColors.XHairColor)
-		ENTRY3("notseencolor", &MIType_String, &gameinfo.defaultAutomapColors.NotSeenColor)
-		ENTRY3("lockedcolor", &MIType_String, &gameinfo.defaultAutomapColors.LockedColor)
-		ENTRY3("almostbackgroundcolor", &MIType_String, &gameinfo.defaultAutomapColors.AlmostBackground)
-		ENTRY3("intrateleportcolor", &MIType_String, &gameinfo.defaultAutomapColors.TeleportColor)
-		ENTRY3("exitcolor", &MIType_String, &gameinfo.defaultAutomapColors.ExitColor)
+		mapInfoDataContainer = {
+			{ "base", &MIType_AutomapBase },
+			{ "showlocks", &MIType_Bool, &gameinfo.showLocks  },
+			{ "background", &MIType_String, &gameinfo.defaultAutomapColors.Background  },
+			{ "yourcolor", &MIType_String, &gameinfo.defaultAutomapColors.YourColor  },
+			{ "wallcolor", &MIType_String, &gameinfo.defaultAutomapColors.WallColor  },
+			{ "twosidedwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.TSWallColor  },
+			{ "floordiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.FDWallColor  },
+			{ "ceilingdiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.CDWallColor  },
+			{ "thingcolor", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor  },
+			{ "thingcolor_item", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Item  },
+			{ "thingcolor_countitem", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_CountItem  },
+			{ "thingcolor_monster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Monster  },
+			{ "thingcolor_nocountmonster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_NoCountMonster  },
+			{ "thingcolor_friend", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Friend  },
+			{ "thingcolor_projectile", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Projectile  },
+			{ "secretwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.SecretWallColor  },
+			{ "gridcolor", &MIType_String, &gameinfo.defaultAutomapColors.GridColor  },
+			{ "xhaircolor", &MIType_String, &gameinfo.defaultAutomapColors.XHairColor  },
+			{ "notseencolor", &MIType_String, &gameinfo.defaultAutomapColors.NotSeenColor  },
+			{ "lockedcolor", &MIType_String, &gameinfo.defaultAutomapColors.LockedColor  },
+			{ "almostbackgroundcolor", &MIType_String, &gameinfo.defaultAutomapColors.AlmostBackground  },
+			{ "intrateleportcolor", &MIType_String, &gameinfo.defaultAutomapColors.TeleportColor  },
+			{ "exitcolor", &MIType_String, &gameinfo.defaultAutomapColors.ExitColor  }
+		};
 	}
 };
 
