@@ -1398,6 +1398,8 @@ odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker)
 		smsg->set_scroll_x(scroller->GetScrollX());
 		smsg->set_scroll_y(scroller->GetScrollY());
 		smsg->set_affectee(scroller->GetAffectee());
+		smsg->set_control(scroller->GetControl());
+		smsg->set_accel(scroller->GetAccel());
 	}
 	else if (thinker->IsA(RUNTIME_CLASS(DFireFlicker)))
 	{
