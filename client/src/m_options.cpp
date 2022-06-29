@@ -880,7 +880,7 @@ static menuitem_t HUDItems[] = {
     {discrete, "Timer Type", {&hud_timer}, {3.0}, {0.0}, {0.0}, {TimerStyles}},
     {discrete, "Speedometer", {&hud_speedometer}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {slider, "Feed Timeout", {&hud_feedtime}, {1.0}, {10.0}, {0.25}, {NULL}},
-    {discrete, "Feed Obits", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {discrete, "Show Kills in Feed", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {discrete, "Netdemo infos", {&hud_demobar}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 
