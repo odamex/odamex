@@ -418,7 +418,7 @@ class HordeState
 	 * @param monsterCounts map to update the counts off (m_bossCounts or m_monsterCounts)
 	 * @param type Type of monster to increment count of
 	 */
-	void recountMonstersHelper(std::unordered_map<mobjtype_t, int> monsterCounts, mobjtype_t type) {
+	void recountMonstersHelper(std::unordered_map<mobjtype_t, int>& monsterCounts, mobjtype_t type) {
 		if (monsterCounts.count(type)) 
 		{
 			monsterCounts[type] += 1;
