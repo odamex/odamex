@@ -204,6 +204,7 @@ class HordeState
 	int m_nextPowerup;
 	corpseCollector_t m_corpses;
 	std::unordered_map<mobjtype_t, int> m_monsterCounts;
+	std::unordered_map<mobjtype_t, int> m_bossCounts;
 
 	/**
 	 * @brief Set the given state.
@@ -226,7 +227,7 @@ class HordeState
 	    : m_state(HS_STARTING), m_wave(0), m_waveTime(0), m_bossTime(0), m_defineID(0),
 	      m_spawnedHealth(0), m_killedHealth(0), m_bossHealth(0), m_bossDamage(0),
 	      m_waveStartHealth(0), m_bossRecipe(hordeRecipe_t()), m_nextSpawn(0),
-	      m_nextPowerup(0), m_monsterCounts()
+	      m_nextPowerup(0), m_monsterCounts(), m_bossCounts()
 	{
 	}
 
@@ -251,6 +252,7 @@ class HordeState
 		m_nextPowerup = ::level.time + (30 * TICRATE);
 		m_corpses.clear();
 		m_monsterCounts.clear();
+		m_bossCounts.clear();
 
 		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
 		                   G_HordeDefine(m_defineID).name.c_str());
@@ -299,6 +301,7 @@ class HordeState
 		m_bossRecipe.clear();
 		m_corpses.startWave();
 		m_monsterCounts.clear();
+		m_bossCounts.clear();
 
 		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
 		                   G_HordeDefine(m_defineID).name.c_str());
@@ -326,6 +329,7 @@ class HordeState
 		m_bosses.clear();
 		m_bossRecipe.clear();
 		m_corpses.startWave();
+		m_bossCounts.clear();
 
 		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
 		                   G_HordeDefine(m_defineID).name.c_str());
@@ -407,6 +411,24 @@ class HordeState
 	}
 
 	/**
+	 * @brief Re-count all monsters helper
+	 *
+	 * @detail Used for loading savegames.
+	 * 
+	 * @param monsterCounts map to update the counts off (m_bossCounts or m_monsterCounts)
+	 * @param type Type of monster to increment count of
+	 */
+	void recountMonstersHelper(std::unordered_map<mobjtype_t, int> monsterCounts, mobjtype_t type) {
+		if (monsterCounts.count(type)) 
+		{
+			monsterCounts[type] += 1;
+		} else 
+		{
+			monsterCounts[type] = 1;
+		}
+	}
+
+	/**
 	 * @brief Re-count all monsters
 	 *
 	 * @detail Used for loading savegames.
@@ -417,15 +439,14 @@ class HordeState
 		TThinkerIterator<AActor> iterator;
 
 		m_monsterCounts.clear();
+		m_bossCounts.clear();
 		while ((mo = iterator.Next()))
 		{
-			if (!mo->oflags & MFO_BOSSPOOL) {
-				if (m_monsterCounts.count(mo->type)) 
-				{
-					m_monsterCounts[mo->type] += 1;
-				} else 
-				{
-					m_monsterCounts[mo->type] = 1;
+			if (mo->health > 0) {
+				if (mo->oflags & MFO_BOSSPOOL) {
+					recountMonstersHelper(m_bossCounts, mo->type);
+				} else {
+					recountMonstersHelper(m_monsterCounts, mo->type);
 				}
 			}
 		}
@@ -457,8 +478,14 @@ class HordeState
 	}
 
 	void decrementCount(AActor* mo) {
-		if (m_monsterCounts.count(mo->type) && !(mo->oflags & MFO_BOSSPOOL)) {
-			m_monsterCounts[mo->type] -= 1;
+		if (mo->oflags & MFO_BOSSPOOL) {
+			if (m_bossCounts.count(mo->type)) {
+				m_bossCounts[mo->type] -= 1;
+			}
+		} else {
+			if (m_monsterCounts.count(mo->type)) {
+				m_monsterCounts[mo->type] -= 1;
+			}
 		}
 	}
 
@@ -724,7 +751,7 @@ void HordeState::tick()
 				break;
 			}
 
-			AActors mobjs = P_HordeSpawn(*spawn, recipe, m_monsterCounts);
+			AActors mobjs = P_HordeSpawn(*spawn, recipe, m_bossCounts);
 			m_bosses.insert(m_bosses.end(), mobjs.begin(), mobjs.end());
 			ActivateMonsters(mobjs);
 			break;
