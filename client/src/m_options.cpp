@@ -1469,7 +1469,7 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 		StrFormat(buf, "%.1f", cur);
 	else
 		StrFormat(buf, "%.2f", cur);
-	screen->DrawTextCleanMove(CR_GREY, x + 96, y, buf.c_str());
+	screen->DrawTextCleanMove(CR_GREEN, x + 96, y, buf.c_str());
 }
 
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
