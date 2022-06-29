@@ -73,7 +73,8 @@ static bool CmpDist(const SpawnPointWeight& a, const SpawnPointWeight& b)
 static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
                                       const v2fixed_t offset, std::map<mobjtype_t, int>& monsterCounts)
 {
-	if(!monsterCounts.count(recipe.type)){
+	if(!monsterCounts.count(recipe.type))
+	{
   		monsterCounts[recipe.type] = 0;
 	}
 	int count = monsterCounts[recipe.type];

@@ -418,7 +418,8 @@ class HordeState
 	 * @param monsterCounts map to update the counts off (m_bossCounts or m_monsterCounts)
 	 * @param type Type of monster to increment count of
 	 */
-	void recountMonstersHelper(std::map<mobjtype_t, int>& monsterCounts, mobjtype_t type) {
+	void recountMonstersHelper(std::map<mobjtype_t, int>& monsterCounts, mobjtype_t type)
+	{
 		if (monsterCounts.count(type)) 
 		{
 			monsterCounts[type] += 1;
@@ -442,8 +443,10 @@ class HordeState
 		m_bossCounts.clear();
 		while ((mo = iterator.Next()))
 		{
-			if (mo->health > 0) {
-				if (mo->oflags & MFO_BOSSPOOL) {
+			if (mo->health > 0)
+			{
+				if (mo->oflags & MFO_BOSSPOOL)
+				{
 					recountMonstersHelper(m_bossCounts, mo->type);
 				} else {
 					recountMonstersHelper(m_monsterCounts, mo->type);
@@ -477,13 +480,18 @@ class HordeState
 		m_corpses.pushCorpse(mo);
 	}
 
-	void decrementCount(AActor* mo) {
-		if (mo->oflags & MFO_BOSSPOOL) {
-			if (m_bossCounts.count(mo->type)) {
+	void decrementCount(AActor* mo)
+	{
+		if (mo->oflags & MFO_BOSSPOOL)
+		{
+			if (m_bossCounts.count(mo->type))
+			{
 				m_bossCounts[mo->type] -= 1;
 			}
-		} else {
-			if (m_monsterCounts.count(mo->type)) {
+		} else 
+		{
+			if (m_monsterCounts.count(mo->type))
+			{
 				m_monsterCounts[mo->type] -= 1;
 			}
 		}
