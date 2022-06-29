@@ -121,6 +121,7 @@ EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(sv_scorelimit);
 EXTERN_CVAR(sv_warmup)
+EXTERN_CVAR(hud_feedtime)
 EXTERN_CVAR(hud_feedobits)
 EXTERN_CVAR(g_horde_waves)
 EXTERN_CVAR(g_roundlimit)
@@ -952,6 +953,9 @@ void DrawToasts()
 	if (!hud_feedobits)
 		return;
 
+	const int fadeDoneTics = (hud_feedtime * float(TICRATE));
+	const int fadeOutTics = fadeDoneTics - TICRATE;
+
 	V_SetFont("DIGFONT");
 	const int TOAST_HEIGHT = V_LineHeight() + 2;
 
@@ -961,13 +965,13 @@ void DrawToasts()
 	const float oldtrans = ::hud_transparency;
 	for (drawToasts_t::const_iterator it = g_Toasts.begin(); it != g_Toasts.end(); ++it)
 	{
-		// Only render the message if it's less than 2 seconds in.
+		// Fade the toast out.
 		int tics = ::gametic - it->tic;
-		if (tics < TICRATE * 2)
+		if (tics < fadeOutTics)
 		{
 			::hud_transparency.ForceSet(1.0);
 		}
-		else if (tics < TICRATE * 3)
+		else if (tics < fadeDoneTics)
 		{
 			tics %= TICRATE;
 			float trans = static_cast<float>(TICRATE - tics) / TICRATE;
@@ -1008,13 +1012,15 @@ void DrawToasts()
 
 void ToastTicker()
 {
+	const int fadeDoneTics = (hud_feedtime * float(TICRATE));
+
 	// Remove stale toasts in a loop.
 	drawToasts_t::iterator it = g_Toasts.begin();
 	while (it != g_Toasts.end())
 	{
 		int tics = ::gametic - it->tic;
 
-		if (tics >= TICRATE * 3)
+		if (tics >= fadeDoneTics)
 		{
 			it = g_Toasts.erase(it);
 		}

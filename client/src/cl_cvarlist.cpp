@@ -556,6 +556,8 @@ CVAR(hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.", CVARTYPE_B
      CVAR_CLIENTARCHIVE)
 CVAR(hud_demoprotos, "0", "Debug protocol messages while demo is paused.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
+CVAR_RANGE(hud_feedtime, "3.0", "How long entries show in the event feed, in seconds.",
+           CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0, 10.0)
 CVAR(hud_feedobits, "1", "Show obituaries in the event feed.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
 
