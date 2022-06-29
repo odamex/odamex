@@ -26,7 +26,7 @@
 #include "p_hordespawn.h"
 
 #include <algorithm>
-#include <unordered_map>
+#include <map>
 
 #include "actor.h"
 #include "c_effect.h"
@@ -71,7 +71,7 @@ static bool CmpDist(const SpawnPointWeight& a, const SpawnPointWeight& b)
  * @return Actor pointer we just spawned, or NULL if the spawn failed.
  */
 static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
-                                      const v2fixed_t offset, std::unordered_map<mobjtype_t, int>& monsterCounts)
+                                      const v2fixed_t offset, std::map<mobjtype_t, int>& monsterCounts)
 {
 	if(!monsterCounts.count(recipe.type)){
   		monsterCounts[recipe.type] = 0;
@@ -139,7 +139,7 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
  * @return Actors spawned by this function.  Can be discarded.
  */
 static AActors SpawnMonsterGroup(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
-                                 const int count, std::unordered_map<mobjtype_t, int>& monsterCounts)
+                                 const int count, std::map<mobjtype_t, int>& monsterCounts)
 {
 	AActors ok;
 
@@ -398,7 +398,7 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
  * @param recipe Recipe of a monster to spawn.
  * @return Actors spawned by this function.  Can be discarded.
  */
-AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe, std::unordered_map<mobjtype_t, int>& monsterCounts)
+AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe, std::map<mobjtype_t, int>& monsterCounts)
 {
 	AActors ok;
 

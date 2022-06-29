@@ -24,7 +24,7 @@
 #include "odamex.h"
 
 #include <math.h>
-#include <unordered_map>
+#include <map>
 
 #include "p_horde.h"
 
@@ -203,8 +203,8 @@ class HordeState
 	int m_nextSpawn;
 	int m_nextPowerup;
 	corpseCollector_t m_corpses;
-	std::unordered_map<mobjtype_t, int> m_monsterCounts;
-	std::unordered_map<mobjtype_t, int> m_bossCounts;
+	std::map<mobjtype_t, int> m_monsterCounts;
+	std::map<mobjtype_t, int> m_bossCounts;
 
 	/**
 	 * @brief Set the given state.
@@ -418,7 +418,7 @@ class HordeState
 	 * @param monsterCounts map to update the counts off (m_bossCounts or m_monsterCounts)
 	 * @param type Type of monster to increment count of
 	 */
-	void recountMonstersHelper(std::unordered_map<mobjtype_t, int>& monsterCounts, mobjtype_t type) {
+	void recountMonstersHelper(std::map<mobjtype_t, int>& monsterCounts, mobjtype_t type) {
 		if (monsterCounts.count(type)) 
 		{
 			monsterCounts[type] += 1;
@@ -521,7 +521,7 @@ void HordeState::changeState()
 		return;
 	}
 	case HS_PRESSURE: {
-		if (m_killedHealth > goalHealth && m_bosses.empty())
+		if (m_killedHealth > goalHealth && (m_bosses.empty() || (m_bossRecipe.isValid() && m_bossCounts[m_bossRecipe.type] < m_bossRecipe.limit)))
 		{
 			// We reached the goal, spawn the boss.
 			setState(HS_WANTBOSS);
@@ -541,7 +541,7 @@ void HordeState::changeState()
 		}
 		return;
 	case HS_WANTBOSS: {
-		if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
+		if (m_bossRecipe.isValid() && ((m_bosses.size() >= m_bossRecipe.count) || m_bossCounts[m_bossRecipe.type] >= m_bossRecipe.limit))
 		{
 			// Doesn't matter which state we enter, but we're more likely
 			// to be in the relax state after spawning a big hunk of HP.
