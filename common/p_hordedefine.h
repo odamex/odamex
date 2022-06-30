@@ -88,7 +88,7 @@ struct hordeDefine_t
 		int maxGroupHealth;
 		int limit;
 		float chance;
-		monConfig_t() : minGroupHealth(-1), maxGroupHealth(-1), chance(1.0f) { }
+		monConfig_t() : minGroupHealth(-1), maxGroupHealth(-1), limit(-1), chance(1.0f) { }
 	};
 
 	struct monster_t

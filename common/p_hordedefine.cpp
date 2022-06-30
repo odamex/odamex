@@ -251,6 +251,10 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	int outCount = 0;
 	const int health = ::mobjinfo[outType].spawnhealth;
 
+	const int aliveHealth = monsterCounts[outType] * health;
+	const float scaledLimit = ceil(config->limit * SkillScaler());
+	const int healthLimit = static_cast<int>(scaledLimit) * health;
+
 	// Maximum health.
 	int maxHealth = -1;
 	if (config->maxGroupHealth >= 0)
@@ -265,6 +269,8 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	{
 		maxHealth = define.maxGroupHealth;
 	}
+
+	maxHealth = MIN(maxHealth, healthLimit - aliveHealth);
 
 	// Minimum health.
 	int minHealth = -1;
@@ -281,7 +287,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		minHealth = define.minGroupHealth;
 	}
 
-	const int upper = MAX(maxHealth / health, 1);
+	const int upper = MAX(maxHealth / health, 0);
 	const int lower = MAX(minHealth / health, 1);
 
 	if (upper <= lower)
@@ -293,11 +299,6 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	{
 		// Randomly select a possibility.
 		outCount = P_RandomInt(upper - lower) + lower;
-	}
-
-	if (outCount + numAlive > config->limit)
-	{
-		outCount = config->limit - numAlive;
 	}
 
 	out.type = outType;
