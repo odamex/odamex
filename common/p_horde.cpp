@@ -528,7 +528,7 @@ void HordeState::changeState()
 		return;
 	}
 	case HS_PRESSURE: {
-		if (m_killedHealth > goalHealth && (m_bosses.empty() || (m_bossRecipe.isValid() && m_bossCounts[m_bossRecipe.type] < m_bossRecipe.limit)))
+		if (m_killedHealth > goalHealth && m_bosses.empty())
 		{
 			// We reached the goal, spawn the boss.
 			setState(HS_WANTBOSS);
@@ -548,7 +548,7 @@ void HordeState::changeState()
 		}
 		return;
 	case HS_WANTBOSS: {
-		if (m_bossRecipe.isValid() && ((m_bosses.size() >= m_bossRecipe.count) || m_bossCounts[m_bossRecipe.type] >= m_bossRecipe.limit))
+		if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
 		{
 			// Doesn't matter which state we enter, but we're more likely
 			// to be in the relax state after spawning a big hunk of HP.
@@ -696,7 +696,7 @@ void HordeState::tick()
 		case HS_PRESSURE: {
 			// Pick a recipe for some monsters.
 			hordeRecipe_t recipe;
-			const bool ok = P_HordeSpawnRecipe(recipe, define, false);
+			const bool ok = P_HordeSpawnRecipe(recipe, define, false, m_monsterCounts);
 			if (!ok)
 			{
 				Printf(PRINT_WARNING, "%s: No spawn recipe for monster.\n", __FUNCTION__);
@@ -731,7 +731,7 @@ void HordeState::tick()
 			if (!m_bossRecipe.isValid())
 			{
 				// Pick a recipe for the boss.
-				const bool ok = P_HordeSpawnRecipe(recipe, define, true);
+				const bool ok = P_HordeSpawnRecipe(recipe, define, true, m_bossCounts);
 				if (!ok)
 				{
 					Printf(PRINT_WARNING, "%s: No spawn recipe for boss monster.\n",

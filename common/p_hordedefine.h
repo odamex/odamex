@@ -32,10 +32,9 @@ struct hordeRecipe_t
 {
 	mobjtype_t type;
 	int count;
-	int limit;
 	bool isBoss;
 
-	hordeRecipe_t() : type(MT_NULL), count(0), limit(0), isBoss(false) { }
+	hordeRecipe_t() : type(MT_NULL), count(0), isBoss(false) { }
 
 	hordeRecipe_t& operator=(const hordeRecipe_t& other)
 	{
@@ -44,7 +43,6 @@ struct hordeRecipe_t
 
 		type = other.type;
 		count = other.count;
-		limit = other.limit;
 		isBoss = other.isBoss;
 
 		return *this;
@@ -54,7 +52,6 @@ struct hordeRecipe_t
 	{
 		type = MT_NULL;
 		count = 0;
-		limit = 0;
 		isBoss = false;
 	}
 
@@ -134,10 +131,23 @@ struct hordeDefine_t
 	StringTokens weaponStrings(player_t* player) const;
 };
 
+template <> struct hashfunc<mobjtype_t>
+{
+	unsigned int operator()(mobjtype_t val) const
+	{
+		if (sizeof(mobjtype_t) == 8)
+			return __hash_jenkins_64bit(val);
+		else
+			return __hash_jenkins_32bit(val);
+	}
+};
+
+typedef OHashTable<mobjtype_t, int> MobjTypeTable;
+
 void G_ParseHordeDefs();
 const hordeDefine_t& G_HordeDefine(size_t id);
 
 size_t P_HordePickDefine(const int current, const int total);
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
-                        const bool wantBoss);
+                        const bool wantBoss, MobjTypeTable monsterCounts);
 bool P_HordeDefineNamed(int& out, const std::string& name);

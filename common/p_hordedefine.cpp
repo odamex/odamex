@@ -213,7 +213,7 @@ size_t P_HordePickDefine(const int current, const int total)
  * @param wantBoss Caller wants a boss.
  */
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
-                        const bool wantBoss)
+                        const bool wantBoss, MobjTypeTable monsterCounts)
 {
 	std::vector<const hordeDefine_t::monster_t*> monsters;
 
@@ -245,6 +245,8 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	const mobjtype_t outType = monster->mobj;
 	const bool outIsBoss = monster->monster != hordeDefine_t::RM_NORMAL;
 	const hordeDefine_t::monConfig_t* config = &monster->config;
+
+	int numAlive = monsterCounts[outType];
 
 	int outCount = 0;
 	const int health = ::mobjinfo[outType].spawnhealth;
@@ -293,9 +295,13 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		outCount = P_RandomInt(upper - lower) + lower;
 	}
 
+	if (outCount + numAlive > config->limit)
+	{
+		outCount = config->limit - numAlive;
+	}
+
 	out.type = outType;
 	out.count = outCount;
-	out.limit = config->limit;
 	out.isBoss = outIsBoss;
 
 	return true;

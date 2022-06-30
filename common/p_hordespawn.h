@@ -63,19 +63,6 @@ static inline const char* HordeThingStr(const int ttype)
 	}
 }
 
-template <> struct hashfunc<mobjtype_t>
-{
-	unsigned int operator()(mobjtype_t val) const
-	{
-		if (sizeof(mobjtype_t) == 8)
-			return __hash_jenkins_64bit(val);
-		else
-			return __hash_jenkins_32bit(val);
-	}
-};
-
-typedef OHashTable<mobjtype_t, int> MobjTypeTable;
-
 struct hordeSpawn_t
 {
 	AActor::AActorPtr mo;

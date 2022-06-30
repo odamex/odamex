@@ -72,21 +72,12 @@ static bool CmpDist(const SpawnPointWeight& a, const SpawnPointWeight& b)
 static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
                                       const v2fixed_t offset, MobjTypeTable& monsterCounts)
 {
-	if(!monsterCounts.count(recipe.type))
-	{
-  		monsterCounts[recipe.type] = 0;
-	}
 	int count = monsterCounts[recipe.type];
 	AActor* mo = new AActor(spawn.mo->x + offset.x, spawn.mo->y + offset.y, spawn.mo->z,
 	                        recipe.type);
 	if (mo)
 	{
-		if (recipe.limit > 0 && count >= recipe.limit) 
-		{
-			// spawn blocked by limit
-			mo->Destroy();
-		}
-		else if (P_TestMobjLocation(mo))
+		if (P_TestMobjLocation(mo))
 		{
 
 			// update current count
