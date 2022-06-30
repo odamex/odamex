@@ -24,7 +24,6 @@
 #include "odamex.h"
 
 #include <math.h>
-#include <map>
 
 #include "p_horde.h"
 
@@ -203,8 +202,8 @@ class HordeState
 	int m_nextSpawn;
 	int m_nextPowerup;
 	corpseCollector_t m_corpses;
-	std::map<mobjtype_t, int> m_monsterCounts;
-	std::map<mobjtype_t, int> m_bossCounts;
+	MobjTypeTable m_monsterCounts;
+	MobjTypeTable m_bossCounts;
 
 	/**
 	 * @brief Set the given state.
@@ -418,7 +417,7 @@ class HordeState
 	 * @param monsterCounts map to update the counts off (m_bossCounts or m_monsterCounts)
 	 * @param type Type of monster to increment count of
 	 */
-	void recountMonstersHelper(std::map<mobjtype_t, int>& monsterCounts, mobjtype_t type)
+	void recountMonstersHelper(MobjTypeTable& monsterCounts, mobjtype_t type)
 	{
 		if (monsterCounts.count(type)) 
 		{
