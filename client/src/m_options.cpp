@@ -81,6 +81,9 @@ extern short			skullAnimCounter;
 
 extern NetDemo netdemo;
 
+EXTERN_CVAR(con_notifytime)
+EXTERN_CVAR(con_midtime)
+
 EXTERN_CVAR (i_skipbootwin)
 EXTERN_CVAR (cl_run)
 EXTERN_CVAR (invertmouse)
@@ -971,6 +974,8 @@ static menuitem_t MessagesItems[] = {
 #if 0
 	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
 #endif
+	{ slider,	"Message Timeout",		 {&con_notifytime},		{1.0}, {10.0},	{0.25}, {NULL} },
+	{ slider,	"Center Message Timeout",{&con_midtime},		{1.0}, {10.0},	{0.25}, {NULL} },
 	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },
 	{ discrete,	"Colorize messages",	{&con_coloredmessages},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
