@@ -70,7 +70,7 @@ static bool CmpDist(const SpawnPointWeight& a, const SpawnPointWeight& b)
  * @return Actor pointer we just spawned, or NULL if the spawn failed.
  */
 static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
-                                      const v2fixed_t offset, MobjTypeTable& monsterCounts)
+                                      const v2fixed_t offset, mobjCounts_t& monsterCounts)
 {
 	int count = monsterCounts[recipe.type];
 	AActor* mo = new AActor(spawn.mo->x + offset.x, spawn.mo->y + offset.y, spawn.mo->z,
@@ -130,7 +130,7 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
  * @return Actors spawned by this function.  Can be discarded.
  */
 static AActors SpawnMonsterGroup(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
-                                 const int count, MobjTypeTable& monsterCounts)
+                                 const int count, mobjCounts_t& monsterCounts)
 {
 	AActors ok;
 
@@ -238,7 +238,7 @@ void P_HordeClearSpawns()
 
 /**
  * @brief True if passed radius and height fits in the passed mobjinfo.
- * 
+ *
  * @param info Info to check against.
  * @param rad Radius to check in whole units (not fixed).
  * @param height Height to check in whole units (not fixed).
@@ -389,7 +389,8 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
  * @param recipe Recipe of a monster to spawn.
  * @return Actors spawned by this function.  Can be discarded.
  */
-AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe, MobjTypeTable& monsterCounts)
+AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
+                     mobjCounts_t& monsterCounts)
 {
 	AActors ok;
 

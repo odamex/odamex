@@ -25,8 +25,8 @@
 
 #include <vector>
 
-#include "info.h"
 #include "d_player.h"
+#include "info.h"
 
 struct hordeRecipe_t
 {
@@ -55,10 +55,7 @@ struct hordeRecipe_t
 		isBoss = false;
 	}
 
-	bool isValid() const
-	{
-		return type != MT_NULL && count > 0;
-	}
+	bool isValid() const { return type != MT_NULL && count > 0; }
 };
 
 struct hordeDefine_t
@@ -88,7 +85,8 @@ struct hordeDefine_t
 		int maxGroupHealth;
 		int limit;
 		float chance;
-		monConfig_t() : minGroupHealth(-1), maxGroupHealth(-1), limit(-1), chance(1.0f) { }
+		monConfig_t()
+		    : minGroupHealth(-1), maxGroupHealth(-1), limit(-1), chance(1.0f) { }
 	};
 
 	struct monster_t
@@ -103,7 +101,7 @@ struct hordeDefine_t
 	typedef std::vector<powerup_t> powerups_t;
 	typedef std::vector<monster_t> monsters_t;
 
-	uint32_t legacyID;	 // ID of wave assuming no deduplication.  Remove me.
+	uint32_t legacyID;   // ID of wave assuming no deduplication.  Remove me.
 	std::string name;    // Name of the wave.
 	weapons_t weapons;   // Weapons we can spawn this wave.
 	ammos_t ammos;       // Ammos we can replenish this wave.
@@ -111,8 +109,8 @@ struct hordeDefine_t
 	powerups_t powerups; // Powerups we can spawn this wave.
 	int minGroupHealth;  // Minimum health of a group of monsters to spawn.
 	int maxGroupHealth;  // Maximum health of a group of monsters to spawn.
-	int minBossHealth;  // Minimum health of a group of bosses to spawn.
-	int maxBossHealth;  // Maximum health of a group of bosses to spawn.
+	int minBossHealth;   // Minimum health of a group of bosses to spawn.
+	int maxBossHealth;   // Maximum health of a group of bosses to spawn.
 
 	hordeDefine_t()
 	    : legacyID(0), minGroupHealth(-1), maxGroupHealth(-1), minBossHealth(-1),
@@ -131,7 +129,8 @@ struct hordeDefine_t
 	StringTokens weaponStrings(player_t* player) const;
 };
 
-template <> struct hashfunc<mobjtype_t>
+template <>
+struct hashfunc<mobjtype_t>
 {
 	unsigned int operator()(mobjtype_t val) const
 	{
@@ -142,12 +141,12 @@ template <> struct hashfunc<mobjtype_t>
 	}
 };
 
-typedef OHashTable<mobjtype_t, int> MobjTypeTable;
+typedef OHashTable<mobjtype_t, int> mobjCounts_t;
 
 void G_ParseHordeDefs();
 const hordeDefine_t& G_HordeDefine(size_t id);
 
 size_t P_HordePickDefine(const int current, const int total);
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
-                        const bool wantBoss, MobjTypeTable monsterCounts);
+                        const bool wantBoss, const mobjCounts_t& monsterCounts);
 bool P_HordeDefineNamed(int& out, const std::string& name);

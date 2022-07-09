@@ -90,10 +90,7 @@ class corpseCollector_t
 		m_corpses.push(ptr->ptr());
 		m_added += 1;
 	}
-	void startWave()
-	{
-		m_waveStart = m_added;
-	}
+	void startWave() { m_waveStart = m_added; }
 	void tick()
 	{
 		if (m_removed >= m_waveStart)
@@ -202,8 +199,8 @@ class HordeState
 	int m_nextSpawn;
 	int m_nextPowerup;
 	corpseCollector_t m_corpses;
-	MobjTypeTable m_monsterCounts;
-	MobjTypeTable m_bossCounts;
+	mobjCounts_t m_monsterCounts;
+	mobjCounts_t m_bossCounts;
 
 	/**
 	 * @brief Set the given state.
@@ -413,16 +410,17 @@ class HordeState
 	 * @brief Re-count all monsters helper
 	 *
 	 * @detail Used for loading savegames.
-	 * 
+	 *
 	 * @param monsterCounts map to update the counts off (m_bossCounts or m_monsterCounts)
 	 * @param type Type of monster to increment count of
 	 */
-	void recountMonstersHelper(MobjTypeTable& monsterCounts, mobjtype_t type)
+	void recountMonstersHelper(mobjCounts_t& monsterCounts, mobjtype_t type)
 	{
-		if (monsterCounts.count(type)) 
+		if (monsterCounts.count(type))
 		{
 			monsterCounts[type] += 1;
-		} else 
+		}
+		else
 		{
 			monsterCounts[type] = 1;
 		}
@@ -447,37 +445,24 @@ class HordeState
 				if (mo->oflags & MFO_BOSSPOOL)
 				{
 					recountMonstersHelper(m_bossCounts, mo->type);
-				} else {
+				}
+				else
+				{
 					recountMonstersHelper(m_monsterCounts, mo->type);
 				}
 			}
 		}
 	}
 
-	void addSpawnHealth(const int health)
-	{
-		m_spawnedHealth += health;
-	}
+	void addSpawnHealth(const int health) { m_spawnedHealth += health; }
 
-	void addKilledHealth(const int health)
-	{
-		m_killedHealth += health;
-	}
+	void addKilledHealth(const int health) { m_killedHealth += health; }
 
-	void addBossHealth(const int health)
-	{
-		m_bossHealth += health;
-	}
+	void addBossHealth(const int health) { m_bossHealth += health; }
 
-	void addBossDamage(const int health)
-	{
-		m_bossDamage += health;
-	}
+	void addBossDamage(const int health) { m_bossDamage += health; }
 
-	void addCorpse(AActor* mo)
-	{
-		m_corpses.pushCorpse(mo);
-	}
+	void addCorpse(AActor* mo) { m_corpses.pushCorpse(mo); }
 
 	void decrementCount(AActor* mo)
 	{
@@ -487,7 +472,8 @@ class HordeState
 			{
 				m_bossCounts[mo->type] -= 1;
 			}
-		} else 
+		}
+		else
 		{
 			if (m_monsterCounts.count(mo->type))
 			{
@@ -496,10 +482,7 @@ class HordeState
 		}
 	}
 
-	size_t getDefineID() const
-	{
-		return m_defineID;
-	}
+	size_t getDefineID() const { return m_defineID; }
 
 	int getAliveHealth() const { return m_spawnedHealth - m_killedHealth; }
 	void changeState();
@@ -586,10 +569,10 @@ void HordeState::getNextSpawnTime(int& min, int& max)
 		alive += (define.maxTotalHealth() - alive) / 2;
 	}
 
-	double minf = Remap(alive, define.minTotalHealth(),
-	                    define.maxTotalHealth(), EMPTY_MIN_SPAWN, EMPTY_MAX_SPAWN);
-	double maxf = Remap(alive, define.minTotalHealth(),
-	                    define.maxTotalHealth(), FULL_MIN_SPAWN, FULL_MAX_SPAWN);
+	double minf = Remap(alive, define.minTotalHealth(), define.maxTotalHealth(),
+	                    EMPTY_MIN_SPAWN, EMPTY_MAX_SPAWN);
+	double maxf = Remap(alive, define.minTotalHealth(), define.maxTotalHealth(),
+	                    FULL_MIN_SPAWN, FULL_MAX_SPAWN);
 
 	// Don't absolutely pound the players in the first minute.
 	const int FALLOFF_TIME = m_waveTime + ::HORDE_STARTING_TICS + TICRATE * 60;
@@ -880,7 +863,7 @@ void P_RunHordeTics()
 				    "WARNING: This map is missing Horde Monster, Horde Supply Cache, "
 				    "or Horde Powerup spawns.  At least one of each must be present.\n");
 			}
-			
+
 			// This map has no horde things in it - probably inside a
 			// non-horde map.
 			return;

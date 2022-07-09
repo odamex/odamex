@@ -34,8 +34,8 @@
 #include "infomap.h"
 #include "m_random.h"
 #include "oscanner.h"
-#include "w_wad.h"
 #include "v_textcolors.h"
+#include "w_wad.h"
 
 EXTERN_CVAR(g_horde_mintotalhp)
 EXTERN_CVAR(g_horde_maxtotalhp)
@@ -215,7 +215,7 @@ size_t P_HordePickDefine(const int current, const int total)
  * @param wantBoss Caller wants a boss.
  */
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
-                        const bool wantBoss, const MobjTypeTable& monsterCounts)
+                        const bool wantBoss, const mobjCounts_t& monsterCounts)
 {
 	std::vector<const hordeDefine_t::monster_t*> monsters;
 
