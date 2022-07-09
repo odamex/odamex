@@ -215,7 +215,7 @@ size_t P_HordePickDefine(const int current, const int total)
  * @param wantBoss Caller wants a boss.
  */
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
-                        const bool wantBoss, MobjTypeTable monsterCounts)
+                        const bool wantBoss, const MobjTypeTable& monsterCounts)
 {
 	std::vector<const hordeDefine_t::monster_t*> monsters;
 
