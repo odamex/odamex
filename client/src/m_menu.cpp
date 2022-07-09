@@ -1258,7 +1258,7 @@ void M_QuitDOOM(int choice)
 //		Player Setup Menu code
 // -----------------------------------------------------
 
-void M_DrawSlider (int x, int y, float min, float max, float cur);
+void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
 
 static const char *genders[3] = { "male", "female", "cyborg" };
 static state_t *PlayerState;
@@ -1502,9 +1502,9 @@ static void M_PlayerSetupDrawer()
 		const int x = V_StringWidth("Green") + 8 + PSetupDef.x;
 		const argb_t playercolor = V_GetColorFromString(cl_color);
 
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, playercolor.getr());
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, playercolor.getg());
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*4, 0.0f, 255.0f, playercolor.getb());
+		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, playercolor.getr(), 0.0f);
+		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, playercolor.getg(), 0.0f);
+		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*4, 0.0f, 255.0f, playercolor.getb(), 0.0f);
 	}
 
 	// Draw team setting
