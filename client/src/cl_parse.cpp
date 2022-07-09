@@ -2511,7 +2511,7 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 			break;
 		if (scrollType != DScroller::sc_side && affectee > ::numsectors)
 			break;
-		if (control <= 0)
+		if (control < 0)
 			control = -1;
 		if (accel < 0)
 			accel = 0;
