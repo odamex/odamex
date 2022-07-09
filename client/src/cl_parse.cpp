@@ -2511,7 +2511,7 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 			break;
 		if (scrollType != DScroller::sc_side && affectee > ::numsectors)
 			break;
-		// remove null checks after 10.2 is released
+		// remove null checks after 11 is released
 		if (!control || control < 0)
 			control = -1;
 		if (!accel || accel < 0)
