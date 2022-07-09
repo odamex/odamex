@@ -106,6 +106,13 @@ static void ParseMonsterConfig(OScanner& os, hordeDefine_t::monConfig_t& outConf
 			os.mustScanFloat();
 			outConfig.chance = os.getTokenFloat();
 		}
+		else if (os.compareToken("limit"))
+		{
+			os.mustScan();
+			os.assertTokenIs("=");
+			os.mustScanInt();
+			outConfig.limit = os.getTokenInt();
+		}
 		else
 		{
 			// We don't know what this token is.

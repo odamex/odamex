@@ -86,8 +86,9 @@ struct hordeDefine_t
 	{
 		int minGroupHealth;
 		int maxGroupHealth;
+		int limit;
 		float chance;
-		monConfig_t() : minGroupHealth(-1), maxGroupHealth(-1), chance(1.0f) { }
+		monConfig_t() : minGroupHealth(-1), maxGroupHealth(-1), limit(-1), chance(1.0f) { }
 	};
 
 	struct monster_t
@@ -130,10 +131,23 @@ struct hordeDefine_t
 	StringTokens weaponStrings(player_t* player) const;
 };
 
+template <> struct hashfunc<mobjtype_t>
+{
+	unsigned int operator()(mobjtype_t val) const
+	{
+		if (sizeof(mobjtype_t) == 8)
+			return __hash_jenkins_64bit(val);
+		else
+			return __hash_jenkins_32bit(val);
+	}
+};
+
+typedef OHashTable<mobjtype_t, int> MobjTypeTable;
+
 void G_ParseHordeDefs();
 const hordeDefine_t& G_HordeDefine(size_t id);
 
 size_t P_HordePickDefine(const int current, const int total);
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
-                        const bool wantBoss);
+                        const bool wantBoss, MobjTypeTable monsterCounts);
 bool P_HordeDefineNamed(int& out, const std::string& name);

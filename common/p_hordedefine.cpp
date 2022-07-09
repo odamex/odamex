@@ -21,6 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <math.h>
+
 #include "odamex.h"
 
 #include "p_hordedefine.h"
@@ -213,7 +215,7 @@ size_t P_HordePickDefine(const int current, const int total)
  * @param wantBoss Caller wants a boss.
  */
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
-                        const bool wantBoss)
+                        const bool wantBoss, const MobjTypeTable& monsterCounts)
 {
 	std::vector<const hordeDefine_t::monster_t*> monsters;
 
@@ -246,8 +248,14 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	const bool outIsBoss = monster->monster != hordeDefine_t::RM_NORMAL;
 	const hordeDefine_t::monConfig_t* config = &monster->config;
 
+	int numAlive = monsterCounts[outType];
+
 	int outCount = 0;
 	const int health = ::mobjinfo[outType].spawnhealth;
+
+	const int aliveHealth = monsterCounts[outType] * health;
+	const float scaledLimit = ceil(config->limit * SkillScaler());
+	const int healthLimit = static_cast<int>(scaledLimit) * health;
 
 	// Maximum health.
 	int maxHealth = -1;
@@ -264,6 +272,8 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		maxHealth = define.maxGroupHealth;
 	}
 
+	maxHealth = MIN(maxHealth, healthLimit - aliveHealth);
+
 	// Minimum health.
 	int minHealth = -1;
 	if (config->minGroupHealth >= 0)
@@ -279,7 +289,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		minHealth = define.minGroupHealth;
 	}
 
-	const int upper = MAX(maxHealth / health, 1);
+	const int upper = MAX(maxHealth / health, 0);
 	const int lower = MAX(minHealth / health, 1);
 
 	if (upper <= lower)
