@@ -169,6 +169,15 @@ StringTokens hordeDefine_t::weaponStrings(player_t* player) const
 }
 
 /**
+ * @brief Return the number of monsters of a given type horde has spawned.
+ */
+int P_HordeMobjCount(const mobjCounts_t& counts, const mobjtype_t type)
+{
+	mobjCounts_t::const_iterator it = counts.find(type);
+	return it != counts.end() ? it->second : 0;
+}
+
+/**
  * @brief Get a define to use for this wave.
  *
  * @param current Current wave.
@@ -248,12 +257,12 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	const bool outIsBoss = monster->monster != hordeDefine_t::RM_NORMAL;
 	const hordeDefine_t::monConfig_t* config = &monster->config;
 
-	int numAlive = monsterCounts[outType];
+	int numAlive = P_HordeMobjCount(monsterCounts, outType);
 
 	int outCount = 0;
 	const int health = ::mobjinfo[outType].spawnhealth;
 
-	const int aliveHealth = monsterCounts[outType] * health;
+	const int aliveHealth = P_HordeMobjCount(monsterCounts, outType) * health;
 	const float scaledLimit = ceil(config->limit * SkillScaler());
 	const int healthLimit = static_cast<int>(scaledLimit) * health;
 

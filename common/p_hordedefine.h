@@ -146,6 +146,7 @@ typedef OHashTable<mobjtype_t, int> mobjCounts_t;
 void G_ParseHordeDefs();
 const hordeDefine_t& G_HordeDefine(size_t id);
 
+int P_HordeMobjCount(const mobjCounts_t& counts, const mobjtype_t type);
 size_t P_HordePickDefine(const int current, const int total);
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
                         const bool wantBoss, const mobjCounts_t& monsterCounts);
