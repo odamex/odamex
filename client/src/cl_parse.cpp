@@ -2501,6 +2501,8 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 		fixed_t dx = msg->scroller().scroll_x();
 		fixed_t dy = msg->scroller().scroll_y();
 		int affectee = msg->scroller().affectee();
+		int accel = msg->scroller().accel();
+		int control = msg->scroller().control();
 		if (::numsides <= 0 || ::numsectors <= 0)
 			break;
 		if (affectee < 0)
@@ -2509,8 +2511,12 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 			break;
 		if (scrollType != DScroller::sc_side && affectee > ::numsectors)
 			break;
+		if (control <= 0)
+			control = -1;
+		if (accel < 0)
+			accel = 0;
 
-		new DScroller(scrollType, dx, dy, -1, affectee, 0);
+		new DScroller(scrollType, dx, dy, control, affectee, accel);
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kFireFlicker: {
