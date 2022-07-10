@@ -2305,8 +2305,6 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 	if (target->health <= 0)
 	{
-		P_KillMobj(source, target, inflictor, false);
-
 		// WDL damage events.
 		// todo: handle voodoo dolls here
 		if (source == NULL && targethasflag)
@@ -2325,6 +2323,8 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		{
 			M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod, 0);
 		}
+
+		P_KillMobj(source, target, inflictor, false);
 
 		return;
 	}
