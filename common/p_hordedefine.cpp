@@ -250,21 +250,44 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		return false;
 
 	// Randomly select a monster to spawn.
-	const hordeDefine_t::monster_t* const monster =
-	    P_RandomFloatWeighted(monsters, MonsterChance);
+	const hordeDefine_t::monster_t* monster = NULL;
+	int limit = INT_MAX;
+	for (size_t i = 0; i < 5; i++)
+	{
+		monster = P_RandomFloatWeighted(monsters, MonsterChance);
+		if (monster->config.limit <= 0)
+		{
+			// No limit, we're good.
+			break;
+		}
+
+		// Scale the limit, but whatever number we come up with must end
+		// up as an integer anyway.
+		limit = ceilf(float(monster->config.limit) * SkillScaler());
+		const int numAlive = P_HordeMobjCount(monsterCounts, monster->mobj);
+		if (numAlive < limit)
+		{
+			// We have limit enough to spawn the monster.
+			break;
+		}
+
+		// Can't fit this monster.
+		monster = NULL;
+		limit = INT_MAX;
+	}
+
+	if (monster == NULL)
+	{
+		// We can't spawn a monster.
+		return false;
+	}
 
 	const mobjtype_t outType = monster->mobj;
 	const bool outIsBoss = monster->monster != hordeDefine_t::RM_NORMAL;
 	const hordeDefine_t::monConfig_t* config = &monster->config;
 
-	int numAlive = P_HordeMobjCount(monsterCounts, outType);
-
 	int outCount = 0;
 	const int health = ::mobjinfo[outType].spawnhealth;
-
-	const int aliveHealth = P_HordeMobjCount(monsterCounts, outType) * health;
-	const float scaledLimit = ceil(config->limit * SkillScaler());
-	const int healthLimit = static_cast<int>(scaledLimit) * health;
 
 	// Maximum health.
 	int maxHealth = -1;
@@ -281,7 +304,8 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		maxHealth = define.maxGroupHealth;
 	}
 
-	maxHealth = MIN(maxHealth, healthLimit - aliveHealth);
+	// If we have a limit, reduce the maxHealth to that.
+	maxHealth = MIN(maxHealth, limit * health);
 
 	// Minimum health.
 	int minHealth = -1;
@@ -298,7 +322,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		minHealth = define.minGroupHealth;
 	}
 
-	const int upper = MAX(maxHealth / health, 0);
+	const int upper = MAX(maxHealth / health, 1);
 	const int lower = MAX(minHealth / health, 1);
 
 	if (upper <= lower)
