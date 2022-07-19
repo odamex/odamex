@@ -50,6 +50,7 @@ EXTERN_CVAR(g_horde_spawnempty_min)
 EXTERN_CVAR(g_horde_spawnempty_max)
 EXTERN_CVAR(g_horde_spawnfull_min)
 EXTERN_CVAR(g_horde_spawnfull_max)
+EXTERN_CVAR(sv_nomonsters)
 
 void A_PainDie(AActor* actor);
 
@@ -625,6 +626,9 @@ void HordeState::tick()
 		switch (m_state)
 		{
 		case HS_PRESSURE: {
+			if (sv_nomonsters)
+				break;
+
 			// Pick a recipe for some monsters.
 			hordeRecipe_t recipe;
 			const bool ok = P_HordeSpawnRecipe(recipe, define, false);
@@ -654,6 +658,9 @@ void HordeState::tick()
 		case HS_RELAX:
 			break;
 		case HS_WANTBOSS: {
+			if (sv_nomonsters)
+				break;
+
 			// Do we already have bosses spawned?
 			if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
 				break;
