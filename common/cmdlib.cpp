@@ -763,6 +763,23 @@ void StripColorCodes(std::string& str)
 	}
 }
 
+/**
+ * @brief Remap a value from one value range to another.
+ *
+ * @detail https://stackoverflow.com/q/3451553/91642
+ *
+ * @param value Value to remap.
+ * @param low1 Lower bound on the source range.
+ * @param high1 Upper bound on the source range.
+ * @param low2 Lower bound on the destination range.
+ * @param high2 Upper bound on the destination range.
+ */
+double Remap(const double value, const double low1, const double high1, const double low2,
+             const double high2)
+{
+	return low2 + (value - low1) * (high2 - low2) / (high1 - low1);
+}
+
 //
 // Log2
 //

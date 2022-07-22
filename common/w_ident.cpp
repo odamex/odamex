@@ -920,7 +920,7 @@ public:
 		if (lumpsfound[10])
 		{
 			if (lumpsfound[0])
-				return OStringToUpper(FREEDOOM1_PREFIX " Unknown");
+				return OStringToUpper(OString(FREEDOOM1_PREFIX " Unknown"));
 			else
 				return "FREEDOOM UNKNOWN";
 		}
@@ -929,13 +929,13 @@ public:
 		if (lumpsfound[3])
 		{
 			if (lumpsfound[6])
-				return OStringToUpper(TNT_PREFIX " Unknown");
+				return OStringToUpper(OString(TNT_PREFIX " Unknown"));
 			if (lumpsfound[7])
-				return OStringToUpper(PLUTONIA_PREFIX " Unknown");
+				return OStringToUpper(OString(PLUTONIA_PREFIX " Unknown"));
 			if (lumpsfound[9])
-				return OStringToUpper(DOOM2_PREFIX " BFG Edition Unknown");
+				return OStringToUpper(OString(DOOM2_PREFIX " BFG Edition Unknown"));
 			else
-				return OStringToUpper(DOOM2_PREFIX " Unknown");
+				return OStringToUpper(OString(DOOM2_PREFIX " Unknown"));
 		}
 
 		// Check for Registered Doom / Ultimate Doom / Chex Quest / Shareware Doom

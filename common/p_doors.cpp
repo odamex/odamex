@@ -401,6 +401,8 @@ DDoor::DDoor(sector_t* sec, line_t* ln, int kind, int trigger, int speed)
 	m_Status = opening;
 	m_TopCountdown = -1;
 
+	fixed_t ceilingheight = P_CeilingHeight(sec);
+
 	switch (speed)
 	{
 	default:
@@ -419,11 +421,13 @@ DDoor::DDoor(sector_t* sec, line_t* ln, int kind, int trigger, int speed)
 	case SpeedTurbo:
 		m_Type = kind ? genBlazeOpen : genBlazeRaise;
 		m_Speed = VDOORSPEED * 8;
-
 		break;
 	}
 	/* killough 10/98: implement gradual lighting */
 	m_LightTag = (ln->special & 6) == 6 && ln->special > GenLockedBase ? ln->id : 0;
+
+	if (m_TopHeight != ceilingheight)
+		PlayDoorSound();
 }
 
 // [Blair] Boom Generic Door Type

@@ -178,7 +178,7 @@ static void AddWDLPlayer(player_t* player)
 	}
 
 	WDLPlayer wdlplayer = {
-	    ::wdlplayers.size() + 1,
+	    int(::wdlplayers.size()) + 1,
 	    player->id,
 	    player->userinfo.netname,
 	    player->userinfo.team,
@@ -210,8 +210,9 @@ static void AddWDLPlayerSpawn(const mapthing2_t* mthing)
 			return;
 	}
 
-	WDLPlayerSpawn wdlplayerspawn = {::wdlplayerspawns.size() + 1, mthing->x, mthing->y,
-	                                 mthing->z, team};
+	WDLPlayerSpawn wdlplayerspawn = {
+	    int(::wdlplayerspawns.size()) + 1, mthing->x, mthing->y, mthing->z, team,
+	};
 	::wdlplayerspawns.push_back(wdlplayerspawn);
 }
 
@@ -277,8 +278,9 @@ void M_LogWDLItemSpawn(AActor* target, WDLPowerups type)
 			return;
 	}
 
-	WDLItemSpawn wdlitemspawn = {::wdlitemspawns.size() + 1, target->x, target->y,
-	                             target->z, type};
+	WDLItemSpawn wdlitemspawn = {
+	    int(::wdlitemspawns.size()) + 1, target->x, target->y, target->z, type,
+	};
 	::wdlitemspawns.push_back(wdlitemspawn);
 }
 
@@ -1096,7 +1098,7 @@ BEGIN_COMMAND(wdlinfo)
 	if (stricmp(argv[1], "size") == 0)
 	{
 		// Count total events.
-		Printf(PRINT_HIGH, "%" PRIuSIZE " events found\n", ::wdlevents.size());
+		Printf(PRINT_HIGH, "%zu events found\n", ::wdlevents.size());
 		return;
 	}
 	else if (stricmp(argv[1], "state") == 0)
@@ -1122,7 +1124,7 @@ BEGIN_COMMAND(wdlinfo)
 		if (it < ::wdlevents.begin())
 			it = wdlevents.begin();
 
-		Printf(PRINT_HIGH, "Showing last %" PRIdSIZE " events:\n",
+		Printf(PRINT_HIGH, "Showing last %zd events:\n",
 		       ::wdlevents.end() - it);
 		for (; it != ::wdlevents.end(); ++it)
 			PrintWDLEvent(*it);

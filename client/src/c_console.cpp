@@ -163,16 +163,18 @@ public:
 //
 // ============================================================================
 
-ConsoleLine::ConsoleLine() :
-	color_code("\034-"), wrapped(false), print_level(PRINT_HIGH),	// TEXTCOLOR_ESCAPE
-	timeout(gametic + con_notifytime.asInt() * TICRATE)
-{ }
+ConsoleLine::ConsoleLine()
+    : color_code("\034-"), wrapped(false), print_level(PRINT_HIGH),
+      timeout(gametic + int(con_notifytime * TICRATE))
+{
+}
 
 ConsoleLine::ConsoleLine(const std::string& _text, const std::string& _color_code,
-			int _print_level) :
-	text(_text), color_code(_color_code), wrapped(false), print_level(_print_level),
-	timeout(gametic + con_notifytime.asInt() * TICRATE)
-{ }
+                         int _print_level)
+    : text(_text), color_code(_color_code), wrapped(false), print_level(_print_level),
+      timeout(gametic + int(con_notifytime * TICRATE))
+{
+}
 
 
 //
@@ -1179,36 +1181,33 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 	return strlen(outline);
 }
 
-static int VPrintf(int printlevel, const char* color_code, const char* format, va_list parms)
+int C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
 {
-	char outline[MAX_LINE_LENGTH], outlinelog[MAX_LINE_LENGTH];
-
 	extern BOOL gameisdead;
 	if (gameisdead)
 		return 0;
 
-	vsnprintf(outline, ARRAY_LENGTH(outline), format, parms);
+	std::string newStr = str;
 
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	// ToDo: there may be more characters not allowed on a consoleprint, 
 	// maybe restrict a few ASCII stuff later on ?
-	int len = strlen(outline);
-	for (int i = 0; i < len; i++)
+	for (int i = 0; i < newStr.length(); i++)
 	{
-		if (outline[i] == 0x07)
-			outline[i] = '.';
+		if (newStr[i] == 0x07)
+			newStr[i] = '.';
 	}
 
 	// Prevents writing a whole lot of new lines to the log file
 	if (gamestate != GS_FORCEWIPE)
 	{
-		strcpy(outlinelog, outline);
+		std::string logStr = newStr;
 
 		// [Nes] - Horizontal line won't show up as-is in the logfile.
-		for (int i = 0; i < len; i++)
+		for (int i = 0; i < logStr.length(); i++)
 		{
-			if (outlinelog[i] == '\35' || outlinelog[i] == '\36' || outlinelog[i] == '\37')
-				outlinelog[i] = '=';
+			if (logStr[i] == '\35' || logStr[i] == '\36' || logStr[i] == '\37')
+				logStr[i] = '=';
 		}
 
 		// Up the row buffer for the console.
@@ -1218,89 +1217,38 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 		// We need to know if there were any new lines being printed
 		// in our string.
 
-		int newLineCount = std::count(outline, outline + strlen(outline), '\n');
+		int newLineCount = std::count(logStr.begin(), logStr.end(), '\n');
 
 		if (ConRows < (unsigned int)con_buffersize.asInt())
 			ConRows += (newLineCount > 1) ? newLineCount + 1 : 1;
 	}
 
 	if (print_stdout && gamestate != GS_FORCEWIPE)
-		C_PrintStringStdOut(outline);
-
-	std::string sanitized_str(outline);
+		C_PrintStringStdOut(newStr.c_str());
 
 	if (!con_coloredmessages)
-		StripColorCodes(sanitized_str);
+		StripColorCodes(newStr);
 
-	C_PrintString(printlevel, color_code, sanitized_str.c_str());
+	C_PrintString(printlevel, color_code, newStr.c_str());
 
 	// Once done, log 
 	if (LOG.is_open())
 	{
 		// Strip if not already done
 		if (con_coloredmessages)
-			StripColorCodes(sanitized_str);
+			StripColorCodes(newStr);
 
-		LOG << sanitized_str;
+		LOG << newStr;
 		LOG.flush();
 	}
 
 #if defined (_WIN32) && defined(_DEBUG)
 	// [AM] Since we don't have stdout/stderr in a non-console Win32 app,
 	//      this outputs the string to the "Output" window.
-	OutputDebugStringA(sanitized_str.c_str());
+	OutputDebugStringA(newStr.c_str());
 #endif
 
-	return len;
-}
-
-FORMAT_PRINTF(1, 2) int STACK_ARGS Printf(const char* format, ...)
-{
-	va_list argptr;
-	int count;
-
-	va_start(argptr, format);
-	count = VPrintf(PRINT_HIGH, TEXTCOLOR_NORMAL, format, argptr);
-	va_end(argptr);
-
-	return count;
-}
-
-FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...)
-{
-	va_list argptr;
-
-	va_start(argptr, format);
-	int count = VPrintf(printlevel, TEXTCOLOR_NORMAL, format, argptr);
-	va_end(argptr);
-
-	return count;
-}
-
-FORMAT_PRINTF(1, 2) int STACK_ARGS Printf_Bold(const char* format, ...)
-{
-	va_list argptr;
-
-	va_start(argptr, format);
-	int count = VPrintf(PRINT_HIGH, TEXTCOLOR_BOLD, format, argptr);
-	va_end(argptr);
-
-	return count;
-}
-
-FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...)
-{
-	if (developer || devparm)
-	{
-		va_list argptr;
-
-		va_start(argptr, format);
-		int count = VPrintf(PRINT_WARNING, TEXTCOLOR_NORMAL, format, argptr);
-		va_end(argptr);
-		return count;
-	}
-
-	return 0;
+	return newStr.length();
 }
 
 void C_FlushDisplay()
@@ -2124,8 +2072,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 {
 	unsigned int i;
 
-	if (!msgtime)
-		msgtime = con_midtime.asInt();
+	const float fmsgtime = msgtime ? float(msgtime) : con_midtime;
 
 	if (MidMsg)
 		V_FreeBrokenLines(MidMsg);
@@ -2151,7 +2098,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 
 		if ( (MidMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
 		{
-			MidTicker = (int)(msgtime * TICRATE) + gametic;
+			MidTicker = (int)(fmsgtime * TICRATE) + gametic;
 
 			for (i = 0; MidMsg[i].width != -1; i++)
 				;
@@ -2208,8 +2155,7 @@ void C_GMidPrint(const char* msg, int color, int msgtime)
 {
 	unsigned int i;
 
-	if (!msgtime)
-		msgtime = con_midtime.asInt();
+	const float fmsgtime = msgtime ? float(msgtime) : con_midtime;
 
 	if (GameMsg)
 		V_FreeBrokenLines(GameMsg);
@@ -2230,7 +2176,7 @@ void C_GMidPrint(const char* msg, int color, int msgtime)
 
 		if ((GameMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
 		{
-			GameTicker = (int)(msgtime * TICRATE) + gametic;
+			GameTicker = (int)(fmsgtime * TICRATE) + gametic;
 
 			for (i = 0;GameMsg[i].width != -1;i++)
 				;

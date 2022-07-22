@@ -33,6 +33,7 @@
 #include "m_random.h"
 #include "oscanner.h"
 #include "w_wad.h"
+#include "v_textcolors.h"
 
 EXTERN_CVAR(g_horde_mintotalhp)
 EXTERN_CVAR(g_horde_maxtotalhp)
@@ -93,6 +94,76 @@ int hordeDefine_t::maxTotalHealth() const
 int hordeDefine_t::goalHealth() const
 {
 	return static_cast<float>(maxGroupHealth) * ::g_horde_goalhp * SkillScaler();
+}
+
+const char* hordeDefine_t::difficulty(const bool colored) const
+{
+	if (maxGroupHealth < 500)
+	{
+		return colored ? TEXTCOLOR_LIGHTBLUE "E" : "E";
+	}
+	else if (maxGroupHealth < 1000)
+	{
+		return colored ? TEXTCOLOR_GREEN "D" : "D";
+	}
+	else if (maxGroupHealth < 2000)
+	{
+		return colored ? TEXTCOLOR_GOLD "C" : "C";
+	}
+	else if (maxGroupHealth < 3000)
+	{
+		return colored ? TEXTCOLOR_ORANGE "B" : "B";
+	}
+	else if (maxGroupHealth < 5000)
+	{
+		return colored ? TEXTCOLOR_RED "A" : "A";
+	}
+	else
+	{
+		return colored ? TEXTCOLOR_DARKRED "X" : "X";
+	}
+}
+
+StringTokens hordeDefine_t::weaponStrings(player_t* player) const
+{
+	StringTokens rvo;
+	for (size_t i = 0; i < weapons.size(); i++)
+	{
+		if (!(player == NULL || !player->weaponowned[weapons[i]]))
+		{
+			continue;
+		}
+
+		switch (weapons[i])
+		{
+		case wp_none:
+			rvo.push_back("BSK");
+			break;
+		case wp_chainsaw:
+			rvo.push_back("1+");
+			break;
+		case wp_shotgun:
+			rvo.push_back("3");
+			break;
+		case wp_supershotgun:
+			rvo.push_back("3+");
+			break;
+		case wp_chaingun:
+			rvo.push_back("4");
+			break;
+		case wp_missile:
+			rvo.push_back("5");
+			break;
+		case wp_plasma:
+			rvo.push_back("6");
+			break;
+		case wp_bfg:
+			rvo.push_back("7");
+			break;
+		}
+	}
+
+	return rvo;
 }
 
 /**
@@ -264,8 +335,7 @@ static void PrintDefines(const std::vector<hordeDefine_t>::const_iterator& begin
 	for (; it != end; ++it)
 	{
 		const ptrdiff_t idx = it - ::WAVE_DEFINES.begin();
-		Printf("%" PRIdSIZE ": %s (Group HP: %d)\n", idx, it->name.c_str(),
-		       it->maxGroupHealth);
+		Printf("%zd: %s (Group HP: %d)\n", idx, it->name.c_str(), it->maxGroupHealth);
 	}
 }
 
@@ -306,7 +376,7 @@ BEGIN_COMMAND(hordedefine)
 						const size_t start = static_cast<size_t>(section_offset);
 						const size_t end =
 						    MIN<size_t>(section_offset + section_choice, section_limit);
-						Printf("[Wave %d/%d - Start:%" PRIuSIZE " End:%" PRIuSIZE "]\n",
+						Printf("[Wave %d/%d - Start:%" "zu" " End:%" "zu" "]\n",
 						       current, total, start, end);
 						PrintDefines(::WAVE_DEFINES.begin() + start,
 						             ::WAVE_DEFINES.begin() + end + 1);

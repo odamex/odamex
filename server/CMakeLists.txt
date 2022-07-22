@@ -46,17 +46,12 @@ add_executable(odasrv
   ${COMMON_SOURCES} ${SERVER_SOURCES} ${SERVER_WIN32_SOURCES})
 odamex_target_settings(odasrv)
 
-if(USE_INTERNAL_JSONCPP)
-  set_property(TARGET odasrv PROPERTY CXX_STANDARD 98)
-else()
-  set_property(TARGET odasrv PROPERTY CXX_STANDARD 11)
-endif()
-
 target_include_directories(odasrv PRIVATE src)
 if(WIN32)
   target_include_directories(odasrv PRIVATE win32)
 endif()
-target_link_libraries(odasrv ZLIB::ZLIB odamex-common odaproto)
+
+target_link_libraries(odasrv fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto)
 
 if(USE_INTERNAL_JSONCPP)
   target_link_libraries(odasrv jsoncpp_lib_static)

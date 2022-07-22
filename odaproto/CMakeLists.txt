@@ -1,3 +1,5 @@
+include(OdamexTargetSettings)
+
 # Find the protobuf we just compiled
 find_package(protobuf
   PATHS
@@ -14,5 +16,6 @@ source_group("Definitions" FILES ${ODAPROTO_PROTOS})
 source_group("Generated" FILES ${ODAPROTO_SOURCES})
 
 add_library(odaproto STATIC ${ODAPROTO_SOURCES} ${ODAPROTO_PROTOS})
+odamex_target_settings(odaproto)
 target_include_directories(odaproto PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries(odaproto protobuf::libprotobuf)

@@ -683,6 +683,9 @@ static void P_GiveCarePack(player_t* player)
 				message = "You found a weapon in this supply cache!";
 				switch (weapons.at(i))
 				{
+				case wp_chainsaw:
+					midmessage = "Got Chainsaw";
+					break;
 				case wp_pistol:
 					midmessage = "Got Pistol";
 					break;
@@ -1299,6 +1302,16 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 	// Only allow clients to predict touching weapons, not health, armor, etc
 	if (!serverside && (!cl_predictpickup || !P_SpecialIsWeapon(special)))
 		return;
+
+	// [Blair] Execute ZDoom thing specials on items that are picked up.
+	// (Then remove the special.)
+	if (special->special)
+	{
+		LineSpecials[special->special](NULL, toucher, special->args[0], special->args[1],
+		                               special->args[2], special->args[3],
+		                               special->args[4]);
+		special->special = 0;
+	}
 
 	if (toucher->type == MT_AVATAR)
 	{
@@ -2287,8 +2300,6 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 	if (target->health <= 0)
 	{
-		P_KillMobj(source, target, inflictor, false);
-
 		// WDL damage events.
 		// todo: handle voodoo dolls here
 		if (source == NULL && targethasflag)
@@ -2307,6 +2318,8 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		{
 			M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod, 0);
 		}
+
+		P_KillMobj(source, target, inflictor, false);
 
 		return;
 	}

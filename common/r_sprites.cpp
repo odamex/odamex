@@ -224,6 +224,10 @@ static void R_InitSpriteDefs(const char **namelist)
 	{
 		memset (sprtemp, -1, sizeof(sprtemp));
 
+                for (int i = 0; i < MAX_SPRITE_FRAMES; i++) {
+                    sprtemp[i].rotate = false;
+                }
+
 		maxframe = -1;
 		const int intname = *(int *)namelist[i];
 

@@ -675,7 +675,9 @@ public:
 		{
 			clear();
 			overflowed = true;
+#if defined(ODAMEX_DEBUG)
 			Printf (PRINT_HIGH, "SZ_GetSpace: overflow\n");
+#endif
 		}
 
 		byte *ret = data + cursize;

@@ -981,17 +981,19 @@ void D_DoomMain()
 	}
 	else if (autostart)
 	{
-		if (autostart)
-		{
-			// single player warp (like in g_level)
-			serverside = true;
-			sv_allowexit = "1";
+		// single player warp (like in g_level)
+		serverside = true;
 
-			players.clear();
-			players.push_back(player_t());
-			players.back().playerstate = PST_REBORN;
-			consoleplayer_id = displayplayer_id = players.back().id = 1;
-		}
+		// Enable serverside settings to make them fully client-controlled.
+		sv_freelook = 1;
+		sv_allowjump = 1;
+		sv_allowexit = 1;
+		sv_allowredscreen = 1;
+
+		players.clear();
+		players.push_back(player_t());
+		players.back().playerstate = PST_REBORN;
+		consoleplayer_id = displayplayer_id = players.back().id = 1;
 
 		G_InitNew(startmap);
 	}

@@ -27,6 +27,8 @@
 
 #include <limits>
 
+#include "nonstd/scope.hpp"
+
 #include "i_sdl.h" 
 #include <stdlib.h>
 
@@ -506,10 +508,41 @@ BOOL gameisdead;
 
 void STACK_ARGS call_terms (void);
 
-NORETURN void STACK_ARGS I_FatalError(const char* error, ...)
+void I_BaseWarning(const std::string& warningtext)
 {
-	char errortext[MAX_ERRORTEXT];
-	char messagetext[MAX_ERRORTEXT];
+	Printf(PRINT_WARNING, "\n%s\n", warningtext);
+}
+
+void I_BaseError(const std::string& errortext)
+{
+	std::string messagetext;
+
+	if (!has_exited)
+	{
+		throw CRecoverableError(errortext);
+	}
+
+	// Recursive atterm, we've used up all our chances.
+	if (SDL_GetError()[0] != '\0')
+	{
+		messagetext = fmt::sprintf(
+		    "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n", errortext,
+		    SDL_GetError());
+	}
+	else
+	{
+		messagetext =
+		    fmt::sprintf("Error while shutting down, aborting:\n%s\n", errortext);
+	}
+
+	I_ErrorMessageBox(messagetext.c_str());
+
+	abort();
+}
+
+NORETURN void I_BaseFatalError(const std::string& errortext)
+{
+	std::string messagetext;
 
 	static BOOL alreadyThrown = false;
 	gameisdead = true;
@@ -517,20 +550,16 @@ NORETURN void STACK_ARGS I_FatalError(const char* error, ...)
 	if (!alreadyThrown) // ignore all but the first message -- killough
 	{
 		alreadyThrown = true;
-		va_list argptr;
-		va_start(argptr, error);
-		int index = vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
 		if (SDL_GetError()[0] != '\0')
 		{
-			snprintf(messagetext, ARRAY_LENGTH(messagetext), "%s\nLast SDL Error:\n%s\n",
-			         errortext, SDL_GetError());
+			messagetext =
+			    fmt::sprintf("%s\nLast SDL Error:\n%s\n", errortext, SDL_GetError());
 			SDL_ClearError();
 		}
 		else
 		{
-			snprintf(messagetext, ARRAY_LENGTH(messagetext), "%s\n", errortext);
+			messagetext = fmt::sprintf("%s\n", errortext);
 		}
-		va_end(argptr);
 
 		throw CFatalError(messagetext);
 	}
@@ -545,70 +574,21 @@ NORETURN void STACK_ARGS I_FatalError(const char* error, ...)
 	}
 
 	// Recursive atterm, we've used up all our chances.
-	va_list argptr;
-	va_start(argptr, error);
-	int index = vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
 	if (SDL_GetError()[0] != '\0')
 	{
-		snprintf(messagetext, ARRAY_LENGTH(messagetext),
-		         "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n",
-		         errortext, SDL_GetError());
+		messagetext = fmt::sprintf(
+		    "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n", errortext,
+		    SDL_GetError());
 	}
 	else
 	{
-		snprintf(messagetext, ARRAY_LENGTH(messagetext),
-		         "Error while shutting down, aborting:\n%s\n", errortext);
+		messagetext =
+		    fmt::sprintf("Error while shutting down, aborting:\n%s\n", errortext);
 	}
-	va_end(argptr);
 
-	I_ErrorMessageBox(messagetext);
+	I_ErrorMessageBox(messagetext.c_str());
 
 	abort();
-}
-
-void STACK_ARGS I_Error(const char* error, ...)
-{
-	va_list argptr;
-	char errortext[MAX_ERRORTEXT];
-	char messagetext[MAX_ERRORTEXT];
-
-	va_start(argptr, error);
-	vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
-	va_end(argptr);
-
-	if (!has_exited)
-	{
-		throw CRecoverableError(errortext);
-	}
-
-	// Recursive atterm, we've used up all our chances.
-	if (SDL_GetError()[0] != '\0')
-	{
-		snprintf(messagetext, ARRAY_LENGTH(messagetext),
-		         "Error while shutting down, aborting:\n%s\nLast SDL Error:\n%s\n",
-		         errortext, SDL_GetError());
-	}
-	else
-	{
-		snprintf(messagetext, ARRAY_LENGTH(messagetext),
-		         "Error while shutting down, aborting:\n%s\n", errortext);
-	}
-
-	I_ErrorMessageBox(messagetext);
-
-	abort();
-}
-
-void STACK_ARGS I_Warning(const char *warning, ...)
-{
-	va_list argptr;
-	char warningtext[MAX_ERRORTEXT];
-
-	va_start (argptr, warning);
-	vsprintf (warningtext, warning, argptr);
-	va_end (argptr);
-
-	Printf (PRINT_WARNING, "\n%s\n", warningtext);
 }
 
 char DoomStartupTitle[256] = { 0 };
@@ -804,19 +784,19 @@ std::string I_GetClipboardText()
 #endif	// OSX < 1050
 
 #ifdef SDL20
-    char* textp = SDL_GetClipboardText();
+	char* textp = SDL_GetClipboardText();
+	auto textpExit = nonstd::make_scope_exit([&]() { SDL_free(textp); });
 
-    if(NULL == textp)
-    {
-        Printf(PRINT_HIGH, "SDL_GetClipboardText error: %s", SDL_GetError());
-        return "";
-    }
+	if (NULL == textp)
+	{
+		Printf(PRINT_HIGH, "SDL_GetClipboardText error: %s", SDL_GetError());
+		return "";
+	}
 
-    std::string clipText(textp);
-    SDL_free(textp);
+	std::string clipText(textp);
 
 	return clipText;
-#endif  // SDL20
+#endif // SDL20
 
 	return "";
 }

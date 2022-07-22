@@ -121,7 +121,7 @@ CVAR_FUNC_IMPL (snd_channels)
 
 
 // whether songs are mus_paused
-static BOOL mus_paused;
+static bool mus_paused;
 
 // music currently being played
 static struct mus_playing_t
@@ -264,7 +264,7 @@ void S_Init(float sfxVolume, float musicVolume)
 	I_SetChannels(numChannels);
 
 	// no sounds are playing, and they are not mus_paused
-	mus_paused = 0;
+	mus_paused = false;
 }
 
 /**
@@ -302,7 +302,7 @@ void S_Start()
 		S_StopChannel(i);
 
 	// start new music for the level
-	mus_paused = 0;
+	mus_paused = false;
 
 	// [RH] This is a lot simpler now.
 	S_ChangeMusic (std::string(level.music.c_str(), 8), true);
@@ -755,7 +755,9 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 	if (!consoleplayer().mo && channel != CHAN_INTERFACE)
 		return;
 
-	if (name == NULL || strlen(name) == 0 ||
+	const std::string soundname = name ? name : "";
+
+	if (soundname.empty() ||
 			(ent && ent != (AActor *)(~0) && ent->subsector && ent->subsector->sector &&
 			ent->subsector->sector->MoreFlags & SECF_SILENT))
 	{
@@ -764,7 +766,7 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 
 	int sfx_id = -1;
 
-	if (*name == '*')
+	if (soundname[0] == '*')
 	{
 		// Sexed sound
 		char nametemp[128];
@@ -777,25 +779,28 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 		sfx_id = -1;
 		if (ent && ent != (AActor *)(~0) && (player = ent->player))
 		{
-			sprintf(nametemp, templat, "base", name + 1);
+			sprintf(nametemp, templat, "base", soundname.substr(1).c_str());
 			sfx_id = S_FindSound(nametemp);
 			if (sfx_id == -1)
 			{
-				sprintf(nametemp, templat, genders[player->userinfo.gender], name + 1);
+				sprintf(nametemp, templat, genders[player->userinfo.gender], soundname.substr(1).c_str());
 				sfx_id = S_FindSound(nametemp);
 			}
 		}
 		if (sfx_id == -1)
 		{
-			sprintf(nametemp, templat, "male", name + 1);
+			sprintf(nametemp, templat, "male", soundname.substr(1).c_str());
 			sfx_id = S_FindSound(nametemp);
 		}
 	}
 	else
-		sfx_id = S_FindSound(name);
+		sfx_id = S_FindSound(soundname.c_str());
 
 	if (sfx_id == -1)
-		DPrintf ("Unknown sound %s\n", name);
+	{
+		DPrintf("Unknown sound %s\n", soundname.c_str());
+		return;
+	}
 
 	if (ent && ent != (AActor *)(~0))
 		S_StartSound(&ent->x, x, y, channel, sfx_id, volume, attenuation, looping);
@@ -1109,7 +1114,7 @@ void S_ChangeMusic(std::string musicname, int looping)
 
 		data = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_CACHE));
 		length = W_LumpLength(lumpnum);
-		I_PlaySong(data, length, (looping != 0));
+		I_PlaySong({data, length}, (looping != 0));
     }
     else
 	{
@@ -1119,7 +1124,9 @@ void S_ChangeMusic(std::string musicname, int looping)
 		fclose(f);
 
 		if (result == 1)
-			I_PlaySong(data, length, (looping != 0));
+		{
+			I_PlaySong({data, length}, (looping != 0));
+		}
 		M_Free(data);
 	}
 

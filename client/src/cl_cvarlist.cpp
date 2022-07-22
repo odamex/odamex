@@ -175,11 +175,13 @@ CVAR(					am_ovteleportcolor, "ff a3 00", "",
 CVAR(				print_stdout, "0", "Print console text to stdout",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(			con_notifytime, "3", "Number of seconds to display messages to top of the HUD",
-					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
+CVAR_RANGE(con_notifytime, "3.0",
+           "Number of seconds to display messages to top of the HUD", CVARTYPE_FLOAT,
+           CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
 
-CVAR_RANGE(			con_midtime, "3", "Number of seconds to display messages in the middle of the screen",
-					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
+CVAR_RANGE(con_midtime, "3.0",
+           "Number of seconds to display messages in the middle of the screen",
+           CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
 
 CVAR_RANGE(			con_scrlock, "1", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
@@ -556,8 +558,12 @@ CVAR(hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.", CVARTYPE_B
      CVAR_CLIENTARCHIVE)
 CVAR(hud_demoprotos, "0", "Debug protocol messages while demo is paused.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
+CVAR_RANGE(hud_feedtime, "3.0", "How long entries show in the event feed, in seconds.",
+           CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0, 10.0)
 CVAR(hud_feedobits, "1", "Show obituaries in the event feed.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
+
+CVAR(hud_hordeinfo_debug, "0", "Show debugging information for horde.", CVARTYPE_BOOL, CVAR_NULL)
 
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                       // A
