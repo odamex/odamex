@@ -888,6 +888,9 @@ static void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 	if (mo && mo->player && mo->player->id == ::displayplayer_id)
 		::displayplayer_id = ::consoleplayer_id;
 
+	if (mo && mo->flags & MF_COUNTITEM)
+		level.found_items++;
+
 	P_ClearId(netid);
 }
 
