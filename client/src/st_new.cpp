@@ -126,6 +126,7 @@ EXTERN_CVAR(hud_feedobits)
 EXTERN_CVAR(g_horde_waves)
 EXTERN_CVAR(g_roundlimit)
 EXTERN_CVAR(hud_hordeinfo_debug)
+EXTERN_CVAR(g_preroundreset)
 
 void ST_unloadNew()
 {
@@ -1276,8 +1277,16 @@ void LevelStateHUD()
 	}
 	case LevelState::PREROUND_COUNTDOWN: {
 		StrFormat(lines.title, "Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
-		StrFormat(lines.subtitle[0], "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
-		          ::levelstate.getCountdown());
+		if (g_preroundreset)
+		{
+			StrFormat(lines.subtitle[0], "Round begins in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
+		}
+		else
+		{
+			StrFormat(lines.subtitle[0], "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
+		}
 		break;
 	}
 	case LevelState::INGAME: {
