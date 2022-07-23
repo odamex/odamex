@@ -416,7 +416,7 @@ std::string PersonalSpread()
 	{
 		// Seek the highest number of rounds or frags.
 		PlayerQuery pq = PlayerQuery().filterSortMax();
-		if (g_rounds)
+		if (g_rounds && !G_IsMatchDuelGame())
 			pq.sortWins();
 		else
 			pq.sortFrags();
@@ -435,9 +435,13 @@ std::string PersonalSpread()
 		}
 
 		// The interesting thing changes based on rounds.
-		int top_number = g_rounds ? max_players.players.at(0)->roundwins
-		                          : max_players.players.at(0)->fragcount;
-		int plyr_number = g_rounds ? plyr.roundwins : plyr.fragcount;
+
+		int top_number = g_rounds && !G_IsMatchDuelGame()
+		                     ? max_players.players.at(0)->roundwins
+		                     : max_players.players.at(0)->fragcount;
+
+		int plyr_number =
+		    g_rounds && !G_IsMatchDuelGame() ? plyr.roundwins : plyr.fragcount;
 
 		if (max_players.players.size() > 1 && top_number == plyr_number)
 		{
@@ -449,15 +453,16 @@ std::string PersonalSpread()
 		{
 			// Do a second query without a filter.
 			PlayerQuery pq = PlayerQuery().filterSortNotMax();
-			if (g_rounds)
+			if (g_rounds && !G_IsMatchDuelGame())
 				pq.sortWins();
 			else
 				pq.sortFrags();
 			PlayerResults other_players = pq.execute();
 
 			// The interesting thing changes based on rounds.
-			int next_number = g_rounds ? other_players.players.at(0)->roundwins
-			                           : other_players.players.at(0)->fragcount;
+			int next_number = g_rounds && !G_IsMatchDuelGame()
+			                      ? other_players.players.at(0)->roundwins
+			                      : other_players.players.at(0)->fragcount;
 
 			// Player is on top.
 			int diff = plyr_number - next_number;
@@ -580,7 +585,7 @@ std::string PersonalScore()
 	}
 	else if (G_IsFFAGame())
 	{
-		if (G_IsRoundsGame())
+		if (G_IsRoundsGame() && !G_IsMatchDuelGame())
 		{
 			if (g_winlimit)
 			{
@@ -604,6 +609,30 @@ std::string PersonalScore()
 				StrFormat(str, TEXTCOLOR_GREY "%d", plyr.fragcount);
 			}
 		}
+	}
+
+	return str;
+}
+
+/**
+ * @brief Return a string that contains the current player's round placement
+ * expressed in a short, colorized string.
+ *
+ * @return Colorized string to render to the HUD.
+ */
+std::string PersonalMatchDuelPlacement()
+{
+	std::string str;
+	const player_t& plyr = displayplayer();
+
+	if (g_winlimit)
+	{
+		StrFormat(str, TEXTCOLOR_GREY "%d/%d W", plyr.roundwins,
+				    g_winlimit.asInt());
+	}
+	else
+	{
+		StrFormat(str, TEXTCOLOR_GREY "%d W", plyr.roundwins);
 	}
 
 	return str;
