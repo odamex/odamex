@@ -1706,6 +1706,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	{
 		target->effects = 0;
 		target->translation = translationref_t();
+		target->oflags |= MFO_FULLBRIGHT;
 	}
 
 	// [RH] If the thing has a special, execute and remove it
