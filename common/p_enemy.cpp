@@ -2606,6 +2606,15 @@ void A_Fall (AActor *actor)
 
 	// So change this if corpse objects
 	// are meant to be obstacles.
+
+	// Remove any sort of boss effect on kill
+	// OFlags hack because of client issues
+	if (actor->oflags)
+	{
+		actor->effects = 0;
+		actor->translation = translationref_t();
+		actor->oflags &= ~MFO_FULLBRIGHT;
+	}
 }
 
 
