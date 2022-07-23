@@ -553,8 +553,9 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	// Light up the projectile if it came from a horde boss
 	// This is a hack because oflags are a hack.
-	if (mo->target && mo->target->oflags)
+	if (mo->flags & MF_MISSILE && mo->target && mo->target->oflags)
 	{
+		mo->oflags |= MFO_FULLBRIGHT;
 		mo->effects = FX_YELLOWFOUNTAIN;
 		mo->translation = translationref_t(&::bosstable[0]);
 	}
