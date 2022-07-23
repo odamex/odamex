@@ -2325,6 +2325,13 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
     th->target = source->ptr();	// where it came from
     an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
 
+	// Horde boss? Make their projectiles look bossy
+	if (source->oflags & MFO_BOSSPOOL)
+	{
+		th->effects = FX_YELLOWFOUNTAIN;
+		th->translation = translationref_t(&bosstable[0]);
+	}
+
     // fuzzy player
     if (dest_flags & MF_SHADOW)
 		an += P_RandomDiff()<<20;
