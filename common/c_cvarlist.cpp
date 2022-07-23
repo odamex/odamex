@@ -383,6 +383,10 @@ CVAR_RANGE_FUNC_DECL(sv_splashfactor, "1.0", "Rocket explosion thrust effect?",
 CVAR(               cl_waddownloaddir, "", "Set custom WAD download directory",
 					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR				(r_softinvulneffect, "1",
+					"Change invuln to enable light googles and invert the pallete on the weapon sprite only.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 // Misc stuff
 // ----------
 

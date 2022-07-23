@@ -65,6 +65,7 @@ int*			spritelights;
 #define SPRITE_NEEDS_INFO	MAXINT
 
 EXTERN_CVAR (r_drawplayersprites)
+EXTERN_CVAR (r_softinvulneffect)
 EXTERN_CVAR (r_particles)
 
 //
@@ -776,6 +777,13 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	{
 		// shadow draw
 		vis->mobjflags = MF_SHADOW;
+	}
+
+	if (camera->player && (camera->player->powers[pw_invulnerability] > 4 * 32 ||
+	                       camera->player->powers[pw_invulnerability] & 8))
+	{
+		// draw invuln palette on vissprite only
+		vis->colormap = basecolormap.with(INVERSECOLORMAP);
 	}
 
 	// Don't display the weapon sprite if using spectating without spynext
