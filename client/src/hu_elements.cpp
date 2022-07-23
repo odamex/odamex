@@ -104,6 +104,11 @@ static bool cmpRoundWins(const player_t* arg1, const player_t* arg2)
 	return arg2->roundwins < arg1->roundwins;
 }
 
+static bool cmpLives(const player_t* arg1, const player_t* arg2)
+{
+	return arg2->lives < arg1->lives;
+}
+
 static bool cmpQueue(const player_t* arg1, const player_t* arg2)
 {
 	return arg1->QueuePosition < arg2->QueuePosition;
@@ -171,10 +176,23 @@ const PlayersView& sortedPlayers()
 	{
 		std::sort(inGame.begin(), inGame.end(), cmpDamage);
 	}
-	else if (sv_gametype == GM_DM && G_IsRoundsGame())
+	else if (sv_gametype == GM_DM)
 	{
-		std::sort(inGame.begin(), inGame.end(), cmpFrags);
-		std::sort(inGame.begin(), inGame.end(), cmpRoundWins);
+		if (G_IsLivesGame())
+		{
+			if (G_IsRoundsGame())
+			{
+				std::sort(inGame.begin(), inGame.end(), cmpRoundWins);
+			}
+			else
+			{
+				std::sort(inGame.begin(), inGame.end(), cmpLives);
+			}
+		}
+		else
+		{
+			std::sort(inGame.begin(), inGame.end(), cmpFrags);
+		}
 	}
 	else
 	{
