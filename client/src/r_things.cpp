@@ -779,11 +779,14 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 		vis->mobjflags = MF_SHADOW;
 	}
 
-	if (camera->player && (camera->player->powers[pw_invulnerability] > 4 * 32 ||
-	                       camera->player->powers[pw_invulnerability] & 8))
+	if (r_softinvulneffect)
 	{
-		// draw invuln palette on vissprite only
-		vis->colormap = basecolormap.with(INVERSECOLORMAP);
+		if (camera->player && (camera->player->powers[pw_invulnerability] > 4 * 32 ||
+		                       camera->player->powers[pw_invulnerability] & 8))
+		{
+			// draw invuln palette on vissprite only
+			vis->colormap = basecolormap.with(INVERSECOLORMAP);
+		}
 	}
 
 	// Don't display the weapon sprite if using spectating without spynext
