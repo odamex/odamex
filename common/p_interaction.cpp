@@ -1700,6 +1700,14 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	target->flags |= MF_CORPSE|MF_DROPOFF;
 	target->height >>= 2;
 
+	// Remove any sort of boss effect on kill
+	// OFlags hack because of client issues
+	if (target->oflags)
+	{
+		target->effects = 0;
+		target->translation = translationref_t();
+	}
+
 	// [RH] If the thing has a special, execute and remove it
 	//		Note that the thing that killed it is considered
 	//		the activator of the script.
