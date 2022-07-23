@@ -49,6 +49,7 @@ EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_novileghosts)
 EXTERN_CVAR(co_zdoomsound)
+EXTERN_CVAR(co_removesoullimit)
 
 enum dirtype_t
 {
@@ -2476,7 +2477,7 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 
 	// if there are already 20 skulls on the level,
 	// don't spit another one
-	if (count > 20)
+	if (count > 20 && !co_removesoullimit)
 		return;
 
 	// okay, there's room for another one
