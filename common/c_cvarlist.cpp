@@ -239,6 +239,9 @@ CVAR(g_winnerstays, "0", "After a match winners stay in the game, losers get spe
 CVAR(g_preroundtime, "5", "Amount of time before a round where you can't shoot",
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(g_preroundreset, "0", "After preround is over, reset the map one last time.",
+     CVARTYPE_INT, CVAR_SERVERARCHIVE)
+
 CVAR(g_postroundtime, "3", "Amount of time after a round before the next round/endgame",
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
