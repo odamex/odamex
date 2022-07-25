@@ -78,6 +78,9 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 	{
 		if (P_TestMobjLocation(mo))
 		{
+			// Don't respawn
+			mo->flags |= MF_DROPPED;
+
 			if (recipe.isBoss)
 			{
 				// Heavy is the head that wears the crown.
