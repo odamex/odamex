@@ -2609,11 +2609,10 @@ void A_Fall (AActor *actor)
 
 	// Remove any sort of boss effect on kill
 	// OFlags hack because of client issues
-	if (actor->oflags)
+	// Only remove the sparkling fountain, keep the transition
+	if (actor->type != MT_PLAYER && actor->oflags)
 	{
 		actor->effects = 0;
-		actor->translation = translationref_t();
-		actor->oflags &= ~MFO_FULLBRIGHT;
 	}
 }
 
