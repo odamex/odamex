@@ -2328,6 +2328,7 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 	// Horde boss? Make their projectiles look bossy
 	if (source->oflags & MFO_BOSSPOOL)
 	{
+		th->oflags |= MFO_FULLBRIGHT;
 		th->effects = FX_YELLOWFOUNTAIN;
 		th->translation = translationref_t(&bosstable[0]);
 	}
