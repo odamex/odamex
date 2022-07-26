@@ -2608,6 +2608,14 @@ void A_Fall (AActor *actor)
 
 	// So change this if corpse objects
 	// are meant to be obstacles.
+
+	// Remove any sort of boss effect on kill
+	// OFlags hack because of client issues
+	// Only remove the sparkling fountain, keep the transition
+	if (actor->type != MT_PLAYER && actor->oflags)
+	{
+		actor->effects = 0;
+	}
 }
 
 
