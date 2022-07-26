@@ -785,7 +785,9 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 		                       camera->player->powers[pw_invulnerability] & 8))
 		{
 			// draw invuln palette on vissprite only
-			vis->colormap = basecolormap.with(INVERSECOLORMAP);
+			// and don't include sector colored lighting because it creates strange colors.
+			const palette_t* pal = V_GetDefaultPalette();
+			vis->colormap = shaderef_t(&pal->maps, INVERSECOLORMAP);
 		}
 	}
 
