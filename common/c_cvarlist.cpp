@@ -333,6 +333,9 @@ CVAR_RANGE(sv_countdown, "5",
 
 	CVAR(			co_novileghosts, "0", "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+	
+	CVAR(			co_removesoullimit, "0", "Allows pain elementals to still spawn lost souls if more than 20 are present",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 
 
