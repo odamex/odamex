@@ -730,6 +730,7 @@ void ResetCustomColors (void);
 EXTERN_CVAR (am_rotate)
 EXTERN_CVAR (am_overlay)
 EXTERN_CVAR (am_showmonsters)
+EXTERN_CVAR (am_showitems)
 EXTERN_CVAR (am_showsecrets)
 EXTERN_CVAR (am_showtime)
 EXTERN_CVAR (am_classicmapstring)
@@ -1021,7 +1022,8 @@ static menuitem_t AutomapItems[] = {
 	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0},  {Overlays} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-    { discrete, "Show monster count",	{&am_showmonsters},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Show item count",		{&am_showitems},		{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Show monster count",	{&am_showmonsters},		{2.0}, {0.0},	{0.0},	{OnOff} },
     { discrete, "Show secrets count",	{&am_showsecrets},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
     { discrete, "Show map timer", 	    {&am_showtime}, 	   	{2.0}, {0.0},	{0.0},  {OnOff} },
     { discrete, "Map name style",       {&am_classicmapstring},	{2.0}, {0.0},	{0.0},  {ClassicMapStringTypes} },
