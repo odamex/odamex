@@ -2616,7 +2616,7 @@ void A_Fall (AActor *actor)
 	// Remove any sort of boss effect on kill
 	// OFlags hack because of client issues
 	// Only remove the sparkling fountain, keep the transition
-	if (actor->type != MT_PLAYER && actor->oflags)
+	if (actor->type != MT_PLAYER && (actor->oflags & hordeBossModMask))
 	{
 		actor->effects = 0;
 	}
