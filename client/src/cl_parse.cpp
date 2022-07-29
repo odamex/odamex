@@ -682,6 +682,10 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->flags |= MF_CORPSE | MF_DROPOFF;
 		mo->height >>= 2;
 		mo->flags &= ~MF_SOLID;
+		if (mo->oflags & hordeBossModMask)
+		{
+			mo->effects = 0; // Remove sparkles from boss corpses
+		}
 
 		if (mo->player)
 			mo->player->playerstate = PST_DEAD;
