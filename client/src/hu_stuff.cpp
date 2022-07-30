@@ -851,131 +851,152 @@ void drawHeader(player_t *player, int y)
 	}
 }
 
-// [AM] Draw scores for teamless gametypes.
-void drawScores(player_t *player, int y, byte extra_rows) {
-	std::string str;
+// Valid column types.
+enum scoreCol_e
+{
+	SCOL_NONE,
+	SCOL_DAMAGE,
+	SCOL_LIVES,
+	SCOL_DEATHS,
+	SCOL_WINS,
+	SCOL_FRAGS,
+	SCOL_KD,
+};
 
-	// Colum headers
-	hud::DrawText(-227, y, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_LEFT, hud::Y_TOP,
-	              "Name", CR_GREY, true);
-
+static void scoreCols(scoreCol_e* columns)
+{
+	// Column selection logic.
 	if (G_IsCoopGame())
 	{
 		if (G_IsLivesGame())
 		{
-			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "DAMAGE", CR_GREY, true);
-			hud::DrawText(140, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "LIVES", CR_GREY, true);
+			columns[1] = SCOL_DAMAGE;
+			columns[2] = SCOL_LIVES;
 		}
 		else
 		{
-			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "DAMAGE", CR_GREY, true);
-			hud::DrawText(140, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "DETHS", CR_GREY, true);
+			columns[1] = SCOL_DAMAGE;
+			columns[2] = SCOL_DEATHS;
 		}
 	}
 	else
 	{
 		if (G_IsLivesGame())
 		{
-			hud::DrawText(44, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "WINS", CR_GREY, true);
-			hud::DrawText(140, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "LIVES", CR_GREY, true);
-			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "FRAGS", CR_GREY, true);
+			if (G_IsRoundsGame())
+			{
+				columns[0] = SCOL_WINS;
+				columns[1] = SCOL_LIVES;
+				columns[2] = SCOL_FRAGS;
+			}
+			else
+			{
+				columns[1] = SCOL_LIVES;
+				columns[2] = SCOL_FRAGS;
+			}
+		}
+		else if (G_IsRoundsGame)
+		{
+			columns[0] = SCOL_FRAGS;
+			columns[1] = SCOL_DEATHS;
+			columns[2] = SCOL_WINS;
 		}
 		else
 		{
-			hud::DrawText(44, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "FRAGS", CR_GREY, true);
-			hud::DrawText(92, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			columns[0] = SCOL_FRAGS;
+			columns[1] = SCOL_DEATHS;
+			columns[2] = SCOL_KD;
+		}
+	}
+}
+
+// [AM] Draw scores for teamless gametypes.
+void drawScores(player_t* player, int y, byte extra_rows)
+{
+	std::string str;
+	scoreCol_e columns[3] = {SCOL_NONE, SCOL_NONE, SCOL_NONE};
+	int columnX[3] = {44, 92, 140};
+
+	// Run column selection logic.
+	scoreCols(columns);
+
+	// Draw columns first.
+	byte limit = extra_rows + 4;
+	for (size_t i = 0; i < ARRAY_LENGTH(columns); i++)
+	{
+		const int x = columnX[i];
+		switch (columns[i])
+		{
+		case SCOL_NONE:
+			break;
+		case SCOL_DAMAGE:
+			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "DAMAGE", CR_GREY, true);
+			hud::EAPlayerDamage(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			break;
+		case SCOL_LIVES:
+			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "LIVES", CR_GREY, true);
+			hud::EAPlayerLives(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			break;
+		case SCOL_DEATHS:
+			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "DETHS", CR_GREY, true);
-			hud::DrawText(140, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			hud::EAPlayerDeaths(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			break;
+		case SCOL_WINS:
+			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "WINS", CR_GREY, true);
+			hud::EAPlayerRoundWins(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                       hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit,
+			                       true);
+			break;
+		case SCOL_FRAGS:
+			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "FRAGS", CR_GREY, true);
+			hud::EAPlayerFrags(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			break;
+		case SCOL_KD:
+			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "K/D", CR_GREY, true);
+			hud::EAPlayerKD(x, y + 11, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			                hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			break;
 		}
 	}
 
-	hud::DrawText(188, y, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_RIGHT, hud::Y_TOP,
-	              "MINS", CR_GREY, true);
-	hud::DrawText(236, y, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_RIGHT, hud::Y_TOP,
-	              "PING", CR_GREY, true);
+	// Other column headers
+	hud::DrawText(-227, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_LEFT,
+	              hud::Y_TOP, "Name", CR_GREY, true);
+	hud::DrawText(188, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT,
+	              hud::Y_TOP, "MINS", CR_GREY, true);
+	hud::DrawText(236, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT,
+	              hud::Y_TOP, "PING", CR_GREY, true);
 
 	// Line
 	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
-	for (short xi = -236 + 1;xi < 236;xi += 2) {
+	for (short xi = -236 + 1; xi < 236; xi += 2)
+	{
 		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard, hud::X_CENTER,
 		                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP, pSBLine,
 		                         Ranges + CR_GREY * 256, true);
 	}
 
 	// Ingame Players
-	byte limit = extra_rows + 4;
-	hud::EAPlayerColors(-236, y + 11, 7, 7, hud_scalescoreboard,
-	                    hud::X_CENTER, hud::Y_MIDDLE,
-	                    hud::X_LEFT, hud::Y_TOP,
-	                    1, limit);
-	hud::EAPlayerNames(-227, y + 11, hud_scalescoreboard,
-	                   hud::X_CENTER, hud::Y_MIDDLE,
-	                   hud::X_LEFT, hud::Y_TOP,
-	                   1, limit, true);
+	hud::EAPlayerColors(-236, y + 11, 7, 7, hud_scalescoreboard, hud::X_CENTER,
+	                    hud::Y_MIDDLE, hud::X_LEFT, hud::Y_TOP, 1, limit);
+	hud::EAPlayerNames(-227, y + 11, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+	                   hud::X_LEFT, hud::Y_TOP, 1, limit, true);
 
-	if (G_IsCoopGame())
-	{
-		if (G_IsLivesGame())
-		{
-			hud::EAPlayerDamage(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-			hud::EAPlayerLives(140, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-		}
-		else
-		{
-			hud::EAPlayerDamage(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-			hud::EAPlayerDeaths(140, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-		}
-	}
-	else
-	{
-		if (G_IsLivesGame())
-		{
-			hud::EAPlayerRoundWins(44, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                       hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit,
-			                       true);
-			hud::EAPlayerLives(140, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-			hud::EAPlayerFrags(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-		}
-		else
-		{
-			hud::EAPlayerFrags(44, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-			hud::EAPlayerDeaths(92, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-			hud::EAPlayerKD(140, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-		}
-	}
-
-	hud::EAPlayerTimes(188, y + 11, hud_scalescoreboard,
-	                   hud::X_CENTER, hud::Y_MIDDLE,
-	                   hud::X_RIGHT, hud::Y_TOP,
-	                   1, limit, true);
-	hud::EAPlayerPings(236, y + 11, hud_scalescoreboard,
-	                   hud::X_CENTER, hud::Y_MIDDLE,
-	                   hud::X_RIGHT, hud::Y_TOP,
-	                   1, limit, true);
+	// Other column data
+	hud::EAPlayerTimes(188, y + 11, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+	                   hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+	hud::EAPlayerPings(236, y + 11, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+	                   hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 }
 
 // [AM] Draw scores for team gametypes.
@@ -1376,126 +1397,94 @@ void drawLowHeader(player_t *player, int y) {
 }
 
 // [AM] Draw low-resolution teamless gametype scores.
-void drawLowScores(player_t *player, int y, byte extra_rows) {
+void drawLowScores(player_t* player, int y, byte extra_rows)
+{
 	std::string str;
 
-	// Colum headers
-	hud::DrawText(-137, y, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_LEFT, hud::Y_TOP,
-	              "Name", CR_GREY, true);
-	if (G_IsCoopGame())
+	// Valid column types.
+	scoreCol_e columns[3] = {SCOL_NONE, SCOL_NONE, SCOL_NONE};
+	const int columnX[3] = {22, 50, 90};
+
+	// Run column selection logic.
+	scoreCols(columns);
+
+	// Draw columns first.
+	byte limit = extra_rows + 4;
+	for (size_t i = 0; i < ARRAY_LENGTH(columns); i++)
 	{
-		if (G_IsLivesGame())
+		const int x = columnX[i];
+		switch (columns[i])
 		{
-			hud::DrawText(62, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "KIL", CR_GREY, true);
-			hud::DrawText(90, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+		case SCOL_NONE:
+			break;
+		case SCOL_DAMAGE:
+			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "DMG", CR_GREY, true);
+			hud::EAPlayerDamage(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			break;
+		case SCOL_LIVES:
+			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "LIV", CR_GREY, true);
-		}
-		else
-		{
-			hud::DrawText(62, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "KIL", CR_GREY, true);
-			hud::DrawText(90, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			hud::EAPlayerLives(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			break;
+		case SCOL_DEATHS:
+			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "DTH", CR_GREY, true);
-		}
-	}
-	else
-	{
-		if (G_IsLivesGame())
-		{
-			hud::DrawText(22, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			hud::EAPlayerDeaths(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			break;
+		case SCOL_WINS:
+			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "WIN", CR_GREY, true);
-			hud::DrawText(50, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "LIV", CR_GREY, true);
-			hud::DrawText(90, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			hud::EAPlayerRoundWins(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                       hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit,
+			                       true);
+			break;
+		case SCOL_FRAGS:
+			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "FRG", CR_GREY, true);
-		}
-		else
-		{
-			hud::DrawText(22, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "FRG", CR_GREY, true);
-			hud::DrawText(50, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "DTH", CR_GREY, true);
-			hud::DrawText(90, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			hud::EAPlayerFrags(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			break;
+		case SCOL_KD:
+			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			              hud::X_RIGHT, hud::Y_TOP, "K/D", CR_GREY, true);
+			hud::EAPlayerKD(x, y + 11, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			                hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+			break;
 		}
 	}
-	hud::DrawText(118, y, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_RIGHT, hud::Y_TOP,
-	              "MIN", CR_GREY, true);
-	hud::DrawText(146, y, hud_scalescoreboard,
-	              hud::X_CENTER, hud::Y_MIDDLE,
-	              hud::X_RIGHT, hud::Y_TOP,
-	              "PNG", CR_GREY, true);
+
+	// Other column headers
+	hud::DrawText(-137, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_LEFT,
+	              hud::Y_TOP, "Name", CR_GREY, true);
+	hud::DrawText(118, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT,
+	              hud::Y_TOP, "MIN", CR_GREY, true);
+	hud::DrawText(146, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT,
+	              hud::Y_TOP, "PNG", CR_GREY, true);
 
 	// Line
 	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
-	for (short xi = -146 + 1;xi < 146;xi += 2) {
+	for (short xi = -146 + 1; xi < 146; xi += 2)
+	{
 		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard, hud::X_CENTER,
 		                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP, pSBLine,
 		                         Ranges + CR_GREY * 256, true);
 	}
 
 	// Ingame Players
-	byte limit = extra_rows + 4;
-	hud::EAPlayerColors(-146, y + 11, 7, 7, hud_scalescoreboard,
-	                    hud::X_CENTER, hud::Y_MIDDLE,
-	                    hud::X_LEFT, hud::Y_TOP,
-	                    1, limit);
-	hud::EAPlayerNames(-137, y + 11, hud_scalescoreboard,
-	                   hud::X_CENTER, hud::Y_MIDDLE,
-	                   hud::X_LEFT, hud::Y_TOP,
-	                   1, limit, true);
-	if (G_IsCoopGame())
-	{
-		if (G_IsLivesGame())
-		{
-			hud::EAPlayerDamage(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-			hud::EAPlayerLives(90, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-		}
-		else
-		{
-			hud::EAPlayerDamage(62, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-			hud::EAPlayerDeaths(90, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-		}
-	}
-	else
-	{
-		if (G_IsLivesGame())
-		{
-			hud::EAPlayerRoundWins(22, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                       hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit,
-			                       true);
-			hud::EAPlayerLives(50, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-			hud::EAPlayerFrags(90, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-		}
-		else
-		{
-			hud::EAPlayerFrags(22, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-			hud::EAPlayerDeaths(50, y + 11, hud_scalescoreboard, hud::X_CENTER,
-			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-			hud::EAPlayerKD(90, y + 11, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			                hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-		}
-	}
-	hud::EAPlayerTimes(118, y + 11, hud_scalescoreboard,
-	                   hud::X_CENTER, hud::Y_MIDDLE,
-	                   hud::X_RIGHT, hud::Y_TOP,
-	                   1, limit, true);
-	hud::EAPlayerPings(146, y + 11, hud_scalescoreboard,
-	                   hud::X_CENTER, hud::Y_MIDDLE,
-	                   hud::X_RIGHT, hud::Y_TOP,
-	                   1, limit, true);
+	hud::EAPlayerColors(-146, y + 11, 7, 7, hud_scalescoreboard, hud::X_CENTER,
+	                    hud::Y_MIDDLE, hud::X_LEFT, hud::Y_TOP, 1, limit);
+	hud::EAPlayerNames(-137, y + 11, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+	                   hud::X_LEFT, hud::Y_TOP, 1, limit, true);
+
+	// Other column data
+	hud::EAPlayerTimes(118, y + 11, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+	                   hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
+	hud::EAPlayerPings(146, y + 11, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+	                   hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 }
 
 // [AM] Draw low-resolution team gametype scores.
