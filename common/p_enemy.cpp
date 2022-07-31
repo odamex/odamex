@@ -49,6 +49,7 @@ EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_novileghosts)
 EXTERN_CVAR(co_zdoomsound)
+EXTERN_CVAR(co_removesoullimit)
 
 enum dirtype_t
 {
@@ -999,7 +1000,8 @@ void A_Chase (AActor *actor)
 		if (actor->info->attacksound)
 			S_Sound (actor, CHAN_WEAPON, actor->info->attacksound, 1, ATTN_NORM);
 
-		P_SetMobjState (actor, actor->info->meleestate, true);
+		if (serverside)
+			P_SetMobjState (actor, actor->info->meleestate, true);
 		return;
 	}
 
@@ -1014,7 +1016,8 @@ void A_Chase (AActor *actor)
 		if (!P_CheckMissileRange (actor))
 			goto nomissile;
 
-		P_SetMobjState (actor, actor->info->missilestate, true);
+		if (serverside)
+			P_SetMobjState (actor, actor->info->missilestate, true);
 		actor->flags |= MF_JUSTATTACKED;
 		return;
 	}
@@ -2476,9 +2479,12 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 
 	// if there are already 20 skulls on the level,
 	// don't spit another one
-	if (count > 20)
+	// co_removesoullimit removes the standard limit
+	if (count > 20 && !co_removesoullimit)
 		return;
-
+	// multiplayer retains a hard limit of 128
+	if (multiplayer && count > 128)
+		return;
 	// okay, there's room for another one
 	an = angle >> ANGLETOFINESHIFT;
 
@@ -2606,6 +2612,14 @@ void A_Fall (AActor *actor)
 
 	// So change this if corpse objects
 	// are meant to be obstacles.
+
+	// Remove any sort of boss effect on kill
+	// OFlags hack because of client issues
+	// Only remove the sparkling fountain, keep the transition
+	if (actor->type != MT_PLAYER && (actor->oflags & hordeBossModMask))
+	{
+		actor->effects = 0;
+	}
 }
 
 
