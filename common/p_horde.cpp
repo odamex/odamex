@@ -50,6 +50,7 @@ EXTERN_CVAR(g_horde_spawnempty_min)
 EXTERN_CVAR(g_horde_spawnempty_max)
 EXTERN_CVAR(g_horde_spawnfull_min)
 EXTERN_CVAR(g_horde_spawnfull_max)
+EXTERN_CVAR(sv_nomonsters)
 
 void A_PainDie(AActor* actor);
 
@@ -258,6 +259,53 @@ class HordeState
 	 */
 	void nextWave()
 	{
+		// The server can have lives, and if that's the case we want
+		// to bring back dead players.
+		if (G_IsLivesGame())
+		{
+			// Give all ingame players an extra life for beating the wave.
+			PlayersView ingame = PlayerQuery().execute().players;
+			for (PlayersView::iterator it = ingame.begin(); it != ingame.end(); ++it)
+			{
+				// Dead players are reborn with a message.
+				if ((*it)->lives <= 0)
+				{
+					(*it)->playerstate = PST_REBORN;
+					SV_BroadcastPrintf("%s gets a new lease on life.\n",
+					                   (*it)->userinfo.netname.c_str());
+
+					// Send a res sound directly to this player.
+					S_PlayerSound(*it, NULL, CHAN_INTERFACE, "misc/plraise",
+					              ATTN_NONE);
+				}
+				// Give everyone an extra life.
+				if ((*it)->lives < g_lives)
+				{
+					(*it)->lives += 1;
+					#if defined(SERVER_APP)
+					SV_QueueReliable((*it)->client, SVC_PlayerInfo(**it));
+					SV_BroadcastReliable(SVC_PlayerMembers(**it, SVC_PM_LIVES),
+											BroadcastExceptPID((*it)->id));
+					#endif
+				}
+			}
+
+		#ifdef SERVER_APP
+			// Service the join queue and give all of the freshly-ingame
+			// players a single life to start with.
+			PlayersView queued = SpecQuery().onlyInQueue().execute();
+			SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
+			for (PlayersView::iterator it = queued.begin(); it != queued.end(); ++it)
+			{
+				(*it)->lives = 1;
+				SV_QueueReliable((*it)->client, SVC_PlayerInfo(**it));
+				SV_BroadcastReliable(SVC_PlayerMembers(**it, SVC_PM_LIVES),
+										BroadcastExceptPID((*it)->id));
+			}
+		#endif
+		}
+
+
 		if (::g_horde_waves && m_wave >= ::g_horde_waves)
 		{
 			// All monsters explode!  Woo!
@@ -560,53 +608,6 @@ void HordeState::tick()
 		}
 		if (!alive)
 		{
-			// The server can have lives, and if that's the case we want
-			// to bring back dead players.
-			if (G_IsLivesGame())
-			{
-				// Give all ingame players an extra life for beating the wave.
-				PlayersView ingame = PlayerQuery().execute().players;
-				for (PlayersView::iterator it = ingame.begin(); it != ingame.end(); ++it)
-				{
-					// Dead players are reborn with a message.
-					if ((*it)->lives <= 0)
-					{
-						(*it)->playerstate = PST_REBORN;
-						SV_BroadcastPrintf("%s gets a new lease on life.\n",
-						                   (*it)->userinfo.netname.c_str());
-
-						// Send a res sound directly to this player.
-						S_PlayerSound(*it, NULL, CHAN_INTERFACE, "misc/plraise",
-						              ATTN_NONE);
-					}
-
-					// Give everyone an extra life.
-					if ((*it)->lives < g_lives)
-					{
-						(*it)->lives += 1;
-#if defined(SERVER_APP)
-						SV_QueueReliable((*it)->client, SVC_PlayerInfo(**it));
-						SV_BroadcastReliable(SVC_PlayerMembers(**it, SVC_PM_LIVES),
-						                     BroadcastExceptPID((*it)->id));
-#endif
-					}
-				}
-
-#if defined(SERVER_APP)
-				// Service the join queue and give all of the freshly-ingame
-				// players a single life to start with.
-				PlayersView queued = SpecQuery().onlyInQueue().execute();
-				SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
-				for (PlayersView::iterator it = queued.begin(); it != queued.end(); ++it)
-				{
-					(*it)->lives = 1;
-					SV_QueueReliable((*it)->client, SVC_PlayerInfo(**it));
-					SV_BroadcastReliable(SVC_PlayerMembers(**it, SVC_PM_LIVES),
-					                     BroadcastExceptPID((*it)->id));
-				}
-#endif
-			}
-
 			// Start the next wave.
 			nextWave();
 			return;
@@ -626,6 +627,9 @@ void HordeState::tick()
 		switch (m_state)
 		{
 		case HS_PRESSURE: {
+			if (sv_nomonsters)
+				break;
+
 			// Pick a recipe for some monsters.
 			hordeRecipe_t recipe;
 			const bool ok = P_HordeSpawnRecipe(recipe, define, false);
@@ -655,6 +659,9 @@ void HordeState::tick()
 		case HS_RELAX:
 			break;
 		case HS_WANTBOSS: {
+			if (sv_nomonsters)
+				break;
+
 			// Do we already have bosses spawned?
 			if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
 				break;

@@ -341,6 +341,9 @@ struct lineresult_s
 	bool lineexecuted;
 };
 
+// Index of the special effects (INVUL inverse) map.
+#define INVERSECOLORMAP 32
+
 // The current state of the game: whether we are
 // playing, gazing at the intermission screen,
 // the game final animation, or a demo.

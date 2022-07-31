@@ -531,6 +531,8 @@ message ThinkerUpdate
 		sfixed32 scroll_x = 2;
 		sfixed32 scroll_y = 3;
 		int32 affectee = 4;
+		sint32 control = 5; // Default is -1.
+		uint32 accel = 6;
 	}
 
 	message FireFlicker
