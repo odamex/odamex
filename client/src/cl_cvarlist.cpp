@@ -45,6 +45,9 @@ CVAR(					am_showsecrets, "1", "",
 CVAR(					am_showmonsters, "1", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(					am_showitems, "1", "",
+						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(					am_showtime, "1", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 

@@ -366,12 +366,10 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 	}
 
 	// odamex flags - only monster flags for now
-	const uint32_t modMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK |
-	                         MFO_NORAISE | MFO_FULLBRIGHT;
-	if (mo->oflags & modMask)
+	if (mo->oflags & hordeBossModMask)
 	{
 		spawnFlags |= SVC_SM_OFLAGS;
-		cur->set_oflags(mo->oflags & modMask);
+		cur->set_oflags(mo->oflags & hordeBossModMask);
 	}
 
 	// animating corpses
@@ -1398,6 +1396,8 @@ odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker)
 		smsg->set_scroll_x(scroller->GetScrollX());
 		smsg->set_scroll_y(scroller->GetScrollY());
 		smsg->set_affectee(scroller->GetAffectee());
+		smsg->set_control(scroller->GetControl());
+		smsg->set_accel(scroller->GetAccel());
 	}
 	else if (thinker->IsA(RUNTIME_CLASS(DFireFlicker)))
 	{

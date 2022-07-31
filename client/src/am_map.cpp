@@ -64,6 +64,7 @@ EXTERN_CVAR(am_rotate)
 EXTERN_CVAR(am_overlay)
 EXTERN_CVAR(am_showsecrets)
 EXTERN_CVAR(am_showmonsters)
+EXTERN_CVAR(am_showitems)
 EXTERN_CVAR(am_showtime)
 EXTERN_CVAR(am_classicmapstring)
 EXTERN_CVAR(am_usecustomcolors)
@@ -1857,6 +1858,29 @@ void AM_Drawer()
 				{
 					x = 0;
 					y = OV_Y - (text_height * 2) + 1;
+				}
+
+				screen->DrawTextClean(CR_GREY, x, y, line);
+			}
+
+			if (am_showitems)
+			{
+				sprintf(line, TEXTCOLOR_RED "ITEMS:" TEXTCOLOR_NORMAL " %d / %d",
+				        level.found_items,
+				        level.total_items);
+
+				int x, y;
+				const int text_width = V_StringWidth(line) * CleanXfac;
+
+				if (AM_OverlayAutomapVisible())
+				{
+					x = surface_width - text_width;
+					y = OV_Y - (text_height * 5) + 1;
+				}
+				else
+				{
+					x = 0;
+					y = OV_Y - (text_height * 3) + 1;
 				}
 
 				screen->DrawTextClean(CR_GREY, x, y, line);
