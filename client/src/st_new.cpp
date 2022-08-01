@@ -912,11 +912,34 @@ void OdamexHUD() {
 	// number on the other side of the screen.
 	if (::hud_bigfont)
 		V_SetFont("BIGFONT");
+	
+	// Special 3 line formatting for match duel
+	int spreadheight, scoreheight, placeheight;
 
-	hud::DrawText(4, 24 + V_LineHeight() + 1, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
-	              hud::X_RIGHT, hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY);
-	hud::DrawText(4, 24, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	if (G_IsMatchDuelGame())
+	{
+		spreadheight = 24 + (V_LineHeight() * 2) + 2;
+		scoreheight = 24 + V_LineHeight() + 1;
+		placeheight = 24;
+	}
+	else
+	{
+		spreadheight = 24 + V_LineHeight() + 1;
+		scoreheight = 24;
+		placeheight = 0; // No place height drawn if not match duel
+	}
+
+	hud::DrawText(4, spreadheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	              hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY);
+	hud::DrawText(4, scoreheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
 	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_GREY);
+
+	if (G_IsMatchDuelGame())
+	{
+		hud::DrawText(4, placeheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+		              hud::X_RIGHT, hud::Y_BOTTOM,
+		              hud::PersonalMatchDuelPlacement().c_str(), CR_GREY);
+	}
 
 	if (::hud_bigfont)
 		V_SetFont("SMALLFONT");
