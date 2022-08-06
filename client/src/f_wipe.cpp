@@ -161,7 +161,7 @@ static void Wipe_DrawMelt()
 // on the Westside...
 
 // [RH] Fire Wipe
-static const int FIREWIDTH = 64, FIREHEIGHT = 64;
+static constexpr int FIREWIDTH = 64, FIREHEIGHT = 64;
 
 static byte *burnarray = NULL;
 static int density;
@@ -170,7 +170,7 @@ static int voop;
 
 static void Wipe_StartBurn()
 {
-	const size_t array_size = FIREWIDTH * (FIREHEIGHT + 5);
+	constexpr size_t array_size = FIREWIDTH * (FIREHEIGHT + 5);
 	burnarray = new byte[array_size];
 	memset(burnarray, 0, array_size);
 	density = 4;

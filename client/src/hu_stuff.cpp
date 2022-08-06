@@ -130,7 +130,7 @@ static void ShoveChatStr(std::string str, byte who);
 static std::string input_text;
 static chatmode_t chatmode;
 
-static const int DefaultTeamHeight = 56;
+static constexpr int DefaultTeamHeight = 56;
 
 chatmode_t HU_ChatMode()
 {
@@ -184,7 +184,7 @@ cvar_t *chat_macros[10] =
 	&chatmacro9
 };
 
-static const int HiResolutionWidth = 480;
+static constexpr int HiResolutionWidth = 480;
 
 //
 // HU_Init
@@ -359,7 +359,7 @@ static void HU_DrawCrosshair()
 
 	if (hud_crosshair && crosshair_lump)
 	{
-		static const byte crosshair_color = 0xB0;
+		static constexpr byte crosshair_color = 0xB0;
 		if (hud_crosshairhealth)
 		{
 			if (camera->health > 75)

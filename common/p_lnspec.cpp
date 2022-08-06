@@ -1396,18 +1396,18 @@ FUNC(LS_Line_SetBlocking)
 	if (arg0)
 	{
 		int i, s;
-		static const int flags[] = {ML_BLOCKING,
-		                            ML_BLOCKMONSTERS,
-		                            ML_BLOCKPLAYERS,
-		                            0, // block floaters (not supported)
-		                            0, // block projectiles (not supported)
-		                            ML_BLOCKEVERYTHING,
-		                            0, // railing (not supported)
-		                            0, // block use (not supported)
-		                            0, // block sight (not supported)
-		                            0, // block hitscan (not supported)
-		                            ML_SOUNDBLOCK,
-		                            -1};
+		static constexpr int flags[] = {ML_BLOCKING,
+		                                ML_BLOCKMONSTERS,
+		                                ML_BLOCKPLAYERS,
+		                                0, // block floaters (not supported)
+		                                0, // block projectiles (not supported)
+		                                ML_BLOCKEVERYTHING,
+		                                0, // railing (not supported)
+		                                0, // block use (not supported)
+		                                0, // block sight (not supported)
+		                                0, // block hitscan (not supported)
+		                                ML_SOUNDBLOCK,
+		                                -1};
 
 		int setflags = 0;
 		int clearflags = 0;

@@ -206,8 +206,8 @@ private:
 	typedef OHashTable<KT, VT, HF> HashTableType;
 
 	typedef unsigned int IndexType;
-	static const unsigned int MAX_CAPACITY	= 65536;
-	static const IndexType NOT_FOUND		= HashTableType::MAX_CAPACITY;
+	static constexpr unsigned int MAX_CAPACITY	= 65536;
+	static constexpr IndexType NOT_FOUND		= HashTableType::MAX_CAPACITY;
 
 	struct Bucket
 	{

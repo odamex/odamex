@@ -47,7 +47,7 @@ extern int	InactiveParticles;
 extern particle_t *Particles;
 extern TArray<WORD>     ParticlesInSubsec;
 
-const WORD NO_PARTICLE = 0xffff;
+constexpr WORD NO_PARTICLE = 0xffff;
 
 #ifdef _MSC_VER
 __inline particle_t *NewParticle()

@@ -51,8 +51,8 @@ void MouseGraph::append(int x, int y)
 
 void MouseGraph::draw(int type)
 {
-	int x = I_GetSurfaceWidth() - MAX_HISTORY_TICS - 10;
-	int y = 100;
+	const int x = I_GetSurfaceWidth() - MAX_HISTORY_TICS - 10;
+	const int y = 100;
 
 	screen->DrawText(CR_GREY, x, y, "Mouse X/Y");
 	if (type == TYPE_LINE)
@@ -63,13 +63,12 @@ void MouseGraph::draw(int type)
 
 void MouseGraph::drawPlot(int x1, int y1)
 {
-	int scaledx, scaledy, in;
 	int limit = 128;
 
-	int x2 = x1 + MAX_HISTORY_TICS;
-	int y2 = y1 + MAX_HISTORY_TICS;
-	int xc = ((x2 - x1) / 2) + x1;
-	int yc = ((y2 - y1) / 2) + y1;
+	const int x2 = x1 + MAX_HISTORY_TICS;
+	const int y2 = y1 + MAX_HISTORY_TICS;
+	const int xc = ((x2 - x1) / 2) + x1;
+	const int yc = ((y2 - y1) / 2) + y1;
 
 	// Draw the background
 	const argb_t bgcolor1(V_GetDefaultPalette()->basecolors[187]);
@@ -80,15 +79,15 @@ void MouseGraph::drawPlot(int x1, int y1)
 
 	for (int i = MAX_HISTORY_TICS - 1; i >= 0; i--)
 	{
-		in = (MAX_HISTORY_TICS + this->index - i) % MAX_HISTORY_TICS;
+		const int in = (MAX_HISTORY_TICS + this->index - i) % MAX_HISTORY_TICS;
 
 		if (abs(mousex[in]) > limit)
 			limit = abs(mousex[in]);
 		if (abs(mousey[in]) > limit)
 			limit = abs(mousey[in]);
 
-		scaledx = (mousex[in] * (MAX_HISTORY_TICS / 2)) / limit;
-		scaledy = (mousey[in] * (MAX_HISTORY_TICS / 2)) / limit;
+		const int scaledx = (mousex[in] * (MAX_HISTORY_TICS / 2)) / limit;
+		const int scaledy = (mousey[in] * (MAX_HISTORY_TICS / 2)) / limit;
 
 		argb_t color;
 		
@@ -103,13 +102,12 @@ void MouseGraph::drawPlot(int x1, int y1)
 
 void MouseGraph::drawLine(int x1, int y1)
 {
-	int scaledx, scaledy, in;
 	int limit = 128;
 
-	int x2 = x1 + MAX_HISTORY_TICS;
-	int y2 = y1 + MAX_HISTORY_TICS;
-	int xc = ((x2 - x1) / 2) + x1;
-	int yc = ((y2 - y1) / 2) + y1;
+	const int x2 = x1 + MAX_HISTORY_TICS;
+	const int y2 = y1 + MAX_HISTORY_TICS;
+	const int xc = ((x2 - x1) / 2) + x1;
+	const int yc = ((y2 - y1) / 2) + y1;
 
 	// Draw the background
 	const argb_t bgcolor1(V_GetDefaultPalette()->basecolors[187]);
@@ -123,15 +121,15 @@ void MouseGraph::drawLine(int x1, int y1)
 
 	for (int i = MAX_HISTORY_TICS - 1;i >= 0;i--)
 	{
-		in = (MAX_HISTORY_TICS + this->index - i) % MAX_HISTORY_TICS;
+		const int in = (MAX_HISTORY_TICS + this->index - i) % MAX_HISTORY_TICS;
 
 		if (abs(mousex[in]) > limit)
 			limit = abs(mousex[in]);
 		if (abs(mousey[in]) > limit)
 			limit = abs(mousey[in]);
 
-		scaledx = (mousex[in] * (MAX_HISTORY_TICS / 2)) / limit;
-		scaledy = (mousey[in] * (MAX_HISTORY_TICS / 2)) / limit;
+		const int scaledx = (mousex[in] * (MAX_HISTORY_TICS / 2)) / limit;
+		const int scaledy = (mousey[in] * (MAX_HISTORY_TICS / 2)) / limit;
 
 		screen->Clear(x1 + i - 1, yc - scaledy - 1, x1 + i, yc - scaledy, color1);
 		screen->Clear(xc + scaledx - 1, y2 - i - 1, xc + scaledx, y2 - i, color2);

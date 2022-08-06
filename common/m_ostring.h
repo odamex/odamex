@@ -469,8 +469,8 @@ public:
 	// member constants
 	// ------------------------------------------------------------------------
 
-	static const size_t npos = -1;
-	static const size_t MAX_STRINGS = 65536;
+	static constexpr size_t npos = -1;
+	static constexpr size_t MAX_STRINGS = 65536;
 
 
 private:
@@ -505,7 +505,7 @@ private:
 	static StringTable*			mStrings;
 	static StringLookupTable*	mStringLookup;
 	static std::string*			mEmptyString;
-	static const StringIdType	mEmptyStringId = 0;
+	static constexpr StringIdType	mEmptyStringId = 0;
 	
 
 	// ------------------------------------------------------------------------

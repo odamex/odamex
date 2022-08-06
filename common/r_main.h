@@ -227,10 +227,10 @@ extern argb_t translationRGB[MAXPLAYERS+1][16];
 
 inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte c) const
 {
-	const palindex_t range_start = 0x70;
-	const palindex_t range_stop = 0x7F;
+	constexpr palindex_t range_start = 0x70;
+	constexpr palindex_t range_stop = 0x7F;
 
-	int pid = translation.getPlayerID();
+	const int pid = translation.getPlayerID();
 
 	// Not a player color translation:
 	if (pid == -1)
@@ -256,7 +256,7 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 	}
 
 	// Find the shading for the custom player colors:
-	argb_t trancolor = translationRGB[pid][c - range_start];
+	const argb_t trancolor = translationRGB[pid][c - range_start];
 
 	unsigned int r = (trancolor.getr() * lightcolor.getr() * (NUMCOLORMAPS - m_mapnum) / 255
 					+ fadecolor.getr() * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;

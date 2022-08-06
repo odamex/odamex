@@ -202,7 +202,7 @@ enum
 
 #define TRANSLATION(a,b)	(((a)<<8)|(b))
 
-const int MAX_ACS_TRANSLATIONS = 32;
+constexpr int MAX_ACS_TRANSLATIONS = 32;
 
 
 // Initialize color translation tables,

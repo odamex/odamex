@@ -30,7 +30,7 @@
 #include "p_local.h"
 #include "p_mapformat.h"
 
-static const xlat_t SpecialTranslation[] = {
+static constexpr xlat_t SpecialTranslation[] = {
 /*   0 */ { 0 },
 /*   1 */ { USE|MONST|REP,	Door_Raise,					 { 0, D_SLOW, VDOORWAIT } },
 /*   2 */ { WALK,			Door_Open,					 { TAG, D_SLOW } },

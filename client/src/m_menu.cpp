@@ -180,8 +180,8 @@ static void M_ChangeAutoAim (int choice);
 bool M_DemoNoPlay;
 
 static IWindowSurface* fire_surface;
-static const int fire_surface_width = 72;
-static const int fire_surface_height = 77;
+static constexpr int fire_surface_width = 72;
+static constexpr int fire_surface_height = 77;
 
 //
 // DOOM MENU
@@ -929,7 +929,7 @@ void M_DrawNewGame()
 	screen->DrawPatchClean((patch_t*)W_CachePatch("M_NEWG"), 96, 14);
 	screen->DrawPatchClean((patch_t*)W_CachePatch("M_SKILL"), 54, 38);
 
-	const int SMALLFONT_OFFSET = 8; // Line up with the skull
+	constexpr int SMALLFONT_OFFSET = 8; // Line up with the skull
 
 	const char* pslabel = "Pistol Start Each Level ";
 	const int psy = NewDef.y + (LINEHEIGHT * skillnum) + SMALLFONT_OFFSET;
@@ -1573,7 +1573,7 @@ static void M_ChangeGender (int choice)
 
 static void M_ChangeAutoAim (int choice)
 {
-	static const float ranges[] = { 0, 0.25, 0.5, 1, 2, 3, 5000 };
+	static constexpr float ranges[] = { 0, 0.25, 0.5, 1, 2, 3, 5000 };
 	float aim = cl_autoaim;
 
 	if (!choice) {

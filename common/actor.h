@@ -147,11 +147,11 @@ public:
 	}
 	
 private:
-	static const int bytesize = 8*sizeof(byte);
-	static const int bytemask = bytesize - 1;
+	static constexpr int bytesize = 8 * sizeof(byte);
+	static constexpr int bytemask = bytesize - 1;
 	
 	// Hacky way of getting ceil() at compile-time
-	static const size_t fieldsize = (MAXPLAYERS + bytemask) / bytesize;
+	static constexpr size_t fieldsize = (MAXPLAYERS + bytemask) / bytesize;
 	
 	byte	bitfield[fieldsize];
 };
@@ -310,18 +310,18 @@ struct baseline_t
 	byte rndindex;
 
 	// Flags are a varint, so order from most to least likely.
-	static const uint32_t POSX = BIT(0);
-	static const uint32_t POSY = BIT(1);
-	static const uint32_t POSZ = BIT(2);
-	static const uint32_t ANGLE = BIT(3);
-	static const uint32_t MOVEDIR = BIT(4);
-	static const uint32_t MOVECOUNT = BIT(5);
-	static const uint32_t RNDINDEX = BIT(6);
-	static const uint32_t TARGET = BIT(7);
-	static const uint32_t TRACER = BIT(8);
-	static const uint32_t MOMX = BIT(9);
-	static const uint32_t MOMY = BIT(10);
-	static const uint32_t MOMZ = BIT(11);
+	static constexpr uint32_t POSX = BIT(0);
+	static constexpr uint32_t POSY = BIT(1);
+	static constexpr uint32_t POSZ = BIT(2);
+	static constexpr uint32_t ANGLE = BIT(3);
+	static constexpr uint32_t MOVEDIR = BIT(4);
+	static constexpr uint32_t MOVECOUNT = BIT(5);
+	static constexpr uint32_t RNDINDEX = BIT(6);
+	static constexpr uint32_t TARGET = BIT(7);
+	static constexpr uint32_t TRACER = BIT(8);
+	static constexpr uint32_t MOMX = BIT(9);
+	static constexpr uint32_t MOMY = BIT(10);
+	static constexpr uint32_t MOMZ = BIT(11);
 
 	baseline_t()
 	    : angle(0), targetid(0), tracerid(0), movecount(0), movedir(0), rndindex(0)
@@ -545,8 +545,8 @@ public:
 	bool			baseline_set;	// Have we set our baseline yet?
 
 private:
-	static const size_t TIDHashSize = 256;
-	static const size_t TIDHashMask = TIDHashSize - 1;
+	static constexpr size_t TIDHashSize = 256;
+	static constexpr size_t TIDHashMask = TIDHashSize - 1;
 	static AActor *TIDHash[TIDHashSize];
 	static inline int TIDHASH (int key) { return key & TIDHashMask; }
 
@@ -580,8 +580,8 @@ public:
 		void clear();
 		size_t getIndex(int bmx, int bmy);
 		
-		static const size_t BLOCKSX = 3;
-		static const size_t BLOCKSY = 3;
+		static constexpr size_t BLOCKSX = 3;
+		static constexpr size_t BLOCKSY = 3;
 
 		AActor		*actor;
 			

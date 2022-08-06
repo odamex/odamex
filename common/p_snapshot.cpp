@@ -35,10 +35,10 @@
 
 #include "p_snapshot.h"
 
-static const int MAX_EXTRAPOLATION = 4;
+static constexpr int MAX_EXTRAPOLATION = 4;
 
-static const fixed_t POS_LERP_THRESHOLD = 2 * FRACUNIT;
-static const fixed_t SECTOR_LERP_THRESHOLD = 2 * FRACUNIT;
+static constexpr fixed_t POS_LERP_THRESHOLD = 2 * FRACUNIT;
+static constexpr fixed_t SECTOR_LERP_THRESHOLD = 2 * FRACUNIT;
 
 extern bool predicting;
 

@@ -55,7 +55,7 @@ struct ticcmd_t
 	}
   public:
 
-	static const size_t SERIALIZED_SIZE = 2 + sizeof(short) * 5;
+	static constexpr size_t SERIALIZED_SIZE = 2 + sizeof(short) * 5;
 
 	ticcmd_t()
 	{

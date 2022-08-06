@@ -704,7 +704,7 @@ void DPhased::Serialize (FArchive &arc)
 
 void DPhased::RunThink ()
 {
-	const int steps = 12;
+	constexpr int steps = 12;
 
 	if (m_Phase < steps)
 		m_Sector->lightlevel = ((255 - m_BaseLevel) * m_Phase) / steps + m_BaseLevel;

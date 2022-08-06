@@ -121,7 +121,7 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 	mPalette(V_GetDefaultPalette()->colors), mPixelFormat(*format),
 	mWidth(width), mHeight(height), mPitch(pitch), mLocks(0)
 {
-	const uintptr_t alignment = 16;
+	constexpr uintptr_t alignment = 16;
 
 	// Not given a pitch? Just base pitch on the given width
 	if (pitch == 0)

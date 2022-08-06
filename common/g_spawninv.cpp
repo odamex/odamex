@@ -72,7 +72,7 @@ struct spawnInventory_t
 
 // Berserk time that prevents showing any red.  If you want to show a teensy
 // bit of red, you're going to need to send the player's powers on map change.
-const int INV_BERSERK_TIME = 64 * 12;
+constexpr int INV_BERSERK_TIME = 64 * 12;
 
 /**
  * @brief Convert a string form of a boolean to an actual boolean.
