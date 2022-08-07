@@ -28,16 +28,16 @@
 void G_SecretExitLevel(int position, int drawscores);
 void P_DamageMobj(AActor* target, AActor* inflictor, AActor* source, int damage, int mod,
                   int flags);
-lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
+bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
                                           bool bossaction);
 const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved);
 void P_ApplyGeneralizedSectorDamage(player_t* player, int bits);
 void P_CollectSecretBoom(sector_t* sector, player_t* player);
 void P_PlayerInCompatibleSector(player_t* player);
 bool P_ActorInCompatibleSector(AActor* actor);
-lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
+bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
                                         bool bossaction);
-lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
+bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
 BOOL EV_DoGenDoor(line_t* line);
 BOOL EV_DoGenFloor(line_t* line);
 BOOL EV_DoGenCeiling(line_t* line);

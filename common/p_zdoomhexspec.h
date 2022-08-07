@@ -46,9 +46,9 @@ void P_AddSectorSecret(sector_t* sector);
 void P_SpawnLightFlash(sector_t* sector);
 void P_SpawnStrobeFlash(sector_t* sector, int utics, int ltics, bool inSync);
 void P_SpawnFireFlicker(sector_t* sector);
-lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
+bool P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
                                      bool bossaction);
-lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
+bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
                                  unsigned int activationType);
 void P_CollectSecretZDoom(sector_t* sector, player_t* player);
 bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,

@@ -335,12 +335,6 @@ enum GameMission_t
 // Texture scrollers operate at a rate of x/64 units per tic.
 #define SCROLL_UNIT 64
 
-struct lineresult_s
-{
-	bool switchchanged;
-	bool lineexecuted;
-};
-
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP 32
 
