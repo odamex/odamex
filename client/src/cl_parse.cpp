@@ -1941,7 +1941,12 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 		return;
 
 	sector_t* sector = &::sectors[sectornum];
-	sector->special = special;
+	sector->flags &= ~SECF_SECRET;
+	sector->secretsector = false;
+
+	if (!map_format.getZDoom())
+		if (sector->special < 32)
+			sector->special = 0;
 
 	// Don't show other secrets if requested
 	if (!::hud_revealsecrets || ::hud_revealsecrets > 2)
