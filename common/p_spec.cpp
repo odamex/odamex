@@ -2024,6 +2024,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 // P_UseSpecialLine
 // Called when a thing uses a special line.
 // Only the front sides of lines are usable.
+// Returns false if this isn't a door that can be opened
 //
 bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 {
@@ -2064,25 +2065,6 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
  	if (result)
 	{
 		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
-
-		if (serverside &&
-		    (map_format.getZDoom() && (!(line->flags & ML_SPAC_PUSH)) ||
-		     !map_format.getZDoom()) &&
-		    result)
-		{
-			bool repeat;
-
-			if (map_format.getZDoom())
-				repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
-			else
-				repeat = P_IsSpecialBoomRepeatable(line->special);
-
-			if (!bossaction)
-			{
-				P_ChangeSwitchTexture(line, repeat, true);
-				OnChangedSwitchTexture(line, repeat);
-			}
-		}
 
 		return true;
 	}

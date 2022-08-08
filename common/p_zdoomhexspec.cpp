@@ -78,7 +78,6 @@ bool P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
 bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
                                  unsigned int activationType)
 {
-	bool repeat;
 	bool buttonSuccess;
 
 	// Err...
@@ -104,6 +103,14 @@ bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 	}
 
 	buttonSuccess = P_ExecuteZDoomLineSpecial(line->special, line->args, line, side, mo);
+
+	bool repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
+
+	if (buttonSuccess)
+	{
+		P_ChangeSwitchTexture(line, repeat, true);
+		OnChangedSwitchTexture(line, repeat);
+	}
 
 	return buttonSuccess;
 }
