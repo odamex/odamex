@@ -106,7 +106,7 @@ bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 
 	bool repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
 
-	if (buttonSuccess)
+	if (buttonSuccess && serverside)
 	{
 		P_ChangeSwitchTexture(line, repeat, true);
 		OnChangedSwitchTexture(line, repeat);
