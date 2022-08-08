@@ -3699,14 +3699,12 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 			if (linefunc(line))
 			{
 				return true;
-				
 			}
 			return false;
 		case GunMany:
 			if (linefunc(line))
 			{
 				return true;
-				
 			}
 			return false;
 		default: // if not a gun type, do nothing here
@@ -3740,7 +3738,6 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		    demoplayback)
 		{
 			return true;
-			
 		}
 		break;
 
@@ -3748,8 +3745,6 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		// 46 GR open door, stay open
 		EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_SLOW), 0, NoKey);
 		return true;
-		
-		break;
 
 	case 47:
 		// 47 G1 raise floor to nearest and change texture and type
@@ -3758,7 +3753,6 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		    demoplayback)
 		{
 			return true;
-			
 		}
 		break;
 
