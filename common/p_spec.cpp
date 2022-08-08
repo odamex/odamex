@@ -1956,7 +1956,8 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 			if (!(thing->player &&
 			      (thing->player->spectator || thing->player->playerstate != PST_LIVE)))
 			{
-				// Not a real texture change, but propigate special change to the clients
+				// Not a real texture change, but propigate special change to the
+				// clients
 				P_ChangeSwitchTexture(line, repeat, false);
 				OnChangedSwitchTexture(line, repeat);
 			}
@@ -2064,7 +2065,15 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 
  	if (result)
 	{
+		// May need to move this higher as the special is gone in Boom by this point.
 		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
+
+		if (map_format.getZDoom())
+		{
+			bool repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
+			P_ChangeSwitchTexture(line, repeat, true);
+			OnChangedSwitchTexture(line, repeat);
+		}
 
 		return true;
 	}
