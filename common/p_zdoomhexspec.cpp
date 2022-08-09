@@ -78,7 +78,6 @@ bool P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
 bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
                                  unsigned int activationType)
 {
-	bool repeat;
 	bool buttonSuccess;
 
 	// Err...

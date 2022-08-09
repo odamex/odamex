@@ -2211,6 +2211,13 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 
 	P_DestroyButtonThinkers();
 
+	// Destroy scrollers
+	DScroller* scroller;
+	TThinkerIterator<DScroller> siterator;
+
+	while ((scroller = siterator.Next()))
+		scroller->Destroy();
+
 	// You don't get to keep cards.  This isn't communicated anywhere else.
 	if (sv_gametype == GM_COOP)
 		P_ClearPlayerCards(consoleplayer());
@@ -2534,7 +2541,7 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 		if (scrollType != DScroller::sc_side && affectee > ::numsectors)
 			break;
 		// remove null checks after 11 is released
-		if (!control || control < 0)
+		if (control < 0)
 			control = -1;
 		if (!accel || accel < 0)
 			accel = 0;

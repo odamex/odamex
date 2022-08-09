@@ -25,6 +25,7 @@
 
 #pragma once
 
+void OnChangedSwitchTexture(line_t* line, int useAgain);
 void G_SecretExitLevel(int position, int drawscores);
 void P_DamageMobj(AActor* target, AActor* inflictor, AActor* source, int damage, int mod,
                   int flags);
