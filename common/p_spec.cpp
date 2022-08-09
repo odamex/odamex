@@ -1956,7 +1956,8 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 			if (!(thing->player &&
 			      (thing->player->spectator || thing->player->playerstate != PST_LIVE)))
 			{
-				// Not a real texture change, but propigate special change to the clients
+				// Not a real texture change, but propigate special change to the
+				// clients
 				P_ChangeSwitchTexture(line, repeat, false);
 				OnChangedSwitchTexture(line, repeat);
 			}
@@ -2024,6 +2025,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 // P_UseSpecialLine
 // Called when a thing uses a special line.
 // Only the front sides of lines are usable.
+// Returns false if this isn't a door that can be opened
 //
 bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 {
@@ -2063,25 +2065,14 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 
  	if (result)
 	{
+		// May need to move this higher as the special is gone in Boom by this point.
 		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
 
-		if (serverside &&
-		    (map_format.getZDoom() && (!(line->flags & ML_SPAC_PUSH)) ||
-		     !map_format.getZDoom()) &&
-		    result)
+		if (map_format.getZDoom())
 		{
-			bool repeat;
-
-			if (map_format.getZDoom())
-				repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
-			else
-				repeat = P_IsSpecialBoomRepeatable(line->special);
-
-			if (!bossaction)
-			{
-				P_ChangeSwitchTexture(line, repeat, true);
-				OnChangedSwitchTexture(line, repeat);
-			}
+			bool repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
+			P_ChangeSwitchTexture(line, repeat, true);
+			OnChangedSwitchTexture(line, repeat);
 		}
 
 		return true;
