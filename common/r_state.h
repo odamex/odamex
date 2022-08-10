@@ -86,6 +86,8 @@ extern line_t*			lines;
 extern int				numsides;
 extern side_t*			sides;
 
+extern int*				originalLightLevels;
+
 inline FArchive &operator<< (FArchive &arc, sector_t *sec)
 {
 	if (sec)
