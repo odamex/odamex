@@ -97,7 +97,7 @@ line_t* 		lines;
 int 			numsides;
 side_t* 		sides;
 
-std::vector<int>originalLightLevels; // Needed for map resets
+std::vector<int>	originalLightLevels; // Needed for map resets
 
 // [RH] Set true if the map contains a BEHAVIOR lump
 bool			HasBehavior = false;
