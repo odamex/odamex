@@ -2194,6 +2194,8 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 	}
 
 	// destroy all moving sector effects and sounds
+	// Also restore original light levels
+	// so light glowing looks normal
 	for (int i = 0; i < numsectors; i++)
 	{
 		if (sectors[i].floordata)
@@ -2207,17 +2209,17 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 			S_StopSound(sectors[i].soundorg);
 			sectors[i].ceilingdata->Destroy();
 		}
+
+		// Restore the old light levels so lighting effects look good every time
+		sectors[i].lightlevel = ::originalLightLevels[i];
 	}
 
 	P_DestroyButtonThinkers();
 
-	// Destroy scrollers
-	DScroller* scroller;
-	TThinkerIterator<DScroller> siterator;
+	P_DestroyScrollerThinkers();
 
-	while ((scroller = siterator.Next()))
-		scroller->Destroy();
-
+	P_DestroyLightThinkers();
+	
 	// You don't get to keep cards.  This isn't communicated anywhere else.
 	if (sv_gametype == GM_COOP)
 		P_ClearPlayerCards(consoleplayer());
@@ -2541,7 +2543,8 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 		if (scrollType != DScroller::sc_side && affectee > ::numsectors)
 			break;
 		// remove null checks after 11 is released
-		if (control < 0)
+		// because right now, control sectors of 0 won't scroll
+		if (!control || control < 0)
 			control = -1;
 		if (!accel || accel < 0)
 			accel = 0;
