@@ -2342,6 +2342,68 @@ void P_ClearNonGeneralizedSectorSpecial(sector_t* sector)
 	sector->special &= map_format.getGeneralizedMask();
 }
 
+void P_DestroyScrollerThinkers()
+{
+	// Destroy scrollers
+	DScroller* scroller;
+	TThinkerIterator<DScroller> siterator;
+
+	while ((scroller = siterator.Next()))
+		scroller->Destroy();
+}
+
+void P_DestroyLightThinkers()
+{
+	// Destroy fireflicker
+	DFireFlicker* fireflicker;
+	TThinkerIterator<DFireFlicker> ffliterator;
+
+	while ((fireflicker = ffliterator.Next()))
+		fireflicker->Destroy();
+
+	// Destroy flicker
+	DFlicker* flicker;
+	TThinkerIterator<DFlicker> fliterator;
+
+	while ((flicker = fliterator.Next()))
+		flicker->Destroy();
+
+	// Destroy lightflash
+	DLightFlash* flash;
+	TThinkerIterator<DLightFlash> flashiterator;
+
+	while ((flash = flashiterator.Next()))
+		flash->Destroy();
+
+	// Destroy strobe
+	DStrobe* strobe;
+	TThinkerIterator<DStrobe> strobeiterator;
+
+	while ((strobe = strobeiterator.Next()))
+		strobe->Destroy();
+
+	// Destroy glow
+	DGlow* glow;
+	TThinkerIterator<DGlow> glowiterator;
+
+	while ((glow = glowiterator.Next()))
+		glow->Destroy();
+
+	// Destroy glow2
+	DGlow2* glow2;
+	TThinkerIterator<DGlow2> glow2iterator;
+
+	while ((glow2 = glow2iterator.Next()))
+		glow2->Destroy();
+
+	// Destroy phased
+	DPhased* phased;
+	TThinkerIterator<DPhased> phasediterator;
+
+	while ((phased = phasediterator.Next()))
+		phased->Destroy();
+}
+
 void P_SpawnPhasedLight(sector_t* sector, int base, int index)
 {
 	int i, b;
