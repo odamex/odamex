@@ -434,14 +434,6 @@ void AM_changeWindowLoc()
 	M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
 }
 
-// if (f_oldloc.x != p.camera->x || f_oldloc.y != p.camera->y)
-// 	{
-// 		M_SetVec2Fixed(&m_ll, FTOM(MTOF(p.camera->x)) - m_wh.x / 2,
-// 		                      FTOM(MTOF(p.camera->y)) - m_wh.y / 2);
-// 		M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
-// 		M_SetVec2Fixed(&f_oldloc, p.camera->x, p.camera->y);
-// 	}
-
 //
 //
 //
