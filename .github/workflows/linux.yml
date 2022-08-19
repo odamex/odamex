@@ -1,6 +1,10 @@
 name: Linux
 
-on: [push, pull_request]
+on: 
+  push:
+  pull_request:
+      branches-ignore:
+      - 'release/**'
 
 jobs:
   pre_job:
