@@ -42,14 +42,20 @@ jobs:
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: windows-latest
+    env:
+      old_version: ${{ needs.pre_job.outputs.old_version }}
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      old_year: 2006-${{ needs.pre_job.outputs.old_year }}
+      new_year: 2006-${{ needs.pre_job.outputs.new_year }}
     steps:
     - uses: actions/checkout@v2
+    - name: Echo vars
+      run: |
+        echo "old_version: $old_version";
+        echo "new_version: new_version";
+        echo "old_year: old_year";
+        echo "new_year: new_year";
     - name: Run upversion script
-      env:
-        old_version: ${{ needs.pre_job.outputs.old_version }}
-        new_version: ${{ needs.pre_job.outputs.new_version }}
-        old_year: 2006-${{ needs.pre_job.outputs.old_year }}
-        new_year: 2006-${{ needs.pre_job.outputs.new_year }}
       run: python .\tools\upversion\upversion.py
     - name: Checkout submodules
       run: git submodule update --init --recursive
@@ -84,14 +90,20 @@ jobs:
   build-and-package-x32:
     name: Build (Visual Studio, 32-bit)
     runs-on: windows-latest
+    env:
+      old_version: ${{ needs.pre_job.outputs.old_version }}
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      old_year: 2006-${{ needs.pre_job.outputs.old_year }}
+      new_year: 2006-${{ needs.pre_job.outputs.new_year }}
     steps:
     - uses: actions/checkout@v2
+    - name: Echo vars
+      run: |
+        echo "old_version: $old_version";
+        echo "new_version: new_version";
+        echo "old_year: old_year";
+        echo "new_year: new_year";
     - name: Run upversion script
-      env:
-        old_version: ${{ needs.pre_job.outputs.old_version }}
-        new_version: ${{ needs.pre_job.outputs.new_version }}
-        old_year: 2006-${{ needs.pre_job.outputs.old_year }}
-        new_year: 2006-${{ needs.pre_job.outputs.new_year }}
       run: python .\tools\upversion\upversion.py
     - name: Checkout submodules
       run: git submodule update --init --recursive
