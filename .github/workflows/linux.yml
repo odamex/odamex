@@ -2,9 +2,9 @@ name: Linux
 
 on: 
   push:
+    branches-ignore:
+    - 'release/**'
   pull_request:
-      branches-ignore:
-      - 'release/**'
 
 jobs:
   pre_job:

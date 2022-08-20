@@ -102,6 +102,9 @@ jobs:
       new_version: ${{ steps.branchVersion.major }}.${{ steps.branchVersion.minor }}
       old_year: 2006-${{ steps.current-time.outputs.year }}
       new_year: 2006-${{ steps.current-time.outputs.year }}
+    steps:
+    - name: Run upversion script
+      run: python .\tools\upversion\upversion.py
   inno:
     name: Run Build Release Scripts
     runs-on: windows-latest
@@ -110,9 +113,9 @@ jobs:
       shell: pwsh
       run: |
         .\installer\windows\build_release.ps1
-  upload:
-    name: Upload all artifacts to Github Artifacts
-    runs-on: windows-latest
+#  upload:
+#    name: Upload all artifacts to Github Artifacts
+#    runs-on: windows-latest
   # build-mingw:
   #   name: Build (MinGW)
   #   runs-on: windows-latest
