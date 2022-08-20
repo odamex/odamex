@@ -17,10 +17,14 @@ jobs:
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
-  upversion:
-    name: Run upversion
+  build-and-package:
+    name: Build (Visual Studio)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: windows-latest
     steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
     - name: 'Get Previous tag'
       id: previoustag
       uses: "WyriHaximus/github-action-get-previous-tag@v1"
@@ -41,14 +45,6 @@ jobs:
         old_year: 2006-${{ steps.current-time.outputs.year }}
         new_year: 2006-${{ steps.current-time.outputs.year }}
       run: python .\tools\upversion\upversion.py
-  build:
-    name: Build (Visual Studio)
-    needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
-    runs-on: windows-latest
-    steps:
-    - name: Checkout source
-      uses: actions/checkout@v2
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install Python packages
@@ -64,6 +60,10 @@ jobs:
       run: cmake --build .\build\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
       run: .\ci\win-artifact.ps1
+    - name: Run build powershell
+      shell: pwsh
+      run: |
+        .\installer\windows\build_release.ps1
     - name: Upload artifact to B2
       run: python .\ci\upload-b2.py .\build\archive Win-x64
       env:
@@ -75,12 +75,32 @@ jobs:
       with:
         name: Odamex-Win-x64
         path: 'build/artifact/*'
-  build-x32:
+  build-and-package-x32:
     name: Build (Visual Studio, 32-bit)
     runs-on: windows-latest
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
+    - name: 'Get Previous tag'
+      id: previoustag
+      uses: "WyriHaximus/github-action-get-previous-tag@v1"
+      with:
+        fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
+    - name: 'Get release branch version'
+      uses: valadas/get-release-branch-version@v1
+      id: branchVersion
+    - name: Get current time
+      uses: josStorer/get-current-time@v2.0.1
+      id: current-time
+      with:
+        format: YYYYMMDD-HH
+    - name: Run upversion script
+      env:
+        old_version: ${{ steps.previoustag.outputs.tag }}
+        new_version: ${{ steps.branchVersion.major }}.${{ steps.branchVersion.minor }}
+        old_year: 2006-${{ steps.current-time.outputs.year }}
+        new_year: 2006-${{ steps.current-time.outputs.year }}
+      run: python .\tools\upversion\upversion.py
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install Python packages
@@ -94,6 +114,10 @@ jobs:
       run: cmake --build .\build-x32\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
       run: .\ci\win-x32-artifact.ps1
+    - name: Run build powershell
+      shell: pwsh
+      run: |
+        .\installer\windows\build_release.ps1
     - name: Upload artifact to B2
       run: python .\ci\upload-b2.py .\build-x32\archive Win-x32
       env:
@@ -105,14 +129,6 @@ jobs:
       with:
         name: Odamex-Win-x32
         path: 'build/artifact/*'
-  inno:
-    name: Run Build Release Scripts
-    runs-on: windows-latest
-    steps:
-    - name: Run build powershell
-      shell: pwsh
-      run: |
-        .\installer\windows\build_release.ps1
 #  upload:
 #    name: Upload all artifacts to Github Artifacts
 #    runs-on: windows-latest
