@@ -17,19 +17,30 @@ jobs:
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
-      - name: 'Get Previous tag'
-        id: previoustag
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
-        with:
-          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
-      - name: 'Get release branch version'
-        uses: valadas/get-release-branch-version@v1
-        id: branchVersion
-      - name: Get current time
-        uses: josStorer/get-current-time@v2.0.1
-        id: current-time
-        with:
-          format: YYYYMMDD-HH
+  upversion:
+    name: Run upversion
+    runs-on: windows-latest
+    steps:
+    - name: 'Get Previous tag'
+      id: previoustag
+      uses: "WyriHaximus/github-action-get-previous-tag@v1"
+      with:
+        fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
+    - name: 'Get release branch version'
+      uses: valadas/get-release-branch-version@v1
+      id: branchVersion
+    - name: Get current time
+      uses: josStorer/get-current-time@v2.0.1
+      id: current-time
+      with:
+        format: YYYYMMDD-HH
+    - name: Run upversion script
+      env:
+        old_version: ${{ steps.previoustag.outputs.tag }}
+        new_version: ${{ steps.branchVersion.major }}.${{ steps.branchVersion.minor }}
+        old_year: 2006-${{ steps.current-time.outputs.year }}
+        new_year: 2006-${{ steps.current-time.outputs.year }}
+      run: python .\tools\upversion\upversion.py
   build:
     name: Build (Visual Studio)
     needs: pre_job
@@ -94,17 +105,6 @@ jobs:
       with:
         name: Odamex-Win-x32
         path: 'build/artifact/*'
-  upversion:
-    name: Run upversion
-    runs-on: windows-latest
-    env:
-      old_version: ${{ steps.previoustag.outputs.tag }}
-      new_version: ${{ steps.branchVersion.major }}.${{ steps.branchVersion.minor }}
-      old_year: 2006-${{ steps.current-time.outputs.year }}
-      new_year: 2006-${{ steps.current-time.outputs.year }}
-    steps:
-    - name: Run upversion script
-      run: python .\tools\upversion\upversion.py
   inno:
     name: Run Build Release Scripts
     runs-on: windows-latest
