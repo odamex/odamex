@@ -27,16 +27,19 @@ jobs:
         uses: "WyriHaximus/github-action-get-previous-tag@v1"
         with:
           fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
+        run: echo "::set-output name=tag::$Tag"
       - name: 'Get next minor version'
         id: semvers
         uses: "WyriHaximus/github-action-next-semvers@v1"
         with:
           version: ${{ steps.previoustag.outputs.tag }}
+        run: echo "::set-output name=patch::$Patch"
       - name: Get current time
         uses: josStorer/get-current-time@v2.0.1
         id: current-time
         with:
           format: YYYYMMDD-HH
+        run: echo "::set-output name=year::$Year"
   build-and-package:
     name: Build (Visual Studio)
     needs: pre_job
@@ -52,9 +55,9 @@ jobs:
     - name: Echo vars
       run: |
         echo "old_version: $old_version";
-        echo "new_version: new_version";
-        echo "old_year: old_year";
-        echo "new_year: new_year";
+        echo "new_version: $new_version";
+        echo "old_year: $old_year";
+        echo "new_year: $new_year";
     - name: Run upversion script
       run: python .\tools\upversion\upversion.py
     - name: Checkout submodules
@@ -100,9 +103,9 @@ jobs:
     - name: Echo vars
       run: |
         echo "old_version: $old_version";
-        echo "new_version: new_version";
-        echo "old_year: old_year";
-        echo "new_year: new_year";
+        echo "new_version: $new_version";
+        echo "old_year: $old_year";
+        echo "new_year: $new_year";
     - name: Run upversion script
       run: python .\tools\upversion\upversion.py
     - name: Checkout submodules
