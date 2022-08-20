@@ -141,15 +141,23 @@ def main():
     COMMA_REPL = f"{NEW_VERSION[0]}, {NEW_VERSION[1]}, {NEW_VERSION[2]}"
     [re_replace(glob, COMMA_RE, COMMA_REPL) for glob in COMMA_FILES]
 
+    oldmaj = int(OLD_VERSION.split(".")[0])
+    oldmin = int(OLD_VERSION.split(".")[1])
+    oldpatch = int(OLD_VERSION.split(".")[2])
+
+    newmaj = int(NEW_VERSION.split(".")[0])
+    newmin = int(NEW_VERSION.split(".")[1])
+    newpatch = int(NEW_VERSION.split(".")[2])
+
     # Fixed-length save strings.
     [
-        re_replace(glob, savestr(*OLD_VERSION), savestr(*NEW_VERSION))
+        re_replace(glob, savestr(oldmaj, oldmin, oldpatch), savestr(newmaj, newmin, newpatch))
         for glob in SAVESTR_FILES
     ]
 
     # Config strings.
     [
-        re_replace(glob, configstr(*OLD_VERSION), configstr(*NEW_VERSION))
+        re_replace(glob, configstr(oldmaj, oldmin, oldpatch), configstr(newmaj, newmin, newpatch))
         for glob in CONFIGSTR_FILES
     ]
 
