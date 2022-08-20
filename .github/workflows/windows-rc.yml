@@ -11,12 +11,32 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
+      old_version: ${{ steps.previoustag.outputs.tag }}
+      new_version: ${{ steps.semvers.outputs.patch }}
+      old_year: 2006-${{ steps.current-time.outputs.year }}
+      new_year: 2006-${{ steps.current-time.outputs.year }}
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
+      - name: 'Get next minor version'
+        id: semvers
+        uses: "WyriHaximus/github-action-next-semvers@v1"
+        with:
+          version: ${{ steps.previoustag.outputs.tag }}
+      - name: Get current time
+        uses: josStorer/get-current-time@v2.0.1
+        id: current-time
+        with:
+          format: YYYYMMDD-HH
   build-and-package:
     name: Build (Visual Studio)
     needs: pre_job
@@ -24,29 +44,12 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
-    - name: 'Get Previous tag'
-      id: previoustag
-      uses: "WyriHaximus/github-action-get-previous-tag@v1"
-      with:
-        fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
-    - name: 'Get next minor version'
-      id: semvers
-      uses: "WyriHaximus/github-action-next-semvers@v1"
-      with:
-        version: ${{ steps.previoustag.outputs.tag }}
-    - name: Get current time
-      uses: josStorer/get-current-time@v2.0.1
-      id: current-time
-      with:
-        format: YYYYMMDD-HH
     - name: Run upversion script
       env:
-        old_version: ${{ steps.previoustag.outputs.tag }}
-        new_version: ${{ steps.branchVersion.major }}.${{ steps.branchVersion.minor }}
-        old_year: 2006-${{ steps.current-time.outputs.year }}
-        new_year: 2006-${{ steps.current-time.outputs.year }}
+        old_version: ${{ needs.pre_job.outputs.old_version }}
+        new_version: ${{ needs.pre_job.outputs.new_version }}
+        old_year: 2006-${{ needs.pre_job.outputs.old_year }}
+        new_year: 2006-${{ needs.pre_job.outputs.new_year }}
       run: python .\tools\upversion\upversion.py
     - name: Checkout submodules
       run: git submodule update --init --recursive
@@ -83,29 +86,12 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
-    - name: 'Get Previous tag'
-      id: previoustag
-      uses: "WyriHaximus/github-action-get-previous-tag@v1"
-      with:
-        fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
-    - name: 'Get next minor version'
-      id: semvers
-      uses: "WyriHaximus/github-action-next-semvers@v1"
-      with:
-        version: ${{ steps.previoustag.outputs.tag }}
-    - name: Get current time
-      uses: josStorer/get-current-time@v2.0.1
-      id: current-time
-      with:
-        format: YYYYMMDD-HH
     - name: Run upversion script
       env:
-        old_version: ${{ steps.previoustag.outputs.tag }}
-        new_version: ${{ steps.semvers.outputs.patch }}
-        old_year: 2006-${{ steps.current-time.outputs.year }}
-        new_year: 2006-${{ steps.current-time.outputs.year }}
+        old_version: ${{ needs.pre_job.outputs.old_version }}
+        new_version: ${{ needs.pre_job.outputs.new_version }}
+        old_year: 2006-${{ needs.pre_job.outputs.old_year }}
+        new_year: 2006-${{ needs.pre_job.outputs.new_year }}
       run: python .\tools\upversion\upversion.py
     - name: Checkout submodules
       run: git submodule update --init --recursive
