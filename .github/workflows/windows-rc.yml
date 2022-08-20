@@ -23,8 +23,9 @@ jobs:
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: windows-latest
     steps:
-    - name: Checkout source
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
     - name: 'Get Previous tag'
       id: previoustag
       uses: "WyriHaximus/github-action-get-previous-tag@v1"
@@ -79,16 +80,19 @@ jobs:
     name: Build (Visual Studio, 32-bit)
     runs-on: windows-latest
     steps:
-    - name: Checkout source
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
     - name: 'Get Previous tag'
       id: previoustag
       uses: "WyriHaximus/github-action-get-previous-tag@v1"
       with:
         fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
-    - name: 'Get release branch version'
-      uses: valadas/get-release-branch-version@v1
-      id: branchVersion
+    - name: 'Get next minor version'
+      id: semvers
+      uses: "WyriHaximus/github-action-next-semvers@v1"
+      with:
+        version: ${{ steps.previoustag.outputs.tag }}
     - name: Get current time
       uses: josStorer/get-current-time@v2.0.1
       id: current-time
@@ -97,7 +101,7 @@ jobs:
     - name: Run upversion script
       env:
         old_version: ${{ steps.previoustag.outputs.tag }}
-        new_version: ${{ steps.branchVersion.major }}.${{ steps.branchVersion.minor }}
+        new_version: ${{ steps.semvers.outputs.patch }}
         old_year: 2006-${{ steps.current-time.outputs.year }}
         new_year: 2006-${{ steps.current-time.outputs.year }}
       run: python .\tools\upversion\upversion.py

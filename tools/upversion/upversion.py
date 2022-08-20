@@ -23,7 +23,7 @@
 
 from typing import List, Tuple
 
-import re, sys
+import re, sys, os
 from configparser import ConfigParser
 from pathlib import Path
 
@@ -104,10 +104,26 @@ def main():
         config = ConfigParser()
         config.read_file(fh)
 
-    OLD_VERSION = ini_version(config.get("upversion", "old_version"))
-    NEW_VERSION = ini_version(config.get("upversion", "new_version"))
-    OLD_YEAR = config.get("upversion", "old_year")
-    NEW_YEAR = config.get("upversion", "new_year")
+    if not os.getenv('OLD_VERSION'):
+        OLD_VERSION = "1.0.0"
+    else:
+        OLD_VERSION = os.getenv('OLD_VERSION')
+
+    if not os.getenv('NEW_VERSION'):
+        NEW_VERSION = "2.0.0"
+    else:
+        NEW_VERSION = os.getenv('NEW_VERSION')
+
+    if not os.getenv('OLD_YEAR'):
+        OLD_YEAR = r"2006-2022"
+    else:
+        OLD_YEAR = os.getenv('OLD_YEAR')
+
+    if not os.getenv('NEW_YEAR'):
+        NEW_YEAR = r"2006-2022"
+    else:
+        NEW_YEAR = os.getenv('NEW_YEAR')
+
     DOTTED_FILES = ini_files(config.get("files", "dotted"))
     COMMA_FILES = ini_files(config.get("files", "comma"))
     SAVESTR_FILES = ini_files(config.get("files", "savestr"))
