@@ -52,11 +52,11 @@ jobs:
     - uses: actions/checkout@v2
     - name: Echo vars
       run: |
-        echo "should_skip: $SHOULD_SKIP";
-        echo "old_version: $old_version";
-        echo "new_version: $new_version";
-        echo "old_year: $old_year";
-        echo "new_year: $new_year";
+        echo ${{ needs.pre_job.outputs.should_skip }}
+        echo ${{ needs.pre_job.outputs.old_version }}
+        echo ${{ needs.pre_job.outputs.new_version }}
+        echo ${{ needs.pre_job.outputs.old_year }}
+        echo ${{ needs.pre_job.outputs.new_year }}
     - name: Run upversion script
       run: python .\tools\upversion\upversion.py
     - name: Checkout submodules
