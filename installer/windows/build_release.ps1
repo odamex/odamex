@@ -87,8 +87,8 @@ function CopyFiles {
         -Destination "${CommonDir}\config-samples"
     Copy-Item -Force -Path "${CurrentDir}\libraries\curl\COPYING" `
         -Destination "${CommonDir}\licenses\COPYING.curl.txt"
-    Copy-Item -Force -Path "${CurrentDir}\libraries\libminiupnpc\LICENSE" `
-        -Destination "${CommonDir}\licenses\LICENSE.libminiupnpc.txt"
+    Copy-Item -Force -Path "${CurrentDir}\libraries\miniupnpc\LICENSE" `
+        -Destination "${CommonDir}\licenses\LICENSE.miniupnpc.txt"
     Copy-Item -Force -Path "${CurrentDir}\libraries\libpng\LICENSE" `
         -Destination "${CommonDir}\licenses\LICENSE.libpng.txt"
     Copy-Item -Force -Path "${CurrentDir}\libraries\portmidi\license.txt" `
