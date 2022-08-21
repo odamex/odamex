@@ -46,17 +46,10 @@ jobs:
       should_skip: ${{ needs.pre_job.outputs.should_skip }}
       old_version: ${{ needs.pre_job.outputs.old_version }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
-      old_year: 2006-${{ needs.pre_job.outputs.old_year }}
-      new_year: 2006-${{ needs.pre_job.outputs.new_year }}
+      old_year: ${{ needs.pre_job.outputs.old_year }}
+      new_year: ${{ needs.pre_job.outputs.new_year }}
     steps:
     - uses: actions/checkout@v2
-    - name: Echo vars
-      run: |
-        echo ${{ needs.pre_job.outputs.should_skip }}
-        echo ${{ needs.pre_job.outputs.old_version }}
-        echo ${{ needs.pre_job.outputs.new_version }}
-        echo ${{ needs.pre_job.outputs.old_year }}
-        echo ${{ needs.pre_job.outputs.new_year }}
     - name: Run upversion script
       run: python .\tools\upversion\upversion.py
     - name: Checkout submodules
