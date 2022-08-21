@@ -58,7 +58,7 @@ function BuildX86 {
 }
 
 function CopyFiles {
-    if (Test-Path "${CurrentDir}")
+    if (Test-Path "${CommonDir}")
     {
         Remove-Item -Force -Recurse -Path "${CommonDir}"
     }

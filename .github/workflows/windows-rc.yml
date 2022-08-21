@@ -38,7 +38,7 @@ jobs:
         with:
           format: YYYYMMDD-HH
   build-and-package:
-    name: Build (Visual Studio)
+    name: Build and package Odamex Release Candidate (Visual Studio)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: windows-latest
