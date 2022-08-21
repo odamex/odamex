@@ -58,8 +58,20 @@ function BuildX86 {
 }
 
 function CopyFiles {
-    Remove-Item -Force -Recurse -Path `
-        "${CommonDir}", "${X64Dir}", "${X86Dir}"
+    if (Test-Path "${CurrentDir}")
+    {
+        Remove-Item -Force -Recurse -Path "${CommonDir}"
+    }
+
+    if (Test-Path "${X64Dir}")
+    {
+        Remove-Item -Force -Recurse -Path "${X64Dir}"
+    }
+
+    if (Test-Path "${X86Dir}")
+    {
+        Remove-Item -Force -Recurse -Path "${X86Dir}"
+    }
 
     New-Item -Force -ItemType "directory" -Path "${CommonDir}"
     New-Item -Force -ItemType "directory" -Path "${CommonDir}\config-samples"
@@ -162,7 +174,10 @@ function CopyFiles {
 }
 
 function Outputs {
-    Remove-Item -Force -Recurse -Path "${OutputDir}"
+    if (Test-Path "${OutputDir}")
+    {
+        Remove-Item -Force -Recurse -Path "${OutputDir}"
+    }
     New-Item  -Force -ItemType "directory" -Path "${OutputDir}"
 
     # Generate archives
