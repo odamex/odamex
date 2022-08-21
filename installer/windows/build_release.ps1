@@ -9,7 +9,7 @@
 # These parameters can and should be changed for new versions.
 # 
 
-Set-Variable -Name "CurrentDir" -Value Get-Location
+Set-Variable -Name "CurrentDir" -Value (Get-Location)
 
 Set-Variable -Name "OdamexVersion" -Value "10.2.0"
 Set-Variable -Name "OdamexTestSuffix" -Value "" # "-RC3"
