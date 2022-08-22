@@ -136,7 +136,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: Odamex-Win-x86
-        path: Output/*.zip
+        path: Output/zip/*.zip
     - name: Archive x86 pdb artifacts
       uses: actions/upload-artifact@v3
       with:
