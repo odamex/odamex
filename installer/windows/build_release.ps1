@@ -191,7 +191,7 @@ function Outputs {
         "-x!${CommonDir}\odamex-installed.txt"
 
     # Generate installer
-    ISCC.exe odamex.iss `
+    ISCC.exe "${CurrentDir}\installer\windows\odamex.iss" `
         /DOdamexVersion=${OdamexVersion} `
         /DOdamexTestSuffix=${OdamexTestSuffix}
 }

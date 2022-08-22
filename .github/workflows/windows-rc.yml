@@ -107,7 +107,7 @@ jobs:
       run: |
         .\installer\windows\build_release.ps1
     - name: Upload artifact to B2
-      run: python .\ci\upload-b2.py .\build\archive Win-x64
+      run: python .\ci\upload-b2.py .\Output\BBArtifacts
       env:
         B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
@@ -116,7 +116,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: Odamex-Win-x64
-        path: 'build/artifact/*'
+        path: 'Output/*'
 #  upload:
 #    name: Upload all artifacts to Github Artifacts
 #    runs-on: windows-latest
