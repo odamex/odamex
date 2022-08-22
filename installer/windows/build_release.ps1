@@ -193,7 +193,9 @@ function Outputs {
     # Generate installer
     ISCC.exe "${CurrentDir}\installer\windows\odamex.iss" `
         /DOdamexVersion=${OdamexVersion} `
-        /DOdamexTestSuffix=${OdamexTestSuffix}
+        /DOdamexTestSuffix=${OdamexTestSuffix} `
+        /DSourcePath=${CurrentDir} `
+        /O${OutputDir}
 }
 
 function ZipDebug {
