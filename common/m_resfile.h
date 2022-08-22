@@ -134,3 +134,4 @@ const std::vector<std::string>& M_FileTypeExts(ofile_t type);
 std::vector<std::string> M_FileSearchDirs();
 bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted);
 std::vector<scannedIWAD_t> M_ScanIWADs();
+std::vector<scannedIWAD_t> M_ScanPWADs();

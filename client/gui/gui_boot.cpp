@@ -32,6 +32,7 @@
 #include "FL/Fl_Button.H"
 #include "FL/Fl_Check_Button.H"
 #include "FL/Fl_Hold_Browser.H"
+#include "FL/Fl_Check_Browser.H"
 #include "FL/Fl_Native_File_Chooser.H"
 #include "FL/Fl_Return_Button.H"
 #include "FL/Fl_Tabs.H"
@@ -59,9 +60,12 @@ const int WINDOW_HEIGHT = 240;
 class BootWindow : public Fl_Window
 {
 	Fl_Group* m_tabIWAD;
+	Fl_Group* m_tabPWADs;
 	std::string m_genWaddirs;
 	std::vector<scannedIWAD_t> m_IWADs;
+	std::vector<scannedIWAD_t> m_PWADs;
 	Fl_Hold_Browser* m_IWADBrowser;
+	Fl_Check_Browser* m_PWADBrowser;
 	std::vector<std::string> m_WADDirs;
 	Fl_Hold_Browser* m_WADDirList;
 
@@ -86,6 +90,13 @@ class BootWindow : public Fl_Window
 				m_tabIWAD->end();
 			} // Fl_Group* tabIWAD
 			{
+				m_tabPWADs = new Fl_Group(0, 25, 425, 175, "PWAD Select");
+				{
+					m_PWADBrowser = new Fl_Check_Browser(10, 35, 405, 155);
+				} // Fl_Check_Browser* m_PWADBrowser
+				m_tabPWADs->end();
+			} // Fl_Group* tabPWADs
+			{
 				Fl_Group* tabWADDirs =
 				    new Fl_Group(0, 25, 425, 175, "Resource Locations");
 				tabWADDirs->hide();
@@ -98,7 +109,7 @@ class BootWindow : public Fl_Window
 				{
 					m_WADDirList = new Fl_Hold_Browser(10, 65, 375, 125);
 				} // Fl_Browser* wadDirList
-				{
+				{	Fl_Check_Browser* m_tabPWADS;
 					Fl_Button* doDirAdd = new Fl_Button(395, 65, 20, 20, "@+");
 					doDirAdd->callback(BootWindow::doDirAddCB, static_cast<void*>(this));
 				} // Fl_Button* doDirAdd
@@ -157,6 +168,7 @@ class BootWindow : public Fl_Window
 			return;
 
 		boot->rescanIWADs();
+		boot->rescanPWADs();
 	}
 
 	static void doCallback(Fl_Widget*, void*) { CL_QuitCommand(); }
@@ -264,6 +276,17 @@ class BootWindow : public Fl_Window
 		m_genWaddirs = ::waddirs.str();
 	}
 
+	void rescanPWADs()
+	{
+		m_PWADBrowser->clear();
+		m_PWADs = M_ScanPWADs();
+		for (size_t i = 0; i < m_IWADs.size(); i++)
+		{
+			m_PWADBrowser->add(m_IWADs[i].id->mNiceName.c_str(), 0);
+		}
+		m_genWaddirs = ::waddirs.str();
+	}
+
 	/**
 	 * @brief Get WAD information for selected IWAD.
 	 */
@@ -326,6 +349,7 @@ std::string GUI_BootWindow()
 	win->initWADDirs();
 	win->updateWADDirBrowser();
 	win->rescanIWADs();
+	win->rescanPWADs();
 	win->position((Fl::w() - win->w()) / 2, (Fl::h() - win->h()) / 2);
 	win->show(0, NULL);
 
