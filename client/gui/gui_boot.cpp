@@ -109,7 +109,7 @@ class BootWindow : public Fl_Window
 				{
 					m_WADDirList = new Fl_Hold_Browser(10, 65, 375, 125);
 				} // Fl_Browser* wadDirList
-				{	Fl_Check_Browser* m_tabPWADS;
+				{
 					Fl_Button* doDirAdd = new Fl_Button(395, 65, 20, 20, "@+");
 					doDirAdd->callback(BootWindow::doDirAddCB, static_cast<void*>(this));
 				} // Fl_Button* doDirAdd
