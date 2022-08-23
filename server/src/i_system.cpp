@@ -468,8 +468,27 @@ std::string I_ConsoleInput (void)
 
 	while(kbhit() && len < sizeof(text))
 	{
-		char ch = (char)getch();
+		int ch = getch();
 
+		// Handle special keys
+		switch (ch)
+		{
+            // Function keys (arrows etc)
+            case 0:
+            case 0xE0:
+            {
+                // getch sends a second char
+                // for these keys, skip it
+                ch = getch();
+                continue;
+            }
+            // Escape key
+            case 27:
+            {
+                continue;
+            }
+		}
+	
 		// input the character
 		if(ch == '\b' && len)
 		{
