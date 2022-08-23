@@ -127,6 +127,7 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
  * @return Filenames of any found files.
  */
 std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString> files);
+std::vector<std::string> M_BaseFilesScanDir2(std::string dir);
 
 /**
  * @brief Get absolute path from passed path.

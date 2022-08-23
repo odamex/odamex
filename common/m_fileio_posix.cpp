@@ -305,6 +305,38 @@ std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString
 	return rvo;
 }
 
+// Scan for PWADs and DEH and BEX files
+std::vector<std::string> M_BaseFilesScanDir2(std::string dir)
+{
+	// replace with structs with name and path
+	std::vector<std::string> rvo;
+
+	// Fix up parameters.
+	dir = M_CleanPath(dir);
+
+	struct dirent** namelist = 0;
+	int n = scandir(dir.c_str(), &namelist, 0, alphasort);
+
+	for (int i = 0; i < n && namelist[i]; i++)
+	{
+		const std::string d_name = namelist[i]->d_name;
+		M_Free(namelist[i]);
+
+		// Don't care about files with names shorter than the extensions
+		if (d_name.length() < 4)
+			continue;
+
+		// Only return files with correct extensions
+		std::string check = StdStringToUpper(d_name).substr(d_name.length() - 4);
+		if (check.compare(".WAD") && check.compare(".DEH") && check.compare(".BEX"))
+			continue;
+
+		rvo.push_back(d_name);
+	}
+
+	return rvo;
+}
+
 bool M_GetAbsPath(const std::string& path, std::string& out)
 {
 

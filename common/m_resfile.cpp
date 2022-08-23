@@ -370,22 +370,25 @@ std::vector<scannedIWAD_t> M_ScanIWADs()
 /**
  * @brief Scan all file search directories for PWAD files.
  */
-std::vector<scannedIWAD_t> M_ScanPWADs()
+std::vector<std::string> M_ScanPWADs()
 {
-	const std::vector<OString> iwads = W_GetIWADFilenames();
 	const std::vector<std::string> dirs = M_FileSearchDirs();
 
-	std::vector<scannedIWAD_t> rvo;
+	std::vector<std::string> rvo;
 	OHashTable<OCRC32Sum, bool> found;
 
 	for (size_t i = 0; i < dirs.size(); i++)
 	{
-		std::vector<std::string> files = M_BaseFilesScanDir(dirs[i], iwads);
+		std::vector<std::string> files = M_BaseFilesScanDir2(dirs[i]);
 		for (size_t j = 0; j < files.size(); j++)
 		{
+			// Don't include odamex.wad
+			if (!StdStringToLower(files[j]).compare("odamex.wad"))
+				continue;
+
 			const std::string fullpath = dirs[i] + PATHSEP + files[j];
 
-			// Check to see if we got a real IWAD.
+			// Generate crc32sum
 			const OCRC32Sum crc32 = W_CRC32(fullpath);
 			if (crc32.empty())
 				continue;
@@ -396,17 +399,17 @@ std::vector<scannedIWAD_t> M_ScanPWADs()
 
 			// Does the gameinfo exist?
 			const fileIdentifier_t* id = W_GameInfo(crc32);
-			if (id == NULL)
+			if (id != NULL)
 				continue;
 
-			scannedIWAD_t iwad = {fullpath, id};
-			rvo.push_back(iwad);
+			//scannedIWAD_t pwad = {fullpath, id};
+			rvo.push_back(StdStringToLower(files[j]));
 			found[crc32] = true;
 		}
 	}
 
-	// Sort the results by weight.
-	std::sort(rvo.begin(), rvo.end(), ScanIWADCmp);
+	// Sort the results alphabetically
+	std::sort(rvo.begin(), rvo.end());
 
 	return rvo;
 }

@@ -63,7 +63,7 @@ class BootWindow : public Fl_Window
 	Fl_Group* m_tabPWADs;
 	std::string m_genWaddirs;
 	std::vector<scannedIWAD_t> m_IWADs;
-	std::vector<scannedIWAD_t> m_PWADs;
+	std::vector<std::string> m_PWADs;
 	Fl_Hold_Browser* m_IWADBrowser;
 	Fl_Check_Browser* m_PWADBrowser;
 	std::vector<std::string> m_WADDirs;
@@ -159,7 +159,7 @@ class BootWindow : public Fl_Window
 		BootWindow* boot = static_cast<BootWindow*>(data);
 
 		Fl_Group* clicked = static_cast<Fl_Group*>(tabs->value());
-		if (clicked != boot->m_tabIWAD)
+		if (clicked != boot->m_tabIWAD || clicked != boot->m_tabPWADs)
 			return;
 
 		// User clicked on the first tab, see if we need to regenerate the
@@ -280,9 +280,9 @@ class BootWindow : public Fl_Window
 	{
 		m_PWADBrowser->clear();
 		m_PWADs = M_ScanPWADs();
-		for (size_t i = 0; i < m_IWADs.size(); i++)
+		for (size_t i = 0; i < m_PWADs.size(); i++)
 		{
-			m_PWADBrowser->add(m_IWADs[i].id->mNiceName.c_str(), 0);
+			m_PWADBrowser->add(m_PWADs[i].c_str(), 0);
 		}
 		m_genWaddirs = ::waddirs.str();
 	}
