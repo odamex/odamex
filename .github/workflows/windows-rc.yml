@@ -147,6 +147,7 @@ jobs:
     runs-on: windows-latest
     needs: [build, build-x32]
     steps:
+    - uses: actions/checkout@v2
     - name: Download x86 artifacats
       uses: actions/download-artifact@v3
       with:
