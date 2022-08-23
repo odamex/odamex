@@ -65,7 +65,8 @@ class BootWindow : public Fl_Window
 	std::vector<scannedIWAD_t> m_IWADs;
 	std::vector<std::string> m_PWADs;
 	Fl_Hold_Browser* m_IWADBrowser;
-	Fl_Check_Browser* m_PWADBrowser;
+	Fl_Check_Browser* m_PWADSelectBrowser;
+	Fl_Hold_Browser* m_PWADOrderBrowser;
 	std::vector<std::string> m_WADDirs;
 	Fl_Hold_Browser* m_WADDirList;
 
@@ -92,8 +93,20 @@ class BootWindow : public Fl_Window
 			{
 				m_tabPWADs = new Fl_Group(0, 25, 425, 175, "PWAD Select");
 				{
-					m_PWADBrowser = new Fl_Check_Browser(10, 35, 405, 155);
-				} // Fl_Check_Browser* m_PWADBrowser
+					m_PWADSelectBrowser = new Fl_Check_Browser(10, 35, 180, 155);
+				} // Fl_Check_Browser* m_PWADSelectBrowser
+				{
+					m_PWADOrderBrowser = new Fl_Hold_Browser(200, 35, 180, 155);
+				}
+				{
+					Fl_Button* doWADUp = new Fl_Button(395, 90, 20, 20, "@2<<");
+					doWADUp->callback(BootWindow::doWADUpCB, static_cast<void*>(this));
+				} // Fl_Button* doWADUp
+				{
+					Fl_Button* doWADDown = new Fl_Button(395, 115, 20, 20, "@2>>");
+					doWADDown->callback(BootWindow::doWADDownCB,
+					                    static_cast<void*>(this));
+				} // Fl_Button* doWADDown
 				m_tabPWADs->end();
 			} // Fl_Group* tabPWADs
 			{
@@ -196,6 +209,36 @@ class BootWindow : public Fl_Window
 		Fl::delete_widget(boot);
 	}
 
+	// -- PWAD Boot Order --
+
+	static void doWADUpCB(Fl_Widget*, void* data)
+	{
+		// BootWindow* boot = static_cast<BootWindow*>(data);
+
+		// const int val = boot->m_PWADOrderBrowser->value() - 1;
+		// if (val <= 0 || val >= boot->m_WADDirs.size())
+		// 	return;
+
+		// std::iter_swap(boot->m_WADDirs.begin() + val, boot->m_WADDirs.begin() + val - 1);
+		// boot->setWADDirs();
+		// boot->updateWADDirBrowser();
+		// boot->m_WADDirList->value(val);
+	}
+
+	static void doWADDownCB(Fl_Widget*, void* data)
+	{
+		// BootWindow* boot = static_cast<BootWindow*>(data);
+
+		// const int val = boot->m_WADDirList->value() - 1;
+		// if (val < 0 || val >= boot->m_WADDirs.size() - 1)
+		// 	return;
+
+		// std::iter_swap(boot->m_WADDirs.begin() + val, boot->m_WADDirs.begin() + val + 1);
+		// boot->setWADDirs();
+		// boot->updateWADDirBrowser();
+		// boot->m_WADDirList->value(val + 2);
+	}
+
 	// -- Resource Locations --
 
 	/**
@@ -278,11 +321,11 @@ class BootWindow : public Fl_Window
 
 	void rescanPWADs()
 	{
-		m_PWADBrowser->clear();
+		m_PWADSelectBrowser->clear();
 		m_PWADs = M_ScanPWADs();
 		for (size_t i = 0; i < m_PWADs.size(); i++)
 		{
-			m_PWADBrowser->add(m_PWADs[i].c_str(), 0);
+			m_PWADSelectBrowser->add(m_PWADs[i].c_str(), 0);
 		}
 		m_genWaddirs = ::waddirs.str();
 	}
