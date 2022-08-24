@@ -11,8 +11,23 @@
 
 Set-Variable -Name "CurrentDir" -Value (Get-Location) # cd to the base odamex git path before executing
 
-Set-Variable -Name "OdamexVersion" -Value "10.2.0"
-Set-Variable -Name "OdamexTestSuffix" -Value "" # "-RC3"
+if ($env:new_version.length -gt 0)
+{
+    Set-Variable -Name "OdamexVersion" -Value "${env:new_version}"
+}
+else
+{
+    Set-Variable -Name "OdamexVersion" -Value "10.2.0"
+}
+
+if ($env:build_number.length -gt 0)
+{
+    Set-Variable -Name "OdamexTestSuffix" -Value "-build_${env:build_number}" # "-build_112"
+}
+else
+{
+    Set-Variable -Name "OdamexTestSuffix" -Value ""
+}
 
 #
 # The actual script follows.

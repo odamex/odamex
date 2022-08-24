@@ -12,7 +12,8 @@ jobs:
     outputs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
       old_version: ${{ steps.previoustag.outputs.tag }}
-      new_version: ${{ steps.semvers.outputs.patch }}
+      new_version: ${{ steps.gitversion.outputs.majorMinorPatch }}
+      build_number: ${{ steps.gitversion.outputs.buildMetaData }}
       old_year: 2006-${{ steps.current-time.outputs.year }}
       new_year: 2006-${{ steps.current-time.outputs.year }}
     steps:
@@ -27,11 +28,6 @@ jobs:
         uses: "WyriHaximus/github-action-get-previous-tag@v1"
         with:
           fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
-      - name: 'Get next minor version'
-        id: semvers
-        uses: "WyriHaximus/github-action-next-semvers@v1"
-        with:
-          version: ${{ steps.previoustag.outputs.tag }}
       - name: Get current time
         uses: josStorer/get-current-time@v2.0.1
         id: current-time
@@ -87,6 +83,7 @@ jobs:
       should_skip: ${{ needs.pre_job.outputs.should_skip }}
       old_version: ${{ needs.pre_job.outputs.old_version }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
+      build_number: ${{ needs.pre_job.outputs.build_number }}
       old_year: ${{ needs.pre_job.outputs.old_year }}
       new_year: ${{ needs.pre_job.outputs.new_year }}
     steps:
@@ -118,6 +115,7 @@ jobs:
     env:
       old_version: ${{ needs.pre_job.outputs.old_version }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
+      build_number: ${{ needs.pre_job.outputs.build_number }}
       old_year: ${{ needs.pre_job.outputs.old_year }}
       new_year: ${{ needs.pre_job.outputs.new_year }}
     steps:
@@ -145,7 +143,10 @@ jobs:
   package-and-upload:
     name: Package and Upload Artifacts
     runs-on: windows-latest
-    needs: [build, build-x32]
+    needs: [pre_job, build, build-x32]
+    env:
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      build_number: ${{ needs.pre_job.outputs.build_number }}
     steps:
     - uses: actions/checkout@v2
     - name: Download x86 artifacats
@@ -159,11 +160,11 @@ jobs:
     - name: Unzip x64 artifacats
       uses: montudor/action-zip@v1
       with:
-        args: unzip -qq Odamex-Win-x64 -d Odamex-Win-x64
+        args: unzip -qq Odamex-Win-x64.zip -d Odamex-Win-x64
     - name: Unzip x86 artifacats
       uses: montudor/action-zip@v1
       with:
-        args: unzip -qq Odamex-Win-x86 -d Odamex-Win-x86
+        args: unzip -qq Odamex-Win-x86.zip -d Odamex-Win-x86
     - name: Stage and run setup compiler
       shell: pwsh
       run: |
