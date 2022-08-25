@@ -1,9 +1,8 @@
-name: Windows-Release-Candidate
+name: Windows-Release
 
 on:
-  push:
-    branches:
-    - 'release/**'
+  release:
+    types: [published]
 
 jobs:
   pre_job:
@@ -12,9 +11,9 @@ jobs:
     outputs:
       old_version: ${{ steps.previoustag.outputs.tag }}
       new_version: ${{ steps.gitversion.outputs.majorMinorPatch }}
-      build_number: ${{ steps.gitversion.outputs.buildMetaData }}
       old_year: 2006-${{ steps.current-time.outputs.year }}
       new_year: 2006-${{ steps.current-time.outputs.year }}
+      upload_url: ${{ steps.get_release.outputs.upload_url }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -24,6 +23,11 @@ jobs:
         uses: "WyriHaximus/github-action-get-previous-tag@v1"
         with:
           fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Get current time
         uses: josStorer/get-current-time@v2.0.1
         id: current-time
@@ -77,9 +81,9 @@ jobs:
     env:
       old_version: ${{ needs.pre_job.outputs.old_version }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
-      build_number: ${{ needs.pre_job.outputs.build_number }}
       old_year: ${{ needs.pre_job.outputs.old_year }}
       new_year: ${{ needs.pre_job.outputs.new_year }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - uses: actions/checkout@v2
     - name: Run upversion script
@@ -113,6 +117,24 @@ jobs:
       with:
         name: Odamex-Win-x64-pdb
         path: Output/pdb/*.zip
+    - name: Upload release binary (x64)
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./Output/zip/odamex-win64-${{env.new_version}}.zip
+        asset_name: odamex-win64-${{env.new_version}}.zip
+        asset_content_type: application/zip
+    - name: Upload debug pdb (x64)
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./Output/pdb/odamex-debug-pdb-${{env.new_version}}-x64.zip
+        asset_name: odamex-debug-pdb-${{env.new_version}}-x64.zip
+        asset_content_type: application/zip
   build-x32:
     name: Build (Visual Studio, 32-bit)
     needs: pre_job
@@ -120,9 +142,9 @@ jobs:
     env:
       old_version: ${{ needs.pre_job.outputs.old_version }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
-      build_number: ${{ needs.pre_job.outputs.build_number }}
       old_year: ${{ needs.pre_job.outputs.old_year }}
       new_year: ${{ needs.pre_job.outputs.new_year }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - uses: actions/checkout@v2
     - name: Run upversion script
@@ -156,6 +178,24 @@ jobs:
       with:
         name: Odamex-Win-x86-pdb
         path: Output/pdb/*.zip
+    - name: Upload release binary (x86)
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./Output/zip/odamex-win32-${{env.new_version}}.zip
+        asset_name: odamex-win32-${{env.new_version}}.zip
+        asset_content_type: application/zip
+    - name: Upload debug pdb (x86)
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./Output/pdb/odamex-debug-pdb-${{env.new_version}}-x86.zip
+        asset_name: odamex-debug-pdb-${{env.new_version}}-x86.zip
+        asset_content_type: application/zip
   package-and-upload:
     name: Package and Upload Artifacts
     runs-on: windows-latest
@@ -163,9 +203,9 @@ jobs:
     env:
       old_version: ${{ needs.pre_job.outputs.old_version }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
-      build_number: ${{ needs.pre_job.outputs.build_number }}
       old_year: ${{ needs.pre_job.outputs.old_year }}
       new_year: ${{ needs.pre_job.outputs.new_year }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - uses: actions/checkout@v2
     - name: Run upversion script
@@ -186,6 +226,8 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: Odamex-Win-x64
+    - name: List directory contents
+      run: ls
     - name: Stage and run setup compiler
       shell: pwsh
       run: |
@@ -205,6 +247,33 @@ jobs:
       with:
         name: Odamex-tar-gz
         path: './*.tar.gz'
+    - name: Upload tar.gz
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./odamex-src-${{env.new_version}}.tar.gz
+        asset_name: odamex-src-${{env.new_version}}.tar.gz
+        asset_content_type: application/x-gzip
+    - name: Upload tar.xz
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./odamex-src-${{env.new_version}}.tar.xz
+        asset_name: odamex-src-${{env.new_version}}.tar.xz
+        asset_content_type: application/x-xz
+    - name: Upload installer
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./Output/odamex-win-${{env.new_version}}.exe
+        asset_name: odamex-win-${{env.new_version}}.exe
+        asset_content_type: application/octet-stream
   # build-mingw:
   #   name: Build (MinGW)
   #   runs-on: windows-latest
