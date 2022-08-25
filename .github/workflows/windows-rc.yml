@@ -92,6 +92,17 @@ jobs:
       shell: pwsh
       run: |
         .\ci\win-release-x64.ps1
+    - name: Install Python packages
+      uses: BSFishy/pip-action@v1
+      with:
+        packages: |
+          b2sdk
+    - name: Upload artifact to B2
+      run: python .\ci\upload-b2.py .\Output\zip Win-x64
+      env:
+        B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
+        B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Archive x64 build artifacts
       uses: actions/upload-artifact@v3
       with:
@@ -124,6 +135,17 @@ jobs:
       shell: pwsh
       run: |
         .\ci\win-release-x86.ps1
+    - name: Install Python packages
+      uses: BSFishy/pip-action@v1
+      with:
+        packages: |
+          b2sdk
+    - name: Upload artifact to B2
+      run: python .\ci\upload-b2.py .\Output\zip Win-x32
+      env:
+        B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
+        B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Archive x86 build artifacts
       uses: actions/upload-artifact@v3
       with:
@@ -170,17 +192,6 @@ jobs:
       shell: pwsh
       run: |
         .\ci\stage-inno-setup-and-run.ps1
-    - name: Install Python packages
-      uses: BSFishy/pip-action@v1
-      with:
-        packages: |
-          b2sdk
-    - name: Upload artifact to B2
-      run: python .\ci\upload-b2.py .\
-      env:
-        B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
-        B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
-        B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Upload setup installer to Github
       uses: actions/upload-artifact@v2
       with:
