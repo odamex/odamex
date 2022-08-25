@@ -374,6 +374,7 @@ std::vector<std::string> M_ScanPWADs()
 {
 	const std::vector<std::string> dirs = M_FileSearchDirs();
 
+	// possibly change this
 	std::vector<std::string> rvo;
 	OHashTable<OCRC32Sum, bool> found;
 
@@ -399,9 +400,14 @@ std::vector<std::string> M_ScanPWADs()
 
 			// Does the gameinfo exist?
 			const fileIdentifier_t* id = W_GameInfo(crc32);
-			if (id != NULL)
+			if (id == NULL)
+			{
+				// do stuff for pwads
+			} else
+			{
 				continue;
-
+			}
+				
 			//scannedIWAD_t pwad = {fullpath, id};
 			rvo.push_back(StdStringToLower(files[j]));
 			found[crc32] = true;

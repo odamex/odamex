@@ -97,7 +97,7 @@ class BootWindow : public Fl_Window
 				} // Fl_Check_Browser* m_PWADSelectBrowser
 				{
 					m_PWADOrderBrowser = new Fl_Hold_Browser(200, 35, 180, 155);
-				}
+				} // Fl_Hold_Browser* m_PWADOrderBrowser
 				{
 					Fl_Button* doWADUp = new Fl_Button(395, 90, 20, 20, "@2<<");
 					doWADUp->callback(BootWindow::doWADUpCB, static_cast<void*>(this));
@@ -172,8 +172,10 @@ class BootWindow : public Fl_Window
 		BootWindow* boot = static_cast<BootWindow*>(data);
 
 		Fl_Group* clicked = static_cast<Fl_Group*>(tabs->value());
-		if (clicked != boot->m_tabIWAD || clicked != boot->m_tabPWADs)
+		if (clicked != boot->m_tabIWAD && clicked != boot->m_tabPWADs)
 			return;
+		// temporary
+		boot->scanCheckedPWADs();
 
 		// User clicked on the first tab, see if we need to regenerate the
 		// list of IWADs.
@@ -325,9 +327,20 @@ class BootWindow : public Fl_Window
 		m_PWADs = M_ScanPWADs();
 		for (size_t i = 0; i < m_PWADs.size(); i++)
 		{
-			m_PWADSelectBrowser->add(m_PWADs[i].c_str(), 0);
+			m_PWADSelectBrowser->add(m_PWADs[i].c_str());
 		}
 		m_genWaddirs = ::waddirs.str();
+	}
+
+	void scanCheckedPWADs()
+	{
+		// dont clear, only add if not already there
+		m_PWADOrderBrowser->clear();
+		for (size_t i = 0; i < m_PWADSelectBrowser->nitems(); i++) 
+		{
+			if (m_PWADSelectBrowser->checked(i))
+				m_PWADOrderBrowser->add(m_PWADSelectBrowser->text(i));
+		}
 	}
 
 	/**
