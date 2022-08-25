@@ -26,20 +26,8 @@ else
 }
 
 function UnzipArtifacts {
-    7z.exe x .\Odamex-Win-x64.zip "-o${UnzippedX64}"
-    7z.exe x .\Odamex-Win-x86.zip "-o${UnzippedX86}"
-
-    Set-Variable -Name "x86zips" -Value (Get-ChildItem -Path ${UnzippedX86} -Filter "*.zip")
-    foreach ($zip in $x86zips)
-    {
-        7z.exe x $zip.Name "-o${UnzippedX86}"
-    }
-
-    Set-Variable -Name "x64zips" -Value (Get-ChildItem -Path ${UnzippedX64} -Filter "*.zip")
-    foreach ($zip in $x64zips)
-    {
-        7z.exe x $zip.Name "-o${UnzippedX64}"
-    }
+    7z.exe x odamex-win64-*.zip "-o${UnzippedX64}"
+    7z.exe x odamex-win32-*.zip "-o${UnzippedX86}"
 }
 
 # Lay files out in a path that Inno Setup expects.
