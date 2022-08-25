@@ -1,4 +1,4 @@
-name: Windows-Release
+name: Windows-Release-Candidate
 
 on:
   push:

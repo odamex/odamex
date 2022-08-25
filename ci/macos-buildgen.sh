@@ -8,7 +8,7 @@ IFS=$'\n\t'
 set -x
 
 # Install packages
-brew install sdl2 sdl2_mixer wxmac
+brew install sdl2@2.0.22 sdl2_mixer wxmac
 
 # Generate build
 mkdir -p build && cd build
