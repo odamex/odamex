@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,7 +27,7 @@
 #pragma once
 
 void OnChangedSwitchTexture(line_t* line, int useAgain);
-void G_SecretExitLevel(int position, int drawscores);
+void G_SecretExitLevel(int position, int drawscores, AActor* thing);
 void P_DamageMobj(AActor* target, AActor* inflictor, AActor* source, int damage, int mod,
                   int flags);
 bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,

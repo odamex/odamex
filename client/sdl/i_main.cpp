@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -106,6 +107,78 @@ void STACK_ARGS nx_early_deinit (void)
 }
 #endif
 
+std::string parse_uri(char const* uri, char const* protocol, bool return_ticket = false)
+{
+	std::string location = uri + strlen(protocol);
+
+	// check and parse query parameters
+	size_t query_start = location.find_first_of('?');
+	if (query_start != std::string::npos)
+	{
+		std::string parameters = location.substr(query_start + 1);
+
+		if (!parameters.empty())
+		{
+			size_t param_start = 0;
+			size_t param_end = 0;
+
+			do
+			{
+				param_end = parameters.find_first_of('&', param_start);
+
+				std::string parameter = parameters.substr(param_start, param_end - param_start);
+				size_t key_end = parameter.find_first_of('=');
+
+				std::string key = parameter.substr(0, key_end);
+				std::string value = key_end != std::string::npos ? parameter.substr(key_end + 1) : "";
+
+				if (!key.empty())
+				{
+					char const first_char = key.at(0);
+					bool const has_qualifier = first_char == '-' || first_char == '+' || first_char == '@';
+
+					Args.AppendArg(has_qualifier ? key.c_str() : ("-" + key).c_str());
+				}
+
+				if (!value.empty())
+				{
+					Args.AppendArg(value.c_str());
+					if (return_ticket && key == "ticket")
+						return value;
+				}
+
+				param_start = param_end + 1;
+			} while (param_end != std::string::npos);
+		}
+
+		location = location.substr(0, query_start);
+	}
+
+
+	// if no ticket found, return empty string
+	if (return_ticket)
+		return "";
+
+	size_t term = location.find_first_of('/');
+
+	if (term == std::string::npos)
+		term = location.length();
+
+	return location.substr(0, term);
+}
+
+std::string parse_scheme(int argc, char* argv[], const char* protocol)
+{
+	if (argc == 2 && argv && argv[1])
+	{
+		const char* uri = argv[1];
+
+		if (uri && strncmp(uri, protocol, strlen(protocol)) == 0)
+			return parse_uri(uri, protocol);
+	}
+
+	return std::string();
+}
 
 #if defined GCONSOLE && !defined __SWITCH__ 
 int I_Main(int argc, char *argv[])
@@ -152,6 +225,34 @@ int main(int argc, char *argv[])
 			exit(EXIT_SUCCESS);
 		}
 
+		// denis - if argv[1] starts with "odamex://"
+		std::string host = parse_scheme(argc, argv, "odamex://");
+		if (!host.empty())
+		{
+			Args.AppendArg("-connect");
+			Args.AppendArg(host.c_str());
+		}
+
+		// doombattlezone://doombattle.zone/play/?ticket=<ticket>
+		char const* dbz_protocol = "doombattlezone://";
+		host = parse_scheme(argc, argv, dbz_protocol);
+		if (!host.empty())
+		{
+			Args.AppendArg("-battle");
+			Args.AppendArg(argv[1]);
+		}
+		else
+		{
+			char const* battle_value = Args.CheckValue("-battle");
+			if (battle_value)
+			{
+				if (strncmp(battle_value, dbz_protocol, strlen(dbz_protocol)) == 0)
+					parse_uri(battle_value, dbz_protocol);
+				else
+					throw CDoomError("Invalid scheme for battle");
+			}
+		}
+
 		const char* crashdir = ::Args.CheckValue("-crashdir");
 		if (crashdir)
 		{
@@ -167,25 +268,6 @@ int main(int argc, char *argv[])
 		if (CON_FILE)
 		{
 			CON.open(CON_FILE, std::ios::in);
-		}
-
-		// denis - if argv[1] starts with "odamex://"
-		if(argc == 2 && argv && argv[1])
-		{
-			const char *protocol = "odamex://";
-			const char *uri = argv[1];
-
-			if(strncmp(uri, protocol, strlen(protocol)) == 0)
-			{
-				std::string location = uri + strlen(protocol);
-				size_t term = location.find_first_of('/');
-
-				if(term == std::string::npos)
-					term = location.length();
-
-				Args.AppendArg("-connect");
-				Args.AppendArg(location.substr(0, term).c_str());
-			}
 		}
 
 #if defined(SDL12)

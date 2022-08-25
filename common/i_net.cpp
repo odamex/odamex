@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -384,7 +385,7 @@ void NetadrToSockadr (netadr_t *a, struct sockaddr_in *s)
      s->sin_port = a->port;
 }
 
-char *NET_AdrToString (netadr_t a)
+char *NET_AdrToString (const netadr_t& a)
 {
      static  char    s[64];
 
@@ -1130,6 +1131,8 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_maplist_index);
 	SVC_INFO(svc_toast);
 	SVC_INFO(svc_hordeinfo);
+	SVC_INFO(svc_transferplayer);
+	SVC_INFO(svc_battleover);
 	SVC_INFO(svc_max);
 
 	// Client Messages.

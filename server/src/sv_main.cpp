@@ -5,6 +5,7 @@
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -72,6 +73,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <google/protobuf/text_format.h>
 
 #include "server.pb.h"
 
@@ -116,9 +118,11 @@ EXTERN_CVAR(sv_ticbuffer)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(sv_teamsinplay)
+EXTERN_CVAR(sv_spectator_seconds)
 EXTERN_CVAR(g_winnerstays)
 EXTERN_CVAR(debug_disconnect)
 EXTERN_CVAR(g_resetinvonexit)
+EXTERN_CVAR(sv_validateticket)
 
 void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
@@ -128,6 +132,7 @@ bool P_LineSpecialMovesSector(short special);
 
 void SV_UpdateShareKeys(player_t& player);
 std::string V_GetTeamColor(UserInfo userinfo);
+void MOTDCmd(player_t& player);
 
 CVAR_FUNC_IMPL (sv_maxclients)
 {
@@ -391,6 +396,44 @@ void SV_KickPlayer(player_t &player, const std::string &reason) {
 	SV_DropClient(player);
 }
 
+void SV_PlayerLevelTimeLimitReached(player_t& player, bool broadcast, bool kill_player)
+{
+	SV_UpdatePlayerLevelTime(player, 0, true, "SV_PlayerLevelTimeLimitReached");
+
+	// Avoid a segfault from an invalid player.
+	if (!validplayer(player))
+		return;
+
+	if (broadcast)
+		SV_BroadcastPrintf("%s is out of time!\n", player.userinfo.netname.c_str());
+
+	// Use suicide as means of death for display until "out of time" is implemented
+	if (kill_player)
+		SV_Suicide(player);
+	else
+		SV_SetPlayerSpec(player, true, true);
+}
+
+void SV_UpdatePlayerLevelTime(player_t& player, int timelimit, bool update_client, char const* caller)
+{
+	int const current_value = player.level_endtime;
+	player.level_endtime = timelimit == 0 ? 0 : level.time + timelimit * TICRATE;
+	bool const changed = current_value != player.level_endtime;
+
+	if (timelimit)
+		player.level_starttime = level.time;
+
+	float total_time = static_cast<float>(level.time - player.level_starttime) / TICRATE;
+
+	Printf(PRINT_HIGH, "PLAYERLEVELTIME - LIMIT: %d(%d/%d) TOTAL: %06.2fs PLAYER: %s(%d) DEBUG: %d/%d/%s\n",
+		timelimit, level.time/TICRATE, player.level_endtime/TICRATE, total_time,
+		player.userinfo.netname.c_str(), player.playerstate,
+		changed, update_client, caller);
+
+	if (changed && update_client)
+		MSG_WriteSVC(&player.client.reliablebuf, SVC_PlayerMembers(player, SVC_PM_LEVEL));
+}
+
 // Invalidate a player.
 //
 // Usually happens when corrupted messages are passed to the server by the
@@ -640,6 +683,20 @@ void SV_GetPackets()
 			if(player.playerstate != PST_DISCONNECT)
 			{
 				player.client.last_received = gametic;
+
+				// if there is any delay during the connection flow,
+				//   the client may send a challenge when the server expects a command
+				if (MSG_BytesLeft() == 4)
+				{
+					long cmd = MSG_ReadLong();
+					if (cmd == LAUNCHER_CHALLENGE)
+					{
+						Printf("Ignoring LAUNCHER_CHALLENGE from %s ...\n", NET_AdrToString(net_from));
+						return;
+					}
+					MSG_SetOffset(0, buf_t::BT_SSET);
+				}
+
 				SV_ParseCommands(player);
 			}
 		}
@@ -1722,6 +1779,7 @@ static void SV_DisconnectOldClient()
 }
 
 void G_DoReborn(player_t& playernum);
+void SV_EnableSpectatorMode(player_t& player);
 
 //
 //	SV_ConnectClient
@@ -1806,6 +1864,7 @@ void SV_ConnectClient()
 	player->JoinTime = time(NULL);
 
 	cl->version = MSG_ReadShort();
+	player->ticket = MSG_ReadString();
 	byte connection_type = MSG_ReadByte();
 
 	// [SL] 2011-05-11 - Register the player with the reconciliation system
@@ -1815,6 +1874,13 @@ void SV_ConnectClient()
 	// Check if the client uses the same version as the server.
 	if (!SV_CheckClientVersion(cl, it))
 	{
+		SV_DropClient(*player);
+		return;
+	}
+
+	if (G_IsBattle() && sv_validateticket && player->ticket.empty())
+	{
+		Printf("%s disconnected (empty ticket).\n", NET_AdrToString(net_from));
 		SV_DropClient(*player);
 		return;
 	}
@@ -1858,9 +1924,19 @@ void SV_ConnectClient()
 		return;
 	}
 
+	Printf("TICKET(%s): %s\n", player->userinfo.netname.c_str(), player->ticket.c_str());
+
+	if (!sv_validateticket)
+		SV_SendConsolePlayer(*player);
+}
+
+void SV_SendConsolePlayer(player_t& player)
+{
+	client_t* cl = &player.client;
+
 	// send consoleplayer number
-	MSG_WriteSVC(&cl->reliablebuf, SVC_ConsolePlayer(*player, cl->digest));
-	SV_SendPacket(*player);
+	MSG_WriteSVC(&cl->reliablebuf, SVC_ConsolePlayer(player, cl->digest));
+	SV_SendPacket(player);
 }
 
 void SV_ConnectClient2(player_t& player)
@@ -1886,14 +1962,7 @@ void SV_ConnectClient2(player_t& player)
 	player.playerstate = PST_ENTER;
 
 	if (!step_mode)
-	{
-		player.spectator = true;
-		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
-		{
-			MSG_WriteSVC(&pit->client.reliablebuf,
-			             SVC_PlayerMembers(player, SVC_PM_SPECTATOR));
-		}
-	}
+		SV_EnableSpectatorMode(player);
 
 	// Send a map name
 	MSG_WriteSVC(&player.client.reliablebuf,
@@ -1910,6 +1979,8 @@ void SV_ConnectClient2(player_t& player)
 
 	SV_BroadcastPrintf("%s has connected.\n", player.userinfo.netname.c_str());
 
+	SV_PrintUserInfo(player, "CONNECT");
+
 	// tell others clients about it
 	for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 	{
@@ -1920,7 +1991,7 @@ void SV_ConnectClient2(player_t& player)
 	SV_SendPlayerQueuePositions(&player, true); 
 
 	// Send out the server's MOTD.
-	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
+	MOTDCmd(player);
 }
 
 //
@@ -3418,7 +3489,9 @@ void SV_Spectate(player_t &player)
 	}
 	else
 	{
-		SV_SetPlayerSpec(player, Code);
+		// Don't allow client to enable spectator mode if a limit was set
+		if (player.spectator || !sv_spectator_seconds)
+			SV_SetPlayerSpec(player, Code);
 	}
 }
 
@@ -3488,6 +3561,7 @@ void SV_JoinPlayer(player_t& player, bool silent)
 
 	// Warn everyone we're not a spectator anymore.
 	player.spectator = false;
+	player.spectator_endtime = 0;
 
 	// Whatever mobj we had it doesn't matter anymore.
 	if (player.mo)
@@ -3519,8 +3593,7 @@ void SV_JoinPlayer(player_t& player, bool silent)
 	if (!silent)
 	{
 		if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
-			SV_BroadcastPrintf("%s joined the game.\n",
-			                   player.userinfo.netname.c_str());
+			SV_BroadcastPrintf("%s joined the game.\n", player.userinfo.netname.c_str());
 		else
 			SV_BroadcastPrintf("%s joined the game on the %s team.\n",
 			                   player.userinfo.netname.c_str(),
@@ -3529,6 +3602,22 @@ void SV_JoinPlayer(player_t& player, bool silent)
 
 	M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team,
 	              M_GetPlayerId(&player, player.userinfo.team), 0, 0);
+}
+
+void SV_EnableSpectatorMode(player_t &player)
+{
+	// if player is already spectator and there's no spectator end time, skip update
+	if (player.spectator && !sv_spectator_seconds)
+		return;
+
+	player.spectator = true;
+	if (sv_spectator_seconds)
+		player.spectator_endtime = level.time + sv_spectator_seconds.asInt() * TICRATE;
+
+	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	{
+		MSG_WriteSVC(&it->client.reliablebuf, SVC_PlayerMembers(player, SVC_PM_SPECTATOR));
+	}
 }
 
 void SV_SpecPlayer(player_t &player, bool silent)
@@ -3544,12 +3633,7 @@ void SV_SpecPlayer(player_t &player, bool silent)
 	if (player.playerstate == PST_DEAD)
 		G_DoReborn(player);
 
-	player.spectator = true;
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
-	{
-		MSG_WriteSVC(&it->client.reliablebuf,
-		             SVC_PlayerMembers(player, SVC_PM_SPECTATOR));
-	}
+	SV_EnableSpectatorMode(player);
 
 	// [AM] Set player unready if we're in warmup mode.
 	if (sv_warmup)
@@ -4067,7 +4151,7 @@ static void TimeCheck()
 	if (P_AtInterval(1 * TICRATE)) // every second
 	{
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
-			MSG_WriteSVC(&it->client.netbuf, SVC_LevelLocals(level, SVC_LL_TIME));
+			MSG_WriteSVC(&it->client.netbuf, SVC_LevelLocals(level, SVC_MSG_ALL));
 	}
 }
 
@@ -4126,12 +4210,27 @@ void SV_TouchSpecial(AActor *special, player_t *player)
 	MSG_WriteSVC(&cl->reliablebuf, SVC_TouchSpecial(special));
 }
 
+void SV_PlayerTimesUpdate(player_t& player)
+{
+	// check if player has reached spectator timelimit and force them out of spectator mode
+	if (player.spectator && player.spectator_endtime > 0 && level.time >= player.spectator_endtime)
+		// this may not clear spectator status due to join delay or join rules so just keep retrying.
+		SV_SetPlayerSpec(player, false, true);
+
+	// if level time limit is set, this is where to check & end the game for the player
+	if (player.level_endtime > 0 && level.time >= player.level_endtime)
+		SV_PlayerLevelTimeLimitReached(player, "Player ran out of time.", true);
+}
+
 void SV_PlayerTimes (void)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (it->ingame())
+		{
 			(it->GameTime) += 1;
+			SV_PlayerTimesUpdate(*it);
+		}
 	}
 }
 
@@ -4266,6 +4365,99 @@ void SV_RunTics()
 	last_player_count = players.size();
 }
 
+static void UnpackBoolArray(bool* bools, size_t count, uint32_t in)
+{
+	for (size_t i = 0; i < count; i++)
+	{
+		bools[i] = in & BIT(i);
+	}
+}
+
+static void SV_SetPlayerInfo(player_t& p, const odaproto::svc::PlayerInfo* msg)
+{
+	uint32_t weaponowned = msg->player().weaponowned();
+	UnpackBoolArray(p.weaponowned, NUMWEAPONS, weaponowned);
+
+	uint32_t cards = msg->player().cards();
+	UnpackBoolArray(p.cards, NUMCARDS, cards);
+
+	p.backpack = msg->player().backpack();
+
+	for (int i = 0; i < NUMAMMO; i++)
+	{
+		if (i < msg->player().ammo_size())
+			p.ammo[i] = msg->player().ammo(i);
+		else
+			p.ammo[i] = 0;
+
+		if (i < msg->player().maxammo_size())
+			p.maxammo[i] = msg->player().maxammo(i);
+		else
+			p.maxammo[i] = 0;
+	}
+
+	p.health = msg->player().health();
+	p.armorpoints = msg->player().armorpoints();
+	p.armortype = msg->player().armortype();
+
+	if (p.lives == 0 && msg->player().lives() > 0)
+	{
+		// Stop spying so you know you're back from the dead.
+		::displayplayer_id = ::consoleplayer_id;
+	}
+	p.lives = msg->player().lives();
+
+	weapontype_t pending = static_cast<weapontype_t>(msg->player().pendingweapon());
+	if (pending != wp_nochange && pending < NUMWEAPONS)
+	{
+		p.pendingweapon = pending;
+	}
+	weapontype_t readyweapon = static_cast<weapontype_t>(msg->player().readyweapon());
+	if (readyweapon != p.readyweapon && readyweapon < NUMWEAPONS)
+	{
+		p.pendingweapon = readyweapon;
+	}
+
+	for (int i = 0; i < NUMPOWERS; i++)
+	{
+		if (i < msg->player().powers_size())
+		{
+			p.powers[i] = msg->player().powers(i);
+		}
+		else
+		{
+			p.powers[i] = 0;
+		}
+	}
+
+	if (!p.spectator)
+		p.cheats = msg->player().cheats();
+
+	SV_SendPlayerInfo(p);
+}
+
+static void SV_SetUserInfo(player_t& p, const odaproto::svc::UserInfo* msg)
+{
+	p.userinfo.netname = msg->netname();
+
+	p.userinfo.team = static_cast<team_t>(msg->team());
+	if (p.userinfo.team < 0 || p.userinfo.team >= NUMTEAMS)
+		p.userinfo.team = TEAM_BLUE;
+
+	p.userinfo.gender = static_cast<gender_t>(msg->gender());
+	if (p.userinfo.gender < 0 || p.userinfo.gender >= NUMGENDER)
+		p.userinfo.gender = GENDER_NEUTER;
+
+	p.userinfo.color[0] = 255;
+	p.userinfo.color[1] = msg->color().r();
+	p.userinfo.color[2] = msg->color().g();
+	p.userinfo.color[3] = msg->color().b();
+
+	p.GameTime = msg->join_time();
+
+	SV_BroadcastUserInfo(p);
+}
+
 
 BEGIN_COMMAND(step)
 {
@@ -4283,6 +4475,180 @@ BEGIN_COMMAND(step)
 }
 END_COMMAND(step)
 
+BEGIN_COMMAND(validateticket)
+{
+	if (argc != 3)
+	{
+		Printf("Usage : validateticket <#playerid> 0|1\n");
+		Printf("Validate ticket for this player <#playerid> on this server\n");
+		return;
+	}
+
+	player_t& player = idplayer(atoi(argv[1]));
+
+	if (!validplayer(player))
+	{
+		Printf(PRINT_HIGH, "Invalid player id.\n");
+		return;
+	}
+
+	int valid = atoi(argv[2]);
+
+	if (valid == 1)
+		SV_SendConsolePlayer(player);
+	else
+	{
+		Printf(PRINT_HIGH, "Dropping client - invalid ticket %d.\n", valid);
+		SV_DropClient(player);
+	}
+}
+END_COMMAND(validateticket)
+
+BEGIN_COMMAND(transferplayer)
+{
+	if (argc != 3)
+	{
+		Printf("Usage : transferplayer <#playerid> <server_address>\n");
+		Printf("Transfer <#playerid> to server at <server_address>\n");
+		return;
+	}
+
+	SV_TransferPlayer(atoi(argv[1]), argv[2]);
+}
+END_COMMAND(transferplayer)
+
+BEGIN_COMMAND(tp)
+{
+	const std::string command = std::string("transferplayer").append(args);
+	AddCommandString(command);
+}
+END_COMMAND(tp)
+
+BEGIN_COMMAND(battleover)
+{
+	if (argc != 3)
+	{
+		Printf("Usage : battleover <#playerid> <winner> <hud_markup> <client_message>\n");
+		Printf("Ends the battle for <#playerid> where,\n");
+		Printf("  <winner> - true/false value indicates if player won or lost battle\n");
+		Printf("  <hud_markup> - markup to display on battle hud\n");
+		Printf("  <client_message> - broadcast message\n");
+		return;
+	}
+
+	bool const winner = !stricmp(argv[2], "TRUE") || !stricmp(argv[2], "T") || atoi(argv[2]) == 1;
+
+	SV_PlayerBattleOver(atoi(argv[1]), winner, argv[3], argv[4]);
+}
+END_COMMAND(battleover)
+
+BEGIN_COMMAND(setplayerinfo)
+{
+	if (argc != 3)
+	{
+		Printf("Usage : setplayerinfo <#playerid> <player_info>\n");
+		Printf("Update player info for <#playerid> on this server\n");
+		return;
+	}
+
+	player_t& player = idplayer(atoi(argv[1]));
+
+	if (!validplayer(player))
+	{
+		Printf(PRINT_HIGH, "Invalid player id.\n");
+		return;
+	}
+
+	odaproto::svc::PlayerInfo msg;
+
+	std::string payload = Unescape(argv[2]);
+
+	if (!google::protobuf::TextFormat::ParseFromString(payload.c_str(), &msg))
+	{
+		Printf(PRINT_HIGH, "Invalid player info.\n");
+		return;
+	}
+
+	SV_SetPlayerInfo(player, &msg);
+}
+END_COMMAND(setplayerinfo)
+
+BEGIN_COMMAND(setuserinfo)
+{
+	if (argc != 3)
+	{
+		Printf("Usage : setuserinfo <#playerid> <user_info>\n");
+		Printf("Update user info for <#playerid> on this server\n");
+		return;
+	}
+
+	player_t& player = idplayer(atoi(argv[1]));
+
+	if (!validplayer(player))
+	{
+		Printf(PRINT_HIGH, "Invalid player id.\n");
+		return;
+	}
+
+	odaproto::svc::UserInfo msg;
+
+	std::string payload = Unescape(argv[2]);
+
+	if (!google::protobuf::TextFormat::ParseFromString(payload.c_str(), &msg))
+	{
+		Printf(PRINT_HIGH, "Invalid user info.\n");
+		return;
+	}
+
+	SV_SetUserInfo(player, &msg);
+}
+END_COMMAND(setuserinfo)
+
+BEGIN_COMMAND(printplayerinfo)
+{
+	if (argc > 1)
+	{
+		player_t& player = idplayer(atoi(argv[1]));
+
+		if (!validplayer(player))
+		{
+			Printf(PRINT_HIGH, "Bad player number.\n");
+			return;
+		}
+
+		SV_PrintPlayerInfo(player, "CONSOLE");
+	}
+	else
+	{
+		Printf("Usage : printplayerinfo <#playerid>\n");
+		Printf("Prints playerinfo message for the selected player (use \"playerlist\" to display player IDs).\n");
+		return;
+	}
+}
+END_COMMAND(printplayerinfo)
+
+BEGIN_COMMAND(printuserinfo)
+{
+	if (argc > 1)
+	{
+		player_t& player = idplayer(atoi(argv[1]));
+
+		if (!validplayer(player))
+		{
+			Printf(PRINT_HIGH, "Bad player number.\n");
+			return;
+		}
+
+		SV_PrintUserInfo(player, "CONSOLE");
+	}
+	else
+	{
+		Printf("Usage : printuserinfo <#playerid>\n");
+		Printf("Prints userinfo message for the selected player (use \"playerlist\" to display player IDs).\n");
+		return;
+	}
+}
+END_COMMAND(printuserinfo)
 
 // For Debugging
 BEGIN_COMMAND (playerinfo)
@@ -4872,6 +5238,62 @@ void SV_ShareKeys(card_t card, player_t &player)
 	{
 		SV_UpdateShareKeys(*it);
 	}
+}
+
+void SV_PrintMessage(std::string const& action, const google::protobuf::Message& message)
+{
+	std::string payload;
+	google::protobuf::TextFormat::PrintToString(message, &payload);
+
+	size_t index = 0;
+	while (index = payload.find("\n", index), index != std::string::npos)
+	{
+		payload.replace(index++, 1, "\\n");
+	}
+
+	Printf("%s(%s): %s", action.c_str(), message.GetTypeName().c_str(), payload.c_str());
+}
+
+void SV_PrintPlayerInfo(player_t& player, std::string const& action)
+{
+	SV_PrintMessage(action, SVC_PlayerInfo(player));
+}
+
+void SV_PrintUserInfo(player_t& player, std::string const& action)
+{
+	SV_PrintMessage(action, SVC_UserInfo(player, 0));
+}
+
+void SV_TransferPlayer(byte player_id, char const *server_address)
+{
+	player_t& player = idplayer(player_id);
+
+	if (!validplayer(player))
+	{
+		Printf(PRINT_HIGH, "Invalid player id.\n");
+		return;
+	}
+
+	SV_PrintPlayerInfo(player, "TRANSFER");
+
+	MSG_WriteSVC(&player.client.reliablebuf, SVC_TransferPlayer(server_address, ""));
+}
+
+void SV_PlayerBattleOver(byte player_id, bool winner, char const* hud_markup, char const* client_message)
+{
+	player_t& player = idplayer(player_id);
+
+	if (!validplayer(player))
+	{
+		Printf(PRINT_HIGH, "Invalid player id.\n");
+		return;
+	}
+
+	SV_BroadcastPrintf("%s %s the battle!\n", player.userinfo.netname.c_str(), winner ? "won" : "lost");
+
+	SV_SetPlayerSpec(player, true, true);
+
+	MSG_WriteSVC(&player.client.reliablebuf, SVC_BattleOver(winner, hud_markup, client_message));
 }
 
 VERSION_CONTROL (sv_main_cpp, "$Id$")

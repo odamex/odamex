@@ -5,6 +5,7 @@
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -105,6 +106,8 @@ void CMD_CoinFlip(std::string &result);
 bool CMD_KickCheck(std::vector<std::string> arguments, std::string &error,
 				   size_t &pid, std::string &reason);
 void SV_KickPlayer(player_t &player, const std::string &reason = "");
+void SV_PlayerLevelTimeLimitReached(player_t& player, bool broadcast, bool kill_player);
+void SV_UpdatePlayerLevelTime(player_t& player, int timelimit, bool update_client, char const* reason);
 bool CMD_ForcespecCheck(const std::vector<std::string> &arguments,
 						std::string &error, size_t &pid);
 void SV_SetPlayerSpec(player_t &player, bool setting, bool silent = false);
@@ -127,6 +130,12 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, in
 void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
                           bool playerOnly,
                           const std::vector<int>& args = std::vector<int>());
+
+void SV_PrintPlayerInfo(player_t& player, std::string const& action);
+void SV_PrintUserInfo(player_t& player, std::string const& action);
+void SV_TransferPlayer(byte player_id, char const* server_address);
+void SV_PlayerBattleOver(byte player_id, bool winner, char const* hud_markup, char const* client_message);
+void SV_SendConsolePlayer(player_t& player);
 
 bool CompareQueuePosition(const player_t* p1, const player_t* p2);
 

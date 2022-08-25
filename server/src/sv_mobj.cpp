@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,13 +35,16 @@
 #include "m_wdlstats.h"
 
 EXTERN_CVAR(sv_maxplayers)
+EXTERN_CVAR(sv_level_seconds)
 
 void G_PlayerReborn(player_t &player);
 void CTF_RememberFlagPos(mapthing2_t *mthing);
+void SV_EnableSpectatorMode(player_t& player);
 
 void P_SetSpectatorFlags(player_t &player)
 {
-	player.spectator = true;
+	if (!player.spectator)
+		SV_EnableSpectatorMode(player);
 
 	if (player.mo)
 	{
@@ -124,6 +128,14 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	// Set up some special spectator stuff
 	if (player.spectator)
 		P_SetSpectatorFlags(player);
+	else
+	{
+		if (sv_level_seconds)
+		{
+			int level_seconds = sv_level_seconds.asInt();
+			SV_UpdatePlayerLevelTime(player, level_seconds, true, "P_SpawnPlayer");
+		}
+	}
 
 	// setup gun psprite
 	P_SetupPsprites(&player);

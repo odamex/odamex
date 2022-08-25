@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -2300,22 +2301,25 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	{
 		// WDL damage events.
 		// todo: handle voodoo dolls here
+		WDLEvents wdl_event = WDL_EVENT_KILL;
+		int arg0 = 0;
+
 		if (source == NULL && targethasflag)
 		{
-			M_LogActorWDLEvent(WDL_EVENT_ENVIROCARRIERKILL, source, target, f, 0, mod, 0);
+			wdl_event = WDL_EVENT_ENVIROCARRIERKILL;
+			arg0 = f;
 		}
 		else if (source == NULL)
 		{
-			M_LogActorWDLEvent(WDL_EVENT_ENVIROKILL, source, target, 0, 0, mod, 0);
+			wdl_event = WDL_EVENT_ENVIROKILL;
 		}
 		else if (targethasflag)
 		{
-			M_LogActorWDLEvent(WDL_EVENT_CARRIERKILL, source, target, f, 0, mod, 0);
+			wdl_event = WDL_EVENT_CARRIERKILL;
+			arg0 = f;
 		}
-		else
-		{
-			M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod, 0);
-		}
+
+		M_LogActorWDLEvent(wdl_event, source, target, arg0, 0, mod, 0);
 
 		P_KillMobj(source, target, inflictor, false);
 

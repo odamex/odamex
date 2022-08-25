@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -910,7 +911,7 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 			while (x < right)
 			{
 				int amount = std::min(64 - (x & 63), right - x);
-				memcpy(dest, src + ((y & 63) << 6) + (x & 63), amount);
+				memcpy(dest, src + ((byte)(y & 63) << 6) + (x & 63), amount);
 				dest += amount;
 				x += amount;
 			}
@@ -924,7 +925,7 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 
 		for (int y = top; y < bottom; y++)
 		{
-			const byte* src_line = src + ((y & 63) << 6);
+			const byte* src_line = src + ((byte)(y & 63) << 6);
 			for (int x = left; x < right; x++)
 				*dest++ = V_Palette.shade(src_line[x & 63]);
 

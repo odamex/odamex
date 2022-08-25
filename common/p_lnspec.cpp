@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1557,7 +1558,7 @@ FUNC(LS_Exit_Normal)
 {
 	if (it && CheckIfExitIsGood (it))
 	{
-		G_ExitLevel (0, 1);
+		G_ExitLevel (0, 1, it);
 		return true;
 	}
 	return false;
@@ -1568,7 +1569,7 @@ FUNC(LS_Exit_Secret)
 {
 	if (it && CheckIfExitIsGood (it))
 	{
-		G_SecretExitLevel (0, 1);
+		G_SecretExitLevel (0, 1, it);
 		return true;
 	}
 	return false;
@@ -1585,7 +1586,7 @@ FUNC(LS_Teleport_NewMap)
 		if (it && (info.levelnum != 0 && CheckIfExitIsGood(it)))
 		{
 			level.nextmap = info.mapname;
-			G_ExitLevel(arg1, 1);
+			G_ExitLevel(arg1, 1, it);
 			return true;
 		}
 	}
@@ -1631,7 +1632,7 @@ FUNC(LS_Teleport_EndGame)
 	{
 		M_CommitWDLLog();
 		level.nextmap = "EndGameC";
-		G_ExitLevel (0, 1);
+		G_ExitLevel (0, 1, it);
 		return true;
 	}
 	return false;
@@ -2942,7 +2943,7 @@ BOOL CheckIfExitIsGood (AActor *self)
 
 	// Bypass the exit restrictions if we're on a lobby.
 	if (level.flags & LEVEL_LOBBYSPECIAL)
-		return true;	
+		return true;
 
 	// [Toke - dmflags] Old location of DF_NO_EXIT
 	if (sv_gametype != GM_COOP && self)
@@ -2959,7 +2960,10 @@ BOOL CheckIfExitIsGood (AActor *self)
 	if (self->player && multiplayer)
 	{
 		OTimespan tspan;
-		TicsToTime(tspan, ::level.time);
+		if (self->player->level_starttime >= 0)
+			TicsToTime(tspan, ::level.time - self->player->level_starttime);
+		else
+			TicsToTime(tspan, ::level.time);
 
 		std::string tstr;
 		if (tspan.hours)

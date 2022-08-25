@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1888,8 +1889,11 @@ void AM_Drawer()
 
 			if (am_showsecrets)
 			{
-				sprintf(line, TEXTCOLOR_RED "SECRETS:" TEXTCOLOR_NORMAL " %d / %d",
-				        level.found_secrets, level.total_secrets);
+				sprintf(line,
+					TEXTCOLOR_RED "SECRETS:" TEXTCOLOR_NORMAL " %2d / %2d"
+					TEXTCOLOR_RED "  ITEMS:" TEXTCOLOR_NORMAL " %2d / %2d",
+					level.found_secrets, level.total_secrets,
+					level.found_items, level.total_items);
 				int x, y;
 				const int text_width = V_StringWidth(line) * CleanXfac;
 
@@ -2004,4 +2008,4 @@ void AM_Drawer()
 	}
 }
 
-VERSION_CONTROL(am_map_cpp, "$Id$")
+VERSION_CONTROL (am_map_cpp, "$Id$")

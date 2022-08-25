@@ -100,6 +100,21 @@ message LoadMap
 	int32 time = 4;	
 }
 
+// svc_transferplayer
+message TransferPlayer
+{
+	string target_address = 1;
+	string player_message = 2;
+}
+
+// svc_battleover
+message BattleOver
+{
+	bool winner = 1;
+	string hud_markup = 2;
+	string client_message = 3;
+}
+
 // svc_consoleplayer
 message ConsolePlayer
 {
@@ -209,6 +224,11 @@ message PlayerMembers
 
 	// Ch0wW: Include Cheats...
 	uint32 cheats = 15;
+
+	// battle
+	uint32 spectator_endtime = 16;
+	uint32 level_endtime = 17;
+	uint32 level_starttime = 18;
 }
 
 // svc_teammembers

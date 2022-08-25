@@ -6,6 +6,7 @@
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -259,6 +260,34 @@ player_t		&displayplayer()
 player_t		&listenplayer()
 {
 	return displayplayer();
+}
+
+bool G_IsBattle(void)
+{
+	return !ticket.empty();
+}
+
+void G_InitGame(void)
+{
+	// must be called at startup
+	if (players.size() != 0)
+	{
+		Printf(PRINT_WARNING, "!!!!players not empty!!!!!");
+	}
+
+	G_ClearPlayers();
+}
+
+void G_ClearPlayers(void)
+{
+	// Remove all players
+	players.clear();
+
+	// we need a console player as the server will be sending updates
+	// create a default with id 1 for now, will change later once the id comes from the server
+	consoleplayer_id = displayplayer_id = 1;
+	players.push_back(player_t());
+	players.back().id = consoleplayer_id;
 }
 
 // [RH] Name of screenshot file to generate (usually NULL)
@@ -723,6 +752,7 @@ BOOL G_Responder (event_t *ev)
 				stricmp (cmd, "spynext") &&
 				stricmp (cmd, "chase") &&
 				stricmp (cmd, "+showscores") &&
+				stricmp (cmd, "+battleinfo") &&
 				stricmp (cmd, "bumpgamma") &&
 				stricmp (cmd, "screenshot") &&
                 stricmp (cmd, "stepmode") &&
@@ -1170,6 +1200,9 @@ void G_PlayerFinishLevel (player_t &player)
 //
 void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 {
+	if (p.id == consoleplayer_id && G_IsBattle())
+		return;
+
 	size_t i;
 	for (i = 0; i < NUMAMMO; i++)
 	{

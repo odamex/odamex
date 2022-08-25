@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2021 by Alex Mayfield.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -109,6 +110,8 @@ static void InitMap()
 	MapProto(svc_maplist_index, odaproto::svc::MaplistIndex::descriptor());
 	MapProto(svc_toast, odaproto::svc::Toast::descriptor());
 	MapProto(svc_hordeinfo, odaproto::svc::HordeInfo::descriptor());
+	MapProto(svc_transferplayer, odaproto::svc::TransferPlayer::descriptor());
+	MapProto(svc_battleover, odaproto::svc::BattleOver::descriptor());
 	MapProto(svc_netdemocap, odaproto::svc::NetdemoCap::descriptor());
 	MapProto(svc_netdemostop, odaproto::svc::NetDemoStop::descriptor());
 	MapProto(svc_netdemoloadsnap, odaproto::svc::NetDemoLoadSnap::descriptor());

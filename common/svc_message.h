@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2021 by Alex Mayfield.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -148,5 +149,10 @@ odaproto::svc::MaplistUpdate SVC_MaplistUpdate(const maplist_status_t status,
 odaproto::svc::MaplistIndex SVC_MaplistIndex(const byte count, const size_t this_index,
                                              const size_t next_index);
 odaproto::svc::Toast SVC_Toast(const toast_t& toast);
+odaproto::svc::TransferPlayer SVC_TransferPlayer(const char* server_address,
+                                                 const char* player_message);
+odaproto::svc::BattleOver SVC_BattleOver(bool winner,
+                                         const char* hud_markup,
+                                         const char* client_message);
 odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde);
 odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player);

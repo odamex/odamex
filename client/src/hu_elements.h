@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2012 by Alex Mayfield.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,6 +23,7 @@
 
 #pragma once
 
+#include "v_textcolors.h"
 
 namespace hud {
 

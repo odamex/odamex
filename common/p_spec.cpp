@@ -6,6 +6,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -2172,7 +2173,7 @@ void P_ApplySectorDamageEndLevel(player_t* player)
 
 	if (player->health <= 10)
 		if (sv_allowexit)
-			G_ExitLevel(0, 1);
+			G_ExitLevel(0, 1, player->mo);
 }
 
 #ifdef SERVER_APP

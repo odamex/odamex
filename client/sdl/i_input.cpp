@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -381,6 +382,10 @@ static bool I_CanGrab()
 
 	// If playing the game, always grab
 	if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback)
+		return true;
+
+	// while transfering, don't block mouse from being grabbed
+	if ((gamestate == GS_CONNECTING || gamestate == GS_CONNECTED) && ConsoleState != c_down && ConsoleState != c_falling && ConsoleState != c_fallfull)
 		return true;
 
 	return false;

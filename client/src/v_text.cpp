@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -45,6 +46,7 @@ EXTERN_CVAR(msg4color)
 EXTERN_CVAR(hud_scaletext)
 
 OGlobalFont hu_font;
+int hu_font_fixed_width = 0;
 
 static lumpHandle_t hu_bigfont[HU_FONTSIZE];
 static lumpHandle_t hu_smallfont[HU_FONTSIZE];
@@ -151,7 +153,7 @@ void V_TextShutdown()
  * 
  * @param fontname Font name, can be one of "BIGFONT" or "SMALLFONT".
  */
-void V_SetFont(const char* fontname)
+void V_SetFont(const char* fontname, int fixed_width)
 {
 	if (!stricmp(fontname, "BIGFONT"))
 		::hu_font.setFont(::hu_bigfont, ::hu_bigfont_height);
@@ -159,6 +161,8 @@ void V_SetFont(const char* fontname)
 		::hu_font.setFont(::hu_smallfont, ::hu_smallfont_height);
 	else if (!stricmp(fontname, "DIGFONT"))
 		::hu_font.setFont(::hu_digfont, ::hu_digfont_height);
+
+	hu_font_fixed_width = fixed_width;
 }
 
 int V_TextScaleXAmount()
@@ -396,13 +400,25 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 
 		patch_t* ch = W_ResolvePatchHandle(hu_font[c]);
 
-		int w = ch->width() * scalex;
+		int const cw = ch->width();
+		int w = cw * scalex;
 		if (cx + w > I_GetSurfaceWidth())
 			break;
 
-        DrawSWrapper(drawer, ch, cx, cy, ch->width() * scalex, ch->height() * scaley);
+		int x_offset = 0;
+		int wx = cw * scalex;
 
-		cx += w;
+		if (hu_font_fixed_width != 0)
+		{
+			if (cw <= hu_font_fixed_width)
+				x_offset = (hu_font_fixed_width - cw) * scalex / 2.0;
+			else
+				wx *= (float)hu_font_fixed_width / cw;
+		}
+
+        DrawSWrapper(drawer, ch, cx + x_offset, cy, wx, ch->height() * scaley);
+
+		cx += hu_font_fixed_width == 0 ? w : hu_font_fixed_width * scalex;
 	}
 }
 
@@ -430,7 +446,7 @@ int V_StringWidth(const byte* str)
 		if (c < 0 || c >= HU_FONTSIZE)
 			width += 4;
 		else
-			width += W_ResolvePatchHandle(hu_font[c])->width();
+			width += hu_font_fixed_width == 0 ? W_ResolvePatchHandle(hu_font[c])->width() : hu_font_fixed_width;
 	}
 
 	return width;
@@ -492,6 +508,9 @@ int V_LineHeight()
 brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 {
 	if (::hu_font[0].empty())
+		return NULL;
+
+	if (maxwidth <= 0)
 		return NULL;
 
 	brokenlines_t lines[128];	// Support up to 128 lines (should be plenty)

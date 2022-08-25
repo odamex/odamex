@@ -6,6 +6,7 @@
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -74,7 +75,8 @@ bool SetServerVar (const char *name, const char *value)
 void D_SendServerInfoChange (const cvar_t *cvar, const char *value)
 {
 	SetServerVar (cvar->name(), (char *)value);
-	SV_BroadcastPrintf("%s%s has been modified to %s!\n", TEXTCOLOR_YELLOW, cvar->name(), (char*)value);
+	if ( (cvar->flags() & CVAR_NOBROADCAST) == 0 )
+		SV_BroadcastPrintf("%s%s has been modified to %s!\n", TEXTCOLOR_YELLOW, cvar->name(), (char*)value);
 	SV_ServerSettingChange ();
 }
 

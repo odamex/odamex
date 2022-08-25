@@ -6,6 +6,7 @@
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -330,7 +331,7 @@ static void goOn(int position)
 	}
 }
 
-void G_ExitLevel (int position, int drawscores)
+void G_ExitLevel (int position, int drawscores, AActor *thing)
 {
 	secretexit = false;
 
@@ -340,7 +341,7 @@ void G_ExitLevel (int position, int drawscores)
 }
 
 // Here's for the german edition.
-void G_SecretExitLevel (int position, int drawscores)
+void G_SecretExitLevel (int position, int drawscores, AActor *thing)
 {
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gameinfo.flags & GI_MAPxx)
@@ -629,14 +630,18 @@ void G_DoLoadLevel (int position)
 	ST_Start();		// [RH] Make sure status bar knows who we are
 	gameaction = ga_nothing;
 
-	// clear cmd building stuff // denis - todo - could we get rid of this?
-	Impulse = 0;
-	for (i = 0; i < NUM_ACTIONS; i++)
-		if (i != ACTION_MLOOK && i != ACTION_KLOOK)
-			Actions[i] = 0;
-	joyforward = joystrafe = joyturn = joylook = 0;
-	mousex = mousey = 0;
-	sendpause = sendsave = paused = sendcenterview = false;
+
+	if (!G_IsBattle())
+	{
+		// clear cmd building stuff // denis - todo - could we get rid of this?
+		Impulse = 0;
+		for (i = 0; i < NUM_ACTIONS; i++)
+			if (i != ACTION_MLOOK && i != ACTION_KLOOK)
+				Actions[i] = 0;
+		joyforward = joystrafe = joyturn = joylook = 0;
+		mousex = mousey = 0;
+		sendpause = sendsave = paused = sendcenterview = false;
+	}
 
 	if (timingdemo)
 	{

@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -410,8 +411,8 @@ void G_DeferedInitNew(const char *mapname);
 void G_DeferedFullReset();
 void G_DeferedReset();
 
-void G_ExitLevel(int position, int drawscores);
-void G_SecretExitLevel(int position, int drawscores);
+void G_ExitLevel(int position, int drawscores, AActor *thing = 0);
+void G_SecretExitLevel(int position, int drawscores, AActor *thing = 0);
 
 void G_DoLoadLevel(int position);
 void G_DoResetLevel(bool full_reset);

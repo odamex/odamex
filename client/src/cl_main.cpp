@@ -6,6 +6,7 @@
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -48,6 +49,7 @@
 #include "md5.h"
 #include "m_fileio.h"
 #include "r_sky.h"
+#include "cl_battle.h"
 #include "cl_demo.h"
 #include "cl_download.h"
 #include "cl_maplist.h"
@@ -116,6 +118,8 @@ std::string connectpasshash = "";
 BOOL      connected;
 netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
+std::string ticket;
+std::string battle_uri;
 
 const static size_t PACKET_SEQ_MASK = 0xFF;
 static int packetseq[256];
@@ -386,7 +390,8 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 
 	memset (&serveraddr, 0, sizeof(serveraddr));
 	connected = false;
-	gameaction = ga_fullconsole;
+	if (reason != NQ_TRANSFER)
+		gameaction = ga_fullconsole;
 	noservermsgs = false;
 	AM_Stop();
 
@@ -448,6 +453,9 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 
 	if (::debug_disconnect)
 		Printf("  (%s:%d)\n", file, line);
+
+	if (G_IsBattle())
+		CL_RestartBattle();
 }
 
 
@@ -718,40 +726,53 @@ END_COMMAND (step)
 
 BEGIN_COMMAND (connect)
 {
-	if (argc == 1)
+	if (argc == 1 || argc > 4)
 	{
-	    Printf("Usage: connect ip[:port] [password]\n");
+	    Printf("Usage: connect ip[:port] [password|. [ticket]]\n");
 	    Printf("\n");
-	    Printf("Connect to a server, with optional port number");
-	    Printf(" and/or password\n");
+	    Printf("Connect to a server, with optional port number,");
+	    Printf(" password, and ticket\n");
 	    Printf("eg: connect 127.0.0.1\n");
 	    Printf("eg: connect 192.168.0.1:12345 secretpass\n");
+	    Printf("eg: connect 192.168.0.1:12345 . 123456\n");
 
 	    return;
 	}
 
-	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
+	char const* target = argc > 1 ? argv[1] : NULL;
+	char const* password = argc > 2 && strcmp(argv[2], ".") ? argv[2] : NULL;
+	std::string const tic = argc > 3 ? argv[3] : "";
 
-	C_FullConsole();
+	CL_ConnectToServer(target, password, tic, false);
+}
+END_COMMAND (connect)
+
+//
+// CL_ConnectToServer - send this client to another server
+//
+void CL_ConnectToServer(const char* target_address, const char* password, std::string const& opt_ticket, bool is_transfer)
+{
+	// Ch0wW : don't block people connect to a server after playing a demo
+	simulated_connection = false;
+
+	if (!is_transfer)
+		C_FullConsole();
 	gamestate = GS_CONNECTING;
 
-	CL_QuitNetGame(NQ_SILENT);
+	CL_QuitNetGame(is_transfer ? NQ_TRANSFER : NQ_SILENT);
 
-	if (argc > 1)
+	if (target_address)
 	{
-		std::string target = argv[1];
+		if (password)
+		{
+			connectpasshash = MD5SUM(password);
+		}
+		else
+		{
+			connectpasshash = "";
+		}
 
-        // [Russell] - Passworded servers
-        if(argc > 2)
-        {
-            connectpasshash = MD5SUM(argv[2]);
-        }
-        else
-        {
-            connectpasshash = "";
-        }
-
-		if(NET_StringToAdr (target.c_str(), &serveraddr))
+		if (NET_StringToAdr(target_address, &serveraddr))
 		{
 			if (!serveraddr.port)
 				I_SetPort(serveraddr, SERVERPORT);
@@ -760,15 +781,17 @@ BEGIN_COMMAND (connect)
 		}
 		else
 		{
-			Printf("Could not resolve host %s\n", target.c_str());
+			Printf("Could not resolve host %s\n", target_address);
 			memset(&serveraddr, 0, sizeof(serveraddr));
 		}
+		// If ticket is not provided, connect using the same ticket
+		//   (this happens with a transfer player message)
+		if (!opt_ticket.empty())
+			ticket = opt_ticket;
 	}
 
 	connecttimeout = 0;
 }
-END_COMMAND (connect)
-
 
 BEGIN_COMMAND (disconnect)
 {
@@ -1744,7 +1767,7 @@ bool CL_PrepareConnect()
 //
 bool CL_Connect()
 {
-	players.clear();
+	G_ClearPlayers();
 
 	memset(packetseq, -1, sizeof(packetseq));
 
@@ -1855,6 +1878,7 @@ void CL_TryToConnect(DWORD server_token)
 		MSG_WriteLong(&net_buffer, PROTO_CHALLENGE); // send challenge
 		MSG_WriteLong(&net_buffer, server_token); // confirm server token
 		MSG_WriteShort(&net_buffer, version); // send client version
+		MSG_WriteString(&net_buffer, ticket.c_str());
 		MSG_WriteByte(&net_buffer, 0); // send type of connection (play/spectate/rcon/download)
 
 		// GhostlyDeath -- Send more version info

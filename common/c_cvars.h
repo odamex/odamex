@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -104,6 +105,11 @@ CVARS (console variables)
  */
 #define CVAR_ARCHIVE (CVAR_CLIENTARCHIVE | CVAR_SERVERARCHIVE)
 
+/**
+ * Do not broadcast a message when this cvar changes value
+ */
+#define CVAR_NOBROADCAST BIT(14)
+
 // Hints for network code optimization
 typedef enum
 {
@@ -129,6 +135,7 @@ public:
 	virtual ~cvar_t ();
 
 	const char *cstring() const {return m_String.c_str(); }
+	std::string unescaped() const;
 	const std::string& str() const { return m_String; }
 	const char *name() const { return m_Name.c_str(); }
 	const char *helptext() const {return m_HelpText.c_str(); }
@@ -145,6 +152,8 @@ public:
 	// return m_Value as an int, rounded to the nearest integer because
 	// casting truncates instead of rounding
 	int asInt() const { return static_cast<int>(m_Value >= 0.0f ? m_Value + 0.5f : m_Value - 0.5f); }
+
+	bool asBool() const { return m_Value ? true : false; }
 
 	inline void Callback (){ if (m_Callback) m_Callback (*this); }
 
@@ -205,7 +214,7 @@ public:
 	static cvar_t *cvar_forceset (const char *var_name, const char *value);
 
     // list all console variables
-	static void cvarlist();
+	static void cvarlist(const char *filter = NULL);
 
 	cvar_t &operator = (float other) { ForceSet(other); return *this; }
 	cvar_t &operator = (const char *other) { ForceSet(other); return *this; }

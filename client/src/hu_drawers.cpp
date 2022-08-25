@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2012 by Alex Mayfield.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -164,14 +165,32 @@ void Dim(int x, int y,
          const unsigned short w, const unsigned short h,
          const float scale,
          const x_align_t x_align, const y_align_t y_align,
-         const x_align_t x_origin, const y_align_t y_origin)
+         const x_align_t x_origin, const y_align_t y_origin,
+         const argb_t color)
 {
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
 	screen->Dim(x, y, w * x_scale, h * y_scale);
+	if (color != 0)
+	{
+		rectInt_t bounds(x, y, x + w * x_scale, y + h * y_scale);
+		screen->Box(bounds, color);
+	}
 }
 
+void DrawLine(
+	int x, int y, const unsigned short w, const unsigned short h, const float scale,
+	const x_align_t x_align, const y_align_t y_align,
+	const x_align_t x_origin, const y_align_t y_origin,
+	const argb_t color
+)
+{
+	int x_scale, y_scale;
+	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
+	rectInt_t bounds(x, y, x + w * x_scale, y + h * y_scale);
+	screen->Line(bounds.min, bounds.max, color);
+}
 
 // Draw hu_font text.
 void DrawText(int x, int y, const float scale,

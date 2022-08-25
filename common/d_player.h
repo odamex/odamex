@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -127,6 +128,9 @@ public:
 	// player identifier on server
 	byte		id;
 
+	// ticket tracking for battles
+	std::string ticket;
+
 	// current player state, see playerstate_t
 	byte		playerstate;
 
@@ -237,6 +241,9 @@ public:
 
 	byte		spying;					// [SL] id of player being spynext'd by this player
 	bool		spectator;				// [GhostlyDeath] spectating?
+	int			spectator_endtime;		// The time specator mode ends for the player
+	int			level_endtime;			// The time the level ends for the player
+	int			level_starttime;		// The time the level started for the player
 //	bool		deadspectator;			// [tm512] spectating as a dead player?
 	int			joindelay;			// Number of tics to delay player from rejoining
 	int			timeout_callvote;       // [AM] Tic when a vote last finished.
@@ -415,6 +422,10 @@ player_t		&listenplayer();
 player_t		&idplayer(byte id);
 player_t		&nameplayer(const std::string &netname);
 bool			validplayer(player_t &ref);
+
+bool G_IsBattle(void);
+void G_InitGame(void);
+void G_ClearPlayers(void);
 
 /**
  * @brief A collection of pointers to players, commonly called a "view".

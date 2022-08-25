@@ -6,6 +6,7 @@
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,6 +34,8 @@
 extern netadr_t  serveraddr;
 extern BOOL      connected;
 extern int       connecttimeout;
+extern std::string ticket;
+extern std::string battle_uri;
 
 extern bool      noservermsgs;
 extern int       last_received;
@@ -48,6 +51,7 @@ extern bool predicting;
 enum netQuitReason_e
 {
 	NQ_SILENT,     // Don't print a message.
+	NQ_TRANSFER,   // Don't print a message or show full console (character transfer)
 	NQ_DISCONNECT, // Generic message for "typical" forced disconnects initiated by the client.
 	NQ_ABORT,      // Connection attempt was aborted
 	NQ_PROTO,      // Encountered something unexpected in the protocol
@@ -76,5 +80,7 @@ void CL_RunTics();
 
 bool CL_SectorIsPredicting(sector_t *sector);
 argb_t CL_GetPlayerColor(player_t* player);
+
+void CL_ConnectToServer(const char* target_address = NULL, const char* password = NULL, std::string const& tic = "", bool is_transfer = false);
 
 std::string M_ExpandTokens(const std::string &str);

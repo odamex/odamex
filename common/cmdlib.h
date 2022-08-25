@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -65,6 +66,8 @@ size_t  StdStringFind(const std::string& haystack, const std::string& needle,
 size_t  StdStringRFind(const std::string& haystack, const std::string& needle,
     size_t pos, size_t n, bool CIS);
 
+std::string Unescape(const char* valstr);
+std::vector<std::string> StdStringSplit(std::string const& str, std::string const& delimiter);
 std::string StdStringToLower(const std::string&, size_t n = std::string::npos);
 std::string StdStringToLower(const char*, size_t n = std::string::npos);
 std::string StdStringToUpper(const std::string&, size_t n = std::string::npos);

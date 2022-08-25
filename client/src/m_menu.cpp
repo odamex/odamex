@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1276,6 +1277,11 @@ void M_PlayerSetup(int choice)
 {
 	strcpy(savegamestrings[0], cl_name.cstring());
 	M_SetupNextMenu (&PSetupDef);
+
+	drawSkull = true;
+	menuactive = 1;
+	OptionsActive = false;
+
 	PlayerState = &states[mobjinfo[MT_PLAYER].seestate];
 	PlayerTics = PlayerState->tics;
 
@@ -1832,7 +1838,6 @@ bool M_Responder (event_t* ev)
 		else if (Key_IsAcceptKey(ch))
 		{
 			genStringEnter = 0;
-			M_ClearMenus();
 			if (savegamestrings[saveSlot][0])
 				genStringEnd(saveSlot);	// [RH] Function to call when enter is pressed
 		}

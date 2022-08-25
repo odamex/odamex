@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -471,7 +472,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (bossaction || ((!(thing->player && thing->player->health <= 0)) &&
 		                   CheckIfExitIsGood(thing)))
 		{	
-			G_ExitLevel(0, 1);
+			G_ExitLevel(0, 1, thing);
 			return true;
 		}
 		break;
@@ -604,7 +605,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (bossaction || ((!(thing->player && thing->player->health <= 0)) &&
 		                   CheckIfExitIsGood(thing)))
 		{			
-			G_SecretExitLevel(0, 1);
+			G_SecretExitLevel(0, 1, thing);
 			return true;
 		}
 		break;
@@ -2148,7 +2149,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 				P_ChangeSwitchTexture(line, false, true);
 				OnChangedSwitchTexture(line, false);
 			}
-			G_ExitLevel(0, 1);
+			G_ExitLevel(0, 1, thing);
 		}
 		break;
 
@@ -2308,7 +2309,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 				P_ChangeSwitchTexture(line, false, true);
 				OnChangedSwitchTexture(line, false);
 			}
-			G_SecretExitLevel(0, 1);
+			G_SecretExitLevel(0, 1, thing);
 		}
 		break;
 
@@ -3769,7 +3770,12 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 				break;
 			if (thing && CheckIfExitIsGood(thing))
 			{		
-				G_ExitLevel(0, 1);
+				if (serverside)
+				{
+					P_ChangeSwitchTexture(line, false, true);
+					OnChangedSwitchTexture(line, false);
+				}
+				G_ExitLevel(0, 1, thing);
 				return true;
 			}
 			break;
@@ -3781,7 +3787,12 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 				break;
 			if (thing && CheckIfExitIsGood(thing))
 			{
-				G_SecretExitLevel(0, 1);
+				if (serverside)
+				{
+					P_ChangeSwitchTexture(line, false, true);
+					OnChangedSwitchTexture(line, false);
+				}
+				G_SecretExitLevel(0, 1, thing);
 				return true;
 			}
 			break;

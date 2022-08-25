@@ -154,3 +154,8 @@ Root: HKA; Subkey: "Software\Classes\Applications\odamex.exe\SupportedTypes"; Va
 Root: HKA; Subkey: "Software\Classes\odamex"; ValueType: string; ValueName: ""; ValueData: "URL:Odamex Protocol"; Flags: uninsdeletekey
 Root: HKA; Subkey: "Software\Classes\odamex"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Flags: uninsdeletekey
 Root: HKA; Subkey: "Software\Classes\odamex\Shell\Open\Command"; ValueType: string; ValueName: ""; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: uninsdeletekey
+
+; doombattlezone:// URI scheme
+Root: HKA; Subkey: "Software\Classes\doombattlezone"; ValueType: string; ValueName: ""; ValueData: "URL:DoomBattleZone Protocol"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\doombattlezone"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\doombattlezone\Shell\Open\Command"; ValueType: string; ValueName: ""; ValueData: """{app}\odamex.exe"" ""%1"""; Flags: uninsdeletekey

@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -55,6 +56,7 @@ void HU_SetChatMode();
 void HU_SetTeamChatMode();
 void HU_UnsetChatMode();
 void HU_ReleaseKeyStates();
+int HU_GetScaledStatusBarY();
 
 void OdamexEffect (int xa, int ya, int xb, int yb);
 
@@ -62,4 +64,3 @@ void OdamexEffect (int xa, int ya, int xb, int yb);
 
 class player_s;
 void HU_DrawScores (player_s *me);
-void HU_DisplayTimer (int x, int y, bool scale = true);

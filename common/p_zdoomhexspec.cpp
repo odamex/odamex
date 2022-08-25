@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -257,7 +258,7 @@ void P_PlayerInZDoomSector(player_t* player)
 					{
 						if (serverside && sv_allowexit)
 						{
-							G_ExitLevel(0, 1);
+							G_ExitLevel(0, 1, player->mo);
 						}
 					}
 

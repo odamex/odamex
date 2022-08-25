@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -73,6 +74,7 @@ void SV_UpdateMonsterRespawnCount();
 
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn) 
+EXTERN_CVAR(sv_respawnbarrel)
 EXTERN_CVAR(sv_respawnsuper)
 EXTERN_CVAR(sv_itemrespawntime)
 EXTERN_CVAR(co_zdoomphys)
@@ -413,7 +415,9 @@ void AActor::Destroy ()
 		P_RemoveHealthPool(this);
 
     // Add special to item respawn queue if it is destined to be respawned
-	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0)
+	bool const is_barrel = sv_respawnbarrel && type == MT_BARREL;
+	bool const is_special = (flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0;
+	if (is_special || is_barrel)
 	{
 		itemrespawnque[iquehead] = spawnpoint;
 		itemrespawntime[iquehead] = level.time;

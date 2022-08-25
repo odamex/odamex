@@ -75,6 +75,7 @@
 #define CONFIGVERSIONSTR "010020"
 
 #define DOTVERSIONSTR "10.2.0"
+#define BATTLEVERSION "DBZ1"
 #define GAMEVER (MAKEVER(10, 2, 0))
 
 #define COPYRIGHTSTR "Copyright (C) 2006-2022 The Odamex Team"

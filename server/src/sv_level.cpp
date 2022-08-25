@@ -6,6 +6,7 @@
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -527,12 +528,33 @@ void G_InitNew (const char *mapname)
 		SV_UpdatePlayerQueueLevelChange(info);
 }
 
+bool HandleExitLevel(AActor * thing)
+{
+	bool const is_player = thing && thing->player;
+
+	if (is_player)
+		SV_UpdatePlayerLevelTime(*thing->player, 0, true, "HandleExitLevel");
+
+	if (G_IsBattle())
+	{
+		if (is_player)
+			SV_PrintPlayerInfo(*thing->player, "EXIT_LEVEL");
+
+		return true;
+	}
+
+	return false;
+}
+
 //
-// G_DoCompleted
+// G_ExitLevel
 //
 
-void G_ExitLevel (int position, int drawscores)
+void G_ExitLevel (int position, int drawscores, AActor *thing)
 {
+	if (HandleExitLevel(thing))
+		return;
+
 	SV_ExitLevel();
 
 	if (drawscores)
@@ -550,8 +572,11 @@ void G_ExitLevel (int position, int drawscores)
 }
 
 // Here's for the german edition.
-void G_SecretExitLevel (int position, int drawscores)
+void G_SecretExitLevel (int position, int drawscores, AActor *thing)
 {
+	if (HandleExitLevel(thing))
+		return;
+
 	SV_ExitLevel();
 
     if (drawscores)

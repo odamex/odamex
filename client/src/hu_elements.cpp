@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2012 by Alex Mayfield.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -335,15 +336,28 @@ std::string SpyPlayerName()
  */
 std::string Timer()
 {
-	const char* color = TEXTCOLOR_NORMAL;
-
-	if (sv_timelimit <= 0.0f)
+	// Do NOT display if in a lobby
+	if (level.flags & LEVEL_LOBBYSPECIAL)
 	{
 		return "";
 	}
 
-	// Do NOT display if in a lobby
-	if (level.flags & LEVEL_LOBBYSPECIAL)
+	const char* color = TEXTCOLOR_NORMAL;
+
+	player_t& player = displayplayer();
+
+	int const timeleft = (player.spectator_endtime - level.time + TICRATE / 2) / TICRATE;
+
+	if (player.spectator && player.spectator_endtime && timeleft > 0)
+	{
+		int const minutes = timeleft / 60;
+		int const seconds = timeleft % 60;
+		std::string str;
+		StrFormat(str, "%s%02d:%02d", TEXTCOLOR_YELLOW, minutes, seconds);
+		return str;
+	}
+
+	if (sv_timelimit <= 0.0f)
 	{
 		return "";
 	}
@@ -977,6 +991,10 @@ void EleBar(const int x, const int y, const int w, const float scale,
 	if (x_align == hud::X_RIGHT)
 	{
 		drawX = x + ((lineHandles.size() - 1) * UNIT_WIDTH);
+	}
+	else if (x_align == hud::X_CENTER)
+	{
+		drawX = x - ((lineHandles.size() - 1) * UNIT_WIDTH / 2);
 	}
 	else
 	{

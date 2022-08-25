@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2012 by Alex Mayfield.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -699,6 +700,33 @@ BEGIN_COMMAND (addmap) {
 	// Successfully warn the server a map has been added.
 	Printf(PRINT_HIGH, "Adding %s to maplist (WAD%s : %s)", arguments[0].c_str(), (arguments.size() > 2)?"s":"", JoinStrings(maplist_entry.wads, " ").c_str());
 } END_COMMAND(addmap)
+
+BEGIN_COMMAND(addmaps)
+{
+	if (argc < 2)
+	{
+		Printf(PRINT_HIGH, "Usage: addmaps <map lump> [<map lump>] [...]\n");
+		return;
+	}
+
+	std::vector<std::string> arguments = VectorArgs(argc, argv);
+
+	for (StringTokens::iterator it = arguments.begin(); it != arguments.end(); ++it)
+	{
+		// Grab the map lump.
+		maplist_entry_t maplist_entry;
+		maplist_entry.map = *it;
+
+		if (!Maplist::instance().add(maplist_entry))
+		{
+			Printf(PRINT_HIGH, "Error: %s\n", Maplist::instance().get_error().c_str());
+		}
+	}
+
+	// Successfully warn the server a map has been added.
+	Printf(PRINT_HIGH, "Added [%s] maps to map list", JoinStrings(arguments, " ").c_str());
+}
+END_COMMAND(addmaps)
 
 BEGIN_COMMAND(insertmap) {
 	if (argc < 3) {

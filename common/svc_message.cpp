@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2021 by Alex Mayfield.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -686,6 +687,7 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(player_t& player, byte flags)
 	if (flags & SVC_PM_SPECTATOR)
 	{
 		msg.set_spectator(player.spectator);
+		msg.set_spectator_endtime(player.spectator_endtime);
 	}
 
 	if (flags & SVC_PM_READY)
@@ -724,6 +726,12 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(player_t& player, byte flags)
 	{
 		if (!player.spectator)
 			msg.set_cheats(player.cheats);
+	}
+
+	if (flags & SVC_PM_LEVEL)
+	{
+		msg.set_level_endtime(player.level_endtime);
+		msg.set_level_starttime(player.level_starttime);
 	}
 
 	return msg;
@@ -1564,6 +1572,27 @@ odaproto::svc::Toast SVC_Toast(const toast_t& toast)
 	msg.set_right(toast.right);
 	msg.set_right_pid(toast.right_pid);
 	msg.set_icon(toast.icon);
+
+	return msg;
+}
+
+odaproto::svc::TransferPlayer SVC_TransferPlayer(const char* server_address, const char* player_message)
+{
+	odaproto::svc::TransferPlayer msg;
+
+	msg.set_target_address(server_address);
+	msg.set_player_message(player_message);
+
+	return msg;
+}
+
+odaproto::svc::BattleOver SVC_BattleOver(bool winner, const char* hud_markup, const char* client_message)
+{
+	odaproto::svc::BattleOver msg;
+
+	msg.set_winner(winner);
+	msg.set_hud_markup(hud_markup);
+	msg.set_client_message(client_message);
 
 	return msg;
 }

@@ -6,6 +6,7 @@
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -42,8 +43,10 @@
 #include "z_zone.h"
 #include "i_system.h"
 #include "st_stuff.h"
+#include "hu_battle.h"
 #include "hu_drawers.h"
 #include "hu_elements.h"
+#include "hu_stuff.h"
 #include "p_ctf.h"
 #include "cl_parse.h"
 #include "cl_vote.h"
@@ -448,23 +451,6 @@ void ST_voteDraw (int y) {
 namespace hud {
 
 /**
- * @brief This is the number of pixels of viewable space, taking into account
- *        the status bar.  We need to convert this into scaled pixels as
- *        best we can.
- */
-static int statusBarY()
-{
-	const int surfaceWidth = I_GetSurfaceWidth();
-	const int surfaceHeight = I_GetSurfaceHeight();
-
-	int stY = surfaceHeight - ST_StatusBarY(surfaceWidth, surfaceHeight);
-	if (::hud_scale)
-		stY /= ::CleanYfac;
-
-	return stY;
-}
-
-/**
  * @brief Sometimes we want the HUD to show round wins and not current round points.
  */
 static bool TeamHUDShowsRoundWins()
@@ -631,7 +617,7 @@ static void drawHordeGametype()
 		killColor = CR_GREEN;
 	}
 
-	const int y = R_StatusBarVisible() ? statusBarY() + SCREEN_BORDER : ABOVE_AMMO;
+	const int y = R_StatusBarVisible() ? HU_GetScaledStatusBarY() + SCREEN_BORDER : ABOVE_AMMO;
 	hud::DrawText(SCREEN_BORDER, y, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 	              hud::X_RIGHT, hud::Y_BOTTOM, waverow.c_str(), CR_GREY);
 	hud::EleBar(SCREEN_BORDER, y + LINE_SPACING, V_StringWidth("WAVE:0/0"), ::hud_scale,
@@ -666,18 +652,21 @@ static void drawHordeGametype()
 	}
 }
 
+static void drawBattleGametype()
+{
+	player_t* player = &consoleplayer();
+	HU_DrawBattleHud(player);
+}
+
 static void drawGametype()
 {
 	if (G_IsTeamGame())
-	{
 		drawTeamGametype();
-		return;
-	}
 	else if (G_IsHordeMode())
-	{
 		drawHordeGametype();
-		return;
-	}
+
+	if (G_IsBattle())
+		drawBattleGametype();
 }
 
 size_t proto_selected;
@@ -1452,6 +1441,9 @@ void SpectatorHUD()
 			V_SetFont("SMALLFONT");
 	}
 
+	if (G_IsBattle())
+		HU_DrawBattleInfo(&displayplayer());
+
 	// Draw help text - spy player name is handled elsewhere.
 	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	              hud::Y_BOTTOM, hud::HelpText().c_str(), CR_GREY);
@@ -1468,7 +1460,7 @@ void SpectatorHUD()
 // [AM] HUD drawn with the Doom Status Bar.
 void DoomHUD()
 {
-	int st_y = statusBarY() + 4;
+	int st_y = HU_GetScaledStatusBarY() + 4;
 
 	// Draw warmup state or timer
 	if (hud_timer)

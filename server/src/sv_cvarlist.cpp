@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -81,6 +82,12 @@ CVAR_FUNC_DECL(	rcon_password, "", "Remote console password",
 				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL(	sv_usemasters, "1", "Advertise on master servers",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+
+CVAR(			sv_battlemode, "0", "Server is hosting a battle.",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+
+CVAR(			sv_validateticket, "0", "Server validates ticket.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 CVAR(			sv_endmapscript, "",  "Script to run at end of each map (e.g. to choose next map)",

@@ -6,6 +6,7 @@
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -243,6 +244,104 @@ bool IsRealNum(const char* str)
 bool iequals(const std::string &s1, const std::string &s2)
 {
 	return StdStringToUpper(s1).compare(StdStringToUpper(s2)) == 0;
+}
+
+byte HexToBin(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'A' && c <= 'F')
+		return c - 'A' + 10;
+	if (c >= 'a' && c <= 'f')
+		return c - 'a' + 10;
+	return 0;
+}
+
+byte OctToBin(char c)
+{
+	if (c >= '0' && c <= '7')
+		return c - '0';
+	return 0;
+}
+
+std::string Unescape(const char* valstr)
+{
+	if (!valstr || valstr[0] == 0)
+		return "";
+
+	std::stringstream result;
+
+	for (const char* cp = valstr; *cp; ++cp)
+	{
+		if (*cp != '\\')
+		{
+			result.put(*cp);
+			continue;
+		}
+
+		if (*(cp + 1) == '\\')
+		{
+			result.put('\\');
+			++cp;
+			continue;
+		}
+
+		if (*(cp + 1) == 'n')
+		{
+			result.put('\n');
+			++cp;
+			continue;
+		}
+
+		if (*(cp + 1) == 't')
+		{
+			result.put('\t');
+			++cp;
+			continue;
+		}
+
+		if (*(cp + 1) == 'x')
+		{
+			char const value1 = HexToBin(*(cp + 2)) << 4;
+			char const value2 = HexToBin(*(cp + 3));
+			char const value = value1 + value2;
+			result.put(value);
+			cp += 3;
+			continue;
+		}
+
+		if (*(cp + 1) >= '0' && *(cp + 1) <= '7')
+		{
+			char const value1 = OctToBin(*(cp + 1)) << 6;
+			char const value2 = OctToBin(*(cp + 2)) << 3;
+			char const value3 = OctToBin(*(cp + 3));
+			char const value = value1 + value2 + value3;
+			result.put(value);
+			cp += 3;
+			continue;
+		}
+
+		result.put(*cp);
+	}
+
+	return result.str();
+}
+
+std::vector<std::string> StdStringSplit(std::string const& str, std::string const& delimiter)
+{
+	std::vector<std::string> v;
+
+	size_t const ds = delimiter.size();
+	size_t p = 0;
+
+	for (size_t i = 0; i = str.find(delimiter, p), i != std::string::npos; p = i + ds)
+		v.push_back(std::string(str.data() + p, i - p));
+
+	// skip last string if empty
+	if (p < str.size())
+		v.push_back(std::string(str.data() + p, str.size() - p));
+
+	return v;
 }
 
 size_t StdStringFind(const std::string& haystack, const std::string& needle,

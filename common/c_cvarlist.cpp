@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -105,6 +106,9 @@ CVAR(				sv_itemsrespawn, "0", "Items will respawn after a fixed period, see sv_
 CVAR(				sv_respawnsuper, "0", "Allows Invisibility/Invulnerability spheres from respawning (need sv_itemsrespawn set to 1)",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+CVAR(				sv_respawnbarrel, "0", "Allows barrel respawning (need sv_itemsrespawn set to 1)",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
 CVAR_RANGE(			sv_itemrespawntime, "30", "If sv_itemsrespawn is set, items will respawn after this " \
 					"time (in seconds)",
 					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 500.0f)
@@ -177,6 +181,26 @@ CVAR(				sv_unblockplayers, "0", "Allows players to walk through other players, 
 
 CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
 					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
+
+char const * const	sv_battleinfo_default =
+					"MT_TEXT\nDoom Battle Zone\nCR_GOLD\n4\n0\nBIGFONT\n0\n"
+					"MT_LINE\nCR_WHITE\n8\n"
+					"MT_TEXT\nVisit \034dwww.DoomBattle.Zone\034j to play!\nCR_WHITE\n8\n0\nSMALLFONT\n0\n";
+
+CVAR(				sv_battleinfo, sv_battleinfo_default, "Battle Info Markup",
+					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(				sv_battlehud, "", "Battle HUD Markup",
+					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(				sv_battlestatus, "", "Battle Status Markup",
+					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_NOBROADCAST)
+
+CVAR(				sv_level_seconds, "0", "Seconds the player can stay in the level.",
+					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(				sv_spectator_seconds, "0", "Seconds the player can spectate.",
+					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
 CVAR(sv_downloadsites, "",
      "A list of websites to download WAD files from, separated by spaces",

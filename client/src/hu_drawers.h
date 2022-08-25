@@ -4,6 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2012 by Alex Mayfield.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -46,7 +47,14 @@ void Dim(int x, int y,
          const unsigned short w, const unsigned short h,
          const float scale,
          const x_align_t x_align, const y_align_t y_align,
-         const x_align_t x_origin, const y_align_t y_origin);
+         const x_align_t x_origin, const y_align_t y_origin,
+         const argb_t color = 0);
+void DrawLine(int x, int y,
+         const unsigned short w, const unsigned short h,
+         const float scale,
+         const x_align_t x_align, const y_align_t y_align,
+         const x_align_t x_origin, const y_align_t y_origin,
+         const argb_t color);
 void DrawText(int x, int y, const float scale,
               const x_align_t x_align, const y_align_t y_align,
               const x_align_t x_origin, const y_align_t y_origin,

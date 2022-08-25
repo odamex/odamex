@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -169,6 +170,11 @@ enum clientBuf_e
  */
 #define SVC_PM_CHEATS BIT(5)
 
+/**
+ * @brief svc_playermembers: Level fields.
+ */
+#define SVC_PM_LEVEL BIT(6)
+
 extern int   localport;
 extern int   msg_badread;
 
@@ -250,6 +256,8 @@ enum svc_t
 	svc_maplist_index,     // [AM] - Send the current and next map index to the client.
 	svc_toast,
 	svc_hordeinfo,
+	svc_transferplayer,
+	svc_battleover,
 	svc_netdemocap = 100,  // netdemos - NullPoint
 	svc_netdemostop = 101, // netdemos - NullPoint
 	svc_netdemoloadsnap = 102, // netdemos - NullPoint
@@ -737,7 +745,7 @@ void InitNetCommon(void);
 void I_SetPort(netadr_t &addr, int port);
 bool NetWaitOrTimeout(size_t ms);
 
-char *NET_AdrToString (netadr_t a);
+char *NET_AdrToString (const netadr_t& a);
 bool NET_StringToAdr (const char *s, netadr_t *a);
 bool NET_CompareAdr (netadr_t a, netadr_t b);
 int  NET_GetPacket (void);

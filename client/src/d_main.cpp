@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -75,6 +76,7 @@
 #include "r_sky.h"
 #include "d_main.h"
 #include "d_dehacked.h"
+#include "cl_battle.h"
 #include "cl_download.h"
 #include "gi.h"
 #include "stats.h"
@@ -261,6 +263,7 @@ void D_Display()
 	// We always want to service downloads, even outside of a specific
 	// download gamestate.
 	CL_DownloadTick();
+	CL_BattleTick();
 
 	switch (gamestate)
 	{
@@ -748,6 +751,8 @@ void D_DoomMain()
 	if (lzo_init() != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError("Could not initialize LZO routines");
 
+	G_InitGame();
+
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
 	// Always log by default
@@ -772,6 +777,7 @@ void D_DoomMain()
 		const char* skipParams[] = {
 		    "+connect", "+demotest", "+map",      "+netplay",  "+playdemo",
 		    "-connect", "-file",     "-playdemo", "-timedemo", "-warp",
+		    "+battle",  "-battle",   "+ticket",   "-ticket",
 		};
 
 		bool shouldSkip = false;
@@ -901,6 +907,19 @@ void D_DoomMain()
 	CL_DownloadInit();
 	atterm(CL_DownloadShutdown);
 
+	CL_BattleInit();
+	atterm(CL_BattleShutdown);
+
+	Printf(PRINT_HIGH, "D_CheckNetGame: Checking for battle.\n");
+	const char* battle_value = Args.CheckValue("-battle");
+	if (battle_value)
+		battle_uri = battle_value;
+
+	Printf(PRINT_HIGH, "D_CheckNetGame: Checking for ticket.\n");
+	const char* ticket_value = Args.CheckValue("-ticket");
+	if (ticket_value)
+		ticket = ticket_value;
+
 	Printf(PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
 	D_CheckNetGame();
 
@@ -1003,6 +1022,11 @@ void D_DoomMain()
 		consoleplayer_id = displayplayer_id = players.back().id = 1;
 
 		G_InitNew(startmap);
+	}
+	else if (!battle_uri.empty())
+	{
+		Printf(PRINT_HIGH, "Connecting to battle [%s].\n", battle_uri.c_str());
+		AddCommandString("battle \"" + battle_uri + "\"");
 	}
 	else if (gamestate != GS_CONNECTING)
 	{

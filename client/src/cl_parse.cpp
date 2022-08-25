@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,6 +35,7 @@
 #include "c_dispatch.h"
 #include "c_effect.h"
 #include "c_maplist.h"
+#include "cl_battle.h"
 #include "cl_main.h"
 #include "cl_maplist.h"
 #include "cl_vote.h"
@@ -874,6 +876,17 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 
 static void CL_ConsolePlayer(const odaproto::svc::ConsolePlayer* msg)
 {
+	// Console player may have already received updates from server with a different id
+	if (players.size() == 1)
+	{
+		player_t& player = players.back();
+
+		if (player.id == consoleplayer_id)
+		{
+			player.id = msg->pid();
+		}
+	}
+
 	::displayplayer_id = ::consoleplayer_id = msg->pid();
 	::digest = msg->digest();
 }
@@ -1371,6 +1384,7 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 	if (flags & SVC_PM_SPECTATOR)
 	{
 		CL_SpectatePlayer(p, msg->spectator());
+		p.spectator_endtime = msg->spectator_endtime();
 	}
 
 	if (flags & SVC_PM_READY)
@@ -1404,6 +1418,12 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 	{
 		if (!p.spectator)
 			p.cheats = msg->cheats();
+	}
+
+	if (flags & SVC_PM_LEVEL)
+	{
+		p.level_endtime = msg->level_endtime();
+		p.level_starttime = msg->level_starttime();
 	}
 }
 
@@ -2753,6 +2773,23 @@ static void CL_HordeInfo(const odaproto::svc::HordeInfo* msg)
 	P_SetHordeInfo(info);
 }
 
+extern int NoWipe;
+
+static void CL_TransferPlayer(const odaproto::svc::TransferPlayer* msg)
+{
+	NoWipe = 100;
+	CL_ConnectToServer(msg->target_address().c_str(), NULL, "", true);
+}
+
+static void CL_BattleOver(const odaproto::svc::BattleOver* msg)
+{
+	bool const winner = msg->winner();
+	std::string const hud_markup = msg->hud_markup();
+	std::string const client_message = msg->client_message();
+
+	CL_SetBattleOver(winner, hud_markup, client_message);
+}
+
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 {
 	player_t* clientPlayer = &consoleplayer();
@@ -2991,6 +3028,8 @@ parseError_e CL_ParseCommand()
 		SV_MSG(svc_maplist_index, CL_MaplistIndex, odaproto::svc::MaplistIndex);
 		SV_MSG(svc_toast, CL_Toast, odaproto::svc::Toast);
 		SV_MSG(svc_hordeinfo, CL_HordeInfo, odaproto::svc::HordeInfo);
+		SV_MSG(svc_transferplayer, CL_TransferPlayer, odaproto::svc::TransferPlayer);
+		SV_MSG(svc_battleover, CL_BattleOver, odaproto::svc::BattleOver);
 		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);

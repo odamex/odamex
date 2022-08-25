@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -76,6 +77,7 @@ struct ActionBits actionbits[NUM_ACTIONS] =
 	{ 0x11268, ACTION_MOVERIGHT,		"moveright" },
 	{ 0x1f4b4, ACTION_AUTOMAP_PANLEFT,	"am_panleft" },
 	{ 0x1f4b8, ACTION_AUTOMAP_PANDOWN,	"am_pandown" },
+	{ 0x1f80b, ACTION_BATTLEINFO,		"battleinfo" },
 	{ 0x1f952, ACTION_AUTOMAP_ZOOMOUT,	"am_zoomout" },
 	{ 0x2314d, ACTION_SHOWSCORES,		"showscores" },
 	{ 0x3ea48, ACTION_AUTOMAP_PANRIGHT, "am_panright" },
@@ -165,6 +167,18 @@ unsigned int MakeKey (const char *s)
 
 	return v;
 }
+
+BEGIN_COMMAND(makeactionkey)
+{
+	if (argc != 2)
+	{
+		Printf(PRINT_HIGH, "makeactionkey <name> - generate key value for ActionBits table for given name.\n");
+		return;
+	}
+
+	Printf(PRINT_HIGH, "name = %s key = 0x%05x\n", argv[1], MakeKey(argv[1]));
+}
+END_COMMAND(makeactionkey)
 
 // GetActionBit scans through the actionbits[] array
 // for a matching key and returns an index or -1 if

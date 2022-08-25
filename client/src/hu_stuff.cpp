@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -46,6 +47,7 @@
 #include "hu_mousegraph.h"
 #include "am_map.h"
 
+#include "hu_battle.h"
 #include "hu_drawers.h"
 #include "hu_elements.h"
 
@@ -68,6 +70,7 @@ DCanvas *odacanvas = NULL;
 extern DCanvas *screen;
 extern byte *Ranges;
 
+EXTERN_CVAR(hud_scale)
 EXTERN_CVAR(hud_scaletext)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_timelimit)
@@ -202,6 +205,8 @@ void HU_Init()
 	::sbline = W_CachePatchHandle("SBLINE", PU_STATIC);
 
 	HU_InitCrosshair();
+
+	HU_BattleInit();
 }
 
 
@@ -542,6 +547,10 @@ void HU_Drawer()
 		     displayplayer().health <= 0 && !displayplayer().spectator))
 		{
 			HU_DrawScores(&displayplayer());
+		}
+		else if (gamestate != GS_INTERMISSION && Actions[ACTION_BATTLEINFO])
+		{
+			HU_DrawBattleInfo(&displayplayer());
 		}
 	}
 
@@ -2141,6 +2150,23 @@ void HU_ConsoleScores(player_t *player)
 	Printf(PRINT_HIGH, "\n");
 
 	C_ToggleConsole();
+}
+
+/**
+ * @brief This is the number of pixels of viewable space, taking into account
+ *        the status bar.  We need to convert this into scaled pixels as
+ *        best we can.
+ */
+int HU_GetScaledStatusBarY()
+{
+	const int surfaceWidth = I_GetSurfaceWidth();
+	const int surfaceHeight = I_GetSurfaceHeight();
+
+	int stY = surfaceHeight - ST_StatusBarY(surfaceWidth, surfaceHeight);
+	if (::hud_scale)
+		stY /= ::CleanYfac;
+
+	return stY;
 }
 
 BEGIN_COMMAND (displayscores)

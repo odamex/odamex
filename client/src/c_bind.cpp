@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -122,6 +123,7 @@ OBinding DefaultBindings[] =
 	{"enter", "messagemode"},
 	{"y", "messagemode2"},
 	{"\\", "+showscores"},		// <- Another new command
+	{"/", "+battleinfo"},
 	{"f11", "bumpgamma"},
 	{"f12", "spynext"},
 	{"pgup", "vote_yes"},		// <- New for voting

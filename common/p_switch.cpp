@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -298,6 +299,7 @@ void P_ChangeSwitchTexture(line_t* line, int useAgain, bool playsound)
 	if (P_IsExitLine(line->special))
 	{
 		sound = "switches/exitbutn";
+		useAgain = useAgain != 0 || G_IsBattle();
 	}
 	else
 	{

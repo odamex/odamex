@@ -6,6 +6,7 @@
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -54,6 +55,7 @@ EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_teamsinplay)
+EXTERN_CVAR (sv_battlemode)
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
@@ -89,6 +91,11 @@ player_t		&consoleplayer()
 player_t		&displayplayer()
 {
 	return idplayer(displayplayer_id);
+}
+
+bool G_IsBattle(void)
+{
+	return sv_battlemode;
 }
 
 BEGIN_COMMAND (pause)
@@ -266,6 +273,26 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 // because something is occupying it
 //
 void P_SpawnPlayer (player_t &player, mapthing2_t* mthing);
+
+void SV_PlayTeleportEffect(player_t& player, mapthing2_t *mthing)
+{
+	unsigned an;
+	AActor* mo;
+	fixed_t xa, ya;
+
+	fixed_t x = mthing->x << FRACBITS;
+	fixed_t y = mthing->y << FRACBITS;
+	fixed_t z = P_FloorHeight(x, y);
+
+	an = (ANG45 * ((unsigned int)mthing->angle / 45)) >> ANGLETOFINESHIFT;
+	xa = finecosine[an];
+	ya = finesine[an];
+
+	mo = new AActor(x + 20 * xa, y + 20 * ya, z, MT_TFOG);
+
+	// send new object
+	SV_SpawnMobj(mo);
+}
 
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 {

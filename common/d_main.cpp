@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -79,6 +80,8 @@ float maxfps = 35.0f;
 
 
 #if defined(_WIN32) && !defined(_XBOX)
+
+#include <debugapi.h>
 
 typedef struct
 {
@@ -916,6 +919,12 @@ public:
 		mFrameStartTime = I_GetTime();
 		mAccumulator += mFrameStartTime - mPreviousFrameStartTime;
 		mPreviousFrameStartTime = mFrameStartTime;
+
+#if defined(_WIN32) && !defined(_XBOX)
+		dtime_t const maxAccumlator = mFrameDuration * 2;
+		if (IsDebuggerPresent() && mAccumulator > maxAccumlator)
+			mAccumulator = maxAccumlator;
+#endif
 
 		int count = mMaxCount;
 

@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -102,6 +103,9 @@ player_t &nameplayer(const std::string &netname)
 bool validplayer(player_t &ref)
 {
 	if (&ref == &nullplayer)
+		return false;
+
+	if (ref.id == 0)
 		return false;
 
 	if (players.empty())
@@ -1299,7 +1303,7 @@ player_s::player_s() :
 	killcount(0),
 	itemcount(0),
 	secretcount(0),
-	pendingweapon(wp_fist),
+	pendingweapon(wp_nochange),
 	readyweapon(wp_fist),
 	attackdown(0),
 	usedown(0),
@@ -1324,6 +1328,9 @@ player_s::player_s() :
 	snapshots(PlayerSnapshotManager()),
 	spying(0),
 	spectator(false),
+	spectator_endtime(0),
+	level_endtime(0),
+	level_starttime(0),
 	joindelay(0),
 	timeout_callvote(0),
 	timeout_vote(0),

@@ -5,6 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2022-2022 by DoomBattle.Zone.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,6 +27,7 @@
 
 #include <cmath>
 #include <exception>
+#include <sstream>
 
 #include "cmdlib.h"
 #include "c_console.h"
@@ -147,6 +149,11 @@ cvar_t::~cvar_t ()
 				ad.GetCVars() = m_Next;
 		}
 	}
+}
+
+std::string cvar_t::unescaped() const
+{
+	return Unescape(m_String.c_str());
 }
 
 void cvar_t::ForceSet(const char* valstr)
@@ -562,7 +569,7 @@ void cvar_t::C_ArchiveCVars (void *f)
 	}
 }
 
-void cvar_t::cvarlist()
+void cvar_t::cvarlist(char const * filter)
 {
 	cvar_t *var = ad.GetCVars();
 	int count = 0;
@@ -571,21 +578,24 @@ void cvar_t::cvarlist()
 	{
 		unsigned flags = var->m_Flags;
 
-		count++;
-		Printf (PRINT_HIGH, "%c%c%c%c %s \"%s\"\n",
-				flags & CVAR_ARCHIVE ? 'A' :
-					flags & CVAR_CLIENTARCHIVE ? 'C' :
-					flags & CVAR_SERVERARCHIVE ? 'S' : ' ',
-				flags & CVAR_USERINFO ? 'U' : ' ',
-				flags & CVAR_SERVERINFO ? 'S' : ' ',
-				flags & CVAR_NOSET ? '-' :
-					flags & CVAR_LATCH ? 'L' :
-					flags & CVAR_UNSETTABLE ? '*' : ' ',
-				var->name(),
-				var->cstring());
+		if (filter == NULL || strstr(var->name(), filter))
+		{
+			count++;
+			Printf (PRINT_HIGH, "%c%c%c%c %s \"%s\"\n",
+					flags & CVAR_ARCHIVE ? 'A' :
+						flags & CVAR_CLIENTARCHIVE ? 'C' :
+						flags & CVAR_SERVERARCHIVE ? 'S' : ' ',
+					flags & CVAR_USERINFO ? 'U' : ' ',
+					flags & CVAR_SERVERINFO ? 'S' : ' ',
+					flags & CVAR_NOSET ? '-' :
+						flags & CVAR_LATCH ? 'L' :
+						flags & CVAR_UNSETTABLE ? '*' : ' ',
+					var->name(),
+					var->cstring());
+		}
 		var = var->m_Next;
 	}
-	Printf (PRINT_HIGH, "%d cvars\n", count);
+	Printf (PRINT_HIGH, "%d cvars (filter = [%s])\n", count, filter);
 }
 
 
@@ -752,7 +762,9 @@ END_COMMAND (toggle)
 
 BEGIN_COMMAND (cvarlist)
 {
-	cvar_t::cvarlist();
+	const char* filter = argc == 2 ? argv[1] : NULL;
+
+	cvar_t::cvarlist(filter);
 }
 END_COMMAND (cvarlist)
 
