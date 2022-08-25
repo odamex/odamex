@@ -66,17 +66,17 @@ function BuildOutCommon {
         -Destination "${CommonDir}"
     Copy-Item -Force -Path "${UnzippedX64}\licenses\COPYING.SDL2_mixer.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${UnzippedX64}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.FLAC.txt" `
+    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.FLAC.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${UnzippedX64}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.modplug.txt" `
+    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.modplug.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${UnzippedX64}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.mpg123.txt" `
+    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.mpg123.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${UnzippedX64}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.ogg-vorbis.txt" `
+    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.ogg-vorbis.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${UnzippedX64}\\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.opus.txt" `
+    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.opus.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${UnzippedX64}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.opusfile.txt" `
+    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.opusfile.txt" `
         -Destination "${CommonDir}\licenses"
     Copy-Item -Force -Path "${UnzippedX64}\licenses\COPYING.SDL2.txt" `
         -Destination "${CommonDir}\licenses"
