@@ -157,14 +157,6 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: Odamex-Win-x64
-    - name: Unzip x64 artifacats
-      uses: montudor/action-zip@v1
-      with:
-        args: unzip -qq Odamex-Win-x64.zip -d Odamex-Win-x64
-    - name: Unzip x86 artifacats
-      uses: montudor/action-zip@v1
-      with:
-        args: unzip -qq Odamex-Win-x86.zip -d Odamex-Win-x86
     - name: Stage and run setup compiler
       shell: pwsh
       run: |

@@ -25,8 +25,12 @@ else
     Set-Variable -Name "OdamexTestSuffix" -Value ""
 }
 
-# Lay files out in a path that Inno Setup expects.
+function UnzipArtifacts {
+    7z.exe x ${UnzippedX64}.zip -o${UnzippedX64}
+    7z.exe x ${UnzippedX86}.zip -o${UnzippedX86}
+}
 
+# Lay files out in a path that Inno Setup expects.
 function BuildOutCommon {
     if (Test-Path "${CommonDir}")
     {
@@ -153,8 +157,14 @@ function CompileSetup {
         /O${OutputDir}
 }
 
+echo "Checking for 7zip..."
+Get-Command 7z.exe -ErrorAction Stop
+
 echo "Checking for Inno Setup Command-Line Compiler..."
 Get-Command ISCC.exe -ErrorAction Stop
+
+echo "Unzipping artifacts"
+UnzipArtifacts
 
 echo "Reconstructing common directory"
 BuildOutCommon
