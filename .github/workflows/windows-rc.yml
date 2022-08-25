@@ -164,6 +164,8 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: Odamex-Win-x64
+    - name: List directory contents
+      run: ls
     - name: Stage and run setup compiler
       shell: pwsh
       run: |
