@@ -8,7 +8,8 @@ IFS=$'\n\t'
 set -x
 
 # Install packages
-brew install sdl2@2.0.22 sdl2_mixer wxmac
+curl https://raw.githubusercontent.com/Homebrew/homebrew-core/3a9d188a695a38244c42e68117aff412ae0884eb/Formula/sdl2.rb > $(find $(brew --repository) -name sdl2.rb) && brew install sdl2
+brew install sdl2_mixer wxmac
 
 # Generate build
 mkdir -p build && cd build
