@@ -151,9 +151,11 @@ jobs:
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Create tar.gz
-      run: git ls-files --others --exclude-standard --cached -z | xargs -0 tar --transform 's,^,odamex-src-${{ env.new_version }}/,' czvf odamex-src-${{ env.new_version }}.tar.gz
+      shell: bash
+      run: git ls-files --others --exclude-standard --cached -z | xargs -0 tar --transform 's,^,odamex-src-${{ env.new_version }}/,' -czvf odamex-src-${{ env.new_version }}.tar.gz
     - name: Create tar.xz
-      run: git ls-files --others --exclude-standard --cached -z | xargs -0 tar --transform 's,^,odamex-src-${{ env.new_version }}/,' cJvf odamex-src-${{ env.new_version }}.tar.xz
+      shell: bash
+      run: git ls-files --others --exclude-standard --cached -z | xargs -0 tar --transform 's,^,odamex-src-${{ env.new_version }}/,' -cJvf odamex-src-${{ env.new_version }}.tar.xz
     - name: Download x86 artifacats
       uses: actions/download-artifact@v3
       with:
