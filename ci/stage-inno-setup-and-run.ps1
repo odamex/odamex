@@ -62,23 +62,23 @@ function BuildOutCommon {
         -Destination "${CommonDir}\MAINTAINERS.txt"
     Copy-Item -Force -Path "${CurrentDir}\README" `
         -Destination "${CommonDir}\README.txt"
-    Copy-Item -Force -Path "${CurrentDir}\${UnzippedX64}\odamex.wad" `
+    Copy-Item -Force -Path "${UnzippedX64}\odamex.wad" `
         -Destination "${CommonDir}"
-    Copy-Item -Force -Path "${CurrentDir}\${UnzippedX64}\licenses\COPYING.SDL2_mixer.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\licenses\COPYING.SDL2_mixer.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\${UnzippedX64}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.FLAC.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.FLAC.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\${UnzippedX64}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.modplug.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.modplug.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\${UnzippedX64}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.mpg123.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.mpg123.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\${UnzippedX64}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.ogg-vorbis.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.ogg-vorbis.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\${UnzippedX64}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.opus.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.opus.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\${UnzippedX64}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.opusfile.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\licenses\SDL2_mixer-2.0.4\lib\x86\LICENSE.opusfile.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\${UnzippedX64}\licenses\COPYING.SDL2.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\licenses\COPYING.SDL2.txt" `
         -Destination "${CommonDir}\licenses"
 }
 
