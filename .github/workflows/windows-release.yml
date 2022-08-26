@@ -226,7 +226,7 @@ jobs:
       shell: pwsh
       run: |
         Copy-Item -Recurse -Force -Path "." -Destination "..\odamex-src-${{ env.new_version }}" -Exclude "*.zip","*.tar.gz","*.tar.xz"
-        Remove-Item -Path "..\odamex-src-${{ env.new_version }}\.git*"
+        Remove-Item -Path "..\odamex-src-${{ env.new_version }}\.git*" -Recurse -Force
         Compress-Archive -Path "..\odamex-src-${{ env.new_version }}" -DestinationPath "odamex-src-${{ env.new_version }}.zip"
     - name: Download x86 artifacats
       uses: actions/download-artifact@v3
