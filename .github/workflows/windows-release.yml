@@ -218,6 +218,9 @@ jobs:
     - name: Create tar.xz
       shell: bash
       run: git ls-files --others --exclude-standard --cached -z | xargs -0 tar --transform 's,^,odamex-src-${{ env.new_version }}/,' -cJvf odamex-src-${{ env.new_version }}.tar.xz
+    - name: Create zip
+      shell: bash
+      run: find . -print0 | xargs -0 tar --transform 's,^,odamex-src-${{ env.new_version }}/,' -cZvf odamex-src-${{ env.new_version }}.zip
     - name: Download x86 artifacats
       uses: actions/download-artifact@v3
       with:
@@ -247,6 +250,20 @@ jobs:
       with:
         name: Odamex-tar-gz
         path: './*.tar.gz'
+    - name: Upload zip
+      uses: actions/upload-artifact@v2
+      with:
+        name: Odamex-src-zip
+        path: './*.zip'
+    - name: Upload zip to Github Release Artifacts
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./odamex-src-${{env.new_version}}.zip
+        asset_name: odamex-src-${{env.new_version}}.zip
+        asset_content_type: application/zip
     - name: Upload tar.gz to Github Release Artifacts
       uses: actions/upload-release-asset@v1.0.2
       env:
