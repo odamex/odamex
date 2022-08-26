@@ -174,13 +174,19 @@ jobs:
       run: git submodule update --init --recursive
     - name: Create tar.gz
       shell: bash
-      run: tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' -czvf odamex-src-${{ env.new_version }}.tar.gz .
+      run: |
+        touch odamex-src-${{ env.new_version }}.tar.gz
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' -czvf odamex-src-${{ env.new_version }}.tar.gz .
     - name: Create tar.xz
       shell: bash
-      run: tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' -cJvf odamex-src-${{ env.new_version }}.tar.xz .
+      run: |
+        touch odamex-src-${{ env.new_version }}.tar.xz
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' -cJvf odamex-src-${{ env.new_version }}.tar.xz .
     - name: Create zip
       shell: bash
-      run: tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' -cZvf odamex-src-${{ env.new_version }}.zip .
+      run: |
+        touch odamex-src-${{ env.new_version }}.zip
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' -cZvf odamex-src-${{ env.new_version }}.zip .
     - name: Download x86 artifacats
       uses: actions/download-artifact@v3
       with:
