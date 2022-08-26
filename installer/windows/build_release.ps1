@@ -9,7 +9,7 @@
 # These parameters can and should be changed for new versions.
 # 
 
-Set-Variable -Name "CurrentDir" -Value (Get-Location) # cd to the base odamex git path before executing
+Set-Variable -Name "CurrentDir" -Value (Get-Item (Get-Location)).Parent.Parent # cd to the base odamex git path before executing (this assumes you're running this script in this dir)
 
 Set-Variable -Name "OdamexVersion" -Value "10.2.0"
 Set-Variable -Name "OdamexTestSuffix" -Value "" # "-RC3"
