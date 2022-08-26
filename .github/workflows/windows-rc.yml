@@ -183,10 +183,10 @@ jobs:
         touch odamex-src-${{ env.new_version }}.tar.xz
         tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' -cJvf odamex-src-${{ env.new_version }}.tar.xz .
     - name: Create zip
-      shell: bash
+      shell: pwsh
       run: |
-        touch odamex-src-${{ env.new_version }}.zip
-        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' -cZvf odamex-src-${{ env.new_version }}.zip .
+        Copy-Item -Recurse -Force -Path "." -Destination "..\odamex-src-${{ env.new_version }}" -Exclude "*.zip","*.tar.gz","*.tar.xz"
+        Compress-Archive -Path "..\odamex-src-${{ env.new_version }}" -DestinationPath "odamex-src-${{ env.new_version }}.zip"
     - name: Download x86 artifacats
       uses: actions/download-artifact@v3
       with:
