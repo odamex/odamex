@@ -218,7 +218,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: Odamex-src-zip
-        path: './*.zip'
+        path: './odamex-src-${{ env.new_version }}.zip'
   # build-mingw:
   #   name: Build (MinGW)
   #   runs-on: windows-latest

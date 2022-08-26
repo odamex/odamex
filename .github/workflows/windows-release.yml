@@ -214,13 +214,19 @@ jobs:
       run: git submodule update --init --recursive
     - name: Create tar.gz
       shell: bash
-      run: git ls-files --others --exclude-standard --cached -z | xargs -0 tar --transform 's,^,odamex-src-${{ env.new_version }}/,' -czvf odamex-src-${{ env.new_version }}.tar.gz
+      run: |
+        touch odamex-src-${{ env.new_version }}.tar.gz
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' -czvf odamex-src-${{ env.new_version }}.tar.gz .
     - name: Create tar.xz
       shell: bash
-      run: git ls-files --others --exclude-standard --cached -z | xargs -0 tar --transform 's,^,odamex-src-${{ env.new_version }}/,' -cJvf odamex-src-${{ env.new_version }}.tar.xz
+      run: |
+        touch odamex-src-${{ env.new_version }}.tar.xz
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' -cJvf odamex-src-${{ env.new_version }}.tar.xz .
     - name: Create zip
-      shell: bash
-      run: find . -print0 | xargs -0 tar --transform 's,^,odamex-src-${{ env.new_version }}/,' -cZvf odamex-src-${{ env.new_version }}.zip
+      shell: pwsh
+      run: |
+        Copy-Item -Recurse -Force -Path "." -Destination "..\odamex-src-${{ env.new_version }}" -Exclude "*.zip","*.tar.gz","*.tar.xz"
+        Compress-Archive -Path "..\odamex-src-${{ env.new_version }}" -DestinationPath "odamex-src-${{ env.new_version }}.zip"
     - name: Download x86 artifacats
       uses: actions/download-artifact@v3
       with:
@@ -254,7 +260,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: Odamex-src-zip
-        path: './*.zip'
+        path: './odamex-src-${{ env.new_version }}.zip'
     - name: Upload zip to Github Release Artifacts
       uses: actions/upload-release-asset@v1.0.2
       env:
