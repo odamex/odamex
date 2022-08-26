@@ -176,16 +176,17 @@ jobs:
       shell: bash
       run: |
         touch odamex-src-${{ env.new_version }}.tar.gz
-        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' -czvf odamex-src-${{ env.new_version }}.tar.gz .
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -czvf odamex-src-${{ env.new_version }}.tar.gz .
     - name: Create tar.xz
       shell: bash
       run: |
         touch odamex-src-${{ env.new_version }}.tar.xz
-        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' -cJvf odamex-src-${{ env.new_version }}.tar.xz .
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -cJvf odamex-src-${{ env.new_version }}.tar.xz .
     - name: Create zip
       shell: pwsh
       run: |
         Copy-Item -Recurse -Force -Path "." -Destination "..\odamex-src-${{ env.new_version }}" -Exclude "*.zip","*.tar.gz","*.tar.xz"
+        Remove-Item -Path "..\odamex-src-${{ env.new_version }}\.git*"
         Compress-Archive -Path "..\odamex-src-${{ env.new_version }}" -DestinationPath "odamex-src-${{ env.new_version }}.zip"
     - name: Download x86 artifacats
       uses: actions/download-artifact@v3
