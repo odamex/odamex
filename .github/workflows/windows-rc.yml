@@ -174,10 +174,13 @@ jobs:
       run: git submodule update --init --recursive
     - name: Create tar.gz
       shell: bash
-      run: find . | xargs -0 tar --transform 's,^,odamex-src-${{ env.new_version }}/,' -czvf odamex-src-${{ env.new_version }}.tar.gz
+      run: find . -print0 | xargs -0 tar --transform 's,^,odamex-src-${{ env.new_version }}/,' -czvf odamex-src-${{ env.new_version }}.tar.gz
     - name: Create tar.xz
       shell: bash
-      run: find . | xargs -0 tar --transform 's,^,odamex-src-${{ env.new_version }}/,' -cJvf odamex-src-${{ env.new_version }}.tar.xz
+      run: find . -print0 | xargs -0 tar --transform 's,^,odamex-src-${{ env.new_version }}/,' -cJvf odamex-src-${{ env.new_version }}.tar.xz
+    - name: Create zip
+      shell: bash
+      run: find . -print0 | xargs -0 tar --transform 's,^,odamex-src-${{ env.new_version }}/,' -cZvf odamex-src-${{ env.new_version }}.zip
     - name: Download x86 artifacats
       uses: actions/download-artifact@v3
       with:

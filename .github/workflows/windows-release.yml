@@ -247,7 +247,7 @@ jobs:
       with:
         name: Odamex-tar-gz
         path: './*.tar.gz'
-    - name: Upload tar.gz
+    - name: Upload tar.gz to Github Release Artifacts
       uses: actions/upload-release-asset@v1.0.2
       env:
         GITHUB_TOKEN: ${{ github.token }}
@@ -256,7 +256,7 @@ jobs:
         asset_path: ./odamex-src-${{env.new_version}}.tar.gz
         asset_name: odamex-src-${{env.new_version}}.tar.gz
         asset_content_type: application/x-gzip
-    - name: Upload tar.xz
+    - name: Upload tar.xz to Github Release Artifacts
       uses: actions/upload-release-asset@v1.0.2
       env:
         GITHUB_TOKEN: ${{ github.token }}
