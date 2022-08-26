@@ -208,6 +208,11 @@ jobs:
       with:
         name: Odamex-tar-gz
         path: './*.tar.gz'
+    - name: Upload zip
+      uses: actions/upload-artifact@v2
+      with:
+        name: Odamex-src-zip
+        path: './*.zip'
   # build-mingw:
   #   name: Build (MinGW)
   #   runs-on: windows-latest
