@@ -131,16 +131,6 @@ def main():
     PLAINYEAR_FILES = ini_files(config.get("files", "plainyear"))
     FANCYYEAR_FILES = ini_files(config.get("files", "fancyyear"))
 
-    # Dotted version.
-    DOTTED_RE = f"{OLD_VERSION[0]}\\.{OLD_VERSION[1]}\\.{OLD_VERSION[2]}"
-    DOTTED_REPL = f"{NEW_VERSION[0]}.{NEW_VERSION[1]}.{NEW_VERSION[2]}"
-    [re_replace(glob, DOTTED_RE, DOTTED_REPL) for glob in DOTTED_FILES]
-
-    # Comma-separated version.
-    COMMA_RE = f"{OLD_VERSION[0]}, {OLD_VERSION[1]}, {OLD_VERSION[2]}"
-    COMMA_REPL = f"{NEW_VERSION[0]}, {NEW_VERSION[1]}, {NEW_VERSION[2]}"
-    [re_replace(glob, COMMA_RE, COMMA_REPL) for glob in COMMA_FILES]
-
     oldmaj = int(OLD_VERSION.split(".")[0])
     oldmin = int(OLD_VERSION.split(".")[1])
     oldpatch = int(OLD_VERSION.split(".")[2])
@@ -148,6 +138,16 @@ def main():
     newmaj = int(NEW_VERSION.split(".")[0])
     newmin = int(NEW_VERSION.split(".")[1])
     newpatch = int(NEW_VERSION.split(".")[2])
+
+    # Dotted version.
+    DOTTED_RE = f"{oldmaj}\\.{oldmin}\\.{oldpatch}"
+    DOTTED_REPL = f"{newmaj}.{newmin}.{newpatch}"
+    [re_replace(glob, DOTTED_RE, DOTTED_REPL) for glob in DOTTED_FILES]
+
+    # Comma-separated version.
+    COMMA_RE = f"{oldmaj}, {oldmin}, {oldpatch}"
+    COMMA_REPL = f"{newmaj}, {newmin}, {newpatch}"
+    [re_replace(glob, COMMA_RE, COMMA_REPL) for glob in COMMA_FILES]
 
     # Fixed-length save strings.
     [
@@ -162,8 +162,8 @@ def main():
     ]
 
     # CMake PROJECT_RC_VERSION
-    CMAKERC_RE = f'"{OLD_VERSION[0]},{OLD_VERSION[1]},{OLD_VERSION[2]},0"'
-    CMAKERC_REPL = f'"{NEW_VERSION[0]},{NEW_VERSION[1]},{NEW_VERSION[2]},0"'
+    CMAKERC_RE = f'"{oldmaj},{oldmin},{oldpatch},0"'
+    CMAKERC_REPL = f'"{newmaj},{newmin},{newpatch},0"'
     re_replace("CMakeLists.txt", CMAKERC_RE, CMAKERC_REPL)
 
     # CMake PROJECT_COPYRIGHT
