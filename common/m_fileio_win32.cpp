@@ -275,6 +275,40 @@ std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString
 	return rvo;
 }
 
+std::vector<std::string> M_BaseFilesScanDir2(std::string dir)
+{
+	std::vector<std::string> rvo;
+
+	// Fix up parameters.
+	dir = M_CleanPath(dir);
+
+	const std::string all_ext = dir + PATHSEP "*";
+
+	WIN32_FIND_DATA FindFileData;
+	HANDLE hFind = FindFirstFile(all_ext.c_str(), &FindFileData);
+	if (hFind == INVALID_HANDLE_VALUE)
+	{
+		return rvo;
+	}
+
+	do
+	{
+		// Skip directories.
+		if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			continue;
+
+		// Only return files with correct extensions
+		std::string filename = std::string(FindFileData.cFileName);
+		std::string check = StdStringToUpper(filename).substr(filename.length() - 4);
+		if (check.compare(".WAD") && check.compare(".DEH") && check.compare(".BEX"))
+			continue;
+
+		rvo.push_back(filename);
+	} while (FindNextFile(hFind, &FindFileData));
+
+	return rvo;
+}
+
 bool M_GetAbsPath(const std::string& path, std::string& out)
 {
 	TCHAR buffer[MAX_PATH];
