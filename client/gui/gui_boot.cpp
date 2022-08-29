@@ -96,13 +96,18 @@ class BootWindow : public Fl_Window
 			{
 				m_tabPWADs = new Fl_Group(0, 25, 425, 175, "PWAD Select");
 				{
-					m_PWADSelectBrowser = new Fl_Check_Browser(10, 35, 180, 155);
+					m_PWADSelectBrowser = new Fl_Check_Browser(10, 35, 183, 155);
 					m_PWADSelectBrowser->callback(BootWindow::scanCheckedPWADsCB, static_cast<void*>(this));
 					m_PWADSelectBrowser->when(FL_WHEN_CHANGED);
 				} // Fl_Check_Browser* m_PWADSelectBrowser
 				{
-					m_PWADOrderBrowser = new Fl_Hold_Browser(200, 35, 180, 155);
+					m_PWADOrderBrowser = new Fl_Hold_Browser(203, 65, 182, 125);
 				} // Fl_Hold_Browser* m_PWADOrderBrowser
+				{
+					Fl_Box* o = new Fl_Box(
+					    203, 35, 182, 20,
+					    "Change Load Order");
+				} // Fl_Box* o
 				{
 					Fl_Button* doWADUp = new Fl_Button(395, 90, 20, 20, "@2<<");
 					doWADUp->callback(BootWindow::doWADUpCB, static_cast<void*>(this));
@@ -236,7 +241,7 @@ class BootWindow : public Fl_Window
 		BootWindow* boot = static_cast<BootWindow*>(data);
 
 		const int val = boot->m_PWADOrderBrowser->value() - 1;
-		if (val <= 0 || val >= boot->m_selectedPWADs.size() - 1)
+		if (val < 0 || val >= boot->m_selectedPWADs.size() - 1)
 			return;
 
 		std::iter_swap(boot->m_selectedPWADs.begin() + val, boot->m_selectedPWADs.begin() + val + 1);
@@ -344,7 +349,6 @@ class BootWindow : public Fl_Window
 		BootWindow* boot = static_cast<BootWindow*>(data);
 		std::vector<std::string>* selected = &boot->m_selectedPWADs;
 
-		// dont clear, only add if not already there
 		boot->m_PWADOrderBrowser->clear();
 		for (size_t i = 1; i <= boot->m_PWADSelectBrowser->nitems(); i++) 
 		{
