@@ -127,7 +127,17 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
  * @return Filenames of any found files.
  */
 std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString> files);
-std::vector<std::string> M_BaseFilesScanDir2(std::string dir);
+
+/**
+ * @brief Attempt to find multiple PWAD files in a directory - case insensitive.
+ * 
+ * @detail Unlike M_BaseFileSearchDir, this scans the entire directory and
+ *         doesn't care about hashes or hashed files.
+ * 
+ * @param dir Directory to search.
+ * @return Filenames of any found files.
+ */
+std::vector<std::string> M_PWADFilesScanDir(std::string dir);
 
 /**
  * @brief Get absolute path from passed path.

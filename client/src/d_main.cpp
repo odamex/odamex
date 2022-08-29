@@ -795,7 +795,6 @@ void D_DoomMain()
 
 		if (!shouldSkip)
 		{
-			// iwad = GUI_BootWindow();
 			scannedWADs_t wads = GUI_BootWindow();
 			iwad = wads.iwad;
 			pwads = wads.pwads;

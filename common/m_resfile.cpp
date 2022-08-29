@@ -385,7 +385,7 @@ std::vector<scannedPWAD_t> M_ScanPWADs()
 
 	for (size_t i = 0; i < dirs.size(); i++)
 	{
-		std::vector<std::string> files = M_BaseFilesScanDir2(dirs[i]);
+		std::vector<std::string> files = M_PWADFilesScanDir(dirs[i]);
 		for (size_t j = 0; j < files.size(); j++)
 		{
 			// Don't include odamex.wad
