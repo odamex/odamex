@@ -23,4 +23,10 @@
 
 #pragma once
 
-std::string GUI_BootWindow();
+struct scannedWADs_t
+{
+    std::string iwad;
+    std::vector<std::string> pwads;
+};
+
+scannedWADs_t GUI_BootWindow();

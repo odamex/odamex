@@ -323,6 +323,11 @@ static bool ScanIWADCmp(const scannedIWAD_t& a, const scannedIWAD_t& b)
 	return a.id->weight < b.id->weight;
 }
 
+static bool ScanPWADCmp(const scannedPWAD_t& a, const scannedPWAD_t& b)
+{
+	return a.filename < b.filename;
+}
+
 /**
  * @brief Scan all file search directories for IWAD files.
  */
@@ -370,12 +375,12 @@ std::vector<scannedIWAD_t> M_ScanIWADs()
 /**
  * @brief Scan all file search directories for PWAD files.
  */
-std::vector<std::string> M_ScanPWADs()
+std::vector<scannedPWAD_t> M_ScanPWADs()
 {
 	const std::vector<std::string> dirs = M_FileSearchDirs();
 
 	// possibly change this
-	std::vector<std::string> rvo;
+	std::vector<scannedPWAD_t> rvo;
 	OHashTable<OCRC32Sum, bool> found;
 
 	for (size_t i = 0; i < dirs.size(); i++)
@@ -408,14 +413,14 @@ std::vector<std::string> M_ScanPWADs()
 				continue;
 			}
 				
-			//scannedIWAD_t pwad = {fullpath, id};
-			rvo.push_back(StdStringToLower(files[j]));
+			scannedPWAD_t pwad = {fullpath, StdStringToLower(files[j])};
+			rvo.push_back(pwad);
 			found[crc32] = true;
 		}
 	}
 
 	// Sort the results alphabetically
-	std::sort(rvo.begin(), rvo.end());
+	std::sort(rvo.begin(), rvo.end(), ScanPWADCmp);
 
 	return rvo;
 }

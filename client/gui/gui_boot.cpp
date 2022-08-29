@@ -54,6 +54,7 @@ EXTERN_CVAR(waddirs);
 // ---------------
 
 const scannedIWAD_t* g_SelectedIWAD;
+scannedWADs_t g_SelectedWADs;
 
 const int WINDOW_WIDTH = 320;
 const int WINDOW_HEIGHT = 240;
@@ -64,7 +65,7 @@ class BootWindow : public Fl_Window
 	Fl_Group* m_tabPWADs;
 	std::string m_genWaddirs;
 	std::vector<scannedIWAD_t> m_IWADs;
-	std::vector<std::string> m_PWADs;
+	std::vector<scannedPWAD_t> m_PWADs;
 	std::vector<std::string> m_selectedPWADs;
 	Fl_Hold_Browser* m_IWADBrowser;
 	Fl_Check_Browser* m_PWADSelectBrowser;
@@ -209,7 +210,9 @@ class BootWindow : public Fl_Window
 			return;
 		}
 
-		::g_SelectedIWAD = boot->selectedIWAD();
+		// ::g_SelectedIWAD = boot->selectedIWAD();
+		// ::g_SelectedWADs = boot->selectedWADs();
+		boot->selectedWADs();
 		Fl::delete_widget(boot);
 	}
 
@@ -327,7 +330,7 @@ class BootWindow : public Fl_Window
 		m_PWADs = M_ScanPWADs();
 		for (size_t i = 0; i < m_PWADs.size(); i++)
 		{
-			m_PWADSelectBrowser->add(m_PWADs[i].c_str());
+			m_PWADSelectBrowser->add(m_PWADs[i].filename.c_str());
 		}
 		m_genWaddirs = ::waddirs.str();
 	}
@@ -347,12 +350,12 @@ class BootWindow : public Fl_Window
 		{
 			if (boot->m_PWADSelectBrowser->checked(i))
 			{
-				if (!std::count(selected->begin(), selected->end(), boot->m_PWADs[i - 1].c_str()))
-					selected->push_back(boot->m_PWADs[i - 1].c_str());
+				if (!std::count(selected->begin(), selected->end(), boot->m_PWADs[i - 1].filename.c_str()))
+					selected->push_back(boot->m_PWADs[i - 1].filename.c_str());
 			} else
 			{
 				std::vector<std::string>::iterator removed = 
-					std::remove(selected->begin(), selected->end(), boot->m_PWADs[i - 1].c_str());
+					std::remove(selected->begin(), selected->end(), boot->m_PWADs[i - 1].filename.c_str());
 				selected->erase(removed, selected->end());
 			}
 		}
@@ -386,6 +389,19 @@ class BootWindow : public Fl_Window
 		if (value == 0)
 			return NULL;
 		return &m_IWADs.at(value - 1);
+	}
+
+	/**
+	 * @brief Get WAD information for selected WADs.
+	 */
+	void selectedWADs()
+	{
+		const size_t value = static_cast<size_t>(m_IWADBrowser->value());
+		::g_SelectedWADs.iwad = m_IWADs.at(value - 1).path;
+		for (size_t i = 0; i < m_selectedPWADs.size(); i++)
+		{
+			::g_SelectedWADs.pwads.push_back(m_selectedPWADs[i]);
+		}
 	}
 
 	/**
@@ -426,7 +442,7 @@ static BootWindow* MakeBootWindow()
  *
  * @return The IWAD file to use when starting the game.
  */
-std::string GUI_BootWindow()
+scannedWADs_t GUI_BootWindow()
 {
 	// Scale according to 1600x900.
 	Fl::screen_scale(0, MAX(Fl::h() / 900.0f, 1.0f));
@@ -447,5 +463,5 @@ std::string GUI_BootWindow()
 	Fl::run();
 
 	// Return the full IWAD path.
-	return ::g_SelectedIWAD->path;
+	return ::g_SelectedWADs;
 }

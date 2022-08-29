@@ -129,9 +129,15 @@ struct scannedIWAD_t
 	const fileIdentifier_t* id;
 };
 
+struct scannedPWAD_t
+{
+	std::string path;
+	std::string filename;
+};
+
 std::string M_ResFilesToString(const OResFiles& files);
 const std::vector<std::string>& M_FileTypeExts(ofile_t type);
 std::vector<std::string> M_FileSearchDirs();
 bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted);
 std::vector<scannedIWAD_t> M_ScanIWADs();
-std::vector<std::string> M_ScanPWADs();
+std::vector<scannedPWAD_t> M_ScanPWADs();

@@ -761,6 +761,7 @@ void D_DoomMain()
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
 	std::string iwad;
+	std::vector<std::string> pwads;
 	const char* iwadParam = Args.CheckValue("-iwad");
 	if (iwadParam)
 	{
@@ -794,7 +795,10 @@ void D_DoomMain()
 
 		if (!shouldSkip)
 		{
-			iwad = GUI_BootWindow();
+			// iwad = GUI_BootWindow();
+			scannedWADs_t wads = GUI_BootWindow();
+			iwad = wads.iwad;
+			pwads = wads.pwads;
 		}
 	}
 
@@ -805,6 +809,16 @@ void D_DoomMain()
 		OWantFile file;
 		OWantFile::make(file, iwad, OFILE_WAD);
 		newwadfiles.push_back(file);
+	}
+
+	if (!pwads.empty())
+	{
+		for (size_t i = 0; i < pwads.size(); i++)
+		{
+			OWantFile file;
+			OWantFile::make(file, pwads[i], OFILE_WAD);
+			newwadfiles.push_back(file);
+		}
 	}
 
 	D_AddWadCommandLineFiles(newwadfiles);
