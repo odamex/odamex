@@ -26,6 +26,7 @@
 #include "gui_boot.h"
 
 #include <algorithm>
+#include <set>
 
 #include "FL/Fl.H"
 #include "FL/Fl_Box.H"
@@ -64,6 +65,7 @@ class BootWindow : public Fl_Window
 	std::string m_genWaddirs;
 	std::vector<scannedIWAD_t> m_IWADs;
 	std::vector<std::string> m_PWADs;
+	std::vector<std::string> m_selectedPWADs;
 	Fl_Hold_Browser* m_IWADBrowser;
 	Fl_Check_Browser* m_PWADSelectBrowser;
 	Fl_Hold_Browser* m_PWADOrderBrowser;
@@ -215,30 +217,28 @@ class BootWindow : public Fl_Window
 
 	static void doWADUpCB(Fl_Widget*, void* data)
 	{
-		// BootWindow* boot = static_cast<BootWindow*>(data);
+		BootWindow* boot = static_cast<BootWindow*>(data);
 
-		// const int val = boot->m_PWADOrderBrowser->value() - 1;
-		// if (val <= 0 || val >= boot->m_WADDirs.size())
-		// 	return;
+		const int val = boot->m_PWADOrderBrowser->value() - 1;
+		if (val <= 0 || val >= boot->m_selectedPWADs.size())
+			return;
 
-		// std::iter_swap(boot->m_WADDirs.begin() + val, boot->m_WADDirs.begin() + val - 1);
-		// boot->setWADDirs();
-		// boot->updateWADDirBrowser();
-		// boot->m_WADDirList->value(val);
+		std::iter_swap(boot->m_selectedPWADs.begin() + val, boot->m_selectedPWADs.begin() + val - 1);
+		boot->updatePWADOrderBrowser();
+		boot->m_PWADOrderBrowser->value(val);
 	}
 
 	static void doWADDownCB(Fl_Widget*, void* data)
 	{
-		// BootWindow* boot = static_cast<BootWindow*>(data);
+		BootWindow* boot = static_cast<BootWindow*>(data);
 
-		// const int val = boot->m_WADDirList->value() - 1;
-		// if (val < 0 || val >= boot->m_WADDirs.size() - 1)
-		// 	return;
+		const int val = boot->m_PWADOrderBrowser->value() - 1;
+		if (val <= 0 || val >= boot->m_selectedPWADs.size() - 1)
+			return;
 
-		// std::iter_swap(boot->m_WADDirs.begin() + val, boot->m_WADDirs.begin() + val + 1);
-		// boot->setWADDirs();
-		// boot->updateWADDirBrowser();
-		// boot->m_WADDirList->value(val + 2);
+		std::iter_swap(boot->m_selectedPWADs.begin() + val, boot->m_selectedPWADs.begin() + val + 1);
+		boot->updatePWADOrderBrowser();
+		boot->m_PWADOrderBrowser->value(val + 2);
 	}
 
 	// -- Resource Locations --
@@ -332,17 +332,49 @@ class BootWindow : public Fl_Window
 		m_genWaddirs = ::waddirs.str();
 	}
 
+
+	/**
+	 * @brief Places selected PWADs into the order browser for load order selection.
+	 */
 	static void scanCheckedPWADsCB(Fl_Widget*, void* data)
 	{
 		BootWindow* boot = static_cast<BootWindow*>(data);
+		std::vector<std::string>* selected = &boot->m_selectedPWADs;
 
 		// dont clear, only add if not already there
 		boot->m_PWADOrderBrowser->clear();
-		for (size_t i = 0; i < boot->m_PWADSelectBrowser->nitems(); i++) 
+		for (size_t i = 1; i <= boot->m_PWADSelectBrowser->nitems(); i++) 
 		{
 			if (boot->m_PWADSelectBrowser->checked(i))
-				boot->m_PWADOrderBrowser->add(boot->m_PWADSelectBrowser->text(i));
+			{
+				if (!std::count(selected->begin(), selected->end(), boot->m_PWADs[i - 1].c_str()))
+					selected->push_back(boot->m_PWADs[i - 1].c_str());
+			} else
+			{
+				std::vector<std::string>::iterator removed = 
+					std::remove(selected->begin(), selected->end(), boot->m_PWADs[i - 1].c_str());
+				selected->erase(removed, selected->end());
+			}
 		}
+		
+		for (size_t i = 0; i < boot->m_selectedPWADs.size(); i++)
+		{
+			boot->m_PWADOrderBrowser->add(boot->m_selectedPWADs[i].c_str());
+		}
+	}
+
+	/**
+	 * @brief Update the PWAD order browser widget from the vector.
+	 */
+	void updatePWADOrderBrowser()
+	{
+		const int val = m_PWADOrderBrowser->value();
+		m_PWADOrderBrowser->clear();
+		for (size_t i = 0; i < m_selectedPWADs.size(); i++)
+		{
+			m_PWADOrderBrowser->add(m_selectedPWADs[i].c_str());
+		}
+		m_PWADOrderBrowser->value(val);
 	}
 
 	/**
