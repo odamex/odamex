@@ -26,7 +26,6 @@
 #include "gui_boot.h"
 
 #include <algorithm>
-#include <set>
 
 #include "FL/Fl.H"
 #include "FL/Fl_Box.H"
@@ -215,8 +214,6 @@ class BootWindow : public Fl_Window
 			return;
 		}
 
-		// ::g_SelectedIWAD = boot->selectedIWAD();
-		// ::g_SelectedWADs = boot->selectedWADs();
 		boot->selectedWADs();
 		Fl::delete_widget(boot);
 	}
