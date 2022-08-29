@@ -305,7 +305,7 @@ std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString
 	return rvo;
 }
 
-// Scan for PWADs and DEH and BEX files --  need to properly name this function
+// Scan for PWADs and DEH and BEX files
 std::vector<std::string> M_PWADFilesScanDir(std::string dir)
 {
 	std::vector<std::string> rvo;
