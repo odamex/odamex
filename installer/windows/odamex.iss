@@ -258,7 +258,7 @@ begin
 end;
  
  
-procedure InitializeSetup;
+function InitializeSetup(): Boolean;
 var
   V: Integer;
   iUpgradeResult: Integer;
@@ -287,16 +287,30 @@ begin
     if V = IDYES then
     begin
       sUnInstallString := GetUninstallString();
-      sUnInstallString :=  RemoveQuotes(sUnInstallString);
+      sUnInstallString := RemoveQuotes(sUnInstallString);
       Exec(ExpandConstant(sUnInstallString), '', '', SW_SHOW, ewWaitUntilTerminated, iResultCode);
-      if iResultCode <> 0 then
-        Exit;
+      if iResultCode = 0 then
+      begin
+          Result := True;
+      end
+      else
+      begin
+          Result := False;
+      end;
+    end
+    else
+    begin
+        Result := False;
     end;
+  end
+  else
+  begin
+      Result := True;
   end;
 end;
 
 [Run]
-Filename: {app}\odalaunch.exe; Description: {cm:LaunchProgram,Odalaunch}; Flags: nowait postinstall skipifsilent; BeforeInstall: InitializeSetup
+Filename: {app}\odalaunch.exe; Description: {cm:LaunchProgram,Odalaunch}; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 Type: files; Name: {app}\odamex.out
