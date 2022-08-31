@@ -140,7 +140,6 @@ var
   sVersion: string;
   sOldVersion: string;
 begin
-  Result := True; { in case when no previous version is found }
   if IsUpgrade() then
   begin
     sVersion := '{#SetupSetting("AppVersion")}';
@@ -167,7 +166,6 @@ begin
       sUnInstallString := GetUninstallString();
       sUnInstallString :=  RemoveQuotes(sUnInstallString);
       Exec(ExpandConstant(sUnInstallString), '', '', SW_SHOW, ewWaitUntilTerminated, iResultCode);
-      Result := True; { if you want to proceed after uninstall }
       { Exit; //if you want to quit after uninstall }
     end
   end;
