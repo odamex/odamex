@@ -279,7 +279,7 @@ begin
     if iVersionCompare = 0 then
         iUpgradeResult := MsgBox(ExpandConstant('The version of Odamex you are about to install is identical to the currently installed version. Do you want to proceed with the installation?'), mbConfirmation, MB_YESNO);
     if iVersionCompare = 1 then
-        iUpgradeResult = IDYES;
+        iUpgradeResult := IDYES;
     if iUpgradeResult = IDYES then
         V := MsgBox(ExpandConstant('Odamex has been detected on this machine. If you don't uninstall, this will be an in-place installation of Odamex to the same path. Do you want to uninstall the previous installation?'), mbConfirmation, MB_YESNO); { Custom Message if App installed }
     
