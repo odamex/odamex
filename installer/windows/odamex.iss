@@ -143,7 +143,7 @@ begin
   Result := True; { in case when no previous version is found }
   if IsUpgrade() then
   begin
-    sVersion := '{#AppVersion}';
+    sVersion := '{#SetupSetting("AppVersion")}';
     sOldVersion := GetRegistryVersion();
     iVersionCompare := CompareVersion(sOldVersion, sVersion);
     if iVersionCompare = -1 then
