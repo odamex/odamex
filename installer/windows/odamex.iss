@@ -131,45 +131,10 @@ Name: {group}\Odamex User Folder; Filename: "%USERPROFILE%\Documents\My Games\Od
 Name: {group}\{cm:UninstallProgram,Odamex}; Filename: {uninstallexe}
 
 [Code]
-function GetUninstallString: string;
-var
-  sUnInstPath: string;
-  sUnInstallString: String;
-begin
-  Result := '';
-  sUnInstPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{{2E517BBB-916F-4AB6-80E0-D4A292513F7A}_is1'); { Your App GUID/ID }
-  sUnInstallString := '';
-  if not RegQueryStringValue(HKLM, sUnInstPath, 'UninstallString', sUnInstallString) then
-    RegQueryStringValue(HKCU, sUnInstPath, 'UninstallString', sUnInstallString);
-  Result := sUnInstallString;
-end;
- 
- 
-function GetRegistryVersion: string;
-var
-  sUnInstPath: string;
-  sVersionString: String;
-begin
-  Result := '';
-  sUnInstPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{{2E517BBB-916F-4AB6-80E0-D4A292513F7A}_is1'); { Your App GUID/ID }
-  sVersionString := '';
-  if not RegQueryStringValue(HKLM, sUnInstPath, 'DisplayVersion', sVersionString) then
-    RegQueryStringValue(HKCU, sUnInstPath, 'DisplayVersion', sVersionString);
-  Result := sVersionString;
-end;
- 
- 
-function IsUpgrade: Boolean;
-begin
-  Result := (GetUninstallString() <> '');
-end;
- 
- 
-function InitializeSetup: Boolean;
+procedure InitializeSetup;
 var
   V: Integer;
   iUpgradeResult: Integer;
-  iResultCode: Integer;
   iVersionCompare: Integer;
   sUnInstallString: string;
   sVersion: string;
@@ -205,8 +170,6 @@ begin
       Result := True; { if you want to proceed after uninstall }
       { Exit; //if you want to quit after uninstall }
     end
-    else
-      Result := False; { when older version present and not uninstalled }
   end;
 end;
  
@@ -303,8 +266,41 @@ begin
     Result := 0; 
 end;
 
+function GetUninstallString: string;
+var
+  sUnInstPath: string;
+  sUnInstallString: String;
+begin
+  Result := '';
+  sUnInstPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{{2E517BBB-916F-4AB6-80E0-D4A292513F7A}_is1'); { Your App GUID/ID }
+  sUnInstallString := '';
+  if not RegQueryStringValue(HKLM, sUnInstPath, 'UninstallString', sUnInstallString) then
+    RegQueryStringValue(HKCU, sUnInstPath, 'UninstallString', sUnInstallString);
+  Result := sUnInstallString;
+end;
+ 
+ 
+function GetRegistryVersion: string;
+var
+  sUnInstPath: string;
+  sVersionString: String;
+begin
+  Result := '';
+  sUnInstPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{{2E517BBB-916F-4AB6-80E0-D4A292513F7A}_is1'); { Your App GUID/ID }
+  sVersionString := '';
+  if not RegQueryStringValue(HKLM, sUnInstPath, 'DisplayVersion', sVersionString) then
+    RegQueryStringValue(HKCU, sUnInstPath, 'DisplayVersion', sVersionString);
+  Result := sVersionString;
+end;
+ 
+ 
+function IsUpgrade: Boolean;
+begin
+  Result := (GetUninstallString() <> '');
+end;
+
 [Run]
-Filename: {app}\odalaunch.exe; Description: {cm:LaunchProgram,Odalaunch}; Flags: nowait postinstall skipifsilent; BeforeInstall: RemoveOldDatabase
+Filename: {app}\odalaunch.exe; Description: {cm:LaunchProgram,Odalaunch}; Flags: nowait postinstall skipifsilent; BeforeInstall: InitializeSetup
 
 [UninstallDelete]
 Type: files; Name: {app}\odamex.out
