@@ -262,6 +262,7 @@ procedure InitializeSetup;
 var
   V: Integer;
   iUpgradeResult: Integer;
+  iResultCode: Integer;
   iVersionCompare: Integer;
   sUnInstallString: string;
   sVersion: string;
@@ -288,7 +289,8 @@ begin
       sUnInstallString := GetUninstallString();
       sUnInstallString :=  RemoveQuotes(sUnInstallString);
       Exec(ExpandConstant(sUnInstallString), '', '', SW_SHOW, ewWaitUntilTerminated, iResultCode);
-      { Exit; //if you want to quit after uninstall }
+      if iResultCode <> 0 then
+        Exit;
     end;
   end;
 end;
