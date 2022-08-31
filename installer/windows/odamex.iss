@@ -139,8 +139,10 @@ var
   sUnInstallString: string;
   sVersion: string;
   sOldVersion: string;
+  bUpgrade: Boolean;
 begin
-  if IsUpgrade() then
+  bUpgrade := IsUpgrade();
+  if bUpgrade then
   begin
     sVersion := '{#SetupSetting("AppVersion")}';
     sOldVersion := GetRegistryVersion();
