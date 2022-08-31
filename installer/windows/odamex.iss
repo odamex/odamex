@@ -289,7 +289,7 @@ begin
       sUnInstallString :=  RemoveQuotes(sUnInstallString);
       Exec(ExpandConstant(sUnInstallString), '', '', SW_SHOW, ewWaitUntilTerminated, iResultCode);
       { Exit; //if you want to quit after uninstall }
-    end
+    end;
   end;
 end;
 
