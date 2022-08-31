@@ -299,6 +299,10 @@ begin
           begin
               Result := False;
           end;
+        end
+        else
+        begin
+            Result := True;
         end;
     end
     else
