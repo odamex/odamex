@@ -131,12 +131,6 @@ Name: {group}\Odamex User Folder; Filename: "%USERPROFILE%\Documents\My Games\Od
 Name: {group}\{cm:UninstallProgram,Odamex}; Filename: {uninstallexe}
 
 [Code]
-function IsUpgrade: Boolean;
-begin
-  Result := (GetUninstallString() <> '');
-end;
- 
- 
 function GetUninstallString: string;
 var
   sUnInstPath: string;
@@ -162,6 +156,12 @@ begin
   if not RegQueryStringValue(HKLM, sUnInstPath, 'DisplayVersion', sVersionString) then
     RegQueryStringValue(HKCU, sUnInstPath, 'DisplayVersion', sVersionString);
   Result := sVersionString;
+end;
+ 
+ 
+function IsUpgrade: Boolean;
+begin
+  Result := (GetUninstallString() <> '');
 end;
  
  
