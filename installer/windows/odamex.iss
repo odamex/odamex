@@ -131,46 +131,37 @@ Name: {group}\Odamex User Folder; Filename: "%USERPROFILE%\Documents\My Games\Od
 Name: {group}\{cm:UninstallProgram,Odamex}; Filename: {uninstallexe}
 
 [Code]
-procedure InitializeSetup;
-var
-  V: Integer;
-  iUpgradeResult: Integer;
-  iVersionCompare: Integer;
-  sUnInstallString: string;
-  sVersion: string;
-  sOldVersion: string;
-  bUpgrade: Boolean;
+function IsUpgrade: Boolean;
 begin
-  bUpgrade := IsUpgrade();
-  if bUpgrade then
-  begin
-    sVersion := '{#SetupSetting("AppVersion")}';
-    sOldVersion := GetRegistryVersion();
-    iVersionCompare := CompareVersion(sOldVersion, sVersion);
-    if iVersionCompare = -1 then
-    begin
-      iUpgradeResult := MsgBox(ExpandConstant('The version of Odamex you are about to install is a downgrade to the currently installed version. Do you want to proceed with the installation?'), mbConfirmation, MB_YESNO);
-      if iUpgradeResult = IDYES then
-        V := MsgBox(ExpandConstant('Odamex has been detected on this machine. If you don't uninstall, this will be an in-place installation of Odamex to the same path. Do you want to uninstall the previous installation?'), mbConfirmation, MB_YESNO); { Custom Message if App installed }
-    end
-    if iVersionCompare = 0 then
-    begin
-      iUpgradeResult := MsgBox(ExpandConstant('The version of Odamex you are about to install is identical to the currently installed version. Do you want to proceed with the installation?'), mbConfirmation, MB_YESNO);
-      if iUpgradeResult = IDYES then
-        V := MsgBox(ExpandConstant('Odamex has been detected on this machine. If you don't uninstall, this will be an in-place installation of Odamex to the same path. Do you want to uninstall the previous installation?'), mbConfirmation, MB_YESNO); { Custom Message if App installed }
-    end
-    if iVersionCompare = 1 then
-    begin
-      V := MsgBox(ExpandConstant('An older version of Odamex has been detected on this machine. This will be an in-place installation of Odamex to the same path. Do you want to uninstall the previous installation?'), mbConfirmation, MB_YESNO); { Custom Message if App installed }
-    end
-    if V = IDYES then
-    begin
-      sUnInstallString := GetUninstallString();
-      sUnInstallString :=  RemoveQuotes(sUnInstallString);
-      Exec(ExpandConstant(sUnInstallString), '', '', SW_SHOW, ewWaitUntilTerminated, iResultCode);
-      { Exit; //if you want to quit after uninstall }
-    end
-  end;
+  Result := (GetUninstallString() <> '');
+end;
+ 
+ 
+function GetUninstallString: string;
+var
+  sUnInstPath: string;
+  sUnInstallString: String;
+begin
+  Result := '';
+  sUnInstPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{{2E517BBB-916F-4AB6-80E0-D4A292513F7A}_is1'); { Your App GUID/ID }
+  sUnInstallString := '';
+  if not RegQueryStringValue(HKLM, sUnInstPath, 'UninstallString', sUnInstallString) then
+    RegQueryStringValue(HKCU, sUnInstPath, 'UninstallString', sUnInstallString);
+  Result := sUnInstallString;
+end;
+ 
+ 
+function GetRegistryVersion: string;
+var
+  sUnInstPath: string;
+  sVersionString: String;
+begin
+  Result := '';
+  sUnInstPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{{2E517BBB-916F-4AB6-80E0-D4A292513F7A}_is1'); { Your App GUID/ID }
+  sVersionString := '';
+  if not RegQueryStringValue(HKLM, sUnInstPath, 'DisplayVersion', sVersionString) then
+    RegQueryStringValue(HKCU, sUnInstPath, 'DisplayVersion', sVersionString);
+  Result := sVersionString;
 end;
  
  
@@ -265,38 +256,48 @@ begin
  
     Result := 0; 
 end;
-
-function GetUninstallString: string;
+ 
+ 
+procedure InitializeSetup;
 var
-  sUnInstPath: string;
-  sUnInstallString: String;
+  V: Integer;
+  iUpgradeResult: Integer;
+  iVersionCompare: Integer;
+  sUnInstallString: string;
+  sVersion: string;
+  sOldVersion: string;
+  bUpgrade: Boolean;
 begin
-  Result := '';
-  sUnInstPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{{2E517BBB-916F-4AB6-80E0-D4A292513F7A}_is1'); { Your App GUID/ID }
-  sUnInstallString := '';
-  if not RegQueryStringValue(HKLM, sUnInstPath, 'UninstallString', sUnInstallString) then
-    RegQueryStringValue(HKCU, sUnInstPath, 'UninstallString', sUnInstallString);
-  Result := sUnInstallString;
-end;
- 
- 
-function GetRegistryVersion: string;
-var
-  sUnInstPath: string;
-  sVersionString: String;
-begin
-  Result := '';
-  sUnInstPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{{2E517BBB-916F-4AB6-80E0-D4A292513F7A}_is1'); { Your App GUID/ID }
-  sVersionString := '';
-  if not RegQueryStringValue(HKLM, sUnInstPath, 'DisplayVersion', sVersionString) then
-    RegQueryStringValue(HKCU, sUnInstPath, 'DisplayVersion', sVersionString);
-  Result := sVersionString;
-end;
- 
- 
-function IsUpgrade: Boolean;
-begin
-  Result := (GetUninstallString() <> '');
+  bUpgrade := IsUpgrade();
+  if bUpgrade then
+  begin
+    sVersion := '{#SetupSetting("AppVersion")}';
+    sOldVersion := GetRegistryVersion();
+    iVersionCompare := CompareVersion(sOldVersion, sVersion);
+    if iVersionCompare = -1 then
+    begin
+      iUpgradeResult := MsgBox(ExpandConstant('The version of Odamex you are about to install is a downgrade to the currently installed version. Do you want to proceed with the installation?'), mbConfirmation, MB_YESNO);
+      if iUpgradeResult = IDYES then
+        V := MsgBox(ExpandConstant('Odamex has been detected on this machine. If you don't uninstall, this will be an in-place installation of Odamex to the same path. Do you want to uninstall the previous installation?'), mbConfirmation, MB_YESNO); { Custom Message if App installed }
+    end
+    if iVersionCompare = 0 then
+    begin
+      iUpgradeResult := MsgBox(ExpandConstant('The version of Odamex you are about to install is identical to the currently installed version. Do you want to proceed with the installation?'), mbConfirmation, MB_YESNO);
+      if iUpgradeResult = IDYES then
+        V := MsgBox(ExpandConstant('Odamex has been detected on this machine. If you don't uninstall, this will be an in-place installation of Odamex to the same path. Do you want to uninstall the previous installation?'), mbConfirmation, MB_YESNO); { Custom Message if App installed }
+    end
+    if iVersionCompare = 1 then
+    begin
+      V := MsgBox(ExpandConstant('An older version of Odamex has been detected on this machine. This will be an in-place installation of Odamex to the same path. Do you want to uninstall the previous installation?'), mbConfirmation, MB_YESNO); { Custom Message if App installed }
+    end
+    if V = IDYES then
+    begin
+      sUnInstallString := GetUninstallString();
+      sUnInstallString :=  RemoveQuotes(sUnInstallString);
+      Exec(ExpandConstant(sUnInstallString), '', '', SW_SHOW, ewWaitUntilTerminated, iResultCode);
+      { Exit; //if you want to quit after uninstall }
+    end
+  end;
 end;
 
 [Run]
