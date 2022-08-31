@@ -300,7 +300,7 @@ begin
     end
     else
     begin
-        Result := False;
+        Result := True;
     end;
   end
   else
