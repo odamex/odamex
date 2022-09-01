@@ -1743,35 +1743,35 @@ struct MapInfoDataSetter<gameinfo_t>
 
 	MapInfoDataSetter()
 	{
-		mapInfoDataContainer.reserve(20);
-
-		ENTRY3("advisorytime", &MIType_Int, &gameinfo.advisoryTime)
-		ENTRY2("border", &MIType_Border)
-		ENTRY3("borderflat", &MIType_LumpName, &gameinfo.borderFlat)
-		ENTRY3("chatsound", &MIType_SoundName, &gameinfo.chatSound)
-		ENTRY3("creditpage", &MIType_Pages, &gameinfo.creditPages)
-		ENTRY3("intermissioncounter", &MIType_BoolString, &gameinfo.intermissionCounter)
-		ENTRY3("intermissionmusic", &MIType_MusicLumpName, &gameinfo.intermissionMusic)
-		ENTRY3("noloopfinalemusic", &MIType_BoolString, &gameinfo.noLoopFinaleMusic)
-		ENTRY3("pagetime", &MIType_Int, &gameinfo.pageTime)
-		ENTRY3("quitsound", &MIType_SoundName, &gameinfo.quitSound)
-		ENTRY3("finaleflat", &MIType_LumpName, &gameinfo.finaleFlat)
-		ENTRY3("finalemusic", &MIType_MusicLumpName, &gameinfo.finaleMusic)
-		ENTRY4("finalepage", &MIType_Pages, &gameinfo.finalePage, 1)
-		ENTRY4("infopage", &MIType_Pages, &gameinfo.infoPage, 1)
-		ENTRY3("telefogheight", &MIType_Int, &gameinfo.telefogHeight)
-		ENTRY3("titlemusic", &MIType_MusicLumpName, &gameinfo.titleMusic)
-		ENTRY3("titlepage", &MIType_LumpName, &gameinfo.titlePage)
-		ENTRY3("titletime", &MIType_Int, &gameinfo.titleTime)
-		ENTRY3("defkickback", &MIType_Int, &gameinfo.defKickback)
-		ENTRY3("endoom", &MIType_LumpName, &gameinfo.endoom)
-		ENTRY3("pausesign", &MIType_LumpName, &gameinfo.pauseSign)
-		ENTRY3("gibfactor", &MIType_Float, &gameinfo.gibFactor)
-		ENTRY3("textscreenx", &MIType_Int, &gameinfo.textScreenX)
-		ENTRY3("textscreeny", &MIType_Int, &gameinfo.textScreenY)
-		ENTRY2("maparrow", &MIType_MapArrows)
-		ENTRY3("cheatkey", &MIType_MapKey, &gameinfo.cheatKey)
-		ENTRY3("easykey", &MIType_MapKey, &gameinfo.easyKey)
+		mapInfoDataContainer = {
+			{ "advisorytime", &MIType_Int, &gameinfo.advisoryTime },
+			{ "border", &MIType_Border },
+			{ "borderflat", &MIType_LumpName, &gameinfo.borderFlat },
+			{ "chatsound", &MIType_SoundName, &gameinfo.chatSound },
+			{ "creditpage", &MIType_Pages, &gameinfo.creditPages },
+			{ "intermissioncounter", &MIType_BoolString, &gameinfo.intermissionCounter },
+			{ "intermissionmusic", &MIType_MusicLumpName, &gameinfo.intermissionMusic },
+			{ "noloopfinalemusic", &MIType_BoolString, &gameinfo.noLoopFinaleMusic },
+			{ "pagetime", &MIType_Int, &gameinfo.pageTime },
+			{ "quitsound", &MIType_SoundName, &gameinfo.quitSound },
+			{ "finaleflat", &MIType_LumpName, &gameinfo.finaleFlat },
+			{ "finalemusic", &MIType_MusicLumpName, &gameinfo.finaleMusic },
+			{ "finalepage", &MIType_Pages, &gameinfo.finalePage, 1 },
+			{ "infopage", &MIType_Pages, &gameinfo.infoPage, 1 },
+			{ "telefogheight", &MIType_Int, &gameinfo.telefogHeight },
+			{ "titlemusic", &MIType_MusicLumpName, &gameinfo.titleMusic },
+			{ "titlepage", &MIType_LumpName, &gameinfo.titlePage },
+			{ "titletime", &MIType_Int, &gameinfo.titleTime },
+			{ "defkickback", &MIType_Int, &gameinfo.defKickback },
+			{ "endoom", &MIType_LumpName, &gameinfo.endoom },
+			{ "pausesign", &MIType_LumpName, &gameinfo.pauseSign },
+			{ "gibfactor", &MIType_Float, &gameinfo.gibFactor },
+			{ "textscreenx", &MIType_Int, &gameinfo.textScreenX },
+			{ "textscreeny", &MIType_Int, &gameinfo.textScreenY },
+			{ "maparrow", &MIType_MapArrows },
+			{ "cheatkey", &MIType_MapKey, &gameinfo.cheatKey },
+			{ "easykey", &MIType_MapKey, &gameinfo.easyKey }
+		};
 	}
 };
 
