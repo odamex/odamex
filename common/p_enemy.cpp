@@ -40,6 +40,7 @@
 #include "d_player.h"
 #include "p_setup.h"
 #include "d_dehacked.h"
+#include "g_skill.h"
 #include "p_mapformat.h"
 
 
@@ -48,6 +49,7 @@ EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_novileghosts)
 EXTERN_CVAR(co_zdoomsound)
+EXTERN_CVAR(co_removesoullimit)
 
 enum dirtype_t
 {
@@ -967,7 +969,7 @@ void A_Chase (AActor *actor)
 	if (actor->flags & MF_JUSTATTACKED)
 	{
 		actor->flags &= ~MF_JUSTATTACKED;
-		if ((sv_skill != sk_nightmare) && !sv_fastmonsters)
+		if (G_GetCurrentSkill().respawn_counter == 0 && !sv_fastmonsters)
 			P_NewChaseDir (actor);
 		return;
 	}
@@ -998,15 +1000,15 @@ void A_Chase (AActor *actor)
 		if (actor->info->attacksound)
 			S_Sound (actor, CHAN_WEAPON, actor->info->attacksound, 1, ATTN_NORM);
 
-		P_SetMobjState (actor, actor->info->meleestate, true);
+		if (serverside)
+			P_SetMobjState (actor, actor->info->meleestate, true);
 		return;
 	}
 
 	// check for missile attack
 	if (actor->info->missilestate)
 	{
-		if (sv_skill < sk_nightmare
-			&& actor->movecount && !sv_fastmonsters)
+		if (!G_GetCurrentSkill().fast_monsters && actor->movecount && !sv_fastmonsters)
 		{
 			goto nomissile;
 		}
@@ -1014,7 +1016,8 @@ void A_Chase (AActor *actor)
 		if (!P_CheckMissileRange (actor))
 			goto nomissile;
 
-		P_SetMobjState (actor, actor->info->missilestate, true);
+		if (serverside)
+			P_SetMobjState (actor, actor->info->missilestate, true);
 		actor->flags |= MF_JUSTATTACKED;
 		return;
 	}
@@ -2154,6 +2157,18 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 
 					P_SetMobjState(corpsehit, info->raisestate, true);
 
+					// [Nes] - Classic demo compatability: Ghost monster bug.
+					if ((co_novileghosts))
+					{
+						corpsehit->height =
+						    P_ThingInfoHeight(info);      // [RH] Use real mobj height
+						corpsehit->radius = info->radius; // [RH] Use real radius
+					}
+					else
+					{
+						corpsehit->height <<= 2;
+					}
+
 					corpsehit->flags = info->flags;
 					corpsehit->health = info->spawnhealth;
 					corpsehit->target = AActor::AActorPtr();
@@ -2464,9 +2479,12 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 
 	// if there are already 20 skulls on the level,
 	// don't spit another one
-	if (count > 20)
+	// co_removesoullimit removes the standard limit
+	if (count > 20 && !co_removesoullimit)
 		return;
-
+	// multiplayer retains a hard limit of 128
+	if (multiplayer && count > 128)
+		return;
 	// okay, there's room for another one
 	an = angle >> ANGLETOFINESHIFT;
 
@@ -2594,6 +2612,14 @@ void A_Fall (AActor *actor)
 
 	// So change this if corpse objects
 	// are meant to be obstacles.
+
+	// Remove any sort of boss effect on kill
+	// OFlags hack because of client issues
+	// Only remove the sparkling fountain, keep the transition
+	if (actor->type != MT_PLAYER && (actor->oflags & hordeBossModMask))
+	{
+		actor->effects = 0;
+	}
 }
 
 
@@ -2847,23 +2873,20 @@ void A_BrainSpit (AActor *mo)
 	if(!serverside)
 		return;
 
-	AActor* 	targ;
-	AActor* 	newmobj;
-
 	// [RH] Do nothing if there are no brain targets.
 	if (numbraintargets == 0)
 		return;
 
 	brain.easy ^= 1;		// killough 3/26/98: use brain struct
-	if (sv_skill <= sk_easy && (!brain.easy))
+	if (G_GetCurrentSkill().easy_boss_brain && (!brain.easy))
 		return;
 
 	// shoot a cube at current target
-	targ = braintargets[brain.targeton++];	// killough 3/26/98:
+	AActor* targ = braintargets[brain.targeton++];	// killough 3/26/98:
 	brain.targeton %= numbraintargets;		// Use brain struct for targets
 
 	// spawn brain missile
-	newmobj = P_SpawnMissile (mo, targ, MT_SPAWNSHOT);
+	AActor* newmobj = P_SpawnMissile(mo, targ, MT_SPAWNSHOT);
 
 	if(newmobj)
 	{
@@ -3061,11 +3084,7 @@ void A_PlaySound(AActor* mo)
 		sndmap = 0;
 	}
 
-	if (!clientside)
-		SV_Sound(mo, CHAN_BODY, SoundMap[sndmap],
-		         (mo->state->misc2 ? ATTN_NONE : ATTN_NORM));
-	else
-		S_Sound(mo, CHAN_BODY, SoundMap[sndmap], 1,
+	S_Sound(mo, CHAN_BODY, SoundMap[sndmap], 1,
 		        (mo->state->misc2 ? ATTN_NONE : ATTN_NORM));
 }
 

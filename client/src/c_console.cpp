@@ -163,16 +163,18 @@ public:
 //
 // ============================================================================
 
-ConsoleLine::ConsoleLine() :
-	color_code("\034-"), wrapped(false), print_level(PRINT_HIGH),	// TEXTCOLOR_ESCAPE
-	timeout(gametic + con_notifytime.asInt() * TICRATE)
-{ }
+ConsoleLine::ConsoleLine()
+    : color_code("\034-"), wrapped(false), print_level(PRINT_HIGH),
+      timeout(gametic + int(con_notifytime * TICRATE))
+{
+}
 
 ConsoleLine::ConsoleLine(const std::string& _text, const std::string& _color_code,
-			int _print_level) :
-	text(_text), color_code(_color_code), wrapped(false), print_level(_print_level),
-	timeout(gametic + con_notifytime.asInt() * TICRATE)
-{ }
+                         int _print_level)
+    : text(_text), color_code(_color_code), wrapped(false), print_level(_print_level),
+      timeout(gametic + int(con_notifytime * TICRATE))
+{
+}
 
 
 //
@@ -2124,8 +2126,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 {
 	unsigned int i;
 
-	if (!msgtime)
-		msgtime = con_midtime.asInt();
+	const float fmsgtime = msgtime ? float(msgtime) : con_midtime;
 
 	if (MidMsg)
 		V_FreeBrokenLines(MidMsg);
@@ -2151,7 +2152,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 
 		if ( (MidMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
 		{
-			MidTicker = (int)(msgtime * TICRATE) + gametic;
+			MidTicker = (int)(fmsgtime * TICRATE) + gametic;
 
 			for (i = 0; MidMsg[i].width != -1; i++)
 				;
@@ -2208,8 +2209,7 @@ void C_GMidPrint(const char* msg, int color, int msgtime)
 {
 	unsigned int i;
 
-	if (!msgtime)
-		msgtime = con_midtime.asInt();
+	const float fmsgtime = msgtime ? float(msgtime) : con_midtime;
 
 	if (GameMsg)
 		V_FreeBrokenLines(GameMsg);
@@ -2230,7 +2230,7 @@ void C_GMidPrint(const char* msg, int color, int msgtime)
 
 		if ((GameMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
 		{
-			GameTicker = (int)(msgtime * TICRATE) + gametic;
+			GameTicker = (int)(fmsgtime * TICRATE) + gametic;
 
 			for (i = 0;GameMsg[i].width != -1;i++)
 				;

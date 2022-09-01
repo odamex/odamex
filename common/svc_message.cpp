@@ -366,12 +366,10 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 	}
 
 	// odamex flags - only monster flags for now
-	const uint32_t modMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK |
-	                         MFO_NORAISE | MFO_FULLBRIGHT;
-	if (mo->oflags & modMask)
+	if (mo->oflags & hordeBossModMask)
 	{
 		spawnFlags |= SVC_SM_OFLAGS;
-		cur->set_oflags(mo->oflags & modMask);
+		cur->set_oflags(mo->oflags & hordeBossModMask);
 	}
 
 	// animating corpses
@@ -1398,6 +1396,8 @@ odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker)
 		smsg->set_scroll_x(scroller->GetScrollX());
 		smsg->set_scroll_y(scroller->GetScrollY());
 		smsg->set_affectee(scroller->GetAffectee());
+		smsg->set_control(scroller->GetControl());
+		smsg->set_accel(scroller->GetAccel());
 	}
 	else if (thinker->IsA(RUNTIME_CLASS(DFireFlicker)))
 	{
@@ -1443,12 +1443,12 @@ odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker)
 	else if (thinker->IsA(RUNTIME_CLASS(DGlow2)))
 	{
 		DGlow2* glow2 = static_cast<DGlow2*>(thinker);
-		odaproto::svc::ThinkerUpdate_Glow2* gmsg = msg.mutable_glow2();
-		gmsg->set_sector(glow2->GetSector() - sectors);
-		gmsg->set_start(glow2->GetStart());
-		gmsg->set_end(glow2->GetEnd());
-		gmsg->set_max_tics(glow2->GetMaxTics());
-		gmsg->set_one_shot(glow2->GetOneShot());
+		odaproto::svc::ThinkerUpdate_Glow2* g2msg = msg.mutable_glow2();
+		g2msg->set_sector(glow2->GetSector() - sectors);
+		g2msg->set_start(glow2->GetStart());
+		g2msg->set_end(glow2->GetEnd());
+		g2msg->set_max_tics(glow2->GetMaxTics());
+		g2msg->set_one_shot(glow2->GetOneShot());
 	}
 	else if (thinker->IsA(RUNTIME_CLASS(DPhased)))
 	{
@@ -1577,6 +1577,7 @@ odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde)
 	msg.set_wave_time(horde.waveTime);
 	msg.set_boss_time(horde.bossTime);
 	msg.set_define_id(horde.defineID);
+	msg.set_legacy_id(horde.legacyID);
 	msg.set_spawned_health(horde.spawnedHealth);
 	msg.set_killed_health(horde.killedHealth);
 	msg.set_boss_health(horde.bossHealth);

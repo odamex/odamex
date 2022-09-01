@@ -24,9 +24,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __P_SPEC__
-#define __P_SPEC__
+#pragma once
 
 #include <list>
 #include "dsectoreffect.h"
@@ -226,6 +224,8 @@ public:
 	void SetRate (fixed_t dx, fixed_t dy) { m_dx = dx; m_dy = dy; }
 	bool IsType(EScrollType type) const { return type == m_Type; }
 	int GetAffectee() const { return m_Affectee; }
+	int GetAccel() const { return m_Accel; }
+	int GetControl() const { return m_Control; }
 
 	EScrollType GetType() const { return m_Type; }
 	fixed_t GetScrollX() const { return m_dx; }
@@ -1285,5 +1285,3 @@ BOOL P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad
 
 // [AM] Trigger actor specials.
 bool A_TriggerAction(AActor *mo, AActor *triggerer, int activationType);
-
-#endif

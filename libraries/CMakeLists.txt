@@ -295,102 +295,45 @@ endif()
 
 ### JsonCpp ###
 
-if(BUILD_SERVER)
+if(BUILD_SERVER AND USE_INTERNAL_JSONCPP)
   message(STATUS "Compiling JsonCpp...")
 
-  # Figure out the correct library path to attach to our imported target
-  set(JSONCPP_LIBRARY_DEBUG
-    "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}jsoncppd${libsuffix}")
-  set(JSONCPP_LIBRARY_RELEASE
-    "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}jsoncpp${libsuffix}")
+  lib_buildgen(
+    LIBRARY jsoncpp
+    PARAMS "-DJSONCPP_WITH_TESTS=OFF"
+           "-DJSONCPP_WITH_POST_BUILD_UNITTEST=OFF"
+           "-DJSONCPP_WITH_WARNING_AS_ERROR=OFF"
+           "-DJSONCPP_WITH_PKGCONFIG_SUPPORT=OFF"
+           "-DJSONCPP_WITH_CMAKE_PACKAGE=ON"
+           "-DCMAKE_DEBUG_POSTFIX=d"
+           "-DCCACHE_EXECUTABLE=CCACHE_EXECUTABLE-NOTFOUND")
+  lib_build(LIBRARY jsoncpp)
 
-  # Generate the build.
-  execute_process(COMMAND "${CMAKE_COMMAND}"
-    -S "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp"
-    -B "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-    -G "${CMAKE_GENERATOR}"
-    -A "${CMAKE_GENERATOR_PLATFORM}"
-    -T "${CMAKE_GENERATOR_TOOLSET}"
-    "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
-    "-DCMAKE_LINKER=${CMAKE_LINKER}"
-    "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
-    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-    "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
-    "-DCMAKE_INSTALL_LIBDIR=lib") # Without this, CentOS installs into lib64
-
-  # Compile the library.
-  get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-  if(IS_MULTI_CONFIG)
-    # Debug and Release are not compatible, so build both.
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-      --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-      --config Debug --target install)
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-    --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-    --config RelWithDebInfo --target install)
-  else()
-    # Single config uses the passed build type.
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-      --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-      --target install)
-  endif()
-
-  # Synthesize an imported target that can be linked against.
-  add_library(jsoncpp STATIC IMPORTED GLOBAL)
-  set_target_properties(jsoncpp PROPERTIES
-    INTERFACE_COMPILE_DEFINITIONS JSON_IS_AMALGAMATION
-    INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/local/include"
-    IMPORTED_LOCATION ${JSONCPP_LIBRARY_RELEASE}
-    IMPORTED_LOCATION_DEBUG ${JSONCPP_LIBRARY_DEBUG}
-    IMPORTED_LOCATION_RELEASE ${JSONCPP_LIBRARY_RELEASE}
-    MAP_IMPORTED_CONFIG_MINSIZEREL Release
-    MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release)
+  find_package(jsoncpp REQUIRED)
+  set_target_properties(jsoncpp_lib_static PROPERTIES IMPORTED_GLOBAL TRUE)
 endif()
 
 ### MiniUPnPc ###
+
 if(BUILD_SERVER AND NOT USE_MINIUPNP)
   message(STATUS "Skipping MiniUPnPc...")
 elseif(BUILD_SERVER AND USE_MINIUPNP AND USE_INTERNAL_MINIUPNP)
   message(STATUS "Compiling MiniUPnPc...")
 
   # Figure out the correct library path to attach to our imported target
-  set(MINIUPNPC_INCLUDE_DIR
-    "${CMAKE_CURRENT_BINARY_DIR}/local/include/miniupnpc")
   set(MINIUPNPC_LIBRARY
     "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}miniupnpc${libsuffix}")
 
-  # This must exist before the target is synthesized.
-  file(MAKE_DIRECTORY ${MINIUPNPC_INCLUDE_DIR})
+  lib_buildgen(
+    LIBRARY miniupnpc
+    SRCDIR "${CMAKE_CURRENT_SOURCE_DIR}/miniupnp/miniupnpc"
+    PARAMS "-DUPNPC_BUILD_SHARED=OFF"
+           "-DUPNPC_BUILD_TESTS=OFF"
+           "-DUPNPC_BUILD_SAMPLE=OFF")
+  lib_build(LIBRARY miniupnpc)
 
-  # Generate the build.
-  execute_process(COMMAND "${CMAKE_COMMAND}"
-    -S "${CMAKE_CURRENT_SOURCE_DIR}/libminiupnpc"
-    -B "${CMAKE_CURRENT_BINARY_DIR}/libminiupnpc-build"
-    -G "${CMAKE_GENERATOR}"
-    -A "${CMAKE_GENERATOR_PLATFORM}"
-    -T "${CMAKE_GENERATOR_TOOLSET}"
-    "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
-    "-DCMAKE_LINKER=${CMAKE_LINKER}"
-    "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
-    "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
-    "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
-    "-DCMAKE_INSTALL_LIBDIR=lib" # Without this, CentOS installs into lib64
-    "-DUPNPC_BUILD_SHARED=No"
-    "-DUPNPC_BUILD_TESTS=No")
-
-  # Compile the library.
-  execute_process(COMMAND "${CMAKE_COMMAND}"
-    --build "${CMAKE_CURRENT_BINARY_DIR}/libminiupnpc-build"
-    --config RelWithDebInfo --target install)
-
-  # Synthesize an imported target that can be linked against.
-  add_library(upnpc-static STATIC IMPORTED GLOBAL)
-  set_target_properties(upnpc-static PROPERTIES
-    INTERFACE_COMPILE_DEFINITIONS MINIUPNP_STATICLIB
-    IMPORTED_LOCATION ${MINIUPNPC_LIBRARY})
-  if(WIN32)
-    set_target_properties(upnpc-static PROPERTIES INTERFACE_LINK_LIBRARIES "ws2_32;iphlpapi")
-  endif()
+  find_package(miniupnpc REQUIRED)
+  set_target_properties(miniupnpc::miniupnpc PROPERTIES IMPORTED_GLOBAL TRUE)
 endif()
 
 ### Protocol Buffers ###

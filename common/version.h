@@ -21,8 +21,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __VERSION_H__
-#define __VERSION_H__
+#pragma once
 
 
 #if defined(CLIENT_APP)
@@ -73,10 +72,10 @@
 // Used by configuration files.  upversion.py will update thie field
 // deterministically and unambiguously so newer versions always compare
 // greater.
-#define CONFIGVERSIONSTR "010000"
+#define CONFIGVERSIONSTR "010020"
 
-#define DOTVERSIONSTR "10.0.0"
-#define GAMEVER (MAKEVER(10, 0, 0))
+#define DOTVERSIONSTR "10.2.0"
+#define GAMEVER (MAKEVER(10, 2, 0))
 
 #define COPYRIGHTSTR "Copyright (C) 2006-2022 The Odamex Team"
 
@@ -92,7 +91,7 @@
 // earlier than this version.  Needs to be exactly 16 chars long.
 // 
 // upversion.py will update thie field deterministically and unambiguously.
-#define SAVESIG "ODAMEXSAVE010000"
+#define SAVESIG "ODAMEXSAVE010020"
 
 #define NETDEMOVER 3
 
@@ -114,5 +113,3 @@ const char* GitRevCount();
 const char* GitShortHash();
 const char* NiceVersionDetails();
 const char* NiceVersion();
-
-#endif //__VERSION_H__

@@ -45,6 +45,9 @@ CVAR(					am_showsecrets, "1", "",
 CVAR(					am_showmonsters, "1", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(					am_showitems, "1", "",
+						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(					am_showtime, "1", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
@@ -75,7 +78,25 @@ CVAR(					am_fdwallcolor, "1a 1a 8a", "",
 CVAR(					am_cdwallcolor, "00 00 5a", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR(					am_thingcolor, "9f d3 ff", "",
+CVAR(					am_thingcolor, "dark grey", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_item, "navy", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_countitem, "sky blue", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_monster, "74 fc 6c", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_nocountmonster, "yellow", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_friend, "dark green", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_projectile, "orange", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(					am_gridcolor, "44 44 88", "",
@@ -111,7 +132,25 @@ CVAR(					am_ovfdwallcolor, "1a 1a 8a", "",
 CVAR(					am_ovcdwallcolor, "00 00 5a", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR(					am_ovthingcolor, "9f d3 ff", "",
+CVAR(					am_ovthingcolor, "dark grey", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_item, "navy", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_countitem, "sky blue", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_monster, "74 fc 6c", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_nocountmonster, "yellow", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_friend, "dark green", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_projectile, "orange", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(					am_ovgridcolor, "44 44 88", "",
@@ -139,11 +178,13 @@ CVAR(					am_ovteleportcolor, "ff a3 00", "",
 CVAR(				print_stdout, "0", "Print console text to stdout",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(			con_notifytime, "3", "Number of seconds to display messages to top of the HUD",
-					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
+CVAR_RANGE(con_notifytime, "3.0",
+           "Number of seconds to display messages to top of the HUD", CVARTYPE_FLOAT,
+           CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
 
-CVAR_RANGE(			con_midtime, "3", "Number of seconds to display messages in the middle of the screen",
-					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
+CVAR_RANGE(con_midtime, "3.0",
+           "Number of seconds to display messages in the middle of the screen",
+           CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
 
 CVAR_RANGE(			con_scrlock, "1", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
@@ -520,8 +561,12 @@ CVAR(hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.", CVARTYPE_B
      CVAR_CLIENTARCHIVE)
 CVAR(hud_demoprotos, "0", "Debug protocol messages while demo is paused.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
+CVAR_RANGE(hud_feedtime, "3.0", "How long entries show in the event feed, in seconds.",
+           CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0, 10.0)
 CVAR(hud_feedobits, "1", "Show obituaries in the event feed.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
+
+CVAR(hud_hordeinfo_debug, "0", "Show debugging information for horde.", CVARTYPE_BOOL, CVAR_NULL)
 
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                       // A

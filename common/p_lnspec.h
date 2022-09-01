@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __P_LNSPEC_H__
-#define __P_LNSPEC_H__
+#pragma once
 
 #include "r_defs.h"
 
@@ -534,6 +532,8 @@ BOOL EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int f
 bool P_LineSpecialMovesSector(short special);
 bool P_CanActivateSpecials(AActor* mo, line_t* line);
 bool P_ActorInSpecialSector(AActor* actor);
+void P_DestroyScrollerThinkers();
+void P_DestroyLightThinkers();
 
 int P_FindLineFromLineTag(const line_t* line, int start);
 int P_IsUnderDamage(const AActor* actor);
@@ -544,6 +544,3 @@ void EV_LightSetMinNeighbor(int tag);
 void EV_LightSetMaxNeighbor(int tag);
 
 extern int TeleportSide;
-
-#endif //__P_LNSPEC_H__
-

@@ -78,10 +78,10 @@ bool s_SpecialFromServer;
 int P_FindSectorFromLineTag(int tag, int start);
 BOOL EV_DoDoor(DDoor::EVlDoor type, line_t* line, AActor* thing, int tag, int speed,
                int delay, card_t lock);
-lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
-lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
+bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
+bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
                                  unsigned int activationType);
-lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
+bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
                                         bool bossaction);
 
 //
@@ -522,67 +522,77 @@ static void ParseAnim(OScanner &os, byte istex);
 //
 static void P_InitAnimDefs ()
 {
-	int lump = -1;
-
-	while ((lump = W_FindLump ("ANIMDEFS", lump)) != -1)
+	// [DE] this hacky try/catch is here so WADs with ZDoom ANIMDEFS extensions
+	// don't crash for now. Once TextureManager is fully implemented I'll just
+	// implement the extensions properly there
+	try
 	{
-		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+		int lump = -1;
 
-		OScannerConfig config = {
-		    "ANIMDEFS", // lumpName
-		    false,      // semiComments
-		    true,       // cComments
-		};
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
-
-		while (os.scan())
+		while ((lump = W_FindLump("ANIMDEFS", lump)) != -1)
 		{
-			if (os.compareToken("flat"))
+			const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+
+			OScannerConfig config = {
+			    "ANIMDEFS", // lumpName
+			    false,      // semiComments
+			    true,       // cComments
+			};
+			OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+
+			while (os.scan())
 			{
-				ParseAnim(os, false);
-			}
-			else if (os.compareToken("texture"))
-			{
-				ParseAnim(os, true);
-			}
-			else if (os.compareToken("switch"))   // Don't support switchdef yet...
-			{
-				//P_ProcessSwitchDef();
-				//os.error("switchdef not supported.");
-			}
-			else if (os.compareToken("warp"))
-			{
-				os.mustScan();
-				if (os.compareToken("flat"))
+				if (os.compareTokenNoCase("flat"))
+				{
+					ParseAnim(os, false);
+				}
+				else if (os.compareTokenNoCase("texture"))
+				{
+					ParseAnim(os, true);
+				}
+				else if (os.compareTokenNoCase(
+				             "switch")) // Don't support switchdef yet...
+				{
+					// P_ProcessSwitchDef();
+					// os.error("switchdef not supported.");
+				}
+				else if (os.compareTokenNoCase("warp"))
 				{
 					os.mustScan();
-					flatwarp[R_FlatNumForName(os.getToken().c_str())] = true;
-				}
-				else if (os.compareToken("texture"))
-				{
-					// TODO: Make texture warping work with wall textures
-					os.mustScan();
-					R_TextureNumForName(os.getToken().c_str());
-				}
-				else
-				{
-					os.error("Unknown error reading in ANIMDEFS");
+					if (os.compareTokenNoCase("flat"))
+					{
+						os.mustScan();
+						flatwarp[R_FlatNumForName(os.getToken().c_str())] = true;
+					}
+					else if (os.compareTokenNoCase("texture"))
+					{
+						// TODO: Make texture warping work with wall textures
+						os.mustScan();
+						R_TextureNumForName(os.getToken().c_str());
+					}
+					else
+					{
+						os.error("Unknown error reading in ANIMDEFS");
+					}
 				}
 			}
 		}
 	}
+    catch (CRecoverableError &)
+    {
+	    
+    }
 }
 
 static void ParseAnim(OScanner &os, byte istex)
 {
 	anim_t sink;
-	short picnum;
 	anim_t *place;
-	byte min, max;
 
 	os.mustScan();
-	picnum = istex ? R_CheckTextureNumForName(os.getToken().c_str())
-		: W_CheckNumForName(os.getToken().c_str(), ns_flats) - firstflat;
+	const short picnum = istex
+		                     ? R_CheckTextureNumForName(os.getToken().c_str())
+		                     : W_CheckNumForName(os.getToken().c_str(), ns_flats) - firstflat;
 
 	if (picnum == -1)
 	{ // Base pic is not present, so skip this definition
@@ -602,7 +612,7 @@ static void ParseAnim(OScanner &os, byte istex)
 			lastanim++;
 			if (lastanim > anims + maxanims)
 			{
-				const size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
+				const size_t newmax = maxanims ? maxanims * 2 : MAXANIMS;
 				anims = static_cast<anim_t*>(Realloc(anims, newmax * sizeof(*anims)));
 				place = anims + maxanims;
 				lastanim = place + 1;
@@ -626,7 +636,7 @@ static void ParseAnim(OScanner &os, byte istex)
 
 	while (os.scan())
 	{
-		/*if (os.compareToken("allowdecals"))
+		/*if (os.compareTokenNoCase("allowdecals"))
 		{
 			if (istex && picnum >= 0)
 			{
@@ -634,7 +644,7 @@ static void ParseAnim(OScanner &os, byte istex)
 			}
 			continue;
 		}
-		else*/ if (!os.compareToken("pic"))
+		else*/ if (!os.compareTokenNoCase("pic"))
 		{
 			os.unScan();
 			break;
@@ -645,7 +655,8 @@ static void ParseAnim(OScanner &os, byte istex)
 			os.error("Animation has too many frames");
 		}
 
-		min = max = 1;	// Shut up, GCC
+		byte min = 1;
+		byte max = 1;
 
 		os.mustScanInt();
 		const int frame = os.getTokenInt();
@@ -1919,21 +1930,19 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 	if (!bossaction && !P_CanActivateSpecials(thing, line))
 		return;
 
-	lineresult_s result;
+	bool result = false;
 
-	if (!thing)
-	{
-		result.lineexecuted = false;
-		result.switchchanged = false;
-	}
-	else
+	if (thing)
 	{
 		result = map_format.cross_special_line(line, side, thing, bossaction);
 	}
 
-	if (serverside && result.lineexecuted)
+	if (result)
 	{
-		SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
+		if (serverside)
+		{
+			SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
+		}
 
 		bool repeat;
 
@@ -1947,7 +1956,10 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 			if (!(thing->player &&
 			      (thing->player->spectator || thing->player->playerstate != PST_LIVE)))
 			{
-				line->special = 0;
+				// Not a real texture change, but propigate special change to the
+				// clients
+				P_ChangeSwitchTexture(line, repeat, false);
+				OnChangedSwitchTexture(line, repeat);
 			}
 		}
 	}
@@ -1977,24 +1989,23 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	//TeleportSide = side;
 
-	lineresult_s lineresult;
+	bool lineresult;
 
 	if (map_format.getZDoom()) // All zdoom specials can be impact activated
 	{
-		lineresult.lineexecuted = LineSpecials[line->special](line, thing, line->args[0], line->args[1],
+		lineresult = LineSpecials[line->special](line, thing, line->args[0], line->args[1],
 		                            line->args[2], line->args[3], line->args[4]);
-		lineresult.switchchanged = lineresult.lineexecuted;
 	}
 	else // Only certain specials from Doom/Boom can be impact activated
 	{
 		lineresult = P_ShootCompatibleSpecialLine(thing, line);
 	}
 
-	if(serverside && lineresult.lineexecuted)
+	if(serverside && lineresult)
 	{
 		SV_OnActivatedLine(line, thing, 0, LineShoot, false);
 
-		if (lineresult.switchchanged)
+		if (lineresult)
 		{
 			bool repeat;
 
@@ -2014,6 +2025,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 // P_UseSpecialLine
 // Called when a thing uses a special line.
 // Only the front sides of lines are usable.
+// Returns false if this isn't a door that can be opened
 //
 bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 {
@@ -2042,7 +2054,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 		}
 	}
 
-	lineresult_s result;
+	bool result;
 
 	TeleportSide = side;
 
@@ -2051,22 +2063,14 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 	else
 		result = P_UseCompatibleSpecialLine(thing, line, side, bossaction);
 
- 	if (result.lineexecuted)
+ 	if (result)
 	{
+		// May need to move this higher as the special is gone in Boom by this point.
 		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
 
-		if (serverside &&
-		    (map_format.getZDoom() && (!(line->flags & ML_SPAC_PUSH)) ||
-		     !map_format.getZDoom()) &&
-		    result.switchchanged)
+		if (map_format.getZDoom())
 		{
-			bool repeat;
-
-			if (map_format.getZDoom())
-				repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
-			else
-				repeat = P_IsSpecialBoomRepeatable(line->special);
-
+			bool repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
 			P_ChangeSwitchTexture(line, repeat, true);
 			OnChangedSwitchTexture(line, repeat);
 		}
@@ -2336,6 +2340,68 @@ void P_ClearNonGeneralizedSectorSpecial(sector_t* sector)
 {
 	// jff 3/14/98 clear non-generalized sector type
 	sector->special &= map_format.getGeneralizedMask();
+}
+
+void P_DestroyScrollerThinkers()
+{
+	// Destroy scrollers
+	DScroller* scroller;
+	TThinkerIterator<DScroller> siterator;
+
+	while ((scroller = siterator.Next()))
+		scroller->Destroy();
+}
+
+void P_DestroyLightThinkers()
+{
+	// Destroy fireflicker
+	DFireFlicker* fireflicker;
+	TThinkerIterator<DFireFlicker> ffliterator;
+
+	while ((fireflicker = ffliterator.Next()))
+		fireflicker->Destroy();
+
+	// Destroy flicker
+	DFlicker* flicker;
+	TThinkerIterator<DFlicker> fliterator;
+
+	while ((flicker = fliterator.Next()))
+		flicker->Destroy();
+
+	// Destroy lightflash
+	DLightFlash* flash;
+	TThinkerIterator<DLightFlash> flashiterator;
+
+	while ((flash = flashiterator.Next()))
+		flash->Destroy();
+
+	// Destroy strobe
+	DStrobe* strobe;
+	TThinkerIterator<DStrobe> strobeiterator;
+
+	while ((strobe = strobeiterator.Next()))
+		strobe->Destroy();
+
+	// Destroy glow
+	DGlow* glow;
+	TThinkerIterator<DGlow> glowiterator;
+
+	while ((glow = glowiterator.Next()))
+		glow->Destroy();
+
+	// Destroy glow2
+	DGlow2* glow2;
+	TThinkerIterator<DGlow2> glow2iterator;
+
+	while ((glow2 = glow2iterator.Next()))
+		glow2->Destroy();
+
+	// Destroy phased
+	DPhased* phased;
+	TThinkerIterator<DPhased> phasediterator;
+
+	while ((phased = phasediterator.Next()))
+		phased->Destroy();
 }
 
 void P_SpawnPhasedLight(sector_t* sector, int base, int index)

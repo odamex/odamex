@@ -665,7 +665,7 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id >= numsfx || sfx_id < 0)
+	if (sfx_id >= S_sfx.size() || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -694,7 +694,7 @@ void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id >= numsfx || sfx_id < 0)
+	if (sfx_id >= S_sfx.size() || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -728,7 +728,7 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id >= numsfx || sfx_id < 0)
+	if (sfx_id >= S_sfx.size() || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -758,7 +758,7 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 
 	sfx_id = S_FindSound( name );
 
-	if (sfx_id >= numsfx || sfx_id < 0)
+	if (sfx_id >= S_sfx.size() || sfx_id < 0)
 	{
 		Printf("SV_StartSound: range error. Sfx_id = %d\n", sfx_id );
 		return;
@@ -783,7 +783,7 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id >= numsfx || sfx_id < 0)
+	if (sfx_id >= S_sfx.size() || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -2846,7 +2846,7 @@ void SV_UpdateGametype(player_t& pl)
 {
 	if (G_IsHordeMode())
 	{
-		static hordeInfo_t lastInfo = {HS_STARTING, -1, -1, -1, 0, -1, -1, -1, -1, -1};
+		static hordeInfo_t lastInfo = {HS_STARTING, -1, -1, -1, 0, 0, -1, -1, -1, -1, -1};
 		static int ticsent;
 
 		// If the hordeinfo has changed since last tic, save and send it.

@@ -56,7 +56,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position);
 void P_SpawnAvatars();
 void P_TranslateTeleportThings();
 
-const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags);
+const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved);
 const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags);
 void P_SpawnCompatibleSectorSpecial(sector_t* sector);
 
@@ -96,6 +96,8 @@ line_t* 		lines;
 
 int 			numsides;
 side_t* 		sides;
+
+std::vector<int>	originalLightLevels; // Needed for map resets
 
 // [RH] Set true if the map contains a BEHAVIOR lump
 bool			HasBehavior = false;
@@ -303,6 +305,7 @@ void P_LoadSectors (int lump)
 
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
 	delete[] sectors;
+	originalLightLevels.clear();
 
 	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
 
@@ -326,6 +329,7 @@ void P_LoadSectors (int lump)
 		ss->floorpic = (short)R_FlatNumForName(ms->floorpic);
 		ss->ceilingpic = (short)R_FlatNumForName(ms->ceilingpic);
 		ss->lightlevel = LESHORT(ms->lightlevel);
+		originalLightLevels.push_back(LESHORT(ms->lightlevel));
 		ss->special = LESHORT(ms->special);
 		ss->secretsector = !!(ss->special&SECRET_MASK);
 		ss->tag = LESHORT(ms->tag);
@@ -870,13 +874,41 @@ void P_LoadLineDefs (const int lump)
 	memset (lines, 0, numlines*sizeof(line_t));
 	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
 
+	// [Blair] Don't mind me, just hackin'
+	// E2M7 has flags masked in that interfere with MBF21 flags.
+	// Boom fixes this with the comp flag comp_reservedlineflag
+	// We'll fix this for now by just checking for the E2M7 FarmHash
+	const std::string e2m7hash = "43ffa244f5ae923b7df59dbf511c0468";
+
+	std::string levelHash;
+
+	// [Blair] Serialize the hashes before reading.
+	uint64_t reconsthash1 = (uint64_t)(::level.level_fingerprint[0]) |
+	                        (uint64_t)(::level.level_fingerprint[1]) << 8 |
+	                        (uint64_t)(::level.level_fingerprint[2]) << 16 |
+	                        (uint64_t)(::level.level_fingerprint[3]) << 24 |
+	                        (uint64_t)(::level.level_fingerprint[4]) << 32 |
+	                        (uint64_t)(::level.level_fingerprint[5]) << 40 |
+	                        (uint64_t)(::level.level_fingerprint[6]) << 48 |
+	                        (uint64_t)(::level.level_fingerprint[7]) << 56;
+
+	uint64_t reconsthash2 = (uint64_t)(::level.level_fingerprint[8]) |
+	                        (uint64_t)(::level.level_fingerprint[9]) << 8 |
+	                        (uint64_t)(::level.level_fingerprint[10]) << 16 |
+	                        (uint64_t)(::level.level_fingerprint[11]) << 24 |
+	                        (uint64_t)(::level.level_fingerprint[12]) << 32 |
+	                        (uint64_t)(::level.level_fingerprint[13]) << 40 |
+	                        (uint64_t)(::level.level_fingerprint[14]) << 48 |
+	                        (uint64_t)(::level.level_fingerprint[15]) << 56;
+
+	StrFormat(levelHash, "%16llx%16llx", reconsthash1, reconsthash2);
+
+	bool isE2M7 = (levelHash == e2m7hash);
+
 	ld = lines;
 	for (i=0 ; i<numlines ; i++, ld++)
 	{
 		const maplinedef_t *mld = ((maplinedef_t *)data) + i;
-
-		// [RH] Translate old linedef special and flags to be
-		//		compatible with the new format.
 
 		ld->flags = (unsigned short)(short int)mld->flags;
 		ld->special = (short int)mld->special;
@@ -887,7 +919,7 @@ void P_LoadLineDefs (const int lump)
 		ld->args[3] = 0;
 		ld->args[4] = 0;
 
-		ld->flags = P_TranslateCompatibleLineFlags(ld->flags);
+		ld->flags = P_TranslateCompatibleLineFlags(ld->flags, isE2M7);
 
 		unsigned short v = LESHORT(mld->v1);
 
@@ -1500,7 +1532,7 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 	unsigned int length = 0;
 
 	typedef std::vector<byte> LevelLumps;
-	static LevelLumps levellumps;
+	LevelLumps levellumps;
 
 	const byte* thingbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
 	const byte* lindefbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
@@ -1813,6 +1845,10 @@ void P_SetupLevel (const char *lumpname, int position)
 		delete level.behavior;
 		level.behavior = NULL;
 	}
+
+	// [Blair] Create map fingerprint
+	P_GenerateUniqueMapFingerPrint(lumpnum);
+
 	if (HasBehavior)
 	{
 		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
@@ -1835,9 +1871,6 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_LoadSideDefs2 (lumpnum+ML_SIDEDEFS);
 	P_FinishLoadingLineDefs ();
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
-
-	// [Blair] Create map fingerprint
-	P_GenerateUniqueMapFingerPrint(lumpnum);
 
 	if (!P_LoadXNOD(lumpnum+ML_NODES))
 	{

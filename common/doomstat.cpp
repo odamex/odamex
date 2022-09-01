@@ -49,9 +49,6 @@ CVAR_FUNC_IMPL (language)
 
 	// Reapply DeHackEd patches on top of these strings.
 	D_LoadResolvedPatches();
-
-	// MAPINFO comes last, because it overrides default level strings.
-	G_ParseMapInfo();
 }
 
 // Set if homebrew PWAD stuff has been added.

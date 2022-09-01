@@ -145,7 +145,7 @@ void MapFormat::spawn_extra(int i)
 		P_SpawnCompatibleExtra(i);
 }
 
-lineresult_s MapFormat::cross_special_line(line_t* line, int side, AActor* thing,
+bool MapFormat::cross_special_line(line_t* line, int side, AActor* thing,
                                            bool bossaction)
 {
 	if (map_format.zdoom)

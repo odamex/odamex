@@ -21,8 +21,8 @@
 //  (Props to DSDA-Doom for the inspiration.)
 //
 //-----------------------------------------------------------------------------
-#ifndef __P_MAPFORMAT__
-#define __P_MAPFORMAT__
+
+#pragma once
 
 #include "p_local.h"
 
@@ -43,7 +43,7 @@ class MapFormat
 	void spawn_friction(line_t*);
 	void spawn_pusher(line_t*);
 	void spawn_extra(int);
-	lineresult_s cross_special_line(line_t*, int, AActor*, bool);
+	bool cross_special_line(line_t*, int, AActor*, bool);
 	void post_process_sidedef_special(side_t*, mapsidedef_t*, sector_t*, int);
 	void post_process_linedef_special(line_t* line);
 
@@ -79,9 +79,9 @@ void P_SpawnZDoomExtra(int i);
 void P_RecordCompatibleLineSpecial(line_t* ld, maplinedef_t* mld);
 void P_RecordZDoomLineSpecial(line_t* ld, maplinedef_t* mld);
 
-lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
+bool P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
                                      bool bossaction);
-lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
+bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
                                           bool bossaction);
 
 void P_PostProcessZDoomSidedefSpecial(side_t* sd, mapsidedef_t* msd, sector_t* sec,
@@ -102,5 +102,3 @@ bool P_IsCompatibleBlueDoorLine(const short special);
 bool P_IsCompatibleRedDoorLine(const short special);
 bool P_IsCompatibleYellowDoorLine(const short special);
 bool P_IsLightTagDoorType(const short special);
-
-#endif

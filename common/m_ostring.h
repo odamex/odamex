@@ -24,8 +24,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __M_OSTRING_H__
-#define __M_OSTRING_H__
+#pragma once
 
 #include <iostream>
 #include <memory>
@@ -669,5 +668,3 @@ OString OStringToUpper(const char* s, size_t n = OString::npos);
 OString OStringToUpper(const OString& str);
 OString OStringToLower(const char* s, size_t n = OString::npos);
 OString OStringToLower(const OString& str);
-
-#endif	// __M_OSTRING_H__

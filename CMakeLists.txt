@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(Odamex VERSION 10.0.0)
+project(Odamex VERSION 10.2.0)
 
 include(CMakeDependentOption)
 
@@ -43,13 +43,14 @@ option(USE_LTO "Build Release builds with Link Time Optimization" 1)
 cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_PNG "Use internal libpng" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
+cmake_dependent_option( USE_INTERNAL_JSONCPP "Use internal JsonCpp" 1 BUILD_SERVER 0 )
 cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_INTERNAL_LIBS} BUILD_LAUNCHER 0 )
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 cmake_dependent_option( USE_INTERNAL_MINIUPNP "Use internal MiniUPnP" 1 USE_MINIUPNP 0 )
 
 set(PROJECT_COPYRIGHT "2006-2022")
-set(PROJECT_RC_VERSION "10,0,0,0")
+set(PROJECT_RC_VERSION "10,2,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
 
 # Include early required commands for specific systems
