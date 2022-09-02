@@ -335,6 +335,9 @@ class BootWindow : public Fl_Window
 			m_PWADSelectBrowser->add(m_PWADs[i].filename.c_str());
 		}
 		m_genWaddirs = ::waddirs.str();
+		// clear order browser since selection browser is being reset
+		m_PWADOrderBrowser->clear();
+		m_selectedPWADs.clear();
 	}
 
 
