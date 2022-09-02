@@ -1939,10 +1939,7 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 
 	if (result)
 	{
-		if (serverside)
-		{
-			SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
-		}
+		SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
 
 		bool repeat;
 
@@ -1951,7 +1948,7 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 		else
 			repeat = P_IsSpecialBoomRepeatable(line->special);
 
-		if (!repeat)
+		if (!repeat && !bossaction && serverside)
 		{
 			if (!(thing->player &&
 			      (thing->player->spectator || thing->player->playerstate != PST_LIVE)))
@@ -2068,7 +2065,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 		// May need to move this higher as the special is gone in Boom by this point.
 		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
 
-		if (map_format.getZDoom())
+		if (map_format.getZDoom() && !bossaction)
 		{
 			bool repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
 			P_ChangeSwitchTexture(line, repeat, true);
