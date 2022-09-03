@@ -287,41 +287,29 @@ begin
 
       if iUpgradeResult = IDYES then
       begin
-          V := MsgBox(ExpandConstant('Odamex has been detected on this machine. If you do not uninstall, there will be an in-place installation of Odamex to the same path. Do you want to uninstall the previous installation?'), mbConfirmation, MB_YESNO);
-        
-          if V = IDYES then
+        V := MsgBox(ExpandConstant('Odamex has been detected on this machine. If you do not uninstall, there will be an in-place installation of Odamex to the same path. Do you want to uninstall the previous installation?'), mbConfirmation, MB_YESNO);
+      
+        if V = IDYES then
+        begin
+          sUnInstallString := GetUninstallString();
+          sUnInstallString := RemoveQuotes(sUnInstallString);
+          Exec(ExpandConstant(sUnInstallString), '', '', SW_SHOW, ewWaitUntilTerminated, iResultCode);
+          if iResultCode <> 0 then
           begin
-            sUnInstallString := GetUninstallString();
-            sUnInstallString := RemoveQuotes(sUnInstallString);
-            Exec(ExpandConstant(sUnInstallString), '', '', SW_SHOW, ewWaitUntilTerminated, iResultCode);
-            if iResultCode = 0 then
-            begin
-                Result := True;
-            end
-            else
-            begin
-                Result := False;
-            end;
-          end
-          else
-          begin
-              Result := True;
+              Result := False;
+              exit;
           end;
+        end;
       end
       else
       begin
           Result := False;
+          exit;
       end;
-    end
-    else
-    begin
-        Result := True;
     end;
-  end
-  else
-  begin
-      Result := True;
   end;
+
+  Result := True;
 end;
 
 [Run]
