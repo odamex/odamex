@@ -114,7 +114,7 @@ int __cdecl main(int argc, char *argv[])
 
     try
     {
-        // Handle ctrl-c, close box, shutdown and logoff events
+        // Handle close box, shutdown and logoff events
         if (!(hEvent = CreateEvent(NULL, FALSE, FALSE, NULL)))
             throw CDoomError("Could not create console control event!\n");
 

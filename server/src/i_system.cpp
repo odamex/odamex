@@ -482,14 +482,13 @@ std::string I_ConsoleInput (void)
                 ch = getch();
                 continue;
             }
-            // Escape key
-            case 27:
+            // Ctrl-C (MSDN has incorrect documentation regarding this)
+            case 3:
             {
-                continue;
+                return "quit";
             }
 		}
-	
-		// input the character
+
 		if(ch == '\b' && len)
 		{
 			buffer[--len] = 0;
@@ -500,7 +499,14 @@ std::string I_ConsoleInput (void)
 			ch = '\b';
 		}
 		else
+		{
+            // Accept return but not unusual characters as input (eg Ctrl-B)
+            if ((ch != '\n' && ch != '\r') && (ch < 32 || ch > 126))
+                continue;
+			
 			buffer[len++] = ch;
+		}
+
 		buffer[len] = 0;
 
 		// recalculate length
