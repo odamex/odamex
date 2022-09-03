@@ -551,6 +551,16 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->target = AActor::AActorPtr();
 	}
 
+	// Light up the projectile if it came from a horde boss
+	// This is a hack because oflags are a hack.
+	if (mo->flags & MF_MISSILE && mo->target && mo->target->oflags &&
+	    (mo->target->oflags & hordeBossModMask))
+	{
+		mo->oflags |= MFO_FULLBRIGHT;
+		mo->effects = FX_YELLOWFOUNTAIN;
+		mo->translation = translationref_t(&::bosstable[0]);
+	}
+
 	AActor* tracer = NULL;
 	if (bflags & baseline_t::TRACER)
 		tracer = P_FindThingById(msg->current().tracerid());
@@ -672,6 +682,10 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->flags |= MF_CORPSE | MF_DROPOFF;
 		mo->height >>= 2;
 		mo->flags &= ~MF_SOLID;
+		if (mo->oflags & hordeBossModMask)
+		{
+			mo->effects = 0; // Remove sparkles from boss corpses
+		}
 
 		if (mo->player)
 			mo->player->playerstate = PST_DEAD;
@@ -887,6 +901,9 @@ static void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 	AActor* mo = P_FindThingById(netid);
 	if (mo && mo->player && mo->player->id == ::displayplayer_id)
 		::displayplayer_id = ::consoleplayer_id;
+
+	if (mo && mo->flags & MF_COUNTITEM)
+		level.found_items++;
 
 	P_ClearId(netid);
 }
@@ -1924,7 +1941,12 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 		return;
 
 	sector_t* sector = &::sectors[sectornum];
-	sector->special = special;
+	sector->flags &= ~SECF_SECRET;
+	sector->secretsector = false;
+
+	if (!map_format.getZDoom())
+		if (sector->special < 32)
+			sector->special = 0;
 
 	// Don't show other secrets if requested
 	if (!::hud_revealsecrets || ::hud_revealsecrets > 2)
@@ -2172,6 +2194,8 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 	}
 
 	// destroy all moving sector effects and sounds
+	// Also restore original light levels
+	// so light glowing looks normal
 	for (int i = 0; i < numsectors; i++)
 	{
 		if (sectors[i].floordata)
@@ -2185,10 +2209,17 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 			S_StopSound(sectors[i].soundorg);
 			sectors[i].ceilingdata->Destroy();
 		}
+
+		// Restore the old light levels so lighting effects look good every time
+		sectors[i].lightlevel = ::originalLightLevels[i];
 	}
 
 	P_DestroyButtonThinkers();
 
+	P_DestroyScrollerThinkers();
+
+	P_DestroyLightThinkers();
+	
 	// You don't get to keep cards.  This isn't communicated anywhere else.
 	if (sv_gametype == GM_COOP)
 		P_ClearPlayerCards(consoleplayer());
@@ -2501,6 +2532,8 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 		fixed_t dx = msg->scroller().scroll_x();
 		fixed_t dy = msg->scroller().scroll_y();
 		int affectee = msg->scroller().affectee();
+		int accel = msg->scroller().accel();
+		int control = msg->scroller().control();
 		if (::numsides <= 0 || ::numsectors <= 0)
 			break;
 		if (affectee < 0)
@@ -2509,8 +2542,14 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 			break;
 		if (scrollType != DScroller::sc_side && affectee > ::numsectors)
 			break;
+		// remove null checks after 11 is released
+		// because right now, control sectors of 0 won't scroll
+		if (!control || control < 0)
+			control = -1;
+		if (!accel || accel < 0)
+			accel = 0;
 
-		new DScroller(scrollType, dx, dy, -1, affectee, 0);
+		new DScroller(scrollType, dx, dy, control, affectee, accel);
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kFireFlicker: {

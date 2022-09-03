@@ -31,6 +31,7 @@ std::string IntermissionTimer();
 std::string Timer();
 std::string PersonalSpread();
 std::string PersonalScore();
+std::string PersonalMatchDuelPlacement();
 std::string NetdemoElapsed(void);
 std::string NetdemoMaps(void);
 std::string ClientsSplit(void);

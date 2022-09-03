@@ -43,9 +43,6 @@
 
 #include "p_mapformat.h"
 
-// Index of the special effects (INVUL inverse) map.
-#define INVERSECOLORMAP 		32
-
 //
 // Movement.
 //
@@ -62,6 +59,7 @@ EXTERN_CVAR (sv_forcerespawn)
 EXTERN_CVAR (sv_forcerespawntime)
 EXTERN_CVAR (sv_spawndelaytime)
 EXTERN_CVAR (g_lives)
+EXTERN_CVAR (r_softinvulneffect)
 
 extern bool predicting, step_mode;
 
@@ -1040,7 +1038,10 @@ void P_PlayerThink (player_t *player)
 	{
 		if (displayplayer().powers[pw_invulnerability] > 4*32
 			|| (displayplayer().powers[pw_invulnerability]&8) )
-			displayplayer().fixedcolormap = INVERSECOLORMAP;
+			if (r_softinvulneffect)
+				displayplayer().fixedcolormap = 1;
+			else
+				displayplayer().fixedcolormap = INVERSECOLORMAP;
 		else
 			displayplayer().fixedcolormap = 0;
 	}

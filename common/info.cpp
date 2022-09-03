@@ -7559,7 +7559,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		100,            // mass
 		0,              // damage
 		NULL,           // activesound
-		0,              // flags
+		MF_NOGRAVITY,   // flags
 		0,              // flags2
 		S_NULL,         // raisestate
 		0x10000,

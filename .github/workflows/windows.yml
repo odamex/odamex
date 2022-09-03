@@ -100,19 +100,19 @@ jobs:
       with:
         name: Odamex-Win-x32
         path: 'build/artifact/*'
-  build-mingw:
-    name: Build (MinGW)
-    runs-on: windows-latest
-    steps:
-    - name: Checkout source
-      uses: actions/checkout@v2
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
-    - name: Install packages
-      uses: crazy-max/ghaction-chocolatey@v1
-      with:
-        args: install ninja
-    - name: Prepare build
-      run: .\ci\win-mingw-buildgen.ps1
-    - name: Run build
-      run: cmake --build .\build-gcc\
+  # build-mingw:
+  #   name: Build (MinGW)
+  #   runs-on: windows-latest
+  #   steps:
+  #   - name: Checkout source
+  #     uses: actions/checkout@v2
+  #   - name: Checkout submodules
+  #     run: git submodule update --init --recursive
+  #   - name: Install packages
+  #     uses: crazy-max/ghaction-chocolatey@v1
+  #     with:
+  #       args: install ninja
+  #   - name: Prepare build
+  #     run: .\ci\win-mingw-buildgen.ps1
+  #   - name: Run build
+  #     run: cmake --build .\build-gcc\

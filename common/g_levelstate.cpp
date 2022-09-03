@@ -41,6 +41,7 @@ EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR(g_rounds)
 EXTERN_CVAR(g_roundlimit)
 EXTERN_CVAR(g_preroundtime)
+EXTERN_CVAR(g_preroundreset)
 EXTERN_CVAR(g_postroundtime)
 
 LevelState levelstate;
@@ -362,9 +363,13 @@ void LevelState::tic()
 		I_FatalError("Tried to tic unknown LevelState.\n");
 		break;
 	case LevelState::PREROUND_COUNTDOWN:
-		// Once the timer has run out, start the round without a reset.
+		// Once the timer has run out, start the round.
 		if (::level.time >= m_countdownDoneTime)
 		{
+			// Possibly reset the map again before the fight begins.
+			if (g_preroundreset)
+				G_DeferedReset();
+
 			setState(LevelState::INGAME);
 			SV_BroadcastPrintf("FIGHT!\n");
 			return;
@@ -506,10 +511,12 @@ void LevelState::unserialize(SerializedLevelState serialized)
  */
 LevelState::States LevelState::getStartOfRoundState()
 {
-	// Deathmatch game modes in survival start with a start-of-round timer.
-	// This is inappropriate for coop or objective-based modes.
-	if (g_lives && (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM))
+	// Preround only makes sense for deathmatch modes.
+	const bool validMode = sv_gametype == GM_DM || sv_gametype == GM_TEAMDM;
+	if (G_IsRoundsGame() && g_preroundtime > 0.0 && validMode)
+	{
 		return LevelState::PREROUND_COUNTDOWN;
+	}
 
 	return LevelState::INGAME;
 }

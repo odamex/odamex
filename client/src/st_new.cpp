@@ -121,10 +121,12 @@ EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(sv_scorelimit);
 EXTERN_CVAR(sv_warmup)
+EXTERN_CVAR(hud_feedtime)
 EXTERN_CVAR(hud_feedobits)
 EXTERN_CVAR(g_horde_waves)
 EXTERN_CVAR(g_roundlimit)
 EXTERN_CVAR(hud_hordeinfo_debug)
+EXTERN_CVAR(g_preroundreset)
 
 void ST_unloadNew()
 {
@@ -910,11 +912,34 @@ void OdamexHUD() {
 	// number on the other side of the screen.
 	if (::hud_bigfont)
 		V_SetFont("BIGFONT");
+	
+	// Special 3 line formatting for match duel
+	int spreadheight, scoreheight, placeheight;
 
-	hud::DrawText(4, 24 + V_LineHeight() + 1, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
-	              hud::X_RIGHT, hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY);
-	hud::DrawText(4, 24, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	if (G_IsMatchDuelGame())
+	{
+		spreadheight = 24 + (V_LineHeight() * 2) + 2;
+		scoreheight = 24 + V_LineHeight() + 1;
+		placeheight = 24;
+	}
+	else
+	{
+		spreadheight = 24 + V_LineHeight() + 1;
+		scoreheight = 24;
+		placeheight = 0; // No place height drawn if not match duel
+	}
+
+	hud::DrawText(4, spreadheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	              hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY);
+	hud::DrawText(4, scoreheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
 	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_GREY);
+
+	if (G_IsMatchDuelGame())
+	{
+		hud::DrawText(4, placeheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+		              hud::X_RIGHT, hud::Y_BOTTOM,
+		              hud::PersonalMatchDuelPlacement().c_str(), CR_GREY);
+	}
 
 	if (::hud_bigfont)
 		V_SetFont("SMALLFONT");
@@ -952,6 +977,9 @@ void DrawToasts()
 	if (!hud_feedobits)
 		return;
 
+	const int fadeDoneTics = (hud_feedtime * float(TICRATE));
+	const int fadeOutTics = fadeDoneTics - TICRATE;
+
 	V_SetFont("DIGFONT");
 	const int TOAST_HEIGHT = V_LineHeight() + 2;
 
@@ -961,16 +989,15 @@ void DrawToasts()
 	const float oldtrans = ::hud_transparency;
 	for (drawToasts_t::const_iterator it = g_Toasts.begin(); it != g_Toasts.end(); ++it)
 	{
-		// Only render the message if it's less than 2 seconds in.
+		// Fade the toast out.
 		int tics = ::gametic - it->tic;
-		if (tics < TICRATE * 2)
+		if (tics < fadeOutTics)
 		{
 			::hud_transparency.ForceSet(1.0);
 		}
-		else if (tics < TICRATE * 3)
+		else if (tics < fadeDoneTics)
 		{
-			tics %= TICRATE;
-			float trans = static_cast<float>(TICRATE - tics) / TICRATE;
+			const float trans = Remap(tics, fadeOutTics, fadeDoneTics, 1.0, 0.0);
 			::hud_transparency.ForceSet(trans);
 		}
 		else
@@ -1008,13 +1035,15 @@ void DrawToasts()
 
 void ToastTicker()
 {
+	const int fadeDoneTics = (hud_feedtime * float(TICRATE));
+
 	// Remove stale toasts in a loop.
 	drawToasts_t::iterator it = g_Toasts.begin();
 	while (it != g_Toasts.end())
 	{
 		int tics = ::gametic - it->tic;
 
-		if (tics >= TICRATE * 3)
+		if (tics >= fadeDoneTics)
 		{
 			it = g_Toasts.erase(it);
 		}
@@ -1270,8 +1299,16 @@ void LevelStateHUD()
 	}
 	case LevelState::PREROUND_COUNTDOWN: {
 		StrFormat(lines.title, "Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
-		StrFormat(lines.subtitle[0], "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
-		          ::levelstate.getCountdown());
+		if (g_preroundreset)
+		{
+			StrFormat(lines.subtitle[0], "Round begins in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
+		}
+		else
+		{
+			StrFormat(lines.subtitle[0], "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
+		}
 		break;
 	}
 	case LevelState::INGAME: {
