@@ -676,8 +676,11 @@ void P_NewChaseDir (AActor *actor)
 //
 bool P_LookForPlayers(AActor *actor, bool allaround)
 {
-	sector_t* sector = actor->subsector->sector;
+	// [AM] Check subsectors first.
+	if (actor->subsector == nullptr)
+		return false;
 
+	sector_t* sector = actor->subsector->sector;
 	if (!sector)
 		return false;
 
