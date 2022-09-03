@@ -420,7 +420,7 @@ void AM_changeWindowLoc()
 		f_oldloc.x = MAXINT;
 	}
 	
-	M_AddVec2Fixed(&m_ll, &m_paninc, &m_paninc);
+	M_AddVec2Fixed(&m_ll, &m_paninc, &m_ll);
 
 	if (m_ll.x + m_wh.x / 2 > max.x)
 		m_ll.x = max.x - m_wh.x / 2;
