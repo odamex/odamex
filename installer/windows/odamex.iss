@@ -136,7 +136,7 @@ var
   sUnInstallString: String;
 begin
   Result := '';
-  sUnInstPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{{2E517BBB-916F-4AB6-80E0-D4A292513F7A}_is1');
+  sUnInstPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{#SetupSetting("AppID")}_is1');
   sUnInstallString := '';
   if not RegQueryStringValue(HKLM, sUnInstPath, 'UninstallString', sUnInstallString) then
     RegQueryStringValue(HKCU, sUnInstPath, 'UninstallString', sUnInstallString);
@@ -150,7 +150,7 @@ var
   sVersionString: String;
 begin
   Result := '';
-  sUnInstPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{{2E517BBB-916F-4AB6-80E0-D4A292513F7A}_is1');
+  sUnInstPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{#SetupSetting("AppID")}_is1');
   sVersionString := '';
   if not RegQueryStringValue(HKLM, sUnInstPath, 'DisplayVersion', sVersionString) then
     RegQueryStringValue(HKCU, sUnInstPath, 'DisplayVersion', sVersionString);
@@ -267,46 +267,55 @@ var
   sVersion: string;
   sOldVersion: string;
   bUpgrade: Boolean;
+  bSilent: Boolean;
 begin
-  bUpgrade := IsUpgrade();
-  if bUpgrade then
+  bSilent := WizardSilent();
+  if bSilent = False then
   begin
-    sVersion := '{#SetupSetting("AppVersion")}';
-    sOldVersion := GetRegistryVersion();
-    iVersionCompare := CompareVersion(sOldVersion, sVersion);
-    if iVersionCompare = -1 then
-        iUpgradeResult := MsgBox(ExpandConstant('The version of Odamex you are about to install is a downgrade to the currently installed version. Do you want to proceed with the installation?'), mbConfirmation, MB_YESNO);
-    if iVersionCompare = 0 then
-        iUpgradeResult := MsgBox(ExpandConstant('The version of Odamex you are about to install is identical to the currently installed version. Do you want to proceed with the installation?'), mbConfirmation, MB_YESNO);
-    if iVersionCompare = 1 then
-        iUpgradeResult := IDYES;
-    
-    if iUpgradeResult = IDYES then
+    bUpgrade := IsUpgrade();
+    if bUpgrade then
     begin
-        V := MsgBox(ExpandConstant('Odamex has been detected on this machine. If you do not uninstall, there will be an in-place installation of Odamex to the same path. Do you want to uninstall the previous installation?'), mbConfirmation, MB_YESNO);
+      sVersion := '{#SetupSetting("AppVersion")}';
+      sOldVersion := GetRegistryVersion();
+      iVersionCompare := CompareVersion(sOldVersion, sVersion);
+      if iVersionCompare = -1 then
+          iUpgradeResult := MsgBox(ExpandConstant('The version of Odamex you are about to install is a downgrade to the currently installed version. Do you want to proceed with the installation?'), mbConfirmation, MB_YESNO);
+      if iVersionCompare = 0 then
+          iUpgradeResult := MsgBox(ExpandConstant('The version of Odamex you are about to install is identical to the currently installed version. Do you want to proceed with the installation?'), mbConfirmation, MB_YESNO);
+      if iVersionCompare = 1 then
+          iUpgradeResult := IDYES;
+
+      if iUpgradeResult = IDYES then
+      begin
+          V := MsgBox(ExpandConstant('Odamex has been detected on this machine. If you do not uninstall, there will be an in-place installation of Odamex to the same path. Do you want to uninstall the previous installation?'), mbConfirmation, MB_YESNO);
         
-        if V = IDYES then
-        begin
-          sUnInstallString := GetUninstallString();
-          sUnInstallString := RemoveQuotes(sUnInstallString);
-          Exec(ExpandConstant(sUnInstallString), '', '', SW_SHOW, ewWaitUntilTerminated, iResultCode);
-          if iResultCode = 0 then
+          if V = IDYES then
           begin
-              Result := True;
+            sUnInstallString := GetUninstallString();
+            sUnInstallString := RemoveQuotes(sUnInstallString);
+            Exec(ExpandConstant(sUnInstallString), '', '', SW_SHOW, ewWaitUntilTerminated, iResultCode);
+            if iResultCode = 0 then
+            begin
+                Result := True;
+            end
+            else
+            begin
+                Result := False;
+            end;
           end
           else
           begin
-              Result := False;
+              Result := True;
           end;
-        end
-        else
-        begin
-            Result := True;
-        end;
+      end
+      else
+      begin
+          Result := False;
+      end;
     end
     else
     begin
-        Result := False;
+        Result := True;
     end;
   end
   else
