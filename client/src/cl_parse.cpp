@@ -1935,7 +1935,12 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 		return;
 
 	sector_t* sector = &::sectors[sectornum];
-	sector->special = special;
+	sector->flags &= ~SECF_SECRET;
+	sector->secretsector = false;
+
+	if (!map_format.getZDoom())
+		if (sector->special < 32)
+			sector->special = 0;
 
 	// Don't show other secrets if requested
 	if (!::hud_revealsecrets || ::hud_revealsecrets > 2)
@@ -2183,6 +2188,8 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 	}
 
 	// destroy all moving sector effects and sounds
+	// Also restore original light levels
+	// so light glowing looks normal
 	for (int i = 0; i < numsectors; i++)
 	{
 		if (sectors[i].floordata)
@@ -2196,10 +2203,17 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 			S_StopSound(sectors[i].soundorg);
 			sectors[i].ceilingdata->Destroy();
 		}
+
+		// Restore the old light levels so lighting effects look good every time
+		sectors[i].lightlevel = ::originalLightLevels[i];
 	}
 
 	P_DestroyButtonThinkers();
 
+	P_DestroyScrollerThinkers();
+
+	P_DestroyLightThinkers();
+	
 	// You don't get to keep cards.  This isn't communicated anywhere else.
 	if (sv_gametype == GM_COOP)
 		P_ClearPlayerCards(consoleplayer());
@@ -2523,6 +2537,7 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 		if (scrollType != DScroller::sc_side && affectee > ::numsectors)
 			break;
 		// remove null checks after 11 is released
+		// because right now, control sectors of 0 won't scroll
 		if (!control || control < 0)
 			control = -1;
 		if (!accel || accel < 0)

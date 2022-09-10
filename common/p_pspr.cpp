@@ -60,6 +60,7 @@ EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowpwo)
 EXTERN_CVAR(co_fineautoaim)
+EXTERN_CVAR(cl_centerbobonfire)
 
 const char *weaponnames[] =
 {
@@ -136,6 +137,11 @@ fixed_t P_CalculateWeaponBobX(player_t* player, float scale_amount)
 		return center_sx + scale_amount * FixedMul(player->bob, finecosine[angle_index]);
 	}
 
+	if (weaponstate == atkstate && cl_centerbobonfire)
+	{
+		return FRACUNIT;
+	}
+
 	// scale the weapon's distance away from center
 	return center_sx + scale_amount * (psp->sx - center_sx);
 }
@@ -165,6 +171,11 @@ fixed_t P_CalculateWeaponBobY(player_t* player, float scale_amount)
 	{
 		unsigned int angle_index = ((128 * level.time) & FINEMASK) & (FINEANGLES / 2 - 1);
 		return center_sy + scale_amount * FixedMul(player->bob, finesine[angle_index]);
+	}
+
+	if (weaponstate == atkstate && cl_centerbobonfire)
+	{
+		return psp->sy;
 	}
 
 	// scale the weapon's distance away from center

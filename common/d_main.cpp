@@ -167,7 +167,9 @@ static registry_value_t steam_install_location =
 static const char* steam_install_subdirs[] =
 {
 	"steamapps\\common\\doom 2\\base",
+	"steamapps\\common\\Doom 2\\masterbase",
 	"steamapps\\common\\final doom\\base",
+	"steamapps\\common\\Doom 2\\finaldoombase",
 	"steamapps\\common\\ultimate doom\\base",
 	"steamapps\\common\\DOOM 3 BFG Edition\\base\\wads",
 	"steamapps\\common\\master levels of doom\\master\\wads", //Let Odamex find the Master Levels pwads too

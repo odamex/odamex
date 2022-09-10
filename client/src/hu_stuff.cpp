@@ -895,7 +895,7 @@ static void scoreCols(scoreCol_e* columns)
 				columns[2] = SCOL_FRAGS;
 			}
 		}
-		else if (G_IsRoundsGame)
+		else if (G_IsRoundsGame())
 		{
 			columns[0] = SCOL_FRAGS;
 			columns[1] = SCOL_DEATHS;

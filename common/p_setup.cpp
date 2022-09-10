@@ -97,6 +97,8 @@ line_t* 		lines;
 int 			numsides;
 side_t* 		sides;
 
+std::vector<int>	originalLightLevels; // Needed for map resets
+
 // [RH] Set true if the map contains a BEHAVIOR lump
 bool			HasBehavior = false;
 
@@ -303,6 +305,7 @@ void P_LoadSectors (int lump)
 
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
 	delete[] sectors;
+	originalLightLevels.clear();
 
 	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
 
@@ -326,6 +329,7 @@ void P_LoadSectors (int lump)
 		ss->floorpic = (short)R_FlatNumForName(ms->floorpic);
 		ss->ceilingpic = (short)R_FlatNumForName(ms->ceilingpic);
 		ss->lightlevel = LESHORT(ms->lightlevel);
+		originalLightLevels.push_back(LESHORT(ms->lightlevel));
 		ss->special = LESHORT(ms->special);
 		ss->secretsector = !!(ss->special&SECRET_MASK);
 		ss->tag = LESHORT(ms->tag);
