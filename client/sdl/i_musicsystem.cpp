@@ -198,6 +198,38 @@ void MidiMusicSystem::_AllNotesOff()
 		playEvent(&event_noteoff);
 		MidiControllerEvent event_reset(0, MIDI_CONTROLLER_RESET_ALL, i);
 		playEvent(&event_reset);
+
+		// pitch bend range (+/- 2 semitones)
+		MidiControllerEvent event_rpn_msb_start(0, MIDI_CONTROLLER_RPN_MSB, i);
+		playEvent(&event_rpn_msb_start);
+		MidiControllerEvent event_rpn_lsb_start(0, MIDI_CONTROLLER_RPN_LSB, i);
+		playEvent(&event_rpn_lsb_start);
+		MidiControllerEvent event_data_msb(0, MIDI_CONTROLLER_DATA_ENTRY_MSB, i, 2);
+		playEvent(&event_data_msb);
+		MidiControllerEvent event_data_lsb(0, MIDI_CONTROLLER_DATA_ENTRY_LSB, i);
+		playEvent(&event_data_lsb);
+		MidiControllerEvent event_rpn_lsb_end(0, MIDI_CONTROLLER_RPN_LSB, i, 127);
+		playEvent(&event_rpn_lsb_end);
+		MidiControllerEvent event_rpn_msb_end(0, MIDI_CONTROLLER_RPN_MSB, i, 127);
+		playEvent(&event_rpn_msb_end);
+
+		// channel volume and panning
+		MidiControllerEvent event_volume(0, MIDI_CONTROLLER_MAIN_VOLUME, i, 100);
+		playEvent(&event_volume);
+		MidiControllerEvent event_pan(0, MIDI_CONTROLLER_PAN, i, 64);
+		playEvent(&event_pan);
+
+		// effect controllers
+		MidiControllerEvent event_reverb(0, MIDI_CONTROLLER_REVERB, i, 40);
+		playEvent(&event_reverb);
+		MidiControllerEvent event_tremolo(0, MIDI_CONTROLLER_TREMOLO, i);
+		playEvent(&event_tremolo);
+		MidiControllerEvent event_chorus(0, MIDI_CONTROLLER_CHORUS, i);
+		playEvent(&event_chorus);
+		MidiControllerEvent event_detune(0, MIDI_CONTROLLER_DETUNE, i);
+		playEvent(&event_detune);
+		MidiControllerEvent event_phaser(0, MIDI_CONTROLLER_PHASER, i);
+		playEvent(&event_phaser);
 	}
 }
 

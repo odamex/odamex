@@ -997,8 +997,7 @@ void DrawToasts()
 		}
 		else if (tics < fadeDoneTics)
 		{
-			tics %= TICRATE;
-			float trans = static_cast<float>(TICRATE - tics) / TICRATE;
+			const float trans = Remap(tics, fadeOutTics, fadeDoneTics, 1.0, 0.0);
 			::hud_transparency.ForceSet(trans);
 		}
 		else
