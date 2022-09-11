@@ -267,8 +267,13 @@ class BootWindow : public Fl_Window
 		if (val < 0 || val >= boot->m_selectedPWADs.size())
 			return;
 
-		// need to figure out value of "item"
-		// boot->m_PWADSelectBrowser->checked(item, 0);
+		// deselect the wad in m_PWADSelectBrowser
+		for (size_t i = 1; i <= boot->m_PWADSelectBrowser->nitems(); i ++)
+		{
+			if (!strcmp(boot->m_PWADSelectBrowser->text(i), (boot->m_PWADOrderBrowser->text(val + 1))))
+				boot->m_PWADSelectBrowser->checked(i, 0);
+		}
+
 		boot->m_selectedPWADs.erase(boot->m_selectedPWADs.begin() + val);
 		boot->updatePWADOrderBrowser();
 	}
