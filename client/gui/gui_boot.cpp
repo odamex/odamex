@@ -116,6 +116,11 @@ class BootWindow : public Fl_Window
 					doWADDown->callback(BootWindow::doWADDownCB,
 					                    static_cast<void*>(this));
 				} // Fl_Button* doWADDown
+				{
+					Fl_Button* doWADRemove = new Fl_Button(395, 140, 20, 20, "@1+");
+					doWADRemove->callback(BootWindow::doWADRemoveCB,
+					                      static_cast<void*>(this));
+				}  // Fl_Button* doWADRemove
 				m_tabPWADs->end();
 			} // Fl_Group* tabPWADs
 			{
@@ -249,6 +254,23 @@ class BootWindow : public Fl_Window
 		std::iter_swap(boot->m_selectedPWADs.begin() + val, boot->m_selectedPWADs.begin() + val + 1);
 		boot->updatePWADOrderBrowser();
 		boot->m_PWADOrderBrowser->value(val + 2);
+	}
+
+	/**
+	 * @brief Removes a WAD from the PWAD selection list.
+	 */
+	static void doWADRemoveCB(Fl_Widget*, void* data)
+	{
+		BootWindow* boot = static_cast<BootWindow*>(data);
+
+		const int val = boot->m_PWADOrderBrowser->value() - 1;
+		if (val < 0 || val >= boot->m_selectedPWADs.size())
+			return;
+
+		// need to figure out value of "item"
+		// boot->m_PWADSelectBrowser->checked(item, 0);
+		boot->m_selectedPWADs.erase(boot->m_selectedPWADs.begin() + val);
+		boot->updatePWADOrderBrowser();
 	}
 
 	// -- Resource Locations --
