@@ -181,16 +181,21 @@ class BootWindow : public Fl_Window
 		BootWindow* boot = static_cast<BootWindow*>(data);
 
 		Fl_Group* clicked = static_cast<Fl_Group*>(tabs->value());
-		if (clicked != boot->m_tabIWAD && clicked != boot->m_tabPWADs)
-			return;
 
-		// User clicked on the first tab, see if we need to regenerate the
-		// list of IWADs.
-		if (boot->m_genWaddirs == ::waddirs)
-			return;
+		// Have waddirs changed?
+		bool waddirsChanged = boot->m_genWaddirs != ::waddirs;
 
-		boot->rescanIWADs();
-		boot->rescanPWADs();
+		// User clicked on the first tab, regenerate the
+		// list of IWADs if waddirs changed.
+		if ((clicked == boot->m_tabIWAD) && waddirsChanged)
+			return boot->rescanIWADs();
+
+		bool pwadsIsEmpty = boot->m_PWADSelectBrowser->nitems() == 0;
+
+		// User clicked on the second tab, regenerate the
+		// list of IWADs if waddirs changed or browser is empty.
+		if ((clicked == boot->m_tabPWADs) && (pwadsIsEmpty || waddirsChanged))
+				return boot->rescanPWADs();
 	}
 
 	static void doCallback(Fl_Widget*, void*) { CL_QuitCommand(); }
@@ -459,7 +464,6 @@ scannedWADs_t GUI_BootWindow()
 	win->initWADDirs();
 	win->updateWADDirBrowser();
 	win->rescanIWADs();
-	win->rescanPWADs();
 	win->position((Fl::w() - win->w()) / 2, (Fl::h() - win->h()) / 2);
 	win->show(0, NULL);
 
