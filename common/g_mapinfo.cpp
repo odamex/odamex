@@ -1021,10 +1021,7 @@ void MIType_CompatFlag(OScanner& os, bool doEquals, void* data, unsigned int fla
 		else
 		{
 			os.unScan();
-			if (os.getTokenInt())
-				*static_cast<DWORD*>(data) |= flags;
-			else
-				*static_cast<DWORD*>(data) &= ~flags;
+		  *static_cast<DWORD*>(data) |= flags;
 		}
 	}
 	else
@@ -1550,12 +1547,12 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		       &ref.exitpic) // todo: add intermission script support
 		ENTRY2("interpic", &MIType_EatNext)
 		ENTRY2("translator", &MIType_EatNext)
-		ENTRY3("compat_shorttex", &MIType_DoNothing, &ref.flags) // todo: not implemented - MIType_CompatFlag
-		ENTRY3("compat_limitpain", &MIType_DoNothing, &ref.flags) // todo: not implemented - MIType_CompatFlag
+		ENTRY3("compat_shorttex", &MIType_CompatFlag, &ref.flags) // todo: not implemented - MIType_CompatFlag
+		ENTRY3("compat_limitpain", &MIType_CompatFlag, &ref.flags) // todo: not implemented - MIType_CompatFlag
 		ENTRY4("compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF)
-		ENTRY3("compat_trace", &MIType_DoNothing, &ref.flags)    // todo: not implemented - MIType_CompatFlag
-		ENTRY3("compat_boomscroll", &MIType_DoNothing, &ref.flags) // todo: not implemented - MIType_CompatFlag
-		ENTRY3("compat_sectorsounds", &MIType_DoNothing, &ref.flags) // todo: not implemented - MIType_CompatFlag
+		ENTRY3("compat_trace", &MIType_CompatFlag, &ref.flags)    // todo: not implemented - MIType_CompatFlag
+		ENTRY3("compat_boomscroll", &MIType_CompatFlag, &ref.flags) // todo: not implemented - MIType_CompatFlag
+		ENTRY3("compat_sectorsounds", &MIType_CompatFlag, &ref.flags) // todo: not implemented - MIType_CompatFlag
 		ENTRY4("compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER)
 	}
 };
