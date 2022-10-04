@@ -719,7 +719,7 @@ bool ISDL20Window::isFocused() const
 //
 // Flashes the taskbar icon if the window is not focused
 //
-void ISDL20Window::flashWindow() {
+void ISDL20Window::flashWindow() const {
 	if (!this->isFocused())
 		SDL_FlashWindow(mSDLWindow, SDL_FLASH_UNTIL_FOCUSED);
 }
