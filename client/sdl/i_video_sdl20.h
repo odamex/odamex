@@ -171,9 +171,7 @@ public:
 
 	virtual bool isFocused() const;
 
-	#if defined(SDL2016)
 	virtual void flashWindow() const;
-	#endif
 
 	virtual bool usingVSync() const
 	{	return mVideoMode.vsync;	}
