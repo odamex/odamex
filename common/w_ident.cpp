@@ -77,6 +77,24 @@ static const identData_t identdata[] = {
         100,                                // weight
     },
     {
+        DOOM2_PREFIX " Classic Unity v1.1", // idName
+        "DOOM2.WAD",                        // filename
+        "22c291c8",                         // crc32Sum
+        "7895d10c281305c45a7e5f01b3f7b1d8", // md5Sum
+        DOOM2_PREFIX " v1.9",               // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        145,                                // weight
+    },
+    {
+        DOOM2_PREFIX " Classic Unity v1.0", // idName
+        "DOOM2.WAD",                        // filename
+        "897339a7",                         // crc32Sum
+        "e7395bd5e838d58627bd028871efbc14", // md5Sum
+        DOOM2_PREFIX " v1.9",               // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        145,                                // weight
+    },
+    {
         DOOM2_PREFIX " BFG Edition",        // idName
         "DOOM2BFG.WAD",                     // filename
         "927A778A",                         // crc32Sum
@@ -1043,6 +1061,14 @@ void W_SetupFileIdentifiers()
 const fileIdentifier_t* W_GameInfo(const OCRC32Sum& crc32)
 {
 	return ::identtab.lookupByCRC32Sum(crc32);
+}
+
+/**
+ * @brief Return the gameinfo associated with the given MD5.
+ */
+const fileIdentifier_t* W_GameInfo(const OMD5Hash& md5)
+{
+	return ::identtab.lookupByMd5Sum(md5);
 }
 
 //
