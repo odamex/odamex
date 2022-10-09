@@ -224,6 +224,33 @@ static const identData_t identdata[] = {
         200,                                // weight
     },
     {
+        UDOOM_PREFIX " Classic Unity v1.3", // mIdName
+        "DOOM.WAD",                         // mFilename
+        "75C3B7BF",                         // mCRC32Sum
+        "8517C4E8F0EEF90B82852667D345EB86", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        245,                                // weight
+    },
+    {
+        UDOOM_PREFIX " Classic Unity v1.1", // mIdName
+        "DOOM.WAD",                         // mFilename
+        "346A4BFD",                         // mCRC32Sum
+        "21B200688D0FA7C1B6F63703D2BDD455", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        245,                                // weight
+    },
+    {
+        UDOOM_PREFIX " Classic Unity v1.0", // mIdName
+        "DOOM.WAD",                         // mFilename
+        "46359DFB",                         // mCRC32Sum
+        "232A79F7121B22D7401905EE0EE1E487", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        245,                                // weight
+    },
+    {
         UDOOM_PREFIX " BFG Edition",        // mIdName
         "DOOMBFG.WAD",                      // mFilename
         "5EFA677E",                         // mCRC32Sum
