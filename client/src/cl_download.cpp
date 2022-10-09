@@ -129,70 +129,6 @@ bool CL_IsDownloading()
 }
 
 /**
- * @brief Print an error that occurrs from trying to download a commercial IWAD.
- * 
- * @param filename Filename of the wanted WAD.
- */
-static void CommercialIWADError(const OWantFile& filename)
-{
-	const fileIdentifier_t* info = W_GameInfo(filename.getWantedMD5());
-	if (!info)
-	{
-		Printf("This server requires a commercial IWAD that Odamex does not recognize.  "
-		       "This should not be possible, please report this message as a bug.\n");
-		return;
-	}
-
-	Printf("This server requires %s.\n", info->mIdName.c_str());
-
-	// Try to find an IWAD to compare it against.
-	OResFile* current = &*::wadfiles.begin();
-	if (current->getBasename() != filename.getBasename())
-	{
-		OWantFile wanted;
-		OWantFile::make(wanted, current->getBasename(), OFILE_WAD);
-		if (!M_ResolveWantedFile(*current, wanted))
-		{
-			Printf("Odamex cannot find the data file for this game.",
-			       info->mFilename.c_str());
-			current = NULL;
-		}
-	}
-
-	if (current != NULL)
-	{
-		const fileIdentifier_t* curInfo = W_GameInfo(current->getMD5());
-		if (curInfo)
-		{
-			// Found a file, but it's the wrong version.
-			Printf(
-			    "Odamex found a possible data file, but it's the wrong version - %s.\n",
-			    curInfo->mIdName.c_str());
-		}
-		else
-		{
-			// Found a file, but it's not recognized at all.
-			Printf(
-			    "Odamex found a possible data file, but Odamex does not recognize it.\n");
-		}
-
-#ifdef _WIN32
-		Printf("You can use a tool such as Omniscient "
-		       "<https://drinkybird.net/doom/omniscient> to patch your way to the "
-		       "correct version of the data file.");
-#else
-		Printf("You can use a tool such as xdelta3 <http://xdelta.org/> paried with IWAD "
-		       "patches located on Github <https://github.com/Doom-Utils/iwad-patches> "
-		       "to patch your way to the correct version of the data file.");
-#endif
-	}
-
-	Printf(
-	    "If you do not own this game, consider purchasing it on Steam or other digital "
-	    "storefront.\n");
-}
-
-/**
  * @brief Start a transfer.
  *
  * @param urls Website to download from, without the WAD at the end.
@@ -238,14 +174,12 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 	if (W_IsFilenameCommercialIWAD(filename.getBasename()))
 	{
 		Printf(PRINT_WARNING, "Refusing to download commercial IWAD file.\n");
-		CommercialIWADError(filename);
 		return false;
 	}
 
 	if (W_IsFilehashCommercialIWAD(filename.getWantedMD5()))
 	{
 		Printf(PRINT_WARNING, "Refusing to download renamed commercial IWAD file.\n");
-		CommercialIWADError(filename);
 		return false;
 	}
 

@@ -77,10 +77,19 @@ static const identData_t identdata[] = {
         100,                                // weight
     },
     {
+        DOOM2_PREFIX " Classic Unity v1.3", // idName
+        "DOOM2.WAD",                        // filename
+        "F1D1AD55",                         // crc32Sum
+        "8AB6D0527A29EFDC1EF200E5687B5CAE", // md5Sum
+        DOOM2_PREFIX " v1.9",               // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        145,                                // weight
+    },
+    {
         DOOM2_PREFIX " Classic Unity v1.1", // idName
         "DOOM2.WAD",                        // filename
-        "22c291c8",                         // crc32Sum
-        "7895d10c281305c45a7e5f01b3f7b1d8", // md5Sum
+        "22C291C8",                         // crc32Sum
+        "7895D10C281305C45A7E5F01B3F7B1D8", // md5Sum
         DOOM2_PREFIX " v1.9",               // groupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
         145,                                // weight
@@ -88,8 +97,8 @@ static const identData_t identdata[] = {
     {
         DOOM2_PREFIX " Classic Unity v1.0", // idName
         "DOOM2.WAD",                        // filename
-        "897339a7",                         // crc32Sum
-        "e7395bd5e838d58627bd028871efbc14", // md5Sum
+        "897339A7",                         // crc32Sum
+        "E7395BD5E838D58627BD028871EFBC14", // md5Sum
         DOOM2_PREFIX " v1.9",               // groupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
         145,                                // weight
