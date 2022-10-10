@@ -390,7 +390,6 @@ std::vector<scannedPWAD_t> M_ScanPWADs()
 		std::vector<std::string> files = M_PWADFilesScanDir(dir);
 		for (size_t j = 0; j < files.size(); j++)
 		{
-			// Since this filename will be user-visible, lowercase it.
 			const std::string filename = files[j];
 
 			// [AM] Don't include odamex.wad or IWADs.
