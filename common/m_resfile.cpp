@@ -381,41 +381,37 @@ std::vector<scannedPWAD_t> M_ScanPWADs()
 
 	// possibly change this
 	std::vector<scannedPWAD_t> rvo;
-	OHashTable<OCRC32Sum, bool> found;
+	OHashTable<std::string, bool> found;
 
 	for (size_t i = 0; i < dirs.size(); i++)
 	{
-		std::vector<std::string> files = M_PWADFilesScanDir(dirs[i]);
+		const std::string& dir = dirs[i];
+
+		std::vector<std::string> files = M_PWADFilesScanDir(dir);
 		for (size_t j = 0; j < files.size(); j++)
 		{
-			// Don't include odamex.wad
-			if (!StdStringToLower(files[j]).compare("odamex.wad"))
+			// Since this filename will be user-visible, lowercase it.
+			const std::string filename = files[j];
+
+			// [AM] Don't include odamex.wad or IWADs.
+			if (iequals(filename, "odamex.wad"))
 				continue;
 
-			const std::string fullpath = dirs[i] + PATHSEP + files[j];
-
-			// Generate crc32sum
-			const OCRC32Sum crc32 = W_CRC32(fullpath);
-			if (crc32.empty())
+			OWantFile file;
+			OWantFile::make(file, filename, OFILE_WAD);
+			if (W_IsKnownIWAD(file))
 				continue;
 
 			// Found a dupe?
-			if (found.find(crc32) != found.end())
+			if (found.find(file.getBasename()) != found.end())
 				continue;
 
-			// Does the gameinfo exist?
-			const fileIdentifier_t* id = W_GameInfo(crc32);
-			if (id == NULL)
-			{
-				// do stuff for pwads
-			} else
-			{
-				continue;
-			}
-				
-			scannedPWAD_t pwad = {fullpath, StdStringToLower(files[j])};
+			// Insert our file into the found set.
+			const std::string fullpath = dir + PATHSEP + filename;
+
+			scannedPWAD_t pwad = {fullpath, filename};
 			rvo.push_back(pwad);
-			found[crc32] = true;
+			found[file.getBasename()] = true;
 		}
 	}
 
