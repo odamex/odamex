@@ -52,6 +52,34 @@ EXTERN_CVAR(waddirs);
 
 // ---------------
 
+typedef std::vector<scannedIWAD_t> scannedIWADs_t;
+typedef std::vector<scannedPWAD_t> scannedPWADs_t;
+typedef std::vector<scannedPWAD_t*> scannedPWADPtrs_t;
+
+/**
+ * @brief Add a scanned PWAD from the pointer list - unless there's a dupe.
+ */
+static void AddScanned(scannedPWADPtrs_t& mut, scannedPWAD_t* pwad)
+{
+	scannedPWADPtrs_t::iterator it = std::find(mut.begin(), mut.end(), pwad);
+	if (it == mut.end())
+	{
+		mut.push_back(pwad);
+	}
+}
+
+/**
+ * @brief Erase a scanned PWAD from the pointer list.
+ */
+static void EraseScanned(scannedPWADPtrs_t& mut, scannedPWAD_t* pwad)
+{
+	scannedPWADPtrs_t::iterator it = std::find(mut.begin(), mut.end(), pwad);
+	if (it != mut.end())
+	{
+		mut.erase(it);
+	}
+}
+
 const scannedIWAD_t* g_SelectedIWAD;
 scannedWADs_t g_SelectedWADs;
 
@@ -63,9 +91,9 @@ class BootWindow : public Fl_Window
 	Fl_Group* m_tabIWAD;
 	Fl_Group* m_tabPWADs;
 	std::string m_genWaddirs;
-	std::vector<scannedIWAD_t> m_IWADs;
-	std::vector<scannedPWAD_t> m_PWADs;
-	StringTokens m_selectedPWADs;
+	scannedIWADs_t m_IWADs;
+	scannedPWADs_t m_PWADs;
+	scannedPWADPtrs_t m_selectedPWADs;
 	Fl_Hold_Browser* m_IWADBrowser;
 	Fl_Check_Browser* m_PWADSelectBrowser;
 	Fl_Hold_Browser* m_PWADOrderBrowser;
@@ -183,7 +211,6 @@ class BootWindow : public Fl_Window
 	{
 		Fl_Tabs* tabs = static_cast<Fl_Tabs*>(w);
 		BootWindow* boot = static_cast<BootWindow*>(data);
-
 		Fl_Group* clicked = static_cast<Fl_Group*>(tabs->value());
 
 		// Have waddirs changed?
@@ -192,14 +219,20 @@ class BootWindow : public Fl_Window
 		// User clicked on the first tab, regenerate the
 		// list of IWADs if waddirs changed.
 		if ((clicked == boot->m_tabIWAD) && waddirsChanged)
-			return boot->rescanIWADs();
+		{
+			boot->rescanIWADs();
+			return;
+		}
 
 		bool pwadsIsEmpty = boot->m_PWADSelectBrowser->nitems() == 0;
 
 		// User clicked on the second tab, regenerate the
 		// list of IWADs if waddirs changed or browser is empty.
 		if ((clicked == boot->m_tabPWADs) && (pwadsIsEmpty || waddirsChanged))
-			return boot->rescanPWADs();
+		{
+			boot->rescanPWADs();
+			return;
+		}
 	}
 
 	static void doCallback(Fl_Widget*, void*) { CL_QuitCommand(); }
@@ -383,45 +416,36 @@ class BootWindow : public Fl_Window
 	static void scanCheckedPWADsCB(Fl_Widget*, void* data)
 	{
 		BootWindow* boot = static_cast<BootWindow*>(data);
-		StringTokens* selected = &boot->m_selectedPWADs;
 
-		boot->m_PWADOrderBrowser->clear();
+		// Scan all PWADs in the selection browser to see if they're checked.
 		for (int i = 1; i <= boot->m_PWADSelectBrowser->nitems(); i++)
 		{
-			const size_t idx = size_t(i) - 1;
+			scannedPWAD_t* selected = &boot->m_PWADs[size_t(i) - 1];
 			if (boot->m_PWADSelectBrowser->checked(i))
 			{
-				if (!std::count(selected->begin(), selected->end(),
-				                boot->m_PWADs[idx].filename.c_str()))
-				{
-					selected->push_back(boot->m_PWADs[idx].filename.c_str());
-				}
+				AddScanned(boot->m_selectedPWADs, selected);
 			}
 			else
 			{
-				StringTokens::iterator removed =
-				    std::remove(selected->begin(), selected->end(),
-				                boot->m_PWADs[idx].filename.c_str());
-				selected->erase(removed, selected->end());
+				EraseScanned(boot->m_selectedPWADs, selected);
 			}
 		}
 
-		for (size_t i = 0; i < boot->m_selectedPWADs.size(); i++)
-		{
-			boot->m_PWADOrderBrowser->add(boot->m_selectedPWADs[i].c_str());
-		}
+		// Update the PWAD order browser.
+		boot->updatePWADOrderBrowser();
 	}
 
 	/**
-	 * @brief Update the PWAD order browser widget from the vector.
+	 * @brief Update the visible PWAD order browser widget from the vector.
 	 */
 	void updatePWADOrderBrowser()
 	{
 		const int val = m_PWADOrderBrowser->value();
 		m_PWADOrderBrowser->clear();
-		for (size_t i = 0; i < m_selectedPWADs.size(); i++)
+		for (scannedPWADPtrs_t::iterator it = m_selectedPWADs.begin();
+		     it != m_selectedPWADs.end(); ++it)
 		{
-			m_PWADOrderBrowser->add(m_selectedPWADs[i].c_str());
+			m_PWADOrderBrowser->add((*it)->filename.c_str());
 		}
 		m_PWADOrderBrowser->value(val);
 	}
@@ -442,11 +466,15 @@ class BootWindow : public Fl_Window
 	 */
 	void selectedWADs()
 	{
+		// IWADs
 		const size_t value = static_cast<size_t>(m_IWADBrowser->value());
 		g_SelectedWADs.iwad = m_IWADs[value - 1].path;
-		for (size_t i = 0; i < m_selectedPWADs.size(); i++)
+
+		// PWADs
+		for (scannedPWADPtrs_t::iterator it = m_selectedPWADs.begin();
+		     it != m_selectedPWADs.end(); ++it)
 		{
-			g_SelectedWADs.pwads.push_back(m_selectedPWADs[i]);
+			g_SelectedWADs.pwads.push_back((*it)->path);
 		}
 	}
 
@@ -457,9 +485,9 @@ class BootWindow : public Fl_Window
 	{
 		const int val = m_WADDirList->value();
 		m_WADDirList->clear();
-		for (size_t i = 0; i < m_WADDirs.size(); i++)
+		for (StringTokens::iterator it = m_WADDirs.begin(); it != m_WADDirs.end(); ++it)
 		{
-			m_WADDirList->add(m_WADDirs[i].c_str());
+			m_WADDirList->add(it->c_str());
 		}
 		m_WADDirList->value(val);
 	}

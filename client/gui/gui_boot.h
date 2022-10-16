@@ -26,7 +26,7 @@
 struct scannedWADs_t
 {
     std::string iwad;
-    std::vector<std::string> pwads;
+    StringTokens pwads;
 };
 
 scannedWADs_t GUI_BootWindow();
