@@ -57,9 +57,24 @@ typedef std::vector<scannedPWAD_t> scannedPWADs_t;
 typedef std::vector<scannedPWAD_t*> scannedPWADPtrs_t;
 
 /**
+ * @brief Find the PWAD pointer in the scanned WAD array.
+ */
+static scannedPWADs_t::iterator FindScanned(scannedPWADs_t& mut, scannedPWAD_t* pwad)
+{
+	for (scannedPWADs_t::iterator it = mut.begin(); it != mut.end(); ++it)
+	{
+		if (&*it == pwad)
+		{
+			return it;
+		}
+	}
+	return mut.end();
+}
+
+/**
  * @brief Add a scanned PWAD from the pointer list - unless there's a dupe.
  */
-static void AddScanned(scannedPWADPtrs_t& mut, scannedPWAD_t* pwad)
+static void AddSelected(scannedPWADPtrs_t& mut, scannedPWAD_t* pwad)
 {
 	scannedPWADPtrs_t::iterator it = std::find(mut.begin(), mut.end(), pwad);
 	if (it == mut.end())
@@ -71,7 +86,7 @@ static void AddScanned(scannedPWADPtrs_t& mut, scannedPWAD_t* pwad)
 /**
  * @brief Erase a scanned PWAD from the pointer list.
  */
-static void EraseScanned(scannedPWADPtrs_t& mut, scannedPWAD_t* pwad)
+static void EraseSelected(scannedPWADPtrs_t& mut, scannedPWAD_t* pwad)
 {
 	scannedPWADPtrs_t::iterator it = std::find(mut.begin(), mut.end(), pwad);
 	if (it != mut.end())
@@ -297,21 +312,25 @@ class BootWindow : public Fl_Window
 	{
 		BootWindow* boot = static_cast<BootWindow*>(data);
 
-		const int val = boot->m_PWADOrderBrowser->value() - 1;
-		if (val < 0 || val >= boot->m_selectedPWADs.size())
-			return;
-
-		// deselect the wad in m_PWADSelectBrowser
-		for (int i = 1; i <= boot->m_PWADSelectBrowser->nitems(); i++)
+		// Figure out which PWAD we're removing.
+		const size_t removeIDX = size_t(boot->m_PWADOrderBrowser->value()) - 1;
+		if (removeIDX > boot->m_selectedPWADs.size())
 		{
-			if (!strcmp(boot->m_PWADSelectBrowser->text(i),
-			            (boot->m_PWADOrderBrowser->text(val + 1))))
-			{
-				boot->m_PWADSelectBrowser->checked(i, 0);
-			}
+			return;
 		}
+		scannedPWAD_t* selected = boot->m_selectedPWADs[removeIDX];
 
-		boot->m_selectedPWADs.erase(boot->m_selectedPWADs.begin() + val);
+		// Uncheck the selected PWAD from the selection array.
+		scannedPWADs_t::iterator it = FindScanned(boot->m_PWADs, selected);
+		if (it == boot->m_PWADs.end())
+		{
+			return;
+		}
+		ptrdiff_t index = it - boot->m_PWADs.begin();
+		boot->m_PWADSelectBrowser->checked(index + 1, 0);
+
+		// Erase the selected PWAD from the order array.
+		EraseSelected(boot->m_selectedPWADs, boot->m_selectedPWADs[removeIDX]);
 		boot->updatePWADOrderBrowser();
 	}
 
@@ -423,11 +442,11 @@ class BootWindow : public Fl_Window
 			scannedPWAD_t* selected = &boot->m_PWADs[size_t(i) - 1];
 			if (boot->m_PWADSelectBrowser->checked(i))
 			{
-				AddScanned(boot->m_selectedPWADs, selected);
+				AddSelected(boot->m_selectedPWADs, selected);
 			}
 			else
 			{
-				EraseScanned(boot->m_selectedPWADs, selected);
+				EraseSelected(boot->m_selectedPWADs, selected);
 			}
 		}
 
