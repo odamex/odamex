@@ -30,6 +30,18 @@
 #include "i_system.h"
 #include "svc_map.h"
 
+FILE* fh;
+
+void NETLOG(const std::string& str)
+{
+	return; // [AM] DISABLED
+
+	if (!fh)
+		fh = fopen("netlog.log", "w+");
+
+	fwrite(str.data(), sizeof(char), str.length(), fh);
+}
+
 static const dtime_t RELIABLE_TIMEOUT = 100;
 static const size_t RELIABLE_HEADER_SIZE = sizeof(byte) + sizeof(uint16_t);
 static const size_t UNRELIABLE_HEADER_SIZE = sizeof(byte);
@@ -49,7 +61,7 @@ SVCMessages::sentPacket_s& SVCMessages::sentPacket(const uint32_t id)
 SVCMessages::sentPacket_s* SVCMessages::validSentPacket(const uint32_t id)
 {
 	sentPacket_s* sent = &sentPacket(id);
-	if (sent->packetID != id || sent->acked)
+	if (sent->packetID != id)
 		return nullptr;
 	return sent;
 }
@@ -69,7 +81,7 @@ SVCMessages::reliableMessage_s& SVCMessages::reliableMessage(const uint16_t id)
 SVCMessages::reliableMessage_s* SVCMessages::validReliableMessage(const uint16_t id)
 {
 	reliableMessage_s* sent = &reliableMessage(id);
-	if (sent->messageID != id || sent->acked)
+	if (sent->messageID != id)
 		return nullptr;
 	return sent;
 }
@@ -141,6 +153,9 @@ bool SVCMessages::writePacket(buf_t& buf)
 {
 	const dtime_t TIME = I_MSTime();
 
+	NETLOG(fmt::format("[{}] time:{} nPack:{} nRel:{} rNoAck:{}\n", ::gametic, TIME,
+	                   m_nextPacketID, m_nextReliableID, m_reliableNoAck));
+
 	// Queue the packet for sending.
 	sentPacket_s& sent = sentPacket(m_nextPacketID);
 	sent.clear();
@@ -150,9 +165,9 @@ bool SVCMessages::writePacket(buf_t& buf)
 	for (uint32_t i = 0; i < LENGTH; i++)
 	{
 		reliableMessage_s* queue = validReliableMessage(m_reliableNoAck + i);
-		if (queue == NULL)
+		if (queue == nullptr || queue->acked)
 		{
-			// Invalid message.
+			// Message either does not exist or was acked already.
 			continue;
 		}
 
@@ -284,15 +299,38 @@ bool SVCMessages::clientAck(const uint32_t packetAck, const uint32_t packetAckBi
 		if (i == 0 || BIT(i - 1) != 0)
 		{
 			// Ack all messages attached to the packet.
-			for (size_t i = 0; i < packet->reliableIDs.size(); i++)
+			for (auto relID : packet->reliableIDs)
 			{
-				const uint32_t msgID = packet->reliableIDs[i];
-				reliableMessage_s* msg = validReliableMessage(msgID);
-				if (!msg)
+				reliableMessage_s* msg = validReliableMessage(relID);
+				if (msg == nullptr || msg->acked)
 					continue;
 
+				NETLOG(fmt::format(" > Acked {}\n", relID));
 				msg->acked = true;
 			}
+		}
+	}
+
+	// What is the most recently un-acked reliable message?
+	for (uint16_t i = m_reliableNoAck;; i++)
+	{
+		NETLOG(fmt::format(" > Checking {}\n", i));
+
+		reliableMessage_s* msg = validReliableMessage(i);
+		if (msg == nullptr || !msg->acked)
+		{
+			if (msg == nullptr)
+				NETLOG(fmt::format(" > {} is nullptr\n", i));
+			else if (!msg->acked)
+				NETLOG(fmt::format(" > {} is not acked\n", i));
+
+			NETLOG(fmt::format(" > Advanced to {}\n", i));
+			m_reliableNoAck = i;
+			break;
+		}
+		else
+		{
+			NETLOG(fmt::format(" > {} is acked, advancing...\n", i));
 		}
 	}
 

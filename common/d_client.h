@@ -76,7 +76,7 @@ class SVCMessages
 
 	uint32_t m_nextPacketID;
 	uint16_t m_nextReliableID;
-	uint32_t m_reliableNoAck;
+	uint16_t m_reliableNoAck;
 
 	sentPacket_s& sentPacket(const uint32_t id);
 	sentPacket_s* validSentPacket(const uint32_t id);
