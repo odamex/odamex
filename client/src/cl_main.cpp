@@ -156,6 +156,12 @@ class ackManager_t
   public:
 	ackManager_t() : m_recentPacketID(UINT32_MAX), m_ackedPackets() { }
 
+	void reset()
+	{
+		m_recentPacketID = UINT32_MAX;
+		m_ackedPackets = {};
+	}
+
 	void ack(const uint32_t id)
 	{
 		// Compare id relative to the current packet ID, to avoid wrapping weirdness.
@@ -1793,6 +1799,9 @@ bool CL_PrepareConnect()
 bool CL_Connect()
 {
 	players.clear();
+
+	CL_ClearMessages();
+	g_AckManager.reset();
 
 	memset(packetseq, -1, sizeof(packetseq));
 

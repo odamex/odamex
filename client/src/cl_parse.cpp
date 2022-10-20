@@ -3242,3 +3242,13 @@ bool CL_ParseMessages()
 
 	return true;
 }
+
+/**
+ * @brief Clear any queued messages.
+ */
+void CL_ClearMessages()
+{
+	g_ClientReliables = {};
+	g_NextReliableID = 0;
+	g_ClientUnreliables = {};
+}

@@ -46,3 +46,4 @@ typedef std::vector<Proto> Protos;
 const Protos& CL_GetTicProtos();
 bool CL_ReadMessages();
 bool CL_ParseMessages();
+void CL_ClearMessages();
