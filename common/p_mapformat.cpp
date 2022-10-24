@@ -49,11 +49,41 @@ enum triggertype
 	PushMany
 };
 
-// Migrate some non-hexen data to hexen format
+// Migrate some non-hexen data to hexen format, and other misc flags.
 void P_MigrateActorInfo(void)
 {
 	int i;
 	static bool migrated = false;
+
+	// Set MF2_PASSMOBJ on dehacked monsters
+	// because we don't expose ZDoom's Bits2 BEX extension (yet...)
+	// which is the normal way MF2_PASSMOBJ gets set.
+	for (i = 0; i < NUMMOBJTYPES; ++i)
+	{
+		if (mobjinfo[i].flags & MF_COUNTKILL)
+		{
+			if (P_AllowPassover())
+			{
+				if (mobjinfo[i].flags & MF_COUNTKILL)
+					mobjinfo[i].flags2 |= MF2_PASSMOBJ;
+			}
+			else
+			{
+				if (mobjinfo[i].flags & MF_COUNTKILL)
+					mobjinfo[i].flags2 &= ~MF2_PASSMOBJ;
+			}
+		}
+	}
+
+	// Don't forget about lost souls!
+	if (P_AllowPassover())
+	{
+		mobjinfo[MT_SKULL].flags2 |= MF2_PASSMOBJ;
+	}
+	else
+	{
+		mobjinfo[MT_SKULL].flags2 &= ~MF2_PASSMOBJ;
+	}
 
 	if (map_format.getZDoom() && !migrated)
 	{
@@ -62,13 +92,13 @@ void P_MigrateActorInfo(void)
 		for (i = 0; i < NUMMOBJTYPES; ++i)
 		{
 			if (mobjinfo[i].flags & MF_COUNTKILL)
-				mobjinfo[i].flags2 |= MF2_MCROSS | MF2_PUSHWALL | MF2_PASSMOBJ;
+				mobjinfo[i].flags2 |= MF2_MCROSS | MF2_PUSHWALL;
 
 			if (mobjinfo[i].flags & MF_MISSILE)
 				mobjinfo[i].flags2 |= MF2_PCROSS | MF2_IMPACT;
 		}
 
-		mobjinfo[MT_SKULL].flags2 |= MF2_MCROSS | MF2_PUSHWALL | MF2_PASSMOBJ;
+		mobjinfo[MT_SKULL].flags2 |= MF2_MCROSS | MF2_PUSHWALL;
 		mobjinfo[MT_PLAYER].flags2 |= MF2_WINDTHRUST | MF2_PUSHWALL;
 	}
 	else if (!map_format.getZDoom() && migrated)
@@ -78,13 +108,13 @@ void P_MigrateActorInfo(void)
 		for (i = 0; i < NUMMOBJTYPES; ++i)
 		{
 			if (mobjinfo[i].flags & MF_COUNTKILL)
-				mobjinfo[i].flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL | MF2_PASSMOBJ);
+				mobjinfo[i].flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);
 
 			if (mobjinfo[i].flags & MF_MISSILE)
 				mobjinfo[i].flags2 &= ~(MF2_PCROSS | MF2_IMPACT);
 		}
 
-		mobjinfo[MT_SKULL].flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL | MF2_PASSMOBJ);
+		mobjinfo[MT_SKULL].flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);
 		mobjinfo[MT_PLAYER].flags2 &= ~(MF2_WINDTHRUST | MF2_PUSHWALL);
 	}
 }
