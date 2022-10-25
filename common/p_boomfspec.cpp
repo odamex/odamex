@@ -1901,7 +1901,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 					trigger = true;
 				}
 			}
-			return true;
+			break;
 		case PushMany:
 			if (!side)
 			{
@@ -1909,21 +1909,21 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 				reuse = true;
 				trigger = true;
 			}
-			return true;
+			break;
 		case SwitchOnce:
 			if (linefunc(line))
 			{
 				reuse = false;
 				trigger = true;
 			}
-			return true;
+			break;
 		case SwitchMany:
 			if (linefunc(line))
 			{
 				reuse = true;
 				trigger = true;
 			}
-			return true;
+			break;
 		default: // if not a switch/push type, do nothing here
 			return false;
 		}
@@ -2836,7 +2836,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 192:
 			// Lights to brightest neighbor sector
 			// 192 SR  EV_LightTurnOn(0)
-			EV_LightTurnOn(line->id, 0);
+			EV_LightTurnOn(line->id, -1);
 			reuse = true;
 			trigger = true;
 			

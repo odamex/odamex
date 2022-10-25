@@ -712,6 +712,17 @@ bool ISDL20Window::isFocused() const
 	return mMouseFocus && mKeyboardFocus;
 }
 
+//
+// ISDL20Window:flashWindow
+//
+// Flashes the taskbar icon if the window is not focused
+//
+void ISDL20Window::flashWindow() const {
+	#if defined(SDL2016)
+	if (!this->isFocused())
+		SDL_FlashWindow(mSDLWindow, SDL_FLASH_UNTIL_FOCUSED);
+	#endif
+}
 
 //
 // ISDL20Window::getVideoDriverName

@@ -772,6 +772,13 @@ bool P_CheckTag(line_t* line)
 	default:
 		break;
 	}
+	if (!demoplayback && line->special >= GenCrusherBase && line->special <= GenEnd)
+	{
+		if ((line->special & 6) != 6) // e6y //jff 2/27/98 all non-manual
+			return false;             // generalized types require tag
+		else
+			return true;
+	}
 	return false; // zero tag not allowed
 }
 
