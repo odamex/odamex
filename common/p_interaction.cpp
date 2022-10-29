@@ -102,7 +102,7 @@ static void PersistPlayerDamage(player_t& p)
 		if (!it->ingame())
 			continue;
 
-		SV_QueueUnreliable(it->client, SVC_PlayerMembers(p, SVC_PM_DAMAGE));
+		SV_QueueUnreliable(*it, SVC_PlayerMembers(p, SVC_PM_DAMAGE));
 	}
 #endif
 }
@@ -131,7 +131,7 @@ static void PersistPlayerScore(player_t& p, const bool lives, const bool score)
 		if (!it->ingame())
 			continue;
 
-		SV_QueueUnreliable(it->client, SVC_PlayerMembers(p, flags));
+		SV_QueueUnreliable(*it, SVC_PlayerMembers(p, flags));
 	}
 #endif
 }
@@ -148,7 +148,8 @@ static void PersistTeamScore(team_t team)
 	{
 		if (!it->ingame())
 			continue;
-		SV_QueueUnreliable(it->client, SVC_TeamMembers(team));
+
+		SV_QueueUnreliable(*it, SVC_TeamMembers(team));
 	}
 #endif
 }
@@ -764,12 +765,12 @@ static void P_GiveCarePack(player_t* player)
 	{
 		// [AM] FIXME: This gives players their inventory, with no
 		//             background flash.
-		SV_QueueReliable(player->client, SVC_PlayerInfo(*player));
-		SV_QueueReliable(player->client, SVC_Print(PRINT_PICKUP, message + "\n"));
+		SV_QueueReliable(*player, SVC_PlayerInfo(*player));
+		SV_QueueReliable(*player, SVC_Print(PRINT_PICKUP, message + "\n"));
 		if (!midmessage.empty())
 		{
 			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
-			SV_QueueReliable(player->client, SVC_MidPrint(buf, 0));
+			SV_QueueReliable(*player, SVC_MidPrint(buf, 0));
 		}
 	}
 #else

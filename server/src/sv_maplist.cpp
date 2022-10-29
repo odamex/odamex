@@ -500,7 +500,7 @@ void SV_Maplist(player_t &player, maplist_status_t status) {
 	case MAPLIST_OK:
 		// Valid statuses
 		DPrintf("SV_Maplist: Sending status %d to pid %d\n", status, player.id);
-		SV_QueueReliable(player.client, SVC_Maplist(status));
+		SV_QueueReliable(player, SVC_Maplist(status));
 	default:
 		// Invalid statuses
 		return;
@@ -509,7 +509,7 @@ void SV_Maplist(player_t &player, maplist_status_t status) {
 
 // Send the player the next map index and current map index if it exists.
 void SV_MaplistIndex(player_t &player) {
-	client_t *cl = &player.client;
+	client_t* cl = player.client.get();
 
 	// count = 0: No indexes.
 	// count = 1: Next map index.
@@ -535,7 +535,7 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 	case MAPLIST_TIMEOUT:
 		// Valid statuses that don't require the packet logic
 		DPrintf("SV_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
-		SV_QueueReliable(player.client, SVC_MaplistUpdate(status, NULL));
+		SV_QueueReliable(player, SVC_MaplistUpdate(status, NULL));
 		return;
 	case MAPLIST_OUTDATED:
 		// Valid statuses that need the packet logic
@@ -549,7 +549,7 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 	maplist_qrows_t maplist;
 	Maplist::instance().query(maplist);
 
-	SV_QueueReliable(player.client, SVC_MaplistUpdate(MAPLIST_OUTDATED, &maplist));
+	SV_QueueReliable(player, SVC_MaplistUpdate(MAPLIST_OUTDATED, &maplist));
 
 	// Update the timeout to ensure the player doesn't abuse the server
 	Maplist::instance().set_timeout(player.id);

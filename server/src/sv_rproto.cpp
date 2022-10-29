@@ -177,7 +177,7 @@ bool SV_SendQueuedPackets(client_t& client)
 //
 void SV_AcknowledgePacket(player_t &player)
 {
-	client_t& cl = player.client;
+	client_t& cl = *player.client;
 
 	const uint32_t packetAck = uint32_t(MSG_ReadLong());
 	const uint32_t packetAckBits = uint32_t(MSG_ReadLong());

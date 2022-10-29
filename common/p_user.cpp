@@ -1336,7 +1336,7 @@ player_s::player_s() :
 	hazardinterval(0),
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
-	client(client_t())
+	client(nullptr)
 {
 	cmd.clear();
 	ArrayInit(powers, 0);

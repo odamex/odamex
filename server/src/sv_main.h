@@ -61,8 +61,39 @@ void STACK_ARGS SV_PlayerPrintf (int level, int who, const char *fmt, ...);
 void SV_CheckTimeouts (void);
 void SV_ConnectClient();
 void SV_ConnectClient2(player_t& player);
-void SV_QueueReliable(client_t& cl, const google::protobuf::Message& msg);
-void SV_QueueUnreliable(client_t& cl, const google::protobuf::Message& msg);
+
+/**
+ * @brief Queue a reliable message for the client.
+ */
+inline void SV_QueueReliable(player_t& pl, const google::protobuf::Message& msg)
+{
+	pl.client->msg.queueReliable(msg);
+}
+
+/**
+ * @brief Queue a reliable message for the client.
+ */
+inline void SV_QueueReliable(client_t& cl, const google::protobuf::Message& msg)
+{
+	cl.msg.queueReliable(msg);
+}
+
+/**
+ * @brief Queue an unreliable message for the client.
+ */
+inline void SV_QueueUnreliable(player_t& pl, const google::protobuf::Message& msg)
+{
+	pl.client->msg.queueUnreliable(msg);
+}
+
+/**
+ * @brief Queue an unreliable message for the client.
+ */
+inline void SV_QueueUnreliable(client_t& cl, const google::protobuf::Message& msg)
+{
+	cl.msg.queueUnreliable(msg);
+}
+
 broadcastFunc_t BroadcastAll();
 broadcastFunc_t BroadcastExceptPID(const int pid);
 void SV_BroadcastReliable(const google::protobuf::Message& msg,

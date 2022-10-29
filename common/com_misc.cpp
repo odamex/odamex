@@ -42,7 +42,7 @@ void COM_PushToast(const toast_t& toast)
 #if defined(SERVER_APP)
 	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
 	{
-		SV_QueueReliable(it->client, SVC_Toast(toast));
+		SV_QueueReliable(*it, SVC_Toast(toast));
 	}
 #else
 	hud::PushToast(toast);

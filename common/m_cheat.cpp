@@ -364,7 +364,7 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 				AActor *actor;
 				TThinkerIterator<AActor> iterator;
 
-				if (multiplayer && !player->client.allow_rcon)
+				if (multiplayer && !player->client->allow_rcon)
 			        return;
 
 				while ( (actor = iterator.Next ()) )
@@ -393,7 +393,7 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 
 		case CHT_MDK: 
 		{
-			if (multiplayer && !player->client.allow_rcon)
+			if (multiplayer && !player->client->allow_rcon)
 				return;
 
 			if (player->spectator)

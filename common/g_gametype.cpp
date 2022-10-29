@@ -534,7 +534,8 @@ static void GiveWins(player_t& player, int wins)
 	{
 		if (!it->ingame())
 			continue;
-		SV_QueueUnreliable(it->client, SVC_PlayerMembers(player, SVC_PM_SCORE));
+
+		SV_QueueUnreliable(*it, SVC_PlayerMembers(player, SVC_PM_SCORE));
 	}
 #endif
 }
@@ -555,7 +556,7 @@ static void GiveTeamWins(team_t team, int wins)
 		if (!it->ingame())
 			continue;
 
-		SV_QueueUnreliable(it->client, SVC_TeamMembers(team));
+		SV_QueueUnreliable(*it, SVC_TeamMembers(team));
 	}
 #endif
 }

@@ -134,7 +134,7 @@ int C_BasePrint(const int printlevel, const char* color_code, const std::string&
 	// Only allow sending internal messages to RCON players that are PRINT_HIGH
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		client_t* cl = &(it->client);
+		client_t* cl = it->client.get();
 
 		// Only allow RCON messages that are PRINT_HIGH
 		if (cl->allow_rcon && (printlevel == PRINT_HIGH || printlevel == PRINT_WARNING ||

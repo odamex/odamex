@@ -283,7 +283,7 @@ class HordeState
 				{
 					(*it)->lives += 1;
 					#if defined(SERVER_APP)
-					SV_QueueReliable((*it)->client, SVC_PlayerInfo(**it));
+					SV_QueueReliable(**it, SVC_PlayerInfo(**it));
 					SV_BroadcastReliable(SVC_PlayerMembers(**it, SVC_PM_LIVES),
 											BroadcastExceptPID((*it)->id));
 					#endif
@@ -298,7 +298,7 @@ class HordeState
 			for (PlayersView::iterator it = queued.begin(); it != queued.end(); ++it)
 			{
 				(*it)->lives = 1;
-				SV_QueueReliable((*it)->client, SVC_PlayerInfo(**it));
+				SV_QueueReliable(**it, SVC_PlayerInfo(**it));
 				SV_BroadcastReliable(SVC_PlayerMembers(**it, SVC_PM_LIVES),
 										BroadcastExceptPID((*it)->id));
 			}

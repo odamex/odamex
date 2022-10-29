@@ -176,7 +176,7 @@ void G_DoNewGame (void)
 	serverside = true;
 
 	players.clear();
-	players.push_back(player_t());
+	players.emplace_back(player_t{});
 	players.front().doreborn = true;
 	consoleplayer_id = displayplayer_id = players.back().id = 1;
 

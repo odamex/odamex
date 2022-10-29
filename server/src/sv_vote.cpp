@@ -905,7 +905,7 @@ void Vote::parse(vote_result_t vote_result)
 	{
 		if (validplayer(*it))
 		{
-			SV_SendQueuedPackets(it->client);
+			SV_SendQueuedPackets(*it->client);
 		}
 	}
 
@@ -1033,7 +1033,7 @@ static void SV_VoteUpdate(player_t &player)
 		return;
 	}
 
-	SV_QueueUnreliable(player.client, SVC_VoteUpdate(::vote->serialize()));
+	SV_QueueUnreliable(player, SVC_VoteUpdate(::vote->serialize()));
 }
 
 // Send a full vote update to everybody

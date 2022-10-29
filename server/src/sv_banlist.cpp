@@ -222,7 +222,7 @@ bool Banlist::add(player_t &player, const time_t expire,
 	Ban ban;
 	ban.expire = expire;
 	ban.name = player.userinfo.netname;
-	ban.range.set(player.client.address);
+	ban.range.set(player.client->address);
 	ban.reason = reason;
 
 	// Add the ban to the banlist
@@ -261,7 +261,7 @@ bool Banlist::add_exception(player_t &player)
 	// Fill in exception info
 	Exception exception;
 	exception.name = player.userinfo.netname;
-	exception.range.set(player.client.address);
+	exception.range.set(player.client->address);
 
 	// Add the exception to the banlist.
 	this->exceptionlist.push_back(exception);

@@ -2590,7 +2590,7 @@ void P_RailAttack (AActor *source, int damage, int offset)
 			if (!mo || mo == source)
 				continue;
 
-			SV_QueueUnreliable(it->client, SVC_RailTrail(start, end));
+			SV_QueueUnreliable(*it, SVC_RailTrail(start, end));
 		}
 	}
 #endif

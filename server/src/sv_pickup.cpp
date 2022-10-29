@@ -104,7 +104,7 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 		SV_ForceSetTeam(player, dest_team);
 		SV_CheckTeam(player);
 		for (Players::iterator pit = players.begin();pit != players.end();++pit) {
-			SV_SendUserInfo(player, &(pit->client));
+			SV_SendUserInfo(player, pit->client.get());
 		}
 
 		int iTeam = dest_team;
