@@ -305,6 +305,12 @@ struct Bad_arg_to_ARRAY_LENGTH {
 	static Is_array check_type(const void*, const void*);
 };
 
+//
+// Delete copy constructor and assignment for class.
+//
+#define PREVENT_COPY(cls)     \
+	cls(const cls&) = delete; \
+	cls& operator=(const cls&) = delete
 
 // ----------------------------------------------------------------------------
 //

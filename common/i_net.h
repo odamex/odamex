@@ -321,12 +321,12 @@ class Message;
 }
 } // namespace google
 
-typedef struct
+struct netadr_t
 {
-   byte    ip[4];
-   unsigned short  port;
-   unsigned short  pad;
-} netadr_t;
+	byte ip[4] = {0, 0, 0, 0};
+	uint16_t port = 0;
+	uint16_t pad = 0;
+};
 
 extern  netadr_t  net_from;  // address of who sent the packet
 extern buf_t net_message;

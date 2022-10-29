@@ -277,11 +277,8 @@ public:
 	}
 
 	player_s();
-	~player_s() { }
-
-	player_s(const player_s&) = delete;
 	player_s(player_s&&) = default;
-	player_s& operator=(const player_s& other) = delete;
+	PREVENT_COPY(player_s);
 };
 
 typedef player_s player_t;

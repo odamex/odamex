@@ -89,34 +89,36 @@ struct client_t
 {
 	netadr_t address;
 
-	buf_t netbuf;
-	buf_t reliablebuf;
+	buf_t netbuf = MAX_UDP_PACKET;
+	buf_t reliablebuf = MAX_UDP_PACKET;
 
 	// protocol version supported by the client
-	short version;
-	int packedversion;
+	short version = 0;
+	int packedversion = 0;
 
-	int sequence;
-	int last_sequence;
-	byte packetnum;
+	int sequence = 0;
+	int last_sequence = 0;
+	byte packetnum = 0;
 
-	int rate;
-	int reliable_bps; // bytes per second
-	int unreliable_bps;
+	int rate = 0;
+	int reliable_bps = 0; // bytes per second
+	int unreliable_bps = 0;
 
-	int last_received; // for timeouts
+	int last_received = 0; // for timeouts
 
-	int lastcmdtic, lastclientcmdtic;
+	int lastcmdtic = 0;
+	int lastclientcmdtic = 0;
 
 	std::string digest;     // randomly generated string that the client must use for any
 	                        // hashes it sends back
-	bool allow_rcon;        // allow remote admin
-	bool displaydisconnect; // display disconnect message when disconnecting
+	bool allow_rcon = false;        // allow remote admin
+	bool displaydisconnect = true; // display disconnect message when disconnecting
 
 	huffman_server compressor; // denis - adaptive huffman compression
 
 	SVCMessages msg;
 
-	client_t();
-	client_t(const client_t& other);
+	client_t() = default;
+	client_t(client_t&& other) = default;
+	PREVENT_COPY(client_t);
 };
