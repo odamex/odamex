@@ -336,3 +336,42 @@ bool SVCMessages::clientAck(const uint32_t packetAck, const uint32_t packetAckBi
 
 	return true;
 }
+
+/**
+ * @brief Return internal message data.
+ */
+SVCMessages::debug_s SVCMessages::debug()
+{
+	debug_s rvo;
+	rvo.nextPacketID = m_nextPacketID;
+	rvo.nextReliableID = m_nextReliableID;
+	rvo.reliableNoAck = m_reliableNoAck;
+	return rvo;
+}
+
+#ifdef SERVER_APP
+
+#include "c_dispatch.h"
+#include "d_player.h"
+
+BEGIN_COMMAND(debugnet)
+{
+	if (::players.empty())
+	{
+		PrintFmt("No players are connected.\n");
+		return;
+	}
+
+	for (auto& player : ::players)
+	{
+		SVCMessages::debug_s deb = player.client->msg.debug();
+
+		PrintFmt("                  === {: 3}:{} ===\n", int(player.id), player.userinfo.netname);
+		PrintFmt("           next packet ID: {}\n", deb.nextPacketID);
+		PrintFmt("         next reliable ID: {}\n", deb.nextReliableID);
+		PrintFmt("first unACKed reliable ID: {}\n", deb.reliableNoAck);
+	}
+}
+END_COMMAND(debugnet)
+
+#endif

@@ -83,6 +83,14 @@ class SVCMessages
 	void queueUnreliable(const google::protobuf::Message& msg);
 	bool writePacket(buf_t& buf);
 	bool clientAck(const uint32_t packetAck, const uint32_t packetAckBits);
+
+	struct debug_s
+	{
+		uint32_t nextPacketID;
+		uint16_t nextReliableID;
+		uint16_t reliableNoAck;
+	};
+	debug_s debug();
 };
 
 struct client_t
