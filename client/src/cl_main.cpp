@@ -279,8 +279,10 @@ static void CL_RebuildAllPlayerTranslations()
 	if (demoplayback)
 		return;
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it));
+	for (auto& player : ::players)
+	{
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
+	}
 }
 
 CVAR_FUNC_IMPL (r_enemycolor)
@@ -1420,7 +1422,7 @@ player_t &CL_FindPlayer(size_t id)
 		if (players.size() >= MAXPLAYERS)
 			return *p;
 
-		players.push_back(player_s());
+		players.emplace_back(player_t{});
 
 		p = &players.back();
 		p->id = id;
