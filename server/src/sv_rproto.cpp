@@ -172,43 +172,6 @@ bool SV_SendQueuedPackets(client_t& client)
 	return count > 0;
 }
 
-/**
- * @brief Send an old reliable packet with old data on the wire.
- * 
- * @param pl Player to send to.
- * @param sequence Sequence number to send.  This assumss
-*/
-static void SendOldPacket(player_t& pl, const int sequence)
-{
-	// Send buffer.
-	static buf_t send(MAX_UDP_PACKET);
-	send.clear();
-
-	client_t& cl = pl.client;
-	oldPacket_s& old = cl.oldpackets[sequence & PACKET_OLD_MASK];
-
-	// This is a lot simpler than a fresh send.  Just send the data we have
-	// have saved out.
-
-	MSG_WriteLong(&send, old.sequence);
-	MSG_WriteByte(&send, 0); // Flags, filled out later.
-
-	// copy the reliable message to the packet
-	if (old.data.cursize)
-	{
-		SZ_Write(&send, old.data.data, old.data.cursize);
-		cl.reliable_bps += old.data.cursize;
-	}
-
-	// compress the packet, but not the sequence id
-	if (send.size() > PACKET_HEADER_SIZE)
-	{
-		CompressPacket(send, PACKET_HEADER_SIZE, &cl);
-	}
-
-	NET_SendPacket(send, cl.address);
-}
-
 //
 // SV_AcknowledgePacket
 //

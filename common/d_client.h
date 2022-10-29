@@ -27,14 +27,6 @@
 #include "i_net.h"
 #include "ocircularbuffer.h"
 
-struct oldPacket_s
-{
-	int sequence;
-	buf_t data;
-
-	oldPacket_s() : sequence(-1) { data.resize(0); }
-};
-
 class SVCMessages
 {
 	struct reliableMessage_s
@@ -103,9 +95,6 @@ struct client_t
 	// protocol version supported by the client
 	short version;
 	int packedversion;
-
-	// for reliable protocol
-	oldPacket_s oldpackets[256];
 
 	int sequence;
 	int last_sequence;

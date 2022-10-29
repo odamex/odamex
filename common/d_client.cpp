@@ -346,12 +346,6 @@ client_t::client_t()
 	ArrayInit(address.ip, 0);
 	address.port = 0;
 	address.pad = 0;
-
-	for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
-	{
-		oldpackets[i].sequence = -1;
-		oldpackets[i].data.resize(MAX_UDP_PACKET);
-	}
 }
 
 client_t::client_t(const client_t& other)
@@ -364,8 +358,4 @@ client_t::client_t(const client_t& other)
       digest(other.digest), allow_rcon(false), displaydisconnect(true),
       compressor(other.compressor)
 {
-	for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
-	{
-		oldpackets[i] = other.oldpackets[i];
-	}
 }
