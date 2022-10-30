@@ -44,6 +44,7 @@
 #include "g_gametype.h"
 #include "g_levelstate.h"
 #include "gi.h"
+#include "i_video.h"
 #include "m_argv.h"
 #include "m_random.h"
 #include "m_resfile.h"
@@ -1103,6 +1104,10 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	{
 		// denis - if this concerns the local player, restart the status bar
 		ST_Start();
+
+		// flash taskbar icon
+		IWindow* window = I_GetWindow();
+		window->flashWindow();
 
 		// [SL] 2012-04-23 - Clear predicted sectors
 		movingsectors.clear();
