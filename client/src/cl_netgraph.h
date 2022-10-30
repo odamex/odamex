@@ -35,6 +35,9 @@ public:
 	void addTrafficIn(int val);
 	void addTrafficOut(int val);
 	void addPacketIn();
+	void addReliableIn();
+	void setNextReliable(uint16_t nextReliable);
+	void addUnreliableIn();
 	void draw();
 
 private:
@@ -43,6 +46,8 @@ private:
 	void drawTrafficIn(int x, int y);
 	void drawTrafficOut(int x, int y);
 	void drawPackets(int x, int y);
+	void drawReliable(int x, int y);
+	void drawUnreliable(int x, int y);
 
 	static const int BAR_HEIGHT_WORLD_INDEX = 4;
 	static const int BAR_WIDTH_WORLD_INDEX = 2;
@@ -58,10 +63,13 @@ private:
 	int		mX;
 	int		mY;
 
-	bool	mMisprediction[NetGraph::MAX_HISTORY_TICS];
-	int		mWorldIndexSync[NetGraph::MAX_HISTORY_TICS];
-	int		mInterpolation;
-	int		mTrafficIn[NetGraph::MAX_HISTORY_TICS];
-	int		mTrafficOut[NetGraph::MAX_HISTORY_TICS];
-	int		mPacketsIn[NetGraph::MAX_HISTORY_TICS];
+	bool mMisprediction[NetGraph::MAX_HISTORY_TICS];
+	int mWorldIndexSync[NetGraph::MAX_HISTORY_TICS];
+	int mInterpolation;
+	int mTrafficIn[NetGraph::MAX_HISTORY_TICS];
+	int mTrafficOut[NetGraph::MAX_HISTORY_TICS];
+	int mPacketsIn[NetGraph::MAX_HISTORY_TICS];
+	int mReliablesIn[NetGraph::MAX_HISTORY_TICS];
+	uint16_t mNextReliable = 0;
+	int mUnreliablesIn[NetGraph::MAX_HISTORY_TICS];
 };

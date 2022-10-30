@@ -3004,12 +3004,16 @@ static bool ReadMessage()
 		msg.svc = svc;
 		msg.reliableID = reliableID;
 		msg.data.assign((char*)data, size);
+
+		::netgraph.addReliableIn();
 	}
 	else
 	{
 		clientUnreliable_s& msg = g_ClientUnreliables.push();
 		msg.svc = svc;
 		msg.data.assign((char*)data, size);
+
+		::netgraph.addUnreliableIn();
 	}
 
 	return true;
@@ -3180,6 +3184,7 @@ bool CL_ParseMessages()
 			break; // Haven't got this message yet.
 
 		g_NextReliableID += 1;
+		::netgraph.setNextReliable(g_NextReliableID);
 
 		// Parse the message body.
 		const parseError_e res = ParseMessage(msg.svc, msg.data);

@@ -35,8 +35,7 @@
 #include "cl_netgraph.h"
 #include "r_draw.h"
 
-NetGraph::NetGraph(int x, int y) :
-	mX(x), mY(y)
+NetGraph::NetGraph(int x, int y) : mX(x), mY(y)
 {
 	for (size_t i = 0; i < NetGraph::MAX_HISTORY_TICS; i++)
 	{
@@ -91,6 +90,33 @@ void NetGraph::addPacketIn()
 		mPacketsIn[gametic % NetGraph::MAX_HISTORY_TICS] += 1;
 	else
 		mPacketsIn[gametic % NetGraph::MAX_HISTORY_TICS] = 1;
+
+	lastgametic = gametic;
+}
+
+void NetGraph::addReliableIn()
+{
+	static int lastgametic = -1;
+	if (gametic == lastgametic)
+		mReliablesIn[gametic % NetGraph::MAX_HISTORY_TICS] += 1;
+	else
+		mReliablesIn[gametic % NetGraph::MAX_HISTORY_TICS] = 1;
+
+	lastgametic = gametic;
+}
+
+void NetGraph::setNextReliable(uint16_t nextReliable)
+{
+	mNextReliable = nextReliable;
+}
+
+void NetGraph::addUnreliableIn()
+{
+	static int lastgametic = -1;
+	if (gametic == lastgametic)
+		mUnreliablesIn[gametic % NetGraph::MAX_HISTORY_TICS] += 1;
+	else
+		mUnreliablesIn[gametic % NetGraph::MAX_HISTORY_TICS] = 1;
 
 	lastgametic = gametic;
 }
@@ -219,24 +245,52 @@ void NetGraph::drawPackets(int x, int y)
 {
 	static const int textcolor = CR_GREY;
 
-	int maxPackets = 0;
-
+	int packets = 0;
 	for (size_t i = 0; i < NetGraph::MAX_HISTORY_TICS; i++)
 	{
 		int index = (gametic - (NetGraph::MAX_HISTORY_TICS - i)) % MAX_HISTORY_TICS;
-		int packets = mPacketsIn[index];
-		if (packets > maxPackets) {
-			maxPackets = packets;
-		}
-
-		int height = packets;
-		if (height > 200) height = 200;
-		NetGraphDrawBar(x + i * 2, y + 8, 2, height, 0xB0);
+		packets += mPacketsIn[index];
 	}
 
-	std::ostringstream buf;
-	buf << "Packets In: " << std::setw(5) << maxPackets;
-	screen->DrawText(textcolor, x, y, buf.str().c_str());
+	std::string buf = fmt::format("Packets In: {:.3f} per tic",
+	                              packets / float(NetGraph::MAX_HISTORY_TICS));
+	screen->DrawText(textcolor, x, y, buf.c_str());
+}
+
+void NetGraph::drawReliable(int x, int y)
+{
+	static const int textcolor = CR_GREY;
+
+	int messages = 0;
+	for (size_t i = 0; i < NetGraph::MAX_HISTORY_TICS; i++)
+	{
+		int index = (gametic - (NetGraph::MAX_HISTORY_TICS - i)) % MAX_HISTORY_TICS;
+		messages += mReliablesIn[index];
+	}
+
+	std::string buf;
+	buf = fmt::format("Reliables In: {:.3f} per tic",
+	                  messages / float(NetGraph::MAX_HISTORY_TICS));
+	screen->DrawText(textcolor, x, y, buf.c_str());
+
+	buf = fmt::format("Next Reliable: {}", mNextReliable);
+	screen->DrawText(textcolor, x, y + 8, buf.c_str());
+}
+
+void NetGraph::drawUnreliable(int x, int y)
+{
+	static const int textcolor = CR_GREY;
+
+	int messages = 0;
+	for (size_t i = 0; i < NetGraph::MAX_HISTORY_TICS; i++)
+	{
+		int index = (gametic - (NetGraph::MAX_HISTORY_TICS - i)) % MAX_HISTORY_TICS;
+		messages += mUnreliablesIn[index];
+	}
+
+	std::string buf = fmt::format("Unreliables In: {:.3f} per tic",
+	                              messages / float(NetGraph::MAX_HISTORY_TICS));
+	screen->DrawText(textcolor, x, y, buf.c_str());
 }
 
 void NetGraph::draw()
@@ -253,6 +307,8 @@ void NetGraph::draw()
 	drawTrafficIn(mX, mY + 128 + fontheight);
 	drawTrafficOut(mX, mY + 128 + fontheight * 3);
 	drawPackets(mX, mY + 128 + fontheight * 6);
+	drawReliable(mX, mY + 128 + fontheight * 7);
+	drawUnreliable(mX, mY + 128 + fontheight * 9);
 }
 
 VERSION_CONTROL (cl_netgraph_cpp, "$Id$")
