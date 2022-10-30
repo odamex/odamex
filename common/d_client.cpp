@@ -281,34 +281,40 @@ bool SVCMessages::clientAck(const uint32_t packetAck, const uint32_t packetAckBi
 	if (packetAck == 0 && packetAckBits == 0)
 		return false;
 
-	// Loop through past 33 packets.
-	for (uint32_t i = 0; i < 33; i++)
-	{
-		const uint32_t checkAck = packetAck - i;
-
+	// Acknowledge a packet and all reliable messages attached to it.
+	const auto clientAckPacket = [&](const uint32_t checkAck) {
 		// See if we have a packet in the system that matches.
 		sentPacket_s* packet = validSentPacket(checkAck);
 		if (!packet || packet->acked)
-			continue;
+			return;
 
 		// Ack the packet!
 		packet->acked = true;
 
-		// First packet should always be checked, subsequent only if they
-		// haven't been acked.
-		if (i == 0 || BIT(i - 1) != 0)
+		// Ack all messages attached to the packet.
+		for (auto relID : packet->reliableIDs)
 		{
-			// Ack all messages attached to the packet.
-			for (auto relID : packet->reliableIDs)
-			{
-				reliableMessage_s* msg = validReliableMessage(relID);
-				if (msg == nullptr || msg->acked)
-					continue;
+			reliableMessage_s* msg = validReliableMessage(relID);
+			if (msg == nullptr || msg->acked)
+				continue;
 
-				NETLOG(fmt::format(" > Acked {}\n", relID));
-				msg->acked = true;
-			}
+			NETLOG(fmt::format(" > Acked {}\n", relID));
+			msg->acked = true;
 		}
+	};
+
+	// Ack the most recent packet.
+	clientAckPacket(packetAck);
+
+	// Loop through the last 32 messages and ack those if the bit is set.
+	uint32_t bitPacketID = packetAck - 1;
+	for (size_t i = 0; i < 32; i++)
+	{
+		if ((packetAckBits & BIT(i)) != 0)
+		{
+			clientAckPacket(bitPacketID);
+		}
+		bitPacketID -= 1;
 	}
 
 	// What is the most recently un-acked reliable message?
