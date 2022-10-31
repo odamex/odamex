@@ -30,18 +30,6 @@
 #include "i_system.h"
 #include "svc_map.h"
 
-FILE* fh;
-
-void NETLOG(const std::string& str)
-{
-	return; // [AM] DISABLED
-
-	if (!fh)
-		fh = fopen("netlog.log", "w+");
-
-	fwrite(str.data(), sizeof(char), str.length(), fh);
-}
-
 static const dtime_t RELIABLE_TIMEOUT = 100;
 static const size_t RELIABLE_HEADER_SIZE = sizeof(byte) + sizeof(uint16_t);
 static const size_t UNRELIABLE_HEADER_SIZE = sizeof(byte);
@@ -152,9 +140,6 @@ void SVCMessages::queueUnreliable(const google::protobuf::Message& msg)
 bool SVCMessages::writePacket(buf_t& buf)
 {
 	const dtime_t TIME = I_MSTime();
-
-	NETLOG(fmt::format("[{}] time:{} nPack:{} nRel:{} rNoAck:{}\n", ::gametic, TIME,
-	                   m_nextPacketID, m_nextReliableID, m_reliableNoAck));
 
 	// Queue the packet for sending.
 	sentPacket_s& sent = sentPacket(m_nextPacketID);
@@ -298,7 +283,6 @@ bool SVCMessages::clientAck(const uint32_t packetAck, const uint32_t packetAckBi
 			if (msg == nullptr || msg->acked)
 				continue;
 
-			NETLOG(fmt::format(" > Acked {}\n", relID));
 			msg->acked = true;
 		}
 	};
@@ -320,23 +304,11 @@ bool SVCMessages::clientAck(const uint32_t packetAck, const uint32_t packetAckBi
 	// What is the most recently un-acked reliable message?
 	for (uint16_t i = m_reliableNoAck;; i++)
 	{
-		NETLOG(fmt::format(" > Checking {}\n", i));
-
 		reliableMessage_s* msg = validReliableMessage(i);
 		if (msg == nullptr || !msg->acked)
 		{
-			if (msg == nullptr)
-				NETLOG(fmt::format(" > {} is nullptr\n", i));
-			else if (!msg->acked)
-				NETLOG(fmt::format(" > {} is not acked\n", i));
-
-			NETLOG(fmt::format(" > Advanced to {}\n", i));
 			m_reliableNoAck = i;
 			break;
-		}
-		else
-		{
-			NETLOG(fmt::format(" > {} is acked, advancing...\n", i));
 		}
 	}
 
