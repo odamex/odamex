@@ -135,19 +135,18 @@ void SVCMessages::queueUnreliable(const google::protobuf::Message& msg)
  * @brief Given the state of messages, construct and write a single packet to the buffer.
  *
  * @param buf Buffer to write to.
+ * @param time Time to consider when preventing resends.
  * @return True if a packet was queued, false if no viable messages made it in.
  */
-bool SVCMessages::writePacket(buf_t& buf)
+bool SVCMessages::writePacket(buf_t& buf, const dtime_t time)
 {
-	const dtime_t TIME = I_MSTime();
-
 	// Queue the packet for sending.
 	sentPacket_s& sent = sentPacket(m_nextPacketID);
 	sent.clear();
 
 	// Walk the message array starting with the oldest un-acked.
-	const uint32_t LENGTH = m_nextReliableID - m_reliableNoAck;
-	for (uint32_t i = 0; i < LENGTH; i++)
+	const uint16_t LENGTH = m_nextReliableID - m_reliableNoAck;
+	for (uint16_t i = 0; i < LENGTH; i++)
 	{
 		reliableMessage_s* queue = validReliableMessage(m_reliableNoAck + i);
 		if (queue == nullptr || queue->acked)
@@ -156,7 +155,7 @@ bool SVCMessages::writePacket(buf_t& buf)
 			continue;
 		}
 
-		if (queue->lastSent + RELIABLE_TIMEOUT >= TIME)
+		if (queue->lastSent + RELIABLE_TIMEOUT >= time)
 		{
 			// Don't rapid-fire resends.
 			continue;
@@ -174,7 +173,7 @@ bool SVCMessages::writePacket(buf_t& buf)
 		sent.reliableIDs.push_back(queue->messageID);
 
 		// Ensure we don't resend immediately.
-		queue->lastSent = TIME;
+		queue->lastSent = time;
 	}
 
 	// See if we can fit in any other unreliable messages.

@@ -136,10 +136,16 @@ void SV_SendPacketDelayed(buf_t& packet, player_t& pl)
  */
 bool SV_SendQueuedPackets(client_t& client)
 {
+	// Only measure time at this point, otherwise a server under load could
+	// get stuck in an infinite loop by endlessly resending reliable packets
+	// if it takes longer than the timeout to assemble a single packet
+	// Unlikely, but better to be safe than sorry.
+	const dtime_t time = I_MSTime();
+
 	size_t count = 0;
 	for (;;)
 	{
-		if (!client.msg.writePacket(client.netbuf))
+		if (!client.msg.writePacket(client.netbuf, time))
 			break;
 
 		// [AM] Most of the hard work of assembling the packet is done in the client.
