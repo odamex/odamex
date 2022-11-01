@@ -2836,7 +2836,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 192:
 			// Lights to brightest neighbor sector
 			// 192 SR  EV_LightTurnOn(0)
-			EV_LightTurnOn(line->id, 0);
+			EV_LightTurnOn(line->id, -1);
 			reuse = true;
 			trigger = true;
 			
