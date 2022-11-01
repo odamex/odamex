@@ -418,9 +418,9 @@ class BootWindow : public Fl_Window
 	{
 		m_PWADSelectBrowser->clear();
 		m_PWADs = M_ScanPWADs();
-		for (size_t i = 0; i < m_PWADs.size(); i++)
+		for (scannedPWADs_t::iterator it = m_PWADs.begin(); it != m_PWADs.end(); ++it)
 		{
-			m_PWADSelectBrowser->add(m_PWADs[i].filename.c_str());
+			m_PWADSelectBrowser->add(it->filename.c_str());
 		}
 		m_genWaddirs = ::waddirs.str();
 

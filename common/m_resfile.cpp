@@ -377,20 +377,20 @@ std::vector<scannedIWAD_t> M_ScanIWADs()
  */
 std::vector<scannedPWAD_t> M_ScanPWADs()
 {
-	const std::vector<std::string> dirs = M_FileSearchDirs();
+	const StringTokens dirs = M_FileSearchDirs();
 
 	// possibly change this
 	std::vector<scannedPWAD_t> rvo;
 	OHashTable<std::string, bool> found;
 
-	for (size_t i = 0; i < dirs.size(); i++)
+	for (StringTokens::const_iterator dit = dirs.begin(); dit != dirs.end(); ++dit)
 	{
-		const std::string& dir = dirs[i];
+		const std::string& dir = *dit;
 
-		std::vector<std::string> files = M_PWADFilesScanDir(dir);
-		for (size_t j = 0; j < files.size(); j++)
+		const StringTokens files = M_PWADFilesScanDir(dir);
+		for (StringTokens::const_iterator fit = files.begin(); fit != files.end(); ++fit)
 		{
-			const std::string filename = files[j];
+			const std::string& filename = *fit;
 
 			// [AM] Don't include odamex.wad or IWADs.
 			if (iequals(filename, "odamex.wad"))
