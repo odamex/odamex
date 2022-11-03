@@ -316,6 +316,24 @@ mobjtype_t P_NameToMobj(const std::string& name)
 	return it->second;
 }
 
+std::string P_MobjToName(const mobjtype_t name)
+{
+	if (::g_MonsterMap.empty())
+	{
+		InitMap();
+	}
+
+	for (MobjMap::iterator it = ::g_MonsterMap.begin(); it != ::g_MonsterMap.end(); ++it)
+	{
+		if (it->second == name)
+		{
+			return it->first.c_str();
+		}
+	}
+
+	return "";
+}
+
 weapontype_t P_NameToWeapon(const std::string& name)
 {
 	if (name == "Fist")
