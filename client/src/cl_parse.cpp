@@ -1679,6 +1679,7 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 	{
 		// Record this item into the replay engine for future replaying
 		ClientReplay::getInstance().recordReplayItem(::last_svgametic, id);
+		return;
 	}
 
 	P_GiveSpecial(&consoleplayer(), mo);
@@ -2201,9 +2202,6 @@ static void CL_LevelState(const odaproto::svc::LevelState* msg)
 
 static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
-#ifdef _DEBUG
-	Printf(PRINT_WARNING, "Map reset initiated!\n");
-#endif
 	ClientReplay::getInstance().reset();
 
 	// Destroy every actor with a netid that isn't a player.  We're going to
