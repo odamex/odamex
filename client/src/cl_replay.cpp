@@ -148,7 +148,7 @@ void ClientReplay::itemReplay()
 
 		P_GiveSpecial(&consoleplayer(), mo);
 
-		int ticDelta = (world_index - it->first - 1);
+		int ticDelta = (world_index - it->first - 1); // -1 because we already thunk this tic.
 
 		// Cycle the raise/lower by the tics elapsed since to get us up to current
 		if (P_SpecialIsWeapon(mo))
