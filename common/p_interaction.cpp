@@ -380,11 +380,6 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 // P_GiveWeapon
 // The weapon name may have a MF_DROPPED flag ored in.
 //
-bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon);
-//
-// P_GiveWeapon
-// The weapon name may have a MF_DROPPED flag ored in.
-//
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 {
 	bool gaveammo;

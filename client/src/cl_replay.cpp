@@ -31,11 +31,10 @@
 
 #include "p_mobj.h"
 #include "p_local.h"
+#include "infomap.h"
 
-static const uint32_t MAX_REPLAY_TIC_LENGTH = TICRATE * 2;
-
-extern int last_svgametic;
 extern int world_index;
+extern int last_svgametic;
 
 //
 // ClientReplay::getInstance
@@ -121,6 +120,8 @@ void ClientReplay::itemReplay()
 	    consoleplayer_id != displayplayer_id || consoleplayer().spectator)
 		return;
 
+	player_t& player = consoleplayer();
+
 	std::vector<std::pair<int, uint32_t> >::iterator it = itemReplayStack.begin();
 	while (it != itemReplayStack.end())
 	{
@@ -146,16 +147,23 @@ void ClientReplay::itemReplay()
 			continue;
 		}
 
-		P_GiveSpecial(&consoleplayer(), mo);
+		P_GiveSpecial(&player, mo);
 
-		int ticDelta = (world_index - it->first - 1); // -1 because we already thunk this tic.
+		int ticDelta = (::gametic - it->first);
+
+		weaponstate_t state = P_GetWeaponState(&player);
+		std::string weaponname = P_MobjToName(mo->type);
+		weapontype_t weapontype = P_NameToWeapon(weaponname);
 
 		// Cycle the raise/lower by the tics elapsed since to get us up to current
-		if (P_SpecialIsWeapon(mo))
+		// But have special logic here to not skip ahead,
+		// and do nothing if it wasn't going to switch our weapon anyway.
+		if (P_SpecialIsWeapon(mo) && state == readystate &&
+		    P_CheckSwitchWeapon(&player, weapontype))
 		{
-			for (int i = 0; i < ticDelta; i++)
+			for (int i = 0; i < ticDelta; ++i)
 			{
-				P_MovePsprites(&consoleplayer());
+					P_MovePsprites(&player);
 			}
 		}
 

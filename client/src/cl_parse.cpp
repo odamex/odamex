@@ -253,6 +253,11 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 		p.pendingweapon = readyweapon;
 	}
 
+	if (pending == wp_nochange)
+	{
+		p.pendingweapon = wp_nochange;
+	}
+
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
 		if (i < msg->player().powers_size())
@@ -267,6 +272,9 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 
 	if (!p.spectator)
 		p.cheats = msg->player().cheats();
+
+	// If a full update was declared, don't try and correct any weapons.
+	ClientReplay::getInstance().reset();
 }
 
 /**

@@ -44,8 +44,9 @@ public:
 	void itemReplay();
 
 private:
-  std::vector<std::pair<int, uint32_t> > itemReplayStack; // Used to replay item pickups for items the clients can't find.
+  std::vector<std::pair<int, uint32_t> > itemReplayStack;			// Used to replay item pickups for items the clients can't find.
+  static const uint32_t MAX_REPLAY_TIC_LENGTH = TICRATE * 3;	// Should be plenty of time.
 	// <int, uint32_t> = <gametic, itemid>
-  ClientReplay() { } // private contsructor (part of Singleton)
-	ClientReplay(const ClientReplay& rhs); // private copy constructor
+	ClientReplay() { }											// private contsructor (part of Singleton)
+	ClientReplay(const ClientReplay& rhs);	// private copy constructor
 };
