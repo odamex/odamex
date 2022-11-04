@@ -208,9 +208,6 @@ static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
  */
 static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 {
-#if defined ODAMEX_DEBUG
-	Printf(PRINT_WARNING, "Player info receive started!\n");
-#endif
 	player_t& p = consoleplayer();
 
 	uint32_t weaponowned = msg->player().weaponowned();
@@ -742,9 +739,6 @@ static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 //
 static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 {
-#if defined ODAMEX_DEBUG
-	Printf(PRINT_WARNING, "Reset map started!\n");
-#endif
 	ClientReplay::getInstance().reset();
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
@@ -1057,9 +1051,6 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 //
 static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 {
-#if defined ODAMEX_DEBUG
-	Printf(PRINT_WARNING, "Spawn player started!\n");
-#endif
 	size_t playernum = msg->pid();
 	size_t netid = msg->actor().netid();
 	player_t* p = &CL_FindPlayer(playernum);
@@ -1681,26 +1672,13 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 	uint32_t id = msg->netid();
 	AActor* mo = P_FindThingById(id);
 
-#if defined _DEBUG
-	Printf(PRINT_WARNING, "Pickup message for item ID %d received!\n", id);
-#endif
-
 	if (!consoleplayer().mo)
 		return;
 
 	if (!mo)
 	{
-#if defined _DEBUG
-		Printf(PRINT_WARNING, "Item ID %d not found!\n", id);
-#endif
 		// Record this item into the replay engine for future replaying
 		ClientReplay::getInstance().recordReplayItem(::last_svgametic, id);
-	}
-	else
-	{
-#if defined _DEBUG
-		Printf(PRINT_WARNING, "Pickup item #%d is of type: %s\n", id, P_MobjToName(mo->type).c_str());
-#endif
 	}
 
 	P_GiveSpecial(&consoleplayer(), mo);
