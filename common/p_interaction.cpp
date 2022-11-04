@@ -777,7 +777,7 @@ static void P_GiveCarePack(player_t* player)
 	}
 }
 
-static bool P_SpecialIsWeapon(AActor *special)
+bool P_SpecialIsWeapon(AActor *special)
 {
 	if (!special)
 		return false;

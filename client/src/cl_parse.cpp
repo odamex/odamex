@@ -62,6 +62,7 @@
 #include "v_textcolors.h"
 #include "p_mapformat.h"
 #include "infomap.h"
+#include "cl_replay.h"
 
 // Extern data from other files.
 
@@ -744,6 +745,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 #if defined ODAMEX_DEBUG
 	Printf(PRINT_WARNING, "Reset map started!\n");
 #endif
+	ClientReplay::getInstance().reset();
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
 	::forcenetdemosplit = false;
@@ -1267,8 +1269,11 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		level.killed_monsters++;
 
 	if (target->player == &consoleplayer())
+	{
+		ClientReplay::getInstance().reset();
 		for (size_t i = 0; i < MAXSAVETICS; i++)
 			localcmds[i].clear();
+	}
 
 	if (target->player && lives >= 0)
 		target->player->lives = lives;
@@ -1665,6 +1670,8 @@ static void CL_ExitLevel(const odaproto::svc::ExitLevel* msg)
 {
 	gameaction = ga_completed;
 
+	ClientReplay::getInstance().reset();
+
 	if (netdemo.isRecording())
 		netdemo.writeIntermission();
 }
@@ -1681,16 +1688,20 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 	if (!consoleplayer().mo)
 		return;
 
-#if defined _DEBUG
 	if (!mo)
 	{
+#if defined _DEBUG
 		Printf(PRINT_WARNING, "Item ID %d not found!\n", id);
+#endif
+		// Record this item into the replay engine for future replaying
+		ClientReplay::getInstance().recordReplayItem(::last_svgametic, id);
 	}
 	else
 	{
+#if defined _DEBUG
 		Printf(PRINT_WARNING, "Pickup item #%d is of type: %s\n", id, P_MobjToName(mo->type).c_str());
-	}
 #endif
+	}
 
 	P_GiveSpecial(&consoleplayer(), mo);
 }
@@ -2215,6 +2226,8 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 #ifdef _DEBUG
 	Printf(PRINT_WARNING, "Map reset initiated!\n");
 #endif
+	ClientReplay::getInstance().reset();
+
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
 	AActor* mo;
