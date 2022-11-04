@@ -44,7 +44,7 @@ public:
 	void itemReplay();
 
 private:
-  std::vector<std::pair<int, uint32_t>> itemReplayStack; // Used to replay item pickups for items the clients can't find.
+  std::vector<std::pair<int, uint32_t> > itemReplayStack; // Used to replay item pickups for items the clients can't find.
 	// <int, uint32_t> = <gametic, itemid>
   ClientReplay() { } // private contsructor (part of Singleton)
 	ClientReplay(const ClientReplay& rhs); // private copy constructor
