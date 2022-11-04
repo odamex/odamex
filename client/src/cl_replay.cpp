@@ -95,7 +95,7 @@ void ClientReplay::recordReplayItem(int tic, const uint32_t netId)
 //
 void ClientReplay::removeReplayItem(const std::pair<int, uint32_t> replayItem)
 {
-	std::vector<std::pair<int, uint32_t>>::iterator it = itemReplayStack.begin();
+	std::vector<std::pair<int, uint32_t> >::iterator it = itemReplayStack.begin();
 	while (it != itemReplayStack.end())
 	{
 		if (replayItem == *it)
@@ -121,7 +121,7 @@ void ClientReplay::itemReplay()
 	    consoleplayer_id != displayplayer_id || consoleplayer().spectator)
 		return;
 
-	std::vector<std::pair<int, uint32_t>>::iterator it = itemReplayStack.begin();
+	std::vector<std::pair<int, uint32_t> >::iterator it = itemReplayStack.begin();
 	while (it != itemReplayStack.end())
 	{
 		if (it->first + MAX_REPLAY_TIC_LENGTH < ::last_svgametic)
