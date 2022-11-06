@@ -1723,6 +1723,14 @@ bool CL_PrepareConnect()
 	}
 	else if (!ok && !missingfiles.empty() || cl_forcedownload)
 	{
+		if (::missingCommercialIWAD)
+		{
+			Printf(PRINT_WARNING,
+			       "Server requires commercial IWAD that was not found.\n");
+			CL_QuitNetGame(NQ_ABORT);
+			return false;
+		}
+
 		OWantFile missing_file;
 		if (missingfiles.empty())				// cl_forcedownload
 		{
