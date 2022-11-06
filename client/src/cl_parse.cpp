@@ -803,7 +803,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	{
 		if (::missingCommercialIWAD)
 		{
-			Printf(PRINT_WARNING, "Server requires commercial IWAD that was don't have.\n");
+			Printf(PRINT_WARNING, "Server requires commercial IWAD that was not found.\n");
 			CL_QuitNetGame(NQ_DISCONNECT);
 			return;
 		}

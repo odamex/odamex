@@ -1720,7 +1720,7 @@ bool CL_PrepareConnect()
 		if (::missingCommercialIWAD)
 		{
 			Printf(PRINT_WARNING,
-			       "Server requires commercial IWAD that was don't have.\n");
+			       "Server requires commercial IWAD that was not found.\n");
 			CL_QuitNetGame(NQ_ABORT);
 			return false;
 		}
