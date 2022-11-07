@@ -77,6 +77,17 @@ bool ClientReplay::enabled()
 }
 
 //
+// ClientReplay::replayedTic
+//
+// Denotes whether an item was replayed during the last tic.
+//
+
+bool ClientReplay::wasReplayed()
+{
+	return replayed;
+}
+
+//
 // ClientReplay::recordReplayItem
 //
 // Records a netid and gametic for an item that was picked up,
@@ -120,6 +131,11 @@ void ClientReplay::itemReplay()
 	    consoleplayer_id != displayplayer_id || consoleplayer().spectator)
 		return;
 
+	if (replayed)
+	{
+		replayed = false;
+	}
+
 	player_t& player = consoleplayer();
 
 	std::vector<std::pair<int, uint32_t> >::iterator it = itemReplayStack.begin();
@@ -148,6 +164,8 @@ void ClientReplay::itemReplay()
 		}
 
 		P_GiveSpecial(&player, mo);
+
+		replayed = true;
 
 		int ticDelta = (::gametic - it->first);
 
