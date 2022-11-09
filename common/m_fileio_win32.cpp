@@ -298,8 +298,13 @@ std::vector<std::string> M_PWADFilesScanDir(std::string dir)
 		if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			continue;
 
-		// Only return files with correct extensions
 		std::string filename = std::string(FindFileData.cFileName);
+
+		// Don't care about files with names shorter than the extension
+		if (filename.length() < 4)
+			continue;
+
+		// Only return files with correct extensions
 		std::string check = StdStringToUpper(filename).substr(filename.length() - 4);
 		if (check.compare(".WAD") && check.compare(".DEH") && check.compare(".BEX"))
 			continue;
