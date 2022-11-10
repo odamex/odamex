@@ -1771,9 +1771,12 @@ void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;
+	int mod = ev->mod;
 	const char *cmd = Bindings.GetBind(ch).c_str();
 
 	item = CurrentMenu->items + CurrentItem;
+
+	bool numlock = mod & OKEY_NUMLOCK;
 
 	// Waiting on a key press for control binding
 	if (WaitingForKey)
@@ -1843,7 +1846,7 @@ void M_OptResponder (event_t *ev)
 	}
 
 	if (item->type == bitflag && flagsvar &&
-	    (Key_IsLeftKey(ch) || Key_IsRightKey(ch) || Key_IsAcceptKey(ch))
+	    (Key_IsLeftKey(ch, numlock) || Key_IsRightKey(ch, numlock) || Key_IsAcceptKey(ch))
 		&& !demoplayback)
 	{
 			int newflags = *item->e.flagint ^ item->a.flagmask;
@@ -1866,7 +1869,7 @@ void M_OptResponder (event_t *ev)
 
 	// Handle Keys
 	{
-		if (Key_IsDownKey(ch))
+		if (Key_IsDownKey(ch, numlock))
 		{
 			int modecol;
 
@@ -1904,7 +1907,7 @@ void M_OptResponder (event_t *ev)
 
 			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		}
-		else if (Key_IsUpKey(ch))
+		else if (Key_IsUpKey(ch, numlock))
 		{
 			int modecol;
 
@@ -1944,7 +1947,7 @@ void M_OptResponder (event_t *ev)
 
 			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		}
-		else if (Key_IsPageUpKey(ch))
+		else if (Key_IsPageUpKey(ch, numlock))
 		{
 			if (CanScrollUp)
 			{
@@ -1965,7 +1968,7 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 		}
-		else if (Key_IsPageDownKey(ch)) 
+		else if (Key_IsPageDownKey(ch, numlock)) 
 		{
 			if (CanScrollDown)
 			{
@@ -1987,7 +1990,7 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 		}
-		else if (Key_IsLeftKey(ch))
+		else if (Key_IsLeftKey(ch, numlock))
 		{
 		switch (item->type)
 		{
@@ -2115,7 +2118,7 @@ void M_OptResponder (event_t *ev)
 			break;
 		}
 		}
-		else if (Key_IsRightKey(ch))
+		else if (Key_IsRightKey(ch, numlock))
 		{
 		switch (item->type)
 		{
