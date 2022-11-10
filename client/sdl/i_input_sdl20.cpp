@@ -282,7 +282,7 @@ void ISDL20KeyboardInputDevice::gatherEvents()
 		if (sdl_ev.type == SDL_KEYDOWN || sdl_ev.type == SDL_KEYUP)
 		{
 			const int sym = sdl_ev.key.keysym.sym;
-			int mod = sdl_ev.key.keysym.mod;
+			const int mod = sdl_ev.key.keysym.mod;
 
 			event_t ev;
 			ev.type = (sdl_ev.type == SDL_KEYDOWN) ? ev_keydown : ev_keyup;
