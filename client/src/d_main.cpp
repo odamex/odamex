@@ -273,7 +273,7 @@ void D_Display()
 			return;
 
 		case GS_LEVEL:
-			if (!gametic)
+		    if (!gametic || !g_ValidLevel)
 				break;
 
 			V_DoPaletteEffects();
@@ -711,6 +711,9 @@ void STACK_ARGS D_Shutdown()
 
 	// reset the Zone memory manager
 	Z_Close();
+
+	// [AM] Level is now invalid due to torching zone memory.
+	g_ValidLevel = false;
 
 	// [AM] All of our dyncolormaps are freed, tidy up so we
 	//      don't follow wild pointers.

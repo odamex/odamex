@@ -62,6 +62,8 @@ extern int				numspritelumps;
 //
 // Lookup tables for map data.
 //
+extern bool				g_ValidLevel;
+
 extern int				numsprites;
 extern spritedef_t* 	sprites;
 
