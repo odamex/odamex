@@ -408,6 +408,8 @@ void AActor::Destroy ()
 {
 	SV_SendDestroyActor(this);
 
+	actor_by_netid.erase(netid);
+
 	// Remove from health pool.
 	if (!::savegamerestore)
 		P_RemoveHealthPool(this);
