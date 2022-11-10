@@ -325,7 +325,7 @@ static bool ScanIWADCmp(const scannedIWAD_t& a, const scannedIWAD_t& b)
 
 static bool ScanPWADCmp(const scannedPWAD_t& a, const scannedPWAD_t& b)
 {
-	return a.filename < b.filename;
+	return StdStringToLower(a.filename) < StdStringToLower(b.filename);
 }
 
 /**
