@@ -1776,7 +1776,7 @@ void M_OptResponder (event_t *ev)
 
 	item = CurrentMenu->items + CurrentItem;
 
-	bool numlock = mod & OKEY_NUMLOCK;
+	bool numlock = mod & OMOD_NUM;
 
 	// Waiting on a key press for control binding
 	if (WaitingForKey)
