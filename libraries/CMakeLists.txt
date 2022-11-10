@@ -25,7 +25,7 @@ set(dllsuffix "${CMAKE_SHARED_LIBRARY_SUFFIX}")
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
 
 function(lib_buildgen)
-  cmake_parse_arguments("" "" "LIBRARY;SRCDIR" "PARAMS" ${ARGN})
+  cmake_parse_arguments("" "" "LIBRARY;SRCDIR;CXXFLAGS" "PARAMS" ${ARGN})
 
   if(NOT _SRCDIR)
     set(_SRCDIR "${CMAKE_CURRENT_SOURCE_DIR}/${_LIBRARY}")
@@ -71,7 +71,13 @@ function(lib_buildgen)
     list(APPEND _COMMAND "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
   endif()
 
-  execute_process(COMMAND ${_COMMAND} ${_PARAMS} RESULT_VARIABLE _RESVAL)
+  if(_CXXFLAGS)
+    set(_ENVCMD ${CMAKE_COMMAND} -E env CXXFLAGS=${_CXXFLAGS})
+  endif()
+
+  message(STATUS "Generating ${_LIBRARY}...")
+  message(${_ENVCMD} ${_COMMAND} ${_PARAMS})
+  execute_process(COMMAND ${_ENVCMD} ${_COMMAND} ${_PARAMS} RESULT_VARIABLE _RESVAL)
   if(_RESVAL GREATER 0)
     message(FATAL_ERROR "Library ${_LIBRARY} did not generate correctly.")
   endif()
@@ -84,6 +90,7 @@ function(lib_build)
   get_property(_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
   if(_IS_MULTI_CONFIG)
     # Debug and Release are not compatible, so build both.
+    message(STATUS "Building ${_LIBRARY} Debug...")
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
       --config Debug --target install
@@ -92,15 +99,17 @@ function(lib_build)
       message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Debug.")
     endif()
 
+    message(STATUS "Building ${_LIBRARY} RelWithDebInfo...")
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
       --config RelWithDebInfo --target install
       --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
     if(_RESVAL GREATER 0)
       message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Release.")
-    endif()  
+    endif()
   else()
     # Single config uses the passed build type.
+    message(STATUS "Building ${_LIBRARY} ${CMAKE_BUILD_TYPE}...")
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
       --config ${CMAKE_BUILD_TYPE} --target install
@@ -256,8 +265,6 @@ endif()
 ### FLTK (dep: libpng) ###
 
 if(BUILD_CLIENT)
-  message(STATUS "Compiling FLTK...")
-
   set(_FLTK_BUILDGEN_PARAMS
     "-DOPTION_USE_SYSTEM_LIBJPEG=OFF"
     "-DOPTION_PRINT_SUPPORT=OFF"
@@ -296,8 +303,6 @@ endif()
 ### JsonCpp ###
 
 if(BUILD_SERVER AND USE_INTERNAL_JSONCPP)
-  message(STATUS "Compiling JsonCpp...")
-
   lib_buildgen(
     LIBRARY jsoncpp
     PARAMS "-DJSONCPP_WITH_TESTS=OFF"
@@ -318,8 +323,6 @@ endif()
 if(BUILD_SERVER AND NOT USE_MINIUPNP)
   message(STATUS "Skipping MiniUPnPc...")
 elseif(BUILD_SERVER AND USE_MINIUPNP AND USE_INTERNAL_MINIUPNP)
-  message(STATUS "Compiling MiniUPnPc...")
-
   # Figure out the correct library path to attach to our imported target
   set(MINIUPNPC_LIBRARY
     "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}miniupnpc${libsuffix}")
@@ -339,17 +342,21 @@ endif()
 ### Protocol Buffers ###
 
 if(BUILD_CLIENT OR BUILD_SERVER)
-  message(STATUS "Compiling protobuf...")
-
   set(_PROTOBUF_BUILDGEN_PARAMS
     "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
     "-Dprotobuf_BUILD_TESTS=OFF"
     "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF")
 
+  if(MSVC)
+    # https://developercommunity.visualstudio.com/t/Visual-Studio-1740-no-longer-compiles-/10193665
+    set(protobuf_CXXFLAGS "/D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS")
+  endif()
+
   lib_buildgen(
     LIBRARY protobuf
     SRCDIR "${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake"
-    PARAMS ${_PROTOBUF_BUILDGEN_PARAMS})
+    PARAMS ${_PROTOBUF_BUILDGEN_PARAMS}
+    CXXFLAGS ${protobuf_CXXFLAGS})
   lib_build(LIBRARY protobuf)
 endif()
 
