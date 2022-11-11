@@ -612,12 +612,12 @@ static std::string C_GetLatchedValueString(const cvar_t* var)
 		return C_GetValueString(var);
 
 	if (var->flags() & CVAR_NOENABLEDISABLE)
-		return '"' + var->latched() + '"';
+		return '"' + std::string(var->latched()) + '"';
 
 	if (atof(var->latched()) == 0.0f)
 		return "disabled";
 	else
-		return "enabled";	
+		return "enabled";
 }
 
 BEGIN_COMMAND (set)
