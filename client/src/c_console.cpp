@@ -355,12 +355,39 @@ void ConsoleCommandLine::moveCursorRight()
 
 void ConsoleCommandLine::moveCursorLeftWord()
 {
-	if (cursor_position > 0)
-		cursor_position--;
+	bool firstSpacesCleared = false;
+	bool spaceWord = false;
 
 	const char* str = text.c_str();
-	while (cursor_position > 0 && str[cursor_position - 1] != ' ')
+
+	if (str[cursor_position - 1] == ' ')
+	{
+		spaceWord = true;
+	}
+
+	while (cursor_position > 0)
+	{
+		if (spaceWord)
+		{
+			if (str[cursor_position - 1] != ' ')
+			{
+				break;
+			}
+		}
+		else
+		{
+			if (firstSpacesCleared && str[cursor_position] == ' ')
+			{
+				break;
+			}
+			else if (str[cursor_position] != ' ' && !firstSpacesCleared)
+			{
+				firstSpacesCleared = true;
+			}
+		}
+
 		cursor_position--;
+	}
 
 	doScrolling();
 }
