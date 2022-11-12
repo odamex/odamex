@@ -83,6 +83,7 @@ extern byte *ConChars;
 
 bool		KeysShifted;
 bool		KeysCtrl;
+bool		KeysAlt;
 bool		NumLockEnabled;
 
 static bool midprinting;
@@ -284,6 +285,8 @@ public:
 	void insertString(const std::string& str);
 	void replaceString(const std::string& str);
 	void deleteCharacter();
+	void deleteLeftWord();
+	void deleteRightWord();
 	void backspace();
 
 	std::string		text;
@@ -416,6 +419,65 @@ void ConsoleCommandLine::deleteCharacter()
 		text.erase(cursor_position, 1);
 		doScrolling();
 	}
+}
+
+
+void ConsoleCommandLine::deleteLeftWord()
+{
+	size_t word = 0;
+	bool firstSpacesCleared = false;
+	bool spaceWord = false;
+
+	const char* str = text.c_str();
+
+	// Delete trailing spaces instead of the word
+	if (str[cursor_position - 1] == ' ')
+	{
+		spaceWord = true;
+	}
+
+	while (cursor_position > 0)
+	{
+		if (spaceWord)
+		{
+			if (str[cursor_position - 1] != ' ')
+			{
+				break;
+			}
+		}
+		else
+		{
+			if (firstSpacesCleared && str[cursor_position] == ' ')
+			{
+				break;
+			}
+			else if (str[cursor_position] != ' ' && !firstSpacesCleared)
+			{
+				firstSpacesCleared = true;
+			}
+		}
+
+		cursor_position--;
+		word++;
+	}
+
+	text.erase(cursor_position, word);
+
+	doScrolling();
+}
+
+void ConsoleCommandLine::deleteRightWord()
+{
+	size_t word = 0;
+	// find first non-space character after the next space(s)
+	word = text.find_first_not_of(' ', text.find_first_of(' ', cursor_position));
+
+	if (word == std::string::npos)
+		word = text.length();
+
+	text.erase(cursor_position, word);
+
+	doScrolling();
 }
 
 void ConsoleCommandLine::backspace()
@@ -1881,12 +1943,27 @@ static bool C_HandleKey(const event_t* ev)
 }
 #endif
 
+	// Add modifiers for these keys
+	KeysCtrl = (ev->mod & OMOD_CTRL);
+	KeysAlt = (ev->mod & OMOD_ALT && !(ev->mod & OMOD_RALT && ev->mod & OMOD_LCTRL)); // Alt without AltGr
+	KeysShifted = (ev->mod & OMOD_SHIFT);
+	NumLockEnabled = (ev->mod & OMOD_NUM);
+
 	switch (ch)
 	{
 	case OKEY_BACKSPACE:
-		CmdLine.backspace();
-		TabCycleClear();
-		return true;
+		if (KeysCtrl)
+		{
+			CmdLine.deleteLeftWord();
+			TabCycleClear();
+			return true;
+		}
+		else
+		{
+			CmdLine.backspace();
+			TabCycleClear();
+			return true;
+		}
 	case OKEY_MOUSE3:
 		// Paste from clipboard - add each character to command line
 		CmdLine.insertString(I_GetClipboardText());
@@ -1894,11 +1971,6 @@ static bool C_HandleKey(const event_t* ev)
 		TabCycleClear();
 		return true;
 	}
-
-	// Add modifiers for these keys
-	KeysCtrl = (ev->mod & OMOD_CTRL);
-	KeysShifted = (ev->mod & OMOD_SHIFT);
-	NumLockEnabled = (ev->mod & OMOD_NUM);
 
 // General keys used by all systems
 	{
@@ -1914,9 +1986,18 @@ static bool C_HandleKey(const event_t* ev)
 		}
 		else if (Key_IsDelKey(ch, NumLockEnabled))
 		{
-			CmdLine.deleteCharacter();
-			TabCycleClear();
-			return true;
+			if (KeysAlt)
+			{
+				CmdLine.deleteRightWord();
+				TabCycleClear();
+				return true;
+			}
+			else
+			{
+				CmdLine.deleteCharacter();
+				TabCycleClear();
+				return true;
+			}
 		}
 		else if (Key_IsPageUpKey(ch, NumLockEnabled))
 		{
