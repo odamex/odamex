@@ -468,14 +468,33 @@ void ConsoleCommandLine::deleteLeftWord()
 
 void ConsoleCommandLine::deleteRightWord()
 {
+	bool spaceWord = false;
+
+	const char* str = text.c_str();
+
+	if (str[cursor_position] == ' ')
+	{
+		spaceWord = true;
+	}
+
 	size_t word = 0;
-	// find first non-space character after the next space(s)
-	word = text.find_first_not_of(' ', text.find_first_of(' ', cursor_position));
+	size_t wordLength = 0;
+	
+	if (spaceWord)
+	{
+		word = text.find_first_not_of(' ', cursor_position);
+	}
+	else
+	{
+		word = text.find_first_not_of(' ', text.find_first_of(' ', cursor_position));
+	}
 
 	if (word == std::string::npos)
-		word = text.length();
+			wordLength = text.length();
+		else
+			wordLength = word - cursor_position;
 
-	text.erase(cursor_position, word);
+	text.erase(cursor_position, wordLength);
 
 	doScrolling();
 }
