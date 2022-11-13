@@ -1754,9 +1754,9 @@ int M_StringHeight(char* string)
 //
 bool M_Responder (event_t* ev)
 {
-	int ch, ch2;
+	int ch, ch2, mod;
 
-	ch = ch2 = -1;
+	ch = ch2 = mod = -1;
 
 	// eat mouse events
 	if(menuactive)
@@ -1785,6 +1785,7 @@ bool M_Responder (event_t* ev)
 	{
 		ch = ev->data1; 		// scancode
 		ch2 = ev->data3;		// ASCII
+		mod = ev->mod;			// key mods
 	}
 
 	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
@@ -1797,8 +1798,10 @@ bool M_Responder (event_t* ev)
 		return true;
 	}
 
+	bool numlock = mod & OKEY_NUMLOCK;
+
 	// Handle Repeat
-	if (Key_IsLeftKey(ch) || Key_IsRightKey(ch))
+	if (Key_IsLeftKey(ch, numlock) || Key_IsRightKey(ch, numlock))
 	{
 		if (repeatKey == ch)
 			repeatCount++;
@@ -1905,7 +1908,7 @@ bool M_Responder (event_t* ev)
 
 	// Keys usable within menu
 	{
-		if (Key_IsDownKey(ch))
+		if (Key_IsDownKey(ch, numlock))
 		{
 			do {
 				if (itemOn + 1 > currentMenu->numitems - 1)
@@ -1916,7 +1919,7 @@ bool M_Responder (event_t* ev)
 			} while (currentMenu->menuitems[itemOn].status == -1);
 			return true;
 		}
-		else if (Key_IsUpKey(ch))
+		else if (Key_IsUpKey(ch, numlock))
 		{
 			do {
 				if (!itemOn)
@@ -1927,7 +1930,7 @@ bool M_Responder (event_t* ev)
 			} while (currentMenu->menuitems[itemOn].status == -1);
 			return true;
 		}
-		else if (Key_IsLeftKey(ch))
+		else if (Key_IsLeftKey(ch, numlock))
 		{
 			if (currentMenu->menuitems[itemOn].routine &&
 				currentMenu->menuitems[itemOn].status == 2)
@@ -1937,7 +1940,7 @@ bool M_Responder (event_t* ev)
 			}
 			return true;
 		}
-		else if (Key_IsRightKey(ch))
+		else if (Key_IsRightKey(ch, numlock))
 		{
 			if (currentMenu->menuitems[itemOn].routine &&
 				currentMenu->menuitems[itemOn].status == 2)

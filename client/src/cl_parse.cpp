@@ -253,7 +253,8 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 		p.pendingweapon = readyweapon;
 	}
 
-	if (pending == wp_nochange)
+	// Tic was replayed? Don't try and use the replays's autoswitch at the same tic as weapon correction.
+	if (ClientReplay::getInstance().wasReplayed() && pending == wp_nochange)
 	{
 		p.pendingweapon = wp_nochange;
 	}

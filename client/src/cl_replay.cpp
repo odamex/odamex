@@ -77,6 +77,17 @@ bool ClientReplay::enabled()
 }
 
 //
+// ClientReplay::replayedTic
+//
+// Denotes whether an item was replayed during the last tic.
+//
+
+bool ClientReplay::wasReplayed()
+{
+	return replayed;
+}
+
+//
 // ClientReplay::recordReplayItem
 //
 // Records a netid and gametic for an item that was picked up,
@@ -122,6 +133,23 @@ void ClientReplay::itemReplay()
 
 	player_t& player = consoleplayer();
 
+	weaponstate_t state = P_GetWeaponState(&player);
+
+	if (state == readystate && firstReadyTic <= 0)
+	{
+		firstReadyTic = ::last_svgametic;
+	}
+	else if (state != readystate)
+	{
+		firstReadyTic = 0;
+	}
+
+	if (replayed && --replayDoneCounter <= 0)
+	{
+		replayDoneCounter = TICRATE * 7;
+		replayed = false;
+	}
+
 	std::vector<std::pair<int, uint32_t> >::iterator it = itemReplayStack.begin();
 	while (it != itemReplayStack.end())
 	{
@@ -147,19 +175,22 @@ void ClientReplay::itemReplay()
 			continue;
 		}
 
-		P_GiveSpecial(&player, mo);
-
-		int ticDelta = (::gametic - it->first);
-
-		weaponstate_t state = P_GetWeaponState(&player);
 		std::string weaponname = P_MobjToName(mo->type);
 		weapontype_t weapontype = P_NameToWeapon(weaponname);
+		bool weaponSwitch = P_CheckSwitchWeapon(&player, weapontype);
+
+		P_GiveSpecial(&player, mo);
+
+		replayed = true;
+
+		int ticDelta = (::last_svgametic - firstReadyTic);
+
+		firstReadyTic = 0;
 
 		// Cycle the raise/lower by the tics elapsed since to get us up to current
 		// But have special logic here to not skip ahead,
 		// and do nothing if it wasn't going to switch our weapon anyway.
-		if (P_SpecialIsWeapon(mo) && state == readystate &&
-		    P_CheckSwitchWeapon(&player, weapontype))
+		if (P_SpecialIsWeapon(mo) && state == readystate && weaponSwitch)
 		{
 			for (int i = 0; i < ticDelta; ++i)
 			{
