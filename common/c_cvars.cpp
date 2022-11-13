@@ -612,7 +612,11 @@ static std::string C_GetLatchedValueString(const cvar_t* var)
 		return C_GetValueString(var);
 
 	if (var->flags() & CVAR_NOENABLEDISABLE)
-		return '"' + std::string(var->latched()) + '"';
+	{
+		std::string str = "";
+		StrFormat(str, "\"%s\"", var->latched());
+		return str;
+	}
 
 	if (atof(var->latched()) == 0.0f)
 		return "disabled";
