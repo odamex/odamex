@@ -279,6 +279,8 @@ void ISDL12KeyboardInputDevice::gatherEvents()
 					ev.data2 = ev.data3 = '\r';
 				else if ((sdl_ev.key.keysym.unicode & 0xFF80) == 0)
 					ev.data2 = ev.data3 = sdl_ev.key.keysym.unicode;
+
+				ev.mod = sdl_ev.key.keysym.mod;
 				
 				if (ev.data1)
 					mEvents.push(ev);
