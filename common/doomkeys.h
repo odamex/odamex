@@ -95,6 +95,27 @@
 #define OKEYP_PERIOD         0x40000063
 #define OKEYP_PLUS           0x40000057
 
+// These are keymods that indicate what modifiers are engaged
+// when the key events are made.
+// These also link up to SDL2.0
+#define OMOD_NONE						0x0000
+#define OMOD_LSHIFT					0x0001
+#define	OMOD_RSHIFT					0x0002
+#define OMOD_LCTRL					0x0040
+#define OMOD_RCTRL					0x0080
+#define OMOD_LALT						0x0100
+#define OMOD_RALT						0x0200
+#define OMOD_LGUI						0x0400
+#define OMOD_RGUI						0x0800
+#define OMOD_NUM						0x1000
+#define OMOD_CAPS						0x2000
+#define OMOD_MODE						0x4000
+#define OMOD_SCROLL					0x8000
+#define OMOD_CTRL						(OMOD_LCTRL		| OMOD_RCTRL)
+#define OMOD_SHIFT					(OMOD_LSHIFT	| OMOD_RSHIFT)
+#define OMOD_ALT						(OMOD_LALT		| OMOD_RALT)
+#define OMOD_GUI						(OMOD_LGUI		| OMOD_RGUI)
+#define OMOD_RESERVED				OMOD_SCROLL /* This is for source-level compatibility with SDL 2.0.0. */
 
 // These are custom to Odamex and not SDL 2.0 keycodes
 // Mouse and joystick button presses are mapped to their own keycodes.
