@@ -360,7 +360,7 @@ void ConsoleCommandLine::moveCursorLeftWord()
 
 	const char* str = text.c_str();
 
-	if (str[cursor_position - 1] == ' ')
+	if (cursor_position > 0 && isspace(str[cursor_position - 1]))
 	{
 		spaceWord = true;
 	}
@@ -369,18 +369,18 @@ void ConsoleCommandLine::moveCursorLeftWord()
 	{
 		if (spaceWord)
 		{
-			if (str[cursor_position - 1] != ' ')
+			if (!isspace(str[cursor_position - 1]))
 			{
 				break;
 			}
 		}
 		else
 		{
-			if (firstSpacesCleared && str[cursor_position] == ' ')
+			if (firstSpacesCleared && isspace(str[cursor_position]))
 			{
 				break;
 			}
-			else if (str[cursor_position] != ' ' && !firstSpacesCleared)
+			else if (!isspace(str[cursor_position]) && !firstSpacesCleared)
 			{
 				firstSpacesCleared = true;
 			}
@@ -458,7 +458,7 @@ void ConsoleCommandLine::deleteLeftWord()
 	const char* str = text.c_str();
 
 	// Delete trailing spaces instead of the word
-	if (str[cursor_position - 1] == ' ')
+	if (cursor_position > 0 && isspace(str[cursor_position - 1]))
 	{
 		spaceWord = true;
 	}
@@ -467,18 +467,18 @@ void ConsoleCommandLine::deleteLeftWord()
 	{
 		if (spaceWord)
 		{
-			if (str[cursor_position - 1] != ' ')
+			if (!isspace(str[cursor_position - 1]))
 			{
 				break;
 			}
 		}
 		else
 		{
-			if (firstSpacesCleared && str[cursor_position] == ' ')
+			if (firstSpacesCleared && isspace(str[cursor_position]))
 			{
 				break;
 			}
-			else if (str[cursor_position] != ' ' && !firstSpacesCleared)
+			else if (!isspace(str[cursor_position]) && !firstSpacesCleared)
 			{
 				firstSpacesCleared = true;
 			}
@@ -499,7 +499,7 @@ void ConsoleCommandLine::deleteRightWord()
 
 	const char* str = text.c_str();
 
-	if (str[cursor_position] == ' ')
+	if (cursor_position > 0 && isspace(str[cursor_position]))
 	{
 		spaceWord = true;
 	}
