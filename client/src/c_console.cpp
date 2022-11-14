@@ -499,7 +499,9 @@ void ConsoleCommandLine::deleteRightWord()
 
 	const char* str = text.c_str();
 
-	if (cursor_position > 0 && isspace(str[cursor_position]))
+	if (cursor_position > 0 &&
+			cursor_position < text.length() &&
+			isspace(str[cursor_position]))
 	{
 		spaceWord = true;
 	}
