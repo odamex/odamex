@@ -355,12 +355,15 @@ void ConsoleCommandLine::moveCursorRight()
 
 void ConsoleCommandLine::moveCursorLeftWord()
 {
-	bool firstSpacesCleared = false;
-	bool spaceWord = false;
-
 	const char* str = text.c_str();
 
-	if (cursor_position > 0 && isspace(str[cursor_position - 1]))
+	bool firstSpacesCleared = isspace(str[cursor_position]);
+	bool spaceWord = false;
+
+	if (cursor_position > 0)
+		cursor_position--;
+
+	if (cursor_position > 0 && firstSpacesCleared)
 	{
 		spaceWord = true;
 	}
@@ -376,11 +379,11 @@ void ConsoleCommandLine::moveCursorLeftWord()
 		}
 		else
 		{
-			if (firstSpacesCleared && isspace(str[cursor_position]))
+			if (firstSpacesCleared && isspace(str[cursor_position - 1]))
 			{
 				break;
 			}
-			else if (!isspace(str[cursor_position]) && !firstSpacesCleared)
+			else if (!isspace(str[cursor_position - 1]) && !firstSpacesCleared)
 			{
 				firstSpacesCleared = true;
 			}
