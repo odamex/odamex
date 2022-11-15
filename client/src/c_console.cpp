@@ -361,15 +361,13 @@ void ConsoleCommandLine::moveCursorLeftWord()
 	bool spaceWord = false;
 	
 	if (cursor_position > 0 && isspace(str[cursor_position]))
-			firstSpacesCleared = true;
+		firstSpacesCleared = true;
 
 	if (cursor_position > 0)
 		cursor_position--;
 
 	if (cursor_position > 0 && firstSpacesCleared)
-	{
 		spaceWord = true;
-	}
 
 	while (cursor_position > 0)
 	{
