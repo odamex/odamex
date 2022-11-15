@@ -42,10 +42,14 @@ public:
 	void recordReplayItem(const int tic, const uint32_t netId);
 	void removeReplayItem(const std::pair<int, uint32_t> replayItem);
 	void itemReplay();
+	bool wasReplayed();
 
 private:
   std::vector<std::pair<int, uint32_t> > itemReplayStack;			// Used to replay item pickups for items the clients can't find.
   static const uint32_t MAX_REPLAY_TIC_LENGTH = TICRATE * 3;	// Should be plenty of time.
+  bool replayed = false;
+  uint32_t replayDoneCounter = TICRATE * 7;
+  uint32_t firstReadyTic = 0;
 	// <int, uint32_t> = <gametic, itemid>
 	ClientReplay() { }											// private contsructor (part of Singleton)
 	ClientReplay(const ClientReplay& rhs);	// private copy constructor
