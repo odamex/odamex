@@ -1630,6 +1630,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 			case MOD_RAILGUN:
 				messagename = OB_RAILGUN;
 				break;
+			default:
+				messagename = OB_KILLED; // If someone was killed by someone, show it
+				break;
 			}
 
 			if (!messagename.empty())

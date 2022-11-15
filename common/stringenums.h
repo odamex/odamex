@@ -410,6 +410,7 @@ extern const OString OB_MPBFG_BOOM;
 extern const OString OB_MPBFG_SPLASH;
 extern const OString OB_MPTELEFRAG;
 extern const OString OB_RAILGUN;
+extern const OString OB_KILLED;
 extern const OString OB_DEFAULT;
 extern const OString OB_FRIENDLY1;
 extern const OString OB_FRIENDLY2;
@@ -683,6 +684,6 @@ extern const OString TXT_BUDDHAON;
 extern const OString TXT_BUDDHAOFF;
 
 
-#define STRING_INDEXES_LENGTH 655
+#define STRING_INDEXES_LENGTH 656
 
 extern const OString* const stringIndexes[STRING_INDEXES_LENGTH];

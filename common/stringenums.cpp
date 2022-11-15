@@ -413,6 +413,7 @@ const OString OB_MPBFG_BOOM = "OB_MPBFG_BOOM";
 const OString OB_MPBFG_SPLASH = "OB_MPBFG_SPLASH";
 const OString OB_MPTELEFRAG = "OB_MPTELEFRAG";
 const OString OB_RAILGUN = "OB_RAILGUN";
+const OString OB_KILLED = "OB_KILLED";
 const OString OB_DEFAULT = "OB_DEFAULT";
 const OString OB_FRIENDLY1 = "OB_FRIENDLY1";
 const OString OB_FRIENDLY2 = "OB_FRIENDLY2";
@@ -1072,6 +1073,7 @@ const OString* const stringIndexes[STRING_INDEXES_LENGTH] = {
     &OB_MPBFG_SPLASH,
     &OB_MPTELEFRAG,
     &OB_RAILGUN,
+    &OB_KILLED,
     &OB_DEFAULT,
     &OB_FRIENDLY1,
     &OB_FRIENDLY2,
