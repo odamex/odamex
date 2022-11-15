@@ -357,8 +357,11 @@ void ConsoleCommandLine::moveCursorLeftWord()
 {
 	const char* str = text.c_str();
 
-	bool firstSpacesCleared = isspace(str[cursor_position]);
+	bool firstSpacesCleared = false;
 	bool spaceWord = false;
+	
+	if (cursor_position > 0 && isspace(str[cursor_position]))
+			firstSpacesCleared = true;
 
 	if (cursor_position > 0)
 		cursor_position--;
