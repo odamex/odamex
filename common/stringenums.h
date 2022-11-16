@@ -397,6 +397,10 @@ extern const OString OB_MUMMYLEADER;
 extern const OString OB_SNAKE;
 extern const OString OB_WIZARD;
 extern const OString OB_WIZARDHIT;
+extern const OString OB_GENMONPROJ;
+extern const OString OB_GENMONPEW;
+extern const OString OB_GENMONHIT;
+extern const OString OB_GENMONBOOM;
 extern const OString OB_MPFIST;
 extern const OString OB_MPCHAINSAW;
 extern const OString OB_MPPISTOL;
@@ -684,6 +688,6 @@ extern const OString TXT_BUDDHAON;
 extern const OString TXT_BUDDHAOFF;
 
 
-#define STRING_INDEXES_LENGTH 656
+#define STRING_INDEXES_LENGTH 660
 
 extern const OString* const stringIndexes[STRING_INDEXES_LENGTH];
