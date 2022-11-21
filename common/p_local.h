@@ -74,9 +74,21 @@
 //
 // P_PSPR
 //
+
+enum weaponstate_t
+{
+	upstate,
+	downstate,
+	readystate,
+	atkstate,
+	unknownstate
+};
+
 void P_SetupPsprites (player_t* curplayer);
 void P_MovePsprites (player_t* curplayer);
 void P_DropWeapon (player_t* player);
+
+weaponstate_t P_GetWeaponState(player_t* player);
 
 
 //
@@ -111,6 +123,7 @@ AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
 void	P_SpawnPlayerMissile (AActor* source, mobjtype_t type);
 void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle,
                                fixed_t pitch, fixed_t xyofs, fixed_t zofs);
+bool P_CheckSwitchWeapon(player_t* player, weapontype_t weapon);
 
 void	P_RailAttack (AActor *source, int damage, int offset);	// [RH] Shoot a railgun
 bool	P_HitFloor (AActor *thing);
@@ -272,6 +285,7 @@ v3fixed_t P_LinePlaneIntersection(const plane_t *plane, const v3fixed_t &lineorg
 
 
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost);
+bool P_SpecialIsWeapon(AActor* special);
 
 bool	P_ChangeSector (sector_t* sector, int crunch);
 

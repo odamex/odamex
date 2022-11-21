@@ -680,17 +680,8 @@ static BOOL PIT_CheckThing (AActor *thing)
 						mod = MOD_BFG_BOOM;
 						break;
 					// [AM] Monster fireballs get a special MOD.
-					case MT_ARACHPLAZ:
-					case MT_TROOPSHOT:
-					case MT_HEADSHOT:
-					case MT_BRUISERSHOT:
-					case MT_TRACER:
-					case MT_FATSHOT:
-					case MT_SPAWNSHOT:
-						mod = MOD_FIREBALL;
-						break;
 					default:
-						mod = MOD_UNKNOWN;
+					    mod = MOD_FIREBALL;
 						break;
 				}
 				P_DamageMobj (thing, tmthing, tmthing->target, damage, mod);
