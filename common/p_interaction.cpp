@@ -1505,6 +1505,7 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 					messagename = OB_SKULL;
 					break;
 				default:
+					messagename = OB_GENMONHIT;
 					break;
 				}
 			}
@@ -1555,6 +1556,18 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 					messagename = OB_WOLFSS;
 					break;
 				default:
+					if (mod == MOD_HITSCAN)
+					{
+						messagename = OB_GENMONPEW;
+					}
+					else if (mod == MOD_ROCKET || mod == MOD_R_SPLASH)
+					{
+						messagename = OB_GENMONBOOM;
+					}
+					else
+					{
+						messagename = OB_GENMONPROJ;
+					}
 					break;
 				}
 			}
@@ -1629,6 +1642,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 				break;
 			case MOD_RAILGUN:
 				messagename = OB_RAILGUN;
+				break;
+			default:
+				messagename = OB_KILLED; // If someone was killed by someone, show it
 				break;
 			}
 
