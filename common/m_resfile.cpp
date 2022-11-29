@@ -401,7 +401,8 @@ std::vector<scannedPWAD_t> M_ScanPWADs()
 			{
 				OMD5Hash hash = W_MD5(dir + PATHSEP + filename);
 				OWantFile::makeWithHash(file, filename, OFILE_WAD, hash);
-			} else
+			}
+			else
 			{
 				OWantFile::make(file, filename, OFILE_WAD);
 			}
