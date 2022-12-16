@@ -111,6 +111,9 @@ short				skullAnimCounter;	// skull animation counter
 short				whichSkull; 		// which skull to draw
 bool				drawSkull;			// [RH] don't always draw skull
 
+// hack for PlayerSetup
+bool				F4menu;
+
 // graphic name of skulls
 char				skullName[2][9] = {"M_SKULL1", "M_SKULL2"};
 
@@ -507,6 +510,7 @@ BEGIN_COMMAND (menu_main)
     S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_SetupNextMenu (&MainDef);
+	F4menu = false;
 }
 END_COMMAND (menu_main)
 
@@ -545,6 +549,7 @@ BEGIN_COMMAND (menu_options)
     S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
     M_StartControlPanel ();
 	M_Options(0);
+	F4menu = true;
 }
 END_COMMAND (menu_options)
 
@@ -2141,7 +2146,20 @@ void M_PopMenuStack (void)
 		S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	} else {
 		M_ClearMenus ();
-		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
+		if (currentMenu == &PSetupDef)			// hack for PlayerSetup
+		{
+			S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
+			M_StartControlPanel();
+			if (!F4menu)
+			{
+				M_SetupNextMenu(&MainDef);
+			}
+			M_Options(0);
+		}
+		else
+		{
+			S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
+		}
 	}
 }
 
