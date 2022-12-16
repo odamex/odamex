@@ -30,20 +30,20 @@
 //
 
 // Called by main loop.
-BOOL F_Responder (event_t* ev);
+BOOL F_Responder(event_t* ev);
 
 // Called by main loop.
-void F_Ticker (void);
+void F_Ticker();
 
 // Called by main loop.
-void F_Drawer (void);
+void F_Drawer();
 
 struct finale_options_t
 {
-	const char* music;
-	const char* flat;
+	OLumpName music;
+	OLumpName flat;
 	const char* text;
-	const char* pic;
+	OLumpName pic;
 };
 
 void F_StartFinale(finale_options_t& options);

@@ -42,45 +42,44 @@ typedef struct
 {
 	byte offset;
 	byte size;
-	char tl[8];
-	char t[8];
-	char tr[8];
-	char l[8];
-	char r[8];
-	char bl[8];
-	char b[8];
-	char br[8];
+	OLumpName tl;
+	OLumpName t;
+	OLumpName tr;
+	OLumpName l;
+	OLumpName r;
+	OLumpName bl;
+	OLumpName b;
+	OLumpName br;
 } gameborder_t;
 
-typedef struct
+typedef struct gameinfo_s
 {
 	int flags;
 	OLumpName titlePage;
-	char creditPage1[8];
-	char creditPage2[8];
+	OLumpName creditPages[2];
 	OLumpName titleMusic;
-	float titleTime;
-	float advisoryTime;
-	float pageTime;
+	int titleTime;
+	int advisoryTime;
+	bool noLoopFinaleMusic; 
+	int pageTime;
 	char chatSound[MAX_SNDNAME + 1];
 	OLumpName finaleMusic;
 	OLumpName finaleFlat;
-	char finalePage1[8];
-	char finalePage2[8];
-	char finalePage3[8];
-	union
-	{
-		char infoPage[3][8];
-		struct
-		{
-			char basePage[8];
-			int numPages;
-		} indexed;
-	} info;
+	OLumpName finalePage[3];
+	OLumpName infoPage[3];
 	char quitSound[MAX_SNDNAME + 1];
 	int maxSwitch;
-	char borderFlat[8];
-	gameborder_t *border;
+	OLumpName borderFlat;
+	gameborder_t border;
+	bool intermissionCounter; 
+	OLumpName intermissionMusic;
+	int defKickback;
+	OLumpName endoom;
+	OLumpName pauseSign;
+	float gibFactor;
+	int telefogHeight;
+	int textScreenX;
+	int textScreenY;
 
 	// automap features
 	am_default_colors_t defaultAutomapColors;
@@ -91,7 +90,38 @@ typedef struct
 	std::vector<mline_t> cheatKey;
 	std::vector<mline_t> easyKey;
 
-	char titleString[64];
+	std::string titleString;
+
+	gameinfo_s()
+		: flags(0)
+		, titlePage("")
+		, creditPages()
+		, titleMusic("")
+		, titleTime(0)
+		, advisoryTime(0)
+		, noLoopFinaleMusic(false)
+		, pageTime(0)
+		, chatSound()
+		, finaleMusic("")
+		, finaleFlat("")
+		, finalePage()
+		, infoPage()
+		, quitSound()
+		, maxSwitch(1)
+		, borderFlat("")
+		, border()
+		, intermissionCounter(true)
+		, intermissionMusic("")
+		, defKickback(100)
+		, endoom("")
+		, pauseSign("")
+		, gibFactor(1.f)
+		, telefogHeight(0)
+		, textScreenX(0)
+		, textScreenY(0)
+		, titleString("Unknown IWAD")
+	{}
+	
 } gameinfo_t;
 
 extern gameinfo_t gameinfo;

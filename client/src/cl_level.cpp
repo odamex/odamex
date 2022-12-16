@@ -681,15 +681,15 @@ void G_WorldDone()
 	
 	if (!level.interbackdrop.empty())
 	{
-		options.flat = level.interbackdrop.c_str();
+		options.flat = level.interbackdrop;
 	}
 	else if (!thiscluster.finalepic.empty())
 	{
-		options.pic = &thiscluster.finalepic[0];
+		options.pic = thiscluster.finalepic;
 	}
 	else
 	{
-		options.flat = &thiscluster.finaleflat[0];
+		options.flat = thiscluster.finaleflat;
 	}
 	
 	if (secretexit)
@@ -723,14 +723,14 @@ void G_WorldDone()
 			if (nextcluster.entertext)
 			{
 				// All of our options need to be from the next cluster.
-				options.music = nextcluster.messagemusic.c_str();
+				options.music = nextcluster.messagemusic;
 				if (!nextcluster.finalepic.empty())
 				{
-					options.pic = &nextcluster.finalepic[0];
+					options.pic = nextcluster.finalepic;
 				}
 				else
 				{
-					options.flat = &nextcluster.finaleflat[0];
+					options.flat = nextcluster.finaleflat;
 				}
 				options.text = nextcluster.entertext;
 

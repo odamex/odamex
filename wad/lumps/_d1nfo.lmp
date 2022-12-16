@@ -1,5 +1,23 @@
 // MAPINFO for Doom 1 (Shareware, Registered, and Retail)
 
+gameinfo
+{
+	border = DoomBorder
+	borderflat = "FLOOR7_2"
+	chatsound = "misc/chat2"
+	creditpage = "CREDIT"
+	pagetime = 5
+	intermissionmusic = "$MUSIC_INTER"
+	quitsound = "menu/quit1"
+	finaleflat = "FLOOR4_8"
+	finalemusic = "$MUSIC_VICTOR"
+	finalepage = "CREDIT", "VICTORY2", "ENDPIC"
+	infopage = "HELP1", "CREDIT"
+	titlemusic = "$MUSIC_INTRO"
+	titlepage = "TITLEPIC"
+	titletime = 5
+}
+
 clearepisodes
 episode e1m1
 {

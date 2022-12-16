@@ -1,0 +1,6 @@
+// MAPINFO for Heretic (Shareware)
+
+gameinfo
+{
+	borderflat = "FLOOR04"
+}

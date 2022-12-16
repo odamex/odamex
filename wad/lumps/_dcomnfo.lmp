@@ -1,8 +1,28 @@
 gameinfo
 {
-	MapArrow = "DOOMARRO", "DDTARROW"
-	CheatKey = "CHEATKEY"
-	EasyKey = "EASYKEY"
+	advisorytime = 0
+	border = DoomBorder
+	borderflat = "GRNROCK"
+	chatsound = "misc/chat"
+	creditpage = "CREDIT"
+	pagetime = 5
+	intermissioncounter = true
+	intermissionmusic = "$MUSIC_DM2INT"
+	quitsound = "menu/quit2"
+	finaleflat = "SLIME16"
+	finalemusic = "$MUSIC_READ_M"
+	finalepage = "CREDIT"
+	infopage = "HELP", "CREDIT"
+	titlemusic = "$MUSIC_DM2TTL"
+	titlepage = "TITLEPIC"
+	titletime = 11
+	endoom = "ENDOOM"
+	pausesign = "M_PAUSE"
+	textscreenx = 10
+	textscreeny = 10
+	maparrow = "DOOMARRO", "DDTARROW"
+	cheatkey = "CHEATKEY"
+	easykey = "EASYKEY"
 }
 
 skill baby
