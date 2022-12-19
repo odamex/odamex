@@ -143,6 +143,7 @@ EXTERN_CVAR (m_side)
 EXTERN_CVAR (m_forward)
 
 // [Ralphis - Menu] Sound Menu
+EXTERN_CVAR (snd_midireset)
 EXTERN_CVAR (snd_musicsystem)
 EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_announcervolume)
@@ -539,6 +540,13 @@ static value_t MusSys[] = {
 	{ MS_NONE,		"No Music"}
 };
 
+static value_t MidiReset[] = {
+	{ 0.0,			"None" },
+	{ 1.0,			"GM" },
+	{ 2.0,			"GS" },
+	{ 3.0,			"XG" }
+};
+
 static value_t VoxType[] = {
 	{ 0.0,			"Off" },
 	{ 1.0,			"Team Colors" },
@@ -563,7 +571,9 @@ static menuitem_t SoundItems[] = {
 	{ slider    ,	"Announcer Volume"             		, {&snd_announcervolume},	{0.0},      {1.0},	    {0.015625},      {NULL} },
 	{ discrete  ,   "Stereo Switch"                     , {&snd_crossover},	    {2.0},			{0.0},		{0.0},		{OnOff} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ yellowtext ,   "Music Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
+	{ discrete	,	"MIDI Reset"						, {&snd_midireset},		{4.0},			{0.0},		{0.0},		{MidiReset} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ yellowtext ,   "Sound Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete  ,   "Game SFX"                          , {&snd_gamesfx},		{2.0},			{0.0},		{0.0},		{OnOff} },

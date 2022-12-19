@@ -1232,7 +1232,9 @@ void M_QuitResponse(int ch)
 
 	// Stop the music so we do not get stuck notes
 	I_StopSong();
-	
+	if (snd_musicsystem.asInt() == MS_PORTMIDI)
+		I_ShutdownMusic();
+
 	if (!multiplayer)
 	{
 		if (gameinfo.quitSound[0])
