@@ -23,3 +23,6 @@
 	url = https://github.com/open-source-parsers/jsoncpp.git
 	branch = 0.y.z
 	ignore = dirty
+[submodule "libraries/portmidi"]
+	path = libraries/portmidi
+	url = https://github.com/PortMidi/portmidi.git
