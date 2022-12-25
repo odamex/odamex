@@ -60,10 +60,6 @@ class PortMidiMusicSystem : public MidiMusicSystem
 	float m_volumeScale;
 	bool m_isInitialized;
 
-#ifdef _WIN32
-	bool m_isMsGsSynth;
-#endif
-
 	PmDeviceID m_outputDevice;
 	PmStream* m_stream;
 
