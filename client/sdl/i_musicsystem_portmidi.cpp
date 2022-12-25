@@ -65,8 +65,24 @@ PortMidiMusicSystem::PortMidiMusicSystem()
 		return;
 	}
 
-	m_outputDevice = Pm_GetDefaultOutputDeviceID();
 	std::string prefdevicename(snd_musicdevice.cstring());
+
+#ifdef _WIN32
+	// Bypass the MIDI mapper and start with the first non-virtual device
+	const char mmname[] = "Microsoft MIDI Mapper";
+	for (int i = 0; i < Pm_CountDevices(); i++)
+	{
+		info = Pm_GetDeviceInfo(i);
+		if (!info || !info->output || _strnicmp(mmname, info->name, sizeof(mmname)) == 0)
+			continue;
+
+		m_outputDevice = i;
+		break;
+	}
+#else
+	// Start with the default device
+	m_outputDevice = Pm_GetDefaultOutputDeviceID();
+#endif
 
 	// List PortMidi devices
 	for (int i = 0; i < Pm_CountDevices(); i++)
@@ -99,6 +115,14 @@ PortMidiMusicSystem::PortMidiMusicSystem()
 
 	if (!m_stream)
 		return;
+
+	info = Pm_GetDeviceInfo(m_outputDevice);
+
+#ifdef _WIN32
+	// Is this device Microsoft GS Wavetable Synth?
+	const char msname[] = "Microsoft GS Wavetable";
+	m_isMsGsSynth = (_strnicmp(msname, info->name, sizeof(msname) - 1) == 0);
+#endif
 
 	// Initialize tracked channel volumes
 	for (int i = 0; i < NUM_CHANNELS; i++)
@@ -153,11 +177,19 @@ void PortMidiMusicSystem::writeSysEx(int time, const byte *data, size_t length)
 	if (length > PM_DEFAULT_SYSEX_BUFFER_SIZE - 1)
 		return;
 
+	bool isSysExReset = _IsSysExReset(data, length);
+
+#ifdef _WIN32
+	// Ignore SysEx reset from MIDI file for Microsoft GS Wavetable Synth
+	if (isSysExReset && m_isMsGsSynth)
+		return;
+#endif
+
 	// Copy data to buffer due to PortMidi not using a const pointer
 	memcpy(&sysex_buffer[1], data, length);
 	Pm_WriteSysEx(m_stream, time, sysex_buffer);
 
-	if (_IsSysExReset(data, length))
+	if (isSysExReset)
 	{
 		// SysEx reset also resets volume. Take the default channel volumes
 		// and scale them by the user's volume slider
