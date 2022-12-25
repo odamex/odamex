@@ -648,13 +648,16 @@ static char *C_GetDefaultMusicSystem()
 	return str;
 }
 
+CVAR(			snd_midisysex, "0", "Read SysEx from MIDI files (0: Disable, 1: Enable)",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(			snd_midifallback, "1", "MIDI instrument fallback (0: Disable, 1: Enable)",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE(		snd_mididelay, "0", "MIDI delay after reset (0 to 2000 milliseconds)",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2000.0f)
 
-CVAR_RANGE(		snd_midireset, "2", "MIDI reset type (0: None, 1: GM, 2: GS, 3: XG)",
+CVAR_RANGE(		snd_midireset, "1", "MIDI reset type (0: None, 1: GM, 2: GS, 3: XG)",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 
 CVAR_FUNC_DECL(	snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem preference",

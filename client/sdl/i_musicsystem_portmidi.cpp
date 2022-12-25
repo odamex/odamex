@@ -36,6 +36,7 @@
 EXTERN_CVAR(snd_musicdevice)
 EXTERN_CVAR(snd_midireset)
 EXTERN_CVAR(snd_mididelay)
+EXTERN_CVAR(snd_midisysex)
 
 // ============================================================================
 // Partially based on an implementation from prboom-plus by Nicholai Main (Natt).
@@ -149,6 +150,9 @@ void PortMidiMusicSystem::writeChannel(int time, byte channel, byte status, byte
 
 void PortMidiMusicSystem::writeSysEx(int time, const byte *data, size_t length)
 {
+	if (!snd_midisysex)
+		return;
+
 	// Ignore messages that are too long
 	if (length > PM_DEFAULT_SYSEX_BUFFER_SIZE - 1)
 		return;
