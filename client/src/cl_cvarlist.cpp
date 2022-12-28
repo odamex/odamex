@@ -386,6 +386,12 @@ CVAR_FUNC_DECL(		cl_name, "Player", "",
 CVAR(				cl_color, "40 cf 00", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(				cl_customcolor, "40 cf 00", "",// Acts 19 quiz
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_colorpreset, "custom", "",// Acts 19 quiz
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE)
+
 CVAR(				cl_gender, "male", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 

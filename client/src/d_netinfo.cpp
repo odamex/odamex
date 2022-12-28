@@ -118,6 +118,22 @@ team_t D_TeamByName (const char *team)
 	return TEAM_NONE;
 }
 
+colorpreset_t D_ColorPreset (const char *colorpreset)// Acts 19 quiz
+{
+	if (!stricmp(colorpreset, "blue"))
+		return COLOR_BLUE;
+	else if (!stricmp(colorpreset, "gray"))
+		return COLOR_GRAY;
+	else if (!stricmp(colorpreset, "green"))
+		return COLOR_GREEN;
+	else if (!stricmp(colorpreset, "brown"))
+		return COLOR_BROWN;
+	else if (!stricmp(colorpreset, "red"))
+		return COLOR_RED;
+	else
+		return COLOR_CUSTOM;
+}
+
 
 static cvar_t *weaponpref_cvar_map[NUMWEAPONS] = {
 	&cl_weaponpref_fst, &cl_weaponpref_pis, &cl_weaponpref_sg, &cl_weaponpref_cg,
