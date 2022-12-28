@@ -408,6 +408,8 @@ void AActor::Destroy ()
 {
 	SV_SendDestroyActor(this);
 
+	actor_by_netid.erase(netid);
+
 	// Remove from health pool.
 	if (!::savegamerestore)
 		P_RemoveHealthPool(this);
@@ -2325,6 +2327,14 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
     th->target = source->ptr();	// where it came from
     an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
 
+	// Horde boss? Make their projectiles look bossy
+	if (source->oflags & MFO_BOSSPOOL)
+	{
+		th->oflags |= MFO_FULLBRIGHT;
+		th->effects = FX_YELLOWFOUNTAIN;
+		th->translation = translationref_t(&bosstable[0]);
+	}
+
     // fuzzy player
     if (dest_flags & MF_SHADOW)
 		an += P_RandomDiff()<<20;
@@ -2621,17 +2631,8 @@ void P_ExplodeMissile (AActor* mo)
 			mod = MOD_BFG_BOOM;
 			break;
 		// [AM] Monster fireballs get a special MOD.
-		case MT_ARACHPLAZ:
-		case MT_TROOPSHOT:
-		case MT_HEADSHOT:
-		case MT_BRUISERSHOT:
-		case MT_TRACER:
-		case MT_FATSHOT:
-		case MT_SPAWNSHOT:
-			mod = MOD_FIREBALL;
-			break;
 		default:
-			mod = MOD_UNKNOWN;
+			mod = MOD_FIREBALL;
 			break;
 		}
 

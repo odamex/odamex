@@ -70,6 +70,7 @@
 OResFiles wadfiles;
 OResFiles patchfiles;
 OWantFiles missingfiles;
+bool missingCommercialIWAD = false;
 
 bool lastWadRebootSuccess = true;
 extern bool step_mode;
@@ -167,7 +168,9 @@ static registry_value_t steam_install_location =
 static const char* steam_install_subdirs[] =
 {
 	"steamapps\\common\\doom 2\\base",
+	"steamapps\\common\\Doom 2\\masterbase",
 	"steamapps\\common\\final doom\\base",
+	"steamapps\\common\\Doom 2\\finaldoombase",
 	"steamapps\\common\\ultimate doom\\base",
 	"steamapps\\common\\DOOM 3 BFG Edition\\base\\wads",
 	"steamapps\\common\\master levels of doom\\master\\wads", //Let Odamex find the Master Levels pwads too
@@ -548,6 +551,85 @@ static void LoadResolvedFiles(const OResFiles& newwadfiles,
 	D_LoadResolvedPatches();
 }
 
+/**
+ * @brief Print a warning that occurrs when the user has an IWAD that's a
+ *        different version than the one we want.
+ * 
+ * @param wanted The IWAD that we wanted.
+ * @return True if we emitted an commercial IWAD warning.
+ */
+static bool CommercialIWADWarning(const OWantFile& wanted)
+{
+	const OMD5Hash& hash = wanted.getWantedMD5();
+	if (hash.empty())
+	{
+		// No MD5 means there is no error we can reasonably display.
+		return false;
+	}
+
+	const fileIdentifier_t* info = W_GameInfo(wanted.getWantedMD5());
+	if (!info)
+	{
+		// No GameInfo means that we're not dealing with a WAD we recognize.
+		return false;
+	}
+
+	if (!info->mIsCommercial)
+	{
+		// Not commercial means that we should treat the IWAD like any other
+		// WAD, with no special callout.
+		return false;
+	}
+
+	Printf("Odamex attempted to load\n> %s.\n\n", info->mIdName.c_str());
+
+	// Try to find an IWAD file with a matching name in the user's directories.
+	OWantFile sameNameWant;
+	OWantFile::make(sameNameWant, wanted.getBasename(), OFILE_WAD);
+	OResFile sameNameRes;
+	const bool resolved = M_ResolveWantedFile(sameNameRes, sameNameWant);
+	if (!resolved)
+	{
+		Printf(
+		    "Odamex could not find the data file for this game in any of the locations "
+		    "it searches for WAD files.  If you know you have %s on your hard drive, you "
+		    "can add that path to the 'waddirs' cvar so Odamex can find it.\n\n",
+		    wanted.getBasename().c_str());
+	}
+	else
+	{
+		const fileIdentifier_t* curInfo = W_GameInfo(sameNameRes.getMD5());
+		if (curInfo)
+		{
+			// Found a file, but it's the wrong version.
+			Printf("Odamex found a possible data file, but it's the wrong version.\n> "
+			       "%s\n> %s\n\n",
+			       curInfo->mIdName.c_str(), sameNameRes.getFullpath().c_str());
+		}
+		else
+		{
+			// Found a file, but it's not recognized at all.
+			Printf("Odamex found a possible data file, but Odamex does not recognize "
+			       "it.\n> %s\n\n",
+			       sameNameRes.getFullpath().c_str());
+		}
+
+#ifdef _WIN32
+		Printf("You can use a tool such as Omniscient "
+		       "<https://drinkybird.net/doom/omniscient> to patch your way to the "
+		       "correct version of the data file.\n");
+#else
+		Printf("You can use a tool such as xdelta3 <http://xdelta.org/> paried with IWAD "
+		       "patches located on Github <https://github.com/Doom-Utils/iwad-patches> "
+		       "to patch your way to the correct version of the data file.\n");
+#endif
+	}
+
+	Printf("If you do not own this game, consider purchasing it on Steam, GOG, or other "
+	       "digital storefront.\n\n");
+	return true;
+}
+
 //
 // D_LoadResourceFiles
 //
@@ -562,6 +644,7 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 	OResFile next_iwad;
 
 	::missingfiles.clear();
+	::missingCommercialIWAD = false;
 
 	// Resolve wanted wads.
 	OResFiles resolved_wads;
@@ -572,6 +655,13 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 		OResFile file;
 		if (!M_ResolveWantedFile(file, *it))
 		{
+			// Give more useful information when trying to load an IWAD.
+			const bool isCommercial = CommercialIWADWarning(*it);
+			if (isCommercial && !::missingCommercialIWAD)
+			{
+				::missingCommercialIWAD = true;
+			}
+
 			::missingfiles.push_back(*it);
 			Printf(PRINT_WARNING, "Could not resolve resource file \"%s\".",
 			       it->getWantedPath().c_str());

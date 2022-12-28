@@ -49,11 +49,41 @@ enum triggertype
 	PushMany
 };
 
-// Migrate some non-hexen data to hexen format
+// Migrate some non-hexen data to hexen format, and other misc flags.
 void P_MigrateActorInfo(void)
 {
 	int i;
 	static bool migrated = false;
+
+	// Set MF2_PASSMOBJ on dehacked monsters
+	// because we don't expose ZDoom's Bits2 BEX extension (yet...)
+	// which is the normal way MF2_PASSMOBJ gets set.
+	for (i = 0; i < NUMMOBJTYPES; ++i)
+	{
+		if (mobjinfo[i].flags & MF_COUNTKILL)
+		{
+			if (P_AllowPassover())
+			{
+				if (mobjinfo[i].flags & MF_COUNTKILL)
+					mobjinfo[i].flags2 |= MF2_PASSMOBJ;
+			}
+			else
+			{
+				if (mobjinfo[i].flags & MF_COUNTKILL)
+					mobjinfo[i].flags2 &= ~MF2_PASSMOBJ;
+			}
+		}
+	}
+
+	// Don't forget about lost souls!
+	if (P_AllowPassover())
+	{
+		mobjinfo[MT_SKULL].flags2 |= MF2_PASSMOBJ;
+	}
+	else
+	{
+		mobjinfo[MT_SKULL].flags2 &= ~MF2_PASSMOBJ;
+	}
 
 	if (map_format.getZDoom() && !migrated)
 	{
@@ -145,7 +175,7 @@ void MapFormat::spawn_extra(int i)
 		P_SpawnCompatibleExtra(i);
 }
 
-lineresult_s MapFormat::cross_special_line(line_t* line, int side, AActor* thing,
+bool MapFormat::cross_special_line(line_t* line, int side, AActor* thing,
                                            bool bossaction)
 {
 	if (map_format.zdoom)

@@ -115,40 +115,44 @@ class MidiMusicSystem : public MusicSystem
 	virtual void stopSong();
 	virtual void pauseSong();
 	virtual void resumeSong();
+	virtual void restartSong();
 
 	virtual void playChunk();
+	virtual void playEvent(int time, MidiEvent *event);
 	virtual void setVolume(float volume);
 
 	// Only plays midi-type music
 	virtual bool isMusCapable() const { return true; }
 	virtual bool isMidiCapable() const { return true; }
 
-	virtual void playEvent(MidiEvent* event, int time = 0) = 0;
+	virtual void writeVolume(int time, byte channel, byte volume) = 0;
+	virtual void writeControl(int time, byte channel, byte control, byte value) = 0;
+	virtual void writeChannel(int time, byte channel, byte status, byte param1, byte param2 = 0) = 0;
+	virtual void writeSysEx(int time, const byte *data, size_t length) = 0;
+	virtual void allNotesOff() = 0;
+	virtual void allSoundOff() = 0;
 
   protected:
-	void _StopSong();
+	static const int NUM_CHANNELS = 16;
+	bool m_useResetDelay;
 
-	virtual void _AllNotesOff();
-
-	int _GetNumChannels() const { return NUM_CHANNELS; }
-	void _SetChannelVolume(int channel, int volume);
-	void _RefreshVolume();
+	void _InitFallback();
+	void _EnableFallback();
+	void _DisableFallback();
 
 	unsigned int _GetLastEventTime() const { return m_lastEventTime; }
 
-	void _InitializePlayback();
-
-	float _GetScaledVolume();
-
   private:
-	static const int NUM_CHANNELS = 16;
 	MidiSong* m_midiSong;
 	MidiSong::const_iterator m_songItr;
 	bool m_loop;
 	int m_timeDivision;
+	double msperclock;
+	bool m_useFallback;
+	midi_fallback_t m_fallback;
 
 	unsigned int m_lastEventTime;
 	int m_prevClockTime;
 
-	byte m_channelVolume[NUM_CHANNELS];
+	void _ResetFallback();
 };

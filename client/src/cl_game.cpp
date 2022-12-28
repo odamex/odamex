@@ -58,6 +58,7 @@
 #include "g_game.h"
 #include "cl_main.h"
 #include "cl_demo.h"
+#include "cl_replay.h"
 #include "gi.h"
 #include "hu_mousegraph.h"
 #include "g_spawninv.h"
@@ -1110,6 +1111,9 @@ void G_Ticker (void)
 
 			CL_SimulateWorld();
 			CL_PredictWorld();
+
+			// Replay item pickups if the items arrived now.
+			ClientReplay::getInstance().itemReplay();
 		}
 		P_Ticker ();
 		ST_Ticker ();

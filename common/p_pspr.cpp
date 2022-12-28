@@ -56,6 +56,7 @@ EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowpwo)
 EXTERN_CVAR(co_fineautoaim)
+EXTERN_CVAR(cl_centerbobonfire)
 
 const char *weaponnames[] =
 {
@@ -70,16 +71,6 @@ const char *weaponnames[] =
 	"Super Shotgun"
 };
 
-
-enum weaponstate_t
-{
-	upstate,
-	downstate,
-	readystate,
-	atkstate,
-	unknownstate
-};
-
 void A_WeaponReady(AActor* mo);
 void A_Raise(AActor* mo);
 void A_Lower(AActor* mo);
@@ -91,7 +82,7 @@ fixed_t P_BulletSlope(AActor* mo);
 //
 // Returns which state the player's ready weapon is in.
 //
-static weaponstate_t P_GetWeaponState(player_t* player)
+weaponstate_t P_GetWeaponState(player_t* player)
 {
 	struct pspdef_s* psp = &player->psprites[player->psprnum];
 
@@ -132,6 +123,11 @@ fixed_t P_CalculateWeaponBobX(player_t* player, float scale_amount)
 		return center_sx + scale_amount * FixedMul(player->bob, finecosine[angle_index]);
 	}
 
+	if (weaponstate == atkstate && cl_centerbobonfire)
+	{
+		return FRACUNIT;
+	}
+
 	// scale the weapon's distance away from center
 	return center_sx + scale_amount * (psp->sx - center_sx);
 }
@@ -161,6 +157,11 @@ fixed_t P_CalculateWeaponBobY(player_t* player, float scale_amount)
 	{
 		unsigned int angle_index = ((128 * level.time) & FINEMASK) & (FINEANGLES / 2 - 1);
 		return center_sy + scale_amount * FixedMul(player->bob, finesine[angle_index]);
+	}
+
+	if (weaponstate == atkstate && cl_centerbobonfire)
+	{
+		return psp->sy;
 	}
 
 	// scale the weapon's distance away from center

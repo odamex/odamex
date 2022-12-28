@@ -211,6 +211,9 @@ void STACK_ARGS D_Shutdown()
 
 	// reset the Zone memory manager
 	Z_Close();
+
+	// [AM] Level is now invalid due to torching zone memory.
+	g_ValidLevel = false;
 	
 	// [AM] All of our dyncolormaps are freed, tidy up so we
 	//      don't follow wild pointers.

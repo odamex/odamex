@@ -33,6 +33,8 @@
 #include "mus2midi.h"
 
 extern MusicSystem* musicsystem;
+EXTERN_CVAR(snd_mididelay)
+EXTERN_CVAR(snd_midifallback)
 
 //
 // I_CalculateMsPerMidiClock()
@@ -178,30 +180,39 @@ static void I_UnregisterMidiSong(MidiSong* midisong)
 // ============================================================================
 
 MidiMusicSystem::MidiMusicSystem()
-    : MusicSystem(), m_midiSong(NULL), m_songItr(), m_loop(false), m_timeDivision(96),
-      m_lastEventTime(0), m_prevClockTime(0), m_channelVolume()
+	: MusicSystem(), m_useResetDelay(false), m_midiSong(NULL), m_songItr(),
+	  m_loop(false), m_timeDivision(96), msperclock(0.0), m_useFallback(false),
+	  m_fallback(), m_lastEventTime(0), m_prevClockTime(0)
 {
 }
 
-MidiMusicSystem::~MidiMusicSystem()
-{
-	_StopSong();
+MidiMusicSystem::~MidiMusicSystem() { }
 
-	I_UnregisterMidiSong(m_midiSong);
+void MidiMusicSystem::_InitFallback()
+{
+	I_MidiInitFallback();
+	m_fallback.type = MIDI_FALLBACK_NONE;
+	m_fallback.value = 0;
 }
 
-void MidiMusicSystem::_AllNotesOff()
+void MidiMusicSystem::_ResetFallback()
 {
-	for (int i = 0; i < _GetNumChannels(); i++)
-	{
-		MidiControllerEvent event_noteoff(0, MIDI_CONTROLLER_ALL_NOTES_OFF, i);
-		playEvent(&event_noteoff);
-		MidiControllerEvent event_reset(0, MIDI_CONTROLLER_RESET_ALL, i);
-		playEvent(&event_reset);
-	}
+	I_MidiResetFallback();
+	m_fallback.type = MIDI_FALLBACK_NONE;
+	m_fallback.value = 0;
 }
 
-void MidiMusicSystem::_StopSong() { }
+void MidiMusicSystem::_EnableFallback()
+{
+	_ResetFallback();
+	m_useFallback = (snd_midifallback.asInt() == 1);
+}
+
+void MidiMusicSystem::_DisableFallback()
+{
+	_ResetFallback();
+	m_useFallback = false;
+}
 
 void MidiMusicSystem::startSong(byte* data, size_t length, bool loop)
 {
@@ -213,8 +224,6 @@ void MidiMusicSystem::startSong(byte* data, size_t length, bool loop)
 	if (!data || !length)
 		return;
 
-	m_loop = loop;
-
 	m_midiSong = I_RegisterMidiSong(data, length);
 	if (!m_midiSong)
 	{
@@ -222,116 +231,131 @@ void MidiMusicSystem::startSong(byte* data, size_t length, bool loop)
 		return;
 	}
 
+	setTempo(120.0f);
+	msperclock = I_CalculateMsPerMidiClock(m_midiSong->getTimeDivision(), getTempo());
+
+	m_loop = loop;
+	m_songItr = m_midiSong->begin();
+	m_prevClockTime = 0;
+	m_lastEventTime = I_MSTime();
+
 	MusicSystem::startSong(data, length, loop);
-	_InitializePlayback();
 }
 
 void MidiMusicSystem::stopSong()
 {
 	I_UnregisterMidiSong(m_midiSong);
 	m_midiSong = NULL;
-
-	_AllNotesOff();
 	MusicSystem::stopSong();
 }
 
 void MidiMusicSystem::pauseSong()
 {
-	_AllNotesOff();
-
 	MusicSystem::pauseSong();
 }
 
 void MidiMusicSystem::resumeSong()
 {
 	MusicSystem::resumeSong();
-
 	m_lastEventTime = I_MSTime();
-
-	MidiEvent* event = *m_songItr;
-	if (event)
-		m_prevClockTime = event->getMidiClockTime();
 }
 
-//
-// MidiMusicSystem::setVolume
-//
-// Sanity checks the volume parameter and then inserts a midi controller
-// event to change the volume for all of the channels.
-//
 void MidiMusicSystem::setVolume(float volume)
 {
 	MusicSystem::setVolume(volume);
-	_RefreshVolume();
 }
 
-//
-// MidiMusicSystem::_GetScaledVolume
-//
-// Returns the volume scaled logrithmically so that the for each unit the volume
-// increases, the perceived volume increases linearly.
-//
-float MidiMusicSystem::_GetScaledVolume()
+void MidiMusicSystem::restartSong()
 {
-	// [SL] mimic the volume curve of midiOutSetVolume, as used by SDL_Mixer
-	return pow(MusicSystem::getVolume(), 0.5f);
-}
-
-//
-// _SetChannelVolume()
-//
-// Updates the array that tracks midi volume events.  Note that channel
-// is 0-indexed (0 - 15).
-//
-void MidiMusicSystem::_SetChannelVolume(int channel, int volume)
-{
-	if (channel >= 0 && channel < _GetNumChannels())
-		m_channelVolume[channel] = clamp(volume, 0, 127);
-}
-
-//
-// _RefreshVolume()
-//
-// Sends out a volume controller event to change the volume to the current
-// cached volume for the indicated channel.
-//
-void MidiMusicSystem::_RefreshVolume()
-{
-	for (int i = 0; i < _GetNumChannels(); i++)
-	{
-		MidiControllerEvent event(0, MIDI_CONTROLLER_MAIN_VOLUME, i, m_channelVolume[i]);
-		playEvent(&event);
-	}
-}
-
-//
-// _InitializePlayback()
-//
-// Resets all of the variables used during playChunk() to determine the timing
-// of midi events as well as the event iterator.  This should be called at the
-// start of playback or when looping back to the beginning of the song.
-//
-void MidiMusicSystem::_InitializePlayback()
-{
-	if (!m_midiSong)
-		return;
-
-	m_lastEventTime = I_MSTime();
-
-	// seek to the begining of the song
 	m_songItr = m_midiSong->begin();
 	m_prevClockTime = 0;
+	m_lastEventTime = I_MSTime();
+}
 
-	// shut off all notes and reset all controllers
-	_AllNotesOff();
+void MidiMusicSystem::playEvent(int time, MidiEvent *event)
+{
+	if (m_useFallback)
+		I_MidiCheckFallback(event, &m_fallback);
 
-	setTempo(120.0);
+	if (I_IsMidiMetaEvent(event))
+	{
+		MidiMetaEvent *metaevent = static_cast<MidiMetaEvent*>(event);
+		byte metatype = metaevent->getMetaType();
 
-	// initialize all channel volumes to 100%
-	for (int i = 0; i < _GetNumChannels(); i++)
-		m_channelVolume[i] = 127;
+		if (metaevent->getMetaType() == MIDI_META_SET_TEMPO)
+		{
+			double tempo = I_GetTempoChange(metaevent);
+			setTempo(tempo);
+			msperclock = I_CalculateMsPerMidiClock(m_midiSong->getTimeDivision(), getTempo());
+		}
+	}
+	else if (I_IsMidiSysexEvent(event) && event->getEventType() == MIDI_EVENT_SYSEX)
+	{
+		MidiSysexEvent *sysexevent = static_cast<MidiSysexEvent*>(event);
+		const byte *data = sysexevent->getData();
+		size_t length = sysexevent->getDataLength();
 
-	_RefreshVolume();
+		if (length > 0 && data[length - 1] == MIDI_EVENT_SYSEX_SPLIT)
+			writeSysEx(time, data, length);
+	}
+	else if (I_IsMidiControllerEvent(event))
+	{
+		MidiControllerEvent *ctrlevent = static_cast<MidiControllerEvent*>(event);
+		byte channel = ctrlevent->getChannel();
+		byte control = ctrlevent->getControllerType();
+		byte param1 = ctrlevent->getParam1();
+
+		switch (control)
+		{
+			case MIDI_CONTROLLER_VOLUME_MSB:
+				writeVolume(time, channel, param1);
+				break;
+
+			case MIDI_CONTROLLER_VOLUME_LSB:
+				// Volume controlled by MSB value only
+				break;
+
+			case MIDI_CONTROLLER_BANK_SELECT_LSB:
+				param1 = (m_fallback.type == MIDI_FALLBACK_BANK_LSB) ? m_fallback.value : param1;
+				writeControl(time, channel, control, param1);
+				break;
+
+			default:
+				writeControl(time, channel, control, param1);
+				break;
+		}
+	}
+	else if (I_IsMidiChannelEvent(event))
+	{
+		MidiChannelEvent *chanevent = static_cast<MidiChannelEvent*>(event);
+		byte status = event->getEventType();
+		byte channel = chanevent->getChannel();
+		byte param1 = chanevent->getParam1();
+		byte param2 = chanevent->getParam2();
+
+		if (status == MIDI_EVENT_PROGRAM_CHANGE)
+		{
+			switch (m_fallback.type)
+			{
+				case MIDI_FALLBACK_BANK_MSB:
+					writeControl(time, channel, MIDI_CONTROLLER_BANK_SELECT_MSB, m_fallback.value);
+					writeChannel(time, channel, status, param1, 0);
+					break;
+
+				case MIDI_FALLBACK_DRUMS:
+					writeChannel(time, channel, status, m_fallback.value, 0);
+					break;
+
+				default: // No fallback
+					writeChannel(time, channel, status, param1, 0);
+					break;
+			}
+		}
+		else
+		{
+			writeChannel(time, channel, status, param1, param2);
+		}
+	}
 }
 
 void MidiMusicSystem::playChunk()
@@ -347,38 +371,30 @@ void MidiMusicSystem::playChunk()
 		if (!event)
 			break;
 
-		double msperclock =
-		    I_CalculateMsPerMidiClock(m_midiSong->getTimeDivision(), getTempo());
-
-		unsigned int deltatime =
-		    (event->getMidiClockTime() - m_prevClockTime) * msperclock;
-
+		unsigned int deltatime = (event->getMidiClockTime() - m_prevClockTime) * msperclock;
 		unsigned int eventplaytime = m_lastEventTime + deltatime;
+
+		if (m_useResetDelay)
+			eventplaytime += snd_mididelay;
 
 		if (eventplaytime > endtime)
 			break;
 
-		playEvent(event, eventplaytime);
+		playEvent(eventplaytime, event);
 
+		m_useResetDelay = false;
 		m_prevClockTime = event->getMidiClockTime();
 		m_lastEventTime = eventplaytime;
-
 		++m_songItr;
 	}
 
 	// At the end of the song.  Either stop or loop back to the begining
 	if (m_songItr == m_midiSong->end())
 	{
-		if (!m_loop)
-		{
-			stopSong();
-			return;
-		}
+		if (m_loop)
+			restartSong();
 		else
-		{
-			_InitializePlayback();
-			return;
-		}
+			stopSong();
 	}
 }
 

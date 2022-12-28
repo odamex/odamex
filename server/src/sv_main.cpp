@@ -1506,6 +1506,8 @@ void SV_ClientFullUpdate(player_t &pl)
 
 	SV_ThinkerUpdate(cl);
 
+	SV_SendPlayerInfo(pl);
+
 	MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::FullUpdateDone());
 
 	SV_SendPacket(pl);
@@ -1765,8 +1767,13 @@ void SV_ConnectClient()
 		Printf("%s disconnected (server full).\n", NET_AdrToString (net_from));
 
 		static buf_t smallbuf(1024);
-		MSG_WriteLong(&smallbuf, 0);
-		MSG_WriteSVC(&smallbuf, SVC_Disconnect("Server is full\n"));
+		if (smallbuf.size() == 0)
+		{
+			MSG_WriteLong(&smallbuf, 0); // First packet.
+			MSG_WriteByte(&smallbuf, 0); // No flags.
+			MSG_WriteSVC(&smallbuf, SVC_Disconnect("Server is full\n"));
+		}
+
 		NET_SendPacket(smallbuf, net_from);
 		return;
 	}
@@ -4591,8 +4598,6 @@ void SV_PreservePlayer(player_t &player)
 	}
 
 	G_DoReborn(player);
-
-	SV_SendPlayerInfo(player);
 }
 
 void SV_AddPlayerToQueue(player_t* player)

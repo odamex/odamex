@@ -255,8 +255,6 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 
 	p.death_time = 0;
 	p.tic = 0;
-
-	SV_SendPlayerInfo(p);
 }
 
 //

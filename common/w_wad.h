@@ -37,6 +37,7 @@
 extern OResFiles wadfiles;
 extern OResFiles patchfiles;
 extern OWantFiles missingfiles;
+extern bool missingCommercialIWAD;
 
 //
 // TYPES

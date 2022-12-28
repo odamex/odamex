@@ -45,6 +45,9 @@ CVAR(					am_showsecrets, "1", "",
 CVAR(					am_showmonsters, "1", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(					am_showitems, "1", "",
+						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(					am_showtime, "1", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
@@ -175,11 +178,13 @@ CVAR(					am_ovteleportcolor, "ff a3 00", "",
 CVAR(				print_stdout, "0", "Print console text to stdout",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(			con_notifytime, "3", "Number of seconds to display messages to top of the HUD",
-					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
+CVAR_RANGE(con_notifytime, "3.0",
+           "Number of seconds to display messages to top of the HUD", CVARTYPE_FLOAT,
+           CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
 
-CVAR_RANGE(			con_midtime, "3", "Number of seconds to display messages in the middle of the screen",
-					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
+CVAR_RANGE(con_midtime, "3.0",
+           "Number of seconds to display messages in the middle of the screen",
+           CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
 
 CVAR_RANGE(			con_scrlock, "1", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
@@ -556,6 +561,8 @@ CVAR(hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.", CVARTYPE_B
      CVAR_CLIENTARCHIVE)
 CVAR(hud_demoprotos, "0", "Debug protocol messages while demo is paused.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
+CVAR_RANGE(hud_feedtime, "3.0", "How long entries show in the event feed, in seconds.",
+           CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0, 10.0)
 CVAR(hud_feedobits, "1", "Show obituaries in the event feed.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
 
@@ -640,6 +647,15 @@ static char *C_GetDefaultMusicSystem()
 	sprintf(str, "%i", defaultmusicsystem);
 	return str;
 }
+
+CVAR(			snd_midifallback, "1", "MIDI instrument fallback (0: Disable, 1: Enable)",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_RANGE(		snd_mididelay, "0", "MIDI delay after reset (0 to 2000 milliseconds)",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2000.0f)
+
+CVAR_RANGE(		snd_midireset, "2", "MIDI reset type (0: None, 1: GM, 2: GS, 3: XG)",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 
 CVAR_FUNC_DECL(	snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem preference",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)

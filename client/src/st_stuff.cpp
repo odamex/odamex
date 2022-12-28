@@ -270,12 +270,6 @@ static bool st_oldchat;
 // whether chat window has the cursor on
 static bool st_cursoron;
 
-// !deathmatch && st_statusbaron
-static bool st_armson;
-
-// !deathmatch
-static bool st_fragson;
-
 // main bar left
 static lumpHandle_t sbar;
 
@@ -917,12 +911,6 @@ void ST_updateWidgets()
 	// refresh everything if this is him coming back to life
 	ST_updateFaceWidget();
 
-	// used by w_arms[] widgets
-	st_armson = st_statusbaron && G_IsCoopGame();
-
-	// used by w_frags widget
-	st_fragson = !G_IsCoopGame() && st_statusbaron;
-
 	//	[Toke - CTF]
 	if (sv_gametype == GM_CTF)
 		st_fragscount = GetTeamInfo(plyr->userinfo.team)->Points; // denis - todo - scoring for ctf
@@ -951,12 +939,6 @@ void ST_Ticker()
 
 void ST_drawWidgets(bool force_refresh)
 {
-	// used by w_arms[] widgets
-	st_armson = G_IsCoopGame() && st_statusbaron;
-
-	// used by w_frags widget
-	st_fragson = !G_IsCoopGame() && st_statusbaron;
-
 	w_ready.update(force_refresh);
 
 	for (int i = 0; i < 4; i++)
@@ -968,15 +950,25 @@ void ST_drawWidgets(bool force_refresh)
 	w_health.update(force_refresh);
 	w_armor.update(force_refresh);
 
-	for (int i = 0; i < 6; i++)
-		w_arms[i].update(force_refresh);
+	if (G_IsCoopGame())
+	{
+		for (int i = 0; i < 6; i++)
+		{
+			w_arms[i].update(force_refresh);
+		}
+	}
 
 	w_faces.update(force_refresh);
 
 	for (int i = 0; i < 3; i++)
+	{
 		w_keyboxes[i].update(force_refresh);
+	}
 
-	w_frags.update(force_refresh);
+	if (!G_IsCoopGame())
+	{
+		w_frags.update(force_refresh);
+	}
 
 	w_lives.update(true, G_IsLivesGame()); // Force refreshing to avoid tens
 	                                       // to be hidden by Doomguy's face
@@ -1260,64 +1252,51 @@ static void ST_unloadData()
 void ST_createWidgets()
 {
 	// ready weapon ammo
-	w_ready.init(ST_AMMOX, ST_AMMOY, tallnum, &st_current_ammo, &st_statusbaron,
-	             ST_AMMOWIDTH);
+	w_ready.init(ST_AMMOX, ST_AMMOY, tallnum, &st_current_ammo, ST_AMMOWIDTH);
 
 	// health percentage
-	w_health.init(ST_HEALTHX, ST_HEALTHY, tallnum, &st_health, &st_statusbaron,
-	              tallpercent);
+	w_health.init(ST_HEALTHX, ST_HEALTHY, tallnum, &st_health, tallpercent);
 
 	// weapons owned
 	for (int i = 0; i < 6; i++)
 	{
 		w_arms[i].init(ST_ARMSX + (i % 3) * ST_ARMSXSPACE,
-		               ST_ARMSY + (i / 3) * ST_ARMSYSPACE, arms[i], &st_weaponowned[i],
-		               &st_armson);
+		               ST_ARMSY + (i / 3) * ST_ARMSYSPACE, arms[i], &st_weaponowned[i]);
 	}
 
 	// frags sum
-	w_frags.init(ST_FRAGSX, ST_FRAGSY, tallnum, &st_fragscount, &st_fragson,
+	w_frags.init(ST_FRAGSX, ST_FRAGSY, tallnum, &st_fragscount,
 	             ST_FRAGSWIDTH);
 
 	// faces
-	w_faces.init(ST_FACESX, ST_FACESY, faces, &st_faceindex, &st_statusbaron);
+	w_faces.init(ST_FACESX, ST_FACESY, faces, &st_faceindex);
 
 	// armor percentage - should be colored later
-	w_armor.init(ST_ARMORX, ST_ARMORY, tallnum, &st_armor, &st_statusbaron, tallpercent);
+	w_armor.init(ST_ARMORX, ST_ARMORY, tallnum, &st_armor, tallpercent);
 
 	// keyboxes 0-2
-	w_keyboxes[0].init(ST_KEY0X, ST_KEY0Y, keys, &keyboxes[0], &st_statusbaron);
-	w_keyboxes[1].init(ST_KEY1X, ST_KEY1Y, keys, &keyboxes[1], &st_statusbaron);
-	w_keyboxes[2].init(ST_KEY2X, ST_KEY2Y, keys, &keyboxes[2], &st_statusbaron);
+	w_keyboxes[0].init(ST_KEY0X, ST_KEY0Y, keys, &keyboxes[0]);
+	w_keyboxes[1].init(ST_KEY1X, ST_KEY1Y, keys, &keyboxes[1]);
+	w_keyboxes[2].init(ST_KEY2X, ST_KEY2Y, keys, &keyboxes[2]);
 
 	// ammo count (all four kinds)
-	w_ammo[0].init(ST_AMMO0X, ST_AMMO0Y, shortnum, &st_ammo[0], &st_statusbaron,
-	               ST_AMMO0WIDTH);
-
-	w_ammo[1].init(ST_AMMO1X, ST_AMMO1Y, shortnum, &st_ammo[1], &st_statusbaron,
-	               ST_AMMO1WIDTH);
-
-	w_ammo[2].init(ST_AMMO2X, ST_AMMO2Y, shortnum, &st_ammo[2], &st_statusbaron,
-	               ST_AMMO2WIDTH);
-
-	w_ammo[3].init(ST_AMMO3X, ST_AMMO3Y, shortnum, &st_ammo[3], &st_statusbaron,
-	               ST_AMMO3WIDTH);
+	w_ammo[0].init(ST_AMMO0X, ST_AMMO0Y, shortnum, &st_ammo[0], ST_AMMO0WIDTH);
+	w_ammo[1].init(ST_AMMO1X, ST_AMMO1Y, shortnum, &st_ammo[1], ST_AMMO1WIDTH);
+	w_ammo[2].init(ST_AMMO2X, ST_AMMO2Y, shortnum, &st_ammo[2], ST_AMMO2WIDTH);
+	w_ammo[3].init(ST_AMMO3X, ST_AMMO3Y, shortnum, &st_ammo[3], ST_AMMO3WIDTH);
 
 	// max ammo count (all four kinds)
 	w_maxammo[0].init(ST_MAXAMMO0X, ST_MAXAMMO0Y, shortnum, &st_maxammo[0],
-	                  &st_statusbaron, ST_MAXAMMO0WIDTH);
-
+	                  ST_MAXAMMO0WIDTH);
 	w_maxammo[1].init(ST_MAXAMMO1X, ST_MAXAMMO1Y, shortnum, &st_maxammo[1],
-	                  &st_statusbaron, ST_MAXAMMO1WIDTH);
-
+	                  ST_MAXAMMO1WIDTH);
 	w_maxammo[2].init(ST_MAXAMMO2X, ST_MAXAMMO2Y, shortnum, &st_maxammo[2],
-	                  &st_statusbaron, ST_MAXAMMO2WIDTH);
-
+	                  ST_MAXAMMO2WIDTH);
 	w_maxammo[3].init(ST_MAXAMMO3X, ST_MAXAMMO3Y, shortnum, &st_maxammo[3],
-	                  &st_statusbaron, ST_MAXAMMO3WIDTH);
+	                  ST_MAXAMMO3WIDTH);
 
 	// Number of lives (not always rendered)
-	w_lives.init(ST_FX + 34, ST_FY + 25, shortnum, &st_lives, &st_statusbaron, 2);
+	w_lives.init(ST_FX + 34, ST_FY + 25, shortnum, &st_lives, 2);
 }
 
 void ST_Start()

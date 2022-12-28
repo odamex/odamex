@@ -195,6 +195,9 @@ static void InitMap()
 	MapMobj(MT_SCEPTRE, "EvilSceptre", MC_NONE);
 	MapMobj(MT_BIBLE, "UnholyBible", MC_NONE);
 	MapMobj(MT_MUSICSOURCE, "MusicChanger", MC_NONE);
+	MapMobj(MT_AVATAR, "PlayerAvatar", MC_NONE);
+	MapMobj(MT_HORDESPAWN, "HordeSpawn", MC_NONE);
+	MapMobj(MT_CAREPACK, "CarePackage", MC_NONE);
 	// [AM] Deh_Actor_145-149 are reserved.
 	MapMobj(MT_EXTRA00, "Deh_Actor_150", MC_NONE);
 	MapMobj(MT_EXTRA01, "Deh_Actor_151", MC_NONE);
@@ -314,6 +317,24 @@ mobjtype_t P_NameToMobj(const std::string& name)
 		return MT_NULL;
 	}
 	return it->second;
+}
+
+std::string P_MobjToName(const mobjtype_t name)
+{
+	if (::g_MonsterMap.empty())
+	{
+		InitMap();
+	}
+
+	for (MobjMap::iterator it = ::g_MonsterMap.begin(); it != ::g_MonsterMap.end(); ++it)
+	{
+		if (it->second == name)
+		{
+			return it->first.c_str();
+		}
+	}
+
+	return "";
 }
 
 weapontype_t P_NameToWeapon(const std::string& name)

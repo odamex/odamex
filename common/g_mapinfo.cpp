@@ -1017,10 +1017,7 @@ void MIType_CompatFlag(OScanner& os, bool doEquals, void* data, unsigned int fla
 		else
 		{
 			os.unScan();
-			if (os.getTokenInt())
-				*static_cast<DWORD*>(data) |= flags;
-			else
-				*static_cast<DWORD*>(data) &= ~flags;
+			*static_cast<DWORD*>(data) |= flags;
 		}
 	}
 	else
