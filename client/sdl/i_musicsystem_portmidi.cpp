@@ -272,6 +272,10 @@ void PortMidiMusicSystem::_ResetDevice(bool playing)
 	if (midireset == MIDI_RESET_GS)
 		_EnableFallback();
 
+	// Reset tracked channel volumes
+	for (int i = 0; i < NUM_CHANNELS; i++)
+		m_channelVolume[i] = DEFAULT_VOLUME;
+
 	// Reset to default volume on shutdown if no SysEx reset selected
 	if (!playing && midireset == MIDI_RESET_NONE)
 	{
