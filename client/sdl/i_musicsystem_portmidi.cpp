@@ -24,6 +24,8 @@
 
 #include "odamex.h"
 
+#include <math.h>
+
 #include "i_musicsystem_portmidi.h"
 
 #include "portmidi.h"
@@ -32,6 +34,9 @@
 #include "i_system.h"
 
 EXTERN_CVAR(snd_musicdevice)
+EXTERN_CVAR(snd_midireset)
+EXTERN_CVAR(snd_mididelay)
+EXTERN_CVAR(snd_midisysex)
 
 // ============================================================================
 // Partially based on an implementation from prboom-plus by Nicholai Main (Natt).
@@ -49,9 +54,11 @@ static int I_PortMidiTime(void* time_info = NULL)
 }
 
 PortMidiMusicSystem::PortMidiMusicSystem()
-    : MidiMusicSystem(), m_isInitialized(false), m_outputDevice(-1), m_stream(NULL)
+	: MidiMusicSystem(), sysex_buffer(), m_channelVolume(), m_volumeScale(0.0f),
+	  m_isInitialized(false), m_outputDevice(-1), m_stream(NULL)
 {
 	const int output_buffer_size = 1024;
+	const PmDeviceInfo *info;
 
 	if (Pm_Initialize() != pmNoError)
 	{
@@ -65,7 +72,7 @@ PortMidiMusicSystem::PortMidiMusicSystem()
 	// List PortMidi devices
 	for (int i = 0; i < Pm_CountDevices(); i++)
 	{
-		const PmDeviceInfo* info = Pm_GetDeviceInfo(i);
+		info = Pm_GetDeviceInfo(i);
 		if (!info || !info->output)
 			continue;
 
@@ -94,6 +101,17 @@ PortMidiMusicSystem::PortMidiMusicSystem()
 	if (!m_stream)
 		return;
 
+	// Initialize tracked channel volumes
+	for (int i = 0; i < NUM_CHANNELS; i++)
+		m_channelVolume[i] = DEFAULT_VOLUME;
+
+	// Initialize SysEx buffer
+	memset(sysex_buffer, 0, sizeof(sysex_buffer));
+	sysex_buffer[0] = MIDI_EVENT_SYSEX;
+
+	// Initialize instrument fallback support
+	_InitFallback();
+
 	Printf(PRINT_HIGH, "I_InitMusic: Music playback enabled using PortMidi.\n");
 	m_isInitialized = true;
 }
@@ -103,12 +121,13 @@ PortMidiMusicSystem::~PortMidiMusicSystem()
 	if (!isInitialized())
 		return;
 
-	_StopSong();
 	m_isInitialized = false;
 
 	if (m_stream)
 	{
-		// Sleep to allow the All-Notes-Off events to be processed
+		_ResetDevice(false);
+
+		// Sleep to prevent PortMidi callback deadlock
 		I_Sleep(I_ConvertTimeFromMs(cLatency * 2));
 
 		Pm_Close(m_stream);
@@ -117,121 +136,277 @@ PortMidiMusicSystem::~PortMidiMusicSystem()
 	}
 }
 
-void PortMidiMusicSystem::stopSong()
+void PortMidiMusicSystem::writeControl(int time, byte channel, byte control, byte value)
 {
-	_StopSong();
-	MidiMusicSystem::stopSong();
+	PmMessage msg = Pm_Message(MIDI_EVENT_CONTROLLER | channel, control, value);
+	Pm_WriteShort(m_stream, time, msg);
 }
 
-void PortMidiMusicSystem::_StopSong()
+void PortMidiMusicSystem::writeChannel(int time, byte channel, byte status, byte param1, byte param2)
 {
-	// non-virtual version of _AllNotesOff()
-	for (int i = 0; i < _GetNumChannels(); i++)
-	{
-		MidiControllerEvent event_noteoff(0, MIDI_CONTROLLER_ALL_NOTES_OFF, i);
-		_PlayEvent(&event_noteoff);
-		MidiControllerEvent event_reset(0, MIDI_CONTROLLER_RESET_ALL, i);
-		_PlayEvent(&event_reset);
-
-		// pitch bend range (+/- 2 semitones)
-		MidiControllerEvent event_rpn_msb_start(0, MIDI_CONTROLLER_RPN_MSB, i);
-		_PlayEvent(&event_rpn_msb_start);
-		MidiControllerEvent event_rpn_lsb_start(0, MIDI_CONTROLLER_RPN_LSB, i);
-		_PlayEvent(&event_rpn_lsb_start);
-		MidiControllerEvent event_data_msb(0, MIDI_CONTROLLER_DATA_ENTRY_MSB, i, 2);
-		_PlayEvent(&event_data_msb);
-		MidiControllerEvent event_data_lsb(0, MIDI_CONTROLLER_DATA_ENTRY_LSB, i);
-		_PlayEvent(&event_data_lsb);
-		MidiControllerEvent event_rpn_lsb_end(0, MIDI_CONTROLLER_RPN_LSB, i, 127);
-		_PlayEvent(&event_rpn_lsb_end);
-		MidiControllerEvent event_rpn_msb_end(0, MIDI_CONTROLLER_RPN_MSB, i, 127);
-		_PlayEvent(&event_rpn_msb_end);
-
-		// channel volume and panning
-		MidiControllerEvent event_volume(0, MIDI_CONTROLLER_MAIN_VOLUME, i, 100);
-		_PlayEvent(&event_volume);
-		MidiControllerEvent event_pan(0, MIDI_CONTROLLER_PAN, i, 64);
-		_PlayEvent(&event_pan);
-
-		// effect controllers
-		MidiControllerEvent event_reverb(0, MIDI_CONTROLLER_REVERB, i, 40);
-		_PlayEvent(&event_reverb);
-		MidiControllerEvent event_tremolo(0, MIDI_CONTROLLER_TREMOLO, i);
-		_PlayEvent(&event_tremolo);
-		MidiControllerEvent event_chorus(0, MIDI_CONTROLLER_CHORUS, i);
-		_PlayEvent(&event_chorus);
-		MidiControllerEvent event_detune(0, MIDI_CONTROLLER_DETUNE, i);
-		_PlayEvent(&event_detune);
-		MidiControllerEvent event_phaser(0, MIDI_CONTROLLER_PHASER, i);
-		_PlayEvent(&event_phaser);
-	}
+	PmMessage msg = Pm_Message(status | channel, param1, param2);
+	Pm_WriteShort(m_stream, time, msg);
 }
 
-//
-// PortMidiMusicSystem::playEvent
-//
-// Virtual wrapper-function for the non-virtual _PlayEvent.  We provide the
-// non-virtual version so that it can be safely called by ctors and dtors.
-//
-void PortMidiMusicSystem::playEvent(MidiEvent* event, int time)
+void PortMidiMusicSystem::writeSysEx(int time, const byte *data, size_t length)
 {
-	if (event)
-		_PlayEvent(event, time);
-}
-
-void PortMidiMusicSystem::_PlayEvent(MidiEvent* event, int time)
-{
-	if (!event)
+	if (!snd_midisysex)
 		return;
 
-	// play at the current time if user specifies time 0
-	if (time == 0)
-		time = _GetLastEventTime();
+	// Ignore messages that are too long
+	if (length > PM_DEFAULT_SYSEX_BUFFER_SIZE - 1)
+		return;
 
-	if (I_IsMidiMetaEvent(event))
+	// Copy data to buffer due to PortMidi not using a const pointer
+	memcpy(&sysex_buffer[1], data, length);
+	Pm_WriteSysEx(m_stream, time, sysex_buffer);
+
+	if (_IsSysExReset(data, length))
 	{
-		MidiMetaEvent* metaevent = static_cast<MidiMetaEvent*>(event);
-		if (metaevent->getMetaType() == MIDI_META_SET_TEMPO)
-		{
-			double tempo = I_GetTempoChange(metaevent);
-			setTempo(tempo);
-		}
+		// SysEx reset also resets volume. Take the default channel volumes
+		// and scale them by the user's volume slider
+		for (int i = 0; i < NUM_CHANNELS; i++)
+			writeVolume(0, i, DEFAULT_VOLUME);
 
-		//	Just ignore other meta events for now
+		// Disable instrument fallback and give priority to MIDI file. Fallback
+		// assumes GS (SC-55 level) and the MIDI file could be GM, GM2, XG, or
+		// GS (SC-88 or higher). Preserve the composer's intent
+		_DisableFallback();
 	}
-	else if (I_IsMidiSysexEvent(event))
+}
+
+void PortMidiMusicSystem::writeVolume(int time, byte channel, byte volume)
+{
+	byte scaled = (byte)(volume * m_volumeScale + 0.5f) & 0x7F;
+	writeControl(time, channel, MIDI_CONTROLLER_VOLUME_MSB, scaled);
+	m_channelVolume[channel] = volume & 0x7F;
+}
+
+void PortMidiMusicSystem::setVolume(float volume)
+{
+	MidiMusicSystem::setVolume(volume);
+
+	// Mimic the volume curve of midiOutSetVolume, as used by SDL_Mixer
+	m_volumeScale = sqrtf(MusicSystem::getVolume());
+
+	if (!isInitialized() || !isPlaying())
+		return;
+
+	for (int i = 0; i < NUM_CHANNELS; i++)
+		writeVolume(0, i, m_channelVolume[i]);
+}
+
+void PortMidiMusicSystem::allNotesOff()
+{
+	for (int i = 0; i < NUM_CHANNELS; i++)
+		writeControl(0, i, MIDI_CONTROLLER_ALL_NOTES_OFF, 0);
+}
+
+void PortMidiMusicSystem::allSoundOff()
+{
+	for (int i = 0; i < NUM_CHANNELS; i++)
+		writeControl(0, i, MIDI_CONTROLLER_ALL_SOUND_OFF, 0);
+}
+
+void PortMidiMusicSystem::_ResetControllers()
+{
+	for (int i = 0; i < NUM_CHANNELS; i++)
 	{
-		// Just ignore sysex events for now
+		// Reset commonly used controllers
+		writeControl(0, i, MIDI_CONTROLLER_RESET_ALL_CTRLS, 0);
+		writeControl(0, i, MIDI_CONTROLLER_PAN, 64);
+		writeControl(0, i, MIDI_CONTROLLER_REVERB, 40);
+		writeControl(0, i, MIDI_CONTROLLER_CHORUS, 0);
+		writeControl(0, i, MIDI_CONTROLLER_BANK_SELECT_MSB, 0);
+		writeControl(0, i, MIDI_CONTROLLER_BANK_SELECT_LSB, 0);
+		writeChannel(0, i, MIDI_EVENT_PROGRAM_CHANGE, 0);
 	}
-	else if (I_IsMidiControllerEvent(event))
+}
+
+void PortMidiMusicSystem::_ResetPitchBendSensitivity()
+{
+	for (int i = 0; i < NUM_CHANNELS; i++)
 	{
-		MidiControllerEvent* ctrlevent = static_cast<MidiControllerEvent*>(event);
-		byte channel = ctrlevent->getChannel();
-		byte controltype = ctrlevent->getControllerType();
-		byte param1 = ctrlevent->getParam1();
+		// Set RPN MSB/LSB to pitch bend sensitivity
+		writeControl(0, i, MIDI_CONTROLLER_RPN_MSB, 0);
+		writeControl(0, i, MIDI_CONTROLLER_RPN_LSB, 0);
 
-		if (controltype == MIDI_CONTROLLER_MAIN_VOLUME)
-		{
-			// store the song's volume for the channel
-			_SetChannelVolume(channel, param1);
+		// Reset pitch bend sensitivity to +/- 2 semitones and 0 cents
+		writeControl(0, i, MIDI_CONTROLLER_DATA_ENTRY_MSB, 2);
+		writeControl(0, i, MIDI_CONTROLLER_DATA_ENTRY_LSB, 0);
 
-			// scale the channel's volume by the master music volume
-			param1 *= _GetScaledVolume();
-		}
-
-		PmMessage msg = Pm_Message(event->getEventType() | channel, controltype, param1);
-		Pm_WriteShort(m_stream, time, msg);
+		// Set RPN MSB/LSB to null value after data entry
+		writeControl(0, i, MIDI_CONTROLLER_RPN_MSB, 127);
+		writeControl(0, i, MIDI_CONTROLLER_RPN_LSB, 127);
 	}
-	else if (I_IsMidiChannelEvent(event))
+}
+
+void PortMidiMusicSystem::_ResetDevice(bool playing)
+{
+	int midireset = snd_midireset.asInt();
+
+	allNotesOff();
+	allSoundOff();
+
+	switch (midireset)
 	{
-		MidiChannelEvent* chanevent = static_cast<MidiChannelEvent*>(event);
-		byte channel = chanevent->getChannel();
-		byte param1 = chanevent->getParam1();
-		byte param2 = chanevent->getParam2();
+		case MIDI_RESET_NONE:
+			_ResetControllers();
+			break;
 
-		PmMessage msg = Pm_Message(event->getEventType() | channel, param1, param2);
-		Pm_WriteShort(m_stream, time, msg);
+		case MIDI_RESET_GM:
+			Pm_WriteSysEx(m_stream, 0, gm_system_on);
+			break;
+
+		case MIDI_RESET_XG:
+			Pm_WriteSysEx(m_stream, 0, xg_system_on);
+			break;
+
+		default:
+			Pm_WriteSysEx(m_stream, 0, gs_reset);
+			break;
 	}
+
+	_ResetPitchBendSensitivity();
+
+	if (midireset == MIDI_RESET_GS)
+		_EnableFallback();
+
+	// Reset tracked channel volumes
+	for (int i = 0; i < NUM_CHANNELS; i++)
+		m_channelVolume[i] = DEFAULT_VOLUME;
+
+	// Reset to default volume on shutdown if no SysEx reset selected
+	if (!playing && midireset == MIDI_RESET_NONE)
+	{
+		m_volumeScale = 1.0f;
+		for (int i = 0; i < NUM_CHANNELS; i++)
+			writeVolume(0, i, DEFAULT_VOLUME);
+	}
+
+	m_useResetDelay = (snd_mididelay > 0);
+}
+
+void PortMidiMusicSystem::startSong(byte *data, size_t length, bool loop)
+{
+	_ResetDevice(true);
+	MidiMusicSystem::startSong(data, length, loop);
+}
+
+void PortMidiMusicSystem::pauseSong()
+{
+	allNotesOff();
+	allSoundOff();
+	MidiMusicSystem::pauseSong();
+}
+
+void PortMidiMusicSystem::restartSong()
+{
+	allNotesOff();
+	MidiMusicSystem::restartSong();
+}
+
+bool PortMidiMusicSystem::_IsSysExReset(const byte *data, size_t length)
+{
+	if (length < 5)
+	{
+		return false;
+	}
+
+	switch (data[0])
+	{
+		case 0x41: // Roland
+			switch (data[2])
+			{
+				case 0x42: // GS
+					switch (data[3])
+					{
+						case 0x12: // DT1
+							if (length == 10 &&
+								data[4] == 0x00 &&  // Address MSB
+								data[5] == 0x00 &&  // Address
+								data[6] == 0x7F &&  // Address LSB
+							  ((data[7] == 0x00 &&  // Data     (MODE-1)
+								data[8] == 0x01) || // Checksum (MODE-1)
+							   (data[7] == 0x01 &&  // Data     (MODE-2)
+								data[8] == 0x00)))  // Checksum (MODE-2)
+							{
+								// SC-88 System Mode Set
+								// 41 <dev> 42 12 00 00 7F 00 01 F7 (MODE-1)
+								// 41 <dev> 42 12 00 00 7F 01 00 F7 (MODE-2)
+								return true;
+							}
+							else if (length == 10 &&
+									 data[4] == 0x40 && // Address MSB
+									 data[5] == 0x00 && // Address
+									 data[6] == 0x7F && // Address LSB
+									 data[7] == 0x00 && // Data (GS Reset)
+									 data[8] == 0x41)   // Checksum
+							{
+								// GS Reset
+								// 41 <dev> 42 12 40 00 7F 00 41 F7
+								return true;
+							}
+							break;
+					}
+					break;
+			}
+			break;
+
+		case 0x43: // Yamaha
+			switch (data[2])
+			{
+				case 0x2B: // TG300
+					if (length == 9 &&
+						data[3] == 0x00 && // Start Address b20 - b14
+						data[4] == 0x00 && // Start Address b13 - b7
+						data[5] == 0x7F && // Start Address b6 - b0
+						data[6] == 0x00 && // Data
+						data[7] == 0x01)   // Checksum
+					{
+						// TG300 All Parameter Reset
+						// 43 <dev> 2B 00 00 7F 00 01 F7
+						return true;
+					}
+					break;
+
+				case 0x4C: // XG
+					if (length == 8 &&
+						data[3] == 0x00 &&  // Address High
+						data[4] == 0x00 &&  // Address Mid
+					   (data[5] == 0x7E ||  // Address Low (System On)
+						data[5] == 0x7F) && // Address Low (All Parameter Reset)
+						data[6] == 0x00)    // Data
+					{
+						// XG System On, XG All Parameter Reset
+						// 43 <dev> 4C 00 00 7E 00 F7
+						// 43 <dev> 4C 00 00 7F 00 F7
+						return true;
+					}
+					break;
+			}
+			break;
+
+		case 0x7E: // Universal Non-Real Time
+			switch (data[2])
+			{
+				case 0x09: // General Midi
+					if (length == 5 &&
+					   (data[3] == 0x01 || // GM System On
+						data[3] == 0x02 || // GM System Off
+						data[3] == 0x03))  // GM2 System On
+					{
+						// GM System On/Off, GM2 System On
+						// 7E <dev> 09 01 F7
+						// 7E <dev> 09 02 F7
+						// 7E <dev> 09 03 F7
+						return true;
+					}
+					break;
+			}
+			break;
+	}
+	return false;
 }
 
 #endif // PORTMIDI

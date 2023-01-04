@@ -111,6 +111,9 @@ short				skullAnimCounter;	// skull animation counter
 short				whichSkull; 		// which skull to draw
 bool				drawSkull;			// [RH] don't always draw skull
 
+// hack for PlayerSetup
+int					PSetupDepth;
+
 // graphic name of skulls
 char				skullName[2][9] = {"M_SKULL1", "M_SKULL2"};
 
@@ -507,6 +510,7 @@ BEGIN_COMMAND (menu_main)
     S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_SetupNextMenu (&MainDef);
+	PSetupDepth = 2;
 }
 END_COMMAND (menu_main)
 
@@ -545,6 +549,7 @@ BEGIN_COMMAND (menu_options)
     S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
     M_StartControlPanel ();
 	M_Options(0);
+	PSetupDepth = 1;
 }
 END_COMMAND (menu_options)
 
@@ -589,6 +594,7 @@ BEGIN_COMMAND (menu_player)
     S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_PlayerSetup(0);
+	PSetupDepth = 0;
 }
 END_COMMAND (menu_player)
 
@@ -1226,7 +1232,9 @@ void M_QuitResponse(int ch)
 
 	// Stop the music so we do not get stuck notes
 	I_StopSong();
-	
+	if (snd_musicsystem.asInt() == MS_PORTMIDI)
+		I_ShutdownMusic();
+
 	if (!multiplayer)
 	{
 		if (gameinfo.quitSound[0])
@@ -1754,9 +1762,9 @@ int M_StringHeight(char* string)
 //
 bool M_Responder (event_t* ev)
 {
-	int ch, ch2;
+	int ch, ch2, mod;
 
-	ch = ch2 = -1;
+	ch = ch2 = mod = -1;
 
 	// eat mouse events
 	if(menuactive)
@@ -1785,6 +1793,7 @@ bool M_Responder (event_t* ev)
 	{
 		ch = ev->data1; 		// scancode
 		ch2 = ev->data3;		// ASCII
+		mod = ev->mod;			// key mods
 	}
 
 	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
@@ -1797,8 +1806,10 @@ bool M_Responder (event_t* ev)
 		return true;
 	}
 
+	bool numlock = mod & OKEY_NUMLOCK;
+
 	// Handle Repeat
-	if (Key_IsLeftKey(ch) || Key_IsRightKey(ch))
+	if (Key_IsLeftKey(ch, numlock) || Key_IsRightKey(ch, numlock))
 	{
 		if (repeatKey == ch)
 			repeatCount++;
@@ -1905,7 +1916,7 @@ bool M_Responder (event_t* ev)
 
 	// Keys usable within menu
 	{
-		if (Key_IsDownKey(ch))
+		if (Key_IsDownKey(ch, numlock))
 		{
 			do {
 				if (itemOn + 1 > currentMenu->numitems - 1)
@@ -1916,7 +1927,7 @@ bool M_Responder (event_t* ev)
 			} while (currentMenu->menuitems[itemOn].status == -1);
 			return true;
 		}
-		else if (Key_IsUpKey(ch))
+		else if (Key_IsUpKey(ch, numlock))
 		{
 			do {
 				if (!itemOn)
@@ -1927,7 +1938,7 @@ bool M_Responder (event_t* ev)
 			} while (currentMenu->menuitems[itemOn].status == -1);
 			return true;
 		}
-		else if (Key_IsLeftKey(ch))
+		else if (Key_IsLeftKey(ch, numlock))
 		{
 			if (currentMenu->menuitems[itemOn].routine &&
 				currentMenu->menuitems[itemOn].status == 2)
@@ -1937,7 +1948,7 @@ bool M_Responder (event_t* ev)
 			}
 			return true;
 		}
-		else if (Key_IsRightKey(ch))
+		else if (Key_IsRightKey(ch, numlock))
 		{
 			if (currentMenu->menuitems[itemOn].routine &&
 				currentMenu->menuitems[itemOn].status == 2)
@@ -2138,7 +2149,16 @@ void M_PopMenuStack (void)
 		S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	} else {
 		M_ClearMenus ();
-		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
+		if (currentMenu == &PSetupDef && PSetupDepth > 0)			// hack for PlayerSetup
+		{
+			S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
+			M_StartControlPanel();
+			if (PSetupDepth == 2)
+				M_SetupNextMenu(&MainDef);
+			M_Options(0);
+		}
+		else
+			S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
 	}
 }
 

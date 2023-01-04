@@ -143,6 +143,7 @@ EXTERN_CVAR (m_side)
 EXTERN_CVAR (m_forward)
 
 // [Ralphis - Menu] Sound Menu
+EXTERN_CVAR (snd_midireset)
 EXTERN_CVAR (snd_musicsystem)
 EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_announcervolume)
@@ -539,6 +540,13 @@ static value_t MusSys[] = {
 	{ MS_NONE,		"No Music"}
 };
 
+static value_t MidiReset[] = {
+	{ 0.0,			"None" },
+	{ 1.0,			"GM" },
+	{ 2.0,			"GS" },
+	{ 3.0,			"XG" }
+};
+
 static value_t VoxType[] = {
 	{ 0.0,			"Off" },
 	{ 1.0,			"Team Colors" },
@@ -563,7 +571,9 @@ static menuitem_t SoundItems[] = {
 	{ slider    ,	"Announcer Volume"             		, {&snd_announcervolume},	{0.0},      {1.0},	    {0.015625},      {NULL} },
 	{ discrete  ,   "Stereo Switch"                     , {&snd_crossover},	    {2.0},			{0.0},		{0.0},		{OnOff} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ yellowtext ,   "Music Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
+	{ discrete	,	"MIDI Reset"						, {&snd_midireset},		{4.0},			{0.0},		{0.0},		{MidiReset} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ yellowtext ,   "Sound Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete  ,   "Game SFX"                          , {&snd_gamesfx},		{2.0},			{0.0},		{0.0},		{OnOff} },
@@ -1771,9 +1781,12 @@ void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;
+	int mod = ev->mod;
 	const char *cmd = Bindings.GetBind(ch).c_str();
 
 	item = CurrentMenu->items + CurrentItem;
+
+	bool numlock = mod & OMOD_NUM;
 
 	// Waiting on a key press for control binding
 	if (WaitingForKey)
@@ -1843,7 +1856,7 @@ void M_OptResponder (event_t *ev)
 	}
 
 	if (item->type == bitflag && flagsvar &&
-	    (Key_IsLeftKey(ch) || Key_IsRightKey(ch) || Key_IsAcceptKey(ch))
+	    (Key_IsLeftKey(ch, numlock) || Key_IsRightKey(ch, numlock) || Key_IsAcceptKey(ch))
 		&& !demoplayback)
 	{
 			int newflags = *item->e.flagint ^ item->a.flagmask;
@@ -1866,7 +1879,7 @@ void M_OptResponder (event_t *ev)
 
 	// Handle Keys
 	{
-		if (Key_IsDownKey(ch))
+		if (Key_IsDownKey(ch, numlock))
 		{
 			int modecol;
 
@@ -1904,7 +1917,7 @@ void M_OptResponder (event_t *ev)
 
 			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		}
-		else if (Key_IsUpKey(ch))
+		else if (Key_IsUpKey(ch, numlock))
 		{
 			int modecol;
 
@@ -1944,7 +1957,7 @@ void M_OptResponder (event_t *ev)
 
 			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		}
-		else if (Key_IsPageUpKey(ch))
+		else if (Key_IsPageUpKey(ch, numlock))
 		{
 			if (CanScrollUp)
 			{
@@ -1965,7 +1978,7 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 		}
-		else if (Key_IsPageDownKey(ch)) 
+		else if (Key_IsPageDownKey(ch, numlock)) 
 		{
 			if (CanScrollDown)
 			{
@@ -1987,7 +2000,7 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 		}
-		else if (Key_IsLeftKey(ch))
+		else if (Key_IsLeftKey(ch, numlock))
 		{
 		switch (item->type)
 		{
@@ -2115,7 +2128,7 @@ void M_OptResponder (event_t *ev)
 			break;
 		}
 		}
-		else if (Key_IsRightKey(ch))
+		else if (Key_IsRightKey(ch, numlock))
 		{
 		switch (item->type)
 		{

@@ -72,6 +72,8 @@ extern AActor* shootthing;
 
 EXTERN_CVAR(g_coopthingfilter)
 
+bool			g_ValidLevel = false;
+
 //
 // MAP related Lookup tables.
 // Store VERTEXES, LINEDEFS, SIDEDEFS, etc.
@@ -1821,6 +1823,7 @@ void P_SetupLevel (const char *lumpname, int position)
 
 	DThinker::DestroyAllThinkers ();
 	Z_FreeTags (PU_LEVEL, PU_LEVELMAX);
+	g_ValidLevel = false;		// [AM] False until the level is loaded.
 	NormalLight.next = NULL;	// [RH] Z_FreeTags frees all the custom colormaps
 
 	// [AM] Every new level starts with fresh netids.
@@ -1944,6 +1947,9 @@ void P_SetupLevel (const char *lumpname, int position)
 	if (precache)
 		R_PrecacheLevel ();
 #endif
+
+	// [AM] Level is now safely loaded.
+	g_ValidLevel = true;
 }
 
 //
