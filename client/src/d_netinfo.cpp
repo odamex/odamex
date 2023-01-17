@@ -122,14 +122,24 @@ colorpreset_t D_ColorPreset (const char *colorpreset)// Acts 19 quiz
 {
 	if (!stricmp(colorpreset, "blue"))
 		return COLOR_BLUE;
-	else if (!stricmp(colorpreset, "gray"))
-		return COLOR_GRAY;
+	else if (!stricmp(colorpreset, "indigo"))
+		return COLOR_INDIGO;
 	else if (!stricmp(colorpreset, "green"))
 		return COLOR_GREEN;
 	else if (!stricmp(colorpreset, "brown"))
 		return COLOR_BROWN;
 	else if (!stricmp(colorpreset, "red"))
 		return COLOR_RED;
+	else if (!stricmp(colorpreset, "gold"))
+		return COLOR_GOLD;
+	else if (!stricmp(colorpreset, "jungle green"))
+		return COLOR_JUNGLEGREEN;
+	else if (!stricmp(colorpreset, "purple"))
+		return COLOR_PURPLE;
+	else if (!stricmp(colorpreset, "white"))
+		return COLOR_WHITE;
+	else if (!stricmp(colorpreset, "black"))
+		return COLOR_BLACK;
 	else
 		return COLOR_CUSTOM;
 }

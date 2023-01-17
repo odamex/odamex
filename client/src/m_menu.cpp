@@ -1272,7 +1272,7 @@ void M_QuitDOOM(int choice)
 void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
 
 static const char *genders[3] = { "male", "female", "cyborg" };
-static const char *colorpresets[6] = { "custom", "blue", "gray", "green", "brown", "red" };// Acts 19 quiz the order must match d_netinf.h
+static const char *colorpresets[11] = { "custom", "blue", "indigo", "green", "brown", "red", "gold", "jungle green", "purple", "white", "black" };// Acts 19 quiz the order must match d_netinf.h
 static state_t *PlayerState;
 static int PlayerTics;
 argb_t CL_GetPlayerColor(player_t*);
@@ -1638,16 +1638,16 @@ static void M_ChangeColorPreset (int choice)// Acts 19 quiz
 	argb_t customcolor = V_GetColorFromString(cl_customcolor);
 
 	if (!choice)
-		colorpreset = (colorpreset == 0) ? 5 : colorpreset - 1;
+		colorpreset = (colorpreset == 0) ? 10 : colorpreset - 1;
 	else
-		colorpreset = (colorpreset == 5) ? 0 : colorpreset + 1;
+		colorpreset = (colorpreset == 10) ? 0 : colorpreset + 1;
 
 	cl_colorpreset = colorpresets[colorpreset];
 
 	if (colorpreset == COLOR_BLUE)
 		// the Corn Chex jump suit; it should be brighter, but that introduces gray pixels on 8-bit
 		SendNewColor(57, 57, 255);
-	else if (colorpreset == COLOR_GRAY)
+	else if (colorpreset == COLOR_INDIGO)
 		// the Wheat Chex jump suit; a little darker than the blue
 		SendNewColor(134, 134, 134);
 	else if (colorpreset == COLOR_GREEN)
@@ -1659,6 +1659,16 @@ static void M_ChangeColorPreset (int choice)// Acts 19 quiz
 	else if (colorpreset == COLOR_RED)
 		// the blue luminosity matched to the Vanilla red hue without looking bad on 8-bit
 		SendNewColor(250, 62, 62);
+	else if (colorpreset == COLOR_GOLD)
+		SendNewColor(255, 206, 43);
+	else if (colorpreset == COLOR_JUNGLEGREEN)
+		SendNewColor(32, 104, 0);
+	else if (colorpreset == COLOR_PURPLE)
+		SendNewColor(255, 10, 255);
+	else if (colorpreset == COLOR_WHITE)
+		SendNewColor(255, 255, 255);
+	else if (colorpreset == COLOR_BLACK)
+		SendNewColor(0, 0, 0);
 	else
 		SendNewColor(customcolor.getr(), customcolor.getg(), customcolor.getb());
 }
