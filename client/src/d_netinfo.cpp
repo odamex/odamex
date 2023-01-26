@@ -118,7 +118,7 @@ team_t D_TeamByName (const char *team)
 	return TEAM_NONE;
 }
 
-colorpreset_t D_ColorPreset (const char *colorpreset)// Acts 19 quiz
+colorpreset_t D_ColorPreset (const char *colorpreset)
 {
 	if (!stricmp(colorpreset, "blue"))
 		return COLOR_BLUE;

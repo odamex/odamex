@@ -178,8 +178,8 @@ static void M_EditPlayerName (int choice);
 static void M_PlayerNameChanged (int choice);
 static void M_ChangeGender (int choice);
 static void M_ChangeAutoAim (int choice);
-static void M_ChangeColorPreset (int choice);// Acts 19 quiz
-static void SendNewColor (int red, int green, int blue);// Acts 19 quiz
+static void M_ChangeColorPreset (int choice);
+static void SendNewColor (int red, int green, int blue);
 static void M_SlidePlayerRed (int choice);
 static void M_SlidePlayerGreen (int choice);
 static void M_SlidePlayerBlue (int choice);
@@ -339,7 +339,7 @@ enum psetup_t
 	playerteam,
 	playersex,
 	playeraim,
-	playercolorpreset,// Acts 19 quiz
+	playercolorpreset,
 	playerred,
 	playergreen,
 	playerblue,
@@ -352,7 +352,7 @@ oldmenuitem_t PlayerSetupMenu[] =
 	{ 2,"", M_ChangeTeam, 'T' },
 	{ 2,"", M_ChangeGender, 'E' },
 	{ 2,"", M_ChangeAutoAim, 'A' },
-    { 2,"", M_ChangeColorPreset, 'C' },// Acts 19 quiz
+    { 2,"", M_ChangeColorPreset, 'C' },
 	{ 2,"", M_SlidePlayerRed, 'R' },
 	{ 2,"", M_SlidePlayerGreen, 'G' },
 	{ 2,"", M_SlidePlayerBlue, 'B' }
@@ -1272,7 +1272,8 @@ void M_QuitDOOM(int choice)
 void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
 
 static const char *genders[3] = { "male", "female", "cyborg" };
-static const char *colorpresets[11] = { "custom", "blue", "indigo", "green", "brown", "red", "gold", "jungle green", "purple", "white", "black" };// Acts 19 quiz the order must match d_netinf.h
+// Acts 19 quiz the order must match d_netinf.h
+static const char *colorpresets[11] = { "custom", "blue", "indigo", "green", "brown", "red", "gold", "jungle green", "purple", "white", "black" };
 static state_t *PlayerState;
 static int PlayerTics;
 argb_t CL_GetPlayerColor(player_t*);
@@ -1280,8 +1281,8 @@ argb_t CL_GetPlayerColor(player_t*);
 
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_team)
-EXTERN_CVAR (cl_colorpreset)// Acts 19 quiz
-EXTERN_CVAR (cl_customcolor)// Acts 19 quiz
+EXTERN_CVAR (cl_colorpreset)
+EXTERN_CVAR (cl_customcolor)
 EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_autoaim)
@@ -1364,7 +1365,7 @@ static void M_PlayerSetupDrawer()
 	const int x2 = (I_GetSurfaceWidth() / 2) + (160 * CleanXfac);
 	const int y2 = (I_GetSurfaceHeight() / 2) + (100 * CleanYfac);
 
-	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());// Acts 19 quiz
+	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
@@ -1538,7 +1539,6 @@ static void M_PlayerSetupDrawer()
 			aim <= 3 ? "Very High" : "Always");
 	}
 
-	// Acts 19 quiz
 	// Draw color setting
 	{
 		const int x = V_StringWidth ("Color") + 8 + PSetupDef.x;
@@ -1632,7 +1632,7 @@ static void M_ChangeAutoAim (int choice)
 	cl_autoaim.Set (aim);
 }
 
-static void M_ChangeColorPreset (int choice)// Acts 19 quiz
+static void M_ChangeColorPreset (int choice)
 {
 	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 	argb_t customcolor = V_GetColorFromString(cl_customcolor);
@@ -1706,15 +1706,15 @@ static void M_PlayerTeamChanged (int choice)
 
 static void SendNewColor(int red, int green, int blue)
 {
-	char colorcommand[24];
-	char customcolorcommand[30];// Acts 19 quiz
-	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());// Acts 19 quiz
+	std::string colorcommand;
+	std::string customcolorcommand;
+	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 
-	sprintf(colorcommand, "cl_color \"%02x %02x %02x\"", red, green, blue);
+	StrFormat(colorcommand, "cl_color \"%02x %02x %02x\"", red, green, blue);
 	AddCommandString(colorcommand);
-	if (colorpreset == COLOR_CUSTOM)// Acts 19 quiz
+	if (colorpreset == COLOR_CUSTOM)
 	{
-		sprintf(customcolorcommand, "cl_customcolor \"%02x %02x %02x\"", red, green, blue);
+		StrFormat(customcolorcommand, "cl_customcolor \"%02x %02x %02x\"", red, green, blue);
 		AddCommandString(customcolorcommand);
 	}
 
