@@ -280,7 +280,6 @@ void MidiMusicSystem::playEvent(int time, MidiEvent *event)
 	if (I_IsMidiMetaEvent(event))
 	{
 		MidiMetaEvent *metaevent = static_cast<MidiMetaEvent*>(event);
-		byte metatype = metaevent->getMetaType();
 
 		if (metaevent->getMetaType() == MIDI_META_SET_TEMPO)
 		{
