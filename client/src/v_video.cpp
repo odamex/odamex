@@ -237,6 +237,9 @@ CVAR_FUNC_IMPL(vid_640x400)
 
 CVAR_FUNC_IMPL (vid_widescreen)
 {
+	if (var < 0 || var > 5)
+		var.RestoreDefault();
+
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
 		V_ForceVideoModeAdjustment();
 }
