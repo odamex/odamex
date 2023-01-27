@@ -531,7 +531,7 @@ void V_Init()
 	BuildTransTable(V_GetDefaultPalette()->basecolors);
 
 	vid_pillarbox_old = vid_pillarbox;
-	vid_widescreen_old = vid_widescreen;
+	vid_widescreen_old = vid_widescreen.asInt();
 }
 
 
