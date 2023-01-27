@@ -1130,6 +1130,14 @@ static value_t FullScreenOptions[] = {
 	{ WINDOW_DesktopFullscreen,	"Full Screen Window" }
 };
 
+static value_t WidescreenMode[] = {
+	{ 0.0,			"Off" },
+	{ 1.0,			"Auto" },
+	{ 2.0,			"16:10" },
+	{ 3.0,			"16:9" },
+	{ 4.0,			"21:9" },
+	{ 5.0,			"32:9" }
+};
 
 static menuitem_t ModesItems[] = {
 #ifdef GCONSOLE
@@ -1137,7 +1145,7 @@ static menuitem_t ModesItems[] = {
 #else
 	{ discrete, "Fullscreen",			{&vid_fullscreen},		{3.0}, {0.0},	{0.0}, {FullScreenOptions} },
 #endif
-	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
+	{ discrete,	"Widescreen",			{&vid_widescreen},		{6.0}, {0.0},	{0.0}, {WidescreenMode} } ,
 	{ discrete,	"VSync",				{&vid_vsync},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ discrete, "Framerate",			{&vid_maxfps},			{5.0}, {0.0},	{0.0}, {VidFPSCaps} },
 	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
