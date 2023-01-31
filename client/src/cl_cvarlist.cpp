@@ -386,6 +386,12 @@ CVAR_FUNC_DECL(		cl_name, "Player", "",
 CVAR(				cl_color, "40 cf 00", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(				cl_customcolor, "40 cf 00", "",
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_colorpreset, "custom", "",
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE)
+
 CVAR(				cl_gender, "male", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -647,6 +653,18 @@ static char *C_GetDefaultMusicSystem()
 	sprintf(str, "%i", defaultmusicsystem);
 	return str;
 }
+
+CVAR(			snd_midisysex, "0", "Read SysEx from MIDI files (0: Disable, 1: Enable)",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			snd_midifallback, "1", "MIDI instrument fallback (0: Disable, 1: Enable)",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_RANGE(		snd_mididelay, "0", "MIDI delay after reset (0 to 2000 milliseconds)",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2000.0f)
+
+CVAR_RANGE(		snd_midireset, "1", "MIDI reset type (0: None, 1: GM, 2: GS, 3: XG)",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 
 CVAR_FUNC_DECL(	snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem preference",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)

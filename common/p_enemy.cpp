@@ -2054,7 +2054,7 @@ void A_MonsterMeleeAttack(AActor* actor)
 	S_Sound(actor, CHAN_WEAPON, SoundMap[hitsound], 1, ATTN_NORM);
 
 	damage = (P_Random() % damagemod + 1) * damagebase;
-	P_DamageMobj(actor->target, actor, actor, damage);
+	P_DamageMobj(actor->target, actor, actor, damage, MOD_HIT);
 }
 
 //
@@ -2639,7 +2639,7 @@ void A_Die (AActor *actor)
 
 void A_Detonate (AActor *mo)
 {
-	P_RadiusAttack (mo, mo->target, mo->damage, mo->damage, true, MOD_UNKNOWN);
+	P_RadiusAttack (mo, mo->target, mo->damage, mo->damage, true, MOD_R_SPLASH);
 	if (mo->z <= mo->floorz + (mo->damage<<FRACBITS))
 	{
 		P_HitFloor (mo);
@@ -2666,7 +2666,7 @@ void A_Explode (AActor *thing)
 			mod = MOD_R_SPLASH;
 			break;
 		default:
-			mod = MOD_UNKNOWN;
+			mod = MOD_R_SPLASH;
 			break;
 	}
 

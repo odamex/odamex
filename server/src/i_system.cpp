@@ -454,9 +454,27 @@ std::string I_ConsoleInput (void)
 
 	while(kbhit() && len < sizeof(text))
 	{
-		char ch = (char)getch();
+		int ch = getch();
 
-		// input the character
+		// Handle special keys
+		switch (ch)
+		{
+            // Function keys (arrows etc)
+            case 0:
+            case 0xE0:
+            {
+                // getch sends a second char
+                // for these keys, skip it
+                ch = getch();
+                continue;
+            }
+            // Ctrl-C (MSDN has incorrect documentation regarding this)
+            case 3:
+            {
+                return "quit";
+            }
+		}
+
 		if(ch == '\b' && len)
 		{
 			buffer[--len] = 0;
@@ -467,7 +485,14 @@ std::string I_ConsoleInput (void)
 			ch = '\b';
 		}
 		else
+		{
+            // Accept return but not unusual characters as input (eg Ctrl-B)
+            if ((ch != '\n' && ch != '\r') && (ch < 32 || ch > 126))
+                continue;
+			
 			buffer[len++] = ch;
+		}
+
 		buffer[len] = 0;
 
 		// recalculate length

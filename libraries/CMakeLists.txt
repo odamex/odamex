@@ -25,7 +25,7 @@ set(dllsuffix "${CMAKE_SHARED_LIBRARY_SUFFIX}")
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
 
 function(lib_buildgen)
-  cmake_parse_arguments("" "" "LIBRARY;SRCDIR" "PARAMS" ${ARGN})
+  cmake_parse_arguments("" "" "LIBRARY;SRCDIR;CXXFLAGS" "PARAMS" ${ARGN})
 
   if(NOT _SRCDIR)
     set(_SRCDIR "${CMAKE_CURRENT_SOURCE_DIR}/${_LIBRARY}")
@@ -71,7 +71,13 @@ function(lib_buildgen)
     list(APPEND _COMMAND "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
   endif()
 
-  execute_process(COMMAND ${_COMMAND} ${_PARAMS} RESULT_VARIABLE _RESVAL)
+  if(_CXXFLAGS)
+    set(_ENVCMD ${CMAKE_COMMAND} -E env CXXFLAGS=${_CXXFLAGS})
+  endif()
+
+  message(STATUS "Generating ${_LIBRARY}...")
+  message(${_ENVCMD} ${_COMMAND} ${_PARAMS})
+  execute_process(COMMAND ${_ENVCMD} ${_COMMAND} ${_PARAMS} RESULT_VARIABLE _RESVAL)
   if(_RESVAL GREATER 0)
     message(FATAL_ERROR "Library ${_LIBRARY} did not generate correctly.")
   endif()
@@ -84,6 +90,7 @@ function(lib_build)
   get_property(_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
   if(_IS_MULTI_CONFIG)
     # Debug and Release are not compatible, so build both.
+    message(STATUS "Building ${_LIBRARY} Debug...")
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
       --config Debug --target install
@@ -92,15 +99,17 @@ function(lib_build)
       message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Debug.")
     endif()
 
+    message(STATUS "Building ${_LIBRARY} RelWithDebInfo...")
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
       --config RelWithDebInfo --target install
       --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
     if(_RESVAL GREATER 0)
       message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Release.")
-    endif()  
+    endif()
   else()
     # Single config uses the passed build type.
+    message(STATUS "Building ${_LIBRARY} ${CMAKE_BUILD_TYPE}...")
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
       --config ${CMAKE_BUILD_TYPE} --target install
