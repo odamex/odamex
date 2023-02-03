@@ -554,6 +554,9 @@ CVAR(hud_speedometer, "0", "Show the HUD speedometer", CVARTYPE_BOOL, CVAR_CLIEN
 CVAR_RANGE(		hud_transparency, "1.0", "HUD transparency",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
+CVAR_RANGE(		hud_anchoring, "1.0", "HUD anchoring (0.0: Center, 1.0: Corners)",
+				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
 CVAR_RANGE(		hud_heldflag, "1", "Show the held flag border",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
