@@ -295,6 +295,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		os.mustScan();
 		mape->level_name = os.getToken();
+		mape->pname.clear();
 	}
 	else if (!stricmp(pname.c_str(), "next"))
 	{
