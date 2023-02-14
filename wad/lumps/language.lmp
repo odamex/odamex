@@ -676,7 +676,7 @@ OB_MPBFG_BOOM = "%o was splintered by %k's BFG.";
 OB_MPBFG_SPLASH = "%o couldn't hide from %k's BFG.";
 OB_MPTELEFRAG = "%o was telefragged by %k.";
 OB_RAILGUN = "%o was railed by %k.";
-OB_KILLED = "%o killed %k.";
+OB_KILLED = "%k killed %o.";
 
 OB_DEFAULT = "%o died.";
 OB_FRIENDLY1 = "%k mows down a teammate.";
