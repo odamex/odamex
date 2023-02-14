@@ -2134,7 +2134,7 @@ OB_MPBFG_BOOM = "%o e' stato sminuzzato dal BFG di %k.";
 OB_MPBFG_SPLASH = "%o non poteva nascondersi dal BFG di %k.";
 OB_MPTELEFRAG = "%o e' stato telefraggato da %k.";
 OB_RAILGUN = "%o e' stato perforato dal railgun di %k.";
-OB_KILLED = "%o ha ucciso %k.";
+OB_KILLED = "%k ha ucciso %o.";
 
 OB_DEFAULT = "%o e' morto.";
 OB_FRIENDLY1 = "%k falcia via un compagno.";
