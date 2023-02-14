@@ -208,12 +208,19 @@ void PortMidiMusicSystem::allSoundOff()
 		writeControl(0, i, MIDI_CONTROLLER_ALL_SOUND_OFF, 0);
 }
 
-void PortMidiMusicSystem::_ResetControllers()
+void PortMidiMusicSystem::_ResetAllControllers()
 {
 	for (int i = 0; i < NUM_CHANNELS; i++)
 	{
-		// Reset commonly used controllers
 		writeControl(0, i, MIDI_CONTROLLER_RESET_ALL_CTRLS, 0);
+	}
+}
+
+void PortMidiMusicSystem::_ResetCommonControllers()
+{
+	for (int i = 0; i < NUM_CHANNELS; i++)
+	{
+		// Reset commonly used controllers not covered by "Reset All Controllers"
 		writeControl(0, i, MIDI_CONTROLLER_PAN, 64);
 		writeControl(0, i, MIDI_CONTROLLER_REVERB, 40);
 		writeControl(0, i, MIDI_CONTROLLER_CHORUS, 0);
@@ -251,7 +258,8 @@ void PortMidiMusicSystem::_ResetDevice(bool playing)
 	switch (midireset)
 	{
 		case MIDI_RESET_NONE:
-			_ResetControllers();
+			_ResetAllControllers();
+			_ResetCommonControllers();
 			break;
 
 		case MIDI_RESET_GM:
@@ -303,6 +311,7 @@ void PortMidiMusicSystem::pauseSong()
 void PortMidiMusicSystem::restartSong()
 {
 	allNotesOff();
+	_ResetAllControllers();
 	MidiMusicSystem::restartSong();
 }
 
