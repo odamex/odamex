@@ -676,7 +676,7 @@ OB_MPBFG_BOOM = "%o was splintered by %k's BFG.";
 OB_MPBFG_SPLASH = "%o couldn't hide from %k's BFG.";
 OB_MPTELEFRAG = "%o was telefragged by %k.";
 OB_RAILGUN = "%o was railed by %k.";
-OB_KILLED = "%k killed %o.";
+OB_KILLED = "%o was killed by %k.";
 
 OB_DEFAULT = "%o died.";
 OB_FRIENDLY1 = "%k mows down a teammate.";
@@ -2134,7 +2134,7 @@ OB_MPBFG_BOOM = "%o e' stato sminuzzato dal BFG di %k.";
 OB_MPBFG_SPLASH = "%o non poteva nascondersi dal BFG di %k.";
 OB_MPTELEFRAG = "%o e' stato telefraggato da %k.";
 OB_RAILGUN = "%o e' stato perforato dal railgun di %k.";
-OB_KILLED = "%k ha ucciso %o.";
+OB_KILLED = "%o e' stato ucciso da %k.";
 
 OB_DEFAULT = "%o e' morto.";
 OB_FRIENDLY1 = "%k falcia via un compagno.";
