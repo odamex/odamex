@@ -795,6 +795,13 @@ BEGIN_COMMAND(fatalout)
 }
 END_COMMAND(fatalout)
 
+BEGIN_COMMAND(exceptout)
+{
+	std::string crashma = "What's crashma?";
+	Printf("%crashma game, lmao.\n", crashma.at(std::string::npos));
+}
+END_COMMAND(exceptout)
+
 #if defined _WIN32
 
 BEGIN_COMMAND(crashout)

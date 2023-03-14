@@ -117,6 +117,7 @@ EXTERN_CVAR (hud_bigfont)
 EXTERN_CVAR (hud_heldflag)
 EXTERN_CVAR (hud_heldflag_flash)
 EXTERN_CVAR (hud_transparency)
+EXTERN_CVAR (hud_anchoring)
 EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
@@ -143,6 +144,7 @@ EXTERN_CVAR (m_side)
 EXTERN_CVAR (m_forward)
 
 // [Ralphis - Menu] Sound Menu
+EXTERN_CVAR (snd_midireset)
 EXTERN_CVAR (snd_musicsystem)
 EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_announcervolume)
@@ -539,6 +541,13 @@ static value_t MusSys[] = {
 	{ MS_NONE,		"No Music"}
 };
 
+static value_t MidiReset[] = {
+	{ 0.0,			"None" },
+	{ 1.0,			"GM" },
+	{ 2.0,			"GS" },
+	{ 3.0,			"XG" }
+};
+
 static value_t VoxType[] = {
 	{ 0.0,			"Off" },
 	{ 1.0,			"Team Colors" },
@@ -563,7 +572,9 @@ static menuitem_t SoundItems[] = {
 	{ slider    ,	"Announcer Volume"             		, {&snd_announcervolume},	{0.0},      {1.0},	    {0.015625},      {NULL} },
 	{ discrete  ,   "Stereo Switch"                     , {&snd_crossover},	    {2.0},			{0.0},		{0.0},		{OnOff} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ yellowtext ,   "Music Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
+	{ discrete	,	"MIDI Reset"						, {&snd_midireset},		{4.0},			{0.0},		{0.0},		{MidiReset} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ yellowtext ,   "Sound Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete  ,   "Game SFX"                          , {&snd_gamesfx},		{2.0},			{0.0},		{0.0},		{OnOff} },
@@ -882,6 +893,7 @@ static menuitem_t HUDItems[] = {
     {yellowtext, "Floating HUD elements", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
     {discrete, "Scale HUD elements", {&hud_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {slider, "HUD Transparency", {&hud_transparency}, {0.0}, {1.0}, {0.1}, {NULL}},
+    {slider, "HUD Anchoring", {&hud_anchoring}, {0.0}, {1.0}, {0.1}, {NULL}},
     {discrete, "Bigger font in HUD", {&hud_bigfont}, {2.0}, {0.0}, {0.0}, {OnOff}},
     // clang-format off
     {discrete, "Show Secret Messages", {&hud_revealsecrets}, {4.0}, {0.0}, {0.0}, {SecretOptions}},
@@ -1120,6 +1132,14 @@ static value_t FullScreenOptions[] = {
 	{ WINDOW_DesktopFullscreen,	"Full Screen Window" }
 };
 
+static value_t WidescreenMode[] = {
+	{ 0.0,			"Off" },
+	{ 1.0,			"Auto" },
+	{ 2.0,			"16:10" },
+	{ 3.0,			"16:9" },
+	{ 4.0,			"21:9" },
+	{ 5.0,			"32:9" }
+};
 
 static menuitem_t ModesItems[] = {
 #ifdef GCONSOLE
@@ -1127,7 +1147,7 @@ static menuitem_t ModesItems[] = {
 #else
 	{ discrete, "Fullscreen",			{&vid_fullscreen},		{3.0}, {0.0},	{0.0}, {FullScreenOptions} },
 #endif
-	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
+	{ discrete,	"Widescreen",			{&vid_widescreen},		{6.0}, {0.0},	{0.0}, {WidescreenMode} } ,
 	{ discrete,	"VSync",				{&vid_vsync},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ discrete, "Framerate",			{&vid_maxfps},			{5.0}, {0.0},	{0.0}, {VidFPSCaps} },
 	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
