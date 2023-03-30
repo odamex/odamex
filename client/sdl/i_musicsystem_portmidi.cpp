@@ -140,6 +140,10 @@ void PortMidiMusicSystem::writeControl(int time, byte channel, byte control, byt
 {
 	PmMessage msg = Pm_Message(MIDI_EVENT_CONTROLLER | channel, control, value);
 	Pm_WriteShort(m_stream, time, msg);
+
+	// Reapply volume for devices that don't follow MIDI spec (e.g. MS GS Synth)
+	if (control == MIDI_CONTROLLER_RESET_ALL_CTRLS)
+		writeVolume(0, channel, m_channelVolume[channel]);
 }
 
 void PortMidiMusicSystem::writeChannel(int time, byte channel, byte status, byte param1, byte param2)
@@ -312,6 +316,11 @@ void PortMidiMusicSystem::restartSong()
 {
 	allNotesOff();
 	_ResetAllControllers();
+
+	// Reapply volume for devices that don't follow MIDI spec (e.g. MS GS Synth)
+	for (int i = 0; i < NUM_CHANNELS; i++)
+		writeVolume(0, i, m_channelVolume[i]);
+
 	MidiMusicSystem::restartSong();
 }
 
