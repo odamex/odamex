@@ -21,6 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <math.h>
+
 #include "odamex.h"
 
 #include "p_hordedefine.h"
@@ -32,8 +34,8 @@
 #include "infomap.h"
 #include "m_random.h"
 #include "oscanner.h"
-#include "w_wad.h"
 #include "v_textcolors.h"
+#include "w_wad.h"
 
 EXTERN_CVAR(g_horde_mintotalhp)
 EXTERN_CVAR(g_horde_maxtotalhp)
@@ -167,6 +169,15 @@ StringTokens hordeDefine_t::weaponStrings(player_t* player) const
 }
 
 /**
+ * @brief Return the number of monsters of a given type horde has spawned.
+ */
+int P_HordeMobjCount(const mobjCounts_t& counts, const mobjtype_t type)
+{
+	mobjCounts_t::const_iterator it = counts.find(type);
+	return it != counts.end() ? it->second : 0;
+}
+
+/**
  * @brief Get a define to use for this wave.
  *
  * @param current Current wave.
@@ -213,7 +224,7 @@ size_t P_HordePickDefine(const int current, const int total)
  * @param wantBoss Caller wants a boss.
  */
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
-                        const bool wantBoss)
+                        const bool wantBoss, const mobjCounts_t& monsterCounts)
 {
 	std::vector<const hordeDefine_t::monster_t*> monsters;
 
@@ -239,8 +250,37 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		return false;
 
 	// Randomly select a monster to spawn.
-	const hordeDefine_t::monster_t* const monster =
-	    P_RandomFloatWeighted(monsters, MonsterChance);
+	const hordeDefine_t::monster_t* monster = NULL;
+	int limit = INT_MAX;
+	for (size_t i = 0; i < 5; i++)
+	{
+		monster = P_RandomFloatWeighted(monsters, MonsterChance);
+		if (monster->config.limit <= 0)
+		{
+			// No limit, we're good.
+			break;
+		}
+
+		// Scale the limit, but whatever number we come up with must end
+		// up as an integer anyway.
+		limit = ceilf(float(monster->config.limit) * SkillScaler());
+		const int numAlive = P_HordeMobjCount(monsterCounts, monster->mobj);
+		if (numAlive < limit)
+		{
+			// We have limit enough to spawn the monster.
+			break;
+		}
+
+		// Can't fit this monster.
+		monster = NULL;
+		limit = INT_MAX;
+	}
+
+	if (monster == NULL)
+	{
+		// We can't spawn a monster.
+		return false;
+	}
 
 	const mobjtype_t outType = monster->mobj;
 	const bool outIsBoss = monster->monster != hordeDefine_t::RM_NORMAL;
@@ -263,6 +303,9 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	{
 		maxHealth = define.maxGroupHealth;
 	}
+
+	// If we have a limit, reduce the maxHealth to that.
+	maxHealth = MIN(maxHealth, limit * health);
 
 	// Minimum health.
 	int minHealth = -1;
