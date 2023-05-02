@@ -363,31 +363,6 @@ define "Sweet Christmas"
 }
 
 // Ralphis
-define "Bullet Sponges"
-{
-	grouphealth = 500, 2500
-	bosshealth = 1500, 3000
-
-	weapons = "Shotgun", "Chaingun"
-
-	addpowerup "Cell"
-	addpowerup "GreenArmor"
-	addpowerup "RocketLauncher"
-
-	addmonster "ZombieMan" {
-		chance = .67
-	}
-
-	addmonster "Archvile" {
-		grouphealth = 700, 1400
-		chance = .33
-	}
-
-	addboss "HellKnight"
-	addboss "BaronOfHell"
-}
-
-// Ralphis
 define "Misri Halek"
 {
 	grouphealth = 1500, 2750
