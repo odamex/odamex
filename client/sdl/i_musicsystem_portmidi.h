@@ -63,7 +63,8 @@ class PortMidiMusicSystem : public MidiMusicSystem
 	PmDeviceID m_outputDevice;
 	PmStream* m_stream;
 
-	void _ResetControllers();
+	void _ResetAllControllers();
+	void _ResetCommonControllers();
 	void _ResetPitchBendSensitivity();
 	void _ResetDevice(bool playing);
 	bool _IsSysExReset(const byte *data, size_t length);

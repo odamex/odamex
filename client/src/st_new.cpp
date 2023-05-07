@@ -115,6 +115,7 @@ EXTERN_CVAR(hud_timer)
 EXTERN_CVAR(hud_speedometer)
 EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(hud_transparency)
+EXTERN_CVAR(hud_anchoring)
 EXTERN_CVAR(hud_demobar)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_teamsinplay)
@@ -800,6 +801,16 @@ void OdamexHUD() {
 	yscale = hud_scale ? CleanYfac : 1;
 	y = I_GetSurfaceHeight() - (num_height + 4) * yscale;
 
+	// HUD element anchoring.
+	int num_ax = 0, text_ax = 0, patch_ax = 0;
+	if (hud_anchoring.value() < 1.0f)
+	{
+		num_ax = (((float)I_GetSurfaceWidth() - (float)I_GetSurfaceHeight() * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
+		num_ax = MAX(0, num_ax);
+		text_ax = num_ax / xscale;
+		patch_ax = num_ax / xscale;
+	}
+
 	// Draw Armor if the player has any
 	if (plyr->armortype && plyr->armorpoints) {
 		const patch_t* current_armor = W_ResolvePatchHandle(armors[1]);
@@ -809,20 +820,20 @@ void OdamexHUD() {
 
 		if (current_armor) {
 			// Draw Armor type.  Vertically centered against armor number.
-			hud::DrawPatchScaled(48 + 2 + 10, 32, 20, 20, hud_scale,
+			hud::DrawPatchScaled(patch_ax + 48 + 2 + 10, 32, 20, 20, hud_scale,
 			                     hud::X_LEFT, hud::Y_BOTTOM,
 			                     hud::X_CENTER, hud::Y_MIDDLE,
 			                     current_armor);
 		}
-		ST_DrawNumRight(48 * xscale, y - 20 * yscale, screen, plyr->armorpoints);
+		ST_DrawNumRight(num_ax + 48 * xscale, y - 20 * yscale, screen, plyr->armorpoints);
 	}
 
 	// Draw Doomguy.  Vertically scaled to an area two pixels above and
 	// below the health number, and horizontally centered below the armor.
-	hud::DrawPatchScaled(48 + 2 + 10, 2, 20, 20, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+	hud::DrawPatchScaled(patch_ax + 48 + 2 + 10, 2, 20, 20, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
 	                     hud::X_CENTER, hud::Y_BOTTOM,
 	                     W_ResolvePatchHandle(faces[st_faceindex]));
-	ST_DrawNumRight(48 * xscale, y, screen, plyr->health);
+	ST_DrawNumRight(num_ax + 48 * xscale, y, screen, plyr->health);
 
 	if (g_lives)
 	{
@@ -832,7 +843,7 @@ void OdamexHUD() {
 			lives_color = CR_DARKGREY;
 
 		StrFormat(buf, "x%d", plyr->lives);
-		hud::DrawText(48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+		hud::DrawText(text_ax + 48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
 		              hud::X_LEFT, hud::Y_MIDDLE, buf.c_str(), lives_color, false);
 	}
 
@@ -853,17 +864,17 @@ void OdamexHUD() {
 		//       probably be commonized, along with "scale only if
 		//       smaller than bounding box".
 		if (ammopatch->width() > 16 || ammopatch->height() > 16) {
-			hud::DrawPatchScaled(12, 12, 16, 16, hud_scale,
+			hud::DrawPatchScaled(patch_ax + 12, 12, 16, 16, hud_scale,
 			                     hud::X_RIGHT, hud::Y_BOTTOM,
 			                     hud::X_CENTER, hud::Y_MIDDLE,
 			                     ammopatch);
 		} else {
-			hud::DrawPatch(12, 12, hud_scale,
+			hud::DrawPatch(patch_ax + 12, 12, hud_scale,
 			               hud::X_RIGHT, hud::Y_BOTTOM,
 			               hud::X_CENTER, hud::Y_MIDDLE,
 			               ammopatch);
 		}
-		ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, y, screen, plyr->ammo[ammotype]);
+		ST_DrawNumRight(I_GetSurfaceWidth() - num_ax - 24 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
 
 	int color;
@@ -929,14 +940,14 @@ void OdamexHUD() {
 		placeheight = 0; // No place height drawn if not match duel
 	}
 
-	hud::DrawText(4, spreadheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	hud::DrawText(text_ax + 4, spreadheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
 	              hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY);
-	hud::DrawText(4, scoreheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	hud::DrawText(text_ax + 4, scoreheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
 	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_GREY);
 
 	if (G_IsMatchDuelGame())
 	{
-		hud::DrawText(4, placeheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+		hud::DrawText(text_ax + 4, placeheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 		              hud::X_RIGHT, hud::Y_BOTTOM,
 		              hud::PersonalMatchDuelPlacement().c_str(), CR_GREY);
 	}
@@ -948,7 +959,7 @@ void OdamexHUD() {
 	if (G_IsCoopGame()) {
 		for (byte i = 0;i < NUMCARDS;i++) {
 			if (plyr->cards[i]) {
-				hud::DrawPatch(4 + (i * 10), 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+				hud::DrawPatch(patch_ax + 4 + (i * 10), 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 				               hud::X_RIGHT, hud::Y_BOTTOM,
 				               W_ResolvePatchHandle(keys[i]));
 			}
