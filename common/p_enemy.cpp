@@ -2109,6 +2109,12 @@ void A_HealChase(AActor* actor)
 // 
 bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 {
+	// don't attempt to resurrect clientside
+	if (!serverside)
+	{
+		return false;
+	}
+
 	int xl, xh;
 	int yl, yh;
 	int bx, by;
