@@ -3214,7 +3214,7 @@ int SV_CalculateNumTiccmds(player_t &player)
 		// Player is not moving
 		return 2;
 	}
-	if (player.cmdqueue.size() > 2 && gametic % 2*TICRATE == player.id % 2*TICRATE)
+	if (player.cmdqueue.size() > 2 && gametic % (2*TICRATE) == player.id % (2*TICRATE))
 	{
 		// Process an extra ticcmd once every 2 seconds to reduce the
 		// queue size. Use player id to stagger the timing to prevent everyone
