@@ -134,6 +134,7 @@ public:
 
 	struct ticcmd_t cmd;	// the ticcmd currently being processed
 	std::queue<NetCommand> cmdqueue;	// all received ticcmds
+	int			missingticcmdcount;		// number of gametics without processing a ticcmd for this player
 
 	// [RH] who is this?
 	UserInfo	userinfo;
