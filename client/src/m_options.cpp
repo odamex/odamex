@@ -717,6 +717,10 @@ static menuitem_t WeaponItems[] = {
 	{redtext,   " ",                   {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{whitetext, "Weapons with higher", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{whitetext, "preference are selected first", {NULL},     {0.0}, {0.0}, {0.0}, {NULL}},
+    {redtext,	" ",				   {NULL},				 {0.0}, {0.0}, {0.0}, {NULL}},
+    {yellowtext, "! ! ! NOTICE ! ! !", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {orangetext, "While playing online, this feature", {NULL},{0.0}, {0.0}, {0.0}, {NULL}},
+    {orangetext, "only works when the server allows it!", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 };
 
 menu_t WeaponMenu = {
@@ -1632,6 +1636,11 @@ void M_OptDrawer (void)
 			case yellowtext:
 				x = 160 - width / 2;
 				color = CR_YELLOW;
+				break;
+
+			case orangetext:
+				x = 160 - width / 2;
+				color = CR_ORANGE;
 				break;
 
 			case listelement:
