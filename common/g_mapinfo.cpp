@@ -295,6 +295,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		os.mustScan();
 		mape->level_name = os.getToken();
+		mape->pname.clear();
 	}
 	else if (!stricmp(pname.c_str(), "next"))
 	{
@@ -2147,20 +2148,9 @@ void G_ParseMapInfo()
 
 	bool found_mapinfo = false;
 	lump = -1;
-
-	while ((lump = W_FindLump("ZMAPINFO", lump)) != -1)
-	{
-		found_mapinfo = true;
-		ParseMapInfoLump(lump, "ZMAPINFO");
-	}
-
-	// If ZMAPINFO exists, we don't parse a normal MAPINFO
-	if (found_mapinfo == true)
-		return;
-
-	lump = -1;
 	while ((lump = W_FindLump("UMAPINFO", lump)) != -1)
 	{
+		found_mapinfo = true;
 		ParseUMapInfoLump(lump, "UMAPINFO");
 	}
 

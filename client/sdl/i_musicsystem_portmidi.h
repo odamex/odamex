@@ -37,21 +37,37 @@ class PortMidiMusicSystem : public MidiMusicSystem
 	PortMidiMusicSystem();
 	virtual ~PortMidiMusicSystem();
 
-	virtual void stopSong();
-	virtual bool isInitialized() const { return m_isInitialized; }
+	virtual void startSong(byte *data, size_t length, bool loop);
+	virtual void pauseSong();
+	virtual void restartSong();
 
-	virtual void playEvent(MidiEvent* event, int time = 0);
+	virtual void setVolume(float volume);
+
+	virtual void writeVolume(int time, byte channel, byte volume);
+	virtual void writeControl(int time, byte channel, byte control, byte value);
+	virtual void writeChannel(int time, byte channel, byte status, byte param1, byte param2 = 0);
+	virtual void writeSysEx(int time, const byte *data, size_t length = 0);
+	virtual void allNotesOff();
+	virtual void allSoundOff();
+
+	virtual bool isInitialized() const { return m_isInitialized; }
 
   private:
 	static const int cLatency = 80;
-
+	static const byte DEFAULT_VOLUME = 100;
+	byte sysex_buffer[PM_DEFAULT_SYSEX_BUFFER_SIZE];
+	byte m_channelVolume[NUM_CHANNELS];
+	float m_volumeScale;
 	bool m_isInitialized;
 
 	PmDeviceID m_outputDevice;
 	PmStream* m_stream;
 
-	void _PlayEvent(MidiEvent* event, int time = 0);
-	void _StopSong();
+	void _ResetAllControllers();
+	void _ResetCommonControllers();
+	void _ResetPitchBendSensitivity();
+	void _ResetDevice(bool playing);
+	bool _IsSysExReset(const byte *data, size_t length);
 };
 
 #endif // PORTMIDI

@@ -117,6 +117,7 @@ EXTERN_CVAR (hud_bigfont)
 EXTERN_CVAR (hud_heldflag)
 EXTERN_CVAR (hud_heldflag_flash)
 EXTERN_CVAR (hud_transparency)
+EXTERN_CVAR (hud_anchoring)
 EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
@@ -143,6 +144,7 @@ EXTERN_CVAR (m_side)
 EXTERN_CVAR (m_forward)
 
 // [Ralphis - Menu] Sound Menu
+EXTERN_CVAR (snd_midireset)
 EXTERN_CVAR (snd_musicsystem)
 EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_announcervolume)
@@ -539,6 +541,13 @@ static value_t MusSys[] = {
 	{ MS_NONE,		"No Music"}
 };
 
+static value_t MidiReset[] = {
+	{ 0.0,			"None" },
+	{ 1.0,			"GM" },
+	{ 2.0,			"GS" },
+	{ 3.0,			"XG" }
+};
+
 static value_t VoxType[] = {
 	{ 0.0,			"Off" },
 	{ 1.0,			"Team Colors" },
@@ -563,7 +572,9 @@ static menuitem_t SoundItems[] = {
 	{ slider    ,	"Announcer Volume"             		, {&snd_announcervolume},	{0.0},      {1.0},	    {0.015625},      {NULL} },
 	{ discrete  ,   "Stereo Switch"                     , {&snd_crossover},	    {2.0},			{0.0},		{0.0},		{OnOff} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ yellowtext ,   "Music Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
+	{ discrete	,	"MIDI Reset"						, {&snd_midireset},		{4.0},			{0.0},		{0.0},		{MidiReset} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ yellowtext ,   "Sound Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete  ,   "Game SFX"                          , {&snd_gamesfx},		{2.0},			{0.0},		{0.0},		{OnOff} },
@@ -706,6 +717,10 @@ static menuitem_t WeaponItems[] = {
 	{redtext,   " ",                   {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{whitetext, "Weapons with higher", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{whitetext, "preference are selected first", {NULL},     {0.0}, {0.0}, {0.0}, {NULL}},
+    {redtext,	" ",				   {NULL},				 {0.0}, {0.0}, {0.0}, {NULL}},
+    {yellowtext, "! ! ! NOTICE ! ! !", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {orangetext, "While playing online, this feature", {NULL},{0.0}, {0.0}, {0.0}, {NULL}},
+    {orangetext, "only works when the server allows it!", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 };
 
 menu_t WeaponMenu = {
@@ -882,6 +897,7 @@ static menuitem_t HUDItems[] = {
     {yellowtext, "Floating HUD elements", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
     {discrete, "Scale HUD elements", {&hud_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {slider, "HUD Transparency", {&hud_transparency}, {0.0}, {1.0}, {0.1}, {NULL}},
+    {slider, "HUD Anchoring", {&hud_anchoring}, {0.0}, {1.0}, {0.1}, {NULL}},
     {discrete, "Bigger font in HUD", {&hud_bigfont}, {2.0}, {0.0}, {0.0}, {OnOff}},
     // clang-format off
     {discrete, "Show Secret Messages", {&hud_revealsecrets}, {4.0}, {0.0}, {0.0}, {SecretOptions}},
@@ -1110,7 +1126,11 @@ static value_t VidFPSCaps[] = {
 	{ 35.0,		"35fps" },
 	{ 60.0,		"60fps" },
 	{ 70.0,		"70fps" },
-	{ 120.0,	"120fps" },
+   	{ 105.0,	"105fps"},
+	{ 120.0,	"120fps" }, 
+	{ 140.0,	"140fps"},
+    	{ 144.0,	"144fps"},
+    	{ 240.0,	"240fps"},
 	{ 0.0,		"Unlimited" }
 };
 
@@ -1120,6 +1140,14 @@ static value_t FullScreenOptions[] = {
 	{ WINDOW_DesktopFullscreen,	"Full Screen Window" }
 };
 
+static value_t WidescreenMode[] = {
+	{ 0.0,			"Off" },
+	{ 1.0,			"Auto" },
+	{ 2.0,			"16:10" },
+	{ 3.0,			"16:9" },
+	{ 4.0,			"21:9" },
+	{ 5.0,			"32:9" }
+};
 
 static menuitem_t ModesItems[] = {
 #ifdef GCONSOLE
@@ -1127,9 +1155,9 @@ static menuitem_t ModesItems[] = {
 #else
 	{ discrete, "Fullscreen",			{&vid_fullscreen},		{3.0}, {0.0},	{0.0}, {FullScreenOptions} },
 #endif
-	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
+	{ discrete,	"Widescreen",			{&vid_widescreen},		{6.0}, {0.0},	{0.0}, {WidescreenMode} } ,
 	{ discrete,	"VSync",				{&vid_vsync},			{2.0}, {0.0},	{0.0}, {YesNo} },
-	{ discrete, "Framerate",			{&vid_maxfps},			{5.0}, {0.0},	{0.0}, {VidFPSCaps} },
+	{ discrete, "Framerate",			{&vid_maxfps},			{9.0}, {0.0},	{0.0}, {VidFPSCaps} },
 	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ redtext,	"",						{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1610,6 +1638,11 @@ void M_OptDrawer (void)
 				color = CR_YELLOW;
 				break;
 
+			case orangetext:
+				x = 160 - width / 2;
+				color = CR_ORANGE;
+				break;
+
 			case listelement:
 				x = CurrentMenu->indent + 14;
 				color = CR_RED;
@@ -1771,9 +1804,12 @@ void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;
+	int mod = ev->mod;
 	const char *cmd = Bindings.GetBind(ch).c_str();
 
 	item = CurrentMenu->items + CurrentItem;
+
+	bool numlock = mod & OMOD_NUM;
 
 	// Waiting on a key press for control binding
 	if (WaitingForKey)
@@ -1843,7 +1879,7 @@ void M_OptResponder (event_t *ev)
 	}
 
 	if (item->type == bitflag && flagsvar &&
-	    (Key_IsLeftKey(ch) || Key_IsRightKey(ch) || Key_IsAcceptKey(ch))
+	    (Key_IsLeftKey(ch, numlock) || Key_IsRightKey(ch, numlock) || Key_IsAcceptKey(ch))
 		&& !demoplayback)
 	{
 			int newflags = *item->e.flagint ^ item->a.flagmask;
@@ -1866,7 +1902,7 @@ void M_OptResponder (event_t *ev)
 
 	// Handle Keys
 	{
-		if (Key_IsDownKey(ch))
+		if (Key_IsDownKey(ch, numlock))
 		{
 			int modecol;
 
@@ -1904,7 +1940,7 @@ void M_OptResponder (event_t *ev)
 
 			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		}
-		else if (Key_IsUpKey(ch))
+		else if (Key_IsUpKey(ch, numlock))
 		{
 			int modecol;
 
@@ -1944,7 +1980,7 @@ void M_OptResponder (event_t *ev)
 
 			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		}
-		else if (Key_IsPageUpKey(ch))
+		else if (Key_IsPageUpKey(ch, numlock))
 		{
 			if (CanScrollUp)
 			{
@@ -1965,7 +2001,7 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 		}
-		else if (Key_IsPageDownKey(ch)) 
+		else if (Key_IsPageDownKey(ch, numlock)) 
 		{
 			if (CanScrollDown)
 			{
@@ -1987,7 +2023,7 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 		}
-		else if (Key_IsLeftKey(ch))
+		else if (Key_IsLeftKey(ch, numlock))
 		{
 		switch (item->type)
 		{
@@ -2115,7 +2151,7 @@ void M_OptResponder (event_t *ev)
 			break;
 		}
 		}
-		else if (Key_IsRightKey(ch))
+		else if (Key_IsRightKey(ch, numlock))
 		{
 		switch (item->type)
 		{
