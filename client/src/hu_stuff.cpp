@@ -153,7 +153,7 @@ void HU_UnsetChatMode()
 }
 
 
-BOOL altdown;
+bool altdown;
 
 void ST_voteDraw (int y);
 
@@ -237,6 +237,35 @@ void HU_ReleaseKeyStates()
 	altdown = false;
 }
 
+static int HU_GetMacroForNumpadKey(int key)
+{
+	switch (key)
+	{
+	case OKEYP_0:
+		return 0;
+	case OKEYP_1:
+		return 1;
+	case OKEYP_2:
+		return 2;
+	case OKEYP_3:
+		return 3;
+	case OKEYP_4:
+		return 4;
+	case OKEYP_5:
+		return 5;
+	case OKEYP_6:
+		return 6;
+	case OKEYP_7:
+		return 7;
+	case OKEYP_8:
+		return 8;
+	case OKEYP_9:
+		return 9;
+	default:
+		return 0;
+	}
+}
+
 //
 // HU_Responder
 //
@@ -244,16 +273,17 @@ void HU_ReleaseKeyStates()
 //
 BOOL HU_Responder(event_t *ev)
 {
-	if (ev->data1 == OKEY_RALT || ev->data1 == OKEY_LALT || ev->data1 == OKEY_HAT1)
+	if ((ev->mod & OMOD_ALT || (ev->data1 == OKEY_HAT1 && ev->type == ev_keydown)) &&
+	   !(ev->mod & OMOD_RALT && ev->mod & OMOD_LCTRL)) // Ignore AltGr
 	{
-		altdown = (ev->type == ev_keydown);
-		return false;
+		altdown = true;
 	}
-	else if (ev->data1 == OKEY_LSHIFT || ev->data1 == OKEY_RSHIFT)
+	else
 	{
-		return false;
+		altdown = false;	
 	}
-	else if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || ev->type != ev_keydown)
+
+	if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || ev->type != ev_keydown)
 	{
 		if (HU_ChatMode() != CHAT_INACTIVE)
             return true;
@@ -276,6 +306,12 @@ BOOL HU_Responder(event_t *ev)
 		else if (ev->data1 >= '0' && ev->data1 <= '9')
 		{
 			ShoveChatStr(chat_macros[ev->data1 - '0']->cstring(), HU_ChatMode() - 1);
+			HU_UnsetChatMode();
+			return true;
+		}
+		else if (ev->data1 >= OKEYP_1 && ev->data1 <= OKEYP_0 && ev->mod & OMOD_NUM) // Use numpad keys for chat macros if numlock is on
+		{
+			ShoveChatStr(chat_macros[HU_GetMacroForNumpadKey(ev->data1)]->cstring(), HU_ChatMode() - 1);
 			HU_UnsetChatMode();
 			return true;
 		}

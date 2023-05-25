@@ -36,6 +36,23 @@ enum gender_t
 	NUMGENDER
 };
 
+enum colorpreset_t	// Acts 19 quiz the order must match m_menu.cpp.
+{
+	COLOR_CUSTOM,
+	COLOR_BLUE,
+	COLOR_INDIGO,
+	COLOR_GREEN,
+	COLOR_BROWN,
+	COLOR_RED,
+	COLOR_GOLD,
+	COLOR_JUNGLEGREEN,
+	COLOR_PURPLE,
+	COLOR_WHITE,
+	COLOR_BLACK,
+
+	NUMCOLOR
+};
+
 enum weaponswitch_t
 {
 	WPSW_NEVER,

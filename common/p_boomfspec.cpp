@@ -1279,14 +1279,14 @@ void P_PlayerInCompatibleSector(player_t* player)
 		switch (sector->special)
 		{
 		case 5:
-			P_ApplySectorDamage(player, 10, 0);
+			P_ApplySectorDamage(player, 10, 0, MOD_SLIME);
 			break;
 		case 7:
-			P_ApplySectorDamage(player, 5, 0);
+			P_ApplySectorDamage(player, 5, 0, MOD_SLIME);
 			break;
 		case 16:
 		case 4:
-			P_ApplySectorDamage(player, 20, 5);
+			P_ApplySectorDamage(player, 20, 5, MOD_SLIME);
 			break;
 		case 9:
 			P_CollectSecretVanilla(sector, player);
@@ -1793,6 +1793,8 @@ void P_SpawnCompatiblePusher(line_t* l)
 bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
                                         bool bossaction)
 {
+	bool reuse = false;
+	bool trigger = false; // used for bossactions
 	// e6y
 	// b.m. side test was broken in boom201
 	if (side) // jff 6/1/98 fix inadvertent deletion of side test
@@ -1895,40 +1897,33 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			{
 				if (linefunc(line))
 				{
-					if (serverside)
-					{
-						P_ChangeSwitchTexture(line, false, true);
-						OnChangedSwitchTexture(line, false);
-					}
+					reuse = false;
+					trigger = true;
 				}
 			}
-			return true;
+			break;
 		case PushMany:
 			if (!side)
 			{
 				linefunc(line);
+				reuse = true;
+				trigger = true;
 			}
-			return true;
+			break;
 		case SwitchOnce:
 			if (linefunc(line))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
-			return true;
+			break;
 		case SwitchMany:
 			if (linefunc(line))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
-			return true;
+			break;
 		default: // if not a switch/push type, do nothing here
 			return false;
 		}
@@ -2000,87 +1995,63 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
 		                                TICS(VDOORWAIT), NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 	case 26: // Blue Door/Locked
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
 		                                TICS(VDOORWAIT), (card_t)(BCard | CardIsSkull)))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 	case 27: // Yellow Door /Locked
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
 		                                TICS(VDOORWAIT), (card_t)(YCard | CardIsSkull)))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 	case 28: // Red Door /Locked
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
 		                                TICS(VDOORWAIT), (card_t)(RCard | CardIsSkull)))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 	case 31: // Manual door open
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0, NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 	case 32: // Blue locked door open
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW),
 			0, (card_t)(BCard | CardIsSkull)))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 	case 33: // Red locked door open
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0,
 		                                (card_t)(RCard | CardIsSkull)))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 	case 34: // Yellow locked door open
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0,
 		                                (card_t)(YCard | CardIsSkull)))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2088,21 +2059,15 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_FAST),
 		                                TICS(VDOORWAIT), NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 	case 118: // Blazing door open
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_FAST), 0, NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2112,11 +2077,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT, SPEED(S_SLOW),
 		                   0, 0, 0, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2124,11 +2086,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Change Donut
 		if (EV_DoDonut(line))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2143,11 +2102,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 		if (thing && CheckIfExitIsGood(thing))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 			G_ExitLevel(0, 1);
 		}
 		break;
@@ -2157,11 +2113,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 4 * 8,
 		              SPEED(P_SLOW / 2), 0, 0, 2))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2170,11 +2123,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 3 * 8,
 		              SPEED(P_SLOW / 2), 0, 0, 2))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2182,11 +2132,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Raise Floor to next highest floor
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2194,11 +2141,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Raise Plat next highest floor and change texture
 		if (EV_DoPlat(line->id, line, DPlat::platRaiseAndStay, 0, SPEED(P_SLOW / 2), 0, 0, 1))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2207,11 +2151,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_FAST),
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2220,11 +2161,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
 		               0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2233,11 +2171,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_SLOW),
 		              TICS(VDOORWAIT), NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2246,11 +2181,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoCeiling(DCeiling::ceilLowerToFloor, line, line->id, SPEED(C_SLOW), 0, 0,
 		                 0, 0, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2259,11 +2191,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_FAST),
 		               (136 - 128) * FRACUNIT, 0, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2272,11 +2201,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoCeiling(DCeiling::crushAndRaise, line, line->id, SPEED(C_SLOW),
 		                 SPEED(C_SLOW), 0, true, 0, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2284,11 +2210,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Close Door
 		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2303,11 +2226,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 		if (thing && CheckIfExitIsGood(thing))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 			G_SecretExitLevel(0, 1);
 		}
 		break;
@@ -2317,11 +2237,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(F_SLOW), 0, true,
 		               0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2329,11 +2246,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Raise Floor
 		if (EV_DoFloor (DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW), 0, 0, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2342,11 +2256,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_SLOW),
 		               (128 - 128) * FRACUNIT, 0, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2354,11 +2265,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Open Door
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2367,11 +2275,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_FAST),
 		              TICS(VDOORWAIT), NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2379,11 +2284,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Blazing Door Open (faster than TURBO!)
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2391,11 +2293,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Blazing Door Close (faster than TURBO!)
 		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2404,11 +2303,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_TURBO),
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2417,11 +2313,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT, SPEED(S_TURBO),
 		                   TICS(0), 0, 0, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2430,11 +2323,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_FAST), 0, 0,
 		               0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2443,11 +2333,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id,
 		              SPEED(D_FAST), TICS(0), (card_t)(BCard | CardIsSkull)))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 	case 135:
@@ -2455,11 +2342,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
 		              (card_t)(RCard | CardIsSkull)))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 	case 137:
@@ -2467,11 +2351,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
 		              (card_t)(YCard | CardIsSkull)))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2480,11 +2361,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
 		               FRACUNIT * 64 * 8, 0, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2503,11 +2381,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorRaiseByTexture, line, line->id, SPEED(F_SLOW), 0,
 			               false, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2517,11 +2392,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorLowerAndChange, line, line->id, SPEED(F_SLOW),
 			               0 * FRACUNIT, false, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2531,11 +2403,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorRaiseAndChange, line, line->id, SPEED(F_SLOW),
 			               24 * FRACUNIT, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2545,11 +2414,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
 			               FRACUNIT * 24, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2559,11 +2425,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoPlat(line->id, line, DPlat::platPerpetualRaise, 0, SPEED(F_SLOW),
 			              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2571,11 +2434,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Stop Moving floor
 			// 163 S1  EV_DoPlat(perpetualRaise,0)
 			EV_StopPlat(line->id);
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 			
 			break;
 
@@ -2585,11 +2445,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::fastCrushAndRaise, line, line->id, SPEED(C_NORMAL),
 			                 SPEED(C_NORMAL), 0, true, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2599,11 +2456,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::silentCrushAndRaise, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW), 0, true, 1, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2615,11 +2469,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			    EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0,
 			               0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2629,11 +2480,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::lowerAndCrush, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW) / 2, 0, true, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2642,11 +2490,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 168 S1 EV_CeilingCrushStop()
 			if (EV_CeilingCrushStop(line->id))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2654,11 +2499,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Lights to brightest neighbor sector
 			// 169 S1  EV_LightTurnOn(0)
 			EV_LightTurnOn(line->id, -1);
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 			
 			break;
 
@@ -2666,11 +2508,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Lights to near dark
 			// 170 S1  EV_LightTurnOn(35)
 			EV_LightTurnOn(line->id, 35);
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 			
 			break;
 
@@ -2678,11 +2517,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Lights on full
 			// 171 S1  EV_LightTurnOn(255)
 			EV_LightTurnOn(line->id, 255);
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 			
 			break;
 
@@ -2690,11 +2526,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Start Lights Strobing
 			// 172 S1  EV_StartLightStrobing()
 			EV_StartLightStrobing(line->id, TICS(5), TICS(35));
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 			
 			break;
 
@@ -2702,11 +2535,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Lights to Dimmest Near
 			// 173 S1  EV_TurnTagLightsOff()
 			EV_TurnTagLightsOff(line->id);
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, false, true);
-				OnChangedSwitchTexture(line, false);
-			}
+			reuse = false;
+			trigger = true;
 			
 			break;
 
@@ -2715,11 +2545,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 174 S1  Teleport(side,thing)
 			if (EV_LineTeleport(line, side, thing))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2729,11 +2556,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoDoor(DDoor::doorCloseWaitOpen, line, thing, line->id, SPEED(F_SLOW),
 			              OCTICS(240), NoKey))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2742,11 +2566,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 189 S1 Change Texture/Type Only
 			if (EV_DoChange(line, trigChangeOnly, line->id))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2756,11 +2577,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::ceilLowerToLowest, line, line->id, SPEED(C_SLOW),
 			                 0, 0, 0, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2770,11 +2588,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::ceilLowerToHighestFloor, line, line->id,
 			                 SPEED(C_SLOW), 0, 0, 0, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2783,11 +2598,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// jff 209 S1 SilentTeleport
 			if (EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2796,11 +2608,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 241 S1 Change Texture/Type Only
 			if (EV_DoChange(line, numChangeOnly, line->id))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2810,11 +2619,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorLowerToNearest, line, line->id, SPEED(F_SLOW), 0,
 			               0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2824,11 +2630,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoElevator(line, DElevator::elevateUp, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2838,11 +2641,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoElevator(line, DElevator::elevateDown, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2852,11 +2652,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoElevator(line, DElevator::elevateCurrent, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, false, true);
-					OnChangedSwitchTexture(line, false);
-				}
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2870,11 +2667,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 78 SR Change Texture/Type Only
 			if (EV_DoChange(line, numChangeOnly, line->id))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2883,11 +2677,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 176 SR  EV_DoFloor(raiseToTexture), CSW(1)
 			if (EV_DoChange(line, numChangeOnly, line->id))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2897,11 +2688,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorLowerAndChange, line, line->id, SPEED(F_SLOW),
 			               0 * FRACUNIT, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2911,11 +2699,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
 			               FRACUNIT * 64 * 8, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2925,11 +2710,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorRaiseAndChange, line, line->id, SPEED(F_SLOW),
 			               24 * FRACUNIT, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2939,11 +2721,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
 			               FRACUNIT * 24, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2953,11 +2732,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 			EV_DoPlat(line->id, line, DPlat::platPerpetualRaise, 0, SPEED(F_SLOW),
 			          TICS(PLATWAIT), 0 * FRACUNIT, 0);
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 			
 			break;
 
@@ -2965,11 +2741,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Stop Moving floor
 			// 182 SR  EV_DoPlat(perpetualRaise,0)
 			EV_StopPlat(line->id);
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 			
 			break;
 
@@ -2979,11 +2752,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::fastCrushAndRaise, line, line->id, SPEED(C_NORMAL),
 			                 SPEED(C_NORMAL), 0, true, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2993,11 +2763,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::crushAndRaise, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW), 0, true, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3007,11 +2774,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::silentCrushAndRaise, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW), 0, true, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3023,11 +2787,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			    EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0,
 			               0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3037,11 +2798,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::lowerAndCrush, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW) / 2, 0, true, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3050,11 +2808,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 188 SR EV_CeilingCrushStop()
 			if (EV_CeilingCrushStop(line->id))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3063,11 +2818,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 190 SR Change Texture/Type Only
 			if (EV_DoChange(line, trigChangeOnly, line->id))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3076,23 +2828,17 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 191 SR  EV_DoDonut()
 			if (EV_DoDonut(line))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
 		case 192:
 			// Lights to brightest neighbor sector
 			// 192 SR  EV_LightTurnOn(0)
-			EV_LightTurnOn(line->id, 0);
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			EV_LightTurnOn(line->id, -1);
+			reuse = true;
+			trigger = true;
 			
 			break;
 
@@ -3100,11 +2846,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Start Lights Strobing
 			// 193 SR  EV_StartLightStrobing()
 			EV_StartLightStrobing(line->id, TICS(5), TICS(35));
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 
 			break;
 
@@ -3112,11 +2855,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Lights to Dimmest Near
 			// 194 SR  EV_TurnTagLightsOff()
 			EV_TurnTagLightsOff(line->id);
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 			
 			break;
 
@@ -3125,11 +2865,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 195 SR  Teleport(side,thing)
 			if (EV_LineTeleport(line, side, thing))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3139,11 +2876,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoDoor(DDoor::doorCloseWaitOpen, line, thing, line->id, SPEED(D_SLOW),
 			              OCTICS(240), NoKey))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3153,11 +2887,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::ceilLowerToLowest, line, line->id, SPEED(C_SLOW),
 			                 0, 0, 0, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3167,11 +2898,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::ceilLowerToHighestFloor, line, line->id,
 			                 SPEED(C_SLOW), 0, 0, 0, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3180,11 +2908,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// jff 210 SR SilentTeleport
 			if (EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3193,11 +2918,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 211 SR Toggle Floor Instant
 			if (EV_DoPlat(line->id, line, DPlat::platToggle, 0, 0, 0, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3207,11 +2929,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorLowerToNearest, line, line->id, SPEED(F_SLOW), 0,
 			               0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3221,11 +2940,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoElevator(line, DElevator::elevateUp, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3235,11 +2951,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoElevator(line, DElevator::elevateDown, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3249,11 +2962,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoElevator(line, DElevator::elevateCurrent, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3263,11 +2973,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT,
 			                   SPEED(S_SLOW), 0, 0, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3277,11 +2984,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT,
 			                   SPEED(S_TURBO), 0, 0, 0, 0))
 			{
-				if (serverside)
-				{
-					P_ChangeSwitchTexture(line, true, true);
-					OnChangedSwitchTexture(line, true);
-				}
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3294,11 +2998,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Close Door
 		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3307,11 +3008,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoCeiling(DCeiling::ceilLowerToFloor, line, line->id, SPEED(C_SLOW), 0, 0,
 		                 false, 0, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3320,11 +3018,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_SLOW),
 		               (128 - 128) * FRACUNIT, 0, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3333,11 +3028,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
 		               0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3345,11 +3037,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Open Door
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3358,11 +3047,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_FAST),
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3371,11 +3057,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_SLOW),
 		              TICS(VDOORWAIT), NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3384,11 +3067,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW),
 		               0, 0, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3397,11 +3077,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 3 * 8,
 		              SPEED(P_SLOW / 2), 0, 0, 2))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3410,11 +3087,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 4 * 8,
 		              SPEED(P_SLOW / 2), 0, 0, 2))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3423,11 +3097,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(F_SLOW), 0, true,
 		               0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3436,11 +3107,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platRaiseAndStay, 0, SPEED(P_SLOW / 2), 0, 0,
 		              1))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3449,11 +3117,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0,
 		               0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3462,11 +3127,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_FAST),
 		               (136 - 128) * FRACUNIT, 0, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3475,11 +3137,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_FAST),
 		              TICS(VDOORWAIT), NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3487,11 +3146,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Blazing Door Open (faster than TURBO!)
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3499,11 +3155,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Blazing Door Close (faster than TURBO!)
 		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3512,11 +3165,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_TURBO),
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3525,11 +3175,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_FAST), 0, 0,
 		               0))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3538,11 +3185,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
 		              (card_t)(BCard | CardIsSkull)))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 	case 134:
@@ -3550,11 +3194,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
 		              (card_t)(RCard | CardIsSkull)))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 	case 136:
@@ -3562,36 +3203,42 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
 		              (card_t)(YCard | CardIsSkull)))
 		{
-			if (serverside)
-			{
-				P_ChangeSwitchTexture(line, true, true);
-				OnChangedSwitchTexture(line, true);
-			}
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
 	case 138:
 		// Light Turn On
 		EV_LightTurnOn(line->id, 255);
-		if (serverside)
-		{
-			P_ChangeSwitchTexture(line, true, true);
-			OnChangedSwitchTexture(line, true);
-		}
+		reuse = true;
+		trigger = true;
 		
 		break;
 
 	case 139:
 		// Light Turn Off
 		EV_LightTurnOn(line->id, 35);
-		if (serverside)
-		{
-			P_ChangeSwitchTexture(line, true, true);
-			OnChangedSwitchTexture(line, true);
-		}
+		reuse = true;
+		trigger = true;
 		
 		break;
 	}
+
+	if (trigger && !bossaction)
+	{
+		if (serverside)
+		{
+			P_ChangeSwitchTexture(line, reuse, true);
+			OnChangedSwitchTexture(line, reuse);
+		}
+	}
+
+	if (!trigger && bossaction)
+	{
+		return false;
+	}
+
 	return true;
 }
 

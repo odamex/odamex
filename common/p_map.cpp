@@ -680,17 +680,8 @@ static BOOL PIT_CheckThing (AActor *thing)
 						mod = MOD_BFG_BOOM;
 						break;
 					// [AM] Monster fireballs get a special MOD.
-					case MT_ARACHPLAZ:
-					case MT_TROOPSHOT:
-					case MT_HEADSHOT:
-					case MT_BRUISERSHOT:
-					case MT_TRACER:
-					case MT_FATSHOT:
-					case MT_SPAWNSHOT:
-						mod = MOD_FIREBALL;
-						break;
 					default:
-						mod = MOD_UNKNOWN;
+					    mod = MOD_FIREBALL;
 						break;
 				}
 				P_DamageMobj (thing, tmthing, tmthing->target, damage, mod);
@@ -3060,7 +3051,7 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bombmod = mod;
 
 	// [Blair] Prevent crash from barrels hit by crushers
-	if (bombsource == NULL && bombspot != NULL)
+	if (!demoplayback && bombsource == NULL && bombspot != NULL)
 	{
 		bombsource = bombspot;
 	}
@@ -3170,7 +3161,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 
 	nofit = true;
 
-	if (crushchange > NO_CRUSH && !(level.time&3) )
+	if (crushchange > 0 && !(level.time&3) )
 	{
 		P_DamageMobj(thing, NULL, NULL, crushchange, MOD_CRUSH);
 

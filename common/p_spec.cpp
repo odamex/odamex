@@ -772,6 +772,13 @@ bool P_CheckTag(line_t* line)
 	default:
 		break;
 	}
+	if (!demoplayback && line->special >= GenCrusherBase && line->special <= GenEnd)
+	{
+		if ((line->special & 6) != 6) // e6y //jff 2/27/98 all non-manual
+			return false;             // generalized types require tag
+		else
+			return true;
+	}
 	return false; // zero tag not allowed
 }
 
@@ -1939,10 +1946,7 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 
 	if (result)
 	{
-		if (serverside)
-		{
-			SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
-		}
+		SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
 
 		bool repeat;
 
@@ -1951,7 +1955,7 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 		else
 			repeat = P_IsSpecialBoomRepeatable(line->special);
 
-		if (!repeat)
+		if (!repeat && !bossaction && serverside)
 		{
 			if (!(thing->player &&
 			      (thing->player->spectator || thing->player->playerstate != PST_LIVE)))
@@ -2068,7 +2072,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 		// May need to move this higher as the special is gone in Boom by this point.
 		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
 
-		if (map_format.getZDoom())
+		if (map_format.getZDoom() && !bossaction)
 		{
 			bool repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
 			P_ChangeSwitchTexture(line, repeat, true);
@@ -2155,11 +2159,11 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
     return true;
 }
 
-void P_ApplySectorDamage(player_t* player, int damage, int leak)
+void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod)
 {
 	if (!player->powers[pw_ironfeet] || (leak && P_Random(player->mo)<leak))
 		if (!(level.time & 0x1f))
-			P_DamageMobj(player->mo, NULL, NULL, damage);
+			P_DamageMobj(player->mo, NULL, NULL, damage, mod);
 }
 
 void P_ApplySectorDamageEndLevel(player_t* player)

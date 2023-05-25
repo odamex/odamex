@@ -1201,7 +1201,7 @@ static void R_InitViewWindow()
 
 	FieldOfView = int(desired_fov * FINEANGLES / 360.0f);
 
-	if (V_UseWidescreen() || V_UseLetterBox())
+	if (V_UseWidescreen())
 	{
 		float am = (3.0f * I_GetSurfaceWidth()) / (4.0f * I_GetSurfaceHeight());
 		float radfov = desired_fov * PI / 180.0f;

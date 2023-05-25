@@ -295,6 +295,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		os.mustScan();
 		mape->level_name = os.getToken();
+		mape->pname.clear();
 	}
 	else if (!stricmp(pname.c_str(), "next"))
 	{
@@ -1021,10 +1022,7 @@ void MIType_CompatFlag(OScanner& os, bool doEquals, void* data, unsigned int fla
 		else
 		{
 			os.unScan();
-			if (os.getTokenInt())
-				*static_cast<DWORD*>(data) |= flags;
-			else
-				*static_cast<DWORD*>(data) &= ~flags;
+			*static_cast<DWORD*>(data) |= flags;
 		}
 	}
 	else

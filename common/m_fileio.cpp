@@ -433,33 +433,33 @@ static size_t VolumeNameLen(std::string path)
 		return 0;
 
 	// with drive letter
-	char c = path.at(0);
-	if (path.at(1) == ':' && ('a' <= c && c <= 'z' || 'A' <= c && c <= 'Z'))
+	char c = path[0];
+	if (path[1] == ':' && ('a' <= c && c <= 'z' || 'A' <= c && c <= 'Z'))
 		return 2;
 
 	// is it UNC?
 	// https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
 	size_t l = path.length();
-	if (l >= 5 && M_IsPathSep(path.at(0)) && M_IsPathSep(path.at(1)) &&
-	    !M_IsPathSep(path.at(2)) && path.at(2) != '.')
+	if (l >= 5 && M_IsPathSep(path[0]) && M_IsPathSep(path[1]) &&
+	    !M_IsPathSep(path[2]) && path[2] != '.')
 	{
 		// first, leading `\\` and next shouldn't be `\`. its server name.
 		for (size_t n = 3; n < l - 1; n++)
 		{
 			// second, next '\' shouldn't be repeated.
-			if (M_IsPathSep(path.at(n)))
+			if (M_IsPathSep(path[n]))
 			{
 				n++;
 
 				// third, following something characters. its share name.
-				if (!M_IsPathSep(path.at(n)))
+				if (!M_IsPathSep(path[n]))
 				{
-					if (path.at(n) == '.')
+					if (path[n] == '.')
 						break;
 
 					for (; n < l; n++)
 					{
-						if (M_IsPathSep(path.at(n)))
+						if (M_IsPathSep(path[n]))
 							break;
 					}
 					return n;
@@ -501,14 +501,14 @@ std::string M_CleanPath(std::string path)
 	path = path.substr(volLen, std::string::npos);
 	if (path == "")
 	{
-		if (volLen > 1 && originalPath.at(1) != ':')
+		if (volLen > 1 && originalPath[1] != ':')
 		{
 			// should be UNC
 			return FromSlash(originalPath);
 		}
 		return originalPath + ".";
 	}
-	bool rooted = M_IsPathSep(path.at(0));
+	bool rooted = M_IsPathSep(path[0]);
 
 	// Invariants:
 	//	reading from path; r is index of next byte to process.
@@ -528,18 +528,18 @@ std::string M_CleanPath(std::string path)
 
 	while (r < n)
 	{
-		if (M_IsPathSep(path.at(r)))
+		if (M_IsPathSep(path[r]))
 		{
 			// empty path element
 			r += 1;
 		}
-		else if (path.at(r) == '.' && (r + 1 == n || M_IsPathSep(path.at(r + 1))))
+		else if (path[r] == '.' && (r + 1 == n || M_IsPathSep(path[r + 1])))
 		{
 			// . element
 			r += 1;
 		}
-		else if (path.at(r) == '.' && path.at(r + 1) == '.' &&
-		         (r + 2 == n || M_IsPathSep(path.at(r + 2))))
+		else if (path[r] == '.' && path[r + 1] == '.' &&
+		         (r + 2 == n || M_IsPathSep(path[r + 2])))
 		{
 			// .. element: remove to last separator
 			r += 2;
@@ -547,7 +547,7 @@ std::string M_CleanPath(std::string path)
 			{
 				// can backtrack
 				size_t w = out.length() - 1;
-				while (w > dotdot && !M_IsPathSep(out.at(w)))
+				while (w > dotdot && !M_IsPathSep(out[w]))
 					w -= 1;
 
 				out.resize(w);
@@ -570,8 +570,8 @@ std::string M_CleanPath(std::string path)
 				out.push_back(PATHSEPCHAR);
 
 			// copy element
-			for (; r < n && !M_IsPathSep(path.at(r)); r++)
-				out.push_back(path.at(r));
+			for (; r < n && !M_IsPathSep(path[r]); r++)
+				out.push_back(path[r]);
 		}
 	}
 

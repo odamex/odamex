@@ -38,16 +38,15 @@
 #include <string.h>
 
 #include <stdint.h>
+#include <time.h>
 
 #ifdef UNIX
 #include <netinet/in.h>
 #include <unistd.h>
-#include <sys/time.h>
 #endif
 
 #ifdef _WIN32
 #include <winsock.h>
-#include <time.h>
 #define usleep(n) Sleep(n/1000)
 #endif
 

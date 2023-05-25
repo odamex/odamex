@@ -513,6 +513,8 @@ public:
 	virtual bool isFocused() const
 	{	return false;	}
 
+	virtual void flashWindow() const { }
+
 	virtual bool usingVSync() const
 	{	return false;	}
 

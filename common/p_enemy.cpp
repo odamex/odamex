@@ -676,8 +676,11 @@ void P_NewChaseDir (AActor *actor)
 //
 bool P_LookForPlayers(AActor *actor, bool allaround)
 {
-	sector_t* sector = actor->subsector->sector;
+	// [AM] Check subsectors first.
+	if (actor->subsector == NULL)
+		return false;
 
+	sector_t* sector = actor->subsector->sector;
 	if (!sector)
 		return false;
 
@@ -2051,7 +2054,7 @@ void A_MonsterMeleeAttack(AActor* actor)
 	S_Sound(actor, CHAN_WEAPON, SoundMap[hitsound], 1, ATTN_NORM);
 
 	damage = (P_Random() % damagemod + 1) * damagebase;
-	P_DamageMobj(actor->target, actor, actor, damage);
+	P_DamageMobj(actor->target, actor, actor, damage, MOD_HIT);
 }
 
 //
@@ -2106,6 +2109,12 @@ void A_HealChase(AActor* actor)
 // 
 bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 {
+	// don't attempt to resurrect clientside
+	if (!serverside)
+	{
+		return false;
+	}
+
 	int xl, xh;
 	int yl, yh;
 	int bx, by;
@@ -2636,7 +2645,7 @@ void A_Die (AActor *actor)
 
 void A_Detonate (AActor *mo)
 {
-	P_RadiusAttack (mo, mo->target, mo->damage, mo->damage, true, MOD_UNKNOWN);
+	P_RadiusAttack (mo, mo->target, mo->damage, mo->damage, true, MOD_R_SPLASH);
 	if (mo->z <= mo->floorz + (mo->damage<<FRACBITS))
 	{
 		P_HitFloor (mo);
@@ -2663,7 +2672,7 @@ void A_Explode (AActor *thing)
 			mod = MOD_R_SPLASH;
 			break;
 		default:
-			mod = MOD_UNKNOWN;
+			mod = MOD_R_SPLASH;
 			break;
 	}
 
