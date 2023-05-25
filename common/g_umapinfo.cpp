@@ -118,6 +118,23 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		mape->level_name = os.getToken();
 		mape->pname.clear();
 	}
+	else if (!stricmp(pname.c_str(), "label"))
+	{
+		os.mustScan();
+		if (!os.isQuotedString() && os.compareTokenNoCase("clear"))
+		{
+			// todo
+		}
+		else
+		{
+			// todo
+		}
+	}
+	else if (!stricmp(pname.c_str(), "author"))
+	{
+		os.mustScan();
+		// todo
+	}
 	else if (!stricmp(pname.c_str(), "next"))
 	{
 		ParseOLumpName(os, mape->nextmap);
