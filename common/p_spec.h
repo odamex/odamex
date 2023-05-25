@@ -112,7 +112,7 @@ void P_RemoveMovingFloor(sector_t *sector);
 bool P_MovingCeilingCompleted(sector_t *sector);
 bool P_MovingFloorCompleted(sector_t *sector);
 bool P_HandleSpecialRepeat(line_t* line);
-void P_ApplySectorDamage(player_t* player, int damage, int leak);
+void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod = 0);
 void P_ApplySectorDamageEndLevel(player_t* player);
 void P_CollectSecretCommon(sector_t* sector, player_t* player);
 int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start);

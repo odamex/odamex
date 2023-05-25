@@ -386,6 +386,12 @@ CVAR_FUNC_DECL(		cl_name, "Player", "",
 CVAR(				cl_color, "40 cf 00", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(				cl_customcolor, "40 cf 00", "",
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_colorpreset, "custom", "",
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE)
+
 CVAR(				cl_gender, "male", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -548,6 +554,9 @@ CVAR(hud_speedometer, "0", "Show the HUD speedometer", CVARTYPE_BOOL, CVAR_CLIEN
 CVAR_RANGE(		hud_transparency, "1.0", "HUD transparency",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
+CVAR_RANGE(		hud_anchoring, "1.0", "HUD anchoring (0.0: Center, 1.0: Corners)",
+				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
 CVAR_RANGE(		hud_heldflag, "1", "Show the held flag border",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
@@ -648,13 +657,16 @@ static char *C_GetDefaultMusicSystem()
 	return str;
 }
 
+CVAR(			snd_midisysex, "0", "Read SysEx from MIDI files (0: Disable, 1: Enable)",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(			snd_midifallback, "1", "MIDI instrument fallback (0: Disable, 1: Enable)",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE(		snd_mididelay, "0", "MIDI delay after reset (0 to 2000 milliseconds)",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2000.0f)
 
-CVAR_RANGE(		snd_midireset, "2", "MIDI reset type (0: None, 1: GM, 2: GS, 3: XG)",
+CVAR_RANGE(		snd_midireset, "1", "MIDI reset type (0: None, 1: GM, 2: GS, 3: XG)",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 
 CVAR_FUNC_DECL(	snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem preference",
@@ -742,8 +754,8 @@ CVAR_FUNC_DECL(	vid_defwidth, "1280", "",
 CVAR_FUNC_DECL(	vid_defheight, "720", "",
 				CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL(	vid_widescreen, "1", "Use wide field-of-view with widescreen video modes",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR_FUNC_DECL(	vid_widescreen, "1", "Widescreen mode (0: Off, 1: Auto, 2: 16:10, 3: 16:9, 4: 21:9, 5: 32:9)",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL(	vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)

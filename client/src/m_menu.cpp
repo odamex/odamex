@@ -83,6 +83,7 @@ void	CL_SendUserInfo();
 void	M_ChangeTeam (int choice);
 team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
+colorpreset_t D_ColorPreset (const char *colorpreset);
 
 #define SAVESTRINGSIZE	24
 
@@ -175,11 +176,13 @@ static void M_EditPlayerName (int choice);
 //static void M_EditPlayerTeam (int choice);
 //static void M_PlayerTeamChanged (int choice);
 static void M_PlayerNameChanged (int choice);
+static void M_ChangeGender (int choice);
+static void M_ChangeAutoAim (int choice);
+static void M_ChangeColorPreset (int choice);
+static void SendNewColor (int red, int green, int blue);
 static void M_SlidePlayerRed (int choice);
 static void M_SlidePlayerGreen (int choice);
 static void M_SlidePlayerBlue (int choice);
-static void M_ChangeGender (int choice);
-static void M_ChangeAutoAim (int choice);
 bool M_DemoNoPlay;
 
 static IWindowSurface* fire_surface;
@@ -334,11 +337,12 @@ enum psetup_t
 {
 	playername,
 	playerteam,
+	playersex,
+	playeraim,
+	playercolorpreset,
 	playerred,
 	playergreen,
 	playerblue,
-	playersex,
-	playeraim,
 	psetup_end
 } psetup_e;
 
@@ -346,11 +350,12 @@ oldmenuitem_t PlayerSetupMenu[] =
 {
 	{ 1,"", M_EditPlayerName, 'N' },
 	{ 2,"", M_ChangeTeam, 'T' },
+	{ 2,"", M_ChangeGender, 'E' },
+	{ 2,"", M_ChangeAutoAim, 'A' },
+    { 2,"", M_ChangeColorPreset, 'C' },
 	{ 2,"", M_SlidePlayerRed, 'R' },
 	{ 2,"", M_SlidePlayerGreen, 'G' },
-	{ 2,"", M_SlidePlayerBlue, 'B' },
-	{ 2,"", M_ChangeGender, 'E' },
-	{ 2,"", M_ChangeAutoAim, 'A' }
+	{ 2,"", M_SlidePlayerBlue, 'B' }
 };
 
 oldmenu_t PSetupDef = {
@@ -1269,6 +1274,8 @@ void M_QuitDOOM(int choice)
 void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
 
 static const char *genders[3] = { "male", "female", "cyborg" };
+// Acts 19 quiz the order must match d_netinf.h
+static const char *colorpresets[11] = { "custom", "blue", "indigo", "green", "brown", "red", "gold", "jungle green", "purple", "white", "black" };
 static state_t *PlayerState;
 static int PlayerTics;
 argb_t CL_GetPlayerColor(player_t*);
@@ -1276,6 +1283,8 @@ argb_t CL_GetPlayerColor(player_t*);
 
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_team)
+EXTERN_CVAR (cl_colorpreset)
+EXTERN_CVAR (cl_customcolor)
 EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_autoaim)
@@ -1357,6 +1366,8 @@ static void M_PlayerSetupDrawer()
 
 	const int x2 = (I_GetSurfaceWidth() / 2) + (160 * CleanXfac);
 	const int y2 = (I_GetSurfaceHeight() / 2) + (100 * CleanYfac);
+
+	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
@@ -1499,22 +1510,6 @@ static void M_PlayerSetupDrawer()
 	screen->DrawPatchClean (W_CachePatch ("M_PBOX"),
 		320 - 88 - 32 + 36, PSetupDef.y + LINEHEIGHT*3 + 22);
 
-	// Draw player color sliders
-	//V_DrawTextCleanMove (CR_GREY, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Color");
-
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*2, "Red");
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*3, "Green");
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Blue");
-
-	{
-		const int x = V_StringWidth("Green") + 8 + PSetupDef.x;
-		const argb_t playercolor = V_GetColorFromString(cl_color);
-
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, playercolor.getr(), 0.0f);
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, playercolor.getg(), 0.0f);
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*4, 0.0f, 255.0f, playercolor.getb(), 0.0f);
-	}
-
 	// Draw team setting
 	{
 		const team_t team = D_TeamByName(cl_team.cstring());
@@ -1527,8 +1522,8 @@ static void M_PlayerSetupDrawer()
 	{
 		const gender_t gender = D_GenderByName(cl_gender.cstring());
 		const int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Gender");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*5, genders[gender]);
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*2, "Gender");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*2, genders[gender]);
 	}
 
 	// Draw autoaim setting
@@ -1536,14 +1531,46 @@ static void M_PlayerSetupDrawer()
 		const int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
 		const float aim = cl_autoaim;
 
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Autoaim");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*6,
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*3, "Autoaim");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*3,
 			aim == 0 ? "Never" :
 			aim <= 0.25 ? "Very Low" :
 			aim <= 0.5 ? "Low" :
 			aim <= 1 ? "Medium" :
 			aim <= 2 ? "High" :
 			aim <= 3 ? "Very High" : "Always");
+	}
+
+	// Draw color setting
+	{
+		const int x = V_StringWidth ("Color") + 8 + PSetupDef.x;
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Color");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*4, colorpresets[colorpreset]);
+	}
+
+	int PSetupSize = sizeof(PlayerSetupMenu) / sizeof(PlayerSetupMenu[0]);
+	if (colorpreset == COLOR_CUSTOM && PSetupDef.numitems < PSetupSize)
+		PSetupDef.numitems = PSetupDef.numitems + 3;
+	else if (colorpreset != COLOR_CUSTOM && PSetupDef.numitems > PSetupSize - 3)
+		PSetupDef.numitems = PSetupDef.numitems - 3;
+
+	// Draw player color sliders
+	//V_DrawTextCleanMove (CR_GREY, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Color");
+
+	if (colorpreset == COLOR_CUSTOM)
+	{
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Red");
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Green");
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*7, "Blue");
+
+		{
+			const int x = V_StringWidth("Green") + 8 + PSetupDef.x;
+			const argb_t playercolor = V_GetColorFromString(cl_color);
+
+			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*5, 0.0f, 255.0f, playercolor.getr(), 0.0f);
+			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*6, 0.0f, 255.0f, playercolor.getg(), 0.0f);
+			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*7, 0.0f, 255.0f, playercolor.getb(), 0.0f);
+		}
 	}
 }
 
@@ -1607,6 +1634,47 @@ static void M_ChangeAutoAim (int choice)
 	cl_autoaim.Set (aim);
 }
 
+static void M_ChangeColorPreset (int choice)
+{
+	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
+	argb_t customcolor = V_GetColorFromString(cl_customcolor);
+
+	if (!choice)
+		colorpreset = (colorpreset == 0) ? 10 : colorpreset - 1;
+	else
+		colorpreset = (colorpreset == 10) ? 0 : colorpreset + 1;
+
+	cl_colorpreset = colorpresets[colorpreset];
+
+	if (colorpreset == COLOR_BLUE)
+		// the Corn Chex jump suit; it should be brighter, but that introduces gray pixels on 8-bit
+		SendNewColor(57, 57, 255);
+	else if (colorpreset == COLOR_INDIGO)
+		// the Wheat Chex jump suit; a little darker than the blue
+		SendNewColor(134, 134, 134);
+	else if (colorpreset == COLOR_GREEN)
+		// the Odamex green default
+		SendNewColor(64, 207, 0);
+	else if (colorpreset == COLOR_BROWN)
+		// my best approximation of the Vanilla brown translation
+		SendNewColor(169, 87, 31);
+	else if (colorpreset == COLOR_RED)
+		// the blue luminosity matched to the Vanilla red hue without looking bad on 8-bit
+		SendNewColor(250, 62, 62);
+	else if (colorpreset == COLOR_GOLD)
+		SendNewColor(255, 206, 43);
+	else if (colorpreset == COLOR_JUNGLEGREEN)
+		SendNewColor(32, 104, 0);
+	else if (colorpreset == COLOR_PURPLE)
+		SendNewColor(255, 10, 255);
+	else if (colorpreset == COLOR_WHITE)
+		SendNewColor(255, 255, 255);
+	else if (colorpreset == COLOR_BLACK)
+		SendNewColor(0, 0, 0);
+	else
+		SendNewColor(customcolor.getr(), customcolor.getg(), customcolor.getb());
+}
+
 static void M_EditPlayerName (int choice)
 {
 	// we are going to be intercepting all chars
@@ -1640,10 +1708,17 @@ static void M_PlayerTeamChanged (int choice)
 
 static void SendNewColor(int red, int green, int blue)
 {
-	char command[24];
+	std::string colorcommand;
+	std::string customcolorcommand;
+	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 
-	sprintf(command, "cl_color \"%02x %02x %02x\"", red, green, blue);
-	AddCommandString(command);
+	StrFormat(colorcommand, "cl_color \"%02x %02x %02x\"", red, green, blue);
+	AddCommandString(colorcommand);
+	if (colorpreset == COLOR_CUSTOM)
+	{
+		StrFormat(customcolorcommand, "cl_customcolor \"%02x %02x %02x\"", red, green, blue);
+		AddCommandString(customcolorcommand);
+	}
 
 	// [SL] not connected to a server so we don't have to wait for the server
 	// to verify the color choice

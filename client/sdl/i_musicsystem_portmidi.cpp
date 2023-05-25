@@ -36,6 +36,7 @@
 EXTERN_CVAR(snd_musicdevice)
 EXTERN_CVAR(snd_midireset)
 EXTERN_CVAR(snd_mididelay)
+EXTERN_CVAR(snd_midisysex)
 
 // ============================================================================
 // Partially based on an implementation from prboom-plus by Nicholai Main (Natt).
@@ -139,6 +140,10 @@ void PortMidiMusicSystem::writeControl(int time, byte channel, byte control, byt
 {
 	PmMessage msg = Pm_Message(MIDI_EVENT_CONTROLLER | channel, control, value);
 	Pm_WriteShort(m_stream, time, msg);
+
+	// Reapply volume for devices that don't follow MIDI spec (e.g. MS GS Synth)
+	if (control == MIDI_CONTROLLER_RESET_ALL_CTRLS)
+		writeVolume(0, channel, m_channelVolume[channel]);
 }
 
 void PortMidiMusicSystem::writeChannel(int time, byte channel, byte status, byte param1, byte param2)
@@ -149,6 +154,9 @@ void PortMidiMusicSystem::writeChannel(int time, byte channel, byte status, byte
 
 void PortMidiMusicSystem::writeSysEx(int time, const byte *data, size_t length)
 {
+	if (!snd_midisysex)
+		return;
+
 	// Ignore messages that are too long
 	if (length > PM_DEFAULT_SYSEX_BUFFER_SIZE - 1)
 		return;
@@ -204,12 +212,19 @@ void PortMidiMusicSystem::allSoundOff()
 		writeControl(0, i, MIDI_CONTROLLER_ALL_SOUND_OFF, 0);
 }
 
-void PortMidiMusicSystem::_ResetControllers()
+void PortMidiMusicSystem::_ResetAllControllers()
 {
 	for (int i = 0; i < NUM_CHANNELS; i++)
 	{
-		// Reset commonly used controllers
 		writeControl(0, i, MIDI_CONTROLLER_RESET_ALL_CTRLS, 0);
+	}
+}
+
+void PortMidiMusicSystem::_ResetCommonControllers()
+{
+	for (int i = 0; i < NUM_CHANNELS; i++)
+	{
+		// Reset commonly used controllers not covered by "Reset All Controllers"
 		writeControl(0, i, MIDI_CONTROLLER_PAN, 64);
 		writeControl(0, i, MIDI_CONTROLLER_REVERB, 40);
 		writeControl(0, i, MIDI_CONTROLLER_CHORUS, 0);
@@ -247,7 +262,8 @@ void PortMidiMusicSystem::_ResetDevice(bool playing)
 	switch (midireset)
 	{
 		case MIDI_RESET_NONE:
-			_ResetControllers();
+			_ResetAllControllers();
+			_ResetCommonControllers();
 			break;
 
 		case MIDI_RESET_GM:
@@ -267,6 +283,10 @@ void PortMidiMusicSystem::_ResetDevice(bool playing)
 
 	if (midireset == MIDI_RESET_GS)
 		_EnableFallback();
+
+	// Reset tracked channel volumes
+	for (int i = 0; i < NUM_CHANNELS; i++)
+		m_channelVolume[i] = DEFAULT_VOLUME;
 
 	// Reset to default volume on shutdown if no SysEx reset selected
 	if (!playing && midireset == MIDI_RESET_NONE)
@@ -295,6 +315,12 @@ void PortMidiMusicSystem::pauseSong()
 void PortMidiMusicSystem::restartSong()
 {
 	allNotesOff();
+	_ResetAllControllers();
+
+	// Reapply volume for devices that don't follow MIDI spec (e.g. MS GS Synth)
+	for (int i = 0; i < NUM_CHANNELS; i++)
+		writeVolume(0, i, m_channelVolume[i]);
+
 	MidiMusicSystem::restartSong();
 }
 
