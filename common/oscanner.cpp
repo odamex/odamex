@@ -289,8 +289,8 @@ void OScanner::mustScan(size_t max_length)
 	{
 		if (m_token.length() > max_length)
 		{
-			error("String \"%s\" is too long. Maximum length is %zu characters.",
-			      m_token.c_str(), max_length);
+			error("String \"%s\" is too long. Maximum length is %" PRIuSIZE
+			       " characters.", m_token.c_str(), max_length);
 		}
 	}
 }
