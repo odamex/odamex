@@ -1952,15 +1952,32 @@ void AM_Drawer()
 		}
 		else
 		{
-			strcpy(line, TEXTCOLOR_RED);
-			int pos = strlen(line);
-			for (int i = 0; i < 8 && level.mapname[i]; i++, pos++)
-				line[pos] = level.mapname[i];
+			int pos = 0;
 
-			line[pos++] = ':';
-			strcpy(line + pos, TEXTCOLOR_NORMAL);
-			pos = strlen(line);
-			line[pos++] = ' ';
+			if (!level.clearlabel)
+			{
+				strcpy(line, TEXTCOLOR_RED);
+				pos = strlen(line);
+
+				// use user provided label if one exists
+				if (!level.label.empty())
+				{
+					for (int i = 0; i < level.label.size(); i++, pos++) // FIXME: overwrite buffer possible
+						line[pos] = level.label[i];
+					strcpy(line + pos, TEXTCOLOR_NORMAL);
+					pos = strlen(line);
+				}
+				else
+				{
+					for (int i = 0; i < 8 && level.mapname[i]; i++, pos++)
+						line[pos] = level.mapname[i];
+					line[pos++] = ':';
+					strcpy(line + pos, TEXTCOLOR_NORMAL);
+					pos = strlen(line);
+					line[pos++] = ' ';
+				}
+			}
+
 			strcpy(&line[pos], level.level_name);
 
 			int x, y;

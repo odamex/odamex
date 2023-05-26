@@ -123,17 +123,17 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		os.mustScan();
 		if (!os.isQuotedString() && os.compareTokenNoCase("clear"))
 		{
-			// todo
+			mape->clearlabel = true;
 		}
 		else
 		{
-			// todo
+			mape->label = os.getToken();
 		}
 	}
 	else if (!stricmp(pname.c_str(), "author"))
 	{
 		os.mustScan();
-		// todo
+		mape->author = os.getToken();
 	}
 	else if (!stricmp(pname.c_str(), "next"))
 	{

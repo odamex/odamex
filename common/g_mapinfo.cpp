@@ -36,7 +36,7 @@
 #include "g_umapinfo.h"
 
 /// Globals
-BOOL HexenHack;
+bool HexenHack;
 
 namespace
 {

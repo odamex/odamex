@@ -920,6 +920,9 @@ void G_InitLevelLocals()
 	::level.intermusic = info.intermusic;
 	
 	::level.bossactions = info.bossactions;
+	::level.label = info.label;
+	::level.clearlabel = info.clearlabel;
+	::level.author = info.author;
 	
 	::level.detected_gametype = GM_COOP;
 
