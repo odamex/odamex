@@ -1109,6 +1109,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY3("compat_boomscroll", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 		ENTRY3("compat_sectorsounds", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 		ENTRY4("compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER)
+		ENTRY3("author", &MIType_String, &ref.author)
 	}
 };
 
