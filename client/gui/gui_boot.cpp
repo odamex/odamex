@@ -112,6 +112,9 @@ class BootWindow : public Fl_Window
 	Fl_Hold_Browser* m_IWADBrowser;
 	Fl_Check_Browser* m_PWADSelectBrowser;
 	Fl_Hold_Browser* m_PWADOrderBrowser;
+	Fl_Check_Button* m_nomonstersCheckButton;
+	Fl_Check_Button* m_fastCheckButton;
+	Fl_Check_Button* m_respawnCheckButton;
 	StringTokens m_WADDirs;
 	Fl_Hold_Browser* m_WADDirList;
 
@@ -165,6 +168,24 @@ class BootWindow : public Fl_Window
 				} // Fl_Button* doWADRemove
 				m_tabPWADs->end();
 			} // Fl_Group* tabPWADs
+			{
+				Fl_Group* tabGameOptions = 
+					new Fl_Group(0, 25, 425, 175, "Game Options");
+				{
+					m_nomonstersCheckButton = new Fl_Check_Button(10, 50, 20, 20, " No Monsters");
+					m_nomonstersCheckButton->down_box(FL_DOWN_BOX);
+				}
+				{
+					m_fastCheckButton = new Fl_Check_Button(10, 100, 20, 20, " Fast Monsters");
+					m_fastCheckButton->down_box(FL_DOWN_BOX);
+				}
+				{
+					m_respawnCheckButton = new Fl_Check_Button(10, 150, 20, 20, " Respawn Monsters");
+					m_respawnCheckButton->down_box(FL_DOWN_BOX);
+				}
+				tabGameOptions->end();
+
+			} // Fl_Group* tabGameOptions
 			{
 				Fl_Group* tabWADDirs =
 				    new Fl_Group(0, 25, 425, 175, "Resource Locations");
