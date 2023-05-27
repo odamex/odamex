@@ -55,7 +55,7 @@ static int I_PortMidiTime(void* time_info = NULL)
 
 PortMidiMusicSystem::PortMidiMusicSystem()
 	: MidiMusicSystem(), sysex_buffer(), m_channelVolume(), m_volumeScale(0.0f),
-	  m_isInitialized(false), m_outputDevice(-1), m_stream(NULL)
+	  m_isInitialized(false), m_isPlaying(false), m_outputDevice(-1), m_stream(NULL)
 {
 	const int output_buffer_size = 1024;
 	const PmDeviceInfo *info;
@@ -122,6 +122,7 @@ PortMidiMusicSystem::~PortMidiMusicSystem()
 		return;
 
 	m_isInitialized = false;
+	m_isPlaying = false;
 
 	if (m_stream)
 	{
@@ -301,8 +302,21 @@ void PortMidiMusicSystem::_ResetDevice(bool playing)
 
 void PortMidiMusicSystem::startSong(byte *data, size_t length, bool loop)
 {
+	m_isPlaying = false;
 	_ResetDevice(true);
 	MidiMusicSystem::startSong(data, length, loop);
+	m_isPlaying = true;
+}
+
+void PortMidiMusicSystem::stopSong()
+{
+	if (m_isPlaying)
+	{
+		allNotesOff();
+		allSoundOff();
+		m_isPlaying = false;
+	}
+	MidiMusicSystem::stopSong();
 }
 
 void PortMidiMusicSystem::pauseSong()
