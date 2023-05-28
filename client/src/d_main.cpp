@@ -801,6 +801,12 @@ void D_DoomMain()
 			scannedWADs_t wads = GUI_BootWindow();
 			iwad = wads.iwad;
 			pwads = wads.pwads;
+			// Nomonsters
+			sv_nomonsters = wads.nomonsters;
+			// Respawn
+			sv_monstersrespawn = wads.respawn;
+			// Fast
+			sv_fastmonsters = wads.fast;
 		}
 	}
 
@@ -860,13 +866,13 @@ void D_DoomMain()
 		vid_ticker.SetDefault("1");
  
 	// Nomonsters
-	sv_nomonsters = Args.CheckParm("-nomonsters");
+	//sv_nomonsters = Args.CheckParm("-nomonsters");
 
 	// Respawn
-	sv_monstersrespawn = Args.CheckParm("-respawn");
+	//sv_monstersrespawn = Args.CheckParm("-respawn");
 
 	// Fast
-	sv_fastmonsters = Args.CheckParm("-fast");
+	//sv_fastmonsters = Args.CheckParm("-fast");
 
 	// Pistol start
 	g_resetinvonexit = Args.CheckParm("-pistolstart");

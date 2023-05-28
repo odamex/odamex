@@ -293,6 +293,7 @@ class BootWindow : public Fl_Window
 		}
 
 		boot->selectedWADs();
+		boot->setOptions();
 		Fl::delete_widget(boot);
 	}
 
@@ -516,6 +517,13 @@ class BootWindow : public Fl_Window
 		{
 			g_SelectedWADs.pwads.push_back((*it)->path);
 		}
+	}
+
+	void setOptions()
+	{
+		g_SelectedWADs.fast = m_fastCheckButton->value();
+		g_SelectedWADs.nomonsters = m_nomonstersCheckButton->value();
+		g_SelectedWADs.respawn = m_respawnCheckButton->value();
 	}
 
 	/**

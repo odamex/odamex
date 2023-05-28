@@ -27,6 +27,9 @@ struct scannedWADs_t
 {
     std::string iwad;
     StringTokens pwads;
+    bool nomonsters;
+    bool respawn;
+    bool fast;
 };
 
 scannedWADs_t GUI_BootWindow();
