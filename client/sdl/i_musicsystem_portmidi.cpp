@@ -55,7 +55,7 @@ static int I_PortMidiTime(void* time_info = NULL)
 
 PortMidiMusicSystem::PortMidiMusicSystem()
 	: MidiMusicSystem(), sysex_buffer(), m_channelVolume(), m_volumeScale(0.0f),
-	  m_isInitialized(false), m_outputDevice(-1), m_stream(NULL)
+	  m_isInitialized(false), m_isPlaying(false), m_outputDevice(-1), m_stream(NULL)
 {
 	const int output_buffer_size = 1024;
 	const PmDeviceInfo *info;
@@ -122,6 +122,7 @@ PortMidiMusicSystem::~PortMidiMusicSystem()
 		return;
 
 	m_isInitialized = false;
+	m_isPlaying = false;
 
 	if (m_stream)
 	{
@@ -138,12 +139,15 @@ PortMidiMusicSystem::~PortMidiMusicSystem()
 
 void PortMidiMusicSystem::writeControl(int time, byte channel, byte control, byte value)
 {
-	PmMessage msg = Pm_Message(MIDI_EVENT_CONTROLLER | channel, control, value);
-	Pm_WriteShort(m_stream, time, msg);
+	PmMessage msg;
 
-	// Reapply volume for devices that don't follow MIDI spec (e.g. MS GS Synth)
+	// MS GS Wavetable Synth resets volume if "reset all controllers" value isn't zero.
 	if (control == MIDI_CONTROLLER_RESET_ALL_CTRLS)
-		writeVolume(0, channel, m_channelVolume[channel]);
+		msg = Pm_Message(MIDI_EVENT_CONTROLLER | channel, control, 0);
+	else
+		msg = Pm_Message(MIDI_EVENT_CONTROLLER | channel, control, value);
+
+	Pm_WriteShort(m_stream, time, msg);
 }
 
 void PortMidiMusicSystem::writeChannel(int time, byte channel, byte status, byte param1, byte param2)
@@ -301,8 +305,21 @@ void PortMidiMusicSystem::_ResetDevice(bool playing)
 
 void PortMidiMusicSystem::startSong(byte *data, size_t length, bool loop)
 {
+	m_isPlaying = false;
 	_ResetDevice(true);
 	MidiMusicSystem::startSong(data, length, loop);
+	m_isPlaying = true;
+}
+
+void PortMidiMusicSystem::stopSong()
+{
+	if (m_isPlaying)
+	{
+		allNotesOff();
+		allSoundOff();
+		m_isPlaying = false;
+	}
+	MidiMusicSystem::stopSong();
 }
 
 void PortMidiMusicSystem::pauseSong()
@@ -316,11 +333,6 @@ void PortMidiMusicSystem::restartSong()
 {
 	allNotesOff();
 	_ResetAllControllers();
-
-	// Reapply volume for devices that don't follow MIDI spec (e.g. MS GS Synth)
-	for (int i = 0; i < NUM_CHANNELS; i++)
-		writeVolume(0, i, m_channelVolume[i]);
-
 	MidiMusicSystem::restartSong();
 }
 
