@@ -1368,9 +1368,14 @@ void LevelStateHUD()
 		break;
 	}
 	case LevelState::ENDROUND_COUNTDOWN: {
-		StrFormat(lines.title,
-		          "Round " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
-		          ::levelstate.getRound());
+		if (G_IsCoopGame() | G_IsHordeMode())
+			StrFormat(lines.title,
+				"Attempt " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
+				::levelstate.getRound());
+		else
+			StrFormat(lines.title,
+				"Round " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
+				::levelstate.getRound());
 
 		WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
@@ -1381,15 +1386,27 @@ void LevelStateHUD()
 		else if (win.type == WinInfo::WIN_TEAM)
 			StrFormat(lines.subtitle[0], "%s team wins the round",
 			          WinToColorString(win).c_str());
+		else if (G_IsCoopGame() | G_IsHordeMode())
+			StrFormat(lines.subtitle[0], "Next attempt in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
 		else
 			StrFormat(lines.subtitle[0], "Next round in " TEXTCOLOR_GREEN "%d",
 			          ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::ENDGAME_COUNTDOWN: {
-		StrFormat(lines.title, "Match complete");
-
 		WinInfo win = ::levelstate.getWinInfo();
+		//Upper Text
+		if 
+			(win.type == WinInfo::WIN_EVERYBODY)
+			StrFormat(lines.title, TEXTCOLOR_YELLOW "Mission Success!");
+		else if 
+			(win.type == WinInfo::WIN_NOBODY)
+			StrFormat(lines.title, TEXTCOLOR_RED "Mission Failed!");
+		else
+			StrFormat(lines.title, "Match complete");
+
+		// Lower Text
 		if (win.type == WinInfo::WIN_DRAW)
 			StrFormat(lines.subtitle[0], "The game ends in a tie");
 		else if (win.type == WinInfo::WIN_PLAYER)
