@@ -175,13 +175,18 @@ struct level_pwad_info_t
 	OLumpName		intermusic;
 	
 	std::vector<bossaction_t> bossactions;
+
+	std::string		label;
+	bool			clearlabel;
+	std::string		author;
 	
 	level_pwad_info_t()
 	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
 	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
 	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
 	      aircontrol(0.0f), exitpic(""), enterpic(""), endpic(""), intertext(""),
-	      intertextsecret(""), interbackdrop(""), intermusic(""), bossactions()
+	      intertextsecret(""), interbackdrop(""), intermusic(""), bossactions(), label(),
+	      clearlabel(false), author()
 	{
 		ArrayInit(fadeto_color, 0);
 		ArrayInit(level_fingerprint, 0);
@@ -197,7 +202,7 @@ struct level_pwad_info_t
 		  snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
 		  skypic2(""), gravity(0.0f), aircontrol(0.0f), exitpic(""), enterpic(""),
 		  endpic(""), intertext(""), intertextsecret(""), interbackdrop(""), intermusic(""),
-		  bossactions()
+		  bossactions(), label(), clearlabel(false), author()
 	{
 		ArrayInit(fadeto_color, 0);
 		ArrayInit(outsidefog_color, 0);
@@ -240,6 +245,9 @@ struct level_pwad_info_t
 		bossactions.clear();
 		std::copy(other.bossactions.begin(), other.bossactions.end(),
 		          bossactions.begin());
+		label = other.label;
+		clearlabel = other.clearlabel;
+		author = other.author;
 
 		return *this;
 	}
@@ -311,6 +319,10 @@ struct level_locals_t
 	OLumpName		intermusic;
 	
 	std::vector<bossaction_t> bossactions;
+
+	std::string		label;
+	bool			clearlabel;
+	std::string		author;
 	
 	// The following is used for automatic gametype detection.
 	float			detected_gametype;
