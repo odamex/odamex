@@ -697,12 +697,31 @@ static BOOL PIT_CheckThing (AActor *thing)
 		// [SL] Work-around the additional height added to players
 		// in P_CheckPosition. Don't let players grab items above
 		// their real height!
-		if (!P_AllowPassover() || !tmthing->player ||
-			thing->z < tmthing->z + tmthing->height - 24*FRACUNIT)
+		if (!P_AllowPassover() || thing->z < tmthing->z + tmthing->height - 24*FRACUNIT)
 			P_TouchSpecialThing (thing, tmthing);	// can remove thing
+
+		return !solid;
 	}
 
-	return !solid;
+	// killough 3/16/98: Allow non-solid moving objects to move through solid
+	// ones, by allowing the moving thing (tmthing) to move if it's non-solid,
+	// despite another solid thing being in the way.
+	// killough 4/11/98: Treat no-clipping things as not blocking
+	// ...but not in demo_compatibility mode
+
+	// e6y
+	// Correction of wrong return value with demo_compatibility.
+	// There is no more synch on http://www.doomworld.com/sda/dwdemo/w303-115.zip
+	// (with correction in setMobjInfoValue)
+	if (demoplayback || !co_boomphys
+	    //&& !prboom_comp[PC_TREAT_NO_CLIPPING_THINGS_AS_NOT_BLOCKING].state
+			)
+		return !(thing->flags & MF_SOLID);
+	else
+		return !((thing->flags & MF_SOLID && !(thing->flags & MF_NOCLIP)) &&
+		         (tmthing->flags & MF_SOLID || (demoplayback || !co_boomphys)));
+
+	// return !(thing->flags & MF_SOLID);   // old code -- killough
 }
 
 // This routine checks for Lost Souls trying to be spawned		// phares
