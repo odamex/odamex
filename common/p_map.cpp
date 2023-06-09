@@ -637,7 +637,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 		}
 
 		if (!(thing->flags & MF_SHOOTABLE))
-			return !solid;		// didn't do any damage
+			return !solid; // didn't do any damage
 
 		// Don't clip the projectile unless it's not a teammate.
 		if (!P_ShouldClipPlayer(tmthing, thing))
@@ -702,7 +702,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 			P_TouchSpecialThing (thing, tmthing);	// can remove thing
 	}
 
-	return !solid;
+	return !solid || !(tmthing->flags & MF_SOLID);
 }
 
 // This routine checks for Lost Souls trying to be spawned		// phares
