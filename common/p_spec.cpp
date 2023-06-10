@@ -2556,6 +2556,7 @@ void DScroller::RunThink ()
 				  {
 					// Move objects only if on floor or underwater,
 					// non-floating, and clipped.
+					thing->on_conveyer = true;
 					thing->momx += dx;
 					thing->momy += dy;
 				  }
