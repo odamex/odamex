@@ -127,7 +127,7 @@ AActor::AActor()
       prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
       subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
       height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
-      info(NULL), tics(0), on_conveyer(true),state(NULL), damage(0), flags(0), flags2(0), 
+      info(NULL), tics(0), on_conveyor(true),state(NULL), damage(0), flags(0), flags2(0), 
       flags3(0), oflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
@@ -148,7 +148,7 @@ AActor::AActor(const AActor& other)
       dropoffz(other.dropoffz), floorsector(other.floorsector), radius(other.radius),
       height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
       validcount(other.validcount), type(other.type), info(other.info), tics(other.tics),
-      state(other.state), on_conveyer(other.on_conveyer), damage(other.damage), 
+      state(other.state), on_conveyor(other.on_conveyor), damage(other.damage), 
       flags(other.flags), flags2(other.flags2), flags3(other.flags3), oflags(other.oflags), 
       special1(other.special1), special2(other.special2),
       health(other.health), movedir(other.movedir), movecount(other.movecount),
@@ -197,7 +197,7 @@ AActor &AActor::operator= (const AActor &other)
     info = other.info;
     tics = other.tics;
     state = other.state;
-    on_conveyer = other.on_conveyer;
+    on_conveyor = other.on_conveyor;
     damage = other.damage;
     flags = other.flags;
     flags2 = other.flags2;
@@ -246,7 +246,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
       prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
       subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
       height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
-      info(NULL), tics(0), on_conveyer(true), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
+      info(NULL), tics(0), on_conveyor(true), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
       special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
@@ -684,7 +684,7 @@ void AActor::RunThink ()
 		prevpitch = pitch;
 	}
 
-	if (on_conveyer)
+	if (on_conveyor)
 	{
 		bool still_on = false;
 
@@ -725,7 +725,7 @@ void AActor::RunThink ()
 			}
 		}
 
-		on_conveyer = still_on;
+		on_conveyor = still_on;
 	}
 
 	// server removal of corpses only
