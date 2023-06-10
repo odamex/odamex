@@ -684,44 +684,49 @@ void AActor::RunThink ()
 		prevpitch = pitch;
 	}
 
+	// Check to see if this actor is still on a conveyor.
 	if (on_conveyor)
 	{
 		bool still_on = false;
 
 		TThinkerIterator<DScroller> scrollIter;
 		DScroller* scroller;
+
 		while ((scroller = scrollIter.Next()))
 		{
-			if (scroller->GetType() == DScroller::sc_carry)
+			if (scroller->GetType() != DScroller::sc_carry)
 			{
-				sector_t* sec = sectors + scroller->GetAffectee();
+				continue;
+			}
+
+			sector_t* sec = sectors + scroller->GetAffectee();
+			fixed_t height = P_HighestHeightOfFloor(sec);
+			fixed_t waterheight =
+			    sec->heightsec && P_HighestHeightOfFloor(sec->heightsec) > height
+			        ? P_HighestHeightOfFloor(sec->heightsec)
+			        : MININT;
+
+			if ((subsector->sector - sectors) == scroller->GetAffectee())
+			{
 				msecnode_t* node;
 				AActor* thing;
-				fixed_t height = P_HighestHeightOfFloor(sec);
-				fixed_t waterheight =
-				    sec->heightsec && P_HighestHeightOfFloor(sec->heightsec) > height
-				        ? P_HighestHeightOfFloor(sec->heightsec)
-				        : MININT;
 
-				if ((subsector->sector - sectors) == scroller->GetAffectee())
+				for (node = sec->touching_thinglist; node; node = node->m_snext)
 				{
-					for (node = sec->touching_thinglist; node; node = node->m_snext)
+					if (!((thing = node->m_thing)->flags & MF_NOCLIP) &&
+					    (!(thing->flags & MF_NOGRAVITY || thing->z > height) ||
+					     thing->z < waterheight) &&
+					    thing == this)
 					{
-						if (!((thing = node->m_thing)->flags & MF_NOCLIP) &&
-						    (!(thing->flags & MF_NOGRAVITY || thing->z > height) ||
-						     thing->z < waterheight) &&
-						    thing == this)
-						{
-							still_on = true;
-							break;
-						}
+						still_on = true;
+						break;
 					}
 				}
+			}
 
-				if (still_on)
-				{
-					break;
-				}
+			if (still_on)
+			{
+				break;
 			}
 		}
 
