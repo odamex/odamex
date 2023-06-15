@@ -22,7 +22,8 @@
 //-----------------------------------------------------------------------------
 
 #pragma once
-#include <array>
+
+#include "m_argv.h"
 
 struct scannedWADs_t
 {

@@ -180,6 +180,7 @@ class BootWindow : public Fl_Window
 					m_gameOptionsBrowser->add("No Monsters");
 					m_gameOptionsBrowser->add("Fast Monsters");
 					m_gameOptionsBrowser->add("Respawn Monsters");
+					m_gameOptionsBrowser->add("Pistol Start");
 				}
 				tabGameOptions->end();
 

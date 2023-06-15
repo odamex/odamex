@@ -801,12 +801,22 @@ void D_DoomMain()
 			scannedWADs_t wads = GUI_BootWindow();
 			iwad = wads.iwad;
 			pwads = wads.pwads;
+
 			// Nomonsters
-			sv_nomonsters = wads.options[0];
+			if(wads.options[0])
+				Args.AppendArg("-nomonsters");
+
 			// Fast
-			sv_fastmonsters = wads.options[1];
+			if(wads.options[1])
+				Args.AppendArg("-fast");
+
 			// Respawn
-			sv_monstersrespawn = wads.options[2];
+			if(wads.options[2])
+				Args.AppendArg("-respawn");
+
+			//Pistol start
+			if(wads.options[3])
+				Args.AppendArg("-pistolstart");
 		}
 	}
 
@@ -864,15 +874,15 @@ void D_DoomMain()
 	// set the default value for vid_ticker based on the presence of -devparm
 	if (devparm)
 		vid_ticker.SetDefault("1");
- 
+
 	// Nomonsters
-	//sv_nomonsters = Args.CheckParm("-nomonsters");
+	sv_nomonsters = Args.CheckParm("-nomonsters");
 
 	// Respawn
-	//sv_monstersrespawn = Args.CheckParm("-respawn");
+	sv_monstersrespawn = Args.CheckParm("-respawn");
 
 	// Fast
-	//sv_fastmonsters = Args.CheckParm("-fast");
+	sv_fastmonsters = Args.CheckParm("-fast");
 
 	// Pistol start
 	g_resetinvonexit = Args.CheckParm("-pistolstart");
