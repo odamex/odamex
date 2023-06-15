@@ -112,9 +112,7 @@ class BootWindow : public Fl_Window
 	Fl_Hold_Browser* m_IWADBrowser;
 	Fl_Check_Browser* m_PWADSelectBrowser;
 	Fl_Hold_Browser* m_PWADOrderBrowser;
-	Fl_Check_Button* m_nomonstersCheckButton;
-	Fl_Check_Button* m_fastCheckButton;
-	Fl_Check_Button* m_respawnCheckButton;
+	Fl_Check_Browser* m_gameOptionsBrowser;
 	StringTokens m_WADDirs;
 	Fl_Hold_Browser* m_WADDirList;
 
@@ -172,16 +170,16 @@ class BootWindow : public Fl_Window
 				Fl_Group* tabGameOptions = 
 					new Fl_Group(0, 25, 425, 175, "Game Options");
 				{
-					m_nomonstersCheckButton = new Fl_Check_Button(10, 50, 20, 20, " No Monsters");
-					m_nomonstersCheckButton->down_box(FL_DOWN_BOX);
-				}
+					Fl_Box* o = new Fl_Box(
+					    10, 35, 405, 20,
+					    "Set options idk.");
+					o->align(Fl_Align(132 | FL_ALIGN_INSIDE));
+				} // Fl_Box* o
 				{
-					m_fastCheckButton = new Fl_Check_Button(10, 100, 20, 20, " Fast Monsters");
-					m_fastCheckButton->down_box(FL_DOWN_BOX);
-				}
-				{
-					m_respawnCheckButton = new Fl_Check_Button(10, 150, 20, 20, " Respawn Monsters");
-					m_respawnCheckButton->down_box(FL_DOWN_BOX);
+					m_gameOptionsBrowser = new Fl_Check_Browser(10, 65, 405, 125);
+					m_gameOptionsBrowser->add("No Monsters");
+					m_gameOptionsBrowser->add("Fast Monsters");
+					m_gameOptionsBrowser->add("Respawn Monsters");
 				}
 				tabGameOptions->end();
 
@@ -521,9 +519,9 @@ class BootWindow : public Fl_Window
 
 	void setOptions()
 	{
-		g_SelectedWADs.fast = m_fastCheckButton->value();
-		g_SelectedWADs.nomonsters = m_nomonstersCheckButton->value();
-		g_SelectedWADs.respawn = m_respawnCheckButton->value();
+		for (int i = 1; i <= m_gameOptionsBrowser->nitems(); i++) {
+			g_SelectedWADs.options.push_back(m_gameOptionsBrowser->checked(i));
+		}
 	}
 
 	/**

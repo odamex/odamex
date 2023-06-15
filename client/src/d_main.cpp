@@ -802,11 +802,11 @@ void D_DoomMain()
 			iwad = wads.iwad;
 			pwads = wads.pwads;
 			// Nomonsters
-			sv_nomonsters = wads.nomonsters;
-			// Respawn
-			sv_monstersrespawn = wads.respawn;
+			sv_nomonsters = wads.options[0];
 			// Fast
-			sv_fastmonsters = wads.fast;
+			sv_fastmonsters = wads.options[1];
+			// Respawn
+			sv_monstersrespawn = wads.options[2];
 		}
 	}
 

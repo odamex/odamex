@@ -22,14 +22,13 @@
 //-----------------------------------------------------------------------------
 
 #pragma once
+#include <array>
 
 struct scannedWADs_t
 {
     std::string iwad;
     StringTokens pwads;
-    bool nomonsters;
-    bool respawn;
-    bool fast;
+    std::vector<bool> options;
 };
 
 scannedWADs_t GUI_BootWindow();
