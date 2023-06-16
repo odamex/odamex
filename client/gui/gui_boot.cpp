@@ -134,6 +134,7 @@ class BootWindow : public Fl_Window
 				{
 					m_IWADBrowser = new Fl_Hold_Browser(135, 35, 280, 155);
 					m_IWADBrowser->callback(BootWindow::doPlayCB, static_cast<void*>(this));
+					m_IWADBrowser->when(FL_WHEN_ENTER_KEY);
 				} // Fl_Browser* m_IWADBrowser
 				m_tabIWAD->end();
 			} // Fl_Group* tabIWAD
