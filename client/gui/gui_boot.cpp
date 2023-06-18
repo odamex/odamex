@@ -116,7 +116,7 @@ class BootWindow : public Fl_Window
 	StringTokens m_WADDirs;
 	Fl_Hold_Browser* m_WADDirList;
 	// display strings for options tab and their corresponding command line arguments
-	std::vector<std::pair<std::string, std::string>> OPTIONS_LIST;
+	std::vector<std::pair<std::string, std::string> > OPTIONS_LIST;
 
   public:
 	BootWindow(int X, int Y, int W, int H, const char* L)
