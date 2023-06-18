@@ -174,7 +174,7 @@ class BootWindow : public Fl_Window
 				{
 					Fl_Box* o = new Fl_Box(
 					    10, 35, 405, 20,
-					    "Set options idk.");
+					    "Set gameplay options to modify your experience.");
 					o->align(Fl_Align(132 | FL_ALIGN_INSIDE));
 				} // Fl_Box* o
 				{
