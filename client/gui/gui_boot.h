@@ -29,7 +29,7 @@ struct scannedWADs_t
 {
     std::string iwad;
     StringTokens pwads;
-    std::vector<bool> options;
+    StringTokens options;
 };
 
 scannedWADs_t GUI_BootWindow();

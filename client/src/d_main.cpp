@@ -802,21 +802,11 @@ void D_DoomMain()
 			iwad = wads.iwad;
 			pwads = wads.pwads;
 
-			// Nomonsters
-			if(wads.options[0])
-				Args.AppendArg("-nomonsters");
-
-			// Fast
-			if(wads.options[1])
-				Args.AppendArg("-fast");
-
-			// Respawn
-			if(wads.options[2])
-				Args.AppendArg("-respawn");
-
-			//Pistol start
-			if(wads.options[3])
-				Args.AppendArg("-pistolstart");
+			for (StringTokens::iterator it = wads.options.begin();
+		    	 it != wads.options.end(); ++it)
+			{
+				Args.AppendArg((*it).c_str());
+			}
 		}
 	}
 

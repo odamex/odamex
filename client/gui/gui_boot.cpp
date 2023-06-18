@@ -56,6 +56,15 @@ typedef std::vector<scannedIWAD_t> scannedIWADs_t;
 typedef std::vector<scannedPWAD_t> scannedPWADs_t;
 typedef std::vector<scannedPWAD_t*> scannedPWADPtrs_t;
 
+// display strings for options tab and their corresponding command line arguments
+const std::vector<std::pair<std::string, std::string>> OPTIONS_LIST =
+{
+	{"No Monsters", "-nomonsters"},
+	{"Fast Monsters", "-fast"},
+	{"Respawn Monsters", "-respawn"},
+	{"Pistol Start", "-pistolstart"}
+};
+
 /**
  * @brief Find the PWAD pointer in the scanned WAD array.
  */
@@ -98,7 +107,7 @@ static void EraseSelected(scannedPWADPtrs_t& mut, scannedPWAD_t* pwad)
 const scannedIWAD_t* g_SelectedIWAD;
 scannedWADs_t g_SelectedWADs;
 
-const int WINDOW_WIDTH = 320;
+const int WINDOW_WIDTH = 425;
 const int WINDOW_HEIGHT = 240;
 
 class BootWindow : public Fl_Window
@@ -179,10 +188,11 @@ class BootWindow : public Fl_Window
 				} // Fl_Box* o
 				{
 					m_gameOptionsBrowser = new Fl_Check_Browser(10, 65, 405, 125);
-					m_gameOptionsBrowser->add("No Monsters");
-					m_gameOptionsBrowser->add("Fast Monsters");
-					m_gameOptionsBrowser->add("Respawn Monsters");
-					m_gameOptionsBrowser->add("Pistol Start");
+					for (auto it = OPTIONS_LIST.begin();
+		    	 		 it != OPTIONS_LIST.end(); ++it)
+					{
+						m_gameOptionsBrowser->add((*it).first.c_str());
+					}
 				}
 				tabGameOptions->end();
 
@@ -523,7 +533,8 @@ class BootWindow : public Fl_Window
 	void setOptions()
 	{
 		for (int i = 1; i <= m_gameOptionsBrowser->nitems(); i++) {
-			g_SelectedWADs.options.push_back(m_gameOptionsBrowser->checked(i));
+			if (m_gameOptionsBrowser->checked(i))
+				g_SelectedWADs.options.push_back(OPTIONS_LIST[i - 1].second);
 		}
 	}
 
@@ -557,7 +568,7 @@ class BootWindow : public Fl_Window
  */
 static BootWindow* MakeBootWindow()
 {
-	return new BootWindow(0, 0, 425, 240, "Odamex " DOTVERSIONSTR);
+	return new BootWindow(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, "Odamex " DOTVERSIONSTR);
 }
 
 /**
