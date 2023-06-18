@@ -59,10 +59,10 @@ typedef std::vector<scannedPWAD_t*> scannedPWADPtrs_t;
 // display strings for options tab and their corresponding command line arguments
 const std::vector<std::pair<std::string, std::string>> OPTIONS_LIST =
 {
-	{"No Monsters", "-nomonsters"},
-	{"Fast Monsters", "-fast"},
-	{"Respawn Monsters", "-respawn"},
-	{"Pistol Start", "-pistolstart"}
+	std::make_pair("No Monsters", "-nomonsters"),
+	std::make_pair("Fast Monsters", "-fast"),
+	std::make_pair("Respawn Monsters", "-respawn"),
+	std::make_pair("Pistol Start", "-pistolstart")
 };
 
 /**
