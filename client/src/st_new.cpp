@@ -1368,7 +1368,7 @@ void LevelStateHUD()
 		break;
 	}
 	case LevelState::ENDROUND_COUNTDOWN: {
-		if (G_IsCoopGame() | G_IsHordeMode())
+		if (G_IsCoopGame() || G_IsHordeMode())
 			StrFormat(lines.title,
 				"Attempt " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
 				::levelstate.getRound());
@@ -1386,7 +1386,7 @@ void LevelStateHUD()
 		else if (win.type == WinInfo::WIN_TEAM)
 			StrFormat(lines.subtitle[0], "%s team wins the round",
 			          WinToColorString(win).c_str());
-		else if (G_IsCoopGame() | G_IsHordeMode())
+		else if (G_IsCoopGame() || G_IsHordeMode())
 			StrFormat(lines.subtitle[0], "Next attempt in " TEXTCOLOR_GREEN "%d",
 			          ::levelstate.getCountdown());
 		else
