@@ -188,7 +188,7 @@ class BootWindow : public Fl_Window
 				} // Fl_Box* o
 				{
 					m_gameOptionsBrowser = new Fl_Check_Browser(10, 65, 405, 125);
-					for (auto it = OPTIONS_LIST.begin();
+					for (std::vector<std::pair<std::string, std::string>>::const_iterator it = OPTIONS_LIST.begin();
 		    	 		 it != OPTIONS_LIST.end(); ++it)
 					{
 						m_gameOptionsBrowser->add((*it).first.c_str());

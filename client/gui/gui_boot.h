@@ -23,8 +23,6 @@
 
 #pragma once
 
-#include "m_argv.h"
-
 struct scannedWADs_t
 {
     std::string iwad;
