@@ -1321,6 +1321,7 @@ player_s::player_s() :
 	ping(0),
 	last_received(0),
 	tic(0),
+	missingticcmdcount(0),
 	snapshots(PlayerSnapshotManager()),
 	spying(0),
 	spectator(false),
@@ -1440,6 +1441,8 @@ player_s &player_s::operator =(const player_s &other)
 	last_received = other.last_received;
 
 	tic = other.tic;
+	missingticcmdcount = other.missingticcmdcount;
+
 	spying = other.spying;
 	spectator = other.spectator;
 //	deadspectator = other.deadspectator;

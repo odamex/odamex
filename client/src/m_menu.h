@@ -85,6 +85,7 @@ typedef enum {
 	whitetext,
 	redtext,
 	yellowtext,
+	orangetext,
 	more,
 	slider,
 	redslider,

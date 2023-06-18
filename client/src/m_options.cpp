@@ -717,6 +717,10 @@ static menuitem_t WeaponItems[] = {
 	{redtext,   " ",                   {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{whitetext, "Weapons with higher", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{whitetext, "preference are selected first", {NULL},     {0.0}, {0.0}, {0.0}, {NULL}},
+    {redtext,	" ",				   {NULL},				 {0.0}, {0.0}, {0.0}, {NULL}},
+    {yellowtext, "! ! ! NOTICE ! ! !", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {orangetext, "While playing online, this feature", {NULL},{0.0}, {0.0}, {0.0}, {NULL}},
+    {orangetext, "only works when the server allows it!", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 };
 
 menu_t WeaponMenu = {
@@ -1122,7 +1126,11 @@ static value_t VidFPSCaps[] = {
 	{ 35.0,		"35fps" },
 	{ 60.0,		"60fps" },
 	{ 70.0,		"70fps" },
-	{ 120.0,	"120fps" },
+   	{ 105.0,	"105fps"},
+	{ 120.0,	"120fps" }, 
+	{ 140.0,	"140fps"},
+    	{ 144.0,	"144fps"},
+    	{ 240.0,	"240fps"},
 	{ 0.0,		"Unlimited" }
 };
 
@@ -1149,7 +1157,7 @@ static menuitem_t ModesItems[] = {
 #endif
 	{ discrete,	"Widescreen",			{&vid_widescreen},		{6.0}, {0.0},	{0.0}, {WidescreenMode} } ,
 	{ discrete,	"VSync",				{&vid_vsync},			{2.0}, {0.0},	{0.0}, {YesNo} },
-	{ discrete, "Framerate",			{&vid_maxfps},			{5.0}, {0.0},	{0.0}, {VidFPSCaps} },
+	{ discrete, "Framerate",			{&vid_maxfps},			{9.0}, {0.0},	{0.0}, {VidFPSCaps} },
 	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ redtext,	"",						{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1628,6 +1636,11 @@ void M_OptDrawer (void)
 			case yellowtext:
 				x = 160 - width / 2;
 				color = CR_YELLOW;
+				break;
+
+			case orangetext:
+				x = 160 - width / 2;
+				color = CR_ORANGE;
 				break;
 
 			case listelement:
