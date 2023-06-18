@@ -56,15 +56,6 @@ typedef std::vector<scannedIWAD_t> scannedIWADs_t;
 typedef std::vector<scannedPWAD_t> scannedPWADs_t;
 typedef std::vector<scannedPWAD_t*> scannedPWADPtrs_t;
 
-// display strings for options tab and their corresponding command line arguments
-const std::vector<std::pair<std::string, std::string>> OPTIONS_LIST =
-{
-	std::make_pair("No Monsters", "-nomonsters"),
-	std::make_pair("Fast Monsters", "-fast"),
-	std::make_pair("Respawn Monsters", "-respawn"),
-	std::make_pair("Pistol Start", "-pistolstart")
-};
-
 /**
  * @brief Find the PWAD pointer in the scanned WAD array.
  */
@@ -124,11 +115,17 @@ class BootWindow : public Fl_Window
 	Fl_Check_Browser* m_gameOptionsBrowser;
 	StringTokens m_WADDirs;
 	Fl_Hold_Browser* m_WADDirList;
+	// display strings for options tab and their corresponding command line arguments
+	std::vector<std::pair<std::string, std::string>> OPTIONS_LIST;
 
   public:
 	BootWindow(int X, int Y, int W, int H, const char* L)
 	    : Fl_Window(X, Y, W, H, L), m_IWADs()
 	{
+		OPTIONS_LIST.emplace_back("No Monsters", "-nomonsters");
+		OPTIONS_LIST.emplace_back("Fast Monsters", "-fast");
+		OPTIONS_LIST.emplace_back("Respawn Monsters", "-respawn");
+		OPTIONS_LIST.emplace_back("Pistol Start", "-pistolstart");
 		{
 			Fl_Tabs* tabs = new Fl_Tabs(0, 0, 425, 200);
 			{
@@ -188,7 +185,7 @@ class BootWindow : public Fl_Window
 				} // Fl_Box* o
 				{
 					m_gameOptionsBrowser = new Fl_Check_Browser(10, 65, 405, 125);
-					for (std::vector<std::pair<std::string, std::string>>::const_iterator it = OPTIONS_LIST.begin();
+					for (std::vector<std::pair<std::string, std::string> >::const_iterator it = OPTIONS_LIST.begin();
 		    	 		 it != OPTIONS_LIST.end(); ++it)
 					{
 						m_gameOptionsBrowser->add((*it).first.c_str());
