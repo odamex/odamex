@@ -122,10 +122,10 @@ class BootWindow : public Fl_Window
 	BootWindow(int X, int Y, int W, int H, const char* L)
 	    : Fl_Window(X, Y, W, H, L), m_IWADs()
 	{
-		OPTIONS_LIST.emplace_back("No Monsters", "-nomonsters");
-		OPTIONS_LIST.emplace_back("Fast Monsters", "-fast");
-		OPTIONS_LIST.emplace_back("Respawn Monsters", "-respawn");
-		OPTIONS_LIST.emplace_back("Pistol Start", "-pistolstart");
+		OPTIONS_LIST.push_back(std::make_pair("No Monsters", "-nomonsters"));
+		OPTIONS_LIST.push_back(std::make_pair("Fast Monsters", "-fast"));
+		OPTIONS_LIST.push_back(std::make_pair("Respawn Monsters", "-respawn"));
+		OPTIONS_LIST.push_back(std::make_pair("Pistol Start", "-pistolstart"));
 		{
 			Fl_Tabs* tabs = new Fl_Tabs(0, 0, 425, 200);
 			{
