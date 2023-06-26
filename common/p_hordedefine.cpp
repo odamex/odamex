@@ -322,7 +322,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	}
 
 	int upper = MAX(maxHealth / health, 1);
-	int lower = MAX(minHealth / health, 1);
+	const int lower = MAX(minHealth / health, 1);
 
 	if (upper <= lower)
 	{
@@ -339,8 +339,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	maxHealth = MIN(maxHealth, limit * health);
 
 	upper = MAX(maxHealth / health, 1);
-	lower = MAX(minHealth / health, 1);
-
+//TODO: make sure randomness isnt messing anything up
 	if (upper <= lower)
 	{
 		// Only one possibility.

@@ -30,6 +30,7 @@
 #include "c_dispatch.h"
 #include "d_player.h"
 #include "doomstat.h"
+#include "doomtype.h"
 #include "g_gametype.h"
 #include "g_horde.h"
 #include "i_net.h"
@@ -594,7 +595,7 @@ void HordeState::changeState()
 		return;
 	}
 	case HS_WANTBOSS: {
-		// TODO: may need to change this condition
+		// TODO: may need to change this condition, switches out of wantboss too often
 		if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
 		{
 			// Doesn't matter which state we enter, but we're more likely
@@ -665,11 +666,10 @@ void HordeState::tick()
 	m_corpses.tick();
 
 	// Are the bosses taken care of?
-	// TODO: only end when all bosses have been both spawned and killed
 	if (m_state != HS_WANTBOSS && m_bossRecipe.isValid())
 	{
 		size_t alive = countLivingBosses();
-		if (!alive && m_bossRecipe.totalCount <= 0)
+		if (!alive && m_bossRecipe.limit <= 0)
 		{			
 			// Start the next wave.
 			nextWave();
@@ -746,19 +746,15 @@ void HordeState::tick()
 			}
 			else
 			{
-				// TODO: properly update count, ie dont spawn up to limit if bosshealth is close
 				// Adjust the count based on how many bosses we've spawned and current boss limit.
 				recipe = m_bossRecipe;
 				recipe.count = m_bossRecipe.totalCount - int(m_bosses.size());
-				if (recipe.count <= recipe.limit)
+				int alive = int(countLivingBosses());
+				if (recipe.count <= recipe.limit - alive)
 				{
-					recipe.limit = 0;
-					recipe.totalCount = 0;
+					m_bossRecipe.limit = 0;
 				}
-				else
-				{
-					recipe.count = recipe.limit - countLivingBosses();
-				}
+				recipe.count = MIN(recipe.limit - alive, recipe.count);
 			}
 
 			// Spawn a boss if we don't have one.
