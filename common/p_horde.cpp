@@ -30,7 +30,6 @@
 #include "c_dispatch.h"
 #include "d_player.h"
 #include "doomstat.h"
-#include "doomtype.h"
 #include "g_gametype.h"
 #include "g_horde.h"
 #include "i_net.h"
