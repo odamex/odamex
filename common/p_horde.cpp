@@ -357,7 +357,6 @@ class HordeState
 		m_bosses.clear();
 		m_bossRecipe.clear();
 		m_corpses.startWave();
-		m_monsterCounts.clear();
 		m_bossCounts.clear();
 
 		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
