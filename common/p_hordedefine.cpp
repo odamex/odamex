@@ -339,7 +339,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	maxHealth = MIN(maxHealth, limit * health);
 
 	upper = MAX(maxHealth / health, 1);
-//TODO: make sure randomness isnt messing anything up
+
 	if (upper <= lower)
 	{
 		// Only one possibility.
@@ -354,7 +354,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	out.type = outType;
 	out.count = outCount;
 	out.limit = limit == INT_MAX ? 0 : limit;
-	out.totalCount = outTotalCount;
+	out.totalCount = MAX(outTotalCount, outCount);
 	out.isBoss = outIsBoss;
 
 	return true;

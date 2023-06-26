@@ -595,7 +595,6 @@ void HordeState::changeState()
 		return;
 	}
 	case HS_WANTBOSS: {
-		// TODO: may need to change this condition, switches out of wantboss too often
 		if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
 		{
 			// Doesn't matter which state we enter, but we're more likely
