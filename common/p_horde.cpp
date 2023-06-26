@@ -204,13 +204,26 @@ class HordeState
 	mobjCounts_t m_bossCounts;
 
 	/**
+	 * @brief Returns number of bosses currently alive.
+	 */
+	size_t countLivingBosses() {
+		size_t alive = 0;
+		for (AActors::iterator it = m_bosses.begin(); it != m_bosses.end(); ++it)
+		{
+			if (*it && (*it)->health > 0)
+				alive += 1;
+		}
+		return alive;
+	}
+
+	/**
 	 * @brief Set the given state.
 	 */
 	void setState(const hordeState_e state)
 	{
 		m_state = state;
 
-		if (m_state == HS_WANTBOSS)
+		if (m_state == HS_WANTBOSS && m_bossTime == m_waveTime)
 		{
 			// Do the boss intro fanfare.
 			SV_BroadcastPrintf("The floor trembles as the boss of the wave arrives.\n");
@@ -558,7 +571,8 @@ void HordeState::changeState()
 		return;
 	}
 	case HS_PRESSURE: {
-		if (m_killedHealth > goalHealth && m_bosses.empty())
+		size_t alive = countLivingBosses();
+		if (m_killedHealth > goalHealth && (m_bosses.empty() || alive < m_bossRecipe.limit))
 		{
 			// We reached the goal, spawn the boss.
 			setState(HS_WANTBOSS);
@@ -566,7 +580,8 @@ void HordeState::changeState()
 		return;
 	}
 	case HS_RELAX: {
-		if (m_killedHealth > goalHealth && m_bosses.empty())
+		size_t alive = countLivingBosses();
+		if (m_killedHealth > goalHealth && (m_bosses.empty() || alive < m_bossRecipe.limit))
 		{
 			// We reached the goal, spawn the boss.
 			setState(HS_WANTBOSS);
@@ -577,7 +592,9 @@ void HordeState::changeState()
 			setState(HS_PRESSURE);
 		}
 		return;
+	}
 	case HS_WANTBOSS: {
+		// TODO: may need to change this condition
 		if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
 		{
 			// Doesn't matter which state we enter, but we're more likely
@@ -585,7 +602,6 @@ void HordeState::changeState()
 			setState(HS_PRESSURE);
 		}
 		return;
-	}
 	}
 	default:
 		return;
@@ -649,15 +665,11 @@ void HordeState::tick()
 	m_corpses.tick();
 
 	// Are the bosses taken care of?
+	// TODO: only end when all bosses have been both spawned and killed
 	if (m_state != HS_WANTBOSS && m_bossRecipe.isValid())
 	{
-		size_t alive = 0;
-		for (AActors::iterator it = m_bosses.begin(); it != m_bosses.end(); ++it)
-		{
-			if (*it && (*it)->health > 0)
-				alive += 1;
-		}
-		if (!alive)
+		size_t alive = countLivingBosses();
+		if (!alive && m_bossRecipe.totalCount <= 0)
 		{			
 			// Start the next wave.
 			nextWave();
@@ -714,7 +726,7 @@ void HordeState::tick()
 				break;
 
 			// Do we already have bosses spawned?
-			if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
+			if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.totalCount)
 				break;
 
 			hordeRecipe_t recipe;
@@ -734,9 +746,19 @@ void HordeState::tick()
 			}
 			else
 			{
-				// Adjust the count based on how many bosses we've spawned.
+				// TODO: properly update count, ie dont spawn up to limit if bosshealth is close
+				// Adjust the count based on how many bosses we've spawned and current boss limit.
 				recipe = m_bossRecipe;
-				recipe.count = m_bossRecipe.count - int(m_bosses.size());
+				recipe.count = m_bossRecipe.totalCount - int(m_bosses.size());
+				if (recipe.count <= recipe.limit)
+				{
+					recipe.limit = 0;
+					recipe.totalCount = 0;
+				}
+				else
+				{
+					recipe.count = recipe.limit - countLivingBosses();
+				}
 			}
 
 			// Spawn a boss if we don't have one.

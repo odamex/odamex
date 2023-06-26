@@ -32,9 +32,11 @@ struct hordeRecipe_t
 {
 	mobjtype_t type;
 	int count;
+	int limit;
+	int totalCount;
 	bool isBoss;
 
-	hordeRecipe_t() : type(MT_NULL), count(0), isBoss(false) { }
+	hordeRecipe_t() : type(MT_NULL), count(0), limit(0), totalCount(0), isBoss(false) { }
 
 	hordeRecipe_t& operator=(const hordeRecipe_t& other)
 	{
@@ -43,6 +45,8 @@ struct hordeRecipe_t
 
 		type = other.type;
 		count = other.count;
+		limit = other.limit;
+		totalCount = other.totalCount;
 		isBoss = other.isBoss;
 
 		return *this;
@@ -52,6 +56,8 @@ struct hordeRecipe_t
 	{
 		type = MT_NULL;
 		count = 0;
+		limit = 0;
+		totalCount = 0;
 		isBoss = false;
 	}
 

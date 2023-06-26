@@ -288,6 +288,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	const hordeDefine_t::monConfig_t* config = &monster->config;
 
 	int outCount = 0;
+	int outTotalCount = 0;
 	const int health = ::mobjinfo[outType].spawnhealth;
 
 	// Maximum health.
@@ -305,9 +306,6 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		maxHealth = define.maxGroupHealth;
 	}
 
-	// If we have a limit, reduce the maxHealth to that.
-	maxHealth = MIN(maxHealth, limit * health);
-
 	// Minimum health.
 	int minHealth = -1;
 	if (config->minGroupHealth >= 0)
@@ -323,8 +321,25 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		minHealth = define.minGroupHealth;
 	}
 
-	const int upper = MAX(maxHealth / health, 1);
-	const int lower = MAX(minHealth / health, 1);
+	int upper = MAX(maxHealth / health, 1);
+	int lower = MAX(minHealth / health, 1);
+
+	if (upper <= lower)
+	{
+		// Only one possibility.
+		outTotalCount = upper;
+	}
+	else
+	{
+		// Randomly select a possibility.
+		outTotalCount = P_RandomInt(upper - lower) + lower;
+	}
+
+	// If we have a limit, reduce the maxHealth to that.
+	maxHealth = MIN(maxHealth, limit * health);
+
+	upper = MAX(maxHealth / health, 1);
+	lower = MAX(minHealth / health, 1);
 
 	if (upper <= lower)
 	{
@@ -339,6 +354,8 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 
 	out.type = outType;
 	out.count = outCount;
+	out.limit = limit == INT_MAX ? 0 : limit;
+	out.totalCount = outTotalCount;
 	out.isBoss = outIsBoss;
 
 	return true;
