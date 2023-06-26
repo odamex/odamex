@@ -695,7 +695,8 @@ void HordeState::tick()
 			const bool ok = P_HordeSpawnRecipe(recipe, define, false, m_monsterCounts);
 			if (!ok)
 			{
-				Printf(PRINT_WARNING, "%s: No spawn recipe for monster.\n", __FUNCTION__);
+				if (recipe.count >= 0)
+					Printf(PRINT_WARNING, "%s: No spawn recipe for monster.\n", __FUNCTION__);
 				return;
 			}
 

@@ -280,6 +280,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	if (monster == NULL)
 	{
 		// We can't spawn a monster.
+		out.count = -1;
 		return false;
 	}
 
