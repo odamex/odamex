@@ -680,8 +680,16 @@ static BOOL PIT_CheckThing (AActor *thing)
 						mod = MOD_BFG_BOOM;
 						break;
 					// [AM] Monster fireballs get a special MOD.
+				  // Unless they're from players
 					default:
-					    mod = MOD_FIREBALL;
+							if ((tmthing->target && tmthing->target->player) || !tmthing->target)
+							{
+						        mod = MOD_UNKNOWN;
+							}
+							else
+							{
+						        mod = MOD_FIREBALL;
+							}
 						break;
 				}
 				P_DamageMobj (thing, tmthing, tmthing->target, damage, mod);
