@@ -651,7 +651,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 			if (tmthing->info->ripsound)
 				S_Sound(tmthing, CHAN_VOICE, tmthing->info->ripsound, 1, ATTN_NORM);
 
-			P_DamageMobj(thing, tmthing, tmthing->target, damage);
+			P_DamageMobj(thing, tmthing, tmthing->target, damage, MOD_UNKNOWN);
 			if (thing->flags2 & MF2_PUSHABLE && !(tmthing->flags2 & MF2_CANNOTPUSH))
 			{ // Push thing
 				thing->momx += tmthing->momx >> 2;
