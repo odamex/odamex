@@ -2682,9 +2682,9 @@ void P_ExplodeMissile (AActor* mo)
 		case MT_BFG:
 			mod = MOD_BFG_BOOM;
 			break;
-		// [AM] Monster fireballs get a special MOD.
+		// Blair: Unknown player projectiles get an unknown mod
 		default:
-			mod = MOD_FIREBALL;
+			mod = MOD_UNKNOWN;
 			break;
 		}
 
