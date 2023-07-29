@@ -705,7 +705,13 @@ static BOOL PIT_CheckThing (AActor *thing)
 		// [SL] Work-around the additional height added to players
 		// in P_CheckPosition. Don't let players grab items above
 		// their real height!
-		if (!P_AllowPassover() || thing->z < tmthing->z + tmthing->height - 24*FRACUNIT)
+
+		fixed_t max_z = tmthing->z + tmthing->height;
+
+		if (tmthing->player)
+			max_z -= 24 * FRACUNIT;
+
+		if (!P_AllowPassover() || thing->z < max_z)
 			P_TouchSpecialThing (thing, tmthing);	// can remove thing
 
 		return !solid;
@@ -728,8 +734,6 @@ static BOOL PIT_CheckThing (AActor *thing)
 	else
 		return !((thing->flags & MF_SOLID && !(thing->flags & MF_NOCLIP)) &&
 		         (tmthing->flags & MF_SOLID || (demoplayback || !co_boomphys)));
-
-	// return !(thing->flags & MF_SOLID);   // old code -- killough
 }
 
 // This routine checks for Lost Souls trying to be spawned		// phares
