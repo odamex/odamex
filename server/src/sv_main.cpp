@@ -1165,6 +1165,15 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 
 		return true;
 	}
+	else if (previously_ok && ok 
+			&& player.mo && !mo->player && mo->type != MT_AVATAR && mo->type != MT_PLAYER 
+			&& mo->on_conveyor
+			&& (gametic + mo->netid) % 120) // Update items on conveyers every 120 tics
+	{
+		SV_SendMobjToClient(mo, cl);
+		return true;
+	}
+
 
 	return false;
 }
