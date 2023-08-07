@@ -38,6 +38,7 @@ class PortMidiMusicSystem : public MidiMusicSystem
 	virtual ~PortMidiMusicSystem();
 
 	virtual void startSong(byte *data, size_t length, bool loop);
+	virtual void stopSong();
 	virtual void pauseSong();
 	virtual void restartSong();
 
@@ -59,6 +60,7 @@ class PortMidiMusicSystem : public MidiMusicSystem
 	byte m_channelVolume[NUM_CHANNELS];
 	float m_volumeScale;
 	bool m_isInitialized;
+	bool m_isPlaying;
 
 	PmDeviceID m_outputDevice;
 	PmStream* m_stream;
