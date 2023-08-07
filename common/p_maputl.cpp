@@ -1232,7 +1232,7 @@ static AActor* RoughBlockCheck(AActor* mo, int index, angle_t fov)
 		}
 
 		// [Blair] Don't target spectators
-		if (mo->target->player && mo->target->player->spectator)
+		if (link->player && link->player->spectator)
 		{
 			link = link->snext;
 			continue;
