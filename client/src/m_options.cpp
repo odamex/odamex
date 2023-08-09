@@ -1468,7 +1468,7 @@ void M_SwitchMenu(menu_t* menu)
 		for (i = 0; i < menu->numitems; i++)
 		{
 			item = menu->items + i;
-			if (item->type != whitetext && item->type != redtext)
+			if (item->type != whitetext && item->type != redtext && item->type != orangetext)
 			{
 				thiswidth = V_StringWidth (item->label);
 				if (thiswidth > widest)
@@ -1932,6 +1932,7 @@ void M_OptResponder (event_t *ev)
 			} while (CurrentMenu->items[CurrentItem].type == redtext ||
 				CurrentMenu->items[CurrentItem].type == whitetext ||
 				CurrentMenu->items[CurrentItem].type == yellowtext ||
+			  CurrentMenu->items[CurrentItem].type == orangetext ||
 				(CurrentMenu->items[CurrentItem].type == screenres &&
 					!CurrentMenu->items[CurrentItem].b.res1));
 
@@ -1972,6 +1973,7 @@ void M_OptResponder (event_t *ev)
 			} while (CurrentMenu->items[CurrentItem].type == redtext ||
 				CurrentMenu->items[CurrentItem].type == whitetext ||
 				CurrentMenu->items[CurrentItem].type == yellowtext ||
+			  CurrentMenu->items[CurrentItem].type == orangetext ||
 				(CurrentMenu->items[CurrentItem].type == screenres &&
 					!CurrentMenu->items[CurrentItem].b.res1));
 
@@ -1993,6 +1995,7 @@ void M_OptResponder (event_t *ev)
 				while (CurrentMenu->items[CurrentItem].type == redtext ||
 					CurrentMenu->items[CurrentItem].type == whitetext ||
 					CurrentMenu->items[CurrentItem].type == yellowtext ||
+				  CurrentMenu->items[CurrentItem].type == orangetext ||
 					(CurrentMenu->items[CurrentItem].type == screenres &&
 						!CurrentMenu->items[CurrentItem].b.res1))
 				{
@@ -2015,6 +2018,7 @@ void M_OptResponder (event_t *ev)
 				while (CurrentMenu->items[CurrentItem].type == redtext ||
 					CurrentMenu->items[CurrentItem].type == whitetext ||
 					CurrentMenu->items[CurrentItem].type == yellowtext ||
+				  CurrentMenu->items[CurrentItem].type == orangetext ||
 					(CurrentMenu->items[CurrentItem].type == screenres &&
 						!CurrentMenu->items[CurrentItem].b.res1))
 				{
