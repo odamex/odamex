@@ -114,6 +114,7 @@ bool				drawSkull;			// [RH] don't always draw skull
 
 // hack for PlayerSetup
 int					PSetupDepth;
+int					PSetupArchive;
 
 // graphic name of skulls
 char				skullName[2][9] = {"M_SKULL1", "M_SKULL2"};
@@ -1691,10 +1692,14 @@ static void M_EditPlayerName (int choice)
 
 static void M_PlayerNameChanged (int choice)
 {
-	char command[SAVESTRINGSIZE+8+2];
+	std::string command;
 
-	sprintf (command, "cl_name \"%s\"", savegamestrings[0]);
+	StrFormat(command, "cl_name \"%s\"", savegamestrings[0]);
 	AddCommandString (command);
+
+	PSetupArchive = PSetupDepth;
+	AddCommandString ("menu_player");
+	PSetupDepth = PSetupArchive;
 }
 /*
 static void M_PlayerTeamChanged (int choice)
