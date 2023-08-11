@@ -1697,9 +1697,12 @@ static void M_PlayerNameChanged (int choice)
 	StrFormat(command, "cl_name \"%s\"", savegamestrings[0]);
 	AddCommandString (command);
 
-	PSetupArchive = PSetupDepth;
-	AddCommandString ("menu_player");
-	PSetupDepth = PSetupArchive;
+	if (currentMenu == &PSetupDef)
+	{
+		PSetupArchive = PSetupDepth;
+		AddCommandString("menu_player");
+		PSetupDepth = PSetupArchive;
+	}
 }
 /*
 static void M_PlayerTeamChanged (int choice)
