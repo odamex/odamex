@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -50,6 +50,8 @@ int D_GenderToInt (const char *gender)
 		return GENDER_FEMALE;
 	else if (!stricmp (gender, "cyborg"))
 		return GENDER_NEUTER;
+  else if (!stricmp (gender, "lizard"))
+    return GENDER_LIZARD;
 	else
 		return GENDER_MALE;
 }
