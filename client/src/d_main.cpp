@@ -801,6 +801,12 @@ void D_DoomMain()
 			scannedWADs_t wads = GUI_BootWindow();
 			iwad = wads.iwad;
 			pwads = wads.pwads;
+
+			for (StringTokens::iterator it = wads.options.begin();
+		    	 it != wads.options.end(); ++it)
+			{
+				Args.AppendArg((*it).c_str());
+			}
 		}
 	}
 
@@ -858,7 +864,7 @@ void D_DoomMain()
 	// set the default value for vid_ticker based on the presence of -devparm
 	if (devparm)
 		vid_ticker.SetDefault("1");
- 
+
 	// Nomonsters
 	sv_nomonsters = Args.CheckParm("-nomonsters");
 

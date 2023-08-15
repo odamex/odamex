@@ -98,7 +98,7 @@ static void EraseSelected(scannedPWADPtrs_t& mut, scannedPWAD_t* pwad)
 const scannedIWAD_t* g_SelectedIWAD;
 scannedWADs_t g_SelectedWADs;
 
-const int WINDOW_WIDTH = 320;
+const int WINDOW_WIDTH = 425;
 const int WINDOW_HEIGHT = 240;
 
 class BootWindow : public Fl_Window
@@ -112,13 +112,20 @@ class BootWindow : public Fl_Window
 	Fl_Hold_Browser* m_IWADBrowser;
 	Fl_Check_Browser* m_PWADSelectBrowser;
 	Fl_Hold_Browser* m_PWADOrderBrowser;
+	Fl_Check_Browser* m_gameOptionsBrowser;
 	StringTokens m_WADDirs;
 	Fl_Hold_Browser* m_WADDirList;
+	// display strings for options tab and their corresponding command line arguments
+	std::vector<std::pair<std::string, std::string> > OPTIONS_LIST;
 
   public:
 	BootWindow(int X, int Y, int W, int H, const char* L)
 	    : Fl_Window(X, Y, W, H, L), m_IWADs()
 	{
+		OPTIONS_LIST.push_back(std::make_pair("No Monsters", "-nomonsters"));
+		OPTIONS_LIST.push_back(std::make_pair("Fast Monsters", "-fast"));
+		OPTIONS_LIST.push_back(std::make_pair("Respawn Monsters", "-respawn"));
+		OPTIONS_LIST.push_back(std::make_pair("Pistol Start", "-pistolstart"));
 		{
 			Fl_Tabs* tabs = new Fl_Tabs(0, 0, 425, 200);
 			{
@@ -132,6 +139,8 @@ class BootWindow : public Fl_Window
 				} // Fl_Box* logo
 				{
 					m_IWADBrowser = new Fl_Hold_Browser(135, 35, 280, 155);
+					m_IWADBrowser->callback(BootWindow::doPlayCB, static_cast<void*>(this));
+					m_IWADBrowser->when(FL_WHEN_ENTER_KEY);
 				} // Fl_Browser* m_IWADBrowser
 				m_tabIWAD->end();
 			} // Fl_Group* tabIWAD
@@ -165,6 +174,26 @@ class BootWindow : public Fl_Window
 				} // Fl_Button* doWADRemove
 				m_tabPWADs->end();
 			} // Fl_Group* tabPWADs
+			{
+				Fl_Group* tabGameOptions = 
+					new Fl_Group(0, 25, 425, 175, "Game Options");
+				{
+					Fl_Box* o = new Fl_Box(
+					    10, 35, 405, 20,
+					    "Set gameplay options to modify your experience.");
+					o->align(Fl_Align(132 | FL_ALIGN_INSIDE));
+				} // Fl_Box* o
+				{
+					m_gameOptionsBrowser = new Fl_Check_Browser(10, 65, 405, 125);
+					for (std::vector<std::pair<std::string, std::string> >::const_iterator it = OPTIONS_LIST.begin();
+		    	 		 it != OPTIONS_LIST.end(); ++it)
+					{
+						m_gameOptionsBrowser->add((*it).first.c_str());
+					}
+				}
+				tabGameOptions->end();
+
+			} // Fl_Group* tabGameOptions
 			{
 				Fl_Group* tabWADDirs =
 				    new Fl_Group(0, 25, 425, 175, "Resource Locations");
@@ -272,6 +301,7 @@ class BootWindow : public Fl_Window
 		}
 
 		boot->selectedWADs();
+		boot->setOptions();
 		Fl::delete_widget(boot);
 	}
 
@@ -497,6 +527,14 @@ class BootWindow : public Fl_Window
 		}
 	}
 
+	void setOptions()
+	{
+		for (int i = 1; i <= m_gameOptionsBrowser->nitems(); i++) {
+			if (m_gameOptionsBrowser->checked(i))
+				g_SelectedWADs.options.push_back(OPTIONS_LIST[i - 1].second);
+		}
+	}
+
 	/**
 	 * @brief Update the WAD dir browser widget from the vector.
 	 */
@@ -527,7 +565,7 @@ class BootWindow : public Fl_Window
  */
 static BootWindow* MakeBootWindow()
 {
-	return new BootWindow(0, 0, 425, 240, "Odamex " DOTVERSIONSTR);
+	return new BootWindow(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, "Odamex " DOTVERSIONSTR);
 }
 
 /**
