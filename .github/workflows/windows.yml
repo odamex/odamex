@@ -40,7 +40,7 @@ jobs:
       run: .\ci\win-artifact.ps1
     - name: Stage artifacts for testing
       run: .\ci\win-prepare-demotest.ps1
-    - name: Download DemoTester
+    - name: Download OdaTests and Testing Resources
       run: .\ci\win-get-demotester.ps1
       env:
         DEMOTESTER_URL: ${{ env.DEMOTESTER_DOWNLOAD_URL }}
@@ -58,7 +58,7 @@ jobs:
         SECRET_KEY: ${{ secrets.DEMOTESTER_IWAD_KEY }}
       working-directory: .\build\demotester
       continue-on-error: true
-    - name: Run DemoTester
+    - name: Run OdaTests
       run: python .\odatestcases.py
       env:
         ODAMEX_BIN: ..\demotest\odamex.exe

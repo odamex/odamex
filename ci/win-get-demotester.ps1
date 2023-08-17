@@ -1,6 +1,6 @@
 Set-PSDebug -Trace 1
 
-if (($env:DEMOTESTER_URL -ne null) -and ($env:DEMORESOURCES_URL -ne null))
+if (($env:DEMOTESTER_URL -ne $null) -and ($env:DEMORESOURCES_URL -ne $null))
 {
 		Write-Output "OdaTests Download URL: $env:DEMOTESTER_URL"
 		Write-Output "OdaTests WAD Resources Download URL: $env:DEMORESOURCES_URL"
