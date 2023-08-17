@@ -77,6 +77,33 @@ static const identData_t identdata[] = {
         100,                                // weight
     },
     {
+        DOOM2_PREFIX " Classic Unity v1.3", // idName
+        "DOOM2.WAD",                        // filename
+        "F1D1AD55",                         // crc32Sum
+        "8AB6D0527A29EFDC1EF200E5687B5CAE", // md5Sum
+        DOOM2_PREFIX " v1.9",               // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        145,                                // weight
+    },
+    {
+        DOOM2_PREFIX " Classic Unity v1.1", // idName
+        "DOOM2.WAD",                        // filename
+        "22C291C8",                         // crc32Sum
+        "7895D10C281305C45A7E5F01B3F7B1D8", // md5Sum
+        DOOM2_PREFIX " v1.9",               // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        145,                                // weight
+    },
+    {
+        DOOM2_PREFIX " Classic Unity v1.0", // idName
+        "DOOM2.WAD",                        // filename
+        "897339A7",                         // crc32Sum
+        "E7395BD5E838D58627BD028871EFBC14", // md5Sum
+        DOOM2_PREFIX " v1.9",               // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        145,                                // weight
+    },
+    {
         DOOM2_PREFIX " BFG Edition",        // idName
         "DOOM2BFG.WAD",                     // filename
         "927A778A",                         // crc32Sum
@@ -195,6 +222,33 @@ static const identData_t identdata[] = {
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
         200,                                // weight
+    },
+    {
+        UDOOM_PREFIX " Classic Unity v1.3", // mIdName
+        "DOOM.WAD",                         // mFilename
+        "75C3B7BF",                         // mCRC32Sum
+        "8517C4E8F0EEF90B82852667D345EB86", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        245,                                // weight
+    },
+    {
+        UDOOM_PREFIX " Classic Unity v1.1", // mIdName
+        "DOOM.WAD",                         // mFilename
+        "346A4BFD",                         // mCRC32Sum
+        "21B200688D0FA7C1B6F63703D2BDD455", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        245,                                // weight
+    },
+    {
+        UDOOM_PREFIX " Classic Unity v1.0", // mIdName
+        "DOOM.WAD",                         // mFilename
+        "46359DFB",                         // mCRC32Sum
+        "232A79F7121B22D7401905EE0EE1E487", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        245,                                // weight
     },
     {
         UDOOM_PREFIX " BFG Edition",        // mIdName
@@ -1043,6 +1097,14 @@ void W_SetupFileIdentifiers()
 const fileIdentifier_t* W_GameInfo(const OCRC32Sum& crc32)
 {
 	return ::identtab.lookupByCRC32Sum(crc32);
+}
+
+/**
+ * @brief Return the gameinfo associated with the given MD5.
+ */
+const fileIdentifier_t* W_GameInfo(const OMD5Hash& md5)
+{
+	return ::identtab.lookupByMd5Sum(md5);
 }
 
 //

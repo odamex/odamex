@@ -323,6 +323,9 @@ void ISDL20KeyboardInputDevice::gatherEvents()
 				continue;
 			}
 
+			// Add the mod in
+			ev.mod = mod;
+
 			// Normal game keyboard event - insert it into our internal queue
 			if (ev.data1)
 				mEvents.push(ev);

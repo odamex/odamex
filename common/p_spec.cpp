@@ -2159,11 +2159,11 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
     return true;
 }
 
-void P_ApplySectorDamage(player_t* player, int damage, int leak)
+void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod)
 {
 	if (!player->powers[pw_ironfeet] || (leak && P_Random(player->mo)<leak))
 		if (!(level.time & 0x1f))
-			P_DamageMobj(player->mo, NULL, NULL, damage);
+			P_DamageMobj(player->mo, NULL, NULL, damage, mod);
 }
 
 void P_ApplySectorDamageEndLevel(player_t* player)
@@ -2556,6 +2556,7 @@ void DScroller::RunThink ()
 				  {
 					// Move objects only if on floor or underwater,
 					// non-floating, and clipped.
+					thing->on_conveyor = true;
 					thing->momx += dx;
 					thing->momy += dy;
 				  }

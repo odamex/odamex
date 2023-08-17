@@ -32,7 +32,7 @@
 //
 // Key_IsUpKey
 //
-bool Key_IsUpKey(int key)
+bool Key_IsUpKey(int key, bool numlock)
 {
     switch (platform)
     {
@@ -42,13 +42,13 @@ bool Key_IsUpKey(int key)
         break;
     }
 
-    return (key == OKEY_HAT1 || key == OKEY_UPARROW || key == OKEYP_8 || key == OKEY_JOY12);
+    return (key == OKEY_HAT1 || key == OKEY_UPARROW || (key == OKEYP_8 && !numlock) || key == OKEY_JOY12);
 }
 
 //
 // Key_IsDownKey
 //
-bool Key_IsDownKey(int key)
+bool Key_IsDownKey(int key, bool numlock)
 {
     switch (platform)
     {
@@ -58,16 +58,16 @@ bool Key_IsDownKey(int key)
         break;
     }
 
-    return (key == OKEY_HAT3 || key == OKEY_DOWNARROW || key == OKEYP_2 || key == OKEY_JOY13);
+    return (key == OKEY_HAT3 || key == OKEY_DOWNARROW || (key == OKEYP_2 && !numlock) || key == OKEY_JOY13);
 }
 
 //
 // Key_IsLeftKey
 //
-bool Key_IsLeftKey(int key)
+bool Key_IsLeftKey(int key, bool numlock)
 {
     // Default Keyboard press
-    bool keyboard = (key == OKEY_LEFTARROW || key == OKEYP_4);
+    bool keyboard = (key == OKEY_LEFTARROW || (key == OKEYP_4 && !numlock));
 
     switch (platform)
     {
@@ -83,10 +83,10 @@ bool Key_IsLeftKey(int key)
 //
 // Key_IsRightKey
 //
-bool Key_IsRightKey(int key)
+bool Key_IsRightKey(int key, bool numlock)
 {
     // Default Keyboard press
-    bool keyboard = (key == OKEY_RIGHTARROW || key == OKEYP_6);
+    bool keyboard = (key == OKEY_RIGHTARROW || (key == OKEYP_6 && !numlock));
 
     switch (platform)
     {
@@ -101,9 +101,9 @@ bool Key_IsRightKey(int key)
     return (key == OKEY_HAT2 || keyboard || key == OKEY_JOY15);
 }
 
-bool Key_IsPageUpKey(int key)
+bool Key_IsPageUpKey(int key, bool numlock)
 {
-    bool keyboard = (key == OKEY_PGUP);
+    bool keyboard = (key == OKEY_PGUP || (key == OKEYP_9 && !numlock));
 
     switch (platform)
     {
@@ -118,9 +118,9 @@ bool Key_IsPageUpKey(int key)
     return (keyboard || key == OKEY_JOY10);
 }
 
-bool Key_IsPageDownKey(int key)
+bool Key_IsPageDownKey(int key, bool numlock)
 {
-    bool keyboard = (key == OKEY_PGDN);
+    bool keyboard = (key == OKEY_PGDN || (key == OKEYP_3 && !numlock));
 
     switch (platform)
     {
@@ -133,6 +133,26 @@ bool Key_IsPageDownKey(int key)
     }
 
     return (keyboard || key == OKEY_JOY11);
+}
+
+bool Key_IsHomeKey(int key, bool numlock)
+{
+	return (key == OKEY_HOME || (key == OKEYP_7 && !numlock));
+}
+
+bool Key_IsEndKey(int key, bool numlock)
+{
+	return (key == OKEY_END || (key == OKEYP_1 && !numlock));
+}
+
+bool Key_IsInsKey(int key, bool numlock)
+{
+	return (key == OKEY_INS || (key == OKEYP_0 && !numlock));
+}
+
+bool Key_IsDelKey(int key, bool numlock)
+{
+	return (key == OKEY_DEL || (key == OKEYP_PERIOD && !numlock));
 }
 
 //

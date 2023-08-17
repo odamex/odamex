@@ -712,16 +712,6 @@ void G_DoResetLevel(bool full_reset)
 	// Reset the respawned monster count
 	level.respawned_monsters = 0;	
 
-	// Send information about the newly reset map.
-	for (it = players.begin(); it != players.end(); ++it)
-	{
-		// Player needs to actually be ingame
-		if (!it->ingame())
-			continue;
-
-		SV_ClientFullUpdate(*it);
-	}
-
 	// No need to clear the spawn locations because we're not loading a new map.
 	M_StartWDLLog(false);
 
@@ -741,6 +731,16 @@ void G_DoResetLevel(bool full_reset)
 		// [AM] Also, forgetting to do this will result in ticcmds that rely on
 		//      a players subsector to be valid (like use) to crash the server.
 		G_DoReborn(*it);
+	}
+
+	// Send information about the newly reset map, but AFTER the reborns.
+	for (it = players.begin(); it != players.end(); ++it)
+	{
+		// Player needs to actually be ingame
+		if (!it->ingame())
+			continue;
+
+		SV_ClientFullUpdate(*it);
 	}
 }
 

@@ -535,7 +535,7 @@ void WI_drawEL()
 	// [RH] Changed to adjust by height of entering patch instead of title
 	y += (5 * ent->height()) / 4;
 
-	if (lnames1)
+	if (!lnames[1].empty())
 	{
 		// draw level
 		screen->DrawPatchClean(lnames1, (320 - lnames1->width()) / 2, y);

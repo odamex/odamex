@@ -148,10 +148,10 @@ CVAR_FUNC_DECL(		sv_sharekeys, "0", "Share keys found to every player.",
 CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maxiumum time allowed for player reconciliation (in seconds)",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
-CVAR(				sv_allowmovebob, "0", "Allow weapon & view bob changing",
+CVAR(				sv_allowmovebob, "1", "Allow weapon & view bob changing",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
-CVAR(				sv_allowredscreen, "0","Allow clients to adjust amount of red pain screen intensity",
+CVAR(				sv_allowredscreen, "1","Allow clients to adjust amount of red pain screen intensity",
 					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
 
 CVAR(				sv_allowpwo, "0", "Allow clients to set their preferences for automatic weapon switching",
