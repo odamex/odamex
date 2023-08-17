@@ -43,8 +43,13 @@ jobs:
       run: cmake --build .\build\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
       run: .\ci\win-artifact.ps1
-    - name: Download DemoTester
+    - name: Stage artifacts for testing
+      run: .\ci\win-prepare-demotest.ps1
+    - name: Download OdaTests and Testing Resources
       run: .\ci\win-get-demotester.ps1
+      env:
+        DEMOTESTER_URL: ${{ vars.DEMOTESTER_DOWNLOAD_URL }}
+        DEMORESOURCES_URL: ${{ vars.DEMORESOURCES_DOWNLOAD_URL }}
       continue-on-error: true
     - name: Decrypt IWADs
       run: |
@@ -58,10 +63,10 @@ jobs:
         SECRET_KEY: ${{ secrets.DEMOTESTER_IWAD_KEY }}
       working-directory: .\build\demotester
       continue-on-error: true
-    - name: Run DemoTester
+    - name: Run OdaTests
       run: python .\odatestcases.py
       env:
-        ODAMEX_BIN: ..\artifact\odamex.exe
+        ODAMEX_BIN: ..\demotest\odamex.exe
       working-directory: .\build\demotester
       continue-on-error: true
     - name: Upload artifact to B2
