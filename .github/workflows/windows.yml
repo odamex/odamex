@@ -43,8 +43,8 @@ jobs:
     - name: Download OdaTests and Testing Resources
       run: .\ci\win-get-demotester.ps1
       env:
-        DEMOTESTER_URL: ${{ env.DEMOTESTER_DOWNLOAD_URL }}
-        DEMORESOURCES_URL: ${{ env.DEMORESOURCES_DOWNLOAD_URL }}
+        DEMOTESTER_URL: ${{ vars.DEMOTESTER_DOWNLOAD_URL }}
+        DEMORESOURCES_URL: ${{ vars.DEMORESOURCES_DOWNLOAD_URL }}
       continue-on-error: true
     - name: Decrypt IWADs
       run: |
