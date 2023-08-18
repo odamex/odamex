@@ -102,6 +102,7 @@ jobs:
     - name: Turn on problem matcher
       uses: ammaraskar/msvc-problem-matcher@master
     - name: Remove .git folders
+      shell: bash
       run: rm -rf .git
     - name: Run build powershell
       shell: pwsh
@@ -151,6 +152,7 @@ jobs:
     - name: Turn on problem matcher
       uses: ammaraskar/msvc-problem-matcher@master
     - name: Remove .git folders
+      shell: bash
       run: rm -rf .git
     - name: Run build-x32 powershell
       shell: pwsh
