@@ -100,6 +100,10 @@ jobs:
       run: git submodule update --init --recursive
     - name: Turn on problem matcher
       uses: ammaraskar/msvc-problem-matcher@master
+    - name: Remove .git folders
+      shell: pwsh
+      run: |
+        Get-ChildItem -Recurse -Directory -Force *.git | Remove-Item -Force
     - name: Run build powershell
       shell: pwsh
       run: |
@@ -146,6 +150,10 @@ jobs:
       run: git submodule update --init --recursive
     - name: Turn on problem matcher
       uses: ammaraskar/msvc-problem-matcher@master
+    - name: Remove .git folders
+      shell: pwsh
+      run: |
+        Get-ChildItem -Recurse -Directory -Force *.git | Remove-Item -Force
     - name: Run build-x32 powershell
       shell: pwsh
       run: |
@@ -198,11 +206,11 @@ jobs:
         Copy-Item -Recurse -Force -Path "." -Destination "..\odamex-src-${{ env.new_version }}" -Exclude "*.zip","*.tar.gz","*.tar.xz"
         Remove-Item -Path "..\odamex-src-${{ env.new_version }}\.git*" -Recurse -Force
         Compress-Archive -Path "..\odamex-src-${{ env.new_version }}" -DestinationPath "odamex-src-${{ env.new_version }}.zip"
-    - name: Download x86 artifacats
+    - name: Download x86 artifacts
       uses: actions/download-artifact@v3
       with:
         name: Odamex-Win-x86
-    - name: Download x64 artifacats
+    - name: Download x64 artifacts
       uses: actions/download-artifact@v3
       with:
         name: Odamex-Win-x64
