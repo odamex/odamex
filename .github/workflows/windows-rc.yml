@@ -85,6 +85,7 @@ jobs:
     runs-on: windows-latest
     env:
       build_number: ${{ needs.pre_job.outputs.build_number }}
+      new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
     - uses: actions/checkout@v2
     - name: Run Upversion
@@ -103,7 +104,7 @@ jobs:
     - name: Remove .git folders
       shell: pwsh
       run: |
-        Get-ChildItem -Recurse -Directory -Force *.git | Remove-Item -Force
+        .\ci\nuke-git-folders.ps1
     - name: Run build powershell
       shell: pwsh
       run: |
@@ -135,6 +136,7 @@ jobs:
     runs-on: windows-latest
     env:
       build_number: ${{ needs.pre_job.outputs.build_number }}
+      new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
     - uses: actions/checkout@v2
     - name: Run Upversion
@@ -153,7 +155,7 @@ jobs:
     - name: Remove .git folders
       shell: pwsh
       run: |
-        Get-ChildItem -Recurse -Directory -Force *.git | Remove-Item -Force
+        .\ci\nuke-git-folders.ps1
     - name: Run build-x32 powershell
       shell: pwsh
       run: |
