@@ -16,10 +16,16 @@ jobs:
       major: ${{ steps.gitversion.outputs.major }}
       minor: ${{ steps.gitversion.outputs.minor }}
       patch: ${{ steps.gitversion.outputs.patch }}
+      upload_url: ${{ steps.get_release.outputs.upload_url }}
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v0.9.7
         with:
@@ -77,6 +83,7 @@ jobs:
     env:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - uses: actions/checkout@v2
     - name: Run Upversion
@@ -145,6 +152,7 @@ jobs:
     env:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - uses: actions/checkout@v2
     - name: Run Upversion
@@ -213,6 +221,7 @@ jobs:
     env:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - uses: actions/checkout@v2
     - name: Run Upversion
