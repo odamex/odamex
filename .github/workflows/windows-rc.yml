@@ -20,6 +20,10 @@ jobs:
         with:
           persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.9.7
+        with:
+          versionSpec: '5.x'
       - name: Determine Version
         id:   gitversion
         uses: gittools/actions/gitversion/execute@v0.9.7
