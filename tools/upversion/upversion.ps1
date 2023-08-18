@@ -61,7 +61,7 @@ $majminpatchCommaFiles = @(
 )
 
 $majminpatchCommaSpaceFiles = @(
-'.\CmakeLists.txt'
+'.\CMakeLists.txt'
 )
 
 $configverFiles = @(
