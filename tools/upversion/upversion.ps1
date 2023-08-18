@@ -1,4 +1,4 @@
-﻿### Upversion.ps1
+### Upversion.ps1
 ### Uses regexes to intelligently update code files to the new version and year.
 ### Designed to be run in the base git path
 
