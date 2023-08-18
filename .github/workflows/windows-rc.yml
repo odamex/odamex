@@ -69,9 +69,9 @@ jobs:
         run: |
           .\tools\upversion\upversion.ps1
         env:
-          MAJORVERSION: ${{ needs.pre_job.outputs.major }}
-          MINORVERSION: ${{ needs.pre_job.outputs.minor }}
-          PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
+          MAJORVERSION: ${{ steps.gitversion.outputs.major }}
+          MINORVERSION: ${{ steps.gitversion.outputs.minor }}
+          PATCHVERSION: ${{ steps.gitversion.outputs.patch }}
       - name: Commit & Push changes
         uses: actions-js/push@master
         with:
