@@ -2,6 +2,8 @@ name: Windows-Release
 
 on:
   release:
+    tags: 
+      - "[0-9]+.[0-9]+.[0-9]+"
     types: [published]
 
 jobs:
@@ -9,28 +11,15 @@ jobs:
     name: Build Preparation
     runs-on: ubuntu-latest
     outputs:
-      old_version: ${{ steps.previoustag.outputs.tag }}
+      build_number: ${{ steps.gitversion.outputs.buildMetaData }}
       new_version: ${{ steps.gitversion.outputs.majorMinorPatch }}
-      old_year: 2006-${{ steps.current-time.outputs.year }}
-      new_year: 2006-${{ steps.current-time.outputs.year }}
-      upload_url: ${{ steps.get_release.outputs.upload_url }}
+      major: ${{ steps.gitversion.outputs.major }}
+      minor: ${{ steps.gitversion.outputs.minor }}
+      patch: ${{ steps.gitversion.outputs.patch }}
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
-      - name: 'Get Previous tag'
-        id: previoustag
-        run: echo ::set-output name=tag::$(git tag --sort "-committerdate" | cut -d$'\n' -f2 | cut -d$'\n' -f1) # Get penultimate tag
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@v1.2.3
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-      - name: Get current time
-        uses: josStorer/get-current-time@v2.0.1
-        id: current-time
-        with:
-          format: YYYYMMDD-HH
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v0.9.7
         with:
@@ -72,24 +61,40 @@ jobs:
           echo "CommitsSinceVersionSourcePadded: ${{ steps.gitversion.outputs.commitsSinceVersionSourcePadded }}"
           echo "UncommittedChanges: ${{ steps.gitversion.outputs.uncommittedChanges }}"
           echo "CommitDate: ${{ steps.gitversion.outputs.commitDate }}"
+      - name: Run Upversion
+        id:   upversion
+        shell: pwsh
+        run: |
+          .\tools\upversion\upversion.ps1
+        env:
+          MAJORVERSION: ${{ steps.gitversion.outputs.major }}
+          MINORVERSION: ${{ steps.gitversion.outputs.minor }}
+          PATCHVERSION: ${{ steps.gitversion.outputs.patch }}
   build:
     name: Build (Visual Studio)
     needs: pre_job
     runs-on: windows-latest
     env:
-      old_version: ${{ needs.pre_job.outputs.old_version }}
+      build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
-      old_year: ${{ needs.pre_job.outputs.old_year }}
-      new_year: ${{ needs.pre_job.outputs.new_year }}
-      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - uses: actions/checkout@v2
-    - name: Run upversion script
-      run: python .\tools\upversion\upversion.py
+    - name: Run Upversion
+      id:   upversion
+      shell: pwsh
+      run: |
+        .\tools\upversion\upversion.ps1
+      env:
+        MAJORVERSION: ${{ needs.pre_job.outputs.major }}
+        MINORVERSION: ${{ needs.pre_job.outputs.minor }}
+        PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Turn on problem matcher
       uses: ammaraskar/msvc-problem-matcher@master
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
     - name: Run build powershell
       shell: pwsh
       run: |
@@ -138,19 +143,26 @@ jobs:
     needs: pre_job
     runs-on: windows-latest
     env:
-      old_version: ${{ needs.pre_job.outputs.old_version }}
+      build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
-      old_year: ${{ needs.pre_job.outputs.old_year }}
-      new_year: ${{ needs.pre_job.outputs.new_year }}
-      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - uses: actions/checkout@v2
-    - name: Run upversion script
-      run: python .\tools\upversion\upversion.py
+    - name: Run Upversion
+      id:   upversion
+      shell: pwsh
+      run: |
+        .\tools\upversion\upversion.ps1
+      env:
+        MAJORVERSION: ${{ needs.pre_job.outputs.major }}
+        MINORVERSION: ${{ needs.pre_job.outputs.minor }}
+        PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Turn on problem matcher
       uses: ammaraskar/msvc-problem-matcher@master
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
     - name: Run build-x32 powershell
       shell: pwsh
       run: |
@@ -199,17 +211,24 @@ jobs:
     runs-on: windows-latest
     needs: [pre_job, build, build-x32]
     env:
-      old_version: ${{ needs.pre_job.outputs.old_version }}
+      build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
-      old_year: ${{ needs.pre_job.outputs.old_year }}
-      new_year: ${{ needs.pre_job.outputs.new_year }}
-      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - uses: actions/checkout@v2
-    - name: Run upversion script
-      run: python .\tools\upversion\upversion.py
+    - name: Run Upversion
+      id:   upversion
+      shell: pwsh
+      run: |
+        .\tools\upversion\upversion.ps1
+      env:
+        MAJORVERSION: ${{ needs.pre_job.outputs.major }}
+        MINORVERSION: ${{ needs.pre_job.outputs.minor }}
+        PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     - name: Checkout submodules
       run: git submodule update --init --recursive
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
     - name: Create tar.gz
       shell: bash
       run: |
