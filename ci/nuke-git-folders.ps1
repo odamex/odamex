@@ -1,1 +1,0 @@
-Get-ChildItem -Recurse -Directory -Force *.git | Remove-Item -Force
