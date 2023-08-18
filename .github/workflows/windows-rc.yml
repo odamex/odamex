@@ -28,6 +28,7 @@ jobs:
         id:   gitversion
         uses: gittools/actions/gitversion/execute@v0.9.7
       - name: Get branch name
+        id:   branchname
         uses: nelonoel/branch-name@v1.0.1
       - name: Display GitVersion outputs
         run: |
@@ -77,7 +78,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           message: "bump version to ${{ steps.gitversion.outputs.majorMinorPatch }}"
-          branch: ${BRANCH_NAME}
+          branch: ${{ steps.branchname.outputs.branch_name }}
   build:
     name: Build (Visual Studio)
     needs: pre_job
