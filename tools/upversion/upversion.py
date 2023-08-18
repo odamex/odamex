@@ -2,7 +2,7 @@
 #
 # -----------------------------------------------------------------------------
 #
-# Copyright (C) 2006-2021 by The Odamex Team.
+# Copyright (C) 2006-2023 by The Odamex Team.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -115,12 +115,12 @@ def main():
         NEW_VERSION = os.getenv('NEW_VERSION')
 
     if not os.getenv('OLD_YEAR'):
-        OLD_YEAR = r"2006-2022"
+        OLD_YEAR = r"2006-2023"
     else:
         OLD_YEAR = os.getenv('OLD_YEAR')
 
     if not os.getenv('NEW_YEAR'):
-        NEW_YEAR = r"2006-2022"
+        NEW_YEAR = r"2006-2023"
     else:
         NEW_YEAR = os.getenv('NEW_YEAR')
 
