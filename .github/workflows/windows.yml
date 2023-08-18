@@ -3,7 +3,7 @@ name: Windows
 on: 
   push:
     branches-ignore:
-    - 'release/**'
+    - 'release/(\d+)[.](\d+)[.](\d+)'
   pull_request:
     
 
