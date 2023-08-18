@@ -87,6 +87,15 @@ jobs:
       build_number: ${{ needs.pre_job.outputs.build_number }}
     steps:
     - uses: actions/checkout@v2
+    - name: Run Upversion
+      id:   upversion
+      shell: pwsh
+      run: |
+        .\tools\upversion\upversion.ps1
+      env:
+        MAJORVERSION: ${{ needs.pre_job.outputs.major }}
+        MINORVERSION: ${{ needs.pre_job.outputs.minor }}
+        PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Turn on problem matcher
@@ -124,6 +133,15 @@ jobs:
       build_number: ${{ needs.pre_job.outputs.build_number }}
     steps:
     - uses: actions/checkout@v2
+    - name: Run Upversion
+      id:   upversion
+      shell: pwsh
+      run: |
+        .\tools\upversion\upversion.ps1
+      env:
+        MAJORVERSION: ${{ needs.pre_job.outputs.major }}
+        MINORVERSION: ${{ needs.pre_job.outputs.minor }}
+        PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Turn on problem matcher
