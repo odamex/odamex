@@ -3,7 +3,7 @@ name: Windows-Release-Candidate
 on:
   push:
     branches:
-    - 'release/[0-9+].[0-9+].[0-9+]' # Only run on major.minor.patch releases
+    - 'release/[0-9]+.[0-9]+.[0-9]+' # Only run on major.minor.patch releases
 
 jobs:
   pre_job:
