@@ -8,9 +8,9 @@ $majminpatchbuildCommaRegex = "(\d+)[,](\d+)[,](\d+)[,](\d+)"
 $configverRegex = "(\d{6})"
 $yearRegex = "2006-(\d{4})"
 
-$maj = "$env:MajorVersion"
-$min = "$env:MinorVersion"
-$patch = "$env:PatchVersion"
+$maj = "$env:MAJORVERSION"
+$min = "$env:MINORVERSION"
+$patch = "$env:PATCHVERSION"
 
 if ([String]::IsNullOrWhiteSpace($maj)) {
     $maj = "1"
