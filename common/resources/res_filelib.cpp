@@ -695,9 +695,9 @@ std::vector<std::string> Res_GatherResourceFilesFromArgs()
 		const char* arg_value = Args.GetArg(i);
 		if (arg_value[0] == '-' || arg_value[0] == '+')
 		{
-			if (strcasecmp(arg_value, "-file") == 0)
+			if (stricmp(arg_value, "-file") == 0)
 				is_filename = true, extlist = ALL_EXTLIST;
-			else if (strcasecmp(arg_value, "-deh") == 0)
+			else if (stricmp(arg_value, "-deh") == 0)
 				is_filename = true, extlist = DEH_EXTLIST;
 			else
 				is_filename = false;
@@ -768,9 +768,13 @@ void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
 		iwad_filename = old_resource_filenames[iwad_position];
 	std::string iwad_full_filename = Res_GetFullPath(iwad_filename);
 	if (iwad_full_filename.empty())
+	{
 		I_FatalError("Unable to locate IWAD resource file.");
+	}
 	else
+	{
 		resource_filenames.push_back(iwad_full_filename);
+	}
 
 	// find where the PWADs are in the input array
 	size_t pwad_end_position = old_resource_filenames.size();
