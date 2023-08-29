@@ -25,8 +25,11 @@
 
 #include <SDL.h>
 
-#if (SDL_MAJOR_VERSION == 2 && SDL_MINOR_VERSION == 0)
+#if (SDL_MAJOR_VERSION == 2)
 	#define SDL20
+	#if (SDL_MINOR_VERSION > 0 || SDL_PATCHLEVEL >= 16)
+		#define SDL2016
+	#endif
 #elif (SDL_MAJOR_VERSION == 1 && SDL_MINOR_VERSION == 2)
 	#define SDL12
 #endif

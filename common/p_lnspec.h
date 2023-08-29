@@ -532,6 +532,8 @@ BOOL EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int f
 bool P_LineSpecialMovesSector(short special);
 bool P_CanActivateSpecials(AActor* mo, line_t* line);
 bool P_ActorInSpecialSector(AActor* actor);
+void P_DestroyScrollerThinkers();
+void P_DestroyLightThinkers();
 
 int P_FindLineFromLineTag(const line_t* line, int start);
 int P_IsUnderDamage(const AActor* actor);

@@ -804,6 +804,10 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		{
 			sec->floor_res_id = line->frontsector->floor_res_id;
 			sec->special = line->frontsector->special;
+			sec->flags = line->frontsector->flags;
+			sec->damageinterval = line->frontsector->damageinterval;
+			sec->leakrate = line->frontsector->leakrate;
+			sec->damageamount = line->frontsector->damageamount;
 		}
 		break;
 
@@ -816,6 +820,10 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		// in case no surrounding sector is at floordestheight
 		// --> should not affect compatibility <--
 		m_NewSpecial = sec->special;
+		m_NewFlags = sec->flags;
+		m_NewDmgInterval = sec->damageinterval;
+		m_NewLeakRate = sec->leakrate;
+		m_NewDamageRate = sec->damageamount;
 
 		//jff 5/23/98 use model subroutine to unify fixes and handling
 		sec = P_FindModelFloorSector (m_FloorDestHeight,sec);
@@ -823,6 +831,10 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		{
 			m_Texture = sec->floor_res_id;
 			m_NewSpecial = sec->special;
+			m_NewFlags = sec->flags;
+			m_NewDmgInterval = sec->damageinterval;
+			m_NewLeakRate = sec->leakrate;
+			m_NewDamageRate = sec->damageamount;
 		}
 		break;
 
@@ -861,10 +873,18 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 				{
 				case 1:
 					m_NewSpecial = 0;
+					m_NewFlags = 0;
+					m_NewDmgInterval = 0;
+					m_NewLeakRate = 0;
+					m_NewDamageRate = 0;
 					m_Type = DFloor::genFloorChg0;
 					break;
 				case 2:
 					m_NewSpecial = found->special;
+					m_NewFlags = found->flags;
+					m_NewDmgInterval = found->damageinterval;
+					m_NewLeakRate = found->leakrate;
+					m_NewDamageRate = found->damageamount;
 					m_Type = DFloor::genFloorChgT;
 					break;
 				case 3:
@@ -881,10 +901,15 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 			switch (change & 3) {
 				case 1:
 					m_NewSpecial = 0;
+				    m_NewFlags = 0;
 					m_Type = DFloor::genFloorChg0;
 					break;
 				case 2:
-					m_NewSpecial = sec->special;
+				    m_NewSpecial = line->frontsector->special;
+				    m_NewFlags = line->frontsector->flags;
+				    m_NewDmgInterval = line->frontsector->damageinterval;
+				    m_NewLeakRate = line->frontsector->leakrate;
+				    m_NewDamageRate = line->frontsector->damageamount;
 					m_Type = DFloor::genFloorChgT;
 					break;
 				case 3:
@@ -937,7 +962,7 @@ BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 
 manual_floor:
 		// ALREADY MOVING?	IF SO, KEEP GOING...
-		if (sec->floordata)
+		if (sec->floordata || (demoplayback && sec->ceilingdata))
 		{
 			if (co_boomphys && manual)
 				return false;

@@ -58,6 +58,7 @@
 #include "g_game.h"
 #include "cl_main.h"
 #include "cl_demo.h"
+#include "cl_replay.h"
 #include "gi.h"
 #include "hu_mousegraph.h"
 #include "g_spawninv.h"
@@ -932,9 +933,21 @@ void G_Ticker (void)
 		C_AdjustBottom ();
 	}
 
+	buf = gametic % BACKUPTICS;
+
     // get commands
-    buf = gametic%BACKUPTICS;
-	memcpy (&consoleplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
+	// [Blair] From all players in a demo playback.
+	if (demoplayback)
+	{
+		for (Players::iterator it = ::players.begin(); it != players.end(); ++it)
+		{
+			memcpy(&it->cmd, &it->netcmds[buf], sizeof(ticcmd_t));
+		}
+	}
+	else
+	{
+		memcpy(&consoleplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
+	}
 
     static int realrate = 0;
     int packet_size;
@@ -1029,26 +1042,50 @@ void G_Ticker (void)
 	// check for special buttons
 	if(serverside && consoleplayer().ingame())
     {
-		player_t &player = consoleplayer();
-
-		if (player.cmd.buttons & BT_SPECIAL)
+		// [Blair] Let's get all player's commands in a demo playback.
+		// Otherwise we might miss a pause and desync!
+		if (demoplayback)
 		{
-			switch (player.cmd.buttons & BT_SPECIALMASK)
+			for (Players::iterator it = ::players.begin(); it != players.end(); ++it)
 			{
-			  case BTS_PAUSE:
-				paused ^= 1;
-				if (paused)
-					S_PauseSound ();
-				else
-					S_ResumeSound ();
-				break;
+				if (it->cmd.buttons & BT_SPECIAL)
+				{
+					switch (it->cmd.buttons & BT_SPECIALMASK)
+					{
+					case BTS_PAUSE:
+						paused ^= 1;
+						if (paused)
+							S_PauseSound();
+						else
+							S_ResumeSound();
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			player_t& player = consoleplayer();
 
-			  case BTS_SAVEGAME:
-				if (!savedescription[0])
-					strcpy (savedescription, "NET GAME");
-				savegameslot =  (player.cmd.buttons & BTS_SAVEMASK)>>BTS_SAVESHIFT;
-				gameaction = ga_savegame;
-				break;
+			if (player.cmd.buttons & BT_SPECIAL)
+			{
+				switch (player.cmd.buttons & BT_SPECIALMASK)
+				{
+				case BTS_PAUSE:
+					paused ^= 1;
+					if (paused)
+						S_PauseSound();
+					else
+						S_ResumeSound();
+					break;
+
+				case BTS_SAVEGAME:
+					if (!savedescription[0])
+						strcpy(savedescription, "NET GAME");
+					savegameslot = (player.cmd.buttons & BTS_SAVEMASK) >> BTS_SAVESHIFT;
+					gameaction = ga_savegame;
+					break;
+				}
 			}
 		}
     }
@@ -1074,6 +1111,9 @@ void G_Ticker (void)
 
 			CL_SimulateWorld();
 			CL_PredictWorld();
+
+			// Replay item pickups if the items arrived now.
+			ClientReplay::getInstance().itemReplay();
 		}
 		P_Ticker ();
 		ST_Ticker ();

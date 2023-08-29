@@ -296,6 +296,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		os.mustScan();
 		mape->level_name = os.getToken();
+		mape->pname.clear();
 	}
 	else if (!stricmp(pname.c_str(), "next"))
 	{
@@ -525,19 +526,19 @@ void MapNameToLevelNum(level_pwad_info_t& info)
 	}
 }
 
-void ParseUMapInfoLump(ResourceId res)
+void ParseUMapInfoLump(ResourceId res_id)
 {
 	LevelInfos& levels = getLevelInfos();
-	const char* lumpname = Res_GetResourceName(res).c_str();
+	const char* lumpname = Res_GetResourceName(res_id).c_str();
 
-	const char* buffer = static_cast<char*>((char*)Res_LoadResource(res, PU_STATIC));
+	const char* buffer = static_cast<char*>((char*)Res_LoadResource(res_id, PU_STATIC));
 
 	const OScannerConfig config = {
 	    lumpname, // lumpName
 	    false,    // semiComments
 	    true,     // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_id));
 
 	while (os.scan())
 	{
@@ -1027,10 +1028,7 @@ void MIType_CompatFlag(OScanner& os, bool doEquals, void* data, unsigned int fla
 		else
 		{
 			os.unScan();
-			if (os.getTokenInt())
-				*static_cast<DWORD*>(data) |= flags;
-			else
-				*static_cast<DWORD*>(data) &= ~flags;
+			*static_cast<DWORD*>(data) |= flags;
 		}
 	}
 	else
@@ -1563,6 +1561,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY3("compat_boomscroll", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 		ENTRY3("compat_sectorsounds", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 		ENTRY4("compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER)
+		ENTRY3("compat_invisibility", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 	}
 };
 
@@ -1938,22 +1937,22 @@ struct MapInfoDataSetter<automap_dummy>
 	}
 };
 
-void ParseMapInfoLump(ResourceId res)
+void ParseMapInfoLump(ResourceId res_id)
 {
 	LevelInfos& levels = getLevelInfos();
 	ClusterInfos& clusters = getClusterInfos();
-	const char* lumpname = Res_GetResourceName(res).c_str();
+	const char* lumpname = Res_GetResourceName(res_id).c_str();
 
 	level_pwad_info_t defaultinfo;
 
-	const char* buffer = static_cast<char*>((char*)Res_LoadResource(res, PU_STATIC));
+	const char* buffer = static_cast<char*>((char*)Res_LoadResource(res_id, PU_STATIC));
 
 	const OScannerConfig config = {
 	    lumpname, // lumpName
 	    true,     // semiComments
 	    true,     // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_id));
 
 	while (os.scan())
 	{
@@ -2155,21 +2154,10 @@ void G_ParseMapInfo()
 		break;
 	}
 
-	ResourceId res = Res_GetResourceId(baseinfoname, global_directory_name);
-	ParseMapInfoLump(res);
+	ResourceId res_id = Res_GetResourceId(baseinfoname, global_directory_name);
+	ParseMapInfoLump(res_id);
 
-	const ResourceIdList zmapinfo_res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/ZMAPINFO"));
 	bool found_mapinfo = false;
-
-	for (size_t i = 0; i < zmapinfo_res_ids.size(); i++)
-	{
-		found_mapinfo = true;
-		ParseMapInfoLump(zmapinfo_res_ids[i]);
-	}
-
-	// If ZMAPINFO exists, we don't parse a normal MAPINFO
-	if (found_mapinfo == true)
-		return;
 
 	const ResourceIdList umapinfo_res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/UMAPINFO"));
 	for (size_t i = 0; i < umapinfo_res_ids.size(); i++)

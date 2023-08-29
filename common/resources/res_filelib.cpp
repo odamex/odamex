@@ -267,7 +267,9 @@ static registry_value_t steam_install_location =
 static const char* steam_install_subdirs[] =
 {
 	"steamapps\\common\\doom 2\\base",
+	"steamapps\\common\\Doom 2\\masterbase",
 	"steamapps\\common\\final doom\\base",
+	"steamapps\\common\\Doom 2\\finaldoombase",
 	"steamapps\\common\\ultimate doom\\base",
 	"steamapps\\common\\DOOM 3 BFG Edition\\base\\wads",
 	"steamapps\\common\\master levels of doom\\master\\wads", //Let Odamex find the Master Levels pwads too
@@ -693,9 +695,9 @@ std::vector<std::string> Res_GatherResourceFilesFromArgs()
 		const char* arg_value = Args.GetArg(i);
 		if (arg_value[0] == '-' || arg_value[0] == '+')
 		{
-			if (stricmp(arg_value, "-file") == 0)
+			if (strcasecmp(arg_value, "-file") == 0)
 				is_filename = true, extlist = ALL_EXTLIST;
-			else if (stricmp(arg_value, "-deh") == 0)
+			else if (strcasecmp(arg_value, "-deh") == 0)
 				is_filename = true, extlist = DEH_EXTLIST;
 			else
 				is_filename = false;

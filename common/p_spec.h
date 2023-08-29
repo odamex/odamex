@@ -113,7 +113,7 @@ void P_RemoveMovingFloor(sector_t *sector);
 bool P_MovingCeilingCompleted(sector_t *sector);
 bool P_MovingFloorCompleted(sector_t *sector);
 bool P_HandleSpecialRepeat(line_t* line);
-void P_ApplySectorDamage(player_t* player, int damage, int leak);
+void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod = 0);
 void P_ApplySectorDamageEndLevel(player_t* player);
 void P_CollectSecretCommon(sector_t* sector, player_t* player);
 int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start);
@@ -225,6 +225,8 @@ public:
 	void SetRate (fixed_t dx, fixed_t dy) { m_dx = dx; m_dy = dy; }
 	bool IsType(EScrollType type) const { return type == m_Type; }
 	int GetAffectee() const { return m_Affectee; }
+	int GetAccel() const { return m_Accel; }
+	int GetControl() const { return m_Control; }
 
 	EScrollType GetType() const { return m_Type; }
 	fixed_t GetScrollX() const { return m_dx; }

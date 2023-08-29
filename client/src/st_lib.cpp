@@ -80,15 +80,13 @@ void StatusBarWidget_Base::drawPatch(int x, int y, const Texture* t)
 	}
 }
 
-void StatusBarWidgetNumber::init(int x_, int y_, const Texture** pl, int* num_, bool* on_,
-                                 int maxdigits_)
+void StatusBarWidgetNumber::init(int x_, int y_, const Texture** pl, int* num_, int maxdigits_)
 {
 	m_x = x_;
 	m_y = y_;
 	oldnum = 0;
 	maxdigits = maxdigits_;
 	num = num_;
-	on = on_;
 	p = pl;
 }
 
@@ -101,11 +99,11 @@ void StatusBarWidgetNumber::init(int x_, int y_, const Texture** pl, int* num_, 
 void StatusBarWidgetNumber::update(bool force_refresh, bool cleararea)
 {
 	// [jsd]: prevent null references as hard as possible
-	if (num == NULL || on == NULL || p == NULL)
+	if (num == NULL || p == NULL)
 		return;
 
 	// only draw if the number is different or refresh is forced
-	if (!(force_refresh || oldnum != *num) || !*on)
+	if (!(force_refresh || oldnum != *num))
 		return;
 
 	int number = *num;
@@ -154,35 +152,32 @@ void StatusBarWidgetNumber::update(bool force_refresh, bool cleararea)
 		drawPatch(drawx - 8, m_y, negminus);
 }
 
-void StatusBarWidgetPercent::init(int x, int y, const Texture** pl, int* num, bool* on,
-                                  const Texture* percent_patch)
+void StatusBarWidgetPercent::init(int x, int y, const Texture** pl, int* num, const Texture* percent_patch)
 {
-	StatusBarWidgetNumber::init(x, y, pl, num, on, 3);
+	StatusBarWidgetNumber::init(x, y, pl, num, 3);
 	m_percentTex = percent_patch;
 }
 
 void StatusBarWidgetPercent::update(bool force_refresh)
 {
-	if (force_refresh && *on)
+	if (force_refresh)
 		drawPatch(getX(), getY(), m_percentTex);
 
 	StatusBarWidgetNumber::update(force_refresh);
 }
 
-void StatusBarWidgetMultiIcon::init(int x_, int y_, const Texture** il, int* inum_,
-                                    bool* on_)
+void StatusBarWidgetMultiIcon::init(int x_, int y_, const Texture** il, int* inum_)
 {
 	m_x = x_;
 	m_y = y_;
 	oldinum = -1;
 	inum = inum_;
-	on = on_;
 	p = il;
 }
 
 void StatusBarWidgetMultiIcon::update(bool force_refresh)
 {
-	if (on && (force_refresh || oldinum != *inum) && (*inum != -1))
+	if ((force_refresh || oldinum != *inum) && (*inum != -1))
 	{
 		// clear the background area
 		if (oldinum != -1)

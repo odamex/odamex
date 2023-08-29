@@ -275,7 +275,7 @@ void D_Display()
 			return;
 
 		case GS_LEVEL:
-			if (!gametic)
+		    if (!gametic || !g_ValidLevel)
 				break;
 
 			V_DoPaletteEffects();
@@ -717,6 +717,9 @@ void STACK_ARGS D_Shutdown()
 	// reset the Zone memory manager
 	Z_Close();
 
+	// [AM] Level is now invalid due to torching zone memory.
+	g_ValidLevel = false;
+
 	// [AM] All of our dyncolormaps are freed, tidy up so we
 	//      don't follow wild pointers.
 	NormalLight.next = NULL;
@@ -763,6 +766,7 @@ void D_DoomMain()
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
 	std::string iwad;
+	std::vector<std::string> pwads;
 	const char* iwadParam = Args.CheckValue("-iwad");
 	if (iwadParam)
 	{
@@ -796,7 +800,15 @@ void D_DoomMain()
 
 		if (!shouldSkip)
 		{
-			iwad = GUI_BootWindow();
+			scannedWADs_t wads = GUI_BootWindow();
+			iwad = wads.iwad;
+			pwads = wads.pwads;
+
+			for (StringTokens::iterator it = wads.options.begin();
+		    	 it != wads.options.end(); ++it)
+			{
+				Args.AppendArg((*it).c_str());
+			}
 		}
 	}
 
@@ -832,7 +844,7 @@ void D_DoomMain()
 	// set the default value for vid_ticker based on the presence of -devparm
 	if (devparm)
 		vid_ticker.SetDefault("1");
- 
+
 	// Nomonsters
 	sv_nomonsters = Args.CheckParm("-nomonsters");
 

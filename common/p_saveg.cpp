@@ -90,6 +90,7 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec->ceiling_res_id
 				<< sec->lightlevel
 				<< sec->special
+				<< sec->flags
 				<< sec->tag
 				<< sec->secretsector
 				<< sec->soundtraversed
@@ -181,6 +182,7 @@ void P_SerializeWorld (FArchive &arc)
 				>> sec->ceiling_res_id
 				>> sec->lightlevel
 				>> sec->special
+				>> sec->flags
 				>> sec->tag
 				>> sec->secretsector
 				>> sec->soundtraversed

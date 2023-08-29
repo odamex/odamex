@@ -40,6 +40,8 @@ extern "C" int			viewheight;
 //
 // Lookup tables for map data.
 //
+extern bool				g_ValidLevel;
+
 extern int				numsprites;
 extern spritedef_t* 	sprites;
 
@@ -63,6 +65,8 @@ extern line_t*			lines;
 
 extern int				numsides;
 extern side_t*			sides;
+
+extern std::vector<int> originalLightLevels;
 
 inline FArchive &operator<< (FArchive &arc, sector_t *sec)
 {

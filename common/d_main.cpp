@@ -70,6 +70,8 @@
 #include "resources/res_filelib.h"
 EXTERN_CVAR (waddirs)
 EXTERN_CVAR (cl_waddownloaddir)
+OWantFiles missingfiles;
+bool missingCommercialIWAD = false;
 
 bool lastWadRebootSuccess = true;
 extern bool step_mode;
@@ -78,6 +80,7 @@ bool capfps = true;
 float maxfps = 35.0f;
 
 extern bool step_mode;
+
 
 //
 // D_GetTitleString
@@ -189,6 +192,85 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 
 	// get skill / episode / map from parms
 	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+}
+
+/**
+ * @brief Print a warning that occurrs when the user has an IWAD that's a
+ *        different version than the one we want.
+ * 
+ * @param wanted The IWAD that we wanted.
+ * @return True if we emitted an commercial IWAD warning.
+ */
+static bool CommercialIWADWarning(const OWantFile& wanted)
+{
+	const OMD5Hash& hash = wanted.getWantedMD5();
+	if (hash.empty())
+	{
+		// No MD5 means there is no error we can reasonably display.
+		return false;
+	}
+
+	const FileIdentifier* info = W_GameInfo(wanted.getWantedMD5());
+	if (!info)
+	{
+		// No GameInfo means that we're not dealing with a WAD we recognize.
+		return false;
+	}
+
+	if (!info->mIsCommercial)
+	{
+		// Not commercial means that we should treat the IWAD like any other
+		// WAD, with no special callout.
+		return false;
+	}
+
+	Printf("Odamex attempted to load\n> %s.\n\n", info->mIdName.c_str());
+
+	// Try to find an IWAD file with a matching name in the user's directories.
+	OWantFile sameNameWant;
+	OWantFile::make(sameNameWant, wanted.getBasename(), OFILE_WAD);
+	OResFile sameNameRes;
+	const bool resolved = M_ResolveWantedFile(sameNameRes, sameNameWant);
+	if (!resolved)
+	{
+		Printf(
+		    "Odamex could not find the data file for this game in any of the locations "
+		    "it searches for WAD files.  If you know you have %s on your hard drive, you "
+		    "can add that path to the 'waddirs' cvar so Odamex can find it.\n\n",
+		    wanted.getBasename().c_str());
+	}
+	else
+	{
+		const FileIdentifier* curInfo = W_GameInfo(sameNameRes.getMD5());
+		if (curInfo)
+		{
+			// Found a file, but it's the wrong version.
+			Printf("Odamex found a possible data file, but it's the wrong version.\n> "
+			       "%s\n> %s\n\n",
+			       curInfo->mIdName.c_str(), sameNameRes.getFullpath().c_str());
+		}
+		else
+		{
+			// Found a file, but it's not recognized at all.
+			Printf("Odamex found a possible data file, but Odamex does not recognize "
+			       "it.\n> %s\n\n",
+			       sameNameRes.getFullpath().c_str());
+		}
+
+#ifdef _WIN32
+		Printf("You can use a tool such as Omniscient "
+		       "<https://drinkybird.net/doom/omniscient> to patch your way to the "
+		       "correct version of the data file.\n");
+#else
+		Printf("You can use a tool such as xdelta3 <http://xdelta.org/> paried with IWAD "
+		       "patches located on Github <https://github.com/Doom-Utils/iwad-patches> "
+		       "to patch your way to the correct version of the data file.\n");
+#endif
+	}
+
+	Printf("If you do not own this game, consider purchasing it on Steam, GOG, or other "
+	       "digital storefront.\n\n");
+	return true;
 }
 
 //

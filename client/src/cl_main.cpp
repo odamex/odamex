@@ -67,6 +67,7 @@
 
 #include "g_gametype.h"
 #include "cl_parse.h"
+#include "cl_replay.h"
 
 #include <bitset>
 #include <map>
@@ -377,6 +378,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
 		sv_gametype = GM_COOP;
+		ClientReplay::getInstance().reset();
 	}
 
 	if (paused)
@@ -458,6 +460,8 @@ void CL_Reconnect(void)
 
 	if (netdemo.isRecording())
 		forcenetdemosplit = true;
+
+	ClientReplay::getInstance().reset();
 
 	if (connected)
 	{
@@ -1423,6 +1427,8 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 			displayplayer_id = consoleplayer_id; // get out of spynext
 			player.cheats &= ~CF_FLY;	// remove flying ability
 		}
+
+		ClientReplay::getInstance().reset();
 
 		CL_RebuildAllPlayerTranslations();
 	}

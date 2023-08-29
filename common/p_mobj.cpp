@@ -128,8 +128,8 @@ AActor::AActor()
       prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
       subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
       height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
-      info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
-      special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
+      info(NULL), tics(0), on_conveyor(false),state(NULL), damage(0), flags(0), flags2(0), 
+      flags3(0), oflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
@@ -149,8 +149,9 @@ AActor::AActor(const AActor& other)
       dropoffz(other.dropoffz), floorsector(other.floorsector), radius(other.radius),
       height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
       validcount(other.validcount), type(other.type), info(other.info), tics(other.tics),
-      state(other.state), damage(other.damage), flags(other.flags), flags2(other.flags2),
-	  flags3(other.flags3), oflags(other.oflags), special1(other.special1), special2(other.special2),
+      state(other.state), on_conveyor(other.on_conveyor), damage(other.damage), 
+      flags(other.flags), flags2(other.flags2), flags3(other.flags3), oflags(other.oflags), 
+      special1(other.special1), special2(other.special2),
       health(other.health), movedir(other.movedir), movecount(other.movecount),
       visdir(other.visdir), reactiontime(other.reactiontime), threshold(other.threshold),
       player(other.player), lastlook(other.lastlook), special(other.special),
@@ -197,6 +198,7 @@ AActor &AActor::operator= (const AActor &other)
     info = other.info;
     tics = other.tics;
     state = other.state;
+    on_conveyor = other.on_conveyor;
     damage = other.damage;
     flags = other.flags;
     flags2 = other.flags2;
@@ -245,7 +247,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
       prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
       subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
       height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
-      info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
+      info(NULL), tics(0), on_conveyor(false), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
       special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
@@ -408,6 +410,8 @@ void P_ClearId(uint32_t id)
 void AActor::Destroy ()
 {
 	SV_SendDestroyActor(this);
+
+	actor_by_netid.erase(netid);
 
 	// Remove from health pool.
 	if (!::savegamerestore)
@@ -674,18 +678,68 @@ void AActor::RunThink ()
 	prevx = x;
 	prevy = y;
 	prevz = z;
+
 	if (!player)
 	{
 		prevangle = angle;
 		prevpitch = pitch;
 	}
 
-    // server removal of corpses only
-    if (!clientside && serverside)
-    {
-        if (type == MT_PLAYER && health <= 0)
-            deadtic++;
-    }
+	// Check to see if this actor is still on a conveyor.
+	if (on_conveyor)
+	{
+		bool still_on = false;
+
+		TThinkerIterator<DScroller> scrollIter;
+		DScroller* scroller;
+
+		while ((scroller = scrollIter.Next()))
+		{
+			if (scroller->GetType() != DScroller::sc_carry)
+			{
+				continue;
+			}
+
+			sector_t* sec = sectors + scroller->GetAffectee();
+			fixed_t height = P_HighestHeightOfFloor(sec);
+			fixed_t waterheight =
+			    sec->heightsec && P_HighestHeightOfFloor(sec->heightsec) > height
+			        ? P_HighestHeightOfFloor(sec->heightsec)
+			        : MININT;
+
+			if ((subsector->sector - sectors) == scroller->GetAffectee())
+			{
+				msecnode_t* node;
+				AActor* thing;
+
+				for (node = sec->touching_thinglist; node; node = node->m_snext)
+				{
+					if (!((thing = node->m_thing)->flags & MF_NOCLIP) &&
+					    (!(thing->flags & MF_NOGRAVITY || thing->z > height) ||
+					     thing->z < waterheight) &&
+					    thing == this)
+					{
+						still_on = true;
+						break;
+					}
+				}
+			}
+
+			if (still_on)
+			{
+				break;
+			}
+		}
+
+		on_conveyor = still_on;
+	}
+
+	// server removal of corpses only
+	if (!clientside && serverside)
+	{
+		if (type == MT_PLAYER && health <= 0)
+			deadtic++;
+	}
 
 	// GhostlyDeath -- Was a spectator but now it's nothing!
 	if ((this->oflags & MFO_SPECTATOR ) && !player)
@@ -2326,6 +2380,14 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
     th->target = source->ptr();	// where it came from
     an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
 
+	// Horde boss? Make their projectiles look bossy
+	if (source->oflags & MFO_BOSSPOOL)
+	{
+		th->oflags |= MFO_FULLBRIGHT;
+		th->effects = FX_YELLOWFOUNTAIN;
+		th->translation = translationref_t(&bosstable[0]);
+	}
+
     // fuzzy player
     if (dest_flags & MF_SHADOW)
 		an += P_RandomDiff()<<20;
@@ -2621,16 +2683,7 @@ void P_ExplodeMissile (AActor* mo)
 		case MT_BFG:
 			mod = MOD_BFG_BOOM;
 			break;
-		// [AM] Monster fireballs get a special MOD.
-		case MT_ARACHPLAZ:
-		case MT_TROOPSHOT:
-		case MT_HEADSHOT:
-		case MT_BRUISERSHOT:
-		case MT_TRACER:
-		case MT_FATSHOT:
-		case MT_SPAWNSHOT:
-			mod = MOD_FIREBALL;
-			break;
+		// Blair: Unknown player projectiles get an unknown mod
 		default:
 			mod = MOD_UNKNOWN;
 			break;

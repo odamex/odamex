@@ -46,14 +46,9 @@ EXTERN_CVAR(sv_allowexit)
 //
 // CPhipps - take a line_t pointer instead of a line number, as in MBF
 
-lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
+bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
                                           bool bossaction)
 {
-	lineresult_s result;
-
-	result.lineexecuted = false;
-	result.switchchanged = false; // Cross doesn't activate a switch
-
 	int ok;
 
 	//  Things that should never trigger lines
@@ -79,7 +74,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		case MT_TROOPSHOT:
 		case MT_HEADSHOT:
 		case MT_BRUISERSHOT:
-			return result;
+			return false;
 			break;
 
 		default:
@@ -103,7 +98,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		{
 			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if ((line->special & FloorChange) || !(line->special & FloorModel))
-					return result; // FloorModel is "Allow Monsters" if FloorChange is 0
+					return false; // FloorModel is "Allow Monsters" if FloorChange is 0
 			/*
 			if (!comperr(comperr_zerotag) &&
 			    !line->tag) // e6y //jff 2/27/98 all walk generalized types require tag
@@ -115,7 +110,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		{
 			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if ((line->special & CeilingChange) || !(line->special & CeilingModel))
-					return result; // CeilingModel is "Allow Monsters" if CeilingChange is
+					return false; // CeilingModel is "Allow Monsters" if CeilingChange is
 					               // 0
 			/*
 			if (!comperr(comperr_zerotag) &&
@@ -129,9 +124,9 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			{
 				if (!(line->special & DoorMonster))
-					return result;           // monsters disallowed from this door
+					return false;            // monsters disallowed from this door
 				if (line->flags & ML_SECRET) // they can't open secret doors either
-					return result;
+					return false;
 			}
 			/*
 			if (!comperr(comperr_zerotag) &&
@@ -144,22 +139,22 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		{
 			if ((!thing->player && thing->type != MT_AVATAR) ||
 			    bossaction)    // boss actions can't handle locked doors
-				return result;                // monsters disallowed from unlocking doors
+				return false;  // monsters disallowed from unlocking doors
 			if (((line->special & TriggerType) == WalkOnce) ||
 			    ((line->special & TriggerType) == WalkMany))
 			{ // jff 4/1/98 check for being a walk type before reporting door type
 				if (!P_CanUnlockGenDoor(line, thing->player))
-					return result;
+					return false;
 			}
 			else
-				return result;
+				return false;
 			linefunc = EV_DoGenLockedDoor;
 		}
 		else if ((unsigned)line->special >= GenLiftBase)
 		{
 			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if (!(line->special & LiftMonster))
-					return result; // monsters disallowed
+					return false; // monsters disallowed
 			/*
 			if (!comperr(comperr_zerotag) &&
 			    !line->tag) // e6y //jff 2/27/98 all walk generalized types require tag
@@ -171,7 +166,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		{
 			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if (!(line->special & StairMonster))
-					return result; // monsters disallowed
+					return false; // monsters disallowed
 			/*
 			if (!comperr(comperr_zerotag) &&
 			    !line->tag) // e6y //jff 2/27/98 all walk generalized types require tag
@@ -185,7 +180,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			// all generalized walk-over crusher types!
 			if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 				if (!(line->special & StairMonster))
-					return result; // monsters disallowed
+					return false; // monsters disallowed
 			/*
 			if (!comperr(comperr_zerotag) &&
 			    !line->tag) // e6y //jff 2/27/98 all walk generalized types require tag
@@ -200,16 +195,13 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			case WalkOnce:
 				if (linefunc(line))
 				{
-					result.lineexecuted = true;
-					line->special = 0; // clear special if a walk once type
+					return true;
 				}
-				return result;
 			case WalkMany:
 				linefunc(line);
-				result.lineexecuted = true;
-				return result;
+				return true;
 			default: // if not a walk type, do nothing here
-				return result;
+				return false;
 			}
 	}
 
@@ -237,7 +229,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		case 268:
 		case 269:
 			if (bossaction)
-				return result;
+				return false;
 
 		case 4:  // raise door
 		case 10: // plat down-wait-up-stay trigger
@@ -246,11 +238,11 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			break;
 		}
 		if (!ok && !bossaction) // Bossactions can use any linedef except teleports.
-			return result;
+			return false;
 	}
 
 	if (!P_CheckTag(line)) // jff 2/27/98 disallow zero tag on some types
-		return result;
+		return false;
 
 	// Dispatch on the line special value to the line's action routine
 	// If a once only function, and successful, clear the line special
@@ -260,7 +252,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	{
 		if (P_IsTeleportLine(line->special))
 		{
-			return result;
+			return false;
 		}
 	}
 
@@ -272,7 +264,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Open Door
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -281,7 +273,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Close Door
 		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -291,7 +283,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_SLOW),
 		              TICS(VDOORWAIT), NoKey))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -301,7 +293,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoFloor(DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW),
 		               0, 0, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -311,7 +303,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoCeiling(DCeiling::fastCrushAndRaise, line, line->id, SPEED(C_NORMAL),
 		                 SPEED(C_NORMAL), 0, true, 0, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -321,7 +313,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT, SPEED(S_SLOW),
 		                   TICS(0), 0, 0, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -331,7 +323,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_FAST),
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -339,14 +331,14 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 12:
 		// Light Turn On - brightest near
 		EV_LightTurnOn(line->id, -1);
-		result.lineexecuted = true;
+		return true;
 		//line->special = 0;
 		break;
 
 	case 13:
 		// Light Turn On 255
 		EV_LightTurnOn(line->id, 255);
-		result.lineexecuted = true;
+		return true;
 		//line->special = 0;
 		break;
 
@@ -355,7 +347,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoDoor(DDoor::doorCloseWaitOpen, line, thing, line->id, SPEED(D_SLOW),
 		              OCTICS(240), NoKey))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -363,7 +355,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 17:
 		// Start Light Strobing
 		EV_StartLightStrobing(line->id, TICS(5), TICS(35));
-		result.lineexecuted = true;
+		return true;
 		//line->special = 0;
 		break;
 
@@ -372,7 +364,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_SLOW),
 		               (128 - 128) * FRACUNIT, 0, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -382,7 +374,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoPlat(line->id, line, DPlat::platRaiseAndStay, 0, SPEED(P_SLOW / 2), 0, 0,
 		              1))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -392,7 +384,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoCeiling(DCeiling::crushAndRaise, line, line->id, SPEED(C_SLOW),
 		                 SPEED(C_SLOW), 0, true, 0, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -403,7 +395,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoFloor(DFloor::floorRaiseByTexture, line, line->id, SPEED(F_SLOW), 0, 0,
 		               0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -411,7 +403,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 35:
 		// Lights Very Dark
 		EV_LightTurnOn(line->id, 35);
-		result.lineexecuted = true;
+		return true;
 		//line->special = 0;
 		break;
 
@@ -420,7 +412,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_FAST),
 		               (136 - 128) * FRACUNIT, 0, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -430,7 +422,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoFloor(DFloor::floorLowerAndChange, line, line->id, SPEED(F_SLOW),
 		               0 * FRACUNIT, 0, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -440,7 +432,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
 		               0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -449,7 +441,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// TELEPORT! //jff 02/09/98 fix using up with wrong side crossing
 		if (EV_LineTeleport(line, side, thing))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}						
 		break;
@@ -460,7 +452,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		             0, 0);
 		EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
 		           0); // jff 02/12/98 doesn't work
-		result.lineexecuted = true;
+		return true;
 		//line->special = 0;
 		break;
 
@@ -469,7 +461,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoCeiling(DCeiling::lowerAndCrush, line, line->id, SPEED(C_SLOW),
 		                 SPEED(C_SLOW) / 2, 0, true, 0, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -479,9 +471,9 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// killough 10/98: prevent zombies from exiting levels
 		if (bossaction || ((!(thing->player && thing->player->health <= 0)) &&
 		                   CheckIfExitIsGood(thing)))
-		{
-			result.lineexecuted = true;
+		{	
 			G_ExitLevel(0, 1);
+			return true;
 		}
 		break;
 
@@ -490,7 +482,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoPlat(line->id, line, DPlat::platPerpetualRaise, 0, SPEED(P_SLOW),
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -498,7 +490,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 54:
 		// Platform Stop
 		EV_StopPlat(line->id);
-		result.lineexecuted = true;
+		return true;
 		//line->special = 0;
 		break;
 
@@ -507,7 +499,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(F_SLOW), 0, true,
 		               0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -516,7 +508,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Ceiling Crush Stop
 		if (EV_CeilingCrushStop(line->id))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -526,7 +518,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
 		               FRACUNIT * 24, 0, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -536,7 +528,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoFloor(DFloor::floorRaiseAndChange, line, line->id, SPEED(F_SLOW),
 		               24 * FRACUNIT, 0, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -546,7 +538,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT, SPEED(S_TURBO),
 		                   TICS(0), 0, 0, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -554,7 +546,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 104:
 		// Turn lights off in sector(tag)
 		EV_TurnTagLightsOff(line->id);
-		result.lineexecuted = true;
+		return true;
 		//line->special = 0;
 		break;
 
@@ -563,7 +555,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_FAST),
 		              TICS(VDOORWAIT), NoKey))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -572,7 +564,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Blazing Door Open (faster than TURBO!)
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -581,7 +573,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Blazing Door Close (faster than TURBO!)
 		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -591,7 +583,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0,
 		               0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -601,7 +593,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_TURBO),
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -612,9 +604,9 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// CPhipps - change for lxdoom's compatibility handling
 		if (bossaction || ((!(thing->player && thing->player->health <= 0)) &&
 		                   CheckIfExitIsGood(thing)))
-		{
-			result.lineexecuted = true;
+		{			
 			G_SecretExitLevel(0, 1);
+			return true;
 		}
 		break;
 
@@ -623,7 +615,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (!thing->player && thing->type != MT_AVATAR &&
 		    (EV_LineTeleport(line, side, thing)))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -633,7 +625,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_FAST), 0, 0,
 		               0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -643,7 +635,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (EV_DoCeiling(DCeiling::silentCrushAndRaise, line, line->id, SPEED(C_SLOW),
 		                 SPEED(C_SLOW), 0, true, 1, 0))
 		{
-			result.lineexecuted = true;
+			return true;
 			//line->special = 0;
 		}
 		break;
@@ -654,213 +646,182 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Ceiling Crush
 		EV_DoCeiling(DCeiling::lowerAndCrush, line, line->id, SPEED(C_SLOW),
 		             SPEED(C_SLOW) / 2, 0, true, 0, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 73:
 		// Ceiling Crush and Raise
 		EV_DoCeiling(DCeiling::crushAndRaise, line, line->id, SPEED(C_SLOW),
 		             SPEED(C_SLOW), 0, true, 0, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 74:
 		// Ceiling Crush Stop
 		EV_CeilingCrushStop(line->id);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 75:
 		// Close Door
 		EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_SLOW), 0, NoKey);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 76:
 		// Close Door 30
 		EV_DoDoor(DDoor::doorCloseWaitOpen, line, thing, line->id, SPEED(D_SLOW),
 		          OCTICS(240), NoKey);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 77:
 		// Fast Ceiling Crush & Raise
 		EV_DoCeiling(DCeiling::fastCrushAndRaise, line, line->id, SPEED(C_NORMAL),
 		             SPEED(C_NORMAL), 0, true, 0, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 79:
 		// Lights Very Dark
 		EV_LightTurnOn(line->id, 35);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 80:
 		// Light Turn On - brightest near
 		EV_LightTurnOn(line->id, -1);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 81:
 		// Light Turn On 255
 		EV_LightTurnOn(line->id, 255);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 82:
 		// Lower Floor To Lowest
 		EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 83:
 		// Lower Floor
 		EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_SLOW),
 		           (128 - 128) * FRACUNIT, 0, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 84:
 		// LowerAndChange
 		EV_DoFloor(DFloor::floorLowerAndChange, line, line->id, SPEED(F_SLOW),
 		           0 * FRACUNIT, 0, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 86:
 		// Open Door
 		EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_SLOW), 0, NoKey);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 87:
 		// Perpetual Platform Raise
 		EV_DoPlat(line->id, line, DPlat::platPerpetualRaise, 0, SPEED(P_SLOW),
 		          TICS(PLATWAIT), 0 * FRACUNIT, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 88:
 		// PlatDownWaitUp
 		EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_FAST),
 		          TICS(PLATWAIT), 0 * FRACUNIT, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 89:
 		// Platform Stop
 		EV_StopPlat(line->id);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 90:
 		// Raise Door
 		EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_SLOW), TICS(VDOORWAIT),
 		          NoKey);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 91:
 		// Raise Floor
 		EV_DoFloor(DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW), 0, 0,
 		           0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 92:
 		// Raise Floor 24
 		EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
 		           FRACUNIT * 24, 0, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 93:
 		// Raise Floor 24 And Change
 		EV_DoFloor(DFloor::floorRaiseAndChange, line, line->id, SPEED(F_SLOW),
 		           24 * FRACUNIT, 0, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 94:
 		// Raise Floor Crush
 		EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(F_SLOW), 0, true, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 95:
 		// Raise floor to nearest height
 		// and change texture.
 		EV_DoPlat(line->id, line, DPlat::platRaiseAndStay, 0, SPEED(P_SLOW / 2), 0, 0, 1);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 96:
 		// Raise floor to shortest texture height
 		// on either side of lines.
 		EV_DoFloor(DFloor::floorRaiseByTexture, line, line->id, SPEED(F_SLOW), 0, 0, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 97:
 		// TELEPORT!
 		EV_LineTeleport(line, side, thing);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 98:
 		// Lower Floor (TURBO)
 		EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_FAST),
 		           (136 - 128) * FRACUNIT, 0, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 105:
 		// Blazing Door Raise (faster than TURBO!)
 		EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_FAST), TICS(VDOORWAIT),
 		          NoKey);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 106:
 		// Blazing Door Open (faster than TURBO!)
 		EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), 0, NoKey);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 107:
 		// Blazing Door Close (faster than TURBO!)
 		EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_FAST), 0, NoKey);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 120:
 		// Blazing PlatDownWaitUpStay.
 		EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_TURBO),
 		          TICS(PLATWAIT), 0 * FRACUNIT, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 126:
 		// TELEPORT MonsterONLY.
 		if (!thing->player && thing->type != MT_AVATAR)
 		{
 			EV_LineTeleport(line, side, thing);
-			result.lineexecuted = true;
+			return true;
 		}
 		break;
 
 	case 128:
 		// Raise To Nearest Floor
 		EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 	case 129:
 		// Raise Floor Turbo
 		EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_FAST), 0, 0, 0);
-		result.lineexecuted = true;
-		break;
+		return true;
 
 		// Extended walk triggers
 
@@ -883,7 +844,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
 			               FRACUNIT * 64 * 8, 0, 0))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -894,7 +855,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 3 * 8,
 			              SPEED(P_SLOW / 2), 0, 0, 2))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -905,7 +866,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 4 * 8,
 			              SPEED(P_SLOW / 2), 0, 0, 2))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -916,7 +877,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoCeiling(DCeiling::ceilLowerToFloor, line, line->id, SPEED(C_SLOW), 0,
 			                 0, 0, 0, 0))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -926,7 +887,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			// 146 W1  EV_DoDonut()
 			if (EV_DoDonut(line))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -937,7 +898,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoCeiling(DCeiling::ceilLowerToLowest, line, line->id, SPEED(C_SLOW),
 			                 0, 0, 0, 0, 0))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -948,7 +909,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoCeiling(DCeiling::ceilLowerToHighestFloor, line, line->id,
 			                 SPEED(C_SLOW), 0, 0, 0, 0, 0))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -957,7 +918,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			// killough 2/16/98: W1 silent teleporter (normal kind)
 			if (EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -968,7 +929,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			// 153 W1 Change Texture/Type Only
 			if (EV_DoChange(line, trigChangeOnly, line->id))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -978,7 +939,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			// 239 W1 Change Texture/Type Only
 			if (EV_DoChange(line, numChangeOnly, line->id))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -989,7 +950,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoFloor(DFloor::floorLowerToNearest, line, line->id, SPEED(F_SLOW), 0,
 			               0, 0))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -1000,7 +961,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoElevator(line, DElevator::elevateUp, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -1011,7 +972,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoElevator(line, DElevator::elevateDown, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -1022,7 +983,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (EV_DoElevator(line, DElevator::elevateCurrent, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -1031,7 +992,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			// killough 2/16/98: W1 silent teleporter (linedef-linedef kind)
 			if (thing && EV_SilentLineTeleport(line, side, thing, line->id, false))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -1039,7 +1000,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		case 262: // jff 4/14/98 add silent line-line reversed
 			if (thing && EV_SilentLineTeleport(line, side, thing, line->id, true))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -1048,7 +1009,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (!thing->player && thing->type != MT_AVATAR &&
 			    EV_SilentLineTeleport(line, side, thing, line->id, true))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -1057,7 +1018,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (!thing->player && thing->type != MT_AVATAR &&
 			    EV_SilentLineTeleport(line, side, thing, line->id, false))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -1066,7 +1027,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (!thing->player && thing->type != MT_AVATAR &&
 			    EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing))
 			{
-				result.lineexecuted = true;
+				return true;
 				//line->special = 0;
 			}
 			break;
@@ -1083,32 +1044,28 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			// 147 WR  EV_DoFloor(raiseFloor512)
 			EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
 			           FRACUNIT * 64 * 8, 0, 0);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 148:
 			// Raise Floor 24 and Change
 			// 148 WR  EV_DoPlat(raiseAndChange,24)
 			EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 3 * 8,
 			          SPEED(P_SLOW / 2), 0, 0, 2);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 149:
 			// Raise Floor 32 and Change
 			// 149 WR  EV_DoPlat(raiseAndChange,32)
 			EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 4 * 8,
 			          SPEED(P_SLOW / 2), 0, 0, 2);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 150:
 			// Start slow silent crusher
 			// 150 WR  EV_DoCeiling(silentCrushAndRaise)
 			EV_DoCeiling(DCeiling::silentCrushAndRaise, line, line->id, SPEED(C_SLOW),
 			             SPEED(C_SLOW), 0, true, 1, 0);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 151:
 			// RaiseCeilingLowerFloor
@@ -1118,16 +1075,14 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			             0, 0, 0, 0);
 			EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
 			           0);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 152:
 			// Lower Ceiling to Floor
 			// 152 WR  EV_DoCeiling(lowerToFloor)
 			EV_DoCeiling(DCeiling::ceilLowerToFloor, line, line->id, SPEED(C_SLOW), 0, 0,
 			             0, 0, 0);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 			// jff 3/16/98 renumber 153->256
 		case 256:
@@ -1135,8 +1090,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			// 256 WR EV_BuildStairs(build8)
 			EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT, SPEED(S_SLOW),
 			               0, 0, 0, 0);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 			// jff 3/16/98 renumber 154->257
 		case 257:
@@ -1144,111 +1098,97 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			// 257 WR EV_BuildStairs(turbo16)
 			EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT, SPEED(S_TURBO),
 			               0, 0, 0, 0);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 155:
 			// Lower Pillar, Raise Donut
 			// 155 WR  EV_DoDonut()
 			EV_DoDonut(line);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 156:
 			// Start lights strobing
 			// 156 WR Lights EV_StartLightStrobing()
 			EV_StartLightStrobing(line->id, TICS(5), TICS(35));
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 157:
 			// Lights to dimmest near
 			// 157 WR Lights EV_TurnTagLightsOff()
 			EV_TurnTagLightsOff(line->id);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 201:
 			// Lower ceiling to lowest surrounding ceiling
 			// 201 WR EV_DoCeiling(lowerToLowest)
 			EV_DoCeiling(DCeiling::ceilLowerToLowest, line, line->id, SPEED(C_SLOW), 0, 0,
 			             0, 0, 0);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 202:
 			// Lower ceiling to highest surrounding floor
 			// 202 WR EV_DoCeiling(lowerToMaxFloor)
 			EV_DoCeiling(DCeiling::ceilLowerToHighestFloor, line, line->id, SPEED(C_SLOW),
 			             0, 0, 0, 0, 0);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 208:
 			// killough 2/16/98: WR silent teleporter (normal kind)
 			EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 212: // jff 3/14/98 create instant toggle floor type
 			// Toggle floor between C and F instantly
 			// 212 WR Instant Toggle Floor
 			EV_DoPlat(line->id, line, DPlat::platToggle, 0, 0, 0, 0, 0);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		// jff 3/16/98 renumber 216->154
 		case 154: // jff 3/15/98 create texture change no motion type
 			// Texture/Type Change Only (Trigger)
 			// 154 WR Change Texture/Type Only
 			EV_DoChange(line, trigChangeOnly, line->id);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 240: // jff 3/15/98 create texture change no motion type
 			// Texture/Type Change Only (Numeric)
 			// 240 WR Change Texture/Type Only
 			EV_DoChange(line, numChangeOnly, line->id);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 220:
 			// Lower floor to next lower neighbor
 			// 220 WR Lower Floor Next Lower Neighbor
 			EV_DoFloor(DFloor::floorLowerToNearest, line, line->id, SPEED(F_SLOW), 0, 0,
 			           0);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 228:
 			// Raise elevator next floor
 			// 228 WR Raise Elevator next floor
 			EV_DoElevator(line, DElevator::elevateUp, SPEED(ELEVATORSPEED), 0, line->id);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 232:
 			// Lower elevator next floor
 			// 232 WR Lower Elevator next floor
 			EV_DoElevator(line, DElevator::elevateDown, SPEED(ELEVATORSPEED), 0,
 			              line->id);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 236:
 			// Elevator to current floor
 			// 236 WR Elevator to current floor
 			EV_DoElevator(line, DElevator::elevateCurrent, SPEED(ELEVATORSPEED), 0,
 			              line->id);
-			result.lineexecuted = true;
-			break;
+			return true;
 
 		case 244: // jff 3/6/98 make fit within DCK's 256 linedef types
 			// killough 2/16/98: WR silent teleporter (linedef-linedef kind)
 			if (thing)
 			{
 				EV_SilentLineTeleport(line, side, thing, line->id, false);
-				result.lineexecuted = true;
+				return true;
 			}
 			break;
 
@@ -1256,7 +1196,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (thing)
 			{
 				EV_SilentLineTeleport(line, side, thing, line->id, true);
-				result.lineexecuted = true;
+				return true;
 			}
 			break;
 
@@ -1264,7 +1204,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (!thing->player && thing->type != MT_AVATAR)
 			{
 				EV_SilentLineTeleport(line, side, thing, line->id, true);
-				result.lineexecuted = true;
+				return true;
 			}
 			break;
 
@@ -1272,7 +1212,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (!thing->player && thing->type != MT_AVATAR)
 			{
 				EV_SilentLineTeleport(line, side, thing, line->id, false);
-				result.lineexecuted = true;
+				return true;
 			}
 			break;
 
@@ -1280,7 +1220,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (!thing->player)
 			{
 				EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing);
-				result.lineexecuted = true;
+				return true;
 			}
 			break;
 
@@ -1288,7 +1228,7 @@ lineresult_s P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		break;
 	}
-	return result;
+	return false;
 }
 
 void P_ApplyGeneralizedSectorDamage(player_t* player, int bits)
@@ -1340,14 +1280,14 @@ void P_PlayerInCompatibleSector(player_t* player)
 		switch (sector->special)
 		{
 		case 5:
-			P_ApplySectorDamage(player, 10, 0);
+			P_ApplySectorDamage(player, 10, 0, MOD_SLIME);
 			break;
 		case 7:
-			P_ApplySectorDamage(player, 5, 0);
+			P_ApplySectorDamage(player, 5, 0, MOD_SLIME);
 			break;
 		case 16:
 		case 4:
-			P_ApplySectorDamage(player, 20, 5);
+			P_ApplySectorDamage(player, 20, 5, MOD_SLIME);
 			break;
 		case 9:
 			P_CollectSecretVanilla(sector, player);
@@ -1690,6 +1630,10 @@ void P_SpawnCompatibleSectorSpecial(sector_t* sector)
 
 void P_SpawnCompatibleScroller(line_t* l, int i)
 {
+	// [Blair] don't run scrolling on clients to prevent desyncs
+	if (IgnoreSpecial)
+		return;
+
 	fixed_t dx = l->dx >> SCROLL_SHIFT; // direction and speed of scrolling
 	fixed_t dy = l->dy >> SCROLL_SHIFT;
 	int control = -1, accel = 0; // no control sector or acceleration
@@ -1847,18 +1791,15 @@ void P_SpawnCompatiblePusher(line_t* l)
 // Passed the thing using the line, the line being used, and the side used
 // Returns true if a thinker was created
 //
-lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
+bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
                                         bool bossaction)
 {
-	lineresult_s result;
-
-	result.lineexecuted = false;
-	result.switchchanged = false;
-
+	bool reuse = false;
+	bool trigger = false; // used for bossactions
 	// e6y
 	// b.m. side test was broken in boom201
 	if (side) // jff 6/1/98 fix inadvertent deletion of side test
-		return result;
+		return false;
 
 	// jff 02/04/98 add check here for generalized floor/ceil mover
 	
@@ -1875,21 +1816,21 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	{
 		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if ((line->special & FloorChange) || !(line->special & FloorModel))
-				return result; // FloorModel is "Allow Monsters" if FloorChange is 0
+				return false; // FloorModel is "Allow Monsters" if FloorChange is 0
 		if (!line->id &&
 			((line->special & 6) != 6)) // e6y //jff 2/27/98 all non-manual
-			return result;              // generalized types require tag
+			return false;                            // generalized types require tag
 		linefunc = EV_DoGenFloor;
 	}
 	else if ((unsigned)line->special >= GenCeilingBase)
 	{
 		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if ((line->special & CeilingChange) || !(line->special & CeilingModel))
-				return result; // CeilingModel is "Allow Monsters" if CeilingChange is
+				return false; // CeilingModel is "Allow Monsters" if CeilingChange is
 					            // 0
 		if (!line->id &&
 			((line->special & 6) != 6)) // e6y //jff 2/27/98 all non-manual
-			return result;              // generalized types require tag
+			return false;                            // generalized types require tag
 		linefunc = EV_DoGenCeiling;
 	}
 	else if ((unsigned)line->special >= GenDoorBase)
@@ -1897,24 +1838,24 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 		{
 			if (!(line->special & DoorMonster))
-				return result;           // monsters disallowed from this door
+				return false;            // monsters disallowed from this door
 			if (line->flags & ML_SECRET) // they can't open secret doors either
-				return result;
+				return false;
 		}
 		if (!line->id &&
 			((line->special & 6) != 6)) // e6y //jff 3/2/98 all non-manual
-			return result;              // generalized types require tag
+			return false;                            // generalized types require tag
 		linefunc = EV_DoGenDoor;
 	}
 	else if ((unsigned)line->special >= GenLockedBase)
 	{
 		if ((!thing->player && thing->type != MT_AVATAR) || bossaction)
-			return result; // monsters disallowed from unlocking doors
+			return false; // monsters disallowed from unlocking doors
 		if (!P_CanUnlockGenDoor(line, thing->player))
-			return result;
+			return false;
 		if (!line->id &&
 			((line->special & 6) != 6)) // e6y //jff 2/27/98 all non-manual
-			return result;              // generalized types require tag
+			return false;                            // generalized types require tag
 
 		linefunc = EV_DoGenLockedDoor;
 	}
@@ -1922,30 +1863,30 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	{
 		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if (!(line->special & LiftMonster))
-				return result; // monsters disallowed
+				return false;                        // monsters disallowed
 		if (!line->id &&
 			((line->special & 6) != 6)) // e6y //jff 2/27/98 all non-manual
-			return result;              // generalized types require tag
+			return false;                            // generalized types require tag
 		linefunc = EV_DoGenLift;
 	}
 	else if ((unsigned)line->special >= GenStairsBase)
 	{
 		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if (!(line->special & StairMonster))
-				return result; // monsters disallowed
+				return false;                        // monsters disallowed
 		if (!line->id &&
 			((line->special & 6) != 6)) // e6y //jff 2/27/98 all non-manual
-			return result;              // generalized types require tag
+			return false;                            // generalized types require tag
 		linefunc = EV_DoGenStairs;
 	}
 	else if ((unsigned)line->special >= GenCrusherBase)
 	{
 		if (!thing->player && thing->type != MT_AVATAR && !bossaction)
 			if (!(line->special & CrusherMonster))
-				return result; // monsters disallowed
+				return false;                        // monsters disallowed
 		if (!line->id &&
 			((line->special & 6) != 6)) // e6y //jff 2/27/98 all non-manual
-			return result;              // generalized types require tag
+			return false;                            // generalized types require tag
 		linefunc = EV_DoGenCrusher;
 	}
 
@@ -1957,33 +1898,35 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			{
 				if (linefunc(line))
 				{
-					result.lineexecuted = true;
+					reuse = false;
+					trigger = true;
 				}
 			}
-			return result;
+			break;
 		case PushMany:
 			if (!side)
 			{
 				linefunc(line);
-				result.lineexecuted = true;
+				reuse = true;
+				trigger = true;
 			}
-			return result;
+			break;
 		case SwitchOnce:
 			if (linefunc(line))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
-			return result;
+			break;
 		case SwitchMany:
 			if (linefunc(line))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
-			return result;
+			break;
 		default: // if not a switch/push type, do nothing here
-			return result;
+			return false;
 		}
 
 	// Switches that other things can activate.
@@ -1991,7 +1934,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	{
 		// never open secret doors
 		if (line->flags & ML_SECRET)
-			return result;
+			return false;
 
 		switch (line->special)
 		{
@@ -2007,7 +1950,7 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			break;
 
 		default:
-			return result;
+			return false;
 			break;
 		}
 	}
@@ -2037,62 +1980,96 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case 174:
 		case 210: // silent switch teleporters
 		case 209:
-			return result;
+			return false;
 			break;
 		}
 	}
 
 	if (!P_CheckTag(line)) // jff 2/27/98 disallow zero tag on some types
-		return result;
+		return false;
 
 	// Dispatch to handler according to linedef type
 	switch (line->special)
 	{
 	// Manual doors, push type with no tag
 	case 1:  // Vertical Door
-		EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
-		                                TICS(VDOORWAIT), NoKey);
-		result.lineexecuted = true;
+		if (EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
+		                                TICS(VDOORWAIT), NoKey))
+		{
+			reuse = true;
+			trigger = true;
+		}
 		break;
 	case 26: // Blue Door/Locked
-		result.lineexecuted = EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
-		                                TICS(VDOORWAIT), (card_t)(BCard | CardIsSkull));
+		if (EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
+		                                TICS(VDOORWAIT), (card_t)(BCard | CardIsSkull)))
+		{
+			reuse = true;
+			trigger = true;
+		}
 		break;
 	case 27: // Yellow Door /Locked
-		result.lineexecuted = EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
-		                                TICS(VDOORWAIT), (card_t)(YCard | CardIsSkull));
+		if (EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
+		                                TICS(VDOORWAIT), (card_t)(YCard | CardIsSkull)))
+		{
+			reuse = true;
+			trigger = true;
+		}
 		break;
 	case 28: // Red Door /Locked
-		result.lineexecuted = EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
-		                                TICS(VDOORWAIT), (card_t)(RCard | CardIsSkull));
+		if (EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_SLOW),
+		                                TICS(VDOORWAIT), (card_t)(RCard | CardIsSkull)))
+		{
+			reuse = true;
+			trigger = true;
+		}
 		break;
 	case 31: // Manual door open
-		result.lineexecuted =
-		    EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0, NoKey);
+		if (EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0, NoKey))
+		{
+			reuse = false;
+			trigger = true;
+		}
 		break;
 	case 32: // Blue locked door open
-		EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW),
-		                                0, (card_t)(BCard | CardIsSkull));
-		result.lineexecuted = true;
+		if (EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW),
+			0, (card_t)(BCard | CardIsSkull)))
+		{
+			reuse = false;
+			trigger = true;
+		}
 		break;
 	case 33: // Red locked door open
-		EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0,
-		                                (card_t)(RCard | CardIsSkull));
-		result.lineexecuted = true;
+		if (EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0,
+		                                (card_t)(RCard | CardIsSkull)))
+		{
+			reuse = false;
+			trigger = true;
+		}
 		break;
 	case 34: // Yellow locked door open
-		EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0,
-		                                (card_t)(YCard | CardIsSkull));
-		result.lineexecuted = true;
+		if (EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_SLOW), 0,
+		                                (card_t)(YCard | CardIsSkull)))
+		{
+			reuse = false;
+			trigger = true;
+		}
 		break;
 
 	case 117: // Blazing door raise
-		result.lineexecuted = EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_FAST),
-		                                TICS(VDOORWAIT), NoKey);
+		if (EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(D_FAST),
+		                                TICS(VDOORWAIT), NoKey))
+		{
+			reuse = true;
+			trigger = true;
+		}
 		break;
 	case 118: // Blazing door open
-		result.lineexecuted =
-		    EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_FAST), 0, NoKey);
+		if (EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(D_FAST), 0, NoKey))
+		{
+			reuse = false;
+			trigger = true;
+		}
 		break;
 
 	// Switches (non-retriggerable)
@@ -2101,8 +2078,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT, SPEED(S_SLOW),
 		                   0, 0, 0, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2110,8 +2087,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Change Donut
 		if (EV_DoDonut(line))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2121,13 +2098,13 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		 */
 		if (!bossaction && thing && thing->player && thing->player->health <= 0)
 		{
-			return result;
+			return false;
 		}
 
 		if (thing && CheckIfExitIsGood(thing))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 			G_ExitLevel(0, 1);
 		}
 		break;
@@ -2137,8 +2114,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 4 * 8,
 		              SPEED(P_SLOW / 2), 0, 0, 2))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2147,8 +2124,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 3 * 8,
 		              SPEED(P_SLOW / 2), 0, 0, 2))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2156,8 +2133,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Raise Floor to next highest floor
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2165,8 +2142,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Raise Plat next highest floor and change texture
 		if (EV_DoPlat(line->id, line, DPlat::platRaiseAndStay, 0, SPEED(P_SLOW / 2), 0, 0, 1))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2175,8 +2152,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_FAST),
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2185,8 +2162,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
 		               0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2195,8 +2172,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_SLOW),
 		              TICS(VDOORWAIT), NoKey))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2205,8 +2182,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoCeiling(DCeiling::ceilLowerToFloor, line, line->id, SPEED(C_SLOW), 0, 0,
 		                 0, 0, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2215,8 +2192,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_FAST),
 		               (136 - 128) * FRACUNIT, 0, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2225,8 +2202,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoCeiling(DCeiling::crushAndRaise, line, line->id, SPEED(C_SLOW),
 		                 SPEED(C_SLOW), 0, true, 0, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2234,8 +2211,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Close Door
 		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2245,13 +2222,13 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		 */
 		if (!bossaction && thing && thing->player && thing->player->health <= 0)
 		{
-			return result;
+			return false;
 		}
 
 		if (thing && CheckIfExitIsGood(thing))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 			G_SecretExitLevel(0, 1);
 		}
 		break;
@@ -2261,8 +2238,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(F_SLOW), 0, true,
 		               0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2270,8 +2247,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Raise Floor
 		if (EV_DoFloor (DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW), 0, 0, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2280,8 +2257,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_SLOW),
 		               (128 - 128) * FRACUNIT, 0, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2289,8 +2266,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Open Door
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2299,8 +2276,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_FAST),
 		              TICS(VDOORWAIT), NoKey))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2308,8 +2285,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Blazing Door Open (faster than TURBO!)
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2317,8 +2294,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Blazing Door Close (faster than TURBO!)
 		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2327,8 +2304,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_TURBO),
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2337,8 +2314,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT, SPEED(S_TURBO),
 		                   TICS(0), 0, 0, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2347,8 +2324,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_FAST), 0, 0,
 		               0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2357,8 +2334,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id,
 		              SPEED(D_FAST), TICS(0), (card_t)(BCard | CardIsSkull)))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 	case 135:
@@ -2366,8 +2343,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
 		              (card_t)(RCard | CardIsSkull)))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 	case 137:
@@ -2375,8 +2352,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
 		              (card_t)(YCard | CardIsSkull)))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2385,8 +2362,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
 		               FRACUNIT * 64 * 8, 0, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
 		}
 		break;
 
@@ -2405,8 +2382,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorRaiseByTexture, line, line->id, SPEED(F_SLOW), 0,
 			               false, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2416,8 +2393,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorLowerAndChange, line, line->id, SPEED(F_SLOW),
 			               0 * FRACUNIT, false, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2427,8 +2404,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorRaiseAndChange, line, line->id, SPEED(F_SLOW),
 			               24 * FRACUNIT, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2438,8 +2415,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
 			               FRACUNIT * 24, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2449,8 +2426,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoPlat(line->id, line, DPlat::platPerpetualRaise, 0, SPEED(F_SLOW),
 			              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2458,8 +2435,9 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Stop Moving floor
 			// 163 S1  EV_DoPlat(perpetualRaise,0)
 			EV_StopPlat(line->id);
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
+			
 			break;
 
 		case 164:
@@ -2468,8 +2446,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::fastCrushAndRaise, line, line->id, SPEED(C_NORMAL),
 			                 SPEED(C_NORMAL), 0, true, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2479,8 +2457,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::silentCrushAndRaise, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW), 0, true, 1, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2492,8 +2470,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			    EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0,
 			               0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2503,8 +2481,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::lowerAndCrush, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW) / 2, 0, true, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2513,8 +2491,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 168 S1 EV_CeilingCrushStop()
 			if (EV_CeilingCrushStop(line->id))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2522,40 +2500,45 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// Lights to brightest neighbor sector
 			// 169 S1  EV_LightTurnOn(0)
 			EV_LightTurnOn(line->id, -1);
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
+			
 			break;
 
 		case 170:
 			// Lights to near dark
 			// 170 S1  EV_LightTurnOn(35)
 			EV_LightTurnOn(line->id, 35);
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
+			
 			break;
 
 		case 171:
 			// Lights on full
 			// 171 S1  EV_LightTurnOn(255)
 			EV_LightTurnOn(line->id, 255);
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
+			
 			break;
 
 		case 172:
 			// Start Lights Strobing
 			// 172 S1  EV_StartLightStrobing()
 			EV_StartLightStrobing(line->id, TICS(5), TICS(35));
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
+			
 			break;
 
 		case 173:
 			// Lights to Dimmest Near
 			// 173 S1  EV_TurnTagLightsOff()
 			EV_TurnTagLightsOff(line->id);
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = false;
+			trigger = true;
+			
 			break;
 
 		case 174:
@@ -2563,8 +2546,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 174 S1  Teleport(side,thing)
 			if (EV_LineTeleport(line, side, thing))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2574,8 +2557,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoDoor(DDoor::doorCloseWaitOpen, line, thing, line->id, SPEED(F_SLOW),
 			              OCTICS(240), NoKey))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2584,8 +2567,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 189 S1 Change Texture/Type Only
 			if (EV_DoChange(line, trigChangeOnly, line->id))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2595,8 +2578,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::ceilLowerToLowest, line, line->id, SPEED(C_SLOW),
 			                 0, 0, 0, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2606,8 +2589,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::ceilLowerToHighestFloor, line, line->id,
 			                 SPEED(C_SLOW), 0, 0, 0, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2616,8 +2599,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// jff 209 S1 SilentTeleport
 			if (EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2626,8 +2609,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 241 S1 Change Texture/Type Only
 			if (EV_DoChange(line, numChangeOnly, line->id))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2637,8 +2620,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorLowerToNearest, line, line->id, SPEED(F_SLOW), 0,
 			               0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2648,8 +2631,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoElevator(line, DElevator::elevateUp, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2659,8 +2642,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoElevator(line, DElevator::elevateDown, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2670,8 +2653,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoElevator(line, DElevator::elevateCurrent, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = false;
+				trigger = true;
 			}
 			break;
 
@@ -2685,8 +2668,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 78 SR Change Texture/Type Only
 			if (EV_DoChange(line, numChangeOnly, line->id))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2695,8 +2678,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 176 SR  EV_DoFloor(raiseToTexture), CSW(1)
 			if (EV_DoChange(line, numChangeOnly, line->id))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2706,8 +2689,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorLowerAndChange, line, line->id, SPEED(F_SLOW),
 			               0 * FRACUNIT, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2717,8 +2700,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
 			               FRACUNIT * 64 * 8, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2728,8 +2711,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorRaiseAndChange, line, line->id, SPEED(F_SLOW),
 			               24 * FRACUNIT, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2739,8 +2722,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(F_SLOW),
 			               FRACUNIT * 24, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2750,16 +2733,18 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 			EV_DoPlat(line->id, line, DPlat::platPerpetualRaise, 0, SPEED(F_SLOW),
 			          TICS(PLATWAIT), 0 * FRACUNIT, 0);
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
+			
 			break;
 
 		case 182:
 			// Stop Moving floor
 			// 182 SR  EV_DoPlat(perpetualRaise,0)
 			EV_StopPlat(line->id);
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
+			
 			break;
 
 		case 183:
@@ -2768,8 +2753,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::fastCrushAndRaise, line, line->id, SPEED(C_NORMAL),
 			                 SPEED(C_NORMAL), 0, true, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2779,8 +2764,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::crushAndRaise, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW), 0, true, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2790,8 +2775,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::silentCrushAndRaise, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW), 0, true, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2803,8 +2788,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			    EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0,
 			               0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2814,8 +2799,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::lowerAndCrush, line, line->id, SPEED(C_SLOW),
 			                 SPEED(C_SLOW) / 2, 0, true, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2824,8 +2809,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 188 SR EV_CeilingCrushStop()
 			if (EV_CeilingCrushStop(line->id))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2834,8 +2819,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 190 SR Change Texture/Type Only
 			if (EV_DoChange(line, trigChangeOnly, line->id))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2844,33 +2829,36 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 191 SR  EV_DoDonut()
 			if (EV_DoDonut(line))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
 		case 192:
 			// Lights to brightest neighbor sector
 			// 192 SR  EV_LightTurnOn(0)
-			EV_LightTurnOn(line->id, 0);
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			EV_LightTurnOn(line->id, -1);
+			reuse = true;
+			trigger = true;
+			
 			break;
 
 		case 193:
 			// Start Lights Strobing
 			// 193 SR  EV_StartLightStrobing()
 			EV_StartLightStrobing(line->id, TICS(5), TICS(35));
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
+
 			break;
 
 		case 194:
 			// Lights to Dimmest Near
 			// 194 SR  EV_TurnTagLightsOff()
 			EV_TurnTagLightsOff(line->id);
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
+			
 			break;
 
 		case 195:
@@ -2878,8 +2866,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 195 SR  Teleport(side,thing)
 			if (EV_LineTeleport(line, side, thing))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2889,8 +2877,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoDoor(DDoor::doorCloseWaitOpen, line, thing, line->id, SPEED(D_SLOW),
 			              OCTICS(240), NoKey))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2900,8 +2888,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::ceilLowerToLowest, line, line->id, SPEED(C_SLOW),
 			                 0, 0, 0, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2911,8 +2899,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoCeiling(DCeiling::ceilLowerToHighestFloor, line, line->id,
 			                 SPEED(C_SLOW), 0, 0, 0, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2921,8 +2909,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// jff 210 SR SilentTeleport
 			if (EV_SilentTeleport(line->args[0], 0, line->args[2], 0, line, side, thing))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2931,8 +2919,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// 211 SR Toggle Floor Instant
 			if (EV_DoPlat(line->id, line, DPlat::platToggle, 0, 0, 0, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2942,8 +2930,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoFloor(DFloor::floorLowerToNearest, line, line->id, SPEED(F_SLOW), 0,
 			               0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2953,8 +2941,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoElevator(line, DElevator::elevateUp, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2964,8 +2952,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoElevator(line, DElevator::elevateDown, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2975,8 +2963,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_DoElevator(line, DElevator::elevateCurrent, SPEED(ELEVATORSPEED), 0,
 			                  line->id))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2986,8 +2974,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT,
 			                   SPEED(S_SLOW), 0, 0, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -2997,8 +2985,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT,
 			                   SPEED(S_TURBO), 0, 0, 0, 0))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				reuse = true;
+				trigger = true;
 			}
 			break;
 
@@ -3011,8 +2999,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Close Door
 		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3021,8 +3009,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoCeiling(DCeiling::ceilLowerToFloor, line, line->id, SPEED(C_SLOW), 0, 0,
 		                 false, 0, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3031,8 +3019,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_SLOW),
 		               (128 - 128) * FRACUNIT, 0, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3041,8 +3029,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(F_SLOW), 0, 0,
 		               0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3050,8 +3038,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Open Door
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_SLOW), 0, NoKey))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3060,8 +3048,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_FAST),
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3070,8 +3058,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_SLOW),
 		              TICS(VDOORWAIT), NoKey))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3080,8 +3068,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(F_SLOW),
 		               0, 0, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3090,8 +3078,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 3 * 8,
 		              SPEED(P_SLOW / 2), 0, 0, 2))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3100,8 +3088,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platUpByValueStay, FRACUNIT * 4 * 8,
 		              SPEED(P_SLOW / 2), 0, 0, 2))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3110,8 +3098,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(F_SLOW), 0, true,
 		               0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3120,8 +3108,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platRaiseAndStay, 0, SPEED(P_SLOW / 2), 0, 0,
 		              1))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3130,8 +3118,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_SLOW), 0, 0,
 		               0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3140,8 +3128,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(F_FAST),
 		               (136 - 128) * FRACUNIT, 0, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3150,8 +3138,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(D_FAST),
 		              TICS(VDOORWAIT), NoKey))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3159,8 +3147,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Blazing Door Open (faster than TURBO!)
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3168,8 +3156,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		// Blazing Door Close (faster than TURBO!)
 		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(D_FAST), 0, NoKey))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3178,8 +3166,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(P_TURBO),
 		              TICS(PLATWAIT), 0 * FRACUNIT, 0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3188,8 +3176,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_FAST), 0, 0,
 		               0))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
@@ -3198,8 +3186,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
 		              (card_t)(BCard | CardIsSkull)))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 	case 134:
@@ -3207,8 +3195,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
 		              (card_t)(RCard | CardIsSkull)))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 	case 136:
@@ -3216,26 +3204,43 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_FAST), TICS(0),
 		              (card_t)(YCard | CardIsSkull)))
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			reuse = true;
+			trigger = true;
 		}
 		break;
 
 	case 138:
 		// Light Turn On
 		EV_LightTurnOn(line->id, 255);
-		result.lineexecuted = true;
-		result.switchchanged = true;
+		reuse = true;
+		trigger = true;
+		
 		break;
 
 	case 139:
 		// Light Turn Off
 		EV_LightTurnOn(line->id, 35);
-		result.lineexecuted = true;
-		result.switchchanged = true;
+		reuse = true;
+		trigger = true;
+		
 		break;
 	}
-	return result;
+
+	if (trigger && !bossaction)
+	{
+		if (serverside)
+		{
+			P_ChangeSwitchTexture(line, reuse, true);
+			OnChangedSwitchTexture(line, reuse);
+		}
+	}
+
+	if (!trigger && bossaction)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 //
@@ -3249,13 +3254,8 @@ lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 // impacted. Change is qualified by demo_compatibility.
 //
 
-lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
+bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 {
-	lineresult_s result;
-
-	result.lineexecuted = false;
-	result.switchchanged = false;
-
 	// pointer to line function is NULL by default, set non-null if
 	// line special is gun triggered generalized linedef type
 	int (*linefunc)(line_t * line) = NULL;
@@ -3269,9 +3269,9 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	{
 		if (!thing->player && thing->type != MT_AVATAR)
 			if ((line->special & FloorChange) || !(line->special & FloorModel))
-				return result; // FloorModel is "Allow Monsters" if FloorChange is 0
+				return false; // FloorModel is "Allow Monsters" if FloorChange is 0
 		if (!line->id)        // e6y //jff 2/27/98 all gun generalized types require tag
-			return result;
+			return false;
 
 		linefunc = EV_DoGenFloor;
 	}
@@ -3279,9 +3279,9 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	{
 		if (!thing->player && thing->type != MT_AVATAR)
 			if ((line->special & CeilingChange) || !(line->special & CeilingModel))
-				return result; // CeilingModel is "Allow Monsters" if CeilingChange is 0
+				return false; // CeilingModel is "Allow Monsters" if CeilingChange is 0
 		if (!line->id)        // jff 2/27/98 all gun generalized types require tag
-			return result;
+			return false;
 		linefunc = EV_DoGenCeiling;
 	}
 	else if ((unsigned)line->special >= GenDoorBase)
@@ -3289,28 +3289,28 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		if (!thing->player && thing->type != MT_AVATAR)
 		{
 			if (!(line->special & DoorMonster))
-				return result;           // monsters disallowed from this door
+				return false;            // monsters disallowed from this door
 			if (line->flags & ML_SECRET) // they can't open secret doors either
-				return result;
+				return false;
 		}
 		if (!line->id) // e6y //jff 3/2/98 all gun generalized types require tag
-			return result;
+			return false;
 		linefunc = EV_DoGenDoor;
 	}
 	else if ((unsigned)line->special >= GenLockedBase)
 	{
 		if (!thing->player && thing->type != MT_AVATAR)
-			return result; // monsters disallowed from unlocking doors
+			return false; // monsters disallowed from unlocking doors
 		if (((line->special & TriggerType) == GunOnce) ||
 		    ((line->special & TriggerType) == GunMany))
 		{ // jff 4/1/98 check for being a gun type before reporting door type
 			if (!P_CanUnlockGenDoor(line, thing->player))
-				return result;
+				return false;
 		}
 		else
-			return result;
+			return false;
 		if (!line->id) // e6y //jff 2/27/98 all gun generalized types require tag
-			return result;
+			return false;
 
 		linefunc = EV_DoGenLockedDoor;
 	}
@@ -3318,25 +3318,25 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	{
 		if (!thing->player && thing->type != MT_AVATAR)
 			if (!(line->special & LiftMonster))
-				return result; // monsters disallowed
+				return false; // monsters disallowed
 		linefunc = EV_DoGenLift;
 	}
 	else if ((unsigned)line->special >= GenStairsBase)
 	{
 		if (!thing->player && thing->type != MT_AVATAR)
 			if (!(line->special & StairMonster))
-				return result; // monsters disallowed
+				return false; // monsters disallowed
 		if (!line->id)        // e6y //jff 2/27/98 all gun generalized types require tag
-			return result;
+			return false;
 		linefunc = EV_DoGenStairs;
 	}
 	else if ((unsigned)line->special >= GenCrusherBase)
 	{
 		if (!thing->player && thing->type != MT_AVATAR)
 			if (!(line->special & StairMonster))
-				return result; // monsters disallowed
+				return false; // monsters disallowed
 		if (!line->id)        // e6y //jff 2/27/98 all gun generalized types require tag
-			return result;
+			return false;
 		linefunc = EV_DoGenCrusher;
 	}
 
@@ -3346,19 +3346,17 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		case GunOnce:
 			if (linefunc(line))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				return true;
 			}
-			return result;
+			return false;
 		case GunMany:
 			if (linefunc(line))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+				return true;
 			}
-			return result;
+			return false;
 		default: // if not a gun type, do nothing here
-			return result;
+			return false;
 		}
 
 	// Impacts that other things can activate.
@@ -3373,11 +3371,11 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 			break;
 		}
 		if (!ok)
-			return result;
+			return false;
 	}
 
 	if (!P_CheckTag(line)) // jff 2/27/98 disallow zero tag on some types
-		return result;
+		return false;
 
 	switch (line->special)
 	{
@@ -3387,17 +3385,14 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		               0, 0, 0) ||
 		    demoplayback)
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			return true;
 		}
 		break;
 
 	case 46:
 		// 46 GR open door, stay open
 		EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(D_SLOW), 0, NoKey);
-		result.lineexecuted = true;
-		result.switchchanged = true;
-		break;
+		return true;
 
 	case 47:
 		// 47 G1 raise floor to nearest and change texture and type
@@ -3405,8 +3400,7 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		              1) ||
 		    demoplayback)
 		{
-			result.lineexecuted = true;
-			result.switchchanged = true;
+			return true;
 		}
 		break;
 
@@ -3422,10 +3416,9 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 			if (thing && thing->player && thing->player->health <= 0)
 				break;
 			if (thing && CheckIfExitIsGood(thing))
-			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
+			{		
 				G_ExitLevel(0, 1);
+				return true;
 			}
 			break;
 
@@ -3436,16 +3429,15 @@ lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 				break;
 			if (thing && CheckIfExitIsGood(thing))
 			{
-				result.lineexecuted = true;
-				result.switchchanged = true;
 				G_SecretExitLevel(0, 1);
+				return true;
 			}
 			break;
 			// jff end addition of new gun linedefs
 		}
 		break;
 	}
-	return result;
+	return false;
 }
 
 const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved)

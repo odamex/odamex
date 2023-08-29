@@ -78,6 +78,8 @@ extern AActor* shootthing;
 
 EXTERN_CVAR(g_coopthingfilter)
 
+bool			g_ValidLevel = false;
+
 //
 // MAP related Lookup tables.
 // Store VERTEXES, LINEDEFS, SIDEDEFS, etc.
@@ -102,6 +104,8 @@ line_t* 		lines;
 
 int 			numsides;
 side_t* 		sides;
+
+std::vector<int>	originalLightLevels; // Needed for map resets
 
 // [RH] Set true if the map contains a BEHAVIOR lump
 bool			HasBehavior = false;
@@ -305,6 +309,7 @@ static void P_LoadSectors(const OString& mapname)
 
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
 	delete [] sectors;
+	originalLightLevels.clear();
 
 	numsectors = Res_GetResourceSize(res_id) / sizeof(mapsector_t);
 
@@ -328,6 +333,7 @@ static void P_LoadSectors(const OString& mapname)
 		ss->ceiling_res_id = Res_GetTextureResourceId(OString(ms->ceilingpic, 8), FLOOR); 
 
 		ss->lightlevel = LESHORT(ms->lightlevel);
+		originalLightLevels.push_back(LESHORT(ms->lightlevel));
 		ss->special = LESHORT(ms->special);
 		ss->secretsector = !!(ss->special&SECRET_MASK);
 		ss->tag = LESHORT(ms->tag);
@@ -1571,7 +1577,7 @@ void P_GenerateUniqueMapFingerPrint(const OString& mapname)
 	unsigned int length = 0;
 
 	typedef std::vector<byte> LevelLumps;
-	static LevelLumps levellumps;
+	LevelLumps levellumps;
 
 	const ResourceId thing_res_id = Res_GetMapResourceId("THINGS", mapname);
 	if (!Res_CheckResource(thing_res_id))
@@ -1929,7 +1935,8 @@ void P_SetupLevel(const OString& mapname, int position)
 	shootthing = NULL;
 
 	DThinker::DestroyAllThinkers ();
-	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL);
+	Z_FreeTags(PU_LEVEL, PU_LEVELMAX);
+	g_ValidLevel = false;		// [AM] False until the level is loaded.
 	NormalLight.next = NULL;	// [RH] Z_FreeTags frees all the custom colormaps
 
 	// [AM] Every new level starts with fresh netids.
@@ -2052,6 +2059,9 @@ void P_SetupLevel(const OString& mapname, int position)
 	if (precache)
 		R_PrecacheLevel ();
 #endif
+
+	// [AM] Level is now safely loaded.
+	g_ValidLevel = true;
 }
 
 //

@@ -76,15 +76,11 @@ class StatusBarWidgetNumber : StatusBarWidget_Base
 	// pointer to current value
 	int* num;
 
-	// pointer to bool stating
-	//	whether to update number
-	bool* on;
-
 	// list of patches for 0-9
 	const Texture** p;
 
 	// Number widget routines
-	void init(int x, int y, const Texture** pl, int* num, bool* on, int maxdigits);
+	void init(int x, int y, const Texture** pl, int* num, int maxdigits);
 
 	void update(bool refresh, bool cleararea = true);
 };
@@ -98,7 +94,7 @@ class StatusBarWidgetPercent : StatusBarWidgetNumber
 
   public:
 	// Percent widget routines
-	void init(int x, int y, const Texture** pl, int* num, bool* on, const Texture* percent);
+	void init(int x, int y, const Texture** pl, int* num, const Texture* percent);
 
 	void update(bool refresh);
 };
@@ -117,15 +113,11 @@ class StatusBarWidgetMultiIcon : StatusBarWidget_Base
 	// pointer to current icon
 	int* inum;
 
-	// pointer to bool stating
-	//	whether to update icon
-	bool* on;
-
 	// list of icons
 	const Texture**		p;
 
 	// Multiple Icon widget routines
-	void init(int x, int y, const Texture** il, int* inum, bool* on);
+	void init(int x, int y, const Texture** il, int* inum);
 
 	void update(bool refresh);
 };

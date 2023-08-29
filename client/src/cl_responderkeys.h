@@ -24,13 +24,17 @@
 #pragma once
 
         // Movement Keys
-bool Key_IsUpKey(int key);
-bool Key_IsDownKey(int key);
-bool Key_IsLeftKey(int key);
-bool Key_IsRightKey(int key);
+bool Key_IsUpKey(int key, bool numlock);
+bool Key_IsDownKey(int key, bool numlock);
+bool Key_IsLeftKey(int key, bool numlock);
+bool Key_IsRightKey(int key, bool numlock);
 
-bool Key_IsPageUpKey(int key);
-bool Key_IsPageDownKey(int key);
+bool Key_IsPageUpKey(int key, bool numlock);
+bool Key_IsPageDownKey(int key, bool numlock);
+bool Key_IsHomeKey(int key, bool numlock);
+bool Key_IsEndKey(int key, bool numlock);
+bool Key_IsInsKey(int key, bool numlock);
+bool Key_IsDelKey(int key, bool numlock);
 
 bool Key_IsAcceptKey(int key);
 bool Key_IsCancelKey(int key);

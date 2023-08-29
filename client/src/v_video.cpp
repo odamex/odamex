@@ -123,6 +123,7 @@ EXTERN_CVAR(vid_pillarbox)
 EXTERN_CVAR(vid_displayfps)
 
 static int vid_pillarbox_old = -1;
+static int vid_widescreen_old = -1;
 
 
 static IVideoMode V_GetRequestedVideoMode()
@@ -146,11 +147,14 @@ bool V_CheckModeAdjustment()
 		return true;
 
 	bool using_widescreen = I_IsWideResolution();
-	if (vid_widescreen && sv_allowwidescreen != using_widescreen)
+	if (vid_widescreen.asInt() > 0 && sv_allowwidescreen != using_widescreen)
 		return true;
 
-	if (vid_widescreen != using_widescreen)
+	if (vid_widescreen.asInt() != vid_widescreen_old)
+	{
+		vid_widescreen_old = vid_widescreen.asInt();
 		return true;
+	}
 
 	if (vid_pillarbox_old != vid_pillarbox)
 	{
@@ -233,6 +237,9 @@ CVAR_FUNC_IMPL(vid_640x400)
 
 CVAR_FUNC_IMPL (vid_widescreen)
 {
+	if (var < 0 || var > 5)
+		var.RestoreDefault();
+
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
 		V_ForceVideoModeAdjustment();
 }
@@ -253,10 +260,10 @@ CVAR_FUNC_IMPL(vid_pillarbox)
 static bool CheckWideModeAdjustment()
 {
 	bool using_widescreen = I_IsWideResolution();
-	if (vid_widescreen && sv_allowwidescreen != using_widescreen)
+	if (vid_widescreen.asInt() > 0 && sv_allowwidescreen != using_widescreen)
 		return true;
 
-	if (vid_widescreen != using_widescreen)
+	if (vid_widescreen.asInt() > 0 != using_widescreen)
 		return true;
 
 	return false;
@@ -400,55 +407,6 @@ BEGIN_COMMAND(vid_setmode)
 }
 END_COMMAND (vid_setmode)
 
-
-//
-// V_UsePillarBox
-//
-// Determines if the display should use pillarboxing. If the resolution is a
-// widescreen mode and either the user or the server doesn't allow
-// widescreen usage, use pillarboxing.
-//
-bool V_UsePillarBox()
-{
-	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
-
-	if (width == 0 || height == 0)
-		return false;
-
-	if (I_IsProtectedResolution(width, height))
-		return false;
-
-	if (vid_320x200 || vid_640x400)
-		return 3 * width > 4 * height;
-
-	return (!vid_widescreen || (!serverside && !sv_allowwidescreen))
-		&& (3 * width > 4 * height);
-}
-
-//
-// V_UseLetterBox
-//
-// Determines if the display should use letterboxing. If the resolution is a
-// standard 4:3 mode and both the user and the server allow widescreen
-// usage, use letterboxing.
-//
-bool V_UseLetterBox()
-{
-	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
-
-	if (width == 0 || height == 0)
-		return false;
-
-	if (I_IsProtectedResolution(width, height))
-		return false;
-
-	if (vid_320x200 || vid_640x400)
-		return 3 * width <= 4 * height;
-
-	return (vid_widescreen && (serverside || sv_allowwidescreen))
-		&& (3 * width <= 4 * height);
-}
-
 //
 // V_UseWidescreen
 //
@@ -464,10 +422,9 @@ bool V_UseWidescreen()
 		return false;
 
 	if (vid_320x200 || vid_640x400)
-		return 3 * width > 4 * height;
+		return true;
 
-	return (vid_widescreen && (serverside || sv_allowwidescreen))
-		&& (3 * width > 4 * height);
+	return (vid_widescreen.asInt() > 0 && (serverside || sv_allowwidescreen));
 }
 
 
@@ -574,6 +531,7 @@ void V_Init()
 	BuildTransTable(V_GetDefaultPalette()->basecolors);
 
 	vid_pillarbox_old = vid_pillarbox;
+	vid_widescreen_old = vid_widescreen.asInt();
 }
 
 
