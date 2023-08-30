@@ -94,8 +94,11 @@ static std::string Res_TransformResourcePath(const std::string& path)
 		if (last_deliminator != std::string::npos)
 		{
 			size_t start_of_lump_name = last_deliminator + 1;
+
 			// Trim the filename extension
-			new_path.replace(new_path.find_first_of(".", start_of_lump_name), std::string::npos, "");
+			if (new_path.find(".") != std::string::npos)
+				new_path.replace(new_path.find_first_of(".", start_of_lump_name), std::string::npos, "");
+
 			// Capitalize the lump name
 			std::transform(new_path.begin(), new_path.end(), new_path.begin(), toupper);
 
