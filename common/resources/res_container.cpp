@@ -75,13 +75,18 @@ static std::string Res_TransformResourcePath(const std::string& path)
 	for (size_t i = 0; i < new_path.length(); i++)
 		if (new_path[i] == '/' || new_path[i] == '\\')
 			new_path[i] = ResourcePath::DELIMINATOR;
+
 	// Add leading '/'
 	if (new_path[0] != ResourcePath::DELIMINATOR)
 		new_path = ResourcePath::DELIMINATOR + new_path;
 
 	size_t end_of_directory = new_path.find(ResourcePath::DELIMINATOR, 1);
 	if (end_of_directory == std::string::npos)
-		end_of_directory = 0;
+	{
+		// Any files in the root directory should be considered as part of the global directory
+		new_path = "/GLOBAL" + new_path;
+		end_of_directory = new_path.find(ResourcePath::DELIMINATOR, 1);
+	}
 
 	// Transform the filename portion of the path into a well-formed lump name.
 	// eg, 8 chars, no filename extension, all caps.
@@ -96,8 +101,9 @@ static std::string Res_TransformResourcePath(const std::string& path)
 			size_t start_of_lump_name = last_deliminator + 1;
 
 			// Trim the filename extension
-			if (new_path.find(".") != std::string::npos)
-				new_path.replace(new_path.find_first_of(".", start_of_lump_name), std::string::npos, "");
+			size_t extension_start = new_path.find_first_of('.', start_of_lump_name);
+			if (extension_start != std::string::npos)
+				new_path.replace(extension_start, std::string::npos, "");
 
 			// Capitalize the lump name
 			std::transform(new_path.begin(), new_path.end(), new_path.begin(), toupper);
