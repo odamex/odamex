@@ -44,6 +44,7 @@ enum TextureSearchOrdering {
 	FLOOR,
 	SPRITE,
 	PATCH,
+	GRAPHICS
 };
 
 

@@ -947,7 +947,7 @@ void C_InitConCharsFont()
 	// paste the patch into the linear byte bufer
 	DCanvas* canvas = temp_surface->getDefaultCanvas();
 
-	const Texture* texture = Res_CacheTexture("CONCHARS", PATCH);
+	const Texture* texture = Res_CacheTexture("CONCHARS", GRAPHICS);
 	canvas->DrawTexture(texture, 0, 0);
 
 	ConChars = new byte[256*8*8*2];
@@ -1033,7 +1033,7 @@ void C_ClearCommand()
 //
 void C_InitConsoleBackground()
 {
-	const Texture* texture = Res_CacheTexture("CONBACK", PATCH);
+	const Texture* texture = Res_CacheTexture("CONBACK", GRAPHICS);
 	background_surface = I_AllocateSurface(texture->mWidth, texture->mHeight, 8);
 	background_surface->lock();
 	background_surface->getDefaultCanvas()->DrawTexture(texture, 0, 0);

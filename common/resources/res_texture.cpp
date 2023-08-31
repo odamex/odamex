@@ -179,6 +179,7 @@ void TextureManager::addResources(ResourceManager* manager)
 	addResourceToManagerByDir(manager, patches_directory_name);
 	addResourceToManagerByDir(manager, sprites_directory_name);
 	addResourceToManagerByDir(manager, textures_directory_name);
+	addResourceToManagerByDir(manager, graphics_directory_name);
 }
 
 
@@ -216,6 +217,8 @@ void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const R
 			else if (dir == patches_directory_name)
 				loader = new PatchTextureLoader(accessor, raw_res_id);
 			else if (dir == sprites_directory_name)
+				loader = new PatchTextureLoader(accessor, raw_res_id);
+			else if (dir == graphics_directory_name)
 				loader = new PatchTextureLoader(accessor, raw_res_id);
 		}
 
@@ -738,6 +741,15 @@ const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrde
 		paths.push_back(flats_directory_name);
 		paths.push_back(global_directory_name);
 	}
+	else if (ordering == GRAPHICS)
+	{
+		paths.push_back(graphics_directory_name);
+		paths.push_back(patches_directory_name);
+		paths.push_back(sprites_directory_name);
+		paths.push_back(global_directory_name);
+		paths.push_back(textures_directory_name);
+		paths.push_back(flats_directory_name);
+	}
 
 	for (ResourcePathList::const_iterator it = paths.begin(); it != paths.end(); ++it)
 	{
@@ -814,6 +826,8 @@ const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& di
 		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, PATCH), tag);
 	if (directory == sprites_directory_name)
 		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, SPRITE), tag);
+	if (directory == graphics_directory_name)
+		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, GRAPHICS), tag);
 	return NULL;
 }
 

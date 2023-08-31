@@ -734,31 +734,31 @@ void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
 	missing_resource_filenames.clear();
 
 	const size_t invalid_position = (size_t)-1;
-	size_t odamex_wad_position = invalid_position;
+	size_t engine_resource_position = invalid_position;
 	size_t iwad_position = invalid_position;
 
-	const OString& engine_resource_filename(Res_GetEngineResourceFileName());
+	OString engine_resource_filename = Res_GetEngineResourceFileName();
 
+	// determine the position of ODAMEX.PK3 and the IWAD in the provided filenames array
 	if (old_resource_filenames.size() >= 1 && iequals(Res_CleanseFilename(old_resource_filenames[0]), engine_resource_filename))
-		odamex_wad_position = 0;
-	
-	if (odamex_wad_position == invalid_position && old_resource_filenames.size() >= 1 && W_IsIWAD(Res_GetFullPath(old_resource_filenames[0])))
+		engine_resource_position = 0;
+
+	if (engine_resource_position == invalid_position && old_resource_filenames.size() >= 1 && W_IsIWAD(Res_GetFullPath(old_resource_filenames[0])))
 		iwad_position = 0;
 
-	if (odamex_wad_position == 0 && old_resource_filenames.size() >= 2 && W_IsIWAD(Res_GetFullPath(old_resource_filenames[1])))
+	if (engine_resource_position == 0 && old_resource_filenames.size() >= 2 && W_IsIWAD(Res_GetFullPath(old_resource_filenames[1])))
 		iwad_position = 1;
 
-	// locate ODAMEX.WAD and add its full path to the validated filename array
-	std::string odamex_wad_filename;
-	if (odamex_wad_position == invalid_position)
-		odamex_wad_filename = engine_resource_filename;
-	else
-		odamex_wad_filename = old_resource_filenames[odamex_wad_position];
-	std::string odamex_wad_full_filename = Res_GetFullPath(odamex_wad_filename);
-	if (odamex_wad_full_filename.empty())
+	// locate ODAMEX.PK3 and add its full path to the validated filename array
+	if (engine_resource_position != invalid_position)
+		engine_resource_filename = old_resource_filenames[engine_resource_position];
+
+	std::string engine_resource_full_path = Res_GetFullPath(engine_resource_filename);
+
+	if (engine_resource_full_path.empty())
 		I_FatalError("Unable to locate \"%s\" resource file.", engine_resource_filename.c_str());
 	else
-		resource_filenames.push_back(odamex_wad_full_filename);
+		resource_filenames.push_back(engine_resource_full_path);
 
 	// locate the IWAD and add its full path to the validated filename array
 	std::string iwad_filename;
@@ -779,8 +779,8 @@ void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
 	// find where the PWADs are in the input array
 	size_t pwad_end_position = old_resource_filenames.size();
 	size_t pwad_start_position = 0;
-	if (odamex_wad_position != invalid_position)
-		pwad_start_position = std::max<size_t>(pwad_start_position, odamex_wad_position + 1);
+	if (engine_resource_position != invalid_position)
+		pwad_start_position = std::max<size_t>(pwad_start_position, engine_resource_position + 1);
 	if (iwad_position != invalid_position)
 		pwad_start_position = std::max<size_t>(pwad_start_position, iwad_position + 1);
 
