@@ -1387,7 +1387,7 @@ static void M_PlayerSetupDrawer()
 
 	// Draw title
 	{
-		const Texture* texture = Res_CacheTexture("M_PSTTL", PATCH);
+		const Texture* texture = Res_CacheTexture("M_PSTTL", GRAPHICS);
         screen->DrawTextureClean(texture, 160 - texture->mWidth / 2, 10);
 	}
 
@@ -1517,7 +1517,7 @@ static void M_PlayerSetupDrawer()
 
 	{
 		// Draw box surrounding fire and player:
-		const Texture* texture = Res_CacheTexture("M_PBOX", PATCH);
+		const Texture* texture = Res_CacheTexture("M_PBOX", GRAPHICS);
 		screen->DrawTextureClean(texture, 320 - 88 - 32 + 36, PSetupDef.y + LINEHEIGHT*3 + 22);
 	}
 

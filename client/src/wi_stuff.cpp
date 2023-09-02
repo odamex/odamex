@@ -438,7 +438,7 @@ static int WI_DrawName (const char *str, int x, int y)
 	{
 		char charname[9];
 		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
-		const ResourceId res_id = Res_GetTextureResourceId(charname, PATCH);
+		const ResourceId res_id = Res_GetTextureResourceId(charname, GRAPHICS);
 		if (res_id != ResourceId::INVALID_ID)
 		{
 			const Texture* texture = Res_CacheTexture(res_id, PU_CACHE);
@@ -452,7 +452,7 @@ static int WI_DrawName (const char *str, int x, int y)
 		str++;
 	}
 
-	const Texture* texture = Res_CacheTexture("FONTB39", PATCH);
+	const Texture* texture = Res_CacheTexture("FONTB39", GRAPHICS);
 	return (5 * (texture->mHeight - texture->mOffsetY)) / 4;
 }
 
@@ -477,7 +477,7 @@ static int WI_DrawSmallName(const char* str, int x, int y)
 		str++;
 	}
 
-	const Texture* texture = Res_CacheTexture("FONTB39", PATCH);
+	const Texture* texture = Res_CacheTexture("FONTB39", GRAPHICS);
 	return (5 * (texture->mHeight - texture->mOffsetY)) / 4;
 }
 
@@ -1407,7 +1407,7 @@ static int WI_CalcWidth(const char *str)
 	while (*str)
 	{
 		sprintf(lump_name, "FONTB%02u", toupper(*str) - 32);
-		const Texture* texture = Res_CacheTexture(lump_name, PATCH);
+		const Texture* texture = Res_CacheTexture(lump_name, GRAPHICS);
 		if (texture)
 			w += texture->mWidth - 1;
 		else
@@ -1546,7 +1546,7 @@ void WI_loadData()
 	// dead face
 	bstar = Res_CacheTexture("STFDEAD0", PATCH, PU_STATIC);
 
-	p = Res_CacheTexture("STPBANY", PATCH, PU_STATIC);
+	p = Res_CacheTexture("STPBANY", GRAPHICS, PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
 	for (int i = 0; i < 4; i++)
