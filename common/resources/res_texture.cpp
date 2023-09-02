@@ -715,6 +715,7 @@ const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrde
 		paths.push_back(flats_directory_name);
 		paths.push_back(patches_directory_name);
 		paths.push_back(sprites_directory_name);
+		paths.push_back(graphics_directory_name);
 		paths.push_back(global_directory_name);
 	}
 	else if (ordering == FLOOR)
@@ -723,11 +724,13 @@ const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrde
 		paths.push_back(textures_directory_name);
 		paths.push_back(patches_directory_name);
 		paths.push_back(sprites_directory_name);
+		paths.push_back(graphics_directory_name);
 		paths.push_back(global_directory_name);
 	}
 	else if (ordering == PATCH)
 	{
 		paths.push_back(patches_directory_name);
+		paths.push_back(graphics_directory_name);
 		paths.push_back(global_directory_name);
 		paths.push_back(textures_directory_name);
 		paths.push_back(flats_directory_name);
@@ -737,6 +740,7 @@ const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrde
 	{
 		paths.push_back(sprites_directory_name);
 		paths.push_back(patches_directory_name);
+		paths.push_back(graphics_directory_name);
 		paths.push_back(textures_directory_name);
 		paths.push_back(flats_directory_name);
 		paths.push_back(global_directory_name);

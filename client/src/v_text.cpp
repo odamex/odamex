@@ -123,7 +123,7 @@ void V_TextInit()
 		}
 
 		// Some letters of this font might be missing.
-		int num = Res_GetTextureResourceId(buffer.c_str(), PATCH);
+		int num = Res_GetTextureResourceId(buffer.c_str(), GRAPHICS);
 		if (Res_CheckResource(num))
 		{
 			::hu_digfont[i] = Res_CacheTexture(num, PU_STATIC);

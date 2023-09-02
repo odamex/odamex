@@ -168,11 +168,11 @@ void ST_initNew()
 
 	for (size_t i = 0; i < NUMTEAMS; i++)
 	{
-		::FlagIconHome[i] = (Texture*)Res_CacheTexture(::flaghomepatches[i], SPRITE, PU_STATIC);
-		::FlagIconTaken[i] = (Texture*)Res_CacheTexture(::flagtakenpatches[i], SPRITE, PU_STATIC);
-		::FlagIconReturn[i] = (Texture*)Res_CacheTexture(::flagreturnpatches[i], SPRITE, PU_STATIC);
-		::FlagIconDropped[i] = (Texture*)Res_CacheTexture(::flagdroppatches[i], SPRITE, PU_STATIC);
-		::LivesIcon[i] = (Texture*)Res_CacheTexture(::livespatches[i], SPRITE, PU_STATIC);
+		::FlagIconHome[i] = (Texture*)Res_CacheTexture(::flaghomepatches[i], GRAPHICS, PU_STATIC);
+		::FlagIconTaken[i] = (Texture*)Res_CacheTexture(::flagtakenpatches[i], GRAPHICS, PU_STATIC);
+		::FlagIconReturn[i] = (Texture*)Res_CacheTexture(::flagreturnpatches[i], GRAPHICS, PU_STATIC);
+		::FlagIconDropped[i] = (Texture*)Res_CacheTexture(::flagdroppatches[i], GRAPHICS, PU_STATIC);
+		::LivesIcon[i] = (Texture*)Res_CacheTexture(::livespatches[i], GRAPHICS, PU_STATIC);
 	}
 
 	::widest_num = widest;
@@ -182,24 +182,24 @@ void ST_initNew()
 	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
 		NameUp = level.time + 2 * TICRATE;
 
-	::flagiconteam = (Texture*)Res_CacheTexture("FLAGIT", SPRITE, PU_STATIC);
-	::flagiconteamoffense = (Texture*)Res_CacheTexture("FLAGITO", SPRITE, PU_STATIC);
-	::flagiconteamdefense = (Texture*)Res_CacheTexture("FLAGITD", SPRITE, PU_STATIC);
+	::flagiconteam = (Texture*)Res_CacheTexture("FLAGIT", GRAPHICS, PU_STATIC);
+	::flagiconteamoffense = (Texture*)Res_CacheTexture("FLAGITO", GRAPHICS, PU_STATIC);
+	::flagiconteamdefense = (Texture*)Res_CacheTexture("FLAGITD", GRAPHICS, PU_STATIC);
 
-	::line_leftempty = (Texture*)Res_CacheTexture("ODABARLE", SPRITE, PU_STATIC);
-	::line_leftfull = (Texture*)Res_CacheTexture("ODABARLF", SPRITE, PU_STATIC);
-	::line_centerempty = (Texture*)Res_CacheTexture("ODABARCE", SPRITE, PU_STATIC);
-	::line_centerleft = (Texture*)Res_CacheTexture("ODABARCL", SPRITE, PU_STATIC);
-	::line_centerright = (Texture*)Res_CacheTexture("ODABARCR", SPRITE, PU_STATIC);
-	::line_centerfull = (Texture*)Res_CacheTexture("ODABARCF", SPRITE, PU_STATIC);
-	::line_rightempty = (Texture*)Res_CacheTexture("ODABARRE", SPRITE, PU_STATIC);
-	::line_rightfull = (Texture*)Res_CacheTexture("ODABARRF", SPRITE, PU_STATIC);
+	::line_leftempty = (Texture*)Res_CacheTexture("ODABARLE", GRAPHICS, PU_STATIC);
+	::line_leftfull = (Texture*)Res_CacheTexture("ODABARLF", GRAPHICS, PU_STATIC);
+	::line_centerempty = (Texture*)Res_CacheTexture("ODABARCE", GRAPHICS, PU_STATIC);
+	::line_centerleft = (Texture*)Res_CacheTexture("ODABARCL", GRAPHICS, PU_STATIC);
+	::line_centerright = (Texture*)Res_CacheTexture("ODABARCR", GRAPHICS, PU_STATIC);
+	::line_centerfull = (Texture*)Res_CacheTexture("ODABARCF", GRAPHICS, PU_STATIC);
+	::line_rightempty = (Texture*)Res_CacheTexture("ODABARRE", GRAPHICS, PU_STATIC);
+	::line_rightfull = (Texture*)Res_CacheTexture("ODABARRF", GRAPHICS, PU_STATIC);
 
 	std::string buffer;
 	for (size_t i = 0; i < NUMMODS; i++)
 	{
 		StrFormat(buffer, "ODAMOD%d", i);
-		::ToastIcon[i] = (Texture*)Res_CacheTexture(buffer.c_str(), SPRITE, PU_STATIC);
+		::ToastIcon[i] = (Texture*)Res_CacheTexture(buffer.c_str(), GRAPHICS, PU_STATIC);
 	}
 }
 
