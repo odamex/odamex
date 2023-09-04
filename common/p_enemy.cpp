@@ -705,9 +705,12 @@ bool P_LookForPlayers(AActor *actor, bool allaround)
 	if (maxid == 0)
 		return false;
 
-	// denis - vanilla sync, original code always looped over size-4 array.
-	if (maxid < MAXPLAYERS_VANILLA)
-		maxid = MAXPLAYERS_VANILLA;
+	if (demoplayback)
+	{
+		// denis - vanilla sync, original code always looped over size-4 array.
+		if (maxid < MAXPLAYERS_VANILLA)
+			maxid = MAXPLAYERS_VANILLA;
+	}
 
 	// denis - prevents calling P_CheckSight twice on the same player
 	static bool sightcheckfailed[MAXPLAYERS];
