@@ -696,7 +696,8 @@ bool P_LookForPlayers(AActor *actor, bool allaround)
 		if (it->ingame() && !(it->spectator))
 		{
 			playeringame[(it->id) - 1] = &*it;
-			maxid = it->id;
+			if (maxid < (short)&it->id)
+				maxid = it->id;
 		}
 	}
 
@@ -705,12 +706,9 @@ bool P_LookForPlayers(AActor *actor, bool allaround)
 	if (maxid == 0)
 		return false;
 
-	if (demoplayback)
-	{
-		// denis - vanilla sync, original code always looped over size-4 array.
-		if (maxid < MAXPLAYERS_VANILLA)
-			maxid = MAXPLAYERS_VANILLA;
-	}
+	// denis - vanilla sync, original code always looped over size-4 array.
+	if (maxid < MAXPLAYERS_VANILLA)
+		maxid = MAXPLAYERS_VANILLA;
 
 	// denis - prevents calling P_CheckSight twice on the same player
 	static bool sightcheckfailed[MAXPLAYERS];
