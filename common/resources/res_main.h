@@ -133,6 +133,11 @@ public:
 		return res_id >= 0 && res_id < mResources.size();
 	}
 
+	const ResourceId getResourceId(const OString& name, ResourceNamespace ns) const
+	{
+		return mNameTranslator.translate(name, ns);
+	}
+
 	const ResourceId getResourceId(const ResourcePath& path) const
 	{
 		return mNameTranslator.translate(path);
@@ -313,6 +318,8 @@ const ResourcePathList Res_ListResourceDirectory(const ResourcePath& path);
 const ResourceId Res_GetResourceId(const ResourcePath& path);
 
 const ResourceId Res_GetResourceId(const OString& name, const ResourcePath& directory);
+
+const ResourceId Res_GetResourceId(const OString& name, ResourceNamespace ns);
 
 const ResourceIdList Res_GetAllResourceIds(const ResourcePath& path);
 

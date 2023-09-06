@@ -26,6 +26,7 @@
 #include <vector>
 #include "hashtable.h"
 
+
 class ResourceId
 {
 public:

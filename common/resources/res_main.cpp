@@ -550,16 +550,25 @@ const ResourceId Res_GetResourceId(const ResourcePath& path)
 //
 // Res_GetResourceId
 //
-// Looks for the resource lump that matches id. If there are more than one
-// lumps that match, resource file merging rules dictate that the id of the
-// matching lump in the resource file with the highest id (most recently added)
-// is returned. A special token of ResourceFile::LUMP_NOT_FOUND is returned if
-// there are no matching lumps.
+// Looks for the resource ID that matches the desired resource name in the given
+// directory name.
 //
 const ResourceId Res_GetResourceId(const OString& name, const ResourcePath& directory)
 {
 	const ResourcePath path = Res_MakeResourcePath(name, directory);
 	return resource_manager.getResourceId(path);
+}
+
+
+//
+// Res_GetResourceId
+//
+// Looks for the resource ID that matches the desired resource name in the given
+// resource namespace.
+//
+const ResourceId Res_GetResourceId(const OString& name, ResourceNamespace ns)
+{
+	return resource_manager.getResourceId(name, ns);
 }
 
 

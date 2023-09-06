@@ -705,65 +705,22 @@ void AnimatedTextureManager::updateAnimatedTextures()
 //
 const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering)
 {
-	if (ordering == WALL && name.c_str()[0] == '-' && name.size() == 1)
+	if (name.empty() || (ordering == WALL && name.size() == 1 && name.c_str()[0] == '-'))
 		return ResourceId::INVALID_ID;
 
-	ResourcePathList paths;
+	ResourceNamespace ns = NS_GLOBAL;
 	if (ordering == WALL)
-	{
-		paths.push_back(textures_directory_name);
-		paths.push_back(flats_directory_name);
-		paths.push_back(patches_directory_name);
-		paths.push_back(sprites_directory_name);
-		paths.push_back(graphics_directory_name);
-		paths.push_back(global_directory_name);
-	}
+		ns = NS_NEWTEXTURES;
 	else if (ordering == FLOOR)
-	{
-		paths.push_back(flats_directory_name);
-		paths.push_back(textures_directory_name);
-		paths.push_back(patches_directory_name);
-		paths.push_back(sprites_directory_name);
-		paths.push_back(graphics_directory_name);
-		paths.push_back(global_directory_name);
-	}
+		ns = NS_FLATS;
 	else if (ordering == PATCH)
-	{
-		paths.push_back(patches_directory_name);
-		paths.push_back(graphics_directory_name);
-		paths.push_back(global_directory_name);
-		paths.push_back(textures_directory_name);
-		paths.push_back(flats_directory_name);
-		paths.push_back(sprites_directory_name);
-	}
+		ns = NS_PATCHES;
 	else if (ordering == SPRITE)
-	{
-		paths.push_back(sprites_directory_name);
-		paths.push_back(patches_directory_name);
-		paths.push_back(graphics_directory_name);
-		paths.push_back(textures_directory_name);
-		paths.push_back(flats_directory_name);
-		paths.push_back(global_directory_name);
-	}
+		ns = NS_SPRITES;
 	else if (ordering == GRAPHICS)
-	{
-		paths.push_back(graphics_directory_name);
-		paths.push_back(patches_directory_name);
-		paths.push_back(sprites_directory_name);
-		paths.push_back(global_directory_name);
-		paths.push_back(textures_directory_name);
-		paths.push_back(flats_directory_name);
-	}
+		ns = NS_GRAPHICS;
 
-	for (ResourcePathList::const_iterator it = paths.begin(); it != paths.end(); ++it)
-	{
-		const ResourcePath& path = *it;
-		const ResourceId res_id = Res_GetResourceId(name, path);
-		if (res_id != ResourceId::INVALID_ID)
-			return res_id;
-	}
-
-	return ResourceId::INVALID_ID;
+	return Res_GetResourceId(name, ns);
 }
 
 

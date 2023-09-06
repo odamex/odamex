@@ -40,11 +40,12 @@ class RawResourceAccessor;
 class Texture;
 
 enum TextureSearchOrdering {
+	ANY,
 	WALL,
 	FLOOR,
 	SPRITE,
 	PATCH,
-	GRAPHICS
+	GRAPHICS,
 };
 
 

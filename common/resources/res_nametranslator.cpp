@@ -24,6 +24,7 @@
 #include "odamex.h"
 
 #include <assert.h>
+#include "resources/res_main.h"
 #include "resources/res_nametranslator.h"
 
 static const size_t default_initial_resource_count = 2048;
@@ -38,7 +39,9 @@ static const size_t default_initial_resource_count = 2048;
 // ResourceNameTranslator::ResourceNameTranslator
 //
 ResourceNameTranslator::ResourceNameTranslator() :
-	mResourceIdLookup(default_initial_resource_count)
+	mNamespacedResourceIdLookup(default_initial_resource_count),
+	mResourceIdLookup(default_initial_resource_count),
+	mResourceIdByPathLookup(default_initial_resource_count)
 { }
 
 
@@ -51,12 +54,44 @@ ResourceNameTranslator::ResourceNameTranslator() :
 //
 const ResourceId ResourceNameTranslator::translate(const ResourcePath& path) const
 {
-	ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(path);
-	if (it != mResourceIdLookup.end())
+	ResourceIdByPathLookupTable::const_iterator it = mResourceIdByPathLookup.find(path);
+	if (it != mResourceIdByPathLookup.end())
 	{
 		const ResourceIdList& res_id_list = it->second;
 		assert(!res_id_list.empty());
 		const ResourceId res_id = res_id_list.back();
+		assert(res_id != ResourceId::INVALID_ID);
+		return res_id;
+	}
+	
+	return ResourceId::INVALID_ID;
+}
+
+
+//
+// ResourceNameTranslator::translate
+//
+// Retrieves the ResourceId for a given resource name and namespace. If more than
+// one ResourceId match the given path name, the ResouceId from the most
+// recently loaded resource file will be returned.
+//
+const ResourceId ResourceNameTranslator::translate(const OString& resource_name, ResourceNamespace ns) const
+{
+	// Check for an exact match for the resource name and namespace
+	const NamespacedResourceName namespaced_resource_name = {resource_name, ns};
+	NamespacedResourceIdLookupTable::const_iterator it_ns = mNamespacedResourceIdLookup.find(namespaced_resource_name);
+	if (it_ns != mNamespacedResourceIdLookup.end())
+	{
+		const ResourceId res_id = it_ns->second;
+		assert(res_id != ResourceId::INVALID_ID);
+		return res_id;
+	}
+
+	// Fallback to the most recently added match for the resource name
+	ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(resource_name);
+	if (it != mResourceIdLookup.end())
+	{
+		const ResourceId res_id = it->second;
 		assert(res_id != ResourceId::INVALID_ID);
 		return res_id;
 	}
@@ -73,8 +108,8 @@ const ResourceId ResourceNameTranslator::translate(const ResourcePath& path) con
 //
 const ResourceIdList ResourceNameTranslator::getAllTranslations(const ResourcePath& path) const
 {
-	ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(path);
-	if (it != mResourceIdLookup.end())
+	ResourceIdByPathLookupTable::const_iterator it = mResourceIdByPathLookup.find(path);
+	if (it != mResourceIdByPathLookup.end())
 	{
 		const ResourceIdList& res_id_list = it->second;
 		assert(!res_id_list.empty());
@@ -105,13 +140,12 @@ bool ResourceNameTranslator::checkNameVisibility(const ResourcePath& path, const
 //
 void ResourceNameTranslator::addTranslation(const ResourcePath& path, const ResourceId res_id)
 {
-	ResourceIdLookupTable::iterator it = mResourceIdLookup.find(path);
-	if (it == mResourceIdLookup.end())
+	ResourceIdByPathLookupTable::iterator it = mResourceIdByPathLookup.find(path);
+	if (it == mResourceIdByPathLookup.end())
 	{
 		// No other resources with the same path exist yet. Create a new list
 		// for ResourceIds with a matching path.
-		std::pair<ResourceIdLookupTable::iterator, bool> result =
-				mResourceIdLookup.insert(std::make_pair(path, ResourceIdList()));
+		std::pair<ResourceIdByPathLookupTable::iterator, bool> result = mResourceIdByPathLookup.insert(std::make_pair(path, ResourceIdList()));
 		it = result.first;
 	}
 
@@ -119,4 +153,42 @@ void ResourceNameTranslator::addTranslation(const ResourcePath& path, const Reso
 	res_id_list.push_back(res_id);
 
 	assert(translate(path) == res_id);
+
+	if (path.size() > 1)
+	{
+		OString resource_name = path.last();
+		OString base_directory = path.first();
+
+		ResourceNamespace ns = NS_GLOBAL;
+		if (base_directory == OString("PATCHES"))
+			ns = NS_PATCHES;
+		else if (base_directory == OString("GRAPHICS"))
+			ns = NS_GRAPHICS;
+		else if (base_directory == OString("SOUNDS"))
+			ns = NS_SOUNDS;
+		else if (base_directory == OString("MUSIC"))
+			ns = NS_MUSIC;
+		else if (base_directory == OString("MAPS"))
+			ns = NS_GLOBAL;			// TODO: Cross-check this behavior with ZDoom
+		else if (base_directory == OString("FLATS"))
+			ns = NS_FLATS;
+		else if (base_directory == OString("SPRITES"))
+			ns = NS_SPRITES;
+		else if (base_directory == OString("TEXTURES"))
+			ns = NS_NEWTEXTURES;
+		else if (base_directory == OString("HIRES"))
+			ns = NS_HIRES;
+		else if (base_directory == OString("COLORMAPS"))
+			ns = NS_COLORMAPS;
+		else if (base_directory == OString("ACS"))
+			ns = NS_ACSLIBRARY;
+		else if (base_directory == OString("VOXELS"))
+			ns = NS_VOXELS;
+		// TODO: add scripts directory
+
+		NamespacedResourceName key = {resource_name, ns};
+		mNamespacedResourceIdLookup.insert(std::make_pair(key, res_id));
+
+		mResourceIdLookup.insert(std::make_pair(resource_name, res_id));
+	}
 }
