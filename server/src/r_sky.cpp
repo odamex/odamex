@@ -29,6 +29,7 @@
 #include "g_level.h"
 #include "i_system.h"
 #include "resources/res_resourceid.h"
+#include "resources/res_main.h"
 #include "resources/res_texture.h"
 #include "r_data.h"
 #include "g_mapinfo.h"
@@ -69,7 +70,7 @@ void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
 		return;
 
 	const ResourceId res_id = Res_GetTextureResourceId(OStringToUpper(sky1_name, 8), WALL);
-	if (res_id == ResourceId::INVALID_ID)
+	if (!Res_CheckResource(res_id))
 		I_Error("Invalid sky1 texture \"%s\"", OStringToUpper(sky1_name, 8).c_str());
 
 	if (HexenHack)

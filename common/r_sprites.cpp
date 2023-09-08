@@ -58,7 +58,7 @@ void R_CacheSprite(spritedef_t* sprite)
 		{
 			if (sprite->spriteframes[i].width[r] == SPRITE_NEEDS_INFO)
 			{
-				if (sprite->spriteframes[i].resource[r] == ResourceId::INVALID_ID)
+				if (!Res_CheckResource(sprite->spriteframes[i].resource[r]))
 					I_Error("Sprite %d, rotation %d has no lump", i, r);
 
 				const ResourceId res_id = sprite->spriteframes[i].resource[r];
@@ -94,7 +94,7 @@ static void R_InstallSpriteLump(const ResourceId res_id, uint32_t frame, uint32_
         // allows doom to have a "no value set yet" boolean value!
 		for (int r = 7; r >= 0; r--)
 		{
-			if (sprtemp[frame].resource[r] == ResourceId::INVALID_ID)
+			if (!Res_CheckResource(sprtemp[frame].resource[r]))
 			{
 				sprtemp[frame].resource[r] = res_id;
 				sprtemp[frame].flip[r] = (byte)flipped;
@@ -105,7 +105,7 @@ static void R_InstallSpriteLump(const ResourceId res_id, uint32_t frame, uint32_
 		
 		return;
 	}
-	else if (sprtemp[frame].resource[--rot] == ResourceId::INVALID_ID)
+	else if (!Res_CheckResource(sprtemp[frame].resource[--rot]))
 	{
 		// the lump is only used for one rotation
 		sprtemp[frame].resource[rot] = res_id;
@@ -152,7 +152,7 @@ static void R_InstallSprite(const char* name, int num)
 			{
 				for (int rotation = 0; rotation < 8; rotation++)
 				{
-					if (sprtemp[frame].resource[rotation] == ResourceId::INVALID_ID)
+					if (!Res_CheckResource(sprtemp[frame].resource[rotation]))
 						I_FatalError(
 						    "R_InstallSprite: Sprite %s frame %c is missing rotations",
 						    sprname, frame + 'A');

@@ -1091,7 +1091,7 @@ void ST_Drawer()
 static const Texture* LoadFaceGraphic(const char* name)
 {
 	const ResourceId res_id = Res_GetTextureResourceId(name, SPRITE);
-	if (res_id != ResourceId::INVALID_ID)
+	if (Res_CheckResource(res_id))
 		return Res_CacheTexture(res_id, PU_STATIC);
 
 	char othername[9];

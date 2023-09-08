@@ -1121,7 +1121,7 @@ void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 		else
 		{
 			*res_id_ptr = Res_GetTextureResourceId(OStringToUpper(texture_name, 8), WALL);
-			if (*res_id_ptr == ResourceId::INVALID_ID)
+			if (!Res_CheckResource(*res_id_ptr))
 			{
 				if (strnicmp(texture_name, "WATERMAP", 8) == 0)
 					*blend_color = argb_t(0x80, 0, 0x4F, 0xA5);
@@ -1138,7 +1138,7 @@ void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 void SetTextureNoErr(ResourceId* res_id_ptr, unsigned int *color, char *name)
 {
 	*res_id_ptr = Res_GetTextureResourceId(OStringToUpper(name, 8), WALL);
-	if (*res_id_ptr == ResourceId::INVALID_ID)
+	if (!Res_CheckResource(*res_id_ptr))
 	{
 		char name2[9];
 		char *stop;

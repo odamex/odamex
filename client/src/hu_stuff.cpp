@@ -357,7 +357,7 @@ static void HU_InitCrosshair()
 		sprintf(xhairname, "XHAIR%d", xhairnum);
 
 		crosshair_res_id = Res_GetTextureResourceId(xhairname, GRAPHICS);
-		if (crosshair_res_id == ResourceId::INVALID_ID)
+		if (!Res_CheckResource(crosshair_res_id))
 			crosshair_res_id = Res_GetTextureResourceId("XHAIR1", GRAPHICS);
 	}
 
@@ -391,7 +391,7 @@ static void HU_DrawCrosshair()
 	if (camera->player && camera->player->spectator)
 		return;
 
-	if (hud_crosshair && crosshair_res_id != ResourceId::INVALID_ID)
+	if (hud_crosshair && Res_CheckResource(crosshair_res_id))
 	{
 		static const byte crosshair_color = 0xB0;
 		if (hud_crosshairhealth)

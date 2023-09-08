@@ -115,7 +115,7 @@ void P_InitSwitchList(void)
 				const ResourceId texture1 = Res_GetTextureResourceId(OStringToUpper((const char*)list_p + 0, 8), WALL);
 				const ResourceId texture2 = Res_GetTextureResourceId(OStringToUpper((const char*)list_p + 9, 8), WALL);
 
-				if (texture1 != ResourceId::INVALID_ID)
+				if (Res_CheckResource(texture1) && Res_CheckResource(texture2))
 				{
 					switchlist[i++] = texture1;
 					switchlist[i++] = texture2;
@@ -206,13 +206,13 @@ const ResourceId P_GetButtonTexture(const line_t* line)
 
 void P_SetButtonTexture(line_t* line, const ResourceId new_res_id)
 {
-	if (new_res_id != ResourceId::INVALID_ID)
+	if (Res_CheckResource(new_res_id))
 	{
 		DActiveButton::EWhere twhere;
 		ResourceId alt_res_id;
 		ResourceId* res_id_ptr = (ResourceId*)P_GetButtonTexturePtr(line, &alt_res_id, twhere);
 
-		if (res_id_ptr != NULL && *res_id_ptr != ResourceId::INVALID_ID)
+		if (res_id_ptr != NULL && Res_CheckResource(*res_id_ptr))
 			*res_id_ptr = new_res_id;
 	}
 }

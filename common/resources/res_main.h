@@ -130,7 +130,7 @@ public:
 
 	bool validateResourceId(const ResourceId res_id) const
 	{
-		return res_id >= 0 && res_id < mResources.size();
+		return res_id < mResources.size();
 	}
 
 	const ResourceId getResourceId(const OString& name, ResourceNamespace ns) const

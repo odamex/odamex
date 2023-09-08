@@ -281,7 +281,7 @@ const ResourceLoader* TextureManager::getResourceLoader(const ResourceId res_id)
 void TextureManager::addCompositeTextureResources(ResourceManager* manager, const ResourceIdList& pnames_lookup, const OString& lump_name)
 {
 	const ResourceId res_id = Res_GetResourceId(lump_name, NS_GLOBAL);
-	if (res_id == ResourceId::INVALID_ID)
+	if (!Res_CheckResource(res_id))
 	{
 		if (lump_name == "TEXTURE1")
 			I_Error("Res_InitTextures: TEXTURE1 lump not found");
@@ -311,7 +311,6 @@ void TextureManager::addCompositeTextureResources(ResourceManager* manager, cons
 
 		const char* str = (const char*)(raw_def_data + tex_offset + 0);
 		const OString texture_lump_name = OStringToUpper(str, 8);
-		ResourcePath path = textures_directory_name + texture_lump_name;
 
 		// From ChocolateDoom r_data.c:
 		// Vanilla Doom does a linear search of the texures array
@@ -319,11 +318,12 @@ void TextureManager::addCompositeTextureResources(ResourceManager* manager, cons
 		// entries with the same name, the first one in the array
 		// wins.
 		// [SL] Only add the first instance of a texture name
-		if (manager->getResourceId(path) != ResourceId::INVALID_ID)
+		if (Res_CheckResource(manager->getResourceId(texture_lump_name, NS_NEWTEXTURES)))
 			continue;
 
 		CompositeTextureDefinition tex_def = buildCompositeTextureDefinition(raw_def_data + tex_offset, pnames_lookup);
 		ResourceLoader* loader = new CompositeTextureLoader(manager->getRawResourceAccessor(), tex_def);
+		ResourcePath path = textures_directory_name + texture_lump_name;
 		const ResourceId res_id = manager->addResource(path, this, loader);
 
 		// save the ResourceLoader pointers so they can be freed later
@@ -378,7 +378,7 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 	// Read the PNAMES lump and store the ResourceId of each patch
 	// listed in the lump in the pnames_lookup array.
 	const ResourceId pnames_res_id = Res_GetResourceId(lump_name, NS_GLOBAL);
-	if (pnames_res_id == ResourceId::INVALID_ID)
+	if (!Res_CheckResource(pnames_res_id))
 		I_Error("Res_InitTextures: PNAMES lump not found");
 
 	uint32_t pnames_size = Res_GetResourceSize(pnames_res_id);
@@ -411,7 +411,7 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 		// appear first in a wad. This is a kludgy solution to the wad
 		// lump namespace problem.
 
-		if (res_id == ResourceId::INVALID_ID)
+		if (!Res_CheckResource(res_id))
 			res_id = Res_GetResourceId(lump_name, NS_SPRITES);
 
 		pnames_lookup.push_back(res_id);
@@ -633,7 +633,7 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 //
 void AnimatedTextureManager::addWarpedTexture(const ResourceId res_id)
 {
-	if (res_id == ResourceId::INVALID_ID)
+	if (!Res_CheckResource(res_id))
 		return;
 
 	AnimatedTextureManager::warp_t warp;
@@ -758,7 +758,7 @@ const ResourceId Res_GetAnimatedTextureResourceId(const ResourceId res_id)
 //
 const Texture* Res_CacheTexture(ResourceId res_id, zoneTag_e tag)
 {
-	if (res_id == ResourceId::INVALID_ID)
+	if (!Res_CheckResource(res_id))
 		return static_cast<const Texture*>(NULL);
 	return static_cast<const Texture*>(Res_LoadResource(res_id, tag));
 }

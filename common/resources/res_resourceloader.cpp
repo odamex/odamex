@@ -363,7 +363,7 @@ void CompositeTextureLoader::load(void* data) const
 	{
 		const CompositeTextureDefinition::PatchDef& patch_def = *it;
 
-		if (patch_def.mResId != ResourceId::INVALID_ID)
+		if (Res_CheckResource(patch_def.mResId))
 		{
 
 			uint32_t patch_size = mRawResourceAccessor->getResourceSize(patch_def.mResId);

@@ -286,12 +286,12 @@ void F_TextWrite ()
 	{
 	case FINALE_GRAPHIC:
 		res_id = Res_GetResourceId(finalelump, NS_GRAPHICS);
-		if (res_id != ResourceId::INVALID_ID)
+		if (Res_CheckResource(res_id))
 			screen->DrawTextureFullScreen(Res_CacheTexture(res_id, PU_CACHE));
 		break;
 	case FINALE_FLAT:
 		res_id = Res_GetResourceId(finalelump, NS_FLATS);
-		if (res_id != ResourceId::INVALID_ID)
+		if (Res_CheckResource(res_id))
 			screen->FlatFill(Res_CacheTexture(res_id, PU_CACHE), x, y, width + x, height + y);
 		break;
 	default:

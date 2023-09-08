@@ -439,7 +439,7 @@ static int WI_DrawName (const char *str, int x, int y)
 		char charname[9];
 		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
 		const ResourceId res_id = Res_GetTextureResourceId(charname, GRAPHICS);
-		if (res_id != ResourceId::INVALID_ID)
+		if (Res_CheckResource(res_id))
 		{
 			const Texture* texture = Res_CacheTexture(res_id, PU_CACHE);
 			screen->DrawTextureClean(texture, x, y);
@@ -464,7 +464,7 @@ static int WI_DrawSmallName(const char* str, int x, int y)
 		sprintf(charname, "STCFN%.3d", HU_FONTSTART + (toupper(*str) - 32) - 1);
 		const ResourceId res_id = Res_GetTextureResourceId(charname, PATCH);
 
-		if (res_id != ResourceId::INVALID_ID)
+		if (Res_CheckResource(res_id))
 		{
 			const Texture* texture = Res_CacheTexture(res_id, PU_CACHE);
 			screen->DrawTextureClean(p, x, y);
@@ -1444,8 +1444,10 @@ void WI_loadData()
 	for (int i = 0, j; i < 2; i++)
 	{
 		char *lname = (i == 0 ? wbs->lname0 : wbs->lname1);
-		const ResourceId res_id = lname ? Res_GetTextureResourceId(lname, PATCH) : ResourceId::INVALID_ID;
-		if (res_id != ResourceId::INVALID_ID)
+		ResourceId res_id = ResourceId::INVALID_ID;
+		if (lname)
+			res_id = Res_GetTextureResourceId(lname, PATCH);
+		if (Res_CheckResource(res_id))
 		{
 			lnames[i] = Res_CacheTexture(res_id, PU_STATIC);
 		}

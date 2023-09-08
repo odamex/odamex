@@ -441,7 +441,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Old demo sequence used in original games, zdoom's
     // dynamic one was too dynamic for its own good
     // [Nes] - Newer demo sequence with better flow.
-	if (gamemode != retail_chex && Res_GetResourceId("DEMO4", NS_GLOBAL) != ResourceId::INVALID_ID)
+	if (gamemode != retail_chex && Res_CheckResource(Res_GetResourceId("DEMO4", NS_GLOBAL)))
         demosequence = (demosequence+1)%8;
     else
         demosequence = (demosequence+1)%6;

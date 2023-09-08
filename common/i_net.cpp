@@ -81,6 +81,7 @@ typedef int SOCKET;
 #include "i_net.h"
 #include "svc_map.h"
 #include "d_player.h"
+#include "resources/res_main.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -735,7 +736,7 @@ void MSG_WriteResourceId(buf_t* b, const ResourceId res_id)
 {
 	if (simulated_connection)
 		return;
-	if (res_id == ResourceId::INVALID_ID)
+	if (!Res_CheckResource(res_id))
 		b->WriteShort(0xFFFF);
 	else
 		b->WriteShort((uint32_t)res_id & 0xFFFF);
