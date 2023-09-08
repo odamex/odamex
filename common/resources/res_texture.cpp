@@ -774,25 +774,6 @@ const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering 
 }
 
 
-//
-// Res_CacheTexture
-//
-const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& directory,
-                                zoneTag_e tag)
-{
-	if (directory == textures_directory_name)
-		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, WALL), tag);
-	if (directory == flats_directory_name)
-		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, FLOOR), tag);
-	if (directory == patches_directory_name)
-		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, PATCH), tag);
-	if (directory == sprites_directory_name)
-		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, SPRITE), tag);
-	if (directory == graphics_directory_name)
-		return Res_CacheTexture(Res_GetTextureResourceId(lump_name, GRAPHICS), tag);
-	return NULL;
-}
-
 static void ParseAnim(OScanner& os, byte istex)
 {
 	AnimatedTextureManager::anim_t sink;

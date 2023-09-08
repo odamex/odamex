@@ -68,7 +68,6 @@ const ResourceId Res_GetAnimatedTextureResourceId(const ResourceId res_id);
 //
 const Texture* Res_CacheTexture(ResourceId res_id, zoneTag_e tag = PU_CACHE);
 const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering ordering, zoneTag_e tag = PU_CACHE);
-const Texture* Res_CacheTexture(const OString& lump_name, const ResourcePath& directory, zoneTag_e tag = PU_CACHE);
 
 static void ParseAnim(OScanner& os, byte istex);
 

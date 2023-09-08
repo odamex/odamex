@@ -662,7 +662,7 @@ void M_ReadSaveStrings(void)
 //
 void M_DrawLoad (void)
 {
-	const Texture* texture = Res_CacheTexture("M_LOADG", PATCH);
+	const Texture* texture = Res_CacheTexture("M_LOADG", GRAPHICS);
 	screen->DrawTextureClean(texture, 72, 28);
 
 	for (int i = 0; i < load_end; i++)
@@ -708,7 +708,7 @@ void M_LoadGame (int choice)
 void M_DrawSave(void)
 {
 	int i = 0;
-	const Texture* texture = Res_CacheTexture("M_SAVEG", PATCH);
+	const Texture* texture = Res_CacheTexture("M_SAVEG", GRAPHICS);
 	screen->DrawTextureClean(texture, 72, 28);
 	for (i = 0; i < load_end; i++)
 	{
@@ -917,17 +917,17 @@ void M_FinishReadThis(int choice)
 //
 void M_DrawSaveLoadBorder (int x, int y, int len)
 {
-	const Texture* left_texture = Res_CacheTexture("M_LSLEFT", PATCH);
+	const Texture* left_texture = Res_CacheTexture("M_LSLEFT", GRAPHICS);
 	screen->DrawTextureClean(left_texture, x-8, y+7);
 
 	for (int i = 0; i < len; i++)
 	{
-		const Texture* center_texture = Res_CacheTexture("M_LSCNTR", PATCH);
+		const Texture* center_texture = Res_CacheTexture("M_LSCNTR", GRAPHICS);
 		screen->DrawTextureClean(center_texture, x, y+7);
 		x += 8;
 	}
 
-	const Texture* right_texture = Res_CacheTexture("M_LSRGHT", PATCH);
+	const Texture* right_texture = Res_CacheTexture("M_LSRGHT", GRAPHICS);
 	screen->DrawTextureClean(right_texture, x, y+7);
 }
 
@@ -936,14 +936,14 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 void M_DrawMainMenu()
 {
-	const Texture* texture = Res_CacheTexture("M_DOOM", PATCH);
+	const Texture* texture = Res_CacheTexture("M_DOOM", GRAPHICS);
 	screen->DrawTextureClean(texture, 94, 2);
 }
 
 void M_DrawNewGame()
 {
-	const Texture* new_texture = Res_CacheTexture("M_NEWG", PATCH);
-	const Texture* skill_texture = Res_CacheTexture("M_SKILL", PATCH);
+	const Texture* new_texture = Res_CacheTexture("M_NEWG", GRAPHICS);
+	const Texture* skill_texture = Res_CacheTexture("M_SKILL", GRAPHICS);
 	screen->DrawTextureClean(new_texture, 96, 14);
 	screen->DrawTextureClean(skill_texture, 54, 38);
 	const int SMALLFONT_OFFSET = 8; // Line up with the skull
@@ -1048,7 +1048,7 @@ void M_DrawEpisode()
 	{
 		y -= (LINEHEIGHT * (episodenum - 4));
 	}
-	const Texture* texture = Res_CacheTexture("M_EPISOD", PATCH);
+	const Texture* texture = Res_CacheTexture("M_EPISOD", GRAPHICS);
 	screen->DrawTextureClean(texture, 54, y);
 }
 
@@ -1168,7 +1168,7 @@ void M_Expansion(int choice)
 //
 void M_DrawReadThis1()
 {
-	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[0], PATCH);
+	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[0], GRAPHICS);
 	screen->DrawTextureFullScreen(texture);
 }
 
@@ -1177,7 +1177,7 @@ void M_DrawReadThis1()
 //
 void M_DrawReadThis2()
 {
-	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[1], PATCH);
+	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[1], GRAPHICS);
 	screen->DrawTextureFullScreen(texture);
 }
 
@@ -1186,7 +1186,7 @@ void M_DrawReadThis2()
 //
 void M_DrawReadThis3()
 {
-	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[2], PATCH);
+	const Texture* texture = Res_CacheTexture(gameinfo.info.infoPage[2], GRAPHICS);
 	screen->DrawTextureFullScreen(texture);
 }
 
@@ -1195,7 +1195,7 @@ void M_DrawReadThis3()
 //
 void M_DrawOptions()
 {
-	const Texture* texture = Res_CacheTexture("M_OPTTL", PATCH);
+	const Texture* texture = Res_CacheTexture("M_OPTTL", GRAPHICS);
 	screen->DrawTextureClean(texture, 108, 15);
 }
 
@@ -1788,13 +1788,13 @@ static void M_SlidePlayerBlue (int choice)
 //
 void M_DrawEmptyCell(oldmenu_t *menu, int item)
 {
-	const Texture* texture = Res_CacheTexture("M_CELL1", PATCH);
+	const Texture* texture = Res_CacheTexture("M_CELL1", GRAPHICS);
 	screen->DrawTextureClean(texture, menu->x - 10, menu->y+item*LINEHEIGHT - 1);
 }
 
 void M_DrawSelCell(oldmenu_t *menu, int item)
 {
-	const Texture* texture = Res_CacheTexture("M_CELL2", PATCH);
+	const Texture* texture = Res_CacheTexture("M_CELL2", GRAPHICS);
 	screen->DrawTextureClean(texture, menu->x - 10, menu->y+item*LINEHEIGHT - 1);
 }
 
@@ -2167,7 +2167,7 @@ void M_Drawer()
 			{
 				if (currentMenu->menuitems[i].name[0])
 				{
-					const Texture* texture = Res_CacheTexture(currentMenu->menuitems[i].name, PATCH);
+					const Texture* texture = Res_CacheTexture(currentMenu->menuitems[i].name, GRAPHICS);
 					screen->DrawTextureClean(texture, x, y);
 				}
 				y += LINEHEIGHT;
@@ -2176,7 +2176,7 @@ void M_Drawer()
 			// DRAW SKULL
 			if (drawSkull)
 			{
-				const Texture* texture = Res_CacheTexture(skullName[whichSkull], PATCH);
+				const Texture* texture = Res_CacheTexture(skullName[whichSkull], GRAPHICS);
 				screen->DrawTextureClean(texture, x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
 			}
 		}

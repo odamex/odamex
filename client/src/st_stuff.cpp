@@ -1117,23 +1117,23 @@ static void ST_loadGraphics()
 	}
 
 	// Load percent key.
-	tallpercent = Res_CacheTexture("STTPRCNT", sprites_directory_name, PU_STATIC);
+	tallpercent = Res_CacheTexture("STTPRCNT", SPRITE, PU_STATIC);
 
 	// Load minus key
-	negminus = Res_CacheTexture("STTMINUS", sprites_directory_name, PU_STATIC);
+	negminus = Res_CacheTexture("STTMINUS", SPRITE, PU_STATIC);
 
 	// key cards
 	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
 	{
 		sprintf(namebuf, "STKEYS%d", i);
-		keys[i] = Res_CacheTexture(namebuf, sprites_directory_name, PU_STATIC);
+		keys[i] = Res_CacheTexture(namebuf, SPRITE, PU_STATIC);
 	}
 
 	// arms background
-	armsbg = Res_CacheTexture("STARMS", sprites_directory_name, PU_STATIC);
+	armsbg = Res_CacheTexture("STARMS", SPRITE, PU_STATIC);
 
 	// flags background
-	flagsbg = Res_CacheTexture("STFLAGS", sprites_directory_name, PU_STATIC);
+	flagsbg = Res_CacheTexture("STFLAGS", SPRITE, PU_STATIC);
 
 	// arms ownership widgets
 	for (int i = 0; i < 6; i++)
@@ -1141,7 +1141,7 @@ static void ST_loadGraphics()
 		sprintf(namebuf, "STGNUM%d", i+2);
 
 		// gray #
-		arms[i][0] = Res_CacheTexture(namebuf, sprites_directory_name, PU_STATIC);
+		arms[i][0] = Res_CacheTexture(namebuf, SPRITE, PU_STATIC);
 
 		// yellow #
 		arms[i][1] = shortnum[i+2];
@@ -1150,17 +1150,17 @@ static void ST_loadGraphics()
 	// face backgrounds for different color players
 	// [RH] only one face background used for all players
 	//		different colors are accomplished with translations
-	faceback = Res_CacheTexture("STFBANY", sprites_directory_name, PU_STATIC);
+	faceback = Res_CacheTexture("STFBANY", SPRITE, PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
 	for (int i = 0; i < 4; i++)
 	{
 		sprintf(namebuf, "STFB%d", i);
-		faceclassic[i] = Res_CacheTexture(namebuf, sprites_directory_name, PU_STATIC);
+		faceclassic[i] = Res_CacheTexture(namebuf, SPRITE, PU_STATIC);
 	}
 
 	// status bar background bits
-	sbar = Res_CacheTexture("STBAR", sprites_directory_name, PU_STATIC);
+	sbar = Res_CacheTexture("STBAR", SPRITE, PU_STATIC);
 
 	// face states
 	int facenum = 0;
