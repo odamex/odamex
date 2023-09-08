@@ -1108,7 +1108,7 @@ void S_ChangeMusic(std::string musicname, int looping)
 
 	if (!(f = fopen (musicname.c_str(), "rb")))
 	{
-		const ResourceId res_id = Res_GetResourceId(musicname, music_directory_name);
+		const ResourceId res_id = Res_GetResourceId(musicname, NS_MUSIC);
 		if (!Res_CheckResource(res_id))
 		{
 			Printf(PRINT_HIGH, "Music lump \"%s\" not found\n", musicname.c_str());
@@ -1239,7 +1239,7 @@ int FindSoundTentative(const char* name)
 	int id = FindSoundNoHash(name);
 	if (id == S_sfx.size())
 	{
-		id = S_AddSoundLump(name, -1);
+		id = S_AddSoundLump(name, ResourceId::INVALID_ID);
 	}
 	return id;
 }
@@ -1248,7 +1248,9 @@ int S_AddSound(const char *logicalname, const char *lumpname)
 {
 	int sfxid = FindSoundNoHash(logicalname);
 
-	const ResourceId res_id = lumpname ? Res_GetResourceId(lumpname, sounds_directory_name) : ResourceId::INVALID_ID;
+	ResourceId res_id = ResourceId::INVALID_ID;
+	if (lumpname)
+		res_id = Res_GetResourceId(OStringToUpper(lumpname), NS_SOUNDS);
 
 	// Otherwise, prepare a new one.
 	if (sfxid != S_sfx.size())
@@ -1462,9 +1464,9 @@ void S_ParseSndInfo()
 
 	S_HashSounds();
 
-	sfx_empty = Res_GetResourceId("DSEMPTY", sounds_directory_name);
-	sfx_noway = S_FindSoundByResourceId(Res_GetResourceId("DSNOWAY", sounds_directory_name));
-	sfx_oof = S_FindSoundByResourceId(Res_GetResourceId("DSOOF", sounds_directory_name));
+	sfx_empty = Res_GetResourceId("DSEMPTY", NS_SOUNDS);
+	sfx_noway = S_FindSoundByResourceId(Res_GetResourceId("DSNOWAY", NS_SOUNDS));
+	sfx_oof = S_FindSoundByResourceId(Res_GetResourceId("DSOOF", NS_SOUNDS));
 }
 
 
