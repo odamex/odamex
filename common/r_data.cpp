@@ -147,8 +147,8 @@ void R_InitColormaps()
 
 		for (size_t i = 1; i < paths.size(); i++)
 		{
-			const ResourcePath& path = paths[i];
-			const ResourceId res_id = Res_GetResourceId(path);
+			const OString& resource_name = paths[i].last();
+			const ResourceId res_id = Res_GetResourceId(resource_name, NS_COLORMAPS);
 			if (Res_GetResourceSize(res_id) >= (NUMCOLORMAPS+1)*256)
 			{
 				const uint8_t* map = (uint8_t*)Res_LoadResource(res_id, PU_CACHE);
@@ -162,7 +162,7 @@ void R_InitColormaps()
 				int g = pal->basecolors[*map].getg();
 				int b = pal->basecolors[*map].getb();
 
-				fakecmaps[i].name = StdStringToUpper(path.last());
+				fakecmaps[i].name = StdStringToUpper(resource_name);
 
 				for (int k = 1; k < 256; k++)
 				{

@@ -280,7 +280,7 @@ const ResourceLoader* TextureManager::getResourceLoader(const ResourceId res_id)
 //
 void TextureManager::addCompositeTextureResources(ResourceManager* manager, const ResourceIdList& pnames_lookup, const OString& lump_name)
 {
-	const ResourceId res_id = Res_GetResourceId(lump_name, global_directory_name);
+	const ResourceId res_id = Res_GetResourceId(lump_name, NS_GLOBAL);
 	if (res_id == ResourceId::INVALID_ID)
 	{
 		if (lump_name == "TEXTURE1")
@@ -377,7 +377,7 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 {
 	// Read the PNAMES lump and store the ResourceId of each patch
 	// listed in the lump in the pnames_lookup array.
-	const ResourceId pnames_res_id = Res_GetResourceId(lump_name, global_directory_name);
+	const ResourceId pnames_res_id = Res_GetResourceId(lump_name, NS_GLOBAL);
 	if (pnames_res_id == ResourceId::INVALID_ID)
 		I_Error("Res_InitTextures: PNAMES lump not found");
 
@@ -401,7 +401,7 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 		const char* str = (const char*)(pnames_raw_data + 4 + 8 * i);
 		const OString lump_name = OStringToUpper(str, 8);
 
-		ResourceId res_id = Res_GetResourceId(lump_name, patches_directory_name);
+		ResourceId res_id = Res_GetResourceId(lump_name, NS_PATCHES);
 
 		// killough 4/17/98:
 		// Some wads use sprites as wall patches, so repeat check and
@@ -412,7 +412,7 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 		// lump namespace problem.
 
 		if (res_id == ResourceId::INVALID_ID)
-			res_id = Res_GetResourceId(lump_name, sprites_directory_name);
+			res_id = Res_GetResourceId(lump_name, NS_SPRITES);
 
 		pnames_lookup.push_back(res_id);
 	}
@@ -506,7 +506,7 @@ const ResourceId AnimatedTextureManager::getResourceId(const ResourceId res_id) 
 //
 void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 {
-	const ResourceId res_id = Res_GetResourceId("/GLOBAL/ANIMATED");
+	const ResourceId res_id = Res_GetResourceId("ANIMATED", NS_GLOBAL);
 	if (!Res_CheckResource(res_id))
 		return;
 

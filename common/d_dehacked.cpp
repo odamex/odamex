@@ -2268,7 +2268,7 @@ static int DoInclude(int dummy)
 	savepversion = pversion;
 	including = true;
 
-	res_id = Res_GetResourceId(com_token, global_directory_name);
+	res_id = Res_GetResourceId(com_token, NS_GLOBAL);
 
 	if (!Res_CheckResource(res_id))
 	{

@@ -493,7 +493,7 @@ static std::string V_GetColorStringByName(const std::string& name)
 	char *data, descr[5*3];
 	int c[3], step;
 
-	const ResourceId res_id = Res_GetResourceId("X11R6RGB", global_directory_name);
+	const ResourceId res_id = Res_GetResourceId("X11R6RGB", NS_GLOBAL);
 	char* rgbNames = (char*)Res_LoadResource(res_id, PU_CACHE);
 
 	if (rgbNames == NULL)
@@ -606,7 +606,7 @@ argb_t V_GetColorFromString(const std::string& input_string)
 void V_InitPalette(const char* lumpname)
 {
 	const OString palette_lumpname(lumpname, 8);
-	palette_res_id = Res_GetResourceId(palette_lumpname, global_directory_name);
+	palette_res_id = Res_GetResourceId(palette_lumpname, NS_GLOBAL);
 	if (!Res_CheckResource(palette_res_id))
 		I_FatalError("Could not initialize %s palette", palette_lumpname.c_str());
 

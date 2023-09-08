@@ -281,23 +281,18 @@ void F_TextWrite ()
 	const int x = (primary_surface->getWidth() - width) / 2;
 	const int y = (primary_surface->getHeight() - height) / 2;
 
-	ResourceId lump;
+	ResourceId res_id;
 	switch (finalelumptype)
 	{
 	case FINALE_GRAPHIC:
-		lump = Res_GetResourceId(finalelump, global_directory_name);
-		if (lump >= 0)
-		{
-			screen->DrawTextureFullScreen(Res_CacheTexture(lump, PU_CACHE));
-		}
+		res_id = Res_GetResourceId(finalelump, NS_GRAPHICS);
+		if (res_id != ResourceId::INVALID_ID)
+			screen->DrawTextureFullScreen(Res_CacheTexture(res_id, PU_CACHE));
 		break;
 	case FINALE_FLAT:
-		lump = Res_GetResourceId(finalelump, flats_directory_name);
-		if (lump >= 0)
-		{
-			screen->FlatFill(Res_CacheTexture(lump, PU_CACHE), x, y, width + x,
-			                 height + y);
-		}
+		res_id = Res_GetResourceId(finalelump, NS_FLATS);
+		if (res_id != ResourceId::INVALID_ID)
+			screen->FlatFill(Res_CacheTexture(res_id, PU_CACHE), x, y, width + x, height + y);
 		break;
 	default:
 		break;

@@ -328,7 +328,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		MustGet<OLumpName>(os);
 		const std::string musicname = os.getToken();
-		ResourceId music_res_id = Res_GetResourceId(musicname, music_directory_name);
+		ResourceId music_res_id = Res_GetResourceId(musicname, NS_MUSIC);
 		if (Res_CheckResource(music_res_id))
 		{
 			mape->music = musicname;
@@ -410,7 +410,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		MustGet<OLumpName>(os);
 		const std::string musicname = os.getToken();
-		ResourceId music_res_id = Res_GetResourceId(musicname, music_directory_name);
+		ResourceId music_res_id = Res_GetResourceId(musicname, NS_MUSIC);
 
 		if (Res_CheckResource(music_res_id))
 			mape->intermusic = musicname;
@@ -951,7 +951,7 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 		// with a D_, so we must add it.
 		char lumpname[9];
 		snprintf(lumpname, ARRAY_LENGTH(lumpname), "D_%s", s.c_str());
-		ResourceId lumpid = Res_GetResourceId(lumpname, music_directory_name);
+		ResourceId lumpid = Res_GetResourceId(lumpname, NS_MUSIC);
 		if (Res_CheckResource(lumpid))
 		{
 			*static_cast<OLumpName*>(data) = lumpname;
@@ -959,7 +959,7 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 	}
 	else
 	{
-		ResourceId lumpid = Res_GetResourceId(musicname.c_str(), music_directory_name);
+		ResourceId lumpid = Res_GetResourceId(musicname.c_str(), NS_MUSIC);
 		if (Res_CheckResource(lumpid))
 		{
 			*static_cast<OLumpName*>(data) = musicname;
@@ -1367,7 +1367,7 @@ bool InterpretLines(const std::string& name, std::vector<mline_t>& lines)
 {
 	lines.clear();
 
-	const ResourceId res = Res_GetResourceId(name.c_str(), global_directory_name);
+	const ResourceId res = Res_GetResourceId(name.c_str(), NS_GLOBAL);
 	if (Res_CheckResource(res))
 	{
 		const char* buffer = static_cast<const char*>(Res_LoadResource(res, PU_STATIC));
@@ -1799,7 +1799,7 @@ void ParseEpisodeInfo(OScanner& os)
 			break;
 	}
 
-	ResourceId ex_res_id = Res_GetResourceId("EXTENDED", global_directory_name);
+	ResourceId ex_res_id = Res_GetResourceId("EXTENDED", NS_GLOBAL);
 
 	std::string mapname = map.c_str();
 	if (remove || (optional && Res_CheckMap(mapname)) ||
@@ -2119,7 +2119,7 @@ void G_ParseMapInfo()
 
 	//if (gamemission != heretic)
 	{
-		ParseMapInfoLump(Res_GetResourceId("_DCOMNFO", global_directory_name));
+		ParseMapInfoLump(Res_GetResourceId("_DCOMNFO", NS_GLOBAL));
 	}
 
 	switch (gamemission)
@@ -2134,7 +2134,7 @@ void G_ParseMapInfo()
 		baseinfoname = "_D2NFO";
 		if (gamemode == commercial_bfg)
 		{
-			ResourceId res = Res_GetResourceId(baseinfoname, global_directory_name);
+			ResourceId res = Res_GetResourceId(baseinfoname, NS_GLOBAL);
 			ParseMapInfoLump(res);
 			baseinfoname = "_BFGNFO";
 		}
@@ -2154,7 +2154,7 @@ void G_ParseMapInfo()
 		break;
 	}
 
-	ResourceId res_id = Res_GetResourceId(baseinfoname, global_directory_name);
+	ResourceId res_id = Res_GetResourceId(baseinfoname, NS_GLOBAL);
 	ParseMapInfoLump(res_id);
 
 	bool found_mapinfo = false;

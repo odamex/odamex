@@ -88,7 +88,7 @@ static int  numswitches;
 //		MAXSWITCHES limit.
 void P_InitSwitchList(void)
 {
-	const ResourceId res_id = Res_GetResourceId("SWITCHES", global_directory_name);
+	const ResourceId res_id = Res_GetResourceId("SWITCHES", NS_GLOBAL);
 	const byte *alphSwitchList = (byte*)Res_LoadResource(res_id, PU_STATIC);
 	const byte *list_p;
 	int i;

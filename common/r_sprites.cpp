@@ -217,20 +217,21 @@ static void R_InitSpriteDefs(const char **namelist)
 		//	filling in the frames for whatever is found
 		for (int l = sprite_paths.size() - 1; l >= 0; l--) 
 		{
-			const char* res_name = sprite_paths[l].last().c_str();
-			uint32_t frame_actor_id = *(uint32_t*)res_name;
+			const OString& resource_name = sprite_paths[l].last();
+			const char* resource_name_array = resource_name.c_str();
+			uint32_t frame_actor_id = *(uint32_t*)resource_name_array;
 			if (frame_actor_id == actor_id)
 			{
-				const ResourceId res_id = Res_GetResourceId(sprite_paths[l]);
-				uint32_t frame = res_name[4] - 'A';
-				uint32_t rotation = res_name[5] - '0';
+				const ResourceId res_id = Res_GetResourceId(resource_name, NS_SPRITES);
+				uint32_t frame = resource_name_array[4] - 'A';
+				uint32_t rotation = resource_name_array[5] - '0';
 				R_InstallSpriteLump(res_id, frame, rotation, false);
 
 				// can frame can be flipped?
-				if (res_name[6] != '\0')
+				if (resource_name.size() > 6)
 				{
-			    	frame = res_name[6] - 'A';
-					rotation = res_name[7] - '0';
+			    	frame = resource_name_array[6] - 'A';
+					rotation = resource_name_array[7] - '0';
 					R_InstallSpriteLump(res_id, frame, rotation, true);
 				}
 			}

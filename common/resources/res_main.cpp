@@ -539,17 +539,6 @@ const ResourcePathList Res_ListResourceDirectory(const ResourcePath& path)
 //
 // Res_GetResourceId
 //
-const ResourceId Res_GetResourceId(const ResourcePath& path)
-{
-	if (path.last().length() > 8)
-		Printf(PRINT_HIGH, "Warning: Res_GetResourceId searching for resource with name longer than 8 chars: %s", path.last().c_str());
-	return resource_manager.getResourceId(path);
-}
-
-
-//
-// Res_GetResourceId
-//
 // Looks for the resource ID that matches the desired resource name in the given
 // directory name.
 //

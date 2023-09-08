@@ -1815,7 +1815,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	gameaction = ga_nothing;
 	int bytelen;
 
-	demo_res_id = Res_GetResourceId(defdemoname, global_directory_name);
+	demo_res_id = Res_GetResourceId(defdemoname, NS_GLOBAL);
 	if (Res_CheckResource(demo_res_id))
 	{
 		demobuffer = demo_p = (byte*)Res_LoadResource(demo_res_id, PU_STATIC);

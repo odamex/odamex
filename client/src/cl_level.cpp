@@ -693,8 +693,7 @@ void G_WorldDone()
 		AM_Stop();
 		if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 		{
-			ResourceId res =
-			    Res_GetResourceId(thiscluster.exittext, global_directory_name);
+			ResourceId res = Res_GetResourceId(thiscluster.exittext, NS_GLOBAL);
 			options.text = static_cast<const char*>(Res_LoadResource(thiscluster.exittext, PU_STATIC));
 		}
 		F_StartFinale(options);
@@ -731,8 +730,7 @@ void G_WorldDone()
 				AM_Stop();
 				if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 				{
-					ResourceId res =
-					    Res_GetResourceId(thiscluster.exittext, global_directory_name);
+					ResourceId res = Res_GetResourceId(thiscluster.exittext, NS_GLOBAL);
 					options.text = static_cast<const char*>(Res_LoadResource(thiscluster.exittext, PU_STATIC));
 				}
 				F_StartFinale(options);
