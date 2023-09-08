@@ -103,7 +103,7 @@ public:
 
 	virtual const ResourceId translate(const ResourcePath& path) const;
 
-	virtual const ResourceId translate(const OString& resource_name, ResourceNamespace ns) const;
+	virtual const ResourceId translate(const OString& resource_name, ResourceNamespace ns, bool exact_ns_match = false) const;
 
 	virtual const ResourceIdList getAllTranslations(const ResourcePath& path) const;
 

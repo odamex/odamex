@@ -133,9 +133,9 @@ public:
 		return res_id < mResources.size();
 	}
 
-	const ResourceId getResourceId(const OString& name, ResourceNamespace ns) const
+	const ResourceId getResourceId(const OString& name, ResourceNamespace ns, bool exact_ns_match = false) const
 	{
-		return mNameTranslator.translate(name, ns);
+		return mNameTranslator.translate(name, ns, exact_ns_match);
 	}
 
 	const ResourceId getResourceId(const ResourcePath& path) const
@@ -332,11 +332,6 @@ const ResourcePath& Res_GetResourcePath(const ResourceId res_id);
 // ----------------------------------------------------------------------------
 
 bool Res_CheckResource(const ResourceId res_id);
-
-static inline bool Res_CheckResource(const OString& name, const ResourcePath& directory)
-{
-	return Res_CheckResource(Res_GetResourceId(name, directory));
-}
 
 
 // ----------------------------------------------------------------------------

@@ -75,7 +75,7 @@ const ResourceId ResourceNameTranslator::translate(const ResourcePath& path) con
 // one ResourceId match the given path name, the ResouceId from the most
 // recently loaded resource file will be returned.
 //
-const ResourceId ResourceNameTranslator::translate(const OString& resource_name, ResourceNamespace ns) const
+const ResourceId ResourceNameTranslator::translate(const OString& resource_name, ResourceNamespace ns, bool exact_ns_match) const
 {
 	// Check for an exact match for the resource name and namespace
 	const NamespacedResourceName namespaced_resource_name = {resource_name, ns};
@@ -87,13 +87,16 @@ const ResourceId ResourceNameTranslator::translate(const OString& resource_name,
 		return res_id;
 	}
 
-	// Fallback to the most recently added match for the resource name
-	ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(resource_name);
-	if (it != mResourceIdLookup.end())
+	if (!exact_ns_match)
 	{
-		const ResourceId res_id = it->second;
-		assert(res_id != ResourceId::INVALID_ID);
-		return res_id;
+		// Fallback to the most recently added match for the resource name
+		ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(resource_name);
+		if (it != mResourceIdLookup.end())
+		{
+			const ResourceId res_id = it->second;
+			assert(res_id != ResourceId::INVALID_ID);
+			return res_id;
+		}
 	}
 	
 	return ResourceId::INVALID_ID;
