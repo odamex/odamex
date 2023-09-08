@@ -318,7 +318,7 @@ void TextureManager::addCompositeTextureResources(ResourceManager* manager, cons
 		// entries with the same name, the first one in the array
 		// wins.
 		// [SL] Only add the first instance of a texture name
-		const ResourceId existing_res_id = manager->getResourceId(texture_lump_name, NS_NEWTEXTURES);
+		const ResourceId existing_res_id = manager->getResourceId(texture_lump_name, NS_NEWTEXTURES, true);
 		if (Res_CheckResource(existing_res_id))
 			continue;
 

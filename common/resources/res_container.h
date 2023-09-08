@@ -59,7 +59,7 @@ public:
 	typedef typename EntryList::iterator iterator;
 	typedef typename EntryList::const_iterator const_iterator;
 
-	static const LumpId INVALID_LUMP_ID = static_cast<LumpId>(-1);
+	static const LumpId INVALID_LUMP_ID = 0xFFFFFFFFu;
 
 	ContainerDirectory(const size_t initial_size = 4096) :
 		mPathLookup(2 * initial_size)
@@ -102,14 +102,14 @@ public:
 		return mEntries.end();
 	}
 
-	const LumpId getLumpId(iterator it) const
+	LumpId getLumpId(iterator it) const
 	{
-		return it - begin();
+		return static_cast<LumpId>(it - begin());
 	}
 
-	const LumpId getLumpId(const_iterator it) const
+	LumpId getLumpId(const_iterator it) const
 	{
-		return it - begin();
+		return static_cast<LumpId>(it - begin());
 	}
 
 	LumpId getLumpId(const OString& path) const
@@ -258,7 +258,7 @@ protected:
 	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
 	LumpIdLookupTable mLumpIdLookup;
 
-	const LumpId getLumpId(const ResourceId res_id) const
+	LumpId getLumpId(const ResourceId res_id) const
 	{
 		LumpIdLookupTable::const_iterator it = mLumpIdLookup.find(res_id);
 		if (it != mLumpIdLookup.end())
@@ -370,7 +370,7 @@ private:
 	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
 	LumpIdLookupTable mLumpIdLookup;
 
-	const LumpId getLumpId(const ResourceId res_id) const
+	LumpId getLumpId(const ResourceId res_id) const
 	{
 		LumpIdLookupTable::const_iterator it = mLumpIdLookup.find(res_id);
 		if (it != mLumpIdLookup.end())
@@ -441,7 +441,7 @@ private:
 	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
 	LumpIdLookupTable mLumpIdLookup;
 
-	const LumpId getLumpId(const ResourceId res_id) const
+	LumpId getLumpId(const ResourceId res_id) const
 	{
 		LumpIdLookupTable::const_iterator it = mLumpIdLookup.find(res_id);
 		if (it != mLumpIdLookup.end())

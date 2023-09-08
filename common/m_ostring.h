@@ -570,7 +570,6 @@ private:
 	inline void increaseRefCount(StringRecord* rec)
 	{
 		assert(rec != NULL);
-		assert(rec->mRefCount >= 0);
 		rec->mRefCount++;
 		assert(rec->mRefCount >= 1);
 	}
@@ -587,7 +586,6 @@ private:
 		assert(rec != NULL);
 		assert(rec->mRefCount >= 1);
 		rec->mRefCount--;
-		assert(rec->mRefCount >= 0);
 	}
 
 
