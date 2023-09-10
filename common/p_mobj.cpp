@@ -85,6 +85,7 @@ EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(sv_allowshowspawns)
 EXTERN_CVAR(sv_teamsinplay)
+EXTERN_CVAR(g_thingfilter)
 
 mapthing2_t     itemrespawnque[ITEMQUESIZE];
 int             itemrespawntime[ITEMQUESIZE];
@@ -2745,6 +2746,16 @@ size_t P_GetMapThingPlayerNumber(mapthing2_t *mthing)
 			(mthing->type - 4001 + 4) % MAXPLAYERSTARTS;
 }
 
+int P_IsPickupableThing(short type)
+{
+	return (type == 82 // SSG
+			|| (type >= 2000 && type <= 2050) // weapons, ammo, health, armor, special items
+			|| type == 17 // cell pack
+			|| type == 83 // megasphere
+			|| type == 8 // backpack
+	       );
+}
+
 //
 // P_SpawnMapThing
 // The fields of the mapthing should
@@ -2885,6 +2896,9 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (!(mthing->flags & MTF_COOPERATIVE))
 			return;
 	}
+
+	if (g_thingfilter == 3 && P_IsPickupableThing(mthing->type))
+		return;
 
 	// check for appropriate skill level
 	if (!(mthing->flags & G_GetCurrentSkill().spawn_filter))
