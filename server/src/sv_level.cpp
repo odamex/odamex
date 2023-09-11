@@ -76,6 +76,7 @@ EXTERN_CVAR (sv_warmup)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_teamsinplay)
 EXTERN_CVAR(g_resetinvonexit)
+EXTERN_CVAR(sv_maplistignoremapchange)
 
 extern int mapchange;
 
@@ -252,7 +253,7 @@ void G_ChangeMap()
 		else
 		{
 			size_t next_index;
-			if (!Maplist::instance().get_next_index(next_index))
+			if (sv_maplistignoremapchange || !Maplist::instance().get_next_index(next_index))
 			{
 				// We don't have a maplist, so grab the next 'natural' map lump.
 				std::string next = G_NextMap();

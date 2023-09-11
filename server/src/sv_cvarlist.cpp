@@ -101,6 +101,9 @@ CVAR(			sv_loopepisode, "0", "Determines whether Doom 1 episodes carry over",
 CVAR_FUNC_DECL(	sv_shufflemaplist, "0", "Randomly shuffle the maplist",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
+CVAR(			sv_maplistignoremapchange, "0", "Ignore the map list when determining the next map to play, use the next map of the current wad instead.",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+
 // Network settings
 // ----------------
 
