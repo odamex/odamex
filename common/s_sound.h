@@ -166,7 +166,6 @@ void S_ParseSndInfo();
 
 void S_HashSounds (void);
 int S_FindSound (const char *logicalname);
-int S_FindSoundByResourceId(const ResourceId res_id);
 int S_AddSound (const char *logicalname, const char *lumpname);	// Add sound by lumpname
 int S_AddSoundLump (const char *logicalname, const ResourceId res_id);	// Add sound by ResourceId
 void S_ClearSoundLumps (void);

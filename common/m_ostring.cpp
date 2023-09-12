@@ -791,13 +791,15 @@ static OString OStringConverter(const char* s, size_t length)
 		*out++	= func(*in++);
 	*out = '\0';
 
-	if (length < 1024)
-		return OString(fixed_buf);
-	else
+	if (dyn_buf)
 	{
 		OString result(dyn_buf);
 		delete [] dyn_buf;
 		return result;
+	}
+	else
+	{
+		return OString(fixed_buf);
 	}
 }
 

@@ -1208,15 +1208,16 @@ int S_FindSoundByResourceId(const ResourceId res_id)
 
 int S_AddSoundLump (const char *logicalname, const ResourceId res_id)
 {
+	size_t new_lump_index = S_sfx.size();
 	S_sfx.push_back(sfxinfo_t());
-	sfxinfo_t& new_sfx = S_sfx[S_sfx.size() - 1];
+	sfxinfo_t& new_sfx = S_sfx[new_lump_index];
 
 	// logicalname MUST be < MAX_SNDNAME chars long
 	strcpy(new_sfx.name, logicalname);
 	new_sfx.data = NULL;
 	new_sfx.link = sfxinfo_t::NO_LINK;
 	new_sfx.res_id = res_id;
-	return S_sfx.size() - 1;
+	return new_lump_index;
 }
 
 void S_ClearSoundLumps()
@@ -1250,7 +1251,7 @@ int S_AddSound(const char *logicalname, const char *lumpname)
 
 	ResourceId res_id = ResourceId::INVALID_ID;
 	if (lumpname)
-		res_id = Res_GetResourceId(OStringToUpper(lumpname), NS_SOUNDS);
+		res_id = Res_GetResourceId(OStringToUpper(lumpname, 8), NS_SOUNDS);
 
 	// Otherwise, prepare a new one.
 	if (sfxid != S_sfx.size())

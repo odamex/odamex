@@ -257,28 +257,18 @@ int S_FindSound(const char *logicalname)
 	return i;
 }
 
-int S_FindSoundByResourceId(const ResourceId res_id)
-{
-	if (Res_CheckResource(res_id))
-	{
-		for (int i = 0; i < S_sfx.size(); i++)
-			if (S_sfx[i].res_id == res_id)
-				return i;
-	}
-	return -1;
-}
-
 int S_AddSoundLump(const char *logicalname, const ResourceId res_id)
 {
+	size_t new_lump_index = S_sfx.size();
 	S_sfx.push_back(sfxinfo_t());
-	sfxinfo_t& new_sfx = S_sfx[S_sfx.size() - 1];
+	sfxinfo_t& new_sfx = S_sfx[new_lump_index];
 
 	// logicalname MUST be < MAX_SNDNAME chars long
-	strcpy(S_sfx[S_sfx.size()].name, logicalname);
+	strcpy(new_sfx.name, logicalname);
 	new_sfx.data = NULL;
 	new_sfx.link = sfxinfo_t::NO_LINK;
 	new_sfx.res_id = res_id;
-	return S_sfx.size() - 1;
+	return new_lump_index;
 }
 
 void S_ClearSoundLumps()
@@ -312,7 +302,7 @@ int S_AddSound(const char *logicalname, const char *lumpname)
 
 	ResourceId res_id = ResourceId::INVALID_ID;
 	if (lumpname)
-		res_id = Res_GetResourceId(OStringToUpper(lumpname), NS_SOUNDS);
+		res_id = Res_GetResourceId(OStringToUpper(lumpname, 8), NS_SOUNDS);
 
 	// Otherwise, prepare a new one.
 	if (sfxid == S_sfx.size())
@@ -335,8 +325,6 @@ void S_AddRandomSound(int owner, std::vector<int>& list)
 void S_ParseSndInfo()
 {
 	S_ClearSoundLumps();
-
-	S_ClearSoundLumps ();
 
 	const ResourceIdList res_ids = Res_GetAllResourceIds("/GLOBAL/SNDINFO");
 	for (size_t i = 0; i < res_ids.size(); i++)
@@ -394,8 +382,7 @@ void S_ParseSndInfo()
 
 						if (IsRealNum(os.getToken().c_str()))
 						{
-							ambient->attenuation =
-							    (os.getTokenFloat() > 0) ? os.getTokenFloat() : 1;
+							ambient->attenuation = (os.getTokenFloat() > 0) ? os.getTokenFloat() : 1;
 							os.mustScan();
 						}
 						else
@@ -409,9 +396,9 @@ void S_ParseSndInfo()
 						os.mustScan();
 						ambient->attenuation = -1;
 					}
-					// else if (os.compareTokenNoCase("world"))
+					//else if (os.compareTokenNoCase("world"))
 					//{
-					// todo
+						// todo
 					//}
 
 					if (os.compareTokenNoCase("continuous"))
@@ -422,18 +409,15 @@ void S_ParseSndInfo()
 					{
 						ambient->type |= RANDOM;
 						os.mustScanFloat();
-						ambient->periodmin =
-						    static_cast<int>(os.getTokenFloat() * TICRATE);
+						ambient->periodmin = static_cast<int>(os.getTokenFloat() * TICRATE);
 						os.mustScanFloat();
-						ambient->periodmax =
-						    static_cast<int>(os.getTokenFloat() * TICRATE);
+						ambient->periodmax = static_cast<int>(os.getTokenFloat() * TICRATE);
 					}
 					else if (os.compareTokenNoCase("periodic"))
 					{
 						ambient->type |= PERIODIC;
 						os.mustScanFloat();
-						ambient->periodmin =
-						    static_cast<int>(os.getTokenFloat() * TICRATE);
+						ambient->periodmin = static_cast<int>(os.getTokenFloat() * TICRATE);
 					}
 					else
 					{
@@ -480,8 +464,7 @@ void S_ParseSndInfo()
 						if (owner == sfxto)
 						{
 							os.warning("Definition of random sound '%s' refers to itself "
-							           "recursively.\n",
-							           os.getToken().c_str());
+							       "recursively.\n", os.getToken().c_str());
 							continue;
 						}
 
@@ -520,6 +503,7 @@ void S_ParseSndInfo()
 			}
 		}
 	}
+
 	S_HashSounds();
 }
 
