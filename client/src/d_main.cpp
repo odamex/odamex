@@ -610,10 +610,6 @@ void D_Init(const std::vector<std::string>& resource_file_names)
 	// Load palette and set up colormaps
 	V_Init();
 
-//	if (first_time)
-//		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
-//	Res_InitTextureManager();
-
 	// [RH] Initialize localizable strings.
 	GStrings.loadStrings(false);
 
@@ -621,8 +617,6 @@ void D_Init(const std::vector<std::string>& resource_file_names)
 	if (first_time)
 		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
 	R_Init();
-
-//	V_LoadFonts();
 
 	C_InitConsoleBackground();
 

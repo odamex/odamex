@@ -49,6 +49,7 @@
 #include "crc32.h"
 
 EXTERN_CVAR(waddirs)
+EXTERN_CVAR(cl_waddownloaddir)
 
 // global list of filename extensions for use when an extension isn't supplied to Res_FindResourceFile
 static const char* const IWAD_EXTLIST[] = { ".WAD", 0 };
@@ -522,18 +523,22 @@ static std::string Res_BaseFileSearch(const std::string& filename, const std::st
 	}
 
 	std::vector<std::string> search_dirs;
-	search_dirs.push_back(startdir);
-	search_dirs.push_back(progdir);
-
+	Res_AddSearchDir(search_dirs, ::cl_waddownloaddir.cstring(), SEARCHPATHSEPCHAR);
 	Res_AddSearchDir(search_dirs, Args.CheckValue("-waddir"), SEARCHPATHSEPCHAR);
 	Res_AddSearchDir(search_dirs, getenv("DOOMWADDIR"), SEARCHPATHSEPCHAR);
 	Res_AddSearchDir(search_dirs, getenv("DOOMWADPATH"), SEARCHPATHSEPCHAR);
-	Res_AddSearchDir(search_dirs, getenv("HOME"), SEARCHPATHSEPCHAR);
+	Res_AddSearchDir(search_dirs, waddirs.cstring(), SEARCHPATHSEPCHAR);
+
+	search_dirs.push_back(M_GetUserDir());
+	search_dirs.push_back(M_GetCWD());
+	search_dirs.push_back(M_GetBinaryDir());
+
+	#ifdef __SWITCH__
+	search_dirs.push_back("./wads");
+	#endif
 
 	// [AM] Search additional paths based on platform
 	Res_AddPlatformSearchDirs(search_dirs);
-
-	Res_AddSearchDir(search_dirs, waddirs.cstring(), SEARCHPATHSEPCHAR);
 
 	search_dirs.erase(std::unique(search_dirs.begin(), search_dirs.end()), search_dirs.end());
 

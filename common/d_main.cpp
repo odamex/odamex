@@ -141,7 +141,7 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	std::vector<std::string> new_resource_filenames = resource_filenames;
 	std::vector<std::string> missing_resource_filenames;
 
-	// Ensure the list of resource filenames include ODAMEX.WAD, an IWAD, and
+	// Ensure the list of resource filenames include ODAMEX.PK3, an IWAD, and
 	// the full path for every file.
 	Res_ValidateResourceFiles(new_resource_filenames, missing_resource_filenames);
 
@@ -149,7 +149,7 @@ void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
 	if (new_resource_filenames == Res_GetResourceFileNames())
 		return;
 
-	assert(new_resource_filenames.size() >= 2);	// Require ODAMEX.WAD and an IWAD
+	assert(new_resource_filenames.size() >= 2);	// Require ODAMEX.PK3 and an IWAD
 
 	// Now scan the contents of the IWAD to determine which one it is.
 	const std::string& iwad_filename = new_resource_filenames[1];
