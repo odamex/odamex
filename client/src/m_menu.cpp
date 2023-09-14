@@ -277,7 +277,7 @@ oldmenu_t EpiDef =
 	0	 				// lastOn
 };
 
-int epi;
+static int selected_episode = 0;
 
 //
 // EXPANSION SELECT (DOOM2 BFG)
@@ -1018,7 +1018,7 @@ void M_NewGame(int choice)
 			EpiDef.y -= LINEHEIGHT;
 		}
 
-		epi = 0;
+		selected_episode = 0;
 
 		NewDef.numitems = skillnum + 1;
 
@@ -1065,46 +1065,45 @@ void M_VerifyNightmare(int ch)
 	M_StartGame(skillchoice);
 }
 
+
+static const std::string nerve_filename("NERVE.WAD");
+
+static bool IsResourceFilenameForNoRestForTheLiving(const std::string& filename)
+{
+	return Res_CleanseFilename(filename) == nerve_filename;
+}
+
+
 void M_StartGame(int choice)
 {
 	sv_skill.Set (static_cast<float>(choice + 1));
 	sv_gametype = GM_COOP;
+	std::string map_name(EpisodeMaps[selected_episode].c_str());
 
 	if (gamemode == commercial_bfg)     // Funky external loading madness fun time (DOOM 2 BFG)
 	{
-		const std::string str("NERVE.WAD");
-		if (epi)
-		{
-			// Load No Rest for The Living Externally
-			epi = 0;
+		std::vector<std::string> new_resource_filenames = Res_GetResourceFileNames();
 
-			std::vector<std::string> new_resource_filenames = Res_GatherResourceFilesFromString(str);
-			D_LoadResourceFiles(new_resource_filenames);
+		// Remove NERVE.WAD from the list of resource files. It will be added back if
+		// No Rest for the Living was selected. Otherwise, remove it to play the normal
+		// Doom2 episode.
+		new_resource_filenames.erase(
+			std::remove_if(
+				new_resource_filenames.begin(),
+				new_resource_filenames.end(),
+				IsResourceFilenameForNoRestForTheLiving
+			),
+			new_resource_filenames.end()
+		);
 
-			G_DeferedInitNew(startmap);
-		}
-		else
-		{
-			// Check for nerve.wad, if it's loaded re-load with just iwad (DOOM 2 BFG)
-			const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
+		if (selected_episode)
+			new_resource_filenames.push_back(Res_FindResourceFile(nerve_filename));
 
-			for (size_t i = 2; i < resource_file_names.size(); i++)
-            {
-				if (iequals(str, M_ExtractFileName(resource_file_names[i])))
-				{
-					std::vector<std::string> new_resource_filenames = Res_GatherResourceFilesFromString(resource_file_names[1]);
-					D_LoadResourceFiles(new_resource_filenames);
-				}
-            }
-
-			G_DeferedInitNew(CalcMapName(epi + 1, 1));
-		}
-	}
-	else
-	{
-		G_DeferedInitNew(CalcMapName(epi + 1, 1));
+		selected_episode = 0;
+		map_name = CalcMapName(selected_episode, 1);
 	}
 
+	G_DeferedInitNew(map_name.c_str());
 	M_ClearMenus();
 }
 
@@ -1143,9 +1142,9 @@ void M_Episode(int choice)
 		return;
 	}
 
-	epi = choice;
+	selected_episode = choice;
 
-	if (EpisodeInfos[epi].noskillmenu)
+	if (EpisodeInfos[selected_episode].noskillmenu)
 		M_StartGame(defaultskillmenu);
 	else
 	{
@@ -1156,7 +1155,7 @@ void M_Episode(int choice)
 
 void M_Expansion(int choice)
 {
-	epi = choice;
+	selected_episode = choice;
 	SetupSkillList();
 	M_SetupNextMenu(&NewDef);
 }

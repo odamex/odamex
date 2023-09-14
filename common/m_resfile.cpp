@@ -394,8 +394,8 @@ std::vector<scannedPWAD_t> M_ScanPWADs()
 		{
 			const std::string& filename = *fit;
 
-			// [AM] Don't include odamex.wad or IWADs.
-			if (iequals(filename, "odamex.wad"))
+			// [AM] Don't include odamex.pk3 or IWADs.
+			if (iequals(filename, "odamex.pk3"))
 				continue;
 
 			OWantFile file;

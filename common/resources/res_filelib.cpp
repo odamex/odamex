@@ -494,22 +494,24 @@ static std::string Res_BaseFileSearchDir(
 
 
 //
-// Res_BaseFileSearch
+// Res_FindResourcFile
 //
-// denis - Check all paths of interest for a given file with a possible extension
+// Searches for a given filename, and returns the full path to the file if
+// found and matches the supplied hash (or the hash was empty). An empty
+// string is returned if no matching file is found.
 //
-static std::string Res_BaseFileSearch(const std::string& filename, const std::string& hash = "")
+std::string Res_FindResourceFile(const std::string& filename, const std::string& hash = "")
 {
 	std::string absolute_dir;
 
 	#ifdef _WIN32
-		if (filename.find(':') != std::string::npos)			// absolute path?
-			M_ExtractFilePath(filename, absolute_dir);
+	if (filename.find(':') != std::string::npos)			// absolute path?
+		M_ExtractFilePath(filename, absolute_dir);
 	#endif	// _WIN32
-	
+
 	#ifdef UNIX
-		if (filename[0] == PATHSEPCHAR || filename[0] == '~')	// absolute path?
-			M_ExtractFilePath(filename, absolute_dir);
+	if (filename[0] == PATHSEPCHAR || filename[0] == '~')	// absolute path?
+		M_ExtractFilePath(filename, absolute_dir);
 	#endif	// UNIX
 
 	if (!absolute_dir.empty())
@@ -554,20 +556,8 @@ static std::string Res_BaseFileSearch(const std::string& filename, const std::st
 			return full_filename;
 	}
 
+	Printf(PRINT_WARNING, "Could not resolve resource file \"%s\".", filename.c_str());
 	return std::string();
-}
-
-
-//
-// Res_FindResourceFile
-//
-// Searches for a given filename, and returns the full path to the file if
-// found and matches the supplied hash (or the hash was empty). An empty
-// string is returned if no matching file is found.
-//
-std::string Res_FindResourceFile(const std::string& filename, const std::string& hash = "")
-{
-	return Res_BaseFileSearch(filename, hash);
 }
 
 
