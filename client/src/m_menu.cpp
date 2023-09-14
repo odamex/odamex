@@ -1156,6 +1156,7 @@ void M_Episode(int choice)
 void M_Expansion(int choice)
 {
 	selected_episode = choice;
+	NewDef.numitems = skillnum + 1;
 	SetupSkillList();
 	M_SetupNextMenu(&NewDef);
 }
