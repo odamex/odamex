@@ -68,6 +68,7 @@ extern int nextupdate;
 
 EXTERN_CVAR (sv_endmapscript)
 EXTERN_CVAR (sv_startmapscript)
+EXTERN_CVAR (sv_curpwad)
 EXTERN_CVAR (sv_curmap)
 EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_loopepisode)
@@ -357,6 +358,17 @@ void G_DoNewGame()
 	}
 
 	sv_curmap.ForceSet(d_mapname);
+
+	if (::wadfiles.size() < 3) // odamex.wad, iwad, pwad(s)
+	{
+		sv_curpwad.ForceSet("");
+	}
+	else
+	{
+		OResFiles::const_iterator it = ::wadfiles.begin();
+		std::advance(it, 2);
+		sv_curpwad.ForceSet(it->getBasename().c_str());
+	}
 
 	G_InitNew (d_mapname);
 	gameaction = ga_nothing;
