@@ -188,10 +188,9 @@ std::string G_NextMap()
 {
 	std::string next = level.nextmap.c_str();
 
-	if (gamestate == GS_STARTUP || sv_gametype != GM_COOP || next.empty())
+	if (gamestate == GS_STARTUP || next.empty())
 	{
-		// if not coop, stay on same level
-		// [ML] 1/25/10: OR if next is empty
+		// [ML] 1/25/10: if next is empty, stay on same level
 		next = level.mapname.c_str();
 	}
 	else if (secretexit && W_CheckNumForName(level.secretmap.c_str()) != -1)
