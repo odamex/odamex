@@ -46,6 +46,7 @@
 #include "w_ident.h"
 
 level_locals_t level;			// info about current level
+std::string forcedlastmap;		// forced last map for the current wad
 
 level_pwad_info_t g_EmptyLevel;
 cluster_info_t g_EmptyCluster;
@@ -401,7 +402,7 @@ const char *ParseString2(const char *data);
 // Takes a string of random wads and patches, which is sorted through and
 // trampolined to the implementation of G_LoadWad.
 //
-bool G_LoadWadString(const std::string& str, const std::string& mapname)
+bool G_LoadWadString(const std::string& str, const std::string& lastmap, const std::string& mapname)
 {
 	const std::vector<std::string>& wad_exts = M_FileTypeExts(OFILE_WAD);
 	const std::vector<std::string>& deh_exts = M_FileTypeExts(OFILE_DEH);
@@ -459,6 +460,7 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname)
 		continue;
 	}
 
+	forcedlastmap = StdStringToUpper(lastmap);
 	return G_LoadWad(newwadfiles, newpatchfiles, mapname);
 }
 
