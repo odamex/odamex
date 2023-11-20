@@ -1304,17 +1304,20 @@ void P_PlayerInCompatibleSector(player_t* player)
 		{
 			switch ((sector->special & DAMAGE_MASK) >> DAMAGE_SHIFT)
 			{
-			case 0: // Kill player unless invuln or rad suit
-				if (!player->powers[pw_invulnerability] && !player->powers[pw_ironfeet])
+			case 0: // Kill player unless invuln or rad suit or IDDQD
+				if (!player->powers[pw_invulnerability] && !player->powers[pw_ironfeet] && !(player->cheats & CF_GODMODE))
 				{
-					P_DamageMobj(player->mo, NULL, NULL, 10000, MOD_UNKNOWN);
+					P_DamageMobj(player->mo, NULL, NULL, 999, MOD_UNKNOWN); // 999 so BUDDHA can survive
 				}
 				break;
-			case 1: // Kill player with no scruples
-				P_DamageMobj(player->mo, NULL, NULL, 10000, MOD_UNKNOWN);
-				break;
+			case 1: // Kill player with no scruples unless IDDQD
+				if(!(player->cheats & CF_GODMODE))
+				{
+					P_DamageMobj(player->mo, NULL, NULL, 10000, MOD_UNKNOWN);
+					break;
+				}
 			case 2: // Kill all players and exit. There's no delay here so it may confuse
-			        // some players.
+			        // some players. Do NOT kill players with IDDQD.
 				if (serverside)
 				{
 					if (sv_allowexit)
@@ -1322,14 +1325,14 @@ void P_PlayerInCompatibleSector(player_t* player)
 						for (Players::iterator it = ::players.begin();
 						     it != ::players.end(); ++it)
 						{
-							if (player->ingame() && player->health > 0)
+							if (player->ingame() && player->health > 0 && !(player->cheats & CF_GODMODE))
 							{
 								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
 							}
 						}
 						G_ExitLevel(0, 1);
 					}
-					else
+					else if (!(player->cheats & CF_GODMODE)) // Do NOT kill players with IDDQD.
 					{
 						P_DamageMobj(
 						    player->mo, NULL, NULL, 10000,
@@ -1339,7 +1342,7 @@ void P_PlayerInCompatibleSector(player_t* player)
 				}
 				break;
 			case 3: // Kill all players and secret exit. There's no delay here so it may
-			        // confuse some players.
+			        // confuse some players. Do NOT kill players with IDDQD.
 				if (serverside)
 				{
 					if (sv_allowexit)
@@ -1347,14 +1350,14 @@ void P_PlayerInCompatibleSector(player_t* player)
 						for (Players::iterator it = ::players.begin();
 						     it != ::players.end(); ++it)
 						{
-							if (player->ingame() && player->health > 0)
+							if (player->ingame() && player->health > 0 && !(player->cheats & CF_GODMODE))
 							{
 								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
 							}
 						}
 						G_SecretExitLevel(0, 1);
 					}
-					else
+					else if (!(player->cheats & CF_GODMODE)) // Do NOT kill players with IDDQD.
 					{
 						P_DamageMobj(
 						    player->mo, NULL, NULL, 10000,
@@ -1365,7 +1368,7 @@ void P_PlayerInCompatibleSector(player_t* player)
 				break;
 			}
 		}
-		else
+		else if (!(player->cheats & CF_GODMODE)) // Do NOT damage players with IDDQD.
 		{
 			P_ApplyGeneralizedSectorDamage(player, (sector->special & DAMAGE_MASK) >>
 			                                           DAMAGE_SHIFT);
