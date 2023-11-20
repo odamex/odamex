@@ -1314,8 +1314,8 @@ void P_PlayerInCompatibleSector(player_t* player)
 				if(!(player->cheats & CF_GODMODE))
 				{
 					P_DamageMobj(player->mo, NULL, NULL, 10000, MOD_UNKNOWN);
-					break;
 				}
+				break;
 			case 2: // Kill all players and exit. There's no delay here so it may confuse
 			        // some players. Do NOT kill players with IDDQD.
 				if (serverside)
