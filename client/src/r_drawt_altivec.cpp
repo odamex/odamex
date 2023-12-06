@@ -36,9 +36,7 @@
 #include "r_main.h"
 #include "i_video.h"
 
-#if !defined(__APPLE_ALTIVEC__)
 #include <altivec.h>
-#endif
 
 #define ALTIVEC_ALIGNED(x) x __attribute__((aligned(16)))
 
