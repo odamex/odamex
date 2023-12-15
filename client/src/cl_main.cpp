@@ -1801,7 +1801,11 @@ bool CL_Connect()
 	noservermsgs = false;
 	last_received = gametic;
 
-	gamestate = GS_CONNECTED;
+	//enaiel: Fix for demos that play only audio and no video becuase they stay stuck on GS_CONNECTED state
+	if(netdemo.isPlaying())
+		gamestate = GS_LEVEL;
+	else
+		gamestate = GS_CONNECTED;
 
 	return true;
 }
