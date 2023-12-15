@@ -1144,7 +1144,8 @@ void WI_drawNetgameStats()
 		// classic face background colour
 		//screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
 
-		if (i == me)
+		//enaiel: Draw displayplayer face instead of consoleplayer in vanilla oldintermission screen
+		if (i == (displayplayer_id -1))
 			screen->DrawPatchClean(pStar, x - pP->width(), y);
 
 		// Display player names online!
