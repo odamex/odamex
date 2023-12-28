@@ -423,7 +423,13 @@ void R_BuildClassicPlayerTranslation (int player, int color)
 	const palette_t* pal = V_GetDefaultPalette();
 	int i;
 	
-	if (color == 1) // Indigo
+	if (color == 0) // Green
+		for (i = 0x70; i < 0x80; i++)
+		{
+			translationtables[i + (player * 256)] = 0x70 + (i&0xf);
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i + (player * 256)]];
+		}
+	else if (color == 1) // Indigo
 		for (i = 0x70; i < 0x80; i++)
 		{
 			translationtables[i+(player * 256)] = 0x60 + (i&0xf);
@@ -441,6 +447,18 @@ void R_BuildClassicPlayerTranslation (int player, int color)
 			translationtables[i+(player * 256)] = 0x20 + (i&0xf);	
 			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
 		}
+	else if (color == 4) // Blue
+		for (i = 0x70; i < 0x80; i++)
+		{
+			translationtables[i + (player * 256)] = 0xC0 + (i&0xf);
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i + (player * 256)]];
+		}
+	else if (color == 5) // Orange
+		for (i = 0x70; i < 0x80; i++)
+		{
+			translationtables[i + (player * 256)] = 0xD0 + (i&0xf);
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i + (player * 256)]];
+		}
 }
 
 void R_CopyTranslationRGB (int fromplayer, int toplayer)
@@ -454,44 +472,51 @@ void R_CopyTranslationRGB (int fromplayer, int toplayer)
 
 // [RH] Create a player's translation table based on
 //		a given mid-range color.
-void R_BuildPlayerTranslation(int player, argb_t dest_color)
+void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset)
 {
-	const palette_t* pal = V_GetDefaultPalette();
-	byte* table = &translationtables[player * 256];
-
-	fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
-	float h = hsv_temp.geth(), s = hsv_temp.gets(), v = hsv_temp.getv();
-
-	s -= 0.23f;
-	if (s < 0.0f)
-		s = 0.0f;
-	float sdelta = 0.014375f;
-
-	v += 0.1f;
-	if (v > 1.0f)
-		v = 1.0f;
-	float vdelta = -0.05882f;
-
-	for (int i = 0x70; i < 0x80; i++)
+	if (colorpreset > -1 && colorpreset < 6)
 	{
-		argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
+		return R_BuildClassicPlayerTranslation(player, colorpreset);
+	}
+	else
+	{
+		const palette_t* pal = V_GetDefaultPalette();
+		byte* table = &translationtables[player * 256];
 
-		// Set up RGB values for 32bpp translation:
-		translationRGB[player][i - 0x70] = color;
-		table[i] = V_BestColor(pal->basecolors, color);
+		fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
+		float h = hsv_temp.geth(), s = hsv_temp.gets(), v = hsv_temp.getv();
 
-		s += sdelta;
-		if (s > 1.0f)
+		s -= 0.23f;
+		if (s < 0.0f)
+			s = 0.0f;
+		float sdelta = 0.014375f;
+
+		v += 0.1f;
+		if (v > 1.0f)
+			v = 1.0f;
+		float vdelta = -0.05882f;
+
+		for (int i = 0x70; i < 0x80; i++)
 		{
-			s = 1.0f;
-			sdelta = 0.0f;
-		}
+			argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
 
-		v += vdelta;
-		if (v < 0.0f)
-		{
-			v = 0.0f;
-			vdelta = 0.0f;
+			// Set up RGB values for 32bpp translation:
+			translationRGB[player][i - 0x70] = color;
+			table[i] = V_BestColor(pal->basecolors, color);
+
+			s += sdelta;
+			if (s > 1.0f)
+			{
+				s = 1.0f;
+				sdelta = 0.0f;
+			}
+
+			v += vdelta;
+			if (v < 0.0f)
+			{
+				v = 0.0f;
+				vdelta = 0.0f;
+			}
 		}
 	}
 }

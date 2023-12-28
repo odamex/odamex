@@ -339,6 +339,17 @@ bool G_IsTeamGame()
 }
 
 /**
+ * @brief Check if team colors are being enforced due to gametype or CVARs.
+ */
+int G_IsTeamColor(int colorpreset, bool forceteamcolor, bool forceenemycolor)
+{
+	if (G_IsTeamGame() || (forceteamcolor && G_IsCoopGame()) || (forceenemycolor && G_IsFFAGame()))
+		return -1;
+	else
+		return colorpreset;
+}
+
+/**
  * @brief Check if the game consists of multiple rounds.
  */
 bool G_IsRoundsGame()

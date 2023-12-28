@@ -31,6 +31,7 @@
 #include "r_draw.h"
 #include "r_state.h"
 #include "cl_main.h"
+#include "g_gametype.h"
 
 // The default preference ordering when the player runs out of one type of ammo.
 // Vanilla Doom compatible.
@@ -48,6 +49,7 @@ const byte UserInfo::weapon_prefs_default[NUMWEAPONS] = {
 
 EXTERN_CVAR (cl_autoaim)
 EXTERN_CVAR (cl_name)
+EXTERN_CVAR (cl_colorpreset)
 EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_team)
@@ -120,16 +122,18 @@ team_t D_TeamByName (const char *team)
 
 colorpreset_t D_ColorPreset (const char *colorpreset)
 {
-	if (!stricmp(colorpreset, "blue"))
-		return COLOR_BLUE;
+	if (!stricmp(colorpreset, "green"))
+		return COLOR_GREEN;
 	else if (!stricmp(colorpreset, "indigo"))
 		return COLOR_INDIGO;
-	else if (!stricmp(colorpreset, "green"))
-		return COLOR_GREEN;
 	else if (!stricmp(colorpreset, "brown"))
 		return COLOR_BROWN;
 	else if (!stricmp(colorpreset, "red"))
 		return COLOR_RED;
+	else if (!stricmp(colorpreset, "blue"))
+		return COLOR_BLUE;
+	else if (!stricmp(colorpreset, "orange"))
+		return COLOR_ORANGE;
 	else if (!stricmp(colorpreset, "gold"))
 		return COLOR_GOLD;
 	else if (!stricmp(colorpreset, "jungle green"))
@@ -203,6 +207,8 @@ void D_SetupUserInfo(void)
 	// Copies the updated cl_weaponpref* cvars to coninfo->weapon_prefs[]
 	D_PrepareWeaponPreferenceUserInfo();
 
+	coninfo->colorpreset = D_ColorPreset(cl_colorpreset.cstring());
+
 	// set the color in a pixel-format neutral way
 	argb_t color = V_GetColorFromString(cl_color);
 	coninfo->color[0] = color.geta();
@@ -212,7 +218,7 @@ void D_SetupUserInfo(void)
 
 	// update color translation
 	if (!demoplayback && !connected)
-		R_BuildPlayerTranslation(consoleplayer_id, color);
+		R_BuildPlayerTranslation(consoleplayer_id, color, G_IsTeamColor(coninfo->colorpreset, 0, 0));
 }
 
 void D_UserInfoChanged (cvar_t *cvar)

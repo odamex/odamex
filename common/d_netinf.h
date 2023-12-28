@@ -38,17 +38,18 @@ enum gender_t
 
 enum colorpreset_t	// Acts 19 quiz the order must match m_menu.cpp.
 {
-	COLOR_CUSTOM,
-	COLOR_BLUE,
-	COLOR_INDIGO,
 	COLOR_GREEN,
+	COLOR_INDIGO,
 	COLOR_BROWN,
 	COLOR_RED,
+	COLOR_BLUE,
+	COLOR_ORANGE,
 	COLOR_GOLD,
 	COLOR_JUNGLEGREEN,
 	COLOR_PURPLE,
 	COLOR_WHITE,
 	COLOR_BLACK,
+	COLOR_CUSTOM,
 
 	NUMCOLOR
 };
@@ -69,6 +70,7 @@ struct UserInfo
 	team_t			team; // [Toke - Teams]
 	fixed_t			aimdist;
 	bool			predict_weapons;
+	colorpreset_t	colorpreset;
 	byte			color[4];
 	gender_t		gender;
 	weaponswitch_t	switchweapon;
