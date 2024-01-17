@@ -960,10 +960,10 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 	EXTERN_CVAR(r_forceenemycolor)
 	EXTERN_CVAR(r_forceteamcolor)
 
-	if (r_forceteamcolor || r_forceenemycolor)
+	if (G_IsTeamColor(r_forceteamcolor, r_forceenemycolor))
 		CL_RebuildAllPlayerTranslations();
 	else
-		R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p), G_IsTeamColor(p->userinfo.colorpreset, 0, 0));
+		R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p), p->userinfo.colorpreset);
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
 	// to the other team?

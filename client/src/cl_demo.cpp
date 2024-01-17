@@ -1631,7 +1631,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		P_SetupPsprites(&*it);
-		R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it), G_IsTeamColor(it->userinfo.colorpreset, 0, 0));
+		R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it), it->userinfo.colorpreset);
 	}
 
 	R_CopyTranslationRGB (0, consoleplayer_id);

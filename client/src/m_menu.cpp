@@ -53,8 +53,6 @@
 #include "g_skill.h"
 #include "m_fileio.h"
 
-#include "g_gametype.h"
-
 #ifdef _XBOX
 #include "i_xbox.h"
 #endif
@@ -1276,7 +1274,7 @@ void M_QuitDOOM(int choice)
 void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
 
 static const char *genders[3] = { "male", "female", "cyborg" };
-// Acts 19 quiz the order must match d_netinf.h
+// [Acts 19 quiz] The order must match d_netinf.h
 static const char *colorpresets[12] = { "green", "indigo", "brown", "red", "blue", "orange", "gold", "jungle green", "purple", "white", "black", "custom" };
 static state_t *PlayerState;
 static int PlayerTics;
@@ -1304,7 +1302,7 @@ void M_PlayerSetup(int choice)
 	// [Nes] Intialize the player preview color.
 	const argb_t player_color = CL_GetPlayerColor(&consoleplayer());
 	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
-	R_BuildPlayerTranslation(0, player_color, G_IsTeamColor(colorpreset, 0, 0));
+	R_BuildPlayerTranslation(0, player_color, colorpreset);
 }
 
 static void M_PlayerSetupTicker()
@@ -1502,7 +1500,7 @@ static void M_PlayerSetupDrawer()
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
 		// of the table of the current player color. (Which is different in single, demo, and team)
 		const argb_t player_color = CL_GetPlayerColor(&consoleplayer());
-		R_BuildPlayerTranslation(0, player_color, G_IsTeamColor(colorpreset, 0, 0));
+		R_BuildPlayerTranslation(0, player_color, colorpreset);
 		V_ColorMap = translationref_t(translationtables, 0);
 
 		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
@@ -1731,7 +1729,7 @@ static void SendNewColor(int red, int green, int blue)
 	if (!connected)
 	{
 		// [Nes] Change the player preview color.
-		R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color), G_IsTeamColor(colorpreset, 0, 0));
+		R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color), colorpreset);
 
 		if (consoleplayer().ingame())
 			R_CopyTranslationRGB(0, consoleplayer_id);

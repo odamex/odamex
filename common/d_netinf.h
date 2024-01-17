@@ -36,7 +36,7 @@ enum gender_t
 	NUMGENDER
 };
 
-enum colorpreset_t	// Acts 19 quiz the order must match m_menu.cpp.
+enum colorpreset_t	// [Acts 19 quiz] The order must match m_menu.cpp.
 {
 	COLOR_GREEN,
 	COLOR_INDIGO,

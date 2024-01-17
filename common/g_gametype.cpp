@@ -255,8 +255,7 @@ bool G_CanShowObituary()
  */
 bool G_CanTickGameplay()
 {
-	return ::levelstate.getState() == LevelState::WARMUP ||
-	       ::levelstate.getState() == LevelState::INGAME;
+	return ::levelstate.getState() == LevelState::WARMUP || ::levelstate.getState() == LevelState::INGAME;
 }
 
 /**
@@ -339,14 +338,11 @@ bool G_IsTeamGame()
 }
 
 /**
- * @brief Check if team colors are being enforced due to gametype or CVARs.
+ * @brief Check if team colors are being enforced due to CVARs and gametype.
  */
-int G_IsTeamColor(int colorpreset, bool forceteamcolor, bool forceenemycolor)
+bool G_IsTeamColor(bool forceteamcolor, bool forceenemycolor)
 {
-	if (G_IsTeamGame() || (forceteamcolor && G_IsCoopGame()) || (forceenemycolor && G_IsFFAGame()))
-		return -1;
-	else
-		return colorpreset;
+	return (forceteamcolor && G_IsCoopGame()) || (forceenemycolor && G_IsFFAGame());
 }
 
 /**

@@ -84,7 +84,6 @@
 #include "g_horde.h"
 #include "w_ident.h"
 #include "gui_boot.h"
-#include "g_gametype.h"//Acts 19 quiz indices
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -917,7 +916,7 @@ void D_DoomMain()
 	// NOTE(jsd): Set up local player color
 	EXTERN_CVAR(cl_colorpreset);
 	EXTERN_CVAR(cl_color);
-	R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color), G_IsTeamColor(cl_colorpreset, 0, 0));
+	R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color), cl_colorpreset);
 
 	I_FinishClockCalibration();
 

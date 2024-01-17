@@ -233,10 +233,10 @@ void CL_RebuildAllPlayerTranslations()
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		if (it == players.begin() || consoleplayer().spectator)
-			R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it), G_IsTeamColor(it->userinfo.colorpreset, 0, 0));
+		if (it == players.begin() || consoleplayer().spectator || !G_IsTeamColor(r_forceteamcolor, r_forceenemycolor))
+			R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it), it->userinfo.colorpreset);
 		else
-			R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it), G_IsTeamColor(it->userinfo.colorpreset, r_forceteamcolor, r_forceenemycolor));
+			R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it), NUMCOLOR);
 	}
 }
 
@@ -1440,7 +1440,10 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	}
 	else
 	{
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player), G_IsTeamColor(player.userinfo.colorpreset, r_forceteamcolor, r_forceenemycolor));
+		if (G_IsTeamColor(r_forceteamcolor, r_forceenemycolor))
+			R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player), NUMCOLOR);
+		else
+			R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player), player.userinfo.colorpreset);
 	}
 
 	P_ClearPlayerPowerups(player);	// Remove all current powerups

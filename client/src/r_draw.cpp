@@ -42,6 +42,7 @@
 #include "gi.h"
 #include "v_text.h"
 #include "st_stuff.h"
+#include "g_gametype.h"
 
 #undef RANGECHECK
 
@@ -92,6 +93,11 @@ void (*R_FillTranslucentSpan)(void);
 void (*R_DrawSpanD)(void);
 void (*R_DrawSlopeSpanD)(void);
 void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
+
+// [Acts 19 quiz] The number of color presets from d_netinf.h
+// we want Vanilla translation on. The order starts from the
+// beginning.
+constexpr unsigned int vanilla_presets = 6;
 
 // ============================================================================
 //
@@ -474,7 +480,7 @@ void R_CopyTranslationRGB (int fromplayer, int toplayer)
 //		a given mid-range color.
 void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset)
 {
-	if (colorpreset > -1 && colorpreset < 6)
+	if (!G_IsTeamGame() && colorpreset < vanilla_presets)
 	{
 		return R_BuildClassicPlayerTranslation(player, colorpreset);
 	}
