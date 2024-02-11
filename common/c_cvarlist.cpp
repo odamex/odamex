@@ -245,12 +245,13 @@ CVAR(g_preroundreset, "0", "After preround is over, reset the map one last time.
 CVAR(g_postroundtime, "3", "Amount of time after a round before the next round/endgame",
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE(g_coopthingfilter, "0", "Removes cooperative things of the map. Values are:\n" \
-	"// 0 - All Coop things are retained (default).\n" \
+CVAR_RANGE(g_thingfilter, "0", "Removes some things from the map. Values are:\n" \
+	"// 0 - All things are retained (default).\n" \
 	"// 1 - Only Coop weapons are removed.\n" \
-        "// 2 - All Coop things are removed.",
+        "// 2 - All Coop things are removed.\n" \
+	"// 3 - All pickupable things are removed.",
            CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_LATCH,
-           0.0f, 2.0f)
+           0.0f, 3.0f)
 
 CVAR(g_resetinvonexit, "0",
      "Always reset players to their starting inventory on level exit", CVARTYPE_BOOL,
