@@ -669,6 +669,15 @@ BEGIN_COMMAND (maplist) {
 } END_COMMAND (maplist)
 
 BEGIN_COMMAND (addmap) {
+	std::string lastmap = argv[argc-1];
+	if (lastmap.rfind("lastmap=", 0) == 0)
+	{
+		lastmap = lastmap.substr(8);
+		argc--;
+	}
+	else
+		lastmap = "";
+
 	if (argc < 2) {
 		Printf(PRINT_HIGH, "Usage: addmap <map lump> [wad name] [...]\n");
 		Printf(PRINT_HIGH, "If you don't specify a wad name, it'll load the IWAD by default.\n");
@@ -680,6 +689,7 @@ BEGIN_COMMAND (addmap) {
 	// Grab the map lump.
 	maplist_entry_t maplist_entry;
 	maplist_entry.map = arguments[0];
+	maplist_entry.lastmap = lastmap;
 
 	// If we specified any WAD files, grab them too.
 	if (arguments.size() > 1) {
@@ -697,6 +707,15 @@ BEGIN_COMMAND (addmap) {
 } END_COMMAND(addmap)
 
 BEGIN_COMMAND(insertmap) {
+	std::string lastmap = argv[argc-1];
+	if (lastmap.rfind("lastmap=", 0) == 0)
+	{
+		lastmap = lastmap.substr(8);
+		argc--;
+	}
+	else
+		lastmap = "";
+
 	if (argc < 3) {
 		Printf(PRINT_HIGH, "Usage: insertmap <maplist position> <map lump> [wad name] [...]\n");
 	}
@@ -715,6 +734,7 @@ BEGIN_COMMAND(insertmap) {
 	// Grab the map lump.
 	maplist_entry_t maplist_entry;
 	maplist_entry.map = arguments[1];
+	maplist_entry.lastmap = lastmap;
 
 	// If we specified any WAD files, grab them too.
 	if (arguments.size() > 2) {
