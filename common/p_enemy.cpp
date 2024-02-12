@@ -696,7 +696,8 @@ bool P_LookForPlayers(AActor *actor, bool allaround)
 		if (it->ingame() && !(it->spectator))
 		{
 			playeringame[(it->id) - 1] = &*it;
-			maxid = it->id;
+			if (maxid < (short)&it->id)
+				maxid = it->id;
 		}
 	}
 
