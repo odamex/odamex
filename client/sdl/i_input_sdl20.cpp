@@ -726,15 +726,10 @@ void ISDL20JoystickInputDevice::gatherEvents()
 				}
 				else
 				{
-					float deadzone = (joy_deadzone * 32767);
 					event_t motion_event(ev_joystick);
 					motion_event.type = ev_joystick;
 					motion_event.data2 = sdl_ev.caxis.axis;
-					if ((sdl_ev.caxis.value >= deadzone) ||
-					    (sdl_ev.caxis.value <= -deadzone)){
-						motion_event.data3 = sdl_ev.caxis.value;
-					}
-
+					motion_event.data3 = calcAxisValue(sdl_ev.caxis.value);
 					mEvents.push(motion_event);
 				}
 
@@ -743,6 +738,41 @@ void ISDL20JoystickInputDevice::gatherEvents()
 	}
 }
 
+int ISDL20JoystickInputDevice::calcAxisValue(int raw_value)
+{
+	float value;
+
+	// Normalize.
+	if (raw_value > 0)
+	{
+		value = (float)raw_value / (float)SDL_JOYSTICK_AXIS_MAX;
+	}
+	else if (raw_value < 0)
+	{
+		value = (float)raw_value / (float)abs(SDL_JOYSTICK_AXIS_MIN);
+	}
+	else
+	{
+		value = 0.0f;
+	}
+
+	// Apply deadzone.
+	if (value > joy_deadzone)
+	{
+		value = (value - joy_deadzone) / (1.0f - joy_deadzone);
+	}
+	else if (value < -joy_deadzone)
+	{
+		value = (value + joy_deadzone) / (1.0f - joy_deadzone);
+	}
+	else
+	{
+		value = 0.0f;
+	}
+
+	// Scale value to the range used for calculations in G_BuildTiccmd().
+	return lroundf(value * 32767.0f);
+}
 
 //
 // ISDL20JoystickInputDevice::getEvent
