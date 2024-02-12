@@ -741,6 +741,9 @@ void ISDL20JoystickInputDevice::gatherEvents()
 			}
 		}
 	}
+
+	// Flush all remaining joystick and game controller events.
+	SDL_FlushEvents(SDL_JOYAXISMOTION, SDL_CONTROLLERDEVICEREMAPPED);
 }
 
 
@@ -787,6 +790,14 @@ ISDL20InputSubsystem::ISDL20InputSubsystem() :
 	SDL_EventState(SDL_CONTROLLERAXISMOTION, SDL_IGNORE);
 	SDL_EventState(SDL_CONTROLLERBUTTONDOWN, SDL_IGNORE);
 	SDL_EventState(SDL_CONTROLLERBUTTONUP, SDL_IGNORE);
+
+	// Ignore unsupported game controller events.
+#if (SDL_MINOR_VERSION > 0 || SDL_PATCHLEVEL >= 14)
+	SDL_EventState(SDL_CONTROLLERTOUCHPADDOWN, SDL_IGNORE);
+	SDL_EventState(SDL_CONTROLLERTOUCHPADMOTION, SDL_IGNORE);
+	SDL_EventState(SDL_CONTROLLERTOUCHPADUP, SDL_IGNORE);
+	SDL_EventState(SDL_CONTROLLERSENSORUPDATE, SDL_IGNORE);
+#endif
 
 	grabInput();
 }
