@@ -99,6 +99,7 @@ EXTERN_CVAR (sv_respawnsuper)
 EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (sv_sharekeys)
+EXTERN_CVAR (sv_keepweapons)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (in_autosr50)
 
@@ -1175,13 +1176,17 @@ void G_PlayerFinishLevel (player_t &player)
 void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 {
 	size_t i;
-	for (i = 0; i < NUMAMMO; i++)
+	if (!sv_keepweapons || p.playerstate == PST_ENTER)
 	{
-		p.maxammo[i] = maxammo[i];
-		p.ammo[i] = 0;
+		for (i = 0; i < NUMAMMO; i++)
+		{
+			p.maxammo[i] = maxammo[i];
+			p.ammo[i] = 0;
+		}
+		for (i = 0; i < NUMWEAPONS; i++)
+			p.weaponowned[i] = false;
+		p.backpack = false;
 	}
-	for (i = 0; i < NUMWEAPONS; i++)
-		p.weaponowned[i] = false;
 
 	if (!sv_keepkeys && !sv_sharekeys)
 		P_ClearPlayerCards(p); 
@@ -1190,7 +1195,6 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 
 	for (i = 0; i < NUMTEAMS; i++)
 		p.flags[i] = false;
-	p.backpack = false;
 
 	G_GiveSpawnInventory(p);
 
