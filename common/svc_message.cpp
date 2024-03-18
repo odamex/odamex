@@ -465,6 +465,7 @@ odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time)
 	msg.set_netname(player.userinfo.netname);
 	msg.set_team(player.userinfo.team);
 	msg.set_gender(player.userinfo.gender);
+	msg.set_colorpreset(player.userinfo.colorpreset);
 
 	// [AM] Alpha is always 255.
 	odaproto::Color* color = msg.mutable_color();
