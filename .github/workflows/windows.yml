@@ -1,6 +1,11 @@
 name: Windows
 
-on: [push, pull_request]
+on: 
+  push:
+    branches-ignore:
+    - 'release/[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+    
 
 jobs:
   pre_job:
