@@ -35,7 +35,7 @@ int 		sky1texture, sky2texture;
 
 fixed_t		sky1pos=0,		sky1speed=0;
 
-char SKYFLATNAME[8] = "F_SKY1";
+OLumpName SKYFLATNAME = "F_SKY1";
 
 VERSION_CONTROL (r_sky_cpp, "$Id$")
 

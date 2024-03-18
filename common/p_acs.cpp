@@ -1526,13 +1526,13 @@ int DLevelScript::ThingCount (int type, int tid)
 
 void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 {
-	int flat, secnum = -1;
-	const char *flatname = level.behavior->LookupString (name);
+	int secnum = -1;
+	const OLumpName flatname = level.behavior->LookupString (name);
 
-	if (flatname == NULL)
+	if (flatname.empty())
 		return;
 
-	flat = R_FlatNumForName (flatname);
+	const int flat = R_FlatNumForName(flatname);
 
 	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
 	{
@@ -1549,7 +1549,7 @@ void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 
 	if (serverside)
 	{
-		int argv[] = {tag, name};
+		const int argv[] = {tag, name};
 		std::vector<int> args = ArgvToArgs(argv);
 		SERVER_ONLY(
 		    SV_ACSExecuteSpecial(floorOrCeiling ? PCD_CHANGECEILING : PCD_CHANGEFLOOR,
@@ -1695,9 +1695,9 @@ void DLevelScript::ACS_SoundSequence(int* args, byte argCount)
 void DLevelScript::SetLineTexture(int lineid, int side, int position, int name)
 {
 	int texture, linenum = -1;
-	const char *texname = level.behavior->LookupString (name);
+	const OLumpName texname = level.behavior->LookupString(name);
 
-	if (texname == NULL)
+	if (texname.empty())
 		return;
 
 	if (serverside)
@@ -1709,7 +1709,7 @@ void DLevelScript::SetLineTexture(int lineid, int side, int position, int name)
 
 	side = (side) ? 1 : 0;
 
-	texture = R_TextureNumForName (texname);
+	texture = R_TextureNumForName(texname);
 
 	while ((linenum = P_FindLineFromID (lineid, linenum)) >= 0)
 	{

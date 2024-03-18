@@ -1273,7 +1273,7 @@ void WI_updateStats()
 			if (nextlevel.enterpic[0])
 			{
 				// background
-				const patch_t* bg_patch = W_CachePatch(name.c_str());
+				const patch_t* bg_patch = W_CachePatch(name);
 				background_surface =
 				    I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 				const DCanvas* canvas = background_surface->getDefaultCanvas();

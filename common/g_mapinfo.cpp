@@ -608,13 +608,9 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 				ValidateMapName(info.mapname.c_str(), &ep, &map);
 				map++;
 				if (gamemode == commercial)
-				{
 					sprintf(arr, "MAP%02d", map);
-				}
 				else
-				{
 					sprintf(arr, "E%dM%d", ep, map);
-				}
 				info.nextmap = arr;
 			}
 		}
@@ -1967,7 +1963,6 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				const int map = std::atoi(map_name);
 
 				sprintf(map_name, "MAP%02d", map);
-				SKYFLATNAME[5] = 0;
 				HexenHack = true;
 				// Hexen levels are automatically nointermission
 				// and even lighting and no auto sound sequences

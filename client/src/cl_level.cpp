@@ -98,12 +98,12 @@ bool isFast = false;
 // Can be called by the startup code or the menu task,
 // consoleplayer, displayplayer, should be set.
 //
-static char d_mapname[9];
+static OLumpName d_mapname;
 
 void G_DeferedInitNew (const char *mapname)
 {
 	G_CleanupDemo();
-	strncpy (d_mapname, mapname, 8);
+	d_mapname = mapname;
 	gameaction = ga_newgame;
 }
 
@@ -180,7 +180,7 @@ void G_DoNewGame (void)
 	players.front().doreborn = true;
 	consoleplayer_id = displayplayer_id = players.back().id = 1;
 
-	G_InitNew (d_mapname);
+	G_InitNew(d_mapname);
 	gameaction = ga_nothing;
 }
 
@@ -537,16 +537,16 @@ void G_DoLoadLevel (int position)
 	//	a flat. The data is in the WAD only because
 	//	we look for an actual index, instead of simply
 	//	setting one.
-	skyflatnum = R_FlatNumForName ( SKYFLATNAME );
+	skyflatnum = R_FlatNumForName(SKYFLATNAME);
 
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
-	sky1texture = R_TextureNumForName (level.skypic.c_str());
+	sky1texture = R_TextureNumForName (level.skypic);
 	if (!level.skypic2.empty())
-		sky2texture = R_TextureNumForName (level.skypic2.c_str());
+		sky2texture = R_TextureNumForName (level.skypic2);
 	else
 		sky2texture = 0;
 
@@ -640,7 +640,7 @@ void G_DoLoadLevel (int position)
 
 	if (timingdemo)
 	{
-		static BOOL firstTime = true;
+		static bool firstTime = true;
 
 		if (firstTime)
 		{
