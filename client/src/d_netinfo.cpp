@@ -91,6 +91,8 @@ gender_t D_GenderByName (const char *gender)
 		return GENDER_FEMALE;
 	else if (!stricmp (gender, "cyborg"))
 		return GENDER_NEUTER;
+  else if (!stricmp (gender, "lizard"))
+    return GENDER_LIZARD;
 	else
 		return GENDER_MALE;
 }
@@ -178,7 +180,7 @@ void D_SetupUserInfo(void)
 
 	std::string netname(cl_name.str());
 	StripColorCodes(netname);
-	
+
 	if (netname.length() > MAXPLAYERNAME)
 		netname.erase(MAXPLAYERNAME);
 
@@ -207,8 +209,8 @@ void D_SetupUserInfo(void)
 	argb_t color = V_GetColorFromString(cl_color);
 	coninfo->color[0] = color.geta();
 	coninfo->color[1] = color.getr();
-	coninfo->color[2] = color.getg(); 
-	coninfo->color[3] = color.getb(); 
+	coninfo->color[2] = color.getg();
+	coninfo->color[3] = color.getb();
 
 	// update color translation
 	if (!demoplayback && !connected)

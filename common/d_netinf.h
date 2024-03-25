@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -32,7 +32,8 @@ enum gender_t
 	GENDER_MALE,
 	GENDER_FEMALE,
 	GENDER_NEUTER,
-	
+  GENDER_LIZARD,
+
 	NUMGENDER
 };
 
