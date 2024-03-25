@@ -70,14 +70,21 @@ static bool CmpDist(const SpawnPointWeight& a, const SpawnPointWeight& b)
  * @return Actor pointer we just spawned, or NULL if the spawn failed.
  */
 static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
-                                      const v2fixed_t offset)
+                                      const v2fixed_t offset, mobjCounts_t& monsterCounts)
 {
+	int count = monsterCounts[recipe.type];
 	AActor* mo = new AActor(spawn.mo->x + offset.x, spawn.mo->y + offset.y, spawn.mo->z,
 	                        recipe.type);
 	if (mo)
 	{
 		if (P_TestMobjLocation(mo))
 		{
+			// update current count
+			monsterCounts[recipe.type] = count + 1;
+
+			// Don't respawn
+			mo->flags |= MF_DROPPED;
+
 			if (recipe.isBoss)
 			{
 				// Heavy is the head that wears the crown.
@@ -120,7 +127,7 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
  * @return Actors spawned by this function.  Can be discarded.
  */
 static AActors SpawnMonsterGroup(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
-                                 const int count)
+                                 const int count, mobjCounts_t& monsterCounts)
 {
 	AActors ok;
 
@@ -130,28 +137,28 @@ static AActors SpawnMonsterGroup(hordeSpawn_t& spawn, const hordeRecipe_t& recip
 	if (count == 4)
 	{
 		// A big square.
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad)));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad)));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, rad)));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, rad)));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad), monsterCounts));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad), monsterCounts));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, rad), monsterCounts));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, rad), monsterCounts));
 	}
 	else if (count == 3)
 	{
 		// A wedge.
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad)));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad)));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, rad)));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad), monsterCounts));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad), monsterCounts));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, rad), monsterCounts));
 	}
 	else if (count == 2)
 	{
 		// Next to each other.
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, 0)));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, 0)));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, 0), monsterCounts));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, 0), monsterCounts));
 	}
 	else if (count == 1)
 	{
 		// All by themselves :(
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, 0)));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, 0), monsterCounts));
 	}
 	else
 	{
@@ -228,7 +235,7 @@ void P_HordeClearSpawns()
 
 /**
  * @brief True if passed radius and height fits in the passed mobjinfo.
- * 
+ *
  * @param info Info to check against.
  * @param rad Radius to check in whole units (not fixed).
  * @param height Height to check in whole units (not fixed).
@@ -379,7 +386,8 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
  * @param recipe Recipe of a monster to spawn.
  * @return Actors spawned by this function.  Can be discarded.
  */
-AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe)
+AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
+                     mobjCounts_t& monsterCounts)
 {
 	AActors ok;
 
@@ -425,7 +433,7 @@ AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe)
 
 		int groupIter = clamp(left, 1, maxGroupSize);
 
-		AActors okIter = SpawnMonsterGroup(*it->spawn, recipe, groupIter);
+		AActors okIter = SpawnMonsterGroup(*it->spawn, recipe, groupIter, monsterCounts);
 		ok.insert(ok.end(), okIter.begin(), okIter.end());
 	}
 
