@@ -1114,6 +1114,9 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	p->attacker = AActor::AActorPtr();
 	p->viewz = z + VIEWHEIGHT;
 
+	//enaiel: If "spyplayername" is set, start spying on named player as soon as they spawn
+	CL_CheckDisplayPlayer();
+
 	// spawn a teleport fog
 	// tfog = new AActor (x, y, z, MT_TFOG);
 

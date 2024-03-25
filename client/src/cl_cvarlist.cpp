@@ -540,6 +540,9 @@ CVAR_RANGE(		hud_targetcount, "2", "Number of players to reveal",
 CVAR(			hud_targetnames, "1", "Show names of players you're aiming at",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(			hud_hidespyname, "0", "Hide name of player you're spying on during a netdemo",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)				
+
 CVAR(hud_targethealth_debug, "0",
      "Show health of friendly players you're aiming at - this feature has known "
      "shortcomings with inaccurate health values and will be fixed in a future version "
