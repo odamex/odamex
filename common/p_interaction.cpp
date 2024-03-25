@@ -1227,8 +1227,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	if (special->flags & MF_COUNTITEM)
 	{
 		player->itemcount++;
-		if (serverside)
-			level.found_items++;
+		level.found_items++;
 	}
 
 	if (val == IEV_NotEquipped)
