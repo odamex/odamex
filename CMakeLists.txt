@@ -26,6 +26,11 @@ include(GNUInstallDirs OPTIONAL)
 add_definitions(-DINSTALL_BINDIR="${CMAKE_INSTALL_BINDIR}")
 add_definitions(-DINSTALL_DATADIR="${CMAKE_INSTALL_DATADIR}")
 
+# Set up FHS installation path
+if(NOT APPLE AND NOT WIN32)
+  add_definitions(-DINSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}")
+endif()
+
 if(WIN32)
   set(USE_INTERNAL_LIBS 1)
 else()
