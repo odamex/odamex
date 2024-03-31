@@ -24,6 +24,8 @@
 
 #include "odamex.h"
 
+#include <ctime>
+
 #include <stdarg.h>
 
 #include "m_memio.h"
