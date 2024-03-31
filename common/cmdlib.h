@@ -24,6 +24,7 @@
 #pragma once
 
 #include <algorithm>
+#include <ctime>
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4244)     // MIPS
