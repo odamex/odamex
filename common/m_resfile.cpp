@@ -71,7 +71,7 @@ bool OResFile::make(OResFile& out, const std::string& file)
 
 	out.m_fullpath = fullpath;
 	out.m_md5 = hash;
-	out.m_basename = StdStringToUpper(basename);
+	out.m_basename = basename;
 	return true;
 }
 
@@ -111,7 +111,7 @@ bool OResFile::makeWithHash(OResFile& out, const std::string& file, const OMD5Ha
 
 	out.m_fullpath = fullpath;
 	out.m_md5 = hash;
-	out.m_basename = StdStringToUpper(basename);
+	out.m_basename = basename;
 	return true;
 }
 
@@ -136,8 +136,8 @@ bool OWantFile::make(OWantFile& out, const std::string& file, const ofile_t type
 
 	out.m_wantedpath = file;
 	out.m_wantedtype = type;
-	out.m_basename = StdStringToUpper(basename);
-	out.m_extension = std::string(".") + StdStringToUpper(extension);
+	out.m_basename = basename;
+	out.m_extension = std::string(".") + extension;
 	return true;
 }
 
@@ -165,8 +165,8 @@ bool OWantFile::makeWithHash(OWantFile& out, const std::string& file, const ofil
 	out.m_wantedpath = file;
 	out.m_wantedtype = type;
 	out.m_wantedMD5 = hash;
-	out.m_basename = StdStringToUpper(basename);
-	out.m_extension = StdStringToUpper(extension);
+	out.m_basename = basename;
+	out.m_extension = extension;
 	return true;
 }
 
@@ -290,7 +290,7 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	M_ExtractFileBase(path, basename);
 	if (M_ExtractFileExtension(path, strext))
 	{
-		exts.push_back("." + StdStringToUpper(strext));
+		exts.push_back("." + strext);
 	}
 	else
 	{

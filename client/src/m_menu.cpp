@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include <ctime>
+
 #include "gstrings.h"
 #include "c_console.h"
 #include "c_dispatch.h"
