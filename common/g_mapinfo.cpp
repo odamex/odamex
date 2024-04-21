@@ -1479,70 +1479,74 @@ struct MapInfoDataSetter<level_pwad_info_t>
 
 	MapInfoDataSetter(level_pwad_info_t& ref)
 	{
-		mapInfoDataContainer = {
-			{ "levelnum", &MIType_Int, &ref.levelnum},
-	        { "next", &MIType_MapName, &ref.nextmap},
-	        { "secretnext", &MIType_MapName, &ref.secretmap},
-			{ "secret", &MIType_MapName, &ref.secretmap },
-			{ "cluster", &MIType_Cluster, &ref.cluster },
-			{ "sky1", &MIType_Sky, &ref.skypic },
-			{ "sky2", &MIType_Sky, &ref.skypic2 },
-			{ "fade", &MIType_Color, &ref.fadeto_color },
-			{ "outsidefog", &MIType_Color, &ref.outsidefog_color },
-			{ "titlepatch", &MIType_LumpName, &ref.pname },
-			{ "par", &MIType_Int, &ref.partime },
-			{ "music", &MIType_MusicLumpName, &ref.music },
-			{ "nointermission", &MIType_SetFlag, &ref.flags, LEVEL_NOINTERMISSION },
-			{ "doublesky", &MIType_SetFlag, &ref.flags, LEVEL_DOUBLESKY },
-			{ "nosoundclipping", &MIType_SetFlag, &ref.flags, LEVEL_NOSOUNDCLIPPING },
-			{ "allowmonstertelefrags", &MIType_SetFlag, &ref.flags,
-		       LEVEL_MONSTERSTELEFRAG },
-			{ "map07special", &MIType_Map07Special, &ref.bossactions },
-			{ "baronspecial", &MIType_BaronSpecial, &ref.bossactions },
-			{ "cyberdemonspecial", &MIType_CyberdemonSpecial, &ref.bossactions },
-			{ "spidermastermindspecial", &MIType_SpiderMastermindSpecial, &ref.bossactions },
-			{ "specialaction_exitlevel", &MIType_SpecialAction_ExitLevel, &ref.bossactions },
-			{ "specialaction_opendoor", &MIType_SpecialAction_OpenDoor, &ref.bossactions },
-			{ "specialaction_lowerfloor", &MIType_SpecialAction_LowerFloor, &ref.bossactions },
-			{ "lightning" },
-			{ "fadetable", &MIType_LumpName, &ref.fadetable },
-			{ "evenlighting", &MIType_SetFlag, &ref.flags, LEVEL_EVENLIGHTING },
-			{ "noautosequences", &MIType_SetFlag, &ref.flags, LEVEL_SNDSEQTOTALCTRL },
-			{ "forcenoskystretch", &MIType_SetFlag, &ref.flags, LEVEL_FORCENOSKYSTRETCH },
-			{ "allowfreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_YES,
-		       ~LEVEL_FREELOOK_NO },
-			{ "nofreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_NO,
-		       ~LEVEL_FREELOOK_YES },
-			{ "allowjump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
-			{ "nojump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
-			{ "cdtrack", &MIType_EatNext },
-			{ "cd_start_track", &MIType_EatNext },
-			{ "cd_end1_track", &MIType_EatNext },
-			{ "cd_end2_track", &MIType_EatNext },
-			{ "cd_end3_track", &MIType_EatNext },
-			{ "cd_intermission_track", &MIType_EatNext },
-			{ "cd_title_track", &MIType_EatNext },
-			{ "warptrans", &MIType_EatNext },
-			{ "gravity", &MIType_Float, &ref.gravity },
-			{ "aircontrol", &MIType_Float, &ref.aircontrol },
-			{ "islobby", &MIType_SetFlag, &ref.flags, LEVEL_LOBBYSPECIAL },
-			{ "lobby", &MIType_SetFlag, &ref.flags, LEVEL_LOBBYSPECIAL },
-			{ "nocrouch" },
-			{ "intermusic", &MIType_EatNext },
-			{ "par", &MIType_Int, &ref.partime },
-			{ "sucktime", &MIType_EatNext },
-			{ "enterpic", &MIType_InterLumpName, &ref.enterpic }, // todo: add intermission script support
-			{ "exitpic", &MIType_InterLumpName, &ref.exitpic }, // todo: add intermission script support
-			{ "interpic", &MIType_EatNext },
-			{ "translator", &MIType_EatNext },
-			{ "compat_shorttex", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
-			{ "compat_limitpain", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
-			{ "compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF },
-			{ "compat_trace", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
-			{ "compat_boomscroll", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
-			{ "compat_sectorsounds", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
-			{ "compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER }
-		};
+		mapInfoDataContainer.reserve(
+		    70); // [DE] some random number, i'm not counting all these
+
+		ENTRY3("levelnum", &MIType_Int, &ref.levelnum)
+		ENTRY3("next", &MIType_MapName, &ref.nextmap)
+		ENTRY3("secretnext", &MIType_MapName, &ref.secretmap)
+		ENTRY3("secret", &MIType_MapName, &ref.secretmap)
+		ENTRY3("cluster", &MIType_Cluster, &ref.cluster)
+		ENTRY3("sky1", &MIType_Sky, &ref.skypic)
+		ENTRY3("sky2", &MIType_Sky, &ref.skypic2)
+		ENTRY3("fade", &MIType_Color, &ref.fadeto_color)
+		ENTRY3("outsidefog", &MIType_Color, &ref.outsidefog_color)
+		ENTRY3("titlepatch", &MIType_LumpName, &ref.pname)
+		ENTRY3("par", &MIType_Int, &ref.partime)
+		ENTRY3("music", &MIType_MusicLumpName, &ref.music)
+		ENTRY4("nointermission", &MIType_SetFlag, &ref.flags, LEVEL_NOINTERMISSION)
+		ENTRY4("doublesky", &MIType_SetFlag, &ref.flags, LEVEL_DOUBLESKY)
+		ENTRY4("nosoundclipping", &MIType_SetFlag, &ref.flags, LEVEL_NOSOUNDCLIPPING)
+		ENTRY4("allowmonstertelefrags", &MIType_SetFlag, &ref.flags,
+		       LEVEL_MONSTERSTELEFRAG)
+		ENTRY3("map07special", &MIType_Map07Special, &ref.bossactions)
+		ENTRY3("baronspecial", &MIType_BaronSpecial, &ref.bossactions)
+		ENTRY3("cyberdemonspecial", &MIType_CyberdemonSpecial, &ref.bossactions)
+		ENTRY3("spidermastermindspecial", &MIType_SpiderMastermindSpecial, &ref.bossactions)
+		ENTRY3("specialaction_exitlevel", &MIType_SpecialAction_ExitLevel, &ref.bossactions)
+		ENTRY3("specialaction_opendoor", &MIType_SpecialAction_OpenDoor, &ref.bossactions)
+		ENTRY3("specialaction_lowerfloor", &MIType_SpecialAction_LowerFloor, &ref.bossactions)
+		ENTRY1("lightning")
+		ENTRY3("fadetable", &MIType_LumpName, &ref.fadetable)
+		ENTRY4("evenlighting", &MIType_SetFlag, &ref.flags, LEVEL_EVENLIGHTING)
+		ENTRY4("noautosequences", &MIType_SetFlag, &ref.flags, LEVEL_SNDSEQTOTALCTRL)
+		ENTRY4("forcenoskystretch", &MIType_SetFlag, &ref.flags, LEVEL_FORCENOSKYSTRETCH)
+		ENTRY5("allowfreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_YES,
+		       ~LEVEL_FREELOOK_NO)
+		ENTRY5("nofreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_NO,
+		       ~LEVEL_FREELOOK_YES)
+		ENTRY5("allowjump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO)
+		ENTRY5("nojump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES)
+		ENTRY2("cdtrack", &MIType_EatNext)
+		ENTRY2("cd_start_track", &MIType_EatNext)
+		ENTRY2("cd_end1_track", &MIType_EatNext)
+		ENTRY2("cd_end2_track", &MIType_EatNext)
+		ENTRY2("cd_end3_track", &MIType_EatNext)
+		ENTRY2("cd_intermission_track", &MIType_EatNext)
+		ENTRY2("cd_title_track", &MIType_EatNext)
+		ENTRY2("warptrans", &MIType_EatNext)
+		ENTRY3("gravity", &MIType_Float, &ref.gravity)
+		ENTRY3("aircontrol", &MIType_Float, &ref.aircontrol)
+		ENTRY4("islobby", &MIType_SetFlag, &ref.flags, LEVEL_LOBBYSPECIAL)
+		ENTRY4("lobby", &MIType_SetFlag, &ref.flags, LEVEL_LOBBYSPECIAL)
+		ENTRY1("nocrouch")
+		ENTRY2("intermusic", &MIType_EatNext)
+		ENTRY3("par", &MIType_Int, &ref.partime)
+		ENTRY2("sucktime", &MIType_EatNext)
+		ENTRY3("enterpic", &MIType_InterLumpName,
+		       &ref.enterpic) // todo: add intermission script support
+		ENTRY3("exitpic", &MIType_InterLumpName,
+		       &ref.exitpic) // todo: add intermission script support
+		ENTRY2("interpic", &MIType_EatNext)
+		ENTRY2("translator", &MIType_EatNext)
+		ENTRY3("compat_shorttex", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY3("compat_limitpain", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY4("compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF)
+		ENTRY3("compat_trace", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY3("compat_boomscroll", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY3("compat_sectorsounds", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY4("compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER)
+		ENTRY3("compat_invisibility", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 	}
 };
 
