@@ -1471,6 +1471,15 @@ struct MapInfoDataSetter
 	}
 };
 
+// macro to make up for lack of initializer lists in C++98
+#define ENTRY1(x1) mapInfoDataContainer.push_back(MapInfoData(x1));
+#define ENTRY2(x1, x2) mapInfoDataContainer.push_back(MapInfoData(x1, x2));
+#define ENTRY3(x1, x2, x3) mapInfoDataContainer.push_back(MapInfoData(x1, x2, x3));
+#define ENTRY4(x1, x2, x3, x4) \
+	mapInfoDataContainer.push_back(MapInfoData(x1, x2, x3, x4));
+#define ENTRY5(x1, x2, x3, x4, x5) \
+	mapInfoDataContainer.push_back(MapInfoData(x1, x2, x3, x4, x5));
+
 // level_pwad_info_t
 template <>
 struct MapInfoDataSetter<level_pwad_info_t>
