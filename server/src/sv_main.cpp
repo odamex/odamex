@@ -1920,7 +1920,6 @@ void SV_ConnectClient2(player_t& player)
 	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
 }
 
-<<<<<<< HEAD
 /**
  * @brief Instruct brodcast function to broadcast to all players.
  * 
@@ -1973,7 +1972,6 @@ void SV_BroadcastUnreliable(const google::protobuf::Message& msg,
 			pl.client->msg.queueUnreliable(msg);
 	}
 }
-=======
 
 //
 // SV_BuildKillsDeathsStatusString
@@ -2017,8 +2015,6 @@ std::string SV_BuildKillsDeathsStatusString(player_t& player)
 	return status;
 }
 
->>>>>>> protobreak
-
 //
 // SV_DisconnectClient
 //
@@ -2041,54 +2037,13 @@ void SV_DisconnectClient(player_t &who)
 	Maplist_Disconnect(who);
 	Vote_Disconnect(who);
 
-<<<<<<< HEAD
+	who.playerstate = PST_DISCONNECT;
+
 	if (who.client->displaydisconnect)
 	{
 		// print some final stats for the disconnected player
-		std::string status;
-		if (who.playerstate == PST_DOWNLOAD)
-			status = "downloading";
-		else if (who.spectator)
-			status = "SPECTATOR";
-		else
-		{
-			if (G_IsTeamGame())
-			{
-				sprintf(str, "%s TEAM, ", GetTeamInfo(who.userinfo.team)->ColorStringUpper.c_str());
-				status += str;
-			}
-
-			// Points (CTF).
-			if (sv_gametype == GM_CTF)
-			{
-				sprintf(str, "%d POINTS, ", who.points);
-				status += str;
-			}
-
-			// Frags (DM/TDM/CTF) or Kills (Coop).
-			if (G_IsCoopGame())
-				sprintf(str, "%d KILLS, ", who.killcount);
-			else
-				sprintf(str, "%d FRAGS, ", who.fragcount);
-
-			status += str;
-
-			// Deaths.
-			sprintf(str, "%d DEATHS", who.deathcount);
-			status += str;
-		}
-
-		// Name and reason for disconnect.
-		if (gametic - who.client->last_received == CLIENT_TIMEOUT*35)
-=======
-	who.playerstate = PST_DISCONNECT;
-
-	if (who.client.displaydisconnect)
-	{
-		// print some final stats for the disconnected player
 		std::string status = SV_BuildKillsDeathsStatusString(who);
-		if (gametic - who.client.last_received == CLIENT_TIMEOUT*35)
->>>>>>> protobreak
+		if (gametic - who.client->last_received == CLIENT_TIMEOUT*35)
 			SV_BroadcastPrintf("%s timed out. (%s)\n",
 							who.userinfo.netname.c_str(), status.c_str());
 		else
