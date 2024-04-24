@@ -482,8 +482,6 @@ forceinline argb_t rt_blend2(const argb_t bg, const int bga, const argb_t fg, co
 	return alphablend2a(bg, bga, fg, fga);
 }
 
-bool V_UsePillarBox();
-bool V_UseLetterBox();
 bool V_UseWidescreen();
 
 // Alpha blend between two RGB colors with only dest alpha value

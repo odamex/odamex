@@ -26,6 +26,8 @@
 
 #include "odamex.h"
 
+#include <ctime>
+
 #include <limits.h>
 
 #include "cmdlib.h"

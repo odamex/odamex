@@ -75,16 +75,6 @@ const char *weaponnames[] =
 	"Super Shotgun"
 };
 
-
-enum weaponstate_t
-{
-	upstate,
-	downstate,
-	readystate,
-	atkstate,
-	unknownstate
-};
-
 void A_WeaponReady(AActor* mo);
 void A_Raise(AActor* mo);
 void A_Lower(AActor* mo);
@@ -96,7 +86,7 @@ fixed_t P_BulletSlope(AActor* mo);
 //
 // Returns which state the player's ready weapon is in.
 //
-static weaponstate_t P_GetWeaponState(player_t* player)
+weaponstate_t P_GetWeaponState(player_t* player)
 {
 	struct pspdef_s* psp = &player->psprites[player->psprnum];
 

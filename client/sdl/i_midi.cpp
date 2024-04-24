@@ -85,6 +85,30 @@ static const size_t		cHeaderSize = 6;
 static const size_t		cTrackHeaderSize = 8;
 static const size_t		cMaxSysexSize = 8192;
 
+static const byte drums_table[128] = {
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
+	0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+	0x18, 0x19, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18,
+	0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+	0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28,
+	0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+	0x38, 0x38, 0x38, 0x38, 0x38, 0x38, 0x38, 0x38,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7F
+};
+
+static byte variation[128][128];
+static byte bank_msb[16];
+static byte drum_map[16];
+static bool selected[16];
+
 // ============================================================================
 //
 // Non-member MidiSong helper functions
@@ -503,6 +527,315 @@ void MidiSong::_ParseSong(MEMFILE *mf)
 	// (only needed if we're merging multiple tracks)
 	if (fileheader.num_tracks > 1)
 		mEvents.sort(I_CompareMidiEventTimes);
+}
+
+// ============================================================================
+//
+// MIDI instrument fallback support
+//
+// ============================================================================
+
+static void UpdateDrumMap(const byte *data, size_t length)
+{
+	// GS allows drums on any channel using SysEx messages
+	// The message format is F0 followed by:
+	//
+	// 41 10 42 12 40 <ch> 15 <map> <sum> F7
+	//
+	// <ch> is [11-19, 10, 1A-1F] for channels 1-16. Note the position of 10
+	// <map> is 00-02 for off (normal part), drum map 1, or drum map 2
+	// <sum> is checksum
+
+	if (length == 10 &&
+		data[0] == 0x41 && // Roland
+		data[1] == 0x10 && // Device ID
+		data[2] == 0x42 && // GS
+		data[3] == 0x12 && // DT1
+		data[4] == 0x40 && // Address MSB
+		data[6] == 0x15 && // Address LSB
+		data[9] == 0xF7)   // SysEx EOX
+	{
+		byte idx;
+		byte checksum = 128 - ((int)data[4] + data[5] + data[6] + data[7]) % 128;
+
+		if (data[8] != checksum)
+			return;
+
+		if (data[5] == 0x10) // Channel 10
+		{
+			idx = 9;
+		}
+		else if (data[5] < 0x1A) // Channels 1-9
+		{
+			idx = (data[5] & 0x0F) - 1;
+		}
+		else // Channels 11-16
+		{
+			idx = data[5] & 0x0F;
+		}
+
+		drum_map[idx] = data[7];
+	}
+}
+
+static bool GetProgramFallback(byte idx, byte program, midi_fallback_t *fallback)
+{
+	if (drum_map[idx] == 0) // Normal channel
+	{
+		if (bank_msb[idx] == 0 || variation[bank_msb[idx]][program])
+		{
+			// Found a capital or variation for this bank select MSB
+			selected[idx] = true;
+			return false;
+		}
+
+		fallback->type = MIDI_FALLBACK_BANK_MSB;
+
+		if (!selected[idx] || bank_msb[idx] > 63)
+		{
+			// Fall to capital when no instrument has (successfully) selected
+			// this variation or if the variation is above 63
+			fallback->value = 0;
+			return true;
+		}
+
+		// A previous instrument used this variation but it's not valid for the
+		// current instrument. Fall to the next valid "sub-capital" (next
+		// variation that is a multiple of 8)
+		fallback->value = (bank_msb[idx] / 8) * 8;
+		while (fallback->value > 0)
+		{
+			if (variation[fallback->value][program])
+				break;
+
+			fallback->value -= 8;
+		}
+		return true;
+	}
+	else // Drums channel
+	{
+		if (program != drums_table[program])
+		{
+			// Use drum set from drums fallback table
+			// Drums 0-63 and 127: same as original SC-55 (1.00 - 1.21)
+			// Drums 64-126: standard drum set (0)
+			fallback->type = MIDI_FALLBACK_DRUMS;
+			fallback->value = drums_table[program];
+			selected[idx] = true;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void I_MidiCheckFallback(MidiEvent *event, midi_fallback_t *fallback)
+{
+	if (I_IsMidiSysexEvent(event) && event->getEventType() == MIDI_EVENT_SYSEX)
+	{
+		MidiSysexEvent *sysexevent = static_cast<MidiSysexEvent*>(event);
+		const byte *data = sysexevent->getData();
+		size_t length = sysexevent->getDataLength();
+
+		if (length > 0 && data[length - 1] == MIDI_EVENT_SYSEX_SPLIT)
+			UpdateDrumMap(data, length);
+	}
+	else if (I_IsMidiControllerEvent(event))
+	{
+		MidiControllerEvent *ctrlevent = static_cast<MidiControllerEvent*>(event);
+		byte idx = ctrlevent->getChannel();
+		byte control = ctrlevent->getControllerType();
+		byte param1 = ctrlevent->getParam1();
+
+		switch (control)
+		{
+			case MIDI_CONTROLLER_BANK_SELECT_MSB:
+				bank_msb[idx] = param1;
+				selected[idx] = false;
+				break;
+
+			case MIDI_CONTROLLER_BANK_SELECT_LSB:
+				selected[idx] = false;
+				if (param1 > 0)
+				{
+					// Bank select LSB > 0 not supported. This also preserves
+					// the user's current SC-XX map
+					fallback->type = MIDI_FALLBACK_BANK_LSB;
+					fallback->value = 0;
+					return;
+				}
+				break;
+		}
+	}
+	else if (I_IsMidiChannelEvent(event))
+	{
+		MidiChannelEvent *chanevent = static_cast<MidiChannelEvent*>(event);
+		byte idx = chanevent->getChannel();
+		byte param1 = chanevent->getParam1();
+
+		if (event->getEventType() == MIDI_EVENT_PROGRAM_CHANGE)
+		{
+			if (GetProgramFallback(idx, param1, fallback))
+				return;
+		}
+	}
+
+	fallback->type = MIDI_FALLBACK_NONE;
+	fallback->value = 0;
+}
+
+void I_MidiResetFallback()
+{
+	for (int i = 0; i < 16; i++)
+	{
+		bank_msb[i] = 0;
+		drum_map[i] = 0;
+		selected[i] = false;
+	}
+
+	// Channel 10 (index 9) is set to drum map 1 by default
+	drum_map[9] = 1;
+}
+
+void I_MidiInitFallback()
+{
+	byte program;
+
+	I_MidiResetFallback();
+
+	// Capital
+	for (program = 0; program < 128; program++)
+		variation[0][program] = 1;
+
+	// Variation #1
+	variation[1][38] = 1;
+	variation[1][57] = 1;
+	variation[1][60] = 1;
+	variation[1][80] = 1;
+	variation[1][81] = 1;
+	variation[1][98] = 1;
+	variation[1][102] = 1;
+	variation[1][104] = 1;
+	variation[1][120] = 1;
+	variation[1][121] = 1;
+	variation[1][122] = 1;
+	variation[1][123] = 1;
+	variation[1][124] = 1;
+	variation[1][125] = 1;
+	variation[1][126] = 1;
+	variation[1][127] = 1;
+
+	// Variation #2
+	variation[2][102] = 1;
+	variation[2][120] = 1;
+	variation[2][122] = 1;
+	variation[2][123] = 1;
+	variation[2][124] = 1;
+	variation[2][125] = 1;
+	variation[2][126] = 1;
+	variation[2][127] = 1;
+
+	// Variation #3
+	variation[3][122] = 1;
+	variation[3][123] = 1;
+	variation[3][124] = 1;
+	variation[3][125] = 1;
+	variation[3][126] = 1;
+	variation[3][127] = 1;
+
+	// Variation #4
+	variation[4][122] = 1;
+	variation[4][124] = 1;
+	variation[4][125] = 1;
+	variation[4][126] = 1;
+
+	// Variation #5
+	variation[5][122] = 1;
+	variation[5][124] = 1;
+	variation[5][125] = 1;
+	variation[5][126] = 1;
+
+	// Variation #6
+	variation[6][125] = 1;
+
+	// Variation #7
+	variation[7][125] = 1;
+
+	// Variation #8
+	variation[8][0] = 1;
+	variation[8][1] = 1;
+	variation[8][2] = 1;
+	variation[8][3] = 1;
+	variation[8][4] = 1;
+	variation[8][5] = 1;
+	variation[8][6] = 1;
+	variation[8][11] = 1;
+	variation[8][12] = 1;
+	variation[8][14] = 1;
+	variation[8][16] = 1;
+	variation[8][17] = 1;
+	variation[8][19] = 1;
+	variation[8][21] = 1;
+	variation[8][24] = 1;
+	variation[8][25] = 1;
+	variation[8][26] = 1;
+	variation[8][27] = 1;
+	variation[8][28] = 1;
+	variation[8][30] = 1;
+	variation[8][31] = 1;
+	variation[8][38] = 1;
+	variation[8][39] = 1;
+	variation[8][40] = 1;
+	variation[8][48] = 1;
+	variation[8][50] = 1;
+	variation[8][61] = 1;
+	variation[8][62] = 1;
+	variation[8][63] = 1;
+	variation[8][80] = 1;
+	variation[8][81] = 1;
+	variation[8][107] = 1;
+	variation[8][115] = 1;
+	variation[8][116] = 1;
+	variation[8][117] = 1;
+	variation[8][118] = 1;
+	variation[8][125] = 1;
+
+	// Variation #9
+	variation[9][14] = 1;
+	variation[9][118] = 1;
+	variation[9][125] = 1;
+
+	// Variation #16
+	variation[16][0] = 1;
+	variation[16][4] = 1;
+	variation[16][5] = 1;
+	variation[16][6] = 1;
+	variation[16][16] = 1;
+	variation[16][19] = 1;
+	variation[16][24] = 1;
+	variation[16][25] = 1;
+	variation[16][28] = 1;
+	variation[16][39] = 1;
+	variation[16][62] = 1;
+	variation[16][63] = 1;
+
+	// Variation #24
+	variation[24][4] = 1;
+	variation[24][6] = 1;
+
+	// Variation #32
+	variation[32][16] = 1;
+	variation[32][17] = 1;
+	variation[32][24] = 1;
+	variation[32][52] = 1;
+
+	// CM-64 Map (PCM)
+	for (program = 0; program < 64; program++)
+		variation[126][program] = 1;
+
+	// CM-64 Map (LA)
+	for (program = 0; program < 128; program++)
+		variation[127][program] = 1;
 }
 
 VERSION_CONTROL (i_midi_cpp, "$Id$")

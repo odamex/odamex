@@ -71,7 +71,7 @@ bool OResFile::make(OResFile& out, const std::string& file)
 
 	out.m_fullpath = fullpath;
 	out.m_md5 = hash;
-	out.m_basename = StdStringToUpper(basename);
+	out.m_basename = basename;
 	return true;
 }
 
@@ -111,7 +111,7 @@ bool OResFile::makeWithHash(OResFile& out, const std::string& file, const OMD5Ha
 
 	out.m_fullpath = fullpath;
 	out.m_md5 = hash;
-	out.m_basename = StdStringToUpper(basename);
+	out.m_basename = basename;
 	return true;
 }
 
@@ -136,8 +136,8 @@ bool OWantFile::make(OWantFile& out, const std::string& file, const ofile_t type
 
 	out.m_wantedpath = file;
 	out.m_wantedtype = type;
-	out.m_basename = StdStringToUpper(basename);
-	out.m_extension = std::string(".") + StdStringToUpper(extension);
+	out.m_basename = basename;
+	out.m_extension = std::string(".") + extension;
 	return true;
 }
 
@@ -165,8 +165,8 @@ bool OWantFile::makeWithHash(OWantFile& out, const std::string& file, const ofil
 	out.m_wantedpath = file;
 	out.m_wantedtype = type;
 	out.m_wantedMD5 = hash;
-	out.m_basename = StdStringToUpper(basename);
-	out.m_extension = StdStringToUpper(extension);
+	out.m_basename = basename;
+	out.m_extension = extension;
 	return true;
 }
 
@@ -290,7 +290,7 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	M_ExtractFileBase(path, basename);
 	if (M_ExtractFileExtension(path, strext))
 	{
-		exts.push_back("." + StdStringToUpper(strext));
+		exts.push_back("." + strext);
 	}
 	else
 	{
@@ -321,6 +321,11 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 static bool ScanIWADCmp(const scannedIWAD_t& a, const scannedIWAD_t& b)
 {
 	return a.id->weight < b.id->weight;
+}
+
+static bool ScanPWADCmp(const scannedPWAD_t& a, const scannedPWAD_t& b)
+{
+	return StdStringToLower(a.filename) < StdStringToLower(b.filename);
 }
 
 /**
@@ -363,6 +368,62 @@ std::vector<scannedIWAD_t> M_ScanIWADs()
 
 	// Sort the results by weight.
 	std::sort(rvo.begin(), rvo.end(), ScanIWADCmp);
+
+	return rvo;
+}
+
+/**
+ * @brief Scan all file search directories for PWAD files.
+ */
+std::vector<scannedPWAD_t> M_ScanPWADs()
+{
+	const StringTokens dirs = M_FileSearchDirs();
+
+	// possibly change this
+	std::vector<scannedPWAD_t> rvo;
+	OHashTable<std::string, bool> found;
+
+	for (StringTokens::const_iterator dit = dirs.begin(); dit != dirs.end(); ++dit)
+	{
+		const std::string& dir = *dit;
+
+		const StringTokens files = M_PWADFilesScanDir(dir);
+		for (StringTokens::const_iterator fit = files.begin(); fit != files.end(); ++fit)
+		{
+			const std::string& filename = *fit;
+
+			// [AM] Don't include odamex.wad or IWADs.
+			if (iequals(filename, "odamex.wad"))
+				continue;
+
+			OWantFile file;
+			if (iequals(filename, "d.WAD"))
+			{
+				OMD5Hash hash = W_MD5(dir + PATHSEP + filename);
+				OWantFile::makeWithHash(file, filename, OFILE_WAD, hash);
+			}
+			else
+			{
+				OWantFile::make(file, filename, OFILE_WAD);
+			}
+			if (W_IsKnownIWAD(file))
+				continue;
+
+			// Found a dupe?
+			if (found.find(file.getBasename()) != found.end())
+				continue;
+
+			// Insert our file into the found set.
+			const std::string fullpath = dir + PATHSEP + filename;
+
+			scannedPWAD_t pwad = {fullpath, filename};
+			rvo.push_back(pwad);
+			found[file.getBasename()] = true;
+		}
+	}
+
+	// Sort the results alphabetically
+	std::sort(rvo.begin(), rvo.end(), ScanPWADCmp);
 
 	return rvo;
 }

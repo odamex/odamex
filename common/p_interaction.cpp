@@ -387,11 +387,6 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 // P_GiveWeapon
 // The weapon name may have a MF_DROPPED flag ored in.
 //
-bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon);
-//
-// P_GiveWeapon
-// The weapon name may have a MF_DROPPED flag ored in.
-//
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 {
 	bool gaveammo;
@@ -785,7 +780,7 @@ static void P_GiveCarePack(player_t* player)
 #endif
 }
 
-static bool P_SpecialIsWeapon(AActor *special)
+bool P_SpecialIsWeapon(AActor *special)
 {
 	if (!special)
 		return false;
@@ -1518,6 +1513,7 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 					messagename = OB_SKULL;
 					break;
 				default:
+					messagename = OB_GENMONHIT;
 					break;
 				}
 			}
@@ -1568,6 +1564,18 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 					messagename = OB_WOLFSS;
 					break;
 				default:
+					if (mod == MOD_HITSCAN)
+					{
+						messagename = OB_GENMONPEW;
+					}
+					else if (mod == MOD_ROCKET || mod == MOD_R_SPLASH)
+					{
+						messagename = OB_GENMONBOOM;
+					}
+					else
+					{
+						messagename = OB_GENMONPROJ;
+					}
 					break;
 				}
 			}
@@ -1642,6 +1650,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 				break;
 			case MOD_RAILGUN:
 				messagename = OB_RAILGUN;
+				break;
+			default:
+				messagename = OB_KILLED; // If someone was killed by someone, show it
 				break;
 			}
 

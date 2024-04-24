@@ -77,6 +77,23 @@ Before submitting a pull request, please make sure it follows [our coding standa
 
 [3]: https://odamex.net/wiki/Coding_standard
 
+**Note**: This project contains a demo testing utility that ensures vanilla compatibility by 
+running a specific set of demos after each commit. When forking this project to prepare a pull request,
+this functionality will be unavailable by default to protect sensitive files.
+You can restore this functionality by:
+
+1. Forking [OdaTest-Resources](https://github.com/odamex/odatests-resources) to get the PWADs.
+2. Downloading [OdaTests](https://github.com/odamex/odatests) to get the encryption module.
+3. Replacing the encrypted IWADs with your own set of encrypted IWADs.
+Encrypt using `python .\secret.py encrypt doom2` with the environment variable
+`SECRET_KEY` defined to encrypt the IWADs with. The following IWADs (latest version) are needed to run all tests:
+`doom, doom1, doom2, tnt, plutonia, hacx`
+4. Create a release for your forked OdaTest-Resources repo.
+5. Enter the following Secrets / Repository Variables in GitHub:
+  - `secrets.DEMOTESTER_IWAD_KEY` - Encryption key for the IWADs
+  - `vars.DEMOTESTER_DOWNLOAD_URL` - Full URL to download the latest OdaTests release.
+  - `vars.DEMORESOURCES_DOWNLOAD_URL` - Full URL to download your personal demo resources
+
 External Links
 --------------
 

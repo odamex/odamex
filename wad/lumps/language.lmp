@@ -658,6 +658,11 @@ OB_SNAKE = "%o was rattled by a snake.";
 OB_WIZARD = "%o was cursed by a wizard.";
 OB_WIZARDHIT = "%o was palpated by a wizard.";
 
+OB_GENMONPROJ = "%o was seared by a demon's fireball.";
+OB_GENMONPEW = "%o was cut down by a demon's gun fire.";
+OB_GENMONHIT = "%o was gutted by a demon.";
+OB_GENMONBOOM = "%o was exploded by a demon.";
+
 OB_MPFIST = "%o chewed on %k's fist.";
 OB_MPCHAINSAW = "%o was mowed over by %k's chainsaw.";
 OB_MPPISTOL = "%o was tickled by %k's pea shooter.";
@@ -671,6 +676,7 @@ OB_MPBFG_BOOM = "%o was splintered by %k's BFG.";
 OB_MPBFG_SPLASH = "%o couldn't hide from %k's BFG.";
 OB_MPTELEFRAG = "%o was telefragged by %k.";
 OB_RAILGUN = "%o was railed by %k.";
+OB_KILLED = "%o was killed by %k.";
 
 OB_DEFAULT = "%o died.";
 OB_FRIENDLY1 = "%k mows down a teammate.";
@@ -2110,6 +2116,11 @@ OB_SNAKE = "%o e' stato stritolato da un serpente.";
 OB_WIZARD = "%o e' stato maledetto da un mago.";
 OB_WIZARDHIT = "%o e' stato toccato da un mago.";
 
+OB_GENMONPROJ = "%o e' stato bruciato dalla palla di fuoco di un demone.";
+OB_GENMONPEW = "%o e' stato abbattuto dal fuoco di un demone.";
+OB_GENMONHIT = "%o e' stato sventrato da un demone";
+OB_GENMONBOOM = "%o e' stato fatto esplodere da un demone.";
+
 OB_MPFIST = "%o si schianta contro il pugno di %k.";
 OB_MPCHAINSAW = "%o e' stato falciato dalla motosega di %k.";
 OB_MPPISTOL = "%o e' stato sforacchiato dalla pistola di %k'.";
@@ -2123,6 +2134,7 @@ OB_MPBFG_BOOM = "%o e' stato sminuzzato dal BFG di %k.";
 OB_MPBFG_SPLASH = "%o non poteva nascondersi dal BFG di %k.";
 OB_MPTELEFRAG = "%o e' stato telefraggato da %k.";
 OB_RAILGUN = "%o e' stato perforato dal railgun di %k.";
+OB_KILLED = "%o e' stato ucciso da %k.";
 
 OB_DEFAULT = "%o e' morto.";
 OB_FRIENDLY1 = "%k falcia via un compagno.";

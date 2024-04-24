@@ -62,6 +62,8 @@
 #include "svc_map.h"
 #include "v_textcolors.h"
 #include "p_mapformat.h"
+#include "infomap.h"
+#include "cl_replay.h"
 
 // Extern data from other files.
 
@@ -245,6 +247,12 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 		p.pendingweapon = readyweapon;
 	}
 
+	// Tic was replayed? Don't try and use the replays's autoswitch at the same tic as weapon correction.
+	if (ClientReplay::getInstance().wasReplayed() && pending == wp_nochange)
+	{
+		p.pendingweapon = wp_nochange;
+	}
+
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
 		if (i < msg->player().powers_size())
@@ -259,6 +267,9 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 
 	if (!p.spectator)
 		p.cheats = msg->player().cheats();
+
+	// If a full update was declared, don't try and correct any weapons.
+	ClientReplay::getInstance().reset();
 }
 
 /**
@@ -731,6 +742,7 @@ static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 //
 static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 {
+	ClientReplay::getInstance().reset();
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
 	::forcenetdemosplit = false;
@@ -795,6 +807,13 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 
 	if (!missingfiles.empty())
 	{
+		if (::missingCommercialIWAD)
+		{
+			Printf(PRINT_WARNING, "Server requires commercial IWAD that was not found.\n");
+			CL_QuitNetGame(NQ_DISCONNECT);
+			return;
+		}
+
 		OWantFile missing_file = missingfiles.front();
 		CL_QuitAndTryDownload(missing_file);
 		return;
@@ -1251,8 +1270,11 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		level.killed_monsters++;
 
 	if (target->player == &consoleplayer())
+	{
+		ClientReplay::getInstance().reset();
 		for (size_t i = 0; i < MAXSAVETICS; i++)
 			localcmds[i].clear();
+	}
 
 	if (target->player && lives >= 0)
 		target->player->lives = lives;
@@ -1649,16 +1671,26 @@ static void CL_ExitLevel(const odaproto::svc::ExitLevel* msg)
 {
 	gameaction = ga_completed;
 
+	ClientReplay::getInstance().reset();
+
 	if (netdemo.isRecording())
 		netdemo.writeIntermission();
 }
 
 static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 {
-	AActor* mo = P_FindThingById(msg->netid());
+	uint32_t id = msg->netid();
+	AActor* mo = P_FindThingById(id);
 
-	if (!consoleplayer().mo || !mo)
+	if (!consoleplayer().mo)
 		return;
+
+	if (!mo)
+	{
+		// Record this item into the replay engine for future replaying
+		ClientReplay::getInstance().recordReplayItem(::last_svgametic, id);
+		return;
+	}
 
 	P_GiveSpecial(&consoleplayer(), mo);
 }
@@ -2180,6 +2212,8 @@ static void CL_LevelState(const odaproto::svc::LevelState* msg)
 
 static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
+	ClientReplay::getInstance().reset();
+
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
 	AActor* mo;
@@ -2314,7 +2348,7 @@ static void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
 			break;
 		}
 		case SPC_Gravity:
-			*(int*)&sector->gravity = msg->sector().gravity();
+			*&sector->gravity = msg->sector().gravity();
 			break;
 		case SPC_Panning:
 			sector->ceiling_xoffs = msg->sector().ceiling_offs().x();

@@ -24,6 +24,7 @@
 
 #include "odamex.h"
 
+#include <ctime>
 #include <sstream>
 
 #include "win32inc.h"

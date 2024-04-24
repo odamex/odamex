@@ -465,7 +465,7 @@ void DPusher::Serialize (FArchive &arc)
 	else
 	{
 		arc >> m_Type;
-		arc.ReadObject((DObject*&)m_Source, DPusher::StaticType());
+		arc.ReadObject((DObject*&)*m_Source, DPusher::StaticType());
 		arc >> m_Xmag >> m_Ymag >> m_Magnitude >> m_Radius >> m_X >> m_Y >> m_Affectee;
 	}
 }
@@ -2159,11 +2159,11 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
     return true;
 }
 
-void P_ApplySectorDamage(player_t* player, int damage, int leak)
+void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod)
 {
 	if (!player->powers[pw_ironfeet] || (leak && P_Random(player->mo)<leak))
 		if (!(level.time & 0x1f))
-			P_DamageMobj(player->mo, NULL, NULL, damage);
+			P_DamageMobj(player->mo, NULL, NULL, damage, mod);
 }
 
 void P_ApplySectorDamageEndLevel(player_t* player)

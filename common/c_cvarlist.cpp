@@ -148,10 +148,10 @@ CVAR_FUNC_DECL(		sv_sharekeys, "0", "Share keys found to every player.",
 CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maxiumum time allowed for player reconciliation (in seconds)",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
-CVAR(				sv_allowmovebob, "0", "Allow weapon & view bob changing",
+CVAR(				sv_allowmovebob, "1", "Allow weapon & view bob changing",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
-CVAR(				sv_allowredscreen, "0","Allow clients to adjust amount of red pain screen intensity",
+CVAR(				sv_allowredscreen, "1","Allow clients to adjust amount of red pain screen intensity",
 					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
 
 CVAR(				sv_allowpwo, "0", "Allow clients to set their preferences for automatic weapon switching",
@@ -245,12 +245,13 @@ CVAR(g_preroundreset, "0", "After preround is over, reset the map one last time.
 CVAR(g_postroundtime, "3", "Amount of time after a round before the next round/endgame",
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE(g_coopthingfilter, "0", "Removes cooperative things of the map. Values are:\n" \
-	"// 0 - All Coop things are retained (default).\n" \
+CVAR_RANGE(g_thingfilter, "0", "Removes some things from the map. Values are:\n" \
+	"// 0 - All things are retained (default).\n" \
 	"// 1 - Only Coop weapons are removed.\n" \
-        "// 2 - All Coop things are removed.",
+        "// 2 - All Coop things are removed.\n" \
+	"// 3 - All pickupable things are removed.",
            CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_LATCH,
-           0.0f, 2.0f)
+           0.0f, 3.0f)
 
 CVAR(g_resetinvonexit, "0",
      "Always reset players to their starting inventory on level exit", CVARTYPE_BOOL,
