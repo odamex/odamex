@@ -290,9 +290,9 @@ bool SVCMessages::clientAck(const uint32_t packetAck, const uint32_t packetAckBi
 	clientAckPacket(packetAck);
 
 	// Loop through the last 32 messages and ack those if the bit is set.
-	uint32_t bitPacketID = packetAck - 1;
 	for (size_t i = 0; i < 32; i++)
 	{
+		uint32_t bitPacketID = packetAck - i - 1;
 		if ((packetAckBits & BIT(i)) != 0)
 		{
 			clientAckPacket(bitPacketID);

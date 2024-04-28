@@ -63,6 +63,7 @@ bool CL_PrepareConnect();
 bool CL_ReadAndParseMessages();
 bool CL_ReadPacketHeader();
 void CL_SendCmd(void);
+void CL_KeepAlive();
 void CL_SaveCmd(void);
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictWorld(void);

@@ -885,6 +885,8 @@ static bool TickConnected()
 	CL_SaveCmd(); // save console commands
 	if (!noservermsgs)
 		CL_SendCmd(); // send console commands to the server
+	else
+		CL_KeepAlive(); // send acks to keep the connection alive.
 
 	if (!(gametic % TICRATE))
 	{

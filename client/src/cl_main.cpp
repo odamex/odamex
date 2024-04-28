@@ -1915,7 +1915,7 @@ void CL_TryToConnect(DWORD server_token)
 
 	if (!connecttimeout)
 	{
-		connecttimeout = 140; // 140 tics = 4 seconds
+		connecttimeout = TICRATE; // [LM] Was 4 seconds, retry faster on dropped packet.
 
 		Printf("Joining server...\n");
 
@@ -2103,6 +2103,21 @@ void CL_SendCmd(void)
 		netcmd->write(&write_buffer);
 	}
 
+	int bytesWritten = NET_SendPacket(write_buffer, serveraddr);
+	netgraph.addTrafficOut(bytesWritten);
+
+	outrate += write_buffer.size();
+	SZ_Clear(&write_buffer);
+}
+
+void CL_KeepAlive()
+{
+	// Update the server on acked packets.
+	MSG_WriteMarker(&write_buffer, clc_ack);
+	MSG_WriteLong(&write_buffer, int(g_AckManager.getRecentAck()));
+	MSG_WriteLong(&write_buffer, int(g_AckManager.getAckBits()));
+
+	// Send just the ack.
 	int bytesWritten = NET_SendPacket(write_buffer, serveraddr);
 	netgraph.addTrafficOut(bytesWritten);
 
