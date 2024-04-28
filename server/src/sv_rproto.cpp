@@ -142,10 +142,13 @@ bool SV_SendQueuedPackets(client_t& client)
 	// Unlikely, but better to be safe than sorry.
 	const dtime_t time = I_MSTime();
 
+	// Number of packets that can contain reliable packets.
+	constexpr size_t reliableWindow = 2;
+
 	size_t count = 0;
 	for (;;)
 	{
-		if (!client.msg.writePacket(client.netbuf, time))
+		if (!client.msg.writePacket(client.netbuf, time, count < reliableWindow))
 			break;
 
 		// [AM] Most of the hard work of assembling the packet is done in the client.

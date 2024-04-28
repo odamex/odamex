@@ -1767,7 +1767,7 @@ void SV_ConnectClient()
 		SVCMessages msg;
 		buf_t buffer(MAX_UDP_SIZE);
 		msg.queueUnreliable(SVC_Disconnect("Server is full\n"));
-		msg.writePacket(buffer, I_MSTime());
+		msg.writePacket(buffer, I_MSTime(), true);
 
 		NET_SendPacket(buffer, ::net_from);
 		return;

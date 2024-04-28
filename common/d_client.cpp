@@ -94,42 +94,45 @@ void SVCMessages::queueUnreliable(const google::protobuf::Message& msg)
 	msg.SerializeToString(&queued.data);
 }
 
-bool SVCMessages::writePacket(buf_t& buf, const dtime_t time)
+bool SVCMessages::writePacket(buf_t& buf, const dtime_t time, const bool reliable)
 {
 	// Queue the packet for sending.
 	sentPacket_s& sent = sentPacket(m_nextPacketID);
 	sent.clear();
 
-	// Walk the message array starting with the oldest un-acked.
-	const uint16_t LENGTH = m_nextReliableID - m_reliableNoAck;
-	for (uint16_t i = 0; i < LENGTH; i++)
+	if (reliable)
 	{
-		reliableMessage_s* queue = validReliableMessage(m_reliableNoAck + i);
-		if (queue == nullptr || queue->acked)
+		// Walk the message array starting with the oldest un-acked.
+		const uint16_t LENGTH = m_nextReliableID - m_reliableNoAck;
+		for (uint16_t i = 0; i < LENGTH; i++)
 		{
-			// Message either does not exist or was acked already.
-			continue;
+			reliableMessage_s* queue = validReliableMessage(m_reliableNoAck + i);
+			if (queue == nullptr || queue->acked)
+			{
+				// Message either does not exist or was acked already.
+				continue;
+			}
+
+			if (queue->lastSent + RELIABLE_TIMEOUT >= time)
+			{
+				// Don't rapid-fire resends.
+				continue;
+			}
+
+			// Size of data plus header.
+			const size_t TOTAL_SIZE = RELIABLE_HEADER_SIZE + queue->data.size();
+			if (sent.size + TOTAL_SIZE > MAX_UDP_SIZE)
+			{
+				// Too big to fit.
+				continue;
+			}
+
+			sent.size += TOTAL_SIZE;
+			sent.reliableIDs.push_back(queue->messageID);
+
+			// Ensure we don't resend immediately.
+			queue->lastSent = time;
 		}
-
-		if (queue->lastSent + RELIABLE_TIMEOUT >= time)
-		{
-			// Don't rapid-fire resends.
-			continue;
-		}
-
-		// Size of data plus header.
-		const size_t TOTAL_SIZE = RELIABLE_HEADER_SIZE + queue->data.size();
-		if (sent.size + TOTAL_SIZE > MAX_UDP_SIZE)
-		{
-			// Too big to fit.
-			continue;
-		}
-
-		sent.size += TOTAL_SIZE;
-		sent.reliableIDs.push_back(queue->messageID);
-
-		// Ensure we don't resend immediately.
-		queue->lastSent = time;
 	}
 
 	// See if we can fit in any other unreliable messages.

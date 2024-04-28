@@ -134,9 +134,10 @@ class SVCMessages
 	 *
 	 * @param buf Buffer to write to.
 	 * @param time Time to consider when preventing resends.
+	 * @param reliable True if we should send reliable packets.
 	 * @return True if a packet was queued, false if no viable messages made it in.
 	 */
-	bool writePacket(buf_t& buf, const dtime_t time);
+	bool writePacket(buf_t& buf, dtime_t time, bool reliable);
 
 	/**
 	 * @brief Process package acknowledgements from the client.
