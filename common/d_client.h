@@ -66,30 +66,91 @@ class SVCMessages
 	OCircularQueue<unreliableMessage_s, BIT(10)> m_unreliableMessages;
 	OCircularBuffer<sentPacket_s, BIT(10)> m_sentPackets;
 
-	uint32_t m_nextPacketID;
-	uint16_t m_nextReliableID;
-	uint16_t m_reliableNoAck;
+	/**
+	 * @brief ID to use for next packet.
+	 */
+	uint32_t m_nextPacketID = 0;
 
+	/**
+	 * @brief ID to use for next reliable message.
+	 */
+	uint16_t m_nextReliableID = 0;
+
+	/**
+	 * @brief The most recent reliable message that the client has not acked.
+	 *        It is assumed that every reliable message packet before this
+	 *        one was acked by the client, in order.
+	 */
+	uint16_t m_reliableNoAck = 0;
+
+	/**
+	 * @brief Return a sent packet for a given packet ID, with no error checking.
+	 */
 	sentPacket_s& sentPacket(const uint32_t id);
+
+	/**
+	 * @brief Return a sent packet for a given packet ID, or null if there is
+	 *        no matching packet.
+	 */
 	sentPacket_s* validSentPacket(const uint32_t id);
+
+	/**
+	 * @brief Return a reliable message for a given reliable ID, with no error checking.
+	 */
 	reliableMessage_s& reliableMessage(const uint16_t id);
+
+	/**
+	 * @brief Return a reliable message for a given message ID, or null if there
+	 *        is no matching message.
+	 */
 	reliableMessage_s* validReliableMessage(const uint16_t id);
 
   public:
-	SVCMessages();
-	SVCMessages(const SVCMessages& other);
-	void clear();
-	void queueReliable(const google::protobuf::Message& msg);
-	void queueUnreliable(const google::protobuf::Message& msg);
-	bool writePacket(buf_t& buf, const dtime_t time);
-	bool clientAck(const uint32_t packetAck, const uint32_t packetAckBits);
-
 	struct debug_s
 	{
 		uint32_t nextPacketID;
 		uint16_t nextReliableID;
 		uint16_t reliableNoAck;
 	};
+
+	/**
+	 * @brief Clear the message container.
+	 */
+	void clear();
+
+	/**
+	 * @brief Queue a reliable message to be sent.
+	 */
+	void queueReliable(const google::protobuf::Message& msg);
+
+	/**
+	 * @brief Queue an unreliable message to be sent.
+	 */
+	void queueUnreliable(const google::protobuf::Message& msg);
+
+	/**
+	 * @brief Given the state of messages, construct and write a single packet to the
+	 *        buffer.
+	 *
+	 * @param buf Buffer to write to.
+	 * @param time Time to consider when preventing resends.
+	 * @return True if a packet was queued, false if no viable messages made it in.
+	 */
+	bool writePacket(buf_t& buf, const dtime_t time);
+
+	/**
+	 * @brief Process package acknowledgements from the client.
+	 *
+	 * @param packetAck Most recent packet acknowledged.
+	 * @param packetAckBits Bitfield of packets previous to packetAck that
+	 *                      have also been acked.
+	 * @return False if ack was sent from new connection, otherwise true.
+	 */
+	bool clientAck(const uint32_t packetAck, const uint32_t packetAckBits);
+
+	/**
+	 * @brief Return internal message data.
+	 */
 	debug_s debug();
 };
 

@@ -34,18 +34,11 @@ static const dtime_t RELIABLE_TIMEOUT = 100;
 static const size_t RELIABLE_HEADER_SIZE = sizeof(byte) + sizeof(uint16_t);
 static const size_t UNRELIABLE_HEADER_SIZE = sizeof(byte);
 
-/**
- * @brief Return a sent packet for a given packet ID, with no error checking.
- */
 SVCMessages::sentPacket_s& SVCMessages::sentPacket(const uint32_t id)
 {
 	return m_sentPackets[id];
 }
 
-/**
- * @brief Return a sent packet for a given packet ID, or null if there is
- *        no matching packet.
- */
 SVCMessages::sentPacket_s* SVCMessages::validSentPacket(const uint32_t id)
 {
 	sentPacket_s* sent = &sentPacket(id);
@@ -54,18 +47,11 @@ SVCMessages::sentPacket_s* SVCMessages::validSentPacket(const uint32_t id)
 	return sent;
 }
 
-/**
- * @brief Return a reliable message for a given reliable ID, with no error checking.
- */
 SVCMessages::reliableMessage_s& SVCMessages::reliableMessage(const uint16_t id)
 {
 	return m_reliableMessages[id];
 }
 
-/**
- * @brief Return a reliable message for a given message ID, or null if there
- *        is no matching message.
- */
 SVCMessages::reliableMessage_s* SVCMessages::validReliableMessage(const uint16_t id)
 {
 	reliableMessage_s* sent = &reliableMessage(id);
@@ -74,23 +60,6 @@ SVCMessages::reliableMessage_s* SVCMessages::validReliableMessage(const uint16_t
 	return sent;
 }
 
-SVCMessages::SVCMessages()
-    : m_reliableMessages(), m_unreliableMessages(), m_sentPackets(), m_nextPacketID(0),
-      m_nextReliableID(0), m_reliableNoAck(0)
-{
-}
-
-SVCMessages::SVCMessages(const SVCMessages& other)
-    : m_reliableMessages(other.m_reliableMessages),
-      m_unreliableMessages(other.m_unreliableMessages),
-      m_sentPackets(other.m_sentPackets), m_nextPacketID(other.m_nextPacketID),
-      m_nextReliableID(other.m_nextReliableID), m_reliableNoAck(other.m_reliableNoAck)
-{
-}
-
-/**
- * @brief Clear the message container.
- */
 void SVCMessages::clear()
 {
 	m_reliableMessages.clear();
@@ -101,9 +70,6 @@ void SVCMessages::clear()
 	m_reliableNoAck = 0;
 }
 
-/**
- * @brief Queue a reliable message to be sent.
- */
 void SVCMessages::queueReliable(const google::protobuf::Message& msg)
 {
 	// Queue the message.
@@ -119,9 +85,6 @@ void SVCMessages::queueReliable(const google::protobuf::Message& msg)
 	m_nextReliableID += 1;
 }
 
-/**
- * @brief Queue an unreliable message to be sent.
- */
 void SVCMessages::queueUnreliable(const google::protobuf::Message& msg)
 {
 	unreliableMessage_s& queued = m_unreliableMessages.push();
@@ -131,13 +94,6 @@ void SVCMessages::queueUnreliable(const google::protobuf::Message& msg)
 	msg.SerializeToString(&queued.data);
 }
 
-/**
- * @brief Given the state of messages, construct and write a single packet to the buffer.
- *
- * @param buf Buffer to write to.
- * @param time Time to consider when preventing resends.
- * @return True if a packet was queued, false if no viable messages made it in.
- */
 bool SVCMessages::writePacket(buf_t& buf, const dtime_t time)
 {
 	// Queue the packet for sending.
@@ -252,14 +208,6 @@ bool SVCMessages::writePacket(buf_t& buf, const dtime_t time)
 	return true;
 }
 
-/**
- * @brief Process package acknowledgements from the client.
- *
- * @param packetAck Most recent packet acknowledged.
- * @param packetAckBits Bitfield of packets previous to packetAck that
- *                      have also been acked.
- * @return False if ack was sent from new connection, otherwise true.
- */
 bool SVCMessages::clientAck(const uint32_t packetAck, const uint32_t packetAckBits)
 {
 	if (packetAck == 0 && packetAckBits == 0)
@@ -314,9 +262,6 @@ bool SVCMessages::clientAck(const uint32_t packetAck, const uint32_t packetAckBi
 	return true;
 }
 
-/**
- * @brief Return internal message data.
- */
 SVCMessages::debug_s SVCMessages::debug()
 {
 	debug_s rvo;
