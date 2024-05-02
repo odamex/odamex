@@ -412,13 +412,22 @@ static const identData_t identdata[] = {
     // FREEDOOM1.WAD
     // ------------------------------------------------------------------------
     {
+        FREEDOOM1_PREFIX " v0.13.0",        // mIdName
+        "FREEDOOM1.WAD",                    // mFilename
+        "5B55E156",                         // mCRC32Sum
+        "B93BE13D05148DD01614BC205A03648E", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_IWAD,                         // flags
+        525,                                // weight
+    },
+    {
         FREEDOOM1_PREFIX " v0.12.1",        // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "DE6DDB27",                         // mCRC32Sum
         "B36AA44A23045E503C19AF4B4C438A78", // mMd5Sum
         UDOOM_PREFIX " v1.9",               // mGroupName
-        IDENT_IWAD,                         // flags
-        525,                                // weight
+        IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1525,                               // weight
     },
     {
         FREEDOOM1_PREFIX " v0.12.0",        // mIdName
@@ -506,13 +515,22 @@ static const identData_t identdata[] = {
     // FREEDOOM2.WAD
     // ------------------------------------------------------------------------
     {
+        FREEDOOM2_PREFIX " v0.13.0",        // mIdName
+        "FREEDOOM2.WAD",                    // mFilename
+        "68A76EB5",                         // mCRC32Sum
+        "CD666466759B5E5F63AF93C5F0FFD0A1", // mMd5Sum
+        DOOM2_PREFIX " v1.9",               // mGroupName
+        IDENT_IWAD,                         // flags
+        500,                                // weight
+    },
+    {
         FREEDOOM2_PREFIX " v0.12.1",        // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "212E1CF9",                         // mCRC32Sum
         "CA9A4159A7833544A89144C7F5053412", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
-        IDENT_IWAD,                         // flags
-        500,                                // weight
+        IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1500,                               // weight
     },
     {
         FREEDOOM2_PREFIX " v0.12.0",        // mIdName
@@ -600,13 +618,22 @@ static const identData_t identdata[] = {
     // FREEDM.WAD
     // ------------------------------------------------------------------------
     {
+        FREEDM_PREFIX " v0.13.0",           // mIdName
+        "FREEDM.WAD",                       // mFilename
+        "E5636B13",                         // mCRC32Sum
+        "908DFD77A14CC490C4CEA94B62D13449", // mMd5Sum
+        DOOM2_PREFIX " v1.9",               // mGroupName
+        IDENT_IWAD,                         // flags
+        550,                                // weight
+    },
+    {
         FREEDM_PREFIX " v0.12.1",           // mIdName
         "FREEDM.WAD",                       // mFilename
         "BD680D11",                         // mCRC32Sum
         "D40C932A9183DED919AFA89F4A729668", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
-        IDENT_IWAD,                         // flags
-        550,                                // weight
+        IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1550,                               // weight
     },
     {
         FREEDM_PREFIX " v0.12.0",           // mIdName
