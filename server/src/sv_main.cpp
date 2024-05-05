@@ -127,6 +127,7 @@ void P_PlayerLeavesGame(player_s* player);
 bool P_LineSpecialMovesSector(short special);
 
 void SV_UpdateShareKeys(player_t& player);
+std::string SV_BuildKillsDeathsStatusString(player_t& player);
 std::string V_GetTeamColor(UserInfo userinfo);
 
 CVAR_FUNC_IMPL (sv_maxclients)
@@ -183,7 +184,10 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 					             SVC_PlayerMembers(*it, SVC_PM_SPECTATOR));
 				}
 
-				SV_BroadcastPrintf ("%s became a spectator.\n", it->userinfo.netname.c_str());
+				std::string status = SV_BuildKillsDeathsStatusString(*it);
+				SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.(%s)\n",
+					it->userinfo.netname.c_str(), status.c_str());
+
 				MSG_WriteSVC(
 				    &it->client.reliablebuf,
 				    SVC_Print(PRINT_CHAT,
@@ -1172,14 +1176,6 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 
 		return true;
 	}
-	else if (previously_ok && ok 
-			&& player.mo && !mo->player && mo->type != MT_AVATAR && mo->type != MT_PLAYER 
-			&& mo->on_conveyor
-			&& (gametic + mo->netid) % 120) // Update items on conveyers every 120 tics
-	{
-		SV_SendMobjToClient(mo, cl);
-		return true;
-	}
 
 
 	return false;
@@ -1946,6 +1942,50 @@ void SV_ConnectClient2(player_t& player)
 	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
 }
 
+
+//
+// SV_BuildKillsDeathsStatusString
+//
+std::string SV_BuildKillsDeathsStatusString(player_t& player)
+{
+	std::string status;
+	char temp_str[100];
+
+	if (player.playerstate == PST_DOWNLOAD)
+		status = "downloading";
+	else if (player.playerstate == PST_DISCONNECT && player.spectator)
+		status = "SPECTATOR";
+	else
+	{
+		if (G_IsTeamGame())
+		{
+			sprintf(temp_str, "%s TEAM, ", GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str());
+			status += temp_str;
+		}
+
+		// Points (CTF).
+		if (sv_gametype == GM_CTF)
+		{
+			sprintf(temp_str, "%d POINTS, ", player.points);
+			status += temp_str;
+		}
+
+		// Frags (DM/TDM/CTF) or Kills (Coop).
+		if (G_IsCoopGame())
+			sprintf(temp_str, "%d KILLS, ", player.killcount);
+		else
+			sprintf(temp_str, "%d FRAGS, ", player.fragcount);
+
+		status += temp_str;
+
+		// Deaths.
+		sprintf(temp_str, "%d DEATHS", player.deathcount);
+		status += temp_str;
+	}
+	return status;
+}
+
+
 //
 // SV_DisconnectClient
 //
@@ -1968,43 +2008,12 @@ void SV_DisconnectClient(player_t &who)
 	Maplist_Disconnect(who);
 	Vote_Disconnect(who);
 
+	who.playerstate = PST_DISCONNECT;
+
 	if (who.client.displaydisconnect)
 	{
 		// print some final stats for the disconnected player
-		std::string status;
-		if (who.playerstate == PST_DOWNLOAD)
-			status = "downloading";
-		else if (who.spectator)
-			status = "SPECTATOR";
-		else
-		{
-			if (G_IsTeamGame())
-			{
-				sprintf(str, "%s TEAM, ", GetTeamInfo(who.userinfo.team)->ColorStringUpper.c_str());
-				status += str;
-			}
-
-			// Points (CTF).
-			if (sv_gametype == GM_CTF)
-			{
-				sprintf(str, "%d POINTS, ", who.points);
-				status += str;
-			}
-
-			// Frags (DM/TDM/CTF) or Kills (Coop).
-			if (G_IsCoopGame())
-				sprintf(str, "%d KILLS, ", who.killcount);
-			else
-				sprintf(str, "%d FRAGS, ", who.fragcount);
-
-			status += str;
-
-			// Deaths.
-			sprintf(str, "%d DEATHS", who.deathcount);
-			status += str;
-		}
-
-		// Name and reason for disconnect.
+		std::string status = SV_BuildKillsDeathsStatusString(who);
 		if (gametic - who.client.last_received == CLIENT_TIMEOUT*35)
 			SV_BroadcastPrintf("%s timed out. (%s)\n",
 							who.userinfo.netname.c_str(), status.c_str());
@@ -2013,7 +2022,6 @@ void SV_DisconnectClient(player_t &who)
 							who.userinfo.netname.c_str(), status.c_str());
 	}
 
-	who.playerstate = PST_DISCONNECT;
 	SV_UpdatePlayerQueuePositions(G_CanJoinGame, &who);
 }
 
@@ -3587,7 +3595,11 @@ void SV_SpecPlayer(player_t &player, bool silent)
 	P_SetSpectatorFlags(player);
 
 	if (!silent)
-		SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname.c_str());
+	{
+		std::string status = SV_BuildKillsDeathsStatusString(player);
+		SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.(%s)\n",
+			player.userinfo.netname.c_str(), status.c_str());
+	}
 
 	P_PlayerLeavesGame(&player);
 	SV_UpdatePlayerQueuePositions(G_CanJoinGame, &player);

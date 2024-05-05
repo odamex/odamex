@@ -2365,7 +2365,7 @@ static void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
 			break;
 		}
 		case SPC_Gravity:
-			*(int*)&sector->gravity = msg->sector().gravity();
+			*&sector->gravity = msg->sector().gravity();
 			break;
 		case SPC_Panning:
 			sector->ceiling_xoffs = msg->sector().ceiling_offs().x();
