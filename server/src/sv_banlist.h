@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <ctime>
 #include <sstream>
 
 #include "json/json.h"
