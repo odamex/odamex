@@ -769,8 +769,15 @@ void AActor::RunThink ()
 
 		movecount++;
 
-		if (movecount < G_GetCurrentSkill().respawn_counter * TICRATE)
-			return;
+		int respawntimer = 0;
+
+		if (G_GetCurrentSkill().respawn_counter < 0)
+			respawntimer = G_GetCurrentSkill().respawn_counter;
+		else
+			respawntimer = 12 * TICRATE;
+
+		if (movecount < respawntimer)
+		return;
 
 		if (level.time & 31)
 			return;
