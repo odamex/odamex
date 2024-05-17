@@ -521,7 +521,6 @@ public:
 	SWORD			gear;			// killough 11/98: used in torque simulation
 
 	bool			onground;		// NES - Fixes infinite jumping bug like a charm.
-	bool			on_conveyor; // Blair - Update items on conveyors more often
 
 	// a linked list of sectors where this object appears
 	struct msecnode_s	*touching_sectorlist;				// phares 3/14/98

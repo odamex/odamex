@@ -309,7 +309,7 @@ CVAR (joy_fastsensitivity, "15.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR
 CVAR (joy_freelook, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE (joy_deadzone, "0.34", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,  0.0f, 1.0f)
+CVAR_RANGE (joy_deadzone, "0.20", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,  0.0f, 0.75f)
 
 CVAR_RANGE(joy_lefttrigger_deadzone, "0.2", "Sets the required pressure to trigger a press on the left trigger (Analog controllers only)",
 					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.01f, 1.0f)
