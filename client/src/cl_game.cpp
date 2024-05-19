@@ -150,6 +150,7 @@ EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowjump)
+EXTERN_CVAR(sv_showplayerpowerups)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_blockmapfix)
@@ -1949,6 +1950,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			}
 
 			sv_respawnsuper.Set(0.0f);
+			sv_showplayerpowerups.Set(0.0f);
 
 			usergame = false;
 		}
