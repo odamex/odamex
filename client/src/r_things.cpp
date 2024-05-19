@@ -189,19 +189,26 @@ void SpriteColumnBlaster()
 // The following will break vanilla demos!
 void R_SpawnBerserkPuff(int x, int y, int z)
 {
-		AActor* puff;
+	// don't run if menu is open
+	if (menuactive || ConsoleState == c_down || paused)
+		return;
 
-		int ang = P_RandomHitscanAngle(256 * 65535);
+	AActor* puff;
 
-		puff = new AActor(x, y, z, MT_PUFF);
+	int ang = P_RandomHitscanAngle(256 * 65535);
 
-		puff->x += FixedMul((P_RandomDiff() * FRACUNIT) >> 4, finecosine[ang >> 13]);
-		puff->y += FixedMul((P_RandomDiff() * FRACUNIT) >> 4, finesine[ang >> 11]);
-		puff->z += abs((P_RandomDiff() * FRACUNIT) >> 2);
-		puff->tics -= P_Random(puff) & 3;
+	puff = new AActor(x, y, z, MT_PUFF);
 
-		if (puff->tics < 1)
-			puff->tics = 1;
+	puff->x += FixedMul(((P_RandomDiff() >> 4) * FRACUNIT) - -(16 * FRACUNIT),
+	                    finecosine[ang >> ANGLETOFINESHIFT]);
+	puff->y += FixedMul(((P_RandomDiff() >> 4) * FRACUNIT) - -(16 * FRACUNIT),
+	                    finesine[ang >> ANGLETOFINESHIFT]);
+	puff->z += abs((P_RandomDiff() >> 2) * FRACUNIT);
+	puff->momz = abs((FRACUNIT * P_RandomDiff()) >> 4);
+	puff->tics -= P_Random(puff) & 3;
+
+	if (puff->tics < 1)
+		puff->tics = 1;
 }
 
 EXTERN_CVAR(sv_showplayerpowerups)
