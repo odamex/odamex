@@ -185,7 +185,7 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 				}
 
 				std::string status = SV_BuildKillsDeathsStatusString(*it);
-				SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.(%s)\n",
+				SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator. (%s)\n",
 					it->userinfo.netname.c_str(), status.c_str());
 
 				MSG_WriteSVC(
@@ -3590,7 +3590,7 @@ void SV_SpecPlayer(player_t &player, bool silent)
 	if (!silent)
 	{
 		std::string status = SV_BuildKillsDeathsStatusString(player);
-		SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.(%s)\n",
+		SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator. (%s)\n",
 			player.userinfo.netname.c_str(), status.c_str());
 	}
 
