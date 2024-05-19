@@ -178,6 +178,9 @@ CVAR(				sv_unblockplayers, "0", "Allows players to walk through other players, 
 CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
 					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
+CVAR(				sv_showplayerpowerups, "1", "Show which powerup each player has. (1 = Show all powerups to clients. 0 = Only show Invisibility (vanilla)", 
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
 CVAR(sv_downloadsites, "",
      "A list of websites to download WAD files from, separated by spaces",
      CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
