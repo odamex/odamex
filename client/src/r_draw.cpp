@@ -213,6 +213,8 @@ argb_t translationRGB[MAXPLAYERS+1][16];
 byte *Ranges;
 static byte *translationtablesmem = NULL;
 byte bosstable[256];
+byte greentable[MAXPLAYERS + 1][256];
+byte redtable[MAXPLAYERS + 1][256];
 
 static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
 {
@@ -328,6 +330,52 @@ static byte SoftLight(const byte bot, const byte top)
 	return res * 255;
 }
 
+void R_RebuildPlayerGreenTintTables(int player)
+{
+	argb_t gtop(0x62, 0xff, 0x5c);
+	for (size_t i = 0; i < ARRAY_LENGTH(::greentable[player]); i++)
+	{
+		argb_t bot = argb_t();
+		if (i > 0x70 && i < 0x80)
+		{
+			bot = translationRGB[player][i - 0x70];
+		}
+		else
+		{
+			bot = V_GetDefaultPalette()->basecolors[i];
+		}
+
+		const argb_t mul(SoftLight(bot.getr(), gtop.getr()),
+		                 SoftLight(bot.getg(), gtop.getg()),
+		                 SoftLight(bot.getb(), gtop.getb()));
+
+		::greentable[player][i] = V_BestColor(V_GetDefaultPalette()->basecolors, mul);
+	}
+}
+
+void R_RebuildPlayerRedTintTables(int player)
+{
+	argb_t rtop(0xff, 0x28, 0x28);
+	for (size_t i = 0; i < ARRAY_LENGTH(::redtable[player]); i++)
+	{
+		argb_t bot = argb_t();
+		if (i > 0x70 && i < 0x80)
+		{
+			bot = translationRGB[player][i - 0x70];
+		}
+		else
+		{
+			bot = V_GetDefaultPalette()->basecolors[i];
+		}
+
+		const argb_t mul(SoftLight(bot.getr(), rtop.getr()),
+		                 SoftLight(bot.getg(), rtop.getg()),
+		                 SoftLight(bot.getb(), rtop.getb()));
+
+		::redtable[player][i] = V_BestColor(V_GetDefaultPalette()->basecolors, mul);
+	}
+}
+
 //
 // R_InitTranslationTables
 //
@@ -341,13 +389,13 @@ void R_InitTranslationTables()
     R_FreeTranslationTables();
 
 	// Boss translation is a yellow tint.
-	argb_t top(0xff, 0xff, 0x73);
+	argb_t ytop(0xff, 0xff, 0x73);
 	for (size_t i = 0; i < ARRAY_LENGTH(::bosstable); i++)
 	{
 		const argb_t bot = V_GetDefaultPalette()->basecolors[i];
-		const argb_t mul(SoftLight(bot.getr(), top.getr()),
-		                 SoftLight(bot.getg(), top.getg()),
-		                 SoftLight(bot.getb(), top.getb()));
+		const argb_t mul(SoftLight(bot.getr(), ytop.getr()),
+		                 SoftLight(bot.getg(), ytop.getg()),
+		                 SoftLight(bot.getb(), ytop.getb()));
 
 		::bosstable[i] = V_BestColor(V_GetDefaultPalette()->basecolors, mul);
 	}
@@ -384,6 +432,13 @@ void R_InitTranslationTables()
 		translationtables[i+(MAXPLAYERS+0)*256] = 0x60 + (i&0xf);
 		translationtables[i+(MAXPLAYERS+1)*256] = 0x40 + (i&0xf);
 		translationtables[i+(MAXPLAYERS+2)*256] = 0x20 + (i&0xf);
+	}
+
+	// Create powerup tints by grabbing each players rgb translation table
+	for (size_t i = 0; i < MAXPLAYERS + 1; i++)
+	{
+		R_RebuildPlayerGreenTintTables(i);
+		R_RebuildPlayerRedTintTables(i);
 	}
 
 	Ranges = translationtables + (MAXPLAYERS+3)*256;
@@ -443,6 +498,12 @@ void R_BuildClassicPlayerTranslation (int player, int color)
 		}
 }
 
+void R_RebuildPlayerTintTables(int playerid)
+{
+	R_RebuildPlayerGreenTintTables(playerid);
+	R_RebuildPlayerRedTintTables(playerid);
+}
+
 void R_CopyTranslationRGB (int fromplayer, int toplayer)
 {
 	for (int i = 0x70; i < 0x80; ++i)
@@ -450,6 +511,8 @@ void R_CopyTranslationRGB (int fromplayer, int toplayer)
 		translationRGB[toplayer][i - 0x70] = translationRGB[fromplayer][i - 0x70];
 		translationtables[i+(toplayer * 256)] = translationtables[i+(fromplayer * 256)];
 	}
+
+	R_RebuildPlayerTintTables(toplayer);
 }
 
 // [RH] Create a player's translation table based on

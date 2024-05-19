@@ -286,6 +286,21 @@ enum mobjflag_t
 	MFO_FALLING			= BIT(10),	// [INTERNAL] for falling
 };
 
+//
+// Status flags
+// Flags to set when you want to indicate the status of a player to other players
+// Like powerups, lagging, etc
+//
+enum statusflag_t
+{
+	SF_INVULN = BIT(0),
+	SF_BERSERK = BIT(1),
+	SF_IRONFEET = BIT(2),
+	SF_INVIS = BIT(3),
+	SF_ALLMAP = BIT(4),
+	SF_INFRARED = BIT(5)
+};
+
 #define MF_TRANSSHIFT	0x1A
 
 #define TRANSLUC25			(FRACUNIT/4)
@@ -471,6 +486,7 @@ public:
 	int				flags2;	// Heretic flags
 	int				flags3;	// MBF21 flags
 	int				oflags;			// Odamex flags
+	int				statusflags; // Flags indicating a players status to other players
 	int				special1;		// Special info
 	int				special2;		// Special info
 	int 			health;

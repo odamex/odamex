@@ -882,6 +882,43 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 
 void SV_SendPlayerInfo(player_t &);
 
+void P_SetPlayerPowerupStatuses(player_t* player, int powers[NUMPOWERS])
+{
+	if (powers[pw_strength])
+		player->mo->statusflags |= SF_BERSERK;
+	else
+		player->mo->statusflags &= ~SF_BERSERK;
+
+	if (powers[pw_invulnerability] > 4 * 32 ||
+		        powers[pw_invulnerability] & 8)
+		player->mo->statusflags |= SF_INVULN;
+	else
+		player->mo->statusflags &= ~SF_INVULN;
+
+	if (powers[pw_invisibility] > 4 * 32 ||
+			powers[pw_invisibility] & 8)
+		player->mo->statusflags |= SF_INVIS;
+	else
+		player->mo->statusflags &= ~SF_INVIS;
+
+	if (powers[pw_infrared] > 4 * 32 ||
+			powers[pw_infrared] & 8)
+		player->mo->statusflags |= SF_INFRARED;
+	else
+		player->mo->statusflags &= ~SF_INFRARED;
+
+	if (powers[pw_ironfeet] > 4 * 32 ||
+			powers[pw_ironfeet] & 8)
+		player->mo->statusflags |= SF_IRONFEET;
+	else
+		player->mo->statusflags &= ~SF_IRONFEET;
+
+		if (powers[pw_allmap])
+		player->mo->statusflags |= SF_ALLMAP;
+	else
+		player->mo->statusflags &= ~SF_ALLMAP;
+}
+
 //
 // P_PlayerThink
 //
@@ -1020,6 +1057,9 @@ void P_PlayerThink (player_t *player)
 
 	if (player->powers[pw_ironfeet])
 		player->powers[pw_ironfeet]--;
+
+	// For offline/chase cam
+	P_SetPlayerPowerupStatuses(player, player->powers);
 
 	if (player->damagecount)
 		player->damagecount--;

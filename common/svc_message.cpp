@@ -147,11 +147,14 @@ odaproto::svc::MovePlayer SVC_MovePlayer(player_t& player, const int tic)
 	mom->set_y(player.mo->momy);
 	mom->set_z(player.mo->momz);
 
-	// [Russell] - hack, tell the client about the partial
-	// invisibility power of another player.. (cheaters can disable
-	// this but its all we have for now)
-	pl->mutable_powers()->Resize(pw_invisibility + 1, 0);
+	// Send all available powers information to show the clients
+	pl->mutable_powers()->Resize(NUMPOWERS + 1, 0);
+	pl->set_powers(pw_invulnerability, player.powers[pw_invulnerability]);
+	pl->set_powers(pw_strength, player.powers[pw_strength] > 0 ? 1 : 0);
 	pl->set_powers(pw_invisibility, player.powers[pw_invisibility]);
+	pl->set_powers(pw_ironfeet, player.powers[pw_ironfeet]);
+	pl->set_powers(pw_allmap, player.powers[pw_allmap]);
+	pl->set_powers(pw_infrared, player.powers[pw_infrared]);
 
 	return msg;
 }

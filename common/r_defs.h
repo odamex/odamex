@@ -691,6 +691,7 @@ struct vissprite_s
     shaderef_t		colormap;
 
 	int 			mobjflags;
+	int				statusflags;	// Status of player to show (powers, etc)
 	bool			spectator;		// [Blair] Mark if this visprite belongs to a spectator.
 
 	translationref_t translation;	// [RH] for translation;

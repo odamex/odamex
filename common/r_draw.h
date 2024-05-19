@@ -185,6 +185,8 @@ extern void (*R_DrawSlopeSpanD)(void);
 extern void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 extern byte bosstable[256];
+extern byte greentable[MAXPLAYERS+1][256];
+extern byte redtable[MAXPLAYERS + 1][256];
 extern byte*			translationtables;
 extern argb_t           translationRGB[MAXPLAYERS+1][16];
 
@@ -211,6 +213,7 @@ void R_InitTranslationTables (void);
 void R_FreeTranslationTables (void);
 
 void R_CopyTranslationRGB (int fromplayer, int toplayer);
+void R_RebuildPlayerTintTables(int player);
 
 // [RH] Actually create a player's translation table.
 void R_BuildPlayerTranslation(int player, argb_t dest_color);
