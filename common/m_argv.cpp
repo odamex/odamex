@@ -394,7 +394,7 @@ void M_FindResponseFile (void)
 			delete[] file;
 		
 			// DISPLAY ARGS
-			Printf("%" PRIuSIZE " command-line args:\n", Args.NumArgs());
+			Printf("%zu command-line args:\n", Args.NumArgs());
 			for (size_t k = 1; k < Args.NumArgs (); k++)
 				Printf (PRINT_HIGH,"%s\n", Args.GetArg (k));
 

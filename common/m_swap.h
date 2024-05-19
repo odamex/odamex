@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <nonstd/bit.hpp>
+
 #if TARGET_CPU_X86 || TARGET_CPU_X86_64
 #ifdef __BIG_ENDIAN__
 #undef __BIG_ENDIAN__
@@ -41,142 +43,62 @@
 #endif
 #endif
 
-// Endianess handling.
-// WAD files are stored little endian.
-#ifdef __BIG_ENDIAN__
-
-// Swap 16bit, that is, MSB and LSB byte.
-// No masking with 0xFF should be necessary.
-
-inline static unsigned short LESHORT(unsigned short x)
+inline static unsigned short LESHORT(const unsigned short x)
 {
-	return (unsigned short)((x >> 8) | (x << 8));
+	return nonstd::bit::as_little_endian(x);
 }
 
-inline static short LESHORT(short x)
+inline static short LESHORT(const short x)
 {
-	return (short)((((unsigned short)x) >> 8) | (((unsigned short)x) << 8));
+	return nonstd::bit::as_little_endian(x);
 }
 
-// Swapping 32bit.
-inline static unsigned int LELONG(unsigned int x)
+inline static unsigned int LELONG(const unsigned int x)
 {
-	return (unsigned int)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
-	                      (x << 24));
+	return nonstd::bit::as_little_endian(x);
 }
 
-inline static int LELONG(int x)
+inline static int LELONG(const int x)
 {
-	return (int)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
-	             ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
+	return nonstd::bit::as_little_endian(x);
 }
 
-inline static unsigned long LELONG(unsigned long x)
+inline static unsigned long LELONG(const unsigned long x)
 {
-	return (unsigned long)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
-	                       (x << 24));
+	return nonstd::bit::as_little_endian(x);
 }
 
-inline static long LELONG(long x)
+inline static long LELONG(const long x)
 {
-	return (long)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
-	              ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
+	return nonstd::bit::as_little_endian(x);
 }
 
-inline static unsigned short BESHORT(unsigned short x)
+inline static unsigned short BESHORT(const unsigned short x)
 {
-	return x;
+	return nonstd::bit::as_big_endian(x);
 }
 
-inline static short BESHORT(short x)
+inline static short BESHORT(const short x)
 {
-	return x;
+	return nonstd::bit::as_big_endian(x);
 }
 
-inline static unsigned int BELONG(unsigned int x)
+inline static unsigned int BELONG(const unsigned int x)
 {
-	return x;
+	return nonstd::bit::as_big_endian(x);
 }
 
-inline static int BELONG(int x)
+inline static int BELONG(const int x)
 {
-	return x;
+	return nonstd::bit::as_big_endian(x);
 }
 
-inline static unsigned long BELONG(unsigned long x)
+inline static unsigned long BELONG(const unsigned long x)
 {
-	return x;
+	return nonstd::bit::as_big_endian(x);
 }
 
-inline static long BELONG(long x)
+inline static long BELONG(const long x)
 {
-	return x;
+	return nonstd::bit::as_big_endian(x);
 }
-
-#else
-
-inline static unsigned short LESHORT(unsigned short x)
-{
-	return x;
-}
-
-inline static short LESHORT(short x)
-{
-	return x;
-}
-
-inline static unsigned int LELONG(unsigned int x)
-{
-	return x;
-}
-
-inline static int LELONG(int x)
-{
-	return x;
-}
-
-inline static unsigned long LELONG(unsigned long x)
-{
-	return x;
-}
-
-inline static long LELONG(long x)
-{
-	return x;
-}
-
-inline static unsigned short BESHORT(unsigned short x)
-{
-	return (unsigned short)((x >> 8) | (x << 8));
-}
-
-inline static short BESHORT(short x)
-{
-	return (short)((((unsigned short)x) >> 8) | (((unsigned short)x) << 8));
-}
-
-inline static unsigned int BELONG(unsigned int x)
-{
-	return (unsigned int)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
-	                      (x << 24));
-}
-
-inline static int BELONG(int x)
-{
-	return (int)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
-	             ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
-}
-
-inline static unsigned long BELONG(unsigned long x)
-{
-	return (unsigned long)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
-	                       (x << 24));
-}
-
-inline static long BELONG(long x)
-{
-	return (long)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
-	              ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
-}
-
-#endif
