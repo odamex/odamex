@@ -195,8 +195,8 @@ void R_SpawnBerserkPuff(int x, int y, int z)
 
 		puff = new AActor(x, y, z, MT_PUFF);
 
-		puff->x += FixedMul((P_RandomDiff() * FRACUNIT) >> 2, finecosine[ang >> 13]);
-		puff->y += FixedMul((P_RandomDiff() * FRACUNIT) >> 2, finesine[ang >> 11]);
+		puff->x += FixedMul((P_RandomDiff() * FRACUNIT) >> 4, finecosine[ang >> 13]);
+		puff->y += FixedMul((P_RandomDiff() * FRACUNIT) >> 4, finesine[ang >> 11]);
 		puff->z += abs((P_RandomDiff() * FRACUNIT) >> 2);
 		puff->tics -= P_Random(puff) & 3;
 
@@ -269,28 +269,22 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	{
 		vis->mobjflags |= MF_SHADOW;
 	}
-	else if (vis->statusflags & SF_INVULN && sv_showplayerpowerups > 0)
+	else if (sv_showplayerpowerups > 0)
 	{
+		if (vis->statusflags & SF_INVULN)
+		{
 			// draw invuln palette on vissprite only
 			// and don't include sector colored lighting because it creates strange
 			// colors.
 			const palette_t* pal = V_GetDefaultPalette();
 			dcol.colormap = shaderef_t(&pal->maps, INVERSECOLORMAP);
-	}
-	else if (vis->statusflags & SF_INFRARED && sv_showplayerpowerups > 0)
-	{
-			// draw the sprite fullbright
-			dcol.colormap = basecolormap;
-	}
-
-	if (sv_showplayerpowerups > 0)
-	{
-		if (vis->statusflags & SF_BERSERK)
+		}
+		else if (vis->statusflags & SF_BERSERK)
 		{
 			// draw a red palette on the vissprite
 			dcol.translation = translationref_t(&::redtable[id][0]);
 
-			if (vis && vis->mo)
+			if (vis && vis->mo && !(vis->statusflags & SF_INVIS))
 				R_SpawnBerserkPuff(vis->mo->x, vis->mo->y, vis->mo->z);
 		}
 		else if (vis->statusflags & SF_IRONFEET)
