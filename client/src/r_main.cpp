@@ -39,10 +39,13 @@
 #include "i_video.h"
 #include "m_vectors.h"
 #include "am_map.h"
+#include "cl_demo.h"
+
+extern NetDemo netdemo;
 
 void R_BeginInterpolation(fixed_t amount);
 void R_EndInterpolation();
-void R_InterpolateCamera(fixed_t amount);
+void R_InterpolateCamera(fixed_t amount, bool use_localview);
 
 #define DISTMAP			2
 
@@ -770,6 +773,11 @@ void R_SetupFrame (player_t *player)
 	if (!camera || !camera->subsector)
 		return;
 
+	player_t &consolePlayer = consoleplayer();
+	const bool use_localview =
+	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
+	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
+
 	if (player->cheats & CF_CHASECAM)
 	{
 		// [RH] Use chasecam view
@@ -783,7 +791,7 @@ void R_SetupFrame (player_t *player)
 	{
 		if (render_lerp_amount < FRACUNIT)
 		{
-			R_InterpolateCamera(render_lerp_amount);
+			R_InterpolateCamera(render_lerp_amount, use_localview);
 		}
 		else
 		{
@@ -863,10 +871,7 @@ void R_SetupFrame (player_t *player)
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
 	}
 
-	player_t& consolePlayer = consoleplayer();
-
-	if (!::localview.skippitch && consolePlayer.id == displayplayer().id &&
-	    consolePlayer.health > 0 && !consolePlayer.mo->reactiontime)
+	if (use_localview && !::localview.skippitch)
 	{
 		R_ViewShear(clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));
 	}
