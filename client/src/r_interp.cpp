@@ -28,8 +28,6 @@
 #include "m_fixed.h"
 #include "r_state.h"
 #include "p_local.h"
-#include "cl_demo.h"
-
 
 typedef std::pair<fixed_t, unsigned int> fixed_uint_pair;
 
@@ -37,8 +35,6 @@ static std::vector<fixed_uint_pair> prev_ceilingheight;
 static std::vector<fixed_uint_pair> saved_ceilingheight;
 static std::vector<fixed_uint_pair> prev_floorheight;
 static std::vector<fixed_uint_pair> saved_floorheight;
-
-extern NetDemo netdemo;
 
 //
 // R_InterpolationTicker
@@ -167,15 +163,11 @@ void R_EndInterpolation()
 // render_lerp_amount will be FRACUNIT.
 //
 
-void R_InterpolateCamera(fixed_t amount)
+void R_InterpolateCamera(fixed_t amount, bool use_localview)
 {
 	if (gamestate == GS_LEVEL && camera)
 	{
-		player_t& consolePlayer = consoleplayer();
-
-		if (!::localview.skipangle && consolePlayer.id == displayplayer().id &&
-		    consolePlayer.health > 0 && !consolePlayer.mo->reactiontime && 
-			(!netdemo.isPlaying() && !demoplayback))
+		if (use_localview && !::localview.skipangle)
 		{
 			viewangle = camera->angle + ::localview.angle;
 		}
