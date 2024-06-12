@@ -4282,7 +4282,7 @@ void SV_RunTics()
 				}
 				wadstr += C_QuoteString(lobby_entry.wads.at(i));
 			}
-			G_LoadWadString(wadstr, lobby_entry.map);
+			G_LoadWadString(wadstr, "", lobby_entry.map);
 		}
 		else
 		{

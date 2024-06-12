@@ -47,6 +47,7 @@ enum maplist_status_t
 // Map list entry structure
 typedef struct {
 	std::string map;
+	std::string lastmap;
 	std::vector<std::string> wads;
 } maplist_entry_t;
 

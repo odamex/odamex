@@ -76,8 +76,10 @@ EXTERN_CVAR (sv_warmup)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_teamsinplay)
 EXTERN_CVAR(g_resetinvonexit)
+EXTERN_CVAR(sv_mapliststayonwad)
 
 extern int mapchange;
+extern std::string forcedlastmap;
 
 // ACS variables with world scope
 int ACS_WorldVars[NUM_WORLDVARS];
@@ -161,6 +163,15 @@ const char* GetBase(const char* in)
 
 BEGIN_COMMAND (wad) // denis - changes wads
 {
+	std::string lastmap = argv[argc-1];
+	if (lastmap.rfind("lastmap=", 0) == 0)
+	{
+		lastmap = lastmap.substr(8);
+		argc--;
+	}
+	else
+		lastmap = "";
+
 	// [Russell] print out some useful info
 	if (argc == 1)
 	{
@@ -173,8 +184,9 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	    return;
 	}
 
+
 	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	G_LoadWadString(str);
+	G_LoadWadString(str, lastmap);
 }
 END_COMMAND (wad)
 
@@ -182,15 +194,32 @@ BOOL 			secretexit;
 
 EXTERN_CVAR(sv_shufflemaplist)
 
+bool isLastMap()
+{
+	if (level.nextmap == "" || level.mapname == forcedlastmap)
+		return true;
+
+	std::string next = level.nextmap.c_str();
+	if (iequals(next.substr(0, 7), "EndGame") ||
+			(gamemode == retail_chex && iequals(level.nextmap.c_str(), "E1M6")))
+	{
+		if (sv_loopepisode || gameinfo.flags & GI_MAPxx || gamemode == shareware ||
+				((gamemode == registered && level.cluster == 3) ||
+				 ((gameinfo.flags & GI_MENUHACK_RETAIL) && level.cluster == 4)))
+			return true;
+	}
+
+	return false;
+}
+
 // Returns the next map, assuming there is no maplist.
 std::string G_NextMap()
 {
 	std::string next = level.nextmap.c_str();
 
-	if (gamestate == GS_STARTUP || sv_gametype != GM_COOP || next.empty())
+	if (gamestate == GS_STARTUP || next.empty())
 	{
-		// if not coop, stay on same level
-		// [ML] 1/25/10: OR if next is empty
+		// [ML] 1/25/10: if next is empty, stay on same level
 		next = level.mapname.c_str();
 	}
 	else if (secretexit && W_CheckNumForName(level.secretmap.c_str()) != -1)
@@ -201,10 +230,12 @@ std::string G_NextMap()
 
 	// NES - exiting a Doom 1 episode moves to the next episode,
 	// rather than always going back to E1M1
-	if (iequals(next.substr(0, 7), "EndGame") ||
-	    (gamemode == retail_chex && iequals(level.nextmap.c_str(), "E1M6")))
+	if (level.nextmap == "" || level.mapname == forcedlastmap ||
+			iequals(next.substr(0, 7), "EndGame") ||
+			(gamemode == retail_chex && iequals(level.nextmap.c_str(), "E1M6")))
 	{
 		if (gameinfo.flags & GI_MAPxx || gamemode == shareware ||
+			(!sv_loopepisode && (level.nextmap == "" || level.mapname == forcedlastmap)) ||
 			(!sv_loopepisode && ((gamemode == registered && level.cluster == 3) ||
 			((gameinfo.flags & GI_MENUHACK_RETAIL) && level.cluster == 4))))
 		{
@@ -247,12 +278,12 @@ void G_ChangeMap()
 				}
 				wadstr += C_QuoteString(lobby_entry.wads.at(i));
 			}
-			G_LoadWadString(wadstr, lobby_entry.map);
+			G_LoadWadString(wadstr, "", lobby_entry.map);
 		}
 		else
 		{
 			size_t next_index;
-			if (!Maplist::instance().get_next_index(next_index))
+			if ((sv_mapliststayonwad && !isLastMap()) || !Maplist::instance().get_next_index(next_index))
 			{
 				// We don't have a maplist, so grab the next 'natural' map lump.
 				std::string next = G_NextMap();
@@ -272,7 +303,7 @@ void G_ChangeMap()
 					}
 					wadstr += C_QuoteString(maplist_entry.wads.at(i));
 				}
-				G_LoadWadString(wadstr, maplist_entry.map);
+				G_LoadWadString(wadstr, maplist_entry.lastmap, maplist_entry.map);
 
 				// Set the new map as the current map
 				Maplist::instance().set_index(next_index);
@@ -297,7 +328,7 @@ void G_ChangeMap(size_t index) {
 		return;
 	}
 
-	G_LoadWadString(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
+	G_LoadWadString(JoinStrings(maplist_entry.wads, " "), maplist_entry.lastmap, maplist_entry.map);
 
 	// Set the new map as the current map
 	Maplist::instance().set_index(index);

@@ -1074,7 +1074,7 @@ void M_StartGame(int choice)
         {
             // Load No Rest for The Living Externally
             epi = 0;
-            G_LoadWadString(str);
+            G_LoadWadString(str, "");
         }
         else
         {
@@ -1083,7 +1083,7 @@ void M_StartGame(int choice)
             {
                 if (iequals(str, wadfiles[i].getBasename()))
                 {
-                    G_LoadWadString(wadfiles[1].getFullpath());
+                    G_LoadWadString(wadfiles[1].getFullpath(), "");
                 }
             }
 
