@@ -67,6 +67,8 @@
 #include "sv_main.h"
 #include "sv_banlist.h"
 #include "g_horde.h"
+#include "sprite.h"
+#include "mobjinfo.h"
 
 #include "w_ident.h"
 
@@ -238,6 +240,13 @@ void D_DoomMain()
 
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
+	// [CMB] TODO: Initialize the states array - common code
+	D_Allocate_states(::NUMSTATES);
+	// [CMB] TODO: Initialize the mobjinfo array - common code
+    D_Initialize_mobjinfo(doom_mobjinfo, ::NUMMOBJTYPES);
+	// [CMB] TODO: Initialize the sprnames array - common code
+	D_Initialize_sprnames(doom_sprnames, ::NUMSPRITES);
+	// [CMD] TODO: This will need to be called after DEHACKED
 	// Initialize all extra frames
 	D_Init_DEHEXTRA_Frames();
 
@@ -250,7 +259,10 @@ void D_DoomMain()
 
 	// Always log by default
 	if (!LOG.is_open())
+	{
 		C_DoCommand("logfile");
+	}
+		
 	
 	OWantFiles newwadfiles, newpatchfiles;
 

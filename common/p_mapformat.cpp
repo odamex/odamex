@@ -58,7 +58,7 @@ void P_MigrateActorInfo(void)
 	// Set MF2_PASSMOBJ on dehacked monsters
 	// because we don't expose ZDoom's Bits2 BEX extension (yet...)
 	// which is the normal way MF2_PASSMOBJ gets set.
-	for (i = 0; i < NUMMOBJTYPES; ++i)
+	for (i = 0; i < ::NUMMOBJTYPES; ++i)
 	{
 		if (mobjinfo[i].flags & MF_COUNTKILL)
 		{
@@ -89,7 +89,7 @@ void P_MigrateActorInfo(void)
 	{
 		migrated = true;
 
-		for (i = 0; i < NUMMOBJTYPES; ++i)
+		for (i = 0; i < ::NUMMOBJTYPES; ++i)
 		{
 			if (mobjinfo[i].flags & MF_COUNTKILL)
 				mobjinfo[i].flags2 |= MF2_MCROSS | MF2_PUSHWALL;
@@ -105,7 +105,7 @@ void P_MigrateActorInfo(void)
 	{
 		migrated = false;
 
-		for (i = 0; i < NUMMOBJTYPES; ++i)
+		for (i = 0; i < ::NUMMOBJTYPES; ++i)
 		{
 			if (mobjinfo[i].flags & MF_COUNTKILL)
 				mobjinfo[i].flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);
