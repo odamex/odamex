@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 42;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -1017,7 +1017,7 @@
 				92D2D6AB0B62B89B00FD5B07 /* client */,
 				92D2DAC70B64491800FD5B07 /* odalaunch */,
 				92A68F5C0B645EE9004AA40D /* master */,
-				D3A13C3611E11ECA00B58D54 /* textscreen */,
+				D3A13C3611E11ECA00B58D54 /* libraries/textscreen */,
 			);
 			name = trunk;
 			sourceTree = "<group>";
@@ -1030,7 +1030,7 @@
 			name = Documentation;
 			sourceTree = "<group>";
 		};
-		D3A13C3611E11ECA00B58D54 /* textscreen */ = {
+		D3A13C3611E11ECA00B58D54 /* libraries/textscreen */ = {
 			isa = PBXGroup;
 			children = (
 				D369BC761409ABB100D149BF /* textscreen.h */,
@@ -1136,15 +1136,20 @@
 /* Begin PBXProject section */
 		08FB7793FE84155DC02AAC07 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1530;
+			};
 			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "odamex" */;
 			compatibilityVersion = "Xcode 2.4";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 1;
 			knownRegions = (
-				English,
 				Japanese,
 				French,
 				German,
+				en,
+				Base,
 			);
 			mainGroup = 08FB7794FE84155DC02AAC07 /* odamex */;
 			productRefGroup = 92D2DA850B6444B300FD5B07 /* Products */;
@@ -1409,43 +1414,40 @@
 		1DEB923608733DC60010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					i386,
-					ppc,
-				);
-				GCC_VERSION = 4.0;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_VERSION = "";
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				PREBINDING = NO;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx14.5;
 			};
 			name = Debug;
 		};
 		1DEB923708733DC60010E9CD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					i386,
-					ppc,
-				);
-				GCC_VERSION = 4.0;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_VERSION = "";
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				PREBINDING = NO;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				SDKROOT = macosx14.5;
 			};
 			name = Release;
 		};
 		920D7C3E0B4D2243000AA4A2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					i386,
-					ppc,
-				);
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -1455,6 +1457,7 @@
 					NOASM,
 				);
 				GCC_THREADSAFE_STATICS = YES;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GENERATE_MASTER_OBJECT_FILE = NO;
 				HEADER_SEARCH_PATHS = (
 					/Library/Frameworks/SDL.framework/Headers,
@@ -1464,9 +1467,11 @@
 				INSTALL_PATH = "$(HOME)/bin";
 				LINKER_DISPLAYS_FILES_FOR_UNDEFINED_SYMBOLS = YES;
 				MACH_O_TYPE = mh_execute;
-				PREBINDING = NO;
 				PRODUCT_NAME = odamex;
-				USER_HEADER_SEARCH_PATHS = "$(HOME)/Library/Frameworks/SDL.framework/Headers $(HOME)/Library/Frameworks/SDL_mixer.framework/Headers";
+				USER_HEADER_SEARCH_PATHS = (
+					"$(HOME)/Library/Frameworks/SDL.framework/Headers",
+					"$(HOME)/Library/Frameworks/SDL_mixer.framework/Headers",
+				);
 				ZERO_LINK = NO;
 			};
 			name = Debug;
@@ -1474,12 +1479,11 @@
 		920D7C3F0B4D2243000AA4A2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					i386,
-					ppc,
-				);
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = YES;
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				DEAD_CODE_STRIPPING = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1488,6 +1492,7 @@
 					NOASM,
 				);
 				GCC_THREADSAFE_STATICS = YES;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GENERATE_MASTER_OBJECT_FILE = NO;
 				HEADER_SEARCH_PATHS = (
 					/Library/Frameworks/SDL.framework/Headers,
@@ -1497,9 +1502,11 @@
 				INSTALL_PATH = "$(HOME)/bin";
 				LINKER_DISPLAYS_FILES_FOR_UNDEFINED_SYMBOLS = YES;
 				MACH_O_TYPE = mh_execute;
-				PREBINDING = NO;
 				PRODUCT_NAME = odamex;
-				USER_HEADER_SEARCH_PATHS = "$(HOME)/Library/Frameworks/SDL.framework/Headers $(HOME)/Library/Frameworks/SDL_mixer.framework/Headers";
+				USER_HEADER_SEARCH_PATHS = (
+					"$(HOME)/Library/Frameworks/SDL.framework/Headers",
+					"$(HOME)/Library/Frameworks/SDL_mixer.framework/Headers",
+				);
 				ZERO_LINK = NO;
 			};
 			name = Release;
@@ -1507,14 +1514,16 @@
 		92A68F7B0B645F39004AA40D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				INSTALL_PATH = "$(HOME)/bin";
-				PREBINDING = NO;
 				PRODUCT_NAME = odamaster;
 				ZERO_LINK = NO;
 			};
@@ -1523,12 +1532,14 @@
 		92A68F7C0B645F39004AA40D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = YES;
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				DEAD_CODE_STRIPPING = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				INSTALL_PATH = "$(HOME)/bin";
-				PREBINDING = NO;
 				PRODUCT_NAME = odamaster;
 				ZERO_LINK = NO;
 			};
@@ -1537,13 +1548,11 @@
 		92D2DA7B0B6442EA00FD5B07 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					i386,
-					ppc,
-				);
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1551,6 +1560,7 @@
 					OSX,
 					NOASM,
 				);
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				INSTALL_PATH = "$(HOME)/bin";
 				PRODUCT_NAME = odasrv;
 				ZERO_LINK = NO;
@@ -1560,10 +1570,9 @@
 		92D2DA7C0B6442EA00FD5B07 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					i386,
-					ppc,
-				);
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "-";
+				DEAD_CODE_STRIPPING = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1571,6 +1580,7 @@
 					OSX,
 					NOASM,
 				);
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				INSTALL_PATH = "$(HOME)/bin";
 				PRODUCT_NAME = odasrv;
 				ZERO_LINK = NO;
