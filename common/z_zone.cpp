@@ -26,6 +26,7 @@
 
 #include <map>
 #include <stdlib.h>
+#include <string.h>
 
 #include "z_zone.h"
 #include "i_system.h"
@@ -310,6 +311,21 @@ void* Z_Malloc2(size_t size, const zoneTag_e tag, void* user, const char* file,
 	return g_zone.alloc(size, tag, user, OFileLine::create(file, line));
 }
 
+//
+// Z_Realloc
+// Uses the use pointer as the basis for a new memory block
+// You can pass a NULL user if the tag is < PU_PURGELEVEL.
+//
+void* Z_Realloc2(void* ptr, size_t size, const char* file, const int line)
+{
+	void* p = Z_Malloc2(size, PU_STATIC, ptr, file, line);
+	if(p)
+	{
+		Z_Free2(ptr, file, line);
+	}
+	return p;
+}
+
 
 //
 // Z_FreeTags
@@ -327,10 +343,20 @@ void Z_ChangeTag2(void* ptr, const zoneTag_e tag, const char* file, int line)
 	return ::g_zone.changeTag(ptr, tag, OFileLine::create(file, line));
 }
 
-
+//
+// Z_ChangeOwner
+//
 void Z_ChangeOwner2(void* ptr, void* user, const char* file, int line)
 {
 	return ::g_zone.changeOwner(ptr, user, OFileLine::create(file, line));
+}
+
+//
+// Z_StrDup
+//
+char* Z_StrDup2(const char* s, const zoneTag_e tag, const char* file, int line)
+{
+    return std::strcpy((char*)Z_Malloc2(strlen(s)+1, tag, NULL, file, line), s);
 }
 
 //
