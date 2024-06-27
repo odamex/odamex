@@ -69,6 +69,7 @@
 #include "g_horde.h"
 #include "sprite.h"
 #include "mobjinfo.h"
+#include "state.h"
 
 #include "w_ident.h"
 
@@ -241,7 +242,7 @@ void D_DoomMain()
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
 	// [CMB] TODO: Initialize the states array - common code
-	D_Allocate_states(::NUMSTATES);
+	D_Initialize_states(NULL, ::NUMSTATES);
 	// [CMB] TODO: Initialize the mobjinfo array - common code
     D_Initialize_mobjinfo(doom_mobjinfo, ::NUMMOBJTYPES);
 	// [CMB] TODO: Initialize the sprnames array - common code
