@@ -621,17 +621,20 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 	}
 }
 
+// newStyleMapInfo signifies if the token came from a
+// new style (as in, within curly braces) mapinfo.
+// Hexen (and old ZDoom mapinfo, allegedly) didn't have curly braces.
 template <typename T>
-void ParseMapInfoHelper(OScanner& os, bool doEquals)
+void ParseMapInfoHelper(OScanner& os, bool newStyleMapInfo)
 {
-	if (doEquals)
+	if (newStyleMapInfo)
 		MustGetStringName(os, "=");
 
 	MustGet<T>(os);
 }
 
 template <>
-void ParseMapInfoHelper<void>(OScanner& os, bool doEquals)
+void ParseMapInfoHelper<void>(OScanner& os, bool newStyleMapInfo)
 {
 	// do nothing
 }
@@ -640,51 +643,51 @@ void ParseMapInfoHelper<void>(OScanner& os, bool doEquals)
 /// MapInfo type functions
 
 // Eats the next block and does nothing with the data
-void MIType_EatNext(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_EatNext(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 }
 
 // Literally does nothing
-void MIType_DoNothing(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_DoNothing(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
 }
 
 // Sets the inputted data as an int
-void MIType_Int(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Int(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                 unsigned int flags2)
 {
-	ParseMapInfoHelper<int>(os, doEquals);
+	ParseMapInfoHelper<int>(os, newStyleMapInfo);
 
 	*static_cast<int*>(data) = os.getTokenInt();
 }
 
 // Sets the inputted data as a float
-void MIType_Float(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Float(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                   unsigned int flags2)
 {
-	ParseMapInfoHelper<float>(os, doEquals);
+	ParseMapInfoHelper<float>(os, newStyleMapInfo);
 
 	*static_cast<float*>(data) = os.getTokenFloat();
 }
 
 // Sets the inputted data as a bool (that is, if flags != 0, set to true; else false)
-void MIType_Bool(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Bool(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                   unsigned int flags2)
 {
 	*static_cast<bool*>(data) = flags;
 }
 
 // Sets the inputted data as a bool (that is, if flags != 0, set to true; else false)
-void MIType_MustConfirm(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                  unsigned int flags2)
 {
 	SkillInfo& info = *static_cast<SkillInfo*>(data);
 	info.must_confirm = true;
 
-	if (doEquals)
+	if (newStyleMapInfo)
 	{
 		os.scan();
 		if (os.compareTokenNoCase("="))
@@ -742,10 +745,10 @@ void MIType_MustConfirm(OScanner& os, bool doEquals, void* data, unsigned int fl
 }
 
 // Sets the inputted data as a char
-void MIType_Char(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Char(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                  unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	if (os.getToken().size() > 1)
 		os.error("Expected single character string, got multi-character string");
@@ -754,19 +757,19 @@ void MIType_Char(OScanner& os, bool doEquals, void* data, unsigned int flags,
 }
 
 // Sets the inputted data as a std::string
-void MIType_String(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_String(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                  unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	*static_cast<std::string*>(data) = os.getToken();
 }
 
 // Sets the inputted data as a color
-void MIType_Color(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Color(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                   unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	const argb_t color(V_GetColorFromString(os.getToken()));
 	uint8_t* ptr = static_cast<uint8_t*>(data);
@@ -777,17 +780,17 @@ void MIType_Color(OScanner& os, bool doEquals, void* data, unsigned int flags,
 }
 
 // Sets the inputted data as an OLumpName map name
-void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	if (IsIdentifier(os))
 	{
 		if (os.compareTokenNoCase("EndPic"))
 		{
 			// todo
-			if (doEquals)
+			if (newStyleMapInfo)
 				MustGetStringName(os, ",");
 
 			os.mustScan();
@@ -795,7 +798,7 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 		else if (os.compareTokenNoCase("EndSequence"))
 		{
 			// todo
-			if (doEquals)
+			if (newStyleMapInfo)
 				MustGetStringName(os, ",");
 
 			os.mustScan();
@@ -820,19 +823,19 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 
 			if (os.compareTokenNoCase("pic"))
 			{
-				ParseMapInfoHelper<OLumpName>(os, doEquals);
+				ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
 
 				// todo
 			}
 			else if (os.compareTokenNoCase("hscroll"))
 			{
-				ParseMapInfoHelper<std::string>(os, doEquals);
+				ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 				// todo
 			}
 			else if (os.compareTokenNoCase("vscroll"))
 			{
-				ParseMapInfoHelper<std::string>(os, doEquals);
+				ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 				// todo
 			}
@@ -842,7 +845,7 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 			}
 			if (os.compareTokenNoCase("music"))
 			{
-				ParseMapInfoHelper<OLumpName>(os, doEquals);
+				ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
 
 				// todo
 				os.scan();
@@ -879,19 +882,19 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 }
 
 // Sets the inputted data as an OLumpName
-void MIType_LumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                      unsigned int flags2)
 {
-	ParseMapInfoHelper<OLumpName>(os, doEquals);
+	ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
 
 	*static_cast<OLumpName*>(data) = os.getToken();
 }
 
 // Handle lump names that can also be intermission scripts
-void MIType_InterLumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_InterLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                           unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 	const std::string tok = os.getToken();
 	if (!tok.empty() && tok.at(0) == '$')
 	{
@@ -903,10 +906,10 @@ void MIType_InterLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 }
 
 // Sets the inputted data as an OLumpName, checking LANGUAGE for the actual OLumpName
-void MIType_$LumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                       unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	if (os.getToken()[0] == '$')
 	{
@@ -927,10 +930,10 @@ void MIType_$LumpName(OScanner& os, bool doEquals, void* data, unsigned int flag
 
 // Sets the inputted data as an OLumpName, checking LANGUAGE for the actual OLumpName
 // (Music variant)
-void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                           unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 	const std::string musicname = os.getToken();
 
 	if (musicname[0] == '$')
@@ -962,10 +965,10 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 }
 
 // Sets the sky texture with an OLumpName
-void MIType_Sky(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                 unsigned int flags2)
 {
-	ParseMapInfoHelper<OLumpName>(os, doEquals);
+	ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
 
 	*static_cast<OLumpName*>(data) = os.getToken();
 
@@ -993,32 +996,24 @@ void MIType_Sky(OScanner& os, bool doEquals, void* data, unsigned int flags,
 }
 
 // Sets a flag
-void MIType_SetFlag(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_SetFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
 	*static_cast<DWORD*>(data) |= flags;
 }
 
 // Sets a compatibility flag for maps
-void MIType_CompatFlag(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_CompatFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                        unsigned int flags2)
 {
 	os.scan();
-	if (doEquals)
+	if (os.compareToken("="))
 	{
-		if (os.compareToken("="))
-		{
-			os.mustScanInt();
-			if (os.getTokenInt())
-				*static_cast<DWORD*>(data) |= flags;
-			else
-				*static_cast<DWORD*>(data) &= ~flags;
-		}
-		else
-		{
-			os.unScan();
+		os.mustScanInt();
+		if (os.getTokenInt())
 			*static_cast<DWORD*>(data) |= flags;
-		}
+		else
+			*static_cast<DWORD*>(data) &= ~flags;
 	}
 	else
 	{
@@ -1035,17 +1030,17 @@ void MIType_CompatFlag(OScanner& os, bool doEquals, void* data, unsigned int fla
 }
 
 // Sets an SC flag
-void MIType_SCFlags(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_SCFlags(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
 	*static_cast<DWORD*>(data) = (*static_cast<DWORD*>(data) & flags2) | flags;
 }
 
 // Sets a cluster
-void MIType_Cluster(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Cluster(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	ParseMapInfoHelper<int>(os, doEquals);
+	ParseMapInfoHelper<int>(os, newStyleMapInfo);
 
 	*static_cast<int*>(data) = os.getTokenInt();
 	if (HexenHack)
@@ -1060,18 +1055,18 @@ void MIType_Cluster(OScanner& os, bool doEquals, void* data, unsigned int flags,
 }
 
 // Sets a cluster string
-void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                           unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	char** text = static_cast<char**>(data);
 
-	if (doEquals)
+	if (newStyleMapInfo)
 	{
 		if (os.compareTokenNoCase("lookup"))
 		{
-			if (doEquals)
+			if (newStyleMapInfo)
 			{
 				MustGetStringName(os, ",");
 			}
@@ -1132,10 +1127,10 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 }
 
 // Sets the inputted data as a std::string
-void MIType_SpawnFilter(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                    unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	if (IsNum(os.getToken().c_str()))
 	{
@@ -1159,7 +1154,7 @@ void MIType_SpawnFilter(OScanner& os, bool doEquals, void* data, unsigned int fl
 }
 
 // Sets the map to use the specific map07 bossactions
-void MIType_Map07Special(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Map07Special(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                          unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector =
@@ -1183,7 +1178,7 @@ void MIType_Map07Special(OScanner& os, bool doEquals, void* data, unsigned int f
 }
 
 // Sets the map to use the baron bossaction
-void MIType_BaronSpecial(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_BaronSpecial(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
@@ -1199,7 +1194,7 @@ void MIType_BaronSpecial(OScanner& os, bool doEquals, void* data, unsigned int f
 }
 
 // Sets the map to use the cyberdemon bossaction
-void MIType_CyberdemonSpecial(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_CyberdemonSpecial(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                          unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector =
@@ -1216,7 +1211,7 @@ void MIType_CyberdemonSpecial(OScanner& os, bool doEquals, void* data, unsigned 
 }
 
 // Sets the map to use the cyberdemon bossaction
-void MIType_SpiderMastermindSpecial(OScanner& os, bool doEquals, void* data,
+void MIType_SpiderMastermindSpecial(OScanner& os, bool newStyleMapInfo, void* data,
                                     unsigned int flags, unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector =
@@ -1233,7 +1228,7 @@ void MIType_SpiderMastermindSpecial(OScanner& os, bool doEquals, void* data,
 }
 
 //
-void MIType_SpecialAction_ExitLevel(OScanner& os, bool doEquals, void* data,
+void MIType_SpecialAction_ExitLevel(OScanner& os, bool newStyleMapInfo, void* data,
                                     unsigned int flags, unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
@@ -1256,7 +1251,7 @@ void MIType_SpecialAction_ExitLevel(OScanner& os, bool doEquals, void* data,
 }
 
 //
-void MIType_SpecialAction_OpenDoor(OScanner& os, bool doEquals, void* data,
+void MIType_SpecialAction_OpenDoor(OScanner& os, bool newStyleMapInfo, void* data,
                                    unsigned int flags, unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
@@ -1279,7 +1274,7 @@ void MIType_SpecialAction_OpenDoor(OScanner& os, bool doEquals, void* data,
 }
 
 //
-void MIType_SpecialAction_LowerFloor(OScanner& os, bool doEquals, void* data,
+void MIType_SpecialAction_LowerFloor(OScanner& os, bool newStyleMapInfo, void* data,
                                     unsigned int flags, unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
@@ -1302,17 +1297,17 @@ void MIType_SpecialAction_LowerFloor(OScanner& os, bool doEquals, void* data,
 }
 
 //
-void MIType_SpecialAction_KillMonsters(OScanner& os, bool doEquals, void* data,
+void MIType_SpecialAction_KillMonsters(OScanner& os, bool newStyleMapInfo, void* data,
                                     unsigned int flags, unsigned int flags2)
 {
 	// todo
 }
 
 //
-void MIType_AutomapBase(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_AutomapBase(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                         unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	if (os.compareTokenNoCase("doom"))
 		AM_SetBaseColorDoom();
@@ -1395,10 +1390,10 @@ bool InterpretLines(const std::string& name, std::vector<mline_t>& lines)
 }
 
 //
-void MIType_MapArrows(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_MapArrows(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                       unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	std::string maparrow = os.getToken();
 
@@ -1421,10 +1416,10 @@ void MIType_MapArrows(OScanner& os, bool doEquals, void* data, unsigned int flag
 }
 
 //
-void MIType_MapKey(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                       unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	const std::string name = os.getToken();
 	InterpretLines(name, *static_cast<std::vector<mline_t>*>(data));
@@ -1546,6 +1541,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY3("compat_shorttex", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 		ENTRY3("compat_limitpain", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 		ENTRY3("compat_useblocking", &MIType_CompatFlag, &ref.flags) // special lines block use (not implemented, default odamex behavior)
+		ENTRY3("compat_missileclip", &MIType_CompatFlag, &ref.flags) // original height monsters when it comes to missiles (not implemented)
 		ENTRY4("compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF)
 		ENTRY3("compat_trace", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 		ENTRY3("compat_boomscroll", &MIType_CompatFlag, &ref.flags) // todo: not implemented
