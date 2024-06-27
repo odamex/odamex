@@ -1,6 +1,7 @@
 #include "odamex.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "sprite.h"
 
@@ -23,10 +24,10 @@ void D_Initialize_sprnames(const char** source, int count)
         sprnames[i] = source[i];
     }
     sprnames[count] = NULL;
-    ::num_spritenum_t_types = count;
+    num_spritenum_t_types = count;
     // [CMB] Useful debug logging
 #if defined _DEBUG
-    DPrintf(PRINT_HIGH, "D_Allocate_sprnames:: allocated %d sprites.\n", limit);
+    Printf(PRINT_HIGH, "D_Allocate_sprnames:: allocated %d sprites.\n", count);
 #endif
 }
 
@@ -40,9 +41,9 @@ void D_Initialize_sprnames(const char** source, int count)
 int D_FindOrgSpriteIndex(const char** src_sprnames, const char* key)
 {
     // search the array for the sprite name you are looking for
-    for(int i = 0; i < ::num_spritenum_t_types; i++)
+    for(int i = 0; i < num_spritenum_t_types; i++)
     {
-        if(!strncasecmp(src_sprnames[i], key, 4))
+        if(!strncmp(src_sprnames[i], key, 4))
         {
             return i;
         }
@@ -61,12 +62,12 @@ int D_FindOrgSpriteIndex(const char** src_sprnames, const char* key)
  */
 void D_EnsureSprnamesCapacity(int limit)
 {
-    while(limit >= ::num_spritenum_t_types)
+    while(limit >= num_spritenum_t_types)
     {
-        int old_num_spritenum_t_types = ::num_spritenum_t_types;
-        ::num_spritenum_t_types *= 2;
-        sprnames = (const char**) M_Realloc(sprnames, ::num_spritenum_t_types * sizeof(*sprnames));
+        int old_num_spritenum_t_types = num_spritenum_t_types;
+        num_spritenum_t_types *= 2;
+        sprnames = (const char**) M_Realloc(sprnames, num_spritenum_t_types * sizeof(*sprnames));
         // memset to 0 because the end of the elements in the array needs to NULL terminated
-        memset(sprnames + old_num_spritenum_t_types, 0, (::num_spritenum_t_types - old_num_spritenum_t_types) * sizeof(*sprnames));
+        memset(sprnames + old_num_spritenum_t_types, 0, (num_spritenum_t_types - old_num_spritenum_t_types) * sizeof(*sprnames));
     }
 }

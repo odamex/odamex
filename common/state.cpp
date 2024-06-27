@@ -14,6 +14,7 @@ static void D_ResetStates(int from, int to)
         s.sprite = SPR_TNT1;
         s.tics = -1;
         s.nextstate = S_TNT1;
+		s.action = NULL;
     }
 }
 
@@ -34,11 +35,15 @@ void D_Initialize_states(state_t* source, int count)
 }
 void D_EnsureStateCapacity(int limit)
 {
-    while(limit > num_state_t_types)
+    while(limit >= num_state_t_types)
     {
         int old_num_state_t_types = num_state_t_types;
         num_state_t_types *= 2;
         states = (state_t*) M_Realloc(states, num_state_t_types * sizeof(*states));
+		// dsdhacked spec says anything not set to a default should be 0/null
+		memset(states + old_num_state_t_types, 0,
+		       (num_state_t_types - old_num_state_t_types) * sizeof(*states));
+		// Reset state_t structs according to DSDHacked spec
         D_ResetStates(old_num_state_t_types, num_state_t_types);
     }
 }

@@ -981,6 +981,7 @@ static int PatchThing(int thingy)
         mobjinfo_t* newthing = (mobjinfo_t*) Z_Malloc(sizeof(mobjinfo_t), PU_STATIC, NULL);
         mobjinfo[thingNum] = *newthing;
         info = newthing;
+		*ednum = *&info->doomednum;
     }
 	else
 	{
@@ -1602,9 +1603,10 @@ static int PatchFrame(int frameNum)
 		}
 	}
 #if defined _DEBUG
+	const char* sprsub = (info->sprite > 0) ? sprnames[info->sprite] : "";
 	Printf("FRAME %d: Duration: %d, Next: %d, SprNum: %d(%s), SprSub: %d\n", frameNum,
-	       info->tics, info->nextstate, info->sprite, sprnames[info->sprite],
-	       info->frame);
+	       info->tics, info->nextstate, info->sprite, sprsub,
+			info->frame);
 #endif
 
 	return result;
@@ -2027,8 +2029,9 @@ static int PatchCodePtrs(int dummy)
 		{
 			int frame = atoi(Line1 + 5);
 
-			if (frame < 0 || frame >= ::NUMSTATES)
+			if (frame < 0 || frame >= num_state_t_types)
 			{
+				// [CMB] TODO: at this point we should have created more space for the state
 				DPrintf("Frame %d out of range\n", frame);
 			}
 			else
