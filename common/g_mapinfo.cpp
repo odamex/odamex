@@ -969,17 +969,12 @@ void MIType_Sky(OScanner& os, bool doEquals, void* data, unsigned int flags,
 
 	*static_cast<OLumpName*>(data) = os.getToken();
 
-	// Scroll speed
-	if (doEquals)
-	{
-		os.scan();
-		if (!os.compareToken(","))
-		{
-			os.unScan();
-			return;
-		}
-	}
 	os.scan();
+	// Scroll speed
+	if (os.compareToken(","))
+	{
+		os.mustScanInt();
+	}
 	if (IsRealNum(os.getToken().c_str()))
 	{
 		/*if (HexenHack)
@@ -1550,6 +1545,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY2("translator", &MIType_EatNext)
 		ENTRY3("compat_shorttex", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 		ENTRY3("compat_limitpain", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY3("compat_useblocking", &MIType_CompatFlag, &ref.flags) // special lines block use (not implemented, default odamex behavior)
 		ENTRY4("compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF)
 		ENTRY3("compat_trace", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 		ENTRY3("compat_boomscroll", &MIType_CompatFlag, &ref.flags) // todo: not implemented
