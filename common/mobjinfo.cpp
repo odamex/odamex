@@ -8,7 +8,7 @@ mobjinfo_t* mobjinfo;
 static void D_ResetMobjInfo(int from, int to)
 {
     mobjinfo_t m;
-    for(int i = 0; i < to; i++)
+    for(int i = from; i < to; i++)
     {
         m = mobjinfo[i];
         m.droppeditem = MT_NULL;
@@ -29,7 +29,7 @@ void D_Initialize_mobjinfo(mobjinfo_t* source, int count) {
     }
     num_mobjinfo_types = count;
 #if defined _DEBUG
-    Printf(PRINT_HIGH,"D_Allocate_mobjinfo:: allocated %d actors.\n", limit);
+    Printf(PRINT_HIGH,"D_Allocate_mobjinfo:: allocated %d actors.\n", count);
 #endif
 }
 
@@ -37,10 +37,14 @@ void D_EnsureMobjInfoCapacity(int limit)
 {
     while(limit >= ::num_mobjinfo_types)
     {
-        int old_num_mobjinfo_types = ::num_mobjinfo_types;
-        ::num_mobjinfo_types *= 2;
-        mobjinfo = (mobjinfo_t*) M_Realloc(mobjinfo, ::num_spritenum_t_types * sizeof(*mobjinfo));
+        int old_num_mobjinfo_types = num_mobjinfo_types;
+        num_mobjinfo_types *= 2;
+		mobjinfo =
+		    (mobjinfo_t*)M_Realloc(mobjinfo, num_mobjinfo_types * sizeof(*mobjinfo));
+        // dsdhacked spec says anything not set to a default should be 0/null
+		memset(mobjinfo + old_num_mobjinfo_types, 0,
+		       (num_mobjinfo_types - old_num_mobjinfo_types) * sizeof(*mobjinfo));
         // Reset mobjinfo structs according to DSDHacked spec
-        D_ResetMobjInfo(old_num_mobjinfo_types, ::num_mobjinfo_types);
+        D_ResetMobjInfo(old_num_mobjinfo_types, num_mobjinfo_types);
     }
 }
