@@ -277,11 +277,15 @@ static void TickCheck()
 			::dlstate.checkfilename = StdStringToLower(::dlstate.checkfilename);
 		}
 
-		// Now we have the full URL.
-		fullurl += ::dlstate.checkfilename;
-
 		// Create the check transfer.
 		::dlstate.check = new OTransferCheck(CheckDone, CheckError);
+
+		std::string safeFileName =
+		    ::dlstate.check->escapeFileName(::dlstate.checkfilename.c_str());
+
+		// Now we have the full URL.
+		fullurl += safeFileName;
+
 		::dlstate.check->setURL(fullurl.c_str());
 		if (!::dlstate.check->start())
 		{
