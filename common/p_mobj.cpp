@@ -254,7 +254,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
       rndindex(0), netid(0), tid(0), bmapnode(this), baseline_set(false)
 {
 	// Fly!!! fix it in P_RespawnSpecial
-	if ((unsigned int)itype >= ::NUMMOBJTYPES)
+	if ((unsigned int)itype >= ::num_mobjinfo_types)
 	{
 		I_Error ("Tried to spawn actor type %d\n", itype);
 	}
@@ -2925,12 +2925,16 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (i == -1)	// we have to search for the type
 	{
 		// find which type to spawn
-		for (i = 0; i < ::NUMMOBJTYPES; i++)
-			if (mthing->type == mobjinfo[i].doomednum)
-				break;
+		for (i = 0; i < ::num_mobjinfo_types; i++)
+        {
+            if (mthing->type == mobjinfo[i].doomednum)
+            {
+                break;
+            }
+        }
 	}
 
-	if (i >= ::NUMMOBJTYPES || i < 0) // [CMB] TODO: there are more objects than this
+	if (i >= ::num_mobjinfo_types || i < 0) // [CMB] TODO: there are more objects than this
 	{
 		// [RH] Don't die if the map tries to spawn an unknown thing
 		Printf (PRINT_WARNING, "Unknown type %i at (%i, %i)\n",
