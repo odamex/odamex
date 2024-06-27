@@ -1046,7 +1046,9 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 		// Modified handling.
 		// Call action functions when the state is set
 		if (st->action)
-			st->action(mobj);
+		{
+			st->action(mobj); // [CMB] access violation here on windows
+		}
 
 		state = st->nextstate;
 
