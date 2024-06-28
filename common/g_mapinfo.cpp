@@ -2139,22 +2139,17 @@ void G_ParseMapInfo()
 	lump = W_GetNumForName(baseinfoname);
 	ParseMapInfoLump(lump, baseinfoname);
 
-	bool found_mapinfo = false;
-	lump = -1;
-	while ((lump = W_FindLump("UMAPINFO", lump)) != -1)
-	{
-		found_mapinfo = true;
-		ParseUMapInfoLump(lump, "UMAPINFO");
-	}
-
-	// If UMAPINFO exists, we don't parse a normal MAPINFO
-	if (found_mapinfo == true)
-		return;
-
+	// Parse MAPINFO then UMAPINFO, like dsda
 	lump = -1;
 	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
 	{
 		ParseMapInfoLump(lump, "MAPINFO");
+	}
+
+	lump = -1;
+	while ((lump = W_FindLump("UMAPINFO", lump)) != -1)
+	{
+		ParseUMapInfoLump(lump, "UMAPINFO");
 	}
 
 	if (episodenum == 0)
