@@ -43,6 +43,7 @@
 #include "p_ctf.h"
 #include "i_video.h"
 #include "cl_netgraph.h"
+#include "cl_state.h"
 #include "hu_mousegraph.h"
 #include "am_map.h"
 
@@ -618,7 +619,7 @@ static void ShovePrivMsg(byte pid, std::string str)
 
 BEGIN_COMMAND (messagemode)
 {
-	if(!connected)
+	if (!ClientState::get().isConnected())
 		return;
 
 	HU_SetChatMode();
@@ -640,7 +641,8 @@ END_COMMAND (say)
 
 BEGIN_COMMAND (messagemode2)
 {
-	if(!connected || (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF && !consoleplayer().spectator))
+	if (!ClientState::get().isConnected() ||
+	    (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF && !consoleplayer().spectator))
 		return;
 
 	HU_SetTeamChatMode();

@@ -32,6 +32,7 @@
 #include "p_mobj.h"
 #include "p_local.h"
 #include "infomap.h"
+#include "cl_state.h"
 
 extern int world_index;
 extern int last_svgametic;
@@ -73,7 +74,7 @@ void ClientReplay::reset()
 
 bool ClientReplay::enabled()
 {
-	return (clientside && multiplayer && connected);
+	return (clientside && multiplayer && ClientState::get().isConnected());
 }
 
 //

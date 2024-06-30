@@ -375,7 +375,7 @@ void SockadrToNetadr (struct sockaddr_in *s, netadr_t *a)
      a->port = s->sin_port;
 }
 
-void NetadrToSockadr (netadr_t *a, struct sockaddr_in *s)
+void NetadrToSockadr (const netadr_t *a, struct sockaddr_in *s)
 {
      memset (s, 0, sizeof(*s));
      s->sin_family = AF_INET;
@@ -483,7 +483,7 @@ int NET_GetPacket(buf_t& outBuffer, netadr_t& outFrom)
 	return ret;
 }
 
-int NET_SendPacket (buf_t &buf, netadr_t &to)
+int NET_SendPacket (buf_t &buf, const netadr_t &to)
 {
 	int				   ret;
 	struct sockaddr_in	addr;

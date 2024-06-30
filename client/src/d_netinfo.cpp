@@ -31,6 +31,7 @@
 #include "r_draw.h"
 #include "r_state.h"
 #include "cl_main.h"
+#include "cl_state.h"
 
 // The default preference ordering when the player runs out of one type of ammo.
 // Vanilla Doom compatible.
@@ -211,16 +212,16 @@ void D_SetupUserInfo(void)
 	coninfo->color[3] = color.getb(); 
 
 	// update color translation
-	if (!demoplayback && !connected)
+	if (!demoplayback && !ClientState::get().isConnected())
 		R_BuildPlayerTranslation(consoleplayer_id, color);
 }
 
 void D_UserInfoChanged (cvar_t *cvar)
 {
-	if (gamestate != GS_STARTUP && !connected)
+	if (gamestate != GS_STARTUP && !ClientState::get().isConnected())
 		D_SetupUserInfo();
 
-	if (connected)
+	if (ClientState::get().isConnected())
 		CL_SendUserInfo();
 }
 

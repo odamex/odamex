@@ -30,10 +30,6 @@
 #include "r_defs.h"
 #include "cl_demo.h"
 
-extern netadr_t  serveraddr;
-extern BOOL      connected;
-extern int       connecttimeout;
-
 extern bool      noservermsgs;
 extern int       last_received;
 

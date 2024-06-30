@@ -64,6 +64,7 @@
 #include "p_mapformat.h"
 #include "infomap.h"
 #include "cl_replay.h"
+#include "cl_state.h"
 
 // Extern data from other files.
 
@@ -616,7 +617,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		level.total_monsters++;
 	}
 
-	if (connected && (mo->flags & MF_MISSILE) && mo->info->seesound)
+	if (ClientState::get().isConnected() && (mo->flags & MF_MISSILE) && mo->info->seesound)
 	{
 		S_Sound(mo, CHAN_VOICE, mo->info->seesound, 1, ATTN_NORM);
 	}
@@ -3062,7 +3063,7 @@ bool CL_ReadMessages()
 {
 	for (;;)
 	{
-		if (!::connected)
+		if (!::ClientState::get().isConnected())
 			return false;
 
 		if (::net_message.BytesLeftToRead() == 0)

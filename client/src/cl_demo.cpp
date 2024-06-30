@@ -37,6 +37,7 @@
 #include "p_mobj.h"
 #include "svc_message.h"
 #include "g_gametype.h"
+#include "cl_state.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
@@ -457,7 +458,7 @@ bool NetDemo::startRecording(const std::string &filename)
 	header.starting_gametic = gametic;
 	Printf(PRINT_HIGH, "Recording netdemo %s.\n", filename.c_str());
 
-	if (connected)
+	if (ClientState::get().isConnected())
 	{
 		// write a simulation of the connection sequence since the server
 		// has already sent it to the client and it wasn't captured
@@ -766,7 +767,7 @@ void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 //
 bool NetDemo::atSnapshotInterval()
 {
-	if (!connected || map_index.empty() || gamestate != GS_LEVEL)
+	if (!ClientState::get().isConnected() || map_index.empty() || gamestate != GS_LEVEL)
 		return false;
 
 	int last_map_tic = map_index.back().ticnum;
@@ -810,7 +811,7 @@ void NetDemo::writeMessages()
 		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_snapshot);
 	}
 
-	if (connected)
+	if (ClientState::get().isConnected())
 	{	
 		// Write the console player's game data
 		SZ_Clear(&netbuf_localcmd);
@@ -902,7 +903,7 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 	netbuffer->WriteChunk(msgdata, len);
 	delete [] msgdata;
 
-	if (!connected)
+	if (!ClientState::get().isConnected())
 	{
 		int type = MSG_ReadLong();
 		if (type == MSG_CHALLENGE)
@@ -1402,7 +1403,7 @@ const std::vector<int> NetDemo::getMapChangeTimes()
 
 void NetDemo::writeMapChange()
 {
-	if (connected && gamestate == GS_LEVEL)
+	if (ClientState::get().isConnected() && gamestate == GS_LEVEL)
 	{
 		writeSnapshotData(snapbuf);
 		writeMapIndexEntry();
@@ -1414,7 +1415,7 @@ void NetDemo::writeMapChange()
 
 void NetDemo::writeIntermission()
 {
-	if (connected && gamestate == GS_INTERMISSION)
+	if (ClientState::get().isConnected() && gamestate == GS_INTERMISSION)
 	{
 		writeSnapshotData(snapbuf);
 		writeSnapshotIndexEntry();

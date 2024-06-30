@@ -29,6 +29,7 @@
 #include "c_maplist.h"
 #include "cl_maplist.h"
 #include "cl_main.h"
+#include "cl_state.h"
 #include "cmdlib.h"
 #include "c_dispatch.h"
 #include "i_net.h"
@@ -158,7 +159,8 @@ void MaplistCache::ev_tic() {
 		return;
 	}
 
-	if (!connected) {
+	if (!ClientState::get().isConnected())
+	{
 		// If we're not connected to a server, our maplist cache is useless.
 		this->invalidate();
 		this->status = MAPLIST_EMPTY;

@@ -67,6 +67,7 @@
 #include "g_gametype.h"
 #include "cl_parse.h"
 #include "cl_replay.h"
+#include "cl_state.h"
 
 #include <bitset>
 #include <map>
@@ -112,12 +113,6 @@ int       last_svgametic = 0;
 int       last_player_update = 0;
 
 bool		recv_full_update = false;
-
-std::string connectpasshash = "";
-
-BOOL      connected;
-netadr_t  serveraddr; // address of a server
-netadr_t  lastconaddr;
 
 const static size_t PACKET_SEQ_MASK = 0xFF;
 static int packetseq[256];
@@ -421,11 +416,11 @@ void Host_EndGame(const char *msg)
 
 void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line)
 {
-	if(connected)
+	if(ClientState::get().isConnected())
 	{
 		SZ_Clear(&write_buffer);
 		MSG_WriteMarker(&write_buffer, clc_disconnect);
-		NET_SendPacket(write_buffer, serveraddr);
+		NET_SendPacket(write_buffer, ClientState::get().getAddress());
 		SZ_Clear(&write_buffer);
 		sv_gametype = GM_COOP;
 		ClientReplay::getInstance().reset();
@@ -437,8 +432,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 		S_ResumeSound ();
 	}
 
-	memset (&serveraddr, 0, sizeof(serveraddr));
-	connected = false;
+	ClientState::get().onDisconnect();
 	gameaction = ga_fullconsole;
 	noservermsgs = false;
 	AM_Stop();
@@ -513,23 +507,23 @@ void CL_Reconnect(void)
 
 	ClientReplay::getInstance().reset();
 
-	if (connected)
+	if (ClientState::get().isConnected())
 	{
 		MSG_WriteMarker(&write_buffer, clc_disconnect);
-		NET_SendPacket(write_buffer, serveraddr);
+		NET_SendPacket(write_buffer, ClientState::get().getAddress());
 		SZ_Clear(&write_buffer);
-		connected = false;
 		gameaction = ga_fullconsole;
 
 		P_ClearAllNetIds();
 	}
-	else if (lastconaddr.ip[0])
-	{
-		serveraddr = lastconaddr;
-	}
 
+	ClientState::get().onDisconnect();
 	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
-	connecttimeout = 0;
+
+	if (!ClientState::get().startReconnect())
+	{
+		PrintFmt("Could not reconnect, no prior address.\n");
+	}
 }
 
 std::string spyplayername;
@@ -747,7 +741,7 @@ void CL_RunTics()
 		CL_StepTics(1);
 	}
 
-	if (!connected)
+	if (!ClientState::get().isConnected())
 		CL_RequestConnectInfo();
 
 	// [RH] Use the consoleplayer's camera to update sounds
@@ -771,58 +765,45 @@ BEGIN_COMMAND (step)
 }
 END_COMMAND (step)
 
-BEGIN_COMMAND (connect)
+BEGIN_COMMAND(connect)
 {
-	if (argc == 1)
+	if (argc <= 1)
 	{
-	    Printf("Usage: connect ip[:port] [password]\n");
-	    Printf("\n");
-	    Printf("Connect to a server, with optional port number");
-	    Printf(" and/or password\n");
-	    Printf("eg: connect 127.0.0.1\n");
-	    Printf("eg: connect 192.168.0.1:12345 secretpass\n");
+		Printf("Usage: connect ip[:port] [password]\n");
+		Printf("\n");
+		Printf("Connect to a server, with optional port number");
+		Printf(" and/or password\n");
+		Printf("eg: connect 127.0.0.1\n");
+		Printf("eg: connect 192.168.0.1:12345 secretpass\n");
 
-	    return;
+		return;
 	}
 
-	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
+	simulated_connection =
+	    false; // Ch0wW : don't block people connect to a server after playing a demo
 
 	C_FullConsole();
 	gamestate = GS_CONNECTING;
 
 	CL_QuitNetGame(NQ_SILENT);
 
-	if (argc > 1)
+	bool ok = false;
+	if (argc > 2)
 	{
-		std::string target = argv[1];
-
-        // [Russell] - Passworded servers
-        if(argc > 2)
-        {
-            connectpasshash = MD5SUM(argv[2]);
-        }
-        else
-        {
-            connectpasshash = "";
-        }
-
-		if(NET_StringToAdr (target.c_str(), &serveraddr))
-		{
-			if (!serveraddr.port)
-				I_SetPort(serveraddr, SERVERPORT);
-
-			lastconaddr = serveraddr;
-		}
-		else
-		{
-			Printf("Could not resolve host %s\n", target.c_str());
-			memset(&serveraddr, 0, sizeof(serveraddr));
-		}
+		ok = ClientState::get().startConnect(argv[1], argv[2]);
+	}
+	else
+	{
+		ok = ClientState::get().startConnect(argv[1]);
 	}
 
-	connecttimeout = 0;
+	if (!ok)
+	{
+		PrintFmt("Could not resolve host \"{}\"\n", argv[1]);
+		return;
+	}
 }
-END_COMMAND (connect)
+END_COMMAND(connect)
 
 
 BEGIN_COMMAND (disconnect)
@@ -967,7 +948,7 @@ END_COMMAND (serverinfo)
 
 BEGIN_COMMAND(rcon)
 {
-	if (connected && argc > 1)
+	if (ClientState::get().isConnected() && argc > 1)
 	{
 		char command[256];
 
@@ -983,7 +964,7 @@ END_COMMAND(rcon)
 
 BEGIN_COMMAND(rcon_password)
 {
-	if (connected && argc > 1)
+	if (ClientState::get().isConnected() && argc > 1)
 	{
 		bool login = true;
 
@@ -998,7 +979,7 @@ END_COMMAND(rcon_password)
 
 BEGIN_COMMAND(rcon_logout)
 {
-	if (connected)
+	if (ClientState::get().isConnected())
 	{
 		bool login = false;
 
@@ -1247,7 +1228,7 @@ BEGIN_COMMAND(netrecord)
 		return;
 	}
 
-	if (!connected || simulated_connection)
+	if (!ClientState::get().isConnected() || simulated_connection)
 	{
 		Printf(PRINT_HIGH, "You must be connected to a server to record a netdemo.\n");
 		return;
@@ -1289,13 +1270,12 @@ BEGIN_COMMAND(netplay)
 		return;
 	}
 
-	if (!connected)
+	if (!ClientState::get().isConnected())
 	{
  		G_CheckDemoStatus();	// cleans up vanilla demo or single player game
 	}
 
 	CL_QuitNetGame(NQ_SILENT);
-	connected = false;
 
 	std::string filename = argv[1];
 	CL_NetDemoPlay(filename);
@@ -1498,31 +1478,28 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	CL_CheckDisplayPlayer();
 }
 
-int connecttimeout = 0;
-
 //
 // [denis] CL_RequestConnectInfo
 // Do what a launcher does...
 //
 void CL_RequestConnectInfo(void)
 {
-	if (!serveraddr.ip[0])
+	if (!ClientState::get().isConnecting())
 		return;
 
-	gamestate = GS_CONNECTING;
+	::gamestate = GS_CONNECTING;
 
-	if(!connecttimeout)
+	if (ClientState::get().canRetryConnect())
 	{
-		connecttimeout = 140;
-
-		Printf(PRINT_HIGH, "Connecting to %s...\n", NET_AdrToString(serveraddr));
+		PrintFmt("Connecting to {}...\n",
+		         NET_AdrToString(ClientState::get().getAddress()));
 
 		SZ_Clear(&write_buffer);
 		MSG_WriteLong(&write_buffer, LAUNCHER_CHALLENGE);
-		NET_SendPacket(write_buffer, serveraddr);
-	}
+		NET_SendPacket(write_buffer, ClientState::get().getAddress());
 
-	connecttimeout--;
+		ClientState::get().onSentConnect();
+	}
 }
 
 /**
@@ -1622,7 +1599,7 @@ bool CL_PrepareConnect()
 	std::string server_map = MSG_ReadString();
 	byte server_wads = MSG_ReadByte();
 
-	Printf("Found server at %s.\n\n", NET_AdrToString(::serveraddr));
+	Printf("Found server at %s.\n\n", NET_AdrToString(ClientState::get().getAddress()));
 	Printf("> Hostname: %s\n", server_host.c_str());
 
 	std::vector<std::string> newwadnames;
@@ -1803,9 +1780,8 @@ bool CL_PrepareConnect()
 
 	recv_full_update = false;
 
-	connecttimeout = 0;
+	ClientState::get().onGotServerInfo();
 	CL_TryToConnect(server_token);
-
 	return true;
 }
 
@@ -1823,7 +1799,8 @@ bool CL_Connect()
 
 	compressor.reset();
 
-	connected = true;
+	ClientState::get().onConnected();
+
 	multiplayer = true;
 	network_game = true;
 	serverside = false;
@@ -1837,7 +1814,7 @@ bool CL_Connect()
 	MSG_WriteMarker(&write_buffer, clc_ack);
 	MSG_WriteLong(&write_buffer, int(g_AckManager.getRecentAck()));
 	MSG_WriteLong(&write_buffer, int(g_AckManager.getAckBits()));
-	NET_SendPacket(write_buffer, serveraddr);
+	NET_SendPacket(write_buffer, ClientState::get().getAddress());
 	SZ_Clear(&write_buffer);
 
 	if (!CL_ReadAndParseMessages())
@@ -1880,43 +1857,36 @@ void CL_InitNetwork (void)
 
     SZ_Clear(&write_buffer);
 
-    size_t ParamIndex = Args.CheckParm ("-connect");
-
-    if (ParamIndex)
-    {
-		const char *ipaddress = Args.GetArg(ParamIndex + 1);
+	size_t ParamIndex = Args.CheckParm("-connect");
+	if (ParamIndex)
+	{
+		const char* ipaddress = Args.GetArg(ParamIndex + 1);
 
 		if (ipaddress && ipaddress[0] != '-' && ipaddress[0] != '+')
 		{
-			NET_StringToAdr (ipaddress, &serveraddr);
-
-			const char *passhash = Args.GetArg(ParamIndex + 2);
-
-			if (passhash && passhash[0] != '-' && passhash[0] != '+')
+			int ok = false;
+			const char* password = Args.GetArg(ParamIndex + 2);
+			if (password && password[0] != '-' && password[0] != '+')
 			{
-				connectpasshash = MD5SUM(passhash);
+				ok = ClientState::get().startConnect(ipaddress, password);
+			}
+			else
+			{
+				ok = ClientState::get().startConnect(ipaddress);
 			}
 
-			if (!serveraddr.port)
-				I_SetPort(serveraddr, SERVERPORT);
-
-			lastconaddr = serveraddr;
-			gamestate = GS_CONNECTING;
+			::gamestate = GS_CONNECTING;
 		}
-    }
-
-    connected = false;
+	}
 }
 
 void CL_TryToConnect(DWORD server_token)
 {
-	if (!serveraddr.ip[0])
+	if (!ClientState::get().isConnecting())
 		return;
 
-	if (!connecttimeout)
+	if (ClientState::get().canRetryConnect())
 	{
-		connecttimeout = TICRATE; // [LM] Was 4 seconds, retry faster on dropped packet.
-
 		Printf("Joining server...\n");
 
 		SZ_Clear(&write_buffer);
@@ -1937,15 +1907,14 @@ void CL_TryToConnect(DWORD server_token)
 		// [SL] The "rate" CVAR has been deprecated. Now just send a hard-coded
 		// maximum rate that the server will ignore.
 		const int rate = 0xFFFF;
-		MSG_WriteLong(&write_buffer, rate); 
+		MSG_WriteLong(&write_buffer, rate);
+		MSG_WriteString(&write_buffer, ClientState::get().getPasswordHash().c_str());
 
-        MSG_WriteString(&write_buffer, (char*)connectpasshash.c_str());
-
-		NET_SendPacket(write_buffer, serveraddr);
+		NET_SendPacket(write_buffer, ClientState::get().getAddress());
 		SZ_Clear(&write_buffer);
-	}
 
-	connecttimeout--;
+		ClientState::get().onSentConnect();
+	}
 }
 
 //
@@ -2103,7 +2072,7 @@ void CL_SendCmd(void)
 		netcmd->write(&write_buffer);
 	}
 
-	int bytesWritten = NET_SendPacket(write_buffer, serveraddr);
+	int bytesWritten = NET_SendPacket(write_buffer, ClientState::get().getAddress());
 	netgraph.addTrafficOut(bytesWritten);
 
 	outrate += write_buffer.size();
@@ -2118,7 +2087,7 @@ void CL_KeepAlive()
 	MSG_WriteLong(&write_buffer, int(g_AckManager.getAckBits()));
 
 	// Send just the ack.
-	int bytesWritten = NET_SendPacket(write_buffer, serveraddr);
+	int bytesWritten = NET_SendPacket(write_buffer, ClientState::get().getAddress());
 	netgraph.addTrafficOut(bytesWritten);
 
 	outrate += write_buffer.size();

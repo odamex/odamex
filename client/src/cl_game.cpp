@@ -64,6 +64,7 @@
 #include "g_spawninv.h"
 #include "g_gametype.h"
 #include "p_horde.h"
+#include "cl_state.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -361,7 +362,8 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
 	int forward = 0, side = 0, look = 0, fly = 0;
 
-	if ((&consoleplayer())->spectator && Actions[ACTION_USE] && connected)
+	if ((&consoleplayer())->spectator && Actions[ACTION_USE] &&
+	    ClientState::get().isConnected())
 		AddCommandString("join");
 
 	// [RH] only use two stage accelerative turning on the keyboard
@@ -838,7 +840,6 @@ void CL_SimulateWorld();
 // Make ticcmd_ts for the players.
 //
 extern DCanvas *page;
-extern int connecttimeout;
 
 /**
  * @brief Tick the network game while connected.
@@ -856,7 +857,7 @@ static bool TickConnected()
 			break;
 
 		// denis - don't accept candy from strangers
-		if (!NET_CompareAdr(serveraddr, net_from))
+		if (!NET_CompareAdr(ClientState::get().getAddress(), net_from))
 			break;
 
 		realrate += packet_size;
@@ -909,7 +910,7 @@ void TickConnecting()
 		return;
 
 	// denis - don't accept candy from strangers
-	if (gamestate != GS_CONNECTING || !NET_CompareAdr(serveraddr, net_from))
+	if (gamestate != GS_CONNECTING || !ClientState::get().isValidAddress(net_from))
 		return;
 
 	if (netdemo.isRecording())
@@ -924,15 +925,15 @@ void TickConnecting()
 	else if (type == 0)
 	{
 		if (!CL_Connect())
-			memset(&serveraddr, 0, sizeof(serveraddr));
-
-		connecttimeout = 0;
+		{
+			ClientState::get().onDisconnect();
+		}
 	}
 	else
 	{
 		// we are already connected to this server, quit first
 		MSG_WriteMarker(&write_buffer, clc_disconnect);
-		NET_SendPacket(write_buffer, serveraddr);
+		NET_SendPacket(write_buffer, ClientState::get().getAddress());
 
 		Printf(PRINT_WARNING,
 		       "Got unknown challenge %d while connecting, disconnecting.\n", type);
@@ -1059,7 +1060,7 @@ void G_Ticker (void)
 
 	if (!::simulated_connection)
 	{
-		if (::connected)
+		if (ClientState::get().isConnected())
 		{
 			if (!TickConnected())
 				return;

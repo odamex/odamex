@@ -31,6 +31,7 @@
 #include "c_dispatch.h"
 #include "cl_main.h"
 #include "cl_maplist.h"
+#include "cl_state.h"
 #include "cmdlib.h"
 #include "i_net.h"
 #include "i_system.h"
@@ -142,9 +143,11 @@ void CMD_RandmapVoteCallback(const maplist_qrows_t &result) {
 /**
  * Send a vote request to the server.
  */
-BEGIN_COMMAND(callvote) {
+BEGIN_COMMAND(callvote)
+{
 	// Dumb question, but are we even connected to a server?
-	if (!connected) {
+	if (!ClientState::get().isConnected())
+	{
 		Printf(PRINT_HIGH, "callvote failed: You are not connected to a server.\n");
 		return;
 	}
@@ -239,7 +242,7 @@ BEGIN_COMMAND(callvote) {
  */
 BEGIN_COMMAND(vote_yes)
 {
-	if (!connected)
+	if (!ClientState::get().isConnected())
 	{
 		Printf(PRINT_HIGH, "vote failed: You are not connected to a server.\n");
 		return;
@@ -257,7 +260,7 @@ END_COMMAND(vote_yes)
  */
 BEGIN_COMMAND(vote_no)
 {
-	if (!connected)
+	if (!ClientState::get().isConnected())
 	{
 		Printf(PRINT_HIGH, "vote failed: You are not connected to a server.\n");
 		return;

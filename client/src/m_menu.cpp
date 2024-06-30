@@ -50,6 +50,7 @@
 #include "cl_main.h"
 #include "c_bind.h"
 #include "cl_responderkeys.h"
+#include "cl_state.h"
 
 #include "gi.h"
 #include "g_skill.h"
@@ -1724,7 +1725,7 @@ static void SendNewColor(int red, int green, int blue)
 
 	// [SL] not connected to a server so we don't have to wait for the server
 	// to verify the color choice
-	if (!connected)
+	if (!ClientState::get().isConnected())
 	{
 		// [Nes] Change the player preview color.
 		R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color));
