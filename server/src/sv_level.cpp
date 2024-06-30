@@ -297,7 +297,17 @@ void G_ChangeMap(size_t index) {
 		return;
 	}
 
-	G_LoadWadString(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
+	std::string wadstr;
+	for (size_t i = 0; i < maplist_entry.wads.size(); i++)
+	{
+		if (i != 0)
+		{
+			wadstr += " ";
+		}
+		wadstr += C_QuoteString(maplist_entry.wads.at(i));
+	}
+
+	G_LoadWadString(wadstr, maplist_entry.map);
 
 	// Set the new map as the current map
 	Maplist::instance().set_index(index);
