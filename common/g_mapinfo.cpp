@@ -1967,12 +1967,17 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				    LEVEL_NOINTERMISSION | LEVEL_EVENLIGHTING | LEVEL_SNDSEQTOTALCTRL;
 			}
 
-			// Find the level.
-			level_pwad_info_t& info = (levels.findByName(map_name).exists())
-			                              ? levels.findByName(map_name)
-			                              : levels.create();
+			// Build upon already defined levels, that way we don't miss any defaults 
+			bool levelExists = levels.findByName(map_name).exists();
 
-			info = defaultinfo;
+			// Find the level.
+			level_pwad_info_t& info = levelExists ? 
+																			levels.findByName(map_name):
+																			levels.create();
+
+			if (!levelExists)
+				info = defaultinfo;
+
 			info.mapname = map_name;
 
 			// Map name.
