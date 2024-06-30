@@ -154,6 +154,17 @@ void OTransferCheck::setURL(const std::string& src)
 }
 
 /**
+ * @brief Escapes a filename and encodes it to be a legal URI
+ *
+ * @param filename Complete filename
+ */
+std::string OTransferCheck::escapeFileName(const std::string& filename)
+{
+	// Let's escape the filename so we have a legal url to try
+	return curl_easy_escape(m_curl, filename.c_str(), filename.length());
+}
+
+/**
  * @brief Start the checking transfer.
  *
  * @return True if the transfer started properly.

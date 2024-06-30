@@ -80,6 +80,7 @@ class OTransferCheck
 	}
 
 	void setURL(const std::string& src);
+	std::string escapeFileName(const std::string& src);
 	bool start();
 	void stop();
 	bool tick();
