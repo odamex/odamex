@@ -1604,7 +1604,7 @@ static int PatchFrame(int frameNum)
 	}
 #if defined _DEBUG
 	const char* sprsub = (info->sprite > 0) ? sprnames[info->sprite] : "";
-	Printf("FRAME %d: Duration: %d, Next: %d, SprNum: %d(%s), SprSub: %d\n", frameNum,
+	DPrintf("FRAME %d: Duration: %d, Next: %d, SprNum: %d(%s), SprSub: %d\n", frameNum,
 	       info->tics, info->nextstate, info->sprite, sprsub,
 			info->frame);
 #endif
@@ -1669,17 +1669,20 @@ static int PatchSprites(int dummy)
 	 6. patch the sprite with the new name
 	*/
 	static size_t maxsprlen = 4;
-	int result = 0;
+	static int call_amt = 0;
+	call_amt++;
+	int result;
 #if defined _DEBUG
-	DPrintf("[Sprites]\n");
+	DPrintf("[SPRITES] %d\n", call_amt);
 #endif
 
 	// [CMB] static char* Line1 is the left hand side
 	// [CMB] static char* Line2 is the right hand side
-	while((result == GetLine()) == 1)
+	while((result = GetLine()) == 1)
 	{
 		const char* zSprIdx = Line1;
-        const char* newSprName = skipwhite(Line2);
+        char* newSprName = skipwhite(Line2);
+		stripwhite(newSprName);
         
         if(!newSprName && strlen(newSprName) > maxsprlen)
         {
@@ -1696,9 +1699,23 @@ static int PatchSprites(int dummy)
         }
         if(sprIdx >= 0)
         {
+#if defined _DEBUG
+			const char* prevSprName =
+			    sprnames[sprIdx] != NULL ? sprnames[sprIdx] : "No Sprite";
+			DPrintf("Patching sprite at %d with name %s with new name %s\n",
+			       prevSprName, sprIdx, newSprName);
+#endif
             sprnames[sprIdx] = Z_StrDup(newSprName, PU_STATIC);
         }
 	}
+
+
+#if defined _DEBUG
+	for (int i = 0; i < ::num_spritenum_t_types; ++i)
+	{
+		Printf_Bold("Sprite[%d]=%s\n", i, sprnames[i]);
+	}
+#endif
 	return result;
 }
 
