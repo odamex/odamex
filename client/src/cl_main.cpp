@@ -2045,8 +2045,8 @@ void CL_SendCmd(void)
 
 	// Resolve acks first.
 	MSG_WriteMarker(&write_buffer, clc_ack);
-	MSG_WriteLong(&write_buffer, int(g_AckManager.getRecentAck()));
-	MSG_WriteLong(&write_buffer, int(g_AckManager.getAckBits()));
+	MSG_WriteULong(&write_buffer, g_AckManager.getRecentAck());
+	MSG_WriteULong(&write_buffer, g_AckManager.getAckBits());
 
 	// GhostlyDeath -- If we are spectating, tell the server of our new position
 	if (p->spectator)
@@ -2089,8 +2089,8 @@ void CL_KeepAlive()
 {
 	// Update the server on acked packets.
 	MSG_WriteMarker(&write_buffer, clc_ack);
-	MSG_WriteLong(&write_buffer, int(g_AckManager.getRecentAck()));
-	MSG_WriteLong(&write_buffer, int(g_AckManager.getAckBits()));
+	MSG_WriteULong(&write_buffer, g_AckManager.getRecentAck());
+	MSG_WriteULong(&write_buffer, g_AckManager.getAckBits());
 
 	// Send just the ack.
 	int bytesWritten = NET_SendPacket(write_buffer, ClientState::get().getAddress());

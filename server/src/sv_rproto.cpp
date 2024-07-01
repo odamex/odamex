@@ -188,8 +188,8 @@ void SV_AcknowledgePacket(player_t &player)
 {
 	client_t& cl = *player.client;
 
-	const uint32_t packetAck = uint32_t(MSG_ReadLong());
-	const uint32_t packetAckBits = uint32_t(MSG_ReadLong());
+	const uint32_t packetAck = MSG_ReadULong();
+	const uint32_t packetAckBits = MSG_ReadULong();
 	const bool connected = cl.msg.clientAck(packetAck, packetAckBits);
 
 	if (!connected)

@@ -60,6 +60,19 @@ void buf_t::WriteLong(int l)
 	}
 }
 
+void buf_t::WriteULong(uint l)
+{
+	byte* buf = GetSpace(sizeof(l));
+
+	if (!overflowed)
+	{
+		buf[0] = l & 0xff;
+		buf[1] = (l >> 8) & 0xff;
+		buf[2] = (l >> 16) & 0xff;
+		buf[3] = l >> 24;
+	}
+}
+
 //
 // Write an unsigned varint to the wire.
 //
@@ -177,6 +190,19 @@ int buf_t::ReadLong()
 	{
 		overflowed = true;
 		return -1;
+	}
+	size_t oldpos = readpos;
+	readpos += 4;
+	return data[oldpos] + (data[oldpos + 1] << 8) + (data[oldpos + 2] << 16) +
+	       (data[oldpos + 3] << 24);
+}
+
+uint buf_t::ReadULong()
+{
+	if (readpos + 4 > cursize)
+	{
+		overflowed = true;
+		return uint(-1);
 	}
 	size_t oldpos = readpos;
 	readpos += 4;

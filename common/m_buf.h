@@ -108,6 +108,7 @@ class buf_t
 	void WriteByte(byte b);
 	void WriteShort(short s);
 	void WriteLong(int l);
+	void WriteULong(uint l);
 	void WriteUnVarint(unsigned int v);
 	void WriteVarint(int v);
 	void WriteString(const char* c);
@@ -117,6 +118,7 @@ class buf_t
 	byte* ReadChunk(size_t size);
 	int ReadShort();
 	int ReadLong();
+	uint ReadULong();
 	unsigned int ReadUnVarint();
 	int ReadVarint();
 	const char* ReadString();
