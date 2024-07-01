@@ -220,13 +220,13 @@ void R_RenderSkyRange(visplane_t* pl)
 	{
 		// use sky1
 		skytex = sky1texture;
-		front_offset = sky1columnoffset >> 16;
+		front_offset = sky1columnoffset >> 6;
 	}
 	else if (pl->picnum == int(PL_SKYFLAT))
 	{
 		// use sky2
 		skytex = sky2texture;
-		front_offset = sky2columnoffset >> 16;
+		front_offset = sky2columnoffset >> 6;
 	}
 	else
 	{
