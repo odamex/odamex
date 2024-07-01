@@ -1860,19 +1860,25 @@ void CL_InitNetwork (void)
 	size_t ParamIndex = Args.CheckParm("-connect");
 	if (ParamIndex)
 	{
-		const char* ipaddress = Args.GetArg(ParamIndex + 1);
+		const char* address = Args.GetArg(ParamIndex + 1);
 
-		if (ipaddress && ipaddress[0] != '-' && ipaddress[0] != '+')
+		if (address && address[0] != '-' && address[0] != '+')
 		{
-			int ok = false;
+			bool ok = false;
 			const char* password = Args.GetArg(ParamIndex + 2);
 			if (password && password[0] != '-' && password[0] != '+')
 			{
-				ok = ClientState::get().startConnect(ipaddress, password);
+				ok = ClientState::get().startConnect(address, password);
 			}
 			else
 			{
-				ok = ClientState::get().startConnect(ipaddress);
+				ok = ClientState::get().startConnect(address);
+			}
+
+			if (!ok)
+			{
+				PrintFmt("Could not resolve host \"{}\"\n", address);
+				return;
 			}
 
 			::gamestate = GS_CONNECTING;
