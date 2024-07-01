@@ -56,8 +56,8 @@ fixed_t		skyheight;
 fixed_t		skyiscale;
 
 int			sky1shift,		sky2shift;
-fixed_t		sky1pos=0,		sky1speed=0;
-fixed_t		sky2pos=0,		sky2speed=0;
+fixed_t sky1scrolldelta, sky2scrolldelta;
+fixed_t sky1columnoffset, sky2columnoffset;
 
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
@@ -220,11 +220,13 @@ void R_RenderSkyRange(visplane_t* pl)
 	{
 		// use sky1
 		skytex = sky1texture;
+		front_offset = sky1columnoffset >> 16;
 	}
 	else if (pl->picnum == int(PL_SKYFLAT))
 	{
 		// use sky2
 		skytex = sky2texture;
+		front_offset = sky2columnoffset >> 16;
 	}
 	else
 	{

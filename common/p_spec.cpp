@@ -2260,7 +2260,9 @@ void P_UpdateSpecials (void)
 		}
 	}
 
-	// [ML] 5/11/06 - Remove sky scrolling ability
+	// Update sky column offsets
+	sky1columnoffset += sky1scrolldelta;
+	sky1columnoffset += sky2scrolldelta;
 }
 
 
