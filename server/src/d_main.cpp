@@ -224,6 +224,7 @@ void STACK_ARGS D_Shutdown()
 }
 
 void D_Init_DEHEXTRA_Frames(void);
+void D_Init_Odamex_States(void);
 
 //
 // D_DoomMain
