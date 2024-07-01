@@ -993,11 +993,11 @@ void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int fla
 	{
 		if (flags == 1)
 		{
-			info.sky1ScrollDelta = FLOAT2FIXED(os.getTokenFloat()) << 8;
+			info.sky1ScrollDelta = FLOAT2FIXED(os.getTokenFloat());
 		}
 		else
 		{
-			info.sky2ScrollDelta = FLOAT2FIXED(os.getTokenFloat()) << 8;
+			info.sky2ScrollDelta = FLOAT2FIXED(os.getTokenFloat());
 		}
 	}
 	else
