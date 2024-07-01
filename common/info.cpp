@@ -31,6 +31,7 @@
 #include "m_fixed.h"
 #include "info.h"
 #include "actor.h"
+#include "state.h"
 
 const char* doom_sprnames[::NUMSPRITES+1] = {
 	"TROO","SHTG","PUNG","PISG","PISF","SHTF","SHT2","CHGG","CHGF","MISG",
@@ -1331,7 +1332,7 @@ state_t odastates[::NUMSTATES - S_GIB0] = {
 // at the end and reference them that way.
 // [CMB] TODO: When we convert this to DSDHacked, we'll need to append the dynamic
 // frame list size to the end of the doom states to get the odamex states.
-// --
+// state_t states[NUMSTATES] = {};
 
 mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 
@@ -7614,10 +7615,10 @@ void D_Init_DEHEXTRA_Frames(void)
 		{
 			states[i] = boomstates[i];
 		}
-		else if (i >= S_GIB0)
-		{
-			states[i] = odastates[i - S_GIB0];
-		}
+//		else if (i >= S_GIB0)
+//		{
+//			states[i] = odastates[i - S_GIB0];
+//		}
 		else
 		{
 			// These cover both DEHEXTRA states and the undefined states
@@ -7648,7 +7649,7 @@ void D_Init_DEHEXTRA_Frames(void)
 		states[i].flags |= STATEF_SKILL5FAST;
 
 	// Start all MBF21 content here.
-	for (int i = 0; i < ::NUMMOBJTYPES ; i++)
+	for (int i = 0; i < ::num_mobjinfo_types ; i++)
 	{
 		mobjinfo[i].altspeed = NO_ALTSPEED;
 		mobjinfo[i].infighting_group = IG_DEFAULT;
@@ -7682,6 +7683,17 @@ void D_Init_DEHEXTRA_Frames(void)
 	// Projectile links
 	mobjinfo[MT_BRUISER].projectile_group = PG_BARON;
 	mobjinfo[MT_KNIGHT].projectile_group = PG_BARON;
+}
+
+void D_Init_Odamex_States(int num_states)
+{
+    // using hard coded values here
+    int num_odamex_states = ::NUMSTATES - S_GIB0;
+    D_EnsureStateCapacity(num_states + num_odamex_states);
+    for(int i = 0; i < num_odamex_states; i++)
+    {
+        states[num_states + i] = odastates[i];
+    }
 }
 
 VERSION_CONTROL (info_cpp, "$Id$")

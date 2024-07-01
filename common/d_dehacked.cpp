@@ -405,7 +405,7 @@ static int PatchThing(int);
 static int PatchSound(int);
 static int PatchFrame(int);
 static int PatchSprite(int);
-static int PatchSprites(int); // [CMB] dsdhacked
+static int PatchSprites(int);
 static int PatchAmmo(int);
 static int PatchWeapon(int);
 static int PatchPointer(int);
@@ -537,10 +537,10 @@ static void BackupData(void)
 		OrgActionPtrs[i] = states[i].action;
 	}
 
-	memcpy(backupStates, states, sizeof(states));
-	memcpy(backupMobjInfo, mobjinfo, sizeof(mobjinfo));
+	memcpy(backupStates, states, sizeof(*states));
+	memcpy(backupMobjInfo, mobjinfo, sizeof(*mobjinfo));
 	memcpy(backupWeaponInfo, weaponinfo, sizeof(weaponinfo));
-	memcpy(backupSprnames, sprnames, sizeof(sprnames));
+	memcpy(backupSprnames, sprnames, sizeof(*sprnames));
 	memcpy(backupClipAmmo, clipammo, sizeof(clipammo));
 	memcpy(backupMaxAmmo, maxammo, sizeof(maxammo));
 	backupDeh = deh;
@@ -1658,6 +1658,12 @@ static int PatchSprite(int sprNum)
 	return result;
 }
 
+/**
+ * @brief patch sprites underneath SPRITES header
+ * 
+ * @param dummy - int value for function pointer
+ * @return int - success or failure
+ */
 static int PatchSprites(int dummy)
 {
 	/* TODO
@@ -1669,11 +1675,10 @@ static int PatchSprites(int dummy)
 	 6. patch the sprite with the new name
 	*/
 	static size_t maxsprlen = 4;
-	static int call_amt = 0;
-	call_amt++;
 	int result;
 #if defined _DEBUG
-	DPrintf("[SPRITES] %d\n", call_amt);
+	static int call_amt = 0;
+	DPrintf("[SPRITES] %d\n", ++call_amt);
 #endif
 
 	// [CMB] static char* Line1 is the left hand side
@@ -1793,7 +1798,7 @@ static int PatchWeapon(int weapNum)
 	while ((result = GetLine()) == 1)
 	{
 		size_t val = atoi(Line2);
-		int linelen = strlen(Line1);
+		size_t linelen = strlen(Line1);
 
 		if (HandleKey(keys, info, Line1, val, sizeof(*info)))
 		{
