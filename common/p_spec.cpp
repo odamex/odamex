@@ -2261,8 +2261,8 @@ void P_UpdateSpecials (void)
 	}
 
 	// Update sky column offsets
-	sky1columnoffset = (sky1columnoffset + level.sky1ScrollDelta) & 0xffffff;
-	sky2columnoffset = (sky2columnoffset + level.sky2ScrollDelta) & 0xffffff;
+	sky1columnoffset += level.sky1ScrollDelta & 0xffffff;
+	sky2columnoffset += level.sky2ScrollDelta & 0xffffff;
 }
 
 
