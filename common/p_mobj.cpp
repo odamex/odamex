@@ -963,9 +963,9 @@ void AActor::Serialize (FArchive &arc)
 		}
 		spawnpoint.Serialize (arc);
 		baseline.Serialize(arc);
-		if(type >= ::NUMMOBJTYPES)
+		if(type >= ::num_mobjinfo_types)
 			I_Error("Unknown object type in saved game");
-		if(sprite >= ::NUMSPRITES)
+		if(sprite >= ::num_spritenum_t_types)
 			I_Error("Unknown sprite in saved game");
 		info = &mobjinfo[type];
 		touching_sectorlist = NULL;
@@ -2562,7 +2562,7 @@ void P_RespawnSpecials (void)
 	y = mthing->y << FRACBITS;
 
 	// find which type to spawn
-	for (i=0 ; i< ::NUMMOBJTYPES ; i++)
+	for (i=0 ; i< ::num_mobjinfo_types ; i++)
 	{
 		if (mthing->type == mobjinfo[i].doomednum)
 		{
@@ -2578,7 +2578,7 @@ void P_RespawnSpecials (void)
 	}
 
 	// [Fly] crashes sometimes without it
-	if (i >= ::NUMMOBJTYPES)
+	if (i >= ::num_mobjinfo_types)
 	{
 		// pull it from the que
 		iquetail = (iquetail+1)&(ITEMQUESIZE-1);
