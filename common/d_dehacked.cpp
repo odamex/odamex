@@ -512,7 +512,7 @@ static BOOL HandleKey(const struct Key* keys, void* structure, const char* key, 
 
 static state_t backupStates[::NUMSTATES];
 static mobjinfo_t backupMobjInfo[::NUMMOBJTYPES];
-static mobjinfo_t backupWeaponInfo[NUMWEAPONS];
+static weaponinfo_t backupWeaponInfo[NUMWEAPONS + 1];
 static char* backupSprnames[::NUMSPRITES + 1];
 static int backupMaxAmmo[NUMAMMO];
 static int backupClipAmmo[NUMAMMO];
@@ -537,10 +537,10 @@ static void BackupData(void)
 		OrgActionPtrs[i] = states[i].action;
 	}
 
-	memcpy(backupStates, states, sizeof(*states));
-	memcpy(backupMobjInfo, mobjinfo, sizeof(*mobjinfo));
+	memcpy(backupStates, states, NUMSTATES);
+	memcpy(backupMobjInfo, mobjinfo, NUMMOBJTYPES);
 	memcpy(backupWeaponInfo, weaponinfo, sizeof(weaponinfo));
-	memcpy(backupSprnames, sprnames, sizeof(*sprnames));
+	memcpy(backupSprnames, sprnames, NUMPSPRITES);
 	memcpy(backupClipAmmo, clipammo, sizeof(clipammo));
 	memcpy(backupMaxAmmo, maxammo, sizeof(maxammo));
 	backupDeh = deh;
@@ -572,16 +572,16 @@ void D_UndoDehPatch()
 		::states[i].action = ::OrgActionPtrs[i];
 	}
 
-	memcpy(states, backupStates, sizeof(states));
+	memcpy(states, backupStates, sizeof(backupStates));
 
-	memcpy(mobjinfo, backupMobjInfo, sizeof(mobjinfo));
+	memcpy(mobjinfo, backupMobjInfo, sizeof(backupMobjInfo));
 	extern bool isFast;
 	isFast = false;
 
-	memcpy(weaponinfo, backupWeaponInfo, sizeof(weaponinfo));
-	memcpy(sprnames, backupSprnames, sizeof(sprnames));
-	memcpy(clipammo, backupClipAmmo, sizeof(clipammo));
-	memcpy(maxammo, backupMaxAmmo, sizeof(maxammo));
+	memcpy(weaponinfo, backupWeaponInfo, sizeof(backupWeaponInfo));
+	memcpy(sprnames, backupSprnames, sizeof(backupSprnames));
+	memcpy(clipammo, backupClipAmmo, sizeof(backupClipAmmo));
+	memcpy(maxammo, backupMaxAmmo, sizeof(backupMaxAmmo));
 	deh = backupDeh;
 }
 
@@ -978,7 +978,7 @@ static int PatchThing(int thingy)
         DPrintf("Thing %" PRIuSIZE " requires allocation.\n", thingNum);
 #endif
         D_EnsureMobjInfoCapacity(thingNum);
-        mobjinfo_t* newthing = (mobjinfo_t*) Z_Malloc(sizeof(mobjinfo_t), PU_STATIC, NULL);
+        mobjinfo_t* newthing = (mobjinfo_t*) M_Malloc(sizeof(mobjinfo_t));
         mobjinfo[thingNum] = *newthing;
         info = newthing;
 		*ednum = *&info->doomednum;
@@ -1535,7 +1535,7 @@ static int PatchFrame(int frameNum)
         DPrintf("Frame %" PRIuSIZE " requires allocation.\n", frameNum);
 #endif
         D_EnsureStateCapacity(frameNum);
-        state_t* newstate = (state_t*) Z_Malloc(sizeof(state_t), PU_STATIC, NULL);
+        state_t* newstate = (state_t*) M_Malloc(sizeof(state_t));
         states[frameNum] = *newstate;
         info = newstate;
     }
@@ -1603,7 +1603,7 @@ static int PatchFrame(int frameNum)
 		}
 	}
 #if defined _DEBUG
-	const char* sprsub = (info->sprite > 0) ? sprnames[info->sprite] : "";
+	const char* sprsub = (info->sprite > 0 && info->sprite < num_spritenum_t_types) ? sprnames[info->sprite] : "";
 	DPrintf("FRAME %d: Duration: %d, Next: %d, SprNum: %d(%s), SprSub: %d\n", frameNum,
 	       info->tics, info->nextstate, info->sprite, sprsub,
 			info->frame);
@@ -1710,7 +1710,8 @@ static int PatchSprites(int dummy)
 			DPrintf("Patching sprite at %d with name %s with new name %s\n",
 			       prevSprName, sprIdx, newSprName);
 #endif
-            sprnames[sprIdx] = Z_StrDup(newSprName, PU_STATIC);
+            // sprnames[sprIdx] = Z_StrDup(newSprName, PU_STATIC);
+			sprnames[sprIdx] = strdup(newSprName);
         }
 	}
 
