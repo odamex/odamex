@@ -35,7 +35,7 @@ void D_Initialize_mobjinfo(mobjinfo_t* source, int count) {
 
 void D_EnsureMobjInfoCapacity(int limit)
 {
-    while(limit >= ::num_mobjinfo_types)
+    while(limit >= num_mobjinfo_types)
     {
         int old_num_mobjinfo_types = num_mobjinfo_types;
         num_mobjinfo_types *= 2;

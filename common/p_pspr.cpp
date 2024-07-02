@@ -184,7 +184,7 @@ void P_SetPspritePtr(player_t* player, pspdef_t* psp, statenum_t stnum)
 			break;
 		}
 
-		if (stnum >= ::NUMSTATES)
+		if (stnum >= ::num_state_t_types)
 			return;
 
 		psp->state = &states[stnum];
