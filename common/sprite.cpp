@@ -37,6 +37,7 @@ void D_Initialize_sprnames(const char** source, int count)
  * @param key the key for a sprite either as a 4 character string or index value
  *            if it is not either, return -1.
  *            if the key is not found, return -1.
+ * @param offset the offset for the odamex sprnames
  */
 int D_FindOrgSpriteIndex(const char** src_sprnames, const char* key)
 {
