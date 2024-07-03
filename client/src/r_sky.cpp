@@ -212,20 +212,31 @@ void R_RenderSkyRange(visplane_t* pl)
 		return;
 
 	int columnmethod = 2;
-	int skytex;
+	int frontskytex, backskytex;
 	fixed_t front_offset = 0;
+	fixed_t back_offset = 0;
 	angle_t skyflip = 0;
 
-	if (pl->picnum == skyflatnum)
+	if (pl->picnum == skyflatnum )
 	{
 		// use sky1
-		skytex = sky1texture;
+		frontskytex = sky1texture;
+		if (level.flags & LEVEL_DOUBLESKY)
+		{
+			backskytex = sky2texture;
+		}
+		else
+		{
+			backskytex = -1;
+		}
 		front_offset = sky1columnoffset;
+		back_offset = sky2columnoffset;
 	}
 	else if (pl->picnum == int(PL_SKYFLAT))
 	{
 		// use sky2
-		skytex = sky2texture;
+		frontskytex = sky2texture;
+		backskytex = -1;
 		front_offset = sky2columnoffset;
 	}
 	else
@@ -238,7 +249,8 @@ void R_RenderSkyRange(visplane_t* pl)
 		const side_t* side = *line->sidenum + sides;
 
 		// Texture comes from upper texture of reference sidedef
-		skytex = texturetranslation[side->toptexture];
+		frontskytex = texturetranslation[side->toptexture];
+		backskytex = -1;
 
 		// Horizontal offset is turned into an angle offset,
 		// to allow sky rotation as well as careful positioning.
@@ -263,7 +275,8 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	dcol.iscale = skyiscale >> skystretch;
 	dcol.texturemid = skytexturemid;
-	dcol.textureheight = textureheight[skytex];
+	dcol.textureheight = textureheight[frontskytex]; // both skies are forced to be the same height anyway
+	dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
 	skyplane = pl;
 
 	// set up the appropriate colormap for the sky
@@ -287,7 +300,48 @@ void R_RenderSkyRange(visplane_t* pl)
 	for (int x = pl->minx; x <= pl->maxx; x++)
 	{
 		int colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
-		skyposts[x] = R_GetTextureColumn(skytex, colnum);
+		tallpost_t* skypost;
+		if (backskytex == -1)
+		{
+			skypost = R_GetTextureColumn(frontskytex, colnum);
+			skyposts[x] = skypost;
+		}
+		else
+		{
+			// create composite of both skies
+			byte composite[MAXWIDTH]; // column replacement
+			byte* skypost;
+			byte* skypost2;
+			byte* dest;
+			int count;
+			int top;
+			int bottom;
+
+			top = dcol.texturefrac >> FRACBITS;
+			bottom = (dcol.texturemid + (dcol.yh - centery) * dcol.iscale) >> FRACBITS;
+			count = bottom - top + 1;
+
+			skypost = R_GetTextureColumnData(frontskytex, colnum);
+			colnum = ((((viewangle + xtoviewangle[x])^skyflip)>>sky2shift) + back_offset)>>16;
+			skypost2 = R_GetTextureColumnData(backskytex, colnum);
+			dest = composite + 4;
+
+			do
+			{
+				if (*skypost)
+				{
+					*dest++ = *skypost++;
+					skypost2++;
+				}
+				else
+				{
+					*dest++ = *skypost2++;
+					skypost++;
+				}
+			} while (--count);
+
+			skyposts[x] = (tallpost_t*)(byte*)composite;
+		}
 	}
 
 	R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom,
