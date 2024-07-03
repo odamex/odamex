@@ -309,38 +309,37 @@ void R_RenderSkyRange(visplane_t* pl)
 		else
 		{
 			// create composite of both skies
-			byte composite[MAXWIDTH]; // column replacement
-			byte* skypost;
-			byte* skypost2;
-			byte* dest;
-			int count;
+			tallpost_t composite[MAXWIDTH]; // column replacement
+			tallpost_t* skypost;
+			tallpost_t* skypost2;
+			tallpost_t* dest;
 			int top;
 			int bottom;
 
 			top = dcol.texturefrac >> FRACBITS;
 			bottom = (dcol.texturemid + (dcol.yh - centery) * dcol.iscale) >> FRACBITS;
-			count = bottom - top + 1;
 
-			skypost = R_GetTextureColumnData(frontskytex, colnum);
-			colnum = ((((viewangle + xtoviewangle[x])^skyflip)>>sky2shift) + back_offset)>>16;
-			skypost2 = R_GetTextureColumnData(backskytex, colnum);
-			dest = composite + 4;
+			skypost  = R_GetTextureColumn(frontskytex, colnum);
+			colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky2shift) + back_offset) >> FRACBITS;
+			skypost2 = R_GetTextureColumn(backskytex, colnum);
+			dest = composite + top;
 
-			do
+			while (!skypost->end())
 			{
-				if (*skypost)
+				if (*skypost->data())
 				{
-					*dest++ = *skypost++;
-					skypost2++;
+					*dest++ = *skypost;
 				}
 				else
 				{
-					*dest++ = *skypost2++;
-					skypost++;
+					*dest++ = *skypost2;
 				}
-			} while (--count);
 
-			skyposts[x] = (tallpost_t*)(byte*)composite;
+				skypost = skypost->next();
+				skypost2 = skypost2->next();
+			}
+
+			skyposts[x] = composite;
 		}
 	}
 
