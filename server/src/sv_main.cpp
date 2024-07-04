@@ -3827,6 +3827,26 @@ void SV_NetCmd(player_t& player)
 	}
 }
 
+void SV_RCon(player_t& player)
+{
+	odaproto::clc::RCon msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
+
+	std::string str(msg.command());
+	StripColorCodes(str);
+
+	if (player.client->allow_rcon)
+	{
+		Printf(PRINT_HIGH, "RCON command from %s - %s -> %s",
+		       player.userinfo.netname.c_str(), NET_AdrToString(net_from), str.c_str());
+		AddCommandString(str);
+	}
+}
+
 //
 // SV_RConPassword
 // denis
@@ -4009,17 +4029,7 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_rcon:
-			{
-				std::string str(MSG_ReadString());
-				StripColorCodes(str);
-
-				if (player.client->allow_rcon)
-				{
-					Printf(PRINT_HIGH, "RCON command from %s - %s -> %s",
-							player.userinfo.netname.c_str(), NET_AdrToString(net_from), str.c_str());
-					AddCommandString(str);
-				}
-			}
+			SV_RCon(player);
 			break;
 
 		case clc_rcon_password:

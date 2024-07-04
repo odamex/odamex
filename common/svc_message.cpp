@@ -1641,6 +1641,15 @@ odaproto::clc::Ack CLC_Ack(uint32_t recent, uint32_t ackBits)
 	return msg;
 }
 
+odaproto::clc::RCon CLC_RCon(const std::string& command)
+{
+	odaproto::clc::RCon msg;
+
+	msg.set_command(command);
+
+	return msg;
+}
+
 odaproto::clc::RConPassword CLC_RConPasswordLogin(const std::string& password,
                                                   const std::string& hash)
 {

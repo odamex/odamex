@@ -956,8 +956,7 @@ BEGIN_COMMAND(rcon)
 		strncpy(command, args, ARRAY_LENGTH(command) - 1);
 		command[255] = '\0';
 
-		MSG_WriteMarker(&write_buffer, clc_rcon);
-		MSG_WriteString(&write_buffer, command);
+		MSG_WriteCLC(&write_buffer, CLC_RCon(command));
 	}
 }
 END_COMMAND(rcon)

@@ -64,6 +64,7 @@ message Ack
 // clc_rcon
 message RCon
 {
+	string command = 1;
 }
 
 // clc_rcon_password
