@@ -3732,7 +3732,7 @@ static void HelpCmd(player_t& player)
 	SV_PlayerPrintf(PRINT_HIGH, player.id,
 	                "odasrv v%s\n\n"
 	                "This server has no custom commands\n",
-	                GitShortHash());
+	                NiceVersionDetails());
 }
 
 /**
@@ -3798,15 +3798,23 @@ void MOTDCmd(player_t& player)
  */
 void SV_NetCmd(player_t& player)
 {
-	std::vector<std::string> netargs;
-
-	// Parse arguments into a vector.
-	netargs.push_back(MSG_ReadString());
-	size_t netargc = MSG_ReadByte();
-
-	for (size_t i = 0; i < netargc; i++)
+	odaproto::clc::NetCmd msg;
+	if (!MSG_ReadProto(msg))
 	{
-		netargs.push_back(MSG_ReadString());
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
+
+	if (msg.args_size() == 0)
+	{
+		return;
+	}
+
+	std::vector<std::string> netargs;
+	netargs.reserve(size_t(msg.args_size()));
+	for (int i = 0; i < msg.args_size(); i++)
+	{
+		netargs.push_back(msg.args().at(i));
 	}
 
 	if (netargs.at(0) == "help")

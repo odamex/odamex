@@ -113,6 +113,7 @@ message GetPlayerInfo
 // clc_netcmd: [LM] Send a string command to the server.
 message NetCmd
 {
+	repeated string args = 1;
 }
 
 // clc_spy: [SL] Tell server to send info about this player

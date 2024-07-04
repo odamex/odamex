@@ -237,6 +237,8 @@ BEGIN_COMMAND(callvote)
 	}
 } END_COMMAND(callvote)
 
+#include "svc_message.h"
+
 /**
  * Sends a "yes" vote to the server.
  */
@@ -248,10 +250,8 @@ BEGIN_COMMAND(vote_yes)
 		return;
 	}
 
-	MSG_WriteMarker(&write_buffer, clc_netcmd);
-	MSG_WriteString(&write_buffer, "vote");
-	MSG_WriteByte(&write_buffer, 1);
-	MSG_WriteString(&write_buffer, "yes");
+	constexpr std::array<const char*, 2> arr = {"vote", "yes"};
+	MSG_WriteCLC(&write_buffer, CLC_NetCmd(arr.data(), 2));
 }
 END_COMMAND(vote_yes)
 
@@ -266,9 +266,7 @@ BEGIN_COMMAND(vote_no)
 		return;
 	}
 
-	MSG_WriteMarker(&write_buffer, clc_netcmd);
-	MSG_WriteString(&write_buffer, "vote");
-	MSG_WriteByte(&write_buffer, 1);
-	MSG_WriteString(&write_buffer, "no");
+	constexpr std::array<const char*, 2> arr = {"vote", "no"};
+	MSG_WriteCLC(&write_buffer, CLC_NetCmd(arr.data(), 2));
 }
 END_COMMAND(vote_no)

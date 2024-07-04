@@ -1670,4 +1670,17 @@ odaproto::clc::RConPassword CLC_RConPasswordLogout()
 	return msg;
 }
 
+odaproto::clc::NetCmd CLC_NetCmd(const char* const* args, size_t len)
+{
+	odaproto::clc::NetCmd msg;
+
+	msg.mutable_args()->Reserve(len);
+	for (size_t i = 0; i < len; i++)
+	{
+		msg.mutable_args()->Add(args[i]);
+	}
+
+	return msg;
+}
+
 VERSION_CONTROL(svc_message, "$Id$")

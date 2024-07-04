@@ -1020,9 +1020,8 @@ END_COMMAND (spectate)
 
 BEGIN_COMMAND(ready)
 {
-	MSG_WriteMarker(&write_buffer, clc_netcmd);
-	MSG_WriteString(&write_buffer, "ready");
-	MSG_WriteByte(&write_buffer, 0);
+	constexpr std::array<const char*, 1> arr = {"ready"};
+	MSG_WriteCLC(&write_buffer, CLC_NetCmd(arr.data(), 1));
 }
 END_COMMAND(ready)
 
@@ -1049,17 +1048,7 @@ BEGIN_COMMAND(netcmd)
 		return;
 	}
 
-	MSG_WriteMarker(&write_buffer, clc_netcmd);
-	MSG_WriteString(&write_buffer, argv[1]);
-
-	// Pass additional arguments as separate strings.  Avoids argument
-	// parsing at the opposite end.
-	byte netargc = MIN<size_t>(argc - 2, 0xFF);
-	MSG_WriteByte(&write_buffer, netargc);
-	for (size_t i = 0; i < netargc; i++)
-	{
-		MSG_WriteString(&write_buffer, argv[i + 2]);
-	}
+	MSG_WriteCLC(&write_buffer, CLC_NetCmd(&argv[1], argc - 1));
 }
 END_COMMAND(netcmd)
 
