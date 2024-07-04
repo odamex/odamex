@@ -30,24 +30,25 @@
 #include "hashtable.h"
 #include "i_net.h"
 
-typedef OHashTable<int, const google::protobuf::Descriptor*> SVCHeaderMap;
-typedef OHashTable<const void*, svc_t> SVCDescMap;
-typedef OHashTable<const void*, clc_t> CLCDescMap;
+using HeaderMap = OHashTable<int, const google::protobuf::Descriptor*>;
+using SVCDescMap = OHashTable<const void*, svc_t>;
+using CLCDescMap = OHashTable<const void*, clc_t>;
 
-static SVCHeaderMap g_SVCHeaderMap;
+static HeaderMap g_SVCHeaderMap;
 static SVCDescMap g_SVCDescMap;
-static SVCHeaderMap g_CLCHeaderMap;
+
+static HeaderMap g_CLCHeaderMap;
 static CLCDescMap g_CLCDescMap;
 
 static void ServerMapProto(const svc_t header, const google::protobuf::Descriptor* desc)
 {
-	::g_SVCHeaderMap.insert(SVCHeaderMap::value_type(header, desc));
+	::g_SVCHeaderMap.insert(HeaderMap::value_type(header, desc));
 	::g_SVCDescMap.insert(SVCDescMap::value_type(desc, header));
 }
 
 static void ClientMapProto(const clc_t header, const google::protobuf::Descriptor* desc)
 {
-	::g_CLCHeaderMap.insert(SVCHeaderMap::value_type(header, desc));
+	::g_CLCHeaderMap.insert(HeaderMap::value_type(header, desc));
 	::g_CLCDescMap.insert(CLCDescMap::value_type(desc, header));
 }
 
@@ -155,7 +156,7 @@ const google::protobuf::Descriptor* SVC_ResolveHeader(const byte header)
 		InitMap();
 	}
 
-	SVCHeaderMap::iterator it = ::g_SVCHeaderMap.find(static_cast<svc_t>(header));
+	HeaderMap::iterator it = ::g_SVCHeaderMap.find(static_cast<svc_t>(header));
 	if (it == ::g_SVCHeaderMap.end())
 	{
 		return NULL;
@@ -189,7 +190,7 @@ const google::protobuf::Descriptor* CLC_ResolveHeader(const byte header)
 		InitMap();
 	}
 
-	SVCHeaderMap::iterator it = ::g_CLCHeaderMap.find(static_cast<svc_t>(header));
+	HeaderMap::iterator it = ::g_CLCHeaderMap.find(static_cast<clc_t>(header));
 	if (it == ::g_CLCHeaderMap.end())
 	{
 		return NULL;
