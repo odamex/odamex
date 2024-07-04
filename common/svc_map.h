@@ -32,5 +32,26 @@ class Descriptor;
 }
 } // namespace google
 
+/**
+ * @brief Given a packet header, return the message Descriptor, or NULL if
+ *        the header is invalid.
+ */
 const google::protobuf::Descriptor* SVC_ResolveHeader(const byte header);
+
+/**
+ * @brief Given a message Descriptor, return the packet header, or svc_invalid
+ *        if the descriptor is invalid.
+ */
 svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc);
+
+/**
+ * @brief Given a packet header, return the message Descriptor, or NULL if
+ *        the header is invalid.
+ */
+const google::protobuf::Descriptor* CLC_ResolveHeader(const byte header);
+
+/**
+ * @brief Given a message Descriptor, return the packet header, or svc_invalid
+ *        if the descriptor is invalid.
+ */
+clc_t CLC_ResolveDescriptor(const google::protobuf::Descriptor* desc);

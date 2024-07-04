@@ -1,6 +1,6 @@
 /**
-* Odamex's server-to-client protocol.
-*/
+ * Odamex's server-to-client protocol.
+ */
 
 syntax="proto3";
 

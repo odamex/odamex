@@ -1,0 +1,137 @@
+/**
+ * Odamex's server-to-client protocol.
+ */
+
+syntax="proto3";
+
+import "common.proto";
+
+package odaproto.clc;
+
+// clc_disconnect
+message Disconnect
+{
+}
+
+// clc_say
+message Say
+{
+	int32 visibility = 1;
+	string message = 2;
+}
+
+// clc_move: send cmds
+message Move
+{
+	message NetCommand
+	{
+		sint32 world_index = 1;
+		int32 buttons = 2;
+		fixed32 angle = 3;
+		fixed32 pitch = 4;
+		int32 forward_move = 5;
+		int32 side_move = 6;
+		int32 up_move = 7;
+		int32 impulse = 8;
+	}
+
+	int32 tic = 1;
+	repeated NetCommand cmds = 2;
+}
+
+// clc_userinfo: send userinfo
+message UserInfo
+{
+}
+
+// clc_pingreply: [SL] 2011-05-11 - timestamp
+message PingReply
+{
+}
+
+// clc_rate
+message Rate
+{
+}
+
+// clc_ack
+message Ack
+{
+}
+
+// clc_rcon
+message RCon
+{
+}
+
+// clc_rcon_password
+// [NightFang] - Change your team
+// [Toke - Teams] Made this actualy work
+message RConPassword
+{
+}
+
+// clc_changeteam
+message ChangeTeam
+{
+}
+
+// clc_ctfcommand
+message CTFCommand
+{
+}
+
+// clc_spectate: denis
+message Spectate
+{
+}
+
+// clc_wantwad: denis - name
+message WantWad
+{
+}
+
+// clc_kill: denis - suicide
+message Kill
+{
+}
+
+// clc_cheat: denis - handle cheat codes.
+message Cheat
+{
+}
+
+// clc_callvote: [LM] - Calling a vote
+message CallVote
+{
+}
+
+// clc_maplist: [LM] - Maplist status request.
+message MapList
+{
+}
+
+// clc_maplist_update: [LM] - Request the entire maplist from the server.
+message MapListUpdate
+{
+}
+
+// clc_getplayerinfo
+message GetPlayerInfo
+{
+}
+
+// clc_netcmd: [LM] Send a string command to the server.
+message NetCmd
+{
+}
+
+// clc_spy: [SL] Tell server to send info about this player
+message Spy
+{
+}
+
+// clc_privmsg: [LM] Targeted chat to a specific player.
+message PrivMsg
+{
+}

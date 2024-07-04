@@ -281,7 +281,8 @@ enum ThinkerType
 // network messages
 enum clc_t
 {
-	clc_abort,
+	clc_invalid, // [LM] Not a real message - used as a null value.
+	clc_abort = clc_invalid,
 	clc_reserved1,
 	clc_disconnect,
 	clc_say,

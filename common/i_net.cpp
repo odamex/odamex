@@ -1052,7 +1052,7 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_max);
 
 	// Client Messages.
-	CLC_INFO(clc_abort);
+	CLC_INFO(clc_invalid);
 	CLC_INFO(clc_reserved1);
 	CLC_INFO(clc_disconnect);
 	CLC_INFO(clc_say);
