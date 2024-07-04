@@ -3828,49 +3828,50 @@ void SV_NetCmd(player_t& player)
 }
 
 //
-// SV_RConLogout
-//
-//   Removes rcon privileges
-//
-void SV_RConLogout (player_t &player)
-{
-	client_t *cl = player.client.get();
-
-	// read and ignore the password field since rcon_logout doesn't use a password
-	MSG_ReadString();
-
-	if (cl->allow_rcon)
-	{
-		Printf("RCON logout from %s - %s", player.userinfo.netname.c_str(), NET_AdrToString(cl->address));
-		cl->allow_rcon = false;
-	}
-}
-
-
-//
 // SV_RConPassword
 // denis
 //
-void SV_RConPassword (player_t &player)
+void SV_RConPassword(player_t &player)
 {
-	client_t *cl = player.client.get();
+	client_t* cl = player.client.get();
 
-	std::string challenge = MSG_ReadString();
-	std::string password = rcon_password.cstring();
-
-	// Don't display login messages again if the client is already logged in
-	if (cl->allow_rcon)
-		return;
-
-	if (!password.empty() && MD5SUM(password + cl->digest) == challenge)
+	odaproto::clc::RConPassword msg;
+	if (!MSG_ReadProto(msg))
 	{
-		cl->allow_rcon = true;
-		Printf(PRINT_HIGH, "RCON login from %s - %s", player.userinfo.netname.c_str(), NET_AdrToString(cl->address));
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
+
+	if (msg.is_login())
+	{
+		std::string challenge = msg.passhash();
+		std::string password = rcon_password.cstring();
+
+		// Don't display login messages again if the client is already logged in
+		if (cl->allow_rcon)
+			return;
+
+		if (!password.empty() && MD5SUM(password + cl->digest) == challenge)
+		{
+			cl->allow_rcon = true;
+			Printf(PRINT_HIGH, "RCON login from %s - %s", player.userinfo.netname.c_str(),
+			       NET_AdrToString(cl->address));
+		}
+		else
+		{
+			Printf(PRINT_HIGH, "RCON login failure from %s - %s",
+			       player.userinfo.netname.c_str(), NET_AdrToString(cl->address));
+			SV_QueueReliable(*cl, SVC_Print(PRINT_HIGH, "Bad password\n"));
+		}
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "RCON login failure from %s - %s", player.userinfo.netname.c_str(), NET_AdrToString(cl->address));
-		SV_QueueReliable(*cl, SVC_Print(PRINT_HIGH, "Bad password\n"));
+		if (cl->allow_rcon)
+		{
+			Printf("RCON logout from %s - %s", player.userinfo.netname.c_str(),
+			       NET_AdrToString(cl->address));
+			cl->allow_rcon = false;
+		}
 	}
 }
 
@@ -4022,16 +4023,8 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_rcon_password:
-			{
-				bool login = MSG_ReadByte();
-
-				if (login)
-					SV_RConPassword(player);
-				else
-					SV_RConLogout(player);
-
-				break;
-			}
+			SV_RConPassword(player);
+			break;
 
 		case clc_changeteam:
 			SV_ChangeTeam(player);

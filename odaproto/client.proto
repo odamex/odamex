@@ -67,13 +67,15 @@ message RCon
 }
 
 // clc_rcon_password
-// [NightFang] - Change your team
-// [Toke - Teams] Made this actualy work
 message RConPassword
 {
+	bool is_login = 1;
+	string passhash = 2;
 }
 
 // clc_changeteam
+// [NightFang] - Change your team
+// [Toke - Teams] Made this actualy work
 message ChangeTeam
 {
 }

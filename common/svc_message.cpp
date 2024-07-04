@@ -24,7 +24,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include "odamex.h"
 
 #include <bitset>
@@ -36,6 +35,7 @@
 #include "g_gametype.h"
 #include "i_system.h"
 #include "m_strindex.h"
+#include "md5.h"
 #include "p_lnspec.h"
 #include "p_local.h"
 #include "p_mobj.h"
@@ -341,7 +341,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 	cur->set_netid(mo->netid);
 
 	// denis - sending state fixes monster ghosts appearing under doors
-	cur->set_statenum(mo->state - states); 
+	cur->set_statenum(mo->state - states);
 
 	if (mo->type == MT_FOUNTAIN)
 	{
@@ -571,7 +571,8 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player)
 	return msg;
 }
 
-odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, AActor* inflictor, int health, int armor)
+odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, AActor* inflictor,
+                                             int health, int armor)
 {
 	odaproto::svc::DamagePlayer msg;
 
@@ -1636,6 +1637,26 @@ odaproto::clc::Ack CLC_Ack(uint32_t recent, uint32_t ackBits)
 
 	msg.set_recent(recent);
 	msg.set_ack_bits(ackBits);
+
+	return msg;
+}
+
+odaproto::clc::RConPassword CLC_RConPasswordLogin(const std::string& password,
+                                                  const std::string& hash)
+{
+	odaproto::clc::RConPassword msg;
+
+	msg.set_is_login(true);
+	msg.set_passhash(MD5SUM(password + hash));
+
+	return msg;
+}
+
+odaproto::clc::RConPassword CLC_RConPasswordLogout()
+{
+	odaproto::clc::RConPassword msg;
+
+	msg.set_is_login(false);
 
 	return msg;
 }

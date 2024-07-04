@@ -967,13 +967,7 @@ BEGIN_COMMAND(rcon_password)
 {
 	if (ClientState::get().isConnected() && argc > 1)
 	{
-		bool login = true;
-
-		MSG_WriteMarker(&write_buffer, clc_rcon_password);
-		MSG_WriteByte(&write_buffer, login);
-
-		std::string password = argv[1];
-		MSG_WriteString(&write_buffer, MD5SUM(password + digest).c_str());
+		MSG_WriteCLC(&write_buffer, CLC_RConPasswordLogin(argv[1], ::digest));
 	}
 }
 END_COMMAND(rcon_password)
@@ -982,11 +976,7 @@ BEGIN_COMMAND(rcon_logout)
 {
 	if (ClientState::get().isConnected())
 	{
-		bool login = false;
-
-		MSG_WriteMarker(&write_buffer, clc_rcon_password);
-		MSG_WriteByte(&write_buffer, login);
-		MSG_WriteString(&write_buffer, "");
+		MSG_WriteCLC(&write_buffer, CLC_RConPasswordLogout());
 	}
 }
 END_COMMAND(rcon_logout)
