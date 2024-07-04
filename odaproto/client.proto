@@ -47,11 +47,7 @@ message UserInfo
 // clc_pingreply: [SL] 2011-05-11 - timestamp
 message PingReply
 {
-}
-
-// clc_rate
-message Rate
-{
+	int64 ms_time = 1;
 }
 
 // clc_ack
@@ -72,18 +68,6 @@ message RConPassword
 {
 	bool is_login = 1;
 	string passhash = 2;
-}
-
-// clc_changeteam
-// [NightFang] - Change your team
-// [Toke - Teams] Made this actualy work
-message ChangeTeam
-{
-}
-
-// clc_ctfcommand
-message CTFCommand
-{
 }
 
 // clc_spectate: denis

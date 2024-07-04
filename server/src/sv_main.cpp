@@ -4020,10 +4020,6 @@ void SV_ParseCommands(player_t &player)
 			SV_CalcPing(player);
 			break;
 
-		case clc_rate:
-			MSG_ReadLong();		// [SL] Read and ignore. Clients now always use sv_maxrate.
-			break;
-
 		case clc_ack:
 			SV_AcknowledgePacket(player);
 			break;
@@ -4034,10 +4030,6 @@ void SV_ParseCommands(player_t &player)
 
 		case clc_rcon_password:
 			SV_RConPassword(player);
-			break;
-
-		case clc_changeteam:
-			SV_ChangeTeam(player);
 			break;
 
 		case clc_spectate:
@@ -4065,11 +4057,6 @@ void SV_ParseCommands(player_t &player)
 		case clc_cheat:
 			SV_Cheat(player);
 			break;
-
-		case clc_abort:
-			Printf("Client abort.\n");
-			SV_DropClient(player);
-			return;
 
 		case clc_spy:
 			SV_SpyPlayer(player);

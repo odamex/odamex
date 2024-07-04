@@ -1130,18 +1130,14 @@ static void InitNetMessageFormats()
 
 	// Client Messages.
 	CLC_INFO(clc_invalid);
-	CLC_INFO(clc_reserved1);
 	CLC_INFO(clc_disconnect);
 	CLC_INFO(clc_say);
 	CLC_INFO(clc_move);
 	CLC_INFO(clc_userinfo);
 	CLC_INFO(clc_pingreply);
-	CLC_INFO(clc_rate);
 	CLC_INFO(clc_ack);
 	CLC_INFO(clc_rcon);
 	CLC_INFO(clc_rcon_password);
-	CLC_INFO(clc_changeteam);
-	CLC_INFO(clc_ctfcommand);
 	CLC_INFO(clc_spectate);
 	CLC_INFO(clc_wantwad);
 	CLC_INFO(clc_kill);

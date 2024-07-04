@@ -282,20 +282,14 @@ enum ThinkerType
 enum clc_t
 {
 	clc_invalid, // [LM] Not a real message - used as a null value.
-	clc_abort = clc_invalid,
-	clc_reserved1,
 	clc_disconnect,
 	clc_say,
 	clc_move,      // send cmds
 	clc_userinfo,  // send userinfo
 	clc_pingreply, // [SL] 2011-05-11 - timestamp
-	clc_rate,
 	clc_ack,
 	clc_rcon,
 	clc_rcon_password,
-	clc_changeteam, // [NightFang] - Change your team
-	                // [Toke - Teams] Made this actualy work
-	clc_ctfcommand,
 	clc_spectate,       // denis
 	clc_wantwad,        // denis - name, hash
 	clc_kill,           // denis - suicide
