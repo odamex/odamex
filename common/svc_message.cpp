@@ -1630,4 +1630,14 @@ odaproto::clc::Say CLC_Say(byte who, const std::string& message)
 	return msg;
 }
 
+odaproto::clc::Ack CLC_Ack(uint32_t recent, uint32_t ackBits)
+{
+	odaproto::clc::Ack msg;
+
+	msg.set_recent(recent);
+	msg.set_ack_bits(ackBits);
+
+	return msg;
+}
+
 VERSION_CONTROL(svc_message, "$Id$")

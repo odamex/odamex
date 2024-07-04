@@ -153,3 +153,4 @@ odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde);
 odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player);
 
 odaproto::clc::Say CLC_Say(byte who, const std::string& message);
+odaproto::clc::Ack CLC_Ack(uint32_t recent, uint32_t ackBits);

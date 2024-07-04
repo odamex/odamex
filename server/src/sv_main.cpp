@@ -67,13 +67,12 @@
 #include "v_textcolors.h"
 #include "p_lnspec.h"
 #include "m_wdlstats.h"
-#include "svc_message.h"
 #include "m_cheat.h"
 
 #include <algorithm>
 #include <sstream>
 
-#include "server.pb.h"
+#include "svc_message.h"
 
 extern void G_DeferedInitNew (const char *mapname);
 extern level_locals_t level;

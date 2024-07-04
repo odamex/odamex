@@ -28,6 +28,8 @@
 #include "sv_main.h"
 #include "huffman.h"
 #include "i_net.h"
+#include "client.pb.h"
+#include "sv_main.h"
 
 #ifdef SIMULATE_LATENCY
 #include <thread>
@@ -186,10 +188,17 @@ bool SV_SendQueuedPackets(client_t& client)
 //
 void SV_AcknowledgePacket(player_t &player)
 {
+	odaproto::clc::Ack msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
+
 	client_t& cl = *player.client;
 
-	const uint32_t packetAck = MSG_ReadULong();
-	const uint32_t packetAckBits = MSG_ReadULong();
+	const uint32_t packetAck = msg.recent();
+	const uint32_t packetAckBits = msg.ack_bits();
 	const bool connected = cl.msg.clientAck(packetAck, packetAckBits);
 
 	if (!connected)

@@ -57,6 +57,8 @@ message Rate
 // clc_ack
 message Ack
 {
+	int32 recent = 1;
+	fixed32 ack_bits = 2;
 }
 
 // clc_rcon
