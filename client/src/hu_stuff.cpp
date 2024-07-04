@@ -46,6 +46,7 @@
 #include "cl_state.h"
 #include "hu_mousegraph.h"
 #include "am_map.h"
+#include "svc_message.h"
 
 #include "hu_drawers.h"
 #include "hu_elements.h"
@@ -598,9 +599,7 @@ static void ShoveChatStr (std::string str, byte who)
 	if(str.length() > MAX_CHATSTR_LEN)
 		str.resize(MAX_CHATSTR_LEN);
 
-	MSG_WriteMarker(&write_buffer, clc_say);
-	MSG_WriteByte(&write_buffer, who);
-	MSG_WriteString(&write_buffer, str.c_str());
+	MSG_WriteCLC(&write_buffer, CLC_Say(who, str));
 }
 
 static void ShovePrivMsg(byte pid, std::string str)

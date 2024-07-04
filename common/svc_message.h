@@ -27,6 +27,7 @@
 #pragma once
 
 #include "server.pb.h"
+#include "client.pb.h"
 
 #include "r_state.h"
 
@@ -150,3 +151,5 @@ odaproto::svc::MaplistIndex SVC_MaplistIndex(const byte count, const size_t this
 odaproto::svc::Toast SVC_Toast(const toast_t& toast);
 odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde);
 odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player);
+
+odaproto::clc::Say CLC_Say(byte who, const std::string& message);

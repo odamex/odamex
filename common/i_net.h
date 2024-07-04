@@ -362,6 +362,7 @@ void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteHexString(buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
 void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg);
+void MSG_WriteCLC(buf_t* b, const google::protobuf::Message& msg);
 
 int MSG_BytesLeft(void);
 int MSG_NextByte (void);

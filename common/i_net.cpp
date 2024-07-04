@@ -619,7 +619,84 @@ void MSG_WriteChunk (buf_t *b, const void *p, unsigned l)
 
 void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 {
-	// [AM] Unused
+	if (::simulated_connection)
+		return;
+
+	static std::string buffer;
+	if (!msg.SerializeToString(&buffer))
+	{
+		Printf(
+		    PRINT_WARNING,
+		    "WARNING: Could not serialize message \"%s\".  This is most likely a bug.\n",
+		    msg.GetDescriptor()->full_name().c_str());
+		return;
+	}
+
+	// Do we actaully have room for this upcoming message?
+	const size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
+	if (b->cursize + MAX_HEADER_SIZE + msg.ByteSize() >= MAX_UDP_SIZE)
+		SV_SendPackets();
+
+	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	if (header == svc_invalid)
+	{
+		Printf(PRINT_WARNING,
+		       "WARNING: Could not find svc header for message \"%s\".  This is most "
+		       "likely a bug.\n",
+		       msg.GetDescriptor()->full_name().c_str());
+		return;
+	}
+
+#if 0
+	Printf("%s (%d)\n, %s\n",
+		::svc_info[header].getName(), msg.ByteSize(),
+		msg.ShortDebugString().c_str());
+#endif
+
+	b->WriteByte(header);
+	b->WriteUnVarint(buffer.size());
+	b->WriteChunk(buffer.data(), buffer.size());
+}
+
+void MSG_WriteCLC(buf_t* b, const google::protobuf::Message& msg)
+{
+	if (::simulated_connection)
+		return;
+
+	static std::string buffer;
+	if (!msg.SerializeToString(&buffer))
+	{
+		Printf(
+		    PRINT_WARNING,
+		    "WARNING: Could not serialize message \"%s\".  This is most likely a bug.\n",
+		    msg.GetDescriptor()->full_name().c_str());
+		return;
+	}
+
+	// Do we actaully have room for this upcoming message?
+	const size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
+	if (b->cursize + MAX_HEADER_SIZE + msg.ByteSize() >= MAX_UDP_SIZE)
+		SV_SendPackets();
+
+	clc_t header = CLC_ResolveDescriptor(msg.GetDescriptor());
+	if (header == clc_invalid)
+	{
+		Printf(PRINT_WARNING,
+		       "WARNING: Could not find clc header for message \"%s\".  This is most "
+		       "likely a bug.\n",
+		       msg.GetDescriptor()->full_name().c_str());
+		return;
+	}
+
+#if 0
+	Printf("%s (%d)\n, %s\n",
+		::svc_info[header].getName(), msg.ByteSize(),
+		msg.ShortDebugString().c_str());
+#endif
+
+	b->WriteByte(header);
+	b->WriteUnVarint(buffer.size());
+	b->WriteChunk(buffer.data(), buffer.size());
 }
 
 void MSG_WriteShort (buf_t *b, short c)

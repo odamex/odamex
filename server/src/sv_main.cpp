@@ -2685,9 +2685,16 @@ void SVC_PrivMsg(player_t &player, player_t &dplayer, const char* message)
 //
 bool SV_Say(player_t &player)
 {
-	byte message_visibility = MSG_ReadByte();
+	odaproto::clc::Say msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(player, "Could not decode message");
+		return false;
+	}
 
-	std::string message(MSG_ReadString());
+	byte message_visibility = msg.visibility();
+	std::string message(msg.message());
+
 	StripColorCodes(message);
 
 	if (!ValidString(message))

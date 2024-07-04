@@ -1618,4 +1618,16 @@ odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player)
 	return msg;
 }
 
+//------------------------------------------------------------------------------
+
+odaproto::clc::Say CLC_Say(byte who, const std::string& message)
+{
+	odaproto::clc::Say msg;
+
+	msg.set_visibility(who);
+	msg.set_message(message);
+
+	return msg;
+}
+
 VERSION_CONTROL(svc_message, "$Id$")
