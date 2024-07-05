@@ -73,6 +73,7 @@ char SKYFLATNAME[8] = "F_SKY1";
 
 
 static tallpost_t* skyposts[MAXWIDTH];
+static byte compositeskybuffer[MAXWIDTH][512]; // holds doublesky composite sky to blit to the screen
 
 
 //
@@ -307,9 +308,6 @@ void R_RenderSkyRange(visplane_t* pl)
 		dcol.colormap = shaderef_t(&pal->maps, 0);
 	}
 
-	// buffer for the sky
-	// doing it this way to keep it on the stack
-
 	// determine which texture posts will be used for each screen
 	// column in this range.
 	for (int x = pl->minx; x <= pl->maxx; x++)
@@ -329,7 +327,7 @@ void R_RenderSkyRange(visplane_t* pl)
 			int count = MIN<int> (512, MIN (textureheight[backskytex], textureheight[frontskytex]) >> FRACBITS);
 			int destpostlen = 0;
 
-			byte* composite = new byte[512]; // column data replacement
+			BYTE* composite = compositeskybuffer[x];
 			tallpost_t* destpost = (tallpost_t*)composite;
 
 			tallpost_t* orig = destpost; // need a pointer to the og element to return!
@@ -339,7 +337,7 @@ void R_RenderSkyRange(visplane_t* pl)
 			// in a lot of cases there's gaps in length and topdelta because of transparency
 			// its up to us to find these gaps and put in sky2 when needed
 
-			// the finished tallpost should be the same length as count, and 0 topdelta.
+			// the finished tallpost should be the same length as count, and 0 topdelta, with a endpost after.
 			
 			destpost->topdelta = 0;
 
