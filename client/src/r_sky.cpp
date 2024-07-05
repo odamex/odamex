@@ -199,6 +199,17 @@ inline void SkyColumnBlaster()
 	R_BlastSkyColumn(colfunc);
 }
 
+inline bool R_PostDataIsTransparent(byte* data)
+{
+	if (*data == '\0')
+	{
+		return true;
+	}
+	return false;
+}
+
+
+
 //
 // R_RenderSkyRange
 //
@@ -322,9 +333,15 @@ void R_RenderSkyRange(visplane_t* pl)
 			tallpost_t* orig = destpost; // need a pointer to the og element to return!
 			
 			// here's the skinny...
+
 			// we need to grab sky1 as long as it has a valid topdelta and length
 			// in a lot of cases there's gaps in length and topdelta because of transparency
 			// its up to us to find these gaps and put in sky2 when needed
+
+			// but when we grab from sky1, we ALSO have to check every byte if it's index 0.
+			// if it is, we need to grab the same byte from sky2 instead.
+			// this allows non-converted sky patches, like those in hexen.wad or tlsxctf1.wad
+			// to work
 
 			// the finished tallpost should be the same length as count, and 0 topdelta, with a endpost after.
 			
@@ -338,6 +355,17 @@ void R_RenderSkyRange(visplane_t* pl)
 				{
 					// valid first sky, grab its data and advance the pixel
 					memcpy(destpost->data() + destpostlen, skypost->data(), skypost->length);
+					// before advancing, check the data we just inserted, and input sky2 if its index 0
+					for (int i = 0; i < skypost->length; i++)
+					{
+						if (R_PostDataIsTransparent(destpost->data() + destpostlen + i))
+						{
+							// use sky2 for this pixel
+						
+							memcpy(destpost->data() + destpostlen + i,
+							       skypost2->data() + destpostlen + i, 1);
+						}
+					}
 					destpostlen += skypost->length;
 				}
 				else
@@ -359,6 +387,7 @@ void R_RenderSkyRange(visplane_t* pl)
 				{
 					skypost2 = skypost2->next();
 				}
+
 				destpost->length = destpostlen;
 			}
 
