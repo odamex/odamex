@@ -1722,4 +1722,14 @@ odaproto::clc::NetCmd CLC_NetCmd(const char* const* args, size_t len)
 	return msg;
 }
 
+odaproto::clc::PrivMsg CLC_PrivMsg(byte pid, const std::string& str)
+{
+	odaproto::clc::PrivMsg msg;
+
+	msg.set_pid(pid);
+	msg.set_message(str);
+
+	return msg;
+}
+
 VERSION_CONTROL(svc_message, "$Id$")

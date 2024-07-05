@@ -611,9 +611,7 @@ static void ShovePrivMsg(byte pid, std::string str)
 	if (str.length() > MAX_CHATSTR_LEN)
 		str.resize(MAX_CHATSTR_LEN);
 
-	MSG_WriteMarker(&write_buffer, clc_privmsg);
-	MSG_WriteByte(&write_buffer, pid);
-	MSG_WriteString(&write_buffer, str.c_str());
+	MSG_WriteCLC(&write_buffer, CLC_PrivMsg(pid, str));
 }
 
 BEGIN_COMMAND (messagemode)

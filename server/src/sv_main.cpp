@@ -2682,13 +2682,13 @@ void SVC_PrivMsg(player_t &player, player_t &dplayer, const char* message)
 // SV_Say
 // Show a chat string and send it to others clients.
 //
-bool SV_Say(player_t &player)
+static void SV_Say(player_t &player)
 {
 	odaproto::clc::Say msg;
 	if (!MSG_ReadProto(msg))
 	{
 		SV_InvalidateClient(player, "Could not decode message");
-		return false;
+		return;
 	}
 
 	byte message_visibility = msg.visibility();
@@ -2699,11 +2699,11 @@ bool SV_Say(player_t &player)
 	if (!ValidString(message))
 	{
 		SV_InvalidateClient(player, "Chatstring contains invalid characters");
-		return false;
+		return;
 	}
 
 	if (message.empty() || message.length() > MAX_CHATSTR_LEN)
-		return true;
+		return;
 
 	// Flood protection
 	if (player.LastMessage.Time)
@@ -2712,7 +2712,7 @@ bool SV_Say(player_t &player)
 		dtime_t diff = I_GetTime() - player.LastMessage.Time;
 
 		if (diff < min_diff)
-			return true;
+			return;
 
 		player.LastMessage.Time = 0;
 	}
@@ -2741,36 +2741,41 @@ bool SV_Say(player_t &player)
 		else
 			SVC_Say(player, message.c_str());
 	}
-
-	return true;
 }
 
 //
 // SV_PrivMsg
 // Show a chat string and show it to a single other client.
 //
-bool SV_PrivMsg(player_t &player)
+static void SV_PrivMsg(player_t &player)
 {
-	player_t& dplayer = idplayer(MSG_ReadByte());
+	odaproto::clc::PrivMsg msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
 
-	std::string str(MSG_ReadString());
+	player_t& dplayer = idplayer(msg.pid());
+
+	std::string str(msg.message());
 	StripColorCodes(str);
 
 	if (!ValidString(str))
 	{
 		SV_InvalidateClient(player, "Private Message contains invalid characters");
-		return false;
+		return;
 	}
 
 	if (!validplayer(dplayer))
-		return true;
+		return;
 
 	if (str.empty() || str.length() > MAX_CHATSTR_LEN)
-		return true;
+		return;
 
 	// In competitive gamemodes, don't allow spectators to message players.
 	if (!G_IsCoopGame() && player.spectator && !dplayer.spectator)
-		return true;
+		return;
 
 	// Flood protection
 	if (player.LastMessage.Time)
@@ -2779,7 +2784,7 @@ bool SV_PrivMsg(player_t &player)
 		dtime_t diff = I_GetTime() - player.LastMessage.Time;
 
 		if (diff < min_diff)
-			return true;
+			return;
 
 		player.LastMessage.Time = 0;
 	}
@@ -2791,8 +2796,6 @@ bool SV_PrivMsg(player_t &player)
 	}
 
 	SVC_PrivMsg(player, dplayer, str.c_str());
-
-	return true;
 }
 
 //
@@ -4021,13 +4024,11 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_say:
-			if (!SV_Say(player))
-				return;
+			SV_Say(player);
 			break;
 
 		case clc_privmsg:
-			if (!SV_PrivMsg(player))
-				return;
+			SV_PrivMsg(player);
 			break;
 
 		case clc_move:

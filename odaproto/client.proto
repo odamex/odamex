@@ -131,4 +131,6 @@ message Spy
 // clc_privmsg: [LM] Targeted chat to a specific player.
 message PrivMsg
 {
+	int32 pid = 1;
+	string message = 2;
 }
