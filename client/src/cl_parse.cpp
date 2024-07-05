@@ -65,6 +65,7 @@
 #include "infomap.h"
 #include "cl_replay.h"
 #include "cl_state.h"
+#include "client.pb.h"
 
 // Extern data from other files.
 
@@ -1309,7 +1310,7 @@ static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 		A_ForceWeaponFire(p->mo, firedweap, servertic);
 
 		// Request the player's ammo status from the server
-		MSG_WriteMarker(&write_buffer, clc_getplayerinfo);
+		MSG_WriteCLC(&write_buffer, odaproto::clc::GetPlayerInfo{});
 	}
 }
 

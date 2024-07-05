@@ -4639,6 +4639,13 @@ void SV_ExplodeMissile(AActor *mo)
 //
 void SV_SendPlayerInfo(player_t &player)
 {
+	odaproto::clc::GetPlayerInfo msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
+
 	client_t *cl = player.client.get();
 	SV_QueueReliable(*cl, SVC_PlayerInfo(player));
 }
