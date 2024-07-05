@@ -199,18 +199,6 @@ inline void SkyColumnBlaster()
 	R_BlastSkyColumn(colfunc);
 }
 
-inline bool R_PostDataIsTransparent(byte* data, int length)
-{
-		for (int i = 0; i < length; i++)
-		{
-				if (data[i] == 0)
-				{
-						return true;
-				}
-		}
-	    return false;
-}
-
 //
 // R_RenderSkyRange
 //
@@ -218,6 +206,7 @@ inline bool R_PostDataIsTransparent(byte* data, int length)
 // in the normal convention for patches, but uses color 0 as a transparent
 // color.
 // [ML] 5/11/06 - Removed sky2
+// [BC] 7/5/24 - Brought back for real this time
 //
 void R_RenderSkyRange(visplane_t* pl)
 {
