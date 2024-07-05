@@ -3869,14 +3869,14 @@ void SV_RCon(player_t& player)
 //
 void SV_RConPassword(player_t &player)
 {
-	client_t* cl = player.client.get();
-
 	odaproto::clc::RConPassword msg;
 	if (!MSG_ReadProto(msg))
 	{
 		SV_InvalidateClient(player, "Could not decode message");
 		return;
 	}
+
+	client_t* cl = player.client.get();
 
 	if (msg.is_login())
 	{
@@ -3914,8 +3914,21 @@ void SV_RConPassword(player_t &player)
 //
 // SV_Suicide
 //
-void SV_Suicide(player_t &player)
+static void SV_Suicide(player_t &player)
 {
+	odaproto::clc::Kill msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
+
+	if (player.mo && player.suicidedelay == 0 && gamestate == GS_LEVEL &&
+	    (sv_allowcheats || G_IsCoopGame()))
+	{
+		return;
+	}
+
 	if (!player.mo)
 		return;
 
@@ -4060,11 +4073,7 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_kill:
-			if(player.mo && player.suicidedelay == 0 && gamestate == GS_LEVEL &&
-               (sv_allowcheats || G_IsCoopGame()))
-            {
-				SV_Suicide (player);
-            }
+			SV_Suicide(player);
 			break;
 
 		case clc_wantwad:

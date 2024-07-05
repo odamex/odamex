@@ -889,7 +889,7 @@ BEGIN_COMMAND(kill)
 {
 	if (sv_allowcheats || G_IsCoopGame())
 	{
-		MSG_WriteMarker(&write_buffer, clc_kill);
+		MSG_WriteCLC(&write_buffer, odaproto::clc::Kill{});
 	}
 	else
 	{
