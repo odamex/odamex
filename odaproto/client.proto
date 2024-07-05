@@ -73,6 +73,8 @@ message RConPassword
 // clc_spectate: denis
 message Spectate
 {
+	int32 command = 1;
+	Vec3 pos = 2;
 }
 
 // clc_wantwad: denis - name

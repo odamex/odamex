@@ -3439,10 +3439,17 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 //
 void SV_Spectate(player_t &player)
 {
-	// [AM] Code has three possible values; true, false and 5.  True specs the
+	odaproto::clc::Spectate msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
+
+	// [LM] Code has three possible values; true, false and 5.  True specs the
 	//      player, false unspecs him and 5 updates the server with the spec's
 	//      new position.
-	byte Code = MSG_ReadByte();
+	byte Code = byte(msg.command());
 
 	if (!player.ingame())
 		return;
@@ -3452,15 +3459,13 @@ void SV_Spectate(player_t &player)
 		// GhostlyDeath -- Prevent Cheaters
 		if (!player.spectator || !player.mo)
 		{
-			for (int i = 0; i < 3; i++)
-				MSG_ReadLong();
 			return;
 		}
 
 		// GhostlyDeath -- Code 5! Anyway, this just updates the player for "antiwallhack" fun
-		player.mo->x = MSG_ReadLong();
-		player.mo->y = MSG_ReadLong();
-		player.mo->z = MSG_ReadLong();
+		player.mo->x = msg.pos().x();
+		player.mo->y = msg.pos().y();
+		player.mo->z = msg.pos().z();
 	}
 	else
 	{
@@ -4046,9 +4051,7 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_spectate:
-            {
-                SV_Spectate (player);
-            }
+			SV_Spectate(player);
 			break;
 
 		case clc_netcmd:

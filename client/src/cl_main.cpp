@@ -1012,8 +1012,7 @@ BEGIN_COMMAND (spectate)
 	// Only send message if currently not a spectator, or to remove from play queue
 	if (!spectator || consoleplayer().QueuePosition > 0)
 	{
-		MSG_WriteMarker(&write_buffer, clc_spectate);
-		MSG_WriteByte(&write_buffer, true);
+		MSG_WriteCLC(&write_buffer, CLC_Spectate(true));
 	}
 }
 END_COMMAND (spectate)
@@ -1060,8 +1059,7 @@ BEGIN_COMMAND (join)
 	//	return;
 	//}
 
-	MSG_WriteMarker(&write_buffer, clc_spectate);
-	MSG_WriteByte(&write_buffer, false);
+	MSG_WriteCLC(&write_buffer, CLC_Spectate(false));
 }
 END_COMMAND (join)
 
@@ -2028,11 +2026,7 @@ void CL_SendCmd(void)
 	// GhostlyDeath -- If we are spectating, tell the server of our new position
 	if (p->spectator)
 	{
-		MSG_WriteMarker(&write_buffer, clc_spectate);
-		MSG_WriteByte(&write_buffer, 5);
-		MSG_WriteLong(&write_buffer, p->mo->x);
-		MSG_WriteLong(&write_buffer, p->mo->y);
-		MSG_WriteLong(&write_buffer, p->mo->z);
+		MSG_WriteCLC(&write_buffer, CLC_SpectateUpdate(p->mo));
 	}
 
 	MSG_WriteMarker(&write_buffer, clc_move);

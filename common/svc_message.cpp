@@ -1670,6 +1670,27 @@ odaproto::clc::RConPassword CLC_RConPasswordLogout()
 	return msg;
 }
 
+odaproto::clc::Spectate CLC_Spectate(bool enabled)
+{
+	odaproto::clc::Spectate msg;
+
+	msg.set_command(enabled);
+
+	return msg;
+}
+
+odaproto::clc::Spectate CLC_SpectateUpdate(const AActor* mobj)
+{
+	odaproto::clc::Spectate msg;
+
+	msg.set_command(5);
+	msg.mutable_pos()->set_x(mobj->x);
+	msg.mutable_pos()->set_y(mobj->y);
+	msg.mutable_pos()->set_z(mobj->z);
+
+	return msg;
+}
+
 odaproto::clc::Cheat CLC_CheatNumber(int number)
 {
 	odaproto::clc::Cheat msg;
