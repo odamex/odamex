@@ -158,4 +158,6 @@ odaproto::clc::RCon CLC_RCon(const std::string& command);
 odaproto::clc::RConPassword CLC_RConPasswordLogin(const std::string& password,
                                                   const std::string& hash);
 odaproto::clc::RConPassword CLC_RConPasswordLogout();
+odaproto::clc::Cheat CLC_CheatNumber(int number);
+odaproto::clc::Cheat CLC_CheatGiveTo(const std::string& item);
 odaproto::clc::NetCmd CLC_NetCmd(const char* const* args, size_t len);

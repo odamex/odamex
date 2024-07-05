@@ -88,6 +88,11 @@ message Kill
 // clc_cheat: denis - handle cheat codes.
 message Cheat
 {
+	oneof cheat_type
+	{
+		int32 cheat_number = 1;
+		string give_item = 2; 
+	}
 }
 
 // clc_callvote: [LM] - Calling a vote

@@ -3924,19 +3924,23 @@ void SV_Suicide(player_t &player)
 //
 // SV_Cheat
 //
-void SV_Cheat(player_t &player)
+void SV_Cheat(player_t& player)
 {
-	byte cheatType = MSG_ReadByte();
-	
-	if (cheatType == 0)
+	odaproto::clc::Cheat msg;
+	if (!MSG_ReadProto(msg))
 	{
-		unsigned int cheat = MSG_ReadShort();
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
 
+	switch (msg.cheat_type_case())
+	{
+	case odaproto::clc::Cheat::kCheatNumber: {
 		if (!CHEAT_AreCheatsEnabled())
 			return;
 
 		int oldCheats = player.cheats;
-		CHEAT_DoCheat(&player, cheat);
+		CHEAT_DoCheat(&player, msg.cheat_number());
 
 		if (player.cheats != oldCheats)
 		{
@@ -3947,22 +3951,23 @@ void SV_Cheat(player_t &player)
 			}
 		}
 
+		break;
 	}
-	else if (cheatType == 1)
-	{
-		const char* wantcmd = MSG_ReadString();
-
+	case odaproto::clc::Cheat::kGiveItem: {
 		if (!CHEAT_AreCheatsEnabled())
 			return;
 
-		CHEAT_GiveTo(&player, wantcmd);
+		CHEAT_GiveTo(&player, msg.give_item().c_str());
 
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
 			client_t* cl = it->client.get();
 			SV_SendPlayerStateUpdate(cl, &player);
 		}
-
+		break;
+	}
+	default:
+		break;
 	}
 }
 

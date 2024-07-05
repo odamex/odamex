@@ -2093,9 +2093,7 @@ void CL_PlayerTimes()
 //
 void CL_SendCheat(int cheats)
 {
-	MSG_WriteMarker(&write_buffer, clc_cheat);
-	MSG_WriteByte(&write_buffer, 0);
-	MSG_WriteShort(&write_buffer, cheats);
+	MSG_WriteCLC(&write_buffer, CLC_CheatNumber(cheats));
 }
 
 //
@@ -2103,9 +2101,7 @@ void CL_SendCheat(int cheats)
 //
 void CL_SendGiveCheat(const char* item)
 {
-	MSG_WriteMarker(&write_buffer, clc_cheat);
-	MSG_WriteByte(&write_buffer, 1);
-	MSG_WriteString(&write_buffer, item);
+	MSG_WriteCLC(&write_buffer, CLC_CheatGiveTo(item));
 }
 
 

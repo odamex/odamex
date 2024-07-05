@@ -1670,6 +1670,24 @@ odaproto::clc::RConPassword CLC_RConPasswordLogout()
 	return msg;
 }
 
+odaproto::clc::Cheat CLC_CheatNumber(int number)
+{
+	odaproto::clc::Cheat msg;
+
+	msg.set_cheat_number(number);
+
+	return msg;
+}
+
+odaproto::clc::Cheat CLC_CheatGiveTo(const std::string& item)
+{
+	odaproto::clc::Cheat msg;
+
+	msg.set_give_item(item);
+
+	return msg;
+}
+
 odaproto::clc::NetCmd CLC_NetCmd(const char* const* args, size_t len)
 {
 	odaproto::clc::NetCmd msg;
