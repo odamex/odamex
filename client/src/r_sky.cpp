@@ -198,6 +198,18 @@ inline void SkyColumnBlaster()
 	R_BlastSkyColumn(colfunc);
 }
 
+inline bool R_PostDataIsTransparent(byte* data, int length)
+{
+		for (int i = 0; i < length; i++)
+		{
+				if (data[i] == 0)
+				{
+						return true;
+				}
+		}
+	    return false;
+}
+
 //
 // R_RenderSkyRange
 //
@@ -220,10 +232,10 @@ void R_RenderSkyRange(visplane_t* pl)
 	if (pl->picnum == skyflatnum )
 	{
 		// use sky1
-		frontskytex = sky1texture;
+		frontskytex = texturetranslation[sky1texture];
 		if (level.flags & LEVEL_DOUBLESKY)
 		{
-			backskytex = sky2texture;
+			backskytex = texturetranslation[sky2texture];
 		}
 		else
 		{
@@ -235,7 +247,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	else if (pl->picnum == int(PL_SKYFLAT))
 	{
 		// use sky2
-		frontskytex = sky2texture;
+		frontskytex = texturetranslation[sky2texture];
 		backskytex = -1;
 		front_offset = sky2columnoffset;
 	}
@@ -295,57 +307,86 @@ void R_RenderSkyRange(visplane_t* pl)
 		dcol.colormap = shaderef_t(&pal->maps, 0);
 	}
 
+	// buffer for the sky
+	// doing it this way to keep it on the stack
+
 	// determine which texture posts will be used for each screen
 	// column in this range.
 	for (int x = pl->minx; x <= pl->maxx; x++)
 	{
-		int colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
-		tallpost_t* skypost;
+		int sky1colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
+		tallpost_t* skypost = R_GetTextureColumn(frontskytex, sky1colnum);
 		if (backskytex == -1)
 		{
-			skypost = R_GetTextureColumn(frontskytex, colnum);
 			skyposts[x] = skypost;
 		}
 		else
 		{
 			// create composite of both skies
-			tallpost_t composite[MAXWIDTH]; // column replacement
-			tallpost_t* skypost;
-			tallpost_t* skypost2;
-			tallpost_t* dest;
-			int top;
-			int bottom;
+			int sky2colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky2shift) + back_offset) >> FRACBITS;
+			tallpost_t* skypost2 = R_GetTextureColumn(backskytex, sky2colnum);
 
-			top = dcol.texturefrac >> FRACBITS;
-			bottom = (dcol.texturemid + (dcol.yh - centery) * dcol.iscale) >> FRACBITS;
+			int count = MIN<int> (512, MIN (textureheight[backskytex], textureheight[frontskytex]) >> FRACBITS);
+			int destpostlen = 0;
 
-			skypost  = R_GetTextureColumn(frontskytex, colnum);
-			colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky2shift) + back_offset) >> FRACBITS;
-			skypost2 = R_GetTextureColumn(backskytex, colnum);
-			dest = composite + top;
+			byte* composite = new byte[512]; // column data replacement
+			tallpost_t* destpost = (tallpost_t*)composite;
 
-			while (!skypost->end())
+			tallpost_t* orig = destpost; // need a pointer to the og element to return!
+			
+			// here's the skinny...
+			// we need to grab sky1 as long as it has a valid topdelta and length
+			// in a lot of cases there's gaps in length and topdelta because of transparency
+			// its up to us to find these gaps and put in sky2 when needed
+
+			// the finished tallpost should be the same length as count, and 0 topdelta.
+			
+			destpost->topdelta = 0;
+
+			while (destpostlen < count)
 			{
-				if (*skypost->data())
+				int remaining = count - destpostlen; // pixels remaining to be replenished
+
+				if (skypost->topdelta == destpostlen)
 				{
-					*dest++ = *skypost;
+					// valid first sky, grab its data and advance the pixel
+					memcpy(destpost->data() + destpostlen, skypost->data(), skypost->length);
+					destpostlen += skypost->length;
 				}
 				else
 				{
-					*dest++ = *skypost2;
+					// sky1 top delta is less than current pixel, lets get sky2 up to the pixel
+					int cursky1delta = abs((skypost->end() ? remaining : skypost->topdelta) - destpostlen);
+					int sky2len = cursky1delta > remaining ? remaining : cursky1delta;
+					memcpy(destpost->data() + destpostlen, skypost2->data() + destpostlen,
+					       sky2len);
+					destpostlen += sky2len;
 				}
 
-				skypost = skypost->next();
-				skypost2 = skypost2->next();
+				if (!skypost->next()->end() && destpostlen >= skypost->topdelta + skypost->length)
+				{
+					skypost = skypost->next();
+				}
+
+				if (!skypost2->next()->end() && destpostlen >= skypost2->topdelta + skypost2->length)
+				{
+					skypost2 = skypost2->next();
+				}
+				destpost->length = destpostlen;
 			}
 
-			skyposts[x] = composite;
+			// finish the post up.
+			destpost = destpost->next();
+			destpost->length = 0;
+			destpost->writeend();
+
+			skyposts[x] = orig;
 		}
 	}
 
 	R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom,
 			skyposts, SkyColumnBlaster, false, columnmethod);
-				
+
 	R_ResetDrawFuncs();
 }
 
