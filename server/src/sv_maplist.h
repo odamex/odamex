@@ -81,8 +81,8 @@ public:
 	bool lobbyempty();
 };
 
-void SV_Maplist(player_t &player);
-void SV_MaplistUpdate(player_t &player);
+void SV_MaplistHandler(player_t& player, maplist_status_t status);
+void SV_MaplistUpdateHandler(player_t &player);
 
 void Maplist_Disconnect(player_t &player);
 

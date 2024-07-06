@@ -68,6 +68,7 @@
 #include "p_lnspec.h"
 #include "m_wdlstats.h"
 #include "m_cheat.h"
+#include "sv_parse.h"
 
 #include <algorithm>
 #include <sstream>
@@ -646,7 +647,7 @@ void SV_GetPackets()
 			if(player.playerstate != PST_DISCONNECT)
 			{
 				player.client->last_received = gametic;
-				SV_ParseCommands(player);
+				SV_ParseMessages(player);
 			}
 		}
 	}
@@ -1035,14 +1036,6 @@ bool SV_SetupUserInfo(player_t &player)
 	}
 
 	return true;
-}
-
-static void SV_ClientUserInfo(player_t& who)
-{
-	if (!SV_SetupUserInfo(who))
-		return;
-
-	SV_BroadcastUserInfo(who);
 }
 
 //
@@ -2596,241 +2589,6 @@ void STACK_ARGS SV_TeamPrintf(int level, int who, const char *fmt, ...)
 	}
 }
 
-/**
- * Send a message to teammates of a player.
- *
- * @param player  Player who said the message.
- * @param message Message that the player said.
- */
-void SVC_TeamSay(player_t &player, const char* message)
-{
-	const char* team = GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str();
-
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		// Player needs to be valid.
-		if (!validplayer(*it))
-			continue;
-
-		bool spectator = it->spectator || !it->ingame();
-
-		// Player needs to be on the same team
-		if (spectator || it->userinfo.team != player.userinfo.team)
-			continue;
-
-		SV_QueueReliable(*it, SVC_Say(true, player.id, message));
-	}
-}
-
-/**
- * Send a message to all spectators.
- *
- * @param player  Player who said the message.
- * @param message Message that the player said.
- */
-void SVC_SpecSay(player_t &player, const char* message)
-{
-	if (strnicmp(message, "/me ", 4) == 0)
-		Printf(PRINT_TEAMCHAT, "<SPEC> * %s %s\n", player.userinfo.netname.c_str(), &message[4]);
-	else
-		Printf(PRINT_TEAMCHAT, "<SPEC> %s: %s\n", player.userinfo.netname.c_str(), message);
-
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		// Player needs to be valid.
-		if (!validplayer(*it))
-			continue;
-
-		bool spectator = it->spectator || !it->ingame();
-
-		if (!spectator)
-			continue;
-
-		SV_QueueReliable(*it, SVC_Say(true, player.id, message));
-	}
-}
-
-/**
- * Send a message to everybody.
- *
- * @param player  Player who said the message.
- * @param message Message that the player said.
- */
-void SVC_Say(player_t &player, const char* message)
-{
-	if (strnicmp(message, "/me ", 4) == 0)
-		Printf(PRINT_CHAT, "<CHAT> * %s %s\n", player.userinfo.netname.c_str(), &message[4]);
-	else
-		Printf(PRINT_CHAT, "<CHAT> %s: %s\n", player.userinfo.netname.c_str(), message);
-
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		// Player needs to be valid.
-		if (!validplayer(*it))
-			continue;
-
-		SV_QueueReliable(*it, SVC_Say(false, player.id, message));
-	}
-}
-
-/**
- * Send a message to a specific player from a specific other player.
- *
- * @param player  Sending player.
- * @param dplayer Player to send to.
- * @param message Message to send.
- */
-void SVC_PrivMsg(player_t &player, player_t &dplayer, const char* message)
-{
-	if (strnicmp(message, "/me ", 4) == 0)
-		Printf(PRINT_CHAT, "<PRIVMSG> * %s (to %s) %s\n",
-				player.userinfo.netname.c_str(), dplayer.userinfo.netname.c_str(), &message[4]);
-	else
-		Printf(PRINT_CHAT, "<PRIVMSG> %s (to %s): %s\n",
-				player.userinfo.netname.c_str(), dplayer.userinfo.netname.c_str(), message);
-
-	SV_QueueReliable(dplayer, SVC_Say(true, player.id, message));
-
-	// [AM] Send a duplicate message to the sender, so he knows the message
-	//      went through.
-	if (player.id != dplayer.id)
-	{
-		SV_QueueReliable(player, SVC_Say(true, player.id, message));
-	}
-}
-
-static void SV_Disconnect(player_t& player)
-{
-	odaproto::clc::Disconnect msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
-	SV_DisconnectClient(player);
-}
-
-//
-// SV_Say
-// Show a chat string and send it to others clients.
-//
-static void SV_Say(player_t &player)
-{
-	odaproto::clc::Say msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
-	byte message_visibility = msg.visibility();
-	std::string message(msg.message());
-
-	StripColorCodes(message);
-
-	if (!ValidString(message))
-	{
-		SV_InvalidateClient(player, "Chatstring contains invalid characters");
-		return;
-	}
-
-	if (message.empty() || message.length() > MAX_CHATSTR_LEN)
-		return;
-
-	// Flood protection
-	if (player.LastMessage.Time)
-	{
-		const dtime_t min_diff = I_ConvertTimeFromMs(1000) * sv_flooddelay;
-		dtime_t diff = I_GetTime() - player.LastMessage.Time;
-
-		if (diff < min_diff)
-			return;
-
-		player.LastMessage.Time = 0;
-	}
-
-	if (player.LastMessage.Time == 0)
-	{
-		player.LastMessage.Time = I_GetTime();
-		player.LastMessage.Message = message;
-	}
-
-	bool spectator = player.spectator || !player.ingame();
-
-	if (message_visibility == 0)
-	{
-		if (spectator && !sv_globalspectatorchat)
-			SVC_SpecSay(player, message.c_str());
-		else
-			SVC_Say(player, message.c_str());
-	}
-	else if (message_visibility == 1)
-	{
-		if (spectator)
-			SVC_SpecSay(player, message.c_str());
-		else if (G_IsTeamGame())
-			SVC_TeamSay(player, message.c_str());
-		else
-			SVC_Say(player, message.c_str());
-	}
-}
-
-//
-// SV_PrivMsg
-// Show a chat string and show it to a single other client.
-//
-static void SV_PrivMsg(player_t &player)
-{
-	odaproto::clc::PrivMsg msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
-	player_t& dplayer = idplayer(msg.pid());
-
-	std::string str(msg.message());
-	StripColorCodes(str);
-
-	if (!ValidString(str))
-	{
-		SV_InvalidateClient(player, "Private Message contains invalid characters");
-		return;
-	}
-
-	if (!validplayer(dplayer))
-		return;
-
-	if (str.empty() || str.length() > MAX_CHATSTR_LEN)
-		return;
-
-	// In competitive gamemodes, don't allow spectators to message players.
-	if (!G_IsCoopGame() && player.spectator && !dplayer.spectator)
-		return;
-
-	// Flood protection
-	if (player.LastMessage.Time)
-	{
-		const dtime_t min_diff = I_ConvertTimeFromMs(1000) * sv_flooddelay;
-		dtime_t diff = I_GetTime() - player.LastMessage.Time;
-
-		if (diff < min_diff)
-			return;
-
-		player.LastMessage.Time = 0;
-	}
-
-	if (player.LastMessage.Time == 0)
-	{
-		player.LastMessage.Time = I_GetTime();
-		player.LastMessage.Message = str;
-	}
-
-	SVC_PrivMsg(player, dplayer, str.c_str());
-}
-
 //
 // SV_UpdateMissiles
 // Updates missiles position sometimes.
@@ -3048,25 +2806,6 @@ void SV_UpdateMonsterRespawnCount()
 	}
 }
 
-// calculates ping using gametic which was sent by SV_SendGametic and
-// current gametic
-void SV_CalcPing(player_t &player)
-{
-	odaproto::clc::PingReply msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
-	dtime_t ping = I_MSTime() - msg.ms_time();
-
-	if(ping > 999)
-		ping = 999;
-
-	player.ping = ping;
-}
-
 //
 // SV_UpdatePing
 // send pings to a client
@@ -3179,25 +2918,6 @@ void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
 		return;
 
 	SV_QueueUnreliable(*client, SVC_PlayerState(*player));
-}
-
-void SV_SpyPlayer(player_t &viewer)
-{
-	odaproto::clc::Spy msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(viewer, "Could not decode message");
-		return;
-	}
-
-	byte id = byte(msg.pid());
-
-	player_t &other = idplayer(id);
-	if (!validplayer(other) || !P_CanSpy(viewer, other))
-		return;
-
-	viewer.spying = id;
-	SV_SendPlayerStateUpdate(viewer.client.get(), &other);
 }
 
 //
@@ -3395,50 +3115,6 @@ void SV_ProcessPlayerCmd(player_t &player)
 	}
 }
 
-//
-// SV_GetPlayerCmd
-//
-// Extracts a player's ticcmd message from their network buffer and queues
-// the ticcmd for later processing.  The client always sends its previous
-// ticcmd followed by its current ticcmd just in case there is a dropped
-// packet.
-
-static void SV_GetPlayerCmd(player_t &player)
-{
-	odaproto::clc::Move msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
-	client_t *cl = player.client.get();
-
-	// The client-tic at the time this message was sent.  The server stores
-	// this and sends it back the next time it tells the client
-	int tic = msg.tic();
-
-	buf_t buffer{MAX_UDP_SIZE};
-	buffer.WriteChunk(msg.cmds().data(), msg.cmds().size());
-
-	// Read the last 10 ticcmds from the client and add any new ones
-	// to the cmdqueue
-	for (int i = 9; i >= 0; i--)
-	{
-		NetCommand netcmd;
-		netcmd.read(&buffer);
-		netcmd.setTic(tic - i);
-
-		if (netcmd.getTic() > cl->lastclientcmdtic && gamestate == GS_LEVEL)
-		{
-			if (!player.spectator)
-				player.cmdqueue.push(netcmd);
-			cl->lastclientcmdtic = netcmd.getTic();
-			cl->lastcmdtic = gametic;
-		}
-	}
-}
-
 void SV_UpdateConsolePlayer(player_t &player)
 {
 	AActor *mo = player.mo;
@@ -3492,45 +3168,6 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 
 	// Team changes can result with not enough players on a team.
 	G_AssertValidPlayerCount();
-}
-
-//
-// SV_Spectate
-//
-void SV_Spectate(player_t &player)
-{
-	odaproto::clc::Spectate msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
-	// [LM] Code has three possible values; true, false and 5.  True specs the
-	//      player, false unspecs him and 5 updates the server with the spec's
-	//      new position.
-	byte Code = byte(msg.command());
-
-	if (!player.ingame())
-		return;
-
-	if (Code == 5)
-	{
-		// GhostlyDeath -- Prevent Cheaters
-		if (!player.spectator || !player.mo)
-		{
-			return;
-		}
-
-		// GhostlyDeath -- Code 5! Anyway, this just updates the player for "antiwallhack" fun
-		player.mo->x = msg.pos().x();
-		player.mo->y = msg.pos().y();
-		player.mo->z = msg.pos().z();
-	}
-	else
-	{
-		SV_SetPlayerSpec(player, Code);
-	}
 }
 
 // Change a player into a spectator or vice-versa.  Pass 'true' for silent
@@ -3792,7 +3429,7 @@ void SV_SetReady(player_t &player, bool setting, bool silent)
  * 
  * @param player Player who asked for help.
  */
-static void HelpCmd(player_t& player)
+void SV_HelpCmd(player_t& player)
 {
 	SV_PlayerPrintf(PRINT_HIGH, player.id,
 	                "odasrv v%s\n\n"
@@ -3805,7 +3442,7 @@ static void HelpCmd(player_t& player)
  * 
  * @param player Player to toggle.
  */
-static void ReadyCmd(player_t &player)
+void SV_ReadyCmd(player_t &player)
 {
 	// If the player is not ingame, he shouldn't be sending us ready packets.
 	if (!player.ingame()) {
@@ -3851,257 +3488,9 @@ static void ReadyCmd(player_t &player)
  * 
  * @param player Player who wants the MOTD.
  */
-void MOTDCmd(player_t& player)
+void SV_MOTDCmd(player_t& player)
 {
 	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
-}
-
-/**
- * @brief Interpret a "netcmd" string from a client.
- * 
- * @param player Player who sent the netcmd.
- */
-void SV_NetCmd(player_t& player)
-{
-	odaproto::clc::NetCmd msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
-	if (msg.args_size() == 0)
-	{
-		return;
-	}
-
-	std::vector<std::string> netargs;
-	netargs.reserve(size_t(msg.args_size()));
-	for (int i = 0; i < msg.args_size(); i++)
-	{
-		netargs.push_back(msg.args().at(i));
-	}
-
-	if (netargs.at(0) == "help")
-	{
-		HelpCmd(player);
-	}
-	else if (netargs.at(0) == "motd")
-	{
-		MOTDCmd(player);
-	}
-	else if (netargs.at(0) == "ready")
-	{
-		ReadyCmd(player);
-	}
-	else if (netargs.at(0) == "vote")
-	{
-		SV_VoteCmd(player, netargs);
-	}
-}
-
-void SV_RCon(player_t& player)
-{
-	odaproto::clc::RCon msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
-	std::string str(msg.command());
-	StripColorCodes(str);
-
-	if (player.client->allow_rcon)
-	{
-		Printf(PRINT_HIGH, "RCON command from %s - %s -> %s",
-		       player.userinfo.netname.c_str(), NET_AdrToString(net_from), str.c_str());
-		AddCommandString(str);
-	}
-}
-
-//
-// SV_RConPassword
-// denis
-//
-void SV_RConPassword(player_t &player)
-{
-	odaproto::clc::RConPassword msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
-	client_t* cl = player.client.get();
-
-	if (msg.is_login())
-	{
-		std::string challenge = msg.passhash();
-		std::string password = rcon_password.cstring();
-
-		// Don't display login messages again if the client is already logged in
-		if (cl->allow_rcon)
-			return;
-
-		if (!password.empty() && MD5SUM(password + cl->digest) == challenge)
-		{
-			cl->allow_rcon = true;
-			Printf(PRINT_HIGH, "RCON login from %s - %s", player.userinfo.netname.c_str(),
-			       NET_AdrToString(cl->address));
-		}
-		else
-		{
-			Printf(PRINT_HIGH, "RCON login failure from %s - %s",
-			       player.userinfo.netname.c_str(), NET_AdrToString(cl->address));
-			SV_QueueReliable(*cl, SVC_Print(PRINT_HIGH, "Bad password\n"));
-		}
-	}
-	else
-	{
-		if (cl->allow_rcon)
-		{
-			Printf("RCON logout from %s - %s", player.userinfo.netname.c_str(),
-			       NET_AdrToString(cl->address));
-			cl->allow_rcon = false;
-		}
-	}
-}
-
-//
-// SV_Suicide
-//
-static void SV_Suicide(player_t &player)
-{
-	odaproto::clc::Kill msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
-	if (player.mo && player.suicidedelay == 0 && gamestate == GS_LEVEL &&
-	    (sv_allowcheats || G_IsCoopGame()))
-	{
-		return;
-	}
-
-	if (!player.mo)
-		return;
-
-	// WHY do you want to commit suicide in the intermission screen ?!?!
-	if (gamestate != GS_LEVEL)
-		return;
-
-	// merry suicide!
-	P_DamageMobj (player.mo, NULL, NULL, 10000, MOD_SUICIDE);
-	//player.mo->player = NULL;
-	//player.mo = NULL;
-}
-
-//
-// SV_Cheat
-//
-void SV_Cheat(player_t& player)
-{
-	odaproto::clc::Cheat msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
-	switch (msg.cheat_type_case())
-	{
-	case odaproto::clc::Cheat::kCheatNumber: {
-		if (!CHEAT_AreCheatsEnabled())
-			return;
-
-		int oldCheats = player.cheats;
-		CHEAT_DoCheat(&player, msg.cheat_number());
-
-		if (player.cheats != oldCheats)
-		{
-			for (Players::iterator it = players.begin(); it != players.end(); ++it)
-			{
-				client_t* cl = it->client.get();
-				SV_SendPlayerStateUpdate(cl, &player);
-			}
-		}
-
-		break;
-	}
-	case odaproto::clc::Cheat::kGiveItem: {
-		if (!CHEAT_AreCheatsEnabled())
-			return;
-
-		CHEAT_GiveTo(&player, msg.give_item().c_str());
-
-		for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		{
-			client_t* cl = it->client.get();
-			SV_SendPlayerStateUpdate(cl, &player);
-		}
-		break;
-	}
-	default:
-		break;
-	}
-}
-
-//
-// SV_ParseCommands
-//
-
-void SV_ParseCommands(player_t& who)
-{
-	while (validplayer(who))
-	{
-		clc_t cmd = (clc_t)MSG_ReadByte();
-
-		if (cmd == (clc_t)-1)
-			break;
-
-#define CL_MSG(header, func) \
-	case header:             \
-		func(who);           \
-		break
-
-		switch (cmd)
-		{
-			CL_MSG(clc_disconnect, SV_Disconnect);
-			CL_MSG(clc_say, SV_Say);
-			CL_MSG(clc_move, SV_GetPlayerCmd);
-			CL_MSG(clc_userinfo, SV_ClientUserInfo);
-			CL_MSG(clc_pingreply, SV_CalcPing);
-			CL_MSG(clc_ack, SV_AcknowledgePacket);
-			CL_MSG(clc_rcon, SV_RCon);
-			CL_MSG(clc_rcon_password, SV_RConPassword);
-			CL_MSG(clc_spectate, SV_Spectate);
-			CL_MSG(clc_kill, SV_Suicide);
-			CL_MSG(clc_cheat, SV_Cheat);
-			CL_MSG(clc_callvote, SV_Callvote);
-			CL_MSG(clc_maplist, SV_Maplist);
-			CL_MSG(clc_maplist_update, SV_MaplistUpdate);
-			CL_MSG(clc_getplayerinfo, SV_SendPlayerInfo);
-			CL_MSG(clc_netcmd, SV_NetCmd);
-			CL_MSG(clc_spy, SV_SpyPlayer);
-			CL_MSG(clc_privmsg, SV_PrivMsg);
-
-		default:
-			Printf("SV_ParseCommands: Unknown client message %d.\n", (int)cmd);
-			SV_DropClient(who);
-			return;
-		}
-
-		if (net_message.overflowed)
-		{
-			Printf("SV_ReadClientMessage: badread %d(%s)\n", (int)cmd,
-			       clc_info[cmd].getName());
-			SV_DropClient(who);
-			return;
-		}
-	}
 }
 
 EXTERN_CVAR (sv_waddownloadcap)
@@ -4625,13 +4014,6 @@ void SV_ExplodeMissile(AActor *mo)
 //
 void SV_SendPlayerInfo(player_t &player)
 {
-	odaproto::clc::GetPlayerInfo msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
 	client_t *cl = player.client.get();
 	SV_QueueReliable(*cl, SVC_PlayerInfo(player));
 }

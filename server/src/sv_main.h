@@ -100,13 +100,14 @@ void SV_BroadcastReliable(const google::protobuf::Message& msg,
                           broadcastFunc_t shouldSend = BroadcastAll());
 void SV_BroadcastUnreliable(const google::protobuf::Message& msg,
                             broadcastFunc_t shouldSend = BroadcastAll());
+void SV_DisconnectClient(player_t& who);
+void SV_SendPlayerStateUpdate(client_t* client, player_t* player);
 void SV_WriteCommands(void);
 void SV_ClearClientsBPS(void);
 bool SV_SendQueuedPackets(client_t& client);
 void SV_AcknowledgePacket(player_t &player);
 void SV_DisplayTics();
 void SV_RunTics();
-void SV_ParseCommands(player_t &player);
 void SV_UpdateFrags (player_t &player);
 void SV_RemoveCorpses (void);
 #define SV_DropClient(who) SV_DropClient2(who, __FILE__, __LINE__)
@@ -125,6 +126,8 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation);
 void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name, const byte attenuation);
 void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenuation);
 void SV_SoundTeam (byte channel, const char* name, byte attenuation, int t);
+void SV_BroadcastUserInfo(player_t& player);
+bool SV_SetupUserInfo(player_t& player);
 
 void SV_MidPrint (const char *msg, player_t *p, int msgtime=0);
 
@@ -154,6 +157,9 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent = false);
 void SV_JoinPlayer(player_t &player, bool silent);
 void SV_SpecPlayer(player_t &player, bool silent);
 void SV_SetReady(player_t &player, bool setting, bool silent = false);
+void SV_HelpCmd(player_t& player);
+void SV_ReadyCmd(player_t& player);
+void SV_MOTDCmd(player_t& player);
 
 void SV_AddPlayerToQueue(player_t* player);
 void SV_RemovePlayerFromQueue(player_t* player);

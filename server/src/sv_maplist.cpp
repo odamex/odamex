@@ -490,7 +490,7 @@ bool Maplist::lobbyempty()
 
 // Clue the client in on if the maplist is outdated or not and if they're
 // allowed to retrieve the entire maplist yet.
-void SV_Maplist(player_t &player, maplist_status_t status) {
+static void SendMaplist(player_t &player, maplist_status_t status) {
 	switch (status) {
 	case MAPLIST_EMPTY:
 	case MAPLIST_OUTDATED:
@@ -555,25 +555,17 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 //////// CLIENT COMMANDS ////////
 
 // Client wants to know the status of the maplist.
-void SV_Maplist(player_t &player) {
-	odaproto::clc::MapList msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
-	maplist_status_t status = maplist_status_t(msg.status());
-
+void SV_MaplistHandler(player_t& player, maplist_status_t status)
+{
 	// If the maplist is empty, say so
 	if (Maplist::instance().empty()) {
-		SV_Maplist(player, MAPLIST_EMPTY);
+		SendMaplist(player, MAPLIST_EMPTY);
 		return;
 	}
 
 	// If they haven't been sent the maplist, they're obviously out of date.
 	if (!Maplist::instance().pid_cached(player.id)) {
-		SV_Maplist(player, MAPLIST_OUTDATED);
+		SendMaplist(player, MAPLIST_OUTDATED);
 		return;
 	}
 
@@ -584,7 +576,7 @@ void SV_Maplist(player_t &player) {
 		// They think their maplist is okay, and we haven't changed it,
 		// so send back proper maplist indexes and an "OK" message.
 		SV_MaplistIndex(player);
-		SV_Maplist(player, MAPLIST_OK);
+		SendMaplist(player, MAPLIST_OK);
 		return;
 	case MAPLIST_EMPTY:
 	case MAPLIST_TIMEOUT:
@@ -601,23 +593,16 @@ void SV_Maplist(player_t &player) {
 
 	// Check to see if their timeout has passed.
 	if (Maplist::instance().pid_timeout(player.id)) {
-		SV_Maplist(player, MAPLIST_OUTDATED);
+		SendMaplist(player, MAPLIST_OUTDATED);
 		return;
 	}
 
 	// They have been sent the maplist, but their timeout has not expired yet.
-	SV_Maplist(player, MAPLIST_THROTTLED);
+	SendMaplist(player, MAPLIST_THROTTLED);
 }
 
 // Client wants the full list of maps.
-void SV_MaplistUpdate(player_t &player) {
-	odaproto::clc::MapListUpdate msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
+void SV_MaplistUpdateHandler(player_t &player) {
 	// Send them the current maplist indexes.
 	SV_MaplistIndex(player);
 

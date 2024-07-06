@@ -1046,29 +1046,8 @@ static void SV_GlobalVoteUpdate()
 
 //////// COMMANDS FROM CLIENT ////////
 
-// Handle callvote commands from the client.
-void SV_Callvote(player_t &player)
+void SV_CallvoteHandler(player_t& player, vote_type_t votecmd, const StringTokens& arguments)
 {
-	odaproto::clc::CallVote msg;
-	if (!MSG_ReadProto(msg))
-	{
-		SV_InvalidateClient(player, "Could not decode message");
-		return;
-	}
-
-	vote_type_t votecmd = vote_type_t(msg.vote_type());
-	size_t argc = msg.args().size();
-
-	DPrintf("SV_Callvote: Got votecmd %s from player %d, %d additional arguments.\n",
-	        vote_type_cmd[votecmd], player.id, argc);
-
-	std::vector<std::string> arguments(argc);
-	for (int i = 0; i < argc; i++)
-	{
-		arguments[i] = msg.args()[i];
-		DPrintf("SV_Callvote: arguments[%d] = \"%s\"\n", i, arguments[i].c_str());
-	}
-
 	if (!(votecmd > VOTE_NONE && votecmd < VOTE_MAX))
 	{
 		// Return a list of valid votes if the client doesn't pass a vote.

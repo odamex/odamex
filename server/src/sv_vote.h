@@ -91,7 +91,8 @@ public:
 	}
 };
 
-void SV_Callvote(player_t &player);
+void SV_CallvoteHandler(player_t& player, vote_type_t votecmd,
+                        const StringTokens& arguments);
 void SV_VoteCmd(player_t& player, const std::vector<std::string>& args);
 void Vote_Disconnect(player_t &player);
 void Vote_Runtic();
