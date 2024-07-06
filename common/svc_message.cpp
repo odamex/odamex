@@ -457,17 +457,19 @@ odaproto::svc::RemoveMobj SVC_RemoveMobj(AActor& mobj)
 	return msg;
 }
 
-odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time)
+odaproto::svc::ServerUserInfo SVC_UserInfo(player_t& player, int64_t time)
 {
-	odaproto::svc::UserInfo msg;
+	odaproto::svc::ServerUserInfo msg;
 
 	msg.set_pid(player.id);
-	msg.set_netname(player.userinfo.netname);
-	msg.set_team(player.userinfo.team);
-	msg.set_gender(player.userinfo.gender);
 
-	// [AM] Alpha is always 255.
-	odaproto::Color* color = msg.mutable_color();
+	odaproto::UserInfo* msgInfo = msg.mutable_userinfo(); 
+	msgInfo->set_netname(player.userinfo.netname);
+	msgInfo->set_team(player.userinfo.team);
+	msgInfo->set_gender(player.userinfo.gender);
+
+	// [LM] Alpha is always 255.
+	odaproto::Color* color = msgInfo->mutable_color();
 	color->set_r(player.userinfo.color[1]);
 	color->set_g(player.userinfo.color[2]);
 	color->set_b(player.userinfo.color[3]);
@@ -1627,6 +1629,33 @@ odaproto::clc::Say CLC_Say(byte who, const std::string& message)
 
 	msg.set_visibility(who);
 	msg.set_message(message);
+
+	return msg;
+}
+
+odaproto::clc::ClientUserInfo CLC_UserInfo(const UserInfo& info)
+{
+	odaproto::clc::ClientUserInfo msg;
+
+	odaproto::UserInfo* msgInfo = msg.mutable_userinfo();
+	msgInfo->set_netname(info.netname);
+	msgInfo->set_team(info.team);
+	msgInfo->set_gender(info.gender);
+
+	// [LM] Alpha is always 255.
+	odaproto::Color* color = msgInfo->mutable_color();
+	color->set_r(info.color[1]);
+	color->set_g(info.color[2]);
+	color->set_b(info.color[3]);
+
+	msgInfo->set_aimdist(info.aimdist);
+	msgInfo->set_predict_weapons(info.predict_weapons);
+	msgInfo->set_switchweapon(info.switchweapon);
+
+	for (size_t i = 0; i < NUMWEAPONS; i++)
+	{
+		msgInfo->add_weapon_prefs(info.weapon_prefs[i]);
+	}
 
 	return msg;
 }

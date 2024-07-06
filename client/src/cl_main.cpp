@@ -1344,28 +1344,9 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 void CL_SendUserInfo(void)
 {
-	UserInfo* coninfo = &consoleplayer().userinfo;
 	D_SetupUserInfo();
 
-	MSG_WriteMarker(&write_buffer, clc_userinfo);
-	MSG_WriteString(&write_buffer, coninfo->netname.c_str());
-	MSG_WriteByte(&write_buffer, coninfo->team); // [Toke]
-	MSG_WriteLong(&write_buffer, coninfo->gender);
-
-	for (int i = 3; i >= 0; i--)
-		MSG_WriteByte(&write_buffer, coninfo->color[i]);
-
-	// [SL] place holder for deprecated skins
-	MSG_WriteString(&write_buffer, "");
-
-	MSG_WriteLong(&write_buffer, coninfo->aimdist);
-	MSG_WriteBool(&write_buffer, true); // [SL] deprecated "cl_unlag" CVAR
-	MSG_WriteBool(&write_buffer, coninfo->predict_weapons);
-	MSG_WriteByte(&write_buffer, (char)coninfo->switchweapon);
-	for (size_t i = 0; i < NUMWEAPONS; i++)
-	{
-		MSG_WriteByte(&write_buffer, coninfo->weapon_prefs[i]);
-	}
+	MSG_WriteCLC(&write_buffer, CLC_UserInfo(consoleplayer().userinfo));
 
 	CL_RebuildAllPlayerTranslations();	// Refresh Player Translations AFTER sending the new status to the server.
 }

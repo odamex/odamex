@@ -49,6 +49,18 @@ message Actor
 	uint32 rndindex = 18;
 }
 
+message UserInfo
+{
+	string netname = 1;
+	int32 team = 2;  // [Toke]
+	int32 gender = 3;
+	Color color = 4;
+	sfixed32 aimdist = 5;
+	bool predict_weapons = 6;
+	int32 switchweapon = 7;
+	repeated int32 weapon_prefs = 8;
+}
+
 message Player
 {
 	message Psp

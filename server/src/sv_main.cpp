@@ -846,9 +846,16 @@ void SV_BroadcastUserInfo(player_t &player)
  */
 bool SV_SetupUserInfo(player_t &player)
 {
+	odaproto::clc::ClientUserInfo msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(player, "Could not decode message");
+		return false;
+	}
+
 	// read in userinfo from packet
 	std::string old_netname(player.userinfo.netname);
-	std::string new_netname(MSG_ReadString());
+	std::string new_netname(msg.userinfo().netname());
 	StripColorCodes(new_netname);
 
 	if (new_netname.length() > MAXPLAYERNAME)
@@ -861,7 +868,7 @@ bool SV_SetupUserInfo(player_t &player)
 	}
 
 	team_t old_team = static_cast<team_t>(player.userinfo.team);
-	team_t new_team = static_cast<team_t>(MSG_ReadByte());
+	team_t new_team = static_cast<team_t>(msg.userinfo().team());
 
 	if (new_team >= NUMTEAMS || new_team < 0)
 	{
@@ -871,25 +878,30 @@ bool SV_SetupUserInfo(player_t &player)
 	if (new_team == TEAM_NONE || (new_team == TEAM_GREEN && sv_teamsinplay < NUMTEAMS))
 		new_team = TEAM_BLUE; // Set the default team to the player.
 
-	gender_t gender = static_cast<gender_t>(MSG_ReadLong());
+	gender_t gender = static_cast<gender_t>(msg.userinfo().gender());
 
-	byte color[4];
-	for (int i = 3; i >= 0; i--)
-		color[i] = MSG_ReadByte();
+	byte color[4] = {
+	    0xFF,
+	    byte(msg.userinfo().color().r()),
+	    byte(msg.userinfo().color().g()),
+	    byte(msg.userinfo().color().b()),
+	};
 
-	MSG_ReadString();	// [SL] place holder for deprecated skins
+	fixed_t aimdist = msg.userinfo().aimdist();
+	bool predict_weapons = msg.userinfo().predict_weapons();
 
-	fixed_t aimdist = MSG_ReadLong();
-	MSG_ReadBool();		// [SL] Read and ignore deprecated cl_unlag setting
-	bool predict_weapons = MSG_ReadBool();
+	weaponswitch_t switchweapon = static_cast<weaponswitch_t>(msg.userinfo().switchweapon());
 
-	weaponswitch_t switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
-
-	byte weapon_prefs[NUMWEAPONS];
+	byte weapon_prefs[NUMWEAPONS] = {};
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
+		if (i >= msg.userinfo().weapon_prefs().size())
+		{
+			continue;
+		}
+
 		// sanitize the weapon preference input
-		byte preflevel = MSG_ReadByte();
+		byte preflevel = msg.userinfo().weapon_prefs()[i];
 		if (preflevel >= NUMWEAPONS)
 			preflevel = NUMWEAPONS - 1;
 

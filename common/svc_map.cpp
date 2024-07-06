@@ -70,7 +70,7 @@ static void InitMap()
 	ServerMapProto(svc_consoleplayer, odaproto::svc::ConsolePlayer::descriptor());
 	ServerMapProto(svc_explodemissile, odaproto::svc::ExplodeMissile::descriptor());
 	ServerMapProto(svc_removemobj, odaproto::svc::RemoveMobj::descriptor());
-	ServerMapProto(svc_userinfo, odaproto::svc::UserInfo::descriptor());
+	ServerMapProto(svc_userinfo, odaproto::svc::ServerUserInfo::descriptor());
 	ServerMapProto(svc_updatemobj, odaproto::svc::UpdateMobj::descriptor());
 	ServerMapProto(svc_spawnplayer, odaproto::svc::SpawnPlayer::descriptor());
 	ServerMapProto(svc_damageplayer, odaproto::svc::DamagePlayer::descriptor());
@@ -126,7 +126,7 @@ static void InitMap()
 	ClientMapProto(clc_disconnect, odaproto::clc::Disconnect::descriptor());
 	ClientMapProto(clc_say, odaproto::clc::Say::descriptor());
 	ClientMapProto(clc_move, odaproto::clc::Move::descriptor());
-	ClientMapProto(clc_userinfo, odaproto::clc::UserInfo::descriptor());
+	ClientMapProto(clc_userinfo, odaproto::clc::ClientUserInfo::descriptor());
 	ClientMapProto(clc_pingreply, odaproto::clc::PingReply::descriptor());
 	ClientMapProto(clc_ack, odaproto::clc::Ack::descriptor());
 	ClientMapProto(clc_rcon, odaproto::clc::RCon::descriptor());

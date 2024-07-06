@@ -927,24 +927,24 @@ static void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 //
 // CL_SetupUserInfo
 //
-static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
+static void CL_UserInfo(const odaproto::svc::ServerUserInfo* msg)
 {
 	player_t* p = &CL_FindPlayer(msg->pid());
 
-	p->userinfo.netname = msg->netname();
+	p->userinfo.netname = msg->userinfo().netname();
 
-	p->userinfo.team = static_cast<team_t>(msg->team());
+	p->userinfo.team = static_cast<team_t>(msg->userinfo().team());
 	if (p->userinfo.team < 0 || p->userinfo.team >= NUMTEAMS)
 		p->userinfo.team = TEAM_BLUE;
 
-	p->userinfo.gender = static_cast<gender_t>(msg->gender());
+	p->userinfo.gender = static_cast<gender_t>(msg->userinfo().gender());
 	if (p->userinfo.gender < 0 || p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
 
 	p->userinfo.color[0] = 255;
-	p->userinfo.color[1] = msg->color().r();
-	p->userinfo.color[2] = msg->color().g();
-	p->userinfo.color[3] = msg->color().b();
+	p->userinfo.color[1] = msg->userinfo().color().r();
+	p->userinfo.color[2] = msg->userinfo().color().g();
+	p->userinfo.color[3] = msg->userinfo().color().b();
 
 	p->GameTime = msg->join_time();
 
@@ -3120,7 +3120,7 @@ parseError_e ParseMessage(const svc_t cmd, const std::string& data)
 		SV_MSG(svc_consoleplayer, CL_ConsolePlayer, odaproto::svc::ConsolePlayer);
 		SV_MSG(svc_explodemissile, CL_ExplodeMissile, odaproto::svc::ExplodeMissile);
 		SV_MSG(svc_removemobj, CL_RemoveMobj, odaproto::svc::RemoveMobj);
-		SV_MSG(svc_userinfo, CL_UserInfo, odaproto::svc::UserInfo);
+		SV_MSG(svc_userinfo, CL_UserInfo, odaproto::svc::ServerUserInfo);
 		SV_MSG(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);
 		SV_MSG(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
 		SV_MSG(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);

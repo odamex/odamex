@@ -40,8 +40,9 @@ message Move
 }
 
 // clc_userinfo: send userinfo
-message UserInfo
+message ClientUserInfo
 {
+	UserInfo userinfo = 1;
 }
 
 // clc_pingreply: [SL] 2011-05-11 - timestamp
