@@ -3051,7 +3051,14 @@ void SV_UpdateMonsterRespawnCount()
 // current gametic
 void SV_CalcPing(player_t &player)
 {
-	unsigned int ping = I_MSTime() - MSG_ReadLong();
+	odaproto::clc::PingReply msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
+
+	dtime_t ping = I_MSTime() - msg.ms_time();
 
 	if(ping > 999)
 		ping = 999;

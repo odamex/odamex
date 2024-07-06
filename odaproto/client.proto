@@ -48,7 +48,7 @@ message ClientUserInfo
 // clc_pingreply: [SL] 2011-05-11 - timestamp
 message PingReply
 {
-	int64 ms_time = 1;
+	uint64 ms_time = 1;
 }
 
 // clc_ack
