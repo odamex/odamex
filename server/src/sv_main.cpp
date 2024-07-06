@@ -3402,20 +3402,30 @@ void SV_ProcessPlayerCmd(player_t &player)
 // ticcmd followed by its current ticcmd just in case there is a dropped
 // packet.
 
-void SV_GetPlayerCmd(player_t &player)
+static void SV_GetPlayerCmd(player_t &player)
 {
+	odaproto::clc::Move msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
+
 	client_t *cl = player.client.get();
 
 	// The client-tic at the time this message was sent.  The server stores
 	// this and sends it back the next time it tells the client
-	int tic = MSG_ReadLong();
+	int tic = msg.tic();
+
+	buf_t buffer{MAX_UDP_SIZE};
+	buffer.WriteChunk(msg.cmds().data(), msg.cmds().size());
 
 	// Read the last 10 ticcmds from the client and add any new ones
 	// to the cmdqueue
 	for (int i = 9; i >= 0; i--)
 	{
 		NetCommand netcmd;
-		netcmd.read(&net_message);
+		netcmd.read(&buffer);
 		netcmd.setTic(tic - i);
 
 		if (netcmd.getTic() > cl->lastclientcmdtic && gamestate == GS_LEVEL)

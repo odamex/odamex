@@ -2009,25 +2009,7 @@ void CL_SendCmd(void)
 		MSG_WriteCLC(&write_buffer, CLC_SpectateUpdate(p->mo));
 	}
 
-	MSG_WriteMarker(&write_buffer, clc_move);
-
-	// Write current client-tic.  Server later sends this back to client
-	// when sending svc_updatelocalplayer so the client knows which ticcmds
-	// need to be used for client's positional prediction.
-	MSG_WriteLong(&write_buffer, gametic);
-
-	for (int i = 9; i >= 0; i--)
-	{
-		NetCommand blank_netcmd;
-		NetCommand* netcmd;
-
-		if (gametic >= i)
-			netcmd = &localcmds[(gametic - i) % MAXSAVETICS];
-		else
-			netcmd = &blank_netcmd;		// write a blank netcmd since not enough gametics have passed
-
-		netcmd->write(&write_buffer);
-	}
+	MSG_WriteCLC(&::write_buffer, CLC_Move(::gametic, ::localcmds, MAXSAVETICS));
 
 	int bytesWritten = NET_SendPacket(write_buffer, ClientState::get().getAddress());
 	netgraph.addTrafficOut(bytesWritten);

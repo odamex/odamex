@@ -23,20 +23,8 @@ message Say
 // clc_move: send cmds
 message Move
 {
-	message NetCommand
-	{
-		sint32 world_index = 1;
-		int32 buttons = 2;
-		fixed32 angle = 3;
-		fixed32 pitch = 4;
-		int32 forward_move = 5;
-		int32 side_move = 6;
-		int32 up_move = 7;
-		int32 impulse = 8;
-	}
-
 	int32 tic = 1;
-	repeated NetCommand cmds = 2;
+	bytes cmds = 2;
 }
 
 // clc_userinfo: send userinfo

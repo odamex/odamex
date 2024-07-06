@@ -1633,6 +1633,36 @@ odaproto::clc::Say CLC_Say(byte who, const std::string& message)
 	return msg;
 }
 
+odaproto::clc::Move CLC_Move(int tic, NetCommand* cmds, size_t cmds_len)
+{
+	odaproto::clc::Move msg;
+
+	buf_t buffer{MAX_UDP_SIZE};
+
+	// Write current client-tic.  Server later sends this back to client
+	// when sending svc_updatelocalplayer so the client knows which ticcmds
+	// need to be used for client's positional prediction.
+	msg.set_tic(tic);
+
+	for (int i = 9; i >= 0; i--)
+	{
+		NetCommand blank_netcmd;
+		NetCommand* netcmd;
+
+		if (tic >= i)
+			netcmd = &cmds[(tic - i) % cmds_len];
+		else
+			netcmd = &blank_netcmd; // write a blank netcmd since not enough gametics have
+			                        // passed
+
+		netcmd->write(&buffer);
+	}
+
+	msg.set_cmds(buffer.data, buffer.cursize);
+
+	return msg;
+}
+
 odaproto::clc::ClientUserInfo CLC_UserInfo(const UserInfo& info)
 {
 	odaproto::clc::ClientUserInfo msg;
