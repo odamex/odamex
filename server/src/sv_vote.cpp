@@ -1048,8 +1048,15 @@ static void SV_GlobalVoteUpdate()
 // Handle callvote commands from the client.
 void SV_Callvote(player_t &player)
 {
-	vote_type_t votecmd = (vote_type_t)MSG_ReadByte();
-	byte argc = (byte)MSG_ReadByte();
+	odaproto::clc::CallVote msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
+
+	vote_type_t votecmd = vote_type_t(msg.vote_type());
+	size_t argc = msg.args().size();
 
 	DPrintf("SV_Callvote: Got votecmd %s from player %d, %d additional arguments.\n",
 	        vote_type_cmd[votecmd], player.id, argc);
@@ -1057,7 +1064,7 @@ void SV_Callvote(player_t &player)
 	std::vector<std::string> arguments(argc);
 	for (int i = 0; i < argc; i++)
 	{
-		arguments[i] = std::string(MSG_ReadString());
+		arguments[i] = msg.args()[i];
 		DPrintf("SV_Callvote: arguments[%d] = \"%s\"\n", i, arguments[i].c_str());
 	}
 

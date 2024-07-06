@@ -165,6 +165,9 @@ odaproto::clc::Spectate CLC_Spectate(bool enabled);
 odaproto::clc::Spectate CLC_SpectateUpdate(const AActor* mobj);
 odaproto::clc::Cheat CLC_CheatNumber(int number);
 odaproto::clc::Cheat CLC_CheatGiveTo(const std::string& item);
+odaproto::clc::MapList CLC_MapList(maplist_status_t status);
+odaproto::clc::CallVote CLC_CallVote(vote_type_t vote_type, const char* const* args,
+                                     size_t len);
 odaproto::clc::NetCmd CLC_NetCmd(const char* const* args, size_t len);
 odaproto::clc::Spy CLC_Spy(byte pid);
 odaproto::clc::PrivMsg CLC_PrivMsg(byte pid, const std::string& str);

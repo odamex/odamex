@@ -34,6 +34,7 @@
 #include "c_dispatch.h"
 #include "i_net.h"
 #include "i_system.h"
+#include "svc_message.h"
 
 //////// MAPLIST CACHE METHODS (Private) ////////
 
@@ -261,8 +262,7 @@ void MaplistCache::defer_query(const std::vector<std::string> &query,
 	if (this->deferred_queries.empty()) {
 		// Only send out a maplist status packet if we don't already have a
 		// deferred query in progress.
-		MSG_WriteMarker(&write_buffer, clc_maplist);
-		MSG_WriteByte(&write_buffer, this->status);
+		MSG_WriteCLC(&write_buffer, CLC_MapList(status));
 		this->status = MAPLIST_WAIT;
 		this->timeout = I_MSTime() + (1000 * 3);
 	}
@@ -280,7 +280,7 @@ void MaplistCache::status_handler(maplist_status_t status) {
 	case MAPLIST_OUTDATED:
 		// If our cache is out-of-date and we are able to request
 		// an updated maplist, request one.
-		MSG_WriteMarker(&write_buffer, clc_maplist_update);
+		MSG_WriteCLC(&write_buffer, odaproto::clc::MapListUpdate{});
 	case MAPLIST_EMPTY:
 	case MAPLIST_THROTTLED:
 		// If our cache is out-of-date or the maplist on the other end

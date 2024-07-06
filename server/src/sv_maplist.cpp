@@ -555,7 +555,14 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 
 // Client wants to know the status of the maplist.
 void SV_Maplist(player_t &player) {
-	maplist_status_t status = (maplist_status_t)MSG_ReadByte();
+	odaproto::clc::MapList msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
+
+	maplist_status_t status = maplist_status_t(msg.status());
 
 	// If the maplist is empty, say so
 	if (Maplist::instance().empty()) {
@@ -603,6 +610,13 @@ void SV_Maplist(player_t &player) {
 
 // Client wants the full list of maps.
 void SV_MaplistUpdate(player_t &player) {
+	odaproto::clc::MapListUpdate msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
+
 	// Send them the current maplist indexes.
 	SV_MaplistIndex(player);
 

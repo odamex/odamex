@@ -1777,6 +1777,31 @@ odaproto::clc::Cheat CLC_CheatGiveTo(const std::string& item)
 	return msg;
 }
 
+odaproto::clc::MapList CLC_MapList(maplist_status_t status)
+{
+	odaproto::clc::MapList msg;
+
+	msg.set_status(int32_t(status));
+
+	return msg;
+}
+
+odaproto::clc::CallVote CLC_CallVote(vote_type_t vote_type, const char* const* args,
+                                     size_t len)
+{
+	odaproto::clc::CallVote msg;
+
+	msg.set_vote_type(int32_t(vote_type));
+
+	msg.mutable_args()->Reserve(len);
+	for (size_t i = 0; i < len; i++)
+	{
+		msg.mutable_args()->Add(args[i]);
+	}
+
+	return msg;
+}
+
 odaproto::clc::NetCmd CLC_NetCmd(const char* const* args, size_t len)
 {
 	odaproto::clc::NetCmd msg;

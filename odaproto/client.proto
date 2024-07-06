@@ -84,11 +84,14 @@ message Cheat
 // clc_callvote: [LM] - Calling a vote
 message CallVote
 {
+	int32 vote_type = 1;
+	repeated string args = 2;
 }
 
 // clc_maplist: [LM] - Maplist status request.
 message MapList
 {
+	int32 status = 1;
 }
 
 // clc_maplist_update: [LM] - Request the entire maplist from the server.

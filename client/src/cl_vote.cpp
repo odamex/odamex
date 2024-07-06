@@ -35,6 +35,7 @@
 #include "cmdlib.h"
 #include "i_net.h"
 #include "i_system.h"
+#include "svc_message.h"
 
 //////// VOTING STATE ////////
 
@@ -109,13 +110,9 @@ void CMD_MapVoteCallback(const maplist_qrows_t &result) {
 	}
 
 	// Send the callvote packet to the server.
-	std::ostringstream index;
-	index << result[0].first;
-
-	MSG_WriteMarker(&write_buffer, clc_callvote);
-	MSG_WriteByte(&write_buffer, VOTE_MAP);
-	MSG_WriteByte(&write_buffer, 1);
-	MSG_WriteString(&write_buffer, index.str().c_str());
+	std::string index = std::to_string(result[0].first);
+	std::array<const char*, 1> args = {index.c_str()};
+	MSG_WriteCLC(&write_buffer, CLC_CallVote(VOTE_MAP, args.data(), args.size()));
 }
 
 void CMD_RandmapVoteErrback(const std::string &error) {
@@ -133,9 +130,7 @@ void CMD_RandmapVoteCallback(const maplist_qrows_t &result) {
 		return;
 	}
 
-	MSG_WriteMarker(&write_buffer, clc_callvote);
-	MSG_WriteByte(&write_buffer, VOTE_RANDMAP);
-	MSG_WriteByte(&write_buffer, 0);
+	MSG_WriteCLC(&write_buffer, CLC_CallVote(VOTE_RANDMAP, nullptr, 0));
 }
 
 //////// CONSOLE COMMANDS ////////
@@ -228,13 +223,14 @@ BEGIN_COMMAND(callvote)
 		return;
 	}
 
-	MSG_WriteMarker(&write_buffer, clc_callvote);
-	MSG_WriteByte(&write_buffer, (byte)votecmd);
-	MSG_WriteByte(&write_buffer, (byte)(arguments.size()));
-	for (std::vector<std::string>::iterator it = arguments.begin();
-		 it != arguments.end();++it) {
-		MSG_WriteString(&write_buffer, it->c_str());
+	std::vector<const char*> args;
+	args.reserve(arguments.size());
+	for (const auto& argument : arguments)
+	{
+		args.push_back(argument.c_str());
 	}
+
+	MSG_WriteCLC(&write_buffer, CLC_CallVote(votecmd, args.data(), args.size()));
 } END_COMMAND(callvote)
 
 #include "svc_message.h"
