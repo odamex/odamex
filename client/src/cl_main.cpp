@@ -565,8 +565,7 @@ void CL_CheckDisplayPlayer(void)
 	{
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
-		MSG_WriteMarker(&write_buffer, clc_spy);
-		MSG_WriteByte(&write_buffer, newid);
+		MSG_WriteCLC(&write_buffer, CLC_Spy(newid));
 		displayplayer_id = newid;
 
 		// Changing display player can sometimes affect status bar visibility

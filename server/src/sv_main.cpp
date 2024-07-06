@@ -3163,7 +3163,14 @@ void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
 
 void SV_SpyPlayer(player_t &viewer)
 {
-	byte id = MSG_ReadByte();
+	odaproto::clc::Spy msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(viewer, "Could not decode message");
+		return;
+	}
+
+	byte id = byte(msg.pid());
 
 	player_t &other = idplayer(id);
 	if (!validplayer(other) || !P_CanSpy(viewer, other))

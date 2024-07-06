@@ -1751,6 +1751,15 @@ odaproto::clc::NetCmd CLC_NetCmd(const char* const* args, size_t len)
 	return msg;
 }
 
+odaproto::clc::Spy CLC_Spy(byte pid)
+{
+	odaproto::clc::Spy msg;
+
+	msg.set_pid(pid);
+
+	return msg;
+}
+
 odaproto::clc::PrivMsg CLC_PrivMsg(byte pid, const std::string& str)
 {
 	odaproto::clc::PrivMsg msg;

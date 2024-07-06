@@ -164,4 +164,5 @@ odaproto::clc::Spectate CLC_SpectateUpdate(const AActor* mobj);
 odaproto::clc::Cheat CLC_CheatNumber(int number);
 odaproto::clc::Cheat CLC_CheatGiveTo(const std::string& item);
 odaproto::clc::NetCmd CLC_NetCmd(const char* const* args, size_t len);
+odaproto::clc::Spy CLC_Spy(byte pid);
 odaproto::clc::PrivMsg CLC_PrivMsg(byte pid, const std::string& str);

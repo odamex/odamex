@@ -122,6 +122,7 @@ message NetCmd
 // clc_spy: [SL] Tell server to send info about this player
 message Spy
 {
+	int32 pid = 1;
 }
 
 // clc_privmsg: [LM] Targeted chat to a specific player.
