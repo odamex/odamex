@@ -27,7 +27,6 @@
 #pragma once
 
 #include "server.pb.h"
-#include "client.pb.h"
 
 #include "r_state.h"
 
@@ -151,23 +150,3 @@ odaproto::svc::MaplistIndex SVC_MaplistIndex(const byte count, const size_t this
 odaproto::svc::Toast SVC_Toast(const toast_t& toast);
 odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde);
 odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player);
-
-odaproto::clc::Say CLC_Say(byte who, const std::string& message);
-odaproto::clc::Move CLC_Move(int tic, NetCommand* cmds, size_t cmds_len);
-odaproto::clc::ClientUserInfo CLC_UserInfo(const UserInfo& info);
-odaproto::clc::PingReply CLC_PingReply(uint64_t ms_time);
-odaproto::clc::Ack CLC_Ack(uint32_t recent, uint32_t ackBits);
-odaproto::clc::RCon CLC_RCon(const std::string& command);
-odaproto::clc::RConPassword CLC_RConPasswordLogin(const std::string& password,
-                                                  const std::string& hash);
-odaproto::clc::RConPassword CLC_RConPasswordLogout();
-odaproto::clc::Spectate CLC_Spectate(bool enabled);
-odaproto::clc::Spectate CLC_SpectateUpdate(const AActor* mobj);
-odaproto::clc::Cheat CLC_CheatNumber(int number);
-odaproto::clc::Cheat CLC_CheatGiveTo(const std::string& item);
-odaproto::clc::MapList CLC_MapList(maplist_status_t status);
-odaproto::clc::CallVote CLC_CallVote(vote_type_t vote_type, const char* const* args,
-                                     size_t len);
-odaproto::clc::NetCmd CLC_NetCmd(const char* const* args, size_t len);
-odaproto::clc::Spy CLC_Spy(byte pid);
-odaproto::clc::PrivMsg CLC_PrivMsg(byte pid, const std::string& str);

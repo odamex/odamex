@@ -68,7 +68,7 @@
 #include "cl_parse.h"
 #include "cl_replay.h"
 #include "cl_state.h"
-#include "svc_message.h"
+#include "clc_message.h"
 
 #include <bitset>
 #include <map>

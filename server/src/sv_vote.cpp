@@ -38,6 +38,7 @@
 #include "sv_pickup.h"
 #include "d_main.h"
 #include "svc_message.h"
+#include "client.pb.h"
 
 EXTERN_CVAR(sv_gametype)
 

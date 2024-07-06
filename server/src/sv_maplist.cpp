@@ -36,6 +36,7 @@
 #include "sv_main.h"
 #include "svc_message.h"
 #include "w_wad.h"
+#include "client.pb.h"
 
 //////// MAPLIST METHODS ////////
 

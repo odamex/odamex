@@ -66,7 +66,7 @@
 #include "cl_replay.h"
 #include "cl_state.h"
 #include "client.pb.h"
-#include "svc_message.h"
+#include "clc_message.h"
 
 // Extern data from other files.
 

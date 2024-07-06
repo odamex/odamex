@@ -73,6 +73,7 @@
 #include <sstream>
 
 #include "svc_message.h"
+#include "client.pb.h"
 
 extern void G_DeferedInitNew (const char *mapname);
 extern level_locals_t level;

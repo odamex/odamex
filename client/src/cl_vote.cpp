@@ -35,7 +35,7 @@
 #include "cmdlib.h"
 #include "i_net.h"
 #include "i_system.h"
-#include "svc_message.h"
+#include "clc_message.h"
 
 //////// VOTING STATE ////////
 

@@ -46,7 +46,7 @@
 #include "cl_state.h"
 #include "hu_mousegraph.h"
 #include "am_map.h"
-#include "svc_message.h"
+#include "clc_message.h"
 
 #include "hu_drawers.h"
 #include "hu_elements.h"
