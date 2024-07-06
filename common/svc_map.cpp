@@ -132,7 +132,6 @@ static void InitMap()
 	ClientMapProto(clc_rcon, odaproto::clc::RCon::descriptor());
 	ClientMapProto(clc_rcon_password, odaproto::clc::RConPassword::descriptor());
 	ClientMapProto(clc_spectate, odaproto::clc::Spectate::descriptor());
-	ClientMapProto(clc_wantwad, odaproto::clc::WantWad::descriptor());
 	ClientMapProto(clc_kill, odaproto::clc::Kill::descriptor());
 	ClientMapProto(clc_cheat, odaproto::clc::Cheat::descriptor());
 	ClientMapProto(clc_callvote, odaproto::clc::CallVote::descriptor());

@@ -291,7 +291,6 @@ enum clc_t
 	clc_rcon,
 	clc_rcon_password,
 	clc_spectate,       // denis
-	clc_wantwad,        // denis - name, hash
 	clc_kill,           // denis - suicide
 	clc_cheat,          // denis - handle cheat codes.
 	clc_callvote,       // [AM] - Calling a vote

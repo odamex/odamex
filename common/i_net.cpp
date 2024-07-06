@@ -1139,7 +1139,6 @@ static void InitNetMessageFormats()
 	CLC_INFO(clc_rcon);
 	CLC_INFO(clc_rcon_password);
 	CLC_INFO(clc_spectate);
-	CLC_INFO(clc_wantwad);
 	CLC_INFO(clc_kill);
 	CLC_INFO(clc_cheat);
 	CLC_INFO(clc_callvote);

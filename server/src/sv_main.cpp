@@ -1036,6 +1036,14 @@ bool SV_SetupUserInfo(player_t &player)
 	return true;
 }
 
+static void SV_ClientUserInfo(player_t& who)
+{
+	if (!SV_SetupUserInfo(who))
+		return;
+
+	SV_BroadcastUserInfo(who);
+}
+
 //
 //	SV_ForceSetTeam
 //
@@ -4004,130 +4012,59 @@ void SV_Cheat(player_t& player)
 	}
 }
 
-void SV_WantWad(player_t &player)
-{
-	client_t *cl = player.client.get();
-
-	// read and ignore the rest of the wad request
-	MSG_ReadString();
-	MSG_ReadString();
-	MSG_ReadLong();
-
-	SV_QueueReliable(*cl, SVC_Print(PRINT_HIGH, "Server: Downloading is disabled\n"));
-
-	SV_DropClient(player);
-	return;
-}
-
 //
 // SV_ParseCommands
 //
 
-void SV_ParseCommands(player_t &player)
+void SV_ParseCommands(player_t& who)
 {
-	 while(validplayer(player))
-	 {
+	while (validplayer(who))
+	{
 		clc_t cmd = (clc_t)MSG_ReadByte();
 
-		if(cmd == (clc_t)-1)
+		if (cmd == (clc_t)-1)
 			break;
 
-		switch(cmd)
+#define CL_MSG(header, func) \
+	case header:             \
+		func(who);           \
+		break
+
+		switch (cmd)
 		{
-		case clc_disconnect:
-			SV_DisconnectClient(player);
-			return;
-
-		case clc_userinfo:
-			if (!SV_SetupUserInfo(player))
-				return;
-			SV_BroadcastUserInfo(player);
-			break;
-
-		case clc_getplayerinfo:
-			SV_SendPlayerInfo (player);
-			break;
-
-		case clc_say:
-			SV_Say(player);
-			break;
-
-		case clc_privmsg:
-			SV_PrivMsg(player);
-			break;
-
-		case clc_move:
-			SV_GetPlayerCmd(player);
-			break;
-
-		case clc_pingreply:  // [SL] 2011-05-11 - Changed to clc_pingreply
-			SV_CalcPing(player);
-			break;
-
-		case clc_ack:
-			SV_AcknowledgePacket(player);
-			break;
-
-		case clc_rcon:
-			SV_RCon(player);
-			break;
-
-		case clc_rcon_password:
-			SV_RConPassword(player);
-			break;
-
-		case clc_spectate:
-			SV_Spectate(player);
-			break;
-
-		case clc_netcmd:
-			SV_NetCmd(player);
-			break;
-
-		case clc_kill:
-			SV_Suicide(player);
-			break;
-
-		case clc_wantwad:
-			SV_WantWad(player);
-			break;
-
-		case clc_cheat:
-			SV_Cheat(player);
-			break;
-
-		case clc_spy:
-			SV_SpyPlayer(player);
-			break;
-
-		// [AM] Vote
-		case clc_callvote:
-			SV_Callvote(player);
-			break;
-
-		// [AM] Maplist
-		case clc_maplist:
-			SV_Maplist(player);
-			break;
-		case clc_maplist_update:
-			SV_MaplistUpdate(player);
-			break;
+			CL_MSG(clc_disconnect, SV_DisconnectClient);
+			CL_MSG(clc_say, SV_Say);
+			CL_MSG(clc_move, SV_GetPlayerCmd);
+			CL_MSG(clc_userinfo, SV_ClientUserInfo);
+			CL_MSG(clc_pingreply, SV_CalcPing);
+			CL_MSG(clc_ack, SV_AcknowledgePacket);
+			CL_MSG(clc_rcon, SV_RCon);
+			CL_MSG(clc_rcon_password, SV_RConPassword);
+			CL_MSG(clc_spectate, SV_Spectate);
+			CL_MSG(clc_kill, SV_Suicide);
+			CL_MSG(clc_cheat, SV_Cheat);
+			CL_MSG(clc_callvote, SV_Callvote);
+			CL_MSG(clc_maplist, SV_Maplist);
+			CL_MSG(clc_maplist_update, SV_MaplistUpdate);
+			CL_MSG(clc_getplayerinfo, SV_SendPlayerInfo);
+			CL_MSG(clc_netcmd, SV_NetCmd);
+			CL_MSG(clc_spy, SV_SpyPlayer);
+			CL_MSG(clc_privmsg, SV_PrivMsg);
 
 		default:
 			Printf("SV_ParseCommands: Unknown client message %d.\n", (int)cmd);
-			SV_DropClient(player);
+			SV_DropClient(who);
 			return;
 		}
 
 		if (net_message.overflowed)
 		{
-			Printf ("SV_ReadClientMessage: badread %d(%s)\n",
-					    (int)cmd,
-					    clc_info[cmd].getName());
-			SV_DropClient(player);
+			Printf("SV_ReadClientMessage: badread %d(%s)\n", (int)cmd,
+			       clc_info[cmd].getName());
+			SV_DropClient(who);
 			return;
 		}
-	 }
+	}
 }
 
 EXTERN_CVAR (sv_waddownloadcap)

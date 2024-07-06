@@ -78,11 +78,6 @@ message Spectate
 	Vec3 pos = 2;
 }
 
-// clc_wantwad: denis - name
-message WantWad
-{
-}
-
 // clc_kill: denis - suicide
 message Kill
 {
