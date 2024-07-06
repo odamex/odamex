@@ -420,7 +420,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	if(ClientState::get().isConnected())
 	{
 		SZ_Clear(&write_buffer);
-		MSG_WriteMarker(&write_buffer, clc_disconnect);
+		MSG_WriteCLC(&write_buffer, odaproto::clc::Disconnect{});
 		NET_SendPacket(write_buffer, ClientState::get().getAddress());
 		SZ_Clear(&write_buffer);
 		sv_gametype = GM_COOP;
@@ -510,7 +510,7 @@ void CL_Reconnect(void)
 
 	if (ClientState::get().isConnected())
 	{
-		MSG_WriteMarker(&write_buffer, clc_disconnect);
+		MSG_WriteCLC(&write_buffer, odaproto::clc::Disconnect{});
 		NET_SendPacket(write_buffer, ClientState::get().getAddress());
 		SZ_Clear(&write_buffer);
 		gameaction = ga_fullconsole;

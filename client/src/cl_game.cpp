@@ -65,6 +65,7 @@
 #include "g_gametype.h"
 #include "p_horde.h"
 #include "cl_state.h"
+#include "client.pb.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -932,7 +933,7 @@ void TickConnecting()
 	else
 	{
 		// we are already connected to this server, quit first
-		MSG_WriteMarker(&write_buffer, clc_disconnect);
+		MSG_WriteCLC(&write_buffer, odaproto::clc::Disconnect{});
 		NET_SendPacket(write_buffer, ClientState::get().getAddress());
 
 		Printf(PRINT_WARNING,

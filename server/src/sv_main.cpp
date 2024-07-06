@@ -2698,6 +2698,18 @@ void SVC_PrivMsg(player_t &player, player_t &dplayer, const char* message)
 	}
 }
 
+static void SV_Disconnect(player_t& player)
+{
+	odaproto::clc::Disconnect msg;
+	if (!MSG_ReadProto(msg))
+	{
+		SV_InvalidateClient(player, "Could not decode message");
+		return;
+	}
+
+	SV_DisconnectClient(player);
+}
+
 //
 // SV_Say
 // Show a chat string and send it to others clients.
@@ -4039,7 +4051,7 @@ void SV_ParseCommands(player_t& who)
 
 		switch (cmd)
 		{
-			CL_MSG(clc_disconnect, SV_DisconnectClient);
+			CL_MSG(clc_disconnect, SV_Disconnect);
 			CL_MSG(clc_say, SV_Say);
 			CL_MSG(clc_move, SV_GetPlayerCmd);
 			CL_MSG(clc_userinfo, SV_ClientUserInfo);

@@ -66,6 +66,7 @@
 #include "cl_replay.h"
 #include "cl_state.h"
 #include "client.pb.h"
+#include "svc_message.h"
 
 // Extern data from other files.
 
@@ -435,8 +436,7 @@ static void CL_LevelLocals(const odaproto::svc::LevelLocals* msg)
 //
 static void CL_PingRequest(const odaproto::svc::PingRequest* msg)
 {
-	MSG_WriteMarker(&write_buffer, clc_pingreply);
-	MSG_WriteLong(&write_buffer, msg->ms_time());
+	MSG_WriteCLC(&write_buffer, CLC_PingReply(msg->ms_time()));
 }
 
 //

@@ -1660,6 +1660,15 @@ odaproto::clc::ClientUserInfo CLC_UserInfo(const UserInfo& info)
 	return msg;
 }
 
+odaproto::clc::PingReply CLC_PingReply(uint64_t ms_time)
+{
+	odaproto::clc::PingReply msg;
+
+	msg.set_ms_time(ms_time);
+
+	return msg;
+}
+
 odaproto::clc::Ack CLC_Ack(uint32_t recent, uint32_t ackBits)
 {
 	odaproto::clc::Ack msg;

@@ -154,6 +154,7 @@ odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player);
 
 odaproto::clc::Say CLC_Say(byte who, const std::string& message);
 odaproto::clc::ClientUserInfo CLC_UserInfo(const UserInfo& info);
+odaproto::clc::PingReply CLC_PingReply(uint64_t ms_time);
 odaproto::clc::Ack CLC_Ack(uint32_t recent, uint32_t ackBits);
 odaproto::clc::RCon CLC_RCon(const std::string& command);
 odaproto::clc::RConPassword CLC_RConPasswordLogin(const std::string& password,
