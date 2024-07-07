@@ -5,6 +5,7 @@
 
 #include "i_system.h"
 #include "md5.h"
+#include "ocircularbuffer.h"
 
 //------------------------------------------------------------------------------
 
@@ -16,6 +17,9 @@ class ClientStateImpl final : public ClientState
 	dtime_t m_lastConnectTime = 0;
 	bool m_connected = false;
 	uint64_t m_connectID = 0;
+	OCircularBuffer<uint32_t, BIT(10)>
+	    m_ackedPackets;                     // [LM] Sequence IDs of acked packets.
+	uint32_t m_recentPacketID = UINT32_MAX; // [LM] Most recently acked packet ID.
 
   public:
 	virtual void reset() override;
@@ -28,6 +32,9 @@ class ClientStateImpl final : public ClientState
 	virtual bool isConnecting() override;
 	virtual bool isConnected() override;
 	virtual bool isValidAddress(const netadr_t& cAddress) override;
+	virtual void ack(const uint32_t id) override;
+	virtual uint32_t getRecentAck() override;
+	virtual uint32_t getAckBits() override;
 	virtual void onGotServerInfo() override;
 	virtual void onSentConnect() override;
 	virtual void onConnected() override;
@@ -43,6 +50,9 @@ void ClientStateImpl::reset()
 	memset(&m_lastAddress, 0x00, sizeof(m_lastAddress));
 	m_lastConnectTime = 0;
 	m_connected = false;
+	m_connectID = 0;
+	m_ackedPackets = {};
+	m_recentPacketID = UINT32_MAX;
 }
 
 //------------------------------------------------------------------------------
@@ -120,6 +130,43 @@ bool ClientStateImpl::isValidAddress(const netadr_t& cAddress)
 
 //------------------------------------------------------------------------------
 
+void ClientStateImpl::ack(const uint32_t id)
+{
+	// Compare id relative to the current packet ID, to avoid wrapping weirdness.
+	if (int32_t(id - m_recentPacketID) > 0)
+		m_recentPacketID = id;
+
+	m_ackedPackets[id] = id;
+}
+
+//------------------------------------------------------------------------------
+
+uint32_t ClientStateImpl::getRecentAck()
+{
+	return m_recentPacketID;
+}
+
+//------------------------------------------------------------------------------
+
+uint32_t ClientStateImpl::getAckBits()
+{
+	uint32_t bits = 0;
+	uint32_t id = m_recentPacketID - 1;
+
+	for (size_t i = 0; i < 32; i++)
+	{
+		if (m_ackedPackets[id] == id)
+		{
+			bits |= BIT(i);
+		}
+		id -= 1;
+	}
+
+	return bits;
+}
+
+//------------------------------------------------------------------------------
+
 void ClientStateImpl::onGotServerInfo()
 {
 	m_lastConnectTime = 0;
@@ -138,6 +185,8 @@ void ClientStateImpl::onConnected()
 {
 	m_connected = true;
 	m_lastConnectTime = 0;
+	m_ackedPackets = {};
+	m_recentPacketID = UINT32_MAX;
 }
 
 //------------------------------------------------------------------------------

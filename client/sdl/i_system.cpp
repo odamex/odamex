@@ -90,6 +90,7 @@
 #include "c_dispatch.h"
 #include "cl_main.h"
 #include "m_fileio.h"
+#include "cl_connect.h"
 
 #ifdef _XBOX
 	#include "i_xbox.h"

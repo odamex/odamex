@@ -29,6 +29,7 @@
 #include "curl/curl.h"
 
 #include "c_dispatch.h"
+#include "cl_connect.h"
 #include "cl_main.h"
 #include "cmdlib.h"
 #include "i_system.h"

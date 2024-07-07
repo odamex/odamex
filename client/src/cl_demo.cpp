@@ -37,6 +37,7 @@
 #include "p_mobj.h"
 #include "svc_message.h"
 #include "g_gametype.h"
+#include "cl_connect.h"
 #include "cl_state.h"
 
 EXTERN_CVAR(sv_maxclients)

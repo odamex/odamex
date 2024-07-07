@@ -51,6 +51,7 @@
 #include "c_bind.h"
 #include "cl_responderkeys.h"
 #include "cl_state.h"
+#include "cl_connect.h"
 
 #include "gi.h"
 #include "g_skill.h"

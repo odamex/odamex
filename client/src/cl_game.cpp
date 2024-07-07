@@ -65,6 +65,7 @@
 #include "g_gametype.h"
 #include "p_horde.h"
 #include "cl_state.h"
+#include "cl_connect.h"
 #include "client.pb.h"
 
 #ifdef _XBOX
@@ -902,45 +903,6 @@ static bool TickConnected()
 	return true;
 }
 
-/**
- * @brief Tick connection sequence.
- */
-void TickConnecting()
-{
-	if (!NET_GetPacket(::net_message, ::net_from))
-		return;
-
-	// denis - don't accept candy from strangers
-	if (gamestate != GS_CONNECTING || !ClientState::get().isValidAddress(net_from))
-		return;
-
-	if (netdemo.isRecording())
-		netdemo.capture(&net_message);
-
-	int type = MSG_ReadLong();
-
-	if (type == MSG_CHALLENGE)
-	{
-		CL_PrepareConnect();
-	}
-	else if (type == 0)
-	{
-		if (!CL_Connect())
-		{
-			ClientState::get().onDisconnect();
-		}
-	}
-	else
-	{
-		// we are already connected to this server, quit first
-		MSG_WriteCLC(&write_buffer, odaproto::clc::Disconnect{});
-		NET_SendPacket(write_buffer, ClientState::get().getAddress());
-
-		Printf(PRINT_WARNING,
-		       "Got unknown challenge %d while connecting, disconnecting.\n", type);
-	}
-}
-
 void G_Ticker (void)
 {
 	int 		buf;
@@ -1068,7 +1030,7 @@ void G_Ticker (void)
 		}
 		else
 		{
-			TickConnecting();
+			CL_TickConnecting();
 		}
 	}
 

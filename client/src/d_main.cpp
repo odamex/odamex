@@ -84,6 +84,7 @@
 #include "g_horde.h"
 #include "w_ident.h"
 #include "gui_boot.h"
+#include "cl_connect.h"
 
 #ifdef GEKKO
 #include "i_wii.h"

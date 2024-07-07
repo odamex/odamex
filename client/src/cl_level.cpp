@@ -56,6 +56,7 @@
 #include "wi_stuff.h"
 #include "z_zone.h"
 #include "m_wdlstats.h"
+#include "cl_connect.h"
 
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)

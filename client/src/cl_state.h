@@ -63,6 +63,10 @@ class ClientState
 	 */
 	virtual bool isValidAddress(const netadr_t& cAddress) = 0;
 
+	virtual void ack(const uint32_t id) = 0;
+	virtual uint32_t getRecentAck() = 0;
+	virtual uint32_t getAckBits() = 0;
+
 	/**
 	 * @brief Modify state after successfully getting server info packet.
 	 */
