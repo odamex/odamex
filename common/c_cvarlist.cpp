@@ -112,6 +112,21 @@ CVAR_RANGE(			sv_itemrespawntime, "30", "If sv_itemsrespawn is set, items will r
 CVAR(				sv_monstersrespawn,  "0", "Monsters will respawn after a period of time",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+CVAR(				sv_monstersrespawn_tuning,  "0", "Fine-tune the monster respawning",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR_RANGE(			sv_monstersrespawn_time, "12",
+					"Post-death duration after which monsters will begin to respawn, in seconds",
+					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 86400.0f)
+
+CVAR_RANGE(			sv_monstersrespawn_period, "1",
+					"Duration between respawn checks, in seconds",
+					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 86400.0f)
+
+CVAR_RANGE(			sv_monstersrespawn_chance, "0.026",
+					"Probability for a given monster to respawn each check",
+					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
 CVAR(				sv_nomonsters, "0", "No monsters will be present",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
