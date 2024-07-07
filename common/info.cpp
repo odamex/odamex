@@ -7607,7 +7607,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 void D_Init_DEHEXTRA_Frames(void)
 {
 	// [Blair] Combine all the state tables.
-	for (int i = 0; i < ::NUMSTATES; i++)
+	for (int i = 0; i < ::num_state_t_types; i++)
 	{
 		// [CMB] TODO: this will need to be adjusted based on the highest index added by dsdhacked
 		// [CMB] TODO: currently it only takes into account the highest index for doom states (S_MUSHROOM) and odastates (S_GIB0)
