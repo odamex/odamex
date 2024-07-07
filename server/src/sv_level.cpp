@@ -347,7 +347,6 @@ BEGIN_COMMAND(restart)
 }
 END_COMMAND(restart)
 
-void SV_ClientFullUpdate(player_t &pl);
 void SV_CheckTeam(player_t &pl);
 
 //

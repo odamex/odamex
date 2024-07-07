@@ -29,6 +29,7 @@
 #include "huffman.h"
 #include "i_net.h"
 #include "client.pb.h"
+#include "sv_connect.h"
 #include "sv_main.h"
 
 #ifdef SIMULATE_LATENCY

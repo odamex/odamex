@@ -52,6 +52,8 @@ void SV_SendReconnectSignal();
 void SV_ExitLevel();
 void SV_DrawScores();
 
+void SV_ClientFullUpdate(player_t& pl);
+void SV_SendServerSettings(player_t& pl);
 void SV_ServerSettingChange();
 bool SV_IsPlayerAllowedToSee(player_t &pl, AActor *mobj);
 
@@ -59,8 +61,6 @@ void STACK_ARGS SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);
 void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...);
 void STACK_ARGS SV_PlayerPrintf (int level, int who, const char *fmt, ...);
 void SV_CheckTimeouts (void);
-void SV_ConnectClient();
-void SV_ConnectClient2(player_t& player);
 
 /**
  * @brief Queue a reliable message for the client.
