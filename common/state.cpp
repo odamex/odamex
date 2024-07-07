@@ -13,8 +13,7 @@ static void D_ResetStates(int from, int to)
         s = states[i];
         s.sprite = SPR_TNT1;
         s.tics = -1;
-        s.nextstate = S_TNT1;
-		s.action = NULL;
+        s.nextstate = (statenum_t) i;
     }
 }
 
