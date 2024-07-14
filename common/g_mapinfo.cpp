@@ -556,6 +556,14 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 		                              ? levels.findByName(mapname)
 		                              : levels.create();
 
+		// for maps above 32, if no sky is defined, it will show texture 0 (aastinky)
+		// so instead, lets just try to give it the first defined sky in the level set.
+		if (levels.size() > 0)
+		{
+			level_pwad_info_t& def = levels.at(0);
+			info.skypic = def.skypic;
+		}
+
 		info.mapname = mapname;
 
 		MapNameToLevelNum(info);
@@ -1967,12 +1975,25 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				    LEVEL_NOINTERMISSION | LEVEL_EVENLIGHTING | LEVEL_SNDSEQTOTALCTRL;
 			}
 
-			// Find the level.
-			level_pwad_info_t& info = (levels.findByName(map_name).exists())
-			                              ? levels.findByName(map_name)
-			                              : levels.create();
+			// Build upon already defined levels, that way we don't miss any defaults 
+			bool levelExists = levels.findByName(map_name).exists();
 
-			info = defaultinfo;
+			// Find the level.
+			level_pwad_info_t& info = levelExists ? 
+																			levels.findByName(map_name):
+																			levels.create();
+
+			if (!levelExists)
+				info = defaultinfo;
+
+			// for maps above 32, if no sky is defined, it will show texture 0 (aastinky)
+			// so instead, lets just try to give it the first defined sky in the level set.
+			if (levels.size() > 0 && defaultinfo.skypic == "")
+			{
+				level_pwad_info_t& def = levels.at(0);
+				info.skypic = def.skypic;
+			}
+
 			info.mapname = map_name;
 
 			// Map name.
