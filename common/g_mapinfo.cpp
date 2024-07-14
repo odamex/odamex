@@ -789,7 +789,7 @@ void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 	{
 			// todo
 			if (newStyleMapInfo)
-			MustGetStringName(os, ",");
+				MustGetStringName(os, ",");
 
 			os.mustScan();
 	}
@@ -797,7 +797,7 @@ void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 	{
 			// todo
 			if (newStyleMapInfo)
-			MustGetStringName(os, ",");
+				MustGetStringName(os, ",");
 
 			os.mustScan();
 	}
