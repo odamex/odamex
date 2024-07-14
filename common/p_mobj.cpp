@@ -3081,6 +3081,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 	if (mobj->type == MT_SKYVIEWPOINT)
 	{
+		mobj->angle = mthing->angle;
 		// If this actor has no TID, make it the default sky box
 		if (mobj->tid == 0)
 		{
