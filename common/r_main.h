@@ -205,6 +205,8 @@ int R_ViewHeight(int width, int height);
 int R_ViewWindowX(int width, int height);
 int R_ViewWindowY(int width, int height);
 
+void R_SetViewAngle(angle_t ang);
+
 
 void R_ForceViewWindowResize();
 

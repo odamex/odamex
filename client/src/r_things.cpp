@@ -99,7 +99,7 @@ int 			newvissprite;
 //
 void R_ClearSprites()
 {
-	vissprite_p = vissprites;
+	vissprite_p = firstvissprite;
 }
 
 
@@ -109,11 +109,13 @@ void R_ClearSprites()
 vissprite_t *R_NewVisSprite()
 {
 	if (vissprite_p == lastvissprite) {
+		int firstvisspritenum = firstvissprite - vissprites;
 		int prevvisspritenum = vissprite_p - vissprites;
 
 		MaxVisSprites *= 2;
 		vissprites = (vissprite_t *)Realloc (vissprites, MaxVisSprites * sizeof(vissprite_t));
 		lastvissprite = &vissprites[MaxVisSprites];
+		firstvissprite = &vissprites[firstvisspritenum];
 		vissprite_p = &vissprites[prevvisspritenum];
 		DPrintf ("MaxVisSprites increased to %d\n", MaxVisSprites);
 	}
@@ -890,20 +892,22 @@ static int STACK_ARGS sv_compare(const void *arg1, const void *arg2)
 
 void R_SortVisSprites()
 {
-	vsprcount = vissprite_p - vissprites;
+	vsprcount = vissprite_p - firstvissprite;
 
 	if (!vsprcount)
 		return;
 
 	if (spritesorter_size < MaxVisSprites)
 	{
-		delete [] spritesorter;
+		if (spritesorter != NULL)
+			delete [] spritesorter;
 		spritesorter = new vissprite_t*[MaxVisSprites];
 		spritesorter_size = MaxVisSprites;
 	}
 
-	for (int i = 0; i < vsprcount; i++)
-		spritesorter[i] = vissprites + i;
+	vissprite_t* spr = firstvissprite;
+	for (int i = 0; i < vsprcount; i++, spr++)
+		spritesorter[i] = spr;
 
 	qsort(spritesorter, vsprcount, sizeof(vissprite_t *), sv_compare);
 }
@@ -987,7 +991,7 @@ void R_DrawSprite (vissprite_t *spr)
 	// (pointer check was originally nonportable
 	// and buggy, by going past LEFT end of array):
 
-	for (ds = ds_p ; ds-- > drawsegs ; )  // new -- killough
+	for (ds = ds_p ; ds-- > firstdrawseg ; )  // new -- killough
 	{
 		// determine if the drawseg obscures the sprite
 		if (ds->x1 > spr->x2 || ds->x2 < spr->x1 ||
@@ -1061,7 +1065,7 @@ void R_DrawMasked (void)
 
 	//		for (ds=ds_p-1 ; ds >= drawsegs ; ds--)    old buggy code
 
-	for (ds=ds_p ; ds-- > drawsegs ; )	// new -- killough
+	for (ds=ds_p ; ds-- > firstdrawseg ; )	// new -- killough
 		if (ds->midposts)
 			R_RenderMaskedSegRange(ds, ds->x1, ds->x2);
 

@@ -259,6 +259,7 @@ static void R_InitSpriteDefs(const char **namelist)
 //
 int				MaxVisSprites;
 vissprite_t 	*vissprites;
+vissprite_t		*firstvissprite;
 vissprite_t		*lastvissprite;
 
 
@@ -273,7 +274,7 @@ void R_InitSprites(const char **namelist)
 
 	M_Free(vissprites);
 
-	vissprites = (vissprite_t *)Malloc(MaxVisSprites * sizeof(vissprite_t));
+	firstvissprite = vissprites = (vissprite_t *)Malloc(MaxVisSprites * sizeof(vissprite_t));
 	lastvissprite = &vissprites[MaxVisSprites];
 
 	R_InitSpriteDefs (namelist);

@@ -6506,6 +6506,99 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	"MT_SECRETTRIGGER"
 	},
 
+	{		// MT_SKYVIEWPOINT
+	9080,		// doomednum
+	S_TNT1,		// spawnstate
+	1000,		// spawnhealth
+	0,		// gibhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	20*FRACUNIT,		// radius
+	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
+	100,		// mass
+	0,		// damage
+	NULL,		// activesound
+  MF_NOBLOCKMAP | MF_NOSECTOR | MF_NOGRAVITY, // flags
+	MF2_DONTDRAW,		// flags2
+	S_NULL,		// raisestate
+	0x10000,
+	"MT_SKYVIEWPOINT"
+	},
+
+	{		// MT_SKYPICKER
+	9081,		// doomednum
+	S_TNT1,		// spawnstate
+	1000,		// spawnhealth
+	0,		// gibhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	20*FRACUNIT,		// radius
+	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
+	100,		// mass
+	0,		// damage
+	NULL,		// activesound
+  MF_NOBLOCKMAP | MF_NOSECTOR | MF_NOGRAVITY, // flags
+	MF2_DONTDRAW,		// flags2
+	S_NULL,		// raisestate
+	0x10000,
+	"MT_SKYPICKER"
+	},
+
+	{		// MT_SECTORSILENCER
+	9082,		// doomednum
+	S_TNT1,		// spawnstate
+	1000,		// spawnhealth
+	0,		// gibhealth
+	S_NULL,		// seestate
+	NULL,		// seesound
+	8,		// reactiontime
+	NULL,		// attacksound
+	S_NULL,		// painstate
+	0,		// painchance
+	NULL,		// painsound
+	S_NULL,		// meleestate
+	S_NULL,		// missilestate
+	S_NULL,		// deathstate
+	S_NULL,		// xdeathstate
+	NULL,		// deathsound
+	0,		// speed
+	20*FRACUNIT,		// radius
+	16*FRACUNIT,		// height
+	16*FRACUNIT,	// cdheight
+	100,		// mass
+	0,		// damage
+	NULL,		// activesound
+  MF_NOBLOCKMAP | MF_NOGRAVITY, // flags
+	MF2_DONTDRAW,		// flags2
+	S_NULL,		// raisestate
+	0x10000,
+	"MT_SECTORSILENCER"
+	},
+
 			// [Toke - CTF] Blue Socket
 	{		// MT_BSOK
 	5130,		// doomednum

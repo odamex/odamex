@@ -1611,6 +1611,10 @@ typedef enum {
 	MT_NODE,		//Added by MC:
 	MT_WATERZONE,
 	MT_SECRETTRIGGER,
+	MT_SKYVIEWPOINT, // Skybox camera
+	MT_SKYPICKER, // Choose which skybox in sector
+	MT_SECTORSILENCER, // Silence all actors in a sector
+
 
 	// -----------------------------------
 	//	[Toke - CTF]

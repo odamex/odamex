@@ -38,6 +38,7 @@
 
 #include "z_zone.h"
 #include "w_wad.h"
+#include "m_mempool.h"
 
 
 #include "p_local.h"
@@ -59,9 +60,11 @@ planefunction_t 		ceilingfunc;
 static const float flatwidth = 64.0f;
 static const float flatheight = 64.0f;
 
-static visplane_t		*visplanes[MAXVISPLANES];	// killough
+static visplane_t		*visplanes[MAXVISPLANES + 1];	// killough
 static visplane_t		*freetail;					// killough
 static visplane_t		**freehead = &freetail;		// killough
+
+static bool r_InSkyBox;
 
 visplane_t 				*floorplane;
 visplane_t 				*ceilingplane;
@@ -95,6 +98,7 @@ int 					*spanstart;
 extern fixed_t FocalLengthX, FocalLengthY;
 extern float xfoc, yfoc;
 extern float focratio, ifocratio;
+extern Pool<int> sprclip_pool;
 
 int*					planezlight;
 float					plight, shade;
@@ -294,19 +298,31 @@ static visplane_t *new_visplane(unsigned hash)
 //
 visplane_t *R_FindPlane (plane_t secplane, int picnum, int lightlevel,
 						 fixed_t xoffs, fixed_t yoffs,
-						 fixed_t xscale, fixed_t yscale, angle_t angle)
+						 fixed_t xscale, fixed_t yscale, angle_t angle,
+						 AActor::AActorPtr skybox)
 {
 	visplane_t *check;
 	unsigned hash;						// killough
+	bool isskybox;
 
-	if (picnum == skyflatnum || picnum & PL_SKYFLAT)  // killough 10/98
-		lightlevel = 0;		// most skies map together
+	if (picnum == skyflatnum || picnum & PL_SKYFLAT) // killough 10/98
+	{ // most skies map together
+		lightlevel = 0;
+		isskybox = (picnum == skyflatnum) && (skybox != NULL) && !r_InSkyBox;
+	}
+	else
+	{
+		isskybox = false;
+	}
 
 	// New visplane algorithm uses hash table -- killough
-	hash = visplane_hash (picnum, lightlevel, secplane);
+	hash = isskybox ? MAXVISPLANES : visplane_hash(picnum, lightlevel, secplane);
 
 	for (check = visplanes[hash]; check; check = check->next)	// killough
-		if (P_IdenticalPlanes(&secplane, &check->secplane) &&
+		if (isskybox)
+			if (skybox == check->skybox)
+				return check;
+		else if (P_IdenticalPlanes(&secplane, &check->secplane) &&
 			picnum == check->picnum &&
 			lightlevel == check->lightlevel &&
 			xoffs == check->xoffs &&	// killough 2/28/98: Add offset checks
@@ -329,6 +345,7 @@ visplane_t *R_FindPlane (plane_t secplane, int picnum, int lightlevel,
 	check->yscale = yscale;
 	check->angle = angle;
 	check->colormap = basecolormap;		// [RH] Save colormap
+	check->skybox = skybox;
 	check->minx = viewwidth;			// Was SCREENWIDTH -- killough 11/98
 	check->maxx = -1;
 
@@ -382,7 +399,16 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 	else
 	{
 		// make a new visplane
-		unsigned hash = visplane_hash (pl->picnum, pl->lightlevel, pl->secplane);
+		unsigned hash;
+
+		if (pl->picnum == skyflatnum && pl->skybox != NULL && !r_InSkyBox)
+		{
+			hash = MAXVISPLANES;
+		}
+		else
+		{
+			hash = visplane_hash(pl->picnum, pl->lightlevel, pl->secplane);
+		}
 		visplane_t *new_pl = new_visplane (hash);
 
 		new_pl->secplane = pl->secplane;
@@ -672,6 +698,119 @@ void R_DrawPlanes (void)
 			}
 		}
 	}
+}
+
+//==========================================================================
+//
+// R_DrawSkyBoxes
+//
+// Draws any recorded sky boxes and then frees them.
+//
+// The process:
+//   1. Move the camera to coincide with the SkyViewpoint.
+//   2. Clear out the old planes. (They have already been drawn.)
+//   3. Clear a window out of the ClipSegs just large enough for the plane.
+//   4. Pretend the existing vissprites and drawsegs aren't there.
+//   5. Create a drawseg at 0 distance to clip sprites to the visplane. It
+//      doesn't need to be associated with a line in the map, since there
+//      will never be any sprites in front of it.
+//   6. Render the BSP, then planes, then masked stuff.
+//   7. Restore the previous vissprites and drawsegs.
+//   8. Repeat for any other sky boxes.
+//   9. Put the camera back where it was to begin with.
+//
+//==========================================================================
+
+void R_DrawSkyBoxes()
+{
+	if (visplanes[MAXVISPLANES] == NULL)
+		return;
+
+	int savedextralight = extralight;
+	fixed_t savedx = viewx;
+	fixed_t savedy = viewy;
+	fixed_t savedz = viewz;
+	angle_t savedangle = viewangle;
+	ptrdiff_t savedvissprite_p = vissprite_p - vissprites;
+	ptrdiff_t savedds_p = ds_p - drawsegs;
+	AActor* savedcamera = camera;
+
+	int i;
+	visplane_t* pl;
+
+	// Don't draw sky boxes inside sky boxes.
+	r_InSkyBox = true;
+
+	// Don't let gun flashes brighten the sky box
+	extralight = 0;
+
+	for (pl = visplanes[MAXVISPLANES]; pl != NULL; pl = pl->next)
+	{
+		if (pl->maxx < pl->minx)
+			continue;
+
+		AActor::AActorPtr sky = pl->skybox;
+
+		viewx = sky->x;
+		viewy = sky->y;
+		viewz = sky->z;
+		camera = sky;
+		R_SetViewAngle(savedangle + sky->angle);
+		validcount++; // Make sure we see all sprites
+
+		R_ClearPlanes();
+		R_ClearClipSegs();
+
+		for (i = pl->minx; i <= pl->maxx; i++)
+		{
+			if (pl->top[i] == 0x7fff)
+			{
+				ceilingclip[i] = viewheight;
+				floorclip[i] = -1;
+			}
+			else
+			{
+				ceilingclip[i] = pl->top[i];
+				floorclip[i] = pl->bottom[i];
+			}
+		}
+
+		// Create a drawseg to clip sprites to the sky plane
+		R_ReallocDrawSegs();
+		ds_p->x1 = pl->minx;
+		ds_p->x2 = pl->maxx;
+		ds_p->silhouette = SIL_BOTH;
+		ds_p->sprbottomclip = sprclip_pool.alloc(pl->maxx - pl->minx + 1);
+		ds_p->sprtopclip = sprclip_pool.alloc(pl->maxx - pl->minx + 1);
+		ds_p->midposts = NULL;
+		memcpy(ds_p->sprbottomclip, floorclip + pl->minx,
+		       (pl->maxx - pl->minx + 1) * sizeof(int));
+		memcpy(ds_p->sprtopclip, ceilingclip + pl->minx,
+		       (pl->maxx - pl->minx + 1) * sizeof(int));
+
+		firstvissprite = vissprite_p;
+		firstdrawseg = ds_p++;
+
+		R_RenderBSPNode(numnodes - 1);
+		R_DrawPlanes();
+		R_DrawMasked();
+
+		firstvissprite = vissprites;
+		vissprite_p = vissprites + savedvissprite_p;
+		ds_p = drawsegs + savedds_p;
+	}
+
+	camera = savedcamera;
+	viewx = savedx;
+	viewy = savedy;
+	viewz = savedz;
+	extralight = savedextralight;
+	R_SetViewAngle(savedangle);
+
+	r_InSkyBox = false;
+
+	for (*freehead = visplanes[MAXVISPLANES], visplanes[MAXVISPLANES] = NULL; *freehead;)
+		freehead = &(*freehead)->next;
 }
 
 //

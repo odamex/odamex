@@ -58,6 +58,7 @@ R_MakeSpans
   int		b2 );
   
 void R_DrawPlanes (void);
+void R_DrawSkyBoxes (void);
 
 visplane_t *R_FindPlane
 ( plane_t		secplane,
@@ -67,7 +68,8 @@ visplane_t *R_FindPlane
   fixed_t		yoffs,
   fixed_t		xscale,
   fixed_t		yscale,
-  angle_t		angle);
+  angle_t		angle,
+  AActor::AActorPtr skybox);
 
 visplane_t *R_CheckPlane (visplane_t *pl, int start, int stop);
 

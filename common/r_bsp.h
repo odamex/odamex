@@ -34,6 +34,7 @@ extern sector_t*	backsector;
 extern BOOL			skymap;
 
 extern drawseg_t	*drawsegs;
+extern drawseg_t	*firstdrawseg;
 extern drawseg_t*	ds_p;
 
 extern byte			solidcol[MAXWIDTH];

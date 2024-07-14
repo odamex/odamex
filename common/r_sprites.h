@@ -26,7 +26,7 @@
 
 extern int MaxVisSprites;
 
-extern vissprite_t *vissprites;
+extern vissprite_t *vissprites, *firstvissprite;
 
 extern spritedef_t* sprites;
 extern int numsprites;
