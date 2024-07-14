@@ -2011,8 +2011,8 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 
 			// Find the level.
 			level_pwad_info_t& info = (levels.findByName(map_name).exists())
-			                              ? levels.findByName(map_name)
-			                              : levels.create();
+				? levels.findByName(map_name)
+				: levels.create();
 
 			info = defaultinfo;
 			info.mapname = map_name;
