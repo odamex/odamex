@@ -1038,7 +1038,7 @@ void R_RenderPlayerView(player_t* player)
 	R_ClearClipSegs();
 	R_ClearDrawSegs();
 	R_ClearOpenings();
-	R_ClearPlanes();
+	R_ClearPlanes(true);
 	R_ClearSprites();
 
 	R_ResetDrawFuncs();

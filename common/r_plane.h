@@ -41,7 +41,7 @@ extern int				*ceilingclipinitial;
 extern fixed_t			*yslope;
 
 void R_InitPlanes (void);
-void R_ClearPlanes (void);
+void R_ClearPlanes (bool fullclear);
 
 void
 R_MapPlane
@@ -61,7 +61,7 @@ void R_DrawPlanes (void);
 void R_DrawSkyBoxes (void);
 
 visplane_t *R_FindPlane
-( plane_t		secplane,
+( const plane_t	&secplane,
   int			picnum,
   int			lightlevel,
   fixed_t		xoffs,		// killough 2/28/98: add x-y offsets

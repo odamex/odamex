@@ -90,14 +90,15 @@ void R_ClearClipSegs (void)
 // [SL] From prboom-plus. Moved out of R_StoreWallRange()
 void R_ReallocDrawSegs(void)
 {
-	if (ds_p == &drawsegs[maxdrawsegs])
-	{ // [RH] Grab some more drawsegs
-		size_t newdrawsegs = maxdrawsegs ? maxdrawsegs * 2 : 32;
-		ptrdiff_t firstofs = firstdrawseg - drawsegs;
-		drawsegs = (drawseg_t *)Realloc (drawsegs, newdrawsegs * sizeof(drawseg_t));
+	if (ds_p == drawsegs+maxdrawsegs)		// killough 1/98 -- fix 2s line HOM
+	{
+		unsigned pos = ds_p - drawsegs;	// jff 8/9/98 fix from ZDOOM1.14a
+		unsigned firstofs = firstdrawseg - drawsegs;
+		unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128; // killough
+		drawsegs = (drawseg_t*)Realloc(drawsegs, newmax*sizeof(*drawsegs));
 		firstdrawseg = drawsegs + firstofs;
-		ds_p = drawsegs + maxdrawsegs;
-		maxdrawsegs = newdrawsegs;
+		ds_p = drawsegs + pos;				// jff 8/9/98 fix from ZDOOM1.14a
+		maxdrawsegs = newmax;
 		DPrintf("MaxDrawSegs increased to %d\n", maxdrawsegs);
 	}
 }

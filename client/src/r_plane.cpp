@@ -257,15 +257,18 @@ void R_MapLevelPlane(int y, int x1, int x2)
 // R_ClearPlanes
 // At begining of frame.
 //
-void R_ClearPlanes (void)
+void R_ClearPlanes(bool fullclear)
 {
-	// opening / clipping determination
-	memcpy(floorclip, floorclipinitial, viewwidth * sizeof(*floorclip));
-	memcpy(ceilingclip, ceilingclipinitial, viewwidth * sizeof(*ceilingclip));
-
 	for (int i = 0; i < MAXVISPLANES; i++)	// new code -- killough
 		for (*freehead = visplanes[i], visplanes[i] = NULL; *freehead; )
 			freehead = &(*freehead)->next;
+
+	if (fullclear)
+	{
+		// opening / clipping determination
+		memcpy(floorclip, floorclipinitial, viewwidth * sizeof(*floorclip));
+		memcpy(ceilingclip, ceilingclipinitial, viewwidth * sizeof(*ceilingclip));
+	}
 }
 
 //
@@ -296,7 +299,7 @@ static visplane_t *new_visplane(unsigned hash)
 //
 // killough 2/28/98: Add offsets
 //
-visplane_t *R_FindPlane (plane_t secplane, int picnum, int lightlevel,
+visplane_t *R_FindPlane (const plane_t &secplane, int picnum, int lightlevel,
 						 fixed_t xoffs, fixed_t yoffs,
 						 fixed_t xscale, fixed_t yscale, angle_t angle,
 						 AActor::AActorPtr skybox)
@@ -318,21 +321,28 @@ visplane_t *R_FindPlane (plane_t secplane, int picnum, int lightlevel,
 	// New visplane algorithm uses hash table -- killough
 	hash = isskybox ? MAXVISPLANES : visplane_hash(picnum, lightlevel, secplane);
 
-	for (check = visplanes[hash]; check; check = check->next)	// killough
+	for (check = visplanes[hash]; check; check = check->next) // killough
+	{
 		if (isskybox)
+		{
 			if (skybox == check->skybox)
+			{
 				return check;
-		else if (P_IdenticalPlanes(&secplane, &check->secplane) &&
-			picnum == check->picnum &&
-			lightlevel == check->lightlevel &&
-			xoffs == check->xoffs &&	// killough 2/28/98: Add offset checks
-			yoffs == check->yoffs &&
-			basecolormap == check->colormap &&	// [RH] Add colormap check
-			xscale == check->xscale &&
-			yscale == check->yscale &&
-			angle == check->angle
-			)
-		  return check;
+			}
+		}
+		else if (P_IdenticalPlanes(&secplane, &check->secplane) && 
+				picnum == check->picnum &&
+				lightlevel == check->lightlevel &&
+				xoffs == check->xoffs && // killough 2/28/98: Add offset checks
+				yoffs == check->yoffs &&
+				basecolormap == check->colormap && // [RH] Add colormap check
+				xscale == check->xscale && 
+				yscale == check->yscale &&
+				angle == check->angle)
+		{
+			return check;
+		}
+	}
 
 	check = new_visplane (hash);		// killough
 
@@ -420,6 +430,7 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 		new_pl->yscale = pl->yscale;
 		new_pl->angle = pl->angle;
 		new_pl->colormap = pl->colormap;	// [RH] Copy colormap
+		new_pl->skybox = pl->skybox;
 		pl = new_pl;
 		pl->minx = start;
 		pl->maxx = stop;
@@ -618,6 +629,7 @@ void R_DrawPlanes (void)
 {
 	visplane_t *pl;
 	int i;
+	int vpcount;
 
 	R_ResetDrawFuncs();
 
@@ -758,12 +770,12 @@ void R_DrawSkyBoxes()
 		R_SetViewAngle(savedangle + sky->angle);
 		validcount++; // Make sure we see all sprites
 
-		R_ClearPlanes();
+		R_ClearPlanes(false);
 		R_ClearClipSegs();
 
 		for (i = pl->minx; i <= pl->maxx; i++)
 		{
-			if (pl->top[i] == 0x7fff)
+			if (pl->top[i] == (unsigned int)viewheight)
 			{
 				ceilingclip[i] = viewheight;
 				floorclip[i] = -1;
@@ -783,10 +795,10 @@ void R_DrawSkyBoxes()
 		ds_p->sprbottomclip = sprclip_pool.alloc(pl->maxx - pl->minx + 1);
 		ds_p->sprtopclip = sprclip_pool.alloc(pl->maxx - pl->minx + 1);
 		ds_p->midposts = NULL;
-		memcpy(ds_p->sprbottomclip, floorclip + pl->minx,
-		       (pl->maxx - pl->minx + 1) * sizeof(int));
-		memcpy(ds_p->sprtopclip, ceilingclip + pl->minx,
-		       (pl->maxx - pl->minx + 1) * sizeof(int));
+		memcpy(ds_p->sprbottomclip, floorclip,
+		       (pl->maxx - pl->minx + 1) * sizeof(*ds_p->sprbottomclip));
+		memcpy(ds_p->sprtopclip, ceilingclip,
+		       (pl->maxx - pl->minx + 1) * sizeof(*ds_p->sprtopclip));
 
 		firstvissprite = vissprite_p;
 		firstdrawseg = ds_p++;
@@ -797,6 +809,7 @@ void R_DrawSkyBoxes()
 
 		firstvissprite = vissprites;
 		vissprite_p = vissprites + savedvissprite_p;
+		firstdrawseg = drawsegs;
 		ds_p = drawsegs + savedds_p;
 	}
 

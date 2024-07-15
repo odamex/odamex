@@ -1054,8 +1054,10 @@ void R_DrawMasked (void)
 
 	R_SortVisSprites ();
 
-	while (vsprcount > 0)
-		R_DrawSprite(spritesorter[--vsprcount]);
+	for (int i = vsprcount; i > 0; i--)
+	{
+		R_DrawSprite(spritesorter[i-1]);
+	}
 
 	// render any remaining masked mid textures
 
