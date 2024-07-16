@@ -4,6 +4,9 @@ WORKDIR odamex
 
 COPY . .
 
+sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+
 # Packages
 RUN set -x && \
     yum -y install epel-release gcc-c++ alsa-lib-devel libcurl-devel && \
