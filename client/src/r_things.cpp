@@ -1008,8 +1008,8 @@ void R_DrawSprite (vissprite_t *spr)
 		segscale2 = MIN<int>(ds->scale1, ds->scale2);
 
 		// check if the seg is in front of the sprite
-		if (segscale1 < spr->yscale ||
-			(segscale2 < spr->yscale && !R_PointOnSegSide(spr->gx, spr->gy, ds->curline)))
+		if (!(!ds->curline) && (segscale1 < spr->yscale ||
+			(segscale2 < spr->yscale && !R_PointOnSegSide(spr->gx, spr->gy, ds->curline))))
 		{
 			// masked mid texture?
 			if (ds->midposts)

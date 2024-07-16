@@ -786,20 +786,22 @@ void R_DrawSkyBoxes()
 				floorclip[i] = pl->bottom[i];
 			}
 		}
-
+		
 		// Create a drawseg to clip sprites to the sky plane
 		R_ReallocDrawSegs();
 		ds_p->x1 = pl->minx;
 		ds_p->x2 = pl->maxx;
 		ds_p->silhouette = SIL_BOTH;
-		ds_p->sprbottomclip = sprclip_pool.alloc(pl->maxx - pl->minx + 1);
-		ds_p->sprtopclip = sprclip_pool.alloc(pl->maxx - pl->minx + 1);
+		int count = pl->maxx - pl->minx + 1;
+		ds_p->sprbottomclip = sprclip_pool.alloc(count) - pl->minx;
+		ds_p->sprtopclip = sprclip_pool.alloc(count) - pl->minx;
 		ds_p->midposts = NULL;
-		memcpy(ds_p->sprbottomclip, floorclip,
-		       (pl->maxx - pl->minx + 1) * sizeof(*ds_p->sprbottomclip));
-		memcpy(ds_p->sprtopclip, ceilingclip,
-		       (pl->maxx - pl->minx + 1) * sizeof(*ds_p->sprtopclip));
-
+		ds_p->curline = NULL;
+		memcpy(ds_p->sprbottomclip + pl->minx, floorclip + pl->minx,
+		       (count) * sizeof(*ds_p->sprbottomclip));
+		memcpy(ds_p->sprtopclip + pl->minx, ceilingclip + pl->minx,
+		       (count) * sizeof(*ds_p->sprtopclip));
+		
 		firstvissprite = vissprite_p;
 		firstdrawseg = ds_p++;
 
