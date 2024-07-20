@@ -1509,11 +1509,18 @@ void AM_rotatePoint(mpoint_t& pt)
 {
 	player_t& pl = displayplayer();
 
-	pt.x -= pl.camera->x;
-	pt.y -= pl.camera->y;
-	AM_rotate(pt, ANG90 - pl.camera->angle);
-	pt.x += pl.camera->x;
-	pt.y += pl.camera->y;
+	fixed_t new_x =
+	    pl.camera->prevx + FixedMul(pl.camera->x - pl.camera->prevx, render_lerp_amount);
+	fixed_t new_y =
+	    pl.camera->prevy + FixedMul(pl.camera->y - pl.camera->prevy, render_lerp_amount);
+	fixed_t new_angle =
+	    pl.camera->prevangle + FixedMul(pl.camera->angle - pl.camera->prevangle, render_lerp_amount);
+
+	pt.x -= new_x;
+	pt.y -= new_y;
+	AM_rotate(pt, ANG90 - new_angle);
+	pt.x += new_x;
+	pt.y += new_y;
 }
 
 void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed_t scale,
