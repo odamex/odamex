@@ -133,10 +133,10 @@ void R_InterpolationTicker()
 		}
 
 		// Update bob
-		const float bob_amount =
-		    ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
-		bobx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
-		boby = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
+		//const float bob_amount =
+		//    ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
+		//bobx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
+		//boby = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
 
 		// Update sky offsets
 		prev_sky1offset = sky1columnoffset;
@@ -362,7 +362,7 @@ void R_BeginInterpolation(fixed_t amount)
 
 		R_InterpolateSkies(amount);
 
-		R_InterpolateBob(amount);
+		//R_InterpolateBob(amount);
 	}
 }
 
@@ -461,7 +461,7 @@ void R_EndInterpolation()
 
 		R_RestoreSkies();
 
-		R_RestoreBob();
+		//R_RestoreBob();
 	}
 }
 

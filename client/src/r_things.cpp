@@ -676,9 +676,9 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	vissprite_t 		avis;
 
 
-	//const float bob_amount = ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
-	//bobx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
-	//boby = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
+	const float bob_amount = ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
+	bobx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
+	boby = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
 
 	// decide which patch to use
 #ifdef RANGECHECK
