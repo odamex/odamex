@@ -90,3 +90,5 @@ void R_SortVisSprites();
 void R_AddSprites(sector_t *sec, int lightlevel, int fakeside);
 void R_ClearSprites();
 void R_DrawMasked();
+fixed_t P_CalculateWeaponBobX(player_t* player, float scale_amount);
+fixed_t P_CalculateWeaponBobY(player_t* player, float scale_amount);

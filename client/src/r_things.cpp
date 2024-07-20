@@ -84,6 +84,10 @@ extern int				InactiveParticles;
 extern particle_t		*Particles;
 TArray<WORD>			ParticlesInSubsec;
 
+// Put bob in here so it can be referenced
+fixed_t bobx;
+fixed_t boby;
+
 
 //
 // GAME FUNCTIONS
@@ -672,9 +676,9 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	vissprite_t 		avis;
 
 
-	const float bob_amount = ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
-	fixed_t sx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
-	fixed_t sy = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
+	//const float bob_amount = ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
+	//bobx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
+	//boby = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
 
 	// decide which patch to use
 #ifdef RANGECHECK
@@ -699,7 +703,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 		R_CacheSprite (sprdef);	// [RH] speeds up game startup time
 
 	// calculate edges of the shape
-	tx = sx - ((320 / 2) << FRACBITS);
+	tx = bobx - ((320 / 2) << FRACBITS);
 
 	tx -= sprframe->offset[0];	// [RH] Moved out of spriteoffset[]
 	x1 = (centerxfrac + FixedMul (tx, pspritexscale)) >>FRACBITS;
@@ -726,7 +730,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 #define WEAPONTWEAK				(0x9000)
 
 	vis->texturemid = (BASEYCENTER << FRACBITS) + FRACUNIT / 2 -
-		(sy + WEAPONTWEAK - sprframe->topoffset[0]);	// [RH] Moved out of spritetopoffset[]
+		(boby + WEAPONTWEAK - sprframe->topoffset[0]);	// [RH] Moved out of spritetopoffset[]
 	vis->x1 = x1 < 0 ? 0 : x1;
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
 	vis->xscale = pspritexscale;
