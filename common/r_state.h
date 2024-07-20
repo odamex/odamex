@@ -159,6 +159,3 @@ extern visplane_t*		skyplane;
 extern int				FieldOfView;
 // [AM] Corrected (for widescreen) Field of View
 extern int				CorrectFieldOfView;
-
-extern fixed_t bobx;
-extern fixed_t boby;

@@ -58,12 +58,6 @@ static fixed_t prev_sky1offset;
 static fixed_t saved_sky2offset;
 static fixed_t prev_sky2offset;
 
-// Weapon Bob
-static fixed_t prev_bobx;
-static fixed_t prev_boby;
-static fixed_t saved_bobx;
-static fixed_t saved_boby;
-
 //
 // R_InterpolationTicker
 //
@@ -80,8 +74,6 @@ void R_InterpolationTicker()
 	prev_sectorfloorscrollingflat.clear();
 	prev_sky1offset = 0;
 	prev_sky2offset = 0;
-	prev_bobx = 0;
-	prev_boby = 0;
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -132,12 +124,6 @@ void R_InterpolationTicker()
 			}
 		}
 
-		// Update bob
-		//const float bob_amount =
-		//    ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
-		//bobx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
-		//boby = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
-
 		// Update sky offsets
 		prev_sky1offset = sky1columnoffset;
 		prev_sky2offset = sky2columnoffset;
@@ -167,10 +153,6 @@ void R_ResetInterpolation()
 	prev_sky2offset = 0;
 	saved_sky1offset = 0;
 	saved_sky2offset = 0;
-	prev_bobx = 0;
-	prev_boby = 0;
-	saved_bobx = 0;
-	saved_boby = 0;
 	::localview.angle = 0;
 	::localview.setangle = false;
 	::localview.skipangle = false;
@@ -313,25 +295,6 @@ void R_InterpolateSkies(fixed_t amount)
 	sky2columnoffset = new_sky2offset;
 }
 
-void R_InterpolateBob(fixed_t amount)
-{
-	// weapon bob interpolation
-	fixed_t old_bobx = prev_bobx;
-	fixed_t old_boby = prev_boby;
-
-	fixed_t cur_bobx = bobx;
-	fixed_t cur_boby = boby;
-
-	fixed_t new_bobx = old_bobx + FixedMul(cur_bobx - old_bobx, amount);
-	fixed_t new_boby = old_boby + FixedMul(cur_boby - old_boby, amount);
-
-	saved_bobx = cur_bobx;
-	saved_boby = cur_boby;
-
-	bobx = new_bobx;
-	boby = new_boby;
-}
-
 //
 // R_BeginInterpolation
 //
@@ -349,8 +312,6 @@ void R_BeginInterpolation(fixed_t amount)
 	saved_linescrollingtex.clear();
 	saved_sky1offset = 0;
 	saved_sky2offset = 0;
-	saved_bobx = 0;
-	saved_boby = 0;
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -361,8 +322,6 @@ void R_BeginInterpolation(fixed_t amount)
 		R_InterpolateWalls(amount);
 
 		R_InterpolateSkies(amount);
-
-		//R_InterpolateBob(amount);
 	}
 }
 
@@ -437,12 +396,6 @@ void R_RestoreSkies(void)
 	sky2columnoffset = saved_sky2offset;
 }
 
-void R_RestoreBob(void)
-{
-	bobx = saved_bobx;
-	boby = saved_boby;
-}
-
 //
 // R_EndInterpolation
 //
@@ -460,8 +413,6 @@ void R_EndInterpolation()
 		R_RestoreWalls();
 
 		R_RestoreSkies();
-
-		//R_RestoreBob();
 	}
 }
 

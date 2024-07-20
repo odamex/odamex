@@ -84,9 +84,8 @@ extern int				InactiveParticles;
 extern particle_t		*Particles;
 TArray<WORD>			ParticlesInSubsec;
 
-// Put bob in here so it can be referenced
-fixed_t bobx;
-fixed_t boby;
+static fixed_t prev_bobx;
+static fixed_t prev_boby;
 
 
 //
@@ -675,10 +674,22 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	vissprite_t*		vis;
 	vissprite_t 		avis;
 
-
 	const float bob_amount = ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
-	bobx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
-	boby = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
+
+	fixed_t old_bobx = prev_bobx;
+	fixed_t old_boby = prev_boby;
+
+	fixed_t current_bobx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
+	fixed_t current_boby = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
+
+	if (prev_bobx != current_bobx)
+		prev_bobx = current_bobx;
+
+	if (prev_boby != current_boby)
+		prev_boby = current_boby;
+
+	fixed_t bobx = old_bobx - FixedMul(render_lerp_amount, current_bobx - old_bobx);
+	fixed_t boby = old_boby - FixedMul(render_lerp_amount, current_boby - old_boby);
 
 	// decide which patch to use
 #ifdef RANGECHECK
