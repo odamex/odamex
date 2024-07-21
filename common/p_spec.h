@@ -255,7 +255,7 @@ inline FArchive &operator>> (FArchive &arc, DScroller::EScrollType &out)
 
 inline bool P_WallScrollType(DScroller::EScrollType type)
 {
-	if (type == DScroller::EScrollType::sc_side)
+	if (type == DScroller::sc_side)
 	{
 		return true;
 	}
@@ -265,7 +265,7 @@ inline bool P_WallScrollType(DScroller::EScrollType type)
 
 inline bool P_FloorScrollType(DScroller::EScrollType type)
 {
-	if (type == DScroller::EScrollType::sc_floor)
+	if (type == DScroller::sc_floor)
 	{
 		return true;
 	}
@@ -275,7 +275,7 @@ inline bool P_FloorScrollType(DScroller::EScrollType type)
 
 inline bool P_CeilingScrollType(DScroller::EScrollType type)
 {
-	if (type == DScroller::EScrollType::sc_ceiling)
+	if (type == DScroller::sc_ceiling)
 	{
 		return true;
 	}
