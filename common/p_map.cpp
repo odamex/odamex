@@ -207,7 +207,7 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 		{
 			camera->prevx = tmx;
 			camera->prevy = tmy;
-			player->prevviewz = tmz;
+			player->prevviewz = tmz + player->viewheight;
 		}
 	}
 
