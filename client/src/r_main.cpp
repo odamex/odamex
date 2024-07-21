@@ -45,7 +45,7 @@ extern NetDemo netdemo;
 
 void R_BeginInterpolation(fixed_t amount);
 void R_EndInterpolation();
-void R_InterpolateCamera(fixed_t amount, bool use_localview, bool chasecam);
+void R_InterpolateView(player_t* player, fixed_t amount);
 
 #define DISTMAP			2
 
@@ -778,18 +778,6 @@ void R_SetupFrame (player_t *player)
 	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
 	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
 
-	if (render_lerp_amount < FRACUNIT)
-	{
-		R_InterpolateCamera(render_lerp_amount, use_localview, player->cheats & CF_CHASECAM);
-	}
-	else
-	{
-		viewx = camera->x;
-		viewy = camera->y;
-		viewz = camera->player ? camera->player->viewz : camera->z;
-		viewangle = camera->angle;
-	}
-
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
 		int intensity = camera->player->xviewshift;
@@ -1002,6 +990,8 @@ void R_RenderPlayerView(player_t* player)
 		ST_ForceRefresh();
 		setsizeneeded = false;
 	}
+
+	R_InterpolateView(player, render_lerp_amount);
 
 	if (!viewactive)
 		return;

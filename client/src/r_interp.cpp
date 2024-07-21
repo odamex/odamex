@@ -26,6 +26,7 @@
 #include "odamex.h"
 
 #include "m_fixed.h"
+#include "cl_demo.h"
 #include "r_state.h"
 #include "r_sky.h"
 #include "p_local.h"
@@ -65,6 +66,8 @@ static fixed_t saved_amy;
 static fixed_t prev_amy;
 static fixed_t saved_amangle;
 static fixed_t prev_amangle;
+
+extern NetDemo netdemo;
 
 //
 // R_InterpolationTicker
@@ -544,6 +547,32 @@ void R_InterpolateCamera(fixed_t amount, bool use_localview, bool chasecam)
 			viewz = camera->player->prevviewz + FixedMul(amount, camera->player->viewz - camera->player->prevviewz);
 		else
 			viewz = camera->prevz + FixedMul(amount, z - camera->prevz);
+	}
+}
+
+void R_InterpolateView(player_t* player, fixed_t amount)
+{
+	camera = player->camera; // [RH] Use camera instead of viewplayer
+
+	if (!camera || !camera->subsector)
+		return;
+
+	if (amount < FRACUNIT)
+	{
+		player_t& consolePlayer = consoleplayer();
+		const bool use_localview =
+		    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
+		     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
+
+		R_InterpolateCamera(render_lerp_amount, use_localview,
+				player->cheats & CF_CHASECAM);
+	}
+	else
+	{
+		viewx = camera->x;
+		viewy = camera->y;
+		viewz = camera->player ? camera->player->viewz : camera->z;
+		viewangle = camera->angle;
 	}
 }
 
