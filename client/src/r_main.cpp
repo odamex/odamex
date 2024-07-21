@@ -45,7 +45,7 @@ extern NetDemo netdemo;
 
 void R_BeginInterpolation(fixed_t amount);
 void R_EndInterpolation();
-void R_InterpolateCamera(fixed_t amount, bool use_localview);
+void R_InterpolateCamera(fixed_t amount, bool use_localview, bool chasecam);
 
 #define DISTMAP			2
 
@@ -778,28 +778,16 @@ void R_SetupFrame (player_t *player)
 	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
 	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
 
-	if (player->cheats & CF_CHASECAM)
+	if (render_lerp_amount < FRACUNIT)
 	{
-		// [RH] Use chasecam view
-		P_AimCamera (camera);
-		viewx = CameraX;
-		viewy = CameraY;
-		viewz = CameraZ;
-		viewangle = camera->angle;
+		R_InterpolateCamera(render_lerp_amount, use_localview, player->cheats & CF_CHASECAM);
 	}
 	else
 	{
-		if (render_lerp_amount < FRACUNIT)
-		{
-			R_InterpolateCamera(render_lerp_amount, use_localview);
-		}
-		else
-		{
-			viewx = camera->x;
-			viewy = camera->y;
-			viewz = camera->player ? camera->player->viewz : camera->z;
-			viewangle = camera->angle;
-		}
+		viewx = camera->x;
+		viewy = camera->y;
+		viewz = camera->player ? camera->player->viewz : camera->z;
+		viewangle = camera->angle;
 	}
 
 	if (camera->player && camera->player->xviewshift && !paused)

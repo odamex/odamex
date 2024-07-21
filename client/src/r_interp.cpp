@@ -58,6 +58,14 @@ static fixed_t prev_sky1offset;
 static fixed_t saved_sky2offset;
 static fixed_t prev_sky2offset;
 
+// Automap x/y/angle
+static fixed_t saved_amx;
+static fixed_t prev_amx;
+static fixed_t saved_amy;
+static fixed_t prev_amy;
+static fixed_t saved_amangle;
+static fixed_t prev_amangle;
+
 //
 // R_InterpolationTicker
 //
@@ -74,6 +82,9 @@ void R_InterpolationTicker()
 	prev_sectorfloorscrollingflat.clear();
 	prev_sky1offset = 0;
 	prev_sky2offset = 0;
+	prev_amx = 0;
+	prev_amy = 0;
+	prev_amangle = 0;
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -127,7 +138,27 @@ void R_InterpolationTicker()
 		// Update sky offsets
 		prev_sky1offset = sky1columnoffset;
 		prev_sky2offset = sky2columnoffset;
+
+		// Update automap coords
+		player_t& player = displayplayer();
+
+		prev_amx = player.camera->x;
+		prev_amy = player.camera->y;
+		prev_amangle = player.camera->angle;
 	}
+}
+
+//
+// R_AutomapInterpolationTicker()
+// Always runs the first frame while automap is active
+void R_AutomapInterpolationTicker()
+{
+	// Update automap coords
+	player_t& player = displayplayer();
+
+	prev_amx = player.camera->x;
+	prev_amy = player.camera->y;
+	prev_amangle = player.camera->angle;
 }
 
 
@@ -153,6 +184,12 @@ void R_ResetInterpolation()
 	prev_sky2offset = 0;
 	saved_sky1offset = 0;
 	saved_sky2offset = 0;
+	prev_amx = 0;
+	prev_amy = 0;
+	prev_amangle = 0;
+	saved_amx = 0;
+	saved_amy = 0;
+	saved_amangle = 0;
 	::localview.angle = 0;
 	::localview.setangle = false;
 	::localview.skipangle = false;
@@ -326,6 +363,39 @@ void R_BeginInterpolation(fixed_t amount)
 }
 
 //
+// R_BeginInterpolateAutomap
+// Starts the interpolation tic for automap if automap is active.
+//
+void R_BeginInterpolateAutomap(fixed_t amount)
+{
+	saved_amx = 0;
+	saved_amy = 0;
+	saved_amangle = 0;
+
+	player_t& player = displayplayer();
+
+	fixed_t old_amx = player.camera->prevx;
+	fixed_t old_amy = player.camera->prevy;
+	fixed_t old_amangle = player.camera->prevangle;
+
+	fixed_t cur_amx = player.camera->x;
+	fixed_t cur_amy = player.camera->y;
+	fixed_t cur_amangle = player.camera->angle;
+
+	fixed_t new_amx = old_amx + FixedMul(cur_amx - old_amx, amount);
+	fixed_t new_amy = old_amy + FixedMul(cur_amy - old_amy, amount);
+	fixed_t new_amangle = old_amangle + FixedMul(cur_amangle - old_amangle, amount);
+
+	saved_amx = cur_amx;
+	saved_amy = cur_amy;
+	saved_amangle = cur_amangle;
+
+	amx = new_amx;
+	amy = new_amy;
+	amangle = new_amangle;
+}
+
+//
 // Functions to assist in the restoration of state after the gametic has ended.
 
 void R_RestoreCeilings(void)
@@ -417,6 +487,21 @@ void R_EndInterpolation()
 }
 
 //
+// R_EndAutomapInterpolation
+//
+// Restores the saved location automap location at the end of the frame.
+//
+void R_EndAutomapInterpolation(void)
+{
+	if (gamestate == GS_LEVEL)
+	{
+		amx = saved_amx;
+		amy = saved_amy;
+		amangle = saved_amangle;
+	}
+}
+
+//
 // R_InterpolateCamera
 //
 // Interpolate between the current position and the previous position
@@ -424,10 +509,23 @@ void R_EndInterpolation()
 // render_lerp_amount will be FRACUNIT.
 //
 
-void R_InterpolateCamera(fixed_t amount, bool use_localview)
+void R_InterpolateCamera(fixed_t amount, bool use_localview, bool chasecam)
 {
 	if (gamestate == GS_LEVEL && camera)
 	{
+		fixed_t x = camera->x;
+		fixed_t y = camera->y;
+		fixed_t z = camera->z;
+
+		if (chasecam)
+		{
+			// [RH] Use chasecam view
+			P_AimCamera(camera);
+			x = CameraX;
+			y = CameraY;
+			z = CameraZ;
+		}
+
 		if (use_localview && !::localview.skipangle)
 		{
 			viewangle = camera->angle + ::localview.angle;
@@ -439,13 +537,13 @@ void R_InterpolateCamera(fixed_t amount, bool use_localview)
 			viewangle = camera->prevangle + FixedMul(amount, camera->angle - camera->prevangle);
 		}
 
-		viewx = camera->prevx + FixedMul(amount, camera->x - camera->prevx);
-		viewy = camera->prevy + FixedMul(amount, camera->y - camera->prevy);
+		viewx = camera->prevx + FixedMul(amount, x - camera->prevx);
+		viewy = camera->prevy + FixedMul(amount, y - camera->prevy);
 
 		if (camera->player)
 			viewz = camera->player->prevviewz + FixedMul(amount, camera->player->viewz - camera->player->prevviewz);
 		else
-			viewz = camera->prevz + FixedMul(amount, camera->z - camera->prevz);
+			viewz = camera->prevz + FixedMul(amount, z - camera->prevz);
 	}
 }
 

@@ -55,6 +55,8 @@
 #include "p_mapformat.h"
 
 argb_t CL_GetPlayerColor(player_t*);
+void R_BeginInterpolateAutomap(fixed_t amount);
+void R_EndAutomapInterpolation();
 
 EXTERN_CVAR(am_followplayer)
 
@@ -237,6 +239,11 @@ static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0;                  // next point to be assigned
 
 static bool stopped = true;
+
+// Automap x/y/angle
+fixed_t amx;
+fixed_t amy;
+fixed_t amangle;
 
 extern NetDemo netdemo;
 
@@ -904,15 +911,13 @@ void AM_changeWindowScale()
 //
 void AM_doFollowPlayer()
 {
-	player_t& p = displayplayer();
+	M_SetVec2Fixed(&m_ll,
+		viewx - m_wh.x / 2,
+		viewy - m_wh.y / 2);
 
-	if (f_oldloc.x != p.camera->x || f_oldloc.y != p.camera->y)
-	{
-		M_SetVec2Fixed(&m_ll, FTOM(MTOF(p.camera->x)) - m_wh.x / 2,
-		                      FTOM(MTOF(p.camera->y)) - m_wh.y / 2);
-		M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
-		M_SetVec2Fixed(&f_oldloc, p.camera->x, p.camera->y);
-	}
+	M_SetVec2Fixed(&m_ur,
+		m_ll.x + m_wh.x,
+		m_ll.y + m_wh.y);
 }
 
 //
@@ -924,34 +929,6 @@ void AM_Ticker()
 		return;
 
 	amclock++;
-
-	if (am_followplayer)
-	{
-		AM_doFollowPlayer();
-	}
-	else
-	{
-		M_ZeroVec2Fixed(&m_paninc);
-
-		// pan according to the direction
-		if (Actions[ACTION_AUTOMAP_PANLEFT])
-			m_paninc.x = -FTOM(F_PANINC);
-		if (Actions[ACTION_AUTOMAP_PANRIGHT])
-			m_paninc.x = FTOM(F_PANINC);
-		if (Actions[ACTION_AUTOMAP_PANUP])
-			m_paninc.y = FTOM(F_PANINC);
-		if (Actions[ACTION_AUTOMAP_PANDOWN])
-			m_paninc.y = -FTOM(F_PANINC);
-	}
-
-	// Change the zoom if necessary
-	if (ftom_zoommul != FRACUNIT || Actions[ACTION_AUTOMAP_ZOOMIN] ||
-	    Actions[ACTION_AUTOMAP_ZOOMOUT])
-		AM_changeWindowScale();
-
-	// Change x,y location
-	if (m_paninc.x || m_paninc.y)
-		AM_changeWindowLoc();
 
 	// NES - Glowing effect on locked doors.
 	if (lockglow < 90)
@@ -1507,20 +1484,11 @@ void AM_rotate(mpoint_t& pt, angle_t a)
 
 void AM_rotatePoint(mpoint_t& pt)
 {
-	player_t& pl = displayplayer();
-
-	fixed_t new_x =
-	    pl.camera->prevx + FixedMul(pl.camera->x - pl.camera->prevx, render_lerp_amount);
-	fixed_t new_y =
-	    pl.camera->prevy + FixedMul(pl.camera->y - pl.camera->prevy, render_lerp_amount);
-	fixed_t new_angle =
-	    pl.camera->prevangle + FixedMul(pl.camera->angle - pl.camera->prevangle, render_lerp_amount);
-
-	pt.x -= new_x;
-	pt.y -= new_y;
-	AM_rotate(pt, ANG90 - new_angle);
-	pt.x += new_x;
-	pt.y += new_y;
+	pt.x -= amx;
+	pt.y -= amy;
+	AM_rotate(pt, ANG90 - amangle);
+	pt.x += amx;
+	pt.y += amy;
 }
 
 void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed_t scale,
@@ -1565,16 +1533,14 @@ void AM_drawPlayers()
 		if (am_rotate)
 			angle = ANG90;
 		else
-			angle = conplayer.camera->angle;
+			angle = amangle;
 
 		if (am_cheating && !gameinfo.mapArrowCheat.empty())
 			AM_drawLineCharacter(gameinfo.mapArrowCheat, INT2FIXED(16), angle,
-			                     gameinfo.currentAutomapColors.YourColor, 
-								 conplayer.camera->x, conplayer.camera->y);
+				gameinfo.currentAutomapColors.YourColor, amx, amy);
 		else
 			AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED(16), angle,
-			                     gameinfo.currentAutomapColors.YourColor,
-			                     conplayer.camera->x, conplayer.camera->y);
+				gameinfo.currentAutomapColors.YourColor, amx, amy);
 		return;
 	}
 
@@ -1626,13 +1592,25 @@ void AM_drawPlayers()
 		}
 
 		mpoint_t pt;
-		M_SetVec2Fixed(&pt, p->mo->x, p->mo->y);
-		angle = p->mo->angle;
+		fixed_t moangle = p->mo->prevangle +
+			FixedMul(p->mo->angle - p->mo->prevangle,
+			render_lerp_amount);
+
+		fixed_t mox = p->mo->prevx +
+			FixedMul(p->mo->x - p->mo->prevx,
+			render_lerp_amount);
+
+		fixed_t moy = p->mo->prevy +
+			FixedMul(p->mo->y - p->mo->prevy,
+			render_lerp_amount);
+		M_SetVec2Fixed(&pt, mox, moy);
+
+		angle = moangle;
 
 		if (am_rotate)
 		{
 			AM_rotatePoint(pt);
-			angle -= conplayer.camera->angle - ANG90;
+			angle -= amangle - ANG90;
 		}
 
 		AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED(16), angle, color, pt.x, pt.y);
@@ -1694,14 +1672,26 @@ void AM_drawThings()
 		while (t)
 		{
 			mpoint_t p;
-			M_SetVec2Fixed(&p, t->x, t->y);
+
+			fixed_t thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
+			fixed_t thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
+
+			fixed_t tangle = t->prevangle +
+				FixedMul(t->angle -	t->prevangle,
+				render_lerp_amount);
+
+			M_SetVec2Fixed(&p, thingx, thingy);
 			angle_t rotate_angle = 0;
-			angle_t triangle_angle = t->angle;
+			angle_t triangle_angle = tangle;
 
 			if (am_rotate)
 			{
 				AM_rotatePoint(p);
-				rotate_angle = ANG90 - displayplayer().camera->angle;
+				fixed_t conangle = displayplayer().camera->prevangle +
+					FixedMul(displayplayer().camera->angle -
+					displayplayer().camera->prevangle,
+					render_lerp_amount);
+				rotate_angle = ANG90 - conangle;
 				triangle_angle += rotate_angle;
 			}
 
@@ -1820,6 +1810,36 @@ void AM_Drawer()
 		f_p = surface->getPitch();
 	}
 
+	if (am_followplayer)
+	{
+		AM_doFollowPlayer();
+	}
+	else
+	{
+		M_ZeroVec2Fixed(&m_paninc);
+
+		// pan according to the direction
+		if (Actions[ACTION_AUTOMAP_PANLEFT])
+			m_paninc.x = -FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANRIGHT])
+			m_paninc.x = FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANUP])
+			m_paninc.y = FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANDOWN])
+			m_paninc.y = -FTOM(F_PANINC);
+	}
+
+	// Change the zoom if necessary
+	if (ftom_zoommul != FRACUNIT || Actions[ACTION_AUTOMAP_ZOOMIN] ||
+	    Actions[ACTION_AUTOMAP_ZOOMOUT])
+		AM_changeWindowScale();
+
+	// Change x,y location
+	if (m_paninc.x || m_paninc.y)
+		AM_changeWindowLoc();
+
+	R_BeginInterpolateAutomap(render_lerp_amount);
+
 	AM_activateNewScale();
 
 	if (grid)
@@ -1836,6 +1856,8 @@ void AM_Drawer()
 		AM_drawCrosshair(gameinfo.currentAutomapColors.XHairColor);
 
 	AM_drawMarks();
+
+	R_EndAutomapInterpolation();
 
 	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
 	{
