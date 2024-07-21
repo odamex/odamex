@@ -174,8 +174,8 @@ struct level_pwad_info_t
 	OLumpName		interbackdrop;
 	OLumpName		intermusic;
 
-	fixed_t sky1ScrollDelta;
-	fixed_t sky2ScrollDelta;
+	fixed_t			sky1ScrollDelta;
+	fixed_t			sky2ScrollDelta;
 	
 	std::vector<bossaction_t> bossactions;
 	
@@ -185,7 +185,7 @@ struct level_pwad_info_t
 	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
 	      aircontrol(0.0f), exitpic(""), enterpic(""), endpic(""), intertext(""),
 	      intertextsecret(""), interbackdrop(""), intermusic(""), 
-			  sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions()
+	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions()
 	{
 		ArrayInit(fadeto_color, 0);
 		ArrayInit(level_fingerprint, 0);
@@ -288,8 +288,8 @@ struct level_locals_t
 	OLumpName		skypic;
 	OLumpName		skypic2;
 
-	fixed_t sky1ScrollDelta;
-	fixed_t sky2ScrollDelta;
+	fixed_t			sky1ScrollDelta;
+	fixed_t			sky2ScrollDelta;
 
 	int				total_secrets;
 	int				found_secrets;
