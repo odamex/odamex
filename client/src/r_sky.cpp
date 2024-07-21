@@ -38,6 +38,10 @@
 extern int *texturewidthmask;
 extern fixed_t FocalLengthX;
 extern fixed_t freelookviewheight;
+extern fixed_t saved_sky1offset;
+extern fixed_t saved_sky2offset;
+extern fixed_t prev_sky1offset;
+extern fixed_t prev_sky2offset;
 
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(cl_mouselook)
@@ -230,6 +234,10 @@ void R_RenderSkyRange(visplane_t* pl)
 	fixed_t back_offset = 0;
 	angle_t skyflip = 0;
 
+	// Perform interp for any scrolling skies
+	fixed_t sky1offset = prev_sky1offset + FixedMul(render_lerp_amount, saved_sky1offset - prev_sky1offset);
+	fixed_t sky2offset = prev_sky2offset + FixedMul(render_lerp_amount, saved_sky2offset - prev_sky2offset);
+
 	if (pl->picnum == skyflatnum )
 	{
 		// use sky1
@@ -242,15 +250,15 @@ void R_RenderSkyRange(visplane_t* pl)
 		{
 			backskytex = -1;
 		}
-		front_offset = sky1columnoffset;
-		back_offset = sky2columnoffset;
+		front_offset = sky1offset;
+		back_offset = sky2offset;
 	}
 	else if (pl->picnum == int(PL_SKYFLAT))
 	{
 		// use sky2
 		frontskytex = texturetranslation[sky2texture];
 		backskytex = -1;
-		front_offset = sky2columnoffset;
+		front_offset = sky2offset;
 	}
 	else
 	{

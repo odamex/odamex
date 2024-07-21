@@ -54,10 +54,10 @@ static std::vector<fixed_fixed_uint_pair> prev_sectorfloorscrollingflat; // <x o
 static std::vector<fixed_fixed_uint_pair> saved_sectorfloorscrollingflat;
 
 // Skies
-static fixed_t saved_sky1offset;
-static fixed_t prev_sky1offset;
-static fixed_t saved_sky2offset;
-static fixed_t prev_sky2offset;
+fixed_t saved_sky1offset;
+fixed_t prev_sky1offset;
+fixed_t saved_sky2offset;
+fixed_t prev_sky2offset;
 
 // Automap x/y/angle
 static fixed_t saved_amx;
@@ -145,8 +145,11 @@ void R_InterpolationTicker()
 		}
 
 		// Update sky offsets
-		prev_sky1offset = sky1columnoffset;
-		prev_sky2offset = sky2columnoffset;
+		prev_sky1offset = saved_sky1offset;
+		prev_sky2offset = saved_sky2offset;
+
+		saved_sky1offset = sky1columnoffset;
+		saved_sky2offset = sky2columnoffset;
 
 		// Update automap coords
 		player_t& player = displayplayer();
@@ -332,27 +335,6 @@ void R_InterpolateWalls(fixed_t amount)
 	}
 }
 
-void R_InterpolateSkies(fixed_t amount)
-{
-	// sky interpolation
-	fixed_t old_sky1offset = prev_sky1offset;
-	fixed_t old_sky2offset = prev_sky2offset;
-
-	fixed_t cur_sky1offset = sky1columnoffset;
-	fixed_t cur_sky2offset = sky2columnoffset;
-
-	fixed_t new_sky1offset =
-	    old_sky1offset + FixedMul(cur_sky1offset - old_sky1offset, amount);
-	fixed_t new_sky2offset =
-	    old_sky2offset + FixedMul(cur_sky2offset - old_sky2offset, amount);
-
-	saved_sky1offset = cur_sky1offset;
-	saved_sky2offset = cur_sky2offset;
-
-	sky1columnoffset = new_sky1offset;
-	sky2columnoffset = new_sky2offset;
-}
-
 //
 // R_BeginInterpolation
 //
@@ -368,8 +350,6 @@ void R_BeginInterpolation(fixed_t amount)
 	saved_sectorceilingscrollingflat.clear();
 	saved_sectorfloorscrollingflat.clear();
 	saved_linescrollingtex.clear();
-	saved_sky1offset = 0;
-	saved_sky2offset = 0;
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -378,8 +358,6 @@ void R_BeginInterpolation(fixed_t amount)
 		R_InterpolateFloors(amount);
 
 		R_InterpolateWalls(amount);
-
-		R_InterpolateSkies(amount);
 	}
 }
 
@@ -481,12 +459,6 @@ void R_RestoreWalls(void)
 	}
 }
 
-void R_RestoreSkies(void)
-{
-	sky1columnoffset = saved_sky1offset;
-	sky2columnoffset = saved_sky2offset;
-}
-
 //
 // R_EndInterpolation
 //
@@ -502,8 +474,6 @@ void R_EndInterpolation()
 		R_RestoreFloors();
 
 		R_RestoreWalls();
-
-		R_RestoreSkies();
 	}
 }
 

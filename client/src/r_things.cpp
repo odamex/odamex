@@ -655,12 +655,6 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 }
 
 
-EXTERN_CVAR(sv_allowmovebob)
-EXTERN_CVAR(cl_movebob)
-
-fixed_t P_CalculateWeaponBobX(player_t* player, float scale_amount);
-fixed_t P_CalculateWeaponBobY(player_t* player, float scale_amount);
-
 //
 // R_DrawPSprite
 //
