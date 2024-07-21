@@ -198,6 +198,19 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 	tmy = y;
 	tmz = z;
 
+	player_t* player = thing->player;
+
+	if (player)
+	{
+		AActor* camera = player->camera;
+		if (camera)
+		{
+			camera->prevx = tmx;
+			camera->prevy = tmy;
+			player->prevviewz = tmz;
+		}
+	}
+
 	tmbbox[BOXTOP] = y + tmthing->radius;
 	tmbbox[BOXBOTTOM] = y - tmthing->radius;
 	tmbbox[BOXRIGHT] = x + tmthing->radius;
