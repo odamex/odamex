@@ -56,8 +56,8 @@ fixed_t		skyheight;
 fixed_t		skyiscale;
 
 int			sky1shift,		sky2shift;
-fixed_t		sky1scrolldelta,		sky2scrolldelta;
-fixed_t		sky1columnoffset,		sky2columnoffset;
+fixed_t		sky1scrolldelta,	sky2scrolldelta;
+fixed_t		sky1columnoffset,	sky2columnoffset;
 
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
