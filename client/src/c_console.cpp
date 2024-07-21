@@ -1463,43 +1463,6 @@ void C_Ticker()
 				RowAdjust = 0;
 		}
 
-		if (ConsoleState == c_falling)
-		{
-			ConBottom += (gametic - lasttic) * (surface_height * 2 / 25);
-			if (ConBottom >= surface_height / 2)
-			{
-				ConBottom = surface_height / 2;
-				ConsoleState = c_down;
-			}
-		}
-		else if (ConsoleState == c_fallfull)
-		{
-			ConBottom += (gametic - lasttic) * (surface_height * 2 / 15);
-			if (ConBottom >= surface_height)
-			{
-				ConBottom = surface_height;
-				ConsoleState = c_down;
-			}
-		}
-		else if (ConsoleState == c_rising)
-		{
-			ConBottom -= (gametic - lasttic) * (surface_height * 2 / 25);
-			if (ConBottom <= 0)
-			{
-				ConsoleState = c_up;
-				ConBottom = 0;
-			}
-		}
-		else if (ConsoleState == c_risefull)
-		{
-			ConBottom -= (gametic - lasttic) * (surface_height * 2 / 15);
-			if (ConBottom <= 0)
-			{
-				ConsoleState = c_up;
-				ConBottom = 0;
-			}
-		}
-
 		if (RowAdjust + (ConBottom/8) + 1 > (unsigned int)con_buffersize.asInt())
 			RowAdjust = con_buffersize.asInt() - ConBottom;
 	}
@@ -1685,6 +1648,67 @@ void C_ToggleConsole()
 	History.resetPosition();
 }
 
+
+//
+// C_DisplayTicker
+//
+// This allows us to tic things separate from the gametics
+// So we can enable smoother display of console falling/rising
+//
+void C_DisplayTicker()
+{
+	int surface_height = I_GetSurfaceHeight();
+
+	// Attaching ConBottom to gametic will still cause falling/rising to
+	// be pinned to the gametic i.e. 35fps.
+
+	// If we subtract 1000 from the last, it should give us a larp-able result
+	int lasttic = gametic - 1000;
+
+	fixed_t ticfrac = (lasttic + FixedMul(gametic - lasttic, render_lerp_amount));
+
+	float fticfrac = (abs(ticfrac) / 1000.0) + 1.0;
+
+	if (ConsoleState == c_falling)
+	{
+		ConBottom += (surface_height * 2 / (25 * fticfrac));
+		if (ConBottom >= surface_height / 2)
+		{
+			ConBottom = surface_height / 2;
+			ConsoleState = c_down;
+		}
+	}
+	else if (ConsoleState == c_fallfull)
+	{
+		ConBottom += (surface_height * 2 / (15 * fticfrac));
+		if (ConBottom >= surface_height)
+		{
+			ConBottom = surface_height;
+			ConsoleState = c_down;
+		}
+	}
+	else if (ConsoleState == c_rising)
+	{
+		ConBottom -= (surface_height * 2 / (25 * fticfrac));
+		if (ConBottom <= 0)
+		{
+			ConsoleState = c_up;
+			ConBottom = 0;
+		}
+	}
+	else if (ConsoleState == c_risefull)
+	{
+		ConBottom -= (surface_height * 2 / (15 * fticfrac));
+		if (ConBottom <= 0)
+		{
+			ConsoleState = c_up;
+			ConBottom = 0;
+		}
+	}
+
+	if (RowAdjust + (ConBottom / 8) + 1 > (unsigned int)con_buffersize.asInt())
+		RowAdjust = con_buffersize.asInt() - ConBottom;
+}
 
 //
 // C_DrawConsole
