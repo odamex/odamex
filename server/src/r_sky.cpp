@@ -33,8 +33,8 @@
 int 		skyflatnum;
 int 		sky1texture, sky2texture;
 
-fixed_t sky1scrolldelta, sky2scrolldelta;
-fixed_t sky1columnoffset, sky2columnoffset;
+fixed_t		sky1scrolldelta,	sky2scrolldelta;
+fixed_t		sky1columnoffset,	sky2columnoffset;
 
 char SKYFLATNAME[8] = "F_SKY1";
 
