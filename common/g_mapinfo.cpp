@@ -793,31 +793,78 @@ void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
-	if (IsIdentifier(os))
+	if (os.compareTokenNoCase("EndPic"))
 	{
-		if (os.compareTokenNoCase("EndPic"))
-		{
 			// todo
 			if (newStyleMapInfo)
 				MustGetStringName(os, ",");
 
 			os.mustScan();
-		}
-		else if (os.compareTokenNoCase("EndSequence"))
-		{
-			// todo
-			if (newStyleMapInfo)
-				MustGetStringName(os, ",");
-
-			os.mustScan();
-		}
 	}
+	else if (os.compareTokenNoCase("EndSequence"))
+	{
+			// todo
+			if (newStyleMapInfo)
+				MustGetStringName(os, ",");
 
-	// If not identifier, check if it's a lumpname
-	os.unScan();
-	MustGet<OLumpName>(os);
-
-	if (os.compareTokenNoCase("endgame"))
+			os.mustScan();
+	}
+	else if (os.compareTokenNoCase("EndBunny"))
+	{
+		*static_cast<OLumpName*>(data) = "EndGame3";
+		return;
+	}
+	else if (os.compareTokenNoCase("EndGame1"))
+	{
+		*static_cast<OLumpName*>(data) = "EndGame1";
+		return;
+	}
+	else if (os.compareTokenNoCase("EndGame2"))
+	{
+		*static_cast<OLumpName*>(data) = "EndGame2";
+		return;
+	}
+	else if (os.compareTokenNoCase("EndGameW"))
+	{
+		// not supported (heretic)
+		return;
+	}
+	else if (os.compareTokenNoCase("EndGame4"))
+	{
+		*static_cast<OLumpName*>(data) = "EndGame4";
+		return;
+	}
+	else if (os.compareTokenNoCase("EndGameC"))
+	{
+		*static_cast<OLumpName*>(data) = "EndGameC";
+		return;
+	}
+	else if (os.compareTokenNoCase("EndGame3"))
+	{
+		*static_cast<OLumpName*>(data) = "EndGame3";
+		return;
+	}
+	else if (os.compareTokenNoCase("EndDemon"))
+	{
+		// not supported (heretic)
+		return;
+	}
+	else if (os.compareTokenNoCase("EndChess"))
+	{
+		// not supported (hexen)
+		return;
+	}
+	else if (os.compareTokenNoCase("EndGameS"))
+	{
+		// not supported (strife)
+		return;
+	}
+	else if (os.compareTokenNoCase("EndTitle"))
+	{
+		// not implemented
+		return;
+	}
+	else if (os.compareTokenNoCase("endgame"))
 	{
 		// endgame block
 		MustGetStringName(os, "{");
@@ -869,7 +916,7 @@ void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 			}
 		}
 	}
-	else
+	else // Must be map lump
 	{
 		char map_name[9];
 		strncpy(map_name, os.getToken().c_str(), 8);
@@ -878,11 +925,6 @@ void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 		{
 			const int map = std::atoi(map_name);
 			sprintf(map_name, "MAP%02d", map);
-		}
-		else if (os.compareTokenNoCase("EndBunny"))
-		{
-			*static_cast<OLumpName*>(data) = "EndGame3";
-			return;
 		}
 
 		*static_cast<OLumpName*>(data) = map_name;
@@ -1990,9 +2032,9 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			bool levelExists = levels.findByName(map_name).exists();
 
 			// Find the level.
-			level_pwad_info_t& info = levelExists ? 
-																			levels.findByName(map_name):
-																			levels.create();
+			level_pwad_info_t& info = levelExists
+				? levels.findByName(map_name)
+				: levels.create();
 
 			if (!levelExists)
 				info = defaultinfo;
