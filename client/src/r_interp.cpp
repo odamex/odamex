@@ -67,6 +67,12 @@ static fixed_t prev_amy;
 static fixed_t saved_amangle;
 static fixed_t prev_amangle;
 
+// Weapon bob x/y
+fixed_t saved_bobx;
+fixed_t prev_bobx;
+fixed_t saved_boby;
+fixed_t prev_boby;
+
 extern NetDemo netdemo;
 
 //
@@ -148,6 +154,18 @@ void R_InterpolationTicker()
 		prev_amx = player.camera->x;
 		prev_amy = player.camera->y;
 		prev_amangle = player.camera->angle;
+
+		// Update bob - this happens once per gametic
+		const float bob_amount = ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
+
+		fixed_t newbobx = P_CalculateWeaponBobX(&player, bob_amount);
+		fixed_t newboby = P_CalculateWeaponBobY(&player, bob_amount);
+
+		prev_bobx = saved_bobx;
+		prev_boby = saved_boby;
+
+		saved_bobx = newbobx;
+		saved_boby = newboby;
 	}
 }
 
