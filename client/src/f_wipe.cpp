@@ -175,15 +175,18 @@ static void Wipe_DrawMelt()
 static const int FIREWIDTH = 64, FIREHEIGHT = 64;
 
 static byte *burnarray = NULL;
+static byte *oldburnarray = NULL;
 static int density;
 static int burntime;
 static int voop;
+const size_t array_size = FIREWIDTH * (FIREHEIGHT + 5);
 
 static void Wipe_StartBurn()
 {
-	const size_t array_size = FIREWIDTH * (FIREHEIGHT + 5);
 	burnarray = new byte[array_size];
 	memset(burnarray, 0, array_size);
+	oldburnarray = new byte[array_size];
+	memset(oldburnarray, 0, array_size);
 	density = 4;
 	burntime = 0;
 	voop = 0;
@@ -197,6 +200,12 @@ static void Wipe_StopBurn()
 		delete [] burnarray;
 		burnarray = NULL;
 	}
+
+	if (oldburnarray)
+	{
+		delete[] oldburnarray;
+		oldburnarray = NULL;
+	}
 }
 
 static bool Wipe_TickBurn()
@@ -204,6 +213,8 @@ static bool Wipe_TickBurn()
 	// This is a modified version of the fire from the player
 	// setup menu.
 	burntime++;
+
+	std::copy(burnarray, burnarray + array_size, oldburnarray);
 
 	// Make the fire burn (twice per tic)
 	for (int count = 0; count < 2; count++)
@@ -324,13 +335,16 @@ static inline void Wipe_DrawBurnGeneric()
 		for (x = 0, firex = 0; x < surface_width; x++, firex += xstep)
 		{
 			int fglevel = burnarray[(firex>>FRACBITS)+(firey>>FRACBITS)*FIREWIDTH] / 2;
+			int oldfglevel = oldburnarray[(firex>>FRACBITS)+(firey>>FRACBITS)*FIREWIDTH] / 2;
 
-			if (fglevel > 0 && fglevel < 63)
+			fixed_t fgdelta = oldfglevel + FixedMul(render_lerp_amount, fglevel - oldfglevel);
+
+			if (fgdelta > 0 && fgdelta < 63)
 			{
-				int bglevel = 64 - fglevel;
-				Wipe_Blend(&to[x], &from[x], fglevel, bglevel);
+				int bglevel = 64 - fgdelta;
+				Wipe_Blend(&to[x], &from[x], fgdelta, bglevel);
 			}
-			else if (fglevel == 0)
+			else if (fgdelta == 0)
 			{
 				to[x] = from[x];
 			}
@@ -381,12 +395,19 @@ static inline void Wipe_DrawFadeGeneric()
 	PIXEL_T* to = (PIXEL_T*)surface->getBuffer();
 	const PIXEL_T* from = (PIXEL_T*)wipe_screen;
 
-	const fixed_t bglevel = MAX(64 - fade, 0);
+	fixed_t newfade = fade - 2;
+
+	if (newfade < 2)
+		newfade = 2;
+
+	fixed_t fadedelta = newfade + FixedMul(render_lerp_amount, fade - newfade);
+
+	const fixed_t bglevel = MAX(64 - fadedelta, 0);
 
 	for (int y = 0; y < surface_height; y++)
 	{
 		for (int x = 0; x < surface_width; x++)
-			Wipe_Blend(&to[x], &from[x], fade, bglevel);
+			Wipe_Blend(&to[x], &from[x], fadedelta, bglevel);
 
 		from += surface_width;
 		to += surface_pitch_pixels;
