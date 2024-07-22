@@ -70,11 +70,16 @@ static IWindowSurface* background_surface;
 
 extern int		gametic;
 
+extern fixed_t saved_conbottomstep;
+extern fixed_t prev_conbottomstep;
+
 static unsigned int		ConRows, ConCols, PhysRows;
 
 static bool				cursoron = false;
 static int				ConBottom = 0;
 static int		RowAdjust = 0;
+
+int			ConBottomStep; // Console fall/raise bottom pixels at the end of the tic, for interp purposes
 
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
@@ -108,6 +113,8 @@ static const char *TickerLabel;
 
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
+
+void R_ConFallRaiseInterpolationTicker();
 
 static struct NotifyText
 {
@@ -1430,10 +1437,22 @@ void C_Ticker()
 {
 	int surface_height = I_GetSurfaceHeight();
 
-	static int lasttic = 0;
-
-	if (lasttic == 0)
-		lasttic = gametic - 1;
+	if (ConsoleState == c_falling)
+	{
+		ConBottomStep += (surface_height * 2 / 25);
+	}
+	else if (ConsoleState == c_fallfull)
+	{
+		ConBottomStep += (surface_height * 2 / 15);
+	}
+	else if (ConsoleState == c_rising)
+	{
+		ConBottomStep -= (surface_height * 2 / 25);
+	}
+	else if (ConsoleState == c_risefull)
+	{
+		ConBottomStep -= (surface_height * 2 / 15);
+	}
 
 	if (ConsoleState != c_up)
 	{
@@ -1473,7 +1492,7 @@ void C_Ticker()
 		CursorTicker = C_BLINKRATE;
 	}
 
-	lasttic = gametic;
+	R_ConFallRaiseInterpolationTicker();
 }
 
 
@@ -1662,47 +1681,48 @@ void C_DisplayTicker()
 	// Attaching ConBottom to gametic will still cause falling/rising to
 	// be pinned to the gametic i.e. 35fps.
 
-	// If we subtract 1000 from the last, it should give us a larp-able result
-	int lasttic = gametic - 1000;
-
-	fixed_t ticfrac = (lasttic + FixedMul(gametic - lasttic, render_lerp_amount));
-
-	float fticfrac = (abs(ticfrac) / 1000.0) + 1.0;
+	// Interp where the console bottom should be based on current and previous 
+	fixed_t bottom = prev_conbottomstep +
+	    FixedMul(render_lerp_amount, saved_conbottomstep - prev_conbottomstep);
 
 	if (ConsoleState == c_falling)
 	{
-		ConBottom += (surface_height * 2 / (25 * fticfrac));
+		ConBottom = bottom;
 		if (ConBottom >= surface_height / 2)
 		{
 			ConBottom = surface_height / 2;
+			ConBottomStep = surface_height / 2;
 			ConsoleState = c_down;
 		}
 	}
 	else if (ConsoleState == c_fallfull)
 	{
-		ConBottom += (surface_height * 2 / (15 * fticfrac));
+		ConBottom = bottom;
 		if (ConBottom >= surface_height)
 		{
 			ConBottom = surface_height;
+			ConBottomStep = surface_height;
 			ConsoleState = c_down;
 		}
 	}
 	else if (ConsoleState == c_rising)
 	{
-		ConBottom -= (surface_height * 2 / (25 * fticfrac));
+		ConBottom = bottom;
 		if (ConBottom <= 0)
 		{
 			ConsoleState = c_up;
 			ConBottom = 0;
+			ConBottomStep = 0;
 		}
 	}
 	else if (ConsoleState == c_risefull)
 	{
-		ConBottom -= (surface_height * 2 / (15 * fticfrac));
+		ConBottom = bottom;
 		if (ConBottom <= 0)
 		{
 			ConsoleState = c_up;
 			ConBottom = 0;
+			ConBottomStep = 0;
 		}
 	}
 

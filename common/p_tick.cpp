@@ -49,17 +49,30 @@ void P_AnimationTick(AActor *mo);
 //
 void P_Ticker (void)
 {
-	if(paused)
-		return;
-
 #ifdef CLIENT_APP
 	// Game pauses when in the menu and not online/demo
-	if (!multiplayer
-		&& !demoplayback 
-		&& (menuactive || ConsoleState == c_down || ConsoleState == c_falling)
-		&& players.begin()->viewz != 1)
-		return;
+		if (paused || (!multiplayer && !demoplayback &&
+			(menuactive || ConsoleState == c_down || ConsoleState == c_falling)) &&
+			(players.begin()->viewz != 1))
+		{
+			player_t* player = &displayplayer();
+
+			if (player)
+			{
+				AActor* camera = player->camera;
+				if (camera)
+				{
+					camera->prevx = camera->x;
+					camera->prevy = camera->y;
+					player->prevviewz = player->viewz;
+				}
+			}
+			return;
+		}
 #endif
+
+	if(paused)
+		return;
 
 	if (serverside)
 		P_RunHordeTics();

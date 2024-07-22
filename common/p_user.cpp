@@ -436,6 +436,8 @@ void P_CalcHeight (player_t *player)
 		if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
 			player->viewz = player->mo->ceilingz-4*FRACUNIT;
 
+		if (player->prevviewz == 1) // don't interp first frame
+			player->prevviewz = player->viewz;
 		return;
 	}
 
@@ -480,6 +482,9 @@ void P_CalcHeight (player_t *player)
 		player->viewz = player->mo->ceilingz-4*FRACUNIT;
 	if (player->viewz < player->mo->floorz + 4*FRACUNIT)
 		player->viewz = player->mo->floorz + 4*FRACUNIT;
+
+	if (player->prevviewz == 1) // don't interp first frame
+		player->prevviewz = player->viewz;
 }
 
 //

@@ -73,7 +73,12 @@ fixed_t prev_bobx;
 fixed_t saved_boby;
 fixed_t prev_boby;
 
+// Console 
+fixed_t saved_conbottomstep;
+fixed_t prev_conbottomstep;
+
 extern NetDemo netdemo;
+extern int ConBottomStep;
 
 //
 // R_InterpolationTicker
@@ -171,20 +176,6 @@ void R_InterpolationTicker()
 		saved_boby = newboby;
 	}
 }
-
-//
-// R_AutomapInterpolationTicker()
-// Always runs the first frame while automap is active
-void R_AutomapInterpolationTicker()
-{
-	// Update automap coords
-	player_t& player = displayplayer();
-
-	prev_amx = player.camera->x;
-	prev_amy = player.camera->y;
-	prev_amangle = player.camera->angle;
-}
-
 
 //
 // R_ResetInterpolation
@@ -362,39 +353,6 @@ void R_BeginInterpolation(fixed_t amount)
 }
 
 //
-// R_BeginInterpolateAutomap
-// Starts the interpolation tic for automap if automap is active.
-//
-void R_BeginInterpolateAutomap(fixed_t amount)
-{
-	saved_amx = 0;
-	saved_amy = 0;
-	saved_amangle = 0;
-
-	player_t& player = displayplayer();
-
-	fixed_t old_amx = player.camera->prevx;
-	fixed_t old_amy = player.camera->prevy;
-	fixed_t old_amangle = player.camera->prevangle;
-
-	fixed_t cur_amx = player.camera->x;
-	fixed_t cur_amy = player.camera->y;
-	fixed_t cur_amangle = player.camera->angle;
-
-	fixed_t new_amx = old_amx + FixedMul(cur_amx - old_amx, amount);
-	fixed_t new_amy = old_amy + FixedMul(cur_amy - old_amy, amount);
-	fixed_t new_amangle = old_amangle + FixedMul(cur_amangle - old_amangle, amount);
-
-	saved_amx = cur_amx;
-	saved_amy = cur_amy;
-	saved_amangle = cur_amangle;
-
-	amx = new_amx;
-	amy = new_amy;
-	amangle = new_amangle;
-}
-
-//
 // Functions to assist in the restoration of state after the gametic has ended.
 
 void R_RestoreCeilings(void)
@@ -478,21 +436,6 @@ void R_EndInterpolation()
 }
 
 //
-// R_EndAutomapInterpolation
-//
-// Restores the saved location automap location at the end of the frame.
-//
-void R_EndAutomapInterpolation(void)
-{
-	if (gamestate == GS_LEVEL)
-	{
-		amx = saved_amx;
-		amy = saved_amy;
-		amangle = saved_amangle;
-	}
-}
-
-//
 // R_InterpolateCamera
 //
 // Interpolate between the current position and the previous position
@@ -562,6 +505,77 @@ void R_InterpolateView(player_t* player, fixed_t amount)
 		viewz = camera->player ? camera->player->viewz : camera->z;
 		viewangle = camera->angle;
 	}
+}
+
+//
+// The stuff below runs even if the R_RenderPlayerView won't run.
+//
+
+//
+// Automap Interpolation
+//
+
+//
+// R_BeginInterpolateAutomap
+// Starts the interpolation tic for automap if automap is active.
+//
+void R_BeginInterpolateAutomap(fixed_t amount)
+{
+	saved_amx = 0;
+	saved_amy = 0;
+	saved_amangle = 0;
+
+	player_t& player = displayplayer();
+
+	fixed_t old_amx = player.camera->prevx;
+	fixed_t old_amy = player.camera->prevy;
+	fixed_t old_amangle = player.camera->prevangle;
+
+	fixed_t cur_amx = player.camera->x;
+	fixed_t cur_amy = player.camera->y;
+	fixed_t cur_amangle = player.camera->angle;
+
+	fixed_t new_amx = old_amx + FixedMul(cur_amx - old_amx, amount);
+	fixed_t new_amy = old_amy + FixedMul(cur_amy - old_amy, amount);
+	fixed_t new_amangle = old_amangle + FixedMul(cur_amangle - old_amangle, amount);
+
+	saved_amx = cur_amx;
+	saved_amy = cur_amy;
+	saved_amangle = cur_amangle;
+
+	amx = new_amx;
+	amy = new_amy;
+	amangle = new_amangle;
+}
+
+//
+// R_EndAutomapInterpolation
+//
+// Restores the saved location automap location at the end of the frame.
+//
+void R_EndAutomapInterpolation(void)
+{
+	if (gamestate == GS_LEVEL)
+	{
+		amx = saved_amx;
+		amy = saved_amy;
+		amangle = saved_amangle;
+	}
+}
+
+//
+// Console Interpolation
+//
+
+//
+// R_ConFallRaiseInterpolationTicker()
+// Always runs the first gametic while console is active
+void R_ConFallRaiseInterpolationTicker()
+{
+	// Update saved bottom step (interpolated console)
+	prev_conbottomstep = saved_conbottomstep;
+
+	saved_conbottomstep = ConBottomStep;
 }
 
 VERSION_CONTROL (r_interp_cpp, "$Id$")
