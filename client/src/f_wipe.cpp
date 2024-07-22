@@ -28,6 +28,7 @@
 #include "v_video.h"
 #include "m_random.h"
 #include "st_stuff.h"
+#include "r_main.h"
 
 //
 //		SCREEN WIPE PACKAGE
@@ -69,6 +70,8 @@ static inline void Wipe_Blend(argb_t* to, const argb_t* from, int fglevel, int b
 // heavily from Eternity Engine, written by James Haley and SoM.
 //
 
+static int oldworms[320];
+
 static int worms[320];
 
 static void Wipe_StartMelt()
@@ -89,6 +92,10 @@ static void Wipe_StartMelt()
 
 static void Wipe_StopMelt()
 {
+	for (int x = 0; x < 320; x++)
+	{
+		oldworms[x] = 0;
+	}
 }
 
 static bool Wipe_TickMelt()
@@ -97,6 +104,8 @@ static bool Wipe_TickMelt()
 
 	for (int x = 0; x < 320; x++)
 	{
+		oldworms[x] = worms[x];
+
 		if (worms[x] < 0)
 		{
 			++worms[x];
@@ -144,13 +153,15 @@ static void Wipe_DrawMelt()
 	{
 		int wormx = x * 320 / surface_width;
 		int wormy = worms[wormx] > 0 ? worms[wormx] : 0;
+		int oldwormy = oldworms[wormx] > 0 ? oldworms[wormx] : 0;
+		fixed_t worm_delta = oldwormy + FixedMul(render_lerp_amount, wormy - oldwormy);
 
-		wormy = wormy * surface_height / 200;
+		worm_delta = worm_delta * surface_height / 200;
 
 		if (surface->getBitsPerPixel() == 8)
-			Wipe_DrawMeltLoop<palindex_t>(x, wormy);
+			Wipe_DrawMeltLoop<palindex_t>(x, worm_delta);
 		else
-			Wipe_DrawMeltLoop<argb_t>(x, wormy);
+			Wipe_DrawMeltLoop<argb_t>(x, worm_delta);
 	}
 }
 
@@ -498,6 +509,9 @@ bool Wipe_Ticker()
 // Renders the wipe animation independent of the ticker. This allows the video
 // framerate to be uncapped while the animation speed moves at the consistent
 // 35Hz ticrate.
+// 
+// It also allows us to interpolate the wipe with the framerate. Which we're doing.
+// Because we can.
 //
 void Wipe_Drawer()
 {

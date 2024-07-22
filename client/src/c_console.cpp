@@ -1453,6 +1453,11 @@ void C_Ticker()
 	{
 		ConBottomStep -= (surface_height * 2 / 15);
 	}
+	else if (ConsoleState == c_up)
+	{
+		// Console suddenly snapped up? Don't interp it anymore.
+		ConBottomStep = 0;
+	}
 
 	if (ConsoleState != c_up)
 	{
