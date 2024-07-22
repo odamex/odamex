@@ -1569,10 +1569,10 @@ void C_AdjustBottom()
 {
 	int surface_height = I_GetSurfaceHeight();
 
-	if (C_UseFullConsole())
-		ConBottom = surface_height; 
-	else if (ConsoleState == c_up)
+	if (ConsoleState == c_up)
 		ConBottom = 0;
+	else if (C_UseFullConsole())
+		ConBottom = surface_height; 
 	else if (ConsoleState == c_down || ConBottom > surface_height / 2)
 		ConBottom = surface_height / 2;
 
