@@ -222,7 +222,13 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		return sec;
 
 	const sector_t* s = sec->heightsec;
-	sector_t *heightsec = camera->subsector->sector->heightsec;
+
+	sector_t* viewsec = R_PointInSubsector(viewx, viewy)->sector;
+
+	if (!viewsec)
+		viewsec = camera->subsector->sector;
+
+	sector_t* heightsec = viewsec->heightsec;
 
 	bool underwater = r_fakingunderwater ||
 		(heightsec && viewz <= P_FloorHeight(viewx, viewy, heightsec));

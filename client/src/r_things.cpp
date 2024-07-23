@@ -813,7 +813,12 @@ void R_DrawPlayerSprites()
 		(consoleplayer().cheats & CF_CHASECAM))
 		return;
 
-	sector_t* sec = R_FakeFlat(camera->subsector->sector, &tempsec, &floorlight,
+	sector_t* viewsec = R_PointInSubsector(viewx, viewy)->sector;
+
+	if (!viewsec)
+		viewsec = camera->subsector->sector;
+
+	sector_t* sec = R_FakeFlat(viewsec, &tempsec, &floorlight,
 	                           &ceilinglight, false);
 
 	// [RH] set foggy flag
