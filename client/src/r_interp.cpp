@@ -473,6 +473,7 @@ void R_InterpolateCamera(fixed_t amount, bool use_localview, bool chasecam)
 
 		viewx = camera->prevx + FixedMul(amount, x - camera->prevx);
 		viewy = camera->prevy + FixedMul(amount, y - camera->prevy);
+		viewsector = R_PointInSubsector(viewx, viewy)->sector;
 
 		if (camera->player)
 			viewz = camera->player->prevviewz + FixedMul(amount, camera->player->viewz - camera->player->prevviewz);
@@ -504,6 +505,7 @@ void R_InterpolateView(player_t* player, fixed_t amount)
 		viewy = camera->y;
 		viewz = camera->player ? camera->player->viewz : camera->z;
 		viewangle = camera->angle;
+		viewsector = camera->subsector->sector;
 	}
 }
 

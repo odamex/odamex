@@ -99,6 +99,7 @@ fixed_t 		viewy;
 fixed_t 		viewz;
 
 angle_t 		viewangle;
+sector_t*		viewsector;
 LocalView		localview;
 
 fixed_t 		viewcos;
@@ -792,14 +793,9 @@ void R_SetupFrame (player_t *player)
 
 	// [SL] Change to a different sector blend color (or colormap in 8bpp mode)
 	// if entering a heightsec (via TransferHeight line special)
-	sector_t* viewsec = R_PointInSubsector(viewx, viewy)->sector;
-
-	if (!viewsec)
-		viewsec = camera->subsector->sector;
-
-	if (viewsec->heightsec && !(viewsec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
+	if (viewsector->heightsec && !(viewsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
-		const sector_t* sec = viewsec->heightsec;
+		const sector_t* sec = viewsector->heightsec;
 
 		argb_t new_sector_blend_color;
 		if (viewz < P_FloorHeight(viewx, viewy, sec))
