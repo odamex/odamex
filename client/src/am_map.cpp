@@ -55,8 +55,6 @@
 #include "p_mapformat.h"
 
 argb_t CL_GetPlayerColor(player_t*);
-void R_BeginInterpolateAutomap(fixed_t amount);
-void R_EndAutomapInterpolation();
 
 EXTERN_CVAR(am_followplayer)
 
@@ -239,11 +237,6 @@ static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0;                  // next point to be assigned
 
 static bool stopped = true;
-
-// Automap x/y/angle
-fixed_t amx;
-fixed_t amy;
-fixed_t amangle;
 
 extern NetDemo netdemo;
 
@@ -1484,11 +1477,20 @@ void AM_rotate(mpoint_t& pt, angle_t a)
 
 void AM_rotatePoint(mpoint_t& pt)
 {
-	pt.x -= amx;
-	pt.y -= amy;
-	AM_rotate(pt, ANG90 - amangle);
-	pt.x += amx;
-	pt.y += amy;
+	player_t* player = &displayplayer();
+
+	fixed_t x = player->camera->prevx +
+	            FixedMul(player->camera->x - player->camera->prevx, render_lerp_amount);
+	fixed_t y = player->camera->prevy +
+	            FixedMul(player->camera->y - player->camera->prevy, render_lerp_amount);
+	fixed_t pangle = player->camera->prevangle +
+	            FixedMul(player->camera->angle - player->camera->prevangle, render_lerp_amount);
+
+	pt.x -= x;
+	pt.y -= y;
+	AM_rotate(pt, ANG90 - pangle);
+	pt.x += x;
+	pt.y += y;
 }
 
 void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed_t scale,
@@ -1528,19 +1530,29 @@ void AM_drawPlayers()
 	angle_t angle;
 	player_t& conplayer = displayplayer();
 
+	fixed_t x =
+	    conplayer.camera->prevx +
+	    FixedMul(conplayer.camera->x - conplayer.camera->prevx, render_lerp_amount);
+	fixed_t y =
+	    conplayer.camera->prevy +
+	    FixedMul(conplayer.camera->y - conplayer.camera->prevy, render_lerp_amount);
+	fixed_t cangle =
+	    conplayer.camera->prevangle +
+	    FixedMul(conplayer.camera->angle - conplayer.camera->prevangle, render_lerp_amount);
+
 	if (!multiplayer)
 	{
 		if (am_rotate)
 			angle = ANG90;
 		else
-			angle = amangle;
+			angle = cangle;
 
 		if (am_cheating && !gameinfo.mapArrowCheat.empty())
 			AM_drawLineCharacter(gameinfo.mapArrowCheat, INT2FIXED(16), angle,
-				gameinfo.currentAutomapColors.YourColor, amx, amy);
+				gameinfo.currentAutomapColors.YourColor, x, y);
 		else
 			AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED(16), angle,
-				gameinfo.currentAutomapColors.YourColor, amx, amy);
+				gameinfo.currentAutomapColors.YourColor, x, y);
 		return;
 	}
 
@@ -1610,7 +1622,7 @@ void AM_drawPlayers()
 		if (am_rotate)
 		{
 			AM_rotatePoint(pt);
-			angle -= amangle - ANG90;
+			angle -= cangle - ANG90;
 		}
 
 		AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED(16), angle, color, pt.x, pt.y);
@@ -1838,8 +1850,6 @@ void AM_Drawer()
 	if (m_paninc.x || m_paninc.y)
 		AM_changeWindowLoc();
 
-	R_BeginInterpolateAutomap(render_lerp_amount);
-
 	AM_activateNewScale();
 
 	if (grid)
@@ -1856,8 +1866,6 @@ void AM_Drawer()
 		AM_drawCrosshair(gameinfo.currentAutomapColors.XHairColor);
 
 	AM_drawMarks();
-
-	R_EndAutomapInterpolation();
 
 	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
 	{

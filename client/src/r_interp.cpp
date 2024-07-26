@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2024 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,8 +17,14 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Interpolation of moving ceiling/floor planes, scrolling texture, etc
-//	for uncapped framerates.
+//   Interpolation system turned into a singleton to keep track of interpolation state.
+//   This system works with the frame scheduler to come up with interpolation values
+//   for many Doom things, to make the higher framerate make things look smoother.
+//   Originally developed by Sean Leonard to handle player camera and sector
+//   heights, this has been expanded to sector and floor scrolling, automap,
+//   viewsector (as the camera lags behind the view for a few rendering frames)
+//   and weapon bob and chasecam. Console rise/fall and wipes are also
+//   interpolated but it can't be disabled here, only gamesim things can.
 //
 //-----------------------------------------------------------------------------
 
@@ -30,64 +36,78 @@
 #include "r_state.h"
 #include "r_sky.h"
 #include "p_local.h"
+#include "r_interp.h"
 
 EXTERN_CVAR(sv_allowmovebob)
 EXTERN_CVAR(cl_movebob)
 
-typedef std::pair<fixed_t, unsigned int> fixed_uint_pair;
-typedef std::pair <std::pair<fixed_t, fixed_t>, unsigned int> fixed_fixed_uint_pair;
-
-// Sector heights
-static std::vector<fixed_uint_pair> prev_ceilingheight;
-static std::vector<fixed_uint_pair> saved_ceilingheight;
-static std::vector<fixed_uint_pair> prev_floorheight;
-static std::vector<fixed_uint_pair> saved_floorheight;
-
-// Line scrolling
-static std::vector<fixed_fixed_uint_pair> prev_linescrollingtex; // <x offs, yoffs>, linenum
-static std::vector<fixed_fixed_uint_pair> saved_linescrollingtex;
-
-// Floor/Ceiling scrolling
-static std::vector<fixed_fixed_uint_pair> prev_sectorceilingscrollingflat; // <x offs, yoffs>, sectornum
-static std::vector<fixed_fixed_uint_pair> saved_sectorceilingscrollingflat;
-static std::vector<fixed_fixed_uint_pair> prev_sectorfloorscrollingflat; // <x offs, yoffs>, sectornum
-static std::vector<fixed_fixed_uint_pair> saved_sectorfloorscrollingflat;
-
-// Skies
-fixed_t saved_sky1offset;
-fixed_t prev_sky1offset;
-fixed_t saved_sky2offset;
-fixed_t prev_sky2offset;
-
-// Automap x/y/angle
-static fixed_t saved_amx;
-static fixed_t prev_amx;
-static fixed_t saved_amy;
-static fixed_t prev_amy;
-static fixed_t saved_amangle;
-static fixed_t prev_amangle;
-
-// Weapon bob x/y
-fixed_t saved_bobx;
-fixed_t prev_bobx;
-fixed_t saved_boby;
-fixed_t prev_boby;
-
-// Console 
-fixed_t saved_conbottomstep;
-fixed_t prev_conbottomstep;
-
 extern NetDemo netdemo;
 extern int ConBottomStep;
 
+extern fixed_t bobx;
+extern fixed_t boby;
+
 //
-// R_InterpolationTicker
+// OInterpolation::getInstance
+//
+// Singleton pattern
+// Returns a pointer to the only allowable OInterpolation object
+//
+
+OInterpolation& OInterpolation::getInstance()
+{
+	static OInterpolation instance;
+	return instance;
+}
+
+OInterpolation::~OInterpolation()
+{
+	OInterpolation::resetGameInterpolation();
+}
+
+//
+// OInterpolation::resetGameInterpolation()
+//
+// Clears any saved interpolation related data. This should be called whenever
+// a map is loaded.
+//
+void OInterpolation::resetGameInterpolation()
+{
+	prev_ceilingheight.clear();
+	prev_floorheight.clear();
+	prev_linescrollingtex.clear();
+	prev_sectorceilingscrollingflat.clear();
+	prev_sectorfloorscrollingflat.clear();
+	saved_ceilingheight.clear();
+	saved_floorheight.clear();
+	saved_linescrollingtex.clear();
+	saved_sectorceilingscrollingflat.clear();
+	saved_sectorfloorscrollingflat.clear();
+	prev_sky1offset = 0;
+	prev_sky2offset = 0;
+	saved_sky1offset = 0;
+	saved_sky2offset = 0;
+	prev_bobx = 0;
+	prev_boby = 0;
+	saved_bobx = 0;
+	saved_boby = 0;
+	// don't reset console params here
+	::localview.angle = 0;
+	::localview.setangle = false;
+	::localview.skipangle = false;
+	::localview.pitch = 0;
+	::localview.setpitch = false;
+	::localview.skippitch = false;
+}
+
+//
+// OInterpolation::ticGameInterpolation()
 //
 // Records the current height of all moving planes and position of scrolling
 // textures, which will be used as the previous position during iterpolation.
 // This should be called once per gametic.
 //
-void R_InterpolationTicker()
+void OInterpolation::ticGameInterpolation()
 {
 	prev_ceilingheight.clear();
 	prev_floorheight.clear();
@@ -96,9 +116,8 @@ void R_InterpolationTicker()
 	prev_sectorfloorscrollingflat.clear();
 	prev_sky1offset = 0;
 	prev_sky2offset = 0;
-	prev_amx = 0;
-	prev_amy = 0;
-	prev_amangle = 0;
+	prev_bobx = 0;
+	prev_boby = 0;
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -150,72 +169,18 @@ void R_InterpolationTicker()
 		}
 
 		// Update sky offsets
-		prev_sky1offset = saved_sky1offset;
-		prev_sky2offset = saved_sky2offset;
-
-		saved_sky1offset = sky1columnoffset;
-		saved_sky2offset = sky2columnoffset;
-
-		// Update automap coords
-		player_t& player = displayplayer();
-
-		prev_amx = player.camera->x;
-		prev_amy = player.camera->y;
-		prev_amangle = player.camera->angle;
+		prev_sky1offset = sky1columnoffset;
+		prev_sky2offset = sky2columnoffset;
 
 		// Update bob - this happens once per gametic
-		const float bob_amount = ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
-
-		fixed_t newbobx = P_CalculateWeaponBobX(&player, bob_amount);
-		fixed_t newboby = P_CalculateWeaponBobY(&player, bob_amount);
-
-		prev_bobx = saved_bobx;
-		prev_boby = saved_boby;
-
-		saved_bobx = newbobx;
-		saved_boby = newboby;
+		prev_bobx = bobx;
+		prev_boby = boby;
 	}
 }
 
 //
-// R_ResetInterpolation
-//
-// Clears any saved interpolation related data. This should be called whenever
-// a map is loaded.
-//
-void R_ResetInterpolation()
-{
-	prev_ceilingheight.clear();
-	prev_floorheight.clear();
-	prev_linescrollingtex.clear();
-	prev_sectorceilingscrollingflat.clear();
-	prev_sectorfloorscrollingflat.clear();
-	saved_ceilingheight.clear();
-	saved_floorheight.clear();
-	saved_linescrollingtex.clear();
-	saved_sectorceilingscrollingflat.clear();
-	saved_sectorfloorscrollingflat.clear();
-	prev_sky1offset = 0;
-	prev_sky2offset = 0;
-	saved_sky1offset = 0;
-	saved_sky2offset = 0;
-	prev_amx = 0;
-	prev_amy = 0;
-	prev_amangle = 0;
-	saved_amx = 0;
-	saved_amy = 0;
-	saved_amangle = 0;
-	::localview.angle = 0;
-	::localview.setangle = false;
-	::localview.skipangle = false;
-	::localview.pitch = 0;
-	::localview.setpitch = false;
-	::localview.skippitch = false;
-}
-
-//
 // Functions that assist with the interpolation of certain game objects
-void R_InterpolateCeilings(fixed_t amount)
+void OInterpolation::interpolateCeilings(fixed_t amount)
 {
 	for (std::vector<fixed_uint_pair>::const_iterator ceiling_it = prev_ceilingheight.begin();
 		 ceiling_it != prev_ceilingheight.end(); ++ceiling_it)
@@ -257,7 +222,7 @@ void R_InterpolateCeilings(fixed_t amount)
 	}
 }
 
-void R_InterpolateFloors(fixed_t amount)
+void OInterpolation::interpolateFloors(fixed_t amount)
 {
 	for (std::vector<fixed_uint_pair>::const_iterator floor_it = prev_floorheight.begin();
 		 floor_it != prev_floorheight.end(); ++floor_it)
@@ -299,7 +264,7 @@ void R_InterpolateFloors(fixed_t amount)
 	}
 }
 
-void R_InterpolateWalls(fixed_t amount)
+void OInterpolation::interpolateWalls(fixed_t amount)
 {
 	for (std::vector<fixed_fixed_uint_pair>::const_iterator side_it = prev_linescrollingtex.begin();
 		 side_it != prev_linescrollingtex.end(); ++side_it)
@@ -326,6 +291,34 @@ void R_InterpolateWalls(fixed_t amount)
 	}
 }
 
+void OInterpolation::interpolateSkies(fixed_t amount)
+{
+	// Perform interp for any scrolling skies
+	fixed_t newsky1offset = prev_sky1offset +
+	                     FixedMul(render_lerp_amount, sky1columnoffset - prev_sky1offset);
+	fixed_t newsky2offset = prev_sky2offset +
+	                     FixedMul(render_lerp_amount, sky2columnoffset - prev_sky2offset);
+
+	saved_sky1offset = sky1columnoffset;
+	saved_sky2offset = sky2columnoffset;
+
+	sky1columnoffset = newsky1offset;
+	sky2columnoffset = newsky2offset;
+}
+
+void OInterpolation::interpolateBob(fixed_t amount)
+{
+	// Perform interp on weapons bob
+	fixed_t newbobx = prev_bobx + FixedMul(render_lerp_amount, bobx - prev_bobx);
+	fixed_t newboby = prev_boby + FixedMul(render_lerp_amount, boby - prev_boby);
+
+	saved_bobx = bobx;
+	saved_boby = boby;
+
+	bobx = newbobx;
+	boby = newboby;
+}
+
 //
 // R_BeginInterpolation
 //
@@ -334,28 +327,36 @@ void R_InterpolateWalls(fixed_t amount)
 // moving plane will be interpolated between the previous height and this
 // current height. This should be called every time a frame is rendered.
 //
-void R_BeginInterpolation(fixed_t amount)
+void OInterpolation::beginGameInterpolation(fixed_t amount)
 {
 	saved_ceilingheight.clear();
 	saved_floorheight.clear();
 	saved_sectorceilingscrollingflat.clear();
 	saved_sectorfloorscrollingflat.clear();
 	saved_linescrollingtex.clear();
+	saved_sky1offset = 0;
+	saved_sky2offset = 0;
+	saved_bobx = 0;
+	saved_boby = 0;
 
 	if (gamestate == GS_LEVEL)
 	{
-		R_InterpolateCeilings(amount);
+		interpolateCeilings(amount);
 
-		R_InterpolateFloors(amount);
+		interpolateFloors(amount);
 
-		R_InterpolateWalls(amount);
+		interpolateWalls(amount);
+
+		interpolateSkies(amount);
+
+		interpolateBob(amount);
 	}
 }
 
 //
 // Functions to assist in the restoration of state after the gametic has ended.
 
-void R_RestoreCeilings(void)
+void OInterpolation::restoreCeilings(void)
 {
 	// Ceiling heights
 	for (std::vector<fixed_uint_pair>::const_iterator ceiling_it = saved_ceilingheight.begin();
@@ -378,7 +379,7 @@ void R_RestoreCeilings(void)
 	}
 }
 
-void R_RestoreFloors(void)
+void OInterpolation::restoreFloors(void)
 {
 		// Floor heights
 		for (std::vector<fixed_uint_pair>::const_iterator floor_it = saved_floorheight.begin();
@@ -401,7 +402,7 @@ void R_RestoreFloors(void)
 		}
 }
 
-void R_RestoreWalls(void)
+void OInterpolation::restoreWalls(void)
 {
 	// Scrolling textures
 	for (std::vector<fixed_fixed_uint_pair>::const_iterator side_it = saved_linescrollingtex.begin();
@@ -417,21 +418,39 @@ void R_RestoreWalls(void)
 	}
 }
 
+void OInterpolation::restoreSkies(void)
+{
+		// Restore scrolling skies
+	sky1columnoffset = saved_sky1offset;
+	sky2columnoffset = saved_sky2offset;
+}
+
+void OInterpolation::restoreBob(void)
+{
+	// Restore weapon bob
+	bobx = saved_bobx;
+	boby = saved_boby;
+}
+
 //
 // R_EndInterpolation
 //
 // Restores the saved height of all moving planes and position of scrolling
 // textures. This should be called at the end of every frame rendered.
 //
-void R_EndInterpolation()
+void OInterpolation::endGameInterpolation()
 {
 	if (gamestate == GS_LEVEL)
 	{
-		R_RestoreCeilings();
+		restoreCeilings();
 
-		R_RestoreFloors();
+		restoreFloors();
 
-		R_RestoreWalls();
+		restoreWalls();
+
+		restoreSkies();
+
+		restoreBob();
 	}
 }
 
@@ -443,7 +462,8 @@ void R_EndInterpolation()
 // render_lerp_amount will be FRACUNIT.
 //
 
-void R_InterpolateCamera(fixed_t amount, bool use_localview, bool chasecam)
+void OInterpolation::interpolateCamera(fixed_t amount, bool use_localview,
+                                         bool chasecam)
 {
 	if (gamestate == GS_LEVEL && camera)
 	{
@@ -482,7 +502,7 @@ void R_InterpolateCamera(fixed_t amount, bool use_localview, bool chasecam)
 	}
 }
 
-void R_InterpolateView(player_t* player, fixed_t amount)
+void OInterpolation::interpolateView(player_t* player, fixed_t amount)
 {
 	camera = player->camera; // [RH] Use camera instead of viewplayer
 
@@ -496,8 +516,7 @@ void R_InterpolateView(player_t* player, fixed_t amount)
 		    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
 		     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
 
-		R_InterpolateCamera(render_lerp_amount, use_localview,
-				player->cheats & CF_CHASECAM);
+		interpolateCamera(render_lerp_amount, use_localview, player->cheats & CF_CHASECAM);
 	}
 	else
 	{
@@ -510,74 +529,31 @@ void R_InterpolateView(player_t* player, fixed_t amount)
 }
 
 //
-// The stuff below runs even if the R_RenderPlayerView won't run.
+// The stuff below runs even if R_RenderPlayerView won't run.
 //
-
-//
-// Automap Interpolation
-//
-
-//
-// R_BeginInterpolateAutomap
-// Starts the interpolation tic for automap if automap is active.
-//
-void R_BeginInterpolateAutomap(fixed_t amount)
-{
-	saved_amx = 0;
-	saved_amy = 0;
-	saved_amangle = 0;
-
-	player_t& player = displayplayer();
-
-	fixed_t old_amx = player.camera->prevx;
-	fixed_t old_amy = player.camera->prevy;
-	fixed_t old_amangle = player.camera->prevangle;
-
-	fixed_t cur_amx = player.camera->x;
-	fixed_t cur_amy = player.camera->y;
-	fixed_t cur_amangle = player.camera->angle;
-
-	fixed_t new_amx = old_amx + FixedMul(cur_amx - old_amx, amount);
-	fixed_t new_amy = old_amy + FixedMul(cur_amy - old_amy, amount);
-	fixed_t new_amangle = old_amangle + FixedMul(cur_amangle - old_amangle, amount);
-
-	saved_amx = cur_amx;
-	saved_amy = cur_amy;
-	saved_amangle = cur_amangle;
-
-	amx = new_amx;
-	amy = new_amy;
-	amangle = new_amangle;
-}
-
-//
-// R_EndAutomapInterpolation
-//
-// Restores the saved location automap location at the end of the frame.
-//
-void R_EndAutomapInterpolation(void)
-{
-	if (gamestate == GS_LEVEL)
-	{
-		amx = saved_amx;
-		amy = saved_amy;
-		amangle = saved_amangle;
-	}
-}
 
 //
 // Console Interpolation
 //
 
 //
-// R_ConFallRaiseInterpolationTicker()
+// beginConsoleInterpolation()
 // Always runs the first gametic while console is active
-void R_ConFallRaiseInterpolationTicker()
+void OInterpolation::beginConsoleInterpolation(fixed_t amount)
 {
-	// Update saved bottom step (interpolated console)
+	// Perform interp on console rise/drop
 	prev_conbottomstep = saved_conbottomstep;
 
 	saved_conbottomstep = ConBottomStep;
+}
+
+//
+// getInterpolatedConsoleBottom()
+// Always runs the first gametic while console is active
+fixed_t OInterpolation::getInterpolatedConsoleBottom(fixed_t amount)
+{
+	// Perform interp on console rise/drop
+	return prev_conbottomstep + FixedMul(render_lerp_amount, saved_conbottomstep - prev_conbottomstep);
 }
 
 VERSION_CONTROL (r_interp_cpp, "$Id$")

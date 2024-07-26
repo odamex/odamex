@@ -32,6 +32,7 @@
 #include "p_local.h"
 #include "r_local.h"
 #include "r_sky.h"
+#include "r_interp.h"
 #include "st_stuff.h"
 #include "v_video.h"
 #include "stats.h"
@@ -42,10 +43,6 @@
 #include "cl_demo.h"
 
 extern NetDemo netdemo;
-
-void R_BeginInterpolation(fixed_t amount);
-void R_EndInterpolation();
-void R_InterpolateView(player_t* player, fixed_t amount);
 
 #define DISTMAP			2
 
@@ -991,7 +988,7 @@ void R_RenderPlayerView(player_t* player)
 		setsizeneeded = false;
 	}
 
-	R_InterpolateView(player, render_lerp_amount);
+	OInterpolation::getInstance().interpolateView(player, render_lerp_amount);
 
 	if (!viewactive)
 		return;
@@ -1019,7 +1016,7 @@ void R_RenderPlayerView(player_t* player)
 		surface->getDefaultCanvas()->Clear(x1, y1, x2, y2, color);
 	}
 
-	R_BeginInterpolation(render_lerp_amount);
+	OInterpolation::getInstance().beginGameInterpolation(render_lerp_amount);
 
 	// [RH] Setup particles for this frame
 	R_FindParticleSubsectors();
@@ -1048,7 +1045,7 @@ void R_RenderPlayerView(player_t* player)
 						viewwindowx, viewwindowy, viewwidth, viewheight);
 	}
 
-	R_EndInterpolation();
+		OInterpolation::getInstance().endGameInterpolation();
 }
 
 

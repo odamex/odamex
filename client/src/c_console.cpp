@@ -40,6 +40,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "r_main.h"
+#include "r_interp.h"
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "cl_responderkeys.h"
@@ -113,8 +114,6 @@ static const char *TickerLabel;
 
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
-
-void R_ConFallRaiseInterpolationTicker();
 
 static struct NotifyText
 {
@@ -1497,7 +1496,7 @@ void C_Ticker()
 		CursorTicker = C_BLINKRATE;
 	}
 
-	R_ConFallRaiseInterpolationTicker();
+	OInterpolation::getInstance().beginConsoleInterpolation(render_lerp_amount);
 }
 
 
@@ -1687,8 +1686,8 @@ void C_DisplayTicker()
 	// be pinned to the gametic i.e. 35fps.
 
 	// Interp where the console bottom should be based on current and previous 
-	fixed_t bottom = prev_conbottomstep +
-	    FixedMul(render_lerp_amount, saved_conbottomstep - prev_conbottomstep);
+	fixed_t bottom =
+		OInterpolation::getInstance().getInterpolatedConsoleBottom(render_lerp_amount);
 
 	if (ConsoleState == c_falling)
 	{

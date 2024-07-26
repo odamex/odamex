@@ -1089,6 +1089,28 @@ void P_PlayerThink (player_t *player)
 
 #define CASE_STR(str) case str : return #str
 
+fixed_t P_TickWeaponBobX()
+{
+	// Update bob - this happens once per gametic
+	player_t& player = displayplayer();
+	const float bob_amount =
+		((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob
+		: 1.0f;
+
+	return P_CalculateWeaponBobX(&player, bob_amount);
+}
+
+fixed_t P_TickWeaponBobY()
+{
+	// Update bob - this happens once per gametic
+	player_t& player = displayplayer();
+		const float bob_amount =
+		((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob
+		: 1.0f;
+
+	return P_CalculateWeaponBobY(&player, bob_amount);
+}
+
 const char* PlayerState(size_t state)
 {
 	statenum_t st = static_cast<statenum_t>(state);

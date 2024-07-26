@@ -61,6 +61,9 @@ fixed_t 		pspritexiscale;
 									// [ML] 5/11/06 - Removed sky2
 int*			spritelights;
 
+fixed_t bobx;
+fixed_t boby;
+
 #define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
 #define SPRITE_NEEDS_INFO	MAXINT
 
@@ -84,10 +87,6 @@ extern int				InactiveParticles;
 extern particle_t		*Particles;
 TArray<WORD>			ParticlesInSubsec;
 
-extern fixed_t prev_bobx;
-extern fixed_t prev_boby;
-extern fixed_t saved_bobx;
-extern fixed_t saved_boby;
 
 
 //
@@ -669,9 +668,6 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	BOOL 				flip;
 	vissprite_t*		vis;
 	vissprite_t 		avis;
-
-	fixed_t bobx = prev_bobx + FixedMul(render_lerp_amount, saved_bobx - prev_bobx);
-	fixed_t boby = prev_boby + FixedMul(render_lerp_amount, saved_boby - prev_boby);
 
 	// decide which patch to use
 #ifdef RANGECHECK

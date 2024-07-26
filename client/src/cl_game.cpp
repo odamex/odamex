@@ -91,6 +91,9 @@ bool	C_DoSpectatorKey(event_t *ev);
 
 void	CL_QuitCommand();
 
+fixed_t P_TickWeaponBobX();
+fixed_t P_TickWeaponBobY();
+
 EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (novert)
 EXTERN_CVAR (sv_monstersrespawn)
@@ -130,6 +133,9 @@ Players			players;
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
 int 			gametic;
+
+extern fixed_t bobx;
+extern fixed_t boby;
 
 enum demoversion_t
 {
@@ -829,6 +835,12 @@ BEGIN_COMMAND(netstat)
 }
 END_COMMAND(netstat)
 
+void P_BobTicker()
+{
+	bobx = P_TickWeaponBobX();
+	boby = P_TickWeaponBobY();
+}
+
 void P_MovePlayer (player_t *player);
 void P_CalcHeight (player_t *player);
 void P_DeathThink (player_t *player);
@@ -1116,6 +1128,7 @@ void G_Ticker (void)
 			ClientReplay::getInstance().itemReplay();
 		}
 		P_Ticker ();
+		P_BobTicker();
 		ST_Ticker ();
 		AM_Ticker ();
 		break;
