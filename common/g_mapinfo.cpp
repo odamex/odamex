@@ -151,6 +151,15 @@ void MustGet<OLumpName>(OScanner& os)
 	os.mustScan(8);
 }
 
+void MustGetStringName(OScanner& os, const char* name)
+{
+	os.mustScan();
+	if (os.compareTokenNoCase(name) == false)
+	{
+		os.error("Expected '%s', got '%s'.", name, os.getToken().c_str());
+	}
+}
+
 //////////////////////////////////////////////////////////////////////
 /// Misc
 
@@ -162,93 +171,6 @@ bool ContainsMapInfoTopLevel(const OScanner& os)
 	       os.compareTokenNoCase("skill") || os.compareTokenNoCase("clearskills") ||
 	       os.compareTokenNoCase("gameinfo") || os.compareTokenNoCase("intermission") ||
 	       os.compareTokenNoCase("automap");
-}
-
-template <typename T>
-void ParseMapInfoHelper(OScanner& os, bool doEquals)
-{
-	if (doEquals)
-	{
-		os.mustScan();
-		os.assertTokenNoCaseIs("=");
-	}
-
-		// Find the level.
-		level_pwad_info_t& info = (levels.findByName(mapname).exists())
-		                              ? levels.findByName(mapname)
-		                              : levels.create();
-
-		// for maps above 32, if no sky is defined, it will show texture 0 (aastinky)
-		// so instead, lets just try to give it the first defined sky in the level set.
-		if (levels.size() > 0)
-		{
-			level_pwad_info_t& def = levels.at(0);
-			info.skypic = def.skypic;
-		}
-
-		info.mapname = mapname;
-
-		MapNameToLevelNum(info);
-
-		MustGetStringName(os, "{");
-		os.scan();
-		while (!os.compareToken("}"))
-		{
-			ParseStandardUmapInfoProperty(os, &info);
-		}
-
-		// Set default level progression here to simplify the checks elsewhere.
-		// Doing this lets us skip all normal code for this if nothing has been defined.
-		if (!info.nextmap[0] && !info.endpic[0])
-		{
-			if (info.mapname == "MAP30")
-			{
-				info.endpic = "$CAST";
-				info.nextmap = "EndGameC";
-			}
-			else if (info.mapname == "E1M8")
-			{
-				info.endpic = gamemode == retail ? "CREDIT" : "HELP2";
-				info.nextmap = "EndGameC";
-			}
-			else if (info.mapname == "E2M8")
-			{
-				info.endpic = "VICTORY";
-				info.nextmap = "EndGame2";
-			}
-			else if (info.mapname == "E3M8")
-			{
-				info.endpic = "$BUNNY";
-				info.nextmap = "EndGame3";
-			}
-			else if (info.mapname == "E4M8")
-			{
-				info.endpic = "ENDPIC";
-				info.nextmap = "EndGame4";
-			}
-			else if (gamemission == chex && info.mapname == "E1M5")
-			{
-				info.endpic = "CREDIT";
-				info.nextmap = "EndGame1";
-			}
-			else
-			{
-				char arr[9] = "";
-				int ep, map;
-				ValidateMapName(info.mapname.c_str(), &ep, &map);
-				map++;
-				if (gamemode == commercial)
-				{
-					sprintf(arr, "MAP%02d", map);
-				}
-				else
-				{
-					sprintf(arr, "E%dM%d", ep, map);
-				}
-				info.nextmap = arr;
-			}
-		}
-	}
 }
 
 // newStyleMapInfo signifies if the token came from a
