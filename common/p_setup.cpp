@@ -70,7 +70,7 @@ int P_TranslateSectorSpecial(int special);
 extern dyncolormap_t NormalLight;
 extern AActor* shootthing;
 
-EXTERN_CVAR(g_coopthingfilter)
+EXTERN_CVAR(g_thingfilter)
 
 bool			g_ValidLevel = false;
 
@@ -629,9 +629,9 @@ void P_LoadThings (int lump)
 			#ifdef SERVER_APP
 			if (G_IsCoopGame())
 			{ 
-				if (g_coopthingfilter == 1)
+				if (g_thingfilter == 1)
 					mt2.flags |= MTF_FILTER_COOPWPN;
-				else if (g_coopthingfilter == 2)
+				else if (g_thingfilter == 2)
 					mt2.flags &= ~MTF_COOPERATIVE;
 			}
 			else
@@ -1961,6 +1961,7 @@ void P_Init (void)
 	P_InitPicAnims ();
 	R_InitSprites (sprnames);
 	InitTeamInfo();
+	P_InitHorde();
 }
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)
