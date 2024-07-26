@@ -509,7 +509,7 @@ void OInterpolation::interpolateView(player_t* player, fixed_t amount)
 	if (!camera || !camera->subsector)
 		return;
 
-	if (amount < FRACUNIT)
+	if (amount < FRACUNIT && interpolationEnabled)
 	{
 		player_t& consolePlayer = consoleplayer();
 		const bool use_localview =
@@ -526,6 +526,19 @@ void OInterpolation::interpolateView(player_t* player, fixed_t amount)
 		viewangle = camera->angle;
 		viewsector = camera->subsector->sector;
 	}
+}
+
+//
+// Handle interpolation state
+//
+void OInterpolation::enable()
+{
+	interpolationEnabled = true;
+}
+
+void OInterpolation::disable()
+{
+	interpolationEnabled = false;
 }
 
 //

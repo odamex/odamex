@@ -42,7 +42,7 @@ class OInterpolation
 public:
 	~OInterpolation();
 	static OInterpolation& getInstance(); // returns the instantiated OInterpolation object
-	static bool enabled(); // Interpolate game stuff at this moment?
+	bool enabled() { return interpolationEnabled; }; // Interpolate game stuff at this moment?
 	// Tickers (for gamesim interpolation)
 	void resetGameInterpolation(); // R_ResetInterpolation() // called when starting/resetting a level
 	void beginGameInterpolation(fixed_t amount); // R_BeginInterpolation(fixed_t amount)
@@ -54,13 +54,12 @@ public:
 	// View interpolation
 	void interpolateView(player_t* player, fixed_t amount);
 	// State 
-	bool disable(); // enable gamesim interpolation
-	bool enable(); // disable gamesim interpolation
+	void disable(); // enable gamesim interpolation
+	void enable();  // disable gamesim interpolation
 
 private:
-	// <int, uint32_t> = <gametic, itemid>
 	// private helper functions
-  void interpolateSkies(fixed_t amount);
+	void interpolateSkies(fixed_t amount);
 	void interpolateCeilings(fixed_t amount);
 	void interpolateFloors(fixed_t amount);
 	void interpolateWalls(fixed_t amount);
@@ -107,6 +106,9 @@ private:
 	// Console
 	fixed_t saved_conbottomstep = 0;
 	fixed_t prev_conbottomstep = 0;
+
+	// Should we interpolate in-game objects?
+	bool interpolationEnabled = true;
 
 	OInterpolation() { }                       // private contsructor (part of Singleton)
 	OInterpolation(const OInterpolation& rhs); // private copy constructor

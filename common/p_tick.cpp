@@ -53,20 +53,8 @@ void P_Ticker (void)
 	// Game pauses when in the menu and not online/demo
 		if (paused || (!multiplayer && !demoplayback &&
 			(menuactive || ConsoleState == c_down || ConsoleState == c_falling)) &&
-			(players.begin()->viewz != 1))
+			(players.begin()->viewz != 1)) // Render the first tic to get proper viewheight
 		{
-			player_t* player = &displayplayer();
-
-			if (player)
-			{
-				AActor* camera = player->camera;
-				if (camera)
-				{
-					camera->prevx = camera->x;
-					camera->prevy = camera->y;
-					player->prevviewz = player->viewz;
-				}
-			}
 			return;
 		}
 #endif
