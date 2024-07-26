@@ -247,41 +247,40 @@ void P_PlayerInZDoomSector(player_t* player)
 				player->hazardcount += sector->damageamount;
 				player->hazardinterval = sector->damageinterval;
 			}
-			else
+
+			if (sector->special == 0) // ZDoom Static Init Damage
 			{
-				if (level.time % sector->damageinterval == 0)
+				if (sector->damageamount < 20)
 				{
-					P_DamageMobj(player->mo, NULL, NULL, sector->damageamount);
-
-					if (sector->flags & SECF_ENDLEVEL && player->health <= 10)
-					{
-						if (serverside && sv_allowexit)
-						{
-							G_ExitLevel(0, 1);
-						}
-					}
-
-					if (sector->flags & SECF_DMGTERRAINFX)
-					{
-						// MAP_FORMAT_TODO: damage special effects
-					}
+					P_ApplySectorDamageNoRandom(player, sector->damageamount,
+					 MOD_UNKNOWN);
+				}
+				else if (sector->damageamount < 50)
+				{
+					P_ApplySectorDamage(player, sector->damageamount, 5, MOD_UNKNOWN);
+				}
+				else
+				{
+					P_ApplySectorDamageNoWait(player, sector->damageamount,
+					 MOD_UNKNOWN);
 				}
 			}
-		}
+			else if (level.time % sector->damageinterval == 0)
+			{
+				P_DamageMobj(player->mo, NULL, NULL, sector->damageamount);
+			}
 
-		if (sector->special == 0) // ZDoom Static Init Damage
-		{
-			if (sector->damageamount < 20)
+			if (sector->flags & SECF_ENDLEVEL && player->health <= 10)
 			{
-				P_ApplySectorDamageNoRandom(player, sector->damageamount, MOD_UNKNOWN);
+				if (serverside && sv_allowexit)
+				{
+					G_ExitLevel(0, 1);
+				}
 			}
-			else if (sector->damageamount < 50)
+
+			if (sector->flags & SECF_DMGTERRAINFX)
 			{
-				P_ApplySectorDamage(player, sector->damageamount, 5, MOD_UNKNOWN);
-			}
-			else
-			{
-				P_ApplySectorDamageNoWait(player, sector->damageamount, MOD_UNKNOWN);
+				// MAP_FORMAT_TODO: damage special effects
 			}
 		}
 	}
