@@ -71,9 +71,6 @@ static IWindowSurface* background_surface;
 
 extern int		gametic;
 
-extern fixed_t saved_conbottomstep;
-extern fixed_t prev_conbottomstep;
-
 static unsigned int		ConRows, ConCols, PhysRows;
 
 static bool				cursoron = false;
