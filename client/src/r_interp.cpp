@@ -91,6 +91,9 @@ void OInterpolation::resetGameInterpolation()
 	prev_boby = 0;
 	saved_bobx = 0;
 	saved_boby = 0;
+	prev_camerax = 0;
+	prev_cameray = 0;
+	prev_cameraz = 0;
 	// don't reset console params here
 	::localview.angle = 0;
 	::localview.setangle = false;
@@ -116,6 +119,9 @@ void OInterpolation::ticGameInterpolation()
 	prev_sectorfloorscrollingflat.clear();
 	prev_sky1offset = 0;
 	prev_sky2offset = 0;
+	prev_camerax = 0;
+	prev_cameray = 0;
+	prev_cameraz = 0;
 	prev_bobx = 0;
 	prev_boby = 0;
 
@@ -175,6 +181,11 @@ void OInterpolation::ticGameInterpolation()
 		// Update bob - this happens once per gametic
 		prev_bobx = bobx;
 		prev_boby = boby;
+
+		// Update chasecam
+		prev_camerax = CameraX;
+		prev_cameray = CameraY;
+		prev_cameraz = CameraZ;
 	}
 }
 
@@ -455,7 +466,7 @@ void OInterpolation::endGameInterpolation()
 }
 
 //
-// R_InterpolateCamera
+// OInterpolation::interpolateCamera
 //
 // Interpolate between the current position and the previous position
 // of the camera. If not using uncapped framerate / interpolation,
@@ -469,7 +480,9 @@ void OInterpolation::interpolateCamera(fixed_t amount, bool use_localview,
 	{
 		fixed_t x = camera->x;
 		fixed_t y = camera->y;
-		fixed_t z = camera->z;
+		fixed_t z = camera->player ? camera->player->viewz : camera->z;
+		fixed_t angle = camera->angle;
+		sector_t* vs = camera->subsector->sector;
 
 		if (chasecam)
 		{
@@ -478,27 +491,55 @@ void OInterpolation::interpolateCamera(fixed_t amount, bool use_localview,
 			x = CameraX;
 			y = CameraY;
 			z = CameraZ;
+			vs = CameraSector;
 		}
 
-		if (use_localview && !::localview.skipangle)
+		if (amount < FRACUNIT && interpolationEnabled)
 		{
-			viewangle = camera->angle + ::localview.angle;
+			if (use_localview && !::localview.skipangle)
+			{
+				viewangle = camera->angle + ::localview.angle;
+			}
+			else
+			{
+				// Only interpolate if we are spectating
+				// interpolate amount/FRACUNIT percent between previous value and
+				// current value
+				viewangle = camera->prevangle +
+				            FixedMul(amount, camera->angle - camera->prevangle);
+			}
+
+			if (chasecam)
+			{
+				viewx = prev_camerax + FixedMul(amount, x - prev_camerax);
+				viewy = prev_cameray + FixedMul(amount, y - prev_cameray);
+				viewz = prev_cameraz + FixedMul(amount, z - prev_cameraz);
+
+				viewsector = R_PointInSubsector(viewx, viewy)->sector;
+			}
+			else
+			{
+				viewx = camera->prevx + FixedMul(amount, x - camera->prevx);
+				viewy = camera->prevy + FixedMul(amount, y - camera->prevy);
+
+				if (camera->player)
+					viewz = camera->player->prevviewz +
+					        FixedMul(amount,
+					                 camera->player->viewz - camera->player->prevviewz);
+				else
+					viewz = camera->prevz + FixedMul(amount, z - camera->prevz);
+
+				viewsector = R_PointInSubsector(viewx, viewy)->sector;
+			}
 		}
 		else
 		{
-			// Only interpolate if we are spectating
-			// interpolate amount/FRACUNIT percent between previous value and current value
-			viewangle = camera->prevangle + FixedMul(amount, camera->angle - camera->prevangle);
+			viewx = x;
+			viewy = y;
+			viewz = z;
+			viewangle = angle;
+			viewsector = vs;
 		}
-
-		viewx = camera->prevx + FixedMul(amount, x - camera->prevx);
-		viewy = camera->prevy + FixedMul(amount, y - camera->prevy);
-		viewsector = R_PointInSubsector(viewx, viewy)->sector;
-
-		if (camera->player)
-			viewz = camera->player->prevviewz + FixedMul(amount, camera->player->viewz - camera->player->prevviewz);
-		else
-			viewz = camera->prevz + FixedMul(amount, z - camera->prevz);
 	}
 }
 
@@ -509,23 +550,12 @@ void OInterpolation::interpolateView(player_t* player, fixed_t amount)
 	if (!camera || !camera->subsector)
 		return;
 
-	if (amount < FRACUNIT && interpolationEnabled)
-	{
 		player_t& consolePlayer = consoleplayer();
 		const bool use_localview =
 		    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
 		     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
 
 		interpolateCamera(render_lerp_amount, use_localview, player->cheats & CF_CHASECAM);
-	}
-	else
-	{
-		viewx = camera->x;
-		viewy = camera->y;
-		viewz = camera->player ? camera->player->viewz : camera->z;
-		viewangle = camera->angle;
-		viewsector = camera->subsector->sector;
-	}
 }
 
 //

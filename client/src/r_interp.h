@@ -107,6 +107,11 @@ private:
 	fixed_t saved_conbottomstep = 0;
 	fixed_t prev_conbottomstep = 0;
 
+	// Chasecam
+	fixed_t prev_camerax = 0;
+	fixed_t prev_cameray = 0;
+	fixed_t prev_cameraz = 0;
+
 	// Should we interpolate in-game objects?
 	bool interpolationEnabled = true;
 

@@ -298,6 +298,7 @@ void	P_LineAttack (AActor *t1, angle_t angle, fixed_t distance, fixed_t slope, i
 // [RH] Position the chasecam
 void	P_AimCamera (AActor *t1);
 extern	fixed_t CameraX, CameraY, CameraZ;
+extern	sector_t* CameraSector;
 
 // [RH] Means of death
 void	P_RadiusAttack (AActor *spot, AActor *source, int damage, int distance, bool hurtSelf, int mod);

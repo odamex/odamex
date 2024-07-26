@@ -505,7 +505,8 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	// [SL] interpolate the position of thing
 	fixed_t thingx, thingy, thingz;
 
-	if (P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT && OInterpolation::getInstance().enabled())
+	if (P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT &&
+		OInterpolation::getInstance().enabled())
 	{
 		// the actor probably did not teleport
 		// interpolate between previous and current position
