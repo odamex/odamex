@@ -268,21 +268,21 @@ void P_PlayerInZDoomSector(player_t* player)
 				}
 			}
 		}
-	}
 
-	if (sector->special == 0 && sector->damageamount > 0) // ZDoom Static Init Damage
-	{
-		if (sector->damageamount < 20)
+		if (sector->special == 0) // ZDoom Static Init Damage
 		{
-			P_ApplySectorDamageNoRandom(player, sector->damageamount, MOD_UNKNOWN);
-		}
-		else if (sector->damageamount < 50)
-		{
-			P_ApplySectorDamage(player, sector->damageamount, 5, MOD_UNKNOWN);
-		}
-		else
-		{
-			P_ApplySectorDamageNoWait(player, sector->damageamount, MOD_UNKNOWN);
+			if (sector->damageamount < 20)
+			{
+				P_ApplySectorDamageNoRandom(player, sector->damageamount, MOD_UNKNOWN);
+			}
+			else if (sector->damageamount < 50)
+			{
+				P_ApplySectorDamage(player, sector->damageamount, 5, MOD_UNKNOWN);
+			}
+			else
+			{
+				P_ApplySectorDamageNoWait(player, sector->damageamount, MOD_UNKNOWN);
+			}
 		}
 	}
 
