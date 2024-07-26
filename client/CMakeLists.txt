@@ -136,7 +136,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     set(TEXTSCREEN_LIBRARY "textscreen")
     set(TEXTSCREEN_DIR ../libraries/textscreen)
     set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
-    set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
+    set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.cpp)
 
     include_directories(${TEXTSCREEN_DIR})
     add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
