@@ -1832,7 +1832,7 @@ void AM_Drawer()
 
 	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
 	{
-		char line[64 + 10];
+		std::string line;
 		const int time = level.time / TICRATE;
 
 		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
@@ -1842,12 +1842,12 @@ void AM_Drawer()
 		{
 			if (am_showmonsters)
 			{
-				sprintf(line, TEXTCOLOR_RED "MONSTERS:" TEXTCOLOR_NORMAL " %d / %d",
+				StrFormat(line, TEXTCOLOR_RED "MONSTERS:" TEXTCOLOR_NORMAL " %d / %d",
 				        level.killed_monsters,
 				        (level.total_monsters + level.respawned_monsters));
 
 				int x, y;
-				const int text_width = V_StringWidth(line) * CleanXfac;
+				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
 
 				if (AM_OverlayAutomapVisible())
 				{
@@ -1860,17 +1860,17 @@ void AM_Drawer()
 					y = OV_Y - (text_height * 2) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line);
+				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 			}
 
 			if (am_showitems)
 			{
-				sprintf(line, TEXTCOLOR_RED "ITEMS:" TEXTCOLOR_NORMAL " %d / %d",
+				StrFormat(line, TEXTCOLOR_RED "ITEMS:" TEXTCOLOR_NORMAL " %d / %d",
 				        level.found_items,
 				        level.total_items);
 
 				int x, y;
-				const int text_width = V_StringWidth(line) * CleanXfac;
+				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
 
 				if (AM_OverlayAutomapVisible())
 				{
@@ -1883,15 +1883,15 @@ void AM_Drawer()
 					y = OV_Y - (text_height * 3) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line);
+				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 			}
 
 			if (am_showsecrets)
 			{
-				sprintf(line, TEXTCOLOR_RED "SECRETS:" TEXTCOLOR_NORMAL " %d / %d",
+				StrFormat(line, TEXTCOLOR_RED "SECRETS:" TEXTCOLOR_NORMAL " %d / %d",
 				        level.found_secrets, level.total_secrets);
 				int x, y;
-				const int text_width = V_StringWidth(line) * CleanXfac;
+				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
 
 				if (AM_OverlayAutomapVisible())
 				{
@@ -1904,7 +1904,7 @@ void AM_Drawer()
 					y = OV_Y - (text_height * 2) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line);
+				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 			}
 		}
 
@@ -1931,11 +1931,10 @@ void AM_Drawer()
 				break;
 			}
 
-			strncpy(line, GStrings.getIndex(firstmap + level.levelnum - mapoffset),
-			        ARRAY_LENGTH(line) - 1);
+			line += GStrings.getIndex(firstmap + level.levelnum - mapoffset);
 
 			int x, y;
-			const int text_width = V_StringWidth(line) * CleanXfac;
+			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
 			{
@@ -1948,23 +1947,35 @@ void AM_Drawer()
 				y = OV_Y - (text_height * 1) + 1;
 			}
 
-			screen->DrawTextClean(CR_RED, x, y, line);
+			screen->DrawTextClean(CR_RED, x, y, line.c_str());
 		}
 		else
 		{
-			strcpy(line, TEXTCOLOR_RED);
-			int pos = strlen(line);
-			for (int i = 0; i < 8 && level.mapname[i]; i++, pos++)
-				line[pos] = level.mapname[i];
+			if (level.clearlabel)
+			{
+				line.clear();
+			}
+			else
+			{
+				line = TEXTCOLOR_RED;
 
-			line[pos++] = ':';
-			strcpy(line + pos, TEXTCOLOR_NORMAL);
-			pos = strlen(line);
-			line[pos++] = ' ';
-			strcpy(&line[pos], level.level_name);
+				// use user provided label if one exists
+				if (!level.label.empty())
+				{
+					line += level.label + TEXTCOLOR_NORMAL;
+				}
+				else
+				{
+					for (int i = 0; i < 8 && level.mapname[i]; i++)
+						line += level.mapname[i];
+					line += ":" TEXTCOLOR_NORMAL " ";
+				}
+			}
+
+			line += level.level_name;
 
 			int x, y;
-			const int text_width = V_StringWidth(line) * CleanXfac;
+			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
 			{
@@ -1977,16 +1988,16 @@ void AM_Drawer()
 				y = OV_Y - (text_height * 1) + 1;
 			}
 
-			screen->DrawTextClean(CR_GREY, x, y, line);
+			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 		}
 
 		if (am_showtime)
 		{
-			sprintf(line, " %02d:%02d:%02d", time / 3600, (time % 3600) / 60,
+			StrFormat(line, " %02d:%02d:%02d", time / 3600, (time % 3600) / 60,
 			        time % 60); // Time
 
 			int x, y;
-			const int text_width = V_StringWidth(line) * CleanXfac;
+			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
 			{
@@ -1999,7 +2010,7 @@ void AM_Drawer()
 				y = OV_Y - (text_height * 1) + 1;
 			}
 
-			screen->DrawTextClean(CR_GREY, x, y, line);
+			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 		}
 	}
 }
