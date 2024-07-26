@@ -15,12 +15,15 @@
 // Text mode emulation in SDL
 //
 
+#pragma warning(disable : 5045) // SPECTRE mitigation warning
+
 #include <SDL.h>
 
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cstdlib>
 
 #include "doomkeys.h"
 
@@ -35,8 +38,8 @@ typedef struct
 {
     char *name;
     const uint8_t *data;
-    unsigned int w;
-    unsigned int h;
+    int w;
+    int h;
 } txt_font_t;
 
 // Fonts:
@@ -57,7 +60,7 @@ SDL_Window *TXT_SDLWindow;
 static SDL_Surface *screenbuffer;
 static SDL_Renderer *renderer;
 #endif
-static unsigned char *screendata;
+static _Notnull_ unsigned char* screendata;
 static int key_mapping = 1;
 
 // Dimensions of the screen image in screen coordinates (not pixels); this
@@ -196,10 +199,16 @@ static void ChooseFont(void)
     SDL_DisplayMode desktop_info;
 #endif
     char *env;
-	int w, h;
+    size_t len = 0; // amount of envvar characters
+    int w, h;
 
     // Allow normal selection to be overridden from an environment variable:
-    env = getenv("TEXTSCREEN_FONT");
+#if defined(_MSC_VER)
+    _dupenv_s(&env, &len, "TEXTSCREEN_FONT");
+#else
+    env = std::getenv("TEXTSCREEN_FONT");
+#endif
+
     if (env != NULL)
     {
         font = FontForName(env);
@@ -318,7 +327,7 @@ int TXT_Init(void)
 #else
 int TXT_Init(void)
 {
-    int flags = 0;
+    Uint32 flags = 0;
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
@@ -383,7 +392,7 @@ int TXT_Init(void)
     SDL_SetPaletteColors(screenbuffer->format->palette, ega_colors, 0, 16);
     SDL_UnlockSurface(screenbuffer);
 
-    screendata = malloc(TXT_SCREEN_W * TXT_SCREEN_H * 2);
+    screendata = (unsigned char*)malloc(TXT_SCREEN_W * TXT_SCREEN_H * 2);
     memset(screendata, 0, TXT_SCREEN_W * TXT_SCREEN_H * 2);
 
     // Ignore all mouse motion events
@@ -419,7 +428,7 @@ static inline void UpdateCharacter(int x, int y)
     unsigned char *s, *s1;
     unsigned int bit;
     int bg, fg;
-    unsigned int x1, y1;
+    int x1, y1;
 
     p = &screendata[(y * TXT_SCREEN_W + x) * 2];
     character = p[0];
@@ -1043,13 +1052,13 @@ int TXT_ScreenHasBlinkingChars(void)
 // Sleeps until an event is received, the screen needs to be redrawn, 
 // or until timeout expires (if timeout != 0)
 
-void TXT_Sleep(int timeout)
+void TXT_Sleep(Uint32 timeout)
 {
     unsigned int start_time;
 
     if (TXT_ScreenHasBlinkingChars())
     {
-        int time_to_next_blink;
+        Uint32 time_to_next_blink;
 
         time_to_next_blink = BLINK_PERIOD - (SDL_GetTicks() % BLINK_PERIOD);
 
@@ -1149,7 +1158,7 @@ void TXT_StringConcat(char *dest, const char *src, size_t dest_len)
 // Safe, portable vsnprintf().
 int TXT_vsnprintf(char *buf, size_t buf_len, const char *s, va_list args)
 {
-    int result;
+    size_t result;
 
     if (buf_len < 1)
     {
@@ -1173,10 +1182,10 @@ int TXT_vsnprintf(char *buf, size_t buf_len, const char *s, va_list args)
 }
 
 // Safe, portable snprintf().
-int TXT_snprintf(char *buf, size_t buf_len, const char *s, ...)
+size_t TXT_snprintf(char *buf, size_t buf_len, const char *s, ...)
 {
     va_list args;
-    int result;
+    size_t result;
     va_start(args, s);
     result = TXT_vsnprintf(buf, buf_len, s, args);
     va_end(args);

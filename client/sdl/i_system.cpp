@@ -88,6 +88,7 @@
 #include "c_dispatch.h"
 #include "cl_main.h"
 #include "m_fileio.h"
+#include "txt_main.h"
 
 #ifdef _XBOX
 	#include "i_xbox.h"
