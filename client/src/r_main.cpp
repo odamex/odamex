@@ -1045,7 +1045,7 @@ void R_RenderPlayerView(player_t* player)
 						viewwindowx, viewwindowy, viewwidth, viewheight);
 	}
 
-		OInterpolation::getInstance().endGameInterpolation();
+	OInterpolation::getInstance().endGameInterpolation();
 }
 
 
