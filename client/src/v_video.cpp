@@ -26,6 +26,7 @@
 #include "odamex.h"
 
 #include <assert.h>
+#include <cmath>
 
 #include "i_system.h"
 #include "i_video.h"
@@ -922,7 +923,7 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, unsigned int fl
 {
 	int surface_advance = mSurface->getPitchInPixels() - right + left;
 
-	int width = sqrt(flatlength);
+	int width = std::sqrt(flatlength);
 
 	if (mSurface->getBitsPerPixel() == 8)
 	{
