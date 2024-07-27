@@ -849,14 +849,13 @@ void V_DrawFPSTicker()
 // There's no posts or columns in flats; the entire
 // thing is one big chunk of data assumed to be 64x64
 //
-// We need to be able to walk the flat bytes.
 // Even if the width is dynamic, a flat pixel
-// will always be 64 bytes
+// will always be 1 byte, and a flat length
+// will always sqrt to its height and width
+// (the same number)
 
 const byte* V_FindTransformedFlatPixel(int x, int y, unsigned int width, const byte* src)
 {
-	const int flat_pixel = 64;
-
 	float pixelcountx = x / static_cast<float>(width);
 	float pixelcounty = y / static_cast<float>(width);
 
@@ -931,13 +930,10 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, unsigned int fl
 
 		for (int y = top; y < bottom; y++)
 		{
-			int x = left;
-			while (x < right)
+			for (int x = left; x < right; x++)
 			{
-				int amount = std::min(64 - (x & 63), right - x);
-				memcpy(dest, src + ((y & 63) << 6) + (x & 63), amount);
-				dest += amount;
-				x += amount;
+				const byte* pixel = V_FindTransformedFlatPixel(x, y, width, src);
+				*dest++ = *pixel;
 			}
 
 			dest += surface_advance;
