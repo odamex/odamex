@@ -122,6 +122,9 @@ bool demotest = false;
 
 IWindowSurface* page_surface;
 
+static int page_height;
+static int page_width;
+
 static int demosequence;
 static int pagetic;
 
@@ -405,11 +408,18 @@ void D_PageDrawer()
 		int destw, desth;
 
 		if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		{
 			destw = surface_width, desth = surface_height;
-		else if (surface_width * 3 >= surface_height * 4)
+		}
+		else if ((surface_height * (4 / 3) == surface_width) ||
+			(page_height <= 200 && page_width <= 320))
+		{
 			destw = surface_height * 4 / 3, desth = surface_height;
+		}
 		else
-			destw = surface_width, desth = surface_width * 3 / 4;
+		{
+				destw = surface_width, desth = surface_width * 3 / 4;
+		}
 
 		page_surface->lock();
 
@@ -523,17 +533,22 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
+		const lumpHandle_t handle = W_CachePatchHandle(pagename);
+
+		page_width = W_ResolvePatchHandle(handle)->width();
+		page_height = W_ResolvePatchHandle(handle)->height();
+
 		const patch_t* patch = W_CachePatch(pagename);
 
 		I_FreeSurface(page_surface);
 
 		if (gameinfo.flags & GI_PAGESARERAW)
 		{
-			page_surface = I_AllocateSurface(320, 200, 8);
+			page_surface = I_AllocateSurface(page_width, page_height, 8);
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
-            canvas->DrawBlock(0, 0, 320, 200, (byte*)patch);
+			canvas->DrawBlock(0, 0, page_width, page_height, (byte*)patch);
 			page_surface->unlock();
 		}
 		else
@@ -556,6 +571,8 @@ void STACK_ARGS D_Close()
 	I_FreeSurface(page_surface);
 
 	D_ClearTaskSchedulers();
+
+	page_height, page_width = 0;
 }
 
 //
