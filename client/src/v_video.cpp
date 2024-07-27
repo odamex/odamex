@@ -861,8 +861,8 @@ const byte* V_FindTransformedFlatPixel(int x, int y, unsigned int width, const b
 
 	float wholex, wholey = 0;
 
-	float flatxfrac = std::modff(pixelcountx, &wholex);
-	float flatyfrac = std::modff(pixelcounty, &wholey);
+	float flatxfrac = modff(pixelcountx, &wholex);
+	float flatyfrac = modff(pixelcounty, &wholey);
 
 	int flatx = 0;
 	int flaty = 0;
