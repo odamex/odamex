@@ -131,6 +131,11 @@ endif()
 # Client target
 if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
 
+  if (CMAKE_COMPILER_IS_GNUCXX)
+    message(STATUS "GNU Detected, forcing GCC to link math.h")
+    target_compile_options(odamex PRIVATE -lm)
+  endif()
+
   if (NOT GCONSOLE)
     # Textscreen
     set(TEXTSCREEN_LIBRARY "textscreen")
@@ -179,10 +184,6 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     endif()
   else()
     message(STATUS "Default SIMD flags not used on user request")
-  endif()
-
-  if (CMAKE_COMPILER_IS_GNUCXX)
-    target_compile_options(odamex PRIVATE -lm)
   endif()
 
   if(MSVC)
