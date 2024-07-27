@@ -433,9 +433,13 @@ int ST_StatusBarHeight(int surface_width, int surface_height)
 		return 0;
 
 	if (st_scale)
+	{
 		return 32 * surface_height / 200;
+	}
 	else
+	{
 		return 32;
+	}
 }
 
 short ST_StatusBarWidth(int surface_width, int surface_height)
@@ -445,34 +449,24 @@ short ST_StatusBarWidth(int surface_width, int surface_height)
 		return 0;
 	}
 
-	short width = 0;
-
-	if (!st_scale)
-	{
-		return sbar_width;
-	}
-	else
-	{
-		if (sbar_width <= 0)
-		{
-			width = 320;
-		}
-		else
-		{
-			width = sbar_width;
-		}
-	}
-
+	
 	// [AM] Scale status bar width according to height, unless there isn't
 	//      enough room for it.  Fixes widescreen status bar scaling.
 	// [ML] A couple of minor changes for true 4:3 correctness...
 	short height = ST_StatusBarHeight(surface_width, surface_height);
 	if (I_IsProtectedResolution(surface_width, surface_height))
 	{
-		return (10 * height > width ? 10 * height : width);
+		return (10 * height > surface_width ? 10 * height : surface_width);
 	}
 
-	return 4 * surface_height / 3;
+	if (st_scale)
+	{
+		return (sbar_width / 80) * surface_height / 3;
+	}
+	else
+	{
+		return sbar_width;
+	}
 }
 
 int ST_StatusBarX(int surface_width, int surface_height)

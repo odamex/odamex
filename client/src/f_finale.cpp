@@ -295,7 +295,10 @@ void F_TextWrite ()
 		lump = W_CheckNumForName(finalelump, ns_flats);
 		if (lump >= 0)
 		{
-			screen->FlatFill(x, y, width + x, height + y, (byte*)W_CacheLumpNum(lump, PU_CACHE));
+			// Support high resolution flats
+			unsigned int length = W_LumpLength(lump);
+
+			screen->FlatFill(x, y, width + x, height + y, length, (byte*)W_CacheLumpNum(lump, PU_CACHE));
 		}
 		break;
 	default:
