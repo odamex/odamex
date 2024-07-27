@@ -181,7 +181,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     message(STATUS "Default SIMD flags not used on user request")
   endif()
 
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if (CMAKE_COMPILER_IS_GNUCXX)
     target_compile_options(odamex PRIVATE -lm)
   endif()
 
