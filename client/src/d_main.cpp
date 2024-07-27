@@ -40,7 +40,7 @@
 #include <dirent.h>
 #endif
 
-#include <math.h>
+#include <cmath>
 
 
 #include "m_alloc.h"
