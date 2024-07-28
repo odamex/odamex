@@ -407,18 +407,26 @@ void D_PageDrawer()
 	{
 		int destw, desth;
 
-		if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight())) // Always fill/stretch pages on protected resolutions
 		{
 			destw = surface_width, desth = surface_height;
 		}
-		else if ((surface_height * (4 / 3) == surface_width) ||
-			(page_height <= 200 && page_width <= 320))
+		else if (surface_width * 3 >= surface_height * 4)
 		{
-			destw = surface_height * 4 / 3, desth = surface_height;
+			if (page_width > 320)
+			{
+				float aspect_scale_ratio = surface_height / page_height;
+				int newPageWidth = aspect_scale_ratio * page_width;
+				destw = newPageWidth;
+			}
+			else
+			{
+				destw = surface_height * 4 / 3, desth = surface_height;
+			}
 		}
 		else
 		{
-				destw = surface_width, desth = surface_width * 3 / 4;
+			destw = surface_width, desth = surface_width * 3 / 4;
 		}
 
 		page_surface->lock();
