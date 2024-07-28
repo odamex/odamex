@@ -417,7 +417,7 @@ void D_PageDrawer()
 			{
 				float aspect_scale_ratio = surface_height / page_height;
 				int newPageWidth = aspect_scale_ratio * page_width;
-				destw = newPageWidth;
+				destw = newPageWidth, desth = surface_height;
 			}
 			else
 			{
