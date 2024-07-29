@@ -1089,10 +1089,10 @@ void ST_Drawer()
 			ST_refreshBackground();
 
 			if (st_scale)
-				stnum_surface->blit(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
+				stnum_surface->blitcrop(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
 						0, 0, stnum_surface->getWidth(), stnum_surface->getHeight());
 			else
-				surface->blit(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
+				surface->blitcrop(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
 						ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
 		}
 		

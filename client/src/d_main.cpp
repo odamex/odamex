@@ -413,25 +413,26 @@ void D_PageDrawer()
 		}
 		else if (surface_width * 3 >= surface_height * 4)
 		{
-			if (page_width > 320)
-			{
-				float aspect_scale_ratio = surface_height / page_height;
-				int newPageWidth = aspect_scale_ratio * page_width;
-				destw = newPageWidth, desth = surface_height;
-			}
-			else
-			{
-				destw = surface_height * 4 / 3, desth = surface_height;
-			}
+			destw = surface_height * 4 / 3, desth = surface_height;
 		}
 		else
 		{
 			destw = surface_width, desth = surface_width * 3 / 4;
 		}
 
+		// Using widescreen assets? It may go off screen.
+		// Preserve the aspect ratio and make the box big
+		// Maybe too big? (it will be cropped if so)
+		if (page_width > 320)
+		{
+			float aspect_scale_ratio = (float)desth / (float)page_height;
+			int newPageWidth = aspect_scale_ratio * page_width;
+			destw = newPageWidth;
+		}
+
 		page_surface->lock();
 
-		primary_surface->blit(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
+		primary_surface->blitcrop(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
 				(surface_width - destw) / 2, (surface_height - desth) / 2, destw, desth);
 
 		page_surface->unlock();

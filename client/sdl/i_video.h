@@ -359,6 +359,9 @@ public:
 	void blit(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
 			int destx, int desty, int destw, int desth);
 
+	void blitcrop(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
+			int destx, int desty, int destw, int desth);
+
 	void clear();
 
 	inline void lock()
