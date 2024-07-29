@@ -542,12 +542,10 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (pagename)
 	{
-		const lumpHandle_t handle = W_CachePatchHandle(pagename);
-
-		page_width = W_ResolvePatchHandle(handle)->width();
-		page_height = W_ResolvePatchHandle(handle)->height();
-
 		const patch_t* patch = W_CachePatch(pagename);
+
+		page_width = patch->width();
+		page_height = patch->height();
 
 		I_FreeSurface(page_surface);
 

@@ -1367,6 +1367,8 @@ void STACK_ARGS ST_Shutdown()
 
 	I_FreeSurface(stbar_surface);
 	I_FreeSurface(stnum_surface);
+
+	sbar_width = 0;
 }
 
 

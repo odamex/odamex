@@ -123,6 +123,9 @@ char				skullName[2][9] = {"M_SKULL1", "M_SKULL2"};
 // current menudef
 oldmenu_t *currentMenu;
 
+static int			help_height;
+static int			help_width;
+
 //
 // PROTOTYPES
 //
@@ -1159,7 +1162,22 @@ void M_Expansion(int choice)
 void M_DrawReadThis1()
 {
 	const patch_t *p = W_CachePatch(gameinfo.info.infoPage[0]);
-	screen->DrawPatchFullScreen(p);
+	help_width = p->width();
+	help_height = p->height();
+
+	if (help_width > 320)
+	{
+		// Create a canvas and stetch it
+		// for widescreen stuff. Make it
+		// respect aspect ratios
+
+		//screen->getSurface()->blitcrop(;
+		screen->DrawPatchFullScreen(p);
+	}
+	else
+	{
+		screen->DrawPatchFullScreen(p);
+	}
 }
 
 //

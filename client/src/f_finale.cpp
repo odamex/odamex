@@ -50,6 +50,9 @@ unsigned int	finalestage;
 
 int	finalecount;
 
+static int finale_height;
+static int finale_width;
+
 #define TEXTSPEED		2
 #define TEXTWAIT		250
 
@@ -80,14 +83,27 @@ static int F_GetWidth()
 {
 	const int surface_width = I_GetPrimarySurface()->getWidth();
 	const int surface_height = I_GetPrimarySurface()->getHeight();
+	int width = 0;
 
 	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
-		return surface_width;
+		width = surface_width;
 
 	if (surface_width * 3 >= surface_height * 4)
-		return surface_height * 4 / 3;
+		width = surface_height * 4 / 3;
 	else
-		return surface_width;
+		width = surface_width;
+
+	// Using widescreen assets? It may go off screen.
+	// Preserve the aspect ratio and make the box big
+	// Maybe too big? (it will be cropped if so)
+	if (finale_width > 320)
+	{
+		float aspect_scale_ratio = (float)width / (float)finale_width;
+		int newFinaleWidth = aspect_scale_ratio * finale_width;
+		width = newFinaleWidth;
+	}
+
+	return width;
 }
 
 
@@ -579,6 +595,9 @@ void F_CastDrawer()
 
 	const patch_t* background_patch = W_CachePatch("BOSSBACK");
 
+	finale_width = background_patch->width();
+	finale_height = background_patch->height();
+
 	// draw the background to the surface
 	cast_surface->lock();
 
@@ -599,7 +618,7 @@ void F_CastDrawer()
 	const int x = (primary_surface->getWidth() - width) / 2;
 	const int y = (primary_surface->getHeight() - height) / 2;
 
-	primary_surface->blit(cast_surface, 0, 0, 320, 200, x, y, width, height);
+	primary_surface->blitcrop(cast_surface, 0, 0, 320, 200, x, y, width, height);
 
 	cast_surface->unlock();
 

@@ -1289,12 +1289,11 @@ void WI_updateStats()
 			if (nextlevel.enterpic[0])
 			{
 				// background
-				const lumpHandle_t handle = W_CachePatchHandle(name.c_str());
+			const patch_t* bg_patch = W_CachePatch(name.c_str());
 
-				inter_width = W_ResolvePatchHandle(handle)->width();
-				inter_height = W_ResolvePatchHandle(handle)->height();
+				inter_width = bg_patch->width();
+				inter_height = bg_patch->height();
 
-				const patch_t* bg_patch = W_CachePatch(name.c_str());
 				background_surface =
 				    I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 				const DCanvas* canvas = background_surface->getDefaultCanvas();
