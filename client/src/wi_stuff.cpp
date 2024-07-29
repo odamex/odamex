@@ -304,6 +304,9 @@ static int			cnt_time;
 static int			cnt_par;
 static int			cnt_pause;
 
+static int			inter_width;
+static int			inter_height;
+
 
 //
 //		GRAPHICS
@@ -382,13 +385,27 @@ static int WI_GetWidth()
 	const int surface_width = I_GetPrimarySurface()->getWidth();
 	const int surface_height = I_GetPrimarySurface()->getHeight();
 
+	int width = 0;
+
 	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
-		return surface_width;
+		width = surface_width;
 
 	if (surface_width * 3 >= surface_height * 4)
-		return surface_height * 4 / 3;
+		width = surface_height * 4 / 3;
 	else
-		return surface_width;
+		width = surface_width;
+
+	// Using widescreen assets? It may go off screen.
+	// Preserve the aspect ratio and make the box big
+	// Maybe too big? (it will be cropped if so)
+	if (inter_width > 320)
+	{
+		float aspect_scale_ratio = (float)surface_height / (float)inter_height;
+		int newPageWidth = aspect_scale_ratio * inter_width;
+		width = newPageWidth;
+	}
+
+	return width;
 }
 
 
@@ -425,7 +442,7 @@ void WI_slamBackground()
 
 	const int destw = WI_GetWidth(), desth = WI_GetHeight();
 
-	primary_surface->blit(background_surface, 0, 0, background_surface->getWidth(), background_surface->getHeight(),
+	primary_surface->blitcrop(background_surface, 0, 0, background_surface->getWidth(), background_surface->getHeight(),
 				(primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
 				destw, desth);
 
@@ -1272,6 +1289,11 @@ void WI_updateStats()
 			if (nextlevel.enterpic[0])
 			{
 				// background
+				const lumpHandle_t handle = W_CachePatchHandle(name.c_str());
+
+				inter_width = W_ResolvePatchHandle(handle)->width();
+				inter_height = W_ResolvePatchHandle(handle)->height();
+
 				const patch_t* bg_patch = W_CachePatch(name.c_str());
 				background_surface =
 				    I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
@@ -1467,6 +1489,11 @@ void WI_loadData()
 		sprintf(name, "WIMAP%d", wbs->epsd);
 
 	// background
+	const lumpHandle_t handle = W_CachePatchHandle(name);
+
+	inter_width = W_ResolvePatchHandle(handle)->width();
+	inter_height = W_ResolvePatchHandle(handle)->height();
+
 	const patch_t* bg_patch = W_CachePatch(name);
 	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 	const DCanvas* canvas = background_surface->getDefaultCanvas();
