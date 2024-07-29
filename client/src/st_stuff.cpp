@@ -456,7 +456,7 @@ short ST_StatusBarWidth(int surface_width, int surface_height)
 	short height = ST_StatusBarHeight(surface_width, surface_height);
 	if (I_IsProtectedResolution(surface_width, surface_height))
 	{
-		return (10 * height > surface_width ? 10 * height : surface_width);
+		return (10 * height > sbar_width ? 10 * height : sbar_width);
 	}
 
 	if (st_scale)
