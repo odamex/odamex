@@ -1289,7 +1289,7 @@ void WI_updateStats()
 			if (nextlevel.enterpic[0])
 			{
 				// background
-			const patch_t* bg_patch = W_CachePatch(name.c_str());
+				const patch_t* bg_patch = W_CachePatch(name.c_str());
 
 				inter_width = bg_patch->width();
 				inter_height = bg_patch->height();
