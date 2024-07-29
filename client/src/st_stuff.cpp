@@ -1100,7 +1100,7 @@ void ST_Drawer()
 		ST_drawWidgets(st_needrefresh);
 
 		if (st_scale)
-			surface->blit(stnum_surface, 0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(),
+			surface->blitcrop(stnum_surface, 0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(),
 					ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);	
 
 		stbar_surface->unlock();
