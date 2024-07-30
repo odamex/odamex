@@ -270,7 +270,7 @@ static void BlitLoopCrop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 	for (int y = 0; y < desth; y++)
 	{
 		// Find if we're off the top or bottom of page
-		if (y + off_top >= 0 && y + off_bottom <= desth)
+		if (y - off_top >= 0 && y + off_bottom <= desth)
 		{
 			if (sizeof(DEST_PIXEL_T) == sizeof(SOURCE_PIXEL_T) && xstep == FRACUNIT)
 			{
