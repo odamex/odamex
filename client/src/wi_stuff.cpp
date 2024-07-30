@@ -702,13 +702,15 @@ void WI_drawAnimatedBack()
 	{
 		DCanvas* canvas = background_surface->getDefaultCanvas();
 
+		int scaled_x = (inter_width - 320) / 2;
+
 		background_surface->lock();
 
 		for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
 		{
 			animinfo_t* a = &anims[wbs->epsd][i];
 			if (a->ctr >= 0)
-				canvas->DrawPatch(a->p[a->ctr], a->loc.x, a->loc.y);
+				canvas->DrawPatch(a->p[a->ctr], a->loc.x + scaled_x, a->loc.y);
 		}
 
 		background_surface->unlock();
