@@ -74,12 +74,13 @@ void	F_CastDrawer (void);
 
 
 //
-// F_GetWidth
+// F_GetCWidth
 //
 // Returns the width of the area that the intermission screen will be
 // drawn to. The intermisison screen should be 4:3, except in 320x200 mode.
+// Except with widescreen assets
 //
-static int F_GetWidth()
+static int F_GetCWidth()
 {
 	const int surface_width = I_GetPrimarySurface()->getWidth();
 	const int surface_height = I_GetPrimarySurface()->getHeight();
@@ -98,10 +99,33 @@ static int F_GetWidth()
 	// Maybe too big? (it will be cropped if so)
 	if (finale_width > 320)
 	{
-		float aspect_scale_ratio = (float)width / (float)finale_width;
+		float aspect_scale_ratio = (float)surface_height / (float)finale_height;
 		int newFinaleWidth = aspect_scale_ratio * finale_width;
 		width = newFinaleWidth;
 	}
+
+	return width;
+}
+
+//
+// F_GetWidth
+//
+// Returns the width of the area that the intermission screen will be
+// drawn to. The intermisison screen should be 4:3, except in 320x200 mode.
+//
+static int F_GetWidth()
+{
+	const int surface_width = I_GetPrimarySurface()->getWidth();
+	const int surface_height = I_GetPrimarySurface()->getHeight();
+	int width = 0;
+
+	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		width = surface_width;
+
+	if (surface_width * 3 >= surface_height * 4)
+		width = surface_height * 4 / 3;
+	else
+		width = surface_width;
 
 	return width;
 }
@@ -598,6 +622,9 @@ void F_CastDrawer()
 	finale_width = background_patch->width();
 	finale_height = background_patch->height();
 
+	I_FreeSurface(cast_surface);
+	cast_surface = I_AllocateSurface(finale_width, finale_height, 8);
+
 	// draw the background to the surface
 	cast_surface->lock();
 
@@ -607,18 +634,20 @@ void F_CastDrawer()
 	const spritedef_t* sprdef = &sprites[castsprite];
 	const spriteframe_t* sprframe = &sprdef->spriteframes[caststate->frame & FF_FRAMEMASK];
 
+	int scaled_x = (finale_width - 320) / 2;
+
 	const patch_t* sprite_patch = W_CachePatch(sprframe->lump[0]);
 	if (sprframe->flip[0])
-		cast_surface->getDefaultCanvas()->DrawPatchFlipped(sprite_patch, 160, 170);
+		cast_surface->getDefaultCanvas()->DrawPatchFlipped(sprite_patch, 160 + scaled_x, 170);
 	else
-		cast_surface->getDefaultCanvas()->DrawPatch(sprite_patch, 160, 170);
+		cast_surface->getDefaultCanvas()->DrawPatch(sprite_patch, 160 + scaled_x, 170);
 
-	const int width = F_GetWidth();
+	const int width = F_GetCWidth();
 	const int height = F_GetHeight();
 	const int x = (primary_surface->getWidth() - width) / 2;
 	const int y = (primary_surface->getHeight() - height) / 2;
 
-	primary_surface->blitcrop(cast_surface, 0, 0, 320, 200, x, y, width, height);
+	primary_surface->blitcrop(cast_surface, 0, 0, finale_width, finale_height, x, y, width, height);
 
 	cast_surface->unlock();
 
