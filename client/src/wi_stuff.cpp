@@ -717,7 +717,7 @@ void WI_updateAnimatedBack()
 				// gawd-awful hack for level anims
 
 				if (!(state == StatCount && i == 7)
-					&& (WI_MapToIndex (wbs->next) + 1) == a->data1)
+					&& WI_MapToIndex(wbs->next) == a->data1)
 				{
 					a->ctr++;
 					if (a->ctr == a->nanims)
