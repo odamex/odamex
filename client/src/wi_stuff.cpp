@@ -366,6 +366,11 @@ static const char*		lnametexts[2];
 
 static IWindowSurface*	background_surface;
 
+static IWindowSurface*	splat_surface;
+
+static bool	needsplat;
+static bool	needmarker;
+
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (wi_oldintermission)
 EXTERN_CVAR (cl_autoscreenshot)
@@ -429,6 +434,73 @@ static int WI_GetHeight()
 		return surface_width * 3 / 4;
 }
 
+int WI_MapToIndex(char* map)
+{
+	int i;
+
+	for (i = 0; i < NUMMAPS; i++)
+	{
+		if (!strnicmp(names[wbs->epsd][i], map, 8))
+			break;
+	}
+
+	return i;
+}
+
+// ====================================================================
+// WI_drawOnLnode
+// Purpose: Draw patches at a location based on episode/map
+// Args:    n   -- index to map# within episode
+//          c[] -- array of patches to be drawn
+//          numpatches -- haleyjd 04/12/03: bug fix - number of patches
+// Returns: void
+//
+// draw stuff at a location by episode/map#
+//
+// [Russell] - Modified for odamex, fixes a crash with certain pwads at
+// intermission change
+void WI_drawOnLnode(int n, lumpHandle_t* c, int numpatches)
+{
+	int i = 0;
+	bool fits = false;
+
+	DCanvas* canvas = splat_surface->getDefaultCanvas();
+
+	int scaled_x = (inter_width - 320) / 2;
+
+	do
+	{
+		patch_t* ch = W_ResolvePatchHandle(c[i]);
+
+		int left = lnodes[wbs->epsd][n].x - ch->leftoffset();
+		int top = lnodes[wbs->epsd][n].y - ch->topoffset();
+		int right = left + ch->width();
+		int bottom = top + ch->height();
+
+		if (left >= 0 && right < 320 && top >= 0 && bottom < 200)
+		{
+			fits = true;
+		}
+		else
+		{
+			i++;
+		}
+	} while (!fits && i != numpatches); // haleyjd: bug fix
+
+	if (fits && i < numpatches) // haleyjd: bug fix
+	{
+		patch_t* ch = W_ResolvePatchHandle(c[i]);
+
+		canvas->DrawPatch(ch, lnodes[wbs->epsd][n].x + scaled_x,
+		                          lnodes[wbs->epsd][n].y);
+	}
+	else
+	{
+		// DEBUG
+		DPrintf("Could not place patch on level %d", n + 1);
+	}
+}
+
 
 // slam background
 // UNUSED static unsigned char *background=0;
@@ -436,17 +508,43 @@ static int WI_GetHeight()
 void WI_slamBackground()
 {
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	const int destw = WI_GetWidth(), desth = WI_GetHeight();
 	primary_surface->clear();		// ensure black background in matted modes
+	splat_surface->clear();
+
+	// Apply splats after animations so its drawn over them
 
 	background_surface->lock();
+	splat_surface->lock();
 
-	const int destw = WI_GetWidth(), desth = WI_GetHeight();
+	splat_surface->blitcrop(background_surface, 0, 0, background_surface->getWidth(), background_surface->getHeight(),
+				0, 0,	splat_surface->getWidth(), splat_surface->getHeight());
 
-	primary_surface->blitcrop(background_surface, 0, 0, background_surface->getWidth(), background_surface->getHeight(),
+	if (needsplat)
+	{
+		// draw a splat on taken cities.
+		LevelInfos& levels = getLevelInfos();
+		for (int i = 0; i < NUMMAPS; i++)
+		{
+			if (levels.findByName(names[wbs->epsd][i]).flags & LEVEL_VISITED)
+			{
+					WI_drawOnLnode(i, &splat, 1);
+			}
+		}
+	}
+
+	if (needmarker)
+	{
+		WI_drawOnLnode(WI_MapToIndex(wbs->next), yah, 2);
+	}
+
+
+	primary_surface->blitcrop(splat_surface, 0, 0, splat_surface->getWidth(), splat_surface->getHeight(),
 				(primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
 				destw, desth);
 
 	background_surface->unlock();
+	splat_surface->unlock();
 }
 
 static int WI_DrawName (const char *str, int x, int y)
@@ -561,69 +659,6 @@ void WI_drawEL()
 	{
 		// [RH] draw a dynamic title string
 		WI_DrawName (lnametexts[1], 160 - lnamewidths[1] / 2, y);
-	}
-}
-
-int WI_MapToIndex (char *map)
-{
-	int i;
-
-	for (i = 0; i < NUMMAPS; i++)
-	{
-		if (!strnicmp (names[wbs->epsd][i], map, 8))
-			break;
-	}
-
-	return i;
-}
-
-
-// ====================================================================
-// WI_drawOnLnode
-// Purpose: Draw patches at a location based on episode/map
-// Args:    n   -- index to map# within episode
-//          c[] -- array of patches to be drawn
-//          numpatches -- haleyjd 04/12/03: bug fix - number of patches
-// Returns: void
-//
-// draw stuff at a location by episode/map#
-//
-// [Russell] - Modified for odamex, fixes a crash with certain pwads at
-// intermission change
-void WI_drawOnLnode (int n, lumpHandle_t* c, int numpatches)
-{
-	int i = 0;
-	bool fits = false;
-
-	do
-	{
-		patch_t* ch = W_ResolvePatchHandle(c[i]);
-
-		int left = lnodes[wbs->epsd][n].x - ch->leftoffset();
-		int top = lnodes[wbs->epsd][n].y - ch->topoffset();
-		int right = left + ch->width();
-		int bottom = top + ch->height();
-
-		if (left >= 0 && right < WI_GetWidth() &&
-            top >= 0 && bottom < WI_GetHeight())
-		{
-			fits = true;
-		}
-		else
-		{
-			i++;
-		}
-	} while (!fits && i != numpatches); // haleyjd: bug fix
-
-	if (fits && i < numpatches) // haleyjd: bug fix
-	{
-		patch_t* ch = W_ResolvePatchHandle(c[i]);
-		screen->DrawPatchIndirect(ch, lnodes[wbs->epsd][n].x, lnodes[wbs->epsd][n].y);
-	}
-	else
-	{
-		// DEBUG
-		DPrintf ("Could not place patch on level %d", n+1);
 	}
 }
 
@@ -816,6 +851,8 @@ void WI_End()
 	WI_unloadData();
 
 	I_FreeSurface(background_surface);
+
+	I_FreeSurface(splat_surface);
 }
 
 void WI_initNoState()
@@ -864,13 +901,12 @@ void WI_updateShowNextLoc()
 
 void WI_drawShowNextLoc()
 {
-	// draw animated background
-	WI_drawAnimatedBack();
-
 	if (gamemode != commercial && gamemode != commercial_bfg)
 	{
 		if (wbs->epsd > 2 || strnicmp(level.nextmap.c_str(), "EndGame", 7) == 0)
 		{
+			// draw animated background
+			WI_drawAnimatedBack();
 			WI_drawEL();
 			return;
 		}
@@ -881,18 +917,22 @@ void WI_drawShowNextLoc()
 		{
 			if (levels.findByName(names[wbs->epsd][i]).flags & LEVEL_VISITED)
 			{
-				WI_drawOnLnode(i, &splat, 1);
+				needsplat = true;
+				break;
 			}
 		}
 
 		// draw flashing ptr
 		if (snl_pointeron)
-			WI_drawOnLnode(WI_MapToIndex (wbs->next), yah, 2);
+			needmarker = true;
+		else
+			needmarker = false;
 	}
 
+	// draw animated background
+	WI_drawAnimatedBack();
 	// draws which level you are entering..
 	WI_drawEL();
-
 }
 
 void WI_drawNoState()
@@ -1298,6 +1338,8 @@ void WI_updateStats()
 
 				background_surface =
 				    I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+				splat_surface =
+				    I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 				const DCanvas* canvas = background_surface->getDefaultCanvas();
 
 				background_surface->lock();
@@ -1497,6 +1539,7 @@ void WI_loadData()
 
 	const patch_t* bg_patch = W_CachePatch(name);
 	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+	splat_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 	const DCanvas* canvas = background_surface->getDefaultCanvas();
 
 	background_surface->lock();
@@ -1622,6 +1665,9 @@ void WI_loadData()
 		sprintf(name, "STPB%d", i);
 		faceclassic[i] = W_CachePatchHandle(name, PU_STATIC);
 	}
+
+	needsplat = false;
+	needmarker = false;
 }
 
 void WI_unloadData()
@@ -1693,7 +1739,7 @@ void WI_Drawer()
 
 	// If the background screen has been freed, then we really shouldn't
 	// be in here. (But it happens anyway.)
-	if (background_surface)
+	if (background_surface && splat_surface)
 	{
 		switch (state)
 		{

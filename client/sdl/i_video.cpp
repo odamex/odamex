@@ -317,9 +317,9 @@ static void BlitLoopCrop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 //
 // Blits a surface into this surface, automatically scaling the source image
 // to fit the destination dimensions. However, instead of scaling the image to fit
-// the destination, it scales the image and then crops it to the screen if it's
-// off the side of the surface in any direction.
-// 
+// the surface dimensions, it scales the image to destination dimensions and then
+// crops it to the screen if it's off the side of the surface in any direction.
+//
 void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, int srcy,
 			int srcw, int srch, int destx, int desty, int destw, int desth)
 {
