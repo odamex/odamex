@@ -30,6 +30,7 @@
 #include <math.h>
 #include "m_random.h"
 #include "p_local.h"
+#include "gi.h"
 #include "r_local.h"
 #include "r_sky.h"
 #include "st_stuff.h"
@@ -148,6 +149,9 @@ int CorrectFieldOfView = 2048;
 fixed_t			render_lerp_amount;
 
 static void R_InitViewWindow();
+
+IWindowSurface* screenblocks_surface;
+IWindowSurface* scaled_screenblocks_surface;
 
 
 //
@@ -639,6 +643,8 @@ void R_Init()
 void STACK_ARGS R_Shutdown()
 {
     R_FreeTranslationTables();
+    I_FreeSurface(screenblocks_surface);
+		I_FreeSurface(scaled_screenblocks_surface);
 }
 
 

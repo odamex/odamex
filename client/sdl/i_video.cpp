@@ -83,6 +83,8 @@ extern int NewWidth, NewHeight, NewBits, DisplayBits;
 static int loading_icon_expire = -1;
 static IWindowSurface* loading_icon_background_surface = NULL;
 
+extern IWindowSurface* scaled_screenblocks_surface;
+
 EXTERN_CVAR(vid_32bpp)
 EXTERN_CVAR(vid_fullscreen)
 EXTERN_CVAR(vid_vsync)
@@ -270,14 +272,14 @@ static void BlitLoopCrop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 	for (int y = 0; y < desth; y++)
 	{
 		// Find if we're off the top or bottom of page
-		if (y - off_top >= 0 && y + off_bottom <= desth)
+		if (y - off_top >= 0 && y <= desth - off_bottom)
 		{
 			if (sizeof(DEST_PIXEL_T) == sizeof(SOURCE_PIXEL_T) && xstep == FRACUNIT)
 			{
 				for (int x = 0; x < destw; x++)
 				{
 					// Find if we're off the left or right of page
-					if (x - off_left >= 0 && x + off_right <= destw)
+					if (x - off_left >= 0 && x <= destw - off_right)
 					{
 						dest[pixelcur] = source[x];
 						pixelcur++;
@@ -291,7 +293,7 @@ static void BlitLoopCrop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 				for (int x = 0; x < destw; x++)
 				{
 					// Find if we're off the left or right of page
-					if (x - off_left >= 0 && x + off_right <= destw)
+					if (x - off_left >= 0 && x <= destw - off_right)
 					{
 						dest[pixelcur] = ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(source[xfrac >> FRACBITS], palette);
 						pixelcur++;
@@ -381,7 +383,7 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 	}
 	if (desty + desth > getHeight())
 	{
-		off_bottom = destw + desty - getHeight();
+		off_bottom = desth + desty - getHeight();
 	}
 
 	if (destw == 0 || desth == 0)
@@ -787,6 +789,7 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	I_FreeSurface(converted_surface);
 	I_FreeSurface(matted_surface);
 	I_FreeSurface(emulated_surface);
+	I_FreeSurface(scaled_screenblocks_surface);
 
 	// Handle a requested 8bpp surface when the video capabilities only support 32bpp
 	if (requested_mode.bpp != validated_mode.bpp)

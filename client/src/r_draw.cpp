@@ -49,6 +49,9 @@
 // [RH] status bar position at bottom of screen
 extern	int		ST_Y;
 
+extern IWindowSurface* screenblocks_surface;
+extern IWindowSurface* scaled_screenblocks_surface;
+
 //
 // All drawing to the view buffer is accomplished in this file.
 // The other refresh files only know about ccordinates,
@@ -147,7 +150,6 @@ const int FuzzTable::table[FuzzTable::size] = {
 
 
 static FuzzTable fuzztable;
-
 
 // ============================================================================
 //
@@ -1470,26 +1472,70 @@ void R_DrawSlopeSpanD_c()
 
 /****************************************************/
 
-
-void R_DrawBorder(int x1, int y1, int x2, int y2)
+void R_InitializeScreenblocksCanvas()
 {
-	IWindowSurface* surface = R_GetRenderingSurface();
-	DCanvas* canvas = surface->getDefaultCanvas();
+	IWindowSurface* primary_surface = R_GetRenderingSurface();
+	int surface_width = primary_surface->getWidth(),
+	    surface_height = primary_surface->getHeight();
 
-	// Get dimensions of flat to fill as well in case its a large flat
-	int lumpnum = W_CheckNumForName(gameinfo.borderFlat, ns_flats);
+	// background
+	int lumpnum = W_CheckNumForName(::gameinfo.borderFlat, ns_flats);
+
+	// Draw screenblocks to a 320x200 surface and scale it based on viewport height
+	// If it doesn't reach the side edges of viewport or over, scale it via
+	// top of surface and spill over the bottom and right
+	float aspect_scale_ratio = (float)surface_height / (float)200.0f;
+	int screenblockWidth = aspect_scale_ratio * 320 > surface_width ? aspect_scale_ratio * 320 : surface_width;
+	int screenblockHeight = surface_height;
+
+	if (screenblocks_surface == NULL)
+		screenblocks_surface = I_AllocateSurface(320, 200, 8);
+	if (scaled_screenblocks_surface == NULL)
+		scaled_screenblocks_surface = I_AllocateSurface(surface_width, surface_height, 8);
+
+	screenblocks_surface->clear();
+	scaled_screenblocks_surface->clear();
+
+	screenblocks_surface->lock();
+	scaled_screenblocks_surface->lock();
+
+	scaled_screenblocks_surface->getDefaultCanvas();
+
 	if (lumpnum >= 0)
 	{
 		// Support high resolution flats
 		unsigned int length = W_LumpLength(lumpnum);
-
 		const byte* patch_data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
-		canvas->FlatFill(x1, y1, x2, y2, length, patch_data);
+
+		screenblocks_surface->getDefaultCanvas()->FlatFill(0, 0, 320, 200, length, patch_data);
 	}
 	else
 	{
-		canvas->Clear(x1, y1, x2, y2, argb_t(0, 0, 0));
+		screenblocks_surface->getDefaultCanvas()->Clear(0, 0, 320, 200, argb_t(0, 0, 0));
 	}
+
+	// Blit the smaller screenblocks into the big one
+	scaled_screenblocks_surface->blitcrop(screenblocks_surface, 0, 0, 320, 200,
+		0, 0, screenblockWidth, screenblockHeight);
+
+	screenblocks_surface->unlock();
+	scaled_screenblocks_surface->unlock();
+}
+
+void R_DrawBorder(int x1, int y1, int x2, int y2)
+{
+	IWindowSurface* primary_surface = R_GetRenderingSurface();
+
+	if (!scaled_screenblocks_surface || !screenblocks_surface)
+		R_InitializeScreenblocksCanvas();
+
+	scaled_screenblocks_surface->lock();
+
+	primary_surface->blit(scaled_screenblocks_surface, x1, y1, 
+		x1 + x2, y1 + y2,
+		x1, y1, x1 + x2, y1 + y2);
+
+	scaled_screenblocks_surface->unlock();
 }
 
 
