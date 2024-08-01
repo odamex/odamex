@@ -715,14 +715,6 @@ void F_BunnyScroll()
 	c2->DrawPatch(p2, 0, 0);
 	bunny2_surface->unlock();
 
-	int p2offset = 0;
-
-	if (bunnywidth > 320)
-	{
-		// Widescreen mod PFUBs.
-		p2offset = bunnywidth - 320;
-	}
-
 	int bunnyextra = bunnywidth - 320;
 
 	float aspect_scale_ratio = (float)surface_height / (float)bunnyheight;
@@ -804,6 +796,48 @@ void F_BunnyScroll()
 	screen->DrawPatchIndirect(W_CachePatch(name), (320-13*8)/2, (200-8*8)/2);
 }
 
+//
+// F_DrawEndPic
+//
+// Draws an endpic on the finale canvas.
+// If using a normal 320x200 endpic,
+// It will be scaled to fit the viewport.
+// 
+// If using a widescreen endpic, it will
+// be scaled keeping aspect ratio to fill
+// the screen and may be too wide for the
+// viewport. It will be cropped in that case.
+//
+void F_DrawEndPic(const char* page)
+{
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	primary_surface->clear(); // ensure black background in matted modes
+
+	const patch_t* background_patch = W_CachePatch(page);
+
+	finale_width = background_patch->width();
+	finale_height = background_patch->height();
+
+	I_FreeSurface(finale_surface);
+	finale_surface = I_AllocateSurface(finale_width, finale_height, 8);
+
+	const int width = F_GetCWidth();
+	const int height = primary_surface->getHeight();
+
+	const int x = (primary_surface->getWidth() - width) / 2;
+	const int y = (primary_surface->getHeight() - height) / 2;
+	
+	// draw the background to the surface
+	finale_surface->lock();
+
+	finale_surface->getDefaultCanvas()->DrawPatch(background_patch, 0, 0);
+
+	primary_surface->blitcrop(finale_surface, 0, 0, finale_width, finale_height, x, y,
+		width, height);
+
+	finale_surface->unlock();
+}
+
 
 //
 // F_Drawer
@@ -824,17 +858,17 @@ void F_Drawer (void)
 				{
 					const char* page = !level.endpic.empty() ? level.endpic.c_str() : gameinfo.finalePage1;
 
-					screen->DrawPatchIndirect(W_CachePatch(page), 0, 0);
+					F_DrawEndPic(page);
 					break;
 				}
 				case '2':
-					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage2), 0, 0);
+					F_DrawEndPic(gameinfo.finalePage2);
 					break;
 				case '3':
 					F_BunnyScroll ();
 					break;
 				case '4':
-					screen->DrawPatchIndirect (W_CachePatch (gameinfo.finalePage3), 0, 0);
+					F_DrawEndPic(gameinfo.finalePage3);
 					break;
 			}
 			break;
