@@ -1485,8 +1485,15 @@ void R_InitializeScreenblocksCanvas()
 	// If it doesn't reach the side edges of viewport or over, scale it via
 	// top of surface and spill over the bottom and right
 	float aspect_scale_ratio = (float)surface_height / (float)200.0f;
-	int screenblockWidth = aspect_scale_ratio * 320 > surface_width ? aspect_scale_ratio * 320 : surface_width;
+	int screenblockWidth = aspect_scale_ratio * 320;
 	int screenblockHeight = surface_height;
+
+	if (screenblockWidth < surface_width)
+	{
+		float width_scale_ratio = (float)surface_width / (float)screenblockWidth;
+		screenblockWidth *= width_scale_ratio;
+		screenblockHeight *= width_scale_ratio;
+	}
 
 	if (screenblocks_surface == NULL)
 		screenblocks_surface = I_AllocateSurface(320, 200, 8);

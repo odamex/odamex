@@ -272,14 +272,14 @@ static void BlitLoopCrop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 	for (int y = 0; y < desth; y++)
 	{
 		// Find if we're off the top or bottom of page
-		if (y - off_top >= 0 && y <= desth - off_bottom)
+		if (y - off_top >= 0 && y < desth - off_bottom)
 		{
 			if (sizeof(DEST_PIXEL_T) == sizeof(SOURCE_PIXEL_T) && xstep == FRACUNIT)
 			{
 				for (int x = 0; x < destw; x++)
 				{
 					// Find if we're off the left or right of page
-					if (x - off_left >= 0 && x <= destw - off_right)
+					if (x - off_left >= 0 && x < destw - off_right)
 					{
 						dest[pixelcur] = source[x];
 						pixelcur++;
@@ -293,7 +293,7 @@ static void BlitLoopCrop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 				for (int x = 0; x < destw; x++)
 				{
 					// Find if we're off the left or right of page
-					if (x - off_left >= 0 && x <= destw - off_right)
+					if (x - off_left >= 0 && x < destw - off_right)
 					{
 						dest[pixelcur] = ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(source[xfrac >> FRACBITS], palette);
 						pixelcur++;
