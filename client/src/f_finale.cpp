@@ -332,7 +332,15 @@ void F_TextWrite ()
 
 	const int width = F_GetWidth();
 	const int height = F_GetHeight();
-	const int x = (primary_surface->getWidth() - width) / 2;
+
+	// Draw screenblocks to a 320x200 surface and scale it based on viewport height
+	// If it doesn't reach the side edges of viewport or over, scale it via
+	// top of surface and spill over the bottom and right
+	int screenblockHeight = height;
+	float aspect_scale_ratio = (float)screenblockHeight / (float)200.0f;
+	int screenblockWidth = aspect_scale_ratio * 320;
+
+	const int x = (primary_surface->getWidth() - screenblockWidth) / 2;
 	const int y = (primary_surface->getHeight() - height) / 2;
 
 	int lump;
@@ -352,7 +360,19 @@ void F_TextWrite ()
 			// Support high resolution flats
 			unsigned int length = W_LumpLength(lump);
 
-			screen->FlatFill(x, y, width + x, height + y, length, (byte*)W_CacheLumpNum(lump, PU_CACHE));
+			I_FreeSurface(finale_surface);
+			finale_surface = I_AllocateSurface(320, 200, 8);
+
+			finale_surface->lock();
+
+			finale_surface->getDefaultCanvas()->FlatFill(
+			    0, 0, 320, 200, length,
+			    (byte*)W_CacheLumpNum(lump, PU_CACHE));
+
+			primary_surface->blitcrop(finale_surface, 0, 0, 320, 200,
+				x, y, screenblockWidth, screenblockHeight);
+
+			finale_surface->unlock();
 		}
 		break;
 	default:
