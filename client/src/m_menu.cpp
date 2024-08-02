@@ -1231,7 +1231,7 @@ void M_DrawHelpToSurface(const patch_t* patch)
 	help_surface->getDefaultCanvas()->DrawPatch(patch, 0, 0);
 
 	primary_surface->blitcrop(help_surface, 0, 0, help_surface->getWidth(),
-	                          help_surface->getHeight(), x, y, destw, desth);
+		help_surface->getHeight(), x, y, destw, desth, true);
 
 	help_surface->unlock();
 }

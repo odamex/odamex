@@ -370,7 +370,7 @@ void F_TextWrite ()
 			    (byte*)W_CacheLumpNum(lump, PU_CACHE));
 
 			primary_surface->blitcrop(finale_surface, 0, 0, 320, 200,
-				x, y, screenblockWidth, screenblockHeight);
+				x, y, screenblockWidth, screenblockHeight, false);
 
 			finale_surface->unlock();
 		}
@@ -681,7 +681,7 @@ void F_CastDrawer()
 	const int x = (primary_surface->getWidth() - width) / 2;
 	const int y = (primary_surface->getHeight() - height) / 2;
 
-	primary_surface->blitcrop(cast_surface, 0, 0, finale_width, finale_height, x, y, width, height);
+	primary_surface->blitcrop(cast_surface, 0, 0, finale_width, finale_height, x, y, width, height, false);
 
 	cast_surface->unlock();
 
@@ -785,10 +785,10 @@ void F_BunnyScroll()
 	bunny2_surface->lock();
 	primary_surface->blitcrop(bunny1_surface, 0, 0, bunny1_surface->getWidth(),
 				bunny1_surface->getHeight(), p1x, 0, frame_width,
-				surface_height);
+				surface_height, false);
 	primary_surface->blitcrop(bunny2_surface, 0, 0, bunny2_surface->getWidth(),
 				bunny2_surface->getHeight(), p2x, 0, frame_width,
-				surface_height);
+				surface_height, false);
 	bunny1_surface->unlock();
 	bunny2_surface->unlock();
 
@@ -853,7 +853,7 @@ void F_DrawEndPic(const char* page)
 	finale_surface->getDefaultCanvas()->DrawPatch(background_patch, 0, 0);
 
 	primary_surface->blitcrop(finale_surface, 0, 0, finale_width, finale_height, x, y,
-		width, height);
+		width, height, false);
 
 	finale_surface->unlock();
 }

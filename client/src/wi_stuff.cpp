@@ -518,7 +518,7 @@ void WI_slamBackground()
 	splat_surface->lock();
 
 	splat_surface->blitcrop(background_surface, 0, 0, background_surface->getWidth(), background_surface->getHeight(),
-				0, 0,	splat_surface->getWidth(), splat_surface->getHeight());
+				0, 0,	splat_surface->getWidth(), splat_surface->getHeight(), false);
 
 	if (needsplat)
 	{
@@ -541,7 +541,7 @@ void WI_slamBackground()
 
 	primary_surface->blitcrop(splat_surface, 0, 0, splat_surface->getWidth(), splat_surface->getHeight(),
 				(primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
-				destw, desth);
+				destw, desth, false);
 
 	background_surface->unlock();
 	splat_surface->unlock();
