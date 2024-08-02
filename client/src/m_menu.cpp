@@ -126,6 +126,8 @@ oldmenu_t *currentMenu;
 static int			help_height;
 static int			help_width;
 
+static IWindowSurface* help_surface = NULL;
+
 //
 // PROTOTYPES
 //
@@ -1154,6 +1156,86 @@ void M_Expansion(int choice)
 	M_SetupNextMenu(&NewDef);
 }
 
+int M_GetHelpHeight() 
+{
+	int surface_width = I_GetVideoWidth(), surface_height = I_GetVideoHeight();
+
+	int desth;
+
+	if (I_IsProtectedResolution(surface_width, surface_height))
+	{
+		desth = surface_height;
+	}
+	else if (surface_width * 3 >= surface_height * 4)
+	{
+		desth = surface_height;
+	}
+	else
+	{
+		desth = surface_width * 3 / 4;
+	}
+
+	return desth;
+}
+
+int M_GetHelpWidth()
+{
+	int surface_width = I_GetVideoWidth(), surface_height = I_GetVideoHeight();
+
+	int destw;
+
+	if (I_IsProtectedResolution(surface_width, surface_height))
+	{
+		destw = surface_width;
+	}
+	else if (surface_width * 3 >= surface_height * 4)
+	{
+		destw = surface_height * 4 / 3;
+	}
+	else
+	{
+		destw = surface_width;
+	}
+
+	if (help_width > 320)
+	{
+
+		float aspect_scale_ratio = (float)surface_height / (float)help_height;
+		int newPageWidth = aspect_scale_ratio * help_width;
+		destw = newPageWidth;
+	}
+
+	return destw;
+}
+
+void M_DrawHelpToSurface(const patch_t* patch)
+{
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+
+	help_width = patch->width();
+	help_height = patch->height();
+
+	int surface_width = primary_surface->getWidth(),
+	    surface_height = primary_surface->getHeight();
+
+	int destw = M_GetHelpWidth(), desth = M_GetHelpHeight();
+
+	int x = (surface_width - destw) / 2;
+	int y = (surface_height - desth) / 2;
+
+	I_FreeSurface(help_surface);
+	help_surface = I_AllocateSurface(help_width, help_height, 8);
+
+	help_surface->lock();
+
+	help_surface->getDefaultCanvas()->DrawPatch(patch, 0, 0);
+
+	primary_surface->blitcrop(help_surface, 0, 0, help_surface->getWidth(),
+	                          help_surface->getHeight(), x, y, destw, desth);
+
+	help_surface->unlock();
+}
+
 
 //
 // Read This Menus
@@ -1162,22 +1244,7 @@ void M_Expansion(int choice)
 void M_DrawReadThis1()
 {
 	const patch_t *p = W_CachePatch(gameinfo.info.infoPage[0]);
-	help_width = p->width();
-	help_height = p->height();
-
-	if (help_width > 320)
-	{
-		// Create a canvas and stetch it
-		// for widescreen stuff. Make it
-		// respect aspect ratios
-
-		//screen->getSurface()->blitcrop(;
-		screen->DrawPatchFullScreen(p);
-	}
-	else
-	{
-		screen->DrawPatchFullScreen(p);
-	}
+	M_DrawHelpToSurface(p);
 }
 
 //
@@ -1186,7 +1253,7 @@ void M_DrawReadThis1()
 void M_DrawReadThis2()
 {
 	const patch_t *p = W_CachePatch(gameinfo.info.infoPage[1]);
-	screen->DrawPatchFullScreen(p);
+	M_DrawHelpToSurface(p);
 }
 
 //
@@ -1195,7 +1262,7 @@ void M_DrawReadThis2()
 void M_DrawReadThis3()
 {
 	const patch_t *p = W_CachePatch(gameinfo.info.infoPage[2]);
-	screen->DrawPatchFullScreen(p);
+	M_DrawHelpToSurface(p);
 }
 
 //
