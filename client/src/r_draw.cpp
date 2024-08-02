@@ -1484,8 +1484,7 @@ void R_InitializeScreenblocksCanvas()
 	// Draw screenblocks to a 320x200 surface and scale it based on viewport height
 	// If it doesn't reach the side edges of viewport or over, scale it via
 	// top of surface and spill over the bottom and right
-	float aspect_scale_ratio = (float)surface_height / (float)200.0f;
-	int screenblockWidth = aspect_scale_ratio * 320;
+	int screenblockWidth = I_GetAspectCorrectWidth(surface_height, 200.0f, 320);
 	int screenblockHeight = surface_height;
 
 	if (screenblockWidth < surface_width)
@@ -1523,7 +1522,7 @@ void R_InitializeScreenblocksCanvas()
 
 	// Blit the smaller screenblocks into the big one
 	scaled_screenblocks_surface->blitcrop(screenblocks_surface, 0, 0, 320, 200,
-		0, 0, screenblockWidth, screenblockHeight, false);
+	   0, 0, screenblockWidth, screenblockHeight, false);
 
 	screenblocks_surface->unlock();
 	scaled_screenblocks_surface->unlock();
@@ -1539,8 +1538,8 @@ void R_DrawBorder(int x1, int y1, int x2, int y2)
 	scaled_screenblocks_surface->lock();
 
 	primary_surface->blit(scaled_screenblocks_surface, x1, y1, 
-		x1 + x2, y1 + y2,
-		x1, y1, x1 + x2, y1 + y2);
+	   x1 + x2, y1 + y2,
+	   x1, y1, x1 + x2, y1 + y2);
 
 	scaled_screenblocks_surface->unlock();
 }

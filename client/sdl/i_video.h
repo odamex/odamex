@@ -99,6 +99,8 @@ const PixelFormat* I_Get32bppPixelFormat();
 
 void I_DrawLoadingIcon();
 
+int I_GetAspectCorrectWidth(int surface_height, int asset_height, int asset_width);
+
 
 // ****************************************************************************
 

@@ -1434,4 +1434,10 @@ const PixelFormat* I_Get32bppPixelFormat()
 	return &format;
 }
 
+int I_GetAspectCorrectWidth(int surface_height, int asset_height, int asset_width)
+{
+	float aspect_scale_ratio = (float)surface_height / (float)asset_height;
+	return aspect_scale_ratio * asset_width;
+}
+
 VERSION_CONTROL (i_video_cpp, "$Id$")

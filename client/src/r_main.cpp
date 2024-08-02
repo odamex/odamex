@@ -644,7 +644,7 @@ void STACK_ARGS R_Shutdown()
 {
     R_FreeTranslationTables();
     I_FreeSurface(screenblocks_surface);
-		I_FreeSurface(scaled_screenblocks_surface);
+    I_FreeSurface(scaled_screenblocks_surface);
 }
 
 

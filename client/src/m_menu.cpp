@@ -1199,10 +1199,7 @@ int M_GetHelpWidth()
 
 	if (help_width > 320)
 	{
-
-		float aspect_scale_ratio = (float)surface_height / (float)help_height;
-		int newPageWidth = aspect_scale_ratio * help_width;
-		destw = newPageWidth;
+		destw = I_GetAspectCorrectWidth(surface_height, help_height, help_width);
 	}
 
 	return destw;
@@ -1231,7 +1228,7 @@ void M_DrawHelpToSurface(const patch_t* patch)
 	help_surface->getDefaultCanvas()->DrawPatch(patch, 0, 0);
 
 	primary_surface->blitcrop(help_surface, 0, 0, help_surface->getWidth(),
-		help_surface->getHeight(), x, y, destw, desth, true);
+	   help_surface->getHeight(), x, y, destw, desth, true);
 
 	help_surface->unlock();
 }

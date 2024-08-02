@@ -405,9 +405,7 @@ static int WI_GetWidth()
 	// Maybe too big? (it will be cropped if so)
 	if (inter_width > 320)
 	{
-		float aspect_scale_ratio = (float)surface_height / (float)inter_height;
-		int newPageWidth = aspect_scale_ratio * inter_width;
-		width = newPageWidth;
+		width = I_GetAspectCorrectWidth(surface_height, inter_height, inter_width);
 	}
 
 	return width;
@@ -492,7 +490,7 @@ void WI_drawOnLnode(int n, lumpHandle_t* c, int numpatches)
 		patch_t* ch = W_ResolvePatchHandle(c[i]);
 
 		canvas->DrawPatch(ch, lnodes[wbs->epsd][n].x + scaled_x,
-		                          lnodes[wbs->epsd][n].y);
+		                      lnodes[wbs->epsd][n].y);
 	}
 	else
 	{
@@ -528,7 +526,7 @@ void WI_slamBackground()
 		{
 			if (levels.findByName(names[wbs->epsd][i]).flags & LEVEL_VISITED)
 			{
-					WI_drawOnLnode(i, &splat, 1);
+				WI_drawOnLnode(i, &splat, 1);
 			}
 		}
 	}
@@ -540,8 +538,8 @@ void WI_slamBackground()
 
 
 	primary_surface->blitcrop(splat_surface, 0, 0, splat_surface->getWidth(), splat_surface->getHeight(),
-				(primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
-				destw, desth, false);
+	   (primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
+	   destw, desth, false);
 
 	background_surface->unlock();
 	splat_surface->unlock();

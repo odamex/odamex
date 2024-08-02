@@ -425,9 +425,7 @@ void D_PageDrawer()
 		// Maybe too big? (it will be cropped if so)
 		if (page_width > 320)
 		{
-			float aspect_scale_ratio = (float)desth / (float)page_height;
-			int newPageWidth = aspect_scale_ratio * page_width;
-			destw = newPageWidth;
+			destw = I_GetAspectCorrectWidth(desth, page_height, page_width);
 		}
 
 		page_surface->lock();

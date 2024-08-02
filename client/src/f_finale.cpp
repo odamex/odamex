@@ -110,9 +110,7 @@ static int F_GetCWidth()
 	// Maybe too big? (it will be cropped if so)
 	if (finale_width > 320)
 	{
-		float aspect_scale_ratio = (float)surface_height / (float)finale_height;
-		int newFinaleWidth = aspect_scale_ratio * finale_width;
-		width = newFinaleWidth;
+		width = I_GetAspectCorrectWidth(surface_height, finale_height, finale_width);
 	}
 
 	return width;
@@ -337,8 +335,7 @@ void F_TextWrite ()
 	// If it doesn't reach the side edges of viewport or over, scale it via
 	// top of surface and spill over the bottom and right
 	int screenblockHeight = height;
-	float aspect_scale_ratio = (float)screenblockHeight / (float)200.0f;
-	int screenblockWidth = aspect_scale_ratio * 320;
+	int screenblockWidth = I_GetAspectCorrectWidth(screenblockHeight, 200.0f, 320);
 
 	const int x = (primary_surface->getWidth() - screenblockWidth) / 2;
 	const int y = (primary_surface->getHeight() - height) / 2;
@@ -370,7 +367,7 @@ void F_TextWrite ()
 			    (byte*)W_CacheLumpNum(lump, PU_CACHE));
 
 			primary_surface->blitcrop(finale_surface, 0, 0, 320, 200,
-				x, y, screenblockWidth, screenblockHeight, false);
+			    x, y, screenblockWidth, screenblockHeight, false);
 
 			finale_surface->unlock();
 		}
@@ -784,11 +781,11 @@ void F_BunnyScroll()
 	bunny1_surface->lock();
 	bunny2_surface->lock();
 	primary_surface->blitcrop(bunny1_surface, 0, 0, bunny1_surface->getWidth(),
-				bunny1_surface->getHeight(), p1x, 0, frame_width,
-				surface_height, false);
+	   bunny1_surface->getHeight(), p1x, 0, frame_width,
+	   surface_height, false);
 	primary_surface->blitcrop(bunny2_surface, 0, 0, bunny2_surface->getWidth(),
-				bunny2_surface->getHeight(), p2x, 0, frame_width,
-				surface_height, false);
+	   bunny2_surface->getHeight(), p2x, 0, frame_width,
+	   surface_height, false);
 	bunny1_surface->unlock();
 	bunny2_surface->unlock();
 
@@ -853,7 +850,7 @@ void F_DrawEndPic(const char* page)
 	finale_surface->getDefaultCanvas()->DrawPatch(background_patch, 0, 0);
 
 	primary_surface->blitcrop(finale_surface, 0, 0, finale_width, finale_height, x, y,
-		width, height, false);
+	   width, height, false);
 
 	finale_surface->unlock();
 }
