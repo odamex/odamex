@@ -473,7 +473,12 @@ byte* R_GetPatchColumnData(int lumpnum, int colnum)
 //
 tallpost_t* R_GetTextureColumn(int texnum, int colnum)
 {
-	colnum &= texturewidthmask[texnum];
+	short width = textures[texnum]->width;
+	int mask = texturewidthmask[texnum];
+	if (mask + 1 == width)
+		colnum &= mask;
+	else
+		colnum %= width;
 	int lump = texturecolumnlump[texnum][colnum];
 	int ofs = texturecolumnofs[texnum][colnum];
 
