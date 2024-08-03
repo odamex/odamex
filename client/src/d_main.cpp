@@ -431,7 +431,7 @@ void D_PageDrawer()
 		page_surface->lock();
 
 		primary_surface->blitcrop(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
-				(surface_width - destw) / 2, (surface_height - desth) / 2, destw, desth, false);
+				(surface_width - destw) / 2, (surface_height - desth) / 2, destw, desth);
 
 		page_surface->unlock();
 	}

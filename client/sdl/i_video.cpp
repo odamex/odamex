@@ -264,7 +264,7 @@ static void BlitLoopCrop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 					int destpitchpixels, int srcpitchpixels,
 					int destw, int desth,
 					int off_top, int off_bottom, int off_left, int off_right,
-					fixed_t xstep, fixed_t ystep, const argb_t* palette, bool transparency)
+					fixed_t xstep, fixed_t ystep, const argb_t* palette)
 {
 	fixed_t yfrac = 0;
 
@@ -281,8 +281,7 @@ static void BlitLoopCrop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 					// Find if we're off the left or right of page
 					if (x - off_left >= 0 && x < destw - off_right)
 					{
-						if (!transparency || (transparency && source[x] != '\0'))
-							dest[pixelcur] = source[x];
+						dest[pixelcur] = source[x];
 						pixelcur++;
 					}
 				}
@@ -296,8 +295,7 @@ static void BlitLoopCrop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 					// Find if we're off the left or right of page
 					if (x - off_left >= 0 && x < destw - off_right)
 					{
-						if (!transparency || (transparency && source[xfrac >> FRACBITS] != '\0'))
-							dest[pixelcur] = ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(source[xfrac >> FRACBITS], palette);
+						dest[pixelcur] = ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(source[xfrac >> FRACBITS], palette);
 						pixelcur++;
 					}
 
@@ -325,7 +323,7 @@ static void BlitLoopCrop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 // crops it to the screen if it's off the side of the surface in any direction.
 //
 void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, int srcy,
-			int srcw, int srch, int destx, int desty, int destw, int desth, bool transparency)
+			int srcw, int srch, int destx, int desty, int destw, int desth)
 {
 	int off_left = 0;
 	int off_right = 0;
@@ -431,7 +429,7 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels, 
 			destw, desth, 
 			off_top, off_bottom, off_left, off_right,
-			xstep, ystep, palette, transparency);
+			xstep, ystep, palette);
 	}
 	else if (srcbits == 8 && destbits == 32)
 	{
@@ -445,7 +443,7 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels, 
 				destw, desth,
 				off_top, off_bottom, off_left, off_right,
-				xstep, ystep, palette, transparency);
+				xstep, ystep, palette);
 	}
 	else if (srcbits == 32 && destbits == 8)
 	{
@@ -461,7 +459,7 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels, 
 			destw, desth,
 			off_top, off_bottom, off_left, off_right,
-			xstep, ystep, palette, transparency);
+			xstep, ystep, palette);
 	}
 }
 

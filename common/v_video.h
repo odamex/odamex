@@ -133,7 +133,7 @@ public:
 	inline void DrawPatchClean (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const;
 
-	void DrawPatchFullScreen(const patch_t* patch) const;
+	void DrawPatchFullScreen(const patch_t* patch, bool clear) const;
 
 	inline void DrawLucentPatch (const patch_t *patch, int x, int y) const;
 	inline void DrawLucentPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;

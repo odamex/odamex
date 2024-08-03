@@ -1098,10 +1098,10 @@ void ST_Drawer()
 
 			if (st_scale)
 				stnum_surface->blitcrop(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
-						0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(), false);
+						0, 0, stnum_surface->getWidth(), stnum_surface->getHeight());
 			else
 				surface->blitcrop(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
-						ST_X, ST_Y, ST_WIDTH, ST_HEIGHT, false);
+						ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
 		}
 		
 		// refresh all widgets
@@ -1109,7 +1109,7 @@ void ST_Drawer()
 
 		if (st_scale)
 			surface->blitcrop(stnum_surface, 0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(),
-					ST_X, ST_Y, ST_WIDTH, ST_HEIGHT, false);	
+					ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);	
 
 		stbar_surface->unlock();
 		stnum_surface->unlock();

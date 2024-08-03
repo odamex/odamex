@@ -1522,7 +1522,7 @@ void R_InitializeScreenblocksCanvas()
 
 	// Blit the smaller screenblocks into the big one
 	scaled_screenblocks_surface->blitcrop(screenblocks_surface, 0, 0, 320, 200,
-	   0, 0, screenblockWidth, screenblockHeight, false);
+	   0, 0, screenblockWidth, screenblockHeight);
 
 	screenblocks_surface->unlock();
 	scaled_screenblocks_surface->unlock();
