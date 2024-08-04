@@ -198,16 +198,19 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 	tmy = y;
 	tmz = z;
 
-	player_t* player = thing->player;
-
-	if (player)
+	if (!P_IsVoodooDoll(thing))
 	{
-		AActor* camera = player->camera;
-		if (camera)
+		player_t* player = thing->player;
+
+		if (player)
 		{
-			camera->prevx = tmx;
-			camera->prevy = tmy;
-			player->prevviewz = tmz + player->viewheight;
+			AActor* camera = player->camera;
+			if (camera)
+			{
+				camera->prevx = tmx;
+				camera->prevy = tmy;
+				player->prevviewz = tmz + player->viewheight;
+			}
 		}
 	}
 
