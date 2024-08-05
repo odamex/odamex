@@ -304,7 +304,7 @@ void CL_PredictWorld(void)
 	}
 
 	// If the player didn't just spawn or teleport, nudge the player from
-	// his position last tic to this new corrected position.  This smooths the
+	// their position last tic to this new corrected position.  This smooths the
 	// view when there's a misprediction.
 	if (snap.isContinuous())
 	{

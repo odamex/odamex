@@ -99,7 +99,7 @@ typedef enum
 	CF_FLY =			(1 << 4), // [RH] Flying player
 	CF_CHASECAM =		(1 << 5), // [RH] Put camera behind player
 	CF_FROZEN =			(1 << 6), // [RH] Don't let the player move
-	CF_REVERTPLEASE =	(1 << 7), // [RH] Stick camera in player's head if he moves
+	CF_REVERTPLEASE =	(1 << 7), // [RH] Stick camera in player's head if they move
 	CF_BUDDHA =			(1 << 8), // [Ch0wW] Buddha Cheatcode
 } cheat_t;
 
@@ -243,7 +243,7 @@ public:
 	int			timeout_vote;           // [AM] Tic when a player last voted.
 
 	bool		ready;					// [AM] Player is ready.
-	int			timeout_ready;          // [AM] Tic when a player last toggled his ready state.
+	int			timeout_ready;          // [AM] Tic when a player last toggled their ready state.
 
     byte		prefcolor[4];			// Nes - Preferred color. Server only.
 

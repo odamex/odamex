@@ -897,7 +897,7 @@ bool SV_SetupUserInfo(player_t &player)
 
 	// ensure sane values for userinfo
 	if (gender < 0 || gender >= NUMGENDER)
-		gender = GENDER_NEUTER;
+		gender = GENDER_OTHER;
 
 	aimdist = clamp(aimdist, 0, 5000 * 16384);
 
@@ -985,7 +985,7 @@ bool SV_SetupUserInfo(player_t &player)
 		switch (gender) {
 			case GENDER_MALE:	gendermessage = "his";  break;
 			case GENDER_FEMALE:	gendermessage = "her";  break;
-			default:			gendermessage = "its";  break;
+			default:			gendermessage = "their";  break;
 		}
 
 		SV_BroadcastPrintf("%s changed %s name to %s.\n",
@@ -2640,7 +2640,7 @@ void SVC_PrivMsg(player_t &player, player_t &dplayer, const char* message)
 
 	MSG_WriteSVC(&dplayer.client.reliablebuf, SVC_Say(true, player.id, message));
 
-	// [AM] Send a duplicate message to the sender, so he knows the message
+	// [AM] Send a duplicate message to the sender, so they know the message
 	//      went through.
 	if (player.id != dplayer.id)
 	{
@@ -3167,7 +3167,7 @@ void SV_WriteCommands(void)
 			MSG_WriteSVC(&cl->netbuf, SVC_MovePlayer(*pit, it->tic));
 		}
 
-		// [SL] Send client info about player he is spying on
+		// [SL] Send client info about player they are spying on
 		player_t *target = &idplayer(it->spying);
 		if (validplayer(*target) && &(*it) != target && P_CanSpy(*it, *target))
 			SV_SendPlayerStateUpdate(&(it->client), target);
@@ -3372,7 +3372,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 		return;
 	}
 
-	// client player will update his position if packets were missed
+	// client player will update their position if packets were missed
 	MSG_WriteSVC(&cl->netbuf, SVC_UpdateLocalPlayer(*mo, player.tic));
     SV_UpdateMovingSectors(player);
 }
@@ -3418,7 +3418,7 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 void SV_Spectate(player_t &player)
 {
 	// [AM] Code has three possible values; true, false and 5.  True specs the
-	//      player, false unspecs him and 5 updates the server with the spec's
+	//      player, false unspecs them and 5 updates the server with the spec's
 	//      new position.
 	byte Code = MSG_ReadByte();
 
@@ -3558,13 +3558,13 @@ void SV_JoinPlayer(player_t& player, bool silent)
 void SV_SpecPlayer(player_t &player, bool silent)
 {
 	// call CTF_CheckFlags _before_ the player becomes a spectator.
-	// Otherwise a flag carrier will drop his flag at (0,0), which
+	// Otherwise a flag carrier will drop their flag at (0,0), which
 	// is often right next to one of the bases...
 	if (sv_gametype == GM_CTF)
 		CTF_CheckFlags(player);
 
 	// [tm512 2014/04/18] Avoid setting spectator flags on a dead player
-	// Instead we respawn the player, move him back, and immediately spectate him afterwards
+	// Instead we respawn the player, move them back, and immediately spectate them afterwards
 	if (player.playerstate == PST_DEAD)
 		G_DoReborn(player);
 
@@ -3722,7 +3722,7 @@ static void HelpCmd(player_t& player)
  */
 static void ReadyCmd(player_t &player)
 {
-	// If the player is not ingame, he shouldn't be sending us ready packets.
+	// If the player is not ingame, they shouldn't be sending us ready packets.
 	if (!player.ingame()) {
 		return;
 	}

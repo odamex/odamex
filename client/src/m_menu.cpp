@@ -1275,7 +1275,7 @@ void M_QuitDOOM(int choice)
 
 void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
 
-static const char *genders[3] = { "male", "female", "cyborg" };
+static const char *genders[3] = { "male", "female", "other" };
 // Acts 19 quiz the order must match d_netinf.h
 static const char *colorpresets[11] = { "custom", "blue", "indigo", "green", "brown", "red", "gold", "jungle green", "purple", "white", "black" };
 static state_t *PlayerState;

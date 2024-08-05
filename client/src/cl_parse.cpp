@@ -943,7 +943,7 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 
 	p->userinfo.gender = static_cast<gender_t>(msg->gender());
 	if (p->userinfo.gender < 0 || p->userinfo.gender >= NUMGENDER)
-		p->userinfo.gender = GENDER_NEUTER;
+		p->userinfo.gender = GENDER_OTHER;
 
 	p->userinfo.color[0] = 255;
 	p->userinfo.color[1] = msg->color().r();

@@ -400,7 +400,7 @@ void CTF_SpawnDroppedFlag (team_t f, int x, int y, int z)
 
 //
 //	[Toke - CTF] CTF_CheckFlags
-//	Checks to see if player has any flags in his inventory, if so it spawns that flag on players location
+//	Checks to see if player has any flags in their inventory, if so it spawns that flag on players location
 //
 void CTF_CheckFlags (player_t &player)
 {

@@ -48,10 +48,10 @@ int D_GenderToInt (const char *gender)
 {
 	if (!stricmp (gender, "female"))
 		return GENDER_FEMALE;
-	else if (!stricmp (gender, "cyborg"))
-		return GENDER_NEUTER;
-	else
+	else if (!stricmp (gender, "male"))
 		return GENDER_MALE;
+	else
+		return GENDER_OTHER;
 }
 
 bool SetServerVar (const char *name, const char *value)

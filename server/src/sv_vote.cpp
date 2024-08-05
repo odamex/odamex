@@ -127,7 +127,7 @@ public:
 			return false;
 		}
 
-		// Stop the player from trying to forcespec himself.
+		// Stop the player from trying to forcespec themselves.
 		if (pid == player.id)
 		{
 			this->error = "You can't vote forcespec yourself!  Try 'spectate' instead.";
@@ -157,7 +157,7 @@ public:
 		if (idplayer(this->id).spectator)
 		{
 			std::ostringstream buffer;
-			buffer << this->netname << " became a spectator on his own.";
+			buffer << this->netname << " became a spectator on their own.";
 			this->error = buffer.str();
 			return false;
 		}
@@ -277,7 +277,7 @@ public:
 			return false;
 		}
 
-		// Stop the player from trying to kick himself.
+		// Stop the player from trying to kick themselves.
 		if (pid == player.id)
 		{
 			this->error = "You can't votekick yourself!  Try 'disconnect' instead.";
@@ -996,7 +996,7 @@ bool Vote::vote(player_t &player, bool ballot)
 		return false;
 	}
 
-	// Has the user voted too soon after his last vote?
+	// Has the user voted too soon after their last vote?
 	if (player.timeout_vote > 0)
 	{
 		int timeout = level.time - player.timeout_vote;
@@ -1194,7 +1194,7 @@ void SV_VoteCmd(player_t& player, const std::vector<std::string>& args)
 		return;
 	}
 
-	// Did the player actually change his vote?
+	// Did the player actually change their vote?
 	if (vote->vote(player, ballot))
 	{
 		SV_BroadcastPrintf("%s voted %s.\n", player.userinfo.netname.c_str(),

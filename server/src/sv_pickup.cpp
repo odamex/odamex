@@ -85,10 +85,10 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	for (std::vector<player_t*>::iterator it = eligible.begin();it != eligible.end();++it,++i) {
 		player_t &player = **it;
 
-		// Force-join the player if he's spectating.
+		// Force-join the player if they're spectating.
 		SV_SetPlayerSpec(player, false, true);
 
-		// Is the last player an odd-one-out?  Randomize the team he is put on.
+		// Is the last player an odd-one-out?  Randomize the team they are put on.
 		// Do not randomize if num_players = teamCount for randcaps (3 way ctf) 
 		if (num_players != teamCount && (eligible.size() % 2) == 1 && i == (eligible.size() - 1))
 			dest_team = (team_t)(P_Random() % teamCount);
