@@ -565,7 +565,18 @@ void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int fla
 {
 	ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
 
-	*static_cast<OLumpName*>(data) = os.getToken();
+	level_pwad_info_t& info = *static_cast<level_pwad_info_t*>(data);
+
+	std::string pic = os.getToken();
+
+	if (flags == 1)
+	{
+		info.skypic = pic;
+	}
+	else
+	{
+		info.skypic2 = pic;
+	}
 
 	os.scan();
 	// Scroll speed
@@ -575,14 +586,14 @@ void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int fla
 	}
 	if (IsRealNum(os.getToken().c_str()))
 	{
-		/*if (HexenHack)
+		if (flags == 1)
 		{
-		    *((fixed_t *)(info + handler->data2)) = sc_Number << 8;
+			info.sky1ScrollDelta = FLOAT2FIXED(os.getTokenFloat());
 		}
-		 else
+		else
 		{
-		    *((fixed_t *)(info + handler->data2)) = (fixed_t)(sc_Float * 65536.0f);
-		}*/
+			info.sky2ScrollDelta = FLOAT2FIXED(os.getTokenFloat());
+		}
 	}
 	else
 	{
@@ -1082,8 +1093,8 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY3("secretnext", &MIType_MapName, &ref.secretmap)
 		ENTRY3("secret", &MIType_MapName, &ref.secretmap)
 		ENTRY3("cluster", &MIType_Cluster, &ref.cluster)
-		ENTRY3("sky1", &MIType_Sky, &ref.skypic)
-		ENTRY3("sky2", &MIType_Sky, &ref.skypic2)
+		ENTRY4("sky1", &MIType_Sky, &ref, 1)
+		ENTRY4("sky2", &MIType_Sky, &ref, 2)
 		ENTRY3("fade", &MIType_Color, &ref.fadeto_color)
 		ENTRY3("outsidefog", &MIType_Color, &ref.outsidefog_color)
 		ENTRY3("titlepatch", &MIType_LumpName, &ref.pname)
