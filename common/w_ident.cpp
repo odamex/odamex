@@ -217,7 +217,7 @@ static const identData_t identdata[] = {
         "4E158D9953C79CCF97BD0663244CC6B6", // mMd5Sum
         TNT_PREFIX " v1.9",                 // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
-        400,                                // weight
+        350,                                // weight
     },
     {
         TNT_PREFIX " (DOOM + DOOM II)",     // mIdName
@@ -226,7 +226,7 @@ static const identData_t identdata[] = {
         "8974E3117ED4A1839C752D5E11AB1B7B", // mMd5Sum
         TNT_PREFIX " v1.9",                 // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
-        420,                                // weight
+        370,                                // weight
     },
     {
         TNT_PREFIX " v1.9 Anthology",       // mIdName
@@ -235,7 +235,7 @@ static const identData_t identdata[] = {
         "1D39E405BF6EE3DF69A8D2646C8D5C49", // mMd5Sum
         TNT_PREFIX " v1.9",                 // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
-        425,                                // weight
+        375,                                // weight
     },
 
     // ------------------------------------------------------------------------
