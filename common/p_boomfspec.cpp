@@ -1271,7 +1271,18 @@ void P_PlayerInCompatibleSector(player_t* player)
 	sector_t* sector = player->mo->subsector->sector;
 	if (sector->special == 0 && sector->damageamount > 0) // Odamex Static Init Damage
 	{
-		P_ApplySectorDamage(player, sector->damageamount, 0);
+		if (sector->damageamount < 20)
+		{
+			P_ApplySectorDamageNoRandom(player, sector->damageamount, MOD_UNKNOWN);
+		}
+		else if (sector->damageamount < 50)
+		{
+			P_ApplySectorDamage(player, sector->damageamount, 5, MOD_UNKNOWN);
+		}
+		else
+		{
+			P_ApplySectorDamageNoWait(player, sector->damageamount, MOD_UNKNOWN);
+		}
 	}
 	// jff add if to handle old vs generalized types
 	else if (sector->special < 32) // regular sector specials

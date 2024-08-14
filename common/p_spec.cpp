@@ -2159,6 +2159,18 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
     return true;
 }
 
+void P_ApplySectorDamageNoWait(player_t* player, int damage, int mod)
+{
+	P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+}
+
+void P_ApplySectorDamageNoRandom(player_t* player, int damage, int mod)
+{
+	if (!player->powers[pw_ironfeet])
+		if (!(level.time & 0x1f))
+			P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+}
+
 void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod)
 {
 	if (!player->powers[pw_ironfeet] || (leak && P_Random(player->mo)<leak))
