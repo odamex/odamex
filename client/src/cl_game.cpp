@@ -55,6 +55,7 @@
 #include "gstrings.h"
 #include "r_sky.h"
 #include "r_draw.h"
+#include "r_interp.h"
 #include "g_game.h"
 #include "cl_main.h"
 #include "cl_demo.h"
@@ -90,6 +91,9 @@ bool	C_DoNetDemoKey(event_t *ev);
 bool	C_DoSpectatorKey(event_t *ev);
 
 void	CL_QuitCommand();
+
+fixed_t P_TickWeaponBobX();
+fixed_t P_TickWeaponBobY();
 
 EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (novert)
@@ -130,6 +134,9 @@ Players			players;
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
 int 			gametic;
+
+extern fixed_t bobx;
+extern fixed_t boby;
 
 enum demoversion_t
 {
@@ -829,6 +836,33 @@ BEGIN_COMMAND(netstat)
 }
 END_COMMAND(netstat)
 
+void P_BobTicker()
+{
+	bobx = P_TickWeaponBobX();
+	boby = P_TickWeaponBobY();
+}
+
+void P_CheckInterpPause()
+{
+	// Game pauses when in the menu and not online/demo
+	OInterpolation &oi = OInterpolation::getInstance();
+	if (paused || (!multiplayer && !demoplayback &&
+		(menuactive || ConsoleState == c_down || ConsoleState == c_falling)))
+	{
+		if (oi.enabled())
+		{
+			oi.disable();
+		}
+	}
+	else
+	{
+		if (!oi.enabled())
+		{
+			oi.enable();
+		}
+	}
+}
+
 void P_MovePlayer (player_t *player);
 void P_CalcHeight (player_t *player);
 void P_DeathThink (player_t *player);
@@ -1115,7 +1149,9 @@ void G_Ticker (void)
 			// Replay item pickups if the items arrived now.
 			ClientReplay::getInstance().itemReplay();
 		}
+		P_CheckInterpPause();
 		P_Ticker ();
+		P_BobTicker();
 		ST_Ticker ();
 		AM_Ticker ();
 		break;

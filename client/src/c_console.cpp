@@ -40,6 +40,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "r_main.h"
+#include "r_interp.h"
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "cl_responderkeys.h"
@@ -75,6 +76,8 @@ static unsigned int		ConRows, ConCols, PhysRows;
 static bool				cursoron = false;
 static int				ConBottom = 0;
 static int		RowAdjust = 0;
+
+int			ConBottomStep; // Console fall/raise bottom pixels at the end of the tic, for interp purposes
 
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
@@ -1430,10 +1433,27 @@ void C_Ticker()
 {
 	int surface_height = I_GetSurfaceHeight();
 
-	static int lasttic = 0;
-
-	if (lasttic == 0)
-		lasttic = gametic - 1;
+	if (ConsoleState == c_falling)
+	{
+		ConBottomStep += (surface_height * 2 / 25);
+	}
+	else if (ConsoleState == c_fallfull)
+	{
+		ConBottomStep += (surface_height * 2 / 15);
+	}
+	else if (ConsoleState == c_rising)
+	{
+		ConBottomStep -= (surface_height * 2 / 25);
+	}
+	else if (ConsoleState == c_risefull)
+	{
+		ConBottomStep -= (surface_height * 2 / 15);
+	}
+	else if (ConsoleState == c_up)
+	{
+		// Console suddenly snapped up? Don't interp it anymore.
+		ConBottomStep = 0;
+	}
 
 	if (ConsoleState != c_up)
 	{
@@ -1463,43 +1483,6 @@ void C_Ticker()
 				RowAdjust = 0;
 		}
 
-		if (ConsoleState == c_falling)
-		{
-			ConBottom += (gametic - lasttic) * (surface_height * 2 / 25);
-			if (ConBottom >= surface_height / 2)
-			{
-				ConBottom = surface_height / 2;
-				ConsoleState = c_down;
-			}
-		}
-		else if (ConsoleState == c_fallfull)
-		{
-			ConBottom += (gametic - lasttic) * (surface_height * 2 / 15);
-			if (ConBottom >= surface_height)
-			{
-				ConBottom = surface_height;
-				ConsoleState = c_down;
-			}
-		}
-		else if (ConsoleState == c_rising)
-		{
-			ConBottom -= (gametic - lasttic) * (surface_height * 2 / 25);
-			if (ConBottom <= 0)
-			{
-				ConsoleState = c_up;
-				ConBottom = 0;
-			}
-		}
-		else if (ConsoleState == c_risefull)
-		{
-			ConBottom -= (gametic - lasttic) * (surface_height * 2 / 15);
-			if (ConBottom <= 0)
-			{
-				ConsoleState = c_up;
-				ConBottom = 0;
-			}
-		}
-
 		if (RowAdjust + (ConBottom/8) + 1 > (unsigned int)con_buffersize.asInt())
 			RowAdjust = con_buffersize.asInt() - ConBottom;
 	}
@@ -1510,7 +1493,7 @@ void C_Ticker()
 		CursorTicker = C_BLINKRATE;
 	}
 
-	lasttic = gametic;
+	OInterpolation::getInstance().beginConsoleInterpolation(render_lerp_amount);
 }
 
 
@@ -1582,10 +1565,10 @@ void C_AdjustBottom()
 {
 	int surface_height = I_GetSurfaceHeight();
 
-	if (C_UseFullConsole())
-		ConBottom = surface_height; 
-	else if (ConsoleState == c_up)
+	if (ConsoleState == c_up)
 		ConBottom = 0;
+	else if (C_UseFullConsole())
+		ConBottom = surface_height; 
 	else if (ConsoleState == c_down || ConBottom > surface_height / 2)
 		ConBottom = surface_height / 2;
 
@@ -1685,6 +1668,68 @@ void C_ToggleConsole()
 	History.resetPosition();
 }
 
+
+//
+// C_DisplayTicker
+//
+// This allows us to tic things separate from the gametics
+// So we can enable smoother display of console falling/rising
+//
+void C_DisplayTicker()
+{
+	int surface_height = I_GetSurfaceHeight();
+
+	// Attaching ConBottom to gametic will still cause falling/rising to
+	// be pinned to the gametic i.e. 35fps.
+
+	// Interp where the console bottom should be based on current and previous 
+	fixed_t bottom =
+		OInterpolation::getInstance().getInterpolatedConsoleBottom(render_lerp_amount);
+
+	if (ConsoleState == c_falling)
+	{
+		ConBottom = bottom;
+		if (ConBottom >= surface_height / 2)
+		{
+			ConBottom = surface_height / 2;
+			ConBottomStep = surface_height / 2;
+			ConsoleState = c_down;
+		}
+	}
+	else if (ConsoleState == c_fallfull)
+	{
+		ConBottom = bottom;
+		if (ConBottom >= surface_height)
+		{
+			ConBottom = surface_height;
+			ConBottomStep = surface_height;
+			ConsoleState = c_down;
+		}
+	}
+	else if (ConsoleState == c_rising)
+	{
+		ConBottom = bottom;
+		if (ConBottom <= 0)
+		{
+			ConsoleState = c_up;
+			ConBottom = 0;
+			ConBottomStep = 0;
+		}
+	}
+	else if (ConsoleState == c_risefull)
+	{
+		ConBottom = bottom;
+		if (ConBottom <= 0)
+		{
+			ConsoleState = c_up;
+			ConBottom = 0;
+			ConBottomStep = 0;
+		}
+	}
+
+	if (RowAdjust + (ConBottom / 8) + 1 > (unsigned int)con_buffersize.asInt())
+		RowAdjust = con_buffersize.asInt() - ConBottom;
+}
 
 //
 // C_DrawConsole
