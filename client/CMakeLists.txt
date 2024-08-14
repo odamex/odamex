@@ -181,6 +181,11 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     message(STATUS "Default SIMD flags not used on user request")
   endif()
 
+  if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    message(STATUS "GNU Detected, forcing GCC to link math.h")
+    target_compile_options(odamex PRIVATE -lm)
+  endif()
+
   if(MSVC)
     # We supply our own manifest, don't use the default one.
     set_target_properties(odamex PROPERTIES LINK_FLAGS "/MANIFEST:NO")
