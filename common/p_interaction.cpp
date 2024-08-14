@@ -1322,28 +1322,30 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 
 
 // [RH]
-// SexMessage: Replace parts of strings with gender-specific pronouns
+// GenderMessage: Replace parts of strings with gender-specific pronouns
 //
 // The following expansions are performed:
-//		%g -> he/she/they
-//		%h -> him/her/them
-//		%p -> his/her/their
+//		%g -> he/she/it/they
+//		%h -> him/her/it/them
+//		%p -> his/her/its/their
 //		%o -> other (victim)
 //		%k -> killer
 //
-void SexMessage (const char *from, char *to, int gender, const char *victim, const char *killer)
+void GenderMessage (const char *from, char *to, int gender, const char *victim, const char *killer)
 {
-	static const char *genderstuff[3][3] =
+	static const char *pronouns[4][3] =
 	{
 		{ "he",  "him", "his" },
 		{ "she", "her", "her" },
+		{ "it",  "it",  "its" }
 		{ "they",  "them",  "their" }
 	};
-	static const int gendershift[3][3] =
+	static const int gendershift[4][3] = // Length of each pronoun
 	{
 		{ 2, 3, 3 },
 		{ 3, 3, 3 },
-		{ 2, 2, 3 }
+		{ 2, 2, 3 },
+		{ 4, 4, 5 }
 	};
 	const char *subst = NULL;
 
@@ -1375,11 +1377,11 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 			}
 			else if (gendermsg < 0)
 			{
-				*to++ = '%';
+				*to++ = '%'; // Accounting for cases where there just happens to be a % as part of the message itself
 			}
 			else
 			{
-				strcpy (to, genderstuff[gender][gendermsg]);
+				strcpy (to, pronouns[gender][gendermsg]);
 				to += gendershift[gender][gendermsg];
 				from++;
 			}
@@ -1393,7 +1395,7 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 //
 static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 {
-	char gendermessage[1024];
+	char genderedmessage[1024];
 
 	if (!self || !self->player)
 		return;
@@ -1578,9 +1580,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 
 	if (message)
 	{
-		SexMessage(message, gendermessage, gender, self->player->userinfo.netname.c_str(),
+		GenderMessage(message, genderedmessage, gender, self->player->userinfo.netname.c_str(),
 		           self->player->userinfo.netname.c_str());
-		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", genderedmessage);
 
 		toast_t toast;
 		toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
@@ -1654,9 +1656,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 
 	if (message && attacker && attacker->player)
 	{
-		SexMessage(message, gendermessage, gender, self->player->userinfo.netname.c_str(),
+		GenderMessage(message, genderedmessage, gender, self->player->userinfo.netname.c_str(),
 		           attacker->player->userinfo.netname.c_str());
-		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", genderedmessage);
 
 		toast_t toast;
 		toast.flags = toast_t::LEFT_PID | toast_t::ICON | toast_t::RIGHT_PID;
@@ -1667,10 +1669,10 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 		return;
 	}
 
-	SexMessage(GStrings(OB_DEFAULT), gendermessage, gender,
+	GenderMessage(GStrings(OB_DEFAULT), genderedmessage, gender,
 	           self->player->userinfo.netname.c_str(),
 	           self->player->userinfo.netname.c_str());
-	SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+	SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", genderedmessage);
 
 	toast_t toast;
 	toast.flags = toast_t::ICON | toast_t::RIGHT_PID;

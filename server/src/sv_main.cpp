@@ -120,7 +120,7 @@ EXTERN_CVAR(g_winnerstays)
 EXTERN_CVAR(debug_disconnect)
 EXTERN_CVAR(g_resetinvonexit)
 
-void SexMessage (const char *from, char *to, int gender,
+void GenderMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_s* player);
@@ -985,6 +985,7 @@ bool SV_SetupUserInfo(player_t &player)
 		switch (gender) {
 			case GENDER_MALE:	gendermessage = "his";  break;
 			case GENDER_FEMALE:	gendermessage = "her";  break;
+			case GENDER_CYBORG:	gendermessage = "its";  break;
 			default:			gendermessage = "their";  break;
 		}
 

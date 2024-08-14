@@ -771,9 +771,11 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 		// Sexed sound
 		char nametemp[128];
 		const char templat[] = "player/%s/%s";
-                // Hacks away! -joek
-		//const char *genders[] = { "male", "female", "other" };
-                const char *genders[] = { "male", "male", "male" };
+		// Hacks away! -joek
+		//const char *genders[] = { "male", "female", "cyborg", "other" };
+		const char *genders[] = { "male", "male", "male", "male" }; // I have no idea what this is here for, but I can only suspect
+		// that it's some sort of bodge due to not having audio for the other gender options?
+		// Someone smarter than me should fix this
 		player_t *player;
 
 		sfx_id = -1;

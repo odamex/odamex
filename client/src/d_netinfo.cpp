@@ -91,6 +91,8 @@ gender_t D_GenderByName (const char *gender)
 		return GENDER_FEMALE;
 	else if (!stricmp (gender, "male"))
 		return GENDER_MALE;
+	else if (!stricmp (gender, "cyborg"))
+		return GENDER_CYBORG;
 	else
 		return GENDER_OTHER;
 }
