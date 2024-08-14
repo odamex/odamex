@@ -274,6 +274,11 @@ static const char* steam_install_subdirs[] =
 	"steamapps\\common\\ultimate doom\\base",
 	"steamapps\\common\\DOOM 3 BFG Edition\\base\\wads",
 	"steamapps\\common\\master levels of doom\\master\\wads", //Let Odamex find the Master Levels pwads too
+	"steamapps\\common\\ultimate doom\\base\\doom2", //2024 Steam re-release additions here and below
+	"steamapps\\common\\ultimate doom\\base\\master\\wads",
+	"steamapps\\common\\ultimate doom\\base\\plutonia",
+	"steamapps\\common\\ultimate doom\\base\\tnt",
+	"steamapps\\common\\ultimate doom\\rerelease",
 };
 
 
