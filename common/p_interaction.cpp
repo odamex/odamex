@@ -1337,7 +1337,7 @@ void GenderMessage (const char *from, char *to, int gender, const char *victim, 
 	{
 		{ "he",  "him", "his" },
 		{ "she", "her", "her" },
-		{ "it",  "it",  "its" }
+		{ "it",  "it",  "its" },
 		{ "they",  "them",  "their" }
 	};
 	static const int gendershift[4][3] = // Length of each pronoun
