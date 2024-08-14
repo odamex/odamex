@@ -30,13 +30,14 @@
 #include "p_setup.h"
 #include "r_sky.h"
 #include "v_video.h"
-#include "w_wad.h"
 #include "infomap.h"
 #include "p_mapformat.h"
+#include "g_umapinfo.h"
 #include "resources/res_main.h"
+#include "resources/res_nametranslator.h"
 
 /// Globals
-BOOL HexenHack;
+bool HexenHack;
 
 namespace
 {
@@ -63,7 +64,7 @@ void SkipUnknownParams(OScanner& os)
 
 //
 // Assumes that you have already munched the unknown type name, and just need
-// to much parameters, if any.
+// to munch parameters, if any.
 //
 void SkipUnknownType(OScanner& os)
 {
@@ -148,64 +149,7 @@ void MustGet<std::string>(OScanner& os)
 template <>
 void MustGet<OLumpName>(OScanner& os)
 {
-	os.mustScan();
-
-	if (os.getToken().length() > 8)
-	{
-		os.error("Lump name \"%s\" too long. Maximum size is 8 characters.",
-		        os.getToken().c_str());
-	}
-}
-
-//////////////////////////////////////////////////////////////////////
-/// Misc
-
-bool IsIdentifier(const OScanner& os)
-{
-	// [A-Za-z_]+[A-Za-z0-9_]*
-
-	if (os.getToken().empty())
-		return false;
-
-	const std::string token = os.getToken();
-	for (std::string::const_iterator it = token.begin(); it != token.end(); ++it)
-	{
-		const char& ch = *it;
-		if (ch == '_')
-			continue;
-
-		if (ch >= 'A' && ch <= 'Z')
-			continue;
-
-		if (ch >= 'a' && ch <= 'z')
-			continue;
-
-		if (it != token.begin() && ch >= '0' && ch <= '9')
-			continue;
-
-		return false;
-	}
-
-	return true;
-}
-
-void MustGetIdentifier(OScanner& os)
-{
-	os.mustScan();
-	if (!IsIdentifier(os))
-	{
-		os.error("Expected identifier (unexpected end of file).");
-	}
-}
-
-bool ContainsMapInfoTopLevel(const OScanner& os)
-{
-	return os.compareTokenNoCase("map") || os.compareTokenNoCase("defaultmap") ||
-	       os.compareTokenNoCase("cluster") || os.compareTokenNoCase("clusterdef") ||
-	       os.compareTokenNoCase("episode") || os.compareTokenNoCase("clearepisodes") ||
-	       os.compareTokenNoCase("skill") || os.compareTokenNoCase("clearskills") ||
-	       os.compareTokenNoCase("gameinfo") || os.compareTokenNoCase("intermission") ||
-	       os.compareTokenNoCase("automap");
+	os.mustScan(8);
 }
 
 void MustGetStringName(OScanner& os, const char* name)
@@ -217,425 +161,33 @@ void MustGetStringName(OScanner& os, const char* name)
 	}
 }
 
-// used for munching the strings in UMAPINFO
-std::string ParseMultiString(OScanner& os)
+//////////////////////////////////////////////////////////////////////
+/// Misc
+
+bool ContainsMapInfoTopLevel(const OScanner& os)
 {
-	os.scan();
-	
-	if (!os.isQuotedString())
-	{
-		if (os.compareTokenNoCase("clear"))
-			return "-"; // this was explicitly deleted to override the default.
-
-		os.error("Either 'clear' or quoted string expected");
-	}
-	os.unScan();
-
-	std::string build;
-
-	do
-	{
-		os.mustScan();
-
-		build += os.getToken(); // Concatenate the new line onto the existing text
-		build += '\n';			// Add newline
-		
-		os.scan();
-	} while (os.compareToken(","));
-	os.unScan();
-
-	return build;
+	return os.compareTokenNoCase("map") || os.compareTokenNoCase("defaultmap") ||
+	       os.compareTokenNoCase("cluster") || os.compareTokenNoCase("clusterdef") ||
+	       os.compareTokenNoCase("episode") || os.compareTokenNoCase("clearepisodes") ||
+	       os.compareTokenNoCase("skill") || os.compareTokenNoCase("clearskills") ||
+	       os.compareTokenNoCase("gameinfo") || os.compareTokenNoCase("intermission") ||
+	       os.compareTokenNoCase("automap");
 }
 
-void ParseOLumpName(OScanner& os, OLumpName& buffer)
-{
-	MustGet<OLumpName>(os);
-	buffer = os.getToken();
-}
-
-int ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL)
-{
-	// Check if the given map name can be expressed as a gameepisode/gamemap pair and be
-	// reconstructed from it.
-	char lumpname[9];
-	int epi = -1, map = -1;
-
-	if (gamemode != commercial)
-	{
-		if (sscanf(mapname.c_str(), "E%dM%d", &epi, &map) != 2)
-			return 0;
-		snprintf(lumpname, 9, "E%dM%d", epi, map);
-	}
-	else
-	{
-		if (sscanf(mapname.c_str(), "MAP%d", &map) != 1)
-			return 0;
-		snprintf(lumpname, 9, "MAP%02d", map);
-		epi = 1;
-	}
-	if (pEpi)
-		*pEpi = epi;
-	if (pMap)
-		*pMap = map;
-	return !strcmp(mapname.c_str(), lumpname);
-}
-
-int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
-{
-	// find the next line with content.
-	// this line is no property.
-
-	if (!IsIdentifier(os))
-	{
-		os.error("Expected identifier, got \"%s\".", os.getToken().c_str());
-	}
-	std::string pname = os.getToken();
-	MustGetStringName(os, "=");
-
-	if (!stricmp(pname.c_str(), "levelname"))
-	{
-		os.mustScan();
-		mape->level_name = os.getToken();
-		mape->pname.clear();
-	}
-	else if (!stricmp(pname.c_str(), "next"))
-	{
-		ParseOLumpName(os, mape->nextmap);
-		if (!ValidateMapName(mape->nextmap.c_str()))
-		{
-			os.error("Invalid map name %s.", mape->nextmap.c_str());
-			return 0;
-		}
-	}
-	else if (!stricmp(pname.c_str(), "nextsecret"))
-	{
-		ParseOLumpName(os, mape->secretmap);
-		if (!ValidateMapName(mape->secretmap.c_str()))
-		{
-			os.error("Invalid map name %s", mape->nextmap.c_str());
-			return 0;
-		}
-	}
-	else if (!stricmp(pname.c_str(), "levelpic"))
-	{
-		ParseOLumpName(os, mape->pname);
-	}
-	else if (!stricmp(pname.c_str(), "skytexture"))
-	{
-		ParseOLumpName(os, mape->skypic);
-	}
-	else if (!stricmp(pname.c_str(), "music"))
-	{
-		MustGet<OLumpName>(os);
-		const std::string musicname = os.getToken();
-		ResourceId music_res_id = Res_GetResourceId(musicname, NS_MUSIC);
-		if (Res_CheckResource(music_res_id))
-		{
-			mape->music = musicname;
-		}
-	}
-	else if (!stricmp(pname.c_str(), "endpic"))
-	{
-		ParseOLumpName(os, mape->endpic);
-		mape->nextmap = "EndGame1";
-	}
-	else if (!stricmp(pname.c_str(), "endcast"))
-	{
-		os.mustScanBool();
-		if (os.getTokenBool())
-			mape->nextmap = "EndGameC";
-		else
-			mape->endpic.clear();
-	}
-	else if (!stricmp(pname.c_str(), "endbunny"))
-	{
-		os.mustScanBool();
-		if (os.getTokenBool())
-			mape->nextmap = "EndGame3";
-		else
-			mape->endpic.clear();
-	}
-	else if (!stricmp(pname.c_str(), "endgame"))
-	{
-		os.mustScanBool();
-		if (os.getTokenBool())
-		{
-			mape->endpic = "!";
-		}
-		else
-		{
-			mape->endpic.clear();
-		}
-	}
-	else if (!stricmp(pname.c_str(), "exitpic"))
-	{
-		ParseOLumpName(os, mape->exitpic);
-	}
-	else if (!stricmp(pname.c_str(), "enterpic"))
-	{
-		ParseOLumpName(os, mape->enterpic);
-	}
-	else if (!stricmp(pname.c_str(), "nointermission"))
-	{
-		os.mustScanBool();
-		if (os.getTokenBool())
-		{
-			mape->flags |= LEVEL_NOINTERMISSION;
-		}
-	}
-	else if (!stricmp(pname.c_str(), "partime"))
-	{
-		os.mustScanInt();
-		mape->partime = TICRATE * os.getTokenInt();
-	}
-	else if (!stricmp(pname.c_str(), "intertext"))
-	{
-		const std::string lname = ParseMultiString(os);
-		if (lname.empty())
-			return 0;
-		mape->intertext = lname;
-	}
-	else if (!stricmp(pname.c_str(), "intertextsecret"))
-	{
-		const std::string lname = ParseMultiString(os);
-		if (lname.empty())
-			return 0;
-		mape->intertextsecret = lname;
-	}
-	else if (!stricmp(pname.c_str(), "interbackdrop"))
-	{
-		ParseOLumpName(os, mape->interbackdrop);
-	}
-	else if (!stricmp(pname.c_str(), "intermusic"))
-	{
-		MustGet<OLumpName>(os);
-		const std::string musicname = os.getToken();
-		ResourceId music_res_id = Res_GetResourceId(musicname, NS_MUSIC);
-
-		if (Res_CheckResource(music_res_id))
-			mape->intermusic = musicname;
-	}
-	else if (!stricmp(pname.c_str(), "episode"))
-	{
-		if (!episodes_modified && gamemode == commercial)
-		{
-			episodenum = 0;
-			episodes_modified = true;
-		}
-
-		const std::string lname = ParseMultiString(os);
-		if (lname.empty())
-			return 0;
-
-		if (lname == "-") // means "clear"
-		{
-			episodenum = 0;
-		}
-		else
-		{
-			const StringTokens tokens = TokenizeString(lname, "\n");
-
-			if (episodenum >= 8)
-				return 0;
-
-			EpisodeMaps[episodenum] = mape->mapname;
-			EpisodeInfos[episodenum].name = tokens[0];
-			EpisodeInfos[episodenum].fulltext = false;
-			EpisodeInfos[episodenum].noskillmenu = false;
-			EpisodeInfos[episodenum].key = (tokens.size() > 2) ? tokens[2][0] : 0;
-			++episodenum;
-		}
-	}
-	else if (!stricmp(pname.c_str(), "bossaction"))
-	{
-		MustGetIdentifier(os);
-
-		if (!stricmp(os.getToken().c_str(), "clear"))
-		{
-			// mark level free of boss actions
-			mape->bossactions.clear();
-		}
-		else
-		{
-			const std::string actor_name = os.getToken();
-			const mobjtype_t i = P_NameToMobj(actor_name);
-			if (i == MT_NULL)
-			{
-				os.error("Unknown thing type %s", os.getToken().c_str());
-				return 0;
-			}
-
-			// skip comma token
-			MustGetStringName(os, ",");
-			os.mustScanInt();
-			const int special = os.getTokenInt();
-			MustGetStringName(os, ",");
-			os.mustScanInt();
-			const int tag = os.getTokenInt();
-			// allow no 0-tag specials here, unless a level exit.
-			if (tag != 0 || special == 11 || special == 51 || special == 52 ||
-			    special == 124)
-			{
-				bossaction_t new_bossaction;
-				
-				new_bossaction.special = static_cast<short>(special);
-				new_bossaction.tag = static_cast<short>(tag);
-
-				new_bossaction.type = i;
-
-				mape->bossactions.push_back(new_bossaction);
-			}
-		}
-	}
-	else
-	{
-		do
-		{
-			if (!IsRealNum(os.getToken().c_str()))
-				os.scan();
-
-		} while (os.compareToken(","));
-	}
-	os.scan();
-
-	return 1;
-}
-
-void MapNameToLevelNum(level_pwad_info_t& info)
-{
-	if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
-	{
-		// Convert a char into its equivalent integer.
-		const int e = info.mapname[1] - '0';
-		const int m = info.mapname[3] - '0';
-		if (e >= 0 && e <= 9 && m >= 0 && m <= 9)
-		{
-			// Copypasted from the ZDoom wiki.
-			info.levelnum = (e - 1) * 10 + m;
-		}
-	}
-	else if (strnicmp(info.mapname.c_str(), "MAP", 3) == 0)
-	{
-		// Try and turn the trailing digits after the "MAP" into a
-		// level number.
-		const int mapnum = std::atoi(info.mapname.c_str() + 3);
-		if (mapnum >= 0 && mapnum <= 99)
-		{
-			info.levelnum = mapnum;
-		}
-	}
-}
-
-void ParseUMapInfoLump(ResourceId res_id)
-{
-	LevelInfos& levels = getLevelInfos();
-	const char* lumpname = Res_GetResourceName(res_id).c_str();
-
-	const char* buffer = static_cast<char*>((char*)Res_LoadResource(res_id, PU_STATIC));
-
-	const OScannerConfig config = {
-	    lumpname, // lumpName
-	    false,    // semiComments
-	    true,     // cComments
-	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_id));
-
-	while (os.scan())
-	{
-		if (!os.compareTokenNoCase("map"))
-		{
-			os.error("Expected map definition, got %s", os.getToken().c_str());
-		}
-
-		MustGet<OLumpName>(os);
-		const OLumpName mapname = os.getToken();
-
-		if (!ValidateMapName(mapname))
-		{
-			os.error("Invalid map name %s", mapname.c_str());
-		}
-
-		// Find the level.
-		level_pwad_info_t& info = (levels.findByName(mapname).exists())
-		                              ? levels.findByName(mapname)
-		                              : levels.create();
-
-		info.mapname = mapname;
-
-		MapNameToLevelNum(info);
-
-		MustGetStringName(os, "{");
-		os.scan();
-		while (!os.compareToken("}"))
-		{
-			ParseStandardUmapInfoProperty(os, &info);
-		}
-
-		// Set default level progression here to simplify the checks elsewhere.
-		// Doing this lets us skip all normal code for this if nothing has been defined.
-		if (!info.nextmap[0] && !info.endpic[0])
-		{
-			if (info.mapname == "MAP30")
-			{
-				info.endpic = "$CAST";
-				info.nextmap = "EndGameC";
-			}
-			else if (info.mapname == "E1M8")
-			{
-				info.endpic = gamemode == retail ? "CREDIT" : "HELP2";
-				info.nextmap = "EndGameC";
-			}
-			else if (info.mapname == "E2M8")
-			{
-				info.endpic = "VICTORY";
-				info.nextmap = "EndGame2";
-			}
-			else if (info.mapname == "E3M8")
-			{
-				info.endpic = "$BUNNY";
-				info.nextmap = "EndGame3";
-			}
-			else if (info.mapname == "E4M8")
-			{
-				info.endpic = "ENDPIC";
-				info.nextmap = "EndGame4";
-			}
-			else if (gamemission == chex && info.mapname == "E1M5")
-			{
-				info.endpic = "CREDIT";
-				info.nextmap = "EndGame1";
-			}
-			else
-			{
-				char arr[9] = "";
-				int ep, map;
-				ValidateMapName(info.mapname.c_str(), &ep, &map);
-				map++;
-				if (gamemode == commercial)
-				{
-					sprintf(arr, "MAP%02d", map);
-				}
-				else
-				{
-					sprintf(arr, "E%dM%d", ep, map);
-				}
-				info.nextmap = arr;
-			}
-		}
-	}
-}
-
+// newStyleMapInfo signifies if the token came from a
+// new style (as in, within curly braces) mapinfo.
+// Hexen (and old ZDoom mapinfo, allegedly) didn't have curly braces.
 template <typename T>
-void ParseMapInfoHelper(OScanner& os, bool doEquals)
+void ParseMapInfoHelper(OScanner& os, bool newStyleMapInfo)
 {
-	if (doEquals)
+	if (newStyleMapInfo)
 		MustGetStringName(os, "=");
 
 	MustGet<T>(os);
 }
 
 template <>
-void ParseMapInfoHelper<void>(OScanner& os, bool doEquals)
+void ParseMapInfoHelper<void>(OScanner& os, bool newStyleMapInfo)
 {
 	// do nothing
 }
@@ -644,51 +196,51 @@ void ParseMapInfoHelper<void>(OScanner& os, bool doEquals)
 /// MapInfo type functions
 
 // Eats the next block and does nothing with the data
-void MIType_EatNext(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_EatNext(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 }
 
 // Literally does nothing
-void MIType_DoNothing(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_DoNothing(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
 }
 
 // Sets the inputted data as an int
-void MIType_Int(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Int(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                 unsigned int flags2)
 {
-	ParseMapInfoHelper<int>(os, doEquals);
+	ParseMapInfoHelper<int>(os, newStyleMapInfo);
 
 	*static_cast<int*>(data) = os.getTokenInt();
 }
 
 // Sets the inputted data as a float
-void MIType_Float(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Float(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                   unsigned int flags2)
 {
-	ParseMapInfoHelper<float>(os, doEquals);
+	ParseMapInfoHelper<float>(os, newStyleMapInfo);
 
 	*static_cast<float*>(data) = os.getTokenFloat();
 }
 
 // Sets the inputted data as a bool (that is, if flags != 0, set to true; else false)
-void MIType_Bool(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Bool(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                   unsigned int flags2)
 {
 	*static_cast<bool*>(data) = flags;
 }
 
 // Sets the inputted data as a bool (that is, if flags != 0, set to true; else false)
-void MIType_MustConfirm(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                  unsigned int flags2)
 {
 	SkillInfo& info = *static_cast<SkillInfo*>(data);
 	info.must_confirm = true;
 
-	if (doEquals)
+	if (newStyleMapInfo)
 	{
 		os.scan();
 		if (os.compareTokenNoCase("="))
@@ -746,10 +298,10 @@ void MIType_MustConfirm(OScanner& os, bool doEquals, void* data, unsigned int fl
 }
 
 // Sets the inputted data as a char
-void MIType_Char(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Char(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                  unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	if (os.getToken().size() > 1)
 		os.error("Expected single character string, got multi-character string");
@@ -758,19 +310,19 @@ void MIType_Char(OScanner& os, bool doEquals, void* data, unsigned int flags,
 }
 
 // Sets the inputted data as a std::string
-void MIType_String(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_String(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                  unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	*static_cast<std::string*>(data) = os.getToken();
 }
 
 // Sets the inputted data as a color
-void MIType_Color(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Color(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                   unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	const argb_t color(V_GetColorFromString(os.getToken()));
 	uint8_t* ptr = static_cast<uint8_t*>(data);
@@ -781,39 +333,87 @@ void MIType_Color(OScanner& os, bool doEquals, void* data, unsigned int flags,
 }
 
 // Sets the inputted data as an OLumpName map name
-void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
-	if (IsIdentifier(os))
+	if (os.compareTokenNoCase("EndPic"))
 	{
-		if (os.compareTokenNoCase("EndPic"))
-		{
 			// todo
-			if (doEquals)
+			if (newStyleMapInfo)
 				MustGetStringName(os, ",");
 
 			os.mustScan();
-		}
-		else if (os.compareTokenNoCase("EndSequence"))
-		{
-			// todo
-			if (doEquals)
-				MustGetStringName(os, ",");
-
-			os.mustScan();
-		}
 	}
+	else if (os.compareTokenNoCase("EndSequence"))
+	{
+			// todo
+			if (newStyleMapInfo)
+				MustGetStringName(os, ",");
 
-	// If not identifier, check if it's a lumpname
-	os.unScan();
-	MustGet<OLumpName>(os);
-
-	if (os.compareTokenNoCase("endgame"))
+			os.mustScan();
+	}
+	else if (os.compareTokenNoCase("EndBunny"))
+	{
+		*static_cast<OLumpName*>(data) = "EndGame3";
+		return;
+	}
+	else if (os.compareTokenNoCase("EndGame1"))
+	{
+		*static_cast<OLumpName*>(data) = "EndGame1";
+		return;
+	}
+	else if (os.compareTokenNoCase("EndGame2"))
+	{
+		*static_cast<OLumpName*>(data) = "EndGame2";
+		return;
+	}
+	else if (os.compareTokenNoCase("EndGameW"))
+	{
+		// not supported (heretic)
+		return;
+	}
+	else if (os.compareTokenNoCase("EndGame4"))
+	{
+		*static_cast<OLumpName*>(data) = "EndGame4";
+		return;
+	}
+	else if (os.compareTokenNoCase("EndGameC"))
+	{
+		*static_cast<OLumpName*>(data) = "EndGameC";
+		return;
+	}
+	else if (os.compareTokenNoCase("EndGame3"))
+	{
+		*static_cast<OLumpName*>(data) = "EndGame3";
+		return;
+	}
+	else if (os.compareTokenNoCase("EndDemon"))
+	{
+		// not supported (heretic)
+		return;
+	}
+	else if (os.compareTokenNoCase("EndChess"))
+	{
+		// not supported (hexen)
+		return;
+	}
+	else if (os.compareTokenNoCase("EndGameS"))
+	{
+		// not supported (strife)
+		return;
+	}
+	else if (os.compareTokenNoCase("EndTitle"))
+	{
+		// not implemented
+		return;
+	}
+	else if (os.compareTokenNoCase("endgame"))
 	{
 		// endgame block
-		MustGetStringName(os, "{");
+		os.mustScan();
+		os.assertTokenNoCaseIs("{");
 
 		while (os.scan())
 		{
@@ -824,19 +424,19 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 
 			if (os.compareTokenNoCase("pic"))
 			{
-				ParseMapInfoHelper<OLumpName>(os, doEquals);
+				ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
 
 				// todo
 			}
 			else if (os.compareTokenNoCase("hscroll"))
 			{
-				ParseMapInfoHelper<std::string>(os, doEquals);
+				ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 				// todo
 			}
 			else if (os.compareTokenNoCase("vscroll"))
 			{
-				ParseMapInfoHelper<std::string>(os, doEquals);
+				ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 				// todo
 			}
@@ -846,7 +446,7 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 			}
 			if (os.compareTokenNoCase("music"))
 			{
-				ParseMapInfoHelper<OLumpName>(os, doEquals);
+				ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
 
 				// todo
 				os.scan();
@@ -862,7 +462,7 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 			}
 		}
 	}
-	else
+	else // Must be map lump
 	{
 		char map_name[9];
 		strncpy(map_name, os.getToken().c_str(), 8);
@@ -872,30 +472,25 @@ void MIType_MapName(OScanner& os, bool doEquals, void* data, unsigned int flags,
 			const int map = std::atoi(map_name);
 			sprintf(map_name, "MAP%02d", map);
 		}
-		else if (os.compareTokenNoCase("EndBunny"))
-		{
-			*static_cast<OLumpName*>(data) = "EndGame3";
-			return;
-		}
 
 		*static_cast<OLumpName*>(data) = map_name;
 	}
 }
 
 // Sets the inputted data as an OLumpName
-void MIType_LumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                      unsigned int flags2)
 {
-	ParseMapInfoHelper<OLumpName>(os, doEquals);
+	ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
 
 	*static_cast<OLumpName*>(data) = os.getToken();
 }
 
 // Handle lump names that can also be intermission scripts
-void MIType_InterLumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_InterLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                           unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 	const std::string tok = os.getToken();
 	if (!tok.empty() && tok.at(0) == '$')
 	{
@@ -907,10 +502,10 @@ void MIType_InterLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 }
 
 // Sets the inputted data as an OLumpName, checking LANGUAGE for the actual OLumpName
-void MIType_$LumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                       unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	if (os.getToken()[0] == '$')
 	{
@@ -931,17 +526,17 @@ void MIType_$LumpName(OScanner& os, bool doEquals, void* data, unsigned int flag
 
 // Sets the inputted data as an OLumpName, checking LANGUAGE for the actual OLumpName
 // (Music variant)
-void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                           unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
-	const std::string musicname = os.getToken();
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
+	std::string musicname = os.getToken();
 
 	if (musicname[0] == '$')
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(StdStringToUpper(musicname.c_str() + 1));
+		const std::string& s = GStrings(StdStringToUpper(musicname.c_str() + 1));
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
@@ -949,53 +544,51 @@ void MIType_MusicLumpName(OScanner& os, bool doEquals, void* data, unsigned int 
 
 		// Music lumps in the stringtable do not begin
 		// with a D_, so we must add it.
-		char lumpname[9];
-		snprintf(lumpname, ARRAY_LENGTH(lumpname), "D_%s", s.c_str());
-		ResourceId lumpid = Res_GetResourceId(lumpname, NS_MUSIC);
-		if (Res_CheckResource(lumpid))
-		{
-			*static_cast<OLumpName*>(data) = lumpname;
-		}
+		musicname = "D_" + std::string(s);
 	}
-	else
+
+	const ResourceId res_id = Res_GetResourceId(musicname, NS_MUSIC);
+	if (res_id != ResourceId::INVALID_ID)
 	{
-		ResourceId lumpid = Res_GetResourceId(musicname.c_str(), NS_MUSIC);
-		if (Res_CheckResource(lumpid))
-		{
-			*static_cast<OLumpName*>(data) = musicname;
-		}
+		*static_cast<OLumpName*>(data) = musicname;
 	}
 }
 
 // Sets the sky texture with an OLumpName
-void MIType_Sky(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                 unsigned int flags2)
 {
-	ParseMapInfoHelper<OLumpName>(os, doEquals);
+	ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
 
-	*static_cast<OLumpName*>(data) = os.getToken();
+	level_pwad_info_t& info = *static_cast<level_pwad_info_t*>(data);
 
-	// Scroll speed
-	if (doEquals)
+	std::string pic = os.getToken();
+
+	if (flags == 1)
 	{
-		os.scan();
-		if (!os.compareToken(","))
-		{
-			os.unScan();
-			return;
-		}
+		info.skypic = pic;
 	}
+	else
+	{
+		info.skypic2 = pic;
+	}
+
 	os.scan();
+	// Scroll speed
+	if (os.compareToken(","))
+	{
+		os.mustScanFloat();
+	}
 	if (IsRealNum(os.getToken().c_str()))
 	{
-		/*if (HexenHack)
+		if (flags == 1)
 		{
-		    *((fixed_t *)(info + handler->data2)) = sc_Number << 8;
+			info.sky1ScrollDelta = FLOAT2FIXED(os.getTokenFloat());
 		}
-		 else
+		else
 		{
-		    *((fixed_t *)(info + handler->data2)) = (fixed_t)(sc_Float * 65536.0f);
-		}*/
+			info.sky2ScrollDelta = FLOAT2FIXED(os.getTokenFloat());
+		}
 	}
 	else
 	{
@@ -1004,32 +597,24 @@ void MIType_Sky(OScanner& os, bool doEquals, void* data, unsigned int flags,
 }
 
 // Sets a flag
-void MIType_SetFlag(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_SetFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
 	*static_cast<DWORD*>(data) |= flags;
 }
 
 // Sets a compatibility flag for maps
-void MIType_CompatFlag(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_CompatFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                        unsigned int flags2)
 {
 	os.scan();
-	if (doEquals)
+	if (os.compareToken("="))
 	{
-		if (os.compareToken("="))
-		{
-			os.mustScanInt();
-			if (os.getTokenInt())
-				*static_cast<DWORD*>(data) |= flags;
-			else
-				*static_cast<DWORD*>(data) &= ~flags;
-		}
-		else
-		{
-			os.unScan();
+		os.mustScanInt();
+		if (os.getTokenInt())
 			*static_cast<DWORD*>(data) |= flags;
-		}
+		else
+			*static_cast<DWORD*>(data) &= ~flags;
 	}
 	else
 	{
@@ -1046,17 +631,17 @@ void MIType_CompatFlag(OScanner& os, bool doEquals, void* data, unsigned int fla
 }
 
 // Sets an SC flag
-void MIType_SCFlags(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_SCFlags(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
 	*static_cast<DWORD*>(data) = (*static_cast<DWORD*>(data) & flags2) | flags;
 }
 
 // Sets a cluster
-void MIType_Cluster(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Cluster(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	ParseMapInfoHelper<int>(os, doEquals);
+	ParseMapInfoHelper<int>(os, newStyleMapInfo);
 
 	*static_cast<int*>(data) = os.getTokenInt();
 	if (HexenHack)
@@ -1071,20 +656,21 @@ void MIType_Cluster(OScanner& os, bool doEquals, void* data, unsigned int flags,
 }
 
 // Sets a cluster string
-void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                           unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	char** text = static_cast<char**>(data);
 
-	if (doEquals)
+	if (newStyleMapInfo)
 	{
 		if (os.compareTokenNoCase("lookup"))
 		{
-			if (doEquals)
+			if (newStyleMapInfo)
 			{
-				MustGetStringName(os, ",");
+				os.mustScan();
+				os.assertTokenNoCaseIs(",");
 			}
 
 			os.mustScan();
@@ -1143,10 +729,10 @@ void MIType_ClusterString(OScanner& os, bool doEquals, void* data, unsigned int 
 }
 
 // Sets the inputted data as a std::string
-void MIType_SpawnFilter(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                    unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	if (IsNum(os.getToken().c_str()))
 	{
@@ -1170,7 +756,7 @@ void MIType_SpawnFilter(OScanner& os, bool doEquals, void* data, unsigned int fl
 }
 
 // Sets the map to use the specific map07 bossactions
-void MIType_Map07Special(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_Map07Special(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                          unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector =
@@ -1194,7 +780,7 @@ void MIType_Map07Special(OScanner& os, bool doEquals, void* data, unsigned int f
 }
 
 // Sets the map to use the baron bossaction
-void MIType_BaronSpecial(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_BaronSpecial(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
@@ -1210,7 +796,7 @@ void MIType_BaronSpecial(OScanner& os, bool doEquals, void* data, unsigned int f
 }
 
 // Sets the map to use the cyberdemon bossaction
-void MIType_CyberdemonSpecial(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_CyberdemonSpecial(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                          unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector =
@@ -1227,7 +813,7 @@ void MIType_CyberdemonSpecial(OScanner& os, bool doEquals, void* data, unsigned 
 }
 
 // Sets the map to use the cyberdemon bossaction
-void MIType_SpiderMastermindSpecial(OScanner& os, bool doEquals, void* data,
+void MIType_SpiderMastermindSpecial(OScanner& os, bool newStyleMapInfo, void* data,
                                     unsigned int flags, unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector =
@@ -1244,7 +830,7 @@ void MIType_SpiderMastermindSpecial(OScanner& os, bool doEquals, void* data,
 }
 
 //
-void MIType_SpecialAction_ExitLevel(OScanner& os, bool doEquals, void* data,
+void MIType_SpecialAction_ExitLevel(OScanner& os, bool newStyleMapInfo, void* data,
                                     unsigned int flags, unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
@@ -1267,7 +853,7 @@ void MIType_SpecialAction_ExitLevel(OScanner& os, bool doEquals, void* data,
 }
 
 //
-void MIType_SpecialAction_OpenDoor(OScanner& os, bool doEquals, void* data,
+void MIType_SpecialAction_OpenDoor(OScanner& os, bool newStyleMapInfo, void* data,
                                    unsigned int flags, unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
@@ -1290,7 +876,7 @@ void MIType_SpecialAction_OpenDoor(OScanner& os, bool doEquals, void* data,
 }
 
 //
-void MIType_SpecialAction_LowerFloor(OScanner& os, bool doEquals, void* data,
+void MIType_SpecialAction_LowerFloor(OScanner& os, bool newStyleMapInfo, void* data,
                                     unsigned int flags, unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
@@ -1313,17 +899,17 @@ void MIType_SpecialAction_LowerFloor(OScanner& os, bool doEquals, void* data,
 }
 
 //
-void MIType_SpecialAction_KillMonsters(OScanner& os, bool doEquals, void* data,
+void MIType_SpecialAction_KillMonsters(OScanner& os, bool newStyleMapInfo, void* data,
                                     unsigned int flags, unsigned int flags2)
 {
 	// todo
 }
 
 //
-void MIType_AutomapBase(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_AutomapBase(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                         unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	if (os.compareTokenNoCase("doom"))
 		AM_SetBaseColorDoom();
@@ -1367,17 +953,17 @@ bool InterpretLines(const std::string& name, std::vector<mline_t>& lines)
 {
 	lines.clear();
 
-	const ResourceId res = Res_GetResourceId(name.c_str(), NS_GLOBAL);
-	if (Res_CheckResource(res))
+	const ResourceId res_id = Res_GetResourceId(name, NS_GLOBAL);
+	if (res_id != ResourceId::INVALID_ID)
 	{
-		const char* buffer = static_cast<const char*>(Res_LoadResource(res, PU_STATIC));
+		const char* buffer = static_cast<const char*>(Res_LoadResource(res_id, PU_STATIC));
 
 		const OScannerConfig config = {
 		    name.c_str(), // lumpName
 		    false,        // semiComments
 		    true,         // cComments
 		};
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res));
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_id));
 		
 		while (os.scan())
 		{
@@ -1406,10 +992,10 @@ bool InterpretLines(const std::string& name, std::vector<mline_t>& lines)
 }
 
 //
-void MIType_MapArrows(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_MapArrows(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                       unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	std::string maparrow = os.getToken();
 
@@ -1432,10 +1018,10 @@ void MIType_MapArrows(OScanner& os, bool doEquals, void* data, unsigned int flag
 }
 
 //
-void MIType_MapKey(OScanner& os, bool doEquals, void* data, unsigned int flags,
+void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                       unsigned int flags2)
 {
-	ParseMapInfoHelper<std::string>(os, doEquals);
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	const std::string name = os.getToken();
 	InterpretLines(name, *static_cast<std::vector<mline_t>*>(data));
@@ -1502,8 +1088,8 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY3("secretnext", &MIType_MapName, &ref.secretmap)
 		ENTRY3("secret", &MIType_MapName, &ref.secretmap)
 		ENTRY3("cluster", &MIType_Cluster, &ref.cluster)
-		ENTRY3("sky1", &MIType_Sky, &ref.skypic)
-		ENTRY3("sky2", &MIType_Sky, &ref.skypic2)
+		ENTRY4("sky1", &MIType_Sky, &ref, 1)
+		ENTRY4("sky2", &MIType_Sky, &ref, 2)
 		ENTRY3("fade", &MIType_Color, &ref.fadeto_color)
 		ENTRY3("outsidefog", &MIType_Color, &ref.outsidefog_color)
 		ENTRY3("titlepatch", &MIType_LumpName, &ref.pname)
@@ -1556,12 +1142,15 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY2("translator", &MIType_EatNext)
 		ENTRY3("compat_shorttex", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 		ENTRY3("compat_limitpain", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY3("compat_useblocking", &MIType_CompatFlag, &ref.flags) // special lines block use (not implemented, default odamex behavior)
+		ENTRY3("compat_missileclip", &MIType_CompatFlag, &ref.flags) // original height monsters when it comes to missiles (not implemented)
 		ENTRY4("compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF)
 		ENTRY3("compat_trace", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 		ENTRY3("compat_boomscroll", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 		ENTRY3("compat_sectorsounds", &MIType_CompatFlag, &ref.flags) // todo: not implemented
 		ENTRY4("compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER)
 		ENTRY3("compat_invisibility", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY3("author", &MIType_String, &ref.author)
 	}
 };
 
@@ -1799,11 +1388,9 @@ void ParseEpisodeInfo(OScanner& os)
 			break;
 	}
 
-	ResourceId ex_res_id = Res_GetResourceId("EXTENDED", NS_GLOBAL);
-
-	std::string mapname = map.c_str();
-	if (remove || (optional && Res_CheckMap(mapname)) ||
-	    (extended && Res_CheckResource(ex_res_id)))
+	bool map_res_id_not_found = Res_GetResourceId(map.c_str(), NS_GLOBAL) == ResourceId::INVALID_ID;
+	bool extended_res_id_not_found = Res_GetResourceId("EXTENDED", NS_GLOBAL) == ResourceId::INVALID_ID;
+	if (remove || (optional && map_res_id_not_found) || (extended && extended_res_id_not_found))
 	{
 		// If the remove property is given for an episode, remove it.
 		if (i < episodenum)
@@ -1936,19 +1523,46 @@ struct MapInfoDataSetter<automap_dummy>
 		ENTRY3("exitcolor", &MIType_String, &gameinfo.defaultAutomapColors.ExitColor)
 	}
 };
+} // namespace
 
-void ParseMapInfoLump(ResourceId res_id)
+// This function in particular is global rather than local specifically because UMAPINFO
+// also makes use of it.
+void G_MapNameToLevelNum(level_pwad_info_t& info)
+{
+	if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
+	{
+		// Convert a char into its equivalent integer.
+		const int e = info.mapname[1] - '0';
+		const int m = info.mapname[3] - '0';
+		if (e >= 0 && e <= 9 && m >= 0 && m <= 9)
+		{
+			// Copypasted from the ZDoom wiki.
+			info.levelnum = (e - 1) * 10 + m;
+		}
+	}
+	else if (strnicmp(info.mapname.c_str(), "MAP", 3) == 0)
+	{
+		// Try and turn the trailing digits after the "MAP" into a
+		// level number.
+		const int mapnum = std::atoi(info.mapname.c_str() + 3);
+		if (mapnum >= 0 && mapnum <= 99)
+		{
+			info.levelnum = mapnum;
+		}
+	}
+}
+
+void ParseMapInfoLump(const ResourceId res_id, const std::string lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
 	ClusterInfos& clusters = getClusterInfos();
-	const char* lumpname = Res_GetResourceName(res_id).c_str();
 
 	level_pwad_info_t defaultinfo;
 
-	const char* buffer = static_cast<char*>((char*)Res_LoadResource(res_id, PU_STATIC));
+	const char* buffer = static_cast<const char*>(Res_LoadResource(res_id, PU_STATIC));
 
 	const OScannerConfig config = {
-	    lumpname, // lumpName
+	    lumpname.c_str(), // lumpName
 	    true,     // semiComments
 	    true,     // cComments
 	};
@@ -1977,8 +1591,6 @@ void ParseMapInfoLump(ResourceId res_id)
 				const int map = std::atoi(map_name);
 
 				sprintf(map_name, "MAP%02d", map);
-				::level.skypic = "";
-				::level.skypic2 = "";
 				HexenHack = true;
 				// Hexen levels are automatically nointermission
 				// and even lighting and no auto sound sequences
@@ -1986,12 +1598,25 @@ void ParseMapInfoLump(ResourceId res_id)
 				    LEVEL_NOINTERMISSION | LEVEL_EVENLIGHTING | LEVEL_SNDSEQTOTALCTRL;
 			}
 
-			// Find the level.
-			level_pwad_info_t& info = (levels.findByName(map_name).exists())
-			                              ? levels.findByName(map_name)
-			                              : levels.create();
+			// Build upon already defined levels, that way we don't miss any defaults 
+			bool levelExists = levels.findByName(map_name).exists();
 
-			info = defaultinfo;
+			// Find the level.
+			level_pwad_info_t& info = levelExists
+				? levels.findByName(map_name)
+				: levels.create();
+
+			if (!levelExists)
+				info = defaultinfo;
+
+			// for maps above 32, if no sky is defined, it will show texture 0 (aastinky)
+			// so instead, lets just try to give it the first defined sky in the level set.
+			if (levels.size() > 0 && defaultinfo.skypic == "")
+			{
+				level_pwad_info_t& def = levels.at(0);
+				info.skypic = def.skypic;
+			}
+
 			info.mapname = map_name;
 
 			// Map name.
@@ -2018,7 +1643,7 @@ void ParseMapInfoLump(ResourceId res_id)
 			// try and synthesize one from the level name.
 			if (info.levelnum == 0)
 			{
-				MapNameToLevelNum(info);
+				G_MapNameToLevelNum(info);
 			}
 		}
 		else if (os.compareTokenNoCase("cluster") ||
@@ -2103,7 +1728,15 @@ void ParseMapInfoLump(ResourceId res_id)
 		}
 	}
 }
-} // namespace
+
+ 
+void ParseMapInfoLump(const std::string& lumpname)
+{
+	ResourceId res_id = Res_GetResourceId(lumpname, NS_GLOBAL);
+	if (res_id == ResourceId::INVALID_ID)
+		I_Error("Unable to locate mapinfo lump \"%s\"", lumpname.c_str());
+	ParseMapInfoLump(res_id, lumpname);
+}
 
 //
 // G_ParseMapInfo
@@ -2113,14 +1746,12 @@ void ParseMapInfoLump(ResourceId res_id)
 void G_ParseMapInfo()
 {
 	const char* baseinfoname = NULL;
+	int lump;
 
 	// Reset skill definitions
 	skillnum = 0;
 
-	//if (gamemission != heretic)
-	{
-		ParseMapInfoLump(Res_GetResourceId("_DCOMNFO", NS_GLOBAL));
-	}
+	ParseMapInfoLump("_DCOMNFO");
 
 	switch (gamemission)
 	{
@@ -2134,8 +1765,7 @@ void G_ParseMapInfo()
 		baseinfoname = "_D2NFO";
 		if (gamemode == commercial_bfg)
 		{
-			ResourceId res = Res_GetResourceId(baseinfoname, NS_GLOBAL);
-			ParseMapInfoLump(res);
+			ParseMapInfoLump(baseinfoname);
 			baseinfoname = "_BFGNFO";
 		}
 		break;
@@ -2154,25 +1784,19 @@ void G_ParseMapInfo()
 		break;
 	}
 
-	ResourceId res_id = Res_GetResourceId(baseinfoname, NS_GLOBAL);
-	ParseMapInfoLump(res_id);
+	ParseMapInfoLump(baseinfoname);
 
-	bool found_mapinfo = false;
+	// Parse MAPINFO then UMAPINFO, like dsda
+	const ResourceIdList mapinfo_res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/MAPINFO"));
+	for (size_t i = 0; i < mapinfo_res_ids.size(); i++)
+	{
+		ParseMapInfoLump(mapinfo_res_ids[i], "MAPINFO");
+	}
 
 	const ResourceIdList umapinfo_res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/UMAPINFO"));
 	for (size_t i = 0; i < umapinfo_res_ids.size(); i++)
 	{
-		ParseUMapInfoLump(umapinfo_res_ids[i]);
-	}
-
-	// If UMAPINFO exists, we don't parse a normal MAPINFO
-	if (found_mapinfo == true)
-		return;
-
-	const ResourceIdList mapinfo_res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/MAPINFO"));
-	for (size_t i = 0; i < mapinfo_res_ids.size(); i++)
-	{
-		ParseMapInfoLump(mapinfo_res_ids[i]);
+		ParseUMapInfoLump(umapinfo_res_ids[i], "UMAPINFO");
 	}
 
 	if (episodenum == 0)

@@ -215,6 +215,38 @@ protected:
 
 
 //
+// InMemoryTextureLoader
+//
+class InMemoryTextureLoader : public BaseTextureLoader
+{
+public:
+	InMemoryTextureLoader(const palindex_t* source_data, int width, int height) :
+		BaseTextureLoader(NULL),
+		mSourceData(NULL),
+		mWidth(width), mHeight(height)
+	{
+		#if CLIENT_APP
+		mSourceData = new palindex_t[mWidth * mHeight];
+		memcpy(mSourceData, source_data, mWidth * mHeight * sizeof(palindex_t));
+		#endif
+	}
+
+	virtual ~InMemoryTextureLoader()
+	{
+		delete [] mSourceData;
+	}
+
+	virtual uint32_t size() const;
+	virtual void load(void* data) const;
+
+protected:
+	palindex_t*			mSourceData;
+	uint16_t			mWidth;
+	uint16_t			mHeight;
+};
+
+
+//
 // PngTextureLoader
 //
 class PngTextureLoader : public BaseTextureLoader

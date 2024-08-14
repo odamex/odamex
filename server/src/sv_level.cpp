@@ -277,8 +277,22 @@ void G_ChangeMap(size_t index)
 		return;
 	}
 
+<<<<<<< HEAD
 	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromString(JoinStrings(maplist_entry.wads, " "));
 	D_ReloadResourceFiles(resource_filenames);
+=======
+	std::string wadstr;
+	for (size_t i = 0; i < maplist_entry.wads.size(); i++)
+	{
+		if (i != 0)
+		{
+			wadstr += " ";
+		}
+		wadstr += C_QuoteString(maplist_entry.wads.at(i));
+	}
+
+	G_LoadWadString(wadstr, maplist_entry.map);
+>>>>>>> stable
 
 	// Set the new map as the current map
 	Maplist::instance().set_index(index);

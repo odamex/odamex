@@ -28,6 +28,7 @@
 #include "tables.h"
 #include "g_level.h"
 #include "m_random.h"
+#include "m_ostring.h"
 #include "cmdlib.h"
 
 #include "resources/res_texture.h"
@@ -47,7 +48,7 @@
 static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture)
 {
 	int width = source_texture->mWidth, height = source_texture->mHeight;
-	int width_bits = source_texture->mWidthBits, height_bits = source_texture->mHeightBits;
+	int height_bits = source_texture->mHeightBits;
 	int width_mask = source_texture->mWidthMask, height_mask = source_texture->mHeightMask;
 
 	// [SL] ZDoom 1.22 warping
@@ -111,7 +112,7 @@ void Texture::init(int width, int height)
 
 	#if CLIENT_APP
 	// mData follows the header in memory
-	mData = (uint8_t*)((uint8_t*)this + calculateHeaderSize(width, height));
+	mData = (uint8_t*)this + calculateHeaderSize(width, height);
 	memset(mData, mMaskColor, calculateDataSize(width, height));
 	#endif
 }
@@ -175,6 +176,7 @@ void TextureManager::clear()
 // 
 void TextureManager::addResources(ResourceManager* manager)
 {
+	addMissingTexturePlaceholder(manager);
 	addResourceToManagerByDir(manager, flats_directory_name);
 	addResourceToManagerByDir(manager, patches_directory_name);
 	addResourceToManagerByDir(manager, sprites_directory_name);
@@ -424,6 +426,47 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 }
 
 
+//
+// TextureManager::addMissingTexturePlaceholder
+//
+// Creates a dummy texture that can be will be used when an
+// expected texture is missing.
+//
+ResourceId TextureManager::addMissingTexturePlaceholder(ResourceManager* manager)
+{
+	const uint16_t width = 64;
+	const uint16_t height = 64;
+	const palindex_t color1 = 200;
+	const palindex_t color2 = 231;
+
+	palindex_t data[width * height];
+	palindex_t* ptr = data;
+	const uintptr_t checker_width = width / 2;
+	
+	for (int y = 0; y < height / 2; y++)
+	{
+		memset(ptr, color1, checker_width);
+		ptr += checker_width;
+		memset(ptr, color2, checker_width);
+		ptr += checker_width;
+	}
+	for (int y = height / 2; y < height; y++)
+	{
+		memset(ptr, color2, checker_width);
+		ptr += checker_width;
+		memset(ptr, color1, checker_width);
+		ptr += checker_width;
+	}
+
+	ResourceLoader* loader = new InMemoryTextureLoader(data, width, height);
+	ResourcePath path = textures_directory_name + "-MISSING-";
+	const ResourceId res_id = manager->addResource(path, this, loader);
+
+	mResourceLoaderLookup.insert(std::make_pair(res_id, loader));
+
+	return res_id;
+}
+
 // ============================================================================
 //
 // AnimatedTextureManager
@@ -459,8 +502,8 @@ void AnimatedTextureManager::readAnimationDefinitions()
 {
 	#if CLIENT_APP
 	clear();
-	loadAnimationsFromAnimDefLump();		// Hexen/ZDoom ANIMDEFS lump
 	loadAnimationsFromAnimatedLump();		// Boom ANIMATED lump
+	loadAnimationsFromAnimDefLump();		// Hexen/ZDoom ANIMDEFS lump
 	#endif
 }
 
@@ -519,39 +562,143 @@ void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 
 	for (const uint8_t* ptr = data; *ptr != 255; ptr += 23)
 	{
-		bool is_flat = (*(ptr + 0) == 0);
-		const OString start_name((char*)(ptr + 10), 8);
-		const OString end_name((char*)(ptr + 1), 8);
-		TextureSearchOrdering search_ordering = is_flat ? FLOOR : WALL;
+		bool is_wall = *ptr & 1;
+		const OString start_name = OStringToUpper((char*)(ptr + 10), 8);
+		const OString end_name = OStringToUpper((char*)(ptr + 1), 8);
+		TextureSearchOrdering search_ordering = is_wall ? WALL : FLOOR;
 
-		const ResourceId start_res_id = Res_GetTextureResourceId(start_name, search_ordering);
-		const ResourceId end_res_id = Res_GetTextureResourceId(end_name, search_ordering);
+		const ResourceId start_res_id = Res_GetTextureResourceId(start_name, search_ordering, false);
+		const ResourceId end_res_id = Res_GetTextureResourceId(end_name, search_ordering, false);
 
+		uint32_t numframes = end_res_id - start_res_id + 1;
 		if (!Res_CheckResource(start_res_id) || !Res_CheckResource(end_res_id))
-			continue;
-
-		anim_t anim;
-		anim.basepic = start_res_id;
-		anim.numframes = end_res_id - start_res_id + 1;
-		anim.uniqueframes = false;
-
-		if (anim.numframes <= 0)
-			continue;
-		anim.curframe = 0;
-			
-		int speed = LELONG(*(int*)(ptr + 19));
-		anim.countdown = speed - 1;
-
-		for (int i = 0; i < anim.numframes; i++)
 		{
-			anim.framepic[i] = anim.basepic + i;
-			anim.speedmin[i] = anim.speedmax[i] = speed;
+			DPrintf("Missing texture for cycle from %s to %s in ANIMATED lump\n", start_name.c_str(), end_name.c_str());
+		} 
+		else if (numframes < 2 || numframes > AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
+		{
+			Printf(PRINT_HIGH, "Bad cycle from %s to %s in ANIMATED lump\n", start_name.c_str(), end_name.c_str());
 		}
+		else
+		{
+			anim_t anim;
+			anim.basepic = start_res_id;
+			anim.numframes = numframes; 
+			anim.uniqueframes = false;
+			anim.curframe = 0;
+			int speed = LELONG(*(int*)(ptr + 19));
+			anim.speedmin[0] = anim.speedmax[0] = speed;
+			anim.countdown = speed - 1;
 
-		mAnimDefs.push_back(anim);
+			mAnimDefs.push_back(anim);
+		}
 	}
 
 	Res_ReleaseResource(res_id);
+}
+
+
+
+//
+// AnimatedTextureManager::parseAnim
+//
+//
+void AnimatedTextureManager::parseAnim(OScanner& os, TextureSearchOrdering search_ordering)
+{
+	bool missing_texture_warning = true;
+
+	os.mustScan();
+	if (os.compareTokenNoCase("optional"))
+	{
+		missing_texture_warning = false;
+		os.mustScan();
+	}
+	
+	const OString texture_name = OStringToUpper(os.getToken());
+	ResourceId base_res_id = Res_GetTextureResourceId(texture_name, search_ordering, false);
+
+	AnimatedTextureManager::anim_t sink_anim;
+	AnimatedTextureManager::anim_t* anim = NULL;
+
+	if (base_res_id == ResourceId::INVALID_ID)
+	{
+		// The base resource isn't present.
+		// Still parse the definition but ignore it since we can't use it 
+		anim = &sink_anim;
+		if (missing_texture_warning)
+			Printf(PRINT_HIGH, "Missing texture %s required by ANIMDEFS definition\n", texture_name.c_str());
+	}
+	else
+	{
+		for (size_t i = 0; i < mAnimDefs.size(); i++)
+		{
+			if (mAnimDefs[i].basepic == base_res_id)
+				anim = &mAnimDefs[i];
+		}
+		if (!anim)
+		{
+			mAnimDefs.push_back(AnimatedTextureManager::anim_t());
+			anim = &mAnimDefs.back();
+		}
+	}
+
+	anim->basepic = base_res_id;
+	anim->curframe = 0;
+	anim->numframes = 0;
+	anim->uniqueframes = true;
+	memset(anim->speedmin, 1,
+	       AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim->speedmin));
+	memset(anim->speedmax, 1,
+	       AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim->speedmax));
+
+	while (os.scan())
+	{
+		if (!os.compareTokenNoCase("pic"))
+		{
+			os.unScan();
+			break;
+		}
+
+		if (anim->numframes == AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
+		{
+			os.error("Animation has too many frames");
+		}
+
+		byte duration_min = 1;
+		byte duration_max = 1;
+
+		os.mustScanInt();
+		const int res_id_offset = os.getTokenInt() - 1;
+		os.mustScan();
+		if (os.compareTokenNoCase("tics"))
+		{
+			os.mustScanInt();
+			duration_min = duration_max = clamp(os.getTokenInt(), 0, 255);
+		}
+		else if (os.compareTokenNoCase("rand"))
+		{
+			os.mustScanInt();
+			duration_min = std::max(os.getTokenInt(), 0);
+			os.mustScanInt();
+			duration_max = std::min(os.getTokenInt(), 255);
+		}
+		else
+		{
+			os.error("Must specify a duration for animation frame");
+		}
+
+		anim->speedmin[anim->numframes] = duration_min;
+		anim->speedmax[anim->numframes] = duration_max;
+		anim->framepic[anim->numframes] = anim->basepic + res_id_offset;
+		anim->numframes++;
+	}
+
+	if (anim->numframes < 2)
+	{
+		os.error("Animation needs at least 2 frames");
+	}
+
+	anim->countdown = anim->speedmin[0];
 }
 
 
@@ -564,62 +711,50 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 {
 	try
 	{
-		const ResourceIdList res_ids =
-		    Res_GetAllResourceIds(ResourcePath("/GLOBAL/ANIMDEFS"));
+		const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/ANIMDEFS"));
 
 		for (size_t i = 0; i < res_ids.size(); i++)
 		{
 			const char* name = Res_GetResourceName(res_ids[i]).c_str();
-			const char* buffer =
-			    static_cast<const char*>(Res_LoadResource(res_ids[i], PU_STATIC));
+			const char* buffer = static_cast<const char*>(Res_LoadResource(res_ids[i], PU_STATIC));
 
 			OScannerConfig config = {
 			    name,  // lumpName
 			    false, // semiComments
 			    true,  // cComments
 			};
-			OScanner os = OScanner::openBuffer(config, buffer,
-			                                   buffer + Res_GetResourceSize(res_ids[i]));
+			OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_ids[i]));
 
 			while (os.scan())
 			{
 				if (os.compareTokenNoCase("flat"))
 				{
-					ParseAnim(os, false);
+					parseAnim(os, FLOOR);
 				}
 				else if (os.compareTokenNoCase("texture"))
 				{
-					ParseAnim(os, true);
+					parseAnim(os, WALL);
 				}
-				else if (os.compareTokenNoCase(
-				             "switch")) // Don't support switchdef yet...
+				else if (os.compareTokenNoCase("switch"))
 				{
-					// P_ProcessSwitchDef();
-					// os.error("switchdef not supported.");
+					// Don't support switchdef yet...
 				}
 				else if (os.compareTokenNoCase("warp"))
 				{
 					os.mustScan();
-					if (os.compareTokenNoCase("flat"))
-					{
-						os.mustScan();
-						const ResourceId res_id = Res_GetTextureResourceId(
-						    OString(os.getToken().c_str()), FLOOR);
-						addWarpedTexture(res_id);
-					}
-					else if (os.compareTokenNoCase("texture"))
-					{
-						os.mustScan();
-						const ResourceId res_id = Res_GetTextureResourceId(
-						    OString(os.getToken().c_str()), WALL);
-						addWarpedTexture(res_id);
-					}
-					else
-					{
+					TextureSearchOrdering search_ordering = FLOOR;
+					if (os.compareTokenNoCase("texture"))
+						search_ordering = WALL;
+					else if (!os.compareTokenNoCase("flat"))
 						os.error("Unknown error reading in ANIMDEFS");
-					}
+
+					os.mustScan();
+					const OString texture_name = OStringToUpper(os.getToken());
+					addWarpedTexture(Res_GetTextureResourceId(texture_name, search_ordering, false));
 				}
 			}
+
+			Res_ReleaseResource(res_ids[i]);
 		}
 	}
 	catch (CRecoverableError&)
@@ -704,7 +839,10 @@ void AnimatedTextureManager::updateAnimatedTextures()
 // (such as "-FLAT-") to imply no texture. ZDoom changes this behavior to 
 // allow texture names that start with "-" if they contain more than 1 character.
 //
-const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering)
+// If use_placeholder is true, this will return the resource ID of a placeholder texture
+// if the requested texture cannot be found.
+//
+const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering, bool use_placeholder)
 {
 	if (name.empty() || (ordering == WALL && name.size() == 1 && name.c_str()[0] == '-'))
 		return ResourceId::INVALID_ID;
@@ -721,7 +859,14 @@ const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrde
 	else if (ordering == GRAPHICS)
 		ns = NS_GRAPHICS;
 
-	return Res_GetResourceId(name, ns);
+	ResourceId res_id = Res_GetResourceId(name, ns);
+	if (!Res_CheckResource(res_id))
+	{
+		DPrintf("Missing texture %s\n", name.c_str());
+		if (use_placeholder)
+			res_id = Res_GetResourceId("-MISSING-", NS_GLOBAL);
+	}
+	return res_id;
 }
 
 
@@ -772,86 +917,3 @@ const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering 
 {
 	return Res_CacheTexture(Res_GetTextureResourceId(lump_name, ordering), tag);
 }
-
-
-static void ParseAnim(OScanner& os, byte istex)
-{
-	AnimatedTextureManager::anim_t sink;
-	AnimatedTextureManager::anim_t* place;
-
-	os.mustScan();
-
-	AnimatedTextureManager::anim_t anim;
-	anim.basepic =
-	    Res_GetTextureResourceId(OString(os.getToken().c_str()), istex ? WALL : FLOOR);
-	anim.curframe = 0;
-	anim.numframes = 0;
-	anim.uniqueframes = true;
-	memset(anim.speedmin, 1,
-	       AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmin));
-	memset(anim.speedmax, 1,
-	       AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmax));
-
-	while (os.scan())
-	{
-		/*if (os.compareTokenNoCase("allowdecals"))
-		{
-		    if (istex && picnum >= 0)
-		    {
-		        texturenodecals[picnum] = 0;
-		    }
-		    continue;
-		}
-		else*/
-		if (!os.compareTokenNoCase("pic"))
-		{
-			os.unScan();
-			break;
-		}
-
-		if (place->numframes == AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
-		{
-			os.error("Animation has too many frames");
-		}
-
-		byte min = 1;
-		byte max = 1;
-
-		os.mustScanInt();
-		const int frame = os.getTokenInt();
-		os.mustScan();
-		if (os.compareToken("tics"))
-		{
-			os.mustScanInt();
-			min = max = clamp(os.getTokenInt(), 0, 255);
-		}
-		else if (os.compareToken("rand"))
-		{
-			os.mustScanInt();
-			int num = os.getTokenInt();
-			min = num >= 0 ? num : 0;
-			os.mustScanInt();
-			num = os.getTokenInt();
-			max = num <= 255 ? num : 255;
-		}
-		else
-		{
-			os.error("Must specify a duration for animation frame");
-		}
-
-		place->speedmin[place->numframes] = min;
-		place->speedmax[place->numframes] = max;
-		place->framepic[place->numframes] = frame + anim.basepic - 1;
-		place->numframes++;
-	}
-
-	if (place->numframes < 2)
-	{
-		os.error("Animation needs at least 2 frames");
-	}
-
-	place->countdown = place->speedmin[0];
-}
-
-
-VERSION_CONTROL (res_texture_cpp, "$Id$")

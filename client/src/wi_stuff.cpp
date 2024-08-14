@@ -1110,16 +1110,15 @@ void WI_drawNetgameStats()
 
 		unsigned int x = NG_STATSX;
 		// [RH] Only use one graphic for the face backgrounds
-		if (demoplayback)
-			V_ColorMap = translationref_t(translationtables + it->id * 256, it->id);
-		else
-			V_ColorMap = translationref_t(translationtables + i * 256, i);
+		//enaiel: Fix incorrect player background when showing old intermission
+		V_ColorMap = translationref_t(translationtables + it->id * 256, it->id);
 		
 		screen->DrawTranslatedTextureClean(p, x - p->mWidth, y);
 		// classic face background colour
 		//screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
 
-		if (i == me)
+		//enaiel: Draw displayplayer face instead of consoleplayer in vanilla oldintermission screen
+		if (i == (displayplayer_id -1))
 			screen->DrawTextureClean(::star, x-p->mWidth, y);
 
 		// Display player names online!

@@ -76,7 +76,7 @@ int P_TranslateSectorSpecial(int special);
 extern dyncolormap_t NormalLight;
 extern AActor* shootthing;
 
-EXTERN_CVAR(g_coopthingfilter)
+EXTERN_CVAR(g_thingfilter)
 
 bool			g_ValidLevel = false;
 
@@ -329,8 +329,8 @@ static void P_LoadSectors(const OString& mapname)
 		ss->floorheight = LESHORT(ms->floorheight) << FRACBITS;
 		ss->ceilingheight = LESHORT(ms->ceilingheight) << FRACBITS;
 
-		ss->floor_res_id = Res_GetTextureResourceId(OString(ms->floorpic, 8), FLOOR);
-		ss->ceiling_res_id = Res_GetTextureResourceId(OString(ms->ceilingpic, 8), FLOOR); 
+		ss->floor_res_id = Res_GetTextureResourceId(OStringToUpper(ms->floorpic, 8), FLOOR);
+		ss->ceiling_res_id = Res_GetTextureResourceId(OStringToUpper(ms->ceilingpic, 8), FLOOR); 
 
 		ss->lightlevel = LESHORT(ms->lightlevel);
 		originalLightLevels.push_back(LESHORT(ms->lightlevel));
@@ -637,9 +637,9 @@ static void P_LoadDoomThings(const OString& mapname)
 			#ifdef SERVER_APP
 			if (G_IsCoopGame())
 			{ 
-				if (g_coopthingfilter == 1)
+				if (g_thingfilter == 1)
 					mt2.flags |= MTF_FILTER_COOPWPN;
-				else if (g_coopthingfilter == 2)
+				else if (g_thingfilter == 2)
 					mt2.flags &= ~MTF_COOPERATIVE;
 			}
 			else
@@ -1089,60 +1089,61 @@ void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 	{
 		ResourceId* res_id_ptr = NULL;
 		argb_t* blend_color;
-		const char* texture_name;
+		OString texture_name;
 
 		if (i == 0)				// bottom textures
 		{
 			res_id_ptr = &sd->bottomtexture;
 			blend_color = &sec->bottommap;
-			texture_name = msd->bottomtexture;
+			texture_name = OStringToUpper(msd->bottomtexture, 8);
 		}
 		else if (i == 1)		// mid textures
 		{
 			res_id_ptr = &sd->midtexture;
 			blend_color = &sec->midmap;
-			texture_name = msd->midtexture;
+			texture_name = OStringToUpper(msd->midtexture, 8);
 		}
 		else					// top textures
 		{
 			res_id_ptr = &sd->toptexture;
 			blend_color = &sec->topmap;
-			texture_name = msd->toptexture;
+			texture_name = OStringToUpper(msd->toptexture, 8);
 		}
 
 		*blend_color = argb_t(0, 255, 255, 255);
 		*res_id_ptr = ResourceId::INVALID_ID;
 
-		int colormap_index = R_ColormapNumForName(texture_name);
+		int colormap_index = R_ColormapNumForName(texture_name.c_str());
 		if (colormap_index != 0)
 		{
 			*blend_color = R_BlendForColormap(colormap_index);
 		}
 		else
 		{
-			*res_id_ptr = Res_GetTextureResourceId(OStringToUpper(texture_name, 8), WALL);
+			*res_id_ptr = Res_GetTextureResourceId(texture_name, WALL, false);
 			if (!Res_CheckResource(*res_id_ptr))
 			{
-				if (strnicmp(texture_name, "WATERMAP", 8) == 0)
+				if (strnicmp(texture_name.c_str(), "WATERMAP", 8) == 0)
 					*blend_color = argb_t(0x80, 0, 0x4F, 0xA5);
 				else
-					*blend_color = P_GetColorFromTextureName(texture_name);
+					*blend_color = P_GetColorFromTextureName(texture_name.c_str());
 			}
 		}
 	}
 }
 
+
 // 
-
-
-void SetTextureNoErr(ResourceId* res_id_ptr, unsigned int *color, char *name)
+// SetTextureNoErr
+//
+void P_SetTextureNoErr(ResourceId* res_id_ptr, unsigned int *color, const OString& texture_name)
 {
-	*res_id_ptr = Res_GetTextureResourceId(OStringToUpper(name, 8), WALL);
+	*res_id_ptr = Res_GetTextureResourceId(texture_name, WALL, false);
 	if (!Res_CheckResource(*res_id_ptr))
 	{
 		char name2[9];
 		char *stop;
-		strncpy(name2, name, 8);
+		strncpy(name2, texture_name.c_str(), 8);
 		name2[8] = 0;
 		*color = strtoul(name2, &stop, 16);
 	}
@@ -2073,6 +2074,7 @@ void P_Init (void)
 	Res_ReadAnimationDefinitions();
 	R_InitSprites(sprnames);
 	InitTeamInfo();
+	P_InitHorde();
 }
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)

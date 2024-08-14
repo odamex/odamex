@@ -186,7 +186,7 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 				}
 
 				std::string status = SV_BuildKillsDeathsStatusString(*it);
-				SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.(%s)\n",
+				SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator. (%s)\n",
 					it->userinfo.netname.c_str(), status.c_str());
 
 				MSG_WriteSVC(
@@ -1168,14 +1168,6 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 			MSG_WriteSVC(&cl->reliablebuf, SVC_SpawnPlayer(*mo->player));
 		}
 
-		return true;
-	}
-	else if (previously_ok && ok 
-			&& player.mo && !mo->player && mo->type != MT_AVATAR && mo->type != MT_PLAYER 
-			&& mo->on_conveyor
-			&& (gametic + mo->netid) % 120) // Update items on conveyers every 120 tics
-	{
-		SV_SendMobjToClient(mo, cl);
 		return true;
 	}
 
@@ -3600,7 +3592,7 @@ void SV_SpecPlayer(player_t &player, bool silent)
 	if (!silent)
 	{
 		std::string status = SV_BuildKillsDeathsStatusString(player);
-		SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.(%s)\n",
+		SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator. (%s)\n",
 			player.userinfo.netname.c_str(), status.c_str());
 	}
 

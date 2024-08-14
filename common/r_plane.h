@@ -63,7 +63,7 @@ void R_DrawPlanes (void);
 visplane_t* R_FindPlane(
 	plane_t secplane,
 	ResourceId res_id,
-	int sky,
+	uint32_t sky_transfer,
   	int lightlevel,
 	fixed_t xoffs,		// killough 2/28/98: add x-y offsets
 	fixed_t yoffs,

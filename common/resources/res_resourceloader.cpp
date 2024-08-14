@@ -114,7 +114,7 @@ static void Res_DrawPatchIntoTexture(
 			int posttopdelta = *(post + 0);
 			int postlength = *(post + 1);
 
-			if (lump_length < (uint32_t)(post - lump_data) + 4 + postlength)
+			if (postlength < 0 || lump_length < (uint32_t)(post - lump_data) + 4 + postlength)
 				return;
 
 			// [SL] Handle DeePsea tall patches: topdelta is treated as a relative
@@ -380,6 +380,30 @@ void CompositeTextureLoader::load(void* data) const
 	}
 	#endif
 }
+
+
+//
+// InMemoryTextureLoader::size
+//
+uint32_t InMemoryTextureLoader::size() const
+{
+	return calculateTextureSize(mWidth, mHeight);
+}
+
+
+//
+// InMemoryTextureLoader::load
+//
+void InMemoryTextureLoader::load(void* data) const
+{
+	Texture* texture = createTexture(data, mWidth, mHeight);
+	#if CLIENT_APP
+	memcpy(texture->mData, mSourceData, mWidth * mHeight * sizeof(palindex_t));
+	#endif
+}
+
+
+
 
 
 // ----------------------------------------------------------------------------

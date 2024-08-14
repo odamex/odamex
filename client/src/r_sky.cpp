@@ -61,8 +61,8 @@ fixed_t		skyheight;
 fixed_t		skyiscale;
 
 int			sky1shift,		sky2shift;
-fixed_t		sky1pos=0,		sky1speed=0;
-fixed_t		sky2pos=0,		sky2speed=0;
+fixed_t		sky1scrolldelta,	sky2scrolldelta;
+fixed_t		sky1columnoffset,	sky2columnoffset;
 
 static ResourceId sky_flat_resource_id = ResourceId::INVALID_ID;
 
@@ -86,6 +86,8 @@ bool R_ResourceIdIsSkyFlat(const ResourceId res_id)
 {
 	return res_id == sky_flat_resource_id;
 }
+
+static palindex_t* compositeskybuffer[MAXWIDTH][512]; // holds doublesky composite sky to blit to the screen
 
 
 //
@@ -199,6 +201,11 @@ void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
 		sky2texture = sky1texture;
 	}
 
+	sky1columnoffset = 0;
+	sky2columnoffset = 0;
+	sky1scrolldelta = level.sky1ScrollDelta;
+	sky2scrolldelta = sky2texture ? level.sky2ScrollDelta : 0;
+
 	if (HexenHack)
 		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY", FLOOR);
 	else
@@ -225,6 +232,16 @@ inline void SkyColumnBlaster()
 	R_BlastSkyColumn(colfunc);
 }
 
+inline bool R_PostDataIsTransparent(byte* data)
+{
+	if (*data == '\0')
+	{
+		return true;
+	}
+	return false;
+}
+
+
 //
 // R_RenderSkyRange
 //
@@ -232,69 +249,86 @@ inline void SkyColumnBlaster()
 // in the normal convention for patches, but uses color 0 as a transparent
 // color.
 // [ML] 5/11/06 - Removed sky2
+// [BC] 7/5/24 - Brought back for real this time
 //
 void R_RenderSkyRange(visplane_t* pl)
 {
 	if (pl->minx > pl->maxx)
 		return;
 
-	const Texture* texture = NULL;
+	const Texture* front_sky_texture = NULL;
+	const Texture* back_sky_texture = NULL;
+
+	int columnmethod = 2;
+	int frontskytex, backskytex;
 
 	fixed_t front_offset = 0;
+	fixed_t back_offset = 0;
 	angle_t skyflip = 0;
 
 	if (R_ResourceIdIsSkyFlat(pl->res_id))
 	{
-		if ((pl->sky & PL_SKYFLAT) == 0)
-		{
-			texture = sky1texture;
-		}
-		else if ((pl->sky & ~PL_SKYFLAT) == 0)
-		{
-			texture = sky2texture;
-		}
-		else
-		{
-			// MBF's linedef-controlled skies
-			const line_t* line = &lines[(pl->sky & ~PL_SKYFLAT) - 1];
+		// use sky1
+		front_sky_texture = sky1texture;
 
-			// Sky transferred from first sidedef
-			const side_t* side = &sides[line->sidenum[0]];
+		if (level.flags & LEVEL_DOUBLESKY)
+			back_sky_texture = sky2texture;
 
-			// Texture comes from upper texture of reference sidedef
-			if (Res_CheckResource(side->toptexture))
-				texture = Res_CacheTexture(side->toptexture);
+		front_offset = sky1columnoffset;
+		back_offset = sky2columnoffset;
+	}
+	else if (pl->sky_transfer == PL_SKYFLAT)
+	{
+		// use sky2
+		front_sky_texture = sky2texture;
+		front_offset = sky2columnoffset;
+	}
+	else
+	{
+		// MBF's linedef-controlled skies
+		uint32_t linenum = (pl->sky_transfer & ~PL_SKYFLAT) - 1;
+		if (linenum >= numlines)
+			linenum = 0;
+		const line_t* line = &lines[linenum];
 
-			// Horizontal offset is turned into an angle offset,
-			// to allow sky rotation as well as careful positioning.
-			// However, the offset is scaled very small, so that it
-			// allows a long-period of sky rotation.
-			front_offset = (-side->textureoffset) >> 6;
+		// Sky transferred from first sidedef
+		const side_t* side = *line->sidenum + sides;
 
-			// Vertical offset allows careful sky positioning.
-			skytexturemid = side->rowoffset - 28*FRACUNIT;
+		// Texture comes from upper texture of reference sidedef
+		front_sky_texture = Res_CacheTexture(side->toptexture);
 
-			// We sometimes flip the picture horizontally.
-			//
-			// Doom always flipped the picture, so we make it optional,
-			// to make it easier to use the new feature, while to still
-			// allow old sky textures to be used.
-			skyflip = line->args[2] ? 0u : ~0u;
-		}
+		// Horizontal offset is turned into an angle offset,
+		// to allow sky rotation as well as careful positioning.
+		// However, the offset is scaled very small, so that it
+		// allows a long-period of sky rotation.
+		front_offset = (-side->textureoffset) >> 6;
+
+		// Vertical offset allows careful sky positioning.
+		skytexturemid = side->rowoffset - 28*FRACUNIT;
+
+		// We sometimes flip the picture horizontally.
+		//
+		// Doom always flipped the picture, so we make it optional,
+		// to make it easier to use the new feature, while to still
+		// allow old sky textures to be used.
+		skyflip = line->args[2] ? 0u : ~0u;
 	}
 
 	R_ResetDrawFuncs();
 
 	const palette_t* pal = V_GetDefaultPalette();
 
+
 	skyplane = pl;
 
-	if (texture)
+	if (front_sky_texture)
 	{
 		dcol.masked = false;
 		dcol.iscale = skyiscale >> skystretch;
 		dcol.texturemid = skytexturemid;
-		dcol.textureheight = texture->mHeight << FRACBITS;
+		dcol.textureheight = front_sky_texture->mHeight << FRACBITS;
+	
+		dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
 
 		// set up the appropriate colormap for the sky
 		if (fixedlightlev)
@@ -317,8 +351,8 @@ void R_RenderSkyRange(visplane_t* pl)
 		for (int x = pl->minx; x <= pl->maxx; x++)
 		{
 			int colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
-			colnum &= (1 << texture->mWidthBits) - 1;
-			skyposts[x] = texture->getColumn(colnum);
+			colnum &= (1 << front_sky_texture->mWidthBits) - 1;
+			skyposts[x] = front_sky_texture->getColumn(colnum);
 		}
 
 		R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom, skyposts, SkyColumnBlaster, false);

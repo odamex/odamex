@@ -61,8 +61,6 @@ BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t sp
 BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
                        fixed_t speed2, fixed_t height, int crush, byte silent, int change,
                        crushmode_e crushmode);
-void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
-void SetTextureNoErr(ResourceId* res_id_ptr, unsigned int* color, char* name);
 
 int P_Random(AActor* actor);
 const LineActivationType P_LineActivationTypeForSPACFlag(

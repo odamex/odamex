@@ -1,15 +1,25 @@
 Set-PSDebug -Trace 1
 
-$DemoTesterPath = "https://github.com/bcahue/odatests/releases/download/1.0.1/OdaTests-v1.0.1.zip"
-$DemoResourcePath = "https://github.com/bcahue/odatests-resources/releases/download/1.0.0/odatests-resources-v1.0.0.zip"
+if (!([String]::IsNullOrWhiteSpace($env:DEMOTESTER_URL)) -and !([String]::IsNullOrWhiteSpace($env:DEMORESOURCES_URL)))
+{
+		Write-Output "OdaTests Download URL: $env:DEMOTESTER_URL"
+		Write-Output "OdaTests WAD Resources Download URL: $env:DEMORESOURCES_URL"
 
-Set-Location "build"
-New-Item -Name "demotester" -ItemType "directory" | Out-Null
+		$DemoTesterPath = $env:DEMOTESTER_URL
+		$DemoResourcePath = $env:DEMORESOURCES_URL
 
-Invoke-WebRequest -Uri $DemoTesterPath -OutFile .\odatests.zip
-Invoke-WebRequest -Uri $DemoResourcePath -OutFile .\odatests-resources.zip
+		Set-Location "build"
+		New-Item -Name "demotester" -ItemType "directory" | Out-Null
 
-7z.exe x odatests.zip -odemotester -y
-7z.exe x odatests-resources.zip -odemotester -y
+		Invoke-WebRequest -Uri $DemoTesterPath -OutFile .\odatests.zip
+		Invoke-WebRequest -Uri $DemoResourcePath -OutFile .\odatests-resources.zip
 
-Set-Location ..
+		7z.exe x odatests.zip -odemotester -y
+		7z.exe x odatests-resources.zip -odemotester -y
+
+		Set-Location ..
+}
+else
+{
+	Write-Output "OdaTests URL or OdaTests Resources URL missing, skipping..."
+}

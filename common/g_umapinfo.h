@@ -14,13 +14,11 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Functions regarding reading and interpreting MAPINFO lumps.
+//   Functions regarding reading and interpreting UMAPINFO lumps.
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
+#include "resources/res_main.h"
 
-extern bool HexenHack; // Semi-Hexen-compatibility mode
-
-void G_MapNameToLevelNum(level_pwad_info_t& info);
-void G_ParseMapInfo();
+void ParseUMapInfoLump(const ResourceId res_id, const std::string& lumpname);

@@ -710,7 +710,7 @@ struct visplane_s
 	plane_t		secplane;
 
 	ResourceId	res_id;
-	short		sky;
+	uint32_t	sky_transfer;		// texture reference for Boom sky transfer
 
 	int			lightlevel;
 	fixed_t		xoffs, yoffs;		// killough 2/28/98: Support scrolling flats

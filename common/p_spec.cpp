@@ -465,7 +465,7 @@ void DPusher::Serialize (FArchive &arc)
 	else
 	{
 		arc >> m_Type;
-		arc.ReadObject((DObject*&)m_Source, DPusher::StaticType());
+		arc.ReadObject((DObject*&)*m_Source, DPusher::StaticType());
 		arc >> m_Xmag >> m_Ymag >> m_Magnitude >> m_Radius >> m_X >> m_Y >> m_Affectee;
 	}
 }
@@ -2224,7 +2224,6 @@ void DScroller::RunThink ()
 				  {
 					// Move objects only if on floor or underwater,
 					// non-floating, and clipped.
-					thing->on_conveyor = true;
 					thing->momx += dx;
 					thing->momy += dy;
 				  }

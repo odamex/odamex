@@ -52,7 +52,7 @@ enum TextureSearchOrdering {
 //
 // Res_GetTextureResourceId
 //
-const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering);
+const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering, bool use_placeholder = true);
 
 
 //
@@ -68,8 +68,6 @@ const ResourceId Res_GetAnimatedTextureResourceId(const ResourceId res_id);
 //
 const Texture* Res_CacheTexture(ResourceId res_id, zoneTag_e tag = PU_CACHE);
 const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering ordering, zoneTag_e tag = PU_CACHE);
-
-static void ParseAnim(OScanner& os, byte istex);
 
 
 // ============================================================================
@@ -256,6 +254,7 @@ private:
 	const ResourceIdList buildPNamesLookup(ResourceManager* manager, const OString& lump_name) const;
 	void addCompositeTextureResources(ResourceManager* manager, const ResourceIdList& pnames_lookup, const OString& lump_name);
 	CompositeTextureDefinition buildCompositeTextureDefinition(const uint8_t* data, const ResourceIdList& pnames_lookup) const;
+	ResourceId addMissingTexturePlaceholder(ResourceManager* manager);
 
 	typedef OHashTable<ResourceId, ResourceLoader*> ResourceLoaderLookupTable;
 	ResourceLoaderLookupTable		mResourceLoaderLookup;
@@ -291,7 +290,7 @@ private:
 
 	void addWarpedTexture(const ResourceId res_id);
 	void copyTexture(Texture* destination_texture, const Texture* source_texture) const;
-	friend void ParseAnim(OScanner& os, byte istex);
+	void parseAnim(OScanner& os, TextureSearchOrdering search_ordering);
 
 	typedef OHashTable<ResourceId, ResourceId> ResourceIdMap;
 	ResourceIdMap		mTextureTranslation;

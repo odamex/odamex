@@ -296,7 +296,7 @@ static visplane_t *new_visplane(unsigned hash)
 visplane_t* R_FindPlane(
 		plane_t secplane,
 		ResourceId res_id,
-		int sky,
+		uint32_t sky_transfer,
 		int lightlevel,
 		fixed_t xoffs, fixed_t yoffs,
 		fixed_t xscale, fixed_t yscale,
@@ -317,7 +317,7 @@ visplane_t* R_FindPlane(
 	for (check = visplanes[hash]; check; check = check->next)	// killough
 		if (P_IdenticalPlanes(&secplane, &check->secplane) &&
 			res_id == check->res_id &&
-			sky == check->sky &&
+			sky_transfer == check->sky_transfer &&
 			lightlevel == check->lightlevel &&
 			xoffs == check->xoffs &&	// killough 2/28/98: Add offset checks
 			yoffs == check->yoffs &&
@@ -332,7 +332,7 @@ visplane_t* R_FindPlane(
 
 	memcpy(&check->secplane, &secplane, sizeof(secplane));
 	check->res_id = res_id;
-	check->sky = sky;
+	check->sky_transfer = sky_transfer;
 	check->lightlevel = lightlevel;
 	check->xoffs = xoffs;				// killough 2/28/98: Save offsets
 	check->yoffs = yoffs;
@@ -398,7 +398,7 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 
 		new_pl->secplane = pl->secplane;
 		new_pl->res_id = pl->res_id;
-		new_pl->sky = pl->sky;
+		new_pl->sky_transfer = pl->sky_transfer;
 		new_pl->lightlevel = pl->lightlevel;
 		new_pl->xoffs = pl->xoffs;			// killough 2/28/98
 		new_pl->yoffs = pl->yoffs;

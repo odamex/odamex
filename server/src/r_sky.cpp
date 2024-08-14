@@ -35,7 +35,15 @@
 #include "g_mapinfo.h"
 
 // [ML] 5/11/06 - Remove sky2
+<<<<<<< HEAD
 fixed_t		sky1pos=0,		sky1speed=0;
+=======
+int 		skyflatnum;
+int 		sky1texture, sky2texture;
+
+fixed_t		sky1scrolldelta,	sky2scrolldelta;
+fixed_t		sky1columnoffset,	sky2columnoffset;
+>>>>>>> stable
 
 static ResourceId sky_flat_resource_id = ResourceId::INVALID_ID;
 

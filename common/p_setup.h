@@ -24,6 +24,7 @@
 #pragma once
 
 class OString;
+class ResourceId;
 
 // NOT called by W_Ticker. Fixme.
 //
@@ -35,3 +36,6 @@ void P_TranslateLineDef(line_t* ld, maplinedef_t* mld);
 
 // Called by startup code.
 void P_Init();
+
+void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
+void P_SetTextureNoErr(ResourceId* res_id_ptr, unsigned int *color, const OString& texture_name);
