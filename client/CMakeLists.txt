@@ -13,6 +13,9 @@ option(USE_DEFAULT_SIMD "Use default SIMD optimization settings" ON)
 # #define CLIENT_APP for use in the source code
 add_definitions(-DCLIENT_APP)
 
+# Always build with PNG support
+add_definitions(-DUSE_PNG)
+
 # Client
 set(CLIENT_DIR sdl src)
 file(GLOB CLIENT_SOURCES src/*.cpp src/*.h)
