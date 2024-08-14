@@ -35,6 +35,8 @@
 
 extern std::vector<hordeDefine_t> WAVE_DEFINES;
 
+static hordeDefine_t EMPTY_WAVE_DEFINE;
+
 typedef OHashTable<std::string, mobjtype_t> AliasMap;
 AliasMap g_aliasMap;
 
@@ -521,5 +523,13 @@ void G_ParseHordeDefs()
  */
 const hordeDefine_t& G_HordeDefine(size_t id)
 {
-	return ::WAVE_DEFINES.at(id);
+	if (id >= ::WAVE_DEFINES.size())
+	{
+		Printf(PRINT_WARNING,
+		       "Tried to access horde wave %llu but only have %llu horde defines!\n", id,
+		       ::WAVE_DEFINES.size());
+		return EMPTY_WAVE_DEFINE;
+	}
+
+	return ::WAVE_DEFINES[id];
 }

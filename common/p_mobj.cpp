@@ -1775,7 +1775,7 @@ void P_ZMovement(AActor *mo)
 		return;
 	}
 
-	if (mo->player)
+	if (mo->player && !P_IsVoodooDoll(mo))
 		P_PlayerSmoothStepUp(mo);
 
 	// ZDoom applies gravity earlier in the function than vanilla

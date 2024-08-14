@@ -885,6 +885,8 @@ void G_InitLevelLocals()
 	{
 		::level.skypic2 =::level.skypic.c_str();
 	}
+	::level.sky1ScrollDelta = info.sky1ScrollDelta;
+	::level.sky2ScrollDelta = info.sky2ScrollDelta;
 
 	if (::level.flags & LEVEL_JUMP_YES)
 	{
@@ -920,6 +922,9 @@ void G_InitLevelLocals()
 	::level.intermusic = info.intermusic;
 	
 	::level.bossactions = info.bossactions;
+	::level.label = info.label;
+	::level.clearlabel = info.clearlabel;
+	::level.author = info.author;
 	
 	::level.detected_gametype = GM_COOP;
 

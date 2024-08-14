@@ -1961,6 +1961,7 @@ void P_Init (void)
 	P_InitPicAnims ();
 	R_InitSprites (sprnames);
 	InitTeamInfo();
+	P_InitHorde();
 }
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)
