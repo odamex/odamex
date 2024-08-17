@@ -591,7 +591,7 @@ MULTI5 = "Monster kill!";
 
 // Obituary strings
 // First the self-kills, then the other-kills
-OB_SUICIDE = "%o committed suicide.";
+OB_SUICIDE = "%o suicides.";
 OB_FALLING = "%o fell too far.";
 OB_CRUSH = "%o was squished.";
 OB_EXIT = "%o tried to leave.";
