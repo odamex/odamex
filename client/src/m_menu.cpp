@@ -2155,13 +2155,13 @@ void M_Drawer()
 			V_SetFont("BIGFONT");
 			for (int i = 0; i < max; i++)
 			{
-				if (currentMenu->menuitems[i].textname[0])
-				{
-					screen->DrawTextCleanMove(CR_RED, x, y, currentMenu->menuitems[i].textname);
-				}
-				else if (currentMenu->menuitems[i].name[0])
+				if (currentMenu->menuitems[i].name[0])
 				{
 					screen->DrawPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y);
+				}
+				else if (currentMenu->menuitems[i].textname[0])
+				{
+					screen->DrawTextCleanMove(CR_RED, x, y, currentMenu->menuitems[i].textname);
 				}
 				y += LINEHEIGHT;
 			}
