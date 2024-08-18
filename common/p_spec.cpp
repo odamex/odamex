@@ -2694,9 +2694,9 @@ bool P_ArgToCrushType(byte arg)
 // these effects to be turned on or off.
 //
 // Sector boundaries present problems. The player should experience these
-// friction changes only when their feet are touching the sector floor. At
+// friction changes only when his feet are touching the sector floor. At
 // sector boundaries where floor height changes, the player can find
-// themselves still 'in' one sector, but with their feet at the floor level
+// himself still 'in' one sector, but with his feet at the floor level
 // of the next sector (steps up or down). To handle this, Thinkers are used
 // in icy/muddy sectors. These thinkers examine each object that is touching
 // their sectors, looking for players whose feet are at the same level as

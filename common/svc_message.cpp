@@ -163,7 +163,7 @@ odaproto::svc::UpdateLocalPlayer SVC_UpdateLocalPlayer(AActor& mo, const int tic
 {
 	odaproto::svc::UpdateLocalPlayer msg;
 
-	// client player will update their position if packets were missed
+	// client player will update his position if packets were missed
 	odaproto::Actor* act = msg.mutable_actor();
 
 	// client-tic of the most recently processed ticcmd for this client
@@ -562,7 +562,7 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player)
 	}
 	else
 	{
-		// The client hasn't yet received their own position from the server
+		// The client hasn't yet received his own position from the server
 		// This happens with cl_autorecord
 		// Just fake a position for now
 		act->set_netid(MAXSHORT);
