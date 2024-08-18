@@ -392,6 +392,14 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 		{
 			ParseStandardUmapInfoProperty(os, &info);
 		}
+		// if any episode title patches are missing, fall back on text name
+		bool missingeppatch = false;
+		for (int i = 0; i < MAX_EPISODES; i++) {
+			missingeppatch = missingeppatch || EpisodeInfos[i].pic_name.empty();
+		}
+		for (int i = 0; i < MAX_EPISODES; i++) {
+			EpisodeInfos[i].fulltext = missingeppatch;
+		}
 
 		// Set default level progression here to simplify the checks elsewhere.
 		// Doing this lets us skip all normal code for this if nothing has been defined.
