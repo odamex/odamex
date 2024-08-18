@@ -1289,6 +1289,7 @@ void ParseEpisodeInfo(OScanner& os)
 	int new_mapinfo = false; // is int instead of bool for template purposes
 	OLumpName map;
 	std::string pic;
+	std::string name;
 	bool picisgfx = false;
 	bool remove = false;
 	char key = 0;
@@ -1342,7 +1343,7 @@ void ParseEpisodeInfo(OScanner& os)
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
 			if (picisgfx == false)
-				pic = os.getToken();
+				name = os.getToken();
 		}
 		else if (os.compareTokenNoCase("lookup"))
 		{
@@ -1436,7 +1437,8 @@ void ParseEpisodeInfo(OScanner& os)
 				i = episodenum++;
 		}
 
-		EpisodeInfos[i].name = pic;
+		EpisodeInfos[i].pic_name = pic;
+		EpisodeInfos[i].menu_name = name;
 		EpisodeInfos[i].key = static_cast<char>(tolower(key));
 		EpisodeInfos[i].fulltext = !picisgfx;
 		EpisodeInfos[i].noskillmenu = noskillmenu;

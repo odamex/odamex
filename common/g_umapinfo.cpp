@@ -274,7 +274,8 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 				return 0;
 
 			EpisodeMaps[episodenum] = mape->mapname;
-			EpisodeInfos[episodenum].name = tokens[0];
+			EpisodeInfos[episodenum].pic_name = tokens[0];
+			EpisodeInfos[episodenum].menu_name = tokens[1];
 			EpisodeInfos[episodenum].fulltext = false;
 			EpisodeInfos[episodenum].noskillmenu = false;
 			EpisodeInfos[episodenum].key = (tokens.size() > 2) ? tokens[2][0] : 0;
