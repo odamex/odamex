@@ -395,7 +395,10 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 		// if any episode title patches are missing, fall back on text name
 		bool missingeppatch = false;
 		for (int i = 0; i < MAX_EPISODES; i++) {
-			missingeppatch = missingeppatch || EpisodeInfos[i].pic_name.empty();
+			if (EpisodeInfos[i].pic_name.empty()) {
+				missingeppatch = true;
+				break;
+			}
 		}
 		for (int i = 0; i < MAX_EPISODES; i++) {
 			EpisodeInfos[i].fulltext = missingeppatch;
