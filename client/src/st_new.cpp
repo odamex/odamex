@@ -53,6 +53,7 @@
 #include "p_horde.h"
 #include "c_dispatch.h"
 #include "hu_speedometer.h"
+#include "am_map.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
@@ -117,6 +118,7 @@ EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(hud_transparency)
 EXTERN_CVAR(hud_anchoring)
 EXTERN_CVAR(hud_demobar)
+EXTERN_CVAR(hud_extendedinfo)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
@@ -789,6 +791,42 @@ void drawNetdemo() {
 	}
 }
 
+static void drawLevelStats() {
+	if (!G_IsCoopGame())
+		return;
+
+	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
+		return;
+
+	std::string line;
+
+	if (G_IsHordeMode())
+	{
+		StrFormat(line, TEXTCOLOR_RED "K" TEXTCOLOR_NORMAL " %d",
+	        level.killed_monsters);
+	}
+	else
+	{
+		StrFormat(line, TEXTCOLOR_RED "K" TEXTCOLOR_NORMAL " %d/%d "
+						TEXTCOLOR_RED "I" TEXTCOLOR_NORMAL " %d/%d "
+						TEXTCOLOR_RED "S" TEXTCOLOR_NORMAL " %d/%d",
+	        level.killed_monsters,
+	        (level.total_monsters + level.respawned_monsters),
+			level.found_items, level.total_items,
+			level.found_secrets, level.total_secrets);
+	}
+
+	int x = 2, y = R_StatusBarVisible() ? statusBarY() + 1 : 24;
+
+	if (hud_extendedinfo == 1)
+	{
+		V_SetFont("DIGFONT");
+	}
+	hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+	              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
+	V_SetFont("SMALLFONT");
+}
+
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
 void OdamexHUD() {
 	std::string buf;
@@ -968,6 +1006,10 @@ void OdamexHUD() {
 
 	// Draw gametype scoreboard
 	hud::drawGametype();
+
+	// Draw level stats
+	if (hud_extendedinfo)
+		hud::drawLevelStats();
 }
 
 struct drawToast_t
@@ -1528,6 +1570,10 @@ void DoomHUD()
 
 	// Draw gametype scoreboard
 	hud::drawGametype();
+
+	// Draw level stats
+	if (hud_extendedinfo)
+		hud::drawLevelStats();
 }
 
 }
