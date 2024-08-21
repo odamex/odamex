@@ -57,8 +57,10 @@ void R_CacheSprite(spritedef_t *sprite)
 		{
 			if (sprite->spriteframes[i].width[r] == SPRITE_NEEDS_INFO)
 			{
-				if (sprite->spriteframes[i].lump[r] == -1)
-					I_Error ("Sprite %d, rotation %d has no lump", i, r);
+				if (sprite->spriteframes[i].lump[r] == -1) 
+				{
+					I_Error("Sprite %d, rotation %d has no lump", i, r);
+				}
 				patch_t* patch = W_CachePatch(sprite->spriteframes[i].lump[r]);
 				sprite->spriteframes[i].width[r] = patch->width()<<FRACBITS;
 				sprite->spriteframes[i].offset[r] = patch->leftoffset()<<FRACBITS;

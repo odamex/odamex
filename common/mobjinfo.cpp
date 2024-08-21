@@ -7,27 +7,31 @@ mobjinfo_t* mobjinfo;
 
 static void D_ResetMobjInfo(int from, int to)
 {
-    mobjinfo_t m;
+    mobjinfo_t *m;
     for(int i = from; i < to; i++)
     {
-        m = mobjinfo[i];
-        m.droppeditem = MT_NULL;
-        m.infighting_group = IG_DEFAULT;
-        m.projectile_group = PG_DEFAULT;
-        m.splash_group = SG_DEFAULT;
-        m.altspeed = NO_ALTSPEED;
-        m.meleerange = MELEERANGE; // MELEERANGE
+        m = &mobjinfo[i];
+        m->droppeditem = MT_NULL;
+        m->infighting_group = IG_DEFAULT;
+        m->projectile_group = PG_DEFAULT;
+        m->splash_group = SG_DEFAULT;
+        m->altspeed = NO_ALTSPEED;
+        m->meleerange = MELEERANGE;
+		m->translucency = 0x10000;
     }
 }
 
-void D_Initialize_mobjinfo(mobjinfo_t* source, int count) {
+void D_Initialize_Mobjinfo(mobjinfo_t* source, int count) {
     // [CMB] Pre-allocate mobjinfo to support current limit on types
     mobjinfo = (mobjinfo_t*) M_Calloc (count, sizeof(*mobjinfo));
-    for(int i = 0; i < count; i++)
-    {
-        mobjinfo[i] = doom_mobjinfo[i];
-    }
-    num_mobjinfo_types = count;
+	if (source)
+	{
+		for (int i = 0; i < count; i++)
+		{
+			mobjinfo[i] = source[i];
+		}
+		num_mobjinfo_types = count;
+	}
 #if defined _DEBUG
     Printf(PRINT_HIGH,"D_Allocate_mobjinfo:: allocated %d actors.\n", count);
 #endif
