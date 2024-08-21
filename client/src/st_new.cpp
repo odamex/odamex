@@ -807,12 +807,15 @@ static void drawLevelStats() {
 	}
 	else
 	{
-		StrFormat(line, TEXTCOLOR_RED "K" TEXTCOLOR_NORMAL " %d/%d "
-						TEXTCOLOR_RED "I" TEXTCOLOR_NORMAL " %d/%d "
-						TEXTCOLOR_RED "S" TEXTCOLOR_NORMAL " %d/%d",
+		StrFormat(line, TEXTCOLOR_RED "K" "%s" " %d/%d "
+						TEXTCOLOR_RED "I" "%s" " %d/%d "
+						TEXTCOLOR_RED "S" "%s" " %d/%d",
+			(level.killed_monsters == (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
 	        level.killed_monsters,
 	        (level.total_monsters + level.respawned_monsters),
+			(level.found_items == level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
 			level.found_items, level.total_items,
+			(level.found_secrets == level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
 			level.found_secrets, level.total_secrets);
 	}
 
