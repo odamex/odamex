@@ -7692,7 +7692,7 @@ void D_Init_Odamex_States(int num_states)
     D_EnsureStateCapacity(num_states + num_odamex_states);
     for(int i = 0; i < num_odamex_states; i++)
     {
-        states[num_states + i] = odastates[i];
+        states[num_states + i] = odastates[i]; // [CMB] TODO: did we actually initialize these?
     }
 }
 
