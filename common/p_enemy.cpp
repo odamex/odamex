@@ -3109,8 +3109,8 @@ void A_RandomJump(AActor* mo)
 
 void A_LineEffect(AActor* mo)
 {
-	/* [AM] Not implemented...yet.
-	if (!(mo->intflags & MIF_LINEDONE))                // Unless already used up
+	/* [AM] Not implemented...yet. */
+	if (!(mo->flags & MF_LINEDONE))                // Unless already used up
 	{
 		line_t junk = *lines;                          // Fake linedef set to 1st
 		if ((junk.special = (short)mo->state->misc1))  // Linedef type
@@ -3120,15 +3120,14 @@ void A_LineEffect(AActor* mo)
 			player_t* oldplayer = mo->player;          // Remember player status
 			mo->player = &player;                      // Fake player
 			player.health = 100;                       // Alive player
-			junk.tag = (short)mo->state->misc2;        // Sector tag for linedef
-			if (!P_UseSpecialLine(mo, &junk, 0))       // Try using it
-			    P_CrossSpecialLine(&junk, 0, mo);        // Try crossing it
+			junk.id = (short)mo->state->misc2;        // Sector tag for linedef
+			if (!P_UseSpecialLine(mo, &junk, 0, mo->flags & MF2_BOSS))       // Try using it
+				P_CrossSpecialLine(&junk, 0, mo, mo->flags & MF2_BOSS); // Try crossing it
 			if (!junk.special)                         // If type cleared,
-			    mo->intflags |= MIF_LINEDONE;            // no more for this thing
+			    mo->flags |= MF_LINEDONE;            // no more for this thing
 			mo->player = oldplayer;                    // Restore player status
 		}
 	}
-	*/
 }
 
 VERSION_CONTROL (p_enemy_cpp, "$Id$")
