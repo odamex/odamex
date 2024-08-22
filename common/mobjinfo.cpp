@@ -39,10 +39,14 @@ void D_Initialize_Mobjinfo(mobjinfo_t* source, int count) {
 
 void D_EnsureMobjInfoCapacity(int limit)
 {
-    while(limit >= num_mobjinfo_types)
-    {
-        int old_num_mobjinfo_types = num_mobjinfo_types;
-        num_mobjinfo_types *= 2;
+	int old_num_mobjinfo_types = num_mobjinfo_types;
+	while (limit >= num_mobjinfo_types)
+	{
+		num_mobjinfo_types *= 2;
+	}
+    
+	if (old_num_mobjinfo_types < num_mobjinfo_types)
+	{
 		mobjinfo =
 		    (mobjinfo_t*)M_Realloc(mobjinfo, num_mobjinfo_types * sizeof(*mobjinfo));
         // dsdhacked spec says anything not set to a default should be 0/null
