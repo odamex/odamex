@@ -799,8 +799,7 @@ static void drawLevelStats()
 	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
 		return;
 
-	unsigned int xscale, yscale;
-	xscale = hud_scale ? CleanXfac : 1;
+	unsigned int xscale = hud_scale ? CleanXfac : 1;
 	int num_ax = 0, text_ax = 0;
 	if (hud_anchoring.value() < 1.0f)
 	{
@@ -812,7 +811,7 @@ static void drawLevelStats()
 	std::string line;
 	const int LINE_SPACING = V_LineHeight() + 1;
 	int font_offset = 0;
-	unsigned int x = R_StatusBarVisible() ? 2 : (text_ax + 10), y = R_StatusBarVisible() ? statusBarY() + 1 : 44;
+	unsigned int x = R_StatusBarVisible() ? (text_ax + 2) : (text_ax + 10), y = R_StatusBarVisible() ? statusBarY() + 1 : 44;
 	
 	if (hud_extendedinfo == 1 || hud_extendedinfo == 3)
 	{
