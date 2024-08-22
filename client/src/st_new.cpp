@@ -791,17 +791,28 @@ void drawNetdemo() {
 	}
 }
 
-static void drawLevelStats() {
+static void drawLevelStats()
+{
 	if (!G_IsCoopGame())
 		return;
 
 	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
 		return;
 
+	unsigned int xscale, yscale;
+	xscale = hud_scale ? CleanXfac : 1;
+	int num_ax = 0, text_ax = 0;
+	if (hud_anchoring.value() < 1.0f)
+	{
+		num_ax = (((float)I_GetSurfaceWidth() - (float)I_GetSurfaceHeight() * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
+		num_ax = MAX(0, num_ax);
+		text_ax = num_ax / xscale;
+	}
+
 	std::string line;
 	const int LINE_SPACING = V_LineHeight() + 1;
 	int font_offset = 0;
-	int x = 2, y = R_StatusBarVisible() ? statusBarY() + 1 : 33;
+	unsigned int x = R_StatusBarVisible() ? 2 : (text_ax + 10), y = R_StatusBarVisible() ? statusBarY() + 1 : 44;
 	
 	if (hud_extendedinfo == 1 || hud_extendedinfo == 3)
 	{
@@ -819,7 +830,8 @@ static void drawLevelStats() {
 	}
 	else
 	{
-		if (hud_extendedinfo >= 3 || !R_StatusBarVisible()){
+		if (hud_extendedinfo >= 3 || !R_StatusBarVisible())
+		{
 			std::string killrow;
 			std::string itemrow;
 			std::string secretrow;
