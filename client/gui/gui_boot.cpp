@@ -56,6 +56,14 @@ typedef std::vector<scannedIWAD_t> scannedIWADs_t;
 typedef std::vector<scannedPWAD_t> scannedPWADs_t;
 typedef std::vector<scannedPWAD_t*> scannedPWADPtrs_t;
 
+// display strings for options tab and their corresponding command line arguments
+const std::vector<std::pair<std::string, std::string> > OPTIONS_LIST = {
+	{"No Monsters", "-nomonsters"},
+	{"Fast Monsters", "-fast"},
+	{"Respawn Monsters", "-respawn"},
+	{"Pistol Start", "-pistolstart"}
+};
+
 /**
  * @brief Find the PWAD pointer in the scanned WAD array.
  */
@@ -115,17 +123,11 @@ class BootWindow : public Fl_Window
 	Fl_Check_Browser* m_gameOptionsBrowser;
 	StringTokens m_WADDirs;
 	Fl_Hold_Browser* m_WADDirList;
-	// display strings for options tab and their corresponding command line arguments
-	std::vector<std::pair<std::string, std::string> > OPTIONS_LIST;
 
   public:
 	BootWindow(int X, int Y, int W, int H, const char* L)
 	    : Fl_Window(X, Y, W, H, L), m_IWADs()
 	{
-		OPTIONS_LIST.push_back(std::make_pair("No Monsters", "-nomonsters"));
-		OPTIONS_LIST.push_back(std::make_pair("Fast Monsters", "-fast"));
-		OPTIONS_LIST.push_back(std::make_pair("Respawn Monsters", "-respawn"));
-		OPTIONS_LIST.push_back(std::make_pair("Pistol Start", "-pistolstart"));
 		{
 			Fl_Tabs* tabs = new Fl_Tabs(0, 0, 425, 200);
 			{
@@ -185,10 +187,9 @@ class BootWindow : public Fl_Window
 				} // Fl_Box* o
 				{
 					m_gameOptionsBrowser = new Fl_Check_Browser(10, 65, 405, 125);
-					for (std::vector<std::pair<std::string, std::string> >::const_iterator it = OPTIONS_LIST.begin();
-		    	 		 it != OPTIONS_LIST.end(); ++it)
+					for (const auto& option : OPTIONS_LIST)
 					{
-						m_gameOptionsBrowser->add((*it).first.c_str());
+						m_gameOptionsBrowser->add(option.first.c_str());
 					}
 				}
 				tabGameOptions->end();
@@ -437,9 +438,9 @@ class BootWindow : public Fl_Window
 	{
 		m_IWADBrowser->clear();
 		m_IWADs = M_ScanIWADs();
-		for (size_t i = 0; i < m_IWADs.size(); i++)
+		for (const auto& iwad : m_IWADs)
 		{
-			m_IWADBrowser->add(m_IWADs[i].id->mNiceName.c_str(), (void*)m_IWADs[i].id);
+			m_IWADBrowser->add(iwad.id->mNiceName.c_str(), (void*)iwad.id);
 		}
 		m_genWaddirs = ::waddirs.str();
 	}
@@ -448,9 +449,9 @@ class BootWindow : public Fl_Window
 	{
 		m_PWADSelectBrowser->clear();
 		m_PWADs = M_ScanPWADs();
-		for (scannedPWADs_t::iterator it = m_PWADs.begin(); it != m_PWADs.end(); ++it)
+		for (const auto& pwad : m_PWADs)
 		{
-			m_PWADSelectBrowser->add(it->filename.c_str());
+			m_PWADSelectBrowser->add(pwad.filename.c_str());
 		}
 		m_genWaddirs = ::waddirs.str();
 
@@ -491,10 +492,9 @@ class BootWindow : public Fl_Window
 	{
 		const int val = m_PWADOrderBrowser->value();
 		m_PWADOrderBrowser->clear();
-		for (scannedPWADPtrs_t::iterator it = m_selectedPWADs.begin();
-		     it != m_selectedPWADs.end(); ++it)
+		for (const auto& pwad : m_selectedPWADs)
 		{
-			m_PWADOrderBrowser->add((*it)->filename.c_str());
+			m_PWADOrderBrowser->add(pwad->filename.c_str());
 		}
 		m_PWADOrderBrowser->value(val);
 	}
@@ -520,10 +520,9 @@ class BootWindow : public Fl_Window
 		g_SelectedWADs.iwad = m_IWADs[value - 1].path;
 
 		// PWADs
-		for (scannedPWADPtrs_t::iterator it = m_selectedPWADs.begin();
-		     it != m_selectedPWADs.end(); ++it)
+		for (const auto& pwad : m_selectedPWADs)
 		{
-			g_SelectedWADs.pwads.push_back((*it)->path);
+			g_SelectedWADs.pwads.push_back(pwad->path);
 		}
 	}
 
@@ -542,9 +541,9 @@ class BootWindow : public Fl_Window
 	{
 		const int val = m_WADDirList->value();
 		m_WADDirList->clear();
-		for (StringTokens::iterator it = m_WADDirs.begin(); it != m_WADDirs.end(); ++it)
+		for (const auto& waddir : m_WADDirs)
 		{
-			m_WADDirList->add(it->c_str());
+			m_WADDirList->add(waddir.c_str());
 		}
 		m_WADDirList->value(val);
 	}
