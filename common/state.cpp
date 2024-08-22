@@ -7,13 +7,13 @@ int num_state_t_types;
 
 static void D_ResetStates(int from, int to)
 {
-    state_t s;
+    state_t *s;
     for(int i = from; i < to; i++)
     {
-        s = states[i];
-        s.sprite = SPR_TNT1;
-        s.tics = -1;
-        s.nextstate = (statenum_t) i;
+        s = &states[i];
+        s->sprite = SPR_TNT1;
+        s->tics = -1;
+        s->nextstate = (statenum_t) i;
     }
 }
 

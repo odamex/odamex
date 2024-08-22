@@ -5611,7 +5611,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	MF_NOBLOCKMAP,	// flags
 	MF2_DONTDRAW,	// flags2
 	S_NULL,		// raisestate
-	0x10000,	// translucency
+	0,	// translucency
 	"MT_PUSH"	// name
 	},
 
@@ -6224,7 +6224,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	MF_NOGRAVITY,		// flags
 	0,		// flags2
 	S_NULL,		// raisestate
-	0x10000,
+	0,
 	"MT_UNKNOWNTHING"
 	},
 
@@ -6255,7 +6255,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	MF_NOBLOCKMAP,		// flags
 	MF2_DONTDRAW,		// flags2
 	S_NULL,		// raisestate
-	0x10000,
+	0,
 	"MT_PATHNODE -- used for monster patrols"
 	},
 
@@ -6379,7 +6379,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	MF_NOSECTOR|MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
 	0,		// flags2
 	S_NULL,		// raisestate
-	0x10000,
+	0,
 	"MT_SPARK"
 	},
 
@@ -6410,7 +6410,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
 	0,		// flags2
 	S_NULL,		// raisestate
-	0x10000,
+	0,
 	"MT_FOUNTAIN"
 	},
 
@@ -6441,7 +6441,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	MF_NOSECTOR | MF_NOGRAVITY,		// flags  MF_NOSECTOR  Makes it invisible
 	0,		// flags2
 	S_NULL,   // raisestate
-	0x10000,
+	0,
 	"MT_NODE   //Added by MC."
 	},
 
@@ -6503,7 +6503,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	MF_NOBLOCKMAP|MF_NOSECTOR|MF_NOGRAVITY,		// flags
 	0,		// flags2
 	S_NULL,		// raisestate
-	0x10000,
+	0,
 	"MT_SECRETTRIGGER"
 	},
 
