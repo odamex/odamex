@@ -843,14 +843,14 @@ static void drawLevelStats()
 	            hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "K", CR_GREY);
 
 			StrFormat(killrow, "%s" " %d/%d",
-				(level.killed_monsters == (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+				(level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
 	        	level.killed_monsters,
 	        	(level.total_monsters + level.respawned_monsters));
 			StrFormat(itemrow, "%s" " %d/%d",
-				(level.found_items == level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+				(level.found_items >= level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
 				level.found_items, level.total_items);
 			StrFormat(secretrow, "%s" " %d/%d",
-				(level.found_secrets == level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+				(level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
 				level.found_secrets, level.total_secrets);
 
 			x += 9 - font_offset * 4;
@@ -868,12 +868,12 @@ static void drawLevelStats()
 			StrFormat(line, TEXTCOLOR_RED "K" "%s" " %d/%d "
 						TEXTCOLOR_RED "I" "%s" " %d/%d "
 						TEXTCOLOR_RED "S" "%s" " %d/%d",
-				(level.killed_monsters == (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+				(level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
 	        	level.killed_monsters,
 	        	(level.total_monsters + level.respawned_monsters),
-				(level.found_items == level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+				(level.found_items >= level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
 				level.found_items, level.total_items,
-				(level.found_secrets == level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+				(level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
 				level.found_secrets, level.total_secrets);
 
 			hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
