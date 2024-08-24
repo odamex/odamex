@@ -84,6 +84,9 @@
 #include "g_horde.h"
 #include "w_ident.h"
 #include "gui_boot.h"
+#include "sprite.h"
+#include "mobjinfo.h"
+#include "state.h"
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -747,6 +750,7 @@ void STACK_ARGS D_Shutdown()
 
 void C_DoCommand(const char *cmd, uint32_t key);
 void D_Init_DEHEXTRA_Frames(void);
+void D_Init_Odamex_States(int num_states);
 
 //
 // D_DoomMain
@@ -767,6 +771,13 @@ void D_DoomMain()
 
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
+	// [CMB] TODO: Initialize the states array - common code
+	D_Initialize_States(NULL, ::NUMSTATES);
+	// [CMB] TODO: Initialize the mobjinfo array - common code
+    D_Initialize_Mobjinfo(doom_mobjinfo, ::NUMMOBJTYPES);
+	// [CMB] TODO: Initialize the sprnames array - common code
+	D_Initialize_sprnames(doom_sprnames, ::NUMSPRITES);
+	// [CMD] TODO: This will need to be called after DEHACKED
 	// Initialize all extra frames
 	D_Init_DEHEXTRA_Frames();
 
@@ -856,7 +867,10 @@ void D_DoomMain()
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
 
+    // [CMB] TODO: deh processing is done here
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
+    
+    D_Init_Odamex_States(num_state_t_types);
 
 	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
 	atterm(I_ShutdownHardware);

@@ -1959,7 +1959,9 @@ void P_Init (void)
 {
 	P_InitSwitchList ();
 	P_InitPicAnims ();
-	R_InitSprites (sprnames);
+	// [CMB] TODO: a little dirty, but saves a copy and its expected to be const
+	const char** names = sprnames;
+	R_InitSprites (names);
 	InitTeamInfo();
 	P_InitHorde();
 }

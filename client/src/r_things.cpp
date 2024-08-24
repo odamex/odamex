@@ -568,8 +568,10 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		flip = static_cast<bool>(sprframe->flip[0]);
 	}
 
-	if (sprframe->width[rot] == SPRITE_NEEDS_INFO)
+	if (sprframe->width[rot] == SPRITE_NEEDS_INFO) 
+	{
 		R_CacheSprite (sprdef);	// [RH] speeds up game startup time
+	}
 
 	sector_t* sector = thing->subsector->sector;
 	fixed_t topoffs = sprframe->topoffset[rot];
