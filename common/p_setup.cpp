@@ -461,9 +461,16 @@ bool P_LoadXNOD(int lump)
 {
 	size_t len = W_LumpLength(lump);
 	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+
+	if (len < 4)
+	{
+		Z_Free(data);
+		return false;
+	}
+
 	bool compressed = memcmp(data, "ZNOD", 4) == 0;
 
-	if (len < 4 || (memcmp(data, "XNOD", 4) != 0 && !compressed))
+	if (memcmp(data, "XNOD", 4) != 0 && !compressed)
 	{
 		Z_Free(data);
 		return false;
