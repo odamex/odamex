@@ -469,6 +469,11 @@ bool P_LoadXNOD(int lump)
 		return false;
 	}
 
+	if (len >= 8 && memcmp(data, "xNd4\0\0\0\0", 8) == 0)
+	{
+		I_Error("P_LoadXNOD: DeePBSP nodes are not supported.");
+	}
+
 	bool compressed = memcmp(data, "ZNOD", 4) == 0;
 
 	if (memcmp(data, "XNOD", 4) != 0 && !compressed)
@@ -511,15 +516,15 @@ bool P_LoadXNOD(int lump)
 		}
 
 		if (err != Z_STREAM_END)
-	    	I_Error("P_LoadNodes: Error during ZDBSP nodes decompression!");
+	    	I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression!");
 
-		fprintf(stderr, "P_LoadNodes: ZDBSP nodes compression ratio %.3f\n",
+		fprintf(stderr, "P_LoadXNOD: ZDBSP nodes compression ratio %.3f\n",
 	    	    (float)zstream->total_out/zstream->total_in);
 
 		len = zstream->total_out;
 
 		if (inflateEnd(zstream) != Z_OK)
-	    	I_Error("P_LoadNodes: Error during ZDBSP nodes decompression shut-down!");
+	    	I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression shut-down!");
 
 		M_Free(zstream);
 		p = output;
