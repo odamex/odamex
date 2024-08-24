@@ -45,6 +45,8 @@
 
 #include <ctype.h>
 
+#include <cmath>
+
 #include <algorithm>
 
 //
