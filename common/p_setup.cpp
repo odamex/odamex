@@ -470,9 +470,7 @@ bool P_LoadXNOD(int lump)
 	}
 
 	if (len >= 8 && memcmp(data, "xNd4\0\0\0\0", 8) == 0)
-	{
 		I_Error("P_LoadXNOD: DeePBSP nodes are not supported.");
-	}
 
 	bool compressed = memcmp(data, "ZNOD", 4) == 0;
 
@@ -485,7 +483,8 @@ bool P_LoadXNOD(int lump)
 	byte *p;
 	// [EB] decompress compressed nodes
 	// adapted from Crispy Doom
-	if (compressed) {
+	if (compressed)
+	{
 		int outlen, err;
 		z_stream *zstream;
 
@@ -503,28 +502,28 @@ bool P_LoadXNOD(int lump)
 		zstream->avail_out = outlen;
 
 		if (inflateInit(zstream) != Z_OK)
-	    	I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression initialization!");
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression initialization!");
 
 		// resize if output buffer runs full
 		while ((err = inflate(zstream, Z_SYNC_FLUSH)) == Z_OK)
 		{
-		    int outlen_old = outlen;
-		    outlen = 2 * outlen_old;
-		    output = (byte*)M_Realloc(output, outlen);
-		    zstream->next_out = output + outlen_old;
-		    zstream->avail_out = outlen - outlen_old;
+			int outlen_old = outlen;
+			outlen = 2 * outlen_old;
+			output = (byte*)M_Realloc(output, outlen);
+			zstream->next_out = output + outlen_old;
+			zstream->avail_out = outlen - outlen_old;
 		}
 
 		if (err != Z_STREAM_END)
-	    	I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression!");
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression!");
 
 		fprintf(stderr, "P_LoadXNOD: ZDBSP nodes compression ratio %.3f\n",
-	    	    (float)zstream->total_out/zstream->total_in);
+				(float)zstream->total_out/zstream->total_in);
 
 		len = zstream->total_out;
 
 		if (inflateEnd(zstream) != Z_OK)
-	    	I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression shut-down!");
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression shut-down!");
 
 		M_Free(zstream);
 		p = output;
