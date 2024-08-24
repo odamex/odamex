@@ -461,6 +461,7 @@ bool P_LoadXNOD(int lump)
 {
 	size_t len = W_LumpLength(lump);
 	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+	byte* output = NULL;
 
 	if (len < 4)
 	{
@@ -480,8 +481,6 @@ bool P_LoadXNOD(int lump)
 	// [EB] decompress compressed nodes
 	// adapted from Crispy Doom
 	if (compressed) {
-		byte* output;
-		
 		int outlen, err;
 		z_stream *zstream;
 
@@ -517,14 +516,13 @@ bool P_LoadXNOD(int lump)
 		fprintf(stderr, "P_LoadNodes: ZDBSP nodes compression ratio %.3f\n",
 	    	    (float)zstream->total_out/zstream->total_in);
 
-		data = output;
 		len = zstream->total_out;
 
 		if (inflateEnd(zstream) != Z_OK)
 	    	I_Error("P_LoadNodes: Error during ZDBSP nodes decompression shut-down!");
 
 		M_Free(zstream);
-		p = data;
+		p = output;
 	}
 	else
 	{
@@ -646,6 +644,7 @@ bool P_LoadXNOD(int lump)
 	}
 
 	Z_Free(data);
+	Z_Free(output);
 
 	return true;
 }
