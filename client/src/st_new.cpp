@@ -102,7 +102,7 @@ extern NetDemo netdemo;
 typedef std::vector<const patch_t**> PathFreeList;
 
 /**
- * @brief Stores pointers to status bar objects that should be freed on shutdown. 
+ * @brief Stores pointers to status bar objects that should be freed on shutdown.
  */
 PathFreeList freelist;
 
@@ -799,6 +799,9 @@ static void drawLevelStats()
 	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
 		return;
 
+	if (R_StatusBarVisible() && HU_ChatMode() != CHAT_INACTIVE)
+		return;
+
 	unsigned int xscale = hud_scale ? CleanXfac : 1;
 	int num_ax = 0, text_ax = 0;
 	if (hud_anchoring.value() < 1.0f)
@@ -812,7 +815,7 @@ static void drawLevelStats()
 	const int LINE_SPACING = V_LineHeight() + 1;
 	int font_offset = 0;
 	unsigned int x = R_StatusBarVisible() ? (text_ax + 2) : (text_ax + 10), y = R_StatusBarVisible() ? statusBarY() + 1 : 44;
-	
+
 	if (hud_extendedinfo == 1 || hud_extendedinfo == 3)
 	{
 		V_SetFont("DIGFONT");
@@ -861,7 +864,7 @@ static void drawLevelStats()
 	            hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, itemrow.c_str(), CR_GREY);
 			hud::DrawText(x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
 	            hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY);
-			
+
 		}
 		else
 		{
@@ -880,7 +883,7 @@ static void drawLevelStats()
 	            hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
 		}
 	}
-	
+
 	V_SetFont("SMALLFONT");
 }
 
@@ -1018,7 +1021,7 @@ void OdamexHUD() {
 	// number on the other side of the screen.
 	if (::hud_bigfont)
 		V_SetFont("BIGFONT");
-	
+
 	// Special 3 line formatting for match duel
 	int spreadheight, scoreheight, placeheight;
 
@@ -1496,10 +1499,10 @@ void LevelStateHUD()
 	case LevelState::ENDGAME_COUNTDOWN: {
 		WinInfo win = ::levelstate.getWinInfo();
 		//Upper Text
-		if 
+		if
 			(win.type == WinInfo::WIN_EVERYBODY)
 			StrFormat(lines.title, TEXTCOLOR_YELLOW "Mission Success!");
-		else if 
+		else if
 			(win.type == WinInfo::WIN_NOBODY)
 			StrFormat(lines.title, TEXTCOLOR_RED "Mission Failed!");
 		else
