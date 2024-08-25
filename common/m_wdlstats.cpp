@@ -1067,7 +1067,7 @@ static void PrintWDLEvent(const WDLEvent& evt)
 {
 	// FIXME: Once we have access to StrFormat, dedupe this format string.
 	//                 "ev,ac,tg,gt,ax,ay,az,tx,ty,tz,a0,a1,a2,a3"
-	Printf(PRINT_HIGH, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", evt.ev,
+	Printf(PRINT_HIGH, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", int(evt.ev),
 	       evt.activator, evt.target, evt.gametic, evt.apos[0], evt.apos[1], evt.apos[2],
 	       evt.tpos[0], evt.tpos[1], evt.tpos[2], evt.arg0, evt.arg1, evt.arg2, evt.arg3);
 }

@@ -289,7 +289,7 @@ void MaplistCache::status_handler(maplist_status_t status) {
 		this->status = status;
 		break;
 	default:
-		DPrintf("MaplistCache::status_handler: Unknown status %d from server.\n", status);
+		DPrintf("MaplistCache::status_handler: Unknown status %d from server.\n", int(status));
 		return;
 	}
 }
@@ -307,7 +307,7 @@ bool MaplistCache::update_status_handler(maplist_status_t status) {
 	case MAPLIST_OUTDATED:
 		return true;
 	default:
-		DPrintf("MaplistCache::status_handler: Unknown status %d from server.\n", status);
+		DPrintf("MaplistCache::status_handler: Unknown status %d from server.\n", int(status));
 		return true;
 	}
 }

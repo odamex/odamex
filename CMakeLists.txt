@@ -14,7 +14,48 @@
 
 cmake_minimum_required(VERSION 3.13)
 
+set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake")
+list(APPEND VCPKG_FEATURE_FLAGS "versions")
+
 project(Odamex VERSION 11.0.0)
+
+### Libraries ###
+find_package(ZLIB REQUIRED)
+#target_link_libraries(main PRIVATE ZLIB::ZLIB)
+
+find_package(CURL REQUIRED)
+#target_link_libraries(main PRIVATE CURL::libcurl)
+
+find_package(fmt CONFIG REQUIRED)
+#target_link_libraries(main PRIVATE fmt::fmt)
+
+if(NOT MSVC)
+  message(STATUS "fmtlib workaround - /utf-8 should not be passed to clang on Windows if GNU-style params are used")
+  set_property(TARGET fmt::fmt PROPERTY INTERFACE_COMPILE_OPTIONS "")
+endif()
+
+find_package(jsoncpp CONFIG REQUIRED)
+#target_link_libraries(main PRIVATE JsonCpp::JsonCpp)
+
+find_package(PNG REQUIRED)
+#target_link_libraries(main PRIVATE PNG::PNG)
+
+find_package(miniupnpc CONFIG REQUIRED)
+#target_link_libraries(main PRIVATE miniupnpc::miniupnpc)
+
+find_package(PortMidi CONFIG REQUIRED)
+#target_link_libraries(main PRIVATE PortMidi::portmidi)
+
+find_package(protobuf CONFIG REQUIRED)
+#target_link_libraries(main PRIVATE protobuf::libprotoc protobuf::libprotobuf protobuf::libprotobuf-lite)
+
+find_package(SDL2 CONFIG REQUIRED)
+#target_link_libraries(main PRIVATE
+#   $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
+#   $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>)
+
+find_package(SDL2_mixer CONFIG REQUIRED)
+#target_link_libraries(main PRIVATE $<IF:$<TARGET_EXISTS:SDL2_mixer::SDL2_mixer>,SDL2_mixer::SDL2_mixer,SDL2_mixer::SDL2_mixer-static>)
 
 include(CMakeDependentOption)
 
@@ -156,7 +197,7 @@ string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
   "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
 # Libraries
-add_subdirectory(libraries)
+#add_subdirectory(libraries)
 
 # WAD building
 add_subdirectory(wad)

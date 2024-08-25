@@ -520,7 +520,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 #ifdef RANGECHECK
 	if (static_cast<unsigned>(thing->sprite) >= static_cast<unsigned>(numsprites))
 	{
-		DPrintf ("R_ProjectSprite: invalid sprite number %i\n", thing->sprite);
+		DPrintf ("R_ProjectSprite: invalid sprite number %i\n", int(thing->sprite));
 		return;
 	}
 #endif
@@ -530,7 +530,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 #ifdef RANGECHECK
 	if ( (thing->frame & FF_FRAMEMASK) >= sprdef->numframes )
 	{
-		DPrintf ("R_ProjectSprite: invalid sprite frame %i : %i\n ", thing->sprite, thing->frame);
+		DPrintf ("R_ProjectSprite: invalid sprite frame %i : %i\n ", int(thing->sprite), thing->frame);
 		return;
 	}
 #endif
@@ -679,14 +679,14 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	// decide which patch to use
 #ifdef RANGECHECK
 	if ( (unsigned)psp->state->sprite >= (unsigned)numsprites) {
-		DPrintf ("R_DrawPSprite: invalid sprite number %i\n", psp->state->sprite);
+		DPrintf ("R_DrawPSprite: invalid sprite number %i\n", int(psp->state->sprite));
 		return;
 	}
 #endif
 	sprdef = &sprites[psp->state->sprite];
 #ifdef RANGECHECK
 	if ( (psp->state->frame & FF_FRAMEMASK) >= sprdef->numframes) {
-		DPrintf ("R_DrawPSprite: invalid sprite frame %i : %i\n", psp->state->sprite, psp->state->frame);
+		DPrintf ("R_DrawPSprite: invalid sprite frame %i : %i\n", int(psp->state->sprite), psp->state->frame);
 		return;
 	}
 #endif

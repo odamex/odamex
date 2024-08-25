@@ -497,7 +497,7 @@ void SV_Maplist(player_t &player, maplist_status_t status) {
 	case MAPLIST_OUTDATED:
 	case MAPLIST_OK:
 		// Valid statuses
-		DPrintf("SV_Maplist: Sending status %d to pid %d\n", status, player.id);
+		DPrintf("SV_Maplist: Sending status %d to pid %d\n", int(status), player.id);
 		MSG_WriteSVC(&cl->reliablebuf, SVC_Maplist(status));
 	default:
 		// Invalid statuses
@@ -534,12 +534,12 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 	case MAPLIST_EMPTY:
 	case MAPLIST_TIMEOUT:
 		// Valid statuses that don't require the packet logic
-		DPrintf("SV_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
+		DPrintf("SV_MaplistUpdate: Sending status %d to pid %d\n", int(status), player.id);
 		MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistUpdate(status, NULL));
 		return;
 	case MAPLIST_OUTDATED:
 		// Valid statuses that need the packet logic
-		DPrintf("SV_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
+		DPrintf("SV_MaplistUpdate: Sending status %d to pid %d\n", int(status), player.id);
 		break;
 	default:
 		// Invalid statuses
@@ -597,7 +597,7 @@ void SV_Maplist(player_t &player) {
 	default:
 		// We don't know what status they sent us.  Ignore it.
 		DPrintf("SV_Maplist: Unexpected status %d from player %d\n",
-				status, player.id);
+				int(status), player.id);
 		return;
 	}
 

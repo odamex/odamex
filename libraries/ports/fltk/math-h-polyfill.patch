@@ -1,0 +1,13 @@
+diff --git a/FL/math.h b/FL/math.h
+index b78357e07..e59aa47e5 100644
+--- a/FL/math.h
++++ b/FL/math.h
+@@ -40,7 +40,7 @@
+ #    define M_SQRT1_2       0.70710678118654752440
+ #  endif // !M_SQRT2
+ 
+-#  if (defined(_WIN32) || defined(CRAY)) && !defined(__MINGW32__)
++#  if defined(FLTK_ENABLE_MATH_H_POLYFILL)
+ 
+ inline double rint(double v) {return floor(v+.5);}
+ inline double copysign(double a, double b) {return b<0 ? -a : a;}

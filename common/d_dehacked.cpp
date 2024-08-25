@@ -37,6 +37,7 @@
 #include "p_local.h"
 #include "s_sound.h"
 #include "w_wad.h"
+#pragma once
 
 // Miscellaneous info that used to be constant
 struct DehInfo deh = {
@@ -1579,7 +1580,7 @@ static int PatchFrame(int frameNum)
 	}
 #if defined _DEBUG
 	Printf("FRAME %d: Duration: %d, Next: %d, SprNum: %d(%s), SprSub: %d\n", frameNum,
-	       info->tics, info->nextstate, info->sprite, sprnames[info->sprite],
+	       info->tics, int(info->nextstate), int(info->sprite), sprnames[info->sprite],
 	       info->frame);
 #endif
 
@@ -1794,7 +1795,7 @@ static int PatchPointer(int ptrNum)
 			{
 				DPrintf("Pointer %d overruns static array (max: %d wanted: %d)."
 				        "\n",
-				        ptrNum, NUMSTATES, i);
+				        ptrNum, int(NUMSTATES), i);
 			}
 			else
 			{

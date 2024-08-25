@@ -2,13 +2,8 @@ function(odamex_copy_libs TARGET)
   set(ODAMEX_DLLS "")
 
   if(WIN32)
-    if(MSVC)
-      set(SDL2_DLL_DIR "$<TARGET_FILE_DIR:SDL2::SDL2>")
-      set(SDL2_MIXER_DLL_DIR "$<TARGET_FILE_DIR:SDL2::mixer>")
-    else()
-      set(SDL2_DLL_DIR "$<TARGET_FILE_DIR:SDL2::SDL2>/../bin")
-      set(SDL2_MIXER_DLL_DIR "$<TARGET_FILE_DIR:SDL2::mixer>/../bin")
-    endif()
+    set(SDL2_DLL_DIR "$<TARGET_FILE_DIR:SDL2::SDL2>/../bin")
+    set(SDL2_MIXER_DLL_DIR "$<TARGET_FILE_DIR:SDL2_mixer::SDL2_mixer>/../bin")
 
     # SDL2
     list(APPEND ODAMEX_DLLS "${SDL2_DLL_DIR}/SDL2.dll")

@@ -1,0 +1,56 @@
+{
+  "dependencies": [
+    {
+      "name": "curl"
+    },
+    {
+      "name": "fltk",
+       "default-features": false
+    },
+    {
+      "name": "fmt"
+    },
+    {
+      "name": "jsoncpp"
+    },
+    {
+      "name": "libpng"
+    },
+    {
+      "name": "miniupnpc"
+    },
+    {
+      "name": "portmidi"
+    },
+    {
+      "name": "protobuf"
+    },
+    {
+      "name": "sdl2"
+    },
+    {
+      "name": "sdl2-mixer"
+    },
+    {
+      "name": "wxwidgets"
+    },
+    {
+      "name": "zlib"
+    }
+  ],
+  "builtin-baseline": "3508985146f1b1d248c67ead13f8f54be5b4f5da",
+  "overrides": [
+    {
+      "name": "fltk",
+      "version": "1.4#0"
+    },
+    {
+      "name": "protobuf",
+      "version": "3.21.12#4"
+    },
+    {
+      "name": "wxwidgets",
+      "version": "3.1.5#11"
+    }
+  ]
+}

@@ -1303,7 +1303,7 @@ static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 	weapontype_t firedweap = static_cast<weapontype_t>(msg->readyweapon());
 	if (firedweap < 0 || firedweap > wp_nochange)
 	{
-		Printf("CL_FireWeapon: unknown weapon %d\n", firedweap);
+		Printf("CL_FireWeapon: unknown weapon %d\n", int(firedweap));
 		return;
 	}
 	int servertic = msg->servertic();

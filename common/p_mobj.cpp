@@ -256,7 +256,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 	// Fly!!! fix it in P_RespawnSpecial
 	if ((unsigned int)itype >= NUMMOBJTYPES)
 	{
-		I_Error ("Tried to spawn actor type %d\n", itype);
+		I_Error ("Tried to spawn actor type %d\n", int(itype));
 	}
 
 	self.init(this);
@@ -1017,7 +1017,7 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 	{
 		if (state >= ARRAY_LENGTH(states) || state < 0)
 		{
-			I_Error("P_SetMobjState: State %d does not exist in state table.", state);
+			I_Error("P_SetMobjState: State %d does not exist in state table.", int(state));
 		}
 
 		if (state == S_NULL)
@@ -1053,7 +1053,7 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 		if (cycle_counter++ > MOBJ_CYCLE_LIMIT)
 		{
 			I_Error("P_SetMobjState: Infinite state cycle detected for %s at state %d.",
-			        mobj->info->name, state);
+			        mobj->info->name, int(state));
 		}
 	} while (!mobj->tics);
 

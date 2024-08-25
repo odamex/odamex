@@ -324,7 +324,7 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 
 	if (ammotype < 0 || ammotype > NUMAMMO)
     {
-		I_Error("P_GiveAmmo: bad type %i", ammotype);
+		I_Error("P_GiveAmmo: bad type %i", int(ammotype));
     }
 
 	if (player->ammo[ammotype] == player->maxammo[ammotype])
@@ -1218,7 +1218,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 
 			if (!teamItemSuccess)
 			{
-				Printf(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite, special->info->name);
+				Printf(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing %d: %s\n", int(special->sprite), special->info->name);
 				return;
 			}
 		}

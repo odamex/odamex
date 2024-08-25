@@ -4361,7 +4361,7 @@ BEGIN_COMMAND (playerinfo)
 	}
 	Printf(" userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
 	Printf(" userinfo.color   - %s \n",		color);
-	Printf(" userinfo.gender  - %d \n",		player->userinfo.gender);
+	Printf(" userinfo.gender  - %d \n",		int(player->userinfo.gender));
 	Printf(" time             - %d \n",		player->GameTime);
 	Printf(" spectator        - %d \n",		player->spectator);
 	if (G_IsCoopGame())
