@@ -14,8 +14,14 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake")
-list(APPEND VCPKG_FEATURE_FLAGS "versions")
+if(DEFINED ENV{VCPKG_ROOT})
+  message(STATUS "vcpkg found, assigning toolchain file.")
+  set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+  list(APPEND VCPKG_FEATURE_FLAGS "versions")
+  message(STATUS "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}")
+else()
+  message(STATUS "vcpkg not found, libraries must be provided manually.")
+endif()
 
 project(Odamex VERSION 11.0.0)
 
