@@ -75,6 +75,15 @@ static const identData_t identdata[] = {
         DOOM2_PREFIX " v1.9",               // groupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
         100,                                // weight
+    },    
+    {
+        DOOM2_PREFIX " (DOOM + DOOM II)",   // idName
+        "DOOM2.WAD",                        // filename
+        "09B8A6AE",                         // crc32Sum
+        "9AA3CBF65B961D0BDAC98EC403B832E1", // md5Sum
+        DOOM2_PREFIX " v1.9",               // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        140,                                // weight
     },
     {
         DOOM2_PREFIX " Classic Unity v1.3", // idName
@@ -180,6 +189,15 @@ static const identData_t identdata[] = {
         300,                                // weight
     },
     {
+        PLUTONIA_PREFIX " (DOOM + DOOM II)",// mIdName
+        "PLUTONIA.WAD",                     // mFilename
+        "650B998D",                         // mCRC32Sum
+        "24037397056E919961005E08611623F4", // mMd5Sum
+        PLUTONIA_PREFIX " v1.9",            // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        320,                                // weight
+    },
+    {
         PLUTONIA_PREFIX " v1.9 Anthology",  // mIdName
         "PLUTONIA.WAD",                     // mFilename
         "15CD1448",                         // mCRC32Sum
@@ -199,7 +217,16 @@ static const identData_t identdata[] = {
         "4E158D9953C79CCF97BD0663244CC6B6", // mMd5Sum
         TNT_PREFIX " v1.9",                 // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
-        300,                                // weight
+        350,                                // weight
+    },
+    {
+        TNT_PREFIX " (DOOM + DOOM II)",     // mIdName
+        "TNT.WAD",                          // mFilename
+        "15F18DDB",                         // mCRC32Sum
+        "8974E3117ED4A1839C752D5E11AB1B7B", // mMd5Sum
+        TNT_PREFIX " v1.9",                 // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        370,                                // weight
     },
     {
         TNT_PREFIX " v1.9 Anthology",       // mIdName
@@ -208,7 +235,7 @@ static const identData_t identdata[] = {
         "1D39E405BF6EE3DF69A8D2646C8D5C49", // mMd5Sum
         TNT_PREFIX " v1.9",                 // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
-        325,                                // weight
+        375,                                // weight
     },
 
     // ------------------------------------------------------------------------
@@ -222,6 +249,15 @@ static const identData_t identdata[] = {
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
         200,                                // weight
+    },
+    {
+        UDOOM_PREFIX " (DOOM + DOOM II)",   // mIdName
+        "DOOM.WAD",                         // mFilename
+        "CFF03D9F",                         // mCRC32Sum
+        "4461D4511386518E784C647E3128E7BC", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        240,                                // weight
     },
     {
         UDOOM_PREFIX " Classic Unity v1.3", // mIdName
