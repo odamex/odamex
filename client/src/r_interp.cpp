@@ -104,6 +104,18 @@ void OInterpolation::resetGameInterpolation()
 }
 
 //
+// OInterpolation::resetGameInterpolation()
+//
+// Clears any saved bob interpolation information
+// That isn't needed because our player died
+//
+void OInterpolation::resetBobInterpolation()
+{
+	prev_bobx = 0;
+	prev_boby = 0;
+}
+
+//
 // OInterpolation::ticGameInterpolation()
 //
 // Records the current height of all moving planes and position of scrolling
