@@ -14,6 +14,10 @@ jobs:
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
+      - name: Install vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '3508985146f1b1d248c67ead13f8f54be5b4f5da'
   build:
     name: Build (Visual Studio)
     needs: pre_job
