@@ -1,4 +1,3 @@
-include(OdamexCopyLibs)
 include(OdamexCopyWad)
 include(OdamexTargetSettings)
 
@@ -136,7 +135,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   target_link_libraries(odamex PRIVATE SDL2_mixer::SDL2_mixer)
   if(NOT GCONSOLE)
     target_include_directories(odamex PRIVATE gui)
-    target_link_libraries(odamex PRIVATE fltk fltk_images)
+    target_link_libraries(odamex PRIVATE Gdiplus fltk fltk_forms fltk_images)
   endif()
 
   if(ENABLE_PORTMIDI)
@@ -165,7 +164,6 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     endif()
   endif()
 
-  odamex_copy_libs(odamex)
   odamex_copy_wad(odamex)
 
   set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})

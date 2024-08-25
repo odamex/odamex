@@ -26,6 +26,12 @@ find_package(ZLIB REQUIRED)
 find_package(CURL REQUIRED)
 #target_link_libraries(main PRIVATE CURL::libcurl)
 
+find_package(PNG REQUIRED)
+#target_link_libraries(main PRIVATE PNG::PNG)
+
+find_package(FLTK CONFIG REQUIRED)
+#target_link_libraries(main PRIVATE fltk fltk_forms fltk_images)
+
 find_package(fmt CONFIG REQUIRED)
 #target_link_libraries(main PRIVATE fmt::fmt)
 
@@ -36,9 +42,6 @@ endif()
 
 find_package(jsoncpp CONFIG REQUIRED)
 #target_link_libraries(main PRIVATE JsonCpp::JsonCpp)
-
-find_package(PNG REQUIRED)
-#target_link_libraries(main PRIVATE PNG::PNG)
 
 find_package(miniupnpc CONFIG REQUIRED)
 #target_link_libraries(main PRIVATE miniupnpc::miniupnpc)
