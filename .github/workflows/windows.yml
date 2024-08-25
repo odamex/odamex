@@ -14,10 +14,6 @@ jobs:
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
-      - name: Install vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitCommitId: '3508985146f1b1d248c67ead13f8f54be5b4f5da'
   build:
     name: Build (Visual Studio)
     needs: pre_job
@@ -26,8 +22,10 @@ jobs:
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+    - name: Install vcpkg
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgGitCommitId: '3508985146f1b1d248c67ead13f8f54be5b4f5da'
     - name: Install Python packages
       uses: BSFishy/pip-action@v1
       with:
@@ -85,8 +83,10 @@ jobs:
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+    - name: Install vcpkg
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgGitCommitId: '3508985146f1b1d248c67ead13f8f54be5b4f5da'
     - name: Install Python packages
       uses: BSFishy/pip-action@v1
       with:
