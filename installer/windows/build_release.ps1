@@ -10,7 +10,7 @@
 # 
 
 Set-Variable -Name "OdamexVersion" -Value "10.6.0"
-Set-Variable -Name "OdamexTestSuffix" -Value "-RC1" # "-RC3"
+Set-Variable -Name "OdamexTestSuffix" -Value "-RC2"
 
 #
 # The actual script follows.
