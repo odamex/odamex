@@ -45,6 +45,7 @@ public:
 	bool enabled() { return interpolationEnabled; }; // Interpolate game stuff at this moment?
 	// Tickers (for gamesim interpolation)
 	void resetGameInterpolation(); // R_ResetInterpolation() // called when starting/resetting a level
+	void resetBobInterpolation(); // Reset bob after the player dies
 	void beginGameInterpolation(fixed_t amount); // R_BeginInterpolation(fixed_t amount)
 	void ticGameInterpolation(); // R_InterpolationTicker()
 	void endGameInterpolation(); // R_EndInterpolation()
