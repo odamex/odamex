@@ -174,7 +174,8 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
 
 	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	G_LoadWadString(str);
+	std::string wadstr = C_QuoteString(str);
+	G_LoadWadString(wadstr);
 }
 END_COMMAND (wad)
 
