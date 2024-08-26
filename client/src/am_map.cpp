@@ -1978,7 +1978,7 @@ void AM_Drawer()
 				// use user provided label if one exists
 				if (!level.label.empty())
 				{
-					line += level.label + TEXTCOLOR_NORMAL;
+					line += level.label + ": " + TEXTCOLOR_NORMAL;
 				}
 				else
 				{
