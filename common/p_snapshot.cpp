@@ -787,7 +787,7 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 		if (sector->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
 		{
 			DCeiling *ceiling	= static_cast<DCeiling *>(sector->ceilingdata);
-			mCeilingMoverType	= SEC_CEILING;			
+			mCeilingMoverType	= SEC_CEILING;
 			mCeilingType		= ceiling->m_Type;
 			mCeilingStatus		= ceiling->m_Status;
 			mCeilingTag			= ceiling->m_Tag;
@@ -1215,7 +1215,7 @@ bool P_FloorSnapshotDone(SectorSnapshot *snap)
 		(snap->getFloorMoverType() == SEC_PILLAR &&
 		 snap->getFloorStatus() == DPillar::destroy) ||
 		(snap->getFloorMoverType() == SEC_ELEVATOR &&
-		 snap->getFloorStatus() == DElevator::destroy))
+	     snap->getFloorStatus() == DElevator::destroy))
 		return true;
 		
 	return false;

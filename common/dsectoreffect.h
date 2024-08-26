@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __DSECTOREFFECT_H__
-#define __DSECTOREFFECT_H__
+#pragma once
 
 #include "dobject.h"
 #include "dthinker.h"
@@ -38,6 +37,7 @@ typedef enum
 	SEC_DOOR,
 	SEC_ELEVATOR,
 	SEC_PILLAR,
+//	SEC_WAGGLE,	// We don't send sector updates for these
 } movertype_t;
 
 class DSectorEffect : public DThinker
@@ -62,24 +62,24 @@ public:
 protected:
 	enum EResult { ok, crushed, pastdest };
 private:
-	EResult MovePlane (fixed_t speed, fixed_t dest, bool crush, int floorOrCeiling, int direction);
+	EResult MovePlane (fixed_t speed, fixed_t dest, int crush, int floorOrCeiling, int direction, bool hexencrush);
 protected:
 	DMover ();
-	inline EResult MoveFloor (fixed_t speed, fixed_t dest, bool crush, int direction)
+	inline EResult MoveFloor (fixed_t speed, fixed_t dest, int crush, int direction, bool hexencrush)
 	{
-		return MovePlane (speed, dest, crush, 0, direction);
+		return MovePlane (speed, dest, crush, 0, direction, hexencrush);
 	}
 	inline EResult MoveFloor (fixed_t speed, fixed_t dest, int direction)
 	{
-		return MovePlane (speed, dest, false, 0, direction);
+		return MovePlane(speed, dest, NO_CRUSH, 0, direction, false);
 	}
-	inline EResult MoveCeiling (fixed_t speed, fixed_t dest, bool crush, int direction)
+	inline EResult MoveCeiling (fixed_t speed, fixed_t dest, int crush, int direction, bool hexencrush)
 	{
-		return MovePlane (speed, dest, crush, 1, direction);
+		return MovePlane (speed, dest, crush, 1, direction, hexencrush);
 	}
 	inline EResult MoveCeiling (fixed_t speed, fixed_t dest, int direction)
 	{
-		return MovePlane (speed, dest, false, 1, direction);
+		return MovePlane(speed, dest, NO_CRUSH, 1, direction, false);
 	}
 };
 
@@ -100,6 +100,3 @@ public:
 protected:
 	DMovingCeiling ();
 };
-
-#endif //__DSECTOREFFECT_H__
-

@@ -23,9 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __INFO_H__
-#define __INFO_H__
+#pragma once
 
 // Needed for action function pointer handling.
 #include "dthinker.h"
@@ -1751,5 +1749,3 @@ inline FArchive &operator>> (FArchive &arc, mobjinfo_t *&info)
 		info = mobjinfo + ofs;
 	return arc;
 }
-
-#endif	// __INFO_H__

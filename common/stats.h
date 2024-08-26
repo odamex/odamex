@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __STATS_H__
-#define __STATS_H__
+#pragma once
 
 #include <algorithm>
 
@@ -58,5 +56,3 @@ private:
 } Stat_var_##n; Stat_var_##n.clock();
 
 #define END_STAT(n) Stat_var_##n.unclock();
-
-#endif //__STATS_H__

@@ -1,5 +1,4 @@
-#ifndef __CL_PCH__
-#define __CL_PCH__
+#pragma once
 
 // system
 #include "i_input.h"
@@ -25,5 +24,3 @@
 
 // common
 #include "c_pch.h"
-
-#endif // __CL_PCH__

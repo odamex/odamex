@@ -22,8 +22,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __I_VIDEO_H__
-#define __I_VIDEO_H__
+#pragma once
 
 #include "v_pixelformat.h"
 
@@ -514,6 +513,8 @@ public:
 	virtual bool isFocused() const
 	{	return false;	}
 
+	virtual void flashWindow() const { }
+
 	virtual bool usingVSync() const
 	{	return false;	}
 
@@ -672,6 +673,3 @@ private:
 
 	IWindow*						mWindow;
 };
-
-
-#endif // __I_VIDEO_H__

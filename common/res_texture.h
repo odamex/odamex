@@ -22,8 +22,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __RES_TEXTURE_H__
-#define __RES_TEXTURE_H__
+#pragma once
 
 #include "m_fixed.h"
 
@@ -320,5 +319,3 @@ private:
 };
 
 extern TextureManager texturemanager;
-
-#endif // __RES_TEXTURE_H__

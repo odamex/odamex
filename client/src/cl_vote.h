@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __CL_VOTE__
-#define __CL_VOTE__
+#pragma once
 
 #include "c_vote.h"
 
@@ -45,5 +44,3 @@ public:
 	void set(const vote_state_t &vote_state);
 	bool get(vote_state_t &vote_state);
 };
-
-#endif

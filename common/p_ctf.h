@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __P_CTF_H__
-#define __P_CTF_H__
+#pragma once
 
 #include "d_netinf.h"
 #include "p_local.h"
@@ -67,5 +66,3 @@ void CTF_ReplaceFlagWithWaypoint(AActor* mo);
 
 FArchive &operator<< (FArchive &arc, flagdata &flag);
 FArchive &operator>> (FArchive &arc, flagdata &flag);
-
-#endif

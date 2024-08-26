@@ -681,6 +681,14 @@ void M_TranslateVec3 (v3double_t *vec, const v3double_t *origin, angle_t ang)
 	vec->y = ty;
 }
 
+rectInt_t M_RectFromDimensions(const v2int_t& origin, const v2int_t& dims)
+{
+	rectInt_t rvo;
+	rvo.min = origin;
+	rvo.max = origin;
+	rvo.max.x += dims.x;
+	rvo.max.y += dims.y;
+	return rvo;
+}
 
 VERSION_CONTROL (m_vectors_cpp, "$Id$")
-

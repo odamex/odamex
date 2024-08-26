@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __WIN32INC_H__
-#define __WIN32INC_H__
+#pragma once
 
 #ifdef _WIN32
 
@@ -84,5 +83,3 @@
         #define va_copy(d,s)((d) = (s))
     #endif
 #endif // WIN32
-
-#endif  // __WIN32INC_H__

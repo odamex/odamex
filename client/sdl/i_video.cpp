@@ -93,6 +93,8 @@ EXTERN_CVAR(vid_640x400)
 EXTERN_CVAR(vid_autoadjust)
 EXTERN_CVAR(vid_displayfps)
 EXTERN_CVAR(vid_ticker)
+EXTERN_CVAR(vid_widescreen)
+EXTERN_CVAR(sv_allowwidescreen)
 
 
 // ****************************************************************************
@@ -611,23 +613,47 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 
 	if (!I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 	{
-		if (vid_320x200 || vid_640x400)
+		if (vid_320x200 || vid_640x400 || (!serverside && !sv_allowwidescreen))
+		{
 			surface_width = surface_height * 4 / 3;
-		else if (V_UsePillarBox())
-			surface_width = surface_height * 4 / 3;
-		else if (V_UseLetterBox())
-			surface_height = surface_width * 9 / 16;
+		}
+		else
+		{
+			int ratios_x[] = { 4, 0, 16, 16, 21, 32 };
+			int ratios_y[] = { 3, 0, 10,  9,  9,  9 };
+			int ratio_x = ratios_x[vid_widescreen.asInt()];
+			int ratio_y = ratios_y[vid_widescreen.asInt()];
+
+			// Clamp "Auto" aspect ratio.
+			if (vid_widescreen.asInt() == 1)
+			{
+				if (3 * surface_width < 4 * surface_height)
+				{
+					ratio_x = 4;
+					ratio_y = 3;
+				}
+				else if (9 * surface_width > 32 * surface_height)
+				{
+					ratio_x = 32;
+					ratio_y = 9;
+				}
+			}
+
+			// Pillarbox or letterbox as needed.
+			if (ratio_x > 0 && ratio_y > 0)
+			{
+				if (surface_height * ratio_x < surface_width * ratio_y)
+					surface_width = surface_height * ratio_x / ratio_y;
+				else if (surface_height * ratio_x > surface_width * ratio_y)
+					surface_height = surface_width * ratio_y / ratio_x;
+			}
+		}
 	}
 
 	// Ensure matted surface dimensions are sane and sanitized.
 	surface_width = clamp<uint16_t>(surface_width, 320, MAXWIDTH);
 	surface_height = clamp<uint16_t>(surface_height, 200, MAXHEIGHT);
 	
-	// Anything wider than 16:9 starts to look more distorted and provides even more advantage, so for now
-	// if the monitor aspect ratio is wider than 16:9, clamp it to that (TODO: Aspect ratio selection)
-	if (surface_width / surface_height > 16 / 9)
-		surface_width = (surface_height * 16) / 9;
-
 	// Is matting being used? Create matted_surface based on the primary_surface.
 	if (surface_width != primary_surface->getWidth() ||
 		surface_height != primary_surface->getHeight())

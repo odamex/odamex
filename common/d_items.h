@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __D_ITEMS_H__
-#define __D_ITEMS_H__
+#pragma once
 
 #include "info.h"
 
@@ -99,5 +97,3 @@ gitem_t *FindItem (const char *pickup_name);
 gitem_t* FindCardItem(card_t card);
 
 #define ITEM_INDEX(i)	((i)-itemlist)
-
-#endif //__D_ITEMS_H__

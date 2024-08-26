@@ -24,8 +24,7 @@
 //---------------------------------------------------------------------
 
 
-#ifndef __Z_ZONE_H__
-#define __Z_ZONE_H__
+#pragma once
 
 
 //
@@ -110,5 +109,3 @@ inline void Z_Discard2(P ptr, const char* file, int line)
 #define Z_Discard(p) Z_Discard2(p,__FILE__,__LINE__)
 #define Z_ChangeTag(p,t) Z_ChangeTag2(p,t,__FILE__,__LINE__)
 #define Z_ChangeOwner(p,u) Z_ChangeOwner2(p,u,__FILE__,__LINE__)
-
-#endif // __Z_ZONE_H__

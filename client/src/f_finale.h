@@ -21,9 +21,7 @@
 //    
 //-----------------------------------------------------------------------------
 
-
-#ifndef __F_FINALE__
-#define __F_FINALE__
+#pragma once
 
 
 #include "d_event.h"
@@ -50,8 +48,3 @@ struct finale_options_t
 
 void F_StartFinale(finale_options_t& options);
 void STACK_ARGS F_ShutdownFinale();
-
-
-
-
-#endif

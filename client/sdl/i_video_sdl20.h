@@ -171,6 +171,8 @@ public:
 
 	virtual bool isFocused() const;
 
+	virtual void flashWindow() const;
+
 	virtual bool usingVSync() const
 	{	return mVideoMode.vsync;	}
 

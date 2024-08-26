@@ -81,8 +81,10 @@ constate_e	ConsoleState = c_up;
 
 extern byte *ConChars;
 
-BOOL		KeysShifted;
-BOOL		KeysCtrl;
+bool		KeysShifted;
+bool		KeysCtrl;
+bool		KeysAlt;
+bool		NumLockEnabled;
 
 static bool midprinting;
 
@@ -163,16 +165,18 @@ public:
 //
 // ============================================================================
 
-ConsoleLine::ConsoleLine() :
-	color_code("\034-"), wrapped(false), print_level(PRINT_HIGH),	// TEXTCOLOR_ESCAPE
-	timeout(gametic + con_notifytime.asInt() * TICRATE)
-{ }
+ConsoleLine::ConsoleLine()
+    : color_code("\034-"), wrapped(false), print_level(PRINT_HIGH),
+      timeout(gametic + int(con_notifytime * TICRATE))
+{
+}
 
 ConsoleLine::ConsoleLine(const std::string& _text, const std::string& _color_code,
-			int _print_level) :
-	text(_text), color_code(_color_code), wrapped(false), print_level(_print_level),
-	timeout(gametic + con_notifytime.asInt() * TICRATE)
-{ }
+                         int _print_level)
+    : text(_text), color_code(_color_code), wrapped(false), print_level(_print_level),
+      timeout(gametic + int(con_notifytime * TICRATE))
+{
+}
 
 
 //
@@ -281,6 +285,8 @@ public:
 	void insertString(const std::string& str);
 	void replaceString(const std::string& str);
 	void deleteCharacter();
+	void deleteLeftWord();
+	void deleteRightWord();
 	void backspace();
 
 	std::string		text;
@@ -349,12 +355,43 @@ void ConsoleCommandLine::moveCursorRight()
 
 void ConsoleCommandLine::moveCursorLeftWord()
 {
+	const char* str = text.c_str();
+
+	bool firstSpacesCleared = false;
+	bool spaceWord = false;
+	
+	if (cursor_position > 0 && isspace(str[cursor_position]))
+		firstSpacesCleared = true;
+
 	if (cursor_position > 0)
 		cursor_position--;
 
-	const char* str = text.c_str();
-	while (cursor_position > 0 && str[cursor_position - 1] != ' ')
+	if (cursor_position > 0 && firstSpacesCleared)
+		spaceWord = true;
+
+	while (cursor_position > 0)
+	{
+		if (spaceWord)
+		{
+			if (!isspace(str[cursor_position - 1]))
+			{
+				break;
+			}
+		}
+		else
+		{
+			if (firstSpacesCleared && isspace(str[cursor_position - 1]))
+			{
+				break;
+			}
+			else if (!isspace(str[cursor_position - 1]) && !firstSpacesCleared)
+			{
+				firstSpacesCleared = true;
+			}
+		}
+
 		cursor_position--;
+	}
 
 	doScrolling();
 }
@@ -413,6 +450,86 @@ void ConsoleCommandLine::deleteCharacter()
 		text.erase(cursor_position, 1);
 		doScrolling();
 	}
+}
+
+
+void ConsoleCommandLine::deleteLeftWord()
+{
+	size_t word = 0;
+	bool firstSpacesCleared = false;
+	bool spaceWord = false;
+
+	const char* str = text.c_str();
+
+	// Delete trailing spaces instead of the word
+	if (cursor_position > 0 && isspace(str[cursor_position - 1]))
+	{
+		spaceWord = true;
+	}
+
+	while (cursor_position > 0)
+	{
+		if (spaceWord)
+		{
+			if (!isspace(str[cursor_position - 1]))
+			{
+				break;
+			}
+		}
+		else
+		{
+			if (firstSpacesCleared && isspace(str[cursor_position]))
+			{
+				break;
+			}
+			else if (!isspace(str[cursor_position]) && !firstSpacesCleared)
+			{
+				firstSpacesCleared = true;
+			}
+		}
+
+		cursor_position--;
+		word++;
+	}
+
+	text.erase(cursor_position, word);
+
+	doScrolling();
+}
+
+void ConsoleCommandLine::deleteRightWord()
+{
+	bool spaceWord = false;
+
+	const char* str = text.c_str();
+
+	if (cursor_position > 0 &&
+			cursor_position < text.length() &&
+			isspace(str[cursor_position]))
+	{
+		spaceWord = true;
+	}
+
+	size_t word = 0;
+	size_t wordLength = 0;
+	
+	if (spaceWord)
+	{
+		word = text.find_first_not_of(' ', cursor_position);
+	}
+	else
+	{
+		word = text.find_first_not_of(' ', text.find_first_of(' ', cursor_position));
+	}
+
+	if (word == std::string::npos)
+			wordLength = text.length();
+		else
+			wordLength = word - cursor_position;
+
+	text.erase(cursor_position, wordLength);
+
+	doScrolling();
 }
 
 void ConsoleCommandLine::backspace()
@@ -1878,35 +1995,27 @@ static bool C_HandleKey(const event_t* ev)
 }
 #endif
 
+	// Add modifiers for these keys
+	KeysCtrl = (ev->mod & OMOD_CTRL);
+	KeysAlt = (ev->mod & OMOD_ALT && !(ev->mod & OMOD_RALT && ev->mod & OMOD_LCTRL)); // Alt without AltGr
+	KeysShifted = (ev->mod & OMOD_SHIFT);
+	NumLockEnabled = (ev->mod & OMOD_NUM);
+
 	switch (ch)
 	{
-	case OKEY_HOME:
-		CmdLine.moveCursorHome();
-		return true;
-	case OKEY_END:
-		CmdLine.moveCursorEnd();
-		return true;		
 	case OKEY_BACKSPACE:
-		CmdLine.backspace();
-		TabCycleClear();
-		return true;
-	case OKEY_DEL:
-		CmdLine.deleteCharacter();
-		TabCycleClear();
-		return true;
-	case OKEY_LALT:
-	case OKEY_RALT:
-		// Do nothing
-		return true;
-	case OKEY_LCTRL:
-	case OKEY_RCTRL:
-		KeysCtrl = true;
-		return true;
-	case OKEY_LSHIFT:
-	case OKEY_RSHIFT:
-		// SHIFT was pressed
-		KeysShifted = true;
-		return true;
+		if (KeysCtrl)
+		{
+			CmdLine.deleteLeftWord();
+			TabCycleClear();
+			return true;
+		}
+		else
+		{
+			CmdLine.backspace();
+			TabCycleClear();
+			return true;
+		}
 	case OKEY_MOUSE3:
 		// Paste from clipboard - add each character to command line
 		CmdLine.insertString(I_GetClipboardText());
@@ -1917,7 +2026,32 @@ static bool C_HandleKey(const event_t* ev)
 
 // General keys used by all systems
 	{
-		if (Key_IsPageUpKey(ch))
+		if (Key_IsHomeKey(ch, NumLockEnabled))
+		{
+			CmdLine.moveCursorHome();
+			return true;
+		}
+		else if (Key_IsEndKey(ch, NumLockEnabled))
+		{
+			CmdLine.moveCursorEnd();
+			return true;
+		}
+		else if (Key_IsDelKey(ch, NumLockEnabled))
+		{
+			if (KeysAlt)
+			{
+				CmdLine.deleteRightWord();
+				TabCycleClear();
+				return true;
+			}
+			else
+			{
+				CmdLine.deleteCharacter();
+				TabCycleClear();
+				return true;
+			}
+		}
+		else if (Key_IsPageUpKey(ch, NumLockEnabled))
 		{
 			if ((int)(ConRows) > (int)(ConBottom / 8))
 			{
@@ -1930,7 +2064,7 @@ static bool C_HandleKey(const event_t* ev)
 			}
 			return true;
 		}
-		else if (Key_IsPageDownKey(ch))
+		else if (Key_IsPageDownKey(ch, NumLockEnabled))
 		{
 			if (KeysShifted)
 				// Move to bottom of console buffer
@@ -1940,7 +2074,7 @@ static bool C_HandleKey(const event_t* ev)
 				ScrollState = SCROLLDN;
 			return true;
 		}
-		else if (Key_IsLeftKey(ch))
+		else if (Key_IsLeftKey(ch, NumLockEnabled))
 		{
 			if (KeysCtrl)
 				CmdLine.moveCursorLeftWord();
@@ -1948,7 +2082,7 @@ static bool C_HandleKey(const event_t* ev)
 				CmdLine.moveCursorLeft();
 			return true;
 		}
-		else if (Key_IsRightKey(ch))
+		else if (Key_IsRightKey(ch, NumLockEnabled))
 		{
 			if (KeysCtrl)
 				CmdLine.moveCursorRightWord();
@@ -1956,7 +2090,7 @@ static bool C_HandleKey(const event_t* ev)
 				CmdLine.moveCursorRight();
 			return true;
 		}
-		else if (Key_IsUpKey(ch))
+		else if (Key_IsUpKey(ch, NumLockEnabled))
 		{
 			// Move to previous entry in the command history
 			History.movePositionUp();
@@ -1966,7 +2100,7 @@ static bool C_HandleKey(const event_t* ev)
 			TabCycleClear();
 			return true;
 		}
-		else if (Key_IsDownKey(ch))
+		else if (Key_IsDownKey(ch, NumLockEnabled))
 		{
 			// Move to next entry in the command history
 			History.movePositionDown();
@@ -2047,26 +2181,13 @@ BOOL C_Responder(event_t *ev)
 	if (ev->type == ev_keyup)
 	{
 		// General Keys used by all systems
-		if (Key_IsPageUpKey(ev->data1) || Key_IsPageDownKey(ev->data1))
+		if (Key_IsPageUpKey(ev->data1, NumLockEnabled) || Key_IsPageDownKey(ev->data1, NumLockEnabled))
 		{
 			ScrollState = SCROLLNO;
 		}
 		else
 		{
-			// Keyboard keys only
-			switch (ev->data1)
-			{
-			case OKEY_LCTRL:
-			case OKEY_RCTRL:
-				KeysCtrl = false;
-				break;
-			case OKEY_LSHIFT:
-			case OKEY_RSHIFT:
-				KeysShifted = false;
-				break;
-			default:
 				return false;
-			}
 		}
 	}
 	else if (ev->type == ev_keydown)
@@ -2124,8 +2245,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 {
 	unsigned int i;
 
-	if (!msgtime)
-		msgtime = con_midtime.asInt();
+	const float fmsgtime = msgtime ? float(msgtime) : con_midtime;
 
 	if (MidMsg)
 		V_FreeBrokenLines(MidMsg);
@@ -2151,7 +2271,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 
 		if ( (MidMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
 		{
-			MidTicker = (int)(msgtime * TICRATE) + gametic;
+			MidTicker = (int)(fmsgtime * TICRATE) + gametic;
 
 			for (i = 0; MidMsg[i].width != -1; i++)
 				;
@@ -2208,8 +2328,7 @@ void C_GMidPrint(const char* msg, int color, int msgtime)
 {
 	unsigned int i;
 
-	if (!msgtime)
-		msgtime = con_midtime.asInt();
+	const float fmsgtime = msgtime ? float(msgtime) : con_midtime;
 
 	if (GameMsg)
 		V_FreeBrokenLines(GameMsg);
@@ -2230,7 +2349,7 @@ void C_GMidPrint(const char* msg, int color, int msgtime)
 
 		if ((GameMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
 		{
-			GameTicker = (int)(msgtime * TICRATE) + gametic;
+			GameTicker = (int)(fmsgtime * TICRATE) + gametic;
 
 			for (i = 0;GameMsg[i].width != -1;i++)
 				;

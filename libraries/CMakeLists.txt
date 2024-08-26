@@ -25,11 +25,15 @@ set(dllsuffix "${CMAKE_SHARED_LIBRARY_SUFFIX}")
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
 
 function(lib_buildgen)
-  cmake_parse_arguments("" "" "LIBRARY" "PARAMS" ${ARGN})
+  cmake_parse_arguments("" "" "LIBRARY;SRCDIR;CXXFLAGS" "PARAMS" ${ARGN})
+
+  if(NOT _SRCDIR)
+    set(_SRCDIR "${CMAKE_CURRENT_SOURCE_DIR}/${_LIBRARY}")
+  endif()
 
   # Baseline library generation.
   set(_COMMAND "${CMAKE_COMMAND}"
-    -S "${CMAKE_CURRENT_SOURCE_DIR}/${_LIBRARY}"
+    -S "${_SRCDIR}"
     -B "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
     -G "${CMAKE_GENERATOR}"
     "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
@@ -67,7 +71,13 @@ function(lib_buildgen)
     list(APPEND _COMMAND "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
   endif()
 
-  execute_process(COMMAND ${_COMMAND} ${_PARAMS} RESULT_VARIABLE _RESVAL)
+  if(_CXXFLAGS)
+    set(_ENVCMD ${CMAKE_COMMAND} -E env CXXFLAGS=${_CXXFLAGS})
+  endif()
+
+  message(STATUS "Generating ${_LIBRARY}...")
+  message(${_ENVCMD} ${_COMMAND} ${_PARAMS})
+  execute_process(COMMAND ${_ENVCMD} ${_COMMAND} ${_PARAMS} RESULT_VARIABLE _RESVAL)
   if(_RESVAL GREATER 0)
     message(FATAL_ERROR "Library ${_LIBRARY} did not generate correctly.")
   endif()
@@ -80,6 +90,7 @@ function(lib_build)
   get_property(_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
   if(_IS_MULTI_CONFIG)
     # Debug and Release are not compatible, so build both.
+    message(STATUS "Building ${_LIBRARY} Debug...")
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
       --config Debug --target install
@@ -88,15 +99,17 @@ function(lib_build)
       message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Debug.")
     endif()
 
+    message(STATUS "Building ${_LIBRARY} RelWithDebInfo...")
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
       --config RelWithDebInfo --target install
       --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
     if(_RESVAL GREATER 0)
       message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Release.")
-    endif()  
+    endif()
   else()
     # Single config uses the passed build type.
+    message(STATUS "Building ${_LIBRARY} ${CMAKE_BUILD_TYPE}...")
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
       --config ${CMAKE_BUILD_TYPE} --target install
@@ -106,6 +119,16 @@ function(lib_build)
     endif()  
   endif()
 endfunction()
+
+### minilzo ###
+
+if(BUILD_CLIENT OR BUILD_SERVER)
+  message(STATUS "Compiling minilzo...")
+
+  add_library(minilzo STATIC
+      "minilzo/lzoconf.h" "minilzo/lzodefs.h" "minilzo/minilzo.c" "minilzo/minilzo.h")
+  target_include_directories(minilzo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/minilzo")
+endif()
 
 ### zlib ###
 
@@ -252,12 +275,13 @@ endif()
 ### FLTK (dep: libpng) ###
 
 if(BUILD_CLIENT)
-  message(STATUS "Compiling FLTK...")
-
   set(_FLTK_BUILDGEN_PARAMS
     "-DOPTION_USE_SYSTEM_LIBJPEG=OFF"
+    "-DOPTION_USE_SYSTEM_LIBPNG=OFF"
+    "-DOPTION_USE_SYSTEM_ZLIB=OFF"
     "-DOPTION_PRINT_SUPPORT=OFF"
     "-DOPTION_USE_GL=OFF"
+
     "-DFLTK_BUILD_TEST=OFF")
 
   if(USE_INTERNAL_ZLIB)
@@ -292,174 +316,62 @@ endif()
 
 ### JsonCpp ###
 
-if(BUILD_SERVER)
-  message(STATUS "Compiling JsonCpp...")
+if(BUILD_SERVER AND USE_INTERNAL_JSONCPP)
+  lib_buildgen(
+    LIBRARY jsoncpp
+    PARAMS "-DJSONCPP_WITH_TESTS=OFF"
+           "-DJSONCPP_WITH_POST_BUILD_UNITTEST=OFF"
+           "-DJSONCPP_WITH_WARNING_AS_ERROR=OFF"
+           "-DJSONCPP_WITH_PKGCONFIG_SUPPORT=OFF"
+           "-DJSONCPP_WITH_CMAKE_PACKAGE=ON"
+           "-DCMAKE_DEBUG_POSTFIX=d"
+           "-DCCACHE_EXECUTABLE=CCACHE_EXECUTABLE-NOTFOUND")
+  lib_build(LIBRARY jsoncpp)
 
-  # Figure out the correct library path to attach to our imported target
-  set(JSONCPP_LIBRARY_DEBUG
-    "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}jsoncppd${libsuffix}")
-  set(JSONCPP_LIBRARY_RELEASE
-    "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}jsoncpp${libsuffix}")
-
-  # Generate the build.
-  execute_process(COMMAND "${CMAKE_COMMAND}"
-    -S "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp"
-    -B "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-    -G "${CMAKE_GENERATOR}"
-    -A "${CMAKE_GENERATOR_PLATFORM}"
-    -T "${CMAKE_GENERATOR_TOOLSET}"
-    "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
-    "-DCMAKE_LINKER=${CMAKE_LINKER}"
-    "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
-    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-    "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
-    "-DCMAKE_INSTALL_LIBDIR=lib") # Without this, CentOS installs into lib64
-
-  # Compile the library.
-  get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-  if(IS_MULTI_CONFIG)
-    # Debug and Release are not compatible, so build both.
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-      --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-      --config Debug --target install)
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-    --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-    --config RelWithDebInfo --target install)
-  else()
-    # Single config uses the passed build type.
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-      --build "${CMAKE_CURRENT_BINARY_DIR}/jsoncpp-build"
-      --target install)
-  endif()
-
-  # Synthesize an imported target that can be linked against.
-  add_library(jsoncpp STATIC IMPORTED GLOBAL)
-  set_target_properties(jsoncpp PROPERTIES
-    INTERFACE_COMPILE_DEFINITIONS JSON_IS_AMALGAMATION
-    INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/local/include"
-    IMPORTED_LOCATION ${JSONCPP_LIBRARY_RELEASE}
-    IMPORTED_LOCATION_DEBUG ${JSONCPP_LIBRARY_DEBUG}
-    IMPORTED_LOCATION_RELEASE ${JSONCPP_LIBRARY_RELEASE}
-    MAP_IMPORTED_CONFIG_MINSIZEREL Release
-    MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release)
+  find_package(jsoncpp REQUIRED)
+  set_target_properties(jsoncpp_lib_static PROPERTIES IMPORTED_GLOBAL TRUE)
 endif()
 
 ### MiniUPnPc ###
+
 if(BUILD_SERVER AND NOT USE_MINIUPNP)
   message(STATUS "Skipping MiniUPnPc...")
-elseif(BUILD_SERVER AND USE_MINIUPNP)
-  message(STATUS "Compiling MiniUPnPc...")
-
+elseif(BUILD_SERVER AND USE_MINIUPNP AND USE_INTERNAL_MINIUPNP)
   # Figure out the correct library path to attach to our imported target
-  set(MINIUPNPC_INCLUDE_DIR
-    "${CMAKE_CURRENT_BINARY_DIR}/local/include/miniupnpc")
   set(MINIUPNPC_LIBRARY
     "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}miniupnpc${libsuffix}")
 
-  # This must exist before the target is synthesized.
-  file(MAKE_DIRECTORY ${MINIUPNPC_INCLUDE_DIR})
+  lib_buildgen(
+    LIBRARY miniupnpc
+    SRCDIR "${CMAKE_CURRENT_SOURCE_DIR}/miniupnp/miniupnpc"
+    PARAMS "-DUPNPC_BUILD_SHARED=OFF"
+           "-DUPNPC_BUILD_TESTS=OFF"
+           "-DUPNPC_BUILD_SAMPLE=OFF")
+  lib_build(LIBRARY miniupnpc)
 
-  # Generate the build.
-  execute_process(COMMAND "${CMAKE_COMMAND}"
-    -S "${CMAKE_CURRENT_SOURCE_DIR}/libminiupnpc"
-    -B "${CMAKE_CURRENT_BINARY_DIR}/libminiupnpc-build"
-    -G "${CMAKE_GENERATOR}"
-    -A "${CMAKE_GENERATOR_PLATFORM}"
-    -T "${CMAKE_GENERATOR_TOOLSET}"
-    "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
-    "-DCMAKE_LINKER=${CMAKE_LINKER}"
-    "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
-    "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
-    "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
-    "-DCMAKE_INSTALL_LIBDIR=lib" # Without this, CentOS installs into lib64
-    "-DUPNPC_BUILD_SHARED=No"
-    "-DUPNPC_BUILD_TESTS=No")
-
-  # Compile the library.
-  execute_process(COMMAND "${CMAKE_COMMAND}"
-    --build "${CMAKE_CURRENT_BINARY_DIR}/libminiupnpc-build"
-    --config RelWithDebInfo --target install)
-
-  # Synthesize an imported target that can be linked against.
-  add_library(upnpc-static STATIC IMPORTED GLOBAL)
-  set_target_properties(upnpc-static PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${MINIUPNPC_INCLUDE_DIR}"
-    IMPORTED_LOCATION ${MINIUPNPC_LIBRARY})
-  if(WIN32)
-    set_target_properties(upnpc-static PROPERTIES INTERFACE_LINK_LIBRARIES "ws2_32;iphlpapi")
-  endif()
+  find_package(miniupnpc REQUIRED)
+  set_target_properties(miniupnpc::miniupnpc PROPERTIES IMPORTED_GLOBAL TRUE)
 endif()
 
 ### Protocol Buffers ###
 
 if(BUILD_CLIENT OR BUILD_SERVER)
-  message(STATUS "Compiling protoc...")
-
-  # Generate the build using the hosts's toolchain.
-  execute_process(COMMAND "${CMAKE_COMMAND}"
-    -S "${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake"
-    -B "${CMAKE_CURRENT_BINARY_DIR}/protoc-build"
-    -G "${CMAKE_GENERATOR}"
-    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+  set(_PROTOBUF_BUILDGEN_PARAMS
     "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
     "-Dprotobuf_BUILD_TESTS=OFF"
     "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF")
-  execute_process(COMMAND "${CMAKE_COMMAND}"
-    --build "${CMAKE_CURRENT_BINARY_DIR}/protoc-build"
-    --config RelWithDebInfo --target protoc)
 
-  get_cmake_property(_IS_MULTI_CONFIG GENERATOR_IS_MULTI_CONFIG)
-  if(_IS_MULTI_CONFIG)
-    message(STATUS "Compiling libprotobuf for multiconfig...")
-
-    # Generate the build.
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-      -S "${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake"
-      -B "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
-      -G "${CMAKE_GENERATOR}"
-      -A "${CMAKE_GENERATOR_PLATFORM}"
-      -T "${CMAKE_GENERATOR_TOOLSET}"
-      "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
-      "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
-      "-DCMAKE_LINKER=${CMAKE_LINKER}"
-      "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
-      "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
-      "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
-      "-Dprotobuf_BUILD_TESTS=OFF"
-      "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF")
-
-    # Compile the library for debug and release.
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-      --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
-      --config Debug --target libprotobuf)
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-      --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
-      --config RelWithDebInfo --target libprotobuf)
-  else()
-    message(STATUS "Compiling libprotobuf for ${CMAKE_BUILD_TYPE}...")
-
-    # Generate the build.
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-      -S "${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake"
-      -B "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
-      -G "${CMAKE_GENERATOR}"
-      -A "${CMAKE_GENERATOR_PLATFORM}"
-      -T "${CMAKE_GENERATOR_TOOLSET}"
-      "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-      "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
-      "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
-      "-DCMAKE_LINKER=${CMAKE_LINKER}"
-      "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}"
-      "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
-      "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
-      "-Dprotobuf_BUILD_TESTS=OFF"
-      "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF")
-
-    # Compile the library.
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-      --build "${CMAKE_CURRENT_BINARY_DIR}/protobuf-build"
-      --target libprotobuf)
+  if(MSVC)
+    # https://developercommunity.visualstudio.com/t/Visual-Studio-1740-no-longer-compiles-/10193665
+    set(protobuf_CXXFLAGS "/D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS")
   endif()
+
+  lib_buildgen(
+    LIBRARY protobuf
+    SRCDIR "${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake"
+    PARAMS ${_PROTOBUF_BUILDGEN_PARAMS}
+    CXXFLAGS ${protobuf_CXXFLAGS})
+  lib_build(LIBRARY protobuf)
 endif()
 
 ### SDL libraries ###
@@ -472,14 +384,14 @@ if(BUILD_CLIENT)
     if(WIN32)
       if(MSVC)
         file(DOWNLOAD
-          "https://www.libsdl.org/release/SDL2-devel-2.0.18-VC.zip"
+          "https://www.libsdl.org/release/SDL2-devel-2.0.20-VC.zip"
           "${CMAKE_CURRENT_BINARY_DIR}/SDL2-VC.zip"
-          EXPECTED_HASH SHA256=d4a56e2ee7c0eae2ef0d511201d3bd38c5ab255662e4b571d4d630762473bf42)
+          EXPECTED_HASH SHA256=5b1512ca6c9d2427bd2147da01e5e954241f8231df12f54a7074dccde416df18)
         execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
           "${CMAKE_CURRENT_BINARY_DIR}/SDL2-VC.zip"
           WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
-        set(SDL2_DIR "${CMAKE_CURRENT_BINARY_DIR}/SDL2-2.0.18")
+        set(SDL2_DIR "${CMAKE_CURRENT_BINARY_DIR}/SDL2-2.0.20")
         set(SDL2_INCLUDE_DIR "${SDL2_DIR}/include" CACHE PATH "")
         if(CMAKE_SIZEOF_VOID_P EQUAL 8)
           set(SDL2_LIBRARY "${SDL2_DIR}/lib/x64/SDL2.lib" CACHE FILEPATH "")
@@ -490,17 +402,17 @@ if(BUILD_CLIENT)
         endif()
       else()
         file(DOWNLOAD
-          "https://www.libsdl.org/release/SDL2-devel-2.0.18-mingw.tar.gz"
+          "https://www.libsdl.org/release/SDL2-devel-2.0.20-mingw.tar.gz"
           "${CMAKE_CURRENT_BINARY_DIR}/SDL2-mingw.tar.gz"
-          EXPECTED_HASH SHA256=bbad7c6947f6ca3e05292f065852ed8b62f319fc5533047e7708769c4dbae394)
+          EXPECTED_HASH SHA256=38094d82a857d6c62352e5c5cdec74948c5b4d25c59cbd298d6d233568976bd1)
         execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
           "${CMAKE_CURRENT_BINARY_DIR}/SDL2-mingw.tar.gz"
           WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
         if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-          set(SDL2_DIR "${CMAKE_CURRENT_BINARY_DIR}/SDL2-2.0.18/x86_64-w64-mingw32")
+          set(SDL2_DIR "${CMAKE_CURRENT_BINARY_DIR}/SDL2-2.0.20/x86_64-w64-mingw32")
         else()
-          set(SDL2_DIR "${CMAKE_CURRENT_BINARY_DIR}/SDL2-2.0.18/i686-w64-mingw32")
+          set(SDL2_DIR "${CMAKE_CURRENT_BINARY_DIR}/SDL2-2.0.20/i686-w64-mingw32")
         endif()
         set(SDL2_INCLUDE_DIR "${SDL2_DIR}/include/SDL2" CACHE PATH "")
         set(SDL2_LIBRARY "${SDL2_DIR}/lib/libSDL2.dll.a" CACHE FILEPATH "")

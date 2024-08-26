@@ -32,36 +32,36 @@
 
 void OLumpName::MakeDataPresentable()
 {
-	// make _data uppercase
+	// make m_data uppercase
 	for (int i = 0; i < 8; ++i)
-		_data[i] = static_cast<char>(toupper(_data[i]));
+		m_data[i] = static_cast<char>(toupper(m_data[i]));
 
 	// ensure last char is escape character
-	_data[8] = '\0';
+	m_data[8] = '\0';
 }
 
 // constructors/assignment operators
 
 OLumpName::OLumpName()
 {
-	memset(_data, '\0', 9);
+	memset(m_data, '\0', 9);
 }
 
 OLumpName::OLumpName(const OLumpName& other)
 {
-	memcpy(_data, other._data, 8);
+	memcpy(m_data, other.m_data, 8);
 	MakeDataPresentable();
 }
 
 OLumpName::OLumpName(const char* other)
 {
-	strncpy(_data, other, 8);
+	strncpy(m_data, other, 8);
 	MakeDataPresentable();
 }
 
 OLumpName::OLumpName(const std::string& other)
 {
-	strncpy(_data, other.data(), 8);
+	strncpy(m_data, other.data(), 8);
 	MakeDataPresentable();
 }
 
@@ -69,7 +69,7 @@ OLumpName& OLumpName::operator=(const OLumpName& other)
 {
 	if (this != &other)
 	{
-		memcpy(_data, other._data, 8);
+		memcpy(m_data, other.m_data, 8);
 		MakeDataPresentable();
 	}
 
@@ -78,7 +78,7 @@ OLumpName& OLumpName::operator=(const OLumpName& other)
 
 OLumpName& OLumpName::operator=(const char* other)
 {
-	strncpy(_data, other, 8);
+	strncpy(m_data, other, 8);
 	MakeDataPresentable();
 
 	return *this;
@@ -86,7 +86,7 @@ OLumpName& OLumpName::operator=(const char* other)
 
 OLumpName& OLumpName::operator=(const std::string& other)
 {
-	strncpy(_data, other.data(), 8);
+	strncpy(m_data, other.data(), 8);
 	MakeDataPresentable();
 
 	return *this;
@@ -99,7 +99,7 @@ size_t OLumpName::size() const
 	size_t i = 0;
 	for (; i < 8; ++i)
 	{
-		if (_data[i] == '\0')
+		if (m_data[i] == '\0')
 		{
 			break;
 		}
@@ -115,12 +115,12 @@ size_t OLumpName::length() const
 
 void OLumpName::clear()
 {
-	_data[0] = '\0';
+	m_data[0] = '\0';
 }
 
 bool OLumpName::empty() const
 {
-	return _data[0] == '\0';
+	return m_data[0] == '\0';
 }
 
 // element access
@@ -143,7 +143,7 @@ char& OLumpName::at(const size_t pos)
 		throw std::out_of_range(buffer);
 	}
 
-	return _data[pos];
+	return m_data[pos];
 }
 
 const char& OLumpName::at(const size_t pos) const
@@ -160,72 +160,72 @@ const char& OLumpName::at(const size_t pos) const
 		throw std::out_of_range(buffer);
 	}
 
-	return _data[pos];
+	return m_data[pos];
 }
 
 char& OLumpName::operator[](const size_t pos)
 {
-	return _data[pos];
+	return m_data[pos];
 }
 
 const char& OLumpName::operator[](const size_t pos) const
 {
-	return _data[pos];
+	return m_data[pos];
 }
 
 // string operations
 
 const char* OLumpName::c_str() const
 {
-	return _data;
+	return m_data;
 }
 
 const char* OLumpName::data() const
 {
-	return _data;
+	return m_data;
 }
 
 int OLumpName::compare(const OLumpName& other) const
 {
-	return !stricmp(_data, other._data);
+	return !stricmp(m_data, other.m_data);
 }
 
 int OLumpName::compare(const char* other) const
 {
-	return !stricmp(_data, other);
+	return !stricmp(m_data, other);
 }
 
 int OLumpName::compare(const std::string& other) const
 {
-	return !stricmp(_data, other.data());
+	return !stricmp(m_data, other.data());
 }
 
 bool operator==(const OLumpName& lhs, const OLumpName& rhs)
 {
-	return !stricmp(lhs._data, rhs._data);
+	return !stricmp(lhs.m_data, rhs.m_data);
 }
 
 bool operator==(const OLumpName& lhs, const char* rhs)
 {
-	return !stricmp(lhs._data, rhs);
+	return !stricmp(lhs.m_data, rhs);
 }
 
 bool operator==(const OLumpName& lhs, const std::string& rhs)
 {
-	return !stricmp(lhs._data, rhs.data());
+	return !stricmp(lhs.m_data, rhs.data());
 }
 
 bool operator!=(const OLumpName& lhs, const OLumpName& rhs)
 {
-	return stricmp(lhs._data, rhs._data);
+	return stricmp(lhs.m_data, rhs.m_data);
 }
 
 bool operator!=(const OLumpName& lhs, const char* rhs)
 {
-	return stricmp(lhs._data, rhs);
+	return stricmp(lhs.m_data, rhs);
 }
 
 bool operator!=(const OLumpName& lhs, const std::string& rhs)
 {
-	return stricmp(lhs._data, rhs.data());
+	return stricmp(lhs.m_data, rhs.data());
 }

@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __DOBJECT_H__
-#define __DOBJECT_H__
+#pragma once
 
 #include <stdlib.h>
 #include "tarray.h"
@@ -209,7 +207,3 @@ private:
 };
 
 #include "farchive.h"
-
-#endif //__DOBJECT_H__
-
-

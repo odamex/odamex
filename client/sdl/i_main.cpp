@@ -134,6 +134,24 @@ int main(int argc, char *argv[])
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		::Args.SetArgs(argc, argv);
 
+		if (::Args.CheckParm("--version"))
+		{
+#ifdef _WIN32
+			FILE* fh = fopen("odamex-version.txt", "w");
+			if (!fh)
+				exit(EXIT_FAILURE);
+
+			const int ok = fprintf(fh, "Odamex %s\n", NiceVersion());
+			if (!ok)
+				exit(EXIT_FAILURE);
+
+			fclose(fh);
+#else
+			printf("Odamex %s\n", NiceVersion());
+#endif
+			exit(EXIT_SUCCESS);
+		}
+
 		const char* crashdir = ::Args.CheckValue("-crashdir");
 		if (crashdir)
 		{

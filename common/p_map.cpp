@@ -40,12 +40,14 @@
 
 #include "m_wdlstats.h"
 #include "g_gametype.h"
+#include "p_mapformat.h"
 // State.
 #include "r_state.h"
 
 #include "z_zone.h"
 #include "p_unlag.h"
 #include "m_vectors.h"
+#include "p_mapformat.h"
 #include <math.h>
 #include <set>
 
@@ -67,7 +69,6 @@ static int		ls_y;	// Lost Soul position for Lost Soul checks		// phares
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".
 BOOL 			floatok;
-extern bool 	HasBehavior;	// ZDoom in Hexen Format
 
 fixed_t 		tmfloorz;
 fixed_t 		tmceilingz;
@@ -271,7 +272,7 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 		// friction value (muddy has precedence over icy).
 
 		for (m = mo->touching_sectorlist; m; m = m->m_tnext)
-			if ((sec = m->m_sector)->special & FRICTION_MASK &&
+			if ((sec = m->m_sector)->flags & SECF_FRICTION &&
 				(sec->friction < friction || friction == ORIG_FRICTION) &&
 				(mo->z <= P_FloorHeight(mo) ||
 				(sec->heightsec && !(sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
@@ -402,20 +403,21 @@ BOOL PIT_CheckLine (line_t *ld)
 	if (!ld->backsector)
 	{ // One sided line
 		BlockingLine = ld;
-		CheckForPushSpecial (ld, 0, tmthing);
+		CheckForPushSpecial(ld, 0, tmthing);
 		return false;
 	}
 
     if (!(tmthing->flags & (MF_MISSILE | MF_BOUNCES)) || (ld->flags & ML_BLOCKEVERYTHING))
     {
-		if ((ld->flags & (ML_BLOCKING|ML_BLOCKEVERYTHING)) || 	// explicitly blocking everything
-		    (!tmthing->player &&
-		     (ld->flags & ML_BLOCKMONSTERS))) // block monsters only
-//			||	 (ld->flags & ML_BLOCKLANDMONSTERS && !(tmthing->flags & MF_FLOAT)))) || // [Blair] Block land monsters.
-//		    (tmthing->player && (ld->flags & ML_BLOCKPLAYERS))) // [Blair] Block players only
-//			[Blair] Remove new MBF21 flags as SPAC
+		if ((ld->flags &
+		     (ML_BLOCKING | ML_BLOCKEVERYTHING)) || // explicitly blocking everything
+		    (!tmthing->player && tmthing->type != MT_AVATAR && (ld->flags & ML_BLOCKMONSTERS)) || // block monsters only
+		    (!tmthing->player && tmthing->type != MT_AVATAR && (ld->flags & ML_BLOCKLANDMONSTERS) &&
+		     !(tmthing->flags & MF_FLOAT)) || // [Blair] Block land monsters.
+		    (tmthing->player &&
+		     (ld->flags & ML_BLOCKPLAYERS))) // [Blair] Block players only
 		{
-			CheckForPushSpecial (ld, 0, tmthing);
+			CheckForPushSpecial(ld, 0, tmthing);
 			return false;
 		}		
     }
@@ -649,7 +651,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 			if (tmthing->info->ripsound)
 				S_Sound(tmthing, CHAN_VOICE, tmthing->info->ripsound, 1, ATTN_NORM);
 
-			P_DamageMobj(thing, tmthing, tmthing->target, damage);
+			P_DamageMobj(thing, tmthing, tmthing->target, damage, MOD_UNKNOWN);
 			if (thing->flags2 & MF2_PUSHABLE && !(tmthing->flags2 & MF2_CANNOTPUSH))
 			{ // Push thing
 				thing->momx += tmthing->momx >> 2;
@@ -678,17 +680,16 @@ static BOOL PIT_CheckThing (AActor *thing)
 						mod = MOD_BFG_BOOM;
 						break;
 					// [AM] Monster fireballs get a special MOD.
-					case MT_ARACHPLAZ:
-					case MT_TROOPSHOT:
-					case MT_HEADSHOT:
-					case MT_BRUISERSHOT:
-					case MT_TRACER:
-					case MT_FATSHOT:
-					case MT_SPAWNSHOT:
-						mod = MOD_FIREBALL;
-						break;
+				  // Unless they're from players
 					default:
-						mod = MOD_UNKNOWN;
+							if ((tmthing->target && tmthing->target->player) || !tmthing->target)
+							{
+						        mod = MOD_UNKNOWN;
+							}
+							else
+							{
+						        mod = MOD_FIREBALL;
+							}
 						break;
 				}
 				P_DamageMobj (thing, tmthing, tmthing->target, damage, mod);
@@ -704,12 +705,35 @@ static BOOL PIT_CheckThing (AActor *thing)
 		// [SL] Work-around the additional height added to players
 		// in P_CheckPosition. Don't let players grab items above
 		// their real height!
-		if (!P_AllowPassover() || !tmthing->player ||
-			thing->z < tmthing->z + tmthing->height - 24*FRACUNIT)
+
+		fixed_t max_z = tmthing->z + tmthing->height;
+
+		if (tmthing->player)
+			max_z -= 24 * FRACUNIT;
+
+		if (!P_AllowPassover() || thing->z < max_z)
 			P_TouchSpecialThing (thing, tmthing);	// can remove thing
+
+		return !solid;
 	}
 
-	return !solid;
+	// killough 3/16/98: Allow non-solid moving objects to move through solid
+	// ones, by allowing the moving thing (tmthing) to move if it's non-solid,
+	// despite another solid thing being in the way.
+	// killough 4/11/98: Treat no-clipping things as not blocking
+	// ...but not in demo_compatibility mode
+
+	// e6y
+	// Correction of wrong return value with demo_compatibility.
+	// There is no more synch on http://www.doomworld.com/sda/dwdemo/w303-115.zip
+	// (with correction in setMobjInfoValue)
+	if (demoplayback || !co_boomphys
+	    //&& !prboom_comp[PC_TREAT_NO_CLIPPING_THINGS_AS_NOT_BLOCKING].state
+			)
+		return !(thing->flags & MF_SOLID);
+	else
+		return !((thing->flags & MF_SOLID && !(thing->flags & MF_NOCLIP)) &&
+		         (tmthing->flags & MF_SOLID || (demoplayback || !co_boomphys)));
 }
 
 // This routine checks for Lost Souls trying to be spawned		// phares
@@ -1093,7 +1117,7 @@ void P_FakeZMovement(AActor *mo)
 
 void P_CheckPushLines(AActor *thing)
 {
-	if (!thing || !HasBehavior)
+	if (!thing || !map_format.getZDoom())
 		return;
 
 	if (!(thing->flags&(MF_TELEPORT|MF_NOCLIP)))
@@ -1252,7 +1276,7 @@ BOOL P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 			int side = P_PointOnLineSide (thing->x, thing->y, ld);
 			int oldside = P_PointOnLineSide (oldx, oldy, ld);
 			if (side != oldside && ld->special)
-				P_CrossSpecialLine (ld-lines, oldside, thing, false);
+				P_CrossSpecialLine (ld, oldside, thing, false);
 		}
 	}
 
@@ -2006,8 +2030,14 @@ bool P_ShootLine(intercept_t* in)
 	if (li->special)
 		P_ShootSpecialLine(shootthing, li);
 
+	short spe;
+	if (map_format.getZDoom())
+		spe = Line_Horizon;
+	else
+		spe = 337;
+
 	// don't shoot horizon lines
-	if (li->special == Line_Horizon)
+	if (li->special == spe)
 		return false;
 
 	// [SL] 2012-02-08 - Calculates where the intercept crosses the line
@@ -2746,9 +2776,22 @@ BOOL PTR_UseTraverse (intercept_t *in)
 	//	   it through, including SPAC_USETHROUGH.
 	//[ML] And NOW (8/16/10) it checks whether it's use or NOT the passthrough flags
 	// (passthru on a cross or use line).  This may get augmented/changed even more in the future.
-	return (GET_SPAC(in->d.line->flags) == SPAC_USE ||
-            (GET_SPAC(in->d.line->flags) != SPAC_CROSSTHROUGH &&
-             GET_SPAC(in->d.line->flags) != SPAC_USETHROUGH)) ? false : true;
+	
+	bool donteatuse;
+	if (map_format.getZDoom())
+	{
+		donteatuse = ((in->d.line->flags & ML_SPAC_USE) ||
+		          (!(in->d.line->flags & ML_SPAC_CROSSTHROUGH) &&
+		           (!(in->d.line->flags & ML_SPAC_USETHROUGH))))
+		             ? false
+		             : true;
+	}
+	else
+	{
+		donteatuse = (in->d.line->flags & ML_PASSUSE);
+	}
+
+	return donteatuse;
 }
 
 // Returns false if a "oof" sound should be made because of a blocking
@@ -3038,6 +3081,12 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	DamageSource = hurtSource;
 	bombmod = mod;
 
+	// [Blair] Prevent crash from barrels hit by crushers
+	if (!demoplayback && bombsource == NULL && bombspot != NULL)
+	{
+		bombsource = bombspot;
+	}
+
 	// decide which radius attack function to use
 	BOOL (*pAttackFunc)(AActor*) = co_zdoomphys ?
 		PIT_ZDoomRadiusAttack : PIT_DoomRadiusAttack;
@@ -3087,13 +3136,13 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 // of all things that touch the sector.
 //
 // If anything doesn't fit anymore, true will be returned.
-// If crunch is true, they will take damage
-//  as they are being crushed.
-// If Crunch is false, you should set the sector height back
+// If crunch is greater than zero, it will crush based on its value
+// (BOOM's default crush is 10 dmg per crush)
+// If Crunch is 0 or less, you should set the sector height back
 //  the way it was and call P_ChangeSector again
 //  to undo the changes.
 //
-bool	crushchange;
+int		crushchange;
 bool 	nofit;
 
 //
@@ -3143,9 +3192,9 @@ BOOL PIT_ChangeSector (AActor *thing)
 
 	nofit = true;
 
-	if (crushchange && !(level.time&3) )
+	if (crushchange > 0 && !(level.time&3) )
 	{
-		P_DamageMobj (thing, NULL, NULL, 10, MOD_CRUSH);
+		P_DamageMobj(thing, NULL, NULL, crushchange, MOD_CRUSH);
 
 		// spray blood in a random direction
 		if (!(thing->flags&MF_NOBLOOD))
@@ -3170,7 +3219,7 @@ BOOL PIT_ChangeSector (AActor *thing)
 // sector. Both more accurate and faster.
 //
 
-bool P_ChangeSector (sector_t *sector, bool crunch)
+bool P_ChangeSector (sector_t *sector, int crunch)
 {
 	if (!sector)
 		return true;
@@ -3900,7 +3949,9 @@ void P_CopySector(sector_t *dest, sector_t *src)
 	dest->midmap				= src->midmap;
 	dest->topmap				= src->topmap;
 	dest->gravity				= src->gravity;
-	dest->damage				= src->damage;
+	dest->damageamount			= src->damageamount;
+	dest->damageinterval		= src->damageinterval;
+	dest->leakrate				= src->leakrate;
 	dest->mod					= src->mod;
 	dest->colormap				= src->colormap;
 	dest->alwaysfake			= src->alwaysfake;

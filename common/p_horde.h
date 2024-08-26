@@ -43,6 +43,7 @@ struct hordeInfo_t
 	int waveTime;
 	int bossTime;
 	uint64_t defineID;
+	uint64_t legacyID;
 	int spawnedHealth;
 	int killedHealth;
 	int bossHealth;
@@ -91,6 +92,8 @@ struct hordeInfo_t
 	}
 };
 
+void P_InitHorde();
+void P_NextSpawnTime(int& min, int& max);
 hordeInfo_t P_HordeInfo();
 void P_SetHordeInfo(const hordeInfo_t& info);
 void P_AddHealthPool(AActor* mo);
@@ -103,3 +106,4 @@ bool P_IsHordeThing(const int type);
 const hordeDefine_t::weapons_t& P_HordeWeapons();
 const hordeDefine_t::ammos_t& P_HordeAmmos();
 void P_SerializeHorde(FArchive& arc);
+void P_HordePostLoad();

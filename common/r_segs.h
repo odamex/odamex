@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __R_SEGS_H__
-#define __R_SEGS_H__
+#pragma once
 
 
 void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, 
@@ -34,5 +32,3 @@ void R_RenderSegLoop();
 void R_ClearOpenings();
 
 EXTERN_CVAR (r_columnmethod)
-
-#endif

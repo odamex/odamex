@@ -127,7 +127,7 @@ CVAR_RANGE(			sv_skill,"3", "Sets the skill level, values are:\n" \
 					"// 3 - Hurt Me Plenty\n" \
 					"// 4 - Ultra-Violence\n" \
 					"// 5 - Nightmare",
-					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 5.0f)
+					CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 7.0f)
 
 CVAR_RANGE(sv_timelimit, "0", "Sets the time limit for the game to end (in minutes)",
            CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
@@ -148,10 +148,10 @@ CVAR_FUNC_DECL(		sv_sharekeys, "0", "Share keys found to every player.",
 CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maxiumum time allowed for player reconciliation (in seconds)",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
-CVAR(				sv_allowmovebob, "0", "Allow weapon & view bob changing",
+CVAR(				sv_allowmovebob, "1", "Allow weapon & view bob changing",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
-CVAR(				sv_allowredscreen, "0","Allow clients to adjust amount of red pain screen intensity",
+CVAR(				sv_allowredscreen, "1","Allow clients to adjust amount of red pain screen intensity",
 					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
 
 CVAR(				sv_allowpwo, "0", "Allow clients to set their preferences for automatic weapon switching",
@@ -239,15 +239,19 @@ CVAR(g_winnerstays, "0", "After a match winners stay in the game, losers get spe
 CVAR(g_preroundtime, "5", "Amount of time before a round where you can't shoot",
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(g_preroundreset, "0", "After preround is over, reset the map one last time.",
+     CVARTYPE_INT, CVAR_SERVERARCHIVE)
+
 CVAR(g_postroundtime, "3", "Amount of time after a round before the next round/endgame",
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE(g_coopthingfilter, "0", "Removes cooperative things of the map. Values are:\n" \
-	"// 0 - All Coop things are retained (default).\n" \
+CVAR_RANGE(g_thingfilter, "0", "Removes some things from the map. Values are:\n" \
+	"// 0 - All things are retained (default).\n" \
 	"// 1 - Only Coop weapons are removed.\n" \
-        "// 2 - All Coop things are removed.",
+        "// 2 - All Coop things are removed.\n" \
+	"// 3 - All pickupable things are removed.",
            CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_LATCH,
-           0.0f, 2.0f)
+           0.0f, 3.0f)
 
 CVAR(g_resetinvonexit, "0",
      "Always reset players to their starting inventory on level exit", CVARTYPE_BOOL,
@@ -264,6 +268,26 @@ CVAR(g_horde_maxtotalhp, "10.0", "Multiplier for maximum spawned health at a tim
 
 CVAR(g_horde_goalhp, "8.0", "Goal health multiplier for a given round", CVARTYPE_FLOAT,
      CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE(g_horde_spawnempty_min, "1",
+           "Minimum number of seconds it takes to spawn a monster in an empty horde map",
+           CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
+           60)
+
+CVAR_RANGE(g_horde_spawnempty_max, "3",
+           "Maximum number of seconds it takes to spawn a monster in an empty horde map",
+           CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
+           60)
+
+CVAR_RANGE(g_horde_spawnfull_min, "2",
+           "Minimum number of seconds it takes to spawn a monster in a full horde map",
+           CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
+           60)
+
+CVAR_RANGE(g_horde_spawnfull_max, "6",
+           "Maximum number of seconds it takes to spawn a monster in a full horde map",
+           CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
+           60)
 
 // Game mode options commonized from the server
 //     At some point, replace "sv_" with "g_"
@@ -310,6 +334,9 @@ CVAR_RANGE(sv_countdown, "5",
 
 	CVAR(			co_novileghosts, "0", "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+	
+	CVAR(			co_removesoullimit, "0", "Allows pain elementals to still spawn lost souls if more than 20 are present",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 
 
@@ -345,6 +372,10 @@ CVAR(				cl_predictpickup, "1", "Predict weapon pickups",
 CVAR_RANGE(			cl_movebob, "1.0", "Adjust weapon and movement bobbing",
 					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
+CVAR(				cl_centerbobonfire, "0",
+					"Centers the weapon bobbing when firing a weapon",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR_RANGE_FUNC_DECL(sv_gravity, "800", "Gravity of the environment",
 					CVARTYPE_WORD, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE,
 					0.0f, 32768.0f)
@@ -359,6 +390,10 @@ CVAR_RANGE_FUNC_DECL(sv_splashfactor, "1.0", "Rocket explosion thrust effect?",
 
 CVAR(               cl_waddownloaddir, "", "Set custom WAD download directory",
 					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR				(r_softinvulneffect, "1",
+					"Change invuln to enable light googles and invert the pallete on the weapon sprite only.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Misc stuff
 // ----------

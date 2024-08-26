@@ -35,6 +35,8 @@
 
 extern std::vector<hordeDefine_t> WAVE_DEFINES;
 
+static hordeDefine_t EMPTY_WAVE_DEFINE;
+
 typedef OHashTable<std::string, mobjtype_t> AliasMap;
 AliasMap g_aliasMap;
 
@@ -385,6 +387,14 @@ static void ParseAlias(OScanner& os)
 		os.error(buffer.c_str());
 	}
 
+	if (!CheckIfDehActorDefined(otype))
+	{
+		// [Blair] DEHEXTRA monster not defined
+		std::string buffer;
+		StrFormat(buffer, "The following actor is undefined: \"%s\".", original.c_str());
+		os.error(buffer.c_str());
+	}
+
 	g_aliasMap.insert(std::make_pair(alias, otype));
 }
 
@@ -432,6 +442,13 @@ static bool CmpHordeDefs(const hordeDefine_t& a, const hordeDefine_t& b)
 	return a.maxGroupHealth < b.maxGroupHealth;
 }
 
+struct FindHordeDef
+{
+	std::string name;
+	FindHordeDef(const std::string& name) : name(name) { }
+	bool operator()(const hordeDefine_t& def) { return def.name == name; }
+};
+
 static void ParseHordeDefs()
 {
 	int lump = -1;
@@ -445,8 +462,39 @@ static void ParseHordeDefs()
 		return;
 	}
 
-	// [AM] Must be stable for wave ID's to be the same on client and server.
+	// Must be stable for wave ID's to be the same on client and server.
 	std::stable_sort(::WAVE_DEFINES.begin(), ::WAVE_DEFINES.end(), CmpHordeDefs);
+
+	// Dedupe wave defines.  Note that this has a gigantic hack for 10.0 that keeps
+	// track of the original wave ID so it can be sent to 10.0 clients.  This hack
+	// should be removed in 11.0 at the soonest.
+
+	for (size_t i = 0; i < ::WAVE_DEFINES.size(); i++)
+	{
+		::WAVE_DEFINES[i].legacyID = i;
+	}
+
+	int i = -1;
+	for (std::vector<hordeDefine_t>::iterator it = ::WAVE_DEFINES.begin();
+	     it != ::WAVE_DEFINES.end(); ++it)
+	{
+		std::vector<hordeDefine_t>::iterator after = it;
+		after++;
+
+		// No need to search if we're at the end.
+		if (after == ::WAVE_DEFINES.end())
+			continue;
+
+		std::vector<hordeDefine_t>::iterator found =
+		    std::find_if(after, ::WAVE_DEFINES.end(), FindHordeDef(it->name));
+
+		// If we didn't find any matches, don't remove.
+		if (found == ::WAVE_DEFINES.end())
+			continue;
+
+		// Erase and set our iterator to the one after it.
+		it = ::WAVE_DEFINES.erase(it);
+	}
 }
 
 /**
@@ -460,11 +508,20 @@ void G_ParseHordeDefs()
 }
 
 /**
- * @brief Resolve a horde define ID to an actual define.  Should be identical on client and server.
+ * @brief Resolve a horde define ID to an actual define.  Should be identical on client
+ * and server.
  *
  * @param id ID of define.
  */
 const hordeDefine_t& G_HordeDefine(size_t id)
 {
-	return ::WAVE_DEFINES.at(id);
+	if (id >= ::WAVE_DEFINES.size())
+	{
+		Printf(PRINT_WARNING,
+		       "Tried to access horde wave %llu but only have %llu horde defines!\n", id,
+		       ::WAVE_DEFINES.size());
+		return EMPTY_WAVE_DEFINE;
+	}
+
+	return ::WAVE_DEFINES[id];
 }

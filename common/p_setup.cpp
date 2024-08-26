@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <set>
+#include <zlib.h>
 
 #include "m_alloc.h"
 #include "m_vectors.h"
@@ -49,24 +50,30 @@
 #include "p_mobj.h"
 #include "p_setup.h"
 #include "p_hordespawn.h"
+#include "p_mapformat.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
 void P_SpawnAvatars();
+void P_TranslateTeleportThings();
 
-void P_TranslateLineDef (line_t *ld, maplinedef_t *mld);
-void P_TranslateTeleportThings (void);
-int	P_TranslateSectorSpecial (int);
+const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved);
+const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags);
+void P_SpawnCompatibleSectorSpecial(sector_t* sector);
 
 static void P_SetupLevelFloorPlane(sector_t *sector);
 static void P_SetupLevelCeilingPlane(sector_t *sector);
 static void P_SetupSlopes();
 void P_InvertPlane(plane_t *plane);
+void P_SetupWorldState();
+int P_TranslateSectorSpecial(int special);
 
 extern dyncolormap_t NormalLight;
 extern AActor* shootthing;
 
-EXTERN_CVAR(g_coopthingfilter)
+EXTERN_CVAR(g_thingfilter)
+
+bool			g_ValidLevel = false;
 
 //
 // MAP related Lookup tables.
@@ -92,6 +99,8 @@ line_t* 		lines;
 
 int 			numsides;
 side_t* 		sides;
+
+std::vector<int>	originalLightLevels; // Needed for map resets
 
 // [RH] Set true if the map contains a BEHAVIOR lump
 bool			HasBehavior = false;
@@ -299,6 +308,7 @@ void P_LoadSectors (int lump)
 
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
 	delete[] sectors;
+	originalLightLevels.clear();
 
 	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
 
@@ -322,10 +332,8 @@ void P_LoadSectors (int lump)
 		ss->floorpic = (short)R_FlatNumForName(ms->floorpic);
 		ss->ceilingpic = (short)R_FlatNumForName(ms->ceilingpic);
 		ss->lightlevel = LESHORT(ms->lightlevel);
-		if (HasBehavior)
-			ss->special = LESHORT(ms->special);
-		else	// [RH] Translate to new sector special
-			ss->special = P_TranslateSectorSpecial (LESHORT(ms->special));
+		originalLightLevels.push_back(LESHORT(ms->lightlevel));
+		ss->special = LESHORT(ms->special);
 		ss->secretsector = !!(ss->special&SECRET_MASK);
 		ss->tag = LESHORT(ms->tag);
 		ss->thinglist = NULL;
@@ -333,6 +341,11 @@ void P_LoadSectors (int lump)
 		ss->seqType = defSeqType;
 		ss->nextsec = -1;	//jff 2/26/98 add fields to support locking out
 		ss->prevsec = -1;	// stair retriggering until build completes
+
+		// damage
+		ss->damageamount = 0;
+		ss->damageinterval = 0;
+		ss->leakrate = 0;
 
 		// killough 3/7/98:
 		ss->floor_xoffs = 0;
@@ -448,14 +461,77 @@ bool P_LoadXNOD(int lump)
 {
 	size_t len = W_LumpLength(lump);
 	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+	byte* output = NULL;
 
-	if (len < 4 || memcmp(data, "XNOD", 4) != 0)
+	if (len < 4)
 	{
 		Z_Free(data);
 		return false;
 	}
 
-	byte *p = data + 4; // skip the magic number
+	if (len >= 8 && memcmp(data, "xNd4\0\0\0\0", 8) == 0)
+		I_Error("P_LoadXNOD: DeePBSP nodes are not supported.");
+
+	bool compressed = memcmp(data, "ZNOD", 4) == 0;
+
+	if (memcmp(data, "XNOD", 4) != 0 && !compressed)
+	{
+		Z_Free(data);
+		return false;
+	}
+
+	byte *p;
+	// [EB] decompress compressed nodes
+	// adapted from Crispy Doom
+	if (compressed)
+	{
+		int outlen, err;
+		z_stream *zstream;
+
+		// first estimate for compression rate:
+		// output buffer size == 2.5 * input size
+		outlen = 2.5 * len;
+		output = (byte*)Z_Malloc(outlen, PU_STATIC, 0);
+
+		// initialize stream state for decompression
+		zstream = (z_stream*)M_Malloc(sizeof(*zstream));
+		memset(zstream, 0, sizeof(*zstream));
+		zstream->next_in = data + 4;
+		zstream->avail_in = len - 4;
+		zstream->next_out = output;
+		zstream->avail_out = outlen;
+
+		if (inflateInit(zstream) != Z_OK)
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression initialization!");
+
+		// resize if output buffer runs full
+		while ((err = inflate(zstream, Z_SYNC_FLUSH)) == Z_OK)
+		{
+			int outlen_old = outlen;
+			outlen = 2 * outlen_old;
+			output = (byte*)M_Realloc(output, outlen);
+			zstream->next_out = output + outlen_old;
+			zstream->avail_out = outlen - outlen_old;
+		}
+
+		if (err != Z_STREAM_END)
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression!");
+
+		fprintf(stderr, "P_LoadXNOD: ZDBSP nodes compression ratio %.3f\n",
+				(float)zstream->total_out/zstream->total_in);
+
+		len = zstream->total_out;
+
+		if (inflateEnd(zstream) != Z_OK)
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression shut-down!");
+
+		M_Free(zstream);
+		p = output;
+	}
+	else
+	{
+		p = data + 4; // skip the magic number
+	}
 
 	// Load vertices
 	unsigned int numorgvert = LELONG(*(unsigned int *)p); p += 4;
@@ -572,6 +648,7 @@ bool P_LoadXNOD(int lump)
 	}
 
 	Z_Free(data);
+	Z_Free(output);
 
 	return true;
 }
@@ -617,9 +694,9 @@ void P_LoadThings (int lump)
 			#ifdef SERVER_APP
 			if (G_IsCoopGame())
 			{ 
-				if (g_coopthingfilter == 1)
+				if (g_thingfilter == 1)
 					mt2.flags |= MTF_FILTER_COOPWPN;
-				else if (g_coopthingfilter == 2)
+				else if (g_thingfilter == 2)
 					mt2.flags &= ~MTF_COOPERATIVE;
 			}
 			else
@@ -732,27 +809,106 @@ void P_AdjustLine (line_t *ld)
 		ld->bbox[BOXTOP] = v1->y;
 	}
 
-	// [RH] Set line id (as appropriate) here
-	if (ld->special == Line_SetIdentification ||
-		ld->special == Teleport_Line ||
-		ld->special == TranslucentLine ||
-		ld->special == Scroll_Texture_Model) {
-		ld->id = ld->args[0];
+	if (map_format.getZDoom())
+	{
+		// [RH] Set line id (as appropriate) here
+		if (ld->special == Line_SetIdentification || ld->special == Teleport_Line ||
+		    ld->special == TranslucentLine || ld->special == Scroll_Texture_Model)
+		{
+			ld->id = ld->args[0];
+		}
+	}
+	else
+	{
+		if (P_IsThingNoFogTeleportLine(ld->special))
+		{
+			if (ld->id == 0)
+			{
+				// Untagged teleporters teleport to tid 1.
+				ld->args[0] = 1;
+			}
+			else
+			{
+				ld->args[2] = ld->id;
+				ld->args[0] = 0;
+			}
+		}
+		else if (ld->special >= OdamexStaticInits &&
+		         ld->special < OdamexStaticInits + NUM_STATIC_INITS)
+		{
+			// An Odamex Static_Init special
+			ld->args[0] = ld->id;
+			ld->args[1] = ld->special - OdamexStaticInits;
+		}
+		else if (ld->special >= 340 && ld->special <= 347)
+		{
+			// [SL] 2012-01-30 - convert to ZDoom Plane_Align special for
+			// sloping sectors
+			// [Blair] Massage this a bit to work with map_format
+			switch (ld->special)
+			{
+			case 340: // Slope the Floor in front of the line
+				ld->args[0] = 1;
+				break;
+			case 341: // Slope the Ceiling in front of the line
+				ld->args[1] = 1;
+				break;
+			case 342: // Slope the Floor+Ceiling in front of the line
+				ld->args[0] = ld->args[1] = 1;
+				break;
+			case 343: // Slope the Floor behind the line
+				ld->args[0] = 2;
+				break;
+			case 344: // Slope the Ceiling behind the line
+				ld->args[1] = 2;
+				break;
+			case 345: // Slope the Floor+Ceiling behind the line
+				ld->args[0] = ld->args[1] = 2;
+				break;
+			case 346: // Slope the Floor behind+Ceiling in front of the line
+				ld->args[0] = 2;
+				ld->args[1] = 1;
+				break;
+			case 347: // Slope the Floor in front+Ceiling behind the line
+				ld->args[0] = 1;
+				ld->args[1] = 2;
+			}
+		}
 	}
 
 	// denis - prevent buffer overrun
 	if(*ld->sidenum == R_NOSIDE)
 		return;
 
-	// killough 4/4/98: support special sidedef interpretation below
-	if (// [RH] Save Static_Init only if it's interested in the textures
-		( (ld->special == Static_Init && ld->args[1] == Init_Color)
-			|| ld->special != Static_Init) ) {
+	if (map_format.getZDoom())
+	{
+		// killough 4/4/98: support special sidedef interpretation below
+		if ( // [RH] Save Static_Init only if it's interested in the textures
+		    ((ld->special == Static_Init && ld->args[1] == Init_Color) ||
+		     ld->special != Static_Init))
+		{
 			sides[*ld->sidenum].special = ld->special;
 			sides[*ld->sidenum].tag = ld->args[0];
 		}
+		else
+		{
+			sides[*ld->sidenum].special = 0;
+		}
+	}
 	else
-		sides[*ld->sidenum].special = 0;
+	{
+		// killough 4/4/98: support special sidedef interpretation below
+		if (ld->special >= OdamexStaticInits + 1 ||
+		    ld->special <= OdamexStaticInits + NUM_STATIC_INITS)
+		{
+			sides[*ld->sidenum].special = ld->special;
+			sides[*ld->sidenum].tag = ld->args[0];
+		}
+		else
+		{
+			sides[*ld->sidenum].special = 0;
+		}
+	}
 }
 
 // killough 4/4/98: delay using sidedefs until they are loaded
@@ -770,35 +926,11 @@ void P_FinishLoadingLineDefs (void)
 		if (ld->sidenum[1] != R_NOSIDE)
 			sides[ld->sidenum[1]].linenum = linenum;
 
-		switch (ld->special)
-		{						// killough 4/11/98: handle special types
-			int j;
-
-			case TranslucentLine:			// killough 4/11/98: translucent 2s textures
-#if 0
-				lump = sides[*ld->sidenum].special;		// translucency from sidedef
-				if (!ld->tag)							// if tag==0,
-					ld->tranlump = lump;				// affect this linedef only
-				else
-					for (j=0;j<numlines;j++)			// if tag!=0,
-						if (lines[j].tag == ld->tag)	// affect all matching linedefs
-							lines[j].tranlump = lump;
-#else
-				// [RH] Second arg controls how opaque it is.
-				if (!ld->args[0])
-					ld->lucency = (byte)ld->args[1];
-				else
-					for (j = 0; j < numlines; j++)
-						if (lines[j].id == ld->args[0])
-							lines[j].lucency = (byte)ld->args[1];
-#endif
-				ld->special = 0;
-				break;
-		}
+		map_format.post_process_linedef_special(ld);
 	}
 }
 
-void P_LoadLineDefs (int lump)
+void P_LoadLineDefs (const int lump)
 {
 	byte *data;
 	int i;
@@ -809,14 +941,52 @@ void P_LoadLineDefs (int lump)
 	memset (lines, 0, numlines*sizeof(line_t));
 	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
 
+	// [Blair] Don't mind me, just hackin'
+	// E2M7 has flags masked in that interfere with MBF21 flags.
+	// Boom fixes this with the comp flag comp_reservedlineflag
+	// We'll fix this for now by just checking for the E2M7 FarmHash
+	const std::string e2m7hash = "43ffa244f5ae923b7df59dbf511c0468";
+
+	std::string levelHash;
+
+	// [Blair] Serialize the hashes before reading.
+	uint64_t reconsthash1 = (uint64_t)(::level.level_fingerprint[0]) |
+	                        (uint64_t)(::level.level_fingerprint[1]) << 8 |
+	                        (uint64_t)(::level.level_fingerprint[2]) << 16 |
+	                        (uint64_t)(::level.level_fingerprint[3]) << 24 |
+	                        (uint64_t)(::level.level_fingerprint[4]) << 32 |
+	                        (uint64_t)(::level.level_fingerprint[5]) << 40 |
+	                        (uint64_t)(::level.level_fingerprint[6]) << 48 |
+	                        (uint64_t)(::level.level_fingerprint[7]) << 56;
+
+	uint64_t reconsthash2 = (uint64_t)(::level.level_fingerprint[8]) |
+	                        (uint64_t)(::level.level_fingerprint[9]) << 8 |
+	                        (uint64_t)(::level.level_fingerprint[10]) << 16 |
+	                        (uint64_t)(::level.level_fingerprint[11]) << 24 |
+	                        (uint64_t)(::level.level_fingerprint[12]) << 32 |
+	                        (uint64_t)(::level.level_fingerprint[13]) << 40 |
+	                        (uint64_t)(::level.level_fingerprint[14]) << 48 |
+	                        (uint64_t)(::level.level_fingerprint[15]) << 56;
+
+	StrFormat(levelHash, "%16llx%16llx", reconsthash1, reconsthash2);
+
+	bool isE2M7 = (levelHash == e2m7hash);
+
 	ld = lines;
 	for (i=0 ; i<numlines ; i++, ld++)
 	{
-		maplinedef_t *mld = ((maplinedef_t *)data) + i;
+		const maplinedef_t *mld = ((maplinedef_t *)data) + i;
 
-		// [RH] Translate old linedef special and flags to be
-		//		compatible with the new format.
-		P_TranslateLineDef (ld, mld);
+		ld->flags = (unsigned short)(short int)mld->flags;
+		ld->special = (short int)mld->special;
+		ld->id = (short int)mld->tag;
+		ld->args[0] = 0;
+		ld->args[1] = 0;
+		ld->args[2] = 0;
+		ld->args[3] = 0;
+		ld->args[4] = 0;
+
+		ld->flags = P_TranslateCompatibleLineFlags(ld->flags, isE2M7);
 
 		unsigned short v = LESHORT(mld->v1);
 
@@ -871,17 +1041,19 @@ void P_LoadLineDefs2 (int lump)
 		ld->flags = LESHORT(mld->flags);
 		ld->special = mld->special;
 
+		ld->flags = P_TranslateZDoomLineFlags(ld->flags);
+
 		unsigned short v = LESHORT(mld->v1);
 
 		if(v >= numvertexes)
-			I_Error("P_LoadLineDefs: invalid vertex %d", v);
+			I_Error("P_LoadLineDefs2: invalid vertex %d", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = LESHORT(mld->v2);
 
 		if(v >= numvertexes)
-			I_Error("P_LoadLineDefs: invalid vertex %d", v);
+			I_Error("P_LoadLineDefs2: invalid vertex %d", v);
 		else
 			ld->v2 = &vertexes[v];
 
@@ -946,7 +1118,7 @@ static argb_t P_GetColorFromTextureName(const char* name)
 // is an ARGB value in hexadecimal, that value is used for the appropriate
 // sector blend.
 // 
-static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
+void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 {
 	sector_t* sec = &sectors[LESHORT(msd->sector)];
 
@@ -1002,7 +1174,7 @@ static void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 // 
 
 
-static void SetTextureNoErr (short *texture, unsigned int *color, char *name)
+void SetTextureNoErr (short *texture, unsigned int *color, char *name)
 {
 	if ((*texture = R_CheckTextureNumForName (name)) == -1) {
 		char name2[9];
@@ -1026,69 +1198,18 @@ void P_LoadSideDefs2 (int lump)
 	{
 		register mapsidedef_t* msd = (mapsidedef_t*)data + i;
 		register side_t* sd = sides + i;
+		register sector_t* sec;
 
 		sd->textureoffset = LESHORT(msd->textureoffset)<<FRACBITS;
 		sd->rowoffset = LESHORT(msd->rowoffset)<<FRACBITS;
 		sd->linenum = -1;
-		sd->sector = &sectors[LESHORT(msd->sector)];
+		sd->sector = sec = &sectors[LESHORT(msd->sector)];
 
 		// killough 4/4/98: allow sidedef texture names to be overloaded
 		// killough 4/11/98: refined to allow colormaps to work as wall
 		// textures if invalid as colormaps but valid as textures.
 
-		switch (sd->special)
-		{
-		  case Transfer_Heights:	// variable colormap via 242 linedef
-			  // [RH] The colormap num we get here isn't really a colormap,
-			  //	  but a packed ARGB word for blending, so we also allow
-			  //	  the blend to be specified directly by the texture names
-			  //	  instead of figuring something out from the colormap.
-			P_SetTransferHeightBlends(sd, msd);
-			break;
-
-		  case Static_Init:
-			// [RH] Set sector color and fog
-			// upper "texture" is light color
-			// lower "texture" is fog color
-			{
-				unsigned int color = 0xffffff, fog = 0x000000;
-
-				SetTextureNoErr (&sd->bottomtexture, &fog, msd->bottomtexture);
-				SetTextureNoErr (&sd->toptexture, &color, msd->toptexture);
-				sd->midtexture = R_TextureNumForName (msd->midtexture);
-
-				if (fog != 0x000000 || color != 0xffffff)
-				{
-					dyncolormap_t *colormap = GetSpecialLights(
-						((argb_t)color).getr(), ((argb_t)color).getg(), ((argb_t)color).getb(),
-						((argb_t)fog).getr(), ((argb_t)fog).getg(), ((argb_t)fog).getb());
-
-					for (int s = 0; s < numsectors; s++)
-					{
-						if (sectors[s].tag == sd->tag)
-							sectors[s].colormap = colormap;
-					}
-				}
-			}
-			break;
-
-/*
-		  case TranslucentLine:	// killough 4/11/98: apply translucency to 2s normal texture
-			sd->midtexture = strncasecmp("TRANMAP", msd->midtexture, 8) ?
-				(sd->special = W_CheckNumForName(msd->midtexture)) < 0 ||
-				W_LumpLength(sd->special) != 65536 ?
-				sd->special=0, R_TextureNumForName(msd->midtexture) :
-					(sd->special++, 0) : (sd->special=0);
-			sd->toptexture = R_TextureNumForName(msd->toptexture);
-			sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
-			break;
-*/
-		  default:			// normal cases
-			sd->midtexture = R_TextureNumForName(msd->midtexture);
-			sd->toptexture = R_TextureNumForName(msd->toptexture);
-			sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
-			break;
-		}
+		map_format.post_process_sidedef_special(sd, msd, sec, i);
 	}
 	Z_Free (data);
 }
@@ -1478,15 +1599,15 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 	unsigned int length = 0;
 
 	typedef std::vector<byte> LevelLumps;
-	static LevelLumps levellumps;
+	LevelLumps levellumps;
 
-	const byte* thingbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
-	const byte* lindefbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
-	const byte* sidedefbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
-	const byte* vertexbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
-	const byte* segsbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
-	const byte* ssectorsbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
-	const byte* sectorsbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
+	const byte* thingbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
+	const byte* lindefbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
+	const byte* sidedefbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
+	const byte* vertexbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
+	const byte* segsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
+	const byte* ssectorsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
+	const byte* sectorsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
 
 	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_THINGS), *thingbytes);
 	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_LINEDEFS), *lindefbytes);
@@ -1500,13 +1621,6 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 	         W_LumpLength(maplumpnum+ML_SIDEDEFS) + W_LumpLength(maplumpnum+ML_VERTEXES) +
 			 W_LumpLength(maplumpnum + ML_SEGS) + W_LumpLength(maplumpnum + ML_SSECTORS) +
 			 W_LumpLength(maplumpnum + ML_SECTORS);
-
-	if (HasBehavior)
-	{
-		const byte* behaviorbytes = static_cast<byte*>(W_CacheLumpNum(maplumpnum + ML_BEHAVIOR, PU_STATIC));
-		levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum + ML_BEHAVIOR), *behaviorbytes);
-		length += W_LumpLength(maplumpnum+ML_BEHAVIOR);
-	}
 
 	fhfprint_s fingerprint = W_FarmHash128(levellumps.data(), length);
 
@@ -1774,6 +1888,7 @@ void P_SetupLevel (const char *lumpname, int position)
 
 	DThinker::DestroyAllThinkers ();
 	Z_FreeTags (PU_LEVEL, PU_LEVELMAX);
+	g_ValidLevel = false;		// [AM] False until the level is loaded.
 	NormalLight.next = NULL;	// [RH] Z_FreeTags frees all the custom colormaps
 
 	// [AM] Every new level starts with fresh netids.
@@ -1798,9 +1913,18 @@ void P_SetupLevel (const char *lumpname, int position)
 		delete level.behavior;
 		level.behavior = NULL;
 	}
+
+	// [Blair] Create map fingerprint
+	P_GenerateUniqueMapFingerPrint(lumpnum);
+
 	if (HasBehavior)
 	{
 		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
+		map_format.P_ApplyZDoomMapFormat();
+	}
+	else
+	{
+		map_format.P_ApplyDefaultMapFormat();
 	}
 
     level.time = 0;
@@ -1815,9 +1939,6 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_LoadSideDefs2 (lumpnum+ML_SIDEDEFS);
 	P_FinishLoadingLineDefs ();
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
-
-	// [Blair] Create map fingerprint
-	P_GenerateUniqueMapFingerPrint(lumpnum);
 
 	if (!P_LoadXNOD(lumpnum+ML_NODES))
 	{
@@ -1855,7 +1976,7 @@ void P_SetupLevel (const char *lumpname, int position)
 		P_LoadThings2 (lumpnum+ML_THINGS, position);	// [RH] Load Hexen-style things
 
 	if (!HasBehavior)
-		P_TranslateTeleportThings ();	// [RH] Assign teleport destination TIDs
+		P_TranslateTeleportThings(); // [RH] Assign teleport destination TIDs
 
     PO_Init ();
 
@@ -1881,7 +2002,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_SpawnBrainTargets();
 
 	// set up world state
-	P_SpawnSpecials ();
+	P_SetupWorldState();
 
 	// build subsector connect matrix
 	//	UNUSED P_ConnectSubsectors ();
@@ -1891,6 +2012,9 @@ void P_SetupLevel (const char *lumpname, int position)
 	if (precache)
 		R_PrecacheLevel ();
 #endif
+
+	// [AM] Level is now safely loaded.
+	g_ValidLevel = true;
 }
 
 //
@@ -1902,8 +2026,8 @@ void P_Init (void)
 	P_InitPicAnims ();
 	R_InitSprites (sprnames);
 	InitTeamInfo();
+	P_InitHorde();
 }
-
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)
 {
@@ -2020,7 +2144,10 @@ static void P_SetupSlopes()
 	{
 		line_t *line = &lines[i];
 
-		if (line->special == Plane_Align)
+		short spec = line->special;
+
+		if ((map_format.getZDoom() && line->special == Plane_Align) ||
+		    (line->special >= 340 && line->special <= 347))
 		{
 			line->special = 0;
 			line->id = line->args[2];

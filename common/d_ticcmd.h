@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __D_TICCMD_H__
-#define __D_TICCMD_H__
+#pragma once
 
 #include "farchive.h"
 
@@ -206,7 +205,3 @@ inline FArchive &operator>> (FArchive &arc, ticcmd_t &cmd)
 
 	return arc;
 }
-
-#endif	// __D_TICCMD_H__
-
-

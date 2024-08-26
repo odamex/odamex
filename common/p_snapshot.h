@@ -23,8 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __P_SNAPSHOT_H__
-#define __P_SNAPSHOT_H__
+#pragma once
 
 #include "m_fixed.h"
 #include "dsectoreffect.h"
@@ -749,5 +748,3 @@ PlayerSnapshot P_ExtrapolatePlayerPosition(const PlayerSnapshot &from, float amo
 
 bool P_CeilingSnapshotDone(SectorSnapshot *snap);
 bool P_FloorSnapshotDone(SectorSnapshot *snap);
-
-#endif	// __P_SNAPSHOT_H__

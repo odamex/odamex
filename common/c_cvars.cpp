@@ -612,12 +612,16 @@ static std::string C_GetLatchedValueString(const cvar_t* var)
 		return C_GetValueString(var);
 
 	if (var->flags() & CVAR_NOENABLEDISABLE)
-		return '"' + var->latched() + '"';
+	{
+		std::string str = "";
+		StrFormat(str, "\"%s\"", var->latched());
+		return str;
+	}
 
 	if (atof(var->latched()) == 0.0f)
 		return "disabled";
 	else
-		return "enabled";	
+		return "enabled";
 }
 
 BEGIN_COMMAND (set)
@@ -779,14 +783,25 @@ BEGIN_COMMAND (help)
 }
 END_COMMAND (help)
 
-// [AM] Crash Odamex on purpose - with no survivors.  Used for testing crash handlers.
 BEGIN_COMMAND(errorout)
 {
-	I_FatalError("errorout was run from the console");
+	I_Error("errorout was run from the console");
 }
 END_COMMAND(errorout)
 
-// [AM] Crash Odamex on purpose - with no survivors.  Used for testing crash handlers.
+BEGIN_COMMAND(fatalout)
+{
+	I_FatalError("fatalout was run from the console");
+}
+END_COMMAND(fatalout)
+
+BEGIN_COMMAND(exceptout)
+{
+	std::string crashma = "What's crashma?";
+	Printf("%crashma game, lmao.\n", crashma.at(std::string::npos));
+}
+END_COMMAND(exceptout)
+
 #if defined _WIN32
 
 BEGIN_COMMAND(crashout)

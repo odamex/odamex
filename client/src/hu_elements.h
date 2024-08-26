@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __HU_ELEMENTS_H__
-#define __HU_ELEMENTS_H__
+#pragma once
 
 
 namespace hud {
@@ -32,6 +31,7 @@ std::string IntermissionTimer();
 std::string Timer();
 std::string PersonalSpread();
 std::string PersonalScore();
+std::string PersonalMatchDuelPlacement();
 std::string NetdemoElapsed(void);
 std::string NetdemoMaps(void);
 std::string ClientsSplit(void);
@@ -158,5 +158,3 @@ void EATargets(int x, int y, const float scale,
                const short padding, const short limit,
                const bool force_opaque = false);
 }
-
-#endif

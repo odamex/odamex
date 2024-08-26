@@ -227,7 +227,7 @@ static DoomEntity DoomDecorationNames[60] = {{"BurningBarrel", MT_MISC77},
                                              {"Column", MT_MISC31},
                                              {"ExplosiveBarrel", MT_BARREL}};
 
-extern ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammo, int num);
+extern ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammo, float num);
 extern ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
 extern ItemEquipVal P_GiveCard(player_t *player, card_t card);
 extern ItemEquipVal P_GivePower(player_t *player, int  power);
@@ -1825,10 +1825,9 @@ void DLevelScript::SetLineSpecial(int lineid, int special, int arg1, int arg2, i
 void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activator,
                                        int arg0, int arg1, int arg2, int arg3, int arg4)
 {
-	LineSpecials[special](line, activator, arg0, arg1, arg2, arg3, arg4);
-
 	if (serverside)
 	{
+		LineSpecials[special](line, activator, arg0, arg1, arg2, arg3, arg4);
 		SERVER_ONLY(SV_SendExecuteLineSpecial(special, line, activator, arg0, arg1, arg2,
 		                                      arg3, arg4));
 	}

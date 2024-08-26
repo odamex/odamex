@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __HU_STUFF_H__
-#define __HU_STUFF_H__
+#pragma once
 
 #include "d_event.h"
 
@@ -64,6 +63,3 @@ void OdamexEffect (int xa, int ya, int xb, int yb);
 class player_s;
 void HU_DrawScores (player_s *me);
 void HU_DisplayTimer (int x, int y, bool scale = true);
-#endif
-
-

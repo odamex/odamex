@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __M_STRINDEX__
-#define __M_STRINDEX__
-
+#pragma once
 
 #include "hashtable.h"
 
@@ -106,5 +104,3 @@ class OStringIndexer
 		m_inverse.at(idx) = str;
 	}
 };
-
-#endif

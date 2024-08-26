@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __SV_VOTE__
-#define __SV_VOTE__
+#pragma once
 
 #include "c_vote.h"
 #include "d_player.h"
@@ -96,5 +95,3 @@ void SV_Callvote(player_t &player);
 void SV_VoteCmd(player_t& player, const std::vector<std::string>& args);
 void Vote_Disconnect(player_t &player);
 void Vote_Runtic();
-
-#endif

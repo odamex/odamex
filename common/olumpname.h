@@ -20,13 +20,11 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __OLUMPNAME_H__
-#define __OLUMPNAME_H__
-
+#pragma once
 
 class OLumpName
 {
-	char _data[9];
+	char m_data[9];
 
 	void MakeDataPresentable();
 
@@ -71,5 +69,3 @@ class OLumpName
 	friend bool operator!=(const OLumpName& lhs, const char* rhs);
 	friend bool operator!=(const OLumpName& lhs, const std::string& rhs);
 };
-
-#endif // __OLUMPNAME_H__

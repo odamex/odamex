@@ -1,8 +1,8 @@
 ---
 name: Feature Request
-about: Suggest an idea for Odamex
+about: Suggest a feature or idea for Odamex
 title: "[FEATURE] Describe Feature Here"
-labels: feature request
+labels: Type-Feature
 assignees: ''
 
 ---

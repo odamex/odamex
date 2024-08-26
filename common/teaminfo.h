@@ -1,5 +1,4 @@
-#ifndef __TEAMINFO_H__
-#define __TEAMINFO_H__
+#pragma once
 
 #include "doomdata.h"
 #include "info.h"
@@ -181,5 +180,3 @@ void TeamInfo_ResetScores(bool fullreset = true);
 TeamInfo* GetTeamInfo(team_t team);
 std::string V_GetTeamColor(TeamInfo* team);
 std::string V_GetTeamColor(team_t ateam);
-
-#endif

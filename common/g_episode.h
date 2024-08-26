@@ -21,9 +21,7 @@
 // 
 //-----------------------------------------------------------------------------
 
-#ifndef __G_EPISODE__
-#define __G_EPISODE__
-
+#pragma once
 
 #define MAX_EPISODES 8
 
@@ -33,11 +31,11 @@ struct EpisodeInfo
 	char key;
 	bool fulltext;
 	bool noskillmenu;
+
+	EpisodeInfo() : name(""), key('\0'), fulltext(false), noskillmenu(false) {}
 };
 
-extern char EpisodeMaps[MAX_EPISODES][8];
+extern OLumpName EpisodeMaps[MAX_EPISODES];
 extern EpisodeInfo EpisodeInfos[MAX_EPISODES];
 extern byte episodenum;
 extern bool episodes_modified; // Used by UMAPINFO only
-
-#endif

@@ -2,7 +2,7 @@
 name: Bug Report
 about: Create a bug report to help us improve Odamex
 title: "[BUG] Describe Bug Here"
-labels: bug
+labels: Type-Bug
 assignees: ''
 
 ---

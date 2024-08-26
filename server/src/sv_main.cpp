@@ -91,7 +91,6 @@ baseapp_t baseapp = server;
 // really only used clientside
 bool        simulated_connection = false;
 
-extern bool HasBehavior;
 extern int mapchange;
 
 bool step_mode = false;
@@ -125,9 +124,10 @@ void SexMessage (const char *from, char *to, int gender,
 	const char *victim, const char *killer);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_s* player);
-bool P_LineSpecialMovesSector(byte special);
+bool P_LineSpecialMovesSector(short special);
 
 void SV_UpdateShareKeys(player_t& player);
+std::string SV_BuildKillsDeathsStatusString(player_t& player);
 std::string V_GetTeamColor(UserInfo userinfo);
 
 CVAR_FUNC_IMPL (sv_maxclients)
@@ -184,7 +184,10 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 					             SVC_PlayerMembers(*it, SVC_PM_SPECTATOR));
 				}
 
-				SV_BroadcastPrintf ("%s became a spectator.\n", it->userinfo.netname.c_str());
+				std::string status = SV_BuildKillsDeathsStatusString(*it);
+				SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator. (%s)\n",
+					it->userinfo.netname.c_str(), status.c_str());
+
 				MSG_WriteSVC(
 				    &it->client.reliablebuf,
 				    SVC_Print(PRINT_CHAT,
@@ -666,7 +669,7 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id >= numsfx || sfx_id < 0)
+	if (sfx_id >= S_sfx.size() || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -695,7 +698,7 @@ void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id >= numsfx || sfx_id < 0)
+	if (sfx_id >= S_sfx.size() || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -729,7 +732,7 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id >= numsfx || sfx_id < 0)
+	if (sfx_id >= S_sfx.size() || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -759,7 +762,7 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 
 	sfx_id = S_FindSound( name );
 
-	if (sfx_id >= numsfx || sfx_id < 0)
+	if (sfx_id >= S_sfx.size() || sfx_id < 0)
 	{
 		Printf("SV_StartSound: range error. Sfx_id = %d\n", sfx_id );
 		return;
@@ -784,7 +787,7 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 
 	sfx_id = S_FindSound (name);
 
-	if (sfx_id >= numsfx || sfx_id < 0)
+	if (sfx_id >= S_sfx.size() || sfx_id < 0)
 	{
 		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
 		return;
@@ -1167,6 +1170,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		return true;
 	}
 
+
 	return false;
 }
 
@@ -1507,6 +1511,8 @@ void SV_ClientFullUpdate(player_t &pl)
 
 	SV_ThinkerUpdate(cl);
 
+	SV_SendPlayerInfo(pl);
+
 	MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::FullUpdateDone());
 
 	SV_SendPacket(pl);
@@ -1766,8 +1772,13 @@ void SV_ConnectClient()
 		Printf("%s disconnected (server full).\n", NET_AdrToString (net_from));
 
 		static buf_t smallbuf(1024);
-		MSG_WriteLong(&smallbuf, 0);
-		MSG_WriteSVC(&smallbuf, SVC_Disconnect("Server is full\n"));
+		if (smallbuf.size() == 0)
+		{
+			MSG_WriteLong(&smallbuf, 0); // First packet.
+			MSG_WriteByte(&smallbuf, 0); // No flags.
+			MSG_WriteSVC(&smallbuf, SVC_Disconnect("Server is full\n"));
+		}
+
 		NET_SendPacket(smallbuf, net_from);
 		return;
 	}
@@ -1924,6 +1935,50 @@ void SV_ConnectClient2(player_t& player)
 	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
 }
 
+
+//
+// SV_BuildKillsDeathsStatusString
+//
+std::string SV_BuildKillsDeathsStatusString(player_t& player)
+{
+	std::string status;
+	char temp_str[100];
+
+	if (player.playerstate == PST_DOWNLOAD)
+		status = "downloading";
+	else if (player.playerstate == PST_DISCONNECT && player.spectator)
+		status = "SPECTATOR";
+	else
+	{
+		if (G_IsTeamGame())
+		{
+			sprintf(temp_str, "%s TEAM, ", GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str());
+			status += temp_str;
+		}
+
+		// Points (CTF).
+		if (sv_gametype == GM_CTF)
+		{
+			sprintf(temp_str, "%d POINTS, ", player.points);
+			status += temp_str;
+		}
+
+		// Frags (DM/TDM/CTF) or Kills (Coop).
+		if (G_IsCoopGame())
+			sprintf(temp_str, "%d KILLS, ", player.killcount);
+		else
+			sprintf(temp_str, "%d FRAGS, ", player.fragcount);
+
+		status += temp_str;
+
+		// Deaths.
+		sprintf(temp_str, "%d DEATHS", player.deathcount);
+		status += temp_str;
+	}
+	return status;
+}
+
+
 //
 // SV_DisconnectClient
 //
@@ -1946,43 +2001,12 @@ void SV_DisconnectClient(player_t &who)
 	Maplist_Disconnect(who);
 	Vote_Disconnect(who);
 
+	who.playerstate = PST_DISCONNECT;
+
 	if (who.client.displaydisconnect)
 	{
 		// print some final stats for the disconnected player
-		std::string status;
-		if (who.playerstate == PST_DOWNLOAD)
-			status = "downloading";
-		else if (who.spectator)
-			status = "SPECTATOR";
-		else
-		{
-			if (G_IsTeamGame())
-			{
-				sprintf(str, "%s TEAM, ", GetTeamInfo(who.userinfo.team)->ColorStringUpper.c_str());
-				status += str;
-			}
-
-			// Points (CTF).
-			if (sv_gametype == GM_CTF)
-			{
-				sprintf(str, "%d POINTS, ", who.points);
-				status += str;
-			}
-
-			// Frags (DM/TDM/CTF) or Kills (Coop).
-			if (G_IsCoopGame())
-				sprintf(str, "%d KILLS, ", who.killcount);
-			else
-				sprintf(str, "%d FRAGS, ", who.fragcount);
-
-			status += str;
-
-			// Deaths.
-			sprintf(str, "%d DEATHS", who.deathcount);
-			status += str;
-		}
-
-		// Name and reason for disconnect.
+		std::string status = SV_BuildKillsDeathsStatusString(who);
 		if (gametic - who.client.last_received == CLIENT_TIMEOUT*35)
 			SV_BroadcastPrintf("%s timed out. (%s)\n",
 							who.userinfo.netname.c_str(), status.c_str());
@@ -1991,7 +2015,6 @@ void SV_DisconnectClient(player_t &who)
 							who.userinfo.netname.c_str(), status.c_str());
 	}
 
-	who.playerstate = PST_DISCONNECT;
 	SV_UpdatePlayerQueuePositions(G_CanJoinGame, &who);
 }
 
@@ -2775,6 +2798,10 @@ void SV_UpdateMissiles(player_t &pl)
 // Update the given actors data immediately.
 void SV_UpdateMobj(AActor* mo)
 {
+	// Don't use this function to update players.
+	if (mo->player)
+		return;
+
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		if (!(it->ingame()))
@@ -2843,7 +2870,7 @@ void SV_UpdateGametype(player_t& pl)
 {
 	if (G_IsHordeMode())
 	{
-		static hordeInfo_t lastInfo = {HS_STARTING, -1, -1, -1, 0, -1, -1, -1, -1, -1};
+		static hordeInfo_t lastInfo = {HS_STARTING, -1, -1, -1, 0, 0, -1, -1, -1, -1, -1};
 		static int ticsent;
 
 		// If the hordeinfo has changed since last tic, save and send it.
@@ -2870,6 +2897,9 @@ void SV_UpdateGametype(player_t& pl)
 //
 void SV_ActorTarget(AActor *actor)
 {
+	if (actor->player)
+		return;
+
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (!(it->ingame()))
@@ -3558,7 +3588,11 @@ void SV_SpecPlayer(player_t &player, bool silent)
 	P_SetSpectatorFlags(player);
 
 	if (!silent)
-		SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname.c_str());
+	{
+		std::string status = SV_BuildKillsDeathsStatusString(player);
+		SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator. (%s)\n",
+			player.userinfo.netname.c_str(), status.c_str());
+	}
 
 	P_PlayerLeavesGame(&player);
 	SV_UpdatePlayerQueuePositions(G_CanJoinGame, &player);
@@ -4501,7 +4535,8 @@ void SV_SendDamageMobj(AActor *target, int pain)
 		client_t *cl = &(it->client);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_DamageMobj(target, pain));
-		MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*target));
+		if (!target->player)
+			MSG_WriteSVC(&cl->netbuf, SVC_UpdateMobj(*target));
 	}
 }
 
@@ -4584,8 +4619,6 @@ void SV_PreservePlayer(player_t &player)
 	}
 
 	G_DoReborn(player);
-
-	SV_SendPlayerInfo(player);
 }
 
 void SV_AddPlayerToQueue(player_t* player)

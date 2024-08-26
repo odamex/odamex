@@ -75,6 +75,42 @@ static const identData_t identdata[] = {
         DOOM2_PREFIX " v1.9",               // groupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
         100,                                // weight
+    },    
+    {
+        DOOM2_PREFIX " (DOOM + DOOM II)",   // idName
+        "DOOM2.WAD",                        // filename
+        "09B8A6AE",                         // crc32Sum
+        "9AA3CBF65B961D0BDAC98EC403B832E1", // md5Sum
+        DOOM2_PREFIX " v1.9",               // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        140,                                // weight
+    },
+    {
+        DOOM2_PREFIX " Classic Unity v1.3", // idName
+        "DOOM2.WAD",                        // filename
+        "F1D1AD55",                         // crc32Sum
+        "8AB6D0527A29EFDC1EF200E5687B5CAE", // md5Sum
+        DOOM2_PREFIX " v1.9",               // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        145,                                // weight
+    },
+    {
+        DOOM2_PREFIX " Classic Unity v1.1", // idName
+        "DOOM2.WAD",                        // filename
+        "22C291C8",                         // crc32Sum
+        "7895D10C281305C45A7E5F01B3F7B1D8", // md5Sum
+        DOOM2_PREFIX " v1.9",               // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        145,                                // weight
+    },
+    {
+        DOOM2_PREFIX " Classic Unity v1.0", // idName
+        "DOOM2.WAD",                        // filename
+        "897339A7",                         // crc32Sum
+        "E7395BD5E838D58627BD028871EFBC14", // md5Sum
+        DOOM2_PREFIX " v1.9",               // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        145,                                // weight
     },
     {
         DOOM2_PREFIX " BFG Edition",        // idName
@@ -153,6 +189,15 @@ static const identData_t identdata[] = {
         300,                                // weight
     },
     {
+        PLUTONIA_PREFIX " (DOOM + DOOM II)",// mIdName
+        "PLUTONIA.WAD",                     // mFilename
+        "650B998D",                         // mCRC32Sum
+        "24037397056E919961005E08611623F4", // mMd5Sum
+        PLUTONIA_PREFIX " v1.9",            // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        320,                                // weight
+    },
+    {
         PLUTONIA_PREFIX " v1.9 Anthology",  // mIdName
         "PLUTONIA.WAD",                     // mFilename
         "15CD1448",                         // mCRC32Sum
@@ -172,7 +217,16 @@ static const identData_t identdata[] = {
         "4E158D9953C79CCF97BD0663244CC6B6", // mMd5Sum
         TNT_PREFIX " v1.9",                 // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
-        300,                                // weight
+        350,                                // weight
+    },
+    {
+        TNT_PREFIX " (DOOM + DOOM II)",     // mIdName
+        "TNT.WAD",                          // mFilename
+        "15F18DDB",                         // mCRC32Sum
+        "8974E3117ED4A1839C752D5E11AB1B7B", // mMd5Sum
+        TNT_PREFIX " v1.9",                 // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        370,                                // weight
     },
     {
         TNT_PREFIX " v1.9 Anthology",       // mIdName
@@ -181,7 +235,7 @@ static const identData_t identdata[] = {
         "1D39E405BF6EE3DF69A8D2646C8D5C49", // mMd5Sum
         TNT_PREFIX " v1.9",                 // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
-        325,                                // weight
+        375,                                // weight
     },
 
     // ------------------------------------------------------------------------
@@ -195,6 +249,42 @@ static const identData_t identdata[] = {
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
         200,                                // weight
+    },
+    {
+        UDOOM_PREFIX " (DOOM + DOOM II)",   // mIdName
+        "DOOM.WAD",                         // mFilename
+        "CFF03D9F",                         // mCRC32Sum
+        "4461D4511386518E784C647E3128E7BC", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        240,                                // weight
+    },
+    {
+        UDOOM_PREFIX " Classic Unity v1.3", // mIdName
+        "DOOM.WAD",                         // mFilename
+        "75C3B7BF",                         // mCRC32Sum
+        "8517C4E8F0EEF90B82852667D345EB86", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        245,                                // weight
+    },
+    {
+        UDOOM_PREFIX " Classic Unity v1.1", // mIdName
+        "DOOM.WAD",                         // mFilename
+        "346A4BFD",                         // mCRC32Sum
+        "21B200688D0FA7C1B6F63703D2BDD455", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        245,                                // weight
+    },
+    {
+        UDOOM_PREFIX " Classic Unity v1.0", // mIdName
+        "DOOM.WAD",                         // mFilename
+        "46359DFB",                         // mCRC32Sum
+        "232A79F7121B22D7401905EE0EE1E487", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        245,                                // weight
     },
     {
         UDOOM_PREFIX " BFG Edition",        // mIdName
@@ -358,13 +448,22 @@ static const identData_t identdata[] = {
     // FREEDOOM1.WAD
     // ------------------------------------------------------------------------
     {
+        FREEDOOM1_PREFIX " v0.13.0",        // mIdName
+        "FREEDOOM1.WAD",                    // mFilename
+        "5B55E156",                         // mCRC32Sum
+        "B93BE13D05148DD01614BC205A03648E", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_IWAD,                         // flags
+        525,                                // weight
+    },
+    {
         FREEDOOM1_PREFIX " v0.12.1",        // mIdName
         "FREEDOOM1.WAD",                    // mFilename
         "DE6DDB27",                         // mCRC32Sum
         "B36AA44A23045E503C19AF4B4C438A78", // mMd5Sum
         UDOOM_PREFIX " v1.9",               // mGroupName
-        IDENT_IWAD,                         // flags
-        525,                                // weight
+        IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1525,                               // weight
     },
     {
         FREEDOOM1_PREFIX " v0.12.0",        // mIdName
@@ -452,13 +551,22 @@ static const identData_t identdata[] = {
     // FREEDOOM2.WAD
     // ------------------------------------------------------------------------
     {
+        FREEDOOM2_PREFIX " v0.13.0",        // mIdName
+        "FREEDOOM2.WAD",                    // mFilename
+        "68A76EB5",                         // mCRC32Sum
+        "CD666466759B5E5F63AF93C5F0FFD0A1", // mMd5Sum
+        DOOM2_PREFIX " v1.9",               // mGroupName
+        IDENT_IWAD,                         // flags
+        500,                                // weight
+    },
+    {
         FREEDOOM2_PREFIX " v0.12.1",        // mIdName
         "FREEDOOM2.WAD",                    // mFilename
         "212E1CF9",                         // mCRC32Sum
         "CA9A4159A7833544A89144C7F5053412", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
-        IDENT_IWAD,                         // flags
-        500,                                // weight
+        IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1500,                               // weight
     },
     {
         FREEDOOM2_PREFIX " v0.12.0",        // mIdName
@@ -546,13 +654,22 @@ static const identData_t identdata[] = {
     // FREEDM.WAD
     // ------------------------------------------------------------------------
     {
+        FREEDM_PREFIX " v0.13.0",           // mIdName
+        "FREEDM.WAD",                       // mFilename
+        "E5636B13",                         // mCRC32Sum
+        "908DFD77A14CC490C4CEA94B62D13449", // mMd5Sum
+        DOOM2_PREFIX " v1.9",               // mGroupName
+        IDENT_IWAD,                         // flags
+        550,                                // weight
+    },
+    {
         FREEDM_PREFIX " v0.12.1",           // mIdName
         "FREEDM.WAD",                       // mFilename
         "BD680D11",                         // mCRC32Sum
         "D40C932A9183DED919AFA89F4A729668", // mMd5Sum
         DOOM2_PREFIX " v1.9",               // mGroupName
-        IDENT_IWAD,                         // flags
-        550,                                // weight
+        IDENT_IWAD | IDENT_DEPRECATED,      // flags
+        1550,                               // weight
     },
     {
         FREEDM_PREFIX " v0.12.0",           // mIdName
@@ -660,7 +777,21 @@ static const identData_t identdata[] = {
         DOOM2_PREFIX " v1.9",               // mGroupName
         IDENT_IWAD,                         // flags
         600,                                // weight
-    }};
+    },
+
+    // ------------------------------------------------------------------------
+    // REKKRSA.WAD
+    // ------------------------------------------------------------------------
+    {
+        "REKKR v1.16a",                     // mIdName
+        "REKKRSA.WAD",                      // mFilename
+        "0D294CA5",                         // mCRC32Sum
+        "B6F4BB3A80F096B6045CFAEB57D4CF29", // mMd5Sum
+        "REKKR",                            // mGroupName
+        IDENT_IWAD,                         // flags
+        600,                                // weight
+    },
+};
 
 
 // ============================================================================
@@ -906,7 +1037,7 @@ public:
 		if (lumpsfound[10])
 		{
 			if (lumpsfound[0])
-				return OStringToUpper(FREEDOOM1_PREFIX " Unknown");
+				return OStringToUpper(OString(FREEDOOM1_PREFIX " Unknown"));
 			else
 				return "FREEDOOM UNKNOWN";
 		}
@@ -915,13 +1046,13 @@ public:
 		if (lumpsfound[3])
 		{
 			if (lumpsfound[6])
-				return OStringToUpper(TNT_PREFIX " Unknown");
+				return OStringToUpper(OString(TNT_PREFIX " Unknown"));
 			if (lumpsfound[7])
-				return OStringToUpper(PLUTONIA_PREFIX " Unknown");
+				return OStringToUpper(OString(PLUTONIA_PREFIX " Unknown"));
 			if (lumpsfound[9])
-				return OStringToUpper(DOOM2_PREFIX " BFG Edition Unknown");
+				return OStringToUpper(OString(DOOM2_PREFIX " BFG Edition Unknown"));
 			else
-				return OStringToUpper(DOOM2_PREFIX " Unknown");
+				return OStringToUpper(OString(DOOM2_PREFIX " Unknown"));
 		}
 
 		// Check for Registered Doom / Ultimate Doom / Chex Quest / Shareware Doom
@@ -1031,6 +1162,14 @@ const fileIdentifier_t* W_GameInfo(const OCRC32Sum& crc32)
 	return ::identtab.lookupByCRC32Sum(crc32);
 }
 
+/**
+ * @brief Return the gameinfo associated with the given MD5.
+ */
+const fileIdentifier_t* W_GameInfo(const OMD5Hash& md5)
+{
+	return ::identtab.lookupByMd5Sum(md5);
+}
+
 //
 // W_ConfigureGameInfo
 //
@@ -1052,7 +1191,13 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 
 	const OString idname = identtab.identify(iwad);
 
-	if (idname.find("HACX") == 0)
+	if (idname.find("REKKR") == 0)
+    {
+		gamemode = retail;
+		gameinfo = RetailGameInfo;
+		gamemission = doom;
+	}
+	else if (idname.find("HACX") == 0)
 	{
 		gameinfo = CommercialGameInfo;
 		gamemode = commercial;

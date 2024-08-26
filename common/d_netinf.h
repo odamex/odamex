@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __D_NETINFO_H__
-#define __D_NETINFO_H__
+#pragma once
 
 #include "teaminfo.h"
 
@@ -36,6 +34,23 @@ enum gender_t
 	GENDER_NEUTER,
 	
 	NUMGENDER
+};
+
+enum colorpreset_t	// Acts 19 quiz the order must match m_menu.cpp.
+{
+	COLOR_CUSTOM,
+	COLOR_BLUE,
+	COLOR_INDIGO,
+	COLOR_GREEN,
+	COLOR_BROWN,
+	COLOR_RED,
+	COLOR_GOLD,
+	COLOR_JUNGLEGREEN,
+	COLOR_PURPLE,
+	COLOR_WHITE,
+	COLOR_BLACK,
+
+	NUMCOLOR
 };
 
 enum weaponswitch_t
@@ -83,5 +98,3 @@ void D_DoServerInfoChange (byte **stream);
 
 void D_WriteUserInfoStrings (int player, byte **stream, bool compact=false);
 void D_ReadUserInfoStrings (int player, byte **stream, bool update);
-
-#endif //__D_NETINFO_H__

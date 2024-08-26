@@ -593,3 +593,5 @@ vox/red/flag/drop		dvrfd
 vox/red/flag/manualreturn	dvrfm
 vox/red/flag/return		dvrfr
 
+$random menu/quit1 { player/male/death1 demon/pain grunt/pain misc/gibbed misc/teleport grunt/sight1 grunt/sight3 demon/melee }
+$random menu/quit2 { vile/active misc/p_pkup brain/cube misc/gibbed skeleton/swing knight/death baby/active demon/melee  }

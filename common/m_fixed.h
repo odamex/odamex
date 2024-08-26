@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __M_FIXED_H__
-#define __M_FIXED_H__
+#pragma once
 
 #include <stdlib.h>
 
@@ -284,7 +282,3 @@ static inline int32_t FixedDiv31(int32_t a, int32_t b)
 
 static inline int32_t FixedDiv32(int32_t a, int32_t b)
 {	return (int32_t)(((int64_t)a << 32) / b);	}
-
-#endif	// __M_FIXED_H__
-
-

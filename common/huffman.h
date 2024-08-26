@@ -30,9 +30,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __C_HUFFMAN_H__
-#define __C_HUFFMAN_H__
+#pragma once
 
 #include <iostream>
 
@@ -169,5 +167,3 @@ public:
 		awaiting_ackack(other.awaiting_ackack)
 	{}
 };
-
-#endif

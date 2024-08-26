@@ -21,14 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __D_NET__
-#define __D_NET__
-
+#pragma once
 
 #define BACKUPTICS		12	// number of tics to remember
 
 // Create any new ticcmds and broadcast to other players.
-void NetUpdate (void);
-
-#endif
+void NetUpdate();

@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __V_PALETTE_H__
-#define __V_PALETTE_H__
+#pragma once
 
 #include "r_defs.h"
 
@@ -125,7 +124,3 @@ fahsv_t V_RGBtoHSV(const fargb_t &color);
 fargb_t V_HSVtoRGB(const fahsv_t &color);
 
 dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb);
-
-#endif //__V_PALETTE_H__
-
-

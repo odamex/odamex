@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_MENU_H__
-#define __M_MENU_H__
+#pragma once
 
 #include "d_event.h"
 
@@ -86,6 +85,7 @@ typedef enum {
 	whitetext,
 	redtext,
 	yellowtext,
+	orangetext,
 	more,
 	slider,
 	redslider,
@@ -214,7 +214,5 @@ size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length);
 #define MAX_EPISODES	8
 
 extern oldmenuitem_t EpisodeMenu[MAX_EPISODES];
-extern char EpisodeMaps[MAX_EPISODES][8];
+extern OLumpName EpisodeMaps[MAX_EPISODES];
 extern oldmenu_t EpiDef;
-
-#endif

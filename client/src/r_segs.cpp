@@ -37,6 +37,8 @@
 
 #include "m_vectors.h"
 
+#include "p_mapformat.h"
+
 #include "p_lnspec.h"
 
 // a pool of bytes allocated for sprite clipping arrays
@@ -998,7 +1000,16 @@ void R_StoreWallRange(int start, int stop)
 
 	// [SL] 2012-01-24 - Horizon line extends to infinity by scaling the wall
 	// height to 0
-	if (curline->linedef->special == Line_Horizon)
+	
+	// [Blair] Ensure Line_Horizon still works in Boom format.
+	short spe;
+
+	if (map_format.getZDoom())
+		spe = Line_Horizon;
+	else
+		spe = 337;
+
+	if (curline->linedef->special == spe)
 	{
 		rw_scale = ds_p->scale1 = ds_p->scale2 = rw_scalestep = ds_p->light = rw_light = 0;
 		midtexture = toptexture = bottomtexture = maskedtexture = 0;

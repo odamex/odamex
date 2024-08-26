@@ -26,6 +26,8 @@
 
 #include "odamex.h"
 
+#include <ctime>
+
 #include <limits.h>
 
 #include "cmdlib.h"
@@ -41,8 +43,7 @@
 #include "p_snapshot.h"
 #include "g_gametype.h"
 
-// Index of the special effects (INVUL inverse) map.
-#define INVERSECOLORMAP 		32
+#include "p_mapformat.h"
 
 //
 // Movement.
@@ -60,6 +61,7 @@ EXTERN_CVAR (sv_forcerespawn)
 EXTERN_CVAR (sv_forcerespawntime)
 EXTERN_CVAR (sv_spawndelaytime)
 EXTERN_CVAR (g_lives)
+EXTERN_CVAR (r_softinvulneffect)
 
 extern bool predicting, step_mode;
 
@@ -195,7 +197,10 @@ PlayerResults PlayerQuery::execute()
 			continue;
 
 		results.total += 1;
-		results.teamTotal[it->userinfo.team] += 1;
+		if (it->userinfo.team != TEAM_NONE)
+		{
+			results.teamTotal[it->userinfo.team] += 1;
+		}
 
 		if (m_ready && !it->ready)
 			continue;
@@ -930,8 +935,11 @@ void P_PlayerThink (player_t *player)
 	P_MovePlayer (player);
 	P_CalcHeight (player);
 
-	if (player->mo->subsector && (player->mo->subsector->sector->special || player->mo->subsector->sector->damage))
-		P_PlayerInSpecialSector (player);
+	if (player->mo->subsector &&
+		(player->mo->subsector->sector->special ||
+		player->mo->subsector->sector->damageamount ||
+		player->mo->subsector->sector->flags & SECF_SECRET))
+		map_format.player_in_special_sector(player);
 
 	// Check for weapon change.
 
@@ -1019,12 +1027,23 @@ void P_PlayerThink (player_t *player)
 	if (player->bonuscount)
 		player->bonuscount--;
 
+	if (player->hazardcount)
+	{
+		player->hazardcount--;
+		if (!(::level.time % player->hazardinterval) &&
+		    player->hazardcount > 16 * TICRATE)
+			P_DamageMobj(player->mo, NULL, NULL, 5);
+	}
+
 	// Handling colormaps.
 	if (displayplayer().powers[pw_invulnerability])
 	{
 		if (displayplayer().powers[pw_invulnerability] > 4*32
 			|| (displayplayer().powers[pw_invulnerability]&8) )
-			displayplayer().fixedcolormap = INVERSECOLORMAP;
+			if (r_softinvulneffect)
+				displayplayer().fixedcolormap = 1;
+			else
+				displayplayer().fixedcolormap = INVERSECOLORMAP;
 		else
 			displayplayer().fixedcolormap = 0;
 	}
@@ -1315,6 +1334,8 @@ player_s::player_s() :
 	blend_color(argb_t(0, 0, 0, 0)),
 	doreborn(false),
 	QueuePosition(0),
+	hazardcount(0),
+	hazardinterval(0),
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
 	client(player_s::client_t())

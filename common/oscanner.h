@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __OSCANNER_H__
-#define __OSCANNER_H__
+#pragma once
 
 
 struct OScannerConfig
@@ -65,7 +64,7 @@ class OScanner
 	                           const char* end);
 
 	bool scan();
-	void mustScan();
+	void mustScan(size_t max_length = 0);
 	void mustScanInt();
 	void mustScanFloat();
 	void mustScanBool();
@@ -78,11 +77,11 @@ class OScanner
 
 	bool &crossed();
 	bool isQuotedString() const;
+	bool isIdentifier() const;
 	void assertTokenIs(const char* string) const;
+	void assertTokenNoCaseIs(const char* string) const;
 	bool compareToken(const char* string) const;
 	bool compareTokenNoCase(const char* string) const;
-	void warning(const char* message) const;
-	void error(const char* message) const;
+	void STACK_ARGS warning(const char* message, ...) const;
+	void STACK_ARGS error(const char* message, ...) const;
 };
-
-#endif // __OSCANNER_H__

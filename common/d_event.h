@@ -21,12 +21,7 @@
 //    
 //-----------------------------------------------------------------------------
 
-
-#ifndef __D_EVENT__
-#define __D_EVENT__
-
-
-
+#pragma once
 
 //
 // Event handling.
@@ -44,8 +39,8 @@ typedef enum
 // Event structure.
 struct event_t
 {
-	event_t(evtype_t t = ev_keydown, int d1 = 0, int d2 = 0, int d3 = 0) :
-		type(t), data1(d1), data2(d2), data3(d3)
+	event_t(evtype_t t = ev_keydown, int d1 = 0, int d2 = 0, int d3 = 0, int mod = 0) :
+		type(t), data1(d1), data2(d2), data3(d3), mod(mod)
 	{ }
 
 	event_t(const event_t& other)
@@ -57,6 +52,7 @@ struct event_t
 	{
 		type = other.type;
 		data1 = other.data1; data2 = other.data2; data3 = other.data3;
+		mod = other.mod;
 		return *this;
 	}
 
@@ -64,6 +60,7 @@ struct event_t
 	int 		data1;			// keys / mouse/joystick buttons
 	int 		data2;			// mouse/joystick x move
 	int 		data3;			// mouse/joystick y move
+	int			mod;				// input mods
 };
 
  
@@ -134,8 +131,3 @@ extern	int 			eventhead;
 extern	int 			eventtail;
 
 extern	gameaction_t	gameaction;
-
-
-#endif
-
-

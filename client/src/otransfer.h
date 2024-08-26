@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __OTRANSFER_H__
-#define __OTRANSFER_H__
+#pragma once
 
 
 #define CURL_STATICLIB
@@ -81,6 +80,7 @@ class OTransferCheck
 	}
 
 	void setURL(const std::string& src);
+	std::string escapeFileName(const std::string& src);
 	bool start();
 	void stop();
 	bool tick();
@@ -137,5 +137,3 @@ class OTransfer
 	std::string getFilename() const;
 	OTransferProgress getProgress() const;
 };
-
-#endif

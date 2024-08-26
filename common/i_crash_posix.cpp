@@ -22,7 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#if defined UNIX && !defined GCONSOLE
+#if defined UNIX && defined HAVE_BACKTRACE && !defined GCONSOLE
 
 #include "odamex.h"
 

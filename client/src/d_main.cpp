@@ -273,7 +273,7 @@ void D_Display()
 			return;
 
 		case GS_LEVEL:
-			if (!gametic)
+		    if (!gametic || !g_ValidLevel)
 				break;
 
 			V_DoPaletteEffects();
@@ -712,6 +712,9 @@ void STACK_ARGS D_Shutdown()
 	// reset the Zone memory manager
 	Z_Close();
 
+	// [AM] Level is now invalid due to torching zone memory.
+	g_ValidLevel = false;
+
 	// [AM] All of our dyncolormaps are freed, tidy up so we
 	//      don't follow wild pointers.
 	NormalLight.next = NULL;
@@ -761,6 +764,7 @@ void D_DoomMain()
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
 	std::string iwad;
+	std::vector<std::string> pwads;
 	const char* iwadParam = Args.CheckValue("-iwad");
 	if (iwadParam)
 	{
@@ -777,24 +781,53 @@ void D_DoomMain()
 		bool shouldSkip = false;
 		for (size_t i = 0; i < ARRAY_LENGTH(skipParams); i++)
 		{
-			if (Args.CheckValue(skipParams[i]))
+			if (::Args.CheckValue(skipParams[i]))
 			{
 				shouldSkip = true;
 				break;
 			}
 		}
 
+		// Skip boot window if we pass a single argument that isn't the
+		// start of a standard parameter - it must be a path.
+		if (!shouldSkip && ::Args.NumArgs() == 2 && ::Args[1][0] != '+' &&
+		    ::Args[1][0] != '-')
+		{
+			shouldSkip = true;
+		}
+
 		if (!shouldSkip)
 		{
-			iwad = GUI_BootWindow();
+			scannedWADs_t wads = GUI_BootWindow();
+			iwad = wads.iwad;
+			pwads = wads.pwads;
+
+			for (StringTokens::iterator it = wads.options.begin();
+		    	 it != wads.options.end(); ++it)
+			{
+				Args.AppendArg((*it).c_str());
+			}
 		}
 	}
 
 	OWantFiles newwadfiles, newpatchfiles;
 
-	OWantFile file;
-	OWantFile::make(file, iwad, OFILE_WAD);
-	newwadfiles.push_back(file);
+	if (!iwad.empty())
+	{
+		OWantFile file;
+		OWantFile::make(file, iwad, OFILE_WAD);
+		newwadfiles.push_back(file);
+	}
+
+	if (!pwads.empty())
+	{
+		for (size_t i = 0; i < pwads.size(); i++)
+		{
+			OWantFile file;
+			OWantFile::make(file, pwads[i], OFILE_WAD);
+			newwadfiles.push_back(file);
+		}
+	}
 
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
@@ -831,7 +864,7 @@ void D_DoomMain()
 	// set the default value for vid_ticker based on the presence of -devparm
 	if (devparm)
 		vid_ticker.SetDefault("1");
- 
+
 	// Nomonsters
 	sv_nomonsters = Args.CheckParm("-nomonsters");
 
@@ -977,17 +1010,19 @@ void D_DoomMain()
 	}
 	else if (autostart)
 	{
-		if (autostart)
-		{
-			// single player warp (like in g_level)
-			serverside = true;
-			sv_allowexit = "1";
+		// single player warp (like in g_level)
+		serverside = true;
 
-			players.clear();
-			players.push_back(player_t());
-			players.back().playerstate = PST_REBORN;
-			consoleplayer_id = displayplayer_id = players.back().id = 1;
-		}
+		// Enable serverside settings to make them fully client-controlled.
+		sv_freelook = 1;
+		sv_allowjump = 1;
+		sv_allowexit = 1;
+		sv_allowredscreen = 1;
+
+		players.clear();
+		players.push_back(player_t());
+		players.back().playerstate = PST_REBORN;
+		consoleplayer_id = displayplayer_id = players.back().id = 1;
 
 		G_InitNew(startmap);
 	}

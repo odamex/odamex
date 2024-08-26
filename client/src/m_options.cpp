@@ -81,6 +81,9 @@ extern short			skullAnimCounter;
 
 extern NetDemo netdemo;
 
+EXTERN_CVAR(con_notifytime)
+EXTERN_CVAR(con_midtime)
+
 EXTERN_CVAR (i_skipbootwin)
 EXTERN_CVAR (cl_run)
 EXTERN_CVAR (invertmouse)
@@ -94,7 +97,9 @@ EXTERN_CVAR (r_forceteamcolor)
 EXTERN_CVAR (r_teamcolor)
 EXTERN_CVAR (r_forceenemycolor)
 EXTERN_CVAR (r_enemycolor)
+EXTERN_CVAR (r_softinvulneffect)
 EXTERN_CVAR (cl_mouselook)
+EXTERN_CVAR (in_autosr50)
 EXTERN_CVAR (gammalevel)
 EXTERN_CVAR (language)
 EXTERN_CVAR (mute_spectators)
@@ -107,10 +112,12 @@ EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_scalescoreboard)
 EXTERN_CVAR (hud_timer)
+EXTERN_CVAR (hud_speedometer)
 EXTERN_CVAR (hud_bigfont)
 EXTERN_CVAR (hud_heldflag)
 EXTERN_CVAR (hud_heldflag_flash)
 EXTERN_CVAR (hud_transparency)
+EXTERN_CVAR (hud_anchoring)
 EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
@@ -122,9 +129,11 @@ EXTERN_CVAR (cl_deathcam)
 EXTERN_CVAR (co_fineautoaim)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (co_boomphys)			// [ML] Roll-up of various compat options
+EXTERN_CVAR (co_removesoullimit)
 EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (co_globalsound)
 EXTERN_CVAR(hud_feedobits)
+EXTERN_CVAR(hud_feedtime)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -135,6 +144,7 @@ EXTERN_CVAR (m_side)
 EXTERN_CVAR (m_forward)
 
 // [Ralphis - Menu] Sound Menu
+EXTERN_CVAR (snd_midireset)
 EXTERN_CVAR (snd_musicsystem)
 EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_announcervolume)
@@ -450,6 +460,7 @@ static menuitem_t MouseItems[] =
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ discrete,	"Always FreeLook"				, {&cl_mouselook},		{2.0},	{0.0},		{0.0},		{OnOff}},
 	{ discrete,	"Invert Mouse"					, {&invertmouse},		{2.0},	{0.0},		{0.0},		{OnOff}},
+	{ discrete, "Auto SR50 on Strafe"			, {&in_autosr50},		{2.0},	{0.0},		{0.0},		{OnOff}}, // [AM] Does not belong here
 	{ discrete, "Lookspring"					, {&lookspring},		{2.0},	{0.0},		{0.0},		{OnOff}},
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ discrete,	"Horizontal Movement"			, {&lookstrafe},		{2.0},	{0.0},		{0.0},		{OnOff}},
@@ -530,6 +541,13 @@ static value_t MusSys[] = {
 	{ MS_NONE,		"No Music"}
 };
 
+static value_t MidiReset[] = {
+	{ 0.0,			"None" },
+	{ 1.0,			"GM" },
+	{ 2.0,			"GS" },
+	{ 3.0,			"XG" }
+};
+
 static value_t VoxType[] = {
 	{ 0.0,			"Off" },
 	{ 1.0,			"Team Colors" },
@@ -554,7 +572,9 @@ static menuitem_t SoundItems[] = {
 	{ slider    ,	"Announcer Volume"             		, {&snd_announcervolume},	{0.0},      {1.0},	    {0.015625},      {NULL} },
 	{ discrete  ,   "Stereo Switch"                     , {&snd_crossover},	    {2.0},			{0.0},		{0.0},		{OnOff} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
+	{ yellowtext ,   "Music Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
+	{ discrete	,	"MIDI Reset"						, {&snd_midireset},		{4.0},			{0.0},		{0.0},		{MidiReset} },
 	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ yellowtext ,   "Sound Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
 	{ discrete  ,   "Game SFX"                          , {&snd_gamesfx},		{2.0},			{0.0},		{0.0},		{OnOff} },
@@ -586,6 +606,7 @@ static menuitem_t CompatItems[] ={
 	{yellowtext, "Gameplay",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{svdiscrete, "Finer-precision Autoaim",        {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "Fix hit detection at grid edges",{&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Remove pain elemental spawn limit",{&co_removesoullimit}, {2.0}, {0.0}, {0.0}, {OnOff}},
 	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{yellowtext, "Items and Decoration",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{svdiscrete, "Fix invisible puffs under skies",{&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
@@ -696,6 +717,10 @@ static menuitem_t WeaponItems[] = {
 	{redtext,   " ",                   {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{whitetext, "Weapons with higher", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
 	{whitetext, "preference are selected first", {NULL},     {0.0}, {0.0}, {0.0}, {NULL}},
+    {redtext,	" ",				   {NULL},				 {0.0}, {0.0}, {0.0}, {NULL}},
+    {yellowtext, "! ! ! NOTICE ! ! !", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {orangetext, "While playing online, this feature", {NULL},{0.0}, {0.0}, {0.0}, {NULL}},
+    {orangetext, "only works when the server allows it!", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 };
 
 menu_t WeaponMenu = {
@@ -723,6 +748,7 @@ void ResetCustomColors (void);
 EXTERN_CVAR (am_rotate)
 EXTERN_CVAR (am_overlay)
 EXTERN_CVAR (am_showmonsters)
+EXTERN_CVAR (am_showitems)
 EXTERN_CVAR (am_showsecrets)
 EXTERN_CVAR (am_showtime)
 EXTERN_CVAR (am_classicmapstring)
@@ -738,6 +764,7 @@ EXTERN_CVAR (r_loadicon)
 EXTERN_CVAR (r_showendoom)
 EXTERN_CVAR (r_painintensity)
 EXTERN_CVAR (cl_movebob)
+EXTERN_CVAR (cl_centerbobonfire)
 EXTERN_CVAR (cl_showspawns)
 EXTERN_CVAR (hud_show_scoreboard_ondeath)
 EXTERN_CVAR (hud_demobar)
@@ -790,6 +817,7 @@ static menuitem_t VideoItems[] = {
 	{ slider,	"Movement bobbing",			{&cl_movebob},			{0.0}, {1.0},	{0.1},	{NULL} },
 	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
 	{ discrete,	"Visible Spawn Points",		{&cl_showspawns},		{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Center weapon when firing",{&cl_centerbobonfire},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Force Team Color",			{&r_forceteamcolor},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redslider,   "Team Color Red",        {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
@@ -809,6 +837,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "See killer on Death",			{&cl_deathcam},   {2.0}, {0.0}, {0.0}, {OnOff}},
 	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Use softer invuln effect", {&r_softinvulneffect},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
 	{ discrete, "Multiplayer Intermissions",{&wi_oldintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
 	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },
@@ -868,13 +897,16 @@ static menuitem_t HUDItems[] = {
     {yellowtext, "Floating HUD elements", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
     {discrete, "Scale HUD elements", {&hud_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {slider, "HUD Transparency", {&hud_transparency}, {0.0}, {1.0}, {0.1}, {NULL}},
+    {slider, "HUD Anchoring", {&hud_anchoring}, {0.0}, {1.0}, {0.1}, {NULL}},
     {discrete, "Bigger font in HUD", {&hud_bigfont}, {2.0}, {0.0}, {0.0}, {OnOff}},
     // clang-format off
     {discrete, "Show Secret Messages", {&hud_revealsecrets}, {4.0}, {0.0}, {0.0}, {SecretOptions}},
     {discrete, "Player target names", {&hud_targetnames}, {2.0}, {0.0}, {0.0}, {HideShow}},
     // clang-format on
     {discrete, "Timer Type", {&hud_timer}, {3.0}, {0.0}, {0.0}, {TimerStyles}},
-    {discrete, "Killfeed", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {discrete, "Speedometer", {&hud_speedometer}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {slider, "Feed Timeout", {&hud_feedtime}, {1.0}, {10.0}, {0.25}, {NULL}},
+    {discrete, "Show Kills in Feed", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {discrete, "Netdemo infos", {&hud_demobar}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 
@@ -965,6 +997,8 @@ static menuitem_t MessagesItems[] = {
 #if 0
 	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
 #endif
+	{ slider,	"Message Timeout",		 {&con_notifytime},		{1.0}, {10.0},	{0.25}, {NULL} },
+	{ slider,	"Center Message Timeout",{&con_midtime},		{1.0}, {10.0},	{0.25}, {NULL} },
 	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },
 	{ discrete,	"Colorize messages",	{&con_coloredmessages},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1010,7 +1044,8 @@ static menuitem_t AutomapItems[] = {
 	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0},  {Overlays} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-    { discrete, "Show monster count",	{&am_showmonsters},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Show item count",		{&am_showitems},		{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete, "Show monster count",	{&am_showmonsters},		{2.0}, {0.0},	{0.0},	{OnOff} },
     { discrete, "Show secrets count",	{&am_showsecrets},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
     { discrete, "Show map timer", 	    {&am_showtime}, 	   	{2.0}, {0.0},	{0.0},  {OnOff} },
     { discrete, "Map name style",       {&am_classicmapstring},	{2.0}, {0.0},	{0.0},  {ClassicMapStringTypes} },
@@ -1022,7 +1057,7 @@ static menuitem_t AutomapItems[] = {
 };
 
 menu_t AutomapMenu = {
-	"M_MESS",
+	"M_AUTOMP",
 	0,
 	ARRAY_LENGTH(AutomapItems),
 	0,
@@ -1049,6 +1084,7 @@ EXTERN_CVAR (vid_maxfps)
 EXTERN_CVAR (vid_overscan)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_32bpp)
+EXTERN_CVAR(vid_vsync)
 
 static uint16_t old_width, old_height;
 
@@ -1090,7 +1126,11 @@ static value_t VidFPSCaps[] = {
 	{ 35.0,		"35fps" },
 	{ 60.0,		"60fps" },
 	{ 70.0,		"70fps" },
-	{ 120.0,	"120fps" },
+   	{ 105.0,	"105fps"},
+	{ 120.0,	"120fps" }, 
+	{ 140.0,	"140fps"},
+    	{ 144.0,	"144fps"},
+    	{ 240.0,	"240fps"},
 	{ 0.0,		"Unlimited" }
 };
 
@@ -1100,6 +1140,14 @@ static value_t FullScreenOptions[] = {
 	{ WINDOW_DesktopFullscreen,	"Full Screen Window" }
 };
 
+static value_t WidescreenMode[] = {
+	{ 0.0,			"Off" },
+	{ 1.0,			"Auto" },
+	{ 2.0,			"16:10" },
+	{ 3.0,			"16:9" },
+	{ 4.0,			"21:9" },
+	{ 5.0,			"32:9" }
+};
 
 static menuitem_t ModesItems[] = {
 #ifdef GCONSOLE
@@ -1107,29 +1155,29 @@ static menuitem_t ModesItems[] = {
 #else
 	{ discrete, "Fullscreen",			{&vid_fullscreen},		{3.0}, {0.0},	{0.0}, {FullScreenOptions} },
 #endif
+	{ discrete,	"Widescreen",			{&vid_widescreen},		{6.0}, {0.0},	{0.0}, {WidescreenMode} } ,
+	{ discrete,	"VSync",				{&vid_vsync},			{2.0}, {0.0},	{0.0}, {YesNo} },
+	{ discrete, "Framerate",			{&vid_maxfps},			{9.0}, {0.0},	{0.0}, {VidFPSCaps} },
 	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
-	{ discrete,	"Widescreen",			{&vid_widescreen},		{2.0}, {0.0},	{0.0}, {YesNo} } ,
-	{ discrete, "Framerate",			{&vid_maxfps},			{5.0}, {0.0},	{0.0}, {VidFPSCaps} },
+	{ redtext,	"",						{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ whitetext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ yellowtext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} }
 };
 
 #define VM_DEPTHITEM	0
-#define VM_RESSTART		5
-#define VM_ENTERLINE	14
-#define VM_TESTLINE		16
+#define VM_RESSTART		6
+#define VM_ENTERLINE	15
+#define VM_TESTLINE		17
 
 menu_t ModesMenu = {
 	"M_VIDMOD",
@@ -1420,7 +1468,7 @@ void M_SwitchMenu(menu_t* menu)
 		for (i = 0; i < menu->numitems; i++)
 		{
 			item = menu->items + i;
-			if (item->type != whitetext && item->type != redtext)
+			if (item->type != whitetext && item->type != redtext && item->type != orangetext)
 			{
 				thiswidth = V_StringWidth (item->label);
 				if (thiswidth > widest)
@@ -1439,7 +1487,7 @@ bool M_StartOptionsMenu (void)
 	return true;
 }
 
-void M_DrawSlider (int x, int y, float leftval, float rightval, float cur)
+void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float step)
 {
 	if (leftval < rightval)
 		cur = clamp(cur, leftval, rightval);
@@ -1454,6 +1502,17 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur)
 	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
 
 	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
+
+	std::string buf;
+	if (step == 0.0f)
+		return;
+	else if (step >= 1.0f)
+		StrFormat(buf, "%.0f", cur);
+	else if (step >= 0.1f)
+		StrFormat(buf, "%.1f", cur);
+	else
+		StrFormat(buf, "%.2f", cur);
+	screen->DrawTextCleanMove(CR_GREEN, x + 96, y, buf.c_str());
 }
 
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
@@ -1579,6 +1638,11 @@ void M_OptDrawer (void)
 				color = CR_YELLOW;
 				break;
 
+			case orangetext:
+				x = 160 - width / 2;
+				color = CR_ORANGE;
+				break;
+
 			case listelement:
 				x = CurrentMenu->indent + 14;
 				color = CR_RED;
@@ -1624,7 +1688,7 @@ void M_OptDrawer (void)
 				break;
 
 			case slider:
-				M_DrawSlider (CurrentMenu->indent + 8, y, item->b.leftval, item->c.rightval, item->a.cvar->value());
+				M_DrawSlider (CurrentMenu->indent + 8, y, item->b.leftval, item->c.rightval, item->a.cvar->value(), item->d.step);
 				break;
 
 			case redslider:
@@ -1740,9 +1804,12 @@ void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;
+	int mod = ev->mod;
 	const char *cmd = Bindings.GetBind(ch).c_str();
 
 	item = CurrentMenu->items + CurrentItem;
+
+	bool numlock = mod & OMOD_NUM;
 
 	// Waiting on a key press for control binding
 	if (WaitingForKey)
@@ -1812,7 +1879,7 @@ void M_OptResponder (event_t *ev)
 	}
 
 	if (item->type == bitflag && flagsvar &&
-	    (Key_IsLeftKey(ch) || Key_IsRightKey(ch) || Key_IsAcceptKey(ch))
+	    (Key_IsLeftKey(ch, numlock) || Key_IsRightKey(ch, numlock) || Key_IsAcceptKey(ch))
 		&& !demoplayback)
 	{
 			int newflags = *item->e.flagint ^ item->a.flagmask;
@@ -1835,7 +1902,7 @@ void M_OptResponder (event_t *ev)
 
 	// Handle Keys
 	{
-		if (Key_IsDownKey(ch))
+		if (Key_IsDownKey(ch, numlock))
 		{
 			int modecol;
 
@@ -1865,6 +1932,7 @@ void M_OptResponder (event_t *ev)
 			} while (CurrentMenu->items[CurrentItem].type == redtext ||
 				CurrentMenu->items[CurrentItem].type == whitetext ||
 				CurrentMenu->items[CurrentItem].type == yellowtext ||
+			  CurrentMenu->items[CurrentItem].type == orangetext ||
 				(CurrentMenu->items[CurrentItem].type == screenres &&
 					!CurrentMenu->items[CurrentItem].b.res1));
 
@@ -1873,7 +1941,7 @@ void M_OptResponder (event_t *ev)
 
 			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		}
-		else if (Key_IsUpKey(ch))
+		else if (Key_IsUpKey(ch, numlock))
 		{
 			int modecol;
 
@@ -1905,6 +1973,7 @@ void M_OptResponder (event_t *ev)
 			} while (CurrentMenu->items[CurrentItem].type == redtext ||
 				CurrentMenu->items[CurrentItem].type == whitetext ||
 				CurrentMenu->items[CurrentItem].type == yellowtext ||
+			  CurrentMenu->items[CurrentItem].type == orangetext ||
 				(CurrentMenu->items[CurrentItem].type == screenres &&
 					!CurrentMenu->items[CurrentItem].b.res1));
 
@@ -1913,7 +1982,7 @@ void M_OptResponder (event_t *ev)
 
 			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 		}
-		else if (Key_IsPageUpKey(ch))
+		else if (Key_IsPageUpKey(ch, numlock))
 		{
 			if (CanScrollUp)
 			{
@@ -1926,6 +1995,7 @@ void M_OptResponder (event_t *ev)
 				while (CurrentMenu->items[CurrentItem].type == redtext ||
 					CurrentMenu->items[CurrentItem].type == whitetext ||
 					CurrentMenu->items[CurrentItem].type == yellowtext ||
+				  CurrentMenu->items[CurrentItem].type == orangetext ||
 					(CurrentMenu->items[CurrentItem].type == screenres &&
 						!CurrentMenu->items[CurrentItem].b.res1))
 				{
@@ -1934,7 +2004,7 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 		}
-		else if (Key_IsPageDownKey(ch)) 
+		else if (Key_IsPageDownKey(ch, numlock)) 
 		{
 			if (CanScrollDown)
 			{
@@ -1948,6 +2018,7 @@ void M_OptResponder (event_t *ev)
 				while (CurrentMenu->items[CurrentItem].type == redtext ||
 					CurrentMenu->items[CurrentItem].type == whitetext ||
 					CurrentMenu->items[CurrentItem].type == yellowtext ||
+				  CurrentMenu->items[CurrentItem].type == orangetext ||
 					(CurrentMenu->items[CurrentItem].type == screenres &&
 						!CurrentMenu->items[CurrentItem].b.res1))
 				{
@@ -1956,7 +2027,7 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 		}
-		else if (Key_IsLeftKey(ch))
+		else if (Key_IsLeftKey(ch, numlock))
 		{
 		switch (item->type)
 		{
@@ -2084,7 +2155,7 @@ void M_OptResponder (event_t *ev)
 			break;
 		}
 		}
-		else if (Key_IsRightKey(ch))
+		else if (Key_IsRightKey(ch, numlock))
 		{
 		switch (item->type)
 		{

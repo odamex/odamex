@@ -478,3 +478,53 @@ BEGIN_COMMAND(game_ctf)
 	AddCommandString(config.c_str());
 }
 END_COMMAND(game_ctf)
+
+static GametypeParam hordeParams[] = {
+    {"sv_skill", 4, "skill", "SKILL",
+     "Set the skill of the game to SKILL.  Defaults to 4."},
+    {"g_lives", 1, "lives", "LIVES",
+     "Set number of scores needed to win to LIVES.  Defaults to 5."},
+    {"g_roundlimit", 2, "rounds", "ROUNDS",
+     "Set number of second-chance rounds there are to ROUNDS.  Defaults to 2."}};
+
+static void HordeHelp()
+{
+	Printf("game_horde - Configures some settings for a basic game of Horde\n");
+	GametypeHelp(::hordeParams);
+}
+
+BEGIN_COMMAND(game_horde)
+{
+	if (argc < 2)
+	{
+		HordeHelp();
+		return;
+	}
+
+	std::string buffer;
+	StringList params = GametypeArgs(::hordeParams, argc, argv);
+	if (params.empty())
+	{
+		HordeHelp();
+		return;
+	}
+
+	if (std::find(params.begin(), params.end(), "g_roundlimit 0") == params.end())
+	{
+		params.push_back("g_rounds 1");
+	}
+	else
+	{
+		params.push_back("g_rounds 0");
+	}
+
+	params.push_back("sv_forcerespawn 0");
+	params.push_back("sv_friendlyfire 0");
+	params.push_back("sv_gametype 4");
+	params.push_back("sv_nomonsters 0");
+
+	std::string config = JoinStrings(params, "; ");
+	Printf("Configuring Horde...\n%s\n", config.c_str());
+	AddCommandString(config.c_str());
+}
+END_COMMAND(game_horde)

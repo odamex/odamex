@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __M_RANDOM__
-#define __M_RANDOM__
+#pragma once
 
 #include "actor.h"
 
@@ -174,4 +173,3 @@ const T& P_RandomFloatWeighted(const std::vector<T>& data, float (*func)(const T
 // Used for MBF21 mostly.
 int P_RandomHitscanAngle(fixed_t spread);
 int P_RandomHitscanSlope(fixed_t spread);
-#endif

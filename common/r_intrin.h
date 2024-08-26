@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __R_INTRIN__
-#define __R_INTRIN__
+#pragma once
 
 // NOTE(jsd): This is from bleeding-edge SDL code which is not in 1.2-15
 
@@ -56,6 +55,4 @@
 	#ifdef __SSE2__
 		#include <emmintrin.h>
 	#endif
-#endif
-
 #endif

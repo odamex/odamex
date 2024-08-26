@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __G_GAMETYPE_H__
-#define __G_GAMETYPE_H__
+#pragma once
 
 
 #include "g_levelstate.h"
@@ -57,6 +56,7 @@ bool G_IsDefendingTeam(team_t team);
 bool G_IsHordeMode();
 bool G_IsCoopGame();
 bool G_IsFFAGame();
+bool G_IsMatchDuelGame();
 bool G_IsDuelGame();
 bool G_IsTeamGame();
 bool G_IsRoundsGame();
@@ -79,5 +79,3 @@ void G_TeamFragsCheckEndGame();
 void G_TeamScoreCheckEndGame();
 void G_LivesCheckEndGame();
 bool G_RoundsShouldEndGame();
-
-#endif // __G_GAMETYPE_H__

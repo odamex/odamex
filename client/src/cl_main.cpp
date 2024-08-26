@@ -66,6 +66,7 @@
 
 #include "g_gametype.h"
 #include "cl_parse.h"
+#include "cl_replay.h"
 
 #include <bitset>
 #include <map>
@@ -376,6 +377,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
 		sv_gametype = GM_COOP;
+		ClientReplay::getInstance().reset();
 	}
 
 	if (paused)
@@ -457,6 +459,8 @@ void CL_Reconnect(void)
 
 	if (netdemo.isRecording())
 		forcenetdemosplit = true;
+
+	ClientReplay::getInstance().reset();
 
 	if (connected)
 	{
@@ -1423,6 +1427,8 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 			player.cheats &= ~CF_FLY;	// remove flying ability
 		}
 
+		ClientReplay::getInstance().reset();
+
 		CL_RebuildAllPlayerTranslations();
 	}
 	else
@@ -1717,6 +1723,14 @@ bool CL_PrepareConnect()
 	}
 	else if (!ok && !missingfiles.empty() || cl_forcedownload)
 	{
+		if (::missingCommercialIWAD)
+		{
+			Printf(PRINT_WARNING,
+			       "Server requires commercial IWAD that was not found.\n");
+			CL_QuitNetGame(NQ_ABORT);
+			return false;
+		}
+
 		OWantFile missing_file;
 		if (missingfiles.empty())				// cl_forcedownload
 		{

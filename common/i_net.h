@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __I_NET_H__
-#define __I_NET_H__
+#pragma once
 
 #include "huffman.h"
 
@@ -677,7 +675,9 @@ public:
 		{
 			clear();
 			overflowed = true;
+#if defined(ODAMEX_DEBUG)
 			Printf (PRINT_HIGH, "SZ_GetSpace: overflow\n");
+#endif
 		}
 
 		byte *ret = data + cursize;
@@ -796,5 +796,3 @@ bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap);
 
 bool MSG_DecompressAdaptive (huffman &huff);
 bool MSG_CompressAdaptive (huffman &huff, buf_t &buf, size_t start_offset, size_t write_gap);
-
-#endif

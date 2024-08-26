@@ -78,9 +78,6 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 	{
 		if (P_TestMobjLocation(mo))
 		{
-			// Don't respawn
-			mo->flags |= MF_DROPPED;
-
 			if (recipe.isBoss)
 			{
 				// Heavy is the head that wears the crown.
@@ -91,16 +88,17 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 				mo->oflags = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK |
 				             MFO_NORAISE | MFO_BOSSPOOL | MFO_FULLBRIGHT;
 
-				mo->flags2 = MF2_BOSS;
-
-				mo->flags3 = MF3_FULLVOLSOUNDS | MF3_DMGIGNORED;
+				mo->flags3 = MF3_FULLVOLSOUNDS | MF3_DMGIGNORED | MF3_NORADIUSDMG;
 			}
 			SV_SpawnMobj(mo);
 
 			// Spawn a teleport fog if it's not an ambush.
-			AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
-			SV_SpawnMobj(tele);
-			S_NetSound(tele, CHAN_VOICE, "misc/teleport", ATTN_NORM);
+			if ((spawn.mo->flags & MF_AMBUSH) == 0)
+			{
+				AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
+				SV_SpawnMobj(tele);
+				S_NetSound(tele, CHAN_VOICE, "misc/teleport", ATTN_NORM);
+			}
 			return mo->ptr();
 		}
 		else
@@ -466,9 +464,12 @@ void P_HordeSpawnItem()
 			SV_SpawnMobj(pack);
 
 			// Play the item respawn sound, so people can listen for it.
-			AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
-			SV_SpawnMobj(tele);
-			S_NetSound(tele, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
+			if ((point.mo->flags & MF_AMBUSH) == 0)
+			{
+				AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
+				SV_SpawnMobj(tele);
+				S_NetSound(tele, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
+			}
 		}
 	}
 }
@@ -505,8 +506,11 @@ void P_HordeSpawnPowerup(const mobjtype_t pw)
 		SV_SpawnMobj(pack);
 
 		// Play the item respawn sound, so people can listen for it.
-		AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
-		SV_SpawnMobj(tele);
-		S_NetSound(tele, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
+		if ((point.mo->flags & MF_AMBUSH) == 0)
+		{
+			AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
+			SV_SpawnMobj(tele);
+			S_NetSound(tele, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
+		}
 	}
 }

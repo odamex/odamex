@@ -93,10 +93,9 @@ typedef int SOCKET;
 #include "minilzo.h"
 
 #ifdef ODA_HAVE_MINIUPNP
-#define MINIUPNP_STATICLIB
-#include "miniwget.h"
-#include "miniupnpc.h"
-#include "upnpcommands.h"
+#include "miniupnpc/miniwget.h"
+#include "miniupnpc/miniupnpc.h"
+#include "miniupnpc/upnpcommands.h"
 #endif
 
 unsigned int	inet_socket;
@@ -1129,6 +1128,8 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_maplist);
 	SVC_INFO(svc_maplist_update);
 	SVC_INFO(svc_maplist_index);
+	SVC_INFO(svc_toast);
+	SVC_INFO(svc_hordeinfo);
 	SVC_INFO(svc_max);
 
 	// Client Messages.

@@ -12,6 +12,11 @@ endfunction()
 function(odamex_target_settings _TARGET)
   set(ODAMEX_DLLS "")
 
+  if(HAS_LTO)
+    set_property(TARGET "${_TARGET}"
+      PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
+
   if(APPLE)
     target_compile_definitions("${_TARGET}" PRIVATE OSX UNIX)
     set_target_properties("${_TARGET}" PROPERTIES
@@ -25,10 +30,12 @@ function(odamex_target_settings _TARGET)
 
   if(MSVC)
     # jsd: hide warnings about using insecure crt functions:
-    target_compile_definitions("${_TARGET}" PRIVATE _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions("${_TARGET}" PRIVATE
+      $<$<CONFIG:Debug>:ODAMEX_DEBUG> _CRT_SECURE_NO_WARNINGS)
     target_compile_options("${_TARGET}" PRIVATE /MP)
   else()
-    target_compile_definitions("${_TARGET}" PRIVATE $<$<CONFIG:Debug>:ODAMEX_DEBUG>)
+    target_compile_definitions("${_TARGET}" PRIVATE
+      $<$<CONFIG:Debug>:ODAMEX_DEBUG>)
     target_compile_options("${_TARGET}" PRIVATE -Wall -Wextra)
 
     if(USE_GPROF)

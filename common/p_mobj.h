@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __PMOBJ_H__
-#define __PMOBJ_H__
+#pragma once
 
 #define REMOVECORPSESTIC TICRATE*80
 
@@ -125,6 +123,10 @@ inline static fixed_t DegToSlope(fixed_t a)
 
 extern NetIDHandler ServerNetID;
 
+// All oflag mods that are sent to horde bosses.
+const uint32_t hordeBossModMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR |
+                                  MFO_QUICK | MFO_NORAISE | MFO_FULLBRIGHT;
+
 void P_ClearAllNetIds();
 AActor* P_FindThingById(uint32_t id);
 void P_SetThingId(AActor* mo, uint32_t newnetid);
@@ -152,6 +154,3 @@ void SpawnFlag(mapthing2_t* mthing, team_t flag);
 
 // From MBF
 bool P_SeekerMissile(AActor* actor, AActor* seekTarget, angle_t thresh, angle_t turnMax, bool seekcenter);
-
-#endif
-

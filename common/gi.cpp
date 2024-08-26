@@ -28,30 +28,6 @@
 
 gameinfo_t gameinfo;
 
-static const char *quitsounds[8] =
-{
-	"player/male/death1",
-	"demon/pain",
-	"grunt/pain",
-	"misc/gibbed",
-	"misc/teleport",
-	"grunt/sight1",
-	"grunt/sight3",
-	"demon/melee"
-};
-
-static const char *quitsounds2[8] =
-{
-	"vile/active",
-	"misc/p_pkup",
-	"brain/cube",
-	"misc/gibbed",
-	"skeleton/swing",
-	"knight/death",
-	"baby/active",
-	"demon/melee"
-};
-
 static gameborder_t DoomBorder =
 {
 	8, 8,
@@ -59,6 +35,8 @@ static gameborder_t DoomBorder =
 	"brdr_l",			 "brdr_r",
 	"brdr_bl", "brdr_b", "brdr_br"
 };
+
+std::vector<mline_t> EmptyLineContainer;
 
 gameinfo_t SharewareGameInfo =
 {
@@ -77,10 +55,17 @@ gameinfo_t SharewareGameInfo =
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
 	{ { "HELP1", "HELP2", "CREDIT" } },
-	quitsounds,
+	"menu/quit1",
 	1,
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
+	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"DOOM Shareware"
 };
 
@@ -101,10 +86,17 @@ gameinfo_t RegisteredGameInfo =
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
 	{ { "HELP1", "HELP2", "CREDIT" } },
-	quitsounds,
+	"menu/quit1",
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
+	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"DOOM Registered"
 };
 
@@ -125,10 +117,17 @@ gameinfo_t RetailGameInfo =
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
 	{ { "HELP1", "CREDIT", "CREDIT"  } },
-	quitsounds,
+	"menu/quit1",
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
+	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"The Ultimate DOOM"
 };
 
@@ -149,10 +148,17 @@ gameinfo_t RetailBFGGameInfo =
 	{ 'V','I','C','T','O','R','Y','2' },
 	"ENDPIC",
 	{ { "HELP1", "CREDIT", "CREDIT"  } },
-	quitsounds,
+	"menu/quit1",
 	2,
 	{ 'F','L','O','O','R','7','_','2' },
 	&DoomBorder,
+	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"The Ultimate DOOM (BFG Edition)"
 };
 
@@ -173,10 +179,17 @@ gameinfo_t CommercialGameInfo =
 	"CREDIT",
 	"CREDIT",
 	{ { "HELP", "CREDIT", "CREDIT" } },
-	quitsounds2,
+	"menu/quit2",
 	3,
 	"GRNROCK",
 	&DoomBorder,
+	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"DOOM 2: Hell on Earth"
 };
 
@@ -197,10 +210,17 @@ gameinfo_t CommercialBFGGameInfo =
 	"CREDIT",
 	"CREDIT",
 	{ { "HELP", "CREDIT", "CREDIT" } },
-	quitsounds2,
+	"menu/quit2",
 	3,
 	"GRNROCK",
 	&DoomBorder,
+	AutomapDefaultColors,
+	AutomapDefaultCurrentColors,
+	false,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
+	EmptyLineContainer,
 	"DOOM 2: Hell on Earth (BFG Edition)"
 };
 

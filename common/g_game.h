@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __G_GAME__
-#define __G_GAME__
+#pragma once
 
 #include "d_event.h"
 #include "d_player.h"
@@ -71,5 +70,3 @@ bool G_ShouldIgnoreMouseInput();
 extern int mapchange;
 
 extern bool timingdemo;
-
-#endif

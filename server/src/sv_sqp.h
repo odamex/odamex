@@ -20,10 +20,6 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __SV_SQP_H__
-#define __SV_SQP_H__
-
+#pragma once
 
 DWORD SV_QryParseEnquiry(const DWORD &Tag);
-
-#endif // __SV_SQP_H__

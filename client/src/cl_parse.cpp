@@ -43,6 +43,7 @@
 #include "g_gametype.h"
 #include "g_levelstate.h"
 #include "gi.h"
+#include "i_video.h"
 #include "m_argv.h"
 #include "m_random.h"
 #include "m_resfile.h"
@@ -59,6 +60,9 @@
 #include "st_stuff.h"
 #include "svc_map.h"
 #include "v_textcolors.h"
+#include "p_mapformat.h"
+#include "infomap.h"
+#include "cl_replay.h"
 
 // Extern data from other files.
 
@@ -129,8 +133,7 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 	// the set of recently teleported players.  This is used to flush past
 	// positions since they cannot be used for interpolation.
 	if (line && (mo && mo->player) &&
-	    (line->special == Teleport || line->special == Teleport_NoFog ||
-	     line->special == Teleport_NoStop || line->special == Teleport_Line))
+	    (P_IsTeleportLine(line->special)))
 	{
 		teleported_players.insert(mo->player->id);
 
@@ -150,7 +153,7 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 	{
 	case LineCross:
 		if (line)
-			P_CrossSpecialLine(line - lines, side, mo, bossaction);
+			P_CrossSpecialLine(line, side, mo, bossaction);
 		break;
 	case LineUse:
 		if (line)
@@ -250,6 +253,12 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 		p.pendingweapon = readyweapon;
 	}
 
+	// Tic was replayed? Don't try and use the replays's autoswitch at the same tic as weapon correction.
+	if (ClientReplay::getInstance().wasReplayed() && pending == wp_nochange)
+	{
+		p.pendingweapon = wp_nochange;
+	}
+
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
 		if (i < msg->player().powers_size())
@@ -264,6 +273,9 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 
 	if (!p.spectator)
 		p.cheats = msg->player().cheats();
+
+	// If a full update was declared, don't try and correct any weapons.
+	ClientReplay::getInstance().reset();
 }
 
 /**
@@ -551,6 +563,16 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->target = AActor::AActorPtr();
 	}
 
+	// Light up the projectile if it came from a horde boss
+	// This is a hack because oflags are a hack.
+	if (mo->flags & MF_MISSILE && mo->target && mo->target->oflags &&
+	    (mo->target->oflags & hordeBossModMask))
+	{
+		mo->oflags |= MFO_FULLBRIGHT;
+		mo->effects = FX_YELLOWFOUNTAIN;
+		mo->translation = translationref_t(&::bosstable[0]);
+	}
+
 	AActor* tracer = NULL;
 	if (bflags & baseline_t::TRACER)
 		tracer = P_FindThingById(msg->current().tracerid());
@@ -672,6 +694,10 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->flags |= MF_CORPSE | MF_DROPOFF;
 		mo->height >>= 2;
 		mo->flags &= ~MF_SOLID;
+		if (mo->oflags & hordeBossModMask)
+		{
+			mo->effects = 0; // Remove sparkles from boss corpses
+		}
 
 		if (mo->player)
 			mo->player->playerstate = PST_DEAD;
@@ -722,6 +748,7 @@ static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 //
 static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 {
+	ClientReplay::getInstance().reset();
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
 	::forcenetdemosplit = false;
@@ -786,6 +813,13 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 
 	if (!missingfiles.empty())
 	{
+		if (::missingCommercialIWAD)
+		{
+			Printf(PRINT_WARNING, "Server requires commercial IWAD that was not found.\n");
+			CL_QuitNetGame(NQ_DISCONNECT);
+			return;
+		}
+
 		OWantFile missing_file = missingfiles.front();
 		CL_QuitAndTryDownload(missing_file);
 		return;
@@ -887,6 +921,9 @@ static void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 	AActor* mo = P_FindThingById(netid);
 	if (mo && mo->player && mo->player->id == ::displayplayer_id)
 		::displayplayer_id = ::consoleplayer_id;
+
+	if (mo && mo->flags & MF_COUNTITEM)
+		level.found_items++;
 
 	P_ClearId(netid);
 }
@@ -1093,6 +1130,10 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		// denis - if this concerns the local player, restart the status bar
 		ST_Start();
 
+		// flash taskbar icon
+		IWindow* window = I_GetWindow();
+		window->flashWindow();
+
 		// [SL] 2012-04-23 - Clear predicted sectors
 		movingsectors.clear();
 	}
@@ -1156,8 +1197,12 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 		else 
 			p->health = 0;
 	}
+
 	if (p->armorpoints < 0)
 		p->armorpoints = 0;
+
+	if (p->armorpoints == 0)
+		p->armortype = 0;
 
 	if (healthDamage > 0)
 	{
@@ -1231,8 +1276,11 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		level.killed_monsters++;
 
 	if (target->player == &consoleplayer())
+	{
+		ClientReplay::getInstance().reset();
 		for (size_t i = 0; i < MAXSAVETICS; i++)
 			localcmds[i].clear();
+	}
 
 	if (target->player && lives >= 0)
 		target->player->lives = lives;
@@ -1629,16 +1677,26 @@ static void CL_ExitLevel(const odaproto::svc::ExitLevel* msg)
 {
 	gameaction = ga_completed;
 
+	ClientReplay::getInstance().reset();
+
 	if (netdemo.isRecording())
 		netdemo.writeIntermission();
 }
 
 static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 {
-	AActor* mo = P_FindThingById(msg->netid());
+	uint32_t id = msg->netid();
+	AActor* mo = P_FindThingById(id);
 
-	if (!consoleplayer().mo || !mo)
+	if (!consoleplayer().mo)
 		return;
+
+	if (!mo)
+	{
+		// Record this item into the replay engine for future replaying
+		ClientReplay::getInstance().recordReplayItem(::last_svgametic, id);
+		return;
+	}
 
 	P_GiveSpecial(&consoleplayer(), mo);
 }
@@ -1670,7 +1728,7 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
 {
 	int l = msg->linenum();
 	byte switchactive = msg->switch_active();
-	byte special = msg->special();
+	unsigned int special = msg->special();
 	unsigned int state = msg->state(); // DActiveButton::EWhere
 	short texture = msg->button_texture();
 	unsigned int time = msg->timer();
@@ -1683,8 +1741,14 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
 	{
 		// only playsound if we've received the full update from
 		// the server (not setting up the map from the server)
-		P_ChangeSwitchTexture(&lines[l], lines[l].flags & ML_REPEAT_SPECIAL,
-		                      recv_full_update);
+		bool repeat;
+
+		if (map_format.getZDoom())
+			repeat = lines[l].flags & ML_REPEATSPECIAL;
+		else
+			repeat = P_IsSpecialBoomRepeatable(lines[l].special);
+
+		P_ChangeSwitchTexture(&lines[l], repeat, recv_full_update);
 	}
 
 	// Only accept texture change from server while receiving the full update
@@ -1914,7 +1978,12 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 		return;
 
 	sector_t* sector = &::sectors[sectornum];
-	sector->special = special;
+	sector->flags &= ~SECF_SECRET;
+	sector->secretsector = false;
+
+	if (!map_format.getZDoom())
+		if (sector->special < 32)
+			sector->special = 0;
 
 	// Don't show other secrets if requested
 	if (!::hud_revealsecrets || ::hud_revealsecrets > 2)
@@ -2149,6 +2218,8 @@ static void CL_LevelState(const odaproto::svc::LevelState* msg)
 
 static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
+	ClientReplay::getInstance().reset();
+
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
 	AActor* mo;
@@ -2162,6 +2233,8 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 	}
 
 	// destroy all moving sector effects and sounds
+	// Also restore original light levels
+	// so light glowing looks normal
 	for (int i = 0; i < numsectors; i++)
 	{
 		if (sectors[i].floordata)
@@ -2175,10 +2248,17 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 			S_StopSound(sectors[i].soundorg);
 			sectors[i].ceilingdata->Destroy();
 		}
+
+		// Restore the old light levels so lighting effects look good every time
+		sectors[i].lightlevel = ::originalLightLevels[i];
 	}
 
 	P_DestroyButtonThinkers();
 
+	P_DestroyScrollerThinkers();
+
+	P_DestroyLightThinkers();
+	
 	// You don't get to keep cards.  This isn't communicated anywhere else.
 	if (sv_gametype == GM_COOP)
 		P_ClearPlayerCards(consoleplayer());
@@ -2274,7 +2354,7 @@ static void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
 			break;
 		}
 		case SPC_Gravity:
-			*(int*)&sector->gravity = msg->sector().gravity();
+			*&sector->gravity = msg->sector().gravity();
 			break;
 		case SPC_Panning:
 			sector->ceiling_xoffs = msg->sector().ceiling_offs().x();
@@ -2491,6 +2571,8 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 		fixed_t dx = msg->scroller().scroll_x();
 		fixed_t dy = msg->scroller().scroll_y();
 		int affectee = msg->scroller().affectee();
+		int accel = msg->scroller().accel();
+		int control = msg->scroller().control();
 		if (::numsides <= 0 || ::numsectors <= 0)
 			break;
 		if (affectee < 0)
@@ -2499,8 +2581,14 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 			break;
 		if (scrollType != DScroller::sc_side && affectee > ::numsectors)
 			break;
+		// remove null checks after 11 is released
+		// because right now, control sectors of 0 won't scroll
+		if (!control || control < 0)
+			control = -1;
+		if (!accel || accel < 0)
+			accel = 0;
 
-		new DScroller(scrollType, dx, dy, -1, affectee, 0);
+		new DScroller(scrollType, dx, dy, control, affectee, accel);
 		break;
 	}
 	case odaproto::svc::ThinkerUpdate::kFireFlicker: {
@@ -2871,6 +2959,10 @@ parseError_e CL_ParseCommand()
 	{
 		return err;
 	}
+
+	// Delete pointer on scope exit.
+	// [AM] Should be unique_ptr as of C++11.
+	std::auto_ptr<google::protobuf::Message> autoMSG(msg);
 
 	// Run the proper message function.
 	switch (cmd)

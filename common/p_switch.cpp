@@ -34,6 +34,7 @@
 #include "w_wad.h"
 #include "gi.h"
 #include "svc_message.h"
+#include "p_mapformat.h"
 
 EXTERN_CVAR(co_zdoomsound)
 extern int numtextures;
@@ -154,6 +155,9 @@ static void P_StartButton (line_t *line, DActiveButton::EWhere w, int texture,
 
 short* P_GetButtonTexturePtr(line_t* line, short*& altTexture, DActiveButton::EWhere& where)
 {
+	if (!line->sidenum[0])
+		return NULL;
+
 	int texTop = sides[line->sidenum[0]].toptexture;
 	int texMid = sides[line->sidenum[0]].midtexture;
 	int texBot = sides[line->sidenum[0]].bottomtexture;
@@ -290,17 +294,18 @@ void P_ChangeSwitchTexture(line_t* line, int useAgain, bool playsound)
 {
 	const char *sound;
 
-	if (!useAgain)
-		line->special = 0;
-
 	// EXIT SWITCH?
-	if (line->special == Exit_Normal ||
-		line->special == Exit_Secret ||
-		line->special == Teleport_NewMap ||
-		line->special == Teleport_EndGame)
+	if (P_IsExitLine(line->special))
+	{
 		sound = "switches/exitbutn";
+	}
 	else
+	{
 		sound = "switches/normbutn";
+	}
+
+	if (!useAgain && P_HandleSpecialRepeat(line))
+		line->special = 0;
 
 	DActiveButton::EWhere twhere;
 	short* altTexture;

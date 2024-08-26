@@ -59,6 +59,7 @@
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
 #include "cmdlib.h"
+#include "g_skill.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -103,6 +104,8 @@ bool isFast = false;
 //
 static char d_mapname[9];
 
+std::string G_NextMap();
+
 void G_DeferedInitNew (const char* mapname)
 {
 	std::string mapnamestr = mapname;
@@ -115,7 +118,14 @@ void G_DeferedInitNew (const char* mapname)
 		    mapname[7] == '4' ||
 			mapname[7] == 'C')
 		{
-			strncpy(d_mapname, EpisodeMaps[episodenum - 1], 8);
+			if (!Maplist::instance().empty())
+			{
+				G_ChangeMap();
+			}
+			else
+			{
+				G_NextMap();
+			}
 		}
 	}
 	else
@@ -164,7 +174,8 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
 
 	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	G_LoadWadString(str);
+	std::string wadstr = C_QuoteString(str);
+	G_LoadWadString(wadstr);
 }
 END_COMMAND (wad)
 
@@ -173,28 +184,39 @@ BOOL 			secretexit;
 EXTERN_CVAR(sv_shufflemaplist)
 
 // Returns the next map, assuming there is no maplist.
-std::string G_NextMap() {
+std::string G_NextMap()
+{
 	std::string next = level.nextmap.c_str();
 
-	if (gamestate == GS_STARTUP || sv_gametype != GM_COOP || !strlen(next.c_str())) {
+	if (gamestate == GS_STARTUP || sv_gametype != GM_COOP || next.empty())
+	{
 		// if not coop, stay on same level
 		// [ML] 1/25/10: OR if next is empty
 		next = level.mapname.c_str();
-	} else if (secretexit && W_CheckNumForName(level.secretmap.c_str()) != -1) {
+	}
+	else if (secretexit && W_CheckNumForName(level.secretmap.c_str()) != -1)
+	{
 		// if we hit a secret exit switch, go there instead.
 		next = level.secretmap.c_str();
 	}
 
 	// NES - exiting a Doom 1 episode moves to the next episode,
 	// rather than always going back to E1M1
-	if (!strncmp(next.c_str(), "EndGame", 7) ||
-		(gamemode == retail_chex && !strncmp (level.nextmap.c_str(), "E1M6", 4))) {
+	if (iequals(next.substr(0, 7), "EndGame") ||
+	    (gamemode == retail_chex && iequals(level.nextmap.c_str(), "E1M6")))
+	{
 		if (gameinfo.flags & GI_MAPxx || gamemode == shareware ||
-			(!sv_loopepisode && ((gamemode == registered && level.cluster == 3) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && level.cluster == 4)))) {
+			(!sv_loopepisode && ((gamemode == registered && level.cluster == 3) ||
+			((gameinfo.flags & GI_MENUHACK_RETAIL) && level.cluster == 4))))
+		{
 			next = CalcMapName(1, 1);
-		} else if (sv_loopepisode) {
+		}
+		else if (sv_loopepisode)
+		{
 			next = CalcMapName(level.cluster, 1);
-		} else {
+		}
+		else
+		{
 			next = CalcMapName(level.cluster + 1, 1);
 		}
 	}
@@ -202,7 +224,8 @@ std::string G_NextMap() {
 }
 
 // Determine the "next map" and change to it.
-void G_ChangeMap() {
+void G_ChangeMap()
+{
 	unnatural_level_progression = false;
 
 	// Skip the maplist to go to the desired level in case of a lobby map.
@@ -212,8 +235,7 @@ void G_ChangeMap() {
 	}
 	else
 	{
-		maplist_entry_t lobby_entry;
-		lobby_entry = Maplist::instance().get_lobbymap();
+		maplist_entry_t lobby_entry = Maplist::instance().get_lobbymap();
 
 		if (!Maplist::instance().lobbyempty())
 		{
@@ -276,7 +298,17 @@ void G_ChangeMap(size_t index) {
 		return;
 	}
 
-	G_LoadWadString(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
+	std::string wadstr;
+	for (size_t i = 0; i < maplist_entry.wads.size(); i++)
+	{
+		if (i != 0)
+		{
+			wadstr += " ";
+		}
+		wadstr += C_QuoteString(maplist_entry.wads.at(i));
+	}
+
+	G_LoadWadString(wadstr, maplist_entry.map);
 
 	// Set the new map as the current map
 	Maplist::instance().set_index(index);
@@ -324,7 +356,7 @@ void SV_CheckTeam(player_t &pl);
 //
 // denis - rewritten so that it does not force client reconnects
 //
-void G_DoNewGame (void)
+void G_DoNewGame()
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -372,6 +404,7 @@ void SV_ServerSettingChange();
 void G_InitNew (const char *mapname)
 {
 	size_t i;
+
 	DWORD previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
@@ -388,7 +421,7 @@ void G_InitNew (const char *mapname)
 		}
 	}
 
-	int old_gametype = sv_gametype.asInt();
+	const int old_gametype = sv_gametype.asInt();
 
 	cvar_t::UnlatchCVars ();
 
@@ -408,7 +441,7 @@ void G_InitNew (const char *mapname)
 		I_Error ("Could not find map %s\n", mapname);
 	}
 
-	bool wantFast = sv_fastmonsters || (sv_skill == sk_nightmare);
+	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
 	if (wantFast != isFast)
 	{
 		if (wantFast)
@@ -419,6 +452,16 @@ void G_InitNew (const char *mapname)
 				    (states[i].tics != 1 || demoplayback))
 					states[i].tics >>= 1; // don't change 1->0 since it causes cycles
 			}
+
+			for (i = 0; i < NUMMOBJTYPES; ++i)
+			{
+				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				{
+					int swap = mobjinfo[i].speed;
+					mobjinfo[i].speed = mobjinfo[i].altspeed;
+					mobjinfo[i].altspeed = swap;
+				}
+			}
 		}
 		else
 		{
@@ -426,6 +469,16 @@ void G_InitNew (const char *mapname)
 			{
 				if (states[i].flags & STATEF_SKILL5FAST)
 					states[i].tics <<= 1; // don't change 1->0 since it causes cycles
+			}
+
+			for (i = 0; i < NUMMOBJTYPES; ++i)
+			{
+				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				{
+					int swap = mobjinfo[i].altspeed;
+					mobjinfo[i].altspeed = mobjinfo[i].speed;
+					mobjinfo[i].speed = swap;
+				}
 			}
 		}
 		isFast = wantFast;
@@ -479,7 +532,7 @@ void G_InitNew (const char *mapname)
 	// [AM] Start the WDL log on new level.
 	M_StartWDLLog(true);
 
-	G_DoLoadLevel (0);
+	G_DoLoadLevel(0);
 
 	if (::serverside && !(previousLevelFlags & LEVEL_LOBBYSPECIAL))
 		SV_UpdatePlayerQueueLevelChange(info);
@@ -670,16 +723,6 @@ void G_DoResetLevel(bool full_reset)
 	// Reset the respawned monster count
 	level.respawned_monsters = 0;	
 
-	// Send information about the newly reset map.
-	for (it = players.begin(); it != players.end(); ++it)
-	{
-		// Player needs to actually be ingame
-		if (!it->ingame())
-			continue;
-
-		SV_ClientFullUpdate(*it);
-	}
-
 	// No need to clear the spawn locations because we're not loading a new map.
 	M_StartWDLLog(false);
 
@@ -700,12 +743,22 @@ void G_DoResetLevel(bool full_reset)
 		//      a players subsector to be valid (like use) to crash the server.
 		G_DoReborn(*it);
 	}
+
+	// Send information about the newly reset map, but AFTER the reborns.
+	for (it = players.begin(); it != players.end(); ++it)
+	{
+		// Player needs to actually be ingame
+		if (!it->ingame())
+			continue;
+
+		SV_ClientFullUpdate(*it);
+	}
 }
 
 //
 // G_DoLoadLevel
 //
-extern gamestate_t 	wipegamestate;
+extern gamestate_t wipegamestate;
 extern float BaseBlendA;
 
 void G_DoLoadLevel (int position)

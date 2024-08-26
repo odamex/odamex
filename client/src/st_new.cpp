@@ -52,6 +52,7 @@
 #include "c_bind.h"
 #include "p_horde.h"
 #include "c_dispatch.h"
+#include "hu_speedometer.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
@@ -88,7 +89,7 @@ static lumpHandle_t ToastIcon[NUMMODS];
 
 static int		NameUp = -1;
 
-extern lumpHandle_t sttminus;
+extern lumpHandle_t negminus;
 extern lumpHandle_t tallnum[10];
 extern lumpHandle_t faces[];
 extern int st_faceindex;
@@ -111,17 +112,22 @@ EXTERN_CVAR(hud_demoprotos)
 EXTERN_CVAR(hud_scale)
 EXTERN_CVAR(hud_bigfont)
 EXTERN_CVAR(hud_timer)
+EXTERN_CVAR(hud_speedometer)
 EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(hud_transparency)
+EXTERN_CVAR(hud_anchoring)
 EXTERN_CVAR(hud_demobar)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(sv_scorelimit);
 EXTERN_CVAR(sv_warmup)
+EXTERN_CVAR(hud_feedtime)
 EXTERN_CVAR(hud_feedobits)
 EXTERN_CVAR(g_horde_waves)
 EXTERN_CVAR(g_roundlimit)
+EXTERN_CVAR(hud_hordeinfo_debug)
+EXTERN_CVAR(g_preroundreset)
 
 void ST_unloadNew()
 {
@@ -195,7 +201,7 @@ void ST_initNew()
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 {
 	char digits[11], *d;
-	patch_t* minus = W_ResolvePatchHandle(sttminus);
+	patch_t* minus = W_ResolvePatchHandle(negminus);
 
 	if (num < 0)
 	{
@@ -245,7 +251,7 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 	} while (d /= 10);
 
 	if (num < 0)
-		x -= W_ResolvePatchHandle(sttminus)->width() * xscale;
+		x -= W_ResolvePatchHandle(negminus)->width() * xscale;
 
 	ST_DrawNum (x, y, scrn, num);
 }
@@ -634,6 +640,31 @@ static void drawHordeGametype()
 	            killColor);
 	hud::DrawText(SCREEN_BORDER, y + LINE_SPACING + BAR_BORDER, ::hud_scale, hud::X_RIGHT,
 	              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY);
+
+	if (hud_hordeinfo_debug)
+	{
+		V_SetFont("DIGFONT");
+
+		int min, max;
+		P_NextSpawnTime(min, max);
+
+		std::string buf, buf2;
+		if (info.alive() > define.maxTotalHealth())
+		{
+			buf2 = "PAUSED";
+		}
+		else
+		{
+			StrFormat(buf2, "%d-%d sec", min, max);
+		}
+		StrFormat(buf, "Min HP: %d\nAlive HP: %d\nMax HP: %d\nSpawn: %s",
+		          define.minTotalHealth(), info.alive(), define.maxTotalHealth(),
+		          buf2.c_str());
+		hud::DrawText(SCREEN_BORDER, 64, ::hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+		              hud::X_LEFT, hud::Y_BOTTOM, buf.c_str(), CR_GREY);
+
+		V_SetFont("SMALLFONT");
+	}
 }
 
 static void drawGametype()
@@ -713,7 +744,7 @@ void drawNetdemo() {
 		return;
 	}
 
-	if (!hud_demobar)
+	if (!hud_demobar || R_DemoBarInvisible())
 		return;
 
 	int xscale = hud_scale ? CleanXfac : 1;
@@ -770,6 +801,16 @@ void OdamexHUD() {
 	yscale = hud_scale ? CleanYfac : 1;
 	y = I_GetSurfaceHeight() - (num_height + 4) * yscale;
 
+	// HUD element anchoring.
+	int num_ax = 0, text_ax = 0, patch_ax = 0;
+	if (hud_anchoring.value() < 1.0f)
+	{
+		num_ax = (((float)I_GetSurfaceWidth() - (float)I_GetSurfaceHeight() * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
+		num_ax = MAX(0, num_ax);
+		text_ax = num_ax / xscale;
+		patch_ax = num_ax / xscale;
+	}
+
 	// Draw Armor if the player has any
 	if (plyr->armortype && plyr->armorpoints) {
 		const patch_t* current_armor = W_ResolvePatchHandle(armors[1]);
@@ -779,20 +820,20 @@ void OdamexHUD() {
 
 		if (current_armor) {
 			// Draw Armor type.  Vertically centered against armor number.
-			hud::DrawPatchScaled(48 + 2 + 10, 32, 20, 20, hud_scale,
+			hud::DrawPatchScaled(patch_ax + 48 + 2 + 10, 32, 20, 20, hud_scale,
 			                     hud::X_LEFT, hud::Y_BOTTOM,
 			                     hud::X_CENTER, hud::Y_MIDDLE,
 			                     current_armor);
 		}
-		ST_DrawNumRight(48 * xscale, y - 20 * yscale, screen, plyr->armorpoints);
+		ST_DrawNumRight(num_ax + 48 * xscale, y - 20 * yscale, screen, plyr->armorpoints);
 	}
 
 	// Draw Doomguy.  Vertically scaled to an area two pixels above and
 	// below the health number, and horizontally centered below the armor.
-	hud::DrawPatchScaled(48 + 2 + 10, 2, 20, 20, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+	hud::DrawPatchScaled(patch_ax + 48 + 2 + 10, 2, 20, 20, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
 	                     hud::X_CENTER, hud::Y_BOTTOM,
 	                     W_ResolvePatchHandle(faces[st_faceindex]));
-	ST_DrawNumRight(48 * xscale, y, screen, plyr->health);
+	ST_DrawNumRight(num_ax + 48 * xscale, y, screen, plyr->health);
 
 	if (g_lives)
 	{
@@ -802,7 +843,7 @@ void OdamexHUD() {
 			lives_color = CR_DARKGREY;
 
 		StrFormat(buf, "x%d", plyr->lives);
-		hud::DrawText(48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+		hud::DrawText(text_ax + 48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
 		              hud::X_LEFT, hud::Y_MIDDLE, buf.c_str(), lives_color, false);
 	}
 
@@ -823,17 +864,17 @@ void OdamexHUD() {
 		//       probably be commonized, along with "scale only if
 		//       smaller than bounding box".
 		if (ammopatch->width() > 16 || ammopatch->height() > 16) {
-			hud::DrawPatchScaled(12, 12, 16, 16, hud_scale,
+			hud::DrawPatchScaled(patch_ax + 12, 12, 16, 16, hud_scale,
 			                     hud::X_RIGHT, hud::Y_BOTTOM,
 			                     hud::X_CENTER, hud::Y_MIDDLE,
 			                     ammopatch);
 		} else {
-			hud::DrawPatch(12, 12, hud_scale,
+			hud::DrawPatch(patch_ax + 12, 12, hud_scale,
 			               hud::X_RIGHT, hud::Y_BOTTOM,
 			               hud::X_CENTER, hud::Y_MIDDLE,
 			               ammopatch);
 		}
-		ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, y, screen, plyr->ammo[ammotype]);
+		ST_DrawNumRight(I_GetSurfaceWidth() - num_ax - 24 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
 
 	int color;
@@ -845,8 +886,23 @@ void OdamexHUD() {
 		if (::hud_bigfont)
 			V_SetFont("BIGFONT");
 
-		hud::DrawText(0, 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
+		iy += V_LineHeight() + 1;
+
+		if (::hud_bigfont)
+			V_SetFont("SMALLFONT");
+	}
+
+	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
+	{
+		if (::hud_bigfont)
+			V_SetFont("BIGFONT");
+
+		StrFormat(buf, "%d" TEXTCOLOR_DARKGREY "ups",
+		          static_cast<int>(HU_GetPlayerSpeed()));
+		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
 		iy += V_LineHeight() + 1;
 
 		if (::hud_bigfont)
@@ -867,11 +923,34 @@ void OdamexHUD() {
 	// number on the other side of the screen.
 	if (::hud_bigfont)
 		V_SetFont("BIGFONT");
+	
+	// Special 3 line formatting for match duel
+	int spreadheight, scoreheight, placeheight;
 
-	hud::DrawText(4, 24 + V_LineHeight() + 1, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
-	              hud::X_RIGHT, hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY);
-	hud::DrawText(4, 24, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	if (G_IsMatchDuelGame())
+	{
+		spreadheight = 24 + (V_LineHeight() * 2) + 2;
+		scoreheight = 24 + V_LineHeight() + 1;
+		placeheight = 24;
+	}
+	else
+	{
+		spreadheight = 24 + V_LineHeight() + 1;
+		scoreheight = 24;
+		placeheight = 0; // No place height drawn if not match duel
+	}
+
+	hud::DrawText(text_ax + 4, spreadheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	              hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY);
+	hud::DrawText(text_ax + 4, scoreheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
 	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_GREY);
+
+	if (G_IsMatchDuelGame())
+	{
+		hud::DrawText(text_ax + 4, placeheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+		              hud::X_RIGHT, hud::Y_BOTTOM,
+		              hud::PersonalMatchDuelPlacement().c_str(), CR_GREY);
+	}
 
 	if (::hud_bigfont)
 		V_SetFont("SMALLFONT");
@@ -880,7 +959,7 @@ void OdamexHUD() {
 	if (G_IsCoopGame()) {
 		for (byte i = 0;i < NUMCARDS;i++) {
 			if (plyr->cards[i]) {
-				hud::DrawPatch(4 + (i * 10), 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+				hud::DrawPatch(patch_ax + 4 + (i * 10), 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 				               hud::X_RIGHT, hud::Y_BOTTOM,
 				               W_ResolvePatchHandle(keys[i]));
 			}
@@ -909,6 +988,9 @@ void DrawToasts()
 	if (!hud_feedobits)
 		return;
 
+	const int fadeDoneTics = (hud_feedtime * float(TICRATE));
+	const int fadeOutTics = fadeDoneTics - TICRATE;
+
 	V_SetFont("DIGFONT");
 	const int TOAST_HEIGHT = V_LineHeight() + 2;
 
@@ -918,16 +1000,15 @@ void DrawToasts()
 	const float oldtrans = ::hud_transparency;
 	for (drawToasts_t::const_iterator it = g_Toasts.begin(); it != g_Toasts.end(); ++it)
 	{
-		// Only render the message if it's less than 2 seconds in.
+		// Fade the toast out.
 		int tics = ::gametic - it->tic;
-		if (tics < TICRATE * 2)
+		if (tics < fadeOutTics)
 		{
 			::hud_transparency.ForceSet(1.0);
 		}
-		else if (tics < TICRATE * 3)
+		else if (tics < fadeDoneTics)
 		{
-			tics %= TICRATE;
-			float trans = static_cast<float>(TICRATE - tics) / TICRATE;
+			const float trans = Remap(tics, fadeOutTics, fadeDoneTics, 1.0, 0.0);
 			::hud_transparency.ForceSet(trans);
 		}
 		else
@@ -965,13 +1046,15 @@ void DrawToasts()
 
 void ToastTicker()
 {
+	const int fadeDoneTics = (hud_feedtime * float(TICRATE));
+
 	// Remove stale toasts in a loop.
 	drawToasts_t::iterator it = g_Toasts.begin();
 	while (it != g_Toasts.end())
 	{
 		int tics = ::gametic - it->tic;
 
-		if (tics >= TICRATE * 3)
+		if (tics >= fadeDoneTics)
 		{
 			it = g_Toasts.erase(it);
 		}
@@ -1091,9 +1174,27 @@ static std::string WinToColorString(const WinInfo& win)
 
 struct levelStateLines_t
 {
-	std::string first;
-	std::string second;
+	std::string title;
+	std::string subtitle[4];
 	float lucent;
+	levelStateLines_t() : lucent(1.0f) { }
+
+	void lucentFade(int tics, const int start, const int end)
+	{
+		if (tics < start)
+		{
+			lucent = 1.0f;
+		}
+		else if (tics < end)
+		{
+			tics %= TICRATE;
+			lucent = static_cast<float>(TICRATE - tics) / TICRATE;
+		}
+		else
+		{
+			lucent = 0.0f;
+		}
+	}
 };
 
 static void LevelStateHorde(levelStateLines_t& lines)
@@ -1106,13 +1207,13 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	{
 		if (gametic % 18 < 9)
 		{
-			lines.first = TEXTCOLOR_RED "!! WARNING !!";
+			lines.title = TEXTCOLOR_RED "!! WARNING !!";
 		}
 		else
 		{
-			lines.first = TEXTCOLOR_RED "WARNING";
+			lines.title = TEXTCOLOR_RED "WARNING";
 		}
-		lines.second =
+		lines.subtitle[0] =
 		    "Defeat the " TEXTCOLOR_YELLOW "boss " TEXTCOLOR_GREY "to win the wave";
 		tics = info.bossTic();
 	}
@@ -1120,34 +1221,44 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	{
 		if (::g_horde_waves.asInt() != 0)
 		{
-			StrFormat(lines.first,
+			StrFormat(lines.title,
 			          "Wave " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "of " TEXTCOLOR_YELLOW
 			          "%d",
 			          info.wave, ::g_horde_waves.asInt());
 		}
 		else
 		{
-			StrFormat(lines.first, "Wave " TEXTCOLOR_YELLOW "%d", info.wave);
+			StrFormat(lines.title, "Wave " TEXTCOLOR_YELLOW "%d", info.wave);
 		}
 
-		StrFormat(lines.second, "\"%s\"", define.name.c_str());
+		StrFormat(lines.subtitle[0], "\"" TEXTCOLOR_YELLOW "%s" TEXTCOLOR_GREY "\"",
+		          define.name.c_str());
+
+		StrFormat(lines.subtitle[1], "Difficulty: %s", define.difficulty(true));
+
+		// Detect when there are new weapons to pick up.
+		StringTokens weapList;
+		if (!consoleplayer().spectator)
+		{
+			weapList = define.weaponStrings(&consoleplayer());
+		}
+		else
+		{
+			// Spectators can see all weapons in a wave.
+			weapList = define.weaponStrings(NULL);
+		}
+
+		if (!weapList.empty())
+		{
+			StrFormat(lines.subtitle[3], TEXTCOLOR_GREY "Weapons: " TEXTCOLOR_GREEN "%s",
+			          JoinStrings(weapList, " ").c_str());
+		}
+
 		tics = ::level.time - info.waveTime;
 	}
 
-	// Only render the wave message if it's less than 2 seconds in.
-	if (tics < TICRATE * 2)
-	{
-		lines.lucent = 1.0f;
-	}
-	else if (tics < TICRATE * 3)
-	{
-		tics %= TICRATE;
-		lines.lucent = static_cast<float>(TICRATE - tics) / TICRATE;
-	}
-	else
-	{
-		lines.lucent = 0.0f;
-	}
+	// Only render the wave message if it's less than 3 seconds in.
+	lines.lucentFade(tics, TICRATE * 3, TICRATE * 4);
 }
 
 void LevelStateHUD()
@@ -1158,7 +1269,7 @@ void LevelStateHUD()
 		return;
 	}
 
-	levelStateLines_t lines = {"", "", 1.0f};
+	levelStateLines_t lines;
 	switch (::levelstate.getState())
 	{
 	case LevelState::WARMUP: {
@@ -1167,17 +1278,17 @@ void LevelStateHUD()
 			break;
 		}
 
-		lines.first = "Warmup";
+		lines.title = "Warmup";
 
 		if (::sv_warmup)
 		{
 			if (consoleplayer().ready)
 			{
-				lines.second = "Waiting for other players to ready up...";
+				lines.subtitle[0] = "Waiting for other players to ready up...";
 			}
 			else
 			{
-				StrFormat(lines.second,
+				StrFormat(lines.subtitle[0],
 				          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
 				          " when ready to play",
 				          ::Bindings.GetKeynameFromCommand("ready").c_str());
@@ -1185,22 +1296,30 @@ void LevelStateHUD()
 		}
 		else
 		{
-			lines.second = "Waiting for other players to join...";
+			lines.subtitle[0] = "Waiting for other players to join...";
 		}
 
 		break;
 	}
 	case LevelState::WARMUP_COUNTDOWN:
 	case LevelState::WARMUP_FORCED_COUNTDOWN: {
-		StrFormat(lines.first, "%s", G_GametypeName().c_str());
-		StrFormat(lines.second, "Match begins in " TEXTCOLOR_GREEN "%d",
+		StrFormat(lines.title, "%s", G_GametypeName().c_str());
+		StrFormat(lines.subtitle[0], "Match begins in " TEXTCOLOR_GREEN "%d",
 		          ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::PREROUND_COUNTDOWN: {
-		StrFormat(lines.first, "Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
-		StrFormat(lines.second, "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
-		          ::levelstate.getCountdown());
+		StrFormat(lines.title, "Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
+		if (g_preroundreset)
+		{
+			StrFormat(lines.subtitle[0], "Round begins in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
+		}
+		else
+		{
+			StrFormat(lines.subtitle[0], "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
+		}
 		break;
 	}
 	case LevelState::INGAME: {
@@ -1214,78 +1333,88 @@ void LevelStateHUD()
 			{
 				if (G_IsDefendingTeam(consoleplayer().userinfo.team))
 				{
-					lines.first = TEXTCOLOR_YELLOW "DEFEND!";
-					lines.second = "Defend the flag!";
+					lines.title = TEXTCOLOR_YELLOW "DEFEND!";
+					lines.subtitle[0] = "Defend the flag!";
 				}
 				else
 				{
-					lines.first = TEXTCOLOR_GREEN "CAPTURE!";
-					lines.second = "Capture the flag!";
+					lines.title = TEXTCOLOR_GREEN "CAPTURE!";
+					lines.subtitle[0] = "Capture the flag!";
 				}
+
+				// Only render the message if it's less than 2 seconds in.
+				lines.lucentFade(::level.time - ::levelstate.getIngameStartTime(),
+				                 TICRATE * 2, TICRATE * 3);
 			}
 			else if (G_IsCoopGame())
 			{
-				lines.first = "GO!\n";
+				lines.title = "GO!\n";
 				if (G_IsRoundsGame() && g_roundlimit)
 				{
-					StrFormat(lines.second,
+					StrFormat(lines.subtitle[0],
 					          TEXTCOLOR_GREEN "%d" TEXTCOLOR_GREY " attempts left",
 					          g_roundlimit.asInt() - ::levelstate.getRound() + 1);
 				}
 			}
 			else
 			{
-				lines.first = "FIGHT!\n";
+				lines.title = "FIGHT!\n";
 			}
 
 			// Only render the "FIGHT" message if it's less than 2 seconds in.
-			int tics = ::level.time - ::levelstate.getIngameStartTime();
-			if (tics < TICRATE * 2)
-			{
-				lines.lucent = 1.0f;
-			}
-			else if (tics < TICRATE * 3)
-			{
-				tics %= TICRATE;
-				lines.lucent = static_cast<float>(TICRATE - tics) / TICRATE;
-			}
-			else
-			{
-				lines.lucent = 0.0f;
-			}
+			lines.lucentFade(::level.time - ::levelstate.getIngameStartTime(),
+			                 TICRATE * 2, TICRATE * 3);
 		}
 		break;
 	}
 	case LevelState::ENDROUND_COUNTDOWN: {
-		StrFormat(lines.first,
-		          "Round " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
-		          ::levelstate.getRound());
+		if (G_IsCoopGame() || G_IsHordeMode())
+			StrFormat(lines.title,
+				"Attempt " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
+				::levelstate.getRound());
+		else
+			StrFormat(lines.title,
+				"Round " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
+				::levelstate.getRound());
 
 		WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
-			StrFormat(lines.second, "Tied at the end of the round");
+			StrFormat(lines.subtitle[0], "Tied at the end of the round");
 		else if (win.type == WinInfo::WIN_PLAYER)
-			StrFormat(lines.second, "%s wins the round", WinToColorString(win).c_str());
-		else if (win.type == WinInfo::WIN_TEAM)
-			StrFormat(lines.second, "%s team wins the round",
+			StrFormat(lines.subtitle[0], "%s wins the round",
 			          WinToColorString(win).c_str());
+		else if (win.type == WinInfo::WIN_TEAM)
+			StrFormat(lines.subtitle[0], "%s team wins the round",
+			          WinToColorString(win).c_str());
+		else if (G_IsCoopGame() || G_IsHordeMode())
+			StrFormat(lines.subtitle[0], "Next attempt in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
 		else
-			StrFormat(lines.second, "Next round in " TEXTCOLOR_GREEN "%d",
+			StrFormat(lines.subtitle[0], "Next round in " TEXTCOLOR_GREEN "%d",
 			          ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::ENDGAME_COUNTDOWN: {
-		StrFormat(lines.first, "Match complete");
-
 		WinInfo win = ::levelstate.getWinInfo();
-		if (win.type == WinInfo::WIN_DRAW)
-			StrFormat(lines.second, "The game ends in a tie");
-		else if (win.type == WinInfo::WIN_PLAYER)
-			StrFormat(lines.second, "%s wins!", WinToColorString(win).c_str());
-		else if (win.type == WinInfo::WIN_TEAM)
-			StrFormat(lines.second, "%s team wins!", WinToColorString(win).c_str());
+		//Upper Text
+		if 
+			(win.type == WinInfo::WIN_EVERYBODY)
+			StrFormat(lines.title, TEXTCOLOR_YELLOW "Mission Success!");
+		else if 
+			(win.type == WinInfo::WIN_NOBODY)
+			StrFormat(lines.title, TEXTCOLOR_RED "Mission Failed!");
 		else
-			StrFormat(lines.second, "Intermission in " TEXTCOLOR_GREEN "%d",
+			StrFormat(lines.title, "Match complete");
+
+		// Lower Text
+		if (win.type == WinInfo::WIN_DRAW)
+			StrFormat(lines.subtitle[0], "The game ends in a tie");
+		else if (win.type == WinInfo::WIN_PLAYER)
+			StrFormat(lines.subtitle[0], "%s wins!", WinToColorString(win).c_str());
+		else if (win.type == WinInfo::WIN_TEAM)
+			StrFormat(lines.subtitle[0], "%s team wins!", WinToColorString(win).c_str());
+		else
+			StrFormat(lines.subtitle[0], "Intermission in " TEXTCOLOR_GREEN "%d",
 			          ::levelstate.getCountdown());
 		break;
 	}
@@ -1296,7 +1425,7 @@ void LevelStateHUD()
 	V_SetFont("BIGFONT");
 
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(lines.first.c_str()) * CleanYfac;
+	int w = V_StringWidth(lines.title.c_str()) * CleanYfac;
 	int h = 12 * CleanYfac;
 
 	const float oldtrans = ::hud_transparency;
@@ -1305,19 +1434,25 @@ void LevelStateHUD()
 	if (::hud_transparency > 0.0f)
 	{
 		::screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
-		                               surface_height / 4 - h / 2, lines.first.c_str(),
+		                               surface_height / 4 - h / 2, lines.title.c_str(),
 		                               ::CleanYfac, ::CleanYfac);
 	}
 
 	V_SetFont("SMALLFONT");
+	int height = V_StringHeight("M") + 1;
 
-	w = V_StringWidth(lines.second.c_str()) * ::CleanYfac;
-	h = 8 * ::CleanYfac;
-	if (::hud_transparency > 0.0f)
+	for (size_t i = 0; i < ARRAY_LENGTH(lines.subtitle); i++)
 	{
-		::screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
-		                               (surface_height / 4 - h / 2) + (12 * ::CleanYfac),
-		                               lines.second.c_str(), ::CleanYfac, ::CleanYfac);
+		w = V_StringWidth(lines.subtitle[i].c_str()) * ::CleanYfac;
+		h = 8 * ::CleanYfac;
+		if (::hud_transparency > 0.0f)
+		{
+			::screen->DrawTextStretchedLuc(
+			    CR_GREY, surface_width / 2 - w / 2,
+			    (surface_height / 4 - h / 2) + (12 * ::CleanYfac) +
+			        (i * height * ::CleanYfac),
+			    lines.subtitle[i].c_str(), ::CleanYfac, ::CleanYfac);
+		}
 	}
 
 	::hud_transparency.ForceSet(oldtrans);
@@ -1361,24 +1496,35 @@ void SpectatorHUD()
 // [AM] HUD drawn with the Doom Status Bar.
 void DoomHUD()
 {
-	int st_y = statusBarY();
+	int st_y = statusBarY() + 4;
 
 	// Draw warmup state or timer
 	if (hud_timer)
 	{
-		hud::DrawText(0, st_y + 4, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_UNTRANSLATED);
+		st_y += V_LineHeight() + 1;
+	}
+
+	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
+	{
+		std::string buf;
+		StrFormat(buf, "%d" TEXTCOLOR_DARKGREY "ups",
+		          static_cast<int>(HU_GetPlayerSpeed()));
+		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
+		st_y += V_LineHeight() + 1;
 	}
 
 	// Draw other player name, if spying
-	hud::DrawText(0, st_y + 12, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_UNTRANSLATED);
+	st_y += V_LineHeight() + 1;
 
 	// Draw targeted player names.
-	hud::EATargets(0, st_y + 20, hud_scale,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               hud::X_CENTER, hud::Y_BOTTOM,
-	               1, hud_targetcount);
+	hud::EATargets(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	               hud::Y_BOTTOM, 1, hud_targetcount);
+	st_y += V_LineHeight() + 1;
 
 	// Draw gametype scoreboard
 	hud::drawGametype();

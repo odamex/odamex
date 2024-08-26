@@ -40,15 +40,16 @@
 #include "d_player.h"
 #include "p_setup.h"
 #include "d_dehacked.h"
+#include "g_skill.h"
+#include "p_mapformat.h"
 
 
-extern bool HasBehavior;
-
-EXTERN_CVAR (sv_allowexit)
+EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_novileghosts)
 EXTERN_CVAR(co_zdoomsound)
+EXTERN_CVAR(co_removesoullimit)
 
 enum dirtype_t
 {
@@ -99,6 +100,8 @@ const int distfriend = 128;
 
 // killough 9/8/98: whether monsters are allowed to strafe or retreat
 const int monster_backing = 0;
+
+extern bool isFast;
 
 //
 // ENEMY THINKING
@@ -673,8 +676,11 @@ void P_NewChaseDir (AActor *actor)
 //
 bool P_LookForPlayers(AActor *actor, bool allaround)
 {
-	sector_t* sector = actor->subsector->sector;
+	// [AM] Check subsectors first.
+	if (actor->subsector == NULL)
+		return false;
 
+	sector_t* sector = actor->subsector->sector;
 	if (!sector)
 		return false;
 
@@ -966,7 +972,7 @@ void A_Chase (AActor *actor)
 	if (actor->flags & MF_JUSTATTACKED)
 	{
 		actor->flags &= ~MF_JUSTATTACKED;
-		if ((sv_skill != sk_nightmare) && !sv_fastmonsters)
+		if (G_GetCurrentSkill().respawn_counter == 0 && !sv_fastmonsters)
 			P_NewChaseDir (actor);
 		return;
 	}
@@ -997,15 +1003,15 @@ void A_Chase (AActor *actor)
 		if (actor->info->attacksound)
 			S_Sound (actor, CHAN_WEAPON, actor->info->attacksound, 1, ATTN_NORM);
 
-		P_SetMobjState (actor, actor->info->meleestate, true);
+		if (serverside)
+			P_SetMobjState (actor, actor->info->meleestate, true);
 		return;
 	}
 
 	// check for missile attack
 	if (actor->info->missilestate)
 	{
-		if (sv_skill < sk_nightmare
-			&& actor->movecount && !sv_fastmonsters)
+		if (!G_GetCurrentSkill().fast_monsters && actor->movecount && !sv_fastmonsters)
 		{
 			goto nomissile;
 		}
@@ -1013,7 +1019,8 @@ void A_Chase (AActor *actor)
 		if (!P_CheckMissileRange (actor))
 			goto nomissile;
 
-		P_SetMobjState (actor, actor->info->missilestate, true);
+		if (serverside)
+			P_SetMobjState (actor, actor->info->missilestate, true);
 		actor->flags |= MF_JUSTATTACKED;
 		return;
 	}
@@ -1321,23 +1328,6 @@ void A_SkelMissile (AActor *actor)
 
 #define TRACEANGLE (0xc000000)
 
-fixed_t P_GetActorSpeed(AActor* actor)
-{
-	extern bool isFast;
-	int speed = actor->info->speed;
-
-	if (isFast)
-	{
-		if (actor->info->altspeed != NO_ALTSPEED)
-			speed = actor->info->altspeed;
-	}
-
-	if (speed < 256)
-		return speed * FRACUNIT;
-
-	return speed;
-}
-
 void A_Tracer (AActor *actor)
 {
 	// killough 1/18/98: this is why some missiles do not have smoke
@@ -1401,16 +1391,14 @@ void A_Tracer (AActor *actor)
 
 	exact = actor->angle>>ANGLETOFINESHIFT;
 
-	fixed_t speed = P_GetActorSpeed(actor);
-
-	actor->momx = FixedMul(speed, finecosine[exact]);
-	actor->momy = FixedMul(speed, finesine[exact]);
+	actor->momx = FixedMul(actor->info->speed, finecosine[exact]);
+	actor->momy = FixedMul(actor->info->speed, finesine[exact]);
 
 	// change slope
 	fixed_t dist = P_AproxDistance (dest->x - actor->x,
 							dest->y - actor->y);
 
-	dist = dist / speed;
+	dist = dist / actor->info->speed;
 
 	if (dist < 1)
 		dist = 1;
@@ -1518,11 +1506,9 @@ void A_VileChase (AActor *actor)
 
 	if (actor->movedir != DI_NODIR)
 	{
-		fixed_t speed = P_GetActorSpeed(actor);
-
 		// check for corpses to raise
-		viletryx = actor->x + speed * xspeed[actor->movedir];
-		viletryy = actor->y + speed * yspeed[actor->movedir];
+		viletryx = actor->x + actor->info->speed * xspeed[actor->movedir];
+		viletryy = actor->y + actor->info->speed * yspeed[actor->movedir];
 
 		xl = (viletryx - bmaporgx - MAXRADIUS*2)>>MAPBLOCKSHIFT;
 		xh = (viletryx - bmaporgx + MAXRADIUS*2)>>MAPBLOCKSHIFT;
@@ -1727,13 +1713,11 @@ void A_FatAttack1 (AActor *actor)
 
 		P_SpawnMissile (actor, actor->target, MT_FATSHOT);
 		AActor *mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
-		
-		fixed_t speed = P_GetActorSpeed(mo);	// Get speed of actor spawned
 
 		mo->angle += FATSPREAD;
 		int an = mo->angle >> ANGLETOFINESHIFT;
-		mo->momx = FixedMul(speed, finecosine[an]);
-		mo->momy = FixedMul(speed, finesine[an]);
+		mo->momx = FixedMul(mo->info->speed, finecosine[an]);
+		mo->momy = FixedMul(mo->info->speed, finesine[an]);
 	}
 }
 
@@ -1752,12 +1736,11 @@ void A_FatAttack2 (AActor *actor)
 		P_SpawnMissile (actor, actor->target, MT_FATSHOT);
 
 		AActor *mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
-	    fixed_t speed = P_GetActorSpeed(mo); // Get speed of actor spawned
 
 		mo->angle -= FATSPREAD*2;
 		int an = mo->angle >> ANGLETOFINESHIFT;
-		mo->momx = FixedMul(speed, finecosine[an]);
-		mo->momy = FixedMul(speed, finesine[an]);
+		mo->momx = FixedMul(mo->info->speed, finecosine[an]);
+		mo->momy = FixedMul(mo->info->speed, finesine[an]);
 	}
 }
 
@@ -1775,16 +1758,14 @@ void A_FatAttack3 (AActor *actor)
 		mo->angle -= FATSPREAD/2;
 		int an = mo->angle >> ANGLETOFINESHIFT;
 
-		fixed_t speed = P_GetActorSpeed(mo);	// Get speed of actor spawned
-		mo->momx = FixedMul(speed, finecosine[an]);
-		mo->momy = FixedMul(speed, finesine[an]);
+		mo->momx = FixedMul(mo->info->speed, finecosine[an]);
+		mo->momy = FixedMul(mo->info->speed, finesine[an]);
 
 		mo = P_SpawnMissile (actor, actor->target, MT_FATSHOT);
-		speed = P_GetActorSpeed(mo); // Get speed of actor spawned
 		mo->angle += FATSPREAD/2;
 		an = mo->angle >> ANGLETOFINESHIFT;
-		mo->momx = FixedMul(speed, finecosine[an]);
-		mo->momy = FixedMul(speed, finesine[an]);
+		mo->momx = FixedMul(mo->info->speed, finecosine[an]);
+		mo->momy = FixedMul(mo->info->speed, finesine[an]);
 	}
 }
 
@@ -2073,7 +2054,7 @@ void A_MonsterMeleeAttack(AActor* actor)
 	S_Sound(actor, CHAN_WEAPON, SoundMap[hitsound], 1, ATTN_NORM);
 
 	damage = (P_Random() % damagemod + 1) * damagebase;
-	P_DamageMobj(actor->target, actor, actor, damage);
+	P_DamageMobj(actor->target, actor, actor, damage, MOD_HIT);
 }
 
 //
@@ -2128,6 +2109,12 @@ void A_HealChase(AActor* actor)
 // 
 bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 {
+	// don't attempt to resurrect clientside
+	if (!serverside)
+	{
+		return false;
+	}
+
 	int xl, xh;
 	int yl, yh;
 	int bx, by;
@@ -2178,6 +2165,18 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 					}
 
 					P_SetMobjState(corpsehit, info->raisestate, true);
+
+					// [Nes] - Classic demo compatability: Ghost monster bug.
+					if ((co_novileghosts))
+					{
+						corpsehit->height =
+						    P_ThingInfoHeight(info);      // [RH] Use real mobj height
+						corpsehit->radius = info->radius; // [RH] Use real radius
+					}
+					else
+					{
+						corpsehit->height <<= 2;
+					}
 
 					corpsehit->flags = info->flags;
 					corpsehit->health = info->spawnhealth;
@@ -2230,8 +2229,13 @@ void A_FindTracer(AActor* actor)
 	angle_t fov;
 	int dist;
 
-	if (!actor || actor->tracer || !serverside)
+	if (!actor || (actor->tracer != AActor::AActorPtr() && actor->tracer->health > 0) ||
+	    !serverside)
 		return;
+
+	if (actor->tracer != AActor::AActorPtr() && actor->tracer->health <= 0)
+		actor->tracer = AActor::AActorPtr(); // [Blair] Clear tracer if it died, to keep
+		                                     // with MBF21 spec
 
 	fov = FixedToAngle(actor->state->args[0]);
 	dist = (actor->state->args[1]);
@@ -2484,9 +2488,12 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 
 	// if there are already 20 skulls on the level,
 	// don't spit another one
-	if (count > 20)
+	// co_removesoullimit removes the standard limit
+	if (count > 20 && !co_removesoullimit)
 		return;
-
+	// multiplayer retains a hard limit of 128
+	if (multiplayer && count > 128)
+		return;
 	// okay, there's room for another one
 	an = angle >> ANGLETOFINESHIFT;
 
@@ -2614,6 +2621,14 @@ void A_Fall (AActor *actor)
 
 	// So change this if corpse objects
 	// are meant to be obstacles.
+
+	// Remove any sort of boss effect on kill
+	// OFlags hack because of client issues
+	// Only remove the sparkling fountain, keep the transition
+	if (actor->type != MT_PLAYER && (actor->oflags & hordeBossModMask))
+	{
+		actor->effects = 0;
+	}
 }
 
 
@@ -2630,7 +2645,7 @@ void A_Die (AActor *actor)
 
 void A_Detonate (AActor *mo)
 {
-	P_RadiusAttack (mo, mo->target, mo->damage, mo->damage, true, MOD_UNKNOWN);
+	P_RadiusAttack (mo, mo->target, mo->damage, mo->damage, true, MOD_R_SPLASH);
 	if (mo->z <= mo->floorz + (mo->damage<<FRACBITS))
 	{
 		P_HitFloor (mo);
@@ -2657,7 +2672,7 @@ void A_Explode (AActor *thing)
 			mod = MOD_R_SPLASH;
 			break;
 		default:
-			mod = MOD_UNKNOWN;
+			mod = MOD_R_SPLASH;
 			break;
 	}
 
@@ -2670,34 +2685,30 @@ void A_Explode (AActor *thing)
 // A_BossDeath
 // Possibly trigger special effects if on a boss level
 //
-void A_BossDeath (AActor *actor)
+void A_BossDeath(AActor *actor)
 {
-	// custom boss actions for UMAPINFO
-	if (level.bossactions_donothing)
-		return;
-	
-	if (!level.bossactions->empty())
+	// make sure there is a player alive for victory
+	Players::const_iterator it = players.begin();
+	for (; it != players.end(); ++it)
 	{
-		// make sure there is a player alive for victory
-		Players::const_iterator it = players.begin();
-		for (; it != players.end(); ++it)
-		{
-			if (it->ingame() && it->health > 0)
-				break;
-		}
+		if (it->ingame() && it->health > 0)
+			break;
+	}
 
-		if (it == players.end())
-			return; // no one left alive, so do not end game
+	if (it == players.end())
+		return; // no one left alive, so do not end game
 
-		std::vector<OBossAction>::iterator ba = level.bossactions->begin();
+	if (!level.bossactions.empty())
+	{
+		std::vector<bossaction_t>::iterator ba = level.bossactions.begin();
 		
 		// see if the BossAction applies to this type
-		for (; ba != level.bossactions->end(); ++ba)
+		for (; ba != level.bossactions.end(); ++ba)
 		{
 			if (ba->type == actor->type)
 				break;
 		}
-		if (ba == level.bossactions->end())
+		if (ba == level.bossactions.end())
 			return;
 
 		// scan the remaining thinkers to see if all bosses are dead
@@ -2713,96 +2724,33 @@ void A_BossDeath (AActor *actor)
 			}
 		}
 
-		ba = level.bossactions->begin();
+		ba = level.bossactions.begin();
 
-		for (; ba != level.bossactions->end(); ++ba)
+		for (; ba != level.bossactions.end(); ++ba)
 		{
 			if (ba->type == actor->type)
 			{
-				if (!P_UseSpecialLine(actor, &ba->ld, 0, true))
-					P_CrossSpecialLine(0, 0, actor, true);
+				line_t ld;
+				
+				if (map_format.getZDoom())
+				{
+					maplinedef_t mld;
+					mld.special = (ba->special);
+					mld.tag = (ba->tag);
+
+					P_TranslateLineDef(&ld, &mld);
+				}
+				else
+				{
+					ld.special = ba->special;
+					ld.id = ba->tag;
+				}
+
+				if (!P_UseSpecialLine(actor, &ld, 0, true))
+					P_CrossSpecialLine(&ld, 0, actor, true);
 			}
 		}
-
-		return;
 	}
-	
-	// [RH] These all depend on the presence of level flags now
-	//		rather than being hard-coded to specific levels.
-
-	if ((level.flags & (LEVEL_MAP07SPECIAL|
-						LEVEL_BRUISERSPECIAL|
-						LEVEL_CYBORGSPECIAL|
-						LEVEL_SPIDERSPECIAL)) == 0)
-		return;
-
-	if (
-		((level.flags & LEVEL_MAP07SPECIAL) && (actor->flags3 & (MF3_MAP07BOSS1 | MF3_MAP07BOSS2))) ||
-		((level.flags & LEVEL_BRUISERSPECIAL) && (actor->flags3 & MF3_E1M8BOSS)) ||
-	    ((level.flags & LEVEL_CYBORGSPECIAL) && (actor->flags3 & (MF3_E2M8BOSS | MF3_E4M6BOSS))) ||
-	    ((level.flags & LEVEL_SPIDERSPECIAL) && (actor->flags3 & (MF3_E3M8BOSS | MF3_E4M8BOSS)))
-	   )
-		;
-	else return;
-
-	// make sure there is a player alive for victory
-	Players::const_iterator it = players.begin();
-	for (;it != players.end();++it)
-	{
-		if (it->ingame() && it->health > 0)
-			break;
-	}
-
-	if (it == players.end())
-		return; // no one left alive, so do not end game
-
-	// scan the remaining thinkers to see if all bosses are dead
-	TThinkerIterator<AActor> iterator;
-	AActor *other;
-
-	while ((other = iterator.Next()))
-	{
-		if (other != actor && other->type == actor->type && other->health > 0)
-		{
-			// other boss not dead
-			return;
-		}
-	}
-
-	// victory!
-	if (level.flags & LEVEL_MAP07SPECIAL)
-	{
-		if (actor->flags3 & MF3_MAP07BOSS1)
-		{
-			EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
-			return;
-		}
-
-		if (actor->flags3 & MF3_MAP07BOSS2)
-		{
-			EV_DoFloor(DFloor::floorRaiseByTexture, NULL, 667, FRACUNIT, 0, 0, 0);
-			return;
-		}
-	}
-	else
-	{
-		switch (level.flags & LEVEL_SPECACTIONSMASK)
-		{
-			case LEVEL_SPECLOWERFLOOR:
-				EV_DoFloor(DFloor::floorLowerToLowest, NULL, 666, FRACUNIT, 0, 0, 0);
-				return;
-
-			case LEVEL_SPECOPENDOOR:
-				EV_DoDoor(DDoor::doorOpen, NULL, NULL, 666, SPEED(64), 0, NoKey);
-				return;
-		}
-	}
-
-	// [RH] If noexit, then don't end the level.
-	if (sv_gametype != GM_COOP && !sv_allowexit)
-		return;
-
-	G_ExitLevel (0, 1);
 }
 
 
@@ -2909,7 +2857,7 @@ void A_BrainExplode (AActor *mo)
 	int x = mo->x + P_RandomDiff (mo)*2048;
 	int y = mo->y;
 	int z = 128 + P_Random (mo)*2*FRACUNIT;
-	AActor *th = new AActor (x,y,z, MT_ROCKET);
+	AActor *th = new AActor (x, y, z, MT_ROCKET);
 	th->momz = P_Random (mo) << 9;
 
 	P_SetMobjState (th, S_BRAINEXPLODE1, true);
@@ -2934,23 +2882,20 @@ void A_BrainSpit (AActor *mo)
 	if(!serverside)
 		return;
 
-	AActor* 	targ;
-	AActor* 	newmobj;
-
 	// [RH] Do nothing if there are no brain targets.
 	if (numbraintargets == 0)
 		return;
 
 	brain.easy ^= 1;		// killough 3/26/98: use brain struct
-	if (sv_skill <= sk_easy && (!brain.easy))
+	if (G_GetCurrentSkill().easy_boss_brain && (!brain.easy))
 		return;
 
 	// shoot a cube at current target
-	targ = braintargets[brain.targeton++];	// killough 3/26/98:
+	AActor* targ = braintargets[brain.targeton++];	// killough 3/26/98:
 	brain.targeton %= numbraintargets;		// Use brain struct for targets
 
 	// spawn brain missile
-	newmobj = P_SpawnMissile (mo, targ, MT_SPAWNSHOT);
+	AActor* newmobj = P_SpawnMissile(mo, targ, MT_SPAWNSHOT);
 
 	if(newmobj)
 	{
@@ -3148,11 +3093,7 @@ void A_PlaySound(AActor* mo)
 		sndmap = 0;
 	}
 
-	if (!clientside)
-		SV_Sound(mo, CHAN_BODY, SoundMap[sndmap],
-		         (mo->state->misc2 ? ATTN_NONE : ATTN_NORM));
-	else
-		S_Sound(mo, CHAN_BODY, SoundMap[sndmap], 1,
+	S_Sound(mo, CHAN_BODY, SoundMap[sndmap], 1,
 		        (mo->state->misc2 ? ATTN_NONE : ATTN_NORM));
 }
 

@@ -29,10 +29,16 @@ B2_KEY_ID = os.getenv("B2_KEY_ID")
 GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME")
 GITHUB_SHA = os.getenv("GITHUB_SHA")
 GITHUB_REF = os.getenv("GITHUB_REF")
+GITHUB_REPOSITORY_OWNER = os.getenv("GITHUB_REPOSITORY_OWNER")
 
 # Skip for pull requests
 if GITHUB_EVENT_NAME == "pull_request":
     print(f"==> Skipping upload for \"{GITHUB_EVENT_NAME}\".")
+    sys.exit(0)
+
+# Skip if on a fork
+if GITHUB_REPOSITORY_OWNER != "odamex":
+    print(f"==> Skipping upload because repo owner is \"{GITHUB_REPOSITORY_OWNER}\" and not \"odamex\".")
     sys.exit(0)
 
 # Load up JSON so we can grab a message

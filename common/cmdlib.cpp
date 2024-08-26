@@ -240,9 +240,9 @@ bool IsRealNum(const char* str)
 
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
-bool iequals(const std::string &s1, const std::string &s2)
+bool iequals(const std::string& s1, const std::string& s2)
 {
-	return StdStringToUpper(s1).compare(StdStringToUpper(s2)) == 0;
+	return stricmp(s1.c_str(), s2.c_str()) == 0;
 }
 
 size_t StdStringFind(const std::string& haystack, const std::string& needle,
@@ -761,6 +761,23 @@ void StripColorCodes(std::string& str)
 		else
 			pos++;
 	}
+}
+
+/**
+ * @brief Remap a value from one value range to another.
+ *
+ * @detail https://stackoverflow.com/q/3451553/91642
+ *
+ * @param value Value to remap.
+ * @param low1 Lower bound on the source range.
+ * @param high1 Upper bound on the source range.
+ * @param low2 Lower bound on the destination range.
+ * @param high2 Upper bound on the destination range.
+ */
+double Remap(const double value, const double low1, const double high1, const double low2,
+             const double high2)
+{
+	return low2 + (value - low1) * (high2 - low2) / (high1 - low1);
 }
 
 //

@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __CL_DOWNLOAD_H__
-#define __CL_DOWNLOAD_H__
+#pragma once
 
 
 #include "otransfer.h"
@@ -43,5 +42,3 @@ bool CL_StopDownload();
 void CL_DownloadTick();
 std::string CL_DownloadFilename();
 OTransferProgress CL_DownloadProgress();
-
-#endif

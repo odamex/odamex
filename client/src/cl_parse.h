@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __CL_PARSE_H__
-#define __CL_PARSE_H__
+#pragma once
 
 
 
@@ -46,5 +45,3 @@ typedef std::vector<Proto> Protos;
 
 const Protos& CL_GetTicProtos();
 parseError_e CL_ParseCommand();
-
-#endif // __CL_PARSE_H__

@@ -21,10 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __M_FILEIO__
-#define __M_FILEIO__
-
-
+#pragma once
 
 #include "d_main.h"
 
@@ -132,6 +129,17 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString> files);
 
 /**
+ * @brief Attempt to find multiple PWAD files in a directory - case insensitive.
+ * 
+ * @detail Unlike M_BaseFileSearchDir, this scans the entire directory and
+ *         doesn't care about hashes or hashed files.
+ * 
+ * @param dir Directory to search.
+ * @return Filenames of any found files.
+ */
+std::vector<std::string> M_PWADFilesScanDir(std::string dir);
+
+/**
  * @brief Get absolute path from passed path.
  * 
  * @param path Path to make absolute.
@@ -139,5 +147,3 @@ std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString
  * @return True if the path was made absolute successfully.
  */
 bool M_GetAbsPath(const std::string& path, std::string& out);
-
-#endif

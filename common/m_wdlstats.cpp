@@ -36,6 +36,7 @@
 extern Players players;
 
 EXTERN_CVAR(sv_gametype)
+EXTERN_CVAR(sv_hostname)
 EXTERN_CVAR(sv_teamspawns)
 EXTERN_CVAR(sv_playerbeacons)
 EXTERN_CVAR(g_sides)
@@ -992,7 +993,7 @@ void M_CommitWDLLog()
 		return;
 	}
 
-	// Header
+	// Header (metadata)
 	fprintf(fh, "version=%d\n", WDLSTATS_VERSION);
 	fprintf(fh, "time=%s\n", iso8601buf);
 	fprintf(fh, "levelnum=%d\n", ::level.levelnum);
@@ -1006,6 +1007,7 @@ void M_CommitWDLLog()
 	fprintf(fh, "round=%d\n", ::levelstate.getRound());
 	fprintf(fh, "winresult=%d\n", ::levelstate.getWinInfo().type);
 	fprintf(fh, "winid=%d\n", ::levelstate.getWinInfo().id);
+	fprintf(fh, "hostname=%s\n", ::sv_hostname.cstring());
 
 	// Players
 	fprintf(fh, "players\n");

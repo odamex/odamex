@@ -58,7 +58,7 @@ const std::string& G_GametypeName()
 	static std::string name;
 	if (!g_gametypename.str().empty())
 		name = g_gametypename.str();
-	if (G_IsHordeMode() && g_lives)
+	else if (G_IsHordeMode() && g_lives)
 		name = "Survival Horde";
 	else if (G_IsHordeMode())
 		name = "Horde";
@@ -312,6 +312,14 @@ bool G_IsCoopGame()
 bool G_IsFFAGame()
 {
 	return sv_gametype == GM_DM;
+}
+
+/**
+ * @brief Check if the gametype is Match Duel, a new take on classic Doom duel.
+ */
+bool G_IsMatchDuelGame()
+{
+	return sv_gametype == GM_DM && sv_maxplayers == 2 && g_rounds;
 }
 
 /**

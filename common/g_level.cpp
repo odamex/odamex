@@ -851,7 +851,13 @@ void G_InitLevelLocals()
 				begin = info.level_name.substr(pos + search.length());
 			else
 				begin = info.level_name;
-		}		
+		}
+		else
+		{
+			begin = info.level_name;
+		}
+
+
 		if (!begin.empty())
 		{
 			std::string level_name(begin);
@@ -879,6 +885,8 @@ void G_InitLevelLocals()
 	{
 		::level.skypic2 =::level.skypic.c_str();
 	}
+	::level.sky1ScrollDelta = info.sky1ScrollDelta;
+	::level.sky2ScrollDelta = info.sky2ScrollDelta;
 
 	if (::level.flags & LEVEL_JUMP_YES)
 	{
@@ -913,8 +921,10 @@ void G_InitLevelLocals()
 	::level.interbackdrop = info.interbackdrop;
 	::level.intermusic = info.intermusic;
 	
-	::level.bossactions = &info.bossactions;
-	::level.bossactions_donothing = info.bossactions_donothing;
+	::level.bossactions = info.bossactions;
+	::level.label = info.label;
+	::level.clearlabel = info.clearlabel;
+	::level.author = info.author;
 	
 	::level.detected_gametype = GM_COOP;
 

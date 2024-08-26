@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __C_DISPATCH_H__
-#define __C_DISPATCH_H__
+#pragma once
 
 #include "dobject.h"
 
@@ -144,5 +142,3 @@ struct ActionBits
 };
 
 extern unsigned int MakeKey (const char *s);
-
-#endif //__C_DISPATCH_H__

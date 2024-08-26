@@ -1,5 +1,4 @@
-#ifndef __SV_PCH__
-#define __SV_PCH__
+#pragma once
 
 // system
 #include "i_system.h"
@@ -16,5 +15,3 @@
 
 // common
 #include "c_pch.h"
-
-#endif // __SV_PCH__

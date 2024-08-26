@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include <ctime>
+
 #include "gstrings.h"
 #include "c_console.h"
 #include "c_dispatch.h"
@@ -50,6 +52,7 @@
 #include "cl_responderkeys.h"
 
 #include "gi.h"
+#include "g_skill.h"
 #include "m_fileio.h"
 
 #ifdef _XBOX
@@ -82,6 +85,7 @@ void	CL_SendUserInfo();
 void	M_ChangeTeam (int choice);
 team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
+colorpreset_t D_ColorPreset (const char *colorpreset);
 
 #define SAVESTRINGSIZE	24
 
@@ -109,6 +113,9 @@ short				itemOn; 			// menu item skull is on
 short				skullAnimCounter;	// skull animation counter
 short				whichSkull; 		// which skull to draw
 bool				drawSkull;			// [RH] don't always draw skull
+
+// hack for PlayerSetup
+int					PSetupDepth;
 
 // graphic name of skulls
 char				skullName[2][9] = {"M_SKULL1", "M_SKULL2"};
@@ -171,11 +178,13 @@ static void M_EditPlayerName (int choice);
 //static void M_EditPlayerTeam (int choice);
 //static void M_PlayerTeamChanged (int choice);
 static void M_PlayerNameChanged (int choice);
+static void M_ChangeGender (int choice);
+static void M_ChangeAutoAim (int choice);
+static void M_ChangeColorPreset (int choice);
+static void SendNewColor (int red, int green, int blue);
 static void M_SlidePlayerRed (int choice);
 static void M_SlidePlayerGreen (int choice);
 static void M_SlidePlayerBlue (int choice);
-static void M_ChangeGender (int choice);
-static void M_ChangeAutoAim (int choice);
 bool M_DemoNoPlay;
 
 static IWindowSurface* fire_surface;
@@ -298,34 +307,27 @@ oldmenu_t ExpDef =
 //
 // NEW GAME
 //
-enum newgame_t
-{
-	killthings,
-	toorough,
-	hurtme,
-	violence,
-	nightmare,
-	pistolstart,
-	newg_end
-} newgame_e;
 
-oldmenuitem_t NewGameMenu[]=
+oldmenuitem_t NewGameMenu[MAX_SKILLS + 1]=
 {
-	{1,"M_JKILL",		M_ChooseSkill, 'i'},
-	{1,"M_ROUGH",		M_ChooseSkill, 'h'},
-	{1,"M_HURT",		M_ChooseSkill, 'h'},
-	{1,"M_ULTRA",		M_ChooseSkill, 'u'},
-	{1,"M_NMARE",		M_ChooseSkill, 'n'},
-	{1,"\0",			M_ChooseSkill, 'p'}
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	{1,"\0", M_ChooseSkill,0},
+	//{1,"\0", M_ChooseSkill,0}
 };
 
 oldmenu_t NewDef =
 {
-	newg_end,			// # of menu items
+	0,			// # of menu items
 	NewGameMenu,		// oldmenuitem_t ->
 	M_DrawNewGame,		// drawing routine ->
 	48,63,				// x,y
-	hurtme				// lastOn
+	0				// lastOn
 };
 
 //
@@ -337,11 +339,12 @@ enum psetup_t
 {
 	playername,
 	playerteam,
+	playersex,
+	playeraim,
+	playercolorpreset,
 	playerred,
 	playergreen,
 	playerblue,
-	playersex,
-	playeraim,
 	psetup_end
 } psetup_e;
 
@@ -349,11 +352,12 @@ oldmenuitem_t PlayerSetupMenu[] =
 {
 	{ 1,"", M_EditPlayerName, 'N' },
 	{ 2,"", M_ChangeTeam, 'T' },
+	{ 2,"", M_ChangeGender, 'E' },
+	{ 2,"", M_ChangeAutoAim, 'A' },
+    { 2,"", M_ChangeColorPreset, 'C' },
 	{ 2,"", M_SlidePlayerRed, 'R' },
 	{ 2,"", M_SlidePlayerGreen, 'G' },
-	{ 2,"", M_SlidePlayerBlue, 'B' },
-	{ 2,"", M_ChangeGender, 'E' },
-	{ 2,"", M_ChangeAutoAim, 'A' }
+	{ 2,"", M_SlidePlayerBlue, 'B' }
 };
 
 oldmenu_t PSetupDef = {
@@ -513,6 +517,7 @@ BEGIN_COMMAND (menu_main)
     S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_SetupNextMenu (&MainDef);
+	PSetupDepth = 2;
 }
 END_COMMAND (menu_main)
 
@@ -551,6 +556,7 @@ BEGIN_COMMAND (menu_options)
     S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
     M_StartControlPanel ();
 	M_Options(0);
+	PSetupDepth = 1;
 }
 END_COMMAND (menu_options)
 
@@ -595,6 +601,7 @@ BEGIN_COMMAND (menu_player)
     S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	M_StartControlPanel ();
 	M_PlayerSetup(0);
+	PSetupDepth = 0;
 }
 END_COMMAND (menu_player)
 
@@ -635,7 +642,7 @@ void M_ReadSaveStrings(void)
 		}
 		else
 		{
-			size_t readlen = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			const size_t readlen = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
 			if (readlen < 1)
 			{
 				printf("M_Read_SaveStrings(): Failed to read handle.\n");
@@ -737,8 +744,8 @@ void M_DoSave (int slot)
 //
 void M_SaveSelect (int choice)
 {
-	time_t     ti = time(NULL);
-	struct tm *lt = localtime(&ti);
+	const time_t     ti = time(NULL);
+	const struct tm *lt = localtime(&ti);
 
 	// we are going to be intercepting all chars
 	genStringEnter = 1;
@@ -938,7 +945,7 @@ void M_DrawNewGame()
 	const int SMALLFONT_OFFSET = 8; // Line up with the skull
 
 	const char* pslabel = "Pistol Start Each Level ";
-	const int psy = NewDef.y + (LINEHEIGHT * 5) + SMALLFONT_OFFSET;
+	const int psy = NewDef.y + (LINEHEIGHT * skillnum) + SMALLFONT_OFFSET;
 
 	screen->DrawTextCleanMove(CR_RED, NewDef.x, psy, pslabel);
 	screen->DrawTextCleanMove(CR_GREY, NewDef.x + V_StringWidth(pslabel), psy,
@@ -963,6 +970,29 @@ namespace
 			EpisodeMenu[i].alphaKey = EpisodeInfos[i].key;
 		}
 	}
+
+	void SetupSkillList()
+	{
+	    NewDef.lastOn = defaultskillmenu;
+
+	    int i = 0;
+	    for (; i < skillnum; ++i)
+	    {
+		    if (SkillInfos[i].pic_name.empty())
+		    {
+			    strncpy(NewGameMenu[i].name, SkillInfos[i].menu_name.c_str(), 8);
+		    }
+		    else
+		    {
+			    strncpy(NewGameMenu[i].name, SkillInfos[i].pic_name.c_str(), 8);
+		    }
+
+			NewGameMenu[i].alphaKey = SkillInfos[i].shortcut;
+	    }
+
+		strncpy(NewGameMenu[i].name, "\0", 1);
+	    NewGameMenu[i].alphaKey = 'p';
+	}
 }
 
 void M_NewGame(int choice)
@@ -986,6 +1016,8 @@ void M_NewGame(int choice)
 
 		epi = 0;
 
+		NewDef.numitems = skillnum + 1;
+
 		if (episodenum > 1)
 		{
 			SetupEpisodeList();
@@ -993,6 +1025,7 @@ void M_NewGame(int choice)
 		}
 		else
 		{
+			SetupSkillList();
 			M_SetupNextMenu(&NewDef);
 		}
 	}
@@ -1012,18 +1045,20 @@ void M_DrawEpisode()
 		y -= (LINEHEIGHT * (episodenum - 4));
 	}
 		
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_EPISOD"), 54, y);
+	screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
 }
+
+static int skillchoice = 0;
 
 void M_VerifyNightmare(int ch)
 {
 	if (ch != 'y' && !Key_IsYesKey(ch))
 	{
-	    M_ClearMenus ();
+	    M_ClearMenus();
 		return;
 	}
 
-	M_StartGame(nightmare);
+	M_StartGame(skillchoice);
 }
 
 void M_StartGame(int choice)
@@ -1033,7 +1068,7 @@ void M_StartGame(int choice)
 
     if (gamemode == commercial_bfg)     // Funky external loading madness fun time (DOOM 2 BFG)
     {
-        std::string str = "nerve.wad";
+	    const std::string str = "nerve.wad";
 
         if (epi)
         {
@@ -1057,7 +1092,7 @@ void M_StartGame(int choice)
     }
     else
     {
-        G_DeferedInitNew (EpisodeMaps[epi]);
+        G_DeferedInitNew (EpisodeMaps[epi].c_str());
     }
 
     M_ClearMenus ();
@@ -1065,41 +1100,54 @@ void M_StartGame(int choice)
 
 void M_ChooseSkill(int choice)
 {
-	if (choice == pistolstart)
+	if (choice == skillnum)
 	{
 		g_resetinvonexit = !g_resetinvonexit;
 		return;
 	}
-	else if (choice == nightmare)
+	else if (SkillInfos[choice].must_confirm)
 	{
-		M_StartMessage(GStrings(NIGHTMARE),M_VerifyNightmare,true);
+		const char* must_confirm_text = SkillInfos[choice].must_confirm_text.c_str();
+
+		if (must_confirm_text[0] == '$')
+			M_StartMessage(GStrings(StdStringToUpper(must_confirm_text + 1)),
+		               M_VerifyNightmare, true);
+		else
+			M_StartMessage(must_confirm_text, M_VerifyNightmare, true);
+
+		skillchoice = choice;
+
 		return;
 	}
 
 	M_StartGame(choice);
 }
 
-void M_Episode (int choice)
+void M_Episode(int choice)
 {
 	if ((gameinfo.flags & GI_SHAREWARE) && choice)
 	{
 		M_StartMessage(GStrings(SWSTRING),NULL,false);
 		//M_SetupNextMenu(&ReadDef1);
-		M_ClearMenus ();
+		M_ClearMenus();
 		return;
 	}
 
 	epi = choice;
 
 	if (EpisodeInfos[epi].noskillmenu)
-		M_StartGame(2); // TODO: Implement defaultskillmenu
+		M_StartGame(defaultskillmenu);
 	else
+	{
+		SetupSkillList();
 		M_SetupNextMenu(&NewDef);
+	}
 }
 
-void M_Expansion (int choice)
+void M_Expansion(int choice)
 {
 	epi = choice;
+	SetupSkillList();
 	M_SetupNextMenu(&NewDef);
 }
 
@@ -1108,34 +1156,34 @@ void M_Expansion (int choice)
 // Read This Menus
 // Had a "quick hack to fix romero bug"
 //
-void M_DrawReadThis1 (void)
+void M_DrawReadThis1()
 {
-	patch_t *p = W_CachePatch(gameinfo.info.infoPage[0]);
+	const patch_t *p = W_CachePatch(gameinfo.info.infoPage[0]);
 	screen->DrawPatchFullScreen(p);
 }
 
 //
 // Read This Menus - optional second page.
 //
-void M_DrawReadThis2 (void)
+void M_DrawReadThis2()
 {
-	patch_t *p = W_CachePatch(gameinfo.info.infoPage[1]);
+	const patch_t *p = W_CachePatch(gameinfo.info.infoPage[1]);
 	screen->DrawPatchFullScreen(p);
 }
 
 //
 // Read This Menus - shareware third page.
 //
-void M_DrawReadThis3 (void)
+void M_DrawReadThis3()
 {
-	patch_t *p = W_CachePatch(gameinfo.info.infoPage[2]);
+	const patch_t *p = W_CachePatch(gameinfo.info.infoPage[2]);
 	screen->DrawPatchFullScreen(p);
 }
 
 //
 // M_Options
 //
-void M_DrawOptions(void)
+void M_DrawOptions()
 {
 	screen->DrawPatchClean (W_CachePatch("M_OPTTTL"), 108, 15);
 }
@@ -1179,7 +1227,7 @@ void M_EndGame(int choice)
 // M_QuitDOOM
 //
 
-void STACK_ARGS call_terms (void);
+void STACK_ARGS call_terms();
 
 void M_QuitResponse(int ch)
 {
@@ -1191,13 +1239,14 @@ void M_QuitResponse(int ch)
 
 	// Stop the music so we do not get stuck notes
 	I_StopSong();
-	
+	if (snd_musicsystem.asInt() == MS_PORTMIDI)
+		I_ShutdownMusic();
+
 	if (!multiplayer)
 	{
-		if (gameinfo.quitSounds)
+		if (gameinfo.quitSound[0])
 		{
-			S_Sound(CHAN_INTERFACE,
-					gameinfo.quitSounds[(gametic>>2)&7], 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, gameinfo.quitSound, 1, ATTN_NONE);
 			I_WaitVBL (105);
 		}
 	}
@@ -1224,9 +1273,11 @@ void M_QuitDOOM(int choice)
 //		Player Setup Menu code
 // -----------------------------------------------------
 
-void M_DrawSlider (int x, int y, float min, float max, float cur);
+void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
 
 static const char *genders[3] = { "male", "female", "cyborg" };
+// Acts 19 quiz the order must match d_netinf.h
+static const char *colorpresets[11] = { "custom", "blue", "indigo", "green", "brown", "red", "gold", "jungle green", "purple", "white", "black" };
 static state_t *PlayerState;
 static int PlayerTics;
 argb_t CL_GetPlayerColor(player_t*);
@@ -1234,6 +1285,8 @@ argb_t CL_GetPlayerColor(player_t*);
 
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (cl_team)
+EXTERN_CVAR (cl_colorpreset)
+EXTERN_CVAR (cl_customcolor)
 EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_autoaim)
@@ -1249,11 +1302,11 @@ void M_PlayerSetup(int choice)
 		fire_surface = I_AllocateSurface(fire_surface_width, fire_surface_height, 8);
 
 	// [Nes] Intialize the player preview color.
-	argb_t player_color = CL_GetPlayerColor(&consoleplayer());
+	const argb_t player_color = CL_GetPlayerColor(&consoleplayer());
 	R_BuildPlayerTranslation(0, player_color);
 }
 
-static void M_PlayerSetupTicker (void)
+static void M_PlayerSetupTicker()
 {
 	// Based on code in f_finale.c
 	if (--PlayerTics > 0)
@@ -1308,22 +1361,22 @@ static forceinline void R_RenderFire(int x, int y)
 	fire_surface->unlock();
 }
 
-static void M_PlayerSetupDrawer (void)
+static void M_PlayerSetupDrawer()
 {
-	int x1,x2,y1,y2;
+	const int x1 = (I_GetSurfaceWidth() / 2) - (160 * CleanXfac);
+	const int y1 = (I_GetSurfaceHeight() / 2) - (100 * CleanYfac);
 
-	x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
-	y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
+	const int x2 = (I_GetSurfaceWidth() / 2) + (160 * CleanXfac);
+	const int y2 = (I_GetSurfaceHeight() / 2) + (100 * CleanYfac);
 
-    x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
-	y2 = (I_GetSurfaceHeight() / 2)+(100*CleanYfac);
+	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
 
 	// Draw title
 	{
-		patch_t *patch = W_CachePatch ("M_PSTTL");
+		const patch_t *patch = W_CachePatch ("M_PSTTL");
         screen->DrawPatchClean (patch, 160-patch->width()/2, 10);
 
 		/*screen->DrawPatchClean (patch,
@@ -1349,7 +1402,7 @@ static void M_PlayerSetupDrawer (void)
 		y = (y-100)*CleanYfac+(I_GetSurfaceHeight() / 2);
 		if (!fire_surface)
 		{
-			argb_t color = V_GetDefaultPalette()->basecolors[34];
+			const argb_t color = V_GetDefaultPalette()->basecolors[34];
 			screen->Clear(x, y, x + fire_surface_width * CleanXfac, y + fire_surface_height * CleanYfac, color);
 		}
 		else
@@ -1358,7 +1411,7 @@ static void M_PlayerSetupDrawer (void)
 			int a, b;
 
 			fire_surface->lock();
-			int pitch = fire_surface->getPitch();
+			const int pitch = fire_surface->getPitch();
 
 			palindex_t* from = (palindex_t*)fire_surface->getBuffer() + (fire_surface_height - 3) * pitch;
 			for (a = 0; a < fire_surface_width; a++, from++)
@@ -1442,68 +1495,84 @@ static void M_PlayerSetupDrawer (void)
 		}
 	}
 	{
-		int spritenum = states[mobjinfo[MT_PLAYER].spawnstate].sprite;
-		spriteframe_t* sprframe = &sprites[spritenum].spriteframes[PlayerState->frame & FF_FRAMEMASK];
+		const int spritenum = states[mobjinfo[MT_PLAYER].spawnstate].sprite;
+		const spriteframe_t* sprframe = &sprites[spritenum].spriteframes[PlayerState->frame & FF_FRAMEMASK];
 
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
 		// of the table of the current player color. (Which is different in single, demo, and team)
-		argb_t player_color = CL_GetPlayerColor(&consoleplayer());
+		const argb_t player_color = CL_GetPlayerColor(&consoleplayer());
 		R_BuildPlayerTranslation(0, player_color);
 		V_ColorMap = translationref_t(translationtables, 0);
+
+		// Draw box surrounding fire and player:
+		screen->DrawPatchClean(W_CachePatch("M_PBOX"), 320 - 88 - 32 + 36,
+			PSetupDef.y + LINEHEIGHT * 3 + 22);
 
 		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
 			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
 	}
 
-	// Draw box surrounding fire and player:
-	screen->DrawPatchClean (W_CachePatch ("M_PBOX"),
-		320 - 88 - 32 + 36, PSetupDef.y + LINEHEIGHT*3 + 22);
-
-	// Draw player color sliders
-	//V_DrawTextCleanMove (CR_GREY, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Color");
-
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*2, "Red");
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*3, "Green");
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Blue");
-
-	{
-		int x = V_StringWidth("Green") + 8 + PSetupDef.x;
-		argb_t playercolor = V_GetColorFromString(cl_color);
-
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*2, 0.0f, 255.0f, playercolor.getr());
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*3, 0.0f, 255.0f, playercolor.getg());
-		M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*4, 0.0f, 255.0f, playercolor.getb());
-	}
-
 	// Draw team setting
 	{
-		team_t team = D_TeamByName(cl_team.cstring());
-		int x = V_StringWidth ("Prefered Team") + 8 + PSetupDef.x;
+		const team_t team = D_TeamByName(cl_team.cstring());
+		const int x = V_StringWidth ("Prefered Team") + 8 + PSetupDef.x;
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Prefered Team");
 		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	// Draw gender setting
 	{
-		gender_t gender = D_GenderByName(cl_gender.cstring());
-		int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Gender");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*5, genders[gender]);
+		const gender_t gender = D_GenderByName(cl_gender.cstring());
+		const int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*2, "Gender");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*2, genders[gender]);
 	}
 
 	// Draw autoaim setting
 	{
-		int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
-		float aim = cl_autoaim;
+		const int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
+		const float aim = cl_autoaim;
 
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Autoaim");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*6,
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*3, "Autoaim");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*3,
 			aim == 0 ? "Never" :
 			aim <= 0.25 ? "Very Low" :
 			aim <= 0.5 ? "Low" :
 			aim <= 1 ? "Medium" :
 			aim <= 2 ? "High" :
 			aim <= 3 ? "Very High" : "Always");
+	}
+
+	// Draw color setting
+	{
+		const int x = V_StringWidth ("Color") + 8 + PSetupDef.x;
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Color");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*4, colorpresets[colorpreset]);
+	}
+
+	int PSetupSize = sizeof(PlayerSetupMenu) / sizeof(PlayerSetupMenu[0]);
+	if (colorpreset == COLOR_CUSTOM && PSetupDef.numitems < PSetupSize)
+		PSetupDef.numitems = PSetupDef.numitems + 3;
+	else if (colorpreset != COLOR_CUSTOM && PSetupDef.numitems > PSetupSize - 3)
+		PSetupDef.numitems = PSetupDef.numitems - 3;
+
+	// Draw player color sliders
+	//V_DrawTextCleanMove (CR_GREY, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Color");
+
+	if (colorpreset == COLOR_CUSTOM)
+	{
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Red");
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Green");
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*7, "Blue");
+
+		{
+			const int x = V_StringWidth("Green") + 8 + PSetupDef.x;
+			const argb_t playercolor = V_GetColorFromString(cl_color);
+
+			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*5, 0.0f, 255.0f, playercolor.getr(), 0.0f);
+			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*6, 0.0f, 255.0f, playercolor.getg(), 0.0f);
+			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*7, 0.0f, 255.0f, playercolor.getb(), 0.0f);
+		}
 	}
 }
 
@@ -1543,12 +1612,11 @@ static void M_ChangeAutoAim (int choice)
 {
 	static const float ranges[] = { 0, 0.25, 0.5, 1, 2, 3, 5000 };
 	float aim = cl_autoaim;
-	int i;
 
 	if (!choice) {
 		// Select a lower autoaim
 
-		for (i = 6; i >= 1; i--) {
+		for (int i = 6; i >= 1; i--) {
 			if (aim >= ranges[i]) {
 				aim = ranges[i - 1];
 				break;
@@ -1557,7 +1625,7 @@ static void M_ChangeAutoAim (int choice)
 	} else {
 		// Select a higher autoaim
 
-		for (i = 5; i >= 0; i--) {
+		for (int i = 5; i >= 0; i--) {
 			if (aim >= ranges[i]) {
 				aim = ranges[i + 1];
 				break;
@@ -1566,6 +1634,47 @@ static void M_ChangeAutoAim (int choice)
 	}
 
 	cl_autoaim.Set (aim);
+}
+
+static void M_ChangeColorPreset (int choice)
+{
+	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
+	argb_t customcolor = V_GetColorFromString(cl_customcolor);
+
+	if (!choice)
+		colorpreset = (colorpreset == 0) ? 10 : colorpreset - 1;
+	else
+		colorpreset = (colorpreset == 10) ? 0 : colorpreset + 1;
+
+	cl_colorpreset = colorpresets[colorpreset];
+
+	if (colorpreset == COLOR_BLUE)
+		// the Corn Chex jump suit; it should be brighter, but that introduces gray pixels on 8-bit
+		SendNewColor(57, 57, 255);
+	else if (colorpreset == COLOR_INDIGO)
+		// the Wheat Chex jump suit; a little darker than the blue
+		SendNewColor(134, 134, 134);
+	else if (colorpreset == COLOR_GREEN)
+		// the Odamex green default
+		SendNewColor(64, 207, 0);
+	else if (colorpreset == COLOR_BROWN)
+		// my best approximation of the Vanilla brown translation
+		SendNewColor(169, 87, 31);
+	else if (colorpreset == COLOR_RED)
+		// the blue luminosity matched to the Vanilla red hue without looking bad on 8-bit
+		SendNewColor(250, 62, 62);
+	else if (colorpreset == COLOR_GOLD)
+		SendNewColor(255, 206, 43);
+	else if (colorpreset == COLOR_JUNGLEGREEN)
+		SendNewColor(32, 104, 0);
+	else if (colorpreset == COLOR_PURPLE)
+		SendNewColor(255, 10, 255);
+	else if (colorpreset == COLOR_WHITE)
+		SendNewColor(255, 255, 255);
+	else if (colorpreset == COLOR_BLACK)
+		SendNewColor(0, 0, 0);
+	else
+		SendNewColor(customcolor.getr(), customcolor.getg(), customcolor.getb());
 }
 
 static void M_EditPlayerName (int choice)
@@ -1601,10 +1710,17 @@ static void M_PlayerTeamChanged (int choice)
 
 static void SendNewColor(int red, int green, int blue)
 {
-	char command[24];
+	std::string colorcommand;
+	std::string customcolorcommand;
+	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 
-	sprintf(command, "cl_color \"%02x %02x %02x\"", red, green, blue);
-	AddCommandString(command);
+	StrFormat(colorcommand, "cl_color \"%02x %02x %02x\"", red, green, blue);
+	AddCommandString(colorcommand);
+	if (colorpreset == COLOR_CUSTOM)
+	{
+		StrFormat(customcolorcommand, "cl_customcolor \"%02x %02x %02x\"", red, green, blue);
+		AddCommandString(customcolorcommand);
+	}
 
 	// [SL] not connected to a server so we don't have to wait for the server
 	// to verify the color choice
@@ -1621,7 +1737,7 @@ static void SendNewColor(int red, int green, int blue)
 static void M_SlidePlayerRed(int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setr(std::max(0, int(color.getr()) - 1 - accel));
@@ -1634,7 +1750,7 @@ static void M_SlidePlayerRed(int choice)
 static void M_SlidePlayerGreen (int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setg(std::max(0, int(color.getg()) - 1 - accel));
@@ -1647,7 +1763,7 @@ static void M_SlidePlayerGreen (int choice)
 static void M_SlidePlayerBlue (int choice)
 {
 	argb_t color = V_GetColorFromString(cl_color);
-	int accel = repeatCount < 10 ? 0 : 5;
+	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
 		color.setb(std::max(0, int(color.getb()) - 1 - accel));
@@ -1682,12 +1798,11 @@ void M_StartMessage (const char *string, void (*routine)(int), bool input)
 	messageRoutine = routine;
 	messageNeedsInput = input;
 	menuactive = true;
-	return;
 }
 
 
 
-void M_StopMessage (void)
+void M_StopMessage()
 {
 	menuactive = messageLastMenuActive;
 	messageToPrint = 0;
@@ -1703,10 +1818,9 @@ int M_StringHeight(char* string)
 	if (::hu_font[0].empty())
 		return 8;
 
-	int h;
-	int height = W_ResolvePatchHandle(hu_font[0])->height();
+	const int height = W_ResolvePatchHandle(hu_font[0])->height();
 
-	h = height;
+	int h = height;
 	while (*string)
 		if ((*string++) == '\n')
 			h += height;
@@ -1725,11 +1839,9 @@ int M_StringHeight(char* string)
 //
 bool M_Responder (event_t* ev)
 {
-	int ch, ch2;
-	int i;
-	const char *cmd;
+	int ch, ch2, mod;
 
-	ch = ch2 = -1;
+	ch = ch2 = mod = -1;
 
 	// eat mouse events
 	if(menuactive)
@@ -1758,6 +1870,7 @@ bool M_Responder (event_t* ev)
 	{
 		ch = ev->data1; 		// scancode
 		ch2 = ev->data3;		// ASCII
+		mod = ev->mod;			// key mods
 	}
 
 	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
@@ -1770,8 +1883,10 @@ bool M_Responder (event_t* ev)
 		return true;
 	}
 
+	bool numlock = mod & OKEY_NUMLOCK;
+
 	// Handle Repeat
-	if (Key_IsLeftKey(ch) || Key_IsRightKey(ch))
+	if (Key_IsLeftKey(ch, numlock) || Key_IsRightKey(ch, numlock))
 	{
 		if (repeatKey == ch)
 			repeatCount++;
@@ -1782,7 +1897,7 @@ bool M_Responder (event_t* ev)
 		}
 	}
 
-	cmd = Bindings.GetBind(ch).c_str();
+	const char* cmd = Bindings.GetBind(ch).c_str();
 
 	// Save Game string input
 	// [RH] and Player Name string input
@@ -1878,7 +1993,7 @@ bool M_Responder (event_t* ev)
 
 	// Keys usable within menu
 	{
-		if (Key_IsDownKey(ch))
+		if (Key_IsDownKey(ch, numlock))
 		{
 			do {
 				if (itemOn + 1 > currentMenu->numitems - 1)
@@ -1889,7 +2004,7 @@ bool M_Responder (event_t* ev)
 			} while (currentMenu->menuitems[itemOn].status == -1);
 			return true;
 		}
-		else if (Key_IsUpKey(ch))
+		else if (Key_IsUpKey(ch, numlock))
 		{
 			do {
 				if (!itemOn)
@@ -1900,7 +2015,7 @@ bool M_Responder (event_t* ev)
 			} while (currentMenu->menuitems[itemOn].status == -1);
 			return true;
 		}
-		else if (Key_IsLeftKey(ch))
+		else if (Key_IsLeftKey(ch, numlock))
 		{
 			if (currentMenu->menuitems[itemOn].routine &&
 				currentMenu->menuitems[itemOn].status == 2)
@@ -1910,7 +2025,7 @@ bool M_Responder (event_t* ev)
 			}
 			return true;
 		}
-		else if (Key_IsRightKey(ch))
+		else if (Key_IsRightKey(ch, numlock))
 		{
 			if (currentMenu->menuitems[itemOn].routine &&
 				currentMenu->menuitems[itemOn].status == 2)
@@ -1950,15 +2065,16 @@ bool M_Responder (event_t* ev)
 		}
 		else
 		{
-			if (ch2 && (ch < OKEY_JOY1)) {
-				for (i = itemOn + 1; i < currentMenu->numitems; i++)
+			if (ch2 && (ch < OKEY_JOY1))
+			{
+				for (int i = itemOn + 1; i < currentMenu->numitems; i++)
 					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
 					{
 						itemOn = i;
 						S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 						return true;
 					}
-				for (i = 0; i <= itemOn; i++)
+				for (int i = 0; i <= itemOn; i++)
 					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
 					{
 						itemOn = i;
@@ -2008,7 +2124,7 @@ void M_Drawer()
 		brokenlines_t *lines = V_BreakLines (320, messageString);
 		int y = 100;
 
-		patch_t* ch = W_ResolvePatchHandle(hu_font[0]);
+		const patch_t* ch = W_ResolvePatchHandle(hu_font[0]);
 
 		for (int i = 0; lines[i].width != -1; i++)
 			y -= ch->height() / 2;
@@ -2033,9 +2149,9 @@ void M_Drawer()
 				currentMenu->routine(); 		// call Draw routine
 
 			// DRAW MENU
-			int x = currentMenu->x;
+			const int x = currentMenu->x;
 			int y = currentMenu->y;
-			int max = currentMenu->numitems;
+			const int max = currentMenu->numitems;
 
 			for (int i = 0; i < max; i++)
 			{
@@ -2110,7 +2226,16 @@ void M_PopMenuStack (void)
 		S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	} else {
 		M_ClearMenus ();
-		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
+		if (currentMenu == &PSetupDef && PSetupDepth > 0)			// hack for PlayerSetup
+		{
+			S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
+			M_StartControlPanel();
+			if (PSetupDepth == 2)
+				M_SetupNextMenu(&MainDef);
+			M_Options(0);
+		}
+		else
+			S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
 	}
 }
 

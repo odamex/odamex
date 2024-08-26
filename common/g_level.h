@@ -83,7 +83,7 @@ const static levelFlags_t LEVEL_VISITED = BIT(31);
 
 struct acsdefered_s;
 class FBehavior;
-struct OBossAction;
+struct bossaction_t;
 
 struct level_info_t
 {
@@ -173,17 +173,24 @@ struct level_pwad_info_t
 	std::string		intertextsecret;
 	OLumpName		interbackdrop;
 	OLumpName		intermusic;
+
+	fixed_t			sky1ScrollDelta;
+	fixed_t			sky2ScrollDelta;
 	
-	std::vector<OBossAction> bossactions;
-	bool			bossactions_donothing;
+	std::vector<bossaction_t> bossactions;
+
+	std::string		label;
+	bool			clearlabel;
+	std::string		author;
 	
 	level_pwad_info_t()
 	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
 	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
 	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
 	      aircontrol(0.0f), exitpic(""), enterpic(""), endpic(""), intertext(""),
-	      intertextsecret(""), interbackdrop(""), intermusic(""), bossactions(),
-	      bossactions_donothing(false)
+	      intertextsecret(""), interbackdrop(""), intermusic(""), 
+	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(),
+	      clearlabel(false), author()
 	{
 		ArrayInit(fadeto_color, 0);
 		ArrayInit(level_fingerprint, 0);
@@ -194,12 +201,12 @@ struct level_pwad_info_t
 	level_pwad_info_t(const level_info_t& other)
 	    : mapname(other.mapname), levelnum(other.levelnum), level_name(other.level_name),
 	      pname(other.pname), nextmap(other.nextmap),
-		  secretmap(other.secretmap), partime(other.partime), skypic(other.skypic),
-		  music(other.music), flags(other.flags), cluster(other.cluster),
-		  snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
-		  skypic2(""), gravity(0.0f), aircontrol(0.0f), exitpic(""), enterpic(""),
-		  endpic(""), intertext(""), intertextsecret(""), interbackdrop(""), intermusic(""),
-		  bossactions(), bossactions_donothing(false)
+	      secretmap(other.secretmap), partime(other.partime), skypic(other.skypic),
+	      music(other.music), flags(other.flags), cluster(other.cluster),
+	      snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
+	      skypic2(""), gravity(0.0f), aircontrol(0.0f), exitpic(""), enterpic(""),
+	      endpic(""), intertext(""), intertextsecret(""), interbackdrop(""), intermusic(""),
+	      bossactions(), label(), clearlabel(false), author(), sky1ScrollDelta(0), sky2ScrollDelta(0)
 	{
 		ArrayInit(fadeto_color, 0);
 		ArrayInit(outsidefog_color, 0);
@@ -239,10 +246,14 @@ struct level_pwad_info_t
 		intertextsecret = other.intertextsecret;
 		interbackdrop = other.interbackdrop;
 		intermusic = other.intermusic;
+		sky1ScrollDelta = other.sky1ScrollDelta;
+		sky2ScrollDelta = other.sky2ScrollDelta;
 		bossactions.clear();
 		std::copy(other.bossactions.begin(), other.bossactions.end(),
 		          bossactions.begin());
-		bossactions_donothing = other.bossactions_donothing;
+		label = other.label;
+		clearlabel = other.clearlabel;
+		author = other.author;
 
 		return *this;
 	}
@@ -285,6 +296,9 @@ struct level_locals_t
 	OLumpName		skypic;
 	OLumpName		skypic2;
 
+	fixed_t			sky1ScrollDelta;
+	fixed_t			sky2ScrollDelta;
+
 	int				total_secrets;
 	int				found_secrets;
 
@@ -313,8 +327,11 @@ struct level_locals_t
 	OLumpName		interbackdrop;
 	OLumpName		intermusic;
 	
-	std::vector<OBossAction> *bossactions;
-	bool			bossactions_donothing;
+	std::vector<bossaction_t> bossactions;
+
+	std::string		label;
+	bool			clearlabel;
+	std::string		author;
 	
 	// The following is used for automatic gametype detection.
 	float			detected_gametype;
@@ -325,10 +342,13 @@ typedef uint32_t clusterFlags_t;
 const static clusterFlags_t CLUSTER_HUB = BIT(0);
 const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
 
-struct OBossAction
+struct bossaction_t
 {
 	int type;
-	line_t ld;
+	short special;
+	short tag;
+
+	bossaction_t() : type(MT_NULL), special(), tag() {}
 };
 
 struct cluster_info_t

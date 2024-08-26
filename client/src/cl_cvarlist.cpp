@@ -45,6 +45,9 @@ CVAR(					am_showsecrets, "1", "",
 CVAR(					am_showmonsters, "1", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(					am_showitems, "1", "",
+						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(					am_showtime, "1", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
@@ -75,7 +78,25 @@ CVAR(					am_fdwallcolor, "1a 1a 8a", "",
 CVAR(					am_cdwallcolor, "00 00 5a", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR(					am_thingcolor, "9f d3 ff", "",
+CVAR(					am_thingcolor, "dark grey", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_item, "navy", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_countitem, "sky blue", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_monster, "74 fc 6c", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_nocountmonster, "yellow", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_friend, "dark green", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_thingcolor_projectile, "orange", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(					am_gridcolor, "44 44 88", "",
@@ -111,7 +132,25 @@ CVAR(					am_ovfdwallcolor, "1a 1a 8a", "",
 CVAR(					am_ovcdwallcolor, "00 00 5a", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR(					am_ovthingcolor, "9f d3 ff", "",
+CVAR(					am_ovthingcolor, "dark grey", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_item, "navy", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_countitem, "sky blue", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_monster, "74 fc 6c", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_nocountmonster, "yellow", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_friend, "dark green", "",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(					am_ovthingcolor_projectile, "orange", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(					am_ovgridcolor, "44 44 88", "",
@@ -139,11 +178,13 @@ CVAR(					am_ovteleportcolor, "ff a3 00", "",
 CVAR(				print_stdout, "0", "Print console text to stdout",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(			con_notifytime, "3", "Number of seconds to display messages to top of the HUD",
-					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
+CVAR_RANGE(con_notifytime, "3.0",
+           "Number of seconds to display messages to top of the HUD", CVARTYPE_FLOAT,
+           CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
 
-CVAR_RANGE(			con_midtime, "3", "Number of seconds to display messages in the middle of the screen",
-					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
+CVAR_RANGE(con_midtime, "3.0",
+           "Number of seconds to display messages in the middle of the screen",
+           CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 10.0f)
 
 CVAR_RANGE(			con_scrlock, "1", "",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
@@ -268,7 +309,7 @@ CVAR (joy_fastsensitivity, "15.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR
 CVAR (joy_freelook, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE (joy_deadzone, "0.34", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,  0.0f, 1.0f)
+CVAR_RANGE (joy_deadzone, "0.20", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,  0.0f, 0.75f)
 
 CVAR_RANGE(joy_lefttrigger_deadzone, "0.2", "Sets the required pressure to trigger a press on the left trigger (Analog controllers only)",
 					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.01f, 1.0f)
@@ -345,6 +386,12 @@ CVAR_FUNC_DECL(		cl_name, "Player", "",
 CVAR(				cl_color, "40 cf 00", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(				cl_customcolor, "40 cf 00", "",
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE)
+
+CVAR(				cl_colorpreset, "custom", "",
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE)
+
 CVAR(				cl_gender, "male", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -352,13 +399,16 @@ CVAR_FUNC_DECL(		cl_team, "blue", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_RANGE(			cl_autoaim,	"5000", "",
-					CVARTYPE_INT, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 5000.0f)
+					CVARTYPE_FLOAT, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 5000.0f)
 
 CVAR(				chasedemo, "0", "",
 					CVARTYPE_BOOL, CVAR_NULL)
 
 CVAR(				cl_run, "1", "Always run",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)		// Always run? // [Toke - Defaults]
+
+CVAR(in_autosr50, "1", "+strife activates automatic SR50", CVARTYPE_BOOL,
+     CVAR_CLIENTARCHIVE)
 
 CVAR(				cl_showspawns, "0", "Show spawn points as particle fountains",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_LATCH)
@@ -499,7 +549,12 @@ CVAR(hud_targethealth_debug, "0",
 CVAR(			hud_timer, "1", "Show the HUD timer:\n// 0: No Timer\n// 1: Count-down Timer\n// 2: Count-up timer",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(hud_speedometer, "0", "Show the HUD speedometer", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR_RANGE(		hud_transparency, "1.0", "HUD transparency",
+				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(		hud_anchoring, "1.0", "HUD anchoring (0.0: Center, 1.0: Corners)",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR_RANGE(		hud_heldflag, "1", "Show the held flag border",
@@ -515,8 +570,12 @@ CVAR(hud_demobar, "1", "Shows the netdemo bar and timer on the HUD.", CVARTYPE_B
      CVAR_CLIENTARCHIVE)
 CVAR(hud_demoprotos, "0", "Debug protocol messages while demo is paused.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
+CVAR_RANGE(hud_feedtime, "3.0", "How long entries show in the event feed, in seconds.",
+           CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0, 10.0)
 CVAR(hud_feedobits, "1", "Show obituaries in the event feed.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
+
+CVAR(hud_hordeinfo_debug, "0", "Show debugging information for horde.", CVARTYPE_BOOL, CVAR_NULL)
 
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                       // A
@@ -598,6 +657,18 @@ static char *C_GetDefaultMusicSystem()
 	return str;
 }
 
+CVAR(			snd_midisysex, "0", "Read SysEx from MIDI files (0: Disable, 1: Enable)",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			snd_midifallback, "1", "MIDI instrument fallback (0: Disable, 1: Enable)",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_RANGE(		snd_mididelay, "0", "MIDI delay after reset (0 to 2000 milliseconds)",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2000.0f)
+
+CVAR_RANGE(		snd_midireset, "1", "MIDI reset type (0: None, 1: GM, 2: GS, 3: XG)",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
+
 CVAR_FUNC_DECL(	snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem preference",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -616,7 +687,7 @@ CVAR_FUNC_DECL (st_scale, "1", "",	CVARTYPE_BYTE, CVAR_CLIENTARCHIVE)
 CVAR_FUNC_DECL(	gammalevel, "1", "Gamma correction level",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE_FUNC_DECL(vid_gammatype, "0", "Select between Doom and ZDoom gamma correction",
+CVAR_RANGE_FUNC_DECL(vid_gammatype, "1", "Select between ZDoom and DOS Doom gamma correction",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR_RANGE_FUNC_DECL(hud_crosshair, "0", "Type of crosshair, 0 means no crosshair",
@@ -683,8 +754,8 @@ CVAR_FUNC_DECL(	vid_defwidth, "1280", "",
 CVAR_FUNC_DECL(	vid_defheight, "720", "",
 				CVARTYPE_WORD, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL(	vid_widescreen, "1", "Use wide field-of-view with widescreen video modes",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR_FUNC_DECL(	vid_widescreen, "1", "Widescreen mode (0: Off, 1: Auto, 2: 16:10, 3: 16:9, 4: 21:9, 5: 32:9)",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL(	vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)

@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __HU_DRAWERS_H__
-#define __HU_DRAWERS_H__
+#pragma once
 
 #include "r_defs.h"
 
@@ -79,5 +78,3 @@ void DrawPatchScaled(const int x, const int y,
                      const patch_t* patch, const bool force_opaque = false,
                      const bool use_patch_offsets = false);
 }
-
-#endif

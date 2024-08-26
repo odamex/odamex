@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __I_SYSTEM__
-#define __I_SYSTEM__
+#pragma once
 
 #ifdef UNIX
 #include <dirent.h>
@@ -124,5 +123,3 @@ int I_FindAttr (findstate_t *fileinfo);
 #define FA_SYSTEM	4
 #define FA_DIREC	8
 #define FA_ARCH		16
-
-#endif

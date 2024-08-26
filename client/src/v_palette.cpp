@@ -86,7 +86,7 @@ EXTERN_CVAR(sv_allowredscreen)
 
 dyncolormap_t NormalLight;
 
-static char palette_lumpname[9];
+static OLumpName palette_lumpname;
 
 static int current_palette_num;
 
@@ -605,12 +605,11 @@ argb_t V_GetColorFromString(const std::string& input_string)
 //
 void V_InitPalette(const char* lumpname)
 {
-	strncpy(palette_lumpname, lumpname, 8);
-	palette_lumpname[8] = '\0';
+	palette_lumpname = lumpname;
 
-	int lumpnum = W_GetNumForName(palette_lumpname);
+	int lumpnum = W_GetNumForName(palette_lumpname.c_str());
 	if (lumpnum < 0)
-		I_FatalError("Could not initialize %s palette", palette_lumpname);
+		I_FatalError("Could not initialize %s palette", palette_lumpname.c_str());
 
 	current_palette_num = -1;
 
@@ -1150,7 +1149,7 @@ void V_DoPaletteEffects()
 		{
 			// [SL] Load palette_num from disk and setup game_palette
 			current_palette_num = palette_num;
-			const byte* data = (byte*)W_CacheLumpName(palette_lumpname, PU_CACHE) + palette_num * 768;
+			const byte* data = (byte*)W_CacheLumpName(palette_lumpname.c_str(), PU_CACHE) + palette_num * 768;
 
 			for (int i = 0; i < 256; i++, data += 3)
 			{
@@ -1169,6 +1168,20 @@ void V_DoPaletteEffects()
 		V_AddBlend(blend, R_GetSectorBlend());
 		V_AddBlend(blend, plyr->blend_color);
 
+		float greendamagecolor;
+		float reddamagecolor;
+
+		if (gamemode == retail_chex)
+		{
+			reddamagecolor = 0.0f;
+			greendamagecolor = 255.0f / 255.0f;
+		}
+		else
+		{
+			reddamagecolor = 255.0f / 255.0f;
+			greendamagecolor = 0.0f;
+		}
+
 		// red tint for pain / berzerk power
 		if (plyr->damagecount || plyr->powers[pw_strength])
 		{
@@ -1185,8 +1198,8 @@ void V_DoPaletteEffects()
 				red_amount = MIN(red_amount, 56.0f);
 				float alpha = (red_amount + 8.0f) / 72.0f;
 
-				static const float red = 255.0f / 255.0f;
-				static const float green = 0.0f;
+				static const float red = reddamagecolor;
+				static const float green = greendamagecolor;
 				static const float blue = 0.0f;
 				V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 			}

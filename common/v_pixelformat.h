@@ -20,8 +20,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __V_PIXELFORMAT_H___
-#define __V_PIXELFORMAT_H___
+#pragma once
 
 
 
@@ -208,6 +207,3 @@ static inline void V_Convert(void* dest, const PixelFormat* destformat, uint16_t
 						uint16_t width, uint16_t height)
 {
 }
-
-
-#endif	// __V_PIXELFORMAT_H__

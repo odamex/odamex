@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __W_IDENT_H__
-#define __W_IDENT_H__
+#pragma once
 
 
 #include "m_ostring.h"
@@ -44,6 +43,7 @@ struct fileIdentifier_t
 
 void W_SetupFileIdentifiers();
 const fileIdentifier_t* W_GameInfo(const OCRC32Sum& crc32);
+const fileIdentifier_t* W_GameInfo(const OMD5Hash& md5);
 void W_ConfigureGameInfo(const OResFile& iwad);
 bool W_IsKnownIWAD(const OWantFile& file);
 bool W_IsIWAD(const OResFile& file);
@@ -52,5 +52,3 @@ bool W_IsFilehashCommercialIWAD(const OMD5Hash& fileHash);
 bool W_IsFileCommercialIWAD(const std::string& filename);
 bool W_IsIWADDeprecated(const OResFile& file);
 std::vector<OString> W_GetIWADFilenames();
-
-#endif // __W_IDENT_H__

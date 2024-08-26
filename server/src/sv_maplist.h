@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __SV_MAPLIST__
-#define __SV_MAPLIST__
+#pragma once
 
 #include <c_maplist.h>
 #include <d_player.h>
@@ -88,5 +87,3 @@ void SV_MaplistUpdate(player_t &player);
 void Maplist_Disconnect(player_t &player);
 
 bool CMD_Randmap(std::string &error);
-
-#endif

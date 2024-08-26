@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __I_SVMAIN_H__
-#define __I_SVMAIN_H__
+#pragma once
 
 
 #include "actor.h"
@@ -133,5 +131,3 @@ void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
 bool CompareQueuePosition(const player_t* p1, const player_t* p2);
 
 extern bool unnatural_level_progression;
-
-#endif

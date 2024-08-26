@@ -21,10 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __D_MAIN__
-#define __D_MAIN__
-
+#pragma once
 
 #include "d_event.h"
 #include "m_resfile.h"
@@ -78,5 +75,3 @@ std::string D_GetTitleString();
 
 void D_Init();
 void STACK_ARGS D_Shutdown();
-
-#endif

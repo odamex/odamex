@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __P_SAVEG_H__
-#define __P_SAVEG_H__
+#pragma once
 
 #include "farchive.h"
 
@@ -37,7 +35,3 @@ void P_SerializeRNGState (FArchive &arc);
 void P_SerializeSounds (FArchive &arc);
 void P_SerializeACSDefereds (FArchive &arc);
 void P_SerializePolyobjs (FArchive &arc);
-
-#endif // __P_SAVEG_H__
-
-

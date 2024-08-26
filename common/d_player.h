@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef __D_PLAYER_H__
-#define __D_PLAYER_H__
+#pragma once
 
 #include <list>
 #include <queue>
@@ -253,6 +251,10 @@ public:
 	bool		doreborn;
 
 	byte        QueuePosition;            //Queue position to join game. 0 means not in queue
+
+	// zdoom
+	int hazardcount;
+	byte hazardinterval;
 
 	// For flood protection
 	struct LastMessage_s
@@ -687,5 +689,3 @@ typedef struct wbstartstruct_s
 
 	std::vector<wbplayerstruct_s> plyr;
 } wbstartstruct_t;
-
-#endif // __D_PLAYER_H__
