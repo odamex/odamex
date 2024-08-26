@@ -212,6 +212,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   target_link_libraries(odamex ZLIB::ZLIB PNG::PNG)
+  target_link_libraries(odamex minilzo)
 
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 shlwapi)
