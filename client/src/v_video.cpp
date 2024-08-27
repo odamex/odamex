@@ -26,6 +26,7 @@
 #include "odamex.h"
 
 #include <assert.h>
+#include <cmath>
 
 #include "i_system.h"
 #include "i_video.h"
@@ -831,6 +832,67 @@ void V_DrawFPSTicker()
 
 
 //
+// V_FindTransformedFlatPixel
+// 
+// Determines the flat pixel to use
+// when given an x/y coordinate.
+// Doesn't take scaling into account. (Good todo)
+//
+// A flat is a 4096 byte chunk of data
+// Representing a 64x64 square
+// 
+// Each pixel is 1 byte.
+// 
+// So we square root the lump size to get dimensions
+// and put it in "flatlength"
+// 
+// There's no posts or columns in flats; the entire
+// thing is one big chunk of data assumed to be 64x64
+//
+// Even if the width is dynamic, a flat pixel
+// will always be 1 byte, and a flat length
+// will always sqrt to its height and width
+// (the same number)
+
+const byte* V_FindTransformedFlatPixel(int x, int y, unsigned int width, const byte* src)
+{
+	float pixelcountx = x / static_cast<float>(width);
+	float pixelcounty = y / static_cast<float>(width);
+
+	float wholex, wholey = 0;
+
+	float flatxfrac = modff(pixelcountx, &wholex);
+	float flatyfrac = modff(pixelcounty, &wholey);
+
+	int flatx = 0;
+	int flaty = 0;
+
+	if (flatxfrac > 0)
+	{
+		flatx = width * flatxfrac;
+	}
+	else
+	{
+		flatx = 0;
+	}
+
+	if (flatyfrac > 0)
+	{
+		flaty = width * flatyfrac;
+	}
+	else
+	{
+		flaty = 0;
+	}
+
+	// Now turn these coordinates into a pixel pointer
+	// Remember that flats are long unbroken buckets of data
+	// So we need to transform flat x/y into a
+	// lump length sized pointer array coordinate
+	return src + (flatx + (flaty * width));
+}
+
+//
 // DCanvas::getCleanX
 //
 // Returns the real screen x coordinate given the virtual 320x200 x coordinate.
@@ -852,11 +914,15 @@ int DCanvas::getCleanY(int y) const
 }
 
 
-// [RH] Fill an area with a 64x64 flat texture
-//		right and bottom are one pixel *past* the boundaries they describe.
-void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src) const
+// [RH] Fill an area with an dynamic dimensions flat
+// right and bottom are one pixel *past* the boundaries they describe.
+// 
+// Rewritten to handle high resolution flats
+void DCanvas::FlatFill(int left, int top, int right, int bottom, unsigned int flatlength, const byte* src) const
 {
 	int surface_advance = mSurface->getPitchInPixels() - right + left;
+
+	int width = std::sqrt(flatlength);
 
 	if (mSurface->getBitsPerPixel() == 8)
 	{
@@ -864,13 +930,10 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 
 		for (int y = top; y < bottom; y++)
 		{
-			int x = left;
-			while (x < right)
+			for (int x = left; x < right; x++)
 			{
-				int amount = std::min(64 - (x & 63), right - x);
-				memcpy(dest, src + ((y & 63) << 6) + (x & 63), amount);
-				dest += amount;
-				x += amount;
+				const byte* pixel = V_FindTransformedFlatPixel(x, y, width, src);
+				*dest++ = *pixel;
 			}
 
 			dest += surface_advance;
@@ -882,9 +945,11 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 
 		for (int y = top; y < bottom; y++)
 		{
-			const byte* src_line = src + ((y & 63) << 6);
 			for (int x = left; x < right; x++)
-				*dest++ = V_Palette.shade(src_line[x & 63]);
+			{
+				const byte* pixel = V_FindTransformedFlatPixel(x, y, width, src);
+				*dest++ = V_Palette.shade(*pixel);
+			}
 
 			dest += surface_advance;
 		}
@@ -894,9 +959,10 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, const byte* src
 
 // [SL] Stretches a patch to fill the full-screen while maintaining a 4:3
 // aspect ratio. Pillarboxing is used in widescreen resolutions.
-void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
+void DCanvas::DrawPatchFullScreen(const patch_t* patch, bool clear) const
 {
-	mSurface->clear();
+	if (clear)
+		mSurface->clear();
 
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
@@ -917,6 +983,11 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch) const
 		destw = surface_width;
 		desth = surface_width * 3 / 4;
 	}
+
+	int width = patch->width();
+
+	if (width > 320)
+		destw = surface_width;
 
 	int x = (surface_width - destw) / 2;
 	int y = (surface_height - desth) / 2;
