@@ -126,17 +126,14 @@ static int F_GetWidth()
 {
 	const int surface_width = I_GetPrimarySurface()->getWidth();
 	const int surface_height = I_GetPrimarySurface()->getHeight();
-	int width = 0;
 
 	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
-		width = surface_width;
+		return surface_width;
 
 	if (surface_width * 3 >= surface_height * 4)
-		width = surface_height * 4 / 3;
+		return surface_height * 4 / 3;
 	else
-		width = surface_width;
-
-	return width;
+		return surface_width;
 }
 
 
