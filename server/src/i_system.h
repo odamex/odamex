@@ -78,8 +78,20 @@ ticcmd_t *I_BaseTiccmd (void);
 // Clean exit, displays sell blurb.
 void STACK_ARGS I_Quit (void);
 
-void STACK_ARGS I_Error (const char *error, ...);
-NORETURN void STACK_ARGS I_FatalError(const char *error, ...);
+void I_BaseError(const std::string& errortext);
+NORETURN void I_BaseFatalError(const std::string& errortext);
+
+template <typename... ARGS>
+void I_Error(const fmt::string_view format, const ARGS&... args)
+{
+	I_BaseError(fmt::sprintf(format, args...));
+}
+
+template <typename... ARGS>
+void I_FatalError(const fmt::string_view format, const ARGS&... args)
+{
+	I_BaseFatalError(fmt::sprintf(format, args...));
+}
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);
 #define atterm(t) addterm (t, #t)
