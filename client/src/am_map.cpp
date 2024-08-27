@@ -418,7 +418,7 @@ void AM_changeWindowLoc()
 		am_followplayer.Set(0.0f);
 		f_oldloc.x = MAXINT;
 	}
-	
+
 	M_AddVec2Fixed(&m_ll, &m_paninc, &m_ll);
 
 	if (m_ll.x + m_wh.x / 2 > max.x)
@@ -430,7 +430,7 @@ void AM_changeWindowLoc()
 		m_ll.y = max.y - m_wh.y / 2;
 	else if (m_ll.y + m_wh.y / 2 < min.y)
 		m_ll.y = min.y - m_wh.y / 2;
-	
+
 	M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
 }
 
@@ -445,7 +445,7 @@ void AM_initVariables()
 	thinrectangle_guy.clear();
 
 	mline_t ml;
-	
+
 #define L(a) (fixed_t)((a)*FRACUNIT)
 #define ADD_TO_VEC(vec, ax, ay, bx, by) \
 	ml.a.x = L(ax); \
@@ -470,7 +470,7 @@ void AM_initVariables()
 
 	f_oldloc.x = MAXINT;
 	amclock = 0;
-	
+
 	M_SetVec2Fixed(&m_wh, FTOM(I_GetSurfaceWidth()), FTOM(I_GetSurfaceHeight()));
 
 	// find player to center on initially
@@ -493,7 +493,7 @@ void AM_initVariables()
 	m_ll.x = pl->camera->x - m_wh.x / 2;
 	m_ll.y = pl->camera->y - m_wh.y / 2;
 	AM_changeWindowLoc();
-	
+
 	AM_saveScaleAndLoc();
 
 	// inform the status bar of the change
@@ -653,43 +653,43 @@ void AM_initColors(const bool overlayed)
 	}
 	else
 	{
-		gameinfo.currentAutomapColors.Background = 
+		gameinfo.currentAutomapColors.Background =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.Background.c_str());
-		gameinfo.currentAutomapColors.YourColor = 
+		gameinfo.currentAutomapColors.YourColor =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.YourColor.c_str());
-		gameinfo.currentAutomapColors.AlmostBackground = 
+		gameinfo.currentAutomapColors.AlmostBackground =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.AlmostBackground.c_str());
-		gameinfo.currentAutomapColors.SecretWallColor = 
+		gameinfo.currentAutomapColors.SecretWallColor =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.SecretWallColor.c_str());
-		gameinfo.currentAutomapColors.WallColor = 
+		gameinfo.currentAutomapColors.WallColor =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.WallColor.c_str());
-		gameinfo.currentAutomapColors.TSWallColor = 
+		gameinfo.currentAutomapColors.TSWallColor =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.TSWallColor.c_str());
-		gameinfo.currentAutomapColors.FDWallColor = 
+		gameinfo.currentAutomapColors.FDWallColor =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.FDWallColor.c_str());
-		gameinfo.currentAutomapColors.LockedColor = 
+		gameinfo.currentAutomapColors.LockedColor =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.LockedColor.c_str());
-		gameinfo.currentAutomapColors.CDWallColor = 
+		gameinfo.currentAutomapColors.CDWallColor =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.CDWallColor.c_str());
-		gameinfo.currentAutomapColors.ThingColor = 
+		gameinfo.currentAutomapColors.ThingColor =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor.c_str());
-		gameinfo.currentAutomapColors.ThingColor_Item = 
+		gameinfo.currentAutomapColors.ThingColor_Item =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Item.c_str());
-		gameinfo.currentAutomapColors.ThingColor_CountItem = 
+		gameinfo.currentAutomapColors.ThingColor_CountItem =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_CountItem.c_str());
-		gameinfo.currentAutomapColors.ThingColor_Monster = 
+		gameinfo.currentAutomapColors.ThingColor_Monster =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Monster.c_str());
-		gameinfo.currentAutomapColors.ThingColor_NoCountMonster = 
+		gameinfo.currentAutomapColors.ThingColor_NoCountMonster =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_NoCountMonster.c_str());
-		gameinfo.currentAutomapColors.ThingColor_Friend = 
+		gameinfo.currentAutomapColors.ThingColor_Friend =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Friend.c_str());
-		gameinfo.currentAutomapColors.ThingColor_Projectile = 
+		gameinfo.currentAutomapColors.ThingColor_Projectile =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Projectile.c_str());
-		gameinfo.currentAutomapColors.GridColor = 
+		gameinfo.currentAutomapColors.GridColor =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.GridColor.c_str());
-		gameinfo.currentAutomapColors.XHairColor = 
+		gameinfo.currentAutomapColors.XHairColor =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.XHairColor.c_str());
-		gameinfo.currentAutomapColors.NotSeenColor = 
+		gameinfo.currentAutomapColors.NotSeenColor =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.NotSeenColor.c_str());
 	}
 }
@@ -1253,7 +1253,7 @@ void AM_drawGrid(am_color_t color)
 	fixed_t start = w + minimum_x - ((minimum_x % w) + w) % w;
 
 	mline_t ml;
-	
+
 	// draw vertical gridlines
 	for (fixed_t x = start; x < maximum_x; x += w)
 	{
@@ -1549,7 +1549,8 @@ void AM_drawPlayers()
 
 		if (am_cheating && !gameinfo.mapArrowCheat.empty())
 			AM_drawLineCharacter(gameinfo.mapArrowCheat, INT2FIXED(16), angle,
-				gameinfo.currentAutomapColors.YourColor, x, y);
+			                     gameinfo.currentAutomapColors.YourColor,
+								 conplayer.camera->x, conplayer.camera->y);
 		else
 			AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED(16), angle,
 				gameinfo.currentAutomapColors.YourColor, x, y);
@@ -2015,7 +2016,7 @@ void AM_Drawer()
 				// use user provided label if one exists
 				if (!level.label.empty())
 				{
-					line += level.label + TEXTCOLOR_NORMAL;
+					line += level.label + ": " + TEXTCOLOR_NORMAL;
 				}
 				else
 				{

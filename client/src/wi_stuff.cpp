@@ -390,25 +390,21 @@ static int WI_GetWidth()
 	const int surface_width = I_GetPrimarySurface()->getWidth();
 	const int surface_height = I_GetPrimarySurface()->getHeight();
 
-	int width = 0;
-
-	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
-		width = surface_width;
-
-	if (surface_width * 3 >= surface_height * 4)
-		width = surface_height * 4 / 3;
-	else
-		width = surface_width;
-
 	// Using widescreen assets? It may go off screen.
 	// Preserve the aspect ratio and make the box big
 	// Maybe too big? (it will be cropped if so)
 	if (inter_width > 320)
 	{
-		width = I_GetAspectCorrectWidth(surface_height, inter_height, inter_width);
+		return I_GetAspectCorrectWidth(surface_height, inter_height, inter_width);
 	}
 
-	return width;
+	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		return surface_width;
+
+	if (surface_width * 3 >= surface_height * 4)
+		return surface_height * 4 / 3;
+	else
+		return surface_width;
 }
 
 
