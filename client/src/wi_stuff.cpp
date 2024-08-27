@@ -1328,7 +1328,7 @@ void WI_updateStats()
 				const patch_t* bg_patch = W_CachePatch(name.c_str());
 
 				inter_width = bg_patch->width();
-				inter_height = bg_patch->height();
+				inter_height = bg_patch->height() + (bg_patch->height() / 5);
 
 				background_surface =
 				    I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);

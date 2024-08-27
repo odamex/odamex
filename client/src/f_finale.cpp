@@ -645,7 +645,7 @@ void F_CastDrawer()
 	const patch_t* background_patch = W_CachePatch("BOSSBACK");
 
 	finale_width = background_patch->width();
-	finale_height = background_patch->height();
+	finale_height = background_patch->height() + (background_patch->height() / 5);
 
 	I_FreeSurface(cast_surface);
 	cast_surface = I_AllocateSurface(finale_width, finale_height, 8);
@@ -710,7 +710,7 @@ void F_BunnyScroll()
 	// PFUB2 and PFUB1 should be the same width
 
 	int bunnywidth = p1->width();
-	int bunnyheight = p1->height();
+	int bunnyheight = p1->height() + (p1->height() / 5);
 
 	bunny1_surface = I_AllocateSurface(bunnywidth, bunnyheight, 8);
 	bunny2_surface = I_AllocateSurface(bunnywidth, bunnyheight, 8);
@@ -827,7 +827,7 @@ void F_DrawEndPic(const char* page)
 	const patch_t* background_patch = W_CachePatch(page);
 
 	finale_width = background_patch->width();
-	finale_height = background_patch->height();
+	finale_height = background_patch->height() + (background_patch->height() / 5);
 
 	I_FreeSurface(finale_surface);
 	finale_surface = I_AllocateSurface(finale_width, finale_height, 8);
