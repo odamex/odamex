@@ -120,6 +120,16 @@ function(lib_build)
   endif()
 endfunction()
 
+### minilzo ###
+
+if(BUILD_CLIENT OR BUILD_SERVER)
+  message(STATUS "Compiling minilzo...")
+
+  add_library(minilzo STATIC
+      "minilzo/lzoconf.h" "minilzo/lzodefs.h" "minilzo/minilzo.c" "minilzo/minilzo.h")
+  target_include_directories(minilzo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/minilzo")
+endif()
+
 ### zlib ###
 
 if(BUILD_CLIENT OR BUILD_SERVER)
