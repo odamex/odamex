@@ -1151,7 +1151,6 @@ void M_Expansion(int choice)
 	M_SetupNextMenu(&NewDef);
 }
 
-
 //
 // Read This Menus
 // Had a "quick hack to fix romero bug"
@@ -1159,7 +1158,7 @@ void M_Expansion(int choice)
 void M_DrawReadThis1()
 {
 	const patch_t *p = W_CachePatch(gameinfo.info.infoPage[0]);
-	screen->DrawPatchFullScreen(p);
+	screen->DrawPatchFullScreen(p, false);
 }
 
 //
@@ -1168,7 +1167,7 @@ void M_DrawReadThis1()
 void M_DrawReadThis2()
 {
 	const patch_t *p = W_CachePatch(gameinfo.info.infoPage[1]);
-	screen->DrawPatchFullScreen(p);
+	screen->DrawPatchFullScreen(p, false);
 }
 
 //
@@ -1177,7 +1176,7 @@ void M_DrawReadThis2()
 void M_DrawReadThis3()
 {
 	const patch_t *p = W_CachePatch(gameinfo.info.infoPage[2]);
-	screen->DrawPatchFullScreen(p);
+	screen->DrawPatchFullScreen(p, false);
 }
 
 //
