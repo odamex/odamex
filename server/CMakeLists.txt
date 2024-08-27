@@ -52,6 +52,7 @@ if(WIN32)
   target_include_directories(odasrv PRIVATE win32)
 endif()
 target_link_libraries(odasrv ZLIB::ZLIB odamex-common odaproto)
+target_link_libraries(odasrv minilzo)
 
 if(USE_INTERNAL_JSONCPP)
   target_link_libraries(odasrv jsoncpp_lib_static)
