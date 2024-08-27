@@ -99,6 +99,8 @@ const PixelFormat* I_Get32bppPixelFormat();
 
 void I_DrawLoadingIcon();
 
+int I_GetAspectCorrectWidth(int surface_height, int asset_height, int asset_width);
+
 
 // ****************************************************************************
 
@@ -357,6 +359,9 @@ public:
 	{	return mPalette;	}
 
 	void blit(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
+			int destx, int desty, int destw, int desth);
+
+	void blitcrop(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
 			int destx, int desty, int destw, int desth);
 
 	void clear();
