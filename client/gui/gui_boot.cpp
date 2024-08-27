@@ -567,6 +567,8 @@ static BootWindow* MakeBootWindow()
 	return new BootWindow(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, "Odamex " DOTVERSIONSTR);
 }
 
+#include "m_argv.h"
+
 /**
  * @brief Create the boot window for Odamex.
  *
@@ -586,7 +588,7 @@ scannedWADs_t GUI_BootWindow()
 	win->updateWADDirBrowser();
 	win->rescanIWADs();
 	win->position((Fl::w() - win->w()) / 2, (Fl::h() - win->h()) / 2);
-	win->show(0, NULL);
+	win->show(::Args.NumArgs(), (char**)::Args.GetArgv().data());
 
 	// Blocks until the boot window has been closed.
 	Fl::run();

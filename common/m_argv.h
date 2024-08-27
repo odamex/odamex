@@ -56,6 +56,7 @@ public:
 	const char *CheckValue (const char *check) const;
 	const char *GetArg (size_t arg) const;
 	const std::vector<std::string> GetArgList (size_t start) const;
+	std::vector<const char*> GetArgv() const;
 	size_t NumArgs () const;
 	void FlushArgs ();
 

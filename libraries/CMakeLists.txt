@@ -227,14 +227,14 @@ if(BUILD_CLIENT)
   lib_build(LIBRARY fltk)
 
   find_package(FLTK CONFIG)
-  if(NOT TARGET fltk)
+  if(NOT TARGET fltk::fltk)
     message(FATAL_ERROR "FLTK target not found.")
   endif()
 
-  set_target_properties(fltk PROPERTIES IMPORTED_GLOBAL True)
-  set_target_properties(fltk_images PROPERTIES IMPORTED_GLOBAL True)
+  set_target_properties(fltk::fltk PROPERTIES IMPORTED_GLOBAL True)
+  set_target_properties(fltk::images PROPERTIES IMPORTED_GLOBAL True)
   if(WIN32)
-    target_link_libraries(fltk INTERFACE gdiplus)
+    target_link_libraries(fltk::fltk INTERFACE gdiplus)
   endif()
 endif()
 
