@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=10.5.0
+Type=Application
+
+Name=Odamex.Client
+Comment=A DOOM source port with online multiplayer, a 32-bit renderer, and much more.
+Categories=Amusement;Game;ActionGame;AdventureGame;ArcadeGame;
+
+Icon=net.odamex.Odamex.Client
+Exec=odamex
+Terminal=false
+StartupWMClass=odamex

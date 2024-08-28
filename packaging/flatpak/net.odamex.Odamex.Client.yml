@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/flatpak/flatpak-builder/main/data/flatpak-manifest.schema.json
+# For Odamex Client 10.5.0
+---
+app-id: net.odamex.Odamex.Client
+runtime: org.freedesktop.Platform
+runtime-version: "23.08"
+sdk: org.freedesktop.Sdk
+command: odamex
+separate-locales: false
+finish-args:
+  - --socket=fallback-x11
+  - --device=dri
+  - --socket=pulseaudio
+  - --share=network
+modules:
+  # Odamex Client
+  - name: Odamex.Client
+    buildsystem: simple
+    only-arches:
+      - x86_64
+    build-commands:
+      - "./ci/flatpak-buildgen.sh"
+    sources:
+      - type: file
+        url: https://github.com/odamex/odamex/releases/download/10.5.0/odamex-src-10.5.0.tar.gz
+        sha256: f2cad6fd86590ad29ad3253db6f305b257e5d0ad665ddae8e9fa3e7e8e9d73ef
+      - type: file
+        path: ./ci/flatpak-buildgen.sh
