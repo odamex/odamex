@@ -340,12 +340,10 @@ END_COMMAND (weapprev)
 
 BEGIN_COMMAND (toggleautorun)
 {
-	cvar_t *var = &cl_run;
-
-	var->Set(!var->value());
+	cl_run.Set(!cl_run.value());
 
 	Printf(PRINT_HIGH, "Always run %s\n",
-			var->value() ? "on" : "off");
+			cl_run.value() ? "on" : "off");
 }
 END_COMMAND (toggleautorun)
 
