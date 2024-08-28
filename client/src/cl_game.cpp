@@ -388,18 +388,18 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	// let movement keys cancel each other out
 	if (strafe)
 	{
-		if (in_autosr50)
-		{
-			if (Actions[ACTION_MOVERIGHT])
-				side += sidemove[speed];
-			if (Actions[ACTION_MOVELEFT])
-				side -= sidemove[speed];
-		}
-		else
+		if (Actions[ACTION_RIGHT] || Actions[ACTION_LEFT])
 		{
 			if (Actions[ACTION_RIGHT])
 				side += sidemove[speed];
 			if (Actions[ACTION_LEFT])
+				side -= sidemove[speed];
+		}
+		else if (in_autosr50)
+		{
+			if (Actions[ACTION_MOVERIGHT])
+				side += sidemove[speed];
+			if (Actions[ACTION_MOVELEFT])
 				side -= sidemove[speed];
 		}
 	}
