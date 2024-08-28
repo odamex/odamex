@@ -61,7 +61,7 @@ OBinding DefaultBindings[] =
 	{"leftalt", "+strafe"},
 	{"leftshift", "+speed"},
 	{"rightshift", "+speed"},
-	{"capslock", "toggleautorun"},
+	{"capslock", "togglerun"},
 	{"space", "+use"},
 	{"e", "+use"},
 	{"uparrow", "+forward"},

@@ -338,14 +338,14 @@ BEGIN_COMMAND (weapprev)
 }
 END_COMMAND (weapprev)
 
-BEGIN_COMMAND (toggleautorun)
+BEGIN_COMMAND (togglerun)
 {
 	cl_run.Set(!cl_run.value());
 
 	Printf(PRINT_HIGH, "Always run %s\n",
 			cl_run.value() ? "on" : "off");
 }
-END_COMMAND (toggleautorun)
+END_COMMAND (togglerun)
 
 extern constate_e ConsoleState;
 

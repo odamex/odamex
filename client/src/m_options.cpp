@@ -337,7 +337,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+left"} },
 	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+right"} },
 	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
-	{ control,	"Always Run",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleautorun"} },
+	{ control,	"Always Run",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglerun"} },
 	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
 	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
 	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"turn180"} },
