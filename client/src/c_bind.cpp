@@ -65,7 +65,7 @@ OBinding DefaultBindings[] =
 	{"space", "+use"},
 	{"e", "+use"},
 	{"uparrow", "+forward"},
-	{"backarrow", "+back"},
+	{"downarrow", "+back"},
 	{"rightarrow", "+right"},
 	{"leftarrow", "+left"},
 	{"w", "+forward"},
