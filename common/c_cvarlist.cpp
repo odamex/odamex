@@ -246,11 +246,11 @@ CVAR(g_postroundtime, "3", "Amount of time after a round before the next round/e
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_RANGE(g_thingfilter, "0", "Removes some things from the map. Values are:\n" \
-	"// 0 - All things are retained (default).\n" \
-	"// 1 - Only Coop weapons are removed.\n" \
-    "// 2 - All Coop things are removed.\n" \
-	"// 3 - All pickupable things are removed.\n" \
-	"// -1 - Multiplayer things are added in singleplayer.",
+           "// -1 - Multiplayer things are added in singleplayer.\n" \
+           "// 0 - All things are retained (default).\n" \
+           "// 1 - Only Coop weapons are removed.\n" \
+           "// 2 - All Coop things are removed.\n" \
+           "// 3 - All pickupable things are removed.\n",
            CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_LATCH,
            -1.0f, 3.0f)
 
