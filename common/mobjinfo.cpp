@@ -22,7 +22,11 @@ static void D_ResetMobjInfo(int from, int to)
 }
 
 void D_Initialize_Mobjinfo(mobjinfo_t* source, int count) {
-    // [CMB] Pre-allocate mobjinfo to support current limit on types
+	if (mobjinfo != nullptr)
+	{
+		free(mobjinfo);
+		mobjinfo = nullptr;
+	}
     mobjinfo = (mobjinfo_t*) M_Calloc (count, sizeof(*mobjinfo));
 	if (source)
 	{

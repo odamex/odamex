@@ -135,7 +135,7 @@ static short codepconv[522] = {
 
 static bool BackedUpData = false;
 // This is the original data before it gets replaced by a patch.
-static const char* OrgSprNames[::NUMSPRITES];
+static const char** OrgSprNames;
 static actionf_p1 OrgActionPtrs[::NUMSTATES];
 
 // Functions used in a .bex [CODEPTR] chunk
@@ -510,13 +510,18 @@ static BOOL HandleKey(const struct Key* keys, void* structure, const char* key, 
 	return true;
 }
 
-static state_t backupStates[::NUMSTATES];
-static mobjinfo_t backupMobjInfo[::NUMMOBJTYPES];
-static weaponinfo_t backupWeaponInfo[NUMWEAPONS + 1];
-static char* backupSprnames[::NUMSPRITES + 1];
-static int backupMaxAmmo[NUMAMMO];
-static int backupClipAmmo[NUMAMMO];
-static DehInfo backupDeh;
+typedef struct
+{
+	state_t backupStates[::NUMSTATES];
+	mobjinfo_t backupMobjInfo[::NUMMOBJTYPES];
+	weaponinfo_t backupWeaponInfo[NUMWEAPONS + 1];
+	const char** backupSprnames;
+	int backupMaxAmmo[NUMAMMO];
+	int backupClipAmmo[NUMAMMO];
+	DehInfo backupDeh;
+} DoomBackup;
+
+DoomBackup doomBackup = {};
 
 static void BackupData(void)
 {
@@ -527,23 +532,33 @@ static void BackupData(void)
 		return;
 	}
 
+	// backup sprites
+	OrgSprNames = (const char**) M_Calloc(::NUMSPRITES + 1, sizeof(char*));
 	for (i = 0; i < ::NUMSPRITES; i++)
 	{
-		OrgSprNames[i] = sprnames[i];
+		OrgSprNames[i] = strdup(sprnames[i]);
+	}
+	OrgSprNames[NUMSPRITES] = NULL;
+
+	doomBackup.backupSprnames = (const char**)M_Calloc(::NUMSPRITES + 1, sizeof(char*));
+	for (i = 0; i < ::NUMSPRITES; i++)
+	{
+		doomBackup.backupSprnames[i] = strdup(sprnames[i]);
 	}
 
+	// backup states
 	for (i = 0; i < ::NUMSTATES; i++)
 	{
 		OrgActionPtrs[i] = states[i].action;
 	}
 
-	memcpy(backupStates, states, NUMSTATES);
-	memcpy(backupMobjInfo, mobjinfo, NUMMOBJTYPES);
-	memcpy(backupWeaponInfo, weaponinfo, sizeof(weaponinfo));
-	memcpy(backupSprnames, sprnames, NUMPSPRITES);
-	memcpy(backupClipAmmo, clipammo, sizeof(clipammo));
-	memcpy(backupMaxAmmo, maxammo, sizeof(maxammo));
-	backupDeh = deh;
+	std::copy(states, states + ::NUMSTATES, doomBackup.backupStates);
+	std::copy(mobjinfo, mobjinfo + ::NUMMOBJTYPES, doomBackup.backupMobjInfo);
+	std::copy(weaponinfo, weaponinfo + ::NUMWEAPONS + 1, doomBackup.backupWeaponInfo);
+	// std::copy(sprnames, sprnames + ::NUMSPRITES + 1, backupSprnames);
+	std::copy(clipammo, clipammo + ::NUMAMMO, doomBackup.backupClipAmmo);
+	std::copy(maxammo, maxammo + ::NUMAMMO, doomBackup.backupMaxAmmo);
+	doomBackup.backupDeh = deh;
 
 	BackedUpData = true;
 }
@@ -557,32 +572,45 @@ void D_UndoDehPatch()
 		return;
 	}
 
-	for (i = 0; i < ::NUMSPRITES; i++)
-	{
-		// [CMB] TODO: restore from backup and mark done
-        // [CMB] TODO: freeing the strdup'd pointers? zone memory management would help here
-        // [CMB] TODO: using zone memory management would be easier to undo and avoid memory fragementing/leakage
-		// strncpy(::sprnames[i], ::OrgSprNames[i], 4);
-        ::sprnames[i] = ::OrgSprNames[i];
-	}
-    sprnames[::NUMSPRITES] = NULL;
+	// reset sprites
+	// reset states
+	// reset reset mobjinfo
 
+	for (i = 0; i < ::NUMSPRITES; i++)
+	{;
+		free((char*)OrgSprNames[i]);
+	}
+	M_Free(OrgSprNames);
+
+	
+	/*
 	for (i = 0; i < ::NUMSTATES; i++)
 	{
 		::states[i].action = ::OrgActionPtrs[i];
 	}
+	*/
 
-	memcpy(states, backupStates, sizeof(backupStates));
+	D_Initialize_sprnames(doomBackup.backupSprnames, ::NUMSPRITES);
+	D_Initialize_States(doomBackup.backupStates, ::NUMSTATES);
+	D_Initialize_Mobjinfo(doomBackup.backupMobjInfo, ::NUMMOBJTYPES);
 
-	memcpy(mobjinfo, backupMobjInfo, sizeof(backupMobjInfo));
+	for (i = 0; i < ::NUMSPRITES; i++)
+	{
+		free((char*)doomBackup.backupSprnames[i]);
+	}
+	M_Free(doomBackup.backupSprnames);
+	
 	extern bool isFast;
 	isFast = false;
 
-	memcpy(weaponinfo, backupWeaponInfo, sizeof(backupWeaponInfo));
-	memcpy(sprnames, backupSprnames, sizeof(backupSprnames));
-	memcpy(clipammo, backupClipAmmo, sizeof(backupClipAmmo));
-	memcpy(maxammo, backupMaxAmmo, sizeof(backupMaxAmmo));
-	deh = backupDeh;
+	std::copy(doomBackup.backupWeaponInfo, doomBackup.backupWeaponInfo + ::NUMWEAPONS,
+	          weaponinfo);
+	std::copy(doomBackup.backupClipAmmo, doomBackup.backupClipAmmo + ::NUMAMMO, clipammo);
+	std::copy(doomBackup.backupMaxAmmo, doomBackup.backupMaxAmmo + ::NUMAMMO, maxammo);
+
+	deh = doomBackup.backupDeh;
+
+	BackedUpData = false;
 }
 
 static BOOL ReadChars(char** stuff, int size)
@@ -1683,7 +1711,7 @@ static int PatchSprites(int dummy)
 	int result;
 #if defined _DEBUG
 	static int call_amt = 0;
-	DPrintf("[SPRITES] %d\n", ++call_amt);
+	Printf_Bold("[SPRITES] call amt: %d\n", ++call_amt);
 #endif
 
 	// [CMB] static char* Line1 is the left hand side
@@ -1713,9 +1741,14 @@ static int PatchSprites(int dummy)
 			const char* prevSprName =
 			    sprnames[sprIdx] != NULL ? sprnames[sprIdx] : "No Sprite";
 			DPrintf("Patching sprite at %d with name %s with new name %s\n",
-			       prevSprName, sprIdx, newSprName);
+			        sprIdx, prevSprName, newSprName);
 #endif
-            // sprnames[sprIdx] = Z_StrDup(newSprName, PU_STATIC);
+			// this is based on the assumption that sprnames is 0'd on initial allocation
+			if (sprnames[sprIdx])
+			{
+				char* s = const_cast<char*>(sprnames[sprIdx]);
+				free(s);
+			}
 			sprnames[sprIdx] = strdup(newSprName);
         }
 	}
@@ -2327,6 +2360,7 @@ static int PatchStrings(int dummy)
 					}
 				}
 			}
+			// [CMB] TODO: Language string table change
 			GStrings.setString(Line1, holdstring);
 			DPrintf("%s set to:\n%s\n", Line1, holdstring);
 		}

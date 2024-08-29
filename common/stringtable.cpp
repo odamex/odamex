@@ -380,7 +380,7 @@ void StringTable::setString(const OString& name, const OString& string)
 	StringHash::iterator it = _stringHash.find(name);
 	if (it == _stringHash.end())
 	{
-		// Stringtable entry does nto exist, insert it.
+		// Stringtable entry does not exist, insert it.
 		TableEntry entry = {std::make_pair(true, string), 0, -1};
 		_stringHash.insert(std::make_pair(name, entry));
 	}
