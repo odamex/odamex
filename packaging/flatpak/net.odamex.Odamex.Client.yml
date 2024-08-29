@@ -18,6 +18,7 @@ modules:
     buildsystem: simple
     only-arches:
       - x86_64
+      - aarch64
     build-commands:
       - "./ci/flatpak-buildgen.sh"
     sources:
