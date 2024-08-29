@@ -4,30 +4,39 @@
 #include <string.h>
 
 #include "sprite.h"
+#include "z_zone.h"
 
 #include <sstream>
 
 // global variables from info.h
 
-const char** sprnames;
+const char** sprnames = nullptr;
 int num_spritenum_t_types;
 
 void D_Initialize_sprnames(const char** source, int count)
 {
-    // [CMB] Pre-allocate sprnames to support current limits on types
-    sprnames = (const char**) M_Calloc(count + 1, sizeof(*sprnames));
-    for(int i = 0; i < count; i++)
+	if (sprnames != nullptr)
+	{
+        for (int i = 0; i < num_spritenum_t_types; i++)
+        {
+			free((char*)sprnames[i]);
+        }
+		free(sprnames);
+		sprnames = nullptr;
+	}
+	sprnames = (const char**)M_Calloc(count + 1, sizeof(char*));
+    if (source)
     {
-        // [CMB] this is important: we are setting each array slot in sprnames to a statically allocated cons char*
-        // during doom initialization. This saves us a free on indices that already exist. For newly allocated
-        // sprites, that pointer exists until program termination.
-        sprnames[i] = source[i];
+		for (int i = 0; i < count; i++)
+		{
+			sprnames[i] = strdup(source[i]);
+		}
     }
-    sprnames[count] = NULL;
-    num_spritenum_t_types = count;
-    // [CMB] Useful debug logging
+	sprnames[count] = NULL;
+	num_spritenum_t_types = count;
+	// [CMB] Useful debug logging
 #if defined _DEBUG
-    Printf(PRINT_HIGH, "D_Allocate_sprnames:: allocated %d sprites.\n", count);
+	Printf(PRINT_HIGH, "D_Allocate_sprnames:: allocated %d sprites.\n", count);
 #endif
 }
 
@@ -41,8 +50,9 @@ void D_Initialize_sprnames(const char** source, int count)
  */
 int D_FindOrgSpriteIndex(const char** src_sprnames, const char* key)
 {
+	int i = 0;
     // search the array for the sprite name you are looking for
-    for(int i = 0; i < num_spritenum_t_types; i++)
+	for (; src_sprnames[i]; ++i)
     {
         if(!strncmp(src_sprnames[i], key, 4))
         {

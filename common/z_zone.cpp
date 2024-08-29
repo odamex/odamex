@@ -356,9 +356,7 @@ void Z_ChangeOwner2(void* ptr, void* user, const char* file, int line)
 //
 char* Z_StrDup2(const char* s, const zoneTag_e tag, const char* file, int line)
 {
-	char* newStr = (char*)Z_Malloc2(strlen(s) + 1, tag, NULL, file, line);
-	newStr = strcpy(newStr, s);
-	return newStr;
+	return strcpy((char*)Z_Malloc2(strlen(s) + 1, tag, 0, file, line), s);
 }
 
 //

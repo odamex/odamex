@@ -19,6 +19,11 @@ static void D_ResetStates(int from, int to)
 
 void D_Initialize_States(state_t* source, int count)
 {
+	if (states != nullptr)
+	{
+		free(states);
+		states = nullptr;
+    }
     states = (state_t*) M_Calloc(count, sizeof(*states));
     // [CMB] TODO: for testing purposes only
     if (source) {

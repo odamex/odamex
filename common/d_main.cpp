@@ -58,6 +58,9 @@
 #include "gi.h"
 #include "w_ident.h"
 #include "m_resfile.h"
+#include "sprite.h"
+#include "mobjinfo.h"
+#include "state.h"
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -77,6 +80,8 @@ extern bool step_mode;
 
 bool capfps = true;
 float maxfps = 35.0f;
+
+extern void D_Init_DEHEXTRA_Frames(void);
 
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -844,6 +849,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	std::string failmsg;
 	try
 	{
+
 		D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
 		// get skill / episode / map from parms
