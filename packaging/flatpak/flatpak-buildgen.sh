@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 
@@ -9,17 +9,16 @@ set -e
 set -x
 
 # Generate build
-mkdir -p build && cd build
 if [[ -z ${USE_SDL12:-} ]]; then
-    cmake .. -GNinja \
+    cmake . -GNinja \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo \
         -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
-        -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
+        -DBUILD_MASTER=0 -DBUILD_LAUNCHER=0 -DUSE_INTERNAL_LIBS=1
 else
-    cmake .. -GNinja \
+    cmake . -GNinja \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_SDL12=1 \
         -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
-        -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
+        -DBUILD_MASTER=0 -DBUILD_LAUNCHER=0 -DUSE_INTERNAL_LIBS=1
 fi
 
 # No spaces in project name.

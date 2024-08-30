@@ -347,11 +347,17 @@ if(USE_INTERNAL_DEUTEX)
       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex")
     find_program(DEUTEX_EXECUTABLE deutex
       PATHS "${CMAKE_CURRENT_BINARY_DIR}/deutex"
-      NO_DEFAULT_PATH)  
+      NO_DEFAULT_PATH)
   endif()
 else()
-  find_program(DEUTEX_EXECUTABLE deutex
-    PATHS "/usr/games") # Debian installation location
+  if (EXISTS "/usr/games/deutex")
+    find_program(DEUTEX_EXECUTABLE deutex
+      PATHS "/usr/games") # Debian installation location
+  else() # not found, lets look in the base dir
+    find_program(DEUTEX_EXECUTABLE deutex
+      PATHS "${CMAKE_BINARY_DIR}/deutex"
+      NO_DEFAULT_PATH)
+  endif()
 endif()
 
 # If DeuTex is available, use it to build the WAD.

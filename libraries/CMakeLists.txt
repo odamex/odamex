@@ -643,6 +643,8 @@ if(BUILD_LAUNCHER)
         set(wxWidgets_wxrc_EXECUTABLE
           "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/gcc_dll/wxrc.exe"
           CACHE FILEPATH "")
+      else()
+       # Compile wxWidgets and copy resources if exists in /wxWidgets/
       endif()
     endif()
   endif()
