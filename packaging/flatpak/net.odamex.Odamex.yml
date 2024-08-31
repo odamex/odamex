@@ -4,6 +4,7 @@ app-id: net.odamex.Odamex
 runtime: org.freedesktop.Platform
 runtime-version: "23.08"
 sdk: org.freedesktop.Sdk
+command: odamex
 separate-locales: false
 finish-args:
   - --share=ipc
