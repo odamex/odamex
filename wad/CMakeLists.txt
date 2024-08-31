@@ -353,9 +353,15 @@ else()
   if (EXISTS "/usr/games/deutex")
     find_program(DEUTEX_EXECUTABLE deutex
       PATHS "/usr/games") # Debian installation location
-  else() # not found, lets look in the base dir
+  else() # not found, build from wad dir if it was unzipped there
+    execute_process(COMMAND sh bootstrap
+      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2")
+    execute_process(COMMAND sh configure
+      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2")
+    execute_process(COMMAND make
+      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2")
     find_program(DEUTEX_EXECUTABLE deutex
-      PATHS "${CMAKE_BINARY_DIR}/deutex"
+      PATHS "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2/src"
       NO_DEFAULT_PATH)
   endif()
 endif()

@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/flatpak/flatpak-builder/main/data/flatpak-manifest.schema.json
 ---
-app-id: net.odamex.Odamex.Client
+app-id: net.odamex.Odamex
 runtime: org.freedesktop.Platform
 runtime-version: "23.08"
 sdk: org.freedesktop.Sdk
@@ -16,8 +16,8 @@ finish-args:
   - --socket=fallback-x11
   - --filesystem=host
 modules:
-  # Odamex Client
-  - name: Odamex.Client
+  # Odamex (combined)
+  - name: Odamex
     buildsystem: simple
     only-arches:
       - x86_64
@@ -25,6 +25,9 @@ modules:
     build-commands:
       - "./flatpak-buildgen.sh"
     sources:
+      - type: file
+        url: https://github.com/Doom-Utils/deutex/releases/download/v5.2.2/deutex-5.2.2.tar.zst
+        sha256: 10ed0e7a533ec97cb6d03548d4258fbec88852a45b5ea4cf5434376ad4174b5f
       - type: dir
         path: ../../../odamex
       - type: file

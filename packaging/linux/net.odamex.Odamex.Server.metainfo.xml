@@ -4,8 +4,8 @@
     https://www.freedesktop.org/software/appstream/metainfocreator/#/
 -->
 <component type="desktop-application">
-  <id>net.odamex.Odamex.Client</id>
-  <name>Odamex Client</name>
+  <id>net.odamex.Odamex.Server</id>
+  <name>Odamex Server</name>
   <summary>A DOOM source port with online multiplayer, a 32-bit renderer, and much more.</summary>
   <developer_name>The Odamex Team</developer_name>
   <url type="homepage">https://odamex.net</url>
@@ -14,7 +14,6 @@
   <supports>
     <control>pointing</control>
     <control>keyboard</control>
-    <control>gamepad</control>
   </supports>
   <description>
     <p>A multiplayer-focused DOOM port with a focus on classic DOOM gameplay.</p>
@@ -26,7 +25,7 @@
       <li>MBF21 compatible</li>
     </ul>
   </description>
-  <launchable type="desktop-id">net.odamex.Odamex.Client.desktop</launchable>
+  <launchable type="desktop-id">net.odamex.Odamex.Server.desktop</launchable>
   <screenshots>
     <screenshot type="default">
       <image>https://raw.githubusercontent.com/odamex/odamex/stable/media/logo_128.png</image>
