@@ -23,6 +23,7 @@ modules:
       - x86_64
       - aarch64
     build-commands:
+      - chmod +x ./flatpak-buildgen.sh
       - "./flatpak-buildgen.sh"
     sources:
       - type: file
