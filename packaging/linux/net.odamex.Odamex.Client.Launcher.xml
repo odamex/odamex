@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+    Generator for metainfo & .desktop files: 
+    https://www.freedesktop.org/software/appstream/metainfocreator/#/
+-->
+<component type="desktop-application">
+  <id>net.odamex.Odamex.Launcher</id>
+  <name>Odamex Launcher</name>
+  <summary>A DOOM source port with online multiplayer, a 32-bit renderer, and much more.</summary>
+  <developer_name>The Odamex Team</developer_name>
+  <url type="homepage">https://odamex.net</url>
+  <metadata_license>GPL2</metadata_license>
+  <project_license>GPL2</project_license>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <description>
+    <p>A multiplayer-focused DOOM port with a focus on classic DOOM gameplay.</p>
+    <p>Features include:</p>
+    <ul>
+      <li>255 Player Maximum</li>
+      <li>32-bit renderer</li>
+      <li>Compiles on many different systems, including Raspberry Pi</li>
+      <li>MBF21 compatible</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">net.odamex.Odamex.Launcher.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/odamex/odamex/stable/media/logo_128.png</image>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="10.5.0" date="2024-08-28" />
+  </releases>
+</component>
