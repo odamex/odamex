@@ -11,21 +11,27 @@ set -x
 # Untar deutex to wad directory
 tar --zstd -xvf deutex-5.2.2.tar.zst -C wad/
 
+# Untar wxWidgets to libraries directory
+tar -xvf wxWidgets-3.1.5.tar.bz2 -C libraries/
+
 # Generate build
 if [[ -z ${USE_SDL12:-} ]]; then
     cmake . -GNinja \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo \
         -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
-        -DBUILD_MASTER=0 -DBUILD_LAUNCHER=0 -DUSE_INTERNAL_LIBS=1
+        -DBUILD_MASTER=0 -DBUILD_LAUNCHER=1 -DUSE_INTERNAL_LIBS=1 \
+        -DUSE_INTERNAL_WXWIDGETS=1
 else
     cmake . -GNinja \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_SDL12=1 \
         -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
-        -DBUILD_MASTER=0 -DBUILD_LAUNCHER=0 -DUSE_INTERNAL_LIBS=1
+        -DBUILD_MASTER=0 -DBUILD_LAUNCHER=1 -DUSE_INTERNAL_LIBS=1 \
+        -DUSE_INTERNAL_WXWIDGETS=1
 fi
 
 ninja odamex
 ninja odasrv
+ninja odalaunch
 
 # Assemble Flatpak assets
 
@@ -94,7 +100,7 @@ executableName=odalaunch
 
 # Copy the client app to the Flatpak-based location.
 mkdir -p /app/$projectName
-cp -r client/$executableName /app/$projectName/
+cp -r odalaunch/$executableName /app/$projectName/
 chmod +x /app/$projectName/$executableName
 mkdir -p /app/bin
 ln -s /app/$projectName/$executableName /app/bin/$executableName

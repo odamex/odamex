@@ -643,9 +643,17 @@ if(BUILD_LAUNCHER)
         set(wxWidgets_wxrc_EXECUTABLE
           "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/gcc_dll/wxrc.exe"
           CACHE FILEPATH "")
-      else()
-       # Compile wxWidgets and copy resources if exists in /wxWidgets/
       endif()
+    else()
+       # Compile wxWidgets and copy resources if exists in /wxWidgets/
+       execute_process(COMMAND cmake .
+         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.1.5")
+       execute_process(COMMAND make -j3
+         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.1.5")
+       set(wxWidgets_wxrc_EXECUTABLE
+         "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.1.5/lib/wxrc"
+         CACHE FILEPATH "")
+       set(wxWidgets_CONFIG_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.1.5/wx-config" CACHE PATH "")
     endif()
   endif()
 endif()

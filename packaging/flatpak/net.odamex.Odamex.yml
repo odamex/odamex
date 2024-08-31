@@ -4,7 +4,6 @@ app-id: net.odamex.Odamex
 runtime: org.freedesktop.Platform
 runtime-version: "23.08"
 sdk: org.freedesktop.Sdk
-command: odamex
 separate-locales: false
 finish-args:
   - --share=ipc
@@ -29,6 +28,9 @@ modules:
       - type: file
         url: https://github.com/Doom-Utils/deutex/releases/download/v5.2.2/deutex-5.2.2.tar.zst
         sha256: 10ed0e7a533ec97cb6d03548d4258fbec88852a45b5ea4cf5434376ad4174b5f
+      - type: file
+        url: https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.5/wxWidgets-3.1.5.tar.bz2
+        sha256: d7b3666de33aa5c10ea41bb9405c40326e1aeb74ee725bb88f90f1d50270a224
       - type: dir
         path: ../../../odamex
       - type: file
