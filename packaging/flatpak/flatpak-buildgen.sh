@@ -105,6 +105,10 @@ chmod +x /app/$projectName/$executableName
 mkdir -p /app/bin
 ln -s /app/$projectName/$executableName /app/bin/$executableName
 
+# Copy wxWidgets dependencies into lib
+mkdir -p /app/lib
+cp -r libraries/wxWidgets-3.1.5/lib/*.so /app/lib/
+
 # Install the icon.
 iconDir=/app/share/icons/hicolor/512x512/apps
 mkdir -p $iconDir
