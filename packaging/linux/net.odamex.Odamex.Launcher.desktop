@@ -2,7 +2,7 @@
 Version=10.5.0
 Type=Application
 
-Name=Odamex.Launcher
+Name=Odalaunch
 Comment=A DOOM source port with online multiplayer, a 32-bit renderer, and much more.
 Categories=Amusement;Game;ActionGame;AdventureGame;ArcadeGame;
 
