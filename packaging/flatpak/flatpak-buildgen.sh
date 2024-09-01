@@ -76,7 +76,7 @@ projectName=Odamex.Server
 projectId=net.odamex.Odamex.Server
 executableName=odasrv
 
-# Copy the client app to the Flatpak-based location.
+# Copy the server app to the Flatpak-based location.
 mkdir -p /app/$projectName
 cp -r server/$executableName /app/$projectName/
 chmod +x /app/$projectName/$executableName
@@ -105,7 +105,7 @@ projectName=Odamex.Launcher
 projectId=net.odamex.Odamex.Launcher
 executableName=odalaunch
 
-# Copy the client app to the Flatpak-based location.
+# Copy the launcher app to the Flatpak-based location.
 mkdir -p /app/$projectName
 cp -r odalaunch/$executableName /app/$projectName/
 chmod +x /app/$projectName/$executableName

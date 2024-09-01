@@ -364,6 +364,12 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	D_AddSearchDir(dirs, "/usr/share/games/doom", separator);
 	D_AddSearchDir(dirs, "/usr/local/share/games/doom", separator);
 	D_AddSearchDir(dirs, "/usr/local/share/doom", separator);
+	// Flatpak sandbox default directories
+	// (Since you need to pass envvars to a Flatpak)
+	D_AddSearchDir(dirs, "/run/host/usr/share/doom", separator);
+	D_AddSearchDir(dirs, "/run/host/usr/share/games/doom", separator);
+	D_AddSearchDir(dirs, "/run/host/usr/local/share/games/doom", separator);
+	D_AddSearchDir(dirs, "/run/host/usr/local/share/doom", separator);
 
 	#endif
 }
