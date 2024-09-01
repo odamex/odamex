@@ -12,7 +12,7 @@ set -x
 tar --zstd -xvf deutex-5.2.2.tar.zst -C wad/
 
 # Untar wxWidgets to libraries directory
-tar -xvf wxWidgets-3.1.5.tar.bz2 -C libraries/
+tar -xvf wxWidgets-3.0.5.tar.bz2 -C libraries/
 
 # Generate build
 if [[ -z ${USE_SDL12:-} ]]; then
@@ -31,6 +31,13 @@ fi
 
 ninja odamex
 ninja odasrv
+
+# Copy wxWidgets dependencies into lib
+# Before running wxrc
+mkdir -p /app/lib
+cp -r libraries/wxWidgets-3.0.5/lib/*.so /app/lib/
+cp -r libraries/wxWidgets-3.0.5/lib/*.0 /app/lib/
+
 ninja odalaunch
 
 # Assemble Flatpak assets
@@ -104,10 +111,6 @@ cp -r odalaunch/$executableName /app/$projectName/
 chmod +x /app/$projectName/$executableName
 mkdir -p /app/bin
 ln -s /app/$projectName/$executableName /app/bin/$executableName
-
-# Copy wxWidgets dependencies into lib
-mkdir -p /app/lib
-cp -r libraries/wxWidgets-3.1.5/lib/*.so /app/lib/
 
 # Install the icon.
 iconDir=/app/share/icons/hicolor/512x512/apps
