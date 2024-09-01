@@ -25,6 +25,8 @@
 
 #include <wx/menu.h>
 #include <wx/filefn.h>
+#include <wx/filename.h>
+#include <wx/stdpaths.h>
 
 #ifdef __WXMSW__
 #include <windows.h>
@@ -95,7 +97,8 @@ wxString OdaGetInstallDir()
 	const char* bindir_cstr = INSTALL_PREFIX "/" INSTALL_BINDIR;
 	InstallDir = wxString::FromAscii(bindir_cstr);
 #else
-	InstallDir = wxGetCwd();
+	wxFileName f(wxStandardPaths::Get().GetExecutablePath());
+	InstallDir = f.GetPath();
 #endif
 
 	return InstallDir;
