@@ -1,10 +1,14 @@
 ---
 BasedOnStyle: Microsoft
+AccessModifierOffset: -4
 AlignEscapedNewlines: Left
 AllowShortFunctionsOnASingleLine: Inline
 AlwaysBreakTemplateDeclarations: Yes
 ColumnLimit: 90
+IndentPPDirectives: BeforeHash
 IndentWidth: 4
+InsertNewlineAtEOF: true
 PointerAlignment: Left
+SortIncludes: Never
 SpaceInEmptyBlock: true
 UseTab: ForIndentation
