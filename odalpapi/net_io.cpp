@@ -52,8 +52,6 @@
 const int INVALID_SOCKET = -1;
 #endif
 
-using namespace std;
-
 namespace odalpapi
 {
 
@@ -163,7 +161,7 @@ void BufferedSocket::DestroySocket()
 	}
 }
 
-void BufferedSocket::SetRemoteAddress(const string& Address, const uint16_t& Port)
+void BufferedSocket::SetRemoteAddress(const std::string& Address, const uint16_t& Port)
 {
 #ifdef _XBOX
 	struct hostent *he;
@@ -201,33 +199,33 @@ void BufferedSocket::SetRemoteAddress(const string& Address, const uint16_t& Por
 #endif
 }
 
-bool BufferedSocket::SetRemoteAddress(const string& Address)
+bool BufferedSocket::SetRemoteAddress(const std::string& Address)
 {
 	size_t colon = Address.find(':');
 
-	if(colon == string::npos)
+	if(colon == std::string::npos)
 		return false;
 
 	if(colon + 1 >= Address.length())
 		return false;
 
 	uint16_t Port = atoi(Address.substr(colon + 1).c_str());
-	string HostIP = Address.substr(0, colon);
+	std::string HostIP = Address.substr(0, colon);
 
 	SetRemoteAddress(HostIP, Port);
 
 	return true;
 }
 
-void BufferedSocket::GetRemoteAddress(string& Address, uint16_t& Port) const
+void BufferedSocket::GetRemoteAddress(std::string& Address, uint16_t& Port) const
 {
 	Address = inet_ntoa(m_RemoteAddress.sin_addr);
 	Port = ntohs(m_RemoteAddress.sin_port);
 }
 
-string BufferedSocket::GetRemoteAddress() const
+std::string BufferedSocket::GetRemoteAddress() const
 {
-	ostringstream rmtAddr;
+	std::ostringstream rmtAddr;
 
 	rmtAddr << inet_ntoa(m_RemoteAddress.sin_addr) << ":" << ntohs(m_RemoteAddress.sin_port);
 
@@ -337,7 +335,7 @@ int32_t BufferedSocket::GetData(const int32_t& Timeout)
 	return -3;
 }
 
-bool BufferedSocket::ReadHexString(string& str)
+bool BufferedSocket::ReadHexString(std::string& str)
 {
 	std::stringstream hash;
 
@@ -377,7 +375,7 @@ bool BufferedSocket::ReadHexString(string& str)
 	return true;
 }
 
-bool BufferedSocket::ReadString(string& str)
+bool BufferedSocket::ReadString(std::string& str)
 {
 	signed char ch;
 
@@ -592,7 +590,7 @@ bool BufferedSocket::Read8(uint8_t& Uint8)
 // Write values
 //
 
-bool BufferedSocket::WriteString(const string& str)
+bool BufferedSocket::WriteString(const std::string& str)
 {
 	if(!CanWrite(str.length() + 1))
 	{

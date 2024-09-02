@@ -32,8 +32,6 @@
 #include "net_error.h"
 //#include "net_cvartable.h"
 
-using namespace std;
-
 namespace odalpapi
 {
 
@@ -102,7 +100,7 @@ ok:
    */
 int32_t MasterServer::Parse()
 {
-    ostringstream ipfmt;
+    std::ostringstream ipfmt;
     addr_t address = { "", 0, false };
 	uint32_t temp_response;
 	int16_t server_count;
@@ -403,7 +401,7 @@ void Server::ReadInformation()
 
 	for(size_t i = 0; i < PatchCount; ++i)
 	{
-		string Patch;
+		std::string Patch;
 
 		Socket->ReadString(Patch);
 
