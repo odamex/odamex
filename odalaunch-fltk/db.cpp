@@ -27,6 +27,8 @@
 
 #include "sqlite3.h"
 
+/******************************************************************************/
+
 const int SQL_TRIES = 3;
 
 static const char* SERVERS_TABLE =           //
@@ -73,24 +75,46 @@ static const char* STRIKE_SERVER = //
     "DELETE FROM servers "         //
     "WHERE address = :address;";   //
 
-sqlite3* kDatabase;
+static sqlite3* g_pDatabase;
 
+/******************************************************************************/
+
+/**
+ * @brief Log an SQL error.
+ * @param Unused.
+ * @param errCode Error code to log.
+ * @param msg Message to log.
+ */
 static void SQLError(void*, int errCode, const char* msg)
 {
 	Log_Debug("[SQLITE] {}: {}\n", errCode, msg);
 }
 
+/**
+ * @brief Prepare a statement.
+ *
+ * @param sql SQL statement to prepare.
+ * @return Pointer to prepared statement if successful, otherwise nullptr.
+ */
 static sqlite3_stmt* SQLPrepare(const char* sql)
 {
-	sqlite3_stmt* rvo = NULL;
-	const int res = sqlite3_prepare_v2(kDatabase, sql, -1, &rvo, NULL);
+	sqlite3_stmt* rvo = nullptr;
+	const int res = sqlite3_prepare_v2(g_pDatabase, sql, -1, &rvo, nullptr);
 	if (res != SQLITE_OK)
 	{
-		return NULL;
+		return nullptr;
 	}
 	return rvo;
 }
 
+/**
+ * @brief Bind a 32-bit integer.
+ *
+ * @param stmt Prepared statement.
+ * @param param Param to bind.
+ * @param data Data to bind.
+ * @return True if data was bound successfully, otherwise false.
+ */
 static bool SQLBindInt(sqlite3_stmt* stmt, const char* param, const int data)
 {
 	const int idx = sqlite3_bind_parameter_index(stmt, param);
@@ -109,6 +133,14 @@ static bool SQLBindInt(sqlite3_stmt* stmt, const char* param, const int data)
 	return true;
 }
 
+/**
+ * @brief Bind a 64-bit integer.
+ *
+ * @param stmt Prepared statement.
+ * @param param Param to bind.
+ * @param data Data to bind.
+ * @return True if data was bound successfully, otherwise false.
+ */
 static bool SQLBindInt64(sqlite3_stmt* stmt, const char* param, const int64_t data)
 {
 	const int idx = sqlite3_bind_parameter_index(stmt, param);
@@ -127,6 +159,14 @@ static bool SQLBindInt64(sqlite3_stmt* stmt, const char* param, const int64_t da
 	return true;
 }
 
+/**
+ * @brief Bind a text parameter.
+ *
+ * @param stmt Prepared statement.
+ * @param param Param to bind.
+ * @param data Data to bind.
+ * @return True if data was bound successfully, otherwise false.
+ */
 static bool SQLBindText(sqlite3_stmt* stmt, const char* param, const char* data)
 {
 	const int idx = sqlite3_bind_parameter_index(stmt, param);
@@ -145,37 +185,35 @@ static bool SQLBindText(sqlite3_stmt* stmt, const char* param, const char* data)
 	return true;
 }
 
-/**
- * @brief Open and create database.
- *
- * @return True if the database was initialized properly.
- */
+/******************************************************************************/
+
 bool DB_Init()
 {
-	if (::kDatabase != NULL)
+	if (::g_pDatabase != nullptr)
 	{
 		Log_Debug("Database is not NULL.\n");
 		return false;
 	}
 
-	if (sqlite3_config(SQLITE_CONFIG_LOG, SQLError, NULL) != SQLITE_OK)
+	if (sqlite3_config(SQLITE_CONFIG_LOG, SQLError, nullptr) != SQLITE_OK)
 	{
-		Log_Debug("Could not config database ({}).\n", sqlite3_errmsg(kDatabase));
+		Log_Debug("Could not config database ({}).\n", sqlite3_errmsg(g_pDatabase));
 		return false;
 	}
 
-	if (sqlite3_open(":memory:", &::kDatabase) != SQLITE_OK)
+	if (sqlite3_open(":memory:", &::g_pDatabase) != SQLITE_OK)
 	{
-		Log_Debug("Could not open database ({}).\n", sqlite3_errmsg(kDatabase));
+		Log_Debug("Could not open database ({}).\n", sqlite3_errmsg(g_pDatabase));
 		return false;
 	}
 
-	if (sqlite3_exec(::kDatabase, "PRAGMA integrity_check;", NULL, NULL, NULL))
+	if (sqlite3_exec(::g_pDatabase, "PRAGMA integrity_check;", nullptr, nullptr, nullptr))
 	{
 		return false;
 	}
 
-	if (sqlite3_exec(::kDatabase, ::SERVERS_TABLE, NULL, NULL, NULL) != SQLITE_OK)
+	if (sqlite3_exec(::g_pDatabase, ::SERVERS_TABLE, nullptr, nullptr, nullptr) !=
+	    SQLITE_OK)
 	{
 		return false;
 	}
@@ -183,26 +221,23 @@ bool DB_Init()
 	return true;
 }
 
-/**
- * @brief Close database.
- */
+/******************************************************************************/
+
 void DB_DeInit()
 {
-	if (kDatabase == NULL)
+	if (g_pDatabase == nullptr)
 		return;
 
-	sqlite3_close(kDatabase);
-	kDatabase = NULL;
+	sqlite3_close(g_pDatabase);
+	g_pDatabase = nullptr;
 }
 
-/**
- * @brief Add a server address to the database.
- *        If the server already exists, just touch the masterupdate field.
- */
+/******************************************************************************/
+
 void DB_AddServer(const std::string& address)
 {
 	sqlite3_stmt* stmt = SQLPrepare(::ADD_SERVER);
-	if (stmt == NULL)
+	if (stmt == nullptr)
 		return;
 
 	ON_SCOPE_EXIT(sqlite3_finalize(stmt););
@@ -219,12 +254,14 @@ void DB_AddServer(const std::string& address)
 	}
 }
 
+/******************************************************************************/
+
 void DB_AddServerInfo(const odalpapi::Server& server)
 {
 	std::string wads;
 
 	sqlite3_stmt* stmt = SQLPrepare(::ADD_SERVER_INFO);
-	if (stmt == NULL)
+	if (stmt == nullptr)
 		return;
 
 	ON_SCOPE_EXIT(sqlite3_finalize(stmt););
@@ -258,9 +295,8 @@ void DB_AddServerInfo(const odalpapi::Server& server)
 	}
 }
 
-/**
- * @brief Get a list of servers.
- */
+/******************************************************************************/
+
 void DB_GetServerList(serverRows_t& rows)
 {
 	int res;
@@ -280,7 +316,7 @@ void DB_GetServerList(serverRows_t& rows)
 		{
 		case SQLITE_ROW: {
 			char buffer[64];
-			serverRow_t newRow;
+			serverRow_s newRow;
 
 			// Extract the row into intermediate representation.
 			const char* address = (const char*)(sqlite3_column_text(stmt, 0));
@@ -327,6 +363,8 @@ void DB_GetServerList(serverRows_t& rows)
 	}
 }
 
+/******************************************************************************/
+
 static bool GetLockedAddress(const uint64_t id, std::string& outAddress)
 {
 	int res;
@@ -346,7 +384,7 @@ static bool GetLockedAddress(const uint64_t id, std::string& outAddress)
 		{
 		case SQLITE_ROW: {
 			const char* address = (const char*)(sqlite3_column_text(stmt, 0));
-			if (address == NULL)
+			if (address == nullptr)
 			{
 				Log_Debug("Could not find address for lock {}\n",
 				          static_cast<uint32_t>(id));
@@ -367,13 +405,8 @@ static bool GetLockedAddress(const uint64_t id, std::string& outAddress)
 	return false;
 }
 
-/**
- * @brief Lock a row with a given id, intending to update its serverinfo.
- *
- * @param id Thread ID to use as a lock.
- * @param outAddress Output address we found.
- * @return True if we locked a row, otherwise false.
- */
+/******************************************************************************/
+
 bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress)
 {
 	sqlite3_stmt* stmt = SQLPrepare(::LOCK_SERVER);
@@ -392,7 +425,7 @@ bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress)
 			continue;
 		}
 
-		if (!sqlite3_changes(::kDatabase))
+		if (!sqlite3_changes(::g_pDatabase))
 		{
 			Log_Debug("Lock not found for {}.\n", static_cast<uint32_t>(id));
 			return false;
@@ -409,10 +442,12 @@ bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress)
 	return false;
 }
 
+/******************************************************************************/
+
 void DB_StrikeServer(const std::string& address)
 {
 	sqlite3_stmt* stmt = SQLPrepare(::STRIKE_SERVER);
-	if (stmt == NULL)
+	if (stmt == nullptr)
 		return;
 
 	ON_SCOPE_EXIT(sqlite3_finalize(stmt););

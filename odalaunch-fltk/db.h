@@ -30,7 +30,10 @@
 
 #include "net_packet.h"
 
-struct serverRow_t
+/**
+ * @brief A single server row for the UI.
+ */
+struct serverRow_s
 {
 	std::string address;
 	std::string servername;
@@ -40,12 +43,55 @@ struct serverRow_t
 	std::string players;
 	std::string ping;
 };
-typedef std::vector<serverRow_t> serverRows_t;
 
+/**
+ * @brief Vector that holds server rows for the UI.
+ */
+using serverRows_t = std::vector<serverRow_s>;
+
+/**
+ * @brief Open and create database.
+ *
+ * @return True if the database was initialized properly.
+ */
 bool DB_Init();
+
+/**
+ * @brief Close database.
+ */
 void DB_DeInit();
+
+/**
+ * @brief Add a server address to the database.
+ *        If the server already exists, just touch the masterupdate field.
+ */
 void DB_AddServer(const std::string& address);
+
+/**
+ * @brief Update a server with new information - as long as it's not locked
+ *        by another thread.
+ *
+ * @param server Server information to update with.
+ */
 void DB_AddServerInfo(const odalpapi::Server& server);
+
+/**
+ * @brief Get a list of servers.
+ */
 void DB_GetServerList(serverRows_t& rows);
+
+/**
+ * @brief Lock a row with a given id, intending to update its serverinfo.
+ *
+ * @param id Thread ID to use as a lock.
+ * @param outAddress Output address we found.
+ * @return True if we locked a row, otherwise false.
+ */
 bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress);
+
+/**
+ * @brief Remove server from list.
+ *
+ * @param address Address of server to remove.
+ */
 void DB_StrikeServer(const std::string& address);
