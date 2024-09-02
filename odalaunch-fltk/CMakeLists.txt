@@ -15,4 +15,4 @@ odamex_target_settings(odalaunch-fltk)
 target_compile_definitions(odalaunch-fltk PUBLIC _UNICODE UNICODE)
 target_include_directories(odalaunch-fltk PUBLIC
     "${CMAKE_BINARY_DIR}/libraries/local/include")
-target_link_libraries(odalaunch-fltk odalpapi sqlite-amalgamation fltk)
+target_link_libraries(odalaunch-fltk odalpapi fmt::fmt sqlite-amalgamation fltk::fltk)

@@ -77,7 +77,7 @@ sqlite3* kDatabase;
 
 static void SQLError(void*, int errCode, const char* msg)
 {
-	Log_Debug("[SQLITE] %d: %s\n", errCode, msg);
+	Log_Debug("[SQLITE] {}: {}\n", errCode, msg);
 }
 
 static sqlite3_stmt* SQLPrepare(const char* sql)
@@ -96,7 +96,7 @@ static bool SQLBindInt(sqlite3_stmt* stmt, const char* param, const int data)
 	const int idx = sqlite3_bind_parameter_index(stmt, param);
 	if (idx == 0)
 	{
-		Log_Debug("Unknown parameter \"%s\".\n", param);
+		Log_Debug("Unknown parameter \"{}\".\n", param);
 		return false;
 	}
 
@@ -114,7 +114,7 @@ static bool SQLBindInt64(sqlite3_stmt* stmt, const char* param, const int64_t da
 	const int idx = sqlite3_bind_parameter_index(stmt, param);
 	if (idx == 0)
 	{
-		Log_Debug("Unknown parameter \"%s\".\n", param);
+		Log_Debug("Unknown parameter \"{}\".\n", param);
 		return false;
 	}
 
@@ -132,7 +132,7 @@ static bool SQLBindText(sqlite3_stmt* stmt, const char* param, const char* data)
 	const int idx = sqlite3_bind_parameter_index(stmt, param);
 	if (idx == 0)
 	{
-		Log_Debug("Unknown parameter \"%s\".\n", param);
+		Log_Debug("Unknown parameter \"{}\".\n", param);
 		return false;
 	}
 
@@ -160,13 +160,13 @@ bool DB_Init()
 
 	if (sqlite3_config(SQLITE_CONFIG_LOG, SQLError, NULL) != SQLITE_OK)
 	{
-		Log_Debug("Could not config database (%s).\n", sqlite3_errmsg(kDatabase));
+		Log_Debug("Could not config database ({}).\n", sqlite3_errmsg(kDatabase));
 		return false;
 	}
 
 	if (sqlite3_open(":memory:", &::kDatabase) != SQLITE_OK)
 	{
-		Log_Debug("Could not open database (%s).\n", sqlite3_errmsg(kDatabase));
+		Log_Debug("Could not open database ({}).\n", sqlite3_errmsg(kDatabase));
 		return false;
 	}
 
@@ -348,7 +348,7 @@ static bool GetLockedAddress(const uint64_t id, std::string& outAddress)
 			const char* address = (const char*)(sqlite3_column_text(stmt, 0));
 			if (address == NULL)
 			{
-				Log_Debug("Could not find address for lock %u\n",
+				Log_Debug("Could not find address for lock {}\n",
 				          static_cast<uint32_t>(id));
 				return false;
 			}
@@ -394,7 +394,7 @@ bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress)
 
 		if (!sqlite3_changes(::kDatabase))
 		{
-			Log_Debug("Lock not found for %u.\n", static_cast<uint32_t>(id));
+			Log_Debug("Lock not found for {}.\n", static_cast<uint32_t>(id));
 			return false;
 		}
 

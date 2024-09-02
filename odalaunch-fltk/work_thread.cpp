@@ -99,7 +99,7 @@ static void WorkerRefreshMaster()
 		uint16_t port;
 		master.GetServerAddress(i, ip, port);
 		DB_AddServer(AddressCombine(ip, port));
-		Log_Debug("Added server %s:%u.\n", ip.c_str(), port);
+		Log_Debug("Added server {}:{}.\n", ip, port);
 	}
 }
 
@@ -121,12 +121,12 @@ static void WorkerRefreshServer(const std::string& address)
 	if (ok)
 	{
 		DB_AddServerInfo(server);
-		Log_Debug("Added server info %s.\n", address.c_str(), port);
+		Log_Debug("Added server info {}.\n", address, port);
 	}
 	else
 	{
 		DB_StrikeServer(address);
-		Log_Debug("Could not update server info for %s.\n", address.c_str(), port);
+		Log_Debug("Could not update server info for {}.\n", address, port);
 	}
 }
 

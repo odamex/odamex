@@ -24,14 +24,7 @@
 
 #include "plat.h"
 
-void Log_Debug(const char* fmt, ...)
+void Log_VDebug(fmt::string_view fmt, fmt::format_args args)
 {
-	va_list args;
-	static char buffer[8192];
-
-	va_start(args, fmt);
-	vsnprintf(buffer, ARRAY_LENGTH(buffer), fmt, args);
-	va_end(args);
-
-	Plat_DebugOut(buffer);
+	Plat_DebugOut(fmt::vformat(fmt, args).c_str());
 }
