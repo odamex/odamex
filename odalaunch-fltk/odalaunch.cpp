@@ -22,38 +22,20 @@
 
 #include "odalaunch.h"
 
-#if defined(USE_MS_SNPRINTF)
-
-int __cdecl ms_snprintf(char* buffer, size_t n, const char* format, ...)
-{
-	int retval;
-	va_list argptr;
-
-	va_start(argptr, format);
-	retval = _vsnprintf(buffer, n, format, argptr);
-	va_end(argptr);
-	return retval;
-}
-
-int __cdecl ms_vsnprintf(char* s, size_t n, const char* format, va_list arg)
-{
-	return _vsnprintf(s, n, format, arg);
-}
-
-#endif
+/******************************************************************************/
 
 std::string AddressCombine(const std::string& address, const uint16_t port)
 {
-	char buffer[128];
-	snprintf(buffer, ARRAY_LENGTH(buffer), "%s:%u", address.c_str(), port);
-	return buffer;
+	return fmt::format("{}:{}", address, port);
 }
 
-void AddressSplit(const std::string& address, std::string& outIp, uint16_t& outPort)
+/******************************************************************************/
+
+void AddressSplit(std::string& outIp, uint16_t& outPort, const std::string& address)
 {
 	outIp = address;
 	const size_t colon = outIp.rfind(':');
 	const std::string port = outIp.substr(colon + 1);
-	outPort = static_cast<uint16_t>(atoi(port.c_str()));
+	outPort = static_cast<uint16_t>(std::stoul(port));
 	outIp = outIp.substr(0, colon);
 }

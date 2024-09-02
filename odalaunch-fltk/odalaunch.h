@@ -28,8 +28,8 @@
 
 #include <cstdint>
 
-#include <string>
 #include <fmt/core.h>
+#include <string>
 
 // Utility functions and classes.
 
@@ -63,9 +63,9 @@ struct Bad_arg_to_ARRAY_LENGTH
 };
 
 // ScopeExit
-// 
+//
 // Run a function on scope exit.
-// 
+//
 // https://stackoverflow.com/a/42506763/91642
 
 template <typename F>
@@ -82,8 +82,16 @@ ScopeExit<F> makeScopeExit(F&& f)
 	return ScopeExit<F>(std::forward<F>(f));
 };
 
+/**
+ * @brief Combine an address and port number into a string addr:port.
+ */
 std::string AddressCombine(const std::string& address, const uint16_t port);
-void AddressSplit(const std::string& address, std::string& outIp, uint16_t& outPort);
+
+/**
+ * @brief Split a string containing an address and port into its constituant
+ *        parts.
+ */
+void AddressSplit(std::string& outIp, uint16_t& outPort, const std::string& address);
 
 // Global variables.
 

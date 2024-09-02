@@ -51,6 +51,6 @@ void PlatformPOSIX::ExecuteOdamex()
 
 Platform& Platform::Get()
 {
-	struct PlatformPOSIX s_cPlatform;
+	static PlatformPOSIX s_cPlatform;
 	return s_cPlatform;
 }

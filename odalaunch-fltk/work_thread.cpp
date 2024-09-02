@@ -113,7 +113,7 @@ static void WorkerRefreshServer(const std::string& address)
 
 	std::string ip;
 	uint16_t port;
-	AddressSplit(address, ip, port);
+	AddressSplit(ip, port, address);
 
 	server.SetSocket(&socket);
 	server.SetAddress(ip, port);

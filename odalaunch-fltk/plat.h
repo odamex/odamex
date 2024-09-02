@@ -27,9 +27,20 @@ class Platform
   public:
 	virtual ~Platform() { }
 
+	/**
+	 * @brief Write a string to a debug log of some kind.
+	 * 
+	 * @param str String to write.
+	 */
 	virtual void DebugOut(const char* str) = 0;
 
+	/**
+	 * @brief Execute Odamex.  WIP.
+	 */
 	virtual void ExecuteOdamex() = 0;
 
+	/**
+	 * @brief Get the abstraction singleton.
+	 */
 	static Platform& Get();
 };

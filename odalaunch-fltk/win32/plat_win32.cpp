@@ -71,6 +71,6 @@ void PlatformWin32::ExecuteOdamex()
 
 Platform& Platform::Get()
 {
-	struct PlatformWin32 s_cPlatform;
+	static PlatformWin32 s_cPlatform;
 	return s_cPlatform;
 }
