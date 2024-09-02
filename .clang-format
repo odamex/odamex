@@ -5,7 +5,6 @@ AlignEscapedNewlines: Left
 AllowShortFunctionsOnASingleLine: Inline
 AlwaysBreakTemplateDeclarations: Yes
 ColumnLimit: 90
-IndentPPDirectives: BeforeHash
 IndentWidth: 4
 InsertNewlineAtEOF: true
 PointerAlignment: Left
