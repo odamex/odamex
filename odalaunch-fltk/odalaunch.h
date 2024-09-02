@@ -72,12 +72,6 @@ ScopeExit<F> makeScopeExit(F&& f)
 	return ScopeExit<F>(std::forward<F>(f));
 };
 
-#define STRING_JOIN(arg1, arg2) STRING_JOIN2(arg1, arg2)
-#define STRING_JOIN2(arg1, arg2) arg1##arg2
-
-#define ON_SCOPE_EXIT(code) \
-	auto STRING_JOIN(scopeExit, __LINE__) = makeScopeExit([&]() { code; })
-
 std::string AddressCombine(const std::string& address, const uint16_t port);
 void AddressSplit(const std::string& address, std::string& outIp, uint16_t& outPort);
 

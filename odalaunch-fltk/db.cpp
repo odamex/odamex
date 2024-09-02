@@ -240,7 +240,7 @@ void DB_AddServer(const std::string& address)
 	if (stmt == nullptr)
 		return;
 
-	ON_SCOPE_EXIT(sqlite3_finalize(stmt););
+	auto onExit = makeScopeExit([stmt] { sqlite3_finalize(stmt); });
 
 	if (!SQLBindText(stmt, ":address", address.c_str()))
 		return;
@@ -264,7 +264,7 @@ void DB_AddServerInfo(const odalpapi::Server& server)
 	if (stmt == nullptr)
 		return;
 
-	ON_SCOPE_EXIT(sqlite3_finalize(stmt););
+	auto onExit = makeScopeExit([stmt] { sqlite3_finalize(stmt); });
 
 	if (!SQLBindText(stmt, ":address", server.GetAddress().c_str()))
 		return;
@@ -306,7 +306,7 @@ void DB_GetServerList(serverRows_t& rows)
 	if (!stmt)
 		return;
 
-	ON_SCOPE_EXIT(sqlite3_finalize(stmt););
+	auto onExit = makeScopeExit([stmt] { sqlite3_finalize(stmt); });
 
 	newRowCount = 0;
 	for (size_t tries = 0; tries < ::SQL_TRIES;)
@@ -372,7 +372,7 @@ static bool GetLockedAddress(const uint64_t id, std::string& outAddress)
 	if (!stmt)
 		return false;
 
-	ON_SCOPE_EXIT(sqlite3_finalize(stmt););
+	auto onExit = makeScopeExit([stmt] { sqlite3_finalize(stmt); });
 
 	if (!SQLBindInt64(stmt, ":lockid", id))
 		return false;
@@ -413,7 +413,7 @@ bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress)
 	if (!stmt)
 		return false;
 
-	ON_SCOPE_EXIT(sqlite3_finalize(stmt););
+	auto onExit = makeScopeExit([stmt] { sqlite3_finalize(stmt); });
 
 	if (!SQLBindInt64(stmt, ":lockid", id))
 		return false;
@@ -450,7 +450,7 @@ void DB_StrikeServer(const std::string& address)
 	if (stmt == nullptr)
 		return;
 
-	ON_SCOPE_EXIT(sqlite3_finalize(stmt););
+	auto onExit = makeScopeExit([stmt] { sqlite3_finalize(stmt); });
 
 	if (!SQLBindText(stmt, ":address", address.c_str()))
 		return;
