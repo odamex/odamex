@@ -241,7 +241,7 @@ if(BUILD_CLIENT)
     message(FATAL_ERROR "FLTK target not found.")
   endif()
 
-  target_include_directories(fltk SYSTEM INTERFACE ${FLTK_INCLUDE_DIRS})
+  target_include_directories(fltk::fltk SYSTEM INTERFACE ${FLTK_INCLUDE_DIRS})
   set_target_properties(fltk::fltk PROPERTIES IMPORTED_GLOBAL True)
   set_target_properties(fltk::images PROPERTIES IMPORTED_GLOBAL True)
   if(WIN32)
