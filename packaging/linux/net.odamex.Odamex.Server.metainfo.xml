@@ -6,7 +6,7 @@
 <component type="desktop-application">
   <id>net.odamex.Odamex.Server</id>
   <name>Odamex Server</name>
-  <summary>A DOOM source port with online multiplayer, a 32-bit renderer, and much more.</summary>
+  <summary>The server terminal program for Odamex. Must have WAD directories configured.</summary>
   <developer_name>The Odamex Team</developer_name>
   <url type="homepage">https://odamex.net</url>
   <metadata_license>GPL2</metadata_license>
@@ -16,14 +16,7 @@
     <control>keyboard</control>
   </supports>
   <description>
-    <p>A multiplayer-focused DOOM port with a focus on classic DOOM gameplay.</p>
-    <p>Features include:</p>
-    <ul>
-      <li>255 Player Maximum</li>
-      <li>32-bit renderer</li>
-      <li>Compiles on many different systems, including Raspberry Pi</li>
-      <li>MBF21 compatible</li>
-    </ul>
+    <p>The server portion of Odamex, to host an online game of DOOM!</p>
   </description>
   <launchable type="desktop-id">net.odamex.Odamex.Server.desktop</launchable>
   <screenshots>

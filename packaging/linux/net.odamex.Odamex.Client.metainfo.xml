@@ -6,7 +6,7 @@
 <component type="desktop-application">
   <id>net.odamex.Odamex.Client</id>
   <name>Odamex Client</name>
-  <summary>A DOOM source port with online multiplayer, a 32-bit renderer, and much more.</summary>
+  <summary>The client for the DOOM port Odamex.</summary>
   <developer_name>The Odamex Team</developer_name>
   <url type="homepage">https://odamex.net</url>
   <metadata_license>GPL2</metadata_license>
