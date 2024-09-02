@@ -54,7 +54,7 @@ using serverRows_t = std::vector<serverRow_s>;
  *
  * @return True if the database was initialized properly.
  */
-bool DB_Init();
+NODISCARD bool DB_Init();
 
 /**
  * @brief Close database.
@@ -87,7 +87,7 @@ void DB_GetServerList(serverRows_t& rows);
  * @param outAddress Output address we found.
  * @return True if we locked a row, otherwise false.
  */
-bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress);
+NODISCARD bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress);
 
 /**
  * @brief Remove server from list.

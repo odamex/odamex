@@ -96,7 +96,7 @@ static void SQLError(void*, int errCode, const char* msg)
  * @param sql SQL statement to prepare.
  * @return Pointer to prepared statement if successful, otherwise nullptr.
  */
-static sqlite3_stmt* SQLPrepare(const char* sql)
+NODISCARD static sqlite3_stmt* SQLPrepare(const char* sql)
 {
 	sqlite3_stmt* rvo = nullptr;
 	const int res = sqlite3_prepare_v2(g_pDatabase, sql, -1, &rvo, nullptr);
@@ -115,7 +115,7 @@ static sqlite3_stmt* SQLPrepare(const char* sql)
  * @param data Data to bind.
  * @return True if data was bound successfully, otherwise false.
  */
-static bool SQLBindInt(sqlite3_stmt* stmt, const char* param, const int data)
+NODISCARD static bool SQLBindInt(sqlite3_stmt* stmt, const char* param, const int data)
 {
 	const int idx = sqlite3_bind_parameter_index(stmt, param);
 	if (idx == 0)
@@ -141,7 +141,8 @@ static bool SQLBindInt(sqlite3_stmt* stmt, const char* param, const int data)
  * @param data Data to bind.
  * @return True if data was bound successfully, otherwise false.
  */
-static bool SQLBindInt64(sqlite3_stmt* stmt, const char* param, const int64_t data)
+NODISCARD static bool SQLBindInt64(sqlite3_stmt* stmt, const char* param,
+                                   const int64_t data)
 {
 	const int idx = sqlite3_bind_parameter_index(stmt, param);
 	if (idx == 0)
@@ -167,7 +168,7 @@ static bool SQLBindInt64(sqlite3_stmt* stmt, const char* param, const int64_t da
  * @param data Data to bind.
  * @return True if data was bound successfully, otherwise false.
  */
-static bool SQLBindText(sqlite3_stmt* stmt, const char* param, const char* data)
+NODISCARD static bool SQLBindText(sqlite3_stmt* stmt, const char* param, const char* data)
 {
 	const int idx = sqlite3_bind_parameter_index(stmt, param);
 	if (idx == 0)
@@ -187,7 +188,7 @@ static bool SQLBindText(sqlite3_stmt* stmt, const char* param, const char* data)
 
 /******************************************************************************/
 
-bool DB_Init()
+NODISCARD bool DB_Init()
 {
 	if (::g_pDatabase != nullptr)
 	{
@@ -407,7 +408,7 @@ static bool GetLockedAddress(const uint64_t id, std::string& outAddress)
 
 /******************************************************************************/
 
-bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress)
+NODISCARD bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress)
 {
 	sqlite3_stmt* stmt = SQLPrepare(::LOCK_SERVER);
 	if (!stmt)

@@ -22,12 +22,22 @@
 
 #pragma once
 
+#if defined(_MSC_VER)
+#include <sal.h> // Useful correctness macros.
+#endif
+
 #include <cstdint>
 
 #include <string>
 #include <fmt/core.h>
 
 // Utility functions and classes.
+
+#if defined(_MSC_VER)
+#define NODISCARD _Check_return_
+#else
+#define NODISCARD __attribute__((__warn_unused_result__))
+#endif
 
 //
 // ARRAY_LENGTH
