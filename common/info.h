@@ -231,6 +231,11 @@ typedef enum
 
 } spritenum_t;
 
+inline auto format_as(spritenum_t eSpriteNum)
+{
+	return fmt::underlying(eSpriteNum);
+}
+
 inline FArchive &operator<< (FArchive &arc, spritenum_t i) { DWORD out; out = i; return arc << out; }
 inline FArchive &operator>> (FArchive &arc, spritenum_t &i) { DWORD in; arc >> in; i = (spritenum_t)in; return arc; }
 
@@ -1365,6 +1370,11 @@ typedef enum
 	NUMSTATES
 } statenum_t;
 
+inline auto format_as(statenum_t eStateNum)
+{
+	return fmt::underlying(eStateNum);
+}
+
 inline FArchive &operator<< (FArchive &arc, statenum_t i) { DWORD out; out = i; return arc << out; }
 inline FArchive &operator>> (FArchive &arc, statenum_t &i) { DWORD in; arc >> in; i = (statenum_t)in; return arc; }
 
@@ -1659,6 +1669,11 @@ typedef enum {
 	NUMMOBJTYPES
 
 } mobjtype_t;
+
+inline auto format_as(mobjtype_t eType)
+{
+	return fmt::underlying(eType);
+}
 
 inline FArchive &operator<< (FArchive &arc, mobjtype_t i) { DWORD out; out = i; return arc << out; }
 inline FArchive &operator>> (FArchive &arc, mobjtype_t &i) { DWORD in; arc >> in; i = (mobjtype_t)in; return arc; }
