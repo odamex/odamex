@@ -26,5 +26,5 @@
 
 void Log_VDebug(fmt::string_view fmt, fmt::format_args args)
 {
-	Plat_DebugOut(fmt::vformat(fmt, args).c_str());
+	Platform::Get().DebugOut(fmt::vformat(fmt, args).c_str());
 }

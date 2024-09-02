@@ -3,6 +3,12 @@ include(OdamexTargetSettings)
 # Odalaunch
 file(GLOB LAUNCHER_SOURCES *.cpp *.h)
 
+if(WIN32)
+    list(APPEND LAUNCHER_SOURCES "win32/plat_win32.cpp")
+else()
+    list(APPEND LAUNCHER_SOURCES "posix/plat_posix.cpp")
+endif()
+
 # Tag source files
 get_target_property(ODALPAPI_SOURCES odalpapi INTERFACE_SOURCES)
 get_target_property(SQLITE_SOURCES sqlite-amalgamation INTERFACE_SOURCES)

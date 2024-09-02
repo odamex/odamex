@@ -22,5 +22,14 @@
 
 #include "odalaunch.h"
 
-void Plat_DebugOut(const char* str);
-void Plat_ExecuteOdamex();
+class Platform
+{
+  public:
+	virtual ~Platform() { }
+
+	virtual void DebugOut(const char* str) = 0;
+
+	virtual void ExecuteOdamex() = 0;
+
+	static Platform& Get();
+};
