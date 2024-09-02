@@ -348,21 +348,25 @@ if(USE_INTERNAL_DEUTEX)
     find_program(DEUTEX_EXECUTABLE deutex
       PATHS "${CMAKE_CURRENT_BINARY_DIR}/deutex"
       NO_DEFAULT_PATH)
+  else()
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/deutex-5.2.2")
+      file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/deutex-5.2.2"
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+      execute_process(COMMAND sh bootstrap
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2")
+      execute_process(COMMAND sh configure
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2")
+      execute_process(COMMAND make
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2")
+      find_program(DEUTEX_EXECUTABLE deutex
+        PATHS "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2/src"
+        NO_DEFAULT_PATH)
+    endif()
   endif()
 else()
   if (EXISTS "/usr/games/deutex")
     find_program(DEUTEX_EXECUTABLE deutex
       PATHS "/usr/games") # Debian installation location
-  else() # not found, build from wad dir if it was unzipped there
-    execute_process(COMMAND sh bootstrap
-      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2")
-    execute_process(COMMAND sh configure
-      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2")
-    execute_process(COMMAND make
-      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2")
-    find_program(DEUTEX_EXECUTABLE deutex
-      PATHS "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2/src"
-      NO_DEFAULT_PATH)
   endif()
 endif()
 

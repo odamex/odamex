@@ -14,19 +14,22 @@ tar --zstd -xvf deutex-5.2.2.tar.zst -C wad/
 # Untar wxWidgets to libraries directory
 tar -xvf wxWidgets-3.0.5.tar.bz2 -C libraries/
 
+mkdir -p build && cd build
 # Generate build
 if [[ -z ${USE_SDL12:-} ]]; then
-    cmake . -GNinja \
+    cmake .. -GNinja \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo \
         -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
         -DBUILD_MASTER=0 -DBUILD_LAUNCHER=1 -DUSE_INTERNAL_LIBS=1 \
-        -DUSE_INTERNAL_WXWIDGETS=1
+        -DUSE_INTERNAL_WXWIDGETS=1 -DUSE_INTERNAL_DEUTEX=1 \
+        -DODAMEX_INSTALL_BINDIR=/app/bin -DODAMEX_INSTALL_DATADIR=/run/host/usr/share
 else
-    cmake . -GNinja \
+    cmake .. -GNinja \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_SDL12=1 \
         -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
         -DBUILD_MASTER=0 -DBUILD_LAUNCHER=1 -DUSE_INTERNAL_LIBS=1 \
-        -DUSE_INTERNAL_WXWIDGETS=1
+        -DUSE_INTERNAL_WXWIDGETS=1 -DUSE_INTERNAL_DEUTEX=1 \
+        -DODAMEX_INSTALL_BINDIR=/app/bin -DODAMEX_INSTALL_DATADIR=/run/host/usr/share
 fi
 
 ninja odamex
@@ -40,6 +43,8 @@ cp -r libraries/wxWidgets-3.0.5/lib/*.0 /app/lib/
 
 ninja odalaunch
 
+cd ..
+
 # Assemble Flatpak assets
 
 # Client app
@@ -49,11 +54,11 @@ executableName=odamex
 
 # Copy the client app to the Flatpak-based location.
 mkdir -p /app/$projectName
-cp -r client/$executableName /app/$projectName/
+cp -r build/client/$executableName /app/$projectName/
 chmod +x /app/$projectName/$executableName
 mkdir -p /app/bin
-cp -r wad/odamex.wad /app/$projectName/
-cp -r wad/odamex.wad /app/bin/
+cp -r build/wad/odamex.wad /app/$projectName/
+cp -r build/wad/odamex.wad /app/bin/
 ln -s /app/$projectName/$executableName /app/bin/$executableName
 
 # Install the icon.
@@ -78,11 +83,11 @@ executableName=odasrv
 
 # Copy the server app to the Flatpak-based location.
 mkdir -p /app/$projectName
-cp -r server/$executableName /app/$projectName/
+cp -r build/server/$executableName /app/$projectName/
 chmod +x /app/$projectName/$executableName
 mkdir -p /app/bin
-cp -r wad/odamex.wad /app/$projectName/
-cp -r wad/odamex.wad /app/bin/
+cp -r build/wad/odamex.wad /app/$projectName/
+cp -r build/wad/odamex.wad /app/bin/
 ln -s /app/$projectName/$executableName /app/bin/$executableName
 
 # Install the icon.
@@ -107,7 +112,7 @@ executableName=odalaunch
 
 # Copy the launcher app to the Flatpak-based location.
 mkdir -p /app/$projectName
-cp -r odalaunch/$executableName /app/$projectName/
+cp -r build/odalaunch/$executableName /app/$projectName/
 chmod +x /app/$projectName/$executableName
 mkdir -p /app/bin
 ln -s /app/$projectName/$executableName /app/bin/$executableName

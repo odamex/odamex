@@ -23,7 +23,6 @@
 
 #include "plat_utils.h"
 
-#include <wx/menu.h>
 #include <wx/filefn.h>
 #include <wx/filename.h>
 #include <wx/stdpaths.h>
@@ -93,12 +92,11 @@ wxString OdaGetInstallDir()
 {
 	wxString InstallDir;
 
-#if defined(INSTALL_PREFIX) && defined(INSTALL_BINDIR)
-	const char* bindir_cstr = INSTALL_PREFIX "/" INSTALL_BINDIR;
+#if defined(ODAMEX_INSTALL_BINDIR)
+	const char* bindir_cstr = ODAMEX_INSTALL_BINDIR;
 	InstallDir = wxString::FromAscii(bindir_cstr);
 #else
-	wxFileName f(wxStandardPaths::Get().GetExecutablePath());
-	InstallDir = f.GetPath();
+	InstallDir = wxGetCwd();
 #endif
 
 	return InstallDir;
@@ -108,11 +106,11 @@ wxString OdaGetDataDir()
 {
 	wxString DataDir;
 
-#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
-	const char* datadir_cstr = INSTALL_PREFIX "/" INSTALL_DATADIR;
+#if defined(ODAMEX_INSTALL_DATADIR)
+	const char* datadir_cstr = ODAMEX_INSTALL_DATADIR;
 	DataDir = wxString::FromAscii(datadir_cstr);
 #else
-	DataDir =  wxGetCwd();
+	DataDir = wxGetCwd();
 #endif
 
 	return DataDir;

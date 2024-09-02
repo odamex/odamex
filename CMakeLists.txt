@@ -21,6 +21,7 @@ include(CMakeDependentOption)
 # CMAKE_INSTALL_BINDIR and CMAKE_INSTALL_DATADIR will be changed if GNUInstallDirs is availible
 set(CMAKE_INSTALL_BINDIR "bin")
 set(CMAKE_INSTALL_DATADIR "share")
+
 include(GNUInstallDirs OPTIONAL)
 
 add_definitions(-DINSTALL_BINDIR="${CMAKE_INSTALL_BINDIR}")
@@ -45,6 +46,8 @@ option(BUILD_MASTER "Build master server target" 0)
 option(BUILD_OR_FAIL "Must build the BUILD_* targets or else generation will fail" 0)
 option(USE_INTERNAL_DEUTEX "Use internal DeuTex" ${USE_INTERNAL_LIBS})
 option(USE_LTO "Build Release builds with Link Time Optimization" 1)
+option(ODAMEX_INSTALL_BINDIR "Smart default for bin dir location" "/usr/local/bin")
+option(ODAMEX_INSTALL_DATADIR "Smart default for data dir location" "/usr/local/share/")
 cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_PNG "Use internal libpng" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
@@ -53,6 +56,11 @@ cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_IN
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 cmake_dependent_option( USE_INTERNAL_MINIUPNP "Use internal MiniUPnP" 1 USE_MINIUPNP 0 )
+
+if(NOT APPLE AND NOT WIN32)
+  add_definitions(-DODAMEX_INSTALL_BINDIR="${ODAMEX_INSTALL_BINDIR}")
+  add_definitions(-DODAMEX_INSTALL_DATADIR="${ODAMEX_INSTALL_DATADIR}")
+endif()
 
 set(PROJECT_COPYRIGHT "2006-2024")
 set(PROJECT_RC_VERSION "10,5,0,0")

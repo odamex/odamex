@@ -645,18 +645,22 @@ if(BUILD_LAUNCHER)
           CACHE FILEPATH "")
       endif()
     else()
-       # Compile wxWidgets and copy resources if exists in /wxWidgets/
-       execute_process(COMMAND sh configure --enable-unicode
-         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.0.5")
-       execute_process(COMMAND make -j3
-         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.0.5")
-       file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/wxWidgets-3.0.5/utils/wxrc/wxrc"
-        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.0.5/lib/")
-       set(wxWidgets_wxrc_EXECUTABLE
-         "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.0.5/lib/wxrc"
-         CACHE FILEPATH "")
-       set(wxWidgets_CONFIG_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.0.5/wx-config" CACHE PATH "")
-       set(wxWidgets_USE_STATIC ON)
+      if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/wxWidgets-3.0.5")
+        file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/wxWidgets-3.0.5"
+          DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+        # Compile wxWidgets and copy resources if exists in /wxWidgets/
+        execute_process(COMMAND sh configure --enable-unicode --with-gtk=3
+          WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.0.5")
+        execute_process(COMMAND make -j3
+          WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.0.5")
+        file(COPY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.0.5/utils/wxrc/wxrc"
+          DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.0.5/lib/")
+        set(wxWidgets_wxrc_EXECUTABLE
+          "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.0.5/lib/wxrc"
+          CACHE FILEPATH "")
+        set(wxWidgets_CONFIG_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.0.5/wx-config" CACHE PATH "")
+        set(wxWidgets_USE_STATIC ON)
+      endif()
     endif()
   endif()
 endif()
