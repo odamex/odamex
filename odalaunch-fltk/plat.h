@@ -24,12 +24,12 @@
 
 class Platform
 {
-  public:
+public:
 	virtual ~Platform() { }
 
 	/**
 	 * @brief Write a string to a debug log of some kind.
-	 * 
+	 *
 	 * @param str String to write.
 	 */
 	virtual void DebugOut(const char* str) = 0;

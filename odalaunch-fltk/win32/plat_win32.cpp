@@ -31,7 +31,7 @@
 
 class PlatformWin32 : public Platform
 {
-  public:
+public:
 	virtual void DebugOut(const char* str) override;
 	virtual void ExecuteOdamex() override;
 };
