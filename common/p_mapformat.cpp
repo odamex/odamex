@@ -381,6 +381,10 @@ bool P_IsSpecialBoomRepeatable(const short special)
 			return false;
 		case WalkMany:
 			return true;
+		case GunOnce:
+			return false;
+		case GunMany:
+			return true;
 		}
 	}
 
