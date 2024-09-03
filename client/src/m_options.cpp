@@ -337,6 +337,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+left"} },
 	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+right"} },
 	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
+	{ control,	"Always Run",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglerun"} },
 	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
 	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
 	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"turn180"} },
@@ -1127,7 +1128,7 @@ static value_t VidFPSCaps[] = {
 	{ 60.0,		"60fps" },
 	{ 70.0,		"70fps" },
    	{ 105.0,	"105fps"},
-	{ 120.0,	"120fps" }, 
+	{ 120.0,	"120fps" },
 	{ 140.0,	"140fps"},
     	{ 144.0,	"144fps"},
     	{ 240.0,	"240fps"},
@@ -2004,7 +2005,7 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 		}
-		else if (Key_IsPageDownKey(ch, numlock)) 
+		else if (Key_IsPageDownKey(ch, numlock))
 		{
 			if (CanScrollDown)
 			{
