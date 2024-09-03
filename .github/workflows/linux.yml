@@ -106,13 +106,18 @@ jobs:
       run: git submodule update --init --recursive
     - name: Install flatpak
       run: sudo apt install flatpak flatpak-builder
+    - name: Create escaped branch name
+      env:
+        name: "${{ github.ref_name }}"
+      run: |
+        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
     - name: Set flatpak repo
       run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Run build
       run: |
         flatpak-builder --force-clean --user --install-deps-from=flathub \
         --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch=${{ github.ref_name }} -v
+        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
     - name: Pack flatpak
       run: |
         flatpak build-bundle repo odamex.flatpak net.odamex.Odamex \
