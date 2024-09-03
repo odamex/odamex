@@ -26,6 +26,8 @@
 
 #include "FL/fl_draw.H"
 
+/******************************************************************************/
+
 const char* HEADER_STRINGS[] = {"Address", "Server Name", "Gametype", "WADs",
                                 "Map",     "Players",     "Ping"};
 
@@ -42,13 +44,17 @@ enum column_e
 
 const int MAX_COLUMNS = COL_PING + 1;
 
+/******************************************************************************/
+
 ServerTable::ServerTable(int X, int Y, int W, int H, const char* l)
-    : Fl_Table(X, Y, W, H, l)
+    : Fl_Table_Row(X, Y, W, H, l)
 {
 	cols(MAX_COLUMNS);
 	col_header(1);
 	col_resize(1);
 }
+
+/******************************************************************************/
 
 void ServerTable::draw_cell(TableContext context, int R, int C, int X, int Y, int W,
                             int H)
@@ -82,7 +88,11 @@ void ServerTable::draw_cell(TableContext context, int R, int C, int X, int Y, in
 
 		fl_push_clip(X, Y, W, H);
 		{
-			fl_color(::FL_WHITE);
+			if (row_selected(R))
+				fl_color(::FL_BLUE);
+			else
+				fl_color(::FL_WHITE);
+
 			fl_rectf(X, Y, W, H);
 
 			fl_font(::FL_HELVETICA, 14);

@@ -24,16 +24,17 @@
 
 #include "odalaunch.h"
 
-#include "FL/Fl_Table.H"
+#include "FL/Fl_Table_Row.H"
 
 #include "db.h"
 
-class ServerTable : public Fl_Table
+class ServerTable : public Fl_Table_Row
 {
 	serverRows_t m_servers;
 
 public:
 	ServerTable(int X, int Y, int W, int H, const char* l = 0);
-	void draw_cell(TableContext context, int R = 0, int C = 0, int X = 0, int Y = 0,
-	               int W = 0, int H = 0);
+
+	virtual void draw_cell(TableContext context, int R = 0, int C = 0, int X = 0,
+	                       int Y = 0, int W = 0, int H = 0) override;
 };
