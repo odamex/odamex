@@ -289,6 +289,11 @@ CVAR_RANGE(g_horde_spawnfull_max, "6",
            CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
            60)
 
+CVAR_RANGE(g_horde_cooldown, "5",
+           "Number of waves a specific Horde wave must wait before it can be chosen again",
+           CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0,
+           10)
+
 // Game mode options commonized from the server
 //     At some point, replace "sv_" with "g_"
 // -------------------------------------------------------------------------
