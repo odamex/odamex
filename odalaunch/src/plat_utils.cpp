@@ -23,9 +23,8 @@
 
 #include "plat_utils.h"
 
+#include <wx/menu.h>
 #include <wx/filefn.h>
-#include <wx/filename.h>
-#include <wx/stdpaths.h>
 
 #ifdef __WXMSW__
 #include <windows.h>
@@ -110,7 +109,7 @@ wxString OdaGetDataDir()
 	const char* datadir_cstr = ODAMEX_INSTALL_DATADIR;
 	DataDir = wxString::FromAscii(datadir_cstr);
 #else
-	DataDir = wxGetCwd();
+	DataDir =  wxGetCwd();
 #endif
 
 	return DataDir;
