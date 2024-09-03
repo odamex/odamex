@@ -26,6 +26,3 @@
 
 void Work_Init();
 void Work_Deinit();
-void Work_RefreshMaster();
-void Work_RefreshServer(const std::string& address);
-void Work_RefreshAll();

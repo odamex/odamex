@@ -60,9 +60,10 @@ struct workerMessage_t
 	std::string server;
 };
 
-static std::atomic<jobSignal_e> kJobSignal;
-static moodycamel::ConcurrentQueue<workerMessage_t> kJobQueue;
-static std::vector<std::thread> kThreads;
+static std::atomic<jobSignal_e> g_eJobSignal;
+static std::atomic<uint64_t> g_qwGeneration;
+static moodycamel::ConcurrentQueue<workerMessage_t> g_cJobQueue;
+static std::vector<std::thread> g_ncThreads;
 
 // Default list of master servers, usually official ones
 static const char* DEFAULT_MASTERS[] = {"master1.odamex.net:15000",
@@ -153,17 +154,18 @@ static void WorkerProc()
 	for (;;)
 	{
 		workerMessage_t work;
-		if (kJobQueue.try_dequeue(work))
+		if (g_cJobQueue.try_dequeue(work))
 		{
 			switch (work.msg)
 			{
 			case workerMessage_t::message_e::REFRESH_MASTER:
 				WorkerRefreshMaster();
-				kJobSignal.store(jobSignal_e::REFRESH_ALL);
+				g_eJobSignal = jobSignal_e::REFRESH_ALL;
+				g_qwGeneration += 1;
 				Fl::awake(AwakeProc, (void*)AWAKE_REDRAW_SERVERS);
 				break;
 			case workerMessage_t::message_e::REFRESH_SERVER:
-				WorkerRefreshServer(work.server.c_str());
+				WorkerRefreshServer(work.server);
 				Fl::awake(AwakeProc, (void*)AWAKE_REDRAW_SERVERS);
 				break;
 			default:
@@ -171,7 +173,7 @@ static void WorkerProc()
 			}
 		}
 
-		switch (kJobSignal.load())
+		switch (g_eJobSignal)
 		{
 		case jobSignal_e::QUIT: {
 			return;
@@ -179,7 +181,7 @@ static void WorkerProc()
 		case jobSignal_e::REFRESH_ALL: {
 			const uint64_t id = std::hash<std::thread::id>{}(std::this_thread::get_id());
 			std::string address;
-			if (DB_LockAddressForServerInfo(id, address))
+			if (DB_LockAddressForServerInfo(id, g_qwGeneration, address))
 			{
 				// Locked an address - let's update it.
 				WorkerRefreshServer(address);
@@ -188,7 +190,8 @@ static void WorkerProc()
 			else
 			{
 				// Could not lock a server - we're done.
-				kJobSignal.store(jobSignal_e::NONE);
+				g_eJobSignal = jobSignal_e::NONE;
+				Log_Debug("REFRESH_ALL complete - other threads will finish.\n");
 			}
 		}
 		default:
@@ -204,13 +207,13 @@ static void WorkerProc()
  */
 void Work_Init()
 {
-	kJobSignal.store(jobSignal_e::NONE);
-	kJobQueue.try_enqueue({workerMessage_t::message_e::REFRESH_MASTER, ""});
+	g_eJobSignal = jobSignal_e::NONE;
+	g_cJobQueue.try_enqueue({workerMessage_t::message_e::REFRESH_MASTER, ""});
 
 	const unsigned threads = std::thread::hardware_concurrency();
 	for (uint32_t i = 0; i < threads; i++)
 	{
-		kThreads.emplace_back(WorkerProc);
+		g_ncThreads.emplace_back(WorkerProc);
 	}
 }
 
@@ -219,24 +222,9 @@ void Work_Init()
  */
 void Work_Deinit()
 {
-	kJobSignal.store(jobSignal_e::QUIT);
-	for (uint32_t i = 0; i < kThreads.size(); i++)
+	g_eJobSignal = jobSignal_e::QUIT;
+	for (uint32_t i = 0; i < g_ncThreads.size(); i++)
 	{
-		kThreads[i].join();
+		g_ncThreads[i].join();
 	}
-}
-
-void Work_RefreshMaster()
-{
-	kJobQueue.try_enqueue({workerMessage_t::message_e::REFRESH_MASTER, ""});
-}
-
-void Work_RefreshServer(const std::string& address)
-{
-	kJobQueue.try_enqueue({workerMessage_t::message_e::REFRESH_SERVER, address});
-}
-
-void Work_RefreshAll()
-{
-	kJobSignal.store(jobSignal_e::REFRESH_ALL);
 }

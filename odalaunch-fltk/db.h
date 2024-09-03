@@ -84,10 +84,12 @@ void DB_GetServerList(serverRows_t& rows);
  * @brief Lock a row with a given id, intending to update its serverinfo.
  *
  * @param id Thread ID to use as a lock.
+ * @param gen Generation ID to prevent repeatedly refreshing servers.
  * @param outAddress Output address we found.
  * @return True if we locked a row, otherwise false.
  */
-NODISCARD bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress);
+NODISCARD bool DB_LockAddressForServerInfo(uint64_t id, uint64_t gen,
+                                           std::string& outAddress);
 
 /**
  * @brief Remove server from list.

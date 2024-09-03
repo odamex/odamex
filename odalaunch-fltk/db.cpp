@@ -41,31 +41,36 @@ static const char* SERVERS_TABLE =           //
     "    players INTEGER,"                   //
     "    maxplayers INTEGER,"                //
     "    ping INTEGER,"                      //
-    "    serverupdate REAL,"                 //
-    "    masterupdate REAL NOT NULL,"        //
-    "    lockid INTEGER) STRICT;";           //
+    "    lockid INTEGER,"                    //
+    "    gen INTEGER DEFAULT 0"              //
+    ") STRICT;";                             //
 
-static const char* ADD_SERVER =                    //
-    "REPLACE INTO servers(address, masterupdate) " //
-    "    VALUES(:address, julianday('now'));";     //
+static const char* ADD_SERVER =      //
+    "REPLACE INTO servers(address) " //
+    "    VALUES(:address);";         //
 
 static const char* ADD_SERVER_INFO =                                     //
     "UPDATE servers "                                                    //
     "SET servername = :servername, gametype = :gametype, wads = :wads, " //
-    "    serverupdate = julianday('now'), lockid = NULL "                //
+    "    lockid = NULL "                                                 //
     "WHERE address = :address";                                          //
 
-static const char* GET_SERVER_LIST =                             //
-    "SELECT "                                                    //
-    "    address, servername, gametype, wads, map, "             //
-    "    players, maxplayers, ping, serverupdate, masterupdate " //
-    "FROM servers;";                                             //
+static const char* GET_SERVER_LIST =                 //
+    "SELECT "                                        //
+    "    address, servername, gametype, wads, map, " //
+    "    players, maxplayers, ping "                 //
+    "FROM servers;";                                 //
 
-static const char* LOCK_SERVER =                            //
-    "UPDATE servers "                                       //
-    "SET lockid = :lockid WHERE rowid IN"                   //
-    "(SELECT rowid FROM servers "                           //
-    "WHERE lockid IS NULL ORDER BY serverupdate LIMIT 1);"; //
+static const char* LOCK_SERVER =        //
+    "UPDATE servers "                   //
+    "SET lockid = :lockid, gen = :gen " //
+    "WHERE rowid IN "                   //
+    "("                                 //
+    " SELECT rowid FROM servers "       //
+    " WHERE lockid IS NULL "            //
+    " AND gen < :gen "                  //
+    " LIMIT 1 "                         //
+    ");";                               //
 
 static const char* GET_LOCKED_SERVER = //
     "SELECT address FROM servers "     //
@@ -408,7 +413,8 @@ static bool GetLockedAddress(const uint64_t id, std::string& outAddress)
 
 /******************************************************************************/
 
-NODISCARD bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAddress)
+NODISCARD bool DB_LockAddressForServerInfo(const uint64_t id, const uint64_t gen,
+                                           std::string& outAddress)
 {
 	sqlite3_stmt* stmt = SQLPrepare(::LOCK_SERVER);
 	if (!stmt)
@@ -417,6 +423,9 @@ NODISCARD bool DB_LockAddressForServerInfo(const uint64_t id, std::string& outAd
 	auto onExit = makeScopeExit([stmt] { sqlite3_finalize(stmt); });
 
 	if (!SQLBindInt64(stmt, ":lockid", id))
+		return false;
+
+	if (!SQLBindInt64(stmt, ":gen", gen))
 		return false;
 
 	for (size_t tries = 0; tries < ::SQL_TRIES; tries++)
