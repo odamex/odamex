@@ -21,7 +21,6 @@ include(CMakeDependentOption)
 # CMAKE_INSTALL_BINDIR and CMAKE_INSTALL_DATADIR will be changed if GNUInstallDirs is availible
 set(CMAKE_INSTALL_BINDIR "bin")
 set(CMAKE_INSTALL_DATADIR "share")
-
 include(GNUInstallDirs OPTIONAL)
 
 add_definitions(-DINSTALL_BINDIR="${CMAKE_INSTALL_BINDIR}")

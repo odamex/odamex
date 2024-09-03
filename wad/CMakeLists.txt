@@ -349,6 +349,7 @@ if(USE_INTERNAL_DEUTEX)
       PATHS "${CMAKE_CURRENT_BINARY_DIR}/deutex"
       NO_DEFAULT_PATH)
   else()
+    # Check if deutex is unzipped in the source dir and if it is, bring it over
     if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/deutex-5.2.2")
       file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/deutex-5.2.2"
         DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
@@ -364,10 +365,8 @@ if(USE_INTERNAL_DEUTEX)
     endif()
   endif()
 else()
-  if (EXISTS "/usr/games/deutex")
-    find_program(DEUTEX_EXECUTABLE deutex
-      PATHS "/usr/games") # Debian installation location
-  endif()
+  find_program(DEUTEX_EXECUTABLE deutex
+    PATHS "/usr/games") # Debian installation location
 endif()
 
 # If DeuTex is available, use it to build the WAD.
