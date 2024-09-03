@@ -442,7 +442,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		{
 			return true;
 			//line->special = 0;
-		}						
+		}
 		break;
 
 	case 40:
@@ -470,7 +470,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// killough 10/98: prevent zombies from exiting levels
 		if (bossaction || ((!(thing->player && thing->player->health <= 0)) &&
 		                   CheckIfExitIsGood(thing)))
-		{	
+		{
 			G_ExitLevel(0, 1);
 			return true;
 		}
@@ -603,7 +603,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// CPhipps - change for lxdoom's compatibility handling
 		if (bossaction || ((!(thing->player && thing->player->health <= 0)) &&
 		                   CheckIfExitIsGood(thing)))
-		{			
+		{
 			G_SecretExitLevel(0, 1);
 			return true;
 		}
@@ -1815,7 +1815,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		return false;
 
 	// jff 02/04/98 add check here for generalized floor/ceil mover
-	
+
 	// pointer to line function is NULL by default, set non-null if
 	// line special is push or switch generalized linedef type
 	int (*linefunc)(line_t * line) = NULL;
@@ -2450,7 +2450,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			EV_StopPlat(line->id);
 			reuse = false;
 			trigger = true;
-			
+
 			break;
 
 		case 164:
@@ -2515,7 +2515,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			EV_LightTurnOn(line->id, -1);
 			reuse = false;
 			trigger = true;
-			
+
 			break;
 
 		case 170:
@@ -2524,7 +2524,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			EV_LightTurnOn(line->id, 35);
 			reuse = false;
 			trigger = true;
-			
+
 			break;
 
 		case 171:
@@ -2533,7 +2533,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			EV_LightTurnOn(line->id, 255);
 			reuse = false;
 			trigger = true;
-			
+
 			break;
 
 		case 172:
@@ -2542,7 +2542,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			EV_StartLightStrobing(line->id, TICS(5), TICS(35));
 			reuse = false;
 			trigger = true;
-			
+
 			break;
 
 		case 173:
@@ -2551,7 +2551,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			EV_TurnTagLightsOff(line->id);
 			reuse = false;
 			trigger = true;
-			
+
 			break;
 
 		case 174:
@@ -2748,7 +2748,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			          TICS(PLATWAIT), 0 * FRACUNIT, 0);
 			reuse = true;
 			trigger = true;
-			
+
 			break;
 
 		case 182:
@@ -2757,7 +2757,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			EV_StopPlat(line->id);
 			reuse = true;
 			trigger = true;
-			
+
 			break;
 
 		case 183:
@@ -2853,7 +2853,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			EV_LightTurnOn(line->id, -1);
 			reuse = true;
 			trigger = true;
-			
+
 			break;
 
 		case 193:
@@ -2871,7 +2871,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			EV_TurnTagLightsOff(line->id);
 			reuse = true;
 			trigger = true;
-			
+
 			break;
 
 		case 195:
@@ -3227,7 +3227,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		EV_LightTurnOn(line->id, 255);
 		reuse = true;
 		trigger = true;
-		
+
 		break;
 
 	case 139:
@@ -3235,7 +3235,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		EV_LightTurnOn(line->id, 35);
 		reuse = true;
 		trigger = true;
-		
+
 		break;
 	}
 
@@ -3306,8 +3306,8 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 			if (line->flags & ML_SECRET) // they can't open secret doors either
 				return false;
 		}
-		if (!line->id) // e6y //jff 3/2/98 all gun generalized types require tag
-			return false;
+		// if (!line->id) // e6y //jff 3/2/98 all gun generalized types require tag
+		// 	return false;
 		linefunc = EV_DoGenDoor;
 	}
 	else if ((unsigned)line->special >= GenLockedBase)
@@ -3429,7 +3429,7 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 			if (thing && thing->player && thing->player->health <= 0)
 				break;
 			if (thing && CheckIfExitIsGood(thing))
-			{		
+			{
 				G_ExitLevel(0, 1);
 				return true;
 			}
