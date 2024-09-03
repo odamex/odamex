@@ -120,7 +120,7 @@ jobs:
         --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
     - name: Pack flatpak
       run: |
-        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex \
+        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
         --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
