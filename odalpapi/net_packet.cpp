@@ -43,7 +43,7 @@ NOTE: All packet classes derive from this, so if some
 packets require different data, you'll have
 to override this
 */
-int32_t ServerBase::Query(int32_t Timeout)
+int32_t MasterServer::Query(int32_t Timeout)
 {
 	int8_t Retry = m_RetryCount;
 
@@ -178,35 +178,8 @@ Server::~Server()
 void Server::ResetData()
 {
 	m_ValidResponse = false;
-
-	Info.Cvars.clear();
-	Info.Wads.clear();
-	Info.Players.clear();
-	Info.Patches.clear();
-	Info.Teams.clear();
-
-	Info.Response = 0;
-	Info.VersionMajor = 0;
-	Info.VersionMinor = 0;
-	Info.VersionPatch = 0;
-	Info.VersionRevision = 0;
-	Info.VersionRevStr = "";
-	Info.VersionProtocol = 0;
-	Info.VersionRealProtocol = 0;
-	Info.PTime = 0;
-	Info.Name = "";
-	Info.MaxClients = 0;
-	Info.MaxPlayers = 0;
-	Info.ScoreLimit = 0;
-	Info.GameType = GT_Cooperative;
-	Info.PasswordHash = "";
-	Info.CurrentMap = "";
-	Info.TimeLeft = 0;
-	Info.TimeLimit = 0;
-	Info.Lives = 0;
-	Info.Sides = 0;
-
 	Ping = 0;
+	Info.Clear();
 }
 
 /*
@@ -214,19 +187,16 @@ void Server::ResetData()
    with every new major/minor version
    */
 
-static uint8_t VersionMajor, VersionMinor, VersionPatch;
-static uint32_t ProtocolVersion;
-
 // Specifies when data was added to the protocol, the parameter is the
 // introduced revision
 // NOTE: this one is different from the servers version for a reason
 #define QRYNEWINFO(INTRODUCED) \
-    if (ProtocolVersion >= INTRODUCED)
+    if (Info.VersionProtocol >= INTRODUCED)
 
 // Specifies when data was removed from the protocol, first parameter is the
 // introduced revision and the last one is the removed revision
 #define QRYRANGEINFO(INTRODUCED,REMOVED) \
-    if (ProtocolVersion >= INTRODUCED && ProtocolVersion < REMOVED)
+    if (Info.VersionProtocol >= INTRODUCED && Info.VersionProtocol < REMOVED)
 
 // Read cvar information
 bool Server::ReadCvars()
@@ -337,11 +307,6 @@ bool Server::ReadCvars()
 // Read information built for us by the server
 void Server::ReadInformation()
 {
-	Info.VersionMajor = VersionMajor;
-	Info.VersionMinor = VersionMinor;
-	Info.VersionPatch = VersionPatch;
-	Info.VersionProtocol = ProtocolVersion;
-
 	// bond - time
 	Socket->Read32(Info.PTime);
 
@@ -541,10 +506,10 @@ int32_t Server::TranslateResponse(const uint16_t& TagId,
 	DISECTVERSION(SvVersion, svmaj, svmin, svpat);
 	DISECTVERSION(VERSION, olmaj, olmin, olpat);
 
-	// [AM] Show current major and next major versions.  This allows a natural
+	// [LM] Show previous major and next major versions.  This allows a natural
 	//      upgrade path without signing us up for supporting every version of
 	//      the SQP in perpituity.
-	if (svmaj < olmaj || svmaj > olmaj + 1)
+	if (svmaj < olmaj - 1 || svmaj > olmaj + 1)
 	{
 		NET_ReportError("Server %s is version %d.%d.%d which is not supported\n",
 		                Socket->GetRemoteAddress().c_str(),
@@ -553,10 +518,10 @@ int32_t Server::TranslateResponse(const uint16_t& TagId,
 		return 0;
 	}
 
-	VersionMajor = VERSIONMAJOR(SvVersion);
-	VersionMinor = VERSIONMINOR(SvVersion);
-	VersionPatch = VERSIONPATCH(SvVersion);
-	ProtocolVersion = SvProtocolVersion;
+	Info.VersionMajor = VERSIONMAJOR(SvVersion);
+	Info.VersionMinor = VERSIONMINOR(SvVersion);
+	Info.VersionPatch = VERSIONPATCH(SvVersion);
+	Info.VersionProtocol = SvProtocolVersion;
 
 	ReadInformation();
 

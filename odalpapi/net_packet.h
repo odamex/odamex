@@ -158,30 +158,59 @@ enum GameType_t
 struct ServerInfo_t
 {
 	std::vector<std::string> Patches;
-	std::vector<Cvar_t>      Cvars;
-	std::vector<Team_t>      Teams;
-	std::vector<Wad_t>       Wads;
-	std::vector<Player_t>    Players;
-	std::string              Name; // Launcher specific: Server name
-	std::string              PasswordHash;
-	std::string              CurrentMap;
-	std::string              VersionRevStr;
-	GameType_t               GameType; // Launcher specific: Game type
-	uint32_t                 Response; // Launcher specific: Server response
-	uint32_t                 VersionRevision;
-	uint32_t                 VersionProtocol;
-	uint32_t                 VersionRealProtocol;
-	uint32_t                 PTime;
-	uint16_t                 ScoreLimit; // Launcher specific: Score limit
-	uint16_t                 TimeLimit;
-	uint16_t                 TimeLeft;
-	uint8_t                  VersionMajor; // Launcher specific: Version fields
-	uint8_t                  VersionMinor;
-	uint8_t                  VersionPatch;
-	uint8_t                  MaxClients; // Launcher specific: Maximum clients
-	uint8_t                  MaxPlayers; // Launcher specific: Maximum players
-	uint16_t                 Lives;
-	uint16_t                 Sides;
+	std::vector<Cvar_t> Cvars;
+	std::vector<Team_t> Teams;
+	std::vector<Wad_t> Wads;
+	std::vector<Player_t> Players;
+	std::string Name; // Launcher specific: Server name
+	std::string PasswordHash;
+	std::string CurrentMap;
+	std::string VersionRevStr;
+	GameType_t GameType = GT_Cooperative; // Launcher specific: Game type
+	uint32_t Response = 0;                // Launcher specific: Server response
+	uint32_t VersionRevision = 0;
+	uint32_t VersionProtocol = 0;
+	uint32_t VersionRealProtocol = 0;
+	uint32_t PTime = 0;
+	uint16_t ScoreLimit = 0; // Launcher specific: Score limit
+	uint16_t TimeLimit = 0;
+	uint16_t TimeLeft = 0;
+	uint8_t VersionMajor = 0; // Launcher specific: Version fields
+	uint8_t VersionMinor = 0;
+	uint8_t VersionPatch = 0;
+	uint8_t MaxClients = 0; // Launcher specific: Maximum clients
+	uint8_t MaxPlayers = 0; // Launcher specific: Maximum players
+	uint16_t Lives = 0;
+	uint16_t Sides = 0;
+
+	void Clear()
+	{
+		Patches.clear();
+		Cvars.clear();
+		Teams.clear();
+		Wads.clear();
+		Players.clear();
+		Name.clear();
+		PasswordHash.clear();
+		CurrentMap.clear();
+		VersionRevStr.clear();
+		GameType = GT_Cooperative;
+		Response = 0;
+		VersionRevision = 0;
+		VersionProtocol = 0;
+		VersionRealProtocol = 0;
+		PTime = 0;
+		ScoreLimit = 0;
+		TimeLimit = 0;
+		TimeLeft = 0;
+		VersionMajor = 0;
+		VersionMinor = 0;
+		VersionPatch = 0;
+		MaxClients = 0;
+		MaxPlayers = 0;
+		Lives = 0;
+		Sides = 0;
+	}
 };
 
 class ServerBase  // [Russell] - Defines an abstract class for all packets
@@ -229,13 +258,10 @@ public:
 	}
 
 	// Parse a packet, the parameter is the packet
-	virtual int32_t Parse()
-	{
-		return -1;
-	}
+	virtual int32_t Parse() = 0;
 
 	// Query the server
-	int32_t Query(int32_t Timeout);
+	virtual int32_t Query(int32_t Timeout) = 0;
 
 	void SetSocket(BufferedSocket* s)
 	{
@@ -321,6 +347,8 @@ public:
 	{
 
 	}
+
+	virtual int32_t Query(int32_t Timeout) override;
 
 	size_t GetServerCount()
 	{
@@ -474,7 +502,7 @@ public:
 		}
 	}
 
-	int32_t Parse();
+	int32_t Parse() override;
 };
 
 class Server : public ServerBase  // [Russell] - A single server
@@ -488,7 +516,7 @@ public:
 
 	virtual  ~Server();
 
-	int32_t Query(int32_t Timeout);
+	virtual int32_t Query(int32_t Timeout) override;
 
 	void ReadInformation();
 
@@ -502,7 +530,7 @@ public:
 		return m_ValidResponse;
 	}
 
-	int32_t Parse();
+	int32_t Parse() override;
 
 protected:
 	bool ReadCvars();
