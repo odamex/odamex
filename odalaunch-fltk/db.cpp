@@ -40,6 +40,8 @@ static const char* SERVERS_TABLE =           //
     "    map TEXT,"                          //
     "    players INTEGER,"                   //
     "    maxplayers INTEGER,"                //
+    "    lives INTEGER,"                     //
+    "    sides INTEGER,"                     //
     "    ping INTEGER,"                      //
     "    lockid INTEGER,"                    //
     "    gen INTEGER DEFAULT 0"              //
@@ -52,13 +54,14 @@ static const char* ADD_SERVER =      //
 static const char* ADD_SERVER_INFO =                                     //
     "UPDATE servers "                                                    //
     "SET servername = :servername, gametype = :gametype, wads = :wads, " //
-    "    lockid = NULL "                                                 //
+    "    map = :map, players = :players, maxplayers = :maxplayers, "     //
+    "    lives = :lives, sides = :sides, lockid = NULL "                 //
     "WHERE address = :address";                                          //
 
 static const char* GET_SERVER_LIST =                 //
     "SELECT "                                        //
     "    address, servername, gametype, wads, map, " //
-    "    players, maxplayers, ping "                 //
+    "    players, maxplayers, lives, sides, ping "   //
     "FROM servers;";                                 //
 
 static const char* LOCK_SERVER =        //
@@ -289,6 +292,21 @@ void DB_AddServerInfo(const odalpapi::Server& server)
 	if (!SQLBindText(stmt, ":wads", wads.c_str()))
 		return;
 
+	if (!SQLBindText(stmt, ":map", server.Info.CurrentMap.c_str()))
+		return;
+
+	if (!SQLBindInt64(stmt, ":players", server.Info.Players.size()))
+		return;
+
+	if (!SQLBindInt(stmt, ":maxplayers", server.Info.MaxPlayers))
+		return;
+
+	if (!SQLBindInt(stmt, ":lives", server.Info.Lives))
+		return;
+
+	if (!SQLBindInt(stmt, ":sides", server.Info.Sides))
+		return;
+
 	for (size_t tries = 0; tries < ::SQL_TRIES; tries++)
 	{
 		const int res = sqlite3_step(stmt);
@@ -327,27 +345,67 @@ void DB_GetServerList(serverRows_t& rows)
 			// Extract the row into intermediate representation.
 			const char* address = (const char*)(sqlite3_column_text(stmt, 0));
 			const char* servername = (const char*)(sqlite3_column_text(stmt, 1));
-			const char* gametype = (const char*)(sqlite3_column_text(stmt, 2));
+			const int gametype = sqlite3_column_int(stmt, 2);
 			const char* wads = (const char*)(sqlite3_column_text(stmt, 3));
 			const char* map = (const char*)(sqlite3_column_text(stmt, 4));
 			const int players = sqlite3_column_int(stmt, 5);
 			const int maxplayers = sqlite3_column_int(stmt, 6);
-			const int ping = sqlite3_column_int(stmt, 7);
+			const int lives = sqlite3_column_int(stmt, 7);
+			const int sides = sqlite3_column_int(stmt, 8);
+			const int ping = sqlite3_column_int(stmt, 9);
 
 			newRow.address = address ? address : "";
 			newRow.servername = servername ? servername : "";
-			newRow.gametype = gametype ? gametype : "";
+
+			constexpr int GT_Cooperative = 0;
+			constexpr int GT_Deathmatch = 1;
+			constexpr int GT_TeamDeathmatch = 2;
+			constexpr int GT_CaptureTheFlag = 3;
+			constexpr int GT_Horde = 4;
+
+			if (gametype == GT_Cooperative && lives)
+				newRow.gametype = "Survival";
+			else if (gametype == GT_Cooperative && maxplayers <= 1)
+				newRow.gametype = "Single-player";
+			else if (gametype == GT_Cooperative)
+				newRow.gametype = "Cooperative";
+			else if (gametype == GT_Deathmatch && lives)
+				newRow.gametype = "Last Marine Standing";
+			else if (gametype == GT_Deathmatch && maxplayers <= 2)
+				newRow.gametype = "Duel";
+			else if (gametype == GT_Deathmatch)
+				newRow.gametype = "Deathmatch";
+			else if (gametype == GT_TeamDeathmatch && lives)
+				newRow.gametype = "Team Last Marine Standing";
+			else if (gametype == GT_TeamDeathmatch)
+				newRow.gametype = "Team Deathmatch";
+			else if (gametype == GT_CaptureTheFlag && sides)
+				newRow.gametype = "Attack & Defend CTF";
+			else if (gametype == GT_CaptureTheFlag && lives)
+				newRow.gametype = "LMS Capture The Flag";
+			else if (gametype == GT_CaptureTheFlag)
+				newRow.gametype = "Capture The Flag";
+			else if (gametype == GT_Horde && lives)
+				newRow.gametype = "Survival Horde";
+			else if (gametype == GT_Horde)
+				newRow.gametype = "Horde";
+			else
+				newRow.gametype = "Unknown";
+
 			newRow.wads = wads ? wads : "";
 			newRow.map = map ? map : "";
 
 			if (maxplayers != 0)
 			{
-				snprintf(buffer, ARRAY_LENGTH(buffer), "%d/%d", players, maxplayers);
+				auto it = fmt::format_to_n(buffer, ARRAY_LENGTH(buffer), "{}/{}", players,
+				                           maxplayers);
+				*it.out = '\0';
 				newRow.players = buffer;
 			}
 
-			snprintf(buffer, ARRAY_LENGTH(buffer), "%d", ping);
-			newRow.ping = ping;
+			auto it = fmt::format_to_n(buffer, ARRAY_LENGTH(buffer), "{}", ping);
+			*it.out = '\0';
+			newRow.ping = buffer;
 
 			// Insert the new server into the existing server data vector.
 			newRowCount += 1;
