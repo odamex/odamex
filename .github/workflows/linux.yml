@@ -94,3 +94,32 @@ jobs:
       run: git submodule update --init --recursive
     - name: Run build
       run: bash ci/ubuntu-bionic-buildgen.sh
+  build-flatpak:
+    name: Build Flatpak (Ubuntu Latest)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install flatpak
+      run: sudo apt install flatpak flatpak-builder
+    - name: Set flatpak repo
+      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    - name: Run build
+      run: |
+        flatpak-builder --force-clean --user --install-deps-from=flathub \
+        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
+        --default-branch=${{ github.ref_name }} -v
+    - name: Pack flatpak
+      run: |
+        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex \
+        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo 
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: odamex.flatpak
+        path: .
+
