@@ -366,23 +366,13 @@ bool P_IsSpecialBoomRepeatable(const short special)
 		switch ((special & TriggerType) >> TriggerTypeShift)
 		{
 		case PushOnce:
-			return false;
-			break;
-		case PushMany:
-			return true;
-			break;
 		case SwitchOnce:
-			return false;
-			break;
-		case SwitchMany:
-			return true;
-			break;
 		case WalkOnce:
-			return false;
-		case WalkMany:
-			return true;
 		case GunOnce:
 			return false;
+		case PushMany:
+		case SwitchMany:
+		case WalkMany:
 		case GunMany:
 			return true;
 		}
