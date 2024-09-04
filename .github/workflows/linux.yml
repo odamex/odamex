@@ -33,7 +33,7 @@ jobs:
     - name: Prepare artifact
       run: bash ci/ubuntu-artifact.sh
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-Linux-x86_64
         path: 'build/artifact/*'
