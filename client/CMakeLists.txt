@@ -22,7 +22,7 @@ if(WIN32)
   list(APPEND CLIENT_SDL_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/client.rc")
 endif()
 
-# Include console folders if compiling 
+# Include console folders if compiling
 if (GCONSOLE)
   if (NSWITCH)
     set(CLIENT_DIR ${CLIENT_DIR} switch)  # Nintendo Switch
@@ -76,7 +76,7 @@ if(ENABLE_PORTMIDI)
     set(PORTMIDI_LIBRARY "portmidi")
     set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY})
     set(PORTMIDI_DIR ../libraries/portmidi)
-    set(PORTMIDI_INCLUDE_DIR ${PORTMIDI_DIR}/pm_common/ ${PORTMIDI_DIR}/porttime/)  
+    set(PORTMIDI_INCLUDE_DIR ${PORTMIDI_DIR}/pm_common/ ${PORTMIDI_DIR}/porttime/)
 
     if(APPLE)
       find_library(COREFOUNDATION_LIBRARY CoreFoundation)
@@ -204,6 +204,14 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   if(NOT GCONSOLE)
     target_include_directories(odamex PRIVATE gui)
     target_link_libraries(odamex fltk::fltk fltk::images)
+  endif()
+
+  if(USE_INTERNAL_JSONCPP)
+    target_link_libraries(odamex jsoncpp_lib_static)
+  else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(JSONCPP jsoncpp REQUIRED IMPORTED_TARGET)
+    target_link_libraries(odamex PkgConfig::JSONCPP)
   endif()
 
   if(ENABLE_PORTMIDI)
