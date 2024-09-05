@@ -309,7 +309,7 @@ void R_InitSkyDefs()
 				}
 				sky->fireticrate = (int32_t)(fireupdatetime.asFloat() * TICRATE);
 			}
-			else if(sky->type = SKY_DOUBLESKY)
+			else if(sky->type == SKY_DOUBLESKY)
 			{
 				if(!foreelem.isObject()) return JL_PARSEERROR;
 
