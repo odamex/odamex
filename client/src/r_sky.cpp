@@ -283,12 +283,12 @@ void R_InitSkyDefs()
 
 			sky->type = skytype;
 
-			constexpr double_t ticratescale = 1.0 / TICRATE;
+			constexpr float_t ticratescale = 1.0 / TICRATE;
 
 			sky->background.texnum  = tex;
 			sky->background.mid     = FLOAT2FIXED(mid.asFloat());
-			sky->background.scrollx = FLOAT2FIXED(scrollx.asFloat());
-			sky->background.scrolly = FLOAT2FIXED(scrolly.asFloat());
+			sky->background.scrollx = FLOAT2FIXED(scrollx.asFloat() * ticratescale);
+			sky->background.scrolly = FLOAT2FIXED(scrolly.asFloat() * ticratescale);
 			sky->background.scalex  = FLOAT2FIXED(scalex.asFloat());
 			sky->background.scaley  = FLOAT2FIXED(scaley.asFloat());
 
@@ -335,8 +335,8 @@ void R_InitSkyDefs()
 
 				sky->foreground.texnum  = foretex;
 				sky->foreground.mid     = FLOAT2FIXED(foremid.asFloat());
-				sky->foreground.scrollx = FLOAT2FIXED(forescrollx.asFloat());
-				sky->foreground.scrolly = FLOAT2FIXED(forescrolly.asFloat());
+				sky->foreground.scrollx = FLOAT2FIXED(forescrollx.asFloat() * ticratescale);
+				sky->foreground.scrolly = FLOAT2FIXED(forescrolly.asFloat() * ticratescale);
 				sky->foreground.scalex  = FLOAT2FIXED(forescalex.asFloat());
 				sky->foreground.scaley  = FLOAT2FIXED(forescaley.asFloat());
 			}
