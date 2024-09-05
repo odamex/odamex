@@ -25,7 +25,7 @@
 #include "FL/Fl.H"
 
 #include "db.h"
-#include "main_window.h"
+#include "gui/main_window.h"
 #include "net_io.h"
 #include "work_thread.h"
 
@@ -54,7 +54,7 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	::g.mainWindow = new MainWindow(640, 480);
+	::g.mainWindow = new MainWindow();
 	::g.mainWindow->show(argc, argv);
 
 	Work_Init();

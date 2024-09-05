@@ -50,6 +50,33 @@ struct serverRow_s
 using serverRows_t = std::vector<serverRow_s>;
 
 /**
+ * @brief Player server information for the query pane.
+ */
+struct serverPlayer_s
+{
+	std::string name;
+};
+
+/**
+ * @brief Vector that holds server players for the UI.
+ */
+using serverPlayers_t = std::vector<serverPlayer_s>;
+
+/**
+ * @brief Cvar server information for the query pane.
+ */
+struct serverCvar_s
+{
+	std::string key;
+	std::string value;
+};
+
+/**
+ * @brief Vector that holds server players for the UI.
+ */
+using serverCvars_t = std::vector<serverCvar_s>;
+
+/**
  * @brief Open and create database.
  *
  * @return True if the database was initialized properly.
@@ -79,6 +106,21 @@ void DB_AddServerInfo(const odalpapi::Server& server);
  * @brief Get a list of servers.
  */
 void DB_GetServerList(serverRows_t& rows);
+
+/**
+ * @brief Get a single server.
+ */
+void DB_GetServer(serverRow_s& row, const std::string& address);
+
+/**
+ * @brief Get player info from a specific server.
+ */
+void DB_GetServerPlayers(serverPlayers_t& players, const std::string& address);
+
+/**
+ * @brief Get cvar info from a specific server.
+ */
+void DB_GetServerCvars(serverCvars_t& cvars, const std::string& address);
 
 /**
  * @brief Lock a row with a given id, intending to update its serverinfo.

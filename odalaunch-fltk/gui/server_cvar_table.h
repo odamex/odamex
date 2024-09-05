@@ -16,24 +16,36 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Main window
+//  Server window cvar table
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
-#include "odalaunch.h"
+#include <string>
 
-#include "FL/Fl_Window.H"
+#include "FL/Fl_Table.H"
 
-class ServerTable;
+#include "db.h"
 
-class MainWindow : public Fl_Window
+class ServerCvarTable final : public Fl_Table
 {
-	ServerTable* m_serverTable;
+	std::string m_strAddress;
+	serverCvars_t m_cvars;
 
 public:
-	MainWindow(int w, int h, const char* title = 0);
-	virtual ~MainWindow(){};
-	void redrawServers();
+	ServerCvarTable(int X, int Y, int W, int H, const char* l = 0);
+
+	virtual void draw_cell(TableContext context, int R = 0, int C = 0, int X = 0,
+	                       int Y = 0, int W = 0, int H = 0) override;
+
+	/**
+	 * @brief Set the address of the cvar table.
+	 */
+	void setAddress(const std::string& strAddress) { m_strAddress = strAddress; }
+
+	/**
+	 * @brief Refresh cvar data associated with this server.
+	 */
+	void refreshInfo();
 };

@@ -30,7 +30,7 @@
 
 #include "db.h"
 #include "log.h"
-#include "main_window.h"
+#include "gui/main_window.h"
 #include "net_packet.h"
 #include "plat.h"
 

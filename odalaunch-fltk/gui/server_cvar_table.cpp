@@ -16,61 +16,53 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Server table
+//  Server window cvar table
 //
 //-----------------------------------------------------------------------------
 
 #include "odalaunch.h"
 
-#include "server_table.h"
+#include "server_cvar_table.h"
 
 #include "FL/fl_draw.H"
 
 /******************************************************************************/
 
-const char* HEADER_STRINGS[] = {"Address", "Server Name", "Gametype", "WADs",
-                                "Map",     "Players",     "Ping"};
-
-enum column_e
+enum cvarColumn_e
 {
-	COL_ADDRESS,
-	COL_SERVERNAME,
-	COL_GAMETYPE,
-	COL_WADS,
-	COL_MAP,
-	COL_PLAYERS,
-	COL_PING
+	CCOL_VARIABLE,
+	CCOL_VALUE,
 };
 
-const int MAX_COLUMNS = COL_PING + 1;
+static const int MAX_CVAR_COLUMNS = CCOL_VALUE + 1;
+
+static const char* CVAR_HEADER_STRINGS[] = {"Variable", "Value"};
 
 /******************************************************************************/
 
-ServerTable::ServerTable(int X, int Y, int W, int H, const char* l)
-    : Fl_Table_Row(X, Y, W, H, l)
+ServerCvarTable::ServerCvarTable(int X, int Y, int W, int H, const char* l)
+    : Fl_Table(X, Y, W, H, l)
 {
-	cols(MAX_COLUMNS);
+	cols(MAX_CVAR_COLUMNS);
 	col_header(1);
 	col_resize(1);
 }
 
 /******************************************************************************/
 
-void ServerTable::draw_cell(TableContext context, int R, int C, int X, int Y, int W,
-                            int H)
+void ServerCvarTable::draw_cell(TableContext context, int R, int C, int X, int Y, int W,
+                                int H)
 {
 	switch (context)
 	{
 	case CONTEXT_STARTPAGE:
-		DB_GetServerList(m_servers);
-		rows(m_servers.size());
 		break;
 	case CONTEXT_ENDPAGE:
 		break;
 	case CONTEXT_ROW_HEADER:
 		break;
 	case CONTEXT_COL_HEADER:
-		if (C >= ARRAY_LENGTH(::HEADER_STRINGS))
+		if (C >= ARRAY_LENGTH(::CVAR_HEADER_STRINGS))
 			break;
 
 		fl_push_clip(X, Y, W, H);
@@ -78,20 +70,17 @@ void ServerTable::draw_cell(TableContext context, int R, int C, int X, int Y, in
 			fl_draw_box(FL_THIN_UP_BOX, X, Y, W, H, ::FL_BACKGROUND_COLOR);
 			fl_font(::FL_HELVETICA_BOLD, 14);
 			fl_color(::FL_BLACK);
-			fl_draw(::HEADER_STRINGS[C], X, Y, W, H, ::FL_ALIGN_CENTER, 0, 0);
+			fl_draw(::CVAR_HEADER_STRINGS[C], X, Y, W, H, ::FL_ALIGN_CENTER, 0, 0);
 		}
 		fl_pop_clip();
 		break;
 	case CONTEXT_CELL:
-		if (C >= ARRAY_LENGTH(::HEADER_STRINGS))
+		if (C >= ARRAY_LENGTH(::CVAR_HEADER_STRINGS))
 			break;
 
 		fl_push_clip(X, Y, W, H);
 		{
-			if (row_selected(R))
-				fl_color(::FL_BLUE);
-			else
-				fl_color(::FL_WHITE);
+			fl_color(::FL_WHITE);
 
 			fl_rectf(X, Y, W, H);
 
@@ -100,27 +89,11 @@ void ServerTable::draw_cell(TableContext context, int R, int C, int X, int Y, in
 
 			switch (C)
 			{
-			case COL_ADDRESS:
-				fl_draw(m_servers[R].address.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
+			case CCOL_VARIABLE:
+				fl_draw(m_cvars[R].key.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
 				break;
-			case COL_SERVERNAME:
-				fl_draw(m_servers[R].servername.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0,
-				        0);
-				break;
-			case COL_GAMETYPE:
-				fl_draw(m_servers[R].gametype.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
-				break;
-			case COL_WADS:
-				fl_draw(m_servers[R].wads.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
-				break;
-			case COL_MAP:
-				fl_draw(m_servers[R].map.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
-				break;
-			case COL_PLAYERS:
-				fl_draw(m_servers[R].players.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
-				break;
-			case COL_PING:
-				fl_draw(m_servers[R].ping.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
+			case CCOL_VALUE:
+				fl_draw(m_cvars[R].value.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
 				break;
 			default:
 				break;
@@ -131,4 +104,12 @@ void ServerTable::draw_cell(TableContext context, int R, int C, int X, int Y, in
 	case CONTEXT_RC_RESIZE:
 		break;
 	}
+}
+
+/******************************************************************************/
+
+void ServerCvarTable::refreshInfo()
+{
+	DB_GetServerCvars(m_cvars, m_strAddress);
+	rows(int(m_cvars.size()));
 }

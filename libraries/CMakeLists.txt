@@ -264,7 +264,7 @@ if(BUILD_SERVER AND USE_INTERNAL_JSONCPP)
   lib_build(LIBRARY jsoncpp)
 
   find_package(jsoncpp REQUIRED)
-  set_target_properties(jsoncpp_lib_static PROPERTIES IMPORTED_GLOBAL TRUE)
+  set_target_properties(JsonCpp::JsonCpp PROPERTIES IMPORTED_GLOBAL TRUE)
 endif()
 
 ### MiniUPnPc ###
@@ -505,20 +505,20 @@ endif()
 
 if(BUILD_LAUNCHER)
   file(DOWNLOAD
-    "https://www.sqlite.org/2022/sqlite-amalgamation-3370200.zip"
-    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3370200.zip"
-    EXPECTED_HASH SHA256=cb25df0fb90b77be6660f6ace641bbea88f3d0441110d394ce418f35f7561bb0)
+    "https://www.sqlite.org/2024/sqlite-amalgamation-3460100.zip"
+    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3460100.zip"
+    EXPECTED_HASH SHA256=77823cb110929c2bcb0f5d48e4833b5c59a8a6e40cdea3936b99e199dbbe5784)
   execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
-    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3370200.zip"
+    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3460100.zip"
     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
   set(SQLITE_SOURCES
-    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3370200/sqlite3.c"
-    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3370200/sqlite3.h")
+    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3460100/sqlite3.c"
+    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3460100/sqlite3.h")
   add_library(sqlite-amalgamation INTERFACE)
   target_sources(sqlite-amalgamation INTERFACE ${SQLITE_SOURCES})
   target_include_directories(sqlite-amalgamation INTERFACE
-    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3370200/")
+    "${CMAKE_CURRENT_BINARY_DIR}/sqlite-amalgamation-3460100/")
 endif()
 
 ### wxWidgets ###

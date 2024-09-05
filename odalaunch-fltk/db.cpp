@@ -25,6 +25,8 @@
 #include "db.h"
 #include "log.h"
 
+#include "json/json.h"
+
 #include "sqlite3.h"
 
 /******************************************************************************/
@@ -38,11 +40,13 @@ static const char* SERVERS_TABLE =           //
     "    gametype TEXT,"                     //
     "    wads TEXT,"                         //
     "    map TEXT,"                          //
-    "    players INTEGER,"                   //
+    "    numplayers INTEGER,"                //
     "    maxplayers INTEGER,"                //
     "    lives INTEGER,"                     //
     "    sides INTEGER,"                     //
     "    ping INTEGER,"                      //
+    "    players BLOB,"                      //
+    "    cvars BLOB,"                        //
     "    lockid INTEGER,"                    //
     "    gen INTEGER DEFAULT 0"              //
     ") STRICT;";                             //
@@ -51,18 +55,38 @@ static const char* ADD_SERVER =      //
     "REPLACE INTO servers(address) " //
     "    VALUES(:address);";         //
 
-static const char* ADD_SERVER_INFO =                                     //
-    "UPDATE servers "                                                    //
-    "SET servername = :servername, gametype = :gametype, wads = :wads, " //
-    "    map = :map, players = :players, maxplayers = :maxplayers, "     //
-    "    lives = :lives, sides = :sides, lockid = NULL "                 //
-    "WHERE address = :address";                                          //
+static const char* ADD_SERVER_INFO =                                       //
+    "UPDATE servers "                                                      //
+    "SET servername = :servername, gametype = :gametype, wads = :wads, "   //
+    "    map = :map, numplayers = :numplayers, maxplayers = :maxplayers, " //
+    "    lives = :lives, sides = :sides, players = jsonb(:players), "      //
+    "    cvars = jsonb(:cvars), ping = :ping, lockid = NULL "              //
+    "WHERE address = :address;";                                           //
 
-static const char* GET_SERVER_LIST =                 //
-    "SELECT "                                        //
-    "    address, servername, gametype, wads, map, " //
-    "    players, maxplayers, lives, sides, ping "   //
-    "FROM servers;";                                 //
+static const char* GET_SERVER_LIST =                  //
+    "SELECT "                                         //
+    "    address, servername, gametype, wads, map, "  //
+    "    numplayers, maxplayers, lives, sides, ping " //
+    "FROM servers;";                                  //
+
+static const char* GET_SERVER =                       //
+    "SELECT "                                         //
+    "    address, servername, gametype, wads, map, "  //
+    "    numplayers, maxplayers, lives, sides, ping " //
+    "FROM servers "                                   //
+    "WHERE address = :address;";                      //
+
+static const char* GET_SERVER_PLAYERS =               //
+    "SELECT "                                         //
+    "    address, servername, gametype, wads, map, "  //
+    "    numplayers, maxplayers, lives, sides, ping " //
+    "FROM servers "                                   //
+    "WHERE address = :address;";                      //
+
+static const char* GET_SERVER_CVARS =         //
+    "SELECT key, value "                      //
+    "FROM servers, json_each(servers.cvars) " //
+    "WHERE servers.address = :address";       //
 
 static const char* LOCK_SERVER =        //
     "UPDATE servers "                   //
@@ -196,6 +220,46 @@ NODISCARD static bool SQLBindText(sqlite3_stmt* stmt, const char* param, const c
 
 /******************************************************************************/
 
+static Json::Value PlayersToJSON(const std::vector<odalpapi::Player_t>& ncPlayers)
+{
+	Json::Value root;
+
+	for (auto& player : ncPlayers)
+	{
+		Json::Value json;
+
+		json["name"] = player.Name;
+		json["color"] = player.Colour;
+		json["kills"] = player.Kills;
+		json["deaths"] = player.Deaths;
+		json["time"] = player.Time;
+		json["frags"] = player.Frags;
+		json["ping"] = player.Ping;
+		json["team"] = player.Team;
+		json["spectator"] = player.Spectator;
+
+		root.append(std::move(json));
+	}
+
+	return root;
+}
+
+/******************************************************************************/
+
+static Json::Value CvarsToJSON(const std::vector<odalpapi::Cvar_t>& ncCvars)
+{
+	Json::Value root;
+
+	for (auto& cvar : ncCvars)
+	{
+		root[cvar.Name] = cvar.Value;
+	}
+
+	return root;
+}
+
+/******************************************************************************/
+
 NODISCARD bool DB_Init()
 {
 	if (::g_pDatabase != nullptr)
@@ -295,7 +359,7 @@ void DB_AddServerInfo(const odalpapi::Server& server)
 	if (!SQLBindText(stmt, ":map", server.Info.CurrentMap.c_str()))
 		return;
 
-	if (!SQLBindInt64(stmt, ":players", server.Info.Players.size()))
+	if (!SQLBindInt64(stmt, ":numplayers", server.Info.Players.size()))
 		return;
 
 	if (!SQLBindInt(stmt, ":maxplayers", server.Info.MaxPlayers))
@@ -305,6 +369,18 @@ void DB_AddServerInfo(const odalpapi::Server& server)
 		return;
 
 	if (!SQLBindInt(stmt, ":sides", server.Info.Sides))
+		return;
+
+	Json::StreamWriterBuilder builder;
+	Json::String buffer = Json::writeString(builder, PlayersToJSON(server.Info.Players));
+	if (!SQLBindText(stmt, ":players", buffer.c_str()))
+		return;
+
+	buffer = Json::writeString(builder, CvarsToJSON(server.Info.Cvars));
+	if (!SQLBindText(stmt, ":cvars", buffer.c_str()))
+		return;
+
+	if (!SQLBindInt(stmt, ":ping", server.GetPing()))
 		return;
 
 	for (size_t tries = 0; tries < ::SQL_TRIES; tries++)
@@ -348,7 +424,7 @@ void DB_GetServerList(serverRows_t& rows)
 			const int gametype = sqlite3_column_int(stmt, 2);
 			const char* wads = (const char*)(sqlite3_column_text(stmt, 3));
 			const char* map = (const char*)(sqlite3_column_text(stmt, 4));
-			const int players = sqlite3_column_int(stmt, 5);
+			const int numplayers = sqlite3_column_int(stmt, 5);
 			const int maxplayers = sqlite3_column_int(stmt, 6);
 			const int lives = sqlite3_column_int(stmt, 7);
 			const int sides = sqlite3_column_int(stmt, 8);
@@ -397,8 +473,8 @@ void DB_GetServerList(serverRows_t& rows)
 
 			if (maxplayers != 0)
 			{
-				auto it = fmt::format_to_n(buffer, ARRAY_LENGTH(buffer), "{}/{}", players,
-				                           maxplayers);
+				auto it = fmt::format_to_n(buffer, ARRAY_LENGTH(buffer), "{}/{}",
+				                           numplayers, maxplayers);
 				*it.out = '\0';
 				newRow.players = buffer;
 			}
@@ -419,6 +495,193 @@ void DB_GetServerList(serverRows_t& rows)
 		case SQLITE_DONE:
 			// Resize the vector down - in case it's now too big.
 			rows.resize(newRowCount);
+			return;
+		default:
+			tries++;
+			break;
+		}
+	}
+}
+
+/******************************************************************************/
+
+void DB_GetServer(serverRow_s& row, const std::string& address)
+{
+	int res;
+
+	sqlite3_stmt* stmt = SQLPrepare(::GET_SERVER);
+	if (!stmt)
+		return;
+
+	auto onExit = makeScopeExit([stmt] { sqlite3_finalize(stmt); });
+
+	if (!SQLBindText(stmt, ":address", address.c_str()))
+		return;
+
+	for (size_t tries = 0; tries < ::SQL_TRIES;)
+	{
+		res = sqlite3_step(stmt);
+		switch (res)
+		{
+		case SQLITE_ROW: {
+			char buffer[64];
+
+			// Extract the row into intermediate representation.
+			const char* address = (const char*)(sqlite3_column_text(stmt, 0));
+			const char* servername = (const char*)(sqlite3_column_text(stmt, 1));
+			const int gametype = sqlite3_column_int(stmt, 2);
+			const char* wads = (const char*)(sqlite3_column_text(stmt, 3));
+			const char* map = (const char*)(sqlite3_column_text(stmt, 4));
+			const int numplayers = sqlite3_column_int(stmt, 5);
+			const int maxplayers = sqlite3_column_int(stmt, 6);
+			const int lives = sqlite3_column_int(stmt, 7);
+			const int sides = sqlite3_column_int(stmt, 8);
+			const int ping = sqlite3_column_int(stmt, 9);
+
+			row.address = address ? address : "";
+			row.servername = servername ? servername : "";
+
+			constexpr int GT_Cooperative = 0;
+			constexpr int GT_Deathmatch = 1;
+			constexpr int GT_TeamDeathmatch = 2;
+			constexpr int GT_CaptureTheFlag = 3;
+			constexpr int GT_Horde = 4;
+
+			if (gametype == GT_Cooperative && lives)
+				row.gametype = "Survival";
+			else if (gametype == GT_Cooperative && maxplayers <= 1)
+				row.gametype = "Single-player";
+			else if (gametype == GT_Cooperative)
+				row.gametype = "Cooperative";
+			else if (gametype == GT_Deathmatch && lives)
+				row.gametype = "Last Marine Standing";
+			else if (gametype == GT_Deathmatch && maxplayers <= 2)
+				row.gametype = "Duel";
+			else if (gametype == GT_Deathmatch)
+				row.gametype = "Deathmatch";
+			else if (gametype == GT_TeamDeathmatch && lives)
+				row.gametype = "Team Last Marine Standing";
+			else if (gametype == GT_TeamDeathmatch)
+				row.gametype = "Team Deathmatch";
+			else if (gametype == GT_CaptureTheFlag && sides)
+				row.gametype = "Attack & Defend CTF";
+			else if (gametype == GT_CaptureTheFlag && lives)
+				row.gametype = "LMS Capture The Flag";
+			else if (gametype == GT_CaptureTheFlag)
+				row.gametype = "Capture The Flag";
+			else if (gametype == GT_Horde && lives)
+				row.gametype = "Survival Horde";
+			else if (gametype == GT_Horde)
+				row.gametype = "Horde";
+			else
+				row.gametype = "Unknown";
+
+			row.wads = wads ? wads : "";
+			row.map = map ? map : "";
+
+			if (maxplayers != 0)
+			{
+				auto it = fmt::format_to_n(buffer, ARRAY_LENGTH(buffer), "{}/{}",
+				                           numplayers, maxplayers);
+				*it.out = '\0';
+				row.players = buffer;
+			}
+
+			auto it = fmt::format_to_n(buffer, ARRAY_LENGTH(buffer), "{}", ping);
+			*it.out = '\0';
+			row.ping = buffer;
+			break;
+		}
+		case SQLITE_DONE:
+			// Resize the vector down - in case it's now too big.
+			return;
+		default:
+			tries++;
+			break;
+		}
+	}
+}
+
+/******************************************************************************/
+
+void DB_GetServerPlayers(serverPlayers_t& players, const std::string& address)
+{
+	int res;
+	size_t newRowCount;
+
+	sqlite3_stmt* stmt = SQLPrepare(::GET_SERVER_PLAYERS);
+	if (!stmt)
+		return;
+
+	auto onExit = makeScopeExit([stmt] { sqlite3_finalize(stmt); });
+
+	if (!SQLBindText(stmt, ":address", address.c_str()))
+		return;
+
+	newRowCount = 0;
+	for (size_t tries = 0; tries < ::SQL_TRIES;)
+	{
+		res = sqlite3_step(stmt);
+		switch (res)
+		{
+		case SQLITE_ROW: {
+		}
+		case SQLITE_DONE:
+			// Resize the vector down - in case it's now too big.
+			players.resize(newRowCount);
+			return;
+		default:
+			tries++;
+			break;
+		}
+	}
+}
+
+/******************************************************************************/
+
+void DB_GetServerCvars(serverCvars_t& cvars, const std::string& address)
+{
+	int res;
+	size_t newRowCount;
+
+	sqlite3_stmt* stmt = SQLPrepare(::GET_SERVER_CVARS);
+	if (!stmt)
+		return;
+
+	auto onExit = makeScopeExit([stmt] { sqlite3_finalize(stmt); });
+
+	if (!SQLBindText(stmt, ":address", address.c_str()))
+		return;
+
+	newRowCount = 0;
+	for (size_t tries = 0; tries < ::SQL_TRIES;)
+	{
+		res = sqlite3_step(stmt);
+		switch (res)
+		{
+		case SQLITE_ROW: {
+			// Extract the row into intermediate representation.
+			const char* key = (const char*)(sqlite3_column_text(stmt, 0));
+			const char* value = (const char*)(sqlite3_column_text(stmt, 1));
+			if (strlen(value) == 0)
+				break;
+
+			serverCvar_s newRow;
+			newRow.key = key;
+			newRow.value = value;
+
+			// Insert the new cvar into the existing cvar data vector.
+			newRowCount += 1;
+			if (newRowCount > cvars.size())
+			{
+				cvars.resize(newRowCount);
+			}
+			cvars[newRowCount - 1] = newRow;
+			break;
+		}
+		case SQLITE_DONE:
+			// Resize the vector down - in case it's now too big.
+			cvars.resize(newRowCount);
 			return;
 		default:
 			tries++;

@@ -16,25 +16,36 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Server table
+//  Server window player table
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
-#include "odalaunch.h"
+#include <string>
 
-#include "FL/Fl_Table_Row.H"
+#include "FL/Fl_Table.H"
 
 #include "db.h"
 
-class ServerTable : public Fl_Table_Row
+class ServerPlayerTable final : public Fl_Table
 {
-	serverRows_t m_servers;
+	std::string m_strAddress;
+	serverPlayers_t m_players;
 
 public:
-	ServerTable(int X, int Y, int W, int H, const char* l = 0);
+	ServerPlayerTable(int X, int Y, int W, int H, const char* l = 0);
 
 	virtual void draw_cell(TableContext context, int R = 0, int C = 0, int X = 0,
 	                       int Y = 0, int W = 0, int H = 0) override;
+
+	/**
+	 * @brief Set the address of the player table.
+	 */
+	void setAddress(const std::string& strAddress) { m_strAddress = strAddress; }
+
+	/**
+	 * @brief Refresh player data associated with this server.
+	 */
+	void refreshInfo();
 };
