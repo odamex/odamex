@@ -295,13 +295,13 @@ void R_InitSkyDefs()
 			if(sky->type == SKY_FIRE)
 			{
 				// TODO: fireskies
-				// if(!fireelem.isObject()) return JL_PARSEERROR;
+				if(!fireelem.isObject()) return JL_PARSEERROR;
 
-				// const Json::Value& firepalette    = fireelem[ "palette" ];
-				// const Json::Value& fireupdatetime = fireelem[ "updatetime" ];
+				const Json::Value& firepalette    = fireelem["palette"];
+				const Json::Value& fireupdatetime = fireelem["updatetime"];
 
-				// if(!firepalette.isArray()) return JL_PARSEERROR;
-				// sky->numfireentries = (int32_t)firepalette.size();
+				if(!firepalette.isArray()) return JL_PARSEERROR;
+				sky->numfireentries = (int32_t)firepalette.size();
 				// byte* output = sky->firepalette = (byte*)Z_MallocZero( sizeof( byte ) * sky->numfireentries, PU_STATIC, nullptr );
 				// for(const Json::Value& palentry : firepalette)
 				// {
@@ -374,7 +374,12 @@ void R_InitSkyDefs()
 
 	jsonlumpresult_t result =  M_ParseJSONLump("SKYDEFS", "skydefs", { 1, 0, 0 }, ParseSkydef);
 	if (result != JL_SUCCESS && result != JL_NOTFOUND)
-		I_Error("SKYDEFS error %d", result);
+		I_Error("R_InitSkyDefs: SKYDEFS JSON error: %s", jsonLumpResultToString(result));
+}
+
+void R_ClearSkyDefs()
+{
+	skylookup.clear();
 }
 
 bool R_LoadSkyDef(const OLumpName& skytex)

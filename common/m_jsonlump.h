@@ -80,6 +80,22 @@ typedef enum
 	JL_PARSEERROR
 } jsonlumpresult_t;
 
+static constexpr const char* JSON_LUMP_RESULT_ERROR_STRINGS[] =
+{
+	"JL_SUCCESS",
+	"JL_NOTFOUND",
+	"JL_MALFORMEDROOT",
+	"JL_TYPEMISMATCH",
+	"JL_BADVERSIONFORMATTING",
+	"JL_VERSIONMISMATCH",
+	"JL_PARSEERROR"
+};
+
+constexpr const char* jsonLumpResultToString(jsonlumpresult_t jlr)
+{
+	return JSON_LUMP_RESULT_ERROR_STRINGS[jlr];
+}
+
 using JSONLumpFunc = std::function<jsonlumpresult_t(const Json::Value& elem, const JSONLumpVersion& version)>;
 
 jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSONLumpVersion& maxversion, const JSONLumpFunc& parsefunc);

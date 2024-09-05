@@ -47,5 +47,6 @@ EXTERN_CVAR (r_stretchsky)
 void R_InitSkyMap();
 void R_InitSkyDefs();
 bool R_LoadSkyDef(const OLumpName& skytex);
+void R_ClearSkyDefs();
 
 void R_RenderSkyRange(visplane_t* pl);
