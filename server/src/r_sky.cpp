@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -21,7 +21,7 @@
 //  wall, wrapping around. A 1024 columns equal 360 degrees.
 //  The default sky map is 256 columns and repeats 4 times
 //  on a 320 screen?
-//  
+//
 //-----------------------------------------------------------------------------
 
 
@@ -33,7 +33,7 @@
 int 		skyflatnum;
 int 		sky1texture, sky2texture;
 
-fixed_t		sky1scrolldelta,	sky2scrolldelta;
+fixed_t		sky1scrollxdelta,	sky2scrollxdelta;
 fixed_t		sky1columnoffset,	sky2columnoffset;
 
 char SKYFLATNAME[8] = "F_SKY1";

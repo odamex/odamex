@@ -50,16 +50,18 @@ EXTERN_CVAR(r_skypalette)
 // sky mapping
 //
 int 		skyflatnum;
-int 		sky1texture,	sky2texture;
-fixed_t		skytexturemid;
+int 		sky1texture,    sky2texture;
+fixed_t		sky1texturemid, sky2texturemid;
 fixed_t		skyscale;
 int			skystretch;
 fixed_t		skyheight;
 fixed_t		skyiscale;
 
-int			sky1shift,		sky2shift;
-fixed_t		sky1scrolldelta,	sky2scrolldelta;
-fixed_t		sky1columnoffset,	sky2columnoffset;
+int			sky1shift,        sky2shift;
+fixed_t		sky1scrollxdelta, sky2scrollxdelta;
+fixed_t		sky1columnoffset, sky2columnoffset;
+fixed_t		sky1scrollydelta, sky2scrollydelta;
+fixed_t		sky1rowoffset,    sky2rowoffset;
 
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
@@ -151,12 +153,12 @@ void R_InitSkyMap()
 
 	if (fskyheight <= (128 << FRACBITS))
 	{
-		skytexturemid = 200/2*FRACUNIT;
+		sky1texturemid = 200/2*FRACUNIT;
 		skystretch = (r_stretchsky == 1) || consoleplayer().spectator || (r_stretchsky == 2 && sv_freelook && cl_mouselook);
 	}
 	else
 	{
-		skytexturemid = 199<<FRACBITS;//textureheight[sky1texture]-1;
+		sky1texturemid = 199<<FRACBITS;//textureheight[sky1texture]-1;
 		skystretch = 0;
 	}
 	skyheight = fskyheight << skystretch;
@@ -182,14 +184,14 @@ void R_InitSkyMap()
 	R_InitXToViewAngle();
 }
 
-typedef enum
+enum skytype_t
 {
 	SKY_NORMAL,
 	SKY_FIRE,
 	SKY_DOUBLESKY
-} skytype_t;
+};
 
-typedef struct
+struct skytex_t
 {
 	fixed_t mid;
 	fixed_t scrollx;
@@ -199,9 +201,9 @@ typedef struct
 	fixed_t currx;
 	fixed_t curry;
 	int32_t texnum;
-} skytex_t;
+};
 
-typedef struct
+struct sky_t
 {
 	skytype_t type;
 	bool      active;
@@ -216,30 +218,28 @@ typedef struct
 
 	// With foreground
 	skytex_t foreground;
-} sky_t;
+};
 
-typedef struct
+struct skyflat_t
 {
 	int    flat;
 	sky_t* sky;
-}  skyflat_t;
+};
 
 skyflat_t* defaultskyflat = nullptr;
 
 OHashTable<std::string, sky_t*> skylookup;
-// OHashTable<int32_t, skyflat_t*> skyflatlookup;
+OHashTable<int32_t, skyflat_t*> skyflatlookup;
 
 // [EB] adapted from Rum n Raisin r_sky.cpp
 void R_InitSkyDefs()
 {
-	// skyflatnum = R_FlatNumForName(SKYFLATNAME);
-	// texturecomposite_t* skyflatcomposite = flatlookup[skyflatnum];
+	skyflatnum = R_FlatNumForName(SKYFLATNAME);
 
-	// defaultskyflat = (skyflat_t*)Z_Malloc(sizeof( skyflat_t ), PU_STATIC, nullptr);
-	// *defaultskyflat = { skyflatcomposite, nullptr };
+	defaultskyflat = (skyflat_t*)Z_Malloc(sizeof(skyflat_t ), PU_STATIC, nullptr);
+	*defaultskyflat = { skyflatnum, nullptr };
 
-	// skyflatlookup[skyflatnum] = defaultskyflat;
-	// skyflatcomposite->skyflat = defaultskyflat;
+	skyflatlookup[skyflatnum] = defaultskyflat;
 
 	auto ParseSkydef = [](const Json::Value& elem, const JSONLumpVersion& version) -> jsonlumpresult_t
 	{
@@ -303,11 +303,11 @@ void R_InitSkyDefs()
 				if(!firepalette.isArray()) return JL_PARSEERROR;
 				sky->numfireentries = (int32_t)firepalette.size();
 				// byte* output = sky->firepalette = (byte*)Z_MallocZero( sizeof( byte ) * sky->numfireentries, PU_STATIC, nullptr );
-				// for(const Json::Value& palentry : firepalette)
-				// {
+				for(const Json::Value& palentry : firepalette)
+				{
 				// 	*output++ = palentry.asUInt();
-				// }
-				// sky->fireticrate = (int32_t)(fireupdatetime.asDouble() * TICRATE);
+				}
+				sky->fireticrate = (int32_t)(fireupdatetime.asFloat() * TICRATE);
 			}
 			else if(sky->type = SKY_DOUBLESKY)
 			{
@@ -392,18 +392,26 @@ bool R_LoadSkyDef(const OLumpName& skytex)
 		case SKY_NORMAL:
 			level.flags &= ~LEVEL_DOUBLESKY;
 			sky1texture = sky->background.texnum;
-			sky1scrolldelta = sky->background.scrollx;
+			sky1scrollxdelta = sky->background.scrollx;
+			sky1scrollydelta = sky->background.scrolly;
+			sky1texturemid = sky->background.mid;
 			sky2texture = 0;
-			sky2scrolldelta = 0;
+			sky2scrollxdelta = 0;
+			sky2scrollydelta = 0;
+			sky2texturemid = 0;
 			break;
 		case SKY_FIRE:
 			break;
 		case SKY_DOUBLESKY:
 			level.flags |= LEVEL_DOUBLESKY;
 			sky1texture = sky->foreground.texnum;
-			sky1scrolldelta = sky->foreground.scrollx;
+			sky1scrollxdelta = sky->foreground.scrollx;
+			sky1scrollydelta = sky->foreground.scrolly;
+			sky1texturemid = sky->foreground.mid;
 			sky2texture = sky->background.texnum;
-			sky2scrolldelta = sky->background.scrollx;
+			sky2scrollxdelta = sky->background.scrollx;
+			sky2scrollydelta = sky->background.scrolly;
+			sky2texturemid = sky->background.mid;
 			break;
 	}
 	return true;
@@ -456,9 +464,11 @@ void R_RenderSkyRange(visplane_t* pl)
 	int frontskytex, backskytex;
 	fixed_t front_offset = 0;
 	fixed_t back_offset = 0;
+	fixed_t frontrow_offset = 0;
+	fixed_t backrow_offset = 0;
 	angle_t skyflip = 0;
 
-	if (pl->picnum == skyflatnum )
+	if (pl->picnum == skyflatnum)
 	{
 		// use sky1
 		frontskytex = texturetranslation[sky1texture];
@@ -472,6 +482,8 @@ void R_RenderSkyRange(visplane_t* pl)
 		}
 		front_offset = sky1columnoffset;
 		back_offset = sky2columnoffset;
+		frontrow_offset = sky1rowoffset;
+		backrow_offset = sky2rowoffset;
 	}
 	else if (pl->picnum == int(PL_SKYFLAT))
 	{
@@ -500,7 +512,7 @@ void R_RenderSkyRange(visplane_t* pl)
 		front_offset = (-side->textureoffset) >> 6;
 
 		// Vertical offset allows careful sky positioning.
-		skytexturemid = side->rowoffset - 28*FRACUNIT;
+		sky1texturemid = side->rowoffset - 28*FRACUNIT;
 
 		// We sometimes flip the picture horizontally.
 		//
@@ -515,7 +527,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	const palette_t* pal = V_GetDefaultPalette();
 
 	dcol.iscale = skyiscale >> skystretch;
-	dcol.texturemid = skytexturemid;
+	dcol.texturemid = sky1texturemid + sky1rowoffset;
 	dcol.textureheight = textureheight[frontskytex]; // both skies are forced to be the same height anyway
 	dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
 	skyplane = pl;

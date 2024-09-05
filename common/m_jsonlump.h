@@ -69,7 +69,7 @@ struct JSONLumpVersion
 	}
 };
 
-typedef enum
+enum jsonlumpresult_t
 {
 	JL_SUCCESS,
 	JL_NOTFOUND,
@@ -78,7 +78,7 @@ typedef enum
 	JL_BADVERSIONFORMATTING,
 	JL_VERSIONMISMATCH,
 	JL_PARSEERROR
-} jsonlumpresult_t;
+};
 
 static constexpr const char* JSON_LUMP_RESULT_ERROR_STRINGS[] =
 {

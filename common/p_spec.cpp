@@ -2273,8 +2273,12 @@ void P_UpdateSpecials (void)
 	}
 
 	// Update sky column offsets
-	sky1columnoffset += sky1scrolldelta & 0xffffff;
-	sky2columnoffset += sky2scrolldelta & 0xffffff;
+	sky1columnoffset += sky1scrollxdelta & 0xffffff;
+	sky2columnoffset += sky2scrollxdelta & 0xffffff;
+
+	// Update sky row offsets
+	sky1rowoffset += sky1scrollydelta & 0xffffff;
+	sky2rowoffset += sky2scrollydelta & 0xffffff;
 }
 
 
