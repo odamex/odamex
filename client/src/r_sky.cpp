@@ -182,37 +182,6 @@ void R_InitSkyMap()
 	R_InitXToViewAngle();
 }
 
-// //
-// // sky mapping
-// //
-// int 		skyflatnum;
-// int 		sky1texture,	sky2texture;
-// fixed_t		skytexturemid;
-// fixed_t		skyscale;
-// int			skystretch;
-// fixed_t		skyheight;
-// fixed_t		skyiscale;
-
-// int			sky1shift,		sky2shift;
-// fixed_t		sky1scrolldelta,	sky2scrolldelta;
-// fixed_t		sky1columnoffset,	sky2columnoffset;
-
-// // The xtoviewangleangle[] table maps a screen pixel
-// // to the lowest viewangle that maps back to x ranges
-// // from clipangle to -clipangle.
-// static angle_t xtoviewangle[MAXWIDTH + 1];
-
-// CVAR_FUNC_IMPL(r_stretchsky)
-// {
-// 	R_InitSkyMap ();
-// }
-
-// char SKYFLATNAME[8] = "F_SKY1";
-
-
-// static tallpost_t* skyposts[MAXWIDTH];
-// static byte compositeskybuffer[MAXWIDTH][512]; // holds doublesky composite sky to blit to the screen
-
 typedef enum
 {
 	SKY_NORMAL,
@@ -260,6 +229,7 @@ skyflat_t* defaultskyflat = nullptr;
 OHashTable<std::string, sky_t*> skylookup;
 // OHashTable<int32_t, skyflat_t*> skyflatlookup;
 
+// [EB] adapted from Rum n Raisin r_sky.cpp
 void R_InitSkyDefs()
 {
 	// skyflatnum = R_FlatNumForName(SKYFLATNAME);
@@ -407,14 +377,15 @@ void R_InitSkyDefs()
 		I_Error("SKYDEFS error %d", result);
 }
 
-void R_LoadSkyDef(const OLumpName& skytex)
+bool R_LoadSkyDef(const OLumpName& skytex)
 {
 	const sky_t* sky = skylookup[std::string(skytex.c_str())];
 	if (sky == nullptr)
-		return;
+		return false;
 	switch(sky->type)
 	{
 		case SKY_NORMAL:
+			level.flags &= ~LEVEL_DOUBLESKY;
 			sky1texture = sky->background.texnum;
 			sky1scrolldelta = sky->background.scrollx;
 			sky2texture = 0;
@@ -430,6 +401,7 @@ void R_LoadSkyDef(const OLumpName& skytex)
 			sky2scrolldelta = sky->background.scrollx;
 			break;
 	}
+	return true;
 }
 
 //
