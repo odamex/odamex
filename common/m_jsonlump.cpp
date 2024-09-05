@@ -22,8 +22,6 @@
 //-----------------------------------------------------------------------------
 
 
-#pragma once
-
 #include "odamex.h"
 
 #include "m_jsonlump.h"
@@ -53,14 +51,17 @@ jsonlumpresult_t M_ParseJSONLump(lumpindex_t lumpindex, const char* lumptype, co
     std::string errs;
 
     if(!reader->parse(jsondata, jsondata + W_LumpLength(lumpindex), &root, &errs))
+    {
+        delete reader;
         return JL_PARSEERROR;
+    }
 
     delete reader;
 
-	const Json::Value& type			= root["type"];
-	const Json::Value& version		= root["version"];
-	const Json::Value& metadata		= root["metadata"];
-	const Json::Value& data			= root["data"];
+	const Json::Value& type     = root["type"];
+	const Json::Value& version  = root["version"];
+	const Json::Value& metadata = root["metadata"];
+	const Json::Value& data     = root["data"];
 
 	std::smatch versionmatch;
 	std::string versionstr = version.asString();
@@ -89,7 +90,7 @@ jsonlumpresult_t M_ParseJSONLump(lumpindex_t lumpindex, const char* lumptype, co
 	{
 		stoi(versionmatch[1].str()),
 		stoi(versionmatch[2].str()),
-		stoi(versionmatch[3].str()),
+		stoi(versionmatch[3].str())
 	};
 
 	if(versiondata > maxversion)
@@ -99,5 +100,3 @@ jsonlumpresult_t M_ParseJSONLump(lumpindex_t lumpindex, const char* lumptype, co
 
 	return parsefunc(data, versiondata);
 }
-
-VERSION_CONTROL (m_jsonlump_cpp, "$Id$")

@@ -332,7 +332,7 @@ void R_GenerateComposite (int texnum)
 				post->length++;
 
 			// copy opaque pixels from the temporary back into the column
-			memcpy(post->data(), tmpdata + post->topdelta, post->length);	
+			memcpy(post->data(), tmpdata + post->topdelta, post->length);
 			post = post->next();
 		}
 	}
@@ -365,8 +365,8 @@ void R_GenerateLookup(int texnum, int *const errors)
 	unsigned short *patchcount = new unsigned short[texture->width];
 	unsigned short *postcount = new unsigned short[texture->width];
 
-	memset(patchcount, 0, sizeof(unsigned short) * texture->width);	
-	memset(postcount, 0, sizeof(unsigned short) * texture->width);	
+	memset(patchcount, 0, sizeof(unsigned short) * texture->width);
+	memset(postcount, 0, sizeof(unsigned short) * texture->width);
 
 	const texpatch_t *texpatch = texture->patches;
 
@@ -387,9 +387,9 @@ void R_GenerateLookup(int texnum, int *const errors)
 			// to fix Medusa bug while allowing for transparent multipatches.
 
 			const tallpost_t *post = (tallpost_t*)((byte*)patch + LELONG(cofs[x]));
-	
+
 			// NOTE: this offset will be rewritten later if a composite is generated
-			// for this texture (eg, there's more than one patch)	
+			// for this texture (eg, there's more than one patch)
 			texturecolumnofs[texnum][x] = (byte *)post - (byte *)patch;
 
 			patchcount[x]++;
@@ -410,7 +410,7 @@ void R_GenerateLookup(int texnum, int *const errors)
 	int csize = 0;
 
 	// [RH] Always create a composite texture for multipatch textures
-	// or tall textures in order to keep things simpler.	
+	// or tall textures in order to keep things simpler.
 	bool needcomposite = (texture->patchcount > 1 || texture->height > 254);
 
 	// [SL] Check for columns without patches.
@@ -444,9 +444,9 @@ void R_GenerateLookup(int texnum, int *const errors)
 			csize += 4 * postcount[x] + 2 + texture->height;
 		}
 	}
-	
+
 	texturecompositesize[texnum] = csize;
-	
+
 	delete [] patchcount;
 	delete [] postcount;
 }
@@ -665,7 +665,7 @@ void R_InitTextures (void)
 		texturewidthmask[i] = j-1;
 
 		textureheight[i] = texture->height << FRACBITS;
-			
+
 		// [RH] Special for beta 29: Values of 0 will use the tx/ty cvars
 		// to determine scaling instead of defaulting to 8. I will likely
 		// remove this once I finish the betas, because by then, users
@@ -943,7 +943,7 @@ int R_ColormapNumForName(const char* name)
 	if (strnicmp(name, "COLORMAP", 8) != 0)
 	{
 		int lump = W_CheckNumForName(name, ns_colormaps);
-		
+
 		if (lump != -1)
 			return lump - firstfakecmap + 1;
 	}
@@ -991,6 +991,7 @@ void R_InitData()
 	R_InitTextures();
 	R_InitFlats();
 	R_InitSpriteLumps();
+	R_InitSkyDefs();
 
 	// haleyjd 01/28/10: also initialize tantoangle_acc table
 	Table_InitTanToAngle();

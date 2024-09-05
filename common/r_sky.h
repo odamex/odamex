@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -44,6 +44,7 @@ extern fixed_t	skyheight;
 EXTERN_CVAR (r_stretchsky)
 
 // Called whenever the sky changes.
-void R_InitSkyMap		();
+void R_InitSkyMap();
+void R_InitSkyDefs();
 
 void R_RenderSkyRange(visplane_t* pl);

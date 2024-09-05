@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
+#pragma once
+
 #include "odamex.h"
 
 #include "doomtype.h"
@@ -92,5 +94,3 @@ inline jsonlumpresult_t M_ParseJSONLump(const char* lumpname, const char* lumpty
 {
 	return M_ParseJSONLump(W_CheckNumForName(lumpname), lumptype, maxversion, parsefunc);
 }
-
-VERSION_CONTROL (m_jsonlump_h, "$Id$")
