@@ -37,8 +37,6 @@
 #include "w_wad.h"
 #include "i_system.h"
 
-#include <unordered_map>
-
 extern int *texturewidthmask;
 extern fixed_t FocalLengthX;
 extern fixed_t freelookviewheight;
@@ -222,39 +220,16 @@ typedef enum
 	SKY_DOUBLESKY
 } skytype_t;
 
-struct skyflat_t;
-
-typedef struct texturecomposite_s
-{
-	byte*        data;
-	char         name[8];
-	int32_t      namepadding;
-	int32_t      size;
-	int32_t      width;
-	int32_t      height;
-	int32_t      pitch;
-	int32_t      widthmask;
-	int32_t      patchcount;
-	fixed_t      renderheight;
-
-	skyflat_t*   skyflat;
-
-	int32_t      index;
-
-	constexpr bool IsSky() const { return skyflat != nullptr; }
-} texturecomposite_t;
-
 typedef struct
 {
-	texturecomposite_t*	texture;
-	fixed_t             mid;
-	fixed_t             scrollx;
-	fixed_t             scrolly;
-	fixed_t             scalex;
-	fixed_t             scaley;
-	fixed_t             currx;
-	fixed_t             curry;
-	int32_t             texnum;
+	fixed_t mid;
+	fixed_t scrollx;
+	fixed_t scrolly;
+	fixed_t scalex;
+	fixed_t scaley;
+	fixed_t currx;
+	fixed_t curry;
+	int32_t texnum;
 } skytex_t;
 
 typedef struct
@@ -274,22 +249,20 @@ typedef struct
 	skytex_t foreground;
 } sky_t;
 
-struct skyflat_t
+typedef struct
 {
-	texturecomposite_t* flatcomposite;
-	sky_t*              sky;
-};
+	int    flat;
+	sky_t* sky;
+}  skyflat_t;
 
 skyflat_t* defaultskyflat = nullptr;
 
-texturecomposite_t** texturelookup;
-texturecomposite_t** flatlookup;
-std::unordered_map<std::string, sky_t*>	skylookup;
-std::unordered_map<int32_t, skyflat_t*>	skyflatlookup;
+OHashTable<std::string, sky_t*> skylookup;
+// OHashTable<int32_t, skyflat_t*> skyflatlookup;
 
 void R_InitSkyDefs()
 {
-	skyflatnum = R_FlatNumForName( SKYFLATNAME );
+	// skyflatnum = R_FlatNumForName(SKYFLATNAME);
 	// texturecomposite_t* skyflatcomposite = flatlookup[skyflatnum];
 
 	// defaultskyflat = (skyflat_t*)Z_Malloc(sizeof( skyflat_t ), PU_STATIC, nullptr);
@@ -342,7 +315,6 @@ void R_InitSkyDefs()
 
 			constexpr double_t ticratescale = 1.0 / TICRATE;
 
-			// sky->background.texture = texturelookup[tex];
 			sky->background.texnum  = tex;
 			sky->background.mid     = DOUBLE2FIXED(mid.asDouble());
 			sky->background.scrollx = DOUBLE2FIXED(scrollx.asDouble() * ticratescale);
@@ -391,7 +363,6 @@ void R_InitSkyDefs()
 					return JL_PARSEERROR;
 				}
 
-				// sky->foreground.texture = texturelookup[foretex];
 				sky->foreground.texnum  = foretex;
 				sky->foreground.mid     = DOUBLE2FIXED(foremid.asDouble());
 				sky->foreground.scrollx = DOUBLE2FIXED(forescrollx.asDouble() * ticratescale);
@@ -404,7 +375,7 @@ void R_InitSkyDefs()
 				if(!fireelem.isNull() || !foreelem.isNull()) return JL_PARSEERROR;
 			}
 
-			// skylookup[skytexname] = sky;
+			skylookup[skytexname] = sky;
 		}
 
 		// TODO: flatmappings
@@ -436,6 +407,32 @@ void R_InitSkyDefs()
 		I_Error("SKYDEFS error %d", result);
 }
 
+void R_LoadSkyDef(const OLumpName& skytex)
+{
+	const sky_t* sky = skylookup[std::string(skytex.c_str())];
+	if (sky == nullptr)
+		return;
+	switch(sky->type)
+	{
+		case SKY_NORMAL:
+			sky1texture = sky->background.texnum;
+			sky1scrolldelta = sky->foreground.scrollx;
+			sky2texture = 0;
+			sky2scrolldelta = 0;
+			break;
+		case SKY_FIRE:
+			break;
+		case SKY_DOUBLESKY:
+			level.flags |= LEVEL_DOUBLESKY;
+			sky1texture = sky->foreground.texnum;
+			// sky1scrolldelta = sky->foreground.scrollx;
+			sky1scrolldelta = FLOAT2FIXED(0.15f);
+			sky2texture = sky->background.texnum;
+			// sky2scrolldelta = sky->background.scrollx;
+			sky2scrolldelta = FLOAT2FIXED(0.075f);
+			break;
+	}
+}
 
 //
 // R_BlastSkyColumn

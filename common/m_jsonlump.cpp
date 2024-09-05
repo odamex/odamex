@@ -32,10 +32,10 @@
 #include <regex>
 
 constexpr const char* TypeMatchRegexString = "^[a-z0-9_-]+$";
-static std::regex TypeMatchRegex = std::regex( TypeMatchRegexString );
+static std::regex TypeMatchRegex = std::regex(TypeMatchRegexString);
 
 constexpr const char* VersionMatchRegexString = "^(\\d+)\\.(\\d+)\\.(\\d+)$";
-static std::regex VersionMatchRegex = std::regex( VersionMatchRegexString );
+static std::regex VersionMatchRegex = std::regex(VersionMatchRegexString);
 
 jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSONLumpVersion& maxversion, const JSONLumpFunc& parsefunc)
 {
