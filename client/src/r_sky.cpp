@@ -290,41 +290,41 @@ std::unordered_map<int32_t, skyflat_t*>	skyflatlookup;
 void R_InitSkyDefs()
 {
 	skyflatnum = R_FlatNumForName( SKYFLATNAME );
-	texturecomposite_t* skyflatcomposite = flatlookup[skyflatnum];
+	// texturecomposite_t* skyflatcomposite = flatlookup[skyflatnum];
 
-	defaultskyflat = (skyflat_t*)Z_Malloc(sizeof( skyflat_t ), PU_STATIC, nullptr);
-	*defaultskyflat = { skyflatcomposite, nullptr };
+	// defaultskyflat = (skyflat_t*)Z_Malloc(sizeof( skyflat_t ), PU_STATIC, nullptr);
+	// *defaultskyflat = { skyflatcomposite, nullptr };
 
-	skyflatlookup[skyflatnum] = defaultskyflat;
-	skyflatcomposite->skyflat = defaultskyflat;
+	// skyflatlookup[skyflatnum] = defaultskyflat;
+	// skyflatcomposite->skyflat = defaultskyflat;
 
 	auto ParseSkydef = [](const Json::Value& elem, const JSONLumpVersion& version) -> jsonlumpresult_t
 	{
-		const Json::Value& skyarray = elem[ "skies" ];
-		const Json::Value& flatmappings = elem[ "flatmapping" ];
+		const Json::Value& skyarray = elem["skies"];
+		const Json::Value& flatmappings = elem["flatmapping"];
 
 		if(!(skyarray.isArray() || skyarray.isNull())) return JL_PARSEERROR;
 		if(!(flatmappings.isArray() || flatmappings.isNull())) return JL_PARSEERROR;
 
 		for(const Json::Value& skyelem : skyarray)
 		{
-			const Json::Value& type     = skyelem[ "type" ];
+			const Json::Value& type     = skyelem["type"];
 
-			const Json::Value& skytex   = skyelem[ "name" ];
-			const Json::Value& mid      = skyelem[ "mid" ];
-			const Json::Value& scrollx  = skyelem[ "scrollx" ];
-			const Json::Value& scrolly  = skyelem[ "scrolly" ];
-			const Json::Value& scalex   = skyelem[ "scalex" ];
-			const Json::Value& scaley   = skyelem[ "scaley" ];
+			const Json::Value& skytex   = skyelem["name"];
+			const Json::Value& mid      = skyelem["mid"];
+			const Json::Value& scrollx  = skyelem["scrollx"];
+			const Json::Value& scrolly  = skyelem["scrolly"];
+			const Json::Value& scalex   = skyelem["scalex"];
+			const Json::Value& scaley   = skyelem["scaley"];
 
-			const Json::Value& fireelem	= skyelem[ "fire" ];
-			const Json::Value& foreelem = skyelem[ "foregroundtex" ];
+			const Json::Value& fireelem	= skyelem["fire"];
+			const Json::Value& foreelem = skyelem["foregroundtex"];
 
 			auto skytype = static_cast<skytype_t>(type.asInt());
 			if(skytype < SKY_NORMAL || skytype > SKY_DOUBLESKY) return JL_PARSEERROR;
 
 			std::string skytexname = skytex.asString();
-			int32_t tex = R_TextureNumForName( skytexname.c_str() );
+			int32_t tex = R_TextureNumForName(skytexname.c_str());
 			if(tex < 0) return JL_PARSEERROR;
 
 			if(!mid.isNumeric()
@@ -342,7 +342,7 @@ void R_InitSkyDefs()
 
 			constexpr double_t ticratescale = 1.0 / TICRATE;
 
-			sky->background.texture = texturelookup[tex];
+			// sky->background.texture = texturelookup[tex];
 			sky->background.texnum  = tex;
 			sky->background.mid     = DOUBLE2FIXED(mid.asDouble());
 			sky->background.scrollx = DOUBLE2FIXED(scrollx.asDouble() * ticratescale);
@@ -391,7 +391,7 @@ void R_InitSkyDefs()
 					return JL_PARSEERROR;
 				}
 
-				sky->foreground.texture = texturelookup[foretex];
+				// sky->foreground.texture = texturelookup[foretex];
 				sky->foreground.texnum  = foretex;
 				sky->foreground.mid     = DOUBLE2FIXED(foremid.asDouble());
 				sky->foreground.scrollx = DOUBLE2FIXED(forescrollx.asDouble() * ticratescale);
@@ -404,7 +404,7 @@ void R_InitSkyDefs()
 				if(!fireelem.isNull() || !foreelem.isNull()) return JL_PARSEERROR;
 			}
 
-			skylookup[skytexname] = sky;
+			// skylookup[skytexname] = sky;
 		}
 
 		// TODO: flatmappings
