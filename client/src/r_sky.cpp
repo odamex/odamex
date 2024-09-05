@@ -316,11 +316,11 @@ void R_InitSkyDefs()
 			constexpr double_t ticratescale = 1.0 / TICRATE;
 
 			sky->background.texnum  = tex;
-			sky->background.mid     = DOUBLE2FIXED(mid.asDouble());
-			sky->background.scrollx = DOUBLE2FIXED(scrollx.asDouble() * ticratescale);
-			sky->background.scrolly = DOUBLE2FIXED(scrolly.asDouble() * ticratescale);
-			sky->background.scalex  = DOUBLE2FIXED(scalex.asDouble());
-			sky->background.scaley  = DOUBLE2FIXED(scaley.asDouble());
+			sky->background.mid     = FLOAT2FIXED(mid.asFloat());
+			sky->background.scrollx = FLOAT2FIXED(scrollx.asFloat());
+			sky->background.scrolly = FLOAT2FIXED(scrolly.asFloat());
+			sky->background.scalex  = FLOAT2FIXED(scalex.asFloat());
+			sky->background.scaley  = FLOAT2FIXED(scaley.asFloat());
 
 			if(sky->type == SKY_FIRE)
 			{
@@ -364,11 +364,11 @@ void R_InitSkyDefs()
 				}
 
 				sky->foreground.texnum  = foretex;
-				sky->foreground.mid     = DOUBLE2FIXED(foremid.asDouble());
-				sky->foreground.scrollx = DOUBLE2FIXED(forescrollx.asDouble() * ticratescale);
-				sky->foreground.scrolly = DOUBLE2FIXED(forescrolly.asDouble() * ticratescale);
-				sky->foreground.scalex  = DOUBLE2FIXED(forescalex.asDouble());
-				sky->foreground.scaley  = DOUBLE2FIXED(forescaley.asDouble());
+				sky->foreground.mid     = FLOAT2FIXED(foremid.asFloat());
+				sky->foreground.scrollx = FLOAT2FIXED(forescrollx.asFloat());
+				sky->foreground.scrolly = FLOAT2FIXED(forescrolly.asFloat());
+				sky->foreground.scalex  = FLOAT2FIXED(forescalex.asFloat());
+				sky->foreground.scaley  = FLOAT2FIXED(forescaley.asFloat());
 			}
 			else
 			{
@@ -416,7 +416,8 @@ void R_LoadSkyDef(const OLumpName& skytex)
 	{
 		case SKY_NORMAL:
 			sky1texture = sky->background.texnum;
-			sky1scrolldelta = sky->foreground.scrollx;
+			sky1scrolldelta = sky->background.scrollx;
+			level.sky1ScrollDelta = sky->foreground.scrollx;
 			sky2texture = 0;
 			sky2scrolldelta = 0;
 			break;
@@ -425,11 +426,11 @@ void R_LoadSkyDef(const OLumpName& skytex)
 		case SKY_DOUBLESKY:
 			level.flags |= LEVEL_DOUBLESKY;
 			sky1texture = sky->foreground.texnum;
-			// sky1scrolldelta = sky->foreground.scrollx;
-			sky1scrolldelta = FLOAT2FIXED(0.15f);
+			sky1scrolldelta = sky->foreground.scrollx;
+			level.sky1ScrollDelta = sky->foreground.scrollx;
 			sky2texture = sky->background.texnum;
-			// sky2scrolldelta = sky->background.scrollx;
-			sky2scrolldelta = FLOAT2FIXED(0.075f);
+			sky2scrolldelta = sky->background.scrollx;
+			level.sky2ScrollDelta = sky->background.scrollx;
 			break;
 	}
 }
