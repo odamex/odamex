@@ -26,6 +26,8 @@
 
 #include "m_jsonlump.h"
 
+#include "i_system.h"
+
 #include <string>
 #include <regex>
 
@@ -35,7 +37,7 @@ static std::regex TypeMatchRegex = std::regex( TypeMatchRegexString );
 constexpr const char* VersionMatchRegexString = "^(\\d+)\\.(\\d+)\\.(\\d+)$";
 static std::regex VersionMatchRegex = std::regex( VersionMatchRegexString );
 
-jsonlumpresult_t M_ParseJSONLump(lumpindex_t lumpindex, const char* lumptype, const JSONLumpVersion& maxversion, const JSONLumpFunc& parsefunc)
+jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSONLumpVersion& maxversion, const JSONLumpFunc& parsefunc)
 {
 	if(lumpindex < 0 || W_LumpLength(lumpindex) <= 0)
 	{
@@ -53,6 +55,7 @@ jsonlumpresult_t M_ParseJSONLump(lumpindex_t lumpindex, const char* lumptype, co
     if(!reader->parse(jsondata, jsondata + W_LumpLength(lumpindex), &root, &errs))
     {
         delete reader;
+        I_Error("M_ParseJSONLump: JSON parsing error in lump %s:\n%s", W_LumpName(lumpindex), errs.c_str());
         return JL_PARSEERROR;
     }
 

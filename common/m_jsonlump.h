@@ -33,8 +33,6 @@
 
 #include <json/json.h>
 
-typedef int32_t lumpindex_t;
-
 struct JSONLumpVersion
 {
 	int32_t major;
@@ -83,9 +81,9 @@ typedef enum
 
 using JSONLumpFunc = std::function<jsonlumpresult_t(const Json::Value& elem, const JSONLumpVersion& version)>;
 
-jsonlumpresult_t M_ParseJSONLump(lumpindex_t lumpindex, const char* lumptype, const JSONLumpVersion& maxversion, const JSONLumpFunc& parsefunc);
+jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSONLumpVersion& maxversion, const JSONLumpFunc& parsefunc);
 
-inline jsonlumpresult_t M_ParseJSONLump(lumpindex_t lumpindex, const char* lumptype, const JSONLumpVersion& maxversion, JSONLumpFunc&& parsefunc)
+inline jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSONLumpVersion& maxversion, JSONLumpFunc&& parsefunc)
 {
 	return M_ParseJSONLump(lumpindex, lumptype, maxversion, parsefunc);
 }
