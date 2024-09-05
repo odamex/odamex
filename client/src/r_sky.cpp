@@ -417,7 +417,6 @@ void R_LoadSkyDef(const OLumpName& skytex)
 		case SKY_NORMAL:
 			sky1texture = sky->background.texnum;
 			sky1scrolldelta = sky->background.scrollx;
-			level.sky1ScrollDelta = sky->foreground.scrollx;
 			sky2texture = 0;
 			sky2scrolldelta = 0;
 			break;
@@ -427,10 +426,8 @@ void R_LoadSkyDef(const OLumpName& skytex)
 			level.flags |= LEVEL_DOUBLESKY;
 			sky1texture = sky->foreground.texnum;
 			sky1scrolldelta = sky->foreground.scrollx;
-			level.sky1ScrollDelta = sky->foreground.scrollx;
 			sky2texture = sky->background.texnum;
 			sky2scrolldelta = sky->background.scrollx;
-			level.sky2ScrollDelta = sky->background.scrollx;
 			break;
 	}
 }
