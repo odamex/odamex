@@ -551,7 +551,7 @@ void G_DoLoadLevel (int position)
 	// [EB] 9/6/2024 - remove sky1 (now using SKYDEFS), sky2 left for hexen style non doublesky sky2
 	// TODO: remove this except for sky2 stuff (for non doublesky use of sky2)
 	sky1texture = R_TextureNumForName(level.skypic.c_str());
-	if (!level.skypic2.empty())
+	if (!level.skypic2.empty() && !(level.flags & LEVEL_DOUBLESKY))
 	{
 		sky2texture = R_TextureNumForName(level.skypic2.c_str());
 		sky2scrollxdelta = level.sky2ScrollDelta;
