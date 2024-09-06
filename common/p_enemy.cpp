@@ -1970,7 +1970,7 @@ void A_MonsterProjectile(AActor* actor)
 
 	// adjust pitch (approximated, using Doom's ye olde
 	// finetangent table; same method as monster aim)
-	mo->momz += FixedMul(mo->info->speed, pitch);
+	mo->momz += FixedMul(mo->info->speed, DegToSlope(pitch));
 
 	// adjust position
 	an = (actor->angle - ANG90) >> ANGLETOFINESHIFT;

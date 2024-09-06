@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <set>
+#include <zlib.h>
 
 #include "m_alloc.h"
 #include "m_vectors.h"
@@ -460,14 +461,77 @@ bool P_LoadXNOD(int lump)
 {
 	size_t len = W_LumpLength(lump);
 	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+	byte* output = NULL;
 
-	if (len < 4 || memcmp(data, "XNOD", 4) != 0)
+	if (len < 4)
 	{
 		Z_Free(data);
 		return false;
 	}
 
-	byte *p = data + 4; // skip the magic number
+	if (len >= 8 && memcmp(data, "xNd4\0\0\0\0", 8) == 0)
+		I_Error("P_LoadXNOD: DeePBSP nodes are not supported.");
+
+	bool compressed = memcmp(data, "ZNOD", 4) == 0;
+
+	if (memcmp(data, "XNOD", 4) != 0 && !compressed)
+	{
+		Z_Free(data);
+		return false;
+	}
+
+	byte *p;
+	// [EB] decompress compressed nodes
+	// adapted from Crispy Doom
+	if (compressed)
+	{
+		int outlen, err;
+		z_stream *zstream;
+
+		// first estimate for compression rate:
+		// output buffer size == 2.5 * input size
+		outlen = 2.5 * len;
+		output = (byte*)Z_Malloc(outlen, PU_STATIC, 0);
+
+		// initialize stream state for decompression
+		zstream = (z_stream*)M_Malloc(sizeof(*zstream));
+		memset(zstream, 0, sizeof(*zstream));
+		zstream->next_in = data + 4;
+		zstream->avail_in = len - 4;
+		zstream->next_out = output;
+		zstream->avail_out = outlen;
+
+		if (inflateInit(zstream) != Z_OK)
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression initialization!");
+
+		// resize if output buffer runs full
+		while ((err = inflate(zstream, Z_SYNC_FLUSH)) == Z_OK)
+		{
+			int outlen_old = outlen;
+			outlen = 2 * outlen_old;
+			output = (byte*)M_Realloc(output, outlen);
+			zstream->next_out = output + outlen_old;
+			zstream->avail_out = outlen - outlen_old;
+		}
+
+		if (err != Z_STREAM_END)
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression!");
+
+		fprintf(stderr, "P_LoadXNOD: ZDBSP nodes compression ratio %.3f\n",
+				(float)zstream->total_out/zstream->total_in);
+
+		len = zstream->total_out;
+
+		if (inflateEnd(zstream) != Z_OK)
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression shut-down!");
+
+		M_Free(zstream);
+		p = output;
+	}
+	else
+	{
+		p = data + 4; // skip the magic number
+	}
 
 	// Load vertices
 	unsigned int numorgvert = LELONG(*(unsigned int *)p); p += 4;
@@ -584,6 +648,7 @@ bool P_LoadXNOD(int lump)
 	}
 
 	Z_Free(data);
+	Z_Free(output);
 
 	return true;
 }

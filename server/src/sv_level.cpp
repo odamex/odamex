@@ -173,8 +173,8 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	    return;
 	}
 
-	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	G_LoadWadString(str);
+	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
+	G_LoadWadString(wadstr);
 }
 END_COMMAND (wad)
 
@@ -238,15 +238,7 @@ void G_ChangeMap()
 
 		if (!Maplist::instance().lobbyempty())
 		{
-			std::string wadstr;
-			for (size_t i = 0; i < lobby_entry.wads.size(); i++)
-			{
-				if (i != 0)
-				{
-					wadstr += " ";
-				}
-				wadstr += C_QuoteString(lobby_entry.wads.at(i));
-			}
+			std::string wadstr = C_EscapeWadList(lobby_entry.wads);
 			G_LoadWadString(wadstr, lobby_entry.map);
 		}
 		else
@@ -263,15 +255,7 @@ void G_ChangeMap()
 				maplist_entry_t maplist_entry;
 				Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-				std::string wadstr;
-				for (size_t i = 0; i < maplist_entry.wads.size(); i++)
-				{
-					if (i != 0)
-					{
-						wadstr += " ";
-					}
-					wadstr += C_QuoteString(maplist_entry.wads.at(i));
-				}
+				std::string wadstr = C_EscapeWadList(maplist_entry.wads);
 				G_LoadWadString(wadstr, maplist_entry.map);
 
 				// Set the new map as the current map
@@ -297,16 +281,7 @@ void G_ChangeMap(size_t index) {
 		return;
 	}
 
-	std::string wadstr;
-	for (size_t i = 0; i < maplist_entry.wads.size(); i++)
-	{
-		if (i != 0)
-		{
-			wadstr += " ";
-		}
-		wadstr += C_QuoteString(maplist_entry.wads.at(i));
-	}
-
+	std::string wadstr = C_EscapeWadList(maplist_entry.wads);
 	G_LoadWadString(wadstr, maplist_entry.map);
 
 	// Set the new map as the current map

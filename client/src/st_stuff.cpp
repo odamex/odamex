@@ -128,6 +128,9 @@ extern bool simulated_connection;
 //		 Problem is, is the stuff rendered
 //		 into a buffer,
 //		 or into the frame buffer?
+// ---
+// Also, this stuff is for a 320x32 sbar size,
+// and is useless on any other size.
 
 // AMMO number pos.
 #define ST_AMMOWIDTH			3
@@ -272,6 +275,8 @@ static bool st_cursoron;
 
 // main bar left
 static lumpHandle_t sbar;
+
+static short sbar_width = 0;
 
 // 0-9, tall numbers
 // [RH] no longer static
@@ -428,26 +433,48 @@ int ST_StatusBarHeight(int surface_width, int surface_height)
 		return 0;
 
 	if (st_scale)
+	{
 		return 32 * surface_height / 200;
+	}
 	else
+	{
 		return 32;
+	}
 }
 
-int ST_StatusBarWidth(int surface_width, int surface_height)
+short ST_StatusBarWidth(int surface_width, int surface_height)
 {
 	if (!R_StatusBarVisible())
+	{
 		return 0;
+	}
 
-	if (!st_scale)
-		return 320;
-
+	
 	// [AM] Scale status bar width according to height, unless there isn't
 	//      enough room for it.  Fixes widescreen status bar scaling.
 	// [ML] A couple of minor changes for true 4:3 correctness...
 	if (I_IsProtectedResolution(surface_width, surface_height))
-		return 10 * ST_StatusBarHeight(surface_width, surface_height);
+	{
+		int height = ST_StatusBarHeight(surface_width, surface_height);
+
+		if (sbar_width > 320)
+		{
+			return (height / 32) * sbar_width;
+		}
+		else
+		{
+			return 10 * height;
+		}
+	}
+
+	if (st_scale)
+	{
+		return (sbar_width / 80) * surface_height / 3;
+	}
 	else
-		return 4 * surface_height / 3;
+	{
+		return sbar_width;
+	}
 }
 
 int ST_StatusBarX(int surface_width, int surface_height)
@@ -985,6 +1012,8 @@ static void ST_refreshBackground()
 	const IWindowSurface* surface = R_GetRenderingSurface();
 	const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 
+	int scaled_x = (sbar_width - 320) / 2;
+
 	// [RH] If screen is wider than the status bar, draw stuff around status bar.
 	if (surface_width > ST_WIDTH)
 	{
@@ -999,11 +1028,11 @@ static void ST_refreshBackground()
 
 	if (sv_gametype == GM_CTF)
 	{
-		stbar_canvas->DrawPatch(W_ResolvePatchHandle(flagsbg), ST_FLAGSBGX, ST_FLAGSBGY);
+		stbar_canvas->DrawPatch(W_ResolvePatchHandle(flagsbg), ST_FLAGSBGX + scaled_x, ST_FLAGSBGY);
 	}
 	else if (G_IsCoopGame())
 	{
-		stbar_canvas->DrawPatch(W_ResolvePatchHandle(armsbg), ST_ARMSBGX, ST_ARMSBGY);
+		stbar_canvas->DrawPatch(W_ResolvePatchHandle(armsbg), ST_ARMSBGX + scaled_x, ST_ARMSBGY);
 	}
 
 	if (multiplayer)
@@ -1013,13 +1042,13 @@ static void ST_refreshBackground()
 			// [RH] Always draw faceback with the player's color
 			//		using a translation rather than a different patch.
 			V_ColorMap = translationref_t(translationtables + displayplayer_id * 256, displayplayer_id);
-			stbar_canvas->DrawTranslatedPatch(W_ResolvePatchHandle(faceback), ST_FX,
+			stbar_canvas->DrawTranslatedPatch(W_ResolvePatchHandle(faceback), ST_FX + scaled_x,
 			                                  ST_FY);
 		}
 		else
 		{
 			stbar_canvas->DrawPatch(
-			    W_ResolvePatchHandle(faceclassic[displayplayer_id - 1]), ST_FX, ST_FY);
+			    W_ResolvePatchHandle(faceclassic[displayplayer_id - 1]), ST_FX + scaled_x, ST_FY);
 		}
 	}
 
@@ -1036,10 +1065,10 @@ static void ST_refreshBackground()
 // on top of it.
 //
 // If st_scale is enabled, the status bar is drawn to an unscaled 320x32 pixel
-// off-screen surface stnum_surface. First stbar_surface (the status bar
-// background) is blitted to stnum_surface, then the widgets are then drawn
-// on top of it. Finally, stnum_surface is blitted onto the rendering surface
-// using scaling to match the size in 320x200 resolution.
+// off-screen surface stnum_surface. (or whatever its dimensions are in widescreen.)
+// First stbar_surface (the status bar background) is blitted to stnum_surface,
+// then the widgets are then drawn on top of it. Finally, stnum_surface is blitted
+// onto the rendering surface using scaling to match the size in 320x200 resolution.
 //
 // Now ST_Drawer recalculates the ST_WIDTH, ST_HEIGHT, ST_X, and ST_Y globals.
 //
@@ -1068,10 +1097,10 @@ void ST_Drawer()
 			ST_refreshBackground();
 
 			if (st_scale)
-				stnum_surface->blit(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
+				stnum_surface->blitcrop(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
 						0, 0, stnum_surface->getWidth(), stnum_surface->getHeight());
 			else
-				surface->blit(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
+				surface->blitcrop(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
 						ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
 		}
 		
@@ -1079,7 +1108,7 @@ void ST_Drawer()
 		ST_drawWidgets(st_needrefresh);
 
 		if (st_scale)
-			surface->blit(stnum_surface, 0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(),
+			surface->blitcrop(stnum_surface, 0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(),
 					ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);	
 
 		stbar_surface->unlock();
@@ -1165,6 +1194,9 @@ static void ST_loadGraphics()
 
 	// status bar background bits
 	sbar = W_CachePatchHandle("STBAR", PU_STATIC);
+	// in tyool 2024, we have widescreen status bars
+	// and they're not always 320x32
+	sbar_width = W_ResolvePatchHandle(sbar)->width();
 
 	// face states
 	int facenum = 0;
@@ -1251,52 +1283,55 @@ static void ST_unloadData()
 
 void ST_createWidgets()
 {
+	int scaled_x = (sbar_width - 320) / 2;
 	// ready weapon ammo
-	w_ready.init(ST_AMMOX, ST_AMMOY, tallnum, &st_current_ammo, ST_AMMOWIDTH);
+	w_ready.init(ST_AMMOX + scaled_x, ST_AMMOY, tallnum, &st_current_ammo,
+	             ST_AMMOWIDTH);
 
 	// health percentage
-	w_health.init(ST_HEALTHX, ST_HEALTHY, tallnum, &st_health, tallpercent);
+	w_health.init(ST_HEALTHX + scaled_x, ST_HEALTHY, tallnum, &st_health,
+	              tallpercent);
 
 	// weapons owned
 	for (int i = 0; i < 6; i++)
 	{
-		w_arms[i].init(ST_ARMSX + (i % 3) * ST_ARMSXSPACE,
+		w_arms[i].init(ST_ARMSX + (i % 3) * ST_ARMSXSPACE + scaled_x,
 		               ST_ARMSY + (i / 3) * ST_ARMSYSPACE, arms[i], &st_weaponowned[i]);
 	}
 
 	// frags sum
-	w_frags.init(ST_FRAGSX, ST_FRAGSY, tallnum, &st_fragscount,
+	w_frags.init(ST_FRAGSX + scaled_x, ST_FRAGSY, tallnum, &st_fragscount,
 	             ST_FRAGSWIDTH);
 
 	// faces
-	w_faces.init(ST_FACESX, ST_FACESY, faces, &st_faceindex);
+	w_faces.init(ST_FACESX + scaled_x, ST_FACESY, faces, &st_faceindex);
 
 	// armor percentage - should be colored later
-	w_armor.init(ST_ARMORX, ST_ARMORY, tallnum, &st_armor, tallpercent);
+	w_armor.init(ST_ARMORX + scaled_x, ST_ARMORY, tallnum, &st_armor, tallpercent);
 
 	// keyboxes 0-2
-	w_keyboxes[0].init(ST_KEY0X, ST_KEY0Y, keys, &keyboxes[0]);
-	w_keyboxes[1].init(ST_KEY1X, ST_KEY1Y, keys, &keyboxes[1]);
-	w_keyboxes[2].init(ST_KEY2X, ST_KEY2Y, keys, &keyboxes[2]);
+	w_keyboxes[0].init(ST_KEY0X + scaled_x, ST_KEY0Y, keys, &keyboxes[0]);
+	w_keyboxes[1].init(ST_KEY1X + scaled_x, ST_KEY1Y, keys, &keyboxes[1]);
+	w_keyboxes[2].init(ST_KEY2X + scaled_x, ST_KEY2Y, keys, &keyboxes[2]);
 
 	// ammo count (all four kinds)
-	w_ammo[0].init(ST_AMMO0X, ST_AMMO0Y, shortnum, &st_ammo[0], ST_AMMO0WIDTH);
-	w_ammo[1].init(ST_AMMO1X, ST_AMMO1Y, shortnum, &st_ammo[1], ST_AMMO1WIDTH);
-	w_ammo[2].init(ST_AMMO2X, ST_AMMO2Y, shortnum, &st_ammo[2], ST_AMMO2WIDTH);
-	w_ammo[3].init(ST_AMMO3X, ST_AMMO3Y, shortnum, &st_ammo[3], ST_AMMO3WIDTH);
+	w_ammo[0].init(ST_AMMO0X + scaled_x, ST_AMMO0Y, shortnum, &st_ammo[0], ST_AMMO0WIDTH);
+	w_ammo[1].init(ST_AMMO1X + scaled_x, ST_AMMO1Y, shortnum, &st_ammo[1], ST_AMMO1WIDTH);
+	w_ammo[2].init(ST_AMMO2X + scaled_x, ST_AMMO2Y, shortnum, &st_ammo[2], ST_AMMO2WIDTH);
+	w_ammo[3].init(ST_AMMO3X + scaled_x, ST_AMMO3Y, shortnum, &st_ammo[3], ST_AMMO3WIDTH);
 
 	// max ammo count (all four kinds)
-	w_maxammo[0].init(ST_MAXAMMO0X, ST_MAXAMMO0Y, shortnum, &st_maxammo[0],
+	w_maxammo[0].init(ST_MAXAMMO0X + scaled_x, ST_MAXAMMO0Y, shortnum, &st_maxammo[0],
 	                  ST_MAXAMMO0WIDTH);
-	w_maxammo[1].init(ST_MAXAMMO1X, ST_MAXAMMO1Y, shortnum, &st_maxammo[1],
+	w_maxammo[1].init(ST_MAXAMMO1X + scaled_x, ST_MAXAMMO1Y, shortnum, &st_maxammo[1],
 	                  ST_MAXAMMO1WIDTH);
-	w_maxammo[2].init(ST_MAXAMMO2X, ST_MAXAMMO2Y, shortnum, &st_maxammo[2],
+	w_maxammo[2].init(ST_MAXAMMO2X + scaled_x, ST_MAXAMMO2Y, shortnum, &st_maxammo[2],
 	                  ST_MAXAMMO2WIDTH);
-	w_maxammo[3].init(ST_MAXAMMO3X, ST_MAXAMMO3Y, shortnum, &st_maxammo[3],
+	w_maxammo[3].init(ST_MAXAMMO3X + scaled_x, ST_MAXAMMO3Y, shortnum, &st_maxammo[3],
 	                  ST_MAXAMMO3WIDTH);
 
 	// Number of lives (not always rendered)
-	w_lives.init(ST_FX + 34, ST_FY + 25, shortnum, &st_lives, 2);
+	w_lives.init(ST_FX + 34 + scaled_x, ST_FY + 25, shortnum, &st_lives, 2);
 }
 
 void ST_Start()
@@ -1326,12 +1361,12 @@ void ST_Start()
 
 void ST_Init()
 {
-	if (stbar_surface == NULL)
-		stbar_surface = I_AllocateSurface(320, 32, 8);
-	if (stnum_surface == NULL)
-		stnum_surface = I_AllocateSurface(320, 32, 8);
-
 	ST_loadData();
+
+	if (stbar_surface == NULL)
+		stbar_surface = I_AllocateSurface(sbar_width, 32, 8);
+	if (stnum_surface == NULL)
+		stnum_surface = I_AllocateSurface(sbar_width, 32, 8);
 }
 
 void STACK_ARGS ST_Shutdown()
@@ -1340,6 +1375,8 @@ void STACK_ARGS ST_Shutdown()
 
 	I_FreeSurface(stbar_surface);
 	I_FreeSurface(stnum_surface);
+
+	sbar_width = 0;
 }
 
 
