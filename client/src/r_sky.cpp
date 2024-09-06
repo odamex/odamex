@@ -363,12 +363,10 @@ void R_InitSkyDefs()
 			std::string skyname = skyelem.asString();
 			sky_t* sky = R_GetSky(skyname.c_str(), true);
 
-	// 		texturecomposite_t* flatcomposite = flatlookup[ flatnum ];
-	// 		skyflat_t* newflat = (skyflat_t*)Z_MallocZero( sizeof( skyflat_t ), PU_STATIC, nullptr );
-	// 		*newflat = { flatcomposite, sky };
+			skyflat_t* newflat = (skyflat_t*)Z_Malloc(sizeof( skyflat_t ), PU_STATIC, nullptr);
+			*newflat = { flatnum, sky };
 
-	// 		skyflatlookup[ flatnum ] = newflat;
-	// 		flatcomposite->skyflat = newflat;
+			skyflatlookup[flatnum] = newflat;
 		}
 
 		return JL_SUCCESS;
@@ -554,7 +552,10 @@ inline bool R_PostDataIsTransparent(byte* data)
 	return false;
 }
 
-
+bool R_IsSkyFlat(int flatnum)
+{
+	return skyflatlookup.count(flatnum);
+}
 
 //
 // R_RenderSkyRange
