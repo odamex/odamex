@@ -221,7 +221,49 @@ struct sky_t
 OHashTable<std::string, sky_t*> skylookup;
 OHashTable<int32_t, sky_t*> skyflatlookup;
 
-sky_t* R_GetSky(const char* name, bool create);
+sky_t* R_GetSky(const char* name, bool create)
+{
+	std::string skytexname = name;
+	auto found = skylookup.find(name);
+	if (found != skylookup.end())
+	{
+		return found->second;
+	}
+
+	if(!create)
+	{
+		return nullptr;
+	}
+
+	int32_t tex = R_TextureNumForName(name);
+	if (tex < 0) return nullptr;
+
+	sky_t* sky = (sky_t*)Z_Malloc(sizeof(sky_t), PU_STATIC, nullptr);
+	sky->background.scalex = INT2FIXED(1);
+	sky->background.scaley = INT2FIXED(1);
+	sky->background.scrolly = INT2FIXED(0);
+	sky->background.mid = INT2FIXED(100);
+	if (level.flags & LEVEL_DOUBLESKY)
+	{
+		sky->background.texnum = R_TextureNumForName(level.skypic2.c_str());
+		sky->background.scrollx = level.sky2ScrollDelta;
+		sky->foreground.scrollx = level.sky1ScrollDelta;
+		sky->foreground.texnum = tex;
+		sky->foreground.scalex = INT2FIXED(1);
+		sky->foreground.scaley = INT2FIXED(1);
+		sky->foreground.scrolly = INT2FIXED(0);
+		sky->foreground.mid = INT2FIXED(100);
+	}
+	else
+	{
+		sky->background.texnum = tex;
+		sky->background.scrollx = level.sky1ScrollDelta;
+	}
+	sky->type = level.flags & LEVEL_DOUBLESKY ? SKY_DOUBLESKY : SKY_NORMAL;
+
+	skylookup[name] = sky;
+	return sky;
+}
 
 // [EB] adapted from Rum n Raisin r_sky.cpp
 void R_InitSkyDefs()
@@ -283,7 +325,6 @@ void R_InitSkyDefs()
 
 			if(sky->type == SKY_FIRE)
 			{
-				// TODO: fireskies
 				if(!fireelem.isObject()) return JL_PARSEERROR;
 
 				const Json::Value& firepalette    = fireelem["palette"];
@@ -291,10 +332,10 @@ void R_InitSkyDefs()
 
 				if(!firepalette.isArray()) return JL_PARSEERROR;
 				sky->numfireentries = (int32_t)firepalette.size();
-				// byte* output = sky->firepalette = (byte*)Z_MallocZero( sizeof( byte ) * sky->numfireentries, PU_STATIC, nullptr );
+				byte* output = sky->firepalette = (byte*)Z_Malloc(sizeof(byte) * sky->numfireentries, PU_STATIC, nullptr);
 				for(const Json::Value& palentry : firepalette)
 				{
-				// 	*output++ = palentry.asUInt();
+					*output++ = palentry.asUInt();
 				}
 				sky->fireticrate = (int32_t)(fireupdatetime.asFloat() * TICRATE);
 			}
@@ -337,7 +378,6 @@ void R_InitSkyDefs()
 			skylookup[skytexname] = sky;
 		}
 
-		// TODO: flatmappings
 		for(const Json::Value& flatentry : flatmappings)
 		{
 			const Json::Value& flatelem = flatentry["flat"];
@@ -364,11 +404,50 @@ void R_InitSkyDefs()
 void R_ClearSkyDefs()
 {
 	skylookup.clear();
+	skyflatlookup.clear();
+}
+
+void spreadFire(int y, byte* col, int firecolor)
+{
+    // col[y] = col[y + 1];
+    col[y] = firecolor;
 }
 
 static void R_UpdateFireSky(sky_t* sky)
 {
+	if (gametic % sky->fireticrate != 0) return;
+	int texnum = sky->background.texnum;
+	texture_t* tex = textures[texnum];
+    for (int x = 0 ; x < tex->width; x++)
+	{
+		tallpost_t* col = R_GetTextureColumn(texnum, x);
+		byte* coldata = col->data();
+		int fireindex = sky->numfireentries - 1;
+        for (int y = tex->height - 2; y >= 0; y--)
+		{
+			int rand = ((int)std::round(((double) std::rand() / (RAND_MAX)) * 3.0)) & 3;
+			fireindex = fireindex - (1 & rand);
+			fireindex = MAX(0, MIN(fireindex, sky->numfireentries - 1));
+            spreadFire(y, coldata, sky->firepalette[fireindex]);
+        }
+    }
+}
 
+void R_InitFireSky(sky_t* sky)
+{
+	std::srand(std::time(nullptr));
+	int texnum = sky->background.texnum;
+	texture_t* tex = textures[texnum];
+    for (int x = 0 ; x < tex->width; x++)
+	{
+		tallpost_t* col = R_GetTextureColumn(texnum, x);
+		byte* coldata = col->data();
+		coldata[tex->height - 1] = sky->firepalette[sky->numfireentries - 1];
+        for (int y = tex->height - 2; y >= 0; y--)
+		{
+			coldata[y] = sky->firepalette[0];
+        }
+    }
 }
 
 static void R_UpdateSky(sky_t* sky)
@@ -407,51 +486,11 @@ void R_InitSkiesForLevel()
 		skypair.second->foreground.curry = 0;
 		skypair.second->background.currx = 0;
 		skypair.second->background.curry = 0;
+		if (skypair.second->type == SKY_FIRE)
+		{
+			R_InitFireSky(skypair.second);
+		}
 	}
-}
-
-sky_t* R_GetSky(const char* name, bool create)
-{
-	std::string skytexname = name;
-	auto found = skylookup.find(name);
-	if (found != skylookup.end())
-	{
-		return found->second;
-	}
-
-	if(!create)
-	{
-		return nullptr;
-	}
-
-	int32_t tex = R_TextureNumForName(name);
-	if (tex < 0) return nullptr;
-
-	sky_t* sky = (sky_t*)Z_Malloc(sizeof(sky_t), PU_STATIC, nullptr);
-	sky->background.scalex = INT2FIXED(1);
-	sky->background.scaley = INT2FIXED(1);
-	sky->background.scrolly = INT2FIXED(0);
-	if (level.flags & LEVEL_DOUBLESKY)
-	{
-		sky->background.texnum = R_TextureNumForName(level.skypic2.c_str());
-		sky->background.scrollx = level.sky2ScrollDelta;
-		sky->foreground.scrollx = level.sky1ScrollDelta;
-		sky->foreground.texnum = tex;
-		sky->foreground.scalex = INT2FIXED(1);
-		sky->foreground.scaley = INT2FIXED(1);
-		sky->foreground.scrolly = INT2FIXED(0);
-	}
-	else
-	{
-		sky->background.texnum = tex;
-		sky->background.scrollx = level.sky1ScrollDelta;
-	}
-	// TODO: set mids correctly
-	// sky->background.mid = sdfgdfg
-	sky->type = level.flags & LEVEL_DOUBLESKY ? SKY_DOUBLESKY : SKY_NORMAL;
-
-	skylookup[name] = sky;
-	return sky;
 }
 
 void R_SetDefaultSky(const char* sky)
