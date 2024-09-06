@@ -220,16 +220,8 @@ struct sky_t
 	skytex_t foreground;
 };
 
-struct skyflat_t
-{
-	int    flat;
-	sky_t* sky;
-};
-
-skyflat_t* defaultskyflat = nullptr;
-
 OHashTable<std::string, sky_t*> skylookup;
-OHashTable<int32_t, skyflat_t*> skyflatlookup;
+OHashTable<int32_t, sky_t*> skyflatlookup;
 
 sky_t* R_GetSky(const char* name, bool create);
 
@@ -238,10 +230,7 @@ void R_InitSkyDefs()
 {
 	skyflatnum = R_FlatNumForName(SKYFLATNAME);
 
-	defaultskyflat = (skyflat_t*)Z_Malloc(sizeof(skyflat_t ), PU_STATIC, nullptr);
-	*defaultskyflat = { skyflatnum, nullptr };
-
-	skyflatlookup[skyflatnum] = defaultskyflat;
+	skyflatlookup[skyflatnum] = nullptr;
 
 	auto ParseSkydef = [](const Json::Value& elem, const JSONLumpVersion& version) -> jsonlumpresult_t
 	{
@@ -363,10 +352,7 @@ void R_InitSkyDefs()
 			std::string skyname = skyelem.asString();
 			sky_t* sky = R_GetSky(skyname.c_str(), true);
 
-			skyflat_t* newflat = (skyflat_t*)Z_Malloc(sizeof( skyflat_t ), PU_STATIC, nullptr);
-			*newflat = { flatnum, sky };
-
-			skyflatlookup[flatnum] = newflat;
+			skyflatlookup[flatnum] = sky;
 		}
 
 		return JL_SUCCESS;
@@ -473,7 +459,7 @@ sky_t* R_GetSky(const char* name, bool create)
 void R_SetDefaultSky(const char* sky)
 {
 	sky_t* skydef = R_GetSky(sky, true);
-	defaultskyflat->sky = skydef;
+	skyflatlookup[R_FlatNumForName(SKYFLATNAME)] = skydef;
 }
 
 // TODO: in R_PreCacheLevel, check if any of the skyflats are present and activate the corresponding skies
@@ -541,9 +527,9 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	if (skyflat != skyflatlookup.end())
 	{
-		sky = skyflat->second->sky;
+		sky = skyflat->second;
 		// use sky1
-		if (skyflat->second->sky->type == SKY_DOUBLESKY)
+		if (skyflat->second->type == SKY_DOUBLESKY)
 		{
 			frontskytex = texturetranslation[sky->foreground.texnum];
 			backskytex = texturetranslation[sky->background.texnum];
