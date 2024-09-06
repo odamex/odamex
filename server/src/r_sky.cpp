@@ -33,16 +33,16 @@
 int 		skyflatnum;
 int 		sky1texture, sky2texture;
 
-fixed_t		sky1scrollxdelta,	sky2scrollxdelta;
-fixed_t		sky1columnoffset,	sky2columnoffset;
-fixed_t		sky1scrollydelta,	sky2scrollydelta;
-fixed_t		sky1rowoffset,	    sky2rowoffset;
+fixed_t		sky2scrollxdelta;
+fixed_t		sky2columnoffset;
 
 char SKYFLATNAME[8] = "F_SKY1";
 
 void R_InitSkyDefs() {}
-bool R_LoadSkyDef(const OLumpName& skytex) { return false; }
+void R_InitSkiesForLevel() {}
 void R_ClearSkyDefs() {}
+void R_SetDefaultSky(const char* sky) {}
+void R_UpdateSkies() {}
 
 VERSION_CONTROL (r_sky_cpp, "$Id$")
 

@@ -31,14 +31,8 @@ extern int      sky1shift;				//		[ML] 5/11/06 - remove sky2 remenants
 extern int      sky2shift;
 extern int      sky1texture;				//		""
 extern int      sky2texture;				//		""
-extern fixed_t	sky1scrollxdelta;
 extern fixed_t	sky2scrollxdelta;
-extern fixed_t	sky1scrollydelta;
-extern fixed_t	sky2scrollydelta;
-extern fixed_t	sky1columnoffset;
 extern fixed_t	sky2columnoffset;
-extern fixed_t	sky1rowoffset;
-extern fixed_t	sky2rowoffset;
 extern fixed_t	sky1texturemid;
 extern fixed_t	sky2texturemid;
 extern int		skystretch;
@@ -51,7 +45,9 @@ EXTERN_CVAR (r_stretchsky)
 // Called whenever the sky changes.
 void R_InitSkyMap();
 void R_InitSkyDefs();
-bool R_LoadSkyDef(const OLumpName& skytex);
+void R_InitSkiesForLevel();
 void R_ClearSkyDefs();
+void R_SetDefaultSky(const char* sky);
+void R_UpdateSkies();
 
 void R_RenderSkyRange(visplane_t* pl);

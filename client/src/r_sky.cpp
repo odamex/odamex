@@ -58,7 +58,7 @@ fixed_t		skyheight;
 fixed_t		skyiscale;
 
 int			sky1shift,        sky2shift;
-fixed_t		sky1scrollxdelta, sky2scrollxdelta;
+fixed_t		sky2scrollxdelta;
 fixed_t		sky1columnoffset, sky2columnoffset;
 fixed_t		sky1scrollydelta, sky2scrollydelta;
 fixed_t		sky1rowoffset,    sky2rowoffset;
@@ -231,6 +231,8 @@ skyflat_t* defaultskyflat = nullptr;
 OHashTable<std::string, sky_t*> skylookup;
 OHashTable<int32_t, skyflat_t*> skyflatlookup;
 
+sky_t* R_GetSky(const char* name, bool create);
+
 // [EB] adapted from Rum n Raisin r_sky.cpp
 void R_InitSkyDefs()
 {
@@ -349,17 +351,17 @@ void R_InitSkyDefs()
 		}
 
 		// TODO: flatmappings
-	// 	for(const Json::Value& flatentry : flatmappings)
-	// 	{
-	// 		const Json::Value& flatelem = flatentry["flat"];
-	// 		const Json::Value& skyelem = flatentry["sky"];
+		for(const Json::Value& flatentry : flatmappings)
+		{
+			const Json::Value& flatelem = flatentry["flat"];
+			const Json::Value& skyelem = flatentry["sky"];
 
-	// 		std::string flatname = flatelem.asString();
-	// 		int32_t flatnum = R_FlatNumForName(flatname.c_str());
-	// 		if(flatnum < 0 || flatnum >= R_GetNumFlats()) return JL_PARSEERROR;
+			std::string flatname = flatelem.asString();
+			int32_t flatnum = R_FlatNumForName(flatname.c_str());
+			if(flatnum < 0 || flatnum >= ::numflats) return JL_PARSEERROR;
 
-	// 		std::string skyname = skyelem.asString();
-	// 		sky_t* sky = R_GetSky( skyname.c_str(), true );
+			std::string skyname = skyelem.asString();
+			sky_t* sky = R_GetSky(skyname.c_str(), true);
 
 	// 		texturecomposite_t* flatcomposite = flatlookup[ flatnum ];
 	// 		skyflat_t* newflat = (skyflat_t*)Z_MallocZero( sizeof( skyflat_t ), PU_STATIC, nullptr );
@@ -367,7 +369,7 @@ void R_InitSkyDefs()
 
 	// 		skyflatlookup[ flatnum ] = newflat;
 	// 		flatcomposite->skyflat = newflat;
-	// 	}
+		}
 
 		return JL_SUCCESS;
 	};
@@ -382,39 +384,147 @@ void R_ClearSkyDefs()
 	skylookup.clear();
 }
 
-bool R_LoadSkyDef(const OLumpName& skytex)
+bool R_InitSkiesForLevel(const OLumpName& skytex)
 {
-	const sky_t* sky = skylookup[std::string(skytex.c_str())];
-	if (sky == nullptr)
-		return false;
-	switch(sky->type)
+	for(auto& skypair : skylookup)
 	{
-		case SKY_NORMAL:
-			level.flags &= ~LEVEL_DOUBLESKY;
-			sky1texture = sky->background.texnum;
-			sky1scrollxdelta = sky->background.scrollx;
-			sky1scrollydelta = sky->background.scrolly;
-			sky1texturemid = sky->background.mid;
-			sky2texture = 0;
-			sky2scrollxdelta = 0;
-			sky2scrollydelta = 0;
-			sky2texturemid = 0;
-			break;
-		case SKY_FIRE:
-			break;
-		case SKY_DOUBLESKY:
-			level.flags |= LEVEL_DOUBLESKY;
-			sky1texture = sky->foreground.texnum;
-			sky1scrollxdelta = sky->foreground.scrollx;
-			sky1scrollydelta = sky->foreground.scrolly;
-			sky1texturemid = sky->foreground.mid;
-			sky2texture = sky->background.texnum;
-			sky2scrollxdelta = sky->background.scrollx;
-			sky2scrollydelta = sky->background.scrolly;
-			sky2texturemid = sky->background.mid;
-			break;
+		// TODO: change to false and correctly set if sky is active elsewhere
+		skypair.second->active = true;
+		skypair.second->foreground.currx = 0;
+		skypair.second->foreground.curry = 0;
+		skypair.second->background.currx = 0;
+		skypair.second->background.curry = 0;
 	}
+	// const sky_t* sky = skylookup[std::string(skytex.c_str())];
+	// if (sky == nullptr)
+	// 	return false;
+	// switch(sky->type)
+	// {
+	// 	case SKY_NORMAL:
+	// 		level.flags &= ~LEVEL_DOUBLESKY;
+	// 		sky1texture = sky->background.texnum;
+	// 		sky1scrollxdelta = sky->background.scrollx;
+	// 		sky1scrollydelta = sky->background.scrolly;
+	// 		sky1texturemid = sky->background.mid;
+	// 		sky2texture = 0;
+	// 		sky2scrollxdelta = 0;
+	// 		sky2scrollydelta = 0;
+	// 		sky2texturemid = 0;
+	// 		break;
+	// 	case SKY_FIRE:
+	// 		break;
+	// 	case SKY_DOUBLESKY:
+	// 		level.flags |= LEVEL_DOUBLESKY;
+	// 		sky1texture = sky->foreground.texnum;
+	// 		sky1scrollxdelta = sky->foreground.scrollx;
+	// 		sky1scrollydelta = sky->foreground.scrolly;
+	// 		sky1texturemid = sky->foreground.mid;
+	// 		sky2texture = sky->background.texnum;
+	// 		sky2scrollxdelta = sky->background.scrollx;
+	// 		sky2scrollydelta = sky->background.scrolly;
+	// 		sky2texturemid = sky->background.mid;
+	// 		break;
+	// }
 	return true;
+}
+
+static void R_UpdateFireSky(sky_t* sky)
+{
+
+}
+
+static void R_UpdateSky(sky_t* sky)
+{
+	sky->foreground.currx += sky->foreground.scrollx;
+	sky->foreground.curry += sky->foreground.scrolly;
+
+	sky->background.currx += sky->background.scrollx;
+	sky->background.curry += sky->background.scrolly;
+
+	if(sky->type == SKY_FIRE)
+	{
+		R_UpdateFireSky(sky);
+	}
+}
+
+
+void R_UpdateSkies()
+{
+	for(auto& skypair : skylookup)
+	{
+		if(skypair.second->active)
+		{
+			R_UpdateSky(skypair.second);
+		}
+	}
+}
+
+void R_InitSkiesForLevel()
+{
+	for(auto& skypair : skylookup)
+	{
+		// TODO: change to false and correctly set if sky is active elsewhere
+		skypair.second->active = true;
+		skypair.second->foreground.currx = 0;
+		skypair.second->foreground.curry = 0;
+		skypair.second->background.currx = 0;
+		skypair.second->background.curry = 0;
+	}
+}
+
+sky_t* R_GetSky(const char* name, bool create)
+{
+	std::string skytexname = name;
+	auto found = skylookup.find(name);
+	if (found != skylookup.end())
+	{
+		return found->second;
+	}
+
+	if(!create)
+	{
+		return nullptr;
+	}
+
+	int32_t tex = R_TextureNumForName(name);
+	if (tex < 0) return nullptr;
+
+	sky_t* sky = (sky_t*)Z_Malloc(sizeof(sky_t), PU_STATIC, nullptr);
+	sky->background.scalex = INT2FIXED(1);
+	sky->background.scaley = INT2FIXED(1);
+	sky->background.scrolly = INT2FIXED(0);
+	if (level.flags & LEVEL_DOUBLESKY)
+	{
+		sky->background.texnum = R_TextureNumForName(level.skypic2.c_str());
+		sky->background.scrollx = level.sky2ScrollDelta;
+		sky->foreground.scrollx = level.sky1ScrollDelta;
+		sky->foreground.texnum = tex;
+		sky->foreground.scalex = INT2FIXED(1);
+		sky->foreground.scaley = INT2FIXED(1);
+		sky->foreground.scrolly = INT2FIXED(0);
+	}
+	else
+	{
+		sky->background.texnum = tex;
+		sky->background.scrollx = level.sky1ScrollDelta;
+	}
+	// TODO: set mids correctly
+	// sky->background.mid = sdfgdfg
+	sky->type = level.flags & LEVEL_DOUBLESKY ? SKY_DOUBLESKY : SKY_NORMAL;
+
+	skylookup[name] = sky;
+	return sky;
+}
+
+void R_SetDefaultSky(const char* sky)
+{
+	sky_t* skydef = R_GetSky(sky, true);
+	defaultskyflat->sky = skydef;
+}
+
+void R_ActivateSky( sky_t* sky )
+{
+	sky->active = true;
 }
 
 //
@@ -468,22 +578,26 @@ void R_RenderSkyRange(visplane_t* pl)
 	fixed_t backrow_offset = 0;
 	angle_t skyflip = 0;
 
-	if (pl->picnum == skyflatnum)
+	auto skyflat = skyflatlookup.find(pl->picnum);
+	sky_t* sky = nullptr;
+
+	if (skyflat != skyflatlookup.end())
 	{
+		sky = skyflat->second->sky;
 		// use sky1
-		frontskytex = texturetranslation[sky1texture];
-		if (level.flags & LEVEL_DOUBLESKY)
+		if (skyflat->second->sky->type == SKY_DOUBLESKY)
 		{
-			backskytex = texturetranslation[sky2texture];
+			frontskytex = texturetranslation[sky->foreground.texnum];
+			backskytex = texturetranslation[sky->background.texnum];
+			front_offset = sky->foreground.currx;
+			back_offset = sky->background.currx;
 		}
 		else
 		{
+			frontskytex = texturetranslation[sky->background.texnum];
 			backskytex = -1;
+			front_offset = sky->background.currx;
 		}
-		front_offset = sky1columnoffset;
-		back_offset = sky2columnoffset;
-		frontrow_offset = sky1rowoffset;
-		backrow_offset = sky2rowoffset;
 	}
 	else if (pl->picnum == int(PL_SKYFLAT))
 	{
@@ -527,7 +641,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	const palette_t* pal = V_GetDefaultPalette();
 
 	dcol.iscale = skyiscale >> skystretch;
-	dcol.texturemid = sky1texturemid + sky1rowoffset;
+	dcol.texturemid = sky1texturemid;
 	dcol.textureheight = textureheight[frontskytex]; // both skies are forced to be the same height anyway
 	dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
 	skyplane = pl;

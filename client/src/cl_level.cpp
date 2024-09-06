@@ -539,35 +539,31 @@ void G_DoLoadLevel (int position)
 	//	setting one.
 	skyflatnum = R_FlatNumForName ( SKYFLATNAME );
 
-	if(!R_LoadSkyDef(level.skypic))
+	R_SetDefaultSky(level.skypic.c_str());
+
+	R_InitSkiesForLevel();
+
+	// DOOM determines the sky texture to be used
+	// depending on the current episode, and the game version.
+	// [RH] Fetch sky parameters from level_locals_t.
+	// [ML] 5/11/06 - remove sky2 remenants
+	// [SL] 2012-03-19 - Add sky2 back
+	// TODO: remove this except for sky2 stuff (for non doublesky use of sky2)
+	sky1texture = R_TextureNumForName(level.skypic.c_str());
+	if (!level.skypic2.empty())
 	{
-		// DOOM determines the sky texture to be used
-		// depending on the current episode, and the game version.
-		// [RH] Fetch sky parameters from level_locals_t.
-		// [ML] 5/11/06 - remove sky2 remenants
-		// [SL] 2012-03-19 - Add sky2 back
-		sky1texture = R_TextureNumForName(level.skypic.c_str());
-		sky1scrollxdelta = level.sky1ScrollDelta;
-		if (!level.skypic2.empty())
-		{
-			sky2texture = R_TextureNumForName(level.skypic2.c_str());
-			sky2scrollxdelta = level.sky2ScrollDelta;
-		}
-		else
-		{
-			sky2texture = 0;
-			sky2scrollxdelta = 0;
-		}
-		sky1scrollydelta = 0;
-		sky2scrollydelta = 0;
-
+		sky2texture = R_TextureNumForName(level.skypic2.c_str());
+		sky2scrollxdelta = level.sky2ScrollDelta;
 	}
-
-	sky1columnoffset = 0;
+	else
+	{
+		sky2texture = 0;
+		sky2scrollxdelta = 0;
+	}
 	sky2columnoffset = 0;
 
 	// [RH] Set up details about sky rendering
-	R_InitSkyMap ();
+	R_InitSkyMap();
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
