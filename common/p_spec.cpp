@@ -2272,7 +2272,9 @@ void P_UpdateSpecials (void)
 		}
 	}
 
+	#ifdef CLIENT_APP
 	R_UpdateSkies();
+	#endif
 }
 
 

@@ -991,7 +991,9 @@ void R_InitData()
 	R_InitTextures();
 	R_InitFlats();
 	R_InitSpriteLumps();
+	#ifdef CLIENT_APP
 	R_InitSkyDefs();
+	#endif
 
 	// haleyjd 01/28/10: also initialize tantoangle_acc table
 	Table_InitTanToAngle();
