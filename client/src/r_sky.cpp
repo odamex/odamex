@@ -382,50 +382,6 @@ void R_ClearSkyDefs()
 	skylookup.clear();
 }
 
-bool R_InitSkiesForLevel(const OLumpName& skytex)
-{
-	for(auto& skypair : skylookup)
-	{
-		// TODO: change to false and correctly set if sky is active elsewhere
-		skypair.second->active = true;
-		skypair.second->foreground.currx = 0;
-		skypair.second->foreground.curry = 0;
-		skypair.second->background.currx = 0;
-		skypair.second->background.curry = 0;
-	}
-	// const sky_t* sky = skylookup[std::string(skytex.c_str())];
-	// if (sky == nullptr)
-	// 	return false;
-	// switch(sky->type)
-	// {
-	// 	case SKY_NORMAL:
-	// 		level.flags &= ~LEVEL_DOUBLESKY;
-	// 		sky1texture = sky->background.texnum;
-	// 		sky1scrollxdelta = sky->background.scrollx;
-	// 		sky1scrollydelta = sky->background.scrolly;
-	// 		sky1texturemid = sky->background.mid;
-	// 		sky2texture = 0;
-	// 		sky2scrollxdelta = 0;
-	// 		sky2scrollydelta = 0;
-	// 		sky2texturemid = 0;
-	// 		break;
-	// 	case SKY_FIRE:
-	// 		break;
-	// 	case SKY_DOUBLESKY:
-	// 		level.flags |= LEVEL_DOUBLESKY;
-	// 		sky1texture = sky->foreground.texnum;
-	// 		sky1scrollxdelta = sky->foreground.scrollx;
-	// 		sky1scrollydelta = sky->foreground.scrolly;
-	// 		sky1texturemid = sky->foreground.mid;
-	// 		sky2texture = sky->background.texnum;
-	// 		sky2scrollxdelta = sky->background.scrollx;
-	// 		sky2scrollydelta = sky->background.scrolly;
-	// 		sky2texturemid = sky->background.mid;
-	// 		break;
-	// }
-	return true;
-}
-
 static void R_UpdateFireSky(sky_t* sky)
 {
 
@@ -520,7 +476,8 @@ void R_SetDefaultSky(const char* sky)
 	defaultskyflat->sky = skydef;
 }
 
-void R_ActivateSky( sky_t* sky )
+// TODO: in R_PreCacheLevel, check if any of the skyflats are present and activate the corresponding skies
+void R_ActivateSky(sky_t* sky)
 {
 	sky->active = true;
 }

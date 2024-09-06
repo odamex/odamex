@@ -38,11 +38,11 @@ fixed_t		sky2columnoffset;
 
 char SKYFLATNAME[8] = "F_SKY1";
 
-void R_InitSkyDefs() {}
-void R_InitSkiesForLevel() {}
-void R_ClearSkyDefs() {}
-void R_SetDefaultSky(const char* sky) {}
-void R_UpdateSkies() {}
+// void R_InitSkyDefs() {}
+// void R_InitSkiesForLevel() {}
+// void R_ClearSkyDefs() {}
+// void R_SetDefaultSky(const char* sky) {}
+// void R_UpdateSkies() {}
 
 VERSION_CONTROL (r_sky_cpp, "$Id$")
 
