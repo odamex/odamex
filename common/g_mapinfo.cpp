@@ -245,7 +245,7 @@ void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 		if (os.compareTokenNoCase("="))
 		{
 			info.must_confirm_text.clear();
-			
+
 			do
 			{
 				os.mustScan();
@@ -742,8 +742,21 @@ void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 	if (IsNum(os.getToken().c_str()))
 	{
 		const int num = os.getTokenInt();
-		if (num > 0)
-			*static_cast<int*>(data) |= (1 << (num - 1));
+		switch (num)
+		{
+			case 1:
+			case 2:
+				*static_cast<int*>(data) |= 1;
+				break;
+			case 3:
+				*static_cast<int*>(data) |= 2;
+				break;
+			case 4:
+			case 5:
+				*static_cast<int*>(data) |= 4;
+				break;
+			default:
+		}
 	}
 	else
 	{
@@ -770,7 +783,7 @@ void MIType_Map07Special(OScanner& os, bool newStyleMapInfo, void* data, unsigne
 	// mancubus
 	bossactionvector.push_back(bossaction_t());
 	std::vector<bossaction_t>::iterator it = (bossactionvector.end() - 1);
-	
+
 	it->type = MT_FATSO;
 	it->special = 23;
 	it->tag = 666;
@@ -778,7 +791,7 @@ void MIType_Map07Special(OScanner& os, bool newStyleMapInfo, void* data, unsigne
 	// arachnotron
 	bossactionvector.push_back(bossaction_t());
 	it = (bossactionvector.end() - 1);
-	
+
 	it->type = MT_BABY;
 	it->special = 30;
 	it->tag = 667;
@@ -949,7 +962,7 @@ bool ScanAndSetRealNum(OScanner& os, fixed_t& num)
 		return false;
 	}
 	num = FLOAT2FIXED(os.getTokenFloat());
-	
+
 	return true;
 }
 
@@ -969,12 +982,12 @@ bool InterpretLines(const std::string& name, std::vector<mline_t>& lines)
 		    true,         // cComments
 		};
 		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
-		
+
 		while (os.scan())
 		{
 			os.unScan();
 			mline_t ml;
-			
+
 			if (!ScanAndCompareString(os, "(")) break;
 			if (!ScanAndSetRealNum(os, ml.a.x)) break;
 			if (!ScanAndCompareString(os, ",")) break;
@@ -1606,7 +1619,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				    LEVEL_NOINTERMISSION | LEVEL_EVENLIGHTING | LEVEL_SNDSEQTOTALCTRL;
 			}
 
-			// Build upon already defined levels, that way we don't miss any defaults 
+			// Build upon already defined levels, that way we don't miss any defaults
 			bool levelExists = levels.findByName(map_name).exists();
 
 			// Find the level.
