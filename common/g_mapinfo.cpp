@@ -756,6 +756,7 @@ void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 				*static_cast<int*>(data) |= 4;
 				break;
 			default:
+				return;
 		}
 	}
 	else
