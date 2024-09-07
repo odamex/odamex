@@ -138,8 +138,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 
 	C_HideConsole();
 
-	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	std::string wadstr = C_QuoteString(str);
+	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
 	G_LoadWadString(wadstr);
 
 	D_StartTitle ();

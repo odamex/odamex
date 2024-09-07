@@ -10,7 +10,7 @@ jobs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
@@ -21,7 +21,7 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install Python packages
@@ -71,7 +71,7 @@ jobs:
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
         B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Upload artifact to Github
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-Win-x64
         path: 'build/artifact/*'
@@ -80,7 +80,7 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install Python packages
@@ -101,7 +101,7 @@ jobs:
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
         B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Upload artifact to Github
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-Win-x32
         path: 'build/artifact/*'
