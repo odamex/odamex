@@ -78,6 +78,9 @@ void M_PopMenuStack (void);
 // [RH] Called whenever the display mode changes
 void M_RefreshModesList ();
 
+// [EB] similar to replaceEscapes for strings that dont come from languages lump
+std::string M_ReplaceEscapes(std::string str);
+
 //
 // MENU TYPEDEFS
 //
@@ -149,7 +152,7 @@ typedef struct menu_s {
 	int				indent;
 	menuitem_t	   *items;
 	int				scrolltop;
-	int				scrollpos;	
+	int				scrollpos;
 	void			(*refreshfunc)();	// Callback func for M_OptResponder
 } menu_t;
 

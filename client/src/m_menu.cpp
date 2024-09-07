@@ -1044,7 +1044,7 @@ void M_DrawEpisode()
 	{
 		y -= (LINEHEIGHT * (episodenum - 4));
 	}
-		
+
 	screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
 }
 
@@ -1113,7 +1113,7 @@ void M_ChooseSkill(int choice)
 			M_StartMessage(GStrings(StdStringToUpper(must_confirm_text + 1)),
 		               M_VerifyNightmare, true);
 		else
-			M_StartMessage(must_confirm_text, M_VerifyNightmare, true);
+			M_StartMessage(M_ReplaceEscapes(must_confirm_text).c_str(), M_VerifyNightmare, true);
 
 		skillchoice = choice;
 
@@ -1875,7 +1875,7 @@ bool M_Responder (event_t* ev)
 	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
 		return false;
 
-	// Transfer any action to the Options Menu Responder 
+	// Transfer any action to the Options Menu Responder
 	// if we're not on the main menu.
 	if (menuactive && OptionsActive) {
 		M_OptResponder (ev);
@@ -1909,7 +1909,7 @@ bool M_Responder (event_t* ev)
 				saveCharIndex--;
 				savegamestrings[saveSlot][saveCharIndex] = 0;
 			}
-		} 
+		}
 		else if (Key_IsCancelKey(ch))
 		{
 			genStringEnter = 0;
@@ -1923,8 +1923,8 @@ bool M_Responder (event_t* ev)
 			if (savegamestrings[saveSlot][0])
 				genStringEnd(saveSlot);	// [RH] Function to call when enter is pressed
 		}
-		else 
-		{ 
+		else
+		{
 			ch = ev->data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
@@ -1943,8 +1943,8 @@ bool M_Responder (event_t* ev)
 	if (messageToPrint)
 	{
 		if (messageNeedsInput &&
-		    (!(ch2 == ' ' || Key_IsMenuKey(ch) || Key_IsYesKey(ch) || Key_IsNoKey(ch) || 
-			(isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y'))))) 
+		    (!(ch2 == ' ' || Key_IsMenuKey(ch) || Key_IsYesKey(ch) || Key_IsNoKey(ch) ||
+			(isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')))))
 			return true;
 
 		menuactive = messageLastMenuActive;
@@ -2323,5 +2323,30 @@ size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length)
     return MAXINT;    // indicate not found
 }
 
+std::string M_ReplaceEscapes(std::string str)
+{
+	size_t index = 0;
+
+	for (;;)
+	{
+		// Find the initial slash.
+		index = str.find("\\", index);
+		if (index == std::string::npos || index == str.length() - 1)
+			break;
+
+		// Substitute the escape string.
+		switch (str.at(index + 1))
+		{
+		case 'n':
+			str.replace(index, 2, "\n");
+			break;
+		case '\\':
+			str.replace(index, 2, "\\");
+			break;
+		}
+		index += 1;
+	}
+	return str;
+}
 
 VERSION_CONTROL (m_menu_cpp, "$Id$")
