@@ -294,6 +294,7 @@ void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 			os.unScan();
 		}
 	}
+	StringTable::replaceEscapes(info.must_confirm_text);
 }
 
 // Sets the inputted data as a char

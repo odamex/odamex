@@ -1113,7 +1113,7 @@ void M_ChooseSkill(int choice)
 			M_StartMessage(GStrings(StdStringToUpper(must_confirm_text + 1)),
 		               M_VerifyNightmare, true);
 		else
-			M_StartMessage(M_ReplaceEscapes(must_confirm_text).c_str(), M_VerifyNightmare, true);
+			M_StartMessage(must_confirm_text, M_VerifyNightmare, true);
 
 		skillchoice = choice;
 
@@ -2321,32 +2321,6 @@ size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length)
 	}
 
     return MAXINT;    // indicate not found
-}
-
-std::string M_ReplaceEscapes(std::string str)
-{
-	size_t index = 0;
-
-	for (;;)
-	{
-		// Find the initial slash.
-		index = str.find("\\", index);
-		if (index == std::string::npos || index == str.length() - 1)
-			break;
-
-		// Substitute the escape string.
-		switch (str.at(index + 1))
-		{
-		case 'n':
-			str.replace(index, 2, "\n");
-			break;
-		case '\\':
-			str.replace(index, 2, "\\");
-			break;
-		}
-		index += 1;
-	}
-	return str;
 }
 
 VERSION_CONTROL (m_menu_cpp, "$Id$")
