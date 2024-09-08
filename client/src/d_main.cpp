@@ -901,7 +901,7 @@ void D_DoomMain()
 	g_resetinvonexit = Args.CheckParm("-pistolstart");
 
 	// Multiplayer things
-	if (Args.CheckParm("-netthings"))
+	if (Args.CheckParm("-coop-things"))
 		g_thingfilter = -1;
 
 	// get skill / episode / map from parms

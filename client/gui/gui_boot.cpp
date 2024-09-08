@@ -126,7 +126,7 @@ class BootWindow : public Fl_Window
 		OPTIONS_LIST.push_back(std::make_pair("Fast Monsters", "-fast"));
 		OPTIONS_LIST.push_back(std::make_pair("Respawn Monsters", "-respawn"));
 		OPTIONS_LIST.push_back(std::make_pair("Pistol Start", "-pistolstart"));
-		OPTIONS_LIST.push_back(std::make_pair("Multiplayer Things", "-netthings"));
+		OPTIONS_LIST.push_back(std::make_pair("Multiplayer Things", "-coop-things"));
 		{
 			Fl_Tabs* tabs = new Fl_Tabs(0, 0, 425, 200);
 			{

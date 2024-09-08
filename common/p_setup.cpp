@@ -693,7 +693,7 @@ void P_LoadThings (int lump)
 		{
 			#ifdef SERVER_APP
 			if (G_IsCoopGame())
-			{
+			{ 
 				if (g_thingfilter == 1)
 					mt2.flags |= MTF_FILTER_COOPWPN;
 				else if (g_thingfilter == 2)
@@ -1117,7 +1117,7 @@ static argb_t P_GetColorFromTextureName(const char* name)
 // value is used for the appropriate sector blend. If the texture name
 // is an ARGB value in hexadecimal, that value is used for the appropriate
 // sector blend.
-//
+// 
 void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 {
 	sector_t* sec = &sectors[LESHORT(msd->sector)];
@@ -1171,7 +1171,7 @@ void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 	}
 }
 
-//
+// 
 
 
 void SetTextureNoErr (short *texture, unsigned int *color, char *name)
@@ -1587,11 +1587,11 @@ void P_LoadBlockMap (int lump)
 
 /*
 * @brief P_GenerateUniqueMapFingerPrint
-*
+* 
 * Creates a unique map fingerprint used to identify a unique map.
 * Based on a few key lumps that makes a map unique.
-*
-* @param maplumpnum - Lump offset number of the specified map
+* 
+* @param maplumpnum - Lump offset number of the specified map 
 * If it is, use it as part of the map calculation.
 */
 void P_GenerateUniqueMapFingerPrint(int maplumpnum)
@@ -1867,7 +1867,7 @@ void P_SetupLevel (const char *lumpname, int position)
 		}
 	}
 
-	// To use the correct nodes for
+	// To use the correct nodes for 
 
 	// Initial height of PointOfView will be set by player think.
 	consoleplayer().viewz = 1;
