@@ -408,11 +408,18 @@ void R_ClearSkyDefs()
 	skyflatlookup.clear();
 }
 
-void spreadFire(int y, byte* col, int firecolor)
+void spreadFire(int src, byte* firePixels, int FIRE_WIDTH, int numfire)
 {
-    // col[y] = col[y + 1];
-    col[y] = firecolor;
+	byte pixel = firePixels[src];
+	if(pixel == 0) {
+		firePixels[src - FIRE_WIDTH] = 0;
+	} else {
+		int rand = (int)std::round(M_RandomFloat() * 3.0) & 3;
+		firePixels[(src - rand + 1) - FIRE_WIDTH] = pixel - (rand & 1);
+	}
 }
+
+byte* paletteindices;
 
 static void R_UpdateFireSky(sky_t* sky)
 {
@@ -421,17 +428,20 @@ static void R_UpdateFireSky(sky_t* sky)
 	texture_t* tex = textures[texnum];
     for (int x = 0 ; x < tex->width; x++)
 	{
-		tallpost_t* col = R_GetTextureColumn(texnum, x);
-		byte* coldata = col->data();
-		int fireindex = sky->numfireentries - 1;
-        for (int y = tex->height - 2; y >= 0; y--)
+        for (int y = 1; y < tex->height; y++)
 		{
-			int rand = (int)(M_RandomFloat() * 3.0) & 3;
-			fireindex = fireindex - (1 & rand);
-			fireindex = MAX(0, MIN(fireindex, sky->numfireentries - 1));
-            spreadFire(y, coldata, sky->firepalette[fireindex]);
+            spreadFire(y * tex->width + x, paletteindices, tex->width, sky->numfireentries);
         }
     }
+	byte* coldata;
+	for (int x = 0; x < tex->width; x++)
+	{
+		coldata = R_GetTextureColumnData(texnum, x);
+		for (int y = 0; y < tex->height; y++)
+		{
+			coldata[y] = sky->firepalette[paletteindices[y * tex->width + x]];
+		}
+	}
 }
 
 void R_InitFireSky(sky_t* sky)
@@ -439,16 +449,18 @@ void R_InitFireSky(sky_t* sky)
 	std::srand(std::time(nullptr));
 	int texnum = sky->background.texnum;
 	texture_t* tex = textures[texnum];
-    for (int x = 0 ; x < tex->width; x++)
+	paletteindices = (byte*)Z_Malloc(sizeof(byte) * tex->width * tex->height, PU_STATIC, nullptr);
+    for (int i = 0 ; i < tex->width*tex->height; i++)
 	{
-		tallpost_t* col = R_GetTextureColumn(texnum, x);
-		byte* coldata = col->data();
-		coldata[tex->height - 1] = sky->firepalette[sky->numfireentries - 1];
-        for (int y = tex->height - 2; y >= 0; y--)
-		{
-			coldata[y] = sky->firepalette[0];
-        }
+		paletteindices[i] = 0;
     }
+	for (int i = 0 ; i < tex->width; i++)
+	{
+		paletteindices[(tex->height - 1) * tex->width + i] = sky->numfireentries - 1;
+    }
+	for (int i = 0; i < 64; i++) {
+		R_UpdateFireSky(sky);
+	}
 }
 
 static void R_UpdateSky(sky_t* sky)
