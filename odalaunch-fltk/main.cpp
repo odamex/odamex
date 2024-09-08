@@ -22,6 +22,8 @@
 
 #include "odalaunch.h"
 
+#include "main.h"
+
 #include "FL/Fl.H"
 
 #include "db.h"
@@ -29,19 +31,25 @@
 #include "net_io.h"
 #include "work_thread.h"
 
+/******************************************************************************/
+
 globals_t g;
 
-static void Shutdown()
+/******************************************************************************/
+
+void Main_Shutdown()
 {
 	Work_Deinit();
 	odalpapi::BufferedSocket::ShutdownSocketAPI();
 	DB_DeInit();
+
+	exit(EXIT_SUCCESS);
 }
+
+/******************************************************************************/
 
 int main(int argc, char** argv)
 {
-	atexit(Shutdown);
-
 	if (!DB_Init())
 	{
 		Fl::error("Could not initialize database.");

@@ -33,6 +33,7 @@
 #include "gui/options_window.h"
 #include "gui/server_table.h"
 #include "gui/server_window.h"
+#include "main.h"
 
 /******************************************************************************/
 
@@ -77,7 +78,7 @@ static void OptionsAction(Fl_Widget*, void*)
 
 static void QuitAction(Fl_Widget*, void*)
 {
-	exit(EXIT_SUCCESS);
+	Main_Shutdown();
 }
 
 /******************************************************************************/
@@ -98,26 +99,21 @@ MainWindow::MainWindow(int w, int h, const char* title) : Fl_Window(w, h, title)
 	    {"Quit", 0, QuitAction, nullptr, FL_MENU_DIVIDER});
 	m_menuItems.push_back({0});
 
-	// Filter row
+	// Tool bar.
 	auto menu = new Fl_Menu_Button(5, 5, 105, 20, "Odalaunch");
 	menu->menu(m_menuItems.data());
 
-	// new Fl_Toggle_Button(5, 5, 105, 20, "Passworded");
-	new Fl_Toggle_Button(115, 5, 105, 20, "Full");
-	new Fl_Toggle_Button(225, 5, 105, 20, "Empty");
-	new Fl_Menu_Button(335, 5, 105, 20, "Ping");
-	new Fl_Input(465, 5, w - 470, 20, "@search");
-
-	// Main list
+	// Main list.
 	m_serverTable = new ServerTable(5, 30, w - 10, h - 60);
 	m_serverTable->end();
 
-	// Verb row
-	new Fl_Button(w - 330, h - 25, 105, 20, "Get New List");
-	new Fl_Button(w - 220, h - 25, 105, 20, "Refresh List");
-	new Fl_Button(w - 110, h - 25, 105, 20, "Join");
+	// Status bar.
+	m_statusBar = new Fl_Group(0, h - 25, w, 25);
+	m_statusBar->align(FL_ALIGN_RIGHT | FL_ALIGN_INSIDE);
+	m_statusBar->box(FL_DOWN_FRAME);
 
-	resizable(this);
+	resizable(m_serverTable);
+	callback(QuitAction); // Called when window is closed.
 }
 
 /******************************************************************************/

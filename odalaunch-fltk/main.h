@@ -16,41 +16,21 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Main window
+//  Main application sequence
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
-#include <vector>
+// Global variables.
 
-#include "server_table.h"
+class MainWindow;
 
-#include "FL/Fl_Menu_Item.H"
-#include "FL/Fl_Window.H"
-
-class MainWindow final : public Fl_Window
+struct globals_t
 {
-	std::vector<Fl_Menu_Item> m_menuItems;
-	ServerTable* m_serverTable;
-	Fl_Group* m_statusBar;
-
-public:
-	MainWindow() : MainWindow(640, 480, "Odalaunch") { }
-	MainWindow(int w, int h, const char* title = 0);
-
-	/**
-	 * @brief Get the server table - for selection.
-	 */
-	ServerTable* getServerTable() { return m_serverTable; }
-
-	/**
-	 * @brief Get he status bar - for updating the status text.
-	 */
-	Fl_Group* getStatusBar() { return m_statusBar; }
-
-	/**
-	 * @brief Redraw the servers widget.  Only call from the main thread.
-	 */
-	void redrawServers();
+	MainWindow* mainWindow = nullptr;
 };
+
+extern globals_t g;
+
+void Main_Shutdown();

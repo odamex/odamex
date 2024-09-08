@@ -22,7 +22,7 @@
 
 #include "work_thread.h"
 
-#include <stddef.h>
+#include <cstddef>
 #include <thread>
 
 #include "concurrentqueue.h"
@@ -30,9 +30,12 @@
 
 #include "db.h"
 #include "log.h"
+#include "main.h"
 #include "gui/main_window.h"
 #include "net_packet.h"
 #include "plat.h"
+
+/******************************************************************************/
 
 enum class jobSignal_e
 {
@@ -60,6 +63,7 @@ struct workerMessage_t
 	std::string server;
 };
 
+static std::thread::id g_hMainThread;
 static std::atomic<jobSignal_e> g_eJobSignal;
 static std::atomic<uint64_t> g_qwGeneration;
 static moodycamel::ConcurrentQueue<workerMessage_t> g_cJobQueue;
@@ -176,6 +180,7 @@ static void WorkerProc()
 		switch (g_eJobSignal)
 		{
 		case jobSignal_e::QUIT: {
+			Log_Debug("QUIT signal - {}.\n", std::this_thread::get_id());
 			return;
 		}
 		case jobSignal_e::REFRESH_ALL: {
@@ -207,6 +212,7 @@ static void WorkerProc()
  */
 void Work_Init()
 {
+	g_hMainThread = std::this_thread::get_id();
 	g_eJobSignal = jobSignal_e::NONE;
 	g_cJobQueue.try_enqueue({workerMessage_t::message_e::REFRESH_MASTER, ""});
 
@@ -222,9 +228,12 @@ void Work_Init()
  */
 void Work_Deinit()
 {
+	assert(g_hMainThread == std::this_thread::get_id());
+
 	g_eJobSignal = jobSignal_e::QUIT;
 	for (uint32_t i = 0; i < g_ncThreads.size(); i++)
 	{
+		Log_Debug("Joining thread {}.\n", g_ncThreads[i].get_id());
 		g_ncThreads[i].join();
 	}
 }

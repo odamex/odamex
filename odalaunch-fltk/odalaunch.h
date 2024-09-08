@@ -29,6 +29,7 @@
 #include <cstdint>
 
 #include <fmt/core.h>
+#include <fmt/std.h>
 #include <string>
 
 // Utility functions and classes.
@@ -92,14 +93,3 @@ std::string AddressCombine(const std::string& address, const uint16_t port);
  *        parts.
  */
 void AddressSplit(std::string& outIp, uint16_t& outPort, const std::string& address);
-
-// Global variables.
-
-class MainWindow;
-
-struct globals_t
-{
-	MainWindow* mainWindow = nullptr;
-};
-
-extern globals_t g;
