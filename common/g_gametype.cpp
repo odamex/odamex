@@ -778,6 +778,35 @@ void G_TeamScoreCheckEndGame()
 	}
 }
 
+// [Acts 19 quiz] We keep track of whether or not the last player hype message
+// has been displayed in a given Horde wave or Survival Co-op map.
+bool lastplayerhype = false;
+bool lastblueplayerhype = false;
+bool lastredplayerhype = false;
+bool lastgreenplayerhype = false;
+
+void G_ResetLastPlayer()
+{
+	lastplayerhype = false;
+}
+
+void G_ResetTeamLastPlayer()
+{
+	lastblueplayerhype = false;
+	lastredplayerhype = false;
+	lastgreenplayerhype = false;
+}
+
+// [Acts 19 quiz] This is duplicated from sv_main.cpp because we can't copy the
+// define from sv_main.h into doomtype.h. Everything that references doomtype.h
+// bugs out when trying to define what player_t* is.
+void CL_MidPrint(const char* msg, player_t* p, int msgtime)
+{
+	client_t* cl = &p->client;
+
+	MSG_WriteSVC(&cl->reliablebuf, SVC_MidPrint(msg, msgtime));
+}
+
 /**
  * @brief Check to see if we should end the game on lives.
  */
@@ -793,8 +822,24 @@ void G_LivesCheckEndGame()
 	{
 		// Everybody losing their lives in coop is a failure.
 		PlayerResults pr = PlayerQuery().hasLives().execute();
-		if (pr.count == 0)
+		if (pr.count == 1 && P_NumPlayersInGame() > 1 && !lastplayerhype)
 		{
+			lastplayerhype = true;
+			SV_BroadcastPrintfButPlayer(PRINT_HIGH, pr.players.front()->id,
+			                            "%s is the last player alive!\n",
+			                            pr.players.front()->userinfo.netname.c_str());
+			CL_MidPrint("You're the last player alive.\nGood luck!\n",
+				         &idplayer(pr.players.front()->id), 3);
+		}
+		// [Acts 19 quiz] If new players join or a new map starts, we want to
+		// be able to display the hype message again.
+		else if (pr.count > 1)
+		{
+			G_ResetLastPlayer();
+		}
+		else if (pr.count == 0)
+		{
+			G_ResetLastPlayer();
 			SV_BroadcastPrintf("All players have run out of lives.\n");
 			::levelstate.setWinner(WinInfo::WIN_NOBODY, 0);
 			M_CommitWDLLog();
@@ -835,6 +880,37 @@ void G_LivesCheckEndGame()
 				aliveteams += 1;
 		}
 
+		if (aliveteams > 1)
+		{
+			PlayerResults blueplayers = PlayerQuery().onTeam(TEAM_BLUE).execute();
+			PlayerResults redplayers = PlayerQuery().onTeam(TEAM_RED).execute();
+			PlayerResults greenplayers = PlayerQuery().onTeam(TEAM_GREEN).execute();
+			PlayerResults bluelivingplayers = PlayerQuery().onTeam(TEAM_BLUE).hasLives().execute();
+			PlayerResults redlivingplayers = PlayerQuery().onTeam(TEAM_RED).hasLives().execute();
+			PlayerResults greenlivingplayers = PlayerQuery().onTeam(TEAM_GREEN).hasLives().execute();
+			if (bluelivingplayers.count == 1 && blueplayers.count > 1 && !lastblueplayerhype)
+			{
+				SV_TeamPrintf(PRINT_WARNING, bluelivingplayers.players.front()->id,
+				              "%s is the last BLUE player alive!\n",
+				              bluelivingplayers.players.front()->userinfo.netname.c_str());
+				lastblueplayerhype = true;
+			}
+			if (redlivingplayers.count == 1 && redplayers.count > 1 && !lastredplayerhype)
+			{
+				SV_TeamPrintf(PRINT_WARNING, redlivingplayers.players.front()->id,
+				              "%s is the last RED player alive!\n",
+				              redlivingplayers.players.front()->userinfo.netname.c_str());
+				lastredplayerhype = true;
+			}
+			if (greenlivingplayers.count == 1 && greenplayers.count > 1 && !lastgreenplayerhype)
+			{
+				SV_TeamPrintf(PRINT_WARNING, greenlivingplayers.players.front()->id,
+				              "%s is the last GREEN player alive!\n",
+				              greenlivingplayers.players.front()->userinfo.netname.c_str());
+				lastgreenplayerhype = true;
+			}
+		}
+
 		// [AM] This end-of-game logic branch is necessary becuase otherwise
 		//      going for objectives in CTF would never be worth it.  However,
 		//      side-mode needs a special-case because otherwise in games
@@ -863,6 +939,7 @@ void G_LivesCheckEndGame()
 				M_CommitWDLLog();
 				::levelstate.endRound();
 			}
+			G_ResetTeamLastPlayer();
 		}
 
 		if (aliveteams == 0 || pr.count == 0)
@@ -871,6 +948,7 @@ void G_LivesCheckEndGame()
 			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 			M_CommitWDLLog();
 			::levelstate.endRound();
+			G_ResetTeamLastPlayer();
 		}
 		else if (aliveteams == 1)
 		{
@@ -881,6 +959,7 @@ void G_LivesCheckEndGame()
 			::levelstate.setWinner(WinInfo::WIN_TEAM, team);
 			M_CommitWDLLog();
 			::levelstate.endRound();
+			G_ResetTeamLastPlayer();
 		}
 
 		// Nobody won the game yet - keep going.
