@@ -213,9 +213,6 @@ void G_InitNew (const char *mapname)
 		}
 	}
 
-	if(G_GetCurrentSkill().spawn_multi)
-		g_thingfilter = -1;
-
 	cvar_t::UnlatchCVars ();
 
 	if (paused)

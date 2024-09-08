@@ -2838,7 +2838,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// Filter mapthings based on the gamemode
-	if (!multiplayer && g_thingfilter != -1)
+	if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
 	{
 		if (!(mthing->flags & MTF_SINGLE))
 			return;
@@ -2960,7 +2960,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		case MT_MISC26: // chainsaw
 		case MT_MISC27: // rocket launcher
 		case MT_MISC28: // plasma gun
-			if (!multiplayer && g_thingfilter != -1)
+			if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
 			{
 				if ((mthing->flags & (MTF_DEATHMATCH | MTF_SINGLE)) == MTF_DEATHMATCH)
 					return;
