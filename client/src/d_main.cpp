@@ -543,7 +543,7 @@ void D_DoAdvanceDemo (void)
 		const patch_t* patch = W_CachePatch(pagename);
 
 		page_width = patch->width();
-		page_height = patch->height();
+		page_height = patch->height() + (patch->height() / 5);
 
 		I_FreeSurface(page_surface);
 
