@@ -133,7 +133,7 @@ static void R_InitXToViewAngle()
 void R_GenerateLookup(int texnum, int *const errors); // from r_data.cpp
 
 
-// MIA TODO: iterate over skymaps to do this stuff
+// MIA TODO: iterate over skies to do this stuff
 void R_InitSkyMap()
 {
 	fixed_t fskyheight;
@@ -302,7 +302,7 @@ void R_InitSkyDefs()
 			auto skytype = static_cast<skytype_t>(type.asInt());
 			if(skytype < SKY_NORMAL || skytype > SKY_DOUBLESKY) return JL_PARSEERROR;
 
-			std::string skytexname = skytex.asString();
+			OLumpName skytexname = skytex.asString();
 			int32_t tex = R_TextureNumForName(skytexname.c_str());
 			if(tex < 0) return JL_PARSEERROR;
 
@@ -355,7 +355,7 @@ void R_InitSkyDefs()
 				const Json::Value& forescalex  = foreelem["scalex"];
 				const Json::Value& forescaley  = foreelem["scaley"];
 
-				std::string foreskytexname = foreskytex.asString();
+				OLumpName foreskytexname = foreskytex.asString();
 				int32_t foretex = R_TextureNumForName(foreskytexname.c_str());
 				if(foretex < 0) return JL_PARSEERROR;
 
@@ -380,7 +380,7 @@ void R_InitSkyDefs()
 				if(!fireelem.isNull() || !foreelem.isNull()) return JL_PARSEERROR;
 			}
 
-			skylookup[skytexname] = sky;
+			skylookup[skytexname.c_str()] = sky;
 		}
 
 		for(const Json::Value& flatentry : flatmappings)
@@ -403,7 +403,7 @@ void R_InitSkyDefs()
 
 	jsonlumpresult_t result =  M_ParseJSONLump("SKYDEFS", "skydefs", { 1, 0, 0 }, ParseSkydef);
 	if (result != JL_SUCCESS && result != JL_NOTFOUND)
-		I_Error("R_InitSkyDefs: SKYDEFS JSON error: %s", jsonLumpResultToString(result));
+		I_Error("R_InitSkyDefs: SKYDEFS JSON error: %s", M_JSONLumpResultToString(result));
 }
 
 void R_ClearSkyDefs()

@@ -91,7 +91,7 @@ static constexpr const char* JSON_LUMP_RESULT_ERROR_STRINGS[] =
 	"JL_PARSEERROR"
 };
 
-constexpr const char* jsonLumpResultToString(jsonlumpresult_t jlr)
+constexpr const char* M_JSONLumpResultToString(jsonlumpresult_t jlr)
 {
 	return JSON_LUMP_RESULT_ERROR_STRINGS[jlr];
 }

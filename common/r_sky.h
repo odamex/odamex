@@ -31,8 +31,6 @@ extern int      sky1texture;
 extern int      sky2texture;
 extern fixed_t	sky2scrollxdelta;
 extern fixed_t	sky2columnoffset;
-extern fixed_t	sky1texturemid;
-extern fixed_t	sky2texturemid;
 extern int		skystretch;
 extern fixed_t	skyiscale;
 extern fixed_t	skyheight;
