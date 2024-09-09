@@ -238,6 +238,8 @@ void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
 void STACK_ARGS SV_BroadcastPrintfButPlayer(int printlevel, int player_id, const char* format, ...);
 void STACK_ARGS SV_TeamPrintf(int level, int who, const char* fmt, ...);
 
+void SV_MidPrint(const char* msg, int p, int msgtime);
+
 // game print flags
 typedef enum {
 	PRINT_PICKUP,		// Pickup messages

@@ -797,16 +797,6 @@ void G_ResetTeamLastPlayer()
 	lastgreenplayerhype = false;
 }
 
-// [Acts 19 quiz] This is duplicated from sv_main.cpp because we can't copy the
-// define from sv_main.h into doomtype.h. Everything that references doomtype.h
-// bugs out when trying to define what player_t* is.
-void CL_MidPrint(const char* msg, player_t* p, int msgtime)
-{
-	client_t* cl = &p->client;
-
-	MSG_WriteSVC(&cl->reliablebuf, SVC_MidPrint(msg, msgtime));
-}
-
 /**
  * @brief Check to see if we should end the game on lives.
  */
@@ -828,8 +818,8 @@ void G_LivesCheckEndGame()
 			SV_BroadcastPrintfButPlayer(PRINT_HIGH, pr.players.front()->id,
 			                            "%s is the last player alive!\n",
 			                            pr.players.front()->userinfo.netname.c_str());
-			CL_MidPrint("You're the last player alive.\nGood luck!\n",
-				         &idplayer(pr.players.front()->id), 3);
+			SV_MidPrint("You're the last player alive.\nGood luck!\n",
+				         pr.players.front()->id, 3);
 		}
 		// [Acts 19 quiz] If new players join or a new map starts, we want to
 		// be able to display the hype message again.

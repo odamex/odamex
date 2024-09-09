@@ -223,7 +223,7 @@ void C_MidPrint (const char *msg, player_t *p, int msgtime)
     if (p == NULL)
         return;
 
-    SV_MidPrint(msg, p, msgtime);
+    SV_MidPrint(msg, p->id, msgtime);
 }
 
 /****** Tab completion code ******/

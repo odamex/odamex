@@ -651,9 +651,9 @@ void SV_GetPackets()
 }
 
 // Print a midscreen message to a client
-void SV_MidPrint(const char* msg, player_t* p, int msgtime)
+void SV_MidPrint(const char* msg, int p, int msgtime)
 {
-	client_t* cl = &p->client;
+	client_t* cl = &idplayer(p).client;
 
 	MSG_WriteSVC(&cl->reliablebuf, SVC_MidPrint(msg, msgtime));
 }
@@ -1932,7 +1932,7 @@ void SV_ConnectClient2(player_t& player)
 	SV_SendPlayerQueuePositions(&player, true); 
 
 	// Send out the server's MOTD.
-	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
+	SV_MidPrint((char*)sv_motd.cstring(), player.id, 6);
 }
 
 
@@ -3508,7 +3508,7 @@ void SV_JoinPlayer(player_t& player, bool silent)
 	}
 
 	// [SL] 2011-09-01 - Clear any previous SV_MidPrint (sv_motd for example)
-	SV_MidPrint("", &player, 0);
+	SV_MidPrint("", player.id, 0);
 
 	// Warn everyone we're not a spectator anymore.
 	player.spectator = false;
@@ -3768,7 +3768,7 @@ static void ReadyCmd(player_t &player)
  */
 void MOTDCmd(player_t& player)
 {
-	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
+	SV_MidPrint((char*)sv_motd.cstring(), player.id, 6);
 }
 
 /**

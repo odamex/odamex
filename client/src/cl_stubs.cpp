@@ -97,6 +97,17 @@ void STACK_ARGS SV_TeamPrintf(int level, int who, const char* fmt, ...)
 	Printf(PRINT_HIGH, "%s", str.c_str());
 }
 
+void SV_MidPrint(const char *msg, int p, int msgtime)
+{
+	if (!serverside)
+		return;
+
+	// Local game, print the message normally.
+	std::string str;
+
+	Printf(PRINT_HIGH, "%s", str.c_str());
+}
+
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
 void D_DoServerInfoChange(byte **stream) {}
 void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {}
