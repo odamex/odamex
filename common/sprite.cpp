@@ -21,8 +21,7 @@ void D_Initialize_sprnames(const char** source, int count)
         {
 			free((char*)sprnames[i]);
         }
-		free(sprnames);
-		sprnames = nullptr;
+		M_Free_Ref(sprnames);
 	}
 	sprnames = (const char**)M_Calloc(count + 1, sizeof(char*));
     if (source)
