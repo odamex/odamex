@@ -212,6 +212,7 @@ struct sky_t
 
 	// Fire functionality
 	byte*    firepalette;
+	byte*    firetexturedata;
 	int32_t  numfireentries;
 	int32_t  fireticrate;
 
@@ -419,18 +420,16 @@ void spreadFire(int src, byte* firePixels, int FIRE_WIDTH, int numfire)
 	}
 }
 
-byte* paletteindices;
-
-static void R_UpdateFireSky(sky_t* sky)
+static void R_UpdateFireSky(sky_t* sky, bool init = false)
 {
-	if (gametic % sky->fireticrate != 0) return;
+	if (gametic % sky->fireticrate != 0 && !init) return;
 	int texnum = sky->background.texnum;
 	texture_t* tex = textures[texnum];
     for (int x = 0 ; x < tex->width; x++)
 	{
         for (int y = 1; y < tex->height; y++)
 		{
-            spreadFire(y * tex->width + x, paletteindices, tex->width, sky->numfireentries);
+            spreadFire(y * tex->width + x, sky->firetexturedata, tex->width, sky->numfireentries);
         }
     }
 	byte* coldata;
@@ -439,37 +438,36 @@ static void R_UpdateFireSky(sky_t* sky)
 		coldata = R_GetTextureColumnData(texnum, x);
 		for (int y = 0; y < tex->height; y++)
 		{
-			coldata[y] = sky->firepalette[paletteindices[y * tex->width + x]];
+			coldata[y] = sky->firepalette[sky->firetexturedata[y * tex->width + x]];
 		}
 	}
 }
 
 void R_InitFireSky(sky_t* sky)
 {
-	std::srand(std::time(nullptr));
 	int texnum = sky->background.texnum;
 	texture_t* tex = textures[texnum];
-	paletteindices = (byte*)Z_Malloc(sizeof(byte) * tex->width * tex->height, PU_STATIC, nullptr);
+	sky->firetexturedata = (byte*)Z_Malloc(sizeof(byte) * tex->width * tex->height, PU_STATIC, nullptr);
     for (int i = 0 ; i < tex->width*tex->height; i++)
 	{
-		paletteindices[i] = 0;
+		sky->firetexturedata[i] = 0;
     }
 	for (int i = 0 ; i < tex->width; i++)
 	{
-		paletteindices[(tex->height - 1) * tex->width + i] = sky->numfireentries - 1;
+		sky->firetexturedata[(tex->height - 1) * tex->width + i] = sky->numfireentries - 1;
     }
 	for (int i = 0; i < 64; i++) {
-		R_UpdateFireSky(sky);
+		R_UpdateFireSky(sky, true);
 	}
 }
 
 static void R_UpdateSky(sky_t* sky)
 {
-	sky->foreground.currx += sky->foreground.scrollx;
-	sky->foreground.curry += sky->foreground.scrolly;
+	sky->foreground.currx += sky->foreground.scrollx & 0xFFFFFF;
+	sky->foreground.curry += sky->foreground.scrolly & 0xFFFFFF;
 
-	sky->background.currx += sky->background.scrollx;
-	sky->background.curry += sky->background.scrolly;
+	sky->background.currx += sky->background.scrollx & 0xFFFFFF;
+	sky->background.curry += sky->background.scrolly & 0xFFFFFF;
 
 	if(sky->type == SKY_FIRE)
 	{
@@ -489,20 +487,27 @@ void R_UpdateSkies()
 	}
 }
 
+// TODO: in R_PreCacheLevel, check if any of the skyflats are present and activate the corresponding skies
+void R_ActivateSky(sky_t* sky)
+{
+	sky->active = true;
+	if (sky->type == SKY_FIRE)
+	{
+		R_InitFireSky(sky);
+	}
+}
+
 void R_InitSkiesForLevel()
 {
 	for(auto& skypair : skylookup)
 	{
-		// TODO: change to false and correctly set if sky is active elsewhere
-		skypair.second->active = true;
+		skypair.second->active = false;
 		skypair.second->foreground.currx = 0;
 		skypair.second->foreground.curry = 0;
 		skypair.second->background.currx = 0;
 		skypair.second->background.curry = 0;
-		if (skypair.second->type == SKY_FIRE)
-		{
-			R_InitFireSky(skypair.second);
-		}
+		// TODO: remove this and call from correct place
+		R_ActivateSky(skypair.second);
 	}
 }
 
@@ -510,12 +515,6 @@ void R_SetDefaultSky(const char* sky)
 {
 	sky_t* skydef = R_GetSky(sky, true);
 	skyflatlookup[R_FlatNumForName(SKYFLATNAME)] = skydef;
-}
-
-// TODO: in R_PreCacheLevel, check if any of the skyflats are present and activate the corresponding skies
-void R_ActivateSky(sky_t* sky)
-{
-	sky->active = true;
 }
 
 //
