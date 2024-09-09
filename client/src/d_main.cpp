@@ -748,7 +748,6 @@ void STACK_ARGS D_Shutdown()
 
 void C_DoCommand(const char *cmd, uint32_t key);
 void D_Init_DEHEXTRA_Frames(void);
-void D_Init_Odamex_States(int num_states);
 
 //
 // D_DoomMain
@@ -863,8 +862,6 @@ void D_DoomMain()
 
     // [CMB] TODO: deh processing is done here
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
-    
-    D_Init_Odamex_States(num_state_t_types);
 
 	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
 	atterm(I_ShutdownHardware);

@@ -555,7 +555,6 @@ static void BackupData(void)
 	std::copy(states, states + ::NUMSTATES, doomBackup.backupStates);
 	std::copy(mobjinfo, mobjinfo + ::NUMMOBJTYPES, doomBackup.backupMobjInfo);
 	std::copy(weaponinfo, weaponinfo + ::NUMWEAPONS + 1, doomBackup.backupWeaponInfo);
-	// std::copy(sprnames, sprnames + ::NUMSPRITES + 1, backupSprnames);
 	std::copy(clipammo, clipammo + ::NUMAMMO, doomBackup.backupClipAmmo);
 	std::copy(maxammo, maxammo + ::NUMAMMO, doomBackup.backupMaxAmmo);
 	doomBackup.backupDeh = deh;
@@ -572,12 +571,14 @@ void D_UndoDehPatch()
 		return;
 	}
 
-	// reset sprites
-	// reset states
-	// reset reset mobjinfo
+	/*
+		The initialization functions can be re-used to re-initialize doom objects; except OrgSprNames which is used
+		for looking up the original location of a sprite.
+	*/ 
 
 	for (i = 0; i < ::NUMSPRITES; i++)
-	{;
+	{
+		// hacky but needed for const char*
 		free((char*)OrgSprNames[i]);
 	}
 	M_Free(OrgSprNames);

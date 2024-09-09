@@ -2936,7 +2936,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
         }
 	}
 
-	if (i >= ::num_mobjinfo_types || i < 0) // [CMB] TODO: there are more objects than this
+	if (i >= ::num_mobjinfo_types || i < 0) // [CMB] TODO 'i' can be negative now
 	{
 		// [RH] Don't die if the map tries to spawn an unknown thing
 		Printf (PRINT_WARNING, "Unknown type %i at (%i, %i)\n",
@@ -2946,6 +2946,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 	// [RH] If the thing's corresponding sprite has no frames, also map
 	//		it to the unknown thing.
+	// [CMB] TODO negative indices will cause this to fail
 	else if (sprites[states[mobjinfo[i].spawnstate].sprite].numframes == 0)
 	{
 		Printf (PRINT_WARNING, "Type %i at (%i, %i) has no frames\n",

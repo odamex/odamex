@@ -31,7 +31,38 @@
 
 typedef enum
 {
-	SPR_TROO,
+	// ------ Odamex Sprites Start -------
+	// [RH] Gibs
+	SPR_GIB0 = 0x80000000,
+	SPR_GIB1,
+	SPR_GIB2,
+	SPR_GIB3,
+	SPR_GIB4,
+	SPR_GIB5,
+	SPR_GIB6,
+	SPR_GIB7,
+	// [RH] Dummy for unknown mapthing
+	SPR_UNKN,
+	//	[Toke - CTF]
+	SPR_BSOK,
+	SPR_RSOK,
+	SPR_BFLG,
+	SPR_RFLG,
+	SPR_BDWN,
+	SPR_RDWN,
+	SPR_BCAR,
+	SPR_RCAR,
+	SPR_GSOK,
+	SPR_GFLG,
+	SPR_GDWN,
+	SPR_GCAR,
+	SPR_TLGL,
+	SPR_WPBF,
+	SPR_WPRF,
+	SPR_WPGF,
+	SPR_CARE, // 0x80000011,
+	// ------ Odamex Sprites End -------
+	SPR_TROO = 0,
 	SPR_SHTG,
 	SPR_PUNG,
 	SPR_PISG,
@@ -192,41 +223,6 @@ typedef enum
     SPR_SP80, SPR_SP81, SPR_SP82, SPR_SP83, SPR_SP84, SPR_SP85, SPR_SP86, SPR_SP87, SPR_SP88, SPR_SP89,
     SPR_SP90, SPR_SP91, SPR_SP92, SPR_SP93, SPR_SP94, SPR_SP95, SPR_SP96, SPR_SP97, SPR_SP98, SPR_SP99,
 
-	// [RH] Gibs
-	SPR_GIB0,
-	SPR_GIB1,
-	SPR_GIB2,
-	SPR_GIB3,
-	SPR_GIB4,
-	SPR_GIB5,
-	SPR_GIB6,
-	SPR_GIB7,
-	// [RH] Dummy for unknown mapthing
-	SPR_UNKN,
-		
-	//	[Toke - CTF]
-	SPR_BSOK,
-	SPR_RSOK,
-	SPR_BFLG,
-	SPR_RFLG,
-	SPR_BDWN,
-	SPR_RDWN,
-	SPR_BCAR,
-	SPR_RCAR,
-
-	SPR_GSOK,
-	SPR_GFLG,
-	SPR_GDWN,
-	SPR_GCAR,
-	
-	SPR_TLGL,
-
-	SPR_WPBF,
-	SPR_WPRF,
-	SPR_WPGF,
-
-	SPR_CARE,
-
 	NUMSPRITES
 
 } spritenum_t;
@@ -241,7 +237,83 @@ inline FArchive &operator>> (FArchive &arc, spritenum_t &i) { DWORD in; arc >> i
 
 typedef enum
 {
-	S_NULL,
+	// ---------Odamex States Start -----------
+	// [RH] Gibs
+	S_GIB0 = 0x80000000,
+	S_GIB1,
+	S_GIB2,
+	S_GIB3,
+	S_GIB4,
+	S_GIB5,
+	S_GIB6,
+	S_GIB7,
+	S_AMBIENTSOUND,
+	S_UNKNOWNTHING,
+	//	[Toke - CTF]
+
+	S_BSOK,	// Blue Flag
+	S_RSOK,	// Red Flag
+
+	// -----[ BLUE Flag Animation ]-------
+	S_BFLG,
+	S_BFLG2,
+	S_BFLG3,
+	S_BFLG4,
+	S_BFLG5,
+	S_BFLG6,
+	S_BFLG7,
+	S_BFLG8,
+
+	// -----[ RED Flag Animation  ]-------
+	S_RFLG,
+	S_RFLG2,
+	S_RFLG3,
+	S_RFLG4,
+	S_RFLG5,
+	S_RFLG6,
+	S_RFLG7,
+	S_RFLG8,
+
+	// -----------------------------------
+	S_BDWN,	// Blue Flag
+	S_RDWN,	// Red Flag
+	S_BCAR,	// Blue Flag
+	S_RCAR,	// Red Flag
+
+	S_GSOK,
+	S_GFLG,
+	S_GFLG2,
+	S_GFLG3,
+	S_GFLG4,
+	S_GFLG5,
+	S_GFLG6,
+	S_GFLG7,
+	S_GFLG8,
+	S_GDWN,
+	S_GCAR,
+
+	// -----------------------------------
+	S_BRIDGE1,
+	S_BRIDGE2,
+	S_BRIDGE3,
+	S_BRIDGE4,
+	S_BRIDGE5,
+
+	S_WPBF1, // Waypoint - Blue flag
+	S_WPBF2,
+	S_WPRF1, // Waypoint - Red flag
+	S_WPRF2,
+	S_WPGF1, // Waypoint - Green flag
+	S_WPGF2,
+
+	S_CARE, // Horde - Care Package
+
+	S_NOWEAPONUP,
+	S_NOWEAPONDOWN,
+	S_NOWEAPON, // 0x80000026
+	// final index is 0x8FFFFFFF
+	// --------- Odamex States End -----------
+	S_NULL = 0,
 	S_LIGHTDONE,
 	S_PUNCH,
 	S_PUNCHDOWN,
@@ -1290,83 +1362,6 @@ typedef enum
 
 	EXTRASTATES = 1089,
 
-
-	// [RH] gibs
-	S_GIB0 = 4000,
-	S_GIB1,
-	S_GIB2,
-	S_GIB3,
-	S_GIB4,
-	S_GIB5,
-	S_GIB6,
-	S_GIB7,
-	S_AMBIENTSOUND,
-	S_UNKNOWNTHING,
-
-	// -----------------------------------
-	//	[Toke - CTF]
-
-	S_BSOK,	// Blue Flag
-	S_RSOK,	// Red Flag
-
-	// -----[ BLUE Flag Animation ]-------
-	S_BFLG,
-	S_BFLG2,
-	S_BFLG3,
-	S_BFLG4,
-	S_BFLG5,
-	S_BFLG6,
-	S_BFLG7,
-	S_BFLG8,
-
-	// -----[ RED Flag Animation  ]-------
-	S_RFLG,
-	S_RFLG2,
-	S_RFLG3,
-	S_RFLG4,
-	S_RFLG5,
-	S_RFLG6,
-	S_RFLG7,
-	S_RFLG8,
-
-	// -----------------------------------
-	S_BDWN,	// Blue Flag
-	S_RDWN,	// Red Flag
-	S_BCAR,	// Blue Flag
-	S_RCAR,	// Red Flag
-
-	S_GSOK,
-	S_GFLG,
-	S_GFLG2,
-	S_GFLG3,
-	S_GFLG4,
-	S_GFLG5,
-	S_GFLG6,
-	S_GFLG7,
-	S_GFLG8,
-	S_GDWN,
-	S_GCAR,
-
-	// -----------------------------------
-	S_BRIDGE1,
-	S_BRIDGE2,
-	S_BRIDGE3,
-	S_BRIDGE4,
-	S_BRIDGE5,
-
-	S_WPBF1, // Waypoint - Blue flag
-	S_WPBF2,
-	S_WPRF1, // Waypoint - Red flag
-	S_WPRF2,
-	S_WPGF1, // Waypoint - Green flag
-	S_WPGF2,
-
-	S_CARE, // Horde - Care Package
-
-	S_NOWEAPONUP,
-	S_NOWEAPONDOWN,
-	S_NOWEAPON,
-
 	NUMSTATES
 } statenum_t;
 
@@ -1423,6 +1418,61 @@ inline FArchive &operator>> (FArchive &arc, state_t *&state)
 }
 
 typedef enum {
+	// -------- Odamex Mobjinfo Start -------
+	// [RH] Gibs (code is disabled)
+	MT_GIB0 = 0x80000000,
+	MT_GIB1,
+	MT_GIB2,
+	MT_GIB3,
+	MT_GIB4,
+	MT_GIB5,
+	MT_GIB6,
+	MT_GIB7,
+	// [RH] Miscellaneous things
+	MT_UNKNOWNTHING,
+	//	[Toke - CTF]
+	MT_BSOK,
+	MT_RSOK,
+	MT_BFLG,
+	MT_RFLG,
+	MT_BDWN,
+	MT_RDWN,
+	MT_BCAR,
+	MT_RCAR,
+	// -----------------------------------
+	
+	MT_BRIDGE,	
+	MT_MAPSPOT,
+	MT_MAPSPOTGRAVITY,
+	MT_BRIDGE32,
+	MT_BRIDGE16,
+	MT_BRIDGE8,
+	MT_ZDOOMBRIDGE,
+
+	// Sector Actions
+	MT_SECACTENTER,
+	MT_SECACTEXIT,
+	MT_SECACTHITFLOOR,
+	MT_SECACTHITCEIL,
+	MT_SECACTUSE,
+	MT_SECACTUSEWALL,
+	MT_SECACTEYESDIVE,
+	MT_SECACTEYESSURFACE,
+	MT_SECACTEYESBELOWC,
+	MT_SECACTEYESABOVEC,
+
+	MT_GSOK,
+	MT_GFLG,
+	MT_GDWN,
+	MT_GCAR,
+
+	MT_WPBFLAG,
+	MT_WPRFLAG,
+	MT_WPGFLAG,
+	MT_AVATAR,
+	MT_HORDESPAWN,
+	MT_CAREPACK,
+	// -------- Odamex Mobjinfo End -------
 	MT_NULL = -1, // ferk: null/invalid mobj (zero is reserved for MT_PLAYER)
 	MT_PLAYER,
 	MT_POSSESSED,
@@ -1596,18 +1646,6 @@ typedef enum {
     MT_EXTRA90, MT_EXTRA91, MT_EXTRA92, MT_EXTRA93, MT_EXTRA94,
     MT_EXTRA95, MT_EXTRA96, MT_EXTRA97, MT_EXTRA98, MT_EXTRA99,
 
-
-	// [RH] Gibs (code is disabled)
-	MT_GIB0,
-	MT_GIB1,
-	MT_GIB2,
-	MT_GIB3,
-	MT_GIB4,
-	MT_GIB5,
-	MT_GIB6,
-	MT_GIB7,
-	// [RH] Miscellaneous things
-	MT_UNKNOWNTHING,
 	MT_PATHNODE,
 	MT_AMBIENT,		// Ambient sounds
 	MT_TELEPORTMAN2,// Teleport destination that pays attention to its height
@@ -1617,50 +1655,6 @@ typedef enum {
 	MT_NODE,		//Added by MC:
 	MT_WATERZONE,
 	MT_SECRETTRIGGER,
-
-	// -----------------------------------
-	//	[Toke - CTF]
-	MT_BSOK,
-	MT_RSOK,
-	MT_BFLG,
-	MT_RFLG,
-	MT_BDWN,
-	MT_RDWN,
-	MT_BCAR,
-	MT_RCAR,
-	// -----------------------------------
-	
-	MT_BRIDGE,	
-	MT_MAPSPOT,
-	MT_MAPSPOTGRAVITY,
-	MT_BRIDGE32,
-	MT_BRIDGE16,
-	MT_BRIDGE8,
-	MT_ZDOOMBRIDGE,
-
-	// Sector Actions
-	MT_SECACTENTER,
-	MT_SECACTEXIT,
-	MT_SECACTHITFLOOR,
-	MT_SECACTHITCEIL,
-	MT_SECACTUSE,
-	MT_SECACTUSEWALL,
-	MT_SECACTEYESDIVE,
-	MT_SECACTEYESSURFACE,
-	MT_SECACTEYESBELOWC,
-	MT_SECACTEYESABOVEC,
-
-	MT_GSOK,
-	MT_GFLG,
-	MT_GDWN,
-	MT_GCAR,
-
-	MT_WPBFLAG,
-	MT_WPRFLAG,
-	MT_WPGFLAG,
-	MT_AVATAR,
-	MT_HORDESPAWN,
-	MT_CAREPACK,
 
 	NUMMOBJTYPES
 
