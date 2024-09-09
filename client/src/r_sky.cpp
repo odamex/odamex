@@ -447,7 +447,7 @@ void R_InitFireSky(sky_t* sky)
 {
 	int texnum = sky->background.texnum;
 	texture_t* tex = textures[texnum];
-	sky->firetexturedata = (byte*)Z_Malloc(sizeof(byte) * tex->width * tex->height, PU_STATIC, nullptr);
+	sky->firetexturedata = (byte*)Z_Malloc(sizeof(byte) * tex->width * tex->height, PU_LEVEL, nullptr);
     for (int i = 0 ; i < tex->width*tex->height; i++)
 	{
 		sky->firetexturedata[i] = 0;
@@ -490,11 +490,11 @@ void R_UpdateSkies()
 // TODO: in R_PreCacheLevel, check if any of the skyflats are present and activate the corresponding skies
 void R_ActivateSky(sky_t* sky)
 {
-	sky->active = true;
 	if (sky->type == SKY_FIRE)
 	{
 		R_InitFireSky(sky);
 	}
+	sky->active = true;
 }
 
 void R_InitSkiesForLevel()

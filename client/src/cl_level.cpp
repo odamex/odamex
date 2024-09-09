@@ -541,8 +541,6 @@ void G_DoLoadLevel (int position)
 
 	R_SetDefaultSky(level.skypic.c_str());
 
-	R_InitSkiesForLevel();
-
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
 	// [RH] Fetch sky parameters from level_locals_t.
@@ -665,7 +663,7 @@ void G_DoLoadLevel (int position)
 	level.starttime = I_MSTime() * TICRATE / 1000;
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
     P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
-
+	R_InitSkiesForLevel();
 	::levelstate.reset();
 
 	C_FlushDisplay ();
