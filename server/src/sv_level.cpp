@@ -547,7 +547,7 @@ void G_ExitLevel (int position, int drawscores)
 
 	if (drawscores)
         SV_DrawScores();
-	
+
 	gamestate = GS_INTERMISSION;
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, default 10
 
@@ -566,7 +566,7 @@ void G_SecretExitLevel (int position, int drawscores)
 
     if (drawscores)
         SV_DrawScores();
-        
+
 	gamestate = GS_INTERMISSION;
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, defaults to 10
 
@@ -720,7 +720,7 @@ void G_DoResetLevel(bool full_reset)
 	P_HordeClearSpawns();
 
 	// Reset the respawned monster count
-	level.respawned_monsters = 0;	
+	level.respawned_monsters = 0;
 
 	// No need to clear the spawn locations because we're not loading a new map.
 	M_StartWDLLog(false);
@@ -783,7 +783,7 @@ void G_DoLoadLevel (int position)
 		wipegamestate = GS_FORCEWIPE;
 
 	gamestate = GS_LEVEL;
-	
+
 	// Reset all keys found
 	for (size_t j = 0; j < NUMCARDS; j++)
 		keysfound[j] = false;
@@ -800,7 +800,6 @@ void G_DoLoadLevel (int position)
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
-	sky1texture = R_TextureNumForName (level.skypic.c_str());
 	if (!level.skypic2.empty())
 		sky2texture = R_TextureNumForName (level.skypic2.c_str());
 	else

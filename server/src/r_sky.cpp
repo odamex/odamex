@@ -31,7 +31,7 @@
 
 // [ML] 5/11/06 - Remove sky2
 int 		skyflatnum;
-int 		sky1texture, sky2texture;
+int 		sky2texture;
 
 fixed_t		sky2scrollxdelta;
 fixed_t		sky2columnoffset;

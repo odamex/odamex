@@ -1138,7 +1138,6 @@ void R_PrecacheLevel (void)
 	// [RH] Possibly two sky textures now.
 	// [ML] 5/11/06 - Not anymore!
 
-	hitlist[sky1texture] = 1;
 	hitlist[sky2texture] = 1;
 
 	for (int skytexture : skytextures)
