@@ -51,6 +51,7 @@ EXTERN_CVAR(r_skypalette)
 // sky mapping
 //
 int 		skyflatnum;
+// MIA TODO: remove sky1 variables
 int 		sky1texture,    sky2texture;
 fixed_t		sky1texturemid, sky2texturemid;
 fixed_t		skyscale;
@@ -131,6 +132,8 @@ static void R_InitXToViewAngle()
 
 void R_GenerateLookup(int texnum, int *const errors); // from r_data.cpp
 
+
+// MIA TODO: iterate over skymaps to do this stuff
 void R_InitSkyMap()
 {
 	fixed_t fskyheight;

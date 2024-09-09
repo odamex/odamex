@@ -1116,7 +1116,9 @@ void R_PrecacheLevel (void)
 			W_CacheLumpNum (firstflat + i, PU_CACHE);
 
 	std::vector<int> skytextures;
+	#ifdef CLIENT_APP
 	R_ActivateSkies(hitlist, skytextures);
+	#endif
 
 	// Precache textures.
 	memset (hitlist, 0, numtextures);
