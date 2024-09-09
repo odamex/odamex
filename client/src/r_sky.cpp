@@ -79,6 +79,46 @@ char SKYFLATNAME[8] = "F_SKY1";
 static tallpost_t* skyposts[MAXWIDTH];
 static byte compositeskybuffer[MAXWIDTH][512]; // holds doublesky composite sky to blit to the screen
 
+enum skytype_t
+{
+	SKY_NORMAL,
+	SKY_FIRE,
+	SKY_DOUBLESKY
+};
+
+struct skytex_t
+{
+	fixed_t mid;
+	fixed_t scrollx;
+	fixed_t scrolly;
+	fixed_t scalex;
+	fixed_t scaley;
+	fixed_t currx;
+	fixed_t curry;
+	int32_t texnum;
+};
+
+struct sky_t
+{
+	skytype_t type;
+	bool      active;
+
+	// Common functionality for all types
+	skytex_t background;
+
+	// Fire functionality
+	byte*    firepalette;
+	byte*    firetexturedata;
+	int32_t  numfireentries;
+	int32_t  fireticrate;
+
+	// With foreground
+	skytex_t foreground;
+};
+
+OHashTable<std::string, sky_t*> skylookup;
+OHashTable<int32_t, sky_t*> skyflatlookup;
+
 
 //
 // R_InitXToViewAngle
@@ -145,6 +185,11 @@ void R_InitSkyMap()
 	if (gamestate != GS_LEVEL)
 		return;
 
+	for (auto& skypair : skylookup)
+	{
+		// do the stuff below for each sky
+	}
+
 	if (sky2texture && textureheight[sky1texture] != textureheight[sky2texture])
 	{
 		Printf (PRINT_HIGH,"\x1f+Both sky textures must be the same height.\x1f-\n");
@@ -185,46 +230,6 @@ void R_InitSkyMap()
 
 	R_InitXToViewAngle();
 }
-
-enum skytype_t
-{
-	SKY_NORMAL,
-	SKY_FIRE,
-	SKY_DOUBLESKY
-};
-
-struct skytex_t
-{
-	fixed_t mid;
-	fixed_t scrollx;
-	fixed_t scrolly;
-	fixed_t scalex;
-	fixed_t scaley;
-	fixed_t currx;
-	fixed_t curry;
-	int32_t texnum;
-};
-
-struct sky_t
-{
-	skytype_t type;
-	bool      active;
-
-	// Common functionality for all types
-	skytex_t background;
-
-	// Fire functionality
-	byte*    firepalette;
-	byte*    firetexturedata;
-	int32_t  numfireentries;
-	int32_t  fireticrate;
-
-	// With foreground
-	skytex_t foreground;
-};
-
-OHashTable<std::string, sky_t*> skylookup;
-OHashTable<int32_t, sky_t*> skyflatlookup;
 
 sky_t* R_GetSky(const char* name, bool create)
 {
@@ -270,7 +275,7 @@ sky_t* R_GetSky(const char* name, bool create)
 	return sky;
 }
 
-// [EB] adapted from Rum n Raisin r_sky.cpp
+// [EB] adapted from Rum and Raisin r_sky.cpp
 void R_InitSkyDefs()
 {
 	skyflatnum = R_FlatNumForName(SKYFLATNAME);
@@ -585,7 +590,6 @@ void R_RenderSkyRange(visplane_t* pl)
 	angle_t skyflip = 0;
 
 	auto skyflat = skyflatlookup.find(pl->picnum);
-	sky_t* sky = nullptr;
 
 	fixed_t sky1scalex = INT2FIXED(1);
 	fixed_t sky2scalex = INT2FIXED(1);
@@ -594,7 +598,7 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	if (skyflat != skyflatlookup.end())
 	{
-		sky = skyflat->second;
+		const sky_t* sky = skyflat->second;
 		// use sky1
 		if (skyflat->second->type == SKY_DOUBLESKY)
 		{
@@ -602,6 +606,8 @@ void R_RenderSkyRange(visplane_t* pl)
 			backskytex = texturetranslation[sky->background.texnum];
 			front_offset = sky->foreground.currx;
 			back_offset = sky->background.currx;
+			frontrow_offset = sky->foreground.curry;
+			backrow_offset = sky->background.curry;
 			sky1scalex = sky->foreground.scalex;
 			sky2scalex = sky->background.scalex;
 			sky1scaley = sky->foreground.scaley;
@@ -612,6 +618,7 @@ void R_RenderSkyRange(visplane_t* pl)
 			frontskytex = texturetranslation[sky->background.texnum];
 			backskytex = -1;
 			front_offset = sky->background.currx;
+			frontrow_offset = sky->background.curry;
 			sky1scalex = sky->background.scalex;
 			sky1scaley = sky->background.scaley;
 		}
@@ -658,7 +665,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	const palette_t* pal = V_GetDefaultPalette();
 
 	dcol.iscale = FixedMul(skyiscale, sky1scaley) >> skystretch;
-	dcol.texturemid = sky1texturemid;
+	dcol.texturemid = sky1texturemid + frontrow_offset;
 	dcol.textureheight = textureheight[frontskytex]; // both skies are forced to be the same height anyway
 	dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
 	skyplane = pl;

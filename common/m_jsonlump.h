@@ -18,7 +18,7 @@
 //
 // DESCRIPTION:
 //  JSON lump parsing for ID24
-//  Adapted from Rum n Raisin Doom m_jsonlump.h
+//  Adapted from Rum and Raisin Doom m_jsonlump.h
 //
 //-----------------------------------------------------------------------------
 
