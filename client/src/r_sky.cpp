@@ -322,8 +322,8 @@ void R_InitSkyDefs()
 			sky->background.mid     = FLOAT2FIXED(mid.asFloat());
 			sky->background.scrollx = FLOAT2FIXED(scrollx.asFloat() * ticratescale);
 			sky->background.scrolly = FLOAT2FIXED(scrolly.asFloat() * ticratescale);
-			sky->background.scalex  = FLOAT2FIXED(scalex.asFloat());
-			sky->background.scaley  = FLOAT2FIXED(scaley.asFloat());
+			sky->background.scalex  = FLOAT2FIXED(1.0f / scalex.asFloat());
+			sky->background.scaley  = FLOAT2FIXED(1.0f / scaley.asFloat());
 
 			if(sky->type == SKY_FIRE)
 			{
@@ -369,8 +369,8 @@ void R_InitSkyDefs()
 				sky->foreground.mid     = FLOAT2FIXED(foremid.asFloat());
 				sky->foreground.scrollx = FLOAT2FIXED(forescrollx.asFloat() * ticratescale);
 				sky->foreground.scrolly = FLOAT2FIXED(forescrolly.asFloat() * ticratescale);
-				sky->foreground.scalex  = FLOAT2FIXED(forescalex.asFloat());
-				sky->foreground.scaley  = FLOAT2FIXED(forescaley.asFloat());
+				sky->foreground.scalex  = FLOAT2FIXED(1.0f / forescalex.asFloat());
+				sky->foreground.scaley  = FLOAT2FIXED(1.0f / forescaley.asFloat());
 			}
 			else
 			{
@@ -584,6 +584,11 @@ void R_RenderSkyRange(visplane_t* pl)
 	auto skyflat = skyflatlookup.find(pl->picnum);
 	sky_t* sky = nullptr;
 
+	fixed_t sky1scalex = INT2FIXED(1);
+	fixed_t sky2scalex = INT2FIXED(1);
+	fixed_t sky1scaley = INT2FIXED(1);
+	fixed_t sky2scaley = INT2FIXED(1);
+
 	if (skyflat != skyflatlookup.end())
 	{
 		sky = skyflat->second;
@@ -594,12 +599,18 @@ void R_RenderSkyRange(visplane_t* pl)
 			backskytex = texturetranslation[sky->background.texnum];
 			front_offset = sky->foreground.currx;
 			back_offset = sky->background.currx;
+			sky1scalex = sky->foreground.scalex;
+			sky2scalex = sky->background.scalex;
+			sky1scaley = sky->foreground.scaley;
+			sky2scaley = sky->background.scaley;
 		}
 		else
 		{
 			frontskytex = texturetranslation[sky->background.texnum];
 			backskytex = -1;
 			front_offset = sky->background.currx;
+			sky1scalex = sky->background.scalex;
+			sky1scaley = sky->background.scaley;
 		}
 	}
 	else if (pl->picnum == int(PL_SKYFLAT))
@@ -643,7 +654,7 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	const palette_t* pal = V_GetDefaultPalette();
 
-	dcol.iscale = skyiscale >> skystretch;
+	dcol.iscale = FixedMul(skyiscale, sky1scaley) >> skystretch;
 	dcol.texturemid = sky1texturemid;
 	dcol.textureheight = textureheight[frontskytex]; // both skies are forced to be the same height anyway
 	dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
@@ -670,6 +681,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	for (int x = pl->minx; x <= pl->maxx; x++)
 	{
 		int sky1colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
+		sky1colnum = FIXED2INT(FixedMul(INT2FIXED(sky1colnum), sky1scalex));
 		tallpost_t* skypost = R_GetTextureColumn(frontskytex, sky1colnum);
 		if (backskytex == -1)
 		{
@@ -679,6 +691,7 @@ void R_RenderSkyRange(visplane_t* pl)
 		{
 			// create composite of both skies
 			int sky2colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky2shift) + back_offset) >> FRACBITS;
+			sky2colnum = FIXED2INT(FixedMul(INT2FIXED(sky2colnum), sky2scalex));
 			tallpost_t* skypost2 = R_GetTextureColumn(backskytex, sky2colnum);
 
 			int count = MIN<int> (512, MIN (textureheight[backskytex], textureheight[frontskytex]) >> FRACBITS);

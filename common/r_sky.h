@@ -37,7 +37,6 @@ extern fixed_t	sky1texturemid;
 extern fixed_t	sky2texturemid;
 extern int		skystretch;
 extern fixed_t	skyiscale;
-extern fixed_t	skyscale;
 extern fixed_t	skyheight;
 
 EXTERN_CVAR (r_stretchsky)
