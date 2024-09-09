@@ -10,7 +10,7 @@ jobs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
@@ -21,7 +21,7 @@ jobs:
     runs-on: macos-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build

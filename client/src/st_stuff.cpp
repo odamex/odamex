@@ -1042,13 +1042,13 @@ static void ST_refreshBackground()
 			// [RH] Always draw faceback with the player's color
 			//		using a translation rather than a different patch.
 			V_ColorMap = translationref_t(translationtables + displayplayer_id * 256, displayplayer_id);
-			stbar_canvas->DrawTranslatedPatch(W_ResolvePatchHandle(faceback), ST_FX,
+			stbar_canvas->DrawTranslatedPatch(W_ResolvePatchHandle(faceback), ST_FX + scaled_x,
 			                                  ST_FY);
 		}
 		else
 		{
 			stbar_canvas->DrawPatch(
-			    W_ResolvePatchHandle(faceclassic[displayplayer_id - 1]), ST_FX, ST_FY);
+			    W_ResolvePatchHandle(faceclassic[displayplayer_id - 1]), ST_FX + scaled_x, ST_FY);
 		}
 	}
 
