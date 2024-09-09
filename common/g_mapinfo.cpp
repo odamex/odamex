@@ -1658,6 +1658,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			{
 				info.level_name = os.getToken();
 			}
+			info.pname.clear();
 
 			MapInfoDataSetter<level_pwad_info_t> setter(info);
 			ParseMapInfoLower<level_pwad_info_t>(os, setter);
