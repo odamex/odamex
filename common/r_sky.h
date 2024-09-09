@@ -50,5 +50,6 @@ void R_ClearSkyDefs();
 void R_SetDefaultSky(const char* sky);
 void R_UpdateSkies();
 bool R_IsSkyFlat(int flatnum);
+void R_ActivateSkies(const byte* hitlist, std::vector<int>& skytextures);
 
 void R_RenderSkyRange(visplane_t* pl);

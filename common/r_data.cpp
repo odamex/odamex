@@ -1115,6 +1115,9 @@ void R_PrecacheLevel (void)
 		if (hitlist[i])
 			W_CacheLumpNum (firstflat + i, PU_CACHE);
 
+	std::vector<int> skytextures;
+	R_ActivateSkies(hitlist, skytextures);
+
 	// Precache textures.
 	memset (hitlist, 0, numtextures);
 
@@ -1137,6 +1140,11 @@ void R_PrecacheLevel (void)
 
 	hitlist[sky1texture] = 1;
 	hitlist[sky2texture] = 1;
+
+	for (int skytexture : skytextures)
+	{
+		hitlist[skytexture] = 1;
+	}
 
 	for (i = numtextures - 1; i >= 0; i--)
 	{

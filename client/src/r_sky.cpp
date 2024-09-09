@@ -487,7 +487,6 @@ void R_UpdateSkies()
 	}
 }
 
-// TODO: in R_PreCacheLevel, check if any of the skyflats are present and activate the corresponding skies
 void R_ActivateSky(sky_t* sky)
 {
 	if (sky->type == SKY_FIRE)
@@ -495,6 +494,19 @@ void R_ActivateSky(sky_t* sky)
 		R_InitFireSky(sky);
 	}
 	sky->active = true;
+}
+
+void R_ActivateSkies(const byte* hitlist, std::vector<int>& skytextures)
+{
+	for(auto& skypair : skyflatlookup)
+	{
+		if (hitlist[skypair.first])
+			R_ActivateSky(skypair.second);
+
+		skytextures.push_back(skypair.second->background.texnum);
+		if (skypair.second->type == SKY_DOUBLESKY)
+			skytextures.push_back(skypair.second->foreground.texnum);
+	}
 }
 
 void R_InitSkiesForLevel()
@@ -506,8 +518,6 @@ void R_InitSkiesForLevel()
 		skypair.second->foreground.curry = 0;
 		skypair.second->background.currx = 0;
 		skypair.second->background.curry = 0;
-		// TODO: remove this and call from correct place
-		R_ActivateSky(skypair.second);
 	}
 }
 
