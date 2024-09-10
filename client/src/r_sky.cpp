@@ -119,8 +119,6 @@ struct sky_t
 OHashTable<std::string, sky_t*> skylookup;
 OHashTable<int32_t, sky_t*> skyflatlookup;
 
-// MIA TODO: delete skies created with R_GetSky at end of level so things like in correct scroll speeds from MAPINFO on maps using same texture but different speeds dont happen
-
 //
 // R_InitXToViewAngle
 //
@@ -537,6 +535,27 @@ void R_InitSkiesForLevel()
 void R_SetDefaultSky(const char* sky)
 {
 	sky_t* skydef = R_GetSky(sky, true);
+	// make sure that if mapinfo sets a scroll speed we use that
+	// to not mess up wads without skydefs that reuse textures with different scroll speeds
+	// setting a scroll speed in mapinfo and in a skydef is undefined behavior
+	if (level.flags & LEVEL_DOUBLESKY)
+	{
+		if (level.sky1ScrollDelta != 0)
+		{
+			skydef->foreground.scrollx = level.sky1ScrollDelta;
+		}
+		if (level.sky2ScrollDelta != 0)
+		{
+			skydef->background.scrollx = level.sky2ScrollDelta;
+		}
+	}
+	else
+	{
+		if (level.sky1ScrollDelta != 0)
+		{
+			skydef->background.scrollx = level.sky1ScrollDelta;
+		}
+	}
 	skyflatlookup[R_FlatNumForName(SKYFLATNAME)] = skydef;
 }
 
