@@ -112,7 +112,7 @@ void ServerTable::draw_cell(TableContext context, int R, int C, int X, int Y, in
 				fl_draw(m_servers[R].gametype.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
 				break;
 			case COL_WADS:
-				fl_draw(m_servers[R].wads.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
+				fl_draw(m_servers[R].Wads().c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);
 				break;
 			case COL_MAP:
 				fl_draw(m_servers[R].map.c_str(), X, Y, W, H, ::FL_ALIGN_LEFT, 0, 0);

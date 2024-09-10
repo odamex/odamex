@@ -38,10 +38,27 @@ struct serverRow_s
 	std::string address;
 	std::string servername;
 	std::string gametype;
-	std::string wads;
+	std::vector<std::string> wads;
+	std::string wadString;
 	std::string map;
 	std::string players;
 	std::string ping;
+
+	std::string Wads()
+	{
+		if (wadString.empty() && !wads.empty())
+		{
+			for (size_t i = 1; i < wads.size(); i++)
+			{
+				wadString += wads[i];
+				if (i != wads.size() - 1)
+				{
+					wadString += " ";
+				}
+			}
+		}
+		return wadString;
+	}
 };
 
 /**

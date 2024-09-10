@@ -86,7 +86,7 @@ void ServerWindow::refreshInfo()
 	m_address->value(m_strAddress.c_str());
 	m_servername->value(server.servername.c_str());
 	m_gametype->value(server.gametype.c_str());
-	m_wads->value(server.wads.c_str());
+	m_wads->value(server.Wads().c_str());
 	m_map->value(server.map.c_str());
 	m_players->value(server.players.c_str());
 

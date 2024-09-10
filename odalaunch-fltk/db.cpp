@@ -22,6 +22,8 @@
 
 #include "odalaunch.h"
 
+#include <cassert>
+
 #include "db.h"
 #include "log.h"
 
@@ -220,6 +222,25 @@ NODISCARD static bool SQLBindText(sqlite3_stmt* stmt, const char* param, const c
 
 /******************************************************************************/
 
+static Json::Value WadsToJSON(const std::vector<odalpapi::Wad_t>& ncWads)
+{
+	Json::Value root;
+
+	for (auto& wad : ncWads)
+	{
+		Json::Value json;
+
+		json["name"] = wad.Name;
+		json["hash"] = wad.Hash;
+
+		root.append(std::move(json));
+	}
+
+	return root;
+}
+
+/******************************************************************************/
+
 static Json::Value PlayersToJSON(const std::vector<odalpapi::Player_t>& ncPlayers)
 {
 	Json::Value root;
@@ -339,6 +360,9 @@ void DB_AddServerInfo(const odalpapi::Server& server)
 
 	auto onExit = makeScopeExit([stmt] { sqlite3_finalize(stmt); });
 
+	Json::StreamWriterBuilder builder;
+	Json::String buffer;
+
 	if (!SQLBindText(stmt, ":address", server.GetAddress().c_str()))
 		return;
 
@@ -348,12 +372,8 @@ void DB_AddServerInfo(const odalpapi::Server& server)
 	if (!SQLBindInt(stmt, ":gametype", server.Info.GameType))
 		return;
 
-	for (size_t i = 1; i < server.Info.Wads.size(); i++)
-	{
-		wads += server.Info.Wads[i].Name + ":";
-	}
-	wads.erase(wads.length() - 1);
-	if (!SQLBindText(stmt, ":wads", wads.c_str()))
+	buffer = Json::writeString(builder, WadsToJSON(server.Info.Wads));
+	if (!SQLBindText(stmt, ":wads", buffer.c_str()))
 		return;
 
 	if (!SQLBindText(stmt, ":map", server.Info.CurrentMap.c_str()))
@@ -371,8 +391,7 @@ void DB_AddServerInfo(const odalpapi::Server& server)
 	if (!SQLBindInt(stmt, ":sides", server.Info.Sides))
 		return;
 
-	Json::StreamWriterBuilder builder;
-	Json::String buffer = Json::writeString(builder, PlayersToJSON(server.Info.Players));
+	buffer = Json::writeString(builder, PlayersToJSON(server.Info.Players));
 	if (!SQLBindText(stmt, ":players", buffer.c_str()))
 		return;
 
@@ -408,6 +427,7 @@ void DB_GetServerList(serverRows_t& rows)
 
 	auto onExit = makeScopeExit([stmt] { sqlite3_finalize(stmt); });
 
+	Json::CharReaderBuilder builder;
 	newRowCount = 0;
 	for (size_t tries = 0; tries < ::SQL_TRIES;)
 	{
@@ -423,6 +443,16 @@ void DB_GetServerList(serverRows_t& rows)
 			const char* servername = (const char*)(sqlite3_column_text(stmt, 1));
 			const int gametype = sqlite3_column_int(stmt, 2);
 			const char* wads = (const char*)(sqlite3_column_text(stmt, 3));
+			const size_t wadsLen = sqlite3_column_bytes(stmt, 3);
+
+			Json::Value wadsJson;
+			if (wads != nullptr)
+			{
+				const bool ok = builder.newCharReader()->parse(wads, wads + wadsLen,
+				                                               &wadsJson, nullptr);
+				assert(ok);
+			}
+
 			const char* map = (const char*)(sqlite3_column_text(stmt, 4));
 			const int numplayers = sqlite3_column_int(stmt, 5);
 			const int maxplayers = sqlite3_column_int(stmt, 6);
@@ -468,7 +498,12 @@ void DB_GetServerList(serverRows_t& rows)
 			else
 				newRow.gametype = "Unknown";
 
-			newRow.wads = wads ? wads : "";
+			newRow.wads.clear();
+			for (auto& wad : wadsJson)
+			{
+				auto name = wad.get("name", Json::String{});
+				newRow.wads.push_back(name.asString());
+			}
 			newRow.map = map ? map : "";
 
 			if (maxplayers != 0)
@@ -518,6 +553,7 @@ void DB_GetServer(serverRow_s& row, const std::string& address)
 	if (!SQLBindText(stmt, ":address", address.c_str()))
 		return;
 
+	Json::CharReaderBuilder builder;
 	for (size_t tries = 0; tries < ::SQL_TRIES;)
 	{
 		res = sqlite3_step(stmt);
@@ -531,6 +567,16 @@ void DB_GetServer(serverRow_s& row, const std::string& address)
 			const char* servername = (const char*)(sqlite3_column_text(stmt, 1));
 			const int gametype = sqlite3_column_int(stmt, 2);
 			const char* wads = (const char*)(sqlite3_column_text(stmt, 3));
+			const size_t wadsLen = sqlite3_column_bytes(stmt, 3);
+
+			Json::Value wadsJson;
+			if (wads != nullptr)
+			{
+				const bool ok = builder.newCharReader()->parse(wads, wads + wadsLen,
+				                                               &wadsJson, nullptr);
+				assert(ok);
+			}
+
 			const char* map = (const char*)(sqlite3_column_text(stmt, 4));
 			const int numplayers = sqlite3_column_int(stmt, 5);
 			const int maxplayers = sqlite3_column_int(stmt, 6);
@@ -576,7 +622,12 @@ void DB_GetServer(serverRow_s& row, const std::string& address)
 			else
 				row.gametype = "Unknown";
 
-			row.wads = wads ? wads : "";
+			row.wads.clear();
+			for (auto& wad : wadsJson)
+			{
+				auto name = wad.get("name", Json::String{});
+				row.wads.push_back(name.asString());
+			}
 			row.map = map ? map : "";
 
 			if (maxplayers != 0)
