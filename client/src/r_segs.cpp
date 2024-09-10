@@ -244,6 +244,50 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 	if (wallscalex[dcol.x] <= 0)
 		return;
 
+	if (dcol.post->length != dcol.textureheight >> FRACBITS)
+	{
+		int count = dcol.textureheight >> FRACBITS;
+		tallpost_t* srcpost = dcol.post;
+
+		int destpostlen = 0;
+
+		static tallpost_t destpost;
+
+		destpost.topdelta = 0;
+
+		while (destpostlen < count)
+		{
+			int remaining = count - destpostlen; // pixels remaining to be replenished
+
+			if (srcpost->topdelta == destpostlen)
+			{
+				memcpy(destpost.data() + destpostlen, srcpost->data(), srcpost->length);
+					   destpostlen += srcpost->length;
+			}
+			else
+			{
+				int curmidtexdelta = abs((srcpost->end() ? remaining : srcpost->topdelta) - destpostlen);
+				int translen = curmidtexdelta > remaining ? remaining : curmidtexdelta;
+				memset(destpost.data() + destpostlen, 0,
+				       translen);
+				destpostlen += translen;
+			}
+
+			if (!srcpost->next()->end() && destpostlen >= srcpost->topdelta + srcpost->length)
+			{
+				srcpost = srcpost->next();
+			}
+
+			destpost.length = destpostlen;
+		}
+
+		// finish the post up.
+		destpost.next()->length = 0;
+		destpost.next()->writeend();
+
+		dcol.post = &destpost;
+	}
+
 	dcol.iscale = 0xffffffffu / unsigned(wallscalex[dcol.x]);
 	dcol.source = dcol.post->data();
 	// TODO: dcol.texturefrac should take y-scaling of textures into account
@@ -398,68 +442,6 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 }
 
 //
-// R_BlackoutTransparency
-//
-// Used by R_RenderSolidSegRange
-//
-// Takes a range of posts and replaces any transparency with palette index 0
-//
-void R_BlackoutTransparency(int start, int stop, tallpost_t* srcposts[])
-{
-	// holds data for textures with transparency on solid walls
-	static byte* destposts[MAXWIDTH][512];
-
-	for (int x = start; x <= stop; x++)
-	{
-		int count = dcol.textureheight >> FRACBITS;
-		tallpost_t* srcpost = srcposts[x];
-		if (srcpost->length == dcol.textureheight)
-			continue;
-
-		int destpostlen = 0;
-
-		tallpost_t* destpost = (tallpost_t*)destposts[x];
-
-		tallpost_t* orig = destpost; // need a pointer to the og element to return!
-
-		destpost->topdelta = 0;
-
-		while (destpostlen < count)
-		{
-			int remaining = count - destpostlen; // pixels remaining to be replenished
-
-			if (srcpost->topdelta == destpostlen)
-			{
-				memcpy(destpost->data() + destpostlen, srcpost->data(), srcpost->length);
-					   destpostlen += srcpost->length;
-			}
-			else
-			{
-				int curmidtexdelta = abs((srcpost->end() ? remaining : srcpost->topdelta) - destpostlen);
-				int translen = curmidtexdelta > remaining ? remaining : curmidtexdelta;
-				memset(destpost->data() + destpostlen, 0,
-				       translen);
-				destpostlen += translen;
-			}
-
-			if (!srcpost->next()->end() && destpostlen >= srcpost->topdelta + srcpost->length)
-			{
-				srcpost = srcpost->next();
-			}
-
-			destpost->length = destpostlen;
-		}
-
-		// finish the post up.
-		destpost = destpost->next();
-		destpost->length = 0;
-		destpost->writeend();
-
-		srcposts[x] = orig;
-	}
-}
-
-//
 // R_RenderSolidSegRange
 //
 // Clips each of the three possible seg tiers of the column (top, mid, and bottom),
@@ -529,8 +511,6 @@ void R_RenderSolidSegRange(int start, int stop)
 
 		dcol.textureheight = textureheight[midtexture];
 		dcol.texturemid = rw_midtexturemid;
-		// if the midtex has transparency, we want to display that as black
-		R_BlackoutTransparency(start, stop, midposts);
 
 		R_RenderColumnRange(start, stop, walltopf, lower, midposts,
 					SolidColumnBlaster, true, columnmethod);
@@ -554,8 +534,6 @@ void R_RenderSolidSegRange(int start, int stop)
 
 			dcol.textureheight = textureheight[toptexture];
 			dcol.texturemid = rw_toptexturemid;
-
-			R_BlackoutTransparency(start, stop, topposts);
 
 			R_RenderColumnRange(start, stop, walltopf, lower, topposts,
 						SolidColumnBlaster, true, columnmethod);
@@ -581,8 +559,6 @@ void R_RenderSolidSegRange(int start, int stop)
 
 			dcol.textureheight = textureheight[bottomtexture];
 			dcol.texturemid = rw_bottomtexturemid;
-
-			R_BlackoutTransparency(start, stop, bottomposts);
 
 			R_RenderColumnRange(start, stop, wallbottomb, lower, bottomposts,
 						SolidColumnBlaster, true, columnmethod);
