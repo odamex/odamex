@@ -251,9 +251,10 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 
 		int destpostlen = 0;
 
-		static tallpost_t destpost;
+		static byte* destpostraw[512];
+		tallpost_t* destpost = (tallpost_t*) destpostraw;
 
-		destpost.topdelta = 0;
+		destpost->topdelta = 0;
 
 		while (destpostlen < count)
 		{
@@ -261,14 +262,14 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 
 			if (srcpost->topdelta == destpostlen)
 			{
-				memcpy(destpost.data() + destpostlen, srcpost->data(), srcpost->length);
+				memcpy(destpost->data() + destpostlen, srcpost->data(), srcpost->length);
 					   destpostlen += srcpost->length;
 			}
 			else
 			{
 				int curmidtexdelta = abs((srcpost->end() ? remaining : srcpost->topdelta) - destpostlen);
 				int translen = curmidtexdelta > remaining ? remaining : curmidtexdelta;
-				memset(destpost.data() + destpostlen, 0,
+				memset(destpost->data() + destpostlen, 0,
 				       translen);
 				destpostlen += translen;
 			}
@@ -278,14 +279,14 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 				srcpost = srcpost->next();
 			}
 
-			destpost.length = destpostlen;
+			destpost->length = destpostlen;
 		}
 
 		// finish the post up.
-		destpost.next()->length = 0;
-		destpost.next()->writeend();
+		destpost->next()->length = 0;
+		destpost->next()->writeend();
 
-		dcol.post = &destpost;
+		dcol.post = destpost;
 	}
 
 	dcol.iscale = 0xffffffffu / unsigned(wallscalex[dcol.x]);
