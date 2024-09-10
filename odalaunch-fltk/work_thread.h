@@ -24,5 +24,12 @@
 
 #include "odalaunch.h"
 
+/**
+ * @brief Initializes the workers.
+ */
 void Work_Init();
+
+/**
+ * @brief Destroys the workers.
+ */
 void Work_Deinit();

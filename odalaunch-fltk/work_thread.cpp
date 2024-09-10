@@ -140,6 +140,8 @@ static void WorkerRefreshServer(const std::string& address)
  */
 static void AwakeProc(void* data)
 {
+	assert(g_hMainThread == std::this_thread::get_id());
+
 	switch ((ptrdiff_t)data)
 	{
 	case AWAKE_REDRAW_SERVERS:
@@ -155,6 +157,8 @@ static void AwakeProc(void* data)
  */
 static void WorkerProc()
 {
+	assert(g_hMainThread != std::this_thread::get_id());
+
 	for (;;)
 	{
 		workerMessage_t work;
@@ -207,9 +211,8 @@ static void WorkerProc()
 	}
 }
 
-/**
- * @brief [MAIN] Initializes the workers.
- */
+/******************************************************************************/
+
 void Work_Init()
 {
 	g_hMainThread = std::this_thread::get_id();
@@ -223,9 +226,8 @@ void Work_Init()
 	}
 }
 
-/**
- * @brief [MAIN] Destroys the workers.
- */
+/******************************************************************************/
+
 void Work_Deinit()
 {
 	assert(g_hMainThread == std::this_thread::get_id());
