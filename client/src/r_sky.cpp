@@ -114,6 +114,8 @@ struct sky_t
 
 	// With foreground
 	skytex_t foreground;
+
+	bool usedefaultmid;
 };
 
 OHashTable<std::string, sky_t*> skylookup;
@@ -254,8 +256,6 @@ sky_t* R_GetSky(const char* name, bool create)
 	sky->background.scalex = INT2FIXED(1);
 	sky->background.scaley = INT2FIXED(1);
 	sky->background.scrolly = INT2FIXED(0);
-	// MIA TODO: set mid using whats done with the initskymaps instead of just 100
-	sky->background.mid = INT2FIXED(100);
 	if (level.flags & LEVEL_DOUBLESKY)
 	{
 		sky->background.texnum = R_TextureNumForName(level.skypic2.c_str());
@@ -265,14 +265,15 @@ sky_t* R_GetSky(const char* name, bool create)
 		sky->foreground.scalex = INT2FIXED(1);
 		sky->foreground.scaley = INT2FIXED(1);
 		sky->foreground.scrolly = INT2FIXED(0);
-		sky->foreground.mid = INT2FIXED(100);
+		sky->type = SKY_DOUBLESKY;
 	}
 	else
 	{
 		sky->background.texnum = tex;
 		sky->background.scrollx = level.sky1ScrollDelta;
+		sky->type = SKY_NORMAL;
 	}
-	sky->type = level.flags & LEVEL_DOUBLESKY ? SKY_DOUBLESKY : SKY_NORMAL;
+	sky->usedefaultmid = true;
 
 	skylookup[name] = sky;
 	return sky;
@@ -326,6 +327,7 @@ void R_InitSkyDefs()
 			sky_t* sky = (sky_t*)Z_Malloc(sizeof(sky_t), PU_STATIC, nullptr);
 
 			sky->type = skytype;
+			sky->usedefaultmid = false;
 
 			constexpr float_t ticratescale = 1.0 / TICRATE;
 
@@ -638,8 +640,11 @@ void R_RenderSkyRange(visplane_t* pl)
 			sky2scalex = sky->background.scalex;
 			sky1scaley = sky->foreground.scaley;
 			sky2scaley = sky->background.scaley;
-			sky1mid    = sky->foreground.mid;
-			sky2mid    = sky->background.mid;
+			if (!sky->usedefaultmid)
+			{
+				sky1mid = sky->foreground.mid;
+				sky2mid = sky->background.mid;
+			}
 		}
 		else
 		{
@@ -649,7 +654,8 @@ void R_RenderSkyRange(visplane_t* pl)
 			frontrow_offset = sky->background.curry;
 			sky1scalex = sky->background.scalex;
 			sky1scaley = sky->background.scaley;
-			sky1mid    = sky->background.mid;
+			if (!sky->usedefaultmid)
+				sky1mid = sky->background.mid;
 		}
 	}
 	else if (pl->picnum == int(PL_SKYFLAT))
