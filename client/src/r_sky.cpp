@@ -119,6 +119,7 @@ struct sky_t
 OHashTable<std::string, sky_t*> skylookup;
 OHashTable<int32_t, sky_t*> skyflatlookup;
 
+// MIA TODO: delete skies created with R_GetSky at end of level so things like in correct scroll speeds from MAPINFO on maps using same texture but different speeds dont happen
 
 //
 // R_InitXToViewAngle
@@ -187,8 +188,10 @@ void R_InitSkyMap()
 
 	for (auto& skypair : skylookup)
 	{
-		// do the stuff below for each sky
+		// do the stuff below for each sky maybe???
 	}
+
+	// sky_t* defaultsky = skyflatlookup[skyflatnum];
 
 	if (sky2texture && textureheight[sky1texture] != textureheight[sky2texture])
 	{
@@ -197,6 +200,7 @@ void R_InitSkyMap()
 	}
 
 	fskyheight = textureheight[sky1texture];
+	// fskyheight = textureheight[defaultsky->background.texnum];
 
 	if (fskyheight <= (128 << FRACBITS))
 	{
@@ -252,6 +256,7 @@ sky_t* R_GetSky(const char* name, bool create)
 	sky->background.scalex = INT2FIXED(1);
 	sky->background.scaley = INT2FIXED(1);
 	sky->background.scrolly = INT2FIXED(0);
+	// MIA TODO: set mid using whats done with the initskymaps instead of just 100
 	sky->background.mid = INT2FIXED(100);
 	if (level.flags & LEVEL_DOUBLESKY)
 	{
@@ -595,6 +600,8 @@ void R_RenderSkyRange(visplane_t* pl)
 	fixed_t sky2scalex = INT2FIXED(1);
 	fixed_t sky1scaley = INT2FIXED(1);
 	fixed_t sky2scaley = INT2FIXED(1);
+	fixed_t sky1mid = sky1texturemid;
+	fixed_t sky2mid = sky2texturemid;
 
 	if (skyflat != skyflatlookup.end())
 	{
@@ -612,6 +619,8 @@ void R_RenderSkyRange(visplane_t* pl)
 			sky2scalex = sky->background.scalex;
 			sky1scaley = sky->foreground.scaley;
 			sky2scaley = sky->background.scaley;
+			sky1mid    = sky->foreground.mid;
+			sky2mid    = sky->background.mid;
 		}
 		else
 		{
@@ -621,6 +630,7 @@ void R_RenderSkyRange(visplane_t* pl)
 			frontrow_offset = sky->background.curry;
 			sky1scalex = sky->background.scalex;
 			sky1scaley = sky->background.scaley;
+			sky1mid    = sky->background.mid;
 		}
 	}
 	else if (pl->picnum == int(PL_SKYFLAT))
@@ -665,7 +675,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	const palette_t* pal = V_GetDefaultPalette();
 
 	dcol.iscale = FixedMul(skyiscale, sky1scaley) >> skystretch;
-	dcol.texturemid = sky1texturemid + frontrow_offset;
+	dcol.texturemid = sky1mid + ((backskytex == -1) ? frontrow_offset : 0);
 	dcol.textureheight = textureheight[frontskytex]; // both skies are forced to be the same height anyway
 	dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
 	skyplane = pl;
