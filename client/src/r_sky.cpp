@@ -422,14 +422,14 @@ void R_ClearSkyDefs()
 	skyflatlookup.clear();
 }
 
-void spreadFire(int src, byte* firePixels, int FIRE_WIDTH, int numfire)
+void spreadFire(int src, byte* firepixels, int width)
 {
-	byte pixel = firePixels[src];
+	byte pixel = firepixels[src];
 	if(pixel == 0) {
-		firePixels[src - FIRE_WIDTH] = 0;
+		firepixels[src - width] = 0;
 	} else {
 		int rand = (int)std::round(M_RandomFloat() * 3.0) & 3;
-		firePixels[(src - rand + 1) - FIRE_WIDTH] = pixel - (rand & 1);
+		firepixels[(src - rand + 1) - width] = pixel - (rand & 1);
 	}
 }
 
@@ -442,7 +442,7 @@ static void R_UpdateFireSky(sky_t* sky, bool init = false)
 	{
         for (int y = 1; y < tex->height; y++)
 		{
-            spreadFire(y * tex->width + x, sky->firetexturedata, tex->width, sky->numfireentries);
+            spreadFire(y * tex->width + x, sky->firetexturedata, tex->width);
         }
     }
 	byte* coldata;
