@@ -1113,7 +1113,6 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY3("fade", &MIType_Color, &ref.fadeto_color)
 		ENTRY3("outsidefog", &MIType_Color, &ref.outsidefog_color)
 		ENTRY3("titlepatch", &MIType_LumpName, &ref.pname)
-		ENTRY3("par", &MIType_Int, &ref.partime)
 		ENTRY3("music", &MIType_MusicLumpName, &ref.music)
 		ENTRY4("nointermission", &MIType_SetFlag, &ref.flags, LEVEL_NOINTERMISSION)
 		ENTRY4("doublesky", &MIType_SetFlag, &ref.flags, LEVEL_DOUBLESKY)
