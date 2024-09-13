@@ -222,7 +222,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	else if (!stricmp(pname.c_str(), "partime"))
 	{
 		os.mustScanInt();
-		mape->partime = TICRATE * os.getTokenInt();
+		mape->partime = os.getTokenInt();
 	}
 	else if (!stricmp(pname.c_str(), "intertext"))
 	{
