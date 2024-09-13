@@ -597,7 +597,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		::localview.skipangle = true;
 	}
 
-	if (sendcenterview)
+	if (sendcenterview && ConsoleState == c_up && !menuactive)
 	{
 		sendcenterview = false;
 		cmd->pitch = CENTERVIEW;
