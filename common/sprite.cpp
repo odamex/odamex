@@ -4,26 +4,49 @@
 #include <string.h>
 
 #include "sprite.h"
-#include "z_zone.h"
+#include "odamex_objects.h"
 
 #include <sstream>
 
+//----------------------------------------------------------------------------------------------
+template <>
+DoomObjectContainer<const char*, spritenum_t>::~DoomObjectContainer()
+{
+	if (this->container != nullptr)
+	{
+		for (int i = 0; i < this->num_types; i++)
+		{
+			free((char*)this->container[i]);
+		}
+		M_Free_Ref(this->container);
+	}
+}
+
+template<>
+void DoomObjectContainer<const char*, spritenum_t>::clear()
+{
+	if (this->container != nullptr)
+	{
+		for (int i = 0; i < this->num_types; i++)
+		{
+			free((char*)this->container[i]);
+		}
+	}
+}
+//----------------------------------------------------------------------------------------------
+
 // global variables from info.h
 
-const char** sprnames = nullptr;
-int num_spritenum_t_types;
+DoomObjectContainer<const char*, spritenum_t> sprnames(::NUMSPRITES);
+size_t num_spritenum_t_types()
+{
+	return sprnames.capacity();
+}
 
 void D_Initialize_sprnames(const char** source, int count)
 {
-	if (sprnames != nullptr)
-	{
-        for (int i = 0; i < num_spritenum_t_types; i++)
-        {
-			free((char*)sprnames[i]);
-        }
-		M_Free_Ref(sprnames);
-	}
-	sprnames = (const char**)M_Calloc(count + 1, sizeof(char*));
+	sprnames.clear();
+	sprnames.resize(count + 1); // make space for ending NULL (other parts of code depend on this)
     if (source)
     {
 		for (int i = 0; i < count; i++)
@@ -32,7 +55,6 @@ void D_Initialize_sprnames(const char** source, int count)
 		}
     }
 	sprnames[count] = NULL;
-	num_spritenum_t_types = count;
 	// [CMB] Useful debug logging
 #if defined _DEBUG
 	Printf(PRINT_HIGH, "D_Allocate_sprnames:: allocated %d sprites.\n", count);
@@ -72,12 +94,10 @@ int D_FindOrgSpriteIndex(const char** src_sprnames, const char* key)
  */
 void D_EnsureSprnamesCapacity(int limit)
 {
-    while(limit >= num_spritenum_t_types)
-    {
-        int old_num_spritenum_t_types = num_spritenum_t_types;
-        num_spritenum_t_types *= 2;
-        sprnames = (const char**) M_Realloc(sprnames, num_spritenum_t_types * sizeof(*sprnames));
-        // memset to 0 because the end of the elements in the array needs to NULL terminated
-        memset(sprnames + old_num_spritenum_t_types, 0, (num_spritenum_t_types - old_num_spritenum_t_types) * sizeof(*sprnames));
-    }
+	int newCapacity = sprnames.capacity();
+	while (limit >= newCapacity)
+	{
+		newCapacity *= 2;
+	}
+	sprnames.resize(newCapacity);
 }

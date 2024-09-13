@@ -50,7 +50,7 @@ int maxframe;
 void R_CacheSprite(spritedef_t *sprite)
 {
 	DPrintf ("cache sprite %s\n",
-		sprite - sprites < ::num_spritenum_t_types ? sprnames[sprite - sprites] : "");
+		sprite - sprites < ::num_spritenum_t_types() ? sprnames[(int)(sprite - sprites)] : "");
 	for (int i = 0; i < sprite->numframes; i++)
 	{
 		for (int r = 0; r < 16; r++)

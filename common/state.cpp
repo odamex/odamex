@@ -1,11 +1,25 @@
 #include "odamex.h"
 
 #include "state.h"
+#include "odamex_objects.h"
 
-state_t* states;
-int num_state_t_types;
+//----------------------------------------------------------------------------------------------
+template<>
+DoomObjectContainer<state_t, statenum_t>::~DoomObjectContainer()
+{
+	M_Free_Ref(this->container);
+}
+//----------------------------------------------------------------------------------------------
 
-static void D_ResetStates(int from, int to)
+static void D_ResetStates(int from, int to);
+DoomObjectContainer<state_t, statenum_t> states(::NUMSTATES, &D_ResetStates);
+
+size_t num_state_t_types()
+{
+	return states.capacity();
+}
+
+void D_ResetStates(int from, int to)
 {
     state_t *s;
     for(int i = from; i < to; i++)
@@ -19,35 +33,24 @@ static void D_ResetStates(int from, int to)
 
 void D_Initialize_States(state_t* source, int count)
 {
-	if (states != nullptr)
-	{
-		M_Free_Ref(states);
-    }
-    states = (state_t*) M_Calloc(count, sizeof(*states));
-    // [CMB] TODO: for testing purposes only
+	states.clear();
+	states.resize(count);
     if (source) {
         for(int i = 0; i < count; i++)
         {
             states[i] = source[i];
         }
     }
-	num_state_t_types = count;
 #if defined _DEBUG
     Printf(PRINT_HIGH,"D_Initialize_states:: allocated %d states.\n", count);
 #endif
 }
 void D_EnsureStateCapacity(int limit)
 {
-    while(limit >= num_state_t_types)
+	int newCapacity = states.capacity();
+    while (limit >= newCapacity)
     {
-        int old_num_state_t_types = num_state_t_types;
-        num_state_t_types *= 2;
-        states = 
-            (state_t*) M_Realloc(states, num_state_t_types * sizeof(*states));
-		// dsdhacked spec says anything not set to a default should be 0/null
-		memset(states + old_num_state_t_types, 0,
-		       (num_state_t_types - old_num_state_t_types) * sizeof(*states));
-		// Reset state_t structs according to DSDHacked spec
-        D_ResetStates(old_num_state_t_types, num_state_t_types);
+		newCapacity *= 2;
     }
+	states.resize(newCapacity);
 }
