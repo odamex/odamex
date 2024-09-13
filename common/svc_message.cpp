@@ -41,6 +41,10 @@
 #include "p_mobj.h"
 #include "p_unlag.h"
 
+#ifndef STATE_NUM
+#define STATE_NUM(mo) (statenum_t)(mo->state - states)
+#endif
+
 /**
  * @brief Pack an array of booleans into a bitfield.
  */
@@ -341,7 +345,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 	cur->set_netid(mo->netid);
 
 	// denis - sending state fixes monster ghosts appearing under doors
-	cur->set_statenum(mo->state - states); 
+	cur->set_statenum(STATE_NUM(mo)); 
 
 	if (mo->type == MT_FOUNTAIN)
 	{
@@ -373,7 +377,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 	}
 
 	// animating corpses
-	if ((mo->flags & MF_CORPSE) && mo->state - states != S_GIBS)
+	if ((mo->flags & MF_CORPSE) && STATE_NUM(mo) != S_GIBS)
 	{
 		// This sets off some additional logic on the client.
 		spawnFlags |= SVC_SM_CORPSE;
@@ -983,7 +987,7 @@ odaproto::svc::PlayerState SVC_PlayerState(player_t& player)
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
 		pspdef_t* psp = &player.psprites[i];
-		unsigned int state = psp->state - states;
+		unsigned int state = (statenum_t)(psp->state - states);
 		odaproto::Player_Psp* plpsp = pl->add_psprites();
 		plpsp->set_statenum(state);
 	}
@@ -1315,7 +1319,7 @@ odaproto::svc::MobjState SVC_MobjState(AActor* mo)
 {
 	odaproto::svc::MobjState msg;
 
-	statenum_t mostate = static_cast<statenum_t>(mo->state - states);
+	statenum_t mostate = static_cast<statenum_t>((mo->state - states));
 
 	msg.set_netid(mo->netid);
 	msg.set_mostate(mostate);

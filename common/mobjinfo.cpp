@@ -1,11 +1,28 @@
 #include "odamex.h"
 
 #include "mobjinfo.h"
+#include "odamex_objects.h"
 
-int num_mobjinfo_types;
-mobjinfo_t* mobjinfo;
+//----------------------------------------------------------------------------------------------
+template <>
+DoomObjectContainer<mobjinfo_t, mobjtype_t>::~DoomObjectContainer()
+{
+	if (this->container != nullptr)
+	{
+		M_Free_Ref(this->container);
+	}
+}
+//----------------------------------------------------------------------------------------------
 
-static void D_ResetMobjInfo(int from, int to)
+void D_ResetMobjInfo(int from, int to);
+DoomObjectContainer<mobjinfo_t, mobjtype_t> mobjinfo(::NUMMOBJTYPES, &D_ResetMobjInfo);
+size_t num_mobjinfo_types()
+{
+	return mobjinfo.capacity();
+}
+
+
+void D_ResetMobjInfo(int from, int to)
 {
     mobjinfo_t *m;
     for(int i = from; i < to; i++)
@@ -21,19 +38,16 @@ static void D_ResetMobjInfo(int from, int to)
     }
 }
 
-void D_Initialize_Mobjinfo(mobjinfo_t* source, int count) {
-	if (mobjinfo != nullptr)
-	{
-		M_Free_Ref(mobjinfo);
-	}
-    mobjinfo = (mobjinfo_t*) M_Calloc (count, sizeof(*mobjinfo));
+void D_Initialize_Mobjinfo(mobjinfo_t* source, int count) 
+{
+	mobjinfo.clear();
+	mobjinfo.resize(count);
 	if (source)
 	{
 		for (int i = 0; i < count; i++)
 		{
 			mobjinfo[i] = source[i];
 		}
-		num_mobjinfo_types = count;
 	}
 #if defined _DEBUG
     Printf(PRINT_HIGH,"D_Allocate_mobjinfo:: allocated %d actors.\n", count);
@@ -42,20 +56,10 @@ void D_Initialize_Mobjinfo(mobjinfo_t* source, int count) {
 
 void D_EnsureMobjInfoCapacity(int limit)
 {
-	int old_num_mobjinfo_types = num_mobjinfo_types;
-	while (limit >= num_mobjinfo_types)
+	int newCapacity = mobjinfo.capacity();
+	while (limit >= newCapacity)
 	{
-		num_mobjinfo_types *= 2;
+		newCapacity *= 2;
 	}
-    
-	if (old_num_mobjinfo_types < num_mobjinfo_types)
-	{
-		mobjinfo =
-		    (mobjinfo_t*)M_Realloc(mobjinfo, num_mobjinfo_types * sizeof(*mobjinfo));
-        // dsdhacked spec says anything not set to a default should be 0/null
-		memset(mobjinfo + old_num_mobjinfo_types, 0,
-		       (num_mobjinfo_types - old_num_mobjinfo_types) * sizeof(*mobjinfo));
-        // Reset mobjinfo structs according to DSDHacked spec
-        D_ResetMobjInfo(old_num_mobjinfo_types, num_mobjinfo_types);
-    }
+	mobjinfo.resize(newCapacity);
 }
