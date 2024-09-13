@@ -223,14 +223,15 @@ bool P_HordeHasRequiredMonsterSpawns()
 {
 	bool bossspawnfound = false;
 	bool monsterspawnfound = false;
-	hordeSpawns_t::iterator it;
-	for (it = monsterSpawns.begin(); it != monsterSpawns.end(); it++)
+
+	for (hordeSpawns_t::iterator it = monsterSpawns.begin(); it != monsterSpawns.end(); it++)
 	{
 		if (it->type == TTYPE_HORDE_BOSS)
 			bossspawnfound = true;
 		if (it->type == TTYPE_HORDE_MONSTER)
 			monsterspawnfound = true;
 	}
+
 	return bossspawnfound && monsterspawnfound;
 }
 
