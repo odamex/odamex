@@ -1113,7 +1113,6 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY3("fade", &MIType_Color, &ref.fadeto_color)
 		ENTRY3("outsidefog", &MIType_Color, &ref.outsidefog_color)
 		ENTRY3("titlepatch", &MIType_LumpName, &ref.pname)
-		ENTRY3("par", &MIType_Int, &ref.partime)
 		ENTRY3("music", &MIType_MusicLumpName, &ref.music)
 		ENTRY4("nointermission", &MIType_SetFlag, &ref.flags, LEVEL_NOINTERMISSION)
 		ENTRY4("doublesky", &MIType_SetFlag, &ref.flags, LEVEL_DOUBLESKY)
@@ -1161,7 +1160,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY2("interpic", &MIType_EatNext)
 		ENTRY2("translator", &MIType_EatNext)
 		ENTRY3("compat_shorttex", &MIType_CompatFlag, &ref.flags) // todo: not implemented
-		ENTRY3("compat_limitpain", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY4("compat_limitpain", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_LIMITPAIN)
 		ENTRY3("compat_useblocking", &MIType_CompatFlag, &ref.flags) // special lines block use (not implemented, default odamex behavior)
 		ENTRY3("compat_missileclip", &MIType_CompatFlag, &ref.flags) // original height monsters when it comes to missiles (not implemented)
 		ENTRY4("compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF)
