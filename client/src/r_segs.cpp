@@ -676,7 +676,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	mfloorclip = ds->sprbottomclip;
 	mceilingclip = ds->sprtopclip;
 
-	dcol.textureheight = texheight;
+	dcol.textureheight = 512*FRACUNIT;
 
 	// draw the columns
 	// TODO: change negonearray to the actual top/bottom
