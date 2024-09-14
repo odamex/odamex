@@ -77,7 +77,7 @@ char SKYFLATNAME[8] = "F_SKY1";
 
 
 static tallpost_t* skyposts[MAXWIDTH];
-static byte compositeskybuffer[MAXWIDTH][512]; // holds doublesky composite sky to blit to the screen
+static byte transparentskybuffer[MAXWIDTH][512]; // holds foreground sky with transparency to blit to the screen
 
 enum skytype_t
 {
@@ -816,21 +816,76 @@ void R_RenderSkyRange(visplane_t* pl)
 	dcol.textureheight = textureheight[frontskytex]; // both skies are forced to be the same height anyway
 	dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
 
-	for (int x = pl->minx; x <= pl->maxx; x++)
-	{
-		int sky1colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
-		sky1colnum = FIXED2INT(FixedMul(INT2FIXED(sky1colnum), sky1scalex));
-		tallpost_t* skypost = R_GetTextureColumn(frontskytex, sky1colnum);
-		skyposts[x] = skypost;
-	}
-
 	if (backskytex == -1)
 	{
+		for (int x = pl->minx; x <= pl->maxx; x++)
+		{
+			int sky1colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
+			sky1colnum = FIXED2INT(FixedMul(INT2FIXED(sky1colnum), sky1scalex));
+			tallpost_t* skypost = R_GetTextureColumn(frontskytex, sky1colnum);
+			skyposts[x] = skypost;
+		}
+
 		R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom,
 			skyposts, SkyBackgroundColumnBlaster, false, columnmethod);
 	}
 	else
 	{
+		for (int x = pl->minx; x <= pl->maxx; x++)
+		{
+			int sky1colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
+			sky1colnum = FIXED2INT(FixedMul(INT2FIXED(sky1colnum), sky1scalex));
+			tallpost_t* skypost = R_GetTextureColumn(frontskytex, sky1colnum);
+
+			int count = MIN<int> (512, textureheight[frontskytex] >> FRACBITS);
+
+			byte* composite = transparentskybuffer[x];
+			tallpost_t* destpost = (tallpost_t*)composite;
+
+			tallpost_t* orig = destpost;
+
+			while (!skypost->end())
+			{
+				// TODO: should this start true or false
+				bool transfound = false;
+				int desttopdelta = 0;
+				for (int i = 0; i < skypost->length; i++)
+				{
+					if (R_PostDataIsTransparent(skypost->data() + i))
+					{
+						if (!transfound)
+						{
+							transfound = true;
+							// TODO: do we need the +1
+							std::memcpy(destpost->data(), skypost->data() + desttopdelta, i - desttopdelta);
+							destpost->length = i - desttopdelta;
+							destpost->topdelta = skypost->topdelta + desttopdelta;
+							destpost = destpost->next();
+						}
+					}
+					else
+					{
+						if (transfound)
+						{
+							desttopdelta = i;
+						}
+						transfound = false;
+					}
+				}
+				std::memcpy(destpost->data(), skypost->data() + desttopdelta, skypost->length - desttopdelta);
+				destpost->length = skypost->length - desttopdelta;
+				destpost->topdelta = skypost->topdelta + desttopdelta;
+				destpost = destpost->next();
+				skypost = skypost->next();
+			}
+
+			// destpost = destpost->next();
+			destpost->length = 0;
+			destpost->writeend();
+
+			skyposts[x] = orig;
+		}
+
 		R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom,
 			skyposts, SkyForegroundColumnBlaster, false, columnmethod);
 	}
