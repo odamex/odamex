@@ -749,12 +749,6 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	const palette_t* pal = V_GetDefaultPalette();
 
-	dcol.iscale = FixedMul(skyiscale, sky1scaley) >> skystretch;
-	dcol.texturemid = sky1mid + ((backskytex == -1) ? frontrow_offset : 0);
-	dcol.textureheight = textureheight[frontskytex]; // both skies are forced to be the same height anyway
-	dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
-	skyplane = pl;
-
 	// set up the appropriate colormap for the sky
 	if (fixedlightlev)
 	{
@@ -776,6 +770,12 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	if (backskytex != -1)
 	{
+		dcol.iscale = FixedMul(skyiscale, sky2scaley) >> skystretch;
+		dcol.texturemid = sky2mid + backrow_offset;
+		dcol.textureheight = textureheight[backskytex]; // both skies are forced to be the same height anyway
+		dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
+		skyplane = pl;
+
 		for (int x = pl->minx; x <= pl->maxx; x++)
 		{
 			int sky2colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky2shift) + back_offset) >> FRACBITS;
@@ -787,6 +787,11 @@ void R_RenderSkyRange(visplane_t* pl)
 		R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom,
 				skyposts, SkyBackgroundColumnBlaster, false, columnmethod);
 	}
+
+	dcol.iscale = FixedMul(skyiscale, sky1scaley) >> skystretch;
+	dcol.texturemid = sky1mid + frontrow_offset;
+	dcol.textureheight = textureheight[frontskytex]; // both skies are forced to be the same height anyway
+	dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
 
 	for (int x = pl->minx; x <= pl->maxx; x++)
 	{
