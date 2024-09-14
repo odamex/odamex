@@ -597,12 +597,13 @@ static inline void R_BlastSkyForegroundColumn(void (*drawfunc)(void))
 	{
 		tallpost_t* post = dcol.post;
 
+		int yl = dcol.yl;
+		int yh = dcol.yh;
+
 		while (!post->end())
 		{
-			int topscreen = centeryfrac - dcol.texturemid + INT2FIXED(1) * post->topdelta + 1;
-
-			// dcol.yl = (topscreen) >> FRACBITS;
-			// dcol.yh = (topscreen + INT2FIXED(1) * post->length) >> FRACBITS;
+			dcol.yl = yl;
+			dcol.yh = yh;
 
 			dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS) + (dcol.yl - centery + 1) * dcol.iscale;
 
