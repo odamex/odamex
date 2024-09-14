@@ -96,6 +96,7 @@ struct skytex_t
 	fixed_t currx;
 	fixed_t curry;
 	int32_t texnum;
+	OLumpName texture;
 };
 
 struct sky_t
@@ -259,9 +260,11 @@ sky_t* R_GetSky(const char* name, bool create)
 	if (level.flags & LEVEL_DOUBLESKY)
 	{
 		sky->background.texnum = R_TextureNumForName(level.skypic2.c_str());
+		sky->background.texture = level.skypic2;
 		sky->background.scrollx = level.sky2ScrollDelta;
 		sky->foreground.scrollx = level.sky1ScrollDelta;
 		sky->foreground.texnum = tex;
+		sky->foreground.texture = skytexname;
 		sky->foreground.scalex = INT2FIXED(1);
 		sky->foreground.scaley = INT2FIXED(1);
 		sky->foreground.scrolly = INT2FIXED(0);
@@ -270,6 +273,7 @@ sky_t* R_GetSky(const char* name, bool create)
 	else
 	{
 		sky->background.texnum = tex;
+		sky->background.texture = skytexname;
 		sky->background.scrollx = level.sky1ScrollDelta;
 		sky->type = SKY_NORMAL;
 	}
@@ -332,6 +336,7 @@ void R_InitSkyDefs()
 			constexpr float_t ticratescale = 1.0 / TICRATE;
 
 			sky->background.texnum  = tex;
+			sky->background.texture = skytexname;
 			sky->background.mid     = FLOAT2FIXED(mid.asFloat());
 			sky->background.scrollx = FLOAT2FIXED(scrollx.asFloat() * ticratescale);
 			sky->background.scrolly = FLOAT2FIXED(scrolly.asFloat() * ticratescale);
@@ -379,6 +384,7 @@ void R_InitSkyDefs()
 				}
 
 				sky->foreground.texnum  = foretex;
+				sky->foreground.texture = foreskytexname;
 				sky->foreground.mid     = FLOAT2FIXED(foremid.asFloat());
 				sky->foreground.scrollx = FLOAT2FIXED(forescrollx.asFloat() * ticratescale);
 				sky->foreground.scrolly = FLOAT2FIXED(forescrolly.asFloat() * ticratescale);
@@ -476,11 +482,11 @@ void R_InitFireSky(sky_t* sky)
 
 static void R_UpdateSky(sky_t* sky)
 {
-	sky->foreground.currx += sky->foreground.scrollx & 0xFFFFFF;
-	sky->foreground.curry += sky->foreground.scrolly & 0xFFFFFF;
+	sky->foreground.currx += sky->foreground.scrollx;
+	sky->foreground.curry += sky->foreground.scrolly;
 
-	sky->background.currx += sky->background.scrollx & 0xFFFFFF;
-	sky->background.curry += sky->background.scrolly & 0xFFFFFF;
+	sky->background.currx += sky->background.scrollx;
+	sky->background.curry += sky->background.scrolly;
 
 	if(sky->type == SKY_FIRE)
 	{
@@ -505,6 +511,14 @@ void R_ActivateSky(sky_t* sky)
 	if (sky->type == SKY_FIRE)
 	{
 		R_InitFireSky(sky);
+	}
+	if (sky->type == SKY_DOUBLESKY)
+	{
+		auto skypair = skylookup.find(sky->foreground.texture.c_str());
+		if (skypair != skylookup.end())
+		{
+			R_ActivateSky(skypair->second);
+		}
 	}
 	sky->active = true;
 }
@@ -562,7 +576,7 @@ void R_SetDefaultSky(const char* sky)
 }
 
 //
-// R_BlastSkyColumn
+// R_BlastSkyBackgroundColumn
 //
 static inline void R_BlastSkyBackgroundColumn(void (*drawfunc)(void))
 {
@@ -589,7 +603,7 @@ inline bool R_PostDataIsTransparent(byte* data)
 }
 
 //
-// R_BlastSkyColumn
+// R_BlastSkyForegroundColumn
 //
 static inline void R_BlastSkyForegroundColumn(void (*drawfunc)(void))
 {
