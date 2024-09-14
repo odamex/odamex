@@ -236,9 +236,8 @@ void R_InitSkyMap()
 	R_InitXToViewAngle();
 }
 
-sky_t* R_GetSky(const char* name, bool create)
+sky_t* R_GetSky(const std::string& name, bool create)
 {
-	std::string skytexname = name;
 	auto found = skylookup.find(name);
 	if (found != skylookup.end())
 	{
@@ -250,9 +249,10 @@ sky_t* R_GetSky(const char* name, bool create)
 		return nullptr;
 	}
 
-	int32_t tex = R_TextureNumForName(name);
+	int32_t tex = R_TextureNumForName(name.c_str());
 	if (tex < 0) return nullptr;
 
+	std::string skytexname;
 	sky_t* sky = (sky_t*)Z_Malloc(sizeof(sky_t), PU_STATIC, nullptr);
 	sky->background.scalex = INT2FIXED(1);
 	sky->background.scaley = INT2FIXED(1);
@@ -264,22 +264,24 @@ sky_t* R_GetSky(const char* name, bool create)
 		sky->background.scrollx = level.sky2ScrollDelta;
 		sky->foreground.scrollx = level.sky1ScrollDelta;
 		sky->foreground.texnum = tex;
-		sky->foreground.texture = skytexname;
+		sky->foreground.texture = name;
 		sky->foreground.scalex = INT2FIXED(1);
 		sky->foreground.scaley = INT2FIXED(1);
 		sky->foreground.scrolly = INT2FIXED(0);
 		sky->type = SKY_DOUBLESKY;
+		skytexname = level.skypic2.c_str();
 	}
 	else
 	{
 		sky->background.texnum = tex;
-		sky->background.texture = skytexname;
+		sky->background.texture = name;
 		sky->background.scrollx = level.sky1ScrollDelta;
 		sky->type = SKY_NORMAL;
+		skytexname = name;
 	}
 	sky->usedefaultmid = true;
 
-	skylookup[name] = sky;
+	skylookup[skytexname] = sky;
 	return sky;
 }
 
@@ -532,7 +534,14 @@ void R_ActivateSkies(const byte* hitlist, std::vector<int>& skytextures)
 
 		skytextures.push_back(skypair.second->background.texnum);
 		if (skypair.second->type == SKY_DOUBLESKY)
+		{
 			skytextures.push_back(skypair.second->foreground.texnum);
+			auto foreskypair = skylookup.find(skypair.second->foreground.texture.c_str());
+			if (foreskypair != skylookup.end())
+			{
+				R_ActivateSky(foreskypair->second);
+			}
+		}
 	}
 }
 
