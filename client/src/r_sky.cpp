@@ -872,9 +872,16 @@ void R_RenderSkyRange(visplane_t* pl)
 						transfound = false;
 					}
 				}
-				std::memcpy(destpost->data(), skypost->data() + desttopdelta, skypost->length - desttopdelta);
-				destpost->length = skypost->length - desttopdelta;
-				destpost->topdelta = skypost->topdelta + desttopdelta;
+				if (transfound)
+				{
+					destpost->length = 0;
+				}
+				else
+				{
+					std::memcpy(destpost->data(), skypost->data() + desttopdelta, skypost->length - desttopdelta);
+					destpost->length = skypost->length - desttopdelta;
+					destpost->topdelta = skypost->topdelta + desttopdelta;
+				}
 				destpost = destpost->next();
 				skypost = skypost->next();
 			}
