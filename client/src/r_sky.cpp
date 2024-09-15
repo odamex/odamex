@@ -261,8 +261,8 @@ sky_t* R_GetSky(const std::string& name, bool create)
 	{
 		sky->background.texnum = R_TextureNumForName(level.skypic2.c_str());
 		sky->background.texture = level.skypic2;
-		sky->background.scrollx = level.sky2ScrollDelta;
-		sky->foreground.scrollx = level.sky1ScrollDelta;
+		sky->background.scrollx = level.sky2ScrollDelta & 0xffffff;
+		sky->foreground.scrollx = level.sky1ScrollDelta & 0xffffff;
 		sky->foreground.texnum = tex;
 		sky->foreground.texture = name;
 		sky->foreground.scalex = INT2FIXED(1);
@@ -275,7 +275,7 @@ sky_t* R_GetSky(const std::string& name, bool create)
 	{
 		sky->background.texnum = tex;
 		sky->background.texture = name;
-		sky->background.scrollx = level.sky1ScrollDelta;
+		sky->background.scrollx = level.sky1ScrollDelta & 0xffffff;
 		sky->type = SKY_NORMAL;
 		skytexname = name;
 	}
@@ -795,7 +795,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	{
 		dcol.iscale = FixedMul(skyiscale, sky2scaley) >> skystretch;
 		dcol.texturemid = sky2mid + backrow_offset;
-		dcol.textureheight = textureheight[backskytex]; // both skies are forced to be the same height anyway
+		dcol.textureheight = textureheight[backskytex];
 		dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
 		skyplane = pl;
 
@@ -813,7 +813,7 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	dcol.iscale = FixedMul(skyiscale, sky1scaley) >> skystretch;
 	dcol.texturemid = sky1mid + frontrow_offset;
-	dcol.textureheight = textureheight[frontskytex]; // both skies are forced to be the same height anyway
+	dcol.textureheight = textureheight[frontskytex];
 	dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
 
 	if (backskytex == -1)
@@ -837,16 +837,12 @@ void R_RenderSkyRange(visplane_t* pl)
 			sky1colnum = FIXED2INT(FixedMul(INT2FIXED(sky1colnum), sky1scalex));
 			tallpost_t* skypost = R_GetTextureColumn(frontskytex, sky1colnum);
 
-			int count = MIN<int> (512, textureheight[frontskytex] >> FRACBITS);
-
-			byte* composite = transparentskybuffer[x];
-			tallpost_t* destpost = (tallpost_t*)composite;
+			tallpost_t* destpost = (tallpost_t*)transparentskybuffer[x];
 
 			tallpost_t* orig = destpost;
-
+			// this method sometimes ends up with a few 0 length posts, which isn't an issue but could be improved
 			while (!skypost->end())
 			{
-				// TODO: should this start true or false
 				bool transfound = false;
 				int desttopdelta = 0;
 				for (int i = 0; i < skypost->length; i++)
@@ -856,11 +852,9 @@ void R_RenderSkyRange(visplane_t* pl)
 						if (!transfound)
 						{
 							transfound = true;
-							// TODO: do we need the +1
 							std::memcpy(destpost->data(), skypost->data() + desttopdelta, i - desttopdelta);
 							destpost->length = i - desttopdelta;
 							destpost->topdelta = skypost->topdelta + desttopdelta;
-							destpost = destpost->next();
 						}
 					}
 					else
@@ -868,15 +862,12 @@ void R_RenderSkyRange(visplane_t* pl)
 						if (transfound)
 						{
 							desttopdelta = i;
+							destpost = destpost->next();
 						}
 						transfound = false;
 					}
 				}
-				if (transfound)
-				{
-					destpost->length = 0;
-				}
-				else
+				if (!transfound)
 				{
 					std::memcpy(destpost->data(), skypost->data() + desttopdelta, skypost->length - desttopdelta);
 					destpost->length = skypost->length - desttopdelta;
@@ -886,7 +877,6 @@ void R_RenderSkyRange(visplane_t* pl)
 				skypost = skypost->next();
 			}
 
-			// destpost = destpost->next();
 			destpost->length = 0;
 			destpost->writeend();
 
