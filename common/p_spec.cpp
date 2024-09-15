@@ -876,8 +876,8 @@ void P_InitPicAnims (void)
 
 			if (lastanim->numframes < 2)
 				Printf (PRINT_WARNING, "P_InitPicAnims: bad cycle from %s to %s",
-						 anim_p + 10 /* .startname */,
-						 anim_p + 1 /* .endname */);
+						 fmt::ptr(anim_p + 10) /* .startname */,
+						 fmt::ptr(anim_p + 1) /* .endname */);
 
 			lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
 						/* .speed */
@@ -2159,6 +2159,18 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
     return true;
 }
 
+void P_ApplySectorDamageNoWait(player_t* player, int damage, int mod)
+{
+	P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+}
+
+void P_ApplySectorDamageNoRandom(player_t* player, int damage, int mod)
+{
+	if (!player->powers[pw_ironfeet])
+		if (!(level.time & 0x1f))
+			P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+}
+
 void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod)
 {
 	if (!player->powers[pw_ironfeet] || (leak && P_Random(player->mo)<leak))
@@ -2260,7 +2272,9 @@ void P_UpdateSpecials (void)
 		}
 	}
 
-	// [ML] 5/11/06 - Remove sky scrolling ability
+	// Update sky column offsets
+	sky1columnoffset += level.sky1ScrollDelta & 0xffffff;
+	sky2columnoffset += level.sky2ScrollDelta & 0xffffff;
 }
 
 

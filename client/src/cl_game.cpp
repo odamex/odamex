@@ -341,6 +341,15 @@ BEGIN_COMMAND (weapprev)
 }
 END_COMMAND (weapprev)
 
+BEGIN_COMMAND (togglerun)
+{
+	cl_run.Set(!cl_run.value());
+
+	Printf(PRINT_HIGH, "Always run %s\n",
+			cl_run.value() ? "on" : "off");
+}
+END_COMMAND (togglerun)
+
 extern constate_e ConsoleState;
 
 //
@@ -383,18 +392,18 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	// let movement keys cancel each other out
 	if (strafe)
 	{
-		if (in_autosr50)
-		{
-			if (Actions[ACTION_MOVERIGHT])
-				side += sidemove[speed];
-			if (Actions[ACTION_MOVELEFT])
-				side -= sidemove[speed];
-		}
-		else
+		if (Actions[ACTION_RIGHT] || Actions[ACTION_LEFT])
 		{
 			if (Actions[ACTION_RIGHT])
 				side += sidemove[speed];
 			if (Actions[ACTION_LEFT])
+				side -= sidemove[speed];
+		}
+		else if (in_autosr50)
+		{
+			if (Actions[ACTION_MOVERIGHT])
+				side += sidemove[speed];
+			if (Actions[ACTION_MOVELEFT])
 				side -= sidemove[speed];
 		}
 	}
@@ -544,7 +553,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
 	}
 
-	if (!consoleplayer().spectator 
+	if (!consoleplayer().spectator
 		&& !Actions[ACTION_MLOOK] && !cl_mouselook && novert == 0)		// [Toke - Mouse] acts like novert.exe
 	{
 		forward += (int)(float(mousey) * m_forward);
@@ -592,7 +601,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		::localview.skipangle = true;
 	}
 
-	if (sendcenterview)
+	if (sendcenterview && ConsoleState == c_up && !menuactive)
 	{
 		sendcenterview = false;
 		cmd->pitch = CENTERVIEW;
@@ -602,7 +611,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		// [AM] LocalViewPitch is an offset on look.
 		cmd->pitch = look + (::localview.pitch >> 16);
 	}
-	
+
 	if (::localview.setangle)
 	{
 		// [AM] LocalViewAngle is a global angle, only pave over the existing
@@ -925,7 +934,7 @@ void G_Ticker (void)
 		{
 			if (it->ingame() && (it->playerstate == PST_REBORN || it->playerstate == PST_ENTER))
 			{
-				if (it->playerstate == PST_REBORN)	
+				if (it->playerstate == PST_REBORN)
 					it->doreborn = true;			// State only our will to lose the whole inventory in case of a reborn.
 				G_DoReborn(*it);
 			}
@@ -1182,7 +1191,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 		p.weaponowned[i] = false;
 
 	if (!sv_keepkeys && !sv_sharekeys)
-		P_ClearPlayerCards(p); 
+		P_ClearPlayerCards(p);
 
 	P_ClearPlayerPowerups(p);
 
@@ -1613,7 +1622,7 @@ void G_SaveGame (int slot, char *description)
 
 /**
  * @brief Create a filename for a savegame.
- * 
+ *
  * @param name Output string.
  * @param slot Slot number.
  */
@@ -1821,7 +1830,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	else
 	{
 		// [RH] Allow for demos not loaded as lumps
-		std::string found = M_FindUserFileName(::defdemoname, ".lmp"); 
+		std::string found = M_FindUserFileName(::defdemoname, ".lmp");
 		if (found.empty())
 		{
 			Printf(PRINT_WARNING, "Could not find demo %s\n", ::defdemoname.c_str());
@@ -1910,7 +1919,7 @@ void G_DoPlayDemo(bool justStreamInput)
 				multiplayer = true;
 			else
 				multiplayer = false;
-	
+
 			serverside = true;
 
 			// [SL] 2012-12-26 - Backup any cvars that need to be set to default to
@@ -1991,7 +2000,7 @@ void G_TimeDemo(const char* name)
 	defdemoname = name;
 	gameaction = ga_playdemo;
 
-	IWindow* window = I_GetWindow();	
+	IWindow* window = I_GetWindow();
 	if (noblit)
 		window->disableRefresh();
 	else

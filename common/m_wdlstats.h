@@ -68,6 +68,11 @@ enum WDLEvents {
 	//WDL_EVENT_EXITLEVEL,
 };
 
+inline auto format_as(WDLEvents eEvent)
+{
+	return fmt::underlying(eEvent);
+}
+
 enum WDLPowerups {
 	WDL_PICKUP_SOULSPHERE,
 	WDL_PICKUP_MEGASPHERE,
@@ -109,6 +114,11 @@ enum WDLPowerups {
 	WDL_PICKUP_POWERUPSPAWNER,
 	WDL_PICKUP_UNKNOWN,
 };
+
+inline auto format_as(WDLPowerups ePowerup)
+{
+	return fmt::underlying(ePowerup);
+}
 
 void M_StartWDLLog(bool newmap);
 void M_LogWDLEvent(

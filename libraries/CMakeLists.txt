@@ -120,12 +120,24 @@ function(lib_build)
   endif()
 endfunction()
 
-### tiny libraries ###
+### minilzo ###
+
+if(BUILD_CLIENT OR BUILD_SERVER)
+  message(STATUS "Compiling minilzo...")
+
+  add_library(minilzo STATIC
+      "minilzo/lzoconf.h" "minilzo/lzodefs.h" "minilzo/minilzo.c" "minilzo/minilzo.h")
+  target_include_directories(minilzo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/minilzo")
+endif()
+
+### zlib ###
 
 if(BUILD_CLIENT OR BUILD_SERVER)
 		set(ZLIB_INCLUDE_DIR
 		"${CMAKE_CURRENT_BINARY_DIR}/local/include" CACHE PATH "" FORCE)
 endif()
+
+### tiny libraries ###
 
 add_library(tinylibs INTERFACE)
 target_include_directories(tinylibs INTERFACE . "tinylibs/include")
@@ -227,14 +239,14 @@ if(BUILD_CLIENT)
   lib_build(LIBRARY fltk)
 
   find_package(FLTK CONFIG)
-  if(NOT TARGET fltk)
+  if(NOT TARGET fltk::fltk)
     message(FATAL_ERROR "FLTK target not found.")
   endif()
 
-  set_target_properties(fltk PROPERTIES IMPORTED_GLOBAL True)
-  set_target_properties(fltk_images PROPERTIES IMPORTED_GLOBAL True)
+  set_target_properties(fltk::fltk PROPERTIES IMPORTED_GLOBAL True)
+  set_target_properties(fltk::images PROPERTIES IMPORTED_GLOBAL True)
   if(WIN32)
-    target_link_libraries(fltk INTERFACE gdiplus)
+    target_link_libraries(fltk::fltk INTERFACE gdiplus)
   endif()
 endif()
 
