@@ -3229,11 +3229,11 @@ bool CL_ParseMessages()
 			std::string err;
 			if (res == PERR_UNKNOWN_HEADER)
 			{
-				err = fmt::format("Unknown message header {}", msg.svc);
+				err = fmt::format("Unknown message header {}", int(msg.svc));
 			}
 			else if (res == PERR_UNKNOWN_MESSAGE)
 			{
-				err = fmt::format("Message {} is not known to message decoder", msg.svc);
+				err = fmt::format("Message {} is not known to message decoder", int(msg.svc));
 			}
 			else if (res == PERR_BAD_DECODE)
 			{
@@ -3265,11 +3265,11 @@ bool CL_ParseMessages()
 			std::string err;
 			if (res == PERR_UNKNOWN_HEADER)
 			{
-				err = fmt::format("Unknown message header {}", msg.svc);
+				err = fmt::format("Unknown message header {}", int(msg.svc));
 			}
 			else if (res == PERR_UNKNOWN_MESSAGE)
 			{
-				err = fmt::format("Message {} is not known to message decoder", msg.svc);
+				err = fmt::format("Message {} is not known to message decoder", int(msg.svc));
 			}
 			else if (res == PERR_BAD_DECODE)
 			{
