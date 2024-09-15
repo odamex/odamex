@@ -45,6 +45,8 @@
 
 #include <ctype.h>
 
+#include <cmath>
+
 #include <algorithm>
 
 //
@@ -478,7 +480,7 @@ tallpost_t* R_GetTextureColumn(int texnum, int colnum)
 	if (mask + 1 == width)
 		colnum &= mask;
 	else
-		colnum %= width;
+		colnum -= width * std::floor((float)colnum / (float)width);
 	int lump = texturecolumnlump[texnum][colnum];
 	int ofs = texturecolumnofs[texnum][colnum];
 

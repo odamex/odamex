@@ -64,6 +64,7 @@ const static levelFlags_t LEVEL_FREELOOK_NO = BIT(16);
 const static levelFlags_t LEVEL_FREELOOK_YES = BIT(17);
 const static levelFlags_t LEVEL_COMPAT_DROPOFF = BIT(18);
 const static levelFlags_t LEVEL_COMPAT_NOPASSOVER = BIT(19);
+const static levelFlags_t LEVEL_COMPAT_LIMITPAIN = BIT(20);
 
  // Automatically start lightning
 const static levelFlags_t LEVEL_STARTLIGHTNING = BIT(24);

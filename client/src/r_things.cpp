@@ -312,7 +312,10 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	R_RotatePoint(x - viewx, y - viewy, ANG90 - viewangle, tx, ty);
 
 	v2fixed_t t1, t2;
-	t1.x = t1xold = tx - sideoffs;
+	if (flip)
+		t1.x = t1xold = tx - (width - sideoffs);
+	else
+		t1.x = t1xold = tx - sideoffs;
 	t2.x = t1.x + width;
 	t1.y = t2.y = ty;
 
@@ -541,7 +544,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	if (sprframe->rotate)
 	{
 		const angle_t ang = R_PointToAngle(thingx, thingy);
-		
+
 		// choose a different rotation based on player view
 		if (sprframe->lump[0] == sprframe->lump[1])
 		{
@@ -551,7 +554,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		{
 			rot = (ang - thing->angle + (angle_t)(ANG45 / 2) * 9 - (angle_t)(ANG180 / 16)) >> 28;
 		}
-		
+
 		lump = sprframe->lump[rot];
 		flip = static_cast<bool>(sprframe->flip[rot]);
 	}
@@ -600,7 +603,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		// full bright
 		vis->colormap = basecolormap;	// [RH] Use basecolormap
 	}
-	else if (!foggy && thing->oflags & MFO_FULLBRIGHT) 
+	else if (!foggy && thing->oflags & MFO_FULLBRIGHT)
 	{
 		// full bright
 		vis->colormap = basecolormap;

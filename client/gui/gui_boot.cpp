@@ -177,7 +177,7 @@ class BootWindow : public Fl_Window
 				m_tabPWADs->end();
 			} // Fl_Group* tabPWADs
 			{
-				Fl_Group* tabGameOptions = 
+				Fl_Group* tabGameOptions =
 					new Fl_Group(0, 25, 425, 175, "Game Options");
 				{
 					Fl_Box* o = new Fl_Box(
@@ -517,7 +517,14 @@ class BootWindow : public Fl_Window
 	{
 		// IWADs
 		const size_t value = static_cast<size_t>(m_IWADBrowser->value());
-		g_SelectedWADs.iwad = m_IWADs[value - 1].path;
+		scannedIWAD_t iwad = m_IWADs[value - 1];
+		g_SelectedWADs.iwad = iwad.path;
+
+		if (iwad.id != NULL && iwad.id->mIdName == "CHEX QUEST")
+		{
+			g_SelectedWADs.options.push_back("-deh");
+			g_SelectedWADs.options.push_back("chex.deh");
+		}
 
 		// PWADs
 		for (const auto& pwad : m_selectedPWADs)

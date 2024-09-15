@@ -180,6 +180,11 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     message(STATUS "Default SIMD flags not used on user request")
   endif()
 
+  if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    message(STATUS "GNU Detected, forcing GCC to link math.h")
+    target_compile_options(odamex PRIVATE -lm)
+  endif()
+
   if(MSVC)
     # We supply our own manifest, don't use the default one.
     set_target_properties(odamex PROPERTIES LINK_FLAGS "/MANIFEST:NO")
@@ -218,7 +223,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})
   endif()
 
-  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG fmt::fmt)
+  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG fmt::fmt minilzo)
 
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 shlwapi)
