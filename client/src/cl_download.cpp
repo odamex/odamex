@@ -171,15 +171,15 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 		return false;
 	}
 
-	if (W_IsFilenameCommercialIWAD(filename.getBasename()))
+	if (W_IsFilenameCommercialWAD(filename.getBasename()))
 	{
-		Printf(PRINT_WARNING, "Refusing to download commercial IWAD file.\n");
+		Printf(PRINT_WARNING, "Refusing to download commercial WAD file.\n");
 		return false;
 	}
 
-	if (W_IsFilehashCommercialIWAD(filename.getWantedMD5()))
+	if (W_IsFilehashCommercialWAD(filename.getWantedMD5()))
 	{
-		Printf(PRINT_WARNING, "Refusing to download renamed commercial IWAD file.\n");
+		Printf(PRINT_WARNING, "Refusing to download renamed commercial WAD file.\n");
 		return false;
 	}
 
