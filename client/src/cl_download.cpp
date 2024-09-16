@@ -175,7 +175,7 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 	{
 		Printf(PRINT_WARNING, "%s is a commercial WAD file and cannot be downloaded by Odamex.\n"
 		                      "A copy can be obtained through purchasing DOOM + DOOM II from Steam or GOG.\n",
-							  filename.getBasename());
+							  filename.getBasename().c_str());
 		return false;
 	}
 
@@ -184,7 +184,7 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 		const fileIdentifier_t* id = W_GameInfo(filename.getWantedMD5());
 		Printf(PRINT_WARNING, "%s is a renamed commercial wad file containing %s.\n"
 		                      "A copy of %s can be obtained through purchasing DOOM + DOOM II from Steam or GOG.\n",
-							  filename.getBasename(), id->mNiceName, id->mFilename);
+							  filename.getBasename().c_str(), id->mNiceName.c_str(), id->mFilename.c_str());
 		return false;
 	}
 
