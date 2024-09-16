@@ -267,6 +267,12 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 		Printf(PRINT_HIGH, "RCON password set.");
 }
 
+CVAR_FUNC_IMPL(sv_maxrate)
+{
+	for (Players::iterator it = players.begin();it != players.end();++it)
+		it->client.rate = int(sv_maxrate);
+}
+
 CVAR_FUNC_IMPL(sv_sharekeys)
 {
 	if (var)
