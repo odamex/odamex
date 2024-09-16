@@ -527,8 +527,8 @@ typedef struct
 {
 	DoomObjectContainer<state_t, statenum_t> backupStates;
 	DoomObjectContainer<mobjinfo_t, mobjtype_t> backupMobjInfo;
+	DoomObjectContainer<const char*, spritenum_t> backupSprnames;
 	weaponinfo_t backupWeaponInfo[NUMWEAPONS + 1];
-	const char** backupSprnames;
 	int backupMaxAmmo[NUMAMMO];
 	int backupClipAmmo[NUMAMMO];
 	DehInfo backupDeh;
@@ -553,23 +553,24 @@ static void BackupData(void)
 	}
 	OrgSprNames[NUMSPRITES] = NULL;
 
-	doomBackup.backupSprnames = (const char**)M_Calloc(::NUMSPRITES + 1, sizeof(char*));
-	for (i = 0; i < ::NUMSPRITES; i++)
-	{
-		doomBackup.backupSprnames[i] = strdup(sprnames[i]);
-	}
-
-	// backup states
+	// backup action pointers
 	for (i = 0; i < ::NUMSTATES; i++)
 	{
 		OrgActionPtrs[i] = states[i].action;
 	}
 
 	doomBackup.backupStates.resize(::NUMSTATES);
+	doomBackup.backupStates.clear();
 	doomBackup.backupStates.append(states);
 
 	doomBackup.backupMobjInfo.resize(::NUMMOBJTYPES);
+	doomBackup.backupMobjInfo.clear();
 	doomBackup.backupMobjInfo.append(mobjinfo);
+
+	doomBackup.backupSprnames.resize(::NUMSPRITES);
+	doomBackup.backupSprnames.clear();
+	doomBackup.backupSprnames.append(sprnames);
+
 	std::copy(weaponinfo, weaponinfo + ::NUMWEAPONS + 1, doomBackup.backupWeaponInfo);
 	std::copy(clipammo, clipammo + ::NUMAMMO, doomBackup.backupClipAmmo);
 	std::copy(maxammo, maxammo + ::NUMAMMO, doomBackup.backupMaxAmmo);
@@ -607,15 +608,9 @@ void D_UndoDehPatch()
 	}
 	*/
 
-	D_Initialize_sprnames(doomBackup.backupSprnames, ::NUMSPRITES);
+	D_Initialize_sprnames(doomBackup.backupSprnames.ptr(), ::NUMSPRITES);
 	D_Initialize_States(doomBackup.backupStates.ptr(), ::NUMSTATES);
 	D_Initialize_Mobjinfo(doomBackup.backupMobjInfo.ptr(), ::NUMMOBJTYPES);
-
-	for (i = 0; i < ::NUMSPRITES; i++)
-	{
-		free((char*)doomBackup.backupSprnames[i]);
-	}
-	M_Free(doomBackup.backupSprnames);
 	
 	extern bool isFast;
 	isFast = false;
@@ -1697,7 +1692,7 @@ static int PatchSprite(int sprNum)
 
 		if (offset >= 0 && offset < ::num_spritenum_t_types())
 		{
-			sprnames[sprNum] = OrgSprNames[offset];
+			sprnames.insert(strdup(OrgSprNames[offset]), sprNum);
 		}
 		else
 		{

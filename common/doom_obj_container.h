@@ -10,6 +10,8 @@
 
 #pragma once
 
+template <typename ObjType, typename IdxType> class DoomObjectContainer;
+
 //----------------------------------------------------------------------------------------------
 // DoomObjectContainer replaces the global doom object pointers (states, mobjinfo,
 // sprnames) with functor objects that can handle negative indices. It also auto-resizes,
@@ -21,9 +23,21 @@
 template <typename ObjType, typename IdxType>
 class DoomObjectContainer
 {
-  public:
+  public:   	
+	typedef void (*ResetObjType)(ObjType*,IdxType);
+
+  private:
 	typedef OHashTable<int, int> IndexTable;
-	typedef void (*ResetObjType)(ObjType*, IdxType);
+	typedef DoomObjectContainer<ObjType, IdxType> DoomObjectContainerType;
+
+	ObjType* container;
+	size_t num_types;
+	size_t _capacity;
+	IndexTable indices_map;
+	ResetObjType rf;
+	static void noop(ObjType* p, IdxType idx) { return; }
+	
+  public:
 
 	DoomObjectContainer(ResetObjType f = nullptr);
 	DoomObjectContainer(size_t num_types, ResetObjType f = nullptr);
@@ -42,19 +56,20 @@ class DoomObjectContainer
 	size_t size() const;
 	void clear();
 	void resize(size_t count);
+	void reserve(size_t new_cap);
 	void insert(const ObjType& pointer, int idx = 0);
 	void append(const DoomObjectContainer<ObjType, IdxType>& container);
 	// [CMB] TODO: this method needs to go, but for now its provided for compatibility
 	ObjType* ptr(void);
 	const ObjType* ptr(void) const;
 
-  private:
-	ObjType* container;
-	size_t num_types;
-	size_t _capacity;
-	IndexTable indices_map;
-	ResetObjType rf;
-	static void noop(ObjType* p, IdxType idx) { return; }
+	// ------------------------------------------------------------------------
+	// DoomObjectContainer::iterator & const_iterator implementation
+	// ------------------------------------------------------------------------
+
+	template <typename IObjType, typename IDOBT> class generic_iterator;
+	typedef generic_iterator<ObjType, DoomObjectContainerType> iterator;
+	typedef generic_iterator<const ObjType, const DoomObjectContainerType> const_iterator;
 };
 
 //----------------------------------------------------------------------------------------------
@@ -179,16 +194,25 @@ void DoomObjectContainer<ObjType, IdxType>::resize(size_t count)
 		}
 		this->_capacity = count;
 	}
-	else if (this->capacity() < count)
+	else if (this->capacity() <= count)
 	{
-		this->container = (ObjType*)M_Realloc(this->container, count * sizeof(ObjType));
+		reserve(count);
+	}
+}
+
+template<typename ObjType, typename IdxType>
+void DoomObjectContainer<ObjType, IdxType>::reserve(size_t new_cap)
+{
+	if (this->capacity() <= new_cap)
+	{
+		this->container = (ObjType*)M_Realloc(this->container, new_cap * sizeof(ObjType));
 		memset(this->container + this->capacity(), 0,
-		       (count - this->capacity()) * sizeof(ObjType));
-		for (int i = this->_capacity; i < count; i++)
+		       (new_cap - this->capacity()) * sizeof(ObjType));
+		for (int i = this->_capacity; i < new_cap; i++)
 		{
 			this->rf(&this->container[i], (IdxType)i);
 		}
-		this->_capacity = count;
+		this->_capacity = new_cap;
 	}
 }
 
@@ -223,7 +247,7 @@ ObjType* DoomObjectContainer<ObjType, IdxType>::ptr(void)
 template <typename ObjType, typename IdxType>
 const ObjType* DoomObjectContainer<ObjType, IdxType>::ptr(void) const
 {
-	return this->container;
+	return const_cast<ObjType*>(this->container);
 }
 
 //----------------------------------------------------------------------------------------------

@@ -234,7 +234,7 @@ typedef enum
 
 // [CMD] TODO: new types and function to allocate sprnames for dsdhacked
 extern const char* doom_sprnames[];
-extern DoomObjectContainer<char*, spritenum_t> sprnames;
+extern DoomObjectContainer<const char*, spritenum_t> sprnames;
 extern size_t num_spritenum_t_types();
 
 inline FArchive &operator<< (FArchive &arc, spritenum_t i) { DWORD out; out = i; return arc << out; }

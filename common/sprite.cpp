@@ -11,7 +11,7 @@
 //----------------------------------------------------------------------------------------------
 
 template<>
-inline void DoomObjectContainer<char*, spritenum_t>::clear()
+inline void DoomObjectContainer<const char*, spritenum_t>::clear()
 {
 	if (this->container != nullptr)
 	{
@@ -27,7 +27,7 @@ inline void DoomObjectContainer<char*, spritenum_t>::clear()
 
 // global variables from info.h
 
-DoomObjectContainer<char*, spritenum_t> sprnames(::NUMSPRITES);
+DoomObjectContainer<const char*, spritenum_t> sprnames(::NUMSPRITES);
 size_t num_spritenum_t_types()
 {
 	return sprnames.capacity();
