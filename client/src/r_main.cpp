@@ -1010,6 +1010,21 @@ void R_SetTranslatedLucentDrawFuncs()
 	}
 }
 
+void R_SetSkyForegroundDrawFuncs()
+{
+	if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else if (r_drawflat)
+	{
+		R_SetFlatDrawFuncs();
+	}
+	else
+	{
+		colfunc = R_DrawSkyForegroundColumn;
+	}
+}
 
 //
 // R_RenderPlayerView
