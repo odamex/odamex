@@ -41,4 +41,4 @@ extern int maxframe;
 extern vissprite_t* lastvissprite;
 
 void R_CacheSprite(spritedef_t *sprite);
-void R_InitSprites(const char** namelist);
+void R_InitSprites(const char** namelist, int count);

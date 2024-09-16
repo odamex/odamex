@@ -18,14 +18,15 @@ void D_ResetState(state_t* s, statenum_t idx)
     s->nextstate = (statenum_t) idx;
 }
 
-void D_Initialize_States(state_t* source, int count)
+void D_Initialize_States(state_t* source, int count, statenum_t start)
 {
 	states.clear();
-	states.resize(count);
     if (source) {
+		statenum_t idx = start;
         for(int i = 0; i < count; i++)
         {
-            states[i] = source[i];
+			states.insert(source[i], idx);
+			idx = statenum_t(idx + 1);
         }
     }
 #if defined _DEBUG

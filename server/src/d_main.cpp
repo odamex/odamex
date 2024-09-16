@@ -242,11 +242,11 @@ void D_DoomMain()
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
 	// [CMB] TODO: Initialize the states array - common code
-	D_Initialize_States(NULL, ::NUMSTATES);
+	D_Initialize_States(boomstates, ::NUMSTATES, S_NULL);
 	// [CMB] TODO: Initialize the mobjinfo array - common code
-    D_Initialize_Mobjinfo(doom_mobjinfo, ::NUMMOBJTYPES);
+    D_Initialize_Mobjinfo(doom_mobjinfo, ::NUMMOBJTYPES, MT_PLAYER);
 	// [CMB] TODO: Initialize the sprnames array - common code
-	D_Initialize_sprnames(doom_sprnames, ::NUMSPRITES);
+	D_Initialize_sprnames(doom_sprnames, ::NUMSPRITES, SPR_TROO);
 	// [CMD] TODO: This will need to be called after DEHACKED
 	// Initialize all extra frames
 	D_Init_DEHEXTRA_Frames();

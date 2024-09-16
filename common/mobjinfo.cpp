@@ -22,15 +22,16 @@ void D_ResetMobjInfo(mobjinfo_t* m, mobjtype_t idx)
 	m->translucency = 0x10000;
 }
 
-void D_Initialize_Mobjinfo(mobjinfo_t* source, int count) 
+void D_Initialize_Mobjinfo(mobjinfo_t* source, int count, mobjtype_t start)
 {
 	mobjinfo.clear();
-	mobjinfo.resize(count);
 	if (source)
 	{
+		mobjtype_t idx = start;
 		for (int i = 0; i < count; i++)
 		{
-			mobjinfo[i] = source[i];
+			mobjinfo.insert(source[i], idx);
+			idx = mobjtype_t(i + 1);
 		}
 	}
 #if defined _DEBUG

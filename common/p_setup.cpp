@@ -2024,7 +2024,7 @@ void P_Init (void)
 {
 	P_InitSwitchList ();
 	P_InitPicAnims ();
-	R_InitSprites(sprnames);
+	R_InitSprites(sprnames, sprnames.size());
 	InitTeamInfo();
 	P_InitHorde();
 }

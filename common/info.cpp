@@ -7613,7 +7613,7 @@ void D_Init_DEHEXTRA_Frames(void)
 		// [CMB] TODO: currently it only takes into account the highest index for doom states (S_MUSHROOM) and odastates (S_GIB0)
 		if (i <= S_MUSHROOM)
 		{
-			states[i] = boomstates[i];
+			// states[i] = boomstates[i];
 		}
 //		else if (i >= S_GIB0)
 //		{

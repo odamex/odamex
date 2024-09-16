@@ -33,19 +33,17 @@ size_t num_spritenum_t_types()
 	return sprnames.size();
 }
 
-void D_Initialize_sprnames(const char** source, int count)
+void D_Initialize_sprnames(const char** source, int count, spritenum_t start)
 {
 	sprnames.clear();
-	sprnames.resize(count + 1); // make space for ending NULL (other parts of code depend on this)
     if (source)
     {
+		spritenum_t idx = start;
 		for (int i = 0; i < count; i++)
 		{
-			sprnames[i] = strdup(source[i]);
+			sprnames.insert(strdup(source[i]), idx);
 		}
     }
-	sprnames[count] = nullptr;
-	// [CMB] Useful debug logging
 #if defined _DEBUG
 	Printf(PRINT_HIGH, "D_Allocate_sprnames:: allocated %d sprites.\n", count);
 #endif

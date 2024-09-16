@@ -608,9 +608,9 @@ void D_UndoDehPatch()
 	}
 	*/
 
-	D_Initialize_sprnames(doomBackup.backupSprnames.ptr(), ::NUMSPRITES);
-	D_Initialize_States(doomBackup.backupStates.ptr(), ::NUMSTATES);
-	D_Initialize_Mobjinfo(doomBackup.backupMobjInfo.ptr(), ::NUMMOBJTYPES);
+	D_Initialize_sprnames(doomBackup.backupSprnames.ptr(), ::NUMSPRITES, SPR_TROO);
+	D_Initialize_States(doomBackup.backupStates.ptr(), ::NUMSTATES, S_NULL);
+	D_Initialize_Mobjinfo(doomBackup.backupMobjInfo.ptr(), ::NUMMOBJTYPES, MT_PLAYER);
 	
 	extern bool isFast;
 	isFast = false;
@@ -1687,7 +1687,7 @@ static int PatchSprite(int sprNum)
 
 		if (offset >= 0 && offset < ::num_spritenum_t_types())
 		{
-			sprnames.insert(strdup(OrgSprNames[offset]), sprNum);
+			sprnames.insert(strdup(OrgSprNames[offset]), (spritenum_t) sprNum);
 		}
 		else
 		{
