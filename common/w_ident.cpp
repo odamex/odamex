@@ -478,7 +478,7 @@ static const identData_t identdata[] = {
         "MASTERLEVELS.WAD",                 // mFilename
         "6baec89f",                         // mCRC32Sum
         "84cb8640f599c4a17c8eb526f90d2b7a", // mMd5Sum
-        MASTERLV_PREFIX,                    // mGroupName
+        MASTERLV_PREFIX " (PSN)",           // mGroupName
         IDENT_COMMERCIAL,                   // flags
         PWAD_NO_WEIGHT                      // weight
     },
@@ -487,7 +487,7 @@ static const identData_t identdata[] = {
         "MASTERLEVELS.WAD",                 // mFilename
         "07312a30",                         // mCRC32Sum
         "2d0e4fde4c83d90476f3f439bb5f3eea", // mMd5Sum
-        MASTERLV_PREFIX,                    // mGroupName
+        MASTERLV_PREFIX " (DOOM + DOOM II)",// mGroupName
         IDENT_COMMERCIAL,                   // flags
         PWAD_NO_WEIGHT                      // weight
     },
@@ -1447,7 +1447,7 @@ bool W_IsFilenameCommercialWAD(const std::string& filename)
 
 
 //
-// W_IsFilenameCommercialWAD
+// W_IsFilehashCommercialWAD
 //
 // Checks to see whether a given hash belongs to an WAD flagged as "commercial"
 //
