@@ -51,9 +51,8 @@ EXTERN_CVAR(r_skypalette)
 // sky mapping
 //
 int 		skyflatnum;
-// MIA TODO: remove sky1 variables
 int 		sky1texture,    sky2texture;
-fixed_t		sky1texturemid, sky2texturemid;
+fixed_t		defaultskytexturemid;
 fixed_t		skyscale;
 int			skystretch;
 fixed_t		skyheight;
@@ -74,7 +73,6 @@ CVAR_FUNC_IMPL(r_stretchsky)
 }
 
 char SKYFLATNAME[8] = "F_SKY1";
-
 
 static tallpost_t* skyposts[MAXWIDTH];
 static byte transparentskybuffer[MAXWIDTH][512]; // holds foreground sky with transparency to blit to the screen
@@ -174,8 +172,6 @@ static void R_InitXToViewAngle()
 
 void R_GenerateLookup(int texnum, int *const errors); // from r_data.cpp
 
-
-// MIA TODO: iterate over skies to do this stuff
 void R_InitSkyMap()
 {
 	fixed_t fskyheight;
@@ -187,30 +183,18 @@ void R_InitSkyMap()
 	if (gamestate != GS_LEVEL)
 		return;
 
-	for (auto& skypair : skylookup)
-	{
-		// do the stuff below for each sky maybe???
-	}
+	sky_t* defaultsky = skyflatlookup[skyflatnum];
 
-	// sky_t* defaultsky = skyflatlookup[skyflatnum];
-
-	if (sky2texture && textureheight[sky1texture] != textureheight[sky2texture])
-	{
-		Printf (PRINT_HIGH,"\x1f+Both sky textures must be the same height.\x1f-\n");
-		sky2texture = sky1texture;
-	}
-
-	fskyheight = textureheight[sky1texture];
-	// fskyheight = textureheight[defaultsky->background.texnum];
+	fskyheight = textureheight[defaultsky->background.texnum];
 
 	if (fskyheight <= (128 << FRACBITS))
 	{
-		sky1texturemid = 200/2*FRACUNIT;
+		defaultskytexturemid = 200/2*FRACUNIT;
 		skystretch = (r_stretchsky == 1) || consoleplayer().spectator || (r_stretchsky == 2 && sv_freelook && cl_mouselook);
 	}
 	else
 	{
-		sky1texturemid = 199<<FRACBITS;//textureheight[sky1texture]-1;
+		defaultskytexturemid = 199<<FRACBITS;
 		skystretch = 0;
 	}
 	skyheight = fskyheight << skystretch;
@@ -644,8 +628,8 @@ void R_RenderSkyRange(visplane_t* pl)
 	fixed_t sky2scalex = INT2FIXED(1);
 	fixed_t sky1scaley = INT2FIXED(1);
 	fixed_t sky2scaley = INT2FIXED(1);
-	fixed_t sky1mid = sky1texturemid;
-	fixed_t sky2mid = sky2texturemid;
+	fixed_t sky1mid = defaultskytexturemid;
+	fixed_t sky2mid = defaultskytexturemid;
 
 	if (skyflat != skyflatlookup.end())
 	{
@@ -708,7 +692,7 @@ void R_RenderSkyRange(visplane_t* pl)
 		front_offset = (-side->textureoffset) >> 6;
 
 		// Vertical offset allows careful sky positioning.
-		sky1texturemid = side->rowoffset - 28*FRACUNIT;
+		defaultskytexturemid = side->rowoffset - 28*FRACUNIT;
 
 		// We sometimes flip the picture horizontally.
 		//
