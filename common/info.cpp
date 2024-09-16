@@ -31,8 +31,9 @@
 #include "m_fixed.h"
 #include "info.h"
 #include "actor.h"
+#include "state.h"
 
-const char *sprnames[NUMSPRITES+1] = {
+const char* doom_sprnames[::NUMSPRITES+1] = {
 	"TROO","SHTG","PUNG","PISG","PISF","SHTF","SHT2","CHGG","CHGF","MISG",
 	"MISF","SAWG","PLSG","PLSF","BFGG","BFGF","BLUD","PUFF","BAL1","BAL2",
 	"PLSS","PLSE","MISL","BFS1","BFE1","BFE2","TFOG","IFOG","PLAY","POSS",
@@ -76,7 +77,7 @@ const char *sprnames[NUMSPRITES+1] = {
 	//	[Toke - CTF]
 	"BSOK","RSOK","BFLG","RFLG","BDWN","RDWN","BCAR","RCAR", "GSOK", "GFLG",
 	"GDWN","GCAR","TLGL","WPBF","WPRF","WPGF", "CARE",
-	NULL
+    NULL
 };
 
 class player_s;
@@ -1255,7 +1256,7 @@ state_t	boomstates[S_MUSHROOM + 1] = {
 	{SPR_MISL,32769,8,A_Mushroom,S_EXPLODE2,0,0},  // S_MUSHROOM
 };
 
-state_t odastates[NUMSTATES - S_GIB0] = {
+state_t odastates[::NUMSTATES - S_GIB0] = {
     // ZDoom/Odamex stuff starts here
 
     {SPR_GIB0, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB0
@@ -1329,11 +1330,11 @@ state_t odastates[NUMSTATES - S_GIB0] = {
 // the new DEHExtra state spec starts at 1100, while we have around
 // 1130. To fix this, we'll need to append the states Odamex adds
 // at the end and reference them that way.
-// When we convert this to DSDHacked, we'll need to append the dynamic
+// [CMB] TODO: When we convert this to DSDHacked, we'll need to append the dynamic
 // frame list size to the end of the doom states to get the odamex states.
-state_t states[NUMSTATES] = {};
+// state_t states[NUMSTATES] = {};
 
-mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
+mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 
 	{		// MT_PLAYER
 	-1,		// doomednum
@@ -5610,7 +5611,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	MF_NOBLOCKMAP,	// flags
 	MF2_DONTDRAW,	// flags2
 	S_NULL,		// raisestate
-	0x10000,	// translucency
+	0,	// translucency
 	"MT_PUSH"	// name
 	},
 
@@ -6223,7 +6224,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	MF_NOGRAVITY,		// flags
 	0,		// flags2
 	S_NULL,		// raisestate
-	0x10000,
+	0,
 	"MT_UNKNOWNTHING"
 	},
 
@@ -6254,7 +6255,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	MF_NOBLOCKMAP,		// flags
 	MF2_DONTDRAW,		// flags2
 	S_NULL,		// raisestate
-	0x10000,
+	0,
 	"MT_PATHNODE -- used for monster patrols"
 	},
 
@@ -6378,7 +6379,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	MF_NOSECTOR|MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
 	0,		// flags2
 	S_NULL,		// raisestate
-	0x10000,
+	0,
 	"MT_SPARK"
 	},
 
@@ -6409,7 +6410,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
 	0,		// flags2
 	S_NULL,		// raisestate
-	0x10000,
+	0,
 	"MT_FOUNTAIN"
 	},
 
@@ -6440,7 +6441,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	MF_NOSECTOR | MF_NOGRAVITY,		// flags  MF_NOSECTOR  Makes it invisible
 	0,		// flags2
 	S_NULL,   // raisestate
-	0x10000,
+	0,
 	"MT_NODE   //Added by MC."
 	},
 
@@ -6502,7 +6503,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	MF_NOBLOCKMAP|MF_NOSECTOR|MF_NOGRAVITY,		// flags
 	0,		// flags2
 	S_NULL,		// raisestate
-	0x10000,
+	0,
 	"MT_SECRETTRIGGER"
 	},
 
@@ -7597,21 +7598,27 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	},
 };
 
-
-
+// [CMB] TODO: how to handle this with dsdhacked?
+// [CMB] TODO: do we even need these with dynamically allocated states now? DEHEXTRA added 2910 spaces for doom objects.
+// [CMB] -- states being pre-allocated is a good thing - means we can use that space instead of having to allocate it dynamically
+// [CMB] -- anything beyond the currently supported range can be dynamically allocated
+// [CMB] -- the harder portion is adding on the odastates at the end
+// [CMB] TODO: there are some other things this does like default behaviors (MBF21, etc). 
 void D_Init_DEHEXTRA_Frames(void)
 {
 	// [Blair] Combine all the state tables.
-	for (int i = 0; i < NUMSTATES; i++)
+	for (int i = 0; i < ::num_state_t_types(); i++)
 	{
+		// [CMB] TODO: this will need to be adjusted based on the highest index added by dsdhacked
+		// [CMB] TODO: currently it only takes into account the highest index for doom states (S_MUSHROOM) and odastates (S_GIB0)
 		if (i <= S_MUSHROOM)
 		{
-			states[i] = boomstates[i];
+			// states[i] = boomstates[i];
 		}
-		else if (i >= S_GIB0)
-		{
-			states[i] = odastates[i - S_GIB0];
-		}
+//		else if (i >= S_GIB0)
+//		{
+//			states[i] = odastates[i - S_GIB0];
+//		}
 		else
 		{
 			// These cover both DEHEXTRA states and the undefined states
@@ -7642,14 +7649,14 @@ void D_Init_DEHEXTRA_Frames(void)
 		states[i].flags |= STATEF_SKILL5FAST;
 
 	// Start all MBF21 content here.
-	for (int i = 0; i < NUMMOBJTYPES ; i++)
+	for (int i = 0; i < ::num_mobjinfo_types() ; i++)
 	{
 		mobjinfo[i].altspeed = NO_ALTSPEED;
 		mobjinfo[i].infighting_group = IG_DEFAULT;
 		mobjinfo[i].projectile_group = PG_DEFAULT;
 		mobjinfo[i].splash_group = SG_DEFAULT;
 		mobjinfo[i].ripsound = "";
-		mobjinfo[i].meleerange = (64 * FRACUNIT);
+		mobjinfo[i].meleerange = MELEERANGE;
 		mobjinfo[i].droppeditem = MT_NULL;
 	}
 
@@ -7676,6 +7683,17 @@ void D_Init_DEHEXTRA_Frames(void)
 	// Projectile links
 	mobjinfo[MT_BRUISER].projectile_group = PG_BARON;
 	mobjinfo[MT_KNIGHT].projectile_group = PG_BARON;
+}
+
+void D_Init_Odamex_States(int num_states)
+{
+    // using hard coded values here
+    int num_odamex_states = ::NUMSTATES - S_GIB0;
+    D_EnsureStateCapacity(num_states + num_odamex_states);
+    for(int i = 0; i < num_odamex_states; i++)
+    {
+        states[num_states + i] = odastates[i]; // [CMB] TODO: did we actually initialize these?
+    }
 }
 
 VERSION_CONTROL (info_cpp, "$Id$")

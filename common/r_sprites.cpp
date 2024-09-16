@@ -50,15 +50,17 @@ int maxframe;
 void R_CacheSprite(spritedef_t *sprite)
 {
 	DPrintf ("cache sprite %s\n",
-		sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
+		sprite - sprites < ::num_spritenum_t_types() ? sprnames[(int)(sprite - sprites)] : "");
 	for (int i = 0; i < sprite->numframes; i++)
 	{
 		for (int r = 0; r < 16; r++)
 		{
 			if (sprite->spriteframes[i].width[r] == SPRITE_NEEDS_INFO)
 			{
-				if (sprite->spriteframes[i].lump[r] == -1)
-					I_Error ("Sprite %d, rotation %d has no lump", i, r);
+				if (sprite->spriteframes[i].lump[r] == -1) 
+				{
+					I_Error("Sprite %d, rotation %d has no lump", i, r);
+				}
 				patch_t* patch = W_CachePatch(sprite->spriteframes[i].lump[r]);
 				sprite->spriteframes[i].width[r] = patch->width()<<FRACBITS;
 				sprite->spriteframes[i].offset[r] = patch->leftoffset()<<FRACBITS;
@@ -197,7 +199,7 @@ static void R_InstallSprite(const char *name, int num)
 //	(4 chars exactly) to be used.
 // Builds the sprite rotation matrices to account
 //	for horizontally flipped sprites.
-// Will report an error if the lumps are inconsistant.
+// Will report an error if the lumps are inconsistent.
 // Only called at startup.
 //
 // Sprite lump names are 4 characters for the actor,
@@ -206,15 +208,11 @@ static void R_InstallSprite(const char *name, int num)
 //	letter/number appended.
 // The rotation character can be 0 to signify no rotations.
 //
-static void R_InitSpriteDefs(const char **namelist)
+static void R_InitSpriteDefs(const char **namelist, int count)
 {
-	// count the number of sprite names
-	for (numsprites = 0; namelist[numsprites]; numsprites++)
-		;
+	numsprites = count;
 
-	if (!numsprites)
-		return;
-
+	// [CMB] TODO: this function zone allocates this statically - this can grow over time so we need a Z_Realloc
 	sprites = (spritedef_t *)Z_Malloc(numsprites * sizeof(*sprites), PU_STATIC, NULL);
 
 	// scan all the lump names for each of the names,
@@ -267,7 +265,7 @@ vissprite_t		*lastvissprite;
 // R_InitSprites
 // Called at program start.
 //
-void R_InitSprites(const char **namelist)
+void R_InitSprites(const char **namelist, int count)
 {
 	MaxVisSprites = 128;	// [RH] This is the initial default value. It grows as needed.
 
@@ -276,7 +274,7 @@ void R_InitSprites(const char **namelist)
 	vissprites = (vissprite_t *)Malloc(MaxVisSprites * sizeof(vissprite_t));
 	lastvissprite = &vissprites[MaxVisSprites];
 
-	R_InitSpriteDefs (namelist);
+	R_InitSpriteDefs (namelist, count);
 }
 
 VERSION_CONTROL (r_sprites_cpp, "$Id$")

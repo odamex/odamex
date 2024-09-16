@@ -197,6 +197,7 @@ enum mobjflag_t
 
 	MF_SKULLFLY  = BIT(24),		// skull in flight
 	MF_NOTDMATCH = BIT(25),		// don't spawn in death match (key cards)
+	MF_LINEDONE = BIT(26),      // MF - A_LineEffect - activate as if player
 
 	// Player sprites in multiplayer modes are modified
 	//  using an internal color lookup table for re-indexing.

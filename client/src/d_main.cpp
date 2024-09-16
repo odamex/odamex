@@ -84,6 +84,9 @@
 #include "g_horde.h"
 #include "w_ident.h"
 #include "gui_boot.h"
+#include "sprite.h"
+#include "mobjinfo.h"
+#include "state.h"
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -765,6 +768,9 @@ void D_DoomMain()
 
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
+	D_Initialize_States(boomstates, ::NUMSTATES, S_NULL);
+    D_Initialize_Mobjinfo(doom_mobjinfo, ::NUMMOBJTYPES, MT_PLAYER);
+	D_Initialize_sprnames(doom_sprnames, ::NUMSPRITES, SPR_TROO);
 	// Initialize all extra frames
 	D_Init_DEHEXTRA_Frames();
 
@@ -866,6 +872,7 @@ void D_DoomMain()
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
 
+    // [CMB] TODO: deh processing is done here
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
 	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
