@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <vector>
+
 template <typename ObjType, typename IdxType> class DoomObjectContainer;
 
 //----------------------------------------------------------------------------------------------
@@ -30,9 +32,7 @@ class DoomObjectContainer
 	typedef OHashTable<int, int> IndexTable;
 	typedef DoomObjectContainer<ObjType, IdxType> DoomObjectContainerType;
 
-	ObjType* container;
-	size_t num_types;
-	size_t _capacity;
+	std::vector<ObjType> container;
 	IndexTable indices_map;
 	ResetObjType rf;
 	static void noop(ObjType* p, IdxType idx) { return; }
@@ -41,7 +41,6 @@ class DoomObjectContainer
 
 	DoomObjectContainer(ResetObjType f = nullptr);
 	DoomObjectContainer(size_t num_types, ResetObjType f = nullptr);
-	DoomObjectContainer(ObjType* pointer, size_t num_types, ResetObjType f = nullptr);
 	~DoomObjectContainer();
 
 	ObjType& operator[](int);
@@ -81,56 +80,24 @@ class DoomObjectContainer
 
 template <typename ObjType, typename IdxType>
 DoomObjectContainer<ObjType, IdxType>::DoomObjectContainer(ResetObjType f)
-    : container(nullptr), num_types(0), _capacity(0), rf(f == nullptr ? &noop : f)
+    : rf(f == nullptr ? &noop : f)
 {
 }
 
 template <typename ObjType, typename IdxType>
 DoomObjectContainer<ObjType, IdxType>::DoomObjectContainer(size_t count, ResetObjType f)
-    : num_types(count), _capacity(count), rf(f == nullptr ? &noop : f)
+    : rf(f == nullptr ? &noop : f)
 {
-	this->container = (ObjType*)M_Calloc(count, sizeof(ObjType));
-}
-
-template <typename ObjType, typename IdxType>
-DoomObjectContainer<ObjType, IdxType>::DoomObjectContainer(ObjType* pointer, size_t count,
-                                                           ResetObjType f)
-{
-	this->container = M_Calloc(count, sizeof(ObjType));
-	this->num_types = count;
-	if (pointer != nullptr)
-	{
-		for (int i = 0; i < count; i++)
-		{
-			this->container[i] = pointer[i];
-		}
-		this->num_types = count;
-		this->_capacity = count;
-	}
-	this->rf = f == nullptr ? &noop : f;
-#if defined _DEBUG
-	// Printf(PRINT_HIGH, "D_Initialize_states:: allocated %d states.\n", count);
-#endif
+	this->container.reserve(count);
 }
 
 template <typename ObjType, typename IdxType>
 DoomObjectContainer<ObjType, IdxType>::~DoomObjectContainer()
-{
-	if (this->container != nullptr)
-	{
-		M_Free_Ref(this->container);
-	}
-}
+{}
 
 template <typename ObjType, typename IdxType>
 ObjType& DoomObjectContainer<ObjType, IdxType>::operator[](int idx)
 {
-	// similar to std::unordered_map::operator[] we re-size and return the zero'd out
-	// ObjType
-	// if ((size_t)idx > this->capacity())
-	//{
-	//	this->resize(this->capacity() * 2);
-	//}
 	return this->container[(size_t)idx];
 }
 
@@ -143,111 +110,89 @@ const ObjType& DoomObjectContainer<ObjType, IdxType>::operator[](int idx) const
 template <typename ObjType, typename IdxType>
 bool DoomObjectContainer<ObjType, IdxType>::operator==(const ObjType* p) const
 {
-	return this->pointer == p;
+	return this->container().data() == p;
 }
 
 template <typename ObjType, typename IdxType>
 bool DoomObjectContainer<ObjType, IdxType>::operator!=(const ObjType* p) const
 {
-	return this->pointer != p;
+	return this->container().data() != p;
 }
 
 template <typename ObjType, typename IdxType>
 DoomObjectContainer<ObjType, IdxType>::operator const ObjType*(void) const
 {
-	return const_cast<ObjType*>(this->container);
+	return const_cast<ObjType*>(this->container.data());
 }
 template <typename ObjType, typename IdxType>
 DoomObjectContainer<ObjType, IdxType>::operator ObjType*(void)
 {
-	return this->container;
+	return this->container.data();
 }
 
 template <typename ObjType, typename IdxType>
 size_t DoomObjectContainer<ObjType, IdxType>::size() const
 {
-	return this->num_types;
+	return this->container.size();
 }
 
 template <typename ObjType, typename IdxType>
 size_t DoomObjectContainer<ObjType, IdxType>::capacity() const
 {
-	return this->_capacity;
+	return this->container.capacity();
 }
 
 template <typename ObjType, typename IdxType>
 void DoomObjectContainer<ObjType, IdxType>::clear()
 {
-	memset(this->container, 0, this->capacity());
-	this->num_types = 0;
+	this->container.clear();
 }
 
 template <typename ObjType, typename IdxType>
 void DoomObjectContainer<ObjType, IdxType>::resize(size_t count)
 {
-	if (this->capacity() > count)
+	int old_size = this->container.size();
+	this->container.resize(count);
+	if (old_size < this->container.size())
 	{
-		this->container = (ObjType*)M_Realloc(this->container, count * sizeof(ObjType));
-		if (this->size() > count)
+		for (int i = old_size; i < this->container.size(); i++)
 		{
-			this->num_types = count;
+			memset(&this->container[i], 0, sizeof(ObjType));
+			this->rf(&this->container[i], (IdxType)i);
 		}
-		this->_capacity = count;
-	}
-	else if (this->capacity() <= count)
-	{
-		reserve(count);
 	}
 }
 
 template<typename ObjType, typename IdxType>
 void DoomObjectContainer<ObjType, IdxType>::reserve(size_t new_cap)
 {
-	if (this->capacity() <= new_cap)
-	{
-		this->container = (ObjType*)M_Realloc(this->container, new_cap * sizeof(ObjType));
-		memset(this->container + this->capacity(), 0,
-		       (new_cap - this->capacity()) * sizeof(ObjType));
-		for (int i = this->_capacity; i < new_cap; i++)
-		{
-			this->rf(&this->container[i], (IdxType)i);
-		}
-		this->_capacity = new_cap;
-	}
+	this->container.reserve(new_cap);
 }
 
 template <typename ObjType, typename IdxType>
 void DoomObjectContainer<ObjType, IdxType>::insert(const ObjType& obj, int index)
 {
-	if (this->size() + 1 > this->capacity())
-	{
-		this->resize(this->capacity() * 2);
-	}
-	this->container[index] = obj;
-	this->num_types++;
+	this->container.push_back(obj);
 }
 
 template <typename ObjType, typename IdxType>
 void DoomObjectContainer<ObjType, IdxType>::append(
-    const DoomObjectContainer<ObjType, IdxType>& container)
+    const DoomObjectContainer<ObjType, IdxType>& dObjContainer)
 {
-	int c_capacity = container.capacity();
-	for (int i = 0; i < c_capacity; i++)
-	{
-		this->insert(container[i]);
-	}
+	this->container.insert(this->container.end(), dObjContainer.container.begin(),
+	                       dObjContainer.container.end());
 }
 
 template <typename ObjType, typename IdxType>
 ObjType* DoomObjectContainer<ObjType, IdxType>::ptr(void)
 {
-	return this->container;
+	return this->container.data();
 }
 
 template <typename ObjType, typename IdxType>
 const ObjType* DoomObjectContainer<ObjType, IdxType>::ptr(void) const
 {
-	return const_cast<ObjType*>(this->container);
+	return const_cast<ObjType*>(this->container.data());
 }
 
 //----------------------------------------------------------------------------------------------

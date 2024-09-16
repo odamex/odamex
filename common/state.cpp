@@ -8,7 +8,7 @@ DoomObjectContainer<state_t, statenum_t> states(::NUMSTATES, &D_ResetState);
 
 size_t num_state_t_types()
 {
-	return states.capacity();
+	return states.size();
 }
 
 void D_ResetState(state_t* s, statenum_t idx)
@@ -34,10 +34,10 @@ void D_Initialize_States(state_t* source, int count)
 }
 void D_EnsureStateCapacity(int limit)
 {
-	int newCapacity = states.capacity();
-    while (limit >= newCapacity)
+	int newSize = states.size();
+	while (limit >= newSize)
     {
-		newCapacity *= 2;
-    }
-	states.resize(newCapacity);
+		newSize *= 2;
+    }   
+    states.resize(newSize);
 }

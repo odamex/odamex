@@ -13,9 +13,9 @@
 template<>
 inline void DoomObjectContainer<const char*, spritenum_t>::clear()
 {
-	if (this->container != nullptr)
+	if (this->container.size() > 0)
 	{
-		for (int i = 0; i < this->num_types; i++)
+		for (int i = 0; i < this->container.size(); i++)
 		{
 			char* p = (char*)this->container[i];
 			M_Free(p);
@@ -30,7 +30,7 @@ inline void DoomObjectContainer<const char*, spritenum_t>::clear()
 DoomObjectContainer<const char*, spritenum_t> sprnames(::NUMSPRITES);
 size_t num_spritenum_t_types()
 {
-	return sprnames.capacity();
+	return sprnames.size();
 }
 
 void D_Initialize_sprnames(const char** source, int count)
@@ -44,7 +44,7 @@ void D_Initialize_sprnames(const char** source, int count)
 			sprnames[i] = strdup(source[i]);
 		}
     }
-	sprnames[count] = NULL;
+	sprnames[count] = nullptr;
 	// [CMB] Useful debug logging
 #if defined _DEBUG
 	Printf(PRINT_HIGH, "D_Allocate_sprnames:: allocated %d sprites.\n", count);
@@ -84,10 +84,10 @@ int D_FindOrgSpriteIndex(const char** src_sprnames, const char* key)
  */
 void D_EnsureSprnamesCapacity(int limit)
 {
-	int newCapacity = sprnames.capacity();
-	while (limit >= newCapacity)
+	int newSize = sprnames.size();
+	if (limit >= newSize)
 	{
-		newCapacity *= 2;
+		newSize *= 2;
 	}
-	sprnames.resize(newCapacity);
+	sprnames.resize(newSize);
 }

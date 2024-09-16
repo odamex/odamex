@@ -1018,11 +1018,6 @@ static int PatchThing(int thingy)
         DPrintf("Thing %" PRIuSIZE " requires allocation.\n", thingNum);
 #endif
         D_EnsureMobjInfoCapacity(thingNum);
-		/*
-        mobjinfo_t* newthing = (mobjinfo_t*) M_Malloc(sizeof(mobjinfo_t));
-        mobjinfo[thingNum] = *newthing;
-        info = newthing;
-		*/
 		info = &mobjinfo[thingNum];
 		*ednum = *&info->doomednum;
     }
