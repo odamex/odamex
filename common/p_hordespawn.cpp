@@ -224,6 +224,25 @@ bool P_HordeHasSpawns()
 }
 
 /**
+ * @brief Return true if there is both at least one large boss spawner and one large monster spawner in the map.
+ */
+bool P_HordeHasRequiredMonsterSpawns()
+{
+	bool bossspawnfound = false;
+	bool monsterspawnfound = false;
+
+	for (hordeSpawns_t::iterator it = monsterSpawns.begin(); it != monsterSpawns.end(); it++)
+	{
+		if (it->type == TTYPE_HORDE_BOSS)
+			bossspawnfound = true;
+		if (it->type == TTYPE_HORDE_MONSTER)
+			monsterspawnfound = true;
+	}
+
+	return bossspawnfound && monsterspawnfound;
+}
+
+/**
  * @brief Clear all tracked spawn points.
  */
 void P_HordeClearSpawns()

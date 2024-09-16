@@ -671,7 +671,7 @@ void HordeState::tick()
 	{
 		size_t alive = countLivingBosses();
 		if (!alive && m_bossRecipe.limit <= 0)
-		{			
+		{
 			// Start the next wave.
 			nextWave();
 			return;
@@ -886,13 +886,13 @@ void P_RunHordeTics()
 	if (!P_HordeHasSpawns())
 	{
 		P_HordeAddSpawns();
-		if (!P_HordeHasSpawns())
+		if (!P_HordeHasSpawns() || !P_HordeHasRequiredMonsterSpawns())
 		{
 			if (::level.time == 0)
 			{
 				Printf(
 				    PRINT_WARNING,
-				    "WARNING: This map is missing Horde Monster, Horde Supply Cache, "
+				    "WARNING: This map is missing Horde Monster, Horde Boss, Horde Supply Cache, "
 				    "or Horde Powerup spawns.  At least one of each must be present.\n");
 			}
 
