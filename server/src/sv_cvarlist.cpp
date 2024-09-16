@@ -89,6 +89,9 @@ CVAR(			sv_endmapscript, "",  "Script to run at end of each map (e.g. to choose 
 CVAR(			sv_startmapscript, "", "Script to run at start of each map (e.g. to override cvars)",
 				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)	
 
+CVAR(			sv_curpwad, "", "Set to the first pwad filename passed to the wad command (for scripting)",
+				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
+
 CVAR(			sv_curmap, "", "Set to the last played map",
 				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
