@@ -1,42 +1,33 @@
 //----------------------------------------------------------------------------------------------
-// odamex enum definitions with negative indices (similar to id24 specification) are in info.h
-// using negative indices prevents overriding during dehacked (though id24 allows this)
+// odamex enum definitions with negative indices (similar to id24 specification) are in
+// info.h using negative indices prevents overriding during dehacked (though id24 allows
+// this)
 //
-// id24 allows 0x80000000-0x8FFFFFFF (abbreviated as 0x8000-0x8FFF) for negative indices for source port implementation
-// id24 spec no longer uses enum to define the indices for doom objects, but until that is implemented enums will
-// continue to be used
+// id24 allows 0x80000000-0x8FFFFFFF (abbreviated as 0x8000-0x8FFF) for negative indices
+// for source port implementation id24 spec no longer uses enum to define the indices for
+// doom objects, but until that is implemented enums will continue to be used
 //----------------------------------------------------------------------------------------------
 
 #pragma once
-#include "info.h" // doom object definitions - including enums with negative indices
-
-/*
-extern state_t odastates[]; //statenum_t 
-extern mobjinfo_t odathings[]; //mobjtype_t
-extern const char* odasprnames[]; // spritenum_t
-
-state_t* D_GetOdaState(statenum_t statenum);
-mobjinfo_t* D_GetOdaMobjinfo(mobjtype_t mobjtype);
-const char* D_GetOdaSprName(spritenum_t spritenum);
-*/
 
 //----------------------------------------------------------------------------------------------
-// DoomObjectContainer replaces the global doom object pointers (states, mobjinfo, sprnames)
-// with functor objects that can handle negative indices.
-// It also auto-resizes, similar to vector, and provides a way to get the size and capcity
-// Additionally, it has implicit type coercion operators to the base pointer type to be compatible
-// with existing code.
+// DoomObjectContainer replaces the global doom object pointers (states, mobjinfo,
+// sprnames) with functor objects that can handle negative indices. It also auto-resizes,
+// similar to vector, and provides a way to get the size and capcity Additionally, it has
+// implicit type coercion operators to the base pointer type to be compatible with
+// existing code.
 //----------------------------------------------------------------------------------------------
 
 template <typename ObjType, typename IdxType>
-class DoomObjectContainer {
+class DoomObjectContainer
+{
   public:
 	typedef OHashTable<int, int> IndexTable;
-	typedef void (*ResetObjTypes)(int from, int to);
+	typedef void (*ResetObjType)(ObjType*, IdxType);
 
-	DoomObjectContainer(ResetObjTypes f = nullptr);
-	DoomObjectContainer(size_t num_types, ResetObjTypes f = nullptr);
-	DoomObjectContainer(ObjType* pointer, size_t num_types, ResetObjTypes f = nullptr);
+	DoomObjectContainer(ResetObjType f = nullptr);
+	DoomObjectContainer(size_t num_types, ResetObjType f = nullptr);
+	DoomObjectContainer(ObjType* pointer, size_t num_types, ResetObjType f = nullptr);
 	~DoomObjectContainer();
 
 	ObjType& operator[](int);
@@ -44,9 +35,9 @@ class DoomObjectContainer {
 	bool operator==(const ObjType* p) const;
 	bool operator!=(const ObjType* p) const;
 	// convert to ObjType* to allow pointer arithmetic
-	operator ObjType*(void) const;
+	operator const ObjType*(void) const;
 	operator ObjType*(void);
-	
+
 	size_t capacity() const;
 	size_t size() const;
 	void clear();
@@ -62,8 +53,8 @@ class DoomObjectContainer {
 	size_t num_types;
 	size_t _capacity;
 	IndexTable indices_map;
-	ResetObjTypes rf;
-	static void noop(int from, int to) { return; }
+	ResetObjType rf;
+	static void noop(ObjType* p, IdxType idx) { return; }
 };
 
 //----------------------------------------------------------------------------------------------
@@ -74,20 +65,21 @@ class DoomObjectContainer {
 // TODO: operator[](int) resizes and returns the reset value
 
 template <typename ObjType, typename IdxType>
-DoomObjectContainer<ObjType, IdxType>::DoomObjectContainer(ResetObjTypes f)
+DoomObjectContainer<ObjType, IdxType>::DoomObjectContainer(ResetObjType f)
     : container(nullptr), num_types(0), _capacity(0), rf(f == nullptr ? &noop : f)
-{}
+{
+}
 
 template <typename ObjType, typename IdxType>
-DoomObjectContainer<ObjType, IdxType>::DoomObjectContainer(size_t count, ResetObjTypes f)
+DoomObjectContainer<ObjType, IdxType>::DoomObjectContainer(size_t count, ResetObjType f)
     : num_types(count), _capacity(count), rf(f == nullptr ? &noop : f)
 {
-	this->container = (ObjType*) M_Calloc(count, sizeof(ObjType));
+	this->container = (ObjType*)M_Calloc(count, sizeof(ObjType));
 }
 
 template <typename ObjType, typename IdxType>
 DoomObjectContainer<ObjType, IdxType>::DoomObjectContainer(ObjType* pointer, size_t count,
-                                                           ResetObjTypes f)
+                                                           ResetObjType f)
 {
 	this->container = M_Calloc(count, sizeof(ObjType));
 	this->num_types = count;
@@ -107,22 +99,31 @@ DoomObjectContainer<ObjType, IdxType>::DoomObjectContainer(ObjType* pointer, siz
 }
 
 template <typename ObjType, typename IdxType>
+DoomObjectContainer<ObjType, IdxType>::~DoomObjectContainer()
+{
+	if (this->container != nullptr)
+	{
+		M_Free_Ref(this->container);
+	}
+}
+
+template <typename ObjType, typename IdxType>
 ObjType& DoomObjectContainer<ObjType, IdxType>::operator[](int idx)
 {
 	// similar to std::unordered_map::operator[] we re-size and return the zero'd out
 	// ObjType
-	//if ((size_t)idx > this->capacity())
+	// if ((size_t)idx > this->capacity())
 	//{
 	//	this->resize(this->capacity() * 2);
 	//}
 	return this->container[(size_t)idx];
 }
 
- template <typename ObjType, typename IdxType>
- const ObjType& DoomObjectContainer<ObjType, IdxType>::operator[](int idx) const
+template <typename ObjType, typename IdxType>
+const ObjType& DoomObjectContainer<ObjType, IdxType>::operator[](int idx) const
 {
 	return const_cast<ObjType&>(this->container[(size_t)idx]);
- }
+}
 
 template <typename ObjType, typename IdxType>
 bool DoomObjectContainer<ObjType, IdxType>::operator==(const ObjType* p) const
@@ -137,7 +138,7 @@ bool DoomObjectContainer<ObjType, IdxType>::operator!=(const ObjType* p) const
 }
 
 template <typename ObjType, typename IdxType>
-DoomObjectContainer<ObjType, IdxType>::operator ObjType*(void) const
+DoomObjectContainer<ObjType, IdxType>::operator const ObjType*(void) const
 {
 	return const_cast<ObjType*>(this->container);
 }
@@ -171,7 +172,7 @@ void DoomObjectContainer<ObjType, IdxType>::resize(size_t count)
 {
 	if (this->capacity() > count)
 	{
-		this->container = (ObjType*) M_Realloc(this->container, count * sizeof(ObjType));
+		this->container = (ObjType*)M_Realloc(this->container, count * sizeof(ObjType));
 		if (this->size() > count)
 		{
 			this->num_types = count;
@@ -181,8 +182,12 @@ void DoomObjectContainer<ObjType, IdxType>::resize(size_t count)
 	else if (this->capacity() < count)
 	{
 		this->container = (ObjType*)M_Realloc(this->container, count * sizeof(ObjType));
-		memset(this->container + this->capacity(), 0, (count - this->capacity()) * sizeof(ObjType));
-		this->rf(this->_capacity, count);
+		memset(this->container + this->capacity(), 0,
+		       (count - this->capacity()) * sizeof(ObjType));
+		for (int i = this->_capacity; i < count; i++)
+		{
+			this->rf(&this->container[i], (IdxType)i);
+		}
 		this->_capacity = count;
 	}
 }
@@ -205,7 +210,7 @@ void DoomObjectContainer<ObjType, IdxType>::append(
 	int c_capacity = container.capacity();
 	for (int i = 0; i < c_capacity; i++)
 	{
-		this->insert( container[i] );
+		this->insert(container[i]);
 	}
 }
 
@@ -220,7 +225,5 @@ const ObjType* DoomObjectContainer<ObjType, IdxType>::ptr(void) const
 {
 	return this->container;
 }
-
-// template specialization
 
 //----------------------------------------------------------------------------------------------

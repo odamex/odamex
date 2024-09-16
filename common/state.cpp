@@ -1,34 +1,21 @@
 #include "odamex.h"
 
 #include "state.h"
-#include "odamex_objects.h"
+#include "doom_obj_container.h"
 
-//----------------------------------------------------------------------------------------------
-template<>
-DoomObjectContainer<state_t, statenum_t>::~DoomObjectContainer()
-{
-	M_Free_Ref(this->container);
-}
-//----------------------------------------------------------------------------------------------
-
-static void D_ResetStates(int from, int to);
-DoomObjectContainer<state_t, statenum_t> states(::NUMSTATES, &D_ResetStates);
+void D_ResetState(state_t* s, statenum_t idx);
+DoomObjectContainer<state_t, statenum_t> states(::NUMSTATES, &D_ResetState);
 
 size_t num_state_t_types()
 {
 	return states.capacity();
 }
 
-void D_ResetStates(int from, int to)
+void D_ResetState(state_t* s, statenum_t idx)
 {
-    state_t *s;
-    for(int i = from; i < to; i++)
-    {
-        s = &states[i];
-        s->sprite = SPR_TNT1;
-        s->tics = -1;
-        s->nextstate = (statenum_t) i;
-    }
+    s->sprite = SPR_TNT1;
+    s->tics = -1;
+    s->nextstate = (statenum_t) idx;
 }
 
 void D_Initialize_States(state_t* source, int count)

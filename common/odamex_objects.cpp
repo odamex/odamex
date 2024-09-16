@@ -1,6 +1,5 @@
 #include "odamex.h"
 #include "m_fixed.h"
-#include "odamex_objects.h"
 #include "actor.h"
 
 #include "hashtable.h"

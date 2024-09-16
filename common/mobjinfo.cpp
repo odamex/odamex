@@ -1,20 +1,9 @@
 #include "odamex.h"
 
 #include "mobjinfo.h"
-#include "odamex_objects.h"
+#include "doom_obj_container.h"
 
-//----------------------------------------------------------------------------------------------
-template <>
-DoomObjectContainer<mobjinfo_t, mobjtype_t>::~DoomObjectContainer()
-{
-	if (this->container != nullptr)
-	{
-		M_Free_Ref(this->container);
-	}
-}
-//----------------------------------------------------------------------------------------------
-
-void D_ResetMobjInfo(int from, int to);
+void D_ResetMobjInfo(mobjinfo_t* m, mobjtype_t idx);
 DoomObjectContainer<mobjinfo_t, mobjtype_t> mobjinfo(::NUMMOBJTYPES, &D_ResetMobjInfo);
 size_t num_mobjinfo_types()
 {
@@ -22,20 +11,15 @@ size_t num_mobjinfo_types()
 }
 
 
-void D_ResetMobjInfo(int from, int to)
+void D_ResetMobjInfo(mobjinfo_t* m, mobjtype_t idx)
 {
-    mobjinfo_t *m;
-    for(int i = from; i < to; i++)
-    {
-        m = &mobjinfo[i];
-        m->droppeditem = MT_NULL;
-        m->infighting_group = IG_DEFAULT;
-        m->projectile_group = PG_DEFAULT;
-        m->splash_group = SG_DEFAULT;
-        m->altspeed = NO_ALTSPEED;
-        m->meleerange = MELEERANGE;
-		m->translucency = 0x10000;
-    }
+    m->droppeditem = MT_NULL;
+    m->infighting_group = IG_DEFAULT;
+    m->projectile_group = PG_DEFAULT;
+    m->splash_group = SG_DEFAULT;
+    m->altspeed = NO_ALTSPEED;
+    m->meleerange = MELEERANGE;
+	m->translucency = 0x10000;
 }
 
 void D_Initialize_Mobjinfo(mobjinfo_t* source, int count) 
