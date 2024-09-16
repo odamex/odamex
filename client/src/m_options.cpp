@@ -104,9 +104,9 @@ EXTERN_CVAR (gammalevel)
 EXTERN_CVAR (language)
 EXTERN_CVAR (mute_spectators)
 EXTERN_CVAR (mute_enemies)
+EXTERN_CVAR (wi_oldintermission)
 
-
-// [Ralphis - Menu] Compatibility Menu
+// [electricbrass - Menu] HUD Menu
 EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_scale)
@@ -119,9 +119,13 @@ EXTERN_CVAR (hud_heldflag_flash)
 EXTERN_CVAR (hud_transparency)
 EXTERN_CVAR (hud_anchoring)
 EXTERN_CVAR (hud_revealsecrets)
+EXTERN_CVAR(hud_feedobits)
+EXTERN_CVAR(hud_feedtime)
+EXTERN_CVAR(hud_extendedinfo)
+
+// [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
-EXTERN_CVAR (wi_oldintermission)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_zdoomsound)
 EXTERN_CVAR (co_fixweaponimpacts)
@@ -132,8 +136,6 @@ EXTERN_CVAR (co_boomphys)			// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_removesoullimit)
 EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (co_globalsound)
-EXTERN_CVAR(hud_feedobits)
-EXTERN_CVAR(hud_feedtime)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -891,6 +893,9 @@ static value_t Crosshairs[] = {{0.0, "None"}, {1.0, "Cross 1"}, {2.0, "Cross 2"}
                                {3.0, "X"},    {4.0, "Diamond"}, {5.0, "Dot"},
                                {6.0, "Box"},  {7.0, "Angle"},   {8.0, "Big Thing"}};
 
+static value_t ExtendedHudStyles[] = {{0.0, "Off"}, {1.0, "Horizontal 1"}, {2.0, "Horizontal 2"},
+								 {3.0, "Vertical 1"}, {4.0, "Vertical 2"},};
+
 static menuitem_t HUDItems[] = {
     {yellowtext, "Status Bar", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
     {discrete, "Scale status bar", {&st_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
@@ -909,6 +914,7 @@ static menuitem_t HUDItems[] = {
     {slider, "Feed Timeout", {&hud_feedtime}, {1.0}, {10.0}, {0.25}, {NULL}},
     {discrete, "Show Kills in Feed", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {discrete, "Netdemo infos", {&hud_demobar}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {discrete, "Extended hud", {&hud_extendedinfo}, {5.0}, {0.0}, {0.0}, {ExtendedHudStyles}},
     {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 
     {yellowtext, "Scoreboard", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
