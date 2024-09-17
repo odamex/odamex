@@ -21,6 +21,8 @@ template <typename ObjType, typename IdxType> class DoomObjectContainer;
 // similar to vector, and provides a way to get the size and capcity Additionally, it has
 // implicit type coercion operators to the base pointer type to be compatible with
 // existing code.
+// Existing code cannot rely on an index being greater than the number of types now because dehacked does not
+// enforce contiguous indices i.e. frame 405 could jump to frame 1055
 //----------------------------------------------------------------------------------------------
 
 template <typename ObjType, typename IdxType>
@@ -59,6 +61,7 @@ class DoomObjectContainer
 	void reserve(size_t new_cap);
 	void insert(const ObjType& pointer, IdxType idx);
 	void append(const DoomObjectContainer<ObjType, IdxType>& container);
+    ObjType* find(int);
 	// [CMB] TODO: this method needs to go, but for now its provided for compatibility
 	ObjType* ptr(void);
 	const ObjType* ptr(void) const;
@@ -75,9 +78,6 @@ class DoomObjectContainer
 //----------------------------------------------------------------------------------------------
 
 // inside class
-
-// TODO: typename parameter for reset function such as D_ResetStates(int from, int to)
-// TODO: operator[](int) resizes and returns the reset value
 
 template <typename ObjType, typename IdxType>
 DoomObjectContainer<ObjType, IdxType>::DoomObjectContainer(ResetObjType f)
@@ -99,13 +99,24 @@ DoomObjectContainer<ObjType, IdxType>::~DoomObjectContainer()
 template <typename ObjType, typename IdxType>
 ObjType& DoomObjectContainer<ObjType, IdxType>::operator[](int idx)
 {
-	return this->container[(size_t)idx];
+	IndexTable::iterator it = this->indices_map.find(idx);
+	int realIdx = it->second;
+    // we did not find an element: add a blank element at the end, map it, and return it
+    if (it == this->indices_map.end())
+    {
+        this->container.emplace_back();
+        this->rf(&this->container.back(), (IdxType) idx);
+        this->indices_map[idx] = this->container.size() - 1;
+        realIdx = this->container.size() - 1;
+    }
+	return this->container[realIdx];
 }
 
 template <typename ObjType, typename IdxType>
 const ObjType& DoomObjectContainer<ObjType, IdxType>::operator[](int idx) const
 {
-	return const_cast<ObjType&>(this->container[(size_t)idx]);
+    ObjType& o = (*this)[idx];
+	return const_cast<ObjType&>(o);
 }
 
 template <typename ObjType, typename IdxType>
@@ -147,6 +158,7 @@ template <typename ObjType, typename IdxType>
 void DoomObjectContainer<ObjType, IdxType>::clear()
 {
 	this->container.clear();
+	this->indices_map.clear();
 }
 
 template <typename ObjType, typename IdxType>
@@ -183,6 +195,19 @@ void DoomObjectContainer<ObjType, IdxType>::append(
 {
 	this->container.insert(this->container.end(), dObjContainer.container.begin(),
 	                       dObjContainer.container.end());
+    // [CMB] TODO: need to append indices_maps together
+	// this->indices_map.insert(dObjContainer.indices_map.begin(), dObjContainer.indices_map.end());
+}
+
+template<typename ObjType, typename IdxType>
+ObjType* DoomObjectContainer<ObjType, IdxType>::find(int idx)
+{
+    IndexTable::iterator it = this->indices_map.find(idx);
+    if (it != this->indices_map.end())
+    {
+        return &this->container[it->second];
+    }
+    return NULL;
 }
 
 template <typename ObjType, typename IdxType>

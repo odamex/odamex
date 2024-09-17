@@ -14,8 +14,23 @@ size_t num_state_t_types()
 void D_ResetState(state_t* s, statenum_t idx)
 {
     s->sprite = SPR_TNT1;
+    s->frame = 0;
     s->tics = -1;
+    s->action = NULL;
     s->nextstate = (statenum_t) idx;
+    s->misc1 = 0;
+    s->misc2 = 0;
+
+    // mbf21 flags
+    s->flags = STATEF_NONE;
+    s->args[0] = 0;
+    s->args[1] = 0;
+    s->args[2] = 0;
+    s->args[3] = 0;
+    s->args[4] = 0;
+    s->args[5] = 0;
+    s->args[6] = 0;
+    s->args[7] = 0;
 }
 
 void D_Initialize_States(state_t* source, int count, statenum_t start)

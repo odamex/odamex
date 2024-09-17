@@ -20,6 +20,8 @@ void D_ResetMobjInfo(mobjinfo_t* m, mobjtype_t idx)
     m->altspeed = NO_ALTSPEED;
     m->meleerange = MELEERANGE;
 	m->translucency = 0x10000;
+	m->altspeed = NO_ALTSPEED;
+	m->ripsound = "";
 }
 
 void D_Initialize_Mobjinfo(mobjinfo_t* source, int count, mobjtype_t start)

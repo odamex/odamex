@@ -81,7 +81,7 @@ extern bool step_mode;
 bool capfps = true;
 float maxfps = 35.0f;
 
-extern void D_Init_DEHEXTRA_Frames(void);
+extern void D_Init_Nightmare_Flags(void);
 
 
 #if defined(_WIN32) && !defined(_XBOX)

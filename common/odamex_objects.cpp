@@ -1,11 +1,11 @@
 #include "odamex.h"
 #include "m_fixed.h"
 #include "actor.h"
+#include "info.h"
 
-#include "hashtable.h"
-
-#define ODAIDX_START 0x80000000
-#define ODAIX_END 0x8FFFFFFF
+// ------------------------------------------------------------------
+// Odamex specific States, Sprites, and Things
+// ------------------------------------------------------------------
 
 // code pointers
 void A_Lower(AActor *);
@@ -13,33 +13,9 @@ void A_Raise(AActor *);
 void A_WeaponReady(AActor *);
 void A_Ambient(AActor*);
 
-typedef OHashTable<int,int> IndexTable;
-
-template<typename IdxType>
-inline void init_idx_map(IdxType idxStart, IdxType idxEnd, int limit, IndexTable& table)
-{
-	IdxType idx = idxStart;
-	for(int i = 0; (IdxType) i < idxEnd; i++)
-	{
-		table[idx] = limit + i;
-		idx = IdxType(idx + 1);
-	}
-}
-
-template void init_idx_map< statenum_t >(statenum_t, statenum_t, int, IndexTable&);
-template void init_idx_map< spritenum_t >(spritenum_t, spritenum_t, int, IndexTable&);
-template void init_idx_map< mobjtype_t >(mobjtype_t, mobjtype_t, int, IndexTable&);
-
-// [CMB] these maps are used to associate the index associated with the doom object to the index in the lookup table
-
-IndexTable odamex_states_indices_map;
-IndexTable odamex_sprnames_indices_map;
-IndexTable odamex_mobjinfo_indices_map;
-
 // reserved odamex states
-state_t odastates_reserved[] = {
+state_t odastates[] = {
     // ZDoom/Odamex stuff starts here
-
     {SPR_GIB0, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB0
     {SPR_GIB1, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB1
     {SPR_GIB2, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB2
@@ -106,8 +82,10 @@ state_t odastates_reserved[] = {
     {SPR_TNT1, 0, 1, A_Lower, S_NOWEAPON, 0, 0},       // S_NOWEAPONDOWN
     {SPR_TNT1, 0, 1, A_WeaponReady, S_NOWEAPON, 0, 0}, // S_NOWEAPON
 };
+
 // reserved odamex sprites
-const char* odasprnames[::SPR_CARE - ::SPR_GIB0 + 2] = {
+// ::SPR_CARE - ::SPR_GIB0 + 2
+const char* odasprnames[] = {
     "GIB0","GIB1","GIB2",
     "GIB3","GIB4","GIB5",
     "GIB6","GIB7","UNKN",
@@ -119,8 +97,10 @@ const char* odasprnames[::SPR_CARE - ::SPR_GIB0 + 2] = {
     "TLGL","WPBF","WPRF",
     "WPGF","CARE", NULL
 };
+
 // reserved odamex mobjinfo
-mobjinfo_t odamobjinfop[::MT_CAREPACK - ::MT_GIB0 + 1] = {
+// ::MT_CAREPACK - ::MT_GIB0 + 1
+mobjinfo_t odamobjinfo[] = {
     // ----------- odamex mobjinfo start -----------
 	{		// MT_GIB0
 	-1,		// doomednum
@@ -1492,36 +1472,16 @@ mobjinfo_t odamobjinfop[::MT_CAREPACK - ::MT_GIB0 + 1] = {
 	// ----------- odamex mobjinfo end -----------
 };
 
-void init_Odamex_Indices(int odastates_limit, int odasprites_limit, int odamobjinfo_limit)
-{
-	init_idx_map(S_GIB0, S_NOWEAPON, odastates_limit, odamex_states_indices_map);
-	init_idx_map(SPR_GIB0, SPR_CARE, odasprites_limit, odamex_sprnames_indices_map);
-	init_idx_map(MT_GIB0, MT_CAREPACK, odamobjinfo_limit, odamex_mobjinfo_indices_map);
+// size functions
+
+size_t odastates_size() {
+	return ARRAY_LENGTH(odastates);
 }
 
-state_t* D_GetOdaState(statenum_t statenum)
-{
-    IndexTable::iterator found = odamex_states_indices_map.find(statenum);
-    if (found == odamex_states_indices_map.end()) return nullptr;
-	
-	int realIdx = found->second;
-	return &odastates_reserved[realIdx];
+size_t odasprnames_size() {
+	return ARRAY_LENGTH(odasprnames);
 }
 
-mobjinfo_t* D_GetOdaMobjinfo(mobjtype_t mobjtype)
-{
-    IndexTable::iterator found = odamex_mobjinfo_indices_map.find(mobjtype);
-	if (found == odamex_mobjinfo_indices_map.end()) return nullptr;
-
-	int realIdx = found->second;
-    return &odamobjinfop[realIdx];
-}
-
-const char* D_GetOdaSprName(spritenum_t spritenum)
-{
-	IndexTable::iterator found = odamex_sprnames_indices_map.find(spritenum);
-	if (found == odamex_sprnames_indices_map.end()) return nullptr;
-	
-    int realIdx = found->second;
-    return odasprnames[realIdx];
+size_t odamobjinfo_size() {
+	return ARRAY_LENGTH(odamobjinfo);
 }

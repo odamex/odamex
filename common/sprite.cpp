@@ -42,6 +42,7 @@ void D_Initialize_sprnames(const char** source, int count, spritenum_t start)
 		for (int i = 0; i < count; i++)
 		{
 			sprnames.insert(strdup(source[i]), idx);
+            idx = spritenum_t(idx + 1);
 		}
     }
 #if defined _DEBUG

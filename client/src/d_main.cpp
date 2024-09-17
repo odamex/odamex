@@ -747,7 +747,7 @@ void STACK_ARGS D_Shutdown()
 
 
 void C_DoCommand(const char *cmd, uint32_t key);
-void D_Init_DEHEXTRA_Frames(void);
+void D_Init_Nightmare_Flags(void);
 
 //
 // D_DoomMain
@@ -772,7 +772,7 @@ void D_DoomMain()
     D_Initialize_Mobjinfo(doom_mobjinfo, ::NUMMOBJTYPES, MT_PLAYER);
 	D_Initialize_sprnames(doom_sprnames, ::NUMSPRITES, SPR_TROO);
 	// Initialize all extra frames
-	D_Init_DEHEXTRA_Frames();
+	D_Init_Nightmare_Flags();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 

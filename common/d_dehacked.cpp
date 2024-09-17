@@ -600,14 +600,6 @@ void D_UndoDehPatch()
 	}
 	M_Free(OrgSprNames);
 
-	
-	/*
-	for (i = 0; i < ::NUMSTATES; i++)
-	{
-		::states[i].action = ::OrgActionPtrs[i];
-	}
-	*/
-
 	D_Initialize_sprnames(doomBackup.backupSprnames.ptr(), ::NUMSPRITES, SPR_TROO);
 	D_Initialize_States(doomBackup.backupStates.ptr(), ::NUMSTATES, S_NULL);
 	D_Initialize_Mobjinfo(doomBackup.backupMobjInfo.ptr(), ::NUMMOBJTYPES, MT_PLAYER);
@@ -1572,11 +1564,7 @@ static int PatchFrame(int frameNum)
 #if defined _DEBUG
         DPrintf("Frame %" PRIuSIZE " requires allocation.\n", frameNum);
 #endif
-        D_EnsureStateCapacity(frameNum);
-		/*
-        state_t* newstate = (state_t*) M_Malloc(sizeof(state_t));
-        states[frameNum] = *newstate;
-		*/
+        // D_EnsureStateCapacity(frameNum);
         info = &states[frameNum];
     }
 
@@ -2097,10 +2085,10 @@ static int PatchCodePtrs(int dummy)
 		if (!strnicmp("Frame", Line1, 5) && isspace(Line1[5]))
 		{
 			int frame = atoi(Line1 + 5);
-
-			if (frame < 0 || frame >= num_state_t_types())
+            // [CMB] TODO: this is not a valid way to test this anymore - just look it up
+			//if (frame < 0 || frame >= num_state_t_types())
+            if (states.find(frame) == NULL)
 			{
-				// [CMB] TODO: at this point we should have created more space for the state
 				DPrintf("Frame %d out of range\n", frame);
 			}
 			else
