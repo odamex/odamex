@@ -516,13 +516,24 @@ void G_InitNew (const char *mapname)
 // G_DoCompleted
 //
 
-void G_ExitLevel (int position, int drawscores)
+void G_ExitLevel (int position, int drawscores, bool resetinv)
 {
+	if (resetinv)
+	{
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (it->ingame())
+			{
+				it->doreborn = true;
+			}
+		}
+	}
+
 	SV_ExitLevel();
 
 	if (drawscores)
         SV_DrawScores();
-	
+
 	gamestate = GS_INTERMISSION;
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, default 10
 
@@ -535,13 +546,24 @@ void G_ExitLevel (int position, int drawscores)
 }
 
 // Here's for the german edition.
-void G_SecretExitLevel (int position, int drawscores)
+void G_SecretExitLevel (int position, int drawscores, bool resetinv)
 {
+	if (resetinv)
+	{
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (it->ingame())
+			{
+				it->doreborn = true;
+			}
+		}
+	}
+
 	SV_ExitLevel();
 
     if (drawscores)
         SV_DrawScores();
-        
+
 	gamestate = GS_INTERMISSION;
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, defaults to 10
 
@@ -695,7 +717,7 @@ void G_DoResetLevel(bool full_reset)
 	P_HordeClearSpawns();
 
 	// Reset the respawned monster count
-	level.respawned_monsters = 0;	
+	level.respawned_monsters = 0;
 
 	// No need to clear the spawn locations because we're not loading a new map.
 	M_StartWDLLog(false);
@@ -758,7 +780,7 @@ void G_DoLoadLevel (int position)
 		wipegamestate = GS_FORCEWIPE;
 
 	gamestate = GS_LEVEL;
-	
+
 	// Reset all keys found
 	for (size_t j = 0; j < NUMCARDS; j++)
 		keysfound[j] = false;

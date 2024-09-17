@@ -215,10 +215,10 @@ int P_IsUnderDamage(AActor* actor)
 }
 
 /*
-* 
+*
 * P_IsFriendlyThing
 * @brief Helper function to determine if a particular thing is of friendly origin.
-* 
+*
 * @param actor Source actor
 * @param friendshiptest Thing to test friendliness
 */
@@ -580,7 +580,7 @@ static void P_InitAnimDefs ()
 	}
     catch (CRecoverableError &)
     {
-	    
+
     }
 }
 
@@ -764,6 +764,12 @@ bool P_CheckTag(line_t* line)
 	case 51:
 	case 124:
 	case 198:
+	case 2069:
+	case 2070:
+	case 2071:
+	case 2072:
+	case 2073:
+	case 2074:
 
 	case 48: // Scrolling walls
 	case 85:
@@ -1459,7 +1465,7 @@ int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start)
 
 /*
 * @brief checks to see if a ZDoom-style door can be unlocked.
-* 
+*
 * @param player: Player to key check
 * @param lock: ZDoom lock type
 * All ZDoom lock types are supported but Odamex is missing
