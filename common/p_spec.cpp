@@ -215,10 +215,10 @@ int P_IsUnderDamage(AActor* actor)
 }
 
 /*
-* 
+*
 * P_IsFriendlyThing
 * @brief Helper function to determine if a particular thing is of friendly origin.
-* 
+*
 * @param actor Source actor
 * @param friendshiptest Thing to test friendliness
 */
@@ -580,7 +580,7 @@ static void P_InitAnimDefs ()
 	}
     catch (CRecoverableError &)
     {
-	    
+
     }
 }
 
@@ -1459,7 +1459,7 @@ int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start)
 
 /*
 * @brief checks to see if a ZDoom-style door can be unlocked.
-* 
+*
 * @param player: Player to key check
 * @param lock: ZDoom lock type
 * All ZDoom lock types are supported but Odamex is missing
@@ -2272,9 +2272,11 @@ void P_UpdateSpecials (void)
 		}
 	}
 
-	// Update sky column offsets
-	sky1columnoffset += level.sky1ScrollDelta & 0xffffff;
-	sky2columnoffset += level.sky2ScrollDelta & 0xffffff;
+	sky2columnoffset += sky2scrollxdelta & 0xffffff;
+
+	#ifdef CLIENT_APP
+	R_UpdateSkies();
+	#endif
 }
 
 
