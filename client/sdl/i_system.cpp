@@ -431,7 +431,7 @@ void I_Endoom(void)
 
 	int lump = -1;
 	int count = 0;
-	while ((lump = W_FindLump("ENDOOM", lump)) != -1)
+	while (count < 2 && (lump = W_FindLump("ENDOOM", lump)) != -1)
 	{
 		count++;
 	}
