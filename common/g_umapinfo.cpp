@@ -211,6 +211,14 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		ParseOLumpName(os, mape->enterpic);
 	}
+	else if (!stricmp(pname.c_str(), "exitanim"))
+	{
+		ParseOLumpName(os, mape->exitanim);
+	}
+	else if (!stricmp(pname.c_str(), "enteranim"))
+	{
+		ParseOLumpName(os, mape->enteranim);
+	}
 	else if (!stricmp(pname.c_str(), "nointermission"))
 	{
 		os.mustScanBool();

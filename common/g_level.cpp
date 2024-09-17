@@ -794,7 +794,7 @@ void G_InitLevelLocals()
 	::level.info = (level_info_t*)&info;
 	::level.skypic2 = info.skypic2;
 	memcpy(::level.fadeto_color, info.fadeto_color, 4);
-	
+
 	if (::level.fadeto_color[0] || ::level.fadeto_color[1] || ::level.fadeto_color[2] || ::level.fadeto_color[3])
 	{
 		NormalLight.maps = shaderef_t(&V_GetDefaultPalette()->maps, 0);
@@ -823,7 +823,7 @@ void G_InitLevelLocals()
 	ArrayCopy(::level.level_fingerprint, info.level_fingerprint);
 
 	// Only copy the level name if there's a valid level name to be copied.
-	
+
 	if (!info.level_name.empty())
 	{
 		// Get rid of initial lump name or level number.
@@ -844,7 +844,7 @@ void G_InitLevelLocals()
 		{
 			std::string search;
 			StrFormat(search, "%u: ", info.levelnum);
-			
+
 			const std::size_t pos = info.level_name.find(search);
 
 			if (pos != std::string::npos)
@@ -913,19 +913,21 @@ void G_InitLevelLocals()
 	}
 
 	::level.exitpic = info.exitpic;
+	::level.exitanim = info.exitanim;
 	::level.enterpic = info.enterpic;
+	::level.enteranim = info.enteranim;
 	::level.endpic = info.endpic;
 
 	::level.intertext = info.intertext;
 	::level.intertextsecret = info.intertextsecret;
 	::level.interbackdrop = info.interbackdrop;
 	::level.intermusic = info.intermusic;
-	
+
 	::level.bossactions = info.bossactions;
 	::level.label = info.label;
 	::level.clearlabel = info.clearlabel;
 	::level.author = info.author;
-	
+
 	::level.detected_gametype = GM_COOP;
 
 	movingsectors.clear();

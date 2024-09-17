@@ -168,6 +168,8 @@ struct level_pwad_info_t
 	// The following are necessary for UMAPINFO compatibility
 	OLumpName		exitpic;
 	OLumpName		enterpic;
+	OLumpName		exitanim;
+	OLumpName		enteranim;
 	OLumpName		endpic;
 
 	std::string		intertext;
@@ -177,19 +179,19 @@ struct level_pwad_info_t
 
 	fixed_t			sky1ScrollDelta;
 	fixed_t			sky2ScrollDelta;
-	
+
 	std::vector<bossaction_t> bossactions;
 
 	std::string		label;
 	bool			clearlabel;
 	std::string		author;
-	
+
 	level_pwad_info_t()
 	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
 	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
 	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
-	      aircontrol(0.0f), exitpic(""), enterpic(""), endpic(""), intertext(""),
-	      intertextsecret(""), interbackdrop(""), intermusic(""), 
+	      aircontrol(0.0f), exitpic(""), exitanim(""), enterpic(""), enteranim(""), endpic(""), intertext(""),
+	      intertextsecret(""), interbackdrop(""), intermusic(""),
 	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(),
 	      clearlabel(false), author()
 	{
@@ -205,7 +207,7 @@ struct level_pwad_info_t
 	      secretmap(other.secretmap), partime(other.partime), skypic(other.skypic),
 	      music(other.music), flags(other.flags), cluster(other.cluster),
 	      snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
-	      skypic2(""), gravity(0.0f), aircontrol(0.0f), exitpic(""), enterpic(""),
+	      skypic2(""), gravity(0.0f), aircontrol(0.0f), exitpic(""), exitanim(""), enterpic(""), enteranim(""),
 	      endpic(""), intertext(""), intertextsecret(""), interbackdrop(""), intermusic(""),
 	      bossactions(), label(), clearlabel(false), author(), sky1ScrollDelta(0), sky2ScrollDelta(0)
 	{
@@ -241,7 +243,9 @@ struct level_pwad_info_t
 		gravity = other.gravity;
 		aircontrol = other.aircontrol;
 		exitpic = other.exitpic;
+		exitanim = other.exitanim;
 		enterpic = other.enterpic;
+		enteranim = other.enteranim;
 		endpic = other.endpic;
 		intertext = other.intertext;
 		intertextsecret = other.intertextsecret;
@@ -320,20 +324,22 @@ struct level_locals_t
 
 	// The following are used for UMAPINFO
 	OLumpName		exitpic;
+	OLumpName		exitanim;
 	OLumpName		enterpic;
+	OLumpName		enteranim;
 	OLumpName		endpic;
 
 	std::string		intertext;
 	std::string		intertextsecret;
 	OLumpName		interbackdrop;
 	OLumpName		intermusic;
-	
+
 	std::vector<bossaction_t> bossactions;
 
 	std::string		label;
 	bool			clearlabel;
 	std::string		author;
-	
+
 	// The following is used for automatic gametype detection.
 	float			detected_gametype;
 };
