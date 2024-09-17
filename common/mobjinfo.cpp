@@ -40,13 +40,3 @@ void D_Initialize_Mobjinfo(mobjinfo_t* source, int count, mobjtype_t start)
     Printf(PRINT_HIGH,"D_Allocate_mobjinfo:: allocated %d actors.\n", count);
 #endif
 }
-
-void D_EnsureMobjInfoCapacity(int limit)
-{
-	int newSize = mobjinfo.size();
-	while (limit >= newSize)
-	{
-		newSize *= 2;
-	}
-	mobjinfo.resize(newSize);
-}

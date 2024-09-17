@@ -48,12 +48,3 @@ void D_Initialize_States(state_t* source, int count, statenum_t start)
     Printf(PRINT_HIGH,"D_Initialize_states:: allocated %d states.\n", count);
 #endif
 }
-void D_EnsureStateCapacity(int limit)
-{
-	int newSize = states.size();
-	while (limit >= newSize)
-    {
-		newSize *= 2;
-    }   
-    states.resize(newSize);
-}

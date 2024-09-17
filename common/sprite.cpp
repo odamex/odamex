@@ -75,18 +75,3 @@ int D_FindOrgSpriteIndex(const char** src_sprnames, const char* key)
     bool ok = !(stream >> spridx).fail();
     return ok ? spridx : -1;
 }
-
-/**
- * @brief ensure the sprnames array of sprite names has the correct capacity
- *
- * @param limit the new size for sprnames. This will realloc and zero beyond the current maximum.
- */
-void D_EnsureSprnamesCapacity(int limit)
-{
-	int newSize = sprnames.size();
-	if (limit >= newSize)
-	{
-		newSize *= 2;
-	}
-	sprnames.resize(newSize);
-}

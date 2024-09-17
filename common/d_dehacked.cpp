@@ -997,24 +997,13 @@ static int PatchThing(int thingy)
 	info = &dummy;
 	ednum = &dummyed;
 
-	// [CMB] TODO: find the index range for the Thing in the tables
-    // [CMB] TODO: ensure capacity and create a new one if necessary
 	thingNum--;
 	if (thingNum < 0)
 	{
 		DPrintf("Thing %" PRIuSIZE " out of range.\n", thingNum);
 	}
-    if(thingNum >= ::num_mobjinfo_types())
-    {
-#if defined _DEBUG
-        DPrintf("Thing %" PRIuSIZE " requires allocation.\n", thingNum);
-#endif
-        D_EnsureMobjInfoCapacity(thingNum);
-		info = &mobjinfo[thingNum];
-		*ednum = *&info->doomednum;
-    }
 	else
-	{
+    {
 		info = &mobjinfo[thingNum];
 		*ednum = *&info->doomednum;
 #if defined _DEBUG
@@ -1728,7 +1717,6 @@ static int PatchSprites(int dummy)
         if (sprIdx == -1 && IsNum(zSprIdx))
         {
             sprIdx = atoi(Line1);
-            D_EnsureSprnamesCapacity(sprIdx);
         }
         if(sprIdx >= 0)
         {

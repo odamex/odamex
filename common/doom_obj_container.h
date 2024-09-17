@@ -100,16 +100,20 @@ template <typename ObjType, typename IdxType>
 ObjType& DoomObjectContainer<ObjType, IdxType>::operator[](int idx)
 {
 	IndexTable::iterator it = this->indices_map.find(idx);
-	int realIdx = it->second;
+	int realidx;
+	if (it != this->indices_map.end())
+	{
+		realidx = it->second;
+	}
     // we did not find an element: add a blank element at the end, map it, and return it
-    if (it == this->indices_map.end())
+	else
     {
         this->container.emplace_back();
         this->rf(&this->container.back(), (IdxType) idx);
         this->indices_map[idx] = this->container.size() - 1;
-        realIdx = this->container.size() - 1;
+		realidx = this->container.size() - 1;
     }
-	return this->container[realIdx];
+	return this->container[realidx];
 }
 
 template <typename ObjType, typename IdxType>
