@@ -438,7 +438,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 2069:
 		resetinv = true;
-		[[fallthrough]]
+		// TODO: add [[fallthrough]] when C++17 comes
 	case 52:
 		// EXIT!
 		// killough 10/98: prevent zombies from exiting levels
@@ -573,7 +573,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 2072:
 		resetinv = true;
-		[[fallthrough]]
+		// TODO: add [[fallthrough]] when C++17 comes
 	case 124:
 		// Secret EXIT
 		// killough 10/98: prevent zombies from exiting levels
@@ -2085,7 +2085,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	case 2070:
 		resetinv = true;
-		[[fallthrough]]
+		// TODO: add [[fallthrough]] when C++17 comes
 	case 11:
 		/* Exit level
 		 * killough 10/98: prevent zombies from exiting levels
@@ -2212,7 +2212,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	case 2073:
 		resetinv = true;
-		[[fallthrough]]
+		// TODO: add [[fallthrough]] when C++17 comes
 	case 51:
 		/* Secret EXIT
 		 * killough 10/98: prevent zombies from exiting levels
@@ -3397,7 +3397,7 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		{
 		case 2071:
 			resetinv = true;
-			[[fallthrough]]
+			// TODO: add [[fallthrough]] when C++17 comes
 		case 197:
 			// Exit to next level
 			// killough 10/98: prevent zombies from exiting levels
@@ -3412,7 +3412,7 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 
 		case 2074:
 			resetinv = true;
-			[[fallthrough]]
+			// TODO: add [[fallthrough]] when C++17 comes
 		case 198:
 			// Exit to secret level
 			// killough 10/98: prevent zombies from exiting levels
