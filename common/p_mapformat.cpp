@@ -387,7 +387,7 @@ bool P_IsExitLine(const short special)
 		return special == 74 || special == 75 || special == 244 || special == 243;
 
 	return special == 11 || special == 52 || special == 197 || special == 51 ||
-	       special == 124 || special == 198;
+	       special == 124 || special == 198 || (2069 <= special && special <= 2074);
 }
 
 bool P_IsTeleportLine(const short special)
