@@ -1137,7 +1137,8 @@ static int PatchThing(int thingy)
 		}
 		else if (stricmp(Line1, "Dropped item") == 0)
 		{
-			if (val - 1 < 0 || val - 1 >= ::num_mobjinfo_types())
+			//if (val - 1 < 0 || val - 1 >= ::num_mobjinfo_types())
+			if (mobjinfo.find(val-1) == NULL)
 			{
 				I_Error("Dropped item out of range. Check your DEHACKED.\n");
 			}
