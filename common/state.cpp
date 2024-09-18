@@ -16,7 +16,7 @@ void D_ResetState(state_t* s, statenum_t idx)
     s->sprite = SPR_TNT1;
     s->frame = 0;
     s->tics = -1;
-    s->action = NULL;
+    // s->action = NULL;
     s->nextstate = (statenum_t) idx;
     s->misc1 = 0;
     s->misc2 = 0;
@@ -36,6 +36,7 @@ void D_ResetState(state_t* s, statenum_t idx)
 void D_Initialize_States(state_t* source, int count, statenum_t start)
 {
 	states.clear();
+    states.reserve(count);
     if (source) {
 		statenum_t idx = start;
         for(int i = 0; i < count; i++)

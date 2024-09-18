@@ -24,6 +24,7 @@
 #include "odamex.h"
 
 #include <stdlib.h>
+#include <sstream>
 
 #include "cmdlib.h"
 #include "d_dehacked.h"
@@ -1511,50 +1512,39 @@ static int PatchSound(int soundNum)
 
 static int PatchFrame(int frameNum)
 {
-	static const struct Key keys[] = {{"Sprite number", offsetof(state_t, sprite)},
-	                                  {"Sprite subnumber", offsetof(state_t, frame)},
-	                                  {"Duration", offsetof(state_t, tics)},
-	                                  {"Next frame", offsetof(state_t, nextstate)},
-	                                  {"Unknown 1", offsetof(state_t, misc1)},
-	                                  {"Unknown 2", offsetof(state_t, misc2)},
-	                                  {"Args1", offsetof(state_t, args[0])},
-	                                  {"Args2", offsetof(state_t, args[1])},
-	                                  {"Args3", offsetof(state_t, args[2])},
-	                                  {"Args4", offsetof(state_t, args[3])},
-	                                  {"Args5", offsetof(state_t, args[4])},
-	                                  {"Args6", offsetof(state_t, args[5])},
-	                                  {"Args7", offsetof(state_t, args[6])},
-	                                  {"Args8", offsetof(state_t, args[7])},
-	                                  {NULL, 0}};
-	int result;
-	state_t *info, dummy;
-
-	static const struct
-	{
-		short Bit;
-		const char* Name;
-	} bitnames[] = {
-	    {1, "SKILL5FAST"},
-	};
-
-	if(frameNum < 0)
-	{
-		info = &dummy;
-		DPrintf("Frame %d out of range\n", frameNum);
-	}
-
-    // [CMB] TODO: ensure capacity if outside current limits
-    if (frameNum >= 0 && frameNum < ::num_state_t_types())
+    static const struct Key keys[] = {{"Sprite number", offsetof(state_t, sprite)},
+        {"Sprite subnumber", offsetof(state_t, frame)},
+        {"Duration", offsetof(state_t, tics)},
+        {"Next frame", offsetof(state_t, nextstate)},
+        {"Unknown 1", offsetof(state_t, misc1)},
+        {"Unknown 2", offsetof(state_t, misc2)},
+        {"Args1", offsetof(state_t, args[0])},
+        {"Args2", offsetof(state_t, args[1])},
+        {"Args3", offsetof(state_t, args[2])},
+        {"Args4", offsetof(state_t, args[3])},
+        {"Args5", offsetof(state_t, args[4])},
+        {"Args6", offsetof(state_t, args[5])},
+        {"Args7", offsetof(state_t, args[6])},
+        {"Args8", offsetof(state_t, args[7])},
+        {NULL, 0}};
+    int result;
+    state_t *info, dummy;
+    
+    static const struct
     {
-        info = &states[frameNum];
-        DPrintf("Frame %d\n", frameNum);
-    }
+        short Bit;
+        const char* Name;
+    } bitnames[] = {
+        {1, "SKILL5FAST"},
+    };
+    
+    if(frameNum < 0)
+    {
+        info = &dummy;
+        DPrintf("Frame %d out of range\n", frameNum);
+    } 
     else
     {
-#if defined _DEBUG
-        DPrintf("Frame %" PRIuSIZE " requires allocation.\n", frameNum);
-#endif
-        // D_EnsureStateCapacity(frameNum);
         info = &states[frameNum];
     }
 
@@ -1906,7 +1896,8 @@ static int PatchPointer(int ptrNum)
 			int i = atoi(Line2);
 
 			// [CMB]: dsdhacked allows infinite code pointers
-			if (i >= ::num_state_t_types())
+			// if (i >= ::num_state_t_types())
+            if (states.find(i) == NULL)
 			{
 				DPrintf("Pointer %d overruns array (max: %d wanted: %d)."
 				        "\n",
@@ -2691,7 +2682,9 @@ static const char* ActionPtrString(actionf_p1 func)
 
 static void PrintState(int index)
 {
-	if (index < 0 || index >= ::num_state_t_types())
+    // [CMB] TODO: checking state existing here
+	// if (index < 0 || index >= ::num_state_t_types())
+    if (states.find(index) == NULL)
 	{
 		return;
 	}
@@ -2703,18 +2696,91 @@ static void PrintState(int index)
 	       state.misc2);
 }
 
+static void PrintMobjinfo(int index)
+{
+    if (mobjinfo.find(index) == NULL)
+    {
+        return;
+    }
+    
+    mobjinfo_t& mob = ::mobjinfo[index];
+    std::stringstream ss;
+    ss << "%4d | ";
+    // doomednum, spawnstate, spawnhealth, seestate, seesound
+    ss << "doomednum: %d, spawnstate: %d, spawnhealth: %d, seestate: %d, seesound: %d\n";
+    // reactiontime, attacksound, painstate, painchance, painsound
+    ss << "reactiontime: %d, attacksound: %d, painstate: %d, painchance: %d, painsound: %d\n";
+    // meleestate, missilestate, deathstate, xdeathstate, deathsound
+    ss << "meleestate: %d, missilestate: %d, deathstate: %d, xdeathstate: %d, deathsound: %d\n";
+    // speed, radius, height, mass, damage
+    ss << "speed: %d, radius: %d, height: %d, mass: %d, damage: %d\n";
+    // activesound, flags, raisestate, droppeditem, flags2
+    ss << "activesound: %d, flags: %ul, raisestate: %d, droppeditem: %d, flags2: %ul\n";
+    // infighting_group, projectile_group, splash_group, ripsound, altspeed, meleerange
+    ss << "infighting_group: %d, projectile_group: %d, splash_group: %d, ripsound: %d, altspeed: %d, meleerange: %d\n";
+    // translucency
+    ss << "translucency: %d\n";
+    Printf(ss.str().c_str(), index, mob.doomednum, mob.spawnstate, mob.spawnhealth, mob.seestate, mob.seesound,
+                             mob.reactiontime, mob.attacksound, mob.painstate, mob.painchance, mob.painsound,
+                             mob.meleestate, mob.missilestate, mob.deathstate, mob.xdeathstate, mob.deathsound,
+                             mob.speed, mob.radius, mob.height, mob.mass, mob.damage,
+                             mob.activesound, mob.flags, mob.raisestate, mob.droppeditem, mob.flags2,
+                             mob.infighting_group, mob.projectile_group, mob.splash_group, mob.ripsound, mob.altspeed, mob.meleerange, mob.translucency);
+}
+
+BEGIN_COMMAND(mobinfo)
+{
+    if (argc < 2)
+    {
+        Printf("Must pass one or two state indexes. (0 to %d)\n", ::num_state_t_types() - 1);
+        return;
+    }
+    
+    int index1 = atoi(argv[1]);
+    if (mobjinfo.find(index1) == NULL)
+    {
+        Printf("Index 1: Not a valid index.\n");
+        return;
+    }
+    int index2 = index1;
+    
+    if (argc == 3)
+    {
+        index2 = atoi(argv[2]);
+        if (states.find(index2) == NULL)
+        {
+            Printf("Index 2: Not a valid index.\n");
+            return;
+        }
+    }
+    
+    if (index2 < index1)
+    {
+        std::swap(index1, index2);
+    }
+    
+    for(int i = index1; i <= index2; i++)
+    {
+        PrintMobjinfo(i);
+    }
+}
+END_COMMAND(mobinfo)
+
 BEGIN_COMMAND(stateinfo)
 {
 	if (argc < 2)
 	{
+        // [CMB] TODO: checking state existing here -- indices should be printed differently
 		Printf("Must pass one or two state indexes. (0 to %d)\n", ::num_state_t_types() - 1);
 		return;
 	}
 
 	int index1 = atoi(argv[1]);
-	if (index1 < 0 || index1 >= ::num_state_t_types())
+    // [CMB] TODO: checking state existing here
+	// if (index1 < 0 || index1 >= ::num_state_t_types())
+    if (states.find(index1) == NULL)
 	{
-		Printf("Not a valid index.\n");
+		Printf("Index 1: Not a valid index.\n");
 		return;
 	}
 	int index2 = index1;
@@ -2722,9 +2788,11 @@ BEGIN_COMMAND(stateinfo)
 	if (argc == 3)
 	{
 		index2 = atoi(argv[2]);
-		if (index2 < 0 || index2 >= ::num_state_t_types())
+        // [CMB] TODO: checking state existing here
+		// if (index2 < 0 || index2 >= ::num_state_t_types())
+        if (states.find(index2) == NULL)
 		{
-			Printf("Not a valid index.\n");
+			Printf("Index 2: Not a valid index.\n");
 			return;
 		}
 	}
@@ -2737,6 +2805,7 @@ BEGIN_COMMAND(stateinfo)
 		index2 = tmp;
 	}
 
+    // [CMB] TODO: index range here may not correspond correctly -- iterator needed
 	for (int i = index1; i <= index2; i++)
 	{
 		PrintState(i);

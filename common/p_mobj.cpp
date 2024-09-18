@@ -254,7 +254,9 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
       rndindex(0), netid(0), tid(0), bmapnode(this), baseline_set(false)
 {
 	// Fly!!! fix it in P_RespawnSpecial
-	if ((unsigned int)itype >= ::num_mobjinfo_types())
+    // [CMB] TODO: need to use find here
+	// if ((unsigned int)itype >= ::num_mobjinfo_types())
+    if (mobjinfo.find(itype) == NULL)
 	{
 		I_Error ("Tried to spawn actor type %d\n", itype);
 	}
