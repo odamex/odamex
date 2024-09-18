@@ -69,31 +69,31 @@ struct JSONLumpVersion
 	}
 };
 
-enum jsonlumpresult_t
+enum class jsonlumpresult_t
 {
-	JL_SUCCESS,
-	JL_NOTFOUND,
-	JL_MALFORMEDROOT,
-	JL_TYPEMISMATCH,
-	JL_BADVERSIONFORMATTING,
-	JL_VERSIONMISMATCH,
-	JL_PARSEERROR
+	SUCCESS,
+	NOTFOUND,
+	MALFORMEDROOT,
+	TYPEMISMATCH,
+	BADVERSIONFORMATTING,
+	VERSIONMISMATCH,
+	PARSEERROR
 };
 
 static constexpr const char* JSON_LUMP_RESULT_ERROR_STRINGS[] =
 {
-	"JL_SUCCESS",
-	"JL_NOTFOUND",
-	"JL_MALFORMEDROOT",
-	"JL_TYPEMISMATCH",
-	"JL_BADVERSIONFORMATTING",
-	"JL_VERSIONMISMATCH",
-	"JL_PARSEERROR"
+	"JSON Lump Parsing Successful",
+	"JSON Lump Not Found",
+	"JSON Lump Malformed Root",
+	"JSON Lump Type Mismatch",
+	"JSON Lump Bad Version Formatting",
+	"JSON Lump Version Mismatch",
+	"JSON Lump Parse Error"
 };
 
 constexpr const char* M_JSONLumpResultToString(jsonlumpresult_t jlr)
 {
-	return JSON_LUMP_RESULT_ERROR_STRINGS[jlr];
+	return JSON_LUMP_RESULT_ERROR_STRINGS[static_cast<int>(jlr)];
 }
 
 using JSONLumpFunc = std::function<jsonlumpresult_t(const Json::Value& elem, const JSONLumpVersion& version)>;
