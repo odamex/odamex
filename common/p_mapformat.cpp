@@ -54,30 +54,35 @@ void P_MigrateActorInfo(void)
 {
 	int i;
 	static bool migrated = false;
+	mobjinfo_t* m;
+	int num_mobj_info_types = ::num_mobjinfo_types();
 
 	// Set MF2_PASSMOBJ on dehacked monsters
 	// because we don't expose ZDoom's Bits2 BEX extension (yet...)
 	// which is the normal way MF2_PASSMOBJ gets set.
-	for (i = 0; i < ::num_mobjinfo_types(); ++i)
+	for (i = 0; i < num_mobj_info_types; ++i)
 	{
-		if (mobjinfo[i].flags & MF_COUNTKILL)
+		// [CMB] TODO: calling operator[] can cause the list to get bigger
+		// [CMB] TODO: certain hash table implementations DO NOT do this behavior
+		m = &mobjinfo[i];
+		if (m->flags & MF_COUNTKILL)
 		{
 			if (P_AllowPassover())
 			{
-				if (mobjinfo[i].flags & MF_COUNTKILL)
-					mobjinfo[i].flags2 |= MF2_PASSMOBJ;
+				if (m->flags & MF_COUNTKILL)
+					m->flags2 |= MF2_PASSMOBJ;
 			}
 			else
 			{
-				if (mobjinfo[i].flags & MF_COUNTKILL)
-					mobjinfo[i].flags2 &= ~MF2_PASSMOBJ;
+				if (m->flags & MF_COUNTKILL)
+					m->flags2 &= ~MF2_PASSMOBJ;
 			}
 		}
 	}
 
 	// Don't forget about lost souls!
 	if (P_AllowPassover())
-	{
+	{ 
 		mobjinfo[MT_SKULL].flags2 |= MF2_PASSMOBJ;
 	}
 	else
@@ -89,13 +94,14 @@ void P_MigrateActorInfo(void)
 	{
 		migrated = true;
 
-		for (i = 0; i < ::num_mobjinfo_types(); ++i)
+		for (i = 0; i < num_mobj_info_types; ++i)
 		{
-			if (mobjinfo[i].flags & MF_COUNTKILL)
-				mobjinfo[i].flags2 |= MF2_MCROSS | MF2_PUSHWALL;
+			m = &mobjinfo[i];
+			if (m->flags & MF_COUNTKILL)
+				m->flags2 |= MF2_MCROSS | MF2_PUSHWALL;
 
-			if (mobjinfo[i].flags & MF_MISSILE)
-				mobjinfo[i].flags2 |= MF2_PCROSS | MF2_IMPACT;
+			if (m->flags & MF_MISSILE)
+				m->flags2 |= MF2_PCROSS | MF2_IMPACT;
 		}
 
 		mobjinfo[MT_SKULL].flags2 |= MF2_MCROSS | MF2_PUSHWALL;
@@ -105,13 +111,14 @@ void P_MigrateActorInfo(void)
 	{
 		migrated = false;
 
-		for (i = 0; i < ::num_mobjinfo_types(); ++i)
+		for (i = 0; i < num_mobj_info_types; ++i)
 		{
-			if (mobjinfo[i].flags & MF_COUNTKILL)
-				mobjinfo[i].flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);
+			m = &mobjinfo[i];
+			if (m->flags & MF_COUNTKILL)
+				m->flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);
 
-			if (mobjinfo[i].flags & MF_MISSILE)
-				mobjinfo[i].flags2 &= ~(MF2_PCROSS | MF2_IMPACT);
+			if (m->flags & MF_MISSILE)
+				m->flags2 &= ~(MF2_PCROSS | MF2_IMPACT);
 		}
 
 		mobjinfo[MT_SKULL].flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);

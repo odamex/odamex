@@ -35,7 +35,43 @@
 
 typedef enum
 {
-	SPR_TROO,
+    // ---------------odamex sprites------------------------ //
+    // [RH] Gibs
+    SPR_GIB0 = 0x80000000,
+    SPR_GIB1,
+    SPR_GIB2,
+    SPR_GIB3,
+    SPR_GIB4,
+    SPR_GIB5,
+    SPR_GIB6,
+    SPR_GIB7,
+    // [RH] Dummy for unknown mapthing
+    SPR_UNKN,
+        
+    //    [Toke - CTF]
+    SPR_BSOK,
+    SPR_RSOK,
+    SPR_BFLG,
+    SPR_RFLG,
+    SPR_BDWN,
+    SPR_RDWN,
+    SPR_BCAR,
+    SPR_RCAR,
+
+    SPR_GSOK,
+    SPR_GFLG,
+    SPR_GDWN,
+    SPR_GCAR,
+    
+    SPR_TLGL,
+
+    SPR_WPBF,
+    SPR_WPRF,
+    SPR_WPGF,
+
+    SPR_CARE,
+    // ------------------------------------------------------ //
+	SPR_TROO = 0,
 	SPR_SHTG,
 	SPR_PUNG,
 	SPR_PISG,
@@ -195,41 +231,6 @@ typedef enum
     SPR_SP70, SPR_SP71, SPR_SP72, SPR_SP73, SPR_SP74, SPR_SP75, SPR_SP76, SPR_SP77, SPR_SP78, SPR_SP79,
     SPR_SP80, SPR_SP81, SPR_SP82, SPR_SP83, SPR_SP84, SPR_SP85, SPR_SP86, SPR_SP87, SPR_SP88, SPR_SP89,
     SPR_SP90, SPR_SP91, SPR_SP92, SPR_SP93, SPR_SP94, SPR_SP95, SPR_SP96, SPR_SP97, SPR_SP98, SPR_SP99,
-
-	// [RH] Gibs
-	SPR_GIB0,
-	SPR_GIB1,
-	SPR_GIB2,
-	SPR_GIB3,
-	SPR_GIB4,
-	SPR_GIB5,
-	SPR_GIB6,
-	SPR_GIB7,
-	// [RH] Dummy for unknown mapthing
-	SPR_UNKN,
-		
-	//	[Toke - CTF]
-	SPR_BSOK,
-	SPR_RSOK,
-	SPR_BFLG,
-	SPR_RFLG,
-	SPR_BDWN,
-	SPR_RDWN,
-	SPR_BCAR,
-	SPR_RCAR,
-
-	SPR_GSOK,
-	SPR_GFLG,
-	SPR_GDWN,
-	SPR_GCAR,
-	
-	SPR_TLGL,
-
-	SPR_WPBF,
-	SPR_WPRF,
-	SPR_WPGF,
-
-	SPR_CARE,
 
 	NUMSPRITES
 
@@ -1430,6 +1431,76 @@ inline FArchive &operator>> (FArchive &arc, state_t *&state)
 }
 
 typedef enum {
+    
+    // -------------------- odamex things ----------------------------------- //
+    
+    // [RH] Gibs (code is disabled)
+    MT_GIB0 = 0x8000000,
+    MT_GIB1,
+    MT_GIB2,
+    MT_GIB3,
+    MT_GIB4,
+    MT_GIB5,
+    MT_GIB6,
+    MT_GIB7,
+    // [RH] Miscellaneous things
+    MT_UNKNOWNTHING,
+    MT_PATHNODE,
+    MT_AMBIENT,        // Ambient sounds
+    MT_TELEPORTMAN2,// Teleport destination that pays attention to its height
+    MT_CAMERA,        // Camera used for "cutscenes"
+    MT_SPARK,        // Throws out sparks when activated
+    MT_FOUNTAIN,    // Just a container for a particle fountain
+    MT_NODE,        //Added by MC:
+    MT_WATERZONE,
+    MT_SECRETTRIGGER,
+
+    // -----------------------------------
+    //    [Toke - CTF]
+    MT_BSOK,
+    MT_RSOK,
+    MT_BFLG,
+    MT_RFLG,
+    MT_BDWN,
+    MT_RDWN,
+    MT_BCAR,
+    MT_RCAR,
+    // -----------------------------------
+    
+    MT_BRIDGE,
+    MT_MAPSPOT,
+    MT_MAPSPOTGRAVITY,
+    MT_BRIDGE32,
+    MT_BRIDGE16,
+    MT_BRIDGE8,
+    MT_ZDOOMBRIDGE,
+
+    // Sector Actions
+    MT_SECACTENTER,
+    MT_SECACTEXIT,
+    MT_SECACTHITFLOOR,
+    MT_SECACTHITCEIL,
+    MT_SECACTUSE,
+    MT_SECACTUSEWALL,
+    MT_SECACTEYESDIVE,
+    MT_SECACTEYESSURFACE,
+    MT_SECACTEYESBELOWC,
+    MT_SECACTEYESABOVEC,
+
+    MT_GSOK,
+    MT_GFLG,
+    MT_GDWN,
+    MT_GCAR,
+
+    MT_WPBFLAG,
+    MT_WPRFLAG,
+    MT_WPGFLAG,
+    MT_AVATAR,
+    MT_HORDESPAWN,
+    MT_CAREPACK,
+    
+    // --------------------------------------------------------------------- //
+
 	MT_NULL = -1, // ferk: null/invalid mobj (zero is reserved for MT_PLAYER)
 	MT_PLAYER,
 	MT_POSSESSED,
@@ -1602,72 +1673,6 @@ typedef enum {
     MT_EXTRA85, MT_EXTRA86, MT_EXTRA87, MT_EXTRA88, MT_EXTRA89,
     MT_EXTRA90, MT_EXTRA91, MT_EXTRA92, MT_EXTRA93, MT_EXTRA94,
     MT_EXTRA95, MT_EXTRA96, MT_EXTRA97, MT_EXTRA98, MT_EXTRA99,
-
-
-	// [RH] Gibs (code is disabled)
-	MT_GIB0,
-	MT_GIB1,
-	MT_GIB2,
-	MT_GIB3,
-	MT_GIB4,
-	MT_GIB5,
-	MT_GIB6,
-	MT_GIB7,
-	// [RH] Miscellaneous things
-	MT_UNKNOWNTHING,
-	MT_PATHNODE,
-	MT_AMBIENT,		// Ambient sounds
-	MT_TELEPORTMAN2,// Teleport destination that pays attention to its height
-	MT_CAMERA,		// Camera used for "cutscenes"
-	MT_SPARK,		// Throws out sparks when activated
-	MT_FOUNTAIN,	// Just a container for a particle fountain
-	MT_NODE,		//Added by MC:
-	MT_WATERZONE,
-	MT_SECRETTRIGGER,
-
-	// -----------------------------------
-	//	[Toke - CTF]
-	MT_BSOK,
-	MT_RSOK,
-	MT_BFLG,
-	MT_RFLG,
-	MT_BDWN,
-	MT_RDWN,
-	MT_BCAR,
-	MT_RCAR,
-	// -----------------------------------
-	
-	MT_BRIDGE,	
-	MT_MAPSPOT,
-	MT_MAPSPOTGRAVITY,
-	MT_BRIDGE32,
-	MT_BRIDGE16,
-	MT_BRIDGE8,
-	MT_ZDOOMBRIDGE,
-
-	// Sector Actions
-	MT_SECACTENTER,
-	MT_SECACTEXIT,
-	MT_SECACTHITFLOOR,
-	MT_SECACTHITCEIL,
-	MT_SECACTUSE,
-	MT_SECACTUSEWALL,
-	MT_SECACTEYESDIVE,
-	MT_SECACTEYESSURFACE,
-	MT_SECACTEYESBELOWC,
-	MT_SECACTEYESABOVEC,
-
-	MT_GSOK,
-	MT_GFLG,
-	MT_GDWN,
-	MT_GCAR,
-
-	MT_WPBFLAG,
-	MT_WPRFLAG,
-	MT_WPGFLAG,
-	MT_AVATAR,
-	MT_HORDESPAWN,
-	MT_CAREPACK,
 
 	NUMMOBJTYPES
 

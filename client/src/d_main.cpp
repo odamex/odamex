@@ -87,6 +87,7 @@
 #include "sprite.h"
 #include "mobjinfo.h"
 #include "state.h"
+#include "odamex_objects.h"
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -773,6 +774,8 @@ void D_DoomMain()
 	D_Initialize_sprnames(doom_sprnames, ::NUMSPRITES, SPR_TROO);
 	// Initialize all extra frames
 	D_Init_Nightmare_Flags();
+    // Initialize the odamex specific objects
+    D_Initialize_Odamex_Objects();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
@@ -860,7 +863,7 @@ void D_DoomMain()
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
 
-    // [CMB] TODO: deh processing is done here
+    // do the deh processing
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
 	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
