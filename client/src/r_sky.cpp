@@ -117,7 +117,7 @@ struct sky_t
 	bool usedefaultmid;
 };
 
-OHashTable<std::string, sky_t*> skylookup;
+OHashTable<OLumpName, sky_t*> skylookup;
 OHashTable<int32_t, sky_t*> skyflatlookup;
 
 //
@@ -220,7 +220,7 @@ void R_InitSkyMap()
 	R_InitXToViewAngle();
 }
 
-sky_t* R_GetSky(const std::string& name, bool create)
+sky_t* R_GetSky(const OLumpName& name, bool create)
 {
 	auto found = skylookup.find(name);
 	if (found != skylookup.end())
@@ -236,7 +236,7 @@ sky_t* R_GetSky(const std::string& name, bool create)
 	int32_t tex = R_TextureNumForName(name.c_str());
 	if (tex < 0) return nullptr;
 
-	std::string skytexname;
+	OLumpName skytexname;
 	sky_t* sky = (sky_t*)Z_Malloc(sizeof(sky_t), PU_STATIC, nullptr);
 	sky->background.scalex = INT2FIXED(1);
 	sky->background.scaley = INT2FIXED(1);
@@ -253,7 +253,7 @@ sky_t* R_GetSky(const std::string& name, bool create)
 		sky->foreground.scaley = INT2FIXED(1);
 		sky->foreground.scrolly = INT2FIXED(0);
 		sky->type = skytype_t::DOUBLESKY;
-		skytexname = level.skypic2.c_str();
+		skytexname = level.skypic2;
 	}
 	else
 	{
@@ -382,7 +382,7 @@ void R_InitSkyDefs()
 				if(!fireelem.isNull() || !foreelem.isNull()) return jsonlumpresult_t::PARSEERROR;
 			}
 
-			skylookup[skytexname.c_str()] = sky;
+			skylookup[skytexname] = sky;
 		}
 
 		for(const Json::Value& flatentry : flatmappings)
@@ -390,12 +390,12 @@ void R_InitSkyDefs()
 			const Json::Value& flatelem = flatentry["flat"];
 			const Json::Value& skyelem = flatentry["sky"];
 
-			std::string flatname = flatelem.asString();
+			OLumpName flatname = flatelem.asString();
 			int32_t flatnum = R_FlatNumForName(flatname.c_str());
 			if(flatnum < 0 || flatnum >= ::numflats) return jsonlumpresult_t::PARSEERROR;
 
-			std::string skyname = skyelem.asString();
-			sky_t* sky = R_GetSky(skyname.c_str(), true);
+			OLumpName skyname = skyelem.asString();
+			sky_t* sky = R_GetSky(skyname, true);
 
 			skyflatlookup[flatnum] = sky;
 		}
@@ -500,7 +500,7 @@ void R_ActivateSky(sky_t* sky)
 	}
 	if (sky->type == skytype_t::DOUBLESKY)
 	{
-		auto skypair = skylookup.find(sky->foreground.texture.c_str());
+		auto skypair = skylookup.find(sky->foreground.texture);
 		if (skypair != skylookup.end())
 		{
 			R_ActivateSky(skypair->second);
@@ -520,7 +520,7 @@ void R_ActivateSkies(const byte* hitlist, std::vector<int>& skytextures)
 		if (skypair.second->type == skytype_t::DOUBLESKY)
 		{
 			skytextures.push_back(skypair.second->foreground.texnum);
-			auto foreskypair = skylookup.find(skypair.second->foreground.texture.c_str());
+			auto foreskypair = skylookup.find(skypair.second->foreground.texture);
 			if (foreskypair != skylookup.end())
 			{
 				R_ActivateSky(foreskypair->second);
