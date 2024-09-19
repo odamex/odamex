@@ -43,6 +43,7 @@
 #include "v_text.h"
 #include "gi.h"
 #include "v_textcolors.h"
+#include "wi_interlevel.h"
 
 extern byte* Ranges;
 
@@ -1190,7 +1191,7 @@ void WI_drawNetgameStats()
 		// [RH] Only use one graphic for the face backgrounds
 		//enaiel: Fix incorrect player background when showing old intermission
 		V_ColorMap = translationref_t(translationtables + it->id * 256, it->id);
-		
+
 		screen->DrawTranslatedPatchClean(pP, x - pP->width(), y);
 		// classic face background colour
 		//screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
@@ -1320,12 +1321,12 @@ void WI_updateStats()
 		if (acceleratestage)
 		{
 			level_pwad_info_t& nextlevel = getLevelInfos().findByName(wbs->next);
-			OLumpName name = nextlevel.enterpic;
+			OLumpName enterpic = nextlevel.enterpic;
 
-			if (nextlevel.enterpic[0])
+			if (enterpic[0])
 			{
 				// background
-				const patch_t* bg_patch = W_CachePatch(name.c_str());
+				const patch_t* bg_patch = W_CachePatch(enterpic.c_str());
 
 				inter_width = bg_patch->width();
 				inter_height = bg_patch->height() + (bg_patch->height() / 5);
@@ -1400,7 +1401,7 @@ void WI_checkForAccelerate()
 {
 	if (!serverside)
 		return;
-		
+
 	// check for button presses to skip delays
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -1613,7 +1614,7 @@ void WI_loadData()
 
 	// "finished"
 	// (Removed) Dan - Causes GUI Issues |FIX-ME|
-	finished = W_CachePatchHandle("WIF", PU_STATIC); 
+	finished = W_CachePatchHandle("WIF", PU_STATIC);
 
 	// "entering"
 	entering = W_CachePatchHandle("WIENTER", PU_STATIC);
