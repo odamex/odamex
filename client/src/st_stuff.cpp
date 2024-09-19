@@ -277,6 +277,7 @@ static bool st_cursoron;
 static lumpHandle_t sbar;
 
 static short sbar_width = 0;
+static short sbar_height = 0;
 
 // 0-9, tall numbers
 // [RH] no longer static
@@ -448,33 +449,14 @@ short ST_StatusBarWidth(int surface_width, int surface_height)
 	{
 		return 0;
 	}
-
 	
 	// [AM] Scale status bar width according to height, unless there isn't
 	//      enough room for it.  Fixes widescreen status bar scaling.
 	// [ML] A couple of minor changes for true 4:3 correctness...
-	if (I_IsProtectedResolution(surface_width, surface_height))
-	{
-		int height = ST_StatusBarHeight(surface_width, surface_height);
 
-		if (sbar_width > 320)
-		{
-			return (height / 32) * sbar_width;
-		}
-		else
-		{
-			return 10 * height;
-		}
-	}
+	int height = ST_StatusBarHeight(surface_width, surface_height);
 
-	if (st_scale)
-	{
-		return (sbar_width / 80) * surface_height / 3;
-	}
-	else
-	{
-		return sbar_width;
-	}
+	return !st_scale ? sbar_width : (height / sbar_height) * sbar_width;
 }
 
 int ST_StatusBarX(int surface_width, int surface_height)
@@ -484,8 +466,8 @@ int ST_StatusBarX(int surface_width, int surface_height)
 
 	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
 		return 0;
-	else
-		return (surface_width - ST_StatusBarWidth(surface_width, surface_height)) / 2;
+
+	return (surface_width - ST_StatusBarWidth(surface_width, surface_height)) / 2;
 }
 
 int ST_StatusBarY(int surface_width, int surface_height)
@@ -1197,6 +1179,7 @@ static void ST_loadGraphics()
 	// in tyool 2024, we have widescreen status bars
 	// and they're not always 320x32
 	sbar_width = W_ResolvePatchHandle(sbar)->width();
+	sbar_height = W_ResolvePatchHandle(sbar)->height();
 
 	// face states
 	int facenum = 0;
@@ -1377,6 +1360,7 @@ void STACK_ARGS ST_Shutdown()
 	I_FreeSurface(stnum_surface);
 
 	sbar_width = 0;
+	sbar_height = 0;
 }
 
 
