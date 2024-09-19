@@ -99,6 +99,8 @@ void MustGetIdentifier(OScanner& os)
 	}
 }
 
+bool pnamemodified;
+
 int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 {
 	// find the next line with content.
@@ -116,7 +118,8 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		os.mustScan();
 		mape->level_name = os.getToken();
-		mape->pname.clear();
+		if (!pnamemodified) // only want to clear pname if its *not* from the umapinfo
+			mape->pname.clear();
 	}
 	else if (!stricmp(pname.c_str(), "label"))
 	{
@@ -156,6 +159,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	else if (!stricmp(pname.c_str(), "levelpic"))
 	{
 		ParseOLumpName(os, mape->pname);
+		pnamemodified = true;
 	}
 	else if (!stricmp(pname.c_str(), "skytexture"))
 	{
@@ -386,6 +390,8 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 			level_pwad_info_t& def = levels.at(0);
 			info.skypic = def.skypic;
 		}
+
+		pnamemodified = false;
 
 		info.mapname = mapname;
 
