@@ -60,8 +60,8 @@ struct interlevelframe_t
     OLumpName imagelump;
     int imagelumpnum;
     frametype_t type;
-    double duration;
-    double maxduration;
+    int duration;
+    int maxduration;
 };
 
 struct interlevelanim_t
@@ -80,9 +80,10 @@ struct interlevellayer_t
 
 struct interlevel_t
 {
-    OLumpName music_lump;
-    OLumpName background_lump;
+    OLumpName musiclump;
+    OLumpName backgroundlump;
     std::vector<interlevellayer_t> layers;
 };
 
 interlevel_t* WI_GetInterlevel(const char* lumpname);
+void WI_ClearInterlevels();

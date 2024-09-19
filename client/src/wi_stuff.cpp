@@ -1322,11 +1322,17 @@ void WI_updateStats()
 		{
 			level_pwad_info_t& nextlevel = getLevelInfos().findByName(wbs->next);
 			OLumpName enterpic = nextlevel.enterpic;
+			interlevel_t* enteranim = nullptr;
+			if (!nextlevel.enteranim.empty())
+			{
+				enteranim = WI_GetInterlevel(nextlevel.enteranim.c_str());
+			}
 
-			if (enterpic[0])
+			if (!enterpic.empty() || enteranim != nullptr)
 			{
 				// background
-				const patch_t* bg_patch = W_CachePatch(enterpic.c_str());
+				const char* bg_lump = enteranim == nullptr ? enterpic.c_str() : enteranim->backgroundlump.c_str();
+				const patch_t* bg_patch = W_CachePatch(bg_lump);
 
 				inter_width = bg_patch->width();
 				inter_height = bg_patch->height() + (bg_patch->height() / 5);
@@ -1516,10 +1522,18 @@ void WI_loadData()
 {
 	LevelInfos& levels = getLevelInfos();
 	level_pwad_info_t& currentlevel = levels.findByName(wbs->current);
+	interlevel_t* exitanim = nullptr;
+
+	if (!currentlevel.exitanim.empty())
+	{
+		exitanim = WI_GetInterlevel(currentlevel.exitanim.c_str());
+	}
 
 	char name[17];
 
-	if (currentlevel.exitpic[0] != '\0')
+	if (exitanim != nullptr)
+		strcpy(name, exitanim->backgroundlump.c_str());
+	else if (currentlevel.exitpic[0] != '\0')
 		strcpy(name, currentlevel.exitpic.c_str());
 	else if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
 		strcpy(name, "INTERPIC");
@@ -1527,12 +1541,11 @@ void WI_loadData()
 		sprintf(name, "WIMAP%d", wbs->epsd);
 
 	// background
-	const lumpHandle_t handle = W_CachePatchHandle(name);
-
-	inter_width = W_ResolvePatchHandle(handle)->width();
-	inter_height = W_ResolvePatchHandle(handle)->height();
-
 	const patch_t* bg_patch = W_CachePatch(name);
+
+	inter_width = bg_patch->width();
+	inter_height = bg_patch->height() + (bg_patch->height() / 5);
+
 	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 	splat_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 	const DCanvas* canvas = background_surface->getDefaultCanvas();
@@ -1653,6 +1666,20 @@ void WI_loadData()
 	bstar = W_CachePatchHandle("STFDEAD0", PU_STATIC);
 
 	p = W_CachePatchHandle("STPBANY", PU_STATIC);
+
+	if (exitanim != nullptr)
+	{
+		for (const auto& layer : exitanim->layers)
+		{
+			for (const auto& anim : layer.anims)
+			{
+				for (const auto& frame : anim.frames)
+				{
+
+				}
+			}
+		}
+	}
 
 	// [Nes] Classic vanilla lifebars.
 	for (int i = 0; i < 4; i++)
@@ -1788,6 +1815,11 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 
 	S_StopAllChannels ();
  	SN_StopAllSequences ();
+}
+
+void WI_Shutdown()
+{
+	WI_ClearInterlevels();
 }
 
 VERSION_CONTROL (wi_stuff_cpp, "$Id$")

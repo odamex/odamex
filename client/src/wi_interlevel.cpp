@@ -91,8 +91,8 @@ jsonlumpresult_t WI_ParseInterlevelFrame(const Json::Value& frame, interlevelfra
 	output.imagelump = image.asString();
     output.imagelumpnum = W_CheckNumForName(output.imagelump.c_str());
 	output.type = static_cast<interlevelframe_t::frametype_t>(type.asInt());
-	output.duration = duration.asDouble() * TICRATE;
-	output.maxduration = maxduration.asDouble() * TICRATE;
+	output.duration = (int)(duration.asDouble() * TICRATE);
+	output.maxduration = (int)(maxduration.asDouble() * TICRATE);
 	// output.lumpname_animindex = 0;
 	// output.lumpname_animframe = 0;
 
@@ -175,8 +175,8 @@ interlevel_t* WI_GetInterlevel(const char* lumpname)
 		}
 
 		output = std::make_unique<interlevel_t>();
-		output->music_lump = music.asString();
-		output->background_lump = backgroundimage.asString();
+		output->musiclump = music.asString();
+		output->backgroundlump = backgroundimage.asString();
         output->layers = std::vector<interlevellayer_t>();
 		jsonlumpresult_t res = jsonlumpresult_t::SUCCESS;
 		if(!layers.isNull())
