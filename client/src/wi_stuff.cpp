@@ -372,6 +372,9 @@ static IWindowSurface*	splat_surface;
 static bool	needsplat;
 static bool	needmarker;
 
+static interlevel_t* enteranim;
+static interlevel_t* exitanim;
+
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (wi_oldintermission)
 EXTERN_CVAR (cl_autoscreenshot)
@@ -1322,7 +1325,7 @@ void WI_updateStats()
 		{
 			level_pwad_info_t& nextlevel = getLevelInfos().findByName(wbs->next);
 			OLumpName enterpic = nextlevel.enterpic;
-			interlevel_t* enteranim = nullptr;
+			enteranim = nullptr;
 			if (!nextlevel.enteranim.empty())
 			{
 				enteranim = WI_GetInterlevel(nextlevel.enteranim.c_str());
@@ -1330,6 +1333,8 @@ void WI_updateStats()
 
 			if (!enterpic.empty() || enteranim != nullptr)
 			{
+				if (enteranim != nullptr)
+					S_ChangeMusic(enteranim->musiclump.c_str(), true);
 				// background
 				const char* bg_lump = enteranim == nullptr ? enterpic.c_str() : enteranim->backgroundlump.c_str();
 				const patch_t* bg_patch = W_CachePatch(bg_lump);
@@ -1352,10 +1357,10 @@ void WI_updateStats()
 
 		    S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
 
-		    if ((gameinfo.flags & GI_MAPxx))
-			WI_initNoState();
+		    if ((gameinfo.flags & GI_MAPxx && enteranim == nullptr))
+				WI_initNoState();
 		    else
-			WI_initShowNextLoc();
+				WI_initShowNextLoc();
 		}
     }
     else if (sp_state & 1)
@@ -1446,7 +1451,9 @@ void WI_Ticker()
 	if (bcnt == 1)
 	{
 		// intermission music
-		if ((gameinfo.flags & GI_MAPxx))
+		if (exitanim != nullptr)
+			S_ChangeMusic (exitanim->musiclump.c_str(), true);
+		else if ((gameinfo.flags & GI_MAPxx))
 			S_ChangeMusic ("d_dm2int", true);
 		else
 			S_ChangeMusic ("d_inter", true);
@@ -1522,7 +1529,7 @@ void WI_loadData()
 {
 	LevelInfos& levels = getLevelInfos();
 	level_pwad_info_t& currentlevel = levels.findByName(wbs->current);
-	interlevel_t* exitanim = nullptr;
+	exitanim = nullptr;
 
 	if (!currentlevel.exitanim.empty())
 	{
@@ -1730,6 +1737,8 @@ void WI_unloadData()
 	Z_ChangeTag (entering, PU_CACHE);
 
 	Z_ChangeTag (p, PU_CACHE);*/
+
+	exitanim = enteranim = nullptr;
 
 	for (int i = 0; i < 10; i++)
 		num[i].clear();
