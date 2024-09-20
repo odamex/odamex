@@ -378,6 +378,271 @@ static interlevel_t* exitanim;
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (wi_oldintermission)
 EXTERN_CVAR (cl_autoscreenshot)
+
+//
+// ID24 STUFF
+//
+typedef struct
+{
+    std::vector<interlevelframe_t> frames;
+    const int xpos;
+    const int ypos;
+    int frame_index;
+    bool frame_start;
+    int duration_left;
+} wi_animationstate_t;
+
+typedef struct
+{
+    std::vector<wi_animationstate_t> exiting_states;
+    std::vector<wi_animationstate_t> entering_states;
+
+    std::vector<wi_animationstate_t>* states;
+} wi_animation_t;
+
+static wi_animation_t* animation;
+
+static bool CheckConditions(const std::vector<interlevelcond_t>& conditions,
+                            bool enteringcondition)
+{
+    bool conditionsmet = true;
+
+    int map_number, map, episode;
+
+    // {
+	// 	mapentry_t* mape;
+    //     LevelInfos& levels = getLevelInfos();
+	// 	level_pwad_info_t& currentlevel = levels.findByName(wbs->current);
+    //     if (enteringcondition)
+    //     {
+    //         mape = wbs->nextmapinfo;
+    //         map = wbs->next + 1;
+    //         episode = wbs->nextep + 1;
+    //     }
+    //     else
+    //     {
+    //         mape = wbs->lastmapinfo;
+    //         map = wbs->last + 1;
+    //         episode = wbs->epsd + 1;
+    //     }
+    //     map_number = mape->map_number ? mape->map_number : mape->all_number;
+    // }
+
+    for (const auto& cond : conditions)
+    {
+        switch (cond.condition)
+        {
+            case animcondition_t::CurrMapGreater:
+                // conditionsmet = (map_number > cond.param);
+                break;
+
+            case animcondition_t::CurrMapEqual:
+                // conditionsmet = (map_number == cond.param);
+                break;
+
+            case animcondition_t::MapVisited:
+                // conditionsmet = false;
+
+                // level_t *level;
+                // array_foreach(level, wbs->visitedlevels)
+                // {
+                //     mapentry_t *mape =
+                //         G_LookupMapinfo(level->episode, level->map);
+
+                //     if ((mape->map_number && mape->map_number == cond->param)
+                //         || mape->all_number == cond->param)
+                //     {
+                //         conditionsmet = true;
+                //         break;
+                //     }
+                // }
+                break;
+
+            case animcondition_t::CurrMapNotSecret:
+                // conditionsmet = !U_IsSecretMap(episode, map);
+                break;
+
+            case animcondition_t::AnySecretVisited:
+                // conditionsmet = wbs->didsecret;
+                break;
+
+            case animcondition_t::OnFinishedScreen:
+                conditionsmet = !enteringcondition;
+                break;
+
+            case animcondition_t::OnEnteringScreen:
+                conditionsmet = enteringcondition;
+                break;
+
+            default:
+                break;
+        }
+    }
+    return conditionsmet;
+}
+
+static void UpdateAnimationStates(std::vector<wi_animationstate_t>& states)
+{
+    for (auto& state : states)
+    {
+        interlevelframe_t& frame = state.frames.at(state.frame_index);
+
+        if (frame.type & interlevelframe_t::DurationInf)
+        {
+            continue;
+        }
+
+        if (state.duration_left == 0)
+        {
+            int tics = 1;
+            switch (frame.type)
+            {
+                case interlevelframe_t::RandomStart:
+                    if (state.frame_start)
+                    {
+                        int maxtics = frame.duration * TICRATE;
+                        tics = M_Random() % maxtics;
+                        break;
+                    }
+                    // [[fallthrough]]
+                case interlevelframe_t::DurationFixed:
+                    tics = frame.duration * TICRATE;
+                    break;
+
+                case interlevelframe_t::DurationRand:
+                    {
+                        int maxtics = frame.maxduration * TICRATE;
+                        int mintics = frame.duration * TICRATE;
+                        tics = M_Random() % maxtics;
+                        tics = clamp(tics, mintics, maxtics);
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+
+            state.duration_left = MAX(tics, 1);
+
+            if (!state.frame_start)
+            {
+                state.frame_index++;
+                if (state.frame_index == state.frames.size())
+                {
+                    state.frame_index = 0;
+                }
+            }
+        }
+
+        state.duration_left--;
+        state.frame_start = false;
+    }
+}
+
+static bool UpdateAnimation(bool enteringcondition)
+{
+    if (!animation)
+    {
+        return false;
+    }
+
+    animation->states = nullptr;
+
+    if (!enteringcondition && exitanim)
+    {
+        animation->states = &animation->exiting_states;
+    }
+    else if (enteranim)
+    {
+        animation->states = &animation->entering_states;
+    }
+
+	if (!animation->states)
+		return false;
+
+    UpdateAnimationStates(*animation->states);
+
+    return true;
+}
+
+static bool DrawAnimation(void)
+{
+    if (!animation || !animation->states)
+    {
+        return false;
+    }
+	background_surface->lock();
+	for (const auto& state : *animation->states)
+    {
+        const interlevelframe_t& frame = state.frames.at(state.frame_index);
+        patch_t *patch = W_CachePatch(frame.imagelumpnum, PU_CACHE);
+
+		DCanvas* canvas = background_surface->getDefaultCanvas();
+
+		int scaled_x = (inter_width - 320) / 2;
+
+		canvas->DrawPatch(patch, state.xpos + scaled_x,
+		                      state.ypos);
+    }
+	background_surface->unlock();
+
+    return true;
+}
+
+static void SetupAnimationStates(std::vector<wi_animationstate_t>& out,
+								 const std::vector<interlevellayer_t>& layers,
+								 bool enteringcondition)
+{
+	for (const auto& layer : layers)
+	{
+		if (!CheckConditions(layer.conditions, enteringcondition))
+		{
+        	continue;
+		}
+
+		for (const auto& anim : layer.anims)
+		{
+			if (!CheckConditions(anim.conditions, enteringcondition))
+			{
+				continue;
+			}
+
+			wi_animationstate_t state = { anim.frames, anim.xpos, anim.ypos, 0, true, 0 };
+			out.push_back(state);
+		}
+	}
+}
+
+static bool SetupAnimation(void)
+{
+	if (!animation)
+	{
+		return false;
+	}
+
+	if (exitanim)
+	{
+		SetupAnimationStates(animation->exiting_states, exitanim->layers, false);
+	}
+
+	if (enteranim)
+	{
+		SetupAnimationStates(animation->entering_states, enteranim->layers, true);
+	}
+
+	return true;
+}
+
+static bool NextLocAnimation(void)
+{
+    if (animation && !animation->entering_states.empty())
+    {
+        return true;
+    }
+
+    return false;
+}
+
 //
 // CODE
 //
@@ -684,6 +949,9 @@ void WI_initAnimatedBack()
 
 void WI_updateAnimatedBack()
 {
+	if (UpdateAnimation(state != StatCount))
+		return;
+
 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
 		return;
 
@@ -748,6 +1016,8 @@ void WI_drawAnimatedBack()
 
 		background_surface->unlock();
 	}
+
+	// DrawAnimation();
 
 	WI_slamBackground();
 }
@@ -929,6 +1199,8 @@ void WI_drawShowNextLoc()
 
 	// draw animated background
 	WI_drawAnimatedBack();
+
+	DrawAnimation();
 	// draws which level you are entering..
 	WI_drawEL();
 }
@@ -1124,7 +1396,7 @@ void WI_updateNetgameStats()
 		if (acceleratestage)
 		{
 			S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
-			if ( (gameinfo.flags & GI_MAPxx) )
+			if ((gameinfo.flags & GI_MAPxx) && enteranim == nullptr)
 				WI_initNoState();
 			else
 				WI_initShowNextLoc();
@@ -1325,11 +1597,6 @@ void WI_updateStats()
 		{
 			level_pwad_info_t& nextlevel = getLevelInfos().findByName(wbs->next);
 			OLumpName enterpic = nextlevel.enterpic;
-			enteranim = nullptr;
-			if (!nextlevel.enteranim.empty())
-			{
-				enteranim = WI_GetInterlevel(nextlevel.enteranim.c_str());
-			}
 
 			if (!enterpic.empty() || enteranim != nullptr)
 			{
@@ -1387,6 +1654,7 @@ void WI_drawStats()
 
 	// draw animated background
 	WI_drawAnimatedBack();
+	DrawAnimation();
 	WI_drawLF();
 
 	screen->DrawPatchClean(pKills, SP_STATSX, SP_STATSY);
@@ -1529,12 +1797,19 @@ void WI_loadData()
 {
 	LevelInfos& levels = getLevelInfos();
 	level_pwad_info_t& currentlevel = levels.findByName(wbs->current);
-	exitanim = nullptr;
+	level_pwad_info_t& nextlevel = levels.findByName(wbs->next);
+
+	animation = new wi_animation_t();
 
 	if (!currentlevel.exitanim.empty())
 	{
 		exitanim = WI_GetInterlevel(currentlevel.exitanim.c_str());
 	}
+	if (!nextlevel.enteranim.empty())
+	{
+		enteranim = WI_GetInterlevel(nextlevel.enteranim.c_str());
+	}
+	SetupAnimation();
 
 	char name[17];
 
@@ -1739,6 +2014,7 @@ void WI_unloadData()
 	Z_ChangeTag (p, PU_CACHE);*/
 
 	exitanim = enteranim = nullptr;
+	// delete animation;
 
 	for (int i = 0; i < 10; i++)
 		num[i].clear();
