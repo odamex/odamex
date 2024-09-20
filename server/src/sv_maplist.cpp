@@ -506,7 +506,7 @@ static void SendMaplist(player_t &player, maplist_status_t status) {
 
 // Send the player the next map index and current map index if it exists.
 void SV_MaplistIndex(player_t &player) {
-	client_t* cl = player.client.get();
+	client_t* cl = player.client;
 
 	// count = 0: No indexes.
 	// count = 1: Next map index.

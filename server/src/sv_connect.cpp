@@ -106,7 +106,7 @@ static void DisconnectOldClient()
 /**
  * @brief Get next free player. Will use the lowest available player id.
  */
-static Players::iterator GetFreeClient()
+static Players::iterator GetFreeClient(client_t* pClient)
 {
 	extern std::set<byte> free_player_ids;
 
@@ -121,8 +121,9 @@ static Players::iterator GetFreeClient()
 	}
 
 	players.emplace_back(player_t{});
-	players.back().client.reset(new client_t());
+	players.back().client = pClient;
 	players.back().playerstate = PST_CONTACT;
+	pClient->player = &players.back();
 
 	// generate player id
 	std::set<byte>::iterator id = free_player_ids.begin();
@@ -249,8 +250,11 @@ void SV_ConnectClient()
 		return;
 	}
 
+	// Create a new client.
+	client_t* cl = SV_CreateClient(::net_from);
+
 	// find an open slot
-	Players::iterator it = GetFreeClient();
+	Players::iterator it = GetFreeClient(cl);
 
 	if (it == players.end()) // a server is full
 	{
@@ -262,11 +266,11 @@ void SV_ConnectClient()
 		msg.writePacket(buffer, I_MSTime(), true);
 
 		NET_SendPacket(buffer, ::net_from);
+		SV_DestroyClient(::net_from);
 		return;
 	}
 
 	player_t* player = &(*it);
-	client_t* cl = player->client.get();
 
 	// clear and reinitialize client network info
 	cl->address = net_from;
@@ -361,7 +365,7 @@ void SV_ConnectClient2(player_t& player)
 {
 	extern bool step_mode;
 
-	client_t* cl = player.client.get();
+	client_t* cl = player.client;
 
 	// [AM] FIXME: I don't know if it's safe to set players as PST_ENTER
 	//             this early.

@@ -245,7 +245,7 @@ static void SV_Move(player_t& player)
 		return;
 	}
 
-	client_t* cl = player.client.get();
+	client_t* cl = player.client;
 
 	// The client-tic at the time this message was sent.  The server stores
 	// this and sends it back the next time it tells the client
@@ -333,7 +333,7 @@ static void SV_RConPassword(player_t& player)
 		return;
 	}
 
-	client_t* cl = player.client.get();
+	client_t* cl = player.client;
 
 	if (msg.is_login())
 	{
@@ -458,7 +458,7 @@ void SV_Cheat(player_t& player)
 		{
 			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 			{
-				client_t* cl = it->client.get();
+				client_t* cl = it->client;
 				SV_SendPlayerStateUpdate(cl, &player);
 			}
 		}
@@ -473,7 +473,7 @@ void SV_Cheat(player_t& player)
 
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
-			client_t* cl = it->client.get();
+			client_t* cl = it->client;
 			SV_SendPlayerStateUpdate(cl, &player);
 		}
 		break;
@@ -608,7 +608,7 @@ static void SV_SpyPlayer(player_t& viewer)
 		return;
 
 	viewer.spying = id;
-	SV_SendPlayerStateUpdate(viewer.client.get(), &other);
+	SV_SendPlayerStateUpdate(viewer.client, &other);
 }
 
 /**

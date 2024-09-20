@@ -101,6 +101,14 @@ std::set<byte> free_player_ids;
 
 bool keysfound[NUMCARDS];		// Ch0wW : Found keys
 
+struct clientInfo_s
+{
+	netadr_t cAddress;
+	std::unique_ptr<client_t> pcClient;
+};
+
+std::vector<clientInfo_s> g_ncClientInfos;
+
 // General server settings
 EXTERN_CVAR(sv_motd)
 EXTERN_CVAR(sv_maxrate)
@@ -467,6 +475,34 @@ static void SendLevelState(SerializedLevelState sls)
 	}
 }
 
+/**
+ * @brief Create a new client and hold storage for it.
+ */
+client_t* SV_CreateClient(const netadr_t& cAddr)
+{
+	for (auto& clientInfo : g_ncClientInfos)
+	{
+		if (NET_CompareAdr(clientInfo.cAddress, cAddr))
+		{
+			return nullptr;
+		}
+	}
+
+	g_ncClientInfos.push_back(clientInfo_s{cAddr, std::make_unique<client_t>()});
+	return g_ncClientInfos.back().pcClient.get();
+} 
+
+void SV_DestroyClient(const netadr_t& cAddr)
+{
+	for (auto it = g_ncClientInfos.begin(); it != g_ncClientInfos.end(); ++it)
+	{
+		if (NET_CompareAdr(it->cAddress, cAddr))
+		{
+			g_ncClientInfos.erase(it);
+			return;
+		}
+	}
+}
 
 //
 // SV_InitNetwork
@@ -574,6 +610,10 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 		it->mo = AActor::AActorPtr();
 	}
 
+	// Destroy the client of this player.
+	SV_DestroyClient(it->client->address);
+	it->client = nullptr;
+
 	// remove this player from the global players vector
 	Players::iterator next;
 	next = players.erase(it);
@@ -618,7 +658,7 @@ void SV_GetPackets()
 // Print a midscreen message to a client
 void SV_MidPrint(const char* msg, player_t* p, int msgtime)
 {
-	client_t* cl = p->client.get();
+	client_t* cl = p->client;
 
 	SV_QueueReliable(*cl, SVC_MidPrint(msg, msgtime));
 }
@@ -648,7 +688,7 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		cl = it->client.get();
+		cl = it->client;
 
 		SV_QueueReliable(
 		    *cl, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f, attenuation));
@@ -675,7 +715,7 @@ void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
 		y = mo->y;
 	}
 
-	client_t *cl = pl.client.get();
+	client_t *cl = pl.client;
 
 	SV_QueueReliable(
 	    *cl, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f, attenuation));
@@ -708,7 +748,7 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 		if(&pl == &*it)
 			continue;
 
-		cl = it->client.get();
+		cl = it->client;
 
 		SV_QueueReliable(
 		    *cl, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f, attenuation));
@@ -737,7 +777,7 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 	{
 		if (it->ingame() && it->userinfo.team == team)
 		{
-			cl = it->client.get();
+			cl = it->client;
 
 			SV_QueueReliable(
 			    *cl, SVC_PlaySound(PlaySoundType(), channel, sfx_id, 1.0f, attenuation));
@@ -763,7 +803,7 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 		if (!(it->ingame()))
 			continue;
 
-		cl = it->client.get();
+		cl = it->client;
 
 		SV_QueueReliable(
 		    *cl, SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id, 1.0f, attenuation));
@@ -777,7 +817,7 @@ void SV_UpdateFrags(player_t &player)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		client_t *cl = it->client.get();
+		client_t *cl = it->client;
 		SV_QueueReliable(*cl, SVC_PlayerMembers(player, SVC_PM_SCORE));
 	}
 }
@@ -798,7 +838,7 @@ Spreads a player's userinfo to every client.
 void SV_BroadcastUserInfo(player_t &player)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
-		SV_SendUserInfo(player, it->client.get());
+		SV_SendUserInfo(player, it->client);
 }
 
 /**
@@ -1007,7 +1047,7 @@ bool SV_SetupUserInfo(player_t &player)
 //
 void SV_ForceSetTeam (player_t &who, team_t team)
 {
-	client_t *cl = who.client.get();
+	client_t *cl = who.client;
 
 	who.userinfo.team = team;
 	Printf (PRINT_HIGH, "Forcing %s to %s team\n", who.userinfo.netname.c_str(), team == TEAM_NONE ? "NONE" : V_GetTeamColor(team).c_str());
@@ -1121,7 +1161,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 
 	bool previously_ok = mo->players_aware.get(player.id);
 
-	client_t *cl = player.client.get();
+	client_t *cl = player.client;
 
 	if(!ok && previously_ok)
 	{
@@ -1243,7 +1283,7 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 void SV_BroadcastSector(int sectornum)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
-		SV_UpdateSector(it->client.get(), sectornum);
+		SV_UpdateSector(it->client, sectornum);
 }
 
 //
@@ -1442,7 +1482,7 @@ void SV_ThinkerUpdate(client_t* cl)
 //
 void SV_ClientFullUpdate(player_t &pl)
 {
-	client_t *cl = pl.client.get();
+	client_t *cl = pl.client;
 
 	SV_QueueReliable(*cl, odaproto::svc::FullUpdateStart());
 
@@ -1505,7 +1545,7 @@ void SV_UpdateSecret(sector_t& sector, player_t &player)
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		client_t* cl = it->client.get();
+		client_t* cl = it->client;
 
 		SV_QueueReliable(*cl, SVC_LevelLocals(::level, SVC_LL_SECRETS));
 		SV_QueueReliable(*cl, SVC_PlayerMembers(player, SVC_PM_SCORE));
@@ -1530,7 +1570,7 @@ void SV_SendPackets(void);
 
 void SV_SendServerSettings(player_t& pl)
 {
-	client_t* cl = pl.client.get();
+	client_t* cl = pl.client;
 
 	// GhostlyDeath <June 19, 2008> -- Loop through all CVARs and send the CVAR_SERVERINFO
 	// stuff only
@@ -2126,9 +2166,9 @@ void STACK_ARGS SV_BroadcastPrintfButPlayer(int printlevel, int player_id, const
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		cl = it->client.get();
+		cl = it->client;
 
-		client_t* excluded_client = idplayer(player_id).client.get();
+		client_t* excluded_client = idplayer(player_id).client;
 
 		if (cl == excluded_client)
 			continue;
@@ -2152,7 +2192,7 @@ void STACK_ARGS SV_SpectatorPrintf(int level, const char *fmt, ...)
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		cl = it->client.get();
+		cl = it->client;
 
 		bool spectator = it->spectator || !it->ingame();
 		if (spectator)
@@ -2214,7 +2254,7 @@ void STACK_ARGS SV_TeamPrintf(int level, int who, const char *fmt, ...)
 		if (spectator)
 			continue;
 
-		client_t* cl = it->client.get();
+		client_t* cl = it->client;
 
 		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
 			continue;
@@ -2354,7 +2394,7 @@ void SV_ActorTarget(AActor *actor)
 		if (!(it->ingame()))
 			continue;
 
-		client_t *cl = it->client.get();
+		client_t *cl = it->client;
 
 		if(!SV_IsPlayerAllowedToSee(*it, actor))
 			continue;
@@ -2373,7 +2413,7 @@ void SV_ActorTracer(AActor *actor)
 		if (!(it->ingame()))
 			continue;
 
-		client_t* cl = it->client.get();
+		client_t* cl = it->client;
 
 		SV_QueueReliable(*cl, SVC_UpdateMobj(*actor));
 	}
@@ -2499,7 +2539,7 @@ void SV_ClearClientsBPS(void)
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		client_t *cl = it->client.get();
+		client_t *cl = it->client;
 
 		cl->reliable_bps = 0;
 		cl->unreliable_bps = 0;
@@ -2566,7 +2606,7 @@ void SV_WriteCommands(void)
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
-		client_t *cl = it->client.get();
+		client_t *cl = it->client;
 
 		// [SL] 2011-05-11 - Send the client the server's gametic
 		// this gametic is returned to the server with the client's
@@ -2596,7 +2636,7 @@ void SV_WriteCommands(void)
 		// [SL] Send client info about player he is spying on
 		player_t *target = &idplayer(it->spying);
 		if (validplayer(*target) && &(*it) != target && P_CanSpy(*it, *target))
-			SV_SendPlayerStateUpdate(it->client.get(), target);
+			SV_SendPlayerStateUpdate(it->client, target);
 
 		SV_UpdateConsolePlayer(*it);
 
@@ -2752,7 +2792,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 void SV_UpdateConsolePlayer(player_t &player)
 {
 	AActor *mo = player.mo;
-	client_t *cl = player.client.get();
+	client_t *cl = player.client;
 
 	if (!mo)
 		return;
@@ -3192,7 +3232,7 @@ void SV_GameTics (void)
 
 void SV_TouchSpecial(AActor *special, player_t *player)
 {
-    client_t *cl = player->client.get();
+    client_t *cl = player->client;
 
     if (cl == NULL || special == NULL)
         return;
@@ -3529,7 +3569,7 @@ void OnChangedSwitchTexture (line_t *line, int useAgain)
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		client_t *cl = it->client.get();
+		client_t *cl = it->client;
 
 		SV_QueueReliable(*cl, SVC_Switch(*line, state, time));
 	}
@@ -3546,7 +3586,7 @@ void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
 		if (!(it->ingame()))
 			continue;
 
-		client_t *cl = it->client.get();
+		client_t *cl = it->client;
 
 		SV_QueueReliable(*cl, SVC_ActivateLine(line, mo, side, activationType));
 	}
@@ -3556,7 +3596,7 @@ void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, 
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		client_t *cl = it->client.get();
+		client_t *cl = it->client;
 
 		SV_QueueReliable(*cl,
 		                 SVC_DamagePlayer(*player, inflictor, healthDamage, armorDamage));
@@ -3570,7 +3610,7 @@ void SV_SendDamageMobj(AActor *target, int pain)
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		client_t *cl = it->client.get();
+		client_t *cl = it->client;
 
 		SV_QueueReliable(*cl, SVC_DamageMobj(target, pain));
 		if (!target->player)
@@ -3588,7 +3628,7 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		client_t *cl = it->client.get();
+		client_t *cl = it->client;
 
 		if (!SV_IsPlayerAllowedToSee(*it, target))
 			continue;
@@ -3607,7 +3647,7 @@ void SV_SendDestroyActor(AActor *mo)
 		{
 			if (mo->players_aware.get(it->id))
 			{
-				client_t *cl = it->client.get();
+				client_t *cl = it->client;
 
 				// denis - todo - need a queue for destroyed (lost awareness)
 				// objects, as a flood of destroyed things could easily overflow a
@@ -3623,7 +3663,7 @@ void SV_ExplodeMissile(AActor *mo)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
-		client_t *cl = it->client.get();
+		client_t *cl = it->client;
 
 		if (!SV_IsPlayerAllowedToSee(*it, mo))
 			continue;
@@ -3640,7 +3680,7 @@ void SV_ExplodeMissile(AActor *mo)
 //
 void SV_SendPlayerInfo(player_t &player)
 {
-	client_t *cl = player.client.get();
+	client_t *cl = player.client;
 	SV_QueueReliable(*cl, SVC_PlayerInfo(player));
 }
 
@@ -3838,7 +3878,7 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, in
 		if (!(it->ingame()))
 			continue;
 
-		client_t* cl = it->client.get();
+		client_t* cl = it->client;
 
 		int args[5] = { arg0, arg1, arg2, arg3, arg4 };
 		SV_QueueReliable(*cl, SVC_ExecuteLineSpecial(special, line, activator, args));
@@ -3861,7 +3901,7 @@ void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
 		if (!(it->ingame()) || (sendPlayer != NULL && sendPlayer != &(*it)))
 			continue;
 
-		client_t* cl = it->client.get();
+		client_t* cl = it->client;
 
 		SV_QueueReliable(*cl, SVC_ExecuteACSSpecial(special, activator, print, args));
 	}

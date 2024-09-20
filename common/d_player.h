@@ -267,7 +267,7 @@ public:
 	// denis - things that are pending to be sent to this player
 	std::queue<AActor::AActorPtr> to_spawn;
 
-	std::unique_ptr<client_t> client;
+	client_t* client = nullptr;
 
 	struct ticcmd_t netcmds[BACKUPTICS];
 

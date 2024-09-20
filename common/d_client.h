@@ -27,6 +27,9 @@
 #include "i_net.h"
 #include "ocircularbuffer.h"
 
+class player_s;
+typedef player_s player_t;
+
 class SVCMessages
 {
 	struct reliableMessage_s
@@ -158,6 +161,8 @@ class SVCMessages
 struct client_t
 {
 	netadr_t address;
+
+	player_t* player = nullptr;
 
 	buf_t netbuf = MAX_UDP_PACKET;
 	buf_t reliablebuf = MAX_UDP_PACKET;

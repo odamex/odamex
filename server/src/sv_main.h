@@ -46,6 +46,9 @@ public:
 
 extern client_c clients;
 
+client_t* SV_CreateClient(const netadr_t& cAddr);
+void SV_DestroyClient(const netadr_t& cAddr);
+
 void SV_InitNetwork (void);
 void SV_SendDisconnectSignal();
 void SV_SendReconnectSignal();
