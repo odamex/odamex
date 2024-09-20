@@ -740,6 +740,10 @@ void G_DoResetLevel(bool full_reset)
 		G_DoReborn(*it);
 	}
 
+	// Re-add type 10 and 14 sectors
+	for (std::list<sector_t*>::iterator iter = specialdoors.begin(); iter != specialdoors.end(); ++iter)
+		P_AddMovingCeiling(*iter);
+
 	// Send information about the newly reset map, but AFTER the reborns.
 	for (it = players.begin(); it != players.end(); ++it)
 	{
@@ -866,6 +870,8 @@ void G_DoLoadLevel (int position)
 		for (int i = 0; i < NUMTEAMS; i++)
 			GetTeamInfo((team_t)i)->FlagData.flaglocated = false;
 	}
+
+	specialdoors.clear();
 
 	P_SetupLevel (level.mapname.c_str(), position);
 
