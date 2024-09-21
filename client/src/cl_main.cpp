@@ -48,6 +48,7 @@
 #include "md5.h"
 #include "m_fileio.h"
 #include "r_sky.h"
+#include "r_interp.h"
 #include "cl_demo.h"
 #include "cl_download.h"
 #include "cl_maplist.h"
@@ -297,8 +298,6 @@ void CL_SimulateWorld();
 void D_Display(void);
 void D_DoAdvanceDemo(void);
 void M_Ticker(void);
-
-void R_InterpolationTicker();
 
 size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
@@ -633,7 +632,7 @@ void CL_StepTics(unsigned int count)
 
 		Maplist_Runtic();
 
-		R_InterpolationTicker();
+		OInterpolation::getInstance().ticGameInterpolation();
 
 		G_Ticker ();
 		gametic++;
