@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2024 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,6 +32,10 @@
 
 // [RH] Stretch values for V_DrawPatchClean()
 int CleanXfac, CleanYfac;
+
+// [ML] Set the base scaled resolution for maintaining proper aspect ratio
+int BaseWidth = 320;
+int BaseHeight = 200;
 
 EXTERN_CVAR(hud_transparency)
 
@@ -572,8 +576,8 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int 
 
 	// [FG] automatically center wide patches without horizontal offset
 	// (taken from dsda but inverted since we center above this)
-	if (patch->width() > 320 && patch->leftoffset() != 0)
-		x += (patch->width() - 320) / 2;
+	if (patch->width() > BaseWidth && patch->leftoffset() != 0)
+		x += (patch->width() - BaseWidth) / 2;
 
 #ifdef RANGECHECK
 	if (x < 0 ||x + patch->width() > surface_width || y < 0 || y + patch->height() > surface_height)
@@ -713,12 +717,12 @@ void DCanvas::DrawIWrapper(EWrapperCode drawer, const patch_t *patch, int x0, in
 
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
-	if (surface_width == 320 && surface_height == 200)
+	if (surface_width == BaseWidth && surface_height == BaseHeight)
 		DrawWrapper(drawer, patch, x0, y0);
 	else
 		DrawSWrapper(drawer, patch,
-			 (surface_width * x0) / 320, (surface_height * y0) / 200,
-			 (surface_width * patch->width()) / 320, (surface_height * patch->height()) / 200);
+			 (surface_width * x0) / BaseWidth, (surface_height * y0) / BaseHeight,
+			 (surface_width * patch->width()) / BaseWidth, (surface_height * patch->height()) / BaseHeight);
 }
 
 //
@@ -733,10 +737,11 @@ void DCanvas::DrawCWrapper(EWrapperCode drawer, const patch_t *patch, int x0, in
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	if (CleanXfac == 1 && CleanYfac == 1)
-		DrawWrapper(drawer, patch, (x0-160) + (surface_width/2), (y0-100) + (surface_height/2));
+		DrawWrapper(drawer, patch, (x0-(BaseWidth/2)) + (surface_width/2), (y0-(BaseHeight/2)) + (surface_height/2));
 	else
 		DrawSWrapper(drawer, patch,
-			(x0-160)*CleanXfac+(surface_width/2), (y0-100)*CleanYfac+(surface_height/2),
+		             (x0 - (BaseWidth / 2)) * CleanXfac + (surface_width / 2),
+		             (y0 - (BaseHeight / 2)) * CleanYfac + (surface_height / 2),
 			patch->width() * CleanXfac, patch->height() * CleanYfac);
 }
 
@@ -785,10 +790,10 @@ void DCanvas::DrawPatchFlipped(const patch_t *patch, int x0, int y0) const
 	vdrawsfunc	drawfunc;
 	int			destwidth, destheight;
 
-	x0 = (surface_width * x0) / 320;
-	y0 = (surface_height * y0) / 200;
-	destwidth = (surface_width * patch->width()) / 320;
-	destheight = (surface_height * patch->height()) / 200;
+	x0 = (surface_width * x0) / BaseWidth;
+	y0 = (surface_height * y0) / BaseHeight;
+	destwidth = (surface_width * patch->width()) / BaseWidth;
+	destheight = (surface_height * patch->height()) / BaseHeight;
 
 	if (!patch || patch->width() <= 0 || patch->height() <= 0 || destwidth <= 0 || destheight <= 0)
 		return;

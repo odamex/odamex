@@ -1377,10 +1377,6 @@ static void M_PlayerSetupDrawer()
 	{
 		const patch_t *patch = W_CachePatch ("M_PSTTL");
         screen->DrawPatchClean (patch, 160-patch->width()/2, 10);
-
-		/*screen->DrawPatchClean (patch,
-			160 - (patch->width() >> 1),
-			PSetupDef.y - (patch->height() * 3));*/
 	}
 
 	// Draw player name box
@@ -1395,10 +1391,10 @@ static void M_PlayerSetupDrawer()
 
 	// Draw player character
 	{
-		int x = 320 - 88 - 32, y = PSetupDef.y + LINEHEIGHT*3 - 14;
+		int x = BaseWidth - 88 - 32, y = PSetupDef.y + LINEHEIGHT * 3 - 14;
 
-		x = (x-160)*CleanXfac+(I_GetSurfaceWidth() / 2);
-		y = (y-100)*CleanYfac+(I_GetSurfaceHeight() / 2);
+		x = (x-(BaseWidth/2))*CleanXfac+(I_GetSurfaceWidth() / 2);
+		y = (y-(BaseHeight/2))*CleanYfac+(I_GetSurfaceHeight() / 2);
 		if (!fire_surface)
 		{
 			const argb_t color = V_GetDefaultPalette()->basecolors[34];
@@ -1504,11 +1500,11 @@ static void M_PlayerSetupDrawer()
 		V_ColorMap = translationref_t(translationtables, 0);
 
 		// Draw box surrounding fire and player:
-		screen->DrawPatchClean(W_CachePatch("M_PBOX"), 320 - 88 - 32 + 36,
+		screen->DrawPatchClean(W_CachePatch("M_PBOX"), BaseWidth - 88 - 32 + 36,
 			PSetupDef.y + LINEHEIGHT * 3 + 22);
 
 		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
-			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
+			BaseWidth - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
 	}
 
 	// Draw team setting

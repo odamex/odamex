@@ -171,7 +171,7 @@ bool V_CheckModeAdjustment()
 
 CVAR_FUNC_IMPL(vid_defwidth)
 {
-	if (var < 320 || var > MAXWIDTH)
+	if (var < BaseWidth || var > MAXWIDTH)
 		var.RestoreDefault();
 
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
@@ -181,7 +181,7 @@ CVAR_FUNC_IMPL(vid_defwidth)
 
 CVAR_FUNC_IMPL(vid_defheight)
 {
-	if (var < 200 || var > MAXHEIGHT)
+	if (var < BaseHeight || var > MAXHEIGHT)
 		var.RestoreDefault();
 
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
@@ -398,7 +398,7 @@ BEGIN_COMMAND(vid_setmode)
 	if (height == 0)
 		height = vid_defheight;
 
-	if (width < 320 || height < 200)
+	if (width < BaseWidth || height < BaseHeight)
 	{
 		Printf(PRINT_WARNING, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
 		return;
@@ -526,7 +526,7 @@ void V_Init()
 
 	// This uses the smaller of the two results. It's still not ideal but at least
 	// this allows hud_scaletext to have some purpose...
-	CleanXfac = CleanYfac = std::max(1, std::min(surface_width / 320, surface_height / 200));
+	CleanXfac = CleanYfac = std::max(1, std::min(surface_width / BaseWidth, surface_height / BaseHeight ));
 
 	R_InitColumnDrawers();
 
@@ -902,22 +902,22 @@ const byte* V_FindTransformedFlatPixel(int x, int y, unsigned int width, const b
 //
 // DCanvas::getCleanX
 //
-// Returns the real screen x coordinate given the virtual 320x200 x coordinate.
+// Returns the real screen x coordinate given the virtual x coordinate.
 //
 int DCanvas::getCleanX(int x) const
 {
-	return (x - 160) * CleanXfac + mSurface->getWidth() / 2;
+	return (x - (BaseWidth / 2)) * CleanXfac + mSurface->getWidth() / 2;
 }
 
 
 //
 // DCanvas::getCleanY
 //
-// Returns the real screen y coordinate given the virtual 320x200 y coordinate.
+// Returns the real screen y coordinate given the virtual y coordinate.
 //
 int DCanvas::getCleanY(int y) const
 {
-	return (y - 100) * CleanYfac + mSurface->getHeight() / 2;
+	return (y - (BaseHeight / 2)) * CleanYfac + mSurface->getHeight() / 2;
 }
 
 
@@ -993,7 +993,7 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch, bool clear) const
 
 	int width = patch->width();
 
-	if (width > 320)
+	if (width > BaseWidth)
 		destw = surface_width;
 
 	int x = (surface_width - destw) / 2;

@@ -745,9 +745,9 @@ void F_BunnyScroll()
 	// overlap. We calculate X on both images, and scroll
 	// based on where we are in finalecount
 
-	int scrolled = 320 - (finalecount - 230) / 2;
-	if (scrolled > 320)
-		scrolled = 320;
+	int scrolled = BaseWidth - (finalecount - 230) / 2;
+	if (scrolled > BaseWidth)
+		scrolled = BaseWidth;
 	if (scrolled < 0)
 		scrolled = 0;
 
@@ -759,7 +759,7 @@ void F_BunnyScroll()
 		p2x = 0;
 		p1x = frame_width;
 	}
-	else if (scrolled >= 320)
+	else if (scrolled >= BaseWidth)
 	{
 		p1x = initialp1x;
 		p2x = initialp2x;
@@ -767,7 +767,7 @@ void F_BunnyScroll()
 	else
 	{
 		// Progress both scrolls an equal amount
-		int progress = (320 * scrollstep) - (scrolled * scrollstep);
+		int progress = (BaseWidth * scrollstep) - (scrolled * scrollstep);
 		p1x = initialp1x + progress;
 		p2x = initialp2x + progress;
 	}
@@ -804,7 +804,8 @@ void F_BunnyScroll()
 	}
 
 	sprintf (name,"END%i",stage);
-	screen->DrawPatchIndirect(W_CachePatch(name), (320-13*8)/2, (200-8*8)/2);
+	screen->DrawPatchIndirect(W_CachePatch(name), (BaseWidth - 13 * 8) / 2,
+	                          (200 - 8 * 8) / 2);
 }
 
 //
