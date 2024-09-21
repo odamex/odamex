@@ -29,8 +29,6 @@ extern char SKYFLATNAME[8];
 
 extern int      sky1texture;
 extern int      sky2texture;
-extern fixed_t	sky2scrollxdelta;
-extern fixed_t	sky2columnoffset;
 extern int		skystretch;
 extern fixed_t	skyiscale;
 extern fixed_t	skyheight;

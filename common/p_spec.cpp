@@ -2279,8 +2279,6 @@ void P_UpdateSpecials (void)
 		}
 	}
 
-	sky2columnoffset += sky2scrollxdelta & 0xffffff;
-
 	#ifdef CLIENT_APP
 	R_UpdateSkies();
 	#endif

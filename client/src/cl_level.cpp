@@ -576,14 +576,7 @@ void G_DoLoadLevel (int position)
 	if (!level.skypic2.empty() && !(level.flags & LEVEL_DOUBLESKY))
 	{
 		sky2texture = R_TextureNumForName(level.skypic2.c_str());
-		sky2scrollxdelta = level.sky2ScrollDelta;
 	}
-	else
-	{
-		sky2texture = 0;
-		sky2scrollxdelta = 0;
-	}
-	sky2columnoffset = 0;
 
 	// [RH] Set up details about sky rendering
 	R_InitSkyMap();
