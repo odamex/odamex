@@ -883,8 +883,8 @@ void P_InitPicAnims (void)
 
 			if (lastanim->numframes < 2)
 				Printf (PRINT_WARNING, "P_InitPicAnims: bad cycle from %s to %s",
-						 anim_p + 10 /* .startname */,
-						 anim_p + 1 /* .endname */);
+						 fmt::ptr(anim_p + 10) /* .startname */,
+						 fmt::ptr(anim_p + 1) /* .endname */);
 
 			lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
 						/* .speed */
@@ -2279,9 +2279,11 @@ void P_UpdateSpecials (void)
 		}
 	}
 
-	// Update sky column offsets
-	sky1columnoffset += level.sky1ScrollDelta & 0xffffff;
-	sky2columnoffset += level.sky2ScrollDelta & 0xffffff;
+	sky2columnoffset += sky2scrollxdelta & 0xffffff;
+
+	#ifdef CLIENT_APP
+	R_UpdateSkies();
+	#endif
 }
 
 

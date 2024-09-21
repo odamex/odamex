@@ -289,8 +289,7 @@ void OScanner::mustScan(size_t max_length)
 	{
 		if (m_token.length() > max_length)
 		{
-			error("String \"%s\" is too long. Maximum length is %" PRIuSIZE
-			       " characters.", m_token.c_str(), max_length);
+			error("String \"%s\" is too long. Maximum length is %zu characters.", m_token.c_str(), max_length);
 		}
 	}
 }
@@ -513,38 +512,6 @@ bool OScanner::compareToken(const char* string) const
 bool OScanner::compareTokenNoCase(const char* string) const
 {
 	return iequals(m_token, string);
-}
-
-#define MAX_ERRORTEXT 1024
-
-//
-// Print given error message.
-//
-void STACK_ARGS OScanner::warning(const char* message, ...) const
-{
-	va_list argptr;
-	char errortext[MAX_ERRORTEXT];
-
-	va_start(argptr, message);
-	vsprintf(errortext, message, argptr);
-	Printf(PRINT_WARNING, "Script Warning: %s:%d: %s\n", m_config.lumpName, m_lineNumber,
-	       errortext, argptr);
-	va_end(argptr);
-}
-
-//
-// Print given error message.
-//
-void STACK_ARGS OScanner::error(const char* message, ...) const
-{
-	va_list argptr;
-	char errortext[MAX_ERRORTEXT];
-
-	va_start(argptr, message);
-	vsprintf(errortext, message, argptr);
-	I_Error("Script Error: %s:%d: %s", m_config.lumpName, m_lineNumber, errortext,
-	        argptr);
-	va_end(argptr);
 }
 
 VERSION_CONTROL(sc_oman_cpp, "$Id$")

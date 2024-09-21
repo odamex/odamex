@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -85,6 +85,7 @@ void (*R_DrawFuzzColumn)(void);
 void (*R_DrawTranslucentColumn)(void);
 void (*R_DrawTranslatedColumn)(void);
 void (*R_DrawTlatedLucentColumn)(void);
+void (*R_DrawSkyForegroundColumn)(void);
 void (*R_DrawSpan)(void);
 void (*R_DrawSlopeSpan)(void);
 void (*R_FillColumn)(void);
@@ -315,9 +316,9 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 
 /**
  * @brief Apply a soft light filter using Pegtop's formula.
- * 
+ *
  * @see https://en.wikipedia.org/wiki/Blend_modes#Soft_Light
- * 
+ *
  * @param bot Bottom channel value.
  * @param top Top channel value.
  * @return Filtered value.
@@ -359,7 +360,7 @@ void R_InitTranslationTables()
 	// [Toke - fix13]
 	// denis - cleaned this up somewhat
 	translationtables = (byte *)(((ptrdiff_t)translationtablesmem + 255) & ~255);
-	
+
 	// [RH] Each player now gets their own translation table
 	//		(soon to be palettes). These are set up during
 	//		netgame arbitration and as-needed rather than
@@ -391,15 +392,15 @@ void R_InitTranslationTables()
 	Ranges = translationtables + (MAXPLAYERS+3)*256;
 
 	R_BuildFontTranslation(CR_BRICK,	argb_t(0xFF, 0xB8, 0xB8), argb_t(0x47, 0x00, 0x00));
-	R_BuildFontTranslation(CR_TAN,		argb_t(0xFF, 0xEB, 0xDF), argb_t(0x33, 0x2B, 0x13));	
-	R_BuildFontTranslation(CR_GRAY,		argb_t(0xEF, 0xEF, 0xEF), argb_t(0x27, 0x27, 0x27));	
-	R_BuildFontTranslation(CR_GREEN,	argb_t(0x77, 0xFF, 0x6F), argb_t(0x0B, 0x17, 0x07));	
-	R_BuildFontTranslation(CR_BROWN,	argb_t(0xBF, 0xA7, 0x8F), argb_t(0x53, 0x3F, 0x2F));	
-	R_BuildFontTranslation(CR_GOLD,		argb_t(0xFF, 0xFF, 0x73), argb_t(0x73, 0x2B, 0x00));	
+	R_BuildFontTranslation(CR_TAN,		argb_t(0xFF, 0xEB, 0xDF), argb_t(0x33, 0x2B, 0x13));
+	R_BuildFontTranslation(CR_GRAY,		argb_t(0xEF, 0xEF, 0xEF), argb_t(0x27, 0x27, 0x27));
+	R_BuildFontTranslation(CR_GREEN,	argb_t(0x77, 0xFF, 0x6F), argb_t(0x0B, 0x17, 0x07));
+	R_BuildFontTranslation(CR_BROWN,	argb_t(0xBF, 0xA7, 0x8F), argb_t(0x53, 0x3F, 0x2F));
+	R_BuildFontTranslation(CR_GOLD,		argb_t(0xFF, 0xFF, 0x73), argb_t(0x73, 0x2B, 0x00));
 	R_BuildFontTranslation(CR_RED,		argb_t(0xFF, 0x00, 0x00), argb_t(0x3F, 0x00, 0x00));
-	R_BuildFontTranslation(CR_BLUE,		argb_t(0x00, 0x00, 0xFF), argb_t(0x00, 0x00, 0x27));	
-	R_BuildFontTranslation(CR_ORANGE,	argb_t(0xFF, 0x80, 0x00), argb_t(0x20, 0x00, 0x00));	
-	R_BuildFontTranslation(CR_WHITE,	argb_t(0xFF, 0xFF, 0xFF), argb_t(0x24, 0x24, 0x24));	
+	R_BuildFontTranslation(CR_BLUE,		argb_t(0x00, 0x00, 0xFF), argb_t(0x00, 0x00, 0x27));
+	R_BuildFontTranslation(CR_ORANGE,	argb_t(0xFF, 0x80, 0x00), argb_t(0x20, 0x00, 0x00));
+	R_BuildFontTranslation(CR_WHITE,	argb_t(0xFF, 0xFF, 0xFF), argb_t(0x24, 0x24, 0x24));
 	R_BuildFontTranslation(CR_YELLOW,	argb_t(0xFC, 0xD0, 0x43), argb_t(0x27, 0x27, 0x27));
 	R_BuildFontTranslation(CR_BLACK,	argb_t(0x50, 0x50, 0x50), argb_t(0x13, 0x13, 0x13));
 	R_BuildFontTranslation(CR_LIGHTBLUE,argb_t(0xB4, 0xB4, 0xFF), argb_t(0x00, 0x00, 0x73));
@@ -424,7 +425,7 @@ void R_BuildClassicPlayerTranslation (int player, int color)
 {
 	const palette_t* pal = V_GetDefaultPalette();
 	int i;
-	
+
 	if (color == 1) // Indigo
 		for (i = 0x70; i < 0x80; i++)
 		{
@@ -434,13 +435,13 @@ void R_BuildClassicPlayerTranslation (int player, int color)
 	else if (color == 2) // Brown
 		for (i = 0x70; i < 0x80; i++)
 		{
-			translationtables[i+(player * 256)] = 0x40 + (i&0xf);	
+			translationtables[i+(player * 256)] = 0x40 + (i&0xf);
 			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
 		}
 	else if (color == 3) // Red
 		for (i = 0x70; i < 0x80; i++)
 		{
-			translationtables[i+(player * 256)] = 0x20 + (i&0xf);	
+			translationtables[i+(player * 256)] = 0x20 + (i&0xf);
 			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
 		}
 }
@@ -547,14 +548,14 @@ void R_BlankSpan()
 //
 // R_FillColumnGeneric
 //
-// Templated version of a function to fill a column with a solid color. 
+// Templated version of a function to fill a column with a solid color.
 // The data type of the destination pixels and a color-remapping functor
 // are passed as template parameters.
 //
 template<typename PIXEL_T, typename COLORFUNC>
 static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& drawcolumn)
 {
-#ifdef RANGECHECK 
+#ifdef RANGECHECK
 	if (drawcolumn.x < 0 || drawcolumn.x >= viewwidth || drawcolumn.yl < 0 || drawcolumn.yh >= viewheight)
 	{
 		Printf (PRINT_HIGH, "R_FillColumn: %i to %i at %i\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
@@ -574,7 +575,7 @@ static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 		colorfunc(color, dest);
 		dest += pitch;
 	} while (--count);
-} 
+}
 
 
 //
@@ -593,7 +594,7 @@ static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 template<typename PIXEL_T, typename COLORFUNC>
 static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& drawcolumn)
 {
-#ifdef RANGECHECK 
+#ifdef RANGECHECK
 	if (drawcolumn.x < 0 || drawcolumn.x >= viewwidth || drawcolumn.yl < 0 || drawcolumn.yh >= viewheight)
 	{
 		Printf (PRINT_HIGH, "R_DrawColumn: %i to %i at %i\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
@@ -607,7 +608,7 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 	if (count <= 0)
 		return;
 
-	const fixed_t fracstep = drawcolumn.iscale; 
+	const fixed_t fracstep = drawcolumn.iscale;
 	fixed_t frac = drawcolumn.texturefrac;
 
 	const int texheight = drawcolumn.textureheight;
@@ -746,7 +747,7 @@ static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, const drawspan_t& 
 	int count = drawspan.x2 - drawspan.x1 + 1;
 	if (count <= 0)
 		return;
-	
+
 	dsfixed_t xfrac = drawspan.xfrac;
 	dsfixed_t yfrac = drawspan.yfrac;
 	const dsfixed_t xstep = drawspan.xstep;
@@ -799,11 +800,11 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 	int count = drawspan.x2 - drawspan.x1 + 1;
 	if (count <= 0)
 		return;
-	
+
 	float iu = drawspan.iu, iv = drawspan.iv;
 	const float ius = drawspan.iustep, ivs = drawspan.ivstep;
 	float id = drawspan.id, ids = drawspan.idstep;
-	
+
 	int ltindex = 0;
 
 	shaderef_t colormap;
@@ -964,7 +965,7 @@ public:
 	{
 		const palindex_t fg = colormap.index(c);
 		const palindex_t bg = *dest;
-				
+
 		*dest = rt_blend2<palindex_t>(bg, bga, fg, fga);
 	}
 
@@ -983,7 +984,7 @@ private:
 class PaletteTranslatedColormapFunc
 {
 public:
-	PaletteTranslatedColormapFunc(const drawcolumn_t& drawcolumn) : 
+	PaletteTranslatedColormapFunc(const drawcolumn_t& drawcolumn) :
 			colormap(drawcolumn.colormap), translation(drawcolumn.translation) { }
 
 	forceinline void operator()(byte c, palindex_t* dest) const
@@ -1028,6 +1029,21 @@ private:
 	const shaderef_t* colormap;
 };
 
+class PaletteSkyForegroundColormapFunc
+{
+public:
+	PaletteSkyForegroundColormapFunc(const drawcolumn_t& drawcolumn) : colormap(drawcolumn.colormap) {}
+
+	PaletteSkyForegroundColormapFunc(const drawspan_t& drawspan) : colormap(drawspan.colormap) {}
+
+	forceinline void operator()(byte c, palindex_t* dest) const
+	{
+		*dest = c == 0 ? *dest : colormap.index(c);
+	}
+
+private:
+	const shaderef_t& colormap;
+};
 
 // ----------------------------------------------------------------------------
 //
@@ -1118,7 +1134,7 @@ void R_DrawTranslatedColumnP()
 // R_DrawTlatedLucentColumnP
 //
 // Renders a translucent column to the 8bpp palettized screen buffer with
-// color-remapping from the source buffer dcol.source and scaled by dcol.iscale. 
+// color-remapping from the source buffer dcol.source and scaled by dcol.iscale.
 // The translation table is supplied by dcol.translation and the amount of
 // translucency is controlled by dcol.translevel. Shading is performed using
 // dcol.colormap.
@@ -1128,6 +1144,18 @@ void R_DrawTlatedLucentColumnP()
 	R_DrawColumnGeneric<palindex_t, PaletteTranslatedTranslucentColormapFunc>(FB_COLDEST_P, dcol);
 }
 
+//
+// R_DrawSkyForegroundColumnP
+//
+// Renders a column to the 8bpp palettized screen buffer from the source buffer
+// dcol.source and scaled by dcol.iscale. Shading is performed using dcol.colormap.
+// Palette index 0 is treated as transparent.
+// This is because we can't use SKYTRAN.
+//
+void R_DrawSkyForegroundColumnP()
+{
+	R_DrawColumnGeneric<palindex_t, PaletteSkyForegroundColormapFunc>(FB_COLDEST_P, dcol);
+}
 
 // ----------------------------------------------------------------------------
 //
@@ -1152,7 +1180,7 @@ void R_FillSpanP()
 // R_FillTranslucentSpanP
 //
 // Fills a span in the 8bpp palettized screen buffer with a solid color,
-// determined by dspan.color using translucency. Shading is performed 
+// determined by dspan.color using translucency. Shading is performed
 // using dspan.colormap.
 //
 void R_FillTranslucentSpanP()
@@ -1263,7 +1291,7 @@ public:
 	{
 		argb_t fg = colormap.shade(c);
 		argb_t bg = *dest;
-		*dest = alphablend2a(bg, bga, fg, fga);	
+		*dest = alphablend2a(bg, bga, fg, fga);
 	}
 
 private:
@@ -1324,6 +1352,22 @@ public:
 
 private:
 	const shaderef_t* colormap;
+};
+
+class DirectSkyForegroundColormapFunc
+{
+public:
+	DirectSkyForegroundColormapFunc(const drawcolumn_t& drawcolumn) : colormap(drawcolumn.colormap) {}
+
+	DirectSkyForegroundColormapFunc(const drawspan_t& drawspan) : colormap(drawspan.colormap) {}
+
+	forceinline void operator()(byte c, argb_t* dest) const
+	{
+		*dest = c == 0 ? *dest : colormap.shade(c);
+	}
+
+private:
+	const shaderef_t& colormap;
 };
 
 
@@ -1405,7 +1449,7 @@ void R_DrawTranslatedColumnD()
 // R_DrawTlatedLucentColumnD
 //
 // Renders a translucent column to the 32bpp ARGB8888 screen buffer with
-// color-remapping from the source buffer dcol.source and scaled by dcol.iscale. 
+// color-remapping from the source buffer dcol.source and scaled by dcol.iscale.
 // The translation table is supplied by dcol.translation and the amount of
 // translucency is controlled by dcol.translevel. Shading is performed using
 // dcol.colormap.
@@ -1415,6 +1459,18 @@ void R_DrawTlatedLucentColumnD()
 	R_DrawColumnGeneric<argb_t, DirectTranslatedTranslucentColormapFunc>(FB_COLDEST_D, dcol);
 }
 
+//
+// R_DrawSkyForegroundColumnD
+//
+// Renders a column to the 32bpp ARGB8888 screen buffer from the source buffer
+// dcol.source and scaled by dcol.iscale. Shading is performed using dcol.colormap.
+// Palette index 0 is treated as transparent.
+// This is because we can't use SKYTRAN.
+//
+void R_DrawSkyForegroundColumnD()
+{
+	R_DrawColumnGeneric<argb_t, DirectSkyForegroundColormapFunc>(FB_COLDEST_D, dcol);
+}
 
 // ----------------------------------------------------------------------------
 //
@@ -1439,7 +1495,7 @@ void R_FillSpanD()
 // R_FillTranslucentSpanD
 //
 // Fills a span in the 32bpp ARGB8888 screen buffer with a solid color,
-// determined by dspan.color using translucency. Shading is performed 
+// determined by dspan.color using translucency. Shading is performed
 // using dspan.colormap.
 //
 void R_FillTranslucentSpanD()
@@ -1537,7 +1593,7 @@ void R_DrawBorder(int x1, int y1, int x2, int y2)
 
 	scaled_screenblocks_surface->lock();
 
-	primary_surface->blit(scaled_screenblocks_surface, x1, y1, 
+	primary_surface->blit(scaled_screenblocks_surface, x1, y1,
 	   x1 + x2, y1 + y2,
 	   x1, y1, x1 + x2, y1 + y2);
 
@@ -1679,7 +1735,7 @@ static bool detect_optimizations()
 // and the current CPU also supports it.
 //
 static bool R_IsOptimizationAvailable(r_optimize_kind kind)
-{ 
+{
 	return std::find(optimizations_available.begin(), optimizations_available.end(), kind)
 			!= optimizations_available.end();
 }
@@ -1790,6 +1846,7 @@ void R_InitColumnDrawers ()
 		R_DrawTranslucentColumn	= R_DrawTranslucentColumnP;
 		R_DrawTranslatedColumn	= R_DrawTranslatedColumnP;
 		R_DrawTlatedLucentColumn = R_DrawTlatedLucentColumnP;
+		R_DrawSkyForegroundColumn= R_DrawSkyForegroundColumnP;
 		R_DrawSlopeSpan			= R_DrawSlopeSpanP;
 		R_DrawSpan				= R_DrawSpanP;
 		R_FillColumn			= R_FillColumnP;
@@ -1804,6 +1861,7 @@ void R_InitColumnDrawers ()
 		R_DrawTranslucentColumn	= R_DrawTranslucentColumnD;
 		R_DrawTranslatedColumn	= R_DrawTranslatedColumnD;
 		R_DrawTlatedLucentColumn = R_DrawTlatedLucentColumnD;
+		R_DrawSkyForegroundColumn= R_DrawSkyForegroundColumnD;
 		R_DrawSlopeSpan			= R_DrawSlopeSpanD;
 		R_DrawSpan				= R_DrawSpanD;
 		R_FillColumn			= R_FillColumnD;

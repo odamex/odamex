@@ -26,7 +26,7 @@
 #include "r_intrin.h"
 #include "r_defs.h"
 
-typedef struct 
+typedef struct
 {
 	byte*				source;
 	byte*				destination;
@@ -40,7 +40,7 @@ typedef struct
 	int					x;
 	int					yl;
 	int					yh;
-	
+
 	fixed_t				iscale;
 	fixed_t				texturemid;
 	fixed_t				texturefrac;
@@ -113,6 +113,9 @@ extern void (*R_DrawTranslucentColumn)(void);
 extern void (*R_DrawTranslatedColumn)(void);
 
 extern void (*R_DrawTlatedLucentColumn)(void);
+
+// [EB] Draw sky foreground with palette 0 transparency
+extern void (*R_DrawSkyForegroundColumn)(void);
 
 // Span blitting for rows, floor/ceiling.
 // No Sepctre effect needed.

@@ -12,6 +12,8 @@ endfunction()
 function(odamex_target_settings _TARGET)
   set(ODAMEX_DLLS "")
 
+  set_property(TARGET "${_TARGET}" PROPERTY CXX_STANDARD 14)
+
   if(HAS_LTO)
     set_property(TARGET "${_TARGET}"
       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
@@ -66,6 +68,7 @@ function(odamex_target_settings _TARGET)
   if(MSVC)
     checked_add_compile_flag(CHECKED_OPTIONS /wd26812 WD_26812)
     checked_add_compile_flag(CHECKED_OPTIONS /permissive- PERMISSIVE_DISABLED)
+    checked_add_compile_flag(CHECKED_OPTIONS /Zc:__cplusplus CORRECT_CPLUSPLUS)
     checked_add_compile_flag(CHECKED_RELEASE_OPTIONS /GL MSVC_GL)
   else()
     checked_add_compile_flag(CHECKED_OPTIONS -Werror=format-security W_FORMAT_SECURITY)

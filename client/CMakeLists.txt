@@ -22,7 +22,7 @@ if(WIN32)
   list(APPEND CLIENT_SDL_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/client.rc")
 endif()
 
-# Include console folders if compiling 
+# Include console folders if compiling
 if (GCONSOLE)
   if (NSWITCH)
     set(CLIENT_DIR ${CLIENT_DIR} switch)  # Nintendo Switch
@@ -76,7 +76,7 @@ if(ENABLE_PORTMIDI)
     set(PORTMIDI_LIBRARY "portmidi")
     set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY})
     set(PORTMIDI_DIR ../libraries/portmidi)
-    set(PORTMIDI_INCLUDE_DIR ${PORTMIDI_DIR}/pm_common/ ${PORTMIDI_DIR}/porttime/)  
+    set(PORTMIDI_INCLUDE_DIR ${PORTMIDI_DIR}/pm_common/ ${PORTMIDI_DIR}/porttime/)
 
     if(APPLE)
       find_library(COREFOUNDATION_LIBRARY CoreFoundation)
@@ -157,7 +157,6 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${COMMON_SOURCES} ${CLIENT_GUI_SOURCES})
   odamex_target_settings(odamex)
-  set_property(TARGET odamex PROPERTY CXX_STANDARD 98)
 
   if(USE_DEFAULT_SIMD)
     if(ODAMEX_TARGET_ARCH STREQUAL "amd64")
@@ -192,7 +191,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
-  target_link_libraries(odamex odamex-common odaproto)
+  target_link_libraries(odamex odamex-common odaproto tinylibs)
   if(TARGET SDL::SDL)
     target_link_libraries(odamex SDL::SDL)
     if(TARGET SDL::SDLmain)
@@ -209,15 +208,22 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY} CURL::libcurl)
   if(NOT GCONSOLE)
     target_include_directories(odamex PRIVATE gui)
-    target_link_libraries(odamex fltk fltk_images)
+    target_link_libraries(odamex fltk::fltk fltk::images)
+  endif()
+
+  if(USE_INTERNAL_JSONCPP)
+    target_link_libraries(odamex jsoncpp_lib_static)
+  else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(JSONCPP jsoncpp REQUIRED IMPORTED_TARGET)
+    target_link_libraries(odamex PkgConfig::JSONCPP)
   endif()
 
   if(ENABLE_PORTMIDI)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})
   endif()
 
-  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG)
-  target_link_libraries(odamex minilzo)
+  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG fmt::fmt minilzo)
 
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 shlwapi)

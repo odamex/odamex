@@ -74,23 +74,6 @@ void STACK_ARGS call_terms (void)
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
-int PrintString(int printlevel, char const* str)
-{
-	std::string sanitized_str(str);
-	StripColorCodes(sanitized_str);
-
-	printf("%s", sanitized_str.c_str());
-	fflush(stdout);
-
-	if (LOG.is_open())
-	{
-		LOG << sanitized_str;
-		LOG.flush();
-	}
-
-	return sanitized_str.length();
-}
-
 #ifdef _WIN32
 static HANDLE hEvent;
 

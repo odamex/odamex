@@ -652,7 +652,7 @@ void Unlag::debugReconciliation(byte shooter_id)
 
 			if (deltaangle < 3 * FRACUNIT)
 			{
-				DPrintf("Unlag (%03d): would have hit player %d at gametic %d (%" PRIuSIZE " tics ago)\n",
+				DPrintf("Unlag (%03d): would have hit player %d at gametic %d (%" "zu" " tics ago)\n",
 						gametic & 0xFF, player_history[i].player->id, (gametic - n) & 0xFF, n);
 			}
 		}

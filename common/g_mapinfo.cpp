@@ -1181,15 +1181,15 @@ struct MapInfoDataSetter<cluster_info_t>
 
 	MapInfoDataSetter(cluster_info_t& ref)
 	{
-		mapInfoDataContainer.reserve(7);
-
-		ENTRY3("entertext", &MIType_ClusterString, &ref.entertext)
-		ENTRY3("exittext", &MIType_ClusterString, &ref.exittext)
-		ENTRY4("exittextislump", &MIType_SetFlag, &ref.flags, CLUSTER_EXITTEXTISLUMP)
-		ENTRY3("music", &MIType_MusicLumpName, &ref.messagemusic)
-		ENTRY3("flat", &MIType_$LumpName, &ref.finaleflat)
-		ENTRY4("hub", &MIType_SetFlag, &ref.flags, CLUSTER_HUB)
-		ENTRY3("pic", &MIType_$LumpName, &ref.finalepic)
+	    mapInfoDataContainer = {
+			{ "entertext", &MIType_ClusterString, &ref.entertext },
+			{ "exittext", &MIType_ClusterString, &ref.exittext },
+			{ "exittextislump", &MIType_SetFlag, &ref.flags, CLUSTER_EXITTEXTISLUMP },
+			{ "music", &MIType_MusicLumpName, &ref.messagemusic },
+			{ "flat", &MIType_$LumpName, &ref.finaleflat },
+			{ "hub", &MIType_SetFlag, &ref.flags, CLUSTER_HUB },
+			{ "pic", &MIType_$LumpName, &ref.finalepic }
+	    };
 	}
 };
 
@@ -1197,31 +1197,26 @@ struct MapInfoDataSetter<cluster_info_t>
 template <>
 struct MapInfoDataSetter<gameinfo_t>
 {
-	MapInfoDataContainer mapInfoDataContainer;
-
-	MapInfoDataSetter()
-	{
-		mapInfoDataContainer.reserve(7);
-
-		ENTRY3("advisorytime", &MIType_Float, &gameinfo.advisoryTime)
-		// ENTRY3("chatsound",			)
-		ENTRY3("pagetime", &MIType_Float, &gameinfo.pageTime)
-		ENTRY3("finaleflat", &MIType_LumpName, &gameinfo.finaleFlat)
-		ENTRY3("finalemusic", &MIType_$LumpName, &gameinfo.finaleMusic)
-		ENTRY3("titlemusic", &MIType_$LumpName, &gameinfo.titleMusic)
-		ENTRY3("titlepage", &MIType_LumpName, &gameinfo.titlePage)
-		ENTRY3("titletime", &MIType_Float, &gameinfo.titleTime)
-		ENTRY2("maparrow", &MIType_MapArrows)
-		ENTRY3("cheatkey", &MIType_MapKey, &gameinfo.cheatKey)
-		ENTRY3("easykey", &MIType_MapKey, &gameinfo.easyKey)
-	}
+	MapInfoDataContainer mapInfoDataContainer = {
+	    { "advisorytime", &MIType_Float, &gameinfo.advisoryTime },
+	    //{ "chatsound" },
+	    { "pagetime", &MIType_Float, &gameinfo.pageTime },
+	    { "finaleflat", &MIType_LumpName, &gameinfo.finaleFlat },
+	    { "finalemusic", &MIType_$LumpName, &gameinfo.finaleMusic },
+	    { "titlemusic", &MIType_$LumpName, &gameinfo.titleMusic },
+	    { "titlepage", &MIType_LumpName, &gameinfo.titlePage },
+	    { "titletime", &MIType_Float, &gameinfo.titleTime },
+	    { "maparrow", &MIType_MapArrows },
+	    { "cheatkey", &MIType_MapKey, &gameinfo.cheatKey },
+	    { "easykey", &MIType_MapKey, &gameinfo.easyKey }
+	};
 };
 
 //
 // Parse a MAPINFO block
 //
 // NULL pointers can be passed if the block is unimplemented.  However, if
-// the block you want to stub out is compatible with old MAPINFO, you need
+// the block you want to stub out is compatible with o ld MAPINFO, you need
 // to parse the block anyway, even if you throw away the values.  This is
 // done by passing in a strings pointer, and leaving the others NULL.
 //
@@ -1466,43 +1461,43 @@ struct MapInfoDataSetter<SkillInfo>
 
 	MapInfoDataSetter(SkillInfo& ref)
 	{
-		mapInfoDataContainer.reserve(33);
+		mapInfoDataContainer = {
+			{ "ammofactor", &MIType_Float, &ref.ammo_factor },
+			{ "doubleammofactor", &MIType_Float, &ref.double_ammo_factor },
+			{ "dropammofactor", &MIType_Float, &ref.drop_ammo_factor },
+			{ "damagefactor", &MIType_Float, &ref.damage_factor },
+			{ "armorfactor", &MIType_Float, &ref.armor_factor },
+			{ "healthfactor", &MIType_Float, &ref.health_factor },
+			{ "kickbackfactor", &MIType_Float, &ref.kickback_factor },
 
-		ENTRY3("ammofactor", &MIType_Float, &ref.ammo_factor)
-		ENTRY3("doubleammofactor", &MIType_Float, &ref.double_ammo_factor)
-		ENTRY3("dropammofactor", &MIType_Float, &ref.drop_ammo_factor)
-		ENTRY3("damagefactor", &MIType_Float, &ref.damage_factor)
-		ENTRY3("armorfactor", &MIType_Float, &ref.armor_factor)
-		ENTRY3("healthfactor", &MIType_Float, &ref.health_factor)
-		ENTRY3("kickbackfactor", &MIType_Float, &ref.kickback_factor)
+			{ "fastmonsters", &MIType_Bool, &ref.fast_monsters, true },
+			{ "slowmonsters", &MIType_Bool, &ref.slow_monsters, true },
+			{ "disablecheats", &MIType_Bool, &ref.disable_cheats, true },
+			{ "autousehealth", &MIType_Bool, &ref.auto_use_health, true },
 
-		ENTRY4("fastmonsters", &MIType_Bool, &ref.fast_monsters, true)
-		ENTRY4("slowmonsters", &MIType_Bool, &ref.slow_monsters, true)
-		ENTRY4("disablecheats", &MIType_Bool, &ref.disable_cheats, true)
-		ENTRY4("autousehealth", &MIType_Bool, &ref.auto_use_health, true)
-
-		ENTRY4("easybossbrain", &MIType_Bool, &ref.easy_boss_brain, true)
-		ENTRY4("easykey", &MIType_Bool, &ref.easy_key, true)
-		ENTRY4("nomenu", &MIType_Bool, &ref.no_menu, true)
-		ENTRY3("respawntime", &MIType_Int, &ref.respawn_counter)
-		ENTRY3("respawnlimit", &MIType_Int, &ref.respawn_limit)
-		ENTRY3("aggressiveness", &MIType_Float, &ref.aggressiveness)
-		ENTRY3("spawnfilter", &MIType_SpawnFilter, &ref.spawn_filter)
-		ENTRY4("spawnmulti", &MIType_Bool, &ref.spawn_multi, true)
-		ENTRY4("instantreaction", &MIType_Bool, &ref.instant_reaction, true)
-		ENTRY3("acsreturn", &MIType_Int, &ref.ACS_return)
-		ENTRY3("name", &MIType_String, &ref.menu_name)
-		ENTRY3("picname", &MIType_String, &ref.pic_name)
-		//ENTRY3("playerclassname", &???, &ref.menu_names_for_player_class) // todo - requires special MIType to work properly
-		ENTRY4("mustconfirm", &MIType_MustConfirm, &ref, true)
-		ENTRY3("key", &MIType_Char, &ref.shortcut)
-		ENTRY3("textcolor", &MIType_Color, &ref.text_color)
-		// ENTRY3("replaceactor", &???, &ref.replace) // todo - requires special MIType to work properly
-		ENTRY3("monsterhealth", &MIType_Float, &ref.monster_health)
-		ENTRY3("friendlyhealth", &MIType_Float, &ref.friendly_health)
-		ENTRY4("nopain", &MIType_Bool, &ref.no_pain, true)
-		ENTRY3("infighting", &MIType_Int, &ref.infighting)
-		ENTRY4("playerrespawn", &MIType_Bool, &ref.player_respawn, true)
+			{ "easybossbrain", &MIType_Bool, &ref.easy_boss_brain, true },
+			{ "easykey", &MIType_Bool, &ref.easy_key, true },
+			{ "nomenu", &MIType_Bool, &ref.no_menu, true },
+			{ "respawntime", &MIType_Int, &ref.respawn_counter },
+			{ "respawnlimit", &MIType_Int, &ref.respawn_limit },
+			{ "aggressiveness", &MIType_Float, &ref.aggressiveness },
+			{ "spawnfilter", &MIType_SpawnFilter, &ref.spawn_filter },
+			{ "spawnmulti", &MIType_Bool, &ref.spawn_multi, true },
+			{ "instantreaction", &MIType_Bool, &ref.instant_reaction, true },
+			{ "acsreturn", &MIType_Int, &ref.ACS_return },
+			{ "name", &MIType_String, &ref.menu_name },
+			{ "picname", &MIType_String, &ref.pic_name },
+			// { "playerclassname", &???, &ref.menu_names_for_player_class } // todo - requires special MIType to work properly
+			{ "mustconfirm", &MIType_MustConfirm, &ref, true },
+			{ "key", &MIType_Char, &ref.shortcut },
+			{ "textcolor", &MIType_Color, &ref.text_color },
+			// { "replaceactor", &???, &ref.replace) } // todo - requires special MIType to work properly
+			{ "monsterhealth", &MIType_Float, &ref.monster_health },
+			{ "friendlyhealth", &MIType_Float, &ref.friendly_health },
+			{ "nopain", &MIType_Bool, &ref.no_pain, true },
+			{ "infighting", &MIType_Int, &ref.infighting },
+			{ "playerrespawn", &MIType_Bool, &ref.player_respawn, true }
+		};
 	}
 };
 
@@ -1516,29 +1511,31 @@ struct MapInfoDataSetter<automap_dummy>
 
 	MapInfoDataSetter()
 	{
-		ENTRY2("base", &MIType_AutomapBase)
-		ENTRY3("showlocks", &MIType_Bool, &gameinfo.showLocks)
-		ENTRY3("background", &MIType_String, &gameinfo.defaultAutomapColors.Background)
-		ENTRY3("yourcolor", &MIType_String, &gameinfo.defaultAutomapColors.YourColor)
-		ENTRY3("wallcolor", &MIType_String, &gameinfo.defaultAutomapColors.WallColor)
-		ENTRY3("twosidedwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.TSWallColor)
-		ENTRY3("floordiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.FDWallColor)
-		ENTRY3("ceilingdiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.CDWallColor)
-		ENTRY3("thingcolor", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor)
-		ENTRY3("thingcolor_item", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Item)
-		ENTRY3("thingcolor_countitem", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_CountItem)
-		ENTRY3("thingcolor_monster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Monster)
-		ENTRY3("thingcolor_nocountmonster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_NoCountMonster)
-		ENTRY3("thingcolor_friend", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Friend)
-		ENTRY3("thingcolor_projectile", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Projectile)
-		ENTRY3("secretwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.SecretWallColor)
-		ENTRY3("gridcolor", &MIType_String, &gameinfo.defaultAutomapColors.GridColor)
-		ENTRY3("xhaircolor", &MIType_String, &gameinfo.defaultAutomapColors.XHairColor)
-		ENTRY3("notseencolor", &MIType_String, &gameinfo.defaultAutomapColors.NotSeenColor)
-		ENTRY3("lockedcolor", &MIType_String, &gameinfo.defaultAutomapColors.LockedColor)
-		ENTRY3("almostbackgroundcolor", &MIType_String, &gameinfo.defaultAutomapColors.AlmostBackground)
-		ENTRY3("intrateleportcolor", &MIType_String, &gameinfo.defaultAutomapColors.TeleportColor)
-		ENTRY3("exitcolor", &MIType_String, &gameinfo.defaultAutomapColors.ExitColor)
+		mapInfoDataContainer = {
+			{ "base", &MIType_AutomapBase },
+			{ "showlocks", &MIType_Bool, &gameinfo.showLocks  },
+			{ "background", &MIType_String, &gameinfo.defaultAutomapColors.Background  },
+			{ "yourcolor", &MIType_String, &gameinfo.defaultAutomapColors.YourColor  },
+			{ "wallcolor", &MIType_String, &gameinfo.defaultAutomapColors.WallColor  },
+			{ "twosidedwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.TSWallColor  },
+			{ "floordiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.FDWallColor  },
+			{ "ceilingdiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.CDWallColor  },
+			{ "thingcolor", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor  },
+			{ "thingcolor_item", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Item  },
+			{ "thingcolor_countitem", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_CountItem  },
+			{ "thingcolor_monster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Monster  },
+			{ "thingcolor_nocountmonster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_NoCountMonster  },
+			{ "thingcolor_friend", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Friend  },
+			{ "thingcolor_projectile", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Projectile  },
+			{ "secretwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.SecretWallColor  },
+			{ "gridcolor", &MIType_String, &gameinfo.defaultAutomapColors.GridColor  },
+			{ "xhaircolor", &MIType_String, &gameinfo.defaultAutomapColors.XHairColor  },
+			{ "notseencolor", &MIType_String, &gameinfo.defaultAutomapColors.NotSeenColor  },
+			{ "lockedcolor", &MIType_String, &gameinfo.defaultAutomapColors.LockedColor  },
+			{ "almostbackgroundcolor", &MIType_String, &gameinfo.defaultAutomapColors.AlmostBackground  },
+			{ "intrateleportcolor", &MIType_String, &gameinfo.defaultAutomapColors.TeleportColor  },
+			{ "exitcolor", &MIType_String, &gameinfo.defaultAutomapColors.ExitColor  }
+		};
 	}
 };
 } // namespace
