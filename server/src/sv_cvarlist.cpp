@@ -84,19 +84,19 @@ CVAR_FUNC_DECL(	sv_usemasters, "1", "Advertise on master servers",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 CVAR(			sv_endmapscript, "",  "Script to run at end of each map (e.g. to choose next map)",
-				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)	
+				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(			sv_startmapscript, "", "Script to run at start of each map (e.g. to override cvars)",
-				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)	
+				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(			sv_curmap, "", "Set to the last played map",
 				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
 CVAR(			sv_nextmap, "", "Set to the next map to be played",
-				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)	
+				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
 CVAR(			sv_loopepisode, "0", "Determines whether Doom 1 episodes carry over",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)	
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 CVAR_FUNC_DECL(	sv_shufflemaplist, "0", "Randomly shuffle the maplist",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
@@ -111,9 +111,6 @@ CVAR_RANGE(		sv_flooddelay, "1.5", "Chat flood protection time (in seconds)",
 				CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
 
 CVAR_RANGE_FUNC_DECL(sv_maxrate, "200", "Forces clients to be on or below this rate",
-				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 7.0f, 100000.0f)
-
-CVAR_RANGE_FUNC_DECL(sv_waddownloadcap, "200", "Cap wad file downloading to a specific rate",
 				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 7.0f, 100000.0f)
 
 #ifdef ODA_HAVE_MINIUPNP
@@ -139,7 +136,7 @@ CVAR(			sv_upnp_externalip, "", "Set to the router IP address",
 CVAR_RANGE(		sv_teamsinplay, "2", "Teams that are enabled",
 				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 2.0f, 3.0f)
 
-CVAR(			ctf_manualreturn, "0", "Flags dropped must be returned manually", 
+CVAR(			ctf_manualreturn, "0", "Flags dropped must be returned manually",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR(			ctf_flagathometoscore, "1",  "Team flag must be at home pedestal for any captures " \

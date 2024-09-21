@@ -142,6 +142,12 @@ std::vector<mapthing2_t> DeathMatchStarts;
 std::vector<mapthing2_t> playerstarts;
 std::vector<mapthing2_t> voodoostarts;
 
+// For sorting player starts
+static bool cmpPlayerNum(mapthing2_t i, mapthing2_t j)
+{
+	return P_GetMapThingPlayerNumber(&i) < P_GetMapThingPlayerNumber(&j);
+}
+
 //
 // P_LoadVertexes
 //
@@ -713,6 +719,9 @@ void P_LoadThings (int lump)
 
 		P_SpawnMapThing (&mt2, 0);
 	}
+
+	// Sort by player number if starts are not in order
+	std::sort(playerstarts.begin(), playerstarts.end(), cmpPlayerNum);
 
 	P_SpawnAvatars();
 
