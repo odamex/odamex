@@ -207,12 +207,12 @@ enum d1_main_t
 
 oldmenuitem_t DoomMainMenu[]=
 {
-	{1,"M_NGAME",M_NewGame,'N'},
-	{1,"M_OPTION",M_Options,'O'},	// [RH] Moved
-    {1,"M_LOADG",M_LoadGame,'L'},
-    {1,"M_SAVEG",M_SaveGame,'S'},
-    {1,"M_RDTHIS",M_ReadThis,'R'},
-	{1,"M_QUITG",M_QuitDOOM,'Q'}
+	{1,"M_NGAME","\0",M_NewGame,'N'},
+	{1,"M_OPTION","\0",M_Options,'O'},	// [RH] Moved
+    {1,"M_LOADG","\0",M_LoadGame,'L'},
+    {1,"M_SAVEG","\0",M_SaveGame,'S'},
+    {1,"M_RDTHIS","\0",M_ReadThis,'R'},
+	{1,"M_QUITG","\0",M_QuitDOOM,'Q'}
 };
 
 //
@@ -231,11 +231,11 @@ enum d2_main_t
 
 oldmenuitem_t Doom2MainMenu[]=
 {
-	{1,"M_NGAME",M_NewGame,'N'},
-	{1,"M_OPTION",M_Options,'O'},	// [RH] Moved
-    {1,"M_LOADG",M_LoadGame,'L'},
-    {1,"M_SAVEG",M_SaveGame,'S'},
-	{1,"M_QUITG",M_QuitDOOM,'Q'}
+	{1,"M_NGAME","\0",M_NewGame,'N'},
+	{1,"M_OPTION","\0",M_Options,'O'},	// [RH] Moved
+    {1,"M_LOADG","\0",M_LoadGame,'L'},
+    {1,"M_SAVEG","\0",M_SaveGame,'S'},
+	{1,"M_QUITG","\0",M_QuitDOOM,'Q'}
 };
 
 
@@ -257,14 +257,14 @@ oldmenu_t MainDef =
 
 oldmenuitem_t EpisodeMenu[MAX_EPISODES] =
 {
-	{1,"\0", M_Episode,0},
-	{1,"\0", M_Episode,0},
-	{1,"\0", M_Episode,0},
-	{1,"\0", M_Episode,0},
-	{1,"\0", M_Episode,0},
-	{1,"\0", M_Episode,0},
-	{1,"\0", M_Episode,0},
-	{1,"\0", M_Episode,0}
+	{1,"\0","\0", M_Episode,0},
+	{1,"\0","\0", M_Episode,0},
+	{1,"\0","\0", M_Episode,0},
+	{1,"\0","\0", M_Episode,0},
+	{1,"\0","\0", M_Episode,0},
+	{1,"\0","\0", M_Episode,0},
+	{1,"\0","\0", M_Episode,0},
+	{1,"\0","\0", M_Episode,0}
 };
 
 oldmenu_t EpiDef =
@@ -290,8 +290,8 @@ enum expansions_t
 
 oldmenuitem_t ExpansionMenu[]=
 {
-	{1,"M_EPI1", M_Expansion,'h'},
-	{1,"M_EPI2", M_Expansion,'n'},
+	{1,"M_EPI1","\0", M_Expansion,'h'},
+	{1,"M_EPI2","\0", M_Expansion,'n'},
 };
 
 oldmenu_t ExpDef =
@@ -310,14 +310,14 @@ oldmenu_t ExpDef =
 
 oldmenuitem_t NewGameMenu[MAX_SKILLS + 1]=
 {
-	{1,"\0", M_ChooseSkill,0},
-	{1,"\0", M_ChooseSkill,0},
-	{1,"\0", M_ChooseSkill,0},
-	{1,"\0", M_ChooseSkill,0},
-	{1,"\0", M_ChooseSkill,0},
-	{1,"\0", M_ChooseSkill,0},
-	{1,"\0", M_ChooseSkill,0},
-	{1,"\0", M_ChooseSkill,0},
+	{1,"\0","\0", M_ChooseSkill,0},
+	{1,"\0","\0", M_ChooseSkill,0},
+	{1,"\0","\0", M_ChooseSkill,0},
+	{1,"\0","\0", M_ChooseSkill,0},
+	{1,"\0","\0", M_ChooseSkill,0},
+	{1,"\0","\0", M_ChooseSkill,0},
+	{1,"\0","\0", M_ChooseSkill,0},
+	{1,"\0","\0", M_ChooseSkill,0},
 	//{1,"\0", M_ChooseSkill,0}
 };
 
@@ -350,14 +350,14 @@ enum psetup_t
 
 oldmenuitem_t PlayerSetupMenu[] =
 {
-	{ 1,"", M_EditPlayerName, 'N' },
-	{ 2,"", M_ChangeTeam, 'T' },
-	{ 2,"", M_ChangeGender, 'E' },
-	{ 2,"", M_ChangeAutoAim, 'A' },
-    { 2,"", M_ChangeColorPreset, 'C' },
-	{ 2,"", M_SlidePlayerRed, 'R' },
-	{ 2,"", M_SlidePlayerGreen, 'G' },
-	{ 2,"", M_SlidePlayerBlue, 'B' }
+	{ 1,"","\0", M_EditPlayerName, 'N' },
+	{ 2,"","\0", M_ChangeTeam, 'T' },
+	{ 2,"","\0", M_ChangeGender, 'E' },
+	{ 2,"","\0", M_ChangeAutoAim, 'A' },
+    { 2,"","\0", M_ChangeColorPreset, 'C' },
+	{ 2,"","\0", M_SlidePlayerRed, 'R' },
+	{ 2,"","\0", M_SlidePlayerGreen, 'G' },
+	{ 2,"","\0", M_SlidePlayerBlue, 'B' }
 };
 
 oldmenu_t PSetupDef = {
@@ -396,7 +396,7 @@ enum read_t
 
 oldmenuitem_t ReadMenu1[] =
 {
-	{1,"",M_ReadThis2,0}
+	{1,"","\0",M_ReadThis2,0}
 };
 
 oldmenu_t	ReadDef1 =
@@ -416,7 +416,7 @@ enum read_t2
 
 oldmenuitem_t ReadMenu2[]=
 {
-	{1,"",M_ReadThis3,0}
+	{1,"","\0",M_ReadThis3,0}
 };
 
 oldmenu_t ReadDef2 =
@@ -437,7 +437,7 @@ enum read_t3
 
 oldmenuitem_t ReadMenu3[]=
 {
-	{1,"",M_FinishReadThis,0}
+	{1,"","\0",M_FinishReadThis,0}
 };
 
 oldmenu_t ReadDef3 =
@@ -467,14 +467,14 @@ enum load_t
 
 static oldmenuitem_t LoadSavegameMenu[]=
 {
-	{1,"", M_LoadSelect,'1'},
-	{1,"", M_LoadSelect,'2'},
-	{1,"", M_LoadSelect,'3'},
-	{1,"", M_LoadSelect,'4'},
-	{1,"", M_LoadSelect,'5'},
-	{1,"", M_LoadSelect,'6'},
-	{1,"", M_LoadSelect,'7'},
-	{1,"", M_LoadSelect,'8'},
+	{1,"","\0", M_LoadSelect,'1'},
+	{1,"","\0", M_LoadSelect,'2'},
+	{1,"","\0", M_LoadSelect,'3'},
+	{1,"","\0", M_LoadSelect,'4'},
+	{1,"","\0", M_LoadSelect,'5'},
+	{1,"","\0", M_LoadSelect,'6'},
+	{1,"","\0", M_LoadSelect,'7'},
+	{1,"","\0", M_LoadSelect,'8'},
 };
 
 oldmenu_t LoadDef =
@@ -491,14 +491,14 @@ oldmenu_t LoadDef =
 //
 oldmenuitem_t SaveMenu[]=
 {
-	{1,"", M_SaveSelect,'1'},
-	{1,"", M_SaveSelect,'2'},
-	{1,"", M_SaveSelect,'3'},
-	{1,"", M_SaveSelect,'4'},
-	{1,"", M_SaveSelect,'5'},
-	{1,"", M_SaveSelect,'6'},
-	{1,"", M_SaveSelect,'7'},
-	{1,"", M_SaveSelect,'8'}
+	{1,"","\0", M_SaveSelect,'1'},
+	{1,"","\0", M_SaveSelect,'2'},
+	{1,"","\0", M_SaveSelect,'3'},
+	{1,"","\0", M_SaveSelect,'4'},
+	{1,"","\0", M_SaveSelect,'5'},
+	{1,"","\0", M_SaveSelect,'6'},
+	{1,"","\0", M_SaveSelect,'7'},
+	{1,"","\0", M_SaveSelect,'8'}
 };
 
 oldmenu_t SaveDef =
@@ -960,11 +960,11 @@ namespace
 		{
 			if (EpisodeInfos[i].fulltext)
 			{
-				// Not implemented
+				strncpy(EpisodeMenu[i].textname, EpisodeInfos[i].menu_name.c_str(), 30);
 			}
 			else
 			{
-				strncpy(EpisodeMenu[i].name, EpisodeInfos[i].name.c_str(), 8);
+				strncpy(EpisodeMenu[i].name, EpisodeInfos[i].pic_name.c_str(), 8);
 			}
 
 			EpisodeMenu[i].alphaKey = EpisodeInfos[i].key;
@@ -980,7 +980,7 @@ namespace
 	    {
 		    if (SkillInfos[i].pic_name.empty())
 		    {
-			    strncpy(NewGameMenu[i].name, SkillInfos[i].menu_name.c_str(), 8);
+			    strncpy(NewGameMenu[i].textname, SkillInfos[i].menu_name.c_str(), 30);
 		    }
 		    else
 		    {
@@ -2151,13 +2151,20 @@ void M_Drawer()
 			const int x = currentMenu->x;
 			int y = currentMenu->y;
 			const int max = currentMenu->numitems;
-
+			V_SetFont("BIGFONT");
 			for (int i = 0; i < max; i++)
 			{
 				if (currentMenu->menuitems[i].name[0])
-					screen->DrawPatchClean (W_CachePatch(currentMenu->menuitems[i].name), x, y);
+				{
+					screen->DrawPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y);
+				}
+				else if (currentMenu->menuitems[i].textname[0])
+				{
+					screen->DrawTextCleanMove(CR_RED, x, y, currentMenu->menuitems[i].textname);
+				}
 				y += LINEHEIGHT;
 			}
+			V_SetFont("SMALLFONT");
 
 
 			// DRAW SKULL
