@@ -97,6 +97,7 @@ enum ceilingchange_e
 };
 
 extern std::list<movingsector_t> movingsectors;
+extern std::list<sector_t*> specialdoors;
 extern bool s_SpecialFromServer;
 
 #define IgnoreSpecial !serverside && !s_SpecialFromServer

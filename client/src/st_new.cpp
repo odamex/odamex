@@ -828,60 +828,57 @@ static void drawLevelStats()
 	        level.killed_monsters);
 
 		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
-	            hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
+	}
+	else if (hud_extendedinfo >= 3 || !R_StatusBarVisible())
+	{
+		std::string killrow;
+		std::string itemrow;
+		std::string secretrow;
+
+		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "S", CR_GREY);
+		hud::DrawText(x + font_offset, y + LINE_SPACING, ::hud_scale, hud::X_LEFT,
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "I", CR_GREY);
+		hud::DrawText(x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "K", CR_GREY);
+
+		StrFormat(killrow, "%s" " %d/%d",
+		          (level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		   	      level.killed_monsters,
+		   	      (level.total_monsters + level.respawned_monsters));
+		StrFormat(itemrow, "%s" " %d/%d",
+		          (level.found_items >= level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		          level.found_items, level.total_items);
+		StrFormat(secretrow, "%s" " %d/%d",
+		          (level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		          level.found_secrets, level.total_secrets);
+
+		x += 9 - font_offset * 4;
+
+		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, secretrow.c_str(), CR_GREY);
+		hud::DrawText(x, y + LINE_SPACING, ::hud_scale, hud::X_LEFT,
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, itemrow.c_str(), CR_GREY);
+		hud::DrawText(x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
+		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY);
+
 	}
 	else
 	{
-		if (hud_extendedinfo >= 3 || !R_StatusBarVisible())
-		{
-			std::string killrow;
-			std::string itemrow;
-			std::string secretrow;
+		StrFormat(line, TEXTCOLOR_RED "K" "%s" " %d/%d "
+					    TEXTCOLOR_RED "I" "%s" " %d/%d "
+					    TEXTCOLOR_RED "S" "%s" " %d/%d",
+		                (level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                level.killed_monsters,
+		                (level.total_monsters + level.respawned_monsters),
+		                (level.found_items >= level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                level.found_items, level.total_items,
+		                (level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                level.found_secrets, level.total_secrets);
 
-			hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
-	            hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "S", CR_GREY);
-			hud::DrawText(x + font_offset, y + LINE_SPACING, ::hud_scale, hud::X_LEFT,
-	            hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "I", CR_GREY);
-			hud::DrawText(x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
-	            hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "K", CR_GREY);
-
-			StrFormat(killrow, "%s" " %d/%d",
-				(level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
-	        	level.killed_monsters,
-	        	(level.total_monsters + level.respawned_monsters));
-			StrFormat(itemrow, "%s" " %d/%d",
-				(level.found_items >= level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
-				level.found_items, level.total_items);
-			StrFormat(secretrow, "%s" " %d/%d",
-				(level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
-				level.found_secrets, level.total_secrets);
-
-			x += 9 - font_offset * 4;
-
-			hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
-	            hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, secretrow.c_str(), CR_GREY);
-			hud::DrawText(x, y + LINE_SPACING, ::hud_scale, hud::X_LEFT,
-	            hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, itemrow.c_str(), CR_GREY);
-			hud::DrawText(x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
-	            hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY);
-
-		}
-		else
-		{
-			StrFormat(line, TEXTCOLOR_RED "K" "%s" " %d/%d "
-						TEXTCOLOR_RED "I" "%s" " %d/%d "
-						TEXTCOLOR_RED "S" "%s" " %d/%d",
-				(level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
-	        	level.killed_monsters,
-	        	(level.total_monsters + level.respawned_monsters),
-				(level.found_items >= level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
-				level.found_items, level.total_items,
-				(level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
-				level.found_secrets, level.total_secrets);
-
-			hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
-	            hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
-		}
+		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+		    hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
 	}
 
 	V_SetFont("SMALLFONT");

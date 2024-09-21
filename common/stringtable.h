@@ -67,7 +67,6 @@ class StringTable
 	                  size_t lumpLen);
 	void loadStringsLump(const int lump, const char* lumpname, const bool engOnly);
 	void prepareIndexes();
-	void replaceEscapes(std::string& str);
 
   public:
 	StringTable() : _stringHash()
@@ -135,4 +134,5 @@ class StringTable
 	void setString(const OString& name, const OString& string);
 	void setPassString(int pass, const OString& name, const OString& string);
 	size_t size() const;
+	static void replaceEscapes(std::string& str);
 };

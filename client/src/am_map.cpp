@@ -1981,7 +1981,7 @@ void AM_Drawer()
 				break;
 			}
 
-			line += GStrings.getIndex(firstmap + level.levelnum - mapoffset);
+			line = GStrings.getIndex(firstmap + level.levelnum - mapoffset);
 
 			int x, y;
 			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
