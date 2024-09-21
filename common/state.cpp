@@ -1,49 +1,51 @@
 #include "odamex.h"
 
 #include "state.h"
+#include "doom_obj_container.h"
 
-state_t* states;
-int num_state_t_types;
+void D_ResetState(state_t* s, statenum_t idx);
+DoomObjectContainer<state_t, statenum_t> states(::NUMSTATES, &D_ResetState);
 
-static void D_ResetStates(int from, int to)
+size_t num_state_t_types()
 {
-    state_t *s;
-    for(int i = from; i < to; i++)
-    {
-        s = &states[i];
-        s->sprite = SPR_TNT1;
-        s->tics = -1;
-        s->nextstate = (statenum_t) i;
-    }
+	return states.size();
 }
 
-void D_Initialize_States(state_t* source, int count)
+void D_ResetState(state_t* s, statenum_t idx)
 {
-    states = (state_t*) M_Calloc(count, sizeof(*states));
-    // [CMB] TODO: for testing purposes only
+    s->sprite = SPR_TNT1;
+    s->frame = 0;
+    s->tics = -1;
+    // s->action = NULL;
+    s->nextstate = (statenum_t) idx;
+    s->misc1 = 0;
+    s->misc2 = 0;
+
+    // mbf21 flags
+    s->flags = STATEF_NONE;
+    s->args[0] = 0;
+    s->args[1] = 0;
+    s->args[2] = 0;
+    s->args[3] = 0;
+    s->args[4] = 0;
+    s->args[5] = 0;
+    s->args[6] = 0;
+    s->args[7] = 0;
+}
+
+void D_Initialize_States(state_t* source, int count, statenum_t start)
+{
+	states.clear();
+    states.reserve(count);
     if (source) {
+		statenum_t idx = start;
         for(int i = 0; i < count; i++)
         {
-            states[i] = source[i];
+			states.insert(source[i], idx);
+			idx = statenum_t(idx + 1);
         }
     }
-	num_state_t_types = count;
 #if defined _DEBUG
     Printf(PRINT_HIGH,"D_Initialize_states:: allocated %d states.\n", count);
 #endif
-}
-void D_EnsureStateCapacity(int limit)
-{
-    while(limit >= num_state_t_types)
-    {
-        int old_num_state_t_types = num_state_t_types;
-        num_state_t_types *= 2;
-        states = 
-            (state_t*) M_Realloc(states, num_state_t_types * sizeof(*states));
-		// dsdhacked spec says anything not set to a default should be 0/null
-		memset(states + old_num_state_t_types, 0,
-		       (num_state_t_types - old_num_state_t_types) * sizeof(*states));
-		// Reset state_t structs according to DSDHacked spec
-        D_ResetStates(old_num_state_t_types, num_state_t_types);
-    }
 }

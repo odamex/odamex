@@ -50,7 +50,7 @@ int maxframe;
 void R_CacheSprite(spritedef_t *sprite)
 {
 	DPrintf ("cache sprite %s\n",
-		sprite - sprites < ::num_spritenum_t_types ? sprnames[sprite - sprites] : "");
+		sprite - sprites < ::num_spritenum_t_types() ? sprnames[(int)(sprite - sprites)] : "");
 	for (int i = 0; i < sprite->numframes; i++)
 	{
 		for (int r = 0; r < 16; r++)
@@ -208,14 +208,9 @@ static void R_InstallSprite(const char *name, int num)
 //	letter/number appended.
 // The rotation character can be 0 to signify no rotations.
 //
-static void R_InitSpriteDefs(const char **namelist)
+static void R_InitSpriteDefs(const char **namelist, int count)
 {
-	// count the number of sprite names - requires NULL at the end
-	for (numsprites = 0; namelist[numsprites]; numsprites++)
-		;
-
-	if (!numsprites)
-		return;
+	numsprites = count;
 
 	// [CMB] TODO: this function zone allocates this statically - this can grow over time so we need a Z_Realloc
 	sprites = (spritedef_t *)Z_Malloc(numsprites * sizeof(*sprites), PU_STATIC, NULL);
@@ -270,7 +265,7 @@ vissprite_t		*lastvissprite;
 // R_InitSprites
 // Called at program start.
 //
-void R_InitSprites(const char **namelist)
+void R_InitSprites(const char **namelist, int count)
 {
 	MaxVisSprites = 128;	// [RH] This is the initial default value. It grows as needed.
 
@@ -279,7 +274,7 @@ void R_InitSprites(const char **namelist)
 	vissprites = (vissprite_t *)Malloc(MaxVisSprites * sizeof(vissprite_t));
 	lastvissprite = &vissprites[MaxVisSprites];
 
-	R_InitSpriteDefs (namelist);
+	R_InitSpriteDefs (namelist, count);
 }
 
 VERSION_CONTROL (r_sprites_cpp, "$Id$")

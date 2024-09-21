@@ -28,6 +28,10 @@
 // Needed for action function pointer handling.
 #include "dthinker.h"
 #include "farchive.h"
+#include "doom_obj_container.h"
+
+#define NO_ALTSPEED -1
+#define MELEERANGE (64 * FRACUNIT)
 
 typedef enum
 {
@@ -233,15 +237,96 @@ typedef enum
 
 // [CMD] TODO: new types and function to allocate sprnames for dsdhacked
 extern const char* doom_sprnames[];
-extern const char** sprnames;;
-extern int num_spritenum_t_types;
+extern DoomObjectContainer<const char*, spritenum_t> sprnames;
+extern size_t num_spritenum_t_types();
 
 inline FArchive &operator<< (FArchive &arc, spritenum_t i) { DWORD out; out = i; return arc << out; }
 inline FArchive &operator>> (FArchive &arc, spritenum_t &i) { DWORD in; arc >> in; i = (spritenum_t)in; return arc; }
 
 typedef enum
 {
-	S_NULL,
+	//------------ odamex states -----------
+
+	// [RH] gibs
+	S_GIB0 = 0x80000000,
+	S_GIB1,
+	S_GIB2,
+	S_GIB3,
+	S_GIB4,
+	S_GIB5,
+	S_GIB6,
+	S_GIB7,
+	S_AMBIENTSOUND,
+	S_UNKNOWNTHING,
+
+	// -----------------------------------
+	//	[Toke - CTF]
+
+	S_BSOK,	// Blue Flag
+	S_RSOK,	// Red Flag
+
+	// -----[ BLUE Flag Animation ]-------
+	S_BFLG,
+	S_BFLG2,
+	S_BFLG3,
+	S_BFLG4,
+	S_BFLG5,
+	S_BFLG6,
+	S_BFLG7,
+	S_BFLG8,
+
+	// -----[ RED Flag Animation  ]-------
+	S_RFLG,
+	S_RFLG2,
+	S_RFLG3,
+	S_RFLG4,
+	S_RFLG5,
+	S_RFLG6,
+	S_RFLG7,
+	S_RFLG8,
+
+	// -----------------------------------
+	S_BDWN,	// Blue Flag
+	S_RDWN,	// Red Flag
+	S_BCAR,	// Blue Flag
+	S_RCAR,	// Red Flag
+
+	S_GSOK,
+	S_GFLG,
+	S_GFLG2,
+	S_GFLG3,
+	S_GFLG4,
+	S_GFLG5,
+	S_GFLG6,
+	S_GFLG7,
+	S_GFLG8,
+	S_GDWN,
+	S_GCAR,
+
+	//------------ bridge states -----------
+	S_BRIDGE1,
+	S_BRIDGE2,
+	S_BRIDGE3,
+	S_BRIDGE4,
+	S_BRIDGE5,
+
+	S_WPBF1, // Waypoint - Blue flag
+	S_WPBF2,
+	S_WPRF1, // Waypoint - Red flag
+	S_WPRF2,
+	S_WPGF1, // Waypoint - Green flag
+	S_WPGF2,
+
+	S_CARE, // Horde - Care Package
+
+	S_NOWEAPONUP,
+	S_NOWEAPONDOWN,
+	S_NOWEAPON,
+
+	//------------------------------------
+
+	//------------ doom states -----------
+	S_NULL = 0,
 	S_LIGHTDONE,
 	S_PUNCH,
 	S_PUNCHDOWN,
@@ -1288,85 +1373,6 @@ typedef enum
 
 	S_MUSHROOM,  // killough 10/98: mushroom explosion effect
 
-	EXTRASTATES = 1089,
-
-
-	// [RH] gibs
-	S_GIB0 = 4000,
-	S_GIB1,
-	S_GIB2,
-	S_GIB3,
-	S_GIB4,
-	S_GIB5,
-	S_GIB6,
-	S_GIB7,
-	S_AMBIENTSOUND,
-	S_UNKNOWNTHING,
-
-	// -----------------------------------
-	//	[Toke - CTF]
-
-	S_BSOK,	// Blue Flag
-	S_RSOK,	// Red Flag
-
-	// -----[ BLUE Flag Animation ]-------
-	S_BFLG,
-	S_BFLG2,
-	S_BFLG3,
-	S_BFLG4,
-	S_BFLG5,
-	S_BFLG6,
-	S_BFLG7,
-	S_BFLG8,
-
-	// -----[ RED Flag Animation  ]-------
-	S_RFLG,
-	S_RFLG2,
-	S_RFLG3,
-	S_RFLG4,
-	S_RFLG5,
-	S_RFLG6,
-	S_RFLG7,
-	S_RFLG8,
-
-	// -----------------------------------
-	S_BDWN,	// Blue Flag
-	S_RDWN,	// Red Flag
-	S_BCAR,	// Blue Flag
-	S_RCAR,	// Red Flag
-
-	S_GSOK,
-	S_GFLG,
-	S_GFLG2,
-	S_GFLG3,
-	S_GFLG4,
-	S_GFLG5,
-	S_GFLG6,
-	S_GFLG7,
-	S_GFLG8,
-	S_GDWN,
-	S_GCAR,
-
-	// -----------------------------------
-	S_BRIDGE1,
-	S_BRIDGE2,
-	S_BRIDGE3,
-	S_BRIDGE4,
-	S_BRIDGE5,
-
-	S_WPBF1, // Waypoint - Blue flag
-	S_WPBF2,
-	S_WPRF1, // Waypoint - Red flag
-	S_WPRF2,
-	S_WPGF1, // Waypoint - Green flag
-	S_WPGF2,
-
-	S_CARE, // Horde - Care Package
-
-	S_NOWEAPONUP,
-	S_NOWEAPONDOWN,
-	S_NOWEAPON,
-
 	NUMSTATES
 } statenum_t;
 
@@ -1396,9 +1402,10 @@ typedef struct
 */
 } state_t;
 
-// [CMB] TODO: new types and function to allocate states for dsdhacked
-extern state_t* states;
-extern int num_state_t_types;
+extern state_t boomstates[];
+extern DoomObjectContainer<state_t, statenum_t> states;
+extern size_t num_state_t_types(); // [CMB] TODO converted to function to just make code work for now
+extern state_t odastates[];
 
 #define STATEF_NONE 0
 #define STATEF_SKILL5FAST BIT(0) // tics halve on nightmare skill
@@ -1730,16 +1737,28 @@ typedef struct _mobjinfo
 	int flags3;
 	const char* ripsound;
 	mobjtype_t droppeditem;
+    
+    static _mobjinfo& get_empty()
+    {
+        _mobjinfo m;
+        m.droppeditem = MT_NULL;
+        m.infighting_group = IG_DEFAULT;
+        m.projectile_group = PG_DEFAULT;
+        m.splash_group = SG_DEFAULT;
+        m.altspeed = NO_ALTSPEED;
+        m.meleerange = MELEERANGE;
+        m.translucency = 0x10000;
+        m.altspeed = NO_ALTSPEED;
+        m.ripsound = "";
+        return m;
+    }
 
 } mobjinfo_t;
 
-#define NO_ALTSPEED -1
-#define MELEERANGE (64 * FRACUNIT)
-
 // [CMB] TODO: new types and function to allocate mobjinfo for dsdhacked
 extern mobjinfo_t doom_mobjinfo[];
-extern mobjinfo_t* mobjinfo;
-extern int num_mobjinfo_types;
+extern DoomObjectContainer<mobjinfo_t, mobjtype_t> mobjinfo;
+extern size_t num_mobjinfo_types();
 
 inline FArchive &operator<< (FArchive &arc, mobjinfo_t *info)
 {

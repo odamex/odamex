@@ -1256,76 +1256,6 @@ state_t	boomstates[S_MUSHROOM + 1] = {
 	{SPR_MISL,32769,8,A_Mushroom,S_EXPLODE2,0,0},  // S_MUSHROOM
 };
 
-state_t odastates[::NUMSTATES - S_GIB0] = {
-    // ZDoom/Odamex stuff starts here
-
-    {SPR_GIB0, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB0
-    {SPR_GIB1, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB1
-    {SPR_GIB2, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB2
-    {SPR_GIB3, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB3
-    {SPR_GIB4, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB4
-    {SPR_GIB5, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB5
-    {SPR_GIB6, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB6
-    {SPR_GIB7, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB7
-    {SPR_TROO, 0, 1, A_Ambient, S_AMBIENTSOUND, 0, 0}, // S_AMBIENTSOUND
-    {SPR_UNKN, 0, -1, NULL, S_NULL, 0, 0},             // S_UNKNOWNTHING
-
-    //	[Toke - CTF]
-    {SPR_BSOK, 0, -1, NULL, S_NULL, 0, 0},     // Blue Socket
-    {SPR_RSOK, 0, -1, NULL, S_NULL, 0, 0},     // Red Socket
-    {SPR_BFLG, 32768, 4, NULL, S_BFLG2, 0, 0}, // BLUE Flag Animation
-    {SPR_BFLG, 32769, 4, NULL, S_BFLG3, 0, 0},
-    {SPR_BFLG, 32770, 4, NULL, S_BFLG4, 0, 0},
-    {SPR_BFLG, 32771, 4, NULL, S_BFLG5, 0, 0},
-    {SPR_BFLG, 32772, 4, NULL, S_BFLG6, 0, 0},
-    {SPR_BFLG, 32773, 4, NULL, S_BFLG7, 0, 0},
-    {SPR_BFLG, 32774, 4, NULL, S_BFLG8, 0, 0},
-    {SPR_BFLG, 32775, 4, NULL, S_BFLG, 0, 0},
-    {SPR_RFLG, 32768, 4, NULL, S_RFLG2, 0, 0}, // RED Flag Animation
-    {SPR_RFLG, 32769, 4, NULL, S_RFLG3, 0, 0},
-    {SPR_RFLG, 32770, 4, NULL, S_RFLG4, 0, 0},
-    {SPR_RFLG, 32771, 4, NULL, S_RFLG5, 0, 0},
-    {SPR_RFLG, 32772, 4, NULL, S_RFLG6, 0, 0},
-    {SPR_RFLG, 32773, 4, NULL, S_RFLG7, 0, 0},
-    {SPR_RFLG, 32774, 4, NULL, S_RFLG8, 0, 0},
-    {SPR_RFLG, 32775, 4, NULL, S_RFLG, 0, 0},
-    {SPR_BDWN, 0, -1, NULL, S_NULL, 0, 0}, // Blue Dropped Flag
-    {SPR_RDWN, 0, -1, NULL, S_NULL, 0, 0}, // Red Dropped Flag
-    {SPR_BCAR, 0, -1, NULL, S_NULL, 0, 0}, // Blue Dropped Flag
-    {SPR_RCAR, 0, -1, NULL, S_NULL, 0, 0}, // Red Dropped Flag
-
-    {SPR_GSOK, 0, -1, NULL, S_NULL, 0, 0},     // S_GSOK,
-    {SPR_GFLG, 32768, 4, NULL, S_GFLG2, 0, 0}, // BLUE Flag Animation
-    {SPR_GFLG, 32769, 4, NULL, S_GFLG3, 0, 0},
-    {SPR_GFLG, 32770, 4, NULL, S_GFLG4, 0, 0},
-    {SPR_GFLG, 32771, 4, NULL, S_GFLG5, 0, 0},
-    {SPR_GFLG, 32772, 4, NULL, S_GFLG6, 0, 0},
-    {SPR_GFLG, 32773, 4, NULL, S_GFLG7, 0, 0},
-    {SPR_GFLG, 32774, 4, NULL, S_GFLG8, 0, 0},
-    {SPR_GFLG, 32775, 4, NULL, S_GFLG, 0, 0},
-    {SPR_GDWN, 0, -1, NULL, S_NULL, 0, 0}, // S_GDWN,
-    {SPR_GCAR, 0, -1, NULL, S_NULL, 0, 0}, // S_GCAR,
-
-    {SPR_TLGL, 32768, 4, NULL, S_BRIDGE2, 0, 0}, // S_BRIDGE1
-    {SPR_TLGL, 32769, 4, NULL, S_BRIDGE3, 0, 0}, // S_BRIDGE2
-    {SPR_TLGL, 32770, 4, NULL, S_BRIDGE4, 0, 0}, // S_BRIDGE3
-    {SPR_TLGL, 32771, 4, NULL, S_BRIDGE5, 0, 0}, // S_BRIDGE4
-    {SPR_TLGL, 32772, 4, NULL, S_BRIDGE1, 0, 0}, // S_BRIDGE5
-
-    {SPR_WPBF, 0, 1, NULL, S_WPBF2, 0, 0},       // S_WPBF1 - Waypoint Blue Flag
-    {SPR_WPBF, 1, 1, NULL, S_WPBF1, 0, 0},       // S_WPBF2
-    {SPR_WPRF, 0, 1, NULL, S_WPRF2, 0, 0},       // S_WPRF1 - Waypoint Red Flag
-    {SPR_WPRF, 1, 1, NULL, S_WPRF1, 0, 0},       // S_WPRF2
-    {SPR_WPGF, 0, 1, NULL, S_WPGF2, 0, 0},       // S_WPGF1 - Waypoint Green Flag
-    {SPR_WPGF, 1, 1, NULL, S_WPGF1, 0, 0},       // S_WPGF2
-
-    {SPR_CARE, 0, -1, NULL, S_NULL, 0, 0}, // S_CARE - Horde Care Package
-
-    {SPR_TNT1, 0, 1, A_Raise, S_NOWEAPON, 0, 0},       // S_NOWEAPONUP
-    {SPR_TNT1, 0, 1, A_Lower, S_NOWEAPON, 0, 0},       // S_NOWEAPONDOWN
-    {SPR_TNT1, 0, 1, A_WeaponReady, S_NOWEAPON, 0, 0}, // S_NOWEAPON
-};
-
 // [Blair] Since Odamex has more out-of-the-box states,
 // the new DEHExtra state spec starts at 1100, while we have around
 // 1130. To fix this, we'll need to append the states Odamex adds
@@ -7598,66 +7528,14 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	},
 };
 
-// [CMB] TODO: how to handle this with dsdhacked?
-// [CMB] TODO: do we even need these with dynamically allocated states now? DEHEXTRA added 2910 spaces for doom objects.
-// [CMB] -- states being pre-allocated is a good thing - means we can use that space instead of having to allocate it dynamically
-// [CMB] -- anything beyond the currently supported range can be dynamically allocated
-// [CMB] -- the harder portion is adding on the odastates at the end
-// [CMB] TODO: there are some other things this does like default behaviors (MBF21, etc). 
-void D_Init_DEHEXTRA_Frames(void)
+// initialize nightmare flags
+void D_Init_Nightmare_Flags(void)
 {
-	// [Blair] Combine all the state tables.
-	for (int i = 0; i < ::num_state_t_types; i++)
-	{
-		// [CMB] TODO: this will need to be adjusted based on the highest index added by dsdhacked
-		// [CMB] TODO: currently it only takes into account the highest index for doom states (S_MUSHROOM) and odastates (S_GIB0)
-		if (i <= S_MUSHROOM)
-		{
-			states[i] = boomstates[i];
-		}
-//		else if (i >= S_GIB0)
-//		{
-//			states[i] = odastates[i - S_GIB0];
-//		}
-		else
-		{
-			// These cover both DEHEXTRA states and the undefined states
-			// between the MBF and DEHEXTRA blocks.
-			states[i].sprite = SPR_TNT1;
-			states[i].frame = 0;
-			states[i].tics = -1;
-			states[i].action = NULL;
-			states[i].nextstate = (statenum_t)(i);
-			states[i].misc1 = 0;
-			states[i].misc2 = 0;
-		}
-
-		states[i].flags = STATEF_NONE;
-		states[i].args[0] = 0;
-		states[i].args[1] = 0;
-		states[i].args[2] = 0;
-		states[i].args[3] = 0;
-		states[i].args[4] = 0;
-		states[i].args[5] = 0;
-		states[i].args[6] = 0;
-		states[i].args[7] = 0;
-	}
-
 	// NIGHTMARE! stuff
 	// Set the flag for nightmare frames
 	for (int i = S_SARG_RUN1; i <= S_SARG_PAIN2; ++i)
-		states[i].flags |= STATEF_SKILL5FAST;
-
-	// Start all MBF21 content here.
-	for (int i = 0; i < ::num_mobjinfo_types ; i++)
 	{
-		mobjinfo[i].altspeed = NO_ALTSPEED;
-		mobjinfo[i].infighting_group = IG_DEFAULT;
-		mobjinfo[i].projectile_group = PG_DEFAULT;
-		mobjinfo[i].splash_group = SG_DEFAULT;
-		mobjinfo[i].ripsound = "";
-		mobjinfo[i].meleerange = MELEERANGE;
-		mobjinfo[i].droppeditem = MT_NULL;
+		states[i].flags |= STATEF_SKILL5FAST;
 	}
 
 	// NIGHTMARE! Alt Speed
@@ -7685,15 +7563,14 @@ void D_Init_DEHEXTRA_Frames(void)
 	mobjinfo[MT_KNIGHT].projectile_group = PG_BARON;
 }
 
-void D_Init_Odamex_States(int num_states)
+void D_Init_Odamex_Objects(
+	const DoomObjectContainer<mobjinfo_t, mobjtype_t>& mobjinfo,
+	const DoomObjectContainer<const char*, spritenum_t>& sprnames,
+	const DoomObjectContainer<state_t, statenum_t>& states
+	)
 {
     // using hard coded values here
-    int num_odamex_states = ::NUMSTATES - S_GIB0;
-    D_EnsureStateCapacity(num_states + num_odamex_states);
-    for(int i = 0; i < num_odamex_states; i++)
-    {
-        states[num_states + i] = odastates[i]; // [CMB] TODO: did we actually initialize these?
-    }
+	// [CMB] TODO: should this live in here or in odamex_objects.h?
 }
 
 VERSION_CONTROL (info_cpp, "$Id$")

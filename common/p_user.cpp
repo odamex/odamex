@@ -1147,7 +1147,8 @@ const char* PlayerState(size_t state)
 	}
 }
 
-#define STATE_NUM(mo) (mo -> state - states)
+// [CMB] TODO pointer difference to statenum_t conversion unchecked
+#define STATE_NUM(mo) (statenum_t)(mo -> state - states)
 
 BEGIN_COMMAND(cheat_players)
 {
@@ -1177,7 +1178,7 @@ BEGIN_COMMAND(cheat_players)
 			{
 				Printf("???: ???\n");
 			}
-			Printf("State: %s\n", PlayerState(mo->state - states));
+			Printf("State: %s\n", PlayerState((statenum_t)(mo->state - states)));
 			Printf("%f, %f, %f\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
 			       FIXED2FLOAT(mo->z));
 		}

@@ -4,30 +4,49 @@
 #include <string.h>
 
 #include "sprite.h"
+#include "doom_obj_container.h"
 
 #include <sstream>
 
+//----------------------------------------------------------------------------------------------
+
+template<>
+inline void DoomObjectContainer<const char*, spritenum_t>::clear()
+{
+	if (this->container.size() > 0)
+	{
+		for (int i = 0; i < this->container.size(); i++)
+		{
+			char* p = (char*)this->container[i];
+			M_Free(p);
+		}
+	}
+}
+
+//----------------------------------------------------------------------------------------------
+
 // global variables from info.h
 
-const char** sprnames;
-int num_spritenum_t_types;
-
-void D_Initialize_sprnames(const char** source, int count)
+DoomObjectContainer<const char*, spritenum_t> sprnames(::NUMSPRITES);
+size_t num_spritenum_t_types()
 {
-    // [CMB] Pre-allocate sprnames to support current limits on types
-    sprnames = (const char**) M_Calloc(count + 1, sizeof(*sprnames));
-    for(int i = 0; i < count; i++)
+	return sprnames.size();
+}
+
+void D_Initialize_sprnames(const char** source, int count, spritenum_t start)
+{
+	sprnames.clear();
+    if (source)
     {
-        // [CMB] this is important: we are setting each array slot in sprnames to a statically allocated cons char*
-        // during doom initialization. This saves us a free on indices that already exist. For newly allocated
-        // sprites, that pointer exists until program termination.
-        sprnames[i] = source[i];
+		spritenum_t idx = start;
+		for (int i = 0; i < count; i++)
+		{
+			sprnames.insert(strdup(source[i]), idx);
+            idx = spritenum_t(idx + 1);
+		}
     }
-    sprnames[count] = NULL;
-    num_spritenum_t_types = count;
-    // [CMB] Useful debug logging
 #if defined _DEBUG
-    Printf(PRINT_HIGH, "D_Allocate_sprnames:: allocated %d sprites.\n", count);
+	Printf(PRINT_HIGH, "D_Allocate_sprnames:: allocated %d sprites.\n", count);
 #endif
 }
 
@@ -41,8 +60,9 @@ void D_Initialize_sprnames(const char** source, int count)
  */
 int D_FindOrgSpriteIndex(const char** src_sprnames, const char* key)
 {
+	int i = 0;
     // search the array for the sprite name you are looking for
-    for(int i = 0; i < num_spritenum_t_types; i++)
+	for (; src_sprnames[i]; ++i)
     {
         if(!strncmp(src_sprnames[i], key, 4))
         {
@@ -54,21 +74,4 @@ int D_FindOrgSpriteIndex(const char** src_sprnames, const char* key)
     int spridx;
     bool ok = !(stream >> spridx).fail();
     return ok ? spridx : -1;
-}
-
-/**
- * @brief ensure the sprnames array of sprite names has the correct capacity
- *
- * @param limit the new size for sprnames. This will realloc and zero beyond the current maximum.
- */
-void D_EnsureSprnamesCapacity(int limit)
-{
-    while(limit >= num_spritenum_t_types)
-    {
-        int old_num_spritenum_t_types = num_spritenum_t_types;
-        num_spritenum_t_types *= 2;
-        sprnames = (const char**) M_Realloc(sprnames, num_spritenum_t_types * sizeof(*sprnames));
-        // memset to 0 because the end of the elements in the array needs to NULL terminated
-        memset(sprnames + old_num_spritenum_t_types, 0, (num_spritenum_t_types - old_num_spritenum_t_types) * sizeof(*sprnames));
-    }
 }

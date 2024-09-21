@@ -254,7 +254,9 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
       rndindex(0), netid(0), tid(0), bmapnode(this), baseline_set(false)
 {
 	// Fly!!! fix it in P_RespawnSpecial
-	if ((unsigned int)itype >= ::num_mobjinfo_types)
+    // [CMB] TODO: need to use find here
+	// if ((unsigned int)itype >= ::num_mobjinfo_types())
+    if (mobjinfo.find(itype) == NULL)
 	{
 		I_Error ("Tried to spawn actor type %d\n", itype);
 	}
@@ -963,9 +965,9 @@ void AActor::Serialize (FArchive &arc)
 		}
 		spawnpoint.Serialize (arc);
 		baseline.Serialize(arc);
-		if(type >= ::num_mobjinfo_types)
+		if(type >= ::num_mobjinfo_types())
 			I_Error("Unknown object type in saved game");
-		if(sprite >= ::num_spritenum_t_types)
+		if(sprite >= ::num_spritenum_t_types())
 			I_Error("Unknown sprite in saved game");
 		info = &mobjinfo[type];
 		touching_sectorlist = NULL;
@@ -1017,7 +1019,7 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 	{
 		// [CMB] TODO: use num_state_t_types from globally allocated array
 		// if (state >= ARRAY_LENGTH(states) || state < 0)
-		if(state >= num_state_t_types || state < 0)
+		if (state >= ::num_state_t_types() || state < 0)
 		{
 			I_Error("P_SetMobjState: State %d does not exist in state table.", state);
 		}
@@ -2562,7 +2564,7 @@ void P_RespawnSpecials (void)
 	y = mthing->y << FRACBITS;
 
 	// find which type to spawn
-	for (i=0 ; i< ::num_mobjinfo_types ; i++)
+	for (i=0 ; i< ::num_mobjinfo_types() ; i++)
 	{
 		if (mthing->type == mobjinfo[i].doomednum)
 		{
@@ -2578,7 +2580,7 @@ void P_RespawnSpecials (void)
 	}
 
 	// [Fly] crashes sometimes without it
-	if (i >= ::num_mobjinfo_types)
+	if (i >= ::num_mobjinfo_types())
 	{
 		// pull it from the que
 		iquetail = (iquetail+1)&(ITEMQUESIZE-1);
@@ -2927,7 +2929,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (i == -1)	// we have to search for the type
 	{
 		// find which type to spawn
-		for (i = 0; i < ::num_mobjinfo_types; i++)
+		for (i = 0; i < ::num_mobjinfo_types(); i++)
         {
             if (mthing->type == mobjinfo[i].doomednum)
             {
@@ -2936,7 +2938,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
         }
 	}
 
-	if (i >= ::num_mobjinfo_types || i < 0) // [CMB] TODO: there are more objects than this
+	if (i >= ::num_mobjinfo_types() || i < 0) // [CMB] TODO 'i' can be negative now
 	{
 		// [RH] Don't die if the map tries to spawn an unknown thing
 		Printf (PRINT_WARNING, "Unknown type %i at (%i, %i)\n",
@@ -2946,6 +2948,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 	// [RH] If the thing's corresponding sprite has no frames, also map
 	//		it to the unknown thing.
+	// [CMB] TODO negative indices will cause this to fail
 	else if (sprites[states[mobjinfo[i].spawnstate].sprite].numframes == 0)
 	{
 		Printf (PRINT_WARNING, "Type %i at (%i, %i) has no frames\n",
@@ -3269,7 +3272,7 @@ BEGIN_COMMAND(cheat_mobjs)
 	ptrdiff_t mobj_index = -1;
 
 	// [CMB] TODO: for (size_t i = 0; i < ARRAY_LENGTH(::mobjinfo); i++)
-	for (size_t i = 0; i < ::num_mobjinfo_types; i++)
+	for (size_t i = 0; i < ::num_mobjinfo_types(); i++)
 	{
 		if (stricmp(::mobjinfo[i].name, mobj_type) == 0)
 		{

@@ -31,6 +31,7 @@ void *Malloc (size_t size);
 void *Calloc (size_t num, size_t size);
 void *Realloc (void *memblock, size_t size);
 void M_Free2 (void **memblock);
+void M_Free3(void **memblock);
 
 #define M_Malloc(s) Malloc((size_t)s)
 #define M_Calloc(n,s) Calloc((size_t)n, (size_t)s)
@@ -41,3 +42,8 @@ void M_Free2 (void **memblock);
         M_Free2((void **)&p); \
     else \
         (void)0
+#define M_Free_Ref(p) \
+    if(1) \
+        M_Free3((void**)&p); \
+    else \
+        (void) 0
