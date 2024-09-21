@@ -103,7 +103,6 @@ bool keysfound[NUMCARDS];		// Ch0wW : Found keys
 EXTERN_CVAR(sv_motd)
 EXTERN_CVAR(sv_hostname)
 EXTERN_CVAR(sv_email)
-EXTERN_CVAR(sv_website)
 EXTERN_CVAR(sv_waddownload)
 EXTERN_CVAR(sv_maxrate)
 EXTERN_CVAR(sv_emptyreset)
@@ -268,23 +267,10 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 		Printf(PRINT_HIGH, "RCON password set.");
 }
 
-
-EXTERN_CVAR(sv_waddownloadcap)
 CVAR_FUNC_IMPL(sv_maxrate)
 {
-	// sv_waddownloadcap can not be larger than sv_maxrate
-	if (sv_waddownloadcap > var)
-		sv_waddownloadcap.Set(var);
-
 	for (Players::iterator it = players.begin();it != players.end();++it)
 		it->client.rate = int(sv_maxrate);
-}
-
-CVAR_FUNC_IMPL (sv_waddownloadcap)
-{
-	// sv_waddownloadcap can not be larger than sv_maxrate
-	if (var > sv_maxrate)
-		var.Set(sv_maxrate);
 }
 
 CVAR_FUNC_IMPL(sv_sharekeys)
@@ -1389,7 +1375,7 @@ void SV_LineStateUpdate(client_t *cl)
 
 		if (!line->SidedefChanged)
 			continue;
-		
+
 		for (int sideNum = 0; sideNum < 2; sideNum++)
 		{
 			if (line->sidenum[sideNum] != R_NOSIDE)
@@ -1799,7 +1785,7 @@ void SV_ConnectClient()
 
 	SZ_Clear(&cl->netbuf);
 	SZ_Clear(&cl->reliablebuf);
-	
+
 	for (size_t i = 0; i < ARRAY_LENGTH(cl->oldpackets); i++)
 	{
 		cl->oldpackets[i].sequence = -1;
@@ -1809,7 +1795,7 @@ void SV_ConnectClient()
 	cl->sequence = 0;
 	cl->last_sequence = -1;
 	cl->packetnum = 0;
-	
+
 	// generate a random string
 	std::stringstream ss;
 	ss << time(NULL) << level.time << VERSION << NET_AdrToString(net_from);
@@ -1930,7 +1916,7 @@ void SV_ConnectClient2(player_t& player)
 	}
 
 	// Notify this player of other player's queue positions
-	SV_SendPlayerQueuePositions(&player, true); 
+	SV_SendPlayerQueuePositions(&player, true);
 
 	// Send out the server's MOTD.
 	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
@@ -3479,10 +3465,10 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 }
 
 /**
- * @brief Have a player join the game.  Note that this function does no 
+ * @brief Have a player join the game.  Note that this function does no
  *        checking against maxplayers or round limits or whatever, that's
  *        the job of the caller.
- * 
+ *
  * @param player Player that should join the game.
  * @param silent True if the join should be done "silently".
 */
@@ -3701,11 +3687,11 @@ void SV_SetReady(player_t &player, bool setting, bool silent)
 
 /**
  * @brief Tell the client about any custom commands we have.
- * 
+ *
  * @detail A stock server is not expected to have any custom commands.
  *         Custom servers can implement their own features, and this is
  *         where you tell players about it.
- * 
+ *
  * @param player Player who asked for help.
  */
 static void HelpCmd(player_t& player)
@@ -3718,7 +3704,7 @@ static void HelpCmd(player_t& player)
 
 /**
  * @brief Toggle a player as ready/unready.
- * 
+ *
  * @param player Player to toggle.
  */
 static void ReadyCmd(player_t &player)
@@ -3764,7 +3750,7 @@ static void ReadyCmd(player_t &player)
 
 /**
  * @brief Send the player a MOTD on demand.
- * 
+ *
  * @param player Player who wants the MOTD.
  */
 void MOTDCmd(player_t& player)
@@ -3774,7 +3760,7 @@ void MOTDCmd(player_t& player)
 
 /**
  * @brief Interpret a "netcmd" string from a client.
- * 
+ *
  * @param player Player who sent the netcmd.
  */
 void SV_NetCmd(player_t& player)
@@ -3879,7 +3865,7 @@ void SV_Suicide(player_t &player)
 void SV_Cheat(player_t &player)
 {
 	byte cheatType = MSG_ReadByte();
-	
+
 	if (cheatType == 0)
 	{
 		unsigned int cheat = MSG_ReadShort();
@@ -4084,7 +4070,6 @@ void SV_ParseCommands(player_t &player)
 	 }
 }
 
-EXTERN_CVAR (sv_waddownloadcap)
 EXTERN_CVAR (sv_download_test)
 
 
@@ -4274,15 +4259,7 @@ void SV_RunTics()
 
 		if (!Maplist::instance().lobbyempty())
 		{
-			std::string wadstr;
-			for (size_t i = 0; i < lobby_entry.wads.size(); i++)
-			{
-				if (i != 0)
-				{
-					wadstr += " ";
-				}
-				wadstr += C_QuoteString(lobby_entry.wads.at(i));
-			}
+			std::string wadstr = C_EscapeWadList(lobby_entry.wads);
 			G_LoadWadString(wadstr, lobby_entry.map);
 		}
 		else
