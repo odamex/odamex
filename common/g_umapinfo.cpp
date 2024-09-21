@@ -274,7 +274,8 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 				return 0;
 
 			EpisodeMaps[episodenum] = mape->mapname;
-			EpisodeInfos[episodenum].name = tokens[0];
+			EpisodeInfos[episodenum].pic_name = tokens[0];
+			EpisodeInfos[episodenum].menu_name = tokens[1];
 			EpisodeInfos[episodenum].fulltext = false;
 			EpisodeInfos[episodenum].noskillmenu = false;
 			EpisodeInfos[episodenum].key = (tokens.size() > 2) ? tokens[2][0] : 0;
@@ -390,6 +391,10 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 		while (!os.compareToken("}"))
 		{
 			ParseStandardUmapInfoProperty(os, &info);
+		}
+		// if an episode title patch is missing, fall back on text name
+		for (int i = 0; i < MAX_EPISODES; i++) {
+			EpisodeInfos[i].fulltext = EpisodeInfos[i].pic_name.empty();
 		}
 
 		// Set default level progression here to simplify the checks elsewhere.
