@@ -366,20 +366,14 @@ bool P_IsSpecialBoomRepeatable(const short special)
 		switch ((special & TriggerType) >> TriggerTypeShift)
 		{
 		case PushOnce:
-			return false;
-			break;
-		case PushMany:
-			return true;
-			break;
 		case SwitchOnce:
-			return false;
-			break;
-		case SwitchMany:
-			return true;
-			break;
 		case WalkOnce:
+		case GunOnce:
 			return false;
+		case PushMany:
+		case SwitchMany:
 		case WalkMany:
+		case GunMany:
 			return true;
 		}
 	}
@@ -393,7 +387,7 @@ bool P_IsExitLine(const short special)
 		return special == 74 || special == 75 || special == 244 || special == 243;
 
 	return special == 11 || special == 52 || special == 197 || special == 51 ||
-	       special == 124 || special == 198;
+	       special == 124 || special == 198 || (2069 <= special && special <= 2074);
 }
 
 bool P_IsTeleportLine(const short special)

@@ -42,6 +42,9 @@ std::string BuildString (size_t argc, std::vector<std::string> args);
 // quote a string
 std::string C_QuoteString(const std::string &argstr);
 
+// escape a list of wads
+std::string C_EscapeWadList(const std::vector<std::string> wadlist);
+
 class DConsoleCommand : public DObject
 {
 	DECLARE_CLASS (DConsoleCommand, DObject)

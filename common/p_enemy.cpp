@@ -1970,7 +1970,7 @@ void A_MonsterProjectile(AActor* actor)
 
 	// adjust pitch (approximated, using Doom's ye olde
 	// finetangent table; same method as monster aim)
-	mo->momz += FixedMul(mo->info->speed, pitch);
+	mo->momz += FixedMul(mo->info->speed, DegToSlope(pitch));
 
 	// adjust position
 	an = (actor->angle - ANG90) >> ANGLETOFINESHIFT;
@@ -2457,6 +2457,15 @@ void A_Stop(AActor* actor)
 	actor->momx = actor->momy = actor->momz = 0;
 }
 
+// P_RemoveSoulLimit
+bool P_RemoveSoulLimit()
+{
+	if (level.flags & LEVEL_COMPAT_LIMITPAIN)
+		return false;
+
+	return co_removesoullimit;
+}
+
 //
 // A_PainShootSkull
 // Spawn a lost soul and launch it at the target
@@ -2489,7 +2498,7 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 	// if there are already 20 skulls on the level,
 	// don't spit another one
 	// co_removesoullimit removes the standard limit
-	if (count > 20 && !co_removesoullimit)
+	if (count > 20 && !P_RemoveSoulLimit())
 		return;
 	// multiplayer retains a hard limit of 128
 	if (multiplayer && count > 128)

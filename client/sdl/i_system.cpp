@@ -27,7 +27,7 @@
 
 #include <limits>
 
-#include "i_sdl.h" 
+#include "i_sdl.h"
 #include <stdlib.h>
 
 #ifdef OSX
@@ -428,6 +428,16 @@ void I_Endoom(void)
 
     if (!r_showendoom || Args.CheckParm ("-novideo"))
         return;
+
+	int lump = -1;
+	int count = 0;
+	while (count < 2 && (lump = W_FindLump("ENDOOM", lump)) != -1)
+	{
+		count++;
+	}
+
+	if (r_showendoom == 2 && count <= 1)
+		return;
 
     // Hack to stop crash with disk icon
     in_endoom = true;
