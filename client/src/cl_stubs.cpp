@@ -67,6 +67,47 @@ void STACK_ARGS SV_BroadcastPrintf(const char* format, ...)
 	Printf(PRINT_HIGH, "%s", str.c_str());
 }
 
+void STACK_ARGS SV_BroadcastPrintfButPlayer(int printlevel, int player_id, const char* format, ...)
+{
+	if (!serverside)
+		return;
+
+	// Local game, print the message normally.
+	std::string str;
+	va_list va;
+	va_start(va, format);
+	VStrFormat(str, format, va);
+	va_end(va);
+
+	Printf(PRINT_HIGH, "%s", str.c_str());
+}
+
+void STACK_ARGS SV_TeamPrintf(int level, int who, const char* fmt, ...)
+{
+	if (!serverside)
+		return;
+
+	// Local game, print the message normally.
+	std::string str;
+	va_list va;
+	va_start(va, fmt);
+	VStrFormat(str, fmt, va);
+	va_end(va);
+
+	Printf(PRINT_HIGH, "%s", str.c_str());
+}
+
+void SV_MidPrint(const char *msg, int p, int msgtime)
+{
+	if (!serverside)
+		return;
+
+	// Local game, print the message normally.
+	std::string str;
+
+	Printf(PRINT_HIGH, "%s", str.c_str());
+}
+
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
 void D_DoServerInfoChange(byte **stream) {}
 void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {}
