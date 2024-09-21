@@ -160,6 +160,15 @@ class SVCMessages
 
 struct client_t
 {
+	enum class state_e
+	{
+		connecting,
+		connected,
+		disconnecting,
+	};
+
+	state_e state = state_e::connecting;
+
 	netadr_t address;
 
 	player_t* player = nullptr;
@@ -186,7 +195,7 @@ struct client_t
 
 	std::string digest;     // randomly generated string that the client must use for any
 	                        // hashes it sends back
-	bool allow_rcon = false;        // allow remote admin
+	bool allow_rcon = false; // allow remote admin
 	bool displaydisconnect = true; // display disconnect message when disconnecting
 
 	huffman_server compressor; // denis - adaptive huffman compression

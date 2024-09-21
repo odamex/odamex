@@ -46,7 +46,19 @@ public:
 
 extern client_c clients;
 
+/**
+ * @brief Create a client from a given address.
+ */
 client_t* SV_CreateClient(const netadr_t& cAddr);
+
+/**
+ * @brief Find a valid client with a given address.
+ */
+client_t* SV_FindClient(const netadr_t& cAddr);
+
+/**
+ * @brief Destroy a client with a given address.
+ */
 void SV_DestroyClient(const netadr_t& cAddr);
 
 void SV_InitNetwork (void);

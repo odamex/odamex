@@ -475,9 +475,8 @@ static void SendLevelState(SerializedLevelState sls)
 	}
 }
 
-/**
- * @brief Create a new client and hold storage for it.
- */
+//------------------------------------------------------------------------------
+
 client_t* SV_CreateClient(const netadr_t& cAddr)
 {
 	for (auto& clientInfo : g_ncClientInfos)
@@ -491,6 +490,23 @@ client_t* SV_CreateClient(const netadr_t& cAddr)
 	g_ncClientInfos.push_back(clientInfo_s{cAddr, std::make_unique<client_t>()});
 	return g_ncClientInfos.back().pcClient.get();
 } 
+
+//------------------------------------------------------------------------------
+
+client_t* SV_FindClient(const netadr_t& cAddr)
+{
+	for (auto& clientInfo : g_ncClientInfos)
+	{
+		if (NET_CompareAdr(clientInfo.cAddress, cAddr))
+		{
+			return clientInfo.pcClient.get();
+		}
+	}
+
+	return nullptr;
+}
+
+//------------------------------------------------------------------------------
 
 void SV_DestroyClient(const netadr_t& cAddr)
 {
@@ -634,22 +650,22 @@ void SV_GetPackets()
 {
 	while (NET_GetPacket(::net_message, ::net_from))
 	{
-		player_t &player = SV_FindPlayerByAddr();
-
-		if (!validplayer(player)) // no client with net_from address
+		client_t* client = SV_FindClient(::net_from);
+		if (client == nullptr) // no client with net_from address
 		{
 			// apparently, someone is trying to connect
 			if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+			{
 				SV_ConnectClient();
-
+			}
 			continue;
 		}
 		else
 		{
-			if(player.playerstate != PST_DISCONNECT)
+			if (client->state != client_t::state_e::disconnecting)
 			{
-				player.client->last_received = gametic;
-				SV_ParseMessages(player);
+				client->last_received = gametic;
+				SV_ParseMessages(*client->player);
 			}
 		}
 	}
@@ -1668,10 +1684,10 @@ std::string SV_BuildKillsDeathsStatusString(player_t& player)
 	std::string status;
 	char temp_str[100];
 
-	if (player.playerstate == PST_DOWNLOAD)
-		status = "downloading";
-	else if (player.playerstate == PST_DISCONNECT && player.spectator)
+	if (player.client->state == client_t::state_e::disconnecting && player.spectator)
+	{
 		status = "SPECTATOR";
+	}
 	else
 	{
 		if (G_IsTeamGame())
@@ -1711,7 +1727,7 @@ void SV_DisconnectClient(player_t &who)
 	std::string disconnectmessage;
 
 	// already gone though this procedure?
-	if (who.playerstate == PST_DISCONNECT)
+	if (who.client->state == client_t::state_e::disconnecting)
 		return;
 
 	// tell others clients about it
@@ -1724,7 +1740,7 @@ void SV_DisconnectClient(player_t &who)
 	Maplist_Disconnect(who);
 	Vote_Disconnect(who);
 
-	who.playerstate = PST_DISCONNECT;
+	who.client->state = client_t::state_e::disconnecting;
 
 	if (who.client->displaydisconnect)
 	{
@@ -2571,7 +2587,7 @@ void SV_SendPackets()
 	do
 	{
 		// [AM] Don't send packets to players who haven't acked packet 0
-		if (it->playerstate != PST_CONTACT)
+		if (it->client->state != client_t::state_e::connecting)
 		{
 			SV_SendQueuedPackets(*it->client);
 		}
@@ -3339,7 +3355,7 @@ void SV_RunTics()
 	// Remove any recently disconnected clients
 	for (Players::iterator it = players.begin(); it != players.end();)
 	{
-		if (it->playerstate == PST_DISCONNECT)
+		if (it->client->state == client_t::state_e::disconnecting)
 			it = SV_RemoveDisconnectedPlayer(it);
 		else
 			++it;

@@ -56,20 +56,8 @@
 //
 // Player states.
 //
-typedef enum
+enum playerstate_t
 {
-	// Connecting or hacking
-	PST_CONTACT,
-
-	// Stealing or pirating
-	PST_DOWNLOAD,
-
-	// Staling or loitering
-	PST_SPECTATE,
-
-	// Spying or remote server administration
-	PST_STEALTH_SPECTATE,
-
 	// Playing or camping.
 	PST_LIVE,
 
@@ -79,13 +67,9 @@ typedef enum
 	// Ready to restart/respawn???
 	PST_REBORN,
 
-	// These are cleaned up at the end of a frame
-	PST_DISCONNECT,
-
     // [BC] Entered the game
 	PST_ENTER
-
-} playerstate_t;
+};
 
 
 //

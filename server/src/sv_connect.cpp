@@ -122,7 +122,7 @@ static Players::iterator GetFreeClient(client_t* pClient)
 
 	players.emplace_back(player_t{});
 	players.back().client = pClient;
-	players.back().playerstate = PST_CONTACT;
+	players.back().playerstate = PST_LIVE;
 	pClient->player = &players.back();
 
 	// generate player id
@@ -367,9 +367,7 @@ void SV_ConnectClient2(player_t& player)
 
 	client_t* cl = player.client;
 
-	// [AM] FIXME: I don't know if it's safe to set players as PST_ENTER
-	//             this early.
-	player.playerstate = PST_LIVE;
+	player.client->state = client_t::state_e::connected;
 
 	// [Toke] send server settings
 	SV_SendServerSettings(player);

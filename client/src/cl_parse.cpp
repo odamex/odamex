@@ -1773,7 +1773,7 @@ static void CL_Say(const odaproto::svc::Say* msg)
 	if (!validplayer(player))
 		return;
 
-	bool spectator = player.spectator || player.playerstate == PST_DOWNLOAD;
+	bool spectator = player.spectator;
 
 	if (consoleplayer().id != player.id)
 	{
