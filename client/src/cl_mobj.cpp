@@ -150,9 +150,6 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	if (consoleplayer().camera == player.mo)
 		ST_Start();	// wake up the status bar
 
-	// [RH] If someone is in the way, kill them
-	P_TeleportMove(mobj, mobj->x, mobj->y, mobj->z, true);
-
 	// [BC] Do script stuff
 	if (serverside && level.behavior)
 	{
@@ -185,7 +182,7 @@ void P_ShowSpawns(mapthing2_t* mthing)
 			// [RK] If we're not using z-height spawns, spawn the fountain on the floor
 			spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS,
 				(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing->z << FRACBITS : ONFLOORZ), MT_FOUNTAIN);
-			
+
 			spawn->args[0] = 7; // White
 		}
 
@@ -199,7 +196,7 @@ void P_ShowSpawns(mapthing2_t* mthing)
 					// [RK] If we're not using z-height spawns, spawn the fountain on the floor
 					spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS,
 						(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing->z << FRACBITS : ONFLOORZ), MT_FOUNTAIN);
-					
+
 					spawn->args[0] = teamInfo->FountainColorArg;
 					break;
 				}

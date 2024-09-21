@@ -120,6 +120,16 @@ function(lib_build)
   endif()
 endfunction()
 
+### minilzo ###
+
+if(BUILD_CLIENT OR BUILD_SERVER)
+  message(STATUS "Compiling minilzo...")
+
+  add_library(minilzo STATIC
+      "minilzo/lzoconf.h" "minilzo/lzodefs.h" "minilzo/minilzo.c" "minilzo/minilzo.h")
+  target_include_directories(minilzo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/minilzo")
+endif()
+
 ### zlib ###
 
 if(BUILD_CLIENT OR BUILD_SERVER)
@@ -267,8 +277,11 @@ endif()
 if(BUILD_CLIENT)
   set(_FLTK_BUILDGEN_PARAMS
     "-DOPTION_USE_SYSTEM_LIBJPEG=OFF"
+    "-DOPTION_USE_SYSTEM_LIBPNG=OFF"
+    "-DOPTION_USE_SYSTEM_ZLIB=OFF"
     "-DOPTION_PRINT_SUPPORT=OFF"
     "-DOPTION_USE_GL=OFF"
+
     "-DFLTK_BUILD_TEST=OFF")
 
   if(USE_INTERNAL_ZLIB)

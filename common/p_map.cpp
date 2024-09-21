@@ -198,6 +198,22 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 	tmy = y;
 	tmz = z;
 
+	if (!P_IsVoodooDoll(thing))
+	{
+		player_t* player = thing->player;
+
+		if (player)
+		{
+			AActor* camera = player->camera;
+			if (camera)
+			{
+				camera->prevx = tmx;
+				camera->prevy = tmy;
+				player->prevviewz = tmz + player->viewheight;
+			}
+		}
+	}
+
 	tmbbox[BOXTOP] = y + tmthing->radius;
 	tmbbox[BOXBOTTOM] = y - tmthing->radius;
 	tmbbox[BOXRIGHT] = x + tmthing->radius;
@@ -411,8 +427,8 @@ BOOL PIT_CheckLine (line_t *ld)
     {
 		if ((ld->flags &
 		     (ML_BLOCKING | ML_BLOCKEVERYTHING)) || // explicitly blocking everything
-		    (!tmthing->player && (ld->flags & ML_BLOCKMONSTERS)) || // block monsters only
-		    (!tmthing->player && (ld->flags & ML_BLOCKLANDMONSTERS) &&
+		    (!tmthing->player && tmthing->type != MT_AVATAR && (ld->flags & ML_BLOCKMONSTERS)) || // block monsters only
+		    (!tmthing->player && tmthing->type != MT_AVATAR && (ld->flags & ML_BLOCKLANDMONSTERS) &&
 		     !(tmthing->flags & MF_FLOAT)) || // [Blair] Block land monsters.
 		    (tmthing->player &&
 		     (ld->flags & ML_BLOCKPLAYERS))) // [Blair] Block players only
@@ -651,7 +667,7 @@ static BOOL PIT_CheckThing (AActor *thing)
 			if (tmthing->info->ripsound)
 				S_Sound(tmthing, CHAN_VOICE, tmthing->info->ripsound, 1, ATTN_NORM);
 
-			P_DamageMobj(thing, tmthing, tmthing->target, damage);
+			P_DamageMobj(thing, tmthing, tmthing->target, damage, MOD_UNKNOWN);
 			if (thing->flags2 & MF2_PUSHABLE && !(tmthing->flags2 & MF2_CANNOTPUSH))
 			{ // Push thing
 				thing->momx += tmthing->momx >> 2;
@@ -680,8 +696,16 @@ static BOOL PIT_CheckThing (AActor *thing)
 						mod = MOD_BFG_BOOM;
 						break;
 					// [AM] Monster fireballs get a special MOD.
+				  // Unless they're from players
 					default:
-					    mod = MOD_FIREBALL;
+							if ((tmthing->target && tmthing->target->player) || !tmthing->target)
+							{
+						        mod = MOD_UNKNOWN;
+							}
+							else
+							{
+						        mod = MOD_FIREBALL;
+							}
 						break;
 				}
 				P_DamageMobj (thing, tmthing, tmthing->target, damage, mod);
@@ -697,12 +721,35 @@ static BOOL PIT_CheckThing (AActor *thing)
 		// [SL] Work-around the additional height added to players
 		// in P_CheckPosition. Don't let players grab items above
 		// their real height!
-		if (!P_AllowPassover() || !tmthing->player ||
-			thing->z < tmthing->z + tmthing->height - 24*FRACUNIT)
+
+		fixed_t max_z = tmthing->z + tmthing->height;
+
+		if (tmthing->player)
+			max_z -= 24 * FRACUNIT;
+
+		if (!P_AllowPassover() || thing->z < max_z)
 			P_TouchSpecialThing (thing, tmthing);	// can remove thing
+
+		return !solid;
 	}
 
-	return !solid;
+	// killough 3/16/98: Allow non-solid moving objects to move through solid
+	// ones, by allowing the moving thing (tmthing) to move if it's non-solid,
+	// despite another solid thing being in the way.
+	// killough 4/11/98: Treat no-clipping things as not blocking
+	// ...but not in demo_compatibility mode
+
+	// e6y
+	// Correction of wrong return value with demo_compatibility.
+	// There is no more synch on http://www.doomworld.com/sda/dwdemo/w303-115.zip
+	// (with correction in setMobjInfoValue)
+	if (demoplayback || !co_boomphys
+	    //&& !prboom_comp[PC_TREAT_NO_CLIPPING_THINGS_AS_NOT_BLOCKING].state
+			)
+		return !(thing->flags & MF_SOLID);
+	else
+		return !((thing->flags & MF_SOLID && !(thing->flags & MF_NOCLIP)) &&
+		         (tmthing->flags & MF_SOLID || (demoplayback || !co_boomphys)));
 }
 
 // This routine checks for Lost Souls trying to be spawned		// phares
@@ -2590,6 +2637,7 @@ void P_RailAttack (AActor *source, int damage, int offset)
 // [RH] PTR_CameraTraverse
 //
 fixed_t CameraX, CameraY, CameraZ;
+sector_t* CameraSector;
 #define CAMERA_DIST	0x1000	// Minimum distance between camera and walls
 
 BOOL PTR_CameraTraverse (intercept_t* in)
@@ -2680,6 +2728,7 @@ void P_AimCamera (AActor *t1)
 		fixed_t ceilingheight = P_CeilingHeight(x2, y2, subsector->sector) - CAMERA_DIST;
 		fixed_t floorheight = P_FloorHeight(x2, y2, subsector->sector) + CAMERA_DIST;
 		fixed_t frac = FRACUNIT;
+		CameraSector = subsector->sector;
 
 		if (CameraZ < floorheight) {
 			frac = FixedDiv (floorheight - shootz, CameraZ - shootz);

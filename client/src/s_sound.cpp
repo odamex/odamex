@@ -207,7 +207,7 @@ void S_NoiseDebug()
 // S_UseMap8Volume
 //
 // Determines if it is appropriate to use the special ExM8 attentuation
-// based on the current map number and the status of co_level8soundfeature
+// based on the current map number
 // [ML] Now based on whether co_zdoomsound is on or it's a multiplayer not-coop game
 //
 static bool S_UseMap8Volume()
@@ -414,7 +414,7 @@ static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
 	else
 	{
 		const float attenuation = static_cast<float>(SoundCurve[approx_dist >> FRACBITS]) / 128.0f;
-		
+
 		*vol = snd_sfxvolume * attenuation;
 
 		// angle of source to listener
@@ -1088,7 +1088,7 @@ void S_ChangeMusic(std::string musicname, int looping)
 	// [SL] Avoid caching music lumps if we're not playing music
 	if (snd_musicsystem == MS_NONE)
 		return;
-		
+
 	if (mus_playing.name == musicname)
 		return;
 
@@ -1227,7 +1227,7 @@ int FindSoundNoHash(const char* logicalname)
 	for (size_t i = 0; i < S_sfx.size(); i++)
 		if (iequals(logicalname, S_sfx[i].name))
 			return i;
-	
+
 	return S_sfx.size();
 }
 

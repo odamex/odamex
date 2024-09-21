@@ -232,7 +232,7 @@ class HordeState
 	/**
 	 * @brief Reset director state.
 	 */
-	void reset()
+	void reset(bool printWave)
 	{
 		setState(HS_STARTING);
 		m_wave = 1;
@@ -250,8 +250,12 @@ class HordeState
 		m_nextPowerup = ::level.time + (30 * TICRATE);
 		m_corpses.clear();
 
-		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
-		                   G_HordeDefine(m_defineID).name.c_str());
+		// Avoid printing wave name on boot and map switch.
+		if (printWave)
+		{
+			SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
+			                   G_HordeDefine(m_defineID).name.c_str());
+		}
 	}
 
 	/**
@@ -606,7 +610,7 @@ void HordeState::tick()
 				alive += 1;
 		}
 		if (!alive)
-		{			
+		{
 			// Start the next wave.
 			nextWave();
 			return;
@@ -718,6 +722,11 @@ void HordeState::tick()
 	}
 }
 
+void P_InitHorde()
+{
+	::g_HordeDirector.reset(false);
+}
+
 void P_NextSpawnTime(int& min, int& max)
 {
 	::g_HordeDirector.getNextSpawnTime(min, max);
@@ -800,23 +809,23 @@ void P_RunHordeTics()
 
 	if (::level.time == 0)
 	{
-		::g_HordeDirector.reset();
+		::g_HordeDirector.reset(true);
 	}
 
 	// Add our spawns if a level reload or reset erased our previous spawns.
 	if (!P_HordeHasSpawns())
 	{
 		P_HordeAddSpawns();
-		if (!P_HordeHasSpawns())
+		if (!P_HordeHasSpawns() || !P_HordeHasRequiredMonsterSpawns())
 		{
 			if (::level.time == 0)
 			{
 				Printf(
 				    PRINT_WARNING,
-				    "WARNING: This map is missing Horde Monster, Horde Supply Cache, "
+				    "WARNING: This map is missing Horde Monster, Horde Boss, Horde Supply Cache, "
 				    "or Horde Powerup spawns.  At least one of each must be present.\n");
 			}
-			
+
 			// This map has no horde things in it - probably inside a
 			// non-horde map.
 			return;
@@ -941,6 +950,12 @@ BEGIN_COMMAND(hordewave)
 		return;
 	}
 
+	if (!G_IsHordeMode())
+	{
+		Printf("Can't change the wave define outside of horde mode.\n");
+		return;
+	}
+
 	if (!::g_HordeDirector.forceWave(argv[1]))
 	{
 		Printf("Could not find wave define starting with \"%s\"\n", argv[1]);
@@ -950,12 +965,24 @@ END_COMMAND(hordewave)
 
 BEGIN_COMMAND(hordenextwave)
 {
+	if (!G_IsHordeMode())
+	{
+		Printf("Can't advance the wave outside of horde mode.\n");
+		return;
+	}
+
 	::g_HordeDirector.nextWave();
 }
 END_COMMAND(hordenextwave)
 
 BEGIN_COMMAND(hordeboss)
 {
+	if (!G_IsHordeMode())
+	{
+		Printf("Can't spawn a horde boss outside of horde mode.\n");
+		return;
+	}
+
 	if (::g_HordeDirector.forceBoss())
 	{
 		Printf("Spawned the boss.\n");
@@ -973,6 +1000,12 @@ EXTERN_CVAR(g_horde_goalhp)
 
 BEGIN_COMMAND(hordeinfo)
 {
+	if (!G_IsHordeMode())
+	{
+		Printf("Can't obtain horde info outside of horde mode.\n");
+		return;
+	}
+
 	float skillScaler = 1.0f;
 	if (sv_skill == sk_medium)
 		skillScaler = 0.75f;

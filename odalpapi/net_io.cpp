@@ -194,7 +194,7 @@ void BufferedSocket::SetRemoteAddress(const string& Address, const uint16_t& Por
 
 	m_RemoteAddress.sin_family = PF_INET;
 	m_RemoteAddress.sin_port = htons(Port);
-	m_RemoteAddress.sin_addr.s_addr = *((unsigned long*)&(((sockaddr_in*)result->ai_addr)->sin_addr));
+	m_RemoteAddress.sin_addr = ((sockaddr_in*)result->ai_addr)->sin_addr;
 	memset(m_RemoteAddress.sin_zero, '\0', sizeof m_RemoteAddress.sin_zero);
 
 	freeaddrinfo(result);

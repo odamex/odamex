@@ -48,6 +48,7 @@
 #include "p_setup.h"
 #include "r_data.h"
 #include "r_sky.h"
+#include "r_interp.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
 #include "st_stuff.h"
@@ -64,7 +65,6 @@
 void CL_ClearSectorSnapshots();
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
-void R_ResetInterpolation();
 
 EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_monstersrespawn)
@@ -137,14 +137,14 @@ BEGIN_COMMAND (wad) // denis - changes wads
 
 	C_HideConsole();
 
-	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	G_LoadWadString(str);
+	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
+	G_LoadWadString(wadstr);
 
 	D_StartTitle ();
 	CL_QuitNetGame(NQ_SILENT);
 	S_StopMusic();
 	currentmusic = gameinfo.titleMusic.c_str();
-	
+
 	S_StartMusic(currentmusic.c_str());
 }
 END_COMMAND (wad)
@@ -157,7 +157,7 @@ EXTERN_CVAR(sv_allowjump)
 
 //
 // G_DoNewGame
-// Is called whenever a new Singleplayer game will be started. 
+// Is called whenever a new Singleplayer game will be started.
 //
 void G_DoNewGame (void)
 {
@@ -291,7 +291,7 @@ void G_InitNew (const char *mapname)
 	viewactive = true;
 
 	D_SetupUserInfo();
-	
+
 	level.mapname = mapname;
 
 	// [AM}] WDL stats (for testing purposes)
@@ -330,8 +330,19 @@ static void goOn(int position)
 	}
 }
 
-void G_ExitLevel (int position, int drawscores)
+void G_ExitLevel (int position, int drawscores, bool resetinv)
 {
+	if (resetinv)
+	{
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (it->ingame())
+			{
+				it->doreborn = true;
+			}
+		}
+	}
+
 	secretexit = false;
 
 	goOn (position);
@@ -340,8 +351,19 @@ void G_ExitLevel (int position, int drawscores)
 }
 
 // Here's for the german edition.
-void G_SecretExitLevel (int position, int drawscores)
+void G_SecretExitLevel (int position, int drawscores, bool resetinv)
 {
+	if (resetinv)
+	{
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (it->ingame())
+			{
+				it->doreborn = true;
+			}
+		}
+	}
+
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gameinfo.flags & GI_MAPxx)
 		 && (W_CheckNumForName("map31")<0))
@@ -530,7 +552,7 @@ void G_DoLoadLevel (int position)
 		C_HideConsole();
 
 	// [SL] clear the saved sector data from the last level
-	R_ResetInterpolation();
+	OInterpolation::getInstance().resetGameInterpolation();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
@@ -544,11 +566,20 @@ void G_DoLoadLevel (int position)
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
-	sky1texture = R_TextureNumForName (level.skypic);
+	sky1texture = R_TextureNumForName (level.skypic.c_str());
+	sky1scrolldelta = level.sky1ScrollDelta;
+	sky1columnoffset = 0;
+	sky2columnoffset = 0;
 	if (!level.skypic2.empty())
-		sky2texture = R_TextureNumForName (level.skypic2);
+	{
+		sky2texture = R_TextureNumForName(level.skypic2.c_str());
+		sky2scrolldelta = level.sky2ScrollDelta;
+	}
 	else
+	{
 		sky2texture = 0;
+		sky2scrolldelta = 0;
+	}
 
 	// [RH] Set up details about sky rendering
 	R_InitSkyMap ();
@@ -678,7 +709,7 @@ void G_WorldDone()
 	// Sort out default options to pass to F_StartFinale
 	finale_options_t options = { 0 };
 	options.music = !level.intermusic.empty() ? level.intermusic.c_str() : thiscluster.messagemusic.c_str();
-	
+
 	if (!level.interbackdrop.empty())
 	{
 		options.flat = level.interbackdrop.c_str();
@@ -691,7 +722,7 @@ void G_WorldDone()
 	{
 		options.flat = &thiscluster.finaleflat[0];
 	}
-	
+
 	if (secretexit)
 	{
 		options.text = (!level.intertextsecret.empty()) ? level.intertextsecret.c_str() : thiscluster.exittext;

@@ -10,7 +10,7 @@ jobs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
@@ -21,14 +21,15 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install Python packages
-      uses: BSFishy/pip-action@v1
+      uses: insightsengineering/pip-action@v2
       with:
         packages: |
           b2sdk
+          PyNaCl
     - name: Prepare build
       run: .\ci\win-buildgen.ps1
     - name: Turn on problem matcher
@@ -37,6 +38,32 @@ jobs:
       run: cmake --build .\build\ --config RelWithDebInfo --parallel
     - name: Prepare artifact
       run: .\ci\win-artifact.ps1
+    - name: Stage artifacts for testing
+      run: .\ci\win-prepare-demotest.ps1
+    - name: Download OdaTests and Testing Resources
+      run: .\ci\win-get-demotester.ps1
+      env:
+        DEMOTESTER_URL: ${{ vars.DEMOTESTER_DOWNLOAD_URL }}
+        DEMORESOURCES_URL: ${{ vars.DEMORESOURCES_DOWNLOAD_URL }}
+      continue-on-error: true
+    - name: Decrypt IWADs
+      run: |
+        python .\secret.py decrypt plutonia
+        python .\secret.py decrypt tnt
+        python .\secret.py decrypt doom
+        python .\secret.py decrypt doom1
+        python .\secret.py decrypt doom2
+        python .\secret.py decrypt hacx
+      env:
+        SECRET_KEY: ${{ secrets.DEMOTESTER_IWAD_KEY }}
+      working-directory: .\build\demotester
+      continue-on-error: true
+    - name: Run OdaTests
+      run: python .\odatestcases.py
+      env:
+        ODAMEX_BIN: ..\demotest\odamex.exe
+      working-directory: .\build\demotester
+      continue-on-error: true
     - name: Upload artifact to B2
       run: python .\ci\upload-b2.py .\build\archive Win-x64
       env:
@@ -44,7 +71,7 @@ jobs:
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
         B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Upload artifact to Github
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-Win-x64
         path: 'build/artifact/*'
@@ -53,11 +80,11 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install Python packages
-      uses: BSFishy/pip-action@v1
+      uses: insightsengineering/pip-action@v2
       with:
         packages: |
           b2sdk
@@ -74,7 +101,7 @@ jobs:
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
         B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Upload artifact to Github
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-Win-x32
         path: 'build/artifact/*'

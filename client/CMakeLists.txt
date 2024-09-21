@@ -128,11 +128,6 @@ if(APPLE)
     ${AUDIOUNIT_LIBRARY})
 endif()
 
-# Set up FHS installation path
-if(NOT APPLE AND NOT WIN32)
-  add_definitions(-DINSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}")
-endif()
-
 # Client target
 if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
 
@@ -169,18 +164,26 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
       message(STATUS "Default SIMD flags not touched for AMD64")
     elseif(ODAMEX_TARGET_ARCH STREQUAL "i386")
       if(NOT MSVC)
-        # Pentium M has SSE2.
-        target_compile_definitions(odamex PRIVATE -march=pentium-m)
+        target_compile_options(odamex PRIVATE -msse2)
       else()
-        target_compile_definitions(odamex PRIVATE /arch:SSE2)
+        target_compile_options(odamex PRIVATE /arch:SSE2)
       endif()
       message(STATUS "Default SIMD flags set to SSE2")
     elseif(ODAMEX_TARGET_ARCH MATCHES "ppc")
-      target_compile_definitions(odamex PRIVATE -faltivec)
+      if(APPLE)
+        target_compile_options(odamex PRIVATE -faltivec)
+      else()
+        target_compile_options(odamex PRIVATE -maltivec)
+      endif()
       message(STATUS "Default SIMD flags set to AltiVec")
     endif()
   else()
     message(STATUS "Default SIMD flags not used on user request")
+  endif()
+
+  if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    message(STATUS "GNU Detected, forcing GCC to link math.h")
+    target_compile_options(odamex PRIVATE -lm)
   endif()
 
   if(MSVC)
@@ -214,6 +217,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   target_link_libraries(odamex ZLIB::ZLIB PNG::PNG)
+  target_link_libraries(odamex minilzo)
 
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 shlwapi)

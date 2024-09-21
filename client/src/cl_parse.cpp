@@ -63,6 +63,7 @@
 #include "p_mapformat.h"
 #include "infomap.h"
 #include "cl_replay.h"
+#include "r_interp.h"
 
 // Extern data from other files.
 
@@ -1143,6 +1144,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
 		// about players/sectors jumping to new positions when the displayplayer spawns
 		CL_ResyncWorldIndex();
+		OInterpolation::getInstance().resetBobInterpolation();
 	}
 
 	if (level.behavior && !p->spectator && p->playerstate == PST_LIVE)
@@ -2354,7 +2356,7 @@ static void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
 			break;
 		}
 		case SPC_Gravity:
-			*(int*)&sector->gravity = msg->sector().gravity();
+			*&sector->gravity = msg->sector().gravity();
 			break;
 		case SPC_Panning:
 			sector->ceiling_xoffs = msg->sector().ceiling_offs().x();

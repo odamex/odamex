@@ -260,7 +260,7 @@ CVAR(				cl_disconnectalert, "1", "Plays a sound when a player quits",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE			(cl_chatsounds, "1", "Plays a sound when a chat message appears (0 = never, 1 = always, " \
-					"2 = only teamchat)", 
+					"2 = only teamchat)",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
 CVAR_RANGE(			cl_switchweapon, "1", "Switch upon weapon pickup (0 = never, 1 = always, " \
@@ -309,7 +309,7 @@ CVAR (joy_fastsensitivity, "15.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR
 CVAR (joy_freelook, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE (joy_deadzone, "0.34", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,  0.0f, 1.0f)
+CVAR_RANGE (joy_deadzone, "0.20", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,  0.0f, 0.75f)
 
 CVAR_RANGE(joy_lefttrigger_deadzone, "0.2", "Sets the required pressure to trigger a press on the left trigger (Analog controllers only)",
 					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.01f, 1.0f)
@@ -407,7 +407,7 @@ CVAR(				chasedemo, "0", "",
 CVAR(				cl_run, "1", "Always run",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)		// Always run? // [Toke - Defaults]
 
-CVAR(in_autosr50, "1", "+strife activates automatic SR50", CVARTYPE_BOOL,
+CVAR(in_autosr50, "1", "+strafe activates automatic SR50", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
 
 CVAR(				cl_showspawns, "0", "Show spawn points as particle fountains",
@@ -577,6 +577,10 @@ CVAR(hud_feedobits, "1", "Show obituaries in the event feed.", CVARTYPE_BOOL,
 
 CVAR(hud_hordeinfo_debug, "0", "Show debugging information for horde.", CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR_RANGE(hud_extendedinfo, "0",
+		   "Show kills, items, and secrets:\n// 0: Off\n// 1: DIGFONT\n// 2: SMALLFONT\n// 3: DIGFONT, vertical arrangement\n// 4: SMALLFONT, vertical arrangement",
+		   CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0, 4.0)
+
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                       // A
 CVAR (chatmacro1, "I'm ready to kick butt!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)   // B
@@ -736,8 +740,8 @@ CVAR_RANGE(		r_wipetype, "1", "",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 #endif
 
-CVAR(			r_showendoom, "0", "Display the ENDDOOM text after quitting",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)   // [ML] 1/5/10: Add endoom support
+CVAR_RANGE(		r_showendoom, "0", "Display the ENDDOOM text after quitting",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)   // [ML] 1/5/10: Add endoom support
 
 CVAR(			r_loadicon, "1", "Display the disk icon when loading data from disk",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)

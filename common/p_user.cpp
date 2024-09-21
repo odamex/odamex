@@ -26,6 +26,8 @@
 
 #include "odamex.h"
 
+#include <ctime>
+
 #include <limits.h>
 
 #include "cmdlib.h"
@@ -434,6 +436,8 @@ void P_CalcHeight (player_t *player)
 		if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
 			player->viewz = player->mo->ceilingz-4*FRACUNIT;
 
+		if (player->prevviewz == 1) // don't interp first frame
+			player->prevviewz = player->viewz;
 		return;
 	}
 
@@ -478,6 +482,9 @@ void P_CalcHeight (player_t *player)
 		player->viewz = player->mo->ceilingz-4*FRACUNIT;
 	if (player->viewz < player->mo->floorz + 4*FRACUNIT)
 		player->viewz = player->mo->floorz + 4*FRACUNIT;
+
+	if (player->prevviewz == 1) // don't interp first frame
+		player->prevviewz = player->viewz;
 }
 
 //
@@ -1082,6 +1089,28 @@ void P_PlayerThink (player_t *player)
 
 #define CASE_STR(str) case str : return #str
 
+fixed_t P_TickWeaponBobX()
+{
+	// Update bob - this happens once per gametic
+	player_t& player = displayplayer();
+	const float bob_amount =
+		((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob
+		: 1.0f;
+
+	return P_CalculateWeaponBobX(&player, bob_amount);
+}
+
+fixed_t P_TickWeaponBobY()
+{
+	// Update bob - this happens once per gametic
+	player_t& player = displayplayer();
+		const float bob_amount =
+		((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob
+		: 1.0f;
+
+	return P_CalculateWeaponBobY(&player, bob_amount);
+}
+
 const char* PlayerState(size_t state)
 {
 	statenum_t st = static_cast<statenum_t>(state);
@@ -1321,7 +1350,6 @@ player_s::player_s() :
 	ping(0),
 	last_received(0),
 	tic(0),
-	missingticcmdcount(0),
 	snapshots(PlayerSnapshotManager()),
 	spying(0),
 	spectator(false),
@@ -1441,8 +1469,6 @@ player_s &player_s::operator =(const player_s &other)
 	last_received = other.last_received;
 
 	tic = other.tic;
-	missingticcmdcount = other.missingticcmdcount;
-
 	spying = other.spying;
 	spectator = other.spectator;
 //	deadspectator = other.deadspectator;

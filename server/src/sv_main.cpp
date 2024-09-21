@@ -103,7 +103,6 @@ bool keysfound[NUMCARDS];		// Ch0wW : Found keys
 EXTERN_CVAR(sv_motd)
 EXTERN_CVAR(sv_hostname)
 EXTERN_CVAR(sv_email)
-EXTERN_CVAR(sv_website)
 EXTERN_CVAR(sv_waddownload)
 EXTERN_CVAR(sv_maxrate)
 EXTERN_CVAR(sv_emptyreset)
@@ -127,6 +126,7 @@ void P_PlayerLeavesGame(player_s* player);
 bool P_LineSpecialMovesSector(short special);
 
 void SV_UpdateShareKeys(player_t& player);
+std::string SV_BuildKillsDeathsStatusString(player_t& player);
 std::string V_GetTeamColor(UserInfo userinfo);
 
 CVAR_FUNC_IMPL (sv_maxclients)
@@ -183,7 +183,10 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 					             SVC_PlayerMembers(*it, SVC_PM_SPECTATOR));
 				}
 
-				SV_BroadcastPrintf ("%s became a spectator.\n", it->userinfo.netname.c_str());
+				std::string status = SV_BuildKillsDeathsStatusString(*it);
+				SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator. (%s)\n",
+					it->userinfo.netname.c_str(), status.c_str());
+
 				MSG_WriteSVC(
 				    &it->client.reliablebuf,
 				    SVC_Print(PRINT_CHAT,
@@ -264,23 +267,10 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 		Printf(PRINT_HIGH, "RCON password set.");
 }
 
-
-EXTERN_CVAR(sv_waddownloadcap)
 CVAR_FUNC_IMPL(sv_maxrate)
 {
-	// sv_waddownloadcap can not be larger than sv_maxrate
-	if (sv_waddownloadcap > var)
-		sv_waddownloadcap.Set(var);
-
 	for (Players::iterator it = players.begin();it != players.end();++it)
 		it->client.rate = int(sv_maxrate);
-}
-
-CVAR_FUNC_IMPL (sv_waddownloadcap)
-{
-	// sv_waddownloadcap can not be larger than sv_maxrate
-	if (var > sv_maxrate)
-		var.Set(sv_maxrate);
 }
 
 CVAR_FUNC_IMPL(sv_sharekeys)
@@ -1166,6 +1156,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 		return true;
 	}
 
+
 	return false;
 }
 
@@ -1383,7 +1374,7 @@ void SV_LineStateUpdate(client_t *cl)
 
 		if (!line->SidedefChanged)
 			continue;
-		
+
 		for (int sideNum = 0; sideNum < 2; sideNum++)
 		{
 			if (line->sidenum[sideNum] != R_NOSIDE)
@@ -1793,7 +1784,7 @@ void SV_ConnectClient()
 
 	SZ_Clear(&cl->netbuf);
 	SZ_Clear(&cl->reliablebuf);
-	
+
 	for (size_t i = 0; i < ARRAY_LENGTH(cl->oldpackets); i++)
 	{
 		cl->oldpackets[i].sequence = -1;
@@ -1803,7 +1794,7 @@ void SV_ConnectClient()
 	cl->sequence = 0;
 	cl->last_sequence = -1;
 	cl->packetnum = 0;
-	
+
 	// generate a random string
 	std::stringstream ss;
 	ss << time(NULL) << level.time << VERSION << NET_AdrToString(net_from);
@@ -1924,11 +1915,55 @@ void SV_ConnectClient2(player_t& player)
 	}
 
 	// Notify this player of other player's queue positions
-	SV_SendPlayerQueuePositions(&player, true); 
+	SV_SendPlayerQueuePositions(&player, true);
 
 	// Send out the server's MOTD.
 	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
 }
+
+
+//
+// SV_BuildKillsDeathsStatusString
+//
+std::string SV_BuildKillsDeathsStatusString(player_t& player)
+{
+	std::string status;
+	char temp_str[100];
+
+	if (player.playerstate == PST_DOWNLOAD)
+		status = "downloading";
+	else if (player.playerstate == PST_DISCONNECT && player.spectator)
+		status = "SPECTATOR";
+	else
+	{
+		if (G_IsTeamGame())
+		{
+			sprintf(temp_str, "%s TEAM, ", GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str());
+			status += temp_str;
+		}
+
+		// Points (CTF).
+		if (sv_gametype == GM_CTF)
+		{
+			sprintf(temp_str, "%d POINTS, ", player.points);
+			status += temp_str;
+		}
+
+		// Frags (DM/TDM/CTF) or Kills (Coop).
+		if (G_IsCoopGame())
+			sprintf(temp_str, "%d KILLS, ", player.killcount);
+		else
+			sprintf(temp_str, "%d FRAGS, ", player.fragcount);
+
+		status += temp_str;
+
+		// Deaths.
+		sprintf(temp_str, "%d DEATHS", player.deathcount);
+		status += temp_str;
+	}
+	return status;
+}
+
 
 //
 // SV_DisconnectClient
@@ -1952,43 +1987,12 @@ void SV_DisconnectClient(player_t &who)
 	Maplist_Disconnect(who);
 	Vote_Disconnect(who);
 
+	who.playerstate = PST_DISCONNECT;
+
 	if (who.client.displaydisconnect)
 	{
 		// print some final stats for the disconnected player
-		std::string status;
-		if (who.playerstate == PST_DOWNLOAD)
-			status = "downloading";
-		else if (who.spectator)
-			status = "SPECTATOR";
-		else
-		{
-			if (G_IsTeamGame())
-			{
-				sprintf(str, "%s TEAM, ", GetTeamInfo(who.userinfo.team)->ColorStringUpper.c_str());
-				status += str;
-			}
-
-			// Points (CTF).
-			if (sv_gametype == GM_CTF)
-			{
-				sprintf(str, "%d POINTS, ", who.points);
-				status += str;
-			}
-
-			// Frags (DM/TDM/CTF) or Kills (Coop).
-			if (G_IsCoopGame())
-				sprintf(str, "%d KILLS, ", who.killcount);
-			else
-				sprintf(str, "%d FRAGS, ", who.fragcount);
-
-			status += str;
-
-			// Deaths.
-			sprintf(str, "%d DEATHS", who.deathcount);
-			status += str;
-		}
-
-		// Name and reason for disconnect.
+		std::string status = SV_BuildKillsDeathsStatusString(who);
 		if (gametic - who.client.last_received == CLIENT_TIMEOUT*35)
 			SV_BroadcastPrintf("%s timed out. (%s)\n",
 							who.userinfo.netname.c_str(), status.c_str());
@@ -1997,7 +2001,6 @@ void SV_DisconnectClient(player_t &who)
 							who.userinfo.netname.c_str(), status.c_str());
 	}
 
-	who.playerstate = PST_DISCONNECT;
 	SV_UpdatePlayerQueuePositions(G_CanJoinGame, &who);
 }
 
@@ -3204,38 +3207,34 @@ int SV_CalculateNumTiccmds(player_t &player)
 
 	static const size_t maximum_queue_size = TICRATE / 4;
 
-	if (!sv_ticbuffer || gamestate != GS_LEVEL || player.spectator || player.playerstate == PST_DEAD)
+	if (!sv_ticbuffer || player.spectator || player.playerstate == PST_DEAD)
 	{
 		// Process all queued ticcmds.
 		return maximum_queue_size;
 	}
-	if (player.missingticcmdcount > 0)
+	if (player.mo->momx == 0 && player.mo->momy == 0 && player.mo->momz == 0)
 	{
-		if (player.mo->momx == 0 && player.mo->momy == 0 && player.mo->momz == 0)
-		{
-			// Player is not moving
-			return 2;
-		}
-		if (player.cmdqueue.size() > 2 && gametic % (2*TICRATE) == player.id % (2*TICRATE))
-		{
-			// Process an extra ticcmd once every 2 seconds to reduce the
-			// queue size. Use player id to stagger the timing to prevent everyone
-			// from running an extra ticcmd at the same time.
-			return 2;
-		}
-		if (player.cmdqueue.size() > maximum_queue_size)
-		{
-			// The player experienced a large latency spike so try to catch up by
-			// processing more than one ticcmd at the expense of appearing perfectly
-			// smooth.
-			return 2;
-		}
+		// Player is not moving
+		return 2;
+	}
+	if (player.cmdqueue.size() > 2 && gametic % 2*TICRATE == player.id % 2*TICRATE)
+	{
+		// Process an extra ticcmd once every 2 seconds to reduce the
+		// queue size. Use player id to stagger the timing to prevent everyone
+		// from running an extra ticcmd at the same time.
+		return 2;
+	}
+	if (player.cmdqueue.size() > maximum_queue_size)
+	{
+		// The player experienced a large latency spike so try to catch up by
+		// processing more than one ticcmd at the expense of appearing perfectly
+		//  smooth
+		return 2;
 	}
 
 	// always run at least 1 ticcmd if possible
 	return 1;
 }
-
 
 //
 // SV_ProcessPlayerCmd
@@ -3265,9 +3264,6 @@ void SV_ProcessPlayerCmd(player_t &player)
 	DPrintf("Cmd queue size for %s: %d\n",
 				player.userinfo.netname, player.cmdqueue.size());
 	#endif	// _TICCMD_QUEUE_DEBUG_
-
-	if (player.cmdqueue.empty())
-		player.missingticcmdcount++;
 
 	int num_cmds = SV_CalculateNumTiccmds(player);
 
@@ -3310,7 +3306,6 @@ void SV_ProcessPlayerCmd(player_t &player)
 		}
 
 		player.cmdqueue.pop();		// remove this tic from the queue after being processed
-		player.missingticcmdcount--;
 	}
 }
 
@@ -3469,10 +3464,10 @@ void SV_SetPlayerSpec(player_t &player, bool setting, bool silent)
 }
 
 /**
- * @brief Have a player join the game.  Note that this function does no 
+ * @brief Have a player join the game.  Note that this function does no
  *        checking against maxplayers or round limits or whatever, that's
  *        the job of the caller.
- * 
+ *
  * @param player Player that should join the game.
  * @param silent True if the join should be done "silently".
 */
@@ -3579,7 +3574,11 @@ void SV_SpecPlayer(player_t &player, bool silent)
 	P_SetSpectatorFlags(player);
 
 	if (!silent)
-		SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator.\n", player.userinfo.netname.c_str());
+	{
+		std::string status = SV_BuildKillsDeathsStatusString(player);
+		SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator. (%s)\n",
+			player.userinfo.netname.c_str(), status.c_str());
+	}
 
 	P_PlayerLeavesGame(&player);
 	SV_UpdatePlayerQueuePositions(G_CanJoinGame, &player);
@@ -3687,11 +3686,11 @@ void SV_SetReady(player_t &player, bool setting, bool silent)
 
 /**
  * @brief Tell the client about any custom commands we have.
- * 
+ *
  * @detail A stock server is not expected to have any custom commands.
  *         Custom servers can implement their own features, and this is
  *         where you tell players about it.
- * 
+ *
  * @param player Player who asked for help.
  */
 static void HelpCmd(player_t& player)
@@ -3704,7 +3703,7 @@ static void HelpCmd(player_t& player)
 
 /**
  * @brief Toggle a player as ready/unready.
- * 
+ *
  * @param player Player to toggle.
  */
 static void ReadyCmd(player_t &player)
@@ -3750,7 +3749,7 @@ static void ReadyCmd(player_t &player)
 
 /**
  * @brief Send the player a MOTD on demand.
- * 
+ *
  * @param player Player who wants the MOTD.
  */
 void MOTDCmd(player_t& player)
@@ -3760,7 +3759,7 @@ void MOTDCmd(player_t& player)
 
 /**
  * @brief Interpret a "netcmd" string from a client.
- * 
+ *
  * @param player Player who sent the netcmd.
  */
 void SV_NetCmd(player_t& player)
@@ -3865,7 +3864,7 @@ void SV_Suicide(player_t &player)
 void SV_Cheat(player_t &player)
 {
 	byte cheatType = MSG_ReadByte();
-	
+
 	if (cheatType == 0)
 	{
 		unsigned int cheat = MSG_ReadShort();
@@ -4070,7 +4069,6 @@ void SV_ParseCommands(player_t &player)
 	 }
 }
 
-EXTERN_CVAR (sv_waddownloadcap)
 EXTERN_CVAR (sv_download_test)
 
 
@@ -4260,15 +4258,7 @@ void SV_RunTics()
 
 		if (!Maplist::instance().lobbyempty())
 		{
-			std::string wadstr;
-			for (size_t i = 0; i < lobby_entry.wads.size(); i++)
-			{
-				if (i != 0)
-				{
-					wadstr += " ";
-				}
-				wadstr += C_QuoteString(lobby_entry.wads.at(i));
-			}
+			std::string wadstr = C_EscapeWadList(lobby_entry.wads);
 			G_LoadWadString(wadstr, lobby_entry.map);
 		}
 		else

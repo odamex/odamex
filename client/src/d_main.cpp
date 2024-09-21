@@ -40,7 +40,7 @@
 #include <dirent.h>
 #endif
 
-#include <math.h>
+#include <cmath>
 
 
 #include "m_alloc.h"
@@ -121,6 +121,9 @@ gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 bool demotest = false;
 
 IWindowSurface* page_surface;
+
+static int page_height;
+static int page_width;
 
 static int demosequence;
 static int pagetic;
@@ -268,6 +271,7 @@ void D_Display()
 		case GS_CONNECTING:
         case GS_CONNECTED:
 			C_DrawConsole();
+			C_DisplayTicker();
 			M_Drawer();
 			I_FinishUpdate();
 			return;
@@ -344,6 +348,7 @@ void D_Display()
 		Wipe_Drawer();
 
 	C_DrawConsole();	// draw console
+	C_DisplayTicker(); // Display console tic
 	M_Drawer();			// menu is drawn even on top of everything
 	I_FinishUpdate();	// page flip or blit buffer
 
@@ -404,16 +409,30 @@ void D_PageDrawer()
 	{
 		int destw, desth;
 
-		if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight())) // Always fill/stretch pages on protected resolutions
+		{
 			destw = surface_width, desth = surface_height;
+		}
 		else if (surface_width * 3 >= surface_height * 4)
+		{
 			destw = surface_height * 4 / 3, desth = surface_height;
+		}
 		else
+		{
 			destw = surface_width, desth = surface_width * 3 / 4;
+		}
+
+		// Using widescreen assets? It may go off screen.
+		// Preserve the aspect ratio and make the box big
+		// Maybe too big? (it will be cropped if so)
+		if (page_width > 320)
+		{
+			destw = I_GetAspectCorrectWidth(desth, page_height, page_width);
+		}
 
 		page_surface->lock();
 
-		primary_surface->blit(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
+		primary_surface->blitcrop(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
 				(surface_width - destw) / 2, (surface_height - desth) / 2, destw, desth);
 
 		page_surface->unlock();
@@ -460,7 +479,7 @@ void D_DoAdvanceDemo (void)
 
             gamestate = GS_DEMOSCREEN;
             pagename = gameinfo.titlePage.c_str();
-            
+
             currentmusic = gameinfo.titleMusic.c_str();
 
             S_StartMusic(currentmusic.c_str());
@@ -491,7 +510,7 @@ void D_DoAdvanceDemo (void)
 					pagetic = 170;
                 pagename = gameinfo.titlePage.c_str();
                 currentmusic = gameinfo.titleMusic.c_str();
-                
+
                 S_StartMusic(currentmusic.c_str());
             }
             else
@@ -525,15 +544,18 @@ void D_DoAdvanceDemo (void)
 	{
 		const patch_t* patch = W_CachePatch(pagename);
 
+		page_width = patch->width();
+		page_height = patch->height() + (patch->height() / 5);
+
 		I_FreeSurface(page_surface);
 
 		if (gameinfo.flags & GI_PAGESARERAW)
 		{
-			page_surface = I_AllocateSurface(320, 200, 8);
+			page_surface = I_AllocateSurface(page_width, page_height, 8);
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
-            canvas->DrawBlock(0, 0, 320, 200, (byte*)patch);
+			canvas->DrawBlock(0, 0, page_width, page_height, (byte*)patch);
 			page_surface->unlock();
 		}
 		else
@@ -556,6 +578,8 @@ void STACK_ARGS D_Close()
 	I_FreeSurface(page_surface);
 
 	D_ClearTaskSchedulers();
+
+	page_height, page_width = 0;
 }
 
 //
@@ -682,7 +706,7 @@ void STACK_ARGS D_Shutdown()
 	// stop sound effects and music
 	S_Stop();
 	S_Deinit();
-	
+
 	// shutdown automap
 	AM_Stop();
 
@@ -801,6 +825,12 @@ void D_DoomMain()
 			scannedWADs_t wads = GUI_BootWindow();
 			iwad = wads.iwad;
 			pwads = wads.pwads;
+
+			for (StringTokens::iterator it = wads.options.begin();
+		    	 it != wads.options.end(); ++it)
+			{
+				Args.AppendArg((*it).c_str());
+			}
 		}
 	}
 
@@ -815,11 +845,23 @@ void D_DoomMain()
 
 	if (!pwads.empty())
 	{
+		const std::vector<std::string>& wad_exts = M_FileTypeExts(OFILE_WAD);
+		const std::vector<std::string>& deh_exts = M_FileTypeExts(OFILE_DEH);
 		for (size_t i = 0; i < pwads.size(); i++)
 		{
 			OWantFile file;
-			OWantFile::make(file, pwads[i], OFILE_WAD);
-			newwadfiles.push_back(file);
+			OWantFile::make(file, pwads[i], OFILE_UNKNOWN);
+			const std::string extension = StdStringToUpper(file.getExt());
+			if (std::find(deh_exts.begin(), deh_exts.end(), extension) != deh_exts.end())
+			{
+				OWantFile::make(file, pwads[i], OFILE_DEH);
+				newpatchfiles.push_back(file);
+			}
+			if (std::find(wad_exts.begin(), wad_exts.end(), extension) != wad_exts.end())
+			{
+				OWantFile::make(file, pwads[i], OFILE_WAD);
+				newwadfiles.push_back(file);
+			}
 		}
 	}
 
@@ -854,11 +896,11 @@ void D_DoomMain()
 
 	if (devparm)
 		Printf(PRINT_HIGH, "%s", GStrings(D_DEVSTR));        // D_DEVSTR
- 
+
 	// set the default value for vid_ticker based on the presence of -devparm
 	if (devparm)
 		vid_ticker.SetDefault("1");
- 
+
 	// Nomonsters
 	sv_nomonsters = Args.CheckParm("-nomonsters");
 
@@ -997,7 +1039,7 @@ void D_DoomMain()
 		Printf(PRINT_HIGH, "Type connect <address> or use the Odamex Launcher to connect to a game.\n");
     Printf(PRINT_HIGH, "\n");
 
-	// Play a demo, start a map, or show the title screen	
+	// Play a demo, start a map, or show the title screen
 	if (singledemo)
 	{
 		G_DoPlayDemo();
