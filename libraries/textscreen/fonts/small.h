@@ -2,6 +2,7 @@
    Please see textscreen/fonts/README for copyright
    information. */
 
+#include <string>
 static const uint8_t small_font_data[] =
 {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x4e, 0x00,
@@ -136,5 +137,5 @@ static const uint8_t small_font_data[] =
 
 static const txt_font_t small_font =
 {
-    "small", small_font_data, 4, 8,
+    (char*)"small", small_font_data, 4, 8,
 };

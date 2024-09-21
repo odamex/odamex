@@ -60,7 +60,7 @@ SDL_Window *TXT_SDLWindow;
 static SDL_Surface *screenbuffer;
 static SDL_Renderer *renderer;
 #endif
-static _Notnull_ unsigned char* screendata;
+static unsigned char* screendata;
 static int key_mapping = 1;
 
 // Dimensions of the screen image in screen coordinates (not pixels); this
