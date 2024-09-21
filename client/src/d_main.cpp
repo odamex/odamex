@@ -479,7 +479,7 @@ void D_DoAdvanceDemo (void)
 
             gamestate = GS_DEMOSCREEN;
             pagename = gameinfo.titlePage.c_str();
-            
+
             currentmusic = gameinfo.titleMusic.c_str();
 
             S_StartMusic(currentmusic.c_str());
@@ -510,7 +510,7 @@ void D_DoAdvanceDemo (void)
 					pagetic = 170;
                 pagename = gameinfo.titlePage.c_str();
                 currentmusic = gameinfo.titleMusic.c_str();
-                
+
                 S_StartMusic(currentmusic.c_str());
             }
             else
@@ -706,7 +706,7 @@ void STACK_ARGS D_Shutdown()
 	// stop sound effects and music
 	S_Stop();
 	S_Deinit();
-	
+
 	// shutdown automap
 	AM_Stop();
 
@@ -845,11 +845,23 @@ void D_DoomMain()
 
 	if (!pwads.empty())
 	{
+		const std::vector<std::string>& wad_exts = M_FileTypeExts(OFILE_WAD);
+		const std::vector<std::string>& deh_exts = M_FileTypeExts(OFILE_DEH);
 		for (size_t i = 0; i < pwads.size(); i++)
 		{
 			OWantFile file;
-			OWantFile::make(file, pwads[i], OFILE_WAD);
-			newwadfiles.push_back(file);
+			OWantFile::make(file, pwads[i], OFILE_UNKNOWN);
+			const std::string extension = StdStringToUpper(file.getExt());
+			if (std::find(deh_exts.begin(), deh_exts.end(), extension) != deh_exts.end())
+			{
+				OWantFile::make(file, pwads[i], OFILE_DEH);
+				newpatchfiles.push_back(file);
+			}
+			if (std::find(wad_exts.begin(), wad_exts.end(), extension) != wad_exts.end())
+			{
+				OWantFile::make(file, pwads[i], OFILE_WAD);
+				newwadfiles.push_back(file);
+			}
 		}
 	}
 
@@ -884,7 +896,7 @@ void D_DoomMain()
 
 	if (devparm)
 		Printf(PRINT_HIGH, "%s", GStrings(D_DEVSTR));        // D_DEVSTR
- 
+
 	// set the default value for vid_ticker based on the presence of -devparm
 	if (devparm)
 		vid_ticker.SetDefault("1");
@@ -1027,7 +1039,7 @@ void D_DoomMain()
 		Printf(PRINT_HIGH, "Type connect <address> or use the Odamex Launcher to connect to a game.\n");
     Printf(PRINT_HIGH, "\n");
 
-	// Play a demo, start a map, or show the title screen	
+	// Play a demo, start a map, or show the title screen
 	if (singledemo)
 	{
 		G_DoPlayDemo();

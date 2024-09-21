@@ -13,7 +13,7 @@ printf "GITHUB_EVENT_PATH=%s\n" "${GITHUB_EVENT_PATH}"
 
 if [[ $GITHUB_EVENT_NAME != "pull_request" ]]; then
     echo "==> Event is not a pull request, build will proceed."
-    echo "::set-output name=should_skip::false"
+    echo "should_skip=false" >> $GITHUB_OUTPUT
     exit 0
 fi
 
@@ -22,10 +22,10 @@ printf "GITHUB_PR_REPOSITORY=%s\n" "${GITHUB_PR_REPOSITORY}"
 
 if [[ $GITHUB_REPOSITORY != $GITHUB_PR_REPOSITORY ]]; then
     echo "==> Pull request came from an outside repository, build will proceed."
-    echo "::set-output name=should_skip::false"
+    echo "should_skip=false" >> $GITHUB_OUTPUT
     exit 0
 fi
 
 echo "==> Internal pull request detected, skipping build."
-echo "::set-output name=should_skip::true"
+echo "should_skip=true" >> $GITHUB_OUTPUT
 exit 0

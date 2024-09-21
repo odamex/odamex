@@ -810,6 +810,22 @@ std::string C_QuoteString(const std::string &argstr)
 	return buffer.str();
 }
 
+// Take a string of inputted WADs and escape them indvidually
+// and add a space before loading them into the system.
+std::string C_EscapeWadList(const std::vector<std::string> wadlist)
+{
+	std::string wadstr;
+	for (size_t i = 0; i < wadlist.size(); i++)
+	{
+		if (i != 0)
+		{
+			wadstr += " ";
+		}
+		wadstr += C_QuoteString(wadlist.at(i));
+	}
+	return wadstr;
+}
+
 static int DumpHash (BOOL aliases)
 {
 	int count = 0;

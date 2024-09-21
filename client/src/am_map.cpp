@@ -1880,9 +1880,17 @@ void AM_Drawer()
 		{
 			if (am_showmonsters)
 			{
-				StrFormat(line, TEXTCOLOR_RED "MONSTERS:" TEXTCOLOR_NORMAL " %d / %d",
+				if (G_IsHordeMode())
+				{
+					StrFormat(line, TEXTCOLOR_RED "MONSTERS:" TEXTCOLOR_NORMAL " %d",
+				        level.killed_monsters);
+				}
+				else
+				{
+					StrFormat(line, TEXTCOLOR_RED "MONSTERS:" TEXTCOLOR_NORMAL " %d / %d",
 				        level.killed_monsters,
 				        (level.total_monsters + level.respawned_monsters));
+				}
 
 				int x, y;
 				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
@@ -1891,6 +1899,10 @@ void AM_Drawer()
 				{
 					x = surface_width - text_width;
 					y = OV_Y - (text_height * 4) + 1;
+					if (G_IsHordeMode())
+					{
+						y -= text_height * 2;
+					}
 				}
 				else
 				{
@@ -1901,7 +1913,7 @@ void AM_Drawer()
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 			}
 
-			if (am_showitems)
+			if (am_showitems && !G_IsHordeMode())
 			{
 				StrFormat(line, TEXTCOLOR_RED "ITEMS:" TEXTCOLOR_NORMAL " %d / %d",
 				        level.found_items,
@@ -1924,7 +1936,7 @@ void AM_Drawer()
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 			}
 
-			if (am_showsecrets)
+			if (am_showsecrets && !G_IsHordeMode())
 			{
 				StrFormat(line, TEXTCOLOR_RED "SECRETS:" TEXTCOLOR_NORMAL " %d / %d",
 				        level.found_secrets, level.total_secrets);
@@ -1969,7 +1981,7 @@ void AM_Drawer()
 				break;
 			}
 
-			line += GStrings.getIndex(firstmap + level.levelnum - mapoffset);
+			line = GStrings.getIndex(firstmap + level.levelnum - mapoffset);
 
 			int x, y;
 			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
@@ -1978,6 +1990,10 @@ void AM_Drawer()
 			{
 				x = surface_width - text_width;
 				y = OV_Y - (text_height * 1) + 1;
+				if (G_IsHordeMode())
+				{
+					y -= text_height * 3;
+				}
 			}
 			else
 			{
@@ -2019,6 +2035,10 @@ void AM_Drawer()
 			{
 				x = surface_width - text_width;
 				y = OV_Y - (text_height * 1) + 1;
+				if (G_IsHordeMode())
+				{
+					y -= text_height * 3;
+				}
 			}
 			else
 			{
@@ -2046,6 +2066,10 @@ void AM_Drawer()
 			{
 				x = surface_width - text_width;
 				y = OV_Y - (text_height * 1) + 1;
+			}
+			if (G_IsHordeMode())
+			{
+				y -= text_height * 3;
 			}
 
 			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
