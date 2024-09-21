@@ -245,7 +245,7 @@ void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 		if (os.compareTokenNoCase("="))
 		{
 			info.must_confirm_text.clear();
-			
+
 			do
 			{
 				os.mustScan();
@@ -294,6 +294,7 @@ void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 			os.unScan();
 		}
 	}
+	StringTable::replaceEscapes(info.must_confirm_text);
 }
 
 // Sets the inputted data as a char
@@ -565,7 +566,18 @@ void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int fla
 {
 	ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
 
-	*static_cast<OLumpName*>(data) = os.getToken();
+	level_pwad_info_t& info = *static_cast<level_pwad_info_t*>(data);
+
+	std::string pic = os.getToken();
+
+	if (flags == 1)
+	{
+		info.skypic = pic;
+	}
+	else
+	{
+		info.skypic2 = pic;
+	}
 
 	os.scan();
 	// Scroll speed
@@ -575,14 +587,14 @@ void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int fla
 	}
 	if (IsRealNum(os.getToken().c_str()))
 	{
-		/*if (HexenHack)
+		if (flags == 1)
 		{
-		    *((fixed_t *)(info + handler->data2)) = sc_Number << 8;
+			info.sky1ScrollDelta = FLOAT2FIXED(os.getTokenFloat());
 		}
-		 else
+		else
 		{
-		    *((fixed_t *)(info + handler->data2)) = (fixed_t)(sc_Float * 65536.0f);
-		}*/
+			info.sky2ScrollDelta = FLOAT2FIXED(os.getTokenFloat());
+		}
 	}
 	else
 	{
@@ -731,8 +743,22 @@ void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 	if (IsNum(os.getToken().c_str()))
 	{
 		const int num = os.getTokenInt();
-		if (num > 0)
-			*static_cast<int*>(data) |= (1 << (num - 1));
+		switch (num)
+		{
+			case 1:
+			case 2:
+				*static_cast<int*>(data) |= 1;
+				break;
+			case 3:
+				*static_cast<int*>(data) |= 2;
+				break;
+			case 4:
+			case 5:
+				*static_cast<int*>(data) |= 4;
+				break;
+			default:
+				return;
+		}
 	}
 	else
 	{
@@ -759,7 +785,7 @@ void MIType_Map07Special(OScanner& os, bool newStyleMapInfo, void* data, unsigne
 	// mancubus
 	bossactionvector.push_back(bossaction_t());
 	std::vector<bossaction_t>::iterator it = (bossactionvector.end() - 1);
-	
+
 	it->type = MT_FATSO;
 	it->special = 23;
 	it->tag = 666;
@@ -767,7 +793,7 @@ void MIType_Map07Special(OScanner& os, bool newStyleMapInfo, void* data, unsigne
 	// arachnotron
 	bossactionvector.push_back(bossaction_t());
 	it = (bossactionvector.end() - 1);
-	
+
 	it->type = MT_BABY;
 	it->special = 30;
 	it->tag = 667;
@@ -938,7 +964,7 @@ bool ScanAndSetRealNum(OScanner& os, fixed_t& num)
 		return false;
 	}
 	num = FLOAT2FIXED(os.getTokenFloat());
-	
+
 	return true;
 }
 
@@ -958,12 +984,12 @@ bool InterpretLines(const std::string& name, std::vector<mline_t>& lines)
 		    true,         // cComments
 		};
 		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
-		
+
 		while (os.scan())
 		{
 			os.unScan();
 			mline_t ml;
-			
+
 			if (!ScanAndCompareString(os, "(")) break;
 			if (!ScanAndSetRealNum(os, ml.a.x)) break;
 			if (!ScanAndCompareString(os, ",")) break;
@@ -1082,12 +1108,11 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY3("secretnext", &MIType_MapName, &ref.secretmap)
 		ENTRY3("secret", &MIType_MapName, &ref.secretmap)
 		ENTRY3("cluster", &MIType_Cluster, &ref.cluster)
-		ENTRY3("sky1", &MIType_Sky, &ref.skypic)
-		ENTRY3("sky2", &MIType_Sky, &ref.skypic2)
+		ENTRY4("sky1", &MIType_Sky, &ref, 1)
+		ENTRY4("sky2", &MIType_Sky, &ref, 2)
 		ENTRY3("fade", &MIType_Color, &ref.fadeto_color)
 		ENTRY3("outsidefog", &MIType_Color, &ref.outsidefog_color)
 		ENTRY3("titlepatch", &MIType_LumpName, &ref.pname)
-		ENTRY3("par", &MIType_Int, &ref.partime)
 		ENTRY3("music", &MIType_MusicLumpName, &ref.music)
 		ENTRY4("nointermission", &MIType_SetFlag, &ref.flags, LEVEL_NOINTERMISSION)
 		ENTRY4("doublesky", &MIType_SetFlag, &ref.flags, LEVEL_DOUBLESKY)
@@ -1135,7 +1160,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 		ENTRY2("interpic", &MIType_EatNext)
 		ENTRY2("translator", &MIType_EatNext)
 		ENTRY3("compat_shorttex", &MIType_CompatFlag, &ref.flags) // todo: not implemented
-		ENTRY3("compat_limitpain", &MIType_CompatFlag, &ref.flags) // todo: not implemented
+		ENTRY4("compat_limitpain", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_LIMITPAIN)
 		ENTRY3("compat_useblocking", &MIType_CompatFlag, &ref.flags) // special lines block use (not implemented, default odamex behavior)
 		ENTRY3("compat_missileclip", &MIType_CompatFlag, &ref.flags) // original height monsters when it comes to missiles (not implemented)
 		ENTRY4("compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF)
@@ -1595,7 +1620,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				    LEVEL_NOINTERMISSION | LEVEL_EVENLIGHTING | LEVEL_SNDSEQTOTALCTRL;
 			}
 
-			// Build upon already defined levels, that way we don't miss any defaults 
+			// Build upon already defined levels, that way we don't miss any defaults
 			bool levelExists = levels.findByName(map_name).exists();
 
 			// Find the level.
@@ -1632,6 +1657,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 			{
 				info.level_name = os.getToken();
 			}
+			info.pname.clear();
 
 			MapInfoDataSetter<level_pwad_info_t> setter(info);
 			ParseMapInfoLower<level_pwad_info_t>(os, setter);

@@ -692,7 +692,8 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 void P_SpawnDoorCloseIn30 (sector_t *sec)
 {
 	DDoor *door = new DDoor (sec);
-	P_AddMovingCeiling(sec);	
+	P_AddMovingCeiling(sec);
+	specialdoors.push_back(sec);
 
 	sec->special = 0;
 
@@ -710,6 +711,7 @@ void P_SpawnDoorRaiseIn5Mins (sector_t *sec)
 {
 	DDoor *door = new DDoor (sec);
 	P_AddMovingCeiling(sec);
+	specialdoors.push_back(sec);
 
 	sec->special = 0;
 

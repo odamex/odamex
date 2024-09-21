@@ -422,7 +422,7 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname)
 
 		// Does this look like a DeHackEd patch?
 		bool is_deh =
-		    std::find(deh_exts.begin(), deh_exts.end(), file.getExt()) != deh_exts.end();
+		    std::find(deh_exts.begin(), deh_exts.end(), StdStringToUpper(file.getExt())) != deh_exts.end();
 		if (is_deh)
 		{
 			if (!OWantFile::make(file, ::com_token, OFILE_DEH))
@@ -439,7 +439,7 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname)
 
 		// Does this look like a WAD file?
 		bool is_wad =
-		    std::find(wad_exts.begin(), wad_exts.end(), file.getExt()) != wad_exts.end();
+		    std::find(wad_exts.begin(), wad_exts.end(), StdStringToUpper(file.getExt())) != wad_exts.end();
 		if (is_wad)
 		{
 			if (!OWantFile::make(file, ::com_token, OFILE_WAD))
@@ -794,7 +794,7 @@ void G_InitLevelLocals()
 	::level.info = (level_info_t*)&info;
 	::level.skypic2 = info.skypic2;
 	memcpy(::level.fadeto_color, info.fadeto_color, 4);
-	
+
 	if (::level.fadeto_color[0] || ::level.fadeto_color[1] || ::level.fadeto_color[2] || ::level.fadeto_color[3])
 	{
 		NormalLight.maps = shaderef_t(&V_GetDefaultPalette()->maps, 0);
@@ -823,7 +823,7 @@ void G_InitLevelLocals()
 	ArrayCopy(::level.level_fingerprint, info.level_fingerprint);
 
 	// Only copy the level name if there's a valid level name to be copied.
-	
+
 	if (!info.level_name.empty())
 	{
 		// Get rid of initial lump name or level number.
@@ -844,7 +844,7 @@ void G_InitLevelLocals()
 		{
 			std::string search;
 			StrFormat(search, "%u: ", info.levelnum);
-			
+
 			const std::size_t pos = info.level_name.find(search);
 
 			if (pos != std::string::npos)
@@ -885,6 +885,8 @@ void G_InitLevelLocals()
 	{
 		::level.skypic2 =::level.skypic.c_str();
 	}
+	::level.sky1ScrollDelta = info.sky1ScrollDelta;
+	::level.sky2ScrollDelta = info.sky2ScrollDelta;
 
 	if (::level.flags & LEVEL_JUMP_YES)
 	{
@@ -918,12 +920,12 @@ void G_InitLevelLocals()
 	::level.intertextsecret = info.intertextsecret;
 	::level.interbackdrop = info.interbackdrop;
 	::level.intermusic = info.intermusic;
-	
+
 	::level.bossactions = info.bossactions;
 	::level.label = info.label;
 	::level.clearlabel = info.clearlabel;
 	::level.author = info.author;
-	
+
 	::level.detected_gametype = GM_COOP;
 
 	movingsectors.clear();
@@ -1043,6 +1045,8 @@ BEGIN_COMMAND(mapinfo)
 	flags += (info.flags & LEVEL_CHANGEMAPCHEAT ? " CHANGEMAPCHEAT" : "");
 	flags += (info.flags & LEVEL_VISITED ? " VISITED" : "");
 	flags += (info.flags & LEVEL_COMPAT_DROPOFF ? "COMPAT_DROPOFF" : "");
+	flags += (info.flags & LEVEL_COMPAT_NOPASSOVER ? "COMPAT_NOPASSOVER" : "");
+	flags += (info.flags & LEVEL_COMPAT_LIMITPAIN ? "COMPAT_LIMITPAIN" : "");
 
 	if (flags.length() > 0)
 	{

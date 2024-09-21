@@ -31,7 +31,10 @@ extern int		sky1shift;				//		[ML] 5/11/06 - remove sky2 remenants
 
 extern int 		sky1texture;				//		""
 extern int 		sky2texture;				//		""
-extern fixed_t	skypos;					//		""
+extern fixed_t	sky1scrolldelta;
+extern fixed_t	sky2scrolldelta;
+extern fixed_t	sky1columnoffset;
+extern fixed_t	sky2columnoffset;
 extern fixed_t	skytexturemid;
 extern int		skystretch;
 extern fixed_t	skyiscale;
