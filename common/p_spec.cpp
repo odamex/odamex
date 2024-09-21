@@ -73,6 +73,7 @@ EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
 
 std::list<movingsector_t> movingsectors;
+std::list<sector_t*> specialdoors;
 bool s_SpecialFromServer;
 
 int P_FindSectorFromLineTag(int tag, int start);
