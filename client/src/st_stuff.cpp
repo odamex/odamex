@@ -433,14 +433,7 @@ int ST_StatusBarHeight(int surface_width, int surface_height)
 	if (!R_StatusBarVisible())
 		return 0;
 
-	if (st_scale)
-	{
-		return 32 * surface_height / 200;
-	}
-	else
-	{
-		return 32;
-	}
+	return !st_scale ? sbar_height : sbar_height * surface_height / 200;
 }
 
 short ST_StatusBarWidth(int surface_width, int surface_height)
