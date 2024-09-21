@@ -108,9 +108,20 @@ typedef enum {
 int M_Random();
 int P_Random();
 
-// [AM] RNG's that use xoshiro128** and not Doom's random table.
-
+/**
+ * @brief Return a random integer that is not tied to game state.
+ *
+ * @param range One past the maximum number you want to roll.
+ * @return A random integer in the given range.
+ */
 uint32_t M_RandomInt(const uint32_t range);
+
+/**
+ * @brief Return a random integer that is tied to game state.
+ *
+ * @param range One past the maximum number you want to roll.
+ * @return A random integer in the given range.
+ */
 uint32_t P_RandomInt(const uint32_t range);
 
 float M_RandomFloat();

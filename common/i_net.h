@@ -41,6 +41,9 @@
 
 #define PLAYER_FULLBRIGHTFRAME 70
 
+#define ODCL_HEADER 0x4C43444F
+#define ODSV_HEADER 0x5653444F
+
 #define PROTO_CHALLENGE -5560020  // Signals challenger wants protobufs.
 #define MSG_CHALLENGE 5560020     // Signals challenger wants MSG protocol.
 #define LAUNCHER_CHALLENGE 777123 // csdl challenge

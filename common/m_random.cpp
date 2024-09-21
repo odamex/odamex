@@ -167,12 +167,8 @@ static void JSF32Seed(jsf32ctx_t* x, const uint32_t seed)
 	}
 }
 
-/**
- * @brief Return a random integer that is not tied to game state.
- *
- * @param range One past the maximum number you want to roll.
- * @return A random integer in the given range.
- */
+//------------------------------------------------------------------------------
+
 uint32_t M_RandomInt(const uint32_t range)
 {
 	const uint32_t t = (0U - range) % range;
@@ -186,12 +182,8 @@ uint32_t M_RandomInt(const uint32_t range)
 	}
 }
 
-/**
- * @brief Return a random integer that is tied to game state.
- *
- * @param range One past the maximum number you want to roll.
- * @return A random integer in the given range.
- */
+//------------------------------------------------------------------------------
+
 uint32_t P_RandomInt(const uint32_t range)
 {
 	const uint32_t t = (0U - range) % range;
