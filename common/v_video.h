@@ -35,6 +35,7 @@
 class IWindowSurface;
 
 extern int CleanXfac, CleanYfac;
+extern int BaseWidth, BaseHeight;
 
 //
 // VIDEO
