@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2024 by The Odamex Team.
 //
@@ -17,41 +15,21 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Serverside connection sequence.
+//     Clientside handling of incoming packets.
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
-enum netQuitReason_e
-{
-	NQ_SILENT,     // Don't print a message.
-	NQ_DISCONNECT, // Generic message for "typical" forced disconnects initiated by the
-	               // client.
-	NQ_ABORT,      // Connection attempt was aborted
-	NQ_PROTO,      // Encountered something unexpected in the protocol
-};
-
 /**
- * @brief Do what a launcher does...
+ * @brief Process server info and switch to the right wads...
  * @author denis
  */
-void CL_RequestConnectInfo();
+bool CL_HandleServerInfo();
+
+bool CL_HandleFirstPacket();
 
 /**
- * @brief Reconnect to the server.
+ * @brief Handle incoming packets.
  */
-void CL_Reconnect();
-
-/**
- * @brief Disconnect from the server.
- */
-#define CL_QuitNetGame(reason) CL_QuitNetGame2(reason, __FILE__, __LINE__)
-void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line);
-
-/**
- * @brief Quit the network game while attempting to download a file.
- *
- * @param missing_file Missing file to attempt to download.
- */
-void CL_QuitAndTryDownload(const OWantFile& missing_file);
+void CL_HandleIncomingPackets();

@@ -66,6 +66,7 @@
 #include "p_horde.h"
 #include "cl_state.h"
 #include "cl_connect.h"
+#include "cl_connection.h"
 #include "client.pb.h"
 
 #ifdef _XBOX
@@ -852,66 +853,6 @@ void CL_SimulateWorld();
 //
 extern DCanvas *page;
 
-/**
- * @brief Tick the network game while connected.
- * 
- * @return True if we should continue, false if we need to early-return.
- */
-static bool TickConnected()
-{
-	static int realrate = 0;
-
-	for (;;)
-	{
-		const int packet_size = NET_GetPacket(net_message, net_from);
-		if (packet_size == 0)
-			break;
-
-		// denis - don't accept candy from strangers
-		if (!NET_CompareAdr(ClientState::get().getAddress(), net_from))
-			break;
-
-		realrate += packet_size;
-		last_received = gametic;
-		noservermsgs = false;
-
-		if (!CL_ReadPacketHeader())
-			continue;
-
-		if (netdemo.isRecording())
-			netdemo.capture(&net_message);
-
-		if (!CL_ReadAndParseMessages())
-			return false;
-
-		if (gameaction == ga_fullconsole) // Host_EndGame was called
-			return false;
-	}
-
-	if (!(gametic % TICRATE))
-	{
-		netin = realrate;
-		realrate = 0;
-	}
-
-	CL_SaveCmd(); // save console commands
-	if (!noservermsgs)
-		CL_SendCmd(); // send console commands to the server
-	else
-		CL_KeepAlive(); // send acks to keep the connection alive.
-
-	if (!(gametic % TICRATE))
-	{
-		netout = outrate;
-		outrate = 0;
-	}
-
-	if (gametic - last_received > 65)
-		noservermsgs = true;
-
-	return true;
-}
-
 void G_Ticker (void)
 {
 	int 		buf;
@@ -1032,15 +973,7 @@ void G_Ticker (void)
 
 	if (!::simulated_connection)
 	{
-		if (ClientState::get().isConnected())
-		{
-			if (!TickConnected())
-				return;
-		}
-		else
-		{
-			CL_TickConnecting();
-		}
+		CL_HandleIncomingPackets();
 	}
 
 	if (netdemo.isRecording())

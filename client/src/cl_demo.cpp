@@ -39,6 +39,7 @@
 #include "g_gametype.h"
 #include "cl_connect.h"
 #include "cl_state.h"
+#include "cl_connection.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
@@ -909,11 +910,11 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 		int type = MSG_ReadLong();
 		if (type == MSG_CHALLENGE)
 		{
-			CL_PrepareConnect();
+			CL_HandleServerInfo();
 		}
 		else if (type == 0)
 		{
-			CL_Connect();
+			CL_HandleFirstPacket();
 		}
 	}
 	else
