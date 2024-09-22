@@ -137,5 +137,5 @@ static const uint8_t small_font_data[] =
 
 static const txt_font_t small_font =
 {
-    static_cast<char*>("small"), small_font_data, 4, 8,
+    (char*)"small", small_font_data, 4, 8,
 };
