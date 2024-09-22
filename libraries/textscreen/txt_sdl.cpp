@@ -77,7 +77,7 @@ static const txt_font_t *font;
 
 // Dummy "font" that means to try highdpi rendering, or fallback to
 // normal_font otherwise.
-static const txt_font_t highdpi_font = { (char*)"normal-highdpi", NULL, 8, 16 };
+static const txt_font_t highdpi_font = { static_cast<char*>("normal-highdpi"), NULL, 8, 16 };
 
 // Just for I_Endoom
 //static const int scancode_translate_table[] = SCANCODE_TO_KEYS_ARRAY;
