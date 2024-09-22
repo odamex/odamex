@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2024 by The Odamex Team.
 //
@@ -17,13 +15,13 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Serverside connection sequence.
+//     Serverside handling of incoming packets.
 //
 //-----------------------------------------------------------------------------
 
 #include "odamex.h"
 
-#include "sv_connect.h"
+#include "sv_connection.h"
 
 #include <set>
 #include <sstream>
@@ -36,6 +34,7 @@
 #include "p_unlag.h"
 #include "sv_banlist.h"
 #include "sv_main.h"
+#include "sv_parse.h"
 #include "sv_sqp.h"
 #include "sv_sqpold.h"
 #include "svc_message.h"
@@ -361,6 +360,8 @@ void SV_ConnectClient()
 	}
 }
 
+//------------------------------------------------------------------------------
+
 void SV_ConnectClient2(player_t& player)
 {
 	extern bool step_mode;
@@ -415,4 +416,31 @@ void SV_ConnectClient2(player_t& player)
 
 	// Send out the server's MOTD.
 	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
+}
+
+//------------------------------------------------------------------------------
+
+void SV_HandleIncomingPackets()
+{
+	while (NET_GetPacket(::net_message, ::net_from))
+	{
+		client_t* client = SV_FindClient(::net_from);
+		if (client == nullptr) // no client with net_from address
+		{
+			// apparently, someone is trying to connect
+			if (::gamestate == GS_LEVEL || ::gamestate == GS_INTERMISSION)
+			{
+				SV_ConnectClient();
+			}
+			continue;
+		}
+		else
+		{
+			if (client->state != client_t::state_e::disconnecting)
+			{
+				client->last_received = ::gametic;
+				SV_ParseMessages(*client->player);
+			}
+		}
+	}
 }

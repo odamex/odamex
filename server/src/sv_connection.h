@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2024 by The Odamex Team.
 //
@@ -17,7 +15,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Serverside connection sequence.
+//     Serverside handling of incoming packets.
 //
 //-----------------------------------------------------------------------------
 
@@ -26,5 +24,17 @@
 class player_s;
 typedef player_s player_t;
 
+/**
+ * @brief Handle incoming connections.
+ */
 void SV_ConnectClient();
+
+/**
+ * @brief Handle second stage of connection.
+ */
 void SV_ConnectClient2(player_t& player);
+
+/**
+ * @brief Handle incoming packets.
+ */
+void SV_HandleIncomingPackets();

@@ -68,7 +68,7 @@
 #include "p_lnspec.h"
 #include "m_wdlstats.h"
 #include "m_cheat.h"
-#include "sv_connect.h"
+#include "sv_incoming.h"
 #include "sv_parse.h"
 
 #include <algorithm>
@@ -641,34 +641,6 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 	sv_clientcount.ForceSet(players.size());
 
 	return next;
-}
-
-//
-// SV_GetPackets
-//
-void SV_GetPackets()
-{
-	while (NET_GetPacket(::net_message, ::net_from))
-	{
-		client_t* client = SV_FindClient(::net_from);
-		if (client == nullptr) // no client with net_from address
-		{
-			// apparently, someone is trying to connect
-			if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
-			{
-				SV_ConnectClient();
-			}
-			continue;
-		}
-		else
-		{
-			if (client->state != client_t::state_e::disconnecting)
-			{
-				client->last_received = gametic;
-				SV_ParseMessages(*client->player);
-			}
-		}
-	}
 }
 
 // Print a midscreen message to a client
@@ -3328,7 +3300,7 @@ void SV_DisplayTics()
 //
 void SV_RunTics()
 {
-	SV_GetPackets();
+	SV_HandleIncomingPackets();
 
 	std::string cmd = I_ConsoleInput();
 	if (cmd.length())
