@@ -347,6 +347,19 @@ BEGIN_COMMAND (togglerun)
 }
 END_COMMAND (togglerun)
 
+// for testing interlevel stuff
+BEGIN_COMMAND (exitmap)
+{
+	G_ExitLevel(0, 1);
+}
+END_COMMAND (exitmap)
+
+BEGIN_COMMAND (secretexitmap)
+{
+	G_SecretExitLevel(0, 1);
+}
+END_COMMAND (secretexitmap)
+
 extern constate_e ConsoleState;
 
 //

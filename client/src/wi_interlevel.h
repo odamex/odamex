@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//		Intermission screens.
+//		ID24 intermission screens.
 //
 //-----------------------------------------------------------------------------
 
@@ -59,6 +59,8 @@ struct interlevelframe_t
 
     OLumpName imagelump;
     int imagelumpnum;
+    OLumpName altimagelump;
+    int altimagelumpnum;
     frametype_t type;
     int duration;
     int maxduration;

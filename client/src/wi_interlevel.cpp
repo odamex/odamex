@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//		Intermission screens.
+//		ID24 intermission screens.
 //
 //-----------------------------------------------------------------------------
 
@@ -76,6 +76,7 @@ jsonlumpresult_t WI_ParseInterlevelCondition(const Json::Value& condition, inter
 jsonlumpresult_t WI_ParseInterlevelFrame(const Json::Value& frame, interlevelframe_t& output)
 {
     const Json::Value& image = frame["image"];
+    const Json::Value& altimage = frame["altimage"]; // nonstandard - should only be used internally by lumps in odamex.wad
 	const Json::Value& type = frame["type"];
 	const Json::Value& duration = frame["duration"];
 	const Json::Value& maxduration = frame["maxduration"];
@@ -94,11 +95,11 @@ jsonlumpresult_t WI_ParseInterlevelFrame(const Json::Value& frame, interlevelfra
     {
         output.imagelumpnum = W_CheckNumForName(output.imagelump.c_str(), ns_sprites);
     }
+    output.altimagelump = altimage.asString();
+    output.altimagelumpnum = W_CheckNumForName(output.altimagelump.c_str());
 	output.type = static_cast<interlevelframe_t::frametype_t>(type.asInt());
 	output.duration = (int)(duration.asDouble() * TICRATE);
 	output.maxduration = (int)(maxduration.asDouble() * TICRATE);
-	// output.lumpname_animindex = 0;
-	// output.lumpname_animframe = 0;
 
 	if(output.type != 0 && (output.type & ~interlevelframe_t::Valid) != 0)
 	{

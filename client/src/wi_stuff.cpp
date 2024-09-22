@@ -101,153 +101,48 @@ typedef struct
 //
 // Animation.
 //
-typedef struct
-{
-    animenum_t	type;
-
-    // period in tics between animations
-    int		period;
-
-    // number of animation frames
-    int		nanims;
-
-    // location of animation
-    point_t	loc;
-
-    // ALWAYS: n/a,
-    // RANDOM: period deviation (<256),
-    // LEVEL: level
-    int		data1;
-
-    // ALWAYS: n/a,
-    // RANDOM: random base period,
-    // LEVEL: n/a
-    int		data2;
-
-    // actual graphics for frames of animations
-    patch_t*	p[3];
-
-    // following must be initialized to zero before use!
-
-    // next value of bcnt (used in conjunction with period)
-    int		nexttic;
-
-    // last drawn animation frame
-    int		lastdrawn;
-
-    // next frame number to animate
-    int		ctr;
-
-    // used by RANDOM and LEVEL when animating
-    int		state;
-
-} animinfo_t;
-
-static point_t lnodes[NUMEPISODES][NUMMAPS] =
-{
-    // Episode 0 World Map
-    {
-	{ 185, 164 },	// location of level 0 (CJ)
-	{ 148, 143 },	// location of level 1 (CJ)
-	{ 69, 122 },	// location of level 2 (CJ)
-	{ 209, 102 },	// location of level 3 (CJ)
-	{ 116, 89 },	// location of level 4 (CJ)
-	{ 166, 55 },	// location of level 5 (CJ)
-	{ 71, 56 },	// location of level 6 (CJ)
-	{ 135, 29 },	// location of level 7 (CJ)
-	{ 71, 24 }	// location of level 8 (CJ)
-    },
-
-    // Episode 1 World Map should go here
-    {
-	{ 254, 25 },	// location of level 0 (CJ)
-	{ 97, 50 },	// location of level 1 (CJ)
-	{ 188, 64 },	// location of level 2 (CJ)
-	{ 128, 78 },	// location of level 3 (CJ)
-	{ 214, 92 },	// location of level 4 (CJ)
-	{ 133, 130 },	// location of level 5 (CJ)
-	{ 208, 136 },	// location of level 6 (CJ)
-	{ 148, 140 },	// location of level 7 (CJ)
-	{ 235, 158 }	// location of level 8 (CJ)
-    },
-
-    // Episode 2 World Map should go here
-    {
-	{ 156, 168 },	// location of level 0 (CJ)
-	{ 48, 154 },	// location of level 1 (CJ)
-	{ 174, 95 },	// location of level 2 (CJ)
-	{ 265, 75 },	// location of level 3 (CJ)
-	{ 130, 48 },	// location of level 4 (CJ)
-	{ 279, 23 },	// location of level 5 (CJ)
-	{ 198, 48 },	// location of level 6 (CJ)
-	{ 140, 25 },	// location of level 7 (CJ)
-	{ 281, 136 }	// location of level 8 (CJ)
-    }
-
-};
 
 //
 // Animation locations for episode 0 (1).
 // Using patches saves a lot of space,
 //  as they replace 320x200 full screen frames.
 //
-static animinfo_t epsd0animinfo[] =
-{
-    { ANIM_ALWAYS, TICRATE/3, 3, { 224, 104 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-    { ANIM_ALWAYS, TICRATE/3, 3, { 184, 160 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-    { ANIM_ALWAYS, TICRATE/3, 3, { 112, 136 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-    { ANIM_ALWAYS, TICRATE/3, 3, { 72, 112 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-    { ANIM_ALWAYS, TICRATE/3, 3, { 88, 96 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-    { ANIM_ALWAYS, TICRATE/3, 3, { 64, 48 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-    { ANIM_ALWAYS, TICRATE/3, 3, { 192, 40 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-    { ANIM_ALWAYS, TICRATE/3, 3, { 136, 16 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-    { ANIM_ALWAYS, TICRATE/3, 3, { 80, 16 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-    { ANIM_ALWAYS, TICRATE/3, 3, { 64, 24 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 }
-};
+// static animinfo_t epsd0animinfo[] =
+// {
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 224, 104 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 184, 160 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 112, 136 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 72, 112 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 88, 96 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 64, 48 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 192, 40 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 136, 16 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 80, 16 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 64, 24 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 }
+// };
 
-static animinfo_t epsd1animinfo[] =
-{
-    { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 1, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-    { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 2, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-    { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 3, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-    { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 4, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-    { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 5, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-    { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 6, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-    { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 7, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-    { ANIM_LEVEL, TICRATE/3, 3, { 192, 144 }, 8, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-    { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 8, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  }
-};
+// static animinfo_t epsd1animinfo[] =
+// {
+//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 1, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
+//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 2, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
+//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 3, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
+//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 4, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
+//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 5, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
+//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 6, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
+//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 7, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
+//     { ANIM_LEVEL, TICRATE/3, 3, { 192, 144 }, 8, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
+//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 8, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  }
+// };
 
-static animinfo_t epsd2animinfo[] =
-{
-    { ANIM_ALWAYS, TICRATE/3, 3, { 104, 168 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-    { ANIM_ALWAYS, TICRATE/3, 3, { 40, 136 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-    { ANIM_ALWAYS, TICRATE/3, 3, { 160, 96 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-    { ANIM_ALWAYS, TICRATE/3, 3, { 104, 80 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-    { ANIM_ALWAYS, TICRATE/3, 3, { 120, 32 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-    { ANIM_ALWAYS, TICRATE/4, 3, { 40, 0 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 }
-};
-
-static int NUMANIMS[NUMEPISODES] =
-{
-	ARRAY_LENGTH(epsd0animinfo),
-	ARRAY_LENGTH(epsd1animinfo),
-	ARRAY_LENGTH(epsd2animinfo)
-};
-
-static animinfo_t *anims[NUMEPISODES] =
-{
-	epsd0animinfo,
-	epsd1animinfo,
-	epsd2animinfo
-};
-
-// [RH] Map name -> index mapping
-static char names[NUMEPISODES][NUMMAPS][8] = {
-	{ "E1M1", "E1M2", "E1M3", "E1M4", "E1M5", "E1M6", "E1M7", "E1M8", "E1M9" },
-	{ "E2M1", "E2M2", "E2M3", "E2M4", "E2M5", "E2M6", "E2M7", "E2M8", "E2M9" },
-	{ "E3M1", "E3M2", "E3M3", "E3M4", "E3M5", "E3M6", "E3M7", "E3M8", "E3M9" }
-};
+// static animinfo_t epsd2animinfo[] =
+// {
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 104, 168 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 40, 136 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 160, 96 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 104, 80 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
+//     { ANIM_ALWAYS, TICRATE/3, 3, { 120, 32 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
+//     { ANIM_ALWAYS, TICRATE/4, 3, { 40, 0 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 }
+// };
 
 //
 // GENERAL DATA
@@ -316,12 +211,6 @@ static int			inter_height;
 // Scoreboard Border - Dan
 //static patch_t* 		sbborder;
 
-// You Are Here graphic
-static lumpHandle_t		yah[2];
-
-// splat
-static lumpHandle_t		splat;
-
 // %, : graphics
 static lumpHandle_t		percent;
 static lumpHandle_t		colon;
@@ -367,10 +256,7 @@ static const char*		lnametexts[2];
 
 static IWindowSurface*	background_surface;
 
-static IWindowSurface*	splat_surface;
-
-static bool	needsplat;
-static bool	needmarker;
+static IWindowSurface*	anim_surface;
 
 static interlevel_t* enteranim;
 static interlevel_t* exitanim;
@@ -380,8 +266,9 @@ EXTERN_CVAR (wi_oldintermission)
 EXTERN_CVAR (cl_autoscreenshot)
 
 //
-// ID24 STUFF
+// ID24 STUFF - largely based on the implementation from Woof, with some bits from Rum and Raisin
 //
+
 typedef struct
 {
     std::vector<interlevelframe_t> frames;
@@ -402,7 +289,11 @@ typedef struct
 
 static wi_animation_t* animation;
 
-static bool CheckConditions(const std::vector<interlevelcond_t>& conditions,
+//
+// CODE
+//
+
+static bool WI_checkConditions(const std::vector<interlevelcond_t>& conditions,
                             bool enteringcondition)
 {
     bool conditionsmet = true;
@@ -411,8 +302,8 @@ static bool CheckConditions(const std::vector<interlevelcond_t>& conditions,
 
     // {
 	// 	mapentry_t* mape;
-    //     LevelInfos& levels = getLevelInfos();
-	// 	level_pwad_info_t& currentlevel = levels.findByName(wbs->current);
+        // LevelInfos& levels = getLevelInfos();
+		// level_pwad_info_t& currentlevel = levels.findByName(wbs->current);
     //     if (enteringcondition)
     //     {
     //         mape = wbs->nextmapinfo;
@@ -481,38 +372,33 @@ static bool CheckConditions(const std::vector<interlevelcond_t>& conditions,
     return conditionsmet;
 }
 
-static void UpdateAnimationStates(std::vector<wi_animationstate_t>& states)
+static void WI_updateAnimationStates(std::vector<wi_animationstate_t>& states)
 {
     for (auto& state : states)
     {
         interlevelframe_t& frame = state.frames.at(state.frame_index);
 
-        if (frame.type & interlevelframe_t::DurationInf)
-        {
-            continue;
-        }
-
         if (state.duration_left == 0)
         {
             int tics = 1;
-            switch (frame.type)
+            switch (frame.type & 0xF)
             {
-                case interlevelframe_t::RandomStart:
-                    if (state.frame_start)
+                case interlevelframe_t::DurationInf:
+                    continue;
+                case interlevelframe_t::DurationFixed:
+					if (state.frame_start && (frame.type & interlevelframe_t::RandomStart))
                     {
-                        int maxtics = frame.duration * TICRATE;
+                        int maxtics = frame.duration;
                         tics = M_Random() % maxtics;
                         break;
                     }
-                    // [[fallthrough]]
-                case interlevelframe_t::DurationFixed:
-                    tics = frame.duration * TICRATE;
+                    tics = frame.duration;
                     break;
 
                 case interlevelframe_t::DurationRand:
                     {
-                        int maxtics = frame.maxduration * TICRATE;
-                        int mintics = frame.duration * TICRATE;
+                        int maxtics = frame.maxduration;
+                        int mintics = frame.duration;
                         tics = M_Random() % maxtics;
                         tics = clamp(tics, mintics, maxtics);
                     }
@@ -539,11 +425,11 @@ static void UpdateAnimationStates(std::vector<wi_animationstate_t>& states)
     }
 }
 
-static bool UpdateAnimation(bool enteringcondition)
+static void WI_updateAnimation(bool enteringcondition)
 {
     if (!animation)
     {
-        return false;
+        return;
     }
 
     animation->states = nullptr;
@@ -558,51 +444,56 @@ static bool UpdateAnimation(bool enteringcondition)
     }
 
 	if (!animation->states)
-		return false;
+		return;
 
-    UpdateAnimationStates(*animation->states);
-
-    return true;
+    WI_updateAnimationStates(*animation->states);
 }
 
-static bool DrawAnimation(void)
+static void WI_drawAnimation(void)
 {
     if (!animation || !animation->states)
     {
-        return false;
+        return;
     }
-	background_surface->lock();
+
+	int scaled_x = (inter_width - 320) / 2;
+	DCanvas* canvas = anim_surface->getDefaultCanvas();
 	for (const auto& state : *animation->states)
     {
         const interlevelframe_t& frame = state.frames.at(state.frame_index);
-        patch_t *patch = W_CachePatch(frame.imagelumpnum, PU_CACHE);
+		patch_t* patch = W_CachePatch(frame.imagelumpnum, PU_CACHE);
+		if (!frame.altimagelump.empty())
+		{
+			int left = state.xpos - patch->leftoffset();
+			int top = state.ypos - patch->topoffset();
+			int right = left + patch->width();
+			int bottom = top + patch->height();
 
-		DCanvas* canvas = background_surface->getDefaultCanvas();
-
-		int scaled_x = (inter_width - 320) / 2;
+			if (!(left >= 0 && right < 320 && top >= 0 && bottom < 200))
+			{
+				patch = W_CachePatch(frame.altimagelumpnum, PU_CACHE);
+			}
+		}
 
 		canvas->DrawPatch(patch, state.xpos + scaled_x,
 		                      state.ypos);
     }
-	background_surface->unlock();
-
-    return true;
 }
 
-static void SetupAnimationStates(std::vector<wi_animationstate_t>& out,
-								 const std::vector<interlevellayer_t>& layers,
-								 bool enteringcondition)
+static void WI_initAnimationStates(std::vector<wi_animationstate_t>& out,
+								   const std::vector<interlevellayer_t>& layers,
+								   bool enteringcondition)
 {
 	for (const auto& layer : layers)
 	{
-		if (!CheckConditions(layer.conditions, enteringcondition))
+		if (!WI_checkConditions(layer.conditions, enteringcondition))
 		{
         	continue;
 		}
 
 		for (const auto& anim : layer.anims)
 		{
-			if (!CheckConditions(anim.conditions, enteringcondition))
+			if (!WI_checkConditions(anim.conditions, enteringcondition))
 			{
 				continue;
 			}
@@ -613,40 +504,25 @@ static void SetupAnimationStates(std::vector<wi_animationstate_t>& out,
 	}
 }
 
-static bool SetupAnimation(void)
+static void WI_initAnimation(void)
 {
 	if (!animation)
 	{
-		return false;
+		return;
 	}
 
 	if (exitanim)
 	{
-		SetupAnimationStates(animation->exiting_states, exitanim->layers, false);
+		WI_initAnimationStates(animation->exiting_states, exitanim->layers, false);
 	}
 
 	if (enteranim)
 	{
-		SetupAnimationStates(animation->entering_states, enteranim->layers, true);
+		WI_initAnimationStates(animation->entering_states, enteranim->layers, true);
 	}
 
-	return true;
+	return;
 }
-
-static bool NextLocAnimation(void)
-{
-    if (animation && !animation->entering_states.empty())
-    {
-        return true;
-    }
-
-    return false;
-}
-
-//
-// CODE
-//
-
 
 //
 // WI_GetWidth
@@ -697,74 +573,6 @@ static int WI_GetHeight()
 		return surface_width * 3 / 4;
 }
 
-int WI_MapToIndex(char* map)
-{
-	int i;
-
-	for (i = 0; i < NUMMAPS; i++)
-	{
-		if (!strnicmp(names[wbs->epsd][i], map, 8))
-			break;
-	}
-
-	return i;
-}
-
-// ====================================================================
-// WI_drawOnLnode
-// Purpose: Draw patches at a location based on episode/map
-// Args:    n   -- index to map# within episode
-//          c[] -- array of patches to be drawn
-//          numpatches -- haleyjd 04/12/03: bug fix - number of patches
-// Returns: void
-//
-// draw stuff at a location by episode/map#
-//
-// [Russell] - Modified for odamex, fixes a crash with certain pwads at
-// intermission change
-void WI_drawOnLnode(int n, lumpHandle_t* c, int numpatches)
-{
-	int i = 0;
-	bool fits = false;
-
-	DCanvas* canvas = splat_surface->getDefaultCanvas();
-
-	int scaled_x = (inter_width - 320) / 2;
-
-	do
-	{
-		patch_t* ch = W_ResolvePatchHandle(c[i]);
-
-		int left = lnodes[wbs->epsd][n].x - ch->leftoffset();
-		int top = lnodes[wbs->epsd][n].y - ch->topoffset();
-		int right = left + ch->width();
-		int bottom = top + ch->height();
-
-		if (left >= 0 && right < 320 && top >= 0 && bottom < 200)
-		{
-			fits = true;
-		}
-		else
-		{
-			i++;
-		}
-	} while (!fits && i != numpatches); // haleyjd: bug fix
-
-	if (fits && i < numpatches) // haleyjd: bug fix
-	{
-		patch_t* ch = W_ResolvePatchHandle(c[i]);
-
-		canvas->DrawPatch(ch, lnodes[wbs->epsd][n].x + scaled_x,
-		                      lnodes[wbs->epsd][n].y);
-	}
-	else
-	{
-		// DEBUG
-		DPrintf("Could not place patch on level %d", n + 1);
-	}
-}
-
-
 // slam background
 // UNUSED static unsigned char *background=0;
 
@@ -773,41 +581,22 @@ void WI_slamBackground()
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	const int destw = WI_GetWidth(), desth = WI_GetHeight();
 	primary_surface->clear();		// ensure black background in matted modes
-	splat_surface->clear();
-
-	// Apply splats after animations so its drawn over them
+	anim_surface->clear();
 
 	background_surface->lock();
-	splat_surface->lock();
+	anim_surface->lock();
 
-	splat_surface->blitcrop(background_surface, 0, 0, background_surface->getWidth(), background_surface->getHeight(),
-	   0, 0,	splat_surface->getWidth(), splat_surface->getHeight());
+	anim_surface->blitcrop(background_surface, 0, 0, background_surface->getWidth(), background_surface->getHeight(),
+	   0, 0,	anim_surface->getWidth(), anim_surface->getHeight());
 
-	if (needsplat)
-	{
-		// draw a splat on taken cities.
-		LevelInfos& levels = getLevelInfos();
-		for (int i = 0; i < NUMMAPS; i++)
-		{
-			if (levels.findByName(names[wbs->epsd][i]).flags & LEVEL_VISITED)
-			{
-				WI_drawOnLnode(i, &splat, 1);
-			}
-		}
-	}
+	WI_drawAnimation();
 
-	if (needmarker)
-	{
-		WI_drawOnLnode(WI_MapToIndex(wbs->next), yah, 2);
-	}
-
-
-	primary_surface->blitcrop(splat_surface, 0, 0, splat_surface->getWidth(), splat_surface->getHeight(),
+	primary_surface->blitcrop(anim_surface, 0, 0, anim_surface->getWidth(), anim_surface->getHeight(),
 	   (primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
 	   destw, desth);
 
 	background_surface->unlock();
-	splat_surface->unlock();
+	anim_surface->unlock();
 }
 
 static int WI_DrawName (const char *str, int x, int y)
@@ -925,100 +714,78 @@ void WI_drawEL()
 	}
 }
 
+// void WI_initAnimatedBack()
+// {
+// 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
+// 		return;
 
+// 	for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
+// 	{
+// 		animinfo_t* a = &anims[wbs->epsd][i];
 
-void WI_initAnimatedBack()
-{
-	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
-		return;
+// 		// init variables
+// 		a->ctr = -1;
 
-	for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
-	{
-		animinfo_t* a = &anims[wbs->epsd][i];
+// 		// specify the next time to draw it
+// 		if (a->type == ANIM_ALWAYS)
+// 			a->nexttic = bcnt + 1 + (M_Random()%a->period);
+// 		else if (a->type == ANIM_LEVEL)
+// 			a->nexttic = bcnt + 1;
+// 	}
+// }
 
-		// init variables
-		a->ctr = -1;
+// void WI_updateAnimatedBack()
+// {
+// 	if (WI_updateAnimation(state != StatCount))
+// 		return;
 
-		// specify the next time to draw it
-		if (a->type == ANIM_ALWAYS)
-			a->nexttic = bcnt + 1 + (M_Random()%a->period);
-		else if (a->type == ANIM_LEVEL)
-			a->nexttic = bcnt + 1;
-	}
-}
+// 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
+// 		return;
 
-void WI_updateAnimatedBack()
-{
-	if (UpdateAnimation(state != StatCount))
-		return;
+// 	for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
+// 	{
+// 		animinfo_t* a = &anims[wbs->epsd][i];
 
-	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
-		return;
+// 		if (bcnt == a->nexttic)
+// 		{
+// 			switch (a->type)
+// 			{
+// 			  case ANIM_ALWAYS:
+// 				if (++a->ctr >= a->nanims)
+// 					a->ctr = 0;
+// 				a->nexttic = bcnt + a->period;
+// 				break;
 
-	for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
-	{
-		animinfo_t* a = &anims[wbs->epsd][i];
+// 			  case ANIM_RANDOM:
+// 				  a->ctr++;
+// 				  if (a->ctr == a->nanims)
+// 				  {
+// 					  a->ctr = -1;
+// 					  a->nexttic = bcnt+a->data2+(M_Random()%a->data1);
+// 				  }
+// 					  else a->nexttic = bcnt + a->period;
+// 				  break;
 
-		if (bcnt == a->nexttic)
-		{
-			switch (a->type)
-			{
-			  case ANIM_ALWAYS:
-				if (++a->ctr >= a->nanims)
-					a->ctr = 0;
-				a->nexttic = bcnt + a->period;
-				break;
+// 			  case ANIM_LEVEL:
+// 				// gawd-awful hack for level anims
 
-			  case ANIM_RANDOM:
-				  a->ctr++;
-				  if (a->ctr == a->nanims)
-				  {
-					  a->ctr = -1;
-					  a->nexttic = bcnt+a->data2+(M_Random()%a->data1);
-				  }
-					  else a->nexttic = bcnt + a->period;
-				  break;
+// 				if (!(state == StatCount && i == 7)
+// 					&& WI_MapToIndex(wbs->next) == a->data1)
+// 				{
+// 					a->ctr++;
+// 					if (a->ctr == a->nanims)
+// 						a->ctr--;
+// 					a->nexttic = bcnt + a->period;
+// 				}
 
-			  case ANIM_LEVEL:
-				// gawd-awful hack for level anims
-
-				if (!(state == StatCount && i == 7)
-					&& WI_MapToIndex(wbs->next) == a->data1)
-				{
-					a->ctr++;
-					if (a->ctr == a->nanims)
-						a->ctr--;
-					a->nexttic = bcnt + a->period;
-				}
-
-				break;
-			}
-		}
-	}
-}
+// 				break;
+// 			}
+// 		}
+// 	}
+// }
 
 void WI_drawAnimatedBack()
 {
-	if (gamemode != commercial && gamemode != commercial_bfg && wbs->epsd <= 2 && NUMANIMS[wbs->epsd] > 0)
-	{
-		DCanvas* canvas = background_surface->getDefaultCanvas();
-
-		int scaled_x = (inter_width - 320) / 2;
-
-		background_surface->lock();
-
-		for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
-		{
-			animinfo_t* a = &anims[wbs->epsd][i];
-			if (a->ctr >= 0)
-				canvas->DrawPatch(a->p[a->ctr], a->loc.x + scaled_x, a->loc.y);
-		}
-
-		background_surface->unlock();
-	}
-
-	// DrawAnimation();
-
 	WI_slamBackground();
 }
 
@@ -1120,7 +887,7 @@ void WI_End()
 
 	I_FreeSurface(background_surface);
 
-	I_FreeSurface(splat_surface);
+	I_FreeSurface(anim_surface);
 }
 
 void WI_initNoState()
@@ -1132,8 +899,6 @@ void WI_initNoState()
 
 void WI_updateNoState()
 {
-	WI_updateAnimatedBack();
-
 	// denis - let the server decide when to load the next map
 	if (serverside)
 	{
@@ -1143,6 +908,8 @@ void WI_updateNoState()
 			G_WorldDone();
 		}
 	}
+
+	WI_updateAnimation(state != StatCount);
 }
 
 static bool snl_pointeron = false;
@@ -1156,8 +923,6 @@ void WI_initShowNextLoc()
 
 void WI_updateShowNextLoc()
 {
-	WI_updateAnimatedBack();
-
 	if(serverside)
 	{
 		if (!--cnt || acceleratestage)
@@ -1165,42 +930,13 @@ void WI_updateShowNextLoc()
 		else
 			snl_pointeron = (cnt & 31) < 20;
 	}
+	WI_updateAnimation(state != StatCount);
 }
 
 void WI_drawShowNextLoc()
 {
-	if (gamemode != commercial && gamemode != commercial_bfg)
-	{
-		if (wbs->epsd > 2 || strnicmp(level.nextmap.c_str(), "EndGame", 7) == 0)
-		{
-			// draw animated background
-			WI_drawAnimatedBack();
-			WI_drawEL();
-			return;
-		}
-
-		// draw a splat on taken cities.
-		LevelInfos& levels = getLevelInfos();
-		for (int i = 0; i < NUMMAPS; i++)
-		{
-			if (levels.findByName(names[wbs->epsd][i]).flags & LEVEL_VISITED)
-			{
-				needsplat = true;
-				break;
-			}
-		}
-
-		// draw flashing ptr
-		if (snl_pointeron)
-			needmarker = true;
-		else
-			needmarker = false;
-	}
-
 	// draw animated background
 	WI_drawAnimatedBack();
-
-	DrawAnimation();
 	// draws which level you are entering..
 	WI_drawEL();
 }
@@ -1253,16 +989,12 @@ void WI_initNetgameStats()
 	}
 
 	dofrags = !!dofrags;
-
-	WI_initAnimatedBack();
 }
 
 void WI_updateNetgameStats()
 {
 	unsigned int i;
 	bool stillticking;
-
-	WI_updateAnimatedBack();
 
 	if (acceleratestage && ng_state != 10)
 	{
@@ -1410,6 +1142,8 @@ void WI_updateNetgameStats()
 			cnt_pause = TICRATE;
 		}
 	}
+
+	WI_updateAnimation(state != StatCount);
 }
 
 void WI_drawNetgameStats()
@@ -1507,14 +1241,10 @@ void WI_initStats()
     cnt_kills = cnt_items = cnt_secret = -1;
     cnt_time = cnt_par = -1;
     cnt_pause = TICRATE;
-
-    WI_initAnimatedBack();
 }
 
 void WI_updateStats()
 {
-    WI_updateAnimatedBack();
-
     if (acceleratestage && sp_state != 10)
     {
 		acceleratestage = 0;
@@ -1611,7 +1341,7 @@ void WI_updateStats()
 
 				background_surface =
 				    I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
-				splat_surface =
+				anim_surface =
 				    I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 				const DCanvas* canvas = background_surface->getDefaultCanvas();
 
@@ -1619,8 +1349,6 @@ void WI_updateStats()
 				canvas->DrawPatch(bg_patch, 0, 0);
 				background_surface->unlock();
 			}
-
-			WI_initAnimatedBack();
 
 		    S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
 
@@ -1639,6 +1367,7 @@ void WI_updateStats()
 		}
     }
 
+	WI_updateAnimation(state != StatCount);
 }
 
 void WI_drawStats()
@@ -1654,7 +1383,6 @@ void WI_drawStats()
 
 	// draw animated background
 	WI_drawAnimatedBack();
-	DrawAnimation();
 	WI_drawLF();
 
 	screen->DrawPatchClean(pKills, SP_STATSX, SP_STATSY);
@@ -1809,7 +1537,7 @@ void WI_loadData()
 	{
 		enteranim = WI_GetInterlevel(nextlevel.enteranim.c_str());
 	}
-	SetupAnimation();
+	WI_initAnimation();
 
 	char name[17];
 
@@ -1829,7 +1557,7 @@ void WI_loadData()
 	inter_height = bg_patch->height() + (bg_patch->height() / 5);
 
 	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
-	splat_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+	anim_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 	const DCanvas* canvas = background_surface->getDefaultCanvas();
 
 	background_surface->lock();
@@ -1857,40 +1585,31 @@ void WI_loadData()
 		}
 	}
 
-	if (gamemode != commercial && gamemode != commercial_bfg)
-	{
-		// you are here
-		yah[0] = W_CachePatchHandle("WIURH0", PU_STATIC);
-
-		// you are here (alt.)
-		yah[1] = W_CachePatchHandle("WIURH1", PU_STATIC);
-
-		// splat
-		splat = W_CachePatchHandle("WISPLAT", PU_STATIC);
-
-		if (wbs->epsd < 3)
-		{
-			for (int j = 0; j < NUMANIMS[wbs->epsd]; j++)
-			{
-				animinfo_t* a = &anims[wbs->epsd][j];
-				for (int i = 0; i < a->nanims; i++)
-				{
-					// MONDO HACK!
-					if (wbs->epsd != 1 || j != 8)
-					{
-						// animations
-						sprintf (name, "WIA%d%.2d%.2d", wbs->epsd, j, i);
-						a->p[i] = W_CachePatch (name, PU_STATIC);
-					}
-					else
-					{
-						// HACK ALERT!
-						a->p[i] = anims[1][4].p[i];
-					}
-				}
-			}
-		}
-	}
+	// if (gamemode != commercial && gamemode != commercial_bfg)
+	// {
+	// 	if (wbs->epsd < 3)
+	// 	{
+	// 		for (int j = 0; j < NUMANIMS[wbs->epsd]; j++)
+	// 		{
+	// 			animinfo_t* a = &anims[wbs->epsd][j];
+	// 			for (int i = 0; i < a->nanims; i++)
+	// 			{
+	// 				// MONDO HACK!
+	// 				if (wbs->epsd != 1 || j != 8)
+	// 				{
+	// 					// animations
+	// 					sprintf (name, "WIA%d%.2d%.2d", wbs->epsd, j, i);
+	// 					a->p[i] = W_CachePatch (name, PU_STATIC);
+	// 				}
+	// 				else
+	// 				{
+	// 					// HACK ALERT!
+	// 					a->p[i] = anims[1][4].p[i];
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	for (int i = 0; i < 10; i++)
 	{
@@ -1957,7 +1676,20 @@ void WI_loadData()
 			{
 				for (const auto& frame : anim.frames)
 				{
-
+					W_CachePatch(frame.imagelumpnum);
+				}
+			}
+		}
+	}
+	if (enteranim != nullptr)
+	{
+		for (const auto& layer : enteranim->layers)
+		{
+			for (const auto& anim : layer.anims)
+			{
+				for (const auto& frame : anim.frames)
+				{
+					W_CachePatch(frame.imagelumpnum);
 				}
 			}
 		}
@@ -1969,9 +1701,6 @@ void WI_loadData()
 		sprintf(name, "STPB%d", i);
 		faceclassic[i] = W_CachePatchHandle(name, PU_STATIC);
 	}
-
-	needsplat = false;
-	needmarker = false;
 }
 
 void WI_unloadData()
@@ -2014,7 +1743,7 @@ void WI_unloadData()
 	Z_ChangeTag (p, PU_CACHE);*/
 
 	exitanim = enteranim = nullptr;
-	// delete animation;
+	delete animation;
 
 	for (int i = 0; i < 10; i++)
 		num[i].clear();
@@ -2046,7 +1775,7 @@ void WI_Drawer()
 
 	// If the background screen has been freed, then we really shouldn't
 	// be in here. (But it happens anyway.)
-	if (background_surface && splat_surface)
+	if (background_surface && anim_surface)
 	{
 		switch (state)
 		{

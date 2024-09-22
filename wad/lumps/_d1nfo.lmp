@@ -28,7 +28,7 @@ episode e4m1
 	name = "Thy Flesh Consumed"
 	key = "t"
 	optional
-} 
+}
 
 // Registered/Retail Episode 1
 
@@ -47,6 +47,8 @@ map E1M1 lookup "HUSTR_E1M1"
 	cluster = 1
 	par = 30
 	music = "$MUSIC_E1M1"
+	enteranim = "_DEP1INT"
+	exitanim = "_DEP1INT"
 }
 
 map E1M2 lookup "HUSTR_E1M2"
@@ -59,6 +61,8 @@ map E1M2 lookup "HUSTR_E1M2"
 	cluster = 1
 	par = 75
 	music = "$MUSIC_E1M2"
+	enteranim = "_DEP1INT"
+	exitanim = "_DEP1INT"
 }
 
 map E1M3 lookup "HUSTR_E1M3"
@@ -71,6 +75,8 @@ map E1M3 lookup "HUSTR_E1M3"
 	cluster = 1
 	par = 120
 	music = "$MUSIC_E1M3"
+	enteranim = "_DEP1INT"
+	exitanim = "_DEP1INT"
 }
 
 map E1M4 lookup "HUSTR_E1M4"
@@ -83,6 +89,8 @@ map E1M4 lookup "HUSTR_E1M4"
 	cluster = 1
 	par = 90
 	music = "$MUSIC_E1M4"
+	enteranim = "_DEP1INT"
+	exitanim = "_DEP1INT"
 }
 
 map E1M5 lookup "HUSTR_E1M5"
@@ -95,6 +103,8 @@ map E1M5 lookup "HUSTR_E1M5"
 	cluster = 1
 	par = 165
 	music = "$MUSIC_E1M5"
+	enteranim = "_DEP1INT"
+	exitanim = "_DEP1INT"
 }
 
 map E1M6 lookup "HUSTR_E1M6"
@@ -107,6 +117,8 @@ map E1M6 lookup "HUSTR_E1M6"
 	cluster = 1
 	par = 180
 	music = "$MUSIC_E1M6"
+	enteranim = "_DEP1INT"
+	exitanim = "_DEP1INT"
 }
 
 map E1M7 lookup "HUSTR_E1M7"
@@ -119,6 +131,8 @@ map E1M7 lookup "HUSTR_E1M7"
 	cluster = 1
 	par = 180
 	music = "$MUSIC_E1M7"
+	enteranim = "_DEP1INT"
+	exitanim = "_DEP1INT"
 }
 
 map E1M8 lookup "HUSTR_E1M8"
@@ -135,6 +149,8 @@ map E1M8 lookup "HUSTR_E1M8"
 	baronspecial
 	specialaction_lowerfloor
 	music = "$MUSIC_E1M8"
+	enteranim = "_DEP1INT"
+	exitanim = "_DEP1INT"
 }
 
 map E1M9 lookup "HUSTR_E1M9"
@@ -147,6 +163,8 @@ map E1M9 lookup "HUSTR_E1M9"
 	cluster = 1
 	par = 165
 	music = "$MUSIC_E1M9"
+	enteranim = "_DEP1INT"
+	exitanim = "_DEP1INT"
 }
 
 // Registered/Retail Episode 2
@@ -161,6 +179,8 @@ map E2M1 lookup "HUSTR_E2M1"
 	cluster = 2
 	par = 90
 	music = "$MUSIC_E2M1"
+	enteranim = "_DEP2INT"
+	exitanim = "_DEP2INT"
 }
 
 map E2M2 lookup "HUSTR_E2M2"
@@ -173,6 +193,8 @@ map E2M2 lookup "HUSTR_E2M2"
 	cluster = 2
 	par = 90
 	music = "$MUSIC_E2M2"
+	enteranim = "_DEP2INT"
+	exitanim = "_DEP2INT"
 }
 
 map E2M3 lookup "HUSTR_E2M3"
@@ -185,6 +207,8 @@ map E2M3 lookup "HUSTR_E2M3"
 	cluster = 2
 	par = 90
 	music = "$MUSIC_E2M3"
+	enteranim = "_DEP2INT"
+	exitanim = "_DEP2INT"
 }
 
 map E2M4 lookup "HUSTR_E2M4"
@@ -197,6 +221,8 @@ map E2M4 lookup "HUSTR_E2M4"
 	cluster = 2
 	par = 120
 	music = "$MUSIC_E2M4"
+	enteranim = "_DEP2INT"
+	exitanim = "_DEP2INT"
 }
 
 map E2M5 lookup "HUSTR_E2M5"
@@ -209,6 +235,8 @@ map E2M5 lookup "HUSTR_E2M5"
 	cluster = 2
 	par = 90
 	music = "$MUSIC_E2M5"
+	enteranim = "_DEP2INT"
+	exitanim = "_DEP2INT"
 }
 
 map E2M6 lookup "HUSTR_E2M6"
@@ -221,6 +249,8 @@ map E2M6 lookup "HUSTR_E2M6"
 	cluster = 2
 	par = 360
 	music = "$MUSIC_E2M6"
+	enteranim = "_DEP2INT"
+	exitanim = "_DEP2INT"
 }
 
 map E2M7 lookup "HUSTR_E2M7"
@@ -233,6 +263,8 @@ map E2M7 lookup "HUSTR_E2M7"
 	cluster = 2
 	par = 240
 	music = "$MUSIC_E2M7"
+	enteranim = "_DEP2INT"
+	exitanim = "_DEP2INT"
 }
 
 map E2M8 lookup "HUSTR_E2M8"
@@ -249,6 +281,8 @@ map E2M8 lookup "HUSTR_E2M8"
 	cyberdemonspecial
 	specialaction_exitlevel
 	music = "$MUSIC_E2M8"
+	enteranim = "_DEP2INT"
+	exitanim = "_DEP2INT"
 }
 
 map E2M9 lookup "HUSTR_E2M9"
@@ -261,6 +295,8 @@ map E2M9 lookup "HUSTR_E2M9"
 	cluster = 2
 	par = 170
 	music = "$MUSIC_E2M9"
+	enteranim = "_DEP2INT"
+	exitanim = "_DEP2INT"
 }
 
 // Registered/Retail Episode 3
@@ -275,6 +311,8 @@ map E3M1 lookup "HUSTR_E3M1"
 	cluster = 3
 	par = 90
 	music = "$MUSIC_E3M1"
+	enteranim = "_DEP3INT"
+	exitanim = "_DEP3INT"
 }
 
 map E3M2 lookup "HUSTR_E3M2"
@@ -287,6 +325,8 @@ map E3M2 lookup "HUSTR_E3M2"
 	cluster = 3
 	par = 45
 	music = "$MUSIC_E3M2"
+	enteranim = "_DEP3INT"
+	exitanim = "_DEP3INT"
 }
 
 map E3M3 lookup "HUSTR_E3M3"
@@ -299,6 +339,8 @@ map E3M3 lookup "HUSTR_E3M3"
 	cluster = 3
 	par = 90
 	music = "$MUSIC_E3M3"
+	enteranim = "_DEP3INT"
+	exitanim = "_DEP3INT"
 }
 
 map E3M4 lookup "HUSTR_E3M4"
@@ -311,6 +353,8 @@ map E3M4 lookup "HUSTR_E3M4"
 	cluster = 3
 	par = 150
 	music = "$MUSIC_E3M4"
+	enteranim = "_DEP3INT"
+	exitanim = "_DEP3INT"
 }
 
 map E3M5 lookup "HUSTR_E3M5"
@@ -323,6 +367,8 @@ map E3M5 lookup "HUSTR_E3M5"
 	cluster = 3
 	par = 90
 	music = "$MUSIC_E3M5"
+	enteranim = "_DEP3INT"
+	exitanim = "_DEP3INT"
 }
 
 map E3M6 lookup "HUSTR_E3M6"
@@ -335,6 +381,8 @@ map E3M6 lookup "HUSTR_E3M6"
 	cluster = 3
 	par = 90
 	music = "$MUSIC_E3M6"
+	enteranim = "_DEP3INT"
+	exitanim = "_DEP3INT"
 }
 
 map E3M7 lookup "HUSTR_E3M7"
@@ -347,6 +395,8 @@ map E3M7 lookup "HUSTR_E3M7"
 	cluster = 3
 	par = 165
 	music = "$MUSIC_E3M7"
+	enteranim = "_DEP3INT"
+	exitanim = "_DEP3INT"
 }
 
 map E3M8 lookup "HUSTR_E3M8"
@@ -363,6 +413,8 @@ map E3M8 lookup "HUSTR_E3M8"
 	spidermastermindspecial
 	specialaction_exitlevel
 	music = "$MUSIC_E3M8"
+	enteranim = "_DEP3INT"
+	exitanim = "_DEP3INT"
 }
 
 map E3M9 lookup "HUSTR_E3M9"
@@ -375,6 +427,8 @@ map E3M9 lookup "HUSTR_E3M9"
 	cluster = 3
 	par = 135
 	music = "$MUSIC_E3M9"
+	enteranim = "_DEP3INT"
+	exitanim = "_DEP3INT"
 }
 
 // Retail Episode 4
