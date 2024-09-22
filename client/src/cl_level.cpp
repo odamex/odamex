@@ -368,6 +368,11 @@ void G_DoCompleted (void)
 	if (!(level.flags & LEVEL_CHANGEMAPCHEAT))
 	{
 		getLevelInfos().findByName(level.mapname).flags |= LEVEL_VISITED;
+		if(level.flags & LEVEL_SECRET)
+		{
+			for (auto& player : players)
+				player.didsecret = true;
+		}
 	}
 
 	AM_Stop();
@@ -432,6 +437,8 @@ void G_DoCompleted (void)
 		if(&*it == &consoleplayer())
 			wminfo.pnum = i;
 	}
+
+	wminfo.didsecret = consoleplayer().didsecret;
 
 	// [RH] If we're in a hub and staying within that hub, take a snapshot
 	//		of the level. If we're traveling to a new hub, take stuff from
