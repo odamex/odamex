@@ -77,7 +77,7 @@ static const txt_font_t *font;
 
 // Dummy "font" that means to try highdpi rendering, or fallback to
 // normal_font otherwise.
-static const txt_font_t highdpi_font = { "normal-highdpi", NULL, 8, 16 };
+static const txt_font_t highdpi_font = { (char*)"normal-highdpi", NULL, 8, 16 };
 
 // Just for I_Endoom
 //static const int scancode_translate_table[] = SCANCODE_TO_KEYS_ARRAY;
@@ -310,7 +310,7 @@ int TXT_Init(void)
     SDL_SetColors(screenbuffer, ega_colors, 0, 16);
     SDL_EnableUNICODE(1);
 
-    screendata = malloc(TXT_SCREEN_W * TXT_SCREEN_H * 2);
+    screendata = (unsigned char*)malloc(TXT_SCREEN_W * TXT_SCREEN_H * 2);
     memset(screendata, 0, TXT_SCREEN_W * TXT_SCREEN_H * 2);
 
     // Ignore all mouse motion events
