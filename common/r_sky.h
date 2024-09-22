@@ -25,7 +25,7 @@
 
 
 // SKY, store the number for name.
-extern char SKYFLATNAME[8];
+extern OLumpName SKYFLATNAME;
 
 extern int		sky1shift;				//		[ML] 5/11/06 - remove sky2 remenants
 
