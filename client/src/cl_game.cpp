@@ -974,6 +974,7 @@ void G_Ticker (void)
 	if (!::simulated_connection)
 	{
 		CL_HandleIncomingPackets();
+		CL_UpdateServer();
 	}
 
 	if (netdemo.isRecording())

@@ -1343,61 +1343,12 @@ bool CL_ReadAndParseMessages()
 	return true;
 }
 
-void CL_SaveCmd(void)
+void CL_SaveNetCommand()
 {
 	NetCommand *netcmd = &localcmds[gametic % MAXSAVETICS];
 	netcmd->fromPlayer(&consoleplayer());
 	netcmd->setTic(gametic);
 	netcmd->setWorldIndex(world_index);
-}
-
-extern int outrate;
-
-//
-// CL_SendCmd
-//
-void CL_SendCmd(void)
-{
-	player_t *p = &consoleplayer();
-
-	if (netdemo.isPlaying())	// we're not really connected to a server
-		return;
-
-	if (!p->mo || gametic < 1 )
-		return;
-
-	// Resolve acks first.
-	// [LM] Add this to the low-level protocol, not as a message.
-	MSG_WriteCLC(&write_buffer, CLC_Ack(ClientState::get().getRecentAck(),
-	                                    ClientState::get().getAckBits()));
-
-	// GhostlyDeath -- If we are spectating, tell the server of our new position
-	if (p->spectator)
-	{
-		MSG_WriteCLC(&write_buffer, CLC_SpectateUpdate(p->mo));
-	}
-
-	MSG_WriteCLC(&::write_buffer, CLC_Move(::gametic, ::localcmds, MAXSAVETICS));
-
-	int bytesWritten = NET_SendPacket(write_buffer, ClientState::get().getAddress());
-	netgraph.addTrafficOut(bytesWritten);
-
-	outrate += write_buffer.size();
-	SZ_Clear(&write_buffer);
-}
-
-void CL_KeepAlive()
-{
-	// Update the server on acked packets.
-	MSG_WriteCLC(&write_buffer, CLC_Ack(ClientState::get().getRecentAck(),
-	                                    ClientState::get().getAckBits()));
-
-	// Send just the ack.
-	int bytesWritten = NET_SendPacket(write_buffer, ClientState::get().getAddress());
-	netgraph.addTrafficOut(bytesWritten);
-
-	outrate += write_buffer.size();
-	SZ_Clear(&write_buffer);
 }
 
 //

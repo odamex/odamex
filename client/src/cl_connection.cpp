@@ -25,6 +25,7 @@
 
 #include "cl_connect.h"
 #include "cl_main.h"
+#include "cl_netgraph.h"
 #include "cl_parse.h"
 #include "cl_state.h"
 #include "clc_message.h"
@@ -43,19 +44,17 @@ extern int netout;
 extern int outrate;
 extern bool recv_full_update;
 extern std::string server_host;
+extern NetGraph netgraph;
+extern NetCommand localcmds[MAXSAVETICS];
 
 //------------------------------------------------------------------------------
 
 /**
  * @brief Handle connection process.
  */
-static void TickConnecting()
+static void HandleConnecting()
 {
-	if (!NET_GetPacket(::net_message, ::net_from))
-		return;
-
-	// denis - don't accept candy from strangers
-	if (gamestate != GS_CONNECTING || !ClientState::get().isValidAddress(net_from))
+	if (gamestate != GS_CONNECTING)
 		return;
 
 	if (netdemo.isRecording())
@@ -132,59 +131,74 @@ static void TryToConnect(uint32_t dwServerToken)
  *
  * @return True if we should continue, false if we need to early-return.
  */
-static bool TickConnected()
+static bool HandleConnected()
 {
-	static int realrate = 0;
+	last_received = gametic;
+	noservermsgs = false;
 
-	for (;;)
-	{
-		const int packet_size = NET_GetPacket(net_message, net_from);
-		if (packet_size == 0)
-			break;
+	if (!CL_ReadPacketHeader())
+		return false;
 
-		// denis - don't accept candy from strangers
-		if (!NET_CompareAdr(ClientState::get().getAddress(), net_from))
-			break;
+	if (netdemo.isRecording())
+		netdemo.capture(&net_message);
 
-		realrate += packet_size;
-		last_received = gametic;
-		noservermsgs = false;
+	if (!CL_ReadAndParseMessages())
+		return false;
 
-		if (!CL_ReadPacketHeader())
-			continue;
-
-		if (netdemo.isRecording())
-			netdemo.capture(&net_message);
-
-		if (!CL_ReadAndParseMessages())
-			return false;
-
-		if (gameaction == ga_fullconsole) // Host_EndGame was called
-			return false;
-	}
-
-	if (!(gametic % TICRATE))
-	{
-		netin = realrate;
-		realrate = 0;
-	}
-
-	CL_SaveCmd(); // save console commands
-	if (!noservermsgs)
-		CL_SendCmd(); // send console commands to the server
-	else
-		CL_KeepAlive(); // send acks to keep the connection alive.
-
-	if (!(gametic % TICRATE))
-	{
-		netout = outrate;
-		outrate = 0;
-	}
-
-	if (gametic - last_received > 65)
-		noservermsgs = true;
+	if (gameaction == ga_fullconsole) // Host_EndGame was called
+		return false;
 
 	return true;
+}
+
+/**
+ * @brief Send a full update to the server.
+ */
+static void SendFullUpdate()
+{
+	player_t* p = &consoleplayer();
+
+	if (netdemo.isPlaying()) // we're not really connected to a server
+		return;
+
+	if (!p->mo || gametic < 1)
+		return;
+
+	// Resolve acks first.
+	// [LM] Add this to the low-level protocol, not as a message.
+	MSG_WriteCLC(&write_buffer, CLC_Ack(ClientState::get().getRecentAck(),
+	                                    ClientState::get().getAckBits()));
+
+	// GhostlyDeath -- If we are spectating, tell the server of our new position
+	if (p->spectator)
+	{
+		MSG_WriteCLC(&write_buffer, CLC_SpectateUpdate(p->mo));
+	}
+
+	MSG_WriteCLC(&::write_buffer, CLC_Move(::gametic, ::localcmds, MAXSAVETICS));
+
+	int bytesWritten = NET_SendPacket(write_buffer, ClientState::get().getAddress());
+	netgraph.addTrafficOut(bytesWritten);
+
+	outrate += write_buffer.size();
+	SZ_Clear(&write_buffer);
+}
+
+/**
+ * @brief Send a keepalive message.
+ */
+static void SendKeepAlive()
+{
+	// Update the server on acked packets.
+	MSG_WriteCLC(&write_buffer, CLC_Ack(ClientState::get().getRecentAck(),
+	                                    ClientState::get().getAckBits()));
+
+	// Send just the ack.
+	int bytesWritten = NET_SendPacket(write_buffer, ClientState::get().getAddress());
+	netgraph.addTrafficOut(bytesWritten);
+
+	outrate += write_buffer.size();
+	SZ_Clear(&write_buffer);
 }
 
 //------------------------------------------------------------------------------
@@ -442,13 +456,57 @@ bool CL_HandleServerInfo()
 
 void CL_HandleIncomingPackets()
 {
-	if (!ClientState::get().isConnected())
+	for (;;)
 	{
-		TickConnecting();
+		const int packet_size = NET_GetPacket(net_message, net_from);
+		if (packet_size == 0)
+			break;
+
+		// denis - don't accept candy from strangers
+		if (!ClientState::get().isValidAddress(::net_from))
+			break;
+
+		if (!ClientState::get().isConnected())
+		{
+			HandleConnecting();
+		}
+		else
+		{
+			static int realrate = 0;
+			realrate += packet_size;
+
+			if (!HandleConnected())
+				break;
+
+			if (!(gametic % TICRATE))
+			{
+				netin = realrate;
+				realrate = 0;
+			}
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+
+void CL_UpdateServer()
+{
+	CL_SaveNetCommand(); // save player commands.
+	if (!noservermsgs)
+	{
+		SendFullUpdate(); // send full update to server
 	}
 	else
 	{
-		if (!TickConnected())
-			return;
+		SendKeepAlive(); // send acks to keep the connection alive.
 	}
+
+	if (!(gametic % TICRATE))
+	{
+		netout = outrate;
+		outrate = 0;
+	}
+
+	if (gametic - last_received > 65)
+		noservermsgs = true;
 }

@@ -23,13 +23,26 @@
 
 /**
  * @brief Process server info and switch to the right wads...
+ * 
  * @author denis
+ * 
+ * @return True if the server info was parsed and successfully handled.
  */
 bool CL_HandleServerInfo();
 
+/**
+ * @brief Handle the initial packet, containing a full update.
+ * 
+ * @return True if the packet was parsed correctly.
+ */
 bool CL_HandleFirstPacket();
 
 /**
  * @brief Handle incoming packets.
  */
 void CL_HandleIncomingPackets();
+
+/**
+ * @brief Send client updates to server.
+ */
+void CL_UpdateServer();
