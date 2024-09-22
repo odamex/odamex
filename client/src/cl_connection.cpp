@@ -203,46 +203,21 @@ static void SendKeepAlive()
 
 //------------------------------------------------------------------------------
 
-bool CL_HandleFirstPacket()
+void CL_RequestServerInfo()
 {
-	players.clear();
+	::gamestate = GS_CONNECTING;
 
-	CL_ClearMessages();
-	ClientState::get().onConnected();
+	if (ClientState::get().canRetryConnect())
+	{
+		PrintFmt("Connecting to {}...\n",
+		         NET_AdrToString(ClientState::get().getAddress()));
 
-	multiplayer = true;
-	network_game = true;
-	serverside = false;
-	simulated_connection = netdemo.isPlaying();
+		SZ_Clear(&write_buffer);
+		MSG_WriteLong(&write_buffer, LAUNCHER_CHALLENGE);
+		NET_SendPacket(write_buffer, ClientState::get().getAddress());
 
-	MSG_SetOffset(0, buf_t::BT_SSET);
-	if (!CL_ReadPacketHeader())
-		return false;
-
-	// Parsing the header means we acked the first packet, send that off.
-	MSG_WriteCLC(&write_buffer, CLC_Ack(ClientState::get().getRecentAck(),
-	                                    ClientState::get().getAckBits()));
-	NET_SendPacket(write_buffer, ClientState::get().getAddress());
-	SZ_Clear(&write_buffer);
-
-	if (!CL_ReadAndParseMessages())
-		return false;
-
-	if (gameaction == ga_fullconsole) // Host_EndGame was called
-		return false;
-
-	D_SetupUserInfo();
-
-	// raise the weapon
-	if (validplayer(consoleplayer()))
-		consoleplayer().psprites[ps_weapon].sy = 32 * FRACUNIT + 0x6000;
-
-	noservermsgs = false;
-	last_received = gametic;
-
-	gamestate = GS_CONNECTED;
-
-	return true;
+		ClientState::get().onSentConnect();
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -449,6 +424,50 @@ bool CL_HandleServerInfo()
 
 	ClientState::get().onGotServerInfo();
 	TryToConnect(server_token);
+	return true;
+}
+
+//------------------------------------------------------------------------------
+
+bool CL_HandleFirstPacket()
+{
+	players.clear();
+
+	CL_ClearMessages();
+	ClientState::get().onConnected();
+
+	multiplayer = true;
+	network_game = true;
+	serverside = false;
+	simulated_connection = netdemo.isPlaying();
+
+	MSG_SetOffset(0, buf_t::BT_SSET);
+	if (!CL_ReadPacketHeader())
+		return false;
+
+	// Parsing the header means we acked the first packet, send that off.
+	MSG_WriteCLC(&write_buffer, CLC_Ack(ClientState::get().getRecentAck(),
+	                                    ClientState::get().getAckBits()));
+	NET_SendPacket(write_buffer, ClientState::get().getAddress());
+	SZ_Clear(&write_buffer);
+
+	if (!CL_ReadAndParseMessages())
+		return false;
+
+	if (gameaction == ga_fullconsole) // Host_EndGame was called
+		return false;
+
+	D_SetupUserInfo();
+
+	// raise the weapon
+	if (validplayer(consoleplayer()))
+		consoleplayer().psprites[ps_weapon].sy = 32 * FRACUNIT + 0x6000;
+
+	noservermsgs = false;
+	last_received = gametic;
+
+	gamestate = GS_CONNECTED;
+
 	return true;
 }
 

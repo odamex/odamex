@@ -33,12 +33,6 @@ enum netQuitReason_e
 };
 
 /**
- * @brief Do what a launcher does...
- * @author denis
- */
-void CL_RequestConnectInfo();
-
-/**
  * @brief Reconnect to the server.
  */
 void CL_Reconnect();

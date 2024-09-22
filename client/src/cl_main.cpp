@@ -70,6 +70,7 @@
 #include "cl_state.h"
 #include "clc_message.h"
 #include "cl_connect.h"
+#include "cl_connection.h"
 
 #include <bitset>
 #include <map>
@@ -559,8 +560,8 @@ void CL_RunTics()
 		CL_StepTics(1);
 	}
 
-	if (!ClientState::get().isConnected())
-		CL_RequestConnectInfo();
+	if (ClientState::get().isConnecting())
+		CL_RequestServerInfo();
 
 	// [RH] Use the consoleplayer's camera to update sounds
 	S_UpdateSounds(listenplayer().camera);	// move positional sounds

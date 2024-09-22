@@ -22,6 +22,13 @@
 #pragma once
 
 /**
+ * @brief Start the connection sequence by doing what a launcher does...
+ * 
+ * @author denis
+ */
+void CL_RequestServerInfo();
+
+/**
  * @brief Process server info and switch to the right wads...
  * 
  * @author denis

@@ -59,26 +59,6 @@ std::string server_host = ""; // hostname of server
 
 //------------------------------------------------------------------------------
 
-void CL_RequestConnectInfo()
-{
-	if (!ClientState::get().isConnecting())
-		return;
-
-	::gamestate = GS_CONNECTING;
-
-	if (ClientState::get().canRetryConnect())
-	{
-		PrintFmt("Connecting to {}...\n",
-		         NET_AdrToString(ClientState::get().getAddress()));
-
-		SZ_Clear(&write_buffer);
-		MSG_WriteLong(&write_buffer, LAUNCHER_CHALLENGE);
-		NET_SendPacket(write_buffer, ClientState::get().getAddress());
-
-		ClientState::get().onSentConnect();
-	}
-}
-
 void CL_Reconnect()
 {
 	recv_full_update = false;
