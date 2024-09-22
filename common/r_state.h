@@ -144,7 +144,9 @@ extern fixed_t			viewy;
 extern fixed_t			viewz;
 
 extern angle_t			viewangle;
-extern LocalView		localview;
+extern sector_t*		viewsector;
+
+extern LocalView localview;
 extern AActor*			camera;		// [RH] camera instead of viewplayer
 
 extern angle_t			clipangle;

@@ -198,6 +198,22 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 	tmy = y;
 	tmz = z;
 
+	if (!P_IsVoodooDoll(thing))
+	{
+		player_t* player = thing->player;
+
+		if (player)
+		{
+			AActor* camera = player->camera;
+			if (camera)
+			{
+				camera->prevx = tmx;
+				camera->prevy = tmy;
+				player->prevviewz = tmz + player->viewheight;
+			}
+		}
+	}
+
 	tmbbox[BOXTOP] = y + tmthing->radius;
 	tmbbox[BOXBOTTOM] = y - tmthing->radius;
 	tmbbox[BOXRIGHT] = x + tmthing->radius;
@@ -2621,6 +2637,7 @@ void P_RailAttack (AActor *source, int damage, int offset)
 // [RH] PTR_CameraTraverse
 //
 fixed_t CameraX, CameraY, CameraZ;
+sector_t* CameraSector;
 #define CAMERA_DIST	0x1000	// Minimum distance between camera and walls
 
 BOOL PTR_CameraTraverse (intercept_t* in)
@@ -2711,6 +2728,7 @@ void P_AimCamera (AActor *t1)
 		fixed_t ceilingheight = P_CeilingHeight(x2, y2, subsector->sector) - CAMERA_DIST;
 		fixed_t floorheight = P_FloorHeight(x2, y2, subsector->sector) + CAMERA_DIST;
 		fixed_t frac = FRACUNIT;
+		CameraSector = subsector->sector;
 
 		if (CameraZ < floorheight) {
 			frac = FixedDiv (floorheight - shootz, CameraZ - shootz);

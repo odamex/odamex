@@ -54,6 +54,7 @@ void C_ClearCommand();
 void C_NewModeAdjust (void);
 
 void C_Ticker (void);
+void C_DisplayTicker(void);
 
 int PrintString (int printlevel, const char *string);
 int STACK_ARGS Printf_Bold (const char *format, ...);

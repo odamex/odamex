@@ -48,6 +48,7 @@
 #include "p_setup.h"
 #include "r_data.h"
 #include "r_sky.h"
+#include "r_interp.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
 #include "st_stuff.h"
@@ -64,7 +65,6 @@
 void CL_ClearSectorSnapshots();
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
-void R_ResetInterpolation();
 
 EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_monstersrespawn)
@@ -552,7 +552,7 @@ void G_DoLoadLevel (int position)
 		C_HideConsole();
 
 	// [SL] clear the saved sector data from the last level
-	R_ResetInterpolation();
+	OInterpolation::getInstance().resetGameInterpolation();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
