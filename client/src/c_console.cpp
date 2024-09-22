@@ -74,10 +74,10 @@ extern int		gametic;
 static unsigned int		ConRows, ConCols, PhysRows;
 
 static bool				cursoron = false;
-static int				ConBottom = 0;
-static int		RowAdjust = 0;
+static unsigned int				ConBottom = 0;
+static unsigned int RowAdjust = 0;
 
-int			ConBottomStep; // Console fall/raise bottom pixels at the end of the tic, for interp purposes
+unsigned int			ConBottomStep; // Console fall/raise bottom pixels at the end of the tic, for interp purposes
 
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
@@ -315,7 +315,7 @@ private:
 //
 void ConsoleCommandLine::doScrolling()
 {
-	int n = scrolled_columns;
+	size_t n = scrolled_columns;
 
 	// Start of visible line is beyond end of line
 	if (scrolled_columns >= text.length())
@@ -1150,7 +1150,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	char work[MAX_LINE_LENGTH];
 	brokenlines_t *lines;
 
-	int len = strlen(source);
+	size_t len = strlen(source);
 
 	if ((printlevel != 128 && !show_messages) || len == 0 ||
 		(gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) )
@@ -1164,7 +1164,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 
 	if (addtype == APPENDLINE && NotifyStrings[NUMNOTIFIES-1].printlevel == printlevel)
 	{
-		sprintf(work, "%s%s", NotifyStrings[NUMNOTIFIES-1].text, source);
+		snprintf(work, MAX_LINE_LENGTH, "%s%s", NotifyStrings[NUMNOTIFIES - 1].text, source);
 		lines = V_BreakLines(width, work);
 	}
 	else
@@ -1208,7 +1208,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 // Prints the given string to stdout, stripping away any color markup
 // escape codes.
 //
-static int C_PrintStringStdOut(const char* str)
+static size_t C_PrintStringStdOut(const char* str)
 {
 	std::string sanitized_str(str);
 	StripColorCodes(sanitized_str);
@@ -1226,7 +1226,7 @@ static int C_PrintStringStdOut(const char* str)
 // Provide our own Printf() that is sensitive of the
 // console status (in or out of game).
 // 
-static int C_PrintString(int printlevel, const char* color_code, const char* outline)
+static size_t C_PrintString(int printlevel, const char* color_code, const char* outline)
 {
 	if (I_VideoInitialized() && !midprinting)
 	{
@@ -1299,7 +1299,7 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 	return strlen(outline);
 }
 
-static int VPrintf(int printlevel, const char* color_code, const char* format, va_list parms)
+static size_t VPrintf(int printlevel, const char* color_code, const char* format, va_list parms)
 {
 	char outline[MAX_LINE_LENGTH], outlinelog[MAX_LINE_LENGTH];
 
@@ -1312,8 +1312,8 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	// ToDo: there may be more characters not allowed on a consoleprint, 
 	// maybe restrict a few ASCII stuff later on ?
-	int len = strlen(outline);
-	for (int i = 0; i < len; i++)
+	size_t len = strlen(outline);
+	for (size_t i = 0; i < len; i++)
 	{
 		if (outline[i] == 0x07)
 			outline[i] = '.';
@@ -1741,7 +1741,7 @@ void C_DrawConsole()
 	int primary_surface_height = primary_surface->getHeight();
 
 	int left = 8;
-	int lines = (ConBottom - 12) / 8;
+	size_t lines = (ConBottom - 12) / 8;
 
 	int offset;
 	if (lines * 8 > ConBottom - 16)
@@ -1813,7 +1813,7 @@ void C_DrawConsole()
 			// Stamp out the bar...if we have enough room - if we at tiny
 			// resolutions we may not.
 			size_t dltxtlen = download.length();
-			ptrdiff_t barchars = chars - dltxtlen;
+			size_t barchars = chars - dltxtlen;
 
 			if (barchars >= 2)
 			{
@@ -1843,14 +1843,14 @@ void C_DrawConsole()
 		if (TickerMax)
 		{
 			char tickstr[256];
-			unsigned int i, tickend = ConCols - primary_surface_width / 90 - 6;
-			unsigned int tickbegin = 0;
+			size_t i, tickend = ConCols - primary_surface_width / 90 - 6;
+			size_t tickbegin = 0;
 
 			if (TickerLabel)
 			{
 				tickbegin = strlen(TickerLabel) + 2;
 				tickend -= tickbegin;
-				sprintf(tickstr, "%s: ", TickerLabel);
+				snprintf(tickstr, 256, "%s: ", TickerLabel);
 			}
 			if (tickend > 256 - 8)
 				tickend = 256 - 8;
@@ -1862,7 +1862,8 @@ void C_DrawConsole()
 			if (i > tickend)
 				i = tickend;
 			tickstr[i] = -125;
-			sprintf(tickstr + tickend + 3, "%u%%", (TickerAt * 100) / TickerMax);
+			size_t buflen = 256 - tickend - 3;
+			snprintf(tickstr + tickend + 3, buflen, "%u%%", (TickerAt * 100) / TickerMax);
 			screen->PrintStr(8, ConBottom - 12, tickstr);
 		}
 	}
@@ -1914,7 +1915,7 @@ void C_DrawConsole()
 			{
 				// Prepare a row string to copy completions into.
 				memset(rowstring, ' ', ARRAY_LENGTH(rowstring));
-				unsigned int col = 0;
+				size_t col = 0;
 
 				for (size_t c = 0; c < cColumns; c++)
 				{
@@ -1944,7 +1945,7 @@ void C_DrawConsole()
 			// Render an overflow message if necessary.
 			if (cOverflow)
 			{
-				snprintf(rowstring, ARRAY_LENGTH(rowstring), "...and %lu more...",
+				snprintf(rowstring, ARRAY_LENGTH(rowstring), "...and %zu more...",
 				         ::CmdCompletions.size() - (cLines * cColumns));
 				screen->PrintStr(left, offset + (lines + cLines + 1) * 8, rowstring,
 				                 CR_YELLOW);

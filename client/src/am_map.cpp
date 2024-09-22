@@ -703,7 +703,7 @@ void AM_loadPics()
 
 	for (int i = 0; i < 10; i++)
 	{
-		sprintf(namebuf, "AMMNUM%d", i);
+		snprintf(namebuf, 9, "AMMNUM%d", i);
 		marknums[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 }

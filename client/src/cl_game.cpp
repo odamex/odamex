@@ -304,7 +304,7 @@ BEGIN_COMMAND (turnspeeds)
 {
 	if (argc == 1)
 	{
-		Printf (PRINT_HIGH, "Current turn speeds: %ld %ld %ld\n",
+		Printf (PRINT_HIGH, "Current turn speeds: %d %d %d\n",
 				angleturn[0], angleturn[1], angleturn[2]);
 	}
 	else
@@ -471,7 +471,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	// Joystick analog look -- Hyper_Eye
-	if (joy_freelook && sv_freelook || consoleplayer().spectator)
+	if ((joy_freelook && sv_freelook) || consoleplayer().spectator)
 	{
 		if (joy_invert)
 			look += (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
@@ -1441,7 +1441,7 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 
 void G_DeathMatchSpawnPlayer (player_t &player)
 {
-	int selections;
+	size_t selections;
 	mapthing2_t *spot;
 
 	if(!serverside || G_UsesCoopSpawns())
@@ -1453,7 +1453,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 		I_Error ("No deathmatch starts");
 
 	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
-	spot = SelectRandomDeathmatchSpot (player, selections);
+	spot = SelectRandomDeathmatchSpot (player, static_cast<int>(selections));
 
 	if (!spot && !playerstarts.empty())
 	{
@@ -1913,9 +1913,9 @@ void G_DoPlayDemo(bool justStreamInput)
 		byte map = *demo_p++;
 		char mapname[32];
 		if (gameinfo.flags & GI_MAPxx)
-			sprintf(mapname, "MAP%02d", map);
+			snprintf(mapname, 32, "MAP%02d", map);
 		else
-			sprintf(mapname, "E%dM%d", episode, map);
+			snprintf(mapname, 32, "E%dM%d", episode, map);
 
 		int deathmatch = *demo_p++;
 		bool monstersrespawn = *demo_p++;
@@ -1933,7 +1933,7 @@ void G_DoPlayDemo(bool justStreamInput)
 				players.push_back(player_t());
 				player_t* player = &players.back();
 				player->playerstate = PST_REBORN;
-				player->id = i + 1;
+				player->id = (byte)i + 1;
 			}
 		}
 
@@ -2010,7 +2010,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			it->userinfo.color[3] = color.getb();
 
 			char tmpname[16];
-			sprintf(tmpname, "Player %i", it->id);
+			snprintf(tmpname, 16, "Player %i", it->id);
 			it->userinfo.netname = tmpname;
 		}
 

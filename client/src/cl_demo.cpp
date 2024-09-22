@@ -727,8 +727,6 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 	if (!player->mo)
 		return;
 
-	AActor *mo = player->mo;
-
 	MSG_WriteSVC(netbuffer, SVC_NetdemoCap(player));
 }
 
