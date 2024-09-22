@@ -23,7 +23,7 @@
 
 #include "SDL.h"
 
-#if (SDL_MAJOR_VERSION == 2 && SDL_MINOR_VERSION == 0)
+#if (SDL_MAJOR_VERSION == 2)
 	#define SDL20
 #elif (SDL_MAJOR_VERSION == 1 && SDL_MINOR_VERSION == 2)
 	#define SDL12

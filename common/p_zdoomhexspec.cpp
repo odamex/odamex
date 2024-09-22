@@ -34,13 +34,9 @@ EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
 EXTERN_CVAR(sv_forcewater)
 
-lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
+bool P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
                                      bool bossaction)
 {
-	lineresult_s result;
-	result.lineexecuted = false;
-	result.switchchanged = false;
-
 	// Do not teleport on the wrong side
 	if (side)
 	{
@@ -52,7 +48,7 @@ lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
 		case Teleport_EndGame:
 		case Teleport_NoStop:
 		case Teleport_Line:
-			return result;
+			return false;
 			break;
 		default:
 			break;
@@ -76,19 +72,13 @@ lineresult_s P_CrossZDoomSpecialLine(line_t* line, int side, AActor* thing,
 	{ // [RH] Just a little hack for BOOM compatibility
 		return P_ActivateZDoomLine(line, thing, side, ML_SPAC_MCROSS);
 	}
-	return result;
+	return false;
 }
 
-lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
+bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
                                  unsigned int activationType)
 {
-	bool repeat;
 	bool buttonSuccess;
-
-	lineresult_s result;
-
-	result.lineexecuted = false;
-	result.switchchanged = false;
 
 	// Err...
 	// Use the back sides of VERY SPECIAL lines...
@@ -102,22 +92,19 @@ lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 			break;
 
 		default:
-			return result;
+			return false;
 		}
 	}
 
 	if (!P_TestActivateZDoomLine(line, mo, side, activationType) ||
 	    !P_CanActivateSpecials(mo, line))
 	{
-		return result;
+		return false;
 	}
 
 	buttonSuccess = P_ExecuteZDoomLineSpecial(line->special, line->args, line, side, mo);
 
-	result.switchchanged = buttonSuccess;
-	result.lineexecuted = buttonSuccess;
-
-	return result;
+	return buttonSuccess;
 }
 
 const LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int activationType)
@@ -260,25 +247,40 @@ void P_PlayerInZDoomSector(player_t* player)
 				player->hazardcount += sector->damageamount;
 				player->hazardinterval = sector->damageinterval;
 			}
-			else
+
+			if (sector->special == 0) // ZDoom Static Init Damage
 			{
-				if (level.time % sector->damageinterval == 0)
+				if (sector->damageamount < 20)
 				{
-					P_DamageMobj(player->mo, NULL, NULL, sector->damageamount);
-
-					if (sector->flags & SECF_ENDLEVEL && player->health <= 10)
-					{
-						if (serverside && sv_allowexit)
-						{
-							G_ExitLevel(0, 1);
-						}
-					}
-
-					if (sector->flags & SECF_DMGTERRAINFX)
-					{
-						// MAP_FORMAT_TODO: damage special effects
-					}
+					P_ApplySectorDamageNoRandom(player, sector->damageamount,
+					 MOD_UNKNOWN);
 				}
+				else if (sector->damageamount < 50)
+				{
+					P_ApplySectorDamage(player, sector->damageamount, 5, MOD_UNKNOWN);
+				}
+				else
+				{
+					P_ApplySectorDamageNoWait(player, sector->damageamount,
+					 MOD_UNKNOWN);
+				}
+			}
+			else if (level.time % sector->damageinterval == 0)
+			{
+				P_DamageMobj(player->mo, NULL, NULL, sector->damageamount);
+			}
+
+			if (sector->flags & SECF_ENDLEVEL && player->health <= 10)
+			{
+				if (serverside && sv_allowexit)
+				{
+					G_ExitLevel(0, 1);
+				}
+			}
+
+			if (sector->flags & SECF_DMGTERRAINFX)
+			{
+				// MAP_FORMAT_TODO: damage special effects
 			}
 		}
 	}

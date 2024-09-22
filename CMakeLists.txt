@@ -26,6 +26,11 @@ include(GNUInstallDirs OPTIONAL)
 add_definitions(-DINSTALL_BINDIR="${CMAKE_INSTALL_BINDIR}")
 add_definitions(-DINSTALL_DATADIR="${CMAKE_INSTALL_DATADIR}")
 
+# Set up FHS installation path
+if(NOT APPLE AND NOT WIN32)
+  add_definitions(-DINSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}")
+endif()
+
 if(WIN32)
   set(USE_INTERNAL_LIBS 1)
 else()
@@ -49,7 +54,7 @@ cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 cmake_dependent_option( USE_INTERNAL_MINIUPNP "Use internal MiniUPnP" 1 USE_MINIUPNP 0 )
 
-set(PROJECT_COPYRIGHT "2006-2022")
+set(PROJECT_COPYRIGHT "2006-2024")
 set(PROJECT_RC_VERSION "11,0,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
 

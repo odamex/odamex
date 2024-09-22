@@ -40,7 +40,7 @@
 #include <dirent.h>
 #endif
 
-#include <math.h>
+#include <cmath>
 
 
 #include "m_alloc.h"
@@ -122,6 +122,9 @@ gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 bool demotest = false;
 
 IWindowSurface* page_surface;
+
+static int page_height;
+static int page_width;
 
 static int demosequence;
 static int pagetic;
@@ -274,7 +277,7 @@ void D_Display()
 			return;
 
 		case GS_LEVEL:
-			if (!gametic)
+		    if (!gametic || !g_ValidLevel)
 				break;
 
 			V_DoPaletteEffects();
@@ -405,16 +408,30 @@ void D_PageDrawer()
 	{
 		int destw, desth;
 
-		if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight())) // Always fill/stretch pages on protected resolutions
+		{
 			destw = surface_width, desth = surface_height;
+		}
 		else if (surface_width * 3 >= surface_height * 4)
+		{
 			destw = surface_height * 4 / 3, desth = surface_height;
+		}
 		else
+		{
 			destw = surface_width, desth = surface_width * 3 / 4;
+		}
+
+		// Using widescreen assets? It may go off screen.
+		// Preserve the aspect ratio and make the box big
+		// Maybe too big? (it will be cropped if so)
+		if (page_width > 320)
+		{
+			destw = I_GetAspectCorrectWidth(desth, page_height, page_width);
+		}
 
 		page_surface->lock();
 
-		primary_surface->blit(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
+		primary_surface->blitcrop(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
 				(surface_width - destw) / 2, (surface_height - desth) / 2, destw, desth);
 
 		page_surface->unlock();
@@ -518,15 +535,18 @@ void D_DoAdvanceDemo (void)
 	{
 		const patch_t* patch = W_CachePatch(pagename);
 
+		page_width = patch->width();
+		page_height = patch->height() + (patch->height() / 5);
+
 		I_FreeSurface(page_surface);
 
 		if (gameinfo.flags & GI_PAGESARERAW)
 		{
-			page_surface = I_AllocateSurface(320, 200, 8);
+			page_surface = I_AllocateSurface(page_width, page_height, 8);
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
-            canvas->DrawBlock(0, 0, 320, 200, (byte*)patch);
+			canvas->DrawBlock(0, 0, page_width, page_height, (byte*)patch);
 			page_surface->unlock();
 		}
 		else
@@ -549,6 +569,8 @@ void STACK_ARGS D_Close()
 	I_FreeSurface(page_surface);
 
 	D_ClearTaskSchedulers();
+
+	page_height, page_width = 0;
 }
 
 //
@@ -705,6 +727,9 @@ void STACK_ARGS D_Shutdown()
 	// reset the Zone memory manager
 	Z_Close();
 
+	// [AM] Level is now invalid due to torching zone memory.
+	g_ValidLevel = false;
+
 	// [AM] All of our dyncolormaps are freed, tidy up so we
 	//      don't follow wild pointers.
 	NormalLight.next = NULL;
@@ -754,6 +779,7 @@ void D_DoomMain()
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
 	std::string iwad;
+	std::vector<std::string> pwads;
 	const char* iwadParam = Args.CheckValue("-iwad");
 	if (iwadParam)
 	{
@@ -787,7 +813,15 @@ void D_DoomMain()
 
 		if (!shouldSkip)
 		{
-			iwad = GUI_BootWindow();
+			scannedWADs_t wads = GUI_BootWindow();
+			iwad = wads.iwad;
+			pwads = wads.pwads;
+
+			for (StringTokens::iterator it = wads.options.begin();
+		    	 it != wads.options.end(); ++it)
+			{
+				Args.AppendArg((*it).c_str());
+			}
 		}
 	}
 
@@ -798,6 +832,16 @@ void D_DoomMain()
 		OWantFile file;
 		OWantFile::make(file, iwad, OFILE_WAD);
 		newwadfiles.push_back(file);
+	}
+
+	if (!pwads.empty())
+	{
+		for (size_t i = 0; i < pwads.size(); i++)
+		{
+			OWantFile file;
+			OWantFile::make(file, pwads[i], OFILE_WAD);
+			newwadfiles.push_back(file);
+		}
 	}
 
 	D_AddWadCommandLineFiles(newwadfiles);
@@ -835,7 +879,7 @@ void D_DoomMain()
 	// set the default value for vid_ticker based on the presence of -devparm
 	if (devparm)
 		vid_ticker.SetDefault("1");
- 
+
 	// Nomonsters
 	sv_nomonsters = Args.CheckParm("-nomonsters");
 

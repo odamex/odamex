@@ -83,6 +83,8 @@ extern int NewWidth, NewHeight, NewBits, DisplayBits;
 static int loading_icon_expire = -1;
 static IWindowSurface* loading_icon_background_surface = NULL;
 
+extern IWindowSurface* scaled_screenblocks_surface;
+
 EXTERN_CVAR(vid_32bpp)
 EXTERN_CVAR(vid_fullscreen)
 EXTERN_CVAR(vid_vsync)
@@ -93,6 +95,8 @@ EXTERN_CVAR(vid_640x400)
 EXTERN_CVAR(vid_autoadjust)
 EXTERN_CVAR(vid_displayfps)
 EXTERN_CVAR(vid_ticker)
+EXTERN_CVAR(vid_widescreen)
+EXTERN_CVAR(sv_allowwidescreen)
 
 
 // ****************************************************************************
@@ -255,13 +259,217 @@ static void BlitLoop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 	}
 }
 
+template <typename SOURCE_PIXEL_T, typename DEST_PIXEL_T>
+static void BlitLoopCrop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
+					int destpitchpixels, int srcpitchpixels,
+					int destw, int desth,
+					int off_top, int off_bottom, int off_left, int off_right,
+					fixed_t xstep, fixed_t ystep, const argb_t* palette)
+{
+	fixed_t yfrac = 0;
+
+	int pixelcur = 0;
+	for (int y = 0; y < desth; y++)
+	{
+		// Find if we're off the top or bottom of page
+		if (y - off_top >= 0 && y < desth - off_bottom)
+		{
+			if (sizeof(DEST_PIXEL_T) == sizeof(SOURCE_PIXEL_T) && xstep == FRACUNIT)
+			{
+				for (int x = 0; x < destw; x++)
+				{
+					// Find if we're off the left or right of page
+					if (x - off_left >= 0 && x < destw - off_right)
+					{
+						dest[pixelcur] = source[x];
+						pixelcur++;
+					}
+				}
+				pixelcur = 0;
+			}
+			else
+			{
+				fixed_t xfrac = 0;
+				for (int x = 0; x < destw; x++)
+				{
+					// Find if we're off the left or right of page
+					if (x - off_left >= 0 && x < destw - off_right)
+					{
+						dest[pixelcur] = ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(source[xfrac >> FRACBITS], palette);
+						pixelcur++;
+					}
+
+					xfrac += xstep;
+				}
+				pixelcur = 0;
+			}
+		}
+
+		dest += destpitchpixels;
+		yfrac += ystep;
+
+		source += srcpitchpixels * (yfrac >> FRACBITS);
+		yfrac &= (FRACUNIT - 1);
+	}
+}
+
+
+//
+// IWindowSurface::blitcrop
+//
+// Blits a surface into this surface, automatically scaling the source image
+// to fit the destination dimensions. However, instead of scaling the image to fit
+// the surface dimensions, it scales the image to destination dimensions and then
+// crops it to the screen if it's off the side of the surface in any direction.
+//
+void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, int srcy,
+			int srcw, int srch, int destx, int desty, int destw, int desth)
+{
+	int off_left = 0;
+	int off_right = 0;
+	int off_top = 0;
+	int off_bottom = 0;
+
+	int bufferx = 0;
+	int buffery = 0;
+
+	// clamp to source surface edges
+	if (srcx < 0)
+	{
+		srcw += srcx;
+		srcx = 0;
+	}
+
+	if (srcy < 0)
+	{
+		srch += srcy;
+		srcy = 0;
+	}
+
+	if (srcx + srcw > source_surface->getWidth())
+		srcw = source_surface->getWidth() - srcx;
+	if (srcy + srch > source_surface->getHeight())
+		srch = source_surface->getHeight() - srcy;
+
+	if (srcw == 0 || srch == 0)
+		return;
+
+	// clamp buffer to source edges, but keep destx and desty
+	// for clipping purposes
+
+	if (destx < 0)
+	{
+		off_left -= destx;
+		bufferx = 0;
+	}
+	else
+	{
+		bufferx = destx;
+	}
+
+	if (desty < 0)
+	{
+		off_top -= desty;
+		buffery = 0;
+	}
+	else
+	{
+		buffery = desty;
+	}
+
+	if (destx + destw > getWidth())
+	{
+		off_right = destw + destx - getWidth();
+	}
+	if (desty + desth > getHeight())
+	{
+		off_bottom = desth + desty - getHeight();
+	}
+
+	if (destw == 0 || desth == 0)
+		return;
+
+	// Our starting position is off the screen
+	// And we will never recover from this
+	// Someone messed their x/y or desth/w calc up!
+	// We're done here!
+
+	// Too far right to draw anything
+	if (destx > getWidth())
+		return;
+
+	// Too far down to draw anything
+	if (desty > getHeight())
+		return;
+
+	// Box at the top will never be drawn
+	if (desty + desth < 0)
+		return;
+
+	// Box at the left will never be drawn
+	if (destx + destw < 0)
+		return;
+
+	fixed_t xstep = FixedDiv(srcw << FRACBITS, destw << FRACBITS);
+	fixed_t ystep = FixedDiv(srch << FRACBITS, desth << FRACBITS);
+
+	int srcbits = source_surface->getBitsPerPixel();
+	int destbits = getBitsPerPixel();
+	int srcpitchpixels = source_surface->getPitchInPixels();
+	int destpitchpixels = getPitchInPixels();
+
+	const argb_t* palette = source_surface->getPalette();
+
+	if (srcbits == 8 && destbits == 8)
+	{
+		const palindex_t* source =
+		    (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
+		palindex_t* dest = (palindex_t*)getBuffer() + buffery * destpitchpixels + bufferx;
+
+		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels, 
+			destw, desth, 
+			off_top, off_bottom, off_left, off_right,
+			xstep, ystep, palette);
+	}
+	else if (srcbits == 8 && destbits == 32)
+	{
+		if (palette == NULL)
+			return;
+
+		const palindex_t* source =
+		    (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
+		argb_t* dest = (argb_t*)getBuffer() + buffery * destpitchpixels + bufferx;
+
+		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels, 
+				destw, desth,
+				off_top, off_bottom, off_left, off_right,
+				xstep, ystep, palette);
+	}
+	else if (srcbits == 32 && destbits == 8)
+	{
+		// we can't quickly convert from 32bpp source to 8bpp dest so don't bother
+		return;
+	}
+	else if (srcbits == 32 && destbits == 32)
+	{
+		const argb_t* source =
+		    (argb_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
+		argb_t* dest = (argb_t*)getBuffer() + buffery * destpitchpixels + bufferx;
+
+		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels, 
+			destw, desth,
+			off_top, off_bottom, off_left, off_right,
+			xstep, ystep, palette);
+	}
+}
+
 
 //
 // IWindowSurface::blit
 //
 // Blits a surface into this surface, automatically scaling the source image
 // to fit the destination dimensions.
-//
+// 
 void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int srcy, int srcw, int srch,
 			int destx, int desty, int destw, int desth)
 {
@@ -581,6 +789,7 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	I_FreeSurface(converted_surface);
 	I_FreeSurface(matted_surface);
 	I_FreeSurface(emulated_surface);
+	I_FreeSurface(scaled_screenblocks_surface);
 
 	// Handle a requested 8bpp surface when the video capabilities only support 32bpp
 	if (requested_mode.bpp != validated_mode.bpp)
@@ -611,23 +820,47 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 
 	if (!I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 	{
-		if (vid_320x200 || vid_640x400)
+		if (vid_320x200 || vid_640x400 || (!serverside && !sv_allowwidescreen))
+		{
 			surface_width = surface_height * 4 / 3;
-		else if (V_UsePillarBox())
-			surface_width = surface_height * 4 / 3;
-		else if (V_UseLetterBox())
-			surface_height = surface_width * 9 / 16;
+		}
+		else
+		{
+			int ratios_x[] = { 4, 0, 16, 16, 21, 32 };
+			int ratios_y[] = { 3, 0, 10,  9,  9,  9 };
+			int ratio_x = ratios_x[vid_widescreen.asInt()];
+			int ratio_y = ratios_y[vid_widescreen.asInt()];
+
+			// Clamp "Auto" aspect ratio.
+			if (vid_widescreen.asInt() == 1)
+			{
+				if (3 * surface_width < 4 * surface_height)
+				{
+					ratio_x = 4;
+					ratio_y = 3;
+				}
+				else if (9 * surface_width > 32 * surface_height)
+				{
+					ratio_x = 32;
+					ratio_y = 9;
+				}
+			}
+
+			// Pillarbox or letterbox as needed.
+			if (ratio_x > 0 && ratio_y > 0)
+			{
+				if (surface_height * ratio_x < surface_width * ratio_y)
+					surface_width = surface_height * ratio_x / ratio_y;
+				else if (surface_height * ratio_x > surface_width * ratio_y)
+					surface_height = surface_width * ratio_y / ratio_x;
+			}
+		}
 	}
 
 	// Ensure matted surface dimensions are sane and sanitized.
 	surface_width = clamp<uint16_t>(surface_width, 320, MAXWIDTH);
 	surface_height = clamp<uint16_t>(surface_height, 200, MAXHEIGHT);
 	
-	// Anything wider than 16:9 starts to look more distorted and provides even more advantage, so for now
-	// if the monitor aspect ratio is wider than 16:9, clamp it to that (TODO: Aspect ratio selection)
-	if (surface_width / surface_height > 16 / 9)
-		surface_width = (surface_height * 16) / 9;
-
 	// Is matting being used? Create matted_surface based on the primary_surface.
 	if (surface_width != primary_surface->getWidth() ||
 		surface_height != primary_surface->getHeight())
@@ -1197,6 +1430,12 @@ const PixelFormat* I_Get32bppPixelFormat()
 	#endif
 
 	return &format;
+}
+
+int I_GetAspectCorrectWidth(int surface_height, int asset_height, int asset_width)
+{
+	float aspect_scale_ratio = (float)surface_height / (float)asset_height;
+	return aspect_scale_ratio * asset_width;
 }
 
 VERSION_CONTROL (i_video_cpp, "$Id$")

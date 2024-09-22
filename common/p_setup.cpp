@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <set>
+#include <zlib.h>
 
 #include "m_alloc.h"
 #include "m_vectors.h"
@@ -70,7 +71,9 @@ int P_TranslateSectorSpecial(int special);
 extern dyncolormap_t NormalLight;
 extern AActor* shootthing;
 
-EXTERN_CVAR(g_coopthingfilter)
+EXTERN_CVAR(g_thingfilter)
+
+bool			g_ValidLevel = false;
 
 //
 // MAP related Lookup tables.
@@ -96,6 +99,8 @@ line_t* 		lines;
 
 int 			numsides;
 side_t* 		sides;
+
+std::vector<int>	originalLightLevels; // Needed for map resets
 
 // [RH] Set true if the map contains a BEHAVIOR lump
 bool			HasBehavior = false;
@@ -303,6 +308,7 @@ void P_LoadSectors (int lump)
 
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
 	delete[] sectors;
+	originalLightLevels.clear();
 
 	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
 
@@ -326,6 +332,7 @@ void P_LoadSectors (int lump)
 		ss->floorpic = (short)R_FlatNumForName(ms->floorpic);
 		ss->ceilingpic = (short)R_FlatNumForName(ms->ceilingpic);
 		ss->lightlevel = LESHORT(ms->lightlevel);
+		originalLightLevels.push_back(LESHORT(ms->lightlevel));
 		ss->special = LESHORT(ms->special);
 		ss->secretsector = !!(ss->special&SECRET_MASK);
 		ss->tag = LESHORT(ms->tag);
@@ -454,14 +461,77 @@ bool P_LoadXNOD(int lump)
 {
 	size_t len = W_LumpLength(lump);
 	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+	byte* output = NULL;
 
-	if (len < 4 || memcmp(data, "XNOD", 4) != 0)
+	if (len < 4)
 	{
 		Z_Free(data);
 		return false;
 	}
 
-	byte *p = data + 4; // skip the magic number
+	if (len >= 8 && memcmp(data, "xNd4\0\0\0\0", 8) == 0)
+		I_Error("P_LoadXNOD: DeePBSP nodes are not supported.");
+
+	bool compressed = memcmp(data, "ZNOD", 4) == 0;
+
+	if (memcmp(data, "XNOD", 4) != 0 && !compressed)
+	{
+		Z_Free(data);
+		return false;
+	}
+
+	byte *p;
+	// [EB] decompress compressed nodes
+	// adapted from Crispy Doom
+	if (compressed)
+	{
+		int outlen, err;
+		z_stream *zstream;
+
+		// first estimate for compression rate:
+		// output buffer size == 2.5 * input size
+		outlen = 2.5 * len;
+		output = (byte*)Z_Malloc(outlen, PU_STATIC, 0);
+
+		// initialize stream state for decompression
+		zstream = (z_stream*)M_Malloc(sizeof(*zstream));
+		memset(zstream, 0, sizeof(*zstream));
+		zstream->next_in = data + 4;
+		zstream->avail_in = len - 4;
+		zstream->next_out = output;
+		zstream->avail_out = outlen;
+
+		if (inflateInit(zstream) != Z_OK)
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression initialization!");
+
+		// resize if output buffer runs full
+		while ((err = inflate(zstream, Z_SYNC_FLUSH)) == Z_OK)
+		{
+			int outlen_old = outlen;
+			outlen = 2 * outlen_old;
+			output = (byte*)M_Realloc(output, outlen);
+			zstream->next_out = output + outlen_old;
+			zstream->avail_out = outlen - outlen_old;
+		}
+
+		if (err != Z_STREAM_END)
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression!");
+
+		fprintf(stderr, "P_LoadXNOD: ZDBSP nodes compression ratio %.3f\n",
+				(float)zstream->total_out/zstream->total_in);
+
+		len = zstream->total_out;
+
+		if (inflateEnd(zstream) != Z_OK)
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression shut-down!");
+
+		M_Free(zstream);
+		p = output;
+	}
+	else
+	{
+		p = data + 4; // skip the magic number
+	}
 
 	// Load vertices
 	unsigned int numorgvert = LELONG(*(unsigned int *)p); p += 4;
@@ -578,6 +648,7 @@ bool P_LoadXNOD(int lump)
 	}
 
 	Z_Free(data);
+	Z_Free(output);
 
 	return true;
 }
@@ -623,9 +694,9 @@ void P_LoadThings (int lump)
 			#ifdef SERVER_APP
 			if (G_IsCoopGame())
 			{ 
-				if (g_coopthingfilter == 1)
+				if (g_thingfilter == 1)
 					mt2.flags |= MTF_FILTER_COOPWPN;
-				else if (g_coopthingfilter == 2)
+				else if (g_thingfilter == 2)
 					mt2.flags &= ~MTF_COOPERATIVE;
 			}
 			else
@@ -1817,6 +1888,7 @@ void P_SetupLevel (const char *lumpname, int position)
 
 	DThinker::DestroyAllThinkers ();
 	Z_FreeTags (PU_LEVEL, PU_LEVELMAX);
+	g_ValidLevel = false;		// [AM] False until the level is loaded.
 	NormalLight.next = NULL;	// [RH] Z_FreeTags frees all the custom colormaps
 
 	// [AM] Every new level starts with fresh netids.
@@ -1940,6 +2012,9 @@ void P_SetupLevel (const char *lumpname, int position)
 	if (precache)
 		R_PrecacheLevel ();
 #endif
+
+	// [AM] Level is now safely loaded.
+	g_ValidLevel = true;
 }
 
 //
@@ -1951,6 +2026,7 @@ void P_Init (void)
 	P_InitPicAnims ();
 	R_InitSprites (sprnames);
 	InitTeamInfo();
+	P_InitHorde();
 }
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)

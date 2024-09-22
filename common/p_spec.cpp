@@ -78,10 +78,10 @@ bool s_SpecialFromServer;
 int P_FindSectorFromLineTag(int tag, int start);
 BOOL EV_DoDoor(DDoor::EVlDoor type, line_t* line, AActor* thing, int tag, int speed,
                int delay, card_t lock);
-lineresult_s P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
-lineresult_s P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
+bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
+bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
                                  unsigned int activationType);
-lineresult_s P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
+bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
                                         bool bossaction);
 
 //
@@ -215,10 +215,10 @@ int P_IsUnderDamage(AActor* actor)
 }
 
 /*
-* 
+*
 * P_IsFriendlyThing
 * @brief Helper function to determine if a particular thing is of friendly origin.
-* 
+*
 * @param actor Source actor
 * @param friendshiptest Thing to test friendliness
 */
@@ -465,7 +465,7 @@ void DPusher::Serialize (FArchive &arc)
 	else
 	{
 		arc >> m_Type;
-		arc.ReadObject((DObject*&)m_Source, DPusher::StaticType());
+		arc.ReadObject((DObject*&)*m_Source, DPusher::StaticType());
 		arc >> m_Xmag >> m_Ymag >> m_Magnitude >> m_Radius >> m_X >> m_Y >> m_Affectee;
 	}
 }
@@ -580,7 +580,7 @@ static void P_InitAnimDefs ()
 	}
     catch (CRecoverableError &)
     {
-	    
+
     }
 }
 
@@ -772,6 +772,13 @@ bool P_CheckTag(line_t* line)
 	default:
 		break;
 	}
+	if (!demoplayback && line->special >= GenCrusherBase && line->special <= GenEnd)
+	{
+		if ((line->special & 6) != 6) // e6y //jff 2/27/98 all non-manual
+			return false;             // generalized types require tag
+		else
+			return true;
+	}
 	return false; // zero tag not allowed
 }
 
@@ -869,8 +876,8 @@ void P_InitPicAnims (void)
 
 			if (lastanim->numframes < 2)
 				Printf (PRINT_WARNING, "P_InitPicAnims: bad cycle from %s to %s",
-						 anim_p + 10 /* .startname */,
-						 anim_p + 1 /* .endname */);
+						 fmt::ptr(anim_p + 10) /* .startname */,
+						 fmt::ptr(anim_p + 1) /* .endname */);
 
 			lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
 						/* .speed */
@@ -1452,7 +1459,7 @@ int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start)
 
 /*
 * @brief checks to see if a ZDoom-style door can be unlocked.
-* 
+*
 * @param player: Player to key check
 * @param lock: ZDoom lock type
 * All ZDoom lock types are supported but Odamex is missing
@@ -1930,24 +1937,16 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 	if (!bossaction && !P_CanActivateSpecials(thing, line))
 		return;
 
-	lineresult_s result;
+	bool result = false;
 
-	if (!thing)
-	{
-		result.lineexecuted = false;
-		result.switchchanged = false;
-	}
-	else
+	if (thing)
 	{
 		result = map_format.cross_special_line(line, side, thing, bossaction);
 	}
 
-	if (result.lineexecuted)
+	if (result)
 	{
-		if (serverside)
-		{
-			SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
-		}
+		SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
 
 		bool repeat;
 
@@ -1956,12 +1955,15 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 		else
 			repeat = P_IsSpecialBoomRepeatable(line->special);
 
-		if (!repeat)
+		if (!repeat && !bossaction && serverside)
 		{
 			if (!(thing->player &&
 			      (thing->player->spectator || thing->player->playerstate != PST_LIVE)))
 			{
-				line->special = 0;
+				// Not a real texture change, but propigate special change to the
+				// clients
+				P_ChangeSwitchTexture(line, repeat, false);
+				OnChangedSwitchTexture(line, repeat);
 			}
 		}
 	}
@@ -1991,24 +1993,23 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	//TeleportSide = side;
 
-	lineresult_s lineresult;
+	bool lineresult;
 
 	if (map_format.getZDoom()) // All zdoom specials can be impact activated
 	{
-		lineresult.lineexecuted = LineSpecials[line->special](line, thing, line->args[0], line->args[1],
+		lineresult = LineSpecials[line->special](line, thing, line->args[0], line->args[1],
 		                            line->args[2], line->args[3], line->args[4]);
-		lineresult.switchchanged = lineresult.lineexecuted;
 	}
 	else // Only certain specials from Doom/Boom can be impact activated
 	{
 		lineresult = P_ShootCompatibleSpecialLine(thing, line);
 	}
 
-	if(serverside && lineresult.lineexecuted)
+	if(serverside && lineresult)
 	{
 		SV_OnActivatedLine(line, thing, 0, LineShoot, false);
 
-		if (lineresult.switchchanged)
+		if (lineresult)
 		{
 			bool repeat;
 
@@ -2028,6 +2029,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 // P_UseSpecialLine
 // Called when a thing uses a special line.
 // Only the front sides of lines are usable.
+// Returns false if this isn't a door that can be opened
 //
 bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 {
@@ -2056,7 +2058,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 		}
 	}
 
-	lineresult_s result;
+	bool result;
 
 	TeleportSide = side;
 
@@ -2065,27 +2067,16 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 	else
 		result = P_UseCompatibleSpecialLine(thing, line, side, bossaction);
 
- 	if (result.lineexecuted)
+ 	if (result)
 	{
+		// May need to move this higher as the special is gone in Boom by this point.
 		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
 
-		if (serverside &&
-		    (map_format.getZDoom() && (!(line->flags & ML_SPAC_PUSH)) ||
-		     !map_format.getZDoom()) &&
-		    result.switchchanged)
+		if (map_format.getZDoom() && !bossaction)
 		{
-			bool repeat;
-
-			if (map_format.getZDoom())
-				repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
-			else
-				repeat = P_IsSpecialBoomRepeatable(line->special);
-
-			if (!bossaction)
-			{
-				P_ChangeSwitchTexture(line, repeat, true);
-				OnChangedSwitchTexture(line, repeat);
-			}
+			bool repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
+			P_ChangeSwitchTexture(line, repeat, true);
+			OnChangedSwitchTexture(line, repeat);
 		}
 
 		return true;
@@ -2168,11 +2159,23 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
     return true;
 }
 
-void P_ApplySectorDamage(player_t* player, int damage, int leak)
+void P_ApplySectorDamageNoWait(player_t* player, int damage, int mod)
+{
+	P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+}
+
+void P_ApplySectorDamageNoRandom(player_t* player, int damage, int mod)
+{
+	if (!player->powers[pw_ironfeet])
+		if (!(level.time & 0x1f))
+			P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+}
+
+void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod)
 {
 	if (!player->powers[pw_ironfeet] || (leak && P_Random(player->mo)<leak))
 		if (!(level.time & 0x1f))
-			P_DamageMobj(player->mo, NULL, NULL, damage);
+			P_DamageMobj(player->mo, NULL, NULL, damage, mod);
 }
 
 void P_ApplySectorDamageEndLevel(player_t* player)
@@ -2269,7 +2272,11 @@ void P_UpdateSpecials (void)
 		}
 	}
 
-	// [ML] 5/11/06 - Remove sky scrolling ability
+	sky2columnoffset += sky2scrollxdelta & 0xffffff;
+
+	#ifdef CLIENT_APP
+	R_UpdateSkies();
+	#endif
 }
 
 
@@ -2353,6 +2360,68 @@ void P_ClearNonGeneralizedSectorSpecial(sector_t* sector)
 {
 	// jff 3/14/98 clear non-generalized sector type
 	sector->special &= map_format.getGeneralizedMask();
+}
+
+void P_DestroyScrollerThinkers()
+{
+	// Destroy scrollers
+	DScroller* scroller;
+	TThinkerIterator<DScroller> siterator;
+
+	while ((scroller = siterator.Next()))
+		scroller->Destroy();
+}
+
+void P_DestroyLightThinkers()
+{
+	// Destroy fireflicker
+	DFireFlicker* fireflicker;
+	TThinkerIterator<DFireFlicker> ffliterator;
+
+	while ((fireflicker = ffliterator.Next()))
+		fireflicker->Destroy();
+
+	// Destroy flicker
+	DFlicker* flicker;
+	TThinkerIterator<DFlicker> fliterator;
+
+	while ((flicker = fliterator.Next()))
+		flicker->Destroy();
+
+	// Destroy lightflash
+	DLightFlash* flash;
+	TThinkerIterator<DLightFlash> flashiterator;
+
+	while ((flash = flashiterator.Next()))
+		flash->Destroy();
+
+	// Destroy strobe
+	DStrobe* strobe;
+	TThinkerIterator<DStrobe> strobeiterator;
+
+	while ((strobe = strobeiterator.Next()))
+		strobe->Destroy();
+
+	// Destroy glow
+	DGlow* glow;
+	TThinkerIterator<DGlow> glowiterator;
+
+	while ((glow = glowiterator.Next()))
+		glow->Destroy();
+
+	// Destroy glow2
+	DGlow2* glow2;
+	TThinkerIterator<DGlow2> glow2iterator;
+
+	while ((glow2 = glow2iterator.Next()))
+		glow2->Destroy();
+
+	// Destroy phased
+	DPhased* phased;
+	TThinkerIterator<DPhased> phasediterator;
+
+	while ((phased = phasediterator.Next()))
+		phased->Destroy();
 }
 
 void P_SpawnPhasedLight(sector_t* sector, int base, int index)

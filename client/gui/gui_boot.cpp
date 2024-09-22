@@ -30,6 +30,7 @@
 #include "FL/Fl.H"
 #include "FL/Fl_Box.H"
 #include "FL/Fl_Button.H"
+#include "FL/Fl_Check_Browser.H"
 #include "FL/Fl_Check_Button.H"
 #include "FL/Fl_Hold_Browser.H"
 #include "FL/Fl_Native_File_Chooser.H"
@@ -51,18 +52,76 @@ EXTERN_CVAR(waddirs);
 
 // ---------------
 
-const scannedIWAD_t* g_SelectedIWAD;
+typedef std::vector<scannedIWAD_t> scannedIWADs_t;
+typedef std::vector<scannedPWAD_t> scannedPWADs_t;
+typedef std::vector<scannedPWAD_t*> scannedPWADPtrs_t;
 
-const int WINDOW_WIDTH = 320;
+// display strings for options tab and their corresponding command line arguments
+const std::vector<std::pair<std::string, std::string> > OPTIONS_LIST = {
+	{"No Monsters", "-nomonsters"},
+	{"Fast Monsters", "-fast"},
+	{"Respawn Monsters", "-respawn"},
+	{"Pistol Start", "-pistolstart"}
+};
+
+/**
+ * @brief Find the PWAD pointer in the scanned WAD array.
+ */
+static scannedPWADs_t::iterator FindScanned(scannedPWADs_t& mut, scannedPWAD_t* pwad)
+{
+	for (scannedPWADs_t::iterator it = mut.begin(); it != mut.end(); ++it)
+	{
+		if (&*it == pwad)
+		{
+			return it;
+		}
+	}
+	return mut.end();
+}
+
+/**
+ * @brief Add a scanned PWAD from the pointer list - unless there's a dupe.
+ */
+static void AddSelected(scannedPWADPtrs_t& mut, scannedPWAD_t* pwad)
+{
+	scannedPWADPtrs_t::iterator it = std::find(mut.begin(), mut.end(), pwad);
+	if (it == mut.end())
+	{
+		mut.push_back(pwad);
+	}
+}
+
+/**
+ * @brief Erase a scanned PWAD from the pointer list.
+ */
+static void EraseSelected(scannedPWADPtrs_t& mut, scannedPWAD_t* pwad)
+{
+	scannedPWADPtrs_t::iterator it = std::find(mut.begin(), mut.end(), pwad);
+	if (it != mut.end())
+	{
+		mut.erase(it);
+	}
+}
+
+const scannedIWAD_t* g_SelectedIWAD;
+scannedWADs_t g_SelectedWADs;
+
+const int WINDOW_WIDTH = 425;
 const int WINDOW_HEIGHT = 240;
 
 class BootWindow : public Fl_Window
 {
 	Fl_Group* m_tabIWAD;
+	Fl_Group* m_tabPWADs;
 	std::string m_genWaddirs;
-	std::vector<scannedIWAD_t> m_IWADs;
+	scannedIWADs_t m_IWADs;
+	scannedPWADs_t m_PWADs;
+	scannedPWADPtrs_t m_selectedPWADs;
 	Fl_Hold_Browser* m_IWADBrowser;
-	std::vector<std::string> m_WADDirs;
+	Fl_Check_Browser* m_PWADSelectBrowser;
+	Fl_Hold_Browser* m_PWADOrderBrowser;
+	Fl_Check_Browser* m_gameOptionsBrowser;
+	StringTokens m_WADDirs;
 	Fl_Hold_Browser* m_WADDirList;
 
   public:
@@ -82,9 +141,60 @@ class BootWindow : public Fl_Window
 				} // Fl_Box* logo
 				{
 					m_IWADBrowser = new Fl_Hold_Browser(135, 35, 280, 155);
+					m_IWADBrowser->callback(BootWindow::doPlayCB, static_cast<void*>(this));
+					m_IWADBrowser->when(FL_WHEN_ENTER_KEY);
 				} // Fl_Browser* m_IWADBrowser
 				m_tabIWAD->end();
 			} // Fl_Group* tabIWAD
+			{
+				m_tabPWADs = new Fl_Group(0, 25, 425, 175, "PWAD Select");
+				{
+					m_PWADSelectBrowser = new Fl_Check_Browser(10, 35, 183, 155);
+					m_PWADSelectBrowser->callback(BootWindow::scanCheckedPWADsCB,
+					                              static_cast<void*>(this));
+					m_PWADSelectBrowser->when(FL_WHEN_CHANGED);
+				} // Fl_Check_Browser* m_PWADSelectBrowser
+				{
+					m_PWADOrderBrowser = new Fl_Hold_Browser(203, 65, 182, 125);
+				} // Fl_Hold_Browser* m_PWADOrderBrowser
+				{
+					Fl_Box* o = new Fl_Box(203, 35, 182, 20, "Change Load Order");
+				} // Fl_Box* o
+				{
+					Fl_Button* doWADUp = new Fl_Button(395, 90, 20, 20, "@2<<");
+					doWADUp->callback(BootWindow::doWADUpCB, static_cast<void*>(this));
+				} // Fl_Button* doWADUp
+				{
+					Fl_Button* doWADDown = new Fl_Button(395, 115, 20, 20, "@2>>");
+					doWADDown->callback(BootWindow::doWADDownCB,
+					                    static_cast<void*>(this));
+				} // Fl_Button* doWADDown
+				{
+					Fl_Button* doWADRemove = new Fl_Button(395, 140, 20, 20, "@1+");
+					doWADRemove->callback(BootWindow::doWADRemoveCB,
+					                      static_cast<void*>(this));
+				} // Fl_Button* doWADRemove
+				m_tabPWADs->end();
+			} // Fl_Group* tabPWADs
+			{
+				Fl_Group* tabGameOptions =
+					new Fl_Group(0, 25, 425, 175, "Game Options");
+				{
+					Fl_Box* o = new Fl_Box(
+					    10, 35, 405, 20,
+					    "Set gameplay options to modify your experience.");
+					o->align(Fl_Align(132 | FL_ALIGN_INSIDE));
+				} // Fl_Box* o
+				{
+					m_gameOptionsBrowser = new Fl_Check_Browser(10, 65, 405, 125);
+					for (const auto& option : OPTIONS_LIST)
+					{
+						m_gameOptionsBrowser->add(option.first.c_str());
+					}
+				}
+				tabGameOptions->end();
+
+			} // Fl_Group* tabGameOptions
 			{
 				Fl_Group* tabWADDirs =
 				    new Fl_Group(0, 25, 425, 175, "Resource Locations");
@@ -146,17 +256,28 @@ class BootWindow : public Fl_Window
 	{
 		Fl_Tabs* tabs = static_cast<Fl_Tabs*>(w);
 		BootWindow* boot = static_cast<BootWindow*>(data);
-
 		Fl_Group* clicked = static_cast<Fl_Group*>(tabs->value());
-		if (clicked != boot->m_tabIWAD)
-			return;
 
-		// User clicked on the first tab, see if we need to regenerate the
-		// list of IWADs.
-		if (boot->m_genWaddirs == ::waddirs)
-			return;
+		// Have waddirs changed?
+		bool waddirsChanged = boot->m_genWaddirs != ::waddirs;
 
-		boot->rescanIWADs();
+		// User clicked on the first tab, regenerate the
+		// list of IWADs if waddirs changed.
+		if ((clicked == boot->m_tabIWAD) && waddirsChanged)
+		{
+			boot->rescanIWADs();
+			return;
+		}
+
+		bool pwadsIsEmpty = boot->m_PWADSelectBrowser->nitems() == 0;
+
+		// User clicked on the second tab, regenerate the
+		// list of IWADs if waddirs changed or browser is empty.
+		if ((clicked == boot->m_tabPWADs) && (pwadsIsEmpty || waddirsChanged))
+		{
+			boot->rescanPWADs();
+			return;
+		}
 	}
 
 	static void doCallback(Fl_Widget*, void*) { CL_QuitCommand(); }
@@ -180,8 +301,68 @@ class BootWindow : public Fl_Window
 			return;
 		}
 
-		::g_SelectedIWAD = boot->selectedIWAD();
+		boot->selectedWADs();
+		boot->setOptions();
 		Fl::delete_widget(boot);
+	}
+
+	// -- PWAD Boot Order --
+
+	static void doWADUpCB(Fl_Widget*, void* data)
+	{
+		BootWindow* boot = static_cast<BootWindow*>(data);
+
+		const int val = boot->m_PWADOrderBrowser->value() - 1;
+		if (val <= 0 || val >= boot->m_selectedPWADs.size())
+			return;
+
+		std::iter_swap(boot->m_selectedPWADs.begin() + val,
+		               boot->m_selectedPWADs.begin() + val - 1);
+		boot->updatePWADOrderBrowser();
+		boot->m_PWADOrderBrowser->value(val);
+	}
+
+	static void doWADDownCB(Fl_Widget*, void* data)
+	{
+		BootWindow* boot = static_cast<BootWindow*>(data);
+
+		const int val = boot->m_PWADOrderBrowser->value() - 1;
+		if (val < 0 || val >= boot->m_selectedPWADs.size() - 1)
+			return;
+
+		std::iter_swap(boot->m_selectedPWADs.begin() + val,
+		               boot->m_selectedPWADs.begin() + val + 1);
+		boot->updatePWADOrderBrowser();
+		boot->m_PWADOrderBrowser->value(val + 2);
+	}
+
+	/**
+	 * @brief Removes a WAD from the PWAD selection list.
+	 */
+	static void doWADRemoveCB(Fl_Widget*, void* data)
+	{
+		BootWindow* boot = static_cast<BootWindow*>(data);
+
+		// Figure out which PWAD we're removing.
+		const size_t removeIDX = size_t(boot->m_PWADOrderBrowser->value()) - 1;
+		if (removeIDX > boot->m_selectedPWADs.size())
+		{
+			return;
+		}
+		scannedPWAD_t* selected = boot->m_selectedPWADs[removeIDX];
+
+		// Uncheck the selected PWAD from the selection array.
+		scannedPWADs_t::iterator it = FindScanned(boot->m_PWADs, selected);
+		if (it == boot->m_PWADs.end())
+		{
+			return;
+		}
+		ptrdiff_t index = it - boot->m_PWADs.begin();
+		boot->m_PWADSelectBrowser->checked(index + 1, 0);
+
+		// Erase the selected PWAD from the order array.
+		EraseSelected(boot->m_selectedPWADs, boot->m_selectedPWADs[removeIDX]);
+		boot->updatePWADOrderBrowser();
 	}
 
 	// -- Resource Locations --
@@ -257,11 +438,65 @@ class BootWindow : public Fl_Window
 	{
 		m_IWADBrowser->clear();
 		m_IWADs = M_ScanIWADs();
-		for (size_t i = 0; i < m_IWADs.size(); i++)
+		for (const auto& iwad : m_IWADs)
 		{
-			m_IWADBrowser->add(m_IWADs[i].id->mNiceName.c_str(), (void*)m_IWADs[i].id);
+			m_IWADBrowser->add(iwad.id->mNiceName.c_str(), (void*)iwad.id);
 		}
 		m_genWaddirs = ::waddirs.str();
+	}
+
+	void rescanPWADs()
+	{
+		m_PWADSelectBrowser->clear();
+		m_PWADs = M_ScanPWADs();
+		for (const auto& pwad : m_PWADs)
+		{
+			m_PWADSelectBrowser->add(pwad.filename.c_str());
+		}
+		m_genWaddirs = ::waddirs.str();
+
+		// clear order browser since selection browser is being reset
+		m_PWADOrderBrowser->clear();
+		m_selectedPWADs.clear();
+	}
+
+	/**
+	 * @brief Places selected PWADs into the order browser for load order selection.
+	 */
+	static void scanCheckedPWADsCB(Fl_Widget*, void* data)
+	{
+		BootWindow* boot = static_cast<BootWindow*>(data);
+
+		// Scan all PWADs in the selection browser to see if they're checked.
+		for (int i = 1; i <= boot->m_PWADSelectBrowser->nitems(); i++)
+		{
+			scannedPWAD_t* selected = &boot->m_PWADs[size_t(i) - 1];
+			if (boot->m_PWADSelectBrowser->checked(i))
+			{
+				AddSelected(boot->m_selectedPWADs, selected);
+			}
+			else
+			{
+				EraseSelected(boot->m_selectedPWADs, selected);
+			}
+		}
+
+		// Update the PWAD order browser.
+		boot->updatePWADOrderBrowser();
+	}
+
+	/**
+	 * @brief Update the visible PWAD order browser widget from the vector.
+	 */
+	void updatePWADOrderBrowser()
+	{
+		const int val = m_PWADOrderBrowser->value();
+		m_PWADOrderBrowser->clear();
+		for (const auto& pwad : m_selectedPWADs)
+		{
+			m_PWADOrderBrowser->add(pwad->filename.c_str());
+		}
+		m_PWADOrderBrowser->value(val);
 	}
 
 	/**
@@ -272,7 +507,38 @@ class BootWindow : public Fl_Window
 		const size_t value = static_cast<size_t>(m_IWADBrowser->value());
 		if (value == 0)
 			return NULL;
-		return &m_IWADs.at(value - 1);
+		return &m_IWADs[value - 1];
+	}
+
+	/**
+	 * @brief Get WAD information for selected WADs.
+	 */
+	void selectedWADs()
+	{
+		// IWADs
+		const size_t value = static_cast<size_t>(m_IWADBrowser->value());
+		scannedIWAD_t iwad = m_IWADs[value - 1];
+		g_SelectedWADs.iwad = iwad.path;
+
+		if (iwad.id != NULL && iwad.id->mIdName == "CHEX QUEST")
+		{
+			g_SelectedWADs.options.push_back("-deh");
+			g_SelectedWADs.options.push_back("chex.deh");
+		}
+
+		// PWADs
+		for (const auto& pwad : m_selectedPWADs)
+		{
+			g_SelectedWADs.pwads.push_back(pwad->path);
+		}
+	}
+
+	void setOptions()
+	{
+		for (int i = 1; i <= m_gameOptionsBrowser->nitems(); i++) {
+			if (m_gameOptionsBrowser->checked(i))
+				g_SelectedWADs.options.push_back(OPTIONS_LIST[i - 1].second);
+		}
 	}
 
 	/**
@@ -282,9 +548,9 @@ class BootWindow : public Fl_Window
 	{
 		const int val = m_WADDirList->value();
 		m_WADDirList->clear();
-		for (size_t i = 0; i < m_WADDirs.size(); i++)
+		for (const auto& waddir : m_WADDirs)
 		{
-			m_WADDirList->add(m_WADDirs[i].c_str());
+			m_WADDirList->add(waddir.c_str());
 		}
 		m_WADDirList->value(val);
 	}
@@ -305,15 +571,17 @@ class BootWindow : public Fl_Window
  */
 static BootWindow* MakeBootWindow()
 {
-	return new BootWindow(0, 0, 425, 240, "Odamex " DOTVERSIONSTR);
+	return new BootWindow(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, "Odamex " DOTVERSIONSTR);
 }
+
+#include "m_argv.h"
 
 /**
  * @brief Create the boot window for Odamex.
  *
  * @return The IWAD file to use when starting the game.
  */
-std::string GUI_BootWindow()
+scannedWADs_t GUI_BootWindow()
 {
 	// Scale according to 1600x900.
 	Fl::screen_scale(0, MAX(Fl::h() / 900.0f, 1.0f));
@@ -327,11 +595,11 @@ std::string GUI_BootWindow()
 	win->updateWADDirBrowser();
 	win->rescanIWADs();
 	win->position((Fl::w() - win->w()) / 2, (Fl::h() - win->h()) / 2);
-	win->show(0, NULL);
+	win->show(::Args.NumArgs(), (char**)::Args.GetArgv().data());
 
 	// Blocks until the boot window has been closed.
 	Fl::run();
 
 	// Return the full IWAD path.
-	return ::g_SelectedIWAD->path;
+	return g_SelectedWADs;
 }

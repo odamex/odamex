@@ -335,11 +335,8 @@ enum GameMission_t
 // Texture scrollers operate at a rate of x/64 units per tic.
 #define SCROLL_UNIT 64
 
-struct lineresult_s
-{
-	bool switchchanged;
-	bool lineexecuted;
-};
+// Index of the special effects (INVUL inverse) map.
+#define INVERSECOLORMAP 32
 
 // The current state of the game: whether we are
 // playing, gazing at the intermission screen,
@@ -447,6 +444,11 @@ enum weapontype_t
 	wp_nochange
 };
 
+inline auto format_as(weapontype_t eWeaponType)
+{
+	return fmt::underlying(eWeaponType);
+}
+
 inline FArchive &operator<< (FArchive &arc, weapontype_t i)
 {
 	return arc << (BYTE)i;
@@ -468,6 +470,11 @@ enum ammotype_t
 	am_noammo	// Unlimited for chainsaw / fist.
 
 };
+
+inline auto format_as(ammotype_t eAmmoType)
+{
+	return fmt::underlying(eAmmoType);
+}
 
 inline FArchive &operator<< (FArchive &arc, ammotype_t i)
 {

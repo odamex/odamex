@@ -541,7 +541,7 @@ int32_t Server::TranslateResponse(const uint16_t& TagId,
 
 	int svmaj, svmin, svpat, olmaj, olmin, olpat;
 	DISECTVERSION(SvVersion, svmaj, svmin, svpat);
-	DISECTVERSION(SvVersion, olmaj, olmin, olpat);
+	DISECTVERSION(VERSION, olmaj, olmin, olpat);
 
 	// [AM] Show current major and next major versions.  This allows a natural
 	//      upgrade path without signing us up for supporting every version of

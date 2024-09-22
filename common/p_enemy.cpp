@@ -49,6 +49,7 @@ EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_novileghosts)
 EXTERN_CVAR(co_zdoomsound)
+EXTERN_CVAR(co_removesoullimit)
 
 enum dirtype_t
 {
@@ -675,8 +676,11 @@ void P_NewChaseDir (AActor *actor)
 //
 bool P_LookForPlayers(AActor *actor, bool allaround)
 {
-	sector_t* sector = actor->subsector->sector;
+	// [AM] Check subsectors first.
+	if (actor->subsector == NULL)
+		return false;
 
+	sector_t* sector = actor->subsector->sector;
 	if (!sector)
 		return false;
 
@@ -999,7 +1003,8 @@ void A_Chase (AActor *actor)
 		if (actor->info->attacksound)
 			S_Sound (actor, CHAN_WEAPON, actor->info->attacksound, 1, ATTN_NORM);
 
-		P_SetMobjState (actor, actor->info->meleestate, true);
+		if (serverside)
+			P_SetMobjState (actor, actor->info->meleestate, true);
 		return;
 	}
 
@@ -1014,7 +1019,8 @@ void A_Chase (AActor *actor)
 		if (!P_CheckMissileRange (actor))
 			goto nomissile;
 
-		P_SetMobjState (actor, actor->info->missilestate, true);
+		if (serverside)
+			P_SetMobjState (actor, actor->info->missilestate, true);
 		actor->flags |= MF_JUSTATTACKED;
 		return;
 	}
@@ -1964,7 +1970,7 @@ void A_MonsterProjectile(AActor* actor)
 
 	// adjust pitch (approximated, using Doom's ye olde
 	// finetangent table; same method as monster aim)
-	mo->momz += FixedMul(mo->info->speed, pitch);
+	mo->momz += FixedMul(mo->info->speed, DegToSlope(pitch));
 
 	// adjust position
 	an = (actor->angle - ANG90) >> ANGLETOFINESHIFT;
@@ -2048,7 +2054,7 @@ void A_MonsterMeleeAttack(AActor* actor)
 	S_Sound(actor, CHAN_WEAPON, SoundMap[hitsound], 1, ATTN_NORM);
 
 	damage = (P_Random() % damagemod + 1) * damagebase;
-	P_DamageMobj(actor->target, actor, actor, damage);
+	P_DamageMobj(actor->target, actor, actor, damage, MOD_HIT);
 }
 
 //
@@ -2103,6 +2109,12 @@ void A_HealChase(AActor* actor)
 // 
 bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 {
+	// don't attempt to resurrect clientside
+	if (!serverside)
+	{
+		return false;
+	}
+
 	int xl, xh;
 	int yl, yh;
 	int bx, by;
@@ -2445,6 +2457,15 @@ void A_Stop(AActor* actor)
 	actor->momx = actor->momy = actor->momz = 0;
 }
 
+// P_RemoveSoulLimit
+bool P_RemoveSoulLimit()
+{
+	if (level.flags & LEVEL_COMPAT_LIMITPAIN)
+		return false;
+
+	return co_removesoullimit;
+}
+
 //
 // A_PainShootSkull
 // Spawn a lost soul and launch it at the target
@@ -2476,9 +2497,12 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 
 	// if there are already 20 skulls on the level,
 	// don't spit another one
-	if (count > 20)
+	// co_removesoullimit removes the standard limit
+	if (count > 20 && !P_RemoveSoulLimit())
 		return;
-
+	// multiplayer retains a hard limit of 128
+	if (multiplayer && count > 128)
+		return;
 	// okay, there's room for another one
 	an = angle >> ANGLETOFINESHIFT;
 
@@ -2606,6 +2630,14 @@ void A_Fall (AActor *actor)
 
 	// So change this if corpse objects
 	// are meant to be obstacles.
+
+	// Remove any sort of boss effect on kill
+	// OFlags hack because of client issues
+	// Only remove the sparkling fountain, keep the transition
+	if (actor->type != MT_PLAYER && (actor->oflags & hordeBossModMask))
+	{
+		actor->effects = 0;
+	}
 }
 
 
@@ -2622,7 +2654,7 @@ void A_Die (AActor *actor)
 
 void A_Detonate (AActor *mo)
 {
-	P_RadiusAttack (mo, mo->target, mo->damage, mo->damage, true, MOD_UNKNOWN);
+	P_RadiusAttack (mo, mo->target, mo->damage, mo->damage, true, MOD_R_SPLASH);
 	if (mo->z <= mo->floorz + (mo->damage<<FRACBITS))
 	{
 		P_HitFloor (mo);
@@ -2649,7 +2681,7 @@ void A_Explode (AActor *thing)
 			mod = MOD_R_SPLASH;
 			break;
 		default:
-			mod = MOD_UNKNOWN;
+			mod = MOD_R_SPLASH;
 			break;
 	}
 

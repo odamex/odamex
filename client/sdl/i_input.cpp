@@ -803,7 +803,8 @@ static int I_GetEventRepeaterKey(const event_t* ev)
 	int button = ev->data1;
 	if (button == OKEY_CAPSLOCK || button == OKEY_SCRLCK ||
 		button == OKEY_LSHIFT || button == OKEY_LCTRL || button == OKEY_LALT ||
-		button == OKEY_RSHIFT || button == OKEY_RCTRL || button == OKEY_RALT)
+		button == OKEY_RSHIFT || button == OKEY_RCTRL || button == OKEY_RALT ||
+		button == OKEY_NUMLOCK)
 		return 0;
 	else if (button >= OKEY_HAT1 && button <= OKEY_HAT8)
 		return button;

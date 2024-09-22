@@ -65,6 +65,7 @@ int*			spritelights;
 #define SPRITE_NEEDS_INFO	MAXINT
 
 EXTERN_CVAR (r_drawplayersprites)
+EXTERN_CVAR (r_softinvulneffect)
 EXTERN_CVAR (r_particles)
 
 //
@@ -311,7 +312,10 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	R_RotatePoint(x - viewx, y - viewy, ANG90 - viewangle, tx, ty);
 
 	v2fixed_t t1, t2;
-	t1.x = t1xold = tx - sideoffs;
+	if (flip)
+		t1.x = t1xold = tx - (width - sideoffs);
+	else
+		t1.x = t1xold = tx - sideoffs;
 	t2.x = t1.x + width;
 	t1.y = t2.y = ty;
 
@@ -540,7 +544,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	if (sprframe->rotate)
 	{
 		const angle_t ang = R_PointToAngle(thingx, thingy);
-		
+
 		// choose a different rotation based on player view
 		if (sprframe->lump[0] == sprframe->lump[1])
 		{
@@ -550,7 +554,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		{
 			rot = (ang - thing->angle + (angle_t)(ANG45 / 2) * 9 - (angle_t)(ANG180 / 16)) >> 28;
 		}
-		
+
 		lump = sprframe->lump[rot];
 		flip = static_cast<bool>(sprframe->flip[rot]);
 	}
@@ -599,7 +603,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		// full bright
 		vis->colormap = basecolormap;	// [RH] Use basecolormap
 	}
-	else if (!foggy && thing->oflags & MFO_FULLBRIGHT) 
+	else if (!foggy && thing->oflags & MFO_FULLBRIGHT)
 	{
 		// full bright
 		vis->colormap = basecolormap;
@@ -776,6 +780,18 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	{
 		// shadow draw
 		vis->mobjflags = MF_SHADOW;
+	}
+
+	if (r_softinvulneffect)
+	{
+		if (camera->player && (camera->player->powers[pw_invulnerability] > 4 * 32 ||
+		                       camera->player->powers[pw_invulnerability] & 8))
+		{
+			// draw invuln palette on vissprite only
+			// and don't include sector colored lighting because it creates strange colors.
+			const palette_t* pal = V_GetDefaultPalette();
+			vis->colormap = shaderef_t(&pal->maps, INVERSECOLORMAP);
+		}
 	}
 
 	// Don't display the weapon sprite if using spectating without spynext

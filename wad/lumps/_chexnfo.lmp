@@ -39,7 +39,7 @@ map E1M1 lookup "CHUSTR_E1M1"
 	secretnext = "E1M9"
 	sky1 = "SKY1"
 	cluster = 1
-	par = 30
+	par = 120
 	music = "$MUSIC_E1M1"
 }
 
@@ -51,7 +51,7 @@ map E1M2 lookup "CHUSTR_E1M2"
 	secretnext = "E1M9"
 	sky1 = "SKY1"
 	cluster = 1
-	par = 75
+	par = 360
 	music = "$MUSIC_E1M2"
 }
 
@@ -63,7 +63,7 @@ map E1M3 lookup "CHUSTR_E1M3"
 	secretnext = "E1M9"
 	sky1 = "SKY1"
 	cluster = 1
-	par = 120
+	par = 480
 	music = "$MUSIC_E1M3"
 }
 
@@ -75,7 +75,7 @@ map E1M4 lookup "CHUSTR_E1M4"
 	secretnext = "E1M9"
 	sky1 = "SKY1"
 	cluster = 1
-	par = 90
+	par = 200
 	music = "$MUSIC_E1M4"
 }
 
@@ -87,7 +87,7 @@ map E1M5 lookup "CHUSTR_E1M5"
 	secretnext = "E1M9"
 	sky1 = "SKY1"
 	cluster = 1
-	par = 165
+	par = 360
 	music = "$MUSIC_E1M5"
 	nointermission
 }

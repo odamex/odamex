@@ -50,6 +50,7 @@ EXTERN_CVAR(g_horde_spawnempty_min)
 EXTERN_CVAR(g_horde_spawnempty_max)
 EXTERN_CVAR(g_horde_spawnfull_min)
 EXTERN_CVAR(g_horde_spawnfull_max)
+EXTERN_CVAR(sv_nomonsters)
 
 void A_PainDie(AActor* actor);
 
@@ -231,7 +232,7 @@ class HordeState
 	/**
 	 * @brief Reset director state.
 	 */
-	void reset()
+	void reset(bool printWave)
 	{
 		setState(HS_STARTING);
 		m_wave = 1;
@@ -249,8 +250,12 @@ class HordeState
 		m_nextPowerup = ::level.time + (30 * TICRATE);
 		m_corpses.clear();
 
-		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
-		                   G_HordeDefine(m_defineID).name.c_str());
+		// Avoid printing wave name on boot and map switch.
+		if (printWave)
+		{
+			SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
+			                   G_HordeDefine(m_defineID).name.c_str());
+		}
 	}
 
 	/**
@@ -258,6 +263,52 @@ class HordeState
 	 */
 	void nextWave()
 	{
+		// The server can have lives, and if that's the case we want
+		// to bring back dead players.
+		if (G_IsLivesGame())
+		{
+			// Give all ingame players an extra life for beating the wave.
+			PlayersView ingame = PlayerQuery().execute().players;
+			for (PlayersView::iterator it = ingame.begin(); it != ingame.end(); ++it)
+			{
+				// Dead players are reborn with a message.
+				if ((*it)->lives <= 0)
+				{
+					(*it)->playerstate = PST_REBORN;
+					SV_BroadcastPrintf("%s gets a new lease on life.\n",
+					                   (*it)->userinfo.netname.c_str());
+
+					// Send a res sound directly to this player.
+					S_PlayerSound(*it, NULL, CHAN_INTERFACE, "misc/plraise",
+					              ATTN_NONE);
+				}
+				// Give everyone an extra life.
+				if ((*it)->lives < g_lives)
+				{
+					(*it)->lives += 1;
+					MSG_WriteSVC(&(*it)->client.reliablebuf, SVC_PlayerInfo(**it));
+					MSG_BroadcastSVC(CLBUF_RELIABLE,
+					                 SVC_PlayerMembers(**it, SVC_PM_LIVES),
+					                 (*it)->id);
+				}
+			}
+
+		#ifdef SERVER_APP
+			// Service the join queue and give all of the freshly-ingame
+			// players a single life to start with.
+			PlayersView queued = SpecQuery().onlyInQueue().execute();
+			SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
+			for (PlayersView::iterator it = queued.begin(); it != queued.end(); ++it)
+			{
+				(*it)->lives = 1;
+				MSG_WriteSVC(&(*it)->client.reliablebuf, SVC_PlayerInfo(**it));
+				MSG_BroadcastSVC(CLBUF_RELIABLE,
+				                 SVC_PlayerMembers(**it, SVC_PM_LIVES), (*it)->id);
+			}
+		#endif
+		}
+
+
 		if (::g_horde_waves && m_wave >= ::g_horde_waves)
 		{
 			// All monsters explode!  Woo!
@@ -560,52 +611,6 @@ void HordeState::tick()
 		}
 		if (!alive)
 		{
-			// The server can have lives, and if that's the case we want
-			// to bring back dead players.
-			if (G_IsLivesGame())
-			{
-				// Give all ingame players an extra life for beating the wave.
-				PlayersView ingame = PlayerQuery().execute().players;
-				for (PlayersView::iterator it = ingame.begin(); it != ingame.end(); ++it)
-				{
-					// Dead players are reborn with a message.
-					if ((*it)->lives <= 0)
-					{
-						(*it)->playerstate = PST_REBORN;
-						SV_BroadcastPrintf("%s gets a new lease on life.\n",
-						                   (*it)->userinfo.netname.c_str());
-
-						// Send a res sound directly to this player.
-						S_PlayerSound(*it, NULL, CHAN_INTERFACE, "misc/plraise",
-						              ATTN_NONE);
-					}
-
-					// Give everyone an extra life.
-					if ((*it)->lives < g_lives)
-					{
-						(*it)->lives += 1;
-						MSG_WriteSVC(&(*it)->client.reliablebuf, SVC_PlayerInfo(**it));
-						MSG_BroadcastSVC(CLBUF_RELIABLE,
-						                 SVC_PlayerMembers(**it, SVC_PM_LIVES),
-						                 (*it)->id);
-					}
-				}
-
-#ifdef SERVER_APP
-				// Service the join queue and give all of the freshly-ingame
-				// players a single life to start with.
-				PlayersView queued = SpecQuery().onlyInQueue().execute();
-				SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);
-				for (PlayersView::iterator it = queued.begin(); it != queued.end(); ++it)
-				{
-					(*it)->lives = 1;
-					MSG_WriteSVC(&(*it)->client.reliablebuf, SVC_PlayerInfo(**it));
-					MSG_BroadcastSVC(CLBUF_RELIABLE,
-					                 SVC_PlayerMembers(**it, SVC_PM_LIVES), (*it)->id);
-				}
-#endif
-			}
-
 			// Start the next wave.
 			nextWave();
 			return;
@@ -625,6 +630,9 @@ void HordeState::tick()
 		switch (m_state)
 		{
 		case HS_PRESSURE: {
+			if (sv_nomonsters)
+				break;
+
 			// Pick a recipe for some monsters.
 			hordeRecipe_t recipe;
 			const bool ok = P_HordeSpawnRecipe(recipe, define, false);
@@ -654,6 +662,9 @@ void HordeState::tick()
 		case HS_RELAX:
 			break;
 		case HS_WANTBOSS: {
+			if (sv_nomonsters)
+				break;
+
 			// Do we already have bosses spawned?
 			if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
 				break;
@@ -709,6 +720,11 @@ void HordeState::tick()
 		const mobjtype_t pw = define.randomPowerup().mobj;
 		P_HordeSpawnPowerup(pw);
 	}
+}
+
+void P_InitHorde()
+{
+	::g_HordeDirector.reset(false);
 }
 
 void P_NextSpawnTime(int& min, int& max)
@@ -793,23 +809,23 @@ void P_RunHordeTics()
 
 	if (::level.time == 0)
 	{
-		::g_HordeDirector.reset();
+		::g_HordeDirector.reset(true);
 	}
 
 	// Add our spawns if a level reload or reset erased our previous spawns.
 	if (!P_HordeHasSpawns())
 	{
 		P_HordeAddSpawns();
-		if (!P_HordeHasSpawns())
+		if (!P_HordeHasSpawns() || !P_HordeHasRequiredMonsterSpawns())
 		{
 			if (::level.time == 0)
 			{
 				Printf(
 				    PRINT_WARNING,
-				    "WARNING: This map is missing Horde Monster, Horde Supply Cache, "
+				    "WARNING: This map is missing Horde Monster, Horde Boss, Horde Supply Cache, "
 				    "or Horde Powerup spawns.  At least one of each must be present.\n");
 			}
-			
+
 			// This map has no horde things in it - probably inside a
 			// non-horde map.
 			return;
@@ -934,6 +950,12 @@ BEGIN_COMMAND(hordewave)
 		return;
 	}
 
+	if (!G_IsHordeMode())
+	{
+		Printf("Can't change the wave define outside of horde mode.\n");
+		return;
+	}
+
 	if (!::g_HordeDirector.forceWave(argv[1]))
 	{
 		Printf("Could not find wave define starting with \"%s\"\n", argv[1]);
@@ -943,12 +965,24 @@ END_COMMAND(hordewave)
 
 BEGIN_COMMAND(hordenextwave)
 {
+	if (!G_IsHordeMode())
+	{
+		Printf("Can't advance the wave outside of horde mode.\n");
+		return;
+	}
+
 	::g_HordeDirector.nextWave();
 }
 END_COMMAND(hordenextwave)
 
 BEGIN_COMMAND(hordeboss)
 {
+	if (!G_IsHordeMode())
+	{
+		Printf("Can't spawn a horde boss outside of horde mode.\n");
+		return;
+	}
+
 	if (::g_HordeDirector.forceBoss())
 	{
 		Printf("Spawned the boss.\n");
@@ -966,6 +1000,12 @@ EXTERN_CVAR(g_horde_goalhp)
 
 BEGIN_COMMAND(hordeinfo)
 {
+	if (!G_IsHordeMode())
+	{
+		Printf("Can't obtain horde info outside of horde mode.\n");
+		return;
+	}
+
 	float skillScaler = 1.0f;
 	if (sv_skill == sk_medium)
 		skillScaler = 0.75f;

@@ -1825,10 +1825,9 @@ void DLevelScript::SetLineSpecial(int lineid, int special, int arg1, int arg2, i
 void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activator,
                                        int arg0, int arg1, int arg2, int arg3, int arg4)
 {
-	LineSpecials[special](line, activator, arg0, arg1, arg2, arg3, arg4);
-
 	if (serverside)
 	{
+		LineSpecials[special](line, activator, arg0, arg1, arg2, arg3, arg4);
 		SERVER_ONLY(SV_SendExecuteLineSpecial(special, line, activator, arg0, arg1, arg2,
 		                                      arg3, arg4));
 	}

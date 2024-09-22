@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -27,20 +27,24 @@
 // SKY, store the number for name.
 extern char SKYFLATNAME[8];
 
-extern int		sky1shift;				//		[ML] 5/11/06 - remove sky2 remenants
-
-extern int 		sky1texture;				//		""
-extern int 		sky2texture;				//		""
-extern fixed_t	skypos;					//		""
-extern fixed_t	skytexturemid;
+extern int      sky1texture;
+extern int      sky2texture;
+extern fixed_t	sky2scrollxdelta;
+extern fixed_t	sky2columnoffset;
 extern int		skystretch;
 extern fixed_t	skyiscale;
-extern fixed_t	skyscale;
 extern fixed_t	skyheight;
 
 EXTERN_CVAR (r_stretchsky)
 
 // Called whenever the sky changes.
-void R_InitSkyMap		();
+void R_InitSkyMap();
+void R_InitSkyDefs();
+void R_InitSkiesForLevel();
+void R_ClearSkyDefs();
+void R_SetDefaultSky(const char* sky);
+void R_UpdateSkies();
+bool R_IsSkyFlat(int flatnum);
+void R_ActivateSkies(const byte* hitlist, std::vector<int>& skytextures);
 
 void R_RenderSkyRange(visplane_t* pl);
