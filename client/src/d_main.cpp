@@ -95,11 +95,11 @@
 
 extern size_t got_heapsize;
 
-void D_CheckNetGame (void);
-void D_ProcessEvents (void);
-void D_DoAdvanceDemo (void);
+void D_CheckNetGame();
+void D_ProcessEvents();
+void D_DoAdvanceDemo();
 
-void D_DoomLoop (void);
+void D_DoomLoop();
 
 extern int testingmode;
 extern BOOL gameisdead;
@@ -111,7 +111,7 @@ BOOL devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 static bool wiping_screen = false;
 
-char startmap[8];
+OLumpName startmap;
 BOOL autostart;
 BOOL advancedemo;
 event_t events[MAXEVENTS];
@@ -272,6 +272,7 @@ void D_Display()
 		case GS_CONNECTING:
         case GS_CONNECTED:
 			C_DrawConsole();
+			C_DisplayTicker();
 			M_Drawer();
 			I_FinishUpdate();
 			return;
@@ -348,6 +349,7 @@ void D_Display()
 		Wipe_Drawer();
 
 	C_DrawConsole();	// draw console
+	C_DisplayTicker(); // Display console tic
 	M_Drawer();			// menu is drawn even on top of everything
 	I_FinishUpdate();	// page flip or blit buffer
 
@@ -844,11 +846,23 @@ void D_DoomMain()
 
 	if (!pwads.empty())
 	{
+		const std::vector<std::string>& wad_exts = M_FileTypeExts(OFILE_WAD);
+		const std::vector<std::string>& deh_exts = M_FileTypeExts(OFILE_DEH);
 		for (size_t i = 0; i < pwads.size(); i++)
 		{
 			OWantFile file;
-			OWantFile::make(file, pwads[i], OFILE_WAD);
-			newwadfiles.push_back(file);
+			OWantFile::make(file, pwads[i], OFILE_UNKNOWN);
+			const std::string extension = StdStringToUpper(file.getExt());
+			if (std::find(deh_exts.begin(), deh_exts.end(), extension) != deh_exts.end())
+			{
+				OWantFile::make(file, pwads[i], OFILE_DEH);
+				newpatchfiles.push_back(file);
+			}
+			if (std::find(wad_exts.begin(), wad_exts.end(), extension) != wad_exts.end())
+			{
+				OWantFile::make(file, pwads[i], OFILE_WAD);
+				newwadfiles.push_back(file);
+			}
 		}
 	}
 
@@ -905,7 +919,7 @@ void D_DoomMain()
 		g_thingfilter = -1;
 
 	// get skill / episode / map from parms
-	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+	startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
 
 	const char* val = Args.CheckValue("-skill");
 	if (val)
@@ -927,7 +941,7 @@ void D_DoomMain()
 			map = Args.GetArg(p+2)[0]-'0';
 		}
 
-		strncpy(startmap, CalcMapName(ep, map), 8);
+		startmap = CalcMapName(ep, map);
 		autostart = true;
 	}
 
@@ -935,7 +949,7 @@ void D_DoomMain()
 	p = Args.CheckParm("+map");
 	if (p && p < Args.NumArgs()-1)
 	{
-		strncpy(startmap, Args.GetArg(p+1), 8);
+		startmap = Args.GetArg(p+1);
 		((char *)Args.GetArg(p))[0] = '-';
 		autostart = true;
 	}

@@ -122,6 +122,8 @@ EXTERN_CVAR(sv_allowwidescreen)
 EXTERN_CVAR(vid_vsync)
 EXTERN_CVAR(vid_pillarbox)
 EXTERN_CVAR(vid_displayfps)
+EXTERN_CVAR(vid_640x400)
+EXTERN_CVAR(vid_320x200)
 
 static int vid_pillarbox_old = -1;
 static int vid_widescreen_old = -1;
@@ -171,7 +173,7 @@ CVAR_FUNC_IMPL(vid_defwidth)
 {
 	if (var < 320 || var > MAXWIDTH)
 		var.RestoreDefault();
-	
+
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
 		V_ForceVideoModeAdjustment();
 }
@@ -181,7 +183,7 @@ CVAR_FUNC_IMPL(vid_defheight)
 {
 	if (var < 200 || var > MAXHEIGHT)
 		var.RestoreDefault();
-	
+
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
 		V_ForceVideoModeAdjustment();
 }
@@ -221,9 +223,11 @@ CVAR_FUNC_IMPL(vid_overscan)
 		V_ForceVideoModeAdjustment();
 }
 
-
 CVAR_FUNC_IMPL(vid_320x200)
 {
+	// vid_320x200 and vid_640x400 cannot both be enabled
+	if (var == 1)
+		vid_640x400.Set(0.0);
 	if (gamestate != GS_STARTUP)
 		V_ForceVideoModeAdjustment();
 }
@@ -231,6 +235,9 @@ CVAR_FUNC_IMPL(vid_320x200)
 
 CVAR_FUNC_IMPL(vid_640x400)
 {
+	// vid_320x200 and vid_640x400 cannot both be enabled
+	if (var == 1)
+		vid_320x200.Set(0.0);
 	if (gamestate != GS_STARTUP)
 		V_ForceVideoModeAdjustment();
 }
@@ -476,7 +483,7 @@ void V_Init()
 			vid_defwidth.RestoreDefault();
 			vid_defheight.RestoreDefault();
 		}
-		
+
 		if (video_width == 0 && video_height == 0)
 		{
 			video_width = vid_defwidth.asInt();
@@ -784,7 +791,7 @@ static void V_DrawTickerDot(IWindowSurface* surface, int n, PIXEL_T color)
 
 	PIXEL_T* dest = (PIXEL_T*)surface->getBuffer() +
 			(surface->getHeight() - 1 - dot_height) * pitch_in_pixels +
-			2 * n * dot_width; 
+			2 * n * dot_width;
 
 	for (int y = 0; y < dot_height; y++)
 	{
@@ -802,7 +809,7 @@ void V_DrawFPSTicker()
 {
 	int current_tic = int(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
 	static int last_tic = current_tic;
-	
+
 	int tics = clamp(current_tic - last_tic, 0, 20);
 	last_tic = current_tic;
 
@@ -833,19 +840,19 @@ void V_DrawFPSTicker()
 
 //
 // V_FindTransformedFlatPixel
-// 
+//
 // Determines the flat pixel to use
 // when given an x/y coordinate.
 // Doesn't take scaling into account. (Good todo)
 //
 // A flat is a 4096 byte chunk of data
 // Representing a 64x64 square
-// 
+//
 // Each pixel is 1 byte.
-// 
+//
 // So we square root the lump size to get dimensions
 // and put it in "flatlength"
-// 
+//
 // There's no posts or columns in flats; the entire
 // thing is one big chunk of data assumed to be 64x64
 //
@@ -916,7 +923,7 @@ int DCanvas::getCleanY(int y) const
 
 // [RH] Fill an area with an dynamic dimensions flat
 // right and bottom are one pixel *past* the boundaries they describe.
-// 
+//
 // Rewritten to handle high resolution flats
 void DCanvas::FlatFill(int left, int top, int right, int bottom, unsigned int flatlength, const byte* src) const
 {
@@ -970,8 +977,8 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch, bool clear) const
 
 	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 	{
-		destw = surface_width; 
-		desth = surface_height; 
+		destw = surface_width;
+		desth = surface_height;
 	}
 	else if (surface_width * 3 >= surface_height * 4)
 	{
@@ -1031,7 +1038,7 @@ void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) cons
  * @brief Draw a line between two points.
  *
  * @detail Yet another implementation of Bresenham.
- * 
+ *
  * @param src Source point.
  * @param dst Destination point.
  * @param color Color to paint the line.
@@ -1081,7 +1088,7 @@ void DCanvas::Line(const v2int_t src, const v2int_t dst, argb_t color) const
 
 /**
  * @brief Draw an empty box according to a rectangle.
- * 
+ *
  * @param bounds Boundary of the rectangle, inclusive.
  * @param color Color of the rectangle.
  */

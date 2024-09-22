@@ -904,15 +904,13 @@ void AM_changeWindowScale()
 //
 void AM_doFollowPlayer()
 {
-	player_t& p = displayplayer();
+	M_SetVec2Fixed(&m_ll,
+		viewx - m_wh.x / 2,
+		viewy - m_wh.y / 2);
 
-	if (f_oldloc.x != p.camera->x || f_oldloc.y != p.camera->y)
-	{
-		M_SetVec2Fixed(&m_ll, FTOM(MTOF(p.camera->x)) - m_wh.x / 2,
-		                      FTOM(MTOF(p.camera->y)) - m_wh.y / 2);
-		M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
-		M_SetVec2Fixed(&f_oldloc, p.camera->x, p.camera->y);
-	}
+	M_SetVec2Fixed(&m_ur,
+		m_ll.x + m_wh.x,
+		m_ll.y + m_wh.y);
 }
 
 //
@@ -924,34 +922,6 @@ void AM_Ticker()
 		return;
 
 	amclock++;
-
-	if (am_followplayer)
-	{
-		AM_doFollowPlayer();
-	}
-	else
-	{
-		M_ZeroVec2Fixed(&m_paninc);
-
-		// pan according to the direction
-		if (Actions[ACTION_AUTOMAP_PANLEFT])
-			m_paninc.x = -FTOM(F_PANINC);
-		if (Actions[ACTION_AUTOMAP_PANRIGHT])
-			m_paninc.x = FTOM(F_PANINC);
-		if (Actions[ACTION_AUTOMAP_PANUP])
-			m_paninc.y = FTOM(F_PANINC);
-		if (Actions[ACTION_AUTOMAP_PANDOWN])
-			m_paninc.y = -FTOM(F_PANINC);
-	}
-
-	// Change the zoom if necessary
-	if (ftom_zoommul != FRACUNIT || Actions[ACTION_AUTOMAP_ZOOMIN] ||
-	    Actions[ACTION_AUTOMAP_ZOOMOUT])
-		AM_changeWindowScale();
-
-	// Change x,y location
-	if (m_paninc.x || m_paninc.y)
-		AM_changeWindowLoc();
 
 	// NES - Glowing effect on locked doors.
 	if (lockglow < 90)
@@ -1507,13 +1477,20 @@ void AM_rotate(mpoint_t& pt, angle_t a)
 
 void AM_rotatePoint(mpoint_t& pt)
 {
-	player_t& pl = displayplayer();
+	player_t* player = &displayplayer();
 
-	pt.x -= pl.camera->x;
-	pt.y -= pl.camera->y;
-	AM_rotate(pt, ANG90 - pl.camera->angle);
-	pt.x += pl.camera->x;
-	pt.y += pl.camera->y;
+	fixed_t x = player->camera->prevx +
+	            FixedMul(player->camera->x - player->camera->prevx, render_lerp_amount);
+	fixed_t y = player->camera->prevy +
+	            FixedMul(player->camera->y - player->camera->prevy, render_lerp_amount);
+	fixed_t pangle = player->camera->prevangle +
+	            FixedMul(player->camera->angle - player->camera->prevangle, render_lerp_amount);
+
+	pt.x -= x;
+	pt.y -= y;
+	AM_rotate(pt, ANG90 - pangle);
+	pt.x += x;
+	pt.y += y;
 }
 
 void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed_t scale,
@@ -1553,12 +1530,22 @@ void AM_drawPlayers()
 	angle_t angle;
 	player_t& conplayer = displayplayer();
 
+	fixed_t x =
+	    conplayer.camera->prevx +
+	    FixedMul(conplayer.camera->x - conplayer.camera->prevx, render_lerp_amount);
+	fixed_t y =
+	    conplayer.camera->prevy +
+	    FixedMul(conplayer.camera->y - conplayer.camera->prevy, render_lerp_amount);
+	fixed_t cangle =
+	    conplayer.camera->prevangle +
+	    FixedMul(conplayer.camera->angle - conplayer.camera->prevangle, render_lerp_amount);
+
 	if (!multiplayer)
 	{
 		if (am_rotate)
 			angle = ANG90;
 		else
-			angle = conplayer.camera->angle;
+			angle = cangle;
 
 		if (am_cheating && !gameinfo.mapArrowCheat.empty())
 			AM_drawLineCharacter(gameinfo.mapArrowCheat, INT2FIXED(16), angle,
@@ -1566,8 +1553,7 @@ void AM_drawPlayers()
 								 conplayer.camera->x, conplayer.camera->y);
 		else
 			AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED(16), angle,
-			                     gameinfo.currentAutomapColors.YourColor,
-			                     conplayer.camera->x, conplayer.camera->y);
+				gameinfo.currentAutomapColors.YourColor, x, y);
 		return;
 	}
 
@@ -1619,13 +1605,25 @@ void AM_drawPlayers()
 		}
 
 		mpoint_t pt;
-		M_SetVec2Fixed(&pt, p->mo->x, p->mo->y);
-		angle = p->mo->angle;
+		fixed_t moangle = p->mo->prevangle +
+			FixedMul(p->mo->angle - p->mo->prevangle,
+			render_lerp_amount);
+
+		fixed_t mox = p->mo->prevx +
+			FixedMul(p->mo->x - p->mo->prevx,
+			render_lerp_amount);
+
+		fixed_t moy = p->mo->prevy +
+			FixedMul(p->mo->y - p->mo->prevy,
+			render_lerp_amount);
+		M_SetVec2Fixed(&pt, mox, moy);
+
+		angle = moangle;
 
 		if (am_rotate)
 		{
 			AM_rotatePoint(pt);
-			angle -= conplayer.camera->angle - ANG90;
+			angle -= cangle - ANG90;
 		}
 
 		AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED(16), angle, color, pt.x, pt.y);
@@ -1687,14 +1685,26 @@ void AM_drawThings()
 		while (t)
 		{
 			mpoint_t p;
-			M_SetVec2Fixed(&p, t->x, t->y);
+
+			fixed_t thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
+			fixed_t thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
+
+			fixed_t tangle = t->prevangle +
+				FixedMul(t->angle -	t->prevangle,
+				render_lerp_amount);
+
+			M_SetVec2Fixed(&p, thingx, thingy);
 			angle_t rotate_angle = 0;
-			angle_t triangle_angle = t->angle;
+			angle_t triangle_angle = tangle;
 
 			if (am_rotate)
 			{
 				AM_rotatePoint(p);
-				rotate_angle = ANG90 - displayplayer().camera->angle;
+				fixed_t conangle = displayplayer().camera->prevangle +
+					FixedMul(displayplayer().camera->angle -
+					displayplayer().camera->prevangle,
+					render_lerp_amount);
+				rotate_angle = ANG90 - conangle;
 				triangle_angle += rotate_angle;
 			}
 
@@ -1813,6 +1823,34 @@ void AM_Drawer()
 		f_p = surface->getPitch();
 	}
 
+	if (am_followplayer)
+	{
+		AM_doFollowPlayer();
+	}
+	else
+	{
+		M_ZeroVec2Fixed(&m_paninc);
+
+		// pan according to the direction
+		if (Actions[ACTION_AUTOMAP_PANLEFT])
+			m_paninc.x = -FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANRIGHT])
+			m_paninc.x = FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANUP])
+			m_paninc.y = FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANDOWN])
+			m_paninc.y = -FTOM(F_PANINC);
+	}
+
+	// Change the zoom if necessary
+	if (ftom_zoommul != FRACUNIT || Actions[ACTION_AUTOMAP_ZOOMIN] ||
+	    Actions[ACTION_AUTOMAP_ZOOMOUT])
+		AM_changeWindowScale();
+
+	// Change x,y location
+	if (m_paninc.x || m_paninc.y)
+		AM_changeWindowLoc();
+
 	AM_activateNewScale();
 
 	if (grid)
@@ -1842,9 +1880,17 @@ void AM_Drawer()
 		{
 			if (am_showmonsters)
 			{
-				StrFormat(line, TEXTCOLOR_RED "MONSTERS:" TEXTCOLOR_NORMAL " %d / %d",
+				if (G_IsHordeMode())
+				{
+					StrFormat(line, TEXTCOLOR_RED "MONSTERS:" TEXTCOLOR_NORMAL " %d",
+				        level.killed_monsters);
+				}
+				else
+				{
+					StrFormat(line, TEXTCOLOR_RED "MONSTERS:" TEXTCOLOR_NORMAL " %d / %d",
 				        level.killed_monsters,
 				        (level.total_monsters + level.respawned_monsters));
+				}
 
 				int x, y;
 				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
@@ -1853,6 +1899,10 @@ void AM_Drawer()
 				{
 					x = surface_width - text_width;
 					y = OV_Y - (text_height * 4) + 1;
+					if (G_IsHordeMode())
+					{
+						y -= text_height * 2;
+					}
 				}
 				else
 				{
@@ -1863,7 +1913,7 @@ void AM_Drawer()
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 			}
 
-			if (am_showitems)
+			if (am_showitems && !G_IsHordeMode())
 			{
 				StrFormat(line, TEXTCOLOR_RED "ITEMS:" TEXTCOLOR_NORMAL " %d / %d",
 				        level.found_items,
@@ -1886,7 +1936,7 @@ void AM_Drawer()
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 			}
 
-			if (am_showsecrets)
+			if (am_showsecrets && !G_IsHordeMode())
 			{
 				StrFormat(line, TEXTCOLOR_RED "SECRETS:" TEXTCOLOR_NORMAL " %d / %d",
 				        level.found_secrets, level.total_secrets);
@@ -1931,7 +1981,7 @@ void AM_Drawer()
 				break;
 			}
 
-			line += GStrings.getIndex(firstmap + level.levelnum - mapoffset);
+			line = GStrings.getIndex(firstmap + level.levelnum - mapoffset);
 
 			int x, y;
 			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
@@ -1940,6 +1990,10 @@ void AM_Drawer()
 			{
 				x = surface_width - text_width;
 				y = OV_Y - (text_height * 1) + 1;
+				if (G_IsHordeMode())
+				{
+					y -= text_height * 3;
+				}
 			}
 			else
 			{
@@ -1981,6 +2035,10 @@ void AM_Drawer()
 			{
 				x = surface_width - text_width;
 				y = OV_Y - (text_height * 1) + 1;
+				if (G_IsHordeMode())
+				{
+					y -= text_height * 3;
+				}
 			}
 			else
 			{
@@ -2008,6 +2066,10 @@ void AM_Drawer()
 			{
 				x = surface_width - text_width;
 				y = OV_Y - (text_height * 1) + 1;
+			}
+			if (G_IsHordeMode())
+			{
+				y -= text_height * 3;
 			}
 
 			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
