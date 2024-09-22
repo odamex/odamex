@@ -93,6 +93,7 @@ jsonlumpresult_t WI_ParseInterlevelFrame(const Json::Value& frame, interlevelfra
     output.imagelumpnum = W_CheckNumForName(output.imagelump.c_str());
     if (output.imagelumpnum < 0)
     {
+        // TNT1A0 used for transparent by Legacy of Rust
         output.imagelumpnum = W_CheckNumForName(output.imagelump.c_str(), ns_sprites);
     }
     output.altimagelump = altimage.asString();

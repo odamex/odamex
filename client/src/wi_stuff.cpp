@@ -56,17 +56,6 @@ size_t P_NumPlayersInGame();
 // Loads of by-pixel layout and placement, offsets etc.
 //
 
-
-//
-// Different vetween registered DOOM (1994) and
-//	Ultimate DOOM - Final edition (retail, 1995?).
-// This is supposedly ignored for commercial
-//	release (aka DOOM II), which had 32 maps
-//	in one episode. So there.
-#define NUMEPISODES 	4
-#define NUMMAPS 		9
-
-
 // GLOBAL LOCATIONS
 #define WI_TITLEY				2
 #define WI_SPACINGY 			33
@@ -82,67 +71,6 @@ size_t P_NumPlayersInGame();
 #define NG_STATSX				(32 + pStar->width()/2 + 32*!dofrags)
 
 #define NG_SPACINGX 			64
-
-
-typedef enum
-{
-	ANIM_ALWAYS,
-    ANIM_RANDOM,
-	ANIM_LEVEL
-} animenum_t;
-
-typedef struct
-{
-    int		x;
-    int		y;
-
-} point_t;
-
-//
-// Animation.
-//
-
-//
-// Animation locations for episode 0 (1).
-// Using patches saves a lot of space,
-//  as they replace 320x200 full screen frames.
-//
-// static animinfo_t epsd0animinfo[] =
-// {
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 224, 104 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 184, 160 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 112, 136 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 72, 112 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 88, 96 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 64, 48 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 192, 40 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 136, 16 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 80, 16 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 64, 24 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 }
-// };
-
-// static animinfo_t epsd1animinfo[] =
-// {
-//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 1, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 2, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 3, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 4, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 5, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 6, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 7, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-//     { ANIM_LEVEL, TICRATE/3, 3, { 192, 144 }, 8, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  },
-//     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 8, 0, { NULL, NULL, NULL }, 0, 0, 0, 0  }
-// };
-
-// static animinfo_t epsd2animinfo[] =
-// {
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 104, 168 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 40, 136 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 160, 96 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 104, 80 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-//     { ANIM_ALWAYS, TICRATE/3, 3, { 120, 32 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 },
-//     { ANIM_ALWAYS, TICRATE/4, 3, { 40, 0 }, 0, 0, { NULL, NULL, NULL }, 0, 0, 0, 0 }
-// };
 
 //
 // GENERAL DATA
@@ -294,75 +222,48 @@ static wi_animation_t* animation;
 //
 
 static bool WI_checkConditions(const std::vector<interlevelcond_t>& conditions,
-                            bool enteringcondition)
+                               bool enteringcondition)
 {
     bool conditionsmet = true;
 
-    int map_number, map, episode;
+    int map_number;
 
-    // {
-	// 	mapentry_t* mape;
-        // LevelInfos& levels = getLevelInfos();
-		// level_pwad_info_t& currentlevel = levels.findByName(wbs->current);
-    //     if (enteringcondition)
-    //     {
-    //         mape = wbs->nextmapinfo;
-    //         map = wbs->next + 1;
-    //         episode = wbs->nextep + 1;
-    //     }
-    //     else
-    //     {
-    //         mape = wbs->lastmapinfo;
-    //         map = wbs->last + 1;
-    //         episode = wbs->epsd + 1;
-    //     }
-    //     map_number = mape->map_number ? mape->map_number : mape->all_number;
-    // }
+	LevelInfos& levels = getLevelInfos();
+    {
+		level_pwad_info_t& currentlevel = enteringcondition ? levels.findByName(wbs->next) : levels.findByName(wbs->current);
+		map_number = currentlevel.levelnum;
+    }
 
     for (const auto& cond : conditions)
     {
         switch (cond.condition)
         {
             case animcondition_t::CurrMapGreater:
-                // conditionsmet = (map_number > cond.param);
+                conditionsmet = conditionsmet && (map_number > cond.param);
                 break;
 
             case animcondition_t::CurrMapEqual:
-                // conditionsmet = (map_number == cond.param);
+                conditionsmet = conditionsmet && (map_number == cond.param);
                 break;
 
             case animcondition_t::MapVisited:
-                // conditionsmet = false;
-
-                // level_t *level;
-                // array_foreach(level, wbs->visitedlevels)
-                // {
-                //     mapentry_t *mape =
-                //         G_LookupMapinfo(level->episode, level->map);
-
-                //     if ((mape->map_number && mape->map_number == cond->param)
-                //         || mape->all_number == cond->param)
-                //     {
-                //         conditionsmet = true;
-                //         break;
-                //     }
-                // }
+                conditionsmet = conditionsmet && levels.findByNum(cond.param).flags & LEVEL_VISITED;
                 break;
 
             case animcondition_t::CurrMapNotSecret:
-                // conditionsmet = !U_IsSecretMap(episode, map);
+                // conditionsmet = conditionsmet && !U_IsSecretMap(episode, map);
                 break;
 
             case animcondition_t::AnySecretVisited:
-                // conditionsmet = wbs->didsecret;
+                // conditionsmet = conditionsmet && wbs->didsecret;
                 break;
 
             case animcondition_t::OnFinishedScreen:
-                conditionsmet = !enteringcondition;
+                conditionsmet = conditionsmet && !enteringcondition;
                 break;
 
             case animcondition_t::OnEnteringScreen:
-                conditionsmet = enteringcondition;
+                conditionsmet = conditionsmet && enteringcondition;
                 break;
 
             default:
@@ -461,7 +362,7 @@ static void WI_drawAnimation(void)
 	for (const auto& state : *animation->states)
     {
         const interlevelframe_t& frame = state.frames.at(state.frame_index);
-		patch_t* patch = W_CachePatch(frame.imagelumpnum, PU_CACHE);
+		patch_t* patch = W_CachePatch(frame.imagelumpnum);
 		if (!frame.altimagelump.empty())
 		{
 			int left = state.xpos - patch->leftoffset();
@@ -471,12 +372,11 @@ static void WI_drawAnimation(void)
 
 			if (!(left >= 0 && right < 320 && top >= 0 && bottom < 200))
 			{
-				patch = W_CachePatch(frame.altimagelumpnum, PU_CACHE);
+				patch = W_CachePatch(frame.altimagelumpnum);
 			}
 		}
 
-		canvas->DrawPatch(patch, state.xpos + scaled_x,
-		                      state.ypos);
+		canvas->DrawPatch(patch, state.xpos + scaled_x, state.ypos);
     }
 }
 
@@ -574,8 +474,6 @@ static int WI_GetHeight()
 }
 
 // slam background
-// UNUSED static unsigned char *background=0;
-
 void WI_slamBackground()
 {
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
@@ -587,13 +485,13 @@ void WI_slamBackground()
 	anim_surface->lock();
 
 	anim_surface->blitcrop(background_surface, 0, 0, background_surface->getWidth(), background_surface->getHeight(),
-	   0, 0,	anim_surface->getWidth(), anim_surface->getHeight());
+	                       0, 0, anim_surface->getWidth(), anim_surface->getHeight());
 
 	WI_drawAnimation();
 
 	primary_surface->blitcrop(anim_surface, 0, 0, anim_surface->getWidth(), anim_surface->getHeight(),
-	   (primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
-	   destw, desth);
+	                          (primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
+	                          destw, desth);
 
 	background_surface->unlock();
 	anim_surface->unlock();
@@ -713,76 +611,6 @@ void WI_drawEL()
 		WI_DrawName (lnametexts[1], 160 - lnamewidths[1] / 2, y);
 	}
 }
-
-// void WI_initAnimatedBack()
-// {
-// 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
-// 		return;
-
-// 	for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
-// 	{
-// 		animinfo_t* a = &anims[wbs->epsd][i];
-
-// 		// init variables
-// 		a->ctr = -1;
-
-// 		// specify the next time to draw it
-// 		if (a->type == ANIM_ALWAYS)
-// 			a->nexttic = bcnt + 1 + (M_Random()%a->period);
-// 		else if (a->type == ANIM_LEVEL)
-// 			a->nexttic = bcnt + 1;
-// 	}
-// }
-
-// void WI_updateAnimatedBack()
-// {
-// 	if (WI_updateAnimation(state != StatCount))
-// 		return;
-
-// 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd > 2)
-// 		return;
-
-// 	for (int i = 0; i < NUMANIMS[wbs->epsd]; i++)
-// 	{
-// 		animinfo_t* a = &anims[wbs->epsd][i];
-
-// 		if (bcnt == a->nexttic)
-// 		{
-// 			switch (a->type)
-// 			{
-// 			  case ANIM_ALWAYS:
-// 				if (++a->ctr >= a->nanims)
-// 					a->ctr = 0;
-// 				a->nexttic = bcnt + a->period;
-// 				break;
-
-// 			  case ANIM_RANDOM:
-// 				  a->ctr++;
-// 				  if (a->ctr == a->nanims)
-// 				  {
-// 					  a->ctr = -1;
-// 					  a->nexttic = bcnt+a->data2+(M_Random()%a->data1);
-// 				  }
-// 					  else a->nexttic = bcnt + a->period;
-// 				  break;
-
-// 			  case ANIM_LEVEL:
-// 				// gawd-awful hack for level anims
-
-// 				if (!(state == StatCount && i == 7)
-// 					&& WI_MapToIndex(wbs->next) == a->data1)
-// 				{
-// 					a->ctr++;
-// 					if (a->ctr == a->nanims)
-// 						a->ctr--;
-// 					a->nexttic = bcnt + a->period;
-// 				}
-
-// 				break;
-// 			}
-// 		}
-// 	}
-// }
 
 void WI_drawAnimatedBack()
 {
@@ -912,8 +740,6 @@ void WI_updateNoState()
 	WI_updateAnimation(state != StatCount);
 }
 
-static bool snl_pointeron = false;
-
 void WI_initShowNextLoc()
 {
 	state = ShowNextLoc;
@@ -927,8 +753,6 @@ void WI_updateShowNextLoc()
 	{
 		if (!--cnt || acceleratestage)
 			WI_initNoState();
-		else
-			snl_pointeron = (cnt & 31) < 20;
 	}
 	WI_updateAnimation(state != StatCount);
 }
@@ -943,7 +767,6 @@ void WI_drawShowNextLoc()
 
 void WI_drawNoState()
 {
-	snl_pointeron = true;
 	WI_drawShowNextLoc();
 }
 

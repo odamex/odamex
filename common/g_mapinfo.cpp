@@ -1534,6 +1534,7 @@ struct MapInfoDataSetter<automap_dummy>
 // also makes use of it.
 void G_MapNameToLevelNum(level_pwad_info_t& info)
 {
+	// TODO: allow for ExMy style map definitions using numbers with greater than 1 digit as allowed by UMAPINFO
 	if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
 	{
 		// Convert a char into its equivalent integer.

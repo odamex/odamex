@@ -98,7 +98,7 @@ struct level_info_t
 	int				partime;
 	OLumpName		skypic;
 	OLumpName		music;
-	uint32_t		flags;
+	levelFlags_t	flags;
 	int				cluster;
 	FLZOMemFile*	snapshot;
 	acsdefered_s*	defered;
@@ -145,7 +145,7 @@ struct level_pwad_info_t
 	int				partime;
 	OLumpName		skypic;
 	OLumpName		music;
-	uint32_t		flags;
+	levelFlags_t	flags;
 	int				cluster;
 	FLZOMemFile*	snapshot;
 	acsdefered_s*	defered;
