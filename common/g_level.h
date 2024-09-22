@@ -41,6 +41,7 @@
 typedef uint32_t levelFlags_t;
 
 const static levelFlags_t LEVEL_NOINTERMISSION = BIT(0);
+const static levelFlags_t LEVEL_SECRET = BIT(1);
 const static levelFlags_t LEVEL_DOUBLESKY = BIT(2);
 const static levelFlags_t LEVEL_NOSOUNDCLIPPING = BIT(3);
 

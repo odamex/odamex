@@ -82,8 +82,6 @@ size_t P_NumPlayersInGame();
 
 // in seconds
 #define SHOWNEXTLOCDELAY		4
-//#define SHOWLASTLOCDELAY		SHOWNEXTLOCDELAY
-
 
 // used to accelerate or skip a stage
 static bool				acceleratestage;
@@ -112,14 +110,6 @@ static int				cnt;
 // used for timing of background animation
 static int				bcnt;
 
-/*struct count_t
-{
-	int cnt_kills, cnt_items, cnt_secret, cnt_frags;
-};
-
-static std::vector<count_t> stats;
-static std::vector<int> dm_totals;*/
-
 // Since classic is used for singleplayer only...
 static int			cnt_kills;
 static int			cnt_items;
@@ -135,9 +125,6 @@ static int			inter_height;
 //
 //		GRAPHICS
 //
-
-// Scoreboard Border - Dan
-//static patch_t* 		sbborder;
 
 // %, : graphics
 static lumpHandle_t		percent;
@@ -199,20 +186,20 @@ EXTERN_CVAR (cl_autoscreenshot)
 
 typedef struct
 {
-    std::vector<interlevelframe_t> frames;
-    const int xpos;
-    const int ypos;
-    int frame_index;
-    bool frame_start;
-    int duration_left;
+	std::vector<interlevelframe_t> frames;
+	const int xpos;
+	const int ypos;
+	int frame_index;
+	bool frame_start;
+	int duration_left;
 } wi_animationstate_t;
 
 typedef struct
 {
-    std::vector<wi_animationstate_t> exiting_states;
-    std::vector<wi_animationstate_t> entering_states;
+	std::vector<wi_animationstate_t> exiting_states;
+	std::vector<wi_animationstate_t> entering_states;
 
-    std::vector<wi_animationstate_t>* states;
+	std::vector<wi_animationstate_t>* states;
 } wi_animation_t;
 
 static wi_animation_t* animation;
@@ -222,146 +209,142 @@ static wi_animation_t* animation;
 //
 
 static bool WI_checkConditions(const std::vector<interlevelcond_t>& conditions,
-                               bool enteringcondition)
+							   bool enteringcondition)
 {
-    bool conditionsmet = true;
-
-    int map_number;
+	bool conditionsmet = true;
 
 	LevelInfos& levels = getLevelInfos();
-    {
-		level_pwad_info_t& currentlevel = enteringcondition ? levels.findByName(wbs->next) : levels.findByName(wbs->current);
-		map_number = currentlevel.levelnum;
-    }
+	level_pwad_info_t& currentlevel = enteringcondition ? levels.findByName(wbs->next) : levels.findByName(wbs->current);
+	int map_number = currentlevel.levelnum;
 
-    for (const auto& cond : conditions)
-    {
-        switch (cond.condition)
-        {
-            case animcondition_t::CurrMapGreater:
-                conditionsmet = conditionsmet && (map_number > cond.param);
-                break;
+	for (const auto& cond : conditions)
+	{
+		switch (cond.condition)
+		{
+			case animcondition_t::CurrMapGreater:
+				conditionsmet = conditionsmet && (map_number > cond.param);
+				break;
 
-            case animcondition_t::CurrMapEqual:
-                conditionsmet = conditionsmet && (map_number == cond.param);
-                break;
+			case animcondition_t::CurrMapEqual:
+				conditionsmet = conditionsmet && (map_number == cond.param);
+				break;
 
-            case animcondition_t::MapVisited:
-                conditionsmet = conditionsmet && levels.findByNum(cond.param).flags & LEVEL_VISITED;
-                break;
+			case animcondition_t::MapVisited:
+				conditionsmet = conditionsmet && levels.findByNum(cond.param).flags & LEVEL_VISITED;
+				break;
 
-            case animcondition_t::CurrMapNotSecret:
-                // conditionsmet = conditionsmet && !U_IsSecretMap(episode, map);
-                break;
+			case animcondition_t::CurrMapNotSecret:
+				conditionsmet = conditionsmet && !(currentlevel.flags & LEVEL_SECRET);
+				break;
 
-            case animcondition_t::AnySecretVisited:
-                // conditionsmet = conditionsmet && wbs->didsecret;
-                break;
+			case animcondition_t::AnySecretVisited:
+				conditionsmet = conditionsmet && wbs->didsecret;
+				break;
 
-            case animcondition_t::OnFinishedScreen:
-                conditionsmet = conditionsmet && !enteringcondition;
-                break;
+			case animcondition_t::OnFinishedScreen:
+				conditionsmet = conditionsmet && !enteringcondition;
+				break;
 
-            case animcondition_t::OnEnteringScreen:
-                conditionsmet = conditionsmet && enteringcondition;
-                break;
+			case animcondition_t::OnEnteringScreen:
+				conditionsmet = conditionsmet && enteringcondition;
+				break;
 
-            default:
-                break;
-        }
-    }
-    return conditionsmet;
+			default:
+				break;
+		}
+	}
+	return conditionsmet;
 }
 
 static void WI_updateAnimationStates(std::vector<wi_animationstate_t>& states)
 {
-    for (auto& state : states)
-    {
-        interlevelframe_t& frame = state.frames.at(state.frame_index);
+	for (auto& state : states)
+	{
+		interlevelframe_t& frame = state.frames.at(state.frame_index);
 
-        if (state.duration_left == 0)
-        {
-            int tics = 1;
-            switch (frame.type & 0xF)
-            {
-                case interlevelframe_t::DurationInf:
-                    continue;
-                case interlevelframe_t::DurationFixed:
+		if (state.duration_left == 0)
+		{
+			int tics = 1;
+			switch (frame.type & 0xF)
+			{
+				case interlevelframe_t::DurationInf:
+					continue;
+				case interlevelframe_t::DurationFixed:
 					if (state.frame_start && (frame.type & interlevelframe_t::RandomStart))
-                    {
-                        int maxtics = frame.duration;
-                        tics = M_Random() % maxtics;
-                        break;
-                    }
-                    tics = frame.duration;
-                    break;
+					{
+						int maxtics = frame.duration;
+						tics = M_Random() % maxtics;
+						break;
+					}
+					tics = frame.duration;
+					break;
 
-                case interlevelframe_t::DurationRand:
-                    {
-                        int maxtics = frame.maxduration;
-                        int mintics = frame.duration;
-                        tics = M_Random() % maxtics;
-                        tics = clamp(tics, mintics, maxtics);
-                    }
-                    break;
+				case interlevelframe_t::DurationRand:
+					{
+						int maxtics = frame.maxduration;
+						int mintics = frame.duration;
+						tics = M_Random() % maxtics;
+						tics = clamp(tics, mintics, maxtics);
+					}
+					break;
 
-                default:
-                    break;
-            }
+				default:
+					break;
+			}
 
-            state.duration_left = MAX(tics, 1);
+			state.duration_left = MAX(tics, 1);
 
-            if (!state.frame_start)
-            {
-                state.frame_index++;
-                if (state.frame_index == state.frames.size())
-                {
-                    state.frame_index = 0;
-                }
-            }
-        }
+			if (!state.frame_start)
+			{
+				state.frame_index++;
+				if (state.frame_index == state.frames.size())
+				{
+					state.frame_index = 0;
+				}
+			}
+		}
 
-        state.duration_left--;
-        state.frame_start = false;
-    }
+		state.duration_left--;
+		state.frame_start = false;
+	}
 }
 
 static void WI_updateAnimation(bool enteringcondition)
 {
-    if (!animation)
-    {
-        return;
-    }
+	if (!animation)
+	{
+		return;
+	}
 
-    animation->states = nullptr;
+	animation->states = nullptr;
 
-    if (!enteringcondition && exitanim)
-    {
-        animation->states = &animation->exiting_states;
-    }
-    else if (enteranim)
-    {
-        animation->states = &animation->entering_states;
-    }
+	if (!enteringcondition && exitanim)
+	{
+		animation->states = &animation->exiting_states;
+	}
+	else if (enteranim)
+	{
+		animation->states = &animation->entering_states;
+	}
 
 	if (!animation->states)
 		return;
 
-    WI_updateAnimationStates(*animation->states);
+	WI_updateAnimationStates(*animation->states);
 }
 
 static void WI_drawAnimation(void)
 {
-    if (!animation || !animation->states)
-    {
-        return;
-    }
+	if (!animation || !animation->states)
+	{
+		return;
+	}
 
 	int scaled_x = (inter_width - 320) / 2;
 	DCanvas* canvas = anim_surface->getDefaultCanvas();
 	for (const auto& state : *animation->states)
-    {
-        const interlevelframe_t& frame = state.frames.at(state.frame_index);
+	{
+		const interlevelframe_t& frame = state.frames.at(state.frame_index);
 		patch_t* patch = W_CachePatch(frame.imagelumpnum);
 		if (!frame.altimagelump.empty())
 		{
@@ -377,7 +360,7 @@ static void WI_drawAnimation(void)
 		}
 
 		canvas->DrawPatch(patch, state.xpos + scaled_x, state.ypos);
-    }
+	}
 }
 
 static void WI_initAnimationStates(std::vector<wi_animationstate_t>& out,
@@ -388,7 +371,7 @@ static void WI_initAnimationStates(std::vector<wi_animationstate_t>& out,
 	{
 		if (!WI_checkConditions(layer.conditions, enteringcondition))
 		{
-        	continue;
+			continue;
 		}
 
 		for (const auto& anim : layer.anims)
@@ -485,13 +468,13 @@ void WI_slamBackground()
 	anim_surface->lock();
 
 	anim_surface->blitcrop(background_surface, 0, 0, background_surface->getWidth(), background_surface->getHeight(),
-	                       0, 0, anim_surface->getWidth(), anim_surface->getHeight());
+						   0, 0, anim_surface->getWidth(), anim_surface->getHeight());
 
 	WI_drawAnimation();
 
 	primary_surface->blitcrop(anim_surface, 0, 0, anim_surface->getWidth(), anim_surface->getHeight(),
-	                          (primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
-	                          destw, desth);
+							  (primary_surface->getWidth() - destw) / 2, (primary_surface->getHeight() - desth) / 2,
+							  destw, desth);
 
 	background_surface->unlock();
 	anim_surface->unlock();
@@ -641,7 +624,7 @@ int WI_drawNum(int n, int x, int y, int digits)
 	}
 
 	const bool neg = n < 0;
-    if (neg)
+	if (neg)
 		n = -n;
 
 	// if non-number, do not draw it
@@ -667,7 +650,7 @@ int WI_drawNum(int n, int x, int y, int digits)
 
 void WI_drawPercent (int p, int x, int y, int b = 0)
 {
-    if (p < 0)
+	if (p < 0)
 		return;
 
 	screen->DrawPatchClean(W_ResolvePatchHandle(percent), x, y);
@@ -682,9 +665,9 @@ void WI_drawTime (int t, int x, int y)
 	if (t < 0)
 		return;
 
-    if (t <= 61 * 59)
-    {
-	    int div = 1;
+	if (t <= 61 * 59)
+	{
+		int div = 1;
 
 		patch_t* col = W_ResolvePatchHandle(colon);
 
@@ -699,14 +682,14 @@ void WI_drawTime (int t, int x, int y)
 				screen->DrawPatchClean(col, x, y);
 
 		} while (t / div);
-    }
-    else
-    {
+	}
+	else
+	{
 		patch_t* suk = W_ResolvePatchHandle(sucks);
 
 		// "sucks"
 		screen->DrawPatchClean(suk, x - suk->width(), y);
-    }
+	}
 }
 
 void WI_End()
@@ -951,7 +934,7 @@ void WI_updateNetgameStats()
 		if (acceleratestage)
 		{
 			S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
-			if ((gameinfo.flags & GI_MAPxx) && enteranim == nullptr)
+			if ((gameinfo.flags & GI_MAPxx) && (enteranim == nullptr || demoplayback))
 				WI_initNoState();
 			else
 				WI_initShowNextLoc();
@@ -1175,7 +1158,7 @@ void WI_updateStats()
 
 		    S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
 
-		    if ((gameinfo.flags & GI_MAPxx && enteranim == nullptr))
+		    if (gameinfo.flags & GI_MAPxx && (enteranim == nullptr || demoplayback))
 				WI_initNoState();
 		    else
 				WI_initShowNextLoc();
@@ -1408,32 +1391,6 @@ void WI_loadData()
 		}
 	}
 
-	// if (gamemode != commercial && gamemode != commercial_bfg)
-	// {
-	// 	if (wbs->epsd < 3)
-	// 	{
-	// 		for (int j = 0; j < NUMANIMS[wbs->epsd]; j++)
-	// 		{
-	// 			animinfo_t* a = &anims[wbs->epsd][j];
-	// 			for (int i = 0; i < a->nanims; i++)
-	// 			{
-	// 				// MONDO HACK!
-	// 				if (wbs->epsd != 1 || j != 8)
-	// 				{
-	// 					// animations
-	// 					sprintf (name, "WIA%d%.2d%.2d", wbs->epsd, j, i);
-	// 					a->p[i] = W_CachePatch (name, PU_STATIC);
-	// 				}
-	// 				else
-	// 				{
-	// 					// HACK ALERT!
-	// 					a->p[i] = anims[1][4].p[i];
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-
 	for (int i = 0; i < 10; i++)
 	{
 		// numbers 0-9
@@ -1528,43 +1485,6 @@ void WI_loadData()
 
 void WI_unloadData()
 {
-/*	int i, j;
-
-	Z_ChangeTag (wiminus, PU_CACHE);
-
-	for (i = 0; i < 10; i++)
-		Z_ChangeTag (num[i], PU_CACHE);
-
-	for (i = 0; i < 2; i++) {
-		if (lnames[i]) {
-			Z_ChangeTag (lnames[i], PU_CACHE);
-			lnames[i] = NULL;
-		}
-	}
-
-	if (gamemode != commercial && gamemode != commercial_bfg)
-	{
-		Z_ChangeTag (yah[0], PU_CACHE);
-		Z_ChangeTag (yah[1], PU_CACHE);
-
-		Z_ChangeTag (splat, PU_CACHE);
-
-		if (wbs->epsd < 3)
-		{
-			for (j=0;j<NUMANIMS[wbs->epsd];j++)
-			{
-				if (wbs->epsd != 1 || j != 8)
-					for (i=0;i<anims[wbs->epsd][j].nanims;i++)
-						Z_ChangeTag (anims[wbs->epsd][j].p[i], PU_CACHE);
-			}
-		}
-	}
-
-	//Z_ChangeTag (finished, PU_CACHE); (Removed) Dan - Causes GUI Issues |FIX-ME|
-	Z_ChangeTag (entering, PU_CACHE);
-
-	Z_ChangeTag (p, PU_CACHE);*/
-
 	exitanim = enteranim = nullptr;
 	delete animation;
 
@@ -1584,8 +1504,6 @@ void WI_unloadData()
 	sucks.clear();
 	par.clear();
 	total.clear();
-	//	Z_ChangeTag(star, PU_CACHE);
-	//	Z_ChangeTag(bstar, PU_CACHE);
 	p.clear();
 
 	for (int i = 0; i < 4; i++)
@@ -1651,7 +1569,7 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 	WI_initNetgameStats();
 
 	S_StopAllChannels ();
- 	SN_StopAllSequences ();
+	SN_StopAllSequences ();
 }
 
 void WI_Shutdown()

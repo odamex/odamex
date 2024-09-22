@@ -1817,4 +1817,14 @@ void G_ParseMapInfo()
 	if (skillnum == 0)
 		I_FatalError("%s: You cannot use clearskills in a MAPINFO if you do not define any "
 					"new skills after it.", __FUNCTION__);
+
+	// mark levels as secrets -- for ID24 intermissions
+	LevelInfos& levels = getLevelInfos();
+	size_t numlevels = levels.size();
+	for (size_t i = 0; i < numlevels; i++)
+	{
+		level_pwad_info_t& level = levels.at(i);
+		level_pwad_info_t& secretlevel = levels.findByName(level.secretmap);
+		secretlevel.flags |= LEVEL_SECRET;
+	}
 }
