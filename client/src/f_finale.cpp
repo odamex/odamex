@@ -866,13 +866,13 @@ void F_Drawer (void)
 					break;
 				}
 				case '2':
-					F_DrawEndPic(gameinfo.finalePage2);
+			        F_DrawEndPic(gameinfo.finalePage[1].c_str());
 					break;
 				case '3':
 					F_BunnyScroll ();
 					break;
 				case '4':
-					F_DrawEndPic(gameinfo.finalePage3);
+			        F_DrawEndPic(gameinfo.finalePage[2].c_str());
 					break;
 			}
 			break;
