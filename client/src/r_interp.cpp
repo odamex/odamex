@@ -42,7 +42,7 @@ EXTERN_CVAR(sv_allowmovebob)
 EXTERN_CVAR(cl_movebob)
 
 extern NetDemo netdemo;
-extern unsigned int ConBottomStep;
+extern int ConBottomStep;
 
 extern fixed_t bobx;
 extern fixed_t boby;

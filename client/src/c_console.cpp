@@ -74,10 +74,10 @@ extern int		gametic;
 static unsigned int		ConRows, ConCols, PhysRows;
 
 static bool				cursoron = false;
-static unsigned int				ConBottom = 0;
+static int				ConBottom = 0;
 static int RowAdjust = 0;
 
-unsigned int			ConBottomStep; // Console fall/raise bottom pixels at the end of the tic, for interp purposes
+int			ConBottomStep; // Console fall/raise bottom pixels at the end of the tic, for interp purposes
 
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
@@ -294,7 +294,7 @@ public:
 
 	std::string		text;
 	size_t			cursor_position;
-	size_t			scrolled_columns;
+	int			scrolled_columns;
 
 private:
 	void doScrolling();
@@ -315,7 +315,7 @@ private:
 //
 void ConsoleCommandLine::doScrolling()
 {
-	size_t n = scrolled_columns;
+	int n = scrolled_columns;
 
 	// Start of visible line is beyond end of line
 	if (scrolled_columns >= text.length())
