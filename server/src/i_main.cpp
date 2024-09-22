@@ -97,14 +97,20 @@ int __cdecl main(int argc, char *argv[])
 
     try
     {
-        // Handle ctrl-c, close box, shutdown and logoff events
+        // Handle close box, shutdown and logoff events
         if (!(hEvent = CreateEvent(NULL, FALSE, FALSE, NULL)))
             throw CDoomError("Could not create console control event!\n");
 
         if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine, TRUE))
             throw CDoomError("Could not set console control handler!\n");
 
-        #ifdef _WIN32
+        // Disable QuickEdit mode as any text selection will cause all functions
+        // that use stdout (printf etc) to block
+        DWORD lpMode = ENABLE_EXTENDED_FLAGS;
+        
+        if (!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), lpMode))
+            throw CDoomError("SetConsoleMode failed!\n");
+            
         // Fixes icon not showing in titlebar and alt-tab menu under windows 7
         HANDLE hIcon;
 
@@ -115,7 +121,6 @@ int __cdecl main(int argc, char *argv[])
             SendMessage(GetConsoleWindow(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
             SendMessage(GetConsoleWindow(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
         }
-        #endif
 
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		::Args.SetArgs(argc, argv);

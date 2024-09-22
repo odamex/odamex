@@ -315,6 +315,14 @@ bool G_IsFFAGame()
 }
 
 /**
+ * @brief Check if the gametype is Match Duel, a new take on classic Doom duel.
+ */
+bool G_IsMatchDuelGame()
+{
+	return sv_gametype == GM_DM && sv_maxplayers == 2 && g_rounds;
+}
+
+/**
  * @brief Check if the gametype is made for Duels.
  */
 bool G_IsDuelGame()

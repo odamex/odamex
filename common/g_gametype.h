@@ -56,6 +56,7 @@ bool G_IsDefendingTeam(team_t team);
 bool G_IsHordeMode();
 bool G_IsCoopGame();
 bool G_IsFFAGame();
+bool G_IsMatchDuelGame();
 bool G_IsDuelGame();
 bool G_IsTeamGame();
 bool G_IsRoundsGame();

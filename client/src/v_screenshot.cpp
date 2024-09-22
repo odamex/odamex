@@ -24,6 +24,8 @@
 
 #include "odamex.h"
 
+#include <ctime>
+
 #include <SDL.h>
 
 #include <stdlib.h>

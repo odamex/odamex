@@ -961,7 +961,7 @@ BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 
 manual_floor:
 		// ALREADY MOVING?	IF SO, KEEP GOING...
-		if (sec->floordata)
+		if (sec->floordata || (demoplayback && sec->ceilingdata))
 		{
 			if (co_boomphys && manual)
 				return false;

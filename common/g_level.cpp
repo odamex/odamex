@@ -885,6 +885,8 @@ void G_InitLevelLocals()
 	{
 		::level.skypic2 =::level.skypic.c_str();
 	}
+	::level.sky1ScrollDelta = info.sky1ScrollDelta;
+	::level.sky2ScrollDelta = info.sky2ScrollDelta;
 
 	if (::level.flags & LEVEL_JUMP_YES)
 	{
@@ -920,6 +922,9 @@ void G_InitLevelLocals()
 	::level.intermusic = info.intermusic;
 	
 	::level.bossactions = info.bossactions;
+	::level.label = info.label;
+	::level.clearlabel = info.clearlabel;
+	::level.author = info.author;
 	
 	::level.detected_gametype = GM_COOP;
 
@@ -1040,6 +1045,8 @@ BEGIN_COMMAND(mapinfo)
 	flags += (info.flags & LEVEL_CHANGEMAPCHEAT ? " CHANGEMAPCHEAT" : "");
 	flags += (info.flags & LEVEL_VISITED ? " VISITED" : "");
 	flags += (info.flags & LEVEL_COMPAT_DROPOFF ? "COMPAT_DROPOFF" : "");
+	flags += (info.flags & LEVEL_COMPAT_NOPASSOVER ? "COMPAT_NOPASSOVER" : "");
+	flags += (info.flags & LEVEL_COMPAT_LIMITPAIN ? "COMPAT_LIMITPAIN" : "");
 
 	if (flags.length() > 0)
 	{

@@ -1244,19 +1244,14 @@ static int PatchThing(int thingy)
 						info->flags3 |= MF3_E4M8BOSS;
 					}
 
+					if (tempval & BIT(17)) // MBF21 RIP is 1 << 17
+					{
+						info->flags2 |= MF2_RIP;
+					}
+
 					if (tempval & MF3_FULLVOLSOUNDS)
 					{
 						info->flags3 |= MF3_FULLVOLSOUNDS;
-					}
-
-					if (tempval & MF2_NODMGTHRUST)
-					{
-						info->flags2 |= MF2_NODMGTHRUST;
-					}
-
-					if (tempval & MF2_RIP)
-					{
-						info->flags2 |= MF2_RIP;
 					}
 
 					value[3] |= atoi(strval);

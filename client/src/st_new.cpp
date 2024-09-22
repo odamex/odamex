@@ -115,16 +115,19 @@ EXTERN_CVAR(hud_timer)
 EXTERN_CVAR(hud_speedometer)
 EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(hud_transparency)
+EXTERN_CVAR(hud_anchoring)
 EXTERN_CVAR(hud_demobar)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(sv_scorelimit);
 EXTERN_CVAR(sv_warmup)
+EXTERN_CVAR(hud_feedtime)
 EXTERN_CVAR(hud_feedobits)
 EXTERN_CVAR(g_horde_waves)
 EXTERN_CVAR(g_roundlimit)
 EXTERN_CVAR(hud_hordeinfo_debug)
+EXTERN_CVAR(g_preroundreset)
 
 void ST_unloadNew()
 {
@@ -798,6 +801,16 @@ void OdamexHUD() {
 	yscale = hud_scale ? CleanYfac : 1;
 	y = I_GetSurfaceHeight() - (num_height + 4) * yscale;
 
+	// HUD element anchoring.
+	int num_ax = 0, text_ax = 0, patch_ax = 0;
+	if (hud_anchoring.value() < 1.0f)
+	{
+		num_ax = (((float)I_GetSurfaceWidth() - (float)I_GetSurfaceHeight() * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
+		num_ax = MAX(0, num_ax);
+		text_ax = num_ax / xscale;
+		patch_ax = num_ax / xscale;
+	}
+
 	// Draw Armor if the player has any
 	if (plyr->armortype && plyr->armorpoints) {
 		const patch_t* current_armor = W_ResolvePatchHandle(armors[1]);
@@ -807,20 +820,20 @@ void OdamexHUD() {
 
 		if (current_armor) {
 			// Draw Armor type.  Vertically centered against armor number.
-			hud::DrawPatchScaled(48 + 2 + 10, 32, 20, 20, hud_scale,
+			hud::DrawPatchScaled(patch_ax + 48 + 2 + 10, 32, 20, 20, hud_scale,
 			                     hud::X_LEFT, hud::Y_BOTTOM,
 			                     hud::X_CENTER, hud::Y_MIDDLE,
 			                     current_armor);
 		}
-		ST_DrawNumRight(48 * xscale, y - 20 * yscale, screen, plyr->armorpoints);
+		ST_DrawNumRight(num_ax + 48 * xscale, y - 20 * yscale, screen, plyr->armorpoints);
 	}
 
 	// Draw Doomguy.  Vertically scaled to an area two pixels above and
 	// below the health number, and horizontally centered below the armor.
-	hud::DrawPatchScaled(48 + 2 + 10, 2, 20, 20, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+	hud::DrawPatchScaled(patch_ax + 48 + 2 + 10, 2, 20, 20, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
 	                     hud::X_CENTER, hud::Y_BOTTOM,
 	                     W_ResolvePatchHandle(faces[st_faceindex]));
-	ST_DrawNumRight(48 * xscale, y, screen, plyr->health);
+	ST_DrawNumRight(num_ax + 48 * xscale, y, screen, plyr->health);
 
 	if (g_lives)
 	{
@@ -830,7 +843,7 @@ void OdamexHUD() {
 			lives_color = CR_DARKGREY;
 
 		StrFormat(buf, "x%d", plyr->lives);
-		hud::DrawText(48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+		hud::DrawText(text_ax + 48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
 		              hud::X_LEFT, hud::Y_MIDDLE, buf.c_str(), lives_color, false);
 	}
 
@@ -851,17 +864,17 @@ void OdamexHUD() {
 		//       probably be commonized, along with "scale only if
 		//       smaller than bounding box".
 		if (ammopatch->width() > 16 || ammopatch->height() > 16) {
-			hud::DrawPatchScaled(12, 12, 16, 16, hud_scale,
+			hud::DrawPatchScaled(patch_ax + 12, 12, 16, 16, hud_scale,
 			                     hud::X_RIGHT, hud::Y_BOTTOM,
 			                     hud::X_CENTER, hud::Y_MIDDLE,
 			                     ammopatch);
 		} else {
-			hud::DrawPatch(12, 12, hud_scale,
+			hud::DrawPatch(patch_ax + 12, 12, hud_scale,
 			               hud::X_RIGHT, hud::Y_BOTTOM,
 			               hud::X_CENTER, hud::Y_MIDDLE,
 			               ammopatch);
 		}
-		ST_DrawNumRight(I_GetSurfaceWidth() - 24 * xscale, y, screen, plyr->ammo[ammotype]);
+		ST_DrawNumRight(I_GetSurfaceWidth() - num_ax - 24 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
 
 	int color;
@@ -910,11 +923,34 @@ void OdamexHUD() {
 	// number on the other side of the screen.
 	if (::hud_bigfont)
 		V_SetFont("BIGFONT");
+	
+	// Special 3 line formatting for match duel
+	int spreadheight, scoreheight, placeheight;
 
-	hud::DrawText(4, 24 + V_LineHeight() + 1, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
-	              hud::X_RIGHT, hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY);
-	hud::DrawText(4, 24, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	if (G_IsMatchDuelGame())
+	{
+		spreadheight = 24 + (V_LineHeight() * 2) + 2;
+		scoreheight = 24 + V_LineHeight() + 1;
+		placeheight = 24;
+	}
+	else
+	{
+		spreadheight = 24 + V_LineHeight() + 1;
+		scoreheight = 24;
+		placeheight = 0; // No place height drawn if not match duel
+	}
+
+	hud::DrawText(text_ax + 4, spreadheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	              hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY);
+	hud::DrawText(text_ax + 4, scoreheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
 	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_GREY);
+
+	if (G_IsMatchDuelGame())
+	{
+		hud::DrawText(text_ax + 4, placeheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+		              hud::X_RIGHT, hud::Y_BOTTOM,
+		              hud::PersonalMatchDuelPlacement().c_str(), CR_GREY);
+	}
 
 	if (::hud_bigfont)
 		V_SetFont("SMALLFONT");
@@ -923,7 +959,7 @@ void OdamexHUD() {
 	if (G_IsCoopGame()) {
 		for (byte i = 0;i < NUMCARDS;i++) {
 			if (plyr->cards[i]) {
-				hud::DrawPatch(4 + (i * 10), 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+				hud::DrawPatch(patch_ax + 4 + (i * 10), 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 				               hud::X_RIGHT, hud::Y_BOTTOM,
 				               W_ResolvePatchHandle(keys[i]));
 			}
@@ -952,6 +988,9 @@ void DrawToasts()
 	if (!hud_feedobits)
 		return;
 
+	const int fadeDoneTics = (hud_feedtime * float(TICRATE));
+	const int fadeOutTics = fadeDoneTics - TICRATE;
+
 	V_SetFont("DIGFONT");
 	const int TOAST_HEIGHT = V_LineHeight() + 2;
 
@@ -961,16 +1000,15 @@ void DrawToasts()
 	const float oldtrans = ::hud_transparency;
 	for (drawToasts_t::const_iterator it = g_Toasts.begin(); it != g_Toasts.end(); ++it)
 	{
-		// Only render the message if it's less than 2 seconds in.
+		// Fade the toast out.
 		int tics = ::gametic - it->tic;
-		if (tics < TICRATE * 2)
+		if (tics < fadeOutTics)
 		{
 			::hud_transparency.ForceSet(1.0);
 		}
-		else if (tics < TICRATE * 3)
+		else if (tics < fadeDoneTics)
 		{
-			tics %= TICRATE;
-			const float trans = static_cast<float>(TICRATE - tics) / TICRATE;
+			const float trans = Remap(tics, fadeOutTics, fadeDoneTics, 1.0, 0.0);
 			::hud_transparency.ForceSet(trans);
 		}
 		else
@@ -1008,13 +1046,15 @@ void DrawToasts()
 
 void ToastTicker()
 {
+	const int fadeDoneTics = (hud_feedtime * float(TICRATE));
+
 	// Remove stale toasts in a loop.
 	drawToasts_t::iterator it = g_Toasts.begin();
 	while (it != g_Toasts.end())
 	{
 		const int tics = ::gametic - it->tic;
 
-		if (tics >= TICRATE * 3)
+		if (tics >= fadeDoneTics)
 		{
 			it = g_Toasts.erase(it);
 		}
@@ -1270,8 +1310,16 @@ void LevelStateHUD()
 	}
 	case LevelState::PREROUND_COUNTDOWN: {
 		StrFormat(lines.title, "Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
-		StrFormat(lines.subtitle[0], "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
-		          ::levelstate.getCountdown());
+		if (g_preroundreset)
+		{
+			StrFormat(lines.subtitle[0], "Round begins in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
+		}
+		else
+		{
+			StrFormat(lines.subtitle[0], "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
+		}
 		break;
 	}
 	case LevelState::INGAME: {
@@ -1320,9 +1368,14 @@ void LevelStateHUD()
 		break;
 	}
 	case LevelState::ENDROUND_COUNTDOWN: {
-		StrFormat(lines.title,
-		          "Round " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
-		          ::levelstate.getRound());
+		if (G_IsCoopGame() || G_IsHordeMode())
+			StrFormat(lines.title,
+				"Attempt " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
+				::levelstate.getRound());
+		else
+			StrFormat(lines.title,
+				"Round " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
+				::levelstate.getRound());
 
 		const WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
@@ -1333,15 +1386,27 @@ void LevelStateHUD()
 		else if (win.type == WinInfo::WIN_TEAM)
 			StrFormat(lines.subtitle[0], "%s team wins the round",
 			          WinToColorString(win).c_str());
+		else if (G_IsCoopGame() || G_IsHordeMode())
+			StrFormat(lines.subtitle[0], "Next attempt in " TEXTCOLOR_GREEN "%d",
+			          ::levelstate.getCountdown());
 		else
 			StrFormat(lines.subtitle[0], "Next round in " TEXTCOLOR_GREEN "%d",
 			          ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::ENDGAME_COUNTDOWN: {
-		StrFormat(lines.title, "Match complete");
+		WinInfo win = ::levelstate.getWinInfo();
+		//Upper Text
+		if 
+			(win.type == WinInfo::WIN_EVERYBODY)
+			StrFormat(lines.title, TEXTCOLOR_YELLOW "Mission Success!");
+		else if 
+			(win.type == WinInfo::WIN_NOBODY)
+			StrFormat(lines.title, TEXTCOLOR_RED "Mission Failed!");
+		else
+			StrFormat(lines.title, "Match complete");
 
-		const WinInfo win = ::levelstate.getWinInfo();
+		// Lower Text
 		if (win.type == WinInfo::WIN_DRAW)
 			StrFormat(lines.subtitle[0], "The game ends in a tie");
 		else if (win.type == WinInfo::WIN_PLAYER)

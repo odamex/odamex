@@ -139,6 +139,8 @@ public:
 	virtual void flushEvents();
 
 private:
+	int calcAxisValue(int raw_value);
+
 	static constexpr int JOY_DEADZONE = 6000;
 
 	bool			mActive;

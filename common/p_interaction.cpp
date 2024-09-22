@@ -380,11 +380,6 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 // P_GiveWeapon
 // The weapon name may have a MF_DROPPED flag ored in.
 //
-bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon);
-//
-// P_GiveWeapon
-// The weapon name may have a MF_DROPPED flag ored in.
-//
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 {
 	bool gaveammo;
@@ -777,7 +772,7 @@ static void P_GiveCarePack(player_t* player)
 	}
 }
 
-static bool P_SpecialIsWeapon(AActor *special)
+bool P_SpecialIsWeapon(AActor *special)
 {
 	if (!special)
 		return false;
@@ -1232,8 +1227,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 	if (special->flags & MF_COUNTITEM)
 	{
 		player->itemcount++;
-		if (serverside)
-			level.found_items++;
+		level.found_items++;
 	}
 
 	if (val == IEV_NotEquipped)
@@ -1510,6 +1504,7 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 					messagename = OB_SKULL;
 					break;
 				default:
+					messagename = OB_GENMONHIT;
 					break;
 				}
 			}
@@ -1560,6 +1555,18 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 					messagename = OB_WOLFSS;
 					break;
 				default:
+					if (mod == MOD_HITSCAN)
+					{
+						messagename = OB_GENMONPEW;
+					}
+					else if (mod == MOD_ROCKET || mod == MOD_R_SPLASH)
+					{
+						messagename = OB_GENMONBOOM;
+					}
+					else
+					{
+						messagename = OB_GENMONPROJ;
+					}
 					break;
 				}
 			}
@@ -1634,6 +1641,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 				break;
 			case MOD_RAILGUN:
 				messagename = OB_RAILGUN;
+				break;
+			default:
+				messagename = OB_KILLED; // If someone was killed by someone, show it
 				break;
 			}
 
@@ -2298,8 +2308,6 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 	if (target->health <= 0)
 	{
-		P_KillMobj(source, target, inflictor, false);
-
 		// WDL damage events.
 		// todo: handle voodoo dolls here
 		if (source == NULL && targethasflag)
@@ -2318,6 +2326,8 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		{
 			M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod, 0);
 		}
+
+		P_KillMobj(source, target, inflictor, false);
 
 		return;
 	}

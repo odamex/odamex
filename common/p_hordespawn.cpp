@@ -78,9 +78,6 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 	{
 		if (P_TestMobjLocation(mo))
 		{
-			// Don't respawn
-			mo->flags |= MF_DROPPED;
-
 			if (recipe.isBoss)
 			{
 				// Heavy is the head that wears the crown.
@@ -91,9 +88,7 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 				mo->oflags = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK |
 				             MFO_NORAISE | MFO_BOSSPOOL | MFO_FULLBRIGHT;
 
-				mo->flags2 = MF2_BOSS;
-
-				mo->flags3 = MF3_FULLVOLSOUNDS | MF3_DMGIGNORED;
+				mo->flags3 = MF3_FULLVOLSOUNDS | MF3_DMGIGNORED | MF3_NORADIUSDMG;
 			}
 			SV_SpawnMobj(mo);
 
@@ -222,6 +217,25 @@ bool P_HordeHasSpawns()
 }
 
 /**
+ * @brief Return true if there is both at least one large boss spawner and one large monster spawner in the map.
+ */
+bool P_HordeHasRequiredMonsterSpawns()
+{
+	bool bossspawnfound = false;
+	bool monsterspawnfound = false;
+
+	for (hordeSpawns_t::iterator it = monsterSpawns.begin(); it != monsterSpawns.end(); it++)
+	{
+		if (it->type == TTYPE_HORDE_BOSS)
+			bossspawnfound = true;
+		if (it->type == TTYPE_HORDE_MONSTER)
+			monsterspawnfound = true;
+	}
+
+	return bossspawnfound && monsterspawnfound;
+}
+
+/**
  * @brief Clear all tracked spawn points.
  */
 void P_HordeClearSpawns()
@@ -233,7 +247,7 @@ void P_HordeClearSpawns()
 
 /**
  * @brief True if passed radius and height fits in the passed mobjinfo.
- * 
+ *
  * @param info Info to check against.
  * @param rad Radius to check in whole units (not fixed).
  * @param height Height to check in whole units (not fixed).

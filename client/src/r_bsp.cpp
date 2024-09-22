@@ -671,7 +671,7 @@ void R_Subsector (int num)
 
 	basecolormap = frontsector->colormap->maps;
 
-	ceilingplane = P_CeilingHeight(camera) > viewz ||
+	ceilingplane = P_CeilingHeight(viewx, viewy, frontsector) > viewz ||
 		frontsector->ceilingpic == skyflatnum ||
 		(frontsector->heightsec && 
 		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) && 
@@ -691,7 +691,7 @@ void R_Subsector (int num)
 	// killough 3/7/98: Add (x,y) offsets to flats, add deep water check
 	// killough 3/16/98: add floorlightlevel
 	// killough 10/98: add support for skies transferred from sidedefs
-	floorplane = P_FloorHeight(camera) < viewz || // killough 3/7/98
+	floorplane = P_FloorHeight(viewx, viewy, frontsector) < viewz || // killough 3/7/98
 		(frontsector->heightsec &&
 		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		frontsector->heightsec->ceilingpic == skyflatnum) ?

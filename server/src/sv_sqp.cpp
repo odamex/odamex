@@ -176,7 +176,7 @@ next:
 
 	if(timeleft < 0)
 		timeleft = 0;
-	
+
 	// TODO: Remove guard on next release and reset protocol version
 	// TODO: Incorporate code above into block
 	// Only send timeleft if sv_timelimit has been set
@@ -187,7 +187,7 @@ next:
 	}
 	else
 		MSG_WriteShort(&ml_message, timeleft);
-	
+
 	// Teams
 	if(G_IsTeamGame())
 	{
@@ -348,8 +348,7 @@ static DWORD IntQrySendResponse(const WORD& TagId,
 	}
 
 	// Override other packet types for older enquirer version response
-	if (VERMAJ(EqVersion) < VERMAJ(GAMEVER) ||
-	    (VERMAJ(EqVersion) <= VERMAJ(GAMEVER) && VERMIN(EqVersion) < VERMIN(GAMEVER)))
+	if (VERMAJ(EqVersion) < VERMAJ(GAMEVER))
 	{
 		RePacketType = 2;
 	}

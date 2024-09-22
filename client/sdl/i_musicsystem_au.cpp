@@ -180,9 +180,12 @@ void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
 		return;
 	}
 
+	MusicTimeStamp maxtime = 0;
 	for (UInt32 i = 0; i < outNumberOfTracks; i++)
 	{
 		MusicTrack track;
+		MusicTimeStamp time;
+		UInt32 size = sizeof(time);
 
 		if (MusicSequenceGetIndTrack(m_sequence, i, &track) != noErr)
 		{
@@ -190,31 +193,39 @@ void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
 			return;
 		}
 
-		struct s_loopinfo
-		{
-			MusicTimeStamp time;
-			long loops;
-		} LoopInfo;
-
-		UInt32 inLength = sizeof(LoopInfo);
-
-		if (MusicTrackGetProperty(track, kSequenceTrackProperty_LoopInfo, &LoopInfo,
-		                          &inLength) != noErr)
+		if (MusicTrackGetProperty(track, kSequenceTrackProperty_TrackLength, &time,
+		                          &size) != noErr)
 		{
 			Printf(PRINT_HIGH, "I_PlaySong: MusicTrackGetProperty failed\n");
 			return;
 		}
 
-		inLength = sizeof(LoopInfo.time);
-
-		if (MusicTrackGetProperty(track, kSequenceTrackProperty_TrackLength,
-		                          &LoopInfo.time, &inLength) != noErr)
+		if (time > maxtime)
 		{
-			Printf(PRINT_HIGH, "I_PlaySong: MusicTrackGetProperty failed\n");
+			maxtime = time;
+		}
+	}
+
+	for (UInt32 i = 0; i < outNumberOfTracks; i++)
+	{
+		MusicTrack track;
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
+		typedef struct
+		{
+			MusicTimeStamp loopDuration;
+			SInt32 numberOfLoops;
+		} MusicTrackLoopInfo;
+#endif
+		MusicTrackLoopInfo LoopInfo;
+
+		if (MusicSequenceGetIndTrack(m_sequence, i, &track) != noErr)
+		{
+			Printf(PRINT_HIGH, "I_PlaySong: MusicSequenceGetIndTrack failed\n");
 			return;
 		}
 
-		LoopInfo.loops = loop ? 0 : 1;
+		LoopInfo.loopDuration = maxtime;
+		LoopInfo.numberOfLoops = (loop ? 0 : 1);
 
 		if (MusicTrackSetProperty(track, kSequenceTrackProperty_LoopInfo, &LoopInfo,
 		                          sizeof(LoopInfo)) != noErr)

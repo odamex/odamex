@@ -137,14 +137,14 @@ BEGIN_COMMAND (wad) // denis - changes wads
 
 	C_HideConsole();
 
-	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	G_LoadWadString(str);
+	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
+	G_LoadWadString(wadstr);
 
 	D_StartTitle ();
 	CL_QuitNetGame(NQ_SILENT);
 	S_StopMusic();
 	currentmusic = gameinfo.titleMusic.c_str();
-	
+
 	S_StartMusic(currentmusic.c_str());
 }
 END_COMMAND (wad)
@@ -157,7 +157,7 @@ EXTERN_CVAR(sv_allowjump)
 
 //
 // G_DoNewGame
-// Is called whenever a new Singleplayer game will be started. 
+// Is called whenever a new Singleplayer game will be started.
 //
 void G_DoNewGame (void)
 {
@@ -291,7 +291,7 @@ void G_InitNew (const char *mapname)
 	viewactive = true;
 
 	D_SetupUserInfo();
-	
+
 	level.mapname = mapname;
 
 	// [AM}] WDL stats (for testing purposes)
@@ -539,19 +539,32 @@ void G_DoLoadLevel (int position)
 	//	setting one.
 	skyflatnum = R_FlatNumForName ( SKYFLATNAME );
 
+	R_SetDefaultSky(level.skypic.c_str());
+
+	R_InitSkiesForLevel();
+
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
-	sky1texture = R_TextureNumForName (level.skypic.c_str());
-	if (!level.skypic2.empty())
-		sky2texture = R_TextureNumForName (level.skypic2.c_str());
+	// [EB] 9/6/2024 - remove sky1 (now using SKYDEFS), sky2 left for hexen style non doublesky sky2
+	// MIA TODO: remove this except for sky2 stuff (for non doublesky use of sky2)
+	sky1texture = R_TextureNumForName(level.skypic.c_str());
+	if (!level.skypic2.empty() && !(level.flags & LEVEL_DOUBLESKY))
+	{
+		sky2texture = R_TextureNumForName(level.skypic2.c_str());
+		sky2scrollxdelta = level.sky2ScrollDelta;
+	}
 	else
+	{
 		sky2texture = 0;
+		sky2scrollxdelta = 0;
+	}
+	sky2columnoffset = 0;
 
 	// [RH] Set up details about sky rendering
-	R_InitSkyMap ();
+	R_InitSkyMap();
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -678,7 +691,7 @@ void G_WorldDone()
 	// Sort out default options to pass to F_StartFinale
 	finale_options_t options = { 0 };
 	options.music = !level.intermusic.empty() ? level.intermusic.c_str() : thiscluster.messagemusic.c_str();
-	
+
 	if (!level.interbackdrop.empty())
 	{
 		options.flat = level.interbackdrop.c_str();
@@ -691,7 +704,7 @@ void G_WorldDone()
 	{
 		options.flat = &thiscluster.finaleflat[0];
 	}
-	
+
 	if (secretexit)
 	{
 		options.text = (!level.intertextsecret.empty()) ? level.intertextsecret.c_str() : thiscluster.exittext;
