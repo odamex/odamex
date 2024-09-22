@@ -657,7 +657,7 @@ static char *C_GetDefaultMusicSystem()
 	if (int(defaultmusicsystem) > 999 || int(defaultmusicsystem) < 0)
 		defaultmusicsystem = MS_NONE;
 
-	sprintf(str, "%i", defaultmusicsystem);
+	snprintf(str, 4, "%i", defaultmusicsystem);
 	return str;
 }
 

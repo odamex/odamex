@@ -75,7 +75,7 @@ static unsigned int		ConRows, ConCols, PhysRows;
 
 static bool				cursoron = false;
 static unsigned int				ConBottom = 0;
-static unsigned int RowAdjust = 0;
+static int RowAdjust = 0;
 
 unsigned int			ConBottomStep; // Console fall/raise bottom pixels at the end of the tic, for interp purposes
 
@@ -1325,7 +1325,7 @@ static size_t VPrintf(int printlevel, const char* color_code, const char* format
 		strcpy(outlinelog, outline);
 
 		// [Nes] - Horizontal line won't show up as-is in the logfile.
-		for (int i = 0; i < len; i++)
+		for (size_t i = 0; i < len; i++)
 		{
 			if (outlinelog[i] == '\35' || outlinelog[i] == '\36' || outlinelog[i] == '\37')
 				outlinelog[i] = '=';
@@ -1563,7 +1563,7 @@ static bool C_UseFullConsole()
 //
 void C_AdjustBottom()
 {
-	int surface_height = I_GetSurfaceHeight();
+	unsigned int surface_height = I_GetSurfaceHeight();
 
 	if (ConsoleState == c_up)
 		ConBottom = 0;
@@ -1655,7 +1655,7 @@ void C_ToggleConsole()
 	}
 	else
 	{
-		if (ConBottom == I_GetSurfaceHeight())
+		if (ConBottom == static_cast<unsigned int>(I_GetSurfaceHeight()))
 			ConsoleState = c_risefull;
 		else
 			ConsoleState = c_rising;
@@ -1677,7 +1677,7 @@ void C_ToggleConsole()
 //
 void C_DisplayTicker()
 {
-	int surface_height = I_GetSurfaceHeight();
+	unsigned int surface_height = I_GetSurfaceHeight();
 
 	// Attaching ConBottom to gametic will still cause falling/rising to
 	// be pinned to the gametic i.e. 35fps.

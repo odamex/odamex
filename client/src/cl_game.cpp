@@ -1946,7 +1946,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			if (!validplayer(con))
 			{
 				Z_Free(demobuffer);
-				Printf(PRINT_HIGH, "DOOM Demo: invalid console player %d of %d\n", who + 1, players.size());
+				Printf(PRINT_HIGH, "DOOM Demo: invalid console player %d of %lu\n", who + 1, players.size());
 				gameaction = ga_fullconsole;
 				return;
 			}
