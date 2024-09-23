@@ -52,13 +52,11 @@ const wxString env_vars[NUM_ENVVARS] = { "DOOMWADDIR", "DOOMWADPATH" };
 class dlgConfig: public wxDialog
 {
 public:
-
 	dlgConfig(wxWindow* parent, wxWindowID id = -1);
 	virtual ~dlgConfig();
 
 	void LoadSettings();
 	void SaveSettings();
-
 	void Show();
 
 protected:

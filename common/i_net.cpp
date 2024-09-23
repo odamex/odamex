@@ -229,7 +229,7 @@ void upnp_add_redir (const char * addr, int port)
 	if (urls.controlURL == NULL)
 		return;
 
-	sprintf(port_str, "%d", port);
+	snprintf(port_str, 16, "%d", port);
 
 	// Set a description if none exists
 	if (!sv_upnp_description.cstring()[0])
@@ -270,7 +270,7 @@ void upnp_rem_redir (int port)
 	if(urls.controlURL == NULL)
 		return;
 
-	sprintf(port_str, "%d", port);
+	snprintf(port_str, 16, "%d", port);
 	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
 		port_str, "UDP", 0);
 

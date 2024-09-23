@@ -993,8 +993,6 @@ void A_GunFlashTo(AActor* mo)
 void A_WeaponProjectile(AActor* mo)
 {
 	fixed_t type, angle, pitch, spawnofs_xy, spawnofs_z;
-	AActor* proj;
-	int an;
 
 	player_t* player = mo->player;
 	struct pspdef_s* psp = &player->psprites[player->psprnum];
@@ -1085,7 +1083,7 @@ void A_WeaponMeleeAttack(AActor* mo)
 	hitsound = psp->state->args[3];
 	range = psp->state->args[4];
 
-	if (hitsound >= ARRAY_LENGTH(SoundMap))
+	if (hitsound >= static_cast<int>(ARRAY_LENGTH(SoundMap)))
 	{
 		DPrintf("Warning: Weapon Melee Hitsound ID is beyond the array of the Sound Map!\n");
 		hitsound = 0;
@@ -1141,7 +1139,7 @@ void A_WeaponSound(AActor *mo)
 
 	int sndmap = psp->state->args[0];
 
-	if (sndmap >= ARRAY_LENGTH(SoundMap))
+	if (sndmap >= static_cast<int>(ARRAY_LENGTH(SoundMap)))
 	{
 		DPrintf("Warning: Weapon Sound ID is beyond the array of the Sound Map!\n");
 		sndmap = 0;

@@ -162,6 +162,7 @@ StringTokens hordeDefine_t::weaponStrings(player_t* player) const
 			break;
 		case wp_fist:
 		case wp_pistol:
+		case wp_nochange:
 		case NUMWEAPONS:
 			break;
 		}

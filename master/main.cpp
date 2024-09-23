@@ -278,8 +278,6 @@ void dumpServersToFile(const char *file = "./latest")
 
 	fprintf(fp, "\"Name\",\"Map\",\"Players/Max\",\"WADs\",\"Gametype\",\"Address:Port\"\n");
 
-	int i = 0;
-
 	while (itr != servers.end())
 	{
 		if(!(*itr).verified)

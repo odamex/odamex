@@ -705,6 +705,7 @@ static void P_GiveCarePack(player_t* player)
 					break;
 				case wp_none:
 				case wp_fist:
+				case wp_nochange:
 				case NUMWEAPONS:
 					break;
 				}

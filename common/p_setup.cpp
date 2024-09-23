@@ -58,7 +58,7 @@ void P_SpawnAvatars();
 void P_TranslateTeleportThings();
 
 unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved);
-const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags);
+unsigned int P_TranslateZDoomLineFlags(const unsigned int flags);
 void P_SpawnCompatibleSectorSpecial(sector_t* sector);
 
 static void P_SetupLevelFloorPlane(sector_t *sector);
@@ -2141,8 +2141,6 @@ static void P_SetupSlopes()
 	for (int i = 0; i < numlines; i++)
 	{
 		line_t *line = &lines[i];
-
-		short spec = line->special;
 
 		if ((map_format.getZDoom() && line->special == Plane_Align) ||
 		    (line->special >= 340 && line->special <= 347))

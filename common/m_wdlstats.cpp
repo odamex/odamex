@@ -42,23 +42,23 @@ EXTERN_CVAR(sv_playerbeacons)
 EXTERN_CVAR(g_sides)
 EXTERN_CVAR(g_lives)
 
-// Strings for WDL events
-static const char* wdlevstrings[] = {
-    "DAMAGE",         "CARRIERDAMAGE",     "KILL",
-    "CARRIERKILL",    "ENVIRODAMAGE",      "ENVIROCARRIERDAMAGE",
-    "ENVIROKILL",     "ENVIROCARRIERKILL", "TOUCH",
-    "PICKUPTOUCH",    "CAPTURE",           "PICKUPCAPTURE",
-    "ASSIST",         "RETURNFLAG",        "PICKUPITEM",
-    "SPREADACCURACY", "SSACCURACY",        "TRACERACCURACY",
-    "PROJACCURACY",   "SPAWNPLAYER",       "SPAWNITEM",
-    "JOINGAME",       "DISCONNECT",        "PLAYERBEACON",
-    "CARRIERBEACON",  "PROJFIRE",
-    //"RJUMPGO",
-    //"RJUMPLAND",
-    //"RJUMPAPEX",
-    //"MOBBEACON",
-    //"SPAWNMOB",
-};
+//// Strings for WDL events
+//static const char* wdlevstrings[] = {
+//    "DAMAGE",         "CARRIERDAMAGE",     "KILL",
+//    "CARRIERKILL",    "ENVIRODAMAGE",      "ENVIROCARRIERDAMAGE",
+//    "ENVIROKILL",     "ENVIROCARRIERKILL", "TOUCH",
+//    "PICKUPTOUCH",    "CAPTURE",           "PICKUPCAPTURE",
+//    "ASSIST",         "RETURNFLAG",        "PICKUPITEM",
+//    "SPREADACCURACY", "SSACCURACY",        "TRACERACCURACY",
+//    "PROJACCURACY",   "SPAWNPLAYER",       "SPAWNITEM",
+//    "JOINGAME",       "DISCONNECT",        "PLAYERBEACON",
+//    "CARRIERBEACON",  "PROJFIRE",
+//    //"RJUMPGO",
+//    //"RJUMPLAND",
+//    //"RJUMPAPEX",
+//    //"MOBBEACON",
+//    //"SPAWNMOB",
+//};
 
 std::string M_GetCurrentWadHashes();
 

@@ -663,7 +663,7 @@ void HordeState::tick()
 				break;
 
 			// Do we already have bosses spawned?
-			if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
+			if (m_bossRecipe.isValid() && static_cast<int>(m_bosses.size()) >= m_bossRecipe.count)
 				break;
 
 			hordeRecipe_t recipe;
@@ -702,6 +702,8 @@ void HordeState::tick()
 			ActivateMonsters(mobjs);
 			break;
 		}
+		case HS_STARTING:
+			break;
 		}
 	}
 

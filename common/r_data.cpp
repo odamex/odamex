@@ -523,7 +523,6 @@ void R_InitTextures (void)
 
 	int*				patchlookup;
 
-	int 				totalwidth;
 	int					nummappatches;
 	int 				offset;
 	int 				maxoff;
@@ -614,8 +613,6 @@ void R_InitTextures (void)
 	texturescalex = new fixed_t[numtextures];
 	texturescaley = new fixed_t[numtextures];
 
-	totalwidth = 0;
-
 	for (i = 0; i < numtextures; i++, directory++)
 	{
 		if (i == numtextures1)
@@ -674,8 +671,6 @@ void R_InitTextures (void)
 		// should be able to actually create scaled textures.
 		texturescalex[i] = mtexture->scalex ? mtexture->scalex << (FRACBITS - 3) : FRACUNIT;
 		texturescaley[i] = mtexture->scaley ? mtexture->scaley << (FRACBITS - 3) : FRACUNIT;
-
-		totalwidth += texture->width;
 	}
 	delete[] patchlookup;
 

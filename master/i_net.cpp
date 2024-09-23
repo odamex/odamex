@@ -125,9 +125,9 @@ char *NET_AdrToString(netadr_t a, bool displayport)
      static char s[64];
 
 	 if (displayport)
-		sprintf(s, "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3], ntohs(a.port));
+		snprintf(s, 64, "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3], ntohs(a.port));
 	 else
-		sprintf(s, "%i.%i.%i.%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3]);
+		snprintf(s, 64, "%i.%i.%i.%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3]);
 
      return s;
 }
