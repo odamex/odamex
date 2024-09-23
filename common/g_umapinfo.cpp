@@ -439,11 +439,11 @@ void ParseUMapInfoLump(int lump, const char* lumpname)
 				map++;
 				if (gamemode == commercial)
 				{
-					sprintf(arr, "MAP%02d", map);
+					snprintf(arr, 9, "MAP%02d", map);
 				}
 				else
 				{
-					sprintf(arr, "E%dM%d", ep, map);
+					snprintf(arr, 9, "E%dM%d", ep, map);
 				}
 				info.nextmap = arr;
 			}

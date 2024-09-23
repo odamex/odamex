@@ -955,8 +955,6 @@ static int PatchThing(int thingy)
 	};
 
 	int result;
-	int oldflags;
-	bool hadTranslucency = false;
 	mobjinfo_t *info, dummy;
 	int *ednum, dummyed;
 	bool hadHeight = false;
@@ -978,8 +976,6 @@ static int PatchThing(int thingy)
 		DPrintf("Thing %" PRIuSIZE " found.\n", thingNum);
 #endif
 	}
-
-	oldflags = info->flags;
 
 	while ((result = GetLine()) == 1)
 	{
@@ -1101,7 +1097,6 @@ static int PatchThing(int thingy)
 		else if (stricmp(Line1, "Translucency") == 0)
 		{
 			info->translucency = val;
-			hadTranslucency = true;
 		}
 		else if (stricmp(Line1, "Dropped item") == 0)
 		{
@@ -1340,7 +1335,6 @@ static int PatchThing(int thingy)
 				{
 					info->translucency =
 					    TRANSLUC50; // Correct value should be 0.66 (BOOM)...
-					hadTranslucency = true;
 				}
 
 				// Unsupported flags have to be announced for developers...
@@ -1370,8 +1364,6 @@ static int PatchThing(int thingy)
 			{
 				if (value[2] & 7)
 				{
-					hadTranslucency = true;
-
 					if (value[2] & 1)
 						info->translucency = TRANSLUC25;
 					else if (value[2] & 2)
@@ -1920,13 +1912,13 @@ static int PatchPars(int dummy)
 		if (moredata)
 		{
 			// At least 3 items on this line, must be E?M? format
-			sprintf(mapname, "E%cM%c", *Line2, *space);
+			snprintf(mapname, 8, "E%cM%c", *Line2, *space);
 			par = atoi(moredata + 1);
 		}
 		else
 		{
 			// Only 2 items, must be MAP?? format
-			sprintf(mapname, "MAP%02d", atoi(Line2) % 100);
+			snprintf(mapname, 8, "MAP%02d", atoi(Line2) % 100);
 			par = atoi(space);
 		}
 
@@ -2024,15 +2016,12 @@ static int PatchMusic(int dummy)
 
 static int PatchText(int oldSize)
 {
-	LevelInfos& levels = getLevelInfos();
-
 	int newSize;
 	char* oldStr;
 	char* newStr;
 	char* temp;
 	BOOL good;
 	int result;
-	int i;
 	const OString* name = NULL;
 
 	// Skip old size, since we already know it
@@ -2083,7 +2072,7 @@ static int PatchText(int oldSize)
 	good = false;
 
 	// Search through sprite names
-	for (i = 0; i < NUMSPRITES; i++)
+	for (int i = 0; i < NUMSPRITES; i++)
 	{
 		if (!strcmp(sprnames[i], oldStr))
 		{
@@ -2446,7 +2435,7 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 	return true;
 }
 
-static CodePtr null_bexptr = {"(NULL)", NULL};
+static CodePtr null_bexptr = {"(NULL)", NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 
 /*
  * @brief Check loaded deh files for any problems prior
@@ -2535,7 +2524,7 @@ bool CheckIfDehActorDefined(const mobjtype_t mobjtype)
 		mobj.infighting_group == IG_DEFAULT &&
 		mobj.projectile_group == PG_DEFAULT &&
 		mobj.splash_group == SG_DEFAULT &&
-		mobj.ripsound == "" &&
+		mobj.ripsound == NULL &&
 		mobj.meleerange == (64 * FRACUNIT) &&
 		mobj.droppeditem == MT_NULL)
 	{

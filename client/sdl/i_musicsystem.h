@@ -146,7 +146,6 @@ class MidiMusicSystem : public MusicSystem
 	MidiSong* m_midiSong;
 	MidiSong::const_iterator m_songItr;
 	bool m_loop;
-	int m_timeDivision;
 	double msperclock;
 	bool m_useFallback;
 	midi_fallback_t m_fallback;

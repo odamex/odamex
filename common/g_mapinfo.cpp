@@ -470,7 +470,7 @@ void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 		if (IsNum(map_name))
 		{
 			const int map = std::atoi(map_name);
-			sprintf(map_name, "MAP%02d", map);
+			snprintf(map_name, 9, "MAP%02d", map);
 		}
 
 		*static_cast<OLumpName*>(data) = map_name;
@@ -1613,7 +1613,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				// MAPNAME is a number, assume a Hexen wad
 				const int map = std::atoi(map_name);
 
-				sprintf(map_name, "MAP%02d", map);
+				snprintf(map_name, 9, "MAP%02d", map);
 				SKYFLATNAME[5] = 0;
 				HexenHack = true;
 				// Hexen levels are automatically nointermission

@@ -1951,7 +1951,7 @@ bool M_Responder (event_t* ev)
 		messageToPrint = 0;
 		if (messageRoutine)
 		{
-			if (ch == NULL && ch2 != NULL)
+			if (ch == '\0' && ch2 != '\0')
 				messageRoutine(ch2);
 			else
 				messageRoutine(ch);

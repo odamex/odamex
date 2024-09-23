@@ -532,7 +532,6 @@ NORETURN void STACK_ARGS I_FatalError(const char* error, ...)
 		alreadyThrown = true;
 		va_list argptr;
 		va_start(argptr, error);
-		int index = vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
 		if (SDL_GetError()[0] != '\0')
 		{
 			snprintf(messagetext, ARRAY_LENGTH(messagetext), "%s\nLast SDL Error:\n%s\n",
@@ -560,7 +559,6 @@ NORETURN void STACK_ARGS I_FatalError(const char* error, ...)
 	// Recursive atterm, we've used up all our chances.
 	va_list argptr;
 	va_start(argptr, error);
-	int index = vsnprintf(errortext, ARRAY_LENGTH(errortext), error, argptr);
 	if (SDL_GetError()[0] != '\0')
 	{
 		snprintf(messagetext, ARRAY_LENGTH(messagetext),
@@ -618,7 +616,7 @@ void STACK_ARGS I_Warning(const char *warning, ...)
 	char warningtext[MAX_ERRORTEXT];
 
 	va_start (argptr, warning);
-	vsprintf (warningtext, warning, argptr);
+	vsnprintf(warningtext, MAX_ERRORTEXT, warning, argptr);
 	va_end (argptr);
 
 	Printf (PRINT_WARNING, "\n%s\n", warningtext);
