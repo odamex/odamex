@@ -69,7 +69,7 @@ CVAR_FUNC_IMPL(r_stretchsky)
 	R_InitSkyMap ();
 }
 
-char SKYFLATNAME[8] = "F_SKY1";
+OLumpName SKYFLATNAME = "F_SKY1";
 
 
 static tallpost_t* skyposts[MAXWIDTH];

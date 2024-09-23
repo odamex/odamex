@@ -306,32 +306,23 @@ void P_LoadSubsectors(int lump)
 //
 void P_LoadSectors (int lump)
 {
-	byte*				data;
-	int 				i;
-	mapsector_t*		ms;
-	sector_t*			ss;
-	int					defSeqType;
-
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
 	delete[] sectors;
 	originalLightLevels.clear();
 
-	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
+	numsectors = W_LumpLength(lump) / sizeof(mapsector_t);
 
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
 	memset(sectors, 0, sizeof(sector_t)*numsectors);
 
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	byte* data = (byte*)W_CacheLumpNum(lump, PU_STATIC);
 
-	if (level.flags & LEVEL_SNDSEQTOTALCTRL)
-		defSeqType = 0;
-	else
-		defSeqType = -1;
+	const int defSeqType = (level.flags & LEVEL_SNDSEQTOTALCTRL) ? 0 : -1;
 
-	ms = (mapsector_t *)data;
-	ss = sectors;
-	for (i = 0; i < numsectors; i++, ss++, ms++)
+	mapsector_t* ms = (mapsector_t*)data;
+	sector_t* ss = sectors;
+	for (int i = 0; i < numsectors; i++, ss++, ms++)
 	{
 		ss->floorheight = LESHORT(ms->floorheight)<<FRACBITS;
 		ss->ceilingheight = LESHORT(ms->ceilingheight)<<FRACBITS;
@@ -1102,16 +1093,14 @@ void P_LoadSideDefs (int lump)
 static argb_t P_GetColorFromTextureName(const char* name)
 {
 	// work around name not being a properly terminated string
-	char name2[9];
-	strncpy(name2, name, 8);
-	name2[8] = '\0';
+	const OLumpName name2 = name;
 
-	unsigned long value = strtoul(name2, NULL, 16);
+	unsigned long value = strtoul(name2.c_str(), NULL, 16);
 
-	int a = (value >> 24) & 0xFF;
-	int r = (value >> 16) & 0xFF;
-	int g = (value >> 8) & 0xFF;
-	int b = value & 0xFF;
+	const int a = (value >> 24) & 0xFF;
+	const int r = (value >> 16) & 0xFF;
+	const int g = (value >> 8) & 0xFF;
+	const int b = value & 0xFF;
 
 	return argb_t(a, r, g, b);
 }

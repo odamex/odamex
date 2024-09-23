@@ -4264,8 +4264,8 @@ void SV_RunTics()
 		else
 		{
 			// [AM] Make a copy of mapname for safety's sake.
-			std::string mapname = ::level.mapname.c_str();
-			G_InitNew(mapname.c_str());
+			OLumpName mapname = ::level.mapname.c_str();
+			G_InitNew(mapname);
 		}
 	}
 	last_player_count = players.size();

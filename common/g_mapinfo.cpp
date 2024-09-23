@@ -1614,7 +1614,6 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				const int map = std::atoi(map_name);
 
 				snprintf(map_name, 9, "MAP%02d", map);
-				SKYFLATNAME[5] = 0;
 				HexenHack = true;
 				// Hexen levels are automatically nointermission
 				// and even lighting and no auto sound sequences
