@@ -189,27 +189,27 @@ int V_GetTextColor(const char* str)
 		for (int i = 0; i < 128; i++)
 			table[i] = -1;
 
-		table['A'] = table['a'] = CR_BRICK;
-		table['B'] = table['b'] = CR_TAN;
-		table['C'] = table['c'] = CR_GRAY;
-		table['D'] = table['d'] = CR_GREEN;
-		table['E'] = table['e'] = CR_BROWN;
-		table['F'] = table['f'] = CR_GOLD;
-		table['G'] = table['g'] = CR_RED;
-		table['H'] = table['h'] = CR_BLUE;
-		table['I'] = table['i'] = CR_ORANGE;
-		table['J'] = table['j'] = CR_WHITE;
-		table['K'] = table['k'] = CR_YELLOW;
-		table['M'] = table['m'] = CR_BLACK;
-		table['N'] = table['n'] = CR_LIGHTBLUE;
-		table['O'] = table['o'] = CR_CREAM;
-		table['P'] = table['p'] = CR_OLIVE;
-		table['Q'] = table['q'] = CR_DARKGREEN;
-		table['R'] = table['r'] = CR_DARKRED;
-		table['S'] = table['s'] = CR_DARKBROWN;
-		table['T'] = table['t'] = CR_PURPLE;
-		table['U'] = table['u'] = CR_DARKGRAY;
-		table['V'] = table['v'] = CR_CYAN;
+		table[static_cast<unsigned char>('A')] = table[static_cast<unsigned char>('a')] = CR_BRICK;
+		table[static_cast<unsigned char>('B')] = table[static_cast<unsigned char>('b')] = CR_TAN;
+		table[static_cast<unsigned char>('C')] = table[static_cast<unsigned char>('c')] = CR_GRAY;
+		table[static_cast<unsigned char>('D')] = table[static_cast<unsigned char>('d')] = CR_GREEN;
+		table[static_cast<unsigned char>('E')] = table[static_cast<unsigned char>('e')] = CR_BROWN;
+		table[static_cast<unsigned char>('F')] = table[static_cast<unsigned char>('f')] = CR_GOLD;
+		table[static_cast<unsigned char>('G')] = table[static_cast<unsigned char>('g')] = CR_RED;
+		table[static_cast<unsigned char>('H')] = table[static_cast<unsigned char>('h')] = CR_BLUE;
+		table[static_cast<unsigned char>('I')] = table[static_cast<unsigned char>('i')] = CR_ORANGE;
+		table[static_cast<unsigned char>('J')] = table[static_cast<unsigned char>('j')] = CR_WHITE;
+		table[static_cast<unsigned char>('K')] = table[static_cast<unsigned char>('k')] = CR_YELLOW;
+		table[static_cast<unsigned char>('M')] = table[static_cast<unsigned char>('m')] = CR_BLACK;
+		table[static_cast<unsigned char>('N')] = table[static_cast<unsigned char>('n')] = CR_LIGHTBLUE;
+		table[static_cast<unsigned char>('O')] = table[static_cast<unsigned char>('o')] = CR_CREAM;
+		table[static_cast<unsigned char>('P')] = table[static_cast<unsigned char>('p')] = CR_OLIVE;
+		table[static_cast<unsigned char>('Q')] = table[static_cast<unsigned char>('q')] = CR_DARKGREEN;
+		table[static_cast<unsigned char>('R')] = table[static_cast<unsigned char>('r')] = CR_DARKRED;
+		table[static_cast<unsigned char>('S')] = table[static_cast<unsigned char>('s')] = CR_DARKBROWN;
+		table[static_cast<unsigned char>('T')] = table[static_cast<unsigned char>('t')] = CR_PURPLE;
+		table[static_cast<unsigned char>('U')] = table[static_cast<unsigned char>('u')] = CR_DARKGRAY;
+		table[static_cast<unsigned char>('V')] = table[static_cast<unsigned char>('v')] = CR_CYAN;
 
 		initialized = true;
 	}
@@ -509,7 +509,7 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 	{
 		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
-			sprintf(color_code_str, "\034%c", str[1]);
+			snprintf(color_code_str, 4, "\034%c", str[1]);
 			str += 2;
 			continue;
 		}

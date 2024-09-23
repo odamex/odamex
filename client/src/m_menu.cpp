@@ -840,7 +840,7 @@ void M_QuickSave(void)
 		quickSaveSlot = -2; 	// means to pick a slot now
 		return;
 	}
-	sprintf (tempstring, GStrings(QSPROMPT), savegamestrings[quickSaveSlot]);
+	snprintf (tempstring, 80, GStrings(QSPROMPT), savegamestrings[quickSaveSlot]);
 	M_StartMessage (tempstring, M_QuickSaveResponse, true);
 }
 
@@ -869,7 +869,7 @@ void M_QuickLoad(void)
 		M_LoadGame (0);
 		return;
 	}
-	sprintf(tempstring,GStrings(QLPROMPT),savegamestrings[quickSaveSlot]);
+	snprintf(tempstring, 80, GStrings(QLPROMPT),savegamestrings[quickSaveSlot]);
 	M_StartMessage(tempstring,M_QuickLoadResponse,true);
 }
 
@@ -1694,7 +1694,7 @@ static void M_PlayerNameChanged (int choice)
 {
 	char command[SAVESTRINGSIZE+8+2];
 
-	sprintf (command, "cl_name \"%s\"", savegamestrings[0]);
+	snprintf (command, 34, "cl_name \"%s\"", savegamestrings[0]);
 	AddCommandString (command);
 }
 /*

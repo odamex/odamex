@@ -2688,8 +2688,6 @@ void A_Explode (AActor *thing)
 	P_RadiusAttack (thing, thing->target, damage, distance, hurtSource, mod);
 }
 
-#define SPEED(a)		((a)*(FRACUNIT/8))
-
 //
 // A_BossDeath
 // Possibly trigger special effects if on a boss level

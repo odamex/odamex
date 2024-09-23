@@ -84,7 +84,7 @@ class SilentMusicSystem : public MusicSystem
 	virtual void pauseSong() { }
 	virtual void resumeSong() { }
 	virtual void playChunk() { }
-	virtual void setVolume(float volume) const { }
+	virtual void setVolume(float volume) { }
 
 	virtual bool isInitialized() const { return true; }
 
