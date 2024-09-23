@@ -37,6 +37,7 @@
 
 #include "g_gametype.h"
 #include "svc_message.h"
+#include "i_system.h"
 
 // State.
 #include "p_pspr.h"
@@ -1007,6 +1008,11 @@ void A_WeaponProjectile(AActor* mo)
 	pitch = psp->state->args[2];
 	spawnofs_xy = psp->state->args[3];
 	spawnofs_z = psp->state->args[4];
+
+	if (!CheckIfDehActorDefined((mobjtype_t)type))
+	{
+		I_Error("A_WeaponProjectile: Attempted to spawn undefined projectile type.");
+	}
 
 	if (serverside)
 		P_SpawnMBF21PlayerMissile(player->mo, (mobjtype_t)type, angle, pitch, spawnofs_xy, spawnofs_z);
