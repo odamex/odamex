@@ -307,7 +307,6 @@ void dumpServersToFile(const char *file = "./latest")
 
 		fprintf(fp, "\"%s\",\"%s\",\"%d/%d\",\"%s\",\"%s\",\"%s\"\n", (*itr).hostname.c_str(), (*itr).map.c_str(), (*itr).players, (*itr).maxplayers, str_wads.c_str(), detectgametype.c_str(), NET_AdrToString((*itr).addr, true));
 
-		i++;
 		++itr;
 	}
 
