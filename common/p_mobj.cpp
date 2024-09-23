@@ -133,7 +133,7 @@ AActor::AActor()
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
-      rndindex(0), netid(0), tid(0), bmapnode(this), baseline_set(false)
+      rndindex(0), netid(0), tid(0), baseline_set(false), bmapnode(this)
 {
 	memset(args, 0, sizeof(args));
 	memset(&baseline, 0, sizeof(baseline));
@@ -159,7 +159,7 @@ AActor::AActor(const AActor& other)
       translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
       onground(other.onground), touching_sectorlist(other.touching_sectorlist),
       deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex),
-      netid(other.netid), tid(other.tid), bmapnode(other.bmapnode), baseline_set(false)
+      netid(other.netid), tid(other.tid), baseline_set(false), bmapnode(other.bmapnode)
 {
 	memcpy(args, other.args, sizeof(args));
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
@@ -251,7 +251,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
-      rndindex(0), netid(0), tid(0), bmapnode(this), baseline_set(false)
+      rndindex(0), netid(0), tid(0), baseline_set(false), bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
 	if ((unsigned int)itype >= NUMMOBJTYPES)
@@ -1689,8 +1689,6 @@ static void P_ActorFakeSectorTriggers(AActor* mo, fixed_t oldz)
 
 void P_ApplyBouncyPhysics(AActor *mo)
 {
-	bool sentient = mo->health > 0 && mo->info->seestate;
-
 	if (mo->flags & MF_BOUNCES && mo->momz)
 	{
 		mo->z += mo->momz;

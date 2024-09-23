@@ -93,29 +93,29 @@ private:
 	std::vector<fixed_fixed_uint_pair> saved_sectorfloorscrollingflat;
 
 	// Skies
-	fixed_t saved_sky1offset = 0;
-	fixed_t prev_sky1offset = 0;
-	fixed_t saved_sky2offset = 0;
-	fixed_t prev_sky2offset = 0;
+	fixed_t saved_sky1offset;
+	fixed_t prev_sky1offset;
+	fixed_t saved_sky2offset;
+	fixed_t prev_sky2offset;
 
 	// Weapon bob x/y
-	fixed_t saved_bobx = 0;
-	fixed_t prev_bobx = 0;
-	fixed_t saved_boby = 0;
-	fixed_t prev_boby = 0;
+	fixed_t saved_bobx;
+	fixed_t prev_bobx;
+	fixed_t saved_boby;
+	fixed_t prev_boby;
 
 	// Console
-	fixed_t saved_conbottomstep = 0;
-	fixed_t prev_conbottomstep = 0;
+	fixed_t saved_conbottomstep;
+	fixed_t prev_conbottomstep;
 
 	// Chasecam
-	fixed_t prev_camerax = 0;
-	fixed_t prev_cameray = 0;
-	fixed_t prev_cameraz = 0;
+	fixed_t prev_camerax;
+	fixed_t prev_cameray;
+	fixed_t prev_cameraz;
 
 	// Should we interpolate in-game objects?
-	bool interpolationEnabled = true;
+	bool interpolationEnabled;
 
-	OInterpolation() { }                       // private contsructor (part of Singleton)
+	OInterpolation();                          // private contsructor (part of Singleton)
 	OInterpolation(const OInterpolation& rhs); // private copy constructor
 };

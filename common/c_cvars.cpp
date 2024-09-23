@@ -360,7 +360,7 @@ void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool 
 		{
 			if (array_size <= 0)
 			{
-				Printf(PRINT_HIGH, "Warning: Saved Cvars exceed %lu bytes, no more cvars will be written.\n");
+				Printf(PRINT_WARNING, "Warning: Saved Cvars exceed %lu bytes, no more cvars will be written.\n", array_size);
 				return;
 			}
 
@@ -379,8 +379,9 @@ void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool 
 			{
 				if (array_size <= 0)
 				{
-					Printf(PRINT_HIGH, "Warning: Saved Cvars exceed %lu bytes, no more "
-					                   "cvars will be written.\n");
+					Printf(PRINT_WARNING, "Saved Cvars exceed %lu bytes, no more "
+					       "cvars will be written.\n",
+					       array_size);
 					return;
 				}
 

@@ -65,6 +65,33 @@ OInterpolation::~OInterpolation()
 	OInterpolation::resetGameInterpolation();
 }
 
+OInterpolation::OInterpolation()
+{
+	// Skies
+	saved_sky1offset = 0;
+	prev_sky1offset = 0;
+	saved_sky2offset = 0;
+	prev_sky2offset = 0;
+
+	// Weapon bob x/y
+	saved_bobx = 0;
+	prev_bobx = 0;
+	saved_boby = 0;
+	prev_boby = 0;
+
+	// Console
+	saved_conbottomstep = 0;
+	prev_conbottomstep = 0;
+
+	// Chasecam
+	prev_camerax = 0;
+	prev_cameray = 0;
+	prev_cameraz = 0;
+
+	// Should we interpolate in-game objects?
+	interpolationEnabled = true;
+}
+
 //
 // OInterpolation::resetGameInterpolation()
 //
@@ -432,7 +459,6 @@ void OInterpolation::restoreWalls(void)
 		 side_it != saved_linescrollingtex.end(); ++side_it)
 	{
 		unsigned int sidenum = side_it->second;
-		const side_t* side = &sides[sidenum];
 
 		fixed_uint_pair offs = side_it->first;
 

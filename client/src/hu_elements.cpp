@@ -1283,7 +1283,6 @@ void EAPlayerFrags(int x, int y, const float scale,
                    const short padding, const short limit,
                    const bool force_opaque) {
 	byte drawn = 0;
-	int frags = 0;
 
 	for (size_t i = 0;i < sortedPlayers().size();i++) {
 		// Make sure we're not overrunning our limit.
@@ -1292,15 +1291,6 @@ void EAPlayerFrags(int x, int y, const float scale,
 		}
 
 		player_t* player = sortedPlayers()[i];
-
-		if (G_IsRoundsGame() && !G_IsDuelGame())
-		{
-			frags = player->totalpoints;
-		}
-		else
-		{
-			frags = player->fragcount;
-		}
 
 		if (ingamePlayer(player)) {
 			std::ostringstream buffer;

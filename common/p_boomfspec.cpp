@@ -3431,7 +3431,7 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	return false;
 }
 
-const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved)
+unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved)
 {
 	/*
 	if (mbf21)

@@ -361,7 +361,7 @@ bool P_IsSpecialBoomRepeatable(const short special)
 		break;
 	}
 
-	if (special >= GenCrusherBase && special <= GenEnd)
+	if (special >= GenCrusherBase)
 	{
 		switch ((special & TriggerType) >> TriggerTypeShift)
 		{
@@ -439,7 +439,7 @@ bool P_IsCompatibleBlueDoorLine(const short special)
 	if (lock == BCard || lock == BSkull)
 		genericlock = true;
 
-	return special == 26 || special == 32;
+	return special == 26 || special == 32 || genericlock;
 }
 
 bool P_IsCompatibleRedDoorLine(const short special)
@@ -453,7 +453,7 @@ bool P_IsCompatibleRedDoorLine(const short special)
 	if (lock == RCard || lock == RSkull)
 		genericlock = true;
 
-	return special == 28 || special == 33;
+	return special == 28 || special == 33 || genericlock;
 }
 
 bool P_IsCompatibleYellowDoorLine(const short special)
@@ -467,7 +467,7 @@ bool P_IsCompatibleYellowDoorLine(const short special)
 	if (lock == YCard || lock == YSkull)
 		genericlock = true;
 
-	return special == 27 || special == 34;
+	return special == 27 || special == 34 || genericlock;
 }
 
 bool P_IsLightTagDoorType(const short special)

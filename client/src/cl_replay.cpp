@@ -54,6 +54,13 @@ ClientReplay::~ClientReplay()
 	ClientReplay::reset();
 }
 
+ClientReplay::ClientReplay()
+{
+	replayed = false;
+	replayDoneCounter = TICRATE * 7;
+	firstReadyTic = 0;
+}
+
 //
 // ClientReplay::reset
 //

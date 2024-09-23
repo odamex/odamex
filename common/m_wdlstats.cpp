@@ -157,12 +157,12 @@ typedef std::vector<WDLEvent> WDLEventLog;
 static WDLEventLog wdlevents;
 
 // Turn an event enum into a string.
-static const char* WDLEventString(WDLEvents i)
-{
-	if (i >= ARRAY_LENGTH(::wdlevstrings) || i < 0)
-		return "UNKNOWN";
-	return ::wdlevstrings[i];
-}
+//static const char* WDLEventString(WDLEvents i)
+//{
+//	if (i >= ARRAY_LENGTH(::wdlevstrings) || i < 0)
+//		return "UNKNOWN";
+//	return ::wdlevstrings[i];
+//}
 
 static void AddWDLPlayer(player_t* player)
 {
@@ -709,7 +709,7 @@ void M_LogWDLItemRespawnEvent(AActor* activator)
 	}
 
 	// Add the event to the log.
-	WDLEvent evt = {WDL_EVENT_SPAWNITEM, NULL,     NULL,        ::gametic, {ax, ay, az},
+	WDLEvent evt = {WDL_EVENT_SPAWNITEM, 0,     0,        ::gametic, {ax, ay, az},
 	                {0, 0, 0},           itemtype, itemspawnid, 0,         0};
 	::wdlevents.push_back(evt);
 }
@@ -1138,7 +1138,7 @@ BEGIN_COMMAND(wdlinfo)
 	if (stricmp(argv[1], "event") == 0)
 	{
 		int id = atoi(argv[2]);
-		if (id >= ::wdlevents.size())
+		if (id >= static_cast<int>(::wdlevents.size()))
 		{
 			Printf(PRINT_HIGH, "Event number %d not found\n", id);
 			return;
