@@ -1153,10 +1153,10 @@ void DFlashFader::Serialize (FArchive &arc)
 	if (arc.IsStoring ())
 	{
 		arc << TotalTics << StartTic << ForWho;
-	
+
 		for (int i = 1; i >= 0; --i)
 			for (int j = 3; j >= 0; --j)
-				arc << Blends[i][j];			
+				arc << Blends[i][j];
 	}
 	else
 	{
@@ -1164,7 +1164,7 @@ void DFlashFader::Serialize (FArchive &arc)
 
 		for (int i = 1; i >= 0; --i)
 			for (int j = 3; j >= 0; --j)
-				arc >> Blends[i][j];		
+				arc >> Blends[i][j];
 	}
 }
 
@@ -1188,7 +1188,7 @@ void DFlashFader::SetBlend (float time)
 {
 	if (ForWho == NULL || ForWho->player == NULL)
 		return;
-	
+
 	player_t* player = ForWho->player;
 
 	float iT = 1.f - time;
@@ -1286,7 +1286,7 @@ void DPlaneWatcher::Serialize (FArchive &arc)
 	{
 		arc >> Special >> Arg0 >> Arg1 >> Arg2 >> Arg3 >> Arg4
 			>> Sector >> bCeiling >> WatchD >> LastD >> Activator
-			>> Line >> LineSide >> bCeiling;	
+			>> Line >> LineSide >> bCeiling;
 	}
 }
 
@@ -1360,7 +1360,7 @@ void DLevelScript::Serialize (FArchive &arc)
 
 		arc << activationline;
 		arc << lineSide;
-			
+
 		for (i = 0; i < LOCAL_SIZE; i++)
 			arc << localvars[i];
 
@@ -1377,10 +1377,10 @@ void DLevelScript::Serialize (FArchive &arc)
 			>> activator
 			>> activationline
 			>> lineSide;
-			
+
 		for (i = 0; i < LOCAL_SIZE; i++)
-			arc >> localvars[i];	
-	
+			arc >> localvars[i];
+
 		arc >> i;
 		pc = level.behavior->Ofs2PC (i);
 	}
@@ -1586,7 +1586,7 @@ void DLevelScript::ACS_Print(byte pcd, AActor* activator, const char* print)
 
 	SERVER_ONLY(SV_ACSExecuteSpecial(pcd, activator, print, local));
 
-	if (clientside && 
+	if (clientside &&
 		(!local || (activator != NULL && activator->player && activator->player->mo == consoleplayer().camera)))
 	{
 		C_MidPrint(print);
@@ -2531,7 +2531,7 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_ASSIGNMAPARRAY:
-			level.behavior->SetArrayVal(ACS_WorldVars[NEXTBYTE], STACK(2), STACK(1));
+			level.behavior->SetArrayVal(level.vars[NEXTBYTE], STACK(2), STACK(1));
 			sp -= 2;
 			break;
 
@@ -3243,7 +3243,7 @@ void DLevelScript::RunScript ()
 
 		case PCD_SOUNDSEQUENCE:
 			if (activationline)
-				StartSoundSequence(activationline->frontsector, STACK(1));			
+				StartSoundSequence(activationline->frontsector, STACK(1));
 			sp--;
 			break;
 
@@ -3268,7 +3268,7 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_SETTHINGSPECIAL:
-		{				
+		{
 			FActorIterator iterator (STACK(7));
 			AActor *actor;
 
@@ -3282,7 +3282,7 @@ void DLevelScript::RunScript ()
 		{
 			FActorIterator iterator(STACK(3));
 			AActor *spot;
-			while ((spot = iterator.Next()))				
+			while ((spot = iterator.Next()))
 				StartThingSound(pcd, spot, CHAN_BODY, STACK(2), STACK(1), ATTN_NORM);
 			sp -= 3;
 		}
@@ -3921,7 +3921,7 @@ void strbin (char *str)
 		} else {
 			switch (*p) {
 				case 'c':
-					*str++ = '\034';	// TEXTCOLOR_ESCAPE	
+					*str++ = '\034';	// TEXTCOLOR_ESCAPE
 					break;
 				case 'n':
 					*str++ = '\n';
