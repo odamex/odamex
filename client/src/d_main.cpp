@@ -132,6 +132,7 @@ EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_fastmonsters)
+EXTERN_CVAR (g_thingfilter)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_allowredscreen)
@@ -912,6 +913,10 @@ void D_DoomMain()
 
 	// Pistol start
 	g_resetinvonexit = Args.CheckParm("-pistolstart");
+
+	// Multiplayer things
+	if (Args.CheckParm("-coop-things"))
+		g_thingfilter = -1;
 
 	// get skill / episode / map from parms
 	startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
