@@ -181,7 +181,7 @@ void D_ProcessEvents (void)
 	// [RH] If testing mode, do not accept input until test is over
 	if (testingmode)
 	{
-		if (testingmode <= I_MSTime() * TICRATE / 1000)
+		if (static_cast <dtime_t>(testingmode) <= I_MSTime() * TICRATE / 1000)
 			M_RestoreVideoMode();
 		else
 			M_ModeFlashTestText();
@@ -579,7 +579,7 @@ void STACK_ARGS D_Close()
 
 	D_ClearTaskSchedulers();
 
-	page_height, page_width = 0;
+	page_height = 0, page_width = 0;
 }
 
 //

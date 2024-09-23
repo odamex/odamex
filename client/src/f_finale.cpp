@@ -803,7 +803,7 @@ void F_BunnyScroll()
 		laststage = stage;
 	}
 
-	sprintf (name,"END%i",stage);
+	snprintf (name, 6, "END%i", stage);
 	screen->DrawPatchIndirect(W_CachePatch(name), (320-13*8)/2, (200-8*8)/2);
 }
 
