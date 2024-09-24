@@ -511,7 +511,6 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
     : DMovingFloor(sec), m_Status(init)
 {
 	fixed_t floorheight = P_FloorHeight(sec);
-	fixed_t ceilingheight = P_CeilingHeight(sec);
 
 	m_Type = genFloor;
 	m_Crush = crush ? DOOM_CRUSH : NO_CRUSH;

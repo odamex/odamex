@@ -2388,7 +2388,6 @@ void STACK_ARGS SV_BroadcastPrintf(const char* fmt, ...)
 {
 	va_list argptr;
 	char string[2048];
-	client_t* cl;
 
 	va_start(argptr, fmt);
 	vsnprintf(string, sizeof(string), fmt, argptr);
@@ -4112,10 +4111,10 @@ void SV_GameTics (void)
 
 void SV_TouchSpecial(AActor *special, player_t *player)
 {
-    client_t *cl = &player->client;
+	client_t *cl = &player->client;
 
-    if (cl == NULL || special == NULL)
-        return;
+	if (cl == NULL || special == NULL)
+		return;
 
 	MSG_WriteSVC(&cl->reliablebuf, SVC_TouchSpecial(special));
 }

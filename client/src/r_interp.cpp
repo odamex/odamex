@@ -588,12 +588,12 @@ void OInterpolation::interpolateView(player_t* player, fixed_t amount)
 	if (!camera || !camera->subsector)
 		return;
 
-		player_t& consolePlayer = consoleplayer();
-		const bool use_localview =
-		    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
-		     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
+	player_t& consolePlayer = consoleplayer();
+	const bool use_localview =
+	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
+	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
 
-		interpolateCamera(render_lerp_amount, use_localview, player->cheats & CF_CHASECAM);
+	interpolateCamera(render_lerp_amount, use_localview, player->cheats & CF_CHASECAM);
 }
 
 //

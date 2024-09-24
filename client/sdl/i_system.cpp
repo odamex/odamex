@@ -427,8 +427,8 @@ void I_Endoom(void)
 	int y;
 	int indent;
 
-    if (!r_showendoom || Args.CheckParm ("-novideo"))
-        return;
+	if (!r_showendoom || Args.CheckParm ("-novideo"))
+		return;
 
 	int lump = -1;
 	int count = 0;
@@ -440,8 +440,8 @@ void I_Endoom(void)
 	if (r_showendoom == 2 && count <= 1)
 		return;
 
-    // Hack to stop crash with disk icon
-    in_endoom = true;
+	// Hack to stop crash with disk icon
+	in_endoom = true;
 
 	endoom_data = (unsigned char *)W_CacheLumpName("ENDOOM", PU_STATIC);
 
@@ -450,34 +450,34 @@ void I_Endoom(void)
 	TXT_Init();
 
 	I_SetWindowCaption(D_GetTitleString());
-    I_SetWindowIcon();
+	I_SetWindowIcon();
 
 	// Write the data to the screen memory
 
 	screendata = TXT_GetScreenData();
 
-    if(NULL != screendata)
-    {
-        indent = (ENDOOM_W - TXT_SCREEN_W) / 2;
+	if(NULL != screendata)
+	{
+		indent = (ENDOOM_W - TXT_SCREEN_W) / 2;
 
-        for (y=0; y<TXT_SCREEN_H; ++y)
-        {
-            memcpy(screendata + (y * TXT_SCREEN_W * 2),
-                    endoom_data + (y * ENDOOM_W + indent) * 2,
-                    TXT_SCREEN_W * 2);
-        }
+		for (y=0; y<TXT_SCREEN_H; ++y)
+		{
+			memcpy(screendata + (y * TXT_SCREEN_W * 2),
+			endoom_data + (y * ENDOOM_W + indent) * 2,
+			TXT_SCREEN_W * 2);
+		}
 
-        // Wait for a keypress
-        while (true)
-        {
-            TXT_UpdateScreen();
+		// Wait for a keypress
+		while (true)
+		{
+			TXT_UpdateScreen();
 
-            if (TXT_GetChar() > 0)
-                break;
+			if (TXT_GetChar() > 0)
+				break;
 
-            TXT_Sleep(0);
-        }
-    }
+			TXT_Sleep(0);
+		}
+	}
 
 	// Shut down text mode screen
 
@@ -705,7 +705,7 @@ std::string I_GetClipboardText()
 		if (!bytes_left)
 		{
 			XDestroyWindow(dis, WindowEvents);
-			DPrintf("I_GetClipboardText: Len was: %d", len);
+			DPrintf("I_GetClipboardText: Len was: %lu", len);
 			XUnlockDisplay(dis);
 			XCloseDisplay(dis);
 			return "";

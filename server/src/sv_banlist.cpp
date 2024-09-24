@@ -481,7 +481,7 @@ bool Banlist::json(Json::Value &json_bans)
 // Replace the current banlist with the contents of a JSON array.
 bool Banlist::json_replace(const Json::Value &json_bans)
 {
-	tm tmp = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+	tm tmp;
 
 	// Must be an array or null root node
 	if (!(json_bans.isArray() || json_bans.isNull()))
@@ -995,7 +995,7 @@ void SV_InitBanlist()
 	if (bansize == jsonsize)
 		Printf(PRINT_HIGH, "SV_InitBanlist: Loaded %lu bans from %s.\n", bansize, banfile);
 	else
-		Printf(PRINT_HIGH, "SV_InitBanlist: Loaded %d bans and skipped %lu invalid entries from %s.", bansize, jsonsize - bansize, banfile);
+		Printf(PRINT_HIGH, "SV_InitBanlist: Loaded %lu bans and skipped %lu invalid entries from %s.", bansize, jsonsize - bansize, banfile);
 }
 
 // Check to see if a client is on the banlist, and kick them out of the server
