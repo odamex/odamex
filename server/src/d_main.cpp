@@ -97,7 +97,7 @@ extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
 BOOL devparm;				// started game with -devparm
-char startmap[8];
+OLumpName startmap;
 event_t events[MAXEVENTS];
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 
@@ -312,7 +312,7 @@ void D_DoomMain()
 		sv_fastmonsters = 1;
 
 	// get skill / episode / map from parms
-	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+	startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
 
 	const char* val = Args.CheckValue("-skill");
 	if (val)
@@ -366,14 +366,14 @@ void D_DoomMain()
 			map = Args.GetArg(p+2)[0]-'0';
 		}
 
-		strncpy(startmap, CalcMapName(ep, map), 8);
+		startmap = CalcMapName(ep, map);
 	}
 
 	// [RH] Hack to handle +map
 	p = Args.CheckParm("+map");
 	if (p && p < Args.NumArgs() - 1)
 	{
-		strncpy(startmap, Args.GetArg(p + 1), 8);
+		startmap = Args.GetArg(p + 1);
 		((char*)Args.GetArg(p))[0] = '-';
 	}
 	

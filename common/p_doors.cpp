@@ -437,8 +437,6 @@ DDoor::DDoor(sector_t* sec, line_t* ln, int delay, int kind, int trigger, int sp
 	m_Line = ln;
 	m_TopCountdown = -1;
 
-	fixed_t ceilingheight = P_CeilingHeight(sec);
-
 	// setup delay for door remaining open/closed
 	switch (delay)
 	{
@@ -692,7 +690,8 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 void P_SpawnDoorCloseIn30 (sector_t *sec)
 {
 	DDoor *door = new DDoor (sec);
-	P_AddMovingCeiling(sec);	
+	P_AddMovingCeiling(sec);
+	specialdoors.push_back(sec);
 
 	sec->special = 0;
 
@@ -710,6 +709,7 @@ void P_SpawnDoorRaiseIn5Mins (sector_t *sec)
 {
 	DDoor *door = new DDoor (sec);
 	P_AddMovingCeiling(sec);
+	specialdoors.push_back(sec);
 
 	sec->special = 0;
 
@@ -910,7 +910,6 @@ BOOL EV_DoGenLockedDoor(line_t* line)
 	bool rtn;
 	sector_t* sec;
 	bool manual;
-	DDoor* door;
 	unsigned value = (unsigned)line->special - GenLockedBase;
 
 	// parse the bit fields in the line's special type

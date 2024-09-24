@@ -32,6 +32,7 @@
 #include "w_wad.h"
 
 #include "r_local.h"
+#include "r_interp.h"
 #include "p_local.h"
 
 #include "c_console.h"
@@ -61,6 +62,9 @@ fixed_t 		pspritexiscale;
 									// [ML] 5/11/06 - Removed sky2
 int*			spritelights;
 
+fixed_t bobx;
+fixed_t boby;
+
 #define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
 #define SPRITE_NEEDS_INFO	MAXINT
 
@@ -83,6 +87,7 @@ extern int				ActiveParticles;
 extern int				InactiveParticles;
 extern particle_t		*Particles;
 TArray<WORD>			ParticlesInSubsec;
+
 
 
 //
@@ -503,7 +508,8 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	// [SL] interpolate the position of thing
 	fixed_t thingx, thingy, thingz;
 
-	if (P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT)
+	if (P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT &&
+		OInterpolation::getInstance().enabled())
 	{
 		// the actor probably did not teleport
 		// interpolate between previous and current position
@@ -653,12 +659,6 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 }
 
 
-EXTERN_CVAR(sv_allowmovebob)
-EXTERN_CVAR(cl_movebob)
-
-fixed_t P_CalculateWeaponBobX(player_t* player, float scale_amount);
-fixed_t P_CalculateWeaponBobY(player_t* player, float scale_amount);
-
 //
 // R_DrawPSprite
 //
@@ -673,11 +673,6 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	BOOL 				flip;
 	vissprite_t*		vis;
 	vissprite_t 		avis;
-
-
-	const float bob_amount = ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
-	fixed_t sx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
-	fixed_t sy = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
 
 	// decide which patch to use
 #ifdef RANGECHECK
@@ -702,7 +697,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 		R_CacheSprite (sprdef);	// [RH] speeds up game startup time
 
 	// calculate edges of the shape
-	tx = sx - ((320 / 2) << FRACBITS);
+	tx = bobx - ((320 / 2) << FRACBITS);
 
 	tx -= sprframe->offset[0];	// [RH] Moved out of spriteoffset[]
 	x1 = (centerxfrac + FixedMul (tx, pspritexscale)) >>FRACBITS;
@@ -729,7 +724,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 #define WEAPONTWEAK				(0x9000)
 
 	vis->texturemid = (BASEYCENTER << FRACBITS) + FRACUNIT / 2 -
-		(sy + WEAPONTWEAK - sprframe->topoffset[0]);	// [RH] Moved out of spritetopoffset[]
+		(boby + WEAPONTWEAK - sprframe->topoffset[0]);	// [RH] Moved out of spritetopoffset[]
 	vis->x1 = x1 < 0 ? 0 : x1;
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
 	vis->xscale = pspritexscale;
@@ -819,7 +814,7 @@ void R_DrawPlayerSprites()
 		(consoleplayer().cheats & CF_CHASECAM))
 		return;
 
-	sector_t* sec = R_FakeFlat(camera->subsector->sector, &tempsec, &floorlight,
+	sector_t* sec = R_FakeFlat(viewsector, &tempsec, &floorlight,
 	                           &ceilinglight, false);
 
 	// [RH] set foggy flag

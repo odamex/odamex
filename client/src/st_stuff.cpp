@@ -545,7 +545,7 @@ bool ST_Responder (event_t *ev)
 	else if (ev->type == ev_keydown && ev->data3)
 	{
 		cheatseq_t* cheats = DoomCheats;
-		for (int i = 0; i < COUNT_CHEATS(DoomCheats); i++, cheats++)
+		for (int i = 0; i < static_cast<int>(COUNT_CHEATS(DoomCheats)); i++, cheats++)
 		{
 			if (CHEAT_AddKey(cheats, (byte)ev->data1, &eat))
 			{
@@ -1142,10 +1142,10 @@ static void ST_loadGraphics()
 	// Load the numbers, tall and short
 	for (int i = 0; i < 10; i++)
 	{
-		sprintf(namebuf, "STTNUM%d", i);
+		snprintf(namebuf, 9, "STTNUM%d", i);
 		tallnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 
-		sprintf(namebuf, "STYSNUM%d", i);
+		snprintf(namebuf, 9, "STYSNUM%d", i);
 		shortnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 
@@ -1158,7 +1158,7 @@ static void ST_loadGraphics()
 	// key cards
 	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
 	{
-		sprintf(namebuf, "STKEYS%d", i);
+		snprintf(namebuf, 9, "STKEYS%d", i);
 		keys[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 
@@ -1171,7 +1171,7 @@ static void ST_loadGraphics()
 	// arms ownership widgets
 	for (int i = 0; i < 6; i++)
 	{
-		sprintf(namebuf, "STGNUM%d", i+2);
+		snprintf(namebuf, 9, "STGNUM%d", i+2);
 
 		// gray #
 		arms[i][0] = W_CachePatchHandle(namebuf, PU_STATIC);
@@ -1188,7 +1188,7 @@ static void ST_loadGraphics()
 	// [Nes] Classic vanilla lifebars.
 	for (int i = 0; i < 4; i++)
 	{
-		sprintf(namebuf, "STFB%d", i);
+		snprintf(namebuf, 9, "STFB%d", i);
 		faceclassic[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 
@@ -1207,18 +1207,18 @@ static void ST_loadGraphics()
 	{
 		for (int j = 0; j < ST_NUMSTRAIGHTFACES; j++)
 		{
-			sprintf(namebuf + 3, "ST%d%d", i, j);
+			snprintf(namebuf + 3, 6, "ST%d%d", i, j);
 			faces[facenum++] = LoadFaceGraphic(namebuf);
 		}
-		sprintf(namebuf + 3, "TR%d0", i); // turn right
+		snprintf(namebuf + 3, 6, "TR%d0", i); // turn right
 		faces[facenum++] = LoadFaceGraphic(namebuf);
-		sprintf(namebuf + 3, "TL%d0", i); // turn left
+		snprintf(namebuf + 3, 6, "TL%d0", i); // turn left
 		faces[facenum++] = LoadFaceGraphic(namebuf);
-		sprintf(namebuf + 3, "OUCH%d", i); // ouch!
+		snprintf(namebuf + 3, 6, "OUCH%d", i); // ouch!
 		faces[facenum++] = LoadFaceGraphic(namebuf);
-		sprintf(namebuf + 3, "EVL%d", i); // evil grin ;)
+		snprintf(namebuf + 3, 6, "EVL%d", i); // evil grin ;)
 		faces[facenum++] = LoadFaceGraphic(namebuf);
-		sprintf(namebuf + 3, "KILL%d", i); // pissed off
+		snprintf(namebuf + 3, 6, "KILL%d", i); // pissed off
 		faces[facenum++] = LoadFaceGraphic(namebuf);
 	}
 	strcpy(namebuf + 3, "GOD0");

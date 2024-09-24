@@ -177,19 +177,19 @@ struct level_pwad_info_t
 
 	fixed_t			sky1ScrollDelta;
 	fixed_t			sky2ScrollDelta;
-	
+
 	std::vector<bossaction_t> bossactions;
 
 	std::string		label;
 	bool			clearlabel;
 	std::string		author;
-	
+
 	level_pwad_info_t()
 	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
 	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
 	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
 	      aircontrol(0.0f), exitpic(""), enterpic(""), endpic(""), intertext(""),
-	      intertextsecret(""), interbackdrop(""), intermusic(""), 
+	      intertextsecret(""), interbackdrop(""), intermusic(""),
 	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(),
 	      clearlabel(false), author()
 	{
@@ -207,7 +207,8 @@ struct level_pwad_info_t
 	      snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
 	      skypic2(""), gravity(0.0f), aircontrol(0.0f), exitpic(""), enterpic(""),
 	      endpic(""), intertext(""), intertextsecret(""), interbackdrop(""), intermusic(""),
-	      bossactions(), label(), clearlabel(false), author(), sky1ScrollDelta(0), sky2ScrollDelta(0)
+	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(),
+	      clearlabel(false), author()
 	{
 		ArrayInit(fadeto_color, 0);
 		ArrayInit(outsidefog_color, 0);
@@ -327,13 +328,13 @@ struct level_locals_t
 	std::string		intertextsecret;
 	OLumpName		interbackdrop;
 	OLumpName		intermusic;
-	
+
 	std::vector<bossaction_t> bossactions;
 
 	std::string		label;
 	bool			clearlabel;
 	std::string		author;
-	
+
 	// The following is used for automatic gametype detection.
 	float			detected_gametype;
 };
@@ -419,6 +420,7 @@ extern int ACS_GlobalVars[NUM_GLOBALVARS];
 extern BOOL savegamerestore;
 
 void G_InitNew(const char *mapname);
+inline void G_InitNew(const OLumpName& mapname) { G_InitNew(mapname.c_str()); }
 void G_ChangeMap();
 void G_ChangeMap(size_t index);
 void G_RestartMap();
@@ -432,8 +434,8 @@ void G_DeferedInitNew(const char *mapname);
 void G_DeferedFullReset();
 void G_DeferedReset();
 
-void G_ExitLevel(int position, int drawscores);
-void G_SecretExitLevel(int position, int drawscores);
+void G_ExitLevel(int position, int drawscores, bool resetinv = false);
+void G_SecretExitLevel(int position, int drawscores, bool resetinv = false);
 
 void G_DoLoadLevel(int position);
 void G_DoResetLevel(bool full_reset);

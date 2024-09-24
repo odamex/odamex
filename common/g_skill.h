@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: 
+// $Id:
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
@@ -18,7 +18,7 @@
 //
 // DESCRIPTION:
 //   Skill data for defining new skills.
-// 
+//
 //-----------------------------------------------------------------------------
 
 #pragma once
@@ -49,7 +49,7 @@ struct SkillInfo
 	int respawn_limit;			// not implemented
 	float aggressiveness;		// not implemented
 	int spawn_filter;
-	bool spawn_multi;			// not implemented
+	bool spawn_multi;
 	bool instant_reaction;
 	int ACS_return;				// not implemented
 	std::string menu_name;

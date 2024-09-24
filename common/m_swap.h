@@ -61,7 +61,7 @@ inline static short LESHORT(short x)
 // Swapping 32bit.
 inline static unsigned int LELONG(unsigned int x)
 {
-	return (unsigned int)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
+	return ((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
 	                      (x << 24));
 }
 
@@ -73,7 +73,7 @@ inline static int LELONG(int x)
 
 inline static unsigned long LELONG(unsigned long x)
 {
-	return (unsigned long)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
+	return ((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
 	                       (x << 24));
 }
 
@@ -157,7 +157,7 @@ inline static short BESHORT(short x)
 
 inline static unsigned int BELONG(unsigned int x)
 {
-	return (unsigned int)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
+	return ((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
 	                      (x << 24));
 }
 
@@ -169,7 +169,7 @@ inline static int BELONG(int x)
 
 inline static unsigned long BELONG(unsigned long x)
 {
-	return (unsigned long)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
+	return ((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
 	                       (x << 24));
 }
 

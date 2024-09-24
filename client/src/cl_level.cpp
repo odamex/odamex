@@ -48,6 +48,7 @@
 #include "p_setup.h"
 #include "r_data.h"
 #include "r_sky.h"
+#include "r_interp.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
 #include "st_stuff.h"
@@ -64,7 +65,6 @@
 void CL_ClearSectorSnapshots();
 bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
-void R_ResetInterpolation();
 
 EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_monstersrespawn)
@@ -98,12 +98,12 @@ bool isFast = false;
 // Can be called by the startup code or the menu task,
 // consoleplayer, displayplayer, should be set.
 //
-static char d_mapname[9];
+static OLumpName d_mapname;
 
 void G_DeferedInitNew (const char *mapname)
 {
 	G_CleanupDemo();
-	strncpy (d_mapname, mapname, 8);
+	d_mapname = mapname;
 	gameaction = ga_newgame;
 }
 
@@ -144,7 +144,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	CL_QuitNetGame(NQ_SILENT);
 	S_StopMusic();
 	currentmusic = gameinfo.titleMusic.c_str();
-	
+
 	S_StartMusic(currentmusic.c_str());
 }
 END_COMMAND (wad)
@@ -157,7 +157,7 @@ EXTERN_CVAR(sv_allowjump)
 
 //
 // G_DoNewGame
-// Is called whenever a new Singleplayer game will be started. 
+// Is called whenever a new Singleplayer game will be started.
 //
 void G_DoNewGame (void)
 {
@@ -180,7 +180,7 @@ void G_DoNewGame (void)
 	players.front().doreborn = true;
 	consoleplayer_id = displayplayer_id = players.back().id = 1;
 
-	G_InitNew (d_mapname);
+	G_InitNew(d_mapname);
 	gameaction = ga_nothing;
 }
 
@@ -291,7 +291,7 @@ void G_InitNew (const char *mapname)
 	viewactive = true;
 
 	D_SetupUserInfo();
-	
+
 	level.mapname = mapname;
 
 	// [AM}] WDL stats (for testing purposes)
@@ -330,8 +330,19 @@ static void goOn(int position)
 	}
 }
 
-void G_ExitLevel (int position, int drawscores)
+void G_ExitLevel (int position, int drawscores, bool resetinv)
 {
+	if (resetinv)
+	{
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (it->ingame())
+			{
+				it->doreborn = true;
+			}
+		}
+	}
+
 	secretexit = false;
 
 	goOn (position);
@@ -340,8 +351,19 @@ void G_ExitLevel (int position, int drawscores)
 }
 
 // Here's for the german edition.
-void G_SecretExitLevel (int position, int drawscores)
+void G_SecretExitLevel (int position, int drawscores, bool resetinv)
 {
+	if (resetinv)
+	{
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (it->ingame())
+			{
+				it->doreborn = true;
+			}
+		}
+	}
+
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gameinfo.flags & GI_MAPxx)
 		 && (W_CheckNumForName("map31")<0))
@@ -430,7 +452,7 @@ void G_DoCompleted (void)
 		wminfo.plyr[i].fragcount = it->fragcount;
 
 		if(&*it == &consoleplayer())
-			wminfo.pnum = i;
+			wminfo.pnum = static_cast<unsigned int>(i);
 	}
 
 	// [RH] If we're in a hub and staying within that hub, take a snapshot
@@ -530,14 +552,14 @@ void G_DoLoadLevel (int position)
 		C_HideConsole();
 
 	// [SL] clear the saved sector data from the last level
-	R_ResetInterpolation();
+	OInterpolation::getInstance().resetGameInterpolation();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
 	//	a flat. The data is in the WAD only because
 	//	we look for an actual index, instead of simply
 	//	setting one.
-	skyflatnum = R_FlatNumForName ( SKYFLATNAME );
+	skyflatnum = R_FlatNumForName(SKYFLATNAME);
 
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
@@ -649,7 +671,7 @@ void G_DoLoadLevel (int position)
 
 	if (timingdemo)
 	{
-		static BOOL firstTime = true;
+		static bool firstTime = true;
 
 		if (firstTime)
 		{
@@ -685,9 +707,9 @@ void G_WorldDone()
 	cluster_info_t& thiscluster = clusters.findByCluster(level.cluster);
 
 	// Sort out default options to pass to F_StartFinale
-	finale_options_t options = { 0 };
+	finale_options_t options = { 0, 0, 0, 0 };
 	options.music = !level.intermusic.empty() ? level.intermusic.c_str() : thiscluster.messagemusic.c_str();
-	
+
 	if (!level.interbackdrop.empty())
 	{
 		options.flat = level.interbackdrop.c_str();
@@ -700,7 +722,7 @@ void G_WorldDone()
 	{
 		options.flat = &thiscluster.finaleflat[0];
 	}
-	
+
 	if (secretexit)
 	{
 		options.text = (!level.intertextsecret.empty()) ? level.intertextsecret.c_str() : thiscluster.exittext;

@@ -166,22 +166,22 @@ static void ActivateMonsters(AActors& mobjs)
 	}
 }
 
-static const char* HordeStateStr(const hordeState_e state)
-{
-	switch (state)
-	{
-	case HS_STARTING:
-		return "HS_STARTING";
-	case HS_PRESSURE:
-		return "HS_PRESSURE";
-	case HS_RELAX:
-		return "HS_RELAX";
-	case HS_WANTBOSS:
-		return "HS_WANTBOSS";
-	default:
-		return "UNKNOWN";
-	}
-}
+//static const char* HordeStateStr(const hordeState_e state)
+//{
+//	switch (state)
+//	{
+//	case HS_STARTING:
+//		return "HS_STARTING";
+//	case HS_PRESSURE:
+//		return "HS_PRESSURE";
+//	case HS_RELAX:
+//		return "HS_RELAX";
+//	case HS_WANTBOSS:
+//		return "HS_WANTBOSS";
+//	default:
+//		return "UNKNOWN";
+//	}
+//}
 
 class HordeState
 {
@@ -457,8 +457,6 @@ class HordeState
 		AActor* mo;
 		TThinkerIterator<AActor> iterator;
 
-		int count = 0;
-
 		m_bosses.clear();
 		while ((mo = iterator.Next()))
 		{
@@ -560,7 +558,6 @@ void HordeState::changeState()
 {
 	const hordeDefine_t& define = G_HordeDefine(m_defineID);
 
-	const int aliveHealth = m_spawnedHealth - m_killedHealth;
 	const int goalHealth = define.goalHealth() + m_waveStartHealth;
 
 	switch (m_state)
@@ -597,7 +594,7 @@ void HordeState::changeState()
 		return;
 	}
 	case HS_WANTBOSS: {
-		if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.count)
+		if (m_bossRecipe.isValid() && static_cast<int>(m_bosses.size()) >= m_bossRecipe.count)
 		{
 			// Doesn't matter which state we enter, but we're more likely
 			// to be in the relax state after spawning a big hunk of HP.
@@ -728,7 +725,7 @@ void HordeState::tick()
 				break;
 
 			// Do we already have bosses spawned?
-			if (m_bossRecipe.isValid() && m_bosses.size() >= m_bossRecipe.totalCount)
+			if (m_bossRecipe.isValid() && static_cast<int>(m_bosses.size()) >= m_bossRecipe.count)
 				break;
 
 			hordeRecipe_t recipe;
@@ -773,6 +770,8 @@ void HordeState::tick()
 			ActivateMonsters(mobjs);
 			break;
 		}
+		case HS_STARTING:
+			break;
 		}
 	}
 

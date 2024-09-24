@@ -657,7 +657,7 @@ static char *C_GetDefaultMusicSystem()
 	if (int(defaultmusicsystem) > 999 || int(defaultmusicsystem) < 0)
 		defaultmusicsystem = MS_NONE;
 
-	sprintf(str, "%i", defaultmusicsystem);
+	snprintf(str, 4, "%i", defaultmusicsystem);
 	return str;
 }
 
@@ -740,8 +740,8 @@ CVAR_RANGE(		r_wipetype, "1", "",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 #endif
 
-CVAR(			r_showendoom, "0", "Display the ENDDOOM text after quitting",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)   // [ML] 1/5/10: Add endoom support
+CVAR_RANGE(		r_showendoom, "0", "Display the ENDDOOM text after quitting",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)   // [ML] 1/5/10: Add endoom support
 
 CVAR(			r_loadicon, "1", "Display the disk icon when loading data from disk",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)

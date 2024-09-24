@@ -899,7 +899,7 @@ void A_Look (AActor *actor)
 
 		if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
 			S_Sound(CHAN_VOICE, sound, 1, ATTN_NORM);
-		else 
+		else
 			S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
 	}
 
@@ -1894,6 +1894,11 @@ void A_SpawnObject(AActor* actor)
 	vel_y = actor->state->args[6];
 	vel_z = actor->state->args[7];
 
+	if (!CheckIfDehActorDefined((mobjtype_t)type))
+	{
+		I_Error("A_SpawnObject: Attempted to spawn undefined object type.");
+	}
+
 	// calculate position offsets
 	an = actor->angle + (unsigned int)(((int64_t)angle << 16) / 360);
 	fan = an >> ANGLETOFINESHIFT;
@@ -1956,6 +1961,11 @@ void A_MonsterProjectile(AActor* actor)
 	pitch = actor->state->args[2];
 	spawnofs_xy = actor->state->args[3];
 	spawnofs_z = actor->state->args[4];
+
+	if (!CheckIfDehActorDefined((mobjtype_t)type))
+	{
+		I_Error("A_MonsterProjectile: Attempted to spawn undefined projectile type.");
+	}
 
 	A_FaceTarget(actor);
 	mo = P_SpawnMissile(actor, actor->target, (mobjtype_t)type);
@@ -2099,14 +2109,14 @@ void A_HealChase(AActor* actor)
 	state = actor->state->args[0];
 	sound = actor->state->args[1];
 
-	if (!P_HealCorpse(actor, actor->info->radius, state, sound))	
+	if (!P_HealCorpse(actor, actor->info->radius, state, sound))
 		A_Chase(actor);
 }
 
 //
 // P_HealCorpse
 // A generic corpse resurrection codepointer.
-// 
+//
 bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 {
 	// don't attempt to resurrect clientside
@@ -2602,7 +2612,7 @@ void A_Scream (AActor *actor)
 
 	if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
 		S_Sound(CHAN_VOICE, sound, 1, ATTN_NORM);
-	else 
+	else
 	    S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
 }
 
@@ -2688,8 +2698,6 @@ void A_Explode (AActor *thing)
 	P_RadiusAttack (thing, thing->target, damage, distance, hurtSource, mod);
 }
 
-#define SPEED(a)		((a)*(FRACUNIT/8))
-
 //
 // A_BossDeath
 // Possibly trigger special effects if on a boss level
@@ -2710,7 +2718,7 @@ void A_BossDeath(AActor *actor)
 	if (!level.bossactions.empty())
 	{
 		std::vector<bossaction_t>::iterator ba = level.bossactions.begin();
-		
+
 		// see if the BossAction applies to this type
 		for (; ba != level.bossactions.end(); ++ba)
 		{
@@ -2740,7 +2748,7 @@ void A_BossDeath(AActor *actor)
 			if (ba->type == actor->type)
 			{
 				line_t ld;
-				
+
 				if (map_format.getZDoom())
 				{
 					maplinedef_t mld;
@@ -3024,7 +3032,7 @@ void A_PlayerScream (AActor *mo)
 	} else {
 		// [RH] More variety in death sounds
 		//sprintf (nametemp, "*death%d", (M_Random ()&3) + 1); // denis - do not use randomness source!
-		sprintf (nametemp, "*death1");
+		snprintf (nametemp, 128, "*death1");
 		sound = nametemp;
 	}
 
@@ -3096,7 +3104,7 @@ void A_PlaySound(AActor* mo)
 
 	int sndmap = mo->state->misc1;
 
-	if (sndmap >= ARRAY_LENGTH(SoundMap))
+	if (sndmap >= static_cast<int>(ARRAY_LENGTH(SoundMap)))
 	{
 		DPrintf("Warning: Sound ID is beyond the array of the Sound Map!\n");
 		sndmap = 0;

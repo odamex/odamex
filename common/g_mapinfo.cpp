@@ -470,7 +470,7 @@ void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 		if (IsNum(map_name))
 		{
 			const int map = std::atoi(map_name);
-			sprintf(map_name, "MAP%02d", map);
+			snprintf(map_name, 9, "MAP%02d", map);
 		}
 
 		*static_cast<OLumpName*>(data) = map_name;
@@ -1303,6 +1303,7 @@ void ParseEpisodeInfo(OScanner& os)
 	int new_mapinfo = false; // is int instead of bool for template purposes
 	OLumpName map;
 	std::string pic;
+	std::string name;
 	bool picisgfx = false;
 	bool remove = false;
 	char key = 0;
@@ -1356,7 +1357,7 @@ void ParseEpisodeInfo(OScanner& os)
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
 			if (picisgfx == false)
-				pic = os.getToken();
+				name = os.getToken();
 		}
 		else if (os.compareTokenNoCase("lookup"))
 		{
@@ -1450,7 +1451,8 @@ void ParseEpisodeInfo(OScanner& os)
 				i = episodenum++;
 		}
 
-		EpisodeInfos[i].name = pic;
+		EpisodeInfos[i].pic_name = pic;
+		EpisodeInfos[i].menu_name = name;
 		EpisodeInfos[i].key = static_cast<char>(tolower(key));
 		EpisodeInfos[i].fulltext = !picisgfx;
 		EpisodeInfos[i].noskillmenu = noskillmenu;
@@ -1611,8 +1613,7 @@ void ParseMapInfoLump(int lump, const char* lumpname)
 				// MAPNAME is a number, assume a Hexen wad
 				const int map = std::atoi(map_name);
 
-				sprintf(map_name, "MAP%02d", map);
-				SKYFLATNAME[5] = 0;
+				snprintf(map_name, 9, "MAP%02d", map);
 				HexenHack = true;
 				// Hexen levels are automatically nointermission
 				// and even lighting and no auto sound sequences

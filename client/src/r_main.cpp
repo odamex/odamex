@@ -33,6 +33,7 @@
 #include "gi.h"
 #include "r_local.h"
 #include "r_sky.h"
+#include "r_interp.h"
 #include "st_stuff.h"
 #include "v_video.h"
 #include "stats.h"
@@ -43,10 +44,6 @@
 #include "cl_demo.h"
 
 extern NetDemo netdemo;
-
-void R_BeginInterpolation(fixed_t amount);
-void R_EndInterpolation();
-void R_InterpolateCamera(fixed_t amount, bool use_localview);
 
 #define DISTMAP			2
 
@@ -100,6 +97,7 @@ fixed_t 		viewy;
 fixed_t 		viewz;
 
 angle_t 		viewangle;
+sector_t*		viewsector;
 LocalView		localview;
 
 fixed_t 		viewcos;
@@ -784,30 +782,6 @@ void R_SetupFrame (player_t *player)
 	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
 	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
 
-	if (player->cheats & CF_CHASECAM)
-	{
-		// [RH] Use chasecam view
-		P_AimCamera (camera);
-		viewx = CameraX;
-		viewy = CameraY;
-		viewz = CameraZ;
-		viewangle = camera->angle;
-	}
-	else
-	{
-		if (render_lerp_amount < FRACUNIT)
-		{
-			R_InterpolateCamera(render_lerp_amount, use_localview);
-		}
-		else
-		{
-			viewx = camera->x;
-			viewy = camera->y;
-			viewz = camera->player ? camera->player->viewz : camera->z;
-			viewangle = camera->angle;
-		}
-	}
-
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
 		int intensity = camera->player->xviewshift;
@@ -822,10 +796,9 @@ void R_SetupFrame (player_t *player)
 
 	// [SL] Change to a different sector blend color (or colormap in 8bpp mode)
 	// if entering a heightsec (via TransferHeight line special)
-	if (camera->subsector->sector->heightsec &&
-		!(camera->subsector->sector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
+	if (viewsector->heightsec && !(viewsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
-		const sector_t* sec = camera->subsector->sector->heightsec;
+		const sector_t* sec = viewsector->heightsec;
 
 		argb_t new_sector_blend_color;
 		if (viewz < P_FloorHeight(viewx, viewy, sec))
@@ -1021,6 +994,8 @@ void R_RenderPlayerView(player_t* player)
 		setsizeneeded = false;
 	}
 
+	OInterpolation::getInstance().interpolateView(player, render_lerp_amount);
+
 	if (!viewactive)
 		return;
 
@@ -1047,7 +1022,7 @@ void R_RenderPlayerView(player_t* player)
 		surface->getDefaultCanvas()->Clear(x1, y1, x2, y2, color);
 	}
 
-	R_BeginInterpolation(render_lerp_amount);
+	OInterpolation::getInstance().beginGameInterpolation(render_lerp_amount);
 
 	// [RH] Setup particles for this frame
 	R_FindParticleSubsectors();
@@ -1076,7 +1051,7 @@ void R_RenderPlayerView(player_t* player)
 						viewwindowx, viewwindowy, viewwidth, viewheight);
 	}
 
-	R_EndInterpolation();
+	OInterpolation::getInstance().endGameInterpolation();
 }
 
 
@@ -1271,7 +1246,7 @@ static void R_InitViewWindow()
 	surface->unlock();
 
 	char temp_str[16];
-	sprintf(temp_str, "%d x %d", viewwidth, viewheight);
+	snprintf(temp_str, 16, "%d x %d", viewwidth, viewheight);
 	r_viewsize.ForceSet(temp_str);
 
 	// [SL] clear many renderer variables
