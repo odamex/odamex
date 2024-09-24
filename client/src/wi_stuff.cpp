@@ -549,7 +549,7 @@ static int WI_DrawName (const char *str, int x, int y)
 	while (*str)
 	{
 		char charname[9];
-		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
+		snprintf (charname, 9, "FONTB%02u", toupper(*str) - 32);
 		int lump = W_CheckNumForName(charname);
 
 		if (lump != -1)
@@ -576,7 +576,7 @@ static int WI_DrawSmallName(const char* str, int x, int y)
 	while (*str)
 	{
 		char charname[9];
-		sprintf(charname, "STCFN%.3d", HU_FONTSTART + (toupper(*str) - 32) - 1);
+		snprintf(charname, 9, "STCFN%.3d", HU_FONTSTART + (toupper(*str) - 32) - 1);
 		int lump = W_CheckNumForName(charname);
 
 		if (lump != -1)
@@ -1495,7 +1495,7 @@ static int WI_CalcWidth (const char *str)
 	while (*str)
 	{
 		char charname[9];
-		sprintf (charname, "FONTB%02u", toupper(*str) - 32);
+		snprintf (charname, 9, "FONTB%02u", toupper(*str) - 32);
 		int lump = W_CheckNumForName(charname);
 
 		if (lump != -1)
@@ -1523,7 +1523,7 @@ void WI_loadData()
 	else if ((gameinfo.flags & GI_MAPxx) || ((gameinfo.flags & GI_MENUHACK_RETAIL) && wbs->epsd >= 3))
 		strcpy(name, "INTERPIC");
 	else
-		sprintf(name, "WIMAP%d", wbs->epsd);
+		snprintf(name, 17, "WIMAP%d", wbs->epsd);
 
 	// background
 	const lumpHandle_t handle = W_CachePatchHandle(name);
@@ -1583,7 +1583,7 @@ void WI_loadData()
 					if (wbs->epsd != 1 || j != 8)
 					{
 						// animations
-						sprintf (name, "WIA%d%.2d%.2d", wbs->epsd, j, i);
+						snprintf (name, 17, "WIA%d%.2d%.2d", wbs->epsd, j, i);
 						a->p[i] = W_CachePatch (name, PU_STATIC);
 					}
 					else
@@ -1599,7 +1599,7 @@ void WI_loadData()
 	for (int i = 0; i < 10; i++)
 	{
 		// numbers 0-9
-		sprintf(name, "WINUM%d", i);
+		snprintf(name, 17, "WINUM%d", i);
 			num[i] = W_CachePatchHandle(name, PU_STATIC);
 	}
 
@@ -1656,7 +1656,7 @@ void WI_loadData()
 	// [Nes] Classic vanilla lifebars.
 	for (int i = 0; i < 4; i++)
 	{
-		sprintf(name, "STPB%d", i);
+		snprintf(name, 17, "STPB%d", i);
 		faceclassic[i] = W_CachePatchHandle(name, PU_STATIC);
 	}
 

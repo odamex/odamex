@@ -561,20 +561,20 @@ void G_SecretExitLevel (int position, int drawscores, bool resetinv)
 
 	SV_ExitLevel();
 
-    if (drawscores)
-        SV_DrawScores();
+	if (drawscores)
+		SV_DrawScores();
 
 	gamestate = GS_INTERMISSION;
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, defaults to 10
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gameinfo.flags & GI_MAPxx)
-		 && (W_CheckNumForName("map31")<0))
+		&& (W_CheckNumForName("map31")<0))
 		secretexit = false;
 	else
 		secretexit = true;
 
-    gameaction = ga_completed;
+	gameaction = ga_completed;
 
 	// denis - this will skip wi_stuff and allow some time for finale text
 	//G_WorldDone();

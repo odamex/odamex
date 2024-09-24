@@ -141,8 +141,8 @@ static DoomEntity DoomAmmoNames[8] = {{"Clip", MT_CLIP},        {"Shell", MT_MIS
                                       {"RocketBox", MT_MISC19}, {"CellPack", MT_MISC21}};
 
 static DoomEntity DoomWeaponNames[9] = {
-    {"Fist", (mobjtype_t)NULL}, // Default weapon, no entity
-    {"Pistol", (mobjtype_t)NULL}, {"Shotgun", MT_SHOTGUN},
+    {"Fist", MT_NULL}, // Default weapon, no entity
+    {"Pistol", MT_NULL},          {"Shotgun", MT_SHOTGUN},
     {"Chaingun", MT_CHAINGUN},    {"RocketLauncher", MT_MISC27},
     {"PlasmaRifle", MT_MISC28},   {"BFG9000", MT_MISC25},
     {"Chainsaw", MT_MISC26},      {"SuperShotgun", MT_SUPERSHOTGUN}};
@@ -239,16 +239,16 @@ mobjtype_t FindWeaponEntity(const char* type)
 	{
 		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
 		{
-			if (DoomWeaponNames[i].Type == NULL)
+			if (DoomWeaponNames[i].Type == MT_NULL)
 			{
 				DPrintf("ACS: LOGIC ERROR - Cannot spawn default weapons!\n");
-				return (mobjtype_t)NULL;
+				return MT_NULL;
 			}
 			return DoomWeaponNames[i].Type;
 		}
 	}
 
-	return (mobjtype_t)NULL;
+	return MT_NULL;
 }
 
 mobjtype_t FindDoomEntity(const char* type, DoomEntity list[], int size)
@@ -262,7 +262,7 @@ mobjtype_t FindDoomEntity(const char* type, DoomEntity list[], int size)
 		}
 	}
 
-	return (mobjtype_t)NULL;
+	return MT_NULL;
 }
 
 static void GiveBackpack(player_t* player)
@@ -1924,7 +1924,7 @@ void DLevelScript::SetThingSpecial(AActor* actor, int special, int arg1, int arg
 
 	if (serverside)
 	{
-		int argv[] = {actor->netid, special, arg1, arg2, arg3, arg4, arg5};
+		int argv[] = {static_cast<int>(actor->netid), special, arg1, arg2, arg3, arg4, arg5};
 		std::vector<int> args = ArgvToArgs(argv);
 		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETTHINGSPECIAL, actor, NULL, false, args));
 	}
@@ -1958,7 +1958,7 @@ void DLevelScript::StartSoundSequence(sector_t* sec, int index)
 
 	if (serverside)
 	{
-		int argv[] = {sec - sectors, index};
+		int argv[] = {static_cast<int>(sec - sectors), index};
 		std::vector<int> args = ArgvToArgs(argv);
 		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SOUNDSEQUENCE, NULL, NULL, false, args));
 	}
@@ -1981,23 +1981,23 @@ int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, in
 		// Find an entity through cycles
 		info = FindDoomEntity(typestr, DoomMonsterNames, NUMMONSTERS);
 
-		if (info == (mobjtype_t)NULL)
+		if (info == MT_NULL)
 			info = FindWeaponEntity(typestr);
-		if (info == (mobjtype_t)NULL)
+		if (info == MT_NULL)
 			info = FindDoomEntity(typestr, DoomAmmoNames, 8);
-		if (info == (mobjtype_t)NULL)
+		if (info == MT_NULL)
 			info = FindDoomEntity(typestr, DoomKeyNames, 6);
-		if (info == (mobjtype_t)NULL)
+		if (info == MT_NULL)
 			info = FindDoomEntity(typestr, DoomPowerNames, 6);
-		if (info == (mobjtype_t)NULL)
+		if (info == MT_NULL)
 			info = FindDoomEntity(typestr, DoomHealthArmorNames, 9); // Ch0wW
-		if (info == (mobjtype_t)NULL)
+		if (info == MT_NULL)
 			info = FindDoomEntity(typestr, DoomDecorationNames, 60); // Ch0wW
 	}
 
 	AActor* actor = NULL;
 
-	if (info != NULL)
+	if (info != MT_NULL)
 	{
 		actor = new AActor (x, y, z, info);
 
@@ -2018,7 +2018,7 @@ int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, in
 		}
 	}
 
-	return (int)(actor - (AActor*)0);
+	return (int)reinterpret_cast<uintptr_t>(actor);
 }
 
 int DLevelScript::DoSpawnSpot(int type, int spot, int tid, int angle)
@@ -3026,13 +3026,13 @@ void DLevelScript::RunScript ()
 				level.behavior->LocalizeString (STACK(1)));
 			if (lookup != NULL)
 			{
-				workwhere += sprintf (workwhere, "%s", lookup);
+				workwhere += snprintf(workwhere, 4096, "%s", lookup);
 			}
 			--sp;
 			break;
 
 		case PCD_PRINTNUMBER:
-			workwhere += sprintf (workwhere, "%d", STACK(1));
+			workwhere += snprintf(workwhere, 4096, "%d", STACK(1));
 			--sp;
 			break;
 
@@ -3044,7 +3044,7 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_PRINTFIXED:
-			workwhere += sprintf (workwhere, "%g", FIXED2FLOAT(STACK(1)));
+			workwhere += snprintf(workwhere, 4096, "%g", FIXED2FLOAT(STACK(1)));
 			--sp;
 			break;
 
@@ -3067,24 +3067,24 @@ void DLevelScript::RunScript ()
 				}
 				else
 				{
-					workwhere += sprintf (workwhere, "Player %d\n",
+				    workwhere += snprintf(workwhere, 4096, "Player %d\n",
 						STACK(1));
 					sp--;
 					break;
 				}
 				if (player)
 				{
-					workwhere += sprintf (workwhere, "%s",
+				    workwhere += snprintf(workwhere, 4096, "%s",
 						activator->player->userinfo.netname.c_str());
 				}
 				else if (activator)
 				{
-					workwhere += sprintf (workwhere, "%s",
+				    workwhere += snprintf(workwhere, 4096, "%s",
 						RUNTIME_TYPE(activator)->Name+1);
 				}
 				else
 				{
-					workwhere += sprintf (workwhere, " ");
+				    workwhere += snprintf(workwhere, 4096, " ");
 				}
 				sp--;
 			}

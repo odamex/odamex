@@ -42,23 +42,23 @@ EXTERN_CVAR(sv_playerbeacons)
 EXTERN_CVAR(g_sides)
 EXTERN_CVAR(g_lives)
 
-// Strings for WDL events
-static const char* wdlevstrings[] = {
-    "DAMAGE",         "CARRIERDAMAGE",     "KILL",
-    "CARRIERKILL",    "ENVIRODAMAGE",      "ENVIROCARRIERDAMAGE",
-    "ENVIROKILL",     "ENVIROCARRIERKILL", "TOUCH",
-    "PICKUPTOUCH",    "CAPTURE",           "PICKUPCAPTURE",
-    "ASSIST",         "RETURNFLAG",        "PICKUPITEM",
-    "SPREADACCURACY", "SSACCURACY",        "TRACERACCURACY",
-    "PROJACCURACY",   "SPAWNPLAYER",       "SPAWNITEM",
-    "JOINGAME",       "DISCONNECT",        "PLAYERBEACON",
-    "CARRIERBEACON",  "PROJFIRE",
-    //"RJUMPGO",
-    //"RJUMPLAND",
-    //"RJUMPAPEX",
-    //"MOBBEACON",
-    //"SPAWNMOB",
-};
+//// Strings for WDL events
+//static const char* wdlevstrings[] = {
+//    "DAMAGE",         "CARRIERDAMAGE",     "KILL",
+//    "CARRIERKILL",    "ENVIRODAMAGE",      "ENVIROCARRIERDAMAGE",
+//    "ENVIROKILL",     "ENVIROCARRIERKILL", "TOUCH",
+//    "PICKUPTOUCH",    "CAPTURE",           "PICKUPCAPTURE",
+//    "ASSIST",         "RETURNFLAG",        "PICKUPITEM",
+//    "SPREADACCURACY", "SSACCURACY",        "TRACERACCURACY",
+//    "PROJACCURACY",   "SPAWNPLAYER",       "SPAWNITEM",
+//    "JOINGAME",       "DISCONNECT",        "PLAYERBEACON",
+//    "CARRIERBEACON",  "PROJFIRE",
+//    //"RJUMPGO",
+//    //"RJUMPLAND",
+//    //"RJUMPAPEX",
+//    //"MOBBEACON",
+//    //"SPAWNMOB",
+//};
 
 std::string M_GetCurrentWadHashes();
 
@@ -157,12 +157,12 @@ typedef std::vector<WDLEvent> WDLEventLog;
 static WDLEventLog wdlevents;
 
 // Turn an event enum into a string.
-static const char* WDLEventString(WDLEvents i)
-{
-	if (i >= ARRAY_LENGTH(::wdlevstrings) || i < 0)
-		return "UNKNOWN";
-	return ::wdlevstrings[i];
-}
+//static const char* WDLEventString(WDLEvents i)
+//{
+//	if (i >= ARRAY_LENGTH(::wdlevstrings) || i < 0)
+//		return "UNKNOWN";
+//	return ::wdlevstrings[i];
+//}
 
 static void AddWDLPlayer(player_t* player)
 {
@@ -178,7 +178,7 @@ static void AddWDLPlayer(player_t* player)
 	}
 
 	WDLPlayer wdlplayer = {
-	    ::wdlplayers.size() + 1,
+	    static_cast<int>(::wdlplayers.size() + 1),
 	    player->id,
 	    player->userinfo.netname,
 	    player->userinfo.team,
@@ -210,7 +210,7 @@ static void AddWDLPlayerSpawn(const mapthing2_t* mthing)
 			return;
 	}
 
-	WDLPlayerSpawn wdlplayerspawn = {::wdlplayerspawns.size() + 1, mthing->x, mthing->y,
+	WDLPlayerSpawn wdlplayerspawn = {static_cast<int>(::wdlplayerspawns.size() + 1), mthing->x, mthing->y,
 	                                 mthing->z, team};
 	::wdlplayerspawns.push_back(wdlplayerspawn);
 }
@@ -277,7 +277,7 @@ void M_LogWDLItemSpawn(AActor* target, WDLPowerups type)
 			return;
 	}
 
-	WDLItemSpawn wdlitemspawn = {::wdlitemspawns.size() + 1, target->x, target->y,
+	WDLItemSpawn wdlitemspawn = {static_cast<int>(::wdlitemspawns.size() + 1), target->x, target->y,
 	                             target->z, type};
 	::wdlitemspawns.push_back(wdlitemspawn);
 }
@@ -709,7 +709,7 @@ void M_LogWDLItemRespawnEvent(AActor* activator)
 	}
 
 	// Add the event to the log.
-	WDLEvent evt = {WDL_EVENT_SPAWNITEM, NULL,     NULL,        ::gametic, {ax, ay, az},
+	WDLEvent evt = {WDL_EVENT_SPAWNITEM, 0,     0,        ::gametic, {ax, ay, az},
 	                {0, 0, 0},           itemtype, itemspawnid, 0,         0};
 	::wdlevents.push_back(evt);
 }
@@ -1138,7 +1138,7 @@ BEGIN_COMMAND(wdlinfo)
 	if (stricmp(argv[1], "event") == 0)
 	{
 		int id = atoi(argv[2]);
-		if (id >= ::wdlevents.size())
+		if (id >= static_cast<int>(::wdlevents.size()))
 		{
 			Printf(PRINT_HIGH, "Event number %d not found\n", id);
 			return;

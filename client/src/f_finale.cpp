@@ -341,7 +341,7 @@ void F_TextWrite ()
 		lump = W_CheckNumForName(finalelump, ns_global);
 		if (lump >= 0)
 		{
-			screen->DrawPatchFullScreen((patch_t*)W_CachePatch(lump, PU_CACHE), true);
+			screen->DrawPatchFullScreen(W_CachePatch(lump, PU_CACHE), true);
 		}
 		break;
 	case FINALE_FLAT:
@@ -803,7 +803,7 @@ void F_BunnyScroll()
 		laststage = stage;
 	}
 
-	sprintf (name,"END%i",stage);
+	snprintf (name, 6, "END%i", stage);
 	screen->DrawPatchIndirect(W_CachePatch(name), (320-13*8)/2, (200-8*8)/2);
 }
 

@@ -73,32 +73,32 @@ static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdat
 	return nitems;
 }
 
+////
+//// https://curl.haxx.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
+////
+//static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
+//                     void* userptr)
+//{
+//	std::string str = std::string(data, size);
 //
-// https://curl.haxx.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
+//	switch (type)
+//	{
+//	case CURLINFO_TEXT:
+//		Printf("curl | %s\n", str.c_str());
+//		break;
+//	case CURLINFO_HEADER_IN:
+//		Printf("curl < %s\n", str.c_str());
+//		break;
+//	case CURLINFO_HEADER_OUT:
+//		Printf("curl > %s\n", str.c_str());
+//		break;
+//	default:
+//		// Don't print data/binary SSL stuff.
+//		break;
+//	}
 //
-static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
-                     void* userptr)
-{
-	std::string str = std::string(data, size);
-
-	switch (type)
-	{
-	case CURLINFO_TEXT:
-		Printf("curl | %s\n", str.c_str());
-		break;
-	case CURLINFO_HEADER_IN:
-		Printf("curl < %s\n", str.c_str());
-		break;
-	case CURLINFO_HEADER_OUT:
-		Printf("curl > %s\n", str.c_str());
-		break;
-	default:
-		// Don't print data/binary SSL stuff.
-		break;
-	}
-
-	return 0;
-}
+//	return 0;
+//}
 
 // // OTransferInfo // //
 

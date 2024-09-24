@@ -31,7 +31,7 @@
 #include "p_mapformat.h"
 
 static const xlat_t SpecialTranslation[] = {
-/*   0 */ { 0 },
+/*   0 */ {0, 0, {0, 0, 0, 0, 0}},
 /*   1 */ { USE|MONST|REP,	Door_Raise,					 { 0, D_SLOW, VDOORWAIT } },
 /*   2 */ { WALK,			Door_Open,					 { TAG, D_SLOW } },
 /*   3 */ { WALK,			Door_Close,					 { TAG, D_SLOW } },
@@ -289,7 +289,7 @@ static const xlat_t SpecialTranslation[] = {
 /* 252 */ { 0,				Scroll_Floor,				 { TAG, 4, 1, 0, 0 } },
 /* 253 */ { 0,				Scroll_Floor,				 { TAG, 4, 2, 0, 0 } },
 /* 254 */ { 0,				Scroll_Texture_Model,		 { TAG, 0 } },
-/* 255 */ { 0,				Scroll_Texture_Offsets },
+/* 255 */ { 0,				Scroll_Texture_Offsets, {0, 0, 0, 0, 0}},
 /* 256 */ { WALK|REP,		Stairs_BuildUpDoom,			 { TAG, S_SLOW, 8, 0, 0 } },
 /* 257 */ { WALK|REP,		Stairs_BuildUpDoom,			 { TAG, S_TURBO, 16, 0, 0 } },
 /* 258 */ { USE|REP,		Stairs_BuildUpDoom,			 { TAG, S_SLOW, 8, 0, 0 } },

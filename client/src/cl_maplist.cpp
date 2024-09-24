@@ -196,8 +196,8 @@ void MaplistCache::ev_tic() {
 	case MAPLIST_TIMEOUT:
 		this->error = "Maplist update timed out.";
 		DPrintf("MaplistCache::ev_tic: Maplist Cache Update Timeout.\n");
-		DPrintf("- Successfully Cached Maps: %d\n", this->maplist.size());
-		DPrintf("- Destionation Maplist Size: %d\n", this->size);
+		DPrintf("- Successfully Cached Maps: %lu\n", this->maplist.size());
+		DPrintf("- Destination Maplist Size: %lu\n", this->size);
 		DPrintf("- Valid Indexes: %d\n", this->valid_indexes);
 		break;
 	case MAPLIST_THROTTLED:
@@ -388,7 +388,7 @@ void CMD_MaplistCallback(const maplist_qrows_t &result) {
 		} else if (it->first == next_index) {
 			flag = '+';
 		}
-		Printf(PRINT_HIGH, "%c%d. %s %s\n", flag, it->first + 1,
+		Printf(PRINT_HIGH, "%c%lu. %s %s\n", flag, it->first + 1,
 			   JoinStrings(it->second->wads, " ").c_str(),
 			   it->second->map.c_str());
 	}

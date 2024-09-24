@@ -2698,8 +2698,6 @@ void A_Explode (AActor *thing)
 	P_RadiusAttack (thing, thing->target, damage, distance, hurtSource, mod);
 }
 
-#define SPEED(a)		((a)*(FRACUNIT/8))
-
 //
 // A_BossDeath
 // Possibly trigger special effects if on a boss level
@@ -3034,7 +3032,7 @@ void A_PlayerScream (AActor *mo)
 	} else {
 		// [RH] More variety in death sounds
 		//sprintf (nametemp, "*death%d", (M_Random ()&3) + 1); // denis - do not use randomness source!
-		sprintf (nametemp, "*death1");
+		snprintf (nametemp, 128, "*death1");
 		sound = nametemp;
 	}
 
@@ -3106,7 +3104,7 @@ void A_PlaySound(AActor* mo)
 
 	int sndmap = mo->state->misc1;
 
-	if (sndmap >= ARRAY_LENGTH(SoundMap))
+	if (sndmap >= static_cast<int>(ARRAY_LENGTH(SoundMap)))
 	{
 		DPrintf("Warning: Sound ID is beyond the array of the Sound Map!\n");
 		sndmap = 0;
