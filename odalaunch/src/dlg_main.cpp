@@ -223,7 +223,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
 		ConfigInfo.Read(CHECKFORUPDATES, &CheckForUpdates,
 		                ODA_UIAUTOCHECKFORUPDATES);
-		                
+
 		ConfigInfo.Read(ARTENABLE, &m_UseRefreshTimer,
 		                ODA_UIARTENABLE);
 
@@ -349,7 +349,7 @@ void dlgMain::OnClose(wxCloseEvent& event)
     m_TimerNewList = NULL;
     delete m_TimerRefresh;
     m_TimerRefresh = NULL;
-    
+
     /* Threading system shutdown */
     // Wait for the monitor thread to finish
 	if(GetThread() && GetThread()->IsRunning())
@@ -359,7 +359,7 @@ void dlgMain::OnClose(wxCloseEvent& event)
 	// their memory
 	{
         std::vector<QueryThread*>::reverse_iterator it;
-        
+
         for(it = threadVector.rbegin(); it != threadVector.rend(); it++)
         {
             if((*it)->IsRunning())
@@ -374,7 +374,7 @@ void dlgMain::OnClose(wxCloseEvent& event)
         // iterator invalidation.
         threadVector.clear();
 	}
-    
+
 	// Save the UI layout and shut it all down
 	wxFileConfig ConfigInfo;
 
@@ -388,13 +388,13 @@ void dlgMain::OnClose(wxCloseEvent& event)
 
 	delete InfoBar;
 	InfoBar = NULL;
-	
+
     if(config_dlg != NULL)
 		config_dlg->Destroy();
 
 	if(server_dlg != NULL)
 		server_dlg->Destroy();
-	
+
 	Destroy();
 }
 
@@ -426,7 +426,7 @@ void dlgMain::OnCheckVersion(wxCommandEvent &event)
 
     VerMsg = wxString::Format("New! Odamex version %s is available", SiteSrc);
 
-    // Remove version separators 
+    // Remove version separators
     SiteSrc.erase(std::remove(SiteSrc.begin(), SiteSrc.end(), '.'), SiteSrc.end());
 
     // Same or older version
@@ -530,25 +530,25 @@ void dlgMain::GetWebsitePageSource(wxString &SiteSrc)
 // Parses the Odamex websites page source to find the version number, here is
 // hoping that the sites layout doesn't change too much!
 void dlgMain::GetVersionInfoFromWebsite(const wxString &SiteSrc, wxString &ver)
-{  
+{
     wxString VerStr = "Latest version: ";
     int Ch;
-    
+
     // Extract version number from website source
     size_t Pos = SiteSrc.find(VerStr);
-    
+
     if (Pos == wxNOT_FOUND)
         return;
-    
+
     // Skip past the search string
     Pos += VerStr.Length();
-    
+
     // Find the end of the data we need
     size_t EndPos = SiteSrc.find("<", Pos);
-    
+
     if (EndPos == wxNOT_FOUND)
         return;
-    
+
     // Copy only the version number back out
     ver = SiteSrc.Mid(Pos, EndPos - Pos);
 }
@@ -600,7 +600,7 @@ void dlgMain::OnManualConnect(wxCommandEvent& event)
 		case 3:
 		{
 			good = true;
-			
+
 			// Use the servers default port number if none was specified
 			if (!Port)
                 Port = ODA_NETDEFSERVERPORT;
@@ -1046,7 +1046,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 
 		bool cs = MServer.IsCustomServer(ThisServer.GetAddress());
 
-		m_LstCtrlServers->AddServerToList(ThisServer, Result->ServerListIndex, 
+		m_LstCtrlServers->AddServerToList(ThisServer, Result->ServerListIndex,
                                     false, cs);
 
 		m_LstCtrlPlayers->AddPlayersToList(ThisServer);
@@ -1584,7 +1584,7 @@ void dlgMain::OnOpenForum(wxCommandEvent& event)
 
 void dlgMain::OnOpenWiki(wxCommandEvent& event)
 {
-	wxLaunchDefaultBrowser("https://odamex.net/wiki");
+	wxLaunchDefaultBrowser("https://github.com/odamex/odamex/wiki");
 }
 
 void dlgMain::OnOpenChangeLog(wxCommandEvent& event)
@@ -1594,7 +1594,7 @@ void dlgMain::OnOpenChangeLog(wxCommandEvent& event)
 
 void dlgMain::OnOpenReportBug(wxCommandEvent& event)
 {
-	wxLaunchDefaultBrowser("https://odamex.net/bugs/enter_bug.cgi");
+	wxLaunchDefaultBrowser("https://github.com/odamex/odamex/issues/new/choose");
 }
 
 void dlgMain::OnOpenChat(wxCommandEvent& event)
