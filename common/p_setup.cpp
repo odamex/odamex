@@ -968,7 +968,7 @@ void P_LoadLineDefs (const int lump)
 	                        (uint64_t)(::level.level_fingerprint[14]) << 48 |
 	                        (uint64_t)(::level.level_fingerprint[15]) << 56;
 
-	StrFormat(levelHash, "%16lx%16lx", reconsthash1, reconsthash2);
+	StrFormat(levelHash, "%16llx%16llx", reconsthash1, reconsthash2);
 
 	bool isE2M7 = (levelHash == e2m7hash);
 

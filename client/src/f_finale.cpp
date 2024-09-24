@@ -341,7 +341,7 @@ void F_TextWrite ()
 		lump = W_CheckNumForName(finalelump, ns_global);
 		if (lump >= 0)
 		{
-			screen->DrawPatchFullScreen((patch_t*)W_CachePatch(lump, PU_CACHE), true);
+			screen->DrawPatchFullScreen(W_CachePatch(lump, PU_CACHE), true);
 		}
 		break;
 	case FINALE_FLAT:

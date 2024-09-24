@@ -446,7 +446,7 @@ void AM_initVariables()
 
 	mline_t ml;
 
-#define L(a) (fixed_t)((a)*FRACUNIT)
+#define L(a) ((a)*FRACUNIT)
 #define ADD_TO_VEC(vec, ax, ay, bx, by) \
 	ml.a.x = L(ax); \
 	ml.a.y = L(ay); \
