@@ -79,7 +79,7 @@ On Windows, all libraries are automatically downloaded if not found.  On
 Please check this page for further instructions on how to compile Odamex
 for your platform.
 
-<https://odamex.net/wiki/How_to_build_from_source>
+<https://github.com/odamex/odamex/wiki/Compiling-Odamex>
 
 Contributing to the project
 ---------------------------
