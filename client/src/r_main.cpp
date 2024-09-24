@@ -1246,7 +1246,7 @@ static void R_InitViewWindow()
 	surface->unlock();
 
 	char temp_str[16];
-	sprintf(temp_str, "%d x %d", viewwidth, viewheight);
+	snprintf(temp_str, 16, "%d x %d", viewwidth, viewheight);
 	r_viewsize.ForceSet(temp_str);
 
 	// [SL] clear many renderer variables

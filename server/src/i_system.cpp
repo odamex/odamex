@@ -372,10 +372,10 @@ void STACK_ARGS I_FatalError (const char *error, ...)
                 va_list argptr;
                 va_start (argptr, error);
                 #ifdef _WIN32
-                int index = vsprintf (errortext, error, argptr);
-                sprintf (errortext + index, "\nGetLastError = %ld", GetLastError());
+                int index = vsnprintf (errortext, MAX_ERRORTEXT, error, argptr);
+                snprintf (errortext + index, 1024 - static_cast<size_t>(index), "\nGetLastError = %ld", GetLastError());
 				#else
-                vsprintf (errortext, error, argptr);
+                vsnprintf (errortext, MAX_ERRORTEXT, error, argptr);
 				#endif
                 va_end (argptr);
 
@@ -398,7 +398,7 @@ void STACK_ARGS I_Error (const char *error, ...)
     char errortext[MAX_ERRORTEXT];
 
     va_start (argptr, error);
-    vsprintf (errortext, error, argptr);
+	vsnprintf(errortext, MAX_ERRORTEXT, error, argptr);
     va_end (argptr);
 
     throw CRecoverableError (errortext);

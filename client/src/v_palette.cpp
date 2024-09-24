@@ -527,7 +527,7 @@ static std::string V_GetColorStringByName(const std::string& name)
 
 			if (!stricmp(com_token, name.c_str()))
 			{
-				sprintf(descr, "%04x %04x %04x",
+				snprintf(descr, 15, "%04x %04x %04x",
 						 (c[0] << 8) | c[0],
 						 (c[1] << 8) | c[1],
 						 (c[2] << 8) | c[2]);
@@ -680,7 +680,7 @@ static void V_DoBlending(argb_t* dest, const argb_t* source, argb_t color)
 }
 
 
-static const float lightScale(float a)
+static float lightScale(float a)
 {
 	// NOTE(jsd): Revised inverse logarithmic scale; near-perfect match to COLORMAP lump's scale
 	// 1 - ((Exp[1] - Exp[a*2 - 1]) / (Exp[1] - Exp[-1]))

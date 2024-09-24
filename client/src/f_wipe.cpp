@@ -190,7 +190,7 @@ static void Wipe_StartBurn()
 	density = 4;
 	burntime = 0;
 	voop = 0;
-	screen->GetBlock(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(), (byte*)wipe_screen);
+	screen->GetBlock(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(), wipe_screen);
 }
 
 static void Wipe_StopBurn()

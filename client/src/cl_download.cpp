@@ -25,7 +25,9 @@
 
 #include "cl_download.h"
 
+#ifndef CURL_STATICLIB
 #define CURL_STATICLIB
+#endif
 #include "curl/curl.h"
 
 #include "c_dispatch.h"

@@ -168,7 +168,7 @@ static AActors SpawnMonsterGroup(hordeSpawn_t& spawn, const hordeRecipe_t& recip
 		}
 	}
 
-	if (ret.size() < count)
+	if (static_cast<int>(ret.size()) < count)
 	{
 		DPrintf("Partial spawn %" PRIuSIZE "/%d of type %s at a %s spawn (%f, %f).\n",
 		        ret.size(), count, name, HordeThingStr(spawn.type),
@@ -409,7 +409,7 @@ AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe)
 		if (it->type != spawn.type)
 			continue;
 
-		SpawnPointWeight spw = {0};
+		SpawnPointWeight spw = {0, 0.0f, 0, false};
 		spw.spawn = &*it;
 		spw.dist = P_AproxDistance2(it->mo, spawn.mo);
 		weights.push_back(spw);

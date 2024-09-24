@@ -188,7 +188,6 @@ static bool cmpWins(player_t* a, const player_t* b)
 PlayerResults PlayerQuery::execute()
 {
 	PlayerResults results;
-	int maxscore = 0;
 
 	// Construct a base result set from all ingame players, possibly filtered.
 	for (Players::iterator it = ::players.begin(); it != players.end(); ++it)
@@ -1391,8 +1390,6 @@ player_s::player_s() :
 
 player_s &player_s::operator =(const player_s &other)
 {
-	size_t i;
-
 	id = other.id;
 	playerstate = other.playerstate;
 	mo = other.mo;

@@ -65,6 +65,33 @@ OInterpolation::~OInterpolation()
 	OInterpolation::resetGameInterpolation();
 }
 
+OInterpolation::OInterpolation()
+{
+	// Skies
+	saved_sky1offset = 0;
+	prev_sky1offset = 0;
+	saved_sky2offset = 0;
+	prev_sky2offset = 0;
+
+	// Weapon bob x/y
+	saved_bobx = 0;
+	prev_bobx = 0;
+	saved_boby = 0;
+	prev_boby = 0;
+
+	// Console
+	saved_conbottomstep = 0;
+	prev_conbottomstep = 0;
+
+	// Chasecam
+	prev_camerax = 0;
+	prev_cameray = 0;
+	prev_cameraz = 0;
+
+	// Should we interpolate in-game objects?
+	interpolationEnabled = true;
+}
+
 //
 // OInterpolation::resetGameInterpolation()
 //
@@ -432,7 +459,6 @@ void OInterpolation::restoreWalls(void)
 		 side_it != saved_linescrollingtex.end(); ++side_it)
 	{
 		unsigned int sidenum = side_it->second;
-		const side_t* side = &sides[sidenum];
 
 		fixed_uint_pair offs = side_it->first;
 
@@ -562,12 +588,12 @@ void OInterpolation::interpolateView(player_t* player, fixed_t amount)
 	if (!camera || !camera->subsector)
 		return;
 
-		player_t& consolePlayer = consoleplayer();
-		const bool use_localview =
-		    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
-		     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
+	player_t& consolePlayer = consoleplayer();
+	const bool use_localview =
+	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
+	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
 
-		interpolateCamera(render_lerp_amount, use_localview, player->cheats & CF_CHASECAM);
+	interpolateCamera(render_lerp_amount, use_localview, player->cheats & CF_CHASECAM);
 }
 
 //

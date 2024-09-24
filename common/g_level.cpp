@@ -410,7 +410,7 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname)
 	OWantFiles newpatchfiles;
 
 	const char* data = str.c_str();
-	for (size_t argv = 0; (data = ParseString2(data)); argv++)
+	for (size_t i = 0; (data = ParseString2(data)); i++)
 	{
 		OWantFile file;
 		if (!OWantFile::make(file, ::com_token, OFILE_UNKNOWN))
@@ -480,9 +480,9 @@ BEGIN_COMMAND (map)
 			if ( argc == 2 )
 			{
 				if ((gameinfo.flags & GI_MAPxx))
-                    sprintf( mapname, "MAP%02i", atoi( argv[1] ) );
+                    snprintf( mapname, 32, "MAP%02i", atoi( argv[1] ) );
                 else
-                    sprintf( mapname, "E%cM%c", argv[1][0], argv[1][1]);
+                    snprintf( mapname, 32, "E%cM%c", argv[1][0], argv[1][1]);
 
 			}
 
@@ -525,7 +525,7 @@ char *CalcMapName(int episode, int level)
 
 	if (gameinfo.flags & GI_MAPxx)
 	{
-		sprintf (lumpname, "MAP%02d", level);
+		snprintf (lumpname, 9, "MAP%02d", level);
 	}
 	else
 	{
@@ -992,7 +992,7 @@ BEGIN_COMMAND(mapinfo)
 	{
 		// Check ahead of time, otherwise we might crash.
 		int id = atoi(argv[2]);
-		if (id < 0 || id >= levels.size())
+		if (id < 0 || id >= static_cast<int>(levels.size()))
 		{
 			Printf(PRINT_HIGH, "Map index %d does not exist\n", id);
 			return;

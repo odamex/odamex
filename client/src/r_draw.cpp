@@ -1135,7 +1135,7 @@ void R_DrawTlatedLucentColumnP()
 //
 // ----------------------------------------------------------------------------
 
-#define FB_SPANDEST_P ((palindex_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1)
+#define FB_SPANDEST_P (dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1)
 
 //
 // R_FillSpanP

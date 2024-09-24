@@ -121,10 +121,10 @@ static inline fixed_t R_TexScaleY(fixed_t y, int texnum)
 //
 // Scales a value by the inverse of the horizontal scaling value for texnum
 //
-static inline fixed_t R_TexInvScaleX(fixed_t x, int texnum)
-{
-	return FixedDiv(x, texturescalex[texnum]);
-}
+//static inline fixed_t R_TexInvScaleX(fixed_t x, int texnum) // unused
+//{
+//	return FixedDiv(x, texturescalex[texnum]);
+//}
 
 //
 // R_TexInvScaleY

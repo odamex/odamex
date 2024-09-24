@@ -446,7 +446,7 @@ void AM_initVariables()
 
 	mline_t ml;
 
-#define L(a) (fixed_t)((a)*FRACUNIT)
+#define L(a) ((a)*FRACUNIT)
 #define ADD_TO_VEC(vec, ax, ay, bx, by) \
 	ml.a.x = L(ax); \
 	ml.a.y = L(ay); \
@@ -703,7 +703,7 @@ void AM_loadPics()
 
 	for (int i = 0; i < 10; i++)
 	{
-		sprintf(namebuf, "AMMNUM%d", i);
+		snprintf(namebuf, 9, "AMMNUM%d", i);
 		marknums[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 }
