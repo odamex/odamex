@@ -292,7 +292,7 @@ std::string I_GetKeyName(int key)
 		return it->second;
 
 	static char name[11];
-	sprintf(name, "#%d", key);
+	snprintf(name, 11, "#%d", key);
 	return std::string(name);
 }
 

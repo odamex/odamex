@@ -121,35 +121,36 @@ static void WriteWAV(char* filename, byte* data, uint32_t length, int samplerate
 
 #endif
 
-// [Russell] - Chocolate Doom's sound converter code, how awesome!
-static bool ConvertibleRatio(int freq1, int freq2)
-{
-    int ratio;
-
-    if (freq1 > freq2)
-    {
-        return ConvertibleRatio(freq2, freq1);
-    }
-    else if ((freq2 % freq1) != 0)
-    {
-        // Not in a direct ratio
-
-        return false;
-    }
-    else
-    {
-        // Check the ratio is a power of 2
-
-        ratio = freq2 / freq1;
-
-        while ((ratio & 1) == 0)
-        {
-            ratio = ratio >> 1;
-        }
-
-        return ratio == 1;
-    }
-}
+//// [Russell] - Chocolate Doom's sound converter code, how awesome!
+//// unused for now
+//static bool ConvertibleRatio(int freq1, int freq2)
+//{
+//    int ratio;
+//
+//    if (freq1 > freq2)
+//    {
+//        return ConvertibleRatio(freq2, freq1);
+//    }
+//    else if ((freq2 % freq1) != 0)
+//    {
+//        // Not in a direct ratio
+//
+//        return false;
+//    }
+//    else
+//    {
+//        // Check the ratio is a power of 2
+//
+//        ratio = freq2 / freq1;
+//
+//        while ((ratio & 1) == 0)
+//        {
+//            ratio = ratio >> 1;
+//        }
+//
+//        return ratio == 1;
+//    }
+//}
 
 // Generic sound expansion function for any sample rate
 

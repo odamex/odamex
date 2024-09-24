@@ -267,130 +267,130 @@ struct CodePtr
 };
 
 static const struct CodePtr CodePtrs[] = {
-    {"NULL", NULL},
-    {"MonsterRail", A_MonsterRail},
-    {"FireRailgun", A_FireRailgun},
-    {"FireRailgunLeft", A_FireRailgunLeft},
-    {"FireRailgunRight", A_FireRailgunRight},
-    {"RailWait", A_RailWait},
-    {"Light0", A_Light0},
-    {"WeaponReady", A_WeaponReady},
-    {"Lower", A_Lower},
-    {"Raise", A_Raise},
-    {"Punch", A_Punch},
-    {"ReFire", A_ReFire},
-    {"FirePistol", A_FirePistol},
-    {"Light1", A_Light1},
-    {"FireShotgun", A_FireShotgun},
-    {"Light2", A_Light2},
-    {"FireShotgun2", A_FireShotgun2},
-    {"CheckReload", A_CheckReload},
-    {"OpenShotgun2", A_OpenShotgun2},
-    {"LoadShotgun2", A_LoadShotgun2},
-    {"CloseShotgun2", A_CloseShotgun2},
-    {"FireCGun", A_FireCGun},
-    {"GunFlash", A_GunFlash},
-    {"FireMissile", A_FireMissile},
-    {"Saw", A_Saw},
-    {"FirePlasma", A_FirePlasma},
-    {"BFGsound", A_BFGsound},
-    {"FireBFG", A_FireBFG},
-    {"BFGSpray", A_BFGSpray},
-    {"Explode", A_Explode},
-    {"Pain", A_Pain},
-    {"PlayerScream", A_PlayerScream},
-    {"Fall", A_Fall},
-    {"XScream", A_XScream},
-    {"Look", A_Look},
-    {"Chase", A_Chase},
-    {"FaceTarget", A_FaceTarget},
-    {"PosAttack", A_PosAttack},
-    {"Scream", A_Scream},
-    {"SPosAttack", A_SPosAttack},
-    {"VileChase", A_VileChase},
-    {"VileStart", A_VileStart},
-    {"VileTarget", A_VileTarget},
-    {"VileAttack", A_VileAttack},
-    {"StartFire", A_StartFire},
-    {"Fire", A_Fire},
-    {"FireCrackle", A_FireCrackle},
-    {"Tracer", A_Tracer},
-    {"SkelWhoosh", A_SkelWhoosh},
-    {"SkelFist", A_SkelFist},
-    {"SkelMissile", A_SkelMissile},
-    {"FatRaise", A_FatRaise},
-    {"FatAttack1", A_FatAttack1},
-    {"FatAttack2", A_FatAttack2},
-    {"FatAttack3", A_FatAttack3},
-    {"BossDeath", A_BossDeath},
-    {"CPosAttack", A_CPosAttack},
-    {"CPosRefire", A_CPosRefire},
-    {"TroopAttack", A_TroopAttack},
-    {"SargAttack", A_SargAttack},
-    {"HeadAttack", A_HeadAttack},
-    {"BruisAttack", A_BruisAttack},
-    {"SkullAttack", A_SkullAttack},
-    {"Metal", A_Metal},
-    {"SpidRefire", A_SpidRefire},
-    {"BabyMetal", A_BabyMetal},
-    {"BspiAttack", A_BspiAttack},
-    {"Hoof", A_Hoof},
-    {"CyberAttack", A_CyberAttack},
-    {"PainAttack", A_PainAttack},
-    {"PainDie", A_PainDie},
-    {"KeenDie", A_KeenDie},
-    {"BrainPain", A_BrainPain},
-    {"BrainScream", A_BrainScream},
-    {"BrainDie", A_BrainDie},
-    {"BrainAwake", A_BrainAwake},
-    {"BrainSpit", A_BrainSpit},
-    {"SpawnSound", A_SpawnSound},
-    {"SpawnFly", A_SpawnFly},
-    {"BrainExplode", A_BrainExplode},
-    {"Detonate", A_Detonate},     // killough 8/9/98
-    {"Mushroom", A_Mushroom},     // killough 10/98
-    {"Die", A_Die},               // killough 11/98
-    {"Spawn", A_Spawn},           // killough 11/98
-    {"Turn", A_Turn},             // killough 11/98
-    {"Face", A_Face},             // killough 11/98
-    {"Scratch", A_Scratch},       // killough 11/98
-    {"PlaySound", A_PlaySound},   // killough 11/98
-    {"RandomJump", A_RandomJump}, // killough 11/98
-    {"LineEffect", A_LineEffect}, // killough 11/98
-    {"BetaSkullAttack", A_BetaSkullAttack},
+    {"NULL", NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"MonsterRail", A_MonsterRail, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FireRailgun", A_FireRailgun, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FireRailgunLeft", A_FireRailgunLeft, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FireRailgunRight", A_FireRailgunRight, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"RailWait", A_RailWait, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Light0", A_Light0, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"WeaponReady", A_WeaponReady, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Lower", A_Lower, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Raise", A_Raise, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Punch", A_Punch, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"ReFire", A_ReFire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FirePistol", A_FirePistol, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Light1", A_Light1, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FireShotgun", A_FireShotgun, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Light2", A_Light2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FireShotgun2", A_FireShotgun2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"CheckReload", A_CheckReload, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"OpenShotgun2", A_OpenShotgun2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"LoadShotgun2", A_LoadShotgun2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"CloseShotgun2", A_CloseShotgun2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FireCGun", A_FireCGun, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"GunFlash", A_GunFlash, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FireMissile", A_FireMissile, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Saw", A_Saw, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FirePlasma", A_FirePlasma, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"BFGsound", A_BFGsound, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FireBFG", A_FireBFG, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"BFGSpray", A_BFGSpray, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Explode", A_Explode, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Pain", A_Pain, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"PlayerScream", A_PlayerScream, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Fall", A_Fall, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"XScream", A_XScream, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Look", A_Look, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Chase", A_Chase, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FaceTarget", A_FaceTarget, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"PosAttack", A_PosAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Scream", A_Scream, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"SPosAttack", A_SPosAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"VileChase", A_VileChase, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"VileStart", A_VileStart, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"VileTarget", A_VileTarget, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"VileAttack", A_VileAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"StartFire", A_StartFire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Fire", A_Fire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FireCrackle", A_FireCrackle, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Tracer", A_Tracer, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"SkelWhoosh", A_SkelWhoosh, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"SkelFist", A_SkelFist, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"SkelMissile", A_SkelMissile, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FatRaise", A_FatRaise, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FatAttack1", A_FatAttack1, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FatAttack2", A_FatAttack2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FatAttack3", A_FatAttack3, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"BossDeath", A_BossDeath, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"CPosAttack", A_CPosAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"CPosRefire", A_CPosRefire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"TroopAttack", A_TroopAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"SargAttack", A_SargAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"HeadAttack", A_HeadAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"BruisAttack", A_BruisAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"SkullAttack", A_SkullAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Metal", A_Metal, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"SpidRefire", A_SpidRefire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"BabyMetal", A_BabyMetal, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"BspiAttack", A_BspiAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Hoof", A_Hoof, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"CyberAttack", A_CyberAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"PainAttack", A_PainAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"PainDie", A_PainDie, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"KeenDie", A_KeenDie, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"BrainPain", A_BrainPain, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"BrainScream", A_BrainScream, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"BrainDie", A_BrainDie, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"BrainAwake", A_BrainAwake, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"BrainSpit", A_BrainSpit, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"SpawnSound", A_SpawnSound, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"SpawnFly", A_SpawnFly, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"BrainExplode", A_BrainExplode, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"Detonate", A_Detonate, 0, {0, 0, 0, 0, 0, 0, 0, 0}},     // killough 8/9/98
+    {"Mushroom", A_Mushroom, 0, {0, 0, 0, 0, 0, 0, 0, 0}},     // killough 10/98
+    {"Die", A_Die, 0, {0, 0, 0, 0, 0, 0, 0, 0}},               // killough 11/98
+    {"Spawn", A_Spawn, 0, {0, 0, 0, 0, 0, 0, 0, 0}},           // killough 11/98
+    {"Turn", A_Turn, 0, {0, 0, 0, 0, 0, 0, 0, 0}},             // killough 11/98
+    {"Face", A_Face, 0, {0, 0, 0, 0, 0, 0, 0, 0}},             // killough 11/98
+    {"Scratch", A_Scratch, 0, {0, 0, 0, 0, 0, 0, 0, 0}},       // killough 11/98
+    {"PlaySound", A_PlaySound, 0, {0, 0, 0, 0, 0, 0, 0, 0}},   // killough 11/98
+    {"RandomJump", A_RandomJump, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, // killough 11/98
+    {"LineEffect", A_LineEffect, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, // killough 11/98
+    {"BetaSkullAttack", A_BetaSkullAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
 
     // MBF21 Pointers
-    {"SpawnObject", A_SpawnObject, 8},
-    {"MonsterProjectile", A_MonsterProjectile, 5},
-    {"MonsterBulletAttack", A_MonsterBulletAttack, 5, {0, 0, 1, 3, 5}},
-    {"MonsterMeleeAttack", A_MonsterMeleeAttack, 4, {3, 8, 0, 0}},
-    {"RadiusDamage", A_RadiusDamage, 2},
-    {"NoiseAlert", A_NoiseAlert, 0},
-    {"HealChase", A_HealChase, 2},
-    {"SeekTracer", A_SeekTracer, 2},
-    {"FindTracer", A_FindTracer, 2, {0, 10}},
-    {"ClearTracer", A_ClearTracer, 0},
-    {"JumpIfHealthBelow", A_JumpIfHealthBelow, 2},
-    {"JumpIfTargetInSight", A_JumpIfTargetInSight, 2},
-    {"JumpIfTargetCloser", A_JumpIfTargetCloser, 2},
-    {"JumpIfTracerInSight", A_JumpIfTracerInSight, 2},
-    {"JumpIfTracerCloser", A_JumpIfTracerCloser, 2},
-    {"JumpIfFlagsSet", A_JumpIfFlagsSet, 3},
-    {"AddFlags", A_AddFlags, 2},
-    {"RemoveFlags", A_RemoveFlags, 2},
+    {"SpawnObject", A_SpawnObject, 8, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"MonsterProjectile", A_MonsterProjectile, 5, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"MonsterBulletAttack", A_MonsterBulletAttack, 5, {0, 0, 1, 3, 5, 0, 0, 0}},
+    {"MonsterMeleeAttack", A_MonsterMeleeAttack, 4, {3, 8, 0, 0, 0, 0, 0, 0}},
+    {"RadiusDamage", A_RadiusDamage, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"NoiseAlert", A_NoiseAlert, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"HealChase", A_HealChase, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"SeekTracer", A_SeekTracer, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FindTracer", A_FindTracer, 2, {0, 10, 0, 0, 0, 0, 0, 0}},
+    {"ClearTracer", A_ClearTracer, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"JumpIfHealthBelow", A_JumpIfHealthBelow, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"JumpIfTargetInSight", A_JumpIfTargetInSight, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"JumpIfTargetCloser", A_JumpIfTargetCloser, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"JumpIfTracerInSight", A_JumpIfTracerInSight, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"JumpIfTracerCloser", A_JumpIfTracerCloser, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"JumpIfFlagsSet", A_JumpIfFlagsSet, 3, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"AddFlags", A_AddFlags, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"RemoveFlags", A_RemoveFlags, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
     // MBF21 Weapon Pointers
-    {"WeaponProjectile", A_WeaponProjectile, 5},
-    {"WeaponBulletAttack", A_WeaponBulletAttack, 5, {0, 0, 1, 5, 3}},
-    {"WeaponMeleeAttack", A_WeaponMeleeAttack, 5, {2, 10, 1 * FRACUNIT, 0, 0}},
-    {"WeaponSound", A_WeaponSound, 2},
-    {"WeaponAlert", A_WeaponAlert, 0},
-    {"WeaponJump", A_WeaponJump, 2},
-    {"ConsumeAmmo", A_ConsumeAmmo, 1},
-    {"CheckAmmo", A_CheckAmmo, 2},
-    {"RefireTo", A_RefireTo, 2},
-    {"GunFlashTo", A_GunFlashTo, 2},
+    {"WeaponProjectile", A_WeaponProjectile, 5, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"WeaponBulletAttack", A_WeaponBulletAttack, 5, {0, 0, 1, 5, 3, 0, 0, 0}},
+    {"WeaponMeleeAttack", A_WeaponMeleeAttack, 5, {2, 10, 1 * FRACUNIT, 0, 0, 0, 0, 0}},
+    {"WeaponSound", A_WeaponSound, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"WeaponAlert", A_WeaponAlert, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"WeaponJump", A_WeaponJump, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"ConsumeAmmo", A_ConsumeAmmo, 1, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"CheckAmmo", A_CheckAmmo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"RefireTo", A_RefireTo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"GunFlashTo", A_GunFlashTo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
 
-    {NULL, NULL}};
+    {NULL, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}};
 
 struct Key
 {
@@ -955,8 +955,6 @@ static int PatchThing(int thingy)
 	};
 
 	int result;
-	int oldflags;
-	bool hadTranslucency = false;
 	mobjinfo_t *info, dummy;
 	int *ednum, dummyed;
 	bool hadHeight = false;
@@ -978,8 +976,6 @@ static int PatchThing(int thingy)
 		DPrintf("Thing %" PRIuSIZE " found.\n", thingNum);
 #endif
 	}
-
-	oldflags = info->flags;
 
 	while ((result = GetLine()) == 1)
 	{
@@ -1101,7 +1097,6 @@ static int PatchThing(int thingy)
 		else if (stricmp(Line1, "Translucency") == 0)
 		{
 			info->translucency = val;
-			hadTranslucency = true;
 		}
 		else if (stricmp(Line1, "Dropped item") == 0)
 		{
@@ -1340,7 +1335,6 @@ static int PatchThing(int thingy)
 				{
 					info->translucency =
 					    TRANSLUC50; // Correct value should be 0.66 (BOOM)...
-					hadTranslucency = true;
 				}
 
 				// Unsupported flags have to be announced for developers...
@@ -1370,8 +1364,6 @@ static int PatchThing(int thingy)
 			{
 				if (value[2] & 7)
 				{
-					hadTranslucency = true;
-
 					if (value[2] & 1)
 						info->translucency = TRANSLUC25;
 					else if (value[2] & 2)
@@ -1920,13 +1912,13 @@ static int PatchPars(int dummy)
 		if (moredata)
 		{
 			// At least 3 items on this line, must be E?M? format
-			sprintf(mapname, "E%cM%c", *Line2, *space);
+			snprintf(mapname, 8, "E%cM%c", *Line2, *space);
 			par = atoi(moredata + 1);
 		}
 		else
 		{
 			// Only 2 items, must be MAP?? format
-			sprintf(mapname, "MAP%02d", atoi(Line2) % 100);
+			snprintf(mapname, 8, "MAP%02d", atoi(Line2) % 100);
 			par = atoi(space);
 		}
 
@@ -2024,15 +2016,12 @@ static int PatchMusic(int dummy)
 
 static int PatchText(int oldSize)
 {
-	LevelInfos& levels = getLevelInfos();
-
 	int newSize;
 	char* oldStr;
 	char* newStr;
 	char* temp;
 	BOOL good;
 	int result;
-	int i;
 	const OString* name = NULL;
 
 	// Skip old size, since we already know it
@@ -2083,7 +2072,7 @@ static int PatchText(int oldSize)
 	good = false;
 
 	// Search through sprite names
-	for (i = 0; i < NUMSPRITES; i++)
+	for (int i = 0; i < NUMSPRITES; i++)
 	{
 		if (!strcmp(sprnames[i], oldStr))
 		{
@@ -2446,7 +2435,7 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 	return true;
 }
 
-static CodePtr null_bexptr = {"(NULL)", NULL};
+static CodePtr null_bexptr = {"(NULL)", NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 
 /*
  * @brief Check loaded deh files for any problems prior
@@ -2535,7 +2524,7 @@ bool CheckIfDehActorDefined(const mobjtype_t mobjtype)
 		mobj.infighting_group == IG_DEFAULT &&
 		mobj.projectile_group == PG_DEFAULT &&
 		mobj.splash_group == SG_DEFAULT &&
-		mobj.ripsound == "" &&
+		mobj.ripsound == NULL &&
 		mobj.meleerange == (64 * FRACUNIT) &&
 		mobj.droppeditem == MT_NULL)
 	{

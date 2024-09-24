@@ -37,7 +37,7 @@
 
 #include "w_ident.h"
 
-static const uint32_t IDENT_NONE = 0;
+//static const uint32_t IDENT_NONE = 0; // unused
 static const uint32_t IDENT_COMMERCIAL = BIT(0);
 static const uint32_t IDENT_IWAD = BIT(1);
 static const uint32_t IDENT_DEPRECATED = BIT(2);

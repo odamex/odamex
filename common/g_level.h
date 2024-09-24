@@ -207,7 +207,8 @@ struct level_pwad_info_t
 	      snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
 	      skypic2(""), gravity(0.0f), aircontrol(0.0f), exitpic(""), enterpic(""),
 	      endpic(""), intertext(""), intertextsecret(""), interbackdrop(""), intermusic(""),
-	      bossactions(), label(), clearlabel(false), author(), sky1ScrollDelta(0), sky2ScrollDelta(0)
+	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(),
+	      clearlabel(false), author()
 	{
 		ArrayInit(fadeto_color, 0);
 		ArrayInit(outsidefog_color, 0);

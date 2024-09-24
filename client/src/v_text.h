@@ -39,7 +39,7 @@ struct OGlobalFont
 	}
 	lumpHandle_t at(const size_t idx) const
 	{
-		if (idx < 0 || idx >= HU_FONTSIZE)
+		if (idx >= HU_FONTSIZE)
 			throw std::out_of_range("Out-of-bounds font char");
 
 		return m_fontData[idx];

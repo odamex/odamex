@@ -233,7 +233,6 @@ bool EV_DoZDoomPillar(DPillar::EPillar type, line_t* line, int tag, fixed_t spee
                       fixed_t floordist, fixed_t ceilingdist, int crush, bool hexencrush)
 {
 	bool rtn = false;
-	sector_t* sec;
 	int secnum = -1;
 
 	floordist *= FRACUNIT;

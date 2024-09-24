@@ -51,8 +51,8 @@ void P_Ticker (void)
 {
 #ifdef CLIENT_APP
 	// Game pauses when in the menu and not online/demo
-	if (paused || (!multiplayer && !demoplayback &&
-		(menuactive || ConsoleState == c_down || ConsoleState == c_falling)) &&
+	if ((paused || (!multiplayer && !demoplayback &&
+		(menuactive || ConsoleState == c_down || ConsoleState == c_falling))) &&
 		(players.begin()->viewz != 1)) // Render the first tic to get proper viewheight
 	{
 		return;

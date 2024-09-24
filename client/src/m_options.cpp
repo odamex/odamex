@@ -995,12 +995,12 @@ static value_t TextColors[] =
 };
 
 // TODO: Put all language info in one array, auto detect what's in the lump?
-static value_t Languages[] = {
-	{ 0.0, "Auto" },
-	{ 1.0, "English" },
-	{ 2.0, "French" },
-	{ 3.0, "Italian" }
-};
+//static value_t Languages[] = { // unused
+//	{ 0.0, "Auto" },
+//	{ 1.0, "English" },
+//	{ 2.0, "French" },
+//	{ 3.0, "Italian" }
+//};
 
 static menuitem_t MessagesItems[] = {
 #if 0
@@ -1105,7 +1105,7 @@ static void M_SetVideoMode(uint16_t width, uint16_t height)
 	old_height = I_GetVideoHeight();
 
 	char command[30];
-	sprintf(command, "vid_setmode %d %d", width, height);
+	snprintf(command, 30, "vid_setmode %d %d", width, height);
 	AddCommandString(command);
 
 	SetModesMenu(width, height);
@@ -1240,7 +1240,7 @@ static void BuildModesList(int hiwidth, int hiheight)
 					ModesItems[i].e.highlight = ModesItems[i].a.selmode = col;
 
 				char strtemp[32];
-				sprintf(strtemp, "%dx%d", width, height);
+				snprintf(strtemp, 32, "%dx%d", width, height);
 				ReplaceString(str, strtemp);
 			}
 			else
@@ -1300,7 +1300,7 @@ static void SetModesMenu(int w, int h)
 	else
 	{
 		static char enter_text[64];
-		sprintf(enter_text, "TESTING %dx%d", w, h);
+		snprintf(enter_text, 64, "TESTING %dx%d", w, h);
 
 		ModesItems[VM_ENTERLINE].label = enter_text;
 		ModesItems[VM_TESTLINE].label = VMTestWaitText;
@@ -1345,7 +1345,7 @@ static void M_SendUINewColor (int red, int green, int blue)
 {
 	char command[24];
 
-	sprintf (command, "ui_dimcolor \"%02x %02x %02x\"", red, green, blue);
+	snprintf (command, 24, "ui_dimcolor \"%02x %02x %02x\"", red, green, blue);
 	AddCommandString (command);
 }
 
@@ -1894,7 +1894,7 @@ void M_OptResponder (event_t *ev)
 			int newflags = *item->e.flagint ^ item->a.flagmask;
 			char val[16];
 
-			sprintf (val, "%d", newflags);
+			snprintf (val, 16, "%d", newflags);
 			flagsvar->Set (val);
 			return;
 	}
@@ -2084,7 +2084,7 @@ void M_OptResponder (event_t *ev)
 				part = 0x00;
 
 			char singlecolor[3];
-			sprintf(singlecolor, "%02x", part);
+			snprintf(singlecolor, 3, "%02x", part);
 
 			if (item->type == redslider)
 				memcpy(newcolor, singlecolor, 2);
@@ -2212,7 +2212,7 @@ void M_OptResponder (event_t *ev)
 				part = 0xff;
 
 			char singlecolor[3];
-			sprintf(singlecolor, "%02x", part);
+			snprintf(singlecolor, 3, "%02x", part);
 
 			if (item->type == redslider)
 				memcpy(newcolor, singlecolor, 2);

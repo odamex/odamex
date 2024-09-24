@@ -447,10 +447,8 @@ BOOL PIT_CheckLine (line_t *ld)
 		{
 			const msecnode_t *node = tmthing->touching_sectorlist;
 			bool allow = false;
-			int count = 0;
 			while (node != NULL)
 			{
-				count++;
 				if (node->m_sector->floorplane.c < STEEPSLOPE)
 				{
 					allow = true;
@@ -2929,8 +2927,8 @@ static BOOL PIT_DoomRadiusAttack(AActor* thing)
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if ((thing->type == MT_CYBORG && bombsource->type == MT_CYBORG) || 
-		(thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS) && 
+	if (((thing->type == MT_CYBORG && bombsource->type == MT_CYBORG) || 
+		(thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS)) && 
 		!(bombspot->flags3 & MF3_FORCERADIUSDMG)) 
 		return true;
 
@@ -2986,8 +2984,8 @@ static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if ((thing->type == MT_CYBORG && bombsource->type == MT_CYBORG) ||
-	   (thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS) &&
+	if (((thing->type == MT_CYBORG && bombsource->type == MT_CYBORG) ||
+	   (thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS)) &&
 	   !(bombspot->flags3 & MF3_FORCERADIUSDMG)) 
 		return true;
 

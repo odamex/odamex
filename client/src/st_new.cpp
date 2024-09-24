@@ -195,7 +195,7 @@ void ST_initNew()
 	std::string buffer;
 	for (size_t i = 0; i < NUMMODS; i++)
 	{
-		StrFormat(buffer, "ODAMOD%d", i);
+		StrFormat(buffer, "ODAMOD%lu", i);
 		::ToastIcon[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
 	}
 }
@@ -220,7 +220,7 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 		num = -num;
 	}
 
-	sprintf (digits, "%d", num);
+	snprintf (digits, 11, "%d", num);
 
 	d = digits;
 	while (*d)
@@ -972,7 +972,6 @@ void OdamexHUD() {
 		ST_DrawNumRight(I_GetSurfaceWidth() - num_ax - 24 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
 
-	int color;
 	std::string str;
 	int iy = 4;
 
@@ -1560,7 +1559,6 @@ void LevelStateHUD()
 // [AM] Spectator HUD.
 void SpectatorHUD()
 {
-	int color;
 	int iy = 4;
 
 	// Draw warmup state or timer

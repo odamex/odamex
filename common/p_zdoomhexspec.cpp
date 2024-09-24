@@ -107,7 +107,7 @@ bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 	return buttonSuccess;
 }
 
-const LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int activationType)
+LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int activationType)
 {
 	if (activationType & (ML_SPAC_CROSS | ML_SPAC_MCROSS | ML_SPAC_PCROSS | ML_SPAC_CROSSTHROUGH))
 		return LineCross;
@@ -134,7 +134,7 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 	lineActivation = line->flags & ML_SPAC_MASK;
 
 	if (line->special == Teleport &&
-	    (lineActivation & ML_SPAC_CROSS | ML_SPAC_CROSSTHROUGH) &&
+	    (lineActivation & ML_SPAC_CROSS || lineActivation & ML_SPAC_CROSSTHROUGH) &&
 	    activationType & ML_SPAC_PCROSS && mo && mo->flags & MF_MISSILE)
 	{ // Let missiles use regular player teleports
 		lineActivation |= ML_SPAC_PCROSS;
@@ -1067,7 +1067,7 @@ bool P_ExecuteZDoomLineSpecial(int special, short* args, line_t* line, int side,
 		                                args[4]);
 }
 
-const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags)
+unsigned int P_TranslateZDoomLineFlags(const unsigned int flags)
 {
 	unsigned int result = flags & 0x1ff;
 

@@ -142,7 +142,7 @@ int P_FindLineFromTag(int tag, int start)
 	return start;
 }
 
-const unsigned int P_ResetSectorTransferFlags(const unsigned int flags)
+unsigned int P_ResetSectorTransferFlags(const unsigned int flags)
 {
 	return (flags & ~SECF_TRANSFERMASK);
 }

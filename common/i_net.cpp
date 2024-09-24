@@ -229,7 +229,7 @@ void upnp_add_redir (const char * addr, int port)
 	if (urls.controlURL == NULL)
 		return;
 
-	sprintf(port_str, "%d", port);
+	snprintf(port_str, 16, "%d", port);
 
 	// Set a description if none exists
 	if (!sv_upnp_description.cstring()[0])
@@ -270,7 +270,7 @@ void upnp_rem_redir (int port)
 	if(urls.controlURL == NULL)
 		return;
 
-	sprintf(port_str, "%d", port);
+	snprintf(port_str, 16, "%d", port);
 	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
 		port_str, "UDP", 0);
 
@@ -327,7 +327,7 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 	}while (v == SOCKET_ERROR);
 
 	char tmp[32] = "";
-	sprintf(tmp, "%d", next - 1);
+	snprintf(tmp, 32, "%d", next - 1);
 	port.ForceSet(tmp);
 
 #ifdef ODA_HAVE_MINIUPNP
@@ -388,7 +388,7 @@ char *NET_AdrToString (netadr_t a)
 {
      static  char    s[64];
 
-     sprintf (s, "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3], ntohs(a.port));
+     snprintf (s, 64, "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3], ntohs(a.port));
 
      return s;
 }
