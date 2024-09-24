@@ -1958,7 +1958,7 @@ void DLevelScript::StartSoundSequence(sector_t* sec, int index)
 
 	if (serverside)
 	{
-		int argv[] = {sec - sectors, index};
+		int argv[] = {static_cast<int>(sec - sectors), index};
 		std::vector<int> args = ArgvToArgs(argv);
 		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SOUNDSEQUENCE, NULL, NULL, false, args));
 	}

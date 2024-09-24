@@ -178,7 +178,7 @@ static void AddWDLPlayer(player_t* player)
 	}
 
 	WDLPlayer wdlplayer = {
-	    ::wdlplayers.size() + 1,
+	    static_cast<int>(::wdlplayers.size() + 1),
 	    player->id,
 	    player->userinfo.netname,
 	    player->userinfo.team,
@@ -210,7 +210,7 @@ static void AddWDLPlayerSpawn(const mapthing2_t* mthing)
 			return;
 	}
 
-	WDLPlayerSpawn wdlplayerspawn = {::wdlplayerspawns.size() + 1, mthing->x, mthing->y,
+	WDLPlayerSpawn wdlplayerspawn = {static_cast<int>(::wdlplayerspawns.size() + 1), mthing->x, mthing->y,
 	                                 mthing->z, team};
 	::wdlplayerspawns.push_back(wdlplayerspawn);
 }
@@ -277,7 +277,7 @@ void M_LogWDLItemSpawn(AActor* target, WDLPowerups type)
 			return;
 	}
 
-	WDLItemSpawn wdlitemspawn = {::wdlitemspawns.size() + 1, target->x, target->y,
+	WDLItemSpawn wdlitemspawn = {static_cast<int>(::wdlitemspawns.size() + 1), target->x, target->y,
 	                             target->z, type};
 	::wdlitemspawns.push_back(wdlitemspawn);
 }
