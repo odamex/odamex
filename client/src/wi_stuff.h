@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -45,3 +45,5 @@ void WI_Drawer (void);
 void WI_Start (wbstartstruct_t *wbstartstruct);
 
 void WI_drawLF (void);
+
+void WI_Shutdown();
