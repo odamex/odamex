@@ -40,6 +40,7 @@
 #include "svc_message.h"
 #include "p_horde.h"
 #include "com_misc.h"
+#include "gi.h"
 #include "g_skill.h"
 #include "p_mapformat.h"
 
@@ -1869,7 +1870,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	P_RemoveHealthPool(target);
 	P_QueueCorpseForDestroy(target);
 
-    if (target->info->xdeathstate && target->health < target->info->gibhealth)
+    if (target->info->xdeathstate &&
+		static_cast<float>(target->health) < static_cast<float>(target->info->gibhealth) * gameinfo.gibFactor)
     {
         P_SetMobjState(target, target->info->xdeathstate);
     }
@@ -2106,7 +2108,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 		unsigned int ang = P_PointToAngle(inflictor->x, inflictor->y, target->x, target->y);
 
-		fixed_t thrust = damage * (FRACUNIT >> 3) * 100 / target->info->mass;
+		fixed_t thrust = damage * (FRACUNIT >> 3) * gameinfo.defKickback / target->info->mass;
 
 		// make fall forwards sometimes
 		if (damage < 40
@@ -2181,8 +2183,8 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 		// WDL damage events - they have to be up here to ensure we know how
 		// much armor is subtracted.
-		int low = std::max(target->health - damage, 0);
-		int actualdamage = target->health - low;
+		const int low = std::max(target->health - damage, 0);
+		const int actualdamage = target->health - low;
 
 		angle_t sangle = 0;
 

@@ -232,6 +232,21 @@ void MIType_Bool(OScanner& os, bool newStyleMapInfo, void* data, unsigned int fl
 	*static_cast<bool*>(data) = flags;
 }
 
+// Sets the inputted data as a bool from a string
+void MIType_BoolString(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                 unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+
+	if (os.compareTokenNoCase("true"))
+		*static_cast<bool*>(data) = true;
+	else if (os.compareTokenNoCase("false"))
+		*static_cast<bool*>(data) = false;
+	else
+		os.error("Expected \"true\" or \"false\" in boolean statement, got \"%s\"",
+		         os.getToken().c_str());
+}
+
 // Sets the inputted data as a bool (that is, if flags != 0, set to true; else false)
 void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                  unsigned int flags2)
@@ -560,6 +575,16 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsign
 	}
 }
 
+// Sets inputted data as a sound name
+void MIType_SoundName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                      unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, doEquals);
+	const std::string soundname = os.getToken();
+
+	strncpy(static_cast<char*>(data), soundname.c_str(), MAX_SNDNAME);
+}
+
 // Sets the sky texture with an OLumpName
 void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                 unsigned int flags2)
@@ -730,6 +755,80 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 		{
 			free(*text);
 			*text = strdup(os.getToken().c_str());
+		}
+	}
+}
+
+// Sets the credit pages from a gameinfo lump
+void MIType_Pages(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                        unsigned int flags2)
+{
+	ParseMapInfoHelper<OLumpName>(os, doEquals);
+
+	const std::string page = os.getToken();
+	static_cast<OLumpName*>(data)[0] = page;
+
+	os.scan();
+	if (os.compareToken(","))
+	{
+		os.mustScan();
+		if (os.isQuotedString())
+			static_cast<OLumpName*>(data)[1] = os.getToken();
+		else
+			os.error("Trailing comma in Page definition; expected lump name");
+
+		// Do a third page if finalePage/infoPage instead of creditPages
+		if (flags)
+		{
+			os.scan();
+			if (os.compareToken(","))
+			{
+				os.mustScan();
+				if (os.isQuotedString())
+					static_cast<OLumpName*>(data)[2] = os.getToken();
+				else
+					os.error("Trailing comma in Page definition; expected lump name");
+			}
+			else
+			{
+				os.unScan();
+				static_cast<OLumpName*>(data)[2] = page;
+			}
+		}
+	}
+	else
+	{
+		os.unScan();
+		static_cast<OLumpName*>(data)[1] = page;
+		static_cast<OLumpName*>(data)[2] = page;
+	}
+
+	SkipUnknownType(os);
+}
+
+// Sets multiple lumpnames in a vector
+void MIType_$VectorLumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
+                            unsigned int flags2)
+{
+	ParseMapInfoHelper<OLumpName>(os, doEquals);
+
+	const std::string page = os.getToken();
+	static_cast<std::vector<OLumpName>*>(data)->push_back(page);
+
+	while (os.scan())
+	{
+		if (os.compareToken(","))
+		{
+			os.mustScan();
+			if (os.isQuotedString())
+				static_cast<OLumpName*>(data)[1] = os.getToken();
+			else
+				os.error("Unexpected trailing comma; expected lump name");
+		}
+		else
+		{
+			os.unScan();
+			break;
 		}
 	}
 }
@@ -923,6 +1022,74 @@ void MIType_SpecialAction_KillMonsters(OScanner& os, bool newStyleMapInfo, void*
                                     unsigned int flags, unsigned int flags2)
 {
 	// todo
+}
+
+// border around smaller screen sizes
+void MIType_Border(OScanner& os, bool doEquals, void* data,
+                                       unsigned int flags, unsigned int flags2)
+{
+	if (doEquals)
+		MustGetStringName(os, "=");
+
+	os.mustScan(); // can be string or int
+
+	if (IsNum(os.getToken().c_str()))
+	{
+		gameborder_t& border = gameinfo.border;
+
+		border.offset = os.getTokenInt();
+
+		os.mustScanInt();
+		border.offset = os.getTokenInt();
+
+		os.mustScan(); border.tl = os.getToken();
+		os.mustScan(); border.t  = os.getToken();
+		os.mustScan(); border.tr = os.getToken();
+		os.mustScan(); border.l  = os.getToken();
+		os.mustScan(); border.r  = os.getToken();
+		os.mustScan(); border.bl = os.getToken();
+		os.mustScan(); border.b  = os.getToken();
+		os.mustScan(); border.br = os.getToken();
+	}
+	else
+	{
+		if (os.compareTokenNoCase("doomborder"))
+		{
+			static const gameborder_t DoomBorder =
+			{
+				8, 8,
+				"brdr_tl", "brdr_t", "brdr_tr",
+				"brdr_l",			 "brdr_r",
+				"brdr_bl", "brdr_b", "brdr_br"
+			};
+
+			gameinfo.border = DoomBorder;
+		}
+		else if (os.compareTokenNoCase("hereticborder"))
+		{
+			static const gameborder_t HereticBorder =
+			{
+				4, 16,
+				"bordtl", "bordt", "bordtr",
+				"bordl",           "bordr",
+				"bordbl", "bordb", "bordbr"
+			};
+
+			gameinfo.border = HereticBorder;
+		}
+		else if (os.compareTokenNoCase("strifeborder"))
+		{
+			static const gameborder_t StrifeBorder =
+			{
+				8, 8,
+				"brdr_tl", "brdr_t", "brdr_tr",
+				"brdr_l",			 "brdr_r",
+				"brdr_bl", "brdr_b", "brdr_br"
+			};
+
+			gameinfo.border = StrifeBorder;
+		}
+	}
 }
 
 //
@@ -1187,19 +1354,40 @@ struct MapInfoDataSetter<cluster_info_t>
 template <>
 struct MapInfoDataSetter<gameinfo_t>
 {
-	MapInfoDataContainer mapInfoDataContainer = {
-	    { "advisorytime", &MIType_Float, &gameinfo.advisoryTime },
-	    //{ "chatsound" },
-	    { "pagetime", &MIType_Float, &gameinfo.pageTime },
-	    { "finaleflat", &MIType_LumpName, &gameinfo.finaleFlat },
-	    { "finalemusic", &MIType_$LumpName, &gameinfo.finaleMusic },
-	    { "titlemusic", &MIType_$LumpName, &gameinfo.titleMusic },
-	    { "titlepage", &MIType_LumpName, &gameinfo.titlePage },
-	    { "titletime", &MIType_Float, &gameinfo.titleTime },
-	    { "maparrow", &MIType_MapArrows },
-	    { "cheatkey", &MIType_MapKey, &gameinfo.cheatKey },
-	    { "easykey", &MIType_MapKey, &gameinfo.easyKey }
-	};
+	MapInfoDataContainer mapInfoDataContainer;
+
+	MapInfoDataSetter()
+	{
+		mapInfoDataContainer = {
+			{ "advisorytime", &MIType_Int, &gameinfo.advisoryTime },
+			{ "border", &MIType_Border },
+			{ "borderflat", &MIType_LumpName, &gameinfo.borderFlat },
+			{ "chatsound", &MIType_SoundName, &gameinfo.chatSound },
+			{ "creditpage", &MIType_Pages, &gameinfo.creditPages },
+			{ "intermissioncounter", &MIType_BoolString, &gameinfo.intermissionCounter },
+			{ "intermissionmusic", &MIType_MusicLumpName, &gameinfo.intermissionMusic },
+			{ "noloopfinalemusic", &MIType_BoolString, &gameinfo.noLoopFinaleMusic },
+			{ "pagetime", &MIType_Int, &gameinfo.pageTime },
+			{ "quitsound", &MIType_SoundName, &gameinfo.quitSound },
+			{ "finaleflat", &MIType_LumpName, &gameinfo.finaleFlat },
+			{ "finalemusic", &MIType_MusicLumpName, &gameinfo.finaleMusic },
+			{ "finalepage", &MIType_Pages, &gameinfo.finalePage, 1 },
+			{ "infopage", &MIType_Pages, &gameinfo.infoPage, 1 },
+			{ "telefogheight", &MIType_Int, &gameinfo.telefogHeight },
+			{ "titlemusic", &MIType_MusicLumpName, &gameinfo.titleMusic },
+			{ "titlepage", &MIType_LumpName, &gameinfo.titlePage },
+			{ "titletime", &MIType_Int, &gameinfo.titleTime },
+			{ "defkickback", &MIType_Int, &gameinfo.defKickback },
+			{ "endoom", &MIType_LumpName, &gameinfo.endoom },
+			{ "pausesign", &MIType_LumpName, &gameinfo.pauseSign },
+			{ "gibfactor", &MIType_Float, &gameinfo.gibFactor },
+			{ "textscreenx", &MIType_Int, &gameinfo.textScreenX },
+			{ "textscreeny", &MIType_Int, &gameinfo.textScreenY },
+			{ "maparrow", &MIType_MapArrows },
+			{ "cheatkey", &MIType_MapKey, &gameinfo.cheatKey },
+			{ "easykey", &MIType_MapKey, &gameinfo.easyKey }
+		};
+	}
 };
 
 //
@@ -1764,6 +1952,12 @@ void G_ParseMapInfo()
 	case doom:
 	case retail_freedoom:
 		baseinfoname = "_D1NFO";
+		if (gamemode == shareware)
+		{
+			lump = W_GetNumForName(baseinfoname);
+			ParseMapInfoLump(lump, baseinfoname);
+			baseinfoname = "_D1SWNFO";
+		}
 		break;
 	case doom2:
 	case commercial_freedoom:

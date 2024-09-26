@@ -75,7 +75,7 @@ enum finale_lump_t
 };
 
 const char* finaletext;
-const char* finalelump;
+OLumpName finalelump;
 finale_lump_t finalelumptype = FINALE_NONE;
 
 void	F_StartCast (void);
@@ -172,29 +172,23 @@ void F_StartFinale(finale_options_t& options)
 	//  determined in G_WorldDone() based on data in
 	//  a level_info_t and a cluster_info_t.
 
-	if (options.music == NULL)
+	if (options.music.empty())
 	{
 		::currentmusic = ::gameinfo.finaleMusic.c_str();
-		S_ChangeMusic(
-			::currentmusic.c_str(),
-			!(::gameinfo.flags & GI_NOLOOPFINALEMUSIC)
-		);
+		S_ChangeMusic(::currentmusic, !::gameinfo.noLoopFinaleMusic);
 	}
 	else
 	{
-		::currentmusic = options.music;
-		S_ChangeMusic(
-			::currentmusic,
-			!(::gameinfo.flags & GI_NOLOOPFINALEMUSIC)
-		);
+		::currentmusic = options.music.c_str();
+		S_ChangeMusic(::currentmusic, !::gameinfo.noLoopFinaleMusic);
 	}
 
-	if (options.pic != NULL)
+	if (!options.pic.empty())
 	{
 		::finalelumptype = FINALE_GRAPHIC;
 		::finalelump = options.pic;
 	}
-	else if (options.flat != NULL)
+	else if (!options.flat.empty())
 	{
 		::finalelumptype = FINALE_FLAT;
 		::finalelump = options.flat;
@@ -202,7 +196,7 @@ void F_StartFinale(finale_options_t& options)
 	else
 	{
 		::finalelumptype = FINALE_FLAT;
-		::finalelump = gameinfo.finaleFlat.c_str();
+		::finalelump = gameinfo.finaleFlat;
 	}
 
 	if (options.text)
@@ -338,14 +332,14 @@ void F_TextWrite ()
 	switch (finalelumptype)
 	{
 	case FINALE_GRAPHIC:
-		lump = W_CheckNumForName(finalelump, ns_global);
+		lump = W_CheckNumForName(finalelump.c_str(), ns_global);
 		if (lump >= 0)
 		{
 			screen->DrawPatchFullScreen((patch_t*)W_CachePatch(lump, PU_CACHE), true);
 		}
 		break;
 	case FINALE_FLAT:
-		lump = W_CheckNumForName(finalelump, ns_flats);
+		lump = W_CheckNumForName(finalelump.c_str(), ns_flats);
 		if (lump >= 0)
 		{
 			// Support high resolution flats
@@ -373,22 +367,22 @@ void F_TextWrite ()
 	V_MarkRect(x, y, width, height);
 
 	// draw some of the text onto the screen
-	int cx = 10, cy = 10;
+	int cx = gameinfo.textScreenX, cy = gameinfo.textScreenY;
 	const char* ch = finaletext;
 
-	if (finalecount < 11)
+	if (finalecount < gameinfo.textScreenY + 1)
 		return;
 
 	int count = (finalecount - 10) / TEXTSPEED;
-	for ( ; count ; count-- )
+	for ( ; count; count-- )
 	{
 		int c = *ch++;
 		if (!c)
 			break;
 		if (c == '\n')
 		{
-			cx = 10;
-			cy += 11;
+			cx = gameinfo.textScreenX;
+			cy += 11; // (gamemission == heretic) ? 10 : 11;
 			continue;
 		}
 
@@ -399,15 +393,14 @@ void F_TextWrite ()
 			continue;
 		}
 
-		const patch_t* ch = W_ResolvePatchHandle(hu_font[c]);
+		const patch_t* chr = W_ResolvePatchHandle(hu_font[c]);
 
-		const int w = ch->width();
+		const int w = chr->width();
 		if (cx + w > width)
 			break;
-		screen->DrawPatchClean(ch, cx, cy);
+		screen->DrawPatchClean(chr, cx, cy);
 		cx += w;
 	}
-
 }
 
 //
@@ -421,7 +414,7 @@ typedef struct
 	mobjtype_t	type;
 } castinfo_t;
 
-castinfo_t		castorder[] = {
+castinfo_t castorder[] = {
 	{NULL, MT_POSSESSED},
 	{NULL, MT_SHOTGUY},
 	{NULL, MT_CHAINGUY},
@@ -443,14 +436,14 @@ castinfo_t		castorder[] = {
 	{NULL, MT_UNKNOWNTHING}
 };
 
-static int 			castnum;
-static int 			casttics;
-static int			castsprite;
-static state_t*		caststate;
-static BOOL	 		castdeath;
-static int 			castframes;
-static int 			castonmelee;
-static BOOL	 		castattacking;
+static int 		castnum;
+static int 		casttics;
+static int		castsprite;
+static state_t*	caststate;
+static bool	 	castdeath;
+static int 		castframes;
+static int 		castonmelee;
+static bool	 	castattacking;
 
 
 //
@@ -867,19 +860,19 @@ void F_Drawer (void)
 				default:
 				case '1':
 				{
-					const char* page = !level.endpic.empty() ? level.endpic.c_str() : gameinfo.finalePage1;
+					const char* page = !level.endpic.empty() ? level.endpic.c_str() : gameinfo.finalePage[0].c_str();
 
 					F_DrawEndPic(page);
 					break;
 				}
 				case '2':
-					F_DrawEndPic(gameinfo.finalePage2);
+			        F_DrawEndPic(gameinfo.finalePage[1].c_str());
 					break;
 				case '3':
 					F_BunnyScroll ();
 					break;
 				case '4':
-					F_DrawEndPic(gameinfo.finalePage3);
+			        F_DrawEndPic(gameinfo.finalePage[2].c_str());
 					break;
 			}
 			break;

@@ -376,19 +376,6 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 //
 std::string D_GetTitleString()
 {
-	if (gamemission == pack_tnt)
-		return "DOOM 2: TNT - Evilution";
-	if (gamemission == pack_plut)
-		return "DOOM 2: Plutonia Experiment";
-	if (gamemission == chex)
-		return "Chex Quest";
-	if (gamemission == retail_freedoom)
-		return "Ultimate FreeDoom";
-	if (gamemission == commercial_freedoom)
-		return "FreeDoom";
-	if (gamemission == commercial_hacx)
-		return "HACX";
-
 	return gameinfo.titleString;
 }
 

@@ -84,6 +84,7 @@
 #include "g_horde.h"
 #include "w_ident.h"
 #include "gui_boot.h"
+#include "g_episode.h"
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -321,24 +322,24 @@ void D_Display()
 	// draw pause pic
 	if (paused && !menuactive)
 	{
-		patch_t *pause = W_CachePatch ("M_PAUSE");
-		int y;
+		const patch_t* pause = W_CachePatch(gameinfo.pauseSign.c_str());
 
-		y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
+		// todo: properly center "PAUSED" graphic for Heretic
+		const int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
 		screen->DrawPatchCleanNoMove (pause, (I_GetSurfaceWidth()-(pause->width())*CleanXfac)/2, y);
 	}
 
 	// [RH] Draw icon, if any
 	if (D_DrawIcon)
 	{
-		int lump = W_CheckNumForName (D_DrawIcon);
+		const int lump = W_CheckNumForName(D_DrawIcon);
 
 		D_DrawIcon = NULL;
 		if (lump >= 0)
 		{
-			patch_t *p = W_CachePatch (lump);
+			const patch_t *p = W_CachePatch(lump);
 
-			screen->DrawPatchIndirect (p, 160-p->width()/2, 100-p->height()/2);
+			screen->DrawPatchIndirect(p, 160-p->width()/2, 100-p->height()/2);
 		}
 		NoWipe = 10;
 	}
@@ -356,9 +357,9 @@ void D_Display()
 //
 //  D_DoomLoop
 //
-void D_DoomLoop (void)
+void D_DoomLoop()
 {
-	while (1)
+	while (true)
 	{
 		try
 		{
@@ -388,10 +389,10 @@ void D_DoomLoop (void)
 // D_PageTicker
 // Handles timing for warped projection
 //
-void D_PageTicker (void)
+void D_PageTicker()
 {
     if (--pagetic < 0)
-		D_AdvanceDemo ();
+		D_AdvanceDemo();
 }
 
 //
@@ -470,10 +471,7 @@ void D_DoAdvanceDemo (void)
     switch (demosequence)
     {
         case 0:
-            if (gameinfo.flags & GI_MAPxx)
-                pagetic = TICRATE * 11;
-            else
-                pagetic = 170;
+            pagetic = gameinfo.titleTime * TICRATE;
 
             gamestate = GS_DEMOSCREEN;
             pagename = gameinfo.titlePage.c_str();
@@ -488,9 +486,9 @@ void D_DoAdvanceDemo (void)
 
             break;
         case 2:
-            pagetic = 200;
+		    pagetic = gameinfo.pageTime * TICRATE;
             gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.creditPage1;
+            pagename = gameinfo.creditPages[0].c_str();
 
             break;
         case 3:
@@ -502,10 +500,8 @@ void D_DoAdvanceDemo (void)
 
             if ((gameinfo.flags & GI_MAPxx) || (gameinfo.flags & GI_MENUHACK_RETAIL))
             {
-				if (gameinfo.flags & GI_MAPxx)
-					pagetic = TICRATE * 11;
-				else
-					pagetic = 170;
+			    pagetic = gameinfo.titleTime * TICRATE;
+
                 pagename = gameinfo.titlePage.c_str();
                 currentmusic = gameinfo.titleMusic.c_str();
 
@@ -513,11 +509,8 @@ void D_DoAdvanceDemo (void)
             }
             else
             {
-                pagetic = 200;
-				if (gamemode == retail_chex)	// [ML] Chex mode just cycles this screen
-					pagename = gameinfo.creditPage1;
-				else
-					pagename = gameinfo.creditPage2;
+                pagetic = gameinfo.pageTime * TICRATE;
+			    pagename = gameinfo.creditPages[1].c_str();
             }
 
             break;
@@ -526,9 +519,9 @@ void D_DoAdvanceDemo (void)
 
             break;
         case 6:
-            pagetic = 200;
+		    pagetic = gameinfo.pageTime * TICRATE;
             gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.creditPage2;
+		    pagename = gameinfo.creditPages[1].c_str();
 
             break;
         case 7:
@@ -902,7 +895,7 @@ void D_DoomMain()
 	g_resetinvonexit = Args.CheckParm("-pistolstart");
 
 	// get skill / episode / map from parms
-	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+	strcpy(startmap, EpisodeMaps[0].c_str());
 
 	const char* val = Args.CheckValue("-skill");
 	if (val)

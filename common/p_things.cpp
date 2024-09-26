@@ -32,8 +32,9 @@
 #include "tables.h"
 #include "m_random.h"
 #include "c_console.h"
+#include "gi.h"
 
-EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR(sv_nomonsters)
 
 // List of spawnable things for the Thing_Spawn and Thing_Projectile specials.
 
@@ -198,7 +199,7 @@ BOOL P_Thing_Spawn (int tid, int type, angle_t angle, BOOL fog)
 	fixed_t z;
 	int rtn = 0;
 	int kind;
-	AActor *spot = NULL, *mobj;
+	AActor *spot = NULL;
 
 	if (type >= NumSpawnableThings)
 		return false;
@@ -216,7 +217,7 @@ BOOL P_Thing_Spawn (int tid, int type, angle_t angle, BOOL fog)
 		else
 			z = spot->z;
 
-		mobj = new AActor (spot->x, spot->y, z, (mobjtype_t)kind);
+		AActor* mobj = new AActor(spot->x, spot->y, z, (mobjtype_t)kind);
 
 		if (mobj)
 		{
@@ -225,7 +226,7 @@ BOOL P_Thing_Spawn (int tid, int type, angle_t angle, BOOL fog)
 				rtn++;
 				mobj->angle = angle;
 				if (fog)
-					S_Sound (new AActor (spot->x, spot->y, spot->z, MT_TFOG),
+					S_Sound (new AActor (spot->x, spot->y, spot->z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG),
 							 CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 				mobj->flags |= MF_DROPPED;	// Don't respawn
 				if (mobj->flags2 & MF2_FLOATBOB)
