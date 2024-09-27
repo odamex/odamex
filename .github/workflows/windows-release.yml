@@ -103,12 +103,12 @@ jobs:
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
         B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Archive x64 build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-Win-x64
         path: Output/zip/*.zip
     - name: Archive x64 pdb artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-Win-x64-pdb
         path: Output/pdb/*.zip
@@ -163,12 +163,12 @@ jobs:
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
         B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Archive x86 build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-Win-x86
         path: Output/zip/*.zip
     - name: Archive x86 pdb artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-Win-x86-pdb
         path: Output/pdb/*.zip
