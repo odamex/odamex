@@ -305,7 +305,7 @@ jobs:
           branch: release/${{env.new_version}}
       - name: Create Pull Request
         if: steps.check-branch-exists.outputs.exists == 'true'
-        run: gh pr create --head release/${{env.new_version}} --base $BASE --body "$BODY" --title "$TITLE" 
+        run: gh pr create --head "release/${{env.new_version}}" --base "$BASE" --body "$BODY" --title "$TITLE" 
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BASE: stable
