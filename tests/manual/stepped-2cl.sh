@@ -2,7 +2,7 @@
 #
 # Odamex demo regression stepped test
 #
-# Copyright (C) 2006-2023 by The Odamex Team.
+# Copyright (C) 2006-2024 by The Odamex Team.
 # Author: Michael Wood
 #
 # Derived from stepped.sh

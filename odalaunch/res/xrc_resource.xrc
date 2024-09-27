@@ -1664,7 +1664,7 @@
 											<flag>wxALIGN_CENTER|wxALL</flag>
 											<border>5</border>
 											<object class="wxStaticText" name="Id_StcTxtCopyright">
-												<label>Copyright (C) 2006-2023 The Odamex Team</label>
+												<label>Copyright (C) 2006-2024 The Odamex Team</label>
 												<wrap>-1</wrap>
 											</object>
 										</object>

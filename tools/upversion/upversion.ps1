@@ -13,11 +13,11 @@ $min = "$env:MINORVERSION"
 $patch = "$env:PATCHVERSION"
 
 if ([String]::IsNullOrWhiteSpace($maj)) {
-    $maj = "1"
+    $maj = "10"
 }
 
 if ([String]::IsNullOrWhiteSpace($min)) {
-    $min = "0"
+    $min = "6"
 }
 
 if ([String]::IsNullOrWhiteSpace($patch)) {
@@ -138,7 +138,7 @@ foreach ($file in $configverFiles) {
    }
 }
 
-# Update years (e.g. 2006-2023)
+# Update years (e.g. 2006-2024)
 foreach ($file in $yearFiles) {
    $filename = $file.FullName
    $content = Get-Content -Raw $filename
