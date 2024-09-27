@@ -13,7 +13,7 @@ if ($env:new_version.length -gt 0)
 }
 else
 {
-    Set-Variable -Name "OdamexVersion" -Value "10.2.0"
+    Set-Variable -Name "OdamexVersion" -Value "10.6.0"
 }
 
 if ($env:build_number.length -gt 0)
