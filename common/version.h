@@ -72,7 +72,7 @@
 // Used by configuration files.  upversion.py will update thie field
 // deterministically and unambiguously so newer versions always compare
 // greater.
-#define CONFIGVERSIONSTR "100"
+#define CONFIGVERSIONSTR "010060"
 
 #define DOTVERSIONSTR "10.6.0"
 #define GAMEVER (MAKEVER(10, 6, 0))
