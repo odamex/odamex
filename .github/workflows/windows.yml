@@ -1,6 +1,11 @@
 name: Windows
 
-on: [push, pull_request]
+on: 
+  push:
+    branches-ignore:
+    - 'release/[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+    
 
 jobs:
   pre_job:
@@ -110,7 +115,7 @@ jobs:
   #   runs-on: windows-latest
   #   steps:
   #   - name: Checkout source
-  #     uses: actions/checkout@v2
+  #     uses: actions/checkout@v4
   #   - name: Checkout submodules
   #     run: git submodule update --init --recursive
   #   - name: Install packages
