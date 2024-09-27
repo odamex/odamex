@@ -1,12 +1,17 @@
-# Release Creation
-# Runs on a new release branch creation
+# Release Upversion
+# Runs on release branch push (create method doesn't support ignoring tags yet)
 # Designed to run upversion and create a PR with the changes
+#
 # When the release is tagged and published, merge to stable
-# Before deleting
-name: Release-Creation-PR
+# before deleting
+name: Release-Upversion-PR
 
 on:
-  create:
+  push:
+    branches:
+      - 'release/[0-9]+.[0-9]+.[0-9]+' # Only run on major.minor.patch releases
+    tags-ignore:
+      - '**'
 
 permissions:
   contents: write
