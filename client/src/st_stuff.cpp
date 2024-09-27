@@ -954,15 +954,34 @@ void ST_updateWidgets()
 		st_chat = st_oldchat;
 }
 
+void ST_UpdateSurfaceBpp()
+{
+	int currentbpp = screen->getSurface()->getBitsPerPixel();
+	int stnumbpp = stnum_surface->getBitsPerPixel();
+	int stbarbpp = stbar_surface->getBitsPerPixel();
+
+	if (stbar_surface && stbarbpp != currentbpp)
+	{
+		delete stbar_surface;
+		stbar_surface = I_AllocateSurface(sbar_width, 32, currentbpp);
+	}
+
+	if (stnum_surface && stnumbpp != currentbpp)
+	{
+		delete stnum_surface;
+		stnum_surface = I_AllocateSurface(sbar_width, 32, currentbpp);
+	}
+}
+
 void ST_Ticker()
 {
+	ST_UpdateSurfaceBpp();
 	if (!multiplayer && !demoplayback && (ConsoleState == c_down || ConsoleState == c_falling))
 		return;
 	st_randomnumber = M_Random();
 	ST_updateWidgets();
 	st_oldhealth = displayplayer().health;
 }
-
 
 void ST_drawWidgets(bool force_refresh)
 {
@@ -1035,8 +1054,8 @@ static void ST_refreshBackground()
 		stbar_canvas->DrawPatch(W_ResolvePatchHandle(armsbg), ST_ARMSBGX + scaled_x, ST_ARMSBGY);
 	}
 
-	if (multiplayer)
-	{
+	//if (multiplayer)
+	//{
 		if (!demoplayback)
 		{
 			// [RH] Always draw faceback with the player's color
@@ -1050,7 +1069,7 @@ static void ST_refreshBackground()
 			stbar_canvas->DrawPatch(
 			    W_ResolvePatchHandle(faceclassic[displayplayer_id - 1]), ST_FX + scaled_x, ST_FY);
 		}
-	}
+	//}
 
 	stbar_surface->unlock();
 }
@@ -1364,9 +1383,19 @@ void ST_Init()
 	ST_loadData();
 
 	if (stbar_surface == NULL)
-		stbar_surface = I_AllocateSurface(sbar_width, 32, 8);
+	{
+		if (I_GetVideoBitDepth() == 32)
+			stbar_surface = I_AllocateSurface(sbar_width, 32, 32);
+		else
+			stbar_surface = I_AllocateSurface(sbar_width, 32, 8);
+	}
 	if (stnum_surface == NULL)
-		stnum_surface = I_AllocateSurface(sbar_width, 32, 8);
+	{
+		if (I_GetVideoBitDepth() == 32)
+			stnum_surface = I_AllocateSurface(sbar_width, 32, 32);
+		else
+			stnum_surface = I_AllocateSurface(sbar_width, 32, 8);
+	}
 }
 
 void STACK_ARGS ST_Shutdown()
