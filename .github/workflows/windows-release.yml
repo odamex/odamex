@@ -305,12 +305,13 @@ jobs:
           branch: release/${{env.new_version}}
       - name: Create Pull Request
         if: steps.check-branch-exists.outputs.exists == 'true'
-        run: gh pr create --head "release/${{env.new_version}}" --base "$BASE" --body "$BODY" --title "$TITLE" 
+        run: gh pr create --head "release/$env:NEW_VERSION" --base "$env:BASE" --body "$env:BODY" --title "$env:TITLE"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BASE: stable
           TITLE: Merge release/${{env.new_version}} to stable
           BODY: This PR covers the task of merging the release branch to stable, the final step in releasing a new version.
+          NEW_VERSION: ${{ env.new_version }}
 # build-mingw:
 #   name: Build (MinGW)
 #   runs-on: windows-latest
