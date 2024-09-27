@@ -84,6 +84,9 @@ jobs:
         PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     - name: Checkout submodules
       run: git submodule update --init --recursive
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
     - name: Turn on problem matcher
       uses: ammaraskar/msvc-problem-matcher@master
     - name: Remove .git folders
@@ -134,6 +137,9 @@ jobs:
         PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     - name: Checkout submodules
       run: git submodule update --init --recursive
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
     - name: Turn on problem matcher
       uses: ammaraskar/msvc-problem-matcher@master
     - name: Remove .git folders
@@ -184,16 +190,19 @@ jobs:
         PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     - name: Checkout submodules
       run: git submodule update --init --recursive
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
     - name: Create tar.gz
       shell: bash
       run: |
         touch odamex-src-${{ env.new_version }}.tar.gz
-        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -czvf odamex-src-${{ env.new_version }}.tar.gz .
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -czvf odamex-src-${{ env.new_version }}.tar.gz **
     - name: Create tar.xz
       shell: bash
       run: |
         touch odamex-src-${{ env.new_version }}.tar.xz
-        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -cJvf odamex-src-${{ env.new_version }}.tar.xz .
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -cJvf odamex-src-${{ env.new_version }}.tar.xz **
     - name: Create zip
       shell: pwsh
       run: |
