@@ -28,6 +28,7 @@
 #include "v_video.h"
 #include "m_random.h"
 #include "st_stuff.h"
+#include "r_main.h"
 
 //
 //		SCREEN WIPE PACKAGE
@@ -69,6 +70,8 @@ static inline void Wipe_Blend(argb_t* to, const argb_t* from, int fglevel, int b
 // heavily from Eternity Engine, written by James Haley and SoM.
 //
 
+static int oldworms[320];
+
 static int worms[320];
 
 static void Wipe_StartMelt()
@@ -89,6 +92,10 @@ static void Wipe_StartMelt()
 
 static void Wipe_StopMelt()
 {
+	for (int x = 0; x < 320; x++)
+	{
+		oldworms[x] = 0;
+	}
 }
 
 static bool Wipe_TickMelt()
@@ -97,6 +104,8 @@ static bool Wipe_TickMelt()
 
 	for (int x = 0; x < 320; x++)
 	{
+		oldworms[x] = worms[x];
+
 		if (worms[x] < 0)
 		{
 			++worms[x];
@@ -144,13 +153,15 @@ static void Wipe_DrawMelt()
 	{
 		int wormx = x * 320 / surface_width;
 		int wormy = worms[wormx] > 0 ? worms[wormx] : 0;
+		int oldwormy = oldworms[wormx] > 0 ? oldworms[wormx] : 0;
+		fixed_t worm_delta = oldwormy + FixedMul(render_lerp_amount, wormy - oldwormy);
 
-		wormy = wormy * surface_height / 200;
+		worm_delta = worm_delta * surface_height / 200;
 
 		if (surface->getBitsPerPixel() == 8)
-			Wipe_DrawMeltLoop<palindex_t>(x, wormy);
+			Wipe_DrawMeltLoop<palindex_t>(x, worm_delta);
 		else
-			Wipe_DrawMeltLoop<argb_t>(x, wormy);
+			Wipe_DrawMeltLoop<argb_t>(x, worm_delta);
 	}
 }
 
@@ -164,19 +175,22 @@ static void Wipe_DrawMelt()
 static const int FIREWIDTH = 64, FIREHEIGHT = 64;
 
 static byte *burnarray = NULL;
+static byte *oldburnarray = NULL;
 static int density;
 static int burntime;
 static int voop;
+const size_t array_size = FIREWIDTH * (FIREHEIGHT + 5);
 
 static void Wipe_StartBurn()
 {
-	const size_t array_size = FIREWIDTH * (FIREHEIGHT + 5);
 	burnarray = new byte[array_size];
 	memset(burnarray, 0, array_size);
+	oldburnarray = new byte[array_size];
+	memset(oldburnarray, 0, array_size);
 	density = 4;
 	burntime = 0;
 	voop = 0;
-	screen->GetBlock(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(), (byte*)wipe_screen);
+	screen->GetBlock(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight(), wipe_screen);
 }
 
 static void Wipe_StopBurn()
@@ -186,6 +200,12 @@ static void Wipe_StopBurn()
 		delete [] burnarray;
 		burnarray = NULL;
 	}
+
+	if (oldburnarray)
+	{
+		delete[] oldburnarray;
+		oldburnarray = NULL;
+	}
 }
 
 static bool Wipe_TickBurn()
@@ -193,6 +213,8 @@ static bool Wipe_TickBurn()
 	// This is a modified version of the fire from the player
 	// setup menu.
 	burntime++;
+
+	std::copy(burnarray, burnarray + array_size, oldburnarray);
 
 	// Make the fire burn (twice per tic)
 	for (int count = 0; count < 2; count++)
@@ -313,13 +335,16 @@ static inline void Wipe_DrawBurnGeneric()
 		for (x = 0, firex = 0; x < surface_width; x++, firex += xstep)
 		{
 			int fglevel = burnarray[(firex>>FRACBITS)+(firey>>FRACBITS)*FIREWIDTH] / 2;
+			int oldfglevel = oldburnarray[(firex>>FRACBITS)+(firey>>FRACBITS)*FIREWIDTH] / 2;
 
-			if (fglevel > 0 && fglevel < 63)
+			fixed_t fgdelta = oldfglevel + FixedMul(render_lerp_amount, fglevel - oldfglevel);
+
+			if (fgdelta > 0 && fgdelta < 63)
 			{
-				int bglevel = 64 - fglevel;
-				Wipe_Blend(&to[x], &from[x], fglevel, bglevel);
+				int bglevel = 64 - fgdelta;
+				Wipe_Blend(&to[x], &from[x], fgdelta, bglevel);
 			}
-			else if (fglevel == 0)
+			else if (fgdelta == 0)
 			{
 				to[x] = from[x];
 			}
@@ -370,12 +395,19 @@ static inline void Wipe_DrawFadeGeneric()
 	PIXEL_T* to = (PIXEL_T*)surface->getBuffer();
 	const PIXEL_T* from = (PIXEL_T*)wipe_screen;
 
-	const fixed_t bglevel = MAX(64 - fade, 0);
+	fixed_t newfade = fade - 2;
+
+	if (newfade < 2)
+		newfade = 2;
+
+	fixed_t fadedelta = newfade + FixedMul(render_lerp_amount, fade - newfade);
+
+	const fixed_t bglevel = MAX(64 - fadedelta, 0);
 
 	for (int y = 0; y < surface_height; y++)
 	{
 		for (int x = 0; x < surface_width; x++)
-			Wipe_Blend(&to[x], &from[x], fade, bglevel);
+			Wipe_Blend(&to[x], &from[x], fadedelta, bglevel);
 
 		from += surface_width;
 		to += surface_pitch_pixels;
@@ -498,6 +530,9 @@ bool Wipe_Ticker()
 // Renders the wipe animation independent of the ticker. This allows the video
 // framerate to be uncapped while the animation speed moves at the consistent
 // 35Hz ticrate.
+// 
+// It also allows us to interpolate the wipe with the framerate. Which we're doing.
+// Because we can.
 //
 void Wipe_Drawer()
 {

@@ -82,7 +82,7 @@ const int INV_BERSERK_TIME = 64 * 12;
  * @param check String to check.
  * @return True if string is a boolean.
  */
-static const bool StrBoolean(const char* check)
+static bool StrBoolean(const char* check)
 {
 	size_t len = strlen(check);
 	if (len == 0)
@@ -200,22 +200,22 @@ static std::string InvAmmoStr(const spawnInventory_t& inv, const ammotype_t type
 	StrFormat(rvo, "%d", inv.ammo[type]);
 	return rvo;
 }
-
+// unused
 /**
  * @brief Berserk status to string.
  */
-static std::string InvBerserkStr(const spawnInventory_t& inv)
-{
-	return inv.berserk ? "Yes" : "No";
-}
+//static std::string InvBerserkStr(const spawnInventory_t& inv)
+//{
+//	return inv.berserk ? "Yes" : "No";
+//}
 
 /**
  * @brief Backpack status to a string.
  */
-static std::string InvBackpackStr(const spawnInventory_t& inv)
-{
-	return inv.backpack ? "Yes" : "No";
-}
+//static std::string InvBackpackStr(const spawnInventory_t& inv)
+//{
+//	return inv.backpack ? "Yes" : "No";
+//}
 
 /**
  * @brief Invulnerability timer to string.

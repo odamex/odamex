@@ -198,6 +198,22 @@ BOOL P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, BOOL telefr
 	tmy = y;
 	tmz = z;
 
+	if (!P_IsVoodooDoll(thing))
+	{
+		player_t* player = thing->player;
+
+		if (player)
+		{
+			AActor* camera = player->camera;
+			if (camera)
+			{
+				camera->prevx = tmx;
+				camera->prevy = tmy;
+				player->prevviewz = tmz + player->viewheight;
+			}
+		}
+	}
+
 	tmbbox[BOXTOP] = y + tmthing->radius;
 	tmbbox[BOXBOTTOM] = y - tmthing->radius;
 	tmbbox[BOXRIGHT] = x + tmthing->radius;
@@ -411,8 +427,8 @@ BOOL PIT_CheckLine (line_t *ld)
     {
 		if ((ld->flags &
 		     (ML_BLOCKING | ML_BLOCKEVERYTHING)) || // explicitly blocking everything
-		    (!tmthing->player && (ld->flags & ML_BLOCKMONSTERS)) || // block monsters only
-		    (!tmthing->player && (ld->flags & ML_BLOCKLANDMONSTERS) &&
+		    (!tmthing->player && tmthing->type != MT_AVATAR && (ld->flags & ML_BLOCKMONSTERS)) || // block monsters only
+		    (!tmthing->player && tmthing->type != MT_AVATAR && (ld->flags & ML_BLOCKLANDMONSTERS) &&
 		     !(tmthing->flags & MF_FLOAT)) || // [Blair] Block land monsters.
 		    (tmthing->player &&
 		     (ld->flags & ML_BLOCKPLAYERS))) // [Blair] Block players only
@@ -431,10 +447,8 @@ BOOL PIT_CheckLine (line_t *ld)
 		{
 			const msecnode_t *node = tmthing->touching_sectorlist;
 			bool allow = false;
-			int count = 0;
 			while (node != NULL)
 			{
-				count++;
 				if (node->m_sector->floorplane.c < STEEPSLOPE)
 				{
 					allow = true;
@@ -2621,6 +2635,7 @@ void P_RailAttack (AActor *source, int damage, int offset)
 // [RH] PTR_CameraTraverse
 //
 fixed_t CameraX, CameraY, CameraZ;
+sector_t* CameraSector;
 #define CAMERA_DIST	0x1000	// Minimum distance between camera and walls
 
 BOOL PTR_CameraTraverse (intercept_t* in)
@@ -2711,6 +2726,7 @@ void P_AimCamera (AActor *t1)
 		fixed_t ceilingheight = P_CeilingHeight(x2, y2, subsector->sector) - CAMERA_DIST;
 		fixed_t floorheight = P_FloorHeight(x2, y2, subsector->sector) + CAMERA_DIST;
 		fixed_t frac = FRACUNIT;
+		CameraSector = subsector->sector;
 
 		if (CameraZ < floorheight) {
 			frac = FixedDiv (floorheight - shootz, CameraZ - shootz);
@@ -2911,8 +2927,8 @@ static BOOL PIT_DoomRadiusAttack(AActor* thing)
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if ((thing->type == MT_CYBORG && bombsource->type == MT_CYBORG) || 
-		(thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS) && 
+	if (((thing->type == MT_CYBORG && bombsource->type == MT_CYBORG) || 
+		(thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS)) && 
 		!(bombspot->flags3 & MF3_FORCERADIUSDMG)) 
 		return true;
 
@@ -2968,8 +2984,8 @@ static BOOL PIT_ZDoomRadiusAttack(AActor* thing)
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if ((thing->type == MT_CYBORG && bombsource->type == MT_CYBORG) ||
-	   (thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS) &&
+	if (((thing->type == MT_CYBORG && bombsource->type == MT_CYBORG) ||
+	   (thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS)) &&
 	   !(bombspot->flags3 & MF3_FORCERADIUSDMG)) 
 		return true;
 

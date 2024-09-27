@@ -74,7 +74,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 
 	byte playerstate = player.playerstate; //save playerstate to check enter/respawn script execution later...
 
-	if (player.playerstate == PST_REBORN || player.playerstate == PST_ENTER)
+	if (player.playerstate == PST_REBORN || player.playerstate == PST_ENTER || player.doreborn)
 		G_PlayerReborn(player);
 
 	AActor* mobj;
@@ -154,7 +154,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		}
 
 		team_t team = player.userinfo.team;
-		
+
 		// Log the spawn
 		if (!player.spectator)
 		{

@@ -100,6 +100,10 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 	case CVARTYPE_STRING:
 		info.push_back("String");
 		break;
+	case CVARTYPE_NONE:
+	case CVARTYPE_MAX:
+		return;
+		break;
 	}
 
 	// Default and range
@@ -159,6 +163,10 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 			StrFormat(buf, "Default: \"%s\"", cvar.getDefault().c_str());
 			info.push_back(buf);
 		}
+		break;
+	case CVARTYPE_NONE:
+	case CVARTYPE_MAX:
+		return;
 		break;
 	}
 

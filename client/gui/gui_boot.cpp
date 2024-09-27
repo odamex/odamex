@@ -126,6 +126,7 @@ class BootWindow : public Fl_Window
 		OPTIONS_LIST.push_back(std::make_pair("Fast Monsters", "-fast"));
 		OPTIONS_LIST.push_back(std::make_pair("Respawn Monsters", "-respawn"));
 		OPTIONS_LIST.push_back(std::make_pair("Pistol Start", "-pistolstart"));
+		OPTIONS_LIST.push_back(std::make_pair("Spawn Multiplayer Things", "-coop-things"));
 		{
 			Fl_Tabs* tabs = new Fl_Tabs(0, 0, 425, 200);
 			{
@@ -175,7 +176,7 @@ class BootWindow : public Fl_Window
 				m_tabPWADs->end();
 			} // Fl_Group* tabPWADs
 			{
-				Fl_Group* tabGameOptions = 
+				Fl_Group* tabGameOptions =
 					new Fl_Group(0, 25, 425, 175, "Game Options");
 				{
 					Fl_Box* o = new Fl_Box(
@@ -312,7 +313,7 @@ class BootWindow : public Fl_Window
 		BootWindow* boot = static_cast<BootWindow*>(data);
 
 		const int val = boot->m_PWADOrderBrowser->value() - 1;
-		if (val <= 0 || val >= boot->m_selectedPWADs.size())
+		if (val <= 0 || val >= static_cast<int>(boot->m_selectedPWADs.size()))
 			return;
 
 		std::iter_swap(boot->m_selectedPWADs.begin() + val,
@@ -326,7 +327,7 @@ class BootWindow : public Fl_Window
 		BootWindow* boot = static_cast<BootWindow*>(data);
 
 		const int val = boot->m_PWADOrderBrowser->value() - 1;
-		if (val < 0 || val >= boot->m_selectedPWADs.size() - 1)
+		if (val < 0 || val >= static_cast<int>(boot->m_selectedPWADs.size() - 1))
 			return;
 
 		std::iter_swap(boot->m_selectedPWADs.begin() + val,
@@ -394,7 +395,7 @@ class BootWindow : public Fl_Window
 		BootWindow* boot = static_cast<BootWindow*>(data);
 
 		const int val = boot->m_WADDirList->value() - 1;
-		if (val <= 0 || val >= boot->m_WADDirs.size())
+		if (val <= 0 || val >= static_cast<int>(boot->m_WADDirs.size()))
 			return;
 
 		std::iter_swap(boot->m_WADDirs.begin() + val, boot->m_WADDirs.begin() + val - 1);
@@ -408,7 +409,7 @@ class BootWindow : public Fl_Window
 		BootWindow* boot = static_cast<BootWindow*>(data);
 
 		const int val = boot->m_WADDirList->value() - 1;
-		if (val < 0 || val >= boot->m_WADDirs.size() - 1)
+		if (val < 0 || val >= static_cast<int>(boot->m_WADDirs.size() - 1))
 			return;
 
 		std::iter_swap(boot->m_WADDirs.begin() + val, boot->m_WADDirs.begin() + val + 1);
@@ -425,7 +426,7 @@ class BootWindow : public Fl_Window
 		BootWindow* boot = static_cast<BootWindow*>(data);
 
 		const int val = boot->m_WADDirList->value() - 1;
-		if (val < 0 || val >= boot->m_WADDirs.size())
+		if (val < 0 || val >= static_cast<int>(boot->m_WADDirs.size()))
 			return;
 
 		boot->m_WADDirs.erase(boot->m_WADDirs.begin() + val);
@@ -517,7 +518,14 @@ class BootWindow : public Fl_Window
 	{
 		// IWADs
 		const size_t value = static_cast<size_t>(m_IWADBrowser->value());
-		g_SelectedWADs.iwad = m_IWADs[value - 1].path;
+		scannedIWAD_t iwad = m_IWADs[value - 1];
+		g_SelectedWADs.iwad = iwad.path;
+
+		if (iwad.id != NULL && iwad.id->mIdName == "CHEX QUEST")
+		{
+			g_SelectedWADs.options.push_back("-deh");
+			g_SelectedWADs.options.push_back("chex.deh");
+		}
 
 		// PWADs
 		for (scannedPWADPtrs_t::iterator it = m_selectedPWADs.begin();

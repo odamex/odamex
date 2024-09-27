@@ -917,13 +917,13 @@ void Vote::parse(vote_result_t vote_result)
 
 	if (vote_result == VOTE_INTERRUPT)
 	{
-		SV_BroadcastPrintf("Vote %s interrupted! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
+		SV_BroadcastPrintf("Vote %s interrupted! (Yes: %lu, No: %lu, Abs: %lu)\n", this->votestring.c_str(), yes, no, abs);
 		return;
 	}
 
 	if (vote_result != VOTE_YES)
 	{
-		SV_BroadcastPrintf("Vote %s failed! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
+		SV_BroadcastPrintf("Vote %s failed! (Yes: %lu, No: %lu, Abs: %lu)\n", this->votestring.c_str(), yes, no, abs);
 
 		// Only set the timeout tic if the vote failed.
 		player_t caller = idplayer(this->caller_id);
@@ -935,7 +935,7 @@ void Vote::parse(vote_result_t vote_result)
 		return;
 	}
 
-	SV_BroadcastPrintf("Vote %s passed! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
+	SV_BroadcastPrintf("Vote %s passed! (Yes: %lu, No: %lu, Abs: %lu)\n", this->votestring.c_str(), yes, no, abs);
 
 	// NOTE: This can return false if there is an error, but we're already
 	//       catching errors in Vote_Runtic by seeing if the error is

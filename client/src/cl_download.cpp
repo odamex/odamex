@@ -25,7 +25,9 @@
 
 #include "cl_download.h"
 
+#ifndef CURL_STATICLIB
 #define CURL_STATICLIB
+#endif
 #include "curl/curl.h"
 
 #include "c_dispatch.h"
@@ -171,15 +173,20 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 		return false;
 	}
 
-	if (W_IsFilenameCommercialIWAD(filename.getBasename()))
+	if (W_IsFilenameCommercialWAD(filename.getBasename()))
 	{
-		Printf(PRINT_WARNING, "Refusing to download commercial IWAD file.\n");
+		Printf(PRINT_WARNING, "%s is a commercial WAD file and cannot be downloaded by Odamex.\n"
+		                      "A copy can be obtained through purchasing DOOM + DOOM II from Steam or GOG.\n",
+							  filename.getBasename().c_str());
 		return false;
 	}
 
-	if (W_IsFilehashCommercialIWAD(filename.getWantedMD5()))
+	if (W_IsFilehashCommercialWAD(filename.getWantedMD5()))
 	{
-		Printf(PRINT_WARNING, "Refusing to download renamed commercial IWAD file.\n");
+		const fileIdentifier_t* id = W_GameInfo(filename.getWantedMD5());
+		Printf(PRINT_WARNING, "%s is a renamed commercial wad file containing %s.\n"
+		                      "A copy of %s can be obtained through purchasing DOOM + DOOM II from Steam or GOG.\n",
+							  filename.getBasename().c_str(), id->mNiceName.c_str(), id->mFilename.c_str());
 		return false;
 	}
 

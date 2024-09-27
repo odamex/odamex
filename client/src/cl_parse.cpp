@@ -63,6 +63,7 @@
 #include "p_mapformat.h"
 #include "infomap.h"
 #include "cl_replay.h"
+#include "r_interp.h"
 
 // Extern data from other files.
 
@@ -1143,6 +1144,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
 		// about players/sectors jumping to new positions when the displayplayer spawns
 		CL_ResyncWorldIndex();
+		OInterpolation::getInstance().resetBobInterpolation();
 	}
 
 	if (level.behavior && !p->spectator && p->playerstate == PST_LIVE)
@@ -1169,7 +1171,7 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	uint32_t netid = msg->netid();
 	uint32_t attackerid = msg->inflictorid();
 	int healthDamage = msg->health_damage();
-	int armorDamage = msg->armor_damage();
+	//int armorDamage = msg->armor_damage(); // unused for now...
 	int health = msg->player().health();
 	int armorpoints = msg->player().armorpoints();
 
@@ -1370,9 +1372,9 @@ static void CL_Print(const odaproto::svc::Print* msg)
 
 	// TODO : Clientchat moved, remove that but PRINT_SERVERCHAT
 	if (level == PRINT_CHAT)
-		Printf(level, "%s*%s", TEXTCOLOR_ESCAPE, str);
+		Printf(level, "%c*%s", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_TEAMCHAT)
-		Printf(level, "%s!%s", TEXTCOLOR_ESCAPE, str);
+		Printf(level, "%c!%s", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
 		Printf(level, "%s%s", TEXTCOLOR_YELLOW, str);
 	else
@@ -1835,7 +1837,7 @@ static void CL_CTFRefresh(const odaproto::svc::CTFRefresh* msg)
 		team_t team = static_cast<team_t>(i);
 		TeamInfo* teamInfo = GetTeamInfo(team);
 
-		if (i < msg->team_info_size())
+		if (i < static_cast<size_t>(msg->team_info_size()))
 		{
 			const odaproto::svc::CTFRefresh_TeamInfo& info = msg->team_info().Get(i);
 
@@ -1971,8 +1973,8 @@ static void CL_CTFEvent(const odaproto::svc::CTFEvent* msg)
 static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 {
 	player_t& player = idplayer(msg->pid());
-	size_t sectornum = msg->sectornum();
-	short special = msg->sector().special();
+	int sectornum = static_cast<int>(msg->sectornum());
+	//short special = msg->sector().special();
 
 	if (!::sectors || sectornum >= numsectors)
 		return;

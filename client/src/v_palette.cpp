@@ -527,7 +527,7 @@ static std::string V_GetColorStringByName(const std::string& name)
 
 			if (!stricmp(com_token, name.c_str()))
 			{
-				sprintf(descr, "%04x %04x %04x",
+				snprintf(descr, 15, "%04x %04x %04x",
 						 (c[0] << 8) | c[0],
 						 (c[1] << 8) | c[1],
 						 (c[2] << 8) | c[2]);
@@ -607,7 +607,7 @@ void V_InitPalette(const char* lumpname)
 {
 	palette_lumpname = lumpname;
 
-	int lumpnum = W_GetNumForName(palette_lumpname.c_str());
+	const int lumpnum = W_GetNumForName(palette_lumpname);
 	if (lumpnum < 0)
 		I_FatalError("Could not initialize %s palette", palette_lumpname.c_str());
 
@@ -680,7 +680,7 @@ static void V_DoBlending(argb_t* dest, const argb_t* source, argb_t color)
 }
 
 
-static const float lightScale(float a)
+static float lightScale(float a)
 {
 	// NOTE(jsd): Revised inverse logarithmic scale; near-perfect match to COLORMAP lump's scale
 	// 1 - ((Exp[1] - Exp[a*2 - 1]) / (Exp[1] - Exp[-1]))
@@ -1149,7 +1149,7 @@ void V_DoPaletteEffects()
 		{
 			// [SL] Load palette_num from disk and setup game_palette
 			current_palette_num = palette_num;
-			const byte* data = (byte*)W_CacheLumpName(palette_lumpname.c_str(), PU_CACHE) + palette_num * 768;
+			const byte* data = (byte*)W_CacheLumpName(palette_lumpname, PU_CACHE) + palette_num * 768;
 
 			for (int i = 0; i < 256; i++, data += 3)
 			{
@@ -1185,7 +1185,7 @@ void V_DoPaletteEffects()
 		// red tint for pain / berzerk power
 		if (plyr->damagecount || plyr->powers[pw_strength])
 		{
-			float red_amount = (float)plyr->damagecount;
+			float red_amount = static_cast<float>(plyr->damagecount);
 			if (!multiplayer || sv_allowredscreen)
 				red_amount *= r_painintensity;
 

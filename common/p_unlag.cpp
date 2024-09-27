@@ -21,12 +21,12 @@
 //   for players firing hitscan weapons such as shotguns/chaingun.  The end
 //   result is that players should no longer need to lead their opponents
 //   with hitscan weapons.
-//  
+//
 //   It maintains a history of the positions of every player and the
 //   floor/ceiling heights of every moving sector.  When a player tries to fire
 //   a hitscan weapon, the system calculates that client's lag X, moves all
 //   other players (excluding the shooter) to their position X tics ago, fires
-//   the weapon, then moves all the players back to their original position.  
+//   the weapon, then moves all the players back to their original position.
 //   In the system, this is refered to as 'reconciling' (moving players to a
 //   prior position) and 'restoring' (moving players back to their proper
 //   positions).
@@ -91,7 +91,7 @@ Unlag& Unlag::getInstance()
 
 Unlag::~Unlag()
 {
-	Unlag::reset();   
+	Unlag::reset();
 }
 
 //
@@ -99,7 +99,7 @@ Unlag::~Unlag()
 //
 // Denotes whether a multiplayer game is running on the server.
 //
- 
+
 bool Unlag::enabled()
 {
 	return (serverside && multiplayer && !demoplayback);
@@ -130,7 +130,7 @@ void Unlag::movePlayer(player_t *player, fixed_t x, fixed_t y, fixed_t z)
 // ceilingheight and floorheight respectively
 //
 
-void Unlag::moveSector(sector_t *sector, fixed_t ceilingheight, 
+void Unlag::moveSector(sector_t *sector, fixed_t ceilingheight,
 					   fixed_t floorheight)
 {
 	P_SetCeilingHeight(sector, ceilingheight);
@@ -160,7 +160,7 @@ void Unlag::reconcilePlayerPositions(byte shooter_id, size_t ticsago)
 		// skip over the player shooting and any spectators
 		if (player->id == shooter_id || player->spectator || !player->mo)
 			continue;
-	
+
 		fixed_t dest_x, dest_y, dest_z; // position to move player to
 
 		if (!reconciled)
@@ -170,7 +170,7 @@ void Unlag::reconcilePlayerPositions(byte shooter_id, size_t ticsago)
 			player_history[i].backup_x = player->mo->x;
 			player_history[i].backup_y = player->mo->y;
 			player_history[i].backup_z = player->mo->z;
-  
+
   			size_t cur = (gametic - ticsago) % Unlag::MAX_HISTORY_TICS;
 
 			dest_x = player_history[i].history_x[cur];
@@ -210,9 +210,9 @@ void Unlag::reconcilePlayerPositions(byte shooter_id, size_t ticsago)
 				player->mo->flags = player_history[i].backup_flags;
 				player_history[i].changed_flags = false;
 			}
-		}   
+		}
 
-		movePlayer(player, dest_x, dest_y, dest_z); 
+		movePlayer(player, dest_x, dest_y, dest_z);
 	}
 }
 
@@ -242,18 +242,18 @@ void Unlag::reconcileSectorPositions(size_t ticsago)
 			sector_history[i].backup_ceilingheight = P_CeilingHeight(sector);
 			sector_history[i].backup_floorheight = P_FloorHeight(sector);
 
-			size_t cur = (sector_history[i].history_size - 1 - ticsago) 
+			size_t cur = (sector_history[i].history_size - 1 - ticsago)
 						  % Unlag::MAX_HISTORY_TICS;
 			dest_ceilingheight = sector_history[i].history_ceilingheight[cur];
 			dest_floorheight = sector_history[i].history_floorheight[cur];
 		}
-		else	// restore to original positions 
+		else	// restore to original positions
 		{
 			dest_ceilingheight = sector_history[i].backup_ceilingheight;
 			dest_floorheight = sector_history[i].backup_floorheight;
 		}
 		moveSector(sector, dest_ceilingheight, dest_floorheight);
-	}	
+	}
 }
 
 
@@ -287,25 +287,25 @@ void Unlag::recordPlayerPositions()
 	for (size_t i=0; i<player_history.size(); i++)
 	{
 		player_t *player = player_history[i].player;
-	
-		if (player->playerstate == PST_LIVE && 
+
+		if (player->playerstate == PST_LIVE &&
 			!player->spectator && player->mo)
 		{
 			player_history[i].history_size++;
-			
+
 			size_t cur = gametic % Unlag::MAX_HISTORY_TICS;
 			player_history[i].history_x[cur] = player->mo->x;
 			player_history[i].history_y[cur] = player->mo->y;
 			player_history[i].history_z[cur] = player->mo->z;
-			
+
 			#ifdef _UNLAG_DEBUG_
 			DPrintf("Unlag (%03d): recording player %d position (%d, %d)\n",
-					gametic & 0xFF, player->id, 
+					gametic & 0xFF, player->id,
 					player->mo->x >> FRACBITS,
 					player->mo->y >> FRACBITS,
 					player->mo->z >> FRACBITS);
-			#endif	// _UNLAG_DEBUG_			
-		} 
+			#endif	// _UNLAG_DEBUG_
+		}
 		else
 		{   // reset history for dead, spectating, etc players
 			player_history[i].history_size = 0;
@@ -329,7 +329,7 @@ void Unlag::recordSectorPositions()
 	{
 		sector_t *sector = sector_history[i].sector;
 
-		size_t cur = sector_history[i].history_size++ 
+		size_t cur = sector_history[i].history_size++
 					 % Unlag::MAX_HISTORY_TICS;
 		sector_history[i].history_ceilingheight[cur] = P_CeilingHeight(sector);
 		sector_history[i].history_floorheight[cur] = P_FloorHeight(sector);
@@ -343,7 +343,7 @@ void Unlag::recordSectorPositions()
 // Updates the pointer to player_t in each player history record.
 // The address of a player's player_t can change when a player is added to or
 // removed from the global 'players' vector.  Also recreate the player_id_map.
-// 
+//
 
 void Unlag::refreshRegisteredPlayers()
 {
@@ -352,7 +352,7 @@ void Unlag::refreshRegisteredPlayers()
 	{
 		byte id = player_history[i].player_id;
 
-		player_history[i].player = &idplayer(id);		
+		player_history[i].player = &idplayer(id);
 		player_id_map[id] = i;
 	}
 }
@@ -446,7 +446,7 @@ void Unlag::unregisterSector(sector_t *sector)
 	for (size_t i=0; i<sector_history.size(); i++)
 	{
 		// note: comparing the pointers to the sector_t objects
-		if (sector_history[i].sector == sector)  
+		if (sector_history[i].sector == sector)
 		{
 			sector_history.erase(sector_history.begin() + i);
 			return;
@@ -467,12 +467,12 @@ void Unlag::unregisterSector(sector_t *sector)
 void Unlag::reconcile(byte shooter_id)
 {
 	if (!Unlag::enabled())
-		return;	
+		return;
 
 	size_t player_index = player_id_map[shooter_id];
 
 	size_t lag = player_history[player_index].current_lag;
-	
+
 	#ifdef _UNLAG_DEBUG_
 	DPrintf("Unlag (%03d): moving players to their positions at gametic %d (%d tics ago)\n",
 			gametic & 0xFF, (gametic - lag) & 0xFF, lag);
@@ -494,13 +494,13 @@ void Unlag::reconcile(byte shooter_id)
 		if (mo)
 			mo->Destroy();
 	}
-	
+
 	if (lag > Unlag::MAX_HISTORY_TICS)
 		DPrintf("Unlag (%03d): player %d has too great of lag (%d tics)\n",
 				gametic & 0xFF, shooter_id, lag);
 	#endif	// _UNLAG_DEBUG_
 
-	if (lag > 0 && lag < Unlag::MAX_HISTORY_TICS) 
+	if (lag > 0 && lag < Unlag::MAX_HISTORY_TICS)
 	{
 		reconcileSectorPositions(lag);
 		reconcilePlayerPositions(shooter_id, lag);
@@ -527,7 +527,7 @@ void Unlag::restore(byte shooter_id)
 		reconcilePlayerPositions(shooter_id, 0);
 		reconciled = false;	 // reset after restoring original positions
 	}
-	
+
 	#ifdef _UNLAG_DEBUG_
 	debugReconciliation(shooter_id);
 	#endif	// _UNLAG_DEBUG_
@@ -555,10 +555,10 @@ void Unlag::setRoundtripDelay(byte player_id, byte svgametic)
 		maxdelay = Unlag::MAX_HISTORY_TICS;
 
 	size_t delay = ((gametic & 0xFF) + 256 - svgametic) & 0xFF;
-	
+
 	size_t player_index = player_id_map[player_id];
 	player_history[player_index].current_lag = MIN(delay, maxdelay);
-	
+
 	#ifdef _UNLAG_DEBUG_
 	DPrintf("Unlag (%03d): received gametic %d from player %d, lag = %d\n",
 					gametic & 0xFF, svgametic, player_id, delay);
@@ -574,10 +574,10 @@ void Unlag::setRoundtripDelay(byte player_id, byte svgametic)
 
 void Unlag::getReconciliationOffset(	byte target_id,
 			   	 			   			fixed_t &x, fixed_t &y, fixed_t &z)
-{  
+{
 	x = y = z = 0;
 
-	if (!reconciled)	// reconciled will only be true if sv_unlag is 1
+	if (!reconciled)
 		return;
 
 	size_t target_index  = player_id_map[target_id];
@@ -629,22 +629,22 @@ void Unlag::getCurrentPlayerPosition(	byte player_id,
 void Unlag::debugReconciliation(byte shooter_id)
 {
 	player_t *shooter = &(idplayer(shooter_id));
-	
+
 	for (size_t i = 0; i < player_history.size(); i++)
 	{
 		if (player_history[i].player->id == shooter_id)
-			continue;	
-	
+			continue;
+
 		for (size_t n = 0; n < MAX_HISTORY_TICS; n++)
 		{
 			if (n > player_history[i].history_size)
 				break;
-				
+
 			size_t cur = (gametic - n) % Unlag::MAX_HISTORY_TICS;
-		
+
 			fixed_t x = player_history[i].history_x[cur];
 			fixed_t y = player_history[i].history_y[cur];
-			
+
 			angle_t angle = P_PointToAngle(shooter->mo->x,	shooter->mo->y, x, y);
 			angle_t deltaangle = 	angle - shooter->mo->angle < ANG180 ?
 									angle - shooter->mo->angle :
@@ -653,7 +653,7 @@ void Unlag::debugReconciliation(byte shooter_id)
 			if (deltaangle < 3 * FRACUNIT)
 			{
 				DPrintf("Unlag (%03d): would have hit player %d at gametic %d (%" PRIuSIZE " tics ago)\n",
-						gametic & 0xFF, player_history[i].player->id, (gametic - n) & 0xFF, n);
+						gametic & 0xFF, player_history[i].player->id, (gametic - static_cast<int>(n)) & 0xFF, n);
 			}
 		}
 	}

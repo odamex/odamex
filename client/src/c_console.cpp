@@ -40,6 +40,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "r_main.h"
+#include "r_interp.h"
 #include "st_stuff.h"
 #include "s_sound.h"
 #include "cl_responderkeys.h"
@@ -74,7 +75,9 @@ static unsigned int		ConRows, ConCols, PhysRows;
 
 static bool				cursoron = false;
 static int				ConBottom = 0;
-static int		RowAdjust = 0;
+static int RowAdjust = 0;
+
+int			ConBottomStep; // Console fall/raise bottom pixels at the end of the tic, for interp purposes
 
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
@@ -291,7 +294,7 @@ public:
 
 	std::string		text;
 	size_t			cursor_position;
-	size_t			scrolled_columns;
+	int			scrolled_columns;
 
 private:
 	void doScrolling();
@@ -1147,7 +1150,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	char work[MAX_LINE_LENGTH];
 	brokenlines_t *lines;
 
-	int len = strlen(source);
+	size_t len = strlen(source);
 
 	if ((printlevel != 128 && !show_messages) || len == 0 ||
 		(gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) )
@@ -1161,7 +1164,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 
 	if (addtype == APPENDLINE && NotifyStrings[NUMNOTIFIES-1].printlevel == printlevel)
 	{
-		sprintf(work, "%s%s", NotifyStrings[NUMNOTIFIES-1].text, source);
+		snprintf(work, MAX_LINE_LENGTH, "%s%s", NotifyStrings[NUMNOTIFIES - 1].text, source);
 		lines = V_BreakLines(width, work);
 	}
 	else
@@ -1205,7 +1208,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 // Prints the given string to stdout, stripping away any color markup
 // escape codes.
 //
-static int C_PrintStringStdOut(const char* str)
+static size_t C_PrintStringStdOut(const char* str)
 {
 	std::string sanitized_str(str);
 	StripColorCodes(sanitized_str);
@@ -1223,7 +1226,7 @@ static int C_PrintStringStdOut(const char* str)
 // Provide our own Printf() that is sensitive of the
 // console status (in or out of game).
 // 
-static int C_PrintString(int printlevel, const char* color_code, const char* outline)
+static size_t C_PrintString(int printlevel, const char* color_code, const char* outline)
 {
 	if (I_VideoInitialized() && !midprinting)
 	{
@@ -1296,7 +1299,7 @@ static int C_PrintString(int printlevel, const char* color_code, const char* out
 	return strlen(outline);
 }
 
-static int VPrintf(int printlevel, const char* color_code, const char* format, va_list parms)
+static size_t VPrintf(int printlevel, const char* color_code, const char* format, va_list parms)
 {
 	char outline[MAX_LINE_LENGTH], outlinelog[MAX_LINE_LENGTH];
 
@@ -1309,8 +1312,8 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	// ToDo: there may be more characters not allowed on a consoleprint, 
 	// maybe restrict a few ASCII stuff later on ?
-	int len = strlen(outline);
-	for (int i = 0; i < len; i++)
+	size_t len = strlen(outline);
+	for (size_t i = 0; i < len; i++)
 	{
 		if (outline[i] == 0x07)
 			outline[i] = '.';
@@ -1322,7 +1325,7 @@ static int VPrintf(int printlevel, const char* color_code, const char* format, v
 		strcpy(outlinelog, outline);
 
 		// [Nes] - Horizontal line won't show up as-is in the logfile.
-		for (int i = 0; i < len; i++)
+		for (size_t i = 0; i < len; i++)
 		{
 			if (outlinelog[i] == '\35' || outlinelog[i] == '\36' || outlinelog[i] == '\37')
 				outlinelog[i] = '=';
@@ -1430,10 +1433,27 @@ void C_Ticker()
 {
 	int surface_height = I_GetSurfaceHeight();
 
-	static int lasttic = 0;
-
-	if (lasttic == 0)
-		lasttic = gametic - 1;
+	if (ConsoleState == c_falling)
+	{
+		ConBottomStep += (surface_height * 2 / 25);
+	}
+	else if (ConsoleState == c_fallfull)
+	{
+		ConBottomStep += (surface_height * 2 / 15);
+	}
+	else if (ConsoleState == c_rising)
+	{
+		ConBottomStep -= (surface_height * 2 / 25);
+	}
+	else if (ConsoleState == c_risefull)
+	{
+		ConBottomStep -= (surface_height * 2 / 15);
+	}
+	else if (ConsoleState == c_up)
+	{
+		// Console suddenly snapped up? Don't interp it anymore.
+		ConBottomStep = 0;
+	}
 
 	if (ConsoleState != c_up)
 	{
@@ -1463,43 +1483,6 @@ void C_Ticker()
 				RowAdjust = 0;
 		}
 
-		if (ConsoleState == c_falling)
-		{
-			ConBottom += (gametic - lasttic) * (surface_height * 2 / 25);
-			if (ConBottom >= surface_height / 2)
-			{
-				ConBottom = surface_height / 2;
-				ConsoleState = c_down;
-			}
-		}
-		else if (ConsoleState == c_fallfull)
-		{
-			ConBottom += (gametic - lasttic) * (surface_height * 2 / 15);
-			if (ConBottom >= surface_height)
-			{
-				ConBottom = surface_height;
-				ConsoleState = c_down;
-			}
-		}
-		else if (ConsoleState == c_rising)
-		{
-			ConBottom -= (gametic - lasttic) * (surface_height * 2 / 25);
-			if (ConBottom <= 0)
-			{
-				ConsoleState = c_up;
-				ConBottom = 0;
-			}
-		}
-		else if (ConsoleState == c_risefull)
-		{
-			ConBottom -= (gametic - lasttic) * (surface_height * 2 / 15);
-			if (ConBottom <= 0)
-			{
-				ConsoleState = c_up;
-				ConBottom = 0;
-			}
-		}
-
 		if (RowAdjust + (ConBottom/8) + 1 > (unsigned int)con_buffersize.asInt())
 			RowAdjust = con_buffersize.asInt() - ConBottom;
 	}
@@ -1510,7 +1493,7 @@ void C_Ticker()
 		CursorTicker = C_BLINKRATE;
 	}
 
-	lasttic = gametic;
+	OInterpolation::getInstance().beginConsoleInterpolation(render_lerp_amount);
 }
 
 
@@ -1580,12 +1563,12 @@ static bool C_UseFullConsole()
 //
 void C_AdjustBottom()
 {
-	int surface_height = I_GetSurfaceHeight();
+	unsigned int surface_height = I_GetSurfaceHeight();
 
-	if (C_UseFullConsole())
-		ConBottom = surface_height; 
-	else if (ConsoleState == c_up)
+	if (ConsoleState == c_up)
 		ConBottom = 0;
+	else if (C_UseFullConsole())
+		ConBottom = surface_height; 
 	else if (ConsoleState == c_down || ConBottom > surface_height / 2)
 		ConBottom = surface_height / 2;
 
@@ -1672,7 +1655,7 @@ void C_ToggleConsole()
 	}
 	else
 	{
-		if (ConBottom == I_GetSurfaceHeight())
+		if (ConBottom == static_cast<unsigned int>(I_GetSurfaceHeight()))
 			ConsoleState = c_risefull;
 		else
 			ConsoleState = c_rising;
@@ -1687,6 +1670,68 @@ void C_ToggleConsole()
 
 
 //
+// C_DisplayTicker
+//
+// This allows us to tic things separate from the gametics
+// So we can enable smoother display of console falling/rising
+//
+void C_DisplayTicker()
+{
+	unsigned int surface_height = I_GetSurfaceHeight();
+
+	// Attaching ConBottom to gametic will still cause falling/rising to
+	// be pinned to the gametic i.e. 35fps.
+
+	// Interp where the console bottom should be based on current and previous 
+	fixed_t bottom =
+		OInterpolation::getInstance().getInterpolatedConsoleBottom(render_lerp_amount);
+
+	if (ConsoleState == c_falling)
+	{
+		ConBottom = bottom;
+		if (ConBottom >= surface_height / 2)
+		{
+			ConBottom = surface_height / 2;
+			ConBottomStep = surface_height / 2;
+			ConsoleState = c_down;
+		}
+	}
+	else if (ConsoleState == c_fallfull)
+	{
+		ConBottom = bottom;
+		if (ConBottom >= surface_height)
+		{
+			ConBottom = surface_height;
+			ConBottomStep = surface_height;
+			ConsoleState = c_down;
+		}
+	}
+	else if (ConsoleState == c_rising)
+	{
+		ConBottom = bottom;
+		if (ConBottom <= 0)
+		{
+			ConsoleState = c_up;
+			ConBottom = 0;
+			ConBottomStep = 0;
+		}
+	}
+	else if (ConsoleState == c_risefull)
+	{
+		ConBottom = bottom;
+		if (ConBottom <= 0)
+		{
+			ConsoleState = c_up;
+			ConBottom = 0;
+			ConBottomStep = 0;
+		}
+	}
+
+	if (RowAdjust + (ConBottom / 8) + 1 > (unsigned int)con_buffersize.asInt())
+		RowAdjust = con_buffersize.asInt() - ConBottom;
+}
+
+//
 // C_DrawConsole
 //
 void C_DrawConsole()
@@ -1696,7 +1741,7 @@ void C_DrawConsole()
 	int primary_surface_height = primary_surface->getHeight();
 
 	int left = 8;
-	int lines = (ConBottom - 12) / 8;
+	size_t lines = (ConBottom - 12) / 8;
 
 	int offset;
 	if (lines * 8 > ConBottom - 16)
@@ -1768,7 +1813,7 @@ void C_DrawConsole()
 			// Stamp out the bar...if we have enough room - if we at tiny
 			// resolutions we may not.
 			size_t dltxtlen = download.length();
-			ptrdiff_t barchars = chars - dltxtlen;
+			size_t barchars = chars - dltxtlen;
 
 			if (barchars >= 2)
 			{
@@ -1798,14 +1843,14 @@ void C_DrawConsole()
 		if (TickerMax)
 		{
 			char tickstr[256];
-			unsigned int i, tickend = ConCols - primary_surface_width / 90 - 6;
-			unsigned int tickbegin = 0;
+			size_t i, tickend = ConCols - primary_surface_width / 90 - 6;
+			size_t tickbegin = 0;
 
 			if (TickerLabel)
 			{
 				tickbegin = strlen(TickerLabel) + 2;
 				tickend -= tickbegin;
-				sprintf(tickstr, "%s: ", TickerLabel);
+				snprintf(tickstr, 256, "%s: ", TickerLabel);
 			}
 			if (tickend > 256 - 8)
 				tickend = 256 - 8;
@@ -1817,7 +1862,8 @@ void C_DrawConsole()
 			if (i > tickend)
 				i = tickend;
 			tickstr[i] = -125;
-			sprintf(tickstr + tickend + 3, "%u%%", (TickerAt * 100) / TickerMax);
+			size_t buflen = 256 - tickend - 3;
+			snprintf(tickstr + tickend + 3, buflen, "%u%%", (TickerAt * 100) / TickerMax);
 			screen->PrintStr(8, ConBottom - 12, tickstr);
 		}
 	}
@@ -1869,7 +1915,7 @@ void C_DrawConsole()
 			{
 				// Prepare a row string to copy completions into.
 				memset(rowstring, ' ', ARRAY_LENGTH(rowstring));
-				unsigned int col = 0;
+				size_t col = 0;
 
 				for (size_t c = 0; c < cColumns; c++)
 				{
@@ -1899,7 +1945,7 @@ void C_DrawConsole()
 			// Render an overflow message if necessary.
 			if (cOverflow)
 			{
-				snprintf(rowstring, ARRAY_LENGTH(rowstring), "...and %lu more...",
+				snprintf(rowstring, ARRAY_LENGTH(rowstring), "...and %zu more...",
 				         ::CmdCompletions.size() - (cLines * cColumns));
 				screen->PrintStr(left, offset + (lines + cLines + 1) * 8, rowstring,
 				                 CR_YELLOW);

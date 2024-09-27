@@ -73,6 +73,7 @@ EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
 
 std::list<movingsector_t> movingsectors;
+std::list<sector_t*> specialdoors;
 bool s_SpecialFromServer;
 
 int P_FindSectorFromLineTag(int tag, int start);
@@ -141,7 +142,7 @@ int P_FindLineFromTag(int tag, int start)
 	return start;
 }
 
-const unsigned int P_ResetSectorTransferFlags(const unsigned int flags)
+unsigned int P_ResetSectorTransferFlags(const unsigned int flags)
 {
 	return (flags & ~SECF_TRANSFERMASK);
 }
@@ -215,10 +216,10 @@ int P_IsUnderDamage(AActor* actor)
 }
 
 /*
-* 
+*
 * P_IsFriendlyThing
 * @brief Helper function to determine if a particular thing is of friendly origin.
-* 
+*
 * @param actor Source actor
 * @param friendshiptest Thing to test friendliness
 */
@@ -580,7 +581,7 @@ static void P_InitAnimDefs ()
 	}
     catch (CRecoverableError &)
     {
-	    
+
     }
 }
 
@@ -764,6 +765,12 @@ bool P_CheckTag(line_t* line)
 	case 51:
 	case 124:
 	case 198:
+	case 2069:
+	case 2070:
+	case 2071:
+	case 2072:
+	case 2073:
+	case 2074:
 
 	case 48: // Scrolling walls
 	case 85:
@@ -1459,7 +1466,7 @@ int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start)
 
 /*
 * @brief checks to see if a ZDoom-style door can be unlocked.
-* 
+*
 * @param player: Player to key check
 * @param lock: ZDoom lock type
 * All ZDoom lock types are supported but Odamex is missing
@@ -2159,6 +2166,18 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
     return true;
 }
 
+void P_ApplySectorDamageNoWait(player_t* player, int damage, int mod)
+{
+	P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+}
+
+void P_ApplySectorDamageNoRandom(player_t* player, int damage, int mod)
+{
+	if (!player->powers[pw_ironfeet])
+		if (!(level.time & 0x1f))
+			P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+}
+
 void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod)
 {
 	if (!player->powers[pw_ironfeet] || (leak && P_Random(player->mo)<leak))
@@ -2260,7 +2279,9 @@ void P_UpdateSpecials (void)
 		}
 	}
 
-	// [ML] 5/11/06 - Remove sky scrolling ability
+	// Update sky column offsets
+	sky1columnoffset += level.sky1ScrollDelta & 0xffffff;
+	sky2columnoffset += level.sky2ScrollDelta & 0xffffff;
 }
 
 

@@ -72,10 +72,10 @@
 // Used by configuration files.  upversion.py will update thie field
 // deterministically and unambiguously so newer versions always compare
 // greater.
-#define CONFIGVERSIONSTR "010050"
+#define CONFIGVERSIONSTR "010060"
 
-#define DOTVERSIONSTR "10.5.0"
-#define GAMEVER (MAKEVER(10, 5, 0))
+#define DOTVERSIONSTR "10.6.0"
+#define GAMEVER (MAKEVER(10, 6, 0))
 
 #define COPYRIGHTSTR "Copyright (C) 2006-2024 The Odamex Team"
 
@@ -91,7 +91,7 @@
 // earlier than this version.  Needs to be exactly 16 chars long.
 // 
 // upversion.py will update thie field deterministically and unambiguously.
-#define SAVESIG "ODAMEXSAVE010050"
+#define SAVESIG "ODAMEXSAVE010060"
 
 #define NETDEMOVER 3
 

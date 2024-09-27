@@ -107,7 +107,7 @@ bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 	return buttonSuccess;
 }
 
-const LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int activationType)
+LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int activationType)
 {
 	if (activationType & (ML_SPAC_CROSS | ML_SPAC_MCROSS | ML_SPAC_PCROSS | ML_SPAC_CROSSTHROUGH))
 		return LineCross;
@@ -134,7 +134,7 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 	lineActivation = line->flags & ML_SPAC_MASK;
 
 	if (line->special == Teleport &&
-	    (lineActivation & ML_SPAC_CROSS | ML_SPAC_CROSSTHROUGH) &&
+	    (lineActivation & ML_SPAC_CROSS || lineActivation & ML_SPAC_CROSSTHROUGH) &&
 	    activationType & ML_SPAC_PCROSS && mo && mo->flags & MF_MISSILE)
 	{ // Let missiles use regular player teleports
 		lineActivation |= ML_SPAC_PCROSS;
@@ -247,25 +247,40 @@ void P_PlayerInZDoomSector(player_t* player)
 				player->hazardcount += sector->damageamount;
 				player->hazardinterval = sector->damageinterval;
 			}
-			else
+
+			if (sector->special == 0) // ZDoom Static Init Damage
 			{
-				if (level.time % sector->damageinterval == 0)
+				if (sector->damageamount < 20)
 				{
-					P_DamageMobj(player->mo, NULL, NULL, sector->damageamount);
-
-					if (sector->flags & SECF_ENDLEVEL && player->health <= 10)
-					{
-						if (serverside && sv_allowexit)
-						{
-							G_ExitLevel(0, 1);
-						}
-					}
-
-					if (sector->flags & SECF_DMGTERRAINFX)
-					{
-						// MAP_FORMAT_TODO: damage special effects
-					}
+					P_ApplySectorDamageNoRandom(player, sector->damageamount,
+					 MOD_UNKNOWN);
 				}
+				else if (sector->damageamount < 50)
+				{
+					P_ApplySectorDamage(player, sector->damageamount, 5, MOD_UNKNOWN);
+				}
+				else
+				{
+					P_ApplySectorDamageNoWait(player, sector->damageamount,
+					 MOD_UNKNOWN);
+				}
+			}
+			else if (level.time % sector->damageinterval == 0)
+			{
+				P_DamageMobj(player->mo, NULL, NULL, sector->damageamount);
+			}
+
+			if (sector->flags & SECF_ENDLEVEL && player->health <= 10)
+			{
+				if (serverside && sv_allowexit)
+				{
+					G_ExitLevel(0, 1);
+				}
+			}
+
+			if (sector->flags & SECF_DMGTERRAINFX)
+			{
+				// MAP_FORMAT_TODO: damage special effects
 			}
 		}
 	}
@@ -1052,7 +1067,7 @@ bool P_ExecuteZDoomLineSpecial(int special, short* args, line_t* line, int side,
 		                                args[4]);
 }
 
-const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags)
+unsigned int P_TranslateZDoomLineFlags(const unsigned int flags)
 {
 	unsigned int result = flags & 0x1ff;
 

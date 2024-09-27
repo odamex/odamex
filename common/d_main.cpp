@@ -174,6 +174,12 @@ static const char* steam_install_subdirs[] =
 	"steamapps\\common\\ultimate doom\\base",
 	"steamapps\\common\\DOOM 3 BFG Edition\\base\\wads",
 	"steamapps\\common\\master levels of doom\\master\\wads", //Let Odamex find the Master Levels pwads too
+	"steamapps\\common\\ultimate doom\\base\\doom2", //2024 Steam re-release additions here and below
+	"steamapps\\common\\ultimate doom\\base\\master\\wads",
+	"steamapps\\common\\ultimate doom\\base\\plutonia",
+	"steamapps\\common\\ultimate doom\\base\\tnt",
+	"steamapps\\common\\ultimate doom\\rerelease",
+
 };
 
 
@@ -328,7 +334,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 				const char* csubpath = subpath;
 				D_AddSearchDir(dirs, csubpath, separator);
-				
+
 				free(subpath);
 			}
 
@@ -349,7 +355,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 	const char separator = ':';
 
-	#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR) 
+	#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
 	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", separator);
 	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", separator);
 	#endif
@@ -406,8 +412,8 @@ static void D_PrintIWADIdentity()
 	{
 		if (gamemode == undetermined)
 			Printf(PRINT_HIGH, "Game mode indeterminate, no standard wad found.\n");
-		else 
-			Printf(PRINT_HIGH, "%s\n", D_GetTitleString().c_str()); 
+		else
+			Printf(PRINT_HIGH, "%s\n", D_GetTitleString().c_str());
 	}
 }
 
@@ -422,7 +428,7 @@ void D_LoadResolvedPatches()
 	for (OResFiles::const_iterator it = ::patchfiles.begin(); it != ::patchfiles.end();
 	     ++it)
 	{
-		if (it->getBasename() == "CHEX.DEH")
+		if (StdStringToUpper(it->getBasename()) == "CHEX.DEH")
 		{
 			chexLoaded = true;
 		}
@@ -507,7 +513,7 @@ static bool FindIWAD(OResFile& out)
 /**
  * @brief Load files that are assumed to be resolved, in the correct order,
  *        and complete.
- * 
+ *
  * @param newwadfiles New set of WAD files.
  * @param newpatchfiles New set of patch files.
 */
@@ -554,7 +560,7 @@ static void LoadResolvedFiles(const OResFiles& newwadfiles,
 /**
  * @brief Print a warning that occurrs when the user has an IWAD that's a
  *        different version than the one we want.
- * 
+ *
  * @param wanted The IWAD that we wanted.
  * @return True if we emitted an commercial IWAD warning.
  */
@@ -757,11 +763,11 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 /**
  * @brief Check to see if the list of WAD files and patches matches the
  *        currently loaded files.
- * 
+ *
  * @detail Note that this relies on the hashes being equal, so if you want
  *         resources to not be reloaded, ensure the hashes are equal by the
  *         time they reach this spot.
- * 
+ *
  * @param newwadfiles WAD files to check.
  * @param newpatchfiles Patch files to check.
  * @return True if everything checks out.
@@ -841,7 +847,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 		D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
 		// get skill / episode / map from parms
-		strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+		startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
 
 		D_Init();
 	}
@@ -866,7 +872,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 			LoadResolvedFiles(oldwadfiles, oldpatchfiles);
 
 			// get skill / episode / map from parms
-			strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+			startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
 
 			D_Init();
 		}
@@ -1109,11 +1115,10 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 #ifdef CLIENT_APP
 	// Use linear interpolation for rendering entities if the display
 	// framerate is not synced with the simulation frequency.
-	// Ch0wW : if you experience a spinning effect while trying to pause the frame, 
+	// Ch0wW : if you experience a spinning effect while trying to pause the frame,
 	// don't forget to add your condition here.
 	if ((maxfps == TICRATE && capfps)
-		|| timingdemo || paused || step_mode
-		|| ((menuactive || ConsoleState == c_down || ConsoleState == c_falling) && !network_game && !demoplayback))
+		|| timingdemo || step_mode)
 		render_lerp_amount = FRACUNIT;
 	else
 		render_lerp_amount = simulation_scheduler->getRemainder() * FRACUNIT;

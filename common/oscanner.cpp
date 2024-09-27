@@ -526,7 +526,7 @@ void STACK_ARGS OScanner::warning(const char* message, ...) const
 	char errortext[MAX_ERRORTEXT];
 
 	va_start(argptr, message);
-	vsprintf(errortext, message, argptr);
+	vsnprintf(errortext, 1024, message, argptr);
 	Printf(PRINT_WARNING, "Script Warning: %s:%d: %s\n", m_config.lumpName, m_lineNumber,
 	       errortext, argptr);
 	va_end(argptr);
@@ -541,7 +541,7 @@ void STACK_ARGS OScanner::error(const char* message, ...) const
 	char errortext[MAX_ERRORTEXT];
 
 	va_start(argptr, message);
-	vsprintf(errortext, message, argptr);
+	vsnprintf(errortext, 1024, message, argptr);
 	I_Error("Script Error: %s:%d: %s", m_config.lumpName, m_lineNumber, errortext,
 	        argptr);
 	va_end(argptr);
