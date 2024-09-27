@@ -297,7 +297,6 @@ jobs:
     runs-on: windows-latest
     env:
       new_version: ${{ needs.pre_job.outputs.new_version }}
-      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
       - id: check-branch-exists
         name: Check if release branch exists
@@ -312,8 +311,8 @@ jobs:
           title: Merge release/${{env.new_version}} to stable
           body: |
             This PR covers the task of merging the release branch to stable, the final step in releasing a new version.
-          branch: release/${{env.new_version}}
-          base: stable
+          branch: stable
+          base: release/${{env.new_version}}
 # build-mingw:
 #   name: Build (MinGW)
 #   runs-on: windows-latest

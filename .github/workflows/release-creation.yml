@@ -7,10 +7,6 @@ name: Release-Creation-PR
 
 on:
   create:
-    branches:
-    - 'release/[0-9]+.[0-9]+.[0-9]+' # Only run on major.minor.patch releases
-    tags-ignore:
-      - '**'
 
 permissions:
   contents: write
@@ -18,6 +14,7 @@ permissions:
 
 jobs:
   pre_job:
+    if: ${{ contains(github.ref, 'refs/heads/releases/') }} # Github workaround (create runs every time)
     name: Build Preparation
     runs-on: ubuntu-latest
     outputs:
@@ -76,6 +73,7 @@ jobs:
           echo "UncommittedChanges: ${{ steps.gitversion.outputs.uncommittedChanges }}"
           echo "CommitDate: ${{ steps.gitversion.outputs.commitDate }}"
   upversion-and-pr:
+    if: ${{ contains(github.ref, 'refs/heads/releases/') }} # Github workaround (create runs every time)
     name: Upversion and PR
     needs: pre_job
     runs-on: windows-latest
