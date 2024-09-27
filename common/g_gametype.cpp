@@ -163,7 +163,7 @@ JoinResult G_CanJoinGameStart()
 	if (G_IsTeamGame() && sv_maxplayersperteam)
 	{
 		int teamplayers = sv_maxplayersperteam * sv_teamsinplay;
-		if (P_NumPlayersInGame() >= teamplayers)
+		if (static_cast<int>(P_NumPlayersInGame()) >= teamplayers)
 			return JOIN_GAMEFULL;
 	}
 

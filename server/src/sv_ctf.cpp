@@ -190,7 +190,7 @@ static const char *CTF_TimeMSG(unsigned int milliseconds)
 	milliseconds /= 60;
 	int mi = milliseconds;
 
-	sprintf((char *)&msg, "%d:%.2d.%.2d", mi, se, ms);
+	snprintf((char *)&msg, 64, "%d:%.2d.%.2d", mi, se, ms);
 
 	return msg;
 }
@@ -485,7 +485,6 @@ void CTF_ReplaceFlagWithWaypoint(AActor* mo)
 
 	SV_SpawnMobj(waypoint);
 
-	mo->netid;
 	mo->Destroy();
 }
 

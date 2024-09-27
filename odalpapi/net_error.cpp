@@ -178,7 +178,7 @@ void NET_ReportError(const char* fmt, ...)
 	char errorstr[1024];
 
 	va_start(ap, fmt);
-	vsprintf(errorstr, fmt, ap);
+	vsnprintf(errorstr, 1024, fmt, ap);
 	va_end(ap);
 
 	_ReportError("", 0, "", errorstr);

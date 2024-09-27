@@ -275,13 +275,23 @@ bool OScanner::scan()
 }
 
 //
-// Ensure next token is a string.
+// Ensure next token is a string. Optional parameter that ensures the string is equal to
+// or under a maximum length. If set to 0, accepts any length.
 //
-void OScanner::mustScan()
+void OScanner::mustScan(size_t max_length)
 {
 	if (!scan())
 	{
 		error("Missing string (unexpected end of file).");
+	}
+
+	if (max_length)
+	{
+		if (m_token.length() > max_length)
+		{
+			error("String \"%s\" is too long. Maximum length is %" PRIuSIZE
+			       " characters.", m_token.c_str(), max_length);
+		}
 	}
 }
 
@@ -436,16 +446,56 @@ bool OScanner::isQuotedString() const
 }
 
 //
+// Check if the last token read in qualifies as an identifier.
+// [A-Za-z_]+[A-Za-z0-9_]*
+//
+bool OScanner::isIdentifier() const
+{
+	if (m_token.empty())
+		return false;
+
+	for (std::string::const_iterator it = m_token.begin(); it != m_token.end(); ++it)
+	{
+		const char& ch = *it;
+		if (ch == '_')
+			continue;
+
+		if (ch >= 'A' && ch <= 'Z')
+			continue;
+
+		if (ch >= 'a' && ch <= 'z')
+			continue;
+
+		if (it != m_token.begin() && ch >= '0' && ch <= '9')
+			continue;
+
+		return false;
+	}
+
+	return true;
+}
+
+//
 // Assert token is equal to the passed string, or error.
 //
 void OScanner::assertTokenIs(const char* string) const
 {
 	if (m_token.compare(string) != 0)
 	{
-		std::string err;
-		StrFormat(err, "Unexpected Token (expected \"%s\" actual \"%s\").", string,
-		          m_token.c_str());
-		error(err.c_str());
+		error("Unexpected Token (expected \"%s\" actual \"%s\").", string,
+		      m_token.c_str());
+	}
+}
+
+//
+// Assert token is equal to the passed string without regard to case, or error.
+//
+void OScanner::assertTokenNoCaseIs(const char* string) const
+{
+	if (!iequals(m_token, string))
+	{
+		error("Unexpected Token (expected \"%s\" actual \"%s\").", string,
+		      m_token.c_str());
 	}
 }
 
@@ -476,7 +526,7 @@ void STACK_ARGS OScanner::warning(const char* message, ...) const
 	char errortext[MAX_ERRORTEXT];
 
 	va_start(argptr, message);
-	vsprintf(errortext, message, argptr);
+	vsnprintf(errortext, 1024, message, argptr);
 	Printf(PRINT_WARNING, "Script Warning: %s:%d: %s\n", m_config.lumpName, m_lineNumber,
 	       errortext, argptr);
 	va_end(argptr);
@@ -491,7 +541,7 @@ void STACK_ARGS OScanner::error(const char* message, ...) const
 	char errortext[MAX_ERRORTEXT];
 
 	va_start(argptr, message);
-	vsprintf(errortext, message, argptr);
+	vsnprintf(errortext, 1024, message, argptr);
 	I_Error("Script Error: %s:%d: %s", m_config.lumpName, m_lineNumber, errortext,
 	        argptr);
 	va_end(argptr);

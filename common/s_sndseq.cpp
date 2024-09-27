@@ -185,8 +185,7 @@ static const hexenseq_t HexenSequences[] = {
 	{ "DoorCreak",		{ HexenDoorSeq(3), HexenLastSeq } },
 	{ "DoorMetal2",		{ HexenDoorSeq(9), HexenLastSeq } },
 	{ "Wind",			{ HexenEnvSeq(10), HexenLastSeq } },
-	{ NULL, }
-};
+    {NULL, {0,0,0,0}}};
 
 static int SeqTrans[64*3];
 static unsigned int *ScriptTemp;

@@ -20,6 +20,7 @@
 
 #pragma once
 
-extern BOOL HexenHack; // Semi-Hexen-compatibility mode
+extern bool HexenHack; // Semi-Hexen-compatibility mode
 
+void G_MapNameToLevelNum(level_pwad_info_t& info);
 void G_ParseMapInfo();

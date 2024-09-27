@@ -727,8 +727,6 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 	if (!player->mo)
 		return;
 
-	AActor *mo = player->mo;
-
 	MSG_WriteSVC(netbuffer, SVC_NetdemoCap(player));
 }
 
@@ -1444,7 +1442,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	byte vars[4096], *vars_p;
 	vars_p = vars;
 
-	cvar_t::C_WriteCVars(&vars_p, CVAR_SERVERINFO);
+	cvar_t::C_WriteCVars(&vars_p, CVAR_SERVERINFO, 4096);
 	arc.WriteCount(vars_p - vars);
 	arc.Write(vars, vars_p - vars);
 

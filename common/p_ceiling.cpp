@@ -36,7 +36,7 @@ EXTERN_CVAR(co_boomphys)
 extern bool predicting;
 
 void P_ResetTransferSpecial(newspecial_s* newspecial);
-const unsigned int P_ResetSectorTransferFlags(const unsigned int flags);
+unsigned int P_ResetSectorTransferFlags(const unsigned int flags);
 
 //
 // CEILINGS
@@ -301,8 +301,6 @@ DCeiling::DCeiling (sector_t *sec, fixed_t speed1, fixed_t speed2, int silent)
 DCeiling::DCeiling(sector_t* sec, line_t* line, int silent, int speed)
     : DMovingCeiling(sec), m_Status(init)
 {
-	fixed_t targheight;
-
 	m_Type = silent ? genSilentCrusher : genCrusher;
 	m_Crush = DOOM_CRUSH;
 	m_CrushMode = crushDoom;
@@ -1105,9 +1103,7 @@ BOOL EV_DoGenCeiling(line_t* line)
 	int secnum;
 	BOOL rtn;
 	BOOL manual;
-	fixed_t targheight;
 	sector_t* sec;
-	DCeiling* ceiling;
 	unsigned value = (unsigned)line->special - GenCeilingBase;
 
 	// parse the bit fields in the line's special type
@@ -1175,9 +1171,7 @@ BOOL EV_DoGenCrusher(line_t* line)
 	int secnum;
 	BOOL rtn;
 	BOOL manual;
-	fixed_t targheight;
 	sector_t* sec;
-	DCeiling* ceiling;
 	unsigned value = (unsigned)line->special - GenCrusherBase;
 
 	// parse the bit fields in the line's special type

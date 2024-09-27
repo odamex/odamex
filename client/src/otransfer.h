@@ -22,8 +22,9 @@
 
 #pragma once
 
-
+#ifndef CURL_STATICLIB
 #define CURL_STATICLIB
+#endif
 #include "curl/curl.h"
 
 struct OTransferProgress
@@ -80,6 +81,7 @@ class OTransferCheck
 	}
 
 	void setURL(const std::string& src);
+	std::string escapeFileName(const std::string& src);
 	bool start();
 	void stop();
 	bool tick();

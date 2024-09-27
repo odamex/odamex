@@ -81,7 +81,7 @@ void FStat::dumpstat(std::string which)
 
 void FStat::dump()
 {
-	Printf(PRINT_HIGH, "%s: %dms\n", name.c_str(), last_elapsed);
+	Printf(PRINT_HIGH, "%s: %llums\n", name.c_str(), last_elapsed);
 }
 
 BEGIN_COMMAND (stat)

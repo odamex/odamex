@@ -361,25 +361,19 @@ bool P_IsSpecialBoomRepeatable(const short special)
 		break;
 	}
 
-	if (special >= GenCrusherBase && special <= GenEnd)
+	if (special >= GenCrusherBase)
 	{
 		switch ((special & TriggerType) >> TriggerTypeShift)
 		{
 		case PushOnce:
-			return false;
-			break;
-		case PushMany:
-			return true;
-			break;
 		case SwitchOnce:
-			return false;
-			break;
-		case SwitchMany:
-			return true;
-			break;
 		case WalkOnce:
+		case GunOnce:
 			return false;
+		case PushMany:
+		case SwitchMany:
 		case WalkMany:
+		case GunMany:
 			return true;
 		}
 	}
@@ -393,7 +387,7 @@ bool P_IsExitLine(const short special)
 		return special == 74 || special == 75 || special == 244 || special == 243;
 
 	return special == 11 || special == 52 || special == 197 || special == 51 ||
-	       special == 124 || special == 198;
+	       special == 124 || special == 198 || (2069 <= special && special <= 2074);
 }
 
 bool P_IsTeleportLine(const short special)
@@ -445,7 +439,7 @@ bool P_IsCompatibleBlueDoorLine(const short special)
 	if (lock == BCard || lock == BSkull)
 		genericlock = true;
 
-	return special == 26 || special == 32;
+	return special == 26 || special == 32 || genericlock;
 }
 
 bool P_IsCompatibleRedDoorLine(const short special)
@@ -459,7 +453,7 @@ bool P_IsCompatibleRedDoorLine(const short special)
 	if (lock == RCard || lock == RSkull)
 		genericlock = true;
 
-	return special == 28 || special == 33;
+	return special == 28 || special == 33 || genericlock;
 }
 
 bool P_IsCompatibleYellowDoorLine(const short special)
@@ -473,7 +467,7 @@ bool P_IsCompatibleYellowDoorLine(const short special)
 	if (lock == YCard || lock == YSkull)
 		genericlock = true;
 
-	return special == 27 || special == 34;
+	return special == 27 || special == 34 || genericlock;
 }
 
 bool P_IsLightTagDoorType(const short special)

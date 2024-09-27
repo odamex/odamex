@@ -143,6 +143,7 @@ void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
 bool P_CheckMissileSpawn(AActor* th);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
 void P_SpawnPlayerMissile(AActor *source, mobjtype_t type);
+size_t P_GetMapThingPlayerNumber(mapthing2_t* mthing);
 bool P_VisibleToPlayers(AActor *mo);
 void P_SetMobjBaseline(AActor& mo);
 uint32_t P_GetMobjBaselineFlags(AActor& mo);

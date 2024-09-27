@@ -181,7 +181,7 @@ void S_NoiseDebug();
 #include "sv_main.h"
 #endif
 
-static void S_NetSound(AActor* mo, byte channel, const char* name, const byte attenuation)
+inline static void S_NetSound(AActor* mo, byte channel, const char* name, const byte attenuation)
 {
 #if SERVER_APP
 	SV_Sound(mo, channel, name, attenuation);
@@ -190,7 +190,7 @@ static void S_NetSound(AActor* mo, byte channel, const char* name, const byte at
 #endif
 }
 
-static void S_PlayerSound(player_t* pl, AActor* mo, const byte channel, const char* name,
+inline static void S_PlayerSound(player_t* pl, AActor* mo, const byte channel, const char* name,
                           const byte attenuation)
 {
 #if SERVER_APP

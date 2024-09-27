@@ -164,7 +164,7 @@ public:
 
 	// Writes all cvars that could effect demo sync to *demo_p. These are
 	// cvars that have either CVAR_SERVERINFO or CVAR_DEMOSAVE set.
-	static void C_WriteCVars (byte **demo_p, DWORD filter, bool compact=false);
+	static void C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool compact=false);
 
 	// Read all cvars from *demo_p and set them appropriately.
 	static void C_ReadCVars (byte **demo_p);

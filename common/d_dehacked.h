@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -139,10 +139,10 @@ static const char* SoundMap[] = { NULL,
                             "misc/chat",
 
                             // MBF SOUNDS
-                            "dog/sight", 
-                            "dog/attack", 
-                            "dog/active", 
-                            "dog/death", 
+                            "dog/sight",
+                            "dog/attack",
+                            "dog/active",
+                            "dog/death",
                             "dog/pain",
 
                             // Padding -- DEHEXTRA's new sound range
@@ -167,7 +167,7 @@ static const char* SoundMap[] = { NULL,
                             "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
                             "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
                             "", "", "", "", "", "", "", "",
-                            
+
                             // Crispy/Retro (DEHEXTRA)
                             "dehextra/sound000", "dehextra/sound001", "dehextra/sound002", "dehextra/sound003",
                             "dehextra/sound004", "dehextra/sound005", "dehextra/sound006", "dehextra/sound007",
@@ -226,3 +226,4 @@ static const char* SoundMap[] = { NULL,
 void D_UndoDehPatch();
 void D_PostProcessDeh();
 bool D_DoDehPatch(const OResFile* patchfile, const int lump);
+bool CheckIfDehActorDefined(const mobjtype_t mobjtype);

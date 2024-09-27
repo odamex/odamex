@@ -52,9 +52,6 @@ void C_DoCommand(const char* cmd, uint32_t key = 0);
 // CHEAT SEQUENCE PACKAGE
 //
 
-static int				firsttime = 1;
-static unsigned char	cheat_xlate_table[256];
-
 #ifdef CLIENT_APP
 
 //-------------
@@ -394,7 +391,7 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 				}
 				// killough 3/22/98: make more intelligent about plural
 				// Ty 03/27/98 - string(s) *not* externalized
-				sprintf (msgbuild, "%d Monster%s Killed", killcount, killcount==1 ? "" : "s");
+				snprintf (msgbuild, 32, "%d Monster%s Killed", killcount, killcount==1 ? "" : "s");
 				msg = msgbuild;
 			}
 			break;
@@ -436,7 +433,7 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 	{
 		if (player == &consoleplayer())
 		{
-			if (msg != "")
+			if (msg != NULL)
 				Printf("%s\n", msg);
 		}
 				

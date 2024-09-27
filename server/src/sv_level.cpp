@@ -102,13 +102,13 @@ bool isFast = false;
 // Can be called by the startup code or the menu task,
 // consoleplayer, displayplayer, should be set.
 //
-static char d_mapname[9];
+static OLumpName d_mapname;
 
 std::string G_NextMap();
 
 void G_DeferedInitNew (const char* mapname)
 {
-	std::string mapnamestr = mapname;
+	const std::string mapnamestr = mapname;
 
 	if (iequals(mapnamestr.substr(0, 7).c_str(), "EndGame"))
 	{
@@ -130,13 +130,13 @@ void G_DeferedInitNew (const char* mapname)
 	}
 	else
 	{
-		strncpy(d_mapname, mapname, 8);
+		d_mapname = mapname;
 	}
 
 	gameaction = ga_newgame;
 
 	// sv_nextmap cvar may be overridden by a script
-	sv_nextmap.ForceSet(d_mapname);
+	sv_nextmap.ForceSet(d_mapname.c_str());
 }
 
 void G_DeferedFullReset()
@@ -173,8 +173,8 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	    return;
 	}
 
-	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
-	G_LoadWadString(str);
+	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
+	G_LoadWadString(wadstr);
 }
 END_COMMAND (wad)
 
@@ -238,15 +238,7 @@ void G_ChangeMap()
 
 		if (!Maplist::instance().lobbyempty())
 		{
-			std::string wadstr;
-			for (size_t i = 0; i < lobby_entry.wads.size(); i++)
-			{
-				if (i != 0)
-				{
-					wadstr += " ";
-				}
-				wadstr += C_QuoteString(lobby_entry.wads.at(i));
-			}
+			std::string wadstr = C_EscapeWadList(lobby_entry.wads);
 			G_LoadWadString(wadstr, lobby_entry.map);
 		}
 		else
@@ -263,15 +255,7 @@ void G_ChangeMap()
 				maplist_entry_t maplist_entry;
 				Maplist::instance().get_map_by_index(next_index, maplist_entry);
 
-				std::string wadstr;
-				for (size_t i = 0; i < maplist_entry.wads.size(); i++)
-				{
-					if (i != 0)
-					{
-						wadstr += " ";
-					}
-					wadstr += C_QuoteString(maplist_entry.wads.at(i));
-				}
+				std::string wadstr = C_EscapeWadList(maplist_entry.wads);
 				G_LoadWadString(wadstr, maplist_entry.map);
 
 				// Set the new map as the current map
@@ -297,7 +281,8 @@ void G_ChangeMap(size_t index) {
 		return;
 	}
 
-	G_LoadWadString(JoinStrings(maplist_entry.wads, " "), maplist_entry.map);
+	std::string wadstr = C_EscapeWadList(maplist_entry.wads);
+	G_LoadWadString(wadstr, maplist_entry.map);
 
 	// Set the new map as the current map
 	Maplist::instance().set_index(index);
@@ -353,12 +338,12 @@ void G_DoNewGame()
 			continue;
 
 		MSG_WriteSVC(&it->client.reliablebuf,
-		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname, 0));
+		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
 	}
 
-	sv_curmap.ForceSet(d_mapname);
+	sv_curmap.ForceSet(d_mapname.c_str());
 
-	G_InitNew (d_mapname);
+	G_InitNew(d_mapname);
 	gameaction = ga_nothing;
 
 	// run script at the start of each map
@@ -390,7 +375,7 @@ EXTERN_CVAR (sv_maxplayers)
 void G_PlayerReborn (player_t &player);
 void SV_ServerSettingChange();
 
-void G_InitNew (const char *mapname)
+void G_InitNew(const char *mapname)
 {
 	size_t i;
 
@@ -531,13 +516,24 @@ void G_InitNew (const char *mapname)
 // G_DoCompleted
 //
 
-void G_ExitLevel (int position, int drawscores)
+void G_ExitLevel (int position, int drawscores, bool resetinv)
 {
+	if (resetinv)
+	{
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (it->ingame())
+			{
+				it->doreborn = true;
+			}
+		}
+	}
+
 	SV_ExitLevel();
 
 	if (drawscores)
         SV_DrawScores();
-	
+
 	gamestate = GS_INTERMISSION;
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, default 10
 
@@ -550,24 +546,35 @@ void G_ExitLevel (int position, int drawscores)
 }
 
 // Here's for the german edition.
-void G_SecretExitLevel (int position, int drawscores)
+void G_SecretExitLevel (int position, int drawscores, bool resetinv)
 {
+	if (resetinv)
+	{
+		for (Players::iterator it = players.begin();it != players.end();++it)
+		{
+			if (it->ingame())
+			{
+				it->doreborn = true;
+			}
+		}
+	}
+
 	SV_ExitLevel();
 
-    if (drawscores)
-        SV_DrawScores();
-        
+	if (drawscores)
+		SV_DrawScores();
+
 	gamestate = GS_INTERMISSION;
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, defaults to 10
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	if ( (gameinfo.flags & GI_MAPxx)
-		 && (W_CheckNumForName("map31")<0))
+		&& (W_CheckNumForName("map31")<0))
 		secretexit = false;
 	else
 		secretexit = true;
 
-    gameaction = ga_completed;
+	gameaction = ga_completed;
 
 	// denis - this will skip wi_stuff and allow some time for finale text
 	//G_WorldDone();
@@ -710,7 +717,7 @@ void G_DoResetLevel(bool full_reset)
 	P_HordeClearSpawns();
 
 	// Reset the respawned monster count
-	level.respawned_monsters = 0;	
+	level.respawned_monsters = 0;
 
 	// No need to clear the spawn locations because we're not loading a new map.
 	M_StartWDLLog(false);
@@ -732,6 +739,10 @@ void G_DoResetLevel(bool full_reset)
 		//      a players subsector to be valid (like use) to crash the server.
 		G_DoReborn(*it);
 	}
+
+	// Re-add type 10 and 14 sectors
+	for (std::list<sector_t*>::iterator iter = specialdoors.begin(); iter != specialdoors.end(); ++iter)
+		P_AddMovingCeiling(*iter);
 
 	// Send information about the newly reset map, but AFTER the reborns.
 	for (it = players.begin(); it != players.end(); ++it)
@@ -773,7 +784,7 @@ void G_DoLoadLevel (int position)
 		wipegamestate = GS_FORCEWIPE;
 
 	gamestate = GS_LEVEL;
-	
+
 	// Reset all keys found
 	for (size_t j = 0; j < NUMCARDS; j++)
 		keysfound[j] = false;
@@ -783,16 +794,16 @@ void G_DoLoadLevel (int position)
 	//	a flat. The data is in the WAD only because
 	//	we look for an actual index, instead of simply
 	//	setting one.
-	skyflatnum = R_FlatNumForName ( SKYFLATNAME );
+	skyflatnum = R_FlatNumForName(SKYFLATNAME);
 
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
-	sky1texture = R_TextureNumForName (level.skypic.c_str());
+	sky1texture = R_TextureNumForName(level.skypic);
 	if (!level.skypic2.empty())
-		sky2texture = R_TextureNumForName (level.skypic2.c_str());
+		sky2texture = R_TextureNumForName(level.skypic2);
 	else
 		sky2texture = 0;
 
@@ -859,6 +870,8 @@ void G_DoLoadLevel (int position)
 		for (int i = 0; i < NUMTEAMS; i++)
 			GetTeamInfo((team_t)i)->FlagData.flaglocated = false;
 	}
+
+	specialdoors.clear();
 
 	P_SetupLevel (level.mapname.c_str(), position);
 

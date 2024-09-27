@@ -38,7 +38,7 @@
 static const int MAX_EXTRAPOLATION = 4;
 
 static const fixed_t POS_LERP_THRESHOLD = 2 * FRACUNIT;
-static const fixed_t SECTOR_LERP_THRESHOLD = 2 * FRACUNIT;
+//static const fixed_t SECTOR_LERP_THRESHOLD = 2 * FRACUNIT; // unused
 
 extern bool predicting;
 

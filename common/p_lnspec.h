@@ -527,11 +527,9 @@ BOOL EV_CeilingCrushStop (int tag);
 void EV_StopPlat (int tag);
 BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
 BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
-BOOL EV_CompatibleTeleport(int tag, line_t* line, int side, AActor* thing, int flags);
 
 bool P_LineSpecialMovesSector(short special);
 bool P_CanActivateSpecials(AActor* mo, line_t* line);
-bool P_ActorInSpecialSector(AActor* actor);
 void P_DestroyScrollerThinkers();
 void P_DestroyLightThinkers();
 
@@ -539,7 +537,6 @@ int P_FindLineFromLineTag(const line_t* line, int start);
 int P_IsUnderDamage(const AActor* actor);
 bool P_IsOnLift(const AActor* actor);
 int P_IsUnderDamage(AActor* actor);
-static bool P_CheckRange(AActor* actor, fixed_t range);
 void EV_LightSetMinNeighbor(int tag);
 void EV_LightSetMaxNeighbor(int tag);
 

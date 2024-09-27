@@ -61,10 +61,11 @@ OBinding DefaultBindings[] =
 	{"leftalt", "+strafe"},
 	{"leftshift", "+speed"},
 	{"rightshift", "+speed"},
+	{"capslock", "togglerun"},
 	{"space", "+use"},
 	{"e", "+use"},
 	{"uparrow", "+forward"},
-	{"backarrow", "+back"},
+	{"downarrow", "+back"},
 	{"rightarrow", "+right"},
 	{"leftarrow", "+left"},
 	{"w", "+forward"},
@@ -648,7 +649,7 @@ BEGIN_COMMAND(unambind)
 
 		if (iequals(lostr, "all"))
 			AutomapBindings.UnbindAll();
-		else 
+		else
 			AutomapBindings.UnbindKey(argv[1]);
 	}
 }

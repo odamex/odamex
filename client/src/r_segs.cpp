@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -121,10 +121,10 @@ static inline fixed_t R_TexScaleY(fixed_t y, int texnum)
 //
 // Scales a value by the inverse of the horizontal scaling value for texnum
 //
-static inline fixed_t R_TexInvScaleX(fixed_t x, int texnum)
-{
-	return FixedDiv(x, texturescalex[texnum]);
-}
+//static inline fixed_t R_TexInvScaleX(fixed_t x, int texnum) // unused
+//{
+//	return FixedDiv(x, texturescalex[texnum]);
+//}
 
 //
 // R_TexInvScaleY
@@ -149,7 +149,7 @@ int R_OrthogonalLightnumAdjustment()
 		else if (curline->linedef->slopetype == ST_VERTICAL)
 			return 1;
 	}
-	
+
 	return 0;	// no adjustment for diagonal lines
 }
 
@@ -159,9 +159,9 @@ int R_OrthogonalLightnumAdjustment()
 // Calculates the wall-texture screen coordinates for a span of columns.
 //
 static void R_FillWallHeightArray(
-	int *array, 
+	int *array,
 	int start, int stop,
-	fixed_t val1, fixed_t val2, 
+	fixed_t val1, fixed_t val2,
 	float scale1, float scale2)
 {
 	if (start > stop)
@@ -169,7 +169,7 @@ static void R_FillWallHeightArray(
 
 	float h1 = FIXED2FLOAT(val1 - viewz) * scale1;
 	float h2 = FIXED2FLOAT(val2 - viewz) * scale2;
-	
+
 	float step = (h2 - h1) / (stop - start + 1);
 	float frac = float(centery) - h1;
 
@@ -215,7 +215,7 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 			const fixed_t endfrac = dcol.texturefrac + (dcol.yh - dcol.yl) * dcol.iscale;
 			const fixed_t maxfrac = post->length << FRACBITS;
-			
+
 			if (endfrac >= maxfrac)
 			{
 				int cnt = (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
@@ -226,7 +226,7 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 			if (dcol.yl >= 0 && dcol.yh < viewheight && dcol.yl <= dcol.yh)
 				drawfunc();
-			
+
 			post = post->next();
 		}
 
@@ -243,6 +243,51 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 {
 	if (wallscalex[dcol.x] <= 0)
 		return;
+
+	if (dcol.post->length != dcol.textureheight >> FRACBITS)
+	{
+		int count = dcol.textureheight >> FRACBITS;
+		tallpost_t* srcpost = dcol.post;
+
+		int destpostlen = 0;
+
+		static byte* destpostraw[512];
+		tallpost_t* destpost = (tallpost_t*) destpostraw;
+
+		destpost->topdelta = 0;
+
+		while (destpostlen < count)
+		{
+			int remaining = count - destpostlen; // pixels remaining to be replenished
+
+			if (srcpost->topdelta == destpostlen)
+			{
+				memcpy(destpost->data() + destpostlen, srcpost->data(), srcpost->length);
+					   destpostlen += srcpost->length;
+			}
+			else
+			{
+				int curmidtexdelta = abs((srcpost->end() ? remaining : srcpost->topdelta) - destpostlen);
+				int translen = curmidtexdelta > remaining ? remaining : curmidtexdelta;
+				memset(destpost->data() + destpostlen, 0,
+				       translen);
+				destpostlen += translen;
+			}
+
+			if (!srcpost->next()->end() && destpostlen >= srcpost->topdelta + srcpost->length)
+			{
+				srcpost = srcpost->next();
+			}
+
+			destpost->length = destpostlen;
+		}
+
+		// finish the post up.
+		destpost->next()->length = 0;
+		destpost->next()->writeend();
+
+		dcol.post = destpost;
+	}
 
 	dcol.iscale = 0xffffffffu / unsigned(wallscalex[dcol.x]);
 	dcol.source = dcol.post->data();
@@ -329,7 +374,7 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 		}
 		else if (fixedcolormap.isValid())
 		{
-			dcol.colormap = fixedcolormap;	
+			dcol.colormap = fixedcolormap;
 			calc_light = false;
 		}
 		else
@@ -354,7 +399,7 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 		#define BLOCKSIZE (1 << BLOCKBITS)
 		#define BLOCKMASK (BLOCKSIZE - 1)
 
-		// pre-calculate the color map number for lighting for each screen column 
+		// pre-calculate the color map number for lighting for each screen column
 		static int light_lookup[MAXWIDTH];
 		if (calc_light)
 		{
@@ -365,7 +410,7 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 				rw_light += rw_lightstep;
 			}
 		}
-			
+
 		// [SL] Render the range of columns in 64x64 pixel blocks, aligned to a grid
 		// on the screen. This is to make better use of spatial locality in the cache.
 		for (int bx = start; bx <= stop; bx = (bx & ~BLOCKMASK) + BLOCKSIZE)
@@ -396,7 +441,6 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 		}
 	}
 }
-
 
 //
 // R_RenderSolidSegRange
@@ -596,15 +640,15 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 		dcol.texturemid = MIN(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
 
 	dcol.texturemid = R_TexScaleY(dcol.texturemid - viewz + curline->sidedef->rowoffset, texnum);
-	
+
 	int64_t topscreenclip = int64_t(centery) << 2*FRACBITS;
 	int64_t botscreenclip = int64_t(centery - viewheight) << 2*FRACBITS;
- 
+
 	// top of texture entirely below screen?
 	if (int64_t(dcol.texturemid) * ds->scale1 <= botscreenclip &&
 		int64_t(dcol.texturemid) * ds->scale2 <= botscreenclip)
 		return;
- 
+
 	// bottom of texture entirely above screen?
 	if (int64_t(dcol.texturemid - texheight) * ds->scale1 > topscreenclip &&
 		int64_t(dcol.texturemid - texheight) * ds->scale2 > topscreenclip)
@@ -632,7 +676,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	mfloorclip = ds->sprbottomclip;
 	mceilingclip = ds->sprtopclip;
 
-	dcol.textureheight = 256*FRACUNIT;
+	dcol.textureheight = 512*FRACUNIT;
 
 	// draw the columns
 	// TODO: change negonearray to the actual top/bottom
@@ -712,20 +756,20 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 
 		fixed_t colfrac = segoffs + FLOAT2FIXED(uinvz / curscale);
 		texoffs[i] = colfrac;
-		
+
 		if (toptexture)
 		{
-			int colnum = R_TexScaleX(colfrac, toptexture) >> FRACBITS;	
+			int colnum = R_TexScaleX(colfrac, toptexture) >> FRACBITS;
 			topposts[i] = R_GetTextureColumn(toptexture, colnum);
 		}
 		if (midtexture)
 		{
-			int colnum = R_TexScaleX(colfrac, midtexture) >> FRACBITS;	
+			int colnum = R_TexScaleX(colfrac, midtexture) >> FRACBITS;
 			midposts[i] = R_GetTextureColumn(midtexture, colnum);
 		}
 		if (bottomtexture)
 		{
-			int colnum = R_TexScaleX(colfrac, bottomtexture) >> FRACBITS;	
+			int colnum = R_TexScaleX(colfrac, bottomtexture) >> FRACBITS;
 			bottomposts[i] = R_GetTextureColumn(bottomtexture, colnum);
 		}
 
@@ -755,7 +799,7 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 		// calculate the upper and lower heights of the walls in the back
 		R_FillWallHeightArray(walltopb, start, stop, rw_backcz1, rw_backcz2, scale1, scale2);
 		R_FillWallHeightArray(wallbottomb, start, stop, rw_backfz1, rw_backfz2, scale1, scale2);
-	
+
 		const fixed_t tolerance = FRACUNIT/2;
 
 		// determine if an upper texture is showing
@@ -831,7 +875,7 @@ void R_StoreWallRange(int start, int stop)
 		if (linedef->flags & ML_DONTPEGBOTTOM)
 		{
 			// bottom of texture at bottom
-			fixed_t texheight = R_TexScaleY(textureheight[midtexture], midtexture); 
+			fixed_t texheight = R_TexScaleY(textureheight[midtexture], midtexture);
 			rw_midtexturemid = P_FloorHeight(frontsector) - viewz + texheight;
 		}
 		else
@@ -853,7 +897,7 @@ void R_StoreWallRange(int start, int stop)
 		ds_p->sprtopclip = ds_p->sprbottomclip = NULL;
 		ds_p->silhouette = 0;
 
-		extern bool doorclosed;	
+		extern bool doorclosed;
 		if (doorclosed)
 		{
 			// clip all sprites behind this closed door (or otherwise solid line)
@@ -863,14 +907,14 @@ void R_StoreWallRange(int start, int stop)
 		}
 		else
 		{
-			// determine sprite clipping for non-solid line segs	
-			if (rw_frontfz1 > rw_backfz1 || rw_frontfz2 > rw_backfz2 || 
-				rw_backfz1 > viewz || rw_backfz2 > viewz || 
+			// determine sprite clipping for non-solid line segs
+			if (rw_frontfz1 > rw_backfz1 || rw_frontfz2 > rw_backfz2 ||
+				rw_backfz1 > viewz || rw_backfz2 > viewz ||
 				!P_IsPlaneLevel(&backsector->floorplane))	// backside sloping?
 				ds_p->silhouette |= SIL_BOTTOM;
 
 			if (rw_frontcz1 < rw_backcz1 || rw_frontcz2 < rw_backcz2 ||
-				rw_backcz1 < viewz || rw_backcz2 < viewz || 
+				rw_backcz1 < viewz || rw_backcz2 < viewz ||
 				!P_IsPlaneLevel(&backsector->ceilingplane))	// backside sloping?
 				ds_p->silhouette |= SIL_TOP;
 		}
@@ -892,7 +936,7 @@ void R_StoreWallRange(int start, int stop)
 
 				// killough 3/7/98: Add checks for (x,y) offsets
 				|| backsector->floor_xoffs != frontsector->floor_xoffs
-				|| (backsector->floor_yoffs + backsector->base_floor_yoffs) != 
+				|| (backsector->floor_yoffs + backsector->base_floor_yoffs) !=
 				   (frontsector->floor_yoffs + frontsector->base_floor_yoffs)
 
 				// killough 4/15/98: prevent 2s normals
@@ -912,7 +956,7 @@ void R_StoreWallRange(int start, int stop)
 				   (frontsector->floor_angle + frontsector->base_floor_angle)
 				;
 
-			markceiling = 
+			markceiling =
 				  !P_IdenticalPlanes(&backsector->ceilingplane, &frontsector->ceilingplane)
 				|| backsector->lightlevel != frontsector->lightlevel
 				|| backsector->ceilingpic != frontsector->ceilingpic
@@ -938,7 +982,7 @@ void R_StoreWallRange(int start, int stop)
 				|| (backsector->ceiling_angle + backsector->base_ceiling_angle) !=
 				   (frontsector->ceiling_angle + frontsector->base_ceiling_angle)
 				;
-				
+
 			// Sky hack
 			markceiling = markceiling &&
 				(frontsector->ceilingpic != skyflatnum || backsector->ceilingpic != skyflatnum);
@@ -1000,7 +1044,7 @@ void R_StoreWallRange(int start, int stop)
 
 	// [SL] 2012-01-24 - Horizon line extends to infinity by scaling the wall
 	// height to 0
-	
+
 	// [Blair] Ensure Line_Horizon still works in Boom format.
 	short spe;
 
@@ -1047,12 +1091,12 @@ void R_StoreWallRange(int start, int stop)
 		(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
 		// above view plane?
-		if (P_FloorHeight(viewx, viewy, frontsector) >= viewz)       
+		if (P_FloorHeight(viewx, viewy, frontsector) >= viewz)
 			markfloor = false;
 		// below view plane?
 		if (P_CeilingHeight(viewx, viewy, frontsector) <= viewz &&
-			frontsector->ceilingpic != skyflatnum)   
-			markceiling = false;	
+			frontsector->ceilingpic != skyflatnum)
+			markceiling = false;
 	}
 
 	// render it

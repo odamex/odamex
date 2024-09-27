@@ -168,7 +168,7 @@ static AActors SpawnMonsterGroup(hordeSpawn_t& spawn, const hordeRecipe_t& recip
 		}
 	}
 
-	if (ret.size() < count)
+	if (static_cast<int>(ret.size()) < count)
 	{
 		DPrintf("Partial spawn %" PRIuSIZE "/%d of type %s at a %s spawn (%f, %f).\n",
 		        ret.size(), count, name, HordeThingStr(spawn.type),
@@ -217,6 +217,25 @@ bool P_HordeHasSpawns()
 }
 
 /**
+ * @brief Return true if there is both at least one large boss spawner and one large monster spawner in the map.
+ */
+bool P_HordeHasRequiredMonsterSpawns()
+{
+	bool bossspawnfound = false;
+	bool monsterspawnfound = false;
+
+	for (hordeSpawns_t::iterator it = monsterSpawns.begin(); it != monsterSpawns.end(); it++)
+	{
+		if (it->type == TTYPE_HORDE_BOSS)
+			bossspawnfound = true;
+		if (it->type == TTYPE_HORDE_MONSTER)
+			monsterspawnfound = true;
+	}
+
+	return bossspawnfound && monsterspawnfound;
+}
+
+/**
  * @brief Clear all tracked spawn points.
  */
 void P_HordeClearSpawns()
@@ -228,7 +247,7 @@ void P_HordeClearSpawns()
 
 /**
  * @brief True if passed radius and height fits in the passed mobjinfo.
- * 
+ *
  * @param info Info to check against.
  * @param rad Radius to check in whole units (not fixed).
  * @param height Height to check in whole units (not fixed).
@@ -390,7 +409,7 @@ AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe)
 		if (it->type != spawn.type)
 			continue;
 
-		SpawnPointWeight spw = {0};
+		SpawnPointWeight spw = {0, 0.0f, 0, false};
 		spw.spawn = &*it;
 		spw.dist = P_AproxDistance2(it->mo, spawn.mo);
 		weights.push_back(spw);

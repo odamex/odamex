@@ -83,7 +83,7 @@ static const uint32_t	cHeaderChunkId = 0x4D546864;
 static const uint32_t	cTrackChunkId = 0x4D54726B;
 static const size_t		cHeaderSize = 6;
 static const size_t		cTrackHeaderSize = 8;
-static const size_t		cMaxSysexSize = 8192;
+//static const size_t		cMaxSysexSize = 8192; //unused
 
 static const byte drums_table[128] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -509,7 +509,7 @@ void MidiSong::_ParseSong(MEMFILE *mf)
 		std::list<MidiEvent*> *eventlist = I_ReadMidiTrack(mf);
 		if (!eventlist)
 		{
-			Printf(PRINT_WARNING, "MidiSong::_ParseSong: Error reading track %d.\n", i + 1);
+			Printf(PRINT_WARNING, "MidiSong::_ParseSong: Error reading track %lu.\n", i + 1);
 			return;
 		}
 		

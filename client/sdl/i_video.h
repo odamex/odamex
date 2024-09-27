@@ -99,6 +99,8 @@ const PixelFormat* I_Get32bppPixelFormat();
 
 void I_DrawLoadingIcon();
 
+int I_GetAspectCorrectWidth(int surface_height, int asset_height, int asset_width);
+
 
 // ****************************************************************************
 
@@ -225,7 +227,7 @@ public:
 	virtual bool supportsWindowed() const
 	{	return getDisplayType() == DISPLAY_WindowOnly || getDisplayType() == DISPLAY_Both;	}
 
-	virtual const EDisplayType getDisplayType() const = 0;
+	virtual EDisplayType getDisplayType() const = 0;
 
 	virtual bool supports8bpp() const
 	{
@@ -272,7 +274,7 @@ public:
 	virtual const IVideoModeList* getSupportedVideoModes() const
 	{	return &mModeList;	}
 
-	virtual const EDisplayType getDisplayType() const
+	virtual EDisplayType getDisplayType() const
 	{	return DISPLAY_WindowOnly;	}
 
 	virtual const IVideoMode& getNativeMode() const
@@ -357,6 +359,9 @@ public:
 	{	return mPalette;	}
 
 	void blit(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
+			int destx, int desty, int destw, int desth);
+
+	void blitcrop(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
 			int destx, int desty, int destw, int desth);
 
 	void clear();

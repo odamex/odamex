@@ -33,7 +33,7 @@ ctrl_c=0
 
 # these are not the only demo parameters
 # (see commands sent to server)
-demoname=demo1 # up to 
+demoname=demo1 # up to
 map=map11
 demoname=demo2 # up to 625
 map=map05
@@ -64,8 +64,6 @@ sleep 0.1
 echo sv_skill      4   >> $svr
 sleep 0.1
 echo sv_maxplayers 1   >> $svr
-sleep 0.1
-echo sv_speedhackfix 1 >> $svr
 sleep 0.1
 
 # launch client

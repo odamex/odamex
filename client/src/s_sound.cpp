@@ -183,17 +183,17 @@ void S_NoiseDebug()
 			strcpy (temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name);
 			temp[8] = 0;
 			screen->DrawText (color, 0, y, temp);
-			sprintf (temp, "%d", ox / FRACUNIT);
+			snprintf (temp, 16, "%d", ox / FRACUNIT);
 			screen->DrawText (color, 70, y, temp);
-			sprintf (temp, "%d", oy / FRACUNIT);
+			snprintf(temp, 16, "%d", oy / FRACUNIT);
 			screen->DrawText (color, 120, y, temp);
-			sprintf (temp, "%.2f", Channel[i].volume);
+			snprintf(temp, 16, "%.2f", Channel[i].volume);
 			screen->DrawText (color, 170, y, temp);
-			sprintf (temp, "%d", Channel[i].priority);
+			snprintf(temp, 16, "%d", Channel[i].priority);
 			screen->DrawText (color, 200, y, temp);
-			sprintf (temp, "%d", P_AproxDistance2 (listenplayer().camera, ox, oy) / FRACUNIT);
+			snprintf(temp, 16, "%d", P_AproxDistance2 (listenplayer().camera, ox, oy) / FRACUNIT);
 			screen->DrawText (color, 240, y, temp);
-			sprintf (temp, "%d", Channel[i].entchannel);
+			snprintf(temp, 16, "%d", Channel[i].entchannel);
 			screen->DrawText (color, 280, y, temp);
 		}
 		else
@@ -207,7 +207,7 @@ void S_NoiseDebug()
 // S_UseMap8Volume
 //
 // Determines if it is appropriate to use the special ExM8 attentuation
-// based on the current map number and the status of co_level8soundfeature
+// based on the current map number
 // [ML] Now based on whether co_zdoomsound is on or it's a multiplayer not-coop game
 //
 static bool S_UseMap8Volume()
@@ -414,7 +414,7 @@ static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
 	else
 	{
 		const float attenuation = static_cast<float>(SoundCurve[approx_dist >> FRACBITS]) / 128.0f;
-		
+
 		*vol = snd_sfxvolume * attenuation;
 
 		// angle of source to listener
@@ -593,7 +593,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 		return;
 
   	// check for bogus sound #
-	if (sfx_id < 1 || sfx_id > S_sfx.size() - 1)
+	if (sfx_id < 1 || sfx_id > static_cast<int>(S_sfx.size()) - 1)
 	{
 		DPrintf("Bad sfx #: %d\n", sfx_id);
 		return;
@@ -601,7 +601,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 
 	sfxinfo_t* sfxinfo = &S_sfx[sfx_id];
 
-	while (sfxinfo->link != sfxinfo_t::NO_LINK)
+	while (sfxinfo->link != static_cast<int>(sfxinfo_t::NO_LINK))
 	{
 		sfx_id = ResolveSound(sfxinfo->link);
 		sfxinfo = &S_sfx[sfx_id];
@@ -610,7 +610,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	if (!sfxinfo->data)
 	{
 		I_LoadSound(sfxinfo);
-		while (sfxinfo->link != sfxinfo_t::NO_LINK)
+		while (sfxinfo->link != static_cast<int>(sfxinfo_t::NO_LINK))
 		{
 			sfx_id = ResolveSound(sfxinfo->link);
 			sfxinfo = &S_sfx[sfx_id];
@@ -779,17 +779,17 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 		sfx_id = -1;
 		if (ent && ent != (AActor *)(~0) && (player = ent->player))
 		{
-			sprintf(nametemp, templat, "base", soundname.substr(1).c_str());
+			snprintf(nametemp, 128, templat, "base", soundname.substr(1).c_str());
 			sfx_id = S_FindSound(nametemp);
 			if (sfx_id == -1)
 			{
-				sprintf(nametemp, templat, genders[player->userinfo.gender], soundname.substr(1).c_str());
+				snprintf(nametemp, 128, templat, genders[player->userinfo.gender], soundname.substr(1).c_str());
 				sfx_id = S_FindSound(nametemp);
 			}
 		}
 		if (sfx_id == -1)
 		{
-			sprintf(nametemp, templat, "male", soundname.substr(1).c_str());
+			snprintf(nametemp, 128, templat, "male", soundname.substr(1).c_str());
 			sfx_id = S_FindSound(nametemp);
 		}
 	}
@@ -1000,7 +1000,7 @@ void S_UpdateSounds(void* listener_p)
 
 				float volume = maxvolume;
 
-				if (sfx->link != sfxinfo_t::NO_LINK)
+				if (sfx->link != static_cast<int>(sfxinfo_t::NO_LINK))
 				{
 					volume += Channel[cnum].volume;
 
@@ -1088,7 +1088,7 @@ void S_ChangeMusic(std::string musicname, int looping)
 	// [SL] Avoid caching music lumps if we're not playing music
 	if (snd_musicsystem == MS_NONE)
 		return;
-		
+
 	if (mus_playing.name == musicname)
 		return;
 
@@ -1227,14 +1227,14 @@ int FindSoundNoHash(const char* logicalname)
 	for (size_t i = 0; i < S_sfx.size(); i++)
 		if (iequals(logicalname, S_sfx[i].name))
 			return i;
-	
+
 	return S_sfx.size();
 }
 
 int FindSoundTentative(const char* name)
 {
 	int id = FindSoundNoHash(name);
-	if (id == S_sfx.size())
+	if (id == static_cast<int>(S_sfx.size()))
 	{
 		id = S_AddSoundLump(name, -1);
 	}
@@ -1248,7 +1248,7 @@ int S_AddSound(const char *logicalname, const char *lumpname)
 	const int lump = lumpname ? W_CheckNumForName(lumpname) : -1;
 
 	// Otherwise, prepare a new one.
-	if (sfxid != S_sfx.size())
+	if (sfxid != static_cast<int>(S_sfx.size()))
 	{
 		sfxinfo_t& sfx = S_sfx[sfxid];
 
@@ -1386,7 +1386,7 @@ void S_ParseSndInfo()
 					char mapname[8];
 
 					os.mustScanInt();
-					sprintf(mapname, "MAP%02d", os.getTokenInt());
+					snprintf(mapname, 8, "MAP%02d", os.getTokenInt());
 					level_pwad_info_t& info = getLevelInfos().findByName(mapname);
 					os.mustScan();
 					if (info.mapname[0])
@@ -1556,15 +1556,13 @@ void S_ActivateAmbient(AActor *origin, int ambient)
 
 BEGIN_COMMAND (snd_soundlist)
 {
-	char lumpname[9];
-
-	lumpname[8] = 0;
 	for (unsigned i = 0; i < S_sfx.size(); i++)
 		if (S_sfx[i].lumpnum != -1)
 		{
-			strncpy (lumpname, lumpinfo[S_sfx[i].lumpnum].name, 8);
-			Printf (PRINT_HIGH, "%3d. %s (%s)\n", i+1, S_sfx[i].name, lumpname);
+			const OLumpName lumpname = lumpinfo[S_sfx[i].lumpnum].name;
+			Printf(PRINT_HIGH, "%3d. %s (%s)\n", i+1, S_sfx[i].name, lumpname.c_str());
 		}
+		// todo: check if sounds are multiple lumps rather than just one (i.e. random sounds)
 		else
 			Printf (PRINT_HIGH, "%3d. %s **not present**\n", i+1, S_sfx[i].name);
 }
@@ -1573,7 +1571,7 @@ END_COMMAND (snd_soundlist)
 BEGIN_COMMAND (snd_soundlinks)
 {
 	for (unsigned i = 0; i < S_sfx.size(); i++)
-		if (S_sfx[i].link != sfxinfo_t::NO_LINK)
+		if (S_sfx[i].link != static_cast<int>(sfxinfo_t::NO_LINK))
 			Printf(PRINT_HIGH, "%s -> %s\n", S_sfx[i].name, S_sfx[S_sfx[i].link].name);
 }
 END_COMMAND (snd_soundlinks)

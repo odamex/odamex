@@ -97,6 +97,7 @@ enum ceilingchange_e
 };
 
 extern std::list<movingsector_t> movingsectors;
+extern std::list<sector_t*> specialdoors;
 extern bool s_SpecialFromServer;
 
 #define IgnoreSpecial !serverside && !s_SpecialFromServer
@@ -113,6 +114,8 @@ bool P_MovingCeilingCompleted(sector_t *sector);
 bool P_MovingFloorCompleted(sector_t *sector);
 bool P_HandleSpecialRepeat(line_t* line);
 void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod = 0);
+void P_ApplySectorDamageNoRandom(player_t* player, int damage, int mod = 0);
+void P_ApplySectorDamageNoWait(player_t* player, int damage, int mod = 0);
 void P_ApplySectorDamageEndLevel(player_t* player);
 void P_CollectSecretCommon(sector_t* sector, player_t* player);
 int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start);
@@ -251,6 +254,36 @@ inline FArchive &operator<< (FArchive &arc, DScroller::EScrollType type)
 inline FArchive &operator>> (FArchive &arc, DScroller::EScrollType &out)
 {
 	BYTE in; arc >> in; out = (DScroller::EScrollType)in; return arc;
+}
+
+inline bool P_WallScrollType(DScroller::EScrollType type)
+{
+	if (type == DScroller::sc_side)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+inline bool P_FloorScrollType(DScroller::EScrollType type)
+{
+	if (type == DScroller::sc_floor)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+inline bool P_CeilingScrollType(DScroller::EScrollType type)
+{
+	if (type == DScroller::sc_ceiling)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 // phares 3/20/98: added new model of Pushers for push/pull effects
@@ -558,8 +591,8 @@ void	EV_StartLightFading (int tag, int value, int tics);
 //
 typedef struct
 {
-	char		name1[9];
-	char		name2[9];
+	OLumpName	name1;
+	OLumpName	name2;
 	short		episode;
 
 } switchlist_t;

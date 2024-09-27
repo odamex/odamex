@@ -474,7 +474,6 @@ static void ParseHordeDefs()
 		::WAVE_DEFINES[i].legacyID = i;
 	}
 
-	int i = -1;
 	for (std::vector<hordeDefine_t>::iterator it = ::WAVE_DEFINES.begin();
 	     it != ::WAVE_DEFINES.end(); ++it)
 	{
@@ -518,7 +517,7 @@ const hordeDefine_t& G_HordeDefine(size_t id)
 	if (id >= ::WAVE_DEFINES.size())
 	{
 		Printf(PRINT_WARNING,
-		       "Tried to access horde wave %llu but only have %llu horde defines!\n", id,
+		       "Tried to access horde wave %lu but only have %lu horde defines!\n", id,
 		       ::WAVE_DEFINES.size());
 		return EMPTY_WAVE_DEFINE;
 	}

@@ -200,7 +200,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	argb_t* dest = (argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1;
 	
 	// texture data
-	byte *src = (byte *)dspan.source;
+	byte *src = dspan.source;
 
 	int ltindex = 0;		// index into the lighting table
 

@@ -11,7 +11,7 @@
 
 Set-Variable -Name "CurrentDir" -Value (Get-Item (Get-Location)).Parent.Parent # cd to the base odamex git path before executing (this assumes you're running this script in this dir)
 
-Set-Variable -Name "OdamexVersion" -Value "10.4.0"
+Set-Variable -Name "OdamexVersion" -Value "10.6.0"
 Set-Variable -Name "OdamexTestSuffix" -Value "" # "-RC3"
 
 #

@@ -1751,7 +1751,6 @@ FUNC(LS_Clear_ForceField)
 	while ((s = P_FindSectorFromTag(arg0, s)) >= 0)
 	{
 		int i;
-		line_t* line;
 
 		for (i = 0; i < sectors[s].linecount; i++)
 		{
@@ -2407,9 +2406,6 @@ FUNC(LS_Sector_SetFade)
 				sectors[secnum].colormap->color.getg(),
 				sectors[secnum].colormap->color.getb(),
 				arg1, arg2, arg3);
-		byte r = sectors[secnum].colormap->fade.getr();
-		byte g = sectors[secnum].colormap->fade.getg();
-		byte b = sectors[secnum].colormap->fade.getb();
 		sectors[secnum].SectorChanges |= SPC_Fade;
 	}
 	return true;

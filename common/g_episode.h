@@ -27,12 +27,13 @@
 
 struct EpisodeInfo
 {
-	std::string name;
+	std::string pic_name;
+	std::string menu_name;
 	char key;
 	bool fulltext;
 	bool noskillmenu;
 
-	EpisodeInfo() : name(""), key('\0'), fulltext(false), noskillmenu(false) {}
+	EpisodeInfo() : pic_name(""), menu_name(""), key('\0'), fulltext(false), noskillmenu(false) {}
 };
 
 extern OLumpName EpisodeMaps[MAX_EPISODES];

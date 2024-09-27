@@ -181,7 +181,7 @@ static void I_UnregisterMidiSong(MidiSong* midisong)
 
 MidiMusicSystem::MidiMusicSystem()
 	: MusicSystem(), m_useResetDelay(false), m_midiSong(NULL), m_songItr(),
-	  m_loop(false), m_timeDivision(96), msperclock(0.0), m_useFallback(false),
+	  m_loop(false), msperclock(0.0), m_useFallback(false),
 	  m_fallback(), m_lastEventTime(0), m_prevClockTime(0)
 {
 }

@@ -136,8 +136,8 @@ char& OLumpName::at(const size_t pos)
 	if (pos > 7 || pos > s)
 	{
 		char buffer[80];
-		sprintf(buffer,
-				"Attempted to access OLumpName at position %llu when the size was %llu",
+		snprintf(buffer, 80,
+				"Attempted to access OLumpName at position %lu when the size was %lu",
 				pos, s);
 		
 		throw std::out_of_range(buffer);
@@ -153,8 +153,8 @@ const char& OLumpName::at(const size_t pos) const
 	if (pos > 7 || pos > s)
 	{
 		char buffer[80];
-		sprintf(buffer,
-		        "Attempted to access OLumpName at position %llu when the size was %llu",
+		snprintf(buffer, 80,
+		        "Attempted to access OLumpName at position %lu when the size was %lu",
 		        pos, s);
 
 		throw std::out_of_range(buffer);

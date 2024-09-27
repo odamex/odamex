@@ -65,7 +65,7 @@ void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
 void SetTextureNoErr(short* texture, unsigned int* color, char* name);
 
 int P_Random(AActor* actor);
-const LineActivationType P_LineActivationTypeForSPACFlag(
+LineActivationType P_LineActivationTypeForSPACFlag(
     const unsigned int activationType);
 void P_SpawnPhasedLight(sector_t* sector, int base, int index);
 void P_SpawnLightSequence(sector_t* sector);

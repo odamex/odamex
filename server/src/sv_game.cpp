@@ -248,6 +248,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 
 	p.usedown = p.attackdown = true;	// don't do anything immediately
 	p.playerstate = PST_LIVE;
+	p.doreborn = false;
 	p.weaponowned[NUMWEAPONS] = true;
 
 	if (!p.spectator)
@@ -387,7 +388,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 
 // [RH] Returns the distance of the closest player to the given mapthing2_t.
 // denis - todo - should this be used somewhere?
-// [Russell] This code is horrible because it does no position checking, even 
+// [Russell] This code is horrible because it does no position checking, even
 // zdoom 2.x still has it!
 static fixed_t PlayersRangeFromSpot (mapthing2_t *spot)
 {

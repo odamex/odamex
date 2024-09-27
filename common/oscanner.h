@@ -64,7 +64,7 @@ class OScanner
 	                           const char* end);
 
 	bool scan();
-	void mustScan();
+	void mustScan(size_t max_length = 0);
 	void mustScanInt();
 	void mustScanFloat();
 	void mustScanBool();
@@ -77,7 +77,9 @@ class OScanner
 
 	bool &crossed();
 	bool isQuotedString() const;
+	bool isIdentifier() const;
 	void assertTokenIs(const char* string) const;
+	void assertTokenNoCaseIs(const char* string) const;
 	bool compareToken(const char* string) const;
 	bool compareTokenNoCase(const char* string) const;
 	void STACK_ARGS warning(const char* message, ...) const;

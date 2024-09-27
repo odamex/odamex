@@ -116,8 +116,9 @@ void W_InitMultipleFiles(const OResFiles& filenames);
 lumpHandle_t W_LumpToHandle(const unsigned lump);
 int W_HandleToLump(const lumpHandle_t handle);
 
-int		W_CheckNumForName (const char *name, int ns = ns_global);
-int		W_GetNumForName (const char *name, int ns = ns_global);
+int W_CheckNumForName(const char *name, int ns = ns_global);
+int W_GetNumForName(const char *name, int ns = ns_global);
+int W_GetNumForName(OLumpName& name, int ns = ns_global);
 
 std::string W_LumpName(unsigned lump);
 unsigned	W_LumpLength (unsigned lump);
@@ -126,8 +127,10 @@ unsigned	W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest,
 
 void* W_CacheLumpNum(unsigned lump, const zoneTag_e tag);
 void* W_CacheLumpName(const char* name, const zoneTag_e tag);
+void* W_CacheLumpName(OLumpName& name, const zoneTag_e tag);
 patch_t* W_CachePatch(unsigned lump, const zoneTag_e tag = PU_CACHE);
 patch_t* W_CachePatch(const char* name, const zoneTag_e tag = PU_CACHE);
+patch_t* W_CachePatch(OLumpName& name, const zoneTag_e tag = PU_CACHE);
 lumpHandle_t W_CachePatchHandle(const int lumpNum, const zoneTag_e tag = PU_CACHE);
 lumpHandle_t W_CachePatchHandle(const char* name, const zoneTag_e tag = PU_CACHE,
                                 int ns = ns_global);
@@ -149,7 +152,10 @@ void	W_MergeLumps (const char *start, const char *end, int);
 void uppercopy (char *to, const char *from);
 
 // [RH] Copies the lump name to to using uppercopy
-void W_GetLumpName (char *to, unsigned lump);
+void W_GetLumpName(char* to, unsigned lump);
+
+// [RH] Copies the lump name to to using uppercopy
+void W_GetOLumpName(OLumpName& to, unsigned lump);
 
 // [RH] Returns file handle for specified lump
 int W_GetLumpFile (unsigned lump);

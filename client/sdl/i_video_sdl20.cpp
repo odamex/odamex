@@ -608,7 +608,7 @@ void ISDL20Window::getEvents()
 					if ((EWindowMode)vid_fullscreen.asInt() == WINDOW_Windowed && current_time > mAcceptResizeEventsTime)
 					{
 						char tmp[30];
-						sprintf(tmp, "vid_setmode %d %d", width, height);
+						snprintf(tmp, 30, "vid_setmode %d %d", width, height);
 						AddCommandString(tmp);
 					}
 				}

@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2024 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -91,7 +91,7 @@
 // earlier than this version.  Needs to be exactly 16 chars long.
 // 
 // upversion.py will update thie field deterministically and unambiguously.
-#define SAVESIG "ODAMEXSAVE100"
+#define SAVESIG "ODAMEXSAVE010060"
 
 #define NETDEMOVER 3
 

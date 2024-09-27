@@ -73,32 +73,32 @@ static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdat
 	return nitems;
 }
 
+////
+//// https://curl.haxx.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
+////
+//static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
+//                     void* userptr)
+//{
+//	std::string str = std::string(data, size);
 //
-// https://curl.haxx.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
+//	switch (type)
+//	{
+//	case CURLINFO_TEXT:
+//		Printf("curl | %s\n", str.c_str());
+//		break;
+//	case CURLINFO_HEADER_IN:
+//		Printf("curl < %s\n", str.c_str());
+//		break;
+//	case CURLINFO_HEADER_OUT:
+//		Printf("curl > %s\n", str.c_str());
+//		break;
+//	default:
+//		// Don't print data/binary SSL stuff.
+//		break;
+//	}
 //
-static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
-                     void* userptr)
-{
-	std::string str = std::string(data, size);
-
-	switch (type)
-	{
-	case CURLINFO_TEXT:
-		Printf("curl | %s\n", str.c_str());
-		break;
-	case CURLINFO_HEADER_IN:
-		Printf("curl < %s\n", str.c_str());
-		break;
-	case CURLINFO_HEADER_OUT:
-		Printf("curl > %s\n", str.c_str());
-		break;
-	default:
-		// Don't print data/binary SSL stuff.
-		break;
-	}
-
-	return 0;
-}
+//	return 0;
+//}
 
 // // OTransferInfo // //
 
@@ -151,6 +151,17 @@ size_t OTransferCheck::curlWrite(void* data, size_t size, size_t nmemb, void* us
 void OTransferCheck::setURL(const std::string& src)
 {
 	curl_easy_setopt(m_curl, CURLOPT_URL, src.c_str());
+}
+
+/**
+ * @brief Escapes a filename and encodes it to be a legal URI
+ *
+ * @param filename Complete filename
+ */
+std::string OTransferCheck::escapeFileName(const std::string& filename)
+{
+	// Let's escape the filename so we have a legal url to try
+	return curl_easy_escape(m_curl, filename.c_str(), filename.length());
 }
 
 /**
@@ -414,12 +425,12 @@ bool OTransfer::tick()
 	m_file = NULL;
 
 	// Verify that the file is what the server wants and is not a renamed
-	// commercial IWAD.
+	// commercial WAD.
 	OMD5Hash actualHash = W_MD5(m_filePart);
-	if (W_IsFilehashCommercialIWAD(actualHash))
+	if (W_IsFilehashCommercialWAD(actualHash))
 	{
 		remove(m_filePart.c_str());
-		m_errorProc("Accidentally downloaded a commercial IWAD - file removed");
+		m_errorProc("Accidentally downloaded a commercial WAD - file removed");
 		return false;
 	}
 	else if (!m_expectHash.empty() && m_expectHash != actualHash)

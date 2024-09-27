@@ -104,9 +104,9 @@ EXTERN_CVAR (gammalevel)
 EXTERN_CVAR (language)
 EXTERN_CVAR (mute_spectators)
 EXTERN_CVAR (mute_enemies)
+EXTERN_CVAR (wi_oldintermission)
 
-
-// [Ralphis - Menu] Compatibility Menu
+// [electricbrass - Menu] HUD Menu
 EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_scale)
@@ -119,9 +119,13 @@ EXTERN_CVAR (hud_heldflag_flash)
 EXTERN_CVAR (hud_transparency)
 EXTERN_CVAR (hud_anchoring)
 EXTERN_CVAR (hud_revealsecrets)
+EXTERN_CVAR(hud_feedobits)
+EXTERN_CVAR(hud_feedtime)
+EXTERN_CVAR(hud_extendedinfo)
+
+// [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
-EXTERN_CVAR (wi_oldintermission)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_zdoomsound)
 EXTERN_CVAR (co_fixweaponimpacts)
@@ -132,8 +136,6 @@ EXTERN_CVAR (co_boomphys)			// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_removesoullimit)
 EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (co_globalsound)
-EXTERN_CVAR(hud_feedobits)
-EXTERN_CVAR(hud_feedtime)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -337,6 +339,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+left"} },
 	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+right"} },
 	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
+	{ control,	"Always Run",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglerun"} },
 	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
 	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
 	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"turn180"} },
@@ -806,6 +809,8 @@ CVAR_FUNC_IMPL (ui_transblue)
     M_SlideUIBlue((int)var);
 }
 
+static value_t Endoom[] = {{0.0, "Off"}, {1.0, "On"}, {2.0, "PWAD Only"}};
+
 static menuitem_t VideoItems[] = {
     {more, "Heads-up display", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)StartHUDMenu}},
 	{ more,		"Messages",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartMessagesMenu} },
@@ -841,7 +846,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
 	{ discrete, "Multiplayer Intermissions",{&wi_oldintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
 	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },
-    { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{3.0}, {0.0},	{0.0},  {Endoom} },
 
 
 };
@@ -890,6 +895,9 @@ static value_t Crosshairs[] = {{0.0, "None"}, {1.0, "Cross 1"}, {2.0, "Cross 2"}
                                {3.0, "X"},    {4.0, "Diamond"}, {5.0, "Dot"},
                                {6.0, "Box"},  {7.0, "Angle"},   {8.0, "Big Thing"}};
 
+static value_t ExtendedHudStyles[] = {{0.0, "Off"}, {1.0, "Horizontal 1"}, {2.0, "Horizontal 2"},
+								 {3.0, "Vertical 1"}, {4.0, "Vertical 2"},};
+
 static menuitem_t HUDItems[] = {
     {yellowtext, "Status Bar", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
     {discrete, "Scale status bar", {&st_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
@@ -908,6 +916,7 @@ static menuitem_t HUDItems[] = {
     {slider, "Feed Timeout", {&hud_feedtime}, {1.0}, {10.0}, {0.25}, {NULL}},
     {discrete, "Show Kills in Feed", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {discrete, "Netdemo infos", {&hud_demobar}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {discrete, "Extended hud", {&hud_extendedinfo}, {5.0}, {0.0}, {0.0}, {ExtendedHudStyles}},
     {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 
     {yellowtext, "Scoreboard", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
@@ -986,12 +995,12 @@ static value_t TextColors[] =
 };
 
 // TODO: Put all language info in one array, auto detect what's in the lump?
-static value_t Languages[] = {
-	{ 0.0, "Auto" },
-	{ 1.0, "English" },
-	{ 2.0, "French" },
-	{ 3.0, "Italian" }
-};
+//static value_t Languages[] = { // unused
+//	{ 0.0, "Auto" },
+//	{ 1.0, "English" },
+//	{ 2.0, "French" },
+//	{ 3.0, "Italian" }
+//};
 
 static menuitem_t MessagesItems[] = {
 #if 0
@@ -1096,7 +1105,7 @@ static void M_SetVideoMode(uint16_t width, uint16_t height)
 	old_height = I_GetVideoHeight();
 
 	char command[30];
-	sprintf(command, "vid_setmode %d %d", width, height);
+	snprintf(command, 30, "vid_setmode %d %d", width, height);
 	AddCommandString(command);
 
 	SetModesMenu(width, height);
@@ -1127,7 +1136,7 @@ static value_t VidFPSCaps[] = {
 	{ 60.0,		"60fps" },
 	{ 70.0,		"70fps" },
    	{ 105.0,	"105fps"},
-	{ 120.0,	"120fps" }, 
+	{ 120.0,	"120fps" },
 	{ 140.0,	"140fps"},
     	{ 144.0,	"144fps"},
     	{ 240.0,	"240fps"},
@@ -1231,7 +1240,7 @@ static void BuildModesList(int hiwidth, int hiheight)
 					ModesItems[i].e.highlight = ModesItems[i].a.selmode = col;
 
 				char strtemp[32];
-				sprintf(strtemp, "%dx%d", width, height);
+				snprintf(strtemp, 32, "%dx%d", width, height);
 				ReplaceString(str, strtemp);
 			}
 			else
@@ -1291,7 +1300,7 @@ static void SetModesMenu(int w, int h)
 	else
 	{
 		static char enter_text[64];
-		sprintf(enter_text, "TESTING %dx%d", w, h);
+		snprintf(enter_text, 64, "TESTING %dx%d", w, h);
 
 		ModesItems[VM_ENTERLINE].label = enter_text;
 		ModesItems[VM_TESTLINE].label = VMTestWaitText;
@@ -1336,7 +1345,7 @@ static void M_SendUINewColor (int red, int green, int blue)
 {
 	char command[24];
 
-	sprintf (command, "ui_dimcolor \"%02x %02x %02x\"", red, green, blue);
+	snprintf (command, 24, "ui_dimcolor \"%02x %02x %02x\"", red, green, blue);
 	AddCommandString (command);
 }
 
@@ -1885,7 +1894,7 @@ void M_OptResponder (event_t *ev)
 			int newflags = *item->e.flagint ^ item->a.flagmask;
 			char val[16];
 
-			sprintf (val, "%d", newflags);
+			snprintf (val, 16, "%d", newflags);
 			flagsvar->Set (val);
 			return;
 	}
@@ -2004,7 +2013,7 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 		}
-		else if (Key_IsPageDownKey(ch, numlock)) 
+		else if (Key_IsPageDownKey(ch, numlock))
 		{
 			if (CanScrollDown)
 			{
@@ -2075,7 +2084,7 @@ void M_OptResponder (event_t *ev)
 				part = 0x00;
 
 			char singlecolor[3];
-			sprintf(singlecolor, "%02x", part);
+			snprintf(singlecolor, 3, "%02x", part);
 
 			if (item->type == redslider)
 				memcpy(newcolor, singlecolor, 2);
@@ -2203,7 +2212,7 @@ void M_OptResponder (event_t *ev)
 				part = 0xff;
 
 			char singlecolor[3];
-			sprintf(singlecolor, "%02x", part);
+			snprintf(singlecolor, 3, "%02x", part);
 
 			if (item->type == redslider)
 				memcpy(newcolor, singlecolor, 2);

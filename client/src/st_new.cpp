@@ -53,6 +53,7 @@
 #include "p_horde.h"
 #include "c_dispatch.h"
 #include "hu_speedometer.h"
+#include "am_map.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
@@ -101,7 +102,7 @@ extern NetDemo netdemo;
 typedef std::vector<const patch_t**> PathFreeList;
 
 /**
- * @brief Stores pointers to status bar objects that should be freed on shutdown. 
+ * @brief Stores pointers to status bar objects that should be freed on shutdown.
  */
 PathFreeList freelist;
 
@@ -117,6 +118,7 @@ EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(hud_transparency)
 EXTERN_CVAR(hud_anchoring)
 EXTERN_CVAR(hud_demobar)
+EXTERN_CVAR(hud_extendedinfo)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
@@ -193,7 +195,7 @@ void ST_initNew()
 	std::string buffer;
 	for (size_t i = 0; i < NUMMODS; i++)
 	{
-		StrFormat(buffer, "ODAMOD%d", i);
+		StrFormat(buffer, "ODAMOD%lu", i);
 		::ToastIcon[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
 	}
 }
@@ -218,7 +220,7 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 		num = -num;
 	}
 
-	sprintf (digits, "%d", num);
+	snprintf (digits, 11, "%d", num);
 
 	d = digits;
 	while (*d)
@@ -789,6 +791,99 @@ void drawNetdemo() {
 	}
 }
 
+static void drawLevelStats()
+{
+	if (!G_IsCoopGame())
+		return;
+
+	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
+		return;
+
+	if (R_StatusBarVisible() && HU_ChatMode() != CHAT_INACTIVE)
+		return;
+
+	unsigned int xscale = hud_scale ? CleanXfac : 1;
+	int num_ax = 0, text_ax = 0;
+	if (hud_anchoring.value() < 1.0f)
+	{
+		num_ax = (((float)I_GetSurfaceWidth() - (float)I_GetSurfaceHeight() * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
+		num_ax = MAX(0, num_ax);
+		text_ax = num_ax / xscale;
+	}
+
+	std::string line;
+	const int LINE_SPACING = V_LineHeight() + 1;
+	int font_offset = 0;
+	unsigned int x = R_StatusBarVisible() ? (text_ax + 2) : (text_ax + 10), y = R_StatusBarVisible() ? statusBarY() + 1 : 44;
+
+	if (hud_extendedinfo == 1 || hud_extendedinfo == 3)
+	{
+		V_SetFont("DIGFONT");
+		font_offset = 1;
+	}
+
+	if (G_IsHordeMode())
+	{
+		StrFormat(line, TEXTCOLOR_RED "K" TEXTCOLOR_NORMAL " %d",
+	        level.killed_monsters);
+
+		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
+	}
+	else if (hud_extendedinfo >= 3 || !R_StatusBarVisible())
+	{
+		std::string killrow;
+		std::string itemrow;
+		std::string secretrow;
+
+		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "S", CR_GREY);
+		hud::DrawText(x + font_offset, y + LINE_SPACING, ::hud_scale, hud::X_LEFT,
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "I", CR_GREY);
+		hud::DrawText(x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "K", CR_GREY);
+
+		StrFormat(killrow, "%s" " %d/%d",
+		          (level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		   	      level.killed_monsters,
+		   	      (level.total_monsters + level.respawned_monsters));
+		StrFormat(itemrow, "%s" " %d/%d",
+		          (level.found_items >= level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		          level.found_items, level.total_items);
+		StrFormat(secretrow, "%s" " %d/%d",
+		          (level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		          level.found_secrets, level.total_secrets);
+
+		x += 9 - font_offset * 4;
+
+		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, secretrow.c_str(), CR_GREY);
+		hud::DrawText(x, y + LINE_SPACING, ::hud_scale, hud::X_LEFT,
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, itemrow.c_str(), CR_GREY);
+		hud::DrawText(x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
+		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY);
+
+	}
+	else
+	{
+		StrFormat(line, TEXTCOLOR_RED "K" "%s" " %d/%d "
+					    TEXTCOLOR_RED "I" "%s" " %d/%d "
+					    TEXTCOLOR_RED "S" "%s" " %d/%d",
+		                (level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                level.killed_monsters,
+		                (level.total_monsters + level.respawned_monsters),
+		                (level.found_items >= level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                level.found_items, level.total_items,
+		                (level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                level.found_secrets, level.total_secrets);
+
+		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+		    hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
+	}
+
+	V_SetFont("SMALLFONT");
+}
+
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
 void OdamexHUD() {
 	std::string buf;
@@ -877,7 +972,6 @@ void OdamexHUD() {
 		ST_DrawNumRight(I_GetSurfaceWidth() - num_ax - 24 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
 
-	int color;
 	std::string str;
 	int iy = 4;
 
@@ -923,7 +1017,7 @@ void OdamexHUD() {
 	// number on the other side of the screen.
 	if (::hud_bigfont)
 		V_SetFont("BIGFONT");
-	
+
 	// Special 3 line formatting for match duel
 	int spreadheight, scoreheight, placeheight;
 
@@ -968,6 +1062,10 @@ void OdamexHUD() {
 
 	// Draw gametype scoreboard
 	hud::drawGametype();
+
+	// Draw level stats
+	if (hud_extendedinfo)
+		hud::drawLevelStats();
 }
 
 struct drawToast_t
@@ -1397,10 +1495,10 @@ void LevelStateHUD()
 	case LevelState::ENDGAME_COUNTDOWN: {
 		WinInfo win = ::levelstate.getWinInfo();
 		//Upper Text
-		if 
+		if
 			(win.type == WinInfo::WIN_EVERYBODY)
 			StrFormat(lines.title, TEXTCOLOR_YELLOW "Mission Success!");
-		else if 
+		else if
 			(win.type == WinInfo::WIN_NOBODY)
 			StrFormat(lines.title, TEXTCOLOR_RED "Mission Failed!");
 		else
@@ -1461,7 +1559,6 @@ void LevelStateHUD()
 // [AM] Spectator HUD.
 void SpectatorHUD()
 {
-	int color;
 	int iy = 4;
 
 	// Draw warmup state or timer
@@ -1528,6 +1625,10 @@ void DoomHUD()
 
 	// Draw gametype scoreboard
 	hud::drawGametype();
+
+	// Draw level stats
+	if (hud_extendedinfo)
+		hud::drawLevelStats();
 }
 
 }

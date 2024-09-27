@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(Odamex VERSION 10.4.0)
+project(Odamex VERSION 10.6.0)
 
 include(CMakeDependentOption)
 

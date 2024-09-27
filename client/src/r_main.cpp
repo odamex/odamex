@@ -30,8 +30,10 @@
 #include <math.h>
 #include "m_random.h"
 #include "p_local.h"
+#include "gi.h"
 #include "r_local.h"
 #include "r_sky.h"
+#include "r_interp.h"
 #include "st_stuff.h"
 #include "v_video.h"
 #include "stats.h"
@@ -39,10 +41,9 @@
 #include "i_video.h"
 #include "m_vectors.h"
 #include "am_map.h"
+#include "cl_demo.h"
 
-void R_BeginInterpolation(fixed_t amount);
-void R_EndInterpolation();
-void R_InterpolateCamera(fixed_t amount);
+extern NetDemo netdemo;
 
 #define DISTMAP			2
 
@@ -96,6 +97,7 @@ fixed_t 		viewy;
 fixed_t 		viewz;
 
 angle_t 		viewangle;
+sector_t*		viewsector;
 LocalView		localview;
 
 fixed_t 		viewcos;
@@ -146,6 +148,9 @@ fixed_t			render_lerp_amount;
 
 static void R_InitViewWindow();
 
+IWindowSurface* screenblocks_surface;
+IWindowSurface* scaled_screenblocks_surface;
+
 
 //
 // R_ForceViewWindowResize
@@ -179,7 +184,7 @@ IWindowSurface* R_GetRenderingSurface()
 // R_PointOnSide
 //
 // Determines which side of a line the point (x, y) is on.
-// Returns side 0 (front) or 1 (back) 
+// Returns side 0 (front) or 1 (back)
 //
 int R_PointOnSide(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixed_t yh)
 {
@@ -198,7 +203,7 @@ int R_PointOnSide(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixe
 //
 int R_PointOnSide(fixed_t x, fixed_t y, const node_t *node)
 {
-	return R_PointOnSide(x, y, node->x, node->y, node->x + node->dx, node->y + node->dy); 
+	return R_PointOnSide(x, y, node->x, node->y, node->x + node->dx, node->y + node->dy);
 }
 
 //
@@ -310,7 +315,7 @@ fixed_t R_PointToDist2(fixed_t dx, fixed_t dy)
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 {
 	int index = ang >> ANGLETOFINESHIFT;
-	
+
 	tx = FixedMul(x, finecosine[index]) - FixedMul(y, finesine[index]);
 	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
 }
@@ -324,7 +329,7 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 // right endpoint is rclip percent of the way between the left and right
 // endpoints
 //
-void R_ClipLine(const v2fixed_t* in1, const v2fixed_t* in2, 
+void R_ClipLine(const v2fixed_t* in1, const v2fixed_t* in2,
 				int32_t lclip, int32_t rclip,
 				v2fixed_t* out1, v2fixed_t* out2)
 {
@@ -364,11 +369,11 @@ bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipd
 	v2fixed_t p1 = *v1, p2 = *v2;
 
 	lclip = 0;
-	rclip = CLIPUNIT; 
+	rclip = CLIPUNIT;
 
 	// Clip portions of the line that are behind the view plane
 	if (p1.y < clipdist)
-	{      
+	{
 		// reject the line entirely if the whole thing is behind the view plane.
 		if (p2.y < clipdist)
 			return false;
@@ -417,7 +422,7 @@ bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipd
 	if (p2.x > yc2)
 	{
 		// clip line at right edge of the screen
-		fixed_t den = p2.x - p1.x - yc2 + yc1;	
+		fixed_t den = p2.x - p1.x - yc2 + yc1;
 		if (den == 0)
 			return false;
 
@@ -481,7 +486,7 @@ bool R_CheckProjectionY(int &y1, int &y2)
 {
 	y1 = MAX(y1, 0);
 	y2 = MIN(y2, viewheight - 1);
-	return (y1 <= y2);
+	return y1 <= viewheight - 1 || y2 >= 0;
 }
 
 
@@ -569,7 +574,7 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 		{
 			R_DrawPixel(x, y, color);
 			if (y == y2)
-				return;		
+				return;
 
 			if (d >= 0)
 			{
@@ -636,6 +641,8 @@ void R_Init()
 void STACK_ARGS R_Shutdown()
 {
     R_FreeTranslationTables();
+    I_FreeSurface(screenblocks_surface);
+    I_FreeSurface(scaled_screenblocks_surface);
 }
 
 
@@ -770,29 +777,10 @@ void R_SetupFrame (player_t *player)
 	if (!camera || !camera->subsector)
 		return;
 
-	if (player->cheats & CF_CHASECAM)
-	{
-		// [RH] Use chasecam view
-		P_AimCamera (camera);
-		viewx = CameraX;
-		viewy = CameraY;
-		viewz = CameraZ;
-		viewangle = camera->angle;
-	}
-	else
-	{
-		if (render_lerp_amount < FRACUNIT)
-		{
-			R_InterpolateCamera(render_lerp_amount);
-		}
-		else
-		{
-			viewx = camera->x;
-			viewy = camera->y;
-			viewz = camera->player ? camera->player->viewz : camera->z;
-			viewangle = camera->angle;
-		}
-	}
+	player_t &consolePlayer = consoleplayer();
+	const bool use_localview =
+	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
+	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
 
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
@@ -808,10 +796,9 @@ void R_SetupFrame (player_t *player)
 
 	// [SL] Change to a different sector blend color (or colormap in 8bpp mode)
 	// if entering a heightsec (via TransferHeight line special)
-	if (camera->subsector->sector->heightsec &&
-		!(camera->subsector->sector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
+	if (viewsector->heightsec && !(viewsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
-		const sector_t* sec = camera->subsector->sector->heightsec;
+		const sector_t* sec = viewsector->heightsec;
 
 		argb_t new_sector_blend_color;
 		if (viewz < P_FloorHeight(viewx, viewy, sec))
@@ -863,10 +850,7 @@ void R_SetupFrame (player_t *player)
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
 	}
 
-	player_t& consolePlayer = consoleplayer();
-
-	if (!::localview.skippitch && consolePlayer.id == displayplayer().id &&
-	    consolePlayer.health > 0 && !consolePlayer.mo->reactiontime)
+	if (use_localview && !::localview.skippitch)
 	{
 		R_ViewShear(clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));
 	}
@@ -1010,6 +994,8 @@ void R_RenderPlayerView(player_t* player)
 		setsizeneeded = false;
 	}
 
+	OInterpolation::getInstance().interpolateView(player, render_lerp_amount);
+
 	if (!viewactive)
 		return;
 
@@ -1031,12 +1017,12 @@ void R_RenderPlayerView(player_t* player)
 	{
 		argb_t color = gametic & 8 ? argb_t(0, 0, 0) : argb_t(0, 0, 255);
 		int x1 = viewwindowx, y1 = viewwindowy;
-		int x2 = viewwindowx + viewwidth - 1, y2 = viewwindowy + viewheight - 1; 
+		int x2 = viewwindowx + viewwidth - 1, y2 = viewwindowy + viewheight - 1;
 
 		surface->getDefaultCanvas()->Clear(x1, y1, x2, y2, color);
 	}
 
-	R_BeginInterpolation(render_lerp_amount);
+	OInterpolation::getInstance().beginGameInterpolation(render_lerp_amount);
 
 	// [RH] Setup particles for this frame
 	R_FindParticleSubsectors();
@@ -1048,7 +1034,7 @@ void R_RenderPlayerView(player_t* player)
 		int flags2_backup = camera->flags2;
 		camera->flags2 |= MF2_DONTDRAW;
 		R_RenderBSPNode(numnodes - 1);
-		camera->flags2 = flags2_backup; 
+		camera->flags2 = flags2_backup;
 	}
 	else
 		R_RenderBSPNode(numnodes - 1);	// The head node is the last node output.
@@ -1065,7 +1051,7 @@ void R_RenderPlayerView(player_t* player)
 						viewwindowx, viewwindowy, viewwidth, viewheight);
 	}
 
-	R_EndInterpolation();
+	OInterpolation::getInstance().endGameInterpolation();
 }
 
 
@@ -1171,14 +1157,14 @@ static void R_InitViewWindow()
 
 	surface->lock();
 
-	// Calculate viewwidth & viewheight based on the amount of window border 
+	// Calculate viewwidth & viewheight based on the amount of window border
 	viewwidth = R_ViewWidth(surface_width, surface_height);
 	viewheight = R_ViewHeight(surface_width, surface_height);
 	viewwindowx = R_ViewWindowX(surface_width, surface_height);
 	viewwindowy = R_ViewWindowY(surface_width, surface_height);
 
 	if (setblocks == 10 || setblocks == 11 || setblocks == 12)
-		freelookviewheight = surface_height; 
+		freelookviewheight = surface_height;
 	else
 		freelookviewheight = ((setblocks * surface_height) / 10) & ~7;
 
@@ -1260,7 +1246,7 @@ static void R_InitViewWindow()
 	surface->unlock();
 
 	char temp_str[16];
-	sprintf(temp_str, "%d x %d", viewwidth, viewheight);
+	snprintf(temp_str, 16, "%d x %d", viewwidth, viewheight);
 	r_viewsize.ForceSet(temp_str);
 
 	// [SL] clear many renderer variables

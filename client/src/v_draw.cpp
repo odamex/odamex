@@ -570,6 +570,11 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int 
 	y -= patch->topoffset();
 	x -= patch->leftoffset();
 
+	// [FG] automatically center wide patches without horizontal offset
+	// (taken from dsda but inverted since we center above this)
+	if (patch->width() > 320 && patch->leftoffset() != 0)
+		x += (patch->width() - 320) / 2;
+
 #ifdef RANGECHECK
 	if (x < 0 ||x + patch->width() > surface_width || y < 0 || y + patch->height() > surface_height)
 	{
