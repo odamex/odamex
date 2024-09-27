@@ -94,6 +94,8 @@ jobs:
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v7
       with:
-        commit-message: |
-          upversion to version 
-          ${{ needs.pre_job.outputs.major }}.${{ needs.pre_job.outputs.minor }}.${{ needs.pre_job.outputs.patch }}
+        commit-message: upversion to version ${{ needs.pre_job.outputs.major }}.${{ needs.pre_job.outputs.minor }}.${{ needs.pre_job.outputs.patch }}
+        title: Upversion release branch to ${{ needs.pre_job.outputs.major }}.${{ needs.pre_job.outputs.minor }}.${{ needs.pre_job.outputs.patch }}
+        body: |
+          This PR covers the task of upversioning the release branch to its intended version.
+          After accepting this PR, you may publish the release after verifying the artifacts.

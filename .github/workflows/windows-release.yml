@@ -188,22 +188,22 @@ jobs:
       run: |
         .\ci\stage-inno-setup-and-run.ps1
     - name: Upload setup installer to Github
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-Installer
         path: 'Output/*.exe'
     - name: Upload tar.xz
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-tar-xz
         path: './*.tar.xz'
     - name: Upload tar.gz
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-tar-gz
         path: './*.tar.gz'
     - name: Upload zip
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-src-zip
         path: './odamex-src-${{ env.new_version }}.zip'
@@ -248,7 +248,7 @@ jobs:
   #   runs-on: windows-latest
   #   steps:
   #   - name: Checkout source
-  #     uses: actions/checkout@v2
+  #     uses: actions/checkout@v4
   #   - name: Checkout submodules
   #     run: git submodule update --init --recursive
   #   - name: Install packages
