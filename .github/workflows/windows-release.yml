@@ -301,7 +301,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
       - name: Create Pull Request
-        run: gh pr create --base $BASE --body $BODY --title $TITLE 
+        run: gh pr create --base "$BASE" --body "$BODY" --title "$TITLE" 
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BASE: stable
