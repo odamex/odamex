@@ -1054,8 +1054,8 @@ static void ST_refreshBackground()
 		stbar_canvas->DrawPatch(W_ResolvePatchHandle(armsbg), ST_ARMSBGX + scaled_x, ST_ARMSBGY);
 	}
 
-	//if (multiplayer)
-	//{
+	if (multiplayer)
+	{
 		if (!demoplayback)
 		{
 			// [RH] Always draw faceback with the player's color
@@ -1069,7 +1069,7 @@ static void ST_refreshBackground()
 			stbar_canvas->DrawPatch(
 			    W_ResolvePatchHandle(faceclassic[displayplayer_id - 1]), ST_FX + scaled_x, ST_FY);
 		}
-	//}
+	}
 
 	stbar_surface->unlock();
 }
