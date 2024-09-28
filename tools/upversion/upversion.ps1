@@ -43,6 +43,7 @@ $year = "2006-$curYear"
 
 $majminpatchFiles = @(
 '.\README',
+'.\CMakeLists.txt',
 '.\Xbox\README.Xbox',
 '.\ag-odalaunch\res\Info.plist',
 '.\common\version.h',
