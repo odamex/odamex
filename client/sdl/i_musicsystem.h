@@ -133,7 +133,7 @@ class MidiMusicSystem : public MusicSystem
 	virtual void allSoundOff() = 0;
 
   protected:
-	static const int NUM_CHANNELS = 16;
+	static constexpr int NUM_CHANNELS = 16;
 	bool m_useResetDelay;
 
 	void _InitFallback();

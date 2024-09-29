@@ -792,8 +792,8 @@ void AActor::RunThink ()
 
 void AActor::Serialize (FArchive &arc)
 {
-	const DWORD TLATE_NONE = 0xFFFFFFFF;
-	const DWORD TLATE_BOSS = 0xFFFFFFFE;
+	constexpr DWORD TLATE_NONE = 0xFFFFFFFF;
+	constexpr DWORD TLATE_BOSS = 0xFFFFFFFE;
 
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
@@ -1075,8 +1075,8 @@ static void P_WindThrustActor(AActor* mo)
 {
 	if (mo->flags2 & MF2_WINDTHRUST)
 	{
-		static const int windTab[3] = {2048*5, 2048*10, 2048*25};
-		int special = mo->subsector->sector->special;
+		static constexpr int windTab[3] = {2048*5, 2048*10, 2048*25};
+		const int special = mo->subsector->sector->special;
 		switch (special)
 		{
 			case 40: case 41: case 42: // Wind_East

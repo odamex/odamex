@@ -227,10 +227,10 @@ void P_PlayerInZDoomSector(player_t* player)
 
 	sector_t* sector = player->mo->subsector->sector;
 
-	static const int heretic_carry[5] = {2048 * 5, 2048 * 10, 2048 * 25, 2048 * 30,
-	                                     2048 * 35};
+	static constexpr int heretic_carry[5] = {2048 * 5, 2048 * 10, 2048 * 25, 2048 * 30,
+	                                         2048 * 35};
 
-	static const int hexen_carry[3] = {2048 * 5, 2048 * 10, 2048 * 25};
+	static constexpr int hexen_carry[3] = {2048 * 5, 2048 * 10, 2048 * 25};
 
 	if (sector->damageamount > 0)
 	{
@@ -1071,14 +1071,14 @@ const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags)
 {
 	unsigned int result = flags & 0x1ff;
 
-	const unsigned int spac_to_flags[8] = {ML_SPAC_CROSS,
-	                                        ML_SPAC_USE,
-	                                        ML_SPAC_MCROSS,
-	                                        ML_SPAC_IMPACT,
-	                                        ML_SPAC_PUSH,
-	                                        ML_SPAC_PCROSS,
-	                                        ML_SPAC_USE | ML_PASSUSE,
-	                                        ML_SPAC_IMPACT | ML_SPAC_PCROSS};
+	constexpr unsigned int spac_to_flags[8] = {ML_SPAC_CROSS,
+	                                           ML_SPAC_USE,
+	                                           ML_SPAC_MCROSS,
+	                                           ML_SPAC_IMPACT,
+	                                           ML_SPAC_PUSH,
+	                                           ML_SPAC_PCROSS,
+	                                           ML_SPAC_USE | ML_PASSUSE,
+	                                           ML_SPAC_IMPACT | ML_SPAC_PCROSS};
 
 	// from zdoom-in-hexen to Odamex
 

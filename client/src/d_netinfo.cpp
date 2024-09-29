@@ -34,7 +34,7 @@
 
 // The default preference ordering when the player runs out of one type of ammo.
 // Vanilla Doom compatible.
-const byte UserInfo::weapon_prefs_default[NUMWEAPONS] = {
+constexpr byte UserInfo::weapon_prefs_default[NUMWEAPONS] = {
 	0, // wp_fist
 	4, // wp_pistol
 	5, // wp_shotgun

@@ -51,7 +51,7 @@
 #define NORM_PRIORITY	64
 #define NORM_SEP		128
 
-static const fixed_t S_STEREO_SWING = 96 * FRACUNIT;
+static constexpr fixed_t S_STEREO_SWING = 96 * FRACUNIT;
 
 struct channel_t
 {
@@ -397,8 +397,8 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
                                    float* vol, int* sep)
 {
-	static const fixed_t MAX_SND_DIST = 2025 * FRACUNIT;
-	static const fixed_t MIN_SND_DIST = 1 * FRACUNIT;
+	static constexpr fixed_t MAX_SND_DIST = 2025 * FRACUNIT;
+	static constexpr fixed_t MIN_SND_DIST = 1 * FRACUNIT;
 	const int approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
 
 	if (approx_dist > MAX_SND_DIST)
@@ -449,8 +449,8 @@ static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
 static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
                                   float* vol, int* sep)
 {
-	static const fixed_t S_CLIPPING_DIST = 1200 * FRACUNIT;
-	static const fixed_t S_CLOSE_DIST = 200 * FRACUNIT;
+	static constexpr fixed_t S_CLIPPING_DIST = 1200 * FRACUNIT;
+	static constexpr fixed_t S_CLOSE_DIST = 200 * FRACUNIT;
 	fixed_t approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
 
 	if (S_UseMap8Volume())

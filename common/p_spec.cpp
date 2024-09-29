@@ -105,7 +105,7 @@ fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f)
 
 int P_ArgToCrushMode(byte arg, bool slowdown)
 {
-	static const crushmode_e map[] = {crushDoom, crushHexen, crushSlowdown};
+	static constexpr crushmode_e map[] = {crushDoom, crushHexen, crushSlowdown};
 
 	if (arg >= 1 && arg <= 3)
 		return map[arg - 1];
@@ -181,7 +181,7 @@ void P_TransferSectorFlags(unsigned int* dest, unsigned int source)
 
 byte P_ArgToChange(byte arg)
 {
-	static const byte ChangeMap[8] = {0, 1, 5, 3, 7, 2, 6, 0};
+	static constexpr byte ChangeMap[8] = {0, 1, 5, 3, 7, 2, 6, 0};
 
 	return (arg < 8) ? ChangeMap[arg] : 0;
 }

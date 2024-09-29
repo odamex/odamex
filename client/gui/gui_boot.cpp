@@ -106,8 +106,8 @@ static void EraseSelected(scannedPWADPtrs_t& mut, scannedPWAD_t* pwad)
 const scannedIWAD_t* g_SelectedIWAD;
 scannedWADs_t g_SelectedWADs;
 
-const int WINDOW_WIDTH = 425;
-const int WINDOW_HEIGHT = 240;
+constexpr int WINDOW_WIDTH = 425;
+constexpr int WINDOW_HEIGHT = 240;
 
 class BootWindow : public Fl_Window
 {

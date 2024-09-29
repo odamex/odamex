@@ -26,15 +26,15 @@
 
 class MouseGraph {
 public:
-	static const char TYPE_OFF = 0;
-	static const char TYPE_LINE = 1;
-	static const char TYPE_PLOT = 2;
+	static constexpr char TYPE_OFF = 0;
+	static constexpr char TYPE_LINE = 1;
+	static constexpr char TYPE_PLOT = 2;
 
 	MouseGraph();
 	void append(int x, int y);
 	void draw(int type = 0);
 private:
-	static const int MAX_HISTORY_TICS = 64;
+	static constexpr int MAX_HISTORY_TICS = 64;
 
 	int index;
 	int mousex[MouseGraph::MAX_HISTORY_TICS];

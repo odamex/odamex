@@ -255,7 +255,7 @@ enum svc_t
 	svc_netdemoloadsnap = 102, // netdemos - NullPoint
 };
 
-static const size_t svc_max = 255;
+static constexpr size_t svc_max = 255;
 
 enum ThinkerType
 {
@@ -299,7 +299,7 @@ enum clc_t
 	clc_privmsg, // [AM] Targeted chat to a specific player.
 };
 
-static const size_t clc_max = 255;
+static constexpr size_t clc_max = 255;
 
 extern msg_info_t clc_info[clc_max + 1];
 extern msg_info_t svc_info[svc_max + 1];

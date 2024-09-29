@@ -231,7 +231,7 @@ void Res_TransposeImage(byte* dest, const byte* source, int width, int height)
 //
 const Texture* Res_LoadTexture(const char* name)
 {
-	texhandle_t texhandle = texturemanager.getHandle(name, Texture::TEX_PATCH);
+	const texhandle_t texhandle = texturemanager.getHandle(name, Texture::TEX_PATCH);
 	return texturemanager.getTexture(texhandle);
 }
 
@@ -816,9 +816,9 @@ void TextureManager::updateAnimatedTextures()
 //
 void TextureManager::generateNotFoundTexture()
 {
-	const int width = 64, height = 64;
+	constexpr int width = 64, height = 64;
 
-	const texhandle_t handle = NOT_FOUND_TEXTURE_HANDLE;
+	constexpr texhandle_t handle = NOT_FOUND_TEXTURE_HANDLE;
 	Texture* texture = createTexture(handle, width, height);
 
 	if (clientside)
@@ -1294,15 +1294,15 @@ texhandle_t TextureManager::getRawTextureHandle(const OString& name)
 //
 void TextureManager::cacheRawTexture(texhandle_t handle)
 {
-	const int width = 320;
-	const int height = 200;
+	constexpr int width = 320;
+	constexpr int height = 200;
 
 	Texture* texture = createTexture(handle, width, height);
 
 	if (clientside)
 	{
-		unsigned int lumpnum = (handle & ~RAW_HANDLE_MASK);
-		unsigned int lumplen = W_LumpLength(lumpnum);
+		const unsigned int lumpnum = (handle & ~RAW_HANDLE_MASK);
+		const unsigned int lumplen = W_LumpLength(lumpnum);
 
 		byte* lumpdata = new byte[lumplen];
 		W_ReadLump(lumpnum, lumpdata);

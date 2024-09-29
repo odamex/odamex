@@ -54,8 +54,8 @@ class PortMidiMusicSystem : public MidiMusicSystem
 	virtual bool isInitialized() const { return m_isInitialized; }
 
   private:
-	static const int cLatency = 80;
-	static const byte DEFAULT_VOLUME = 100;
+	static constexpr int cLatency = 80;
+	static constexpr byte DEFAULT_VOLUME = 100;
 	byte sysex_buffer[PM_DEFAULT_SYSEX_BUFFER_SIZE];
 	byte m_channelVolume[NUM_CHANNELS];
 	float m_volumeScale;

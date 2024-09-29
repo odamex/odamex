@@ -447,7 +447,8 @@ class IDummyWindowSurfaceManager : public IWindowSurfaceManager
 {
 public:
 	IDummyWindowSurfaceManager()
-	{	mSurface = I_AllocateSurface(320, 200, 8);	}
+		: mSurface(I_AllocateSurface(320, 200, 8))
+	{}
 
 	virtual ~IDummyWindowSurfaceManager()
 	{	delete mSurface;	}

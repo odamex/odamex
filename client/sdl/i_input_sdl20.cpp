@@ -34,7 +34,7 @@
 #include <queue>
 #include <cassert>
 
-static const int MAX_SDL_EVENTS_PER_TIC = 8192;
+static constexpr int MAX_SDL_EVENTS_PER_TIC = 8192;
 
 EXTERN_CVAR(joy_deadzone)
 EXTERN_CVAR(joy_lefttrigger_deadzone)
@@ -207,7 +207,7 @@ void ISDL20KeyboardInputDevice::disableTextEntry()
 //
 int ISDL20KeyboardInputDevice::getTextEventValue()
 {
-	const size_t max_events = 32;
+	constexpr size_t max_events = 32;
 	SDL_Event sdl_events[max_events];
 	
 	SDL_PumpEvents();

@@ -43,7 +43,7 @@
 
 static inline double DEG2RAD(double a)
 {
-	static const double factor = M_PI / 180.0;
+	static constexpr double factor = M_PI / 180.0;
 	return a * factor;
 }
 

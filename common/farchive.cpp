@@ -54,7 +54,7 @@
 
 #define MAX(a,b)	((a)<(b)?(a):(b))
 
-static const char LZOSig[4] = { 'F', 'L', 'Z', 'O' };
+static constexpr char LZOSig[4] = { 'F', 'L', 'Z', 'O' };
 
 // Output buffer size for LZO compression, extra space in case uncompressable
 static unsigned int MaxLZOCompressedLength(unsigned int input_len)

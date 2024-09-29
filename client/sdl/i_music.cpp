@@ -150,7 +150,7 @@ void I_ResetMidiVolume()
 		MMRESULT result = midiOutGetDevCaps(device, &caps, sizeof(caps));
 
 		// Set the midi device's volume
-		static const DWORD volume = 0xFFFFFFFF;		// maximum volume
+		static constexpr DWORD volume = 0xFFFFFFFF;		// maximum volume
 		if (result == MMSYSERR_NOERROR && (caps.dwSupport & MIDICAPS_VOLUME))
 			midiOutSetVolume((HMIDIOUT)device, volume);
 	}

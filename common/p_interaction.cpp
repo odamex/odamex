@@ -584,7 +584,7 @@ ItemEquipVal P_GivePower(player_t *player, int /*powertype_t*/ power)
  */
 static void P_GiveCarePack(player_t* player)
 {
-	const int ammomulti[NUMAMMO] = {2, 1, 1, 2};
+	constexpr int ammomulti[NUMAMMO] = {2, 1, 1, 2};
 
 	// [AM] There is way too much going on in here to accurately predict.
 	if (!::serverside)
@@ -1339,7 +1339,7 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 		{ "she", "her", "her" },
 		{ "it",  "it",  "its" }
 	};
-	static const int gendershift[3][3] =
+	static constexpr int gendershift[3][3] =
 	{
 		{ 2, 3, 3 },
 		{ 3, 3, 3 },
