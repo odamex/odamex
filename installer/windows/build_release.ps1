@@ -127,7 +127,7 @@ function CopyFiles {
         -Destination "${X64Dir}\"
 
     # Get VC++ Redist
-		Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" -OutFile "${X64Dir}\redist\vc_redist.x64.exe"
+    Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" -OutFile "${X64Dir}\redist\vc_redist.x64.exe"
 
     ########################################
     ## 32-BIT FILES
