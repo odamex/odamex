@@ -90,7 +90,7 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 
 		// Is the last player an odd-one-out?  Randomize the team he is put on.
 		// Do not randomize if num_players = teamCount for randcaps (3 way ctf) 
-		if (num_players != teamCount && (eligible.size() % 2) == 1 && i == (eligible.size() - 1))
+		if (static_cast<int>(num_players) != teamCount && (eligible.size() % 2) == 1 && i == (eligible.size() - 1))
 			dest_team = (team_t)(P_Random() % teamCount);
 
 		// Switch player to the proper team, ensure the correct color,

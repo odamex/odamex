@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(Odamex VERSION 10.5.0)
+project(Odamex VERSION 10.6.0)
 
 include(CMakeDependentOption)
 
@@ -62,7 +62,7 @@ if(NOT APPLE AND NOT WIN32)
 endif()
 
 set(PROJECT_COPYRIGHT "2006-2024")
-set(PROJECT_RC_VERSION "10,5,0,0")
+set(PROJECT_RC_VERSION "10,6,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
 
 # Include early required commands for specific systems

@@ -57,9 +57,9 @@ extern	BOOL			modifiedgame;
 // Selected skill type, map etc.
 //
 
-extern	char			startmap[8];		// [RH] Actual map name now
+extern OLumpName startmap; // [RH] Actual map name now
 
-extern	BOOL 			autostart;
+extern BOOL autostart;
 
 // Selected by user.
 EXTERN_CVAR (sv_skill)

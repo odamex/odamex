@@ -95,11 +95,11 @@
 
 extern size_t got_heapsize;
 
-void D_CheckNetGame (void);
-void D_ProcessEvents (void);
-void D_DoAdvanceDemo (void);
+void D_CheckNetGame();
+void D_ProcessEvents();
+void D_DoAdvanceDemo();
 
-void D_DoomLoop (void);
+void D_DoomLoop();
 
 extern int testingmode;
 extern BOOL gameisdead;
@@ -111,7 +111,7 @@ BOOL devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 static bool wiping_screen = false;
 
-char startmap[8];
+OLumpName startmap;
 BOOL autostart;
 BOOL advancedemo;
 event_t events[MAXEVENTS];
@@ -132,6 +132,7 @@ EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_fastmonsters)
+EXTERN_CVAR (g_thingfilter)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_allowredscreen)
@@ -181,7 +182,7 @@ void D_ProcessEvents (void)
 	// [RH] If testing mode, do not accept input until test is over
 	if (testingmode)
 	{
-		if (testingmode <= I_MSTime() * TICRATE / 1000)
+		if (static_cast <dtime_t>(testingmode) <= I_MSTime() * TICRATE / 1000)
 			M_RestoreVideoMode();
 		else
 			M_ModeFlashTestText();
@@ -271,6 +272,7 @@ void D_Display()
 		case GS_CONNECTING:
         case GS_CONNECTED:
 			C_DrawConsole();
+			C_DisplayTicker();
 			M_Drawer();
 			I_FinishUpdate();
 			return;
@@ -347,6 +349,7 @@ void D_Display()
 		Wipe_Drawer();
 
 	C_DrawConsole();	// draw console
+	C_DisplayTicker(); // Display console tic
 	M_Drawer();			// menu is drawn even on top of everything
 	I_FinishUpdate();	// page flip or blit buffer
 
@@ -477,7 +480,7 @@ void D_DoAdvanceDemo (void)
 
             gamestate = GS_DEMOSCREEN;
             pagename = gameinfo.titlePage.c_str();
-            
+
             currentmusic = gameinfo.titleMusic.c_str();
 
             S_StartMusic(currentmusic.c_str());
@@ -508,7 +511,7 @@ void D_DoAdvanceDemo (void)
 					pagetic = 170;
                 pagename = gameinfo.titlePage.c_str();
                 currentmusic = gameinfo.titleMusic.c_str();
-                
+
                 S_StartMusic(currentmusic.c_str());
             }
             else
@@ -577,7 +580,7 @@ void STACK_ARGS D_Close()
 
 	D_ClearTaskSchedulers();
 
-	page_height, page_width = 0;
+	page_height = 0, page_width = 0;
 }
 
 //
@@ -704,7 +707,7 @@ void STACK_ARGS D_Shutdown()
 	// stop sound effects and music
 	S_Stop();
 	S_Deinit();
-	
+
 	// shutdown automap
 	AM_Stop();
 
@@ -843,11 +846,23 @@ void D_DoomMain()
 
 	if (!pwads.empty())
 	{
+		const std::vector<std::string>& wad_exts = M_FileTypeExts(OFILE_WAD);
+		const std::vector<std::string>& deh_exts = M_FileTypeExts(OFILE_DEH);
 		for (size_t i = 0; i < pwads.size(); i++)
 		{
 			OWantFile file;
-			OWantFile::make(file, pwads[i], OFILE_WAD);
-			newwadfiles.push_back(file);
+			OWantFile::make(file, pwads[i], OFILE_UNKNOWN);
+			const std::string extension = StdStringToUpper(file.getExt());
+			if (std::find(deh_exts.begin(), deh_exts.end(), extension) != deh_exts.end())
+			{
+				OWantFile::make(file, pwads[i], OFILE_DEH);
+				newpatchfiles.push_back(file);
+			}
+			if (std::find(wad_exts.begin(), wad_exts.end(), extension) != wad_exts.end())
+			{
+				OWantFile::make(file, pwads[i], OFILE_WAD);
+				newwadfiles.push_back(file);
+			}
 		}
 	}
 
@@ -882,7 +897,7 @@ void D_DoomMain()
 
 	if (devparm)
 		Printf(PRINT_HIGH, "%s", GStrings(D_DEVSTR));        // D_DEVSTR
- 
+
 	// set the default value for vid_ticker based on the presence of -devparm
 	if (devparm)
 		vid_ticker.SetDefault("1");
@@ -899,8 +914,12 @@ void D_DoomMain()
 	// Pistol start
 	g_resetinvonexit = Args.CheckParm("-pistolstart");
 
+	// Multiplayer things
+	if (Args.CheckParm("-coop-things"))
+		g_thingfilter = -1;
+
 	// get skill / episode / map from parms
-	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+	startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
 
 	const char* val = Args.CheckValue("-skill");
 	if (val)
@@ -922,7 +941,7 @@ void D_DoomMain()
 			map = Args.GetArg(p+2)[0]-'0';
 		}
 
-		strncpy(startmap, CalcMapName(ep, map), 8);
+		startmap = CalcMapName(ep, map);
 		autostart = true;
 	}
 
@@ -930,7 +949,7 @@ void D_DoomMain()
 	p = Args.CheckParm("+map");
 	if (p && p < Args.NumArgs()-1)
 	{
-		strncpy(startmap, Args.GetArg(p+1), 8);
+		startmap = Args.GetArg(p+1);
 		((char *)Args.GetArg(p))[0] = '-';
 		autostart = true;
 	}
@@ -1025,7 +1044,7 @@ void D_DoomMain()
 		Printf(PRINT_HIGH, "Type connect <address> or use the Odamex Launcher to connect to a game.\n");
     Printf(PRINT_HIGH, "\n");
 
-	// Play a demo, start a map, or show the title screen	
+	// Play a demo, start a map, or show the title screen
 	if (singledemo)
 	{
 		G_DoPlayDemo();
