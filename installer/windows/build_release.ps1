@@ -221,10 +221,10 @@ echo "Checking for Inno Setup Command-Line Compiler..."
 Get-Command ISCC.exe -ErrorAction Stop
 
 echo "Building 64-bit..."
-#BuildX64
+BuildX64
 
 echo "Building 32-bit..."
-#BuildX86
+BuildX86
 
 echo "Copying files..."
 CopyFiles
