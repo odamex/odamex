@@ -155,8 +155,7 @@ inline static fixed64_t FixedDiv64( fixed64_t a, fixed64_t b )
 	{
 		return (a ^ b) < 0 ? MINLONG : MAXLONG;
 	}
-	fixed64_t result = (a << FRACBITS64) / b;
-	return (fixed64_t) result;
+	return (a << FRACBITS64) / b;
 }
 
 //
