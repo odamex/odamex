@@ -302,19 +302,14 @@ END_COMMAND(am_togglefollow)
 void AM_rotatePoint(mpoint64_t& pt);
 
 // translates between frame-buffer and map coordinates
-int CXMTOF(int x)
+int CXMTOF(fixed64_t x)
 {
-	Printf("scale_mtof: %1.3f\n", FIXED642FLOAT(scale_mtof));
-	Printf("input x: %5.3f\n", FIXED642FLOAT(x));
-	Printf("input m_ll.x: %5.3f\n", FIXED642FLOAT(m_ll.x));
-	int64_t out = (MTOF((x)-m_ll.x) /* - f_x*/);
-	Printf("output: %lld\n", out);
-	return out;
+	return MTOF((x)-m_ll.x);
 }
 
-int CYMTOF(int y)
+int CYMTOF(fixed64_t y)
 {
-	return (f_h - MTOF((y)-m_ll.y) /* + f_y*/);
+	return f_h - MTOF((y)-m_ll.y);
 }
 
 bool AM_ClassicAutomapVisible()
@@ -966,7 +961,7 @@ void AM_clearFB(am_color_t color)
 //
 // Based on Cohen-Sutherland clipping algorithm but with a slightly
 // faster reject and precalculated slopes.  If the speed is needed,
-// use a hash algorithm to handle  the common cases.
+// use a hash algorithm to handle the common cases.
 //
 bool AM_clipMline(mline64_t* ml, fline_t* fl)
 {

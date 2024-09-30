@@ -36,10 +36,9 @@ typedef unsigned int dsfixed_t;		// fixedpt used by span drawer
 
 #define FRACBITS64				20ll
 #define FRACUNIT64				(1ll<<FRACBITS64)
-#define RENDFRACMASK					( FRACUNIT64 - 1ll )
-#define RENDFRACSIGNBIT					0x8000000000000000ll
-#define RENDFRACFILL( x, o )			( ( x ) | ( ( o ) < 0 ? ( RENDFRACMASK << ( 64 - FRACBITS64 ) ) : 0 ) )
-#define RENDFRACFILLFIXED( x, o )		( ( x ) | ( ( o ) < 0 ? ( RENDFRACMASK << ( 64 - ( FRACBITS64 - FRACBITS ) ) ) : 0 ) )
+#define FRAC64MASK				(FRACUNIT64 - 1ll)
+#define FRAC64FILL( x, o )		( ( x ) | ( ( o ) < 0 ? ( FRAC64MASK << ( 64 - FRACBITS64 ) ) : 0 ) )
+#define FRAC64FILLFIXED( x, o )	( ( x ) | ( ( o ) < 0 ? ( FRAC64MASK << ( 64 - ( FRACBITS64 - FRACBITS ) ) ) : 0 ) )
 
 
 typedef int64_t fixed64_t;
@@ -85,11 +84,11 @@ inline float FIXED642FLOAT(fixed64_t x)
 	return x * factor;
 }
 
-// inline double FIXED642DOUBLE(fixed64_t x)
-// {
-// 	static const double factor = 1.0 / double(FRACUNIT64);
-// 	return x * factor;
-// }
+inline double FIXED642DOUBLE(fixed64_t x)
+{
+	static const double factor = 1.0 / double(FRACUNIT64);
+	return x * factor;
+}
 
 inline fixed64_t FLOAT2FIXED64(float x)
 {
@@ -103,7 +102,7 @@ inline fixed64_t DOUBLE2FIXED64(double x)
 
 inline int FIXED642INT(fixed64_t x)
 {
-	return ((int32_t)RENDFRACFILL(x >> FRACBITS64, x));
+	return ((int32_t)FRAC64FILL(x >> FRACBITS64, x));
 }
 
 inline fixed_t INT2FIXED64(int x)
@@ -113,12 +112,12 @@ inline fixed_t INT2FIXED64(int x)
 
 inline fixed_t FIXED642FIXED(fixed64_t x)
 {
-	return (fixed_t)RENDFRACFILLFIXED(x >> (FRACBITS64 - FRACBITS), x);
+	return (fixed_t)FRAC64FILLFIXED(x >> (FRACBITS64 - FRACBITS), x);
 }
 
 inline fixed64_t FIXED2FIXED64(fixed_t x)
 {
-	return ( (fixed64_t)( x ) << (FRACBITS64 - FRACBITS) );
+	return (fixed64_t)x << (FRACBITS64 - FRACBITS);
 }
 
 //
@@ -131,9 +130,8 @@ inline static fixed_t FixedMul(fixed_t a, fixed_t b)
 
 inline static fixed64_t FixedMul64( fixed64_t a, fixed64_t b )
 {
-	fixed64_t result = ( a * b ) >> FRACBITS64;
-
-	return RENDFRACFILL( result, result );
+	fixed64_t result = (a * b) >> FRACBITS64;
+	return FRAC64FILL(result, result);
 }
 
 //
