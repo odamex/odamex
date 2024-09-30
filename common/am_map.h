@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -94,6 +94,13 @@ typedef struct
 {
 	mpoint_t a, b;
 } mline_t;
+
+typedef v2fixed64_t mpoint64_t;
+
+typedef struct
+{
+	mpoint64_t a, b;
+} mline64_t;
 
 extern am_default_colors_t AutomapDefaultColors;
 extern am_colors_t AutomapDefaultCurrentColors;

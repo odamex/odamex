@@ -147,20 +147,20 @@ EXTERN_CVAR(screenblocks)
 #define AM_NUMMARKPOINTS 10
 
 // scale on entry
-#define INITSCALEMTOF (.2 * FRACUNIT)
+#define INITSCALEMTOF (.2 * FRACUNIT64)
 // how much the automap moves window per tic in frame-buffer coordinates
 // moves 140 pixels in 1 second
 #define F_PANINC (140 / TICRATE)
 // how much zoom-in per tic
 // goes to 2x in 1 second
-#define M_ZOOMIN ((int)(1.02 * FRACUNIT))
+#define M_ZOOMIN ((int)(1.02 * FRACUNIT64))
 // how much zoom-out per tic
 // pulls out to 0.5x in 1 second
-#define M_ZOOMOUT ((int)(FRACUNIT / 1.02))
+#define M_ZOOMOUT ((int)(FRACUNIT64 / 1.02))
 
 // translates between frame-buffer and map distances
-#define FTOM(x) FixedMul(((x) << 16), scale_ftom)
-#define MTOF(x) (FixedMul((x), scale_mtof) >> 16)
+#define FTOM(x) FixedMul64(((x) << FRACBITS64), scale_ftom)
+#define MTOF(x) FIXED642INT(FixedMul64((x), scale_mtof))
 
 #define PUTDOTP(xx, yy, cc) fb[(yy)*f_p + (xx)] = (cc)
 #define PUTDOTD(xx, yy, cc) *((argb_t*)(fb + (yy)*f_p + ((xx) << 2))) = (cc)
@@ -174,7 +174,7 @@ typedef struct
 
 typedef struct
 {
-	fixed_t slp, islp;
+	fixed64_t slp, islp;
 } islope_t;
 
 // vector graphics for the automap for things.
@@ -202,38 +202,38 @@ static int f_p; // [RH] # of bytes from start of a line to start of next
 static byte* fb; // pseudo-frame buffer
 static int amclock;
 
-static mpoint_t m_paninc;    // how far the window pans each tic (map coords)
-static fixed_t ftom_zoommul; // how far the window zooms in each tic (fb coords)
+static mpoint64_t m_paninc;    // how far the window pans each tic (map coords)
+static fixed64_t ftom_zoommul; // how far the window zooms in each tic (fb coords)
 
-static v2fixed_t m_ll;   // LL x,y where the window is on the map (map coords)
-static v2fixed_t m_ur; // UR x,y where the window is on the map (map coords)
+static v2fixed64_t m_ll;   // LL x,y where the window is on the map (map coords)
+static v2fixed64_t m_ur; // UR x,y where the window is on the map (map coords)
 
 //
 // width/height of window on map (map coords)
 //
-static v2fixed_t m_wh;
+static v2fixed64_t m_wh;
 
 // based on level size
-static v2fixed_t min;
-static v2fixed_t max;
+static v2fixed64_t min;
+static v2fixed64_t max;
 
-static fixed_t min_scale_mtof; // used to tell when to stop zooming out
-static fixed_t max_scale_mtof; // used to tell when to stop zooming in
+static fixed64_t min_scale_mtof; // used to tell when to stop zooming out
+static fixed64_t max_scale_mtof; // used to tell when to stop zooming in
 
 // old stuff for recovery later
-static v2fixed_t old_m_wh;
-static v2fixed_t old_m_ll;
+static v2fixed64_t old_m_wh;
+static v2fixed64_t old_m_ll;
 
 // old location used by the Follower routine
-static mpoint_t f_oldloc;
+static mpoint64_t f_oldloc;
 
 // used by MTOF to scale from map-to-frame-buffer coords
-static fixed_t scale_mtof = static_cast<fixed_t>(INITSCALEMTOF);
+static fixed64_t scale_mtof = static_cast<fixed64_t>(INITSCALEMTOF);
 // used by FTOM to scale from frame-buffer-to-map coords (=1/scale_mtof)
-static fixed_t scale_ftom;
+static fixed64_t scale_ftom;
 
 static lumpHandle_t marknums[10];             // numbers used for marking by the automap
-static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
+static mpoint64_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0;                  // next point to be assigned
 
 static bool stopped = true;
@@ -299,12 +299,17 @@ BEGIN_COMMAND(am_togglefollow)
 }
 END_COMMAND(am_togglefollow)
 
-void AM_rotatePoint(mpoint_t& pt);
+void AM_rotatePoint(mpoint64_t& pt);
 
 // translates between frame-buffer and map coordinates
 int CXMTOF(int x)
 {
-	return (MTOF((x)-m_ll.x) /* - f_x*/);
+	Printf("scale_mtof: %1.3f\n", FIXED642FLOAT(scale_mtof));
+	Printf("input x: %5.3f\n", FIXED642FLOAT(x));
+	Printf("input m_ll.x: %5.3f\n", FIXED642FLOAT(m_ll.x));
+	int64_t out = (MTOF((x)-m_ll.x) /* - f_x*/);
+	Printf("output: %lld\n", out);
+	return out;
 }
 
 int CYMTOF(int y)
@@ -329,10 +334,10 @@ void AM_activateNewScale()
 {
 	m_ll.x += m_wh.x / 2;
 	m_ll.y += m_wh.y / 2;
-	M_SetVec2Fixed(&m_wh, FTOM(f_w), FTOM(f_h));
+	M_SetVec2Fixed64(&m_wh, FTOM(f_w), FTOM(f_h));
 	m_ll.x -= m_wh.x / 2;
 	m_ll.y -= m_wh.y / 2;
-	M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
+	M_AddVec2Fixed64(&m_ur, &m_ll, &m_wh);
 }
 
 //
@@ -356,14 +361,14 @@ void AM_restoreScaleAndLoc()
 	}
 	else
 	{
-		M_SetVec2Fixed(&m_ll, displayplayer().camera->x - m_wh.x / 2,
-			                  displayplayer().camera->y - m_wh.y / 2);
+		M_SetVec2Fixed64(&m_ll, FIXED2FIXED64(displayplayer().camera->x) - m_wh.x / 2,
+			                  FIXED2FIXED64(displayplayer().camera->y) - m_wh.y / 2);
 	}
-	M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
+	M_AddVec2Fixed64(&m_ur, &m_ll, &m_wh);
 
 	// Change the scaling multipliers
-	scale_mtof = FixedDiv(f_w << FRACBITS, m_wh.x);
-	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+	scale_mtof = FixedDiv64(f_w << FRACBITS64, m_wh.x);
+	scale_ftom = FixedDiv64(FRACUNIT64, scale_mtof);
 }
 
 //
@@ -382,30 +387,30 @@ void AM_addMark()
 //
 void AM_findMinMaxBoundaries()
 {
-	M_SetVec2Fixed(&min, MAXINT, MAXINT);
-	M_SetVec2Fixed(&max, -MAXINT, -MAXINT);
+	M_SetVec2Fixed64(&min, MAXLONG, MAXLONG);
+	M_SetVec2Fixed64(&max, -MAXLONG, -MAXLONG);
 
 	for (int i = 0; i < numvertexes; i++)
 	{
-		if (vertexes[i].x < min.x)
-			min.x = vertexes[i].x;
+		if (FIXED2FIXED64(vertexes[i].x) < min.x)
+			min.x = FIXED2FIXED64(vertexes[i].x);
 		else if (vertexes[i].x > max.x)
-			max.x = vertexes[i].x;
+			max.x = FIXED2FIXED64(vertexes[i].x);
 
-		if (vertexes[i].y < min.y)
-			min.y = vertexes[i].y;
-		else if (vertexes[i].y > max.y)
-			max.y = vertexes[i].y;
+		if (FIXED2FIXED64(vertexes[i].y) < min.y)
+			min.y = FIXED2FIXED64(vertexes[i].y);
+		else if (FIXED2FIXED64(vertexes[i].y) > max.y)
+			max.y = FIXED2FIXED64(vertexes[i].y);
 	}
 
-	const fixed_t max_w = max.x - min.x;
-	const fixed_t max_h = max.y - min.y;
+	const fixed64_t max_w = max.x - min.x;
+	const fixed64_t max_h = max.y - min.y;
 
-	const fixed_t a = FixedDiv((I_GetSurfaceWidth()) << FRACBITS, max_w);
-	const fixed_t b = FixedDiv((I_GetSurfaceHeight()) << FRACBITS, max_h);
+	const fixed64_t a = FixedDiv64((I_GetSurfaceWidth()) << FRACBITS64, max_w);
+	const fixed64_t b = FixedDiv64((I_GetSurfaceHeight()) << FRACBITS64, max_h);
 
 	min_scale_mtof = a < b ? a : b;
-	max_scale_mtof = FixedDiv((I_GetSurfaceHeight()) << FRACBITS, 2 * PLAYERRADIUS);
+	max_scale_mtof = FixedDiv64((I_GetSurfaceHeight()) << FRACBITS64, 2 * PLAYERRADIUS64);
 }
 
 //
@@ -419,7 +424,7 @@ void AM_changeWindowLoc()
 		f_oldloc.x = MAXINT;
 	}
 
-	M_AddVec2Fixed(&m_ll, &m_paninc, &m_ll);
+	M_AddVec2Fixed64(&m_ll, &m_paninc, &m_ll);
 
 	if (m_ll.x + m_wh.x / 2 > max.x)
 		m_ll.x = max.x - m_wh.x / 2;
@@ -431,7 +436,7 @@ void AM_changeWindowLoc()
 	else if (m_ll.y + m_wh.y / 2 < min.y)
 		m_ll.y = min.y - m_wh.y / 2;
 
-	M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
+	M_AddVec2Fixed64(&m_ur, &m_ll, &m_wh);
 }
 
 //
@@ -471,7 +476,7 @@ void AM_initVariables()
 	f_oldloc.x = MAXINT;
 	amclock = 0;
 
-	M_SetVec2Fixed(&m_wh, FTOM(I_GetSurfaceWidth()), FTOM(I_GetSurfaceHeight()));
+	M_SetVec2Fixed64(&m_wh, FTOM(I_GetSurfaceWidth()), FTOM(I_GetSurfaceHeight()));
 
 	// find player to center on initially
 	player_t* pl = &displayplayer();
@@ -490,8 +495,8 @@ void AM_initVariables()
 	if (!pl->camera)
 		return;
 
-	m_ll.x = pl->camera->x - m_wh.x / 2;
-	m_ll.y = pl->camera->y - m_wh.y / 2;
+	m_ll.x = FIXED2FIXED64(pl->camera->x) - m_wh.x / 2;
+	m_ll.y = FIXED2FIXED64(pl->camera->y) - m_wh.y / 2;
 	AM_changeWindowLoc();
 
 	AM_saveScaleAndLoc();
@@ -733,10 +738,10 @@ void AM_LevelInit()
 	AM_clearMarks();
 
 	AM_findMinMaxBoundaries();
-	scale_mtof = FixedDiv(min_scale_mtof, static_cast<int>(0.7 * FRACUNIT));
+	scale_mtof = FixedDiv64(min_scale_mtof, static_cast<int>(0.7 * FRACUNIT64));
 	if (scale_mtof > max_scale_mtof)
 		scale_mtof = min_scale_mtof;
-	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+	scale_ftom = FixedDiv64(FRACUNIT64, scale_mtof);
 }
 
 //
@@ -786,7 +791,7 @@ void AM_Start()
 void AM_minOutWindowScale()
 {
 	scale_mtof = min_scale_mtof;
-	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+	scale_ftom = FixedDiv64(FRACUNIT64, scale_mtof);
 }
 
 //
@@ -795,7 +800,7 @@ void AM_minOutWindowScale()
 void AM_maxOutWindowScale()
 {
 	scale_mtof = max_scale_mtof;
-	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+	scale_ftom = FixedDiv64(FRACUNIT64, scale_mtof);
 }
 
 BEGIN_COMMAND(togglemap)
@@ -871,7 +876,7 @@ BOOL AM_Responder(event_t* ev)
 //
 void AM_changeWindowScale()
 {
-	static fixed_t mtof_zoommul; // how far the window zooms in each tic (map coords)
+	static fixed64_t mtof_zoommul; // how far the window zooms in each tic (map coords)
 
 	if (Actions[ACTION_AUTOMAP_ZOOMOUT])
 	{
@@ -885,13 +890,13 @@ void AM_changeWindowScale()
 	}
 	else
 	{
-		mtof_zoommul = FRACUNIT;
-		ftom_zoommul = FRACUNIT;
+		mtof_zoommul = FRACUNIT64;
+		ftom_zoommul = FRACUNIT64;
 	}
 
 	// Change the scaling multipliers
-	scale_mtof = FixedMul(scale_mtof, mtof_zoommul);
-	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+	scale_mtof = FixedMul64(scale_mtof, mtof_zoommul);
+	scale_ftom = FixedDiv64(FRACUNIT64, scale_mtof);
 
 	if (scale_mtof < min_scale_mtof)
 		AM_minOutWindowScale();
@@ -904,11 +909,11 @@ void AM_changeWindowScale()
 //
 void AM_doFollowPlayer()
 {
-	M_SetVec2Fixed(&m_ll,
-		viewx - m_wh.x / 2,
-		viewy - m_wh.y / 2);
+	M_SetVec2Fixed64(&m_ll,
+		FIXED2FIXED64(viewx) - m_wh.x / 2,
+		FIXED2FIXED64(viewy) - m_wh.y / 2);
 
-	M_SetVec2Fixed(&m_ur,
+	M_SetVec2Fixed64(&m_ur,
 		m_ll.x + m_wh.x,
 		m_ll.y + m_wh.y);
 }
@@ -963,7 +968,7 @@ void AM_clearFB(am_color_t color)
 // faster reject and precalculated slopes.  If the speed is needed,
 // use a hash algorithm to handle  the common cases.
 //
-bool AM_clipMline(mline_t* ml, fline_t* fl)
+bool AM_clipMline(mline64_t* ml, fline_t* fl)
 {
 	enum
 	{
@@ -1214,7 +1219,7 @@ void AM_drawFlineD(fline_t* fl, argb_t color)
 //
 // Clip lines, draw visible part sof lines.
 //
-void AM_drawMline(mline_t* ml, am_color_t color)
+void AM_drawMline(mline64_t* ml, am_color_t color)
 {
 	static fline_t fl;
 
@@ -1234,28 +1239,28 @@ void AM_drawMline(mline_t* ml, am_color_t color)
 void AM_drawGrid(am_color_t color)
 {
 	// find maximum distance lines should be drawn from center of screen in world coordinates
-	v2fixed_t distVec;
-	M_SubVec2Fixed(&distVec, &m_ll, &m_ur);
-	const fixed_t dist = P_AproxDistance(distVec.x, distVec.y);
-	const fixed_t half_dist = FixedDiv(dist, INT2FIXED(2));
+	v2fixed64_t distVec;
+	M_SubVec2Fixed64(&distVec, &m_ll, &m_ur);
+	const fixed64_t dist = FIXED2FIXED64(P_AproxDistance(FIXED642FIXED(distVec.x), FIXED642FIXED(distVec.y)));
+	const fixed64_t half_dist = FixedDiv64(dist, INT2FIXED64(2));
 
 	// find center point of screen in world coordinates
-	v2fixed_t centerp;
-	centerp.x = FixedDiv(m_ur.x + m_ll.x, INT2FIXED(2));
-	centerp.y = FixedDiv(m_ur.y + m_ll.y, INT2FIXED(2));
+	v2fixed64_t centerp;
+	centerp.x = FixedDiv64(m_ur.x + m_ll.x, INT2FIXED64(2));
+	centerp.y = FixedDiv64(m_ur.y + m_ll.y, INT2FIXED64(2));
 
-	const fixed_t w = INT2FIXED(MAPBLOCKUNITS);
-	const fixed_t minimum_x = centerp.x - half_dist;
-	const fixed_t maximum_x = centerp.x + half_dist;
-	const fixed_t minimum_y = centerp.y - half_dist;
-	const fixed_t maximum_y = centerp.y + half_dist;
+	const fixed64_t w = INT2FIXED64(MAPBLOCKUNITS);
+	const fixed64_t minimum_x = centerp.x - half_dist;
+	const fixed64_t maximum_x = centerp.x + half_dist;
+	const fixed64_t minimum_y = centerp.y - half_dist;
+	const fixed64_t maximum_y = centerp.y + half_dist;
 
-	fixed_t start = w + minimum_x - ((minimum_x % w) + w) % w;
+	fixed64_t start = w + minimum_x - ((minimum_x % w) + w) % w;
 
-	mline_t ml;
+	mline64_t ml;
 
 	// draw vertical gridlines
-	for (fixed_t x = start; x < maximum_x; x += w)
+	for (fixed64_t x = start; x < maximum_x; x += w)
 	{
 		ml.a.y = minimum_y;
 		ml.b.y = maximum_y;
@@ -1273,7 +1278,7 @@ void AM_drawGrid(am_color_t color)
 	start = w + minimum_y - ((minimum_y % w) + w) % w;
 
 	// draw horizontal gridlines
-	for (fixed_t y = start; y < maximum_y; y += w)
+	for (fixed64_t y = start; y < maximum_y; y += w)
 	{
 		ml.a.x = minimum_x;
 		ml.b.x = maximum_x;
@@ -1296,14 +1301,14 @@ void AM_drawGrid(am_color_t color)
 void AM_drawWalls()
 {
 	int r, g, b;
-	static mline_t l;
+	static mline64_t l;
 	float rdif, gdif, bdif;
 	const palette_t* pal = V_GetDefaultPalette();
 
 	for (int i = 0; i < numlines; i++)
 	{
-		M_SetVec2Fixed(&l.a, lines[i].v1->x, lines[i].v1->y);
-		M_SetVec2Fixed(&l.b, lines[i].v2->x, lines[i].v2->y);
+		M_SetVec2Fixed64(&l.a, FIXED2FIXED64(lines[i].v1->x), FIXED2FIXED64(lines[i].v1->y));
+		M_SetVec2Fixed64(&l.b, FIXED2FIXED64(lines[i].v2->x), FIXED2FIXED64(lines[i].v2->y));
 
 		if (am_rotate)
 		{
@@ -1464,27 +1469,27 @@ void AM_drawWalls()
 // Rotation in 2D.
 // Used to rotate player arrow line character.
 //
-void AM_rotate(mpoint_t& pt, angle_t a)
+void AM_rotate(mpoint64_t& pt, angle_t a)
 {
-	const fixed_t tmpx = FixedMul(pt.x, finecosine[a >> ANGLETOFINESHIFT]) -
-	                     FixedMul(pt.y, finesine[a >> ANGLETOFINESHIFT]);
+	const fixed64_t tmpx = FixedMul64(pt.x, finecosine[a >> ANGLETOFINESHIFT]) -
+	                     FixedMul64(pt.y, finesine[a >> ANGLETOFINESHIFT]);
 
-	pt.y = FixedMul(pt.x, finesine[a >> ANGLETOFINESHIFT]) +
-	       FixedMul(pt.y, finecosine[a >> ANGLETOFINESHIFT]);
+	pt.y = FixedMul64(pt.x, finesine[a >> ANGLETOFINESHIFT]) +
+	       FixedMul64(pt.y, finecosine[a >> ANGLETOFINESHIFT]);
 
 	pt.x = tmpx;
 }
 
-void AM_rotatePoint(mpoint_t& pt)
+void AM_rotatePoint(mpoint64_t& pt)
 {
 	player_t* player = &displayplayer();
 
-	fixed_t x = player->camera->prevx +
-	            FixedMul(player->camera->x - player->camera->prevx, render_lerp_amount);
-	fixed_t y = player->camera->prevy +
-	            FixedMul(player->camera->y - player->camera->prevy, render_lerp_amount);
-	fixed_t pangle = player->camera->prevangle +
-	            FixedMul(player->camera->angle - player->camera->prevangle, render_lerp_amount);
+	fixed64_t x = player->camera->prevx +
+	            FixedMul64(player->camera->x - player->camera->prevx, render_lerp_amount);
+	fixed64_t y = player->camera->prevy +
+	            FixedMul64(player->camera->y - player->camera->prevy, render_lerp_amount);
+	fixed64_t pangle = player->camera->prevangle +
+	            FixedMul64(player->camera->angle - player->camera->prevangle, render_lerp_amount);
 
 	pt.x -= x;
 	pt.y -= y;
@@ -1494,15 +1499,15 @@ void AM_rotatePoint(mpoint_t& pt)
 }
 
 void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed_t scale,
-                          angle_t angle, am_color_t color, fixed_t x, fixed_t y)
+                          angle_t angle, am_color_t color, fixed64_t x, fixed64_t y)
 {
 	for (std::vector<mline_t>::const_iterator it = lineguy.begin(); it != lineguy.end(); ++it)
 	{
-		mline_t l;
-		l.a = it->a;
+		mline64_t l;
+		M_SetVec2Fixed64(&l.a, FIXED2FIXED64(it->a.x), FIXED2FIXED64(it->a.y));
 
 		if (scale)
-			M_ScaleVec2Fixed(&l.a, &l.a, scale);
+			M_ScaleVec2Fixed64(&l.a, &l.a, FIXED2FIXED64(scale));
 
 		if (angle)
 			AM_rotate(l.a, angle);
@@ -1510,10 +1515,10 @@ void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed_t scale,
 		l.a.x += x;
 		l.a.y += y;
 
-		l.b = it->b;
+		M_SetVec2Fixed64(&l.b, FIXED2FIXED64(it->b.x), FIXED2FIXED64(it->b.y));
 
 		if (scale)
-			M_ScaleVec2Fixed(&l.b, &l.b, scale);
+			M_ScaleVec2Fixed64(&l.b, &l.b, FIXED2FIXED64(scale));
 
 		if (angle)
 			AM_rotate(l.b, angle);
@@ -1530,12 +1535,12 @@ void AM_drawPlayers()
 	angle_t angle;
 	player_t& conplayer = displayplayer();
 
-	fixed_t x =
-	    conplayer.camera->prevx +
-	    FixedMul(conplayer.camera->x - conplayer.camera->prevx, render_lerp_amount);
-	fixed_t y =
-	    conplayer.camera->prevy +
-	    FixedMul(conplayer.camera->y - conplayer.camera->prevy, render_lerp_amount);
+	fixed64_t x =
+	    FIXED2FIXED64(conplayer.camera->prevx +
+	    FixedMul(conplayer.camera->x - conplayer.camera->prevx, render_lerp_amount));
+	fixed64_t y =
+	    FIXED2FIXED64(conplayer.camera->prevy +
+	    FixedMul(conplayer.camera->y - conplayer.camera->prevy, render_lerp_amount));
 	fixed_t cangle =
 	    conplayer.camera->prevangle +
 	    FixedMul(conplayer.camera->angle - conplayer.camera->prevangle, render_lerp_amount);
@@ -1603,7 +1608,7 @@ void AM_drawPlayers()
 			color.index = V_BestColor(V_GetDefaultPalette()->basecolors, color.rgb);
 		}
 
-		mpoint_t pt;
+		mpoint64_t pt;
 		fixed_t moangle = p->mo->prevangle +
 			FixedMul(p->mo->angle - p->mo->prevangle,
 			render_lerp_amount);
@@ -1615,7 +1620,7 @@ void AM_drawPlayers()
 		fixed_t moy = p->mo->prevy +
 			FixedMul(p->mo->y - p->mo->prevy,
 			render_lerp_amount);
-		M_SetVec2Fixed(&pt, mox, moy);
+		M_SetVec2Fixed64(&pt, FIXED2FIXED64(mox), FIXED2FIXED64(moy));
 
 		angle = moangle;
 
@@ -1664,8 +1669,8 @@ void AM_drawEasyKeys()
 		{
 			if (AM_actorIsKey(t))
 			{
-				mpoint_t p;
-				M_SetVec2Fixed(&p, t->x, t->y);
+				mpoint64_t p;
+				M_SetVec2Fixed64(&p, FIXED2FIXED64(t->x), FIXED2FIXED64(t->y));
 
 				const am_color_t key_color = AM_getKeyColor(t);
 
@@ -1683,7 +1688,7 @@ void AM_drawThings()
 		AActor* t = sectors[i].thinglist;
 		while (t)
 		{
-			mpoint_t p;
+			mpoint64_t p;
 
 			fixed_t thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
 			fixed_t thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
@@ -1692,7 +1697,7 @@ void AM_drawThings()
 				FixedMul(t->angle -	t->prevangle,
 				render_lerp_amount);
 
-			M_SetVec2Fixed(&p, thingx, thingy);
+			M_SetVec2Fixed64(&p, FIXED2FIXED64(thingx), FIXED2FIXED64(thingy));
 			angle_t rotate_angle = 0;
 			angle_t triangle_angle = tangle;
 
@@ -1759,7 +1764,7 @@ void AM_drawMarks()
 	{
 		if (markpoints[i].x != -1)
 		{
-			mpoint_t pt;
+			mpoint64_t pt;
 			pt.x = markpoints[i].x;
 			pt.y = markpoints[i].y;
 
@@ -1828,7 +1833,7 @@ void AM_Drawer()
 	}
 	else
 	{
-		M_ZeroVec2Fixed(&m_paninc);
+		M_ZeroVec2Fixed64(&m_paninc);
 
 		// pan according to the direction
 		if (Actions[ACTION_AUTOMAP_PANLEFT])
@@ -1842,7 +1847,7 @@ void AM_Drawer()
 	}
 
 	// Change the zoom if necessary
-	if (ftom_zoommul != FRACUNIT || Actions[ACTION_AUTOMAP_ZOOMIN] ||
+	if (ftom_zoommul != FRACUNIT64 || Actions[ACTION_AUTOMAP_ZOOMIN] ||
 	    Actions[ACTION_AUTOMAP_ZOOMOUT])
 		AM_changeWindowScale();
 

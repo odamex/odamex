@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -64,7 +64,7 @@ void M_SetVec3f(v3float_t *dest, fixed_t x, fixed_t y, fixed_t z)
 	dest->x = FIXED2FLOAT(x);
 	dest->y = FIXED2FLOAT(y);
 	dest->z = FIXED2FLOAT(z);
-}		
+}
 
 void M_SetVec3(v3double_t *dest, double x, double y, double z)
 {
@@ -76,13 +76,13 @@ void M_SetVec3(v3double_t *dest, double x, double y, double z)
 void M_SetVec3(v3double_t *dest, fixed_t x, fixed_t y, fixed_t z)
 {
 	dest->x = FIXED2DOUBLE(x);
-	dest->y = FIXED2DOUBLE(y);	
+	dest->y = FIXED2DOUBLE(y);
 	dest->z = FIXED2DOUBLE(z);
 }
 
 void M_SetVec2Fixed(v2fixed_t *dest, double x, double y)
 {
-	dest->x = DOUBLE2FIXED(x); 
+	dest->x = DOUBLE2FIXED(x);
 	dest->y = DOUBLE2FIXED(y);
 }
 
@@ -92,6 +92,12 @@ void M_SetVec2Fixed(v2fixed_t *dest, fixed_t x, fixed_t y)
 	dest->y = y;
 }
 
+
+void M_SetVec2Fixed64(v2fixed64_t *dest, fixed64_t x, fixed64_t y)
+{
+	dest->x = x;
+	dest->y = y;
+}
 void M_SetVec3Fixed(v3fixed_t *dest, double x, double y, double z)
 {
 	dest->x = DOUBLE2FIXED(x);
@@ -180,6 +186,11 @@ void M_ZeroVec2Fixed(v2fixed_t *v)
 	v->x = v->y = 0;
 }
 
+void M_ZeroVec2Fixed64(v2fixed64_t *v)
+{
+	v->x = v->y = 0;
+}
+
 void M_ZeroVec3Fixed(v3fixed_t *v)
 {
 	v->x = v->y = v->z = 0;
@@ -212,6 +223,12 @@ void M_AddVec2Fixed(v2fixed_t *dest, const v2fixed_t *v1, const v2fixed_t *v2)
 	dest->y = v1->y + v2->y;
 }
 
+void M_AddVec2Fixed64(v2fixed64_t *dest, const v2fixed64_t *v1, const v2fixed64_t *v2)
+{
+	dest->x = v1->x + v2->x;
+	dest->y = v1->y + v2->y;
+}
+
 void M_AddVec3Fixed(v3fixed_t *dest, const v3fixed_t *v1, const v3fixed_t *v2)
 {
 	dest->x = v1->x + v2->x;
@@ -220,7 +237,7 @@ void M_AddVec3Fixed(v3fixed_t *dest, const v3fixed_t *v1, const v3fixed_t *v2)
 }
 
 
-// 
+//
 // M_SubVec3f
 //
 // Subtracts v2 from v1 stores in dest
@@ -240,6 +257,12 @@ void M_SubVec3(v3double_t *dest, const v3double_t *v1, const v3double_t *v2)
 }
 
 void M_SubVec2Fixed(v2fixed_t *dest, const v2fixed_t *v1, const v2fixed_t *v2)
+{
+	dest->x = v1->x - v2->x;
+	dest->y = v1->y - v2->y;
+}
+
+void M_SubVec2Fixed64(v2fixed64_t *dest, const v2fixed64_t *v1, const v2fixed64_t *v2)
 {
 	dest->x = v1->x - v2->x;
 	dest->y = v1->y - v2->y;
@@ -273,7 +296,7 @@ fixed_t M_LengthVec2Fixed(const v2fixed_t *v)
 {
 	double fx = FIXED2DOUBLE(v->x);
 	double fy = FIXED2DOUBLE(v->y);
-	
+
 	return DOUBLE2FIXED(sqrt(fx * fx + fy * fy));
 }
 
@@ -282,7 +305,7 @@ fixed_t M_LengthVec3Fixed(const v3fixed_t *v)
 	double fx = FIXED2DOUBLE(v->x);
 	double fy = FIXED2DOUBLE(v->y);
 	double fz = FIXED2DOUBLE(v->z);
-	
+
 	return DOUBLE2FIXED(sqrt(fx * fx + fy * fy + fz * fz));
 }
 
@@ -311,6 +334,12 @@ void M_ScaleVec2Fixed(v2fixed_t *dest, const v2fixed_t *v, fixed_t a)
 {
 	dest->x = FixedMul(v->x, a);
 	dest->y = FixedMul(v->y, a);
+}
+
+void M_ScaleVec2Fixed64(v2fixed64_t *dest, const v2fixed64_t *v, fixed64_t a)
+{
+	dest->x = FixedMul64(v->x, a);
+	dest->y = FixedMul64(v->y, a);
 }
 
 void M_ScaleVec3Fixed(v3fixed_t *dest, const v3fixed_t *v, fixed_t a)
@@ -360,7 +389,7 @@ void M_ScaleVec3FixedToLength(v3fixed_t* dest, const v3fixed_t* v, fixed_t a)
 }
 
 
-// 
+//
 // M_DotVec3f
 //
 // Returns the dot product of v1 and v2
@@ -379,7 +408,7 @@ double M_DotProductVec3(const v3double_t *v1, const v3double_t *v2)
 //
 // M_CrossProduct3f
 //
-// Gets the cross product of v1 and v2 and stores in dest 
+// Gets the cross product of v1 and v2 and stores in dest
 //
 void M_CrossProductVec3f(v3float_t *dest, const v3float_t *v1, const v3float_t *v2)
 {
@@ -399,7 +428,7 @@ void M_CrossProductVec3(v3double_t *dest, const v3double_t *v1, const v3double_t
 //
 // M_NormalizeVec3f
 //
-// Scales v so that its length is 1.0 and stores in dest 
+// Scales v so that its length is 1.0 and stores in dest
 //
 void M_NormalizeVec3f(v3float_t *dest, const v3float_t *v)
 {
@@ -500,7 +529,7 @@ void M_AngleToVec3f(v3float_t *dest, angle_t ang, int pitch)
 	dest->z = FIXED2FLOAT(finetangent[FINEANGLES/4 - (pitch >> ANGLETOFINESHIFT)]);
 	M_NormalizeVec3f(dest, dest);
 }
-	
+
 void M_AngleToVec3(v3double_t *dest, angle_t ang, int pitch)
 {
 	dest->x = FIXED2DOUBLE(finecosine[ang >> ANGLETOFINESHIFT]);
@@ -509,11 +538,11 @@ void M_AngleToVec3(v3double_t *dest, angle_t ang, int pitch)
 	M_NormalizeVec3(dest, dest);
 }
 
-	
+
 //
 // M_ProjectPointOnPlane
 //
-// 
+//
 //
 void M_ProjectPointOnPlane(v3double_t *dest, const v3double_t *p, const v3double_t *normal)
 {
@@ -523,7 +552,7 @@ void M_ProjectPointOnPlane(v3double_t *dest, const v3double_t *p, const v3double
 		M_ZeroVec3(dest);
 		return;
 	}
-	
+
 	double inv_denom = 1.0 / M_DotProductVec3(normal, normal);
 	double d = M_DotProductVec3(normal, p) * inv_denom;
 
@@ -531,7 +560,7 @@ void M_ProjectPointOnPlane(v3double_t *dest, const v3double_t *p, const v3double
 	M_ScaleVec3(&n, normal, inv_denom * d);
 	M_SubVec3(dest, p, &n);
 }
-	
+
 //
 // M_PerpendicularVec3
 //
@@ -553,14 +582,14 @@ void M_PerpendicularVec3(v3double_t *dest, const v3double_t *src)
 		minelem = fabs(src->z);
 		mincomponent = &(tempvec.z);
 	}
-	
+
 	// make tempvec the identity vector along the axis of the smallest component
 	M_ZeroVec3(&tempvec);
 	*mincomponent = 1.0;
-	
+
 	M_ProjectPointOnPlane(dest, &tempvec, src);
 	M_NormalizeVec3(dest, dest);
-}	
+}
 
 
 static void M_ConcatRotations(double out[3][3], const double in1[3][3], const double in2[3][3])
@@ -588,7 +617,7 @@ static void M_ConcatRotations(double out[3][3], const double in1[3][3], const do
 #ifdef _MSC_VER
 #pragma optimize( "", off )
 #endif
-	
+
 void M_RotatePointAroundVector(v3double_t *dest, const v3double_t *dir, const v3double_t *point, float degrees)
 {
 
@@ -643,19 +672,19 @@ void M_RotatePointAroundVector(v3double_t *dest, const v3double_t *dir, const v3
 #pragma optimize( "", on )
 #endif
 
-// 
+//
 // M_TranslateVec3f
 //
 // Translates the given vector (in doom's coordinate system) to the camera
 // space (in right-handed coordinate system) This function is used for slopes.
-// 
+//
 void M_TranslateVec3f(v3float_t *vec, const v3float_t *origin, angle_t ang)
 {
 	float tx, ty, tz;
 
 	float viewcosf = FIXED2FLOAT(finecosine[ang >> ANGLETOFINESHIFT]);
 	float viewsinf = FIXED2FLOAT(finesine[ang >> ANGLETOFINESHIFT]);
-   
+
 	tx = vec->x - origin->x;
 	ty = origin->z - vec->y;
 	tz = vec->z - origin->y;
@@ -671,7 +700,7 @@ void M_TranslateVec3 (v3double_t *vec, const v3double_t *origin, angle_t ang)
 
 	double viewcosf = FIXED2DOUBLE(finecosine[ang >> ANGLETOFINESHIFT]);
 	double viewsinf = FIXED2DOUBLE(finesine[ang >> ANGLETOFINESHIFT]);
- 	  
+
 	tx = vec->x - origin->x;
 	ty = origin->z - vec->y;
 	tz = vec->z - origin->y;
