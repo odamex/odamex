@@ -146,16 +146,16 @@ inline static fixed_t FixedDiv(fixed_t a, fixed_t b)
 inline static fixed64_t FixedAbs64( fixed64_t val )
 {
 	fixed64_t sign = val >> 63ll;
-	return ( val ^ sign ) - sign;
+	return (val ^ sign) - sign;
 }
 
 inline static fixed64_t FixedDiv64( fixed64_t a, fixed64_t b )
 {
-	if ( ( FixedAbs64( a ) >> ( FRACBITS64 - 2 ) ) >= FixedAbs64( b ) )
+	if ((FixedAbs64(a) >> (FRACBITS64 - 2)) >= FixedAbs64(b))
 	{
-		return ( a ^ b ) < 0 ? LONG_MIN : LONG_MAX;
+		return (a ^ b) < 0 ? MINLONG : MAXLONG;
 	}
-	fixed64_t result = ( a << FRACBITS64 ) / b;
+	fixed64_t result = (a << FRACBITS64) / b;
 	return (fixed64_t) result;
 }
 
