@@ -1471,11 +1471,11 @@ void AM_drawWalls()
 //
 void AM_rotate(mpoint64_t& pt, angle_t a)
 {
-	const fixed64_t tmpx = FixedMul64(pt.x, finecosine[a >> ANGLETOFINESHIFT]) -
-	                     FixedMul64(pt.y, finesine[a >> ANGLETOFINESHIFT]);
+	const fixed64_t tmpx = FixedMul64(pt.x, FIXED2FIXED64(finecosine[a >> ANGLETOFINESHIFT])) -
+	                     FixedMul64(pt.y, FIXED2FIXED64(finesine[a >> ANGLETOFINESHIFT]));
 
-	pt.y = FixedMul64(pt.x, finesine[a >> ANGLETOFINESHIFT]) +
-	       FixedMul64(pt.y, finecosine[a >> ANGLETOFINESHIFT]);
+	pt.y = FixedMul64(pt.x, FIXED2FIXED64(finesine[a >> ANGLETOFINESHIFT])) +
+	       FixedMul64(pt.y, FIXED2FIXED64(finecosine[a >> ANGLETOFINESHIFT]));
 
 	pt.x = tmpx;
 }
@@ -1498,7 +1498,7 @@ void AM_rotatePoint(mpoint64_t& pt)
 	pt.y += y;
 }
 
-void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed_t scale,
+void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed64_t scale,
                           angle_t angle, am_color_t color, fixed64_t x, fixed64_t y)
 {
 	for (std::vector<mline_t>::const_iterator it = lineguy.begin(); it != lineguy.end(); ++it)
@@ -1507,7 +1507,7 @@ void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed_t scale,
 		M_SetVec2Fixed64(&l.a, FIXED2FIXED64(it->a.x), FIXED2FIXED64(it->a.y));
 
 		if (scale)
-			M_ScaleVec2Fixed64(&l.a, &l.a, FIXED2FIXED64(scale));
+			M_ScaleVec2Fixed64(&l.a, &l.a, scale);
 
 		if (angle)
 			AM_rotate(l.a, angle);
@@ -1518,7 +1518,7 @@ void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed_t scale,
 		M_SetVec2Fixed64(&l.b, FIXED2FIXED64(it->b.x), FIXED2FIXED64(it->b.y));
 
 		if (scale)
-			M_ScaleVec2Fixed64(&l.b, &l.b, FIXED2FIXED64(scale));
+			M_ScaleVec2Fixed64(&l.b, &l.b, scale);
 
 		if (angle)
 			AM_rotate(l.b, angle);
@@ -1553,10 +1553,10 @@ void AM_drawPlayers()
 			angle = cangle;
 
 		if (am_cheating && !gameinfo.mapArrowCheat.empty())
-			AM_drawLineCharacter(gameinfo.mapArrowCheat, INT2FIXED(16), angle,
+			AM_drawLineCharacter(gameinfo.mapArrowCheat, INT2FIXED64(16), angle,
 				gameinfo.currentAutomapColors.YourColor, x, y);
 		else
-			AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED(16), angle,
+			AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED64(16), angle,
 				gameinfo.currentAutomapColors.YourColor, x, y);
 		return;
 	}
@@ -1630,7 +1630,7 @@ void AM_drawPlayers()
 			angle -= cangle - ANG90;
 		}
 
-		AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED(16), angle, color, pt.x, pt.y);
+		AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED64(16), angle, color, pt.x, pt.y);
 	}
 }
 
@@ -1674,7 +1674,7 @@ void AM_drawEasyKeys()
 
 				const am_color_t key_color = AM_getKeyColor(t);
 
-				AM_drawLineCharacter(gameinfo.easyKey, t->radius, 0, key_color, p.x, p.y);
+				AM_drawLineCharacter(gameinfo.easyKey, FIXED2FIXED64(t->radius), 0, key_color, p.x, p.y);
 			}
 			t = t->snext;
 		}
@@ -1718,7 +1718,7 @@ void AM_drawThings()
 				{
 					const am_color_t key_color = AM_getKeyColor(t);
 
-					AM_drawLineCharacter(gameinfo.cheatKey, t->radius, 0, key_color, p.x,
+					AM_drawLineCharacter(gameinfo.cheatKey, FIXED2FIXED64(t->radius), 0, key_color, p.x,
 					                     p.y);
 				}
 			}
@@ -1726,7 +1726,7 @@ void AM_drawThings()
 			{
 				am_color_t color = gameinfo.currentAutomapColors.ThingColor;
 
-				AM_drawLineCharacter(thintriangle_guy, t->radius, triangle_angle, color,
+				AM_drawLineCharacter(thintriangle_guy, FIXED2FIXED64(t->radius), triangle_angle, color,
 				                     p.x, p.y);
 
 				if (t->flags & MF_MISSILE)
@@ -1750,7 +1750,7 @@ void AM_drawThings()
 						color = gameinfo.currentAutomapColors.ThingColor_NoCountMonster;
 				}
 
-				AM_drawLineCharacter(thinrectangle_guy, t->radius, rotate_angle, color,
+				AM_drawLineCharacter(thinrectangle_guy, FIXED2FIXED64(t->radius), rotate_angle, color,
 				                     p.x, p.y);
 			}
 			t = t->snext;
