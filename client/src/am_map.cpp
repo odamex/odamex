@@ -202,7 +202,7 @@ static int f_p; // [RH] # of bytes from start of a line to start of next
 static byte* fb; // pseudo-frame buffer
 static int amclock;
 
-static mpoint64_t m_paninc;    // how far the window pans each tic (map coords)
+static mpoint_t m_paninc;    // how far the window pans each tic (map coords)
 static fixed64_t ftom_zoommul; // how far the window zooms in each tic (fb coords)
 
 static v2fixed64_t m_ll;   // LL x,y where the window is on the map (map coords)
@@ -225,7 +225,7 @@ static v2fixed64_t old_m_wh;
 static v2fixed64_t old_m_ll;
 
 // old location used by the Follower routine
-static mpoint64_t f_oldloc;
+static mpoint_t f_oldloc;
 
 // used by MTOF to scale from map-to-frame-buffer coords
 static fixed64_t scale_mtof = static_cast<fixed64_t>(INITSCALEMTOF);
@@ -233,7 +233,7 @@ static fixed64_t scale_mtof = static_cast<fixed64_t>(INITSCALEMTOF);
 static fixed64_t scale_ftom;
 
 static lumpHandle_t marknums[10];             // numbers used for marking by the automap
-static mpoint64_t markpoints[AM_NUMMARKPOINTS]; // where the points are
+static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0;                  // next point to be assigned
 
 static bool stopped = true;
@@ -299,7 +299,7 @@ BEGIN_COMMAND(am_togglefollow)
 }
 END_COMMAND(am_togglefollow)
 
-void AM_rotatePoint(mpoint64_t& pt);
+void AM_rotatePoint(mpoint_t& pt);
 
 // translates between frame-buffer and map coordinates
 int CXMTOF(fixed64_t x)
@@ -387,15 +387,17 @@ void AM_findMinMaxBoundaries()
 
 	for (int i = 0; i < numvertexes; i++)
 	{
-		if (FIXED2FIXED64(vertexes[i].x) < min.x)
-			min.x = FIXED2FIXED64(vertexes[i].x);
-		else if (vertexes[i].x > max.x)
-			max.x = FIXED2FIXED64(vertexes[i].x);
+		fixed64_t vx = FIXED2FIXED64(vertexes[i].x);
+		if (vx < min.x)
+			min.x = vx;
+		else if (vx > max.x)
+			max.x = vx;
 
-		if (FIXED2FIXED64(vertexes[i].y) < min.y)
-			min.y = FIXED2FIXED64(vertexes[i].y);
-		else if (FIXED2FIXED64(vertexes[i].y) > max.y)
-			max.y = FIXED2FIXED64(vertexes[i].y);
+		fixed64_t vy = FIXED2FIXED64(vertexes[i].y);
+		if (vy < min.y)
+			min.y = vy;
+		else if (vy > max.y)
+			max.y = vy;
 	}
 
 	const fixed64_t max_w = max.x - min.x;
@@ -446,7 +448,7 @@ void AM_initVariables()
 
 	mline_t ml;
 
-#define L(a) ((a)*FRACUNIT)
+#define L(a) ((a)*FRACUNIT64)
 #define ADD_TO_VEC(vec, ax, ay, bx, by) \
 	ml.a.x = L(ax); \
 	ml.a.y = L(ay); \
@@ -963,7 +965,7 @@ void AM_clearFB(am_color_t color)
 // faster reject and precalculated slopes.  If the speed is needed,
 // use a hash algorithm to handle the common cases.
 //
-bool AM_clipMline(mline64_t* ml, fline_t* fl)
+bool AM_clipMline(mline_t* ml, fline_t* fl)
 {
 	enum
 	{
@@ -1214,7 +1216,7 @@ void AM_drawFlineD(fline_t* fl, argb_t color)
 //
 // Clip lines, draw visible part sof lines.
 //
-void AM_drawMline(mline64_t* ml, am_color_t color)
+void AM_drawMline(mline_t* ml, am_color_t color)
 {
 	static fline_t fl;
 
@@ -1252,7 +1254,7 @@ void AM_drawGrid(am_color_t color)
 
 	fixed64_t start = w + minimum_x - ((minimum_x % w) + w) % w;
 
-	mline64_t ml;
+	mline_t ml;
 
 	// draw vertical gridlines
 	for (fixed64_t x = start; x < maximum_x; x += w)
@@ -1296,7 +1298,7 @@ void AM_drawGrid(am_color_t color)
 void AM_drawWalls()
 {
 	int r, g, b;
-	static mline64_t l;
+	static mline_t l;
 	float rdif, gdif, bdif;
 	const palette_t* pal = V_GetDefaultPalette();
 
@@ -1464,7 +1466,7 @@ void AM_drawWalls()
 // Rotation in 2D.
 // Used to rotate player arrow line character.
 //
-void AM_rotate(mpoint64_t& pt, angle_t a)
+void AM_rotate(mpoint_t& pt, angle_t a)
 {
 	const fixed64_t tmpx = FixedMul64(pt.x, FIXED2FIXED64(finecosine[a >> ANGLETOFINESHIFT])) -
 	                     FixedMul64(pt.y, FIXED2FIXED64(finesine[a >> ANGLETOFINESHIFT]));
@@ -1475,7 +1477,7 @@ void AM_rotate(mpoint64_t& pt, angle_t a)
 	pt.x = tmpx;
 }
 
-void AM_rotatePoint(mpoint64_t& pt)
+void AM_rotatePoint(mpoint_t& pt)
 {
 	player_t* player = &displayplayer();
 
@@ -1498,8 +1500,8 @@ void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed64_t scale,
 {
 	for (std::vector<mline_t>::const_iterator it = lineguy.begin(); it != lineguy.end(); ++it)
 	{
-		mline64_t l;
-		M_SetVec2Fixed64(&l.a, FIXED2FIXED64(it->a.x), FIXED2FIXED64(it->a.y));
+		mline_t l;
+		M_SetVec2Fixed64(&l.a, it->a.x, it->a.y);
 
 		if (scale)
 			M_ScaleVec2Fixed64(&l.a, &l.a, scale);
@@ -1510,7 +1512,7 @@ void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed64_t scale,
 		l.a.x += x;
 		l.a.y += y;
 
-		M_SetVec2Fixed64(&l.b, FIXED2FIXED64(it->b.x), FIXED2FIXED64(it->b.y));
+		M_SetVec2Fixed64(&l.b, it->b.x, it->b.y);
 
 		if (scale)
 			M_ScaleVec2Fixed64(&l.b, &l.b, scale);
@@ -1603,7 +1605,7 @@ void AM_drawPlayers()
 			color.index = V_BestColor(V_GetDefaultPalette()->basecolors, color.rgb);
 		}
 
-		mpoint64_t pt;
+		mpoint_t pt;
 		fixed_t moangle = p->mo->prevangle +
 			FixedMul(p->mo->angle - p->mo->prevangle,
 			render_lerp_amount);
@@ -1664,7 +1666,7 @@ void AM_drawEasyKeys()
 		{
 			if (AM_actorIsKey(t))
 			{
-				mpoint64_t p;
+				mpoint_t p;
 				M_SetVec2Fixed64(&p, FIXED2FIXED64(t->x), FIXED2FIXED64(t->y));
 
 				const am_color_t key_color = AM_getKeyColor(t);
@@ -1683,7 +1685,7 @@ void AM_drawThings()
 		AActor* t = sectors[i].thinglist;
 		while (t)
 		{
-			mpoint64_t p;
+			mpoint_t p;
 
 			fixed_t thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
 			fixed_t thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
@@ -1759,7 +1761,7 @@ void AM_drawMarks()
 	{
 		if (markpoints[i].x != -1)
 		{
-			mpoint64_t pt;
+			mpoint_t pt;
 			pt.x = markpoints[i].x;
 			pt.y = markpoints[i].y;
 
