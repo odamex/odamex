@@ -123,6 +123,7 @@ function CopyFiles {
     ########################################
 
     New-Item -Force -ItemType "directory" -Path "${X64Dir}"
+    New-Item -Force -ItemType "directory" -Path "${X64Dir}/redist"
 
     Copy-Item -Force -Path `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libFLAC-8.dll", `
@@ -145,11 +146,15 @@ function CopyFiles {
         "${CurrentDir}\BuildX64\server\RelWithDebInfo\odasrv.exe" `
         -Destination "${X64Dir}\"
 
+    # Get VC++ Redist
+    Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" -OutFile "${X64Dir}\redist\vc_redist.x64.exe"
+
     ########################################
     ## 32-BIT FILES
     ########################################
 
     New-Item -Force -ItemType "directory" -Path "${X86Dir}"
+    New-Item -Force -ItemType "directory" -Path "${X86Dir}/redist"
 
     Copy-Item -Force -Path `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\libFLAC-8.dll", `
@@ -171,6 +176,9 @@ function CopyFiles {
         "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxmsw315u_xrc_vc14x.dll", `
         "${CurrentDir}\BuildX86\server\RelWithDebInfo\odasrv.exe" `
         -Destination "${X86Dir}\"
+
+    # Get VC++ Redist
+    Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x86.exe" -OutFile "${X86Dir}\redist\vc_redist.x86.exe"
 }
 
 function Outputs {

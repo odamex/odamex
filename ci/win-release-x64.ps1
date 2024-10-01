@@ -117,6 +117,7 @@ function CopyFilesX64 {
     ########################################
 
     New-Item -Force -ItemType "directory" -Path "${X64Dir}"
+    New-Item -Force -ItemType "directory" -Path "${X64Dir}\redist"
 
     Copy-Item -Force -Path `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libFLAC-8.dll", `
@@ -138,6 +139,9 @@ function CopyFilesX64 {
         "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw315u_xrc_vc14x_x64.dll", `
         "${CurrentDir}\BuildX64\server\RelWithDebInfo\odasrv.exe" `
         -Destination "${X64Dir}\"
+
+    # Get VC++ Redist
+    Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" -OutFile "${X64Dir}\redist\vc_redist.x64.exe"
 }
 
 function OutputsX64 {

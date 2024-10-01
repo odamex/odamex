@@ -89,6 +89,7 @@ function BuildOutX86 {
     }
 
     New-Item -Force -ItemType "directory" -Path "${OutX86}"
+    New-Item -Force -ItemType "directory" -Path "${OutX86}\redist"
 
     Copy-Item -Force -Path `
         "${UnzippedX86}\libFLAC-8.dll", `
@@ -110,6 +111,10 @@ function BuildOutX86 {
         "${UnzippedX86}\wxmsw315u_xrc_vc14x.dll", `
         "${UnzippedX86}\odasrv.exe" `
         -Destination "${OutX86}\"
+
+    Copy-Item -Force -Path `
+    "${UnzippedX86}\redist\vc_redist.x86.exe" `
+    -Destination "${OutX86}\redist"
 }
 
 function BuildOutX64 {
@@ -119,8 +124,9 @@ function BuildOutX64 {
     }
 
     New-Item -Force -ItemType "directory" -Path "${OutX64}"
+    New-Item -Force -ItemType "directory" -Path "${OutX64}\redist"
 
-        Copy-Item -Force -Path `
+    Copy-Item -Force -Path `
         "${UnzippedX64}\libFLAC-8.dll", `
         "${UnzippedX64}\libmodplug-1.dll", `
         "${UnzippedX64}\libmpg123-0.dll", `
@@ -140,6 +146,10 @@ function BuildOutX64 {
         "${UnzippedX64}\wxmsw315u_xrc_vc14x_x64.dll", `
         "${UnzippedX64}\odasrv.exe" `
         -Destination "${OutX64}\"
+
+    Copy-Item -Force -Path `
+    "${UnzippedX64}\redist\vc_redist.x64.exe" `
+    -Destination "${OutX64}\redist"
 }
 
 function CompileSetup {
