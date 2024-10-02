@@ -1630,10 +1630,16 @@ void G_DoLoadGame (void)
 
 
 	for (i = 0; i < NUM_WORLDVARS; i++)
+	{
 		arc >> ACS_WorldVars[i];
+		// arc >> ACS_WorldArrays[i];
+	}
 
 	for (i = 0; i < NUM_GLOBALVARS; i++)
+	{
 		arc >> ACS_GlobalVars[i];
+		// arc >> ACS_GlobalArrays[i];
+	}
 
 	arc >> text[9];
 
@@ -1722,10 +1728,16 @@ void G_DoSaveGame()
 	arc << level.time;
 
 	for (i = 0; i < NUM_WORLDVARS; i++)
+	{
 		arc << ACS_WorldVars[i];
+		// arc << ACS_WorldArrays[i];
+	}
 
 	for (i = 0; i < NUM_GLOBALVARS; i++)
+	{
 		arc << ACS_GlobalVars[i];
+		// arc << ACS_GlobalArrays[i];
+	}
 
 
 	arc << (BYTE)0x1d;			// consistancy marker
