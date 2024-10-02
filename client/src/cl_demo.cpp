@@ -1613,7 +1613,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 		arc >> ACS_WorldVars[i];
 		int size, k, v;
 		arc >> size;
-		for (int i = 0; i < size; i++)
+		for (int j = 0; j < size; j++)
 		{
 			arc >> k;
 			arc >> v;
@@ -1626,7 +1626,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 		arc >> ACS_GlobalVars[i];
 		int size, k, v;
 		arc >> size;
-		for (int i = 0; i < size; i++)
+		for (int j = 0; j < size; j++)
 		{
 			arc >> k;
 			arc >> v;

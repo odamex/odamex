@@ -1634,7 +1634,7 @@ void G_DoLoadGame (void)
 		arc >> ACS_WorldVars[i];
 		int size, k, v;
 		arc >> size;
-		for (int i = 0; i < size; i++)
+		for (int j = 0; j < size; j++)
 		{
 			arc >> k;
 			arc >> v;
@@ -1647,7 +1647,7 @@ void G_DoLoadGame (void)
 		arc >> ACS_GlobalVars[i];
 		int size, k, v;
 		arc >> size;
-		for (int i = 0; i < size; i++)
+		for (int j = 0; j < size; j++)
 		{
 			arc >> k;
 			arc >> v;
@@ -1745,6 +1745,7 @@ void G_DoSaveGame()
 	{
 		arc << ACS_WorldVars[i];
 		ACSWorldGlobalArray worldarr = ACS_WorldArrays[i];
+		arc << worldarr.size();
 		for (ACSWorldGlobalArray::iterator it = worldarr.begin(); it != worldarr.end(); it++)
 		{
 			arc << it->first;
@@ -1756,6 +1757,7 @@ void G_DoSaveGame()
 	{
 		arc << ACS_GlobalVars[i];
 		ACSWorldGlobalArray globalarr = ACS_GlobalArrays[i];
+		arc << globalarr.size();
 		for (ACSWorldGlobalArray::iterator it = globalarr.begin(); it != globalarr.end(); it++)
 		{
 			arc << it->first;
