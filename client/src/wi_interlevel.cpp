@@ -245,6 +245,9 @@ int ValidateMapName(const OLumpName& mapname)
 	return !strcmp(mapname.c_str(), lumpname);
 }
 
+// some of the zdoom intermission conditions are the same as the logical OR of 2 id24 conditions
+// id24 offers no way to do this directly (only AND), but we can just make one animation with each condition
+// this is the purpose of the twoanims argument
 void WI_ParseZDoomPic(OScanner& os, std::vector<interlevelanim_t>& anims, interlevelcond_t cond1 = {}, interlevelcond_t cond2 = {}, bool twoanims = false)
 {
 	os.mustScanInt();
@@ -533,11 +536,19 @@ interlevel_t* WI_GetIntermissionScript(const char* lumpname)
 		int x = std::get<1>(spot);                              // delete for c++17
 		int y = std::get<2>(spot);                              // delete for c++17
 		int mapnum = levels.findByName(map).levelnum;
-		splats.push_back({{{intermissionscript.splat, intermissionscript.splatnum, "", -1, interlevelframe_t::DurationInf, 0, 0}},
-		                 {{animcondition_t::MapVisited, mapnum, 0}}, x, y});
-		pointers.push_back({{{intermissionscript.ptr1, intermissionscript.ptr1num, intermissionscript.ptr2, intermissionscript.ptr2num, interlevelframe_t::DurationFixed, 20, 0},
-		{"TNT1A0", tnt1, "", -1, interlevelframe_t::DurationFixed, 12, 0}
-		}, {{animcondition_t::CurrMapEqual, mapnum, 0}}, x, y});
+		splats.push_back({
+			{{intermissionscript.splat, intermissionscript.splatnum, "", -1, interlevelframe_t::DurationInf, 0, 0}},
+			{{animcondition_t::MapVisited, mapnum, 0}},
+			x, y
+		});
+		pointers.push_back({
+			{
+				{intermissionscript.ptr1, intermissionscript.ptr1num, intermissionscript.ptr2, intermissionscript.ptr2num, interlevelframe_t::DurationFixed, 20, 0},
+				{"TNT1A0", tnt1, "", -1, interlevelframe_t::DurationFixed, 12, 0}
+			},
+			{{animcondition_t::CurrMapEqual, mapnum, 0}},
+			x, y
+		});
 	}
 
 	interlevel_t* ret = output.get();
