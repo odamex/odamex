@@ -258,11 +258,11 @@ void WI_ParseZDoomPic(OScanner& os, std::vector<interlevelanim_t>& anims, interl
 	OLumpName picname = os.getToken();
 	int picnum = W_GetNumForName(picname.c_str());
 	if (!twoanims && cond2.condition != animcondition_t::None)
-		anims.push_back({{interlevelframe_t{picname, picnum, "", -1, interlevelframe_t::DurationInf, 0, 0}}, {cond1, cond2}, x, y});
+		anims.emplace_back(std::vector<interlevelframe_t>{interlevelframe_t{picname, picnum, "", -1, interlevelframe_t::DurationInf, 0, 0}}, std::vector<interlevelcond_t>{cond1, cond2}, x, y);
 	else
-		anims.push_back({{interlevelframe_t{picname, picnum, "", -1, interlevelframe_t::DurationInf, 0, 0}}, {cond1}, x, y});
+		anims.emplace_back(std::vector<interlevelframe_t>{interlevelframe_t{picname, picnum, "", -1, interlevelframe_t::DurationInf, 0, 0}}, std::vector<interlevelcond_t>{cond1}, x, y);
 	if ((cond2.condition != animcondition_t::None) && twoanims)
-		anims.push_back({{interlevelframe_t{picname, picnum, "", -1, interlevelframe_t::DurationInf, 0, 0}}, {cond2}, x, y});
+		anims.emplace_back(std::vector<interlevelframe_t>{interlevelframe_t{picname, picnum, "", -1, interlevelframe_t::DurationInf, 0, 0}}, std::vector<interlevelcond_t>{cond2}, x, y);
 }
 
 void WI_ParseZDoomAnim(OScanner& os, std::vector<interlevelanim_t>& anims, interlevelcond_t cond1 = {}, interlevelcond_t cond2 = {}, bool twoanims = false)
@@ -294,7 +294,7 @@ void WI_ParseZDoomAnim(OScanner& os, std::vector<interlevelanim_t>& anims, inter
 		interlevelframe_t::frametype_t type = (i == 0 ?
 			static_cast<interlevelframe_t::frametype_t>(interlevelframe_t::DurationFixed | interlevelframe_t::RandomStart) :
 			interlevelframe_t::DurationFixed);
-		anim.frames.push_back({framename, framenum, "", -1, type, duration, 0});
+		anim.frames.emplace_back(framename, framenum, "", -1, type, duration, 0);
 		if (++i >= 20)
 			os.error("More than 20 frames in animation.");
 		os.mustScan();
@@ -328,8 +328,8 @@ interlevel_t* WI_GetIntermissionScript(const char* lumpname)
 	std::vector<interlevelanim_t>& anims = output->layers[0].anims;
 	std::vector<interlevelanim_t>& splats = output->layers[1].anims;
 	std::vector<interlevelanim_t>& pointers = output->layers[2].anims;
-	output->layers[1].conditions.push_back({animcondition_t::OnEnteringScreen, 0, 0});
-	output->layers[2].conditions.push_back({animcondition_t::OnEnteringScreen, 0, 0});
+	output->layers[1].conditions.emplace_back(animcondition_t::OnEnteringScreen, 0, 0);
+	output->layers[2].conditions.emplace_back(animcondition_t::OnEnteringScreen, 0, 0);
 	LevelInfos& levels = getLevelInfos();
 	intermissionscript_t intermissionscript{};
 	const char* buffer = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
@@ -536,19 +536,19 @@ interlevel_t* WI_GetIntermissionScript(const char* lumpname)
 		int x = std::get<1>(spot);                              // delete for c++17
 		int y = std::get<2>(spot);                              // delete for c++17
 		int mapnum = levels.findByName(map).levelnum;
-		splats.push_back({
-			{{intermissionscript.splat, intermissionscript.splatnum, "", -1, interlevelframe_t::DurationInf, 0, 0}},
-			{{animcondition_t::MapVisited, mapnum, 0}},
+		splats.emplace_back(
+			std::vector<interlevelframe_t>{{intermissionscript.splat, intermissionscript.splatnum, "", -1, interlevelframe_t::DurationInf, 0, 0}},
+			std::vector<interlevelcond_t>{{animcondition_t::MapVisited, mapnum, 0}},
 			x, y
-		});
-		pointers.push_back({
-			{
+		);
+		pointers.emplace_back(
+			std::vector<interlevelframe_t>{
 				{intermissionscript.ptr1, intermissionscript.ptr1num, intermissionscript.ptr2, intermissionscript.ptr2num, interlevelframe_t::DurationFixed, 20, 0},
 				{"TNT1A0", tnt1, "", -1, interlevelframe_t::DurationFixed, 12, 0}
 			},
-			{{animcondition_t::CurrMapEqual, mapnum, 0}},
+			std::vector<interlevelcond_t>{{animcondition_t::CurrMapEqual, mapnum, 0}},
 			x, y
-		});
+		);
 	}
 
 	interlevel_t* ret = output.get();

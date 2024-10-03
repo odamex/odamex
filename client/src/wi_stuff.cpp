@@ -184,7 +184,7 @@ EXTERN_CVAR (cl_autoscreenshot)
 // ID24 STUFF - largely based on the implementation from Woof, with some bits from Rum and Raisin
 //
 
-typedef struct
+struct wi_animationstate_t
 {
 	std::vector<interlevelframe_t> frames;
 	const int xpos;
@@ -192,15 +192,18 @@ typedef struct
 	int frame_index;
 	bool frame_start;
 	int duration_left;
-} wi_animationstate_t;
 
-typedef struct
+	wi_animationstate_t(std::vector<interlevelframe_t> f = {}, int x = 0, int y = 0, int fi = 0, bool fs = false, int dl = 0) :
+		frames(f), xpos(x), ypos(y), frame_index(fi), frame_start(fs), duration_left(dl) {}
+};
+
+struct wi_animation_t
 {
 	std::vector<wi_animationstate_t> exiting_states;
 	std::vector<wi_animationstate_t> entering_states;
 
 	std::vector<wi_animationstate_t>* states;
-} wi_animation_t;
+};
 
 static wi_animation_t* animation;
 
@@ -399,8 +402,7 @@ static void WI_initAnimationStates(std::vector<wi_animationstate_t>& out,
 				continue;
 			}
 
-			wi_animationstate_t state = { anim.frames, anim.xpos, anim.ypos, 0, true, 0 };
-			out.push_back(state);
+			out.emplace_back(anim.frames, anim.xpos, anim.ypos, 0, true, 0);
 		}
 	}
 }
