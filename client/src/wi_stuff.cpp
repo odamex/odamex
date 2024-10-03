@@ -1367,7 +1367,7 @@ void WI_loadData()
 		enteranim = WI_GetInterlevel(nextlevel.enteranim.c_str());
 	} else if (!nextlevel.enterscript.empty())
 	{
-		enteranim = WI_GetInterlevel(nextlevel.enterscript.c_str());
+		enteranim = WI_GetIntermissionScript(nextlevel.enterscript.c_str());
 	}
 	WI_initAnimation();
 
