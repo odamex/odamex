@@ -96,10 +96,10 @@ jsonlumpresult_t WI_ParseInterlevelFrame(const Json::Value& frame, interlevelfra
 	if (output.imagelumpnum < 0)
 	{
 		// TNT1A0 used for transparent by Legacy of Rust
-		output.imagelumpnum = W_CheckNumForName(output.imagelump.c_str(), ns_sprites);
+		output.imagelumpnum = W_GetNumForName(output.imagelump.c_str(), ns_sprites);
 	}
 	output.altimagelump = altimage.asString();
-	output.altimagelumpnum = W_CheckNumForName(output.altimagelump.c_str());
+	output.altimagelumpnum = W_GetNumForName(output.altimagelump.c_str());
 	output.type = static_cast<interlevelframe_t::frametype_t>(type.asInt());
 	output.duration = (int)(duration.asDouble() * TICRATE);
 	output.maxduration = (int)(maxduration.asDouble() * TICRATE);
@@ -216,7 +216,9 @@ struct intermissionscript_t
 	bool tilebackground;
 	// unsupported ^^^
 	OLumpName splat;
+	int splatnum;
 	OLumpName ptr1, ptr2;
+	int ptr1num, ptr2num;
 	std::vector<std::tuple<OLumpName, int, int>> spots;
 };
 
@@ -251,9 +253,7 @@ void WI_ParseZDoomPic(OScanner& os, std::vector<interlevelanim_t>& anims, interl
 	int y = os.getTokenInt();
 	os.mustScan(8);
 	OLumpName picname = os.getToken();
-	int picnum = W_CheckNumForName(picname.c_str());
-	if (picnum == -1)
-		os.error("Intermission script pic %s not found.", picname.c_str());
+	int picnum = W_GetNumForName(picname.c_str());
 	if (!twoanims && cond2.condition != animcondition_t::None)
 		anims.push_back({{interlevelframe_t{picname, picnum, "", -1, interlevelframe_t::DurationInf, 0, 0}}, {cond1, cond2}, x, y});
 	else
@@ -287,9 +287,7 @@ void WI_ParseZDoomAnim(OScanner& os, std::vector<interlevelanim_t>& anims, inter
 			os.error("Expected identifier, got \"%s\".", os.getToken().c_str());
 		}
 		OLumpName framename = os.getToken();
-		int framenum = W_CheckNumForName(framename.c_str());
-		if (framenum == -1)
-			os.error("Intermission script animation frame %s not found.", framename.c_str());
+		int framenum = W_GetNumForName(framename.c_str());
 		interlevelframe_t::frametype_t type = (i == 0 ?
 			static_cast<interlevelframe_t::frametype_t>(interlevelframe_t::DurationFixed | interlevelframe_t::RandomStart) :
 			interlevelframe_t::DurationFixed);
@@ -327,6 +325,8 @@ interlevel_t* WI_GetIntermissionScript(const char* lumpname)
 	std::vector<interlevelanim_t>& anims = output->layers[0].anims;
 	std::vector<interlevelanim_t>& splats = output->layers[1].anims;
 	std::vector<interlevelanim_t>& pointers = output->layers[2].anims;
+	output->layers[1].conditions.push_back({animcondition_t::OnEnteringScreen, 0, 0});
+	output->layers[2].conditions.push_back({animcondition_t::OnEnteringScreen, 0, 0});
 	LevelInfos& levels = getLevelInfos();
 	intermissionscript_t intermissionscript{};
 	const char* buffer = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
@@ -370,13 +370,18 @@ interlevel_t* WI_GetIntermissionScript(const char* lumpname)
 		{
 			os.mustScan(8);
 			intermissionscript.splat = os.getToken();
+			intermissionscript.splatnum = W_GetNumForName(intermissionscript.splat.c_str());
 		}
 		else if (!strnicmp(name.c_str(), "pointer", 7))
 		{
 			os.mustScan(8);
 			intermissionscript.ptr1 = os.getToken();
+			intermissionscript.ptr1num = W_GetNumForName(intermissionscript.ptr1.c_str());
+
 			os.mustScan(8);
 			intermissionscript.ptr2 = os.getToken();
+			intermissionscript.ptr2num = W_GetNumForName(intermissionscript.ptr2.c_str());
+
 		}
 		else if (!strnicmp(name.c_str(), "spots", 5))
 		{
@@ -520,7 +525,20 @@ interlevel_t* WI_GetIntermissionScript(const char* lumpname)
 		}
 	}
 
-	// TODO: convert pointers and splats to interlevel stuff
+	int tnt1 = W_GetNumForName("TNT1A0", ns_sprites);
+	// for (const auto& [map, x, y] : intermissionscript.spots) // uncomment for c++17
+	for (const auto& spot : intermissionscript.spots)           // delete for c++17
+	{
+		OLumpName map = std::get<0>(spot);                      // delete for c++17
+		int x = std::get<1>(spot);                              // delete for c++17
+		int y = std::get<2>(spot);                              // delete for c++17
+		int mapnum = levels.findByName(map).levelnum;
+		splats.push_back({{{intermissionscript.splat, intermissionscript.splatnum, "", -1, interlevelframe_t::DurationInf, 0, 0}},
+		                 {{animcondition_t::MapVisited, mapnum, 0}}, x, y});
+		pointers.push_back({{{intermissionscript.ptr1, intermissionscript.ptr1num, intermissionscript.ptr2, intermissionscript.ptr2num, interlevelframe_t::DurationFixed, 20, 0},
+		{"TNT1A0", tnt1, "", -1, interlevelframe_t::DurationFixed, 12, 0}
+		}, {{animcondition_t::CurrMapEqual, mapnum, 0}}, x, y});
+	}
 
 	interlevel_t* ret = output.get();
 	interlevelstorage[lumpname] = std::move(output);
