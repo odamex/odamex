@@ -99,7 +99,7 @@ jsonlumpresult_t WI_ParseInterlevelFrame(const Json::Value& frame, interlevelfra
 		output.imagelumpnum = W_GetNumForName(output.imagelump.c_str(), ns_sprites);
 	}
 	output.altimagelump = altimage.asString();
-	output.altimagelumpnum = W_GetNumForName(output.altimagelump.c_str());
+	output.altimagelumpnum = W_CheckNumForName(output.altimagelump.c_str());
 	output.type = static_cast<interlevelframe_t::frametype_t>(type.asInt());
 	output.duration = (int)(duration.asDouble() * TICRATE);
 	output.maxduration = (int)(maxduration.asDouble() * TICRATE);
