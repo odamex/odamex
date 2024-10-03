@@ -357,7 +357,7 @@ interlevel_t* WI_GetIntermissionScript(const char* lumpname)
 		{
 			intermissionscript.tilebackground = true;
 		}
-		else if (!strnicmp(name.c_str(), "screensize", 13))
+		else if (!strnicmp(name.c_str(), "screensize", 10))
 		{
 			os.mustScanInt();
 			intermissionscript.screenx = os.getTokenInt();
@@ -438,7 +438,7 @@ interlevel_t* WI_GetIntermissionScript(const char* lumpname)
 			else
 				os.error("Unknown command %s", os.getToken());
 		}
-		else if (!strnicmp(name.c_str(), "ifleaving", 10))
+		else if (!strnicmp(name.c_str(), "ifleaving", 9))
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
@@ -451,7 +451,7 @@ interlevel_t* WI_GetIntermissionScript(const char* lumpname)
 			else
 				os.error("Unknown command %s", os.getToken());
 		}
-		else if (!strnicmp(name.c_str(), "ifnotleaving", 13))
+		else if (!strnicmp(name.c_str(), "ifnotleaving", 12))
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
@@ -464,7 +464,7 @@ interlevel_t* WI_GetIntermissionScript(const char* lumpname)
 			else
 				os.error("Unknown command %s", os.getToken());
 		}
-		else if (!strnicmp(name.c_str(), "ifvisited", 13))
+		else if (!strnicmp(name.c_str(), "ifvisited", 9))
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
@@ -477,7 +477,7 @@ interlevel_t* WI_GetIntermissionScript(const char* lumpname)
 			else
 				os.error("Unknown command %s", os.getToken());
 		}
-		else if (!strnicmp(name.c_str(), "ifnotvisited", 13))
+		else if (!strnicmp(name.c_str(), "ifnotvisited", 12))
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
@@ -490,7 +490,7 @@ interlevel_t* WI_GetIntermissionScript(const char* lumpname)
 			else
 				os.error("Unknown command %s", os.getToken());
 		}
-		else if (!strnicmp(name.c_str(), "iftraveling", 13))
+		else if (!strnicmp(name.c_str(), "iftraveling", 11))
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
@@ -506,7 +506,7 @@ interlevel_t* WI_GetIntermissionScript(const char* lumpname)
 			else
 				os.error("Unknown command %s", os.getToken());
 		}
-		else if (!strnicmp(name.c_str(), "ifnottraveling", 13))
+		else if (!strnicmp(name.c_str(), "ifnottraveling", 14))
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
