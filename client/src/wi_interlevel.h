@@ -36,13 +36,20 @@ enum class animcondition_t
     OnFinishedScreen, // The current screen is the "finished" screen
     OnEnteringScreen, // The current screen is the “entering” screen
 
-    Max,
+    ID24Max,
+
+    // vv extra conditions for zdoom intermission scripts
+    CurrMapNotEqual,
+    MapNotVisited,
+    TravelingBetween,
+    NotTravelingBetween,
 };
 
 struct interlevelcond_t
 {
     animcondition_t condition;
-    int param;
+    int param1;
+    int param2;
 };
 
 struct interlevelframe_t
@@ -88,4 +95,5 @@ struct interlevel_t
 };
 
 interlevel_t* WI_GetInterlevel(const char* lumpname);
+interlevel_t* WI_GetIntermissionScript(const char* lumpname);
 void WI_ClearInterlevels();

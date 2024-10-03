@@ -214,7 +214,9 @@ static bool WI_checkConditions(const std::vector<interlevelcond_t>& conditions,
 	bool conditionsmet = true;
 
 	LevelInfos& levels = getLevelInfos();
-	level_pwad_info_t& currentlevel = enteringcondition ? levels.findByName(wbs->next) : levels.findByName(wbs->current);
+	level_pwad_info_t& exitinglevel = levels.findByName(wbs->current);
+	level_pwad_info_t& enteringlevel = levels.findByName(wbs->next);
+	level_pwad_info_t& currentlevel = enteringcondition ? enteringlevel : exitinglevel;
 	int map_number = currentlevel.levelnum;
 
 	for (const auto& cond : conditions)
@@ -222,15 +224,23 @@ static bool WI_checkConditions(const std::vector<interlevelcond_t>& conditions,
 		switch (cond.condition)
 		{
 			case animcondition_t::CurrMapGreater:
-				conditionsmet = conditionsmet && (map_number > cond.param);
+				conditionsmet = conditionsmet && (map_number > cond.param1);
 				break;
 
 			case animcondition_t::CurrMapEqual:
-				conditionsmet = conditionsmet && (map_number == cond.param);
+				conditionsmet = conditionsmet && (map_number == cond.param1);
+				break;
+
+			case animcondition_t::CurrMapNotEqual:
+				conditionsmet = conditionsmet && !(map_number == cond.param1);
 				break;
 
 			case animcondition_t::MapVisited:
-				conditionsmet = conditionsmet && levels.findByNum(cond.param).flags & LEVEL_VISITED;
+				conditionsmet = conditionsmet && levels.findByNum(cond.param1).flags & LEVEL_VISITED;
+				break;
+
+			case animcondition_t::MapNotVisited:
+				conditionsmet = conditionsmet && !(levels.findByNum(cond.param1).flags & LEVEL_VISITED);
 				break;
 
 			case animcondition_t::CurrMapNotSecret:
@@ -247,6 +257,14 @@ static bool WI_checkConditions(const std::vector<interlevelcond_t>& conditions,
 
 			case animcondition_t::OnEnteringScreen:
 				conditionsmet = conditionsmet && enteringcondition;
+				break;
+
+			case animcondition_t::TravelingBetween:
+				conditionsmet = conditionsmet && (exitinglevel.levelnum == cond.param1) && (enteringlevel.levelnum == cond.param2);
+				break;
+
+			case animcondition_t::NotTravelingBetween:
+				conditionsmet = conditionsmet && !((exitinglevel.levelnum == cond.param1) && (enteringlevel.levelnum == cond.param2));
 				break;
 
 			default:
@@ -586,7 +604,7 @@ void WI_drawEL()
 	if (!lnames[1].empty())
 	{
 		// draw level
-		screen->DrawPatchClean(lnames1, (320 - lnames1->width()) / 2, y);
+		screen->DrawPatchClean(lnames1, (320 - lnames1->width()) / 2, lnames1->height() >= 200 ? WI_TITLEY : y); // MIA TODO: figure out better way of setting y here
 	}
 	else
 	{
@@ -1136,7 +1154,7 @@ void WI_updateStats()
 
 			if (!enterpic.empty() || enteranim != nullptr)
 			{
-				if (enteranim != nullptr)
+				if (enteranim != nullptr && !enteranim->musiclump.empty())
 					S_ChangeMusic(enteranim->musiclump.c_str(), true);
 				// background
 				const char* bg_lump = enteranim == nullptr ? enterpic.c_str() : enteranim->backgroundlump.c_str();
@@ -1253,7 +1271,7 @@ void WI_Ticker()
 	if (bcnt == 1)
 	{
 		// intermission music
-		if (exitanim != nullptr)
+		if (exitanim != nullptr && !exitanim->musiclump.empty())
 			S_ChangeMusic (exitanim->musiclump.c_str(), true);
 		else if ((gameinfo.flags & GI_MAPxx))
 			S_ChangeMusic ("d_dm2int", true);
@@ -1338,10 +1356,16 @@ void WI_loadData()
 	if (!currentlevel.exitanim.empty())
 	{
 		exitanim = WI_GetInterlevel(currentlevel.exitanim.c_str());
+	} else if (!currentlevel.exitscript.empty())
+	{
+		exitanim = WI_GetIntermissionScript(currentlevel.exitscript.c_str());
 	}
 	if (!nextlevel.enteranim.empty())
 	{
 		enteranim = WI_GetInterlevel(nextlevel.enteranim.c_str());
+	} else if (!nextlevel.enterscript.empty())
+	{
+		enteranim = WI_GetInterlevel(nextlevel.enterscript.c_str());
 	}
 	WI_initAnimation();
 
