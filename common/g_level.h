@@ -169,6 +169,8 @@ struct level_pwad_info_t
 	// The following are necessary for UMAPINFO compatibility
 	OLumpName		exitpic;
 	OLumpName		enterpic;
+	OLumpName		exitscript;
+	OLumpName		enterscript;
 	OLumpName		exitanim;
 	OLumpName		enteranim;
 	OLumpName		endpic;
@@ -191,7 +193,7 @@ struct level_pwad_info_t
 	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
 	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
 	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
-	      aircontrol(0.0f), exitpic(""), exitanim(""), enterpic(""), enteranim(""), endpic(""), intertext(""),
+	      aircontrol(0.0f), exitpic(""), exitscript(""), exitanim(""), enterpic(""), enterscript(""), enteranim(""), endpic(""), intertext(""),
 	      intertextsecret(""), interbackdrop(""), intermusic(""),
 	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(),
 	      clearlabel(false), author()
@@ -208,7 +210,7 @@ struct level_pwad_info_t
 	      secretmap(other.secretmap), partime(other.partime), skypic(other.skypic),
 	      music(other.music), flags(other.flags), cluster(other.cluster),
 	      snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
-	      skypic2(""), gravity(0.0f), aircontrol(0.0f), exitpic(""), exitanim(""), enterpic(""), enteranim(""),
+	      skypic2(""), gravity(0.0f), aircontrol(0.0f), exitpic(""), exitscript(""), exitanim(""), enterpic(""), enterscript(""), enteranim(""),
 	      endpic(""), intertext(""), intertextsecret(""), interbackdrop(""), intermusic(""),
 	      bossactions(), label(), clearlabel(false), author(), sky1ScrollDelta(0), sky2ScrollDelta(0)
 	{
@@ -244,8 +246,10 @@ struct level_pwad_info_t
 		gravity = other.gravity;
 		aircontrol = other.aircontrol;
 		exitpic = other.exitpic;
+		exitscript = other.exitscript;
 		exitanim = other.exitanim;
 		enterpic = other.enterpic;
+		enterscript = other.enterscript;
 		enteranim = other.enteranim;
 		endpic = other.endpic;
 		intertext = other.intertext;
@@ -325,8 +329,10 @@ struct level_locals_t
 
 	// The following are used for UMAPINFO
 	OLumpName		exitpic;
+	OLumpName		exitscript;
 	OLumpName		exitanim;
 	OLumpName		enterpic;
+	OLumpName		enterscript;
 	OLumpName		enteranim;
 	OLumpName		endpic;
 
