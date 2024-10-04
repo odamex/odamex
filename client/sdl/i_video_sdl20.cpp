@@ -991,7 +991,7 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 
 	mVideoCapabilities = new ISDL20VideoCapabilities();
 
-	mWindow = new ISDL20Window(640, 480, 8, WINDOW_Windowed, false);
+	mWindow = new ISDL20Window(320, 200, 8, WINDOW_Windowed, false);
 }
 
 
