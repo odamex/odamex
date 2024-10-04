@@ -541,7 +541,7 @@ static const identData_t identdata[] = {
     // ID1.WAD
     // ------------------------------------------------------------------------
     {
-        "Legacy of Rust v1.1",              // mIdName
+        "Legacy of Rust v1.2",              // mIdName
         "ID1.WAD",                          // mFilename
         "3A495080",                         // mCRC32Sum
         "95F21547BE5E0BFF38D412017440F656", // mMd5Sum
@@ -550,7 +550,7 @@ static const identData_t identdata[] = {
         PWAD_NO_WEIGHT                      // weight
     },
     {
-        "Legacy of Rust v1.0",              // mIdName
+        "Legacy of Rust v1.1",              // mIdName
         "ID1.WAD",                          // mFilename
         "e2e73e06",                         // mCRC32Sum
         "681bcea18c1286e8b9986c335034bdd1", // mMd5Sum
