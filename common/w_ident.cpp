@@ -576,7 +576,7 @@ static const identData_t identdata[] = {
     // ID1-RES.WAD
     // ------------------------------------------------------------------------
     {
-        "id1-res v1.1",                     // mIdName
+        "id1-res v1.2",                     // mIdName
         "ID1-RES.WAD",                      // mFilename
         "5B7DEA04",                         // mCRC32Sum
         "F8FBAB472230BFA090D6A9234D65FAE6", // mMd5Sum
@@ -585,7 +585,7 @@ static const identData_t identdata[] = {
         PWAD_NO_WEIGHT                      // weight
     },
     {
-        "id1-res v1.0",                     // mIdName
+        "id1-res v1.1",                     // mIdName
         "ID1-RES.WAD",                      // mFilename
         "0b9a1202",                         // mCRC32Sum
         "b6b2370ae8733aaf1377b0ef12351572", // mMd5Sum
@@ -598,7 +598,7 @@ static const identData_t identdata[] = {
     // ID1-WEAP.WAD
     // ------------------------------------------------------------------------
     {
-        "id1-weap v1.1",                    // mIdName
+        "id1-weap v1.2",                    // mIdName
         "ID1-WEAP.WAD",                     // mFilename
         "EC52FDB9",                         // mCRC32Sum
         "85D25C8C3D06A05A1283AE4AFE749C9F", // mMd5Sum
@@ -607,7 +607,7 @@ static const identData_t identdata[] = {
         PWAD_NO_WEIGHT                      // weight
     },
     {
-        "id1-weap v1.0",                    // mIdName
+        "id1-weap v1.1",                    // mIdName
         "ID1-WEAP.WAD",                     // mFilename
         "ec81d166",                         // mCRC32Sum
         "b3247939c60f6a819c625036b52a5f53", // mMd5Sum
