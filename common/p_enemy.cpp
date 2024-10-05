@@ -50,6 +50,7 @@ EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_novileghosts)
 EXTERN_CVAR(co_zdoomsound)
 EXTERN_CVAR(co_removesoullimit)
+EXTERN_CVAR(co_deadplayertarget)
 
 enum dirtype_t
 {
@@ -851,7 +852,6 @@ void A_Look (AActor *actor)
 		actor->target = AActor::AActorPtr();
 		//return;
 	}
-
 	if (targ && (targ->flags & MF_SHOOTABLE))
 	{
 		actor->target = targ->ptr();
@@ -953,7 +953,36 @@ void A_Chase (AActor *actor)
 
 	// [RH] If the target is dead (and not a goal), stop chasing it.
 	if (actor->target && actor->target != actor->goal && actor->target->health <= 0)
-		actor->target = AActor::AActorPtr();
+	{
+		// with co_deadplayertarget enabled, keep chasing the corpse
+		// to avoid breaking some maps
+		if (co_deadplayertarget && actor->target->type == MT_PLAYER)
+		{
+			// test for sound like we would if we were in A_Look
+			// to let go of the corpse target asap in favor of a real player
+			AActor *targ = NULL;
+			if (actor->subsector && actor->subsector->sector)
+				targ = actor->subsector->sector->soundtarget;
+			if (targ && targ->player && !(targ->player->cheats & CF_NOTARGET) && !targ->player->spectator)
+			{
+				actor->target = targ->ptr();
+				return; 	// got a new target
+			}
+			else if (P_LookForPlayers (actor, true))
+			{
+				return; 	// got a new target
+			}
+			else
+			{
+				// keep the corpse around
+				actor->target->deadtic = 0;
+			}
+		}
+		else
+		{
+			actor->target = AActor::AActorPtr();
+		}
+	}
 
 	if (!actor->target || !(actor->target->flags & MF_SHOOTABLE))
 	{
@@ -967,6 +996,9 @@ void A_Chase (AActor *actor)
 			return;
 		}
 	}
+
+	if (co_deadplayertarget && actor->target && actor->target->health <= 0) // let enemy move towards corpse
+		goto nomissile;
 
 	// do not attack twice in a row
 	if (actor->flags & MF_JUSTATTACKED)

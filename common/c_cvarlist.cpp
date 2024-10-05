@@ -323,6 +323,9 @@ CVAR_RANGE(sv_countdown, "5",
 	CVAR(			co_blockmapfix, "0", "Fix the blockmap collision bug",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+	CVAR(                   co_deadplayertarget, "0", "Enemies keep chasing a dead player",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
 
 	// Boom-compatibility changes
 	//------------------------------
