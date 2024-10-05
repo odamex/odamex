@@ -50,22 +50,10 @@ struct hordeInfo_t
 	int bossDamage;
 	int waveStartHealth;
 
-	int alive() const
-	{
-		return spawnedHealth - killedHealth;
-	}
-	int killed() const
-	{
-		return killedHealth - waveStartHealth;
-	}
-	bool hasBoss() const
-	{
-		return waveTime != bossTime;
-	}
-	int bossTic() const
-	{
-		return ::level.time - bossTime;
-	}
+	int alive() const { return spawnedHealth - killedHealth; }
+	int killed() const { return killedHealth - waveStartHealth; }
+	bool hasBoss() const { return waveTime != bossTime; }
+	int bossTic() const { return ::level.time - bossTime; }
 	bool equals(const hordeInfo_t& info) const
 	{
 		if (state != info.state)

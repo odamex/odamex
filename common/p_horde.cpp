@@ -91,10 +91,7 @@ class corpseCollector_t
 		m_corpses.push(ptr->ptr());
 		m_added += 1;
 	}
-	void startWave()
-	{
-		m_waveStart = m_added;
-	}
+	void startWave() { m_waveStart = m_added; }
 	void tick()
 	{
 		if (m_removed >= m_waveStart)
@@ -203,6 +200,21 @@ class HordeState
 	int m_nextSpawn;
 	int m_nextPowerup;
 	corpseCollector_t m_corpses;
+	mobjCounts_t m_monsterCounts;
+	mobjCounts_t m_bossCounts;
+
+	/**
+	 * @brief Returns number of bosses currently alive.
+	 */
+	size_t countLivingBosses() {
+		size_t alive = 0;
+		for (AActors::iterator it = m_bosses.begin(); it != m_bosses.end(); ++it)
+		{
+			if (*it && (*it)->health > 0)
+				alive += 1;
+		}
+		return alive;
+	}
 
 	/**
 	 * @brief Set the given state.
@@ -211,7 +223,7 @@ class HordeState
 	{
 		m_state = state;
 
-		if (m_state == HS_WANTBOSS)
+		if (m_state == HS_WANTBOSS && m_bossTime == m_waveTime)
 		{
 			// Do the boss intro fanfare.
 			SV_BroadcastPrintf("The floor trembles as the boss of the wave arrives.\n");
@@ -225,7 +237,7 @@ class HordeState
 	    : m_state(HS_STARTING), m_wave(0), m_waveTime(0), m_bossTime(0), m_defineID(0),
 	      m_spawnedHealth(0), m_killedHealth(0), m_bossHealth(0), m_bossDamage(0),
 	      m_waveStartHealth(0), m_bossRecipe(hordeRecipe_t()), m_nextSpawn(0),
-	      m_nextPowerup(0)
+	      m_nextPowerup(0), m_monsterCounts(), m_bossCounts()
 	{
 	}
 
@@ -249,6 +261,8 @@ class HordeState
 		m_nextSpawn = ::level.time;
 		m_nextPowerup = ::level.time + (30 * TICRATE);
 		m_corpses.clear();
+		m_monsterCounts.clear();
+		m_bossCounts.clear();
 
 		// Avoid printing wave name on boot and map switch.
 		if (printWave)
@@ -346,6 +360,7 @@ class HordeState
 		m_bosses.clear();
 		m_bossRecipe.clear();
 		m_corpses.startWave();
+		m_bossCounts.clear();
 
 		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
 		                   G_HordeDefine(m_defineID).name.c_str());
@@ -373,6 +388,7 @@ class HordeState
 		m_bosses.clear();
 		m_bossRecipe.clear();
 		m_corpses.startWave();
+		m_bossCounts.clear();
 
 		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
 		                   G_HordeDefine(m_defineID).name.c_str());
@@ -451,35 +467,83 @@ class HordeState
 		}
 	}
 
-	void addSpawnHealth(const int health)
+	/**
+	 * @brief Re-count all monsters helper
+	 *
+	 * @detail Used for loading savegames.
+	 *
+	 * @param monsterCounts map to update the counts off (m_bossCounts or m_monsterCounts)
+	 * @param type Type of monster to increment count of
+	 */
+	void recountMonstersHelper(mobjCounts_t& monsterCounts, mobjtype_t type)
 	{
-		m_spawnedHealth += health;
+		if (monsterCounts.count(type))
+		{
+			monsterCounts[type] += 1;
+		}
+		else
+		{
+			monsterCounts[type] = 1;
+		}
 	}
 
-	void addKilledHealth(const int health)
+	/**
+	 * @brief Re-count all monsters
+	 *
+	 * @detail Used for loading savegames.
+	 */
+	void recountMonsters()
 	{
-		m_killedHealth += health;
+		AActor* mo;
+		TThinkerIterator<AActor> iterator;
+
+		m_monsterCounts.clear();
+		m_bossCounts.clear();
+		while ((mo = iterator.Next()))
+		{
+			if (mo->health > 0)
+			{
+				if (mo->oflags & MFO_BOSSPOOL)
+				{
+					recountMonstersHelper(m_bossCounts, mo->type);
+				}
+				else
+				{
+					recountMonstersHelper(m_monsterCounts, mo->type);
+				}
+			}
+		}
 	}
 
-	void addBossHealth(const int health)
+	void addSpawnHealth(const int health) { m_spawnedHealth += health; }
+
+	void addKilledHealth(const int health) { m_killedHealth += health; }
+
+	void addBossHealth(const int health) { m_bossHealth += health; }
+
+	void addBossDamage(const int health) { m_bossDamage += health; }
+
+	void addCorpse(AActor* mo) { m_corpses.pushCorpse(mo); }
+
+	void decrementCount(AActor* mo)
 	{
-		m_bossHealth += health;
+		if (mo->oflags & MFO_BOSSPOOL)
+		{
+			if (m_bossCounts.count(mo->type))
+			{
+				m_bossCounts[mo->type] -= 1;
+			}
+		}
+		else
+		{
+			if (m_monsterCounts.count(mo->type))
+			{
+				m_monsterCounts[mo->type] -= 1;
+			}
+		}
 	}
 
-	void addBossDamage(const int health)
-	{
-		m_bossDamage += health;
-	}
-
-	void addCorpse(AActor* mo)
-	{
-		m_corpses.pushCorpse(mo);
-	}
-
-	size_t getDefineID() const
-	{
-		return m_defineID;
-	}
+	size_t getDefineID() const { return m_defineID; }
 
 	int getAliveHealth() const { return m_spawnedHealth - m_killedHealth; }
 	void changeState();
@@ -507,7 +571,8 @@ void HordeState::changeState()
 		return;
 	}
 	case HS_PRESSURE: {
-		if (m_killedHealth > goalHealth && m_bosses.empty())
+		size_t alive = countLivingBosses();
+		if (m_killedHealth > goalHealth && (m_bosses.empty() || alive < m_bossRecipe.limit))
 		{
 			// We reached the goal, spawn the boss.
 			setState(HS_WANTBOSS);
@@ -515,7 +580,8 @@ void HordeState::changeState()
 		return;
 	}
 	case HS_RELAX: {
-		if (m_killedHealth > goalHealth && m_bosses.empty())
+		size_t alive = countLivingBosses();
+		if (m_killedHealth > goalHealth && (m_bosses.empty() || alive < m_bossRecipe.limit))
 		{
 			// We reached the goal, spawn the boss.
 			setState(HS_WANTBOSS);
@@ -526,6 +592,7 @@ void HordeState::changeState()
 			setState(HS_PRESSURE);
 		}
 		return;
+	}
 	case HS_WANTBOSS: {
 		if (m_bossRecipe.isValid() && static_cast<int>(m_bosses.size()) >= m_bossRecipe.count)
 		{
@@ -534,7 +601,6 @@ void HordeState::changeState()
 			setState(HS_PRESSURE);
 		}
 		return;
-	}
 	}
 	default:
 		return;
@@ -565,10 +631,10 @@ void HordeState::getNextSpawnTime(int& min, int& max)
 		alive += (define.maxTotalHealth() - alive) / 2;
 	}
 
-	double minf = Remap(alive, define.minTotalHealth(),
-	                    define.maxTotalHealth(), EMPTY_MIN_SPAWN, EMPTY_MAX_SPAWN);
-	double maxf = Remap(alive, define.minTotalHealth(),
-	                    define.maxTotalHealth(), FULL_MIN_SPAWN, FULL_MAX_SPAWN);
+	double minf = Remap(alive, define.minTotalHealth(), define.maxTotalHealth(),
+	                    EMPTY_MIN_SPAWN, EMPTY_MAX_SPAWN);
+	double maxf = Remap(alive, define.minTotalHealth(), define.maxTotalHealth(),
+	                    FULL_MIN_SPAWN, FULL_MAX_SPAWN);
 
 	// Don't absolutely pound the players in the first minute.
 	const int FALLOFF_TIME = m_waveTime + ::HORDE_STARTING_TICS + TICRATE * 60;
@@ -600,13 +666,8 @@ void HordeState::tick()
 	// Are the bosses taken care of?
 	if (m_state != HS_WANTBOSS && m_bossRecipe.isValid())
 	{
-		size_t alive = 0;
-		for (AActors::iterator it = m_bosses.begin(); it != m_bosses.end(); ++it)
-		{
-			if (*it && (*it)->health > 0)
-				alive += 1;
-		}
-		if (!alive)
+		size_t alive = countLivingBosses();
+		if (!alive && m_bossRecipe.limit <= 0)
 		{
 			// Start the next wave.
 			nextWave();
@@ -632,10 +693,11 @@ void HordeState::tick()
 
 			// Pick a recipe for some monsters.
 			hordeRecipe_t recipe;
-			const bool ok = P_HordeSpawnRecipe(recipe, define, false);
+			const bool ok = P_HordeSpawnRecipe(recipe, define, false, m_monsterCounts);
 			if (!ok)
 			{
-				Printf(PRINT_WARNING, "%s: No spawn recipe for monster.\n", __FUNCTION__);
+				if (recipe.count >= 0)
+					Printf(PRINT_WARNING, "%s: No spawn recipe for monster.\n", __FUNCTION__);
 				return;
 			}
 
@@ -652,7 +714,7 @@ void HordeState::tick()
 			DPrintf("Spawning %d %s (%d hp) at a %s spawn\n", recipe.count,
 			        ::mobjinfo[recipe.type].name, hp, HordeThingStr(spawn->type));
 
-			AActors mobjs = P_HordeSpawn(*spawn, recipe);
+			AActors mobjs = P_HordeSpawn(*spawn, recipe, m_monsterCounts);
 			ActivateMonsters(mobjs);
 			break;
 		}
@@ -670,7 +732,7 @@ void HordeState::tick()
 			if (!m_bossRecipe.isValid())
 			{
 				// Pick a recipe for the boss.
-				const bool ok = P_HordeSpawnRecipe(recipe, define, true);
+				const bool ok = P_HordeSpawnRecipe(recipe, define, true, m_bossCounts);
 				if (!ok)
 				{
 					Printf(PRINT_WARNING, "%s: No spawn recipe for boss monster.\n",
@@ -683,9 +745,15 @@ void HordeState::tick()
 			}
 			else
 			{
-				// Adjust the count based on how many bosses we've spawned.
+				// Adjust the count based on how many bosses we've spawned and current boss limit.
 				recipe = m_bossRecipe;
-				recipe.count = m_bossRecipe.count - int(m_bosses.size());
+				recipe.count = m_bossRecipe.totalCount - int(m_bosses.size());
+				int alive = int(countLivingBosses());
+				if (recipe.count <= recipe.limit - alive)
+				{
+					m_bossRecipe.limit = 0;
+				}
+				recipe.count = MIN(recipe.limit - alive, recipe.count);
 			}
 
 			// Spawn a boss if we don't have one.
@@ -697,7 +765,7 @@ void HordeState::tick()
 				break;
 			}
 
-			AActors mobjs = P_HordeSpawn(*spawn, recipe);
+			AActors mobjs = P_HordeSpawn(*spawn, recipe, m_bossCounts);
 			m_bosses.insert(m_bosses.end(), mobjs.begin(), mobjs.end());
 			ActivateMonsters(mobjs);
 			break;
@@ -771,6 +839,8 @@ void P_RemoveHealthPool(AActor* mo)
 
 	// Unset the flag - we only get one try.
 	mo->oflags &= ~MFO_HEALTHPOOL;
+
+	::g_HordeDirector.decrementCount(mo);
 
 	::g_HordeDirector.addKilledHealth(::mobjinfo[mo->type].spawnhealth);
 }
@@ -936,6 +1006,7 @@ void P_HordePostLoad()
 		return;
 
 	::g_HordeDirector.rescanBosses();
+	::g_HordeDirector.recountMonsters();
 }
 
 BEGIN_COMMAND(hordewave)

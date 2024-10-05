@@ -108,11 +108,19 @@ static void ParseMonsterConfig(OScanner& os, hordeDefine_t::monConfig_t& outConf
 			os.mustScanFloat();
 			outConfig.chance = os.getTokenFloat();
 		}
+		else if (os.compareToken("limit"))
+		{
+			os.mustScan();
+			os.assertTokenIs("=");
+			os.mustScanInt();
+			outConfig.limit = os.getTokenInt();
+		}
 		else
 		{
 			// We don't know what this token is.
 			std::string buffer;
-			StrFormat(buffer, "Unknown Monster/Boss Token \"%s\".", os.getToken().c_str());
+			StrFormat(buffer, "Unknown Monster/Boss Token \"%s\".",
+			          os.getToken().c_str());
 			os.error(buffer.c_str());
 		}
 	}

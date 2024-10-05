@@ -75,6 +75,7 @@ bool P_HordeHasSpawns();
 bool P_HordeHasRequiredMonsterSpawns();
 void P_HordeClearSpawns();
 hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe);
-AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe);
+AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
+                     mobjCounts_t& monsterCounts);
 void P_HordeSpawnItem();
 void P_HordeSpawnPowerup(const mobjtype_t pw);
