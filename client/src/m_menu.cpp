@@ -1275,8 +1275,8 @@ void M_QuitDOOM(int choice)
 void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
 
 static const char *genders[3] = { "male", "female", "cyborg" };
-// Acts 19 quiz the order must match d_netinf.h
-static const char *colorpresets[11] = { "custom", "blue", "indigo", "green", "brown", "red", "gold", "jungle green", "purple", "white", "black" };
+// [Acts 19 quiz] The order must match d_netinf.h
+static const char *colorpresets[12] = { "green", "indigo", "brown", "red", "blue", "orange", "gold", "jungle green", "purple", "white", "black", "custom" };
 static state_t *PlayerState;
 static int PlayerTics;
 argb_t CL_GetPlayerColor(player_t*);
@@ -1302,7 +1302,8 @@ void M_PlayerSetup(int choice)
 
 	// [Nes] Intialize the player preview color.
 	const argb_t player_color = CL_GetPlayerColor(&consoleplayer());
-	R_BuildPlayerTranslation(0, player_color);
+	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
+	R_BuildPlayerTranslation(0, player_color, colorpreset);
 }
 
 static void M_PlayerSetupTicker()
@@ -1500,7 +1501,7 @@ static void M_PlayerSetupDrawer()
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
 		// of the table of the current player color. (Which is different in single, demo, and team)
 		const argb_t player_color = CL_GetPlayerColor(&consoleplayer());
-		R_BuildPlayerTranslation(0, player_color);
+		R_BuildPlayerTranslation(0, player_color, colorpreset);
 		V_ColorMap = translationref_t(translationtables, 0);
 
 		// Draw box surrounding fire and player:
@@ -1641,27 +1642,30 @@ static void M_ChangeColorPreset (int choice)
 	argb_t customcolor = V_GetColorFromString(cl_customcolor);
 
 	if (!choice)
-		colorpreset = (colorpreset == 0) ? 10 : colorpreset - 1;
+		colorpreset = (colorpreset == 0) ? 11 : colorpreset - 1;
 	else
-		colorpreset = (colorpreset == 10) ? 0 : colorpreset + 1;
+		colorpreset = (colorpreset == 11) ? 0 : colorpreset + 1;
 
 	cl_colorpreset = colorpresets[colorpreset];
 
-	if (colorpreset == COLOR_BLUE)
-		// the Corn Chex jump suit; it should be brighter, but that introduces gray pixels on 8-bit
-		SendNewColor(57, 57, 255);
+	// The color presets up through BLUE are still used to give an RGB baseline for r_forceteamcolor and r_forceenemycolor.
+	if (colorpreset == COLOR_GREEN)
+		// the Odamex green default
+		SendNewColor(64, 207, 0);
 	else if (colorpreset == COLOR_INDIGO)
 		// the Wheat Chex jump suit; a little darker than the blue
 		SendNewColor(134, 134, 134);
-	else if (colorpreset == COLOR_GREEN)
-		// the Odamex green default
-		SendNewColor(64, 207, 0);
 	else if (colorpreset == COLOR_BROWN)
 		// my best approximation of the Vanilla brown translation
 		SendNewColor(169, 87, 31);
 	else if (colorpreset == COLOR_RED)
 		// the blue luminosity matched to the Vanilla red hue without looking bad on 8-bit
 		SendNewColor(250, 62, 62);
+	else if (colorpreset == COLOR_BLUE)
+		// the Corn Chex jump suit; it should be brighter, but that introduces gray pixels on 8-bit
+		SendNewColor(57, 57, 255);
+	else if (colorpreset == COLOR_ORANGE)
+		SendNewColor(255, 96, 0);
 	else if (colorpreset == COLOR_GOLD)
 		SendNewColor(255, 206, 43);
 	else if (colorpreset == COLOR_JUNGLEGREEN)
@@ -1726,7 +1730,7 @@ static void SendNewColor(int red, int green, int blue)
 	if (!connected)
 	{
 		// [Nes] Change the player preview color.
-		R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color));
+		R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color), colorpreset);
 
 		if (consoleplayer().ingame())
 			R_CopyTranslationRGB(0, consoleplayer_id);

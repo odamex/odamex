@@ -110,6 +110,7 @@ void P_ExplodeMissile(AActor* mo);
 void P_PlayerLeavesGame(player_s* player);
 void P_SetPsprite(player_t* player, int position, statenum_t stnum);
 void P_SetButtonTexture(line_t* line, short texture);
+void CL_RebuildAllPlayerTranslations();
 
 /**
  * @brief Unpack a bitfield into an array of booleans.
@@ -946,6 +947,10 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 	if (p->userinfo.gender < 0 || p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_NEUTER;
 
+	p->userinfo.colorpreset = static_cast<colorpreset_t>(msg->colorpreset());
+	if (p->userinfo.colorpreset < 0 || p->userinfo.colorpreset >= NUMCOLOR)
+		p->userinfo.colorpreset = COLOR_CUSTOM;
+
 	p->userinfo.color[0] = 255;
 	p->userinfo.color[1] = msg->color().r();
 	p->userinfo.color[2] = msg->color().g();
@@ -953,7 +958,13 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 
 	p->GameTime = msg->join_time();
 
-	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p));
+	EXTERN_CVAR(r_forceenemycolor)
+	EXTERN_CVAR(r_forceteamcolor)
+
+	if (G_IsTeamColor(r_forceteamcolor, r_forceenemycolor))
+		CL_RebuildAllPlayerTranslations();
+	else
+		R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p), p->userinfo.colorpreset);
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
 	// to the other team?

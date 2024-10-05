@@ -845,6 +845,8 @@ bool SV_SetupUserInfo(player_t &player)
 
 	gender_t gender = static_cast<gender_t>(MSG_ReadLong());
 
+	colorpreset_t colorpreset = static_cast<colorpreset_t>(MSG_ReadLong());
+
 	byte color[4];
 	for (int i = 3; i >= 0; i--)
 		color[i] = MSG_ReadByte();
@@ -872,6 +874,9 @@ bool SV_SetupUserInfo(player_t &player)
 	if (gender < 0 || gender >= NUMGENDER)
 		gender = GENDER_NEUTER;
 
+	if (colorpreset < 0 || colorpreset >= NUMCOLOR)
+		colorpreset = COLOR_CUSTOM;
+
 	aimdist = clamp(aimdist, 0, 5000 * 16384);
 
 	if (switchweapon >= WPSW_NUMTYPES || switchweapon < 0)
@@ -885,6 +890,8 @@ bool SV_SetupUserInfo(player_t &player)
 
 	player.userinfo.gender			= gender;
 	player.userinfo.team			= new_team;
+
+	player.userinfo.colorpreset		= colorpreset;
 
 	memcpy(player.userinfo.color, color, 4);
 	memcpy(player.prefcolor, color, 4);
@@ -4311,16 +4318,17 @@ BEGIN_COMMAND (playerinfo)
 	const char* team = GetTeamInfo(player->userinfo.team)->ColorStringUpper.c_str();
 
 	Printf("---------------[player info]----------- \n");
-	Printf(" IP Address       - %s \n",		ip);
-	Printf(" userinfo.netname - %s \n",		player->userinfo.netname.c_str());
+	Printf(" IP Address           - %s \n",		ip);
+	Printf(" userinfo.netname     - %s \n",		player->userinfo.netname.c_str());
 	if (sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) {
-		Printf(" userinfo.team    - %s \n", team);
+		Printf(" userinfo.team        - %s \n", team);
 	}
-	Printf(" userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
-	Printf(" userinfo.color   - %s \n",		color);
-	Printf(" userinfo.gender  - %d \n",		player->userinfo.gender);
-	Printf(" time             - %d \n",		player->GameTime);
-	Printf(" spectator        - %d \n",		player->spectator);
+	Printf(" userinfo.aimdist     - %d \n",		player->userinfo.aimdist >> FRACBITS);
+	Printf(" userinfo.colorpreset - %d \n",		player->userinfo.colorpreset);
+	Printf(" userinfo.color       - %s \n",		color);
+	Printf(" userinfo.gender      - %d \n",		player->userinfo.gender);
+	Printf(" time                 - %d \n",		player->GameTime);
+	Printf(" spectator            - %d \n",		player->spectator);
 	if (G_IsCoopGame())
 	{
 		Printf(" kills - %d  deaths - %d\n", player->killcount, player->deathcount);

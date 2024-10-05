@@ -255,8 +255,7 @@ bool G_CanShowObituary()
  */
 bool G_CanTickGameplay()
 {
-	return ::levelstate.getState() == LevelState::WARMUP ||
-	       ::levelstate.getState() == LevelState::INGAME;
+	return ::levelstate.getState() == LevelState::WARMUP || ::levelstate.getState() == LevelState::INGAME;
 }
 
 /**
@@ -336,6 +335,14 @@ bool G_IsDuelGame()
 bool G_IsTeamGame()
 {
 	return sv_gametype == GM_TEAMDM || sv_gametype == GM_CTF;
+}
+
+/**
+ * @brief Check if team colors are being enforced due to CVARs and gametype.
+ */
+bool G_IsTeamColor(bool forceteamcolor, bool forceenemycolor)
+{
+	return (forceteamcolor && G_IsCoopGame()) || (forceenemycolor && G_IsFFAGame());
 }
 
 /**
