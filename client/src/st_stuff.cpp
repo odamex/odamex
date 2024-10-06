@@ -57,6 +57,7 @@ static bool st_needrefresh = true;
 static int lu_palette;
 
 EXTERN_CVAR(sv_allowredscreen)
+EXTERN_CVAR(sv_allowfov)
 EXTERN_CVAR(st_scale)
 EXTERN_CVAR(screenblocks)
 EXTERN_CVAR(g_lives)
@@ -692,7 +693,7 @@ END_COMMAND (give)
 
 BEGIN_COMMAND (fov)
 {
-	if (!CHEAT_AreCheatsEnabled() || !m_Instigator)
+	if (!sv_allowfov && (!CHEAT_AreCheatsEnabled() || !m_Instigator))
 		return;
 
 	if (argc != 2)
