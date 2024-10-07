@@ -2535,6 +2535,16 @@ void DLevelScript::RunScript ()
 			sp -= 2;
 			break;
 
+		case PCD_ASSIGNWORLDARRAY:
+			ACS_WorldArrays[NEXTBYTE][STACK(2)] = STACK(1);
+			sp -= 2;
+			break;
+
+		case PCD_ASSIGNGLOBALARRAY:
+			ACS_GlobalArrays[NEXTBYTE][STACK(2)] = STACK(1);
+			sp -= 2;
+			break;
+
 		case PCD_PUSHSCRIPTVAR:
 			PushToStack(locals[NEXTBYTE]);
 			break;
@@ -2553,6 +2563,14 @@ void DLevelScript::RunScript ()
 
 		case PCD_PUSHMAPARRAY:
 			STACK(1) = level.behavior->GetArrayVal(level.vars[NEXTBYTE], STACK(1));
+			break;
+
+		case PCD_PUSHWORLDARRAY:
+			STACK(1) = ACS_WorldArrays[NEXTBYTE][STACK(1)];
+			break;
+
+		case PCD_PUSHGLOBALARRAY:
+			STACK(1) = ACS_GlobalArrays[NEXTBYTE][STACK(1)];
 			break;
 
 		case PCD_ADDSCRIPTVAR:
@@ -2576,13 +2594,29 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_ADDMAPARRAY: {
-			int a = ACS_WorldVars[NEXTBYTE];
+			int a = level.vars[NEXTBYTE];
 			int i = STACK(2);
 			level.behavior->SetArrayVal(a, i,
 			                            level.behavior->GetArrayVal(a, i) + STACK(1));
 			sp -= 2;
 		}
 		break;
+
+		case PCD_ADDWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] += STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_ADDGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] += STACK(1);
+				sp -= 2;
+			}
+			break;
 
 		case PCD_SUBSCRIPTVAR:
 			locals[NEXTBYTE] -= STACK(1);
@@ -2605,13 +2639,29 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_SUBMAPARRAY: {
-			int a = ACS_WorldVars[NEXTBYTE];
+			int a = level.vars[NEXTBYTE];
 			int i = STACK(2);
 			level.behavior->SetArrayVal(a, i,
 			                            level.behavior->GetArrayVal(a, i) - STACK(1));
 			sp -= 2;
 		}
 		break;
+
+		case PCD_SUBWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] -= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_SUBGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] -= STACK(1);
+				sp -= 2;
+			}
+			break;
 
 		case PCD_MULSCRIPTVAR:
 			locals[NEXTBYTE] *= STACK(1);
@@ -2634,13 +2684,29 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_MULMAPARRAY: {
-			int a = ACS_WorldVars[NEXTBYTE];
+			int a = level.vars[NEXTBYTE];
 			int i = STACK(2);
 			level.behavior->SetArrayVal(a, i,
 			                            level.behavior->GetArrayVal(a, i) * STACK(1));
 			sp -= 2;
 		}
 		break;
+
+		case PCD_MULWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] *= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_MULGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] *= STACK(1);
+				sp -= 2;
+			}
+			break;
 
 		case PCD_DIVSCRIPTVAR:
 			if (STACK(1) == 0)
@@ -2698,12 +2764,38 @@ void DLevelScript::RunScript ()
 				}
 			    else
 			    {
-				    int a = ACS_WorldVars[NEXTBYTE];
+				    int a = level.vars[NEXTBYTE];
 				    int i = STACK(2);
 				    level.behavior->SetArrayVal(
 				        a, i, level.behavior->GetArrayVal(a, i) / STACK(1));
 				    sp -= 2;
 			    }
+			}
+			break;
+
+		case PCD_DIVWORLDARRAY:
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_DivideBy0;
+			}
+			else
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] /= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_DIVGLOBALARRAY:
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_DivideBy0;
+			}
+			else
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] /= STACK(1);
+				sp -= 2;
 			}
 			break;
 
@@ -2762,10 +2854,36 @@ void DLevelScript::RunScript ()
 			}
 			else
 			{
-				int a = ACS_WorldVars[NEXTBYTE];
+				int a = level.vars[NEXTBYTE];
 				int i = STACK(2);
 				level.behavior->SetArrayVal(a, i,
 											level.behavior->GetArrayVal(a, i) % STACK(1));
+				sp -= 2;
+			}
+			break;
+
+		case PCD_MODWORLDARRAY:
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_ModulusBy0;
+			}
+			else
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] %= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_MODGLOBALARRAY:
+			if (STACK(1) == 0)
+			{
+				state = SCRIPT_ModulusBy0;
+			}
+			else
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] %= STACK(1);
 				sp -= 2;
 			}
 			break;
@@ -2788,10 +2906,26 @@ void DLevelScript::RunScript ()
 
 		case PCD_INCMAPARRAY:
 			{
-				int a = ACS_WorldVars[NEXTBYTE];
+				int a = level.vars[NEXTBYTE];
 				int i = STACK(2);
 				level.behavior->SetArrayVal (a, i,
 					level.behavior->GetArrayVal (a, i) + 1);
+				sp--;
+			}
+			break;
+
+		case PCD_INCWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(1)] += 1;
+				sp--;
+			}
+			break;
+
+		case PCD_INCGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(1)] += 1;
 				sp--;
 			}
 			break;
@@ -2814,10 +2948,26 @@ void DLevelScript::RunScript ()
 
 		case PCD_DECMAPARRAY:
 			{
-				int a = ACS_WorldVars[NEXTBYTE];
+				int a = level.vars[NEXTBYTE];
 				int i = STACK(2);
 				level.behavior->SetArrayVal (a, i,
 					level.behavior->GetArrayVal (a, i) - 1);
+				sp--;
+			}
+			break;
+
+		case PCD_DECWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(1)] -= 1;
+				sp--;
+			}
+			break;
+
+		case PCD_DECGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(1)] -= 1;
 				sp--;
 			}
 			break;

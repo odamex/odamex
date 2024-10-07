@@ -81,9 +81,11 @@ extern int mapchange;
 
 // ACS variables with world scope
 int ACS_WorldVars[NUM_WORLDVARS];
+ACSWorldGlobalArray ACS_WorldArrays[NUM_WORLDVARS];
 
 // ACS variables with global scope
 int ACS_GlobalVars[NUM_GLOBALVARS];
+ACSWorldGlobalArray ACS_GlobalArrays[NUM_GLOBALVARS];
 
 // [AM] Stores the reset snapshot
 FLZOMemFile	*reset_snapshot = NULL;
@@ -466,6 +468,10 @@ void G_InitNew(const char *mapname)
 		M_ClearRandom ();
 		memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
 		memset (ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
+		for (int i = 0; i < NUM_GLOBALVARS; i++)
+			ACS_GlobalArrays[i].clear();
+		for (int i = 0; i < NUM_WORLDVARS; i++)
+			ACS_WorldArrays[i].clear();
 		level.time = 0;
 		level.inttimeleft = 0;
 
