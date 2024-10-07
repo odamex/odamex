@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=10.5.0
+Type=Application
+
+Name=Odasrv
+Comment=Server to run Odamex and play DOOM wads online!
+Categories=Amusement;Game;ActionGame;AdventureGame;ArcadeGame;
+
+Icon=net.odamex.Odamex.Server
+Exec=odasrv
+Terminal=true
+StartupWMClass=odasrv

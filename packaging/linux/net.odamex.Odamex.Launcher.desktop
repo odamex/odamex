@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=10.5.0
+Type=Application
+
+Name=Odalaunch
+Comment=A server browser to find and play DOOM games online!
+Categories=Amusement;Game;ActionGame;AdventureGame;ArcadeGame;
+
+Icon=net.odamex.Odamex.Launcher
+Exec=odalaunch
+Terminal=false
+StartupWMClass=odalaunch
