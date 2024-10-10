@@ -580,10 +580,6 @@ void G_DoLoadLevel (int position)
 
 	R_InitSkiesForLevel();
 
-	R_SetDefaultSky(level.skypic.c_str());
-
-	R_InitSkiesForLevel();
-
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
 	// [RH] Fetch sky parameters from level_locals_t.
