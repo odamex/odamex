@@ -1274,7 +1274,7 @@ void M_QuitDOOM(int choice)
 
 void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
 
-static const char *genders[3] = { "male", "female", "cyborg" };
+static const char *genders[4] = { "male", "female", "cyborg", "other" };
 // Acts 19 quiz the order must match d_netinf.h
 static const char *colorpresets[11] = { "custom", "blue", "indigo", "green", "brown", "red", "gold", "jungle green", "purple", "white", "black" };
 static state_t *PlayerState;
@@ -1600,9 +1600,13 @@ static void M_ChangeGender (int choice)
 	int gender = D_GenderByName(cl_gender.cstring());
 
 	if (!choice)
-		gender = (gender == 0) ? 2 : gender - 1;
+		gender = (gender == 0) ? 3 : gender - 1; // Wrap around back to 0 (male) if reach end of gender list
 	else
-		gender = (gender == 2) ? 0 : gender + 1;
+		gender = (gender == 3) ? 0 : gender + 1; // Wrap around back to 3 (other) if reach start of gender list
+
+	// WARNING: If genders are added, this function must be adjusted to account for the number of options
+	// This is bad code, and should be changed to grab the number of genders available
+	// Otherwise, gender options may become inaccessible
 
 	cl_gender = genders[gender];
 }
