@@ -728,6 +728,8 @@ void STACK_ARGS D_Shutdown()
 
 	R_Shutdown();
 
+	WI_Shutdown();
+
 //	Res_ShutdownTextureManager();
 
 //	R_ShutdownColormaps();

@@ -9,8 +9,8 @@
 # These parameters can and should be changed for new versions.
 # 
 
-Set-Variable -Name "OdamexVersion" -Value "10.6.0"
-Set-Variable -Name "OdamexTestSuffix" -Value "-RC2"
+Set-Variable -Name "OdamexVersion" -Value "11.0.0"
+Set-Variable -Name "OdamexTestSuffix" -Value "" # "-RC3"
 
 #
 # The actual script follows.

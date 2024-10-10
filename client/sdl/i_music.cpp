@@ -262,12 +262,12 @@ static MusicSystemType I_SelectMusicSystem(byte *data, size_t length)
 	return MS_SDLMIXER;
 }
 
-void I_PlaySong(byte* data, size_t length, bool loop)
+void I_PlaySong(const OByteSpan data, const bool loop)
 {
 	if (!musicsystem)
 		return;
 
-	MusicSystemType newtype = I_SelectMusicSystem(data, length);
+	MusicSystemType newtype = I_SelectMusicSystem(data.data(), data.size());
 	if (newtype != current_musicsystem_type)
 	{
 		if (musicsystem)
@@ -278,7 +278,7 @@ void I_PlaySong(byte* data, size_t length, bool loop)
 		I_InitMusic(newtype);
 	}
 
-	musicsystem->startSong(data, length, loop);
+	musicsystem->startSong(data.data(), data.size(), loop);
 
 	// Hack for problems with Windows Vista/7 & SDL_Mixer
 	// See comment for I_ResetMidiVolume().

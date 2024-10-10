@@ -36,6 +36,11 @@ enum gender_t
 	NUMGENDER
 };
 
+inline auto format_as(gender_t eGender)
+{
+	return fmt::underlying(eGender);
+}
+
 enum colorpreset_t	// Acts 19 quiz the order must match m_menu.cpp.
 {
 	COLOR_CUSTOM,

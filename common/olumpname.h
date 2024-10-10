@@ -38,13 +38,13 @@ class OLumpName
 	OLumpName& operator=(const OLumpName& other);
 	OLumpName& operator=(const char* other);
 	OLumpName& operator=(const std::string& other);
-	
+
 	// capacity
 	size_t size() const;
 	size_t length() const;
 	void clear();
 	bool empty() const;
-	
+
 	// element access
 	//
 	// WARNING: If you use any of the non-const element access functions, the uppercase
@@ -68,4 +68,34 @@ class OLumpName
 	friend bool operator!=(const OLumpName& lhs, const OLumpName& rhs);
 	friend bool operator!=(const OLumpName& lhs, const char* rhs);
 	friend bool operator!=(const OLumpName& lhs, const std::string& rhs);
+
+	// for allowing use as keys in OHashTable and std::unordered_map
+	friend struct hashfunc<OLumpName>;
+	friend struct std::hash<OLumpName>;
+};
+
+template <>
+struct hashfunc<OLumpName>
+{
+	auto operator()(const OLumpName& lumpname) const
+	{
+		const char* s = lumpname.m_data;
+		size_t val = 0;
+		for (size_t n = 9; *s != 0 && n != 0; s++, n--)
+			val = val * 101 + *s;
+		return val;
+	}
+};
+
+template <>
+struct std::hash<OLumpName>
+{
+	auto operator()(const OLumpName& lumpname) const
+	{
+		const char* s = lumpname.m_data;
+		size_t val = 0;
+		for (size_t n = 9; *s != 0 && n != 0; s++, n--)
+			val = val * 101 + *s;
+		return val;
+	}
 };

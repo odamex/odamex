@@ -913,7 +913,9 @@ void G_InitLevelLocals()
 	}
 
 	::level.exitpic = info.exitpic;
+	::level.exitanim = info.exitanim;
 	::level.enterpic = info.enterpic;
+	::level.enteranim = info.enteranim;
 	::level.endpic = info.endpic;
 
 	::level.intertext = info.intertext;
@@ -958,7 +960,7 @@ BEGIN_COMMAND(mapinfo)
 	LevelInfos& levels = getLevelInfos();
 	if (stricmp(argv[1], "size") == 0)
 	{
-		Printf(PRINT_HIGH, "%" PRIuSIZE " maps found\n", levels.size());
+		Printf(PRINT_HIGH, "%zu maps found\n", levels.size());
 		return;
 	}
 

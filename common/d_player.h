@@ -177,10 +177,12 @@ public:
 	int			monsterdmgcount;
 	int			killcount, itemcount, secretcount;		// for intermission
 
+	bool		didsecret;	// player has completed a secret level -- for ID24 intermissions
+
 	// Total points/frags that aren't reset after rounds. Used for LMS/TLMS/LMSCTF.
 	int totalpoints;
 	// Total Deaths that are seen only on Rounds without lives.
-	int totaldeaths;	
+	int totaldeaths;
 
     // Is wp_nochange if not changing.
 	weapontype_t	pendingweapon;
@@ -218,7 +220,7 @@ public:
 
 	int			jumpTics;				// delay the next jump for a moment
 
-	int			death_time;				// [SL] Record time of death to enforce respawn delay if needed 
+	int			death_time;				// [SL] Record time of death to enforce respawn delay if needed
 	int			suicidedelay;			// Ch0wW - Time between 2 suicides.
 	fixed_t		oldvelocity[3];			// [RH] Used for falling damage
 
@@ -232,7 +234,7 @@ public:
 	int         last_received;
 
 	int         tic;					// gametic last update for player was received
-	
+
 	PlayerSnapshotManager snapshots;	// Previous player positions
 
 	byte		spying;					// [SL] id of player being spynext'd by this player
@@ -395,7 +397,7 @@ public:
 
 	player_s();
 	player_s &operator =(const player_s &other);
-	
+
 	~player_s();
 
 
@@ -584,7 +586,7 @@ class PlayerQuery
 	/**
 	 * @brief Given a sort, filter so only the top item remains.  In the case
 	 *        of a tie, multiple items are returned.
-	 * 
+	 *
 	 * @return A mutated PlayerQuery to chain off of.
 	 */
 	PlayerQuery& filterSortMax()
@@ -686,6 +688,8 @@ typedef struct wbstartstruct_s
 
 	// index of this player in game
 	unsigned	pnum;
+
+	bool		didsecret = false;
 
 	std::vector<wbplayerstruct_s> plyr;
 } wbstartstruct_t;

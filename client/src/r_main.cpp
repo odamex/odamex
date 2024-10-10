@@ -641,8 +641,11 @@ void R_Init()
 void STACK_ARGS R_Shutdown()
 {
     R_FreeTranslationTables();
+
+	R_ClearSkyDefs();
     I_FreeSurface(screenblocks_surface);
     I_FreeSurface(scaled_screenblocks_surface);
+
 }
 
 
@@ -980,6 +983,21 @@ void R_SetTranslatedLucentDrawFuncs()
 	}
 }
 
+void R_SetSkyForegroundDrawFuncs()
+{
+	if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else if (r_drawflat)
+	{
+		R_SetFlatDrawFuncs();
+	}
+	else
+	{
+		colfunc = R_DrawSkyForegroundColumn;
+	}
+}
 
 //
 // R_RenderPlayerView

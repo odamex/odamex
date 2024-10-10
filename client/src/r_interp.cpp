@@ -214,8 +214,8 @@ void OInterpolation::ticGameInterpolation()
 		}
 
 		// Update sky offsets
-		prev_sky1offset = sky1columnoffset;
-		prev_sky2offset = sky2columnoffset;
+		//prev_sky1offset = sky1columnoffset;
+		//prev_sky2offset = sky2columnoffset;
 
 		// Update bob - this happens once per gametic
 		prev_bobx = bobx;
@@ -344,16 +344,16 @@ void OInterpolation::interpolateWalls(fixed_t amount)
 void OInterpolation::interpolateSkies(fixed_t amount)
 {
 	// Perform interp for any scrolling skies
-	fixed_t newsky1offset = prev_sky1offset +
-	                     FixedMul(render_lerp_amount, sky1columnoffset - prev_sky1offset);
-	fixed_t newsky2offset = prev_sky2offset +
-	                     FixedMul(render_lerp_amount, sky2columnoffset - prev_sky2offset);
+	//fixed_t newsky1offset = prev_sky1offset +
+	//                     FixedMul(render_lerp_amount, sky1columnoffset - prev_sky1offset);
+	//fixed_t newsky2offset = prev_sky2offset +
+	//                     FixedMul(render_lerp_amount, sky2columnoffset - prev_sky2offset);
 
-	saved_sky1offset = sky1columnoffset;
-	saved_sky2offset = sky2columnoffset;
+	//saved_sky1offset = sky1columnoffset;
+	//saved_sky2offset = sky2columnoffset;
 
-	sky1columnoffset = newsky1offset;
-	sky2columnoffset = newsky2offset;
+	//sky1columnoffset = newsky1offset;
+	//sky2columnoffset = newsky2offset;
 }
 
 void OInterpolation::interpolateBob(fixed_t amount)
@@ -470,8 +470,8 @@ void OInterpolation::restoreWalls(void)
 void OInterpolation::restoreSkies(void)
 {
 		// Restore scrolling skies
-	sky1columnoffset = saved_sky1offset;
-	sky2columnoffset = saved_sky2offset;
+	//sky1columnoffset = saved_sky1offset;
+	//sky2columnoffset = saved_sky2offset;
 }
 
 void OInterpolation::restoreBob(void)

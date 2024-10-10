@@ -59,6 +59,11 @@ enum vote_type_t
 	VOTE_MAX // Reserved
 };
 
+inline auto format_as(vote_type_t eVoteType)
+{
+	return fmt::underlying(eVoteType);
+}
+
 // A struct to pass around voting state
 struct vote_state_t
 {

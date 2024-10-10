@@ -86,7 +86,7 @@ player_t &idplayer(byte id)
 
 /**
  * Find player by netname.  Note that this search is case-insensitive.
- * 
+ *
  * @param  netname Name of player to look for.
  * @return         Player reference of found player, or nullplayer.
  */
@@ -114,7 +114,7 @@ bool validplayer(player_t &ref)
 
 /**
  * @brief Clear all cards from a player.
- * 
+ *
  * @param p Player to clear.
 */
 void P_ClearPlayerCards(player_t& p)
@@ -136,7 +136,7 @@ void P_ClearPlayerPowerups(player_t& p)
 
 /**
  * @brief Clear all scores from a player.
- * 
+ *
  * @param p Player to clear.
  * @param wins True if a player's wins should be cleared as well - should
  *             usually be True unless it's a reset across rounds.
@@ -1220,6 +1220,7 @@ void player_s::Serialize (FArchive &arc)
 			<< secretcount
 			<< damagecount
 			<< bonuscount
+			<< didsecret
 			<< points
 			/*<< attacker->netid*/
 			<< extralight
@@ -1273,6 +1274,7 @@ void player_s::Serialize (FArchive &arc)
 			>> secretcount
 			>> damagecount
 			>> bonuscount
+			>> didsecret
 			>> points
 			/*>> attacker->netid*/
 			>> extralight

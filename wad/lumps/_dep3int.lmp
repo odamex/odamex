@@ -1,0 +1,173 @@
+{
+  "type": "interlevel",
+  "version": "1.0.0",
+  "metadata": {
+    "comment": "Interlevel definition for Doom episode 3."
+  },
+  "data":
+  {
+    "music": "D_INTER",
+    "backgroundimage": "WIMAP2",
+    "layers": [
+	  {
+	    "anims": [
+		  {
+		    "x": 104,
+			"y": 168,
+			"frames": [{ "image": "WIA20000", "type": 4098, "duration": 0.333, "maxduration": 0 }, { "image": "WIA20001", "type": 4098, "duration": 0.333, "maxduration": 0 }, { "image": "WIA20002", "type": 4098, "duration": 0.333, "maxduration": 0 }],
+			"conditions": null
+		  },
+		  {
+		    "x": 40,
+			"y": 136,
+			"frames": [{ "image": "WIA20100", "type": 4098, "duration": 0.333, "maxduration": 0 }, { "image": "WIA20101", "type": 4098, "duration": 0.333, "maxduration": 0 }, { "image": "WIA20102", "type": 4098, "duration": 0.333, "maxduration": 0 }],
+			"conditions": null
+		  },
+		  {
+		    "x": 160,
+			"y": 96,
+			"frames": [{ "image": "WIA20200", "type": 4098, "duration": 0.333, "maxduration": 0 }, { "image": "WIA20201", "type": 4098, "duration": 0.333, "maxduration": 0 }, { "image": "WIA20202", "type": 4098, "duration": 0.333, "maxduration": 0 }],
+			"conditions": null
+		  },
+		  {
+		    "x": 104,
+			"y": 80,
+			"frames": [{ "image": "WIA20300", "type": 4098, "duration": 0.333, "maxduration": 0 }, { "image": "WIA20301", "type": 4098, "duration": 0.333, "maxduration": 0 }, { "image": "WIA20302", "type": 4098, "duration": 0.333, "maxduration": 0 }],
+			"conditions": null
+		  },
+		  {
+		    "x": 120,
+			"y": 32,
+			"frames": [{ "image": "WIA20400", "type": 4098, "duration": 0.333, "maxduration": 0 }, { "image": "WIA20401", "type": 4098, "duration": 0.333, "maxduration": 0 }, { "image": "WIA20402", "type": 4098, "duration": 0.333, "maxduration": 0 }],
+			"conditions": null
+		  },
+		  {
+		    "x": 40,
+			"y": 0,
+			"frames": [{ "image": "WIA20500", "type": 4098, "duration": 0.333, "maxduration": 0 }, { "image": "WIA20501", "type": 4098, "duration": 0.333, "maxduration": 0 }, { "image": "WIA20502", "type": 4098, "duration": 0.333, "maxduration": 0 }],
+			"conditions": null
+		  }
+		],
+		"conditions": null
+	  },
+	  {
+        "anims": [
+          {
+            "x": 156,
+            "y": 168,
+            "frames": [{ "image": "WISPLAT", "type": 1, "duration": 0, "maxduration": 0 }],
+            "conditions": [{ "condition": 3, "param": 21 }]
+          },
+          {
+            "x": 48,
+            "y": 154,
+            "frames": [{ "image": "WISPLAT", "type": 1, "duration": 0, "maxduration": 0 }],
+            "conditions": [{ "condition": 3, "param": 22 }]
+          },
+          {
+            "x": 174,
+            "y": 95,
+            "frames": [{ "image": "WISPLAT", "type": 1, "duration": 0, "maxduration": 0 }],
+            "conditions": [{ "condition": 3, "param": 23 }]
+          },
+          {
+            "x": 265,
+            "y": 75,
+            "frames": [{ "image": "WISPLAT", "type": 1, "duration": 0, "maxduration": 0 }],
+            "conditions": [{ "condition": 3, "param": 24 }]
+          },
+          {
+            "x": 130,
+            "y": 48,
+            "frames": [{ "image": "WISPLAT", "type": 1, "duration": 0, "maxduration": 0 }],
+            "conditions": [{ "condition": 3, "param": 25 }]
+          },
+          {
+            "x": 279,
+            "y": 23,
+            "frames": [{ "image": "WISPLAT", "type": 1, "duration": 0, "maxduration": 0 }],
+            "conditions": [{ "condition": 3, "param": 26 }]
+          },
+          {
+            "x": 198,
+            "y": 48,
+            "frames": [{ "image": "WISPLAT", "type": 1, "duration": 0, "maxduration": 0 }],
+            "conditions": [{ "condition": 3, "param": 27 }]
+          },
+          {
+            "x": 140,
+            "y": 25,
+            "frames": [{ "image": "WISPLAT", "type": 1, "duration": 0, "maxduration": 0 }],
+            "conditions": [{ "condition": 3, "param": 28 }]
+          },
+		  {
+            "x": 281,
+            "y": 136,
+            "frames": [{ "image": "WISPLAT", "type": 1, "duration": 0, "maxduration": 0 }],
+            "conditions": [{ "condition": 3, "param": 29 }]
+          }
+        ],
+        "conditions": [{ "condition": 7, "param": 0 }]
+      },
+      {
+        "anims": [
+          {
+            "x": 156,
+            "y": 168,
+            "frames": [{ "image": "WIURH0", "altimage": "WIURH1", "type": 2, "duration": 0.667, "maxduration": 0 }, { "image": "TNT1A0", "type": 2, "duration": 0.333, "maxduration": 0 }],
+            "conditions": [{ "condition": 2, "param": 21 }]
+          },
+          {
+            "x": 48,
+            "y": 154,
+            "frames": [{ "image": "WIURH0", "altimage": "WIURH1", "type": 2, "duration": 0.58, "maxduration": 0 }, { "image": "TNT1A0", "type": 2, "duration": 0.34, "maxduration": 0 }],
+            "conditions": [{ "condition": 2, "param": 22 }]
+          },
+          {
+            "x": 174,
+            "y": 95,
+            "frames": [{ "image": "WIURH0", "altimage": "WIURH1", "type": 2, "duration": 0.58, "maxduration": 0 }, { "image": "TNT1A0", "type": 2, "duration": 0.34, "maxduration": 0 }],
+            "conditions": [{ "condition": 2, "param": 23 }]
+          },
+          {
+            "x": 265,
+            "y": 75,
+            "frames": [{ "image": "WIURH0", "altimage": "WIURH1", "type": 2, "duration": 0.58, "maxduration": 0 }, { "image": "TNT1A0", "type": 2, "duration": 0.34, "maxduration": 0 }],
+            "conditions": [{ "condition": 2, "param": 24 }]
+          },
+          {
+            "x": 130,
+            "y": 48,
+            "frames": [{ "image": "WIURH0", "altimage": "WIURH1", "type": 2, "duration": 0.58, "maxduration": 0 }, { "image": "TNT1A0", "type": 2, "duration": 0.34, "maxduration": 0 }],
+            "conditions": [{ "condition": 2, "param": 25 }]
+          },
+          {
+            "x": 279,
+            "y": 23,
+            "frames": [{ "image": "WIURH0", "altimage": "WIURH1", "type": 2, "duration": 0.58, "maxduration": 0 }, { "image": "TNT1A0", "type": 2, "duration": 0.34, "maxduration": 0 }],
+            "conditions": [{ "condition": 2, "param": 26 }]
+          },
+          {
+            "x": 198,
+            "y": 48,
+            "frames": [{ "image": "WIURH0", "altimage": "WIURH1", "type": 2, "duration": 0.58, "maxduration": 0 }, { "image": "TNT1A0", "type": 2, "duration": 0.34, "maxduration": 0 }],
+            "conditions": [{ "condition": 2, "param": 27 }]
+          },
+          {
+            "x": 140,
+            "y": 25,
+            "frames": [{ "image": "WIURH0", "altimage": "WIURH1", "type": 2, "duration": 0.58, "maxduration": 0 }, { "image": "TNT1A0", "type": 2, "duration": 0.34, "maxduration": 0 }],
+            "conditions": [{ "condition": 2, "param": 28 }]
+          },
+		  {
+            "x": 281,
+            "y": 136,
+            "frames": [{ "image": "WIURH0", "altimage": "WIURH1", "type": 2, "duration": 0.58, "maxduration": 0 }, { "image": "TNT1A0", "type": 2, "duration": 0.34, "maxduration": 0 }],
+            "conditions": [{ "condition": 2, "param": 29 }]
+          }
+        ],
+        "conditions": [{ "condition": 7, "param": 0 }]
+      }
+    ]
+  }
+}
