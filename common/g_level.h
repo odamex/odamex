@@ -414,8 +414,12 @@ public:
 	size_t size() const;
 };
 
+typedef OHashTable<int, int> ACSWorldGlobalArray;
+
 extern int ACS_WorldVars[NUM_WORLDVARS];
 extern int ACS_GlobalVars[NUM_GLOBALVARS];
+extern ACSWorldGlobalArray ACS_WorldArrays[NUM_WORLDVARS];
+extern ACSWorldGlobalArray ACS_GlobalArrays[NUM_GLOBALVARS];
 
 extern BOOL savegamerestore;
 
