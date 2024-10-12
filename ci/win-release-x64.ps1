@@ -9,10 +9,25 @@
 # These parameters can and should be changed for new versions.
 # 
 
-Set-Variable -Name "CurrentDir" -Value (Get-Item (Get-Location)).Parent.Parent # cd to the base odamex git path before executing (this assumes you're running this script in this dir)
+Set-Variable -Name "CurrentDir" -Value (Get-Location) # cd to the base odamex git path before executing
 
-Set-Variable -Name "OdamexVersion" -Value "10.6.0"
-Set-Variable -Name "OdamexTestSuffix" -Value "" # "-RC3"
+if ($env:new_version.length -gt 0)
+{
+    Set-Variable -Name "OdamexVersion" -Value "${env:new_version}"
+}
+else
+{
+    Set-Variable -Name "OdamexVersion" -Value "10.2.0"
+}
+
+if ($env:build_number.length -gt 0)
+{
+    Set-Variable -Name "OdamexTestSuffix" -Value "-build_${env:build_number}" # "-build_112"
+}
+else
+{
+    Set-Variable -Name "OdamexTestSuffix" -Value ""
+}
 
 #
 # The actual script follows.
@@ -20,8 +35,9 @@ Set-Variable -Name "OdamexTestSuffix" -Value "" # "-RC3"
 
 Set-Variable -Name "CommonDir" -Value "${CurrentDir}\OutCommon"
 Set-Variable -Name "X64Dir" -Value "${CurrentDir}\OutX64"
-Set-Variable -Name "X86Dir" -Value "${CurrentDir}\OutX86"
 Set-Variable -Name "OutputDir" -Value "${CurrentDir}\Output"
+Set-Variable -Name "PdbDir" -Value "${OutputDir}\pdb"
+Set-Variable -Name "ZipDir" -Value "${OutputDir}\zip"
 
 function BuildX64 {
     if (Test-Path "${CurrentDir}\BuildX64")
@@ -40,24 +56,7 @@ function BuildX64 {
     Set-Location -Path "${CurrentDir}"
 }
 
-function BuildX86 {
-    if (Test-Path "${CurrentDir}\BuildX86")
-    {
-        Remove-Item -Recurse -Path "${CurrentDir}\BuildX86"
-    }
-    New-Item  -Force -ItemType "directory" -Path "${CurrentDir}\BuildX86"
-    Set-Location -Path "${CurrentDir}\BuildX86"
-    
-    cmake.exe -G "Visual Studio 17 2022" -A "Win32" "${CurrentDir}" `
-        -DBUILD_OR_FAIL=1 `
-        -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
-        -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
-    cmake.exe --build . --config RelWithDebInfo
-
-    Set-Location -Path "${CurrentDir}"
-}
-
-function CopyFiles {
+function CopyFilesX64 {
     if (Test-Path "${CommonDir}")
     {
         Remove-Item -Force -Recurse -Path "${CommonDir}"
@@ -66,11 +65,6 @@ function CopyFiles {
     if (Test-Path "${X64Dir}")
     {
         Remove-Item -Force -Recurse -Path "${X64Dir}"
-    }
-
-    if (Test-Path "${X86Dir}")
-    {
-        Remove-Item -Force -Recurse -Path "${X86Dir}"
     }
 
     New-Item -Force -ItemType "directory" -Path "${CommonDir}"
@@ -123,7 +117,7 @@ function CopyFiles {
     ########################################
 
     New-Item -Force -ItemType "directory" -Path "${X64Dir}"
-    New-Item -Force -ItemType "directory" -Path "${X64Dir}/redist"
+    New-Item -Force -ItemType "directory" -Path "${X64Dir}\redist"
 
     Copy-Item -Force -Path `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libFLAC-8.dll", `
@@ -148,65 +142,32 @@ function CopyFiles {
 
     # Get VC++ Redist
     Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" -OutFile "${X64Dir}\redist\vc_redist.x64.exe"
-
-    ########################################
-    ## 32-BIT FILES
-    ########################################
-
-    New-Item -Force -ItemType "directory" -Path "${X86Dir}"
-    New-Item -Force -ItemType "directory" -Path "${X86Dir}/redist"
-
-    Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libFLAC-8.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libmodplug-1.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libmpg123-0.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libogg-0.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libopus-0.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libvorbis-0.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libvorbisfile-3.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\odamex.exe", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\SDL2_mixer.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\SDL2.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\odalaunch.exe", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_net_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_xml_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxmsw315u_core_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxmsw315u_html_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxmsw315u_xrc_vc14x.dll", `
-        "${CurrentDir}\BuildX86\server\RelWithDebInfo\odasrv.exe" `
-        -Destination "${X86Dir}\"
-
-    # Get VC++ Redist
-    Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x86.exe" -OutFile "${X86Dir}\redist\vc_redist.x86.exe"
 }
 
-function Outputs {
+function OutputsX64 {
     if (Test-Path "${OutputDir}")
     {
         Remove-Item -Force -Recurse -Path "${OutputDir}"
     }
+
     New-Item  -Force -ItemType "directory" -Path "${OutputDir}"
+    New-Item  -Force -ItemType "directory" -Path "${ZipDir}"
 
     # Generate archives
     7z.exe a `
-        "${OutputDir}\odamex-win64-${OdamexVersion}${OdamexTestSuffix}.zip" `
+        "${ZipDir}\odamex-win64-${OdamexVersion}${OdamexTestSuffix}.zip" `
         "${CommonDir}\*" "${X64Dir}\*" `
         "-x!${CommonDir}\odamex-installed.txt"
-    7z.exe a `
-        "${OutputDir}\odamex-win32-${OdamexVersion}${OdamexTestSuffix}.zip" `
-        "${CommonDir}\*" "${X86Dir}\*" `
-        "-x!${CommonDir}\odamex-installed.txt"
-
-    # Generate installer
-    ISCC.exe "${CurrentDir}\installer\windows\odamex.iss" `
-        /DOdamexVersion=${OdamexVersion} `
-        /DOdamexTestSuffix=${OdamexTestSuffix} `
-        /DSourcePath=${CurrentDir} `
-        /O${OutputDir}
 }
 
-function ZipDebug {
+function ZipDebugX64 {
+    if (Test-Path "${PdbDir}")
+    {
+        Remove-Item -Force -Recurse -Path "${PdbDir}"
+    }
+
+    New-Item  -Force -ItemType "directory" -Path "${PdbDir}"
+
     # Copy pdb files into zip.  DO NOT THROW THESE AWAY!
     Copy-Item -Force -Path `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\odamex.pdb" `
@@ -218,18 +179,8 @@ function ZipDebug {
         "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\odalaunch.pdb" `
         -Destination "${OutputDir}\odalaunch-x64-${OdamexVersion}.pdb"
 
-    Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\odamex.pdb" `
-        -Destination "${OutputDir}\odamex-x86-${OdamexVersion}.pdb"
-    Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX86\server\RelWithDebInfo\odasrv.pdb" `
-        -Destination "${OutputDir}\odasrv-x86-${OdamexVersion}.pdb"
-    Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\odalaunch.pdb" `
-        -Destination "${OutputDir}\odalaunch-x86-${OdamexVersion}.pdb"
-
     7z.exe a `
-        "${OutputDir}\odamex-debug-pdb-${OdamexVersion}.zip" `
+        "${PdbDir}\odamex-debug-pdb-${OdamexVersion}-x64.zip" `
         "${OutputDir}\*.pdb"
 
     Remove-Item -Force -Path "${OutputDir}\*.pdb"
@@ -242,20 +193,14 @@ Get-Command cmake.exe -ErrorAction Stop
 echo "Checking for 7zip..."
 Get-Command 7z.exe -ErrorAction Stop
 
-echo "Checking for Inno Setup Command-Line Compiler..."
-Get-Command ISCC.exe -ErrorAction Stop
-
 echo "Building 64-bit..."
 BuildX64
 
-echo "Building 32-bit..."
-BuildX86
-
 echo "Copying files..."
-CopyFiles
+CopyFilesX64
 
 echo "Generating output..."
-Outputs
+OutputsX64
 
 echo "Copying PDB's into ZIP..."
-ZipDebug
+ZipDebugX64

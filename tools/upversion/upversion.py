@@ -2,7 +2,7 @@
 #
 # -----------------------------------------------------------------------------
 #
-# Copyright (C) 2006-2021 by The Odamex Team.
+# Copyright (C) 2006-2024 by The Odamex Team.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
 
 from typing import List, Tuple
 
-import re, sys
+import re, sys, os
 from configparser import ConfigParser
 from pathlib import Path
 
@@ -104,10 +104,26 @@ def main():
         config = ConfigParser()
         config.read_file(fh)
 
-    OLD_VERSION = ini_version(config.get("upversion", "old_version"))
-    NEW_VERSION = ini_version(config.get("upversion", "new_version"))
-    OLD_YEAR = config.get("upversion", "old_year")
-    NEW_YEAR = config.get("upversion", "new_year")
+    if not os.getenv('OLD_VERSION'):
+        OLD_VERSION = "1.0.0"
+    else:
+        OLD_VERSION = os.getenv('OLD_VERSION')
+
+    if not os.getenv('NEW_VERSION'):
+        NEW_VERSION = "2.0.0"
+    else:
+        NEW_VERSION = os.getenv('NEW_VERSION')
+
+    if not os.getenv('OLD_YEAR'):
+        OLD_YEAR = r"2006-2024"
+    else:
+        OLD_YEAR = os.getenv('OLD_YEAR')
+
+    if not os.getenv('NEW_YEAR'):
+        NEW_YEAR = r"2006-2024"
+    else:
+        NEW_YEAR = os.getenv('NEW_YEAR')
+
     DOTTED_FILES = ini_files(config.get("files", "dotted"))
     COMMA_FILES = ini_files(config.get("files", "comma"))
     SAVESTR_FILES = ini_files(config.get("files", "savestr"))
@@ -115,31 +131,39 @@ def main():
     PLAINYEAR_FILES = ini_files(config.get("files", "plainyear"))
     FANCYYEAR_FILES = ini_files(config.get("files", "fancyyear"))
 
+    oldmaj = int(OLD_VERSION.split(".")[0])
+    oldmin = int(OLD_VERSION.split(".")[1])
+    oldpatch = int(OLD_VERSION.split(".")[2])
+
+    newmaj = int(NEW_VERSION.split(".")[0])
+    newmin = int(NEW_VERSION.split(".")[1])
+    newpatch = int(NEW_VERSION.split(".")[2])
+
     # Dotted version.
-    DOTTED_RE = f"{OLD_VERSION[0]}\\.{OLD_VERSION[1]}\\.{OLD_VERSION[2]}"
-    DOTTED_REPL = f"{NEW_VERSION[0]}.{NEW_VERSION[1]}.{NEW_VERSION[2]}"
+    DOTTED_RE = f"{oldmaj}\\.{oldmin}\\.{oldpatch}"
+    DOTTED_REPL = f"{newmaj}.{newmin}.{newpatch}"
     [re_replace(glob, DOTTED_RE, DOTTED_REPL) for glob in DOTTED_FILES]
 
     # Comma-separated version.
-    COMMA_RE = f"{OLD_VERSION[0]}, {OLD_VERSION[1]}, {OLD_VERSION[2]}"
-    COMMA_REPL = f"{NEW_VERSION[0]}, {NEW_VERSION[1]}, {NEW_VERSION[2]}"
+    COMMA_RE = f"{oldmaj}, {oldmin}, {oldpatch}"
+    COMMA_REPL = f"{newmaj}, {newmin}, {newpatch}"
     [re_replace(glob, COMMA_RE, COMMA_REPL) for glob in COMMA_FILES]
 
     # Fixed-length save strings.
     [
-        re_replace(glob, savestr(*OLD_VERSION), savestr(*NEW_VERSION))
+        re_replace(glob, savestr(oldmaj, oldmin, oldpatch), savestr(newmaj, newmin, newpatch))
         for glob in SAVESTR_FILES
     ]
 
     # Config strings.
     [
-        re_replace(glob, configstr(*OLD_VERSION), configstr(*NEW_VERSION))
+        re_replace(glob, configstr(oldmaj, oldmin, oldpatch), configstr(newmaj, newmin, newpatch))
         for glob in CONFIGSTR_FILES
     ]
 
     # CMake PROJECT_RC_VERSION
-    CMAKERC_RE = f'"{OLD_VERSION[0]},{OLD_VERSION[1]},{OLD_VERSION[2]},0"'
-    CMAKERC_REPL = f'"{NEW_VERSION[0]},{NEW_VERSION[1]},{NEW_VERSION[2]},0"'
+    CMAKERC_RE = f'"{oldmaj},{oldmin},{oldpatch},0"'
+    CMAKERC_REPL = f'"{newmaj},{newmin},{newpatch},0"'
     re_replace("CMakeLists.txt", CMAKERC_RE, CMAKERC_REPL)
 
     # CMake PROJECT_COPYRIGHT
