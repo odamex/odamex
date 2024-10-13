@@ -273,7 +273,7 @@ void P_LoadSegs (int lump)
 //
 // P_LoadSubsectors
 //
-void P_LoadSubsectors(int lump)
+void P_LoadSubsectors(int lump, bool isdeepbsp = false)
 {
 	if (!W_LumpLength(lump))
 	{
@@ -284,7 +284,10 @@ void P_LoadSubsectors(int lump)
 	byte *data;
 	int i;
 
-	numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_t);
+	if (isdeepbsp)
+		numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_deepbsp_t);
+	else
+		numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_t);
 	subsectors = (subsector_t *)Z_Malloc (numsubsectors*sizeof(subsector_t),PU_LEVEL,0);
 	data = (byte *)W_CacheLumpNum (lump,PU_STATIC);
 
@@ -292,8 +295,15 @@ void P_LoadSubsectors(int lump)
 
 	for (i = 0; i < numsubsectors; i++)
 	{
-		subsectors[i].numlines = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].numsegs);
-		subsectors[i].firstline = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].firstseg);
+		if (isdeepbsp) {
+			subsectors[i].numlines = (unsigned short)LESHORT(((mapsubsector_deepbsp_t *)data)[i].numsegs);
+			subsectors[i].firstline = (unsigned int)LELONG(((mapsubsector_deepbsp_t *)data)[i].firstseg);
+		}
+		else
+		{
+			subsectors[i].numlines = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].numsegs);
+			subsectors[i].firstline = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].firstseg);
+		}
 	}
 
 	Z_Free (data);
@@ -670,35 +680,6 @@ bool P_LoadXNOD(int lump)
 	Z_Free(output);
 
 	return true;
-}
-
-//
-// P_LoadSubsectors_DeePBSP
-//
-void P_LoadSubsectors_DeePBSP(int lump)
-{
-	if (!W_LumpLength(lump))
-	{
-		I_Error(
-		    "P_LoadSubsectors_DeePBSP: SSECTORS lump is empty - levels without nodes are not supported.");
-	}
-
-	mapsubsector_deepbsp_t *data;
-	int i;
-
-	numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_deepbsp_t);
-	subsectors = (subsector_t *)Z_Malloc (numsubsectors*sizeof(subsector_t),PU_LEVEL,0);
-	data = (mapsubsector_deepbsp_t *)W_CacheLumpNum (lump,PU_STATIC);
-
-	memset (subsectors, 0, numsubsectors*sizeof(subsector_t));
-
-	for (i = 0; i < numsubsectors; i++)
-	{
-		subsectors[i].numlines = (unsigned short)LESHORT(data[i].numsegs);
-		subsectors[i].firstline = (unsigned int)LELONG(data[i].firstseg);
-	}
-
-	Z_Free (data);
 }
 
 //
@@ -2124,15 +2105,15 @@ void P_SetupLevel (const char *lumpname, int position)
 			break;
 
 		case NT_DEEP:
-			P_LoadSubsectors_DeePBSP(lumpnum+ML_SSECTORS);
+			P_LoadSubsectors(lumpnum+ML_SSECTORS, true);
 			P_LoadNodes_DeePBSP(lumpnum+ML_NODES);
 			P_LoadSegs_DeePBSP(lumpnum+ML_SEGS);
 			break;
 
 		default:
-			P_LoadSubsectors (lumpnum+ML_SSECTORS);
-			P_LoadNodes (lumpnum+ML_NODES);
-			P_LoadSegs (lumpnum+ML_SEGS);
+			P_LoadSubsectors(lumpnum+ML_SSECTORS);
+			P_LoadNodes(lumpnum+ML_NODES);
+			P_LoadSegs(lumpnum+ML_SEGS);
 	}
 
 	rejectmatrix = (byte *)W_CacheLumpNum (lumpnum+ML_REJECT, PU_LEVEL);
