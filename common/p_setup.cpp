@@ -178,14 +178,52 @@ void P_LoadVertexes (int lump)
 	Z_Free (data);
 }
 
+void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
+{
+	line_t *ldef;
+	li->angle = (angle)<<16;
+
+	if(linedef < 0 || linedef >= numlines)
+		I_Error("P_LoadSegsHelper: invalid linedef %d", linedef);
+
+	ldef = &lines[linedef];
+	li->linedef = ldef;
+
+	if (side != 0 && side != 1)
+		side = 1;	// assume invalid value means back
+
+	li->sidedef = &sides[ldef->sidenum[side]];
+	li->frontsector = sides[ldef->sidenum[side]].sector;
+
+	// killough 5/3/98: ignore 2s flag if second sidedef missing:
+	if (ldef->flags & ML_TWOSIDED && ldef->sidenum[side^1]!=R_NOSIDE)
+		li->backsector = sides[ldef->sidenum[side^1]].sector;
+	else
+	{
+		li->backsector = 0;
+		ldef->flags &= ~ML_TWOSIDED;
+	}
+
+	// recalculate seg offsets. values in wads are untrustworthy.
+	vertex_t *from = (side == 0)
+		? ldef->v1			// right side: offset is from start of linedef
+		: ldef->v2;			// left side: offset is from end of linedef
+	vertex_t *to = li->v1;	// end point is start of seg, in both cases
+
+	float dx = FIXED2FLOAT(to->x - from->x);
+	float dy = FIXED2FLOAT(to->y - from->y);
+	li->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
+
+	dx = FIXED2FLOAT(li->v2->x - li->v1->x);
+	dy = FIXED2FLOAT(li->v2->y - li->v1->y);
+	li->length = FLOAT2FIXED(sqrt(dx * dx + dy* dy));
+}
 
 
 //
 // P_LoadSegs
 //
-// killough 5/3/98: reformatted, cleaned up
-
-void P_LoadSegs (int lump)
+void P_LoadSegs (int lump, bool isdeepbsp = false)
 {
 	if (!W_LumpLength(lump))
 	{
@@ -193,82 +231,65 @@ void P_LoadSegs (int lump)
 		    "P_LoadSegs: SEGS lump is empty - levels without nodes are not supported.");
 	}
 
-	int  i;
-	byte *data;
+	byte* data;
 
-	numsegs = W_LumpLength (lump) / sizeof(mapseg_t);
+	if (isdeepbsp)
+		numsegs = W_LumpLength (lump) / sizeof(mapseg_deepbsp_t);
+	else
+		numsegs = W_LumpLength (lump) / sizeof(mapseg_t);
 	segs = (seg_t *)Z_Malloc (numsegs*sizeof(seg_t), PU_LEVEL, 0);
 	memset (segs, 0, numsegs*sizeof(seg_t));
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	data = (byte*)W_CacheLumpNum (lump, PU_STATIC);
 
-	for (i = 0; i < numsegs; i++)
+	for (int i = 0; i < numsegs; i++)
 	{
 		seg_t *li = segs+i;
-		mapseg_t *ml = (mapseg_t *) data + i;
+		if (isdeepbsp)
+		{
+			mapseg_deepbsp_t *ml = (mapseg_deepbsp_t*) data+i;
+			unsigned int v;
 
-		int side, linedef;
-		line_t *ldef;
+			v = LELONG(ml->v1);
 
-		unsigned short v = LESHORT(ml->v1);
+			if(v >= numvertexes)
+				I_Error("P_LoadSegs: invalid vertex %d", v);
+			else
+				li->v1 = &vertexes[v];
 
-		if(v >= numvertexes)
-			I_Error("P_LoadSegs: invalid vertex %d", v);
-		else
-			li->v1 = &vertexes[v];
+			v = LELONG(ml->v2);
 
-		v = LESHORT(ml->v2);
+			if(v >= numvertexes)
+				I_Error("P_LoadSegs: invalid vertex %d", v);
+			else
+				li->v2 = &vertexes[v];
 
-		if(v >= numvertexes)
-			I_Error("P_LoadSegs: invalid vertex %d", v);
-		else
-			li->v2 = &vertexes[v];
-
-		li->angle = (LESHORT(ml->angle))<<16;
-
-		li->offset = (LESHORT(ml->offset))<<16;
-		linedef = LESHORT(ml->linedef);
-
-		if(linedef < 0 || linedef >= numlines)
-			I_Error("P_LoadSegs: invalid linedef %d", linedef);
-
-		ldef = &lines[linedef];
-		li->linedef = ldef;
-
-		side = LESHORT(ml->side);
-
-		if (side != 0 && side != 1)
-			side = 1;	// assume invalid value means back
-
-		li->sidedef = &sides[ldef->sidenum[side]];
-		li->frontsector = sides[ldef->sidenum[side]].sector;
-
-		// killough 5/3/98: ignore 2s flag if second sidedef missing:
-		if (ldef->flags & ML_TWOSIDED && ldef->sidenum[side^1]!=R_NOSIDE)
-			li->backsector = sides[ldef->sidenum[side^1]].sector;
+			P_LoadSegsHelper(LESHORT(ml->side), LESHORT(ml->angle), LESHORT(ml->linedef), li);
+		}
 		else
 		{
-			li->backsector = 0;
-			ldef->flags &= ~ML_TWOSIDED;
+			mapseg_t *ml = (mapseg_t*) data+i;
+			unsigned short v;
+
+			v = LESHORT(ml->v1);
+
+			if(v >= numvertexes)
+				I_Error("P_LoadSegs: invalid vertex %d", v);
+			else
+				li->v1 = &vertexes[v];
+
+			v = LESHORT(ml->v2);
+
+			if(v >= numvertexes)
+				I_Error("P_LoadSegs: invalid vertex %d", v);
+			else
+				li->v2 = &vertexes[v];
+
+			P_LoadSegsHelper(LESHORT(ml->side), LESHORT(ml->angle), LESHORT(ml->linedef), li);
 		}
-
-		// recalculate seg offsets. values in wads are untrustworthy.
-		vertex_t *from = (side == 0)
-			? ldef->v1			// right side: offset is from start of linedef
-			: ldef->v2;			// left side: offset is from end of linedef
-		vertex_t *to = li->v1;	// end point is start of seg, in both cases
-
-		float dx = FIXED2FLOAT(to->x - from->x);
-		float dy = FIXED2FLOAT(to->y - from->y);
-		li->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
-
-		dx = FIXED2FLOAT(li->v2->x - li->v1->x);
-		dy = FIXED2FLOAT(li->v2->y - li->v1->y);
-		li->length = FLOAT2FIXED(sqrt(dx * dx + dy* dy));
 	}
 
 	Z_Free (data);
 }
-
 
 //
 // P_LoadSubsectors
@@ -460,35 +481,46 @@ void P_LoadNodes (int lump)
 	Z_Free (data);
 }
 
-enum nodetype_t {
-	NT_XNOD,
-	NT_ZNOD,
-	NT_DEEP,
-	NT_STANDARD
-};
-
-nodetype_t P_CheckNodeType(int lump) {
-	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
-
-	if (memcmp(data, "xNd4\0\0\0\0", 8) == 0)
+//
+// P_LoadNodes_DeePBSP
+//
+void P_LoadNodes_DeePBSP(int lump)
+{
+	if (!W_LumpLength(lump))
 	{
-		Z_Free(data);
-		return NT_DEEP;
+		I_Error(
+		    "P_LoadNodes_DeePBSP: NODES lump is empty - levels without nodes are not supported.");
 	}
 
-	if (memcmp(data, "XNOD", 4) == 0)
+	byte*		data;
+	mapnode_deepbsp_t*	mn;
+	node_t* 	no;
+
+	numnodes = (W_LumpLength (lump) - 8) / sizeof(mapnode_deepbsp_t);
+	nodes = (node_t *)Z_Malloc (numnodes*sizeof(node_t), PU_LEVEL, 0);
+	data = (byte*) W_CacheLumpNum (lump, PU_STATIC);
+
+	data += 8;
+
+	mn = (mapnode_deepbsp_t *)data;
+	no = nodes;
+
+	for (int i = 0; i < numnodes; i++, mn++, no++)
 	{
-		Z_Free(data);
-		return NT_XNOD;
+		no->x = LESHORT(mn->x)<<FRACBITS;
+		no->y = LESHORT(mn->y)<<FRACBITS;
+		no->dx = LESHORT(mn->dx)<<FRACBITS;
+		no->dy = LESHORT(mn->dy)<<FRACBITS;
+		for (int j = 0; j < 2; j++)
+		{
+			no->children[j] = LELONG(mn->children[j]);
+
+			for (int k = 0; k < 4; k++)
+				no->bbox[j][k] = LESHORT(mn->bbox[j][k]) << FRACBITS;
+		}
 	}
 
-	if (memcmp(data, "ZNOD", 4) == 0)
-	{
-		Z_Free(data);
-		return NT_ZNOD;
-	}
-
-	return NT_STANDARD;
+	Z_Free (data - 8);
 }
 
 //
@@ -682,132 +714,35 @@ bool P_LoadXNOD(int lump)
 	return true;
 }
 
-//
-// P_LoadNodes_DeePBSP
-//
-void P_LoadNodes_DeePBSP(int lump)
-{
-	if (!W_LumpLength(lump))
+enum nodetype_t {
+	NT_XNOD,
+	NT_ZNOD,
+	NT_DEEP,
+	NT_STANDARD
+};
+
+nodetype_t P_CheckNodeType(int lump) {
+	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+
+	if (memcmp(data, "xNd4\0\0\0\0", 8) == 0)
 	{
-		I_Error(
-		    "P_LoadNodes_DeePBSP: NODES lump is empty - levels without nodes are not supported.");
+		Z_Free(data);
+		return NT_DEEP;
 	}
 
-	byte*		data;
-	mapnode_deepbsp_t*	mn;
-	node_t* 	no;
-
-	numnodes = (W_LumpLength (lump) - 8) / sizeof(mapnode_deepbsp_t);
-	nodes = (node_t *)Z_Malloc (numnodes*sizeof(node_t), PU_LEVEL, 0);
-	data = (byte*) W_CacheLumpNum (lump, PU_STATIC);
-
-	data += 8;
-
-	mn = (mapnode_deepbsp_t *)data;
-	no = nodes;
-
-	for (int i = 0; i < numnodes; i++, mn++, no++)
+	if (memcmp(data, "XNOD", 4) == 0)
 	{
-		no->x = LESHORT(mn->x)<<FRACBITS;
-		no->y = LESHORT(mn->y)<<FRACBITS;
-		no->dx = LESHORT(mn->dx)<<FRACBITS;
-		no->dy = LESHORT(mn->dy)<<FRACBITS;
-		for (int j = 0; j < 2; j++)
-		{
-			no->children[j] = LELONG(mn->children[j]);
-
-			for (int k = 0; k < 4; k++)
-				no->bbox[j][k] = LESHORT(mn->bbox[j][k]) << FRACBITS;
-		}
+		Z_Free(data);
+		return NT_XNOD;
 	}
 
-	Z_Free (data - 8);
-}
-
-//
-// P_LoadSegs_DeepBSP
-//
-void P_LoadSegs_DeePBSP (int lump)
-{
-	if (!W_LumpLength(lump))
+	if (memcmp(data, "ZNOD", 4) == 0)
 	{
-		I_Error(
-		    "P_LoadSegs_DeePBSP: SEGS lump is empty - levels without nodes are not supported.");
+		Z_Free(data);
+		return NT_ZNOD;
 	}
 
-	mapseg_deepbsp_t* data;
-
-	numsegs = W_LumpLength (lump) / sizeof(mapseg_deepbsp_t);
-	segs = (seg_t *)Z_Malloc (numsegs*sizeof(seg_t), PU_LEVEL, 0);
-	memset (segs, 0, numsegs*sizeof(seg_t));
-	data = (mapseg_deepbsp_t*)W_CacheLumpNum (lump, PU_STATIC);
-
-	for (int i = 0; i < numsegs; i++)
-	{
-		seg_t *li = segs+i;
-		mapseg_deepbsp_t *ml = data+i;
-
-		int side, linedef;
-		line_t *ldef;
-
-		unsigned int v = LELONG(ml->v1);
-
-		if(v >= numvertexes)
-			I_Error("P_LoadSegs_DeePBSP: invalid vertex %d", v);
-		else
-			li->v1 = &vertexes[v];
-
-		v = LELONG(ml->v2);
-
-		if(v >= numvertexes)
-			I_Error("P_LoadSegs_DeePBSP: invalid vertex %d", v);
-		else
-			li->v2 = &vertexes[v];
-
-		li->angle = (LESHORT(ml->angle))<<16;
-
-		li->offset = (LESHORT(ml->offset))<<16;
-		linedef = LESHORT(ml->linedef);
-
-		if(linedef < 0 || linedef >= numlines)
-			I_Error("P_LoadSegs_DeePBSP: invalid linedef %d", linedef);
-
-		ldef = &lines[linedef];
-		li->linedef = ldef;
-
-		side = LESHORT(ml->side);
-
-		if (side != 0 && side != 1)
-			side = 1;	// assume invalid value means back
-
-		li->sidedef = &sides[ldef->sidenum[side]];
-		li->frontsector = sides[ldef->sidenum[side]].sector;
-
-		// killough 5/3/98: ignore 2s flag if second sidedef missing:
-		if (ldef->flags & ML_TWOSIDED && ldef->sidenum[side^1]!=R_NOSIDE)
-			li->backsector = sides[ldef->sidenum[side^1]].sector;
-		else
-		{
-			li->backsector = 0;
-			ldef->flags &= ~ML_TWOSIDED;
-		}
-
-		// recalculate seg offsets. values in wads are untrustworthy.
-		vertex_t *from = (side == 0)
-			? ldef->v1			// right side: offset is from start of linedef
-			: ldef->v2;			// left side: offset is from end of linedef
-		vertex_t *to = li->v1;	// end point is start of seg, in both cases
-
-		float dx = FIXED2FLOAT(to->x - from->x);
-		float dy = FIXED2FLOAT(to->y - from->y);
-		li->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
-
-		dx = FIXED2FLOAT(li->v2->x - li->v1->x);
-		dy = FIXED2FLOAT(li->v2->y - li->v1->y);
-		li->length = FLOAT2FIXED(sqrt(dx * dx + dy* dy));
-	}
-
-	Z_Free (data);
+	return NT_STANDARD;
 }
 
 //
@@ -2107,7 +2042,7 @@ void P_SetupLevel (const char *lumpname, int position)
 		case NT_DEEP:
 			P_LoadSubsectors(lumpnum+ML_SSECTORS, true);
 			P_LoadNodes_DeePBSP(lumpnum+ML_NODES);
-			P_LoadSegs_DeePBSP(lumpnum+ML_SEGS);
+			P_LoadSegs(lumpnum+ML_SEGS, true);
 			break;
 
 		default:
