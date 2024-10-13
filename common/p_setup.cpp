@@ -247,7 +247,7 @@ void P_LoadSegs (int lump, bool isdeepbsp = false)
 		if (isdeepbsp)
 		{
 			mapseg_deepbsp_t *ml = (mapseg_deepbsp_t*) data+i;
-			unsigned int v;
+			int v;
 
 			v = LELONG(ml->v1);
 
@@ -268,7 +268,7 @@ void P_LoadSegs (int lump, bool isdeepbsp = false)
 		else
 		{
 			mapseg_t *ml = (mapseg_t*) data+i;
-			unsigned short v;
+			short v;
 
 			v = LESHORT(ml->v1);
 
@@ -314,20 +314,23 @@ void P_LoadSubsectors(int lump, bool isdeepbsp = false)
 
 	memset (subsectors, 0, numsubsectors*sizeof(subsector_t));
 
-	for (i = 0; i < numsubsectors; i++)
-	{
-		if (isdeepbsp) {
-			subsectors[i].numlines = (unsigned short)LESHORT(((mapsubsector_deepbsp_t *)data)[i].numsegs);
+	if (isdeepbsp) {
+		for (i = 0; i < numsubsectors; i++)
+		{
+			subsectors[i].numlines = LESHORT(((mapsubsector_deepbsp_t *)data)[i].numsegs);
 			subsectors[i].firstline = (unsigned int)LELONG(((mapsubsector_deepbsp_t *)data)[i].firstseg);
 		}
-		else
+	}
+	else
+	{
+		for (i = 0; i < numsubsectors; i++)
 		{
 			subsectors[i].numlines = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].numsegs);
 			subsectors[i].firstline = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].firstseg);
 		}
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
 
