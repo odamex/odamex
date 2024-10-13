@@ -450,6 +450,37 @@ void P_LoadNodes (int lump)
 	Z_Free (data);
 }
 
+enum nodetype_t {
+	NT_XNOD,
+	NT_ZNOD,
+	NT_DEEP,
+	NT_STANDARD
+};
+
+nodetype_t P_CheckNodeType(int lump) {
+	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+
+	if (memcmp(data, "xNd4\0\0\0\0", 8) == 0)
+	{
+		Z_Free(data);
+		return NT_DEEP;
+	}
+
+	if (memcmp(data, "XNOD", 4) == 0)
+	{
+		Z_Free(data);
+		return NT_XNOD;
+	}
+
+	if (memcmp(data, "ZNOD", 4) == 0)
+	{
+		Z_Free(data);
+		return NT_ZNOD;
+	}
+
+	return NT_STANDARD;
+}
+
 //
 // P_LoadXNOD - load ZDBSP extended nodes
 // returns false if nodes are not extended to fall back to original nodes
@@ -466,19 +497,7 @@ bool P_LoadXNOD(int lump)
 		return false;
 	}
 
-	if (len >= 8 && memcmp(data, "xNd4\0\0\0\0", 8) == 0)
-	{
-		Z_Free(data);
-		return false;
-	}
-
 	bool compressed = memcmp(data, "ZNOD", 4) == 0;
-
-	if (memcmp(data, "XNOD", 4) != 0 && !compressed)
-	{
-		Z_Free(data);
-		return false;
-	}
 
 	byte *p;
 	// [EB] decompress compressed nodes
@@ -2017,7 +2036,7 @@ static void P_InitTagLists(void)
 // [RH] position indicates the start spot to spawn at
 void P_SetupLevel (const char *lumpname, int position)
 {
-	size_t lumpnum;
+	int lumpnum;
 
 	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
@@ -2106,14 +2125,22 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_FinishLoadingLineDefs ();
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
 
-	if (!P_LoadXNOD(lumpnum+ML_NODES))
-	{
-		// P_LoadSubsectors (lumpnum+ML_SSECTORS);
-		// P_LoadNodes (lumpnum+ML_NODES);
-		// P_LoadSegs (lumpnum+ML_SEGS);
-		P_LoadSubsectors_DeePBSP(lumpnum+ML_SSECTORS);
-		P_LoadNodes_DeePBSP(lumpnum+ML_NODES);
-		P_LoadSegs_DeePBSP(lumpnum+ML_SEGS);
+	switch (P_CheckNodeType(lumpnum+ML_NODES)) {
+		case NT_XNOD:
+		case NT_ZNOD:
+			P_LoadXNOD(lumpnum+ML_NODES);
+			break;
+
+		case NT_DEEP:
+			P_LoadSubsectors_DeePBSP(lumpnum+ML_SSECTORS);
+			P_LoadNodes_DeePBSP(lumpnum+ML_NODES);
+			P_LoadSegs_DeePBSP(lumpnum+ML_SEGS);
+			break;
+
+		default:
+			P_LoadSubsectors (lumpnum+ML_SSECTORS);
+			P_LoadNodes (lumpnum+ML_NODES);
+			P_LoadSegs (lumpnum+ML_SEGS);
 	}
 
 	rejectmatrix = (byte *)W_CacheLumpNum (lumpnum+ML_REJECT, PU_LEVEL);
