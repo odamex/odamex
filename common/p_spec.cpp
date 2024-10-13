@@ -893,8 +893,6 @@ void P_InitPicAnims (void)
 						(anim_p[21] << 16) |
 						(anim_p[22] << 24);
 
-			lastanim->countdown--;
-
 			lastanim++;
 		}
 	Z_Free (animdefs);
