@@ -733,15 +733,7 @@ void P_LoadNodes_DeePBSP(int lump)
 		no->dy = LESHORT(mn->dy)<<FRACBITS;
 		for (int j = 0; j < 2; j++)
 		{
-			// account for children's promotion to 32 bits
-			unsigned int child = (unsigned int)LELONG(mn->children[j]);
-
-			if (child == 0xffff)
-				child = 0xffffffff;
-			else if (child & 0x8000)
-				child = (child & ~0x8000) | NF_SUBSECTOR;
-
-			no->children[j] = child;
+			no->children[j] = LELONG(mn->children[j]);
 
 			for (int k = 0; k < 4; k++)
 				no->bbox[j][k] = LESHORT(mn->bbox[j][k]) << FRACBITS;
