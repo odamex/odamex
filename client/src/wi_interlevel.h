@@ -36,13 +36,22 @@ enum class animcondition_t
     OnFinishedScreen, // The current screen is the "finished" screen
     OnEnteringScreen, // The current screen is the “entering” screen
 
-    Max,
+    ID24Max,
+
+    // vv extra conditions for zdoom intermission scripts
+    CurrMapNotEqual,
+    MapNotVisited,
+    TravelingBetween,
+    NotTravelingBetween,
 };
 
 struct interlevelcond_t
 {
     animcondition_t condition;
-    int param;
+    int param1;
+    int param2;
+
+    interlevelcond_t(animcondition_t c = animcondition_t::None, int p1 = 0, int p2 = 0) : condition(c), param1(p1), param2(p2) {}
 };
 
 struct interlevelframe_t
@@ -64,6 +73,9 @@ struct interlevelframe_t
     frametype_t type;
     int duration;
     int maxduration;
+
+    interlevelframe_t(OLumpName il = "", int iln = 0, OLumpName ail = "", int ailn = 0, frametype_t t = None, int d = 0, int md = 0) :
+        imagelump(il), imagelumpnum(iln), altimagelump(ail), altimagelumpnum(0), type(t), duration(d), maxduration(md) {}
 };
 
 struct interlevelanim_t
@@ -72,6 +84,8 @@ struct interlevelanim_t
     std::vector<interlevelcond_t> conditions;
     int xpos;
     int ypos;
+
+    interlevelanim_t(std::vector<interlevelframe_t> f = {}, std::vector<interlevelcond_t> c = {}, int x = 0, int y = 0) : frames(f), conditions(c), xpos(x), ypos(y) {}
 };
 
 struct interlevellayer_t
@@ -88,4 +102,5 @@ struct interlevel_t
 };
 
 interlevel_t* WI_GetInterlevel(const char* lumpname);
+interlevel_t* WI_GetIntermissionScript(const char* lumpname);
 void WI_ClearInterlevels();

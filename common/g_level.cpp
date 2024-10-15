@@ -913,8 +913,10 @@ void G_InitLevelLocals()
 	}
 
 	::level.exitpic = info.exitpic;
+	::level.exitscript = info.exitscript;
 	::level.exitanim = info.exitanim;
 	::level.enterpic = info.enterpic;
+	::level.enterscript = info.enterscript;
 	::level.enteranim = info.enteranim;
 	::level.endpic = info.endpic;
 

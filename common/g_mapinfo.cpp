@@ -494,11 +494,11 @@ void MIType_InterLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsign
 	const std::string tok = os.getToken();
 	if (!tok.empty() && tok.at(0) == '$')
 	{
-		os.mustScan();
-		// Intermission scripts are not supported.
+		// intermission script lump
+		*static_cast<std::pair<OLumpName*, OLumpName*>*>(data)->second = tok.substr(1);
 		return;
 	}
-	*static_cast<OLumpName*>(data) = tok;
+	*static_cast<std::pair<OLumpName*, OLumpName*>*>(data)->first = tok;
 }
 
 // Sets the inputted data as an OLumpName, checking LANGUAGE for the actual OLumpName
@@ -1091,6 +1091,8 @@ struct MapInfoDataSetter<level_pwad_info_t>
 
 	MapInfoDataSetter(level_pwad_info_t& ref)
 	{
+		std::pair<OLumpName*, OLumpName*> enterpicscript = std::make_pair(&ref.enterpic, &ref.enterscript);
+		std::pair<OLumpName*, OLumpName*> exitpicscript = std::make_pair(&ref.exitpic, &ref.exitscript);
 		mapInfoDataContainer = {
 			{ "levelnum", &MIType_Int, &ref.levelnum },
 	        { "next", &MIType_MapName, &ref.nextmap },
@@ -1142,8 +1144,8 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "intermusic", &MIType_EatNext },
 			{ "par", &MIType_Int, &ref.partime },
 			{ "sucktime", &MIType_EatNext },
-			{ "enterpic", &MIType_InterLumpName, &ref.enterpic }, // todo: add intermission script support
-			{ "exitpic", &MIType_InterLumpName, &ref.exitpic }, // todo: add intermission script support
+			{ "enterpic", &MIType_InterLumpName, &enterpicscript },
+			{ "exitpic", &MIType_InterLumpName, &exitpicscript },
 			{ "enteranim", &MIType_LumpName, &ref.enteranim }, // nonstandard, from ID24 UMAPINFO, only present here for _D1NFO in odamex.wad
 			{ "exitanim", &MIType_LumpName, &ref.exitanim }, // nonstandard, from ID24 UMAPINFO, only present here for _D1NFO in odamex.wad
 			{ "interpic", &MIType_EatNext },
