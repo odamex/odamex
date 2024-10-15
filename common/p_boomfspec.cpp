@@ -49,6 +49,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
                                           bool bossaction)
 {
 	int ok;
+	bool resetinv = false;
 
 	//  Things that should never trigger lines
 	//
@@ -435,13 +436,16 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		break;
 
+	case 2069:
+		resetinv = true;
+		// TODO: add [[fallthrough]] when C++17 comes
 	case 52:
 		// EXIT!
 		// killough 10/98: prevent zombies from exiting levels
 		if (bossaction || ((!(thing->player && thing->player->health <= 0)) &&
 		                   CheckIfExitIsGood(thing)))
 		{
-			G_ExitLevel(0, 1);
+			G_ExitLevel(0, 1, resetinv);
 			return true;
 		}
 		break;
@@ -567,6 +571,9 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		break;
 
+	case 2072:
+		resetinv = true;
+		// TODO: add [[fallthrough]] when C++17 comes
 	case 124:
 		// Secret EXIT
 		// killough 10/98: prevent zombies from exiting levels
@@ -574,7 +581,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		if (bossaction || ((!(thing->player && thing->player->health <= 0)) &&
 		                   CheckIfExitIsGood(thing)))
 		{
-			G_SecretExitLevel(0, 1);
+			G_SecretExitLevel(0, 1, resetinv);
 			return true;
 		}
 		break;
@@ -1777,6 +1784,7 @@ void P_SpawnCompatiblePusher(line_t* l)
 bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
                                         bool bossaction)
 {
+	bool resetinv = false; // used for exits
 	bool reuse = false;
 	bool trigger = false; // used for bossactions
 	// e6y
@@ -2075,6 +2083,9 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		}
 		break;
 
+	case 2070:
+		resetinv = true;
+		// TODO: add [[fallthrough]] when C++17 comes
 	case 11:
 		/* Exit level
 		 * killough 10/98: prevent zombies from exiting levels
@@ -2088,7 +2099,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		{
 			reuse = false;
 			trigger = true;
-			G_ExitLevel(0, 1);
+			G_ExitLevel(0, 1, resetinv);
 		}
 		break;
 
@@ -2199,6 +2210,9 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		}
 		break;
 
+	case 2073:
+		resetinv = true;
+		// TODO: add [[fallthrough]] when C++17 comes
 	case 51:
 		/* Secret EXIT
 		 * killough 10/98: prevent zombies from exiting levels
@@ -2212,7 +2226,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		{
 			reuse = false;
 			trigger = true;
-			G_SecretExitLevel(0, 1);
+			G_SecretExitLevel(0, 1, resetinv);
 		}
 		break;
 
@@ -3239,6 +3253,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 {
+	bool resetinv = false;
+
 	// pointer to line function is NULL by default, set non-null if
 	// line special is gun triggered generalized linedef type
 	int (*linefunc)(line_t * line) = NULL;
@@ -3379,6 +3395,9 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	default:
 		switch (line->special)
 		{
+		case 2071:
+			resetinv = true;
+			// TODO: add [[fallthrough]] when C++17 comes
 		case 197:
 			// Exit to next level
 			// killough 10/98: prevent zombies from exiting levels
@@ -3386,11 +3405,14 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 				break;
 			if (thing && CheckIfExitIsGood(thing))
 			{
-				G_ExitLevel(0, 1);
+				G_ExitLevel(0, 1, resetinv);
 				return true;
 			}
 			break;
 
+		case 2074:
+			resetinv = true;
+			// TODO: add [[fallthrough]] when C++17 comes
 		case 198:
 			// Exit to secret level
 			// killough 10/98: prevent zombies from exiting levels
@@ -3398,7 +3420,7 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 				break;
 			if (thing && CheckIfExitIsGood(thing))
 			{
-				G_SecretExitLevel(0, 1);
+				G_SecretExitLevel(0, 1, resetinv);
 				return true;
 			}
 			break;
@@ -3409,7 +3431,7 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	return false;
 }
 
-const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved)
+unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved)
 {
 	/*
 	if (mbf21)

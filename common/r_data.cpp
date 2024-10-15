@@ -523,7 +523,6 @@ void R_InitTextures (void)
 
 	int*				patchlookup;
 
-	int 				totalwidth;
 	int					nummappatches;
 	int 				offset;
 	int 				maxoff;
@@ -614,8 +613,6 @@ void R_InitTextures (void)
 	texturescalex = new fixed_t[numtextures];
 	texturescaley = new fixed_t[numtextures];
 
-	totalwidth = 0;
-
 	for (i = 0; i < numtextures; i++, directory++)
 	{
 		if (i == numtextures1)
@@ -674,8 +671,6 @@ void R_InitTextures (void)
 		// should be able to actually create scaled textures.
 		texturescalex[i] = mtexture->scalex ? mtexture->scalex << (FRACBITS - 3) : FRACUNIT;
 		texturescaley[i] = mtexture->scaley ? mtexture->scaley << (FRACBITS - 3) : FRACUNIT;
-
-		totalwidth += texture->width;
 	}
 	delete[] patchlookup;
 
@@ -787,7 +782,7 @@ void R_InitSpriteLumps (void)
 
 struct FakeCmap
 {
-	std::string name;
+	OLumpName name;
 	argb_t blend_color;
 };
 
@@ -812,13 +807,13 @@ void R_ForceDefaultColormap(const char* name)
 	BuildDefaultShademap(V_GetDefaultPalette(), realcolormaps);
 #endif
 
-	fakecmaps[0].name = StdStringToUpper(name, 8); 	// denis - todo - string limit?
+	fakecmaps[0].name = name;
 	fakecmaps[0].blend_color = argb_t(0, 255, 255, 255);
 }
 
 void R_SetDefaultColormap(const char* name)
 {
-	if (strnicmp(fakecmaps[0].name.c_str(), name, 8) != 0)
+	if (fakecmaps[0].name == name)
 		R_ForceDefaultColormap(name);
 }
 
@@ -827,7 +822,7 @@ void R_ReinitColormap()
 	if (fakecmaps == NULL)
 		return;
 
-	std::string name = fakecmaps[0].name;
+	std::string name = fakecmaps[0].name.c_str();
 	if (name.empty())
 		name = "COLORMAP";
 
@@ -859,7 +854,6 @@ void R_ShutdownColormaps()
 		delete [] fakecmaps;
 		fakecmaps = NULL;
 	}
-
 }
 
 //
@@ -909,10 +903,8 @@ void R_InitColormaps()
 				int r = pal->basecolors[*map].getr();
 				int g = pal->basecolors[*map].getg();
 				int b = pal->basecolors[*map].getb();
-
-				char name[9];
-				W_GetLumpName(name, i);
-				fakecmaps[j].name = StdStringToUpper(name, 8);
+				
+				W_GetOLumpName(fakecmaps[j].name, i);
 
 				for (int k = 1; k < 256; k++)
 				{

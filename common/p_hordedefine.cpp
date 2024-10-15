@@ -160,6 +160,11 @@ StringTokens hordeDefine_t::weaponStrings(player_t* player) const
 		case wp_bfg:
 			rvo.push_back("7");
 			break;
+		case wp_fist:
+		case wp_pistol:
+		case wp_nochange:
+		case NUMWEAPONS:
+			break;
 		}
 	}
 
@@ -221,7 +226,6 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	for (size_t i = 0; i < define.monsters.size(); i++)
 	{
 		const hordeDefine_t::monster_t& waveMon = define.monsters.at(i);
-		const mobjinfo_t& info = ::mobjinfo[waveMon.mobj];
 
 		// Boss spawns have to spawn boss things.
 		if (wantBoss && waveMon.monster == hordeDefine_t::RM_NORMAL)

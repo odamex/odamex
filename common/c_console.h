@@ -54,6 +54,7 @@ void C_ClearCommand();
 void C_NewModeAdjust (void);
 
 void C_Ticker (void);
+void C_DisplayTicker(void);
 
 void C_AddNotifyString (int printlevel, const char *s);
 void C_DrawConsole (void);
@@ -71,7 +72,7 @@ void C_DrawMid (void);
 void C_GMidPrint(const char* msg, int color, int msgtime);
 void C_DrawGMid (void);
 
-BOOL C_Responder (event_t *ev);
+bool C_Responder(event_t* ev);
 
 void C_AddTabCommand (const char *name);
 void C_RemoveTabCommand (const char *name);

@@ -36,7 +36,7 @@ int 		sky2texture;
 fixed_t		sky2scrollxdelta;
 fixed_t		sky2columnoffset;
 
-char SKYFLATNAME[8] = "F_SKY1";
+OLumpName SKYFLATNAME = "F_SKY1";
 
 VERSION_CONTROL (r_sky_cpp, "$Id$")
 

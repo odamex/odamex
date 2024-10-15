@@ -25,7 +25,7 @@
 
 #include "v_textcolors.h"
 
-int C_BasePrint(const int printlevel, const char* color_code, const std::string& str);
+size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str);
 
 template <typename... ARGS>
 int Printf(const fmt::string_view format, const ARGS&... args)

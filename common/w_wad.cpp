@@ -680,6 +680,15 @@ int W_GetNumForName(const char* name, int namespc)
 	return i;
 }
 
+//
+// W_GetNumForName
+// Calls W_CheckNumForName, but bombs out if not found.
+//
+int W_GetNumForName(OLumpName& name, int namespc)
+{
+	return W_GetNumForName(name.c_str(), namespc);
+}
+
 /**
  * @brief Return the name of a lump number.
  * 
@@ -774,7 +783,7 @@ bool W_CheckLumpName (unsigned lump, const char *name)
 //
 // W_GetLumpName
 //
-void W_GetLumpName (char *to, unsigned  lump)
+void W_GetLumpName(char *to, unsigned lump)
 {
 	if (lump >= numlumps)
 		*to = 0;
@@ -784,6 +793,17 @@ void W_GetLumpName (char *to, unsigned  lump)
 		to[8] = '\0';
 		std::transform(to, to + strlen(to), to, toupper);
 	}
+}
+
+//
+// W_GetLumpName
+//
+void W_GetOLumpName(OLumpName& to, unsigned lump)
+{
+	if (lump >= numlumps)
+		to.clear();
+	else
+		to = lumpinfo[lump].name;
 }
 
 //
@@ -822,7 +842,15 @@ void* W_CacheLumpNum(unsigned int lump, const zoneTag_e tag)
 //
 void* W_CacheLumpName(const char* name, const zoneTag_e tag)
 {
-	return W_CacheLumpNum (W_GetNumForName(name), tag);
+	return W_CacheLumpNum(W_GetNumForName(name), tag);
+}
+
+//
+// W_CacheLumpName
+//
+void* W_CacheLumpName(OLumpName& name, const zoneTag_e tag)
+{
+	return W_CacheLumpNum(W_GetNumForName(name.c_str()), tag);
 }
 
 size_t R_CalculateNewPatchSize(patch_t *patch, size_t length);
@@ -883,6 +911,13 @@ patch_t* W_CachePatch(const char* name, const zoneTag_e tag)
 {
 	return W_CachePatch(W_GetNumForName(name), tag);
 	// denis - todo - would be good to replace non-existant patches with a default '404' patch
+}
+
+patch_t* W_CachePatch(OLumpName& name, const zoneTag_e tag)
+{
+	return W_CachePatch(W_GetNumForName(name.c_str()), tag);
+	// denis - todo - would be good to replace non-existant patches with a default '404'
+	// patch
 }
 
 /**

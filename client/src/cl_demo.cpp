@@ -47,7 +47,7 @@ extern OResFiles wadfiles;
 
 /**
  * @brief Map demo versions to the latest Odamex version that can read them.
- * 
+ *
  * @param version Demo version to check.
  * @return Latest Odamex version for that demo in packed format, or 0 if
  *         the demo version is unknown to us.
@@ -84,7 +84,7 @@ NetDemo::~NetDemo()
 // copy
 //
 //   Copies the data from one NetDemo object to another
- 
+
 void NetDemo::copy(NetDemo &to, const NetDemo &from)
 {
 	// free any memory used by structures and close open files
@@ -116,8 +116,8 @@ NetDemo& NetDemo::operator=(const NetDemo &rhs)
 void NetDemo::reset()
 {
 	cleanUp();
-	
-	filename = "";	
+
+	filename = "";
 	memset(&header, 0, sizeof(header));
 	captured.clear();
 }
@@ -134,14 +134,14 @@ void NetDemo::cleanUp()
 	{
 		stopRecording();	// Try to write any unwritten data
 	}
-	
+
 	// close all files
 	if (demofp)
 	{
 		fclose(demofp);
 		demofp = NULL;
 	}
-	
+
 	snapshot_index.clear();
 	map_index.clear();
 	state = oldstate = NetDemo::st_stopped;
@@ -152,7 +152,7 @@ void NetDemo::cleanUp()
  * Error handler.
  *
  * Generic error handler for netdemo issues.
- * 
+ *
  * @param message Error message.
  */
 void NetDemo::error(const std::string &message)
@@ -166,7 +166,7 @@ void NetDemo::error(const std::string &message)
  *
  * Error handler for netdemo issues that should blank out the view of
  * the game.  Generally used for issues that come up during playback.
- * 
+ *
  * @param message Error message.
  */
 void NetDemo::fatalError(const std::string &message)
@@ -203,7 +203,7 @@ bool NetDemo::writeHeader()
 	tmpheader.snapshot_spacing		= LESHORT(tmpheader.snapshot_spacing);
 	tmpheader.starting_gametic		= LELONG(tmpheader.starting_gametic);
 	tmpheader.ending_gametic		= LELONG(tmpheader.ending_gametic);
-	
+
 	fseek(demofp, 0, SEEK_SET);
 	size_t cnt = 0;
 	cnt += sizeof(tmpheader.identifier) *
@@ -228,7 +228,7 @@ bool NetDemo::writeHeader()
 		fwrite(&tmpheader.ending_gametic, sizeof(tmpheader.ending_gametic), 1, demofp);
 	cnt += sizeof(tmpheader.reserved) *
 		fwrite(&tmpheader.reserved, sizeof(tmpheader.reserved), 1, demofp);
-	
+
 	if (cnt < NetDemo::HEADER_SIZE)
 		return false;
 
@@ -246,7 +246,7 @@ bool NetDemo::writeHeader()
 bool NetDemo::readHeader()
 {
 	fseek(demofp, 0, SEEK_SET);
-	
+
 	size_t cnt = 0;
 	cnt += sizeof(header.identifier) *
 		fread(&header.identifier, sizeof(header.identifier), 1, demofp);
@@ -270,7 +270,7 @@ bool NetDemo::readHeader()
 		fread(&header.ending_gametic, sizeof(header.ending_gametic), 1, demofp);
 	cnt += sizeof(header.reserved) *
 		fread(&header.reserved, sizeof(header.reserved), 1, demofp);
-	
+
 	if (cnt < NetDemo::HEADER_SIZE)
 		return false;
 
@@ -282,7 +282,7 @@ bool NetDemo::readHeader()
 	header.snapshot_spacing 		= LESHORT(header.snapshot_spacing);
 	header.starting_gametic 		= LELONG(header.starting_gametic);
 	header.ending_gametic			= LELONG(header.ending_gametic);
-	
+
 	return true;
 }
 
@@ -306,13 +306,13 @@ bool NetDemo::writeSnapshotIndex()
 		// convert to little-endian
 		entry.ticnum = LELONG(snapshot_index[i].ticnum);
 		entry.offset = LELONG(snapshot_index[i].offset);
-		
+
 		size_t cnt = 0;
 		cnt += sizeof(entry.ticnum) *
 			fwrite(&entry.ticnum, sizeof(entry.ticnum), 1, demofp);
 		cnt += sizeof(entry.offset) *
 			fwrite(&entry.offset, sizeof(entry.offset), 1, demofp);
-		
+
 		if (cnt < NetDemo::INDEX_ENTRY_SIZE)
 			return false;
 	}
@@ -335,18 +335,18 @@ bool NetDemo::readSnapshotIndex()
 	for (int i = 0; i < header.snapshot_index_size; i++)
 	{
 		netdemo_index_entry_t entry;
-		
+
 		size_t cnt = 0;
 		cnt += sizeof(entry.ticnum) *
 			fread(&entry.ticnum, sizeof(entry.ticnum), 1, demofp);
 		cnt += sizeof(entry.offset) *
 			fread(&entry.offset, sizeof(entry.offset), 1, demofp);
-		
+
 		if (cnt < INDEX_ENTRY_SIZE)
 			return false;
 
 		// convert from little-endian to native
-		entry.ticnum = LELONG(entry.ticnum);	
+		entry.ticnum = LELONG(entry.ticnum);
 		entry.offset = LELONG(entry.offset);
 
 		snapshot_index.push_back(entry);
@@ -366,13 +366,13 @@ bool NetDemo::writeMapIndex()
 		// convert to little-endian
 		entry.ticnum = LELONG(map_index[i].ticnum);
 		entry.offset = LELONG(map_index[i].offset);
-		
+
 		size_t cnt = 0;
 		cnt += sizeof(entry.ticnum) *
 			fwrite(&entry.ticnum, sizeof(entry.ticnum), 1, demofp);
 		cnt += sizeof(entry.offset) *
 			fwrite(&entry.offset, sizeof(entry.offset), 1, demofp);
-		
+
 		if (cnt < NetDemo::INDEX_ENTRY_SIZE)
 			return false;
 	}
@@ -387,18 +387,18 @@ bool NetDemo::readMapIndex()
 	for (int i = 0; i < header.map_index_size; i++)
 	{
 		netdemo_index_entry_t entry;
-		
+
 		size_t cnt = 0;
 		cnt += sizeof(entry.ticnum) *
 			fread(&entry.ticnum, sizeof(entry.ticnum), 1, demofp);
 		cnt += sizeof(entry.offset) *
 			fread(&entry.offset, sizeof(entry.offset), 1, demofp);
-		
+
 		if (cnt < INDEX_ENTRY_SIZE)
 			return false;
 
 		// convert from little-endian to native
-		entry.ticnum = LELONG(entry.ticnum);	
+		entry.ticnum = LELONG(entry.ticnum);
 		entry.offset = LELONG(entry.offset);
 
 		map_index.push_back(entry);
@@ -468,7 +468,7 @@ bool NetDemo::startRecording(const std::string &filename)
 		writeLauncherSequence(&tempbuf);
 		capture(&tempbuf);
 		writeMessages();
-		
+
 		// Fake the server's side of the connection sequence
 		SZ_Clear(&tempbuf);
 		writeConnectionSequence(&tempbuf);
@@ -498,12 +498,12 @@ bool NetDemo::startRecording(const std::string &filename)
 bool NetDemo::startPlaying(const std::string &filename)
 {
 	this->filename = filename;
-	
+
 	if (filename.empty())
 	{
 		error("No netdemo filename specified.");
 		return false;
-	}	
+	}
 
 	if (isPlaying())
 	{
@@ -585,12 +585,12 @@ bool NetDemo::startPlaying(const std::string &filename)
 	state = NetDemo::st_playing;
 
 	Printf(PRINT_HIGH, "Playing netdemo %s.\n", filename.c_str());
-	
+
 	return true;
 }
 
 
-// 
+//
 // pause()
 //
 //   Changes the netdemo's state to paused.  No messages will be read or written
@@ -604,7 +604,7 @@ bool NetDemo::pause()
 		state = NetDemo::st_paused;
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -672,7 +672,7 @@ bool NetDemo::stopRecording()
 		return false;
 	}
 
-	// rewrite the header since snapshot_index_offset and 
+	// rewrite the header since snapshot_index_offset and
 	// snapshot_index_size are now known
 	if (!writeHeader())
 	{
@@ -706,12 +706,12 @@ bool NetDemo::stopPlaying()
 		fclose(demofp);
 		demofp = NULL;
 	}
-	
+
 	Printf(PRINT_HIGH, "Demo has ended.\n");
 	reset();
     gameaction = ga_fullconsole;
     gamestate = GS_FULLCONSOLE;
-	
+
 	return true;
 }
 
@@ -719,15 +719,13 @@ bool NetDemo::stopPlaying()
 // writeLocalCmd()
 //
 //   Generates a message indicating the current position and angle of the
-//   consoleplayer, taking the place of ticcmds.  
+//   consoleplayer, taking the place of ticcmds.
 void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 {
 	// Record the local player's data
 	player_t *player = &consoleplayer();
 	if (!player->mo)
 		return;
-
-	AActor *mo = player->mo;
 
 	MSG_WriteSVC(netbuffer, SVC_NetdemoCap(player));
 }
@@ -737,11 +735,11 @@ void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 {
 	message_header_t msgheader;
 	memset(&msgheader, 0, sizeof(msgheader));
-	
+
 	msgheader.type = static_cast<byte>(type);
 	msgheader.length = LELONG((uint32_t)size);
 	msgheader.gametic = LELONG(gametic);
-	
+
 	size_t cnt = 0;
 	cnt += sizeof(msgheader.type) *
 		fwrite(&msgheader.type, sizeof(msgheader.type), 1, demofp);
@@ -793,7 +791,7 @@ void NetDemo::ticker()
 //
 //   Writes the packets received from the server and captures local player
 //   input and writes to the netdemo file.
-// 
+//
 
 void NetDemo::writeMessages()
 {
@@ -806,12 +804,12 @@ void NetDemo::writeMessages()
 	{
 		writeSnapshotData(snapbuf);
 		writeSnapshotIndexEntry();
-			
+
 		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_snapshot);
 	}
 
 	if (connected)
-	{	
+	{
 		// Write the console player's game data
 		SZ_Clear(&netbuf_localcmd);
 		writeLocalCmd(&netbuf_localcmd);
@@ -829,7 +827,7 @@ void NetDemo::writeMessages()
 		byte *chunk = netbuf.ReadChunk(len);
 		memcpy(output_buf + output_len, chunk, len);
 		output_len += len;
-		
+
 		captured.pop_front();
 	}
 
@@ -851,7 +849,7 @@ bool NetDemo::readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t
 	len = tic = 0;
 
 	message_header_t msgheader;
-	
+
 	size_t cnt = 0;
 	cnt += sizeof(msgheader.type) *
 		fread(&msgheader.type, sizeof(msgheader.type), 1, demofp);
@@ -859,7 +857,7 @@ bool NetDemo::readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t
 		fread(&msgheader.length, sizeof(msgheader.length), 1, demofp);
 	cnt += sizeof(msgheader.gametic) *
 		fread(&msgheader.gametic, sizeof(msgheader.gametic), 1, demofp);
-	
+
 	if (cnt < NetDemo::MESSAGE_HEADER_SIZE)
 	{
 		return false;
@@ -880,11 +878,11 @@ bool NetDemo::readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t
 //   Reads a message of length len from the netdemo file and stores the
 //   message in netbuffer.
 //
- 
+
 void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 {
 	char *msgdata = new char[len];
-	
+
 	size_t cnt = fread(msgdata, 1, len, demofp);
 	if (cnt < len)
 	{
@@ -948,10 +946,10 @@ void NetDemo::readMessages(buf_t* netbuffer)
 
 	netdemo_message_t type;
 	uint32_t len = 0, tic = 0;
-	
+
 	// get the values for type, len and tic
 	readMessageHeader(type, len, tic);
-	
+
 	while (type == NetDemo::msg_snapshot)
 	{
 		// skip over snapshots and read the next message instead
@@ -968,7 +966,7 @@ void NetDemo::readMessages(buf_t* netbuffer)
 //
 // capture()
 //
-//   Copies data from inputbuffer just before the game parses it 
+//   Copies data from inputbuffer just before the game parses it
 //
 
 void NetDemo::capture(const buf_t* inputbuffer)
@@ -1000,10 +998,10 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	// Server sends launcher info
 	MSG_WriteLong	(netbuffer, PROTO_CHALLENGE);
 	MSG_WriteLong	(netbuffer, 0);		// server_token
-	
+
 	// get sv_hostname and write it
 	MSG_WriteString (netbuffer, server_host.c_str());
-	
+
 	int playersingame = 0;
 	for (Players::const_iterator it = players.begin();it != players.end();++it)
 	{
@@ -1014,7 +1012,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	MSG_WriteByte	(netbuffer, 0);				// sv_maxclients
 	MSG_WriteString	(netbuffer, level.mapname.c_str());
 
-	// names of all the wadfiles on the server	
+	// names of all the wadfiles on the server
 	size_t numwads = wadfiles.size();
 	if (numwads > 0xff)
 		numwads = 0xff;
@@ -1025,7 +1023,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 		// Don't use absolute paths, as they present a security risk.
 		MSG_WriteString(netbuffer, ::wadfiles[n].getBasename().c_str());
 	}
-		
+
 	MSG_WriteBool	(netbuffer, 0);		// deathmatch?
 	MSG_WriteByte	(netbuffer, 0);		// sv_skill
 	MSG_WriteBool	(netbuffer, (sv_gametype == GM_TEAMDM));
@@ -1056,13 +1054,13 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 		{
 			MSG_WriteBool	(netbuffer, false);
 		}
-	}	
+	}
 
     MSG_WriteShort	(netbuffer, VERSION);
-  
+
   	// Note: these are ignored by clients when the client connects anyway
   	// so they don't need real data
-	MSG_WriteString	(netbuffer, "");	// sv_email.cstring()  
+	MSG_WriteString	(netbuffer, "");	// sv_email.cstring()
 
 	MSG_WriteShort	(netbuffer, 0);		// sv_timelimit
 	MSG_WriteShort	(netbuffer, 0);		// timeleft before end of level
@@ -1082,30 +1080,30 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	MSG_WriteBool	(netbuffer, false);	// sv_emptyreset
 	MSG_WriteBool	(netbuffer, false);	// sv_cleanmaps
 	MSG_WriteBool	(netbuffer, false);	// sv_fragexitswitch
-	
+
 	for (Players::const_iterator it = players.begin();it != players.end();++it)
 	{
 		if (it->ingame())
 		{
 			MSG_WriteShort(netbuffer, it->killcount);
 			MSG_WriteShort(netbuffer, it->deathcount);
-			
+
 			int timeingame = (time(NULL) - it->JoinTime) / 60;
 			if (timeingame < 0)
 				timeingame = 0;
 			MSG_WriteShort(netbuffer, timeingame);
 		}
 	}
-	
+
 	MSG_WriteLong(netbuffer, (DWORD)0x01020304);
 	MSG_WriteShort(netbuffer, sv_maxplayers);
-    
+
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (it->ingame())
 			MSG_WriteBool(netbuffer, it->spectator);
 	}
-	
+
 	MSG_WriteLong	(netbuffer, (DWORD)0x01020305);
 	MSG_WriteShort	(netbuffer, 0);	// join_passowrd
 
@@ -1114,7 +1112,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
     // TODO: handle patch files
 	MSG_WriteByte	(netbuffer, 0);  // patchfiles.size()
 //	MSG_WriteByte	(netbuffer, patchfiles.size());
-    
+
 //	for (size_t n = 0; n < patchfiles.size(); n++)
 //		MSG_WriteString(netbuffer, patchfiles[n].c_str());
 }
@@ -1139,7 +1137,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 
 	// our userinfo
 	MSG_WriteSVC(netbuffer, SVC_UserInfo(consoleplayer(), consoleplayer().GameTime));
-	
+
 	// Server sends its settings
 	cvar_t *var = GetFirstCvar();
 	while (var)
@@ -1254,7 +1252,7 @@ void NetDemo::nextSnapshot()
 	// don't read past the last snapshot
 	if (nextsnapindex >= header.snapshot_index_size)
 		return;
-	
+
 	readSnapshot(&snapshot_index[nextsnapindex]);
 }
 
@@ -1281,7 +1279,7 @@ void NetDemo::prevSnapshot()
 //
 // nextMap()
 //
-//		Reads the snapshot at the begining of the next map and 
+//		Reads the snapshot at the begining of the next map and
 //		restores the world state to the snapshot
 //
 void NetDemo::nextMap()
@@ -1294,7 +1292,7 @@ void NetDemo::nextMap()
 		return;
 
 	const NetDemo::netdemo_index_entry_t *snap = &map_index[nextmapindex];
-	
+
 	readSnapshot(snap);
 }
 
@@ -1309,7 +1307,7 @@ void NetDemo::prevMap()
 	if (!header.map_index_size)
 		return;
 
-	int prevmapindex = getCurrentMapIndex() - 1; 
+	int prevmapindex = getCurrentMapIndex() - 1;
 	if (prevmapindex < 0)
 		prevmapindex = 0;
 
@@ -1331,12 +1329,12 @@ void NetDemo::readSnapshot(const netdemo_index_entry_t *snap)
 	gametic = snap->ticnum;
 	int file_offset = snap->offset;
 	fseek(demofp, file_offset, SEEK_SET);
-	
+
 	// read the values for length, gametic, and message type
 	netdemo_message_t type;
 	uint32_t len = 0, tic = 0;
 	readMessageHeader(type, len, tic);
-	
+
 	// Clear the snapshot buffer and read into it.
 	snapbuf.clear();
 	snapbuf.resize(len);
@@ -1395,7 +1393,7 @@ const std::vector<int> NetDemo::getMapChangeTimes()
 		int start_time = (map_index[i].ticnum - header.starting_gametic) / TICRATE;
 		times.push_back(start_time);
 	}
-	
+
 	return times;
 }
 
@@ -1407,7 +1405,7 @@ void NetDemo::writeMapChange()
 		writeSnapshotData(snapbuf);
 		writeMapIndexEntry();
 		writeSnapshotIndexEntry();
-		
+
 		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_snapshot);
 	}
 }
@@ -1418,7 +1416,7 @@ void NetDemo::writeIntermission()
 	{
 		writeSnapshotData(snapbuf);
 		writeSnapshotIndexEntry();
-		
+
 		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_snapshot);
 	}
 }
@@ -1444,7 +1442,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	byte vars[4096], *vars_p;
 	vars_p = vars;
 
-	cvar_t::C_WriteCVars(&vars_p, CVAR_SERVERINFO);
+	cvar_t::C_WriteCVars(&vars_p, CVAR_SERVERINFO, 4096);
 	arc.WriteCount(vars_p - vars);
 	arc.Write(vars, vars_p - vars);
 
@@ -1479,14 +1477,33 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	// Save team points
 	for (int i = 0; i < NUMTEAMS; i++)
 		arc << GetTeamInfo((team_t)i)->Points;
-	
+
 	arc << level.time;
 
 	for (int i = 0; i < NUM_WORLDVARS; i++)
+	{
 		arc << ACS_WorldVars[i];
+		ACSWorldGlobalArray worldarr = ACS_WorldArrays[i];
+		arc << worldarr.size();
+		for (ACSWorldGlobalArray::iterator it = worldarr.begin(); it != worldarr.end(); it++)
+		{
+			arc << it->first;
+			arc << it->second;
+		}
+	}
+
 
 	for (int i = 0; i < NUM_GLOBALVARS; i++)
+	{
 		arc << ACS_GlobalVars[i];
+		ACSWorldGlobalArray globalarr = ACS_GlobalArrays[i];
+		arc << globalarr.size();
+		for (ACSWorldGlobalArray::iterator it = globalarr.begin(); it != globalarr.end(); it++)
+		{
+			arc << it->first;
+			arc << it->second;
+		}
+	}
 
 	byte check = 0x1d;
 	arc << check;          // consistancy marker
@@ -1498,7 +1515,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	// Resize the snapshot buffer to hold our snapshot size.
 	buf.resize(memfile.Length());
 	memfile.WriteToBuffer(buf.data(), buf.size());
-			
+
     if (level.info->snapshot != NULL)
     {
         delete level.info->snapshot;
@@ -1514,7 +1531,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 
 	P_ClearAllNetIds();
 
-	// Remove all players	
+	// Remove all players
 	players.clear();
 
 	// Remove all actors
@@ -1522,11 +1539,11 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	AActor *mo;
 	while ( (mo = iterator.Next() ) )
 		mo->Destroy();
-	
+
 	gameaction = ga_nothing;
-	
+
 	FLZOMemFile memfile;
-	
+
 	memfile.Open(buf.data()); // open for reading
 
 	FArchive arc(memfile);
@@ -1592,10 +1609,30 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	arc >> level.time;
 
 	for (int i = 0; i < NUM_WORLDVARS; i++)
+	{
 		arc >> ACS_WorldVars[i];
+		int size, k, v;
+		arc >> size;
+		for (int j = 0; j < size; j++)
+		{
+			arc >> k;
+			arc >> v;
+			ACS_WorldArrays[i][k] = v;
+		}
+	}
 
 	for (int i = 0; i < NUM_GLOBALVARS; i++)
+	{
 		arc >> ACS_GlobalVars[i];
+		int size, k, v;
+		arc >> size;
+		for (int j = 0; j < size; j++)
+		{
+			arc >> k;
+			arc >> v;
+			ACS_GlobalArrays[i][k] = v;
+		}
+	}
 
 	multiplayer = true;
 
@@ -1617,9 +1654,9 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 
 	if (check != 0x1d)
 		fatalError("Bad snapshot");
-	
+
 	consoleplayer_id = cid;
-	
+
 	// try to restore display player
 	player_t *disp = &idplayer(did);
 	if (validplayer(*disp) && disp->ingame() && !disp->spectator)
@@ -1656,12 +1693,12 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 //
 // writeSnapshotIndexEntry()
 //
-//   
+//
 void NetDemo::writeSnapshotIndexEntry()
 {
 	// Update the snapshot index
 	netdemo_index_entry_t entry;
-	
+
 	fflush(demofp);
 	entry.offset = ftell(demofp);
 	entry.ticnum = gametic;
@@ -1671,12 +1708,12 @@ void NetDemo::writeSnapshotIndexEntry()
 //
 // writeMapIndexEntry()
 //
-//   
+//
 void NetDemo::writeMapIndexEntry()
 {
 	// Update the map index
 	netdemo_index_entry_t entry;
-	
+
 	fflush(demofp);
 	entry.offset = ftell(demofp);
 	entry.ticnum = gametic;

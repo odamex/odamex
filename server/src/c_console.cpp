@@ -73,7 +73,8 @@ char *TimeStamp()
 	{
 		if (log_fulltimestamps)
 		{
-            sprintf (stamp,
+            snprintf (stamp,
+                     38,
                      "[%.2d/%.2d/%.2d %.2d:%.2d:%.2d]",
                      lt->tm_mday,
                      lt->tm_mon + 1,	// localtime returns 0-based month
@@ -84,7 +85,8 @@ char *TimeStamp()
 		}
 		else
 		{
-            sprintf (stamp,
+            snprintf (stamp,
+                     38,
                      "[%.2d:%.2d:%.2d]",
                      lt->tm_hour,
                      lt->tm_min,
@@ -115,7 +117,7 @@ static int PrintString(int printlevel, const std::string& str)
 
 extern BOOL gameisdead;
 
-int C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
+size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
 {
 	(void)color_code;
 	if (gameisdead)

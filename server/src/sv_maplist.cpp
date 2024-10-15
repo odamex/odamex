@@ -115,7 +115,6 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 			for (OResFiles::const_iterator it = ::wadfiles.begin() + 1;
 			     it != ::wadfiles.end(); ++it)
 			{
-				size_t idx = it - ::wadfiles.begin();
 				maplist_entry.wads.push_back(it->getBasename());
 			}
 		}
@@ -662,7 +661,7 @@ BEGIN_COMMAND (maplist) {
 		} else if (it->first == next_index) {
 			flag = '+';
 		}
-		Printf(PRINT_HIGH, "%c%d. %s %s\n", flag, it->first + 1,
+		Printf(PRINT_HIGH, "%c%lu. %s %s\n", flag, it->first + 1,
 			   JoinStrings(it->second->wads, " ").c_str(),
 			   it->second->map.c_str());
 	}

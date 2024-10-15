@@ -341,7 +341,7 @@ void F_TextWrite ()
 		lump = W_CheckNumForName(finalelump, ns_global);
 		if (lump >= 0)
 		{
-			screen->DrawPatchFullScreen((patch_t*)W_CachePatch(lump, PU_CACHE), true);
+			screen->DrawPatchFullScreen(W_CachePatch(lump, PU_CACHE), true);
 		}
 		break;
 	case FINALE_FLAT:
@@ -648,7 +648,7 @@ void F_CastDrawer()
 	finale_height = background_patch->height() + (background_patch->height() / 5);
 
 	I_FreeSurface(cast_surface);
-	cast_surface = I_AllocateSurface(finale_width, finale_height, 8);
+	cast_surface = I_AllocateSurface(background_patch->width(), background_patch->height(), 8);
 
 	// draw the background to the surface
 	cast_surface->lock();
@@ -712,8 +712,8 @@ void F_BunnyScroll()
 	int bunnywidth = p1->width();
 	int bunnyheight = p1->height() + (p1->height() / 5);
 
-	bunny1_surface = I_AllocateSurface(bunnywidth, bunnyheight, 8);
-	bunny2_surface = I_AllocateSurface(bunnywidth, bunnyheight, 8);
+	bunny1_surface = I_AllocateSurface(p1->width(), p1->height(), 8);
+	bunny2_surface = I_AllocateSurface(p2->width(), p2->height(), 8);
 
 	DCanvas* c1 = bunny1_surface->getDefaultCanvas();
 	DCanvas* c2 = bunny2_surface->getDefaultCanvas();
@@ -803,7 +803,7 @@ void F_BunnyScroll()
 		laststage = stage;
 	}
 
-	sprintf (name,"END%i",stage);
+	snprintf (name, 6, "END%i", stage);
 	screen->DrawPatchIndirect(W_CachePatch(name), (320-13*8)/2, (200-8*8)/2);
 }
 
@@ -830,7 +830,7 @@ void F_DrawEndPic(const char* page)
 	finale_height = background_patch->height() + (background_patch->height() / 5);
 
 	I_FreeSurface(finale_surface);
-	finale_surface = I_AllocateSurface(finale_width, finale_height, 8);
+	finale_surface = I_AllocateSurface(background_patch->width(), background_patch->height(), 8);
 
 	const int width = F_GetCWidth();
 	const int height = primary_surface->getHeight();

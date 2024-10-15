@@ -89,10 +89,10 @@ static bool cmpDamage(const player_t* arg1, const player_t* arg2)
 	return arg2->monsterdmgcount < arg1->monsterdmgcount;
 }
 
-static bool cmpKills(const player_t* arg1, const player_t* arg2)
-{
-	return arg2->killcount < arg1->killcount;
-}
+//static bool cmpKills(const player_t* arg1, const player_t* arg2) // unused
+//{
+//	return arg2->killcount < arg1->killcount;
+//}
 
 static bool cmpPoints(const player_t* arg1, const player_t* arg2)
 {
@@ -673,9 +673,9 @@ std::string NetdemoElapsed() {
 
 	char str[12];
 	if (hours) {
-		sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
+		snprintf(str, 12, "%02d:%02d:%02d", hours, minutes, seconds);
 	} else {
-		sprintf(str, "%02d:%02d", minutes, seconds);
+		snprintf(str, 12, "%02d:%02d", minutes, seconds);
 	}
 
 	return str;
@@ -894,7 +894,7 @@ void EleBar(const int x, const int y, const int w, const float scale,
 	patch_t* leftfull = W_ResolvePatchHandle(::line_leftfull);
 	patch_t* centerempty = W_ResolvePatchHandle(::line_centerempty);
 	patch_t* centerleft = W_ResolvePatchHandle(::line_centerleft);
-	patch_t* centerright = W_ResolvePatchHandle(::line_centerright);
+	//patch_t* centerright = W_ResolvePatchHandle(::line_centerright); // unused
 	patch_t* centerfull = W_ResolvePatchHandle(::line_centerfull);
 	patch_t* rightempty = W_ResolvePatchHandle(::line_rightempty);
 	patch_t* rightfull = W_ResolvePatchHandle(::line_rightfull);
@@ -904,9 +904,6 @@ void EleBar(const int x, const int y, const int w, const float scale,
 
 	// Number of things to draw.
 	const int UNITS = w / UNIT_WIDTH;
-
-	// Actual width - rounded down from input w.
-	const int ACTUAL_WIDTH = UNIT_WIDTH * UNITS;
 
 	if (UNITS <= 2)
 	{
@@ -976,7 +973,7 @@ void EleBar(const int x, const int y, const int w, const float scale,
 	int drawX;
 	if (x_align == hud::X_RIGHT)
 	{
-		drawX = x + ((lineHandles.size() - 1) * UNIT_WIDTH);
+		drawX = x + ((static_cast<int>(lineHandles.size()) - 1) * UNIT_WIDTH);
 	}
 	else
 	{
@@ -1286,7 +1283,6 @@ void EAPlayerFrags(int x, int y, const float scale,
                    const short padding, const short limit,
                    const bool force_opaque) {
 	byte drawn = 0;
-	int frags = 0;
 
 	for (size_t i = 0;i < sortedPlayers().size();i++) {
 		// Make sure we're not overrunning our limit.
@@ -1295,15 +1291,6 @@ void EAPlayerFrags(int x, int y, const float scale,
 		}
 
 		player_t* player = sortedPlayers()[i];
-
-		if (G_IsRoundsGame() && !G_IsDuelGame())
-		{
-			frags = player->totalpoints;
-		}
-		else
-		{
-			frags = player->fragcount;
-		}
 
 		if (ingamePlayer(player)) {
 			std::ostringstream buffer;

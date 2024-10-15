@@ -73,6 +73,7 @@ EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
 
 std::list<movingsector_t> movingsectors;
+std::list<sector_t*> specialdoors;
 bool s_SpecialFromServer;
 
 int P_FindSectorFromLineTag(int tag, int start);
@@ -141,7 +142,7 @@ int P_FindLineFromTag(int tag, int start)
 	return start;
 }
 
-const unsigned int P_ResetSectorTransferFlags(const unsigned int flags)
+unsigned int P_ResetSectorTransferFlags(const unsigned int flags)
 {
 	return (flags & ~SECF_TRANSFERMASK);
 }
@@ -764,6 +765,12 @@ bool P_CheckTag(line_t* line)
 	case 51:
 	case 124:
 	case 198:
+	case 2069:
+	case 2070:
+	case 2071:
+	case 2072:
+	case 2073:
+	case 2074:
 
 	case 48: // Scrolling walls
 	case 85:
@@ -885,8 +892,6 @@ void P_InitPicAnims (void)
 						(anim_p[20] << 8) |
 						(anim_p[21] << 16) |
 						(anim_p[22] << 24);
-
-			lastanim->countdown--;
 
 			lastanim++;
 		}

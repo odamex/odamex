@@ -703,6 +703,11 @@ static void P_GiveCarePack(player_t* player)
 				case wp_supershotgun:
 					midmessage = "Got Super Shotgun";
 					break;
+				case wp_none:
+				case wp_fist:
+				case wp_nochange:
+				case NUMWEAPONS:
+					break;
 				}
 				
 				break;
@@ -2018,9 +2023,6 @@ static bool P_InfightingImmune(AActor* target, AActor* source)
 // [Toke] This is no longer needed client-side
 void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage, int mod, int flags)
 {
-    unsigned	ang;
-	int 		saved = 0;
-
 	if (!serverside)
     {
 		return;

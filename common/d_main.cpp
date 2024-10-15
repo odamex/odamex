@@ -847,7 +847,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 		D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
 		// get skill / episode / map from parms
-		strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+		startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
 
 		D_Init();
 	}
@@ -872,7 +872,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 			LoadResolvedFiles(oldwadfiles, oldpatchfiles);
 
 			// get skill / episode / map from parms
-			strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+			startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
 
 			D_Init();
 		}
@@ -1118,8 +1118,7 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 	// Ch0wW : if you experience a spinning effect while trying to pause the frame,
 	// don't forget to add your condition here.
 	if ((maxfps == TICRATE && capfps)
-		|| timingdemo || paused || step_mode
-		|| ((menuactive || ConsoleState == c_down || ConsoleState == c_falling) && !network_game && !demoplayback))
+		|| timingdemo || step_mode)
 		render_lerp_amount = FRACUNIT;
 	else
 		render_lerp_amount = simulation_scheduler->getRemainder() * FRACUNIT;

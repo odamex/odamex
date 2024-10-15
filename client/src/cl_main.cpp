@@ -48,6 +48,7 @@
 #include "md5.h"
 #include "m_fileio.h"
 #include "r_sky.h"
+#include "r_interp.h"
 #include "cl_demo.h"
 #include "cl_download.h"
 #include "cl_maplist.h"
@@ -297,8 +298,6 @@ void CL_SimulateWorld();
 void D_Display(void);
 void D_DoAdvanceDemo(void);
 void M_Ticker(void);
-
-void R_InterpolationTicker();
 
 size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
@@ -633,7 +632,7 @@ void CL_StepTics(unsigned int count)
 
 		Maplist_Runtic();
 
-		R_InterpolationTicker();
+		OInterpolation::getInstance().ticGameInterpolation();
 
 		G_Ticker ();
 		gametic++;
@@ -802,7 +801,7 @@ BEGIN_COMMAND (players)
 	for (std::map<int, std::string>::iterator it = mplayers.begin();it != mplayers.end();++it) {
 		Printf("%3d. %s\n", (*it).first, (*it).second.c_str());
 	}
-	Printf("%d %s\n", mplayers.size(), mplayers.size() == 1 ? "PLAYER" : "PLAYERS");
+	Printf("%lu %s\n", mplayers.size(), mplayers.size() == 1 ? "PLAYER" : "PLAYERS");
 }
 END_COMMAND (players)
 
@@ -831,7 +830,7 @@ BEGIN_COMMAND (playerinfo)
 	}
 
 	char color[8];
-	sprintf(color, "#%02X%02X%02X",
+	snprintf(color, 8, "#%02X%02X%02X",
 			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
 
 	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
@@ -890,7 +889,7 @@ BEGIN_COMMAND (serverinfo)
 	std::sort(server_cvars.begin(), server_cvars.end());
 
     // Heading
-    Printf ("\n%*s - Value\n", MaxFieldLength, "Name");
+    Printf ("\n%*s - Value\n", static_cast<int>(MaxFieldLength), "Name");
 
     // Data
 	for (size_t i = 0; i < server_cvars.size(); i++)
@@ -899,7 +898,7 @@ BEGIN_COMMAND (serverinfo)
 		Cvar = cvar_t::FindCVar(server_cvars[i].c_str(), &dummy);
 
 		Printf( "%*s - %s\n",
-				MaxFieldLength,
+				static_cast<int>(MaxFieldLength),
 				Cvar->name(),
 				Cvar->cstring());
 	}
@@ -1260,10 +1259,10 @@ BEGIN_COMMAND(netdemostats)
 	Printf(PRINT_HIGH, "Total time: %i seconds\n", totaltime);
 	Printf(PRINT_HIGH, "Current position: %i seconds (%i%%)\n",
 		curtime, curtime * 100 / totaltime);
-	Printf(PRINT_HIGH, "Number of maps: %i\n", maptimes.size());
+	Printf(PRINT_HIGH, "Number of maps: %lu\n", maptimes.size());
 	for (size_t i = 0; i < maptimes.size(); i++)
 	{
-		Printf(PRINT_HIGH, "> %02i Starting time: %i seconds\n",
+		Printf(PRINT_HIGH, "> %02lu Starting time: %i seconds\n",
 			i + 1, maptimes[i]);
 	}
 }
@@ -1273,7 +1272,7 @@ BEGIN_COMMAND(netff)
 {
 	if (netdemo.isPlaying())
 		netdemo.nextSnapshot();
-	else if (netdemo.isPaused());
+	else if (netdemo.isPaused())
 		netdemo.nextTic();
 }
 END_COMMAND(netff)
@@ -1484,8 +1483,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 	{
 		Printf(PRINT_WARNING,
 		       "Tried to download an empty file.  This is probably a bug "
-		       "in the client where an empty file is considered missing.\n",
-		       missing_file.getBasename().c_str());
+		       "in the client where an empty file is considered missing.\n");
 		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
@@ -1721,7 +1719,7 @@ bool CL_PrepareConnect()
 		CL_QuitNetGame(NQ_ABORT);
 		return false;
 	}
-	else if (!ok && !missingfiles.empty() || cl_forcedownload)
+	else if ((!ok && !missingfiles.empty()) || cl_forcedownload)
 	{
 		if (::missingCommercialIWAD)
 		{
@@ -2062,7 +2060,7 @@ void CL_ParseCommands()
 		// Measure length of each message, so we can keep track of bandwidth.
 		if (::net_message.BytesRead() < byteStart)
 		{
-			Printf("CL_ParseCommands: end byte (%d) < start byte (%d)\n",
+			Printf("CL_ParseCommands: end byte (%lu) < start byte (%lu)\n",
 			       ::net_message.BytesRead(), byteStart);
 		}
 

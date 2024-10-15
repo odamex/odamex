@@ -55,6 +55,7 @@
 #include "gstrings.h"
 #include "r_sky.h"
 #include "r_draw.h"
+#include "r_interp.h"
 #include "g_game.h"
 #include "cl_main.h"
 #include "cl_demo.h"
@@ -90,6 +91,9 @@ bool	C_DoNetDemoKey(event_t *ev);
 bool	C_DoSpectatorKey(event_t *ev);
 
 void	CL_QuitCommand();
+
+fixed_t P_TickWeaponBobX();
+fixed_t P_TickWeaponBobY();
 
 EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (novert)
@@ -130,6 +134,9 @@ Players			players;
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed
 int 			gametic;
+
+extern fixed_t bobx;
+extern fixed_t boby;
 
 enum demoversion_t
 {
@@ -297,7 +304,7 @@ BEGIN_COMMAND (turnspeeds)
 {
 	if (argc == 1)
 	{
-		Printf (PRINT_HIGH, "Current turn speeds: %ld %ld %ld\n",
+		Printf (PRINT_HIGH, "Current turn speeds: %d %d %d\n",
 				angleturn[0], angleturn[1], angleturn[2]);
 	}
 	else
@@ -464,7 +471,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	// Joystick analog look -- Hyper_Eye
-	if (joy_freelook && sv_freelook || consoleplayer().spectator)
+	if ((joy_freelook && sv_freelook) || consoleplayer().spectator)
 	{
 		if (joy_invert)
 			look += (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
@@ -838,6 +845,33 @@ BEGIN_COMMAND(netstat)
 }
 END_COMMAND(netstat)
 
+void P_BobTicker()
+{
+	bobx = P_TickWeaponBobX();
+	boby = P_TickWeaponBobY();
+}
+
+void P_CheckInterpPause()
+{
+	// Game pauses when in the menu and not online/demo
+	OInterpolation &oi = OInterpolation::getInstance();
+	if (paused || (!multiplayer && !demoplayback &&
+		(menuactive || ConsoleState == c_down || ConsoleState == c_falling)))
+	{
+		if (oi.enabled())
+		{
+			oi.disable();
+		}
+	}
+	else
+	{
+		if (!oi.enabled())
+		{
+			oi.enable();
+		}
+	}
+}
+
 void P_MovePlayer (player_t *player);
 void P_CalcHeight (player_t *player);
 void P_DeathThink (player_t *player);
@@ -1124,7 +1158,9 @@ void G_Ticker (void)
 			// Replay item pickups if the items arrived now.
 			ClientReplay::getInstance().itemReplay();
 		}
+		P_CheckInterpPause();
 		P_Ticker ();
+		P_BobTicker();
 		ST_Ticker ();
 		AM_Ticker ();
 		break;
@@ -1405,7 +1441,7 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 
 void G_DeathMatchSpawnPlayer (player_t &player)
 {
-	int selections;
+	size_t selections;
 	mapthing2_t *spot;
 
 	if(!serverside || G_UsesCoopSpawns())
@@ -1417,7 +1453,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 		I_Error ("No deathmatch starts");
 
 	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
-	spot = SelectRandomDeathmatchSpot (player, selections);
+	spot = SelectRandomDeathmatchSpot (player, static_cast<int>(selections));
 
 	if (!spot && !playerstarts.empty())
 	{
@@ -1586,7 +1622,7 @@ void G_DoLoadGame (void)
 	// load a base level
 	savegamerestore = true;		// Use the player actors in the savegame
 	serverside = true;
-	G_InitNew (text);
+	G_InitNew(text);
 	displayplayer_id = consoleplayer_id = 1;
 	savegamerestore = false;
 
@@ -1594,10 +1630,30 @@ void G_DoLoadGame (void)
 
 
 	for (i = 0; i < NUM_WORLDVARS; i++)
+	{
 		arc >> ACS_WorldVars[i];
+		int size, k, v;
+		arc >> size;
+		for (int j = 0; j < size; j++)
+		{
+			arc >> k;
+			arc >> v;
+			ACS_WorldArrays[i][k] = v;
+		}
+	}
 
 	for (i = 0; i < NUM_GLOBALVARS; i++)
+	{
 		arc >> ACS_GlobalVars[i];
+		int size, k, v;
+		arc >> size;
+		for (int j = 0; j < size; j++)
+		{
+			arc >> k;
+			arc >> v;
+			ACS_GlobalArrays[i][k] = v;
+		}
+	}
 
 	arc >> text[9];
 
@@ -1673,7 +1729,7 @@ void G_DoSaveGame()
 		byte vars[4096], *vars_p;
 		vars_p = vars;
 
-		cvar_t::C_WriteCVars (&vars_p, CVAR_SERVERINFO);
+		cvar_t::C_WriteCVars (&vars_p, CVAR_SERVERINFO, 4096);
 		arc.WriteCount (vars_p - vars);
 		arc.Write (vars, vars_p - vars);
 	}
@@ -1686,10 +1742,28 @@ void G_DoSaveGame()
 	arc << level.time;
 
 	for (i = 0; i < NUM_WORLDVARS; i++)
+	{
 		arc << ACS_WorldVars[i];
+		ACSWorldGlobalArray worldarr = ACS_WorldArrays[i];
+		arc << worldarr.size();
+		for (ACSWorldGlobalArray::iterator it = worldarr.begin(); it != worldarr.end(); it++)
+		{
+			arc << it->first;
+			arc << it->second;
+		}
+	}
 
 	for (i = 0; i < NUM_GLOBALVARS; i++)
+	{
 		arc << ACS_GlobalVars[i];
+		ACSWorldGlobalArray globalarr = ACS_GlobalArrays[i];
+		arc << globalarr.size();
+		for (ACSWorldGlobalArray::iterator it = globalarr.begin(); it != globalarr.end(); it++)
+		{
+			arc << it->first;
+			arc << it->second;
+		}
+	}
 
 
 	arc << (BYTE)0x1d;			// consistancy marker
@@ -1877,9 +1951,9 @@ void G_DoPlayDemo(bool justStreamInput)
 		byte map = *demo_p++;
 		char mapname[32];
 		if (gameinfo.flags & GI_MAPxx)
-			sprintf(mapname, "MAP%02d", map);
+			snprintf(mapname, 32, "MAP%02d", map);
 		else
-			sprintf(mapname, "E%dM%d", episode, map);
+			snprintf(mapname, 32, "E%dM%d", episode, map);
 
 		int deathmatch = *demo_p++;
 		bool monstersrespawn = *demo_p++;
@@ -1897,7 +1971,7 @@ void G_DoPlayDemo(bool justStreamInput)
 				players.push_back(player_t());
 				player_t* player = &players.back();
 				player->playerstate = PST_REBORN;
-				player->id = i + 1;
+				player->id = (byte)i + 1;
 			}
 		}
 
@@ -1910,7 +1984,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			if (!validplayer(con))
 			{
 				Z_Free(demobuffer);
-				Printf(PRINT_HIGH, "DOOM Demo: invalid console player %d of %d\n", who + 1, players.size());
+				Printf(PRINT_HIGH, "DOOM Demo: invalid console player %d of %lu\n", who + 1, players.size());
 				gameaction = ga_fullconsole;
 				return;
 			}
@@ -1974,7 +2048,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			it->userinfo.color[3] = color.getb();
 
 			char tmpname[16];
-			sprintf(tmpname, "Player %i", it->id);
+			snprintf(tmpname, 16, "Player %i", it->id);
 			it->userinfo.netname = tmpname;
 		}
 

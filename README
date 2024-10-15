@@ -79,7 +79,7 @@ On Windows, all libraries are automatically downloaded if not found.  On
 Please check this page for further instructions on how to compile Odamex
 for your platform.
 
-<https://odamex.net/wiki/How_to_build_from_source>
+<https://github.com/odamex/odamex/wiki/Compiling-Odamex>
 
 Contributing to the project
 ---------------------------
@@ -92,7 +92,7 @@ to our issues page. You can also submit patches as a Pull Request.
 Before submitting a pull request, please make sure it follows our coding
 standards!
 
-<https://odamex.net/wiki/Coding_standard>
+<https://github.com/odamex/odamex/wiki/Coding-Standard>
 
 For historical purposes, you can also view our bugtracker's archive.
 
@@ -105,7 +105,7 @@ Please visit the following websites for more information about the development
 of the port and our community:
 
 * Odamex Website: <https://odamex.net>
-* Wiki: <https://odamex.net/wiki/Main_Page>
+* Wiki: <https://github.com/odamex/odamex/wiki>
 * Forums: <https://odamex.net/boards/>
 * Discord: <https://discord.gg/aMUzcZE>
 * Twitter: <https://twitter.com/odamex>

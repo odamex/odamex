@@ -497,7 +497,7 @@ static long ParseCommandLine (const char *args, int *argc, char **argv)
 	{
 		*argc = count;
 	}
-	return (long)(buffplace - (char *)0);
+	return (long)reinterpret_cast<uintptr_t>(buffplace);
 }
 
 

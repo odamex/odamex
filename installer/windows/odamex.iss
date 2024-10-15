@@ -98,6 +98,7 @@ Source: OutX64\wxbase315u_xml_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversio
 Source: OutX64\wxmsw315u_core_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
 Source: OutX64\wxmsw315u_html_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
 Source: OutX64\wxmsw315u_xrc_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: OutX64\redist\VC_redist.x64.exe; DestDir: {tmp}; Flags: dontcopy
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 32-BIT FILES
@@ -121,6 +122,7 @@ Source: OutX86\wxbase315u_xml_vc14x.dll; DestDir: {app}; Flags: ignoreversion; C
 Source: OutX86\wxmsw315u_core_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
 Source: OutX86\wxmsw315u_html_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
 Source: OutX86\wxmsw315u_xrc_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
+Source: OutX86\redist\VC_redist.x86.exe; DestDir: {tmp}; Flags: dontcopy
 
 [Icons]
 Name: {group}\Odamex Client; Filename: {app}\odamex.exe; WorkingDir: {app}
@@ -279,32 +281,49 @@ begin
       sOldVersion := GetRegistryVersion();
       iVersionCompare := CompareVersion(sOldVersion, sVersion);
       if iVersionCompare = -1 then
-          iUpgradeResult := MsgBox(ExpandConstant('The version of Odamex you are about to install is a downgrade to the currently installed version. Do you want to proceed with the installation?'), mbConfirmation, MB_YESNO);
+          iUpgradeResult := MsgBox('The version of Odamex you are about to install is a ' + \
+          'downgrade to the currently installed version. Do you want to proceed with the installation?'
+          , mbConfirmation, MB_YESNO);
       if iVersionCompare = 0 then
-          iUpgradeResult := MsgBox(ExpandConstant('The version of Odamex you are about to install is identical to the currently installed version. Do you want to proceed with the installation?'), mbConfirmation, MB_YESNO);
+          iUpgradeResult := MsgBox('The version of Odamex you are about to install is identical ' + \
+          'to the currently installed version. Do you want to proceed with the installation?',
+          mbConfirmation, MB_YESNO);
       if iVersionCompare = 1 then
           iUpgradeResult := IDYES;
 
       if iUpgradeResult = IDYES then
       begin
-        V := MsgBox(ExpandConstant('Odamex has been detected on this machine. If you do not uninstall, there will be an in-place installation of Odamex to the same path. Do you want to uninstall the previous installation?'), mbConfirmation, MB_YESNO);
+        V := MsgBox('Odamex has been detected on this machine. ' + \
+        'Would you like to do an in-place upgrade?' #13#10 #13#10 + \
+        'If you want to upgrade your copy of Odamex in-place, press "Yes." This is the suggested choice.' #13#10 + \
+        'If you want to do a fresh installation of Odamex, in order to change your installation directory ' + \
+        'or installation type, press "No."' #13#10 + \
+        'If you want to exit the installation, press "Cancel."',
+        mbConfirmation, MB_YESNOCANCEL);
       
         if V = IDYES then
+        begin
+          Result := True;
+          exit;
+        end;
+        if V = IDNO then
         begin
           sUnInstallString := GetUninstallString();
           sUnInstallString := RemoveQuotes(sUnInstallString);
           Exec(ExpandConstant(sUnInstallString), '', '', SW_SHOW, ewWaitUntilTerminated, iResultCode);
-          if iResultCode <> 0 then
-          begin
-              Result := False;
-              exit;
-          end;
+          Result := False;
+          exit;
+        end;
+        if V = IDCANCEL then
+        begin
+          Result := False;
+          exit;
         end;
       end
       else
       begin
-          Result := False;
-          exit;
+        Result := False;
+        exit;
       end;
     end;
   end;
@@ -312,7 +331,45 @@ begin
   Result := True;
 end;
 
+
+function VC2017RedistNeedsInstall(Platform: String): Boolean;
+var 
+  Version: String;
+  KeyLocation: String;
+begin
+  KeyLocation := 'SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\' + Platform;
+  if RegQueryStringValue(HKEY_LOCAL_MACHINE,
+       KeyLocation, 'Version',
+       Version) then
+  begin
+    // Is the installed version at least 14.40? 
+    Log('VC Redist Version check : found ' + Version);
+    Result := (CompareVersion(Version, 'v14.40.33810.0')>0);
+  end
+  else 
+  begin
+    // Not even an old version installed
+    Result := True;
+  end;
+  if (Result) then
+  begin
+    ExtractTemporaryFile('VC_redist.' + Platform + '.exe');
+  end;
+end;
+
 [Run]
+Filename: "{tmp}\VC_redist.x64.exe"; \
+  StatusMsg: "Installing VC++ Runtime"; \
+  Parameters: "/install /passive /norestart"; \
+  Check: VC2017RedistNeedsInstall('x64') and Is64BitInstallMode; \
+  Flags: waituntilterminated
+
+Filename: "{tmp}\VC_redist.x86.exe"; \
+  StatusMsg: "Installing VC++ Runtime"; \
+  Parameters: "/install /passive /norestart"; \
+  Check: VC2017RedistNeedsInstall('x86') and (not Is64BitInstallMode); \
+  Flags: waituntilterminated
+
 Filename: {app}\odalaunch.exe; Description: {cm:LaunchProgram,Odalaunch}; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]

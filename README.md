@@ -64,7 +64,7 @@ On Windows, all libraries are automatically downloaded if not found.  On \*nix/M
 
 Please check [this page][1] for further instructions on how to compile Odamex for your platform.
 
-[1]: https://odamex.net/wiki/How_to_build_from_source
+[1]: https://github.com/odamex/odamex/wiki/Compiling-Odamex
 
 Contributing to the project
 ---------------------------
