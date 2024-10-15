@@ -84,7 +84,7 @@ void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name, co
 void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenuation);
 void SV_SoundTeam (byte channel, const char* name, byte attenuation, int t);
 
-void SV_MidPrint (const char *msg, player_t *p, int msgtime=0);
+void SV_MidPrint (const char *msg, int p, int msgtime=0);
 
 extern std::vector<std::string> wadnames;
 
