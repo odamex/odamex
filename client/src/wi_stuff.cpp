@@ -606,7 +606,7 @@ void WI_drawEL()
 	if (!lnames[1].empty())
 	{
 		// draw level
-		screen->DrawPatchClean(lnames1, (320 - lnames1->width()) / 2, lnames1->height() >= 200 ? WI_TITLEY : y); // MIA TODO: figure out better way of setting y here
+		screen->DrawPatchClean(lnames1, (320 - lnames1->width()) / 2, y);
 	}
 	else
 	{
