@@ -70,6 +70,7 @@ EXTERN_CVAR(g_winlimit)
 
 EXTERN_CVAR(hud_targetnames)
 EXTERN_CVAR(hud_targethealth_debug)
+EXTERN_CVAR(hud_hidespyname)
 EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(hud_timer)
 
@@ -310,7 +311,7 @@ std::string HelpText()
 std::string SpyPlayerName()
 {
 	const player_t& plyr = displayplayer();
-	if (plyr.id == consoleplayer().id)
+	if (plyr.id == consoleplayer().id || hud_hidespyname)
 	{
 		return "";
 	}
