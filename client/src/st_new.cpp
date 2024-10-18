@@ -114,6 +114,7 @@ EXTERN_CVAR(hud_scale)
 EXTERN_CVAR(hud_bigfont)
 EXTERN_CVAR(hud_timer)
 EXTERN_CVAR(hud_speedometer)
+EXTERN_CVAR(hud_weapontext)
 EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(hud_transparency)
 EXTERN_CVAR(hud_anchoring)
@@ -975,10 +976,13 @@ void OdamexHUD() {
 	std::string str;
 	int iy = 4;
 
-	V_SetFont("DIGFONT");
-	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER, hud::Y_BOTTOM, hud::Weapons().c_str(), false);
-	iy += V_LineHeight() + 1;
-	V_SetFont("SMALLFONT");
+	if (::hud_weapontext)
+	{
+		V_SetFont("DIGFONT");
+		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER, hud::Y_BOTTOM, hud::Weapons().c_str(), false);
+		iy += V_LineHeight() + 1;
+		V_SetFont("SMALLFONT");
+	}
 
 	if (::hud_timer)
 	{
