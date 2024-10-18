@@ -635,7 +635,11 @@ static void drawHordeGametype()
 		killColor = CR_GREEN;
 	}
 
-	const int y = R_StatusBarVisible() ? statusBarY() + SCREEN_BORDER : ABOVE_AMMO;
+	int y = R_StatusBarVisible() ? statusBarY() + SCREEN_BORDER : ABOVE_AMMO;
+
+	if (::hud_weapontext)
+		y += V_LineHeight() + 1;
+
 	hud::DrawText(SCREEN_BORDER, y, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 	              hud::X_RIGHT, hud::Y_BOTTOM, waverow.c_str(), CR_GREY);
 	hud::EleBar(SCREEN_BORDER, y + LINE_SPACING, V_StringWidth("WAVE:0/0"), ::hud_scale,
@@ -976,7 +980,7 @@ void OdamexHUD() {
 	if (::hud_weapontext)
 	{
 		V_SetFont("SMALLFONT");
-		hud::DrawText(patch_ax + 8, 28, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_MIDDLE, hud::Weapons().c_str(), false);
+		hud::DrawText(patch_ax + 4, 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, hud::Weapons().c_str(), false);
 	}
 
 	std::string str;
@@ -1027,6 +1031,7 @@ void OdamexHUD() {
 
 	// Special 3 line formatting for match duel
 	int spreadheight, scoreheight, placeheight;
+	int cardheight = 24;
 
 	if (G_IsMatchDuelGame())
 	{
@@ -1039,6 +1044,12 @@ void OdamexHUD() {
 		spreadheight = 24 + V_LineHeight() + 1;
 		scoreheight = 24;
 		placeheight = 0; // No place height drawn if not match duel
+	}
+	if (::hud_weapontext) {
+		spreadheight += V_LineHeight() + 1;
+		scoreheight += V_LineHeight() + 1;
+		placeheight += V_LineHeight() + 1;
+		cardheight += V_LineHeight() + 2;
 	}
 
 	hud::DrawText(text_ax + 4, spreadheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
@@ -1060,7 +1071,7 @@ void OdamexHUD() {
 	if (G_IsCoopGame()) {
 		for (byte i = 0;i < NUMCARDS;i++) {
 			if (plyr->cards[i]) {
-				hud::DrawPatch(patch_ax + 4 + (i * 10), 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+				hud::DrawPatch(patch_ax + 4 + (i * 10), cardheight, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 				               hud::X_RIGHT, hud::Y_BOTTOM,
 				               W_ResolvePatchHandle(keys[i]));
 			}
