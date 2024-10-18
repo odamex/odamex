@@ -114,6 +114,7 @@ EXTERN_CVAR(hud_scale)
 EXTERN_CVAR(hud_bigfont)
 EXTERN_CVAR(hud_timer)
 EXTERN_CVAR(hud_speedometer)
+EXTERN_CVAR(hud_weapontext)
 EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(hud_transparency)
 EXTERN_CVAR(hud_anchoring)
@@ -972,6 +973,12 @@ void OdamexHUD() {
 		ST_DrawNumRight(I_GetSurfaceWidth() - num_ax - 24 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
 
+	if (::hud_weapontext)
+	{
+		V_SetFont("SMALLFONT");
+		hud::DrawText(patch_ax + 4, 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, hud::Weapons().c_str(), false);
+	}
+
 	std::string str;
 	int iy = 4;
 
@@ -1020,6 +1027,7 @@ void OdamexHUD() {
 
 	// Special 3 line formatting for match duel
 	int spreadheight, scoreheight, placeheight;
+	int cardheight = 24;
 
 	if (G_IsMatchDuelGame())
 	{
@@ -1032,6 +1040,12 @@ void OdamexHUD() {
 		spreadheight = 24 + V_LineHeight() + 1;
 		scoreheight = 24;
 		placeheight = 0; // No place height drawn if not match duel
+	}
+	if (::hud_weapontext) {
+		spreadheight += V_LineHeight() + 1;
+		scoreheight += V_LineHeight() + 1;
+		placeheight += V_LineHeight() + 1;
+		cardheight += V_LineHeight() + 2;
 	}
 
 	hud::DrawText(text_ax + 4, spreadheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
@@ -1053,7 +1067,7 @@ void OdamexHUD() {
 	if (G_IsCoopGame()) {
 		for (byte i = 0;i < NUMCARDS;i++) {
 			if (plyr->cards[i]) {
-				hud::DrawPatch(patch_ax + 4 + (i * 10), 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+				hud::DrawPatch(patch_ax + 4 + (i * 10), cardheight, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 				               hud::X_RIGHT, hud::Y_BOTTOM,
 				               W_ResolvePatchHandle(keys[i]));
 			}
