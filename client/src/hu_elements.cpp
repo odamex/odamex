@@ -396,7 +396,7 @@ std::string Weapons()
 {
 	const player_t& plyr = displayplayer();
 	std::ostringstream buffer;
-	buffer << TEXTCOLOR_WHITE "WPN" TEXTCOLOR_GREEN;
+	buffer << TEXTCOLOR_WHITE "W" TEXTCOLOR_GREEN;
 	for (int i = 0; i < NUMWEAPONS; ++i)
 	{
 		if (i == 0 && plyr.powers[pw_strength] > 0)
