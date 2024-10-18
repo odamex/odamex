@@ -551,6 +551,8 @@ CVAR(			hud_timer, "1", "Show the HUD timer:\n// 0: No Timer\n// 1: Count-down T
 
 CVAR(hud_speedometer, "0", "Show the HUD speedometer", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(hud_weapontext, "0", "Show the HUD weapon text", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR_RANGE(		hud_transparency, "1.0", "HUD transparency",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
