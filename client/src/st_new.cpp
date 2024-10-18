@@ -973,16 +973,14 @@ void OdamexHUD() {
 		ST_DrawNumRight(I_GetSurfaceWidth() - num_ax - 24 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
 
-	std::string str;
-	int iy = 4;
-
 	if (::hud_weapontext)
 	{
-		V_SetFont("DIGFONT");
-		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER, hud::Y_BOTTOM, hud::Weapons().c_str(), false);
-		iy += V_LineHeight() + 1;
 		V_SetFont("SMALLFONT");
+		hud::DrawText(patch_ax + 8, 28, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_MIDDLE, hud::Weapons().c_str(), false);
 	}
+
+	std::string str;
+	int iy = 4;
 
 	if (::hud_timer)
 	{
