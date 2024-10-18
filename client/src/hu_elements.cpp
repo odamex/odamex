@@ -392,6 +392,21 @@ std::string Timer()
 	return str;
 }
 
+std::string Weapons()
+{
+	const player_t& plyr = displayplayer();
+	std::ostringstream buffer;
+	buffer << TEXTCOLOR_WHITE "WPN" TEXTCOLOR_GREEN;
+	for (int i = 0; i < NUMWEAPONS; ++i)
+	{
+		if (i == 0 && plyr.powers[pw_strength] > 0)
+			buffer << TEXTCOLOR_LIGHTBLUE " 1" TEXTCOLOR_GREEN;
+		else if (plyr.weaponowned[i])
+			buffer << " " << i + 1;
+	}
+	return buffer.str();
+}
+
 std::string IntermissionTimer()
 {
 	if (gamestate != GS_INTERMISSION)

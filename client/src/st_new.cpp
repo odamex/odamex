@@ -975,6 +975,11 @@ void OdamexHUD() {
 	std::string str;
 	int iy = 4;
 
+	V_SetFont("DIGFONT");
+	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER, hud::Y_BOTTOM, hud::Weapons().c_str(), false);
+	iy += V_LineHeight() + 1;
+	V_SetFont("SMALLFONT");
+
 	if (::hud_timer)
 	{
 		if (::hud_bigfont)
