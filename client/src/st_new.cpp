@@ -1027,6 +1027,7 @@ void OdamexHUD() {
 
 	// Special 3 line formatting for match duel
 	int spreadheight, scoreheight, placeheight;
+	int cardheight = 24;
 
 	if (G_IsMatchDuelGame())
 	{
@@ -1044,6 +1045,7 @@ void OdamexHUD() {
 		spreadheight += V_LineHeight() + 1;
 		scoreheight += V_LineHeight() + 1;
 		placeheight += V_LineHeight() + 1;
+		cardheight += V_LineHeight() + 2;
 	}
 
 	hud::DrawText(text_ax + 4, spreadheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
@@ -1065,7 +1067,7 @@ void OdamexHUD() {
 	if (G_IsCoopGame()) {
 		for (byte i = 0;i < NUMCARDS;i++) {
 			if (plyr->cards[i]) {
-				hud::DrawPatch(patch_ax + 4 + (i * 10), 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+				hud::DrawPatch(patch_ax + 4 + (i * 10), cardheight, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 				               hud::X_RIGHT, hud::Y_BOTTOM,
 				               W_ResolvePatchHandle(keys[i]));
 			}
