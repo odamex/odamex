@@ -976,7 +976,7 @@ void OdamexHUD() {
 	if (::hud_weapontext)
 	{
 		V_SetFont("SMALLFONT");
-		hud::DrawText(patch_ax + 8, 28, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_MIDDLE, hud::Weapons().c_str(), false);
+		hud::DrawText(patch_ax + 4, 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, hud::Weapons().c_str(), false);
 	}
 
 	std::string str;
@@ -1039,6 +1039,11 @@ void OdamexHUD() {
 		spreadheight = 24 + V_LineHeight() + 1;
 		scoreheight = 24;
 		placeheight = 0; // No place height drawn if not match duel
+	}
+	if (::hud_weapontext) {
+		spreadheight += V_LineHeight() + 1;
+		scoreheight += V_LineHeight() + 1;
+		placeheight += V_LineHeight() + 1;
 	}
 
 	hud::DrawText(text_ax + 4, spreadheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
