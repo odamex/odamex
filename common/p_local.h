@@ -47,6 +47,7 @@
 
 // player radius for movement checking
 #define PLAYERRADIUS	16*FRACUNIT
+#define PLAYERRADIUS64	16*FRACUNIT64
 
 // MAXRADIUS is for precalculated sector block boxes
 // the spider demon is larger,
@@ -380,8 +381,8 @@ typedef enum
 	PODOOR_NONE,
 	PODOOR_SLIDE,
 	PODOOR_SWING,
-	
-	NUMTYPES	
+
+	NUMTYPES
 } podoortype_t;
 
 inline FArchive &operator<< (FArchive &arc, podoortype_t type)

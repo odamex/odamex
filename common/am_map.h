@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -88,7 +88,7 @@ typedef struct am_default_colors_s
 	std::string ExitColor;
 } am_default_colors_t;
 
-typedef v2fixed_t mpoint_t;
+typedef v2fixed64_t mpoint_t;
 
 typedef struct
 {
