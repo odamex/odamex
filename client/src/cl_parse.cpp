@@ -64,6 +64,8 @@
 #include "infomap.h"
 #include "cl_replay.h"
 #include "r_interp.h"
+#include "cl_gamestatus.h"
+#include "i_shims.h"
 
 // Extern data from other files.
 
@@ -739,6 +741,8 @@ static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 
 	// if this was our displayplayer, update camera
 	CL_CheckDisplayPlayer();
+
+	OShim::getInstance().Shim_sendStatusUpdate(G_GameStatusUpdate());
 }
 
 //
@@ -1161,6 +1165,8 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	newsnap.setContinuous(false);
 	p->snapshots.clearSnapshots();
 	p->snapshots.addSnapshot(newsnap);
+
+	OShim::getInstance().Shim_sendStatusUpdate(G_GameStatusUpdate());
 }
 
 //
@@ -1434,6 +1440,9 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		if (!p.spectator)
 			p.cheats = msg->cheats();
 	}
+
+	if (p.id == consoleplayer_id)
+		OShim::getInstance().Shim_sendStatusUpdate(G_GameStatusUpdate());
 }
 
 //
@@ -2285,6 +2294,8 @@ static void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos* msg)
 		{
 			Printf(PRINT_HIGH, "You have been removed from the queue.\n");
 		}
+
+		OShim::getInstance().Shim_sendStatusUpdate(G_GameStatusUpdate());
 	}
 
 	player.QueuePosition = queuePos;

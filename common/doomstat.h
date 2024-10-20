@@ -72,6 +72,7 @@ extern BOOL            network_game;
 // Game mode
 EXTERN_CVAR (sv_gametype)
 EXTERN_CVAR (sv_maxplayers)
+EXTERN_CVAR (sv_maxclients)
 
 #define GM_COOP		0.0f
 #define GM_DM		1.0f

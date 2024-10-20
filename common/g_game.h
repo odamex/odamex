@@ -67,6 +67,11 @@ void G_AddViewAngle(int yaw);
 void G_AddViewPitch(int pitch);
 bool G_ShouldIgnoreMouseInput();
 
+std::string G_GetWadMapSummary();
+std::string G_GetWadSummary();
+int G_GetCurrentPlayerCount();
+int G_GetMaxServerPlayerCount();
+
 extern int mapchange;
 
 extern bool timingdemo;

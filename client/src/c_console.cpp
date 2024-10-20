@@ -47,6 +47,8 @@
 #include "cl_download.h"
 #include "g_gametype.h"
 #include "m_fileio.h"
+#include "g_status.h"
+#include "i_shims.h"
 
 #include <list>
 #include <algorithm>
@@ -103,6 +105,8 @@ EXTERN_CVAR(con_notifytime)
 
 EXTERN_CVAR(message_showpickups)
 EXTERN_CVAR(message_showobituaries)
+
+extern time_t instanceLaunchTime;
 
 static unsigned int TickerAt, TickerMax;
 static const char *TickerLabel;
@@ -1597,6 +1601,27 @@ void C_NewModeAdjust()
 	C_AdjustBottom();
 }
 
+const StatusUpdate C_PlayerInConsoleUpdate(void)
+{
+	std::string wadstr = G_GetWadSummary();
+	StatusUpdate update = {};
+
+	update.current_size = 0;
+	update.max_size = 0;
+	update.join_secret = "";
+	update.party_id = "";
+	update.start = instanceLaunchTime;
+	update.end = 0;
+	update.privacy = MatchJoinPrivacy::Private;
+	update.small_image = "";
+	update.small_image_text = "";
+	update.large_image = "odamex_icon_main";
+	update.large_image_text = wadstr;
+	update.details = "In Console";
+	update.state = "Idle";
+
+	return update;
+}
 
 //
 //	C_FullConsole
@@ -1612,6 +1637,8 @@ void C_FullConsole()
 	TabCycleClear();
 
 	C_AdjustBottom();
+
+	OShim::getInstance().Shim_sendStatusUpdate(C_PlayerInConsoleUpdate());
 }
 
 

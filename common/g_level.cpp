@@ -44,6 +44,7 @@
 #include "v_video.h"
 #include "w_wad.h"
 #include "w_ident.h"
+#include "g_status.h"
 
 level_locals_t level;			// info about current level
 
@@ -695,6 +696,89 @@ static void writeDefereds(FArchive &arc, level_pwad_info_t& info)
 {
 	arc.Write(info.mapname.c_str(), 8);
 	arc << info.defered;
+}
+
+std::string G_GetWadMapSummary()
+{
+	if (::wadfiles.empty())
+		return "";
+
+	std::string wadlevelstr = "";
+	StatusUpdate update = {};
+
+	if (::modifiedgame)
+	{
+		for (size_t i = 2; i < wadfiles.size(); i++)
+		{
+			if (i > 2)
+				wadlevelstr += ", ";
+			wadlevelstr += wadfiles[i].getBasename();
+		}
+	}
+	else
+	{
+		wadlevelstr = ::wadfiles[1].getBasename();
+	}
+
+	if (level.levelnum > 0)
+	{
+		std::string mapnum;
+		StrFormat(mapnum, "MAP%02d", level.levelnum);
+
+		wadlevelstr += " | " + mapnum + " - " + std::string(level.level_name);
+	}
+	return wadlevelstr;
+}
+
+int G_GetCurrentPlayerCount()
+{
+	if (!multiplayer || demoplayback)
+		return 0;
+
+	int playercount = 0;
+
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+			if (it->ingame() && it->spectator == false)
+			{
+			    playercount++;
+			}
+	}
+
+	return playercount;
+}
+
+int G_GetMaxServerPlayerCount()
+{
+	if (!multiplayer || demoplayback)
+		return 0;
+
+	return sv_maxplayers.asInt();
+}
+
+std::string G_GetWadSummary()
+{
+	if (::wadfiles.empty())
+		return "";
+
+	std::string wadlevelstr = "";
+	StatusUpdate update = {};
+
+	if (::modifiedgame)
+	{
+		for (size_t i = 2; i < wadfiles.size(); i++)
+		{
+			if (i > 2)
+				wadlevelstr += ", ";
+			wadlevelstr += wadfiles[i].getBasename();
+		}
+	}
+	else
+	{
+		wadlevelstr = ::wadfiles[1].getBasename();
+	}
+
+	return wadlevelstr;
 }
 
 void P_SerializeACSDefereds(FArchive &arc)

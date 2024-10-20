@@ -326,6 +326,9 @@ CVAR(				mute_spectators, "0", "Mute spectators chat.",
 CVAR(				mute_enemies, "0", "Mute enemy players chat.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(				cl_shim, "1", "Determines if the client should launch a shim for interfacing with commercial software (Discord)",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 
 // Maximum number of clients who can connect to the server
 CVAR (sv_maxclients,       "0", "maximum clients who can connect to server", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)

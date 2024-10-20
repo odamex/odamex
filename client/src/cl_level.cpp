@@ -36,6 +36,7 @@
 #include "f_finale.h"
 #include "g_game.h"
 #include "g_levelstate.h"
+#include "g_gametype.h"
 #include "gi.h"
 #include "g_skill.h"
 #include "i_system.h"
@@ -57,6 +58,8 @@
 #include "wi_stuff.h"
 #include "z_zone.h"
 #include "m_wdlstats.h"
+#include "i_shims.h"
+#include "cl_gamestatus.h"
 
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
@@ -71,6 +74,7 @@ EXTERN_CVAR(sv_monstersrespawn)
 EXTERN_CVAR(sv_gravity)
 EXTERN_CVAR(sv_aircontrol)
 EXTERN_CVAR(g_resetinvonexit)
+EXTERN_CVAR(sv_timelimit)
 
 // Start time for timing demos
 dtime_t starttime;
@@ -91,6 +95,7 @@ BOOL savegamerestore;
 
 extern int mousex, mousey, joyforward, joystrafe, joyturn, joylook, Impulse;
 extern BOOL sendpause, sendsave, sendcenterview;
+extern time_t instanceLaunchTime;
 
 
 bool isFast = false;
@@ -184,6 +189,90 @@ void G_DoNewGame (void)
 
 	G_InitNew(d_mapname);
 	gameaction = ga_nothing;
+}
+
+extern std::string defdemoname;
+
+std::string G_GetPlayerState()
+{
+	if (demoplayback)
+	{
+		return "Viewing " + ::defdemoname;
+	}
+
+	if (consoleplayer().spectator)
+	{
+		return "Spectating";
+	}
+
+	if (consoleplayer().QueuePosition > 0)
+	{
+		return "In Queue";
+	}
+
+	if (G_IsLivesGame() && consoleplayer().lives == 0)
+	{
+		return "Dead";
+	}
+
+	return "In Game";
+}
+
+int64_t G_GetRoundStartTime()
+{
+	if (!multiplayer || demoplayback || sv_timelimit <= 0 ||
+	    ::levelstate.getState() == LevelState::WARMUP ||
+	    ::levelstate.getState() == LevelState::WARMUP_COUNTDOWN ||
+	    ::levelstate.getState() == LevelState::WARMUP_FORCED_COUNTDOWN)
+		return instanceLaunchTime;
+
+	return static_cast<int64_t>(std::time(0)) - (::level.time / TICRATE);
+}
+
+int64_t G_GetRoundEndTime()
+{
+	if (!multiplayer || demoplayback || sv_timelimit <= 0 ||
+	    ::levelstate.getState() == LevelState::WARMUP ||
+	    ::levelstate.getState() == LevelState::WARMUP_COUNTDOWN ||
+	    ::levelstate.getState() == LevelState::WARMUP_FORCED_COUNTDOWN)
+		return 0;
+
+	int64_t time = 
+		static_cast<int64_t>(std::time(0)) - 
+		(::level.time / TICRATE) + 
+		(G_GetEndingTic() / TICRATE);
+
+	return time;
+}
+
+const StatusUpdate G_GameStatusUpdate(void)
+{
+	StatusUpdate update = {};
+	std::string wadlevelstr = G_GetWadMapSummary();
+	std::string mode = G_GetGameMode();
+	std::string state = G_GetPlayerState();
+	std::string stats = "";
+
+	if (state == "In Game" || state == "Dead")
+	{
+		stats = G_GetPlayerStatLineForMode();
+	}
+
+	update.current_size = G_GetCurrentPlayerCount();
+	update.max_size = G_GetMaxServerPlayerCount();
+	update.join_secret = "";
+	update.party_id = "";
+	update.start = G_GetRoundStartTime();
+	update.end = G_GetRoundEndTime();
+	update.privacy = MatchJoinPrivacy::Private;
+	update.small_image = G_GetSmallIconForMode();
+	update.small_image_text = stats; // X Kills / X Damage [[/ X Other Stats],[]...]
+	update.large_image = G_GetMainIconForMode();
+	update.large_image_text = wadlevelstr; // WAD, WAD | MAPXX - Map Name
+	update.details = mode + G_GetScoreForModes();
+	update.state = G_GetPlayerState();
+
+	return update;
 }
 
 void G_InitNew (const char *mapname)
@@ -695,6 +784,8 @@ void G_DoLoadLevel (int position)
 	::levelstate.reset();
 
 	C_FlushDisplay ();
+
+	OShim::getInstance().Shim_sendStatusUpdate(G_GameStatusUpdate());
 }
 
 //

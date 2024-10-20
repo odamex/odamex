@@ -876,6 +876,7 @@ void P_MovePlayer (player_t *player);
 void P_CalcHeight (player_t *player);
 void P_DeathThink (player_t *player);
 void CL_SimulateWorld();
+
 //
 // G_Ticker
 // Make ticcmd_ts for the players.
@@ -1878,7 +1879,6 @@ BEGIN_COMMAND(streamdemo)
 }
 END_COMMAND(streamdemo)
 
-
 //
 // G_DoPlayDemo
 //
@@ -2054,7 +2054,6 @@ void G_DoPlayDemo(bool justStreamInput)
 
 		if (!justStreamInput)
 			G_InitNew(mapname);
-
 	}
 	else
 	{

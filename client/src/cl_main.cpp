@@ -64,6 +64,7 @@
 #include "hu_stuff.h"
 #include "p_acs.h"
 #include "i_input.h"
+#include "i_shims.h"
 
 #include "g_gametype.h"
 #include "cl_parse.h"
@@ -162,6 +163,8 @@ EXTERN_CVAR (cl_autoaim)
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_serverdownload)
 EXTERN_CVAR (cl_forcedownload)
+
+EXTERN_CVAR(cl_shim)
 
 // [SL] Force enemies to have the specified color
 EXTERN_CVAR (r_forceenemycolor)
@@ -633,6 +636,10 @@ void CL_StepTics(unsigned int count)
 		Maplist_Runtic();
 
 		OInterpolation::getInstance().ticGameInterpolation();
+		if (cl_shim)
+		{
+			OShim::getInstance().Shim_tick();
+		}
 
 		G_Ticker ();
 		gametic++;
@@ -649,6 +656,8 @@ void CL_StepTics(unsigned int count)
 void CL_DisplayTics()
 {
 	I_GetEvents(true);
+	if (cl_shim)
+		I_ProcessShim();
 	D_Display();
 }
 

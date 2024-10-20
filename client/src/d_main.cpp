@@ -84,6 +84,8 @@
 #include "g_horde.h"
 #include "w_ident.h"
 #include "gui_boot.h"
+#include "g_status.h"
+#include "i_shims.h"
 
 #ifdef GEKKO
 #include "i_wii.h"
@@ -107,10 +109,11 @@ extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
+time_t instanceLaunchTime;
+
 BOOL devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 static bool wiping_screen = false;
-
 OLumpName startmap;
 BOOL autostart;
 BOOL advancedemo;
@@ -440,6 +443,28 @@ void D_PageDrawer()
 	}
 }
 
+const StatusUpdate D_PlayerInMainMenuUpdate(void)
+{
+	std::string wadstr = G_GetWadSummary();
+	StatusUpdate update = {};
+
+	update.current_size = 0;
+	update.max_size = 0;
+	update.join_secret = "";
+	update.party_id = "";
+	update.start = instanceLaunchTime;
+	update.end = 0;
+	update.privacy = MatchJoinPrivacy::Private;
+	update.small_image = "";
+	update.small_image_text = "";
+	update.large_image = "odamex_icon_main";
+	update.large_image_text = wadstr;
+	update.details = "In Main Menu";
+	update.state = "Idle";
+
+	return update;
+}
+
 //
 // D_AdvanceDemo
 // Called after each demo or intro demosequence finishes
@@ -568,6 +593,8 @@ void D_DoAdvanceDemo (void)
 			canvas->DrawPatch(patch, 0, 0);
 			page_surface->unlock();
 		}
+
+		OShim::getInstance().Shim_sendStatusUpdate(D_PlayerInMainMenuUpdate());
 	}
 }
 
@@ -875,12 +902,14 @@ void D_DoomMain()
 	atterm(I_ShutdownHardware);
 	I_Init();
 	I_InitInput();
+	I_InitShim();
 
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
 	atterm(D_Shutdown);
 	D_Init();
 
 	atterm(I_Endoom);
+	atterm(I_ShutdownShim);
 
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks();
@@ -1076,6 +1105,7 @@ void D_DoomMain()
 			AddCommandString("menu_main");
     }
 
+	instanceLaunchTime = std::time(0);
 	D_DoomLoop();		// never returns
 }
 
