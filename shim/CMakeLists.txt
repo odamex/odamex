@@ -32,12 +32,14 @@ file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/discord")
 # Add Discord SDK Library
 add_library(dsdk_lib_import SHARED IMPORTED)
 
+string(TOLOWER "${ODAMEX_TARGET_ARCH}" arch_lower) # Upper case in Windows but lowercase on Linux 
+
 # Set library target version
-if(ODAMEX_TARGET_ARCH STREQUAL "AMD64")
-set(DISCORD_ARCH "x86_64")
-elseif(ODAMEX_TARGET_ARCH STREQUAL "I386")
+if(arch_lower STREQUAL "i386" OR CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
 set(DISCORD_ARCH "x86")
-elseif(ODAMEX_TARGET_ARCH STREQUAL "ARM")
+elseif(arch_lower STREQUAL "amd64")
+set(DISCORD_ARCH "x86_64")
+elseif(arch_lower STREQUAL "arm")
 set(DISCORD_ARCH "aarch64")
 else()
 message(FATAL_ERROR "Cannot compile shim on this architecture.")

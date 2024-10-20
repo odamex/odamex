@@ -62,6 +62,7 @@ OShim::OShim()
 
 	backoff = false;
 	lastWriteTime = 0;
+	lastHelloTime = 0;
 
 #ifdef _WIN32
 	shimPid = {0, 0, 0, 0};
@@ -90,15 +91,18 @@ void OShim::Shim_tick(void)
 	time_t curtime = std::time(0);
 	time_t timediff = curtime - lastWriteTime;
 
-	if (timediff > 0 && timediff % 5 == 0)
+	if (timediff <= 0)
+		return;
+
+	if (timediff % 5 == 0 && lastHelloTime != curtime)
 	{
 		// Every 5+ seconds of no communication, send a hello
 		writeHello(PParentWrite);
 	}
 
-	if (timediff > 0 && timediff % 45 == 0)
+	if (timediff % 45 == 0)
 	{
-		// On the 45th second of the minute,
+		// After 45 seconds of no communication,
 		// We can assume the shim is no longer active.
 		// Relaunch it, the shim this interacts with
 		// SHOULD self terminate
@@ -158,6 +162,7 @@ int OShim::writeBye(PipeType fd)
 int OShim::writeHello(PipeType fd)
 {
 	//Printf(PRINT_HIGH, "I_Shim: Sending SHIMCMD_HELLO() to shim.\n");
+	lastHelloTime = std::time(0);
 	return write1ByteCmd(fd, SHIMCMD_HELLO);
 }
 

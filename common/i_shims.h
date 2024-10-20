@@ -110,6 +110,9 @@ class OShim
 	// Every 5 seconds, send a hello
 	time_t lastWriteTime;
 
+	// Last time we sent a hello
+	time_t lastHelloTime;
+
 	// Current PID of the shim launched if detected in the same directory
 	ProcessType shimPid;
 
