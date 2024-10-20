@@ -18,71 +18,71 @@ void A_Ambient(AActor*);
 // reserved odamex states
 state_t odastates[] = {
     // ZDoom/Odamex stuff starts here
-    {SPR_GIB0, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB0
-    {SPR_GIB1, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB1
-    {SPR_GIB2, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB2
-    {SPR_GIB3, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB3
-    {SPR_GIB4, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB4
-    {SPR_GIB5, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB5
-    {SPR_GIB6, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB6
-    {SPR_GIB7, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB7
-    {SPR_TROO, 0, 1, A_Ambient, S_AMBIENTSOUND, 0, 0}, // S_AMBIENTSOUND
-    {SPR_UNKN, 0, -1, NULL, S_NULL, 0, 0},             // S_UNKNOWNTHING
+    {S_GIB0, SPR_GIB0, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB0
+    {S_GIB1, SPR_GIB1, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB1
+    {S_GIB2, SPR_GIB2, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB2
+    {S_GIB3, SPR_GIB3, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB3
+    {S_GIB4, SPR_GIB4, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB4
+    {S_GIB5, SPR_GIB5, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB5
+    {S_GIB6, SPR_GIB6, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB6
+    {S_GIB7, SPR_GIB7, 0, -1, NULL, S_NULL, 0, 0},             // S_GIB7
+    {S_AMBIENTSOUND, SPR_TROO, 0, 1, A_Ambient, S_AMBIENTSOUND, 0, 0}, // S_AMBIENTSOUND
+    {S_UNKNOWNTHING, SPR_UNKN, 0, -1, NULL, S_NULL, 0, 0},             // S_UNKNOWNTHING
 
     //	[Toke - CTF]
-    {SPR_BSOK, 0, -1, NULL, S_NULL, 0, 0},     // Blue Socket
-    {SPR_RSOK, 0, -1, NULL, S_NULL, 0, 0},     // Red Socket
-    {SPR_BFLG, 32768, 4, NULL, S_BFLG2, 0, 0}, // BLUE Flag Animation
-    {SPR_BFLG, 32769, 4, NULL, S_BFLG3, 0, 0},
-    {SPR_BFLG, 32770, 4, NULL, S_BFLG4, 0, 0},
-    {SPR_BFLG, 32771, 4, NULL, S_BFLG5, 0, 0},
-    {SPR_BFLG, 32772, 4, NULL, S_BFLG6, 0, 0},
-    {SPR_BFLG, 32773, 4, NULL, S_BFLG7, 0, 0},
-    {SPR_BFLG, 32774, 4, NULL, S_BFLG8, 0, 0},
-    {SPR_BFLG, 32775, 4, NULL, S_BFLG, 0, 0},
-    {SPR_RFLG, 32768, 4, NULL, S_RFLG2, 0, 0}, // RED Flag Animation
-    {SPR_RFLG, 32769, 4, NULL, S_RFLG3, 0, 0},
-    {SPR_RFLG, 32770, 4, NULL, S_RFLG4, 0, 0},
-    {SPR_RFLG, 32771, 4, NULL, S_RFLG5, 0, 0},
-    {SPR_RFLG, 32772, 4, NULL, S_RFLG6, 0, 0},
-    {SPR_RFLG, 32773, 4, NULL, S_RFLG7, 0, 0},
-    {SPR_RFLG, 32774, 4, NULL, S_RFLG8, 0, 0},
-    {SPR_RFLG, 32775, 4, NULL, S_RFLG, 0, 0},
-    {SPR_BDWN, 0, -1, NULL, S_NULL, 0, 0}, // Blue Dropped Flag
-    {SPR_RDWN, 0, -1, NULL, S_NULL, 0, 0}, // Red Dropped Flag
-    {SPR_BCAR, 0, -1, NULL, S_NULL, 0, 0}, // Blue Dropped Flag
-    {SPR_RCAR, 0, -1, NULL, S_NULL, 0, 0}, // Red Dropped Flag
+    {S_BSOK, SPR_BSOK, 0, -1, NULL, S_NULL, 0, 0},     // Blue Socket
+    {S_RSOK, SPR_RSOK, 0, -1, NULL, S_NULL, 0, 0},     // Red Socket
+    {S_BFLG, SPR_BFLG, 32768, 4, NULL, S_BFLG2, 0, 0}, // BLUE Flag Animation; S_BFLG
+    {S_BFLG2, SPR_BFLG, 32769, 4, NULL, S_BFLG3, 0, 0}, // S_BFLG2
+    {S_BFLG3, SPR_BFLG, 32770, 4, NULL, S_BFLG4, 0, 0}, // S_BFLG3
+    {S_BFLG4, SPR_BFLG, 32771, 4, NULL, S_BFLG5, 0, 0}, // S_BFLG4
+    {S_BFLG5, SPR_BFLG, 32772, 4, NULL, S_BFLG6, 0, 0}, // S_BFLG5
+    {S_BFLG6, SPR_BFLG, 32773, 4, NULL, S_BFLG7, 0, 0}, // S_BFLG6
+    {S_BFLG7, SPR_BFLG, 32774, 4, NULL, S_BFLG8, 0, 0}, // S_BFLG7
+    {S_BFLG8, SPR_BFLG, 32775, 4, NULL, S_BFLG, 0, 0}, // S_BFLG8
+    {S_RFLG, SPR_RFLG, 32768, 4, NULL, S_RFLG2, 0, 0}, // RED Flag Animation; S_RFLG
+    {S_RFLG2, SPR_RFLG, 32769, 4, NULL, S_RFLG3, 0, 0}, // S_RFLG2
+    {S_RFLG3, SPR_RFLG, 32770, 4, NULL, S_RFLG4, 0, 0}, // S_RFLG3
+    {S_RFLG4, SPR_RFLG, 32771, 4, NULL, S_RFLG5, 0, 0}, // S_RFLG4
+    {S_RFLG5, SPR_RFLG, 32772, 4, NULL, S_RFLG6, 0, 0}, // S_RFLG5
+    {S_RFLG6, SPR_RFLG, 32773, 4, NULL, S_RFLG7, 0, 0}, // S_RFLG6
+    {S_RFLG7, SPR_RFLG, 32774, 4, NULL, S_RFLG8, 0, 0}, // S_RFLG7
+    {S_RFLG8, SPR_RFLG, 32775, 4, NULL, S_RFLG, 0, 0}, // S_RFLG8
+    {S_BDWN, SPR_BDWN, 0, -1, NULL, S_NULL, 0, 0}, // Blue Dropped Flag; S_BDWN
+    {S_RDWN, SPR_RDWN, 0, -1, NULL, S_NULL, 0, 0}, // Red Dropped Flag; S_RDWN
+    {S_BCAR, SPR_BCAR, 0, -1, NULL, S_NULL, 0, 0}, // Blue Dropped Flag; S_BCAR
+    {S_RCAR, SPR_RCAR, 0, -1, NULL, S_NULL, 0, 0}, // Red Dropped Flag; S_RCAR
 
-    {SPR_GSOK, 0, -1, NULL, S_NULL, 0, 0},     // S_GSOK,
-    {SPR_GFLG, 32768, 4, NULL, S_GFLG2, 0, 0}, // BLUE Flag Animation
-    {SPR_GFLG, 32769, 4, NULL, S_GFLG3, 0, 0},
-    {SPR_GFLG, 32770, 4, NULL, S_GFLG4, 0, 0},
-    {SPR_GFLG, 32771, 4, NULL, S_GFLG5, 0, 0},
-    {SPR_GFLG, 32772, 4, NULL, S_GFLG6, 0, 0},
-    {SPR_GFLG, 32773, 4, NULL, S_GFLG7, 0, 0},
-    {SPR_GFLG, 32774, 4, NULL, S_GFLG8, 0, 0},
-    {SPR_GFLG, 32775, 4, NULL, S_GFLG, 0, 0},
-    {SPR_GDWN, 0, -1, NULL, S_NULL, 0, 0}, // S_GDWN,
-    {SPR_GCAR, 0, -1, NULL, S_NULL, 0, 0}, // S_GCAR,
+    {S_GSOK, SPR_GSOK, 0, -1, NULL, S_NULL, 0, 0},     // S_GSOK,
+    {S_GFLG, SPR_GFLG, 32768, 4, NULL, S_GFLG2, 0, 0}, // Green Flag Animation; S_GFLG
+    {S_GFLG2, SPR_GFLG, 32769, 4, NULL, S_GFLG3, 0, 0}, // S_GFLG2
+    {S_GFLG3, SPR_GFLG, 32770, 4, NULL, S_GFLG4, 0, 0}, // S_GFLG3
+    {S_GFLG4, SPR_GFLG, 32771, 4, NULL, S_GFLG5, 0, 0}, // S_GFLG4
+    {S_GFLG5, SPR_GFLG, 32772, 4, NULL, S_GFLG6, 0, 0}, // S_GFLG5
+    {S_GFLG6, SPR_GFLG, 32773, 4, NULL, S_GFLG7, 0, 0}, // S_GFLG6
+    {S_GFLG7, SPR_GFLG, 32774, 4, NULL, S_GFLG8, 0, 0}, // S_GFLG7
+    {S_GFLG8, SPR_GFLG, 32775, 4, NULL, S_GFLG, 0, 0}, // S_GFLG8
+    {S_GDWN, SPR_GDWN, 0, -1, NULL, S_NULL, 0, 0}, // S_GDWN,
+    {S_GCAR, SPR_GCAR, 0, -1, NULL, S_NULL, 0, 0}, // S_GCAR,
 
-    {SPR_TLGL, 32768, 4, NULL, S_BRIDGE2, 0, 0}, // S_BRIDGE1
-    {SPR_TLGL, 32769, 4, NULL, S_BRIDGE3, 0, 0}, // S_BRIDGE2
-    {SPR_TLGL, 32770, 4, NULL, S_BRIDGE4, 0, 0}, // S_BRIDGE3
-    {SPR_TLGL, 32771, 4, NULL, S_BRIDGE5, 0, 0}, // S_BRIDGE4
-    {SPR_TLGL, 32772, 4, NULL, S_BRIDGE1, 0, 0}, // S_BRIDGE5
+    {S_BRIDGE1, SPR_TLGL, 32768, 4, NULL, S_BRIDGE2, 0, 0}, // S_BRIDGE1
+    {S_BRIDGE2, SPR_TLGL, 32769, 4, NULL, S_BRIDGE3, 0, 0}, // S_BRIDGE2
+    {S_BRIDGE3, SPR_TLGL, 32770, 4, NULL, S_BRIDGE4, 0, 0}, // S_BRIDGE3
+    {S_BRIDGE4, SPR_TLGL, 32771, 4, NULL, S_BRIDGE5, 0, 0}, // S_BRIDGE4
+    {S_BRIDGE5, SPR_TLGL, 32772, 4, NULL, S_BRIDGE1, 0, 0}, // S_BRIDGE5
 
-    {SPR_WPBF, 0, 1, NULL, S_WPBF2, 0, 0},       // S_WPBF1 - Waypoint Blue Flag
-    {SPR_WPBF, 1, 1, NULL, S_WPBF1, 0, 0},       // S_WPBF2
-    {SPR_WPRF, 0, 1, NULL, S_WPRF2, 0, 0},       // S_WPRF1 - Waypoint Red Flag
-    {SPR_WPRF, 1, 1, NULL, S_WPRF1, 0, 0},       // S_WPRF2
-    {SPR_WPGF, 0, 1, NULL, S_WPGF2, 0, 0},       // S_WPGF1 - Waypoint Green Flag
-    {SPR_WPGF, 1, 1, NULL, S_WPGF1, 0, 0},       // S_WPGF2
+    {S_WPBF1, SPR_WPBF, 0, 1, NULL, S_WPBF2, 0, 0},       // S_WPBF1 - Waypoint Blue Flag
+    {S_WPBF2, SPR_WPBF, 1, 1, NULL, S_WPBF1, 0, 0},       // S_WPBF2
+    {S_WPRF1, SPR_WPRF, 0, 1, NULL, S_WPRF2, 0, 0},       // S_WPRF1 - Waypoint Red Flag
+    {S_WPRF2, SPR_WPRF, 1, 1, NULL, S_WPRF1, 0, 0},       // S_WPRF2
+    {S_WPGF1, SPR_WPGF, 0, 1, NULL, S_WPGF2, 0, 0},       // S_WPGF1 - Waypoint Green Flag
+    {S_WPGF2, SPR_WPGF, 1, 1, NULL, S_WPGF1, 0, 0},       // S_WPGF2
 
-    {SPR_CARE, 0, -1, NULL, S_NULL, 0, 0}, // S_CARE - Horde Care Package
+    {S_CARE, SPR_CARE, 0, -1, NULL, S_NULL, 0, 0}, // S_CARE - Horde Care Package
 
-    {SPR_TNT1, 0, 1, A_Raise, S_NOWEAPON, 0, 0},       // S_NOWEAPONUP
-    {SPR_TNT1, 0, 1, A_Lower, S_NOWEAPON, 0, 0},       // S_NOWEAPONDOWN
-    {SPR_TNT1, 0, 1, A_WeaponReady, S_NOWEAPON, 0, 0}, // S_NOWEAPON
+    {S_NOWEAPONUP, SPR_TNT1, 0, 1, A_Raise, S_NOWEAPON, 0, 0},       // S_NOWEAPONUP
+    {S_NOWEAPONDOWN, SPR_TNT1, 0, 1, A_Lower, S_NOWEAPON, 0, 0},       // S_NOWEAPONDOWN
+    {S_NOWEAPON, SPR_TNT1, 0, 1, A_WeaponReady, S_NOWEAPON, 0, 0}, // S_NOWEAPON
 };
 
 // reserved odamex sprites
@@ -104,7 +104,8 @@ const char* odasprnames[] = {
 // ::MT_CAREPACK - ::MT_GIB0 + 1
 mobjinfo_t odamobjinfo[] = {
     // ------------ odamex things start ------------ //
-    {        // MT_GIB0
+    {        //  MT_GIB0
+	MT_GIB0,
     -1,        // doomednum
     S_GIB0,        // spawnstate
     1000,        // spawnhealth
@@ -135,7 +136,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_GIB0"
     },
 
-    {        // MT_GIB1
+    {        //  MT_GIB1
+	MT_GIB1,
     -1,        // doomednum
     S_GIB1,        // spawnstate
     1000,        // spawnhealth
@@ -166,7 +168,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_GIB1"
     },
 
-    {        // MT_GIB2
+    {        //  MT_GIB2
+	MT_GIB2,
     -1,        // doomednum
     S_GIB2,        // spawnstate
     1000,        // spawnhealth
@@ -197,7 +200,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_GIB2"
     },
 
-    {        // MT_GIB3
+    {        //  MT_GIB3
+	MT_GIB3,
     -1,        // doomednum
     S_GIB3,        // spawnstate
     1000,        // spawnhealth
@@ -228,7 +232,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_GIB3"
     },
 
-    {        // MT_GIB4
+    {        //  MT_GIB4
+	MT_GIB4,
     -1,        // doomednum
     S_GIB4,        // spawnstate
     1000,        // spawnhealth
@@ -259,7 +264,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_GIB4"
     },
 
-    {        // MT_GIB5
+    {        //  MT_GIB5
+	MT_GIB5,
     -1,        // doomednum
     S_GIB5,        // spawnstate
     1000,        // spawnhealth
@@ -290,7 +296,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_GIB5"
     },
 
-    {        // MT_GIB6
+    {        //  MT_GIB6
+	MT_GIB6,
     -1,        // doomednum
     S_GIB6,        // spawnstate
     1000,        // spawnhealth
@@ -321,7 +328,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_GIB6"
     },
 
-    {        // MT_GIB7
+    {        //  MT_GIB7
+	MT_GIB7,
     -1,        // doomednum
     S_GIB7,        // spawnstate
     1000,        // spawnhealth
@@ -352,7 +360,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_GIB7"
     },
 
-    {        // MT_UNKNOWNTHING
+    {        //  MT_UNKNOWNTHING
+	MT_UNKNOWNTHING,
     -1,        // doomednum
     S_UNKNOWNTHING,        // spawnstate
     1000,        // spawnhealth
@@ -384,6 +393,7 @@ mobjinfo_t odamobjinfo[] = {
     },
 
     {        // [RH] MT_PATHNODE -- used for monster patrols
+    MT_PATHNODE,
     9024,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -415,6 +425,7 @@ mobjinfo_t odamobjinfo[] = {
     },
 
     {        // [RH] MT_AMBIENT (subsumes MT_AMBIENT0-MT_AMBIENT63)
+    MT_AMBIENT,
     14065,        // doomednum
     S_AMBIENTSOUND,        // spawnstate
     1000,        // spawnhealth
@@ -446,6 +457,7 @@ mobjinfo_t odamobjinfo[] = {
     },
 
     {        // [RH] MT_TELEPORTMAN2 - Height-sensitive teleport destination
+    	MT_TELEPORTMAN2,
     9044,        // doomednum
     S_NULL,        // spawnstate
     1000,        // spawnhealth
@@ -477,6 +489,7 @@ mobjinfo_t odamobjinfo[] = {
     },
 
     {        // [RH] MT_CAMERA
+    	MT_CAMERA,
     9025,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -508,6 +521,7 @@ mobjinfo_t odamobjinfo[] = {
     },
 
     {        // [RH] MT_SPARK
+    	MT_SPARK,
     9026,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -539,6 +553,7 @@ mobjinfo_t odamobjinfo[] = {
     },
 
     {        // [RH] MT_FOUNTAIN
+    	MT_FOUNTAIN,
     -1,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -569,7 +584,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_FOUNTAIN"
     },
 
-    {        // MT_NODE   //Added by MC.
+    {        //  MT_NODE   //Added by MC.
+	MT_NODE,   //Added by MC.,
     786,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -600,7 +616,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_NODE   //Added by MC."
     },
 
-    {        // MT_WATERZONE
+    {        //  MT_WATERZONE
+	MT_WATERZONE,
     9045,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -631,7 +648,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_WATERZONE"
     },
 
-    {        // MT_SECRETTRIGGER
+    {        //  MT_SECRETTRIGGER
+	MT_SECRETTRIGGER,
     9046,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -663,7 +681,8 @@ mobjinfo_t odamobjinfo[] = {
     },
 
             // [Toke - CTF] Blue Socket
-    {        // MT_BSOK
+    {        //  MT_BSOK
+	MT_BSOK,
     5130,        // doomednum
     S_BSOK,        // spawnstate
     1000,        // spawnhealth
@@ -695,7 +714,8 @@ mobjinfo_t odamobjinfo[] = {
     },
     
             // [Toke - CTF] Red Socket
-    {        // MT_RSOK
+    {        //  MT_RSOK
+	MT_RSOK,
     5131,        // doomednum
     S_RSOK,        // spawnstate
     1000,        // spawnhealth
@@ -730,7 +750,8 @@ mobjinfo_t odamobjinfo[] = {
 
 
             // [Toke - CTF] Blue Flag
-    {        // MT_BFLG
+    {        //  MT_BFLG
+	MT_BFLG,
     -1,        // doomednum
     S_BFLG,        // spawnstate
     1000,        // spawnhealth
@@ -762,7 +783,8 @@ mobjinfo_t odamobjinfo[] = {
     },
 
             // [Toke - CTF] Red Flag
-    {        // MT_RFLG
+    {        //  MT_RFLG
+	MT_RFLG,
     -1,        // doomednum
     S_RFLG,        // spawnstate
     1000,        // spawnhealth
@@ -794,7 +816,8 @@ mobjinfo_t odamobjinfo[] = {
     },
 
             // [Toke - CTF] Blue Dropped Flag
-    {        // MT_BDWN
+    {        //  MT_BDWN
+	MT_BDWN,
     -1,        // doomednum
     S_BDWN,        // spawnstate
     1000,        // spawnhealth
@@ -826,7 +849,8 @@ mobjinfo_t odamobjinfo[] = {
     },
 
             // [Toke - CTF] Red Dropped Flag
-    {        // MT_RDWN
+    {        //  MT_RDWN
+	MT_RDWN,
     -1,        // doomednum
     S_RDWN,        // spawnstate
     1000,        // spawnhealth
@@ -858,7 +882,8 @@ mobjinfo_t odamobjinfo[] = {
     },
 
             // [Toke - CTF] Blue Carrying Flag
-    {        // MT_BCAR
+    {        //  MT_BCAR
+	MT_BCAR,
     -1,        // doomednum
     S_BCAR,        // spawnstate
     1000,        // spawnhealth
@@ -890,7 +915,8 @@ mobjinfo_t odamobjinfo[] = {
     },
 
             // [Toke - CTF] Red Carrying Flag
-    {        // MT_RCAR
+    {        //  MT_RCAR
+	MT_RCAR,
     -1,        // doomednum
     S_RCAR,        // spawnstate
     1000,        // spawnhealth
@@ -921,7 +947,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_RCAR"
     },
 
-    {        // MT_BRIDGE
+    {        //  MT_BRIDGE
+	MT_BRIDGE,
     118,        // doomednum
     S_BRIDGE1,        // spawnstate
     1000,        // spawnhealth
@@ -952,7 +979,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_BRIDGE"
     },
 
-    {        // MT_MAPSPOT
+    {        //  MT_MAPSPOT
+	MT_MAPSPOT,
     9001,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -983,7 +1011,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_MAPSPOT"
     },
 
-    {        // MT_MAPSPOTGRAV
+    {        //  MT_MAPSPOTGRAVITY
+	MT_MAPSPOTGRAVITY,
     9013,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1014,7 +1043,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_MAPSPOTGRAV"
     },
 
-    {        // MT_BRIDGE32
+    {        //  MT_BRIDGE32
+	MT_BRIDGE32,
     5061,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1045,7 +1075,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_BRIDGE32"
     },
     
-    {        // MT_BRIDGE16
+    {        //  MT_BRIDGE16
+	MT_BRIDGE16,
     5064,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1076,7 +1107,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_BRIDGE16"
     },
 
-    {        // MT_BRIDGE8
+    {        //  MT_BRIDGE8
+	MT_BRIDGE8,
     5065,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1107,7 +1139,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_BRIDGE8"
     },
 
-    {        // MT_ZDOOMBRIDGE
+    {        //  MT_ZDOOMBRIDGE
+	MT_ZDOOMBRIDGE,
     9990,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1138,7 +1171,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_ZDOOMBRIDGE"
     },
 
-    {        // MT_SECACTENTER
+    {        //  MT_SECACTENTER
+	MT_SECACTENTER,
     9998,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1169,7 +1203,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_SECACTENTER"
     },
 
-    {        // MT_SECACTEXIT
+    {        //  MT_SECACTEXIT
+	MT_SECACTEXIT,
     9997,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1200,7 +1235,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_SECACTEXIT"
     },
 
-    {        // MT_SECACTHITFLOOR
+    {        //  MT_SECACTHITFLOOR
+	MT_SECACTHITFLOOR,
     9999,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1231,7 +1267,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_SECACTHITFLOOR"
     },
 
-    {        // MT_SECACTHITCEIL
+    {        //  MT_SECACTHITCEIL
+	MT_SECACTHITCEIL,
     9996,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1262,7 +1299,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_SECACTHITCEIL"
     },
 
-    {        // MT_SECACTUSE
+    {        //  MT_SECACTUSE
+	MT_SECACTUSE,
     9995,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1293,7 +1331,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_SECACTUSE"
     },
 
-    {        // MT_SECACTUSEWALL
+    {        //  MT_SECACTUSEWALL
+	MT_SECACTUSEWALL,
     9994,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1324,7 +1363,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_SECACTUSEWALL"
     },
 
-    {        // MT_SECACTEYESDIVE
+    {        //  MT_SECACTEYESDIVE
+	MT_SECACTEYESDIVE,
     9993,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1355,7 +1395,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_SECACTEYESDIVE"
     },
 
-    {        // MT_SECACTEYESSURFACE
+    {        //  MT_SECACTEYESSURFACE
+	MT_SECACTEYESSURFACE,
     9992,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1386,7 +1427,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_SECACTEYESSURFACE"
     },
 
-    {        // MT_SECACTEYESBELOWC
+    {        //  MT_SECACTEYESBELOWC
+	MT_SECACTEYESBELOWC,
     9983,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1417,7 +1459,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_SECACTEYESBELOWC"
     },
 
-    {        // MT_SECACTEYESABOVEC
+    {        //  MT_SECACTEYESABOVEC
+	MT_SECACTEYESABOVEC,
     9982,        // doomednum
     S_TNT1,        // spawnstate
     1000,        // spawnhealth
@@ -1448,7 +1491,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_SECACTEYESABOVEC"
     },
 
-    {        // MT_GSOK
+    {        //  MT_GSOK
+	MT_GSOK,
     5133,        // doomednum
     S_GSOK,        // spawnstate
     1000,        // spawnhealth
@@ -1479,7 +1523,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_GSOK"
     },
 
-    {        // MT_GFLG
+    {        //  MT_GFLG
+	MT_GFLG,
     -1,        // doomednum
     S_GFLG,        // spawnstate
     1000,        // spawnhealth
@@ -1510,7 +1555,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_GFLG"
     },
 
-    {        // MT_GDWN
+    {        //  MT_GDWN
+	MT_GDWN,
     -1,        // doomednum
     S_GDWN,        // spawnstate
     1000,        // spawnhealth
@@ -1541,7 +1587,8 @@ mobjinfo_t odamobjinfo[] = {
     "MT_GDWN"
     },
 
-    {        // MT_GCAR
+    {        //  MT_GCAR
+	MT_GCAR,
     -1,        // doomednum
     S_GCAR,        // spawnstate
     1000,        // spawnhealth
@@ -1572,6 +1619,7 @@ mobjinfo_t odamobjinfo[] = {
     "MT_GCAR"
     },
     {                  // MT_WPBFLAG
+    	MT_WPBFLAG,
         -1,            // doomednum
         S_WPBF1,       // spawnstate
         1000,          // spawnhealth
@@ -1602,6 +1650,7 @@ mobjinfo_t odamobjinfo[] = {
         "MT_WPBFLAG"
     },
     {                  // MT_WPRFLAG
+    	MT_WPRFLAG,
         -1,            // doomednum
         S_WPRF1,       // spawnstate
         1000,          // spawnhealth
@@ -1632,6 +1681,7 @@ mobjinfo_t odamobjinfo[] = {
         "MT_WPRFLAG"
     },
     {                  // MT_WPGFLAG
+    	MT_WPGFLAG,
         -1,            // doomednum
         S_WPGF1,       // spawnstate
         1000,          // spawnhealth
@@ -1662,6 +1712,7 @@ mobjinfo_t odamobjinfo[] = {
         "MT_WPGFLAG"
     },
     {                   // MT_AVATAR
+    	MT_AVATAR,
         -1,             // doomednum
         S_PLAY,         // spawnstate
         100,            // spawnhealth
@@ -1692,6 +1743,7 @@ mobjinfo_t odamobjinfo[] = {
         "MT_AVATAR"
     },
     {                   // MT_HORDESPAWN
+    	MT_HORDESPAWN,
         -1,             // doomednum
         S_TNT1,         // spawnstate
         100,            // spawnhealth
@@ -1722,6 +1774,7 @@ mobjinfo_t odamobjinfo[] = {
         "MT_HORDESPAWN"
     },
     {               // MT_CAREPACK
+    	MT_CAREPACK,
         -1,             // doomednum
         S_CARE,         // spawnstate
         1000,           // spawnhealth
@@ -1776,7 +1829,9 @@ void D_Initialize_Odamex_Objects()
     // states
 	for (int i = 0; i < size; i++)
     {
-        states.insert(odastates[i], sidx);
+		state_t* state = (state_t*) M_Calloc(1,sizeof(state_t));
+		*state = odastates[i];
+        states.insert(state, sidx);
         sidx = statenum_t(sidx + 1);
     }
 #if defined _DEBUG
@@ -1788,7 +1843,9 @@ void D_Initialize_Odamex_Objects()
     mobjtype_t midx = MT_GIB0;
     for(int i = 0; i < odamobjinfo_size(); i++)
     {
-        mobjinfo.insert(odamobjinfo[i], midx);
+    	mobjinfo_t* mobj = (mobjinfo_t*) M_Calloc(1,sizeof(mobjinfo_t));
+    	*mobj = odamobjinfo[i];
+        mobjinfo.insert(mobj, midx);
         midx = mobjtype_t(midx + 1);
     }
 #if defined _DEBUG

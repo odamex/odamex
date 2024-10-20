@@ -429,11 +429,11 @@ void G_InitNew (const char *mapname)
 
 			for (i = 0; i < ::num_mobjinfo_types(); ++i)
 			{
-				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				if (mobjinfo[i]->altspeed != NO_ALTSPEED)
 				{
-					int swap = mobjinfo[i].speed;
-					mobjinfo[i].speed = mobjinfo[i].altspeed;
-					mobjinfo[i].altspeed = swap;
+					int swap = mobjinfo[i]->speed;
+					mobjinfo[i].speed = mobjinfo[i]->altspeed;
+					mobjinfo[i]->altspeed = swap;
 				}
 			}
 		}
@@ -447,11 +447,11 @@ void G_InitNew (const char *mapname)
 
 			for (i = 0; i < ::num_mobjinfo_types(); ++i)
 			{
-				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				if (mobjinfo[i]->altspeed != NO_ALTSPEED)
 				{
-					int swap = mobjinfo[i].altspeed;
-					mobjinfo[i].altspeed = mobjinfo[i].speed;
-					mobjinfo[i].speed = swap;
+					int swap = mobjinfo[i]->altspeed;
+					mobjinfo[i].altspeed = mobjinfo[i]->speed;
+					mobjinfo[i]->speed = swap;
 				}
 			}
 		}

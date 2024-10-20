@@ -386,7 +386,8 @@ ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 	bool gaveweapon;
 
 	// [RH] Don't get the weapon if no graphics for it
-	state_t *state = states + weaponinfo[weapon].readystate;
+	// state_t* state = states + weaponinfo[weapon].readystate;
+	state_t* state = states[weaponinfo[weapon].readystate];
 	if ((state->frame & FF_FRAMEMASK) >= sprites[state->sprite].numframes)
 	{
 		return IEV_NotEquipped;
@@ -1999,9 +2000,9 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 static bool P_InfightingImmune(AActor* target, AActor* source)
 {
 	return // not default behaviour, and same group
-		mobjinfo[target->type].infighting_group != IG_DEFAULT &&
-		mobjinfo[target->type].infighting_group ==
-		mobjinfo[source->type].infighting_group;
+		mobjinfo[target->type]->infighting_group != IG_DEFAULT &&
+		mobjinfo[target->type]->infighting_group ==
+		mobjinfo[source->type]->infighting_group;
 }
 
 //
@@ -2386,7 +2387,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 			target->target = source->ptr();
 			target->threshold = BASETHRESHOLD;
-			if (target->state == &states[target->info->spawnstate]
+			if (target->state == states[target->info->spawnstate]
 				&& target->info->seestate != S_NULL)
             {
 				P_SetMobjState(target, target->info->seestate);
@@ -2454,7 +2455,7 @@ void P_HealMobj(AActor* mo, int num)
 	}
 	else
 	{
-		int max = mobjinfo[mo->type].spawnhealth;
+		int max = mobjinfo[mo->type]->spawnhealth;
 
 		mo->health += num;
 		if (mo->health > max)

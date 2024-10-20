@@ -11,7 +11,7 @@
 //----------------------------------------------------------------------------------------------
 
 template<>
-inline void DoomObjectContainer<const char*, spritenum_t>::clear()
+inline void DoomObjectContainer<const char*, int32_t>::clear()
 {
 	if (this->container.size() > 0)
 	{
@@ -21,13 +21,14 @@ inline void DoomObjectContainer<const char*, spritenum_t>::clear()
 			M_Free(p);
 		}
 	}
+	// [CMB] TODO: cleanup the lookup table too
 }
 
 //----------------------------------------------------------------------------------------------
 
 // global variables from info.h
 
-DoomObjectContainer<const char*, spritenum_t> sprnames(::NUMSPRITES);
+DoomObjectContainer<const char*> sprnames(::NUMSPRITES);
 size_t num_spritenum_t_types()
 {
 	return sprnames.size();

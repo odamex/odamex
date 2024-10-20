@@ -552,15 +552,15 @@ bool P_ShouldClipPlayer(AActor* projectile, AActor* player)
 static bool P_ProjectileImmune(AActor* target, AActor* source)
 {
 	return ( // PG_GROUPLESS means no immunity, even to own species
-	           mobjinfo[target->type].projectile_group != PG_GROUPLESS ||
+	           mobjinfo[target->type]->projectile_group != PG_GROUPLESS ||
 	           target == source) &&
 	       (( // target type has default behaviour, and things are the same type
-	            mobjinfo[target->type].projectile_group == PG_DEFAULT &&
+	            mobjinfo[target->type]->projectile_group == PG_DEFAULT &&
 	            source->type == target->type) ||
 	        ( // target type has special behaviour, and things have the same group
-	            mobjinfo[target->type].projectile_group != PG_DEFAULT &&
-	            mobjinfo[target->type].projectile_group ==
-	                mobjinfo[source->type].projectile_group));
+	            mobjinfo[target->type]->projectile_group != PG_DEFAULT &&
+	            mobjinfo[target->type]->projectile_group ==
+	                mobjinfo[source->type]->projectile_group));
 }
 
 static BOOL PIT_CheckThing (AActor *thing)
@@ -2373,7 +2373,7 @@ void P_LineAttack (AActor *t1, angle_t angle, fixed_t distance,
 		fixed_t z = shootz + FixedMul (distance, slope);
 		int updown;
 
-		opentop -= mobjinfo[MT_PUFF].height;
+		opentop -= mobjinfo[MT_PUFF]->height;
 		if (z < openbottom) {
 			// hit floor
 			frac = FixedDiv (openbottom - shootz, z - shootz);
@@ -2896,8 +2896,8 @@ CVAR_FUNC_IMPL(sv_splashfactor)
 static bool P_SplashImmune(AActor* target, AActor* spot)
 {
 	return // not default behaviour and same group
-	    mobjinfo[target->type].splash_group != SG_DEFAULT &&
-	    mobjinfo[target->type].splash_group == mobjinfo[spot->type].splash_group;
+	    mobjinfo[target->type]->splash_group != SG_DEFAULT &&
+	    mobjinfo[target->type]->splash_group == mobjinfo[spot->type]->splash_group;
 }
 
 static BOOL PIT_DoomRadiusAttack(AActor* thing)

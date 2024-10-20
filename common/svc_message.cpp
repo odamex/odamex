@@ -42,7 +42,7 @@
 #include "p_unlag.h"
 
 #ifndef STATE_NUM
-#define STATE_NUM(mo) (statenum_t)(mo->state - states)
+#define STATE_NUM(mo) (statenum_t)(mo->state->statenum)
 #endif
 
 /**
@@ -359,7 +359,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 	}
 
 	// denis - check type as that is what the client will be spawning
-	if (mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE)
+	if (mo->flags & MF_MISSILE || mobjinfo[mo->type]->flags & MF_MISSILE)
 	{
 		msg.set_target_netid(mo->target ? mo->target->netid : 0);
 	}
@@ -987,7 +987,7 @@ odaproto::svc::PlayerState SVC_PlayerState(player_t& player)
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
 		pspdef_t* psp = &player.psprites[i];
-		unsigned int state = (statenum_t)(psp->state - states);
+		unsigned int state = (statenum_t)(psp->state->statenum);
 		odaproto::Player_Psp* plpsp = pl->add_psprites();
 		plpsp->set_statenum(state);
 	}
@@ -1319,7 +1319,7 @@ odaproto::svc::MobjState SVC_MobjState(AActor* mo)
 {
 	odaproto::svc::MobjState msg;
 
-	statenum_t mostate = static_cast<statenum_t>((mo->state - states));
+	statenum_t mostate = static_cast<statenum_t>((mo->state->statenum));
 
 	msg.set_netid(mo->netid);
 	msg.set_mostate(mostate);

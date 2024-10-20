@@ -647,13 +647,13 @@ void HordeState::tick()
 			if (spawn == NULL)
 			{
 				Printf(PRINT_WARNING, "%s: Can't find a place to spawn %s.\n",
-				       __FUNCTION__, ::mobjinfo[recipe.type].name);
+				       __FUNCTION__, ::mobjinfo[recipe.type]->name);
 				return;
 			}
 
-			const int hp = ::mobjinfo[recipe.type].spawnhealth * recipe.count;
+			const int hp = ::mobjinfo[recipe.type]->spawnhealth * recipe.count;
 			DPrintf("Spawning %d %s (%d hp) at a %s spawn\n", recipe.count,
-			        ::mobjinfo[recipe.type].name, hp, HordeThingStr(spawn->type));
+			        ::mobjinfo[recipe.type]->name, hp, HordeThingStr(spawn->type));
 
 			AActors mobjs = P_HordeSpawn(*spawn, recipe);
 			ActivateMonsters(mobjs);
@@ -696,7 +696,7 @@ void HordeState::tick()
 			if (spawn == NULL)
 			{
 				Printf(PRINT_WARNING, "%s: Can't find a place to spawn %s.\n",
-				       __FUNCTION__, ::mobjinfo[recipe.type].name);
+				       __FUNCTION__, ::mobjinfo[recipe.type]->name);
 				break;
 			}
 
@@ -755,12 +755,12 @@ void P_AddHealthPool(AActor* mo)
 	// Mark as part of the health pool for cleanup later
 	mo->oflags |= MFO_HEALTHPOOL;
 
-	::g_HordeDirector.addSpawnHealth(::mobjinfo[mo->type].spawnhealth);
+	::g_HordeDirector.addSpawnHealth(::mobjinfo[mo->type]->spawnhealth);
 
 	// Bosses also have health added to a separate pool for display purposes.
 	if (mo->oflags & MFO_BOSSPOOL)
 	{
-		::g_HordeDirector.addBossHealth(::mobjinfo[mo->type].spawnhealth);
+		::g_HordeDirector.addBossHealth(::mobjinfo[mo->type]->spawnhealth);
 	}
 }
 
@@ -773,7 +773,7 @@ void P_RemoveHealthPool(AActor* mo)
 	// Unset the flag - we only get one try.
 	mo->oflags &= ~MFO_HEALTHPOOL;
 
-	::g_HordeDirector.addKilledHealth(::mobjinfo[mo->type].spawnhealth);
+	::g_HordeDirector.addKilledHealth(::mobjinfo[mo->type]->spawnhealth);
 }
 
 void P_AddDamagePool(AActor* mo, const int damage)

@@ -533,7 +533,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 #ifdef RANGECHECK
 	if ( (thing->frame & FF_FRAMEMASK) >= sprdef->numframes )
 	{
-		DPrintf ("R_ProjectSprite: invalid sprite frame %i : %i\n ", thing->sprite, thing->frame);
+		DPrintf ("R_ProjectSprite: thing %d: invalid sprite frame %i : %i\n ", thing->type, thing->sprite, thing->frame);
 		return;
 	}
 #endif

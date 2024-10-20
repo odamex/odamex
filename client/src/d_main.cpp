@@ -769,8 +769,8 @@ void D_DoomMain()
 
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
-	D_Initialize_States(boomstates, ::NUMSTATES, S_NULL);
-    D_Initialize_Mobjinfo(doom_mobjinfo, ::NUMMOBJTYPES, MT_PLAYER);
+	D_Initialize_States(boomstates, ::NUMSTATES);
+    D_Initialize_Mobjinfo(doom_mobjinfo, ::NUMMOBJTYPES);
 	D_Initialize_sprnames(doom_sprnames, ::NUMSPRITES, SPR_TROO);
 	// Initialize all extra frames
 	D_Init_Nightmare_Flags();

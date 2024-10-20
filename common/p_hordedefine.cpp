@@ -221,7 +221,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	for (size_t i = 0; i < define.monsters.size(); i++)
 	{
 		const hordeDefine_t::monster_t& waveMon = define.monsters.at(i);
-		const mobjinfo_t& info = ::mobjinfo[waveMon.mobj];
+		const mobjinfo_t& info = mobjinfo_t(*::mobjinfo[waveMon.mobj]);
 
 		// Boss spawns have to spawn boss things.
 		if (wantBoss && waveMon.monster == hordeDefine_t::RM_NORMAL)
@@ -247,7 +247,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	const hordeDefine_t::monConfig_t* config = &monster->config;
 
 	int outCount = 0;
-	const int health = ::mobjinfo[outType].spawnhealth;
+	const int health = ::mobjinfo[outType]->spawnhealth;
 
 	// Maximum health.
 	int maxHealth = -1;

@@ -124,8 +124,9 @@ static AActors SpawnMonsterGroup(hordeSpawn_t& spawn, const hordeRecipe_t& recip
 {
 	AActors ok;
 
-	const fixed_t rad = ::mobjinfo[recipe.type].radius;
-	const char* name = ::mobjinfo[recipe.type].name;
+	mobjinfo_t& mobj = *::mobjinfo[recipe.type];
+	const fixed_t rad = mobj.radius;
+	const char* name = mobj.name;
 
 	if (count == 4)
 	{
@@ -268,7 +269,7 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 	for (hordeSpawns_t::iterator sit = monsterSpawns.begin(); sit != monsterSpawns.end();
 	     ++sit)
 	{
-		mobjinfo_t& info = ::mobjinfo[recipe.type];
+		mobjinfo_t& info = *::mobjinfo[recipe.type];
 		const bool isFlying = info.flags & (MF_NOGRAVITY | MF_FLOAT);
 
 		if (recipe.isBoss && sit->type != TTYPE_HORDE_BOSS &&
@@ -421,7 +422,7 @@ AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe)
 	// Ensure we only spawn as many monsters as can fit in the spawn.
 	// Snipers must fit in a 64x64 square, big snipers must fit into a 128x128 square,
 	// bosses must fit in a 256x256 square, everything else must fit in a 128x128 square.
-	const int rad = ::mobjinfo[recipe.type].radius >> FRACBITS;
+	const int rad = ::mobjinfo[recipe.type]->radius >> FRACBITS;
 	int maxGroupSize = 4;
 	if (spawn.type == TTYPE_HORDE_SMALLSNIPER || spawn.type == TTYPE_HORDE_SNIPER ||
 	    (spawn.type == TTYPE_HORDE_BOSS && rad * 2 > 128) || rad * 2 > 64)
@@ -430,7 +431,7 @@ AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe)
 		maxGroupSize = 1;
 	}
 
-	// Printf("Spawning %d of type %s\n", recipe.count, ::mobjinfo[recipe.type].name);
+	// Printf("Spawning %d of type %s\n", recipe.count, ::mobjinfo[recipe.type]->name);
 
 	// Place monsters in spawn points in order of approx distance.
 	for (SpawnPointWeights::iterator it = weights.begin(); it != weights.end(); ++it)

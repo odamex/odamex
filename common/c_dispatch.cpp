@@ -978,7 +978,7 @@ BEGIN_COMMAND (dumpactors)
 	Printf (PRINT_HIGH, "Actors at level.time == %d:\n", level.time);
 	while ( (mo = iterator.Next ()) )
 	{
-		Printf (PRINT_HIGH, "%s (%x, %x, %x | %x) state: %" PRIdSIZE " tics: %d\n", mobjinfo[mo->type].name, mo->x, mo->y, mo->z, mo->angle, mo->state - states, mo->tics);
+		Printf (PRINT_HIGH, "%s (%x, %x, %x | %x) state: %" PRIdSIZE " tics: %d\n", mobjinfo[mo->type]->name, mo->x, mo->y, mo->z, mo->angle, mo->state->statenum, mo->tics);
 	}
 }
 END_COMMAND (dumpactors)

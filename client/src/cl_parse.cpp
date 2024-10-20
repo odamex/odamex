@@ -63,6 +63,7 @@
 #include "p_mapformat.h"
 #include "infomap.h"
 #include "cl_replay.h"
+#include "doom_obj_container.h"
 
 // Extern data from other files.
 
@@ -614,7 +615,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
     // [CMB] TODO: checking state existing here
 	//if (state >= S_NULL && state < ::num_state_t_types())
-    if(state >= S_NULL && states.find(state) != NULL)
+    if(state >= S_NULL && states.find(state) != states.end())
 	{
 		P_SetMobjState(mo, state);
 	}
@@ -683,7 +684,8 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 		// already spawned as gibs?
 		// [CMB] TODO: pointer difference to check the order of a fixed data structure...come on guy
-		if (!mo || (statenum_t)(mo->state - states) == S_GIBS)
+		state_t* s_gibs_state = states[S_GIBS];
+		if (!mo || mo->state == s_gibs_state)
 			return;
 
 		if ((frame & FF_FRAMEMASK) >= sprites[mo->sprite].numframes)
@@ -2151,7 +2153,7 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 			unsigned int state = msg->player().psprites().Get(i).statenum();
             // [CMB] TODO: checking state existing here
 			// if (state >= ::num_state_t_types())
-            if (states.find(state) == NULL)
+            if (states.find(static_cast<statenum_t>(state)) == states.end())
 			{
 				continue;
 			}
@@ -2435,7 +2437,7 @@ static void CL_SetMobjState(const odaproto::svc::MobjState* msg)
 
     // [CMB] TODO: checking state existing here
 	// if (mo == NULL || s < 0 || s >= ::num_state_t_types())
-    if (mo == NULL || states.find(s) == NULL)
+    if (mo == NULL || states.find(static_cast<statenum_t>(s)) == states.end())
 		return;
 
 	P_SetMobjState(mo, static_cast<statenum_t>(s));

@@ -10,74 +10,85 @@
 
 #pragma once
 
-#include <vector>
 #include "hashtable.h"
+#include "i_system.h"
+#include <vector>
+#include <cstddef>
+#include <typeinfo>
 
-template <typename ObjType, typename IdxType> class DoomObjectContainer;
+template <typename ObjType, typename IdxType>
+class DoomObjectContainer;
 
 //----------------------------------------------------------------------------------------------
 // DoomObjectContainer replaces the global doom object pointers (states, mobjinfo,
-// sprnames) with functor objects that can handle negative indices. It also auto-resizes,
-// similar to vector, and provides a way to get the size and capcity Additionally, it has
-// implicit type coercion operators to the base pointer type to be compatible with
-// existing code.
-// Existing code cannot rely on an index being greater than the number of types now because dehacked does not
-// enforce contiguous indices i.e. frame 405 could jump to frame 1055
+// sprnames) with multi-use objects that can handle negative indices. It also
+// auto-resizes, similar to vector, and provides a way to get the size and capacity.
+// Existing code cannot rely on an index being greater than the number of types now
+// because dehacked does not enforce contiguous indices i.e. frame 405 could jump to frame
+// 1055
 //----------------------------------------------------------------------------------------------
 
-template <typename ObjType, typename IdxType>
+template <typename ObjType, typename IdxType = int32_t>
 class DoomObjectContainer
 {
-  public:   	
-	typedef void (*ResetObjType)(ObjType*, IdxType);
 
-  private:
-	typedef OHashTable<int, int> IndexTable;
+	typedef OHashTable<int, ObjType> LookupTable;
+	typedef std::vector<ObjType> DoomObjectContainerData;
 	typedef DoomObjectContainer<ObjType, IdxType> DoomObjectContainerType;
 
-	std::vector<ObjType> container;
-	IndexTable indices_map;
-	ResetObjType rf;
-	static void noop(ObjType* p, IdxType idx) { return; }
-	
-  public:
+	DoomObjectContainerData container;
+	LookupTable lookup_table;
 
-	DoomObjectContainer(ResetObjType f = nullptr);
-	DoomObjectContainer(size_t num_types, ResetObjType f = nullptr);
+	static void noop(ObjType p, IdxType idx) { }
+
+  public:
+	using ObjReference = typename DoomObjectContainerData::reference;
+	using ConstObjReference = typename DoomObjectContainerData::const_reference;
+	using iterator = typename LookupTable::iterator;
+	using const_iterator = typename LookupTable::const_iterator;
+
+	typedef void (*ResetObjType)(ObjType, IdxType);
+
+	explicit DoomObjectContainer(ResetObjType f = nullptr);
+	explicit DoomObjectContainer(size_t count, ResetObjType f = nullptr);
 	~DoomObjectContainer();
 
-	ObjType& operator[](int);
-	const ObjType& operator[](int) const;
+	ObjReference operator[](int);
+	ConstObjReference operator[](int) const;
 	bool operator==(const ObjType* p) const;
 	bool operator!=(const ObjType* p) const;
 	// convert to ObjType* to allow pointer arithmetic
-	operator const ObjType*(void) const;
-	operator ObjType*(void);
+	operator const ObjType*() const;
+	operator ObjType*();
+	// direct access similar to STL data()
+	ObjType* data();
+	const ObjType* data() const;
 
 	size_t capacity() const;
 	size_t size() const;
 	void clear();
 	void resize(size_t count);
 	void reserve(size_t new_cap);
-	void insert(const ObjType& pointer, IdxType idx);
-	void append(const DoomObjectContainer<ObjType, IdxType>& container);
-    ObjType* find(int);
-	// [CMB] TODO: this method needs to go, but for now its provided for compatibility
-	ObjType* ptr(void);
-	const ObjType* ptr(void) const;
+	void insert(const ObjType& obj, IdxType idx);
+	void append(const DoomObjectContainerType& dObjContainer);
 
-	// ------------------------------------------------------------------------
-	// DoomObjectContainer::iterator & const_iterator implementation
-	// ------------------------------------------------------------------------
+	iterator begin();
+	iterator end();
+	const_iterator cbegin();
+	const_iterator cend();
+	iterator find(IdxType index);
+	const_iterator find(IdxType index) const;
 
-	template <typename IObjType, typename IDOBT> class generic_iterator;
-	typedef generic_iterator<ObjType, DoomObjectContainerType> iterator;
-	typedef generic_iterator<const ObjType, const DoomObjectContainerType> const_iterator;
+	friend ObjType operator-(ObjType obj, DoomObjectContainerType& container);
+	friend ObjType operator+(DoomObjectContainerType& container, WORD ofs);
+
+  private:
+	ResetObjType rf;
 };
 
 //----------------------------------------------------------------------------------------------
 
-// inside class
+// Construction and Destruction
 
 template <typename ObjType, typename IdxType>
 DoomObjectContainer<ObjType, IdxType>::DoomObjectContainer(ResetObjType f)
@@ -94,33 +105,34 @@ DoomObjectContainer<ObjType, IdxType>::DoomObjectContainer(size_t count, ResetOb
 
 template <typename ObjType, typename IdxType>
 DoomObjectContainer<ObjType, IdxType>::~DoomObjectContainer()
-{}
+{
+	clear();
+}
+
+// Operators
 
 template <typename ObjType, typename IdxType>
-ObjType& DoomObjectContainer<ObjType, IdxType>::operator[](int idx)
+typename DoomObjectContainer<ObjType, IdxType>::ObjReference DoomObjectContainer<
+    ObjType, IdxType>::operator[](int idx)
 {
-	IndexTable::iterator it = this->indices_map.find(idx);
-	int realidx;
-	if (it != this->indices_map.end())
-	{
-		realidx = it->second;
-	}
-    // we did not find an element: add a blank element at the end, map it, and return it
-	else
+	iterator it = this->lookup_table.find(idx);
+    if (it == this->end())
     {
-        this->container.emplace_back();
-        this->rf(&this->container.back(), (IdxType) idx);
-        this->indices_map[idx] = this->container.size() - 1;
-		realidx = this->container.size() - 1;
+	    I_Error("Attempt to access invalid %s at idx %d", typeid(ObjType).name(), idx);
     }
-	return this->container[realidx];
+    return it->second;
 }
 
 template <typename ObjType, typename IdxType>
-const ObjType& DoomObjectContainer<ObjType, IdxType>::operator[](int idx) const
+typename DoomObjectContainer<ObjType, IdxType>::ConstObjReference DoomObjectContainer<
+    ObjType, IdxType>::operator[](int idx) const
 {
-    ObjType& o = (*this)[idx];
-	return const_cast<ObjType&>(o);
+    const_iterator it = this->lookup_table.find(idx);
+    if (it == this->end())
+    {
+    	I_Error("Attempt to access invalid %s at idx %d", typeid(ObjType).name(), idx);
+    }
+    return it->second;
 }
 
 template <typename ObjType, typename IdxType>
@@ -136,15 +148,42 @@ bool DoomObjectContainer<ObjType, IdxType>::operator!=(const ObjType* p) const
 }
 
 template <typename ObjType, typename IdxType>
-DoomObjectContainer<ObjType, IdxType>::operator const ObjType*(void) const
+DoomObjectContainer<ObjType, IdxType>::operator const ObjType*() const
 {
-	return const_cast<ObjType*>(this->container.data());
+	return const_cast<ObjType>(this->container.data());
 }
 template <typename ObjType, typename IdxType>
-DoomObjectContainer<ObjType, IdxType>::operator ObjType*(void)
+DoomObjectContainer<ObjType, IdxType>::operator ObjType*()
 {
 	return this->container.data();
 }
+
+template <typename ObjType, typename IdxType>
+ObjType operator-(ObjType obj, DoomObjectContainer<ObjType, IdxType>& container)
+{
+	return obj - container.data();
+}
+template <typename ObjType, typename IdxType>
+ObjType operator+(DoomObjectContainer<ObjType, IdxType>& container, WORD ofs)
+{
+	return container.data() + ofs;
+}
+
+// PTR functions for quicker access to all
+
+template <typename ObjType, typename IdxType>
+ObjType* DoomObjectContainer<ObjType, IdxType>::data()
+{
+	return this->container.data();
+}
+
+template <typename ObjType, typename IdxType>
+const ObjType* DoomObjectContainer<ObjType, IdxType>::data() const
+{
+	return this->container.data();
+}
+
+// Capacity and Size
 
 template <typename ObjType, typename IdxType>
 size_t DoomObjectContainer<ObjType, IdxType>::size() const
@@ -161,69 +200,99 @@ size_t DoomObjectContainer<ObjType, IdxType>::capacity() const
 template <typename ObjType, typename IdxType>
 void DoomObjectContainer<ObjType, IdxType>::clear()
 {
-	this->container.clear();
-	this->indices_map.clear();
+	this->container.erase(container.begin(), container.end());
+	this->lookup_table.erase(lookup_table.begin(), lookup_table.end());
 }
+
+// Allocation changes
 
 template <typename ObjType, typename IdxType>
 void DoomObjectContainer<ObjType, IdxType>::resize(size_t count)
 {
-	int old_size = this->container.size();
 	this->container.resize(count);
-	if (old_size < this->container.size())
-	{
-		for (int i = old_size; i < this->container.size(); i++)
-		{
-			memset(&this->container[i], 0, sizeof(ObjType));
-			this->rf(&this->container[i], (IdxType)i);
-		}
-	}
+	// this->lookup_table.resize(count);
 }
 
-template<typename ObjType, typename IdxType>
+template <typename ObjType, typename IdxType>
 void DoomObjectContainer<ObjType, IdxType>::reserve(size_t new_cap)
 {
 	this->container.reserve(new_cap);
+	// this->lookup_table.resize(new_cap);
 }
+
+// Insertion
 
 template <typename ObjType, typename IdxType>
 void DoomObjectContainer<ObjType, IdxType>::insert(const ObjType& obj, IdxType idx)
 {
 	this->container.push_back(obj);
-	this->indices_map[(int) idx] = this->container.size() - 1;
+	this->lookup_table[static_cast<int>(idx)] = obj;
 }
 
+// TODO: more of a copy construct in a sense
 template <typename ObjType, typename IdxType>
 void DoomObjectContainer<ObjType, IdxType>::append(
     const DoomObjectContainer<ObjType, IdxType>& dObjContainer)
 {
-	this->container.insert(this->container.end(), dObjContainer.container.begin(),
-	                       dObjContainer.container.end());
-    // [CMB] TODO: need to append indices_maps together
-	// this->indices_map.insert(dObjContainer.indices_map.begin(), dObjContainer.indices_map.end());
+	for (auto it = dObjContainer.lookup_table.begin();
+	     it != dObjContainer.lookup_table.end(); ++it)
+	{
+		int idx = it->first;
+		ObjType obj = it->second;
+		this->insert(static_cast<IdxType>(idx), obj);
+	}
 }
 
-template<typename ObjType, typename IdxType>
-ObjType* DoomObjectContainer<ObjType, IdxType>::find(int idx)
+// Iterators
+
+template <typename ObjType, typename IdxType>
+typename DoomObjectContainer<ObjType, IdxType>::iterator DoomObjectContainer<ObjType, IdxType>::begin()
 {
-    IndexTable::iterator it = this->indices_map.find(idx);
-    if (it != this->indices_map.end())
-    {
-        return &this->container[it->second];
-    }
-    return NULL;
+	return lookup_table.begin();
 }
 
 template <typename ObjType, typename IdxType>
-ObjType* DoomObjectContainer<ObjType, IdxType>::ptr(void)
+typename DoomObjectContainer<ObjType, IdxType>::iterator DoomObjectContainer<ObjType, IdxType>::end()
 {
-	return this->container.data();
+	return lookup_table.end();
 }
 
 template <typename ObjType, typename IdxType>
-const ObjType* DoomObjectContainer<ObjType, IdxType>::ptr(void) const
+typename DoomObjectContainer<ObjType, IdxType>::const_iterator DoomObjectContainer<ObjType, IdxType>::cbegin()
 {
-	return const_cast<ObjType*>(this->container.data());
+	return lookup_table.begin();
+}
+
+template <typename ObjType, typename IdxType>
+typename DoomObjectContainer<ObjType, IdxType>::const_iterator DoomObjectContainer<ObjType, IdxType>::cend()
+{
+	return lookup_table.end();
+}
+
+// Lookup
+
+template <typename ObjType, typename IdxType>
+typename DoomObjectContainer<ObjType, IdxType>::iterator DoomObjectContainer<
+    ObjType, IdxType>::find(IdxType idx)
+{
+	typename LookupTable::iterator it = this->lookup_table.find(idx);
+	if (it != this->lookup_table.end())
+	{
+		return it;
+	}
+	return this->lookup_table.end();
+}
+
+template <typename ObjType, typename IdxType>
+typename DoomObjectContainer<ObjType, IdxType>::const_iterator DoomObjectContainer<
+    ObjType, IdxType>::find(IdxType idx) const
+{
+	typename LookupTable::iterator it = this->lookup_table.find(idx);
+	if (it != this->lookup_table.end())
+	{
+		return it;
+	}
+	return this->lookup_table.end();
 }
 
 //----------------------------------------------------------------------------------------------

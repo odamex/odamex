@@ -526,9 +526,9 @@ typedef struct
 
 typedef struct
 {
-	DoomObjectContainer<state_t, statenum_t> backupStates;
-	DoomObjectContainer<mobjinfo_t, mobjtype_t> backupMobjInfo;
-	DoomObjectContainer<const char*, spritenum_t> backupSprnames;
+	DoomObjectContainer<state_t> backupStates; // boomstates
+	DoomObjectContainer<mobjinfo_t> backupMobjInfo; // doom_mobjinfo
+	DoomObjectContainer<const char*> backupSprnames; // doom_sprnames
 	weaponinfo_t backupWeaponInfo[NUMWEAPONS + 1];
 	int backupMaxAmmo[NUMAMMO];
 	int backupClipAmmo[NUMAMMO];
@@ -557,20 +557,38 @@ static void BackupData(void)
 	// backup action pointers
 	for (i = 0; i < ::NUMSTATES; i++)
 	{
-		OrgActionPtrs[i] = states[i].action;
+		OrgActionPtrs[i] = states[i]->action;
 	}
 
 	doomBackup.backupStates.resize(::NUMSTATES);
 	doomBackup.backupStates.clear();
-	doomBackup.backupStates.append(states);
+	// doomBackup.backupStates.append(states);
+	for(auto & it : states)
+	{
+		statenum_t idx = statenum_t(it.first);
+		state_t state = *it.second;
+		doomBackup.backupStates.insert(state, idx);
+	}
 
 	doomBackup.backupMobjInfo.resize(::NUMMOBJTYPES);
 	doomBackup.backupMobjInfo.clear();
-	doomBackup.backupMobjInfo.append(mobjinfo);
+	// doomBackup.backupMobjInfo.append(mobjinfo);
+	for(auto & it : mobjinfo)
+	{
+		mobjtype_t idx = mobjtype_t(it.first);
+		mobjinfo_t mobj = *it.second;
+		doomBackup.backupMobjInfo.insert(mobj, idx);
+	}
 
 	doomBackup.backupSprnames.resize(::NUMSPRITES);
 	doomBackup.backupSprnames.clear();
-	doomBackup.backupSprnames.append(sprnames);
+	// doomBackup.backupSprnames.append(sprnames);
+	for(auto & it : sprnames)
+	{
+		spritenum_t idx = spritenum_t(it.first);
+		const char* spr = strdup(it.second);
+		doomBackup.backupSprnames.insert(spr, idx);
+	}
 
 	std::copy(weaponinfo, weaponinfo + ::NUMWEAPONS + 1, doomBackup.backupWeaponInfo);
 	std::copy(clipammo, clipammo + ::NUMAMMO, doomBackup.backupClipAmmo);
@@ -601,9 +619,10 @@ void D_UndoDehPatch()
 	}
 	M_Free(OrgSprNames);
 
-	D_Initialize_sprnames(doomBackup.backupSprnames.ptr(), ::NUMSPRITES, SPR_TROO);
-	D_Initialize_States(doomBackup.backupStates.ptr(), ::NUMSTATES, S_NULL);
-	D_Initialize_Mobjinfo(doomBackup.backupMobjInfo.ptr(), ::NUMMOBJTYPES, MT_PLAYER);
+	// unsafe usage of data() here but to keep a consistent API
+	D_Initialize_sprnames(doomBackup.backupSprnames.data(), ::NUMSPRITES, SPR_TROO);
+	D_Initialize_States(doomBackup.backupStates.data(), ::NUMSTATES);
+	D_Initialize_Mobjinfo(doomBackup.backupMobjInfo.data(), ::NUMMOBJTYPES);
 	
 	extern bool isFast;
 	isFast = false;
@@ -886,7 +905,7 @@ static int PatchThing(int thingy)
 		                             // replaced by bouncetypes with the BOUNCES_MBF bit.
 	};
 
-	size_t thingNum = thingy;
+	int thingNum = thingy;
 
 	// flags can be specified by name (a .bex extension):
 	struct flagsystem_t
@@ -999,18 +1018,36 @@ static int PatchThing(int thingy)
 	ednum = &dummyed;
 
 	thingNum--;
-	if (thingNum < 0)
+	auto mobjinfo_it = mobjinfo.find(static_cast<mobjtype_t>(thingNum));
+	if (mobjinfo_it == mobjinfo.end())
 	{
-		DPrintf("Thing %" PRIuSIZE " out of range.\n", thingNum);
+		auto mobjinfo_t_default = []() -> mobjinfo_t
+		{
+			mobjinfo_t m = {};
+			m.doomednum = -1;
+			m.droppeditem = MT_NULL;
+			m.infighting_group = IG_DEFAULT;
+			m.projectile_group = PG_DEFAULT;
+			m.splash_group = SG_DEFAULT;
+			m.altspeed = NO_ALTSPEED;
+			m.meleerange = MELEERANGE;
+			m.translucency = 0x10000;
+			m.altspeed = NO_ALTSPEED;
+			m.ripsound = "";
+			return m;
+		};
+		mobjinfo_t* mobj = (mobjinfo_t*) M_Calloc(1, sizeof(mobjinfo_t));
+		*mobj = mobjinfo_t_default();
+		mobjinfo.insert(mobj, (mobjtype_t) thingNum);
+		// set the type
+		mobj->type = thingNum;
 	}
-	else
-    {
-		info = &mobjinfo[thingNum];
-		*ednum = *&info->doomednum;
+
+	info = mobjinfo[thingNum];
+	*ednum = (info->doomednum);
 #if defined _DEBUG
 		DPrintf("Thing %" PRIuSIZE " found.\n", thingNum);
 #endif
-	}
 
 	oldflags = info->flags;
 
@@ -1139,7 +1176,8 @@ static int PatchThing(int thingy)
 		else if (stricmp(Line1, "Dropped item") == 0)
 		{
 			//if (val - 1 < 0 || val - 1 >= ::num_mobjinfo_types())
-			if (mobjinfo.find(val-1) == NULL)
+			int validx = val;
+			if (mobjinfo.find(validx) == mobjinfo.end())
 			{
 				I_Error("Dropped item out of range. Check your DEHACKED.\n");
 			}
@@ -1421,7 +1459,7 @@ static int PatchThing(int thingy)
 		}
 		else if (stricmp(Line1, "ID #") == 0)
 		{
-			*&info->doomednum = (SDWORD)val;
+			info->doomednum = (SDWORD)val;
 		}
 		else if (stricmp(Line1, "Mass") == 0)
 		{
@@ -1451,6 +1489,16 @@ static int PatchThing(int thingy)
 		if (!gibhealth && info->spawnhealth && !info->gibhealth)
 		{
 			info->gibhealth = -info->spawnhealth;
+		}
+	}
+
+	// update spawn map
+	if (info->doomednum && info->doomednum != -1)
+	{
+		auto spawn_map_it = spawn_map.find(info->doomednum);
+		if (spawn_map_it == spawn_map.end())
+		{
+			spawn_map.insert(info, info->doomednum);
 		}
 	}
 
@@ -1537,16 +1585,39 @@ static int PatchFrame(int frameNum)
     } bitnames[] = {
         {1, "SKILL5FAST"},
     };
-    
-    if(frameNum < 0)
+
+	auto states_it = states.find(frameNum);
+	if(states_it == states.end())
     {
-        info = &dummy;
-        DPrintf("Frame %d out of range\n", frameNum);
+		auto state_t_default = [](statenum_t idx) -> state_t {
+				_state_t s{};
+				s.sprite = SPR_TNT1;
+				s.frame = 0;
+				s.tics = -1;
+				s.action = NULL;
+				s.nextstate = idx;
+				s.misc1 = 0;
+				s.misc2 = 0;
+
+				// mbf21 flags
+				s.flags = STATEF_NONE;
+				s.args[0] = 0;
+				s.args[1] = 0;
+				s.args[2] = 0;
+				s.args[3] = 0;
+				s.args[4] = 0;
+				s.args[5] = 0;
+				s.args[6] = 0;
+				s.args[7] = 0;
+				return s;
+		};
+		state_t* state = (state_t*) M_Calloc(1, sizeof(state_t));
+		*state = state_t_default((statenum_t)frameNum);
+		states.insert(state, (statenum_t) frameNum);
+		// set the proper state number
+		state->statenum = frameNum;
     } 
-    else
-    {
-        info = &states[frameNum];
-    }
+    info = states[frameNum];
 
 	while ((result = GetLine()) == 1)
 	{
@@ -1611,7 +1682,8 @@ static int PatchFrame(int frameNum)
 		}
 	}
 #if defined _DEBUG
-	const char* sprsub = (info->sprite > 0 && info->sprite < num_spritenum_t_types()) ? sprnames[info->sprite] : "";
+	auto sprnames_it = sprnames.find(info->sprite);
+	const char* sprsub = (sprnames_it == sprnames.end()) ? "<No Sprite>" : sprnames_it->second;
 	DPrintf("FRAME %d: Duration: %d, Next: %d, SprNum: %d(%s), SprSub: %d\n", frameNum,
 	       info->tics, info->nextstate, info->sprite, sprsub,
 			info->frame);
@@ -1712,28 +1784,23 @@ static int PatchSprites(int dummy)
         if(sprIdx >= 0)
         {
 #if defined _DEBUG
+			auto sprnames_it = sprnames.find(sprIdx);
 			const char* prevSprName =
-			    sprnames[sprIdx] != NULL ? sprnames[sprIdx] : "No Sprite";
+			    sprnames_it != sprnames.end() ? sprnames_it->second : "No Sprite";
 			DPrintf("Patching sprite at %d with name %s with new name %s\n",
 			        sprIdx, prevSprName, newSprName);
 #endif
-			// this is based on the assumption that sprnames is 0'd on initial allocation
-			if (sprnames[sprIdx])
+			// if we find the one in the container - we already strdup'd here - free it and replace it
+			if (sprnames_it != sprnames.end())
 			{
-				char* s = const_cast<char*>(sprnames[sprIdx]);
+				const char* found = sprnames_it->second;
+				char* s = const_cast<char*>(found);
 				free(s);
 			}
-			sprnames[sprIdx] = strdup(newSprName);
+			sprnames.insert(strdup(newSprName), (spritenum_t) sprIdx);
         }
 	}
 
-
-#if defined _DEBUG
-	for (int i = 0; i < ::num_spritenum_t_types(); ++i)
-	{
-		Printf_Bold("Sprite[%d]=%s\n", i, sprnames[i]);
-	}
-#endif
 	return result;
 }
 
@@ -1897,7 +1964,7 @@ static int PatchPointer(int ptrNum)
 
 			// [CMB]: dsdhacked allows infinite code pointers
 			// if (i >= ::num_state_t_types())
-            if (states.find(i) == NULL)
+            if (states.find(i) == states.end())
 			{
 				DPrintf("Pointer %d overruns array (max: %d wanted: %d)."
 				        "\n",
@@ -1905,7 +1972,7 @@ static int PatchPointer(int ptrNum)
 			}
 			else
 			{
-				states[codepconv[ptrNum]].action = OrgActionPtrs[i];
+				states[codepconv[ptrNum]]->action = OrgActionPtrs[i];
 			}
 		}
 		else
@@ -2067,7 +2134,7 @@ static int PatchCodePtrs(int dummy)
 			int frame = atoi(Line1 + 5);
             // [CMB] TODO: this is not a valid way to test this anymore - just look it up
 			//if (frame < 0 || frame >= num_state_t_types())
-            if (states.find(frame) == NULL)
+            if (states.find(frame) == states.end())
 			{
 				DPrintf("Frame %d out of range\n", frame);
 			}
@@ -2094,12 +2161,12 @@ static int PatchCodePtrs(int dummy)
 
 				if (CodePtrs[i].name)
 				{
-					states[frame].action = CodePtrs[i].func;
+					states[frame]->action = CodePtrs[i].func;
 					DPrintf("Frame %d set to %s\n", frame, CodePtrs[i].name);
 				}
 				else
 				{
-					states[frame].action = NULL;
+					states[frame]->action = NULL;
 					DPrintf("Unknown code pointer: %s\n", com_token);
 				}
 			}
@@ -2195,7 +2262,8 @@ static int PatchText(int oldSize)
 	{
 		if (!strcmp(sprnames[i], oldStr))
 		{
-			sprnames[i] = copystring(newStr);
+			// sprnames[i] = copystring(newStr);
+			sprnames.insert(copystring(newStr), (spritenum_t) i);
 			good = true;
 			// See above.
 		}
@@ -2577,14 +2645,17 @@ void D_PostProcessDeh()
 {
 	int i, j;
 	const CodePtr* bexptr_match;
+	int num_state_t_types = ::num_state_t_types();
 
-	for (i = 0; i < ::num_state_t_types(); i++)
+	// [CMB] TODO: using ptr here is just to go from front to back - iterator is BETTER but this works
+	state_t** statesptr = states.data();
+	for (i = 0; i < num_state_t_types; i++)
 	{
 		bexptr_match = &null_bexptr;
 
 		for (j = 1; CodePtrs[j].func != NULL; ++j)
 		{
-			if (states[i].action == CodePtrs[j].func)
+			if (statesptr[i]->action == CodePtrs[j].func)
 			{
 				bexptr_match = &CodePtrs[j];
 				break;
@@ -2595,7 +2666,7 @@ void D_PostProcessDeh()
 		// action pointer expects, for future-proofing's sake
 		for (j = MAXSTATEARGS - 1; j >= bexptr_match->argcount; j--)
 		{
-			if (states[i].args[j] != 0)
+			if (statesptr[i]->args[j] != 0)
 			{
 				I_Error("Action %s on state %d expects no more than %d nonzero args (%d "
 				        "found). Check your DEHACKED.",
@@ -2606,9 +2677,9 @@ void D_PostProcessDeh()
 		// replace unset fields with default values
 		for (; j >= 0; j--)
 		{
-			if (states[i].args[j] == 0 && bexptr_match->default_args[j])
+			if (statesptr[i]->args[j] == 0 && bexptr_match->default_args[j])
 			{
-				states[i].args[j] = bexptr_match->default_args[j];
+				statesptr[i]->args[j] = bexptr_match->default_args[j];
 			}
 		}
 	}
@@ -2618,10 +2689,11 @@ void D_PostProcessDeh()
 * @brief Checks to see if TNT-range actor is defined, but useful for DEHEXTRA monsters.
 * Because in HORDEDEF, sometimes a WAD author may accidentally use a DEHEXTRA monster
 * that is undefined.
+* Assumes the value exists - no range checking
 */
 bool CheckIfDehActorDefined(const mobjtype_t mobjtype)
 {
-	const mobjinfo_t mobj = ::mobjinfo[mobjtype];
+	const mobjinfo_t mobj = *::mobjinfo[mobjtype];
 	if (mobj.doomednum == -1 &&
 		mobj.spawnstate == S_TNT1 &&
 		mobj.spawnhealth == 0 &&
@@ -2684,13 +2756,13 @@ static void PrintState(int index)
 {
     // [CMB] TODO: checking state existing here
 	// if (index < 0 || index >= ::num_state_t_types())
-    if (states.find(index) == NULL)
+    if (states.find(index) == states.end())
 	{
 		return;
 	}
 
 	// Print this state.
-	state_t& state = ::states[index];
+	state_t& state = *::states[index];
 	Printf("%4d | s:%s f:%d t:%d a:%s m1:%d m2:%d\n", index, ::sprnames[state.sprite],
 	       state.frame, state.tics, ActionPtrString(state.action), state.misc1,
 	       state.misc2);
@@ -2698,12 +2770,12 @@ static void PrintState(int index)
 
 static void PrintMobjinfo(int index)
 {
-    if (mobjinfo.find(index) == NULL)
+    if (mobjinfo.find(index) == mobjinfo.end())
     {
         return;
     }
     
-    mobjinfo_t& mob = ::mobjinfo[index];
+    mobjinfo_t& mob = *::mobjinfo[index];
     std::stringstream ss;
     ss << "%4d | ";
     // doomednum, spawnstate, spawnhealth, seestate, seesound
@@ -2732,12 +2804,12 @@ BEGIN_COMMAND(mobinfo)
 {
     if (argc < 2)
     {
-        Printf("Must pass one or two state indexes. (0 to %d)\n", ::num_state_t_types() - 1);
+        Printf("Must pass one or two mobjinfo indexes. (0 to %d)\n", ::num_mobjinfo_types() - 1);
         return;
     }
     
     int index1 = atoi(argv[1]);
-    if (mobjinfo.find(index1) == NULL)
+    if (mobjinfo.find(index1) == mobjinfo.end())
     {
         Printf("Index 1: Not a valid index.\n");
         return;
@@ -2747,7 +2819,7 @@ BEGIN_COMMAND(mobinfo)
     if (argc == 3)
     {
         index2 = atoi(argv[2]);
-        if (states.find(index2) == NULL)
+        if (mobjinfo.find(index2) == mobjinfo.end())
         {
             Printf("Index 2: Not a valid index.\n");
             return;
@@ -2778,7 +2850,7 @@ BEGIN_COMMAND(stateinfo)
 	int index1 = atoi(argv[1]);
     // [CMB] TODO: checking state existing here
 	// if (index1 < 0 || index1 >= ::num_state_t_types())
-    if (states.find(index1) == NULL)
+    if (states.find(index1) == states.end())
 	{
 		Printf("Index 1: Not a valid index.\n");
 		return;
@@ -2790,7 +2862,7 @@ BEGIN_COMMAND(stateinfo)
 		index2 = atoi(argv[2]);
         // [CMB] TODO: checking state existing here
 		// if (index2 < 0 || index2 >= ::num_state_t_types())
-        if (states.find(index2) == NULL)
+        if (states.find(index2) == states.end())
 		{
 			Printf("Index 2: Not a valid index.\n");
 			return;
@@ -2845,7 +2917,7 @@ BEGIN_COMMAND(playstate)
 		visited.insert(std::pair<int, bool>(index, true));
 
 		// Next state.
-		index = ::states[index].nextstate;
+		index = ::states[index]->nextstate;
 	}
 }
 END_COMMAND(playstate)

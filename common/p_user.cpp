@@ -633,7 +633,7 @@ void P_MovePlayer (player_t *player)
 			}
 		}
 
-		if (mo->state == &states[S_PLAY])
+		if (mo->state == states[S_PLAY])
 		{
 			// denis - fixme - this function might destoy player->mo without setting it to 0
 			P_SetMobjState (player->mo, S_PLAY_RUN1);
@@ -1121,7 +1121,7 @@ const char* PlayerState(size_t state)
 }
 
 // [CMB] TODO pointer difference to statenum_t conversion unchecked
-#define STATE_NUM(mo) (statenum_t)(mo -> state - states)
+#define STATE_NUM(mo) (statenum_t)(mo ->state->statenum )
 
 BEGIN_COMMAND(cheat_players)
 {
@@ -1151,7 +1151,7 @@ BEGIN_COMMAND(cheat_players)
 			{
 				Printf("???: ???\n");
 			}
-			Printf("State: %s\n", PlayerState((statenum_t)(mo->state - states)));
+			Printf("State: %s\n", PlayerState((statenum_t)(mo->state->statenum)));
 			Printf("%f, %f, %f\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
 			       FIXED2FLOAT(mo->z));
 		}

@@ -482,7 +482,7 @@ void F_StartCast()
 
 	wipegamestate = GS_FORCEWIPE;
 	castnum = 0;
-	caststate = &states[mobjinfo[castorder[castnum].type].seestate];
+	caststate = states[mobjinfo[castorder[castnum].type]->seestate];
 	castsprite = caststate->sprite;
 	casttics = caststate->tics;
 	castdeath = false;
@@ -512,12 +512,12 @@ void F_CastTicker()
 		castdeath = false;
 		if (castorder[castnum].name == NULL)
 			castnum = 0;
-		if (mobjinfo[castorder[castnum].type].seesound)
+		if (mobjinfo[castorder[castnum].type]->seesound)
 		{
 			const int atten = ATTN_NONE;
-			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].seesound, 1, atten);
+			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type]->seesound, 1, atten);
 		}
-		caststate = &states[mobjinfo[castorder[castnum].type].seestate];
+		caststate = states[mobjinfo[castorder[castnum].type]->seestate];
 		castsprite = caststate->sprite;
 		castframes = 0;
 	}
@@ -526,12 +526,12 @@ void F_CastTicker()
 		const char *sfx;
 
 		// just advance to next state in animation
-		if (caststate == &states[S_PLAY_ATK1])
+		if (caststate == states[S_PLAY_ATK1])
 			goto stopattack;	// Oh, gross hack!
 
 		const int st = caststate->nextstate;
 
-		caststate = &states[st];
+		caststate = states[st];
 		castframes++;
 
 		// sound hacks....
@@ -577,30 +577,30 @@ void F_CastTicker()
 		// go into attack frame
 		castattacking = true;
 		if (castonmelee)
-			caststate=&states[mobjinfo[castorder[castnum].type].meleestate];
+			caststate = states[mobjinfo[castorder[castnum].type]->meleestate];
 		else
-			caststate=&states[mobjinfo[castorder[castnum].type].missilestate];
+			caststate = states[mobjinfo[castorder[castnum].type]->missilestate];
 		castonmelee ^= 1;
-		if (caststate == &states[S_NULL])
+		if (caststate == states[S_NULL])
 		{
 			if (castonmelee)
 				caststate=
-					&states[mobjinfo[castorder[castnum].type].meleestate];
+					states[mobjinfo[castorder[castnum].type]->meleestate];
 			else
 				caststate=
-					&states[mobjinfo[castorder[castnum].type].missilestate];
+					states[mobjinfo[castorder[castnum].type]->missilestate];
 		}
 	}
 
 	if (castattacking)
 	{
 		if (castframes == 24
-			||	caststate == &states[mobjinfo[castorder[castnum].type].seestate] )
+			||	caststate == states[mobjinfo[castorder[castnum].type]->seestate] )
 		{
 		  stopattack:
 			castattacking = false;
 			castframes = 0;
-			caststate = &states[mobjinfo[castorder[castnum].type].seestate];
+			caststate = states[mobjinfo[castorder[castnum].type]->seestate];
 		}
 	}
 
@@ -624,12 +624,12 @@ BOOL F_CastResponder (event_t* ev)
 
 	// go into death frame
 	castdeath = true;
-	caststate = &states[mobjinfo[castorder[castnum].type].deathstate];
+	caststate = states[mobjinfo[castorder[castnum].type]->deathstate];
 	casttics = caststate->tics;
 	castframes = 0;
 	castattacking = false;
-	if (mobjinfo[castorder[castnum].type].deathsound)
-		S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].deathsound, 1, ATTN_NONE);
+	if (mobjinfo[castorder[castnum].type]->deathsound)
+		S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type]->deathsound, 1, ATTN_NONE);
 
 	return true;
 }

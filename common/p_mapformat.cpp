@@ -55,16 +55,16 @@ void P_MigrateActorInfo(void)
 	int i;
 	static bool migrated = false;
 	mobjinfo_t* m;
-	int num_mobj_info_types = ::num_mobjinfo_types();
+	// [CMB] data accesses the underlying vector inside of doomobjcontainer
+	// this is a contiguous data structure that has ALL mobjinfo objects
+	mobjinfo_t** mobjinfoptr = mobjinfo.data();
 
 	// Set MF2_PASSMOBJ on dehacked monsters
 	// because we don't expose ZDoom's Bits2 BEX extension (yet...)
 	// which is the normal way MF2_PASSMOBJ gets set.
-	for (i = 0; i < num_mobj_info_types; ++i)
+	for (i = 0; i < ::num_mobjinfo_types(); ++i)
 	{
-		// [CMB] TODO: calling operator[] can cause the list to get bigger
-		// [CMB] TODO: certain hash table implementations DO NOT do this behavior
-		m = &mobjinfo[i];
+		m = mobjinfoptr[i];
 		if (m->flags & MF_COUNTKILL)
 		{
 			if (P_AllowPassover())
@@ -83,20 +83,20 @@ void P_MigrateActorInfo(void)
 	// Don't forget about lost souls!
 	if (P_AllowPassover())
 	{ 
-		mobjinfo[MT_SKULL].flags2 |= MF2_PASSMOBJ;
+		mobjinfo[MT_SKULL]->flags2 |= MF2_PASSMOBJ;
 	}
 	else
 	{
-		mobjinfo[MT_SKULL].flags2 &= ~MF2_PASSMOBJ;
+		mobjinfo[MT_SKULL]->flags2 &= ~MF2_PASSMOBJ;
 	}
 
 	if (map_format.getZDoom() && !migrated)
 	{
 		migrated = true;
 
-		for (i = 0; i < num_mobj_info_types; ++i)
+		for (i = 0; i < ::num_mobjinfo_types(); ++i)
 		{
-			m = &mobjinfo[i];
+			m = mobjinfoptr[i];
 			if (m->flags & MF_COUNTKILL)
 				m->flags2 |= MF2_MCROSS | MF2_PUSHWALL;
 
@@ -104,16 +104,16 @@ void P_MigrateActorInfo(void)
 				m->flags2 |= MF2_PCROSS | MF2_IMPACT;
 		}
 
-		mobjinfo[MT_SKULL].flags2 |= MF2_MCROSS | MF2_PUSHWALL;
-		mobjinfo[MT_PLAYER].flags2 |= MF2_WINDTHRUST | MF2_PUSHWALL;
+		mobjinfo[MT_SKULL]->flags2 |= MF2_MCROSS | MF2_PUSHWALL;
+		mobjinfo[MT_PLAYER]->flags2 |= MF2_WINDTHRUST | MF2_PUSHWALL;
 	}
 	else if (!map_format.getZDoom() && migrated)
 	{
 		migrated = false;
 
-		for (i = 0; i < num_mobj_info_types; ++i)
+		for (i = 0; i < ::num_mobjinfo_types(); ++i)
 		{
-			m = &mobjinfo[i];
+			m = mobjinfoptr[i];
 			if (m->flags & MF_COUNTKILL)
 				m->flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);
 
@@ -121,8 +121,8 @@ void P_MigrateActorInfo(void)
 				m->flags2 &= ~(MF2_PCROSS | MF2_IMPACT);
 		}
 
-		mobjinfo[MT_SKULL].flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);
-		mobjinfo[MT_PLAYER].flags2 &= ~(MF2_WINDTHRUST | MF2_PUSHWALL);
+		mobjinfo[MT_SKULL]->flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);
+		mobjinfo[MT_PLAYER]->flags2 &= ~(MF2_WINDTHRUST | MF2_PUSHWALL);
 	}
 }
 

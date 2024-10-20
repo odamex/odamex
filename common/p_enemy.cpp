@@ -1517,7 +1517,7 @@ void A_VileChase (AActor *actor)
 
 		vileobj = actor;
 
-		viletryradius = mobjinfo[MT_VILE].radius;
+		viletryradius = mobjinfo[MT_VILE]->radius;
 
 		for (bx=xl ; bx<=xh ; bx++)
 		{
@@ -2506,7 +2506,7 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 	// okay, there's room for another one
 	an = angle >> ANGLETOFINESHIFT;
 
-	prestep = 4*FRACUNIT + 3*(actor->info->radius + mobjinfo[MT_SKULL].radius)/2;
+	prestep = 4*FRACUNIT + 3*(actor->info->radius + mobjinfo[MT_SKULL]->radius)/2;
 
 	x = actor->x + FixedMul (prestep, finecosine[an]);
 	y = actor->y + FixedMul (prestep, finesine[an]);

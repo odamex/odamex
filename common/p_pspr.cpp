@@ -187,7 +187,7 @@ void P_SetPspritePtr(player_t* player, pspdef_t* psp, statenum_t stnum)
 		if (stnum >= ::num_state_t_types())
 			return;
 
-		psp->state = &states[stnum];
+		psp->state = states[stnum];
 		psp->tics = psp->state->tics;		// could be 0
 
 		if (psp->state->misc1)
@@ -463,10 +463,12 @@ void P_FireWeapon(player_t* player)
 
 	// [tm512] Send the client the weapon they just fired so
 	// that they can fix any weapon desyncs that they get - apr 14 2012
+#if defined(SERVER_APP)
 	if (serverside && !clientside)
 	{
 		MSG_WriteSVC(&player->client.reliablebuf, SVC_FireWeapon(*player));
 	}
+#endif
 
 	P_SetMobjState(player->mo, S_PLAY_ATK1);
 	statenum_t newstatenum = weaponinfo[player->readyweapon].atkstate;
@@ -499,10 +501,10 @@ void A_WeaponReady(AActor* mo)
     struct pspdef_s* psp = &player->psprites[player->psprnum];
 
 	// get out of attack state
-	if (player->mo->state == &states[S_PLAY_ATK1] || player->mo->state == &states[S_PLAY_ATK2])
+	if (player->mo->state == states[S_PLAY_ATK1] || player->mo->state == states[S_PLAY_ATK2])
 		P_SetMobjState(player->mo, S_PLAY);
 
-	if (player->readyweapon == wp_chainsaw && psp->state == &states[S_SAW])
+	if (player->readyweapon == wp_chainsaw && psp->state == states[S_SAW])
 		A_FireSound(player, "weapons/sawidle");
 
 	// check for change -  if player is dead, put the weapon away
@@ -1420,7 +1422,7 @@ void A_FireShotgun2(AActor* mo)
 void A_FireCGun(AActor* mo)
 {
     player_t *player = mo->player;
-    struct pspdef_s *psp = &player->psprites[player->psprnum];
+	pspdef_s *psp = &player->psprites[player->psprnum];
 
 	A_FireSound (player, "weapons/chngun");
 
@@ -1432,11 +1434,8 @@ void A_FireCGun(AActor* mo)
 
 	DecreaseAmmo(player);
 
-	P_SetPsprite (player,
-				  ps_flash,
-				  (statenum_t)(weaponinfo[player->readyweapon].flashstate
-				  + psp->state
-				  - &states[S_CHAIN1]) );
+	// [CMB] TODO: this is expecting to calculate a very specific state based on the pointer arthmetic
+	P_SetPsprite (player, ps_flash, (statenum_t)(weaponinfo[player->readyweapon].flashstate + psp->state->statenum - states[S_CHAIN1]->statenum) );
 
 	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
 	P_FireHitscan(player, 1, accuracy);

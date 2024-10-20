@@ -1786,8 +1786,8 @@ FUNC(LS_HealThing)
 	else
 	{
 		it->health += arg0;
-		if (mobjinfo[it->type].spawnhealth > it->health)
-			it->health = mobjinfo[it->type].spawnhealth;
+		if (mobjinfo[it->type]->spawnhealth > it->health)
+			it->health = mobjinfo[it->type]->spawnhealth;
 	}
 
 	return true;

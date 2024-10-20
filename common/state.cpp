@@ -3,15 +3,15 @@
 #include "state.h"
 #include "doom_obj_container.h"
 
-void D_ResetState(state_t* s, statenum_t idx);
-DoomObjectContainer<state_t, statenum_t> states(::NUMSTATES, &D_ResetState);
+void D_ResetState(state_t* s, int32_t idx);
+DoomObjectContainer<state_t*> states(::NUMSTATES, &D_ResetState);
 
 size_t num_state_t_types()
 {
 	return states.size();
 }
 
-void D_ResetState(state_t* s, statenum_t idx)
+void D_ResetState(state_t* s, int32_t idx)
 {
     s->sprite = SPR_TNT1;
     s->frame = 0;
@@ -33,16 +33,21 @@ void D_ResetState(state_t* s, statenum_t idx)
     s->args[7] = 0;
 }
 
-void D_Initialize_States(state_t* source, int count, statenum_t start)
+void D_Initialize_States(state_t* source, int count)
 {
 	states.clear();
     states.reserve(count);
     if (source) {
-		statenum_t idx = start;
+
+    	state_t state_source;
+    	int32_t idx = source->statenum;
         for(int i = 0; i < count; i++)
         {
-			states.insert(source[i], idx);
-			idx = statenum_t(idx + 1);
+        	state_source = source[i];
+        	state_t* newstate = (state_t*) M_Calloc(1, sizeof(state_t));
+        	*newstate = state_source;
+			states.insert(newstate, idx);
+        	++idx;
         }
     }
 #if defined _DEBUG
