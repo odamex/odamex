@@ -181,21 +181,21 @@ void OShimApp::fail(const char* err)
 	_exit(1);
 }
 
-bool OShimApp::writePipe(PipeType fd, const void* buf, const unsigned int _len)
+bool OShimApp::writePipe(const void* buf, const unsigned int _len)
 {
 	const ssize_t len = (ssize_t)_len;
 	ssize_t bw;
-	while (((bw = write(fd, buf, len)) == -1) && (errno == EINTR))
+	while (((bw = write(GPipeWrite, buf, len)) == -1) && (errno == EINTR))
 	{
 	}
 	return (bw == len);
 }
 
-int OShimApp::readPipe(PipeType fd, void* buf, const unsigned int _len)
+int OShimApp::readPipe(void* buf, const unsigned int _len)
 {
 	const ssize_t len = (ssize_t)_len;
 	ssize_t br;
-	while (((br = read(fd, buf, len)) == -1) && (errno == EINTR))
+	while (((br = read(GPipeRead, buf, len)) == -1) && (errno == EINTR))
 	{
 	}
 	return (int)br;

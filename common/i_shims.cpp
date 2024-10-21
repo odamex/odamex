@@ -47,7 +47,6 @@
 
 #include <sstream>
 #include <locale>
-#include <codecvt>
 
 #define DEBUGPIPE 0
 
@@ -222,6 +221,8 @@ void OShim::sendStatusUpdate(const StatusUpdate& update)
 
 #ifdef _WIN32
 
+#include <codecvt>
+
 static LPWSTR LpCmdLine = NULL;
 
 int OShim::isAlive(PipeType fd)
@@ -324,7 +325,7 @@ char* OShim::getEnvVar(const char* key, char* buf, const size_t _buflen)
 
 #else
 
-#include <sys/poll.h>
+#include <sys/inotify.h>
 
 int OShim::pipeReady(PipeType fd)
 {
