@@ -1612,7 +1612,7 @@ const StatusUpdate C_PlayerInConsoleUpdate(void)
 	update.party_id = "";
 	update.start = instanceLaunchTime;
 	update.end = 0;
-	update.privacy = MatchJoinPrivacy::Private;
+	update.privacy = Private;
 	update.small_image = "";
 	update.small_image_text = "";
 	update.large_image = "odamex_icon_main";

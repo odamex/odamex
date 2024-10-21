@@ -56,24 +56,23 @@ struct StatusUpdate
 	std::string party_id;
 	std::string join_secret;
 
-	std::ostringstream status_update_serialize() const
+	std::ostringstream& status_update_serialize(std::ostringstream& stream) const
 	{
-		std::ostringstream data_stream;
-		data_stream.write(reinterpret_cast<const char*>(&current_size), sizeof(current_size));
-		data_stream.write(reinterpret_cast<const char*>(&max_size), sizeof(max_size));
-		data_stream.write(reinterpret_cast<const char*>(&start), sizeof(start));
-		data_stream.write(reinterpret_cast<const char*>(&end), sizeof(end));
-		data_stream.write(reinterpret_cast<const char*>(&privacy), sizeof(privacy));
+		stream.write(reinterpret_cast<const char*>(&current_size), sizeof(current_size));
+		stream.write(reinterpret_cast<const char*>(&max_size), sizeof(max_size));
+		stream.write(reinterpret_cast<const char*>(&start), sizeof(start));
+		stream.write(reinterpret_cast<const char*>(&end), sizeof(end));
+		stream.write(reinterpret_cast<const char*>(&privacy), sizeof(privacy));
 
-		data_stream << details << '\0';
-		data_stream << state << '\0';
-		data_stream << large_image << '\0';
-		data_stream << large_image_text << '\0';
-		data_stream << small_image << '\0';
-		data_stream << small_image_text << '\0';
-		data_stream << party_id << '\0';
-		data_stream << join_secret << '\0';
+		stream << details << '\0';
+		stream << state << '\0';
+		stream << large_image << '\0';
+		stream << large_image_text << '\0';
+		stream << small_image << '\0';
+		stream << small_image_text << '\0';
+		stream << party_id << '\0';
+		stream << join_secret << '\0';
 
-		return data_stream;
+		return stream;
 	}
 };

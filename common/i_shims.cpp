@@ -204,7 +204,10 @@ void OShim::sendStatusUpdate(const StatusUpdate& update)
 
 	//Printf("Parent sending SHIMCMD_SETSTATUS.\n");
 
-	auto data_stream = update.status_update_serialize();
+	std::ostringstream data_stream;
+
+	update.status_update_serialize(data_stream);
+
 	data_stream = std::ostringstream() << (uint8_t)SHIMCMD_SETSTATUS << data_stream.str();
 
 	std::ostringstream data_stream_shim;
@@ -321,6 +324,8 @@ char* OShim::getEnvVar(const char* key, char* buf, const size_t _buflen)
 
 #else
 
+#include <sys/poll.h>
+
 int OShim::pipeReady(PipeType fd)
 {
 	int rc;
@@ -401,12 +406,12 @@ bool OShim::launchChildShim(ProcessType* pid)
 	std::string app = M_GetBinaryDir() + "\\odashim";
 #endif
 
-	GArgv[0] = strdup(bin.c_str());
+	GArgv[0] = strdup(M_GetBinaryDir().c_str());
 	execvp(GArgv[0], GArgv);
 	_exit(1);
 }
 
-static int OShim::closeChildProcess(ProcessType* pid)
+int OShim::closeChildProcess(ProcessType* pid)
 {
 	int rc = 0;
 	while ((waitpid(*pid, &rc, 0) == -1) && (errno == EINTR))

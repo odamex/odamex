@@ -264,7 +264,7 @@ const StatusUpdate G_GameStatusUpdate(void)
 	update.party_id = "";
 	update.start = G_GetRoundStartTime();
 	update.end = G_GetRoundEndTime();
-	update.privacy = MatchJoinPrivacy::Private;
+	update.privacy = Private;
 	update.small_image = G_GetSmallIconForMode();
 	update.small_image_text = stats; // X Kills / X Damage [[/ X Other Stats],[]...]
 	update.large_image = G_GetMainIconForMode();
