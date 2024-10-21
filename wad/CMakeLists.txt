@@ -347,7 +347,22 @@ if(USE_INTERNAL_DEUTEX)
       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex")
     find_program(DEUTEX_EXECUTABLE deutex
       PATHS "${CMAKE_CURRENT_BINARY_DIR}/deutex"
-      NO_DEFAULT_PATH)  
+      NO_DEFAULT_PATH)
+  else()
+    # Check if deutex is unzipped in the source dir and if it is, bring it over
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/deutex-5.2.2")
+      file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/deutex-5.2.2"
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+      execute_process(COMMAND sh bootstrap
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2")
+      execute_process(COMMAND sh configure
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2")
+      execute_process(COMMAND make
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2")
+      find_program(DEUTEX_EXECUTABLE deutex
+        PATHS "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2/src"
+        NO_DEFAULT_PATH)
+    endif()
   endif()
 else()
   find_program(DEUTEX_EXECUTABLE deutex

@@ -359,11 +359,21 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", separator);
 	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", separator);
 	#endif
+	// Search the maintainer-directed data directory for WADs
+	#if defined(ODAMEX_INSTALL_DATADIR)
+	D_AddSearchDir(dirs, ODAMEX_INSTALL_DATADIR, separator);
+	#endif
 
 	D_AddSearchDir(dirs, "/usr/share/doom", separator);
 	D_AddSearchDir(dirs, "/usr/share/games/doom", separator);
 	D_AddSearchDir(dirs, "/usr/local/share/games/doom", separator);
 	D_AddSearchDir(dirs, "/usr/local/share/doom", separator);
+	// Flatpak sandbox default directories
+	// (Since you need to pass envvars to a Flatpak)
+	D_AddSearchDir(dirs, "/run/host/usr/share/doom", separator);
+	D_AddSearchDir(dirs, "/run/host/usr/share/games/doom", separator);
+	D_AddSearchDir(dirs, "/run/host/usr/local/share/games/doom", separator);
+	D_AddSearchDir(dirs, "/run/host/usr/local/share/doom", separator);
 
 	#endif
 }

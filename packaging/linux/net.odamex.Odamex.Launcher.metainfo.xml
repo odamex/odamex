@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+    Generator for metainfo & .desktop files: 
+    https://www.freedesktop.org/software/appstream/metainfocreator/#/
+-->
+<component type="desktop-application">
+  <id>net.odamex.Odamex.Launcher</id>
+  <name>Odamex Launcher</name>
+  <summary>The server browser for Odamex, the best way to play DOOM online!</summary>
+  <developer_name>The Odamex Team</developer_name>
+  <url type="homepage">https://odamex.net</url>
+  <metadata_license>GPL2</metadata_license>
+  <project_license>GPL2</project_license>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <description>
+    <p>This server browser makes searching for online DOOM games easy via Odamex!</p>
+  </description>
+  <launchable type="desktop-id">net.odamex.Odamex.Launcher.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/odamex/odamex/stable/media/logo_128.png</image>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="10.5.0" date="2024-08-28" />
+  </releases>
+</component>
