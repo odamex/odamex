@@ -319,6 +319,14 @@ int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2,
 	Item.SetColumn(SortCol);
 	Item.SetMask(wxLIST_MASK_TEXT);
 
+	long id1 = ListCtrl->FindItem(-1, item1);
+	long id2 = ListCtrl->FindItem(-1, item2);
+
+	if (id1 == -1 || id2 == -1)
+	{
+		return 0;
+	}
+
 	if(SortCol == ListCtrl->GetSpecialSortColumn())
 	{
 		int Img1, Img2;
