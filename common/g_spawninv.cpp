@@ -32,6 +32,7 @@
 #include "cmdlib.h"
 
 EXTERN_CVAR(g_spawninv);
+EXTERN_CVAR(sv_keepweapons);
 
 extern const char* weaponnames[];
 
@@ -834,16 +835,22 @@ void G_GiveSpawnInventory(player_t& player)
 	player.health = inv.health;
 	player.armorpoints = inv.armorpoints;
 	player.armortype = inv.armortype;
-	player.readyweapon = player.pendingweapon = inv.readyweapon;
-	ArrayCopy(player.weaponowned, inv.weaponowned);
-	ArrayCopy(player.ammo, inv.ammo);
+
+	// When respawning, playerstate is PST_REBORN in the server
+	// and PST_DEAD in the client. Use PST_ENTER for consistency across both.
+	if (!sv_keepweapons || player.playerstate == PST_ENTER)
+	{
+		player.readyweapon = player.pendingweapon = inv.readyweapon;
+		ArrayCopy(player.weaponowned, inv.weaponowned);
+		ArrayCopy(player.ammo, inv.ammo);
+	}
 
 	if (inv.berserk)
 	{
 		player.powers[pw_strength] = INV_BERSERK_TIME;
 	}
 
-	if (inv.backpack)
+	if (inv.backpack && !player.backpack)
 	{
 		player.backpack = true;
 		for (size_t i = 0; i < ARRAY_LENGTH(player.maxammo); i++)
