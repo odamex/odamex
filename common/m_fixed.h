@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -33,6 +33,15 @@
 
 typedef int fixed_t;				// fixed 16.16
 typedef unsigned int dsfixed_t;		// fixedpt used by span drawer
+
+#define FRACBITS64				20ll
+#define FRACUNIT64				(1ll<<FRACBITS64)
+#define FRAC64MASK				(FRACUNIT64 - 1ll)
+#define FRAC64FILL( x, o )		( ( x ) | ( ( o ) < 0 ? ( FRAC64MASK << ( 64 - FRACBITS64 ) ) : 0 ) )
+#define FRAC64FILLFIXED( x, o )	( ( x ) | ( ( o ) < 0 ? ( FRAC64MASK << ( 64 - ( FRACBITS64 - FRACBITS ) ) ) : 0 ) )
+
+
+typedef int64_t fixed64_t;
 
 //
 // Fixed Point / Floating Point Conversion
@@ -69,6 +78,47 @@ inline fixed_t INT2FIXED(int x)
 	return x << FRACBITS;
 }
 
+inline float FIXED642FLOAT(fixed64_t x)
+{
+	static const float factor = 1.0f / float(FRACUNIT64);
+	return x * factor;
+}
+
+inline double FIXED642DOUBLE(fixed64_t x)
+{
+	static const double factor = 1.0 / double(FRACUNIT64);
+	return x * factor;
+}
+
+inline fixed64_t FLOAT2FIXED64(float x)
+{
+	return fixed64_t(x * float(FRACUNIT64));
+}
+
+inline fixed64_t DOUBLE2FIXED64(double x)
+{
+	return fixed64_t(x * double(FRACUNIT64));
+}
+
+inline int FIXED642INT(fixed64_t x)
+{
+	return ((int32_t)FRAC64FILL(x >> FRACBITS64, x));
+}
+
+inline fixed_t INT2FIXED64(int x)
+{
+	return x << FRACBITS64;
+}
+
+inline fixed_t FIXED642FIXED(fixed64_t x)
+{
+	return (fixed_t)FRAC64FILLFIXED(x >> (FRACBITS64 - FRACBITS), x);
+}
+
+inline fixed64_t FIXED2FIXED64(fixed_t x)
+{
+	return (fixed64_t)x << (FRACBITS64 - FRACBITS);
+}
 
 //
 // Fixed Point Multiplication for 16.16 precision
@@ -78,6 +128,12 @@ inline static fixed_t FixedMul(fixed_t a, fixed_t b)
 	return (fixed_t)(((int64_t)a * b) >> FRACBITS);
 }
 
+inline static fixed64_t FixedMul64( fixed64_t a, fixed64_t b )
+{
+	fixed64_t result = (a * b) >> FRACBITS64;
+	return FRAC64FILL(result, result);
+}
+
 //
 // Fixed Point Division for 16.16 precision
 //
@@ -85,6 +141,21 @@ inline static fixed_t FixedDiv(fixed_t a, fixed_t b)
 {
 	return (abs(a) >> 14) >= abs(b) ? ((a ^ b) >> 31) ^ MAXINT :
 		(fixed_t)(((int64_t)a << FRACBITS) / b);
+}
+
+inline static fixed64_t FixedAbs64( fixed64_t val )
+{
+	fixed64_t sign = val >> 63ll;
+	return (val ^ sign) - sign;
+}
+
+inline static fixed64_t FixedDiv64( fixed64_t a, fixed64_t b )
+{
+	if ((FixedAbs64(a) >> (FRACBITS64 - 2)) >= FixedAbs64(b))
+	{
+		return (a ^ b) < 0 ? MINLONG : MAXLONG;
+	}
+	return (a << FRACBITS64) / b;
 }
 
 //

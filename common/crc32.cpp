@@ -50,8 +50,11 @@
   #else
     // defines __BYTE_ORDER as __LITTLE_ENDIAN or __BIG_ENDIAN
     #include <sys/param.h>
-    #if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__)
-      #include <sys/endian.h>
+    #if defined(__FreeBSD__)
+      #include <endian.h>
+    #elif defined(__OpenBSD__) || defined(__NetBSD__)
+      #include <endian.h>
+      #define __BYTE_ORDER BYTE_ORDER
     #endif
   #endif
 

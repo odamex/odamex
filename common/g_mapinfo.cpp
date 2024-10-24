@@ -955,7 +955,7 @@ bool ScanAndCompareString(OScanner& os, std::string cmp)
 }
 
 //
-bool ScanAndSetRealNum(OScanner& os, fixed_t& num)
+bool ScanAndSetRealNum(OScanner& os, fixed64_t& num)
 {
 	os.scan();
 	if (!IsRealNum(os.getToken().c_str()))
@@ -963,7 +963,7 @@ bool ScanAndSetRealNum(OScanner& os, fixed_t& num)
 		os.warning("Expected number, got \"%s\". Aborting parsing", os.getToken().c_str());
 		return false;
 	}
-	num = FLOAT2FIXED(os.getTokenFloat());
+	num = FLOAT2FIXED64(os.getTokenFloat());
 
 	return true;
 }
