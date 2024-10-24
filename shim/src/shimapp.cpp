@@ -36,6 +36,10 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <string>
+#include <sstream>
+#include <thread>
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN 1 // we don't need the gui
 #include <windows.h>
@@ -46,23 +50,17 @@ typedef HANDLE PipeType;
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <poll.h>
 #include <unistd.h>
 typedef pid_t ProcessType;
 typedef int PipeType;
 #define NULLPIPE -1
 #endif
 
-#include <string>
-#include <sstream>
-#include <thread>
-
 #include "shimapp.h"
 #include "discordlib.h"
-
-using namespace std::chrono_literals;
 
 OShimApp::OShimApp()
 {
@@ -164,6 +162,24 @@ char* OShimApp::getEnvVar(const char* key, char* buf, const size_t _buflen)
 }
 
 #else
+
+#if !defined(POLLIN)
+
+#define POLLIN 0x01
+#define POLLPRI 0x02
+#define POLLOUT 0x04
+#define POLLERR 0x08
+#define POLLHUP 0x10
+#define POLLNVAL 0x20
+
+struct pollfd
+{
+	PipeType fd;
+	short events;
+	short revents;
+};
+
+#endif
 
 int OShimApp::pipeReady(PipeType fd)
 {
@@ -376,7 +392,7 @@ void OShimApp::processCommands()
 			break;
 		}
 
-		std::this_thread::sleep_for(50ms);
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
 		if (!pipeReady(GPipeRead))
 		{

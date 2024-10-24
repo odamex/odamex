@@ -37,7 +37,6 @@
 #include "discordlib.h"
 
 #include <ctime>
-#include <functional>
 
 ODiscordLib& ODiscordLib::getInstance()
 {

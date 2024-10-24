@@ -38,6 +38,8 @@
 
 #pragma once
 
+#include <ctime>
+
 #define DEBUGPIPE 1
 #if DEBUGPIPE
 #define dbgpipe printf

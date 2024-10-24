@@ -54,9 +54,10 @@ typedef HANDLE PipeType;
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <poll.h>
+#include <unistd.h>
 typedef pid_t ProcessType;
 typedef int PipeType;
 #define NULLPIPE -1
@@ -96,6 +97,8 @@ class OShim
 	void Shim_sendStatusUpdate(const StatusUpdate& update);
 	void Shim_tick(void);
 	const ShimEvent* Shim_pump(void);
+	const StatusUpdate& GetLastStatus();
+	time_t GetLastStatusTime();
 
   private:
 	OShim();
@@ -124,6 +127,11 @@ class OShim
 	// Bootstrapper Process Shim
 	PipeType BParentRead;
 	PipeType BParentWrite;
+
+	// Status update send control
+	time_t lastStatusTime;
+
+	StatusUpdate lastStatus;
 
 	// Cross platform implementations
 	const ShimEvent* processEvent(const uint8_t* buf, size_t buflen);
@@ -158,4 +166,5 @@ class OShim
 // Shim Process Functions
 void I_InitShim(void);
 void I_ShutdownShim(void);
+void I_GameStatusTicker(const StatusUpdate& update);
 const ShimEvent* I_ProcessShim(void);

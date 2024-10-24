@@ -59,7 +59,6 @@
 #include "z_zone.h"
 #include "m_wdlstats.h"
 #include "i_shims.h"
-#include "cl_gamestatus.h"
 
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
@@ -784,8 +783,6 @@ void G_DoLoadLevel (int position)
 	::levelstate.reset();
 
 	C_FlushDisplay ();
-
-	OShim::getInstance().Shim_sendStatusUpdate(G_GameStatusUpdate());
 }
 
 //

@@ -29,7 +29,8 @@ function BuildX64 {
     cmake.exe -G "Visual Studio 17 2022" -A "x64" "${PSScriptRoot}\..\.." `
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
-        -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
+        -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1 `
+        -DBUILD_SHIM=1
     cmake.exe --build . --config RelWithDebInfo
 
     Set-Location -Path "${PSScriptRoot}"
@@ -43,7 +44,8 @@ function BuildX86 {
     cmake.exe -G "Visual Studio 17 2022" -A "Win32" "${PSScriptRoot}\..\.." `
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
-        -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
+        -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1 `
+        -DBUILD_SHIM=1
     cmake.exe --build . --config RelWithDebInfo
 
     Set-Location -Path "${PSScriptRoot}"
@@ -116,6 +118,8 @@ function CopyFiles {
         "${PSScriptRoot}\BuildX64\client\RelWithDebInfo\odamex.exe", `
         "${PSScriptRoot}\BuildX64\client\RelWithDebInfo\SDL2_mixer.dll", `
         "${PSScriptRoot}\BuildX64\client\RelWithDebInfo\SDL2.dll", `
+        "${PSScriptRoot}\BuildX64\shim\RelWithDebInfo\odashim.exe", `
+        "${PSScriptRoot}\BuildX64\shim\discord_game_sdk.dll", `
         "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\odalaunch.exe", `
         "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\wxbase315u_net_vc14x_x64.dll", `
         "${PSScriptRoot}\BuildX64\odalaunch\RelWithDebInfo\wxbase315u_vc14x_x64.dll", `
@@ -147,6 +151,8 @@ function CopyFiles {
         "${PSScriptRoot}\BuildX86\client\RelWithDebInfo\odamex.exe", `
         "${PSScriptRoot}\BuildX86\client\RelWithDebInfo\SDL2_mixer.dll", `
         "${PSScriptRoot}\BuildX86\client\RelWithDebInfo\SDL2.dll", `
+        "${PSScriptRoot}\BuildX86\shim\RelWithDebInfo\odashim.exe", `
+        "${PSScriptRoot}\BuildX86\shim\discord_game_sdk.dll", `
         "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\odalaunch.exe", `
         "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_net_vc14x.dll", `
         "${PSScriptRoot}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_vc14x.dll", `

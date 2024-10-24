@@ -65,6 +65,8 @@
 #include "g_spawninv.h"
 #include "g_gametype.h"
 #include "p_horde.h"
+#include "i_shims.h"
+#include "cl_gamestatus.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -107,6 +109,8 @@ EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (in_autosr50)
 
 EXTERN_CVAR (chasedemo)
+
+EXTERN_CVAR(cl_shim)
 
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
@@ -1164,6 +1168,8 @@ void G_Ticker (void)
 		P_BobTicker();
 		ST_Ticker ();
 		AM_Ticker ();
+		if (cl_shim)
+			I_GameStatusTicker(G_GameStatusUpdate());
 		break;
 
 	case GS_INTERMISSION:

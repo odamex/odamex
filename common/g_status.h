@@ -25,7 +25,6 @@
 #pragma once
 
 #include <string>
-#include <ctime>
 #include <sstream>
 
 enum MatchJoinPrivacy
@@ -74,5 +73,28 @@ struct StatusUpdate
 		stream << join_secret << '\0';
 
 		return stream;
+	}
+
+	bool operator==(const StatusUpdate& comp)
+	{
+		if (
+				this->current_size == comp.current_size &&
+				this->details == comp.details &&
+				this->end == comp.end &&
+				this->join_secret == comp.join_secret &&
+				this->large_image == comp.large_image &&
+				this->large_image_text == comp.large_image_text &&
+				this->max_size == comp.max_size &&
+				this->party_id == comp.party_id &&
+				this->privacy == comp.privacy &&
+				this->small_image == comp.small_image &&
+				this->small_image_text == comp.small_image_text &&
+				this->start == comp.start &&
+				this->state == comp.state
+			)
+		{
+			return true;
+		}
+		return false;
 	}
 };

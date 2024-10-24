@@ -826,7 +826,7 @@ std::string G_GetPlayerStatLineForMode()
 		{
 			std::string livesleft = "";
 			int lives = consoleplayer().lives;
-			StrFormat(livesleft, " / %d %s Left", lives, lives == 1 ? "Lives" : "Life");
+			StrFormat(livesleft, " / %d %s Left", lives, lives == 1 ? "Life" : "Lives");
 			statline += livesleft;
 		}
 	}

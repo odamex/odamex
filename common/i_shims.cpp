@@ -39,14 +39,14 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "i_shims.h"
-#include "doomtype.h"
-#include "c_cvars.h"
+#include "odamex.h"
 
 #include <string>
 
 #include <sstream>
 #include <locale>
+
+#include "i_shims.h"
 
 #define DEBUGPIPE 0
 
@@ -62,6 +62,7 @@ OShim::OShim()
 	backoff = false;
 	lastWriteTime = 0;
 	lastHelloTime = 0;
+	lastStatusTime = 0;
 
 #ifdef _WIN32
 	shimPid = {0, 0, 0, 0};
@@ -165,6 +166,16 @@ int OShim::writeHello(PipeType fd)
 	return write1ByteCmd(fd, SHIMCMD_HELLO);
 }
 
+int OShim::isAlive(PipeType fd)
+{
+	return (fd != NULLPIPE);
+}
+
+int OShim::isDead(PipeType fd)
+{
+	return !isAlive(fd);
+}
+
 void OShim::fail(const char* err)
 {
 	Printf(PRINT_WARNING,
@@ -203,11 +214,15 @@ void OShim::sendStatusUpdate(const StatusUpdate& update)
 
 	//Printf("Parent sending SHIMCMD_SETSTATUS.\n");
 
+	std::ostringstream status;
+
+	update.status_update_serialize(status);
+
+	std::string serialized = status.str();
+
 	std::ostringstream data_stream;
 
-	update.status_update_serialize(data_stream);
-
-	data_stream = std::ostringstream() << (uint8_t)SHIMCMD_SETSTATUS << data_stream.str();
+	data_stream << (uint8_t)SHIMCMD_SETSTATUS << serialized;
 
 	std::ostringstream data_stream_shim;
 
@@ -215,7 +230,7 @@ void OShim::sendStatusUpdate(const StatusUpdate& update)
 	data_stream_shim.write(reinterpret_cast<const char*>(&length), sizeof(length));
 	data_stream_shim << data_stream.str();
 
-	auto buffer = data_stream_shim.str();
+	std::string buffer = data_stream_shim.str();
 	writePipe(PParentWrite, buffer.data(), buffer.length());
 }
 
@@ -224,16 +239,6 @@ void OShim::sendStatusUpdate(const StatusUpdate& update)
 #include <codecvt>
 
 static LPWSTR LpCmdLine = NULL;
-
-int OShim::isAlive(PipeType fd)
-{
-	return (fd != NULLPIPE);
-}
-
-int OShim::isDead(PipeType fd)
-{
-	return !isAlive(fd);
-}
 
 int OShim::pipeReady(PipeType fd)
 {
@@ -324,8 +329,6 @@ char* OShim::getEnvVar(const char* key, char* buf, const size_t _buflen)
 }
 
 #else
-
-#include <poll.h>
 
 #if !defined(POLLIN)
 
@@ -578,6 +581,18 @@ void OShim::Shim_initialize(void)
 void OShim::Shim_sendStatusUpdate(const StatusUpdate& update)
 {
 	sendStatusUpdate(update);
+	lastStatus = update;
+	lastStatusTime = std::time(0);
+}
+
+const StatusUpdate& OShim::GetLastStatus(void)
+{
+	return lastStatus;
+}
+
+time_t OShim::GetLastStatusTime(void)
+{
+	return lastStatusTime;
 }
 
 void OShim::Shim_deinitialize(void)
@@ -607,6 +622,29 @@ void I_InitShim(void)
 }
 
 //
+// I_GameStatusTicker
+//
+// Main ticker for in-game status updates
+//
+void I_GameStatusTicker(const StatusUpdate& update)
+{
+	time_t curtime = std::time(0);
+
+	if (OShim::getInstance().GetLastStatusTime() == curtime)
+	{
+		return;
+	}
+
+	const StatusUpdate& s = OShim::getInstance().GetLastStatus();
+
+	if (&update != &s)
+	{
+		OShim::getInstance().Shim_sendStatusUpdate(update);
+	}
+}
+
+
+//
 // I_ShutdownShim
 //
 // Sends a goodbye to the shim, waits for it to shutdown, and returns the exit code.
@@ -619,7 +657,7 @@ void I_ShutdownShim()
 }
 
 //
-// I_CheckShim
+// I_ProcessShim
 //
 // Main process loop for shims.
 //
