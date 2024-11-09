@@ -45,6 +45,8 @@
 // State.
 #include "r_state.h"
 
+#include "r_interp.h"
+
 // Data.
 #include "gstrings.h"
 
@@ -1481,12 +1483,31 @@ void AM_rotatePoint(mpoint_t& pt)
 {
 	player_t* player = &displayplayer();
 
-	fixed64_t x = player->camera->prevx +
-	            FixedMul64(player->camera->x - player->camera->prevx, render_lerp_amount);
-	fixed64_t y = player->camera->prevy +
-	            FixedMul64(player->camera->y - player->camera->prevy, render_lerp_amount);
-	fixed64_t pangle = player->camera->prevangle +
-	            FixedMul64(player->camera->angle - player->camera->prevangle, render_lerp_amount);
+	OInterpolation& oi = OInterpolation::getInstance();
+
+	fixed64_t x;
+	fixed64_t y;
+	angle_t pangle;
+
+	if (oi.enabled())
+	{
+		x = FIXED2FIXED64(
+			player->camera->prevx +
+			FixedMul(player->camera->x - player->camera->prevx, render_lerp_amount));
+
+		y = FIXED2FIXED64(
+			player->camera->prevy +
+			FixedMul(player->camera->y - player->camera->prevy, render_lerp_amount));
+
+		pangle = player->camera->prevangle +
+			FixedMul(player->camera->angle - player->camera->prevangle, render_lerp_amount);
+	}
+	else
+	{
+		x = FIXED2FIXED64(player->camera->x);
+		y = FIXED2FIXED64(player->camera->y);
+		pangle = player->camera->angle;
+	}
 
 	pt.x -= x;
 	pt.y -= y;
@@ -1532,15 +1553,31 @@ void AM_drawPlayers()
 	angle_t angle;
 	player_t& conplayer = displayplayer();
 
-	fixed64_t x =
-	    FIXED2FIXED64(conplayer.camera->prevx +
-	    FixedMul(conplayer.camera->x - conplayer.camera->prevx, render_lerp_amount));
-	fixed64_t y =
-	    FIXED2FIXED64(conplayer.camera->prevy +
-	    FixedMul(conplayer.camera->y - conplayer.camera->prevy, render_lerp_amount));
-	fixed_t cangle =
-	    conplayer.camera->prevangle +
-	    FixedMul(conplayer.camera->angle - conplayer.camera->prevangle, render_lerp_amount);
+	OInterpolation& oi = OInterpolation::getInstance();
+
+	fixed64_t x;
+	fixed64_t y;
+	fixed_t cangle;
+
+	if (oi.enabled())
+	{
+		x = FIXED2FIXED64(
+			conplayer.camera->prevx +
+			FixedMul(conplayer.camera->x - conplayer.camera->prevx, render_lerp_amount));
+
+		y = FIXED2FIXED64(
+			conplayer.camera->prevy +
+			FixedMul(conplayer.camera->y - conplayer.camera->prevy, render_lerp_amount));
+
+		cangle = conplayer.camera->prevangle +
+			FixedMul(conplayer.camera->angle - conplayer.camera->prevangle, render_lerp_amount);
+	}
+	else
+	{
+		x = FIXED2FIXED64(conplayer.camera->x);
+		y = FIXED2FIXED64(conplayer.camera->y);
+		cangle = conplayer.camera->angle;
+	}
 
 	if (!multiplayer)
 	{
@@ -1606,17 +1643,24 @@ void AM_drawPlayers()
 		}
 
 		mpoint_t pt;
-		fixed_t moangle = p->mo->prevangle +
-			FixedMul(p->mo->angle - p->mo->prevangle,
-			render_lerp_amount);
 
-		fixed_t mox = p->mo->prevx +
-			FixedMul(p->mo->x - p->mo->prevx,
-			render_lerp_amount);
+		fixed_t moangle;
+		fixed_t mox;
+		fixed_t moy;
 
-		fixed_t moy = p->mo->prevy +
-			FixedMul(p->mo->y - p->mo->prevy,
-			render_lerp_amount);
+		if (oi.enabled())
+		{
+			moangle = p->mo->prevangle + FixedMul(p->mo->angle - p->mo->prevangle, render_lerp_amount);
+			mox = p->mo->prevx + FixedMul(p->mo->x - p->mo->prevx, render_lerp_amount);
+			moy = p->mo->prevy + FixedMul(p->mo->y - p->mo->prevy, render_lerp_amount);
+		}
+		else
+		{
+			moangle = p->mo->angle;
+			mox = p->mo->x;
+			moy = p->mo->y;
+		}
+
 		M_SetVec2Fixed64(&pt, FIXED2FIXED64(mox), FIXED2FIXED64(moy));
 
 		angle = moangle;
@@ -1680,6 +1724,8 @@ void AM_drawEasyKeys()
 
 void AM_drawThings()
 {
+	OInterpolation& oi = OInterpolation::getInstance();
+
 	for (int i = 0; i < numsectors; i++)
 	{
 		AActor* t = sectors[i].thinglist;
@@ -1687,12 +1733,23 @@ void AM_drawThings()
 		{
 			mpoint_t p;
 
-			fixed_t thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
-			fixed_t thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
+			fixed_t thingx;
+			fixed_t thingy;
 
-			fixed_t tangle = t->prevangle +
-				FixedMul(t->angle -	t->prevangle,
-				render_lerp_amount);
+			fixed_t tangle;
+
+			if (oi.enabled())
+			{
+				thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
+				thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
+				tangle = t->prevangle + FixedMul(t->angle - t->prevangle, render_lerp_amount);
+			}
+			else
+			{
+				thingx = t->x;
+				thingy = t->y;
+				tangle = t->angle;
+			}
 
 			M_SetVec2Fixed64(&p, FIXED2FIXED64(thingx), FIXED2FIXED64(thingy));
 			angle_t rotate_angle = 0;
@@ -1701,10 +1758,21 @@ void AM_drawThings()
 			if (am_rotate)
 			{
 				AM_rotatePoint(p);
-				fixed_t conangle = displayplayer().camera->prevangle +
-					FixedMul(displayplayer().camera->angle -
-					displayplayer().camera->prevangle,
-					render_lerp_amount);
+
+				fixed_t conangle;
+
+				if (oi.enabled())
+				{
+					conangle = displayplayer().camera->prevangle +
+						FixedMul(displayplayer().camera->angle -
+						displayplayer().camera->prevangle,
+						render_lerp_amount);
+				}
+				else
+				{
+					conangle = displayplayer().camera->angle;
+				}
+
 				rotate_angle = ANG90 - conangle;
 				triangle_angle += rotate_angle;
 			}
