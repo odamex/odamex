@@ -793,31 +793,48 @@ std::string G_GetPlayerStatLineForMode()
 
 	if (G_IsCoopGame())
 	{
-		StrFormat(statline, "%d Kills / %d Deaths / %d Damage / %d Secrets Found",
-		          consoleplayer().killcount, consoleplayer().deathcount,
-		          consoleplayer().monsterdmgcount, ::level.found_secrets);
+		int kills = consoleplayer().killcount;
+		int deaths = consoleplayer().deathcount;
+		int monsterdmg = consoleplayer().monsterdmgcount;
+		int secrets = ::level.found_secrets;
+		StrFormat(statline, "%d %s / %d %s / %d Damage / %d %s Found",
+			kills, kills == 1 ? "Kill" : "Kills",
+			deaths, deaths == 1 ? "Death" : "Deaths",
+			monsterdmg,
+			secrets, secrets == 1 ? "Secret" : "Secrets");
 	}
 	else if (G_IsDuelGame())
 	{
-		StrFormat(statline, "%d Deaths", consoleplayer().deathcount);
+		int deaths = consoleplayer().deathcount;
+		StrFormat(statline, "%d %s", deaths, deaths == 1 ? "Death" : "Deaths");
 	}
 	else if (G_IsTeamGame())
 	{
 		if (sv_gametype == GM_TEAMDM)
 		{
-			StrFormat(statline, "%d Frags / %d Deaths / %d Damage",
-			          consoleplayer().fragcount, consoleplayer().deathcount,
-			          consoleplayer().damagecount);
+			int frags = consoleplayer().fragcount;
+			int deaths = consoleplayer().deathcount;
+			int damage = consoleplayer().damagecount;
+			StrFormat(statline, "%d %s / %d %s / %d Damage",
+				frags, frags == 1 ? "Frag" : "Frags",
+				deaths, deaths == 1 ? "Death" : "Deaths",
+				damage);
 		}
 		else // CTF
 		{
-			StrFormat(statline, "%d Flags / %d Frags / %d Deaths", consoleplayer().points,
-			          consoleplayer().fragcount, consoleplayer().deathcount);
+			int points = consoleplayer().points;
+			int frags = consoleplayer().fragcount;
+			int deaths = consoleplayer().deathcount;
+			StrFormat(statline, "%d %s / %d %s / %d %s", 
+				points, points == 1 ? "Flag" : "Flags",
+				frags, frags == 1 ? "Frag" : "Frags",
+				deaths, deaths == 1 ? "Death" : "Deaths");
 		}
 	}
 	else if (G_IsFFAGame())
 	{
-		StrFormat(statline, "%d Deaths", consoleplayer().deathcount);
+		int deaths = consoleplayer().deathcount;
+		StrFormat(statline, "%d %s", deaths, deaths == 1 ? "Death" : "Deaths");
 	}
 
 	if (G_IsLivesGame())
