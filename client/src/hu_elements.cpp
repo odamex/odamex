@@ -114,6 +114,27 @@ static bool cmpQueue(const player_t* arg1, const player_t* arg2)
 	return arg1->QueuePosition < arg2->QueuePosition;
 }
 
+static void printWeaponTextIfWeaponOwned(const player_t& plyr, std::ostringstream& buffer, int i)
+{
+	if (i == 0 && plyr.powers[pw_strength] > 0)
+		buffer << TEXTCOLOR_BRICK;
+	else if (weaponinfo[i].minammo == 0
+		|| plyr.ammo[weaponinfo[i].ammotype] > 0)
+		buffer << TEXTCOLOR_GREEN;
+	else
+		buffer << TEXTCOLOR_DARKGRAY;
+
+	if (plyr.weaponowned[i])
+	{
+		if (i == 7)
+			buffer << " 1+";
+		else if (i == 8)
+			buffer << " 3+";
+		else
+			buffer << " " << i + 1;
+	}
+}
+
 // Returns true if a player is ingame.
 bool ingamePlayer(player_t* player)
 {
@@ -396,17 +417,15 @@ std::string Weapons()
 {
 	const player_t& plyr = displayplayer();
 	std::ostringstream buffer;
-	buffer << TEXTCOLOR_WHITE "ARMS" TEXTCOLOR_GREEN;
+	buffer << TEXTCOLOR_WHITE "ARMS";
 	for (int i = 0; i < NUMWEAPONS; ++i)
 	{
-		if (i == 0 && plyr.powers[pw_strength] > 0)
-			buffer << TEXTCOLOR_LIGHTBLUE " 1" TEXTCOLOR_GREEN;
-		else if (plyr.weaponowned[i] && i != 7 && i != 8)
-			buffer << " " << i + 1;
-		if (i == 0 && plyr.weaponowned[7])
-			buffer << " 1+";
-		else if (i == 2 && plyr.weaponowned[8])
-			buffer << " 3+";
+		if (i != 7 && i != 8)
+			printWeaponTextIfWeaponOwned(plyr, buffer, i);
+		if (i == 0)
+			printWeaponTextIfWeaponOwned(plyr, buffer, 7);
+		if (i == 2)
+			printWeaponTextIfWeaponOwned(plyr, buffer, 8);
 	}
 	return buffer.str();
 }
