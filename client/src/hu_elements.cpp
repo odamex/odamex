@@ -116,13 +116,13 @@ static bool cmpQueue(const player_t* arg1, const player_t* arg2)
 
 static void printWeaponTextIfWeaponOwned(const player_t& plyr, std::ostringstream& buffer, int i)
 {
-	if (i == 0 && plyr.powers[pw_strength] > 0)
-		buffer << TEXTCOLOR_BRICK;
+	if (i == wp_fist && plyr.powers[pw_strength] > 0)
+		buffer << ((i == plyr.readyweapon) ? TEXTCOLOR_BRICK : TEXTCOLOR_DARKRED);
 	else if (weaponinfo[i].minammo == 0
 		|| plyr.ammo[weaponinfo[i].ammotype] > 0)
-		buffer << TEXTCOLOR_GREEN;
+		buffer << ((i == plyr.readyweapon) ? TEXTCOLOR_GREEN : TEXTCOLOR_DARKGREEN);
 	else
-		buffer << TEXTCOLOR_DARKGRAY;
+		buffer << ((i == plyr.readyweapon) ? TEXTCOLOR_GRAY : TEXTCOLOR_DARKGRAY);
 
 	if (plyr.weaponowned[i])
 	{
