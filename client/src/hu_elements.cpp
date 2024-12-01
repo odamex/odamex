@@ -396,13 +396,17 @@ std::string Weapons()
 {
 	const player_t& plyr = displayplayer();
 	std::ostringstream buffer;
-	buffer << TEXTCOLOR_WHITE "W" TEXTCOLOR_GREEN;
+	buffer << TEXTCOLOR_WHITE "ARMS" TEXTCOLOR_GREEN;
 	for (int i = 0; i < NUMWEAPONS; ++i)
 	{
 		if (i == 0 && plyr.powers[pw_strength] > 0)
 			buffer << TEXTCOLOR_LIGHTBLUE " 1" TEXTCOLOR_GREEN;
-		else if (plyr.weaponowned[i])
+		else if (plyr.weaponowned[i] && i != 7 && i != 8)
 			buffer << " " << i + 1;
+		if (i == 0 && plyr.weaponowned[7])
+			buffer << " 1+";
+		else if (i == 2 && plyr.weaponowned[8])
+			buffer << " 3+";
 	}
 	return buffer.str();
 }
