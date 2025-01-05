@@ -126,6 +126,7 @@ struct hordeDefine_t
 	int minTotalHealth() const;
 	int maxTotalHealth() const;
 	int goalHealth() const;
+	int relaxHealth() const;
 	const char* difficulty(const bool colored) const;
 	StringTokens weaponStrings(player_t* player) const;
 };

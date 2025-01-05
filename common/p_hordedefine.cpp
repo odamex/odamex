@@ -38,6 +38,7 @@
 EXTERN_CVAR(g_horde_mintotalhp)
 EXTERN_CVAR(g_horde_maxtotalhp)
 EXTERN_CVAR(g_horde_goalhp)
+EXTERN_CVAR(g_horde_relaxhp)
 EXTERN_CVAR(g_horde_waves)
 
 std::vector<hordeDefine_t> WAVE_DEFINES;
@@ -94,6 +95,13 @@ int hordeDefine_t::maxTotalHealth() const
 int hordeDefine_t::goalHealth() const
 {
 	return static_cast<float>(maxGroupHealth) * ::g_horde_goalhp * SkillScaler();
+}
+
+int hordeDefine_t::relaxHealth() const
+{
+	return ::g_horde_relaxhp < ::g_horde_goalhp
+		? 0
+		: static_cast<float>(maxGroupHealth) * ::g_horde_relaxhp * SkillScaler();
 }
 
 const char* hordeDefine_t::difficulty(const bool colored) const

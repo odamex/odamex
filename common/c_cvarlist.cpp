@@ -273,6 +273,12 @@ CVAR(g_horde_maxtotalhp, "10.0", "Multiplier for maximum spawned health at a tim
 CVAR(g_horde_goalhp, "8.0", "Goal health multiplier for a given round", CVARTYPE_FLOAT,
      CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
+CVAR(g_horde_relaxhp, "0", "Multiplier for limit of spawnable health per wave", CVARTYPE_FLOAT,
+     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_horde_bosspace, "1", "Only waves that are a multiple of this value will have a boss", CVARTYPE_INT,
+     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
 CVAR_RANGE(g_horde_spawnempty_min, "1",
            "Minimum number of seconds it takes to spawn a monster in an empty horde map",
            CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,

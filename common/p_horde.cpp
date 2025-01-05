@@ -45,6 +45,7 @@
 #endif
 
 EXTERN_CVAR(g_horde_waves)
+EXTERN_CVAR(g_horde_bosspace)
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(g_horde_spawnempty_min)
 EXTERN_CVAR(g_horde_spawnempty_max)
@@ -482,6 +483,8 @@ class HordeState
 	}
 
 	int getAliveHealth() const { return m_spawnedHealth - m_killedHealth; }
+	bool getIsBossWave() const { return ::g_horde_bosspace < 1 ? false : m_wave % static_cast<int>(::g_horde_bosspace) == 0; }
+
 	void changeState();
 	void getNextSpawnTime(int& min, int& max);
 	void tick();
@@ -495,6 +498,7 @@ void HordeState::changeState()
 	const hordeDefine_t& define = G_HordeDefine(m_defineID);
 
 	const int goalHealth = define.goalHealth() + m_waveStartHealth;
+	const int relaxHealth = define.relaxHealth() == 0 ? INT_MAX : define.relaxHealth() + m_waveStartHealth;
 
 	switch (m_state)
 	{
@@ -507,20 +511,25 @@ void HordeState::changeState()
 		return;
 	}
 	case HS_PRESSURE: {
-		if (m_killedHealth > goalHealth && m_bosses.empty())
+		if (getIsBossWave() && m_killedHealth > goalHealth && m_bosses.empty())
 		{
-			// We reached the goal, spawn the boss.
+			// We reached the goal and this wave needs a boss, spawn it.
 			setState(HS_WANTBOSS);
+		}
+		else if (m_spawnedHealth > relaxHealth)
+		{
+			// Spawn quota has been reached, relax.
+			setState(HS_RELAX);
 		}
 		return;
 	}
 	case HS_RELAX: {
-		if (m_killedHealth > goalHealth && m_bosses.empty())
+		if (getIsBossWave() && m_killedHealth > goalHealth && m_bosses.empty())
 		{
-			// We reached the goal, spawn the boss.
+			// We reached the goal and this wave needs a boss, spawn it.
 			setState(HS_WANTBOSS);
 		}
-		else
+		else if (m_spawnedHealth <= relaxHealth)
 		{
 			// There's not enough monsters in the level, add more.
 			setState(HS_PRESSURE);
@@ -529,9 +538,16 @@ void HordeState::changeState()
 	case HS_WANTBOSS: {
 		if (m_bossRecipe.isValid() && static_cast<int>(m_bosses.size()) >= m_bossRecipe.count)
 		{
-			// Doesn't matter which state we enter, but we're more likely
-			// to be in the relax state after spawning a big hunk of HP.
-			setState(HS_PRESSURE);
+			if (m_spawnedHealth > relaxHealth)
+			{
+				// Spawn quota has been reached, relax.
+				setState(HS_RELAX);
+			}
+			else
+			{
+				// There's not enough monsters in the level, add more.
+				setState(HS_PRESSURE);
+			}
 		}
 		return;
 	}
@@ -609,6 +625,17 @@ void HordeState::tick()
 		if (!alive)
 		{
 			// Start the next wave.
+			nextWave();
+			return;
+		}
+	}
+	else if (m_bosses.empty() && !getIsBossWave())
+	{
+		const hordeDefine_t& define = G_HordeDefine(m_defineID);
+		const int goalHealth = define.goalHealth() + m_waveStartHealth;
+
+		if (m_killedHealth > goalHealth)
+		{
 			nextWave();
 			return;
 		}
@@ -996,6 +1023,7 @@ END_COMMAND(hordeboss)
 EXTERN_CVAR(g_horde_mintotalhp)
 EXTERN_CVAR(g_horde_maxtotalhp)
 EXTERN_CVAR(g_horde_goalhp)
+EXTERN_CVAR(g_horde_relaxhp)
 
 BEGIN_COMMAND(hordeinfo)
 {
@@ -1029,6 +1057,19 @@ BEGIN_COMMAND(hordeinfo)
 	Printf("Goal Health: %d = waveMaxGroup:%d * g_horde_goalhp:%s * skillLevel:%0.2f\n",
 	       define.goalHealth(), define.maxGroupHealth, ::g_horde_goalhp.cstring(),
 	       skillScaler);
+
+	if (define.relaxHealth() == 0)
+		Printf("Relax Health: Unlimited (g_horde_relaxhp:%s < g_horde_goalhp:%s)\n",
+	        ::g_horde_relaxhp.cstring(), ::g_horde_goalhp.cstring());
+	else
+	    Printf("Relax Health: %d = waveMaxGroup:%d * g_horde_relaxhp:%s * skillLevel:%0.2f\n",
+	        define.relaxHealth(), define.maxGroupHealth, ::g_horde_relaxhp.cstring(),
+	        skillScaler);
+
+	if (::g_horde_bosspace < 1)
+		Printf("Boss Pace: Never (g_horde_bosspace:%s < 1)\n", ::g_horde_bosspace.cstring());
+	else
+		Printf("Boss Pace: Every %d wave(s) (g_horde_bosspace:%s)\n", static_cast<int>(::g_horde_bosspace), ::g_horde_bosspace.cstring());
 
 	const char* stateStr = NULL;
 	switch (::g_HordeDirector.serialize().state)
@@ -1066,6 +1107,7 @@ BEGIN_COMMAND(hordeinfo)
 	       g_horde_spawnfull_max.asInt());
 	Printf("Alive Health: %d\n", ::g_HordeDirector.serialize().alive());
 	Printf("Killed Health: %d\n", ::g_HordeDirector.serialize().killed());
+	Printf("Boss Wave: %s\n", g_HordeDirector.getIsBossWave() ? "yes" : "no");
 	Printf("Boss Health: %d\n", ::g_HordeDirector.serialize().bossHealth);
 	Printf("Boss Damage: %d\n", ::g_HordeDirector.serialize().bossDamage);
 }
