@@ -99,9 +99,7 @@ int hordeDefine_t::goalHealth() const
 
 int hordeDefine_t::relaxHealth() const
 {
-	return ::g_horde_relaxhp < ::g_horde_goalhp
-		? 0
-		: static_cast<float>(maxGroupHealth) * ::g_horde_relaxhp * SkillScaler();
+	return static_cast<float>(maxGroupHealth) * ::g_horde_relaxhp * SkillScaler();
 }
 
 const char* hordeDefine_t::difficulty(const bool colored) const

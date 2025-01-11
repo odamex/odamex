@@ -279,6 +279,12 @@ CVAR(g_horde_relaxhp, "0", "Multiplier for limit of spawnable health per wave", 
 CVAR(g_horde_bosspace, "1", "Only waves that are a multiple of this value will have a boss", CVARTYPE_INT,
      CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
 
+CVAR(g_horde_bossrelax, "0", "Starting a boss fight resets the relaxhp limit", CVARTYPE_BOOL,
+     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
+CVAR(g_horde_bosswipe, "0", "Winning a boss fight will kill all remaining enemies", CVARTYPE_BOOL,
+     CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
+
 CVAR_RANGE(g_horde_spawnempty_min, "1",
            "Minimum number of seconds it takes to spawn a monster in an empty horde map",
            CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,

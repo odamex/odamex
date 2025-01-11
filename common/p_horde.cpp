@@ -45,7 +45,11 @@
 #endif
 
 EXTERN_CVAR(g_horde_waves)
+EXTERN_CVAR(g_horde_goalhp)
+EXTERN_CVAR(g_horde_relaxhp)
 EXTERN_CVAR(g_horde_bosspace)
+EXTERN_CVAR(g_horde_bossrelax)
+EXTERN_CVAR(g_horde_bosswipe)
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(g_horde_spawnempty_min)
 EXTERN_CVAR(g_horde_spawnempty_max)
@@ -309,8 +313,7 @@ class HordeState
 		#endif
 		}
 
-
-		if (::g_horde_waves && m_wave >= ::g_horde_waves)
+		if ((::g_horde_waves && m_wave >= ::g_horde_waves) || (!m_bosses.empty() && ::g_horde_bosswipe))
 		{
 			// All monsters explode!  Woo!
 			AActor* actor;
@@ -331,7 +334,10 @@ class HordeState
 					}
 				}
 			}
+		}
 
+		if (::g_horde_waves && m_wave >= ::g_horde_waves)
+		{
 			G_EndGame();
 			return;
 		}
@@ -498,7 +504,10 @@ void HordeState::changeState()
 	const hordeDefine_t& define = G_HordeDefine(m_defineID);
 
 	const int goalHealth = define.goalHealth() + m_waveStartHealth;
-	const int relaxHealth = define.relaxHealth() == 0 ? INT_MAX : define.relaxHealth() + m_waveStartHealth;
+	const int relaxHealth = g_horde_relaxhp <= 0 ? INT_MAX // disable relax if 0
+		: g_horde_bossrelax && !m_bosses.empty() ? goalHealth + define.relaxHealth() // if bossrelax is on and bosses exist, add goal health
+		: g_horde_relaxhp < g_horde_goalhp ? goalHealth // otherwise, if relax is less than goal, set it to goal
+		: define.relaxHealth() + m_waveStartHealth;
 
 	switch (m_state)
 	{
@@ -1022,8 +1031,6 @@ END_COMMAND(hordeboss)
 
 EXTERN_CVAR(g_horde_mintotalhp)
 EXTERN_CVAR(g_horde_maxtotalhp)
-EXTERN_CVAR(g_horde_goalhp)
-EXTERN_CVAR(g_horde_relaxhp)
 
 BEGIN_COMMAND(hordeinfo)
 {
@@ -1058,18 +1065,31 @@ BEGIN_COMMAND(hordeinfo)
 	       define.goalHealth(), define.maxGroupHealth, ::g_horde_goalhp.cstring(),
 	       skillScaler);
 
-	if (define.relaxHealth() == 0)
-		Printf("Relax Health: Unlimited (g_horde_relaxhp:%s < g_horde_goalhp:%s)\n",
-	        ::g_horde_relaxhp.cstring(), ::g_horde_goalhp.cstring());
+	if (g_horde_relaxhp <= 0)
+		Printf("Relax Health: Unlimited (g_horde_relaxhp <= 0)\n");
 	else
-	    Printf("Relax Health: %d = waveMaxGroup:%d * g_horde_relaxhp:%s * skillLevel:%0.2f\n",
-	        define.relaxHealth(), define.maxGroupHealth, ::g_horde_relaxhp.cstring(),
-	        skillScaler);
+	{
+		if (::g_horde_relaxhp < ::g_horde_goalhp)
+			Printf("Relax Health: Goal (g_horde_relaxhp:%s < g_horde_goalhp:%s)\n",
+				::g_horde_relaxhp.cstring(), ::g_horde_goalhp.cstring());
+		else
+			Printf("Relax Health: %d = waveMaxGroup:%d * g_horde_relaxhp:%s * skillLevel:%0.2f\n",
+				define.relaxHealth(), define.maxGroupHealth, ::g_horde_relaxhp.cstring(),
+				skillScaler);
+
+		if (!::g_horde_bossrelax)
+			Printf("Boss Relax Health: N/A (g_horde_bossrelax:0)\n");
+		else
+			Printf("Boss Relax Health: %d = goalHealth:%d + relaxHealth:%d (g_horde_bossrelax:1)\n",
+				define.goalHealth() + define.relaxHealth(), define.goalHealth(), define.relaxHealth());
+	}
 
 	if (::g_horde_bosspace < 1)
 		Printf("Boss Pace: Never (g_horde_bosspace:%s < 1)\n", ::g_horde_bosspace.cstring());
 	else
 		Printf("Boss Pace: Every %d wave(s) (g_horde_bosspace:%s)\n", static_cast<int>(::g_horde_bosspace), ::g_horde_bosspace.cstring());
+
+	Printf("Boss Wipe: %s (g_horde_bosswipe:%s)\n", g_horde_bosswipe ? "Yes" : "No", ::g_horde_bosswipe.cstring());
 
 	const char* stateStr = NULL;
 	switch (::g_HordeDirector.serialize().state)
@@ -1105,6 +1125,7 @@ BEGIN_COMMAND(hordeinfo)
 	Printf("Empty/Full Spawn Rate: %d-%dsec, %d-%dsec\n", g_horde_spawnempty_min.asInt(),
 	       g_horde_spawnempty_max.asInt(), g_horde_spawnfull_min.asInt(),
 	       g_horde_spawnfull_max.asInt());
+	Printf("Spawned Health: %d\n", ::g_HordeDirector.serialize().spawnedHealth - g_HordeDirector.serialize().waveStartHealth);
 	Printf("Alive Health: %d\n", ::g_HordeDirector.serialize().alive());
 	Printf("Killed Health: %d\n", ::g_HordeDirector.serialize().killed());
 	Printf("Boss Wave: %s\n", g_HordeDirector.getIsBossWave() ? "yes" : "no");
