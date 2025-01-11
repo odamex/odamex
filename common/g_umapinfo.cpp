@@ -294,7 +294,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		else
 		{
 			const std::string actor_name = os.getToken();
-			const mobjtype_t i = P_NameToMobj(actor_name);
+			const mobjtype_t i = P_INameToMobj(actor_name);
 			if (i == MT_NULL)
 			{
 				os.error("Unknown thing type %s", os.getToken().c_str());

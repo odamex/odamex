@@ -16,7 +16,7 @@
 				<object class="wxMenuItem" name="Id_MnuItmRunOffline">
 					<label>Start Odamex (Single Player)</label>
 					<help>Runs the Odamex Client without connecting to a server</help>
-				</object>				
+				</object>
 				<object class="separator" />
 				<object class="wxMenuItem" name="wxID_PREFERENCES">
 					<label>Settings</label>
@@ -178,6 +178,7 @@
 			<object class="separator" />
 			<object class="wxSearchCtrl" name="Id_SrchCtrlGlobal">
 				<value></value>
+				<size>75,-1d</size>
 			</object>
 		</object>
 		<object class="wxBoxSizer">

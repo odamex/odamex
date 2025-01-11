@@ -39,10 +39,10 @@
 #include "z_zone.h"
 #include "w_wad.h"
 
-
 #include "p_local.h"
 #include "r_local.h"
 #include "r_sky.h"
+#include "p_mapformat.h"
 
 #include "m_alloc.h"
 #include "i_video.h"
@@ -138,12 +138,12 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 	v3float_t s;
 	s.x = x1 - centerx;
 	s.y = y - centery + 1.0f;
-	s.z = xfoc; 
+	s.z = xfoc;
 
 	dspan.iu = M_DotProductVec3f(&s, &a) * flatwidth;
 	dspan.iv = M_DotProductVec3f(&s, &b) * flatheight;
 	dspan.id = M_DotProductVec3f(&s, &c);
-	
+
 	dspan.iustep = a.x * flatwidth;
 	dspan.ivstep = b.x * flatheight;
 	dspan.idstep = c.x;
@@ -176,14 +176,14 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 		{
 			int index = (int)(map >> FRACBITS) + 1;
 			index -= (foggy ? 0 : extralight << 2);
-			
+
 			if (index < 0)
 				dspan.slopelighting[i] = basecolormap;
 			else if (index >= NUMCOLORMAPS)
 				dspan.slopelighting[i] = basecolormap.with((NUMCOLORMAPS - 1));
 			else
 				dspan.slopelighting[i] = basecolormap.with(index);
-			
+
 			map += step;
 		}
 	}
@@ -221,7 +221,7 @@ void R_MapLevelPlane(int y, int x1, int x2)
 	dspan.ystep = FixedMul(pl_ystepscale, slope);
 
 	dspan.xfrac = pl_viewxtrans +
-				FixedMul(FixedMul(pl_viewcos, distance), pl_xscale) + 
+				FixedMul(FixedMul(pl_viewcos, distance), pl_xscale) +
 				(x1 - centerx) * dspan.xstep;
 	dspan.yfrac = pl_viewytrans -
 				FixedMul(FixedMul(pl_viewsin, distance), pl_yscale) +
@@ -413,7 +413,7 @@ void R_MakeSpans(visplane_t *pl, void(*spanfunc)(int, int, int))
 		unsigned int b1 = pl->bottom[x-1];
 		unsigned int t2 = pl->top[x];
 		unsigned int b2 = pl->bottom[x];
-		
+
 		for (; t1 < t2 && t1 <= b1; t1++)
 			spanfunc(t1, spanstart[t1], x-1);
 		for (; b1 > b2 && b1 >= t1; b1--)
@@ -496,11 +496,11 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	M_TranslateVec3f(&p, &viewpos, rotation);
 	M_TranslateVec3f(&t, &viewpos, rotation);
 	M_TranslateVec3f(&s, &viewpos, rotation);
-	
+
 	// Subtract p from t and s, making t and s into direction vectors
 	M_SubVec3f(&t, &t, &p);
 	M_SubVec3f(&s, &s, &p);
-	
+
 	M_CrossProductVec3f(&a, &p, &s);
 	M_CrossProductVec3f(&b, &t, &p);
 	M_CrossProductVec3f(&c, &t, &s);
@@ -511,9 +511,9 @@ void R_DrawSlopedPlane(visplane_t *pl)
 
 	a.y *= ifocratio;
 	b.y *= ifocratio;
-	c.y *= ifocratio;		
-	
-	// (SoM) More help from randy. I was totally lost on this... 
+	c.y *= ifocratio;
+
+	// (SoM) More help from randy. I was totally lost on this...
 	float scalenumer = FIXED2FLOAT(finetangent[FINEANGLES/4+CorrectFieldOfView/2]);
 	float ixscale = scalenumer / flatwidth;
 	float iyscale = scalenumer / flatheight;
@@ -523,12 +523,12 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	angle_t fovang = ANG(consoleplayer().fov / 2.0f);
 	float slopetan = FIXED2FLOAT(finetangent[fovang >> ANGLETOFINESHIFT]);
 	float slopevis = 8.0 * slopetan * 16.0 * 320.0 / float(I_GetSurfaceWidth());
-	
+
 	plight = (slopevis * ixscale * iyscale) / (zat - viewpos.z);
 	shade = 256.0 * 2.0 - (pl->lightlevel + 16.0) * 256.0 / 128.0;
 
 	basecolormap = pl->colormap;	// [RH] set basecolormap
-   
+
 	R_MakeSpans(pl, R_MapSlopedPlane);
 }
 
@@ -550,16 +550,24 @@ void R_DrawLevelPlane(visplane_t *pl)
 	// values for angle 0. This helps the texture to line up correctly.
 	if (pl->angle == 0)
 	{
-		pl_viewx = viewx;
-		pl_viewy = -viewy;
+		pl_viewx = pl->xoffs + viewx;
+		pl_viewy = pl->yoffs - viewy;
 	}
 	else
 	{
 		const fixed_t pl_cos = finecosine[pl->angle >> ANGLETOFINESHIFT];
 		const fixed_t pl_sin = finesine[pl->angle >> ANGLETOFINESHIFT];
-		
-		pl_viewx = FixedMul(viewx, pl_cos) - FixedMul(viewy, pl_sin);
-		pl_viewy = -(FixedMul(viewx, pl_sin) + FixedMul(viewy, pl_cos));
+
+		if (map_format.getZDoom())
+		{
+			pl_viewx = pl->xoffs + FixedMul(viewx, pl_cos) - FixedMul(viewy, pl_sin);
+			pl_viewy = pl->yoffs - (FixedMul(viewx, pl_sin) + FixedMul(viewy, pl_cos));
+		}
+		else
+		{
+			pl_viewx = FixedMul(viewx + pl->xoffs, pl_cos) - FixedMul(viewy - pl->yoffs, pl_sin);
+			pl_viewy = -(FixedMul(viewx + pl->xoffs, pl_sin) + FixedMul(viewy - pl->yoffs, pl_cos));
+		}
 	}
 
 	// cache a calculation used by R_MapLevelPlane
@@ -567,9 +575,9 @@ void R_DrawLevelPlane(visplane_t *pl)
 	pl_ystepscale = FixedMul(pl_viewcos, pl->yscale) << 10;
 
 	// cache a calculation used by R_MapLevelPlane
-	pl_viewxtrans = FixedMul(pl_viewx + pl->xoffs, pl->xscale) << 10;
-	pl_viewytrans = FixedMul(pl_viewy + pl->yoffs, pl->yscale) << 10;
-	
+	pl_viewxtrans = FixedMul(pl_viewx, pl->xscale) << 10;
+	pl_viewytrans = FixedMul(pl_viewy, pl->yscale) << 10;
+
 	basecolormap = pl->colormap;	// [RH] set basecolormap
 
 	// [SL] 2012-02-05 - Plane's height should be constant for all (x,y)
@@ -596,7 +604,7 @@ void R_DrawPlanes (void)
 	R_ResetDrawFuncs();
 
 	dspan.color = 3;
-	
+
 	for (i = 0; i < MAXVISPLANES; i++)
 	{
 		for (pl = visplanes[i]; pl; pl = pl->next)
@@ -616,7 +624,7 @@ void R_DrawPlanes (void)
 
 				dspan.color += 4;	// [RH] color if r_drawflat is 1
 				dspan.source = (byte *)W_CacheLumpNum (firstflat + useflatnum, PU_STATIC);
-										   
+
 				// [RH] warp a flat if desired
 				if (flatwarp[useflatnum])
 				{
@@ -659,7 +667,7 @@ void R_DrawPlanes (void)
 						dspan.source = warped;
 					}
 				}
-				
+
 				pl->top[pl->maxx+1] = viewheight;
 				pl->top[pl->minx-1] = viewheight;
 
@@ -667,7 +675,7 @@ void R_DrawPlanes (void)
 					R_DrawLevelPlane(pl);
 				else
 					R_DrawSlopedPlane(pl);
-					
+
 				Z_ChangeTag (dspan.source, PU_CACHE);
 			}
 		}

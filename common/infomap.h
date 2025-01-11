@@ -26,5 +26,6 @@
 #include "info.h"
 
 mobjtype_t P_NameToMobj(const std::string& name);
+mobjtype_t P_INameToMobj(const std::string& name);
 weapontype_t P_NameToWeapon(const std::string& name);
 std::string P_MobjToName(const mobjtype_t name);

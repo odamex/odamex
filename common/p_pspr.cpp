@@ -916,6 +916,9 @@ void A_ConsumeAmmo(AActor* mo)
 	player_t* player = mo->player;
 	struct pspdef_s* psp = &player->psprites[player->psprnum];
 
+	if (sv_infiniteammo)
+		return;
+
 	// don't do dumb things, kids
 	type = weaponinfo[player->readyweapon].ammotype;
 	if (!psp->state || type == am_noammo)

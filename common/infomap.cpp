@@ -319,6 +319,26 @@ mobjtype_t P_NameToMobj(const std::string& name)
 	return it->second;
 }
 
+/**
+ * @brief Convert a UMAPINFO/ZDoom class name to a MT Mobj index. Case insensitive for UMAPINFO
+ */
+mobjtype_t P_INameToMobj(const std::string& name)
+{
+	if (::g_MonsterMap.empty())
+	{
+		InitMap();
+	}
+
+	for (MobjMap::iterator it = ::g_MonsterMap.begin(); it != ::g_MonsterMap.end(); ++it)
+	{
+		if (iequals(it->first, name))
+		{
+			return it->second;
+		}
+	}
+	return MT_NULL;
+}
+
 std::string P_MobjToName(const mobjtype_t name)
 {
 	if (::g_MonsterMap.empty())

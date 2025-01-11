@@ -235,11 +235,13 @@ int V_GetTextColor(const char* str)
 // V_PrintStr
 // Print a line of text using the console font
 //
-void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool use_color_codes) const
+void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool use_color_codes, int scale) const
 {
 	// Don't try and print a string without conchars loaded.
 	if (::ConChars == NULL)
 		return;
+
+	const int char_size = 8 * scale;
 
 	if (default_color < 0)
 		default_color = CR_GRAY;
@@ -249,29 +251,29 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
 
-	if (y > (surface_height - 8) || y < 0)
+	if (y > (surface_height - char_size) || y < 0)
 		return;
 
 	if (x < 0)
 	{
-		int skip = -(x - 7) / 8;
-		x += skip * 8;
+		int skip = -(x - (char_size - 1)) / char_size;
+		x += skip * char_size;
 		if ((int)strlen(str) <= skip)
 			return;
 
 		str += skip;
 	}
 
-	x &= ~3;
+	x = x / char_size * char_size;
 	byte* destline = mSurface->getBuffer() + y * mSurface->getPitch();
 
-	while (*str && x <= (surface_width - 8))
+	while (*str && x <= (surface_width - char_size))
 	{
 	    // john - tab 4 spaces
 	    if (*str == '\t')
 	    {
 	        str++;
-	        x += 8 * 4;
+	        x += char_size * 4;
 	        continue;
 	    }
 
@@ -280,7 +282,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 		{
 			int new_color = V_GetTextColor(str);
 			if (new_color == -1)
-				new_color = default_color; 
+				new_color = default_color;
 
 			trans = translationref_t(Ranges + new_color * 256);
 
@@ -296,14 +298,20 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 			palindex_t* dest = (palindex_t*)destline + x;
 			for (int z = 0; z < 8; z++)
 			{
-				for (int a = 0; a < 8; a++)
+				// repeat each scanline based on scale
+				for (int sy = 0; sy < scale; ++sy)
 				{
-					const palindex_t mask = source[a+8];
-					palindex_t color = trans.tlate(source[a]);
-					dest[a] = (dest[a] & mask) ^ color;
-				}
+					for (int a = 0; a < 8; a++)
+					{
+						const palindex_t mask = source[a+8];
+						palindex_t color = trans.tlate(source[a]);
 
-				dest += surface_pitch; 
+						// repeat each pixel based on scale
+						for (int sx = 0; sx < scale; ++sx)
+							dest[a*scale + sx] = (dest[a*scale + sx] & mask) ^ color;
+					}
+					dest += surface_pitch;
+				}
 				source += 16;
 			}
 		}
@@ -313,22 +321,27 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 			argb_t* dest = (argb_t*)destline + x;
 			for (int z = 0; z < 8; z++)
 			{
-				for (int a = 0; a < 8; a++)
+				// repeat each scanline based on scale
+				for (int sy = 0; sy < scale; ++sy)
 				{
-					const argb_t mask = (source[a+8] << 24) | (source[a+8] << 16)
-										| (source[a+8] << 8) | source[a+8];
+					for (int a = 0; a < 8; a++)
+					{
+						const argb_t mask = (source[a+8] << 24) | (source[a+8] << 16)
+											| (source[a+8] << 8) | source[a+8];
 
-					argb_t color = V_Palette.shade(trans.tlate(source[a])) & ~mask;
-					dest[a] = (dest[a] & mask) ^ color; 
+						argb_t color = V_Palette.shade(trans.tlate(source[a])) & ~mask;
+						// repeat each pixel based on scale
+						for (int sx = 0; sx < scale; ++sx)
+							dest[a*scale + sx] = (dest[a*scale + sx] & mask) ^ color;
+					}
+					dest += surface_pitch >> 2;
 				}
-
-				dest += surface_pitch >> 2; 
 				source += 16;
 			}
 		}
 
 		str++;
-		x += 8;
+		x += char_size;
 	}
 }
 

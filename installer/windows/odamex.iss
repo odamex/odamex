@@ -4,6 +4,7 @@
 ; Must be passed as a /D parameter to the compiler
 ;#define OdamexVersion "0.9.0"
 ;#define OdamexTestSuffix "-TEST1"
+;#define SourcePath "C:\odamex\odamex"
 
 #define OdamexName "Odamex"
 #define OdamexPublisher "Odamex Development Team"
@@ -24,7 +25,7 @@ VersionInfoVersion={#OdamexVersion}
 DefaultDirName={autopf}\{#OdamexName}
 DefaultGroupName={#OdamexName}
 AllowNoIcons=true
-LicenseFile=..\..\LICENSE
+LicenseFile={#SourcePath}\LICENSE
 OutputBaseFilename={#"odamex-win-" + OdamexVersion + OdamexTestSuffix}
 Compression=lzma2
 SolidCompression=true
@@ -40,8 +41,8 @@ DirExistsWarning=no
 AllowRootDirectory=True
 ChangesAssociations=yes
 ArchitecturesInstallIn64BitMode=x64
-WizardImageFile=..\..\media\wininstall_largeback.bmp
-WizardSmallImageFile=..\..\media\wininstall_wizardicon.bmp
+WizardImageFile={#SourcePath}\media\wininstall_largeback.bmp
+WizardSmallImageFile={#SourcePath}\media\wininstall_wizardicon.bmp
 
 [Languages]
 Name: english; MessagesFile: compiler:Default.isl
@@ -71,58 +72,58 @@ Name: launcher; Description: Odalaunch (Game Launcher); Types: full compact cust
 ;; COMMON FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Source: OutCommon\*.txt; DestDir: {app}; Flags: ignoreversion; Components: base
-Source: OutCommon\config-samples\*; DestDir: {app}\config-samples; Flags: ignoreversion; Components: server
-Source: OutCommon\licenses\*; DestDir: {app}\licenses; Flags: ignoreversion; Components: base
-Source: OutCommon\odamex.wad; DestDir: {app}; Flags: ignoreversion; Components: client server
+Source: {#SourcePath}\OutCommon\*.txt; DestDir: {app}; Flags: ignoreversion; Components: base
+Source: {#SourcePath}\OutCommon\config-samples\*; DestDir: {app}\config-samples; Flags: ignoreversion; Components: server
+Source: {#SourcePath}\OutCommon\licenses\*; DestDir: {app}\licenses; Flags: ignoreversion; Components: base
+Source: {#SourcePath}\OutCommon\odamex.wad; DestDir: {app}; Flags: ignoreversion; Components: client server
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 64-BIT FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Source: OutX64\libFLAC-8.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: OutX64\libmodplug-1.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: OutX64\libmpg123-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: OutX64\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: OutX64\libopus-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: OutX64\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: OutX64\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: OutX64\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: OutX64\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: OutX64\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: Is64BitInstallMode
-Source: OutX64\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: OutX64\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: OutX64\wxbase315u_net_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: OutX64\wxbase315u_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: OutX64\wxbase315u_xml_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: OutX64\wxmsw315u_core_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: OutX64\wxmsw315u_html_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: OutX64\wxmsw315u_xrc_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: OutX64\redist\VC_redist.x64.exe; DestDir: {tmp}; Flags: dontcopy
+Source: {#SourcePath}\OutX64\libFLAC-8.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\libmodplug-1.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\libmpg123-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\libopus-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\wxbase315u_net_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\wxbase315u_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\wxbase315u_xml_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\wxmsw315u_core_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\wxmsw315u_html_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\wxmsw315u_xrc_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\redist\VC_redist.x64.exe; DestDir: {tmp}; Flags: dontcopy
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 32-BIT FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Source: OutX86\libFLAC-8.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: OutX86\libmodplug-1.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: OutX86\libmpg123-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: OutX86\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: OutX86\libopus-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: OutX86\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: OutX86\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: OutX86\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
-Source: OutX86\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: OutX86\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: not Is64BitInstallMode
-Source: OutX86\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: OutX86\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: OutX86\wxbase315u_net_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
-Source: OutX86\wxbase315u_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
-Source: OutX86\wxbase315u_xml_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
-Source: OutX86\wxmsw315u_core_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
-Source: OutX86\wxmsw315u_html_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
-Source: OutX86\wxmsw315u_xrc_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
-Source: OutX86\redist\VC_redist.x86.exe; DestDir: {tmp}; Flags: dontcopy
+Source: {#SourcePath}\OutX86\libFLAC-8.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\libmodplug-1.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\libmpg123-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\libopus-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\wxbase315u_net_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\wxbase315u_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\wxbase315u_xml_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\wxmsw315u_core_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\wxmsw315u_html_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\wxmsw315u_xrc_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\redist\VC_redist.x86.exe; DestDir: {tmp}; Flags: dontcopy
 
 [Icons]
 Name: {group}\Odamex Client; Filename: {app}\odamex.exe; WorkingDir: {app}

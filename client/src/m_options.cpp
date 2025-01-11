@@ -963,6 +963,7 @@ menu_t HUDMenu = {
 EXTERN_CVAR(message_showpickups)
 EXTERN_CVAR(message_showobituaries)
 EXTERN_CVAR (con_coloredmessages)
+EXTERN_CVAR (con_scaletext)
 EXTERN_CVAR (hud_scaletext)
 EXTERN_CVAR (msg0color)
 EXTERN_CVAR (msg1color)
@@ -1004,6 +1005,9 @@ static value_t TextColors[] =
 //	{ 3.0, "Italian" }
 //};
 
+static value_t ScaleFactors[] = {{0.0, "Auto"}, {1.0, "1X"}, {2.0, "2X"},
+                                 {3.0, "3X"},   {4.0, "4X"}, {5.0, "5X"}};
+
 static menuitem_t MessagesItems[] = {
 #if 0
 	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
@@ -1012,6 +1016,7 @@ static menuitem_t MessagesItems[] = {
 	{ slider,	"Center Message Timeout",{&con_midtime},		{1.0}, {10.0},	{0.25}, {NULL} },
 	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },
 	{ discrete,	"Colorize messages",	{&con_coloredmessages},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete,	"Scale console text",   {&con_scaletext},		{5.0}, {0.0}, 	{0.0}, {ScaleFactors} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ yellowtext,"Display settings",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete,	"Show pickup messages",	{&message_showpickups},	{2.0}, {0.0},   {0.0},	{OnOff} },

@@ -195,6 +195,9 @@ CVAR_RANGE(			con_buffersize, "1024", "Size of console scroll-back buffer",
 CVAR(				con_coloredmessages, "1", "Activates colored messages in printed messages",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR_RANGE_FUNC_DECL(con_scaletext, "0", "Scale factor of console text (0 = auto).",
+					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
+
 CVAR(message_showpickups, "1", "Show item pickup messages on the message line.",
      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
