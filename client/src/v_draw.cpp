@@ -575,10 +575,12 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int 
 	if (patch->width() > 320 && patch->leftoffset() != 0)
 		x += (patch->width() - 320) / 2;
 
-	int clippedx = MAX(0, x);
-	int clippedy = MAX(0, y);
-	int patchheight = clamp(static_cast<int>(patch->height()), 0, surface_height - clippedy);
-	int patchwidth = clamp(static_cast<int>(patch->width()), 0, surface_width - clippedx);
+	const int clippedx = MAX(0, x);
+	const int clippedy = MAX(0, y);
+	const int xoffs = clippedx - x;
+	const int yoffs = clippedy - y;
+	const int patchheight = clamp(static_cast<int>(patch->height()), 0, surface_height - clippedy);
+	const int patchwidth = clamp(static_cast<int>(patch->width()), 0, surface_width - clippedx);
 
 	if (mSurface->getBitsPerPixel() == 8)
 		drawfunc = Pfuncs[drawer];
@@ -591,7 +593,7 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int 
 
 	byte* desttop = mSurface->getBuffer() + clippedy * surface_pitch + clippedx * colstep;
 
-	for (int col = x - clippedx; col < patchwidth; x++, col++, desttop += colstep)
+	for (int col = xoffs; col < patchwidth + xoffs; x++, col++, desttop += colstep)
 	{
 		tallpost_t *post =
 				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
@@ -655,8 +657,10 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 
 	y0 -= (patch->topoffset() * ymul) >> FRACBITS;
 	x0 -= (patch->leftoffset() * xmul) >> FRACBITS;
-	int clippedx = MAX(0, x0);
-	int clippedy = MAX(0, y0);
+	const int clippedx = MAX(0, x0);
+	const int clippedy = MAX(0, y0);
+	const int xoffs = clippedx - x0;
+	const int yoffs = clippedy - y0;
 	destheight = clamp(destheight, 0, surface_height - clippedy);
 	destwidth = clamp(destwidth, 0, surface_width - clippedx);
 
@@ -670,9 +674,9 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 		V_MarkRect(clippedx, clippedy, destwidth, destheight);
 
 	byte* desttop = mSurface->getBuffer() + (clippedy * surface_pitch) + (clippedx * colstep);
-	int w = MIN(destwidth * xinc, patch->width() << FRACBITS);
+	int w = MIN(destwidth * xinc, patch->width() << FRACBITS) + xoffs * xinc;
 
-	for (int col = x0 - clippedx; col < w; col += xinc, desttop += colstep)
+	for (int col = xoffs * xinc; col < w; col += xinc, desttop += colstep)
 	{
 		tallpost_t *post =
 				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col >> FRACBITS]));
