@@ -575,15 +575,10 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int 
 	if (patch->width() > 320 && patch->leftoffset() != 0)
 		x += (patch->width() - 320) / 2;
 
-#ifdef RANGECHECK
-	if (x < 0 || x + patch->width() > surface_width || y < 0 || y + patch->height() > surface_height)
-	{
-	  // Printf (PRINT_HIGH, "Patch at %d,%d exceeds LFB\n", x,y );
-	  // No I_Error abort - what is up with TNT.WAD?
-	  DPrintf ("DCanvas::DrawWrapper: bad patch (ignored)\n");
-	  return;
-	}
-#endif
+	int clippedx = MAX(0, x);
+	int clippedy = MAX(0, y);
+	int patchheight = clamp(static_cast<int>(patch->height()), 0, surface_height - clippedy);
+	int patchwidth = clamp(static_cast<int>(patch->width()), 0, surface_width - clippedx);
 
 	if (mSurface->getBitsPerPixel() == 8)
 		drawfunc = Pfuncs[drawer];
@@ -592,13 +587,11 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int 
 
 	// mark if this is the primary drawing surface
 	if (mSurface == I_GetPrimarySurface())
-		V_MarkRect(x, y, patch->width(), patch->height());
+		V_MarkRect(clippedx, clippedy, patchwidth, patchheight);
 
-	byte* desttop = mSurface->getBuffer() + y * surface_pitch + x * colstep;
+	byte* desttop = mSurface->getBuffer() + clippedy * surface_pitch + clippedx * colstep;
 
-	int patchwidth = patch->width();
-
-	for (int col = 0; col < patchwidth; x++, col++, desttop += colstep)
+	for (int col = x - clippedx; col < patchwidth; x++, col++, desttop += colstep)
 	{
 		tallpost_t *post =
 				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
@@ -624,7 +617,7 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int 
  * @param destheight
  */
 void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, int y0,
-                           const int destwidth, const int destheight) const
+                           int destwidth, int destheight) const
 {
 	if (patch == NULL)
 		return;
@@ -662,14 +655,10 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 
 	y0 -= (patch->topoffset() * ymul) >> FRACBITS;
 	x0 -= (patch->leftoffset() * xmul) >> FRACBITS;
-
-#ifdef RANGECHECK
-	if (x0 < 0 || x0 + destwidth > surface_width || y0 < 0 || y0 + destheight > surface_height)
-	{
-		DPrintf("DCanvas::DrawSWrapper: bad patch (ignored)\n");
-		return;
-	}
-#endif
+	int clippedx = MAX(0, x0);
+	int clippedy = MAX(0, y0);
+	destheight = clamp(destheight, 0, surface_height - clippedy);
+	destwidth = clamp(destwidth, 0, surface_width - clippedx);
 
 	if (mSurface->getBitsPerPixel() == 8)
 		drawfunc = Psfuncs[drawer];
@@ -678,12 +667,12 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 
 	// mark if this is the primary drawing surface
 	if (mSurface == I_GetPrimarySurface())
-		V_MarkRect(x0, y0, destwidth, destheight);
+		V_MarkRect(clippedx, clippedy, destwidth, destheight);
 
-	byte* desttop = mSurface->getBuffer()+ (y0 * surface_pitch) + (x0 * colstep);
+	byte* desttop = mSurface->getBuffer() + (clippedy * surface_pitch) + (clippedx * colstep);
 	int w = MIN(destwidth * xinc, patch->width() << FRACBITS);
 
-	for (int col = 0; col < w; col += xinc, desttop += colstep)
+	for (int col = x0 - clippedx; col < w; col += xinc, desttop += colstep)
 	{
 		tallpost_t *post =
 				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col >> FRACBITS]));
