@@ -990,7 +990,7 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch, bool clear) const
 		if (width <= 320)
 			destw = surface_height * 4 / 3;
 		else
-			destw = width * (surface_height / 200);
+			destw = width * (surface_height / 200.0f) * 3 / 4;
 		desth = surface_height;
 	}
 	else
@@ -998,7 +998,7 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch, bool clear) const
 		if (width <= 320)
 			destw = surface_width;
 		else
-			destw = width * (surface_width / 320);
+			destw = width * (surface_width / 320) * 3 / 4;
 		desth = surface_width * 3 / 4;
 	}
 
