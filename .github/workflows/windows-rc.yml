@@ -97,7 +97,7 @@ jobs:
       run: |
         .\ci\win-release-x64.ps1
     - name: Install Python packages
-      uses: BSFishy/pip-action@v1
+      uses: insightsengineering/pip-action@v2
       with:
         packages: |
           b2sdk
@@ -146,7 +146,7 @@ jobs:
       run: |
         .\ci\win-release-x86.ps1
     - name: Install Python packages
-      uses: BSFishy/pip-action@v1
+      uses: insightsengineering/pip-action@v2
       with:
         packages: |
           b2sdk
