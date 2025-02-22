@@ -1,9 +1,51 @@
 #include "gtest/gtest.h"
+// yea need to fix the cmake to include this in a better way
+#include "../../common/hashtable.h"
 
-// Demonstrate some basic assertions.
-TEST(HelloTest, BasicAssertions) {
-    // Expect two strings not to be equal.
-    EXPECT_STRNE("hello", "world");
-    // Expect equality.
-    EXPECT_EQ(7 * 6, 42);
-  }
+TEST(OHashTable, InsertAndRetrieve) {
+    OHashTable<int, std::string> table;
+
+    table.insert(std::make_pair(1, "one"));
+    table.insert(std::make_pair(2, "two"));
+    table.insert(std::make_pair(3, "three"));
+
+    EXPECT_EQ(table[1], "one");
+    EXPECT_EQ(table[2], "two");
+    EXPECT_EQ(table[3], "three");
+}
+
+TEST(OHashTable, UpdateElement) {
+    OHashTable<int, std::string> table;
+
+    table.insert(std::make_pair(1, "one"));
+    table.insert(std::make_pair(1, "uno"));
+
+    EXPECT_EQ(table[1], "uno");
+}
+
+TEST(OHashTable, EraseKey) {
+    OHashTable<int, std::string> table;
+
+    table.insert(std::make_pair(1, "one"));
+    table.insert(std::make_pair(2, "two"));
+
+    table.erase(1);
+
+    EXPECT_EQ(table.find(1), table.end());
+    EXPECT_EQ(table[2], "two");
+}
+
+TEST(OHashTable, CheckSize) {
+    OHashTable<int, std::string> table;
+
+    EXPECT_EQ(table.size(), 0);
+
+    table.insert(std::make_pair(1, "one"));
+    table.insert(std::make_pair(2, "two"));
+
+    EXPECT_EQ(table.size(), 2);
+
+    table.erase(1);
+
+    EXPECT_EQ(table.size(), 1);
+}
