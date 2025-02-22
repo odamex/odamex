@@ -2,7 +2,7 @@
 #
 # Note that if you are running Linux, there are many ways to get newer
 # versions of CMake.
-# 
+#
 # - Kitware offers binary downloads direct from their website, which you can
 #   extract to /usr/local or ~/.local.
 # - Ubuntu LTS users can install the CMake snap, and Kitware also runs an
@@ -41,6 +41,7 @@ endif()
 option(BUILD_CLIENT "Build client target" 1)
 option(BUILD_SERVER "Build server target" 1)
 option(BUILD_LAUNCHER "Build launcher target" 1)
+option(BUILD_TESTS "Build unit test target" 1)
 option(BUILD_MASTER "Build master server target" 0)
 option(BUILD_OR_FAIL "Must build the BUILD_* targets or else generation will fail" 0)
 option(USE_INTERNAL_DEUTEX "Use internal DeuTex" ${USE_INTERNAL_LIBS})
@@ -162,7 +163,7 @@ add_subdirectory(libraries)
 add_subdirectory(wad)
 
 # Subdirectories for Odamex projects
-if(BUILD_CLIENT OR BUILD_SERVER)
+if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
   add_subdirectory(common)
   add_subdirectory(odaproto)
 endif()
@@ -171,6 +172,11 @@ if(BUILD_CLIENT)
 endif()
 if(BUILD_SERVER)
   add_subdirectory(server)
+endif()
+if(BUILD_TESTS)
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  add_subdirectory(libraries/googletest)
+  add_subdirectory(tests/unit-tests)
 endif()
 if(BUILD_MASTER)
   add_subdirectory(master)

@@ -26,3 +26,6 @@
 [submodule "libraries/portmidi"]
 	path = libraries/portmidi
 	url = https://github.com/PortMidi/portmidi.git
+[submodule "libraries/googletest"]
+	path = libraries/googletest
+	url = git@github.com:google/googletest.git
