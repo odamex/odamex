@@ -28,3 +28,5 @@ jobs:
       run: bash ci/macos-buildgen.sh
     - name: Run build
       run: cmake --build ./build/
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes

@@ -41,6 +41,8 @@ jobs:
       uses: ammaraskar/msvc-problem-matcher@master
     - name: Run build
       run: cmake --build .\build\ --config RelWithDebInfo --parallel
+    - name: Run unit tests
+      run: .\build\tests\unit-tests\RelWithDebInfo\odagtest --gtest_color=yes
     - name: Prepare artifact
       run: .\ci\win-artifact.ps1
     - name: Stage artifacts for testing
