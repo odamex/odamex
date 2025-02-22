@@ -30,8 +30,8 @@ jobs:
       uses: ammaraskar/gcc-problem-matcher@master
     - name: Run build
       run: cmake --build ./build/
-    - name: Run Google Tests
-      run: ./build/tests/unit-tests/odagtest
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes
     - name: Prepare artifact
       run: bash ci/ubuntu-artifact.sh
     - name: Upload artifact
