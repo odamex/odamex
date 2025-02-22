@@ -5,6 +5,9 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
 endif(COMMAND cmake_policy)
 
+# #define TEST_APP for use in the source code
+add_definitions(-DTEST_APP)
+
 file(GLOB TEST_SOURCES *.cpp *.h)
 
 get_target_property(COMMON_SOURCES odamex-common INTERFACE_SOURCES)
