@@ -94,7 +94,7 @@ jobs:
       run: cmake --build ./build/
     - name: Run unit tests
       run: ./build/tests/unit-tests/odagtest --gtest_color=yes
-  build-centos:
+  build-fedora:
     name: Build (Fedora 32)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
@@ -106,9 +106,7 @@ jobs:
       run: git submodule update --init --recursive
     - name: Run build
       run: bash ci/fedora-buildgen.sh
-    - name: Run unit tests
-      run: ./build/tests/unit-tests/odagtest --gtest_color=yes
-  build-ubuntu-bionic:
+  build-ubuntu-focal:
     name: Build (Ubuntu 20.04 LTS)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
@@ -120,5 +118,3 @@ jobs:
       run: git submodule update --init --recursive
     - name: Run build
       run: bash ci/ubuntu-focal-buildgen.sh
-    - name: Run unit tests
-      run: ./build/tests/unit-tests/odagtest --gtest_color=yes
