@@ -66,7 +66,7 @@ constexpr fixed_t DOUBLE2FIXED(double x)
 
 constexpr int FIXED2INT(fixed_t x)
 {
-	return x >> FRACBITS;
+	return (x + FRACUNIT / 2) >> FRACBITS;
 }
 
 constexpr fixed_t INT2FIXED(int x)
