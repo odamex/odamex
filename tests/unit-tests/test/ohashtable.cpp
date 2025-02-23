@@ -109,8 +109,7 @@ TEST(OHashTable, EraseIterators) {
 	EXPECT_TRUE(table.empty());
 }
 
-// just disabled until we merge the fix
-TEST(OHashTable, DISABLED_EraseIteratorsLarge) {
+TEST(OHashTable, EraseIteratorsLarge) {
 	OHashTable<int, int> table;
 
 	for (int i = 0; i < 10000; i++) {
