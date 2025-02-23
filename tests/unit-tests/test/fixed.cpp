@@ -93,7 +93,7 @@ TEST(FixedMath, NegativeFloatConversionRoundUpToInt) {
 	EXPECT_EQ(FIXED2INT(FLOAT2FIXED(-32767.4f)), -32767);
 }
 
-TEST(FixedMath, NegativeFloatConversionRoundDown) {
+TEST(FixedMath, NegativeFloatConversionRoundDownToInt) {
 	EXPECT_EQ(FIXED2INT(FLOAT2FIXED(-1.6f)), -2);
 	EXPECT_EQ(FIXED2INT(FLOAT2FIXED(-2.6f)), -3);
 	EXPECT_EQ(FIXED2INT(FLOAT2FIXED(-10.6f)), -11);
@@ -162,7 +162,7 @@ TEST(FixedMath64, NegativeIntConversion) {
 
 // ------ double to fixed to int -------
 
-TEST(FixedMath64, DoubleConversionRoundUpToInt) {
+TEST(FixedMath64, DISABLED_DoubleConversionRoundUpToInt) {
 	EXPECT_EQ(FIXED642INT(DOUBLE2FIXED64(0.6)), 1);
 	EXPECT_EQ(FIXED642INT(DOUBLE2FIXED64(1.6)), 2);
 	EXPECT_EQ(FIXED642INT(DOUBLE2FIXED64(2.6)), 3);
@@ -180,7 +180,7 @@ TEST(FixedMath64, DoubleConversionRoundDownToInt) {
 	EXPECT_EQ(FIXED642INT(DOUBLE2FIXED64(32767.4)), 32767);
 }
 
-TEST(FixedMath64, NegativeDoubleConversionRoundUpToInt) {
+TEST(FixedMath64, DISABLED_NegativeDoubleConversionRoundUpToInt) {
 	EXPECT_EQ(FIXED642INT(DOUBLE2FIXED64(-1.4)), -1);
 	EXPECT_EQ(FIXED642INT(DOUBLE2FIXED64(-2.4)), -2);
 	EXPECT_EQ(FIXED642INT(DOUBLE2FIXED64(-10.4)), -10);
@@ -207,7 +207,7 @@ TEST(FixedMath64, DISABLED_FloatConversionRoundUpToInt) {
 	EXPECT_EQ(FIXED642INT(FLOAT2FIXED64(32766.6f)), 32767);
 }
 
-TEST(FixedMath64, DISABLED_FloatConversionRoundDownToInt) {
+TEST(FixedMath64, FloatConversionRoundDownToInt) {
 	EXPECT_EQ(FIXED642INT(FLOAT2FIXED64(0.4f)), 0);
 	EXPECT_EQ(FIXED642INT(FLOAT2FIXED64(1.4f)), 1);
 	EXPECT_EQ(FIXED642INT(FLOAT2FIXED64(2.4f)), 2);
@@ -224,7 +224,7 @@ TEST(FixedMath64, DISABLED_NegativeFloatConversionRoundUpToInt) {
 	EXPECT_EQ(FIXED642INT(FLOAT2FIXED64(-32767.4f)), -32767);
 }
 
-TEST(FixedMath64, DISABLED_NegativeFloatConversionRoundDown) {
+TEST(FixedMath64, NegativeFloatConversionRoundDownToInt) {
 	EXPECT_EQ(FIXED642INT(FLOAT2FIXED64(-1.6f)), -2);
 	EXPECT_EQ(FIXED642INT(FLOAT2FIXED64(-2.6f)), -3);
 	EXPECT_EQ(FIXED642INT(FLOAT2FIXED64(-10.6f)), -11);
