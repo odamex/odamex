@@ -14,7 +14,7 @@ TEST(FixedMath, IntConversion) {
 }
 
 // these are all off by one, is this correct or not?
-TEST(FixedMath, DISABLED_NegativeIntConversion) {
+TEST(FixedMath, NegativeIntConversion) {
 	EXPECT_EQ(FIXED2INT(INT2FIXED(-1)), -1);
 	EXPECT_EQ(FIXED2INT(INT2FIXED(-2)), -2);
 	EXPECT_EQ(FIXED2INT(INT2FIXED(-10)), -10);
