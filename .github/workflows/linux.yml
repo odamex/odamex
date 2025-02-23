@@ -55,6 +55,8 @@ jobs:
       run: bash ci/ubuntu-buildgen.sh
     - name: Run build
       run: cmake --build ./build/
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes
   build-clang:
     name: Build (Clang)
     needs: pre_job
@@ -72,6 +74,8 @@ jobs:
       run: bash ci/ubuntu-buildgen.sh
     - name: Run build
       run: cmake --build ./build/
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes
   build-arm:
     name: Build (ARM64)
     needs: pre_job
@@ -88,6 +92,8 @@ jobs:
       uses: ammaraskar/gcc-problem-matcher@master
     - name: Run build
       run: cmake --build ./build/
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes
   build-centos:
     name: Build (Fedora 32)
     needs: pre_job
@@ -100,6 +106,8 @@ jobs:
       run: git submodule update --init --recursive
     - name: Run build
       run: bash ci/fedora-buildgen.sh
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes
   build-ubuntu-bionic:
     name: Build (Ubuntu 20.04 LTS)
     needs: pre_job
@@ -112,3 +120,5 @@ jobs:
       run: git submodule update --init --recursive
     - name: Run build
       run: bash ci/ubuntu-focal-buildgen.sh
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes

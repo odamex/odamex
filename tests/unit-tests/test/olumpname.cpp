@@ -41,4 +41,26 @@ TEST(OLumpName, Equality) {
 	EXPECT_TRUE(lumpname == "test");
 	EXPECT_TRUE(lumpname == std::string("test"));
 	EXPECT_TRUE(lumpname == OLumpName("test"));
+	EXPECT_FALSE(lumpname == "TEST1");
+	EXPECT_FALSE(lumpname == std::string("TEST1"));
+	EXPECT_FALSE(lumpname == OLumpName("TEST1"));
+	EXPECT_FALSE(lumpname == "test1");
+	EXPECT_FALSE(lumpname == std::string("test1"));
+	EXPECT_FALSE(lumpname == OLumpName("test1"));
+}
+
+TEST(OLumpName, Inequality) {
+	OLumpName lumpname = "test";
+	EXPECT_FALSE(lumpname != "TEST");
+	EXPECT_FALSE(lumpname != std::string("TEST"));
+	EXPECT_FALSE(lumpname != OLumpName("TEST"));
+	EXPECT_FALSE(lumpname != "test");
+	EXPECT_FALSE(lumpname != std::string("test"));
+	EXPECT_FALSE(lumpname != OLumpName("test"));
+	EXPECT_TRUE(lumpname != "TEST1");
+	EXPECT_TRUE(lumpname != std::string("TEST1"));
+	EXPECT_TRUE(lumpname != OLumpName("TEST1"));
+	EXPECT_TRUE(lumpname != "test1");
+	EXPECT_TRUE(lumpname != std::string("test1"));
+	EXPECT_TRUE(lumpname != OLumpName("test1"));
 }
