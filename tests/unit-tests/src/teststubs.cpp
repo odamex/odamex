@@ -43,8 +43,23 @@
 // int sky2scrollxdelta;
 // int sky2texture;
 // int savegamerestore;
+// unsigned char consoleplayer_id;
+// int skyflatnum;
+// int paused;
+// int viewactive;
+// wbstartstruct_t wminfo;
+// gameaction_t gameaction;
+// bool predicting;
+// int validcount;
+// int demostartgametic;
 
+// void C_AddTabCommand(char const *) {}
+// void C_RemoveTabCommand(char const *) {}
+// void R_RotatePoint(int,int,unsigned long,int &,int &) {}
+// void P_ShowSpawns(MapThing*) {}
+// void G_DeathMatchSpawnPlayer(player_t&) {}
 // player_t& consoleplayer() { static player_t fake{}; return fake; }
+// player_t& displayplayer() { static player_t fake{}; return fake; }
 // DArgs Args;
 // bool clientside;
 // bool isFast;

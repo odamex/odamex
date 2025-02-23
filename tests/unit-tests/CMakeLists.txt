@@ -7,16 +7,19 @@ endif(COMMAND cmake_policy)
 
 # #define TEST_APP for use in the source code
 add_definitions(-DTEST_APP)
+add_definitions(-DODAMEX_NO_GITVER)
 
 file(GLOB TEST_SOURCES src/*.cpp src/*.h test/*.cpp test/*.h)
 
+set(COMMON_DIR ../../common)
+
 # ew, but trying to link against odamex-common requires LOTS of stubs
-file(GLOB COMMON_SOURCES ../../common/olumpname.cpp)
+file(GLOB COMMON_SOURCES ${COMMON_DIR}/olumpname.cpp)
 # get_target_property(COMMON_SOURCES odamex-common INTERFACE_SOURCES)
 source_group("Test" FILES ${TEST_SOURCES})
 source_group("Common" FILES ${COMMON_SOURCES})
 
-include_directories(../../common src)
+include_directories(${COMMON_DIR} src)
 
 add_executable(odagtest ${COMMON_SOURCES} ${TEST_SOURCES})
 target_link_libraries(odagtest GTest::gtest_main)
