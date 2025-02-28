@@ -13,11 +13,11 @@ $min = "$env:MINORVERSION"
 $patch = "$env:PATCHVERSION"
 
 if ([String]::IsNullOrWhiteSpace($maj)) {
-    $maj = "10"
+    $maj = "12"
 }
 
 if ([String]::IsNullOrWhiteSpace($min)) {
-    $min = "6"
+    $min = "0"
 }
 
 if ([String]::IsNullOrWhiteSpace($patch)) {
