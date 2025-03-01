@@ -81,13 +81,10 @@ Source: {#SourcePath}\OutCommon\odamex.wad; DestDir: {app}; Flags: ignoreversion
 ;; 64-BIT FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Source: {#SourcePath}\OutX64\libFLAC-8.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
 Source: {#SourcePath}\OutX64\libmodplug-1.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\libmpg123-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
 Source: {#SourcePath}\OutX64\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
 Source: {#SourcePath}\OutX64\libopus-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\libopusfile-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
 Source: {#SourcePath}\OutX64\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
 Source: {#SourcePath}\OutX64\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
 Source: {#SourcePath}\OutX64\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: Is64BitInstallMode
@@ -105,13 +102,10 @@ Source: {#SourcePath}\OutX64\redist\VC_redist.x64.exe; DestDir: {tmp}; Flags: do
 ;; 32-BIT FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Source: {#SourcePath}\OutX86\libFLAC-8.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
 Source: {#SourcePath}\OutX86\libmodplug-1.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\libmpg123-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
 Source: {#SourcePath}\OutX86\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
 Source: {#SourcePath}\OutX86\libopus-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\libvorbis-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\libvorbisfile-3.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
+Source: {#SourcePath}\OutX86\libopusfile-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
 Source: {#SourcePath}\OutX86\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
 Source: {#SourcePath}\OutX86\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
 Source: {#SourcePath}\OutX86\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: not Is64BitInstallMode

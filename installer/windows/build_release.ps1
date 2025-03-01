@@ -101,19 +101,15 @@ function CopyFiles {
         -Destination "${CommonDir}\README.txt"
     Copy-Item -Force -Path "${CurrentDir}\BuildX64\wad\odamex.wad" `
         -Destination "${CommonDir}"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.0.4\COPYING.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\lib\x64\optional\COPYING.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2_mixer.txt"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.FLAC.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\lib\x64\optional\LICENSE.modplug.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.modplug.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\lib\x64\optional\LICENSE.ogg-vorbis.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.mpg123.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\lib\x64\optional\LICENSE.opus.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.ogg-vorbis.txt" `
-        -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.opus.txt" `
-        -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.opusfile.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\lib\x64\optional\LICENSE.opusfile.txt" `
         -Destination "${CommonDir}\licenses"
     Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2-2.0.20\COPYING.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2.txt"

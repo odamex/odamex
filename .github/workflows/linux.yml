@@ -87,7 +87,7 @@ jobs:
     - name: Run build
       run: cmake --build ./build/
   build-centos:
-    name: Build (Fedora 28)
+    name: Build (Fedora 32)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
@@ -99,7 +99,7 @@ jobs:
     - name: Run build
       run: bash ci/fedora-buildgen.sh
   build-ubuntu-bionic:
-    name: Build (Ubuntu 18.04 LTS)
+    name: Build (Ubuntu 20.04 LTS)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
@@ -109,4 +109,4 @@ jobs:
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Run build
-      run: bash ci/ubuntu-bionic-buildgen.sh
+      run: bash ci/ubuntu-focal-buildgen.sh

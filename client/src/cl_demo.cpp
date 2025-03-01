@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1076,9 +1076,9 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	MSG_WriteBool	(netbuffer, false);	// sv_fastmonsters
 	MSG_WriteBool	(netbuffer, false);	// sv_allowjump
 	MSG_WriteBool	(netbuffer, false);	// sv_freelook
-	MSG_WriteBool	(netbuffer, false);	// sv_waddownload
+	MSG_WriteBool	(netbuffer, false);	// sv_waddownload -- removed
 	MSG_WriteBool	(netbuffer, false);	// sv_emptyreset
-	MSG_WriteBool	(netbuffer, false);	// sv_cleanmaps
+	MSG_WriteBool	(netbuffer, false);	// sv_cleanmaps -- removed
 	MSG_WriteBool	(netbuffer, false);	// sv_fragexitswitch
 
 	for (Players::const_iterator it = players.begin();it != players.end();++it)

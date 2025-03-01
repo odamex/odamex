@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1165,20 +1165,6 @@ void V_DoPaletteEffects()
 		V_AddBlend(blend, R_GetSectorBlend());
 		V_AddBlend(blend, plyr->blend_color);
 
-		float greendamagecolor;
-		float reddamagecolor;
-
-		if (gamemode == retail_chex)
-		{
-			reddamagecolor = 0.0f;
-			greendamagecolor = 255.0f / 255.0f;
-		}
-		else
-		{
-			reddamagecolor = 255.0f / 255.0f;
-			greendamagecolor = 0.0f;
-		}
-
 		// red tint for pain / berzerk power
 		if (plyr->damagecount || plyr->powers[pw_strength])
 		{
@@ -1195,8 +1181,8 @@ void V_DoPaletteEffects()
 				red_amount = MIN(red_amount, 56.0f);
 				float alpha = (red_amount + 8.0f) / 72.0f;
 
-				static const float red = reddamagecolor;
-				static const float green = greendamagecolor;
+				const float red = gamemode == retail_chex ? 0.0f : 1.0f;
+				const float green = gamemode == retail_chex ? 1.0f : 0.0f;
 				static constexpr float blue = 0.0f;
 				V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 			}

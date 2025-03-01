@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -205,7 +205,7 @@ struct wi_animation_t
 	std::vector<wi_animationstate_t>* states;
 };
 
-static wi_animation_t* animation;
+static wi_animation_t animation;
 
 //
 // CODE
@@ -332,38 +332,33 @@ static void WI_updateAnimationStates(std::vector<wi_animationstate_t>& states)
 
 static void WI_updateAnimation(bool enteringcondition)
 {
-	if (!animation)
-	{
-		return;
-	}
-
-	animation->states = nullptr;
+	animation.states = nullptr;
 
 	if (!enteringcondition && exitanim)
 	{
-		animation->states = &animation->exiting_states;
+		animation.states = &animation.exiting_states;
 	}
 	else if (enteranim)
 	{
-		animation->states = &animation->entering_states;
+		animation.states = &animation.entering_states;
 	}
 
-	if (!animation->states)
+	if (!animation.states)
 		return;
 
-	WI_updateAnimationStates(*animation->states);
+	WI_updateAnimationStates(*animation.states);
 }
 
 static void WI_drawAnimation(void)
 {
-	if (!animation || !animation->states)
+	if (!animation.states)
 	{
 		return;
 	}
 
 	int scaled_x = (inter_width - 320) / 2;
 	DCanvas* canvas = anim_surface->getDefaultCanvas();
-	for (const auto& state : *animation->states)
+	for (const auto& state : *animation.states)
 	{
 		const interlevelframe_t& frame = state.frames.at(state.frame_index);
 		patch_t* patch = W_CachePatch(frame.imagelumpnum);
@@ -409,19 +404,14 @@ static void WI_initAnimationStates(std::vector<wi_animationstate_t>& out,
 
 static void WI_initAnimation(void)
 {
-	if (!animation)
-	{
-		return;
-	}
-
 	if (exitanim)
 	{
-		WI_initAnimationStates(animation->exiting_states, exitanim->layers, false);
+		WI_initAnimationStates(animation.exiting_states, exitanim->layers, false);
 	}
 
 	if (enteranim)
 	{
-		WI_initAnimationStates(animation->entering_states, enteranim->layers, true);
+		WI_initAnimationStates(animation.entering_states, enteranim->layers, true);
 	}
 
 	return;
@@ -507,7 +497,7 @@ static int WI_DrawName (const char *str, int x, int y)
 	::V_ColorMap = translationref_t(::Ranges + CR_GREY * 256);
 	while (*str)
 	{
-		int lump = W_CheckNumForName(fmt::format("FONTB{:2d}", toupper(*str) - 32));
+		int lump = W_CheckNumForName(fmt::format("FONTB{:02d}", toupper(*str) - 32));
 
 		if (lump != -1)
 		{
@@ -1359,6 +1349,7 @@ static int WI_CalcWidth (const char *str)
 
 void WI_loadData()
 {
+	exitanim = enteranim = nullptr;
 	LevelInfos& levels = getLevelInfos();
 	level_pwad_info_t& currentlevel = levels.findByName(wbs->current);
 	level_pwad_info_t& nextlevel = levels.findByName(wbs->next);
@@ -1370,7 +1361,7 @@ void WI_loadData()
 	else if (W_CheckNumForName(wbs->winner ? "WINERPIC" : "LOSERPIC") != -1)
 		winpic = wbs->winner ? "WINERPIC" : "LOSERPIC";
 
-	animation = new wi_animation_t();
+	animation = wi_animation_t();
 
 	if (!winanim.empty())
 		exitanim = WI_GetInterlevel(winanim);
@@ -1392,8 +1383,8 @@ void WI_loadData()
 		name = exitanim->backgroundlump;
 	else if (!winpic.empty())
 		name = winpic;
-	else if (currentlevel.exitpic[0] != '\0')
-		currentlevel.exitpic;
+	else if (!currentlevel.exitpic.empty())
+		name = currentlevel.exitpic;
 	else
 		name = "INTERPIC";
 
@@ -1526,9 +1517,6 @@ void WI_loadData()
 
 void WI_unloadData()
 {
-	exitanim = enteranim = nullptr;
-	delete animation;
-
 	for (int i = 0; i < 10; i++)
 		num[i].clear();
 
@@ -1548,7 +1536,7 @@ void WI_unloadData()
 	p.clear();
 
 	for (int i = 0; i < 4; i++)
-		faceclassic[i ].clear();
+		faceclassic[i].clear();
 }
 
 void WI_Drawer()

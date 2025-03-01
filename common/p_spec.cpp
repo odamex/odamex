@@ -5,7 +5,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -467,7 +467,9 @@ void DPusher::Serialize (FArchive &arc)
 	else
 	{
 		arc >> m_Type;
-		arc.ReadObject((DObject*&)*m_Source, DPusher::StaticType());
+		DObject* temp = nullptr;
+		arc.ReadObject(temp, DPusher::StaticType());
+		m_Source = temp ? static_cast<AActor*>(temp)->ptr() : AActor::AActorPtr();
 		arc >> m_Xmag >> m_Ymag >> m_Magnitude >> m_Radius >> m_X >> m_Y >> m_Affectee;
 	}
 }
@@ -1256,7 +1258,7 @@ fixed_t P_FindShortestTextureAround (sector_t *sec)
 	int minsize = MAXINT;
 	side_t *side;
 	int i;
-	int mintex = co_boomphys ? 1 : 0;
+	int mintex = (co_boomphys && !(level.flags & LEVEL_COMPAT_SHORTTEX)) ? 1 : 0;
 
 	for (i = 0; i < sec->linecount; i++)
 	{
@@ -1291,7 +1293,7 @@ fixed_t P_FindShortestUpperAround (sector_t *sec)
 	int minsize = MAXINT;
 	side_t *side;
 	int i;
-	int mintex = co_boomphys ? 1 : 0;
+	int mintex = (co_boomphys && !(level.flags & LEVEL_COMPAT_SHORTTEX)) ? 1 : 0;
 
 	for (i = 0; i < sec->linecount; i++)
 	{

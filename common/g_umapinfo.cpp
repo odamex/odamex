@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,27 +31,27 @@ int ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL
 {
 	// Check if the given map name can be expressed as a gameepisode/gamemap pair and be
 	// reconstructed from it.
-	char lumpname[9];
+	OLumpName lumpname;
 	int epi = -1, map = -1;
 
 	if (gamemode != commercial)
 	{
 		if (sscanf(mapname.c_str(), "E%dM%d", &epi, &map) != 2)
 			return 0;
-		snprintf(lumpname, 9, "E%dM%d", epi, map);
+		lumpname = fmt::format("E{}M{}", epi, map);
 	}
 	else
 	{
 		if (sscanf(mapname.c_str(), "MAP%d", &map) != 1)
 			return 0;
-		snprintf(lumpname, 9, "MAP%02d", map);
+		lumpname = fmt::format("MAP{:02d}", map);
 		epi = 1;
 	}
 	if (pEpi)
 		*pEpi = epi;
 	if (pMap)
 		*pMap = map;
-	return !strcmp(mapname.c_str(), lumpname);
+	return mapname == lumpname;
 }
 
 // used for munching the strings in UMAPINFO
@@ -452,7 +452,7 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 				map++;
 				if (gamemode == commercial)
 				{
-					info.nextmap = fmt::format("MAP{:2d}", map);
+					info.nextmap = fmt::format("MAP{:02d}", map);
 				}
 				else
 				{

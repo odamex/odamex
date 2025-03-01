@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Old version of the server query protocol, kept for clients and older 
+//  Old version of the server query protocol, kept for clients and older
 //  launchers
 //
 //-----------------------------------------------------------------------------
@@ -43,8 +43,8 @@ EXTERN_CVAR (sv_maxclients)
 EXTERN_CVAR (port)
 
 //bond===========================
-EXTERN_CVAR (sv_timelimit)			
-EXTERN_CVAR (sv_fraglimit)			
+EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_email)
 EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_weaponstay)
@@ -56,7 +56,6 @@ EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_freelook)
-EXTERN_CVAR (sv_waddownload)
 EXTERN_CVAR (sv_emptyreset)
 EXTERN_CVAR (sv_fragexitswitch)
 //bond===========================
@@ -95,7 +94,7 @@ DWORD SV_NewToken()
 	token.id = rand()*time(0);
 	token.issued = now;
 	token.from = net_from;
-	
+
 	// find an old token to replace
 	for(size_t i = 0; i < connect_tokens.size(); i++)
 	{
@@ -129,13 +128,13 @@ bool SV_IsValidToken(DWORD token)
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
 //
 // SV_SendServerInfo
-// 
+//
 // Sends server info to a launcher
 // TODO: Clean up and reinvent.
 void SV_SendServerInfo()
@@ -143,7 +142,7 @@ void SV_SendServerInfo()
 	size_t i;
 
 	SZ_Clear(&ml_message);
-	
+
 	MSG_WriteLong(&ml_message, MSG_CHALLENGE);
 	MSG_WriteLong(&ml_message, SV_NewToken());
 
@@ -202,7 +201,7 @@ void SV_SendServerInfo()
 	if (G_IsTeamGame())
 	{
 		MSG_WriteLong(&ml_message, sv_scorelimit.asInt());
-		
+
 		for(size_t i = 0; i < NUMTEAMS; i++)
 		{
 			if ((sv_gametype == GM_CTF && i < 2) || (sv_gametype != GM_CTF && i < sv_teamsinplay)) {
@@ -213,7 +212,7 @@ void SV_SendServerInfo()
 			}
 		}
 	}
-	
+
 	MSG_WriteShort(&ml_message, VERSION);
 
 //bond===========================
@@ -236,7 +235,7 @@ void SV_SendServerInfo()
 	MSG_WriteBool(&ml_message, (sv_fastmonsters ? true : false));
 	MSG_WriteBool(&ml_message, (sv_allowjump ? true : false));
 	MSG_WriteBool(&ml_message, (sv_freelook ? true : false));
-	MSG_WriteBool(&ml_message, (sv_waddownload ? true : false));
+	MSG_WriteBool(&ml_message, false);		// used to be sv_waddownload
 	MSG_WriteBool(&ml_message, (sv_emptyreset ? true : false));
 	MSG_WriteBool(&ml_message, false);		// used to be sv_cleanmaps
 	MSG_WriteBool(&ml_message, (sv_fragexitswitch ? true : false));
@@ -247,18 +246,18 @@ void SV_SendServerInfo()
 		{
 			MSG_WriteShort(&ml_message, it->killcount);
 			MSG_WriteShort(&ml_message, it->deathcount);
-			
+
 			int timeingame = (time(NULL) - it->JoinTime)/60;
 			if (timeingame<0) timeingame=0;
 				MSG_WriteShort(&ml_message, timeingame);
 		}
 	}
-	
+
 //bond===========================
 
     MSG_WriteLong(&ml_message, (DWORD)0x01020304);
     MSG_WriteShort(&ml_message, sv_maxplayers.asInt());
-    
+
     for (Players::iterator it = players.begin();it != players.end();++it)
     {
         if (it->ingame())
@@ -269,12 +268,12 @@ void SV_SendServerInfo()
 
     MSG_WriteLong(&ml_message, (DWORD)0x01020305);
     MSG_WriteShort(&ml_message, strlen(join_password.cstring()) ? 1 : 0);
-    
+
     // GhostlyDeath -- Send Game Version info
     MSG_WriteLong(&ml_message, GAMEVER);
 
     MSG_WriteByte(&ml_message, patchfiles.size());
-    
+
 	for (size_t i = 0; i < patchfiles.size(); ++i)
 	{
 		MSG_WriteString(&ml_message,

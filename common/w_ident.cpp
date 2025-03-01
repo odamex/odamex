@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -551,6 +551,15 @@ static constexpr identData_t identdata[] = {
     // ID1.WAD
     // ------------------------------------------------------------------------
     {
+        "Legacy of Rust v1.3",              // mIdName
+        "ID1.WAD",                          // mFilename
+        "666CB0E0",                         // mCRC32Sum
+        "713C5A3C1734B1D55B2813A3DD0136D9", // mMd5Sum
+        "Legacy of Rust",                   // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+    {
         "Legacy of Rust v1.2",              // mIdName
         "ID1.WAD",                          // mFilename
         "3A495080",                         // mCRC32Sum
@@ -573,7 +582,16 @@ static constexpr identData_t identdata[] = {
     // IDDM1.WAD
     // ------------------------------------------------------------------------
     {
-        "ID Deathmatch Pack #1",            // mIdName
+        "ID Deathmatch Pack #1 v1.3",       // mIdName
+        "IDDM1.WAD",                        // mFilename
+        "585C7750",                         // mCRC32Sum
+        "CB92010B8EC05F8924AC966A8ED95B74", // mMd5Sum
+        "ID Deathmatch Pack #1",            // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+    {
+        "ID Deathmatch Pack #1 v1.1",       // mIdName
         "IDDM1.WAD",                        // mFilename
         "11fe5048",                         // mCRC32Sum
         "5670fd8fe8eb6910ec28f9e27969d84f", // mMd5Sum
@@ -622,6 +640,32 @@ static constexpr identData_t identdata[] = {
         "ec81d166",                         // mCRC32Sum
         "b3247939c60f6a819c625036b52a5f53", // mMd5Sum
         "id1-weap",                         // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+
+    // ------------------------------------------------------------------------
+    // ID1-TEX.WAD
+    // ------------------------------------------------------------------------
+    {
+        "id1-tex v1.0",                     // mIdName
+        "ID1-TEX.WAD",                      // mFilename
+        "128930F7",                         // mCRC32Sum
+        "187BFE543F8328B379E46957976E800D", // mMd5Sum
+        "id1-tex",                          // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+
+    // ------------------------------------------------------------------------
+    // ID1-MUS.WAD
+    // ------------------------------------------------------------------------
+    {
+        "id1-mus v1.0",                     // mIdName
+        "ID1-MUS.WAD",                      // mFilename
+        "815C9CA8",                         // mCRC32Sum
+        "436C83DD83A47F8DD251BA15108E9459", // mMd5Sum
+        "id1-mus",                          // mGroupName
         IDENT_COMMERCIAL,                   // flags
         PWAD_NO_WEIGHT                      // weight
     },
@@ -1456,7 +1500,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "FreeDM";
-	}	
+	}
 	else if (idname.find(OStringToUpper(OString(DOOMSW_PREFIX))) == 0)
 	{
 		gamemode = shareware;

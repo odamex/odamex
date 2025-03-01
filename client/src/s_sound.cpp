@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1539,7 +1539,7 @@ void S_ActivateAmbient(AActor *origin, int ambient)
 	if (!(amb->type & 3) && !amb->periodmin)
 	{
 		const int sndnum = S_FindSound(amb->sound);
-		if (sndnum == 0)
+		if (sndnum == 0 || sndnum == -1)
 			return;
 
 		sfxinfo_t *sfx = &S_sfx[sndnum];
