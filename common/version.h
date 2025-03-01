@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -77,7 +77,7 @@
 #define DOTVERSIONSTR "11.0.0"
 #define GAMEVER (MAKEVER(11, 0, 0))
 
-#define COPYRIGHTSTR "Copyright (C) 2006-2024 The Odamex Team"
+#define COPYRIGHTSTR "Copyright (C) 2006-2025 The Odamex Team"
 
 #define SERVERMAJ (VERMAJ(gameversion))
 #define SERVERMIN (VERMIN(gameversion))
