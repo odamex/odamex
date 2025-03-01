@@ -134,19 +134,7 @@ if(BUILD_CLIENT OR BUILD_SERVER)
   target_include_directories(minilzo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/minilzo")
 endif()
 
-include(zlib-lib.cmake)
-
-include(libpng-lib.cmake)
-
-include(curl-lib.cmake)
-
 include(fltk-lib.cmake)
-
-include(fmt-lib.cmake)
-
-include(jsoncpp-lib.cmake)
-
-include(miniupnp-lib.cmake)
 
 include(protobuf-lib.cmake)
 

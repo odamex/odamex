@@ -1,0 +1,10 @@
+{
+  "dependencies": [
+    "curl",
+    "fmt",
+    "jsoncpp",
+    "libpng",
+    "zlib",
+    "miniupnpc"
+  ]
+}
