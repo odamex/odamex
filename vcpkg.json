@@ -1,6 +1,7 @@
 {
   "dependencies": [
     "curl",
+    "fltk",
     "fmt",
     "jsoncpp",
     "libpng",
@@ -9,6 +10,6 @@
     "sdl2",
     "sdl2-mixer",
     "zlib",
-    "fltk"
+    "protobuf"
   ]
 }
