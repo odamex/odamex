@@ -5,6 +5,3 @@
 	path = libraries/protobuf
 	url = https://github.com/protocolbuffers/protobuf.git
 	branch = 3.5.x
-[submodule "libraries/portmidi"]
-	path = libraries/portmidi
-	url = https://github.com/PortMidi/portmidi.git

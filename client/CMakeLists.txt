@@ -65,57 +65,7 @@ if(UNIX AND NOT APPLE)
   endif()
 endif()
 
-# PortMidi configuration
-
-# PortMidi
-if(ENABLE_PORTMIDI)
-  find_package(PortMidi)
-  if(NOT PORTMIDI_FOUND)
-    # build the PortMidi library
-    set(PORTMIDI_LIBRARY "portmidi")
-    set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY})
-    set(PORTMIDI_DIR ../libraries/portmidi)
-    set(PORTMIDI_INCLUDE_DIR ${PORTMIDI_DIR}/pm_common/ ${PORTMIDI_DIR}/porttime/)
-
-    if(APPLE)
-      find_library(COREFOUNDATION_LIBRARY CoreFoundation)
-      find_library(COREAUDIO_LIB CoreAudio)
-      find_library(COREMIDI_LIB CoreMIDI)
-      find_library(CORESERVICES_LIB CoreServices)
-
-      set(PM_NEEDED_LIBS ${COREAUDIO_LIB} ${COREFOUNDATION_LIB} ${COREMIDI_LIB} ${CORESERVICES_LIB} CACHE INTERNAL "")
-      file(GLOB PORTMIDI_PLATFORM_HEADERS ${PORTMIDI_DIR}/pm_mac/*.h)
-      file(GLOB PORTMIDI_PLATFORM_SOURCES ${PORTMIDI_DIR}/pm_mac/*.c)
-      list(APPEND PORTMIDI_PLATFORM_SOURCES ${PORTMIDI_DIR}/porttime/ptmacosx_mach.c)
-    elseif(WIN32)
-      set(PM_NEEDED_LIBS winmm.lib)
-      file(GLOB PORTMIDI_PLATFORM_HEADERS ${PORTMIDI_DIR}/pm_win/*.h)
-      file(GLOB PORTMIDI_PLATFORM_SOURCES ${PORTMIDI_DIR}/pm_win/*.c)
-      list(APPEND PORTMIDI_PLATFORM_SOURCES ${PORTMIDI_DIR}/porttime/ptwinmm.c)
-    elseif(UNIX)
-      add_definitions(-DPMALSA)
-      set(PM_NEEDED_LIBS pthread asound)
-      file(GLOB PORTMIDI_PLATFORM_HEADERS ${PORTMIDI_DIR}/pm_linux/*.h)
-      file(GLOB PORTMIDI_PLATFORM_SOURCES ${PORTMIDI_DIR}/pm_linux/*.c)
-      list(APPEND PORTMIDI_PLATFORM_SOURCES ${PORTMIDI_DIR}/porttime/ptlinux.c)
-    endif()
-
-    file(GLOB PORTMIDI_HEADERS ${PORTMIDI_DIR}/pm_common/*.h)
-    list(APPEND PORTMIDI_HEADERS ${PORTMIDI_DIR}/porttime/porttime.h)
-    list(APPEND PORTMIDI_HEADERS ${PORTMIDI_PLATFORM_HEADERS})
-
-    file(GLOB PORTMIDI_SOURCES ${PORTMIDI_DIR}/pm_common/*.c)
-    list(APPEND PORTMIDI_SOURCES ${PORTMIDI_DIR}/porttime/porttime.c)
-    list(APPEND PORTMIDI_SOURCES ${PORTMIDI_PLATFORM_SOURCES})
-
-    add_library(${PORTMIDI_LIBRARY} STATIC ${PORTMIDI_SOURCES} ${PORTMIDI_HEADERS})
-    target_link_libraries(${PORTMIDI_LIBRARY} PRIVATE ${PM_NEEDED_LIBS})
-    message(STATUS "portmidi will be built and staticaly linked when compiling the client application.")
-  endif()
-
-  add_definitions(-DPORTMIDI)
-  include_directories(${PORTMIDI_INCLUDE_DIR})
-endif()
+add_definitions(-DPORTMIDI)
 
 # Find Mac frameworks
 if(APPLE)
@@ -209,9 +159,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
 
   target_link_libraries(odamex PRIVATE JsonCpp::JsonCpp)
 
-  if(ENABLE_PORTMIDI)
-    target_link_libraries(odamex PRIVATE ${PORTMIDI_LIBRARY})
-  endif()
+  target_link_libraries(odamex PRIVATE PortMidi::portmidi)
 
   target_link_libraries(odamex PRIVATE ZLIB::ZLIB PNG::PNG fmt::fmt minilzo)
 

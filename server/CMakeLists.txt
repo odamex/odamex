@@ -51,13 +51,7 @@ target_link_libraries(odasrv fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto
 target_link_libraries(odasrv JsonCpp::JsonCpp)
 
 if(USE_MINIUPNP)
-  if(USE_INTERNAL_MINIUPNP)
-    target_link_libraries(odasrv miniupnpc::miniupnpc)
-  else()
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(MINIUPNPC miniupnpc REQUIRED IMPORTED_TARGET)
-    target_link_libraries(odasrv PkgConfig::MINIUPNPC)
-  endif()
+  target_link_libraries(odasrv miniupnpc::miniupnpc)
 endif()
 
 if(WIN32)

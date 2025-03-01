@@ -6,7 +6,8 @@
     "libpng",
     "miniupnpc",
     "sdl2",
+    "sdl2-mixer",
     "zlib",
-    "sdl2-mixer"
+    "portmidi"
   ]
 }
