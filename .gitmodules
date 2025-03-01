@@ -5,3 +5,6 @@
 	path = libraries/protobuf
 	url = https://github.com/protocolbuffers/protobuf.git
 	branch = 3.5.x
+[submodule "vcpkg"]
+	path = vcpkg
+	url = https://github.com/microsoft/vcpkg/
