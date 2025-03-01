@@ -4,7 +4,9 @@
     "fmt",
     "jsoncpp",
     "libpng",
+    "miniupnpc",
+    "sdl2",
     "zlib",
-    "miniupnpc"
+    "sdl2-mixer"
   ]
 }

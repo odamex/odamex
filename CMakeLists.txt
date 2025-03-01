@@ -161,6 +161,8 @@ find_package(CURL REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(jsoncpp CONFIG REQUIRED)
 find_package(miniupnpc CONFIG REQUIRED)
+find_package(SDL2 CONFIG REQUIRED)
+find_package(SDL2_mixer CONFIG REQUIRED)
 
 add_subdirectory(libraries)
 
