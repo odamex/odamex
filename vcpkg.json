@@ -5,9 +5,10 @@
     "jsoncpp",
     "libpng",
     "miniupnpc",
+    "portmidi",
     "sdl2",
     "sdl2-mixer",
     "zlib",
-    "portmidi"
+    "fltk"
   ]
 }

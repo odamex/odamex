@@ -1,6 +1,3 @@
-[submodule "libraries/fltk"]
-	path = libraries/fltk
-	url = https://github.com/fltk/fltk
 [submodule "libraries/protobuf"]
 	path = libraries/protobuf
 	url = https://github.com/protocolbuffers/protobuf.git

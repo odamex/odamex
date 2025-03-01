@@ -134,8 +134,6 @@ if(BUILD_CLIENT OR BUILD_SERVER)
   target_include_directories(minilzo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/minilzo")
 endif()
 
-include(fltk-lib.cmake)
-
 include(protobuf-lib.cmake)
 
 include(wxWidgets-lib.cmake)

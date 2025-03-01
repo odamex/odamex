@@ -2,9 +2,17 @@
     "version": 2,
     "configurePresets": [
         {
-            "name": "windows-msvc",
+            "name": "msvc-2022",
             "generator": "Visual Studio 17 2022",
             "binaryDir": "${sourceDir}/build_msvc",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+            }
+        },
+        {
+            "name": "ninja",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake"
             }
