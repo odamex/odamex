@@ -46,9 +46,7 @@ if(WIN32)
   target_include_directories(odasrv PRIVATE win32)
 endif()
 
-target_link_libraries(odasrv fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo::minilzo)
-
-target_link_libraries(odasrv JsonCpp::JsonCpp)
+target_link_libraries(odasrv odamex-common)
 
 if(USE_MINIUPNP)
   target_link_libraries(odasrv miniupnpc::miniupnpc)

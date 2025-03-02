@@ -22,9 +22,6 @@ set(XRCRES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/res")
 set(XRCRES_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/res")
 set(XRCRES_HEADER "${XRCRES_BINARY_DIR}/xrc_resource.h")
 
-# Odalaunch definitions
-include_directories(${API_DIR} ${LAUNCH_DIR} ${XRCRES_BINARY_DIR})
-
 # Odalaunch target
 if(wxWidgets_FOUND)
   file(MAKE_DIRECTORY "${XRCRES_BINARY_DIR}")
@@ -42,13 +39,15 @@ if(wxWidgets_FOUND)
     ${XRCRES_HEADER} ${LAUNCH_WIN32_RESOURCES})
   odamex_target_settings(odalaunch)
 
+  target_include_directories(odalaunch PRIVATE ${API_DIR} ${LAUNCH_DIR} ${XRCRES_BINARY_DIR})
+
   target_compile_definitions(odalaunch PRIVATE ${wxWidgets_DEFINITIONS})
   target_compile_options(odalaunch PRIVATE ${wxWidgets_CXX_FLAGS})
   target_include_directories(odalaunch PRIVATE ${wxWidgets_INCLUDE_DIRS})
   target_link_libraries(odalaunch PRIVATE ${wxWidgets_LIBRARIES})
 
   if(WIN32)
-    target_link_libraries(odalaunch ws2_32)
+    target_link_libraries(odalaunch PRIVATE ws2_32)
   endif()
 
   odalaunch_copy_libs(odalaunch)

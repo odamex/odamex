@@ -83,7 +83,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   if (NOT GCONSOLE)
     # Textscreen
     set(TEXTSCREEN_LIBRARY "textscreen")
-    set(TEXTSCREEN_DIR ../libraries/textscreen)
+    set(TEXTSCREEN_DIR ./textscreen)
     set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
     set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.cpp)
 
@@ -137,7 +137,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   target_link_libraries(odamex PRIVATE ${TEXTSCREEN_LIBRARY})
-  target_link_libraries(odamex PRIVATE odamex-common odaproto tinylibs)
+  target_link_libraries(odamex PRIVATE odamex-common)
   if(TARGET SDL::SDL)
     target_link_libraries(odamex SDL::SDL)
     if(TARGET SDL::SDLmain)
@@ -151,17 +151,13 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex PRIVATE
       $<IF:$<TARGET_EXISTS:SDL2_mixer::SDL2_mixer>,SDL2_mixer::SDL2_mixer,SDL2_mixer::SDL2_mixer-static>)
   endif()
-  target_link_libraries(odamex PRIVATE ${PNG_LIBRARY} ${ZLIB_LIBRARY} CURL::libcurl)
+
+  target_link_libraries(odamex PRIVATE CURL::libcurl PNG::PNG PortMidi::portmidi)
+
   if(NOT GCONSOLE)
     target_include_directories(odamex PRIVATE gui)
     target_link_libraries(odamex PRIVATE fltk::fltk fltk::images)
   endif()
-
-  target_link_libraries(odamex PRIVATE JsonCpp::JsonCpp)
-
-  target_link_libraries(odamex PRIVATE PortMidi::portmidi)
-
-  target_link_libraries(odamex PRIVATE ZLIB::ZLIB PNG::PNG fmt::fmt)
 
   if(WIN32)
     target_link_libraries(odamex PRIVATE winmm wsock32 shlwapi)
