@@ -57,17 +57,15 @@ extern	bool			modifiedgame;
 // Selected skill type, map etc.
 //
 
-extern OLumpName startmap; // [RH] Actual map name now
+inline OLumpName startmap; // [RH] Actual map name now
 
 extern bool autostart;
 
 // Selected by user.
 EXTERN_CVAR (sv_skill)
 
-// Bot game? Like netgame, but doesn't involve network communication.
-extern	bool			multiplayer;
-
-extern bool            network_game;
+inline bool network_game;			// Describes if a network game is being played
+inline bool multiplayer;			// Describes if this is a multiplayer game or not
 
 // Game mode
 EXTERN_CVAR (sv_gametype)

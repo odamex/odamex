@@ -112,8 +112,6 @@ bool devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 static bool wiping_screen = false;
 
-OLumpName startmap;
-bool autostart;
 bool advancedemo;
 event_t events[MAXEVENTS];
 int eventhead;
