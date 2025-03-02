@@ -29,6 +29,20 @@
                 "BUILD_MASTER": "TRUE",
                 "BUILD_LAUNCHER": "TRUE"
             }
+        },
+        {
+            "name": "github-win-x32",
+            "generator": "Visual Studio 17 2022",
+            "architecture": "Win32",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+                "BUILD_OR_FAIL": "TRUE",
+                "BUILD_CLIENT": "TRUE",
+                "BUILD_SERVER": "TRUE",
+                "BUILD_MASTER": "TRUE",
+                "BUILD_LAUNCHER": "TRUE"
+            }
         }
     ]
 }
