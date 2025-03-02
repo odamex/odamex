@@ -47,7 +47,6 @@ int demostartgametic;
 
 void C_AddTabCommand(char const *) {}
 void C_RemoveTabCommand(char const *) {}
-void R_RotatePoint(int,int,unsigned long,int &,int &) {}
 void P_ShowSpawns(MapThing*) {}
 void G_DeathMatchSpawnPlayer(player_t&) {}
 player_t& consoleplayer() { static player_t fake{}; return fake; }
@@ -853,6 +852,14 @@ dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 	//BuildColoredLights (maps, lr, lg, lb, fr, fg, fb);
 
 	return colormap;
+}
+
+void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
+{
+	int index = ang >> ANGLETOFINESHIFT;
+
+	tx = FixedMul(x, finecosine[index]) - FixedMul(y, finesine[index]);
+	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
 }
 
 VERSION_CONTROL (test_stubs_cpp, "$Id$")
