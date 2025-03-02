@@ -30,7 +30,7 @@
 #ifdef _WIN32
     #ifndef _XBOX
         #undef GetMessage
-        typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
+        typedef bool (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
     #endif // !_XBOX
 #else
     #include <sched.h>

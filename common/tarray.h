@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -72,11 +72,11 @@ public:
 		}
 		return false;
 	}
-	size_t Size ()
+	size_t Size () const
 	{
 		return Count;
 	}
-	size_t Max ()
+	size_t Max () const
 	{
 		return Most;
 	}
@@ -111,7 +111,7 @@ public:
 	// Reserves amount entries at the end of the array, but does nothing
 	// with them.
 	size_t Reserve (size_t amount)
-	{	
+	{
 		if (Count + amount > Most)
 		{
 			Grow (amount);

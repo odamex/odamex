@@ -115,7 +115,7 @@ bool		recv_full_update = false;
 
 std::string connectpasshash = "";
 
-BOOL      connected;
+bool      connected;
 netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
 
@@ -232,8 +232,8 @@ static void CL_RebuildAllPlayerTranslations()
 	if (demoplayback)
 		return;
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it));
+	for (auto& player : players)
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
 }
 
 CVAR_FUNC_IMPL (r_enemycolor)
@@ -407,8 +407,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 
 	{
 		// [jsd] unlink player pointers from AActors; solves crash in R_ProjectSprites after a svc_disconnect message.
-		for (Players::iterator it = players.begin(); it != players.end(); it++) {
-			player_s &player = *it;
+		for (auto& player : players) {
 			if (player.mo) {
 				player.mo->player = NULL;
 			}
@@ -599,7 +598,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 	} while (it != sentinal);
 }
 
-extern BOOL advancedemo;
+extern bool advancedemo;
 QWORD nextstep = 0;
 int canceltics = 0;
 
@@ -763,7 +762,7 @@ BEGIN_COMMAND (connect)
 		}
 		else
 		{
-			Printf("Could not resolve host %s\n", target.c_str());
+			Printf("Could not resolve host %s\n", target);
 			memset(&serveraddr, 0, sizeof(serveraddr));
 		}
 	}
@@ -790,16 +789,16 @@ BEGIN_COMMAND (players)
 {
 	// Gather all ingame players
 	std::map<int, std::string> mplayers;
-	for (Players::const_iterator it = players.begin();it != players.end();++it) {
-		if (it->ingame()) {
-			mplayers[it->id] = it->userinfo.netname;
+	for (const auto& player : players) {
+		if (player.ingame()) {
+			mplayers[player.id] = player.userinfo.netname;
 		}
 	}
 
 	// Print them, ordered by player id.
 	Printf("PLAYERS IN GAME:\n");
-	for (std::map<int, std::string>::iterator it = mplayers.begin();it != mplayers.end();++it) {
-		Printf("%3d. %s\n", (*it).first, (*it).second.c_str());
+	for (const auto& [id, name] : mplayers) {
+		Printf("%3d. %s\n", id, name);
 	}
 	Printf("%lu %s\n", mplayers.size(), mplayers.size() == 1 ? "PLAYER" : "PLAYERS");
 }
@@ -816,7 +815,7 @@ BEGIN_COMMAND (playerinfo)
 
 		if (!validplayer(p))
 		{
-			Printf ("Bad player number\n");
+			PrintFmt("Bad player number\n");
 			return;
 		}
 		else
@@ -825,28 +824,27 @@ BEGIN_COMMAND (playerinfo)
 
 	if (!validplayer(*player))
 	{
-		Printf ("Not a valid player\n");
+		PrintFmt("Not a valid player\n");
 		return;
 	}
 
-	char color[8];
-	snprintf(color, 8, "#%02X%02X%02X",
-			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
+	const std::string color = fmt::format("#{:02X}{:02X}{:02X}",
+		player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
 
-	Printf (PRINT_HIGH, "---------------[player info]----------- \n");
-	Printf(PRINT_HIGH, " userinfo.netname - %s \n",		player->userinfo.netname.c_str());
+	PrintFmt(PRINT_HIGH, "---------------[player info]----------- \n");
+	PrintFmt(PRINT_HIGH, " userinfo.netname - {:s} \n",		player->userinfo.netname);
 
 	if (sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) {
-		Printf(PRINT_HIGH, " userinfo.team    - %s \n",
-		       GetTeamInfo(player->userinfo.team)->ColorizedTeamName().c_str());
+		PrintFmt(PRINT_HIGH, " userinfo.team    - {:s} \n",
+		       GetTeamInfo(player->userinfo.team)->ColorizedTeamName());
 	}
-	Printf(PRINT_HIGH, " userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
-	Printf(PRINT_HIGH, " userinfo.color   - %s \n",		color);
-	Printf(PRINT_HIGH, " userinfo.gender  - %d \n",		player->userinfo.gender);
-	Printf(PRINT_HIGH, " time             - %d \n",		player->GameTime);
-	Printf(PRINT_HIGH, " spectator        - %d \n",		player->spectator);
-	Printf(PRINT_HIGH, " downloader       - %d \n",		player->playerstate == PST_DOWNLOAD);
-	Printf (PRINT_HIGH, "--------------------------------------- \n");
+	PrintFmt(PRINT_HIGH, " userinfo.aimdist - {:d} \n",		player->userinfo.aimdist >> FRACBITS);
+	PrintFmt(PRINT_HIGH, " userinfo.color   - {:s} \n",		color);
+	PrintFmt(PRINT_HIGH, " userinfo.gender  - {:d} \n",		player->userinfo.gender);
+	PrintFmt(PRINT_HIGH, " time             - {:d} \n",		player->GameTime);
+	PrintFmt(PRINT_HIGH, " spectator        - {:d} \n",		player->spectator);
+	PrintFmt(PRINT_HIGH, " downloader       - {:d} \n",		player->playerstate == PST_DOWNLOAD);
+	PrintFmt(PRINT_HIGH, "--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
 
@@ -892,15 +890,15 @@ BEGIN_COMMAND (serverinfo)
     Printf ("\n%*s - Value\n", static_cast<int>(MaxFieldLength), "Name");
 
     // Data
-	for (size_t i = 0; i < server_cvars.size(); i++)
+	for (const auto& varname : server_cvars)
 	{
 		cvar_t *dummy;
-		Cvar = cvar_t::FindCVar(server_cvars[i].c_str(), &dummy);
+		Cvar = cvar_t::FindCVar(varname.c_str(), &dummy);
 
 		Printf( "%*s - %s\n",
 				static_cast<int>(MaxFieldLength),
 				Cvar->name(),
-				Cvar->cstring());
+				Cvar->str());
 	}
 
     Printf ("\n");
@@ -956,7 +954,7 @@ END_COMMAND (rcon_logout)
 BEGIN_COMMAND (playerteam)
 {
 	if (G_IsTeamGame())
-		Printf("Your are in the %s team.\n", V_GetTeamColor(consoleplayer().userinfo.team).c_str());
+		Printf("Your are in the %s team.\n", V_GetTeamColor(consoleplayer().userinfo.team));
 	else
 		Printf("You need to play a team-based gamemode in order to use this command.\n");
 }
@@ -1082,7 +1080,7 @@ BEGIN_COMMAND (spy)
 {
 	if (argc <= 1) {
 		if (spyplayername.length() > 0) {
-			Printf(PRINT_HIGH, "Unfollowing player '%s'.\n", spyplayername.c_str());
+			Printf(PRINT_HIGH, "Unfollowing player '%s'.\n", spyplayername);
 
 			// revert to not spying:
 			displayplayer_id = consoleplayer_id;
@@ -1097,7 +1095,7 @@ BEGIN_COMMAND (spy)
 		spyplayername = argv[1];
 
 		Printf(PRINT_HIGH, "Following player '%s'. Use 'spy' with no player name to unfollow.\n",
-			   spyplayername.c_str());
+			   spyplayername);
 	}
 
 	CL_CheckDisplayPlayer();
@@ -1144,7 +1142,7 @@ std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemon
 {
 	const std::string expanded_filename(M_ExpandTokens(filename));
 	std::string newfilename(expanded_filename);
-	newfilename = M_GetUserFileName(newfilename.c_str());
+	newfilename = M_GetUserFileName(newfilename);
 
 	// keep trying to find a filename that doesn't yet exist
 	if (!M_FindFreeName(newfilename, "odd"))
@@ -1161,7 +1159,7 @@ void CL_NetDemoPlay(const std::string& filename)
 	std::string found = M_FindUserFileName(filename, ".odd");
 	if (found.empty())
 	{
-		Printf(PRINT_WARNING, "Could not find demo %s.\n", filename.c_str());
+		Printf(PRINT_WARNING, "Could not find demo %s.\n", filename);
 		return;
 	}
 
@@ -1254,7 +1252,7 @@ BEGIN_COMMAND(netdemostats)
 	int curtime = netdemo.calculateTimeElapsed();
 	int totaltime = netdemo.calculateTotalTime();
 
-	Printf(PRINT_HIGH, "\n%s\n", netdemo.getFileName().c_str());
+	Printf(PRINT_HIGH, "\n%s\n", netdemo.getFileName());
 	Printf(PRINT_HIGH, "============================================\n");
 	Printf(PRINT_HIGH, "Total time: %i seconds\n", totaltime);
 	Printf(PRINT_HIGH, "Current position: %i seconds (%i%%)\n",
@@ -1348,9 +1346,9 @@ void CL_SendUserInfo(void)
 	MSG_WriteBool	(&net_buffer, true);	// [SL] deprecated "cl_unlag" CVAR
 	MSG_WriteBool	(&net_buffer, coninfo->predict_weapons);
 	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
-	for (size_t i = 0; i < NUMWEAPONS; i++)
+	for (const auto& pref : coninfo->weapon_prefs)
 	{
-		MSG_WriteByte (&net_buffer, coninfo->weapon_prefs[i]);
+		MSG_WriteByte (&net_buffer, pref);
 	}
 
 	CL_RebuildAllPlayerTranslations();	// Refresh Player Translations AFTER sending the new status to the server.
@@ -1369,9 +1367,7 @@ player_t &CL_FindPlayer(size_t id)
 		if (players.size() >= MAXPLAYERS)
 			return *p;
 
-		players.push_back(player_s());
-
-		p = &players.back();
+		p = &players.emplace_back();
 		p->id = id;
 	}
 
@@ -1494,7 +1490,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 		Printf(PRINT_WARNING,
 		       "Unable to find \"%s\". Downloading is disabled on your client.  Go to "
 		       "Options > Network Options to enable downloading.\n",
-		       missing_file.getBasename().c_str());
+		       missing_file.getBasename());
 		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
@@ -1504,7 +1500,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 		// Playing a netdemo and unable to download from the server
 		Printf(PRINT_WARNING,
 		       "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
-		       missing_file.getBasename().c_str());
+		       missing_file.getBasename());
 		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
@@ -1514,7 +1510,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 		// Nobody has any download sites configured.
 		Printf("Unable to find \"%s\".  Both your client and the server have no "
 		       "download sites configured.\n",
-		       missing_file.getBasename().c_str());
+		       missing_file.getBasename());
 		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
@@ -1535,7 +1531,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 
 	// Disconnect from the server before we start the download.
 	Printf(PRINT_HIGH, "Need to download \"%s\", disconnecting from server...\n",
-	       missing_file.getBasename().c_str());
+	       missing_file.getBasename());
 	CL_QuitNetGame(NQ_SILENT);
 
 	// Start the download.
@@ -1565,7 +1561,7 @@ bool CL_PrepareConnect()
 	byte server_wads = MSG_ReadByte();
 
 	Printf("Found server at %s.\n\n", NET_AdrToString(::serveraddr));
-	Printf("> Hostname: %s\n", server_host.c_str());
+	Printf("> Hostname: %s\n", server_host);
 
 	std::vector<std::string> newwadnames;
 	newwadnames.reserve(server_wads);
@@ -1599,13 +1595,13 @@ bool CL_PrepareConnect()
 		{
 			Printf(PRINT_WARNING,
 			       "Could not construct wanted file \"%s\" that server requested.\n",
-			       newwadnames.at(i).c_str());
+			       newwadnames.at(i));
 			CL_QuitNetGame(NQ_ABORT);
 			return false;
 		}
 
-		Printf("> %s\n   %s\n", file.getBasename().c_str(),
-		       file.getWantedMD5().getHexCStr());
+		Printf("> %s\n   %s\n", file.getBasename(),
+		       file.getWantedMD5().getHexStr());
 	}
 
 	// Download website - needed for HTTP downloading to work.
@@ -1625,7 +1621,7 @@ bool CL_PrepareConnect()
 		}
 	}
 
-	Printf("> Map: %s\n", server_map.c_str());
+	Printf("> Map: %s\n", server_map);
 
 	version = MSG_ReadShort();
 	if(version > VERSION)
@@ -1675,7 +1671,7 @@ bool CL_PrepareConnect()
 		std::string msg = VersionMessage(::gameversion, GAMEVER, NULL);
 		if (!msg.empty())
 		{
-			Printf(PRINT_WARNING, "%s", msg.c_str());
+			Printf(PRINT_WARNING, "%s", msg);
 			CL_QuitNetGame(NQ_ABORT);
 			return false;
 		}
@@ -1684,7 +1680,7 @@ bool CL_PrepareConnect()
 	{
 		// [AM] Not worth sorting out what version it actually is.
 		std::string msg = VersionMessage(MAKEVER(0, 3, 0), GAMEVER, NULL);
-		Printf(PRINT_WARNING, "%s", msg.c_str());
+		Printf(PRINT_WARNING, "%s", msg);
 		CL_QuitNetGame(NQ_ABORT);
 		return false;
 	}
@@ -1702,12 +1698,12 @@ bool CL_PrepareConnect()
 		{
 			Printf(PRINT_WARNING,
 			       "Could not construct wanted file \"%s\" that server requested.\n",
-			       filename.c_str());
+			       filename);
 			CL_QuitNetGame(NQ_ABORT);
 			return false;
 		}
 
-		Printf("> %s\n", file.getBasename().c_str());
+		Printf("> %s\n", file.getBasename());
 	}
 
 	// TODO: Allow deh/bex file downloads
@@ -1882,7 +1878,7 @@ void CL_TryToConnect(DWORD server_token)
 		constexpr int rate = 0xFFFF;
 		MSG_WriteLong(&net_buffer, rate);
 
-        MSG_WriteString(&net_buffer, (char *)connectpasshash.c_str());
+        MSG_WriteString(&net_buffer, connectpasshash.c_str());
 
 		NET_SendPacket(net_buffer, serveraddr);
 		SZ_Clear(&net_buffer);
@@ -1914,7 +1910,7 @@ void CL_ClearPlayerJustTeleported(player_t *player)
 		teleported_players.erase(player->id);
 }
 
-ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
+ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped);
 
 //
 // CL_ClearSectorSnapshots
@@ -2037,7 +2033,7 @@ void CL_ParseCommands()
 
 			if (!protos.empty())
 			{
-				Printf(PRINT_WARNING, "CL_ParseCommands: %s\n", err.c_str());
+				Printf(PRINT_WARNING, "CL_ParseCommands: %s\n", err);
 
 				for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
 				{
@@ -2045,13 +2041,13 @@ void CL_ParseCommands()
 					ptrdiff_t idx = it - protos.begin() + 1;
 					std::string svc = SVCName(it->header);
 					size_t siz = it->size;
-					Printf(PRINT_WARNING, "%c %2zd [%s] %zub\n", latest, idx, svc.c_str(),
+					Printf(PRINT_WARNING, "%c %2zd [%s] %zub\n", latest, idx, svc,
 					       siz);
 				}
 			}
 			else
 			{
-				Printf(PRINT_WARNING, "CL_ParseCommands: %s\n", err.c_str());
+				Printf(PRINT_WARNING, "CL_ParseCommands: %s\n", err);
 			}
 
 			CL_QuitNetGame(NQ_PROTO);
@@ -2134,10 +2130,10 @@ void CL_SendCmd(void)
 //
 void CL_PlayerTimes()
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (it->ingame())
-			it->GameTime++;
+		if (player.ingame())
+			player.GameTime++;
 	}
 }
 
@@ -2282,10 +2278,8 @@ void CL_SimulateSectors()
 	CL_RemoveCompletedMovingSectors();
 
 	// Move sectors
-	std::map<unsigned short, SectorSnapshotManager>::iterator itr;
-	for (itr = sector_snaps.begin(); itr != sector_snaps.end(); ++itr)
+	for (const auto& [sectornum, snapmanager] : sector_snaps)
 	{
-		unsigned short sectornum = itr->first;
 		if (sectornum >= numsectors)
 			continue;
 
@@ -2297,7 +2291,7 @@ void CL_SimulateSectors()
 
 		// Fetch the snapshot for this world_index and run the sector's
 		// thinkers to play any sector sounds
-		SectorSnapshot snap = itr->second.getSnapshot(world_index);
+		SectorSnapshot snap = snapmanager.getSnapshot(world_index);
 		if (snap.isValid())
 		{
 			snap.toSector(sector);
@@ -2321,17 +2315,16 @@ void CL_SimulateSectors()
 //
 void CL_SimulatePlayers()
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		player_t *player = &*it;
-		if (!player || !player->mo || player->spectator)
+		if (!player.mo || player.spectator)
 			continue;
 
 		// Consoleplayer is handled in CL_PredictWorld
-		if (player->id == consoleplayer_id)
+		if (player.id == consoleplayer_id)
 			continue;
 
-		PlayerSnapshot snap = player->snapshots.getSnapshot(world_index);
+		PlayerSnapshot snap = player.snapshots.getSnapshot(world_index);
 		if (snap.isValid())
 		{
 			// Examine the old position.  If it doesn't match the snapshot for the
@@ -2343,18 +2336,18 @@ void CL_SimulatePlayers()
 			{
 				// [SL] Save the position prior to the new update so it can be
 				// used for rendering interpolation
-				player->mo->prevx = player->mo->x;
-				player->mo->prevy = player->mo->y;
-				player->mo->prevz = player->mo->z;
-				player->mo->prevangle = player->mo->angle;
-				player->mo->prevpitch = player->mo->pitch;
+				player.mo->prevx = player.mo->x;
+				player.mo->prevy = player.mo->y;
+				player.mo->prevz = player.mo->z;
+				player.mo->prevangle = player.mo->angle;
+				player.mo->prevpitch = player.mo->pitch;
 
-				PlayerSnapshot prevsnap = player->snapshots.getSnapshot(world_index - 1);
+				PlayerSnapshot prevsnap = player.snapshots.getSnapshot(world_index - 1);
 
 				v3fixed_t offset;
-				M_SetVec3Fixed(&offset, prevsnap.getX() - player->mo->x,
-										prevsnap.getY() - player->mo->y,
-										prevsnap.getZ() - player->mo->z);
+				M_SetVec3Fixed(&offset, prevsnap.getX() - player.mo->x,
+										prevsnap.getY() - player.mo->y,
+										prevsnap.getZ() - player.mo->z);
 
 				fixed_t dist = M_LengthVec3Fixed(&offset);
 				if (dist > 2 * FRACUNIT)
@@ -2374,21 +2367,21 @@ void CL_SimulatePlayers()
 				}
 			}
 
-			int oldframe = player->mo->frame;
-			snap.toPlayer(player);
+			int oldframe = player.mo->frame;
+			snap.toPlayer(&player);
 
-			if (player->playerstate != PST_LIVE)
-				player->mo->frame = oldframe;
+			if (player.playerstate != PST_LIVE)
+				player.mo->frame = oldframe;
 
 			if (!snap.isContinuous())
 			{
 				// [SL] Save the position after to the new update so this position
 				// won't be interpolated.
-				player->mo->prevx = player->mo->x;
-				player->mo->prevy = player->mo->y;
-				player->mo->prevz = player->mo->z;
-				player->mo->prevangle = player->mo->angle;
-				player->mo->prevpitch = player->mo->pitch;
+				player.mo->prevx = player.mo->x;
+				player.mo->prevy = player.mo->y;
+				player.mo->prevz = player.mo->z;
+				player.mo->prevangle = player.mo->angle;
+				player.mo->prevpitch = player.mo->pitch;
 			}
 		}
 	}
@@ -2433,7 +2426,7 @@ void CL_SimulateWorld()
 			reason = "invalid world_index";
 
 		Printf(PRINT_HIGH, "Gametic %i, world_index %i, Resynching world index (%s).\n",
-			gametic, world_index, reason.c_str());
+			gametic, world_index, reason);
 		#endif // _WORLD_INDEX_DEBUG_
 
 		CL_ResyncWorldIndex();

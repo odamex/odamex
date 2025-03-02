@@ -201,7 +201,7 @@ void ClientReplay::itemReplay()
 		{
 			for (int i = 0; i < ticDelta; ++i)
 			{
-					P_MovePsprites(&player);
+				P_MovePsprites(&player);
 			}
 		}
 

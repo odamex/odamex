@@ -147,7 +147,7 @@ static AActor* SelectTeleDest(int tid, int tag)
 //
 // TELEPORTATION
 //
-BOOL EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop)
+bool EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop)
 {
 	// don't teleport missiles
 	// TODO: Allow projectile activated missiles to teleport
@@ -177,7 +177,7 @@ BOOL EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop
 	if (!P_TeleportMove (thing, m->x, m->y, destz, false))
 		return false;
 
-	// fraggle: this was changed in final doom, 
+	// fraggle: this was changed in final doom,
 	// problem between normal doom2 1.9 and final doom
 	// Note that although chex.exe is based on Final Doom,
 	// it does not have this quirk.
@@ -230,7 +230,7 @@ BOOL EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop
 
 	thing->momx = thing->momy = thing->momz = 0;
 	thing->angle = m->angle;
-	
+
 	// [RK] we keep the player's pitch if it's a no stop teleport
 	if(nostop == 0)
 		thing->pitch = 0;
@@ -239,7 +239,7 @@ BOOL EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop
 }
 
 // [ML] Original vanilla-style EV_Teleport, based on code from chocolate doom
-BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
+bool EV_LineTeleport (line_t *line, int side, AActor *thing)
 {
 	AActor *m;
 	TThinkerIterator<AActor> iterator;
@@ -250,7 +250,7 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 
     // Don't teleport if hit back of line,
     //  so you can get out of teleporter.
-    if (side == 1)		
+    if (side == 1)
 		return false;
 
 	const int tag = line->id;
@@ -264,12 +264,12 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 				// not a teleportman
 				if (m->type != MT_TELEPORTMAN)
 					continue;
-				
+
 				sector_t* sector = m->subsector->sector;
 				// wrong sector
 				if (sector-sectors != i )
 					continue;
-									
+
 				// killough 5/12/98: exclude voodoo dolls:
 				player_t* player = thing->player;
 				if (player && player->mo != thing)
@@ -289,7 +289,7 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 				if (!P_TeleportMove (thing, m->x, m->y, destz, false))
 					return false;
 
-				// fraggle: this was changed in final doom, 
+				// fraggle: this was changed in final doom,
 				// problem between normal doom2 1.9 and final doom
 				// Note that although chex.exe is based on Final Doom,
 				// it does not have this quirk.
@@ -337,7 +337,7 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 // [RH] Changed to find destination by tid rather than sector
 //
 
-BOOL EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* line,
+bool EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* line,
                        int side, AActor* thing)
 {
 	// don't teleport missiles
@@ -415,8 +415,8 @@ BOOL EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* l
 #define FUDGEFACTOR 10
 
 // [RH] Modified to support different source and destination ids.
-BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
-							BOOL reverse)
+bool EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
+							bool reverse)
 {
 	line_t *l;
 
@@ -458,8 +458,8 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 			// Height of thing above ground
 			const fixed_t z = thing->z -
 			                  P_FloorHeight(thing->x, thing->y, sides[line->sidenum[1]].sector) +
-			                  P_FloorHeight(x, y, sides[l->sidenum[0]].sector);		
-	
+			                  P_FloorHeight(x, y, sides[l->sidenum[0]].sector);
+
 			// Side to exit the linedef on positionally.
 			//
 			// Notes:

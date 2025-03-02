@@ -607,9 +607,7 @@ void ISDL20Window::getEvents()
 					int current_time = I_MSTime();
 					if ((EWindowMode)vid_fullscreen.asInt() == WINDOW_Windowed && current_time > mAcceptResizeEventsTime)
 					{
-						char tmp[30];
-						snprintf(tmp, 30, "vid_setmode %d %d", width, height);
-						AddCommandString(tmp);
+						AddCommandString(fmt::format("vid_setmode {} {}", width, height));
 					}
 				}
 			}
@@ -695,7 +693,7 @@ void ISDL20Window::setWindowIcon()
 											(void*)app_icon.pixel_data, app_icon.width, app_icon.height,
 											app_icon.bytes_per_pixel * 8, app_icon.width * app_icon.bytes_per_pixel,
 											0xff << 0, 0xff << 8, 0xff << 16, 0xff << 24);
-	
+
 	SDL_SetWindowIcon(mSDLWindow, icon_surface);
 	SDL_FreeSurface(icon_surface);
 	#endif	// !_WIN32 && !_XBOX
@@ -917,7 +915,7 @@ bool ISDL20Window::setMode(const IVideoMode& video_mode)
 uint16_t ISDL20Window::getCurrentWidth() const
 {
 	int width;
-	SDL_GetWindowSize(mSDLWindow, &width, NULL); 
+	SDL_GetWindowSize(mSDLWindow, &width, NULL);
 	return width;
 }
 
@@ -928,7 +926,7 @@ uint16_t ISDL20Window::getCurrentWidth() const
 uint16_t ISDL20Window::getCurrentHeight() const
 {
 	int height;
-	SDL_GetWindowSize(mSDLWindow, NULL, &height); 
+	SDL_GetWindowSize(mSDLWindow, NULL, &height);
 	return height;
 }
 

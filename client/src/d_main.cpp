@@ -103,18 +103,18 @@ void D_DoAdvanceDemo();
 void D_DoomLoop();
 
 extern int testingmode;
-extern BOOL gameisdead;
+extern bool gameisdead;
 extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
-BOOL devparm;				// started game with -devparm
+bool devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 static bool wiping_screen = false;
 
 OLumpName startmap;
-BOOL autostart;
-BOOL advancedemo;
+bool autostart;
+bool advancedemo;
 event_t events[MAXEVENTS];
 int eventhead;
 int eventtail;
@@ -324,7 +324,7 @@ void D_Display()
 	// draw pause pic
 	if (paused && !menuactive)
 	{
-		const patch_t* pause = W_CachePatch(gameinfo.pauseSign.c_str());
+		const patch_t* pause = W_CachePatch(gameinfo.pauseSign);
 
 		// todo: properly center "PAUSED" graphic for Heretic
 		const int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
@@ -370,7 +370,7 @@ void D_DoomLoop()
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf(PRINT_ERROR, "\nERROR: %s\n", error.GetMsg().c_str());
+			Printf(PRINT_ERROR, "\nERROR: %s\n", error.GetMsg());
 
 			// [AM] In case an error is caused by a console command.
 			C_ClearCommand();
@@ -455,7 +455,7 @@ void D_AdvanceDemo (void)
 //
 void D_DoAdvanceDemo (void)
 {
-	const char *pagename = NULL;
+	OLumpName pagename;
 
 	consoleplayer().playerstate = PST_LIVE;	// not reborn
 	advancedemo = false;
@@ -477,7 +477,7 @@ void D_DoAdvanceDemo (void)
             pagetic = gameinfo.titleTime * TICRATE;
 
             gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.titlePage.c_str();
+            pagename = gameinfo.titlePage;
 
             currentmusic = gameinfo.titleMusic.c_str();
 
@@ -491,7 +491,7 @@ void D_DoAdvanceDemo (void)
         case 2:
             pagetic = gameinfo.pageTime * TICRATE;
             gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.creditPages[0].c_str();
+            pagename = gameinfo.creditPages[0];
 
             break;
         case 3:
@@ -505,7 +505,7 @@ void D_DoAdvanceDemo (void)
             {
                 pagetic = gameinfo.titleTime * TICRATE;
 
-                pagename = gameinfo.titlePage.c_str();
+                pagename = gameinfo.titlePage;
                 currentmusic = gameinfo.titleMusic.c_str();
 
                 S_StartMusic(currentmusic.c_str());
@@ -513,7 +513,7 @@ void D_DoAdvanceDemo (void)
             else
             {
                 pagetic = gameinfo.pageTime * TICRATE;
-                pagename = gameinfo.creditPages[1].c_str();
+                pagename = gameinfo.creditPages[1];
             }
 
             break;
@@ -524,7 +524,7 @@ void D_DoAdvanceDemo (void)
         case 6:
             pagetic = gameinfo.pageTime * TICRATE;
             gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.creditPages[1].c_str();
+            pagename = gameinfo.creditPages[1];
 
             break;
         case 7:
@@ -534,7 +534,7 @@ void D_DoAdvanceDemo (void)
     }
 
     // [Russell] - Still need this toilet humor for now unfortunately
-	if (pagename)
+	if (!pagename.empty())
 	{
 		const patch_t* patch = W_CachePatch(pagename);
 
@@ -749,7 +749,7 @@ void D_Init_DEHEXTRA_Frames(void);
 //
 void D_DoomMain()
 {
-	unsigned int p;
+	size_t p;
 
 	gamestate = GS_STARTUP;
 
@@ -798,15 +798,7 @@ void D_DoomMain()
 		    "-connect", "-file",     "-playdemo", "-timedemo", "-warp",
 		};
 
-		bool shouldSkip = false;
-		for (size_t i = 0; i < ARRAY_LENGTH(skipParams); i++)
-		{
-			if (::Args.CheckValue(skipParams[i]))
-			{
-				shouldSkip = true;
-				break;
-			}
-		}
+		bool shouldSkip = std::any_of(std::begin(skipParams), std::end(skipParams), [](const auto& param){ return ::Args.CheckValue(param); });
 
 		// Skip boot window if we pass a single argument that isn't the
 		// start of a standard parameter - it must be a path.
@@ -822,10 +814,9 @@ void D_DoomMain()
 			iwad = wads.iwad;
 			pwads = wads.pwads;
 
-			for (StringTokens::iterator it = wads.options.begin();
-		    	 it != wads.options.end(); ++it)
+			for (const auto& option : wads.options)
 			{
-				Args.AppendArg((*it).c_str());
+				Args.AppendArg(option.c_str());
 			}
 		}
 	}
@@ -843,19 +834,19 @@ void D_DoomMain()
 	{
 		const std::vector<std::string>& wad_exts = M_FileTypeExts(OFILE_WAD);
 		const std::vector<std::string>& deh_exts = M_FileTypeExts(OFILE_DEH);
-		for (size_t i = 0; i < pwads.size(); i++)
+		for (const auto& pwad : pwads)
 		{
 			OWantFile file;
-			OWantFile::make(file, pwads[i], OFILE_UNKNOWN);
+			OWantFile::make(file, pwad, OFILE_UNKNOWN);
 			const std::string extension = StdStringToUpper(file.getExt());
 			if (std::find(deh_exts.begin(), deh_exts.end(), extension) != deh_exts.end())
 			{
-				OWantFile::make(file, pwads[i], OFILE_DEH);
+				OWantFile::make(file, pwad, OFILE_DEH);
 				newpatchfiles.push_back(file);
 			}
 			if (std::find(wad_exts.begin(), wad_exts.end(), extension) != wad_exts.end())
 			{
-				OWantFile::make(file, pwads[i], OFILE_WAD);
+				OWantFile::make(file, pwad, OFILE_WAD);
 				newwadfiles.push_back(file);
 			}
 		}
@@ -1034,10 +1025,10 @@ void D_DoomMain()
 
 	// --- initialization complete ---
 
-	Printf_Bold("\n\35\36\36\36\36 Odamex Client Initialized \36\36\36\36\37\n");
+	PrintFmt_Bold("\n\35\36\36\36\36 Odamex Client Initialized \36\36\36\36\37\n");
 	if (gamestate != GS_CONNECTING)
-		Printf(PRINT_HIGH, "Type connect <address> or use the Odamex Launcher to connect to a game.\n");
-    Printf(PRINT_HIGH, "\n");
+		PrintFmt(PRINT_HIGH, "Type connect <address> or use the Odamex Launcher to connect to a game.\n");
+    PrintFmt(PRINT_HIGH, "\n");
 
 	// Play a demo, start a map, or show the title screen
 	if (singledemo)
@@ -1056,7 +1047,7 @@ void D_DoomMain()
 		sv_allowredscreen = 1;
 
 		players.clear();
-		players.push_back(player_t());
+		players.emplace_back();
 		players.back().playerstate = PST_REBORN;
 		consoleplayer_id = displayplayer_id = players.back().id = 1;
 

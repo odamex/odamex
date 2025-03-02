@@ -59,7 +59,7 @@ bool SetServerVar (const char *name, const char *value)
 
 void D_SendServerInfoChange (const cvar_t *cvar, const char *value)
 {
-	SetServerVar (cvar->name(), (char *)value);
+	SetServerVar(cvar->name(), value);
 	SV_BroadcastPrintf("%s%s has been modified to %s!\n", TEXTCOLOR_YELLOW, cvar->name(), (char*)value);
 	SV_ServerSettingChange ();
 }

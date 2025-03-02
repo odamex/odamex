@@ -615,7 +615,7 @@ void LevelState::printRoundStart() const
 	else if (def != TEAM_NONE)
 	{
 		TeamInfo& teaminfo = *GetTeamInfo(def);
-		right = fmt::sprintf("%s is on defense", teaminfo.ColorizedTeamName().c_str());
+		right = fmt::sprintf("%s is on defense", teaminfo.ColorizedTeamName());
 	}
 
 	if (!right.empty())

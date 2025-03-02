@@ -128,7 +128,7 @@ AActor::AActor()
       prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
       subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
       height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
-      info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), 
+      info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0),
       flags3(0), oflags(0), statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
@@ -793,8 +793,8 @@ void AActor::RunThink ()
 
 void AActor::Serialize (FArchive &arc)
 {
-	constexpr DWORD TLATE_NONE = 0xFFFFFFFF;
-	constexpr DWORD TLATE_BOSS = 0xFFFFFFFE;
+	static constexpr DWORD TLATE_NONE = 0xFFFFFFFF;
+	static constexpr DWORD TLATE_BOSS = 0xFFFFFFFE;
 
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
@@ -2186,9 +2186,9 @@ bool P_CheckMissileSpawn (AActor* th)
 	// [SL] 2011-06-02 - If a missile explodes immediatley upon firing,
 	// make sure we spawn the missile first, send it to all clients immediately
 	// instead of queueing it, then explode it.
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		SV_AwarenessUpdate(*it, th);
+		SV_AwarenessUpdate(player, th);
 	}
 
 	if (!P_TryMove (th, th->x, th->y, false))
@@ -3123,10 +3123,9 @@ void P_SpawnAvatars()
 		return;
 	}
 
-	for (std::vector<mapthing2_t>::iterator it = ::voodoostarts.begin();
-	     it != ::voodoostarts.end(); ++it)
+	for (const auto& thing : ::voodoostarts)
 	{
-		new AActor(it->x << FRACBITS, it->y << FRACBITS, it->z << FRACBITS, MT_AVATAR);
+		new AActor(thing.x << FRACBITS, thing.y << FRACBITS, thing.z << FRACBITS, MT_AVATAR);
 	}
 }
 
@@ -3152,16 +3151,16 @@ bool P_VisibleToPlayers(AActor *mo)
 	if (!mo)
 		return false;
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
 		// players aren't considered visible to themselves
-		if (mo->player && mo->player->id == it->id)
+		if (mo->player && mo->player->id == player.id)
 			continue;
 
-		if (!(it->mo) || it->spectator)
+		if (!(player.mo) || player.spectator)
 			continue;
 
-		if (P_CheckSightEdges(it->mo, mo, 5.0))
+		if (P_CheckSightEdges(player.mo, mo, 5.0))
 			return true;
 	}
 

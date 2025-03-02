@@ -193,14 +193,14 @@ static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 	std::string buffer;
 	if (!msg->message().empty())
 	{
-		buffer = fmt::sprintf("Disconnected from server: %s", msg->message().c_str());
+		buffer = fmt::sprintf("Disconnected from server: %s", msg->message());
 	}
 	else
 	{
 		buffer = fmt::sprintf("Disconnected from server\n");
 	}
 
-	Printf("%s", msg->message().c_str());
+	Printf("%s", msg->message());
 	CL_QuitNetGame(NQ_SILENT);
 }
 
@@ -784,7 +784,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 		{
 			Printf(PRINT_WARNING,
 			       "Could not construct wanted file \"%s\" that server requested.\n",
-			       name.c_str());
+			       name);
 			CL_QuitNetGame(NQ_DISCONNECT);
 			return;
 		}
@@ -807,7 +807,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 		{
 			Printf(PRINT_WARNING,
 			       "Could not construct wanted patch \"%s\" that server requested.\n",
-			       name.c_str());
+			       name);
 			CL_QuitNetGame(NQ_DISCONNECT);
 			return;
 		}
@@ -840,7 +840,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	// the music from the old wad continues to play...
 	S_StopMusic();
 
-	G_InitNew(mapname.c_str());
+	G_InitNew(mapname);
 
 	// [AM] Sync the server's level time with the client.
 	::level.time = server_level_time;
@@ -849,8 +849,8 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	::teleported_players.clear();
 
 	CL_ClearSectorSnapshots();
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		it->snapshots.clearSnapshots();
+	for (auto& player : players)
+		player.snapshots.clearSnapshots();
 
 	// reset the world_index (force it to sync)
 	CL_ResyncWorldIndex();
@@ -1374,7 +1374,7 @@ static void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 static void CL_Print(const odaproto::svc::Print* msg)
 {
 	byte level = msg->level();
-	const char* str = msg->message().c_str();
+	const std::string& str = msg->message();
 
 	// Disallow getting NORCON messages
 	if (level == PRINT_NORCON)
@@ -1802,7 +1802,7 @@ static void CL_Say(const odaproto::svc::Say* msg)
 			filtermessage = true;
 	}
 
-	const char* name = player.userinfo.netname.c_str();
+	const std::string& name = player.userinfo.netname;
 	printlevel_t publicmsg = filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT;
 	printlevel_t publicteammsg = filtermessage ? PRINT_FILTERCHAT : PRINT_TEAMCHAT;
 
@@ -1834,11 +1834,11 @@ static void CL_Say(const odaproto::svc::Say* msg)
 static void CL_CTFRefresh(const odaproto::svc::CTFRefresh* msg)
 {
 	// clear player flags client may have imagined
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
 		for (size_t i = 0; i < NUMTEAMS; i++)
 		{
-			it->flags[i] = false;
+			player.flags[i] = false;
 		}
 	}
 
@@ -2003,8 +2003,8 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 
 	std::string buf;
 	buf = fmt::sprintf("%s%s %sfound a secret!\n", TEXTCOLOR_YELLOW,
-	                   player.userinfo.netname.c_str(), TEXTCOLOR_NORMAL);
-	Printf("%s", buf.c_str());
+	                   player.userinfo.netname, TEXTCOLOR_NORMAL);
+	Printf("%s", buf);
 
 	if (::hud_revealsecrets == 1)
 		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
@@ -2732,10 +2732,9 @@ static void CL_MaplistUpdate(const odaproto::svc::MaplistUpdate* msg)
 	OStringIndexer indexer = OStringIndexer::maplistFactory();
 
 	// Parse our dictionary first.
-	google::protobuf::Map<uint32_t, std::string>::const_iterator it;
-	for (it = msg->dict().begin(); it != msg->dict().end(); ++it)
+	for (const auto& [idx, str] : msg->dict())
 	{
-		indexer.setIndex(it->first, it->second);
+		indexer.setIndex(idx, str);
 	}
 
 	// Load our maps into the local cache.

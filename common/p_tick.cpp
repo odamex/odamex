@@ -67,22 +67,22 @@ void P_Ticker (void)
 
 	if (clientside && serverside)
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
-			if (it->ingame())
-				P_PlayerThink(&*(it));
+		for (auto& player : players)
+			if (player.ingame())
+				P_PlayerThink(&player);
 	}
 
 	// [SL] 2011-06-05 - Tick player actor animations here since P_Ticker is
 	// called only once per tick.  AActor::RunThink is called whenever the
 	// server receives a cmd from the client, which can happen multiple times
 	// in a single gametic.
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		P_AnimationTick(it->mo);
+		P_AnimationTick(player.mo);
 	}
 
 	DThinker::RunThinkers ();
-	
+
 	P_UpdateSpecials ();
 	P_RespawnSpecials ();
 

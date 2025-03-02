@@ -53,7 +53,7 @@ public:
 	~DConsoleCommand () override;
 	virtual void Run (uint32_t key = 0) = 0;
 	virtual bool IsAlias () { return false; }
-	void PrintCommand () { Printf (PRINT_HIGH, "%s\n", m_Name.c_str()); }
+	void PrintCommand () { Printf (PRINT_HIGH, "%s\n", m_Name); }
 
 	std::string m_Name;
 
@@ -87,7 +87,7 @@ public:
 	~DConsoleAlias () override;
 	void Run (uint32_t key = 0) override;
 	bool IsAlias () override { return true; }
-	void PrintAlias () { Printf (PRINT_HIGH, "%s : %s\n", m_Name.c_str(), m_Command.c_str()); }
+	void PrintAlias () { Printf (PRINT_HIGH, "%s : %s\n", m_Name, m_Command); }
 	void Archive (FILE *f);
 
 	// Write out alias commands to a file for all current aliases.

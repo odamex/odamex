@@ -444,8 +444,7 @@ void I_Endoom()
 	// Hack to stop crash with disk icon
 	in_endoom = true;
 
-	unsigned char* endoom_data = (unsigned char*)W_CacheLumpName(gameinfo.endoom.c_str(),
-		PU_STATIC);
+	unsigned char* endoom_data = (unsigned char*)W_CacheLumpName(gameinfo.endoom, PU_STATIC);
 
 	// Set up text mode screen
 
@@ -515,7 +514,7 @@ void STACK_ARGS I_Quit (void)
 //
 // I_Error
 //
-BOOL gameisdead;
+bool gameisdead;
 
 #define MAX_ERRORTEXT	1024
 
@@ -557,7 +556,7 @@ void I_BaseError(const std::string& errortext)
 {
 	std::string messagetext;
 
-	static BOOL alreadyThrown = false;
+	static bool alreadyThrown = false;
 	gameisdead = true;
 
 	if (!alreadyThrown) // ignore all but the first message -- killough
@@ -814,7 +813,7 @@ std::string I_GetClipboardText()
 	return "";
 }
 
-void I_PrintStr (int xp, const char *cp, int count, BOOL scroll)
+void I_PrintStr (int xp, const char *cp, int count, bool scroll)
 {
 	// used in the DOS version
 }
@@ -1017,7 +1016,7 @@ BEGIN_COMMAND(debug_userfilename)
 	}
 
 	std::string userfile = M_GetUserFileName(argv[1]);
-	Printf("Resolved to: %s\n", userfile.c_str());
+	PrintFmt("Resolved to: {:s}\n", userfile);
 }
 END_COMMAND(debug_userfilename)
 

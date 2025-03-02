@@ -134,7 +134,7 @@ AActor**		blocklinks;		// for thing chains
 //	used as a PVS lookup as well.
 //
 byte*			rejectmatrix;
-BOOL			rejectempty;
+bool			rejectempty;
 
 
 // Maintain single and multi player starting spots.
@@ -1695,13 +1695,13 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 	typedef std::vector<byte> LevelLumps;
 	LevelLumps levellumps;
 
-	const byte* thingbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
-	const byte* lindefbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
-	const byte* sidedefbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
-	const byte* vertexbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
-	const byte* segsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
-	const byte* ssectorsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
-	const byte* sectorsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
+	const byte* thingbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
+	const byte* lindefbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
+	const byte* sidedefbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
+	const byte* vertexbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
+	const byte* segsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
+	const byte* ssectorsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
+	const byte* sectorsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
 
 	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_THINGS), *thingbytes);
 	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_LINEDEFS), *lindefbytes);
@@ -1955,9 +1955,9 @@ void P_SetupLevel (const char *lumpname, int position)
 
 	if (!savegamerestore)
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			it->killcount = it->secretcount = it->itemcount = 0;
+			player.killcount = player.secretcount = player.itemcount = 0;
 		}
 	}
 
@@ -2087,15 +2087,15 @@ void P_SetupLevel (const char *lumpname, int position)
 
     if (serverside)
     {
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			SV_PreservePlayer(*it);
+			SV_PreservePlayer(player);
 
-			if (it->ingame())
+			if (player.ingame())
 			{
 				// if deathmatch, randomly spawn the active players
 				// denis - this function checks for deathmatch internally
-				G_DeathMatchSpawnPlayer(*it);
+				G_DeathMatchSpawnPlayer(player);
 			}
 		}
     }

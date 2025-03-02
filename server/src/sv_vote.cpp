@@ -373,9 +373,8 @@ public:
 		std::ostringstream vsbuffer;
 		vsbuffer << "map ";
 
-		for (std::vector<std::string>::const_iterator it = maplist_entry.wads.begin();
-			it!= maplist_entry.wads.end(); ++it)
-			vsbuffer << D_CleanseFileName(*it) << " ";
+		for (const auto& wad : maplist_entry.wads)
+			vsbuffer << D_CleanseFileName(wad) << " ";
 
 		vsbuffer << maplist_entry.map;
 		this->votestring = vsbuffer.str();
@@ -720,12 +719,11 @@ size_t Vote::count_yes() const
 	}
 
 	int count = 0;
-	std::map<int, vote_result_t>::const_iterator it;
 
 	// Count the for votes.
-	for (it = this->tally.begin(); it != this->tally.end(); ++it)
+	for (const auto [_, vote_result] : this->tally)
 	{
-		if ((*it).second == VOTE_YES)
+		if (vote_result == VOTE_YES)
 		{
 			count++;
 		}
@@ -768,12 +766,11 @@ size_t Vote::count_no() const
 	}
 
 	int count = 0;
-	std::map<int, vote_result_t>::const_iterator it;
 
 	// Count the against votes.
-	for (it = this->tally.begin(); it != this->tally.end(); ++it)
+	for (const auto [_, vote_result] : this->tally)
 	{
-		if ((*it).second == VOTE_NO)
+		if (vote_result == VOTE_NO)
 		{
 			count++;
 		}
@@ -901,9 +898,9 @@ void Vote::parse(vote_result_t vote_result)
 	// Make sure the clients have the final state of the vote
 	// before we do anything else.
 	SV_GlobalVoteUpdate();
-	for (Players::iterator it = players.begin();it != players.end();++it)
-		if (validplayer(*it))
-			SV_SendPacket(*it);
+	for (auto& player : players)
+		if (validplayer(player))
+			SV_SendPacket(player);
 
 	if (this->tally.empty() || vote_result == VOTE_ABANDON)
 	{
@@ -1037,8 +1034,8 @@ static void SV_VoteUpdate(player_t &player)
 // Send a full vote update to everybody
 static void SV_GlobalVoteUpdate()
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
-		SV_VoteUpdate(*it);
+	for (auto& player : players)
+		SV_VoteUpdate(player);
 }
 
 //////// COMMANDS FROM CLIENT ////////
@@ -1056,7 +1053,7 @@ void SV_Callvote(player_t &player)
 	for (int i = 0; i < argc; i++)
 	{
 		arguments[i] = std::string(MSG_ReadString());
-		DPrintf("SV_Callvote: arguments[%d] = \"%s\"\n", i, arguments[i].c_str());
+		DPrintf("SV_Callvote: arguments[%d] = \"%s\"\n", i, arguments[i]);
 	}
 
 	if (!(votecmd > VOTE_NONE && votecmd < VOTE_MAX))
@@ -1224,15 +1221,15 @@ void Vote_Runtic()
 	if (level.time == 1)
 	{
 		// Every player has a clean slate in terms of timeouts.
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			if (!validplayer(*it))
+			if (!validplayer(player))
 			{
 				continue;
 			}
 
-			it->timeout_callvote = 0;
-			it->timeout_vote = 0;
+			player.timeout_callvote = 0;
+			player.timeout_vote = 0;
 		}
 	}
 

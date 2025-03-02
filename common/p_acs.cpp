@@ -99,12 +99,12 @@ static void ClearInventory(AActor* activator)
 {
 	if (activator == NULL)
 	{
-		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		for (auto& player : players)
 		{
-			if (it->ingame() && !it->spectator)
+			if (player.ingame() && !player.spectator)
 			{
-				DoClearInv(&(*it));
-				SERVER_ONLY(SV_SendPlayerInfo(*it));
+				DoClearInv(&player);
+				SERVER_ONLY(SV_SendPlayerInfo(player));
 			}
 		}
 	}
@@ -228,7 +228,7 @@ static DoomEntity DoomDecorationNames[60] = {{"BurningBarrel", MT_MISC77},
                                              {"ExplosiveBarrel", MT_BARREL}};
 
 extern ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammo, float num);
-extern ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped);
+extern ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped);
 extern ItemEquipVal P_GiveCard(player_t *player, card_t card);
 extern ItemEquipVal P_GivePower(player_t *player, int  power);
 
@@ -368,11 +368,10 @@ static void GiveInventory(AActor* activator, const char* type, int amount)
 	{
 		for (int i = 0; i < MAXPLAYERS; ++i)
 		{
-			Players::iterator it;
-			for (it = players.begin();it != players.end();++it)
+			for (auto& player : players)
 			{
-				if (it->ingame() && !it->spectator)
-					DoGiveInv(&(*it), type, amount);
+				if (player.ingame() && !player.spectator)
+					DoGiveInv(&player, type, amount);
 			}
 		}
 	}
@@ -407,7 +406,7 @@ static void TakeWeapon(player_t* player, int weapon)
 	SERVER_ONLY(SV_SendPlayerInfo(*player));
 }
 
-extern BOOL P_CheckAmmo (player_t *player);
+extern bool P_CheckAmmo (player_t *player);
 
 static void TakeAmmo(player_t* player, int ammo, int amount)
 {
@@ -512,11 +511,10 @@ static void TakeInventory(AActor* activator, const char* type, int amount)
 {
 	if (activator == NULL)
 	{
-		Players::iterator it;
-		for (it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			if (it->ingame() && !it->spectator)
-				DoTakeInv(&(*it), type, amount);
+			if (player.ingame() && !player.spectator)
+				DoTakeInv(&player, type, amount);
 		}
 	}
 	else if (activator->player != NULL)
@@ -1066,7 +1064,7 @@ void DACSThinker::Serialize (FArchive &arc)
 			if (RunningScripts[i])
 				arc << RunningScripts[i] << (WORD)i;
 		}
-		arc << (DLevelScript *)NULL;
+		arc << static_cast<DLevelScript*>(nullptr);
 	}
 	else
 	{
@@ -1354,7 +1352,7 @@ void DLevelScript::Serialize (FArchive &arc)
 
 		// [AM] We don't want player activators to be saved
 		if (arc.IsReset() && P_ThinkerIsPlayerType(activator))
-			arc << (AActor*)NULL;
+			arc << static_cast<AActor*>(nullptr);
 		else
 			arc << activator;
 
@@ -3766,7 +3764,7 @@ void DLevelScript::RunScript ()
 			}
 			else
 			{
-				STACK(1) = (int)var->value();
+				STACK(1) = var->asInt();
 			}
 		}
 		break;
@@ -4011,7 +4009,7 @@ static void addDefered (level_pwad_info_t& i, acsdefered_t::EType type, int scri
 			def->playernum = -1;
 		}
 		i.defered = def;
-		DPrintf ("Script %d on map %s defered\n", script, i.mapname.c_str());
+		DPrintFmt("Script {} on map {} defered\n", script, i.mapname);
 	}
 }
 

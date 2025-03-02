@@ -45,7 +45,7 @@ MusicSystem* musicsystem = NULL;
 MusicSystemType current_musicsystem_type = MS_NONE;
 
 void S_StopMusic();
-void S_ChangeMusic (std::string musicname, int looping);
+void S_ChangeMusic (std::string musicname, bool looping);
 
 EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_musicsystem)
@@ -233,9 +233,9 @@ CVAR_FUNC_IMPL (snd_musicsystem)
 		S_StopMusic();
 	}
 	I_InitMusic();
-	
+
 	if (level.music.empty())
-		S_ChangeMusic(currentmusic.c_str(), true);	
+		S_ChangeMusic(currentmusic, true);
 	else
 		S_ChangeMusic(std::string(level.music.c_str(), 8), true);
 }

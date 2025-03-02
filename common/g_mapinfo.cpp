@@ -156,7 +156,7 @@ void MustGetStringName(OScanner& os, const char* name)
 	os.mustScan();
 	if (os.compareTokenNoCase(name) == false)
 	{
-		os.error("Expected '%s', got '%s'.", name, os.getToken().c_str());
+		os.error("Expected '%s', got '%s'.", name, os.getToken());
 	}
 }
 
@@ -244,7 +244,7 @@ void MIType_BoolString(OScanner& os, bool doEquals, void* data, unsigned int fla
 		*static_cast<bool*>(data) = false;
 	else
 		os.error("Expected \"true\" or \"false\" in boolean statement, got \"%s\"",
-		         os.getToken().c_str());
+		         os.getToken());
 }
 
 // Sets the inputted data as a bool (that is, if flags != 0, set to true; else false)
@@ -479,13 +479,12 @@ void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 	}
 	else // Must be map lump
 	{
-		char map_name[9];
-		strncpy(map_name, os.getToken().c_str(), 8);
+		OLumpName map_name = os.getToken();
 
-		if (IsNum(map_name))
+		if (IsNum(map_name.c_str()))
 		{
-			const int map = std::atoi(map_name);
-			snprintf(map_name, 9, "MAP%02d", map);
+			const int map = std::atoi(map_name.c_str());
+			map_name = fmt::format("MAP{:02d}", map);
 		}
 
 		*static_cast<OLumpName*>(data) = map_name;
@@ -529,7 +528,7 @@ void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 		const OString& s = GStrings(StdStringToUpper(os.getToken()).c_str() + 1);
 		if (s.empty())
 		{
-			os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
+			os.error("Unknown lookup string \"%s\".", os.getToken());
 		}
 		*static_cast<OLumpName*>(data) = s;
 	}
@@ -554,7 +553,7 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsign
 		const OString& s = GStrings(StdStringToUpper(musicname.c_str() + 1));
 		if (s.empty())
 		{
-			os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
+			os.error("Unknown lookup string \"%s\".", os.getToken());
 		}
 
 		// Music lumps in the stringtable do not begin
@@ -691,7 +690,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
-	char** text = static_cast<char**>(data);
+	std::string* text = static_cast<std::string*>(data);
 
 	if (newStyleMapInfo)
 	{
@@ -707,10 +706,9 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 			const OString& s = GStrings(StdStringToUpper(os.getToken()));
 			if (s.empty())
 			{
-				os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
+				os.error("Unknown lookup string \"%s\".", os.getToken());
 			}
-			free(*text);
-			*text = strdup(s.c_str());
+			*text = s;
 		}
 		else
 		{
@@ -732,8 +730,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 				ctext.resize(ctext.length() - 1);
 			}
 
-			free(*text);
-			*text = strdup(ctext.c_str());
+			*text = ctext;
 		}
 	}
 	else
@@ -744,16 +741,14 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 			const OString& s = GStrings(StdStringToUpper(os.getToken()));
 			if (s.empty())
 			{
-				os.error("Unknown lookup string \"%s\".", os.getToken().c_str());
+				os.error("Unknown lookup string \"%s\".", os.getToken());
 			}
 
-			free(*text);
-			*text = strdup(s.c_str());
+			*text = s;
 		}
 		else
 		{
-			free(*text);
-			*text = strdup(os.getToken().c_str());
+			*text = os.getToken();
 		}
 	}
 }
@@ -882,20 +877,20 @@ void MIType_Map07Special(OScanner& os, bool newStyleMapInfo, void* data, unsigne
 	    *static_cast<std::vector<bossaction_t>*>(data);
 
 	// mancubus
-	bossactionvector.push_back(bossaction_t());
-	std::vector<bossaction_t>::iterator it = (bossactionvector.end() - 1);
+	bossactionvector.emplace_back();
+	bossaction_t& lastaction = bossactionvector.back();
 
-	it->type = MT_FATSO;
-	it->special = 23;
-	it->tag = 666;
+	lastaction.type = MT_FATSO;
+	lastaction.special = 23;
+	lastaction.tag = 666;
 
 	// arachnotron
-	bossactionvector.push_back(bossaction_t());
-	it = (bossactionvector.end() - 1);
+	bossactionvector.emplace_back();
+	lastaction = bossactionvector.back();
 
-	it->type = MT_BABY;
-	it->special = 30;
-	it->tag = 667;
+	lastaction.type = MT_BABY;
+	lastaction.special = 30;
+	lastaction.tag = 667;
 }
 
 // Sets the map to use the baron bossaction
@@ -905,12 +900,11 @@ void MIType_BaronSpecial(OScanner& os, bool newStyleMapInfo, void* data, unsigne
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
 
 	if (bossactionvector.size() == 0)
-		bossactionvector.push_back(bossaction_t());
+		bossactionvector.emplace_back();
 
-	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
-	     it != bossactionvector.end(); ++it)
+	for (auto& bossaction : bossactionvector)
 	{
-		it->type = MT_BRUISER;
+		bossaction.type = MT_BRUISER;
 	}
 }
 
@@ -922,12 +916,11 @@ void MIType_CyberdemonSpecial(OScanner& os, bool newStyleMapInfo, void* data, un
 	    *static_cast<std::vector<bossaction_t>*>(data);
 
 	if (bossactionvector.size() == 0)
-		bossactionvector.push_back(bossaction_t());
+		bossactionvector.emplace_back();
 
-	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
-	     it != bossactionvector.end(); ++it)
+	for (auto& bossaction : bossactionvector)
 	{
-		it->type = MT_CYBORG;
+		bossaction.type = MT_CYBORG;
 	}
 }
 
@@ -939,12 +932,11 @@ void MIType_SpiderMastermindSpecial(OScanner& os, bool newStyleMapInfo, void* da
 	    *static_cast<std::vector<bossaction_t>*>(data);
 
 	if (bossactionvector.size() == 0)
-		bossactionvector.push_back(bossaction_t());
+		bossactionvector.emplace_back();
 
-	for (std::vector<bossaction_t>::iterator it = bossactionvector.begin();
-	     it != bossactionvector.end(); ++it)
+	for (auto& bossaction : bossactionvector)
 	{
-		it->type = MT_SPIDER;
+		bossaction.type = MT_SPIDER;
 	}
 }
 
@@ -954,21 +946,20 @@ void MIType_SpecialAction_ExitLevel(OScanner& os, bool newStyleMapInfo, void* da
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
 
-	std::vector<bossaction_t>::iterator it;
-	for (it = bossactionvector.begin(); it != bossactionvector.end(); ++it)
+	for (auto& bossaction : bossactionvector)
 	{
-		if (it->type != MT_NULL)
+		if (bossaction.type != MT_NULL)
 		{
-			it->special = 11;
-			it->tag = 0;
+			bossaction.special = 11;
+			bossaction.tag = 0;
 			return;
 		}
 	}
 
-	bossactionvector.push_back(bossaction_t());
-	it = bossactionvector.end() - 1;
-	it->special = 11;
-	it->tag = 0;
+	bossactionvector.emplace_back();
+	bossaction_t& lastaction = bossactionvector.back();
+	lastaction.special = 11;
+	lastaction.tag = 0;
 }
 
 //
@@ -977,21 +968,20 @@ void MIType_SpecialAction_OpenDoor(OScanner& os, bool newStyleMapInfo, void* dat
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
 
-	std::vector<bossaction_t>::iterator it;
-	for (it = bossactionvector.begin(); it != bossactionvector.end(); ++it)
+	for (auto& bossaction : bossactionvector)
 	{
-		if (it->type != MT_NULL)
+		if (bossaction.type != MT_NULL)
 		{
-			it->special = 29;
-			it->tag = 666;
+			bossaction.special = 29;
+			bossaction.tag = 666;
 			return;
 		}
 	}
 
-	bossactionvector.push_back(bossaction_t());
-	it = bossactionvector.end() - 1;
-	it->special = 29;
-	it->tag = 666;
+	bossactionvector.emplace_back();
+	bossaction_t& lastaction = bossactionvector.back();
+	lastaction.special = 29;
+	lastaction.tag = 666;
 }
 
 //
@@ -1000,21 +990,20 @@ void MIType_SpecialAction_LowerFloor(OScanner& os, bool newStyleMapInfo, void* d
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
 
-	std::vector<bossaction_t>::iterator it;
-	for (it = bossactionvector.begin(); it != bossactionvector.end(); ++it)
+	for (auto& bossaction : bossactionvector)
 	{
-		if (it->type != MT_NULL)
+		if (bossaction.type != MT_NULL)
 		{
-			it->special = 23;
-			it->tag = 666;
+			bossaction.special = 23;
+			bossaction.tag = 666;
 			return;
 		}
 	}
 
-	bossactionvector.push_back(bossaction_t());
-	it = (bossactionvector.end() - 1);
-	it->special = 23;
-	it->tag = 666;
+	bossactionvector.emplace_back();
+	bossaction_t& lastaction = bossactionvector.back();
+	lastaction.special = 23;
+	lastaction.tag = 666;
 }
 
 //
@@ -1105,7 +1094,7 @@ void MIType_AutomapBase(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 	else if (os.compareTokenNoCase("strife"))
 		AM_SetBaseColorStrife();
 	else
-		os.warning("base expected \"doom\", \"heretic\", or \"strife\"; got %s", os.getToken().c_str());
+		os.warning("base expected \"doom\", \"heretic\", or \"strife\"; got %s", os.getToken());
 }
 
 //
@@ -1114,7 +1103,7 @@ bool ScanAndCompareString(OScanner& os, std::string cmp)
 	os.scan();
 	if (!os.compareToken(cmp.c_str()))
 	{
-		os.warning("Expected \"%s\", got \"%s\". Aborting parsing", cmp.c_str(), os.getToken().c_str());
+		os.warning("Expected \"%s\", got \"%s\". Aborting parsing", cmp, os.getToken());
 		return false;
 	}
 
@@ -1127,7 +1116,7 @@ bool ScanAndSetRealNum(OScanner& os, fixed64_t& num)
 	os.scan();
 	if (!IsRealNum(os.getToken().c_str()))
 	{
-		os.warning("Expected number, got \"%s\". Aborting parsing", os.getToken().c_str());
+		os.warning("Expected number, got \"%s\". Aborting parsing", os.getToken());
 		return false;
 	}
 	num = FLOAT2FIXED64(os.getTokenFloat());
@@ -1187,7 +1176,7 @@ void MIType_MapArrows(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 	std::string maparrow = os.getToken();
 
 	if (!InterpretLines(maparrow, gameinfo.mapArrow))
-		os.warning("Map arrow lump \"%s\" could not be found", maparrow.c_str());
+		os.warning("Map arrow lump \"%s\" could not be found", maparrow);
 
 	os.scan();
 	if (os.compareToken(","))
@@ -1196,7 +1185,7 @@ void MIType_MapArrows(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 		maparrow = os.getToken();
 
 		if (!InterpretLines(maparrow, gameinfo.mapArrowCheat))
-			os.warning("Map arrow lump \"%s\" could not be found", maparrow.c_str());
+			os.warning("Map arrow lump \"%s\" could not be found", maparrow);
 	}
 	else
 	{
@@ -1464,7 +1453,7 @@ void ParseMapInfoLower(OScanner& os, MapInfoDataSetter<T>& mapInfoDataSetter)
 				// able to parse all types even if we can't
 				// do anything with them.
 				//
-				os.error("Unknown MAPINFO token \"%s\"", os.getToken().c_str());
+				os.error("Unknown MAPINFO token \"%s\"", os.getToken());
 			}
 
 			// New MAPINFO is capable of skipping past unknown
@@ -1479,7 +1468,7 @@ void ParseEpisodeInfo(OScanner& os)
 {
 	int new_mapinfo = false; // is int instead of bool for template purposes
 	OLumpName map;
-	std::string pic;
+	OLumpName pic;
 	std::string name;
 	bool picisgfx = false;
 	bool remove = false;
@@ -1585,7 +1574,7 @@ void ParseEpisodeInfo(OScanner& os)
 			break;
 	}
 
-	if (remove || (optional && W_CheckNumForName(map.c_str()) == -1) ||
+	if (remove || (optional && W_CheckNumForName(map) == -1) ||
 	    (extended && W_CheckNumForName("EXTENDED") == -1))
 	{
 		// If the remove property is given for an episode, remove it.
@@ -1616,7 +1605,7 @@ void ParseEpisodeInfo(OScanner& os)
 	{
 		if (pic.empty())
 		{
-			pic = map.c_str();
+			pic = map;
 			picisgfx = false;
 		}
 
@@ -1670,7 +1659,7 @@ struct MapInfoDataSetter<SkillInfo>
 			{ "instantreaction", &MIType_Bool, &ref.instant_reaction, true },
 			{ "acsreturn", &MIType_Int, &ref.ACS_return },
 			{ "name", &MIType_String, &ref.menu_name },
-			{ "picname", &MIType_String, &ref.pic_name },
+			{ "picname", &MIType_LumpName, &ref.pic_name },
 			// { "playerclassname", &???, &ref.menu_names_for_player_class } // todo - requires special MIType to work properly
 			{ "mustconfirm", &MIType_MustConfirm, &ref, true },
 			{ "key", &MIType_Char, &ref.shortcut },
@@ -1785,15 +1774,12 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 			uint32_t& levelflags = defaultinfo.flags;
 			os.mustScan();
 
-			char map_name[9];
-			strncpy(map_name, os.getToken().c_str(), 8);
+			OLumpName map_name = os.getToken();
 
-			if (IsNum(map_name))
+			if (IsNum(map_name.c_str()))
 			{
-				// MAPNAME is a number, assume a Hexen wad
-				const int map = std::atoi(map_name);
-
-				snprintf(map_name, 9, "MAP%02d", map);
+				const int map = std::atoi(map_name.c_str());
+				map_name = fmt::format("MAP{:02d}", map);
 				HexenHack = true;
 				// Hexen levels are automatically nointermission
 				// and even lighting and no auto sound sequences
@@ -1928,7 +1914,7 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 		}
 		else
 		{
-			os.error("Unimplemented top-level type \"%s\"", os.getToken().c_str());
+			os.error("Unimplemented top-level type \"%s\"", os.getToken());
 		}
 	}
 }

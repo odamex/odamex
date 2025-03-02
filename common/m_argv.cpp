@@ -170,7 +170,7 @@ void DArgs::AppendArg (const char *arg)
 // IsParam
 //
 // Helper function to return if the given argument number i is a parameter
-// 
+//
 static bool IsParam(const std::vector<std::string>& args, size_t i)
 {
 	return i < args.size() && (args[i][0] == '-' || args[i][0] == '+');
@@ -353,7 +353,7 @@ void M_FindResponseFile (void)
 		{
 			char	**argv;
 			char	*file;
-			int		argc;
+			size_t	argc;
 			int		argcinresp;
 			FILE	*handle;
 			int 	size;
@@ -398,12 +398,12 @@ void M_FindResponseFile (void)
 
 				DArgs newargs (i, argv);
 				Args = newargs;
-				
+
 				M_Free(argv);
 			}
 
 			delete[] file;
-		
+
 			// DISPLAY ARGS
 			Printf("%zu command-line args:\n", Args.NumArgs());
 			for (size_t k = 1; k < Args.NumArgs (); k++)

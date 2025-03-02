@@ -201,7 +201,7 @@ static bool P_CheckRange(AActor* actor, fixed_t range)
 //
 // P_CheckMeleeRange
 //
-BOOL P_CheckMeleeRange (AActor *actor)
+bool P_CheckMeleeRange (AActor *actor)
 {
 	AActor *pl;
 	fixed_t dist;
@@ -239,7 +239,7 @@ BOOL P_CheckMeleeRange (AActor *actor)
 //
 // P_CheckMissileRange
 //
-BOOL P_CheckMissileRange (AActor *actor)
+bool P_CheckMissileRange (AActor *actor)
 {
 	fixed_t dist;
 
@@ -304,10 +304,10 @@ BOOL P_CheckMissileRange (AActor *actor)
 //
 extern	std::vector<line_t*> spechit;
 
-BOOL P_Move (AActor *actor)
+bool P_Move (AActor *actor)
 {
 	fixed_t tryx, tryy, deltax, deltay, origx, origy;
-	BOOL try_ok;
+	bool try_ok;
 	int good;
 	int speed;
 	int movefactor = ORIG_FRICTION_FACTOR;
@@ -436,7 +436,7 @@ BOOL P_Move (AActor *actor)
 // If a door is in the way,
 // an OpenDoor call is made to start it opening.
 //
-BOOL P_TryWalk (AActor *actor)
+bool P_TryWalk (AActor *actor)
 {
 	if (!P_Move (actor))
 	{
@@ -697,12 +697,12 @@ bool P_LookForPlayers(AActor *actor, bool allaround)
 	memset(playeringame, 0, sizeof(player_t*) * MAXPLAYERS);
 
 	short maxid = 0;
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (it->ingame() && !(it->spectator))
+		if (player.ingame() && !(player.spectator))
 		{
-			playeringame[(it->id) - 1] = &*it;
-			maxid = it->id;
+			playeringame[(player.id) - 1] = &player;
+			maxid = player.id;
 		}
 	}
 
@@ -1452,10 +1452,10 @@ fixed_t 		viletryx;
 fixed_t 		viletryy;
 int				viletryradius;
 
-BOOL PIT_VileCheck (AActor *thing)
+bool PIT_VileCheck (AActor *thing)
 {
 	int 	maxdist;
-	BOOL 	check;
+	bool 	check;
 
 	if (thing->oflags & MFO_NORAISE)
 		return true;	// [AM] Can't raise

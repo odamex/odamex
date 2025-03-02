@@ -50,8 +50,6 @@ EXTERN_CVAR(r_skypalette)
 //
 // sky mapping
 //
-int 		skyflatnum;
-int 		sky1texture,    sky2texture;
 fixed_t		defaultskytexturemid;
 fixed_t		skyscale;
 int			skystretch;
@@ -59,8 +57,6 @@ fixed_t		skyheight;
 fixed_t		skyiscale;
 
 int			sky1shift,        sky2shift;
-fixed_t		sky2scrollxdelta;
-fixed_t		sky2columnoffset;
 
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
@@ -71,8 +67,6 @@ CVAR_FUNC_IMPL(r_stretchsky)
 {
 	R_InitSkyMap ();
 }
-
-OLumpName SKYFLATNAME = "F_SKY1";
 
 static tallpost_t* skyposts[MAXWIDTH];
 static byte transparentskybuffer[MAXWIDTH][512]; // holds foreground sky with transparency to blit to the screen
@@ -330,7 +324,7 @@ sky_t* R_GetSky(const OLumpName& name, bool create)
 		return nullptr;
 	}
 
-	int32_t tex = R_TextureNumForName(name.c_str());
+	int32_t tex = R_TextureNumForName(name);
 	if (tex < 0) return nullptr;
 
 	OLumpName skytexname;
@@ -340,7 +334,7 @@ sky_t* R_GetSky(const OLumpName& name, bool create)
 	sky->background.scrolly = INT2FIXED(0);
 	if (level.flags & LEVEL_DOUBLESKY)
 	{
-		sky->background.texnum = R_TextureNumForName(level.skypic2.c_str());
+		sky->background.texnum = R_TextureNumForName(level.skypic2);
 		sky->background.texture = level.skypic2;
 		sky->background.scrollx = level.sky2ScrollDelta & 0xffffff;
 		sky->foreground.scrollx = level.sky1ScrollDelta & 0xffffff;
@@ -399,7 +393,7 @@ void R_InitSkyDefs()
 			if(skytype < skytype_t::NORMAL || skytype > skytype_t::DOUBLESKY) return jsonlumpresult_t::PARSEERROR;
 
 			OLumpName skytexname = skytex.asString();
-			int32_t tex = R_TextureNumForName(skytexname.c_str());
+			int32_t tex = R_TextureNumForName(skytexname);
 			if(tex < 0) return jsonlumpresult_t::PARSEERROR;
 
 			if(!mid.isNumeric()
@@ -416,7 +410,7 @@ void R_InitSkyDefs()
 			sky->type = skytype;
 			sky->usedefaultmid = false;
 
-			constexpr float_t ticratescale = 1.0 / TICRATE;
+			static constexpr float_t ticratescale = 1.0 / TICRATE;
 
 			sky->background.texnum  = tex;
 			sky->background.texture = skytexname;
@@ -454,7 +448,7 @@ void R_InitSkyDefs()
 				const Json::Value& forescaley  = foreelem["scaley"];
 
 				OLumpName foreskytexname = foreskytex.asString();
-				int32_t foretex = R_TextureNumForName(foreskytexname.c_str());
+				int32_t foretex = R_TextureNumForName(foreskytexname);
 				if(foretex < 0) return jsonlumpresult_t::PARSEERROR;
 
 				if(!foremid.isNumeric()
@@ -488,7 +482,7 @@ void R_InitSkyDefs()
 			const Json::Value& skyelem = flatentry["sky"];
 
 			OLumpName flatname = flatelem.asString();
-			int32_t flatnum = R_FlatNumForName(flatname.c_str());
+			int32_t flatnum = R_FlatNumForName(flatname);
 			if(flatnum < 0 || flatnum >= ::numflats) return jsonlumpresult_t::PARSEERROR;
 
 			OLumpName skyname = skyelem.asString();
@@ -723,7 +717,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	if (pl->minx > pl->maxx)
 		return;
 
-	constexpr int columnmethod = 2;
+	static constexpr int columnmethod = 2;
 	int frontskytex, backskytex;
 	fixed_t front_offset = 0;
 	fixed_t back_offset = 0;

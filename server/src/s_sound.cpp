@@ -195,7 +195,7 @@ void S_StartMusic(const char *m_id)
 
 // [RH] S_ChangeMusic() now accepts the name of the music lump.
 // It's up to the caller to figure out what that name is.
-void S_ChangeMusic(std::string musicname, int looping)
+void S_ChangeMusic(std::string musicname, bool looping)
 {
 }
 
@@ -209,9 +209,6 @@ void S_StopMusic()
 //	Ambient sound and SNDINFO routines
 //
 // =============================== [RH]
-
-std::vector<sfxinfo_t> S_sfx; // [RH] This is no longer defined in sounds.c
-std::map<int, std::vector<int> > S_rnd;
 
 static struct AmbientSound {
 	unsigned	type;		// type of ambient sound
@@ -231,8 +228,8 @@ static struct AmbientSound {
 void S_HashSounds()
 {
 	// Mark all buckets as empty
-	for (unsigned i = 0; i < S_sfx.size(); i++)
-		S_sfx[i].index = ~0;
+	for (auto& sfx : S_sfx)
+		sfx.index = ~0;
 
 	// Now set up the chains
 	for (unsigned i = 0; i < S_sfx.size(); i++)
@@ -269,8 +266,8 @@ int S_FindSoundByLump(int lump)
 
 int S_AddSoundLump(const char *logicalname, int lump)
 {
-	S_sfx.push_back(sfxinfo_t());
-	sfxinfo_t& new_sfx = S_sfx[S_sfx.size() - 1];
+	S_sfx.emplace_back();
+	sfxinfo_t& new_sfx = S_sfx.back();
 
 	// logicalname MUST be < MAX_SNDNAME chars long
 	strcpy(new_sfx.name, logicalname);
@@ -442,7 +439,7 @@ void S_ParseSndInfo()
 					}
 					else
 					{
-						os.warning("Unknown ambient type (%s)\n", os.getToken().c_str());
+						os.warning("Unknown ambient type (%s)\n", os.getToken());
 					}
 
 					os.mustScanFloat();
@@ -484,7 +481,7 @@ void S_ParseSndInfo()
 						{
 							os.warning("Definition of random sound '%s' refers to itself "
 							           "recursively.\n",
-							           os.getToken().c_str());
+							           os.getToken());
 							continue;
 						}
 
@@ -502,7 +499,7 @@ void S_ParseSndInfo()
 				}
 				else
 				{
-					os.warning("Unknown SNDINFO command %s\n", os.getToken().c_str());
+					os.warning("Unknown SNDINFO command %s\n", os.getToken());
 					while (os.scan())
 						if (os.crossed())
 						{

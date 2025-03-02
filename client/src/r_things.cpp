@@ -454,7 +454,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 void R_DrawHitBox(AActor* thing)
 {
 	v3fixed_t vertices[8];
-	constexpr byte color = 0x80;
+	static constexpr byte color = 0x80;
 
 	// bottom front left
 	vertices[0].x = thing->x - thing->radius;

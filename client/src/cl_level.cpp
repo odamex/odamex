@@ -75,22 +75,14 @@ EXTERN_CVAR(g_resetinvonexit)
 // Start time for timing demos
 dtime_t starttime;
 
-// ACS variables with world scope
-int ACS_WorldVars[NUM_WORLDVARS];
-ACSWorldGlobalArray ACS_WorldArrays[NUM_WORLDVARS];
-
-// ACS variables with global scope
-int ACS_GlobalVars[NUM_GLOBALVARS];
-ACSWorldGlobalArray ACS_GlobalArrays[NUM_GLOBALVARS];
-
 // [AM] Stores the reset snapshot
 FLZOMemFile	*reset_snapshot = NULL;
 
 extern bool r_underwater;
-BOOL savegamerestore;
+bool savegamerestore;
 
 extern int mousex, mousey, joyforward, joystrafe, joyturn, joylook, Impulse;
-extern BOOL sendpause, sendsave, sendcenterview;
+extern bool sendpause, sendsave, sendcenterview;
 
 
 bool isFast = false;
@@ -187,7 +179,7 @@ void G_DoNewGame (void)
 	serverside = true;
 
 	players.clear();
-	players.push_back(player_t());
+	players.emplace_back();
 	players.front().doreborn = true;
 	consoleplayer_id = displayplayer_id = players.back().id = 1;
 
@@ -202,11 +194,11 @@ void G_InitNew (const char *mapname)
 	// [RH] Remove all particles
 	R_ClearParticles ();
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		it->mo = AActor::AActorPtr();
-		it->camera = AActor::AActorPtr();
-		it->attacker = AActor::AActorPtr();
+		player.mo = AActor::AActorPtr();
+		player.camera = AActor::AActorPtr();
+		player.attacker = AActor::AActorPtr();
 	}
 
 	if (!savegamerestore)
@@ -289,12 +281,12 @@ void G_InitNew (const char *mapname)
 	if (!savegamerestore)
 	{
 		M_ClearRandom ();
-		memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
-		memset (ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
-		for (int i = 0; i < NUM_GLOBALVARS; i++)
-			ACS_GlobalArrays[i].clear();
-		for (int i = 0; i < NUM_WORLDVARS; i++)
-			ACS_WorldArrays[i].clear();
+		ACS_WorldVars.fill(0);
+		ACS_GlobalVars.fill(0);
+		for (auto& globalarr : ACS_GlobalArrays)
+			globalarr.clear();
+		for (auto& worldarr : ACS_WorldArrays)
+			worldarr.clear();
 		level.time = 0;
 		level.inttimeleft = 0;
 	}
@@ -318,9 +310,9 @@ void G_InitNew (const char *mapname)
 //
 // G_DoCompleted
 //
-BOOL 			secretexit;
+bool 			secretexit;
 static int		startpos;	// [RH] Support for multiple starts per level
-extern BOOL		NoWipe;		// [RH] Don't wipe when travelling in hubs
+extern int		NoWipe;		// [RH] Don't wipe when travelling in hubs
 
 // [RH] The position parameter to these next three functions should
 //		match the first parameter of the single player start spots
@@ -349,11 +341,11 @@ void G_ExitLevel (int position, int drawscores, bool resetinv)
 {
 	if (resetinv)
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			if (it->ingame())
+			if (player.ingame())
 			{
-				it->doreborn = true;
+				player.doreborn = true;
 			}
 		}
 	}
@@ -370,11 +362,11 @@ void G_SecretExitLevel (int position, int drawscores, bool resetinv)
 {
 	if (resetinv)
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			if (it->ingame())
+			if (player.ingame())
 			{
-				it->doreborn = true;
+				player.doreborn = true;
 			}
 		}
 	}
@@ -394,9 +386,9 @@ void G_DoCompleted (void)
 {
 	gameaction = ga_nothing;
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
-		if (it->ingame())
-			G_PlayerFinishLevel(*it);
+	for (auto& player : players)
+		if (player.ingame())
+			G_PlayerFinishLevel(player);
 
 	V_RestoreScreenPalette();
 	R_ExitLevel();
@@ -431,17 +423,17 @@ void G_DoCompleted (void)
 	AM_Stop();
 
 	wminfo.epsd = level.cluster - 1;		// Only used for DOOM I.
-	strncpy (wminfo.lname0, level.info->pname.c_str(), 8);
-	strncpy (wminfo.current, level.mapname.c_str(), 8);
+	wminfo.lname0 = level.info->pname;
+	wminfo.current = level.mapname;
 
 	if (sv_gametype != GM_COOP && !(level.flags & LEVEL_CHANGEMAPCHEAT))
 	{
-		strncpy (wminfo.next, level.mapname.c_str(), 8);
-		strncpy (wminfo.lname1, level.info->pname.c_str(), 8);
+		wminfo.next = level.mapname;
+		wminfo.lname1 = level.info->pname;
 	}
 	else
 	{
-		wminfo.next[0] = 0;
+		wminfo.next.clear();
 
 		if (!level.endpic.empty() && level.flags & LEVEL_NOINTERMISSION)
 		{
@@ -450,20 +442,20 @@ void G_DoCompleted (void)
 		}
 		if (secretexit)
 		{
-			if (W_CheckNumForName (level.secretmap.c_str()) != -1)
+			if (W_CheckNumForName (level.secretmap) != -1)
 			{
-				strncpy(wminfo.next, level.secretmap.c_str(), 8);
-				strncpy(wminfo.lname1, getLevelInfos().findByName(level.secretmap).pname.c_str(), 8);
+				wminfo.next = level.secretmap;
+				wminfo.lname1 = getLevelInfos().findByName(level.secretmap).pname;
 			}
 			else
 			{
 				secretexit = false;
 			}
 		}
-		if (!wminfo.next[0])
+		if (wminfo.next.empty())
 		{
-			strncpy(wminfo.next, level.nextmap.c_str(), 8);
-			strncpy(wminfo.lname1, getLevelInfos().findByName(level.nextmap).pname.c_str(), 8);
+			wminfo.next = level.nextmap;
+			wminfo.lname1 = getLevelInfos().findByName(level.nextmap).pname;
 		}
 	}
 
@@ -475,20 +467,21 @@ void G_DoCompleted (void)
 
 	wminfo.plyr.resize(players.size());
 
-	size_t i = 0;
-	for (Players::iterator it = players.begin();it != players.end();++it,++i)
+	unsigned int i = 0;
+	for (const auto& player : players)
 	{
-		wminfo.plyr[i].in = it->ingame();
-		wminfo.plyr[i].skills = it->killcount;
-		wminfo.plyr[i].sitems = it->itemcount;
-		wminfo.plyr[i].ssecret = it->secretcount;
+		wminfo.plyr[i].in = player.ingame();
+		wminfo.plyr[i].skills = player.killcount;
+		wminfo.plyr[i].sitems = player.itemcount;
+		wminfo.plyr[i].ssecret = player.secretcount;
 		wminfo.plyr[i].stime = level.time;
 		//memcpy (wminfo.plyr[i].frags, players[i].frags
 		//		, sizeof(wminfo.plyr[i].frags));
-		wminfo.plyr[i].fragcount = it->fragcount;
+		wminfo.plyr[i].fragcount = player.fragcount;
 
-		if(&*it == &consoleplayer())
-			wminfo.pnum = static_cast<unsigned int>(i);
+		if(&player == &consoleplayer())
+			wminfo.pnum = i;
+		i++;
 	}
 
 	wminfo.didsecret = consoleplayer().didsecret;
@@ -506,14 +499,14 @@ void G_DoCompleted (void)
 
 		if (&thiscluster != &nextcluster || sv_gametype == GM_DM || !(thiscluster.flags & CLUSTER_HUB))
 		{
-			for (Players::iterator it = players.begin();it != players.end();++it)
-				if (it->ingame())
-					G_PlayerFinishLevel(*it); // take away cards and stuff
+			for (auto& player : players)
+				if (player.ingame())
+					G_PlayerFinishLevel(player); // take away cards and stuff
 
 			if (nextcluster.flags & CLUSTER_HUB) {
-				memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
-				for (int i = 0; i < NUM_WORLDVARS; i++)
-					ACS_WorldArrays[i].clear();
+				ACS_WorldVars.fill(0);
+				for (auto& worldarr : ACS_WorldArrays)
+					worldarr.clear();
 				P_RemoveDefereds ();
 				G_ClearSnapshots ();
 			}
@@ -564,7 +557,6 @@ extern gamestate_t 	wipegamestate;
 void G_DoLoadLevel (int position)
 {
 	static int lastposition = 0;
-	size_t i;
 
 	if (position == -1)
 		position = lastposition;
@@ -575,9 +567,9 @@ void G_DoLoadLevel (int position)
 
 	G_InitLevelLocals ();
 
-    Printf_Bold ("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
+    PrintFmt_Bold ("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
                  "\36\36\36\36\36\36\36\36\36\36\36\36\37\n"
-                 "%s: \"%s\"\n\n", level.mapname.c_str(), level.level_name);
+                 "{}: \"{}\"\n\n", level.mapname, level.level_name);
 
 	if (wipegamestate == GS_LEVEL)
 		wipegamestate = GS_FORCEWIPE;
@@ -612,10 +604,10 @@ void G_DoLoadLevel (int position)
 	// [SL] 2012-03-19 - Add sky2 back
 	// [EB] 9/6/2024 - remove sky1 (now using SKYDEFS), sky2 left for hexen style non doublesky sky2
 	// MIA TODO: remove this except for sky2 stuff (for non doublesky use of sky2)
-	sky1texture = R_TextureNumForName(level.skypic.c_str());
+	sky1texture = R_TextureNumForName(level.skypic);
 	if (!level.skypic2.empty() && !(level.flags & LEVEL_DOUBLESKY))
 	{
-		sky2texture = R_TextureNumForName(level.skypic2.c_str());
+		sky2texture = R_TextureNumForName(level.skypic2);
 		sky2scrollxdelta = level.sky2ScrollDelta;
 	}
 	else
@@ -628,22 +620,22 @@ void G_DoLoadLevel (int position)
 	// [RH] Set up details about sky rendering
 	R_InitSkyMap();
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (it->ingame())
+		if (player.ingame())
 		{
-			if (::g_resetinvonexit || it->playerstate == PST_DEAD ||
-			    it->playerstate == PST_REBORN)
+			if (::g_resetinvonexit || player.playerstate == PST_DEAD ||
+			    player.playerstate == PST_REBORN)
 			{
-				it->doreborn = true;
+				player.doreborn = true;
 			}
-			it->playerstate = PST_ENTER;
+			player.playerstate = PST_ENTER;
 		}
 
 		// Properly reset Cards, Powerups, and scores.
-		P_ClearPlayerCards(*it);
-		P_ClearPlayerPowerups(*it);
-		P_ClearPlayerScores(*it, SCORES_CLEAR_ALL);
+		P_ClearPlayerCards(player);
+		P_ClearPlayerPowerups(player);
+		P_ClearPlayerScores(player, SCORES_CLEAR_ALL);
 	}
 
 	// initialize the msecnode_t freelist.					phares 3/25/98
@@ -692,10 +684,10 @@ void G_DoLoadLevel (int position)
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
 			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
-			for (size_t n = 0; n < teamInfo->Starts.size(); n++)
+			for (auto& teamstart : teamInfo->Starts)
 			{
-				if (G_CheckSpot(consoleplayer(), &teamInfo->Starts[n]))
-					P_SpawnPlayer(consoleplayer(), &teamInfo->Starts[n]);
+				if (G_CheckSpot(consoleplayer(), &teamstart))
+					P_SpawnPlayer(consoleplayer(), &teamstart);
 			}
 		}
 	}
@@ -706,7 +698,7 @@ void G_DoLoadLevel (int position)
 
 	// clear cmd building stuff // denis - todo - could we get rid of this?
 	Impulse = 0;
-	for (i = 0; i < NUM_ACTIONS; i++)
+	for (size_t i = 0; i < NUM_ACTIONS; i++)
 		if (i != ACTION_MLOOK && i != ACTION_KLOOK)
 			Actions[i] = 0;
 	joyforward = joystrafe = joyturn = joylook = 0;
@@ -752,7 +744,7 @@ void G_WorldDone()
 
 	// Sort out default options to pass to F_StartFinale
 	finale_options_t options = { "", "", "", "" };
-	options.music = !level.intermusic.empty() ? level.intermusic.c_str() : thiscluster.messagemusic.c_str();
+	options.music = !level.intermusic.empty() ? level.intermusic : thiscluster.messagemusic;
 
 	if (!level.interbackdrop.empty())
 	{
@@ -769,11 +761,11 @@ void G_WorldDone()
 
 	if (secretexit)
 	{
-		options.text = (!level.intertextsecret.empty()) ? level.intertextsecret.c_str() : thiscluster.exittext;
+		options.text = (!level.intertextsecret.empty()) ? level.intertextsecret : thiscluster.exittext;
 	}
 	else
 	{
-		options.text = (!level.intertext.empty()) ? level.intertext.c_str() : thiscluster.exittext;
+		options.text = (!level.intertext.empty()) ? level.intertext : thiscluster.exittext;
 	}
 
 	if (!strnicmp(level.nextmap.c_str(), "EndGame", 7))
@@ -795,7 +787,7 @@ void G_WorldDone()
 		if (nextcluster.cluster != level.cluster && sv_gametype == GM_COOP) {
 			// Only start the finale if the next level's cluster is different
 			// than the current one and we're not in deathmatch.
-			if (nextcluster.entertext)
+			if (!nextcluster.entertext.empty())
 			{
 				// All of our options need to be from the next cluster.
 				options.music = nextcluster.messagemusic;
@@ -812,7 +804,7 @@ void G_WorldDone()
 				AM_Stop();
 				F_StartFinale(options);
 			}
-			else if (thiscluster.exittext)
+			else if (!thiscluster.exittext.empty())
 			{
 				AM_Stop();
 				if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)

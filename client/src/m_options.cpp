@@ -258,8 +258,8 @@ static value_t DoomOrOdamex[2] =
 menu_t  *CurrentMenu;
 int		CurrentItem;
 bool configuring_controls = false;
-static BOOL	WaitingForKey;
-static BOOL	WaitingForAxis;
+static bool	WaitingForKey;
+static bool	WaitingForAxis;
 static const char	   *OldContMessage;
 static itemtype OldContType;
 static const char	   *OldAxisMessage;
@@ -798,17 +798,17 @@ int dummy = 0;
 
 CVAR_FUNC_IMPL (ui_transred)
 {
-    M_SlideUIRed((int)var);
+    M_SlideUIRed(var.asInt());
 }
 
 CVAR_FUNC_IMPL (ui_transgreen)
 {
-    M_SlideUIGreen((int)var);
+    M_SlideUIGreen(var.asInt());
 }
 
 CVAR_FUNC_IMPL (ui_transblue)
 {
-    M_SlideUIBlue((int)var);
+    M_SlideUIBlue(var.asInt());
 }
 
 static value_t Endoom[] = {{0.0, "Off"}, {1.0, "On"}, {2.0, "PWAD Only"}};
@@ -1111,9 +1111,7 @@ static void M_SetVideoMode(uint16_t width, uint16_t height)
 	old_width = I_GetVideoWidth();
 	old_height = I_GetVideoHeight();
 
-	char command[30];
-	snprintf(command, 30, "vid_setmode %d %d", width, height);
-	AddCommandString(command);
+	AddCommandString(fmt::format("vid_setmode {} {}", width, height));
 
 	SetModesMenu(width, height);
 }
@@ -1216,9 +1214,9 @@ static void BuildModesList(int hiwidth, int hiheight)
 	MenuModeList menumodelist;
 
 	const IVideoModeList* videomodelist = I_GetVideoCapabilities()->getSupportedVideoModes();
-	for (IVideoModeList::const_iterator it = videomodelist->begin(); it != videomodelist->end(); ++it)
-		if (it->isFullScreen() == fullscreen)
-			menumodelist.emplace_back(it->width, it->height);
+	for (const auto& mode : *videomodelist)
+		if (mode.isFullScreen() == fullscreen)
+			menumodelist.emplace_back(mode.width, mode.height);
 	menumodelist.erase(std::unique(menumodelist.begin(), menumodelist.end()), menumodelist.end());
 
 	MenuModeList::const_iterator mode_it = menumodelist.begin();
@@ -1239,8 +1237,7 @@ static void BuildModesList(int hiwidth, int hiheight)
 
 			if (mode_it != menumodelist.end())
 			{
-				int width = mode_it->first;
-				int height = mode_it->second;
+				auto [width, height] = *mode_it;
 				++mode_it;
 
 				if (width == hiwidth && height == hiheight)
@@ -1350,10 +1347,7 @@ EXTERN_CVAR(ui_dimcolor)
 // [Russell] - Modified to send new colours
 static void M_SendUINewColor (int red, int green, int blue)
 {
-	char command[24];
-
-	snprintf (command, 24, "ui_dimcolor \"%02x %02x %02x\"", red, green, blue);
-	AddCommandString (command);
+	AddCommandString(fmt::format("ui_dimcolor \"{:02} {:02x} {:02}\"", red, green, blue));
 }
 
 static void M_SlideUIRed(int val)
@@ -1768,12 +1762,11 @@ void M_OptDrawer (void)
 
 			case joyactive:
 			{
-				int         numjoy;
 				std::string joyname;
 
-				numjoy = I_GetJoystickCount();
+				size_t numjoy = I_GetJoystickCount();
 
-				if((int)item->a.cvar->value() > numjoy)
+				if((size_t)item->a.cvar->value() > numjoy)
 					item->a.cvar->Set(0.0);
 
 				if(!numjoy)
@@ -2155,13 +2148,11 @@ void M_OptResponder (event_t *ev)
 
 		case joyactive:
 		{
-			int         numjoy;
+			size_t numjoy = I_GetJoystickCount();
 
-			numjoy = I_GetJoystickCount();
-
-			if ((int)item->a.cvar->value() > numjoy)
+			if ((size_t)item->a.cvar->value() > numjoy)
 				item->a.cvar->Set(0.0);
-			else if ((int)item->a.cvar->value() > 0)
+			else if ((size_t)item->a.cvar->value() > 0)
 				item->a.cvar->Set(item->a.cvar->value() - 1);
 		}
 		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
@@ -2286,13 +2277,11 @@ void M_OptResponder (event_t *ev)
 
 		case joyactive:
 		{
-			int         numjoy;
+			size_t numjoy = I_GetJoystickCount();
 
-			numjoy = I_GetJoystickCount();
-
-			if ((int)item->a.cvar->value() >= numjoy)
+			if ((size_t)item->a.cvar->value() >= numjoy)
 				item->a.cvar->Set(0.0);
-			else if ((int)item->a.cvar->value() < (numjoy - 1))
+			else if ((size_t)item->a.cvar->value() < (numjoy - 1))
 				item->a.cvar->Set(item->a.cvar->value() + 1);
 
 		}

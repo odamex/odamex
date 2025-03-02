@@ -81,7 +81,7 @@ bool IsHexString(const std::string& str, const size_t len);
 char	*COM_Parse (char *data);
 
 extern	char	com_token[8192];
-extern	BOOL	com_eof;
+extern	bool	com_eof;
 
 char	*copystring(const char *s);
 
@@ -90,8 +90,6 @@ std::string JoinStrings(const std::vector<std::string> &pieces, const std::strin
 
 typedef std::vector<std::string> StringTokens;
 StringTokens TokenizeString(const std::string& str, const std::string& delim);
-
-void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va);
 
 void StrFormatBytes(std::string& out, size_t bytes);
 bool StrFormatISOTime(std::string& s, const tm* utc_tm);

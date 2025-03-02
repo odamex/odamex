@@ -208,17 +208,17 @@ CVAR_FUNC_IMPL (sv_maxplayersperteam)
 	for (int i = 0; i < NUMTEAMS;i++)
 	{
 		int normalcount = 0;
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			bool spectator = it->spectator || !it->ingame();
-			if (it->userinfo.team == i && !spectator)
+			bool spectator = player.spectator || !player.ingame();
+			if (player.userinfo.team == i && player.ingame() && !spectator)
 			{
 				normalcount++;
 
 				if (normalcount > var)
 				{
-					SV_SetPlayerSpec(*it, true);
-					SV_PlayerPrintf(it->id, PRINT_HIGH, "Active player limit reduced. You are now a spectator!\n");
+					SV_SetPlayerSpec(player, true);
+					SV_PlayerPrintf(player.id, PRINT_HIGH, "Active player limit reduced. You are now a spectator!\n");
 				}
 			}
 		}
@@ -272,8 +272,8 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 
 CVAR_FUNC_IMPL(sv_maxrate)
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
-		it->client.rate = int(sv_maxrate);
+	for (auto& player : players)
+		player.client.rate = int(sv_maxrate);
 }
 
 CVAR_FUNC_IMPL(sv_sharekeys)
@@ -281,8 +281,8 @@ CVAR_FUNC_IMPL(sv_sharekeys)
 	if (var)
 	{
 		// Refresh it to everyone
-		for (Players::iterator it = players.begin(); it != players.end(); ++it) {
-			SV_UpdateShareKeys(*it);
+		for (auto& player : players) {
+			SV_UpdateShareKeys(player);
 		}
 	}
 }
@@ -325,7 +325,7 @@ BEGIN_COMMAND (kick) {
 	std::string reason;
 
 	if (!CMD_KickCheck(arguments, error, pid, reason)) {
-		Printf("Kick: %s.\n", error.c_str());
+		Printf("Kick: %s.\n", error);
 		return;
 	}
 
@@ -393,11 +393,11 @@ void SV_InvalidateClient(player_t &player, const std::string& reason)
 {
 	if (&(player.client) == NULL)
 	{
-		Printf("Player with NULL client fails security check (%s), client cannot be safely dropped.\n", reason.c_str());
+		Printf("Player with NULL client fails security check (%s), client cannot be safely dropped.\n", reason);
 		return;
 	}
 
-	Printf("%s fails security check (%s), dropping client.\n", NET_AdrToString(player.client.address), reason.c_str());
+	Printf("%s fails security check (%s), dropping client.\n", NET_AdrToString(player.client.address), reason);
 	SV_PlayerPrintf(PRINT_ERROR, player.id,
 	                "The server closed your connection for the following reason: %s.\n",
 	                reason.c_str());
@@ -456,9 +456,9 @@ END_COMMAND (exit)
 
 static void SendLevelState(SerializedLevelState sls)
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		client_t& cl = it->client;
+		client_t& cl = player.client;
 		MSG_WriteSVC(&cl.reliablebuf, SVC_LevelState(sls));
 	}
 }
@@ -515,7 +515,7 @@ Players::iterator SV_GetFreeClient(void)
 			free_player_ids.insert(i);
 	}
 
-	players.push_back(player_t());
+	players.emplace_back();
 	players.back().playerstate = PST_CONTACT;
 
 	// generate player id
@@ -533,10 +533,10 @@ Players::iterator SV_GetFreeClient(void)
 
 player_t &SV_FindPlayerByAddr(void)
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (NET_CompareAdr(it->client.address, net_from))
-		   return *it;
+		if (NET_CompareAdr(player.client.address, net_from))
+		   return player;
 	}
 
 	return idplayer(0);
@@ -549,10 +549,10 @@ player_t &SV_FindPlayerByAddr(void)
 //
 void SV_CheckTimeouts()
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (gametic - it->client.last_received == CLIENT_TIMEOUT * 35)
-		    SV_DropClient(*it);
+		if (gametic - player.client.last_received == CLIENT_TIMEOUT * 35)
+		    SV_DropClient(player);
 	}
 }
 
@@ -647,15 +647,38 @@ void SV_MidPrint(const char* msg, player_t* p, int msgtime)
 	MSG_WriteSVC(&cl->reliablebuf, SVC_MidPrint(msg, msgtime));
 }
 
+void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str)
+{
+	MSG_WriteSVC(&cl->reliablebuf, SVC_Print(static_cast<printlevel_t>(printlevel), str));
+}
+
+void SV_BasePrintAllPlayers(const int printlevel, const std::string& str)
+{
+	for (auto& player : players)
+		MSG_WriteSVC(&player.client.reliablebuf, SVC_Print(static_cast<printlevel_t>(printlevel), str));
+}
+
+void SV_BasePrintButPlayer(const int printlevel, const int player_id, const std::string& str)
+{
+	for (auto& player : players)
+	{
+		client_t* cl = &(player.client);
+
+		client_t* excluded_client = &idplayer(player_id).client;
+
+		if (cl == excluded_client)
+			continue;
+
+		MSG_WriteSVC(&cl->reliablebuf, SVC_Print(static_cast<printlevel_t>(printlevel), str));
+	}
+}
+
 //
 // SV_Sound
 //
 void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 {
-	int sfx_id;
-	client_t* cl;
-
-	sfx_id = S_FindSound (name);
+	const int sfx_id = S_FindSound (name);
 
 	if (sfx_id >= static_cast<int>(S_sfx.size()) || sfx_id < 0)
 	{
@@ -663,10 +686,9 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 		return;
 	}
 
-
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		cl = &(it->client);
+		client_t* cl = &(player.client);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
 		                                             1.0f, attenuation));
@@ -676,9 +698,7 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
               const byte attenuation)
 {
-	int sfx_id;
-
-	sfx_id = S_FindSound (name);
+	const int sfx_id = S_FindSound (name);
 
 	if (sfx_id >= static_cast<int>(S_sfx.size()) || sfx_id < 0)
 	{
@@ -698,15 +718,12 @@ void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
 //
 void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte attenuation)
 {
-	int        sfx_id;
-	client_t  *cl;
-
 	if (!mo || !mo->player)
 		return;
 
 	player_t &pl = *mo->player;
 
-	sfx_id = S_FindSound (name);
+	const int sfx_id = S_FindSound (name);
 
 	if (sfx_id >= static_cast<int>(S_sfx.size()) || sfx_id < 0)
 	{
@@ -714,12 +731,12 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 		return;
 	}
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if(&pl == &*it)
+		if(&pl == &player)
 			continue;
 
-		cl = &(it->client);
+		client_t* cl = &(player.client);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
 		                                             1.0f, attenuation));
@@ -732,11 +749,7 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 //
 void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 {
-	int sfx_id;
-
-	client_t* cl;
-
-	sfx_id = S_FindSound( name );
+	const int sfx_id = S_FindSound( name );
 
 	if (sfx_id >= static_cast<int>(S_sfx.size()) || sfx_id < 0)
 	{
@@ -744,11 +757,11 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 		return;
 	}
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (it->ingame() && it->userinfo.team == team)
+		if (player.ingame() && player.userinfo.team == team)
 		{
-			cl = &(it->client);
+			client_t* cl = &(player.client);
 
 			MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(), channel, sfx_id,
 			                                             1.0f, attenuation));
@@ -758,10 +771,7 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 
 void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenuation)
 {
-	int        sfx_id;
-	client_t  *cl;
-
-	sfx_id = S_FindSound (name);
+	const int sfx_id = S_FindSound (name);
 
 	if (sfx_id >= static_cast<int>(S_sfx.size()) || sfx_id < 0)
 	{
@@ -769,12 +779,12 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 		return;
 	}
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (!(it->ingame()))
+		if (!(player.ingame()))
 			continue;
 
-		cl = &(it->client);
+		client_t* cl = &(player.client);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id,
 		                                             1.0f, attenuation));
@@ -926,7 +936,7 @@ bool SV_SetupUserInfo(player_t &player)
 					test_netname = new_netname + strnum;
 
 				// Check to see if the enumerated name is taken.
-				player_t& test = nameplayer(test_netname.c_str());
+				player_t& test = nameplayer(test_netname);
 				if (!validplayer(test))
 					break;
 
@@ -971,8 +981,8 @@ bool SV_SetupUserInfo(player_t &player)
 		if (player.mo && player.userinfo.team && player.ingame() && !player.spectator &&
 		    !G_IsLevelState(LevelState::WARMUP))
 		{
-			M_HandleWDLNameChange(team, old_netname.c_str(),
-			                      player.userinfo.netname.c_str(), player.id);
+			M_HandleWDLNameChange(team, old_netname,
+			                      player.userinfo.netname, player.id);
 		}
 	}
 
@@ -1161,12 +1171,12 @@ void SV_SpawnMobj(AActor *mo)
 
 	P_SetMobjBaseline(*mo);
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
 		if (mo->player)
-			SV_AwarenessUpdate(*it, mo);
+			SV_AwarenessUpdate(player, mo);
 		else
-			it->to_spawn.push(mo->ptr());
+			player.to_spawn.push(mo->ptr());
 	}
 }
 
@@ -1196,10 +1206,8 @@ void SV_UpdateHiddenMobj(void)
 	AActor *mo;
 	TThinkerIterator<AActor> iterator;
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& pl : players)
 	{
-		player_t &pl = *it;
-
 		if (!pl.mo)
 			continue;
 
@@ -1241,8 +1249,8 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 
 void SV_BroadcastSector(int sectornum)
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
-		SV_UpdateSector(&(it->client), sectornum);
+	for (auto& player : players)
+		SV_UpdateSector(&(player.client), sectornum);
 }
 
 //
@@ -1565,9 +1573,9 @@ void SV_ServerSettingChange()
 		return;
 	}
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
-		SendServerSettings(*it);
+		SendServerSettings(player);
 	}
 }
 
@@ -1641,7 +1649,7 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 
 		// GhostlyDeath -- And we tell the server
 		Printf("%s disconnected (version mismatch %s).\n", NET_AdrToString(::net_from),
-		       VersionStr.c_str());
+		       VersionStr);
 	}
 
 	return AllowConnect;
@@ -1915,7 +1923,6 @@ void SV_ConnectClient2(player_t& player)
 std::string SV_BuildKillsDeathsStatusString(player_t& player)
 {
 	std::string status;
-	char temp_str[100];
 
 	if (player.playerstate == PST_DOWNLOAD)
 		status = "downloading";
@@ -1925,28 +1932,23 @@ std::string SV_BuildKillsDeathsStatusString(player_t& player)
 	{
 		if (G_IsTeamGame())
 		{
-			snprintf(temp_str, 100, "%s TEAM, ", GetTeamInfo(player.userinfo.team)->ColorStringUpper.c_str());
-			status += temp_str;
+			status += fmt::format("{} TEAM", GetTeamInfo(player.userinfo.team)->ColorStringUpper);
 		}
 
 		// Points (CTF).
 		if (sv_gametype == GM_CTF)
 		{
-			snprintf(temp_str, 100, "%d POINTS, ", player.points);
-			status += temp_str;
+			status += fmt::format("{} POINTS", player.points);
 		}
 
 		// Frags (DM/TDM/CTF) or Kills (Coop).
 		if (G_IsCoopGame())
-			snprintf(temp_str, 100, "%d KILLS, ", player.killcount);
+			status += fmt::format("{} KILLS, ", player.killcount);
 		else
-			snprintf(temp_str, 100, "%d FRAGS, ", player.fragcount);
-
-		status += temp_str;
+			status += fmt::format("{} FRAGS, ", player.fragcount);
 
 		// Deaths.
-		snprintf(temp_str, 100, "%d DEATHS", player.deathcount);
-		status += temp_str;
+		status += fmt::format("{} DEATHS", player.deathcount);
 	}
 	return status;
 }
@@ -1964,9 +1966,9 @@ void SV_DisconnectClient(player_t &who)
 		return;
 
 	// tell others clients about it
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
-		client_t &cl = it->client;
+		client_t &cl = player.client;
 		MSG_WriteSVC(&cl.reliablebuf, SVC_DisconnectClient(who));
 	}
 
@@ -2013,15 +2015,15 @@ void SV_DropClient2(player_t &who, const char* file, const int line)
 //
 void SV_SendDisconnectSignal()
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		client_t *cl = &(it->client);
+		client_t *cl = &(player.client);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_Disconnect("Shutting down\n"));
-		SV_SendPacket(*it);
+		SV_SendPacket(player);
 
-		if (it->mo)
-			it->mo->Destroy();
+		if (player.mo)
+			player.mo->Destroy();
 	}
 
 	players.clear();
@@ -2034,13 +2036,13 @@ void SV_SendDisconnectSignal()
 void SV_SendReconnectSignal()
 {
 	// tell others clients about it
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		MSG_WriteSVC(&(it->client.reliablebuf), odaproto::svc::Reconnect());
-		SV_SendPacket(*it);
+		MSG_WriteSVC(&(player.client.reliablebuf), odaproto::svc::Reconnect());
+		SV_SendPacket(player);
 
-		if (it->mo)
-			it->mo->Destroy();
+		if (player.mo)
+			player.mo->Destroy();
 	}
 
 	players.clear();
@@ -2052,9 +2054,9 @@ void SV_SendReconnectSignal()
 //
 void SV_ExitLevel()
 {
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
-		MSG_WriteSVC(&(it->client.reliablebuf), odaproto::svc::ExitLevel());
+		MSG_WriteSVC(&(player.client.reliablebuf), odaproto::svc::ExitLevel());
 	}
 }
 
@@ -2147,69 +2149,68 @@ static float SV_CalculateFragDeathRatio(const player_t* player)
 //
 void SV_DrawScores()
 {
-	char str[1024];
+	std::string str;
 
 	typedef std::list<const player_t*> PlayerPtrList;
 	PlayerPtrList sortedplayers;
 	PlayerPtrList sortedspectators;
 
-	for (Players::const_iterator it = players.begin(); it != players.end(); ++it)
-		if (!it->spectator && it->ingame())
-			sortedplayers.push_back(&*it);
+	for (const auto& player : players)
+		if (!player.spectator && player.ingame())
+			sortedplayers.push_back(&player);
 		else
-			sortedspectators.push_back(&*it);
+			sortedspectators.push_back(&player);
 
-	Printf_Bold("\n");
+	PrintFmt_Bold("\n");
 
 	if (sv_gametype == GM_CTF)
 	{
 		compare_player_points comparison_functor;
 		sortedplayers.sort(comparison_functor);
 
-        Printf_Bold("                    CAPTURE THE FLAG");
-        Printf_Bold("-----------------------------------------------------------");
+        PrintFmt_Bold("                    CAPTURE THE FLAG");
+        PrintFmt_Bold("-----------------------------------------------------------");
 
 		if (sv_scorelimit)
-			snprintf(str, 1024, "Scorelimit: %-6d", sv_scorelimit.asInt());
+			str = fmt::format("Scorelimit: {:<6d}", sv_scorelimit.asInt());
 		else
-			snprintf(str, 1024, "Scorelimit: N/A   ");
+			str = fmt::format("Scorelimit: N/A   ");
 
-		Printf_Bold("%s  ", str);
+		PrintFmt_Bold("{}  ", str);
 
 		if (sv_timelimit)
-			snprintf(str, 1024, "Timelimit: %-7d", sv_timelimit.asInt());
+			str = fmt::format("Timelimit: {:<7d}", sv_timelimit.asInt());
 		else
-			snprintf(str, 1024, "Timelimit: N/A");
+			str = fmt::format("Timelimit: N/A");
 
-		Printf_Bold("%18s\n", str);
+		PrintFmt_Bold("{:18s}\n", str);
 
 		for (int team_num = 0; team_num < sv_teamsinplay; team_num++)
 		{
 			if (team_num == TEAM_BLUE)
-                Printf_Bold("--------------------------------------------------BLUE TEAM");
+                PrintFmt_Bold("--------------------------------------------------BLUE TEAM");
 			else if (team_num == TEAM_RED)
-                Printf_Bold("---------------------------------------------------RED TEAM");
+                PrintFmt_Bold("---------------------------------------------------RED TEAM");
 			else if (team_num == TEAM_GREEN)
-				Printf_Bold("-------------------------------------------------GREEN TEAM");
+				PrintFmt_Bold("-------------------------------------------------GREEN TEAM");
 			else		// shouldn't happen
-                Printf_Bold("-----------------------------------------------UNKNOWN TEAM");
+                PrintFmt_Bold("-----------------------------------------------UNKNOWN TEAM");
 
-            Printf_Bold("ID  Address          Name            Points Caps Frags Time");
-            Printf_Bold("-----------------------------------------------------------");
+            PrintFmt_Bold("ID  Address          Name            Points Caps Frags Time");
+            PrintFmt_Bold("-----------------------------------------------------------");
 
-			for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
+			for (const auto& player : sortedplayers)
 			{
-				const player_t* itplayer = *it;
-				if (itplayer->userinfo.team == team_num)
+				if (player->userinfo.team == team_num)
 				{
-					Printf_Bold("%-3d %-16s %-15s %-6d N/A  %-5d %-3d",
-							itplayer->id,
-							NET_AdrToString(itplayer->client.address),
-							itplayer->userinfo.netname.c_str(),
-							P_GetPointCount(itplayer),
-							//itplayer->captures,
-					        P_GetFragCount(itplayer),
-							itplayer->GameTime / 60);
+					PrintFmt_Bold("{:<3d} {:<16s} {:<15s} {:<6d} N/A  {:<5d} {:<3d}",
+					              player->id,
+					              NET_AdrToString(player->client.address),
+					              player->userinfo.netname,
+					              P_GetPointCount(player),
+					              //itplayer->captures,
+					              P_GetFragCount(player),
+					              player->GameTime / 60);
 				}
 			}
 		}
@@ -2220,50 +2221,49 @@ void SV_DrawScores()
 		compare_player_frags comparison_functor;
 		sortedplayers.sort(comparison_functor);
 
-        Printf_Bold("                     TEAM DEATHMATCH");
-        Printf_Bold("-----------------------------------------------------------");
+        PrintFmt_Bold("                     TEAM DEATHMATCH");
+        PrintFmt_Bold("-----------------------------------------------------------");
 
 		if (sv_fraglimit)
-			snprintf(str, 1024, "Fraglimit: %-7d", sv_fraglimit.asInt());
+			str = fmt::format("Fraglimit: {:<7d}", sv_fraglimit.asInt());
 		else
-			snprintf(str, 1024, "Fraglimit: N/A    ");
+			str = fmt::format("Fraglimit: N/A    ");
 
-		Printf_Bold("%s  ", str);
+		PrintFmt_Bold("{}  ", str);
 
 		if (sv_timelimit)
-			snprintf(str, 1024, "Timelimit: %-7d", sv_timelimit.asInt());
+			str = fmt::format("Timelimit: {:<7d}", sv_timelimit.asInt());
 		else
-			snprintf(str, 1024, "Timelimit: N/A");
+			str = fmt::format("Timelimit: N/A");
 
-		Printf_Bold("%18s\n", str);
+		PrintFmt_Bold("{:18s}\n", str);
 
 		for (int team_num = 0; team_num < sv_teamsinplay; team_num++)
 		{
 			if (team_num == TEAM_BLUE)
-                Printf_Bold("--------------------------------------------------BLUE TEAM");
+                PrintFmt_Bold("--------------------------------------------------BLUE TEAM");
 			else if (team_num == TEAM_RED)
-                Printf_Bold("---------------------------------------------------RED TEAM");
+                PrintFmt_Bold("---------------------------------------------------RED TEAM");
 			else if (team_num == TEAM_GREEN)
-				Printf_Bold("-------------------------------------------------GREEN TEAM");
+				PrintFmt_Bold("-------------------------------------------------GREEN TEAM");
 			else		// shouldn't happen
-                Printf_Bold("-----------------------------------------------UNKNOWN TEAM");
+                PrintFmt_Bold("-----------------------------------------------UNKNOWN TEAM");
 
-            Printf_Bold("ID  Address          Name            Frags Deaths  K/D Time");
-            Printf_Bold("-----------------------------------------------------------");
+            PrintFmt_Bold("ID  Address          Name            Frags Deaths  K/D Time");
+            PrintFmt_Bold("-----------------------------------------------------------");
 
-			for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
+			for (const auto& player : sortedplayers)
 			{
-				const player_t* itplayer = *it;
-				if (itplayer->userinfo.team == team_num)
+				if (player->userinfo.team == team_num)
 				{
-					Printf_Bold("%-3d %-16s %-15s %-5d %-6d %2.1f %-3d",
-							itplayer->id,
-							NET_AdrToString(itplayer->client.address),
-							itplayer->userinfo.netname.c_str(),
-							P_GetFragCount(itplayer),
-							P_GetDeathCount(itplayer),
-							SV_CalculateFragDeathRatio(itplayer),
-							itplayer->GameTime / 60);
+					PrintFmt_Bold("{:<3d} {:<16s} {:<15s} {:<5d} {:<6d} {:2.1f} {:<3d}",
+					              player->id,
+					              NET_AdrToString(player->client.address),
+					              player->userinfo.netname,
+					              P_GetFragCount(player),
+					              P_GetDeathCount(player),
+					              SV_CalculateFragDeathRatio(player),
+					              player->GameTime / 60);
 				}
 			}
 		}
@@ -2274,37 +2274,36 @@ void SV_DrawScores()
 		compare_player_frags comparison_functor;
 		sortedplayers.sort(comparison_functor);
 
-        Printf_Bold("                        DEATHMATCH");
-        Printf_Bold("-----------------------------------------------------------");
+        PrintFmt_Bold("                        DEATHMATCH");
+        PrintFmt_Bold("-----------------------------------------------------------");
 
 		if (sv_fraglimit)
-			snprintf(str, 1024, "Fraglimit: %-7d", sv_fraglimit.asInt());
+			str = fmt::format("Fraglimit: {:<7d}", sv_fraglimit.asInt());
 		else
-			snprintf(str, 1024, "Fraglimit: N/A    ");
+			str = fmt::format("Fraglimit: N/A    ");
 
-		Printf_Bold("%s  ", str);
+		PrintFmt_Bold("{}  ", str);
 
 		if (sv_timelimit)
-			snprintf(str, 1024, "Timelimit: %-7d", sv_timelimit.asInt());
+			str = fmt::format("Timelimit: {:<7d}", sv_timelimit.asInt());
 		else
-			snprintf(str, 1024, "Timelimit: N/A");
+			str = fmt::format("Timelimit: N/A");
 
-		Printf_Bold("%18s\n", str);
+		PrintFmt_Bold("{:18s}\n", str);
 
-        Printf_Bold("ID  Address          Name            Frags Deaths  K/D Time");
-        Printf_Bold("-----------------------------------------------------------");
+        PrintFmt_Bold("ID  Address          Name            Frags Deaths  K/D Time");
+        PrintFmt_Bold("-----------------------------------------------------------");
 
-		for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
+		for (const auto& player : sortedplayers)
 		{
-			const player_t* itplayer = *it;
-			Printf_Bold("%-3d %-16s %-15s %-5d %-6d %2.1f %-3d",
-					itplayer->id,
-					NET_AdrToString(itplayer->client.address),
-					itplayer->userinfo.netname.c_str(),
-					P_GetFragCount(itplayer),
-					P_GetDeathCount(itplayer),
-					SV_CalculateFragDeathRatio(itplayer),
-					itplayer->GameTime / 60);
+			PrintFmt_Bold("{:<3d} {:<16s} {:<15s} {:<5d} {:<6d} {:2.1f} {:<3d}",
+			              player->id,
+			              NET_AdrToString(player->client.address),
+			              player->userinfo.netname,
+			              P_GetFragCount(player),
+			              P_GetDeathCount(player),
+			              SV_CalculateFragDeathRatio(player),
+			              player->GameTime / 60);
 		}
 
 	}
@@ -2314,22 +2313,21 @@ void SV_DrawScores()
 		compare_player_kills comparison_functor;
 		sortedplayers.sort(comparison_functor);
 
-        Printf_Bold("                       COOPERATIVE");
-        Printf_Bold("-----------------------------------------------------------");
-        Printf_Bold("ID  Address          Name            Kills Deaths  K/D Time");
-        Printf_Bold("-----------------------------------------------------------");
+        PrintFmt_Bold("                       COOPERATIVE");
+        PrintFmt_Bold("-----------------------------------------------------------");
+        PrintFmt_Bold("ID  Address          Name            Kills Deaths  K/D Time");
+        PrintFmt_Bold("-----------------------------------------------------------");
 
-		for (PlayerPtrList::const_iterator it = sortedplayers.begin(); it != sortedplayers.end(); ++it)
+		for (const auto& player : sortedplayers)
 		{
-			const player_t* itplayer = *it;
-			Printf_Bold("%-3d %-16s %-15s %-5d %-6d %2.1f %-3d",
-					itplayer->id,
-					NET_AdrToString(itplayer->client.address),
-					itplayer->userinfo.netname.c_str(),
-					itplayer->killcount,
-					itplayer->deathcount,
-					SV_CalculateKillDeathRatio(itplayer),
-					itplayer->GameTime / 60);
+			PrintFmt_Bold("{:<3d} {:<16s} {:<15s} {:<5d} {:<6d} {:2.1f} {:<3d}",
+			              player->id,
+			              NET_AdrToString(player->client.address),
+			              player->userinfo.netname,
+			              player->killcount,
+			              player->deathcount,
+			              SV_CalculateKillDeathRatio(player),
+			              player->GameTime / 60);
 		}
 	}
 
@@ -2338,19 +2336,18 @@ void SV_DrawScores()
 		compare_player_names comparison_functor;
 		sortedspectators.sort(comparison_functor);
 
-    	Printf_Bold("-------------------------------------------------SPECTATORS");
+    	PrintFmt_Bold("-------------------------------------------------SPECTATORS");
 
-		for (PlayerPtrList::const_iterator it = sortedspectators.begin(); it != sortedspectators.end(); ++it)
+		for (const auto& spec : sortedspectators)
 		{
-			const player_t* itplayer = *it;
-			Printf_Bold("%-3d %-16s %-15s\n",
-					itplayer->id,
-					NET_AdrToString(itplayer->client.address),
-					itplayer->userinfo.netname.c_str());
+			PrintFmt_Bold("{:<3d} {:<16s} {:<15s}\n",
+			              spec->id,
+			              NET_AdrToString(spec->client.address),
+			              spec->userinfo.netname);
 		}
 	}
 
-	Printf_Bold("\n");
+	PrintFmt_Bold("\n");
 }
 
 BEGIN_COMMAND (showscores)
@@ -2358,162 +2355,6 @@ BEGIN_COMMAND (showscores)
     SV_DrawScores();
 }
 END_COMMAND (showscores)
-
-FORMAT_PRINTF(2, 3)
-void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
-{
-	va_list argptr;
-	std::string string;
-	client_t* cl;
-
-	va_start(argptr, format);
-	VStrFormat(string, format, argptr);
-	va_end(argptr);
-
-	Printf(printlevel, "%s", string.c_str()); // print to the console
-
-	// Hacky code to display messages as normal ones to clients
-	if (printlevel == PRINT_NORCON)
-		printlevel = PRINT_HIGH;
-
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		cl = &(it->client);
-
-		MSG_WriteSVC(&cl->reliablebuf,
-		             SVC_Print(static_cast<printlevel_t>(printlevel), string));
-	}
-}
-
-FORMAT_PRINTF(1, 2)
-void STACK_ARGS SV_BroadcastPrintf(const char* fmt, ...)
-{
-	va_list argptr;
-	char string[2048];
-
-	va_start(argptr, fmt);
-	vsnprintf(string, sizeof(string), fmt, argptr);
-	va_end(argptr);
-
-	SV_BroadcastPrintf(PRINT_NORCON, "%s", string);
-}
-
-void STACK_ARGS SV_BroadcastPrintfButPlayer(int printlevel, int player_id, const char* format, ...)
-{
-	va_list argptr;
-	std::string string;
-
-	va_start(argptr, format);
-	VStrFormat(string, format, argptr);
-	va_end(argptr);
-
-	Printf(printlevel, "%s", string.c_str()); // print to the console
-
-	// Hacky code to display messages as normal ones to clients
-	if (printlevel == PRINT_NORCON)
-		printlevel = PRINT_HIGH;
-
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		client_t* cl = &(it->client);
-
-		client_t* excluded_client = &idplayer(player_id).client;
-
-		if (cl == excluded_client)
-			continue;
-
-		MSG_WriteSVC(&cl->reliablebuf,
-		             SVC_Print(static_cast<printlevel_t>(printlevel), string));
-	}
-}
-
-// GhostlyDeath -- same as above but ONLY for spectators
-void STACK_ARGS SV_SpectatorPrintf(int level, const char *fmt, ...)
-{
-	va_list argptr;
-	char string[2048];
-	client_t *cl;
-
-	va_start(argptr,fmt);
-	vsnprintf(string, 2048, fmt, argptr);
-	va_end(argptr);
-
-	Printf(level, "%s", string);  // print to the console
-
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		cl = &(it->client);
-
-		bool spectator = it->spectator || !it->ingame();
-		if (spectator)
-		{
-			MSG_WriteSVC(&cl->reliablebuf,
-			             SVC_Print(static_cast<printlevel_t>(level), string));
-		}
-	}
-}
-
-// Print directly to a specific client.
-void STACK_ARGS SV_ClientPrintf(client_t *cl, int level, const char *fmt, ...)
-{
-	va_list argptr;
-	char string[2048];
-
-	va_start(argptr, fmt);
-	vsnprintf(string, 2048, fmt, argptr);
-	va_end(argptr);
-
-	MSG_WriteSVC(&cl->reliablebuf, SVC_Print(static_cast<printlevel_t>(level), string));
-}
-
-// Print directly to a specific player.
-void STACK_ARGS SV_PlayerPrintf(int level, int player_id, const char *fmt, ...)
-{
-	va_list argptr;
-	char string[2048];
-
-	va_start(argptr,fmt);
-	vsnprintf(string, 2048, fmt,argptr);
-	va_end(argptr);
-
-	client_t* cl = &idplayer(player_id).client;
-	MSG_WriteSVC(&cl->reliablebuf, SVC_Print(static_cast<printlevel_t>(level), string));
-}
-
-void STACK_ARGS SV_TeamPrintf(int level, int who, const char *fmt, ...)
-{
-	if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
-		return;
-
-	va_list argptr;
-	char string[2048];
-
-	va_start(argptr,fmt);
-	vsnprintf(string, 2048, fmt,argptr);
-	va_end(argptr);
-
-	Printf(level, "%s", string);  // print to the console
-
-	player_t* player = &idplayer(who);
-
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		if (it->userinfo.team != player->userinfo.team)
-			continue;
-
-		bool spectator = it->spectator || !it->ingame();
-		if (spectator)
-			continue;
-
-		client_t* cl = &(it->client);
-
-		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
-			continue;
-
-		MSG_WriteSVC(&cl->reliablebuf,
-		             SVC_Print(static_cast<printlevel_t>(level), string));
-	}
-}
 
 /**
  * Send a message to teammates of a player.
@@ -2548,9 +2389,9 @@ void SVC_TeamSay(player_t &player, const char* message)
 void SVC_SpecSay(player_t &player, const char* message)
 {
 	if (strnicmp(message, "/me ", 4) == 0)
-		Printf(PRINT_TEAMCHAT, "<SPEC> * %s %s\n", player.userinfo.netname.c_str(), &message[4]);
+		Printf(PRINT_TEAMCHAT, "<SPEC> * %s %s\n", player.userinfo.netname, &message[4]);
 	else
-		Printf(PRINT_TEAMCHAT, "<SPEC> %s: %s\n", player.userinfo.netname.c_str(), message);
+		Printf(PRINT_TEAMCHAT, "<SPEC> %s: %s\n", player.userinfo.netname, message);
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
@@ -2576,9 +2417,9 @@ void SVC_SpecSay(player_t &player, const char* message)
 void SVC_Say(player_t &player, const char* message)
 {
 	if (strnicmp(message, "/me ", 4) == 0)
-		Printf(PRINT_CHAT, "<CHAT> * %s %s\n", player.userinfo.netname.c_str(), &message[4]);
+		Printf(PRINT_CHAT, "<CHAT> * %s %s\n", player.userinfo.netname, &message[4]);
 	else
-		Printf(PRINT_CHAT, "<CHAT> %s: %s\n", player.userinfo.netname.c_str(), message);
+		Printf(PRINT_CHAT, "<CHAT> %s: %s\n", player.userinfo.netname, message);
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
@@ -2601,10 +2442,10 @@ void SVC_PrivMsg(player_t &player, player_t &dplayer, const char* message)
 {
 	if (strnicmp(message, "/me ", 4) == 0)
 		Printf(PRINT_CHAT, "<PRIVMSG> * %s (to %s) %s\n",
-				player.userinfo.netname.c_str(), dplayer.userinfo.netname.c_str(), &message[4]);
+				player.userinfo.netname, dplayer.userinfo.netname, &message[4]);
 	else
 		Printf(PRINT_CHAT, "<PRIVMSG> %s (to %s): %s\n",
-				player.userinfo.netname.c_str(), dplayer.userinfo.netname.c_str(), message);
+				player.userinfo.netname, dplayer.userinfo.netname, message);
 
 	MSG_WriteSVC(&dplayer.client.reliablebuf, SVC_Say(true, player.id, message));
 
@@ -2770,14 +2611,14 @@ void SV_UpdateMobj(AActor* mo)
 	if (mo->player)
 		return;
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!(it->ingame()))
+		if (!(player.ingame()))
 			continue;
 
-		if (SV_IsPlayerAllowedToSee(*it, mo))
+		if (SV_IsPlayerAllowedToSee(player, mo))
 		{
-			client_t* cl = &(it->client);
+			client_t* cl = &(player.client);
 			MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
 		}
 	}
@@ -2786,14 +2627,14 @@ void SV_UpdateMobj(AActor* mo)
 // Update the given actors state immediately.
 void SV_UpdateMobjState(AActor* mo)
 {
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!(it->ingame()))
+		if (!(player.ingame()))
 			continue;
 
-		if (SV_IsPlayerAllowedToSee(*it, mo))
+		if (SV_IsPlayerAllowedToSee(player, mo))
 		{
-			client_t* cl = &(it->client);
+			client_t* cl = &(player.client);
 			MSG_WriteSVC(&cl->reliablebuf, SVC_MobjState(mo));
 		}
 	}
@@ -2868,14 +2709,14 @@ void SV_ActorTarget(AActor *actor)
 	if (actor->player)
 		return;
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (!(it->ingame()))
+		if (!(player.ingame()))
 			continue;
 
-		client_t *cl = &(it->client);
+		client_t *cl = &(player.client);
 
-		if(!SV_IsPlayerAllowedToSee(*it, actor))
+		if(!SV_IsPlayerAllowedToSee(player, actor))
 			continue;
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor));
@@ -2887,12 +2728,12 @@ void SV_ActorTarget(AActor *actor)
 //
 void SV_ActorTracer(AActor *actor)
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (!(it->ingame()))
+		if (!(player.ingame()))
 			continue;
 
-		client_t *cl = &(it->client);
+		client_t *cl = &(player.client);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*actor));
 	}
@@ -2953,9 +2794,9 @@ void SV_UpdateMonsterRespawnCount()
 	if (!G_IsCoopGame())
 		return;
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
-		client_t* cl = &(it->client);
+		client_t* cl = &(player.client);
 		MSG_WriteSVC(&cl->reliablebuf, SVC_LevelLocals(::level, SVC_LL_MONSTER_RESPAWNS));
 	}
 }
@@ -2981,12 +2822,12 @@ void SV_UpdatePing(client_t* cl)
 	if (!P_AtInterval(101))
 		return;
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!(it->ingame()))
+		if (!(player.ingame()))
 			continue;
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdatePing(*it));
+		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdatePing(player));
 	}
 }
 
@@ -3029,9 +2870,9 @@ void SV_ClearClientsBPS(void)
 	if (!P_AtInterval(TICRATE))
 		return;
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		client_t *cl = &(it->client);
+		client_t *cl = &(player.client);
 
 		cl->reliable_bps = 0;
 		cl->unreliable_bps = 0;
@@ -3616,7 +3457,7 @@ BEGIN_COMMAND (forcespec) {
 	size_t pid;
 
 	if (!CMD_ForcespecCheck(arguments, error, pid)) {
-		Printf("forcespec: %s\n", error.c_str());
+		Printf("forcespec: %s\n", error);
 		return;
 	}
 
@@ -3789,7 +3630,7 @@ void SV_RConLogout (player_t &player)
 
 	if (cl->allow_rcon)
 	{
-		Printf("RCON logout from %s - %s", player.userinfo.netname.c_str(), NET_AdrToString(cl->address));
+		Printf("RCON logout from %s - %s", player.userinfo.netname, NET_AdrToString(cl->address));
 		cl->allow_rcon = false;
 	}
 }
@@ -3813,11 +3654,11 @@ void SV_RConPassword (player_t &player)
 	if (!password.empty() && MD5SUM(password + cl->digest) == challenge)
 	{
 		cl->allow_rcon = true;
-		Printf(PRINT_HIGH, "RCON login from %s - %s", player.userinfo.netname.c_str(), NET_AdrToString(cl->address));
+		Printf(PRINT_HIGH, "RCON login from %s - %s", player.userinfo.netname, NET_AdrToString(cl->address));
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "RCON login failure from %s - %s", player.userinfo.netname.c_str(), NET_AdrToString(cl->address));
+		Printf(PRINT_HIGH, "RCON login failure from %s - %s", player.userinfo.netname, NET_AdrToString(cl->address));
 		MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_HIGH, "Bad password\n"));
 	}
 }
@@ -3982,7 +3823,7 @@ void SV_ParseCommands(player_t &player)
 				if (player.client.allow_rcon)
 				{
 					Printf(PRINT_HIGH, "RCON command from %s - %s -> %s",
-							player.userinfo.netname.c_str(), NET_AdrToString(net_from), str.c_str());
+							player.userinfo.netname, NET_AdrToString(net_from), str);
 					AddCommandString(str);
 				}
 			}
@@ -4077,8 +3918,8 @@ static void TimeCheck()
 	// [SL] 2011-10-25 - Send the clients the remaining time (measured in seconds)
 	if (P_AtInterval(1 * TICRATE)) // every second
 	{
-		for (Players::iterator it = players.begin(); it != players.end(); ++it)
-			MSG_WriteSVC(&it->client.netbuf, SVC_LevelLocals(level, SVC_LL_TIME));
+		for (auto& player : players)
+			MSG_WriteSVC(&player.client.netbuf, SVC_LevelLocals(level, SVC_LL_TIME));
 	}
 }
 
@@ -4090,9 +3931,9 @@ static void IntermissionTimeCheck()
 	// [ML] 2012-2-1 - Copy it for intermission fun
 	if (P_AtInterval(1 * TICRATE)) // every second
 	{
-		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		for (auto& player : players)
 		{
-			MSG_WriteSVC(&(it->client.netbuf), SVC_IntTimeLeft(level.inttimeleft));
+			MSG_WriteSVC(&(player.client.netbuf), SVC_IntTimeLeft(level.inttimeleft));
 		}
 	}
 }
@@ -4123,8 +3964,8 @@ void SV_GameTics (void)
 		break;
 	}
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		SV_ProcessPlayerCmd(*it);
+	for (auto& player : players)
+		SV_ProcessPlayerCmd(player);
 }
 
 void SV_TouchSpecial(AActor *special, player_t *player)
@@ -4139,10 +3980,10 @@ void SV_TouchSpecial(AActor *special, player_t *player)
 
 void SV_PlayerTimes (void)
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (it->ingame())
-			(it->GameTime) += 1;
+		if (player.ingame())
+			(player.GameTime) += 1;
 	}
 }
 
@@ -4317,42 +4158,40 @@ BEGIN_COMMAND (playerinfo)
 		return;
 	}
 
-	char ip[16];
-	snprintf(ip, 16, "%d.%d.%d.%d",
+	const std::string ip = fmt::format("{:d}.{:d}.{:d}.{:d}",
 			player->client.address.ip[0], player->client.address.ip[1],
 			player->client.address.ip[2], player->client.address.ip[3]);
 
-	char color[8];
-	snprintf(color, 8, "#%02X%02X%02X",
+	const std::string color = fmt::format("#{:02X}{:02X}{:02X}",
 			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
 
-	const char* team = GetTeamInfo(player->userinfo.team)->ColorStringUpper.c_str();
+	const std::string& team = GetTeamInfo(player->userinfo.team)->ColorStringUpper;
 
-	Printf("---------------[player info]----------- \n");
-	Printf(" IP Address       - %s \n",		ip);
-	Printf(" userinfo.netname - %s \n",		player->userinfo.netname.c_str());
+	PrintFmt("---------------[player info]----------- \n");
+	PrintFmt(" IP Address       - {:s} \n",		ip);
+	PrintFmt(" userinfo.netname - {:s} \n",		player->userinfo.netname);
 	if (sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) {
-		Printf(" userinfo.team    - %s \n", team);
+		PrintFmt(" userinfo.team    - {:s} \n", team);
 	}
-	Printf(" userinfo.aimdist - %d \n",		player->userinfo.aimdist >> FRACBITS);
-	Printf(" userinfo.color   - %s \n",		color);
-	Printf(" userinfo.gender  - %d \n",		player->userinfo.gender);
-	Printf(" time             - %d \n",		player->GameTime);
-	Printf(" spectator        - %d \n",		player->spectator);
+	PrintFmt(" userinfo.aimdist - {:d} \n",		player->userinfo.aimdist >> FRACBITS);
+	PrintFmt(" userinfo.color   - {:s} \n",		color);
+	PrintFmt(" userinfo.gender  - {:d} \n",		player->userinfo.gender);
+	PrintFmt(" time             - {:d} \n",		player->GameTime);
+	PrintFmt(" spectator        - {:d} \n",		player->spectator);
 	if (G_IsCoopGame())
 	{
-		Printf(" kills - %d  deaths - %d\n", player->killcount, player->deathcount);
+		PrintFmt(" kills - {:d}  deaths - {:d}\n", player->killcount, player->deathcount);
 	}
 	else
 	{
-		Printf(" frags - %d  deaths - %d  points - %d\n", player->fragcount,
+		PrintFmt(" frags - {:d}  deaths - {:d}  points - %d\n", player->fragcount,
 		       player->deathcount, player->points);
 	}
 	if (g_lives)
 	{
-		Printf(" lives - %d  wins - %d\n", player->lives, player->roundwins);
+		PrintFmt(" lives - {:d}  wins - {:d}\n", player->lives, player->roundwins);
 	}
-	Printf("--------------------------------------- \n");
+	PrintFmt("--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
 
@@ -4381,7 +4220,7 @@ BEGIN_COMMAND(playerlist)
 
 		std::string strMain, strScore;
 		strMain = fmt::sprintf("(%02d): %s %s - %s - time:%d - ping:%d", it->id,
-		                       it->userinfo.netname.c_str(), it->spectator ? "(SPEC)" : "",
+		                       it->userinfo.netname, it->spectator ? "(SPEC)" : "",
 		                       NET_AdrToString(it->client.address), it->GameTime, it->ping);
 
 		if (G_IsCoopGame())
@@ -4439,7 +4278,7 @@ BEGIN_COMMAND(playerlist)
 			}
 		}
 
-		Printf("%s%s\n", strMain.c_str(), strScore.c_str());
+		Printf("%s%s\n", strMain, strScore);
 		anybody = true;
 	}
 
@@ -4462,9 +4301,9 @@ void OnChangedSwitchTexture (line_t *line, int useAgain)
 	unsigned state = 0, time = 0;
 	P_GetButtonInfo(line, state, time);
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		client_t *cl = &(it->client);
+		client_t *cl = &(player.client);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_Switch(*line, state, time));
 	}
@@ -4476,12 +4315,12 @@ void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
 	if (P_LineSpecialMovesSector(line->special))
 		return;
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (!(it->ingame()))
+		if (!(player.ingame()))
 			continue;
 
-		client_t *cl = &(it->client);
+		client_t *cl = &(player.client);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_ActivateLine(line, mo, side, activationType));
 	}
@@ -4503,9 +4342,9 @@ void SV_SendDamageMobj(AActor *target, int pain)
 	if (!target)
 		return;
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		client_t *cl = &(it->client);
+		client_t *cl = &(player.client);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_DamageMobj(target, pain));
 		if (!target->player)
@@ -4519,11 +4358,11 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 	if (!target)
 		return;
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		client_t *cl = &(it->client);
+		client_t *cl = &(player.client);
 
-		if (!SV_IsPlayerAllowedToSee(*it, target))
+		if (!SV_IsPlayerAllowedToSee(player, target))
 			continue;
 
 		MSG_WriteSVC(&cl->reliablebuf,
@@ -4536,11 +4375,11 @@ void SV_SendDestroyActor(AActor *mo)
 {
 	if (mo->netid && mo->type != MT_PUFF)
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			if (mo->players_aware.get(it->id))
+			if (mo->players_aware.get(player.id))
 			{
-				client_t *cl = &(it->client);
+				client_t *cl = &(player.client);
 
 				// denis - todo - need a queue for destroyed (lost awareness)
 				// objects, as a flood of destroyed things could easily overflow a
@@ -4554,11 +4393,11 @@ void SV_SendDestroyActor(AActor *mo)
 // Missile exploded so tell clients about it
 void SV_ExplodeMissile(AActor *mo)
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		client_t *cl = &(it->client);
+		client_t *cl = &(player.client);
 
-		if (!SV_IsPlayerAllowedToSee(*it, mo))
+		if (!SV_IsPlayerAllowedToSee(player, mo))
 			continue;
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateMobj(*mo));
@@ -4680,10 +4519,10 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 	PlayersView queued;
 	PlayersView queueUpdates;
 
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : ::players)
 	{
-		if (it->QueuePosition > 0 && disconnectPlayer != &(*it))
-			queued.push_back(&(*it));
+		if (player.QueuePosition > 0 && disconnectPlayer != &(player))
+			queued.push_back(&(player));
 	}
 
 	std::sort(queued.begin(), queued.end(), CompareQueuePosition);
@@ -4727,11 +4566,11 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 
 void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect)
 {
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (initConnect && it->QueuePosition == 0)
+		if (initConnect && player.QueuePosition == 0)
 			continue;
-		SV_SendPlayerQueuePosition(&(*it), dest);
+		SV_SendPlayerQueuePosition(&player, dest);
 	}
 }
 
@@ -4747,11 +4586,11 @@ bool CompareQueuePosition(const player_t* p1, const player_t* p2)
 
 void SV_ClearPlayerQueue()
 {
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		it->QueuePosition = 0;
+	for (auto& player : players)
+		player.QueuePosition = 0;
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		SV_SendPlayerQueuePositions(&(*it), false);
+	for (auto& player : players)
+		SV_SendPlayerQueuePositions(&player, false);
 }
 
 void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, int arg0,
@@ -4760,12 +4599,12 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, in
 	if (P_LineSpecialMovesSector(special))
 		return;
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!(it->ingame()))
+		if (!(player.ingame()))
 			continue;
 
-		client_t* cl = &it->client;
+		client_t* cl = &player.client;
 
 		int args[5] = { arg0, arg1, arg2, arg3, arg4 };
 		MSG_WriteSVC(&cl->reliablebuf,
@@ -4780,16 +4619,16 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, in
 void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
                           bool playerOnly, const std::vector<int>& args)
 {
-	player_s* sendPlayer = NULL;
-	if (playerOnly && activator != NULL && activator->player != NULL)
+	player_s* sendPlayer = nullptr;
+	if (playerOnly && activator != nullptr && activator->player != nullptr)
 		sendPlayer = activator->player;
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!(it->ingame()) || (sendPlayer != NULL && sendPlayer != &(*it)))
+		if (!(player.ingame()) || (sendPlayer != nullptr && sendPlayer != &player))
 			continue;
 
-		client_t* cl = &it->client;
+		client_t* cl = &player.client;
 
 		MSG_WriteSVC(&cl->reliablebuf,
 		             SVC_ExecuteACSSpecial(special, activator, print, args));

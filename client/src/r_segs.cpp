@@ -49,11 +49,11 @@ Pool<int> sprclip_pool(4096);
 
 // killough 1/6/98: replaced globals with statics where appropriate
 
-static BOOL		segtextured;	// True if any of the segs textures might be visible.
-static BOOL		markfloor;		// False if the back side is the same plane.
-static BOOL		markceiling;
-static BOOL		maskedtexture;
+static bool		segtextured;	// True if any of the segs textures might be visible.
+static bool		markfloor;		// False if the back side is the same plane.
+static bool		markceiling;
 static bool		didsolidcol;
+static int		maskedtexture;
 static int		toptexture;
 static int		bottomtexture;
 static int		midtexture;
@@ -461,7 +461,7 @@ void R_RenderSolidSegRange(int start, int stop)
 	if (start > stop)
 		return;
 
-	constexpr int columnmethod = 2;
+	static constexpr int columnmethod = 2;
 
 	// clip the front of the walls to the ceiling and floor
 	for (int x = start; x <= stop; x++)
@@ -723,7 +723,7 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 	const fixed_t segoffs = curline->offset + R_LineLength(curline->v1->x, curline->v1->y, px1, py1);
 
 	const fixed_t mindist = NEARCLIP;
-	constexpr fixed_t maxdist = 16384*FRACUNIT;
+	static constexpr fixed_t maxdist = 16384*FRACUNIT;
 	dist1 = clamp(dist1, mindist, maxdist);
 	dist2 = clamp(dist2, mindist, maxdist);
 
@@ -797,7 +797,7 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 		R_FillWallHeightArray(walltopb, start, stop, rw_backcz1, rw_backcz2, scale1, scale2);
 		R_FillWallHeightArray(wallbottomb, start, stop, rw_backfz1, rw_backfz2, scale1, scale2);
 
-		constexpr fixed_t tolerance = FRACUNIT / 2;
+		static constexpr fixed_t tolerance = FRACUNIT / 2;
 
 		// determine if an upper texture is showing
 		rw_hashigh	= (P_CeilingHeight(curline->v1->x, curline->v1->y, frontsector) - tolerance >

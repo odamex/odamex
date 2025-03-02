@@ -71,18 +71,18 @@ class OScanner
 	void mustScanBool();
 	void unScan();
 
-	std::string getToken() const;
-	int getTokenInt() const;
-	float getTokenFloat() const;
-	bool getTokenBool() const;
+	[[nodiscard]] std::string getToken() const;
+	[[nodiscard]] int getTokenInt() const;
+	[[nodiscard]] float getTokenFloat() const;
+	[[nodiscard]] bool getTokenBool() const;
 
-	bool &crossed();
-	bool isQuotedString() const;
-	bool isIdentifier() const;
+	[[nodiscard]] bool &crossed();
+	[[nodiscard]] bool isQuotedString() const;
+	[[nodiscard]] bool isIdentifier() const;
 	void assertTokenIs(const char* string) const;
 	void assertTokenNoCaseIs(const char* string) const;
-	bool compareToken(const char* string) const;
-	bool compareTokenNoCase(const char* string) const;
+	[[nodiscard]] bool compareToken(const char* string) const;
+	[[nodiscard]] bool compareTokenNoCase(const char* string) const;
 
 	template <typename... ARGS>
 	void warning(const fmt::string_view format, const ARGS&... args) const

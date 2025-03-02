@@ -39,14 +39,14 @@ bool P_ActorInCompatibleSector(AActor* actor);
 bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
                                         bool bossaction);
 bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
-BOOL EV_DoGenDoor(line_t* line);
-BOOL EV_DoGenFloor(line_t* line);
-BOOL EV_DoGenCeiling(line_t* line);
-BOOL EV_DoGenLift(line_t* line);
-BOOL EV_DoGenStairs(line_t* line);
+bool EV_DoGenDoor(line_t* line);
+bool EV_DoGenFloor(line_t* line);
+bool EV_DoGenCeiling(line_t* line);
+bool EV_DoGenLift(line_t* line);
+bool EV_DoGenStairs(line_t* line);
 bool P_CanUnlockGenDoor(line_t* line, player_t* player);
-BOOL EV_DoGenLockedDoor(line_t* line);
-BOOL EV_DoGenCrusher(line_t* line);
+bool EV_DoGenLockedDoor(line_t* line);
+bool EV_DoGenCrusher(line_t* line);
 int EV_DoDonut(line_t* line);
 void P_CollectSecretVanilla(sector_t* sector, player_t* player);
 void EV_StartLightStrobing(int tag, int upper, int lower, int utics, int ltics);
@@ -61,4 +61,4 @@ AActor* P_GetPushThing(int);
 void P_PostProcessCompatibleLinedefSpecial(line_t* line);
 bool P_IsTeleportLine(const short special);
 
-extern BOOL demoplayback;
+extern bool demoplayback;

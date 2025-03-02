@@ -140,9 +140,9 @@ static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lumpdata, int
 
 				// set up the mask
 				byte* mask = texture->getMaskData() + texheight * x + y1;
-				memset(mask, 1, y2 - y1 + 1);	
+				memset(mask, 1, y2 - y1 + 1);
 			}
-			
+
 			post += postlength + 4;
 		}
 	}
@@ -163,7 +163,7 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 	int dx1, int dy1, int dx2, int dy2,
 	int sx1, int sy1, int sx2, int sy2)
 {
-	const int destwidth = dx2 - dx1 + 1; 
+	const int destwidth = dx2 - dx1 + 1;
 	const int destheight = dy2 - dy1 + 1;
 
 	const int sourcewidth = sx2 - sx1 + 1;
@@ -173,8 +173,8 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 	const fixed_t ystep = FixedDiv(sourceheight << FRACBITS, destheight << FRACBITS) + 1;
 
 	int dest_offset = dx1 * dest_texture->getHeight() + dy1;
-	byte* dest = dest_texture->getData() + dest_offset; 
-	byte* dest_mask = dest_texture->getMaskData() + dest_offset; 
+	byte* dest = dest_texture->getData() + dest_offset;
+	byte* dest_mask = dest_texture->getMaskData() + dest_offset;
 
 	fixed_t xfrac = 0;
 	for (int xcount = destwidth; xcount > 0; xcount--)
@@ -186,13 +186,13 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 		fixed_t yfrac = 0;
 		for (int ycount = destheight; ycount > 0; ycount--)
 		{
-			*dest++ = source[yfrac >> FRACBITS];	
-			*dest_mask++ = source_mask[yfrac >> FRACBITS];	
+			*dest++ = source[yfrac >> FRACBITS];
+			*dest_mask++ = source_mask[yfrac >> FRACBITS];
 			yfrac += ystep;
 		}
 
 		dest += dest_texture->getHeight() - destheight;
-		dest_mask += dest_texture->getHeight() - destheight; 
+		dest_mask += dest_texture->getHeight() - destheight;
 
 		xfrac += xstep;
 	}
@@ -215,7 +215,7 @@ void Res_TransposeImage(byte* dest, const byte* source, int width, int height)
 	for (int x = 0; x < width; x++)
 	{
 		const byte* source_column = source + x;
-		
+
 		for (int y = 0; y < height; y++)
 		{
 			*dest = *source_column;
@@ -251,7 +251,7 @@ static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture
 
 	int widthbits = source_texture->getWidthBits();
 	int width = (1 << widthbits);
-	int widthmask = width - 1; 
+	int widthmask = width - 1;
 	int heightbits = source_texture->getHeightBits();
 	int height = (1 << heightbits);
 	int heightmask = height - 1;
@@ -279,7 +279,7 @@ static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture
 			*dest++ = rt_blend2(source_buffer[xindex], 128, source_buffer[yindex], 127);
 		}
 	}
-#endif 
+#endif
 
 #if 0
 	// [SL] ZDoom 1.22 warping
@@ -453,7 +453,7 @@ void TextureManager::startup()
 	// initialize the FLATS data
 	mFirstFlatLumpNum = W_GetNumForName("F_START") + 1;
 	mLastFlatLumpNum = W_GetNumForName("F_END") - 1;
-	
+
 	// initialize the PNAMES mapping to map an index in PNAMES to a WAD lump number
 	readPNamesDirectory();
 
@@ -464,7 +464,7 @@ void TextureManager::startup()
 	generateNotFoundTexture();
 
 	if (clientside)
-	{	
+	{
 		readAnimDefLump();
 		readAnimatedLump();
 	}
@@ -553,7 +553,7 @@ void TextureManager::readPNamesDirectory()
 void TextureManager::readAnimDefLump()
 {
 	int lump = -1;
-	
+
 	while ((lump = W_FindLump("ANIMDEFS", lump)) != -1)
 	{
 		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
@@ -595,7 +595,7 @@ void TextureManager::readAnimDefLump()
 						os.error("Animation has too many frames");
 
 					byte min = 1, max = 1;
-					
+
 					os.mustScanInt();
 					const int frame = os.getTokenInt();
 					os.mustScan();
@@ -740,7 +740,7 @@ void TextureManager::readAnimatedLump()
 		if (anim.numframes <= 0)
 			continue;
 		anim.curframe = 0;
-			
+
 		int speed = LELONG(*(int*)(ptr + 19));
 		anim.countdown = speed - 1;
 
@@ -791,9 +791,9 @@ void TextureManager::updateAnimatedTextures()
 			{
 				int frame2 = (frame1 + 1) % anim->numframes;
 				getTexture(anim->framepic[frame2]);	// ensure Texture is still cached
-				mHandleMap[anim->framepic[frame1]] = mHandleMap[anim->framepic[frame2]]; 
+				mHandleMap[anim->framepic[frame1]] = mHandleMap[anim->framepic[frame2]];
 			}
-			
+
 			mHandleMap[anim->framepic[anim->numframes - 1]] = first_texture;
 		}
 	}
@@ -816,9 +816,9 @@ void TextureManager::updateAnimatedTextures()
 //
 void TextureManager::generateNotFoundTexture()
 {
-	constexpr int width = 64, height = 64;
+	static constexpr int width = 64, height = 64;
 
-	constexpr texhandle_t handle = NOT_FOUND_TEXTURE_HANDLE;
+	static constexpr texhandle_t handle = NOT_FOUND_TEXTURE_HANDLE;
 	Texture* texture = createTexture(handle, width, height);
 
 	if (clientside)
@@ -912,7 +912,7 @@ void TextureManager::addTextureDirectory(const char* lumpname)
 		if (mTextureNameTranslationMap.find(uname) == mTextureNameTranslationMap.end())
 		{
 			size_t texdefsize = sizeof(texdef_t) + sizeof(texdefpatch_t) * (SAFESHORT(mtexdef->patchcount) - 1);
-			texdef_t* texdef = (texdef_t*)(new byte[texdefsize]); 	
+			texdef_t* texdef = (texdef_t*)(new byte[texdefsize]);
 
 			texdef->width = SAFESHORT(mtexdef->width);
 			texdef->height = SAFESHORT(mtexdef->height);
@@ -976,10 +976,10 @@ Texture* TextureManager::createTexture(texhandle_t texhandle, int width, int hei
 	width = std::min<int>(width, Texture::MAX_TEXTURE_WIDTH);
 	height = std::min<int>(height, Texture::MAX_TEXTURE_HEIGHT);
 
-	// server shouldn't allocate memory for texture data, only the header	
+	// server shouldn't allocate memory for texture data, only the header
 	size_t texture_size = clientside ?
 			Texture::calculateSize(width, height) : sizeof(Texture);
-	
+
 	Texture* texture = (Texture*)Z_Malloc(texture_size, PU_STATIC, NULL);
 	texture->init(width, height);
 
@@ -1013,7 +1013,7 @@ void TextureManager::freeTexture(texhandle_t texhandle)
 			if (texhandle & CUSTOM_HANDLE_MASK)
 				freeCustomHandle(texhandle);
 		}
-		
+
 		mHandleMap.erase(it);
 	}
 }
@@ -1070,7 +1070,7 @@ void TextureManager::cachePatch(texhandle_t handle)
 		// TODO: remove this once proper masking is in place
 		memset(texture->mData, 0, width * height);
 
-		// initialize the mask to entirely transparent 
+		// initialize the mask to entirely transparent
 		memset(texture->mMask, 0, width * height);
 
 		Res_DrawPatchIntoTexture(texture, lumpdata, 0, 0);
@@ -1163,7 +1163,7 @@ void TextureManager::cacheFlat(texhandle_t handle)
 	unsigned int lumpnum = (handle & ~FLAT_HANDLE_MASK) + mFirstFlatLumpNum;
 	unsigned int lumplen = W_LumpLength(lumpnum);
 
-	int width, height;	
+	int width, height;
 
 	if (lumplen == 64 * 64)
 		width = height = 64;
@@ -1172,7 +1172,7 @@ void TextureManager::cacheFlat(texhandle_t handle)
 	else if (lumplen == 256 * 256)
 		width = height = 256;
 	else
-		width = height = Log2(sqrt((double)lumplen));	// probably not pretty... 
+		width = height = Log2(sqrt((double)lumplen));	// probably not pretty...
 
 	Texture* texture = createTexture(handle, width, height);
 
@@ -1183,7 +1183,7 @@ void TextureManager::cacheFlat(texhandle_t handle)
 
 		// convert the row-major flat lump to into column-major
 		Res_TransposeImage(texture->mData, lumpdata, width, height);
-		
+
 		delete [] lumpdata;
 	}
 }
@@ -1238,14 +1238,14 @@ void TextureManager::cacheWallTexture(texhandle_t handle)
 		// TODO: remove this once proper masking is in place
 		memset(texture->mData, 0, width * height);
 
-		// initialize the mask to entirely transparent 
+		// initialize the mask to entirely transparent
 		memset(texture->mMask, 0, width * height);
 
 		// compose the texture out of a set of patches
 		for (int i = 0; i < texdef->patchcount; i++)
 		{
 			texdefpatch_t* texdefpatch = &texdef->patches[i];
-			
+
 			if (texdefpatch->patch == -1)		// not found ?
 				continue;
 
@@ -1290,12 +1290,12 @@ texhandle_t TextureManager::getRawTextureHandle(const OString& name)
 //
 // TextureManager::cacheRawTexture
 //
-// Converts a linear 320x200 block of pixels into a Texture 
+// Converts a linear 320x200 block of pixels into a Texture
 //
 void TextureManager::cacheRawTexture(texhandle_t handle)
 {
-	constexpr int width = 320;
-	constexpr int height = 200;
+	static constexpr int width = 320;
+	static constexpr int height = 200;
 
 	Texture* texture = createTexture(handle, width, height);
 
@@ -1313,7 +1313,7 @@ void TextureManager::cacheRawTexture(texhandle_t handle)
 		delete [] lumpdata;
 	}
 }
-	
+
 
 //
 // TextureManager::getPNGTextureHandle
@@ -1395,7 +1395,7 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 	byte* lumpdata = NULL;
 	png_byte* row_data = NULL;
 	MEMFILE* mfp = NULL;
-	
+
 	unsigned int lumpnum = (handle & ~PNG_HANDLE_MASK);
 	unsigned int lumplen = W_LumpLength(lumpnum);
 
@@ -1417,9 +1417,9 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 	{
 		Printf(PRINT_WARNING, "PNG out of memory reading %s.\n", lumpname);
 		Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
-		return;	
+		return;
 	}
-  
+
 	info_ptr = png_create_info_struct(png_ptr);
 	if (!info_ptr)
 	{
@@ -1455,19 +1455,19 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 	// convert transparency to full alpha
 	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
 		png_set_tRNS_to_alpha(png_ptr);
- 
+
 	// convert grayscale, if needed.
 	if (colortype == PNG_COLOR_TYPE_GRAY && bitsperpixel < 8)
 		png_set_expand_gray_1_2_4_to_8(png_ptr);
- 
+
 	// convert paletted images to RGB
 	if (colortype == PNG_COLOR_TYPE_PALETTE)
 		png_set_palette_to_rgb(png_ptr);
- 
+
 	// convert from RGB to ARGB
 	if (colortype == PNG_COLOR_TYPE_PALETTE || colortype == PNG_COLOR_TYPE_RGB)
 	   png_set_add_alpha(png_ptr, 0xFF, PNG_FILLER_AFTER);
- 
+
 	// process the above transformations
 	png_read_update_info(png_ptr, info_ptr);
 
@@ -1483,7 +1483,7 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 		png_read_row(png_ptr, row_data, NULL);
 		byte* dest = texture->mData + y;
 		byte* mask = texture->mMask + y;
-		
+
 		for (unsigned int x = 0; x < width; x++)
 		{
 			argb_t color(row_data[(x << 2) + 3], row_data[(x << 2) + 0],
@@ -1590,7 +1590,7 @@ texhandle_t TextureManager::getHandle(unsigned int lumpnum, Texture::TextureSour
 // Returns the Texture for the appropriate handle. If the Texture is not
 // currently cached, it will be loaded from the disk and cached.
 //
-const Texture* TextureManager::getTexture(texhandle_t handle) 
+const Texture* TextureManager::getTexture(texhandle_t handle)
 {
 	Texture* texture = mHandleMap[handle];
 	if (!texture)

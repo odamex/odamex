@@ -254,6 +254,7 @@ public:
 			return ConstThisClass(mBucketNum, mHashTable);
 		}
 
+		[[nodiscard]]
 		bool operator== (const ThisClass& other) const
 		{
 			return mBucketNum == other.mBucketNum && mHashTable == other.mHashTable;
@@ -446,8 +447,29 @@ public:
 	{
 		while (it1 != it2)
 		{
-			eraseBucket(it1.mBucketNum);
+			mElements[it1.mBucketNum].order = 0;
+			mElements[it1.mBucketNum].pair = HashPairType();
+			mUsed--;
 			++it1;
+		}
+		// Rehash all of the non-empty buckets that follow the erased buckets.
+		IndexType bucketnum = it2.mBucketNum & mSizeMask;
+		while (!emptyBucket(bucketnum))
+		{
+			const KT& key = mElements[bucketnum].pair.first;
+			unsigned int order = mElements[bucketnum].order;
+			mElements[bucketnum].order = 0;
+
+			IndexType new_bucketnum = findBucket(key);
+			mElements[new_bucketnum].order = order;
+
+			if (new_bucketnum != bucketnum)
+			{
+				mElements[new_bucketnum].pair = mElements[bucketnum].pair;
+				mElements[bucketnum].pair = HashPairType();
+			}
+
+			bucketnum = (bucketnum + 1) & mSizeMask;
 		}
 	}
 

@@ -127,38 +127,38 @@ const char* hordeDefine_t::difficulty(const bool colored) const
 StringTokens hordeDefine_t::weaponStrings(player_t* player) const
 {
 	StringTokens rvo;
-	for (size_t i = 0; i < weapons.size(); i++)
+	for (const auto& weapon : weapons)
 	{
-		if (!(player == NULL || !player->weaponowned[weapons[i]]))
+		if (!(player == NULL || !player->weaponowned[weapon]))
 		{
 			continue;
 		}
 
-		switch (weapons[i])
+		switch (weapon)
 		{
 		case wp_none:
-			rvo.push_back("BSK");
+			rvo.emplace_back("BSK");
 			break;
 		case wp_chainsaw:
-			rvo.push_back("1+");
+			rvo.emplace_back("1+");
 			break;
 		case wp_shotgun:
-			rvo.push_back("3");
+			rvo.emplace_back("3");
 			break;
 		case wp_supershotgun:
-			rvo.push_back("3+");
+			rvo.emplace_back("3+");
 			break;
 		case wp_chaingun:
-			rvo.push_back("4");
+			rvo.emplace_back("4");
 			break;
 		case wp_missile:
-			rvo.push_back("5");
+			rvo.emplace_back("5");
 			break;
 		case wp_plasma:
-			rvo.push_back("6");
+			rvo.emplace_back("6");
 			break;
 		case wp_bfg:
-			rvo.push_back("7");
+			rvo.emplace_back("7");
 			break;
 		case wp_fist:
 		case wp_pistol:
@@ -223,10 +223,8 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	std::vector<const hordeDefine_t::monster_t*> monsters;
 
 	// Figure out which monster we want to spawn.
-	for (size_t i = 0; i < define.monsters.size(); i++)
+	for (const auto& waveMon : define.monsters)
 	{
-		const hordeDefine_t::monster_t& waveMon = define.monsters.at(i);
-
 		// Boss spawns have to spawn boss things.
 		if (wantBoss && waveMon.monster == hordeDefine_t::RM_NORMAL)
 			continue;
@@ -312,7 +310,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
  * @param name Partial name to search for.
  * @return True if the define was found, otherwise false.
  */
-bool P_HordeDefineNamed(int& out, const std::string& name)
+bool P_HordeDefineNamed(size_t& out, const std::string& name)
 {
 	for (size_t i = 0; i < ::WAVE_DEFINES.size(); i++)
 	{
@@ -339,7 +337,7 @@ static void PrintDefines(const std::vector<hordeDefine_t>::const_iterator& begin
 	for (; it != end; ++it)
 	{
 		const ptrdiff_t idx = it - ::WAVE_DEFINES.begin();
-		Printf("%zd: %s (Group HP: %d)\n", idx, it->name.c_str(), it->maxGroupHealth);
+		Printf("%zd: %s (Group HP: %d)\n", idx, it->name, it->maxGroupHealth);
 	}
 }
 

@@ -41,23 +41,23 @@ void P_SerializePlayers (FArchive &arc)
 {
 	if (arc.IsStoring ())
 	{
-		for (Players::const_iterator it = players.begin();it != players.end();++it)
-			arc << (int)(it->playerstate);
+		for (const auto& player : players)
+			arc << (int)(player.playerstate);
 	}
 	else
 	{
 		int playerstate = (playerstate_t)0;
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
 			arc >> playerstate;
-			it->playerstate = (playerstate_t)playerstate;
+			player.playerstate = (playerstate_t)playerstate;
 		}
 	}
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (it->ingame())
-			it->Serialize(arc);
+		if (player.ingame())
+			player.Serialize(arc);
 	}
 }
 

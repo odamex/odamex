@@ -417,7 +417,7 @@ bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
 // Returns true if there is enough ammo to shoot.
 // If not, selects the next weapon to use.
 //
-BOOL P_CheckAmmo (player_t *player)
+bool P_CheckAmmo (player_t *player)
 {
 	if (P_EnoughAmmo(player, player->readyweapon))
 		return true;

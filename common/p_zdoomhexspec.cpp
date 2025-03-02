@@ -1072,14 +1072,14 @@ unsigned int P_TranslateZDoomLineFlags(const unsigned int flags)
 {
 	unsigned int result = flags & 0x1ff;
 
-	constexpr unsigned int spac_to_flags[8] = {ML_SPAC_CROSS,
-	                                           ML_SPAC_USE,
-	                                           ML_SPAC_MCROSS,
-	                                           ML_SPAC_IMPACT,
-	                                           ML_SPAC_PUSH,
-	                                           ML_SPAC_PCROSS,
-	                                           ML_SPAC_USE | ML_PASSUSE,
-	                                           ML_SPAC_IMPACT | ML_SPAC_PCROSS};
+	static constexpr unsigned int spac_to_flags[8] = {ML_SPAC_CROSS,
+	                                                  ML_SPAC_USE,
+	                                                  ML_SPAC_MCROSS,
+	                                                  ML_SPAC_IMPACT,
+	                                                  ML_SPAC_PUSH,
+	                                                  ML_SPAC_PCROSS,
+	                                                  ML_SPAC_USE | ML_PASSUSE,
+	                                                  ML_SPAC_IMPACT | ML_SPAC_PCROSS};
 
 	// from zdoom-in-hexen to Odamex
 

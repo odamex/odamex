@@ -221,14 +221,14 @@ byte redtable[MAXPLAYERS + 1][256];
 
 static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
 {
-	constexpr palindex_t chexstart_index = 0x70;
-	constexpr palindex_t chexend_index = 0x7F;
-	constexpr palindex_t hacxstart_index = 0xC3;
-	constexpr palindex_t hacxmid1_index = 0xCF;
-	constexpr palindex_t hacxmid2_index = 0xF0;
-	constexpr palindex_t hacxend_index = 0xF2;
-	constexpr palindex_t start_index = 0xB0;
-	constexpr palindex_t end_index = 0xBF;
+	static constexpr palindex_t chexstart_index = 0x70;
+	static constexpr palindex_t chexend_index = 0x7F;
+	static constexpr palindex_t hacxstart_index = 0xC3;
+	static constexpr palindex_t hacxmid1_index = 0xCF;
+	static constexpr palindex_t hacxmid2_index = 0xF0;
+	static constexpr palindex_t hacxend_index = 0xF2;
+	static constexpr palindex_t start_index = 0xB0;
+	static constexpr palindex_t end_index = 0xBF;
 	const int index_range = end_index - start_index + 1;
 
 	palindex_t* dest = (palindex_t*)Ranges + color_num * 256;
@@ -1599,7 +1599,7 @@ void R_InitializeScreenblocksCanvas()
 	    surface_height = primary_surface->getHeight();
 
 	// background
-	int lumpnum = W_CheckNumForName(::gameinfo.borderFlat.c_str(), ns_flats);
+	int lumpnum = W_CheckNumForName(::gameinfo.borderFlat, ns_flats);
 
 	// Draw screenblocks to a 320x200 surface and scale it based on viewport height
 	// If it doesn't reach the side edges of viewport or over, scale it via
@@ -1703,22 +1703,22 @@ void R_DrawViewBorder()
 	// draw beveled edge for the viewing window's top and bottom edges
 	for (int x = viewwindowx; x < viewwindowx + viewwidth; x += size)
 	{
-		canvas->DrawPatch(W_CachePatch(border.t.c_str()), x, viewwindowy - offset);
-		canvas->DrawPatch(W_CachePatch(border.b.c_str()), x, viewwindowy + viewheight);
+		canvas->DrawPatch(W_CachePatch(border.t), x, viewwindowy - offset);
+		canvas->DrawPatch(W_CachePatch(border.b), x, viewwindowy + viewheight);
 	}
 
 	// draw beveled edge for the viewing window's left and right edges
 	for (int y = viewwindowy; y < viewwindowy + viewheight; y += size)
 	{
-		canvas->DrawPatch(W_CachePatch(border.l.c_str()), viewwindowx - offset, y);
-		canvas->DrawPatch(W_CachePatch(border.r.c_str()), viewwindowx + viewwidth, y);
+		canvas->DrawPatch(W_CachePatch(border.l), viewwindowx - offset, y);
+		canvas->DrawPatch(W_CachePatch(border.r), viewwindowx + viewwidth, y);
 	}
 
 	// draw beveled edge for the viewing window's corners
-	canvas->DrawPatch(W_CachePatch(border.tl.c_str()), viewwindowx - offset, viewwindowy - offset);
-	canvas->DrawPatch(W_CachePatch(border.tr.c_str()), viewwindowx + viewwidth, viewwindowy - offset);
-	canvas->DrawPatch(W_CachePatch(border.bl.c_str()), viewwindowx - offset, viewwindowy + viewheight);
-	canvas->DrawPatch(W_CachePatch(border.br.c_str()), viewwindowx + viewwidth, viewwindowy + viewheight);
+	canvas->DrawPatch(W_CachePatch(border.tl), viewwindowx - offset, viewwindowy - offset);
+	canvas->DrawPatch(W_CachePatch(border.tr), viewwindowx + viewwidth, viewwindowy - offset);
+	canvas->DrawPatch(W_CachePatch(border.bl), viewwindowx - offset, viewwindowy + viewheight);
+	canvas->DrawPatch(W_CachePatch(border.br), viewwindowx + viewwidth, viewwindowy + viewheight);
 
 	V_MarkRect(left, top, right, bottom);
 }
@@ -1765,7 +1765,7 @@ static std::string get_optimization_name_list(const bool includeNone)
 
 static void print_optimizations()
 {
-	Printf(PRINT_HIGH, "r_optimize detected \"%s\"\n", get_optimization_name_list(false).c_str());
+	Printf(PRINT_HIGH, "r_optimize detected \"%s\"\n", get_optimization_name_list(false));
 }
 
 static bool detect_optimizations()
@@ -1831,7 +1831,7 @@ CVAR_FUNC_IMPL(r_optimize)
 	else
 	{
 		Printf(PRINT_HIGH, "Invalid value for r_optimize. Availible options are \"%s, detect\"\n",
-				get_optimization_name_list(true).c_str());
+				get_optimization_name_list(true));
 
 		// Restore the original setting:
 		var.Set(get_optimization_name(optimize_kind));

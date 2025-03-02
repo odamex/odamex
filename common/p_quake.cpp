@@ -80,11 +80,11 @@ void DEarthquake::RunThink ()
 
 	if (serverside)
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			if (it->ingame() && !(it->cheats & CF_NOCLIP))
+			if (player.ingame() && !(player.cheats & CF_NOCLIP))
 			{
-				AActor *mo = it->mo;
+				AActor *mo = player.mo;
 
 				if (!(level.time & 7) &&
 					 mo->x >= m_DamageBox[BOXLEFT] && mo->x < m_DamageBox[BOXRIGHT] &&
@@ -99,7 +99,7 @@ void DEarthquake::RunThink ()
 				if (mo->x >= m_TremorBox[BOXLEFT] && mo->x < m_TremorBox[BOXRIGHT] &&
 					 mo->y >= m_TremorBox[BOXTOP] && mo->y < m_TremorBox[BOXBOTTOM])
 				{
-					it->xviewshift = m_Intensity;
+					player.xviewshift = m_Intensity;
 				}
 			}
 		}
@@ -133,10 +133,10 @@ DEarthquake::DEarthquake (AActor *center, int intensity, int duration,
 	m_Countdown = duration;
 }
 
-BOOL P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad)
+bool P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad)
 {
 	AActor *center = NULL;
-	BOOL res = false;
+	bool res = false;
 
 	if (intensity > 9)
 		intensity = 9;

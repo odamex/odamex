@@ -148,7 +148,7 @@ public:
 
 	void join(const ConsoleLine& other);
 	ConsoleLine split(size_t max_width);
-	bool expired() const;
+	[[nodiscard]] bool expired() const;
 
 	std::string		text;
 	std::string		color_code;
@@ -559,7 +559,7 @@ public:
 	void resetPosition();
 
 	void addString(const std::string& str);
-	const std::string& getString() const;
+	[[nodiscard]] const std::string& getString() const;
 
 	void movePositionUp();
 	void movePositionDown();
@@ -633,8 +633,8 @@ void ConsoleHistory::movePositionDown()
 
 void ConsoleHistory::dump()
 {
-	for (ConsoleHistoryList::const_iterator it = history.begin(); it != history.end(); ++it)
-		Printf(PRINT_HIGH, "   %s\n", it->c_str());
+	for (const auto& it : history)
+		Printf(PRINT_HIGH, "   %s\n", it);
 }
 
 class ConsoleCompletions
@@ -650,7 +650,7 @@ class ConsoleCompletions
 			_maxlen = completion.length();
 	}
 
-	const std::string& at(size_t index) const
+	[[nodiscard]] const std::string& at(size_t index) const
 	{
 		return _completions.at(index);
 	}
@@ -661,7 +661,7 @@ class ConsoleCompletions
 		_maxlen = 0;
 	}
 
-	bool empty() const
+	[[nodiscard]] bool empty() const
 	{
 		return _completions.empty();
 	}
@@ -669,7 +669,7 @@ class ConsoleCompletions
 	//
 	// Get longest common substring of completions.
 	//
-	std::string getCommon() const
+	[[nodiscard]] std::string getCommon() const
 	{
 		bool diff = false;
 		std::string common;
@@ -678,10 +678,9 @@ class ConsoleCompletions
 		{
 			char compare = '\xFF';
 
-			std::vector<std::string>::const_iterator it = _completions.begin();
-			for (; it != _completions.end(); ++it)
+			for (const auto& comp : _completions)
 			{
-				if (index >= it->length())
+				if (index >= comp.length())
 				{
 					// End of string, this is an implicit failed match.
 					diff = true;
@@ -691,9 +690,9 @@ class ConsoleCompletions
 				if (compare == '\xFF')
 				{
 					// Set character to compare against.
-					compare = it->at(index);
+					compare = comp.at(index);
 				}
-				else if (compare != it->at(index))
+				else if (compare != comp.at(index))
 				{
 					// Found a different character.
 					diff = true;
@@ -712,12 +711,12 @@ class ConsoleCompletions
 		return common;
 	}
 
-	size_t getMaxLen() const
+	[[nodiscard]] size_t getMaxLen() const
 	{
 		return _maxlen;
 	}
 
-	size_t size() const
+	[[nodiscard]] size_t size() const
 	{
 		return _completions.size();
 	}
@@ -1180,7 +1179,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	{
 		if (addtype == NEWLINE)
 			memmove(&NotifyStrings[0], &NotifyStrings[1], sizeof(struct NotifyText) * (NUMNOTIFIES-1));
-		strcpy((char *)NotifyStrings[NUMNOTIFIES-1].text, lines[i].string);
+		strncpy((char *)NotifyStrings[NUMNOTIFIES-1].text, lines[i].string, lines[i].width);
 		NotifyStrings[NUMNOTIFIES-1].timeout = gametic + (con_notifytime.asInt() * TICRATE);
 		NotifyStrings[NUMNOTIFIES-1].printlevel = printlevel;
 		addtype = NEWLINE;
@@ -1301,7 +1300,7 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 
 size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
 {
-	extern BOOL gameisdead;
+	extern bool gameisdead;
 	if (gameisdead)
 		return 0;
 
@@ -1310,10 +1309,10 @@ size_t C_BasePrint(const int printlevel, const char* color_code, const std::stri
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
 	// ToDo: there may be more characters not allowed on a consoleprint,
 	// maybe restrict a few ASCII stuff later on ?
-	for (size_t i = 0; i < newStr.length(); i++)
+	for (auto& c : newStr)
 	{
-		if (newStr[i] == 0x07)
-			newStr[i] = '.';
+		if (c == 0x07)
+			c = '.';
 	}
 
 	// Prevents writing a whole lot of new lines to the log file
@@ -1322,10 +1321,10 @@ size_t C_BasePrint(const int printlevel, const char* color_code, const std::stri
 		std::string logStr = newStr;
 
 		// [Nes] - Horizontal line won't show up as-is in the logfile.
-		for (size_t i = 0; i < logStr.length(); i++)
+		for (auto& c : logStr)
 		{
-			if (logStr[i] == '\35' || logStr[i] == '\36' || logStr[i] == '\37')
-				logStr[i] = '=';
+			if (c == '\35' || c == '\36' || c == '\37')
+				c = '=';
 		}
 
 		// Up the row buffer for the console.
@@ -1370,8 +1369,8 @@ size_t C_BasePrint(const int printlevel, const char* color_code, const std::stri
 
 void C_FlushDisplay()
 {
-	for (int i = 0; i < NUMNOTIFIES; i++)
-		NotifyStrings[i].timeout = 0;
+	for (auto& notify : NotifyStrings)
+		notify.timeout = 0;
 }
 
 void C_Ticker()
@@ -1454,20 +1453,20 @@ static void C_DrawNotifyText()
 		return;
 
 	int ypos = 0;
-	for (int i = 0; i < NUMNOTIFIES; i++)
+	for (const auto& notify : NotifyStrings)
 	{
-		if (NotifyStrings[i].timeout > gametic)
+		if (notify.timeout > gametic)
 		{
-			if (!show_messages && NotifyStrings[i].printlevel != 128)
+			if (!show_messages && notify.printlevel != 128)
 				continue;
 
 			int color;
-			if (NotifyStrings[i].printlevel >= PRINTLEVELS)
+			if (notify.printlevel >= PRINTLEVELS)
 				color = CR_RED;
 			else
-				color = PrintColors[NotifyStrings[i].printlevel];
+				color = PrintColors[notify.printlevel];
 
-			screen->DrawTextStretched(color, 0, ypos, NotifyStrings[i].text,
+			screen->DrawTextStretched(color, 0, ypos, notify.text,
 						V_TextScaleXAmount(), V_TextScaleYAmount());
 			ypos += 8 * V_TextScaleYAmount();
 		}
@@ -1603,7 +1602,7 @@ void C_ToggleConsole()
 	}
 	else
 	{
-		if (ConBottom == static_cast<unsigned int>(I_GetSurfaceHeight()))
+		if (ConBottom == I_GetSurfaceHeight())
 			ConsoleState = c_risefull;
 		else
 			ConsoleState = c_rising;
@@ -2277,7 +2276,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 			MidLines = i;
 		}
 
-		free(newmsg);
+		M_Free(newmsg);
 	}
 	else
 		MidMsg = NULL;
@@ -2356,7 +2355,7 @@ void C_GMidPrint(const char* msg, int color, int msgtime)
 		}
 
 		GameColor = color;
-		free(newmsg);
+		M_Free(newmsg);
 	}
 	else
 	{

@@ -163,7 +163,7 @@ typedef struct
 	// -1 = no cursor here, 1 = ok, 2 = arrows ok
 	short		status;
 
-	char		name[10];
+	OLumpName	name;
 	char		textname[32];
 
 	// choice = menu item #.

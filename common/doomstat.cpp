@@ -52,6 +52,6 @@ CVAR_FUNC_IMPL (language)
 }
 
 // Set if homebrew PWAD stuff has been added.
-BOOL			modifiedgame;
+bool			modifiedgame;
 
 VERSION_CONTROL (doomstat_cpp, "$Id$")

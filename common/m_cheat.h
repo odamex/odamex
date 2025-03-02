@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -83,8 +83,8 @@ enum ECheatFlags
 class player_s;
 void CHEAT_DoCheat (player_s *player, int cheat, bool silentmsg=false);
 void CHEAT_GiveTo (player_s *player, const char *item);
-AActor* CHEAT_Summon(player_s* player, const char* sum, bool friendly);
-bool CHEAT_ValidSummonActor(const char* summon);
+AActor* CHEAT_Summon(player_s* player, const std::string& sum, bool friendly);
+bool CHEAT_ValidSummonActor(const std::string& summon);
 
 // Heretic code (unused)
 #if 0

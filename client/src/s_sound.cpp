@@ -798,7 +798,7 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 
 	if (sfx_id == -1)
 	{
-		DPrintf("Unknown sound %s\n", soundname.c_str());
+		DPrintf("Unknown sound %s\n", soundname);
 		return;
 	}
 
@@ -1083,7 +1083,7 @@ void S_StartMusic(const char *m_id)
 
 // [RH] S_ChangeMusic() now accepts the name of the music lump.
 // It's up to the caller to figure out what that name is.
-void S_ChangeMusic(std::string musicname, int looping)
+void S_ChangeMusic(std::string musicname, bool looping)
 {
 	// [SL] Avoid caching music lumps if we're not playing music
 	if (snd_musicsystem == MS_NONE)
@@ -1108,13 +1108,13 @@ void S_ChangeMusic(std::string musicname, int looping)
 		int lumpnum;
 		if ((lumpnum = W_CheckNumForName (musicname.c_str())) == -1)
 		{
-			Printf (PRINT_HIGH, "Music lump \"%s\" not found\n", musicname.c_str());
+			Printf (PRINT_HIGH, "Music lump \"%s\" not found\n", musicname);
 			return;
 		}
 
 		data = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_CACHE));
 		length = W_LumpLength(lumpnum);
-		I_PlaySong({data, length}, (looping != 0));
+		I_PlaySong({data, length}, looping);
     }
     else
 	{
@@ -1125,7 +1125,7 @@ void S_ChangeMusic(std::string musicname, int looping)
 
 		if (result == 1)
 		{
-			I_PlaySong({data, length}, (looping != 0));
+			I_PlaySong({data, length}, looping);
 		}
 		M_Free(data);
 	}
@@ -1148,9 +1148,6 @@ void S_StopMusic()
 //
 // =============================== [RH]
 
-std::vector<sfxinfo_t> S_sfx;	// [RH] This is no longer defined in sounds.c
-std::map<int, std::vector<int> > S_rnd;
-
 static struct AmbientSound {
 	unsigned	type;		// type of ambient sound
 	int			periodmin;	// # of tics between repeats
@@ -1169,8 +1166,8 @@ static struct AmbientSound {
 void S_HashSounds()
 {
 	// Mark all buckets as empty
-	for (unsigned i = 0; i < S_sfx.size(); i++)
-		S_sfx[i].index = ~0;
+	for (auto& sfx : S_sfx)
+		sfx.index = ~0;
 
 	// Now set up the chains
 	for (unsigned i = 0; i < S_sfx.size(); i++)
@@ -1207,8 +1204,7 @@ int S_FindSoundByLump(int lump)
 
 int S_AddSoundLump(const char *logicalname, int lump)
 {
-	S_sfx.push_back(sfxinfo_t());
-	sfxinfo_t& new_sfx = S_sfx[S_sfx.size() - 1];
+	sfxinfo_t& new_sfx = S_sfx.emplace_back();
 
 	// logicalname MUST be < MAX_SNDNAME chars long
 	strcpy(new_sfx.name, logicalname);
@@ -1572,9 +1568,9 @@ END_COMMAND (snd_soundlist)
 
 BEGIN_COMMAND (snd_soundlinks)
 {
-	for (unsigned i = 0; i < S_sfx.size(); i++)
-		if (S_sfx[i].link != static_cast<int>(sfxinfo_t::NO_LINK))
-			Printf(PRINT_HIGH, "%s -> %s\n", S_sfx[i].name, S_sfx[S_sfx[i].link].name);
+	for (const auto& sfx : S_sfx)
+		if (sfx.link != static_cast<int>(sfxinfo_t::NO_LINK))
+			Printf(PRINT_HIGH, "%s -> %s\n", sfx.name, S_sfx[sfx.link].name);
 }
 END_COMMAND (snd_soundlinks)
 

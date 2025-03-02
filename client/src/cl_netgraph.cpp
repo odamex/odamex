@@ -115,7 +115,7 @@ static void NetGraphDrawBar(int startx, int starty, int width, int height, int c
 
 void NetGraph::drawWorldIndexSync(int x, int y)
 {
-	constexpr int graphwidth = NetGraph::BAR_WIDTH_WORLD_INDEX * NetGraph::MAX_HISTORY_TICS;
+	static constexpr int graphwidth = NetGraph::BAR_WIDTH_WORLD_INDEX * NetGraph::MAX_HISTORY_TICS;
 	const int centery = y + NetGraph::MAX_WORLD_INDEX * NetGraph::BAR_HEIGHT_WORLD_INDEX;
 
 	// draw the center line
@@ -125,7 +125,7 @@ void NetGraph::drawWorldIndexSync(int x, int y)
 	for (size_t i = 0; i < NetGraph::MAX_HISTORY_TICS; i++)
 	{
 		const int index = (gametic - (NetGraph::MAX_HISTORY_TICS - i)) % MAX_HISTORY_TICS;
-		constexpr int width = NetGraph::BAR_WIDTH_WORLD_INDEX;
+		static constexpr int width = NetGraph::BAR_WIDTH_WORLD_INDEX;
 		const int height = abs(mWorldIndexSync[index] * NetGraph::BAR_HEIGHT_WORLD_INDEX);
 		const int startx = x + i * NetGraph::BAR_WIDTH_WORLD_INDEX;
 		int starty, color;
@@ -155,7 +155,7 @@ void NetGraph::drawWorldIndexSync(int x, int y)
 
 void NetGraph::drawMispredictions(int x, int y)
 {
-	constexpr int graphwidth = NetGraph::BAR_WIDTH_MISPREDICTION * NetGraph::MAX_HISTORY_TICS;
+	static constexpr int graphwidth = NetGraph::BAR_WIDTH_MISPREDICTION * NetGraph::MAX_HISTORY_TICS;
 	const int centery = y + NetGraph::BAR_HEIGHT_MISPREDICTION;
 
 	// draw the center line
@@ -165,8 +165,8 @@ void NetGraph::drawMispredictions(int x, int y)
 	for (size_t i = 0; i < NetGraph::MAX_HISTORY_TICS; i++)
 	{
 		const int index = (gametic - (NetGraph::MAX_HISTORY_TICS - i)) % MAX_HISTORY_TICS;
-		constexpr int width = NetGraph::BAR_WIDTH_MISPREDICTION;
-		constexpr int height = NetGraph::BAR_HEIGHT_MISPREDICTION;
+		static constexpr int width = NetGraph::BAR_WIDTH_MISPREDICTION;
+		static constexpr int height = NetGraph::BAR_HEIGHT_MISPREDICTION;
 		const int startx = x + i * NetGraph::BAR_WIDTH_MISPREDICTION;
 		const int starty = y;
 

@@ -549,11 +549,11 @@ static void GiveTeamWins(team_t team, int wins)
 		return;
 
 	// Send information about the new team round wins to all players.
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : ::players)
 	{
-		if (!it->ingame())
+		if (!player.ingame())
 			continue;
-		MSG_WriteSVC(&it->client.netbuf, SVC_TeamMembers(team));
+		MSG_WriteSVC(&player.client.netbuf, SVC_TeamMembers(team));
 	}
 }
 

@@ -1161,9 +1161,9 @@ public:
 	bool isCommercialFilename(const std::string& filename) const
 	{
 		OString upper = StdStringToUpper(filename);
-		for (IdentifierTable::const_iterator it = mIdentifiers.begin(); it != mIdentifiers.end(); ++it)
+		for (const auto& id : mIdentifiers)
 		{
-			if (it->mIsCommercial && it->mFilename == upper)
+			if (id.mIsCommercial && id.mFilename == upper)
 				return true;
 		}
 		return false;
@@ -1172,10 +1172,9 @@ public:
 	bool isKnownIWADFilename(const std::string& filename) const
 	{
 		OString upper = StdStringToUpper(filename);
-		for (IdentifierTable::const_iterator it = mIdentifiers.begin();
-		     it != mIdentifiers.end(); ++it)
+		for (const auto& id : mIdentifiers)
 		{
-			if (it->mIsIWAD && it->mFilename == upper)
+			if (id.mIsIWAD && id.mFilename == upper)
 				return true;
 		}
 		return false;
@@ -1334,11 +1333,9 @@ public:
 
 	void dump() const
 	{
-		for (IdentifierTable::const_iterator it = mIdentifiers.begin();
-		     it != mIdentifiers.end(); ++it)
+		for (const auto& id : mIdentifiers)
 		{
-			Printf(PRINT_HIGH, "%s %s %s\n", it->mGroupName.c_str(),
-			       it->mFilename.c_str(), it->mMd5Sum.getHexCStr());
+			PrintFmt(PRINT_HIGH, "{} {} {}\n", id.mGroupName, id.mFilename, id.mMd5Sum.getHexStr());
 		}
 	}
 

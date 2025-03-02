@@ -178,7 +178,7 @@ void R_ConvertPatch(patch_t* newpatch, patch_t* rawpatch, const unsigned int lum
 			if (length < 0)
 			{
 				I_Error("%s: Patch %s appears to be corrupted.", __FUNCTION__,
-				        W_LumpName(lump).c_str());
+				        W_LumpName(lump));
 			}
 
 			// copy the pixels in the post
@@ -806,7 +806,7 @@ void R_ReinitColormap()
 	if (fakecmaps == NULL)
 		return;
 
-	std::string name = fakecmaps[0].name.c_str();
+	OLumpName name = fakecmaps[0].name;
 	if (name.empty())
 		name = "COLORMAP";
 

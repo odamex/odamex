@@ -36,7 +36,7 @@
 /**
  * @brief Map a ZDoom game name to Odamex's internals and returns true if
  *        the current game is the passed string.
- * 
+ *
  * @param str String to check against.
  * @return True if the game matches the passed string, otherwise false.
  */
@@ -313,11 +313,10 @@ void StringTable::replaceEscapes(std::string& str)
 //
 void StringTable::dumpStrings()
 {
-	StringHash::const_iterator it = _stringHash.begin();
-	for (; it != _stringHash.end(); ++it)
+	for (const auto& [first, second] : _stringHash)
 	{
-		Printf(PRINT_HIGH, "%s (pass: %d, index: %d) = %s\n", (*it).first.c_str(),
-		       (*it).second.pass, (*it).second.index, (*it).second.string.second.c_str());
+		PrintFmt(PRINT_HIGH, "{} (pass: {}, index: {}) = {}\n", first,
+		         second.pass, second.index, second.string.second);
 	}
 }
 
@@ -357,13 +356,12 @@ void StringTable::loadStrings(const bool engOnly)
 //
 const OString& StringTable::matchString(const OString& string) const
 {
-	for (StringHash::const_iterator it = _stringHash.begin(); it != _stringHash.end();
-	     ++it)
+	for (const auto& [first, second] : _stringHash)
 	{
-		if ((*it).second.string.first == false)
+		if (second.string.first == false)
 			continue;
-		if ((*it).second.string.second == string)
-			return (*it).first;
+		if (second.string.second == string)
+			return first;
 	}
 
 	static OString empty = "";

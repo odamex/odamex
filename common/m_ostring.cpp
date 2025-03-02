@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//    
+//
 // Drop-in replacement for std::string featuring string interning.
 // When an OString is compared for equality with another OString, an integer
 // hash of the string is used for extremely quick comparison rather than
@@ -72,15 +72,15 @@ void OString::printStringTable()
 {
 	printf("OString Table\n");
 	printf("=============\n");
-	for (StringTable::const_iterator it = mStrings->begin(); it != mStrings->end(); ++it)
-		printf("id 0x%08x hash 0x%08x (%u): %s\n", mStrings->getId(*it), hash(it->mString.c_str()),
-					it->mRefCount, it->mString.c_str());
+	for (const auto& string : *mStrings)
+		printf("id 0x%08x hash 0x%08x (%u): %s\n", mStrings->getId(string), hash(string.mString.c_str()),
+					string.mRefCount, string.mString.c_str());
 	printf("\n");
 }
 
 
 // ------------------------------------------------------------------------
-// OString Constructors 
+// OString Constructors
 // ------------------------------------------------------------------------
 
 OString::OString() :
@@ -291,7 +291,7 @@ const char& OString::operator[] (size_t pos) const
 
 
 // ------------------------------------------------------------------------
-// OString::at 
+// OString::at
 // ------------------------------------------------------------------------
 
 const char& OString::at(size_t pos) const
@@ -745,7 +745,7 @@ bool operator>= (const char* lhs, const OString& rhs)
 }
 
 // ------------------------------------------------------------------------
-// swap 
+// swap
 // ------------------------------------------------------------------------
 
 namespace std {
@@ -786,7 +786,7 @@ static OString OStringConverter(const char* s, size_t length)
 		out = fixed_buf;
 	else
 		out = dyn_buf = new char[length + 1];
-	
+
 	for (size_t i = 0; i < length && *in != '\0'; i++)
 		*out++	= func(*in++);
 	*out = '\0';

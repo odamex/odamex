@@ -117,7 +117,7 @@ void STACK_ARGS M_SaveDefaults(std::string filename)
 
 		fclose(f);
 
-		Printf(PRINT_HIGH, "Configuration saved to %s.\n", configfile.c_str());
+		Printf(PRINT_HIGH, "Configuration saved to %s.\n", configfile);
 	}
 }
 

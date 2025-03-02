@@ -75,11 +75,11 @@ player_t &idplayer(byte id)
 	// Put a cached lookup mechanism in here.
 
 	// full search
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
 		// Add to the cache while we search
-		if (it->id == id)
-			return *it;
+		if (player.id == id)
+			return player;
 	}
 
 	return nullplayer;
@@ -93,16 +93,16 @@ player_t &idplayer(byte id)
  */
 player_t &nameplayer(const std::string &netname)
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (iequals(netname, it->userinfo.netname))
-			return *it;
+		if (iequals(netname, player.userinfo.netname))
+			return player;
 	}
 
 	return nullplayer;
 }
 
-bool validplayer(player_t &ref)
+bool validplayer(const player_t &ref)
 {
 	if (&ref == &nullplayer)
 		return false;
@@ -191,33 +191,33 @@ PlayerResults PlayerQuery::execute()
 	PlayerResults results;
 
 	// Construct a base result set from all ingame players, possibly filtered.
-	for (Players::iterator it = ::players.begin(); it != players.end(); ++it)
+	for (auto& player : ::players)
 	{
-		if (!it->ingame() || it->spectator)
+		if (!player.ingame() || player.spectator)
 			continue;
 
 		results.total += 1;
-		if (it->userinfo.team != TEAM_NONE)
+		if (player.userinfo.team != TEAM_NONE)
 		{
-			results.teamTotal[it->userinfo.team] += 1;
+			results.teamTotal[player.userinfo.team] += 1;
 		}
 
-		if (m_ready && !it->ready)
+		if (m_ready && !player.ready)
 			continue;
 
-		if (m_health && it->health <= 0)
+		if (m_health && player.health <= 0)
 			continue;
 
-		if (m_lives && it->lives <= 0)
+		if (m_lives && player.lives <= 0)
 			continue;
 
-		if (m_notLives && it->lives > 0)
+		if (m_notLives && player.lives > 0)
 			continue;
 
-		if (m_team != TEAM_NONE && it->userinfo.team != m_team)
+		if (m_team != TEAM_NONE && player.userinfo.team != m_team)
 			continue;
 
-		results.players.push_back(&*it);
+		results.players.push_back(&player);
 	}
 
 	// We have no filtered players, we have our totals, there is no more
@@ -301,11 +301,10 @@ PlayerResults PlayerQuery::execute()
 	}
 
 	// Get the final totals.
-	for (PlayersView::iterator it = results.players.begin(); it != results.players.end();
-	     ++it)
+	for (const auto& player : results.players)
 	{
 		results.count += 1;
-		results.teamCount[(*it)->userinfo.team] += 1;
+		results.teamCount[player->userinfo.team] += 1;
 	}
 
 	return results;
@@ -320,15 +319,15 @@ PlayersView SpecQuery::execute()
 {
 	PlayersView rvo;
 
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : ::players)
 	{
-		if (!it->ingame() || !it->spectator)
+		if (!player.ingame() || !player.spectator)
 			continue;
 
-		if (m_onlyInQueue && it->QueuePosition == 0)
+		if (m_onlyInQueue && player.QueuePosition == 0)
 			continue;
 
-		rvo.push_back(&*it);
+		rvo.push_back(&player);
 	}
 
 	return rvo;
@@ -817,7 +816,7 @@ void P_DeathThink (player_t *player)
 	}
 }
 
-bool P_AreTeammates(player_t &a, player_t &b)
+bool P_AreTeammates(const player_t &a, const player_t &b)
 {
 	// not your own teammate (at least for friendly fire, etc)
 	if (a.id == b.id)
@@ -951,7 +950,7 @@ void P_PlayerThink (player_t *player)
 	if (!player->mo && clientside && multiplayer)
 	{
 		DPrintf("Warning: P_PlayerThink called for player %s without a valid Actor.\n",
-				player->userinfo.netname.c_str());
+				player->userinfo.netname);
 		return;
 	}
 	else if (!player->mo)
@@ -1225,7 +1224,7 @@ BEGIN_COMMAND(cheat_players)
 			if (mo->player)
 			{
 				Printf("%.3u: %s\n", mo->player->id,
-				       mo->player->userinfo.netname.c_str());
+				       mo->player->userinfo.netname);
 			}
 			else
 			{

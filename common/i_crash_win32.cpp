@@ -54,7 +54,7 @@
 static TCHAR gCrashDir[CRASH_DIR_LEN];
 
 // Fucntion pointer for MiniDumpWriteDump.
-typedef BOOL(WINAPI* MINIDUMPWRITEDUMP)(
+typedef bool(WINAPI* MINIDUMPWRITEDUMP)(
     HANDLE hProcess, DWORD dwPid, HANDLE hFile, MINIDUMP_TYPE DumpType,
     CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
     CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam,
@@ -99,7 +99,7 @@ void writeMinidump(EXCEPTION_POINTERS* exceptionPtrs)
 	MINIDUMP_EXCEPTION_INFORMATION mei;
 	mei.ThreadId = GetCurrentThreadId();
 	mei.ExceptionPointers = exceptionPtrs;
-	mei.ClientPointers = FALSE;
+	mei.ClientPointers = false;
 
 	// Do the actual dump.
 	pMiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile,

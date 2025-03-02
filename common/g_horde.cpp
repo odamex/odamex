@@ -73,8 +73,8 @@ static void ParsePowerupConfig(OScanner& os, hordeDefine_t::powConfig_t& outConf
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer = fmt::sprintf("Unknown Powerup Token \"%s\".", os.getToken().c_str());
-			os.error(buffer.c_str());
+			std::string buffer = fmt::sprintf("Unknown Powerup Token \"%s\".", os.getToken());
+			os.error(buffer);
 		}
 	}
 }
@@ -110,8 +110,8 @@ static void ParseMonsterConfig(OScanner& os, hordeDefine_t::monConfig_t& outConf
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer = fmt::sprintf("Unknown Monster/Boss Token \"%s\".", os.getToken().c_str());
-			os.error(buffer.c_str());
+			std::string buffer = fmt::sprintf("Unknown Monster/Boss Token \"%s\".", os.getToken());
+			os.error(buffer);
 		}
 	}
 }
@@ -175,8 +175,8 @@ static void ParseDefine(OScanner& os)
 					else
 					{
 						std::string buffer = fmt::sprintf("Unknown weapon \"%s\".",
-						                                  os.getToken().c_str());
-						os.error(buffer.c_str());
+						                                  os.getToken());
+						os.error(buffer);
 					}
 				}
 				define.weapons.push_back(weapon);
@@ -196,8 +196,8 @@ static void ParseDefine(OScanner& os)
 			const mobjtype_t type = NameOrAliasToMobj(os.getToken());
 			if (type == MT_NULL)
 			{
-				std::string buffer = fmt::sprintf("Unknown powerup \"%s\".", os.getToken().c_str());
-				os.error(buffer.c_str());
+				std::string buffer = fmt::sprintf("Unknown powerup \"%s\".", os.getToken());
+				os.error(buffer);
 			}
 
 			// Config block.
@@ -222,8 +222,8 @@ static void ParseDefine(OScanner& os)
 			const mobjtype_t type = NameOrAliasToMobj(os.getToken());
 			if (type == MT_NULL)
 			{
-				std::string buffer = fmt::sprintf("Unknown monster \"%s\".", os.getToken().c_str());
-				os.error(buffer.c_str());
+				std::string buffer = fmt::sprintf("Unknown monster \"%s\".", os.getToken());
+				os.error(buffer);
 			}
 
 			// Config block.
@@ -248,8 +248,8 @@ static void ParseDefine(OScanner& os)
 			const mobjtype_t type = NameOrAliasToMobj(os.getToken());
 			if (type == MT_NULL)
 			{
-				std::string buffer = fmt::sprintf("Unknown boss \"%s\".", os.getToken().c_str());
-				os.error(buffer.c_str());
+				std::string buffer = fmt::sprintf("Unknown boss \"%s\".", os.getToken());
+				os.error(buffer);
 			}
 
 			// Config block.
@@ -270,24 +270,23 @@ static void ParseDefine(OScanner& os)
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer = fmt::sprintf("Unknown Token \"%s\".", os.getToken().c_str());
-			os.error(buffer.c_str());
+			std::string buffer = fmt::sprintf("Unknown Token \"%s\".", os.getToken());
+			os.error(buffer);
 		}
 	}
 
 	// Add ammo for the weapons in order of their definition.
 	std::set<ammotype_t> ammoAdded;
-	for (size_t i = 0; i < define.weapons.size(); i++)
+	for (const auto weap : define.weapons)
 	{
 		// Is the weapon valid?
-		const weapontype_t& weap = define.weapons.at(i);
 		if (weap < wp_fist || weap >= NUMWEAPONS)
 		{
 			continue;
 		}
 
 		// Does the weapon have ammo?
-		const ammotype_t& ammo = ::weaponinfo[weap].ammotype;
+		const ammotype_t ammo = ::weaponinfo[weap].ammotype;
 		if (ammo == am_noammo)
 		{
 			continue;
@@ -310,54 +309,54 @@ static void ParseDefine(OScanner& os)
 	}
 	if (define.weapons.empty())
 	{
-		buf = fmt::sprintf("No weapon pickups found for define \"%s\".", define.name.c_str());
-		os.warning(buf.c_str());
+		buf = fmt::sprintf("No weapon pickups found for define \"%s\".", define.name);
+		os.warning(buf);
 	}
 	if (define.monsters.empty())
 	{
-		buf = fmt::sprintf("No monsters found for define \"%s\".", define.name.c_str());
-		os.error(buf.c_str());
+		buf = fmt::sprintf("No monsters found for define \"%s\".", define.name);
+		os.error(buf);
 	}
 	if (define.powerups.empty())
 	{
-		buf = fmt::sprintf("No powerups found for define \"%s\".", define.name.c_str());
-		os.error(buf.c_str());
+		buf = fmt::sprintf("No powerups found for define \"%s\".", define.name);
+		os.error(buf);
 	}
 	if (define.minGroupHealth < 0)
 	{
 		buf = fmt::sprintf("Minimum group health for define \"%s\" was not set.",
-		                   define.name.c_str());
-		os.error(buf.c_str());
+		                   define.name);
+		os.error(buf);
 	}
 	if (define.maxGroupHealth <= 0)
 	{
 		buf = fmt::sprintf("Maximum group health for define \"%s\" was not set.",
-		                   define.name.c_str());
-		os.error(buf.c_str());
+		                   define.name);
+		os.error(buf);
 	}
 	if (define.minGroupHealth > define.maxGroupHealth)
 	{
 		buf = fmt::sprintf("Maximum group health for define \"%s\" is less than minimum.",
-		                   define.name.c_str());
-		os.error(buf.c_str());
+		                   define.name);
+		os.error(buf);
 	}
 	if (define.minBossHealth < 0)
 	{
 		buf = fmt::sprintf("Minimum boss health for define \"%s\" was not set.",
-		                   define.name.c_str());
-		os.error(buf.c_str());
+		                   define.name);
+		os.error(buf);
 	}
 	if (define.maxBossHealth <= 0)
 	{
 		buf = fmt::sprintf("Maximum boss health for define \"%s\" was not set.",
-		                   define.name.c_str());
-		os.error(buf.c_str());
+		                   define.name);
+		os.error(buf);
 	}
 	if (define.minBossHealth > define.maxBossHealth)
 	{
 		buf = fmt::sprintf("Maximum boss health for define \"%s\" is less than minimum.",
-		                   define.name.c_str());
-		os.error(buf.c_str());
+		                   define.name);
+		os.error(buf);
 	}
 
 	::WAVE_DEFINES.push_back(define);
@@ -375,15 +374,15 @@ static void ParseAlias(OScanner& os)
 	if (otype == MT_NULL)
 	{
 		// We don't know what this token is.
-		std::string buffer = fmt::sprintf("Can't alias unknown thing \"%s\".", original.c_str());
-		os.error(buffer.c_str());
+		std::string buffer = fmt::sprintf("Can't alias unknown thing \"%s\".", original);
+		os.error(buffer);
 	}
 
 	if (!CheckIfDehActorDefined(otype))
 	{
 		// [Blair] DEHEXTRA monster not defined
-		std::string buffer = fmt::sprintf("The following actor is undefined: \"%s\".", original.c_str());
-		os.error(buffer.c_str());
+		std::string buffer = fmt::sprintf("The following actor is undefined: \"%s\".", original);
+		os.error(buffer);
 	}
 
 	g_aliasMap.insert(std::make_pair(alias, otype));
@@ -418,8 +417,8 @@ static void ParseHordeDef(const int lump, const OLumpName& name)
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer = fmt::sprintf("Unknown Token \"%s\".", os.getToken().c_str());
-			os.error(buffer.c_str());
+			std::string buffer = fmt::sprintf("Unknown Token \"%s\".", os.getToken());
+			os.error(buffer);
 		}
 	}
 }

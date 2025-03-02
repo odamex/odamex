@@ -51,32 +51,6 @@ fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
 int 			viewangleoffset;
 
-// increment every time a check is made
-int 			validcount = 1;
-
-int 			centerx;
-int				centery;
-
-fixed_t 		centerxfrac;
-fixed_t 		centeryfrac;
-fixed_t			yaspectmul;
-
-// just for profiling purposes
-int 			framecount;
-int 			linecount;
-int 			loopcount;
-
-fixed_t 		viewx;
-fixed_t 		viewy;
-fixed_t 		viewz;
-
-angle_t 		viewangle;
-
-fixed_t 		viewcos;
-fixed_t 		viewsin;
-
-AActor			*camera;	// [RH] camera to draw from. doesn't have to be a player
-
 //
 // precalculated math tables
 //
@@ -101,15 +75,7 @@ int				zlight[LIGHTLEVELS][MAXLIGHTZ];
 int				lightscalexmul;	// [RH] used to keep hires modes dark enough
 int				lightscaleymul;
 
-// bumped light from gun blasts
-int			extralight;
-
-// [RH] ignore extralight and fullbright
-BOOL		foggy;
-
 fixed_t			freelookviewheight;
-
-fixed_t		render_lerp_amount;
 
 unsigned int	R_OldBlend = ~0;
 
@@ -235,7 +201,7 @@ R_PointToAngle
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 {
 	int index = ang >> ANGLETOFINESHIFT;
-	
+
 	tx = FixedMul(x, finecosine[index]) - FixedMul(y, finesine[index]);
 	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
 }
@@ -249,8 +215,6 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 void R_Init (void)
 {
 	R_InitData ();
-
-	framecount = 0;
 }
 
 VERSION_CONTROL (r_main_cpp, "$Id$")

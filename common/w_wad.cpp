@@ -301,11 +301,11 @@ void AddFile(const OResFile& file)
 
 	if ( (handle = fopen(filename.c_str(), "rb")) == NULL)
 	{
-		Printf(PRINT_WARNING, "couldn't open %s\n", filename.c_str());
+		Printf(PRINT_WARNING, "couldn't open %s\n", filename);
 		return;
 	}
 
-	Printf(PRINT_HIGH, "adding %s", filename.c_str());
+	Printf(PRINT_HIGH, "adding %s", filename);
 
 	size_t newlumps;
 
@@ -313,7 +313,7 @@ void AddFile(const OResFile& file)
 	size_t readlen = fread(&header, sizeof(header), 1, handle);
 	if ( readlen < 1 )
 	{
-		Printf(PRINT_HIGH, "failed to read %s.\n", filename.c_str());
+		Printf(PRINT_HIGH, "failed to read %s.\n", filename);
 		fclose(handle);
 		return;
 	}
@@ -342,7 +342,7 @@ void AddFile(const OResFile& file)
 
 		if (length > (unsigned)M_FileLength(handle))
 		{
-			Printf(PRINT_WARNING, "\nbad number of lumps for %s\n", filename.c_str());
+			Printf(PRINT_WARNING, "\nbad number of lumps for %s\n", filename);
 			fclose(handle);
 			return;
 		}
@@ -352,7 +352,7 @@ void AddFile(const OResFile& file)
 		readlen = fread(fileinfo, length, 1, handle);
 		if (readlen < 1)
 		{
-			Printf(PRINT_HIGH, "failed to read file info in %s\n", filename.c_str());
+			Printf(PRINT_HIGH, "failed to read file info in %s\n", filename);
 			fclose(handle);
 			return;
 		}
@@ -385,7 +385,7 @@ void AddFile(const OResFile& file)
 //
 //
 
-static BOOL IsMarker (const lumpinfo_t *lump, const char *marker)
+static bool IsMarker (const lumpinfo_t *lump, const char *marker)
 {
 	return (lump->namespc == ns_global) && (!strncmp (lump->name, marker, 8) ||
 			(*(lump->name) == *marker && !strncmp (lump->name + 1, marker, 7)));
@@ -403,7 +403,7 @@ void W_MergeLumps (const char *start, const char *end, int space)
 	char ustart[8], uend[8];
 	lumpinfo_t *newlumpinfos;
 	unsigned newlumps, oldlumps;
-	BOOL insideBlock;
+	bool insideBlock;
 	unsigned flatHack, i;
 
 	strncpy(ustart, start, 8);
@@ -664,28 +664,6 @@ int W_CheckNumForName(const char *name, int namespc)
 }
 
 //
-// W_CheckNumForName
-// Returns -1 if name not found.
-//
-// Rewritten by Lee Killough to use hash table for performance. Significantly
-// cuts down on time -- increases Doom performance over 300%. This is the
-// single most important optimization of the original Doom sources, because
-// lump name lookup is used so often, and the original Doom used a sequential
-// search. For large wads with > 1000 lumps this meant an average of over
-// 500 were probed during every search. Now the average is under 2 probes per
-// search. There is no significant benefit to packing the names into longwords
-// with this new hashing algorithm, because the work to do the packing is
-// just as much work as simply doing the string comparisons with the new
-// algorithm, which minimizes the expected number of comparisons to under 2.
-//
-// [SL] taken from prboom-plus
-//
-int W_CheckNumForName(const OLumpName& name, int namespc)
-{
-	return W_CheckNumForName(name.c_str(), namespc);
-}
-
-//
 // W_GetNumForName
 // Calls W_CheckNumForName, but bombs out if not found.
 //
@@ -696,19 +674,10 @@ int W_GetNumForName(const char* name, int namespc)
 	if (i == -1)
 	{
 		I_Error("W_GetNumForName: %s not found!\n(checked in: %s)", name,
-		        M_ResFilesToString(::wadfiles).c_str());
+		        M_ResFilesToString(::wadfiles));
 	}
 
 	return i;
-}
-
-//
-// W_GetNumForName
-// Calls W_CheckNumForName, but bombs out if not found.
-//
-int W_GetNumForName(const OLumpName& name, int namespc)
-{
-	return W_GetNumForName(name.c_str(), namespc);
 }
 
 /**
@@ -872,7 +841,7 @@ void* W_CacheLumpName(const char* name, const zoneTag_e tag)
 //
 void* W_CacheLumpName(const OLumpName& name, const zoneTag_e tag)
 {
-	return W_CacheLumpNum(W_GetNumForName(name.c_str()), tag);
+	return W_CacheLumpNum(W_GetNumForName(name), tag);
 }
 
 size_t R_CalculateNewPatchSize(patch_t *patch, size_t length);

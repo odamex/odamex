@@ -83,8 +83,25 @@ public:
 		return *naive;
 	}
 
+	const inline T* operator ->() const
+	{
+		if(!naive || !*naive)
+			throw CRecoverableError("szp pointer was NULL");
+
+		return *naive;
+	}
+
 	// use as raw pointer
 	inline operator T*()
+	{
+		if(!naive)
+			return NULL;
+		else
+			return *naive;
+	}
+
+	// use as raw pointer
+	inline operator const T*() const
 	{
 		if(!naive)
 			return NULL;

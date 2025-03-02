@@ -97,12 +97,12 @@ void SV_ShareKeys(card_t card, player_t& player);
 static void PersistPlayerDamage(player_t& p)
 {
 	// Send this information to everybody.
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : ::players)
 	{
-		if (!it->ingame())
+		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, SVC_PM_DAMAGE));
+		MSG_WriteSVC(&player.client.netbuf, SVC_PlayerMembers(p, SVC_PM_DAMAGE));
 	}
 }
 
@@ -124,12 +124,12 @@ static void PersistPlayerScore(player_t& p, const bool lives, const bool score)
 		flags |= SVC_PM_SCORE;
 
 	// Send this information to everybody.
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!it->ingame())
+		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, flags));
+		MSG_WriteSVC(&player.client.netbuf, SVC_PlayerMembers(p, flags));
 	}
 }
 
@@ -140,11 +140,11 @@ static void PersistTeamScore(team_t team)
 		return;
 
 	// Send this information to everybody.
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!it->ingame())
+		if (!player.ingame())
 			continue;
-		MSG_WriteSVC(&it->client.netbuf, SVC_TeamMembers(team));
+		MSG_WriteSVC(&player.client.netbuf, SVC_TeamMembers(team));
 	}
 }
 
@@ -381,7 +381,7 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 // P_GiveWeapon
 // The weapon name may have a MF_DROPPED flag ored in.
 //
-ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
+ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped)
 {
 	bool gaveammo;
 	bool gaveweapon;
@@ -621,9 +621,8 @@ static void P_GiveCarePack(player_t* player)
 	// Players who are extremely low on ammo for a weapon they are holding
 	// always get ammo for that weapon.
 	const hordeDefine_t::ammos_t& ammos = P_HordeAmmos();
-	for (size_t i = 0; i < ammos.size(); i++)
+	for (const auto ammo : ammos)
 	{
-		const ammotype_t ammo = ammos.at(i);
 		if (blocks < 1)
 		{
 			break;
@@ -657,11 +656,11 @@ static void P_GiveCarePack(player_t* player)
 	if (blocks >= 1)
 	{
 		const hordeDefine_t::weapons_t& weapons = P_HordeWeapons();
-		for (size_t i = 0; i < weapons.size(); i++)
+		for (const auto weapon : weapons)
 		{
 			// No weapon is a special case that means give the player
 			// berserk strength (without the health).
-			if (weapons.at(i) == wp_none && player->powers[pw_strength] < 1)
+			if (weapon == wp_none && player->powers[pw_strength] < 1)
 			{
 				player->powers[pw_strength] = 1;
 				blocks -= 1;
@@ -670,13 +669,13 @@ static void P_GiveCarePack(player_t* player)
 				midmessage = "Got berserk";
 				break;
 			}
-			else if (weapons.at(i) != wp_none && !player->weaponowned[weapons.at(i)])
+			else if (weapon != wp_none && !player->weaponowned[weapon])
 			{
-				P_GiveWeapon(player, weapons.at(i), false);
+				P_GiveWeapon(player, weapon, false);
 				blocks -= 1;
 
 				message = "You found a weapon in this supply cache!";
-				switch (weapons.at(i))
+				switch (weapon)
 				{
 				case wp_chainsaw:
 					midmessage = "Got Chainsaw";
@@ -1315,9 +1314,9 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 	if (toucher->type == MT_AVATAR)
 	{
 		PlayersView pr = PlayerQuery().execute().players;
-		for (PlayersView::iterator it = pr.begin(); it != pr.end(); ++it)
+		for (const auto& player : pr)
 		{
-			P_GiveSpecial(*it, special);
+			P_GiveSpecial(player, special);
 		}
 	}
 	else if (toucher->player)

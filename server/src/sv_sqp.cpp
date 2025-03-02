@@ -226,19 +226,19 @@ next:
 	MSG_WriteByte(&ml_message, players.size());
 
 	// Player info
-	for(Players::iterator it = players.begin(); it != players.end(); ++it)
+	for(const auto& player : players)
 	{
-		MSG_WriteString(&ml_message, it->userinfo.netname.c_str());
+		MSG_WriteString(&ml_message, player.userinfo.netname.c_str());
 
 		for (int i = 3; i >= 0; i--)
-			MSG_WriteByte(&ml_message, it->userinfo.color[i]);
+			MSG_WriteByte(&ml_message, player.userinfo.color[i]);
 
 		if(G_IsTeamGame())
-			MSG_WriteByte(&ml_message, it->userinfo.team);
+			MSG_WriteByte(&ml_message, player.userinfo.team);
 
-		MSG_WriteShort(&ml_message, it->ping);
+		MSG_WriteShort(&ml_message, player.ping);
 
-		int timeingame = (time(NULL) - it->JoinTime) / 60;
+		int timeingame = (time(NULL) - player.JoinTime) / 60;
 
 		if(timeingame < 0)
 			timeingame = 0;
@@ -248,16 +248,16 @@ next:
 		// FIXME - Treat non-players (downloaders/others) as spectators too for now
 		bool spectator;
 
-		spectator = (it->spectator ||
-					 ((it->playerstate != PST_LIVE) &&
-					  (it->playerstate != PST_DEAD) &&
-					  (it->playerstate != PST_REBORN)));
+		spectator = (player.spectator ||
+					 ((player.playerstate != PST_LIVE) &&
+					  (player.playerstate != PST_DEAD) &&
+					  (player.playerstate != PST_REBORN)));
 
 		MSG_WriteBool(&ml_message, spectator);
 
-		MSG_WriteShort(&ml_message, it->fragcount);
-		MSG_WriteShort(&ml_message, it->killcount);
-		MSG_WriteShort(&ml_message, it->deathcount);
+		MSG_WriteShort(&ml_message, player.fragcount);
+		MSG_WriteShort(&ml_message, player.killcount);
+		MSG_WriteShort(&ml_message, player.deathcount);
 	}
 }
 
