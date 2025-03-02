@@ -16,6 +16,19 @@
             "cacheVariables": {
                 "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake"
             }
+        },
+        {
+            "name": "github-win",
+            "generator": "Visual Studio 17 2022",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+                "BUILD_OR_FAIL": "TRUE",
+                "BUILD_CLIENT": "TRUE",
+                "BUILD_SERVER": "TRUE",
+                "BUILD_MASTER": "TRUE",
+                "BUILD_LAUNCHER": "TRUE"
+            }
         }
     ]
 }
