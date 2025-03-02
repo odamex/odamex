@@ -31,17 +31,12 @@ template <class T>
 class TArray
 {
 public:
-	TArray ()
-	{
-		Most = 0;
-		Count = 0;
-		Array = NULL;
-	}
+	TArray () {}
 	TArray (int max)
 	{
 		Most = max;
 		Count = 0;
-		Array = (T *)Malloc (sizeof(T)*max);
+		Array = (T *)M_Malloc (sizeof(T)*max);
 	}
 	~TArray ()
 	{
@@ -122,7 +117,7 @@ public:
 	}
 
 private:
-	T *Array;
-	size_t Most;
-	size_t Count;
+	T* Array = nullptr;
+	size_t Most = 0;
+	size_t Count = 0;
 };

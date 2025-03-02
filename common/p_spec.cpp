@@ -2210,7 +2210,7 @@ void P_CollectSecretCommon(sector_t* sector, player_t* player)
 #ifdef SERVER_APP
 	SV_UpdateSecret(*sector, *player); // Update the sector to all clients so that they
 	                                   // don't discover an already found secret.
-#else
+#elif defined(CLIENT_APP)
 	if (player->mo == consoleplayer().camera)
 		C_RevealSecret(); // Display the secret revealed message
 #endif

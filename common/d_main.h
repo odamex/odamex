@@ -26,7 +26,7 @@
 #include "d_event.h"
 #include "m_resfile.h"
 
-extern std::string LOG_FILE;
+inline std::string LOG_FILE;
 
 //
 // D_DoomMain()

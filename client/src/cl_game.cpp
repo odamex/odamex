@@ -126,8 +126,6 @@ bool 			noblit; 				// for comparative timing purposes
 bool			network_game;
 // Describes if this is a multiplayer game or not
 bool			multiplayer;
-// The player vector, contains all player information
-Players			players;
 
 byte			consoleplayer_id;			// player taking events and displaying
 byte			displayplayer_id;			// view being displayed

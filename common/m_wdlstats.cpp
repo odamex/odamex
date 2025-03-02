@@ -33,8 +33,6 @@
 
 #define WDLSTATS_VERSION 6
 
-extern Players players;
-
 EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_hostname)
 EXTERN_CVAR(sv_teamspawns)

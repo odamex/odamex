@@ -32,4 +32,11 @@ else()
   pkg_check_modules(JSONCPP jsoncpp REQUIRED IMPORTED_TARGET)
   target_link_libraries(odagtest PkgConfig::JSONCPP)
 endif()
+
+if(WIN32)
+  target_link_libraries(odagtest winmm wsock32 shlwapi)
+elseif(UNIX AND NOT APPLE)
+  target_link_libraries(odagtest rt)
+endif()
+
 odamex_target_settings(odagtest)

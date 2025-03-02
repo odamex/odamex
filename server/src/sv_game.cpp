@@ -67,7 +67,6 @@ bool			timingdemo; 			// FIXME : delete this variable for odasrv ?
 bool			network_game;			// Describes if a network game is being played
 bool			multiplayer;			// Describes if this is a multiplayer game or not
 
-Players			players;				// The player vector, contains all player information
 player_t		nullplayer;				// The null player
 
 byte			consoleplayer_id;		// player taking events and displaying

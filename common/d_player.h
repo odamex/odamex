@@ -408,7 +408,7 @@ typedef player_t::client_t client_t;
 
 // Bookkeeping on players - state.
 typedef std::list<player_t> Players;
-extern Players players;
+inline Players players;
 
 // Player taking events, and displaying.
 player_t		&consoleplayer();

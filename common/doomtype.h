@@ -311,7 +311,7 @@ public:
 	{	a_num = _a; r_num = _r; g_num = _g; b_num = _b;	}
 
 private:
-	static uint8_t a_num, r_num, g_num, b_num;
+	static inline uint8_t a_num, r_num, g_num, b_num;
 
 	union
 	{

@@ -187,7 +187,7 @@ inline static void S_NetSound(AActor* mo, byte channel, const char* name, const 
 {
 #if SERVER_APP
 	SV_Sound(mo, channel, name, attenuation);
-#else
+#elif defined(CLIENT_APP)
 	S_Sound(mo, channel, name, 1, attenuation);
 #endif
 }
@@ -197,7 +197,7 @@ inline static void S_PlayerSound(player_t* pl, AActor* mo, const byte channel, c
 {
 #if SERVER_APP
 	SV_Sound(*pl, mo, channel, name, attenuation);
-#else
+#elif defined(CLIENT_APP)
 	S_Sound(mo, channel, name, 1, attenuation);
 #endif
 }

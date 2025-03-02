@@ -66,6 +66,7 @@ bool menuactive;
 bool step_mode;
 int gametic;
 bool savegamerestore;
+bool simulated_connection;
 
 void BuildDefaultShademap(palette_t const *, shademap_t &) {}
 palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b) { return 0; }
@@ -294,7 +295,7 @@ void S_StartMusic(const char *m_id)
 
 // [RH] S_ChangeMusic() now accepts the name of the music lump.
 // It's up to the caller to figure out what that name is.
-void S_ChangeMusic(std::string musicname, int looping)
+void S_ChangeMusic(std::string musicname, bool looping)
 {
 }
 
@@ -630,9 +631,18 @@ void S_ActivateAmbient(AActor *origin, int ambient)
 {
 }
 
+void AM_SetBaseColorDoom() {}
 void AM_SetBaseColorRaven() {}
-void AM_SetBaseColorHexen() {}
 void AM_SetBaseColorStrife() {}
+
+void G_DoLoadLevel(int) {}
+void G_DeferedInitNew(const OLumpName&) {}
+void G_DeferedFullReset() {}
+void G_DeferedReset() {}
+void G_ExitLevel(int,int,bool) {}
+void G_SecretExitLevel(int,int,bool) {}
+void D_Init() {}
+void D_Shutdown() {}
 
 FArchive &operator<< (FArchive &arc, UserInfo &info) { return arc; }
 FArchive &operator>> (FArchive &arc, UserInfo &info) { return arc; }
@@ -640,5 +650,209 @@ void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
     const LineActivationType activationType, const bool bossaction) {}
 void UV_SoundAvoidPlayer(AActor *mo, byte channel, const char *name, byte attenuation) {}
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
+void C_MidPrint (const char *msg, player_t *p, int msgtime) {}
+
+CVAR_RANGE (sv_teamsinplay, "2", "Teams that are enabled", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 2.0f, 3.0f)
+CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+
+#define R_P2ATHRESHOLD (INT_MAX / 4)
+
+angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y)
+{
+	x -= viewx;
+	y -= viewy;
+
+	if((x | y) == 0)
+		return 0;
+
+	if(x < R_P2ATHRESHOLD && x > -R_P2ATHRESHOLD &&
+		y < R_P2ATHRESHOLD && y > -R_P2ATHRESHOLD)
+	{
+		if(x >= 0)
+		{
+			if (y >= 0)
+			{
+				if(x > y)
+				{
+					// octant 0
+					return tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 1
+					return ANG90 - 1 - tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+			else // y < 0
+			{
+				y = -y;
+
+				if(x > y)
+				{
+					// octant 8
+					return 0 - tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 7
+					return ANG270 + tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+		}
+		else // x < 0
+		{
+			x = -x;
+
+			if(y >= 0)
+			{
+				if(x > y)
+				{
+					// octant 3
+					return ANG180 - 1 - tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 2
+					return ANG90 + tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+			else // y < 0
+			{
+				y = -y;
+
+				if(x > y)
+				{
+					// octant 4
+					return ANG180 + tantoangle_acc[SlopeDiv(y, x)];
+				}
+				else
+				{
+					// octant 5
+					return ANG270 - 1 - tantoangle_acc[SlopeDiv(x, y)];
+				}
+			}
+		}
+	}
+	else
+	{
+      return (angle_t)(atan2((double)y, (double)x) * (ANG180 / PI));
+	}
+
+   return 0;
+}
+
+translationref_t::translationref_t() : m_table(NULL), m_player_id(-1) {}
+translationref_t::translationref_t(const translationref_t &other) : m_table(other.m_table), m_player_id(other.m_player_id) {}
+translationref_t::translationref_t(const byte *table) : m_table(table), m_player_id(-1) {}
+translationref_t::translationref_t(const byte *table, const int player_id) : m_table(table), m_player_id(player_id) {}
+
+shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_colors(colors), m_mapnum(mapnum)
+{
+	#if ODAMEX_DEBUG
+	// NOTE(jsd): Arbitrary value picked here because we don't record the max number of colormaps for dynamic ones... or do we?
+	if (m_mapnum >= 8192)
+	{
+		throw CFatalError(fmt::format("32bpp: shaderef_t::shaderef_t() called with mapnum = {}, which looks too large", m_mapnum));
+	}
+	#endif
+
+	if (m_colors != NULL)
+	{
+		if (m_colors->colormap != NULL)
+			m_colormap = m_colors->colormap + (256 * m_mapnum);
+		else
+			m_colormap = NULL;
+
+		if (m_colors->shademap != NULL)
+			m_shademap = m_colors->shademap + (256 * m_mapnum);
+		else
+			m_shademap = NULL;
+
+		// Detect if the colormap is dynamic:
+		m_dyncolormap = NULL;
+
+		if (m_colors != &(V_GetDefaultPalette()->maps))
+		{
+			// Find the dynamic colormap by the `m_colors` pointer:
+			extern dyncolormap_t NormalLight;
+			dyncolormap_t *colormap = &NormalLight;
+
+			do
+			{
+				if (m_colors == colormap->maps.m_colors)
+				{
+					m_dyncolormap = colormap;
+					break;
+				}
+				colormap = colormap->next;
+			} while (colormap);
+		}
+	}
+	else
+	{
+		m_colormap = NULL;
+		m_shademap = NULL;
+		m_dyncolormap = NULL;
+	}
+}
+
+static palette_t default_palette;
+
+const palette_t* V_GetDefaultPalette()
+{
+	return &default_palette;
+}
+
+void P_SpawnPlayer(player_t&, mapthing2_t*) {}
+void CTF_CheckFlags (player_t &player)
+{
+	for(size_t i = 0; i < NUMTEAMS; i++)
+	{
+		if(player.flags[i])
+		{
+			player.flags[i] = false;
+			GetTeamInfo((team_t)i)->FlagData.flagger = 0;
+		}
+	}
+}
+
+shaderef_t::shaderef_t() : m_colors(NULL), m_mapnum(-1), m_colormap(NULL), m_shademap(NULL) {}
+
+dyncolormap_t NormalLight;
+
+dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
+{
+	argb_t color(lr, lg, lb);
+	argb_t fade(fr, fg, fb);
+	dyncolormap_t *colormap = &NormalLight;
+
+	// Bah! Simple linear search because I want to get this done.
+	while (colormap) {
+		if (color == colormap->color && fade == colormap->fade)
+			return colormap;
+		else
+			colormap = colormap->next;
+	}
+
+	// Not found. Create it.
+	colormap = (dyncolormap_t *)Z_Malloc (sizeof(*colormap), PU_LEVEL, 0);
+	shademap_t *maps = new shademap_t();
+	maps->colormap = (byte *)Z_Malloc (NUMCOLORMAPS*256*sizeof(byte)+3+255, PU_LEVEL, 0);
+	maps->colormap = (byte *)(((ptrdiff_t)maps->colormap + 255) & ~0xff);
+	maps->shademap = (argb_t *)Z_Malloc (NUMCOLORMAPS*256*sizeof(argb_t)+3+255, PU_LEVEL, 0);
+	maps->shademap = (argb_t *)(((ptrdiff_t)maps->shademap + 255) & ~0xff);
+
+	colormap->maps = shaderef_t(maps, 0);
+	colormap->color = color;
+	colormap->fade = fade;
+	colormap->next = NormalLight.next;
+	NormalLight.next = colormap;
+
+	// [AM] We don't keep the necessary palette info on the server to do this.
+	//BuildColoredLights (maps, lr, lg, lb, fr, fg, fb);
+
+	return colormap;
+}
 
 VERSION_CONTROL (test_stubs_cpp, "$Id$")

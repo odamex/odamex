@@ -150,8 +150,6 @@ EXTERN_CVAR (vid_vsync)
 EXTERN_CVAR (g_resetinvonexit)
 EXTERN_CVAR (i_skipbootwin)
 
-std::string LOG_FILE;
-
 void M_RestoreVideoMode();
 void M_ModeFlashTestText();
 

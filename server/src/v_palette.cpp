@@ -31,9 +31,6 @@
 #include "z_zone.h"
 #include "st_stuff.h"
 
-// Declared in doomtype.h as part of argb_t
-uint8_t argb_t::a_num, argb_t::r_num, argb_t::g_num, argb_t::b_num;
-
 dyncolormap_t NormalLight;
 
 /****************************/
