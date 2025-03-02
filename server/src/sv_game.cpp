@@ -63,7 +63,6 @@ bool 			paused;
 bool 			sendpause;				// send a pause event next tic
 
 bool			timingdemo; 			// FIXME : delete this variable for odasrv ?
-bool	 		viewactive;
 
 bool			network_game;			// Describes if a network game is being played
 bool			multiplayer;			// Describes if this is a multiplayer game or not

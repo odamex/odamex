@@ -109,7 +109,7 @@ extern	bool			menuactive; 	// Menu overlayed?
 extern	bool			paused; 		// Game Pause?
 
 
-extern	bool			viewactive;
+inline	bool			viewactive;
 
 extern	bool	 		nodrawers;
 extern	bool	 		noblit;

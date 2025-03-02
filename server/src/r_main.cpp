@@ -40,13 +40,6 @@ void R_SpanInitData ();
 extern int *walllights;
 extern dyncolormap_t NormalLight;
 
-// [Russell] - Server expects these to exist
-// [Russell] - Doesn't get used serverside
-byte *translationtables;
-byte bosstable[256];
-byte greentable[MAXPLAYERS + 1][256];
-byte redtable[MAXPLAYERS + 1][256];
-
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
 int 			viewangleoffset;
@@ -65,8 +58,6 @@ int 			viewangletox[FINEANGLES/2];
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
 angle_t 		*xtoviewangle;
-
-const fixed_t	*finecosine = &finesine[FINEANGLES/4];
 
 int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 int				scalelightfixed[MAXLIGHTSCALE];

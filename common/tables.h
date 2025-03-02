@@ -51,7 +51,7 @@
 extern	const fixed_t 		finesine[5*FINEANGLES/4];
 
 // Re-use data, is just PI/2 phase shift.
-extern const fixed_t*		finecosine;
+inline const fixed_t*		finecosine = &finesine[FINEANGLES/4];
 
 
 // Effective size is 4096.

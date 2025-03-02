@@ -80,12 +80,6 @@ shaderef_t		fixedcolormap;
 // just for profiling purposes
 int 			framecount;
 
-//
-// precalculated math tables
-//
-
-const fixed_t	*finecosine = &finesine[FINEANGLES/4];
-
 int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 int				scalelightfixed[MAXLIGHTSCALE];
 int				zlight[LIGHTLEVELS][MAXLIGHTZ];

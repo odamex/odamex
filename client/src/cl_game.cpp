@@ -122,8 +122,6 @@ bool			longtics;				// don't quantize yaw for classic vanilla demos
 bool 			nodrawers;				// for comparative timing purposes
 bool 			noblit; 				// for comparative timing purposes
 
-bool	 		viewactive;
-
 // Describes if a network game is being played
 bool			network_game;
 // Describes if this is a multiplayer game or not
