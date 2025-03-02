@@ -7,9 +7,10 @@
     "libpng",
     "miniupnpc",
     "portmidi",
+    "protobuf",
     "sdl2",
     "sdl2-mixer",
     "zlib",
-    "protobuf"
+    "minilzo"
   ]
 }

@@ -153,19 +153,7 @@ string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
   "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
 # Libraries
-find_package(ZLIB REQUIRED)
-find_package(PNG REQUIRED)
-find_package(CURL REQUIRED)
-find_package(fmt CONFIG REQUIRED)
-find_package(FLTK CONFIG REQUIRED)
-find_package(jsoncpp CONFIG REQUIRED)
-find_package(miniupnpc CONFIG REQUIRED)
-find_package(PortMidi CONFIG REQUIRED)
-find_package(protobuf CONFIG REQUIRED)
-find_package(SDL2 CONFIG REQUIRED)
-find_package(SDL2_mixer CONFIG REQUIRED)
-
-add_subdirectory(libraries)
+include(OdamexFindLibs)
 
 # WAD building
 add_subdirectory(wad)

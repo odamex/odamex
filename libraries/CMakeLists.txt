@@ -124,14 +124,3 @@ endfunction()
 
 add_library(tinylibs INTERFACE)
 target_include_directories(tinylibs INTERFACE . "tinylibs/include")
-
-### minilzo ###
-
-if(BUILD_CLIENT OR BUILD_SERVER)
-  message(STATUS "Compiling minilzo...")
-  add_library(minilzo STATIC
-      "minilzo/lzoconf.h" "minilzo/lzodefs.h" "minilzo/minilzo.c" "minilzo/minilzo.h")
-  target_include_directories(minilzo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/minilzo")
-endif()
-
-include(wxWidgets-lib.cmake)

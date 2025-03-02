@@ -1,3 +1,16 @@
+find_package(ZLIB REQUIRED)
+find_package(PNG REQUIRED)
+find_package(CURL REQUIRED)
+find_package(fmt CONFIG REQUIRED)
+find_package(FLTK CONFIG REQUIRED)
+find_package(jsoncpp CONFIG REQUIRED)
+find_package(minilzo CONFIG REQUIRED)
+find_package(miniupnpc CONFIG REQUIRED)
+find_package(PortMidi CONFIG REQUIRED)
+find_package(protobuf CONFIG REQUIRED)
+find_package(SDL2 CONFIG REQUIRED)
+find_package(SDL2_mixer CONFIG REQUIRED)
+
 ### wxWidgets ###
 
 if(BUILD_LAUNCHER)
@@ -77,6 +90,12 @@ if(BUILD_LAUNCHER)
           "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/gcc_dll/wxrc.exe"
           CACHE FILEPATH "")
       endif()
+    endif() # WIN32
+  else() # !USE_INTERNAL_WXWIDGETS
+    if(UNIX)
+      find_file(wxWidgets_CONFIG_EXECUTABLE wx-config)
     endif()
-  endif()
-endif()
+  endif() # USE_INTERNAL_WXWIDGETS
+
+  find_package(wxWidgets REQUIRED COMPONENTS core base adv net xrc)
+endif() # BUILD_LAUNCHER

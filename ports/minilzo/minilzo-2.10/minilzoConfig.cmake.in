@@ -1,0 +1,3 @@
+# (C) 2025 Lexi Mayfield
+
+include("${CMAKE_CURRENT_LIST_DIR}/minilzoTargets.cmake")

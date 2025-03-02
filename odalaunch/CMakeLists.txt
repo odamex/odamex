@@ -25,22 +25,6 @@ set(XRCRES_HEADER "${XRCRES_BINARY_DIR}/xrc_resource.h")
 # Odalaunch definitions
 include_directories(${API_DIR} ${LAUNCH_DIR} ${XRCRES_BINARY_DIR})
 
-# wxWidgets configuration
-# [AM] Putting this "find" in libraries would only work (from a scope
-#      perspective) if we got a target out of it, which we don't for
-#      wxWidgets.  So we do the ugly downloading bits in libraries and do
-#      the "find" here.
-find_package(wxWidgets COMPONENTS core base adv net xrc)
-if(wxWidgets_FOUND)
-  include( "${wxWidgets_USE_FILE}" )
-else()
-  if(wxWidgets_ROOT_DIR)
-    message(WARNING "wxWidgets root directory exists but no compiled libraries were found, odalaunch target not generated.")
-  else()
-    message(WARNING "wxWidgets not found, odalaunch target not generated.")
-  endif()
-endif()
-
 # Odalaunch target
 if(wxWidgets_FOUND)
   file(MAKE_DIRECTORY "${XRCRES_BINARY_DIR}")
@@ -58,7 +42,10 @@ if(wxWidgets_FOUND)
     ${XRCRES_HEADER} ${LAUNCH_WIN32_RESOURCES})
   odamex_target_settings(odalaunch)
 
-  target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
+  target_compile_definitions(odalaunch PRIVATE ${wxWidgets_DEFINITIONS})
+  target_compile_options(odalaunch PRIVATE ${wxWidgets_CXX_FLAGS})
+  target_include_directories(odalaunch PRIVATE ${wxWidgets_INCLUDE_DIRS})
+  target_link_libraries(odalaunch PRIVATE ${wxWidgets_LIBRARIES})
 
   if(WIN32)
     target_link_libraries(odalaunch ws2_32)
