@@ -16,3 +16,6 @@ vcpkg_cmake_configure(
         -DCMAKE_DISABLE_FIND_PACKAGE_Doxygen=1)
 
 vcpkg_cmake_install()
+vcpkg_copy_pdbs()
+vcpkg_copy_tools(TOOL_NAMES fltk-options fltk-options-cmd AUTO_CLEAN)
+vcpkg_cmake_config_fixup(CONFIG_PATH "CMake")
