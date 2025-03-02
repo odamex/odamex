@@ -40,7 +40,7 @@
 // ------------------------
 // Command line parameters.
 //
-extern	bool			devparm;		// DEBUG: launched with -devparm
+inline	bool			devparm;		// DEBUG: launched with -devparm
 
 
 // -----------------------------------------------------
@@ -103,8 +103,8 @@ EXTERN_CVAR (sv_maxplayers)
 //	status bar explicitely.
 extern	bool			statusbaractive;
 
-extern	bool			menuactive; 	// Menu overlayed?
-extern	bool			paused; 		// Game Pause?
+inline	bool			menuactive; 	// Menu overlayed?
+inline	bool			paused; 		// Game Pause?
 
 
 inline	bool			viewactive;

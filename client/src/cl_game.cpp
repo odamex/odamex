@@ -111,7 +111,6 @@ EXTERN_CVAR (chasedemo)
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
 
-bool 			paused;
 bool 			sendpause;				// send a pause event next tic
 bool			sendsave;				// send a save event next tic
 bool 			usergame;				// ok to save / end game

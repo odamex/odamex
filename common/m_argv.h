@@ -68,9 +68,9 @@ private:
 
 };
 
-extern DArgs Args;
+inline DArgs Args;
 
 void M_FindResponseFile(void);
 int M_GetParmValue(const char* name);
 
-extern bool DefaultsLoaded; 
+extern bool DefaultsLoaded;

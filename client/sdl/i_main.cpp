@@ -75,8 +75,6 @@
 
 EXTERN_CVAR (r_centerwindow)
 
-DArgs Args;
-
 // functions to be called at shutdown are stored in this stack
 typedef void (STACK_ARGS *term_func_t)(void);
 std::stack< std::pair<term_func_t, std::string> > TermFuncs;

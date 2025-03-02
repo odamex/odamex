@@ -28,8 +28,6 @@
 #include "d_player.h"
 #include "v_palette.h"
 
-bool menuactive;
-
 void R_ExitLevel() {}
 void D_SetupUserInfo (void) {}
 void D_UserInfoChanged (cvar_t *cvar) {}

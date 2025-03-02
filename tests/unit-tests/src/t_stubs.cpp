@@ -51,17 +51,12 @@ void P_ShowSpawns(MapThing*) {}
 void G_DeathMatchSpawnPlayer(player_t&) {}
 player_t& consoleplayer() { static player_t fake{}; return fake; }
 player_t& displayplayer() { static player_t fake{}; return fake; }
-DArgs Args;
 bool clientside;
 bool isFast;
 bool timingdemo;
 bool demoplayback;
-bool devparm;
-bool paused;
-bool menuactive;
 bool step_mode;
 int gametic;
-bool savegamerestore;
 bool simulated_connection;
 
 void BuildDefaultShademap(palette_t const *, shademap_t &) {}

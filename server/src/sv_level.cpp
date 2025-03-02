@@ -82,8 +82,6 @@ FLZOMemFile	*reset_snapshot = NULL;
 
 bool firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
 
-bool savegamerestore;
-
 extern bool sendpause;
 
 

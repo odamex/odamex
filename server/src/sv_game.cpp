@@ -59,7 +59,6 @@ EXTERN_CVAR (sv_teamsinplay)
 gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
 
-bool 			paused;
 bool 			sendpause;				// send a pause event next tic
 
 bool			timingdemo; 			// FIXME : delete this variable for odasrv ?

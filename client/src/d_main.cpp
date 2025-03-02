@@ -108,10 +108,10 @@ extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
-bool devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 static bool wiping_screen = false;
 
+bool autostart;
 bool advancedemo;
 event_t events[MAXEVENTS];
 int eventhead;
