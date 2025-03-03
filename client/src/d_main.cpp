@@ -94,8 +94,6 @@
 #include "i_xbox.h"
 #endif
 
-extern size_t got_heapsize;
-
 void D_CheckNetGame();
 void D_ProcessEvents();
 void D_DoAdvanceDemo();

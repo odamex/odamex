@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -83,7 +83,7 @@ typedef struct {
 
 #define INVALID_FILE_ATTRIBUTES -1
 
-typedef struct _STRING 
+typedef struct _STRING
 {
 	USHORT	Length;
 	USHORT	MaximumLength;
@@ -108,7 +108,7 @@ static char                      *LauncherXBE = NULL;
 static bool                       Xbox_RROD = false; // Novelty - Red Ring of DOOM!
 
 //
-// xbox_Getenv 
+// xbox_Getenv
 // Environment variables don't exist on Xbox. Return NULL.
 //
 char *xbox_Getenv(const char *)
@@ -117,7 +117,7 @@ char *xbox_Getenv(const char *)
 }
 
 //
-// xbox_Putenv 
+// xbox_Putenv
 //
 // Environment variables don't exist on Xbox. Just return success.
 //
@@ -127,7 +127,7 @@ int xbox_Putenv(const char *)
 }
 
 //
-// xbox_GetCWD 
+// xbox_GetCWD
 //
 // Return working directory which is always D:\
 //
@@ -177,7 +177,7 @@ struct hostent *xbox_GetHostByName(const char *name)
 	WSAEVENT               hEvent;
 	XNDNS                 *pDns = NULL;
 	INT                    err;
-	
+
 	if(!name)
 		return NULL;
 
@@ -243,7 +243,7 @@ int xbox_GetHostname(char *name, int namelen)
 	}
 	else
 		errno = EFAULT;
-	
+
 	return -1;
 }
 
@@ -252,7 +252,6 @@ int xbox_GetHostname(char *name, int namelen)
 //
 void xbox_PrintMemoryDebug()
 {
-	extern size_t got_heapsize;
 	MEMORYSTATUS  stat;
 	static DWORD  lastmem = 0;
 	char          buf[100];
@@ -265,14 +264,10 @@ void xbox_PrintMemoryDebug()
 		sprintf(buf, "\nMemory Debug:\n");
 		OutputDebugString( buf );
 
-		sprintf(buf, "Heap Size: \t%4d MB\n", got_heapsize);
-		OutputDebugString( buf );
-
-
 		sprintf(buf, "Total Physical Memory: \t%4d bytes / %4d MB\n", stat.dwTotalPhys, I_BytesToMegabytes(stat.dwTotalPhys));
 		OutputDebugString( buf );
 
-		sprintf(buf, "Used Physical Memory : \t%4d bytes / %4d MB\n", stat.dwTotalPhys - stat.dwAvailPhys, 
+		sprintf(buf, "Used Physical Memory : \t%4d bytes / %4d MB\n", stat.dwTotalPhys - stat.dwAvailPhys,
 		                                                             I_BytesToMegabytes(stat.dwTotalPhys - stat.dwAvailPhys));
 		OutputDebugString( buf );
 
@@ -321,7 +316,7 @@ LONG xbox_UnMountDevice(LPSTR sSymbolicLinkName)
 //
 // xbox_MountPartitions
 //
-// Some of these partitions are automatically mounted but just 
+// Some of these partitions are automatically mounted but just
 // to be on the safe side the mount will be attempted anyway
 //
 // Some of these partitions are only found on some modded consoles.
@@ -486,7 +481,7 @@ void xbox_RecordLauncherXBE(char *szLauncherXBE, DWORD dwID)
 }
 
 //
-// xbox_reboot 
+// xbox_reboot
 //
 // Exit Odamex and perform a warm reboot (no startup logo) to a launcher or dashboard
 //
@@ -520,7 +515,7 @@ void xbox_Reboot()
 }
 
 //
-// xbox_AtExit 
+// xbox_AtExit
 //
 // Custom atexit function for Xbox
 //
@@ -603,7 +598,7 @@ void  __cdecl main()
 	if(XGetLaunchInfo (&launchDataType, &launchData) == ERROR_SUCCESS)
 	{
 		// Command line from debugger
-		if(launchDataType == LDT_FROM_DEBUGGER_CMDLINE) 
+		if(launchDataType == LDT_FROM_DEBUGGER_CMDLINE)
 			xbox_PrepareArgs((char*)((PLD_FROM_DEBUGGER_CMDLINE)&launchData)->szCmdLine, xargv, xargc);
 		// Command line from homebrew dashboards (XBMC, etc.)
 		else if(launchDataType == LDT_TITLE && ((PCUSTOM_LAUNCH_DATA)&launchData)->magic == CUSTOM_LAUNCH_MAGIC)
