@@ -69,4 +69,4 @@ bool G_ShouldIgnoreMouseInput();
 
 extern int mapchange;
 
-extern bool timingdemo;
+inline bool timingdemo; // if true, exit with report on completion

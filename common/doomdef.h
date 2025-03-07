@@ -60,7 +60,8 @@ extern bool clientside, serverside;
 enum baseapp_t
 {
 	client,		// Odamex.exe
-	server		// Odasrv.exe
+	server,		// Odasrv.exe
+	test,		// Odagtest.exe
 };
 
 extern baseapp_t baseapp;
@@ -92,10 +93,10 @@ extern baseapp_t baseapp;
 #define SERVER_ONLY(expr)
 #endif
 
-// 
+//
 // Environment Platform
-// 
-enum gameplatform_t 
+//
+enum gameplatform_t
 {
 	PF_PC,
 	PF_XBOX,

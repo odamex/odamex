@@ -70,8 +70,6 @@ IWindowSurface* stnum_surface;
 void ST_initNew();
 void ST_unloadNew();
 
-extern bool simulated_connection;
-
 //
 // STATUS BAR DATA
 //

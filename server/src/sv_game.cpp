@@ -61,8 +61,6 @@ gamestate_t 	gamestate = GS_STARTUP;
 
 bool 			sendpause;				// send a pause event next tic
 
-bool			timingdemo; 			// FIXME : delete this variable for odasrv ?
-
 player_t		nullplayer;				// The null player
 
 byte			consoleplayer_id;		// player taking events and displaying

@@ -116,7 +116,6 @@ bool			sendsave;				// send a save event next tic
 bool 			usergame;				// ok to save / end game
 bool			sendcenterview;			// send a center view event next tic
 
-bool			timingdemo; 			// if true, exit with report on completion
 bool			longtics;				// don't quantize yaw for classic vanilla demos
 bool 			nodrawers;				// for comparative timing purposes
 bool 			noblit; 				// for comparative timing purposes

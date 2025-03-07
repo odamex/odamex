@@ -36,6 +36,10 @@
 #include "c_dispatch.h"
 #include "w_wad.h"
 
+bool clientside = false; // don't want any rendering code called
+bool serverside = true;
+baseapp_t baseapp = test;
+
 // Unnatural Level Progression.  True if we've used 'map' or another command
 // to switch to a specific map out of order, otherwise false.
 bool unnatural_level_progression;
@@ -45,19 +49,25 @@ gameaction_t gameaction;
 bool predicting;
 int demostartgametic;
 
+bool isFast;
+bool demoplayback;
+bool step_mode;
+int gametic;
+bool simulated_connection;
+gamestate_t gamestate;
+
+CVAR_FUNC_IMPL (sv_allowwidescreen) {}
+CVAR_FUNC_IMPL (sv_sharekeys) {}
+CVAR_RANGE (sv_teamsinplay, "2", "Teams that are enabled", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 2.0f, 3.0f)
+CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+
 void C_AddTabCommand(char const *) {}
 void C_RemoveTabCommand(char const *) {}
 void P_ShowSpawns(MapThing*) {}
 void G_DeathMatchSpawnPlayer(player_t&) {}
 player_t& consoleplayer() { static player_t fake{}; return fake; }
 player_t& displayplayer() { static player_t fake{}; return fake; }
-bool clientside;
-bool isFast;
-bool timingdemo;
-bool demoplayback;
-bool step_mode;
-int gametic;
-bool simulated_connection;
 
 void BuildDefaultShademap(palette_t const *, shademap_t &) {}
 palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b) { return 0; }
@@ -92,15 +102,10 @@ void CTF_SpawnFlag(team_t f) {}
 bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
 void SV_SendPackets(void) {}
 void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, int arg0,
-                               int arg1, int arg2, int arg3, int arg4)
-{
-}
+                               int arg1, int arg2, int arg3, int arg4) {}
 
 void SV_UpdateMonsterRespawnCount() {}
 void SV_Sound(AActor* mo, byte channel, const char* name, byte attenuation) {}
-
-
-CVAR_FUNC_IMPL(sv_sharekeys) {}
 
 void R_ExitLevel() {}
 void D_SetupUserInfo (void) {}
@@ -120,13 +125,7 @@ void RefreshPalettes (void) {}
 
 void V_RefreshColormaps() {}
 
-CVAR_FUNC_IMPL (sv_allowwidescreen) {}
-
 size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str) { return 0; }
-
-bool serverside;
-gamestate_t gamestate;
-baseapp_t baseapp;
 
 #define NORM_PITCH				128
 #define NORM_PRIORITY			64
@@ -158,84 +157,30 @@ void S_Init(float sfxVolume, float musicVolume)
 	//NumSequences = 0;
 }
 
-void S_Start()
-{
-}
-
-void S_Stop()
-{
-}
-
-void S_SoundID(int channel, int sound_id, float volume, int attenuation)
-{
-}
-
-void S_SoundID(AActor *ent, int channel, int sound_id, float volume, int attenuation)
-{
-}
-
-void S_SoundID(fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
-{
-}
-
-void S_LoopedSoundID(AActor *ent, int channel, int sound_id, float volume, int attenuation)
-{
-}
-
-void S_LoopedSoundID(fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
-{
-}
+void S_Start() {}
+void S_Stop() {}
+void S_SoundID(int channel, int sound_id, float volume, int attenuation) {}
+void S_SoundID(AActor *ent, int channel, int sound_id, float volume, int attenuation) {}
+void S_SoundID(fixed_t *pt, int channel, int sound_id, float volume, int attenuation) {}
+void S_LoopedSoundID(AActor *ent, int channel, int sound_id, float volume, int attenuation) {}
+void S_LoopedSoundID(fixed_t *pt, int channel, int sound_id, float volume, int attenuation) {}
 
 // [Russell] - Hack to stop multiple plat stop sounds
-void S_PlatSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
-{
-}
-
-void S_Sound(int channel, const char *name, float volume, int attenuation)
-{
-}
-
-void S_Sound(AActor *ent, int channel, const char *name, float volume, int attenuation)
-{
-}
-
-void S_Sound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
-{
-}
-
-void S_LoopedSound(AActor *ent, int channel, const char *name, float volume, int attenuation)
-{
-}
-
-void S_LoopedSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
-{
-}
-
-void S_Sound(fixed_t x, fixed_t y, int channel, const char *name, float volume, int attenuation)
-{
-}
-
-void S_StopSound(fixed_t *pt)
-{
-}
-
-void S_StopSound(fixed_t *pt, int channel)
-{
-}
-
-void S_StopSound(AActor *ent, int channel)
-{
-}
-
-void S_StopAllChannels()
-{
-}
+void S_PlatSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation) {}
+void S_Sound(int channel, const char *name, float volume, int attenuation) {}
+void S_Sound(AActor *ent, int channel, const char *name, float volume, int attenuation) {}
+void S_Sound(fixed_t *pt, int channel, const char *name, float volume, int attenuation) {}
+void S_LoopedSound(AActor *ent, int channel, const char *name, float volume, int attenuation) {}
+void S_LoopedSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation) {}
+void S_Sound(fixed_t x, fixed_t y, int channel, const char *name, float volume, int attenuation) {}
+void S_StopSound(fixed_t *pt) {}
+void S_StopSound(fixed_t *pt, int channel) {}
+void S_StopSound(AActor *ent, int channel) {}
+void S_StopAllChannels() {}
 
 // Moves all the sounds from one thing to another. If the destination is
 // NULL, then the sound becomes a positioned sound.
-void S_RelinkSound(AActor *from, AActor *to)
-{
-}
+void S_RelinkSound(AActor *from, AActor *to) {}
 
 bool S_GetSoundPlayingInfo(fixed_t *pt, int sound_id)
 {
@@ -250,49 +195,31 @@ bool S_GetSoundPlayingInfo(AActor *ent, int sound_id)
 //
 // Stop and resume music, during game PAUSE.
 //
-void S_PauseSound()
-{
-}
+void S_PauseSound() {}
 
-void S_ResumeSound()
-{
-}
+void S_ResumeSound() {}
 
 //
 // Updates music & sounds
 //
-void S_UpdateSounds(void *listener_p)
-{
-}
+void S_UpdateSounds(void *listener_p) {}
 
-void S_UpdateMusic()
-{
-}
+void S_UpdateMusic() {}
 
-void S_SetMusicVolume(float volume)
-{
-}
+void S_SetMusicVolume(float volume) {}
 
-void S_SetSfxVolume(float volume)
-{
-}
+void S_SetSfxVolume(float volume) {}
 
 //
 // Starts some music with the music id found in sounds.h.
 //
-void S_StartMusic(const char *m_id)
-{
-}
+void S_StartMusic(const char *m_id) {}
 
 // [RH] S_ChangeMusic() now accepts the name of the music lump.
 // It's up to the caller to figure out what that name is.
-void S_ChangeMusic(std::string musicname, bool looping)
-{
-}
+void S_ChangeMusic(std::string musicname, bool looping)  {}
 
-void S_StopMusic()
-{
-}
+void S_StopMusic() {}
 
 
 // [RH] ===============================
@@ -614,13 +541,8 @@ void S_ParseSndInfo()
 	S_HashSounds();
 }
 
-void A_Ambient(AActor *actor)
-{
-}
-
-void S_ActivateAmbient(AActor *origin, int ambient)
-{
-}
+void A_Ambient(AActor *actor) {}
+void S_ActivateAmbient(AActor *origin, int ambient) {}
 
 void AM_SetBaseColorDoom() {}
 void AM_SetBaseColorRaven() {}
@@ -642,10 +564,6 @@ void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
 void UV_SoundAvoidPlayer(AActor *mo, byte channel, const char *name, byte attenuation) {}
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void C_MidPrint (const char *msg, player_t *p, int msgtime) {}
-
-CVAR_RANGE (sv_teamsinplay, "2", "Teams that are enabled", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 2.0f, 3.0f)
-CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
-CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 
 #define R_P2ATHRESHOLD (INT_MAX / 4)
 
