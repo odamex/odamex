@@ -1,4 +1,3 @@
-include(OdalaunchCopyLibs)
 include(OdamexTargetSettings)
 
 # API
@@ -25,11 +24,12 @@ set(XRCRES_HEADER "${XRCRES_BINARY_DIR}/xrc_resource.h")
 # Odalaunch target
 if(wxWidgets_FOUND)
   file(MAKE_DIRECTORY "${XRCRES_BINARY_DIR}")
+  find_program(WXRC_EXECUTABLE NAMES "wxrc" REQUIRED)
 
   # Attempt to compile all of the XRC files with custom commands.
   add_custom_command(
     OUTPUT "${XRCRES_HEADER}"
-    COMMAND "${wxWidgets_wxrc_EXECUTABLE}" -c -o "${XRCRES_HEADER}"
+    COMMAND "${WXRC_EXECUTABLE}" -c -o "${XRCRES_HEADER}"
     "${XRCRES_DIR}/icons.xrc" "${XRCRES_DIR}/xrc_resource.xrc"
     VERBATIM)
 
@@ -49,8 +49,6 @@ if(wxWidgets_FOUND)
   if(WIN32)
     target_link_libraries(odalaunch PRIVATE ws2_32)
   endif()
-
-  odalaunch_copy_libs(odalaunch)
 
   set(MACOSX_BUNDLE_BUNDLE_NAME OdaLaunch)
   set(MACOSX_BUNDLE_INFO_STRING "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")

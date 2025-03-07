@@ -5,12 +5,13 @@
     "fmt",
     "jsoncpp",
     "libpng",
+    "minilzo",
     "miniupnpc",
     "portmidi",
     "protobuf",
     "sdl2",
     "sdl2-mixer",
     "zlib",
-    "minilzo"
+    "wxwidgets"
   ]
 }
