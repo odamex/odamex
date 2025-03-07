@@ -106,7 +106,6 @@ void StripColorCodes(std::string& str);
 double Remap(const double value, const double low1, const double high1, const double low2,
              const double high2);
 uint32_t Log2(uint32_t n);
-float NextAfter(const float from, const float to);
 
 /**
  * @brief Initialize an array with a specific value.

@@ -193,7 +193,7 @@ size_t P_HordePickDefine(const int current, const int total)
 		const float section_size = static_cast<float>(::WAVE_DEFINES.size()) / total;
 		const float section_offset = (current - 1) * section_size;
 		const float section_choice = M_RandomFloat() * section_size;
-		const float section_limit = NextAfter(section_offset + section_size, 0.0f);
+		const float section_limit = nextafter(section_offset + section_size, 0.0f);
 		return MIN<size_t>(section_offset + section_choice, section_limit);
 	}
 	else if (current <= 1)
@@ -372,9 +372,9 @@ BEGIN_COMMAND(hordedefine)
 						const float section_size =
 						    static_cast<float>(::WAVE_DEFINES.size()) / total;
 						const float section_offset = (current - 1) * section_size;
-						const float section_choice = NextAfter(1.0f, 0.0f) * section_size;
+						const float section_choice = nextafter(1.0f, 0.0f) * section_size;
 						const float section_limit =
-						    NextAfter(section_offset + section_size, 0.0f);
+						    nextafter(section_offset + section_size, 0.0f);
 						const size_t start = static_cast<size_t>(section_offset);
 						const size_t end =
 						    MIN<size_t>(section_offset + section_choice, section_limit);

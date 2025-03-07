@@ -560,14 +560,14 @@ static int _isspace(int c)
 // Trim whitespace from the start of a string
 std::string &TrimStringStart(std::string &s)
 {
-	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not_fn([](int c){ return _isspace(c); })));
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not_fn( _isspace )));
 	return s;
 }
 
 // Trim whitespace from the end of a string
 std::string &TrimStringEnd(std::string &s)
 {
-	s.erase(std::find_if(s.rbegin(), s.rend(), std::not_fn([](int c){ return _isspace(c); })).base(), s.end());
+	s.erase(std::find_if(s.rbegin(), s.rend(), std::not_fn( _isspace )).base(), s.end());
 	return s;
 }
 
@@ -749,41 +749,6 @@ uint32_t Log2(uint32_t n)
 		return (t = (tt >> 8)) ? 24 + LogTable256[t] : 16 + LogTable256[tt];
 	else
 		return (t = (n >> 8)) ? 8 + LogTable256[t] : LogTable256[n];
-}
-
-/**
- * This file has no copyright assigned and is placed in the Public Domain.
- * This file is part of the mingw-w64 runtime package.
- * No warranty is given; refer to the file DISCLAIMER.PD within this package.
- */
-
-/**
- * @brief Returns the next representable value of from in the direction of to.
- */
-float NextAfter(const float from, const float to)
-{
-	const float x = from;
-	const float y = to;
-	union {
-		float f;
-		unsigned int i;
-	} u;
-	if (isnan(y) || isnan(x))
-		return x + y;
-	if (x == y)
-		/* nextafter (0.0, -O.0) should return -0.0.  */
-		return y;
-	u.f = x;
-	if (x == 0.0F)
-	{
-		u.i = 1;
-		return y > 0.0F ? u.f : -u.f;
-	}
-	if (((x > 0.0F) ^ (y > x)) == 0)
-		u.i++;
-	else
-		u.i--;
-	return u.f;
 }
 
 VERSION_CONTROL (cmdlib_cpp, "$Id$")
