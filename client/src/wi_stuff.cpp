@@ -1327,7 +1327,7 @@ static int WI_CalcWidth (const char *str)
 
 	while (*str)
 	{
-		const OLumpName charname = fmt::format("FONTB{:02u}", toupper(*str) - 32);
+		const OLumpName charname = fmt::format("FONTB{:02d}", toupper(*str) - 32);
 		int lump = W_CheckNumForName(charname);
 
 		if (lump != -1)

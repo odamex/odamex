@@ -2053,7 +2053,7 @@ static int PatchText(int oldSize)
 	}
 
 	good = ReadChars(&oldStr, oldSize);
-	good = good || ReadChars(&newStr, newSize);
+	good = ReadChars(&newStr, newSize) || good;
 
 	if (!good)
 	{
