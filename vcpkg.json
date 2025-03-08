@@ -1,17 +1,37 @@
 {
-  "dependencies": [
-    "curl",
-    "fltk",
-    "fmt",
-    "jsoncpp",
-    "libpng",
-    "minilzo",
-    "miniupnpc",
-    "portmidi",
-    "protobuf",
-    "sdl2",
-    "sdl2-mixer",
-    "zlib",
-    "wxwidgets"
-  ]
+  "features": {
+    "client": {
+      "description": "Odamex Client",
+      "dependencies": [
+        "curl",
+        "fltk",
+        "fmt",
+        "jsoncpp",
+        "libpng",
+        "minilzo",
+        "portmidi",
+        "protobuf",
+        "sdl2",
+        "sdl2-mixer",
+        "zlib"
+      ]
+    },
+    "server": {
+      "description": "Odamex Server",
+      "dependencies": [
+        "fmt",
+        "jsoncpp",
+        "minilzo",
+        "miniupnpc",
+        "protobuf",
+        "zlib"
+      ]
+    },
+    "launcher": {
+      "description": "Odamex Launcher",
+      "dependencies": [
+        "wxwidgets"
+      ]
+    }
+  }
 }

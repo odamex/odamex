@@ -14,6 +14,26 @@
 
 cmake_minimum_required(VERSION 3.13)
 
+option(BUILD_CLIENT "Build client target" 1)
+if(BUILD_CLIENT)
+  list(APPEND VCPKG_MANIFEST_FEATURES "client")
+endif()
+
+option(BUILD_SERVER "Build server target" 1)
+if(BUILD_SERVER)
+  list(APPEND VCPKG_MANIFEST_FEATURES "server")
+endif()
+
+option(BUILD_LAUNCHER "Build launcher target" 1)
+if(BUILD_LAUNCHER)
+  list(APPEND VCPKG_MANIFEST_FEATURES "launcher")
+endif()
+
+option(BUILD_MASTER "Build master server target" 0)
+# if(BUILD_MASTER)
+#   list(APPEND VCPKG_MANIFEST_FEATURES "master")
+# endif()
+
 project(Odamex VERSION 12.0.0)
 
 include(CMakeDependentOption)
@@ -38,10 +58,6 @@ else()
 endif()
 
 # options
-option(BUILD_CLIENT "Build client target" 1)
-option(BUILD_SERVER "Build server target" 1)
-option(BUILD_LAUNCHER "Build launcher target" 1)
-option(BUILD_MASTER "Build master server target" 0)
 option(BUILD_OR_FAIL "Must build the BUILD_* targets or else generation will fail" 0)
 option(USE_INTERNAL_DEUTEX "Use internal DeuTex" ${USE_INTERNAL_LIBS})
 option(USE_LTO "Build Release builds with Link Time Optimization" 1)
@@ -152,8 +168,20 @@ git_branch(HEAD GIT_BRANCH)
 string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
   "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
-# Libraries
-include(OdamexFindLibs)
+# Libraries - Try and find everything.
+find_package(ZLIB)
+find_package(PNG)
+find_package(CURL)
+find_package(fmt CONFIG)
+find_package(FLTK CONFIG)
+find_package(jsoncpp CONFIG)
+find_package(minilzo CONFIG)
+find_package(miniupnpc CONFIG)
+find_package(PortMidi CONFIG)
+find_package(protobuf CONFIG)
+find_package(SDL2 CONFIG)
+find_package(SDL2_mixer CONFIG)
+find_package(wxWidgets CONFIG)
 
 # WAD building
 add_subdirectory(wad)
