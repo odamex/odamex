@@ -51,12 +51,6 @@ void I_EndRead (void);
 void I_Init (void);
 void I_Endoom(void);
 
-// Called by startup code
-// to get the ammount of memory to malloc
-// for the zone management.
-void *I_ZoneBase (size_t *size);
-
-
 // returns current time in nanoseconds.
 dtime_t I_GetTime();
 

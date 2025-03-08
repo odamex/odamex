@@ -60,14 +60,25 @@ CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are sp
 void C_AddTabCommand(char const *) {}
 void C_RemoveTabCommand(char const *) {}
 void P_ShowSpawns(MapThing*) {}
+void P_SpawnPlayer(player_t&, mapthing2_t*) {}
 void G_DeathMatchSpawnPlayer(player_t&) {}
-player_t& consoleplayer() { static player_t fake{}; return fake; }
-player_t& displayplayer() { static player_t fake{}; return fake; }
+player_t& consoleplayer() { return idplayer(consoleplayer_id); }
+player_t& displayplayer() { return idplayer(displayplayer_id); }
 
 void BuildDefaultShademap(palette_t const *, shademap_t &) {}
 palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b) { return 0; }
 palindex_t V_BestColor(const argb_t *palette_colors, argb_t color) { return 0; }
-bool R_AlignFlat(int,int,int) { return false; }
+
+argb_t V_GetColorFromString(const std::string& str)
+{
+    return 0;
+}
+
+const palette_t* V_GetDefaultPalette()
+{
+	static palette_t default_palette;
+	return &default_palette;
+}
 
 void D_SendServerInfoChange(const cvar_t *cvar, const char *value) {}
 void D_DoServerInfoChange(byte **stream) {}
@@ -106,11 +117,6 @@ void R_ExitLevel() {}
 void D_SetupUserInfo (void) {}
 void D_UserInfoChanged (cvar_t *cvar) {}
 
-argb_t V_GetColorFromString(const std::string& str)
-{
-    return 0;
-}
-
 void PickupMessage(AActor *toucher, const char *message) {}
 void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon) {}
 
@@ -120,29 +126,11 @@ void RefreshPalettes (void) {}
 
 void V_RefreshColormaps() {}
 
-size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str) { return 0; }
+void C_MidPrint (const char *msg, player_t *p, int msgtime) {}
+size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str) { fmt::print(str); }
 
-//
-// [RH] Print sound debug info. Called from D_Display()
-//
 void S_NoiseDebug() {}
-
-
-//
-// Internals.
-//
-
-//
-// Initializes sound stuff, including volume
-// Sets channels, SFX and music volume,
-// allocates channel buffer, sets S_sfx lookup.
-//
-void S_Init(float sfxVolume, float musicVolume)
-{
-	// [RH] Read in sound sequences
-	//NumSequences = 0;
-}
-
+void S_Init(float sfxVolume, float musicVolume) {}
 void S_Start() {}
 void S_Stop() {}
 void S_SoundID(int channel, int sound_id, float volume, int attenuation) {}
@@ -150,8 +138,6 @@ void S_SoundID(AActor *ent, int channel, int sound_id, float volume, int attenua
 void S_SoundID(fixed_t *pt, int channel, int sound_id, float volume, int attenuation) {}
 void S_LoopedSoundID(AActor *ent, int channel, int sound_id, float volume, int attenuation) {}
 void S_LoopedSoundID(fixed_t *pt, int channel, int sound_id, float volume, int attenuation) {}
-
-// [Russell] - Hack to stop multiple plat stop sounds
 void S_PlatSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation) {}
 void S_Sound(int channel, const char *name, float volume, int attenuation) {}
 void S_Sound(AActor *ent, int channel, const char *name, float volume, int attenuation) {}
@@ -163,49 +149,20 @@ void S_StopSound(fixed_t *pt) {}
 void S_StopSound(fixed_t *pt, int channel) {}
 void S_StopSound(AActor *ent, int channel) {}
 void S_StopAllChannels() {}
-
-// Moves all the sounds from one thing to another. If the destination is
-// NULL, then the sound becomes a positioned sound.
 void S_RelinkSound(AActor *from, AActor *to) {}
-
-bool S_GetSoundPlayingInfo(fixed_t *pt, int sound_id)
-{
-	return false;
-}
-
-bool S_GetSoundPlayingInfo(AActor *ent, int sound_id)
-{
-	return S_GetSoundPlayingInfo (ent ? &ent->x : NULL, sound_id);
-}
-
-//
-// Stop and resume music, during game PAUSE.
-//
+bool S_GetSoundPlayingInfo(fixed_t *pt, int sound_id) { return false; }
+bool S_GetSoundPlayingInfo(AActor *ent, int sound_id) {	return S_GetSoundPlayingInfo (ent ? &ent->x : NULL, sound_id); }
 void S_PauseSound() {}
-
 void S_ResumeSound() {}
-
-//
-// Updates music & sounds
-//
 void S_UpdateSounds(void *listener_p) {}
-
 void S_UpdateMusic() {}
-
 void S_SetMusicVolume(float volume) {}
-
 void S_SetSfxVolume(float volume) {}
-
-//
-// Starts some music with the music id found in sounds.h.
-//
 void S_StartMusic(const char *m_id) {}
-
-// [RH] S_ChangeMusic() now accepts the name of the music lump.
-// It's up to the caller to figure out what that name is.
 void S_ChangeMusic(std::string musicname, bool looping)  {}
-
 void S_StopMusic() {}
+void A_Ambient(AActor *actor) {}
+void S_ActivateAmbient(AActor *origin, int ambient) {}
 
 
 // [RH] ===============================
@@ -527,9 +484,6 @@ void S_ParseSndInfo()
 	S_HashSounds();
 }
 
-void A_Ambient(AActor *actor) {}
-void S_ActivateAmbient(AActor *origin, int ambient) {}
-
 void AM_SetBaseColorDoom() {}
 void AM_SetBaseColorRaven() {}
 void AM_SetBaseColorStrife() {}
@@ -549,9 +503,21 @@ void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
     const LineActivationType activationType, const bool bossaction) {}
 void UV_SoundAvoidPlayer(AActor *mo, byte channel, const char *name, byte attenuation) {}
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
-void C_MidPrint (const char *msg, player_t *p, int msgtime) {}
+
+void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
+{
+	int index = ang >> ANGLETOFINESHIFT;
+
+	tx = FixedMul(x, finecosine[index]) - FixedMul(y, finesine[index]);
+	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
+}
 
 #define R_P2ATHRESHOLD (INT_MAX / 4)
+
+angle_t R_PointToAngle (fixed_t x, fixed_t y)
+{
+    return R_PointToAngle2 (viewx, viewy, x, y);
+}
 
 angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y)
 {
@@ -642,6 +608,7 @@ translationref_t::translationref_t(const translationref_t &other) : m_table(othe
 translationref_t::translationref_t(const byte *table) : m_table(table), m_player_id(-1) {}
 translationref_t::translationref_t(const byte *table, const int player_id) : m_table(table), m_player_id(player_id) {}
 
+shaderef_t::shaderef_t() : m_colors(NULL), m_mapnum(-1), m_colormap(NULL), m_shademap(NULL) {}
 shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_colors(colors), m_mapnum(mapnum)
 {
 	#if ODAMEX_DEBUG
@@ -692,28 +659,6 @@ shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_co
 	}
 }
 
-static palette_t default_palette;
-
-const palette_t* V_GetDefaultPalette()
-{
-	return &default_palette;
-}
-
-void P_SpawnPlayer(player_t&, mapthing2_t*) {}
-void CTF_CheckFlags (player_t &player)
-{
-	for(size_t i = 0; i < NUMTEAMS; i++)
-	{
-		if(player.flags[i])
-		{
-			player.flags[i] = false;
-			GetTeamInfo((team_t)i)->FlagData.flagger = 0;
-		}
-	}
-}
-
-shaderef_t::shaderef_t() : m_colors(NULL), m_mapnum(-1), m_colormap(NULL), m_shademap(NULL) {}
-
 dyncolormap_t NormalLight;
 
 dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
@@ -750,12 +695,16 @@ dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 	return colormap;
 }
 
-void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
+void CTF_CheckFlags (player_t &player)
 {
-	int index = ang >> ANGLETOFINESHIFT;
-
-	tx = FixedMul(x, finecosine[index]) - FixedMul(y, finesine[index]);
-	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
+	for(size_t i = 0; i < NUMTEAMS; i++)
+	{
+		if(player.flags[i])
+		{
+			player.flags[i] = false;
+			GetTeamInfo((team_t)i)->FlagData.flagger = 0;
+		}
+	}
 }
 
 VERSION_CONTROL (test_stubs_cpp, "$Id$")

@@ -49,12 +49,6 @@ void I_EndRead (void);
 // Called by DoomMain.
 void I_Init (void);
 
-// Called by startup code
-// to get the ammount of memory to malloc
-// for the zone management.
-void *I_ZoneBase (size_t *size);
-
-
 dtime_t I_GetTime();
 dtime_t I_ConvertTimeToMs(dtime_t value);
 dtime_t I_ConvertTimeFromMs(dtime_t value);

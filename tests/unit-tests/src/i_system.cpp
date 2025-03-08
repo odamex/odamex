@@ -97,13 +97,8 @@ size_t I_BytesToMegabytes (size_t Bytes)
     return (Bytes/1024/1024);
 }
 
-void I_BeginRead(void)
-{
-}
-
-void I_EndRead(void)
-{
-}
+void I_BeginRead(void) {}
+void I_EndRead(void) {}
 
 //
 // I_GetTime
@@ -266,9 +261,7 @@ void SetLanguageIDs()
 //
 // I_Init
 //
-void I_Init (void)
-{
-}
+void I_Init (void) {}
 
 void I_FinishClockCalibration ()
 {
