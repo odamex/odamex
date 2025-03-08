@@ -560,7 +560,7 @@ int S_CalculateSoundPriority(const fixed_t* pt, int channel, int attenuation)
 	return priority;
 }
 
-static int ResolveSound(int soundid)
+static size_t ResolveSound(size_t soundid)
 {
 	const sfxinfo_t& sfx = S_sfx[soundid];
 
@@ -568,8 +568,8 @@ static int ResolveSound(int soundid)
 	{
 		while (S_sfx[soundid].israndom)
 		{
-			std::vector<int>& list = S_rnd[soundid];
-			soundid = list[P_Random() % static_cast<int>(list.size())];
+			std::vector<size_t>& list = S_rnd[soundid];
+			soundid = list[P_Random() % list.size()];
 		}
 		return soundid;
 	}
@@ -593,7 +593,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 		return;
 
   	// check for bogus sound #
-	if (sfx_id < 1 || sfx_id > static_cast<int>(S_sfx.size()) - 1)
+	if (sfx_id < 0 || sfx_id > static_cast<int>(S_sfx.size()) - 1)
 	{
 		DPrintf("Bad sfx #: %d\n", sfx_id);
 		return;
@@ -601,7 +601,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 
 	sfxinfo_t* sfxinfo = &S_sfx[sfx_id];
 
-	while (sfxinfo->link != static_cast<int>(sfxinfo_t::NO_LINK))
+	while (sfxinfo->link != static_cast<size_t>(sfxinfo_t::NO_LINK))
 	{
 		sfx_id = ResolveSound(sfxinfo->link);
 		sfxinfo = &S_sfx[sfx_id];
@@ -610,7 +610,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	if (!sfxinfo->data)
 	{
 		I_LoadSound(sfxinfo);
-		while (sfxinfo->link != static_cast<int>(sfxinfo_t::NO_LINK))
+		while (sfxinfo->link != static_cast<size_t>(sfxinfo_t::NO_LINK))
 		{
 			sfx_id = ResolveSound(sfxinfo->link);
 			sfxinfo = &S_sfx[sfx_id];
@@ -1202,7 +1202,7 @@ int S_FindSoundByLump(int lump)
 	return -1;
 }
 
-int S_AddSoundLump(const char *logicalname, int lump)
+size_t S_AddSoundLump(const char *logicalname, int lump)
 {
 	sfxinfo_t& new_sfx = S_sfx.emplace_back();
 
@@ -1220,7 +1220,7 @@ void S_ClearSoundLumps()
 	S_rnd.clear();
 }
 
-int FindSoundNoHash(const char* logicalname)
+size_t FindSoundNoHash(const char* logicalname)
 {
 	for (size_t i = 0; i < S_sfx.size(); i++)
 		if (iequals(logicalname, S_sfx[i].name))
@@ -1229,24 +1229,24 @@ int FindSoundNoHash(const char* logicalname)
 	return S_sfx.size();
 }
 
-int FindSoundTentative(const char* name)
+size_t FindSoundTentative(const char* name)
 {
-	int id = FindSoundNoHash(name);
-	if (id == static_cast<int>(S_sfx.size()))
+	size_t id = FindSoundNoHash(name);
+	if (id == S_sfx.size())
 	{
 		id = S_AddSoundLump(name, -1);
 	}
 	return id;
 }
 
-int S_AddSound(const char *logicalname, const char *lumpname)
+size_t S_AddSound(const char *logicalname, const char *lumpname)
 {
-	int sfxid = FindSoundNoHash(logicalname);
+	size_t sfxid = FindSoundNoHash(logicalname);
 
 	const int lump = lumpname ? W_CheckNumForName(lumpname) : -1;
 
 	// Otherwise, prepare a new one.
-	if (sfxid != static_cast<int>(S_sfx.size()))
+	if (sfxid != S_sfx.size())
 	{
 		sfxinfo_t& sfx = S_sfx[sfxid];
 
@@ -1264,7 +1264,7 @@ int S_AddSound(const char *logicalname, const char *lumpname)
 	return sfxid;
 }
 
-void S_AddRandomSound(int owner, std::vector<int>& list)
+void S_AddRandomSound(size_t owner, std::vector<size_t>& list)
 {
 	S_rnd[owner] = list;
 	S_sfx[owner].link = owner;
@@ -1395,22 +1395,22 @@ void S_ParseSndInfo()
 				else if (os.compareTokenNoCase("alias"))
 				{
 					os.mustScan();
-					const int sfxfrom = S_AddSound(os.getToken().c_str(), NULL);
+					const size_t sfxfrom = S_AddSound(os.getToken().c_str(), NULL);
 					os.mustScan();
 					S_sfx[sfxfrom].link = FindSoundTentative(os.getToken().c_str());
 				}
 				else if (os.compareTokenNoCase("random"))
 				{
-					std::vector<int> list;
+					std::vector<size_t> list;
 
 					os.mustScan();
-					const int owner = S_AddSound(os.getToken().c_str(), NULL);
+					const size_t owner = S_AddSound(os.getToken().c_str(), NULL);
 
 					os.mustScan();
 					os.assertTokenIs("{");
 					while (os.scan() && !os.compareToken("}"))
 					{
-						const int sfxto = FindSoundTentative(os.getToken().c_str());
+						const size_t sfxto = FindSoundTentative(os.getToken().c_str());
 
 						if (owner == sfxto)
 						{

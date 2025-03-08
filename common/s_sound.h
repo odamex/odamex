@@ -45,7 +45,7 @@ struct sfxinfo_struct
 	unsigned looping;           // Looping sample handle
 	void* data;
 
-	int link;
+	size_t link;
 	enum { NO_LINK = 0xffffffff };
 
 	int lumpnum;              // lump number of sfx
@@ -60,7 +60,7 @@ struct sfxinfo_struct
 inline std::vector<sfxinfo_t> S_sfx;
 
 // map of every sound id for sounds that have randomized variants
-inline std::map<int, std::vector<int>> S_rnd;
+inline std::map<size_t, std::vector<size_t>> S_rnd;
 
 // Initializes sound stuff, including volume
 // Sets channels, SFX and music volume,
@@ -166,9 +166,9 @@ void S_ParseSndInfo();
 void S_HashSounds();
 int S_FindSound(const char* logicalname);
 int S_FindSoundByLump(int lump);
-int S_AddSound(const char* logicalname, const char* lumpname); // Add sound by lumpname
-int S_AddSoundLump(char* logicalname, int lump);         // Add sound by lump index
-void S_AddRandomSound(int owner, std::vector<int>& list);
+size_t S_AddSound(const char* logicalname, const char* lumpname); // Add sound by lumpname
+size_t S_AddSoundLump(char* logicalname, int lump);         // Add sound by lump index
+void S_AddRandomSound(size_t owner, std::vector<size_t>& list);
 void S_ClearSoundLumps();
 
 void UV_SoundAvoidPlayer(AActor* mo, byte channel, const char* name, byte attenuation);

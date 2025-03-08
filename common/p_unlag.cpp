@@ -373,7 +373,7 @@ void Unlag::registerPlayer(byte player_id)
 	if (!validplayer(idplayer(player_id)))
 		return;
 
-	player_history.push_back(PlayerHistoryRecord());
+	player_history.emplace_back();
 	player_history.back().player_id = player_id;
 	player_history.back().history_size = 0;
 	player_history.back().changed_flags = false;

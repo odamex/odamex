@@ -264,10 +264,9 @@ int S_FindSoundByLump(int lump)
 	return -1;
 }
 
-int S_AddSoundLump(const char *logicalname, int lump)
+size_t S_AddSoundLump(const char *logicalname, int lump)
 {
-	S_sfx.emplace_back();
-	sfxinfo_t& new_sfx = S_sfx.back();
+	sfxinfo_t& new_sfx = S_sfx.emplace_back();
 
 	// logicalname MUST be < MAX_SNDNAME chars long
 	strcpy(new_sfx.name, logicalname);
@@ -283,7 +282,7 @@ void S_ClearSoundLumps()
 	S_rnd.clear();
 }
 
-int FindSoundNoHash(const char* logicalname)
+size_t FindSoundNoHash(const char* logicalname)
 {
 	for (size_t i = 0; i < S_sfx.size(); i++)
 		if (iequals(logicalname, S_sfx[i].name))
@@ -292,24 +291,24 @@ int FindSoundNoHash(const char* logicalname)
 	return S_sfx.size();
 }
 
-int FindSoundTentative(const char* name)
+size_t FindSoundTentative(const char* name)
 {
-	int id = FindSoundNoHash(name);
-	if (id == static_cast<int>(S_sfx.size()))
+	size_t id = FindSoundNoHash(name);
+	if (id == S_sfx.size())
 	{
 		id = S_AddSoundLump(name, -1);
 	}
 	return id;
 }
 
-int S_AddSound(const char *logicalname, const char *lumpname)
+size_t S_AddSound(const char *logicalname, const char *lumpname)
 {
-	int sfxid = FindSoundNoHash(logicalname);
+	size_t sfxid = FindSoundNoHash(logicalname);
 
 	const int lump = lumpname ? W_CheckNumForName(lumpname) : -1;
 
 	// Otherwise, prepare a new one.
-	if (sfxid != static_cast<int>(S_sfx.size()))
+	if (sfxid != S_sfx.size())
 	{
 		sfxinfo_t& sfx = S_sfx[sfxid];
 
@@ -327,7 +326,7 @@ int S_AddSound(const char *logicalname, const char *lumpname)
 	return sfxid;
 }
 
-void S_AddRandomSound(int owner, std::vector<int>& list)
+void S_AddRandomSound(size_t owner, std::vector<size_t>& list)
 {
 	S_rnd[owner] = list;
 	S_sfx[owner].link = owner;
@@ -460,22 +459,22 @@ void S_ParseSndInfo()
 				else if (os.compareTokenNoCase("alias"))
 				{
 					os.mustScan();
-					const int sfxfrom = S_AddSound(os.getToken().c_str(), NULL);
+					const size_t sfxfrom = S_AddSound(os.getToken().c_str(), NULL);
 					os.mustScan();
 					S_sfx[sfxfrom].link = FindSoundTentative(os.getToken().c_str());
 				}
 				else if (os.compareTokenNoCase("random"))
 				{
-					std::vector<int> list;
+					std::vector<size_t> list;
 
 					os.mustScan();
-					const int owner = S_AddSound(os.getToken().c_str(), NULL);
+					const size_t owner = S_AddSound(os.getToken().c_str(), NULL);
 
 					os.mustScan();
 					os.assertTokenIs("{");
 					while (os.scan() && !os.compareToken("}"))
 					{
-						const int sfxto = FindSoundTentative(os.getToken().c_str());
+						const size_t sfxto = FindSoundTentative(os.getToken().c_str());
 
 						if (owner == sfxto)
 						{

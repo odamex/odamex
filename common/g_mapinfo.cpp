@@ -877,16 +877,14 @@ void MIType_Map07Special(OScanner& os, bool newStyleMapInfo, void* data, unsigne
 	    *static_cast<std::vector<bossaction_t>*>(data);
 
 	// mancubus
-	bossactionvector.emplace_back();
-	bossaction_t& mancaction = bossactionvector.back();
+	bossaction_t& mancaction = bossactionvector.emplace_back();
 
 	mancaction.type = MT_FATSO;
 	mancaction.special = 23;
 	mancaction.tag = 666;
 
 	// arachnotron
-	bossactionvector.emplace_back();
-	bossaction_t& arachnoaction = bossactionvector.back();
+	bossaction_t& arachnoaction = bossactionvector.emplace_back();
 
 	arachnoaction.type = MT_BABY;
 	arachnoaction.special = 30;
@@ -956,8 +954,7 @@ void MIType_SpecialAction_ExitLevel(OScanner& os, bool newStyleMapInfo, void* da
 		}
 	}
 
-	bossactionvector.emplace_back();
-	bossaction_t& action = bossactionvector.back();
+	bossaction_t& action = bossactionvector.emplace_back();
 	action.special = 11;
 	action.tag = 0;
 }
@@ -978,8 +975,7 @@ void MIType_SpecialAction_OpenDoor(OScanner& os, bool newStyleMapInfo, void* dat
 		}
 	}
 
-	bossactionvector.emplace_back();
-	bossaction_t& action = bossactionvector.back();
+	bossaction_t& action = bossactionvector.emplace_back();
 	action.special = 29;
 	action.tag = 666;
 }
@@ -1000,8 +996,7 @@ void MIType_SpecialAction_LowerFloor(OScanner& os, bool newStyleMapInfo, void* d
 		}
 	}
 
-	bossactionvector.emplace_back();
-	bossaction_t& action = bossactionvector.back();
+	bossaction_t& action = bossactionvector.emplace_back();
 	action.special = 23;
 	action.tag = 666;
 }

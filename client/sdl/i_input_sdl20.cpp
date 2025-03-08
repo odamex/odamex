@@ -912,8 +912,7 @@ void ISDL20InputSubsystem::shutdownKeyboard(int id)
 std::vector<IInputDeviceInfo> ISDL20InputSubsystem::getMouseDevices() const
 {
 	std::vector<IInputDeviceInfo> devices;
-	devices.push_back(IInputDeviceInfo());
-	IInputDeviceInfo& sdl_device_info = devices.back();
+	IInputDeviceInfo& sdl_device_info = devices.emplace_back();
 	sdl_device_info.mId = 0;
 	sdl_device_info.mDeviceName = "SDL 2.0 mouse";
 	return devices;
@@ -970,8 +969,7 @@ std::vector<IInputDeviceInfo> ISDL20InputSubsystem::getJoystickDevices() const
 	std::vector<IInputDeviceInfo> devices;
 	for (int i = 0; i < SDL_NumJoysticks(); i++)
 	{
-		devices.push_back(IInputDeviceInfo());
-		IInputDeviceInfo& device_info = devices.back();
+		IInputDeviceInfo& device_info = devices.emplace_back();
 		device_info.mId = i;
 		const char* name = SDL_GameControllerNameForIndex(i);
 		device_info.mDeviceName = fmt::format("SDL 2.0 joystick ({})", name ? name : "unknown");

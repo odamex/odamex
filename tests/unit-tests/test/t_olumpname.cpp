@@ -29,8 +29,9 @@ TEST(OLumpName, Substring) {
 
 TEST(OLumpName, AtBoundsCheck) {
 	OLumpName lumpname = "test";
-	EXPECT_NO_THROW(lumpname.at(4));
-	EXPECT_ANY_THROW(lumpname.at(5));
+	char dummy;
+	EXPECT_NO_THROW(dummy = lumpname.at(4));
+	EXPECT_ANY_THROW(dummy = lumpname.at(5));
 }
 
 TEST(OLumpName, Equality) {
