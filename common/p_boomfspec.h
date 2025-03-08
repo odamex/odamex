@@ -60,5 +60,3 @@ void P_SpawnFireFlicker(sector_t* sector);
 AActor* P_GetPushThing(int);
 void P_PostProcessCompatibleLinedefSpecial(line_t* line);
 bool P_IsTeleportLine(const short special);
-
-extern bool demoplayback;

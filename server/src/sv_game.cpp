@@ -56,20 +56,15 @@ EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_teamsinplay)
 
-gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
 
 bool 			sendpause;				// send a pause event next tic
 
 player_t		nullplayer;				// The null player
 
-byte			consoleplayer_id;		// player taking events and displaying
-byte			displayplayer_id;		// view being displayed
 int 			gametic;
 
-
 FILE			*recorddemo_fp;			// Ch0wW : Keeping this for future serverside demo-recording.
-bool 			demoplayback;			// FIXME : remove this serverside !
 int				demostartgametic;		// FIXME : remove this serverside !
 
 wbstartstruct_t wminfo; 				// parms for world map / intermission

@@ -108,7 +108,6 @@ EXTERN_CVAR (in_autosr50)
 
 EXTERN_CVAR (chasedemo)
 
-gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
 
 bool 			sendpause;				// send a pause event next tic
@@ -120,8 +119,6 @@ bool			longtics;				// don't quantize yaw for classic vanilla demos
 bool 			nodrawers;				// for comparative timing purposes
 bool 			noblit; 				// for comparative timing purposes
 
-byte			consoleplayer_id;			// player taking events and displaying
-byte			displayplayer_id;			// view being displayed
 int 			gametic;
 
 extern fixed_t bobx;
@@ -187,7 +184,6 @@ CVAR_FUNC_IMPL(cl_mouselook)
 }
 
 char			demoname[256];
-bool 			demoplayback;
 
 extern bool		simulated_connection;
 

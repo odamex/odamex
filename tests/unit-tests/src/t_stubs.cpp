@@ -40,18 +40,13 @@ bool clientside = false; // don't want any rendering code called
 bool serverside = true;
 baseapp_t baseapp = test;
 
-// Unnatural Level Progression.  True if we've used 'map' or another command
-// to switch to a specific map out of order, otherwise false.
-bool unnatural_level_progression;
-unsigned char consoleplayer_id;
+bool unnatural_level_progression = false;
+bool step_mode = false;
 wbstartstruct_t wminfo;
-gameaction_t gameaction;
+
 bool predicting;
 int demostartgametic;
-
 bool isFast;
-bool demoplayback;
-bool step_mode;
 int gametic;
 bool simulated_connection;
 gamestate_t gamestate;
@@ -127,19 +122,10 @@ void V_RefreshColormaps() {}
 
 size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str) { return 0; }
 
-#define NORM_PITCH				128
-#define NORM_PRIORITY			64
-#define NORM_SEP				128
-
-#define S_PITCH_PERTURB 		1
-#define S_STEREO_SWING			(96<<FRACBITS)
-
 //
 // [RH] Print sound debug info. Called from D_Display()
 //
-void S_NoiseDebug()
-{
-}
+void S_NoiseDebug() {}
 
 
 //

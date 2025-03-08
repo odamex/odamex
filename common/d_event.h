@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -18,7 +18,7 @@
 //
 // DESCRIPTION:
 //	Input event handling (?)
-//    
+//
 //-----------------------------------------------------------------------------
 
 #pragma once
@@ -63,7 +63,7 @@ struct event_t
 	int			mod;				// input mods
 };
 
- 
+
 typedef enum
 {
 	ga_nothing,
@@ -96,7 +96,7 @@ typedef enum
 	// Flag: game events, not really buttons.
 	BT_SPECIAL			= 128,
 	BT_SPECIALMASK		= 3,
-	
+
 	// Flag, weapon change pending.
 	// If true, the next 3 bits hold weapon num.
 	BT_CHANGE			= 4,
@@ -112,10 +112,10 @@ typedef enum
 	BTS_SAVEGAME		= 2,
 
 	// Savegame slot numbers
-	//	occupy the second byte of buttons.	  
+	//	occupy the second byte of buttons.
 	BTS_SAVEMASK		= (4+8+16),
 	BTS_SAVESHIFT		= 2
-  
+
 } buttoncode_t;
 
 
@@ -130,4 +130,4 @@ extern	event_t 		events[MAXEVENTS];
 extern	int 			eventhead;
 extern	int 			eventtail;
 
-extern	gameaction_t	gameaction;
+inline	gameaction_t	gameaction;
