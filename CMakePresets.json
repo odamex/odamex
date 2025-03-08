@@ -11,19 +11,6 @@
             }
         },
         {
-            "name": "test",
-            "generator": "Visual Studio 17 2022",
-            "binaryDir": "${sourceDir}/build_test",
-            "cacheVariables": {
-                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
-                "VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
-                "BUILD_CLIENT": "OFF",
-                "BUILD_SERVER": "OFF",
-                "BUILD_LAUNCHER": "OFF",
-                "BUILD_MASTER": "ON"
-            }
-        },
-        {
             "name": "ninja",
             "generator": "Ninja Multi-Config",
             "binaryDir": "${sourceDir}/build",

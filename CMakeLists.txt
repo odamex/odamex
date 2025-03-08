@@ -30,9 +30,6 @@ if(BUILD_LAUNCHER)
 endif()
 
 option(BUILD_MASTER "Build master server target" 0)
-# if(BUILD_MASTER)
-#   list(APPEND VCPKG_MANIFEST_FEATURES "master")
-# endif()
 
 project(Odamex VERSION 12.0.0)
 
