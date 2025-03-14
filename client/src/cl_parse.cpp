@@ -1312,13 +1312,21 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 {
 	uint32_t srcid = msg->source_netid();
-	uint32_t tgtid = msg->target().netid();
+	uint32_t cpsid = msg->corpse().netid();
 
 	AActor* source = P_FindThingById(srcid);
-	AActor* corpsehit = P_FindThingById(tgtid);
+	AActor* corpsehit = P_FindThingById(cpsid);
 
 	if (!corpsehit)
 		return;
+
+	corpsehit->x = msg->corpse().pos().x();
+	corpsehit->y = msg->corpse().pos().y();
+	corpsehit->z = msg->corpse().pos().z();
+	corpsehit->angle = msg->corpse().angle();
+	corpsehit->momx = msg->corpse().mom().x();
+	corpsehit->momy = msg->corpse().mom().y();
+	corpsehit->momz = msg->corpse().mom().z();
 
 	mobjinfo_t* info = corpsehit->info;
 

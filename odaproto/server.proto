@@ -170,7 +170,7 @@ message KillMobj
 message RaiseMobj
 {
 	uint32 source_netid = 1;
-	Actor target = 2;
+	Actor corpse = 2;
 }
 
 // svc_fireweapon
