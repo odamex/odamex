@@ -247,6 +247,7 @@ enum svc_t
 	svc_maplist_index,     // [AM] - Send the current and next map index to the client.
 	svc_toast,
 	svc_hordeinfo,
+	svc_raisemobj,
 	svc_netdemocap = 100,  // netdemos - NullPoint
 	svc_netdemostop = 101, // netdemos - NullPoint
 	svc_netdemoloadsnap = 102, // netdemos - NullPoint

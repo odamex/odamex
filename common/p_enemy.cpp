@@ -92,6 +92,7 @@ void A_Fall (AActor *actor);
 
 
 void SV_UpdateMonsterRespawnCount();
+void SV_SendRaiseMobj(AActor* source, AActor* corpse);
 void SV_UpdateMobj(AActor* mo);
 void SV_Sound(AActor* mo, byte channel, const char* name, byte attenuation);
 
@@ -1580,7 +1581,8 @@ void A_VileChase (AActor *actor)
 						SV_UpdateMonsterRespawnCount();
 					}
 
-					P_SetMobjState (corpsehit,info->raisestate, true);
+					P_SetMobjState (corpsehit,info->raisestate);
+					SV_SendRaiseMobj(actor, corpsehit);
 
 					// [Nes] - Classic demo compatability: Ghost monster bug.
 					if ((co_novileghosts)) {
@@ -2209,7 +2211,8 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 						SV_UpdateMonsterRespawnCount();
 					}
 
-					P_SetMobjState(corpsehit, info->raisestate, true);
+					P_SetMobjState(corpsehit, info->raisestate);
+					SV_SendRaiseMobj(actor, corpsehit);
 
 					// [Nes] - Classic demo compatability: Ghost monster bug.
 					if ((co_novileghosts))

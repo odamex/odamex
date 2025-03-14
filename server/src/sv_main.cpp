@@ -4387,6 +4387,22 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 	}
 }
 
+void SV_SendRaiseMobj(AActor* source, AActor* corpse)
+{
+	if (!corpse)
+		return;
+
+	for (auto& player : players)
+	{
+		client_t* cl = &(player.client);
+
+		if (!SV_IsPlayerAllowedToSee(player, corpse))
+			continue;
+
+		MSG_WriteSVC(&cl->reliablebuf, SVC_RaiseMobj(source, corpse));
+	}
+}
+
 // Tells clients to remove an actor from the world as it doesn't exist anymore
 void SV_SendDestroyActor(AActor *mo)
 {

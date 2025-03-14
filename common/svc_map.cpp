@@ -66,6 +66,7 @@ static void InitMap()
 	MapProto(svc_spawnplayer, odaproto::svc::SpawnPlayer::descriptor());
 	MapProto(svc_damageplayer, odaproto::svc::DamagePlayer::descriptor());
 	MapProto(svc_killmobj, odaproto::svc::KillMobj::descriptor());
+	MapProto(svc_raisemobj, odaproto::svc::RaiseMobj::descriptor());
 	MapProto(svc_fireweapon, odaproto::svc::FireWeapon::descriptor());
 	MapProto(svc_updatesector, odaproto::svc::UpdateSector::descriptor());
 	MapProto(svc_print, odaproto::svc::Print::descriptor());

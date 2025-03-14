@@ -1023,6 +1023,7 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_spawnplayer);
 	SVC_INFO(svc_damageplayer);
 	SVC_INFO(svc_killmobj);
+	SVC_INFO(svc_raisemobj);
 	SVC_INFO(svc_fireweapon);
 	SVC_INFO(svc_updatesector);
 	SVC_INFO(svc_print);
