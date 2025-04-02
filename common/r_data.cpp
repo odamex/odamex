@@ -253,19 +253,6 @@ void R_DrawColumnInCache(const tallpost_t *post, byte *cache,
 	}
 }
 
-// Some vanilla textures use patch offsets that were ignored by the vanilla executable
-// In Odamex, these cause issues and need to be set to zero manually
-void R_VanillaTextureHacks(texture_t* tex)
-{
-	if (tex->name == "SKY1" &&
-	    tex->height == 128 &&
-		tex->patchcount == 1 &&
-		tex->patches[0].originy == -8)
-	{
-		tex->patches[0].originy = 0;
-	}
-}
-
 //
 // R_GenerateComposite
 // Using the texture definition,
@@ -281,10 +268,9 @@ void R_GenerateComposite (int texnum)
 	texturecomposite[texnum] = block;
 	texture_t *texture = textures[texnum];
 
-	R_VanillaTextureHacks(texture);
-
 	// Composite the columns together.
 	texpatch_t *texpatch = texture->patches;
+	short *collump = texturecolumnlump[texnum];
 
 	// killough 4/9/98: marks to identify transparent regions in merged textures
 	byte *marks = new byte[texture->width * texture->height];
@@ -302,12 +288,15 @@ void R_GenerateComposite (int texnum)
 
 		for (; x1 < x2 ; x1++)
 		{
-			// killough 1/25/98, 4/9/98: Fix medusa bug.
-			tallpost_t *srcpost = (tallpost_t*)((byte*)patch + LELONG(cofs[x1]));
-			tallpost_t *destpost = (tallpost_t*)(block + texturecolumnofs[texnum][x1]);
+			if (collump[x1] == -1)			// Column has multiple patches?
+			{
+				// killough 1/25/98, 4/9/98: Fix medusa bug.
+				tallpost_t *srcpost = (tallpost_t*)((byte*)patch + LELONG(cofs[x1]));
+				tallpost_t *destpost = (tallpost_t*)(block + texturecolumnofs[texnum][x1]);
 
-			R_DrawColumnInCache(srcpost, destpost->data(), texpatch->originy, texture->height,
-								marks + x1 * texture->height);
+				R_DrawColumnInCache(srcpost, destpost->data(), texpatch->originy, texture->height,
+									marks + x1 * texture->height);
+			}
 		}
 	}
 
@@ -317,6 +306,9 @@ void R_GenerateComposite (int texnum)
 	byte *tmpdata = new byte[texture->height];		// temporary post data
 	for (int i = 0; i < texture->width; i++)
 	{
+		if (collump[i] != -1)	// process only multipatched columns
+			continue;
+
 		tallpost_t *post = (tallpost_t *)(block + texturecolumnofs[texnum][i]);
 		const byte *mark = marks + i * texture->height;
 		int j = 0;
@@ -368,10 +360,14 @@ void R_GenerateLookup(int texnum, int *const errors)
 
 	// Composited texture not created yet.
 
+	short *collump = texturecolumnlump[texnum];
+
 	// killough 4/9/98: keep count of posts in addition to patches.
 	// Part of fix for medusa bug for multipatched 2s normals.
+	unsigned short *patchcount = new unsigned short[texture->width];
 	unsigned short *postcount = new unsigned short[texture->width];
 
+	memset(patchcount, 0, sizeof(unsigned short) * texture->width);
 	memset(postcount, 0, sizeof(unsigned short) * texture->width);
 
 	const texpatch_t *texpatch = texture->patches;
@@ -397,6 +393,9 @@ void R_GenerateLookup(int texnum, int *const errors)
 			// NOTE: this offset will be rewritten later if a composite is generated
 			// for this texture (eg, there's more than one patch)
 			texturecolumnofs[texnum][x] = (byte *)post - (byte *)patch;
+
+			patchcount[x]++;
+			collump[x] = patchnum;
 
 			while (!post->end())
 			{
@@ -424,6 +423,8 @@ void R_GenerateLookup(int texnum, int *const errors)
 		// yet know how many posts the merged column will
 		// require, and it's bounded above by this limit.
 
+		collump[x] = -1;				// mark lump as in need of compositing
+
 		texturecolumnofs[texnum][x] = csize;
 
 		// 4 header bytes per post + column height + 2 byte terminator
@@ -432,6 +433,7 @@ void R_GenerateLookup(int texnum, int *const errors)
 
 	texturecompositesize[texnum] = csize;
 
+	delete [] patchcount;
 	delete [] postcount;
 }
 
@@ -621,7 +623,8 @@ void R_InitTextures (void)
 		texture->height = SAFESHORT(mtexture->height);
 		texture->patchcount = SAFESHORT(mtexture->patchcount);
 
-		texture->name = mtexture->name;
+		strncpy (texture->name, mtexture->name, 9); // denis - todo string limit?
+		std::transform(texture->name, texture->name + strlen(texture->name), texture->name, toupper);
 
 		mpatch = &mtexture->patches[0];
 		patch = &texture->patches[0];
@@ -633,7 +636,7 @@ void R_InitTextures (void)
 			patch->patch = patchlookup[LESHORT(mpatch->patch)];
 			if (patch->patch == -1)
 			{
-				PrintFmt(PRINT_WARNING, "R_InitTextures: Missing patch in texture {}\n", texture->name);
+				Printf (PRINT_WARNING, "R_InitTextures: Missing patch in texture %s\n", texture->name);
 				errors++;
 			}
 		}
@@ -1009,17 +1012,21 @@ int R_FlatNumForName (const char* name)
 //
 int R_CheckTextureNumForName (const char *name)
 {
+	unsigned char uname[9];
+	int  i;
+
 	// "NoTexture" marker.
 	if (name[0] == '-')
 		return 0;
 
 	// [RH] Use a hash table instead of linear search
-	OLumpName uname = name;
+	strncpy ((char *)uname, name, 9); // denis - todo - string limit?
+	std::transform(uname, uname + sizeof(uname), uname, toupper);
 
-	int i = textures[/*W_LumpNameHash (uname) % (unsigned) numtextures*/0]->index; // denis - todo - replace with map<>
+	i = textures[/*W_LumpNameHash (uname) % (unsigned) numtextures*/0]->index; // denis - todo - replace with map<>
 
 	while (i != -1) {
-		if (textures[i]->name == uname)
+		if (!strncmp (textures[i]->name, (char *)uname, 8))
 			break;
 		i = textures[i]->next;
 	}
