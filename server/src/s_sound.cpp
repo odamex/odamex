@@ -269,8 +269,8 @@ int S_AddSoundLump(const char *logicalname, int lump)
 	S_sfx.emplace_back();
 	sfxinfo_t& new_sfx = S_sfx.back();
 
-	// logicalname MUST be <= MAX_SNDNAME chars long
-	M_StringCopy(new_sfx.name, logicalname, MAX_SNDNAME + 1);
+	// logicalname MUST be < MAX_SNDNAME chars long
+	strcpy(new_sfx.name, logicalname);
 	new_sfx.data = NULL;
 	new_sfx.link = sfxinfo_t::NO_LINK;
 	new_sfx.lumpnum = lump;

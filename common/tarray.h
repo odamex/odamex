@@ -41,7 +41,7 @@ public:
 	{
 		Most = max;
 		Count = 0;
-		Array = (T*) M_Malloc(sizeof(T)*max);
+		Array = (T *)Malloc (sizeof(T)*max);
 	}
 	~TArray ()
 	{
@@ -58,7 +58,7 @@ public:
 		if (Count >= Most)
 		{
 			Most = Most ? Most * 2 : 16;
-			Array = (T*) M_Realloc(Array, sizeof(T)*Most);
+			Array = (T *)Realloc (Array, sizeof(T)*Most);
 		}
 		Array[Count] = item;
 		return Count++;
@@ -93,7 +93,7 @@ public:
 			const size_t choicea = Count + amount;
 			const size_t choiceb = Most + Most/2;
 			Most = (choicea > choiceb ? choicea : choiceb);
-			Array = (T*) M_Realloc(Array, sizeof(T)*Most);
+			Array = (T *)Realloc (Array, sizeof(T)*Most);
 		}
 	}
 	// Resize Array so that it has exactly amount entries in use.

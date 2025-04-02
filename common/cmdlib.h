@@ -84,7 +84,6 @@ extern	char	com_token[8192];
 extern	bool	com_eof;
 
 char	*copystring(const char *s);
-bool M_StringCopy(char *dest, const char *src, size_t dest_size);
 
 std::vector<std::string> VectorArgs(size_t argc, char **argv);
 std::string JoinStrings(const std::vector<std::string> &pieces, const std::string &glue = "");

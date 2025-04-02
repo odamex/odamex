@@ -180,7 +180,8 @@ void S_NoiseDebug()
 				oy = Channel[i].y;
 			}
 			const int color = Channel[i].loop ? CR_BROWN : CR_GREY;
-			M_StringCopy(temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name, 9);
+			strcpy (temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name);
+			temp[8] = 0;
 			screen->DrawText (color, 0, y, temp);
 			snprintf (temp, 16, "%d", ox / FRACUNIT);
 			screen->DrawText (color, 70, y, temp);
@@ -1206,7 +1207,7 @@ int S_AddSoundLump(const char *logicalname, int lump)
 	sfxinfo_t& new_sfx = S_sfx.emplace_back();
 
 	// logicalname MUST be < MAX_SNDNAME chars long
-	M_StringCopy(new_sfx.name, logicalname, MAX_SNDNAME + 1);
+	strcpy(new_sfx.name, logicalname);
 	new_sfx.data = NULL;
 	new_sfx.link = sfxinfo_t::NO_LINK;
 	new_sfx.lumpnum = lump;

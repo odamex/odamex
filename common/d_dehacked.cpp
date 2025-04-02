@@ -2159,7 +2159,7 @@ static int PatchStrings(int dummy)
 #endif
 	if (!holdstring)
 	{
-		holdstring = static_cast<char*>(M_Malloc(maxstrlen));
+		holdstring = (char*)Malloc(maxstrlen);
 	}
 
 	while ((result = GetLine()) == 1)
@@ -2172,9 +2172,9 @@ static int PatchStrings(int dummy)
 			while (maxstrlen < strlen(holdstring) + strlen(Line2) + 8)
 			{
 				maxstrlen += 128;
-				holdstring = static_cast<char*>(M_Realloc(holdstring, maxstrlen));
+				holdstring = (char*)Realloc(holdstring, maxstrlen);
 			}
-			strncat(holdstring, skipwhite(Line2), maxstrlen - strlen(holdstring) - 1);
+			strcat(holdstring, skipwhite(Line2));
 			stripwhite(holdstring);
 			if (holdstring[strlen(holdstring) - 1] == '\\')
 			{

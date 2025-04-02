@@ -630,7 +630,7 @@ void M_ReadSaveStrings()
 		FILE* handle = fopen(name.c_str(), "rb");
 		if (handle == NULL)
 		{
-			M_StringCopy(&savegamestrings[i][0], GStrings(EMPTYSTRING), SAVESTRINGSIZE);
+			strcpy (&savegamestrings[i][0], GStrings(EMPTYSTRING));
 			LoadSavegameMenu[i].status = 0;
 		}
 		else
@@ -670,7 +670,7 @@ void M_LoadSelect (int choice)
 	std::string name;
 
 	G_BuildSaveName (name, choice);
-	G_LoadGame(name);
+	G_LoadGame(name.c_str());
 	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
 	M_ClearMenus ();
 	if (quickSaveSlot == -2)
@@ -721,7 +721,7 @@ void M_DrawSave()
 //
 void M_DoSave (int slot)
 {
-	G_SaveGame (slot, { savegamestrings[slot], 24 });
+	G_SaveGame (slot,savegamestrings[slot]);
 	M_ClearMenus ();
 		// PICK QUICKSAVE SLOT YET?
 	if (quickSaveSlot == -2)
@@ -744,7 +744,7 @@ void M_SaveSelect (int choice)
 	genStringLen = SAVESTRINGSIZE-1;
 
 	saveSlot = choice;
-	M_StringCopy(saveOldString, savegamestrings[choice], SAVESTRINGSIZE);
+	strcpy(saveOldString,savegamestrings[choice]);
 
 	// If on a game console, auto-fill with date and time to save name
 
@@ -1280,7 +1280,7 @@ EXTERN_CVAR (cl_autoaim)
 
 void M_PlayerSetup(int choice)
 {
-	M_StringCopy(savegamestrings[0], cl_name.cstring(), SAVESTRINGSIZE);
+	strcpy(savegamestrings[0], cl_name.cstring());
 	M_SetupNextMenu (&PSetupDef);
 	PlayerState = &states[mobjinfo[MT_PLAYER].seestate];
 	PlayerTics = PlayerState->tics;
@@ -1716,8 +1716,8 @@ static void M_EditPlayerName (int choice)
 	genStringLen = MAXPLAYERNAME;
 
 	saveSlot = 0;
-	M_StringCopy(saveOldString, savegamestrings[0], SAVESTRINGSIZE);
-	if (!strcmp(savegamestrings[0], GStrings(EMPTYSTRING)))
+	strcpy(saveOldString,savegamestrings[0]);
+	if (!strcmp(savegamestrings[0],GStrings(EMPTYSTRING)))
 		savegamestrings[0][0] = 0;
 	saveCharIndex = strlen(savegamestrings[0]);
 }
@@ -1940,7 +1940,7 @@ bool M_Responder (event_t* ev)
 			if (genStringEnter == oldmenustring_t::SAVEGAME)
 				M_ClearMenus();
 			genStringEnter = oldmenustring_t::NONE;
-			M_StringCopy(&savegamestrings[saveSlot][0], saveOldString, SAVESTRINGSIZE);
+			strcpy(&savegamestrings[saveSlot][0], saveOldString);
 		}
 		else if (Key_IsAcceptKey(ch))
 		{

@@ -1336,14 +1336,21 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 //		%o -> other (victim)
 //		%k -> killer
 //
-void SexMessage (const char *from, char *to, gender_t gender, std::string_view victim, std::string_view killer)
+void SexMessage (const char *from, char *to, int gender, const char *victim, const char *killer)
 {
-	static constexpr std::string_view genderstuff[3][3] =
+	static const char *genderstuff[3][3] =
 	{
 		{ "he",  "him", "his" },
 		{ "she", "her", "her" },
 		{ "it",  "it",  "its" }
 	};
+	static constexpr int gendershift[3][3] =
+	{
+		{ 2, 3, 3 },
+		{ 3, 3, 3 },
+		{ 2, 2, 3 }
+	};
+	const char *subst = NULL;
 
 	do
 	{
@@ -1354,7 +1361,6 @@ void SexMessage (const char *from, char *to, gender_t gender, std::string_view v
 		else
 		{
 			int gendermsg = -1;
-			std::string_view subst{};
 
 			switch (from[1])
 			{
@@ -1364,11 +1370,13 @@ void SexMessage (const char *from, char *to, gender_t gender, std::string_view v
 			case 'o':	subst = victim;	break;
 			case 'k':	subst = killer;	break;
 			}
-			if (!subst.empty())
+			if (subst != NULL)
 			{
-				strncpy(to, subst.data(), subst.length());
-				to += subst.length();
+				size_t len = strlen (subst);
+				memcpy (to, subst, len);
+				to += len;
 				from++;
+				subst = NULL;
 			}
 			else if (gendermsg < 0)
 			{
@@ -1376,8 +1384,8 @@ void SexMessage (const char *from, char *to, gender_t gender, std::string_view v
 			}
 			else
 			{
-				strncpy(to, genderstuff[gender][gendermsg].data(), genderstuff[gender][gendermsg].length());
-				to += genderstuff[gender][gendermsg].length();
+				strcpy (to, genderstuff[gender][gendermsg]);
+				to += gendershift[gender][gendermsg];
 				from++;
 			}
 		}
@@ -1399,7 +1407,7 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	if (!G_CanShowObituary() || gamestate != GS_LEVEL)
 		return;
 
-	gender_t gender = self->player->userinfo.gender;
+	int gender = self->player->userinfo.gender;
 
 	// Treat voodoo dolls as unknown deaths
 	if (inflictor && inflictor->player == self->player)
@@ -1575,8 +1583,8 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 
 	if (message)
 	{
-		SexMessage(message, gendermessage, gender, self->player->userinfo.netname,
-		           self->player->userinfo.netname);
+		SexMessage(message, gendermessage, gender, self->player->userinfo.netname.c_str(),
+		           self->player->userinfo.netname.c_str());
 		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 		toast_t toast;
@@ -1651,8 +1659,8 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 
 	if (message && attacker && attacker->player)
 	{
-		SexMessage(message, gendermessage, gender, self->player->userinfo.netname,
-		           attacker->player->userinfo.netname);
+		SexMessage(message, gendermessage, gender, self->player->userinfo.netname.c_str(),
+		           attacker->player->userinfo.netname.c_str());
 		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 		toast_t toast;
@@ -1665,8 +1673,8 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	}
 
 	SexMessage(GStrings(OB_DEFAULT), gendermessage, gender,
-	           self->player->userinfo.netname,
-	           self->player->userinfo.netname);
+	           self->player->userinfo.netname.c_str(),
+	           self->player->userinfo.netname.c_str());
 	SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 	toast_t toast;

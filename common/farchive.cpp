@@ -140,7 +140,7 @@ void FLZOFile::PostOpen()
 			SWAP_DWORD(sizes[1]);
 
 			unsigned int len = sizes[0] == 0 ? sizes[1] : sizes[0];
-			m_Buffer = (byte*) M_Malloc(len + 8);
+			m_Buffer = (byte*)Malloc(len + 8);
 
 			readlen = fread(m_Buffer + 8, len, 1, m_File);
 			if ( readlen < 1 )
@@ -205,7 +205,7 @@ FFile& FLZOFile::Write(const void* mem, unsigned int len)
 			m_BufferSize = m_MaxBufferSize = m_BufferSize ? m_BufferSize * 2 : 16384;
 		} while (m_Pos + len > m_BufferSize);
 
-		m_Buffer = (byte*)M_Realloc(m_Buffer, m_BufferSize);
+		m_Buffer = (byte*)Realloc(m_Buffer, m_BufferSize);
 	}
 
 	if (len == 1)
@@ -300,7 +300,7 @@ void FLZOFile::Implode()
 	else
 		m_BufferSize = m_MaxBufferSize = compressed_len;
 
-	m_Buffer = (byte*) M_Malloc(m_BufferSize + 8);
+	m_Buffer = (byte*)Malloc(m_BufferSize + 8);
 	m_Pos = 0;
 
 	((unsigned int*)m_Buffer)[0] = BELONG((unsigned int)compressed_len);
@@ -324,7 +324,7 @@ void FLZOFile::Explode()
 		unsigned int compressed_len = BELONG(((unsigned int*)m_Buffer)[0]);
 		unsigned int expanded_len = BELONG(((unsigned int*)m_Buffer)[1]);
 
-		byte* expanded_buffer = (byte*) M_Malloc(expanded_len);
+		byte* expanded_buffer = (byte*)Malloc(expanded_len);
 
 		if (compressed_len != 0)
 		{
@@ -403,7 +403,7 @@ bool FLZOMemFile::Open()
 	m_Mode = EWriting;
 	m_BufferSize = 0;
 	m_MaxBufferSize = 16384;
-	m_Buffer = (unsigned char*) M_Malloc(16384);
+	m_Buffer = (unsigned char*)Malloc(16384);
 	m_Pos = 0;
 	return true;
 }
@@ -467,7 +467,7 @@ void FLZOMemFile::Serialize(FArchive& arc)
 		arc >> sizes[0] >> sizes[1];
 		DWORD len = sizes[0] == 0 ? sizes[1] : sizes[0];
 
-		m_Buffer = (byte*) M_Malloc(len + 8);
+		m_Buffer = (byte*)Malloc(len + 8);
 		SWAP_DWORD(sizes[0]);
 		SWAP_DWORD(sizes[1]);
 		((DWORD*)m_Buffer)[0] = sizes[0];
@@ -980,7 +980,7 @@ DWORD FArchive::MapObject (const DObject *obj)
 	if (m_ObjectCount >= m_MaxObjectCount)
 	{
 		m_MaxObjectCount = m_MaxObjectCount ? m_MaxObjectCount * 2 : 1024;
-		m_ObjectMap = (ObjectMap *)M_Realloc(m_ObjectMap, sizeof(ObjectMap)*m_MaxObjectCount);
+		m_ObjectMap = (ObjectMap *)Realloc (m_ObjectMap, sizeof(ObjectMap)*m_MaxObjectCount);
 		for (i = m_ObjectCount; i < m_MaxObjectCount; i++)
 		{
 			m_ObjectMap[i].hashNext = (unsigned)~0;

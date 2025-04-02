@@ -53,36 +53,13 @@
 char		com_token[8192];
 bool		com_eof;
 
-// Safe string copy function that works like OpenBSD's strlcpy().
-// Returns true if the string was not truncated.
-// from Chocolate Doom m_misc.cpp
-
-bool M_StringCopy(char *dest, const char *src, size_t dest_size)
-{
-    size_t len;
-
-    if (dest_size >= 1)
-    {
-        dest[dest_size - 1] = '\0';
-        strncpy(dest, src, dest_size - 1);
-    }
-    else
-    {
-        return false;
-    }
-
-    len = strlen(dest);
-    return src[len] == '\0';
-}
-
 char *copystring (const char *s)
 {
 	char *b;
 	if (s)
 	{
-		size_t len = strlen(s) + 1;
-		b = new char[len];
-		M_StringCopy(b, s, len);
+		b = new char[strlen(s)+1];
+		strcpy (b, s);
 	}
 	else
 	{

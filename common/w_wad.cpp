@@ -261,7 +261,7 @@ fhfprint_s W_FarmHash128(const byte* lumpdata, int length)
 //
 void W_AddLumps(FILE* handle, filelump_t* fileinfo, size_t newlumps, bool clientonly)
 {
-	lumpinfo = (lumpinfo_t*) M_Realloc(lumpinfo, (numlumps + newlumps) * sizeof(lumpinfo_t));
+	lumpinfo = (lumpinfo_t*)Realloc(lumpinfo, (numlumps + newlumps) * sizeof(lumpinfo_t));
 	if (!lumpinfo)
 		I_Error("Couldn't realloc lumpinfo");
 
@@ -513,7 +513,7 @@ void W_MergeLumps (const char *start, const char *end, int space)
 	if (newlumps)
 	{
 		if (oldlumps + newlumps > numlumps)
-			lumpinfo = (lumpinfo_t*) M_Realloc(lumpinfo, oldlumps + newlumps);
+			lumpinfo = (lumpinfo_t *)Realloc (lumpinfo, oldlumps + newlumps);
 
 		memcpy (lumpinfo + oldlumps, newlumpinfos, sizeof(lumpinfo_t) * newlumps);
 
@@ -582,7 +582,7 @@ void W_InitMultipleFiles(const OResFiles& files)
 	M_Free(lumpcache);
 
 	size_t size = numlumps * sizeof(*lumpcache);
-	lumpcache = (void **) M_Malloc(size);
+	lumpcache = (void **)Malloc (size);
 
 	if (!lumpcache)
 		I_Error("Couldn't allocate lumpcache");

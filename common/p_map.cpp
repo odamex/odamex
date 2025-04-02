@@ -2559,7 +2559,7 @@ bool PTR_RailTraverse (intercept_t *in)
 	if (NumRailHits >= MaxRailHits)
 	{
 		MaxRailHits = MaxRailHits ? MaxRailHits * 2 : 16;
-		RailHits = (SRailHit *) M_Realloc(RailHits, sizeof(*RailHits) * MaxRailHits);
+		RailHits = (SRailHit *)Realloc (RailHits, sizeof(*RailHits) * MaxRailHits);
 	}
 	RailHits[NumRailHits].hitthing = th;
 	RailHits[NumRailHits].x = x;

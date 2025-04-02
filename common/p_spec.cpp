@@ -841,7 +841,7 @@ void P_InitPicAnims (void)
 			if (lastanim >= anims + maxanims)
 			{
 				size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
-				anims = (anim_t*) M_Realloc(anims, newmax*sizeof(*anims));   // killough
+				anims = (anim_t *)Realloc(anims, newmax*sizeof(*anims));   // killough
 				lastanim = anims + maxanims;
 				maxanims = newmax;
 			}

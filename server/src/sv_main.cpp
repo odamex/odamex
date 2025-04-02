@@ -118,8 +118,8 @@ EXTERN_CVAR(g_winnerstays)
 EXTERN_CVAR(debug_disconnect)
 EXTERN_CVAR(g_resetinvonexit)
 
-void SexMessage (const char *from, char *to, gender_t gender,
-	std::string_view victim, std::string_view killer);
+void SexMessage (const char *from, char *to, int gender,
+	const char *victim, const char *killer);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_s* player);
 bool P_LineSpecialMovesSector(short special);

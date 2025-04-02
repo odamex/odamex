@@ -894,13 +894,13 @@ void A_Look (AActor *actor)
 	{
 		char sound[MAX_SNDNAME];
 
-		M_StringCopy(sound, actor->info->seesound, MAX_SNDNAME);
+		strcpy (sound, actor->info->seesound);
 
-		if (sound[strlen(sound) - 1] == '1')
+		if (sound[strlen(sound)-1] == '1')
 		{
-			sound[strlen(sound) - 1] = P_Random(actor)%3 + '1';
+			sound[strlen(sound)-1] = P_Random(actor)%3 + '1';
 			if (S_FindSound (sound) == -1)
-				sound[strlen(sound) - 1] = '1';
+				sound[strlen(sound)-1] = '1';
 		}
 
 		if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
@@ -2601,19 +2601,19 @@ void A_Scream (AActor *actor)
         return;
 
 
-	M_StringCopy(sound, actor->info->deathsound, MAX_SNDNAME);
+	strcpy (sound, actor->info->deathsound);
 
     if (stricmp(sound, "grunt/death1") == 0 ||
         stricmp(sound, "shotguy/death1") == 0 ||
         stricmp(sound, "chainguy/death1") == 0)
     {
-        sound[strlen(sound) - 1] = P_Random(actor) % 3 + '1';
+        sound[strlen(sound)-1] = P_Random(actor) % 3 + '1';
     }
 
     if (stricmp(sound, "imp/death1") == 0 ||
         stricmp(sound, "imp/death2") == 0)
     {
-        sound[strlen(sound) - 1] = P_Random(actor) % 2 + '1';
+        sound[strlen(sound)-1] = P_Random(actor) % 2 + '1';
     }
 
 	if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
@@ -2821,7 +2821,7 @@ void P_SpawnBrainTargets (void)	// killough 3/26/98: renamed old function
 		{	// killough 2/7/98: remove limit on icon landings:
 			if (numbraintargets >= numbraintargets_alloc)
 			{
-				braintargets = (AActor **)M_Realloc (braintargets,
+				braintargets = (AActor **)Realloc (braintargets,
 					(numbraintargets_alloc = numbraintargets_alloc ?
 					 numbraintargets_alloc*2 : 32) *sizeof *braintargets);
 			}

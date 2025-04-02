@@ -119,7 +119,7 @@ vissprite_t *R_NewVisSprite()
 		int prevvisspritenum = vissprite_p - vissprites;
 
 		MaxVisSprites *= 2;
-		vissprites = (vissprite_t *)M_Realloc (vissprites, MaxVisSprites * sizeof(vissprite_t));
+		vissprites = (vissprite_t *)Realloc (vissprites, MaxVisSprites * sizeof(vissprite_t));
 		lastvissprite = &vissprites[MaxVisSprites];
 		vissprite_p = &vissprites[prevvisspritenum];
 		DPrintFmt("MaxVisSprites increased to {}\n", MaxVisSprites);
