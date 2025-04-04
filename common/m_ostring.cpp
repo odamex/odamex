@@ -70,12 +70,12 @@ void OString::shutdown()
 
 void OString::printStringTable()
 {
-	printf("OString Table\n");
-	printf("=============\n");
+	fmt::print("OString Table\n");
+	fmt::print("=============\n");
 	for (const auto& string : *mStrings)
-		printf("id 0x%08x hash 0x%08x (%u): %s\n", mStrings->getId(string), hash(string.mString.c_str()),
-					string.mRefCount, string.mString.c_str());
-	printf("\n");
+		fmt::print("id 0x{:08} hash 0x{:08} ({}): {}\n", mStrings->getId(string), hash(string.mString.c_str()),
+					string.mRefCount, string.mString);
+	fmt::print("\n");
 }
 
 

@@ -60,7 +60,7 @@ typedef struct
 typedef struct
 {
 	// Keep name for switch changing, etc.
-	char		name[9];
+	OLumpName	name;
 	short		width;
 	short		height;
 

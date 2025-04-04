@@ -666,7 +666,7 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 		OWantFile::make(want_odamex, "odamex.wad", OFILE_WAD);
 		if (!M_ResolveWantedFile(odamex_wad, want_odamex))
 		{
-			I_FatalError("Could not resolve \"%s\".  Please ensure this file is "
+			I_FatalError("Could not resolve \"{}\".  Please ensure this file is "
 			             "someplace where Odamex can find it.\n",
 			             want_odamex.getBasename());
 		}
@@ -848,7 +848,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 		if (!fatalmsg.empty())
 		{
 			I_FatalError("Failed to load new resource files, then ran into error when "
-			             "loading original resource files:\n%s\n",
+			             "loading original resource files:\n{}\n",
 			             fatalmsg);
 		}
 	}

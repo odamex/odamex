@@ -156,7 +156,7 @@ void MustGetStringName(OScanner& os, const char* name)
 	os.mustScan();
 	if (os.compareTokenNoCase(name) == false)
 	{
-		os.error("Expected '%s', got '%s'.", name, os.getToken());
+		os.error("Expected '{}', got '{}'.", name, os.getToken());
 	}
 }
 
@@ -166,6 +166,7 @@ void MustGetStringName(OScanner& os, const char* name)
 bool ContainsMapInfoTopLevel(const OScanner& os)
 {
 	return os.compareTokenNoCase("map") || os.compareTokenNoCase("defaultmap") ||
+	       os.compareTokenNoCase("adddefaultmap") ||
 	       os.compareTokenNoCase("cluster") || os.compareTokenNoCase("clusterdef") ||
 	       os.compareTokenNoCase("episode") || os.compareTokenNoCase("clearepisodes") ||
 	       os.compareTokenNoCase("skill") || os.compareTokenNoCase("clearskills") ||
@@ -243,7 +244,7 @@ void MIType_BoolString(OScanner& os, bool doEquals, void* data, unsigned int fla
 	else if (os.compareTokenNoCase("false"))
 		*static_cast<bool*>(data) = false;
 	else
-		os.error("Expected \"true\" or \"false\" in boolean statement, got \"%s\"",
+		os.error("Expected \"true\" or \"false\" in boolean statement, got \"{}\"",
 		         os.getToken());
 }
 
@@ -528,7 +529,7 @@ void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 		const OString& s = GStrings(StdStringToUpper(os.getToken()).c_str() + 1);
 		if (s.empty())
 		{
-			os.error("Unknown lookup string \"%s\".", os.getToken());
+			os.error("Unknown lookup string \"{}\".", os.getToken());
 		}
 		*static_cast<OLumpName*>(data) = s;
 	}
@@ -553,7 +554,7 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsign
 		const OString& s = GStrings(StdStringToUpper(musicname.c_str() + 1));
 		if (s.empty())
 		{
-			os.error("Unknown lookup string \"%s\".", os.getToken());
+			os.error("Unknown lookup string \"{}\".", os.getToken());
 		}
 
 		// Music lumps in the stringtable do not begin
@@ -706,7 +707,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 			const OString& s = GStrings(StdStringToUpper(os.getToken()));
 			if (s.empty())
 			{
-				os.error("Unknown lookup string \"%s\".", os.getToken());
+				os.error("Unknown lookup string \"{}\".", os.getToken());
 			}
 			*text = s;
 		}
@@ -741,7 +742,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 			const OString& s = GStrings(StdStringToUpper(os.getToken()));
 			if (s.empty())
 			{
-				os.error("Unknown lookup string \"%s\".", os.getToken());
+				os.error("Unknown lookup string \"{}\".", os.getToken());
 			}
 
 			*text = s;
@@ -1089,7 +1090,7 @@ void MIType_AutomapBase(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 	else if (os.compareTokenNoCase("strife"))
 		AM_SetBaseColorStrife();
 	else
-		os.warning("base expected \"doom\", \"heretic\", or \"strife\"; got %s", os.getToken());
+		os.warning("base expected \"doom\", \"heretic\", or \"strife\"; got {}", os.getToken());
 }
 
 //
@@ -1098,7 +1099,7 @@ bool ScanAndCompareString(OScanner& os, std::string cmp)
 	os.scan();
 	if (!os.compareToken(cmp.c_str()))
 	{
-		os.warning("Expected \"%s\", got \"%s\". Aborting parsing", cmp, os.getToken());
+		os.warning("Expected \"{}\", got \"{}\". Aborting parsing", cmp, os.getToken());
 		return false;
 	}
 
@@ -1111,7 +1112,7 @@ bool ScanAndSetRealNum(OScanner& os, fixed64_t& num)
 	os.scan();
 	if (!IsRealNum(os.getToken().c_str()))
 	{
-		os.warning("Expected number, got \"%s\". Aborting parsing", os.getToken());
+		os.warning("Expected number, got \"{}\". Aborting parsing", os.getToken());
 		return false;
 	}
 	num = FLOAT2FIXED64(os.getTokenFloat());
@@ -1171,7 +1172,7 @@ void MIType_MapArrows(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 	std::string maparrow = os.getToken();
 
 	if (!InterpretLines(maparrow, gameinfo.mapArrow))
-		os.warning("Map arrow lump \"%s\" could not be found", maparrow);
+		os.warning("Map arrow lump \"{}\" could not be found", maparrow);
 
 	os.scan();
 	if (os.compareToken(","))
@@ -1180,7 +1181,7 @@ void MIType_MapArrows(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 		maparrow = os.getToken();
 
 		if (!InterpretLines(maparrow, gameinfo.mapArrowCheat))
-			os.warning("Map arrow lump \"%s\" could not be found", maparrow);
+			os.warning("Map arrow lump \"{}\" could not be found", maparrow);
 	}
 	else
 	{
@@ -1448,7 +1449,7 @@ void ParseMapInfoLower(OScanner& os, MapInfoDataSetter<T>& mapInfoDataSetter)
 				// able to parse all types even if we can't
 				// do anything with them.
 				//
-				os.error("Unknown MAPINFO token \"%s\"", os.getToken());
+				os.error("Unknown MAPINFO token \"{}\"", os.getToken());
 			}
 
 			// New MAPINFO is capable of skipping past unknown
@@ -1744,7 +1745,7 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 	LevelInfos& levels = getLevelInfos();
 	ClusterInfos& clusters = getClusterInfos();
 
-	level_pwad_info_t defaultinfo;
+	level_pwad_info_t defaultinfo{};
 
 	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 
@@ -1761,6 +1762,11 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 		{
 			defaultinfo = level_pwad_info_t();
 
+			MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
+			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
+		}
+		else if (os.compareTokenNoCase("adddefaultmap"))
+		{
 			MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
 			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
 		}
@@ -1909,7 +1915,7 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 		}
 		else
 		{
-			os.error("Unimplemented top-level type \"%s\"", os.getToken());
+			os.error("Unimplemented top-level type \"{}\"", os.getToken());
 		}
 	}
 }
@@ -1967,7 +1973,7 @@ void G_ParseMapInfo()
 		break;
 	case none:
 	default:
-		I_Error("%s: This IWAD is unknown to Odamex", __FUNCTION__);
+		I_Error("{}: This IWAD is unknown to Odamex", __FUNCTION__);
 		break;
 	}
 
@@ -1988,14 +1994,14 @@ void G_ParseMapInfo()
 	}
 
 	if (episodenum == 0)
-		I_FatalError("%s: You cannot use clearepisodes in a MAPINFO if you do not define any "
+		I_FatalError("{}: You cannot use clearepisodes in a MAPINFO if you do not define any "
 		             "new episodes after it.", __FUNCTION__);
 
 	if (defaultskillmenu > skillnum - 1)
 		defaultskillmenu = skillnum - 1;
 
 	if (skillnum == 0)
-		I_FatalError("%s: You cannot use clearskills in a MAPINFO if you do not define any "
+		I_FatalError("{}: You cannot use clearskills in a MAPINFO if you do not define any "
 					"new skills after it.", __FUNCTION__);
 
 	// mark levels as secrets -- for ID24 intermissions

@@ -1179,7 +1179,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	{
 		if (addtype == NEWLINE)
 			memmove(&NotifyStrings[0], &NotifyStrings[1], sizeof(struct NotifyText) * (NUMNOTIFIES-1));
-		strncpy((char *)NotifyStrings[NUMNOTIFIES-1].text, lines[i].string, lines[i].width);
+		M_StringCopy((char *)NotifyStrings[NUMNOTIFIES-1].text, lines[i].string, 256);
 		NotifyStrings[NUMNOTIFIES-1].timeout = gametic + (con_notifytime.asInt() * TICRATE);
 		NotifyStrings[NUMNOTIFIES-1].printlevel = printlevel;
 		addtype = NEWLINE;
@@ -1212,7 +1212,7 @@ static size_t C_PrintStringStdOut(const char* str)
 	std::string sanitized_str(str);
 	StripColorCodes(sanitized_str);
 
-	printf("%s", sanitized_str.c_str());
+	fmt::print("{}", sanitized_str);
 	fflush(stdout);
 
 	return sanitized_str.length();
@@ -1970,10 +1970,10 @@ static bool C_HandleKey(const event_t* ev)
 
 #ifdef __SWITCH__
 	if (ev->data1 == OKEY_JOY3)
-{
-	char oldtext[64], text[64], fulltext[65];
+	{
+		char oldtext[64], text[64], fulltext[65];
 
-		strcpy (text, CmdLine.text.c_str());
+		M_StringCopy(text, CmdLine.text.c_str(), 64);
 
 		// Initiate the console
 		NX_SetKeyboard(text, 64);
@@ -1989,7 +1989,7 @@ static bool C_HandleKey(const event_t* ev)
 		Printf(127, "]%s\n", text);
 		AddCommandString(text);
 		CmdLine.clear();
-}
+	}
 #endif
 
 	// Add modifiers for these keys

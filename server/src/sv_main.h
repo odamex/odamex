@@ -56,24 +56,24 @@ void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str);
 
 // Print directly to a specific client.
 template <typename... ARGS>
-void SV_ClientPrintf(client_t *cl, int level, const fmt::string_view format, const ARGS&... args)
+void SV_ClientPrintFmt(client_t *cl, int level, const fmt::string_view format, const ARGS&... args)
 {
-	SV_BasePrint(cl, level, fmt::sprintf(format, args...));
+	SV_BasePrint(cl, level, fmt::format(format, args...));
 }
 
 // Print directly to a specific player.
 template <typename... ARGS>
-void SV_PlayerPrintf(int level, int player_id, const fmt::string_view format, const ARGS&... args)
+void SV_PlayerPrintFmt(int level, int player_id, const fmt::string_view format, const ARGS&... args)
 {
 	client_t* cl = &idplayer(player_id).client;
-	SV_ClientPrintf(cl, level, format, args...);
+	SV_ClientPrintFmt(cl, level, format, args...);
 }
 
 // Print to all spectators
 template <typename... ARGS>
-void SV_SpectatorPrintf(int level, const fmt::string_view format, const ARGS&... args)
+void SV_SpectatorPrintFmt(int level, const fmt::string_view format, const ARGS&... args)
 {
-	std::string string = fmt::sprintf(format, args...);
+	std::string string = fmt::format(format, args...);
 	PrintFmt(level, "{}", string);  // print to the console
 
 	for (auto& player : players)
@@ -89,12 +89,12 @@ void SV_SpectatorPrintf(int level, const fmt::string_view format, const ARGS&...
 }
 
 template <typename... ARGS>
-void SV_TeamPrintf(int level, int who, const fmt::string_view format, const ARGS&... args)
+void SV_TeamPrintFmt(int level, int who, const fmt::string_view format, const ARGS&... args)
 {
 	if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
 		return;
 
-	std::string string = fmt::sprintf(format, args...);
+	std::string string = fmt::format(format, args...);
 	PrintFmt(level, "{}", string);  // print to the console
 
 	const team_t& team = idplayer(who).userinfo.team;

@@ -153,7 +153,7 @@ static void ActivateMonsters(AActors& mobjs)
 		{
 			char sound[MAX_SNDNAME];
 
-			strcpy(sound, mo->info->seesound);
+			M_StringCopy(sound, mo->info->seesound, MAX_SNDNAME);
 
 			if (sound[strlen(sound) - 1] == '1')
 			{
@@ -212,7 +212,7 @@ class HordeState
 		if (m_state == HS_WANTBOSS)
 		{
 			// Do the boss intro fanfare.
-			SV_BroadcastPrintf("The floor trembles as the boss of the wave arrives.\n");
+			SV_BroadcastPrintFmt("The floor trembles as the boss of the wave arrives.\n");
 			S_NetSound(NULL, CHAN_GAMEINFO, "misc/horde/boss", ATTN_NONE);
 			m_bossTime = ::level.time;
 		}
@@ -251,8 +251,8 @@ class HordeState
 		// Avoid printing wave name on boot and map switch.
 		if (printWave)
 		{
-			SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
-			                   G_HordeDefine(m_defineID).name.c_str());
+			SV_BroadcastPrintFmt("Wave {}: \"{}\"\n", m_wave,
+			                     G_HordeDefine(m_defineID).name);
 		}
 	}
 
@@ -273,8 +273,8 @@ class HordeState
 				if (player->lives <= 0)
 				{
 					player->playerstate = PST_REBORN;
-					SV_BroadcastPrintf("%s gets a new lease on life.\n",
-					                   player->userinfo.netname.c_str());
+					SV_BroadcastPrintFmt("{} gets a new lease on life.\n",
+					                     player->userinfo.netname);
 
 					// Send a res sound directly to this player.
 					S_PlayerSound(player, NULL, CHAN_INTERFACE, "misc/plraise",
@@ -345,8 +345,8 @@ class HordeState
 		m_bossRecipe.clear();
 		m_corpses.startWave();
 
-		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
-		                   G_HordeDefine(m_defineID).name.c_str());
+		SV_BroadcastPrintFmt("Wave {}: \"{}\"\n", m_wave,
+		                     G_HordeDefine(m_defineID).name);
 	}
 
 	/**
@@ -372,8 +372,8 @@ class HordeState
 		m_bossRecipe.clear();
 		m_corpses.startWave();
 
-		SV_BroadcastPrintf("Wave %d: \"%s\"\n", m_wave,
-		                   G_HordeDefine(m_defineID).name.c_str());
+		SV_BroadcastPrintFmt("Wave {}: \"{}\"\n", m_wave,
+		                     G_HordeDefine(m_defineID).name);
 		return true;
 	}
 
@@ -647,8 +647,8 @@ void HordeState::tick()
 			}
 
 			const int hp = ::mobjinfo[recipe.type].spawnhealth * recipe.count;
-			DPrintf("Spawning %d %s (%d hp) at a %s spawn\n", recipe.count,
-			        ::mobjinfo[recipe.type].name, hp, HordeThingStr(spawn->type));
+			DPrintFmt("Spawning {} {} ({} hp) at a {} spawn\n", recipe.count,
+			          ::mobjinfo[recipe.type].name, hp, HordeThingStr(spawn->type));
 
 			AActors mobjs = P_HordeSpawn(*spawn, recipe);
 			ActivateMonsters(mobjs);

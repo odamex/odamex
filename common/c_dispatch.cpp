@@ -241,15 +241,16 @@ void C_DoCommand(const char *cmd, uint32_t key)
 	if (check == -1)
 	{
 		argc = 1;
-		argsize = strlen (com_token) + 1;
+		argsize = strlen(com_token) + 1;
 
-		realargs = new char[strlen (data) + 1];
-		strcpy (realargs, data);
+		size_t datalen = strlen(data) + 1;
+		realargs = new char[datalen];
+		M_StringCopy(realargs, data, datalen);
 
-		while ( (data = ParseString (data)) )
+		while (data = ParseString(data))
 		{
 			argc++;
-			argsize += strlen (com_token) + 1;
+			argsize += strlen(com_token) + 1;
 		}
 
 		args = new char[argsize];
@@ -258,12 +259,12 @@ void C_DoCommand(const char *cmd, uint32_t key)
 		arg = args;
 		data = cmd;
 		argsize = 0;
-		while ( (data = ParseString (data)) )
+		while (data = ParseString(data))
 		{
-			strcpy (arg, com_token);
+			size_t tokenlen = strlen(com_token) + 1;
+			M_StringCopy(arg, com_token, tokenlen);
 			argv[argsize] = arg;
-			arg += strlen (arg);
-			*arg++ = 0;
+			arg += tokenlen;
 			argsize++;
 		}
 
@@ -670,7 +671,7 @@ const char *ParseString (const char *data)
 		{
 			if ( (var = cvar_t::FindCVar (&com_token[1], &dummy)) )
 			{
-				strcpy (com_token, var->cstring());
+				M_StringCopy(com_token, var->cstring(), 8192);
 			}
 		}
 	}
@@ -691,7 +692,7 @@ DConsoleCommand::DConsoleCommand (const char *name)
 		// Add all the action commands for tab completion
 		for (i = 0; i < NUM_ACTIONS; i++)
 		{
-			strcpy (&tname[1], actionbits[i].name);
+			M_StringCopy(&tname[1], actionbits[i].name, 15);
 			tname[0] = '+';
 			C_AddTabCommand (tname);
 			tname[0] = '-';
@@ -848,7 +849,7 @@ static int DumpHash (bool aliases)
 
 void DConsoleAlias::Archive(FILE *f)
 {
-	fprintf(f, "alias %s %s\n", C_QuoteString(m_Name).c_str(), C_QuoteString(m_Command).c_str());
+	fmt::print(f, "alias {} {}\n", C_QuoteString(m_Name), C_QuoteString(m_Command));
 }
 
 void DConsoleAlias::C_ArchiveAliases (FILE *f)

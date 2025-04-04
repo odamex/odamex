@@ -457,7 +457,7 @@ std::string I_ConsoleInput (void)
 		fwrite(&ch, 1, 1, stdout);
 		fflush(stdout);
 
-		strcpy(text, buffer);
+		M_StringCopy(text, buffer, 1024);
 		text[len-1] = 0; // rip off the /n and terminate
 		buffer[0] = 0;
 		len = 0;

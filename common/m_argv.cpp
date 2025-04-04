@@ -249,8 +249,8 @@ void DArgs::SetArgs(const char *cmdline)
 	if (!*cmdline)
 		return;
 
-	outputline = (char *)Malloc((strlen(cmdline) + 1) * sizeof(char));
-	outputargv = (char **)Malloc(((strlen(cmdline) + 1) / 2) * sizeof(char *));
+	outputline = (char *) M_Malloc((strlen(cmdline) + 1) * sizeof(char));
+	outputargv = (char **) M_Malloc(((strlen(cmdline) + 1) / 2) * sizeof(char *));
 
 	const char *p = cmdline;
 	q = outputline;
@@ -386,7 +386,7 @@ void M_FindResponseFile (void)
 
 			if (argc != 0)
 			{
-				argv = (char **)Malloc (argc*sizeof(char *) + argsize);
+				argv = (char **) M_Malloc(argc*sizeof(char *) + argsize);
 				argv[i] = (char *)argv + argc*sizeof(char *);
 				ParseCommandLine (file, NULL, argv+i);
 

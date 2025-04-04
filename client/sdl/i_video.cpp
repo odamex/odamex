@@ -876,12 +876,12 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	assert(I_VideoInitialized());
 
 	if (window->getVideoMode() != requested_mode)
-		DPrintf("I_SetVideoMode: could not set video mode to %s. Using %s instead.\n",
-						I_GetVideoModeString(requested_mode).c_str(),
-						I_GetVideoModeString(window->getVideoMode()).c_str());
+		DPrintFmt("I_SetVideoMode: could not set video mode to {}. Using {} instead.\n",
+						I_GetVideoModeString(requested_mode),
+						I_GetVideoModeString(window->getVideoMode()));
 	else
-		DPrintf("I_SetVideoMode: set video mode to %s\n",
-					I_GetVideoModeString(window->getVideoMode()).c_str());
+		DPrintFmt("I_SetVideoMode: set video mode to {}\n",
+					I_GetVideoModeString(window->getVideoMode()));
 
 	const argb_t* palette = V_GetGamePalette()->colors;
 	if (matted_surface)

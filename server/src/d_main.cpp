@@ -285,7 +285,7 @@ void D_DoomMain()
 	devparm = Args.CheckParm("-devparm");
 
 	if (devparm)
-		DPrintf ("%s", GStrings(D_DEVSTR));		// D_DEVSTR
+		DPrintFmt("{}", GStrings(D_DEVSTR));		// D_DEVSTR
 
 	// Nomonsters
 	if (Args.CheckParm("-nomonsters"))

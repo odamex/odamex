@@ -261,7 +261,7 @@ void DSeqNode::Serialize (FArchive &arc)
 			}
 		}
 		if (i == NumSequences)
-			I_Error ("Unknown sound sequence '%s'\n", seqName.c_str());
+			I_Error("Unknown sound sequence '{}'\n", seqName);
 
 		ChangeData (seqOffset, delayTics, volume, S_FindSound (soundName.c_str()));
 	}
@@ -321,7 +321,7 @@ static void VerifySeqPtr (int pos, int need)
 	if (pos + need > ScriptTempSize)
 	{
 		ScriptTempSize *= 2;
-		ScriptTemp = (unsigned int *)Realloc (ScriptTemp, ScriptTempSize * sizeof(*ScriptTemp));
+		ScriptTemp = (unsigned int *) M_Realloc(ScriptTemp, ScriptTempSize * sizeof(*ScriptTemp));
 	}
 }
 
@@ -556,9 +556,9 @@ void S_ParseSndSeq()
 					break;
 
 				case SS_STRING_END:
-					Sequences[curseq] = (sndseq_t *)Z_Malloc (sizeof(sndseq_t) + sizeof(int)*cursize, PU_STATIC, 0);
-					strcpy (Sequences[curseq]->name, name);
-					memcpy (Sequences[curseq]->script, ScriptTemp, sizeof(int)*cursize);
+					Sequences[curseq] = (sndseq_t *) Z_Malloc(sizeof(sndseq_t) + sizeof(int)*cursize, PU_STATIC, 0);
+					M_StringCopy(Sequences[curseq]->name, name, MAX_SNDNAME + 1);
+					memcpy(Sequences[curseq]->script, ScriptTemp, sizeof(int)*cursize);
 					Sequences[curseq]->script[cursize] = SS_CMD_END;
 					Sequences[curseq]->stopsound = stopsound;
 					curseq = -1;

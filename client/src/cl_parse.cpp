@@ -1322,7 +1322,7 @@ static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 
 	if (firedweap != p->readyweapon)
 	{
-		DPrintf("CL_FireWeapon: weapon misprediction\n");
+		DPrintFmt("CL_FireWeapon: weapon misprediction\n");
 		A_ForceWeaponFire(p->mo, firedweap, servertic);
 
 		// Request the player's ammo status from the server

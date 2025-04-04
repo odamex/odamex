@@ -121,7 +121,7 @@ void FLZOFile::PostOpen()
 		size_t readlen = fread(sig, 4, 1, m_File);
 		if ( readlen < 1 )
 		{
-			printf("FLZOFile::PostOpen(): failed to read m_File\n");
+			fmt::print("FLZOFile::PostOpen(): failed to read m_File\n");
 		}
 		if (sig[0] != LZOSig[0] || sig[1] != LZOSig[1] || sig[2] != LZOSig[2] || sig[3] != LZOSig[3])
 		{
@@ -134,18 +134,18 @@ void FLZOFile::PostOpen()
 			readlen = fread(sizes, sizeof(DWORD), 2, m_File);
 			if ( readlen < 1 )
 			{
-				printf("FLZOFile::PostOpen(): failed to read m_File\n");
+				fmt::print("FLZOFile::PostOpen(): failed to read m_File\n");
 			}
 			SWAP_DWORD(sizes[0]);
 			SWAP_DWORD(sizes[1]);
 
 			unsigned int len = sizes[0] == 0 ? sizes[1] : sizes[0];
-			m_Buffer = (byte*)Malloc(len + 8);
+			m_Buffer = (byte*) M_Malloc(len + 8);
 
 			readlen = fread(m_Buffer + 8, len, 1, m_File);
 			if ( readlen < 1 )
 			{
-				printf("FLZOFile::PostOpen(): failed to read m_File\n");
+				fmt::print("FLZOFile::PostOpen(): failed to read m_File\n");
 			}
 
 			SWAP_DWORD(sizes[0]);
@@ -205,7 +205,7 @@ FFile& FLZOFile::Write(const void* mem, unsigned int len)
 			m_BufferSize = m_MaxBufferSize = m_BufferSize ? m_BufferSize * 2 : 16384;
 		} while (m_Pos + len > m_BufferSize);
 
-		m_Buffer = (byte*)Realloc(m_Buffer, m_BufferSize);
+		m_Buffer = (byte*)M_Realloc(m_Buffer, m_BufferSize);
 	}
 
 	if (len == 1)
@@ -285,13 +285,13 @@ void FLZOFile::Implode()
 		// If the data could not be compressed, store it as-is.
 		if (res != LZO_E_OK || compressed_len > input_len)
 		{
-			DPrintf("LZOFile could not be imploded\n");
+			DPrintFmt("LZOFile could not be imploded\n");
 			compressed_len = 0;
 		}
 		else
 		{
 			// A comment inside LZO says "lzo_uint must match size_t".
-			DPrintf("LZOFile shrunk from %u to %zu bytes\n", input_len, compressed_len);
+			DPrintFmt("LZOFile shrunk from {} to {} bytes\n", input_len, compressed_len);
 		}
 	}
 
@@ -300,7 +300,7 @@ void FLZOFile::Implode()
 	else
 		m_BufferSize = m_MaxBufferSize = compressed_len;
 
-	m_Buffer = (byte*)Malloc(m_BufferSize + 8);
+	m_Buffer = (byte*) M_Malloc(m_BufferSize + 8);
 	m_Pos = 0;
 
 	((unsigned int*)m_Buffer)[0] = BELONG((unsigned int)compressed_len);
@@ -324,7 +324,7 @@ void FLZOFile::Explode()
 		unsigned int compressed_len = BELONG(((unsigned int*)m_Buffer)[0]);
 		unsigned int expanded_len = BELONG(((unsigned int*)m_Buffer)[1]);
 
-		byte* expanded_buffer = (byte*)Malloc(expanded_len);
+		byte* expanded_buffer = (byte*) M_Malloc(expanded_len);
 
 		if (compressed_len != 0)
 		{
@@ -403,7 +403,7 @@ bool FLZOMemFile::Open()
 	m_Mode = EWriting;
 	m_BufferSize = 0;
 	m_MaxBufferSize = 16384;
-	m_Buffer = (unsigned char*)Malloc(16384);
+	m_Buffer = (unsigned char*) M_Malloc(16384);
 	m_Pos = 0;
 	return true;
 }
@@ -467,7 +467,7 @@ void FLZOMemFile::Serialize(FArchive& arc)
 		arc >> sizes[0] >> sizes[1];
 		DWORD len = sizes[0] == 0 ? sizes[1] : sizes[0];
 
-		m_Buffer = (byte*)Malloc(len + 8);
+		m_Buffer = (byte*) M_Malloc(len + 8);
 		SWAP_DWORD(sizes[0]);
 		SWAP_DWORD(sizes[1]);
 		((DWORD*)m_Buffer)[0] = sizes[0];
@@ -841,7 +841,7 @@ FArchive &FArchive::ReadObject (DObject* &obj, TypeInfo *wanttype)
 		index = ReadCount ();
 		if (index >= m_ObjectCount)
 		{
-			I_Error ("Object reference too high (%u; max is %u)\n", index, m_ObjectCount);
+			I_Error ("Object reference too high ({}; max is {})\n", index, m_ObjectCount);
 		}
 		obj = const_cast<DObject*>(m_ObjectMap[index].object);
 		break;
@@ -894,7 +894,7 @@ FArchive &FArchive::ReadObject (DObject* &obj, TypeInfo *wanttype)
 		break;
 
 	default:
-		I_Error ("Unknown object code (%d) in archive\n", objHead);
+		I_Error("Unknown object code ({}) in archive\n", objHead);
 	}
 	return *this;
 }
@@ -903,12 +903,12 @@ DWORD FArchive::WriteClass (const TypeInfo *info)
 {
 	if (m_ClassCount >= TypeInfo::m_NumTypes)
 	{
-		I_Error ("Too many unique classes have been written.\nOnly %u were registered\n",
+		I_Error("Too many unique classes have been written.\nOnly {} were registered\n",
 			TypeInfo::m_NumTypes);
 	}
 	if (m_TypeMap[info->TypeIndex].toArchive != (DWORD)~0)
 	{
-		I_Error ("Attempt to write '%s' twice.\n", info->Name);
+		I_Error("Attempt to write '{}' twice.\n", info->Name);
 	}
 	m_TypeMap[info->TypeIndex].toArchive = m_ClassCount;
 	m_TypeMap[m_ClassCount].toCurrent = info;
@@ -923,7 +923,7 @@ const TypeInfo *FArchive::ReadClass ()
 
 	if (m_ClassCount >= TypeInfo::m_NumTypes)
 	{
-		I_Error ("Too many unique classes have been read.\nOnly %u were registered\n",
+		I_Error("Too many unique classes have been read.\nOnly {} were registered\n",
 			TypeInfo::m_NumTypes);
 	}
 	operator>> (typeName);
@@ -938,9 +938,9 @@ const TypeInfo *FArchive::ReadClass ()
 		}
 	}
 	if(typeName.length())
-		I_Error ("Unknown class '%s'\n", typeName);
+		I_Error("Unknown class '{}'\n", typeName);
 	else
-		I_Error ("Unknown class\n");
+		I_Error("Unknown class\n");
 	return NULL;
 }
 
@@ -949,8 +949,8 @@ const TypeInfo *FArchive::ReadClass (const TypeInfo *wanttype)
 	const TypeInfo *type = ReadClass ();
 	if (!type->IsDescendantOf (wanttype))
 	{
-		I_Error ("Expected to extract an object of type '%s'.\n"
-				 "Found one of type '%s' instead.\n",
+		I_Error("Expected to extract an object of type '{}'.\n"
+				"Found one of type '{}' instead.\n",
 			wanttype->Name, type->Name);
 	}
 	return type;
@@ -961,13 +961,13 @@ const TypeInfo *FArchive::ReadStoredClass (const TypeInfo *wanttype)
 	DWORD index = ReadCount ();
 	if (index >= m_ClassCount)
 	{
-		I_Error ("Class reference too high (%u; max is %u)\n", index, m_ClassCount);
+		I_Error("Class reference too high ({}; max is {})\n", index, m_ClassCount);
 	}
 	const TypeInfo *type = m_TypeMap[index].toCurrent;
 	if (!type->IsDescendantOf (wanttype))
 	{
-		I_Error ("Expected to extract an object of type '%s'.\n"
-				 "Found one of type '%s' instead.\n",
+		I_Error("Expected to extract an object of type '{}'.\n"
+				"Found one of type '{}' instead.\n",
 			wanttype->Name, type->Name);
 	}
 	return type;
@@ -980,7 +980,7 @@ DWORD FArchive::MapObject (const DObject *obj)
 	if (m_ObjectCount >= m_MaxObjectCount)
 	{
 		m_MaxObjectCount = m_MaxObjectCount ? m_MaxObjectCount * 2 : 1024;
-		m_ObjectMap = (ObjectMap *)Realloc (m_ObjectMap, sizeof(ObjectMap)*m_MaxObjectCount);
+		m_ObjectMap = (ObjectMap *)M_Realloc(m_ObjectMap, sizeof(ObjectMap)*m_MaxObjectCount);
 		for (i = m_ObjectCount; i < m_MaxObjectCount; i++)
 		{
 			m_ObjectMap[i].hashNext = (unsigned)~0;

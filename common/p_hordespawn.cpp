@@ -171,9 +171,9 @@ static AActors SpawnMonsterGroup(hordeSpawn_t& spawn, const hordeRecipe_t& recip
 
 	if (static_cast<int>(ret.size()) < count)
 	{
-		DPrintf("Partial spawn %" "zu" "/%d of type %s at a %s spawn (%f, %f).\n",
-		        ret.size(), count, name, HordeThingStr(spawn.type),
-		        FIXED2FLOAT(spawn.mo->x), FIXED2FLOAT(spawn.mo->y));
+		DPrintFmt("Partial spawn {}/{} of type {} at a {} spawn ({}, {}).\n",
+		          ret.size(), count, name, HordeThingStr(spawn.type),
+		          FIXED2FLOAT(spawn.mo->x), FIXED2FLOAT(spawn.mo->y));
 	}
 
 	return ret;

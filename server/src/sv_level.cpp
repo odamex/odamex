@@ -423,7 +423,7 @@ void G_InitNew(const char *mapname)
 	// [RH] If this map doesn't exist, bomb out
 	if (W_CheckNumForName (mapname) == -1)
 	{
-		I_Error ("Could not find map %s\n", mapname);
+		I_Error("Could not find map {}\n", mapname);
 	}
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
@@ -633,7 +633,7 @@ void G_DoResetLevel(bool full_reset)
 	if (reset_snapshot == NULL)
 	{
 		// No saved state to reload to
-		DPrintf("G_DoResetLevel: No saved state to reload.");
+		DPrintFmt("G_DoResetLevel: No saved state to reload.");
 		return;
 	}
 
@@ -897,7 +897,7 @@ void G_DoLoadLevel (int position)
 			if (!teamInfo->FlagData.flaglocated)
 			{
 				const char* teamColor = teamInfo->ColorString.c_str();
-				SV_BroadcastPrintf(PRINT_WARNING, "WARNING: %s flag pedestal not found! No %s flags in game.\n", teamColor, teamColor);
+				SV_BroadcastPrintFmt(PRINT_WARNING, "WARNING: {} flag pedestal not found! No {} flags in game.\n", teamColor, teamColor);
 			}
 		}
 	}

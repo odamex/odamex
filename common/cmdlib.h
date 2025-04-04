@@ -61,10 +61,10 @@ bool	IsRealNum(const char* str);
 bool iequals(const std::string &, const std::string &);
 
 size_t  StdStringFind(const std::string& haystack, const std::string& needle,
-    size_t pos, size_t n, bool CIS);
+    size_t pos = 0, size_t n = std::string::npos, bool CIS = false);
 
 size_t  StdStringRFind(const std::string& haystack, const std::string& needle,
-    size_t pos, size_t n, bool CIS);
+    size_t pos = 0, size_t n = std::string::npos, bool CIS = false);
 
 std::string StdStringToLower(const std::string&, size_t n = std::string::npos);
 std::string StdStringToLower(const char*, size_t n = std::string::npos);
@@ -84,6 +84,7 @@ extern	char	com_token[8192];
 extern	bool	com_eof;
 
 char	*copystring(const char *s);
+bool M_StringCopy(char *dest, const char *src, size_t dest_size);
 
 std::vector<std::string> VectorArgs(size_t argc, char **argv);
 std::string JoinStrings(const std::vector<std::string> &pieces, const std::string &glue = "");

@@ -162,7 +162,7 @@ std::string M_GetWriteDir()
 	{
 		if (mkdir(path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR) == -1)
 		{
-			I_FatalError("Failed to create %s directory:\n%s", path.c_str(),
+			I_FatalError("Failed to create {} directory:\n{}", path,
 			             strerror(errno));
 		}
 	}
@@ -170,7 +170,7 @@ std::string M_GetWriteDir()
 	{
 		if (!S_ISDIR(info.st_mode))
 		{
-			I_FatalError("%s must be a directory", path.c_str());
+			I_FatalError("{} must be a directory", path);
 		}
 	}
 

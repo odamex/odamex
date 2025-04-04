@@ -118,8 +118,8 @@ EXTERN_CVAR(g_winnerstays)
 EXTERN_CVAR(debug_disconnect)
 EXTERN_CVAR(g_resetinvonexit)
 
-void SexMessage (const char *from, char *to, int gender,
-	const char *victim, const char *killer);
+void SexMessage (const char *from, char *to, gender_t gender,
+	std::string_view victim, std::string_view killer);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_s* player);
 bool P_LineSpecialMovesSector(short special);
@@ -183,8 +183,8 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 				}
 
 				std::string status = SV_BuildKillsDeathsStatusString(*it);
-				SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator. (%s)\n",
-					it->userinfo.netname.c_str(), status.c_str());
+				SV_BroadcastPrintFmt(PRINT_HIGH, "{} became a spectator. ({})\n",
+					it->userinfo.netname, status);
 
 				MSG_WriteSVC(
 				    &it->client.reliablebuf,
@@ -218,7 +218,7 @@ CVAR_FUNC_IMPL (sv_maxplayersperteam)
 				if (normalcount > var)
 				{
 					SV_SetPlayerSpec(player, true);
-					SV_PlayerPrintf(player.id, PRINT_HIGH, "Active player limit reduced. You are now a spectator!\n");
+					SV_PlayerPrintFmt(player.id, PRINT_HIGH, "Active player limit reduced. You are now a spectator!\n");
 				}
 			}
 		}
@@ -308,7 +308,7 @@ BEGIN_COMMAND (coinflip) {
 	std::string result;
 	CMD_CoinFlip(result);
 
-	SV_BroadcastPrintf("%s\n", result.c_str());
+	SV_BroadcastPrintFmt("{}\n", result);
 } END_COMMAND (coinflip)
 
 void CMD_CoinFlip(std::string &result) {
@@ -375,10 +375,10 @@ void SV_KickPlayer(player_t &player, const std::string &reason) {
 	}
 
 	if (reason.empty())
-		SV_BroadcastPrintf("%s was kicked from the server!\n", player.userinfo.netname.c_str());
+		SV_BroadcastPrintFmt("{} was kicked from the server!\n", player.userinfo.netname);
 	else
-		SV_BroadcastPrintf("%s was kicked from the server! (Reason: %s)\n",
-					player.userinfo.netname.c_str(), reason.c_str());
+		SV_BroadcastPrintFmt("{} was kicked from the server! (Reason: {})\n",
+					player.userinfo.netname, reason);
 
 	player.client.displaydisconnect = false;
 	SV_DropClient(player);
@@ -398,9 +398,9 @@ void SV_InvalidateClient(player_t &player, const std::string& reason)
 	}
 
 	Printf("%s fails security check (%s), dropping client.\n", NET_AdrToString(player.client.address), reason);
-	SV_PlayerPrintf(PRINT_ERROR, player.id,
-	                "The server closed your connection for the following reason: %s.\n",
-	                reason.c_str());
+	SV_PlayerPrintFmt(PRINT_ERROR, player.id,
+	                  "The server closed your connection for the following reason: {}.\n",
+	                  reason);
 	SV_DropClient(player);
 }
 
@@ -420,7 +420,7 @@ BEGIN_COMMAND (say)
 	if (argc > 1)
 	{
 		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
-		SV_BroadcastPrintf(PRINT_SERVERCHAT, "[console]: %s\n", chat.c_str());
+		SV_BroadcastPrintFmt(PRINT_SERVERCHAT, "[console]: {}\n", chat);
 	}
 }
 END_COMMAND (say)
@@ -973,8 +973,8 @@ bool SV_SetupUserInfo(player_t &player)
 			default:			gendermessage = "its";  break;
 		}
 
-		SV_BroadcastPrintf("%s changed %s name to %s.\n",
-			old_netname.c_str(), gendermessage.c_str(), player.userinfo.netname.c_str());
+		SV_BroadcastPrintFmt("{} changed {} name to {}.\n",
+			old_netname, gendermessage, player.userinfo.netname);
 
 		team_t team = TEAM_NONE;
 		if (player.mo && player.userinfo.team && player.ingame() && !player.spectator &&
@@ -999,9 +999,9 @@ bool SV_SetupUserInfo(player_t &player)
 			M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team,
 			              M_GetPlayerId(&player, player.userinfo.team), 0,
 			              0);
-			SV_BroadcastPrintf("%s switched to the %s team.\n",
-			                   player.userinfo.netname.c_str(),
-			                   V_GetTeamColor(player.userinfo.team).c_str());
+			SV_BroadcastPrintFmt("{} switched to the {} team.\n",
+			                     player.userinfo.netname,
+			                     V_GetTeamColor(player.userinfo.team));
 		}
 	}
 
@@ -1900,7 +1900,7 @@ void SV_ConnectClient2(player_t& player)
 	G_DoReborn(player);
 	SV_ClientFullUpdate(player);
 
-	SV_BroadcastPrintf("%s has connected.\n", player.userinfo.netname.c_str());
+	SV_BroadcastPrintFmt("{} has connected.\n", player.userinfo.netname);
 
 	// tell others clients about it
 	for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
@@ -1981,11 +1981,11 @@ void SV_DisconnectClient(player_t &who)
 		// print some final stats for the disconnected player
 		std::string status = SV_BuildKillsDeathsStatusString(who);
 		if (gametic - who.client.last_received == CLIENT_TIMEOUT*35)
-			SV_BroadcastPrintf("%s timed out. (%s)\n",
-							who.userinfo.netname.c_str(), status.c_str());
+			SV_BroadcastPrintFmt("{} timed out. ({})\n",
+							who.userinfo.netname, status);
 		else
-			SV_BroadcastPrintf("%s disconnected. (%s)\n",
-							who.userinfo.netname.c_str(), status.c_str());
+			SV_BroadcastPrintFmt("{} disconnected. ({})\n",
+							who.userinfo.netname, status);
 	}
 
 	SV_UpdatePlayerQueuePositions(G_CanJoinGame, &who);
@@ -3000,7 +3000,7 @@ void SV_WriteCommands(void)
 
 void SV_PlayerTriedToCheat(player_t &player)
 {
-	SV_BroadcastPrintf("%s tried to cheat!\n", player.userinfo.netname.c_str());
+	SV_BroadcastPrintFmt("{} tried to cheat!\n", player.userinfo.netname);
 	SV_DropClient(player);
 }
 
@@ -3083,7 +3083,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 		return;
 
 	#ifdef _TICCMD_QUEUE_DEBUG_
-	DPrintf("Cmd queue size for %s: %d\n",
+	DPrintFmt("Cmd queue size for {}: {}\n",
 				player.userinfo.netname, player.cmdqueue.size());
 	#endif	// _TICCMD_QUEUE_DEBUG_
 
@@ -3213,8 +3213,8 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 		M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, team, M_GetPlayerId(&player, team), 0,
 		              0);
 	}
-	SV_BroadcastPrintf("%s has joined the %s team.\n", player.userinfo.netname.c_str(),
-	                   V_GetTeamColor(team).c_str());
+	SV_BroadcastPrintFmt("{} has joined the {} team.\n", player.userinfo.netname,
+	                   V_GetTeamColor(team));
 
 	// Team changes can result with not enough players on a team.
 	G_AssertValidPlayerCount();
@@ -3351,12 +3351,12 @@ void SV_JoinPlayer(player_t& player, bool silent)
 	if (!silent)
 	{
 		if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
-			SV_BroadcastPrintf("%s joined the game.\n",
-			                   player.userinfo.netname.c_str());
+			SV_BroadcastPrintFmt("{} joined the game.\n",
+			                     player.userinfo.netname);
 		else
-			SV_BroadcastPrintf("%s joined the game on the %s team.\n",
-			                   player.userinfo.netname.c_str(),
-			                   V_GetTeamColor(player.userinfo.team).c_str());
+			SV_BroadcastPrintFmt("{} joined the game on the {} team.\n",
+			                     player.userinfo.netname,
+			                     V_GetTeamColor(player.userinfo.team));
 	}
 
 	M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team,
@@ -3398,8 +3398,8 @@ void SV_SpecPlayer(player_t &player, bool silent)
 	if (!silent)
 	{
 		std::string status = SV_BuildKillsDeathsStatusString(player);
-		SV_BroadcastPrintf(PRINT_HIGH, "%s became a spectator. (%s)\n",
-			player.userinfo.netname.c_str(), status.c_str());
+		SV_BroadcastPrintFmt(PRINT_HIGH, "{} became a spectator. ({})\n",
+			player.userinfo.netname, status);
 	}
 
 	P_PlayerLeavesGame(&player);
@@ -3478,17 +3478,17 @@ void SV_SetReady(player_t &player, bool setting, bool silent)
 		player.ready = false;
 		if (!silent) {
 			if (player.spectator)
-				SV_PlayerPrintf(PRINT_HIGH, player.id, "You are no longer willing to play.\n");
+				SV_PlayerPrintFmt(PRINT_HIGH, player.id, "You are no longer willing to play.\n");
 			else
-				SV_PlayerPrintf(PRINT_HIGH, player.id, "You are no longer ready to play.\n");
+				SV_PlayerPrintFmt(PRINT_HIGH, player.id, "You are no longer ready to play.\n");
 		}
 	} else if (!player.ready && setting) {
 		player.ready = true;
 		if (!silent) {
 			if (player.spectator)
-				SV_PlayerPrintf(PRINT_HIGH, player.id, "You are now willing to play.\n");
+				SV_PlayerPrintFmt(PRINT_HIGH, player.id, "You are now willing to play.\n");
 			else
-				SV_PlayerPrintf(PRINT_HIGH, player.id, "You are now ready to play.\n");
+				SV_PlayerPrintFmt(PRINT_HIGH, player.id, "You are now ready to play.\n");
 		}
 	} else {
 		changed = false;
@@ -3517,10 +3517,10 @@ void SV_SetReady(player_t &player, bool setting, bool silent)
  */
 static void HelpCmd(player_t& player)
 {
-	SV_PlayerPrintf(PRINT_HIGH, player.id,
-	                "odasrv v%s\n\n"
-	                "This server has no custom commands\n",
-	                GitShortHash());
+	SV_PlayerPrintFmt(PRINT_HIGH, player.id,
+	                  "odasrv v{}\n\n"
+	                  "This server has no custom commands\n",
+	                  GitShortHash());
 }
 
 /**
@@ -3543,7 +3543,7 @@ static void ReadyCmd(player_t &player)
 	// Check to see if warmup will allow us to toggle our ready state.
 	if (!::G_CanReadyToggle())
 	{
-		SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't ready in the middle of a match!\n");
+		SV_PlayerPrintFmt(PRINT_HIGH, player.id, "You can't ready in the middle of a match!\n");
 		return;
 	}
 
@@ -3556,8 +3556,8 @@ static void ReadyCmd(player_t &player)
 		int timeout_waitsec = 3 - (timeout / TICRATE);
 
 		if (timeout < timeout_check) {
-			SV_PlayerPrintf(PRINT_HIGH, player.id, "Please wait another %d second%s to change your ready state.\n",
-			                timeout_waitsec, timeout_waitsec != 1 ? "s" : "");
+			SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Please wait another {} second{} to change your ready state.\n",
+			                  timeout_waitsec, timeout_waitsec != 1 ? "s" : "");
 			return;
 		}
 	}
@@ -4493,19 +4493,19 @@ void SV_UpdatePlayerQueueLevelChange(const WinInfo& win)
 		if (names.size() > 2)
 		{
 			names.back() = std::string("and ") + names.back();
-			SV_BroadcastPrintf("%s lost the last game and were forced to spectate.\n",
-			                   JoinStrings(names, ", ").c_str());
+			SV_BroadcastPrintFmt("{} lost the last game and were forced to spectate.\n",
+			                     JoinStrings(names, ", "));
 		}
 		else if (names.size() == 2)
 		{
-			SV_BroadcastPrintf(
-			    "%s and %s lost the last game and were forced to spectate.\n",
-			    names.at(0).c_str(), names.at(1).c_str());
+			SV_BroadcastPrintFmt(
+			    "{} and {} lost the last game and were forced to spectate.\n",
+			    names.at(0), names.at(1));
 		}
 		else if (names.size() == 1)
 		{
-			SV_BroadcastPrintf("%s lost the last game and was forced to spectate.\n",
-			                   names.at(0).c_str());
+			SV_BroadcastPrintFmt("{} lost the last game and was forced to spectate.\n",
+			                     names.at(0));
 		}
 	}
 
@@ -4689,12 +4689,12 @@ void SV_ShareKeys(card_t card, player_t &player)
 			coloritem = TEXTCOLOR_NORMAL;
 		}
 
-		SV_BroadcastPrintf("%s found the %s%s%s!\n", player.userinfo.netname.c_str(),
-		                   coloritem, item->pickup_name, TEXTCOLOR_NORMAL);
+		SV_BroadcastPrintFmt("{} found the {}{}{}!\n", player.userinfo.netname,
+		                     coloritem, item->pickup_name, TEXTCOLOR_NORMAL);
 	}
 	else
 	{
-		SV_BroadcastPrintf("%s found a key!\n", player.userinfo.netname.c_str());
+		SV_BroadcastPrintFmt("{} found a key!\n", player.userinfo.netname);
 	}
 
 	// Refresh the inventory to everyone

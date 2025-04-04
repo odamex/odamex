@@ -639,6 +639,18 @@ CVAR_RANGE_FUNC_DECL(snd_channels, "32", "Number of channels for sound effects",
                      CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 4.0f,
                      32.0f)
 
+CVAR_RANGE_FUNC_DECL(	snd_oplcore, "0", "OPL emulation quality",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+
+CVAR_FUNC_DECL(			snd_oplpan, "1", "Full-range OPL panning",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE_FUNC_DECL(	snd_oplchips, "6", "Number of emulated OPL chips",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 8.0f)
+
+CVAR_RANGE_FUNC_DECL(	snd_oplbank, "1", "OPL instrument set",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+
 //
 // C_GetDefaultMuiscSystem()
 //
@@ -680,6 +692,9 @@ CVAR_RANGE(		snd_midireset, "1", "MIDI reset type (0: None, 1: GM, 2: GS, 3: XG)
 
 CVAR_FUNC_DECL(	snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem preference",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_FUNC_DECL(	snd_nomusic, "0", "Disables music",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			snd_musicdevice, "", "Music output device for the chosen music subsystem",
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)

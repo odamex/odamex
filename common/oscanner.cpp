@@ -33,7 +33,7 @@
 
 #include "i_system.h"
 
-static const char* SINGLE_CHAR_TOKENS = "$(),;=[]{}";
+static constexpr const char* SINGLE_CHAR_TOKENS = "$(),;=[]{}";
 
 bool OScanner::checkPair(char a, char b)
 {
@@ -289,7 +289,7 @@ void OScanner::mustScan(size_t max_length)
 	{
 		if (m_token.length() > max_length)
 		{
-			error("String \"%s\" is too long. Maximum length is %zu characters.", m_token, max_length);
+			error("String \"{}\" is too long. Maximum length is %zu characters.", m_token, max_length);
 		}
 	}
 }
@@ -476,7 +476,7 @@ void OScanner::assertTokenIs(const char* string) const
 {
 	if (m_token.compare(string) != 0)
 	{
-		error("Unexpected Token (expected \"%s\" actual \"%s\").", string,
+		error("Unexpected Token (expected \"{}\" actual \"{}\").", string,
 		      m_token);
 	}
 }
@@ -488,7 +488,7 @@ void OScanner::assertTokenNoCaseIs(const char* string) const
 {
 	if (!iequals(m_token, string))
 	{
-		error("Unexpected Token (expected \"%s\" actual \"%s\").", string,
+		error("Unexpected Token (expected \"{}\" actual \"{}\").", string,
 		      m_token);
 	}
 }

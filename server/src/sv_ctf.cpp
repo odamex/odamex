@@ -141,17 +141,17 @@ ItemEquipVal SV_FlagGrab (player_t &player, team_t f, bool firstgrab)
 	if (player.userinfo.team != f){
 		if (firstgrab) {
 			teamInfo->FlagData.firstgrab = true;
-			SV_BroadcastPrintf("%s has taken the %s flag!\n", player.userinfo.netname.c_str(), teamInfo->ColorizedTeamName().c_str());
+			SV_BroadcastPrintFmt("{} has taken the {} flag!\n", player.userinfo.netname, teamInfo->ColorizedTeamName());
 			SV_CTFEvent (f, SCORE_FIRSTGRAB, player);
 			M_LogWDLEvent(WDL_EVENT_TOUCH, &player, NULL, f, 0, 0, 0);
 		} else {
 			teamInfo->FlagData.firstgrab = false;
-			SV_BroadcastPrintf ("%s picked up the %s flag!\n", player.userinfo.netname.c_str(), teamInfo->ColorizedTeamName().c_str());
+			SV_BroadcastPrintFmt("{} picked up the {} flag!\n", player.userinfo.netname, teamInfo->ColorizedTeamName());
 			SV_CTFEvent (f, SCORE_GRAB, player);
 			M_LogWDLEvent(WDL_EVENT_PICKUPTOUCH, &player, NULL, f, 0, 0, 0);
 		}
 	} else {
-		SV_BroadcastPrintf ("%s is recovering the %s flag!\n", player.userinfo.netname.c_str(), teamInfo->ColorizedTeamName().c_str());
+		SV_BroadcastPrintFmt("{} is recovering the {} flag!\n", player.userinfo.netname, teamInfo->ColorizedTeamName());
 		SV_CTFEvent (f, SCORE_MANUALRETURN, player);
 		M_LogWDLEvent(WDL_EVENT_CARRYRETURNFLAG, &player, NULL, f, 0, 0, 0);
 	}
@@ -169,7 +169,7 @@ void SV_FlagReturn (player_t &player, team_t f)
 
 	CTF_SpawnFlag (f);
 
-	SV_BroadcastPrintf ("%s has returned the %s flag.\n", player.userinfo.netname.c_str(), V_GetTeamColor(f).c_str());
+	SV_BroadcastPrintFmt("{} has returned the {} flag.\n", player.userinfo.netname, V_GetTeamColor(f));
 	M_LogWDLEvent(WDL_EVENT_RETURNFLAG, &player, NULL, f, 0, 0, 0);
 }
 
@@ -208,10 +208,10 @@ void SV_FlagScore (player_t &player, team_t f)
 	TeamInfo* teamInfo = GetTeamInfo(f);
 	int time_held = I_MSTime() - teamInfo->FlagData.pickup_time;
 
-	SV_BroadcastPrintf("%s has captured the %s flag (held for %s)\n",
-						player.userinfo.netname.c_str(),
-						teamInfo->ColorizedTeamName().c_str(),
-						CTF_TimeMSG(time_held));
+	SV_BroadcastPrintFmt("{} has captured the {} flag (held for {})\n",
+						  player.userinfo.netname,
+						  teamInfo->ColorizedTeamName(),
+						  CTF_TimeMSG(time_held));
 
 	if (teamInfo->FlagData.firstgrab)
 		M_LogWDLEvent(WDL_EVENT_CAPTURE, &player, NULL, f, 0, 0, 0);
@@ -315,7 +315,7 @@ void SV_FlagDrop (player_t &player, team_t f)
 	TeamInfo* teamInfo = GetTeamInfo(f);
 	int time_held = I_MSTime() - teamInfo->FlagData.pickup_time;
 
-	SV_BroadcastPrintf ("%s has dropped the %s flag. (held for %s)\n", player.userinfo.netname.c_str(), V_GetTeamColor(f).c_str(), CTF_TimeMSG(time_held));
+	SV_BroadcastPrintFmt("{} has dropped the {} flag. (held for {})\n", player.userinfo.netname, V_GetTeamColor(f), CTF_TimeMSG(time_held));
 
 	player.flags[f] = false; // take ex-carrier's flag
 	teamInfo->FlagData.flagger = 0;
@@ -353,7 +353,7 @@ void CTF_RunTics (void)
 
 		SV_CTFEvent (teamInfo->Team, SCORE_RETURN, idplayer(0));
 
-		SV_BroadcastPrintf ("%s flag returned.\n", teamInfo->ColorizedTeamName().c_str());
+		SV_BroadcastPrintFmt("{} flag returned.\n", teamInfo->ColorizedTeamName());
 
 		CTF_SpawnFlag(teamInfo->Team);
 

@@ -2512,7 +2512,7 @@ FUNC(LS_Line_AlignCeiling)
 	bool ret = 0;
 
 	if (line < 0)
-		I_Error ("Sector_AlignCeiling: Lineid %d is undefined", arg0);
+		I_Error("Sector_AlignCeiling: Lineid {} is undefined", arg0);
 	do
 	{
 		ret |= R_AlignFlat (line, !!arg1, 1);
@@ -2527,7 +2527,7 @@ FUNC(LS_Line_AlignFloor)
 	bool ret = 0;
 
 	if (line < 0)
-		I_Error ("Sector_AlignFloor: Lineid %d is undefined", arg0);
+		I_Error("Sector_AlignFloor: Lineid {} is undefined", arg0);
 	do
 	{
 		ret |= R_AlignFlat (line, !!arg1, 0);
@@ -2968,8 +2968,8 @@ bool CheckIfExitIsGood (AActor *self)
 			tstr = fmt::sprintf("%02d:%02d.%02d", tspan.minutes, tspan.seconds, tspan.csecs);
 		}
 
-		SV_BroadcastPrintf("%s exited the level in %s.\n",
-		                   self->player->userinfo.netname.c_str(), tstr.c_str());
+		SV_BroadcastPrintFmt("{} exited the level in {}.\n",
+		                     self->player->userinfo.netname, tstr);
 	}
 
 	M_CommitWDLLog();

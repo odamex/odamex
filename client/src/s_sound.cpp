@@ -180,8 +180,7 @@ void S_NoiseDebug()
 				oy = Channel[i].y;
 			}
 			const int color = Channel[i].loop ? CR_BROWN : CR_GREY;
-			strcpy (temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name);
-			temp[8] = 0;
+			M_StringCopy(temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name, 9);
 			screen->DrawText (color, 0, y, temp);
 			snprintf (temp, 16, "%d", ox / FRACUNIT);
 			screen->DrawText (color, 70, y, temp);
@@ -595,7 +594,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
   	// check for bogus sound #
 	if (sfx_id < 0 || sfx_id > static_cast<int>(S_sfx.size()) - 1)
 	{
-		DPrintf("Bad sfx #: %d\n", sfx_id);
+		DPrintFmt("Bad sfx #: {}\n", sfx_id);
 		return;
 	}
 
@@ -620,7 +619,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
   	// check for bogus sound lump
 	if (sfxinfo->lumpnum < 0 || sfxinfo->lumpnum > static_cast<int>(numlumps))
 	{
-		DPrintf("Bad sfx lump #: %d\n", sfxinfo->lumpnum);
+		DPrintFmt("Bad sfx lump #: {}\n", sfxinfo->lumpnum);
 		return;
 	}
 
@@ -798,7 +797,7 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 
 	if (sfx_id == -1)
 	{
-		DPrintf("Unknown sound %s\n", soundname);
+		DPrintFmt("Unknown sound {}\n", soundname);
 		return;
 	}
 
@@ -864,7 +863,7 @@ static void S_StopChannel(unsigned int cnum)
 
 	if (cnum >= numChannels)
 	{
-		DPrintf("Trying to stop invalid channel %d\n", cnum);
+		DPrintFmt("Trying to stop invalid channel {}\n", cnum);
 		return;
 	}
 
@@ -1206,8 +1205,8 @@ size_t S_AddSoundLump(const char *logicalname, int lump)
 {
 	sfxinfo_t& new_sfx = S_sfx.emplace_back();
 
-	// logicalname MUST be < MAX_SNDNAME chars long
-	strcpy(new_sfx.name, logicalname);
+	// logicalname MUST be <= MAX_SNDNAME chars long
+	M_StringCopy(new_sfx.name, logicalname, MAX_SNDNAME + 1);
 	new_sfx.data = NULL;
 	new_sfx.link = sfxinfo_t::NO_LINK;
 	new_sfx.lumpnum = lump;
@@ -1307,7 +1306,7 @@ void S_ParseSndInfo()
 					const int index = os.getTokenInt();
 					if (index < 0 || index > 255)
 					{
-						os.warning("Bad ambient index (%d)\n", index);
+						os.warning("Bad ambient index ({})\n", index);
 						ambient = &dummy;
 					}
 					else
@@ -1372,7 +1371,7 @@ void S_ParseSndInfo()
 					}
 					else
 					{
-						os.warning("Unknown ambient type (%s)\n", os.getToken().c_str());
+						os.warning("Unknown ambient type ({})\n", os.getToken());
 					}
 
 					os.mustScanFloat();
@@ -1414,8 +1413,8 @@ void S_ParseSndInfo()
 
 						if (owner == sfxto)
 						{
-							os.warning("Definition of random sound '%s' refers to itself "
-							       "recursively.\n", os.getToken().c_str());
+							os.warning("Definition of random sound '{}' refers to itself "
+							       "recursively.\n", os.getToken());
 							continue;
 						}
 
@@ -1433,7 +1432,7 @@ void S_ParseSndInfo()
 				}
 				else
 				{
-					os.warning("Unknown SNDINFO command %s\n", os.getToken().c_str());
+					os.warning("Unknown SNDINFO command {}\n", os.getToken());
 					while (os.scan())
 						if (os.crossed())
 						{

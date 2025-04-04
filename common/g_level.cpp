@@ -717,7 +717,7 @@ void P_SerializeACSDefereds(FArchive &arc)
 				char name[9];
 				strncpy(name, mapname, ARRAY_LENGTH(name) - 1);
 				name[8] = 0;
-				I_Error("Unknown map '%s' in savegame", name);
+				I_Error("Unknown map '{}' in savegame", name);
 			}
 			arc >> info.defered;
 			arc >> mapname[0];

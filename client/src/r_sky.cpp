@@ -496,7 +496,7 @@ void R_InitSkyDefs()
 
 	jsonlumpresult_t result =  M_ParseJSONLump("SKYDEFS", "skydefs", { 1, 0, 0 }, ParseSkydef);
 	if (result != jsonlumpresult_t::SUCCESS && result != jsonlumpresult_t::NOTFOUND)
-		I_Error("R_InitSkyDefs: SKYDEFS JSON error: %s", M_JSONLumpResultToString(result));
+		I_Error("R_InitSkyDefs: SKYDEFS JSON error: {}", M_JSONLumpResultToString(result));
 }
 
 void R_ClearSkyDefs()

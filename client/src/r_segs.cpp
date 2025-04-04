@@ -829,7 +829,7 @@ void R_StoreWallRange(int start, int stop)
 {
 #ifdef RANGECHECK
 	if (start >= viewwidth || start > stop)
-		I_FatalError ("Bad R_StoreWallRange: %i to %i", start , stop);
+		I_FatalError("Bad R_StoreWallRange: {} to {}", start , stop);
 #endif
 
 	const int count = stop - start + 1;

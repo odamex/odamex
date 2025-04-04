@@ -629,7 +629,7 @@ std::string I_GetClipboardText()
 		if (!bytes_left)
 		{
 			XDestroyWindow(dis, WindowEvents);
-			DPrintf("I_GetClipboardText: Len was: %lu", len);
+			DPrintFmt("I_GetClipboardText: Len was: {}", len);
 			XUnlockDisplay(dis);
 			XCloseDisplay(dis);
 			return "";
@@ -943,7 +943,7 @@ void I_ErrorMessageBox(const char* message)
 
 void I_ErrorMessageBox(const char* message)
 {
-	fprintf(stderr, "%s\n%s\n", ODAMEX_ERROR_TITLE, message);
+	fmt::print(stderr, "{}\n{}\n", ODAMEX_ERROR_TITLE, message);
 }
 
 #endif
@@ -954,7 +954,7 @@ BEGIN_COMMAND(debug_userfilename)
 {
 	if (argc < 2)
 	{
-		Printf("debug_userfilename: needs a path to check.\n");
+		PrintFmt("debug_userfilename: needs a path to check.\n");
 		return;
 	}
 

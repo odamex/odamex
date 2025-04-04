@@ -299,7 +299,7 @@ void Unlag::recordPlayerPositions()
 			record.history_z[cur] = player->mo->z;
 
 			#ifdef _UNLAG_DEBUG_
-			DPrintf("Unlag (%03d): recording player %d position (%d, %d)\n",
+			DPrintFmt("Unlag ({:03d}): recording player {} position ({}, {})\n",
 					gametic & 0xFF, player->id,
 					player->mo->x >> FRACBITS,
 					player->mo->y >> FRACBITS,
@@ -474,7 +474,7 @@ void Unlag::reconcile(byte shooter_id)
 	size_t lag = player_history[player_index].current_lag;
 
 	#ifdef _UNLAG_DEBUG_
-	DPrintf("Unlag (%03d): moving players to their positions at gametic %d (%d tics ago)\n",
+	DPrintFmt("Unlag ({:03d}): moving players to their positions at gametic {} ({} tics ago)\n",
 			gametic & 0xFF, (gametic - lag) & 0xFF, lag);
 
 	// remove any other debugging player markers
@@ -496,7 +496,7 @@ void Unlag::reconcile(byte shooter_id)
 	}
 
 	if (lag > Unlag::MAX_HISTORY_TICS)
-		DPrintf("Unlag (%03d): player %d has too great of lag (%d tics)\n",
+		DPrintFmt("Unlag ({:03d}): player {} has too great of lag ({} tics)\n",
 				gametic & 0xFF, shooter_id, lag);
 	#endif	// _UNLAG_DEBUG_
 
@@ -560,7 +560,7 @@ void Unlag::setRoundtripDelay(byte player_id, byte svgametic)
 	player_history[player_index].current_lag = MIN(delay, maxdelay);
 
 	#ifdef _UNLAG_DEBUG_
-	DPrintf("Unlag (%03d): received gametic %d from player %d, lag = %d\n",
+	DPrintFmt("Unlag ({:03d}): received gametic {} from player {}, lag = {}\n",
 					gametic & 0xFF, svgametic, player_id, delay);
 	#endif	// _UNLAG_DEBUG
 }
@@ -652,7 +652,7 @@ void Unlag::debugReconciliation(byte shooter_id)
 
 			if (deltaangle < 3 * FRACUNIT)
 			{
-				DPrintf("Unlag (%03d): would have hit player %d at gametic %d (%" "zu" " tics ago)\n",
+				DPrintFmt("Unlag ({:03d}): would have hit player {} at gametic {} ({} tics ago)\n",
 						gametic & 0xFF, record.player->id, (gametic - static_cast<int>(n)) & 0xFF, n);
 			}
 		}

@@ -1094,7 +1094,7 @@ void A_WeaponMeleeAttack(AActor* mo)
 
 	if (hitsound >= static_cast<int>(ARRAY_LENGTH(SoundMap)))
 	{
-		DPrintf("Warning: Weapon Melee Hitsound ID is beyond the array of the Sound Map!\n");
+		DPrintFmt("Warning: Weapon Melee Hitsound ID is beyond the array of the Sound Map!\n");
 		hitsound = 0;
 	}
 
@@ -1150,7 +1150,7 @@ void A_WeaponSound(AActor *mo)
 
 	if (sndmap >= static_cast<int>(ARRAY_LENGTH(SoundMap)))
 	{
-		DPrintf("Warning: Weapon Sound ID is beyond the array of the Sound Map!\n");
+		DPrintFmt("Warning: Weapon Sound ID is beyond the array of the Sound Map!\n");
 		sndmap = 0;
 	}
 

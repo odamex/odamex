@@ -238,7 +238,7 @@ EXTERN_CVAR (joy_invert)
 EXTERN_CVAR (joy_freelook)
 
 int 			savegameslot;
-char			savedescription[32];
+std::string		savedescription;
 
 player_t		&consoleplayer()
 {
@@ -1109,8 +1109,8 @@ void G_Ticker (void)
 					break;
 
 				case BTS_SAVEGAME:
-					if (!savedescription[0])
-						strcpy(savedescription, "NET GAME");
+					if (savedescription.empty())
+						savedescription = "NET GAME";
 					savegameslot = (player.cmd.buttons & BTS_SAVEMASK) >> BTS_SAVESHIFT;
 					gameaction = ga_savegame;
 					break;
@@ -1135,7 +1135,7 @@ void G_Ticker (void)
 				consoleplayer().mo = consoleplayer().camera = mobj->ptr();
 				consoleplayer().mo->player = &consoleplayer();
 				G_PlayerReborn(consoleplayer());
-				DPrintf("Did not receive spawn for consoleplayer.\n");
+				DPrintFmt("Did not receive spawn for consoleplayer.\n");
 			}
 
 			CL_SimulateWorld();
@@ -1527,11 +1527,11 @@ void G_ScreenShot(const char* filename)
 // G_InitFromSavegame
 // Can be called by the startup code or the menu task.
 //
-char savename[256];
+std::string savename;
 
-void G_LoadGame (const char* name)
+void G_LoadGame (const std::string& name)
 {
-	strcpy (savename, name);
+	savename = name;
 	gameaction = ga_loadgame;
 }
 
@@ -1543,7 +1543,7 @@ void G_DoLoadGame (void)
 
 	gameaction = ga_nothing;
 
-	FILE *stdfile = fopen (savename, "rb");
+	FILE *stdfile = fopen (savename.c_str(), "rb");
 	if (stdfile == NULL)
 	{
 		Printf (PRINT_HIGH, "Could not read savegame '%s'\n", savename);
@@ -1580,7 +1580,7 @@ void G_DoLoadGame (void)
 	FLZOFile savefile (stdfile, FFile::EReading);
 
 	if (!savefile.IsOpen ())
-		I_Error ("Savegame '%s' is corrupt\n", savename);
+		I_Error ("Savegame '{}' is corrupt\n", savename);
 
 	Printf (PRINT_HIGH, "Loading savegame '%s'...\n", savename);
 
@@ -1657,10 +1657,10 @@ void G_DoLoadGame (void)
 // Called by the menu task.
 // Description is a 24 byte text string
 //
-void G_SaveGame (int slot, char *description)
+void G_SaveGame (int slot, std::string_view description)
 {
 	savegameslot = slot;
-	strcpy (savedescription, description);
+	savedescription = description;
 	sendsave = true;
 }
 
@@ -1682,9 +1682,7 @@ void G_BuildSaveName(std::string &name, int slot)
 
 void G_DoSaveGame()
 {
-	std::string name;
-	char *description;
-	int i;
+	std::string name, description;
 
 	G_SnapshotLevel ();
 
@@ -1699,12 +1697,12 @@ void G_DoSaveGame()
 	}
 
 #ifdef _XBOX
-	xbox_WriteSaveMeta(name.substr(0, name.rfind(PATHSEPCHAR)), description);
+	xbox_WriteSaveMeta(name.substr(0, name.rfind(PATHSEPCHAR)), description.c_str());
 #endif
 
 	Printf (PRINT_HIGH, "Saving game to '%s'...\n", name);
 
-	fwrite (description, SAVESTRINGSIZE, 1, stdfile);
+	fwrite (description.c_str(), SAVESTRINGSIZE, 1, stdfile);
 	fwrite (SAVESIG, 16, 1, stdfile);
 	fwrite (level.mapname.c_str(), 8, 1, stdfile);
 
@@ -1727,7 +1725,7 @@ void G_DoSaveGame()
 
 	arc << level.time;
 
-	for (i = 0; i < NUM_WORLDVARS; i++)
+	for (int i = 0; i < NUM_WORLDVARS; i++)
 	{
 		arc << ACS_WorldVars[i];
 		ACSWorldGlobalArray worldarr = ACS_WorldArrays[i];
@@ -1739,7 +1737,7 @@ void G_DoSaveGame()
 		}
 	}
 
-	for (i = 0; i < NUM_GLOBALVARS; i++)
+	for (int i = 0; i < NUM_GLOBALVARS; i++)
 	{
 		arc << ACS_GlobalVars[i];
 		ACSWorldGlobalArray globalarr = ACS_GlobalArrays[i];

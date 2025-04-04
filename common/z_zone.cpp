@@ -159,7 +159,7 @@ class OZone
 		if (ptr == NULL)
 		{
 			// Don't format these bytes, the byte formatter allocates.
-			I_Error("%s: Could not allocate %zu bytes at %s:%i.", __FUNCTION__, size,
+			I_Error("{}: Could not allocate {} bytes at {}:{}.", __FUNCTION__, size,
 			        info.shortFile(), info.line);
 		}
 
@@ -188,21 +188,21 @@ class OZone
 	{
 		if (tag == PU_FREE)
 		{
-			I_Error("%s: Tried to change a tag to PU_FREE at %s:%i.", __FUNCTION__,
+			I_Error("{}: Tried to change a tag to PU_FREE at {}:{}.", __FUNCTION__,
 			        info.shortFile(), info.line);
 		}
 
 		MemoryBlockTable::iterator it = m_heap.find(ptr);
 		if (it == m_heap.end())
 		{
-			I_Error("%s: Address 0x%p is not tracked by zone at %s:%i.", __FUNCTION__,
+			I_Error("{}: Address 0x{:p} is not tracked by zone at {}:{}.", __FUNCTION__,
 			        it->first, info.shortFile(), info.line);
 		}
 
 		if (tag >= PU_PURGELEVEL && it->second.user == NULL)
 		{
-			I_Error("%s: Found purgable block without an owner at %s:%i, "
-			        "allocated at %s:%i.",
+			I_Error("{}: Found purgable block without an owner at {}:{}, "
+			        "allocated at {}:{}.",
 			        __FUNCTION__, info.shortFile(), info.line,
 			        it->second.fileLine.shortFile(), it->second.fileLine.line);
 		}
@@ -213,7 +213,7 @@ class OZone
 	void changeOwner(void* ptr, void* user, const OFileLine& info)
 	{
 		// [AM] Nothing calls this as far as I know.
-		I_Error("%s: not implemented", __FUNCTION__);
+		I_Error("{}: not implemented", __FUNCTION__);
 	}
 
 	void deallocPtr(void* ptr, const OFileLine& info)
@@ -224,7 +224,7 @@ class OZone
 		MemoryBlockTable::iterator it = m_heap.find(ptr);
 		if (it == m_heap.end())
 		{
-			I_Error("%s: Address 0x%p is not tracked by zone at %s:%i.", __FUNCTION__,
+			I_Error("{}: Address 0x{:p} is not tracked by zone at {}:{}.", __FUNCTION__,
 			        it->first, info.shortFile(), info.line);
 		}
 

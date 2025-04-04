@@ -56,7 +56,7 @@ jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSON
     if(!reader->parse(jsondata, jsondata + W_LumpLength(lumpindex), &root, &errs))
     {
         delete reader;
-        I_Error("M_ParseJSONLump: JSON parsing error in lump %s:\n%s", W_LumpName(lumpindex), errs);
+        I_Error("M_ParseJSONLump: JSON parsing error in lump {}:\n{}", W_LumpName(lumpindex), errs);
         return jsonlumpresult_t::PARSEERROR;
     }
 

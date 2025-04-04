@@ -2559,7 +2559,7 @@ bool PTR_RailTraverse (intercept_t *in)
 	if (NumRailHits >= MaxRailHits)
 	{
 		MaxRailHits = MaxRailHits ? MaxRailHits * 2 : 16;
-		RailHits = (SRailHit *)Realloc (RailHits, sizeof(*RailHits) * MaxRailHits);
+		RailHits = (SRailHit *) M_Realloc(RailHits, sizeof(*RailHits) * MaxRailHits);
 	}
 	RailHits[NumRailHits].hitthing = th;
 	RailHits[NumRailHits].x = x;
@@ -3334,7 +3334,7 @@ msecnode_t *P_AddSecnode (sector_t *s, AActor *thing, msecnode_t *nextnode)
 	msecnode_t *node;
 
 	if (s == NULL)
-		I_FatalError("AddSecnode of 0 for %s\n", thing->_StaticType.Name);
+		I_FatalError("AddSecnode of 0 for {}\n", thing->_StaticType.Name);
 
 	node = nextnode;
 	while (node)

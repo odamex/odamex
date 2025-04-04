@@ -268,8 +268,8 @@ size_t S_AddSoundLump(const char *logicalname, int lump)
 {
 	sfxinfo_t& new_sfx = S_sfx.emplace_back();
 
-	// logicalname MUST be < MAX_SNDNAME chars long
-	strcpy(new_sfx.name, logicalname);
+	// logicalname MUST be <= MAX_SNDNAME chars long
+	M_StringCopy(new_sfx.name, logicalname, MAX_SNDNAME + 1);
 	new_sfx.data = NULL;
 	new_sfx.link = sfxinfo_t::NO_LINK;
 	new_sfx.lumpnum = lump;
@@ -369,7 +369,7 @@ void S_ParseSndInfo()
 					const int index = os.getTokenInt();
 					if (index < 0 || index > 255)
 					{
-						os.warning("Bad ambient index (%d)\n", index);
+						os.warning("Bad ambient index ({})\n", index);
 						ambient = &dummy;
 					}
 					else
@@ -438,7 +438,7 @@ void S_ParseSndInfo()
 					}
 					else
 					{
-						os.warning("Unknown ambient type (%s)\n", os.getToken());
+						os.warning("Unknown ambient type ({})\n", os.getToken());
 					}
 
 					os.mustScanFloat();
@@ -478,7 +478,7 @@ void S_ParseSndInfo()
 
 						if (owner == sfxto)
 						{
-							os.warning("Definition of random sound '%s' refers to itself "
+							os.warning("Definition of random sound '{}' refers to itself "
 							           "recursively.\n",
 							           os.getToken());
 							continue;
@@ -498,7 +498,7 @@ void S_ParseSndInfo()
 				}
 				else
 				{
-					os.warning("Unknown SNDINFO command %s\n", os.getToken());
+					os.warning("Unknown SNDINFO command {}\n", os.getToken());
 					while (os.scan())
 						if (os.crossed())
 						{

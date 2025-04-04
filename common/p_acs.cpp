@@ -241,7 +241,7 @@ mobjtype_t FindWeaponEntity(const char* type)
 		{
 			if (DoomWeaponNames[i].Type == MT_NULL)
 			{
-				DPrintf("ACS: LOGIC ERROR - Cannot spawn default weapons!\n");
+				DPrintFmt("ACS: LOGIC ERROR - Cannot spawn default weapons!\n");
 				return MT_NULL;
 			}
 			return DoomWeaponNames[i].Type;
@@ -728,7 +728,7 @@ FBehavior::FBehavior (BYTE *object, int len)
 		}
 	}
 
-	DPrintf ("Loaded %d scripts, %d Functions\n", NumScripts, NumFunctions);
+	DPrintFmt("Loaded {} scripts, {} Functions\n", NumScripts, NumFunctions);
 }
 
 FBehavior::~FBehavior ()
@@ -1029,7 +1029,7 @@ DACSThinker::DACSThinker ()
 {
 	if (ActiveThinker)
 	{
-		I_Error ("Only one ACSThinker is allowed to exist at a time.\nCheck your code.");
+		I_Error("Only one ACSThinker is allowed to exist at a time.\nCheck your code.");
 	}
 	else
 	{
@@ -2033,7 +2033,7 @@ int DLevelScript::DoSpawnSpot(int type, int spot, int tid, int angle)
 
 void DLevelScript::DoFadeTo(AActor* who, int r, int g, int b, int a, fixed_t time)
 {
-    DPrintf("DoFadeRange now... \n");
+    DPrintFmt("DoFadeRange now... \n");
 	DoFadeRange(who, 0, 0, 0, -1, r, g, b, a, time);
 }
 
@@ -2184,7 +2184,7 @@ void DLevelScript::RunScript ()
 	{
 		if (++runaway > 500000)
 		{
-			DPrintf ("Runaway script %d terminated\n", script);
+			DPrintFmt("Runaway script {} terminated\n", script);
 			state = SCRIPT_PleaseRemove;
 			break;
 		}
@@ -2205,7 +2205,7 @@ void DLevelScript::RunScript ()
 		switch (pcd)
 		{
 		default:
-			DPrintf("Unknown P-Code %d in script %d\n", pcd, script);
+			DPrintFmt("Unknown P-Code {} in script {}\n", pcd, script);
 			continue;
 			// fall through
 		case PCD_TERMINATE:
@@ -3860,12 +3860,12 @@ void DLevelScript::RunScript ()
 
 	if (state == SCRIPT_DivideBy0)
 	{
-		DPrintf("Divide by zero in script %d\n", script);
+		DPrintFmt("Divide by zero in script {}\n", script);
 		state = SCRIPT_PleaseRemove;
 	}
 	else if (state == SCRIPT_ModulusBy0)
 	{
-		DPrintf("Modulus by zero in script %d\n", script);
+		DPrintFmt("Modulus by zero in script {}\n", script);
 		state = SCRIPT_PleaseRemove;
 	}
 
@@ -3932,7 +3932,7 @@ DLevelScript::DLevelScript (AActor *who, line_t *where, int num, int *code, int 
 
 	Link ();
 
-	DPrintf ("Script %d started.\n", num);
+	DPrintFmt("Script {} started.\n", num);
 }
 
 static void SetScriptState (int script, DLevelScript::EScriptState state)
@@ -3974,12 +3974,12 @@ void P_DoDeferedScripts (void)
 
 		case acsdefered_t::defsuspend:
 			SetScriptState (def->script, DLevelScript::SCRIPT_Suspended);
-			DPrintf ("Defered suspend of script %d\n", def->script);
+			DPrintFmt("Defered suspend of script {}\n", def->script);
 			break;
 
 		case acsdefered_t::defterminate:
 			SetScriptState (def->script, DLevelScript::SCRIPT_PleaseRemove);
-			DPrintf ("Defered terminate of script %d\n", def->script);
+			DPrintFmt("Defered terminate of script {}\n", def->script);
 			break;
 		}
 		delete def;

@@ -119,10 +119,10 @@ vissprite_t *R_NewVisSprite()
 		int prevvisspritenum = vissprite_p - vissprites;
 
 		MaxVisSprites *= 2;
-		vissprites = (vissprite_t *)Realloc (vissprites, MaxVisSprites * sizeof(vissprite_t));
+		vissprites = (vissprite_t *)M_Realloc (vissprites, MaxVisSprites * sizeof(vissprite_t));
 		lastvissprite = &vissprites[MaxVisSprites];
 		vissprite_p = &vissprites[prevvisspritenum];
-		DPrintf ("MaxVisSprites increased to %d\n", MaxVisSprites);
+		DPrintFmt("MaxVisSprites increased to {}\n", MaxVisSprites);
 	}
 
 	vissprite_p++;
@@ -566,7 +566,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 #ifdef RANGECHECK
 	if (static_cast<unsigned>(thing->sprite) >= static_cast<unsigned>(numsprites))
 	{
-		DPrintf ("R_ProjectSprite: invalid sprite number %i\n", thing->sprite);
+		DPrintFmt("R_ProjectSprite: invalid sprite number %i\n", thing->sprite);
 		return;
 	}
 #endif
@@ -576,7 +576,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 #ifdef RANGECHECK
 	if ( (thing->frame & FF_FRAMEMASK) >= sprdef->numframes )
 	{
-		DPrintf ("R_ProjectSprite: invalid sprite frame %i : %i\n ", thing->sprite, thing->frame);
+		DPrintFmt("R_ProjectSprite: invalid sprite frame %i : %i\n ", thing->sprite, thing->frame);
 		return;
 	}
 #endif
@@ -715,14 +715,14 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	// decide which patch to use
 #ifdef RANGECHECK
 	if ( (unsigned)psp->state->sprite >= (unsigned)numsprites) {
-		DPrintf ("R_DrawPSprite: invalid sprite number %i\n", psp->state->sprite);
+		DPrintFmt("R_DrawPSprite: invalid sprite number %i\n", psp->state->sprite);
 		return;
 	}
 #endif
 	sprdef = &sprites[psp->state->sprite];
 #ifdef RANGECHECK
 	if ( (psp->state->frame & FF_FRAMEMASK) >= sprdef->numframes) {
-		DPrintf ("R_DrawPSprite: invalid sprite frame %i : %i\n", psp->state->sprite, psp->state->frame);
+		DPrintFmt("R_DrawPSprite: invalid sprite frame %i : %i\n", psp->state->sprite, psp->state->frame);
 		return;
 	}
 #endif

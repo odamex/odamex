@@ -485,7 +485,7 @@ void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this 
 	}
 
 	if (selections < 1)
-		I_Error ("No appropriate team starts");
+		I_Error("No appropriate team starts");
 
 	if (!spot && !playerstarts.empty())
 		spot = &playerstarts[player.id%playerstarts.size()];
@@ -519,7 +519,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	selections = DeathMatchStarts.size();
 	// [RH] We can get by with just 1 deathmatch start
 	if (selections < 1)
-		I_Error ("No deathmatch starts");
+		I_Error("No deathmatch starts");
 
 	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
 	// [Russell] - Readded, makes modern dm more interesting

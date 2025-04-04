@@ -1054,7 +1054,7 @@ bool SV_BanCheck(client_t* cl)
 	Printf(PRINT_HIGH, "%s is banned, dropping client.\n", NET_AdrToString(cl->address));
 
 	// Send the message to the client.
-	SV_ClientPrintf(cl, PRINT_HIGH, "%s", buffer.str().c_str());
+	SV_ClientPrintFmt(cl, PRINT_HIGH, "{}", buffer.str());
 
 	return true;
 }

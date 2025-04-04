@@ -440,7 +440,7 @@ bool NetDemo::startRecording(const std::string &filename)
 	if (!demofp)
 	{
 		//error("Unable to create netdemo file " + filename + ".");
-		I_Warning("Unable to create netdemo file %s", filename);
+		I_Warning("Unable to create netdemo file {}", filename);
 		return false;
 	}
 

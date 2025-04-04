@@ -111,7 +111,7 @@ std::string M_GetWriteDir()
 		}
 		else
 		{
-			I_FatalError("Failed to create %s directory.\n", userPath.c_str());
+			I_FatalError("Failed to create {} directory.\n", userPath);
 		}
 	}
 

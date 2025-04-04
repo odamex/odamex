@@ -40,6 +40,7 @@
 #include "i_musicsystem_portmidi.h"
 #endif
 #include "i_musicsystem_sdl.h"
+#include "i_musicsystem_adlmidi.h"
 
 MusicSystem* musicsystem = NULL;
 MusicSystemType current_musicsystem_type = MS_NONE;
@@ -49,6 +50,7 @@ void S_ChangeMusic (std::string musicname, bool looping);
 
 EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_musicsystem)
+EXTERN_CVAR (snd_nomusic)
 
 
 std::string currentmusic;
@@ -182,7 +184,7 @@ void I_InitMusic(MusicSystemType musicsystem_type)
 	I_ShutdownMusic();
 	I_ResetMidiVolume();
 
-	if (I_IsHeadless() || Args.CheckParm("-nosound") || Args.CheckParm("-nomusic") || snd_musicsystem == MS_NONE)
+	if (I_IsHeadless() || Args.CheckParm("-nosound") || Args.CheckParm("-nomusic") || snd_musicsystem == MS_NONE || snd_nomusic)
 	{
 		// User has chosen to disable music
 		musicsystem = new SilentMusicSystem();
@@ -203,6 +205,10 @@ void I_InitMusic(MusicSystemType musicsystem_type)
 			musicsystem = new PortMidiMusicSystem();
 			break;
 		#endif	// PORTMIDI
+
+		case MS_LIBADLMIDI:
+			musicsystem = new AdlMidiMusicSystem();
+			break;
 
 		case MS_SDLMIXER:	// fall through
 		default:
@@ -233,6 +239,26 @@ CVAR_FUNC_IMPL (snd_musicsystem)
 		S_StopMusic();
 	}
 	I_InitMusic();
+
+	if (level.music.empty())
+		S_ChangeMusic(currentmusic, true);
+	else
+		S_ChangeMusic(std::string(level.music.c_str(), 8), true);
+}
+
+CVAR_FUNC_IMPL (snd_nomusic)
+{
+	if (musicsystem)
+	{
+		I_ShutdownMusic();
+		S_StopMusic();
+	}
+	I_InitMusic();
+
+	// if we're disabling music,
+	// this will print the music disabled message twice without the early return
+	if (var)
+		return;
 
 	if (level.music.empty())
 		S_ChangeMusic(currentmusic, true);

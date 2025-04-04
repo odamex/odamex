@@ -182,7 +182,7 @@ size_t P_HordePickDefine(const int current, const int total)
 {
 	if (::WAVE_DEFINES.empty())
 	{
-		I_Error("%s: No wave defines found.\n", __FUNCTION__);
+		I_Error("{}: No wave defines found.\n", __FUNCTION__);
 	}
 
 	if (total > 0)

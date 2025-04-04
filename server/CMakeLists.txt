@@ -49,7 +49,7 @@ endif()
 target_link_libraries(odasrv fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo)
 
 if(USE_INTERNAL_JSONCPP)
-  target_link_libraries(odasrv jsoncpp_lib_static)
+  target_link_libraries(odasrv jsoncpp_static)
 else()
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(JSONCPP jsoncpp REQUIRED IMPORTED_TARGET)

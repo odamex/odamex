@@ -261,7 +261,7 @@ fhfprint_s W_FarmHash128(const byte* lumpdata, int length)
 //
 void W_AddLumps(FILE* handle, filelump_t* fileinfo, size_t newlumps, bool clientonly)
 {
-	lumpinfo = (lumpinfo_t*)Realloc(lumpinfo, (numlumps + newlumps) * sizeof(lumpinfo_t));
+	lumpinfo = (lumpinfo_t*) M_Realloc(lumpinfo, (numlumps + newlumps) * sizeof(lumpinfo_t));
 	if (!lumpinfo)
 		I_Error("Couldn't realloc lumpinfo");
 
@@ -513,7 +513,7 @@ void W_MergeLumps (const char *start, const char *end, int space)
 	if (newlumps)
 	{
 		if (oldlumps + newlumps > numlumps)
-			lumpinfo = (lumpinfo_t *)Realloc (lumpinfo, oldlumps + newlumps);
+			lumpinfo = (lumpinfo_t*) M_Realloc(lumpinfo, oldlumps + newlumps);
 
 		memcpy (lumpinfo + oldlumps, newlumpinfos, sizeof(lumpinfo_t) * newlumps);
 
@@ -565,7 +565,7 @@ void W_InitMultipleFiles(const OResFiles& files)
 	}
 
 	if (!numlumps)
-		I_Error ("W_InitFiles: no files found");
+		I_Error("W_InitFiles: no files found");
 
 	// [RH] Set namespace markers to global for everything
 	for (size_t i = 0; i < numlumps; i++)
@@ -582,10 +582,10 @@ void W_InitMultipleFiles(const OResFiles& files)
 	M_Free(lumpcache);
 
 	size_t size = numlumps * sizeof(*lumpcache);
-	lumpcache = (void **)Malloc (size);
+	lumpcache = (void **) M_Malloc(size);
 
 	if (!lumpcache)
-		I_Error ("Couldn't allocate lumpcache");
+		I_Error("Couldn't allocate lumpcache");
 
 	memset (lumpcache,0, size);
 
@@ -673,7 +673,7 @@ int W_GetNumForName(const char* name, int namespc)
 
 	if (i == -1)
 	{
-		I_Error("W_GetNumForName: %s not found!\n(checked in: %s)", name,
+		I_Error("W_GetNumForName: {} not found!\n(checked in: {})", name,
 		        M_ResFilesToString(::wadfiles));
 	}
 
@@ -689,7 +689,7 @@ int W_GetNumForName(const char* name, int namespc)
 std::string W_LumpName(unsigned lump)
 {
 	if (lump >= ::numlumps)
-		I_Error("%s: %i >= numlumps", __FUNCTION__, lump);
+		I_Error("{}: {} >= numlumps", __FUNCTION__, lump);
 
 	return std::string(::lumpinfo[lump].name, ARRAY_LENGTH(::lumpinfo[lump].name));
 }
@@ -701,7 +701,7 @@ std::string W_LumpName(unsigned lump)
 unsigned W_LumpLength (unsigned lump)
 {
 	if (lump >= numlumps)
-		I_Error ("W_LumpLength: %i >= numlumps",lump);
+		I_Error("W_LumpLength: {} >= numlumps", lump);
 
 	return lumpinfo[lump].size;
 }
@@ -719,7 +719,7 @@ void W_ReadLump(unsigned int lump, void* dest)
 	lumpinfo_t*	l;
 
 	if (lump >= numlumps)
-		I_Error ("W_ReadLump: %i >= numlumps",lump);
+		I_Error("W_ReadLump: {} >= numlumps", lump);
 
 	l = lumpinfo + lump;
 
@@ -730,7 +730,7 @@ void W_ReadLump(unsigned int lump, void* dest)
 	c = fread (dest, l->size, 1, l->handle);
 
 	if (feof(l->handle))
-		I_Error ("W_ReadLump: only read %i of %i on lump %i", c, l->size, lump);
+		I_Error("W_ReadLump: only read {} of {} on lump {}", c, l->size, lump);
 
 	if (lump != stdisk_lumpnum)
     	I_EndRead();
@@ -803,7 +803,7 @@ void W_GetOLumpName(OLumpName& to, unsigned lump)
 void* W_CacheLumpNum(unsigned int lump, const zoneTag_e tag)
 {
 	if ((unsigned)lump >= numlumps)
-		I_Error ("W_CacheLumpNum: %i >= numlumps",lump);
+		I_Error("W_CacheLumpNum: {} >= numlumps",lump);
 
 	if (!lumpcache[lump])
 	{
@@ -857,7 +857,7 @@ void R_ConvertPatch(patch_t* rawpatch, patch_t* newpatch, const unsigned int lum
 patch_t* W_CachePatch(unsigned lumpnum, const zoneTag_e tag)
 {
 	if (lumpnum >= numlumps)
-		I_Error ("W_CachePatch: %u >= numlumps", lumpnum);
+		I_Error("W_CachePatch: {} >= numlumps", lumpnum);
 
 	if (!lumpcache[lumpnum])
 	{

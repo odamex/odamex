@@ -197,7 +197,7 @@ interlevel_t* WI_GetInterlevel(const OLumpName& lumpname)
 	jsonlumpresult_t result =  M_ParseJSONLump(lumpname, "interlevel", { 1, 0, 0 }, ParseInterlevel);
 	if (result != jsonlumpresult_t::SUCCESS)
 	{
-		I_Error("R_GetInterlevel: Interlevel JSON error in lump %s: %s", lumpname.c_str(), M_JSONLumpResultToString(result));
+		I_Error("R_GetInterlevel: Interlevel JSON error in lump {}: {}", lumpname, M_JSONLumpResultToString(result));
 		return nullptr;
 	}
 
@@ -285,7 +285,7 @@ void WI_ParseZDoomAnim(OScanner& os, std::vector<interlevelanim_t>& anims, inter
 	{
 		if (!os.isIdentifier())
 		{
-			os.error("Expected identifier, got \"%s\".", os.getToken());
+			os.error("Expected identifier, got \"{}\".", os.getToken());
 		}
 		OLumpName framename = os.getToken();
 		int framenum = W_GetNumForName(framename);
@@ -343,7 +343,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 	{
 		if (!os.isIdentifier())
 		{
-			os.error("Expected identifier, got \"%s\".", os.getToken());
+			os.error("Expected identifier, got \"{}\".", os.getToken());
 		}
 
 		std::string name = os.getToken();
@@ -393,7 +393,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			{
 				OLumpName mapname = os.getToken();
 				if (!ValidateMapName(mapname))
-					os.error("Invalid map name %s", mapname.c_str());
+					os.error("Invalid map name {}", mapname);
 				os.mustScanInt();
 				int x = os.getTokenInt();
 				os.mustScanInt();
@@ -421,7 +421,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::OnEnteringScreen, 0, 0}, {animcondition_t::CurrMapEqual, mapnum, 0});
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
 		else if (iequals(name, "ifnotentering"))
 		{
@@ -434,7 +434,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::OnFinishedScreen, 0, 0}, {animcondition_t::CurrMapNotEqual, mapnum, 0}, true);
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
 		else if (iequals(name, "ifleaving"))
 		{
@@ -447,7 +447,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::OnFinishedScreen, 0, 0}, {animcondition_t::CurrMapEqual, mapnum, 0});
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
 		else if (iequals(name, "ifnotleaving"))
 		{
@@ -460,7 +460,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::OnEnteringScreen, 0, 0}, {animcondition_t::CurrMapNotEqual, mapnum, 0}, true);
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
 		else if (iequals(name, "ifvisited"))
 		{
@@ -473,7 +473,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::MapVisited, mapnum, 0});
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
 		else if (iequals(name, "ifnotvisited"))
 		{
@@ -486,7 +486,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::MapNotVisited, mapnum, 0});
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
 		else if (iequals(name, "iftraveling"))
 		{
@@ -502,7 +502,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::TravelingBetween, mapnum, mapnum2});
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
 		else if (iequals(name, "ifnottraveling"))
 		{
@@ -518,11 +518,11 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::NotTravelingBetween, mapnum, mapnum2});
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
 		else
 		{
-			os.error("Unknown command %s", name);
+			os.error("Unknown command {}", name);
 		}
 	}
 

@@ -193,10 +193,10 @@ void MaplistCache::ev_tic() {
 		break;
 	case MAPLIST_TIMEOUT:
 		this->error = "Maplist update timed out.";
-		DPrintf("MaplistCache::ev_tic: Maplist Cache Update Timeout.\n");
-		DPrintf("- Successfully Cached Maps: %lu\n", this->maplist.size());
-		DPrintf("- Destination Maplist Size: %lu\n", this->size);
-		DPrintf("- Valid Indexes: %d\n", this->valid_indexes);
+		DPrintFmt("MaplistCache::ev_tic: Maplist Cache Update Timeout.\n");
+		DPrintFmt("- Successfully Cached Maps: {}\n", this->maplist.size());
+		DPrintFmt("- Destination Maplist Size: {}\n", this->size);
+		DPrintFmt("- Valid Indexes: {}\n", this->valid_indexes);
 		break;
 	case MAPLIST_THROTTLED:
 		this->error = "Server refused to send the maplist.";
@@ -288,7 +288,7 @@ void MaplistCache::status_handler(maplist_status_t status) {
 		this->status = status;
 		break;
 	default:
-		DPrintf("MaplistCache::status_handler: Unknown status %d from server.\n", status);
+		DPrintFmt("MaplistCache::status_handler: Unknown status {} from server.\n", status);
 		return;
 	}
 }
@@ -306,7 +306,7 @@ bool MaplistCache::update_status_handler(maplist_status_t status) {
 	case MAPLIST_OUTDATED:
 		return true;
 	default:
-		DPrintf("MaplistCache::status_handler: Unknown status %d from server.\n", status);
+		DPrintFmt("MaplistCache::status_handler: Unknown status {} from server.\n", status);
 		return true;
 	}
 }

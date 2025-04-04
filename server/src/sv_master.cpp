@@ -173,7 +173,7 @@ bool SV_AddMaster(const char *masterip)
 void SV_ArchiveMasters(FILE *fp)
 {
 	for(size_t i = 0; i < masters.size(); i++)
-		fprintf(fp, "addmaster %s\n", masters[i].masterip.c_str());
+		fmt::print(fp, "addmaster {}\n", masters[i].masterip);
 }
 
 //

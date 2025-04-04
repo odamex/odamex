@@ -221,7 +221,7 @@ BEGIN_COMMAND(callvote) {
 											 &CMD_RandmapVoteErrback);
 		return;
 	default:
-		DPrintf("callvote: Unknown uncaught votecmd %d.\n", votecmd);
+		DPrintFmt("callvote: Unknown uncaught votecmd {}.\n", votecmd);
 		return;
 	}
 

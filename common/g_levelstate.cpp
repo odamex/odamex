@@ -287,7 +287,7 @@ void LevelState::readyToggle()
 		if (m_state == LevelState::WARMUP_COUNTDOWN)
 		{
 			setState(LevelState::WARMUP);
-			SV_BroadcastPrintf("Countdown aborted: Player unreadied.\n");
+			SV_BroadcastPrintFmt("Countdown aborted: Player unreadied.\n");
 		}
 	}
 }
@@ -371,7 +371,7 @@ void LevelState::tic()
 				G_DeferedReset();
 
 			setState(LevelState::INGAME);
-			SV_BroadcastPrintf("FIGHT!\n");
+			SV_BroadcastPrintFmt("FIGHT!\n");
 			return;
 		}
 		break;
@@ -465,8 +465,8 @@ void LevelState::tic()
 				printRoundStart();
 			else
 			{
-				SV_BroadcastPrintf("The %s has started.\n",
-				                   G_IsCoopGame() ? "game" : "match");
+				SV_BroadcastPrintFmt("The {} has started.\n",
+				                     G_IsCoopGame() ? "game" : "match");
 			}
 			return;
 		}
@@ -620,11 +620,11 @@ void LevelState::printRoundStart() const
 
 	if (!right.empty())
 	{
-		SV_BroadcastPrintf("%s - %s.\n", left.c_str(), right.c_str());
+		SV_BroadcastPrintFmt("{} - {}.\n", left, right);
 	}
 	else
 	{
-		SV_BroadcastPrintf("%s.\n", left.c_str());
+		SV_BroadcastPrintFmt("{}.\n", left);
 	}
 }
 

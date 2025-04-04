@@ -108,7 +108,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 
 	if (!os.isIdentifier())
 	{
-		os.error("Expected identifier, got \"%s\".", os.getToken());
+		os.error("Expected identifier, got \"{}\".", os.getToken());
 	}
 	std::string pname = os.getToken();
 	os.mustScan();
@@ -143,7 +143,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		ParseOLumpName(os, mape->nextmap);
 		if (!ValidateMapName(mape->nextmap))
 		{
-			os.error("Invalid map name %s.", mape->nextmap.c_str());
+			os.error("Invalid map name {}", mape->nextmap);
 			return 0;
 		}
 	}
@@ -152,7 +152,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		ParseOLumpName(os, mape->secretmap);
 		if (!ValidateMapName(mape->secretmap))
 		{
-			os.error("Invalid map name %s", mape->nextmap.c_str());
+			os.error("Invalid map name {}", mape->nextmap);
 			return 0;
 		}
 	}
@@ -309,7 +309,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			const mobjtype_t i = P_INameToMobj(actor_name);
 			if (i == MT_NULL)
 			{
-				os.error("Unknown thing type %s", os.getToken());
+				os.error("Unknown thing type {}", os.getToken());
 				return 0;
 			}
 
@@ -368,7 +368,7 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 	{
 		if (!os.compareTokenNoCase("map"))
 		{
-			os.error("Expected map definition, got %s", os.getToken());
+			os.error("Expected map definition, got {}", os.getToken());
 		}
 
 		os.mustScan(8);
@@ -376,7 +376,7 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 
 		if (!ValidateMapName(mapname))
 		{
-			os.error("Invalid map name %s", mapname.c_str());
+			os.error("Invalid map name {}", mapname);
 		}
 
 		// Find the level.

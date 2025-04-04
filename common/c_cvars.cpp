@@ -486,7 +486,7 @@ void cvar_t::C_BackupCVars (unsigned int bitflag)
 		if (cvar->m_Flags & bitflag)
 		{
 			if (backup == &CVarBackups[MAX_BACKUPCVARS])
-				I_Error ("C_BackupDemoCVars: Too many cvars to save (%d)", MAX_BACKUPCVARS);
+				I_Error("C_BackupDemoCVars: Too many cvars to save ({})", MAX_BACKUPCVARS);
 			backup->name = cvar->m_Name;
 			backup->string = cvar->m_String;
 			backup++;

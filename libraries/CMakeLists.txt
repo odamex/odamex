@@ -153,3 +153,5 @@ include(protobuf-lib.cmake)
 include(SDL-lib.cmake)
 
 include(wxWidgets-lib.cmake)
+
+include(libadlmidi-lib.cmake)

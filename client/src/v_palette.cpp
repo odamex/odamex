@@ -606,7 +606,7 @@ void V_InitPalette(const char* lumpname)
 
 	const int lumpnum = W_GetNumForName(palette_lumpname);
 	if (lumpnum < 0)
-		I_FatalError("Could not initialize %s palette", palette_lumpname.c_str());
+		I_FatalError("Could not initialize {} palette", palette_lumpname);
 
 	current_palette_num = -1;
 

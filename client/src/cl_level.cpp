@@ -231,7 +231,7 @@ void G_InitNew (const char *mapname)
 	// [RH] If this map doesn't exist, bomb out
 	if (W_CheckNumForName (mapname) == -1)
 	{
-		I_Error ("Could not find map %s\n", mapname);
+		I_Error("Could not find map {}\n", mapname);
 	}
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;

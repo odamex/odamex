@@ -426,7 +426,7 @@ void OKeyBindings::ArchiveBindings(FILE* f)
 	for (const auto& [key, binding] : Binds)
 	{
 		if (!binding.empty())
-			fprintf(f, "%s %s %s\n", command.c_str(), C_QuoteString(I_GetKeyName(key)).c_str(), C_QuoteString(binding).c_str());
+			fmt::print(f, "{} {} {}\n", command, C_QuoteString(I_GetKeyName(key)), C_QuoteString(binding));
 	}
 }
 
