@@ -74,7 +74,7 @@ enum finale_lump_t
 	FINALE_GRAPHIC,
 };
 
-const char* finaletext;
+std::string finaletext;
 OLumpName finalelump;
 finale_lump_t finalelumptype = FINALE_NONE;
 
@@ -199,7 +199,7 @@ void F_StartFinale(finale_options_t& options)
 		::finalelump = gameinfo.finaleFlat;
 	}
 
-	if (options.text)
+	if (!options.text.empty())
 	{
 		::finaletext = options.text;
 	}
@@ -368,7 +368,7 @@ void F_TextWrite ()
 
 	// draw some of the text onto the screen
 	int cx = gameinfo.textScreenX, cy = gameinfo.textScreenY;
-	const char* ch = finaletext;
+	const char* ch = finaletext.c_str();
 
 	if (finalecount < gameinfo.textScreenY + 1)
 		return;
@@ -505,7 +505,7 @@ void F_CastTicker()
 			castnum = 0;
 		if (mobjinfo[castorder[castnum].type].seesound)
 		{
-			constexpr int atten = ATTN_NONE;
+			static constexpr int atten = ATTN_NONE;
 			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].seesound, 1, atten);
 		}
 		caststate = &states[mobjinfo[castorder[castnum].type].seestate];
@@ -678,7 +678,6 @@ void F_CastDrawer()
 // by cropping the 2 canvas positions to the screen.
 void F_BunnyScroll()
 {
-	char		name[10];
 	static int	laststage;
 
 	const patch_t* p1 = W_CachePatch("PFUB1");
@@ -791,7 +790,7 @@ void F_BunnyScroll()
 		laststage = stage;
 	}
 
-	snprintf (name, 6, "END%i", stage);
+	OLumpName name = fmt::format("END{}", stage);
 	screen->DrawPatchIndirect(W_CachePatch(name), (320-13*8)/2, (200-8*8)/2);
 }
 
@@ -807,7 +806,7 @@ void F_BunnyScroll()
 // the screen and may be too wide for the
 // viewport. It will be cropped in that case.
 //
-void F_DrawEndPic(const char* page)
+void F_DrawEndPic(const OLumpName& page)
 {
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear(); // ensure black background in matted modes
@@ -855,19 +854,19 @@ void F_Drawer (void)
 				default:
 				case '1':
 				{
-					const char* page = !level.endpic.empty() ? level.endpic.c_str() : gameinfo.finalePage[0].c_str();
+					const OLumpName& page = !level.endpic.empty() ? level.endpic : gameinfo.finalePage[0];
 
 					F_DrawEndPic(page);
 					break;
 				}
 				case '2':
-			        F_DrawEndPic(gameinfo.finalePage[1].c_str());
+			        F_DrawEndPic(gameinfo.finalePage[1]);
 					break;
 				case '3':
 					F_BunnyScroll ();
 					break;
 				case '4':
-			        F_DrawEndPic(gameinfo.finalePage[2].c_str());
+			        F_DrawEndPic(gameinfo.finalePage[2]);
 					break;
 			}
 			break;

@@ -97,12 +97,12 @@ void SV_ShareKeys(card_t card, player_t& player);
 static void PersistPlayerDamage(player_t& p)
 {
 	// Send this information to everybody.
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : ::players)
 	{
-		if (!it->ingame())
+		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, SVC_PM_DAMAGE));
+		MSG_WriteSVC(&player.client.netbuf, SVC_PlayerMembers(p, SVC_PM_DAMAGE));
 	}
 }
 
@@ -124,12 +124,12 @@ static void PersistPlayerScore(player_t& p, const bool lives, const bool score)
 		flags |= SVC_PM_SCORE;
 
 	// Send this information to everybody.
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!it->ingame())
+		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, flags));
+		MSG_WriteSVC(&player.client.netbuf, SVC_PlayerMembers(p, flags));
 	}
 }
 
@@ -140,11 +140,11 @@ static void PersistTeamScore(team_t team)
 		return;
 
 	// Send this information to everybody.
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!it->ingame())
+		if (!player.ingame())
 			continue;
-		MSG_WriteSVC(&it->client.netbuf, SVC_TeamMembers(team));
+		MSG_WriteSVC(&player.client.netbuf, SVC_TeamMembers(team));
 	}
 }
 
@@ -325,7 +325,7 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 
 	if (ammotype < 0 || ammotype > NUMAMMO)
     {
-		I_Error("P_GiveAmmo: bad type %i", ammotype);
+		I_Error("P_GiveAmmo: bad type {}", ammotype);
     }
 
 	if (player->ammo[ammotype] == player->maxammo[ammotype])
@@ -381,7 +381,7 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 // P_GiveWeapon
 // The weapon name may have a MF_DROPPED flag ored in.
 //
-ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
+ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped)
 {
 	bool gaveammo;
 	bool gaveweapon;
@@ -621,9 +621,8 @@ static void P_GiveCarePack(player_t* player)
 	// Players who are extremely low on ammo for a weapon they are holding
 	// always get ammo for that weapon.
 	const hordeDefine_t::ammos_t& ammos = P_HordeAmmos();
-	for (size_t i = 0; i < ammos.size(); i++)
+	for (const auto ammo : ammos)
 	{
-		const ammotype_t ammo = ammos.at(i);
 		if (blocks < 1)
 		{
 			break;
@@ -657,11 +656,11 @@ static void P_GiveCarePack(player_t* player)
 	if (blocks >= 1)
 	{
 		const hordeDefine_t::weapons_t& weapons = P_HordeWeapons();
-		for (size_t i = 0; i < weapons.size(); i++)
+		for (const auto weapon : weapons)
 		{
 			// No weapon is a special case that means give the player
 			// berserk strength (without the health).
-			if (weapons.at(i) == wp_none && player->powers[pw_strength] < 1)
+			if (weapon == wp_none && player->powers[pw_strength] < 1)
 			{
 				player->powers[pw_strength] = 1;
 				blocks -= 1;
@@ -670,13 +669,13 @@ static void P_GiveCarePack(player_t* player)
 				midmessage = "Got berserk";
 				break;
 			}
-			else if (weapons.at(i) != wp_none && !player->weaponowned[weapons.at(i)])
+			else if (weapon != wp_none && !player->weaponowned[weapon])
 			{
-				P_GiveWeapon(player, weapons.at(i), false);
+				P_GiveWeapon(player, weapon, false);
 				blocks -= 1;
 
 				message = "You found a weapon in this supply cache!";
-				switch (weapons.at(i))
+				switch (weapon)
 				{
 				case wp_chainsaw:
 					midmessage = "Got Chainsaw";
@@ -1315,9 +1314,9 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 	if (toucher->type == MT_AVATAR)
 	{
 		PlayersView pr = PlayerQuery().execute().players;
-		for (PlayersView::iterator it = pr.begin(); it != pr.end(); ++it)
+		for (const auto& player : pr)
 		{
-			P_GiveSpecial(*it, special);
+			P_GiveSpecial(player, special);
 		}
 	}
 	else if (toucher->player)
@@ -1337,21 +1336,14 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 //		%o -> other (victim)
 //		%k -> killer
 //
-void SexMessage (const char *from, char *to, int gender, const char *victim, const char *killer)
+void SexMessage (const char *from, char *to, gender_t gender, std::string_view victim, std::string_view killer)
 {
-	static const char *genderstuff[3][3] =
+	static constexpr std::string_view genderstuff[3][3] =
 	{
 		{ "he",  "him", "his" },
 		{ "she", "her", "her" },
 		{ "it",  "it",  "its" }
 	};
-	static constexpr int gendershift[3][3] =
-	{
-		{ 2, 3, 3 },
-		{ 3, 3, 3 },
-		{ 2, 2, 3 }
-	};
-	const char *subst = NULL;
 
 	do
 	{
@@ -1362,6 +1354,7 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 		else
 		{
 			int gendermsg = -1;
+			std::string_view subst{};
 
 			switch (from[1])
 			{
@@ -1371,13 +1364,11 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 			case 'o':	subst = victim;	break;
 			case 'k':	subst = killer;	break;
 			}
-			if (subst != NULL)
+			if (!subst.empty())
 			{
-				size_t len = strlen (subst);
-				memcpy (to, subst, len);
-				to += len;
+				strncpy(to, subst.data(), subst.length());
+				to += subst.length();
 				from++;
-				subst = NULL;
 			}
 			else if (gendermsg < 0)
 			{
@@ -1385,8 +1376,8 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 			}
 			else
 			{
-				strcpy (to, genderstuff[gender][gendermsg]);
-				to += gendershift[gender][gendermsg];
+				strncpy(to, genderstuff[gender][gendermsg].data(), genderstuff[gender][gendermsg].length());
+				to += genderstuff[gender][gendermsg].length();
 				from++;
 			}
 		}
@@ -1408,7 +1399,7 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	if (!G_CanShowObituary() || gamestate != GS_LEVEL)
 		return;
 
-	int gender = self->player->userinfo.gender;
+	gender_t gender = self->player->userinfo.gender;
 
 	// Treat voodoo dolls as unknown deaths
 	if (inflictor && inflictor->player == self->player)
@@ -1584,9 +1575,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 
 	if (message)
 	{
-		SexMessage(message, gendermessage, gender, self->player->userinfo.netname.c_str(),
-		           self->player->userinfo.netname.c_str());
-		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+		SexMessage(message, gendermessage, gender, self->player->userinfo.netname,
+		           self->player->userinfo.netname);
+		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 		toast_t toast;
 		toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
@@ -1660,9 +1651,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 
 	if (message && attacker && attacker->player)
 	{
-		SexMessage(message, gendermessage, gender, self->player->userinfo.netname.c_str(),
-		           attacker->player->userinfo.netname.c_str());
-		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+		SexMessage(message, gendermessage, gender, self->player->userinfo.netname,
+		           attacker->player->userinfo.netname);
+		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 		toast_t toast;
 		toast.flags = toast_t::LEFT_PID | toast_t::ICON | toast_t::RIGHT_PID;
@@ -1674,9 +1665,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	}
 
 	SexMessage(GStrings(OB_DEFAULT), gendermessage, gender,
-	           self->player->userinfo.netname.c_str(),
-	           self->player->userinfo.netname.c_str());
-	SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+	           self->player->userinfo.netname,
+	           self->player->userinfo.netname);
+	SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 	toast_t toast;
 	toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
@@ -1902,8 +1893,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 
 	// [AM] Save the "out of lives" message until after the obit.
 	if (g_lives && tplayer && tplayer->lives <= 0)
-		SV_BroadcastPrintf("%s is out of lives.\n",
-		                   tplayer->userinfo.netname.c_str());
+		SV_BroadcastPrintFmt("{} is out of lives.\n",
+		                     tplayer->userinfo.netname.c_str());
 
 	// Check sv_fraglimit.
 	if (source && source->player && target->player && level.time)

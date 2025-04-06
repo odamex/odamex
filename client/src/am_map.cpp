@@ -185,13 +185,10 @@ std::vector<mline_t> thinrectangle_guy;
 
 am_default_colors_t AutomapDefaultColors;
 am_colors_t AutomapDefaultCurrentColors;
-int am_cheating = 0;
 static bool grid = false;
 static bool bigstate = false; // Bigmode
 
 static bool leveljuststarted = true; // kluge until AM_LevelInit() is called
-
-bool automapactive = false;
 
 // location of window on screen
 static v2int_t f;
@@ -312,16 +309,6 @@ int CXMTOF(fixed64_t x)
 int CYMTOF(fixed64_t y)
 {
 	return f_h - MTOF((y)-m_ll.y);
-}
-
-bool AM_ClassicAutomapVisible()
-{
-	return automapactive && !viewactive;
-}
-
-bool AM_OverlayAutomapVisible()
-{
-	return automapactive && viewactive;
 }
 
 //
@@ -481,11 +468,11 @@ void AM_initVariables()
 	player_t* pl = &displayplayer();
 	if (!pl->ingame())
 	{
-		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		for (auto& player : players)
 		{
-			if (it->ingame())
+			if (player.ingame())
 			{
-				pl = &*it;
+				pl = &player;
 				break;
 			}
 		}
@@ -504,7 +491,7 @@ void AM_initVariables()
 	ST_Responder(&st_notify);
 }
 
-am_color_t AM_GetColorFromString(const argb_t* palette_colors, const char* colorstring)
+am_color_t AM_GetColorFromString(const argb_t* palette_colors, const std::string& colorstring)
 {
 	am_color_t c;
 	c.rgb = V_GetColorFromString(colorstring);
@@ -658,43 +645,43 @@ void AM_initColors(const bool overlayed)
 	else
 	{
 		gameinfo.currentAutomapColors.Background =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.Background.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.Background);
 		gameinfo.currentAutomapColors.YourColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.YourColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.YourColor);
 		gameinfo.currentAutomapColors.AlmostBackground =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.AlmostBackground.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.AlmostBackground);
 		gameinfo.currentAutomapColors.SecretWallColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.SecretWallColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.SecretWallColor);
 		gameinfo.currentAutomapColors.WallColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.WallColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.WallColor);
 		gameinfo.currentAutomapColors.TSWallColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.TSWallColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.TSWallColor);
 		gameinfo.currentAutomapColors.FDWallColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.FDWallColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.FDWallColor);
 		gameinfo.currentAutomapColors.LockedColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.LockedColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.LockedColor);
 		gameinfo.currentAutomapColors.CDWallColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.CDWallColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.CDWallColor);
 		gameinfo.currentAutomapColors.ThingColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor);
 		gameinfo.currentAutomapColors.ThingColor_Item =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Item.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Item);
 		gameinfo.currentAutomapColors.ThingColor_CountItem =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_CountItem.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_CountItem);
 		gameinfo.currentAutomapColors.ThingColor_Monster =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Monster.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Monster);
 		gameinfo.currentAutomapColors.ThingColor_NoCountMonster =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_NoCountMonster.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_NoCountMonster);
 		gameinfo.currentAutomapColors.ThingColor_Friend =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Friend.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Friend);
 		gameinfo.currentAutomapColors.ThingColor_Projectile =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Projectile.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Projectile);
 		gameinfo.currentAutomapColors.GridColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.GridColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.GridColor);
 		gameinfo.currentAutomapColors.XHairColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.XHairColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.XHairColor);
 		gameinfo.currentAutomapColors.NotSeenColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.NotSeenColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.NotSeenColor);
 	}
 }
 
@@ -711,8 +698,8 @@ void AM_loadPics()
 
 void AM_unloadPics()
 {
-	for (int i = 0; i < 10; i++)
-		marknums[i].clear();
+	for (auto& marknum : marknums)
+		marknum.clear();
 }
 
 void AM_clearMarks()
@@ -828,7 +815,7 @@ END_COMMAND(togglemap)
 //
 // Handle events (user inputs) in automap mode
 //
-BOOL AM_Responder(event_t* ev)
+bool AM_Responder(event_t* ev)
 {
 	if (automapactive && (ev->type == ev_keydown || ev->type == ev_keyup))
 	{
@@ -836,7 +823,7 @@ BOOL AM_Responder(event_t* ev)
 		{
 			// check for am_pan* and ignore in follow mode
 			const std::string defbind = AutomapBindings.Binds[ev->data1];
-			if (!strnicmp(defbind.c_str(), "+am_pan", 7))
+			if (iequals(defbind, "+am_pan"))
 				return false;
 		}
 
@@ -844,7 +831,7 @@ BOOL AM_Responder(event_t* ev)
 		{
 			const std::string defbind = Bindings.Binds[ev->data1];
 			// Check for automap, in order not to be stuck
-			if (!strnicmp(defbind.c_str(), "togglemap", 9))
+			if (iequals(defbind, "togglemap"))
 				return false;
 		}
 
@@ -856,7 +843,7 @@ BOOL AM_Responder(event_t* ev)
 			const std::string defbind = Bindings.Binds[ev->data1];
 
 			// Check for automap, in order not to be stuck
-			if (!strnicmp(defbind.c_str(), "togglemap", 9))
+			if (iequals(defbind, "togglemap"))
 				return false;
 
 			return (defbind[0] != '+'); // Let G_Responder handle button releases
@@ -1245,7 +1232,7 @@ void AM_drawGrid(am_color_t color)
 	centerp.x = FixedDiv64(m_ur.x + m_ll.x, INT2FIXED64(2));
 	centerp.y = FixedDiv64(m_ur.y + m_ll.y, INT2FIXED64(2));
 
-	constexpr fixed64_t w = INT2FIXED(MAPBLOCKUNITS);
+	static constexpr fixed64_t w = INT2FIXED(MAPBLOCKUNITS);
 	const fixed64_t minimum_x = centerp.x - half_dist;
 	const fixed64_t maximum_x = centerp.x + half_dist;
 	const fixed64_t minimum_y = centerp.y - half_dist;
@@ -1516,10 +1503,10 @@ void AM_rotatePoint(mpoint_t& pt)
 void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed64_t scale,
                           angle_t angle, am_color_t color, fixed64_t x, fixed64_t y)
 {
-	for (std::vector<mline_t>::const_iterator it = lineguy.begin(); it != lineguy.end(); ++it)
+	for (const auto& mline : lineguy)
 	{
 		mline_t l;
-		M_SetVec2Fixed64(&l.a, it->a.x, it->a.y);
+		M_SetVec2Fixed64(&l.a, mline.a.x, mline.a.y);
 
 		if (scale)
 			M_ScaleVec2Fixed64(&l.a, &l.a, scale);
@@ -1530,7 +1517,7 @@ void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed64_t scale,
 		l.a.x += x;
 		l.a.y += y;
 
-		M_SetVec2Fixed64(&l.b, it->b.x, it->b.y);
+		M_SetVec2Fixed64(&l.b, mline.b.x, mline.b.y);
 
 		if (scale)
 			M_ScaleVec2Fixed64(&l.b, &l.b, scale);
@@ -1592,22 +1579,21 @@ void AM_drawPlayers()
 		return;
 	}
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& p : players)
 	{
-		player_t* p = &*it;
 		am_color_t color;
 
-		if (!(it->ingame()) || !p->mo ||
-		    (((G_IsFFAGame() && p != &conplayer) ||
-		      (G_IsTeamGame() && p->userinfo.team != conplayer.userinfo.team)) &&
+		if (!(p.ingame()) || !p.mo ||
+		    (((G_IsFFAGame() && &p != &conplayer) ||
+		      (G_IsTeamGame() && p.userinfo.team != conplayer.userinfo.team)) &&
 		     !(netdemo.isPlaying() || netdemo.isPaused()) && !demoplayback &&
 		     !(conplayer.spectator)) ||
-		    p->spectator)
+		    p.spectator)
 		{
 			continue;
 		}
 
-		if (p->powers[pw_invisibility])
+		if (p.powers[pw_invisibility])
 		{
 			color = gameinfo.currentAutomapColors.AlmostBackground;
 		}
@@ -1615,7 +1601,7 @@ void AM_drawPlayers()
 		{
 			const argb_t* palette = V_GetDefaultPalette()->colors;
 
-			switch (it->id)
+			switch (p.id)
 			{
 			case 1:
 				color = AM_GetColorFromString(palette, "00 FF 00");
@@ -1635,7 +1621,7 @@ void AM_drawPlayers()
 		}
 		else
 		{
-			color.rgb = CL_GetPlayerColor(p);
+			color.rgb = CL_GetPlayerColor(&p);
 			color.index = V_BestColor(V_GetDefaultPalette()->basecolors, color.rgb);
 		}
 
@@ -1647,15 +1633,15 @@ void AM_drawPlayers()
 
 		if (oi.enabled())
 		{
-			moangle = p->mo->prevangle + FixedMul(p->mo->angle - p->mo->prevangle, render_lerp_amount);
-			mox = p->mo->prevx + FixedMul(p->mo->x - p->mo->prevx, render_lerp_amount);
-			moy = p->mo->prevy + FixedMul(p->mo->y - p->mo->prevy, render_lerp_amount);
+			moangle = p.mo->prevangle + FixedMul(p.mo->angle - p.mo->prevangle, render_lerp_amount);
+			mox = p.mo->prevx + FixedMul(p.mo->x - p.mo->prevx, render_lerp_amount);
+			moy = p.mo->prevy + FixedMul(p.mo->y - p.mo->prevy, render_lerp_amount);
 		}
 		else
 		{
-			moangle = p->mo->angle;
-			mox = p->mo->x;
-			moy = p->mo->y;
+			moangle = p.mo->angle;
+			mox = p.mo->x;
+			moy = p.mo->y;
 		}
 
 		M_SetVec2Fixed64(&pt, FIXED2FIXED64(mox), FIXED2FIXED64(moy));
@@ -1838,8 +1824,8 @@ void AM_drawMarks()
 
 			//      w = LESHORT(marknums[i]->width);
 			//      h = LESHORT(marknums[i]->height);
-			constexpr int w = 5; // because something's wrong with the wad, i guess
-			constexpr int h = 6; // because something's wrong with the wad, i guess
+			static constexpr int w = 5; // because something's wrong with the wad, i guess
+			static constexpr int h = 6; // because something's wrong with the wad, i guess
 
 			if (fx >= f.x && fx <= f_w - w && fy >= f.y && fy <= f_h - h)
 			{

@@ -38,11 +38,11 @@ private:
 	bool mask[4];
 public:
 	IPRange(void);
-	bool check(const netadr_t &address);
-	bool check(const std::string &input);
+	[[nodiscard]] bool check(const netadr_t &address) const;
+	[[nodiscard]] bool check(const std::string &input) const;
 	void set(const netadr_t &address);
 	bool set(const std::string &input);
-	std::string string(void);
+	std::string string() const;
 };
 
 struct Ban

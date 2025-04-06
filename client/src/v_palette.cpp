@@ -492,7 +492,7 @@ static std::string V_GetColorStringByName(const std::string& name)
 	 * with a NULL byte. This is so that COM_Parse is able to
 	 * detect the end of the lump.
 	 */
-	char *rgbNames, *data, descr[5*3];
+	char *rgbNames, *data;
 	int c[3], step;
 
 	if (!(rgbNames = (char*)W_CacheLumpName("X11R6RGB", PU_CACHE)))
@@ -525,11 +525,10 @@ static std::string V_GetColorStringByName(const std::string& name)
 
 			if (!stricmp(com_token, name.c_str()))
 			{
-				snprintf(descr, 15, "%04x %04x %04x",
-						 (c[0] << 8) | c[0],
-						 (c[1] << 8) | c[1],
-						 (c[2] << 8) | c[2]);
-				return descr;
+				return fmt::format("{:04x} {:04x} {:04x}",
+				                   (c[0] << 8) | c[0],
+				                   (c[1] << 8) | c[1],
+				                   (c[2] << 8) | c[2]);
 			}
 		}
 	}
@@ -607,7 +606,7 @@ void V_InitPalette(const char* lumpname)
 
 	const int lumpnum = W_GetNumForName(palette_lumpname);
 	if (lumpnum < 0)
-		I_FatalError("Could not initialize %s palette", palette_lumpname.c_str());
+		I_FatalError("Could not initialize {} palette", palette_lumpname);
 
 	current_palette_num = -1;
 

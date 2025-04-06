@@ -140,7 +140,7 @@ public:
 
 	virtual IWindowSurface* getPrimarySurface()
 	{
-		return const_cast<IWindowSurface*>(static_cast<const ISDL20Window&>(*this).getPrimarySurface());
+		return const_cast<IWindowSurface*>(std::as_const(*this).getPrimarySurface());
 	}
 
 	virtual uint16_t getWidth() const

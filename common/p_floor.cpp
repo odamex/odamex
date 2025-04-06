@@ -942,13 +942,13 @@ DFloor* DFloor::Clone(sector_t* sec) const
 // HANDLE FLOOR TYPES
 // [RH] Added tag, speed, height, crush, change params.
 //
-BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
+bool EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 				 fixed_t speed, fixed_t height, bool crush, int change)
 {
 	int 				secnum;
-	BOOL 				rtn = false;
+	bool 				rtn = false;
 	sector_t*			sec;
-	BOOL				manual = false;
+	bool				manual = false;
 
 	// check if a manual trigger; if so do just the sector on the backside
 	if (co_boomphys && tag == 0)
@@ -997,10 +997,10 @@ manual_floor:
 // jff 02/04/98 Added this routine (and file) to handle generalized
 // floor movers using bit fields in the line special type.
 //
-BOOL EV_DoGenFloor(line_t* line)
+bool EV_DoGenFloor(line_t* line)
 {
 	int secnum;
-	BOOL rtn;
+	bool rtn;
 	bool manual;
 	sector_t* sec;
 	unsigned value = (unsigned)line->special - GenFloorBase;
@@ -1053,11 +1053,11 @@ BOOL EV_DoGenFloor(line_t* line)
 	return rtn;
 }
 
-BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
+bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
                 fixed_t height, int crush, int change, bool hexencrush, bool hereticlower)
 {
 	int secnum;
-	BOOL rtn = false;
+	bool rtn = false;
 	sector_t* sec;
 	bool manual = false;
 
@@ -1111,10 +1111,10 @@ BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t sp
 // jff 3/15/98 added to better support generalized sector types
 // [RH] Added tag parameter.
 //
-BOOL EV_DoChange (line_t *line, EChange changetype, int tag)
+bool EV_DoChange (line_t *line, EChange changetype, int tag)
 {
 	int			secnum;
-	BOOL		rtn;
+	bool		rtn;
 	sector_t	*sec;
 	sector_t	*secm;
 
@@ -1154,7 +1154,7 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag)
 //
 // [Blair] Generic staircase building
 //
-BOOL EV_DoGenStairs(line_t* line)
+bool EV_DoGenStairs(line_t* line)
 {
 	int secnum;
 	int osecnum; // jff 3/4/98 save old loop index
@@ -1368,7 +1368,7 @@ BOOL EV_DoGenStairs(line_t* line)
 //		by its special. If usespecials is 2, each sector stays in "sync" with
 //		the others.
 //
-BOOL EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
+bool EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
 					 fixed_t stairsize, fixed_t speed, int delay, int reset, int igntxt,
 					 int usespecials)
 {
@@ -1380,14 +1380,14 @@ BOOL EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
 	int 				texture;
 	int 				ok;
 	int					persteptime;
-	BOOL 				rtn = false;
+	bool 				rtn = false;
 
 	sector_t*			sec = NULL;
 	sector_t*			tsec = NULL;
 	sector_t*			prev = NULL;
 
 	DFloor*				floor = NULL;
-	BOOL				manual = false;
+	bool				manual = false;
 
 	if (speed == 0)
 		return false;
@@ -1562,7 +1562,7 @@ manual_stair:
 
 int P_SpawnDonut(int, line_t*, fixed_t, fixed_t);
 
-BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
+bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
 {
 	int rtn = 0;
 
@@ -1794,7 +1794,7 @@ bool SpawnCommonElevator(line_t*, DElevator::EElevator, fixed_t,
 // jff 2/22/98 new type to move floor and ceiling in parallel
 // [RH] Added speed, tag, and height parameters and new types.
 //
-BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
+bool EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 					fixed_t speed, fixed_t height, int tag)
 {
 	bool rtn = SpawnCommonElevator(line, elevtype, speed, height, tag);
@@ -1805,7 +1805,7 @@ bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
                        fixed_t height, int tag)
 {
 	int secnum;
-	BOOL rtn;
+	bool rtn;
 	sector_t* sec;
 	DElevator* elevator;
 
@@ -1923,7 +1923,7 @@ static constexpr fixed_t FloatBobOffsets[64] = {
     -524288, -521764, -514214, -501713, -484379, -462381, -435930, -405280,
     -370728, -332605, -291279, -247148, -200637, -152193, -102284, -51389};
 /*
-BOOL EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
+bool EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
                              int timer, bool ceiling)
 {
 	int sectorIndex;

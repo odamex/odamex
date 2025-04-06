@@ -25,6 +25,7 @@
 
 #include <cassert>
 #include <utility>
+#include <memory>
 
 // ============================================================================
 //
@@ -254,6 +255,7 @@ public:
 			return ConstThisClass(mBucketNum, mHashTable);
 		}
 
+		[[nodiscard]]
 		bool operator== (const ThisClass& other) const
 		{
 			return mBucketNum == other.mBucketNum && mHashTable == other.mHashTable;
@@ -317,21 +319,18 @@ public:
 	// ------------------------------------------------------------------------
 
 	OHashTable(unsigned int size = 256) :
-		mSize(0), mSizeMask(0), mUsed(0), mElements(NULL), mNextOrder(1)
+		mSize(0), mSizeMask(0), mUsed(0), mElements(nullptr), mNextOrder(1)
 	{
 		resize(size);
 	}
 
 	OHashTable(const HashTableType& other) :
-		mSize(0), mSizeMask(0), mUsed(0), mElements(NULL), mNextOrder(1)
+		mSize(0), mSizeMask(0), mUsed(0), mElements(nullptr), mNextOrder(1)
 	{
 		copyFromOther(other);
 	}
 
-	~OHashTable()
-	{
-		delete [] mElements;
-	}
+	~OHashTable() = default;
 
 	OHashTable& operator= (const HashTableType& other)
 	{
@@ -428,6 +427,15 @@ public:
 		}
 	}
 
+	template <typename... Args>
+	std::pair<iterator, bool> emplace(Args&&... args)
+	{
+		auto hp = std::pair(std::forward<Args>(args)...);
+		unsigned int oldused = mUsed;
+		IndexType bucketnum = insertElement(hp.first, hp.second);
+		return std::pair<iterator, bool>(iterator(bucketnum, this), mUsed > oldused);
+	}
+
 	void erase(iterator it)
 	{
 		eraseBucket(it.mBucketNum);
@@ -446,8 +454,29 @@ public:
 	{
 		while (it1 != it2)
 		{
-			eraseBucket(it1.mBucketNum);
+			mElements[it1.mBucketNum].order = 0;
+			mElements[it1.mBucketNum].pair = HashPairType();
+			mUsed--;
 			++it1;
+		}
+		// Rehash all of the non-empty buckets that follow the erased buckets.
+		IndexType bucketnum = it2.mBucketNum & mSizeMask;
+		while (!emptyBucket(bucketnum))
+		{
+			const KT& key = mElements[bucketnum].pair.first;
+			unsigned int order = mElements[bucketnum].order;
+			mElements[bucketnum].order = 0;
+
+			IndexType new_bucketnum = findBucket(key);
+			mElements[new_bucketnum].order = order;
+
+			if (new_bucketnum != bucketnum)
+			{
+				mElements[new_bucketnum].pair = mElements[bucketnum].pair;
+				mElements[bucketnum].pair = HashPairType();
+			}
+
+			bucketnum = (bucketnum + 1) & mSizeMask;
 		}
 	}
 
@@ -478,8 +507,8 @@ private:
 		mSizeMask = mSize - 1;
 		assert(mSize > oldsize);
 
-		Bucket* oldelements = mElements;
-		mElements = new Bucket[mSize];
+		auto oldelements = std::move(mElements);
+		mElements = std::make_unique<Bucket[]>(mSize);
 
 		mUsed = 0;
 		mNextOrder = 1;
@@ -492,9 +521,7 @@ private:
 		// TODO: go through iteration list instead
 		for (unsigned int i = 0; i < oldsize; i++)
 			if (oldelements[i].order)
-				insertElement(oldelements[i].pair.first, oldelements[i].pair.second);
-
-		delete [] oldelements;
+				insertElement(oldelements[i].pair.first, std::move(oldelements[i].pair.second));
 	}
 
 	void copyFromOther(const HashTableType& other)
@@ -518,6 +545,31 @@ private:
 		// [SL] NOTE: this can loop infinitely if there is no match and the table is full!
 		while (!emptyBucket(bucketnum) && mElements[bucketnum].pair.first != key)
 			bucketnum = (bucketnum + 1) & mSizeMask;
+		return bucketnum;
+	}
+
+	IndexType insertElement(const KT& key, VT&& value)
+	{
+		// double the capacity if we're going to exceed 75% load
+		if (4 * (mUsed + 1) > 3 * mSize)
+			resize(2 * mSize);
+
+		IndexType bucketnum = findBucket(key);
+
+		if (emptyBucket(bucketnum))
+		{
+			// add key and value pair
+			mElements[bucketnum].order = mNextOrder++;
+			mElements[bucketnum].pair.first = key;
+			mElements[bucketnum].pair.second = std::move(value);
+			mUsed++;
+		}
+		else
+		{
+			// key already exists so just update the value
+			mElements[bucketnum].pair.second = std::move(value);
+		}
+
 		return bucketnum;
 	}
 
@@ -577,7 +629,7 @@ private:
 	unsigned int	mSizeMask;
 	unsigned int	mUsed;
 
-	Bucket*			mElements;
+	std::unique_ptr<Bucket[]> mElements;
 	unsigned int	mNextOrder;
 
 	HF				mHashFunc;		// hash key generation functor

@@ -128,6 +128,7 @@ struct fhfprint_s
 	{
 		ArrayInit(fingerprint, 0);
 	}
+	[[nodiscard]]
 	bool operator==(const fhfprint_s& other)
 	{
 		return fingerprint == other.fingerprint;
@@ -382,13 +383,13 @@ struct cluster_info_t
 	int				cluster;
 	OLumpName		messagemusic;
 	OLumpName		finaleflat;
-	char*			exittext;
-	char*			entertext;
+	std::string		exittext;
+	std::string		entertext;
 	int				flags;
 	OLumpName		finalepic;
 
 	cluster_info_t()
-	    : cluster(0), messagemusic(""), finaleflat(""), exittext(NULL), entertext(NULL),
+	    : cluster(0), messagemusic(""), finaleflat(""), exittext(""), entertext(""),
 	      flags(0)
 	{
 	}
@@ -440,12 +441,15 @@ public:
 
 typedef OHashTable<int, int> ACSWorldGlobalArray;
 
-extern int ACS_WorldVars[NUM_WORLDVARS];
-extern int ACS_GlobalVars[NUM_GLOBALVARS];
-extern ACSWorldGlobalArray ACS_WorldArrays[NUM_WORLDVARS];
-extern ACSWorldGlobalArray ACS_GlobalArrays[NUM_GLOBALVARS];
+// ACS variables with world scope
+inline std::array<int, NUM_WORLDVARS> ACS_WorldVars;
+inline std::array<ACSWorldGlobalArray, NUM_WORLDVARS> ACS_WorldArrays;
 
-extern BOOL savegamerestore;
+// ACS variables with global scope
+inline std::array<int, NUM_GLOBALVARS> ACS_GlobalVars;
+inline std::array<ACSWorldGlobalArray, NUM_GLOBALVARS> ACS_GlobalArrays;
+
+extern bool savegamerestore;
 
 void G_InitNew(const char *mapname);
 inline void G_InitNew(const OLumpName& mapname) { G_InitNew(mapname.c_str()); }

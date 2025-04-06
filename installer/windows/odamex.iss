@@ -119,6 +119,13 @@ Source: {#SourcePath}\OutX86\wxmsw315u_html_vc14x.dll; DestDir: {app}; Flags: ig
 Source: {#SourcePath}\OutX86\wxmsw315u_xrc_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
 Source: {#SourcePath}\OutX86\redist\VC_redist.x86.exe; DestDir: {tmp}; Flags: dontcopy
 
+[InstallDelete]
+
+Type: files; Name: "{app}\libFLAC-8.dll"
+Type: files; Name: "{app}\libmpg123-0.dll"
+Type: files; Name: "{app}\libvorbis-0.dll"
+Type: files; Name: "{app}\libvorbisfile-3.dll"
+
 [Icons]
 Name: {group}\Odamex Client; Filename: {app}\odamex.exe; WorkingDir: {app}
 Name: {group}\Odamex Launcher; Filename: {app}\odalaunch.exe; WorkingDir: {app}

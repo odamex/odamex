@@ -146,13 +146,13 @@ void AActor::ActorBlockMapListNode::Link()
 				AActor *headactor = *headptr;
 
 				size_t thisidx = getIndex(bmx, bmy);
-				
+
 		        if ((next[thisidx] = headactor))
 		        {
 		        	size_t nextidx = headactor->bmapnode.getIndex(bmx, bmy);
 					headactor->bmapnode.prev[nextidx] = &next[thisidx];
 				}
-				
+
 		        prev[thisidx] = headptr;
 		        *headptr = actor;
 			}
@@ -179,10 +179,10 @@ void AActor::ActorBlockMapListNode::Unlink()
 			// linking.
 
 			size_t thisidx = getIndex(bmx, bmy);
-			
+
 			AActor *nextactor = next[thisidx];
 			AActor **prevactor = prev[thisidx];
-			
+
 			if (prevactor && (*prevactor = nextactor))
 			{
 				size_t nextidx = nextactor->bmapnode.getIndex(bmx, bmy);
@@ -217,7 +217,7 @@ size_t AActor::ActorBlockMapListNode::getIndex(int bmx, int bmy)
 	if (bmx < originx || bmx > originx + blockcntx - 1 ||
 		bmy < originy || bmy > originy + blockcnty - 1)
 		return 0;
-		
+
 	return (bmy - originy) * BLOCKSX + bmx - originx;
 }
 
@@ -236,7 +236,7 @@ fixed_t P_AproxDistance (fixed_t dx, fixed_t dy)
 	return dx+dy-(dy>>1);
 }
 
-fixed_t P_AproxDistance2 (fixed_t *pos_array, fixed_t x, fixed_t y)
+fixed_t P_AproxDistance2 (const fixed_t *pos_array, fixed_t x, fixed_t y)
 {
 	if (pos_array)
 	{
@@ -249,7 +249,7 @@ fixed_t P_AproxDistance2 (fixed_t *pos_array, fixed_t x, fixed_t y)
 		return 0;
 }
 
-fixed_t P_AproxDistance2 (AActor *mo, fixed_t x, fixed_t y)
+fixed_t P_AproxDistance2 (const AActor *mo, fixed_t x, fixed_t y)
 {
 	if (mo)
 		return P_AproxDistance2(&mo->x, x, y);
@@ -257,7 +257,7 @@ fixed_t P_AproxDistance2 (AActor *mo, fixed_t x, fixed_t y)
 		return 0;
 }
 
-fixed_t P_AproxDistance2 (AActor *a, AActor *b)
+fixed_t P_AproxDistance2 (const AActor *a, const AActor *b)
 {
 	if (a && b)
 		return P_AproxDistance2(&a->x, b->x, b->y);
@@ -643,14 +643,14 @@ void AActor::SetOrigin (fixed_t ix, fixed_t iy, fixed_t iz)
 //
 extern polyblock_t **PolyBlockMap;
 
-BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
+bool P_BlockLinesIterator (int x, int y, bool(*func)(line_t*))
 {
 	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
 		return true;
 
 	int offset = *(blockmap + (bmapwidth*y + x));
 	int *list = blockmaplump + offset;
-	
+
 	/* [RH] Polyobj stuff from Hexen --> */
 	polyblock_t *polyLink;
 
@@ -658,7 +658,7 @@ BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
 	if (PolyBlockMap)
 	{
 		polyLink = PolyBlockMap[offset];
-		
+
 		while (polyLink)
 		{
 			if (polyLink->polyobj && polyLink->polyobj->validcount != validcount)
@@ -680,7 +680,7 @@ BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
 			polyLink = polyLink->next;
 		}
 	}
-	/* <-- Polyobj stuff from Hexen */	
+	/* <-- Polyobj stuff from Hexen */
 
 	// [RH] Get past starting 0 (from BOOM)
 	// denis - not so fast, this breaks doom1.wad 1.9 demo1
@@ -711,7 +711,7 @@ BOOL P_BlockLinesIterator (int x, int y, BOOL(*func)(line_t*))
 //
 // P_BlockThingsIterator
 //
-BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*), AActor *actor)
+bool P_BlockThingsIterator (int x, int y, bool(*func)(AActor*), AActor *actor)
 {
 	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
 		return true;
@@ -738,7 +738,7 @@ BOOL P_BlockThingsIterator (int x, int y, BOOL(*func)(AActor*), AActor *actor)
 TArray<intercept_t> intercepts;
 
 divline_t		trace;
-BOOL 			earlyout;
+bool 			earlyout;
 int 			ptflags;
 
 //
@@ -751,7 +751,7 @@ int 			ptflags;
 // are on opposite sides of the trace.
 // Returns true if earlyout and a solid line hit.
 //
-BOOL PIT_AddLineIntercepts (line_t *ld)
+bool PIT_AddLineIntercepts (line_t *ld)
 {
 	int 				s1;
 	int 				s2;
@@ -806,7 +806,7 @@ BOOL PIT_AddLineIntercepts (line_t *ld)
 //
 // PIT_AddThingIntercepts
 //
-BOOL PIT_AddThingIntercepts (AActor* thing)
+bool PIT_AddThingIntercepts (AActor* thing)
 {
 	fixed_t 		x1;
 	fixed_t 		y1;
@@ -816,7 +816,7 @@ BOOL PIT_AddThingIntercepts (AActor* thing)
 	int 			s1;
 	int 			s2;
 
-	BOOL 			tracepositive;
+	bool 			tracepositive;
 
 	divline_t		dl;
 
@@ -873,7 +873,7 @@ BOOL PIT_AddThingIntercepts (AActor* thing)
 // Returns true if the traverser function returns true
 // for all lines.
 //
-BOOL P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
+bool P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 {
 	size_t 				count = intercepts.Size();
 	fixed_t 			dist;
@@ -915,7 +915,7 @@ BOOL P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 // Returns true if the traverser function returns true
 // for all lines.
 //
-BOOL P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, BOOL (*trav) (intercept_t *))
+bool P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, bool (*trav) (intercept_t *))
 {
 	fixed_t 	xt1;
 	fixed_t 	yt1;
@@ -1147,7 +1147,7 @@ angle_t P_PointToAngle(fixed_t xo, fixed_t yo, fixed_t x, fixed_t y)
 // with FOV specified by f (0.0 - 180.0) and within a maximum distance specified
 // by dist.
 //
-bool P_ActorInFOV(AActor* origin, AActor* mo , float f, fixed_t dist)
+bool P_ActorInFOV(const AActor* origin, const AActor* mo , float f, fixed_t dist)
 {
 	if (f <= 0.0f)
 		return false;
@@ -1223,7 +1223,7 @@ static AActor* RoughBlockCheck(AActor* mo, int index, angle_t fov)
 			link = link->snext;
 			continue;
 		}
-		
+
 		// [Blair] Don't target friendlies
 		if (P_IsFriendlyThing(mo->target, link))
 		{
@@ -1245,7 +1245,7 @@ static AActor* RoughBlockCheck(AActor* mo, int index, angle_t fov)
 			link = link->snext;
 			continue;
 		}
-		
+
 		// skip actors outside of specified FOV
 		 if (fov > 0 && !P_CheckFov(mo, link, fov))
 		{

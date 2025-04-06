@@ -84,20 +84,20 @@ void I_BaseError(const std::string& errortext);
 template <typename... ARGS>
 void I_Error(const fmt::string_view format, const ARGS&... args)
 {
-	I_BaseError(fmt::sprintf(format, args...));
+	I_BaseError(fmt::format(format, args...));
 }
 
 template <typename... ARGS>
 void I_FatalError(const fmt::string_view format, const ARGS&... args)
 {
-	I_BaseFatalError(fmt::sprintf(format, args...));
+	I_BaseFatalError(fmt::format(format, args...));
 }
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);
 #define atterm(t) addterm (t, #t)
 
 // Print a console string
-void I_PrintStr (int x, const char *str, int count, BOOL scroll);
+void I_PrintStr (int x, const char *str, int count, bool scroll);
 
 // Set the title string of the startup window
 void I_SetTitleString (const char *title);

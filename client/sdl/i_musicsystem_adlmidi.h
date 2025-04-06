@@ -1,9 +1,6 @@
-// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,32 +13,34 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Plays music utilizing OSX's Audio Unit system, which is the default for
-//  OSX.
+//  Plays music utilizing libADLMIDI library for MIDI and SDL_Mixer
+//  for other formats.
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
-#ifdef OSX
-
-#include <AudioToolbox/AudioToolbox.h>
-#include <CoreFoundation/CoreFoundation.h>
-
+#include "i_midi.h"
+#include "i_music.h"
 #include "i_musicsystem.h"
 
+struct ADL_MIDIPlayer;
+
+struct AdlMidiHookData
+{
+	ADL_MIDIPlayer *player;
+	bool paused;
+	float volume;
+};
+
 /**
- * @brief Plays music utilizing OSX's Audio Unit system, which is the default
- *        for OSX.
- *
- * @detail On non-OSX systems, the AuMusicSystem will not output any sound
- *         and should not be selected.
+ * @brief Plays music utilizing the libADLMIDI music library.
  */
-class AuMusicSystem : public MusicSystem
+class AdlMidiMusicSystem : public MusicSystem
 {
   public:
-	AuMusicSystem();
-	~AuMusicSystem() override;
+	AdlMidiMusicSystem();
+	~AdlMidiMusicSystem() override;
 
 	void startSong(byte* data, size_t length, bool loop) override;
 	void stopSong() override;
@@ -49,27 +48,23 @@ class AuMusicSystem : public MusicSystem
 	void resumeSong() override;
 	void playChunk() override { }
 	void setVolume(float volume) override;
+	void setTempo(float tempo) override { }
 
 	bool isInitialized() const override { return m_isInitialized; }
+
+	void applyCVars();
 
 	// Only plays midi-type music
 	bool isMusCapable() const override { return true; }
 	bool isMidiCapable() const override { return true; }
 
   private:
-	bool m_isInitialized;
-
-	MusicPlayer m_player;
-	MusicSequence m_sequence;
-	AUGraph m_graph;
-	AUNode m_synth;
-	AUNode m_output;
-	AudioUnit m_unit;
-	CFDataRef m_cfd;
+	bool m_isInitialized = false;
+	bool m_isPlaying = false;
+	ADL_MIDIPlayer *m_midiPlayer;
+	AdlMidiHookData m_midiHookData;
 
 	void _StopSong();
 	void _RegisterSong(byte* data, size_t length);
-	void _UnregisterSong();
+	void _UpdateMidiHook();
 };
-
-#endif // OSX

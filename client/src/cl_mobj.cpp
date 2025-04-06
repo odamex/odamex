@@ -139,8 +139,8 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	// give all cards in death match mode
 	if (!G_IsCoopGame())
 	{
-		for (int i = 0; i < NUMCARDS; i++)
-			player.cards[i] = true;
+		for (auto& cardheld : player.cards)
+			cardheld = true;
 	}
 
 	// Give any other between-level inventory.

@@ -83,6 +83,7 @@ public:
 			mALoss(8 - abits), mRLoss(8 - rbits), mGLoss(8 - gbits), mBLoss(8 - bbits)
 	{ }
 
+	[[nodiscard]]
 	inline bool operator==(const PixelFormat& other) const
 	{	return memcmp(this, &other, sizeof(PixelFormat)) == 0;	}
 

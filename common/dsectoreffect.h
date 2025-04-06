@@ -46,7 +46,7 @@ class DSectorEffect : public DThinker
 public:
 	DSectorEffect (sector_t *sector);
 	~DSectorEffect ();
-	virtual DSectorEffect* Clone(sector_t *sector) const;
+	[[nodiscard]] virtual DSectorEffect* Clone(sector_t *sector) const;
 	void Destroy() override;
 	sector_t* GetSector() const { return m_Sector; }
 protected:

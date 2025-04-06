@@ -39,7 +39,7 @@ int P_GetFragCount(const player_t* player);
 int P_GetPointCount(const player_t* player);
 int P_GetDeathCount(const player_t* player);
 ItemEquipVal P_GiveAmmo(player_t* player, ammotype_t ammotype, float num);
-ItemEquipVal P_GiveWeapon(player_t* player, weapontype_t weapon, BOOL dropped);
+ItemEquipVal P_GiveWeapon(player_t* player, weapontype_t weapon, bool dropped);
 ItemEquipVal P_GiveArmor(player_t* player, int armortype);
 ItemEquipVal P_GiveCard(player_t* player, card_t card);
 ItemEquipVal P_GivePower(player_t* player, int /*powertype_t*/ power);

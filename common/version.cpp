@@ -336,7 +336,7 @@ BEGIN_COMMAND(version)
 		}
 		else
 		{
-			PrintFmt("{}", it->second.c_str());
+			PrintFmt("{}", it->second);
 		}
 	}
 }
@@ -344,10 +344,9 @@ END_COMMAND(version)
 
 BEGIN_COMMAND(listsourcefiles)
 {
-	for (source_files_t::const_iterator it = get_source_files().begin();
-	     it != get_source_files().end(); ++it)
+	for (const auto& file : get_source_files())
 	{
-		Printf(PRINT_HIGH, "%s %s\n", it->first.c_str(), it->second.c_str());
+		PrintFmt(PRINT_HIGH, "{} {}\n", file.first, file.second);
 	}
 }
 END_COMMAND(listsourcefiles)

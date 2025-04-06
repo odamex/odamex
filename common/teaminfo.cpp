@@ -116,11 +116,10 @@ void InitTeamInfo()
 void TeamInfo_ResetScores(bool fullreset)
 {
 	// Clear teamgame state.
-	Players::iterator it;
 	for (size_t i = 0; i < NUMTEAMS; i++)
 	{
-		for (it = players.begin(); it != players.end(); ++it)
-			it->flags[i] = false;
+		for (auto& player : players)
+			player.flags[i] = false;
 
 		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
 		teamInfo->FlagData.flagger = 0;
@@ -248,19 +247,19 @@ TeamsView TeamQuery::execute()
 std::string V_GetTeamColor(team_t ateam)
 {
 	TeamInfo* team = GetTeamInfo(ateam);
-	return fmt::sprintf("%s%s%s", team->TextColor.c_str(), team->ColorStringUpper.c_str(),
+	return fmt::sprintf("%s%s%s", team->TextColor, team->ColorStringUpper,
 	                    TEXTCOLOR_NORMAL);
 }
 
 std::string V_GetTeamColor(UserInfo userinfo)
 {
 	TeamInfo* team = GetTeamInfo(userinfo.team);
-	return fmt::sprintf("%s%s%s", team->TextColor.c_str(), team->ColorStringUpper.c_str(), TEXTCOLOR_NORMAL);
+	return fmt::sprintf("%s%s%s", team->TextColor, team->ColorStringUpper, TEXTCOLOR_NORMAL);
 }
 
 const std::string TeamInfo::ColorizedTeamName()
 {
-	return fmt::sprintf("%s%s%s", TextColor.c_str(), ColorStringUpper.c_str(),
+	return fmt::sprintf("%s%s%s", TextColor, ColorStringUpper,
 	                    TEXTCOLOR_NORMAL);
 }
 
@@ -269,14 +268,13 @@ int TeamInfo::LivesPool()
 	int pool = 0;
 	PlayerResults pr = PlayerQuery().hasLives().execute();
 
-	for (PlayersView::const_iterator it = pr.players.begin(); it != pr.players.end();
-	     ++it)
+	for (const auto& player : pr.players)
 	{
-		team_t team = (*it)->userinfo.team;
+		team_t team = player->userinfo.team;
 		if (team != Team)
 			continue;
 
-		pool += (*it)->lives;
+		pool += player->lives;
 	}
 
 	return pool;

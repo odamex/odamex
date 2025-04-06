@@ -133,6 +133,7 @@ public:
 			return ConstThisClass(mSArray, mSlot);
 		}
 
+		[[nodiscard]]
 		inline bool operator== (const ThisClass& other) const
 		{
 			return &mSArray == &other.mSArray && mSlot == other.mSlot;
@@ -716,7 +717,7 @@ private:
 		mIdKey = other.mIdKey;
 	}
 
-	static constexpr unsigned int SLOT_BITS = N; 
+	static constexpr unsigned int SLOT_BITS = N;
 	static constexpr unsigned int KEY_BITS = 32 - SLOT_BITS;
 	static constexpr unsigned int MAX_SIZE = 1 << SLOT_BITS;
 
@@ -724,7 +725,7 @@ private:
 	static constexpr unsigned int MAX_KEY = (1 << KEY_BITS) - 1;
 
 	static constexpr unsigned int MIN_SLOT = 0;
-	static constexpr unsigned int MAX_SLOT = (1 << SLOT_BITS) - 1; 
+	static constexpr unsigned int MAX_SLOT = (1 << SLOT_BITS) - 1;
 	static constexpr unsigned int SLOT_MASK = (1 << SLOT_BITS) - 1;
 
 	static constexpr unsigned int NOT_FOUND = (1 << SLOT_BITS) | MAX_SLOT;

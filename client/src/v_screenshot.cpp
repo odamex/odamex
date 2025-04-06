@@ -147,7 +147,7 @@ static void SetPNGComments(PNGStrings& out, png_struct* png_ptr, png_info* info_
 	return;
 #endif
 
-	constexpr int PNG_TEXT_LINES = 6;
+	static constexpr int PNG_TEXT_LINES = 6;
 	png_text pngtext[PNG_TEXT_LINES];
 	int text_line = 0;
 
@@ -210,7 +210,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 
 	if (fp == NULL)
 	{
-		Printf(PRINT_WARNING, "I_SavePNG: Could not open %s for writing\n", filename.c_str());
+		Printf(PRINT_WARNING, "I_SavePNG: Could not open %s for writing\n", filename);
 		return -1;
 	}
 
@@ -391,7 +391,7 @@ void V_ScreenShot(std::string filename)
 	filename = M_ExpandTokens(filename);
 
 	// Turn filename into complete path.
-	std::string pathname = M_GetUserFileName(filename);
+	std::string pathname = M_GetScreenshotFileName(filename);
 
 	// If the file already exists, append numbers.
 	if (!M_FindFreeName(pathname, extension))
@@ -410,7 +410,7 @@ void V_ScreenShot(std::string filename)
 		return;
 	}
 
-	Printf(PRINT_HIGH, "Screenshot taken: %s.%s\n", filename.c_str(), extension.c_str());
+	Printf(PRINT_HIGH, "Screenshot taken: %s.%s\n", filename, extension);
 }
 
 

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -34,11 +34,11 @@ void *Malloc (size_t size)
 	// We don't want implementation-defined behaviour!
 	if (!size)
         return NULL;
-	
+
 	void *zone = malloc (size);
 
 	if (!zone)
-		I_FatalError ("Could not malloc %lu bytes", size);
+		I_FatalError("Could not malloc {} bytes", size);
 
 	return zone;
 }
@@ -48,11 +48,11 @@ void *Calloc (size_t num, size_t size)
 	// We don't want implementation-defined behaviour!
 	if (!num || !size)
         return NULL;
-	
+
 	void *zone = calloc (num, size);
 
 	if (!zone)
-		I_FatalError ("Could not calloc %lu bytes", num * size);
+		I_FatalError("Could not calloc {} bytes", num * size);
 
 	return zone;
 }
@@ -67,7 +67,7 @@ void *Realloc (void *memblock, size_t size)
 	void *zone = realloc (memblock, size);
 
 	if (!zone)
-		I_FatalError ("Could not realloc %lu bytes", size);
+		I_FatalError("Could not realloc {} bytes", size);
 
 	return zone;
 }
@@ -75,13 +75,13 @@ void *Realloc (void *memblock, size_t size)
 //
 // M_Free
 //
-// Wraps around the standard free() memory function. This variation is slightly 
+// Wraps around the standard free() memory function. This variation is slightly
 // more safer, as it only frees a block if its not NULL and will NULL it on
 // exiting.
 void M_Free2 (void **memblock)
 {
     if (*memblock != NULL)
-    {               
+    {
         free(*memblock);
         *memblock = NULL;
     }

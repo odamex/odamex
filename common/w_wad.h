@@ -99,7 +99,8 @@ struct lumpHandle_t
 	{
 		return id == 0;
 	}
-	bool operator==(const lumpHandle_t& other)
+	[[nodiscard]]
+	bool operator==(const lumpHandle_t& other) const
 	{
 		return id == other.id;
 	}
@@ -117,9 +118,9 @@ lumpHandle_t W_LumpToHandle(const unsigned lump);
 int W_HandleToLump(const lumpHandle_t handle);
 
 int W_CheckNumForName(const char *name, int ns = ns_global);
-int W_CheckNumForName(const OLumpName& name, int ns = ns_global);
+inline int W_CheckNumForName(const OLumpName& name, int ns = ns_global) { return W_CheckNumForName(name.c_str(), ns); };
 int W_GetNumForName(const char *name, int ns = ns_global);
-int W_GetNumForName(const OLumpName& name, int ns = ns_global);
+inline int W_GetNumForName(const OLumpName& name, int ns = ns_global) { return W_GetNumForName(name.c_str(), ns); };
 
 std::string W_LumpName(unsigned lump);
 unsigned	W_LumpLength (unsigned lump);

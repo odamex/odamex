@@ -26,11 +26,11 @@
 #include "i_system.h"
 #include "m_jsonlump.h"
 #include "oscanner.h"
+#include "hashtable.h"
 
 #include <memory>
-#include <unordered_map>
 
-static std::unordered_map<OLumpName, std::unique_ptr<interlevel_t>> interlevelstorage;
+static OHashTable<OLumpName, std::unique_ptr<interlevel_t>> interlevelstorage;
 
 template<typename T>
 jsonlumpresult_t WI_ParseInterlevelArray(const Json::Value& array, std::vector<T>& output,
@@ -43,8 +43,7 @@ jsonlumpresult_t WI_ParseInterlevelArray(const Json::Value& array, std::vector<T
 
 	for (const auto& arrayelem : array)
 	{
-		output.emplace_back();
-		jsonlumpresult_t res = parse(arrayelem, output.back());
+		jsonlumpresult_t res = parse(arrayelem, output.emplace_back());
 		if(res != jsonlumpresult_t::SUCCESS)
 			return res;
 	}
@@ -198,7 +197,7 @@ interlevel_t* WI_GetInterlevel(const OLumpName& lumpname)
 	jsonlumpresult_t result =  M_ParseJSONLump(lumpname, "interlevel", { 1, 0, 0 }, ParseInterlevel);
 	if (result != jsonlumpresult_t::SUCCESS)
 	{
-		I_Error("R_GetInterlevel: Interlevel JSON error in lump %s: %s", lumpname.c_str(), M_JSONLumpResultToString(result));
+		I_Error("R_GetInterlevel: Interlevel JSON error in lump {}: {}", lumpname, M_JSONLumpResultToString(result));
 		return nullptr;
 	}
 
@@ -286,7 +285,7 @@ void WI_ParseZDoomAnim(OScanner& os, std::vector<interlevelanim_t>& anims, inter
 	{
 		if (!os.isIdentifier())
 		{
-			os.error("Expected identifier, got \"%s\".", os.getToken());
+			os.error("Expected identifier, got \"{}\".", os.getToken());
 		}
 		OLumpName framename = os.getToken();
 		int framenum = W_GetNumForName(framename);
@@ -344,37 +343,37 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 	{
 		if (!os.isIdentifier())
 		{
-			os.error("Expected identifier, got \"%s\".", os.getToken());
+			os.error("Expected identifier, got \"{}\".", os.getToken());
 		}
 
 		std::string name = os.getToken();
-		if (!strnicmp(name.c_str(), "noautostartmap", 14))
+		if (iequals(name, "noautostartmap"))
 		{
 			intermissionscript.autostart = false;
 		}
-		else if (!strnicmp(name.c_str(), "tilebackground", 14))
+		else if (iequals(name, "tilebackground"))
 		{
 			intermissionscript.tilebackground = true;
 		}
-		else if (!strnicmp(name.c_str(), "screensize", 10))
+		else if (iequals(name, "screensize"))
 		{
 			os.mustScanInt();
 			intermissionscript.screenx = os.getTokenInt();
 			os.mustScanInt();
 			intermissionscript.screeny = os.getTokenInt();
 		}
-		else if (!strnicmp(name.c_str(), "background", 10))
+		else if (iequals(name, "background"))
 		{
 			os.mustScan(8);
 			output->backgroundlump = os.getToken();
 		}
-		else if (!strnicmp(name.c_str(), "splat", 5))
+		else if (iequals(name, "splat"))
 		{
 			os.mustScan(8);
 			intermissionscript.splat = os.getToken();
 			intermissionscript.splatnum = W_GetNumForName(intermissionscript.splat);
 		}
-		else if (!strnicmp(name.c_str(), "pointer", 7))
+		else if (iequals(name, "pointer"))
 		{
 			os.mustScan(8);
 			intermissionscript.ptr1 = os.getToken();
@@ -385,7 +384,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			intermissionscript.ptr2num = W_GetNumForName(intermissionscript.ptr2);
 
 		}
-		else if (!strnicmp(name.c_str(), "spots", 5))
+		else if (iequals(name, "spots"))
 		{
 			os.mustScan();
 			os.assertTokenNoCaseIs("{");
@@ -394,7 +393,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			{
 				OLumpName mapname = os.getToken();
 				if (!ValidateMapName(mapname))
-					os.error("Invalid map name %s", mapname.c_str());
+					os.error("Invalid map name {}", mapname);
 				os.mustScanInt();
 				int x = os.getTokenInt();
 				os.mustScanInt();
@@ -403,15 +402,15 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 				os.mustScan();
 			}
 		}
-		else if (!strnicmp(name.c_str(), "pic", 3))
+		else if (iequals(name, "pic"))
 		{
 			WI_ParseZDoomPic(os, anims);
 		}
-		else if (!strnicmp(name.c_str(), "animation", 9))
+		else if (iequals(name, "animation"))
 		{
 			WI_ParseZDoomAnim(os, anims);
 		}
-		else if (!strnicmp(name.c_str(), "ifentering", 10))
+		else if (iequals(name, "ifentering"))
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
@@ -422,9 +421,9 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::OnEnteringScreen, 0, 0}, {animcondition_t::CurrMapEqual, mapnum, 0});
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
-		else if (!strnicmp(name.c_str(), "ifnotentering", 13))
+		else if (iequals(name, "ifnotentering"))
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
@@ -435,9 +434,9 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::OnFinishedScreen, 0, 0}, {animcondition_t::CurrMapNotEqual, mapnum, 0}, true);
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
-		else if (!strnicmp(name.c_str(), "ifleaving", 9))
+		else if (iequals(name, "ifleaving"))
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
@@ -448,9 +447,9 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::OnFinishedScreen, 0, 0}, {animcondition_t::CurrMapEqual, mapnum, 0});
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
-		else if (!strnicmp(name.c_str(), "ifnotleaving", 12))
+		else if (iequals(name, "ifnotleaving"))
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
@@ -461,9 +460,9 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::OnEnteringScreen, 0, 0}, {animcondition_t::CurrMapNotEqual, mapnum, 0}, true);
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
-		else if (!strnicmp(name.c_str(), "ifvisited", 9))
+		else if (iequals(name, "ifvisited"))
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
@@ -474,9 +473,9 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::MapVisited, mapnum, 0});
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
-		else if (!strnicmp(name.c_str(), "ifnotvisited", 12))
+		else if (iequals(name, "ifnotvisited"))
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
@@ -487,9 +486,9 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::MapNotVisited, mapnum, 0});
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
-		else if (!strnicmp(name.c_str(), "iftraveling", 11))
+		else if (iequals(name, "iftraveling"))
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
@@ -503,9 +502,9 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::TravelingBetween, mapnum, mapnum2});
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
-		else if (!strnicmp(name.c_str(), "ifnottraveling", 14))
+		else if (iequals(name, "ifnottraveling"))
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
@@ -519,11 +518,11 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			else if (os.compareTokenNoCase("pic"))
 				WI_ParseZDoomPic(os, anims, {animcondition_t::NotTravelingBetween, mapnum, mapnum2});
 			else
-				os.error("Unknown command %s", os.getToken());
+				os.error("Unknown command {}", os.getToken());
 		}
 		else
 		{
-			os.error("Unknown command %s", name.c_str());
+			os.error("Unknown command {}", name);
 		}
 	}
 

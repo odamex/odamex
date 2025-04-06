@@ -9,7 +9,7 @@
 # These parameters can and should be changed for new versions.
 # 
 
-Set-Variable -Name "CurrentDir" -Value (Get-Item (Get-Location)).Parent.Parent # cd to the base odamex git path before executing (this assumes you're running this script in this dir)
+Set-Variable -Name "CurrentDir" -Value (Get-Location) # cd to the base odamex git path before executing (this assumes you're running this script in this dir)
 
 Set-Variable -Name "OdamexVersion" -Value "11.0.0"
 Set-Variable -Name "OdamexTestSuffix" -Value "" # "-RC3"
@@ -122,13 +122,10 @@ function CopyFiles {
     New-Item -Force -ItemType "directory" -Path "${X64Dir}/redist"
 
     Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libFLAC-8.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libmodplug-1.dll", `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libmpg123-0.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libogg-0.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libopus-0.dll", `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libvorbis-0.dll", `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libvorbisfile-3.dll", `
+        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libopusfile-0.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\odamex.exe", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\SDL2_mixer.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\SDL2.dll", `
@@ -153,13 +150,10 @@ function CopyFiles {
     New-Item -Force -ItemType "directory" -Path "${X86Dir}/redist"
 
     Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libFLAC-8.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\libmodplug-1.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libmpg123-0.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\libogg-0.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\libopus-0.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libvorbis-0.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libvorbisfile-3.dll", `
+        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libopusfile-0.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\odamex.exe", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\SDL2_mixer.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\SDL2.dll", `

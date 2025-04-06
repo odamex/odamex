@@ -113,10 +113,9 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 			// loaded WAD files.  Add one to the beginning of wadfiles, since
 			// position 0 stores odamex.wad.
 			maplist_entry.wads.clear();
-			for (OResFiles::const_iterator it = ::wadfiles.begin() + 1;
-			     it != ::wadfiles.end(); ++it)
+			for (const auto& file : ::wadfiles)
 			{
-				maplist_entry.wads.push_back(it->getBasename());
+				maplist_entry.wads.push_back(file.getBasename());
 			}
 		}
 		else
@@ -498,7 +497,7 @@ void SV_Maplist(player_t &player, maplist_status_t status) {
 	case MAPLIST_OUTDATED:
 	case MAPLIST_OK:
 		// Valid statuses
-		DPrintf("SV_Maplist: Sending status %d to pid %d\n", status, player.id);
+		DPrintFmt("SV_Maplist: Sending status {} to pid {}\n", status, player.id);
 		MSG_WriteSVC(&cl->reliablebuf, SVC_Maplist(status));
 	default:
 		// Invalid statuses
@@ -535,12 +534,12 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 	case MAPLIST_EMPTY:
 	case MAPLIST_TIMEOUT:
 		// Valid statuses that don't require the packet logic
-		DPrintf("SV_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
+		DPrintFmt("SV_MaplistUpdate: Sending status {} to pid {}\n", status, player.id);
 		MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistUpdate(status, NULL));
 		return;
 	case MAPLIST_OUTDATED:
 		// Valid statuses that need the packet logic
-		DPrintf("SV_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
+		DPrintFmt("SV_MaplistUpdate: Sending status {} to pid {}\n", status, player.id);
 		break;
 	default:
 		// Invalid statuses
@@ -597,7 +596,7 @@ void SV_Maplist(player_t &player) {
 		break;
 	default:
 		// We don't know what status they sent us.  Ignore it.
-		DPrintf("SV_Maplist: Unexpected status %d from player %d\n",
+		DPrintFmt("SV_Maplist: Unexpected status {} from player {}\n",
 				status, player.id);
 		return;
 	}
@@ -647,7 +646,7 @@ BEGIN_COMMAND (maplist) {
 	// Query the maplist
 	std::vector<std::pair<size_t, maplist_entry_t*> > result;
 	if (!Maplist::instance().query(arguments, result)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error());
 		return;
 	}
 
@@ -664,7 +663,7 @@ BEGIN_COMMAND (maplist) {
 			flag = '+';
 		}
 		Printf(PRINT_HIGH, "%c%lu. %s %s%s\n", flag, index + 1,
-			   JoinStrings(wads, " ").c_str(), map.c_str(),
+			   JoinStrings(wads, " "), map,
 			   lastmap.empty() ? "" : fmt::sprintf(" lastmap=%s", lastmap));
 	}
 } END_COMMAND (maplist)
@@ -699,12 +698,12 @@ BEGIN_COMMAND (addmap) {
 	}
 
 	if (!Maplist::instance().add(maplist_entry)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error());
 		return;
 	}
 
 	// Successfully warn the server a map has been added.
-	Printf(PRINT_HIGH, "Adding %s to maplist (WAD%s : %s)", arguments[0].c_str(), (arguments.size() > 2)?"s":"", JoinStrings(maplist_entry.wads, " ").c_str());
+	Printf(PRINT_HIGH, "Adding %s to maplist (WAD%s : %s)", arguments[0], (arguments.size() > 2)?"s":"", JoinStrings(maplist_entry.wads, " "));
 } END_COMMAND(addmap)
 
 BEGIN_COMMAND(insertmap) {
@@ -744,12 +743,12 @@ BEGIN_COMMAND(insertmap) {
 	}
 
 	if (!Maplist::instance().insert(maplist_position - 1, maplist_entry)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error());
 		return;
 	}
 
 	// Successfully warn the server a map has been added.
-	Printf(PRINT_HIGH, "Successfully inserting %s to position #%s (WAD%s : %s)", arguments[1].c_str(), arguments[0].c_str(), (arguments.size() > 3) ? "s" : "", JoinStrings(maplist_entry.wads, " ").c_str());
+	Printf(PRINT_HIGH, "Successfully inserting %s to position #%s (WAD%s : %s)", arguments[1], arguments[0], (arguments.size() > 3) ? "s" : "", JoinStrings(maplist_entry.wads, " "));
 } END_COMMAND(insertmap)
 
 BEGIN_COMMAND(delmap) {
@@ -770,13 +769,13 @@ BEGIN_COMMAND(delmap) {
 	}
 
 	if (!Maplist::instance().remove(maplist_index - 1)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error());
 	}
 } END_COMMAND(delmap)
 
 BEGIN_COMMAND(clearmaplist) {
 	if (!Maplist::instance().clear()) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error());
 	}
 	else {
 		Printf(PRINT_HIGH, "Maplist cleared.\n");
@@ -799,7 +798,7 @@ BEGIN_COMMAND (gotomap) {
 	// Query the maplist
 	maplist_qrows_t result;
 	if (!Maplist::instance().query(arguments, result)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error());
 		return;
 	}
 
@@ -835,7 +834,7 @@ bool CMD_Randmap(std::string &error) {
 BEGIN_COMMAND (randmap) {
 	std::string error;
 	if (!CMD_Randmap(error)) {
-		Printf(PRINT_HIGH, "%s\n", error.c_str());
+		Printf(PRINT_HIGH, "%s\n", error);
 	}
 } END_COMMAND (randmap)
 
@@ -868,9 +867,9 @@ BEGIN_COMMAND(setlobbymap)
 	Maplist::instance().set_lobbymap(maplist_entry);
 
 	// Successfully warn the server a map has been added.
-	Printf(PRINT_HIGH, "Setting %s as the Lobby map (WAD%s : %s)\n", arguments[0].c_str(),
+	Printf(PRINT_HIGH, "Setting %s as the Lobby map (WAD%s : %s)\n", arguments[0],
 	       (arguments.size() > 2) ? "s" : "",
-	       JoinStrings(maplist_entry.wads, " ").c_str());
+	       JoinStrings(maplist_entry.wads, " "));
 }
 END_COMMAND(setlobbymap)
 

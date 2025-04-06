@@ -56,6 +56,7 @@ enum vote_type_t
 	VOTE_SCORELIMIT,
 	VOTE_TIMELIMIT,
 	VOTE_COINFLIP,
+	VOTE_LIVES,
 	VOTE_MAX // Reserved
 };
 
@@ -77,4 +78,25 @@ struct vote_state_t
 	byte abs;
 };
 
-extern const char* vote_type_cmd[];
+/**
+ * A string array used to associate vote types with command names.
+ */
+inline const char* vote_type_cmd[] = {
+	"???",
+	"kick",
+	"forcespec",
+	"forcestart",
+	"randcaps",
+	"randpickup",
+	"map",
+	"nextmap",
+	"randmap",
+	"restart",
+	"fraglimit",
+	"scorelimit",
+	"timelimit",
+	"coinflip",
+	"lives",
+	"???"
+};
+

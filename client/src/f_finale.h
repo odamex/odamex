@@ -42,7 +42,7 @@ struct finale_options_t
 {
 	OLumpName music;
 	OLumpName flat;
-	const char* text;
+	std::string text;
 	OLumpName pic;
 };
 

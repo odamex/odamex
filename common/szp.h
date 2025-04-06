@@ -38,7 +38,7 @@
 
 #pragma once
 
-
+#include "m_stacktrace.h"
 
 template <typename T>
 class szp
@@ -78,7 +78,15 @@ public:
 	inline T* operator ->()
 	{
 		if(!naive || !*naive)
-			throw CRecoverableError("szp pointer was NULL");
+			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL:"));
+
+		return *naive;
+	}
+
+	const inline T* operator ->() const
+	{
+		if(!naive || !*naive)
+			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL:"));
 
 		return *naive;
 	}
@@ -92,11 +100,20 @@ public:
 			return *naive;
 	}
 
+	// use as raw pointer
+	inline operator const T*() const
+	{
+		if(!naive)
+			return NULL;
+		else
+			return *naive;
+	}
+
 	// this function can update or zero all related pointers
 	void update_all(T *target)
 	{
 		if(!naive)
-			throw CRecoverableError("szp pointer was NULL on update_all");
+			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL on update_all:"));
 
 		// all copies already have naive, so their pointers will update too
 		*naive = target;

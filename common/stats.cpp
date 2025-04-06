@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -41,7 +41,7 @@ FStat::FStat (const char *cname)
 FStat::~FStat ()
 {
 	std::vector<FStat*>::iterator i = std::find(stats.begin(), stats.end(), this);
-	
+
 	if(i != stats.end())
 		stats.erase(i);
 }
@@ -81,7 +81,7 @@ void FStat::dumpstat(std::string which)
 
 void FStat::dump()
 {
-	Printf(PRINT_HIGH, "%s: %llums\n", name.c_str(), last_elapsed);
+	Printf(PRINT_HIGH, "%s: %llums\n", name, last_elapsed);
 }
 
 BEGIN_COMMAND (stat)

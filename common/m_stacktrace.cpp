@@ -3,6 +3,7 @@
 //
 // $Id$
 //
+// Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -16,30 +17,28 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Voting-specific stuff.
+//	Stacktrace for more useful error messages
 //
 //-----------------------------------------------------------------------------
 
-
 #include "odamex.h"
 
-/**
- * A string array used to associate vote types with command names.
- */
-const char* vote_type_cmd[] = {
-	"???",
-	"kick",
-	"forcespec",
-	"forcestart",
-	"randcaps",
-	"randpickup",
-	"map",
-	"nextmap",
-	"randmap",
-	"restart",
-	"fraglimit",
-	"scorelimit",
-	"timelimit",
-	"coinflip",
-	"???"
-};
+#include "m_stacktrace.h"
+
+#include "cpptrace/cpptrace.hpp"
+#include "cpptrace/formatting.hpp"
+
+std::string M_GetStacktrace(std::string header)
+{
+	auto formatter = cpptrace::formatter{}
+		.header(header)
+		.colors(cpptrace::formatter::color_mode::none)
+		.addresses(cpptrace::formatter::address_mode::none)
+		.paths(cpptrace::formatter::path_mode::basename)
+		.columns(false)
+		.snippets(false)
+		.filter([](const auto& frame)
+			{ return frame.symbol.find("M_GetStacktrace") == std::string::npos; })
+		.filtered_frame_placeholders(false);
+	return formatter.format(cpptrace::generate_trace());
+}

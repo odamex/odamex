@@ -49,7 +49,7 @@ int maxframe;
 
 void R_CacheSprite(spritedef_t *sprite)
 {
-	DPrintf ("cache sprite %s\n",
+	DPrintFmt("cache sprite {}\n",
 		sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
 	for (int i = 0; i < sprite->numframes; i++)
 	{
@@ -58,7 +58,7 @@ void R_CacheSprite(spritedef_t *sprite)
 			if (sprite->spriteframes[i].width[r] == SPRITE_NEEDS_INFO)
 			{
 				if (sprite->spriteframes[i].lump[r] == -1)
-					I_Error ("Sprite %d, rotation %d has no lump", i, r);
+					I_Error("Sprite {}, rotation {} has no lump", i, r);
 				patch_t* patch = W_CachePatch(sprite->spriteframes[i].lump[r]);
 				sprite->spriteframes[i].width[r] = patch->width()<<FRACBITS;
 				sprite->spriteframes[i].offset[r] = patch->leftoffset()<<FRACBITS;
@@ -85,7 +85,7 @@ static void R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, bool fli
 		rotation = (rot >= 17) ? rot - 7 : 17;
 
 	if (frame >= MAX_SPRITE_FRAMES || rotation > 16)
-		I_FatalError("R_InstallSpriteLump: Bad frame characters in lump %i", lump);
+		I_FatalError("R_InstallSpriteLump: Bad frame characters in lump {}", lump);
 
 	if (static_cast<int>(frame) > maxframe)
 		maxframe = frame;
@@ -143,7 +143,7 @@ static void R_InstallSprite(const char *name, int num)
 		{
 		  case -1:
 			// no rotations were found for that frame at all
-			I_FatalError ("R_InstallSprite: No patches found for %s frame %c", sprname, frame+'A');
+			I_FatalError ("R_InstallSprite: No patches found for {} frame {:c}", sprname, frame+'A');
 			break;
 
 		  case 0:
@@ -174,7 +174,7 @@ static void R_InstallSprite(const char *name, int num)
 		  	{
 				if (sprtemp[frame].lump[rotation] == -1)
 				{
-					I_FatalError("R_InstallSprite: Sprite %s frame %c is missing rotations",
+					I_FatalError("R_InstallSprite: Sprite {} frame {:c} is missing rotations",
 						sprname, frame + 'A');
 				}
 		  	}
@@ -273,7 +273,7 @@ void R_InitSprites(const char **namelist)
 
 	M_Free(vissprites);
 
-	vissprites = (vissprite_t *)Malloc(MaxVisSprites * sizeof(vissprite_t));
+	vissprites = (vissprite_t *) M_Malloc(MaxVisSprites * sizeof(vissprite_t));
 	lastvissprite = &vissprites[MaxVisSprites];
 
 	R_InitSpriteDefs (namelist);

@@ -45,13 +45,12 @@ extern fixed_t freelookviewheight;
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(cl_mouselook)
 EXTERN_CVAR(r_skypalette)
+EXTERN_CVAR(r_linearsky)
 
 
 //
 // sky mapping
 //
-int 		skyflatnum;
-int 		sky1texture,    sky2texture;
 fixed_t		defaultskytexturemid;
 fixed_t		skyscale;
 int			skystretch;
@@ -59,20 +58,17 @@ fixed_t		skyheight;
 fixed_t		skyiscale;
 
 int			sky1shift,        sky2shift;
-fixed_t		sky2scrollxdelta;
-fixed_t		sky2columnoffset;
 
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
 static angle_t xtoviewangle[MAXWIDTH + 1];
+static angle_t linearskyangle[MAXWIDTH + 1];
 
 CVAR_FUNC_IMPL(r_stretchsky)
 {
 	R_InitSkyMap ();
 }
-
-OLumpName SKYFLATNAME = "F_SKY1";
 
 static tallpost_t* skyposts[MAXWIDTH];
 static byte transparentskybuffer[MAXWIDTH][512]; // holds foreground sky with transparency to blit to the screen
@@ -241,17 +237,27 @@ static void R_InitXToViewAngle()
 			const fixed_t dfocus = FocalLengthX >> DBITS;
 
 			for (int i = centerx, slope = 0; i <= t; i++, slope += slopestep)
-				xtoviewangle[i] = (angle_t)-(signed)tantoangle[slope >> DBITS];
+			{
+				xtoviewangle[i]   = (angle_t)-(signed)tantoangle[slope >> DBITS];
+				linearskyangle[i] = (0.5 - i / (double)viewwidth) * FIXED2DOUBLE(hitan) * ANG90;
+			}
 
 			for (int i = t + 1; i <= viewwidth; i++)
-				xtoviewangle[i] = ANG270+tantoangle[dfocus / (i - centerx)];
+			{
+				xtoviewangle[i]   = ANG270+tantoangle[dfocus / (i - centerx)];
+				linearskyangle[i] = (0.5 - i / (double)viewwidth) * FIXED2DOUBLE(hitan) * ANG90;
+			}
 
 			for (int i = 0; i < centerx; i++)
-				xtoviewangle[i] = (angle_t)(-(signed)xtoviewangle[viewwidth-i-1]);
+			{
+				xtoviewangle[i]   = (angle_t)(-(signed)xtoviewangle[viewwidth-i-1]);
+				linearskyangle[i] = (angle_t)(-(signed)linearskyangle[viewwidth-i-1]);
+			}
 		}
 		else
 		{
 			memset(xtoviewangle, 0, sizeof(angle_t) * viewwidth + 1);
+			memset(linearskyangle, 0, sizeof(angle_t) * viewwidth + 1);
 		}
 
 		last_viewwidth = viewwidth;
@@ -330,7 +336,7 @@ sky_t* R_GetSky(const OLumpName& name, bool create)
 		return nullptr;
 	}
 
-	int32_t tex = R_TextureNumForName(name.c_str());
+	int32_t tex = R_TextureNumForName(name);
 	if (tex < 0) return nullptr;
 
 	OLumpName skytexname;
@@ -340,7 +346,7 @@ sky_t* R_GetSky(const OLumpName& name, bool create)
 	sky->background.scrolly = INT2FIXED(0);
 	if (level.flags & LEVEL_DOUBLESKY)
 	{
-		sky->background.texnum = R_TextureNumForName(level.skypic2.c_str());
+		sky->background.texnum = R_TextureNumForName(level.skypic2);
 		sky->background.texture = level.skypic2;
 		sky->background.scrollx = level.sky2ScrollDelta & 0xffffff;
 		sky->foreground.scrollx = level.sky1ScrollDelta & 0xffffff;
@@ -399,7 +405,7 @@ void R_InitSkyDefs()
 			if(skytype < skytype_t::NORMAL || skytype > skytype_t::DOUBLESKY) return jsonlumpresult_t::PARSEERROR;
 
 			OLumpName skytexname = skytex.asString();
-			int32_t tex = R_TextureNumForName(skytexname.c_str());
+			int32_t tex = R_TextureNumForName(skytexname);
 			if(tex < 0) return jsonlumpresult_t::PARSEERROR;
 
 			if(!mid.isNumeric()
@@ -416,7 +422,7 @@ void R_InitSkyDefs()
 			sky->type = skytype;
 			sky->usedefaultmid = false;
 
-			constexpr float_t ticratescale = 1.0 / TICRATE;
+			static constexpr float_t ticratescale = 1.0 / TICRATE;
 
 			sky->background.texnum  = tex;
 			sky->background.texture = skytexname;
@@ -454,7 +460,7 @@ void R_InitSkyDefs()
 				const Json::Value& forescaley  = foreelem["scaley"];
 
 				OLumpName foreskytexname = foreskytex.asString();
-				int32_t foretex = R_TextureNumForName(foreskytexname.c_str());
+				int32_t foretex = R_TextureNumForName(foreskytexname);
 				if(foretex < 0) return jsonlumpresult_t::PARSEERROR;
 
 				if(!foremid.isNumeric()
@@ -488,7 +494,7 @@ void R_InitSkyDefs()
 			const Json::Value& skyelem = flatentry["sky"];
 
 			OLumpName flatname = flatelem.asString();
-			int32_t flatnum = R_FlatNumForName(flatname.c_str());
+			int32_t flatnum = R_FlatNumForName(flatname);
 			if(flatnum < 0 || flatnum >= ::numflats) return jsonlumpresult_t::PARSEERROR;
 
 			OLumpName skyname = skyelem.asString();
@@ -502,7 +508,7 @@ void R_InitSkyDefs()
 
 	jsonlumpresult_t result =  M_ParseJSONLump("SKYDEFS", "skydefs", { 1, 0, 0 }, ParseSkydef);
 	if (result != jsonlumpresult_t::SUCCESS && result != jsonlumpresult_t::NOTFOUND)
-		I_Error("R_InitSkyDefs: SKYDEFS JSON error: %s", M_JSONLumpResultToString(result));
+		I_Error("R_InitSkyDefs: SKYDEFS JSON error: {}", M_JSONLumpResultToString(result));
 }
 
 void R_ClearSkyDefs()
@@ -723,13 +729,14 @@ void R_RenderSkyRange(visplane_t* pl)
 	if (pl->minx > pl->maxx)
 		return;
 
-	constexpr int columnmethod = 2;
+	static constexpr int columnmethod = 2;
 	int frontskytex, backskytex;
 	fixed_t front_offset = 0;
 	fixed_t back_offset = 0;
 	fixed_t frontrow_offset = 0;
 	fixed_t backrow_offset = 0;
 	angle_t skyflip = 0;
+	const angle_t* xtoskyangle = r_linearsky.asBool() ? linearskyangle : xtoviewangle;
 
 	auto skyflat = skyflatlookup.find(pl->picnum);
 
@@ -844,7 +851,7 @@ void R_RenderSkyRange(visplane_t* pl)
 
 		for (int x = pl->minx; x <= pl->maxx; x++)
 		{
-			int sky2colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky2shift) + back_offset) >> FRACBITS;
+			int sky2colnum = ((((viewangle + xtoskyangle[x]) ^ skyflip) >> sky2shift) + back_offset) >> FRACBITS;
 			sky2colnum = FIXED2INT(FixedMul(INT2FIXED(sky2colnum), sky2scalex));
 			tallpost_t* skypost = R_GetTextureColumn(backskytex, sky2colnum);
 			skyposts[x] = skypost;
@@ -863,7 +870,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	{
 		for (int x = pl->minx; x <= pl->maxx; x++)
 		{
-			int sky1colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
+			int sky1colnum = ((((viewangle + xtoskyangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
 			sky1colnum = FIXED2INT(FixedMul(INT2FIXED(sky1colnum), sky1scalex));
 			tallpost_t* skypost = R_GetTextureColumn(frontskytex, sky1colnum);
 			skyposts[x] = skypost;
@@ -876,7 +883,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	{
 		for (int x = pl->minx; x <= pl->maxx; x++)
 		{
-			int sky1colnum = ((((viewangle + xtoviewangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
+			int sky1colnum = ((((viewangle + xtoskyangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
 			sky1colnum = FIXED2INT(FixedMul(INT2FIXED(sky1colnum), sky1scalex));
 			tallpost_t* skypost = R_GetTextureColumn(frontskytex, sky1colnum);
 

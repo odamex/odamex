@@ -105,7 +105,7 @@ size_t 				saveCharIndex;	// which char we're editing
 // old save description before edit
 char				saveOldString[SAVESTRINGSIZE];
 
-BOOL 				menuactive;
+bool 				menuactive;
 
 int                 repeatKey;
 int                 repeatCount;
@@ -214,12 +214,12 @@ enum d1_main_t
 
 oldmenuitem_t DoomMainMenu[]=
 {
-	{1,"M_NGAME","\0",M_NewGame,'N'},
-	{1,"M_OPTION","\0",M_Options,'O'},	// [RH] Moved
-    {1,"M_LOADG","\0",M_LoadGame,'L'},
-    {1,"M_SAVEG","\0",M_SaveGame,'S'},
-    {1,"M_RDTHIS","\0",M_ReadThis,'R'},
-	{1,"M_QUITG","\0",M_QuitDOOM,'Q'}
+	{1,"M_NGAME","",M_NewGame,'N'},
+	{1,"M_OPTION","",M_Options,'O'},	// [RH] Moved
+    {1,"M_LOADG","",M_LoadGame,'L'},
+    {1,"M_SAVEG","",M_SaveGame,'S'},
+    {1,"M_RDTHIS","",M_ReadThis,'R'},
+	{1,"M_QUITG","",M_QuitDOOM,'Q'}
 };
 
 //
@@ -238,11 +238,11 @@ enum d2_main_t
 
 oldmenuitem_t Doom2MainMenu[]=
 {
-	{1,"M_NGAME","\0",M_NewGame,'N'},
-	{1,"M_OPTION","\0",M_Options,'O'},	// [RH] Moved
-    {1,"M_LOADG","\0",M_LoadGame,'L'},
-    {1,"M_SAVEG","\0",M_SaveGame,'S'},
-	{1,"M_QUITG","\0",M_QuitDOOM,'Q'}
+	{1,"M_NGAME","",M_NewGame,'N'},
+	{1,"M_OPTION","",M_Options,'O'},	// [RH] Moved
+    {1,"M_LOADG","",M_LoadGame,'L'},
+    {1,"M_SAVEG","",M_SaveGame,'S'},
+	{1,"M_QUITG","",M_QuitDOOM,'Q'}
 };
 
 
@@ -262,14 +262,14 @@ oldmenu_t MainDef =
 
 oldmenuitem_t EpisodeMenu[MAX_EPISODES] =
 {
-	{1,"\0","\0", M_Episode,0},
-	{1,"\0","\0", M_Episode,0},
-	{1,"\0","\0", M_Episode,0},
-	{1,"\0","\0", M_Episode,0},
-	{1,"\0","\0", M_Episode,0},
-	{1,"\0","\0", M_Episode,0},
-	{1,"\0","\0", M_Episode,0},
-	{1,"\0","\0", M_Episode,0}
+	{1,"","\0", M_Episode,0},
+	{1,"","\0", M_Episode,0},
+	{1,"","\0", M_Episode,0},
+	{1,"","\0", M_Episode,0},
+	{1,"","\0", M_Episode,0},
+	{1,"","\0", M_Episode,0},
+	{1,"","\0", M_Episode,0},
+	{1,"","\0", M_Episode,0}
 };
 
 oldmenu_t EpiDef =
@@ -315,14 +315,14 @@ oldmenu_t ExpDef =
 
 oldmenuitem_t NewGameMenu[MAX_SKILLS + 1]=
 {
-	{1,"\0","\0", M_ChooseSkill,0},
-	{1,"\0","\0", M_ChooseSkill,0},
-	{1,"\0","\0", M_ChooseSkill,0},
-	{1,"\0","\0", M_ChooseSkill,0},
-	{1,"\0","\0", M_ChooseSkill,0},
-	{1,"\0","\0", M_ChooseSkill,0},
-	{1,"\0","\0", M_ChooseSkill,0},
-	{1,"\0","\0", M_ChooseSkill,0},
+	{1,"","\0", M_ChooseSkill,0},
+	{1,"","\0", M_ChooseSkill,0},
+	{1,"","\0", M_ChooseSkill,0},
+	{1,"","\0", M_ChooseSkill,0},
+	{1,"","\0", M_ChooseSkill,0},
+	{1,"","\0", M_ChooseSkill,0},
+	{1,"","\0", M_ChooseSkill,0},
+	{1,"","\0", M_ChooseSkill,0},
 	//{1,"\0", M_ChooseSkill,0}
 };
 
@@ -630,7 +630,7 @@ void M_ReadSaveStrings()
 		FILE* handle = fopen(name.c_str(), "rb");
 		if (handle == NULL)
 		{
-			strcpy (&savegamestrings[i][0], GStrings(EMPTYSTRING));
+			M_StringCopy(&savegamestrings[i][0], GStrings(EMPTYSTRING), SAVESTRINGSIZE);
 			LoadSavegameMenu[i].status = 0;
 		}
 		else
@@ -638,7 +638,7 @@ void M_ReadSaveStrings()
 			const size_t readlen = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
 			if (readlen < 1)
 			{
-				printf("M_Read_SaveStrings(): Failed to read handle.\n");
+				fmt::print("M_Read_SaveStrings(): Failed to read handle.\n");
 				fclose(handle);
 				return;
 			}
@@ -670,7 +670,7 @@ void M_LoadSelect (int choice)
 	std::string name;
 
 	G_BuildSaveName (name, choice);
-	G_LoadGame ((char *)name.c_str());
+	G_LoadGame(name);
 	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
 	M_ClearMenus ();
 	if (quickSaveSlot == -2)
@@ -721,7 +721,7 @@ void M_DrawSave()
 //
 void M_DoSave (int slot)
 {
-	G_SaveGame (slot,savegamestrings[slot]);
+	G_SaveGame (slot, { savegamestrings[slot], 24 });
 	M_ClearMenus ();
 		// PICK QUICKSAVE SLOT YET?
 	if (quickSaveSlot == -2)
@@ -744,7 +744,7 @@ void M_SaveSelect (int choice)
 	genStringLen = SAVESTRINGSIZE-1;
 
 	saveSlot = choice;
-	strcpy(saveOldString,savegamestrings[choice]);
+	M_StringCopy(saveOldString, savegamestrings[choice], SAVESTRINGSIZE);
 
 	// If on a game console, auto-fill with date and time to save name
 
@@ -931,7 +931,7 @@ void M_DrawNewGame()
 	screen->DrawPatchClean(W_CachePatch("M_NEWG"), 96, 14);
 	screen->DrawPatchClean(W_CachePatch("M_SKILL"), 54, 38);
 
-	constexpr int SMALLFONT_OFFSET = 8; // Line up with the skull
+	static constexpr int SMALLFONT_OFFSET = 8; // Line up with the skull
 
 	const char* pslabel = "Pistol Start Each Level ";
 	const int psy = NewDef.y + (LINEHEIGHT * skillnum) + SMALLFONT_OFFSET;
@@ -953,7 +953,7 @@ namespace
 			}
 			else
 			{
-				strncpy(EpisodeMenu[i].name, EpisodeInfos[i].pic_name.c_str(), 8);
+				EpisodeMenu[i].name = EpisodeInfos[i].pic_name;
 			}
 
 			EpisodeMenu[i].alphaKey = EpisodeInfos[i].key;
@@ -973,13 +973,13 @@ namespace
 		    }
 		    else
 		    {
-			    strncpy(NewGameMenu[i].name, SkillInfos[i].pic_name.c_str(), 8);
+			    NewGameMenu[i].name = SkillInfos[i].pic_name;
 		    }
 
 			NewGameMenu[i].alphaKey = SkillInfos[i].shortcut;
 	    }
 
-		strncpy(NewGameMenu[i].name, "\0", 1);
+		NewGameMenu[i].name.clear();
 	    NewGameMenu[i].alphaKey = 'p';
 	}
 }
@@ -1081,7 +1081,7 @@ void M_StartGame(int choice)
     }
     else
     {
-        G_DeferedInitNew (EpisodeMaps[epi].c_str());
+        G_DeferedInitNew (EpisodeMaps[epi]);
     }
 
     M_ClearMenus ();
@@ -1146,7 +1146,7 @@ void M_Expansion(int choice)
 //
 void M_DrawReadThis1()
 {
-	const patch_t *p = W_CachePatch(gameinfo.infoPage[0].c_str());
+	const patch_t *p = W_CachePatch(gameinfo.infoPage[0]);
 	screen->DrawPatchFullScreen(p, false);
 }
 
@@ -1155,7 +1155,7 @@ void M_DrawReadThis1()
 //
 void M_DrawReadThis2()
 {
-	const patch_t *p = W_CachePatch(gameinfo.infoPage[1].c_str());
+	const patch_t *p = W_CachePatch(gameinfo.infoPage[1]);
 	screen->DrawPatchFullScreen(p, false);
 }
 
@@ -1164,7 +1164,7 @@ void M_DrawReadThis2()
 //
 void M_DrawReadThis3()
 {
-	const patch_t *p = W_CachePatch(gameinfo.infoPage[2].c_str());
+	const patch_t *p = W_CachePatch(gameinfo.infoPage[2]);
 	screen->DrawPatchFullScreen(p, false);
 }
 
@@ -1280,7 +1280,7 @@ EXTERN_CVAR (cl_autoaim)
 
 void M_PlayerSetup(int choice)
 {
-	strcpy(savegamestrings[0], cl_name.cstring());
+	M_StringCopy(savegamestrings[0], cl_name.cstring(), SAVESTRINGSIZE);
 	M_SetupNextMenu (&PSetupDef);
 	PlayerState = &states[mobjinfo[MT_PLAYER].seestate];
 	PlayerTics = PlayerState->tics;
@@ -1716,8 +1716,8 @@ static void M_EditPlayerName (int choice)
 	genStringLen = MAXPLAYERNAME;
 
 	saveSlot = 0;
-	strcpy(saveOldString,savegamestrings[0]);
-	if (!strcmp(savegamestrings[0],GStrings(EMPTYSTRING)))
+	M_StringCopy(saveOldString, savegamestrings[0], SAVESTRINGSIZE);
+	if (!strcmp(savegamestrings[0], GStrings(EMPTYSTRING)))
 		savegamestrings[0][0] = 0;
 	saveCharIndex = strlen(savegamestrings[0]);
 }
@@ -1940,7 +1940,7 @@ bool M_Responder (event_t* ev)
 			if (genStringEnter == oldmenustring_t::SAVEGAME)
 				M_ClearMenus();
 			genStringEnter = oldmenustring_t::NONE;
-			strcpy(&savegamestrings[saveSlot][0], saveOldString);
+			M_StringCopy(&savegamestrings[saveSlot][0], saveOldString, SAVESTRINGSIZE);
 		}
 		else if (Key_IsAcceptKey(ch))
 		{

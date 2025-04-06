@@ -330,7 +330,7 @@ protected:
 	int m_Y;				// Y of point source if point pusher
 	int m_Affectee;			// Number of affected sector
 
-	friend BOOL PIT_PushThing (AActor *thing);
+	friend bool PIT_PushThing (AActor *thing);
 };
 
 inline FArchive &operator<< (FArchive &arc, DPusher::EPusher type)
@@ -342,7 +342,7 @@ inline FArchive &operator>> (FArchive &arc, DPusher::EPusher &out)
 	BYTE in; arc >> in; out = (DPusher::EPusher)in; return arc;
 }
 
-BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote);
+bool P_CheckKeys (player_t *p, card_t lock, bool remote);
 
 // Define values for map objects
 #define MO_TELEPORTMAN			14
@@ -351,7 +351,7 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote);
 // [RH] If a deathmatch game, checks to see if noexit is enabled.
 //		If so, it kills the player and returns false. Otherwise,
 //		it returns true, and the player is allowed to live.
-BOOL	CheckIfExitIsGood (AActor *self);
+bool	CheckIfExitIsGood (AActor *self);
 
 // at game start
 void	P_InitPicAnims (void);
@@ -444,7 +444,7 @@ class DFireFlicker : public DLighting
 public:
 	DFireFlicker (sector_t *sector);
 	DFireFlicker (sector_t *sector, int upper, int lower);
-	void		RunThink ();
+	void RunThink() override;
 	int GetMaxLight() const { return m_MaxLight; }
 	int GetMinLight() const { return m_MinLight; }
 protected:
@@ -460,7 +460,7 @@ class DFlicker : public DLighting
 	DECLARE_SERIAL (DFlicker, DLighting)
 public:
 	DFlicker (sector_t *sector, int upper, int lower);
-	void		RunThink ();
+	void RunThink () override;
 	int GetMaxLight() const { return m_MaxLight; }
 	int GetMinLight() const { return m_MinLight; }
 protected:
@@ -477,7 +477,7 @@ class DLightFlash : public DLighting
 public:
 	DLightFlash (sector_t *sector);
 	DLightFlash (sector_t *sector, int min, int max);
-	void		RunThink ();
+	void RunThink() override;
 	int GetMaxLight() const { return m_MaxLight; }
 	int GetMinLight() const { return m_MinLight; }
 protected:
@@ -496,7 +496,7 @@ class DStrobe : public DLighting
 public:
 	DStrobe (sector_t *sector, int utics, int ltics, bool inSync);
 	DStrobe (sector_t *sector, int upper, int lower, int utics, int ltics);
-	void		RunThink ();
+	void RunThink() override;
 	int GetMaxLight() const { return m_MaxLight; }
 	int GetMinLight() const { return m_MinLight; }
 	int GetDarkTime() const { return m_DarkTime; }
@@ -518,7 +518,7 @@ class DGlow : public DLighting
 	DECLARE_SERIAL (DGlow, DLighting)
 public:
 	DGlow (sector_t *sector);
-	void		RunThink ();
+	void RunThink() override;
 protected:
 	int 		m_MinLight;
 	int 		m_MaxLight;
@@ -533,7 +533,7 @@ class DGlow2 : public DLighting
 	DECLARE_SERIAL (DGlow2, DLighting)
 public:
 	DGlow2 (sector_t *sector, int start, int end, int tics, bool oneshot);
-	void		RunThink ();
+	void RunThink() override;
 	int GetStart() const { return m_Start; }
 	int GetEnd() const { return m_End; }
 	int GetMaxTics() const { return m_MaxTics; }
@@ -555,7 +555,7 @@ class DPhased : public DLighting
 public:
 	DPhased (sector_t *sector);
 	DPhased (sector_t *sector, int baselevel, int phase);
-	void		RunThink ();
+	void RunThink() override;
 	byte GetBaseLevel() const { return m_BaseLevel; }
 	byte GetPhase() const { return m_Phase; }
 protected:
@@ -669,7 +669,7 @@ public:
 	DPlat(sector_t *sector);
 	DPlat(sector_t *sector, DPlat::EPlatType type, fixed_t height, int speed, int delay, fixed_t lip);
 	DPlat(sector_t* sector, int target, int delay, int speed, int trigger); // [Blair] Boom Generic Plat type
-	DPlat* Clone(sector_t* sec) const override;
+	[[nodiscard]] DPlat* Clone(sector_t* sec) const override;
 	friend void P_SetPlatDestroy(DPlat *plat);
 
 	void PlayPlatSound ();
@@ -695,11 +695,11 @@ protected:
 private:
 	DPlat ();
 
-	friend BOOL	EV_DoPlat (int tag, line_t *line, EPlatType type,
+	friend bool	EV_DoPlat (int tag, line_t *line, EPlatType type,
 						   fixed_t height, int speed, int delay, fixed_t lip, int change);
 	friend void EV_StopPlat (int tag);
 	friend void P_ActivateInStasis (int tag);
-	friend BOOL EV_DoGenLift(line_t* line);
+	friend bool EV_DoGenLift(line_t* line);
 };
 
 inline FArchive &operator<< (FArchive &arc, DPlat::EPlatType type)
@@ -746,7 +746,7 @@ public:
 	DPillar ();
 	DPillar(sector_t* sector, EPillar type, fixed_t speed, fixed_t height,
 	        fixed_t height2, int crush, bool hexencrush);
-	DPillar* Clone(sector_t* sec) const override;
+	[[nodiscard]] DPillar* Clone(sector_t* sec) const override;
 	friend void P_SetPillarDestroy(DPillar *pillar);
 	friend bool EV_DoZDoomPillar(DPillar::EPillar type, line_t* line, int tag,
 	                             fixed_t speed, fixed_t floordist, fixed_t ceilingdist,
@@ -784,7 +784,7 @@ inline FArchive &operator>> (FArchive &arc, DPillar::EPillarState &out)
 	BYTE in; arc >> in; out = (DPillar::EPillarState)in; return arc;
 }
 
-BOOL EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
+bool EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
 				  fixed_t height2, bool crush);
 void P_SpawnDoorCloseIn30 (sector_t *sec);
 void P_SpawnDoorRaiseIn5Mins (sector_t *sec);
@@ -844,7 +844,7 @@ public:
 	// ZDoom Compatible DDoor
 	DDoor(sector_t* sec, line_t* ln, EVlDoor type, fixed_t speed, int topwait,
 	      byte lighttag, int topcountdown);
-	DDoor* Clone(sector_t* sec) const override;
+	[[nodiscard]] DDoor* Clone(sector_t* sec) const override;
 
 	friend void P_SetDoorDestroy(DDoor *door);
 
@@ -868,9 +868,9 @@ public:
 	int			m_LightTag; // ZDoom compat
 
 protected:
-	friend BOOL	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
+	friend bool	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                                    int tag, int speed, int delay, card_t lock);
-    friend BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
+    friend bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 	                         byte speed_byte, int topwait, zdoom_lock_t lock,
 	                         byte lightTag, bool boomgen, int topcountdown);
 	friend void P_SpawnDoorCloseIn30 (sector_t *sec);
@@ -966,7 +966,7 @@ public:
 	DCeiling (sector_t* sec, line_t* line, int speed,
 	         int target, int crush, int change, int direction, int model);
 	DCeiling(sector_t* sec, line_t* line, int silent, int speed);
-	DCeiling* Clone(sector_t* sec) const override;
+	[[nodiscard]] DCeiling* Clone(sector_t* sec) const override;
 	friend void P_SetCeilingDestroy(DCeiling *ceiling);
 
 	void RunThink () override;
@@ -1003,12 +1003,12 @@ protected:
 private:
 	DCeiling ();
 
-	friend BOOL EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
+	friend bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 		int tag, fixed_t speed, fixed_t speed2, fixed_t height,
 		bool crush, int silent, int change);
-	friend BOOL EV_CeilingCrushStop (int tag);
+	friend bool EV_CeilingCrushStop (int tag);
 	friend void P_ActivateInStasisCeiling (int tag);
-	friend BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
+	friend bool EV_ZDoomCeilingCrushStop(int tag, bool remove);
 };
 
 inline FArchive &operator<< (FArchive &arc, DCeiling::ECeiling type)
@@ -1104,10 +1104,10 @@ public:
 	DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t speed,
 	               fixed_t height, int crush, int change, bool hexencrush,
 	               bool hereticlower);
-	DFloor* Clone(sector_t* sec) const override;
+	[[nodiscard]] DFloor* Clone(sector_t* sec) const override;
 	friend void P_SetFloorDestroy(DFloor *floor);
-	friend BOOL EV_DoGenFloor(line_t* line);
-	friend BOOL EV_DoGenStairs(line_t* line);
+	friend bool EV_DoGenFloor(line_t* line);
+	friend bool EV_DoGenStairs(line_t* line);
 
 	void RunThink () override;
 	void PlayFloorSound();
@@ -1139,16 +1139,16 @@ public:
 	int			m_Change;
 
 protected:
-	friend BOOL EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
+	friend bool EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
 		fixed_t stairsize, fixed_t speed, int delay, int reset, int igntxt,
 		int usespecials);
-	friend BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
+	friend bool EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 		fixed_t speed, fixed_t height, bool crush, int change);
 	friend int EV_DoDonut (line_t* line);
-	friend BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed,
+	friend bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed,
 	                            fixed_t slimespeed);
 	friend int P_SpawnDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
-	friend BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag,
+	friend bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag,
 	                            fixed_t speed, fixed_t height, int crush, int change,
 	                            bool hexencrush, bool hereticlower);
 
@@ -1196,7 +1196,7 @@ public:
 	};
 
 	DElevator (sector_t *sec);
-	DElevator* Clone(sector_t* sec) const override;
+	[[nodiscard]] DElevator* Clone(sector_t* sec) const override;
 	friend void P_SetElevatorDestroy(DElevator *elevator);
 
 	void RunThink () override;
@@ -1211,7 +1211,7 @@ public:
 	EElevatorState m_Status;
 
 protected:
-	friend BOOL EV_DoElevator (line_t *line, DElevator::EElevator type, fixed_t speed,
+	friend bool EV_DoElevator (line_t *line, DElevator::EElevator type, fixed_t speed,
 		fixed_t height, int tag);
     friend bool EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
 	                        fixed_t height, int tag);
@@ -1274,7 +1274,7 @@ class DWaggle : public DMover
 	DWaggle();
 
   protected:
-	friend BOOL EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed,
+	friend bool EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed,
 	                                int offset, int timer, bool ceiling);
 };
 */
@@ -1285,19 +1285,19 @@ enum EChange
 	numChangeOnly
 };
 
-BOOL EV_DoChange (line_t *line, EChange changetype, int tag);
+bool EV_DoChange (line_t *line, EChange changetype, int tag);
 
 
 
 //
 // P_TELEPT
 //
-BOOL EV_Teleport (int tid, int tag, int arg0, int side, AActor *thing, int nostop);
-BOOL EV_LineTeleport (line_t *line, int side, AActor *thing);
-BOOL EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* line,
+bool EV_Teleport (int tid, int tag, int arg0, int side, AActor *thing, int nostop);
+bool EV_LineTeleport (line_t *line, int side, AActor *thing);
+bool EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* line,
                        int side, AActor* thing);
-BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
-							BOOL reverse);
+bool EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
+							bool reverse);
 
 //
 // [RH] ACS (see also p_acs.h)
@@ -1314,7 +1314,7 @@ void P_DoDeferedScripts (void);
 //
 // [RH] p_quake.c
 //
-BOOL P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad);
+bool P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad);
 
 // [AM] Trigger actor specials.
 bool A_TriggerAction(AActor *mo, AActor *triggerer, int activationType);

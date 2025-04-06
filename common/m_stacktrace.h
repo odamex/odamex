@@ -17,26 +17,10 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Sky rendering. The DOOM sky is a texture map like any
-//  wall, wrapping around. A 1024 columns equal 360 degrees.
-//  The default sky map is 256 columns and repeats 4 times
-//  on a 320 screen?
+//	Stacktrace for more useful error messages
 //
 //-----------------------------------------------------------------------------
 
+#pragma once
 
-#include "odamex.h"
-
-#include "r_data.h"
-
-// [ML] 5/11/06 - Remove sky2
-int 		skyflatnum;
-int 		sky2texture;
-
-fixed_t		sky2scrollxdelta;
-fixed_t		sky2columnoffset;
-
-OLumpName SKYFLATNAME = "F_SKY1";
-
-VERSION_CONTROL (r_sky_cpp, "$Id$")
-
+std::string M_GetStacktrace(std::string header = "Stack trace:");

@@ -45,9 +45,9 @@ class StatusBarWidget_Base
 	void drawPatch(int x, int y, const patch_t* p);
 
   public:
-	int getX() const { return m_x; }
-	int getY() const { return m_y; }
-	
+	[[nodiscard]] int getX() const { return m_x; }
+	[[nodiscard]] int getY() const { return m_y; }
+
 };
 
 // Number widget

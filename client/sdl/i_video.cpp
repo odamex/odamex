@@ -125,7 +125,7 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 	mPalette(V_GetDefaultPalette()->colors), mPixelFormat(*format),
 	mWidth(width), mHeight(height), mPitch(pitch), mLocks(0)
 {
-	constexpr uintptr_t alignment = 16;
+	static constexpr uintptr_t alignment = 16;
 
 	// Not given a pitch? Just base pitch on the given width
 	if (pitch == 0)
@@ -194,8 +194,8 @@ IWindowSurface::IWindowSurface(IWindowSurface* base_surface, uint16_t width, uin
 IWindowSurface::~IWindowSurface()
 {
 	// free all DCanvas objects allocated by this surface
-	for (DCanvasCollection::iterator it = mCanvasStore.begin(); it != mCanvasStore.end(); ++it)
-		delete *it;
+	for (auto& canvas : mCanvasStore)
+		delete canvas;
 
 	// calculate the buffer's original address when freeing mSurfaceBuffer
 	if (mOwnsSurfaceBuffer)
@@ -679,12 +679,7 @@ std::string I_GetVideoModeString(const IVideoMode& mode)
 static bool I_IsModeSupported(uint8_t bpp, EWindowMode window_mode)
 {
 	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
-
-	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
-		if (it->bpp == bpp && it->window_mode == window_mode)
-			return true;
-
-	return false;
+	return std::any_of(modelist->cbegin(), modelist->cend(), [bpp, window_mode](const auto& mode){ return mode.bpp == bpp && mode.window_mode == window_mode; });
 }
 
 
@@ -727,26 +722,26 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode& mode)
 	unsigned int closest_dist = UINT_MAX;
 	const IVideoMode* closest_mode = NULL;
 
-	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
+	const IVideoModeList& modelist = *I_GetVideoCapabilities()->getSupportedVideoModes();
 	for (int iteration = 0; iteration < 2; iteration++)
 	{
-		for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
+		for (const auto& mode : modelist)
 		{
-			if (*it == desired_mode)		// perfect match?
-				return *it;
+			if (mode == desired_mode)		// perfect match?
+				return mode;
 
-			if (it->bpp == desired_mode.bpp && it->window_mode == desired_mode.window_mode)
+			if (mode.bpp == desired_mode.bpp && mode.window_mode == desired_mode.window_mode)
 			{
-				if (iteration == 0 && (it->width < desired_mode.width || it->height < desired_mode.height))
+				if (iteration == 0 && (mode.width < desired_mode.width || mode.height < desired_mode.height))
 					continue;
 
-				unsigned int dist = (it->width - desired_mode.width) * (it->width - desired_mode.width)
-						+ (it->height - desired_mode.height) * (it->height - desired_mode.height);
+				unsigned int dist = (mode.width - desired_mode.width) * (mode.width - desired_mode.width)
+						+ (mode.height - desired_mode.height) * (mode.height - desired_mode.height);
 
 				if (dist < closest_dist)
 				{
 					closest_dist = dist;
-					closest_mode = &(*it);
+					closest_mode = &mode;
 				}
 			}
 		}
@@ -884,12 +879,12 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	assert(I_VideoInitialized());
 
 	if (window->getVideoMode() != requested_mode)
-		DPrintf("I_SetVideoMode: could not set video mode to %s. Using %s instead.\n",
-						I_GetVideoModeString(requested_mode).c_str(),
-						I_GetVideoModeString(window->getVideoMode()).c_str());
+		DPrintFmt("I_SetVideoMode: could not set video mode to {}. Using {} instead.\n",
+						I_GetVideoModeString(requested_mode),
+						I_GetVideoModeString(window->getVideoMode()));
 	else
-		DPrintf("I_SetVideoMode: set video mode to %s\n",
-					I_GetVideoModeString(window->getVideoMode()).c_str());
+		DPrintFmt("I_SetVideoMode: set video mode to {}\n",
+					I_GetVideoModeString(window->getVideoMode()));
 
 	const argb_t* palette = V_GetGamePalette()->colors;
 	if (matted_surface)
@@ -947,7 +942,7 @@ void I_InitHardware()
 		assert(video_subsystem != NULL);
 
 		const IVideoMode& native_mode = I_GetVideoCapabilities()->getNativeMode();
-		Printf(PRINT_HIGH, "I_InitHardware: native resolution: %s\n", I_GetVideoModeString(native_mode).c_str());
+		PrintFmt(PRINT_HIGH, "I_InitHardware: native resolution: {:s}\n", I_GetVideoModeString(native_mode));
 	}
 }
 

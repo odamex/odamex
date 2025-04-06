@@ -27,7 +27,7 @@
 
 struct EpisodeInfo
 {
-	std::string pic_name;
+	OLumpName pic_name;
 	std::string menu_name;
 	char key;
 	bool fulltext;
