@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -147,8 +147,7 @@ static void SetPNGComments(PNGStrings& out, png_struct* png_ptr, png_info* info_
 	return;
 #endif
 
-	std::string strbuf;
-	const int PNG_TEXT_LINES = 6;
+	static constexpr int PNG_TEXT_LINES = 6;
 	png_text pngtext[PNG_TEXT_LINES];
 	int text_line = 0;
 
@@ -183,8 +182,7 @@ static void SetPNGComments(PNGStrings& out, png_struct* png_ptr, png_info* info_
 	                              : (png_charp) "32bpp";
 	text_line++;
 
-	StrFormat(strbuf, "%#.3f", gammalevel.value());
-	out.at(text_line) = strbuf;
+	out.at(text_line) = fmt::sprintf("%#.3f", gammalevel.value());
 	pngtext[text_line].key = (png_charp) "In-game Gamma Correction Level";
 	pngtext[text_line].text = (png_charp)out.at(text_line).c_str();
 	text_line++;
@@ -212,7 +210,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 
 	if (fp == NULL)
 	{
-		Printf(PRINT_WARNING, "I_SavePNG: Could not open %s for writing\n", filename.c_str());
+		Printf(PRINT_WARNING, "I_SavePNG: Could not open %s for writing\n", filename);
 		return -1;
 	}
 
@@ -234,7 +232,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 		Printf(PRINT_HIGH, "I_SavePNG: png_create_info_struct failed\n");
 		return -1;
 	}
-	
+
 	// libpng instances compiled without PNG_NO_SETJMP expect this;
 	// PNG_ABORT() is invoked instead if PNG_SETJMP_SUPPORTED was not defined
 	// see include/pnglibconf.h for libpng feature support macros
@@ -270,11 +268,11 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	int png_bpp = (surface->getBitsPerPixel() == 8) ? 1 : 3;
 	png_byte** row_ptrs = (png_byte**)png_malloc(png_ptr, (png_alloc_size_t)(height * sizeof(png_byte*)));
 	png_byte* row;
-	
+
 	for (unsigned int rownum = 0; rownum < height; rownum++)
 	{
 		row = (png_byte*)png_malloc(png_ptr, (png_alloc_size_t)(sizeof(uint8_t) * width * png_bpp));
-		
+
 		if (row != NULL)
 		{
 			row_ptrs[rownum] = row;
@@ -287,17 +285,17 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 			png_free(png_ptr, row_ptrs);
 			png_destroy_write_struct(&png_ptr, &info_ptr);
 			fclose(fp);
-			
+
 			Printf(PRINT_WARNING, "I_SavePNG: Not enough RAM to create PNG file\n");
 			return -1;
 		}
 	}
-	
+
 	// write PNG in either paletted or RGB form, according to the current screen mode
 	if (surface->getBitsPerPixel() == 8)
 	{
 		V_SetPNGPalette(png_ptr, info_ptr, surface->getPalette());
-		
+
 		const palindex_t* source = (palindex_t*)surface->getBuffer();
 		const int pitch_remainder = surface->getPitchInPixels() - width;
 
@@ -325,7 +323,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 		for (unsigned int y = 0; y < height; y++)
 		{
 			row = row_ptrs[y];
-			
+
 			for (unsigned int x = 0; x < width; x++)
 			{
 				// gather color components from current pixel of SDL surface
@@ -342,7 +340,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 			source += pitch_remainder;
 		}
 	}
-	
+
 	// commit PNG image data to file
 	surface->unlock();
 	png_init_io(png_ptr, fp);
@@ -359,17 +357,17 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	#else
 	Printf(PRINT_HIGH, "I_SavePNG: Skipping PNG tIME chunk\n");
 	#endif // PNG_tIME_SUPPORTED
-	
+
 	png_set_rows(png_ptr, info_ptr, row_ptrs);
 	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
-	
+
 	// free allocated PNG image data
 	for (unsigned int y = 0; y < height; y++)
 		png_free(png_ptr, row_ptrs[y]);
 
 	png_free(png_ptr, row_ptrs);
 	png_destroy_write_struct(&png_ptr, &info_ptr);
-	
+
 	fclose(fp);
 	return 0;
 }
@@ -393,7 +391,7 @@ void V_ScreenShot(std::string filename)
 	filename = M_ExpandTokens(filename);
 
 	// Turn filename into complete path.
-	std::string pathname = M_GetUserFileName(filename);
+	std::string pathname = M_GetScreenshotFileName(filename);
 
 	// If the file already exists, append numbers.
 	if (!M_FindFreeName(pathname, extension))
@@ -412,7 +410,7 @@ void V_ScreenShot(std::string filename)
 		return;
 	}
 
-	Printf(PRINT_HIGH, "Screenshot taken: %s.%s\n", filename.c_str(), extension.c_str());
+	Printf(PRINT_HIGH, "Screenshot taken: %s.%s\n", filename, extension);
 }
 
 

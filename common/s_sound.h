@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,6 +24,8 @@
 #pragma once
 
 #include "m_fixed.h"
+
+#include <map>
 
 #define MAX_SNDNAME 63
 
@@ -55,10 +57,10 @@ struct sfxinfo_struct
 };
 
 // the complete set of sound effects
-extern std::vector<sfxinfo_t> S_sfx;
+inline std::vector<sfxinfo_t> S_sfx;
 
 // map of every sound id for sounds that have randomized variants
-extern std::map<int, std::vector<int> > S_rnd;
+inline std::map<int, std::vector<int>> S_rnd;
 
 // Initializes sound stuff, including volume
 // Sets channels, SFX and music volume,
@@ -136,7 +138,7 @@ void S_RelinkSound(AActor* from, AActor* to);
 void S_StartMusic(const char* music_name);
 
 // Start music using <music_name>, and set whether looping
-void S_ChangeMusic(std::string music_name, int looping);
+void S_ChangeMusic(std::string music_name, bool looping);
 
 // Stops the music fer sure.
 void S_StopMusic();
@@ -181,7 +183,7 @@ void S_NoiseDebug();
 #include "sv_main.h"
 #endif
 
-static void S_NetSound(AActor* mo, byte channel, const char* name, const byte attenuation)
+inline static void S_NetSound(AActor* mo, byte channel, const char* name, const byte attenuation)
 {
 #if SERVER_APP
 	SV_Sound(mo, channel, name, attenuation);
@@ -190,7 +192,7 @@ static void S_NetSound(AActor* mo, byte channel, const char* name, const byte at
 #endif
 }
 
-static void S_PlayerSound(player_t* pl, AActor* mo, const byte channel, const char* name,
+inline static void S_PlayerSound(player_t* pl, AActor* mo, const byte channel, const char* name,
                           const byte attenuation)
 {
 #if SERVER_APP

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,6 +37,7 @@
 
 #include "g_gametype.h"
 #include "svc_message.h"
+#include "i_system.h"
 
 // State.
 #include "p_pspr.h"
@@ -416,7 +417,7 @@ bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
 // Returns true if there is enough ammo to shoot.
 // If not, selects the next weapon to use.
 //
-BOOL P_CheckAmmo (player_t *player)
+bool P_CheckAmmo (player_t *player)
 {
 	if (P_EnoughAmmo(player, player->readyweapon))
 		return true;
@@ -915,6 +916,9 @@ void A_ConsumeAmmo(AActor* mo)
 	player_t* player = mo->player;
 	struct pspdef_s* psp = &player->psprites[player->psprnum];
 
+	if (sv_infiniteammo)
+		return;
+
 	// don't do dumb things, kids
 	type = weaponinfo[player->readyweapon].ammotype;
 	if (!psp->state || type == am_noammo)
@@ -993,8 +997,6 @@ void A_GunFlashTo(AActor* mo)
 void A_WeaponProjectile(AActor* mo)
 {
 	fixed_t type, angle, pitch, spawnofs_xy, spawnofs_z;
-	AActor* proj;
-	int an;
 
 	player_t* player = mo->player;
 	struct pspdef_s* psp = &player->psprites[player->psprnum];
@@ -1007,6 +1009,11 @@ void A_WeaponProjectile(AActor* mo)
 	pitch = psp->state->args[2];
 	spawnofs_xy = psp->state->args[3];
 	spawnofs_z = psp->state->args[4];
+
+	if (!CheckIfDehActorDefined((mobjtype_t)type))
+	{
+		I_Error("A_WeaponProjectile: Attempted to spawn undefined projectile type.");
+	}
 
 	if (serverside)
 		P_SpawnMBF21PlayerMissile(player->mo, (mobjtype_t)type, angle, pitch, spawnofs_xy, spawnofs_z);
@@ -1085,9 +1092,9 @@ void A_WeaponMeleeAttack(AActor* mo)
 	hitsound = psp->state->args[3];
 	range = psp->state->args[4];
 
-	if (hitsound >= ARRAY_LENGTH(SoundMap))
+	if (hitsound >= static_cast<int>(ARRAY_LENGTH(SoundMap)))
 	{
-		DPrintf("Warning: Weapon Melee Hitsound ID is beyond the array of the Sound Map!\n");
+		DPrintFmt("Warning: Weapon Melee Hitsound ID is beyond the array of the Sound Map!\n");
 		hitsound = 0;
 	}
 
@@ -1141,9 +1148,9 @@ void A_WeaponSound(AActor *mo)
 
 	int sndmap = psp->state->args[0];
 
-	if (sndmap >= ARRAY_LENGTH(SoundMap))
+	if (sndmap >= static_cast<int>(ARRAY_LENGTH(SoundMap)))
 	{
-		DPrintf("Warning: Weapon Sound ID is beyond the array of the Sound Map!\n");
+		DPrintFmt("Warning: Weapon Sound ID is beyond the array of the Sound Map!\n");
 		sndmap = 0;
 	}
 

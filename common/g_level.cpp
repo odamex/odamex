@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -46,6 +46,7 @@
 #include "w_ident.h"
 
 level_locals_t level;			// info about current level
+std::string forcedlastmap;		// forced last map for the current wad
 
 level_pwad_info_t g_EmptyLevel;
 cluster_info_t g_EmptyCluster;
@@ -102,12 +103,12 @@ void LevelInfos::clear()
 // Clear all stored snapshots
 void LevelInfos::clearSnapshots()
 {
-	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
+	for (auto& info : m_infos)
 	{
-		if (it->snapshot)
+		if (info.snapshot)
 		{
-			delete it->snapshot;
-			it->snapshot = NULL;
+			delete info.snapshot;
+			info.snapshot = nullptr;
 		}
 	}
 }
@@ -115,18 +116,18 @@ void LevelInfos::clearSnapshots()
 // Add a new levelinfo and return it by reference
 level_pwad_info_t& LevelInfos::create()
 {
-	m_infos.push_back(level_pwad_info_t());
+	m_infos.emplace_back();
 	return m_infos.back();
 }
 
 // Find a levelinfo by mapname
 level_pwad_info_t& LevelInfos::findByName(const char* mapname)
 {
-	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
+	for (auto& info : m_infos)
 	{
-		if (it->mapname == mapname)
+		if (info.mapname == mapname)
 		{
-			return *it;
+			return info;
 		}
 	}
 	return ::g_EmptyLevel;
@@ -134,11 +135,11 @@ level_pwad_info_t& LevelInfos::findByName(const char* mapname)
 
 level_pwad_info_t& LevelInfos::findByName(const std::string &mapname)
 {
-	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
+	for (auto& info : m_infos)
 	{
-		if (it->mapname == mapname)
+		if (info.mapname == mapname)
 		{
-			return *it;
+			return info;
 		}
 	}
 	return ::g_EmptyLevel;
@@ -146,11 +147,11 @@ level_pwad_info_t& LevelInfos::findByName(const std::string &mapname)
 
 level_pwad_info_t& LevelInfos::findByName(const OLumpName& mapname)
 {
-	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
+	for (auto& info : m_infos)
 	{
-		if (it->mapname == mapname)
+		if (info.mapname == mapname)
 		{
-			return *it;
+			return info;
 		}
 	}
 	return ::g_EmptyLevel;
@@ -159,11 +160,11 @@ level_pwad_info_t& LevelInfos::findByName(const OLumpName& mapname)
 // Find a levelinfo by mapnum
 level_pwad_info_t& LevelInfos::findByNum(int levelnum)
 {
-	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
+	for (auto& info : m_infos)
 	{
-		if (it->levelnum == levelnum && W_CheckNumForName(it->mapname.c_str()) != -1)
+		if (info.levelnum == levelnum && W_CheckNumForName(info.mapname) != -1)
 		{
-			return *it;
+			return info;
 		}
 	}
 	return ::g_EmptyLevel;
@@ -178,15 +179,15 @@ size_t LevelInfos::size()
 // Zap all deferred ACS scripts
 void LevelInfos::zapDeferreds()
 {
-	for (_LevelInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
+	for (auto& info : m_infos)
 	{
-		acsdefered_t* def = it->defered;
+		acsdefered_t* def = info.defered;
 		while (def) {
 			acsdefered_t* next = def->next;
 			delete def;
 			def = next;
 		}
-		it->defered = NULL;
+		info.defered = nullptr;
 	}
 }
 
@@ -232,32 +233,24 @@ cluster_info_t& ClusterInfos::at(size_t i)
 // Clear all cluster definitions
 void ClusterInfos::clear()
 {
-	// Free all strings.
-	for (_ClusterInfoArray::iterator it = m_infos.begin(); it != m_infos.end(); ++it)
-	{
-		free(it->exittext);
-		it->exittext = NULL;
-		free(it->entertext);
-		it->entertext = NULL;
-	}
-	return m_infos.clear();
+	m_infos.clear();
 }
 
 // Add a new levelinfo and return it by reference
 cluster_info_t& ClusterInfos::create()
 {
-	m_infos.push_back(cluster_info_t());
+	m_infos.emplace_back();
 	return m_infos.back();
 }
 
 // Find a clusterinfo by mapname
 cluster_info_t& ClusterInfos::findByCluster(int i)
 {
-	for (_ClusterInfoArray::iterator it = m_infos.begin();it != m_infos.end();++it)
+	for (auto& info : m_infos)
 	{
-		if (it->cluster == i)
+		if (info.cluster == i)
 		{
-			return *it;
+			return info;
 		}
 	}
 	return ::g_EmptyCluster;
@@ -377,14 +370,14 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 
 	if (mapname.length())
 	{
-		if (W_CheckNumForName(mapname.c_str()) != -1)
+		if (W_CheckNumForName(mapname) != -1)
 		{
-			G_DeferedInitNew(mapname.c_str());
+			G_DeferedInitNew(mapname);
 		}
         else
         {
-            Printf_Bold("map %s not found, loading start map instead", mapname.c_str());
-            G_DeferedInitNew(startmap);
+            PrintFmt_Bold("map {} not found, loading start map instead", mapname);
+			G_DeferedInitNew(startmap);
         }
 	}
 	else
@@ -401,7 +394,7 @@ const char *ParseString2(const char *data);
 // Takes a string of random wads and patches, which is sorted through and
 // trampolined to the implementation of G_LoadWad.
 //
-bool G_LoadWadString(const std::string& str, const std::string& mapname)
+bool G_LoadWadString(const std::string& str, const std::string& mapname, const std::string& lastmap)
 {
 	const std::vector<std::string>& wad_exts = M_FileTypeExts(OFILE_WAD);
 	const std::vector<std::string>& deh_exts = M_FileTypeExts(OFILE_DEH);
@@ -410,7 +403,7 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname)
 	OWantFiles newpatchfiles;
 
 	const char* data = str.c_str();
-	for (size_t argv = 0; (data = ParseString2(data)); argv++)
+	for (size_t i = 0; (data = ParseString2(data)); i++)
 	{
 		OWantFile file;
 		if (!OWantFile::make(file, ::com_token, OFILE_UNKNOWN))
@@ -422,7 +415,7 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname)
 
 		// Does this look like a DeHackEd patch?
 		bool is_deh =
-		    std::find(deh_exts.begin(), deh_exts.end(), file.getExt()) != deh_exts.end();
+		    std::find(deh_exts.begin(), deh_exts.end(), StdStringToUpper(file.getExt())) != deh_exts.end();
 		if (is_deh)
 		{
 			if (!OWantFile::make(file, ::com_token, OFILE_DEH))
@@ -439,7 +432,7 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname)
 
 		// Does this look like a WAD file?
 		bool is_wad =
-		    std::find(wad_exts.begin(), wad_exts.end(), file.getExt()) != wad_exts.end();
+		    std::find(wad_exts.begin(), wad_exts.end(), StdStringToUpper(file.getExt())) != wad_exts.end();
 		if (is_wad)
 		{
 			if (!OWantFile::make(file, ::com_token, OFILE_WAD))
@@ -459,6 +452,7 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname)
 		continue;
 	}
 
+	forcedlastmap = StdStringToUpper(lastmap);
 	return G_LoadWad(newwadfiles, newpatchfiles, mapname);
 }
 
@@ -467,7 +461,7 @@ BEGIN_COMMAND (map)
 {
 	if (argc > 1)
 	{
-		char mapname[32];
+		OLumpName mapname;
 
 		// [Dash|RD] -- We can make a safe assumption that the user might not specify
 		//              the whole lumpname for the level, and might opt for just the
@@ -480,9 +474,9 @@ BEGIN_COMMAND (map)
 			if ( argc == 2 )
 			{
 				if ((gameinfo.flags & GI_MAPxx))
-                    sprintf( mapname, "MAP%02i", atoi( argv[1] ) );
+                    mapname = fmt::format("MAP{:02d}", atoi( argv[1] ) );
                 else
-                    sprintf( mapname, "E%cM%c", argv[1][0], argv[1][1]);
+                    mapname = fmt::format("E{}M{}", argv[1][0], argv[1][1]);
 
 			}
 
@@ -507,35 +501,28 @@ BEGIN_COMMAND (map)
 			else
 			{
 				unnatural_level_progression = true;
-				uppercopy(mapname, argv[1]); // uppercase the mapname
+				mapname = argv[1];
 				G_DeferedInitNew(mapname);
 			}
 		}
 	}
 	else
 	{
-		Printf (PRINT_HIGH, "The current map is %s: \"%s\"\n", level.mapname.c_str(), level.level_name);
+		PrintFmt(PRINT_HIGH, "The current map is {}: \"{}\"\n", level.mapname, level.level_name);
 	}
 }
 END_COMMAND (map)
 
-char *CalcMapName(int episode, int level)
+OLumpName CalcMapName(int episode, int level)
 {
-	static char lumpname[9];
-
 	if (gameinfo.flags & GI_MAPxx)
 	{
-		sprintf (lumpname, "MAP%02d", level);
+		return fmt::format("MAP{:02d}", level);
 	}
 	else
 	{
-		lumpname[0] = 'E';
-		lumpname[1] = '0' + episode;
-		lumpname[2] = 'M';
-		lumpname[3] = '0' + level;
-		lumpname[4] = 0;
+		return fmt::format("E{}M{}", episode, level);
 	}
-	return lumpname;
 }
 
 void G_AirControlChanged()
@@ -572,15 +559,14 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad)
 
 		G_AirControlChanged();
 
-		for (int i = 0; i < NUM_MAPVARS; i++)
-			arc << level.vars[i];
+		for (const auto& var : level.vars)
+			arc << var;
 
 		if (!arc.IsReset())
 			arc << playernum;
 	}
 	else
 	{
-		unsigned int playernum;
 		arc >> level.flags
 			>> level.fadeto_color[0] >> level.fadeto_color[1] >> level.fadeto_color[2] >> level.fadeto_color[3]
 			>> level.found_secrets
@@ -591,11 +577,12 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad)
 
 		G_AirControlChanged();
 
-		for (int i = 0; i < NUM_MAPVARS; i++)
-			arc >> level.vars[i];
+		for (auto& var : level.vars)
+			arc >> var;
 
 		if (!arc.IsReset())
 		{
+			unsigned int playernum;
 			arc >> playernum;
 			players.resize(playernum);
 		}
@@ -732,7 +719,7 @@ void P_SerializeACSDefereds(FArchive &arc)
 				char name[9];
 				strncpy(name, mapname, ARRAY_LENGTH(name) - 1);
 				name[8] = 0;
-				I_Error("Unknown map '%s' in savegame", name);
+				I_Error("Unknown map '{}' in savegame", name);
 			}
 			arc >> info.defered;
 			arc >> mapname[0];
@@ -794,7 +781,7 @@ void G_InitLevelLocals()
 	::level.info = (level_info_t*)&info;
 	::level.skypic2 = info.skypic2;
 	memcpy(::level.fadeto_color, info.fadeto_color, 4);
-	
+
 	if (::level.fadeto_color[0] || ::level.fadeto_color[1] || ::level.fadeto_color[2] || ::level.fadeto_color[3])
 	{
 		NormalLight.maps = shaderef_t(&V_GetDefaultPalette()->maps, 0);
@@ -815,6 +802,7 @@ void G_InitLevelLocals()
 	{
 		::level.aircontrol = static_cast<fixed_t>(info.aircontrol * 65536.f);
 	}
+	::level.airsupply = info.airsupply;
 
 	::level.partime = info.partime;
 	::level.cluster = info.cluster;
@@ -823,7 +811,7 @@ void G_InitLevelLocals()
 	ArrayCopy(::level.level_fingerprint, info.level_fingerprint);
 
 	// Only copy the level name if there's a valid level name to be copied.
-	
+
 	if (!info.level_name.empty())
 	{
 		// Get rid of initial lump name or level number.
@@ -831,7 +819,7 @@ void G_InitLevelLocals()
 		if (info.mapname[0] == 'E' && info.mapname[2] == 'M')
 		{
 			std::string search;
-			StrFormat(search, "E%cM%c: ", info.mapname[1], info.mapname[3]);
+			search = fmt::sprintf("E%cM%c: ", info.mapname[1], info.mapname[3]);
 
 			const std::size_t pos = info.level_name.find(search);
 
@@ -843,8 +831,8 @@ void G_InitLevelLocals()
 		else if (strstr(info.mapname.c_str(), "MAP") == &info.mapname[0])
 		{
 			std::string search;
-			StrFormat(search, "%u: ", info.levelnum);
-			
+			search = fmt::sprintf("%u: ", info.levelnum);
+
 			const std::size_t pos = info.level_name.find(search);
 
 			if (pos != std::string::npos)
@@ -881,10 +869,12 @@ void G_InitLevelLocals()
 	::level.secretmap = info.secretmap;
 	::level.music = info.music;
 	::level.skypic = info.skypic;
-	if (!::level.skypic2[0])
+	if (::level.skypic2.empty())
 	{
-		::level.skypic2 =::level.skypic.c_str();
+		::level.skypic2 = ::level.skypic;
 	}
+	::level.sky1ScrollDelta = info.sky1ScrollDelta;
+	::level.sky2ScrollDelta = info.sky2ScrollDelta;
 
 	if (::level.flags & LEVEL_JUMP_YES)
 	{
@@ -911,16 +901,24 @@ void G_InitLevelLocals()
 	}
 
 	::level.exitpic = info.exitpic;
+	::level.exitscript = info.exitscript;
+	::level.exitanim = info.exitanim;
 	::level.enterpic = info.enterpic;
+	::level.enterscript = info.enterscript;
+	::level.enteranim = info.enteranim;
 	::level.endpic = info.endpic;
 
 	::level.intertext = info.intertext;
 	::level.intertextsecret = info.intertextsecret;
 	::level.interbackdrop = info.interbackdrop;
 	::level.intermusic = info.intermusic;
-	
+	::level.zintermusic = info.zintermusic;
+
 	::level.bossactions = info.bossactions;
-	
+	::level.label = info.label;
+	::level.clearlabel = info.clearlabel;
+	::level.author = info.author;
+
 	::level.detected_gametype = GM_COOP;
 
 	movingsectors.clear();
@@ -953,7 +951,7 @@ BEGIN_COMMAND(mapinfo)
 	LevelInfos& levels = getLevelInfos();
 	if (stricmp(argv[1], "size") == 0)
 	{
-		Printf(PRINT_HIGH, "%" PRIuSIZE " maps found\n", levels.size());
+		Printf(PRINT_HIGH, "%zu maps found\n", levels.size());
 		return;
 	}
 
@@ -987,7 +985,7 @@ BEGIN_COMMAND(mapinfo)
 	{
 		// Check ahead of time, otherwise we might crash.
 		int id = atoi(argv[2]);
-		if (id < 0 || id >= levels.size())
+		if (id < 0 || id >= static_cast<int>(levels.size()))
 		{
 			Printf(PRINT_HIGH, "Map index %d does not exist\n", id);
 			return;
@@ -1002,15 +1000,15 @@ BEGIN_COMMAND(mapinfo)
 
 	level_pwad_info_t& info = *infoptr;
 
-	Printf(PRINT_HIGH, "Map Name: %s\n", info.mapname.c_str());
-	Printf(PRINT_HIGH, "Level Number: %d\n", info.levelnum);
-	Printf(PRINT_HIGH, "Level Name: %s\n", info.level_name.c_str());
-	Printf(PRINT_HIGH, "Intermission Graphic: %s\n", info.pname.c_str());
-	Printf(PRINT_HIGH, "Next Map: %s\n", info.nextmap.c_str());
-	Printf(PRINT_HIGH, "Secret Map: %s\n", info.secretmap.c_str());
-	Printf(PRINT_HIGH, "Par Time: %d\n", info.partime);
-	Printf(PRINT_HIGH, "Sky: %s\n", info.skypic.c_str());
-	Printf(PRINT_HIGH, "Music: %s\n", info.music.c_str());
+	PrintFmt(PRINT_HIGH, "Map Name: {}\n", info.mapname);
+	PrintFmt(PRINT_HIGH, "Level Number: {}\n", info.levelnum);
+	PrintFmt(PRINT_HIGH, "Level Name: {}\n", info.level_name);
+	PrintFmt(PRINT_HIGH, "Intermission Graphic: {}\n", info.pname);
+	PrintFmt(PRINT_HIGH, "Next Map: {}\n", info.nextmap);
+	PrintFmt(PRINT_HIGH, "Secret Map: {}\n", info.secretmap);
+	PrintFmt(PRINT_HIGH, "Par Time: %d\n", info.partime);
+	PrintFmt(PRINT_HIGH, "Sky: {}\n", info.skypic);
+	PrintFmt(PRINT_HIGH, "Music: {}\n", info.music);
 
 	// Stringify the set level flags.
 	std::string flags;
@@ -1040,10 +1038,12 @@ BEGIN_COMMAND(mapinfo)
 	flags += (info.flags & LEVEL_CHANGEMAPCHEAT ? " CHANGEMAPCHEAT" : "");
 	flags += (info.flags & LEVEL_VISITED ? " VISITED" : "");
 	flags += (info.flags & LEVEL_COMPAT_DROPOFF ? "COMPAT_DROPOFF" : "");
+	flags += (info.flags & LEVEL_COMPAT_NOPASSOVER ? "COMPAT_NOPASSOVER" : "");
+	flags += (info.flags & LEVEL_COMPAT_LIMITPAIN ? "COMPAT_LIMITPAIN" : "");
 
 	if (flags.length() > 0)
 	{
-		Printf(PRINT_HIGH, "Flags:%s\n", flags.c_str());
+		Printf(PRINT_HIGH, "Flags:%s\n", flags);
 	}
 	else
 	{
@@ -1072,10 +1072,10 @@ BEGIN_COMMAND(clusterinfo)
 		return;
 	}
 
-	Printf(PRINT_HIGH, "Cluster: %d\n", info.cluster);
-	Printf(PRINT_HIGH, "Message Music: %s\n", info.messagemusic.c_str());
-	Printf(PRINT_HIGH, "Message Flat: %s\n", info.finaleflat.c_str());
-	if (info.exittext)
+	PrintFmt(PRINT_HIGH, "Cluster: {}\n", info.cluster);
+	PrintFmt(PRINT_HIGH, "Message Music: {}\n", info.messagemusic);
+	PrintFmt(PRINT_HIGH, "Message Flat: {}\n", info.finaleflat);
+	if (!info.exittext.empty())
 	{
 		Printf(PRINT_HIGH, "- = Exit Text = -\n%s\n- = = = -\n", info.exittext);
 	}
@@ -1083,7 +1083,7 @@ BEGIN_COMMAND(clusterinfo)
 	{
 		Printf(PRINT_HIGH, "Exit Text: None\n");
 	}
-	if (info.entertext)
+	if (!info.entertext.empty())
 	{
 		Printf(PRINT_HIGH, "- = Enter Text = -\n%s\n- = = = -\n", info.entertext);
 	}
@@ -1099,7 +1099,7 @@ BEGIN_COMMAND(clusterinfo)
 
 	if (flags.length() > 0)
 	{
-		Printf(PRINT_HIGH, "Flags:%s\n", flags.c_str());
+		Printf(PRINT_HIGH, "Flags:%s\n", flags);
 	}
 	else
 	{

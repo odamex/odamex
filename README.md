@@ -64,7 +64,7 @@ On Windows, all libraries are automatically downloaded if not found.  On \*nix/M
 
 Please check [this page][1] for further instructions on how to compile Odamex for your platform.
 
-[1]: https://odamex.net/wiki/How_to_build_from_source
+[1]: https://github.com/odamex/odamex/wiki/Compiling-Odamex
 
 Contributing to the project
 ---------------------------
@@ -75,9 +75,9 @@ Please report any oddity, physics inaccuracies, bugs or game-breaking glitches t
 
 Before submitting a pull request, please make sure it follows [our coding standards][3]!
 
-[3]: https://odamex.net/wiki/Coding_standard
+[3]: https://github.com/odamex/odamex/wiki/Coding-Standard
 
-**Note**: This project contains a demo testing utility that ensures vanilla compatibility by 
+**Note**: This project contains a demo testing utility that ensures vanilla compatibility by
 running a specific set of demos after each commit. When forking this project to prepare a pull request,
 this functionality will be unavailable by default to protect sensitive files.
 You can restore this functionality by:
@@ -100,7 +100,7 @@ External Links
 Please visit the following websites for more information about the development of the port and our community:
 
 * [**Odamex Website**](https://odamex.net)
-* [Wiki](https://odamex.net/wiki/Main_Page)
+* [Wiki](https://github.com/odamex/odamex/wiki)
 * [Forums](https://odamex.net/boards/)
 * [Discord](https://discord.gg/aMUzcZE)
 * [Twitter](https://twitter.com/odamex)

@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,7 +21,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include "odamex.h"
 
 #include <stdlib.h>
@@ -35,6 +34,7 @@
 #include "d_items.h"
 #include "g_skill.h"
 #include "p_local.h"
+#include "infomap.h"
 
 extern bool simulated_connection;
 EXTERN_CVAR(sv_allowcheats)
@@ -51,9 +51,6 @@ void C_DoCommand(const char* cmd, uint32_t key = 0);
 //
 // CHEAT SEQUENCE PACKAGE
 //
-
-static int				firsttime = 1;
-static unsigned char	cheat_xlate_table[256];
 
 #ifdef CLIENT_APP
 
@@ -74,7 +71,7 @@ bool CHEAT_AutoMap(cheatseq_t* cheat)
 
 bool CHEAT_ChangeLevel(cheatseq_t* cheat)
 {
-	char buf[16];
+	std::string buf;
 
 	// What were you trying to achieve?
 	if (multiplayer)
@@ -82,11 +79,12 @@ bool CHEAT_ChangeLevel(cheatseq_t* cheat)
 
 	// [ML] Chex mode: always set the episode number to 1.
 	// FIXME: This is probably a horrible hack, it sure looks like one at least
+	// And why is there only a newline for non-chex?
 	if (gamemode == retail_chex)
-		snprintf(buf, sizeof(buf), "map 1%c", cheat->Args[1]);
+		buf = fmt::format("map 1{}", cheat->Args[1]);
 	else
-		snprintf(buf, sizeof(buf), "map %c%c\n", cheat->Args[0], cheat->Args[1]);
-	
+		buf = fmt::format("map {}{}\n", cheat->Args[0], cheat->Args[1]);
+
 	AddCommandString(buf);
 	return true;
 }
@@ -186,6 +184,27 @@ BEGIN_COMMAND(tntem)
 }
 END_COMMAND(tntem)
 
+BEGIN_COMMAND(summon)
+{
+	if (!CHEAT_AreCheatsEnabled())
+		return;
+
+	if (argc < 2)
+		return;
+
+	const std::string mobname = C_ArgCombine(argc - 1, (const char**)(argv + 1));
+
+	if (!CHEAT_ValidSummonActor(mobname))
+	{
+		Printf(PRINT_HIGH, "Invalid summon argument: %s. Please use `dumpactors` for a valid list of actor names.\n", mobname);
+		return;
+	}
+
+	CHEAT_Summon(&consoleplayer(), mobname, false);
+	CL_SendSummonCheat(mobname.c_str());
+ }
+END_COMMAND(summon)
+
 BEGIN_COMMAND(mdk)
 {
 	if (!CHEAT_AreCheatsEnabled())
@@ -240,242 +259,299 @@ extern void A_PainDie(AActor*);
 
 void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 {
-	const char *msg = "";
-	char msgbuild[32];
+	std::string msg;
 
 	if (player->health <= 0 || !player)
 		return;
 
-	switch (cheat) {
-		case CHT_IDDQD:
+	switch (cheat)
+	{
+	case CHT_IDDQD:
 
-			if (player->spectator)
-			    return;
+		if (player->spectator)
+			return;
 
-			if (!(player->cheats & CF_GODMODE)) {
-				if (player->mo)
-					player->mo->health = deh.GodHealth;
-
-				player->health = deh.GodHealth;
-			}
-		case CHT_GOD:
-
-			if (player->spectator)
-			    return;
-
-			player->cheats ^= CF_GODMODE;
-		    msg = (player->cheats & CF_GODMODE) ? GStrings(STSTR_DQDON)
-		                                        : GStrings(STSTR_DQDOFF);
-			break;
-
-		case CHT_NOCLIP:
-			if (player->spectator)
-			    silentmsg = true;
-
-			player->cheats ^= CF_NOCLIP;
-		    msg = (player->cheats & CF_NOCLIP) ? GStrings(STSTR_NCON)
-		                                       : GStrings(STSTR_NCOFF);
-			break;
-
-		case CHT_FLY:
-			player->cheats ^= CF_FLY;
-		    msg = (player->cheats & CF_FLY) ? "You feel lighter"
-		                                    : "Gravity weighs you down";
-			break;
-
-		case CHT_NOTARGET:
-
-			if (player->spectator)
-			    return;
-
-			player->cheats ^= CF_NOTARGET;
-		    msg = (player->cheats & CF_NOTARGET) ? "notarget ON" 
-				                                 : "notarget OFF";
-			break;
-
-		case CHT_CHASECAM:
-
-			if (player->spectator)
-			    return;
-
-			player->cheats ^= CF_CHASECAM;
-			msg = (player->cheats & CF_CHASECAM) ? "chasecam ON" 
-				                                 : "chasecam OFF";
-			break;
-
-		case CHT_CHAINSAW:
-
-			if (player->spectator)
-			    return;
-
-			player->weaponowned[wp_chainsaw] = true;
-			player->powers[pw_invulnerability] = true;
-			msg = GStrings(STSTR_CHOPPERS);
-			break;
-
-		case CHT_IDKFA:
-
-			if (player->spectator)
-			    return;
-
-		    CHEAT_GiveTo(player, "all");
-			player->armorpoints = deh.KFAArmor;
-			player->armortype = deh.KFAAC;
-			msg = GStrings(STSTR_KFAADDED);
-			break;
-
-		case CHT_IDFA:
-
-			if (player->spectator)
-			    return;
-
-		    CHEAT_GiveTo(player, "backpack");
-		    CHEAT_GiveTo(player, "weapons");
-		    CHEAT_GiveTo(player, "ammo");
-			player->armorpoints = deh.FAArmor;
-			player->armortype = deh.FAAC;
-			msg = GStrings(STSTR_FAADDED);
-			break;
-
-		case CHT_BEHOLDV:
-		case CHT_BEHOLDS:
-		case CHT_BEHOLDI:
-		case CHT_BEHOLDR:
-		case CHT_BEHOLDA:
-		case CHT_BEHOLDL:
-			{
-				if (player->spectator)
-					return;
-
-				int i = cheat - CHT_BEHOLDV;
-
-				if (!player->powers[i])
-					P_GivePower (player, i);
-				else if (i!=pw_strength)
-					player->powers[i] = 1;
-				else
-					player->powers[i] = 0;
-			}
-			msg = GStrings(STSTR_BEHOLDX);
-
-			break;
-
-		case CHT_MASSACRE:
-			{
-				// jff 02/01/98 'em' cheat - kill all monsters
-				// partially taken from Chi's .46 port
-				//
-				// killough 2/7/98: cleaned up code and changed to use dprintf;
-				// fixed lost soul bug (LSs left behind when PEs are killed)
-
-				int killcount = 0;
-				AActor *actor;
-				TThinkerIterator<AActor> iterator;
-
-				if (multiplayer && !player->client.allow_rcon)
-			        return;
-
-				while ( (actor = iterator.Next ()) )
-				{
-					if (actor->flags & MF_COUNTKILL || actor->type == MT_SKULL)
-					{
-						// killough 3/6/98: kill even if PE is dead
-						if (actor->health > 0)
-						{
-							killcount++;
-							P_DamageMobj (actor, NULL, NULL, 10000, MOD_UNKNOWN);
-						}
-						if (actor->type == MT_PAIN)
-						{
-							A_PainDie (actor);    // killough 2/8/98
-							P_SetMobjState (actor, S_PAIN_DIE6);
-						}
-					}
-				}
-				// killough 3/22/98: make more intelligent about plural
-				// Ty 03/27/98 - string(s) *not* externalized
-				sprintf (msgbuild, "%d Monster%s Killed", killcount, killcount==1 ? "" : "s");
-				msg = msgbuild;
-			}
-			break;
-
-		case CHT_MDK: 
+		if (!(player->cheats & CF_GODMODE))
 		{
-			if (multiplayer && !player->client.allow_rcon)
-				return;
+			if (player->mo)
+				player->mo->health = deh.GodHealth;
 
-			if (player->spectator)
-			    return;
-
-			// Never enable that in PvP, are you crazy?
-			if (!G_IsCoopGame())
-			    return;
-
-			if (serverside)
-		    {
-			    P_LineAttack(
-			        player->mo, player->mo->angle, 8192 * FRACUNIT,
-			        P_AimLineAttack(player->mo, player->mo->angle, 8192 * FRACUNIT),
-			        10000);
-
-				if (multiplayer)
-					msg = "MDK";
-		    }
+			player->health = deh.GodHealth;
 		}
-	    break;
+		[[fallthrough]];
+	case CHT_GOD:
 
-		case CHT_BUDDHA: 
+		if (player->spectator)
+			return;
+
+		player->cheats ^= CF_GODMODE;
+		msg = (player->cheats & CF_GODMODE) ? GStrings(STSTR_DQDON)
+		                                    : GStrings(STSTR_DQDOFF);
+		break;
+
+	case CHT_NOCLIP:
+		if (player->spectator)
+			silentmsg = true;
+
+		player->cheats ^= CF_NOCLIP;
+		msg = (player->cheats & CF_NOCLIP) ? GStrings(STSTR_NCON) : GStrings(STSTR_NCOFF);
+		break;
+
+	case CHT_FLY:
+		player->cheats ^= CF_FLY;
+		msg = (player->cheats & CF_FLY) ? "You feel lighter" : "Gravity weighs you down";
+		break;
+
+	case CHT_NOTARGET:
+
+		if (player->spectator)
+			return;
+
+		player->cheats ^= CF_NOTARGET;
+		msg = (player->cheats & CF_NOTARGET) ? "notarget ON" : "notarget OFF";
+		break;
+
+	case CHT_CHASECAM:
+
+		if (player->spectator)
+			return;
+
+		player->cheats ^= CF_CHASECAM;
+		msg = (player->cheats & CF_CHASECAM) ? "chasecam ON" : "chasecam OFF";
+		break;
+
+	case CHT_CHAINSAW:
+
+		if (player->spectator)
+			return;
+
+		player->weaponowned[wp_chainsaw] = true;
+		player->powers[pw_invulnerability] = true;
+		msg = GStrings(STSTR_CHOPPERS);
+		break;
+
+	case CHT_IDKFA:
+
+		if (player->spectator)
+			return;
+
+		CHEAT_GiveTo(player, "all");
+		player->armorpoints = deh.KFAArmor;
+		player->armortype = deh.KFAAC;
+		msg = GStrings(STSTR_KFAADDED);
+		break;
+
+	case CHT_IDFA:
+
+		if (player->spectator)
+			return;
+
+		CHEAT_GiveTo(player, "backpack");
+		CHEAT_GiveTo(player, "weapons");
+		CHEAT_GiveTo(player, "ammo");
+		player->armorpoints = deh.FAArmor;
+		player->armortype = deh.FAAC;
+		msg = GStrings(STSTR_FAADDED);
+		break;
+
+	case CHT_BEHOLDV:
+	case CHT_BEHOLDS:
+	case CHT_BEHOLDI:
+	case CHT_BEHOLDR:
+	case CHT_BEHOLDA:
+	case CHT_BEHOLDL: {
+		if (player->spectator)
+			return;
+
+		int i = cheat - CHT_BEHOLDV;
+
+		if (!player->powers[i])
+			P_GivePower(player, i);
+		else if (i != pw_strength)
+			player->powers[i] = 1;
+		else
+			player->powers[i] = 0;
+	}
+		msg = GStrings(STSTR_BEHOLDX);
+
+		break;
+
+	case CHT_MASSACRE: {
+		// jff 02/01/98 'em' cheat - kill all monsters
+		// partially taken from Chi's .46 port
+		//
+		// killough 2/7/98: cleaned up code and changed to use dprintf;
+		// fixed lost soul bug (LSs left behind when PEs are killed)
+
+		int killcount = 0;
+		AActor* actor;
+		TThinkerIterator<AActor> iterator;
+
+		if (multiplayer && !player->client.allow_rcon)
+			return;
+
+		while ((actor = iterator.Next()))
 		{
-		        player->cheats ^= CF_BUDDHA;
-		        msg = (player->cheats & CF_BUDDHA) ? GStrings(TXT_BUDDHAON)
-		                                           : GStrings(TXT_BUDDHAOFF);
-	    }
+			if (actor->flags & MF_COUNTKILL || actor->type == MT_SKULL)
+			{
+				// killough 3/6/98: kill even if PE is dead
+				if (actor->health > 0)
+				{
+					killcount++;
+					P_DamageMobj(actor, NULL, NULL, 10000, MOD_UNKNOWN);
+				}
+				if (actor->type == MT_PAIN)
+				{
+					A_PainDie(actor); // killough 2/8/98
+					P_SetMobjState(actor, S_PAIN_DIE6);
+				}
+			}
+		}
+		// killough 3/22/98: make more intelligent about plural
+		// Ty 03/27/98 - string(s) *not* externalized
+		msg = fmt::format("{} Monster{} Killed", killcount, killcount == 1 ? "" : "s");
+	}
+	break;
+
+	case CHT_MDK: {
+		if (multiplayer && !player->client.allow_rcon)
+			return;
+
+		if (player->spectator)
+			return;
+
+		// Never enable that in PvP, are you crazy?
+		if (!G_IsCoopGame())
+			return;
+
+		if (serverside)
+		{
+			P_LineAttack(player->mo, player->mo->angle, 8192 * FRACUNIT,
+			             P_AimLineAttack(player->mo, player->mo->angle, 8192 * FRACUNIT),
+			             10000);
+
+			if (multiplayer)
+				msg = "MDK";
+		}
+	}
+	break;
+	case CHT_BUDDHA: {
+		player->cheats ^= CF_BUDDHA;
+		msg = (player->cheats & CF_BUDDHA) ? GStrings(TXT_BUDDHAON)
+		                                   : GStrings(TXT_BUDDHAOFF);
+	}
+	break;
 	}
 
 	if (!silentmsg)
 	{
 		if (player == &consoleplayer())
 		{
-			if (msg != "")
-				Printf("%s\n", msg);
+			PrintFmt("{}\n", msg);
 		}
-				
-			
+
 #ifdef SERVER_APP
-			SV_BroadcastPrintfButPlayer(PRINT_HIGH, player->id, "%s is a cheater: %s\n",
-			                            player->userinfo.netname.c_str(), msg);
-			#endif
+		SV_BroadcastPrintFmtButPlayer(PRINT_HIGH, player->id, "{} is a cheater: {}\n",
+		                            player->userinfo.netname, msg);
+#endif
 	}
+}
+
+bool CHEAT_ValidSummonActor(const std::string& summon) {
+	std::string mobname = "";
+
+	mobjtype_t mobjtype = P_INameToMobj(summon);
+
+	if (mobjtype == MT_NULL)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+AActor* CHEAT_Summon(player_s* player, const std::string& sum, bool friendly)
+{
+	AActor* entity = AActor::AActorPtr();
+	AActor* source = player->mo;
+
+	if (player->spectator || source == NULL)
+		return entity;
+
+	if (serverside)
+	{
+		// First, find whatever the heck we summoned.
+		mobjtype_t mobjtype = P_INameToMobj(sum);
+
+		if (mobjtype == MT_NULL)
+		{
+			PrintFmt(PRINT_HIGH, "{} tried to cheat but can't even summon right\n",
+				       player->userinfo.netname);
+				return entity;
+		}
+
+		fixed_t x = source->x + FixedMul(mobjinfo[mobjtype].radius * 2 + source->radius,
+		                                 finecosine[source->angle >> ANGLETOFINESHIFT]);
+		fixed_t y = source->y + FixedMul(mobjinfo[mobjtype].radius * 2 + source->radius,
+		                                 finesine[source->angle >> ANGLETOFINESHIFT]);
+		fixed_t z = source->z + 8 * FRACUNIT;
+
+		if (mobjinfo[mobjtype].flags & MF_MISSILE)
+		{
+			entity = P_SpawnPlayerMissile(source, mobjtype);
+		}
+		else
+		{
+			entity = new AActor(x, y, z, mobjtype);
+
+			entity->angle = source->angle;
+		}
+	}
+
+	if (multiplayer)
+		PrintFmt(PRINT_HIGH, "{} is a cheater: summon {}\n",
+		         player->userinfo.netname,
+		 sum);
+
+	return entity;
 }
 
 void CHEAT_GiveTo(player_t* player, const char* name)
 {
-	BOOL giveall;
+	bool giveall;
 	int i;
-	gitem_t *it;
+	gitem_t* it;
 
 	if (player != &consoleplayer())
-		Printf (PRINT_HIGH, "%s is a cheater: give %s\n", player->userinfo.netname.c_str(), name);
+		Printf(PRINT_HIGH, "%s is a cheater: give %s\n", player->userinfo.netname,
+		       name);
 
-	if (stricmp (name, "all") == 0)
+	if (stricmp(name, "all") == 0)
 		giveall = true;
 	else
 		giveall = false;
 
-	if (giveall || strnicmp (name, "health", 6) == 0) {
+	if (giveall || strnicmp(name, "health", 6) == 0)
+	{
 		int h;
 
-		if (0 < (h = atoi (name + 6))) {
-			if (player->mo) {
+		if (0 < (h = atoi(name + 6)))
+		{
+			if (player->mo)
+			{
 				player->mo->health += h;
-	  			player->health = player->mo->health;
-			} else {
+				player->health = player->mo->health;
+			}
+			else
+			{
 				player->health += h;
 			}
-		} else {
+		}
+		else
+		{
 			if (player->mo)
 				player->mo->health = deh.GodHealth;
-	  
+
 			player->health = deh.GodHealth;
 		}
 
@@ -483,38 +559,43 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 			return;
 	}
 
-	if (giveall || stricmp (name, "backpack") == 0) {
-		if (!player->backpack) {
-			for (i=0 ; i<NUMAMMO ; i++)
-			player->maxammo[i] *= 2;
+	if (giveall || stricmp(name, "backpack") == 0)
+	{
+		if (!player->backpack)
+		{
+			for (i = 0; i < NUMAMMO; i++)
+				player->maxammo[i] *= 2;
 			player->backpack = true;
 		}
-		for (i=0 ; i<NUMAMMO ; i++)
-			P_GiveAmmo (player, (ammotype_t)i, 1);
+		for (i = 0; i < NUMAMMO; i++)
+			P_GiveAmmo(player, (ammotype_t)i, 1);
 
 		if (!giveall)
 			return;
 	}
 
-	if (giveall || stricmp (name, "weapons") == 0) {
+	if (giveall || stricmp(name, "weapons") == 0)
+	{
 		weapontype_t pendweap = player->pendingweapon;
-		for (i = 0; i<NUMWEAPONS; i++)
-			P_GiveWeapon (player, (weapontype_t)i, false);
+		for (i = 0; i < NUMWEAPONS; i++)
+			P_GiveWeapon(player, (weapontype_t)i, false);
 		player->pendingweapon = pendweap;
 
 		if (!giveall)
 			return;
 	}
 
-	if (giveall || stricmp (name, "ammo") == 0) {
-		for (i=0;i<NUMAMMO;i++)
+	if (giveall || stricmp(name, "ammo") == 0)
+	{
+		for (i = 0; i < NUMAMMO; i++)
 			player->ammo[i] = player->maxammo[i];
 
 		if (!giveall)
 			return;
 	}
 
-	if (giveall || stricmp (name, "armor") == 0) {
+	if (giveall || stricmp(name, "armor") == 0)
+	{
 		player->armorpoints = 200;
 		player->armortype = 2;
 
@@ -522,8 +603,9 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 			return;
 	}
 
-	if (giveall || stricmp (name, "keys") == 0) {
-		for (i=0;i<NUMCARDS;i++)
+	if (giveall || stricmp(name, "keys") == 0)
+	{
+		for (i = 0; i < NUMCARDS; i++)
 			player->cards[i] = true;
 
 		if (!giveall)
@@ -533,33 +615,44 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 	if (giveall)
 		return;
 
-	it = FindItem (name);
-	if (!it) {
-		it = FindItemByClassname (name);
-		if (!it) {
+	it = FindItem(name);
+	if (!it)
+	{
+		it = FindItemByClassname(name);
+		if (!it)
+		{
 			if (player == &consoleplayer())
-				Printf (PRINT_HIGH, "Unknown item\n");
+				Printf(PRINT_HIGH, "Unknown item\n");
 			return;
 		}
 	}
 
-	if (it->flags & IT_AMMO) {
+	if (it->flags & IT_AMMO)
+	{
 		int howmuch;
 
-	/*	if (argc == 3)
-			howmuch = atoi (argv[2]);
-		else */
-			howmuch = it->quantity;
+		/*	if (argc == 3)
+		        howmuch = atoi (argv[2]);
+		    else */
+		howmuch = it->quantity;
 
-		P_GiveAmmo (player, (ammotype_t)it->offset, howmuch);
-	} else if (it->flags & IT_WEAPON) {
-		P_GiveWeapon (player, (weapontype_t)it->offset, 0);
-	} else if (it->flags & IT_KEY) {
-		P_GiveCard (player, (card_t)it->offset);
-	} else if (it->flags & IT_POWERUP) {
-		P_GivePower (player, it->offset);
-	} else if (it->flags & IT_ARMOR) {
-		P_GiveArmor (player, it->offset);
+		P_GiveAmmo(player, (ammotype_t)it->offset, howmuch);
+	}
+	else if (it->flags & IT_WEAPON)
+	{
+		P_GiveWeapon(player, (weapontype_t)it->offset, 0);
+	}
+	else if (it->flags & IT_KEY)
+	{
+		P_GiveCard(player, (card_t)it->offset);
+	}
+	else if (it->flags & IT_POWERUP)
+	{
+		P_GivePower(player, it->offset);
+	}
+	else if (it->flags & IT_ARMOR)
+	{
+		P_GiveArmor(player, it->offset);
 	}
 }
 
@@ -574,4 +667,4 @@ void CHEAT_Suicide(player_t* plyr)
 }
 #endif
 
-VERSION_CONTROL (m_cheat_cpp, "$Id$")
+VERSION_CONTROL(m_cheat_cpp, "$Id$")

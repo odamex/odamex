@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 // Copyright (C) 2012 by Alex Mayfield.
 //
 // This program is free software; you can redistribute it and/or
@@ -59,7 +59,7 @@ IPRange::IPRange()
 }
 
 // Check a given address against the ip + range in the object.
-bool IPRange::check(const netadr_t &address)
+bool IPRange::check(const netadr_t &address) const
 {
 	for (byte i = 0; i < 4; i++)
 	{
@@ -73,7 +73,7 @@ bool IPRange::check(const netadr_t &address)
 }
 
 // Check a given string address against the ip + range in the object.
-bool IPRange::check(const std::string &address)
+bool IPRange::check(const std::string &address) const
 {
 	StringTokens tokens = TokenizeString(address, ".");
 
@@ -156,7 +156,7 @@ bool IPRange::set(const std::string &input)
 }
 
 // Return the range as a string, with stars representing masked octets.
-std::string IPRange::string()
+std::string IPRange::string() const
 {
 	std::ostringstream buffer;
 
@@ -276,23 +276,21 @@ bool Banlist::add_exception(player_t &player)
 bool Banlist::check(const netadr_t &address, Ban &baninfo)
 {
 	// Check against exception list.
-	for (std::vector<Exception>::iterator it = this->exceptionlist.begin();
-	        it != this->exceptionlist.end(); ++it)
+	for (const auto& exception : this->exceptionlist)
 	{
-		if (it->range.check(address))
+		if (exception.range.check(address))
 		{
 			return false;
 		}
 	}
 
 	// Check against banlist.
-	for (std::vector<Ban>::iterator it = this->banlist.begin();
-	        it != this->banlist.end(); ++it)
+	for (const auto& ban : this->banlist)
 	{
-		if (it->range.check(address) && (it->expire == 0 ||
-		                                 it->expire > time(NULL)))
+		if (ban.range.check(address) && (ban.expire == 0 ||
+		                                 ban.expire > time(NULL)))
 		{
-			baninfo = *it;
+			baninfo = ban;
 			return true;
 		}
 	}
@@ -301,7 +299,7 @@ bool Banlist::check(const netadr_t &address, Ban &baninfo)
 }
 
 // Return a complete list of bans.
-bool Banlist::query(banlist_results_t &result)
+bool Banlist::query(banlist_results_t &results)
 {
 	// No banlist?  Return an error state.
 	if (this->banlist.empty())
@@ -309,10 +307,10 @@ bool Banlist::query(banlist_results_t &result)
 		return false;
 	}
 
-	result.reserve(this->banlist.size());
+	results.reserve(this->banlist.size());
 	for (size_t i = 0; i < banlist.size(); i++)
 	{
-		result.push_back(banlist_result_t(i, &(this->banlist[i])));
+		results.emplace_back(i, &(this->banlist[i]));
 	}
 
 	return true;
@@ -320,7 +318,7 @@ bool Banlist::query(banlist_results_t &result)
 
 // Run a query on the banlist and return a list of all matching bans.  Matches
 // against IP address/range and partial name.
-bool Banlist::query(const std::string &query, banlist_results_t &result)
+bool Banlist::query(const std::string &query, banlist_results_t &results)
 {
 	// No banlist?  Return an error state.
 	if (this->banlist.empty())
@@ -331,7 +329,7 @@ bool Banlist::query(const std::string &query, banlist_results_t &result)
 	// No query?  Return everything.
 	if (query.empty())
 	{
-		return this->query(result);
+		return this->query(results);
 	}
 
 	std::string pattern = "*" + (query) + "*";
@@ -342,14 +340,14 @@ bool Banlist::query(const std::string &query, banlist_results_t &result)
 		                             this->banlist[i].name.c_str());
 		if (f_ip || f_name)
 		{
-			result.push_back(banlist_result_t(i, &(this->banlist[i])));
+			results.emplace_back(i, &(this->banlist[i]));
 		}
 	}
 	return true;
 }
 
 // Return a complete list of exceptions.
-bool Banlist::query_exception(exceptionlist_results_t &result)
+bool Banlist::query_exception(exceptionlist_results_t &results)
 {
 	// No banlist?  Return an error state.
 	if (this->exceptionlist.empty())
@@ -357,10 +355,10 @@ bool Banlist::query_exception(exceptionlist_results_t &result)
 		return false;
 	}
 
-	result.reserve(this->exceptionlist.size());
+	results.reserve(this->exceptionlist.size());
 	for (size_t i = 0; i < exceptionlist.size(); i++)
 	{
-		result.push_back(exceptionlist_result_t(i, &(this->exceptionlist[i])));
+		results.emplace_back(i, &(this->exceptionlist[i]));
 	}
 
 	return true;
@@ -369,7 +367,7 @@ bool Banlist::query_exception(exceptionlist_results_t &result)
 // Run a query on the exceptionlist and return a list of all matching
 // exceptions.  Matches against IP address/range and partial name.
 bool Banlist::query_exception(const std::string &query,
-                              exceptionlist_results_t &result)
+                              exceptionlist_results_t &results)
 {
 	// No exceptionlist?  Return an error state.
 	if (this->exceptionlist.empty())
@@ -380,7 +378,7 @@ bool Banlist::query_exception(const std::string &query,
 	// No query?  Return everything.
 	if (query.empty())
 	{
-		return this->query_exception(result);
+		return this->query_exception(results);
 	}
 
 	std::string pattern = "*" + (query) + "*";
@@ -391,7 +389,7 @@ bool Banlist::query_exception(const std::string &query,
 		                             this->exceptionlist[i].name.c_str());
 		if (f_ip || f_name)
 		{
-			result.push_back(exceptionlist_result_t(i, &(this->exceptionlist[i])));
+			results.emplace_back(i, &(this->exceptionlist[i]));
 		}
 	}
 	return true;
@@ -453,25 +451,25 @@ bool Banlist::json(Json::Value &json_bans)
 	std::string expire;
 	tm* tmp;
 
-	for (size_t i = 0; i < banlist.size(); i++)
+	for (const auto& ban : this->banlist)
 	{
 		Json::Value json_ban(Json::objectValue);
-		json_ban["range"] = this->banlist[i].range.string();
+		json_ban["range"] = ban.range.string();
 		// Expire time is optional.
-		if (this->banlist[i].expire != 0)
+		if (ban.expire != 0)
 		{
-			tmp = gmtime(&this->banlist[i].expire);
+			tmp = gmtime(&ban.expire);
 			if (StrFormatISOTime(expire, tmp))
 			{
 				json_ban["expire"] = expire;
 			}
 		}
 		// Name is optional.
-		if (!this->banlist[i].name.empty())
-			json_ban["name"] = this->banlist[i].name;
+		if (!ban.name.empty())
+			json_ban["name"] = ban.name;
 		// Reason is optional.
-		if (!this->banlist[i].reason.empty())
-			json_ban["reason"] = this->banlist[i].reason;
+		if (!ban.reason.empty())
+			json_ban["reason"] = ban.reason;
 		json_bans.append(json_ban);
 	}
 
@@ -481,7 +479,7 @@ bool Banlist::json(Json::Value &json_bans)
 // Replace the current banlist with the contents of a JSON array.
 bool Banlist::json_replace(const Json::Value &json_bans)
 {
-	tm tmp = {0};
+	tm tmp;
 
 	// Must be an array or null root node
 	if (!(json_bans.isArray() || json_bans.isNull()))
@@ -493,21 +491,20 @@ bool Banlist::json_replace(const Json::Value &json_bans)
 	if (json_bans.isNull() || json_bans.empty())
 		return true;
 
-	Json::ValueConstIterator it;
-	for (it = json_bans.begin(); it != json_bans.end(); ++it)
+	for (const auto& json_ban : json_bans)
 	{
 		Ban ban;
 		Json::Value value;
 
 		// Range
-		value = (*it).get("range", Json::Value::null);
+		value = json_ban.get("range", Json::Value::null);
 		if (value.isNull())
 			continue;
 		else
-			ban.range.set((*it).get("range", false).asString());
+			ban.range.set(json_ban.get("range", false).asString());
 
 		// Expire time
-		value = (*it).get("expire", Json::Value::null);
+		value = json_ban.get("expire", Json::Value::null);
 		if (!value.isNull())
 		{
 			if (StrParseISOTime(value.asString(), &tmp))
@@ -515,12 +512,12 @@ bool Banlist::json_replace(const Json::Value &json_bans)
 		}
 
 		// Name
-		value = (*it).get("name", Json::Value::null);
+		value = json_ban.get("name", Json::Value::null);
 		if (!value.isNull())
 			ban.name = value.asString();
 
 		// Reason
-		value = (*it).get("reason", Json::Value::null);
+		value = json_ban.get("reason", Json::Value::null);
 		if (!value.isNull())
 			ban.reason = value.asString();
 
@@ -556,7 +553,7 @@ BEGIN_COMMAND(ban)
 	player_t &player = idplayer(pid);
 	if (!validplayer(player))
 	{
-		Printf(PRINT_HIGH, "ban: %d is not a valid player id.\n", pid);
+		Printf(PRINT_HIGH, "ban: %lu is not a valid player id.\n", pid);
 		return;
 	}
 
@@ -688,7 +685,7 @@ BEGIN_COMMAND(except)
 	player_t &player = idplayer(pid);
 	if (!validplayer(player))
 	{
-		Printf(PRINT_HIGH, "except: %d is not a valid player id.\n", pid);
+		Printf(PRINT_HIGH, "except: %lu is not a valid player id.\n", pid);
 		return;
 	}
 
@@ -793,14 +790,14 @@ BEGIN_COMMAND(banlist)
 {
 	std::vector<std::string> arguments = VectorArgs(argc, argv);
 
-	banlist_results_t result;
-	if (!banlist.query(JoinStrings(arguments, " "), result))
+	banlist_results_t results;
+	if (!banlist.query(JoinStrings(arguments, " "), results))
 	{
 		Printf(PRINT_HIGH, "banlist: banlist is empty.\n");
 		return;
 	}
 
-	if (result.empty())
+	if (results.empty())
 	{
 		Printf(PRINT_HIGH, "banlist: no results found.\n");
 		return;
@@ -809,19 +806,18 @@ BEGIN_COMMAND(banlist)
 	char expire[20];
 	tm* tmp;
 
-	for (banlist_results_t::iterator it = result.begin();
-	        it != result.end(); ++it)
+	for (const auto& [num, ban] : results)
 	{
 		std::ostringstream buffer;
-		buffer << it->first + 1 << ". " << it->second->range.string();
+		buffer << num + 1 << ". " << ban->range.string();
 
-		if (it->second->expire == 0)
+		if (ban->expire == 0)
 		{
 			strncpy(expire, "Permanent", 19);
 		}
 		else
 		{
-			tmp = localtime(&(it->second->expire));
+			tmp = localtime(&(ban->expire));
 			if (!strftime(expire, 20, "%Y-%m-%d %H:%M:%S", tmp))
 			{
 				strncpy(expire, "???", 19);
@@ -829,27 +825,27 @@ BEGIN_COMMAND(banlist)
 		}
 		buffer << " " << expire;
 
-		bool has_name = !it->second->name.empty();
-		bool has_reason = !it->second->reason.empty();
+		bool has_name = !ban->name.empty();
+		bool has_reason = !ban->reason.empty();
 		if (has_name || has_reason)
 		{
 			buffer << " (";
 			if (!has_name)
 			{
-				buffer << "\"" << it->second->reason << "\"";
+				buffer << "\"" << ban->reason << "\"";
 			}
 			else if (!has_reason)
 			{
-				buffer << it->second->name;
+				buffer << ban->name;
 			}
 			else
 			{
-				buffer << it->second->name << ": \"" << it->second->reason << "\"";
+				buffer << ban->name << ": \"" << ban->reason << "\"";
 			}
 			buffer << ")";
 		}
 
-		Printf(PRINT_HIGH, "%s", buffer.str().c_str());
+		Printf(PRINT_HIGH, "%s", buffer.str());
 	}
 }
 END_COMMAND(banlist)
@@ -880,7 +876,7 @@ BEGIN_COMMAND(savebanlist)
 
 	Json::Value json_bans(Json::arrayValue);
 	if (banlist.json(json_bans) && M_WriteJSON(banfile.c_str(), json_bans, true))
-		Printf(PRINT_HIGH, "savebanlist: banlist saved to %s.\n", banfile.c_str());
+		Printf(PRINT_HIGH, "savebanlist: banlist saved to %s.\n", banfile);
 	else
 		Printf(PRINT_HIGH, "savebanlist: could not save banlist.\n");
 }
@@ -895,7 +891,7 @@ BEGIN_COMMAND(loadbanlist)
 		banfile = sv_banfile.cstring();
 
 	Json::Value json_bans;
-	if (!M_ReadJSON(json_bans, banfile.c_str()))
+	if (!M_ReadJSON(json_bans, banfile))
 	{
 		Printf(PRINT_HIGH, "loadbanlist: could not load banlist.\n");
 		return;
@@ -910,9 +906,9 @@ BEGIN_COMMAND(loadbanlist)
 	size_t jsonsize = json_bans.size();
 
 	if (bansize == jsonsize)
-		Printf(PRINT_HIGH, "loadbanlist: loaded %d bans from %s.\n", bansize, banfile.c_str());
+		Printf(PRINT_HIGH, "loadbanlist: loaded %lu bans from %s.\n", bansize, banfile);
 	else
-		Printf(PRINT_HIGH, "loadbanlist: loaded %d bans and skipped %d invalid entries from %s.", bansize, jsonsize - bansize, banfile.c_str());
+		Printf(PRINT_HIGH, "loadbanlist: loaded %lu bans and skipped %lu invalid entries from %s.", bansize, jsonsize - bansize, banfile);
 }
 END_COMMAND(loadbanlist)
 
@@ -920,31 +916,30 @@ BEGIN_COMMAND(exceptionlist)
 {
 	std::vector<std::string> arguments = VectorArgs(argc, argv);
 
-	exceptionlist_results_t result;
-	if (!banlist.query_exception(JoinStrings(arguments, " "), result))
+	exceptionlist_results_t results;
+	if (!banlist.query_exception(JoinStrings(arguments, " "), results))
 	{
 		Printf(PRINT_HIGH, "exceptionlist: exceptionlist is empty.\n");
 		return;
 	}
 
-	if (result.empty())
+	if (results.empty())
 	{
 		Printf(PRINT_HIGH, "exceptionlist: no results found.\n");
 		return;
 	}
 
-	for (exceptionlist_results_t::iterator it = result.begin();
-	        it != result.end(); ++it)
+	for (const auto& [num, exception] : results)
 	{
 		std::ostringstream buffer;
-		buffer << it->first + 1 << ". " << it->second->range.string();
+		buffer << num + 1 << ". " << exception->range.string();
 
-		if (!it->second->name.empty())
+		if (!exception->name.empty())
 		{
-			buffer << " (" << it->second->name << ")";
+			buffer << " (" << exception->name << ")";
 		}
 
-		Printf(PRINT_HIGH, "%s", buffer.str().c_str());
+		Printf(PRINT_HIGH, "%s", buffer.str());
 	}
 }
 END_COMMAND(exceptionlist)
@@ -993,9 +988,9 @@ void SV_InitBanlist()
 	size_t jsonsize = json_bans.size();
 
 	if (bansize == jsonsize)
-		Printf(PRINT_HIGH, "SV_InitBanlist: Loaded %d bans from %s.\n", bansize, banfile);
+		Printf(PRINT_HIGH, "SV_InitBanlist: Loaded %lu bans from %s.\n", bansize, banfile);
 	else
-		Printf(PRINT_HIGH, "SV_InitBanlist: Loaded %d bans and skipped %d invalid entries from %s.", bansize, jsonsize - bansize, banfile);
+		Printf(PRINT_HIGH, "SV_InitBanlist: Loaded %lu bans and skipped %lu invalid entries from %s.", bansize, jsonsize - bansize, banfile);
 }
 
 // Check to see if a client is on the banlist, and kick them out of the server
@@ -1059,7 +1054,7 @@ bool SV_BanCheck(client_t* cl)
 	Printf(PRINT_HIGH, "%s is banned, dropping client.\n", NET_AdrToString(cl->address));
 
 	// Send the message to the client.
-	SV_ClientPrintf(cl, PRINT_HIGH, "%s", buffer.str().c_str());
+	SV_ClientPrintFmt(cl, PRINT_HIGH, "{}", buffer.str());
 
 	return true;
 }
@@ -1080,7 +1075,7 @@ void SV_BanlistTics()
 		return;
 
 	const dtime_t current_time = I_GetTime();
-	static dtime_t last_reload_time = current_time; 
+	static dtime_t last_reload_time = current_time;
 
 	if (current_time - last_reload_time >= min_delta_time)
 	{

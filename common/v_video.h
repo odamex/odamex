@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This source is available for distribution and/or modification
 // only under the terms of the DOOM Source Code License as
@@ -91,7 +91,7 @@ public:
 	void Dim (int x, int y, int width, int height) const;
 
 	// Fill an area with a 64x64 flat texture
-	void FlatFill (int left, int top, int right, int bottom, const byte *src) const;
+	void FlatFill (int left, int top, int right, int bottom, unsigned int flatlength, const byte *src) const;
 
 	// Set an area to a specified color
 	void Clear(int left, int top, int right, int bottom, argb_t color) const;
@@ -104,7 +104,7 @@ public:
 
 	// Text drawing functions
 	// Output a line of text using the console font
-	void PrintStr(int x, int y, const char *s, int default_color = -1, bool use_color_codes = true) const;
+	void PrintStr(int x, int y, const char *s, int default_color = -1, bool use_color_codes = true, int scale = 1) const;
 
 	// Output some text with wad heads-up font
 	inline void DrawText (int normalcolor, int x, int y, const byte *string) const;
@@ -124,6 +124,7 @@ public:
 	inline void DrawTextStretchedLuc (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const;
 
 	// Patch drawing functions
+	void DrawPatchIndirectFlipped (const patch_t *patch, int x, int y) const;
 	void DrawPatchFlipped (const patch_t *patch, int x, int y) const;
 
 	inline void DrawPatch (const patch_t *patch, int x, int y) const;
@@ -133,7 +134,7 @@ public:
 	inline void DrawPatchClean (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const;
 
-	void DrawPatchFullScreen(const patch_t* patch) const;
+	void DrawPatchFullScreen(const patch_t* patch, bool clear) const;
 
 	inline void DrawLucentPatch (const patch_t *patch, int x, int y) const;
 	inline void DrawLucentPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;

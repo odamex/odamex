@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -85,19 +85,13 @@ void daemon_init();
 
 void D_DoomLoop (void);
 
-extern gameinfo_t SharewareGameInfo;
-extern gameinfo_t RegisteredGameInfo;
-extern gameinfo_t RetailGameInfo;
-extern gameinfo_t CommercialGameInfo;
-extern gameinfo_t RetailBFGGameInfo;
-extern gameinfo_t CommercialBFGGameInfo;
+extern bool gameisdead;
 
-extern BOOL gameisdead;
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
-BOOL devparm;				// started game with -devparm
-char startmap[8];
+bool devparm;				// started game with -devparm
+OLumpName startmap;
 event_t events[MAXEVENTS];
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 
@@ -116,7 +110,7 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf ("ERROR: %s\n", error.GetMsg().c_str());
+			Printf ("ERROR: %s\n", error.GetMsg());
 			Printf ("sleeping for 10 seconds before map reload...");
 
 			// denis - drop clients
@@ -199,7 +193,7 @@ void STACK_ARGS D_Shutdown()
 
 	// stop sound effects and music
 	S_Stop();
-	
+
 	DThinker::DestroyAllThinkers();
 
 	D_UndoDehPatch();
@@ -214,7 +208,7 @@ void STACK_ARGS D_Shutdown()
 
 	// [AM] Level is now invalid due to torching zone memory.
 	g_ValidLevel = false;
-	
+
 	// [AM] All of our dyncolormaps are freed, tidy up so we
 	//      don't follow wild pointers.
 	NormalLight.next = NULL;
@@ -251,7 +245,7 @@ void D_DoomMain()
 	// Always log by default
 	if (!LOG.is_open())
 		C_DoCommand("logfile");
-	
+
 	OWantFiles newwadfiles, newpatchfiles;
 
 	const char* iwad_filename_cstr = Args.CheckValue("-iwad");
@@ -297,7 +291,7 @@ void D_DoomMain()
 	devparm = Args.CheckParm("-devparm");
 
 	if (devparm)
-		DPrintf ("%s", GStrings(D_DEVSTR));		// D_DEVSTR
+		DPrintFmt("{}", GStrings(D_DEVSTR));		// D_DEVSTR
 
 	// Nomonsters
 	if (Args.CheckParm("-nomonsters"))
@@ -312,7 +306,7 @@ void D_DoomMain()
 		sv_fastmonsters = 1;
 
 	// get skill / episode / map from parms
-	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+	startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
 
 	const char* val = Args.CheckValue("-skill");
 	if (val)
@@ -366,17 +360,17 @@ void D_DoomMain()
 			map = Args.GetArg(p+2)[0]-'0';
 		}
 
-		strncpy(startmap, CalcMapName(ep, map), 8);
+		startmap = CalcMapName(ep, map);
 	}
 
 	// [RH] Hack to handle +map
 	p = Args.CheckParm("+map");
 	if (p && p < Args.NumArgs() - 1)
 	{
-		strncpy(startmap, Args.GetArg(p + 1), 8);
+		startmap = Args.GetArg(p + 1);
 		((char*)Args.GetArg(p))[0] = '-';
 	}
-	
+
 	level.mapname = startmap;
 
 	G_ChangeMap();

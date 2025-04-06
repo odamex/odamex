@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -74,7 +74,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 
 	byte playerstate = player.playerstate; //save playerstate to check enter/respawn script execution later...
 
-	if (player.playerstate == PST_REBORN || player.playerstate == PST_ENTER)
+	if (player.playerstate == PST_REBORN || player.playerstate == PST_ENTER || player.doreborn)
 		G_PlayerReborn(player);
 
 	AActor* mobj;
@@ -154,7 +154,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		}
 
 		team_t team = player.userinfo.team;
-		
+
 		// Log the spawn
 		if (!player.spectator)
 		{

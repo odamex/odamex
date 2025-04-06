@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,25 +21,24 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include "odamex.h"
-
 
 #ifndef ODAMEX_NO_GITVER
 #include "git_describe.h"
 #endif
 
-#include <map>
+#include <unordered_map>
 #include <sstream>
 #include <memory>
+#include <sstream>
 
-#include "cmdlib.h"
 #include "c_dispatch.h"
+#include "cmdlib.h"
 
 /**
  * @brief Compare two "packed" versions of Odamex to see if they are expected
  *        to be protocol-compatible.
- * 
+ *
  * @param server Packed version of the server.
  * @param client Packed version of the client.
  * @return 0 if they are compatible, -1 if the server is on the older verison
@@ -96,15 +95,15 @@ int VersionCompat(const int server, const int client)
 
 /**
  * @brief Generate a version mismatch message.
- * 
+ *
  * @param server Packed version of the server.
  * @param client Packed version of the client.
  * @param email E-mail address of server host.
  * @return String message, or blank string if compatible.
-*/
+ */
 std::string VersionMessage(const int server, const int client, const char* email)
 {
-	std::string rvo, buf;
+	std::string rvo;
 
 	int cmp = VersionCompat(server, client);
 	if (!cmp)
@@ -115,32 +114,27 @@ std::string VersionMessage(const int server, const int client, const char* email
 	int cl_maj, cl_min, cl_pat;
 	BREAKVER(client, cl_maj, cl_min, cl_pat);
 
-	StrFormat(
-	    buf,
+	rvo += fmt::sprintf(
 	    "Your version of Odamex %d.%d.%d does not match the server version %d.%d.%d.\n",
 	    cl_maj, cl_min, cl_pat, sv_maj, sv_min, sv_pat);
-	rvo += buf;
 
 	if (cmp > 0)
 	{
-		StrFormat(buf,
+		rvo += fmt::sprintf(
 		          "Please visit https://odamex.net/ to obtain Odamex %d.%d.%d or "
 		          "newer.\nIf you do not see this version available for download, "
 		          "you are likely attempting to connect to a server running a "
 		          "development version of Odamex.\n",
 		          sv_maj, sv_min, sv_pat);
-		rvo += buf;
 	}
 	else
 	{
-		StrFormat(buf, "Please allow the server admin some time to upgrade.");
-		rvo += buf;
+		rvo += fmt::sprintf("Please allow the server admin some time to upgrade.");
 
 		if (email != NULL)
 		{
-			StrFormat(buf, "  If the problem persists, you can contact them at %s.\n",
+			rvo += fmt::sprintf("  If the problem persists, you can contact them at %s.\n",
 			          email);
-			rvo += buf;
 		}
 		else
 		{
@@ -151,14 +145,13 @@ std::string VersionMessage(const int server, const int client, const char* email
 	return rvo;
 }
 
-typedef std::map<std::string, std::string> source_files_t;
+using source_files_t = std::unordered_map<std::string, std::string>;
 
-source_files_t &get_source_files()
+source_files_t& get_source_files()
 {
-	static std::auto_ptr<source_files_t> source_files(new source_files_t);
+	static auto source_files = std::make_unique<source_files_t>();
 	return *source_files.get();
 }
-
 
 file_version::file_version(const char *uid, const char *id, const char *pp, int l, const char *t, const char *d)
 {
@@ -168,7 +161,8 @@ file_version::file_version(const char *uid, const char *id, const char *pp, int 
 	size_t e = p.find_last_of("/\\");
 	std::string file = p.substr(e == std::string::npos ? 0 : e + 1);
 
-	ss << id << " " << l << " " << t << " " << d << " " << p.substr(e == std::string::npos ? 0 : e + 1);
+	ss << id << " " << l << " " << t << " " << d << " "
+	   << p.substr(e == std::string::npos ? 0 : e + 1);
 
 	get_source_files()[file] = ss.str();
 }
@@ -211,7 +205,7 @@ const char* GitBranch()
 
 /**
  * @brief Return the number of commits since the first commit.
- * 
+ *
  * @detail Two branches that are the same distance from the first commit
  *         can have the same number.
  */
@@ -272,13 +266,13 @@ const char* NiceVersionDetails()
 	}
 	else if (!strncmp(GitBranch(), "release", ARRAY_LENGTH(RELEASE_PREFIX) - 1))
 	{
-		// "Release" branch is omitted.
-		StrFormat(version, "g%s-%s%s", GitShortHash(), GitRevCount(), debug);
+		// "Release" branch shows total revisions as a build number
+		version = fmt::sprintf("-prerelease.%s%s", GitRevCount(), debug);
 	}
 	else
 	{
 		// Other branches are written in.
-		StrFormat(version, "%s, g%s-%s%s", GitBranch(), GitShortHash(), GitRevCount(),
+		version = fmt::sprintf("%s, g%s-%s%s", GitBranch(), GitShortHash(), GitRevCount(),
 		          debug);
 	}
 
@@ -293,6 +287,7 @@ const char* NiceVersion()
 {
 	static std::string version;
 	static bool tried = false;
+	const char RELEASE_PREFIX[] = "release";
 
 	if (tried)
 	{
@@ -309,39 +304,50 @@ const char* NiceVersion()
 	}
 	else
 	{
-		// Put details in parens.
-		StrFormat(version, "%s (%s)", DOTVERSIONSTR, details);
+		// Release candidates show everything together
+		if (!strncmp(GitBranch(), "release", ARRAY_LENGTH(RELEASE_PREFIX) - 1))
+		{
+			version = fmt::sprintf("%s%s", DOTVERSIONSTR, details);
+		}
+		else
+		{
+			// Put details in parens.
+			version = fmt::sprintf("%s (%s)", DOTVERSIONSTR, details);
+		}
 	}
 
 	return version.c_str();
 }
 
-BEGIN_COMMAND (version)
+BEGIN_COMMAND(version)
 {
 	if (argc == 1)
 	{
 		// distribution
-		Printf(PRINT_HIGH, "Odamex v%s - %s\n", NiceVersion(), COPYRIGHTSTR);
+		PrintFmt("Odamex v{} - {}\n", NiceVersion(), COPYRIGHTSTR);
 	}
 	else
 	{
 		// specific file version
-		source_files_t::const_iterator it = get_source_files().find(argv[1]);
-
+		const auto it = get_source_files().find(argv[1]);
 		if (it == get_source_files().end())
-			Printf(PRINT_WARNING, "no such file: %s", argv[1]);
+		{
+			PrintFmt(PRINT_WARNING, "no such file: {}", argv[1]);
+		}
 		else
-			Printf(PRINT_HIGH, "%s", it->second.c_str());
+		{
+			PrintFmt("{}", it->second);
+		}
 	}
 }
-END_COMMAND (version)
+END_COMMAND(version)
 
-BEGIN_COMMAND (listsourcefiles)
+BEGIN_COMMAND(listsourcefiles)
 {
-	for (source_files_t::const_iterator it = get_source_files().begin(); it != get_source_files().end(); ++it)
-		Printf(PRINT_HIGH, "%s\n", it->first.c_str());
-		
-	Printf(PRINT_HIGH, "End of list\n");
+	for (const auto& file : get_source_files())
+	{
+		PrintFmt(PRINT_HIGH, "{} {}\n", file.first, file.second);
+	}
 }
 END_COMMAND(listsourcefiles)
 

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,10 +37,10 @@
 
 #include "w_ident.h"
 
-static const uint32_t IDENT_NONE = 0;
-static const uint32_t IDENT_COMMERCIAL = BIT(0);
-static const uint32_t IDENT_IWAD = BIT(1);
-static const uint32_t IDENT_DEPRECATED = BIT(2);
+//static constexpr uint32_t IDENT_NONE = 0; // unused
+static constexpr uint32_t IDENT_COMMERCIAL = BIT(0);
+static constexpr uint32_t IDENT_IWAD = BIT(1);
+static constexpr uint32_t IDENT_DEPRECATED = BIT(2);
 
 struct identData_t
 {
@@ -62,8 +62,12 @@ struct identData_t
 #define FREEDOOM1_PREFIX "Freedoom: Phase 1"
 #define FREEDOOM2_PREFIX "Freedoom: Phase 2"
 #define FREEDM_PREFIX "FreeDM"
+#define NERVE_PREFIX "No Rest for the Living"
+#define MASTERLV_PREFIX "Master Levels"
 
-static const identData_t identdata[] = {
+#define PWAD_NO_WEIGHT 0
+
+static constexpr identData_t identdata[] = {
     // ------------------------------------------------------------------------
     // DOOM2.WAD
     // ------------------------------------------------------------------------
@@ -75,6 +79,26 @@ static const identData_t identdata[] = {
         DOOM2_PREFIX " v1.9",               // groupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
         100,                                // weight
+    },
+    {
+        // version from October 3, 2024
+        DOOM2_PREFIX " (DOOM + DOOM II)",   // idName
+        "DOOM2.WAD",                        // filename
+        "151B8A96",                         // crc32Sum
+        "64A4C88A871DA67492AAA2020A068CD8", // md5Sum
+        DOOM2_PREFIX " v1.9",               // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        140,                                // weight
+    },
+    {
+        // version on release
+        DOOM2_PREFIX " (DOOM + DOOM II)",   // idName
+        "DOOM2.WAD",                        // filename
+        "09B8A6AE",                         // crc32Sum
+        "9AA3CBF65B961D0BDAC98EC403B832E1", // md5Sum
+        DOOM2_PREFIX " v1.9",               // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        140,                                // weight
     },
     {
         DOOM2_PREFIX " Classic Unity v1.3", // idName
@@ -180,6 +204,26 @@ static const identData_t identdata[] = {
         300,                                // weight
     },
     {
+        // version from October 3, 2024
+        PLUTONIA_PREFIX " (DOOM + DOOM II)", // mIdName
+        "PLUTONIA.WAD",                      // mFilename
+        "E82FBFD2",                          // mCRC32Sum
+        "E47CF6D82A0CCEDF8C1C16A284BB5937",  // mMd5Sum
+        PLUTONIA_PREFIX " v1.9",             // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,       // flags
+        320,                                 // weight
+    },
+    {
+        // version on release
+        PLUTONIA_PREFIX " (DOOM + DOOM II)", // mIdName
+        "PLUTONIA.WAD",                      // mFilename
+        "650B998D",                          // mCRC32Sum
+        "24037397056E919961005E08611623F4",  // mMd5Sum
+        PLUTONIA_PREFIX " v1.9",             // groupName
+        IDENT_COMMERCIAL | IDENT_IWAD,       // flags
+        320,                                 // weight
+    },
+    {
         PLUTONIA_PREFIX " v1.9 Anthology",  // mIdName
         "PLUTONIA.WAD",                     // mFilename
         "15CD1448",                         // mCRC32Sum
@@ -199,7 +243,27 @@ static const identData_t identdata[] = {
         "4E158D9953C79CCF97BD0663244CC6B6", // mMd5Sum
         TNT_PREFIX " v1.9",                 // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
-        300,                                // weight
+        350,                                // weight
+    },
+    {
+        // version from October 3, 2024
+        TNT_PREFIX " (DOOM + DOOM II)",     // mIdName
+        "TNT.WAD",                          // mFilename
+        "6D7A8EEC",                         // mCRC32Sum
+        "AD7885C17A6B9B79B09D7A7634DD7E2C", // mMd5Sum
+        TNT_PREFIX " v1.9",                 // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        370,                                // weight
+    },
+    {
+        // version on release
+        TNT_PREFIX " (DOOM + DOOM II)",     // mIdName
+        "TNT.WAD",                          // mFilename
+        "15F18DDB",                         // mCRC32Sum
+        "8974E3117ED4A1839C752D5E11AB1B7B", // mMd5Sum
+        TNT_PREFIX " v1.9",                 // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        370,                                // weight
     },
     {
         TNT_PREFIX " v1.9 Anthology",       // mIdName
@@ -208,7 +272,7 @@ static const identData_t identdata[] = {
         "1D39E405BF6EE3DF69A8D2646C8D5C49", // mMd5Sum
         TNT_PREFIX " v1.9",                 // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
-        325,                                // weight
+        375,                                // weight
     },
 
     // ------------------------------------------------------------------------
@@ -222,6 +286,26 @@ static const identData_t identdata[] = {
         UDOOM_PREFIX " v1.9",               // mGroupName
         IDENT_COMMERCIAL | IDENT_IWAD,      // flags
         200,                                // weight
+    },
+    {
+        // version from October 3, 2024
+        UDOOM_PREFIX " (DOOM + DOOM II)",   // mIdName
+        "DOOM.WAD",                         // mFilename
+        "D5F8C089",                         // mCRC32Sum
+        "3B37188F6337F15718B617C16E6E7A9C", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        240,                                // weight
+    },
+    {
+        // version on release
+        UDOOM_PREFIX " (DOOM + DOOM II)",   // mIdName
+        "DOOM.WAD",                         // mFilename
+        "CFF03D9F",                         // mCRC32Sum
+        "4461D4511386518E784C647E3128E7BC", // mMd5Sum
+        UDOOM_PREFIX " v1.9",               // mGroupName
+        IDENT_COMMERCIAL | IDENT_IWAD,      // flags
+        240,                                // weight
     },
     {
         UDOOM_PREFIX " Classic Unity v1.3", // mIdName
@@ -406,6 +490,197 @@ static const identData_t identdata[] = {
         DOOMSW_PREFIX " v0.99",             // mGroupName
         IDENT_IWAD | IDENT_DEPRECATED,      // flags
         1400,                               // weight
+    },
+
+    // ------------------------------------------------------------------------
+    // NERVE.WAD
+    // ------------------------------------------------------------------------
+    {
+        NERVE_PREFIX " BFG Edition",        // mIdName
+        "NERVE.WAD",                        // mFilename
+        "ad7f9292",                         // mCRC32Sum
+        "967d5ae23daf45196212ae1b605da3b0", // mMd5Sum
+        NERVE_PREFIX,                       // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+    {
+        NERVE_PREFIX " (DOOM + DOOM II)",   // mIdName
+        "NERVE.WAD",                        // mFilename
+        "07d9faab",                         // mCRC32Sum
+        "23422eb42833ac7b0dd59c0c7ae18a6f", // mMd5Sum
+        NERVE_PREFIX,                       // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+
+    // ------------------------------------------------------------------------
+    // MASTERLEVELS.WAD
+    // ------------------------------------------------------------------------
+    {
+        MASTERLV_PREFIX " (PSN)",           // mIdName
+        "MASTERLEVELS.WAD",                 // mFilename
+        "6baec89f",                         // mCRC32Sum
+        "84cb8640f599c4a17c8eb526f90d2b7a", // mMd5Sum
+        MASTERLV_PREFIX " (PSN)",           // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+    {
+        // version from October 3, 2024
+        MASTERLV_PREFIX " (DOOM + DOOM II)",// mIdName
+        "MASTERLEVELS.WAD",                 // mFilename
+        "D7053E8A",                         // mCRC32Sum
+        "AB3CE78E085E50A61F6DFF46AABBFAEB", // mMd5Sum
+        MASTERLV_PREFIX " (DOOM + DOOM II)",// mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+    {
+        // version on release
+        MASTERLV_PREFIX " (DOOM + DOOM II)",// mIdName
+        "MASTERLEVELS.WAD",                 // mFilename
+        "07312a30",                         // mCRC32Sum
+        "2d0e4fde4c83d90476f3f439bb5f3eea", // mMd5Sum
+        MASTERLV_PREFIX " (DOOM + DOOM II)",// mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+
+    // ------------------------------------------------------------------------
+    // ID1.WAD
+    // ------------------------------------------------------------------------
+    {
+        "Legacy of Rust v1.3",              // mIdName
+        "ID1.WAD",                          // mFilename
+        "666CB0E0",                         // mCRC32Sum
+        "713C5A3C1734B1D55B2813A3DD0136D9", // mMd5Sum
+        "Legacy of Rust",                   // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+    {
+        "Legacy of Rust v1.2",              // mIdName
+        "ID1.WAD",                          // mFilename
+        "3A495080",                         // mCRC32Sum
+        "95F21547BE5E0BFF38D412017440F656", // mMd5Sum
+        "Legacy of Rust",                   // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+    {
+        "Legacy of Rust v1.1",              // mIdName
+        "ID1.WAD",                          // mFilename
+        "e2e73e06",                         // mCRC32Sum
+        "681bcea18c1286e8b9986c335034bdd1", // mMd5Sum
+        "Legacy of Rust",                   // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+
+    // ------------------------------------------------------------------------
+    // IDDM1.WAD
+    // ------------------------------------------------------------------------
+    {
+        "ID Deathmatch Pack #1 v1.3",       // mIdName
+        "IDDM1.WAD",                        // mFilename
+        "585C7750",                         // mCRC32Sum
+        "CB92010B8EC05F8924AC966A8ED95B74", // mMd5Sum
+        "ID Deathmatch Pack #1",            // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+    {
+        "ID Deathmatch Pack #1 v1.1",       // mIdName
+        "IDDM1.WAD",                        // mFilename
+        "11fe5048",                         // mCRC32Sum
+        "5670fd8fe8eb6910ec28f9e27969d84f", // mMd5Sum
+        "ID Deathmatch Pack #1",            // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+
+    // ------------------------------------------------------------------------
+    // ID1-RES.WAD
+    // ------------------------------------------------------------------------
+    {
+        "id1-res v1.2",                     // mIdName
+        "ID1-RES.WAD",                      // mFilename
+        "5B7DEA04",                         // mCRC32Sum
+        "F8FBAB472230BFA090D6A9234D65FAE6", // mMd5Sum
+        "id1-res",                          // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+    {
+        "id1-res v1.1",                     // mIdName
+        "ID1-RES.WAD",                      // mFilename
+        "0b9a1202",                         // mCRC32Sum
+        "b6b2370ae8733aaf1377b0ef12351572", // mMd5Sum
+        "id1-res",                          // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+
+    // ------------------------------------------------------------------------
+    // ID1-WEAP.WAD
+    // ------------------------------------------------------------------------
+    {
+        "id1-weap v1.2",                    // mIdName
+        "ID1-WEAP.WAD",                     // mFilename
+        "EC52FDB9",                         // mCRC32Sum
+        "85D25C8C3D06A05A1283AE4AFE749C9F", // mMd5Sum
+        "id1-weap",                         // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+    {
+        "id1-weap v1.1",                    // mIdName
+        "ID1-WEAP.WAD",                     // mFilename
+        "ec81d166",                         // mCRC32Sum
+        "b3247939c60f6a819c625036b52a5f53", // mMd5Sum
+        "id1-weap",                         // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+
+    // ------------------------------------------------------------------------
+    // ID1-TEX.WAD
+    // ------------------------------------------------------------------------
+    {
+        "id1-tex v1.0",                     // mIdName
+        "ID1-TEX.WAD",                      // mFilename
+        "128930F7",                         // mCRC32Sum
+        "187BFE543F8328B379E46957976E800D", // mMd5Sum
+        "id1-tex",                          // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+
+    // ------------------------------------------------------------------------
+    // ID1-MUS.WAD
+    // ------------------------------------------------------------------------
+    {
+        "id1-mus v1.0",                     // mIdName
+        "ID1-MUS.WAD",                      // mFilename
+        "815C9CA8",                         // mCRC32Sum
+        "436C83DD83A47F8DD251BA15108E9459", // mMd5Sum
+        "id1-mus",                          // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
+    },
+
+    // ------------------------------------------------------------------------
+    // ID24RES.WAD
+    // ------------------------------------------------------------------------
+    {
+        "id24res",                          // mIdName
+        "ID24RES.WAD",                      // mFilename
+        "6875903f",                         // mCRC32Sum
+        "4f0651accebc007b853943ac12aa95b8", // mMd5Sum
+        "id24res",                          // mGroupName
+        IDENT_COMMERCIAL,                   // flags
+        PWAD_NO_WEIGHT                      // weight
     },
 
     // ------------------------------------------------------------------------
@@ -862,17 +1137,20 @@ public:
 
 		if (!crc32Hash.empty())
 		{
-			mCRC32SumLookup.insert(std::make_pair(file->mCRC32Sum, id));
+			mCRC32SumLookup.emplace(file->mCRC32Sum, id);
 		}
 
 		if (!md5Hash.empty())
 		{
-			mMd5SumLookup.insert(std::make_pair(file->mMd5Sum, id));
+			mMd5SumLookup.emplace(file->mMd5Sum, id);
 		}
 
-		// add the filename to the IWAD search list if it's not already in there
-		if (std::find(mIWADSearchOrder.begin(), mIWADSearchOrder.end(), file->mFilename) == mIWADSearchOrder.end())
-			mIWADSearchOrder.push_back(file->mFilename);
+        if (iwad)
+        {
+		    // add the filename to the IWAD search list if it's not already in there
+		    if (std::find(mIWADSearchOrder.begin(), mIWADSearchOrder.end(), file->mFilename) == mIWADSearchOrder.end())
+		    	mIWADSearchOrder.push_back(file->mFilename);
+        }
 	}
 
 	std::vector<OString> getFilenames() const
@@ -883,9 +1161,9 @@ public:
 	bool isCommercialFilename(const std::string& filename) const
 	{
 		OString upper = StdStringToUpper(filename);
-		for (IdentifierTable::const_iterator it = mIdentifiers.begin(); it != mIdentifiers.end(); ++it)
+		for (const auto& id : mIdentifiers)
 		{
-			if (it->mIsCommercial && it->mFilename == upper)
+			if (id.mIsCommercial && id.mFilename == upper)
 				return true;
 		}
 		return false;
@@ -894,10 +1172,9 @@ public:
 	bool isKnownIWADFilename(const std::string& filename) const
 	{
 		OString upper = StdStringToUpper(filename);
-		for (IdentifierTable::const_iterator it = mIdentifiers.begin();
-		     it != mIdentifiers.end(); ++it)
+		for (const auto& id : mIdentifiers)
 		{
-			if (it->mIsIWAD && it->mFilename == upper)
+			if (id.mIsIWAD && id.mFilename == upper)
 				return true;
 		}
 		return false;
@@ -930,8 +1207,8 @@ public:
 
 		// [SL] not an offical IWAD.
 		// Check for lumps that are required by vanilla Doom.
-		static const int NUM_CHECKLUMPS = 6;
-		static const char checklumps[NUM_CHECKLUMPS][8] = {
+		static constexpr int NUM_CHECKLUMPS = 6;
+		static constexpr char checklumps[NUM_CHECKLUMPS][8] = {
 		    {'P', 'L', 'A', 'Y', 'P', 'A', 'L'},      // 0
 		    {'C', 'O', 'L', 'O', 'R', 'M', 'A', 'P'}, // 1
 		    {'F', '_', 'S', 'T', 'A', 'R', 'T'},      // 2
@@ -958,7 +1235,7 @@ public:
 		return file1->mGroupName == file2->mGroupName;
 	}
 
-	const OString identify(const OResFile& file)
+	const OString identify(const OResFile& file) const
 	{
 		const fileIdentifier_t* fileid = lookupByMd5Sum(file.getMD5());
 
@@ -968,8 +1245,8 @@ public:
 		// Not a registered file.
 		// Try to identify if it's compatible with known IWADs.
 
-		static const int NUM_CHECKLUMPS = 12;
-		static const char checklumps[NUM_CHECKLUMPS][8] = {
+		static constexpr int NUM_CHECKLUMPS = 12;
+		static constexpr char checklumps[NUM_CHECKLUMPS][8] = {
 			{ 'E','1','M','1' },					// 0
 			{ 'E','2','M','1' },					// 1
 			{ 'E','4','M','1' },					// 2
@@ -990,7 +1267,7 @@ public:
 		for (int i = 0; i < NUM_CHECKLUMPS; i++)
 			if (lumps.exists(std::string(checklumps[i], 8)))
 				lumpsfound[i] = true;
-				
+
 		// [ML] Check for HACX 1.2
 		if (lumpsfound[11])
 		{
@@ -1056,11 +1333,9 @@ public:
 
 	void dump() const
 	{
-		for (IdentifierTable::const_iterator it = mIdentifiers.begin();
-		     it != mIdentifiers.end(); ++it)
+		for (const auto& id : mIdentifiers)
 		{
-			Printf(PRINT_HIGH, "%s %s %s\n", it->mGroupName.c_str(),
-			       it->mFilename.c_str(), it->mMd5Sum.getHexCStr());
+			PrintFmt(PRINT_HIGH, "{} {} {}\n", id.mGroupName, id.mFilename, id.mMd5Sum.getHexStr());
 		}
 	}
 
@@ -1146,111 +1421,138 @@ const fileIdentifier_t* W_GameInfo(const OMD5Hash& md5)
 //
 void W_ConfigureGameInfo(const OResFile& iwad)
 {
-	extern gameinfo_t SharewareGameInfo;
-	extern gameinfo_t RegisteredGameInfo;
-	extern gameinfo_t RetailGameInfo;
-	extern gameinfo_t CommercialGameInfo;
-	extern gameinfo_t RetailBFGGameInfo;
-	extern gameinfo_t CommercialBFGGameInfo;
-
 	const OString idname = identtab.identify(iwad);
+
+    gameinfo = gameinfo_t();
 
 	if (idname.find("REKKR") == 0)
     {
 		gamemode = retail;
-		gameinfo = RetailGameInfo;
 		gamemission = doom;
+		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
+		gameinfo.maxSwitch = 2;
+		gameinfo.titleString = "REKKR";
 	}
 	else if (idname.find("HACX") == 0)
 	{
-		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = commercial_hacx;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
+		gameinfo.maxSwitch = 3;
+		gameinfo.titleString = "HACX";
 	}
 	else if (idname.find(OStringToUpper(OString(PLUTONIA_PREFIX))) == 0)
 	{
-		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = pack_plut;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
+		gameinfo.maxSwitch = 3;
+		gameinfo.titleString = "DOOM 2: Plutonia Experiment";
 	}
 	else if (idname.find(OStringToUpper(OString(TNT_PREFIX))) == 0)
 	{
-		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = pack_tnt;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
+		gameinfo.maxSwitch = 3;
+		gameinfo.titleString = "DOOM 2: TNT - Evilution";
 	}
 	else if (idname.find("CHEX QUEST") == 0)
 	{
 		gamemission = chex;
 		gamemode = retail_chex;
-		gameinfo = RetailGameInfo;
+		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
+		gameinfo.maxSwitch = 2;
+		gameinfo.titleString = "Chex Quest";
 	}
 	else if (idname.find(OStringToUpper(OString(FREEDOOM1_PREFIX))) == 0)
 	{
 		gamemode = retail;
-		gameinfo = RetailGameInfo;
 		gamemission = retail_freedoom;
+		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
+		gameinfo.maxSwitch = 2;
+		gameinfo.titleString = "FreeDoom: Phase 1";
 	}
 	else if (idname.find("FREEDOOM") == 0)
 	{
 		gamemode = commercial;
-		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
+		gameinfo.maxSwitch = 3;
+		gameinfo.titleString = "FreeDoom: Phase 2";
 	}
 	else if (idname.find(OStringToUpper(OString(FREEDOOM2_PREFIX))) == 0)
 	{
 		gamemode = commercial;
-		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
+		gameinfo.maxSwitch = 3;
+		gameinfo.titleString = "FreeDoom: Phase 2";
 	}
 
 	else if (idname.find(OStringToUpper(OString(FREEDM_PREFIX))) == 0)
 	{
 		gamemode = commercial;
-		gameinfo = CommercialGameInfo;
 		gamemission = commercial_freedoom;
-	}	
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
+		gameinfo.maxSwitch = 3;
+		gameinfo.titleString = "FreeDM";
+	}
 	else if (idname.find(OStringToUpper(OString(DOOMSW_PREFIX))) == 0)
 	{
 		gamemode = shareware;
-		gameinfo = SharewareGameInfo;
 		gamemission = doom;
+		gameinfo.flags = GI_SHAREWARE | GI_NOCRAZYDEATH;
+		gameinfo.maxSwitch = 1;
+		gameinfo.titleString = "DOOM Shareware";
 	}
 	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX " BFG"))) == 0)
 	{
 		gamemode = retail_bfg;
-		gameinfo = RetailBFGGameInfo;
 		gamemission = doom;
+		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
+		gameinfo.maxSwitch = 2;
+		gameinfo.titleString = "The Ultimate DOOM (BFG Edition)";
 	}
 	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX))) == 0)
 	{
 		gamemode = retail;
-		gameinfo = RetailGameInfo;
 		gamemission = doom;
+		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
+		gameinfo.maxSwitch = 2;
+		gameinfo.titleString = "The Ultimate DOOM";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX " BFG"))) == 0)
 	{
-		gameinfo = CommercialBFGGameInfo;
 		gamemode = commercial_bfg;
 		gamemission = doom2;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
+		gameinfo.maxSwitch = 3;
+		gameinfo.titleString = "DOOM 2: Hell on Earth (BFG Edition)";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX))) == 0)
 	{
-		gameinfo = CommercialGameInfo;
 		gamemode = commercial;
 		gamemission = doom2;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
+		gameinfo.maxSwitch = 3;
+		gameinfo.titleString = "DOOM 2: Hell on Earth";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM_PREFIX))) == 0)
 	{
 		gamemode = registered;
-		gameinfo = RegisteredGameInfo;
 		gamemission = doom;
+		gameinfo.flags = GI_NOCRAZYDEATH;
+		gameinfo.maxSwitch = 2;
+		gameinfo.titleString = "DOOM Registered";
 	}
 	else
 	{
 		gamemode = undetermined;
-		gameinfo = SharewareGameInfo;
 		gamemission = doom;
+		gameinfo.flags = GI_SHAREWARE | GI_NOCRAZYDEATH;
+		gameinfo.maxSwitch = 1;
+		gameinfo.titleString = "Unknown IWAD";
 	}
 }
 
@@ -1284,33 +1586,33 @@ bool W_IsIWAD(const OResFile& file)
 
 
 //
-// W_IsFilenameCommercialIWAD
+// W_IsFilenameCommercialWAD
 //
-// Checks to see whether a given filename is an IWAD flagged as "commercial"
+// Checks to see whether a given filename is an WAD flagged as "commercial"
 //
-bool W_IsFilenameCommercialIWAD(const std::string& filename)
+bool W_IsFilenameCommercialWAD(const std::string& filename)
 {
 	return identtab.isCommercialFilename(filename);
 }
 
 
 //
-// W_IsFilenameCommercialIWAD
+// W_IsFilehashCommercialWAD
 //
-// Checks to see whether a given hash belongs to an IWAD flagged as "commercial"
+// Checks to see whether a given hash belongs to an WAD flagged as "commercial"
 //
-bool W_IsFilehashCommercialIWAD(const OMD5Hash& fileHash)
+bool W_IsFilehashCommercialWAD(const OMD5Hash& fileHash)
 {
 	return identtab.isCommercial(fileHash);
 }
 
 
 //
-// W_IsFileCommercialIWAD
+// W_IsFileCommercialWAD
 //
-// Checks to see whether a given file on disk is an IWAD flagged as "commercial"
+// Checks to see whether a given file on disk is an WAD flagged as "commercial"
 //
-bool W_IsFileCommercialIWAD(const std::string& filename)
+bool W_IsFileCommercialWAD(const std::string& filename)
 {
 	const OMD5Hash md5sum = W_MD5(filename);
 	return identtab.isCommercial(md5sum);

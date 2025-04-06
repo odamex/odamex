@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,15 +26,15 @@
 
 class MouseGraph {
 public:
-	static const char TYPE_OFF = 0;
-	static const char TYPE_LINE = 1;
-	static const char TYPE_PLOT = 2;
+	static constexpr char TYPE_OFF = 0;
+	static constexpr char TYPE_LINE = 1;
+	static constexpr char TYPE_PLOT = 2;
 
 	MouseGraph();
 	void append(int x, int y);
 	void draw(int type = 0);
 private:
-	static const int MAX_HISTORY_TICS = 64;
+	static constexpr int MAX_HISTORY_TICS = 64;
 
 	int index;
 	int mousex[MouseGraph::MAX_HISTORY_TICS];

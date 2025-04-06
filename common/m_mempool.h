@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@
 //	the intial memory pool is exhausted, additional pools are allocated. These
 //	are consolodated into one large pool the next time clear() is called.
 //
-//    
+//
 //-----------------------------------------------------------------------------
 
 
@@ -72,7 +72,7 @@ public:
 private:
 	void resize(size_t new_max_count)
 	{
-		uint32_t new_size = new_max_count * sizeof(T);
+		size_t new_size = new_max_count * sizeof(T);
 
 		if (new_size == 0)
 			return;
@@ -103,7 +103,7 @@ private:
 	void free_data()
 	{
 		for (size_t i = 0; i < num_blocks; i++)
-			delete [] data_block[i];	
+			delete [] data_block[i];
 
 		delete [] block_size;
 		delete [] data_block;

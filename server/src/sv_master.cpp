@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -46,7 +46,7 @@ public:
 	masterserver()
 	{
 	}
-	
+
 	masterserver(const masterserver &other)
 		: masterip(other.masterip), masteraddr(other.masteraddr)
 	{
@@ -106,7 +106,7 @@ void SV_InitMasters(void)
 {
 	static bool previous_sv_usemasters = (sv_usemasters == 0);
 
-	if (previous_sv_usemasters != sv_usemasters)
+	if (previous_sv_usemasters != sv_usemasters.asBool())
 	{
 		if (sv_usemasters)
 		{
@@ -124,7 +124,7 @@ void SV_InitMasters(void)
 		}
 	}
 
-	previous_sv_usemasters = (sv_usemasters != 0);
+	previous_sv_usemasters = sv_usemasters.asBool();
 }
 
 
@@ -148,19 +148,19 @@ bool SV_AddMaster(const char *masterip)
 	{
 		if(masters[i].masterip == m.masterip)
 		{
-			Printf("Master %s [%s] is already on the list", m.masterip.c_str(), NET_AdrToString(m.masteraddr));
+			Printf("Master %s [%s] is already on the list", m.masterip, NET_AdrToString(m.masteraddr));
 			return false;
 		}
 	}
-	
+
 	if(m.masteraddr.ip[0] == 0 && m.masteraddr.ip[1] == 0 && m.masteraddr.ip[2] == 0 && m.masteraddr.ip[3] == 0)
 	{
-		Printf("Failed to resolve master server: %s, not added", m.masterip.c_str());
+		Printf("Failed to resolve master server: %s, not added", m.masterip);
 		return false;
 	}
 	else
 	{
-		Printf("Added master: %s [%s]", m.masterip.c_str(), NET_AdrToString(m.masteraddr));
+		Printf("Added master: %s [%s]", m.masterip, NET_AdrToString(m.masteraddr));
 		masters.push_back(m);
 	}
 
@@ -173,7 +173,7 @@ bool SV_AddMaster(const char *masterip)
 void SV_ArchiveMasters(FILE *fp)
 {
 	for(size_t i = 0; i < masters.size(); i++)
-		fprintf(fp, "addmaster %s\n", masters[i].masterip.c_str());
+		fmt::print(fp, "addmaster {}\n", masters[i].masterip);
 }
 
 //
@@ -184,7 +184,7 @@ void SV_ListMasters(void)
 	Printf("Use addmaster/delmaster commands to modify this list");
 
 	for(size_t index = 0; index < masters.size(); index++)
-		Printf("%s [%s]", masters[index].masterip.c_str(), NET_AdrToString(masters[index].masteraddr));
+		Printf("%s [%s]", masters[index].masterip, NET_AdrToString(masters[index].masteraddr));
 }
 
 //
@@ -196,7 +196,7 @@ bool SV_RemoveMaster(const char *masterip)
 	{
 		if(strnicmp(masters[index].masterip.c_str(), masterip, strlen(masterip)) == 0)
 		{
-			Printf("Removed master server: %s", masters[index].masterip.c_str());
+			Printf("Removed master server: %s", masters[index].masterip);
 			masters.erase(masters.begin() + index);
 			return true;
 		}

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -55,7 +55,7 @@ struct ticcmd_t
 	}
   public:
 
-	static const size_t SERIALIZED_SIZE = 2 + sizeof(short) * 5;
+	static constexpr size_t SERIALIZED_SIZE = 2 + sizeof(short) * 5;
 
 	ticcmd_t()
 	{

@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -73,7 +73,7 @@ void V_TextInit()
 	sub = 0;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		StrFormat(buffer, bigfont, j++ - sub);
+		buffer = fmt::sprintf(bigfont, j++ - sub);
 
 		// Some letters of this font are missing.
 		int num = W_CheckNumForName(buffer.c_str());
@@ -88,7 +88,7 @@ void V_TextInit()
 	sub = 0;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		StrFormat(buffer, smallfont, j++ - sub);
+		buffer = fmt::sprintf(smallfont, j++ - sub);
 		::hu_smallfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
 	}
 
@@ -102,11 +102,11 @@ void V_TextInit()
 	{
 		if ((j >= '0' && j <= '9') || (j >= 'A' && j <= 'Z'))
 		{
-			StrFormat(buffer, digfont_literal, j++);
+			buffer = fmt::sprintf(digfont_literal, j++);
 		}
 		else
 		{
-			StrFormat(buffer, digfont, j++);
+			buffer = fmt::sprintf(digfont, j++);
 		}
 
 		// Some letters of this font might be missing.
@@ -148,7 +148,7 @@ void V_TextShutdown()
 
 /**
  * @brief Set the current font.
- * 
+ *
  * @param fontname Font name, can be one of "BIGFONT" or "SMALLFONT".
  */
 void V_SetFont(const char* fontname)
@@ -189,27 +189,27 @@ int V_GetTextColor(const char* str)
 		for (int i = 0; i < 128; i++)
 			table[i] = -1;
 
-		table['A'] = table['a'] = CR_BRICK;
-		table['B'] = table['b'] = CR_TAN;
-		table['C'] = table['c'] = CR_GRAY;
-		table['D'] = table['d'] = CR_GREEN;
-		table['E'] = table['e'] = CR_BROWN;
-		table['F'] = table['f'] = CR_GOLD;
-		table['G'] = table['g'] = CR_RED;
-		table['H'] = table['h'] = CR_BLUE;
-		table['I'] = table['i'] = CR_ORANGE;
-		table['J'] = table['j'] = CR_WHITE;
-		table['K'] = table['k'] = CR_YELLOW;
-		table['M'] = table['m'] = CR_BLACK;
-		table['N'] = table['n'] = CR_LIGHTBLUE;
-		table['O'] = table['o'] = CR_CREAM;
-		table['P'] = table['p'] = CR_OLIVE;
-		table['Q'] = table['q'] = CR_DARKGREEN;
-		table['R'] = table['r'] = CR_DARKRED;
-		table['S'] = table['s'] = CR_DARKBROWN;
-		table['T'] = table['t'] = CR_PURPLE;
-		table['U'] = table['u'] = CR_DARKGRAY;
-		table['V'] = table['v'] = CR_CYAN;
+		table[static_cast<unsigned char>('A')] = table[static_cast<unsigned char>('a')] = CR_BRICK;
+		table[static_cast<unsigned char>('B')] = table[static_cast<unsigned char>('b')] = CR_TAN;
+		table[static_cast<unsigned char>('C')] = table[static_cast<unsigned char>('c')] = CR_GRAY;
+		table[static_cast<unsigned char>('D')] = table[static_cast<unsigned char>('d')] = CR_GREEN;
+		table[static_cast<unsigned char>('E')] = table[static_cast<unsigned char>('e')] = CR_BROWN;
+		table[static_cast<unsigned char>('F')] = table[static_cast<unsigned char>('f')] = CR_GOLD;
+		table[static_cast<unsigned char>('G')] = table[static_cast<unsigned char>('g')] = CR_RED;
+		table[static_cast<unsigned char>('H')] = table[static_cast<unsigned char>('h')] = CR_BLUE;
+		table[static_cast<unsigned char>('I')] = table[static_cast<unsigned char>('i')] = CR_ORANGE;
+		table[static_cast<unsigned char>('J')] = table[static_cast<unsigned char>('j')] = CR_WHITE;
+		table[static_cast<unsigned char>('K')] = table[static_cast<unsigned char>('k')] = CR_YELLOW;
+		table[static_cast<unsigned char>('M')] = table[static_cast<unsigned char>('m')] = CR_BLACK;
+		table[static_cast<unsigned char>('N')] = table[static_cast<unsigned char>('n')] = CR_LIGHTBLUE;
+		table[static_cast<unsigned char>('O')] = table[static_cast<unsigned char>('o')] = CR_CREAM;
+		table[static_cast<unsigned char>('P')] = table[static_cast<unsigned char>('p')] = CR_OLIVE;
+		table[static_cast<unsigned char>('Q')] = table[static_cast<unsigned char>('q')] = CR_DARKGREEN;
+		table[static_cast<unsigned char>('R')] = table[static_cast<unsigned char>('r')] = CR_DARKRED;
+		table[static_cast<unsigned char>('S')] = table[static_cast<unsigned char>('s')] = CR_DARKBROWN;
+		table[static_cast<unsigned char>('T')] = table[static_cast<unsigned char>('t')] = CR_PURPLE;
+		table[static_cast<unsigned char>('U')] = table[static_cast<unsigned char>('u')] = CR_DARKGRAY;
+		table[static_cast<unsigned char>('V')] = table[static_cast<unsigned char>('v')] = CR_CYAN;
 
 		initialized = true;
 	}
@@ -235,11 +235,13 @@ int V_GetTextColor(const char* str)
 // V_PrintStr
 // Print a line of text using the console font
 //
-void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool use_color_codes) const
+void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool use_color_codes, int scale) const
 {
 	// Don't try and print a string without conchars loaded.
 	if (::ConChars == NULL)
 		return;
+
+	const int char_size = 8 * scale;
 
 	if (default_color < 0)
 		default_color = CR_GRAY;
@@ -249,29 +251,29 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
 
-	if (y > (surface_height - 8) || y < 0)
+	if (y > (surface_height - char_size) || y < 0)
 		return;
 
 	if (x < 0)
 	{
-		int skip = -(x - 7) / 8;
-		x += skip * 8;
+		int skip = -(x - (char_size - 1)) / char_size;
+		x += skip * char_size;
 		if ((int)strlen(str) <= skip)
 			return;
 
 		str += skip;
 	}
 
-	x &= ~3;
+	x = x / char_size * char_size;
 	byte* destline = mSurface->getBuffer() + y * mSurface->getPitch();
 
-	while (*str && x <= (surface_width - 8))
+	while (*str && x <= (surface_width - char_size))
 	{
 	    // john - tab 4 spaces
 	    if (*str == '\t')
 	    {
 	        str++;
-	        x += 8 * 4;
+	        x += char_size * 4;
 	        continue;
 	    }
 
@@ -280,7 +282,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 		{
 			int new_color = V_GetTextColor(str);
 			if (new_color == -1)
-				new_color = default_color; 
+				new_color = default_color;
 
 			trans = translationref_t(Ranges + new_color * 256);
 
@@ -296,14 +298,20 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 			palindex_t* dest = (palindex_t*)destline + x;
 			for (int z = 0; z < 8; z++)
 			{
-				for (int a = 0; a < 8; a++)
+				// repeat each scanline based on scale
+				for (int sy = 0; sy < scale; ++sy)
 				{
-					const palindex_t mask = source[a+8];
-					palindex_t color = trans.tlate(source[a]);
-					dest[a] = (dest[a] & mask) ^ color;
-				}
+					for (int a = 0; a < 8; a++)
+					{
+						const palindex_t mask = source[a+8];
+						palindex_t color = trans.tlate(source[a]);
 
-				dest += surface_pitch; 
+						// repeat each pixel based on scale
+						for (int sx = 0; sx < scale; ++sx)
+							dest[a*scale + sx] = (dest[a*scale + sx] & mask) ^ color;
+					}
+					dest += surface_pitch;
+				}
 				source += 16;
 			}
 		}
@@ -313,22 +321,27 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 			argb_t* dest = (argb_t*)destline + x;
 			for (int z = 0; z < 8; z++)
 			{
-				for (int a = 0; a < 8; a++)
+				// repeat each scanline based on scale
+				for (int sy = 0; sy < scale; ++sy)
 				{
-					const argb_t mask = (source[a+8] << 24) | (source[a+8] << 16)
-										| (source[a+8] << 8) | source[a+8];
+					for (int a = 0; a < 8; a++)
+					{
+						const argb_t mask = (source[a+8] << 24) | (source[a+8] << 16)
+											| (source[a+8] << 8) | source[a+8];
 
-					argb_t color = V_Palette.shade(trans.tlate(source[a])) & ~mask;
-					dest[a] = (dest[a] & mask) ^ color; 
+						argb_t color = V_Palette.shade(trans.tlate(source[a])) & ~mask;
+						// repeat each pixel based on scale
+						for (int sx = 0; sx < scale; ++sx)
+							dest[a*scale + sx] = (dest[a*scale + sx] & mask) ^ color;
+					}
+					dest += surface_pitch >> 2;
 				}
-
-				dest += surface_pitch >> 2; 
 				source += 16;
 			}
 		}
 
 		str++;
-		x += 8;
+		x += char_size;
 	}
 }
 
@@ -348,7 +361,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 	TextSWrapper(drawer, normalcolor, x, y, string, CleanXfac, CleanYfac);
 }
 
-void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
+void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 							const byte *string, int scalex, int scaley) const
 {
 	if (::hu_font[0].empty())
@@ -373,7 +386,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 		{
 			int new_color = V_GetTextColor(str);
 			V_ColorMap = translationref_t(Ranges + new_color * 256);
-			str += 2;	
+			str += 2;
 			continue;
 		}
 
@@ -416,7 +429,7 @@ int V_StringWidth(const byte* str)
 		return 8;
 
 	int width = 0;
-	
+
 	while (*str)
 	{
 		// skip over color markup escape codes
@@ -472,7 +485,7 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 	while (string > start && isspace(*(string - 1)))
 		string--;
 
-	int prefix_len = prefix ? strlen(prefix) : 0;
+	size_t prefix_len = prefix ? strlen(prefix) : 0;
 
 	line->string = new char[string - start + 1 + prefix_len];
 
@@ -509,7 +522,7 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 	{
 		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
-			sprintf(color_code_str, "\034%c", str[1]);
+			snprintf(color_code_str, 4, "\034%c", str[1]);
 			str += 2;
 			continue;
 		}

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -195,6 +195,9 @@ CVAR_RANGE(			con_buffersize, "1024", "Size of console scroll-back buffer",
 CVAR(				con_coloredmessages, "1", "Activates colored messages in printed messages",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR_RANGE_FUNC_DECL(con_scaletext, "0", "Scale factor of console text (0 = auto).",
+					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
+
 CVAR(message_showpickups, "1", "Show item pickup messages on the message line.",
      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
@@ -260,7 +263,7 @@ CVAR(				cl_disconnectalert, "1", "Plays a sound when a player quits",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE			(cl_chatsounds, "1", "Plays a sound when a chat message appears (0 = never, 1 = always, " \
-					"2 = only teamchat)", 
+					"2 = only teamchat)",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
 CVAR_RANGE(			cl_switchweapon, "1", "Switch upon weapon pickup (0 = never, 1 = always, " \
@@ -340,10 +343,12 @@ CVAR_RANGE (sv_teamsinplay, "2", "Teams that are enabled", CVARTYPE_BYTE, CVAR_S
 // --------------
 
 CVAR(cl_downloadsites,
-     "https://static.allfearthesentinel.net/wads/ https://doomshack.org/wads/ "
+     "https://static.allfearthesentinel.com/wads/ https://doomshack.org/wads/ "
      "http://grandpachuck.org/files/wads/ https://wads.doomleague.org/ "
      "http://files.funcrusher.net/wads/ https://doomshack.org/uploads/ "
-     "https://doom.dogsoft.net/getwad.php?search=",
+     "https://doom.dogsoft.net/getwad.php?search= https://doomshack.org/wadlist.php "
+     "https://wads.firestick.games/ https://euroboros.net/zandronum/wads/ "
+     "https://static.audrealms.org/wads/ https://downloadbox.captainpollutiontv.de/DooM/WADSEEKER/",
      "A list of websites to download WAD files from.  These websites are used if the "
      "server doesn't provide any websites to download files from, or the file can't be "
      "found on any of their sites.  The list of sites is separated by spaces.  These "
@@ -363,8 +368,8 @@ CVAR(				cl_predictweapons, "1", "Draw weapon effects immediately",
 CVAR(				cl_netgraph, "0", "Show a graph of network related statistics",
 					CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR(				cl_serverdownload, "1", "Enable or disable downloading game files and resources from the server" \
-											"(requires downloading enabled on server)",
+CVAR(				cl_serverdownload, "1", "Enable or disable downloading game files and resources from the internet " \
+											"(see cl_downloadsites for more information)",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(				cl_forcedownload, "0", "Forces the client to download the last WAD file when connecting " \
@@ -407,7 +412,7 @@ CVAR(				chasedemo, "0", "",
 CVAR(				cl_run, "1", "Always run",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)		// Always run? // [Toke - Defaults]
 
-CVAR(in_autosr50, "1", "+strife activates automatic SR50", CVARTYPE_BOOL,
+CVAR(in_autosr50, "1", "+strafe activates automatic SR50", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
 
 CVAR(				cl_showspawns, "0", "Show spawn points as particle fountains",
@@ -577,6 +582,10 @@ CVAR(hud_feedobits, "1", "Show obituaries in the event feed.", CVARTYPE_BOOL,
 
 CVAR(hud_hordeinfo_debug, "0", "Show debugging information for horde.", CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR_RANGE(hud_extendedinfo, "0",
+		   "Show kills, items, and secrets:\n// 0: Off\n// 1: DIGFONT\n// 2: SMALLFONT\n// 3: DIGFONT, vertical arrangement\n// 4: SMALLFONT, vertical arrangement",
+		   CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0, 4.0)
+
 #ifdef _XBOX
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                       // A
 CVAR (chatmacro1, "I'm ready to kick butt!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)   // B
@@ -630,6 +639,18 @@ CVAR_RANGE_FUNC_DECL(snd_channels, "32", "Number of channels for sound effects",
                      CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 4.0f,
                      32.0f)
 
+CVAR_RANGE_FUNC_DECL(	snd_oplcore, "0", "OPL emulation quality",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+
+CVAR_FUNC_DECL(			snd_oplpan, "1", "Full-range OPL panning",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE_FUNC_DECL(	snd_oplchips, "6", "Number of emulated OPL chips",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 8.0f)
+
+CVAR_RANGE_FUNC_DECL(	snd_oplbank, "1", "OPL instrument set",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+
 //
 // C_GetDefaultMuiscSystem()
 //
@@ -653,7 +674,7 @@ static char *C_GetDefaultMusicSystem()
 	if (int(defaultmusicsystem) > 999 || int(defaultmusicsystem) < 0)
 		defaultmusicsystem = MS_NONE;
 
-	sprintf(str, "%i", defaultmusicsystem);
+	snprintf(str, 4, "%i", defaultmusicsystem);
 	return str;
 }
 
@@ -671,6 +692,9 @@ CVAR_RANGE(		snd_midireset, "1", "MIDI reset type (0: None, 1: GM, 2: GS, 3: XG)
 
 CVAR_FUNC_DECL(	snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem preference",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_FUNC_DECL(	snd_nomusic, "0", "Disables music",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			snd_musicdevice, "", "Music output device for the chosen music subsystem",
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
@@ -713,6 +737,9 @@ CVAR(			r_particles, "1", "Draw particles",
 CVAR_RANGE_FUNC_DECL(r_stretchsky, "2", "Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
+CVAR(			r_linearsky, "0", "Render skies without horizonal stretching",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(			r_skypalette, "0", "Invulnerability sphere changes the palette of the sky",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
@@ -736,8 +763,8 @@ CVAR_RANGE(		r_wipetype, "1", "",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 #endif
 
-CVAR(			r_showendoom, "0", "Display the ENDDOOM text after quitting",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)   // [ML] 1/5/10: Add endoom support
+CVAR_RANGE(		r_showendoom, "0", "Display the ENDDOOM text after quitting",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)   // [ML] 1/5/10: Add endoom support
 
 CVAR(			r_loadicon, "1", "Display the disk icon when loading data from disk",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)

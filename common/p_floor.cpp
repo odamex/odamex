@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,7 +31,7 @@
 #include "tables.h"
 
 void P_ResetTransferSpecial(newspecial_s* newspecial);
-const unsigned int P_ResetSectorTransferFlags(const unsigned int flags);
+unsigned int P_ResetSectorTransferFlags(const unsigned int flags);
 
 EXTERN_CVAR(co_boomphys)
 
@@ -302,6 +302,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 
 	case DFloor::floorLowerInstant:
 		m_Speed = height;
+		[[fallthrough]];
 	case DFloor::floorLowerByValue:
 		m_Direction = -1;
 		m_FloorDestHeight = floorheight - height;
@@ -309,6 +310,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 
 	case DFloor::floorRaiseInstant:
 		m_Speed = height;
+		[[fallthrough]];
 	case DFloor::floorRaiseByValue:
 		m_Direction = 1;
 		m_FloorDestHeight = floorheight + height;
@@ -321,6 +323,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 
 	case DFloor::floorRaiseAndCrushDoom:
 		height = 8 * FRACUNIT;
+		[[fallthrough]];
 	case DFloor::floorRaiseToLowestCeiling:
 		m_Direction = 1;
 		m_FloorDestHeight = P_FindLowestCeilingSurrounding(sec);
@@ -345,6 +348,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 
 	case DFloor::floorRaiseAndCrush:
 		height = 8 * FRACUNIT;
+		[[fallthrough]];
 	case DFloor::floorRaiseToCeiling:
 		m_Direction = 1;
 		m_FloorDestHeight = ceilingheight - height;
@@ -511,7 +515,6 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
     : DMovingFloor(sec), m_Status(init)
 {
 	fixed_t floorheight = P_FloorHeight(sec);
-	fixed_t ceilingheight = P_CeilingHeight(sec);
 
 	m_Type = genFloor;
 	m_Crush = crush ? DOOM_CRUSH : NO_CRUSH;
@@ -722,6 +725,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 
 	case DFloor::floorLowerInstant:
 		m_Speed = height;
+		[[fallthrough]];
 	case DFloor::floorLowerByValue:
 		m_Direction = -1;
 		m_FloorDestHeight = floorheight - height;
@@ -729,6 +733,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 
 	case DFloor::floorRaiseInstant:
 		m_Speed = height;
+		[[fallthrough]];
 	case DFloor::floorRaiseByValue:
 		m_Direction = 1;
 		m_FloorDestHeight = floorheight + height;
@@ -741,6 +746,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 
 	case DFloor::floorRaiseAndCrush:
 		m_Crush = crush;
+		[[fallthrough]];
 	case DFloor::floorRaiseToLowestCeiling:
 		m_Direction = 1;
 		m_FloorDestHeight =
@@ -936,13 +942,13 @@ DFloor* DFloor::Clone(sector_t* sec) const
 // HANDLE FLOOR TYPES
 // [RH] Added tag, speed, height, crush, change params.
 //
-BOOL EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
+bool EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 				 fixed_t speed, fixed_t height, bool crush, int change)
 {
 	int 				secnum;
-	BOOL 				rtn = false;
+	bool 				rtn = false;
 	sector_t*			sec;
-	BOOL				manual = false;
+	bool				manual = false;
 
 	// check if a manual trigger; if so do just the sector on the backside
 	if (co_boomphys && tag == 0)
@@ -991,13 +997,12 @@ manual_floor:
 // jff 02/04/98 Added this routine (and file) to handle generalized
 // floor movers using bit fields in the line special type.
 //
-BOOL EV_DoGenFloor(line_t* line)
+bool EV_DoGenFloor(line_t* line)
 {
 	int secnum;
-	BOOL rtn;
+	bool rtn;
 	bool manual;
 	sector_t* sec;
-	DFloor* floor;
 	unsigned value = (unsigned)line->special - GenFloorBase;
 
 	// parse the bit fields in the line's special type
@@ -1048,11 +1053,11 @@ BOOL EV_DoGenFloor(line_t* line)
 	return rtn;
 }
 
-BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
+bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
                 fixed_t height, int crush, int change, bool hexencrush, bool hereticlower)
 {
 	int secnum;
-	BOOL rtn = false;
+	bool rtn = false;
 	sector_t* sec;
 	bool manual = false;
 
@@ -1106,10 +1111,10 @@ BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t sp
 // jff 3/15/98 added to better support generalized sector types
 // [RH] Added tag parameter.
 //
-BOOL EV_DoChange (line_t *line, EChange changetype, int tag)
+bool EV_DoChange (line_t *line, EChange changetype, int tag)
 {
 	int			secnum;
-	BOOL		rtn;
+	bool		rtn;
 	sector_t	*sec;
 	sector_t	*secm;
 
@@ -1149,7 +1154,7 @@ BOOL EV_DoChange (line_t *line, EChange changetype, int tag)
 //
 // [Blair] Generic staircase building
 //
-BOOL EV_DoGenStairs(line_t* line)
+bool EV_DoGenStairs(line_t* line)
 {
 	int secnum;
 	int osecnum; // jff 3/4/98 save old loop index
@@ -1363,7 +1368,7 @@ BOOL EV_DoGenStairs(line_t* line)
 //		by its special. If usespecials is 2, each sector stays in "sync" with
 //		the others.
 //
-BOOL EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
+bool EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
 					 fixed_t stairsize, fixed_t speed, int delay, int reset, int igntxt,
 					 int usespecials)
 {
@@ -1375,14 +1380,14 @@ BOOL EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
 	int 				texture;
 	int 				ok;
 	int					persteptime;
-	BOOL 				rtn = false;
+	bool 				rtn = false;
 
 	sector_t*			sec = NULL;
 	sector_t*			tsec = NULL;
 	sector_t*			prev = NULL;
 
 	DFloor*				floor = NULL;
-	BOOL				manual = false;
+	bool				manual = false;
 
 	if (speed == 0)
 		return false;
@@ -1557,7 +1562,7 @@ manual_stair:
 
 int P_SpawnDonut(int, line_t*, fixed_t, fixed_t);
 
-BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
+bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
 {
 	int rtn = 0;
 
@@ -1789,7 +1794,7 @@ bool SpawnCommonElevator(line_t*, DElevator::EElevator, fixed_t,
 // jff 2/22/98 new type to move floor and ceiling in parallel
 // [RH] Added speed, tag, and height parameters and new types.
 //
-BOOL EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
+bool EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
 					fixed_t speed, fixed_t height, int tag)
 {
 	bool rtn = SpawnCommonElevator(line, elevtype, speed, height, tag);
@@ -1800,7 +1805,7 @@ bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
                        fixed_t height, int tag)
 {
 	int secnum;
-	BOOL rtn;
+	bool rtn;
 	sector_t* sec;
 	DElevator* elevator;
 
@@ -1908,7 +1913,7 @@ bool EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
 /// Waggle
 ///////////////////////////////////////
 
-static const fixed_t FloatBobOffsets[64] = {
+static constexpr fixed_t FloatBobOffsets[64] = {
     0,       51389,   102283,  152192,  200636,  247147,  291278,  332604,
     370727,  405280,  435929,  462380,  484378,  501712,  514213,  521763,
     524287,  521763,  514213,  501712,  484378,  462380,  435929,  405280,
@@ -1918,7 +1923,7 @@ static const fixed_t FloatBobOffsets[64] = {
     -524288, -521764, -514214, -501713, -484379, -462381, -435930, -405280,
     -370728, -332605, -291279, -247148, -200637, -152193, -102284, -51389};
 /*
-BOOL EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
+bool EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
                              int timer, bool ceiling)
 {
 	int sectorIndex;
@@ -2062,7 +2067,7 @@ void DWaggle::RunThink()
 
 	m_Accumulator += m_AccDelta;
 	fixed_t changeamount = m_OriginalHeight + FixedMul(FloatBobOffsets[(m_Accumulator >> FRACBITS) & 63], m_Scale);
-	
+
 	if (m_Ceiling)
 	{
 		P_SetCeilingHeight(m_Sector, changeamount);

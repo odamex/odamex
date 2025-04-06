@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -178,7 +178,7 @@ void NET_ReportError(const char* fmt, ...)
 	char errorstr[1024];
 
 	va_start(ap, fmt);
-	vsprintf(errorstr, fmt, ap);
+	vsnprintf(errorstr, 1024, fmt, ap);
 	va_end(ap);
 
 	_ReportError("", 0, "", errorstr);

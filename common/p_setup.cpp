@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <set>
+#include <zlib.h>
 
 #include "m_alloc.h"
 #include "m_vectors.h"
@@ -56,8 +57,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position);
 void P_SpawnAvatars();
 void P_TranslateTeleportThings();
 
-const unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved);
-const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags);
+unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved);
+unsigned int P_TranslateZDoomLineFlags(const unsigned int flags);
 void P_SpawnCompatibleSectorSpecial(sector_t* sector);
 
 static void P_SetupLevelFloorPlane(sector_t *sector);
@@ -133,13 +134,19 @@ AActor**		blocklinks;		// for thing chains
 //	used as a PVS lookup as well.
 //
 byte*			rejectmatrix;
-BOOL			rejectempty;
+bool			rejectempty;
 
 
 // Maintain single and multi player starting spots.
 std::vector<mapthing2_t> DeathMatchStarts;
 std::vector<mapthing2_t> playerstarts;
 std::vector<mapthing2_t> voodoostarts;
+
+// For sorting player starts
+static bool cmpPlayerNum(mapthing2_t i, mapthing2_t j)
+{
+	return P_GetMapThingPlayerNumber(&i) < P_GetMapThingPlayerNumber(&j);
+}
 
 //
 // P_LoadVertexes
@@ -171,14 +178,52 @@ void P_LoadVertexes (int lump)
 	Z_Free (data);
 }
 
+void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
+{
+	line_t *ldef;
+	li->angle = (angle)<<16;
+
+	if(linedef < 0 || linedef >= numlines)
+		I_Error("P_LoadSegsHelper: invalid linedef {}", linedef);
+
+	ldef = &lines[linedef];
+	li->linedef = ldef;
+
+	if (side != 0 && side != 1)
+		side = 1;	// assume invalid value means back
+
+	li->sidedef = &sides[ldef->sidenum[side]];
+	li->frontsector = sides[ldef->sidenum[side]].sector;
+
+	// killough 5/3/98: ignore 2s flag if second sidedef missing:
+	if (ldef->flags & ML_TWOSIDED && ldef->sidenum[side^1]!=R_NOSIDE)
+		li->backsector = sides[ldef->sidenum[side^1]].sector;
+	else
+	{
+		li->backsector = 0;
+		ldef->flags &= ~ML_TWOSIDED;
+	}
+
+	// recalculate seg offsets. values in wads are untrustworthy.
+	vertex_t *from = (side == 0)
+		? ldef->v1			// right side: offset is from start of linedef
+		: ldef->v2;			// left side: offset is from end of linedef
+	vertex_t *to = li->v1;	// end point is start of seg, in both cases
+
+	float dx = FIXED2FLOAT(to->x - from->x);
+	float dy = FIXED2FLOAT(to->y - from->y);
+	li->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
+
+	dx = FIXED2FLOAT(li->v2->x - li->v1->x);
+	dy = FIXED2FLOAT(li->v2->y - li->v1->y);
+	li->length = FLOAT2FIXED(sqrt(dx * dx + dy* dy));
+}
 
 
 //
 // P_LoadSegs
 //
-// killough 5/3/98: reformatted, cleaned up
-
-void P_LoadSegs (int lump)
+void P_LoadSegs (int lump, bool isdeepbsp = false)
 {
 	if (!W_LumpLength(lump))
 	{
@@ -186,87 +231,70 @@ void P_LoadSegs (int lump)
 		    "P_LoadSegs: SEGS lump is empty - levels without nodes are not supported.");
 	}
 
-	int  i;
-	byte *data;
+	byte* data;
 
-	numsegs = W_LumpLength (lump) / sizeof(mapseg_t);
+	if (isdeepbsp)
+		numsegs = W_LumpLength (lump) / sizeof(mapseg_deepbsp_t);
+	else
+		numsegs = W_LumpLength (lump) / sizeof(mapseg_t);
 	segs = (seg_t *)Z_Malloc (numsegs*sizeof(seg_t), PU_LEVEL, 0);
 	memset (segs, 0, numsegs*sizeof(seg_t));
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	data = (byte*)W_CacheLumpNum (lump, PU_STATIC);
 
-	for (i = 0; i < numsegs; i++)
+	for (int i = 0; i < numsegs; i++)
 	{
 		seg_t *li = segs+i;
-		mapseg_t *ml = (mapseg_t *) data + i;
+		if (isdeepbsp)
+		{
+			mapseg_deepbsp_t *ml = (mapseg_deepbsp_t*) data+i;
+			int v;
 
-		int side, linedef;
-		line_t *ldef;
+			v = LELONG(ml->v1);
 
-		unsigned short v = LESHORT(ml->v1);
+			if(v >= numvertexes)
+				I_Error("P_LoadSegs: invalid vertex {}", v);
+			else
+				li->v1 = &vertexes[v];
 
-		if(v >= numvertexes)
-			I_Error("P_LoadSegs: invalid vertex %d", v);
-		else
-			li->v1 = &vertexes[v];
+			v = LELONG(ml->v2);
 
-		v = LESHORT(ml->v2);
+			if(v >= numvertexes)
+				I_Error("P_LoadSegs: invalid vertex {}", v);
+			else
+				li->v2 = &vertexes[v];
 
-		if(v >= numvertexes)
-			I_Error("P_LoadSegs: invalid vertex %d", v);
-		else
-			li->v2 = &vertexes[v];
-
-		li->angle = (LESHORT(ml->angle))<<16;
-
-		li->offset = (LESHORT(ml->offset))<<16;
-		linedef = LESHORT(ml->linedef);
-
-		if(linedef < 0 || linedef >= numlines)
-			I_Error("P_LoadSegs: invalid linedef %d", linedef);
-
-		ldef = &lines[linedef];
-		li->linedef = ldef;
-
-		side = LESHORT(ml->side);
-
-		if (side != 0 && side != 1)
-			side = 1;	// assume invalid value means back
-
-		li->sidedef = &sides[ldef->sidenum[side]];
-		li->frontsector = sides[ldef->sidenum[side]].sector;
-
-		// killough 5/3/98: ignore 2s flag if second sidedef missing:
-		if (ldef->flags & ML_TWOSIDED && ldef->sidenum[side^1]!=R_NOSIDE)
-			li->backsector = sides[ldef->sidenum[side^1]].sector;
+			P_LoadSegsHelper(LESHORT(ml->side), LESHORT(ml->angle), LESHORT(ml->linedef), li);
+		}
 		else
 		{
-			li->backsector = 0;
-			ldef->flags &= ~ML_TWOSIDED;
+			mapseg_t *ml = (mapseg_t*) data+i;
+			short v;
+
+			v = LESHORT(ml->v1);
+
+			if(v >= numvertexes)
+				I_Error("P_LoadSegs: invalid vertex {}", v);
+			else
+				li->v1 = &vertexes[v];
+
+			v = LESHORT(ml->v2);
+
+			if(v >= numvertexes)
+				I_Error("P_LoadSegs: invalid vertex {}", v);
+			else
+				li->v2 = &vertexes[v];
+
+			P_LoadSegsHelper(LESHORT(ml->side), LESHORT(ml->angle), LESHORT(ml->linedef), li);
 		}
-
-		// recalculate seg offsets. values in wads are untrustworthy.
-		vertex_t *from = (side == 0)
-			? ldef->v1			// right side: offset is from start of linedef
-			: ldef->v2;			// left side: offset is from end of linedef
-		vertex_t *to = li->v1;	// end point is start of seg, in both cases
-
-		float dx = FIXED2FLOAT(to->x - from->x);
-		float dy = FIXED2FLOAT(to->y - from->y);
-		li->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
-
-		dx = FIXED2FLOAT(li->v2->x - li->v1->x);
-		dy = FIXED2FLOAT(li->v2->y - li->v1->y);
-		li->length = FLOAT2FIXED(sqrt(dx * dx + dy* dy));
 	}
 
 	Z_Free (data);
 }
 
-
 //
 // P_LoadSubsectors
 //
-void P_LoadSubsectors(int lump)
+void P_LoadSubsectors(int lump, bool isdeepbsp = false)
 {
 	if (!W_LumpLength(lump))
 	{
@@ -277,19 +305,32 @@ void P_LoadSubsectors(int lump)
 	byte *data;
 	int i;
 
-	numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_t);
+	if (isdeepbsp)
+		numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_deepbsp_t);
+	else
+		numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_t);
 	subsectors = (subsector_t *)Z_Malloc (numsubsectors*sizeof(subsector_t),PU_LEVEL,0);
 	data = (byte *)W_CacheLumpNum (lump,PU_STATIC);
 
 	memset (subsectors, 0, numsubsectors*sizeof(subsector_t));
 
-	for (i = 0; i < numsubsectors; i++)
+	if (isdeepbsp) {
+		for (i = 0; i < numsubsectors; i++)
+		{
+			subsectors[i].numlines = LESHORT(((mapsubsector_deepbsp_t *)data)[i].numsegs);
+			subsectors[i].firstline = (unsigned int)LELONG(((mapsubsector_deepbsp_t *)data)[i].firstseg);
+		}
+	}
+	else
 	{
-		subsectors[i].numlines = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].numsegs);
-		subsectors[i].firstline = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].firstseg);
+		for (i = 0; i < numsubsectors; i++)
+		{
+			subsectors[i].numlines = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].numsegs);
+			subsectors[i].firstline = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].firstseg);
+		}
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
 
@@ -299,32 +340,23 @@ void P_LoadSubsectors(int lump)
 //
 void P_LoadSectors (int lump)
 {
-	byte*				data;
-	int 				i;
-	mapsector_t*		ms;
-	sector_t*			ss;
-	int					defSeqType;
-
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
 	delete[] sectors;
 	originalLightLevels.clear();
 
-	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
+	numsectors = W_LumpLength(lump) / sizeof(mapsector_t);
 
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
 	memset(sectors, 0, sizeof(sector_t)*numsectors);
 
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	byte* data = (byte*)W_CacheLumpNum(lump, PU_STATIC);
 
-	if (level.flags & LEVEL_SNDSEQTOTALCTRL)
-		defSeqType = 0;
-	else
-		defSeqType = -1;
+	const int defSeqType = (level.flags & LEVEL_SNDSEQTOTALCTRL) ? 0 : -1;
 
-	ms = (mapsector_t *)data;
-	ss = sectors;
-	for (i = 0; i < numsectors; i++, ss++, ms++)
+	mapsector_t* ms = (mapsector_t*)data;
+	sector_t* ss = sectors;
+	for (int i = 0; i < numsectors; i++, ss++, ms++)
 	{
 		ss->floorheight = LESHORT(ms->floorheight)<<FRACBITS;
 		ss->ceilingheight = LESHORT(ms->ceilingheight)<<FRACBITS;
@@ -453,6 +485,48 @@ void P_LoadNodes (int lump)
 }
 
 //
+// P_LoadNodes_DeePBSP
+//
+void P_LoadNodes_DeePBSP(int lump)
+{
+	if (!W_LumpLength(lump))
+	{
+		I_Error(
+		    "P_LoadNodes_DeePBSP: NODES lump is empty - levels without nodes are not supported.");
+	}
+
+	byte*		data;
+	mapnode_deepbsp_t*	mn;
+	node_t* 	no;
+
+	numnodes = (W_LumpLength (lump) - 8) / sizeof(mapnode_deepbsp_t);
+	nodes = (node_t *)Z_Malloc (numnodes*sizeof(node_t), PU_LEVEL, 0);
+	data = (byte*) W_CacheLumpNum (lump, PU_STATIC);
+
+	data += 8;
+
+	mn = (mapnode_deepbsp_t *)data;
+	no = nodes;
+
+	for (int i = 0; i < numnodes; i++, mn++, no++)
+	{
+		no->x = LESHORT(mn->x)<<FRACBITS;
+		no->y = LESHORT(mn->y)<<FRACBITS;
+		no->dx = LESHORT(mn->dx)<<FRACBITS;
+		no->dy = LESHORT(mn->dy)<<FRACBITS;
+		for (int j = 0; j < 2; j++)
+		{
+			no->children[j] = LELONG(mn->children[j]);
+
+			for (int k = 0; k < 4; k++)
+				no->bbox[j][k] = LESHORT(mn->bbox[j][k]) << FRACBITS;
+		}
+	}
+
+	Z_Free (data - 8);
+}
+
+//
 // P_LoadXNOD - load ZDBSP extended nodes
 // returns false if nodes are not extended to fall back to original nodes
 //
@@ -460,14 +534,68 @@ bool P_LoadXNOD(int lump)
 {
 	size_t len = W_LumpLength(lump);
 	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+	byte* output = NULL;
 
-	if (len < 4 || memcmp(data, "XNOD", 4) != 0)
+	if (len < 4)
 	{
 		Z_Free(data);
 		return false;
 	}
 
-	byte *p = data + 4; // skip the magic number
+	bool compressed = memcmp(data, "ZNOD", 4) == 0;
+
+	byte *p;
+	// [EB] decompress compressed nodes
+	// adapted from Crispy Doom
+	if (compressed)
+	{
+		int outlen, err;
+		z_stream *zstream;
+
+		// first estimate for compression rate:
+		// output buffer size == 2.5 * input size
+		outlen = 2.5 * len;
+		output = (byte*)Z_Malloc(outlen, PU_STATIC, 0);
+
+		// initialize stream state for decompression
+		zstream = (z_stream*)M_Malloc(sizeof(*zstream));
+		memset(zstream, 0, sizeof(*zstream));
+		zstream->next_in = data + 4;
+		zstream->avail_in = len - 4;
+		zstream->next_out = output;
+		zstream->avail_out = outlen;
+
+		if (inflateInit(zstream) != Z_OK)
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression initialization!");
+
+		// resize if output buffer runs full
+		while ((err = inflate(zstream, Z_SYNC_FLUSH)) == Z_OK)
+		{
+			int outlen_old = outlen;
+			outlen = 2 * outlen_old;
+			output = (byte*)M_Realloc(output, outlen);
+			zstream->next_out = output + outlen_old;
+			zstream->avail_out = outlen - outlen_old;
+		}
+
+		if (err != Z_STREAM_END)
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression!");
+
+		fmt::print(stderr, "P_LoadXNOD: ZDBSP nodes compression ratio {:.3f}\n",
+		           (float)zstream->total_out/zstream->total_in);
+
+		len = zstream->total_out;
+
+		if (inflateEnd(zstream) != Z_OK)
+			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression shut-down!");
+
+		M_Free(zstream);
+		p = output;
+	}
+	else
+	{
+		p = data + 4; // skip the magic number
+	}
 
 	// Load vertices
 	unsigned int numorgvert = LELONG(*(unsigned int *)p); p += 4;
@@ -584,8 +712,40 @@ bool P_LoadXNOD(int lump)
 	}
 
 	Z_Free(data);
+	Z_Free(output);
 
 	return true;
+}
+
+enum nodetype_t {
+	NT_XNOD,
+	NT_ZNOD,
+	NT_DEEP,
+	NT_STANDARD
+};
+
+nodetype_t P_CheckNodeType(int lump) {
+	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+
+	if (memcmp(data, "xNd4\0\0\0\0", 8) == 0)
+	{
+		Z_Free(data);
+		return NT_DEEP;
+	}
+
+	if (memcmp(data, "XNOD", 4) == 0)
+	{
+		Z_Free(data);
+		return NT_XNOD;
+	}
+
+	if (memcmp(data, "ZNOD", 4) == 0)
+	{
+		Z_Free(data);
+		return NT_ZNOD;
+	}
+
+	return NT_STANDARD;
 }
 
 //
@@ -628,7 +788,7 @@ void P_LoadThings (int lump)
 		{
 			#ifdef SERVER_APP
 			if (G_IsCoopGame())
-			{ 
+			{
 				if (g_thingfilter == 1)
 					mt2.flags |= MTF_FILTER_COOPWPN;
 				else if (g_thingfilter == 2)
@@ -648,6 +808,9 @@ void P_LoadThings (int lump)
 
 		P_SpawnMapThing (&mt2, 0);
 	}
+
+	// Sort by player number if starts are not in order
+	std::sort(playerstarts.begin(), playerstarts.end(), cmpPlayerNum);
 
 	P_SpawnAvatars();
 
@@ -850,7 +1013,7 @@ void P_AdjustLine (line_t *ld)
 void P_FinishLoadingLineDefs (void)
 {
 	int i, linenum;
-	register line_t *ld = lines;
+	line_t *ld = lines;
 
 	for (i = numlines, linenum = 0; i--; ld++, linenum++)
 	{
@@ -882,8 +1045,6 @@ void P_LoadLineDefs (const int lump)
 	// We'll fix this for now by just checking for the E2M7 FarmHash
 	const std::string e2m7hash = "43ffa244f5ae923b7df59dbf511c0468";
 
-	std::string levelHash;
-
 	// [Blair] Serialize the hashes before reading.
 	uint64_t reconsthash1 = (uint64_t)(::level.level_fingerprint[0]) |
 	                        (uint64_t)(::level.level_fingerprint[1]) << 8 |
@@ -903,7 +1064,7 @@ void P_LoadLineDefs (const int lump)
 	                        (uint64_t)(::level.level_fingerprint[14]) << 48 |
 	                        (uint64_t)(::level.level_fingerprint[15]) << 56;
 
-	StrFormat(levelHash, "%16llx%16llx", reconsthash1, reconsthash2);
+	std:: string levelHash = fmt::sprintf("%16llx%16llx", reconsthash1, reconsthash2);
 
 	bool isE2M7 = (levelHash == e2m7hash);
 
@@ -926,14 +1087,14 @@ void P_LoadLineDefs (const int lump)
 		unsigned short v = LESHORT(mld->v1);
 
 		if(v >= numvertexes)
-			I_Error("P_LoadLineDefs: invalid vertex %d", v);
+			I_Error("P_LoadLineDefs: invalid vertex {}", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = LESHORT(mld->v2);
 
 		if(v >= numvertexes)
-			I_Error("P_LoadLineDefs: invalid vertex %d", v);
+			I_Error("P_LoadLineDefs: invalid vertex {}", v);
 		else
 			ld->v2 = &vertexes[v];
 
@@ -981,14 +1142,14 @@ void P_LoadLineDefs2 (int lump)
 		unsigned short v = LESHORT(mld->v1);
 
 		if(v >= numvertexes)
-			I_Error("P_LoadLineDefs2: invalid vertex %d", v);
+			I_Error("P_LoadLineDefs2: invalid vertex {}", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = LESHORT(mld->v2);
 
 		if(v >= numvertexes)
-			I_Error("P_LoadLineDefs2: invalid vertex %d", v);
+			I_Error("P_LoadLineDefs2: invalid vertex {}", v);
 		else
 			ld->v2 = &vertexes[v];
 
@@ -1028,16 +1189,14 @@ void P_LoadSideDefs (int lump)
 static argb_t P_GetColorFromTextureName(const char* name)
 {
 	// work around name not being a properly terminated string
-	char name2[9];
-	strncpy(name2, name, 8);
-	name2[8] = '\0';
+	const OLumpName name2 = name;
 
-	unsigned long value = strtoul(name2, NULL, 16);
+	unsigned long value = strtoul(name2.c_str(), NULL, 16);
 
-	int a = (value >> 24) & 0xFF;
-	int r = (value >> 16) & 0xFF;
-	int g = (value >> 8) & 0xFF;
-	int b = value & 0xFF;
+	const int a = (value >> 24) & 0xFF;
+	const int r = (value >> 16) & 0xFF;
+	const int g = (value >> 8) & 0xFF;
+	const int b = value & 0xFF;
 
 	return argb_t(a, r, g, b);
 }
@@ -1052,7 +1211,7 @@ static argb_t P_GetColorFromTextureName(const char* name)
 // value is used for the appropriate sector blend. If the texture name
 // is an ARGB value in hexadecimal, that value is used for the appropriate
 // sector blend.
-// 
+//
 void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 {
 	sector_t* sec = &sectors[LESHORT(msd->sector)];
@@ -1106,7 +1265,7 @@ void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 	}
 }
 
-// 
+//
 
 
 void SetTextureNoErr (short *texture, unsigned int *color, char *name)
@@ -1131,9 +1290,9 @@ void P_LoadSideDefs2 (int lump)
 
 	for (int i = 0; i < numsides; i++)
 	{
-		register mapsidedef_t* msd = (mapsidedef_t*)data + i;
-		register side_t* sd = sides + i;
-		register sector_t* sec;
+		mapsidedef_t* msd = (mapsidedef_t*)data + i;
+		side_t* sd = sides + i;
+		sector_t* sec;
 
 		sd->textureoffset = LESHORT(msd->textureoffset)<<FRACBITS;
 		sd->rowoffset = LESHORT(msd->rowoffset)<<FRACBITS;
@@ -1522,11 +1681,11 @@ void P_LoadBlockMap (int lump)
 
 /*
 * @brief P_GenerateUniqueMapFingerPrint
-* 
+*
 * Creates a unique map fingerprint used to identify a unique map.
 * Based on a few key lumps that makes a map unique.
-* 
-* @param maplumpnum - Lump offset number of the specified map 
+*
+* @param maplumpnum - Lump offset number of the specified map
 * If it is, use it as part of the map calculation.
 */
 void P_GenerateUniqueMapFingerPrint(int maplumpnum)
@@ -1536,13 +1695,13 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 	typedef std::vector<byte> LevelLumps;
 	LevelLumps levellumps;
 
-	const byte* thingbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
-	const byte* lindefbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
-	const byte* sidedefbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
-	const byte* vertexbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
-	const byte* segsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
-	const byte* ssectorsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
-	const byte* sectorsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
+	const byte* thingbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
+	const byte* lindefbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
+	const byte* sidedefbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
+	const byte* vertexbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
+	const byte* segsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
+	const byte* ssectorsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
+	const byte* sectorsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
 
 	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_THINGS), *thingbytes);
 	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_LINEDEFS), *lindefbytes);
@@ -1581,7 +1740,7 @@ void P_GroupLines (void)
 	for (i = 0; i < numsubsectors; i++)
 	{
 		if (subsectors[i].firstline >= (unsigned int)numsegs)
-			I_Error("subsector[%d].firstline exceeds numsegs (%u)", i, numsegs);
+			I_Error("subsector[{}].firstline exceeds numsegs (%u)", i, numsegs);
 		subsectors[i].sector = segs[subsectors[i].firstline].sidedef->sector;
 	}
 
@@ -1627,7 +1786,7 @@ void P_GroupLines (void)
 			}
 		}
 		if (linebuffer - sector->lines != sector->linecount)
-			I_Error ("P_GroupLines: miscounted");
+			I_Error("P_GroupLines: miscounted");
 
 		// set the soundorg to the middle of the bounding box
 		sector->soundorg[0] = (bbox.Right()+bbox.Left())/2;
@@ -1760,7 +1919,7 @@ extern polyblock_t **PolyBlockMap;
 // Hash the sector tags across the sectors and linedefs.
 static void P_InitTagLists(void)
 {
-	register int i;
+	int i;
 
 	for (i = numsectors; --i >= 0; )		// Initially make all slots empty.
 		sectors[i].firsttag = -1;
@@ -1786,7 +1945,7 @@ static void P_InitTagLists(void)
 // [RH] position indicates the start spot to spawn at
 void P_SetupLevel (const char *lumpname, int position)
 {
-	size_t lumpnum;
+	int lumpnum;
 
 	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
@@ -1796,13 +1955,13 @@ void P_SetupLevel (const char *lumpname, int position)
 
 	if (!savegamerestore)
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			it->killcount = it->secretcount = it->itemcount = 0;
+			player.killcount = player.secretcount = player.itemcount = 0;
 		}
 	}
 
-	// To use the correct nodes for 
+	// To use the correct nodes for
 
 	// Initial height of PointOfView will be set by player think.
 	consoleplayer().viewz = 1;
@@ -1875,11 +2034,22 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_FinishLoadingLineDefs ();
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
 
-	if (!P_LoadXNOD(lumpnum+ML_NODES))
-	{
-		P_LoadSubsectors (lumpnum+ML_SSECTORS);
-		P_LoadNodes (lumpnum+ML_NODES);
-		P_LoadSegs (lumpnum+ML_SEGS);
+	switch (P_CheckNodeType(lumpnum+ML_NODES)) {
+		case NT_XNOD:
+		case NT_ZNOD:
+			P_LoadXNOD(lumpnum+ML_NODES);
+			break;
+
+		case NT_DEEP:
+			P_LoadSubsectors(lumpnum+ML_SSECTORS, true);
+			P_LoadNodes_DeePBSP(lumpnum+ML_NODES);
+			P_LoadSegs(lumpnum+ML_SEGS, true);
+			break;
+
+		default:
+			P_LoadSubsectors(lumpnum+ML_SSECTORS);
+			P_LoadNodes(lumpnum+ML_NODES);
+			P_LoadSegs(lumpnum+ML_SEGS);
 	}
 
 	rejectmatrix = (byte *)W_CacheLumpNum (lumpnum+ML_REJECT, PU_LEVEL);
@@ -1889,7 +2059,7 @@ void P_SetupLevel (const char *lumpname, int position)
 		// calling P_CheckSight
 		if (W_LumpLength(lumpnum + ML_REJECT) < ((unsigned int)ceil((float)(numsectors * numsectors / 8))))
 		{
-			DPrintf("Reject matrix is not valid and will be ignored.\n");
+			DPrintFmt("Reject matrix is not valid and will be ignored.\n");
 			rejectempty = true;
 		}
 	}
@@ -1917,15 +2087,15 @@ void P_SetupLevel (const char *lumpname, int position)
 
     if (serverside)
     {
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			SV_PreservePlayer(*it);
+			SV_PreservePlayer(player);
 
-			if (it->ingame())
+			if (player.ingame())
 			{
 				// if deathmatch, randomly spawn the active players
 				// denis - this function checks for deathmatch internally
-				G_DeathMatchSpawnPlayer(*it);
+				G_DeathMatchSpawnPlayer(player);
 			}
 		}
     }
@@ -1961,6 +2131,7 @@ void P_Init (void)
 	P_InitPicAnims ();
 	R_InitSprites (sprnames);
 	InitTeamInfo();
+	P_InitHorde();
 }
 
 CVAR_FUNC_IMPL(sv_intermissionlimit)
@@ -2077,8 +2248,6 @@ static void P_SetupSlopes()
 	for (int i = 0; i < numlines; i++)
 	{
 		line_t *line = &lines[i];
-
-		short spec = line->special;
 
 		if ((map_format.getZDoom() && line->special == Plane_Align) ||
 		    (line->special >= 340 && line->special <= 347))

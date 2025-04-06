@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -76,7 +76,7 @@ static void CompressPacket(buf_t& send, const size_t reserved, client_t* cl)
 	}
 
 	send.ptr()[PACKET_FLAG_INDEX] |= method;
-	DPrintf("CompressPacket %x " PRIuSIZE "\n", method, send.size());
+	DPrintFmt("CompressPacket {} {}\n", method, send.size());
 }
 
 #ifdef SIMULATE_LATENCY
@@ -138,7 +138,7 @@ bool SV_SendPacket(player_t &pl)
 	client_t *cl = &pl.client;
 
 	if (cl->reliablebuf.overflowed)
-	{ 
+	{
 		SZ_Clear(&cl->netbuf);
 		SZ_Clear(&cl->reliablebuf);
 	    SV_DropClient(pl);
@@ -154,7 +154,7 @@ bool SV_SendPacket(player_t &pl)
 
 	sendd.clear();
 
-	// save the reliable message 
+	// save the reliable message
 	// it will be retransmited, if it's missed
 	client_t::oldPacket_t& old = cl->oldpackets[cl->sequence & PACKET_OLD_MASK];
 
@@ -197,10 +197,10 @@ bool SV_SendPacket(player_t &pl)
          SZ_Write (&sendd, cl->netbuf.data, cl->netbuf.cursize);
 	     cl->unreliable_bps += cl->netbuf.cursize;
 	  }
-    
+
 	SZ_Clear(&cl->netbuf);
 	SZ_Clear(&cl->reliablebuf);
-	
+
 	// compress the packet, but not the sequence id
 	if (sendd.size() > PACKET_HEADER_SIZE)
 	{
@@ -209,7 +209,7 @@ bool SV_SendPacket(player_t &pl)
 
 	if (log_packetdebug)
 	{
-		Printf(PRINT_HIGH, "ply %03u, pkt %06u, size %04u, tic %07u, time %011u\n",
+		Printf(PRINT_HIGH, "ply %03u, pkt %06u, size %04lu, tic %07u, time %011llu\n",
 			   pl.id, cl->sequence - 1, sendd.cursize, gametic, I_MSTime());
 	}
 
@@ -224,7 +224,7 @@ bool SV_SendPacket(player_t &pl)
 
 /**
  * @brief Send an old reliable packet with old data on the wire.
- * 
+ *
  * @param pl Player to send to.
  * @param sequence Sequence number to send.  This assumss
 */
@@ -276,13 +276,10 @@ void SV_AcknowledgePacket(player_t &player)
 		// resend
 		for (int seq = cl->last_sequence+1; seq < sequence; seq++)
 		{
-			int  n;
-			bool needfullupdate = true;
-
 			if (cl->oldpackets[seq & PACKET_OLD_MASK].sequence != seq)
 			{
 				// do full update
-				DPrintf("need full update\n");
+				DPrintFmt("need full update\n");
 				cl->last_sequence = sequence;
 				return;
 			}

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -174,6 +174,12 @@ static const char* steam_install_subdirs[] =
 	"steamapps\\common\\ultimate doom\\base",
 	"steamapps\\common\\DOOM 3 BFG Edition\\base\\wads",
 	"steamapps\\common\\master levels of doom\\master\\wads", //Let Odamex find the Master Levels pwads too
+	"steamapps\\common\\ultimate doom\\base\\doom2", //2024 Steam re-release additions here and below
+	"steamapps\\common\\ultimate doom\\base\\master\\wads",
+	"steamapps\\common\\ultimate doom\\base\\plutonia",
+	"steamapps\\common\\ultimate doom\\base\\tnt",
+	"steamapps\\common\\ultimate doom\\rerelease",
+
 };
 
 
@@ -205,8 +211,7 @@ static char *GetRegistryString(registry_value_t *reg_val)
 		if (RegQueryValueEx(key, reg_val->value, NULL, &valtype,
 		    (unsigned char *)result, &len) != ERROR_SUCCESS)
 		{
-			free(result);
-			result = NULL;
+			M_Free(result);
 		}
 	}
 
@@ -256,15 +261,13 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 	// Doom 95
 	{
-		unsigned int i;
-
-		for (i = 0; i < ARRAY_LENGTH(uninstall_values); ++i)
+		for (auto& uninstallval : uninstall_values)
 		{
 			char* val;
 			char* path;
 			char* unstr;
 
-			val = GetRegistryString(&uninstall_values[i]);
+			val = GetRegistryString(&uninstallval);
 
 			if (val == NULL)
 				continue;
@@ -273,7 +276,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 			if (unstr == NULL)
 			{
-				free(val);
+				M_Free(val);
 			}
 			else
 			{
@@ -287,52 +290,37 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 	// Doom Collectors Edition
 	{
-		char* install_path;
-		char* subpath;
-		unsigned int i;
-
-		install_path = GetRegistryString(&collectors_edition_value);
+		char* install_path = GetRegistryString(&collectors_edition_value);
 
 		if (install_path != NULL)
 		{
-			for (i = 0; i < ARRAY_LENGTH(collectors_edition_subdirs); ++i)
+			for (const auto& dir : collectors_edition_subdirs)
 			{
-				subpath = static_cast<char*>(malloc(strlen(install_path)
-				                             + strlen(collectors_edition_subdirs[i])
-				                             + 5));
-				sprintf(subpath, "%s\\%s", install_path, collectors_edition_subdirs[i]);
+				const std::string subpath = fmt::format("{}\\{}", install_path, dir);
 
-				const char* csubpath = subpath;
-				D_AddSearchDir(dirs, csubpath, separator);
+				D_AddSearchDir(dirs, subpath.c_str(), separator);
 			}
 
-			free(install_path);
+			M_Free(install_path);
 		}
 	}
 
 	// Doom on Steam
 	{
-		char* install_path;
-		char* subpath;
-		size_t i;
-
-		install_path = GetRegistryString(&steam_install_location);
+		char* install_path = GetRegistryString(&steam_install_location);
 
 		if (install_path != NULL)
 		{
-			for (i = 0; i < ARRAY_LENGTH(steam_install_subdirs); ++i)
+			for (const auto& dir : steam_install_subdirs)
 			{
-				subpath = static_cast<char*>(malloc(strlen(install_path)
-				                             + strlen(steam_install_subdirs[i]) + 5));
-				sprintf(subpath, "%s\\%s", install_path, steam_install_subdirs[i]);
+				const std::string subpath = fmt::format("{}\\{}", install_path, dir);
 
-				const char* csubpath = subpath;
-				D_AddSearchDir(dirs, csubpath, separator);
-				
-				free(subpath);
+				D_AddSearchDir(dirs, subpath.c_str(), separator);
+
+				M_FileExists(subpath);
 			}
 
-			free(install_path);
+			M_FileExists(install_path);
 		}
 	}
 
@@ -349,7 +337,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 	const char separator = ':';
 
-	#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR) 
+	#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
 	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", separator);
 	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", separator);
 	#endif
@@ -370,19 +358,6 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 //
 std::string D_GetTitleString()
 {
-	if (gamemission == pack_tnt)
-		return "DOOM 2: TNT - Evilution";
-	if (gamemission == pack_plut)
-		return "DOOM 2: Plutonia Experiment";
-	if (gamemission == chex)
-		return "Chex Quest";
-	if (gamemission == retail_freedoom)
-		return "Ultimate FreeDoom";
-	if (gamemission == commercial_freedoom)
-		return "FreeDoom";
-	if (gamemission == commercial_hacx)
-		return "HACX";
-
 	return gameinfo.titleString;
 }
 
@@ -398,16 +373,16 @@ static void D_PrintIWADIdentity()
     	                   "\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
 
 		if (gamemode == undetermined)
-			Printf_Bold("Game mode indeterminate, no standard wad found.\n\n");
+			PrintFmt_Bold("Game mode indeterminate, no standard wad found.\n\n");
 		else
-			Printf_Bold("%s\n\n", D_GetTitleString().c_str());
+			PrintFmt_Bold("{}\n\n", D_GetTitleString());
 	}
 	else
 	{
 		if (gamemode == undetermined)
 			Printf(PRINT_HIGH, "Game mode indeterminate, no standard wad found.\n");
-		else 
-			Printf(PRINT_HIGH, "%s\n", D_GetTitleString().c_str()); 
+		else
+			Printf(PRINT_HIGH, "%s\n", D_GetTitleString());
 	}
 }
 
@@ -419,14 +394,13 @@ void D_LoadResolvedPatches()
 {
 	// Load external patch files first.
 	bool chexLoaded = false;
-	for (OResFiles::const_iterator it = ::patchfiles.begin(); it != ::patchfiles.end();
-	     ++it)
+	for (const auto& file : ::patchfiles)
 	{
-		if (it->getBasename() == "CHEX.DEH")
+		if (StdStringToUpper(file.getBasename()) == "CHEX.DEH")
 		{
 			chexLoaded = true;
 		}
-		D_DoDehPatch(&*it, -1);
+		D_DoDehPatch(&file, -1);
 	}
 
 	// Check WAD files for lumps.
@@ -481,12 +455,10 @@ static bool FindIWAD(OResFile& out)
 {
 	// Search for a pre-defined IWAD from the list above
 	std::vector<OString> filenames = W_GetIWADFilenames();
-	for (std::vector<OString>::const_iterator it = filenames.begin();
-	     it != filenames.end(); ++it)
+	for (const auto& filename : filenames)
 	{
 		// Construct a file.
 		OWantFile wantfile;
-		std::string filename = it->c_str();
 		if (!OWantFile::make(wantfile, filename, OFILE_WAD))
 		{
 			continue;
@@ -507,7 +479,7 @@ static bool FindIWAD(OResFile& out)
 /**
  * @brief Load files that are assumed to be resolved, in the correct order,
  *        and complete.
- * 
+ *
  * @param newwadfiles New set of WAD files.
  * @param newpatchfiles New set of patch files.
 */
@@ -554,7 +526,7 @@ static void LoadResolvedFiles(const OResFiles& newwadfiles,
 /**
  * @brief Print a warning that occurrs when the user has an IWAD that's a
  *        different version than the one we want.
- * 
+ *
  * @param wanted The IWAD that we wanted.
  * @return True if we emitted an commercial IWAD warning.
  */
@@ -581,7 +553,7 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 		return false;
 	}
 
-	Printf("Odamex attempted to load\n> %s.\n\n", info->mIdName.c_str());
+	Printf("Odamex attempted to load\n> %s.\n\n", info->mIdName);
 
 	// Try to find an IWAD file with a matching name in the user's directories.
 	OWantFile sameNameWant;
@@ -594,7 +566,7 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 		    "Odamex could not find the data file for this game in any of the locations "
 		    "it searches for WAD files.  If you know you have %s on your hard drive, you "
 		    "can add that path to the 'waddirs' cvar so Odamex can find it.\n\n",
-		    wanted.getBasename().c_str());
+		    wanted.getBasename());
 	}
 	else
 	{
@@ -604,14 +576,14 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 			// Found a file, but it's the wrong version.
 			Printf("Odamex found a possible data file, but it's the wrong version.\n> "
 			       "%s\n> %s\n\n",
-			       curInfo->mIdName.c_str(), sameNameRes.getFullpath().c_str());
+			       curInfo->mIdName, sameNameRes.getFullpath());
 		}
 		else
 		{
 			// Found a file, but it's not recognized at all.
 			Printf("Odamex found a possible data file, but Odamex does not recognize "
 			       "it.\n> %s\n\n",
-			       sameNameRes.getFullpath().c_str());
+			       sameNameRes.getFullpath());
 		}
 
 #ifdef _WIN32
@@ -649,22 +621,21 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 	// Resolve wanted wads.
 	OResFiles resolved_wads;
 	resolved_wads.reserve(newwadfiles.size());
-	for (OWantFiles::const_iterator it = newwadfiles.begin(); it != newwadfiles.end();
-	     ++it)
+	for (const auto& wantfile : newwadfiles)
 	{
 		OResFile file;
-		if (!M_ResolveWantedFile(file, *it))
+		if (!M_ResolveWantedFile(file, wantfile))
 		{
 			// Give more useful information when trying to load an IWAD.
-			const bool isCommercial = CommercialIWADWarning(*it);
+			const bool isCommercial = CommercialIWADWarning(wantfile);
 			if (isCommercial && !::missingCommercialIWAD)
 			{
 				::missingCommercialIWAD = true;
 			}
 
-			::missingfiles.push_back(*it);
+			::missingfiles.push_back(wantfile);
 			Printf(PRINT_WARNING, "Could not resolve resource file \"%s\".",
-			       it->getWantedPath().c_str());
+			       wantfile.getWantedPath());
 			continue;
 		}
 		resolved_wads.push_back(file);
@@ -673,15 +644,14 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 	// Resolve wanted patches.
 	OResFiles resolved_patches;
 	resolved_patches.reserve(newpatchfiles.size());
-	for (OWantFiles::const_iterator it = newpatchfiles.begin(); it != newpatchfiles.end();
-	     ++it)
+	for (const auto& wantfile : newpatchfiles)
 	{
 		OResFile file;
-		if (!M_ResolveWantedFile(file, *it))
+		if (!M_ResolveWantedFile(file, wantfile))
 		{
-			::missingfiles.push_back(*it);
+			::missingfiles.push_back(wantfile);
 			Printf(PRINT_WARNING, "Could not resolve patch file \"%s\".",
-			       it->getWantedPath().c_str());
+			       wantfile.getWantedPath());
 			continue;
 		}
 		resolved_patches.push_back(file);
@@ -696,9 +666,9 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 		OWantFile::make(want_odamex, "odamex.wad", OFILE_WAD);
 		if (!M_ResolveWantedFile(odamex_wad, want_odamex))
 		{
-			I_FatalError("Could not resolve \"%s\".  Please ensure this file is "
+			I_FatalError("Could not resolve \"{}\".  Please ensure this file is "
 			             "someplace where Odamex can find it.\n",
-			             want_odamex.getBasename().c_str());
+			             want_odamex.getBasename());
 		}
 	}
 	else
@@ -721,9 +691,9 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 			resolved_wads.erase(resolved_wads.begin());
 			if (W_IsIWADDeprecated(next_iwad))
 			{
-				Printf_Bold("WARNING: IWAD %s is outdated. Please update it to the "
-				            "latest version.\n",
-				            next_iwad.getBasename().c_str());
+				PrintFmt_Bold("WARNING: IWAD {} is outdated. Please update it to the "
+				              "latest version.\n",
+				              next_iwad.getBasename());
 			}
 		}
 	}
@@ -757,11 +727,11 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 /**
  * @brief Check to see if the list of WAD files and patches matches the
  *        currently loaded files.
- * 
+ *
  * @detail Note that this relies on the hashes being equal, so if you want
  *         resources to not be reloaded, ensure the hashes are equal by the
  *         time they reach this spot.
- * 
+ *
  * @param newwadfiles WAD files to check.
  * @param newpatchfiles Patch files to check.
  * @return True if everything checks out.
@@ -841,7 +811,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 		D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
 		// get skill / episode / map from parms
-		strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+		startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
 
 		D_Init();
 	}
@@ -856,7 +826,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 		Printf(PRINT_WARNING,
 		       "Could not load new resource files.\n%s\nReloading previous resource "
 		       "set...\n",
-		       failmsg.c_str());
+		       failmsg);
 
 		D_Shutdown();
 
@@ -866,7 +836,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 			LoadResolvedFiles(oldwadfiles, oldpatchfiles);
 
 			// get skill / episode / map from parms
-			strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+			startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
 
 			D_Init();
 		}
@@ -878,8 +848,8 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 		if (!fatalmsg.empty())
 		{
 			I_FatalError("Failed to load new resource files, then ran into error when "
-			             "loading original resource files:\n%s\n",
-			             fatalmsg.c_str());
+			             "loading original resource files:\n{}\n",
+			             fatalmsg);
 		}
 	}
 
@@ -965,19 +935,19 @@ public:
 		mTask(task)
 	{ }
 
-	virtual ~UncappedTaskScheduler() { }
+	~UncappedTaskScheduler() override { }
 
-	virtual void run()
+	void run() override
 	{
 		mTask();
 	}
 
-	virtual dtime_t getNextTime() const
+	dtime_t getNextTime() const override
 	{
 		return I_GetTime();
 	}
 
-	virtual float getRemainder() const
+	float getRemainder() const override
 	{
 		return 0.0f;
 	}
@@ -997,9 +967,9 @@ public:
 	{
 	}
 
-	virtual ~CappedTaskScheduler() { }
+	~CappedTaskScheduler() override { }
 
-	virtual void run()
+	void run() override
 	{
 		mFrameStartTime = I_GetTime();
 		mAccumulator += mFrameStartTime - mPreviousFrameStartTime;
@@ -1014,12 +984,12 @@ public:
 		}
 	}
 
-	virtual dtime_t getNextTime() const
+	dtime_t getNextTime() const override
 	{
 		return mFrameStartTime + mFrameDuration - mAccumulator;
 	}
 
-	virtual float getRemainder() const
+	float getRemainder() const override
 	{
 		// mAccumulator can be greater than mFrameDuration so only get the
 		// time remaining until the next frame
@@ -1109,11 +1079,10 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 #ifdef CLIENT_APP
 	// Use linear interpolation for rendering entities if the display
 	// framerate is not synced with the simulation frequency.
-	// Ch0wW : if you experience a spinning effect while trying to pause the frame, 
+	// Ch0wW : if you experience a spinning effect while trying to pause the frame,
 	// don't forget to add your condition here.
 	if ((maxfps == TICRATE && capfps)
-		|| timingdemo || paused || step_mode
-		|| ((menuactive || ConsoleState == c_down || ConsoleState == c_falling) && !network_game && !demoplayback))
+		|| timingdemo || step_mode)
 		render_lerp_amount = FRACUNIT;
 	else
 		render_lerp_amount = simulation_scheduler->getRemainder() * FRACUNIT;
@@ -1125,16 +1094,16 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 		return;
 
 	// Sleep until the next scheduled task.
-	dtime_t simulation_wake_time = simulation_scheduler->getNextTime();
-	dtime_t display_wake_time = display_scheduler->getNextTime();
-	dtime_t wake_time = std::min<dtime_t>(simulation_wake_time, display_wake_time);
+	const dtime_t simulation_wake_time = simulation_scheduler->getNextTime();
+	const dtime_t display_wake_time = display_scheduler->getNextTime();
+	const dtime_t wake_time = std::min<dtime_t>(simulation_wake_time, display_wake_time);
 
-	const dtime_t max_sleep_amount = 1000LL * 1000LL;	// 1ms
+	constexpr dtime_t max_sleep_amount = 1000LL * 1000LL;	// 1ms
 
 	// Sleep in 1ms increments until the next scheduled task
 	for (dtime_t now = I_GetTime(); wake_time > now; now = I_GetTime())
 	{
-		dtime_t sleep_amount = std::min<dtime_t>(max_sleep_amount, wake_time - now);
+		const dtime_t sleep_amount = std::min<dtime_t>(max_sleep_amount, wake_time - now);
 		I_Sleep(sleep_amount);
 	}
 }

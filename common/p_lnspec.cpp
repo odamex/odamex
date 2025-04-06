@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@
 #include "m_wdlstats.h"
 #include "p_mapformat.h"
 
-#define FUNC(a) static BOOL a (line_t *ln, AActor *it, int arg0, int arg1, \
+#define FUNC(a) static bool a (line_t *ln, AActor *it, int arg0, int arg1, \
 							   int arg2, int arg3, int arg4)
 
 // Used by the teleporters to know if they were
@@ -42,15 +42,15 @@ int TeleportSide;
 extern bool s_SpecialFromServer;
 
 // Set true if this special was activated from inside a script.
-BOOL InScript;
+bool InScript;
 
 // 9/11/10: Add poly action definitions here, even though they're in p_local...
 // Why are these needed here?  Linux won't compile without these definitions??
 //
-BOOL EV_MovePoly (line_t *line, int polyNum, int speed, angle_t angle, fixed_t dist, BOOL overRide);
-BOOL EV_OpenPolyDoor (line_t *line, int polyNum, int speed, angle_t angle, int delay, int distance, podoortype_t type);
-BOOL EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle, int direction, BOOL overRide);
-BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
+bool EV_MovePoly (line_t *line, int polyNum, int speed, angle_t angle, fixed_t dist, bool overRide);
+bool EV_OpenPolyDoor (line_t *line, int polyNum, int speed, angle_t angle, int delay, int distance, podoortype_t type);
+bool EV_RotatePoly (line_t *line, int polyNum, int speed, int byteAngle, int direction, bool overRide);
+bool EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
                        fixed_t speed2, fixed_t height, int crush, byte silent, int change,
                        crushmode_e crushmode);
 
@@ -432,7 +432,7 @@ FUNC(LS_NOP)
 
 FUNC(LS_NOTIMP)
 {
-	Printf(PRINT_HIGH, "Line special not implemented yet: special number %d", ln->special);
+	PrintFmt(PRINT_HIGH, "Line special not implemented yet.\n");
 	return false;
 }
 
@@ -604,7 +604,7 @@ FUNC(LS_Thing_Stop)
 			target->momx = target->momy = target->momz = 0;
 			if (target->player != NULL)
 				target->momx = target->momy = 0;
-			
+
 			return true;
 		}
 	}
@@ -950,7 +950,7 @@ FUNC(LS_Generic_Stairs)
 // Generic_Stairs (tag, speed, step, dir/igntxt, reset)
 {
 	DFloor::EStair type = (arg3 & 1) ? DFloor::buildUp : DFloor::buildDown;
-	BOOL res = EV_BuildStairs (arg0, type, ln,
+	bool res = EV_BuildStairs (arg0, type, ln,
 							   arg2 * FRACUNIT, SPEED(arg1), 0, arg4, arg3 & 2, 0);
 
 	if (res && ln && (ln->flags & ML_REPEATSPECIAL) && ln->special == Generic_Stairs)
@@ -1396,18 +1396,18 @@ FUNC(LS_Line_SetBlocking)
 	if (arg0)
 	{
 		int i, s;
-		static const int flags[] = {ML_BLOCKING,
-		                            ML_BLOCKMONSTERS,
-		                            ML_BLOCKPLAYERS,
-		                            0, // block floaters (not supported)
-		                            0, // block projectiles (not supported)
-		                            ML_BLOCKEVERYTHING,
-		                            0, // railing (not supported)
-		                            0, // block use (not supported)
-		                            0, // block sight (not supported)
-		                            0, // block hitscan (not supported)
-		                            ML_SOUNDBLOCK,
-		                            -1};
+		static constexpr int flags[] = {ML_BLOCKING,
+		                                ML_BLOCKMONSTERS,
+		                                ML_BLOCKPLAYERS,
+		                                0, // block floaters (not supported)
+		                                0, // block projectiles (not supported)
+		                                ML_BLOCKEVERYTHING,
+		                                0, // railing (not supported)
+		                                0, // block use (not supported)
+		                                0, // block sight (not supported)
+		                                0, // block hitscan (not supported)
+		                                ML_SOUNDBLOCK,
+		                                -1};
 
 		int setflags = 0;
 		int clearflags = 0;
@@ -1435,8 +1435,8 @@ FUNC(LS_Scroll_Wall)
 {
 	if (arg4)
 	{
-		Printf(PRINT_HIGH,
-		       "Warning: Odamex can only scroll entire sidedefs (special 52)");
+		PrintFmt(PRINT_HIGH,
+		       "Warning: Odamex can only scroll entire sidedefs (special 52)\n");
 	}
 	if (arg0)
 	{
@@ -1458,8 +1458,8 @@ FUNC(LS_Line_SetTextureOffset)
 {
 	if (arg4 & 7)
 	{
-		Printf(PRINT_HIGH,
-		       "Warning: Odamex can only offset entire sidedefs (special 53)");
+		PrintFmt(PRINT_HIGH,
+		       "Warning: Odamex can only offset entire sidedefs (special 53)\n");
 	}
 	if (arg0 && arg3 <= 1)
 	{
@@ -1596,7 +1596,7 @@ FUNC(LS_Teleport)
 // Teleport (tid, tag, nosourcefog)
 {
 	if(!it) return false;
-	BOOL result;
+	bool result;
 
 	if (map_format.getZDoom())
 		// [AM] Use ZDoom-style teleport for Hexen-format maps
@@ -1751,7 +1751,6 @@ FUNC(LS_Clear_ForceField)
 	while ((s = P_FindSectorFromTag(arg0, s)) >= 0)
 	{
 		int i;
-		line_t* line;
 
 		for (i = 0; i < sectors[s].linecount; i++)
 		{
@@ -2159,13 +2158,13 @@ void AdjustPusher (int tag, int magnitude, int angle, DPusher::EPusher type)
 		}
 	}
 
-	int numcollected = Collection.Size ();
+	size_t numcollected = Collection.Size ();
 	int secnum = -1;
 
 	// Now create pushers for any sectors that don't already have them.
 	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
 	{
-		int i;
+		size_t i;
 		for (i = 0; i < numcollected; i++)
 		{
 			if (Collection[i].RefNum == sectors[secnum].tag)
@@ -2265,13 +2264,13 @@ FUNC(LS_Scroll_Texture_Both)
 			}
 		}
 
-		int numcollected = Collection.Size ();
+		size_t numcollected = Collection.Size ();
 		int linenum = -1;
 
 		// Now create scrollers for any walls that don't already have them.
 		while ((linenum = P_FindLineFromID (arg0, linenum)) >= 0)
 		{
-			int i;
+			size_t i;
 			for (i = 0; i < numcollected; i++)
 			{
 				if (Collection[i].RefNum == lines[linenum].sidenum[sidechoice])
@@ -2407,9 +2406,6 @@ FUNC(LS_Sector_SetFade)
 				sectors[secnum].colormap->color.getg(),
 				sectors[secnum].colormap->color.getb(),
 				arg1, arg2, arg3);
-		byte r = sectors[secnum].colormap->fade.getr();
-		byte g = sectors[secnum].colormap->fade.getg();
-		byte b = sectors[secnum].colormap->fade.getb();
 		sectors[secnum].SectorChanges |= SPC_Fade;
 	}
 	return true;
@@ -2513,10 +2509,10 @@ FUNC(LS_Line_AlignCeiling)
 // Line_AlignCeiling (lineid, side)
 {
 	int line = P_FindLineFromID (arg0, -1);
-	BOOL ret = 0;
+	bool ret = 0;
 
 	if (line < 0)
-		I_Error ("Sector_AlignCeiling: Lineid %d is undefined", arg0);
+		I_Error("Sector_AlignCeiling: Lineid {} is undefined", arg0);
 	do
 	{
 		ret |= R_AlignFlat (line, !!arg1, 1);
@@ -2528,10 +2524,10 @@ FUNC(LS_Line_AlignFloor)
 // Line_AlignFloor (lineid, side)
 {
 	int line = P_FindLineFromID (arg0, -1);
-	BOOL ret = 0;
+	bool ret = 0;
 
 	if (line < 0)
-		I_Error ("Sector_AlignFloor: Lineid %d is undefined", arg0);
+		I_Error("Sector_AlignFloor: Lineid {} is undefined", arg0);
 	do
 	{
 		ret |= R_AlignFlat (line, !!arg1, 0);
@@ -2546,21 +2542,21 @@ FUNC(LS_ChangeCamera)
 
 	if (!it || !it->player || arg1)
 	{
-		for (Players::iterator itr = players.begin();itr != players.end();++itr)
+		for (auto& player : players)
 		{
-			if (!(itr->ingame()))
+			if (!(player.ingame()))
 				continue;
 
 			if (camera)
 			{
-				itr->camera = camera->ptr();
+				player.camera = camera->ptr();
 				if (arg2)
-					itr->cheats |= CF_REVERTPLEASE;
+					player.cheats |= CF_REVERTPLEASE;
 			}
 			else
 			{
-				itr->camera = itr->mo;
-				itr->cheats &= ~CF_REVERTPLEASE;
+				player.camera = player.mo;
+				player.cheats &= ~CF_REVERTPLEASE;
 			}
 		}
 	}
@@ -2611,15 +2607,15 @@ FUNC(LS_SetPlayerProperty)
 	}
 	else
 	{
-		for (Players::iterator itr = players.begin();itr != players.end();++itr)
+		for (auto& player : players)
 		{
-			if (!(itr->ingame()))
+			if (!(player.ingame()))
 				continue;
 
 			if (arg1)
-				itr->cheats |= mask;
+				player.cheats |= mask;
 			else
-				itr->cheats &= ~mask;
+				player.cheats &= ~mask;
 		}
 	}
 
@@ -2935,14 +2931,14 @@ EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_allowexit)
 EXTERN_CVAR (sv_fragexitswitch)
 
-BOOL CheckIfExitIsGood (AActor *self)
+bool CheckIfExitIsGood (AActor *self)
 {
 	if (self == NULL || !serverside)
 		return false;
 
 	// Bypass the exit restrictions if we're on a lobby.
 	if (level.flags & LEVEL_LOBBYSPECIAL)
-		return true;	
+		return true;
 
 	// [Toke - dmflags] Old location of DF_NO_EXIT
 	if (sv_gametype != GM_COOP && self)
@@ -2964,16 +2960,16 @@ BOOL CheckIfExitIsGood (AActor *self)
 		std::string tstr;
 		if (tspan.hours)
 		{
-			StrFormat(tstr, "%02d:%02d:%02d.%02d", tspan.hours, tspan.minutes,
-			          tspan.seconds, tspan.csecs);
+			tstr = fmt::sprintf("%02d:%02d:%02d.%02d", tspan.hours, tspan.minutes,
+			                    tspan.seconds, tspan.csecs);
 		}
 		else
 		{
-			StrFormat(tstr, "%02d:%02d.%02d", tspan.minutes, tspan.seconds, tspan.csecs);
+			tstr = fmt::sprintf("%02d:%02d.%02d", tspan.minutes, tspan.seconds, tspan.csecs);
 		}
 
-		SV_BroadcastPrintf("%s exited the level in %s.\n",
-		                   self->player->userinfo.netname.c_str(), tstr.c_str());
+		SV_BroadcastPrintFmt("{} exited the level in {}.\n",
+		                     self->player->userinfo.netname, tstr);
 	}
 
 	M_CommitWDLLog();

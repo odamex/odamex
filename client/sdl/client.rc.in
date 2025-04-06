@@ -38,7 +38,7 @@ FILESUBTYPE 0
       VALUE "FileDescription", ODAMEX_DESC
       VALUE "FileVersion", "@PROJECT_VERSION@"
       VALUE "InternalName", ODAMEX_INTERNAL
-      VALUE "LegalCopyright", "ODAMEX and its likeness are Copyright ï¿½ @PROJECT_COPYRIGHT@ by @PROJECT_COMPANY@."
+      VALUE "LegalCopyright", "ODAMEX and its likeness are Copyright © @PROJECT_COPYRIGHT@ by @PROJECT_COMPANY@."
       VALUE "OriginalFilename", ODAMEX_EXE
       VALUE "ProductName", ODAMEX_NAME
       VALUE "ProductVersion", "@PROJECT_VERSION@"

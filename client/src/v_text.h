@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,7 +39,7 @@ struct OGlobalFont
 	}
 	lumpHandle_t at(const size_t idx) const
 	{
-		if (idx < 0 || idx >= HU_FONTSIZE)
+		if (idx >= HU_FONTSIZE)
 			throw std::out_of_range("Out-of-bounds font char");
 
 		return m_fontData[idx];

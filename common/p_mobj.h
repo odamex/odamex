@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,17 +32,17 @@
 // Very simple, very fast.
 // Does not iterate when releasing a netid.
 // Does not iterate when obtaining a netid unless all pooled ids are taken.
-// (in which case does one allocation and does not iterate more than 
+// (in which case does one allocation and does not iterate more than
 //  MEMPOOLSIZE times)
-// Only downside is that it won't detect double-releasing, but shouldn't be 
+// Only downside is that it won't detect double-releasing, but shouldn't be
 // a problem.
 //
-// Thanks to [Dash|RD] for noticing the efficiency problem, hard work on other 
+// Thanks to [Dash|RD] for noticing the efficiency problem, hard work on other
 // versions of this class and giving me this great idea.
 //
 //-----------------------------------------------------------------------------
 
-// [SL] 2012-04-04 
+// [SL] 2012-04-04
 // Modified to use a std::queue, popping from the front of the queue to assign
 // new netids and pushing newly freed netids on the back of the queue.  This is
 // to avoid reassigning a recently freed netid to a different actor.  Otherwise
@@ -82,7 +82,7 @@ class NetIDHandler
 	{
 		if (m_nextID == MAX_NETID)
 		{
-			I_Error("Exceeded maximum number of netids (%u)", MAX_NETID);
+			I_Error("Exceeded maximum number of netids ({})", MAX_NETID);
 		}
 
 		m_nextID += 1;
@@ -142,7 +142,8 @@ void P_SpawnTracerPuff(fixed_t x, fixed_t y, fixed_t z);
 void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
 bool P_CheckMissileSpawn(AActor* th);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
-void P_SpawnPlayerMissile(AActor *source, mobjtype_t type);
+AActor* P_SpawnPlayerMissile(AActor* source, mobjtype_t type);
+size_t P_GetMapThingPlayerNumber(mapthing2_t* mthing);
 bool P_VisibleToPlayers(AActor *mo);
 void P_SetMobjBaseline(AActor& mo);
 uint32_t P_GetMobjBaselineFlags(AActor& mo);

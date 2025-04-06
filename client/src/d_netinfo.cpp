@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,20 +31,6 @@
 #include "r_draw.h"
 #include "r_state.h"
 #include "cl_main.h"
-
-// The default preference ordering when the player runs out of one type of ammo.
-// Vanilla Doom compatible.
-const byte UserInfo::weapon_prefs_default[NUMWEAPONS] = {
-	0, // wp_fist
-	4, // wp_pistol
-	5, // wp_shotgun
-	6, // wp_chaingun
-	1, // wp_missile
-	8, // wp_plasma
-	2, // wp_bfg
-	3, // wp_chainsaw
-	7  // wp_supershotgun
-};
 
 EXTERN_CVAR (cl_autoaim)
 EXTERN_CVAR (cl_name)
@@ -178,7 +164,7 @@ void D_SetupUserInfo(void)
 
 	std::string netname(cl_name.str());
 	StripColorCodes(netname);
-	
+
 	if (netname.length() > MAXPLAYERNAME)
 		netname.erase(MAXPLAYERNAME);
 
@@ -207,8 +193,8 @@ void D_SetupUserInfo(void)
 	argb_t color = V_GetColorFromString(cl_color);
 	coninfo->color[0] = color.geta();
 	coninfo->color[1] = color.getr();
-	coninfo->color[2] = color.getg(); 
-	coninfo->color[3] = color.getb(); 
+	coninfo->color[2] = color.getg();
+	coninfo->color[3] = color.getb();
 
 	// update color translation
 	if (!demoplayback && !connected)

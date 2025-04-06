@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -104,9 +104,9 @@ EXTERN_CVAR (gammalevel)
 EXTERN_CVAR (language)
 EXTERN_CVAR (mute_spectators)
 EXTERN_CVAR (mute_enemies)
+EXTERN_CVAR (wi_oldintermission)
 
-
-// [Ralphis - Menu] Compatibility Menu
+// [electricbrass - Menu] HUD Menu
 EXTERN_CVAR (hud_targetnames)
 EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_scale)
@@ -119,9 +119,13 @@ EXTERN_CVAR (hud_heldflag_flash)
 EXTERN_CVAR (hud_transparency)
 EXTERN_CVAR (hud_anchoring)
 EXTERN_CVAR (hud_revealsecrets)
+EXTERN_CVAR(hud_feedobits)
+EXTERN_CVAR(hud_feedtime)
+EXTERN_CVAR(hud_extendedinfo)
+
+// [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
-EXTERN_CVAR (wi_oldintermission)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_zdoomsound)
 EXTERN_CVAR (co_fixweaponimpacts)
@@ -132,8 +136,7 @@ EXTERN_CVAR (co_boomphys)			// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_removesoullimit)
 EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (co_globalsound)
-EXTERN_CVAR(hud_feedobits)
-EXTERN_CVAR(hud_feedtime)
+EXTERN_CVAR (co_novileghosts)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -144,9 +147,17 @@ EXTERN_CVAR (m_side)
 EXTERN_CVAR (m_forward)
 
 // [Ralphis - Menu] Sound Menu
-EXTERN_CVAR (snd_midireset)
-EXTERN_CVAR (snd_musicsystem)
 EXTERN_CVAR (snd_musicvolume)
+EXTERN_CVAR (snd_musicsystem)
+EXTERN_CVAR (snd_nomusic)
+EXTERN_CVAR (snd_midireset)
+EXTERN_CVAR (snd_midifallback)
+EXTERN_CVAR (snd_mididelay)
+EXTERN_CVAR (snd_midisysex)
+EXTERN_CVAR (snd_oplcore)
+EXTERN_CVAR (snd_oplpan)
+EXTERN_CVAR (snd_oplchips)
+EXTERN_CVAR (snd_oplbank)
 EXTERN_CVAR (snd_announcervolume)
 EXTERN_CVAR (snd_sfxvolume)
 EXTERN_CVAR (snd_crossover)
@@ -255,8 +266,8 @@ static value_t DoomOrOdamex[2] =
 menu_t  *CurrentMenu;
 int		CurrentItem;
 bool configuring_controls = false;
-static BOOL	WaitingForKey;
-static BOOL	WaitingForAxis;
+static bool	WaitingForKey;
+static bool	WaitingForAxis;
 static const char	   *OldContMessage;
 static itemtype OldContType;
 static const char	   *OldAxisMessage;
@@ -275,7 +286,6 @@ static void SoundOptions (void);
 static void CompatOptions (void);
 static void NetworkOptions (void);
 static void WeaponOptions (void);
-static void GoToConsole (void);
 static void GoToConsole (void);
 void Reset2Defaults (void);
 void Reset2Saved (void);
@@ -337,6 +347,7 @@ static menuitem_t ControlsItems[] = {
 	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+left"} },
 	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+right"} },
 	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
+	{ control,	"Always Run",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglerun"} },
 	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
 	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
 	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"turn180"} },
@@ -531,14 +542,16 @@ menu_t JoystickMenu = {
   *=======================================*/
 
 static value_t MusSys[] = {
+	#ifndef _WIN32
 	{ MS_SDLMIXER,	"SDL Mixer"},
+	#endif
+	{ MS_LIBADLMIDI,"libADLMIDI (OPL3 FM)"},
 	#ifdef OSX
 	{ MS_AUDIOUNIT,	"AudioUnit"},
 	#endif	// OSX
 	#ifdef PORTMIDI
 	{ MS_PORTMIDI,	"PortMidi"},
 	#endif	// PORTMIDI
-	{ MS_NONE,		"No Music"}
 };
 
 static value_t MidiReset[] = {
@@ -546,6 +559,18 @@ static value_t MidiReset[] = {
 	{ 1.0,			"GM" },
 	{ 2.0,			"GS" },
 	{ 3.0,			"XG" }
+};
+
+static value_t OplCore[] = {
+	{ 0.0,			"Fast (Dosbox)"},
+	{ 1.0,			"Balanced (Nuked 1.74)"},
+	{ 2.0,			"Accurate (Nuked 1.8)"}
+};
+
+static value_t OplBank[] = {
+	{ 0.0,			"Doom"},
+	{ 1.0,			"Doom II"},
+	{ 2.0,			"DMXOPL3"}
 };
 
 static value_t VoxType[] = {
@@ -560,30 +585,88 @@ static value_t ChatSndType[] = {
 	{ 2.0,			"Teamchat only" }
 };
 
-static float num_mussys = static_cast<float>(ARRAY_LENGTH(MusSys));
+static void AdvMidiOptions (void);
+static void LibAdlMidiOptions (void);
+
+static constexpr float num_mussys = static_cast<float>(ARRAY_LENGTH(MusSys));
 
 EXTERN_CVAR(cl_chatsounds)
 
-static menuitem_t SoundItems[] = {
-    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext ,   "Sound Levels"                      , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
-	{ slider    ,	"Music Volume"                      , {&snd_musicvolume},	{0.0},      	{1.0},	    {0.015625},      {NULL} },
-	{ slider    ,	"Sound Volume"                      , {&snd_sfxvolume},		{0.0},      	{1.0},	    {0.015625},      {NULL} },
-	{ slider    ,	"Announcer Volume"             		, {&snd_announcervolume},	{0.0},      {1.0},	    {0.015625},      {NULL} },
-	{ discrete  ,   "Stereo Switch"                     , {&snd_crossover},	    {2.0},			{0.0},		{0.0},		{OnOff} },
-	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
-	{ yellowtext ,   "Music Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
-	{ discrete	,	"Music System Backend"				, {&snd_musicsystem},	{num_mussys},	{0.0},		{0.0},		{MusSys} },
-	{ discrete	,	"MIDI Reset"						, {&snd_midireset},		{4.0},			{0.0},		{0.0},		{MidiReset} },
-	{ redtext   ,	" "                                 , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
-	{ yellowtext ,   "Sound Options"                     , {NULL},	            {0.0},      	{0.0},      {0.0},      {NULL} },
-	{ discrete  ,   "Game SFX"                          , {&snd_gamesfx},		{2.0},			{0.0},		{0.0},		{OnOff} },
-	{ discrete  ,   "Announcer Type"                    , {&snd_voxtype},		{3.0},			{0.0},		{0.0},		{VoxType} },
-	{ discrete  ,   "Player Connect Alert"              , {&cl_connectalert},	{2.0},			{0.0},		{0.0},		{OnOff} },
-	{ discrete  ,   "Player Disconnect Alert"           , {&cl_disconnectalert},{2.0},			{0.0},		{0.0},		{OnOff} },
-    { discrete  ,	"Chat sounds"						, {&cl_chatsounds},		{3.0},			{0.0},		{0.0},		{ChatSndType}},
+static menuitem_t AdvMidiItems[] = {
+	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext, "Advanced MIDI Options" , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
+	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
+	{ discrete  , "MIDI Instrument Fallback", {&snd_midifallback}, {4.0}, {0.0}, {0.0}, {OnOff} },
+	{ slider    , "MIDI Reset Delay (ms)", {&snd_mididelay}, {0.0}, {2000.0}, {50.0}, {NULL} },
+	#ifdef PORTMIDI
+	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext, "PortMidi Options", {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
+	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
+	{ discrete  , "MIDI Reset"      , {&snd_midireset}, {4.0}, {0.0}, {0.0}, {MidiReset} },
+	{ discrete  , "Read MIDI SysEx" , {&snd_midisysex}, {4.0}, {0.0}, {0.0}, {OnOff} },
+	#endif
+	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
+	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
+	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
+	{yellowtext, "! ! ! NOTICE ! ! !", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {orangetext, "Modifying these settings may cause", {NULL},{0.0}, {0.0}, {0.0}, {NULL}},
+    {orangetext, "unwanted behavior during MIDI playback!", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+};
 
- };
+ static menuitem_t LibAdlMidiItems[] = {
+	{ redtext   , " "                   , {NULL}         , {0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext, "OPL FM Synth Options", {NULL}         , {0.0}, {0.0}, {0.0}, {NULL} },
+	{ redtext   , " "                   , {NULL}         , {0.0}, {0.0}, {0.0}, {NULL} },
+	{ discrete  , "OPL quality"         , {&snd_oplcore} , {3.0}, {0.0}, {0.0}, {OplCore} },
+	{ discrete  , "Full OPL panning"    , {&snd_oplpan}  , {2.0}, {0.0}, {0.0}, {OnOff} },
+	{ slider    , "# of OPL chips"      , {&snd_oplchips}, {1.0}, {8.0}, {1.0}, {NULL} },
+	{ discrete  , "OPL instruments"     , {&snd_oplbank} , {3.0}, {0.0}, {0.0}, {OplBank} },
+};
+
+static menuitem_t SoundItems[] = {
+	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
+	{ yellowtext,   "Sound Levels"             , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
+	{ slider    ,	"Music Volume"             , {&snd_musicvolume},    {0.0},        {1.0}, {0.015625}, {NULL} },
+	{ slider    ,	"Sound Volume"             , {&snd_sfxvolume},      {0.0},        {1.0}, {0.015625}, {NULL} },
+	{ slider    ,	"Announcer Volume"         , {&snd_announcervolume},{0.0},        {1.0}, {0.015625}, {NULL} },
+	{ discrete  ,   "Stereo Switch"            , {&snd_crossover},      {2.0},        {0.0}, {0.0},      {OnOff} },
+	{ redtext   ,	" "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
+	{ yellowtext,   "Music Options"            , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
+	{ discrete  ,   "Midi Synth"               , {&snd_musicsystem},    {num_mussys}, {0.0}, {0.0},      {MusSys} },
+	{ discrete  ,   "Disable Music"            , {&snd_nomusic},        {2.0},        {0.0}, {0.0},      {YesNo} },
+	{ redtext   ,	" "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
+	{ more      ,   "OPL FM Synth Options"     , {NULL},                {0.0},        {0.0}, {0.0},      {(value_t *)LibAdlMidiOptions}},
+	{ more      ,   "Advanced MIDI Options"    , {NULL},                {0.0},        {0.0}, {0.0},      {(value_t *)AdvMidiOptions}},
+	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
+	{ yellowtext,   "Sound Options"            , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
+	{ discrete  ,   "Game SFX"                 , {&snd_gamesfx},        {2.0},        {0.0}, {0.0},      {OnOff} },
+	{ discrete  ,   "Announcer Type"           , {&snd_voxtype},        {3.0},        {0.0}, {0.0},      {VoxType} },
+	{ discrete  ,   "Player Connect Alert"     , {&cl_connectalert},    {2.0},        {0.0}, {0.0},      {OnOff} },
+	{ discrete  ,   "Player Disconnect Alert"  , {&cl_disconnectalert}, {2.0},        {0.0}, {0.0},      {OnOff} },
+	{ discrete  ,   "Chat sounds"              , {&cl_chatsounds},      {3.0},        {0.0}, {0.0},      {ChatSndType}},
+};
+
+menu_t AdvMidiMenu = {
+	"M_SOUND",
+	3,
+	ARRAY_LENGTH(AdvMidiItems),
+	177,
+	AdvMidiItems,
+	0,
+	0,
+	NULL
+};
+
+menu_t LibAdlMidiMenu = {
+	"M_SOUND",
+	3,
+	ARRAY_LENGTH(LibAdlMidiItems),
+	177,
+	LibAdlMidiItems,
+	0,
+	0,
+	NULL
+};
 
 menu_t SoundMenu = {
 	"M_SOUND",
@@ -607,6 +690,7 @@ static menuitem_t CompatItems[] ={
 	{svdiscrete, "Finer-precision Autoaim",        {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "Fix hit detection at grid edges",{&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "Remove pain elemental spawn limit",{&co_removesoullimit}, {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Fix arch-vile ghost bug",			{&co_novileghosts}, {2.0}, {0.0}, {0.0}, {OnOff}},
 	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{yellowtext, "Items and Decoration",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{svdiscrete, "Fix invisible puffs under skies",{&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
@@ -656,7 +740,7 @@ static menuitem_t NetworkItems[] = {
 	{ discrete,		"Predict sector actions",		{&cl_predictsectors},{3.0},		{0.0},		{0.0},		{PredictSectors} },
 	{ discrete,		"Predict weapon effects",		{&cl_predictweapons},{2.0},		{0.0},		{0.0},		{OnOff} },
 	{ redtext,		" ",							{NULL},				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },
-	{ discrete, 	"Download From Server", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} },
+	{ discrete, 	"Download From Internet", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} },
 
 	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ yellowtext,	"Netdemo Settings",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
@@ -755,6 +839,7 @@ EXTERN_CVAR (am_classicmapstring)
 EXTERN_CVAR (am_usecustomcolors)
 EXTERN_CVAR (st_scale)
 EXTERN_CVAR (r_stretchsky)
+EXTERN_CVAR (r_linearsky)
 EXTERN_CVAR (r_skypalette)
 EXTERN_CVAR (r_wipetype)
 EXTERN_CVAR (r_drawplayersprites)
@@ -793,18 +878,20 @@ int dummy = 0;
 
 CVAR_FUNC_IMPL (ui_transred)
 {
-    M_SlideUIRed((int)var);
+    M_SlideUIRed(var.asInt());
 }
 
 CVAR_FUNC_IMPL (ui_transgreen)
 {
-    M_SlideUIGreen((int)var);
+    M_SlideUIGreen(var.asInt());
 }
 
 CVAR_FUNC_IMPL (ui_transblue)
 {
-    M_SlideUIBlue((int)var);
+    M_SlideUIBlue(var.asInt());
 }
+
+static value_t Endoom[] = {{0.0, "Off"}, {1.0, "On"}, {2.0, "PWAD Only"}};
 
 static menuitem_t VideoItems[] = {
     {more, "Heads-up display", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)StartHUDMenu}},
@@ -835,13 +922,14 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "See killer on Death",			{&cl_deathcam},   {2.0}, {0.0}, {0.0}, {OnOff}},
-	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
+	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "Linear Skies",			    {&r_linearsky},	   		{3.0}, {0.0},	{0.0},  {OnOffAuto} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Use softer invuln effect", {&r_softinvulneffect},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
 	{ discrete, "Multiplayer Intermissions",{&wi_oldintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
 	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },
-    { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{2.0}, {0.0},	{0.0},  {OnOff} },
+    { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{3.0}, {0.0},	{0.0},  {Endoom} },
 
 
 };
@@ -890,6 +978,9 @@ static value_t Crosshairs[] = {{0.0, "None"}, {1.0, "Cross 1"}, {2.0, "Cross 2"}
                                {3.0, "X"},    {4.0, "Diamond"}, {5.0, "Dot"},
                                {6.0, "Box"},  {7.0, "Angle"},   {8.0, "Big Thing"}};
 
+static value_t ExtendedHudStyles[] = {{0.0, "Off"}, {1.0, "Horizontal 1"}, {2.0, "Horizontal 2"},
+								 {3.0, "Vertical 1"}, {4.0, "Vertical 2"},};
+
 static menuitem_t HUDItems[] = {
     {yellowtext, "Status Bar", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
     {discrete, "Scale status bar", {&st_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
@@ -908,6 +999,7 @@ static menuitem_t HUDItems[] = {
     {slider, "Feed Timeout", {&hud_feedtime}, {1.0}, {10.0}, {0.25}, {NULL}},
     {discrete, "Show Kills in Feed", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {discrete, "Netdemo infos", {&hud_demobar}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {discrete, "Extended hud", {&hud_extendedinfo}, {5.0}, {0.0}, {0.0}, {ExtendedHudStyles}},
     {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 
     {yellowtext, "Scoreboard", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
@@ -952,6 +1044,7 @@ menu_t HUDMenu = {
 EXTERN_CVAR(message_showpickups)
 EXTERN_CVAR(message_showobituaries)
 EXTERN_CVAR (con_coloredmessages)
+EXTERN_CVAR (con_scaletext)
 EXTERN_CVAR (hud_scaletext)
 EXTERN_CVAR (msg0color)
 EXTERN_CVAR (msg1color)
@@ -986,12 +1079,15 @@ static value_t TextColors[] =
 };
 
 // TODO: Put all language info in one array, auto detect what's in the lump?
-static value_t Languages[] = {
-	{ 0.0, "Auto" },
-	{ 1.0, "English" },
-	{ 2.0, "French" },
-	{ 3.0, "Italian" }
-};
+//static value_t Languages[] = { // unused
+//	{ 0.0, "Auto" },
+//	{ 1.0, "English" },
+//	{ 2.0, "French" },
+//	{ 3.0, "Italian" }
+//};
+
+static value_t ScaleFactors[] = {{0.0, "Auto"}, {1.0, "1X"}, {2.0, "2X"},
+                                 {3.0, "3X"},   {4.0, "4X"}, {5.0, "5X"}};
 
 static menuitem_t MessagesItems[] = {
 #if 0
@@ -1001,12 +1097,13 @@ static menuitem_t MessagesItems[] = {
 	{ slider,	"Center Message Timeout",{&con_midtime},		{1.0}, {10.0},	{0.25}, {NULL} },
 	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },
 	{ discrete,	"Colorize messages",	{&con_coloredmessages},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete,	"Scale console text",   {&con_scaletext},		{5.0}, {0.0}, 	{0.0}, {ScaleFactors} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ yellowtext,"Display settings",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete,	"Show pickup messages",	{&message_showpickups},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ discrete,	"Show death messages",	{&message_showobituaries},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ discrete,	"Hide spectator messages",	{&mute_spectators},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ discrete,	"Hide enemies messages",	{&mute_enemies},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ yellowtext,"Display settings",	{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ discrete,	"Pickup messages",		{&message_showpickups},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete,	"Death messages",		{&message_showobituaries},	{2.0}, {0.0},   {0.0},	{OnOff} },
+	{ discrete,	"Spectator messages",	{&mute_spectators},	{2.0}, {0.0},   {0.0},	{OffOn} },
+	{ discrete,	"Enemy messages",		{&mute_enemies},	{2.0}, {0.0},   {0.0},	{OffOn} },
 
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ yellowtext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1095,9 +1192,7 @@ static void M_SetVideoMode(uint16_t width, uint16_t height)
 	old_width = I_GetVideoWidth();
 	old_height = I_GetVideoHeight();
 
-	char command[30];
-	sprintf(command, "vid_setmode %d %d", width, height);
-	AddCommandString(command);
+	AddCommandString(fmt::format("vid_setmode {} {}", width, height));
 
 	SetModesMenu(width, height);
 }
@@ -1127,7 +1222,7 @@ static value_t VidFPSCaps[] = {
 	{ 60.0,		"60fps" },
 	{ 70.0,		"70fps" },
    	{ 105.0,	"105fps"},
-	{ 120.0,	"120fps" }, 
+	{ 120.0,	"120fps" },
 	{ 140.0,	"140fps"},
     	{ 144.0,	"144fps"},
     	{ 240.0,	"240fps"},
@@ -1200,9 +1295,9 @@ static void BuildModesList(int hiwidth, int hiheight)
 	MenuModeList menumodelist;
 
 	const IVideoModeList* videomodelist = I_GetVideoCapabilities()->getSupportedVideoModes();
-	for (IVideoModeList::const_iterator it = videomodelist->begin(); it != videomodelist->end(); ++it)
-		if (it->isFullScreen() == fullscreen)
-			menumodelist.push_back(std::make_pair(it->width, it->height));
+	for (const auto& mode : *videomodelist)
+		if (mode.isFullScreen() == fullscreen)
+			menumodelist.emplace_back(mode.width, mode.height);
 	menumodelist.erase(std::unique(menumodelist.begin(), menumodelist.end()), menumodelist.end());
 
 	MenuModeList::const_iterator mode_it = menumodelist.begin();
@@ -1223,15 +1318,14 @@ static void BuildModesList(int hiwidth, int hiheight)
 
 			if (mode_it != menumodelist.end())
 			{
-				int width = mode_it->first;
-				int height = mode_it->second;
+				auto [width, height] = *mode_it;
 				++mode_it;
 
 				if (width == hiwidth && height == hiheight)
 					ModesItems[i].e.highlight = ModesItems[i].a.selmode = col;
 
 				char strtemp[32];
-				sprintf(strtemp, "%dx%d", width, height);
+				snprintf(strtemp, 32, "%dx%d", width, height);
 				ReplaceString(str, strtemp);
 			}
 			else
@@ -1291,7 +1385,7 @@ static void SetModesMenu(int w, int h)
 	else
 	{
 		static char enter_text[64];
-		sprintf(enter_text, "TESTING %dx%d", w, h);
+		snprintf(enter_text, 64, "TESTING %dx%d", w, h);
 
 		ModesItems[VM_ENTERLINE].label = enter_text;
 		ModesItems[VM_TESTLINE].label = VMTestWaitText;
@@ -1334,10 +1428,7 @@ EXTERN_CVAR(ui_dimcolor)
 // [Russell] - Modified to send new colours
 static void M_SendUINewColor (int red, int green, int blue)
 {
-	char command[24];
-
-	sprintf (command, "ui_dimcolor \"%02x %02x %02x\"", red, green, blue);
-	AddCommandString (command);
+	AddCommandString(fmt::format("ui_dimcolor \"{:02} {:02x} {:02}\"", red, green, blue));
 }
 
 static void M_SlideUIRed(int val)
@@ -1507,11 +1598,11 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 	if (step == 0.0f)
 		return;
 	else if (step >= 1.0f)
-		StrFormat(buf, "%.0f", cur);
+		buf = fmt::sprintf("%.0f", cur);
 	else if (step >= 0.1f)
-		StrFormat(buf, "%.1f", cur);
+		buf = fmt::sprintf("%.1f", cur);
 	else
-		StrFormat(buf, "%.2f", cur);
+		buf = fmt::sprintf("%.2f", cur);
 	screen->DrawTextCleanMove(CR_GREEN, x + 96, y, buf.c_str());
 }
 
@@ -1752,12 +1843,11 @@ void M_OptDrawer (void)
 
 			case joyactive:
 			{
-				int         numjoy;
 				std::string joyname;
 
-				numjoy = I_GetJoystickCount();
+				size_t numjoy = I_GetJoystickCount();
 
-				if((int)item->a.cvar->value() > numjoy)
+				if((size_t)item->a.cvar->value() > numjoy)
 					item->a.cvar->Set(0.0);
 
 				if(!numjoy)
@@ -1885,7 +1975,7 @@ void M_OptResponder (event_t *ev)
 			int newflags = *item->e.flagint ^ item->a.flagmask;
 			char val[16];
 
-			sprintf (val, "%d", newflags);
+			snprintf (val, 16, "%d", newflags);
 			flagsvar->Set (val);
 			return;
 	}
@@ -2004,7 +2094,7 @@ void M_OptResponder (event_t *ev)
 				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
 			}
 		}
-		else if (Key_IsPageDownKey(ch, numlock)) 
+		else if (Key_IsPageDownKey(ch, numlock))
 		{
 			if (CanScrollDown)
 			{
@@ -2075,7 +2165,7 @@ void M_OptResponder (event_t *ev)
 				part = 0x00;
 
 			char singlecolor[3];
-			sprintf(singlecolor, "%02x", part);
+			snprintf(singlecolor, 3, "%02x", part);
 
 			if (item->type == redslider)
 				memcpy(newcolor, singlecolor, 2);
@@ -2139,13 +2229,11 @@ void M_OptResponder (event_t *ev)
 
 		case joyactive:
 		{
-			int         numjoy;
+			size_t numjoy = I_GetJoystickCount();
 
-			numjoy = I_GetJoystickCount();
-
-			if ((int)item->a.cvar->value() > numjoy)
+			if ((size_t)item->a.cvar->value() > numjoy)
 				item->a.cvar->Set(0.0);
-			else if ((int)item->a.cvar->value() > 0)
+			else if ((size_t)item->a.cvar->value() > 0)
 				item->a.cvar->Set(item->a.cvar->value() - 1);
 		}
 		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
@@ -2203,7 +2291,7 @@ void M_OptResponder (event_t *ev)
 				part = 0xff;
 
 			char singlecolor[3];
-			sprintf(singlecolor, "%02x", part);
+			snprintf(singlecolor, 3, "%02x", part);
 
 			if (item->type == redslider)
 				memcpy(newcolor, singlecolor, 2);
@@ -2270,13 +2358,11 @@ void M_OptResponder (event_t *ev)
 
 		case joyactive:
 		{
-			int         numjoy;
+			size_t numjoy = I_GetJoystickCount();
 
-			numjoy = I_GetJoystickCount();
-
-			if ((int)item->a.cvar->value() >= numjoy)
+			if ((size_t)item->a.cvar->value() >= numjoy)
 				item->a.cvar->Set(0.0);
-			else if ((int)item->a.cvar->value() < (numjoy - 1))
+			else if ((size_t)item->a.cvar->value() < (numjoy - 1))
 				item->a.cvar->Set(item->a.cvar->value() + 1);
 
 		}
@@ -2497,6 +2583,16 @@ END_COMMAND (menu_keys)
 static void VideoOptions (void)
 {
 	M_SwitchMenu (&VideoMenu);
+}
+
+void AdvMidiOptions (void)
+{
+	M_SwitchMenu (&AdvMidiMenu);
+}
+
+void LibAdlMidiOptions (void)
+{
+	M_SwitchMenu (&LibAdlMidiMenu);
 }
 
 void SoundOptions (void) // [Ralphis] for sound menu

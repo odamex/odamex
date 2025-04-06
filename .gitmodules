@@ -26,3 +26,6 @@
 [submodule "libraries/portmidi"]
 	path = libraries/portmidi
 	url = https://github.com/PortMidi/portmidi.git
+[submodule "libraries/libadlmidi"]
+	path = libraries/libadlmidi
+	url = https://github.com/Wohlstand/libADLMIDI.git

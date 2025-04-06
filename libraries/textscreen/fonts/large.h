@@ -2056,5 +2056,5 @@ static const uint8_t large_font_data[] =
 
 static const txt_font_t large_font =
 {
-    "large", large_font_data, 16, 32,
+    (char*)"large", large_font_data, 16, 32,
 };

@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,6 +39,8 @@
 #include "i_system.h"
 #include "cmdlib.h"
 
+#include "fmt/ranges.h"
+
 #ifdef GEKKO
 #include "i_wii.h"
 #endif
@@ -49,15 +51,38 @@
 
 
 char		com_token[8192];
-BOOL		com_eof;
+bool		com_eof;
+
+// Safe string copy function that works like OpenBSD's strlcpy().
+// Returns true if the string was not truncated.
+// from Chocolate Doom m_misc.cpp
+
+bool M_StringCopy(char *dest, const char *src, size_t dest_size)
+{
+    size_t len;
+
+    if (dest_size >= 1)
+    {
+        dest[dest_size - 1] = '\0';
+        strncpy(dest, src, dest_size - 1);
+    }
+    else
+    {
+        return false;
+    }
+
+    len = strlen(dest);
+    return src[len] == '\0';
+}
 
 char *copystring (const char *s)
 {
 	char *b;
 	if (s)
 	{
-		b = new char[strlen(s)+1];
-		strcpy (b, s);
+		size_t len = strlen(s) + 1;
+		b = new char[len];
+		M_StringCopy(b, s, len);
 	}
 	else
 	{
@@ -164,7 +189,7 @@ int ParseHex(const char* hex)
 		else if (*str >= 'A' && *str <= 'F')
 			num += 10 + *str-'A';
 		else {
-			DPrintf("Bad hex number: %s\n",hex);
+			DPrintFmt("Bad hex number: {}\n",hex);
 			return 0;
 		}
 		str++;
@@ -267,13 +292,13 @@ size_t StdStringFind(const std::string& haystack, const std::string& needle,
 }
 
 size_t StdStringFind(const std::string& haystack, const std::string& needle,
-    size_t pos = 0, size_t n = std::string::npos, bool CIS = false)
+    size_t pos, size_t n, bool CIS)
 {
     return StdStringFind(haystack, needle, pos, n, CIS, false);
 }
 
 size_t StdStringRFind(const std::string& haystack, const std::string& needle,
-    size_t pos = 0, size_t n = std::string::npos, bool CIS = false)
+    size_t pos, size_t n, bool CIS)
 {
     return StdStringFind(haystack, needle, pos, n, CIS, true);
 }
@@ -327,15 +352,7 @@ std::vector<std::string> VectorArgs(size_t argc, char **argv) {
 
 // [AM] Return a joined string based on a vector of strings
 std::string JoinStrings(const std::vector<std::string> &pieces, const std::string &glue) {
-	std::ostringstream result;
-	for (std::vector<std::string>::const_iterator it = pieces.begin();
-		 it != pieces.end();++it) {
-		result << *it;
-		if (it != (pieces.end() - 1)) {
-			result << glue;
-		}
-	}
-	return result.str();
+	return fmt::format("{}", fmt::join(pieces, glue));
 }
 
 // Tokenize a string
@@ -357,54 +374,9 @@ StringTokens TokenizeString(const std::string& str, const std::string& delim) {
 	return tokens;
 }
 
-//
-// A quick and dirty std::string formatting that uses snprintf under the covers.
-//
-FORMAT_PRINTF(2, 3) void STACK_ARGS StrFormat(std::string& out, const char* fmt, ...)
-{
-	va_list va;
-	va_start(va, fmt);
-	VStrFormat(out, fmt, va);
-	va_end(va);
-}
-
-//
-// A quick and dirty std::string formatting that uses snprintf under the covers.
-//
-void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va)
-{
-	va_list va2;
-	va_copy(va2, va);
-
-	// Get desired length of buffer.
-	int chars = vsnprintf(NULL, 0, fmt, va);
-	if (chars < 0)
-	{
-		I_Error("Encoding error detected in StrFormat\n");
-	}
-	size_t len = (size_t)chars + sizeof('\0');
-
-	// Allocate the buffer.
-	char* buf = (char*)malloc(len);
-	if (buf == NULL)
-	{
-		I_Error("Could not allocate StrFormat buffer\n");
-	}
-
-	// Actually write to the buffer.
-	int ok = vsnprintf(buf, len, fmt, va2);
-	if (ok != chars)
-	{
-		I_Error("Truncation detected in StrFormat\n");
-	}
-
-	out = buf;
-	free(buf);
-}
-
 /**
- * @brief Format passed number of bytes with a byte multiple suffix. 
- * 
+ * @brief Format passed number of bytes with a byte multiple suffix.
+ *
  * @param out Output string buffer.
  * @param bytes Number of bytes to format.
  */
@@ -426,9 +398,9 @@ void StrFormatBytes(std::string& out, size_t bytes)
 	}
 
 	if (magnitude)
-		StrFormat(out, "%.2f %s", checkbytes, BYTE_MAGS[magnitude]);
+		out = fmt::sprintf("%.2f %s", checkbytes, BYTE_MAGS[magnitude]);
 	else
-		StrFormat(out, "%.0f %s", checkbytes, BYTE_MAGS[magnitude]);
+		out = fmt::sprintf("%.0f %s", checkbytes, BYTE_MAGS[magnitude]);
 }
 
 // [AM] Format a tm struct as an ISO8601-compliant extended format string.
@@ -522,10 +494,7 @@ bool StrToTime(std::string str, time_t &tim) {
 		i = j;
 
 		// Push to tokens vector
-		token_t token;
-		token.first = num;
-		token.second = timeword;
-		tokens.push_back(token);
+		tokens.emplace_back(num, timeword);
 
 		// Skip whitespace and commas.
 		while ((str[i] == ' ' || str[i] == ',') && i < size) {
@@ -533,25 +502,25 @@ bool StrToTime(std::string str, time_t &tim) {
 		}
 	}
 
-	for (tokens_t::iterator it = tokens.begin();it != tokens.end();++it) {
-		if (it->second.compare(std::string("seconds").substr(0, it->second.size())) == 0) {
-			tim += it->first;
-		} else if (it->second.compare("secs") == 0) {
-			tim += it->first;
-		} else if (it->second.compare(std::string("minutes").substr(0, it->second.size())) == 0) {
-			tim += it->first * 60;
-		} else if (it->second.compare("mins") == 0) {
-			tim += it->first * 60;
-		} else if (it->second.compare(std::string("hours").substr(0, it->second.size())) == 0) {
-			tim += it->first * 3600;
-		} else if (it->second.compare(std::string("days").substr(0, it->second.size())) == 0) {
-			tim += it->first * 86400;
-		} else if (it->second.compare(std::string("weeks").substr(0, it->second.size())) == 0) {
-			tim += it->first * 604800;
-		} else if (it->second.compare(std::string("months").substr(0, it->second.size())) == 0) {
-			tim += it->first * 2592000;
-		} else if (it->second.compare(std::string("years").substr(0, it->second.size())) == 0) {
-			tim += it->first * 31536000;
+	for (const auto& [count, timeword] : tokens) {
+		if (timeword.compare(std::string("seconds").substr(0, timeword.size())) == 0) {
+			tim += count;
+		} else if (timeword.compare("secs") == 0) {
+			tim += count;
+		} else if (timeword.compare(std::string("minutes").substr(0, timeword.size())) == 0) {
+			tim += count * 60;
+		} else if (timeword.compare("mins") == 0) {
+			tim += count * 60;
+		} else if (timeword.compare(std::string("hours").substr(0, timeword.size())) == 0) {
+			tim += count * 3600;
+		} else if (timeword.compare(std::string("days").substr(0, timeword.size())) == 0) {
+			tim += count * 86400;
+		} else if (timeword.compare(std::string("weeks").substr(0, timeword.size())) == 0) {
+			tim += count * 604800;
+		} else if (timeword.compare(std::string("months").substr(0, timeword.size())) == 0) {
+			tim += count * 2592000;
+		} else if (timeword.compare(std::string("years").substr(0, timeword.size())) == 0) {
+			tim += count * 31536000;
 		} else {
 			// Unrecognized timeword
 			return false;
@@ -563,7 +532,7 @@ bool StrToTime(std::string str, time_t &tim) {
 
 /**
  * @brief Turn the given number of tics into a time.
- * 
+ *
  * @param str String buffer to write into.
  * @param time Number of tics to turn into a time.
  * @param ceil Round up to the nearest second.
@@ -614,14 +583,14 @@ static int _isspace(int c)
 // Trim whitespace from the start of a string
 std::string &TrimStringStart(std::string &s)
 {
-	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(_isspace))));
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not_fn([](int c){ return _isspace(c); })));
 	return s;
 }
 
 // Trim whitespace from the end of a string
 std::string &TrimStringEnd(std::string &s)
 {
-	s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(_isspace))).base(), s.end());
+	s.erase(std::find_if(s.rbegin(), s.rend(), std::not_fn([](int c){ return _isspace(c); })).base(), s.end());
 	return s;
 }
 
@@ -634,9 +603,8 @@ std::string &TrimString(std::string &s)
 // Ensure that a string only has valid viewable ASCII in it.
 bool ValidString(const std::string& s)
 {
-	for (std::string::const_iterator it = s.begin();it != s.end();++it)
+	for (const auto c : s)
 	{
-		const char c = *it;
 		if (c < ' ' || c > '~')
 			return false;
 	}
@@ -648,11 +616,11 @@ bool IsHexString(const std::string& str, const size_t len)
 	if (str.length() != len)
 		return false;
 
-	for (std::string::const_iterator it = str.begin(); it != str.end(); ++it)
+	for (const auto c : str)
 	{
-		if (*it >= '0' && *it <= '9')
+		if (c >= '0' && c <= '9')
 			continue;
-		if (*it >= 'A' && *it <= 'F')
+		if (c >= 'A' && c <= 'F')
 			continue;
 		return false;
 	}
@@ -791,14 +759,14 @@ double Remap(const double value, const double low1, const double high1, const do
 uint32_t Log2(uint32_t n)
 {
 	#define LT(n) n, n, n, n, n, n, n, n, n, n, n, n, n, n, n, n
-	static const signed char LogTable256[256] = 
+	static constexpr signed char LogTable256[256] =
 	{
 		-1, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
 		LT(4), LT(5), LT(5), LT(6), LT(6), LT(6), LT(6),
 		LT(7), LT(7), LT(7), LT(7), LT(7), LT(7), LT(7), LT(7)
 	};
 
-	register unsigned int t, tt;		// temporaries
+	unsigned int t, tt;		// temporaries
 
 	if ((tt = (n >> 16)))
 		return (t = (tt >> 8)) ? 24 + LogTable256[t] : 16 + LogTable256[tt];

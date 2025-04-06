@@ -520,5 +520,5 @@ static const uint8_t normal_font_data[] =
 
 static const txt_font_t normal_font =
 {
-    "normal", normal_font_data, 8, 16,
+    (char*)"normal", normal_font_data, 8, 16,
 };

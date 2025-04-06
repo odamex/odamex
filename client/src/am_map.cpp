@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -44,6 +44,8 @@
 
 // State.
 #include "r_state.h"
+
+#include "r_interp.h"
 
 // Data.
 #include "gstrings.h"
@@ -147,20 +149,20 @@ EXTERN_CVAR(screenblocks)
 #define AM_NUMMARKPOINTS 10
 
 // scale on entry
-#define INITSCALEMTOF (.2 * FRACUNIT)
+#define INITSCALEMTOF (.2 * FRACUNIT64)
 // how much the automap moves window per tic in frame-buffer coordinates
 // moves 140 pixels in 1 second
 #define F_PANINC (140 / TICRATE)
 // how much zoom-in per tic
 // goes to 2x in 1 second
-#define M_ZOOMIN ((int)(1.02 * FRACUNIT))
+#define M_ZOOMIN ((int)(1.02 * FRACUNIT64))
 // how much zoom-out per tic
 // pulls out to 0.5x in 1 second
-#define M_ZOOMOUT ((int)(FRACUNIT / 1.02))
+#define M_ZOOMOUT ((int)(FRACUNIT64 / 1.02))
 
 // translates between frame-buffer and map distances
-#define FTOM(x) FixedMul(((x) << 16), scale_ftom)
-#define MTOF(x) (FixedMul((x), scale_mtof) >> 16)
+#define FTOM(x) FixedMul64((INT2FIXED64((x))), scale_ftom)
+#define MTOF(x) FIXED642INT(FixedMul64((x), scale_mtof))
 
 #define PUTDOTP(xx, yy, cc) fb[(yy)*f_p + (xx)] = (cc)
 #define PUTDOTD(xx, yy, cc) *((argb_t*)(fb + (yy)*f_p + ((xx) << 2))) = (cc)
@@ -174,7 +176,7 @@ typedef struct
 
 typedef struct
 {
-	fixed_t slp, islp;
+	fixed64_t slp, islp;
 } islope_t;
 
 // vector graphics for the automap for things.
@@ -183,13 +185,10 @@ std::vector<mline_t> thinrectangle_guy;
 
 am_default_colors_t AutomapDefaultColors;
 am_colors_t AutomapDefaultCurrentColors;
-int am_cheating = 0;
 static bool grid = false;
 static bool bigstate = false; // Bigmode
 
 static bool leveljuststarted = true; // kluge until AM_LevelInit() is called
-
-bool automapactive = false;
 
 // location of window on screen
 static v2int_t f;
@@ -203,34 +202,34 @@ static byte* fb; // pseudo-frame buffer
 static int amclock;
 
 static mpoint_t m_paninc;    // how far the window pans each tic (map coords)
-static fixed_t ftom_zoommul; // how far the window zooms in each tic (fb coords)
+static fixed64_t ftom_zoommul; // how far the window zooms in each tic (fb coords)
 
-static v2fixed_t m_ll;   // LL x,y where the window is on the map (map coords)
-static v2fixed_t m_ur; // UR x,y where the window is on the map (map coords)
+static v2fixed64_t m_ll;   // LL x,y where the window is on the map (map coords)
+static v2fixed64_t m_ur; // UR x,y where the window is on the map (map coords)
 
 //
 // width/height of window on map (map coords)
 //
-static v2fixed_t m_wh;
+static v2fixed64_t m_wh;
 
 // based on level size
-static v2fixed_t min;
-static v2fixed_t max;
+static v2fixed64_t min;
+static v2fixed64_t max;
 
-static fixed_t min_scale_mtof; // used to tell when to stop zooming out
-static fixed_t max_scale_mtof; // used to tell when to stop zooming in
+static fixed64_t min_scale_mtof; // used to tell when to stop zooming out
+static fixed64_t max_scale_mtof; // used to tell when to stop zooming in
 
 // old stuff for recovery later
-static v2fixed_t old_m_wh;
-static v2fixed_t old_m_ll;
+static v2fixed64_t old_m_wh;
+static v2fixed64_t old_m_ll;
 
 // old location used by the Follower routine
 static mpoint_t f_oldloc;
 
 // used by MTOF to scale from map-to-frame-buffer coords
-static fixed_t scale_mtof = static_cast<fixed_t>(INITSCALEMTOF);
+static fixed64_t scale_mtof = static_cast<fixed64_t>(INITSCALEMTOF);
 // used by FTOM to scale from frame-buffer-to-map coords (=1/scale_mtof)
-static fixed_t scale_ftom;
+static fixed64_t scale_ftom;
 
 static lumpHandle_t marknums[10];             // numbers used for marking by the automap
 static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
@@ -302,24 +301,14 @@ END_COMMAND(am_togglefollow)
 void AM_rotatePoint(mpoint_t& pt);
 
 // translates between frame-buffer and map coordinates
-int CXMTOF(int x)
+int CXMTOF(fixed64_t x)
 {
-	return (MTOF((x)-m_ll.x) /* - f_x*/);
+	return MTOF((x)-m_ll.x);
 }
 
-int CYMTOF(int y)
+int CYMTOF(fixed64_t y)
 {
-	return (f_h - MTOF((y)-m_ll.y) /* + f_y*/);
-}
-
-bool AM_ClassicAutomapVisible()
-{
-	return automapactive && !viewactive;
-}
-
-bool AM_OverlayAutomapVisible()
-{
-	return automapactive && viewactive;
+	return f_h - MTOF((y)-m_ll.y);
 }
 
 //
@@ -329,10 +318,10 @@ void AM_activateNewScale()
 {
 	m_ll.x += m_wh.x / 2;
 	m_ll.y += m_wh.y / 2;
-	M_SetVec2Fixed(&m_wh, FTOM(f_w), FTOM(f_h));
+	M_SetVec2Fixed64(&m_wh, FTOM(f_w), FTOM(f_h));
 	m_ll.x -= m_wh.x / 2;
 	m_ll.y -= m_wh.y / 2;
-	M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
+	M_AddVec2Fixed64(&m_ur, &m_ll, &m_wh);
 }
 
 //
@@ -356,14 +345,14 @@ void AM_restoreScaleAndLoc()
 	}
 	else
 	{
-		M_SetVec2Fixed(&m_ll, displayplayer().camera->x - m_wh.x / 2,
-			                  displayplayer().camera->y - m_wh.y / 2);
+		M_SetVec2Fixed64(&m_ll, FIXED2FIXED64(displayplayer().camera->x) - m_wh.x / 2,
+			                  FIXED2FIXED64(displayplayer().camera->y) - m_wh.y / 2);
 	}
-	M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
+	M_AddVec2Fixed64(&m_ur, &m_ll, &m_wh);
 
 	// Change the scaling multipliers
-	scale_mtof = FixedDiv(f_w << FRACBITS, m_wh.x);
-	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+	scale_mtof = FixedDiv64(INT2FIXED64(f_w), m_wh.x);
+	scale_ftom = FixedDiv64(FRACUNIT64, scale_mtof);
 }
 
 //
@@ -382,30 +371,32 @@ void AM_addMark()
 //
 void AM_findMinMaxBoundaries()
 {
-	M_SetVec2Fixed(&min, MAXINT, MAXINT);
-	M_SetVec2Fixed(&max, -MAXINT, -MAXINT);
+	M_SetVec2Fixed64(&min, MAXLONG, MAXLONG);
+	M_SetVec2Fixed64(&max, -MAXLONG, -MAXLONG);
 
 	for (int i = 0; i < numvertexes; i++)
 	{
-		if (vertexes[i].x < min.x)
-			min.x = vertexes[i].x;
-		else if (vertexes[i].x > max.x)
-			max.x = vertexes[i].x;
+		fixed64_t vx = FIXED2FIXED64(vertexes[i].x);
+		if (vx < min.x)
+			min.x = vx;
+		else if (vx > max.x)
+			max.x = vx;
 
-		if (vertexes[i].y < min.y)
-			min.y = vertexes[i].y;
-		else if (vertexes[i].y > max.y)
-			max.y = vertexes[i].y;
+		fixed64_t vy = FIXED2FIXED64(vertexes[i].y);
+		if (vy < min.y)
+			min.y = vy;
+		else if (vy > max.y)
+			max.y = vy;
 	}
 
-	const fixed_t max_w = max.x - min.x;
-	const fixed_t max_h = max.y - min.y;
+	const fixed64_t max_w = max.x - min.x;
+	const fixed64_t max_h = max.y - min.y;
 
-	const fixed_t a = FixedDiv((I_GetSurfaceWidth()) << FRACBITS, max_w);
-	const fixed_t b = FixedDiv((I_GetSurfaceHeight()) << FRACBITS, max_h);
+	const fixed64_t a = FixedDiv64(INT2FIXED64(I_GetSurfaceWidth()), max_w);
+	const fixed64_t b = FixedDiv64(INT2FIXED64(I_GetSurfaceHeight()), max_h);
 
 	min_scale_mtof = a < b ? a : b;
-	max_scale_mtof = FixedDiv((I_GetSurfaceHeight()) << FRACBITS, 2 * PLAYERRADIUS);
+	max_scale_mtof = FixedDiv64(INT2FIXED64(I_GetSurfaceHeight()), 2 * PLAYERRADIUS64);
 }
 
 //
@@ -418,8 +409,8 @@ void AM_changeWindowLoc()
 		am_followplayer.Set(0.0f);
 		f_oldloc.x = MAXINT;
 	}
-	
-	M_AddVec2Fixed(&m_ll, &m_paninc, &m_ll);
+
+	M_AddVec2Fixed64(&m_ll, &m_paninc, &m_ll);
 
 	if (m_ll.x + m_wh.x / 2 > max.x)
 		m_ll.x = max.x - m_wh.x / 2;
@@ -430,8 +421,8 @@ void AM_changeWindowLoc()
 		m_ll.y = max.y - m_wh.y / 2;
 	else if (m_ll.y + m_wh.y / 2 < min.y)
 		m_ll.y = min.y - m_wh.y / 2;
-	
-	M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
+
+	M_AddVec2Fixed64(&m_ur, &m_ll, &m_wh);
 }
 
 //
@@ -445,8 +436,8 @@ void AM_initVariables()
 	thinrectangle_guy.clear();
 
 	mline_t ml;
-	
-#define L(a) (fixed_t)((a)*FRACUNIT)
+
+#define L(a) ((a)*FRACUNIT64)
 #define ADD_TO_VEC(vec, ax, ay, bx, by) \
 	ml.a.x = L(ax); \
 	ml.a.y = L(ay); \
@@ -470,18 +461,18 @@ void AM_initVariables()
 
 	f_oldloc.x = MAXINT;
 	amclock = 0;
-	
-	M_SetVec2Fixed(&m_wh, FTOM(I_GetSurfaceWidth()), FTOM(I_GetSurfaceHeight()));
+
+	M_SetVec2Fixed64(&m_wh, FTOM(I_GetSurfaceWidth()), FTOM(I_GetSurfaceHeight()));
 
 	// find player to center on initially
 	player_t* pl = &displayplayer();
 	if (!pl->ingame())
 	{
-		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		for (auto& player : players)
 		{
-			if (it->ingame())
+			if (player.ingame())
 			{
-				pl = &*it;
+				pl = &player;
 				break;
 			}
 		}
@@ -490,17 +481,17 @@ void AM_initVariables()
 	if (!pl->camera)
 		return;
 
-	m_ll.x = pl->camera->x - m_wh.x / 2;
-	m_ll.y = pl->camera->y - m_wh.y / 2;
+	m_ll.x = FIXED2FIXED64(pl->camera->x) - m_wh.x / 2;
+	m_ll.y = FIXED2FIXED64(pl->camera->y) - m_wh.y / 2;
 	AM_changeWindowLoc();
-	
+
 	AM_saveScaleAndLoc();
 
 	// inform the status bar of the change
 	ST_Responder(&st_notify);
 }
 
-am_color_t AM_GetColorFromString(const argb_t* palette_colors, const char* colorstring)
+am_color_t AM_GetColorFromString(const argb_t* palette_colors, const std::string& colorstring)
 {
 	am_color_t c;
 	c.rgb = V_GetColorFromString(colorstring);
@@ -653,44 +644,44 @@ void AM_initColors(const bool overlayed)
 	}
 	else
 	{
-		gameinfo.currentAutomapColors.Background = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.Background.c_str());
-		gameinfo.currentAutomapColors.YourColor = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.YourColor.c_str());
-		gameinfo.currentAutomapColors.AlmostBackground = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.AlmostBackground.c_str());
-		gameinfo.currentAutomapColors.SecretWallColor = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.SecretWallColor.c_str());
-		gameinfo.currentAutomapColors.WallColor = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.WallColor.c_str());
-		gameinfo.currentAutomapColors.TSWallColor = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.TSWallColor.c_str());
-		gameinfo.currentAutomapColors.FDWallColor = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.FDWallColor.c_str());
-		gameinfo.currentAutomapColors.LockedColor = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.LockedColor.c_str());
-		gameinfo.currentAutomapColors.CDWallColor = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.CDWallColor.c_str());
-		gameinfo.currentAutomapColors.ThingColor = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor.c_str());
-		gameinfo.currentAutomapColors.ThingColor_Item = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Item.c_str());
-		gameinfo.currentAutomapColors.ThingColor_CountItem = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_CountItem.c_str());
-		gameinfo.currentAutomapColors.ThingColor_Monster = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Monster.c_str());
-		gameinfo.currentAutomapColors.ThingColor_NoCountMonster = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_NoCountMonster.c_str());
-		gameinfo.currentAutomapColors.ThingColor_Friend = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Friend.c_str());
-		gameinfo.currentAutomapColors.ThingColor_Projectile = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Projectile.c_str());
-		gameinfo.currentAutomapColors.GridColor = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.GridColor.c_str());
-		gameinfo.currentAutomapColors.XHairColor = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.XHairColor.c_str());
-		gameinfo.currentAutomapColors.NotSeenColor = 
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.NotSeenColor.c_str());
+		gameinfo.currentAutomapColors.Background =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.Background);
+		gameinfo.currentAutomapColors.YourColor =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.YourColor);
+		gameinfo.currentAutomapColors.AlmostBackground =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.AlmostBackground);
+		gameinfo.currentAutomapColors.SecretWallColor =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.SecretWallColor);
+		gameinfo.currentAutomapColors.WallColor =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.WallColor);
+		gameinfo.currentAutomapColors.TSWallColor =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.TSWallColor);
+		gameinfo.currentAutomapColors.FDWallColor =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.FDWallColor);
+		gameinfo.currentAutomapColors.LockedColor =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.LockedColor);
+		gameinfo.currentAutomapColors.CDWallColor =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.CDWallColor);
+		gameinfo.currentAutomapColors.ThingColor =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor);
+		gameinfo.currentAutomapColors.ThingColor_Item =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Item);
+		gameinfo.currentAutomapColors.ThingColor_CountItem =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_CountItem);
+		gameinfo.currentAutomapColors.ThingColor_Monster =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Monster);
+		gameinfo.currentAutomapColors.ThingColor_NoCountMonster =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_NoCountMonster);
+		gameinfo.currentAutomapColors.ThingColor_Friend =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Friend);
+		gameinfo.currentAutomapColors.ThingColor_Projectile =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Projectile);
+		gameinfo.currentAutomapColors.GridColor =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.GridColor);
+		gameinfo.currentAutomapColors.XHairColor =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.XHairColor);
+		gameinfo.currentAutomapColors.NotSeenColor =
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.NotSeenColor);
 	}
 }
 
@@ -699,19 +690,16 @@ void AM_initColors(const bool overlayed)
 //
 void AM_loadPics()
 {
-	char namebuf[9];
-
 	for (int i = 0; i < 10; i++)
 	{
-		sprintf(namebuf, "AMMNUM%d", i);
-		marknums[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		marknums[i] = W_CachePatchHandle(fmt::format("AMMNUM{}", i), PU_STATIC);
 	}
 }
 
 void AM_unloadPics()
 {
-	for (int i = 0; i < 10; i++)
-		marknums[i].clear();
+	for (auto& marknum : marknums)
+		marknum.clear();
 }
 
 void AM_clearMarks()
@@ -733,10 +721,10 @@ void AM_LevelInit()
 	AM_clearMarks();
 
 	AM_findMinMaxBoundaries();
-	scale_mtof = FixedDiv(min_scale_mtof, static_cast<int>(0.7 * FRACUNIT));
+	scale_mtof = FixedDiv64(min_scale_mtof, static_cast<int>(0.7 * FRACUNIT64));
 	if (scale_mtof > max_scale_mtof)
 		scale_mtof = min_scale_mtof;
-	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+	scale_ftom = FixedDiv64(FRACUNIT64, scale_mtof);
 }
 
 //
@@ -786,7 +774,7 @@ void AM_Start()
 void AM_minOutWindowScale()
 {
 	scale_mtof = min_scale_mtof;
-	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+	scale_ftom = FixedDiv64(FRACUNIT64, scale_mtof);
 }
 
 //
@@ -795,7 +783,7 @@ void AM_minOutWindowScale()
 void AM_maxOutWindowScale()
 {
 	scale_mtof = max_scale_mtof;
-	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+	scale_ftom = FixedDiv64(FRACUNIT64, scale_mtof);
 }
 
 BEGIN_COMMAND(togglemap)
@@ -827,7 +815,7 @@ END_COMMAND(togglemap)
 //
 // Handle events (user inputs) in automap mode
 //
-BOOL AM_Responder(event_t* ev)
+bool AM_Responder(event_t* ev)
 {
 	if (automapactive && (ev->type == ev_keydown || ev->type == ev_keyup))
 	{
@@ -835,7 +823,7 @@ BOOL AM_Responder(event_t* ev)
 		{
 			// check for am_pan* and ignore in follow mode
 			const std::string defbind = AutomapBindings.Binds[ev->data1];
-			if (!strnicmp(defbind.c_str(), "+am_pan", 7))
+			if (iequals(defbind, "+am_pan"))
 				return false;
 		}
 
@@ -843,7 +831,7 @@ BOOL AM_Responder(event_t* ev)
 		{
 			const std::string defbind = Bindings.Binds[ev->data1];
 			// Check for automap, in order not to be stuck
-			if (!strnicmp(defbind.c_str(), "togglemap", 9))
+			if (iequals(defbind, "togglemap"))
 				return false;
 		}
 
@@ -855,7 +843,7 @@ BOOL AM_Responder(event_t* ev)
 			const std::string defbind = Bindings.Binds[ev->data1];
 
 			// Check for automap, in order not to be stuck
-			if (!strnicmp(defbind.c_str(), "togglemap", 9))
+			if (iequals(defbind, "togglemap"))
 				return false;
 
 			return (defbind[0] != '+'); // Let G_Responder handle button releases
@@ -871,7 +859,7 @@ BOOL AM_Responder(event_t* ev)
 //
 void AM_changeWindowScale()
 {
-	static fixed_t mtof_zoommul; // how far the window zooms in each tic (map coords)
+	static fixed64_t mtof_zoommul; // how far the window zooms in each tic (map coords)
 
 	if (Actions[ACTION_AUTOMAP_ZOOMOUT])
 	{
@@ -885,13 +873,13 @@ void AM_changeWindowScale()
 	}
 	else
 	{
-		mtof_zoommul = FRACUNIT;
-		ftom_zoommul = FRACUNIT;
+		mtof_zoommul = FRACUNIT64;
+		ftom_zoommul = FRACUNIT64;
 	}
 
 	// Change the scaling multipliers
-	scale_mtof = FixedMul(scale_mtof, mtof_zoommul);
-	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+	scale_mtof = FixedMul64(scale_mtof, mtof_zoommul);
+	scale_ftom = FixedDiv64(FRACUNIT64, scale_mtof);
 
 	if (scale_mtof < min_scale_mtof)
 		AM_minOutWindowScale();
@@ -904,15 +892,13 @@ void AM_changeWindowScale()
 //
 void AM_doFollowPlayer()
 {
-	player_t& p = displayplayer();
+	M_SetVec2Fixed64(&m_ll,
+		FIXED2FIXED64(viewx) - m_wh.x / 2,
+		FIXED2FIXED64(viewy) - m_wh.y / 2);
 
-	if (f_oldloc.x != p.camera->x || f_oldloc.y != p.camera->y)
-	{
-		M_SetVec2Fixed(&m_ll, FTOM(MTOF(p.camera->x)) - m_wh.x / 2,
-		                      FTOM(MTOF(p.camera->y)) - m_wh.y / 2);
-		M_AddVec2Fixed(&m_ur, &m_ll, &m_wh);
-		M_SetVec2Fixed(&f_oldloc, p.camera->x, p.camera->y);
-	}
+	M_SetVec2Fixed64(&m_ur,
+		m_ll.x + m_wh.x,
+		m_ll.y + m_wh.y);
 }
 
 //
@@ -924,34 +910,6 @@ void AM_Ticker()
 		return;
 
 	amclock++;
-
-	if (am_followplayer)
-	{
-		AM_doFollowPlayer();
-	}
-	else
-	{
-		M_ZeroVec2Fixed(&m_paninc);
-
-		// pan according to the direction
-		if (Actions[ACTION_AUTOMAP_PANLEFT])
-			m_paninc.x = -FTOM(F_PANINC);
-		if (Actions[ACTION_AUTOMAP_PANRIGHT])
-			m_paninc.x = FTOM(F_PANINC);
-		if (Actions[ACTION_AUTOMAP_PANUP])
-			m_paninc.y = FTOM(F_PANINC);
-		if (Actions[ACTION_AUTOMAP_PANDOWN])
-			m_paninc.y = -FTOM(F_PANINC);
-	}
-
-	// Change the zoom if necessary
-	if (ftom_zoommul != FRACUNIT || Actions[ACTION_AUTOMAP_ZOOMIN] ||
-	    Actions[ACTION_AUTOMAP_ZOOMOUT])
-		AM_changeWindowScale();
-
-	// Change x,y location
-	if (m_paninc.x || m_paninc.y)
-		AM_changeWindowLoc();
 
 	// NES - Glowing effect on locked doors.
 	if (lockglow < 90)
@@ -991,7 +949,7 @@ void AM_clearFB(am_color_t color)
 //
 // Based on Cohen-Sutherland clipping algorithm but with a slightly
 // faster reject and precalculated slopes.  If the speed is needed,
-// use a hash algorithm to handle  the common cases.
+// use a hash algorithm to handle the common cases.
 //
 bool AM_clipMline(mline_t* ml, fline_t* fl)
 {
@@ -1264,28 +1222,28 @@ void AM_drawMline(mline_t* ml, am_color_t color)
 void AM_drawGrid(am_color_t color)
 {
 	// find maximum distance lines should be drawn from center of screen in world coordinates
-	v2fixed_t distVec;
-	M_SubVec2Fixed(&distVec, &m_ll, &m_ur);
-	const fixed_t dist = P_AproxDistance(distVec.x, distVec.y);
-	const fixed_t half_dist = FixedDiv(dist, INT2FIXED(2));
+	v2fixed64_t distVec;
+	M_SubVec2Fixed64(&distVec, &m_ll, &m_ur);
+	const fixed64_t dist = FIXED2FIXED64(P_AproxDistance(FIXED642FIXED(distVec.x), FIXED642FIXED(distVec.y)));
+	const fixed64_t half_dist = FixedDiv64(dist, INT2FIXED64(2));
 
 	// find center point of screen in world coordinates
-	v2fixed_t centerp;
-	centerp.x = FixedDiv(m_ur.x + m_ll.x, INT2FIXED(2));
-	centerp.y = FixedDiv(m_ur.y + m_ll.y, INT2FIXED(2));
+	v2fixed64_t centerp;
+	centerp.x = FixedDiv64(m_ur.x + m_ll.x, INT2FIXED64(2));
+	centerp.y = FixedDiv64(m_ur.y + m_ll.y, INT2FIXED64(2));
 
-	const fixed_t w = INT2FIXED(MAPBLOCKUNITS);
-	const fixed_t minimum_x = centerp.x - half_dist;
-	const fixed_t maximum_x = centerp.x + half_dist;
-	const fixed_t minimum_y = centerp.y - half_dist;
-	const fixed_t maximum_y = centerp.y + half_dist;
+	static constexpr fixed64_t w = INT2FIXED(MAPBLOCKUNITS);
+	const fixed64_t minimum_x = centerp.x - half_dist;
+	const fixed64_t maximum_x = centerp.x + half_dist;
+	const fixed64_t minimum_y = centerp.y - half_dist;
+	const fixed64_t maximum_y = centerp.y + half_dist;
 
-	fixed_t start = w + minimum_x - ((minimum_x % w) + w) % w;
+	fixed64_t start = w + minimum_x - ((minimum_x % w) + w) % w;
 
 	mline_t ml;
-	
+
 	// draw vertical gridlines
-	for (fixed_t x = start; x < maximum_x; x += w)
+	for (fixed64_t x = start; x < maximum_x; x += w)
 	{
 		ml.a.y = minimum_y;
 		ml.b.y = maximum_y;
@@ -1303,7 +1261,7 @@ void AM_drawGrid(am_color_t color)
 	start = w + minimum_y - ((minimum_y % w) + w) % w;
 
 	// draw horizontal gridlines
-	for (fixed_t y = start; y < maximum_y; y += w)
+	for (fixed64_t y = start; y < maximum_y; y += w)
 	{
 		ml.a.x = minimum_x;
 		ml.b.x = maximum_x;
@@ -1332,8 +1290,8 @@ void AM_drawWalls()
 
 	for (int i = 0; i < numlines; i++)
 	{
-		M_SetVec2Fixed(&l.a, lines[i].v1->x, lines[i].v1->y);
-		M_SetVec2Fixed(&l.b, lines[i].v2->x, lines[i].v2->y);
+		M_SetVec2Fixed64(&l.a, FIXED2FIXED64(lines[i].v1->x), FIXED2FIXED64(lines[i].v1->y));
+		M_SetVec2Fixed64(&l.b, FIXED2FIXED64(lines[i].v2->x), FIXED2FIXED64(lines[i].v2->y));
 
 		if (am_rotate)
 		{
@@ -1496,36 +1454,62 @@ void AM_drawWalls()
 //
 void AM_rotate(mpoint_t& pt, angle_t a)
 {
-	const fixed_t tmpx = FixedMul(pt.x, finecosine[a >> ANGLETOFINESHIFT]) -
-	                     FixedMul(pt.y, finesine[a >> ANGLETOFINESHIFT]);
+	const fixed64_t tmpx = FixedMul64(pt.x, FIXED2FIXED64(finecosine[a >> ANGLETOFINESHIFT])) -
+	                     FixedMul64(pt.y, FIXED2FIXED64(finesine[a >> ANGLETOFINESHIFT]));
 
-	pt.y = FixedMul(pt.x, finesine[a >> ANGLETOFINESHIFT]) +
-	       FixedMul(pt.y, finecosine[a >> ANGLETOFINESHIFT]);
+	pt.y = FixedMul64(pt.x, FIXED2FIXED64(finesine[a >> ANGLETOFINESHIFT])) +
+	       FixedMul64(pt.y, FIXED2FIXED64(finecosine[a >> ANGLETOFINESHIFT]));
 
 	pt.x = tmpx;
 }
 
 void AM_rotatePoint(mpoint_t& pt)
 {
-	player_t& pl = displayplayer();
+	player_t* player = &displayplayer();
 
-	pt.x -= pl.camera->x;
-	pt.y -= pl.camera->y;
-	AM_rotate(pt, ANG90 - pl.camera->angle);
-	pt.x += pl.camera->x;
-	pt.y += pl.camera->y;
+	OInterpolation& oi = OInterpolation::getInstance();
+
+	fixed64_t x;
+	fixed64_t y;
+	angle_t pangle;
+
+	if (oi.enabled())
+	{
+		x = FIXED2FIXED64(
+			player->camera->prevx +
+			FixedMul(player->camera->x - player->camera->prevx, render_lerp_amount));
+
+		y = FIXED2FIXED64(
+			player->camera->prevy +
+			FixedMul(player->camera->y - player->camera->prevy, render_lerp_amount));
+
+		pangle = player->camera->prevangle +
+			FixedMul(player->camera->angle - player->camera->prevangle, render_lerp_amount);
+	}
+	else
+	{
+		x = FIXED2FIXED64(player->camera->x);
+		y = FIXED2FIXED64(player->camera->y);
+		pangle = player->camera->angle;
+	}
+
+	pt.x -= x;
+	pt.y -= y;
+	AM_rotate(pt, ANG90 - pangle);
+	pt.x += x;
+	pt.y += y;
 }
 
-void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed_t scale,
-                          angle_t angle, am_color_t color, fixed_t x, fixed_t y)
+void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed64_t scale,
+                          angle_t angle, am_color_t color, fixed64_t x, fixed64_t y)
 {
-	for (std::vector<mline_t>::const_iterator it = lineguy.begin(); it != lineguy.end(); ++it)
+	for (const auto& mline : lineguy)
 	{
 		mline_t l;
-		l.a = it->a;
+		M_SetVec2Fixed64(&l.a, mline.a.x, mline.a.y);
 
 		if (scale)
-			M_ScaleVec2Fixed(&l.a, &l.a, scale);
+			M_ScaleVec2Fixed64(&l.a, &l.a, scale);
 
 		if (angle)
 			AM_rotate(l.a, angle);
@@ -1533,10 +1517,10 @@ void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed_t scale,
 		l.a.x += x;
 		l.a.y += y;
 
-		l.b = it->b;
+		M_SetVec2Fixed64(&l.b, mline.b.x, mline.b.y);
 
 		if (scale)
-			M_ScaleVec2Fixed(&l.b, &l.b, scale);
+			M_ScaleVec2Fixed64(&l.b, &l.b, scale);
 
 		if (angle)
 			AM_rotate(l.b, angle);
@@ -1553,40 +1537,63 @@ void AM_drawPlayers()
 	angle_t angle;
 	player_t& conplayer = displayplayer();
 
+	OInterpolation& oi = OInterpolation::getInstance();
+
+	fixed64_t x;
+	fixed64_t y;
+	fixed_t cangle;
+
+	if (oi.enabled())
+	{
+		x = FIXED2FIXED64(
+			conplayer.camera->prevx +
+			FixedMul(conplayer.camera->x - conplayer.camera->prevx, render_lerp_amount));
+
+		y = FIXED2FIXED64(
+			conplayer.camera->prevy +
+			FixedMul(conplayer.camera->y - conplayer.camera->prevy, render_lerp_amount));
+
+		cangle = conplayer.camera->prevangle +
+			FixedMul(conplayer.camera->angle - conplayer.camera->prevangle, render_lerp_amount);
+	}
+	else
+	{
+		x = FIXED2FIXED64(conplayer.camera->x);
+		y = FIXED2FIXED64(conplayer.camera->y);
+		cangle = conplayer.camera->angle;
+	}
+
 	if (!multiplayer)
 	{
 		if (am_rotate)
 			angle = ANG90;
 		else
-			angle = conplayer.camera->angle;
+			angle = cangle;
 
 		if (am_cheating && !gameinfo.mapArrowCheat.empty())
-			AM_drawLineCharacter(gameinfo.mapArrowCheat, INT2FIXED(16), angle,
-			                     gameinfo.currentAutomapColors.YourColor, 
-								 conplayer.camera->x, conplayer.camera->y);
+			AM_drawLineCharacter(gameinfo.mapArrowCheat, INT2FIXED64(16), angle,
+				gameinfo.currentAutomapColors.YourColor, x, y);
 		else
-			AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED(16), angle,
-			                     gameinfo.currentAutomapColors.YourColor,
-			                     conplayer.camera->x, conplayer.camera->y);
+			AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED64(16), angle,
+				gameinfo.currentAutomapColors.YourColor, x, y);
 		return;
 	}
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& p : players)
 	{
-		player_t* p = &*it;
 		am_color_t color;
 
-		if (!(it->ingame()) || !p->mo ||
-		    (((G_IsFFAGame() && p != &conplayer) ||
-		      (G_IsTeamGame() && p->userinfo.team != conplayer.userinfo.team)) &&
+		if (!(p.ingame()) || !p.mo ||
+		    (((G_IsFFAGame() && &p != &conplayer) ||
+		      (G_IsTeamGame() && p.userinfo.team != conplayer.userinfo.team)) &&
 		     !(netdemo.isPlaying() || netdemo.isPaused()) && !demoplayback &&
 		     !(conplayer.spectator)) ||
-		    p->spectator)
+		    p.spectator)
 		{
 			continue;
 		}
 
-		if (p->powers[pw_invisibility])
+		if (p.powers[pw_invisibility])
 		{
 			color = gameinfo.currentAutomapColors.AlmostBackground;
 		}
@@ -1594,7 +1601,7 @@ void AM_drawPlayers()
 		{
 			const argb_t* palette = V_GetDefaultPalette()->colors;
 
-			switch (it->id)
+			switch (p.id)
 			{
 			case 1:
 				color = AM_GetColorFromString(palette, "00 FF 00");
@@ -1614,21 +1621,40 @@ void AM_drawPlayers()
 		}
 		else
 		{
-			color.rgb = CL_GetPlayerColor(p);
+			color.rgb = CL_GetPlayerColor(&p);
 			color.index = V_BestColor(V_GetDefaultPalette()->basecolors, color.rgb);
 		}
 
 		mpoint_t pt;
-		M_SetVec2Fixed(&pt, p->mo->x, p->mo->y);
-		angle = p->mo->angle;
+
+		fixed_t moangle;
+		fixed_t mox;
+		fixed_t moy;
+
+		if (oi.enabled())
+		{
+			moangle = p.mo->prevangle + FixedMul(p.mo->angle - p.mo->prevangle, render_lerp_amount);
+			mox = p.mo->prevx + FixedMul(p.mo->x - p.mo->prevx, render_lerp_amount);
+			moy = p.mo->prevy + FixedMul(p.mo->y - p.mo->prevy, render_lerp_amount);
+		}
+		else
+		{
+			moangle = p.mo->angle;
+			mox = p.mo->x;
+			moy = p.mo->y;
+		}
+
+		M_SetVec2Fixed64(&pt, FIXED2FIXED64(mox), FIXED2FIXED64(moy));
+
+		angle = moangle;
 
 		if (am_rotate)
 		{
 			AM_rotatePoint(pt);
-			angle -= conplayer.camera->angle - ANG90;
+			angle -= cangle - ANG90;
 		}
 
-		AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED(16), angle, color, pt.x, pt.y);
+		AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED64(16), angle, color, pt.x, pt.y);
 	}
 }
 
@@ -1668,11 +1694,11 @@ void AM_drawEasyKeys()
 			if (AM_actorIsKey(t))
 			{
 				mpoint_t p;
-				M_SetVec2Fixed(&p, t->x, t->y);
+				M_SetVec2Fixed64(&p, FIXED2FIXED64(t->x), FIXED2FIXED64(t->y));
 
 				const am_color_t key_color = AM_getKeyColor(t);
 
-				AM_drawLineCharacter(gameinfo.easyKey, t->radius, 0, key_color, p.x, p.y);
+				AM_drawLineCharacter(gameinfo.easyKey, FIXED2FIXED64(t->radius), 0, key_color, p.x, p.y);
 			}
 			t = t->snext;
 		}
@@ -1681,20 +1707,56 @@ void AM_drawEasyKeys()
 
 void AM_drawThings()
 {
+	OInterpolation& oi = OInterpolation::getInstance();
+
 	for (int i = 0; i < numsectors; i++)
 	{
 		AActor* t = sectors[i].thinglist;
 		while (t)
 		{
 			mpoint_t p;
-			M_SetVec2Fixed(&p, t->x, t->y);
+
+			fixed_t thingx;
+			fixed_t thingy;
+
+			fixed_t tangle;
+
+			if (oi.enabled())
+			{
+				thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
+				thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
+				tangle = t->prevangle + FixedMul(t->angle - t->prevangle, render_lerp_amount);
+			}
+			else
+			{
+				thingx = t->x;
+				thingy = t->y;
+				tangle = t->angle;
+			}
+
+			M_SetVec2Fixed64(&p, FIXED2FIXED64(thingx), FIXED2FIXED64(thingy));
 			angle_t rotate_angle = 0;
-			angle_t triangle_angle = t->angle;
+			angle_t triangle_angle = tangle;
 
 			if (am_rotate)
 			{
 				AM_rotatePoint(p);
-				rotate_angle = ANG90 - displayplayer().camera->angle;
+
+				fixed_t conangle;
+
+				if (oi.enabled())
+				{
+					conangle = displayplayer().camera->prevangle +
+						FixedMul(displayplayer().camera->angle -
+						displayplayer().camera->prevangle,
+						render_lerp_amount);
+				}
+				else
+				{
+					conangle = displayplayer().camera->angle;
+				}
+
+				rotate_angle = ANG90 - conangle;
 				triangle_angle += rotate_angle;
 			}
 
@@ -1704,7 +1766,7 @@ void AM_drawThings()
 				{
 					const am_color_t key_color = AM_getKeyColor(t);
 
-					AM_drawLineCharacter(gameinfo.cheatKey, t->radius, 0, key_color, p.x,
+					AM_drawLineCharacter(gameinfo.cheatKey, FIXED2FIXED64(t->radius), 0, key_color, p.x,
 					                     p.y);
 				}
 			}
@@ -1712,7 +1774,7 @@ void AM_drawThings()
 			{
 				am_color_t color = gameinfo.currentAutomapColors.ThingColor;
 
-				AM_drawLineCharacter(thintriangle_guy, t->radius, triangle_angle, color,
+				AM_drawLineCharacter(thintriangle_guy, FIXED2FIXED64(t->radius), triangle_angle, color,
 				                     p.x, p.y);
 
 				if (t->flags & MF_MISSILE)
@@ -1736,7 +1798,7 @@ void AM_drawThings()
 						color = gameinfo.currentAutomapColors.ThingColor_NoCountMonster;
 				}
 
-				AM_drawLineCharacter(thinrectangle_guy, t->radius, rotate_angle, color,
+				AM_drawLineCharacter(thinrectangle_guy, FIXED2FIXED64(t->radius), rotate_angle, color,
 				                     p.x, p.y);
 			}
 			t = t->snext;
@@ -1762,8 +1824,8 @@ void AM_drawMarks()
 
 			//      w = LESHORT(marknums[i]->width);
 			//      h = LESHORT(marknums[i]->height);
-			const int w = 5; // because something's wrong with the wad, i guess
-			const int h = 6; // because something's wrong with the wad, i guess
+			static constexpr int w = 5; // because something's wrong with the wad, i guess
+			static constexpr int h = 6; // because something's wrong with the wad, i guess
 
 			if (fx >= f.x && fx <= f_w - w && fy >= f.y && fy <= f_h - h)
 			{
@@ -1813,6 +1875,34 @@ void AM_Drawer()
 		f_p = surface->getPitch();
 	}
 
+	if (am_followplayer)
+	{
+		AM_doFollowPlayer();
+	}
+	else
+	{
+		M_ZeroVec2Fixed64(&m_paninc);
+
+		// pan according to the direction
+		if (Actions[ACTION_AUTOMAP_PANLEFT])
+			m_paninc.x = -FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANRIGHT])
+			m_paninc.x = FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANUP])
+			m_paninc.y = FTOM(F_PANINC);
+		if (Actions[ACTION_AUTOMAP_PANDOWN])
+			m_paninc.y = -FTOM(F_PANINC);
+	}
+
+	// Change the zoom if necessary
+	if (ftom_zoommul != FRACUNIT64 || Actions[ACTION_AUTOMAP_ZOOMIN] ||
+	    Actions[ACTION_AUTOMAP_ZOOMOUT])
+		AM_changeWindowScale();
+
+	// Change x,y location
+	if (m_paninc.x || m_paninc.y)
+		AM_changeWindowLoc();
+
 	AM_activateNewScale();
 
 	if (grid)
@@ -1832,7 +1922,7 @@ void AM_Drawer()
 
 	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
 	{
-		char line[64 + 10];
+		std::string line;
 		const int time = level.time / TICRATE;
 
 		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
@@ -1842,17 +1932,29 @@ void AM_Drawer()
 		{
 			if (am_showmonsters)
 			{
-				sprintf(line, TEXTCOLOR_RED "MONSTERS:" TEXTCOLOR_NORMAL " %d / %d",
+				if (G_IsHordeMode())
+				{
+					line = fmt::sprintf(TEXTCOLOR_RED "MONSTERS:" TEXTCOLOR_NORMAL " %d",
+				        level.killed_monsters);
+				}
+				else
+				{
+					line = fmt::sprintf(TEXTCOLOR_RED "MONSTERS:" TEXTCOLOR_NORMAL " %d / %d",
 				        level.killed_monsters,
 				        (level.total_monsters + level.respawned_monsters));
+				}
 
 				int x, y;
-				const int text_width = V_StringWidth(line) * CleanXfac;
+				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
 
 				if (AM_OverlayAutomapVisible())
 				{
 					x = surface_width - text_width;
 					y = OV_Y - (text_height * 4) + 1;
+					if (G_IsHordeMode())
+					{
+						y -= text_height * 2;
+					}
 				}
 				else
 				{
@@ -1860,17 +1962,17 @@ void AM_Drawer()
 					y = OV_Y - (text_height * 2) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line);
+				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 			}
 
-			if (am_showitems)
+			if (am_showitems && !G_IsHordeMode())
 			{
-				sprintf(line, TEXTCOLOR_RED "ITEMS:" TEXTCOLOR_NORMAL " %d / %d",
-				        level.found_items,
-				        level.total_items);
+				line = fmt::sprintf(TEXTCOLOR_RED "ITEMS:" TEXTCOLOR_NORMAL " %d / %d",
+				                    level.found_items,
+				                    level.total_items);
 
 				int x, y;
-				const int text_width = V_StringWidth(line) * CleanXfac;
+				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
 
 				if (AM_OverlayAutomapVisible())
 				{
@@ -1883,15 +1985,15 @@ void AM_Drawer()
 					y = OV_Y - (text_height * 3) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line);
+				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 			}
 
-			if (am_showsecrets)
+			if (am_showsecrets && !G_IsHordeMode())
 			{
-				sprintf(line, TEXTCOLOR_RED "SECRETS:" TEXTCOLOR_NORMAL " %d / %d",
-				        level.found_secrets, level.total_secrets);
+				line = fmt::sprintf(TEXTCOLOR_RED "SECRETS:" TEXTCOLOR_NORMAL " %d / %d",
+				                    level.found_secrets, level.total_secrets);
 				int x, y;
-				const int text_width = V_StringWidth(line) * CleanXfac;
+				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
 
 				if (AM_OverlayAutomapVisible())
 				{
@@ -1904,7 +2006,7 @@ void AM_Drawer()
 					y = OV_Y - (text_height * 2) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line);
+				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 			}
 		}
 
@@ -1931,16 +2033,19 @@ void AM_Drawer()
 				break;
 			}
 
-			strncpy(line, GStrings.getIndex(firstmap + level.levelnum - mapoffset),
-			        ARRAY_LENGTH(line) - 1);
+			line = GStrings.getIndex(firstmap + level.levelnum - mapoffset);
 
 			int x, y;
-			const int text_width = V_StringWidth(line) * CleanXfac;
+			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
 			{
 				x = surface_width - text_width;
 				y = OV_Y - (text_height * 1) + 1;
+				if (G_IsHordeMode())
+				{
+					y -= text_height * 3;
+				}
 			}
 			else
 			{
@@ -1948,28 +2053,44 @@ void AM_Drawer()
 				y = OV_Y - (text_height * 1) + 1;
 			}
 
-			screen->DrawTextClean(CR_RED, x, y, line);
+			screen->DrawTextClean(CR_RED, x, y, line.c_str());
 		}
 		else
 		{
-			strcpy(line, TEXTCOLOR_RED);
-			int pos = strlen(line);
-			for (int i = 0; i < 8 && level.mapname[i]; i++, pos++)
-				line[pos] = level.mapname[i];
+			if (level.clearlabel)
+			{
+				line.clear();
+			}
+			else
+			{
+				line = TEXTCOLOR_RED;
 
-			line[pos++] = ':';
-			strcpy(line + pos, TEXTCOLOR_NORMAL);
-			pos = strlen(line);
-			line[pos++] = ' ';
-			strcpy(&line[pos], level.level_name);
+				// use user provided label if one exists
+				if (!level.label.empty())
+				{
+					line += level.label + ": " + TEXTCOLOR_NORMAL;
+				}
+				else
+				{
+					for (int i = 0; i < 8 && level.mapname[i]; i++)
+						line += level.mapname[i];
+					line += ":" TEXTCOLOR_NORMAL " ";
+				}
+			}
+
+			line += level.level_name;
 
 			int x, y;
-			const int text_width = V_StringWidth(line) * CleanXfac;
+			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
 			{
 				x = surface_width - text_width;
 				y = OV_Y - (text_height * 1) + 1;
+				if (G_IsHordeMode())
+				{
+					y -= text_height * 3;
+				}
 			}
 			else
 			{
@@ -1977,16 +2098,15 @@ void AM_Drawer()
 				y = OV_Y - (text_height * 1) + 1;
 			}
 
-			screen->DrawTextClean(CR_GREY, x, y, line);
+			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 		}
 
 		if (am_showtime)
 		{
-			sprintf(line, " %02d:%02d:%02d", time / 3600, (time % 3600) / 60,
-			        time % 60); // Time
+			line = fmt::sprintf(" %02d:%02d:%02d", time / 3600, (time % 3600) / 60, time % 60); // Time
 
 			int x, y;
-			const int text_width = V_StringWidth(line) * CleanXfac;
+			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
 			{
@@ -1998,8 +2118,12 @@ void AM_Drawer()
 				x = surface_width - text_width;
 				y = OV_Y - (text_height * 1) + 1;
 			}
+			if (G_IsHordeMode())
+			{
+				y -= text_height * 3;
+			}
 
-			screen->DrawTextClean(CR_GREY, x, y, line);
+			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 		}
 	}
 }

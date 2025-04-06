@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -139,8 +139,8 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	// give all cards in death match mode
 	if (!G_IsCoopGame())
 	{
-		for (int i = 0; i < NUMCARDS; i++)
-			player.cards[i] = true;
+		for (auto& cardheld : player.cards)
+			cardheld = true;
 	}
 
 	// Give any other between-level inventory.
@@ -149,9 +149,6 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 
 	if (consoleplayer().camera == player.mo)
 		ST_Start();	// wake up the status bar
-
-	// [RH] If someone is in the way, kill them
-	P_TeleportMove(mobj, mobj->x, mobj->y, mobj->z, true);
 
 	// [BC] Do script stuff
 	if (serverside && level.behavior)
@@ -185,7 +182,7 @@ void P_ShowSpawns(mapthing2_t* mthing)
 			// [RK] If we're not using z-height spawns, spawn the fountain on the floor
 			spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS,
 				(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing->z << FRACBITS : ONFLOORZ), MT_FOUNTAIN);
-			
+
 			spawn->args[0] = 7; // White
 		}
 
@@ -199,7 +196,7 @@ void P_ShowSpawns(mapthing2_t* mthing)
 					// [RK] If we're not using z-height spawns, spawn the fountain on the floor
 					spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS,
 						(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing->z << FRACBITS : ONFLOORZ), MT_FOUNTAIN);
-					
+
 					spawn->args[0] = teamInfo->FountainColorArg;
 					break;
 				}

@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -181,7 +181,7 @@ static void I_UnregisterMidiSong(MidiSong* midisong)
 
 MidiMusicSystem::MidiMusicSystem()
 	: MusicSystem(), m_useResetDelay(false), m_midiSong(NULL), m_songItr(),
-	  m_loop(false), m_timeDivision(96), msperclock(0.0), m_useFallback(false),
+	  m_loop(false), msperclock(0.0), m_useFallback(false),
 	  m_fallback(), m_lastEventTime(0), m_prevClockTime(0)
 {
 }

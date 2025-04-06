@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -78,7 +78,7 @@ static StringList GametypeArgs(const GametypeParam (&params)[SIZE], size_t argc,
 	}
 
 	StringList args = VectorArgs(argc, argv);
-	if (!(!args.empty() && iequals(args.at(0).c_str(), "default")))
+	if (!(!args.empty() && iequals(args.at(0), "default")))
 	{
 		for (;;)
 		{
@@ -90,7 +90,7 @@ static StringList GametypeArgs(const GametypeParam (&params)[SIZE], size_t argc,
 			else if (args.size() == 1)
 			{
 				// All params take a second one.
-				Printf(PRINT_HIGH, "Missing argument for \"%s\"\n", args.front().c_str());
+				Printf(PRINT_HIGH, "Missing argument for \"%s\"\n", args.front());
 				return ret;
 			}
 
@@ -100,7 +100,7 @@ static StringList GametypeArgs(const GametypeParam (&params)[SIZE], size_t argc,
 			bool next = false;
 			for (size_t i = 0; i < SIZE; i++)
 			{
-				if (iequals(cmd.c_str(), params[i].flag))
+				if (iequals(cmd, params[i].flag))
 				{
 					// Set a new value.
 					cvars.insert(std::make_pair(std::string(params[i].cvar), val));
@@ -121,17 +121,15 @@ static StringList GametypeArgs(const GametypeParam (&params)[SIZE], size_t argc,
 			}
 
 			// Unknown flag.
-			Printf(PRINT_HIGH, "Unknown flag \"%s\"\n", cmd.c_str());
+			Printf(PRINT_HIGH, "Unknown flag \"%s\"\n", cmd);
 			return ret;
 		}
 	}
 
 	// Apply all the flags
-	std::string buffer;
-	for (CvarTable::const_iterator it = cvars.begin(); it != cvars.end(); ++it)
+	for (const auto& [cvar, def] : cvars)
 	{
-		StrFormat(buffer, "%s %d", it->first.c_str(), it->second);
-		ret.push_back(buffer);
+		ret.push_back(fmt::format("{} {}", cvar, def));
 	}
 
 	// We're done!
@@ -176,8 +174,8 @@ BEGIN_COMMAND(game_coop)
 	params.push_back("sv_nomonsters 0");
 
 	std::string config = JoinStrings(params, "; ");
-	Printf("Configuring Cooperative...\n%s\n", config.c_str());
-	AddCommandString(config.c_str());
+	Printf("Configuring Cooperative...\n%s\n", config);
+	AddCommandString(config);
 }
 END_COMMAND(game_coop)
 
@@ -216,8 +214,8 @@ BEGIN_COMMAND(game_survival)
 	params.push_back("sv_nomonsters 0");
 
 	std::string config = JoinStrings(params, "; ");
-	Printf("Configuring Survival...\n%s\n", config.c_str());
-	AddCommandString(config.c_str());
+	Printf("Configuring Survival...\n%s\n", config);
+	AddCommandString(config);
 }
 END_COMMAND(game_survival)
 
@@ -257,8 +255,8 @@ BEGIN_COMMAND(game_dm)
 	params.push_back("sv_skill 5");
 
 	std::string config = JoinStrings(params, "; ");
-	Printf("Configuring Deathmatch...\n%s\n", config.c_str());
-	AddCommandString(config.c_str());
+	Printf("Configuring Deathmatch...\n%s\n", config);
+	AddCommandString(config);
 }
 END_COMMAND(game_dm)
 
@@ -301,8 +299,8 @@ BEGIN_COMMAND(game_duel)
 	params.push_back("sv_warmup_autostart 1.0");
 
 	std::string config = JoinStrings(params, "; ");
-	Printf("Configuring Duel...\n%s\n", config.c_str());
-	AddCommandString(config.c_str());
+	Printf("Configuring Duel...\n%s\n", config);
+	AddCommandString(config);
 }
 END_COMMAND(game_duel)
 
@@ -343,8 +341,8 @@ BEGIN_COMMAND(game_lms)
 	params.push_back("sv_skill 5");
 
 	std::string config = JoinStrings(params, "; ");
-	Printf("Configuring Last Marine Standing...\n%s\n", config.c_str());
-	AddCommandString(config.c_str());
+	Printf("Configuring Last Marine Standing...\n%s\n", config);
+	AddCommandString(config);
 }
 END_COMMAND(game_lms)
 
@@ -385,8 +383,8 @@ BEGIN_COMMAND(game_tdm)
 	params.push_back("sv_skill 5");
 
 	std::string config = JoinStrings(params, "; ");
-	Printf("Configuring Team Deathmatch...\n%s\n", config.c_str());
-	AddCommandString(config.c_str());
+	Printf("Configuring Team Deathmatch...\n%s\n", config);
+	AddCommandString(config);
 }
 END_COMMAND(game_tdm)
 
@@ -430,8 +428,8 @@ BEGIN_COMMAND(game_tlms)
 	params.push_back("sv_skill 5");
 
 	std::string config = JoinStrings(params, "; ");
-	Printf("Configuring Team Last Marine Standing...\n%s\n", config.c_str());
-	AddCommandString(config.c_str());
+	Printf("Configuring Team Last Marine Standing...\n%s\n", config);
+	AddCommandString(config);
 }
 END_COMMAND(game_tlms)
 
@@ -474,8 +472,8 @@ BEGIN_COMMAND(game_ctf)
 	params.push_back("sv_skill 5");
 
 	std::string config = JoinStrings(params, "; ");
-	Printf("Configuring Capture the Flag...\n%s\n", config.c_str());
-	AddCommandString(config.c_str());
+	Printf("Configuring Capture the Flag...\n%s\n", config);
+	AddCommandString(config);
 }
 END_COMMAND(game_ctf)
 
@@ -524,7 +522,7 @@ BEGIN_COMMAND(game_horde)
 	params.push_back("sv_nomonsters 0");
 
 	std::string config = JoinStrings(params, "; ");
-	Printf("Configuring Horde...\n%s\n", config.c_str());
-	AddCommandString(config.c_str());
+	Printf("Configuring Horde...\n%s\n", config);
+	AddCommandString(config);
 }
 END_COMMAND(game_horde)

@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -54,7 +54,7 @@
 static TCHAR gCrashDir[CRASH_DIR_LEN];
 
 // Fucntion pointer for MiniDumpWriteDump.
-typedef BOOL(WINAPI* MINIDUMPWRITEDUMP)(
+typedef bool(WINAPI* MINIDUMPWRITEDUMP)(
     HANDLE hProcess, DWORD dwPid, HANDLE hFile, MINIDUMP_TYPE DumpType,
     CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
     CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam,
@@ -99,7 +99,7 @@ void writeMinidump(EXCEPTION_POINTERS* exceptionPtrs)
 	MINIDUMP_EXCEPTION_INFORMATION mei;
 	mei.ThreadId = GetCurrentThreadId();
 	mei.ExceptionPointers = exceptionPtrs;
-	mei.ClientPointers = FALSE;
+	mei.ClientPointers = false;
 
 	// Do the actual dump.
 	pMiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile,
@@ -217,7 +217,7 @@ void I_SetCrashDir(const char* crashdir)
 	if (len > CRASH_DIR_LEN)
 	{
 		I_FatalError(
-		    "Crash directory \"%s\" is too long.  Please pass a correct -crashout param.",
+		    "Crash directory \"{}\" is too long.  Please pass a correct -crashout param.",
 		    crashdir);
 		abort();
 	}
@@ -226,7 +226,7 @@ void I_SetCrashDir(const char* crashdir)
 	UINT res = GetTempFileName(crashdir, "crash", 0, testfile);
 	if (res == 0 || res == ERROR_BUFFER_OVERFLOW)
 	{
-		I_FatalError("Crash directory \"%s\" is not writable.  Please point -crashout to "
+		I_FatalError("Crash directory \"{}\" is not writable.  Please point -crashout to "
 		             "a directory with write permissions.",
 		             crashdir);
 		abort();

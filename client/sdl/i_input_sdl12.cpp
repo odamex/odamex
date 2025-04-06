@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,8 +34,6 @@
 #include <queue>
 #include <cassert>
 
-static const int MAX_SDL_EVENTS_PER_TIC = 8192;
-
 EXTERN_CVAR(joy_deadzone)
 EXTERN_CVAR(joy_lefttrigger_deadzone)
 EXTERN_CVAR(joy_righttrigger_deadzone)
@@ -47,6 +45,8 @@ EXTERN_CVAR(joy_righttrigger_deadzone)
 // ============================================================================
 
 #ifdef SDL12
+
+static const int MAX_SDL_EVENTS_PER_TIC = 8192;
 
 // ============================================================================
 //

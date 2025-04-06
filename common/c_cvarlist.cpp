@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -160,6 +160,9 @@ CVAR(				sv_allowredscreen, "1","Allow clients to adjust amount of red pain scre
 CVAR(				sv_allowpwo, "0", "Allow clients to set their preferences for automatic weapon switching",
 					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
 
+CVAR(				sv_allowfov, "0", "Allow clients to set their field of view",
+					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
+
 CVAR_FUNC_DECL(		sv_allowwidescreen, "1", "Allow clients to use true widescreen",
 					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE | CVAR_LATCH)
 
@@ -180,6 +183,9 @@ CVAR(				sv_unblockplayers, "0", "Allows players to walk through other players, 
 
 CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
 					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
+
+CVAR(				sv_showplayerpowerups, "0", "Show which powerup each player has. (1 = Show all powerups to clients. 0 = Only show Invisibility (vanilla)",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR(sv_downloadsites, "",
      "A list of websites to download WAD files from, separated by spaces",
@@ -249,12 +255,13 @@ CVAR(g_postroundtime, "3", "Amount of time after a round before the next round/e
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_RANGE(g_thingfilter, "0", "Removes some things from the map. Values are:\n" \
-	"// 0 - All things are retained (default).\n" \
-	"// 1 - Only Coop weapons are removed.\n" \
-        "// 2 - All Coop things are removed.\n" \
-	"// 3 - All pickupable things are removed.",
+           "// -1 - Multiplayer things are added in singleplayer.\n" \
+           "// 0 - All things are retained (default).\n" \
+           "// 1 - Only Coop weapons are removed.\n" \
+           "// 2 - All Coop things are removed.\n" \
+           "// 3 - All pickupable things are removed.\n",
            CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_LATCH,
-           0.0f, 3.0f)
+           -1.0f, 3.0f)
 
 CVAR(g_resetinvonexit, "0",
      "Always reset players to their starting inventory on level exit", CVARTYPE_BOOL,
@@ -325,6 +332,9 @@ CVAR_RANGE(sv_countdown, "5",
 	CVAR(			co_blockmapfix, "0", "Fix the blockmap collision bug",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+	CVAR(			co_novileghosts, "0", "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
 
 	// Boom-compatibility changes
 	//------------------------------
@@ -335,9 +345,6 @@ CVAR_RANGE(sv_countdown, "5",
 	CVAR(			co_allowdropoff, "0", "Allow monsters can get pushed or thrusted off of ledges",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
-	CVAR(			co_novileghosts, "0", "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
-					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
-	
 	CVAR(			co_removesoullimit, "0", "Allows pain elementals to still spawn lost souls if more than 20 are present",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 

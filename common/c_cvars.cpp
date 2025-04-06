@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,7 +31,6 @@
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "m_alloc.h"
-
 
 #include "d_netinf.h"
 
@@ -154,7 +153,7 @@ void cvar_t::ForceSet(const char* valstr)
 	// [SL] 2013-04-16 - Latched CVARs do not change values until the next map.
 	// Servers and single-player games should abide by this behavior but
 	// multiplayer clients should just do what the server tells them.
-	if (m_Flags & CVAR_LATCH && serverside && 
+	if (m_Flags & CVAR_LATCH && serverside &&
 		(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION))
 	{
 		m_Flags |= CVAR_MODIFIED;
@@ -175,16 +174,14 @@ void cvar_t::ForceSet(const char* valstr)
 
 		// perform rounding to nearest integer for integral types
 		if (integral_type)
-			valf = floor(valf + 0.5f);
+			valf = std::round(valf);
 
 		valf = clamp(valf, m_MinValue, m_MaxValue);
 
 		if (numerical_value || integral_type || floating_type)
 		{
 			// generate m_String based on the clamped valf value
-			char tmp[32];
-			sprintf(tmp, "%g", valf);
-			m_String = tmp;
+			m_String = fmt::format("{:g}", valf);
 		}
 		else
 		{
@@ -213,7 +210,7 @@ void cvar_t::ForceSet(const char* valstr)
 void cvar_t::ForceSet(float val)
 {
 	char string[32];
-	sprintf(string, "%g", val);
+	snprintf(string, 32, "%g", val);
 	ForceSet(string);
 }
 
@@ -332,19 +329,40 @@ void cvar_t::FilterCompactCVars (TArray<cvar_t *> &cvars, DWORD filter)
 	}
 }
 
-void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, bool compact)
+// Uses snprintf's return value (number of chars written) to advance
+// a pointer of an array of chars to write out a packed byte array
+// of cvars, subtracting the base array size from the total after
+// each advancement.
+void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool compact)
 {
+	if (array_size <= 0)
+		return;
+
 	cvar_t *cvar = ad.GetCVars();
 	byte *ptr = *demo_p;
+	int chars;
 
 	if (compact)
 	{
 		TArray<cvar_t *> cvars;
-		ptr += sprintf ((char *)ptr, "\\\\%ux", (unsigned int)filter);
+		chars = snprintf((char*)ptr, array_size, "\\\\%ux", (unsigned int)filter);
+
+		ptr += chars;
+		array_size -= chars;
+
 		FilterCompactCVars (cvars, filter);
 		while (cvars.Pop (cvar))
 		{
-			ptr += sprintf ((char *)ptr, "\\%s", cvar->cstring());
+			if (array_size <= 0)
+			{
+				Printf(PRINT_WARNING, "Warning: Saved Cvars exceed %lu bytes, no more cvars will be written.\n", array_size);
+				return;
+			}
+
+			chars = snprintf ((char *)ptr, array_size, "\\%s", cvar->cstring());
+
+			ptr += chars;
+			array_size -= chars;
 		}
 	}
 	else
@@ -354,8 +372,19 @@ void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, bool compact)
 		{
 			if (cvar->m_Flags & filter)
 			{
-				ptr += sprintf ((char *)ptr, "\\%s\\%s",
+				if (array_size <= 0)
+				{
+					Printf(PRINT_WARNING, "Saved Cvars exceed %lu bytes, no more "
+					       "cvars will be written.\n",
+					       array_size);
+					return;
+				}
+
+				chars = snprintf((char*)ptr, array_size, "\\%s\\%s",
 								cvar->name(), cvar->cstring());
+
+				ptr += chars;
+				array_size -= chars;
 			}
 			cvar = cvar->m_Next;
 		}
@@ -457,7 +486,7 @@ void cvar_t::C_BackupCVars (unsigned int bitflag)
 		if (cvar->m_Flags & bitflag)
 		{
 			if (backup == &CVarBackups[MAX_BACKUPCVARS])
-				I_Error ("C_BackupDemoCVars: Too many cvars to save (%d)", MAX_BACKUPCVARS);
+				I_Error("C_BackupDemoCVars: Too many cvars to save ({})", MAX_BACKUPCVARS);
 			backup->name = cvar->m_Name;
 			backup->string = cvar->m_String;
 			backup++;
@@ -600,7 +629,7 @@ static std::string C_GetValueString(const cvar_t* var)
 	if (atof(var->cstring()) == 0.0f)
 		return "disabled";
 	else
-		return "enabled";	
+		return "enabled";
 }
 
 static std::string C_GetLatchedValueString(const cvar_t* var)
@@ -613,9 +642,7 @@ static std::string C_GetLatchedValueString(const cvar_t* var)
 
 	if (var->flags() & CVAR_NOENABLEDISABLE)
 	{
-		std::string str = "";
-		StrFormat(str, "\"%s\"", var->latched());
-		return str;
+		return fmt::sprintf("\"%s\"", var->latched());
 	}
 
 	if (atof(var->latched()) == 0.0f)
@@ -701,11 +728,11 @@ BEGIN_COMMAND (get)
 		// [Russell] - Don't make the user feel inadequate, tell
 		// them its either enabled, disabled or its other value
 		Printf(PRINT_HIGH, "\"%s\" is %s%s.\n",
-				var->name(), C_GetValueString(var).c_str(), control.c_str());
+				var->name(), C_GetValueString(var), control);
 
 		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
 			Printf(PRINT_HIGH, "\"%s\" will be changed to %s.\n",
-					var->name(), C_GetLatchedValueString(var).c_str());
+					var->name(), C_GetLatchedValueString(var));
 	}
 	else
 	{
@@ -745,11 +772,11 @@ BEGIN_COMMAND (toggle)
 		// [Russell] - Don't make the user feel inadequate, tell
 		// them its either enabled, disabled or its other value
 		Printf(PRINT_HIGH, "\"%s\" is %s.\n",
-				var->name(), C_GetValueString(var).c_str());
+				var->name(), C_GetValueString(var));
 
 		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
 			Printf(PRINT_HIGH, "\"%s\" will be changed to %s.\n",
-					var->name(), C_GetLatchedValueString(var).c_str());
+					var->name(), C_GetLatchedValueString(var));
 	}
 }
 END_COMMAND (toggle)

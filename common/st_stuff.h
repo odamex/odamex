@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,7 +39,7 @@ extern int ST_WIDTH;
 extern int ST_X;
 extern int ST_Y;
 
-int ST_StatusBarWidth(int surface_width, int surface_height);
+short ST_StatusBarWidth(int surface_width, int surface_height);
 int ST_StatusBarHeight(int surface_width, int surface_height);
 int ST_StatusBarX(int surface_width, int surface_height);
 int ST_StatusBarY(int surface_width, int surface_height);

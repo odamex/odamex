@@ -89,10 +89,10 @@ static bool cmpDamage(const player_t* arg1, const player_t* arg2)
 	return arg2->monsterdmgcount < arg1->monsterdmgcount;
 }
 
-static bool cmpKills(const player_t* arg1, const player_t* arg2)
-{
-	return arg2->killcount < arg1->killcount;
-}
+//static bool cmpKills(const player_t* arg1, const player_t* arg2) // unused
+//{
+//	return arg2->killcount < arg1->killcount;
+//}
 
 static bool cmpPoints(const player_t* arg1, const player_t* arg2)
 {
@@ -115,20 +115,20 @@ static bool cmpQueue(const player_t* arg1, const player_t* arg2)
 }
 
 // Returns true if a player is ingame.
-bool ingamePlayer(player_t* player)
+bool ingamePlayer(const player_t* player)
 {
 	return (player->ingame() && player->spectator == false);
 }
 
 // Returns true if a player is ingame and on a specific team
-bool inTeamPlayer(player_t* player, const byte team)
+bool inTeamPlayer(const player_t* player, const byte team)
 {
 	return (player->ingame() && player->userinfo.team == team &&
 	        player->spectator == false);
 }
 
 // Returns true if a player is a spectator
-bool spectatingPlayer(player_t* player)
+bool spectatingPlayer(const player_t* player)
 {
 	return (!player->ingame() || player->spectator == true);
 }
@@ -150,25 +150,25 @@ const PlayersView& sortedPlayers()
 	specInQueue.clear();
 	specNormal.clear();
 
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!it->ingame())
+		if (!player.ingame())
 			continue;
 
-		if (it->spectator)
+		if (player.spectator)
 		{
-			if (it->QueuePosition > 0)
+			if (player.QueuePosition > 0)
 			{
-				specInQueue.push_back(&(*it));
+				specInQueue.push_back(&player);
 			}
 			else
 			{
-				specNormal.push_back(&(*it));
+				specNormal.push_back(&player);
 			}
 		}
 		else
 		{
-			inGame.push_back(&(*it));
+			inGame.push_back(&player);
 		}
 	}
 
@@ -205,16 +205,14 @@ const PlayersView& sortedPlayers()
 
 	std::sort(specInQueue.begin(), specInQueue.end(), cmpQueue);
 
-	for (std::vector<player_t*>::iterator it = inGame.begin(); it != inGame.end(); it++)
-		sortedplayers.push_back(*it);
+	for (auto& player : inGame)
+		sortedplayers.push_back(player);
 
-	for (std::vector<player_t*>::iterator it = specInQueue.begin();
-	     it != specInQueue.end(); it++)
-		sortedplayers.push_back(*it);
+	for (auto& player : specInQueue)
+		sortedplayers.push_back(player);
 
-	for (std::vector<player_t*>::iterator it = specNormal.begin(); it != specNormal.end();
-	     it++)
-		sortedplayers.push_back(*it);
+	for (auto& player : specNormal)
+		sortedplayers.push_back(player);
 
 	sp_tic = gametic;
 	return sortedplayers;
@@ -254,7 +252,6 @@ static const char *ordinal(int n)
  */
 std::string HelpText()
 {
-	std::string str;
 	int queuePos = consoleplayer().QueuePosition;
 
 	std::string joinmsg;
@@ -278,29 +275,25 @@ std::string HelpText()
 	{
 		if (queuePos > 0)
 		{
-			StrFormat(str, "%s - " TEXTCOLOR_GREEN "%d%s" TEXTCOLOR_NORMAL " in line",
-			          joinmsg.c_str(), queuePos, ordinal(queuePos));
-			return str;
+			return fmt::sprintf("%s - " TEXTCOLOR_GREEN "%d%s" TEXTCOLOR_NORMAL " in line",
+			                    joinmsg, queuePos, ordinal(queuePos));
 		}
 
-		StrFormat(str, "%s - Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to queue",
-		          joinmsg.c_str(), ::Bindings.GetKeynameFromCommand("+use").c_str());
-		return str;
+		return fmt::sprintf("%s - Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to queue",
+		                    joinmsg, ::Bindings.GetKeynameFromCommand("+use"));
 	}
 
 	if (G_CanShowJoinTimer())
 	{
-		StrFormat(str,
+		return fmt::sprintf(
 		          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
 		          " to join - " TEXTCOLOR_GREEN "%d" TEXTCOLOR_NORMAL " secs left",
-		          ::Bindings.GetKeynameFromCommand("+use").c_str(),
+		          ::Bindings.GetKeynameFromCommand("+use"),
 		          ::levelstate.getJoinTimeLeft());
-		return str;
 	}
 
-	StrFormat(str, "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to join",
-	          ::Bindings.GetKeynameFromCommand("+use").c_str());
-	return str;
+	return fmt::sprintf("Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to join",
+	                    ::Bindings.GetKeynameFromCommand("+use"));
 }
 
 /**
@@ -321,9 +314,7 @@ std::string SpyPlayerName()
 		color = GetTeamInfo(plyr.userinfo.team)->TextColor.c_str();
 	}
 
-	std::string str;
-	StrFormat(str, "%s%s", color, plyr.userinfo.netname.c_str());
-	return str;
+	return fmt::sprintf("%s%s", color, plyr.userinfo.netname);
 }
 
 /**
@@ -350,7 +341,7 @@ std::string Timer()
 
 
 	OTimespan tspan;
-	if (::levelstate.getState() == LevelState::WARMUP || 
+	if (::levelstate.getState() == LevelState::WARMUP ||
 		::levelstate.getState() == LevelState::WARMUP_COUNTDOWN ||
 		::levelstate.getState() == LevelState::WARMUP_FORCED_COUNTDOWN )
 	{
@@ -382,12 +373,11 @@ std::string Timer()
 	std::string str;
 	if (tspan.hours)
 	{
-		StrFormat(str, "%s%02d:%02d:%02d", color, tspan.hours, tspan.minutes,
-		          tspan.seconds);
+		str = fmt::sprintf("%s%02d:%02d:%02d", color, tspan.hours, tspan.minutes, tspan.seconds);
 	}
 	else
 	{
-		StrFormat(str, "%s%02d:%02d", color, tspan.minutes, tspan.seconds);
+		str = fmt::sprintf("%s%02d:%02d", color, tspan.minutes, tspan.seconds);
 	}
 	return str;
 }
@@ -410,11 +400,11 @@ std::string IntermissionTimer()
 	std::string str;
 	if (tspan.hours)
 	{
-		StrFormat(str, "%02d:%02d:%02d", tspan.hours, tspan.minutes, tspan.seconds);
+		str = fmt::sprintf("%02d:%02d:%02d", tspan.hours, tspan.minutes, tspan.seconds);
 	}
 	else
 	{
-		StrFormat(str, "%02d:%02d", tspan.minutes, tspan.seconds);
+		str = fmt::sprintf("%02d:%02d", tspan.minutes, tspan.seconds);
 	}
 	return str;
 }
@@ -422,12 +412,11 @@ std::string IntermissionTimer()
 /**
  * @brief Return a "spread" of personal frags or team points that the current
  *        player or team is ahead or behind by.
- * 
+ *
  * @return Colored string to render in the HUD.
  */
 std::string PersonalSpread()
 {
-	std::string str;
 	player_t& plyr = displayplayer();
 
 	if (G_IsFFAGame())
@@ -484,14 +473,12 @@ std::string PersonalSpread()
 
 			// Player is on top.
 			int diff = plyr_number - next_number;
-			StrFormat(str, TEXTCOLOR_GREEN "+%d", diff);
-			return str;
+			return fmt::sprintf(TEXTCOLOR_GREEN "+%d", diff);
 		}
 
 		// Player is behind.
 		int diff = top_number - plyr_number;
-		StrFormat(str, TEXTCOLOR_BRICK "-%d", diff);
-		return str;
+		return fmt::sprintf(TEXTCOLOR_BRICK "-%d", diff);
 	}
 	else if (G_IsTeamGame())
 	{
@@ -542,14 +529,12 @@ std::string PersonalSpread()
 
 			// Player team is on top.
 			int diff = plyr_number - next_number;
-			StrFormat(str, TEXTCOLOR_GREEN "+%d", diff);
-			return str;
+			return fmt::sprintf(TEXTCOLOR_GREEN "+%d", diff);
 		}
 
 		// Player team is behind.
 		int diff = top_number - plyr_number;
-		StrFormat(str, TEXTCOLOR_BRICK "-%d", diff);
-		return str;
+		return fmt::sprintf(TEXTCOLOR_BRICK "-%d", diff);
 	}
 
 	// We're not in an appropriate gamemode.
@@ -560,7 +545,7 @@ std::string PersonalSpread()
  * @brief Return a string that contains the current team score or personal
  *        frags of the individual player.  Optionally returns the "limit"
  *        as well.
- * 
+ *
  * @return Colorized string to render to the HUD.
  */
 std::string PersonalScore()
@@ -575,29 +560,29 @@ std::string PersonalScore()
 		{
 			if (g_winlimit)
 			{
-				StrFormat(str, "%s%d/%d", plyr_team.TextColor.c_str(),
-				          plyr_team.RoundWins, g_winlimit.asInt());
+				str = fmt::sprintf("%s%d/%d", plyr_team.TextColor,
+				                   plyr_team.RoundWins, g_winlimit.asInt());
 			}
 			else
 			{
-				StrFormat(str, "%s%d", plyr_team.TextColor.c_str(), plyr.roundwins);
+				str = fmt::sprintf("%s%d", plyr_team.TextColor, plyr.roundwins);
 			}
 		}
 		else
 		{
 			if (G_UsesFraglimit() && sv_fraglimit > 0)
 			{
-				StrFormat(str, "%s%d/%d", plyr_team.TextColor.c_str(), plyr_team.Points,
-				          sv_fraglimit.asInt());
+				str = fmt::sprintf("%s%d/%d", plyr_team.TextColor, plyr_team.Points,
+				                   sv_fraglimit.asInt());
 			}
 			else if (!G_UsesFraglimit() && sv_scorelimit > 0)
 			{
-				StrFormat(str, "%s%d/%d", plyr_team.TextColor.c_str(), plyr_team.Points,
-				          sv_scorelimit.asInt());
+				str = fmt::sprintf("%s%d/%d", plyr_team.TextColor, plyr_team.Points,
+				                   sv_scorelimit.asInt());
 			}
 			else
 			{
-				StrFormat(str, "%s%d", plyr_team.TextColor.c_str(), plyr.fragcount);
+				str = fmt::sprintf("%s%d", plyr_team.TextColor, plyr.fragcount);
 			}
 		}
 	}
@@ -607,24 +592,24 @@ std::string PersonalScore()
 		{
 			if (g_winlimit)
 			{
-				StrFormat(str, TEXTCOLOR_GREY "%d/%d", plyr.roundwins,
-				          g_winlimit.asInt());
+				str = fmt::sprintf(TEXTCOLOR_GREY "%d/%d", plyr.roundwins,
+				                   g_winlimit.asInt());
 			}
 			else
 			{
-				StrFormat(str, TEXTCOLOR_GREY "%d", plyr.roundwins);
+				str = fmt::sprintf(TEXTCOLOR_GREY "%d", plyr.roundwins);
 			}
 		}
 		else
 		{
 			if (sv_fraglimit)
 			{
-				StrFormat(str, TEXTCOLOR_GREY "%d/%d", plyr.fragcount,
-				          sv_fraglimit.asInt());
+				str = fmt::sprintf(TEXTCOLOR_GREY "%d/%d", plyr.fragcount,
+				                   sv_fraglimit.asInt());
 			}
 			else
 			{
-				StrFormat(str, TEXTCOLOR_GREY "%d", plyr.fragcount);
+				str = fmt::sprintf(TEXTCOLOR_GREY "%d", plyr.fragcount);
 			}
 		}
 	}
@@ -645,12 +630,12 @@ std::string PersonalMatchDuelPlacement()
 
 	if (g_winlimit)
 	{
-		StrFormat(str, TEXTCOLOR_GREY "%d/%d W", plyr.roundwins,
-				    g_winlimit.asInt());
+		str = fmt::sprintf(TEXTCOLOR_GREY "%d/%d W", plyr.roundwins,
+				           g_winlimit.asInt());
 	}
 	else
 	{
-		StrFormat(str, TEXTCOLOR_GREY "%d W", plyr.roundwins);
+		str = fmt::sprintf(TEXTCOLOR_GREY "%d W", plyr.roundwins);
 	}
 
 	return str;
@@ -671,14 +656,11 @@ std::string NetdemoElapsed() {
 	timeelapsed -= minutes * 60;
 	uint8_t seconds = timeelapsed;
 
-	char str[12];
 	if (hours) {
-		sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
+		return fmt::format("{:02d}:{:02d}:{:02d}", hours, minutes, seconds);
 	} else {
-		sprintf(str, "%02d:%02d", minutes, seconds);
+		return fmt::format("{:02d}:{:02d}", minutes, seconds);
 	}
-
-	return str;
 }
 
 // Return current map number/total maps in demo
@@ -723,27 +705,15 @@ std::string PlayersSplit() {
 // Returns the number of players on a team
 int CountTeamPlayers(byte team)
 {
-	int count = 0;
-	std::vector<player_t*> sortPlayers = sortedPlayers();
-	for (size_t i = 0; i < sortPlayers.size(); i++)
-	{
-		if (inTeamPlayer(sortPlayers[i], team))
-			count++;
-	}
-	return count;
+	const PlayersView& sortPlayers = sortedPlayers();
+	return std::count_if(sortPlayers.cbegin(), sortPlayers.cend(), [team](const auto& player) { return inTeamPlayer(player, team); });
 }
 
 // Returns the number of spectators on a team
 int CountSpectators()
 {
-	int count = 0;
-	std::vector<player_t*> sortPlayers = sortedPlayers();
-	for (size_t i = 0; i < sortPlayers.size(); i++)
-	{
-		if (spectatingPlayer(sortPlayers[i]))
-			count++;
-	}
-	return count;
+	const PlayersView& sortPlayers = sortedPlayers();
+	return std::count_if(sortPlayers.cbegin(), sortPlayers.cend(), [](const auto& player) { return spectatingPlayer(player); });
 }
 
 std::string TeamPlayers(int& color, byte team)
@@ -773,8 +743,7 @@ std::string TeamFrags(int& color, byte team)
 	color = V_GetTextColor(GetTeamInfo((team_t)team)->TextColor.c_str());
 
 	int fragcount = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
-		player_t* player = sortedPlayers()[i];
+	for (const auto& player : sortedPlayers()) {
 		if (inTeamPlayer(player, team)) {
 			fragcount += player->fragcount;
 		}
@@ -801,7 +770,7 @@ std::string TeamPoints(int& color, byte team) {
 
 /**
  * @brief Calculate the number of team lives for the HUD.
- * 
+ *
  * @param str Output string buffer.
  * @param color Output color.
  * @param team Team to construct for.
@@ -820,11 +789,10 @@ void TeamLives(std::string& str, int& color, byte team)
 
 	PlayerResults results = PlayerQuery().hasLives().onTeam(static_cast<team_t>(team)).execute();
 	int lives = 0;
-	PlayersView::const_iterator it = results.players.begin();
-	for (; it != results.players.end(); ++it)
-		lives += (*it)->lives;
+	for (const auto& player : results.players)
+		lives += player->lives;
 
-	StrFormat(str, "%d", lives);
+	str = fmt::format("{}", lives);
 }
 
 std::string TeamKD(int& color, byte team) {
@@ -837,8 +805,7 @@ std::string TeamKD(int& color, byte team) {
 
 	int killcount = 0;
 	unsigned int deathcount = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
-		player_t* player = sortedPlayers()[i];
+	for (const auto& player : sortedPlayers()) {
 		if (inTeamPlayer(player, team)) {
 			killcount += player->fragcount;
 			deathcount += player->deathcount;
@@ -865,8 +832,7 @@ std::string TeamPing(int& color, byte team) {
 	}
 
 	unsigned int ping = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
-		player_t* player = sortedPlayers()[i];
+	for (const auto& player : sortedPlayers()) {
 		if (inTeamPlayer(player, team)) {
 			ping += player->ping;
 		}
@@ -894,7 +860,7 @@ void EleBar(const int x, const int y, const int w, const float scale,
 	patch_t* leftfull = W_ResolvePatchHandle(::line_leftfull);
 	patch_t* centerempty = W_ResolvePatchHandle(::line_centerempty);
 	patch_t* centerleft = W_ResolvePatchHandle(::line_centerleft);
-	patch_t* centerright = W_ResolvePatchHandle(::line_centerright);
+	//patch_t* centerright = W_ResolvePatchHandle(::line_centerright); // unused
 	patch_t* centerfull = W_ResolvePatchHandle(::line_centerfull);
 	patch_t* rightempty = W_ResolvePatchHandle(::line_rightempty);
 	patch_t* rightfull = W_ResolvePatchHandle(::line_rightfull);
@@ -904,9 +870,6 @@ void EleBar(const int x, const int y, const int w, const float scale,
 
 	// Number of things to draw.
 	const int UNITS = w / UNIT_WIDTH;
-
-	// Actual width - rounded down from input w.
-	const int ACTUAL_WIDTH = UNIT_WIDTH * UNITS;
 
 	if (UNITS <= 2)
 	{
@@ -950,7 +913,7 @@ void EleBar(const int x, const int y, const int w, const float scale,
 			// i0 is short-circuited, so remove it.
 			const int idx = i - 1;
 
-			// Each unit 
+			// Each unit
 			const float scaled = pct * (UNITS - 2);
 
 			if (scaled < static_cast<float>(idx) + 0.5f)
@@ -976,16 +939,15 @@ void EleBar(const int x, const int y, const int w, const float scale,
 	int drawX;
 	if (x_align == hud::X_RIGHT)
 	{
-		drawX = x + ((lineHandles.size() - 1) * UNIT_WIDTH);
+		drawX = x + ((static_cast<int>(lineHandles.size()) - 1) * UNIT_WIDTH);
 	}
 	else
 	{
 		drawX = x;
 	}
 
-	for (size_t i = 0; i < lineHandles.size(); i++)
+	for (const auto& patch : lineHandles)
 	{
-		patch_t* patch = lineHandles.at(i);
 		hud::DrawTranslatedPatch(drawX, y, scale, x_align, y_align, x_origin, y_origin,
 		                         patch, ::Ranges + color * 256);
 
@@ -1009,13 +971,12 @@ void EAPlayerColors(int x, int y,
                     const short padding, const short limit)
 {
 	byte drawn = 0;
-	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	for (const auto& player : sortedPlayers())
 	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit)
 			break;
 
-		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player))
 		{
 			argb_t playercolor = CL_GetPlayerColor(player);
@@ -1037,13 +998,12 @@ void EATeamPlayerColors(int x, int y,
                         const byte team)
 {
 	byte drawn = 0;
-	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	for (const auto& player : sortedPlayers())
 	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit)
 			break;
 
-		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team))
 		{
 			argb_t playercolor = CL_GetPlayerColor(player);
@@ -1062,13 +1022,13 @@ void EAPlayerNames(int x, int y, const float scale,
                    const short padding, const short limit,
                    const bool force_opaque) {
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (const auto& player : sortedPlayers())
+	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
 		}
 
-		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player)) {
 			int color = CR_GREY;
 			if (player->id == displayplayer().id)
@@ -1116,21 +1076,21 @@ void EATeamPlayerNames(int x, int y, const float scale,
                        const short padding, const short limit,
                        const byte team, const bool force_opaque) {
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (const auto& player : sortedPlayers())
+	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
 		}
 
-		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team)) {
 			int color = CR_GREY;
 			if (G_IsTeamGame())
 			{
 				color = GetTeamPlayerColor(player);
 			}
-			else if(player->id == displayplayer().id) 
-			{	
+			else if(player->id == displayplayer().id)
+			{
 				color = CR_GOLD;
 			}
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
@@ -1149,13 +1109,12 @@ void EASpectatorNames(int x, int y, const float scale,
                       const bool force_opaque) {
 	byte drawn = 0;
 	std::vector<player_t*> sortPlayers = sortedPlayers();
-	for (size_t i = 0; i < sortPlayers.size(); i++)
+	for (const auto& player : sortedPlayers())
 	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit)
 			break;
 
-		player_t* player = sortPlayers[i];
 		if (spectatingPlayer(player)) {
 			if (skip <= 0) {
 				int color = CR_GREY;
@@ -1199,7 +1158,7 @@ void EAPlayerRoundWins(int x, int y, const float scale, const x_align_t x_align,
                        const bool force_opaque)
 {
 	byte drawn = 0;
-	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	for (const auto& player : sortedPlayers())
 	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit)
@@ -1207,11 +1166,9 @@ void EAPlayerRoundWins(int x, int y, const float scale, const x_align_t x_align,
 			break;
 		}
 
-		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player))
 		{
-			std::string buffer;
-			StrFormat(buffer, "%d", player->roundwins);
+			std::string buffer = fmt::sprintf("%d", player->roundwins);
 
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.c_str(), CR_GREY, force_opaque);
@@ -1228,7 +1185,7 @@ void EAPlayerLives(int x, int y, const float scale, const x_align_t x_align,
                    const bool force_opaque)
 {
 	byte drawn = 0;
-	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	for (const auto& player : sortedPlayers())
 	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit)
@@ -1236,11 +1193,9 @@ void EAPlayerLives(int x, int y, const float scale, const x_align_t x_align,
 			break;
 		}
 
-		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player))
 		{
-			std::string buffer;
-			StrFormat(buffer, "%d", player->lives);
+			std::string buffer = fmt::sprintf("%d", player->lives);
 
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.c_str(), CR_GREY, force_opaque);
@@ -1257,7 +1212,7 @@ void EATeamPlayerLives(int x, int y, const float scale, const x_align_t x_align,
                        const byte team, const bool force_opaque)
 {
 	byte drawn = 0;
-	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	for (const auto& player : sortedPlayers())
 	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit)
@@ -1265,11 +1220,9 @@ void EATeamPlayerLives(int x, int y, const float scale, const x_align_t x_align,
 			break;
 		}
 
-		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team))
 		{
-			std::string buffer;
-			StrFormat(buffer, "%d", player->lives);
+			std::string buffer = fmt::sprintf("%d", player->lives);
 
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.c_str(), CR_GREY, force_opaque);
@@ -1286,23 +1239,12 @@ void EAPlayerFrags(int x, int y, const float scale,
                    const short padding, const short limit,
                    const bool force_opaque) {
 	byte drawn = 0;
-	int frags = 0;
 
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (const auto& player : sortedPlayers())
+	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
-		}
-
-		player_t* player = sortedPlayers()[i];
-
-		if (G_IsRoundsGame() && !G_IsDuelGame())
-		{
-			frags = player->totalpoints;
-		}
-		else
-		{
-			frags = player->fragcount;
 		}
 
 		if (ingamePlayer(player)) {
@@ -1326,13 +1268,12 @@ void EATeamPlayerFrags(int x, int y, const float scale,
 	byte drawn = 0;
 	int frags = 0;
 
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (const auto& player : sortedPlayers())
+	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
 		}
-
-		player_t* player = sortedPlayers()[i];
 
 		if (G_IsRoundsGame() && G_IsLivesGame())
 		{
@@ -1363,7 +1304,7 @@ void EAPlayerDamage(int x, int y, const float scale, const x_align_t x_align,
                     const bool force_opaque)
 {
 	byte drawn = 0;
-	for (size_t i = 0; i < sortedPlayers().size(); i++)
+	for (const auto& player : sortedPlayers())
 	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit)
@@ -1371,7 +1312,6 @@ void EAPlayerDamage(int x, int y, const float scale, const x_align_t x_align,
 			break;
 		}
 
-		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player))
 		{
 			std::ostringstream buffer;
@@ -1392,13 +1332,13 @@ void EAPlayerKills(int x, int y, const float scale,
                    const short padding, const short limit,
                    const bool force_opaque) {
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (const auto& player : sortedPlayers())
+	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
 		}
 
-		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player)) {
 			std::ostringstream buffer;
 			buffer << player->killcount;
@@ -1419,12 +1359,12 @@ void EAPlayerDeaths(int x, int y, const float scale,
                     const bool force_opaque) {
 	byte drawn = 0;
 	int deaths = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (const auto& player : sortedPlayers())
+	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
 		}
-		player_t* player = sortedPlayers()[i];
 
 		if (G_IsRoundsGame() && !G_IsDuelGame())
 		{
@@ -1457,13 +1397,12 @@ void EATeamPlayerPoints(int x, int y, const float scale,
 	byte drawn = 0;
 	int points = 0;
 
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (const auto& player : sortedPlayers())
+	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
 		}
-
-		player_t* player = sortedPlayers()[i];
 
 		if (G_IsRoundsGame())
 		{
@@ -1495,13 +1434,13 @@ void EAPlayerKD(int x, int y, const float scale,
                 const short padding, const short limit,
                 const bool force_opaque) {
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (const auto& player : sortedPlayers())
+	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
 		}
 
-		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player)) {
 			std::ostringstream buffer;
 			buffer.precision(2);
@@ -1531,13 +1470,13 @@ void EATeamPlayerKD(int x, int y, const float scale,
                     const short padding, const short limit,
                     const byte team, const bool force_opaque) {
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (const auto& player : sortedPlayers())
+	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
 		}
 
-		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team)) {
 			std::ostringstream buffer;
 			buffer.precision(2);
@@ -1566,13 +1505,13 @@ void EAPlayerTimes(int x, int y, const float scale,
                    const short padding, const short limit,
                    const bool force_opaque) {
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (const auto& player : sortedPlayers())
+	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
 		}
 
-		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player)) {
 			std::ostringstream buffer;
 			buffer << player->GameTime / 60;
@@ -1593,13 +1532,13 @@ void EATeamPlayerTimes(int x, int y, const float scale,
                        const short padding, const short limit,
                        const byte team, const bool force_opaque) {
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (const auto& player : sortedPlayers())
+	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
 		}
 
-		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team)) {
 			std::ostringstream buffer;
 			buffer << player->GameTime / 60;
@@ -1619,13 +1558,13 @@ void EAPlayerPings(int x, int y, const float scale,
                    const short padding, const short limit,
                    const bool force_opaque) {
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (const auto& player : sortedPlayers())
+	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
 		}
 
-		player_t* player = sortedPlayers()[i];
 		if (ingamePlayer(player)) {
 			std::ostringstream buffer;
 			buffer << player->ping;
@@ -1646,13 +1585,13 @@ void EATeamPlayerPings(int x, int y, const float scale,
                        const short padding, const short limit,
                        const byte team, const bool force_opaque) {
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (const auto& player : sortedPlayers())
+	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
 		}
 
-		player_t* player = sortedPlayers()[i];
 		if (inTeamPlayer(player, team)) {
 			std::ostringstream buffer;
 			buffer << player->ping;
@@ -1674,13 +1613,13 @@ void EASpectatorPings(int x, int y, const float scale,
                       const short padding, short skip, const short limit,
                       const bool force_opaque) {
 	byte drawn = 0;
-	for (size_t i = 0;i < sortedPlayers().size();i++) {
+	for (const auto& player : sortedPlayers())
+	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit) {
 			break;
 		}
 
-		player_t* player = sortedPlayers()[i];
 		if (spectatingPlayer(player)) {
 			if (skip <= 0) {
 				std::ostringstream buffer;
@@ -1731,21 +1670,21 @@ void EATargets(int x, int y, const float scale,
 	std::vector<TargetInfo_t> Targets;
 
 	// What players should be drawn?
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (it->spectator || !(it->mo) || it->mo->health <= 0)
+		if (player.spectator || !(player.mo) || player.mo->health <= 0)
 			continue;
 
 		// We don't care about the player whose eyes we are looking through.
-		if (&*it == &(displayplayer()))
+		if (&player == &(displayplayer()))
 			continue;
 
-		if (!P_ActorInFOV(displayplayer().mo, it->mo, 45.0f, 512 * FRACUNIT))
+		if (!P_ActorInFOV(displayplayer().mo, player.mo, 45.0f, 512 * FRACUNIT))
 			continue;
 
 		// The server doesn't want us to see enemy target names.
 		if (!netdemoplaying && !::sv_allowtargetnames && !consoleplayer().spectator &&
-		    !P_AreTeammates(displayplayer(), *it))
+		    !P_AreTeammates(displayplayer(), player))
 		{
 			continue;
 		}
@@ -1754,15 +1693,15 @@ void EATargets(int x, int y, const float scale,
 		int color;
 		if (G_IsTeamGame()) {
 			// In teamgames, we want to use team colors for targets.
-			color = V_GetTextColor(GetTeamInfo(it->userinfo.team)->TextColor.c_str());
+			color = V_GetTextColor(GetTeamInfo(player.userinfo.team)->TextColor.c_str());
 		} else {
 			color = CR_GREY;
 		}
 
 		// Ok, make the temporary player info then add it
 		TargetInfo_t temp = {
-			&*it,
-			P_AproxDistance2(displayplayer().mo, it->mo) >> FRACBITS,
+			&player,
+			P_AproxDistance2(displayplayer().mo, player.mo) >> FRACBITS,
 			color
 		};
 		Targets.push_back(temp);
@@ -1787,7 +1726,7 @@ void EATargets(int x, int y, const float scale,
 
 	// [AM] New ElementArray drawing function
 	byte drawn = 0;
-	for (size_t i = 0; i < Targets.size(); i++)
+	for (const auto& target : Targets)
 	{
 		// Make sure we're not overrunning our limit.
 		if (limit != 0 && drawn >= limit)
@@ -1795,20 +1734,20 @@ void EATargets(int x, int y, const float scale,
 			break;
 		}
 
-		if (Targets[i].PlayPtr == &(consoleplayer()))
+		if (target.PlayPtr == &(consoleplayer()))
 		{
 			// You're looking at yourself.
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin, "You",
-			              Targets[i].Color);
+			              target.Color);
 		}
 		else
 		{
 			// Figure out if we should be showing this player's health.
 			std::string nameplate;
 			if (netdemoplaying || (::hud_targethealth_debug &&
-			                       P_AreTeammates(*Targets[i].PlayPtr, consoleplayer())))
+			                       P_AreTeammates(*target.PlayPtr, consoleplayer())))
 			{
-				int health = Targets[i].PlayPtr->health;
+				int health = target.PlayPtr->health;
 
 				const char* color;
 				if (health < 25)
@@ -1822,15 +1761,15 @@ void EATargets(int x, int y, const float scale,
 				else
 					color = TEXTCOLOR_LIGHTBLUE;
 
-				StrFormat(nameplate, "%s %s%d",
-				          Targets[i].PlayPtr->userinfo.netname.c_str(), color, health);
+				nameplate = fmt::sprintf("%s %s%d",
+				          target.PlayPtr->userinfo.netname, color, health);
 			}
 			else
 			{
-				nameplate = Targets[i].PlayPtr->userinfo.netname;
+				nameplate = target.PlayPtr->userinfo.netname;
 			}
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-			              nameplate.c_str(), Targets[i].Color);
+			              nameplate.c_str(), target.Color);
 		}
 
 		y += 7 + padding;

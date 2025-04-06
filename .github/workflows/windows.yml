@@ -1,6 +1,11 @@
 name: Windows
 
-on: [push, pull_request]
+on: 
+  push:
+    branches-ignore:
+    - 'release/[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+    
 
 jobs:
   pre_job:
@@ -10,7 +15,7 @@ jobs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
@@ -21,11 +26,11 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install Python packages
-      uses: BSFishy/pip-action@v1
+      uses: insightsengineering/pip-action@v2
       with:
         packages: |
           b2sdk
@@ -71,7 +76,7 @@ jobs:
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
         B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Upload artifact to Github
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-Win-x64
         path: 'build/artifact/*'
@@ -80,11 +85,11 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install Python packages
-      uses: BSFishy/pip-action@v1
+      uses: insightsengineering/pip-action@v2
       with:
         packages: |
           b2sdk
@@ -101,7 +106,7 @@ jobs:
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
         B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Upload artifact to Github
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-Win-x32
         path: 'build/artifact/*'
@@ -110,7 +115,7 @@ jobs:
   #   runs-on: windows-latest
   #   steps:
   #   - name: Checkout source
-  #     uses: actions/checkout@v2
+  #     uses: actions/checkout@v4
   #   - name: Checkout submodules
   #     run: git submodule update --init --recursive
   #   - name: Install packages

@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -18,7 +18,7 @@
 //
 // DESCRIPTION:
 //	Random number LUT.
-//    
+//
 //-----------------------------------------------------------------------------
 
 
@@ -26,6 +26,9 @@
 
 #include "actor.h"
 
+#include <random>
+
+inline std::mt19937 rng(time(NULL));
 
 typedef enum {
 	pr_misc,					// 0
@@ -130,10 +133,10 @@ void M_ClearRandom(void);
 
 /**
  * @brief Get a weighted random number from a vector.
- * 
+ *
  * @detail Upside of this algorithm is that it requires no preperation and
  *         only requires a single complete iteration of the vector.
- * 
+ *
  * @see https://softwareengineering.stackexchange.com/a/150642
  */
 template <typename T>
@@ -144,11 +147,9 @@ const T& P_RandomFloatWeighted(const std::vector<T>& data, float (*func)(const T
 
 	// currently selected element
 	const T* selected = NULL;
-	for (typename std::vector<T>::const_iterator it = data.begin(); it != data.end();
-	     ++it)
+	for (const auto& ele : data)
 	{
 		// weight of current element
-		const T& ele = *it;
 		const float weight = func(ele);
 
 		// random value

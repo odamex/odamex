@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -56,9 +56,9 @@ static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdat
 	if (pos == 0)
 	{
 		// Found Content-Type, see if it's the correct one.
-		for (size_t i = 0; i < ARRAY_LENGTH(WANTED_TYPES); i++)
+		for (const auto& wantedtype : WANTED_TYPES)
 		{
-			size_t pos2 = str.find(WANTED_TYPES[i]);
+			size_t pos2 = str.find(wantedtype);
 			if (pos2 == 0)
 			{
 				// Ding, right answer.
@@ -73,32 +73,32 @@ static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdat
 	return nitems;
 }
 
+////
+//// https://curl.haxx.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
+////
+//static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
+//                     void* userptr)
+//{
+//	std::string str = std::string(data, size);
 //
-// https://curl.haxx.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
+//	switch (type)
+//	{
+//	case CURLINFO_TEXT:
+//		Printf("curl | %s\n", str.c_str());
+//		break;
+//	case CURLINFO_HEADER_IN:
+//		Printf("curl < %s\n", str.c_str());
+//		break;
+//	case CURLINFO_HEADER_OUT:
+//		Printf("curl > %s\n", str.c_str());
+//		break;
+//	default:
+//		// Don't print data/binary SSL stuff.
+//		break;
+//	}
 //
-static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
-                     void* userptr)
-{
-	std::string str = std::string(data, size);
-
-	switch (type)
-	{
-	case CURLINFO_TEXT:
-		Printf("curl | %s\n", str.c_str());
-		break;
-	case CURLINFO_HEADER_IN:
-		Printf("curl < %s\n", str.c_str());
-		break;
-	case CURLINFO_HEADER_OUT:
-		Printf("curl > %s\n", str.c_str());
-		break;
-	default:
-		// Don't print data/binary SSL stuff.
-		break;
-	}
-
-	return 0;
-}
+//	return 0;
+//}
 
 // // OTransferInfo // //
 
@@ -151,6 +151,17 @@ size_t OTransferCheck::curlWrite(void* data, size_t size, size_t nmemb, void* us
 void OTransferCheck::setURL(const std::string& src)
 {
 	curl_easy_setopt(m_curl, CURLOPT_URL, src.c_str());
+}
+
+/**
+ * @brief Escapes a filename and encodes it to be a legal URI
+ *
+ * @param filename Complete filename
+ */
+std::string OTransferCheck::escapeFileName(const std::string& filename)
+{
+	// Let's escape the filename so we have a legal url to try
+	return curl_easy_escape(m_curl, filename.c_str(), filename.length());
 }
 
 /**
@@ -414,12 +425,12 @@ bool OTransfer::tick()
 	m_file = NULL;
 
 	// Verify that the file is what the server wants and is not a renamed
-	// commercial IWAD.
+	// commercial WAD.
 	OMD5Hash actualHash = W_MD5(m_filePart);
-	if (W_IsFilehashCommercialIWAD(actualHash))
+	if (W_IsFilehashCommercialWAD(actualHash))
 	{
 		remove(m_filePart.c_str());
-		m_errorProc("Accidentally downloaded a commercial IWAD - file removed");
+		m_errorProc("Accidentally downloaded a commercial WAD - file removed");
 		return false;
 	}
 	else if (!m_expectHash.empty() && m_expectHash != actualHash)
@@ -441,8 +452,8 @@ bool OTransfer::tick()
 		{
 			ext = std::string(".") + ext;
 		}
-		StrFormat(fallback, "%s%s%s.%s%s", path.c_str(), PATHSEP, base.c_str(),
-		          actualHash.getHexStr().substr(0, 6).c_str(), ext.c_str());
+		fallback = fmt::sprintf("%s%s%s.%s%s", path, PATHSEP, base,
+		                        actualHash.getHexStr().substr(0, 6), ext);
 
 		// Try one more time.
 		ok = rename(m_filePart.c_str(), fallback.c_str());
@@ -451,18 +462,17 @@ bool OTransfer::tick()
 			// Something is seriously wrong with our writable directory.
 			m_shouldCheckAgain = false;
 
-			std::string buf;
-			StrFormat(buf, "File %s could not be renamed to %s - %s", m_filePart.c_str(),
-			          m_filename.c_str(), strerror(errno));
+			std::string buf = fmt::sprintf("File %s could not be renamed to %s - %s", m_filePart,
+			                               m_filename, strerror(errno));
 			m_errorProc(buf.c_str());
 			return false;
 		}
 
-		Printf("Saved to fallback location \"%s\".\n", fallback.c_str());
+		Printf("Saved to fallback location \"%s\".\n", fallback);
 	}
 	else
 	{
-		Printf("Saved to location \"%s\".\n", m_filename.c_str());
+		Printf("Saved to location \"%s\".\n", m_filename);
 	}
 
 	m_shouldCheckAgain = false;

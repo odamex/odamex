@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -49,16 +49,14 @@ void P_AnimationTick(AActor *mo);
 //
 void P_Ticker (void)
 {
-	if(paused)
-		return;
-
 #ifdef CLIENT_APP
 	// Game pauses when in the menu and not online/demo
-	if (!multiplayer
-		&& !demoplayback 
-		&& (menuactive || ConsoleState == c_down || ConsoleState == c_falling)
-		&& players.begin()->viewz != 1)
+	if ((paused || (!multiplayer && !demoplayback &&
+		(menuactive || ConsoleState == c_down || ConsoleState == c_falling))) &&
+		(players.begin()->viewz != 1)) // Render the first tic to get proper viewheight
+	{
 		return;
+	}
 #endif
 
 	if (serverside)
@@ -69,22 +67,22 @@ void P_Ticker (void)
 
 	if (clientside && serverside)
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
-			if (it->ingame())
-				P_PlayerThink(&*(it));
+		for (auto& player : players)
+			if (player.ingame())
+				P_PlayerThink(&player);
 	}
 
 	// [SL] 2011-06-05 - Tick player actor animations here since P_Ticker is
 	// called only once per tick.  AActor::RunThink is called whenever the
 	// server receives a cmd from the client, which can happen multiple times
 	// in a single gametic.
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		P_AnimationTick(it->mo);
+		P_AnimationTick(player.mo);
 	}
 
 	DThinker::RunThinkers ();
-	
+
 	P_UpdateSpecials ();
 	P_RespawnSpecials ();
 

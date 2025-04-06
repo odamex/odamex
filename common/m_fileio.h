@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,10 +40,10 @@ SDWORD M_FileLength (FILE *f);
 bool M_FileExists(const std::string& filename);
 bool M_FileExistsExt(const std::string& filename, const char* ext);
 
-BOOL M_WriteFile(std::string filename, void *source, QWORD length);
+bool M_WriteFile(std::string filename, void *source, QWORD length);
 QWORD M_ReadFile(std::string filename, BYTE **buffer);
 
-BOOL M_AppendExtension (std::string &filename, std::string extension, bool if_needed = true);
+bool M_AppendExtension (std::string &filename, std::string extension, bool if_needed = true);
 void M_ExtractFilePath(const std::string& filename, std::string &dest);
 bool M_ExtractFileExtension(const std::string& filename, std::string &dest);
 void M_ExtractFileBase (std::string filename, std::string &dest);
@@ -63,9 +63,9 @@ std::string M_GetBinaryDir();
 
 /**
  * @brief Get the home directory of the passed user - or the current user.
- * 
+ *
  * @param user Name of the user to look up, or blank if no user.
- * @return 
+ * @return
  */
 std::string M_GetHomeDir(const std::string& user = "");
 
@@ -83,10 +83,17 @@ std::string M_GetUserDir();
 std::string M_GetWriteDir();
 
 /**
+ * @brief Get the directory that downloaded wads and other files
+ *        shall be written into. If the directory does not exist, it will
+ *        be created.
+ */
+std::string M_GetDownloadDir();
+
+/**
  * @brief Resolve a file name into a user directory.
- * 
+ *
  * @detail This function is OS-specific.
- * 
+ *
  *         Aboslute and relative paths that begin with "." and ".." should
  *         be resolved relative to the Odamex binary.  Otherwise, the file
  *         is resolved relative to a platform and user specific directory
@@ -95,17 +102,51 @@ std::string M_GetWriteDir();
  *         The resolution process will create a user home directory if it
  *         doesn't exist, but otherwise this process is blind and does not
  *         consider the existence of the file in question.
- * 
+ *
  * @param file Filename to resolve.
  * @return An absolute path pointing to the resolved file.
  */
 std::string M_GetUserFileName(const std::string& file);
 
 /**
- * @brief Attempt to find a file in a directory - case insensitive.
- * 
+ * @brief Resolve a file name into a user screenshot directory.
+ *
  * @detail This function is OS-specific.
- * 
+ *
+ *         The file is resolved relative to a platform and
+ *         user specific directory in their home directory.
+ *
+ *         The resolution process will create a user home directory and screenshot subdirectory
+ *         if it doesn't exist, but otherwise this process is blind and does not
+ *         consider the existence of the file in question.
+ *
+ * @param file Filename to resolve.
+ * @return An absolute path pointing to the resolved file.
+ */
+std::string M_GetScreenshotFileName(const std::string& file);
+
+/**
+ * @brief Resolve a file name into a user netdemo directory.
+ *
+ * @detail This function is OS-specific.
+ *
+ *         The file is resolved relative to a platform and
+ *         user specific directory in their home directory.
+ *
+ *         The resolution process will create a user home directory and netdemo subdirectory
+ *         if it doesn't exist, but otherwise this process is blind and does not
+ *         consider the existence of the file in question.
+ *
+ * @param file Filename to resolve.
+ * @return An absolute path pointing to the resolved file.
+ */
+std::string M_GetNetDemoFileName(const std::string& file);
+
+/**
+ * @brief Attempt to find a file in a directory - case insensitive.
+ *
+ * @detail This function is OS-specific.
+ *
  * @param dir Directory to search.
  * @param file File to search, without extension.
  * @param exts Extensions to search, including initial dot - must be capitalized.
@@ -118,10 +159,10 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 
 /**
  * @brief Attempt to find multiple files in a directory - case insensitive.
- * 
+ *
  * @detail Unlike M_BaseFileSearchDir, this scans the entire directory and
  *         doesn't care about hashes or hashed files.
- * 
+ *
  * @param dir Directory to search.
  * @param files Files to search, with extension.
  * @return Filenames of any found files.
@@ -130,10 +171,10 @@ std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString
 
 /**
  * @brief Attempt to find multiple PWAD files in a directory - case insensitive.
- * 
+ *
  * @detail Unlike M_BaseFileSearchDir, this scans the entire directory and
  *         doesn't care about hashes or hashed files.
- * 
+ *
  * @param dir Directory to search.
  * @return Filenames of any found files.
  */
@@ -141,7 +182,7 @@ std::vector<std::string> M_PWADFilesScanDir(std::string dir);
 
 /**
  * @brief Get absolute path from passed path.
- * 
+ *
  * @param path Path to make absolute.
  * @param out Resulting path.
  * @return True if the path was made absolute successfully.

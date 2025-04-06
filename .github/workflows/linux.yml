@@ -10,7 +10,7 @@ jobs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
@@ -33,7 +33,7 @@ jobs:
     - name: Prepare artifact
       run: bash ci/ubuntu-artifact.sh
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Odamex-Linux-x86_64
         path: 'build/artifact/*'
@@ -46,7 +46,7 @@ jobs:
       USE_SDL12: 1
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
@@ -63,34 +63,50 @@ jobs:
       CXX: /usr/bin/clang++
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
       run: bash ci/ubuntu-buildgen.sh
     - name: Run build
       run: cmake --build ./build/
+  build-arm:
+    name: Build (ARM64)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Prepare build
+      run: bash ci/ubuntu-buildgen.sh
+    - name: Turn on problem matcher
+      uses: ammaraskar/gcc-problem-matcher@master
+    - name: Run build
+      run: cmake --build ./build/
   build-centos:
-    name: Build (CentOS 7)
+    name: Build (Fedora 32)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Run build
-      run: bash ci/centos-buildgen.sh
+      run: bash ci/fedora-buildgen.sh
   build-ubuntu-bionic:
-    name: Build (Ubuntu 18.04 LTS)
+    name: Build (Ubuntu 20.04 LTS)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Run build
-      run: bash ci/ubuntu-bionic-buildgen.sh
+      run: bash ci/ubuntu-focal-buildgen.sh

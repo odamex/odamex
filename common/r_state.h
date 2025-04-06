@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -51,8 +51,8 @@ extern bool*			flatwarp;
 extern byte**			warpedflats;
 extern int*				flatwarpedwhen;
 extern int*				flattranslation;
-		
-extern int* 			texturetranslation; 	
+
+extern int* 			texturetranslation;
 
 // Sprite....
 extern int				firstspritelump;
@@ -139,13 +139,15 @@ struct LocalView
 //
 // POV data.
 //
-extern fixed_t			viewx;
-extern fixed_t			viewy;
-extern fixed_t			viewz;
+inline fixed_t			viewx;
+inline fixed_t			viewy;
+inline fixed_t			viewz;
 
-extern angle_t			viewangle;
-extern LocalView		localview;
-extern AActor*			camera;		// [RH] camera instead of viewplayer
+inline angle_t			viewangle;
+inline sector_t*		viewsector;
+
+inline LocalView		localview;
+inline AActor*			camera;		// [RH] camera to draw from. doesn't have to be a player
 
 extern angle_t			clipangle;
 

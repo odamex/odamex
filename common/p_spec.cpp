@@ -5,7 +5,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -71,12 +71,14 @@
 
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
+EXTERN_CVAR(co_boomphys)
 
 std::list<movingsector_t> movingsectors;
+std::list<sector_t*> specialdoors;
 bool s_SpecialFromServer;
 
 int P_FindSectorFromLineTag(int tag, int start);
-BOOL EV_DoDoor(DDoor::EVlDoor type, line_t* line, AActor* thing, int tag, int speed,
+bool EV_DoDoor(DDoor::EVlDoor type, line_t* line, AActor* thing, int tag, int speed,
                int delay, card_t lock);
 bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
 bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
@@ -89,13 +91,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 //
 std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector)
 {
-	std::list<movingsector_t>::iterator itr;
-	for (itr = movingsectors.begin(); itr != movingsectors.end(); ++itr)
-		if (sector == itr->sector)
-			return itr;
-
-	// not found
-	return movingsectors.end();
+	return std::find_if(movingsectors.begin(), movingsectors.end(), [sector](const auto& it){ return it.sector == sector; });
 }
 
 fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f)
@@ -105,7 +101,7 @@ fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f)
 
 int P_ArgToCrushMode(byte arg, bool slowdown)
 {
-	static const crushmode_e map[] = {crushDoom, crushHexen, crushSlowdown};
+	static constexpr crushmode_e map[] = {crushDoom, crushHexen, crushSlowdown};
 
 	if (arg >= 1 && arg <= 3)
 		return map[arg - 1];
@@ -141,7 +137,7 @@ int P_FindLineFromTag(int tag, int start)
 	return start;
 }
 
-const unsigned int P_ResetSectorTransferFlags(const unsigned int flags)
+unsigned int P_ResetSectorTransferFlags(const unsigned int flags)
 {
 	return (flags & ~SECF_TRANSFERMASK);
 }
@@ -181,7 +177,7 @@ void P_TransferSectorFlags(unsigned int* dest, unsigned int source)
 
 byte P_ArgToChange(byte arg)
 {
-	static const byte ChangeMap[8] = {0, 1, 5, 3, 7, 2, 6, 0};
+	static constexpr byte ChangeMap[8] = {0, 1, 5, 3, 7, 2, 6, 0};
 
 	return (arg < 8) ? ChangeMap[arg] : 0;
 }
@@ -215,10 +211,10 @@ int P_IsUnderDamage(AActor* actor)
 }
 
 /*
-* 
+*
 * P_IsFriendlyThing
 * @brief Helper function to determine if a particular thing is of friendly origin.
-* 
+*
 * @param actor Source actor
 * @param friendshiptest Thing to test friendliness
 */
@@ -268,7 +264,7 @@ void P_AddMovingCeiling(sector_t *sector)
 	}
 	else
 	{
-		movingsectors.push_back(movingsector_t());
+		movingsectors.emplace_back();
 		movesec = &(movingsectors.back());
 	}
 
@@ -303,7 +299,7 @@ void P_AddMovingFloor(sector_t *sector)
 	}
 	else
 	{
-		movingsectors.push_back(movingsector_t());
+		movingsectors.emplace_back();
 		movesec = &(movingsectors.back());
 	}
 
@@ -465,7 +461,9 @@ void DPusher::Serialize (FArchive &arc)
 	else
 	{
 		arc >> m_Type;
-		arc.ReadObject((DObject*&)*m_Source, DPusher::StaticType());
+		DObject* temp = nullptr;
+		arc.ReadObject(temp, DPusher::StaticType());
+		m_Source = temp ? static_cast<AActor*>(temp)->ptr() : AActor::AActorPtr();
 		arc >> m_Xmag >> m_Ymag >> m_Magnitude >> m_Radius >> m_X >> m_Y >> m_Affectee;
 	}
 }
@@ -580,7 +578,7 @@ static void P_InitAnimDefs ()
 	}
     catch (CRecoverableError &)
     {
-	    
+
     }
 }
 
@@ -764,9 +762,17 @@ bool P_CheckTag(line_t* line)
 	case 51:
 	case 124:
 	case 198:
+	case 2069:
+	case 2070:
+	case 2071:
+	case 2072:
+	case 2073:
+	case 2074:
 
 	case 48: // Scrolling walls
 	case 85:
+	case 2082:
+	case 2083:
 		return true; // zero tag allowed
 
 	default:
@@ -815,7 +821,7 @@ void P_InitPicAnims (void)
 	if(anims)
 	{
 		M_Free(anims);
-		lastanim = 0;
+		lastanim = nullptr;
 		maxanims = 0;
 	}
 
@@ -835,7 +841,7 @@ void P_InitPicAnims (void)
 			if (lastanim >= anims + maxanims)
 			{
 				size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
-				anims = (anim_t *)Realloc(anims, newmax*sizeof(*anims));   // killough
+				anims = (anim_t*) M_Realloc(anims, newmax*sizeof(*anims));   // killough
 				lastanim = anims + maxanims;
 				maxanims = newmax;
 			}
@@ -876,8 +882,8 @@ void P_InitPicAnims (void)
 
 			if (lastanim->numframes < 2)
 				Printf (PRINT_WARNING, "P_InitPicAnims: bad cycle from %s to %s",
-						 anim_p + 10 /* .startname */,
-						 anim_p + 1 /* .endname */);
+						 fmt::ptr(anim_p + 10) /* .startname */,
+						 fmt::ptr(anim_p + 1) /* .endname */);
 
 			lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
 						/* .speed */
@@ -885,8 +891,6 @@ void P_InitPicAnims (void)
 						(anim_p[20] << 8) |
 						(anim_p[21] << 16) |
 						(anim_p[22] << 24);
-
-			lastanim->countdown--;
 
 			lastanim++;
 		}
@@ -1248,17 +1252,18 @@ fixed_t P_FindShortestTextureAround (sector_t *sec)
 	int minsize = MAXINT;
 	side_t *side;
 	int i;
+	int mintex = (co_boomphys && !(level.flags & LEVEL_COMPAT_SHORTTEX)) ? 1 : 0;
 
 	for (i = 0; i < sec->linecount; i++)
 	{
 		if (sec->lines[i]->flags & ML_TWOSIDED)
 		{
 			side = &sides[(sec->lines[i])->sidenum[0]];
-			if (side->bottomtexture >= 0 && textureheight[side->bottomtexture] < minsize)
+			if (side->bottomtexture >= mintex && textureheight[side->bottomtexture] < minsize)
 				minsize = textureheight[side->bottomtexture];
 
 			side = &sides[(sec->lines[i])->sidenum[1]];
-			if (side->bottomtexture >= 0 && textureheight[side->bottomtexture] < minsize)
+			if (side->bottomtexture >= mintex && textureheight[side->bottomtexture] < minsize)
 				minsize = textureheight[side->bottomtexture];
 		}
 	}
@@ -1282,17 +1287,18 @@ fixed_t P_FindShortestUpperAround (sector_t *sec)
 	int minsize = MAXINT;
 	side_t *side;
 	int i;
+	int mintex = (co_boomphys && !(level.flags & LEVEL_COMPAT_SHORTTEX)) ? 1 : 0;
 
 	for (i = 0; i < sec->linecount; i++)
 	{
 		if (sec->lines[i]->flags & ML_TWOSIDED)
 		{
 			side = &sides[(sec->lines[i])->sidenum[0]];
-			if (side->toptexture >= 0 && textureheight[side->toptexture] < minsize)
+			if (side->toptexture >= mintex && textureheight[side->toptexture] < minsize)
 				minsize = textureheight[side->toptexture];
 
 			side = &sides[(sec->lines[i])->sidenum[1]];
-			if (side->toptexture >= 0 && textureheight[side->toptexture] < minsize)
+			if (side->toptexture >= mintex && textureheight[side->toptexture] < minsize)
 				minsize = textureheight[side->toptexture];
 		}
 	}
@@ -1459,7 +1465,7 @@ int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start)
 
 /*
 * @brief checks to see if a ZDoom-style door can be unlocked.
-* 
+*
 * @param player: Player to key check
 * @param lock: ZDoom lock type
 * All ZDoom lock types are supported but Odamex is missing
@@ -1793,7 +1799,7 @@ bool P_CanUnlockGenDoor(line_t* line, player_t* player)
 //	Returns true if the player has the desired key,
 //	false otherwise.
 
-BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
+bool P_CheckKeys (player_t *p, card_t lock, bool remote)
 {
 	if ((lock & 0x7f) == NoKey)
 		return true;
@@ -1802,8 +1808,8 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 		return false;
 
 	const OString* msg = NULL;
-	BOOL bc, rc, yc, bs, rs, ys;
-	BOOL equiv = lock & 0x80;
+	bool bc, rc, yc, bs, rs, ys;
+	bool equiv = lock & 0x80;
 
         lock = (card_t)(lock & 0x7f);
 
@@ -2159,6 +2165,18 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
     return true;
 }
 
+void P_ApplySectorDamageNoWait(player_t* player, int damage, int mod)
+{
+	P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+}
+
+void P_ApplySectorDamageNoRandom(player_t* player, int damage, int mod)
+{
+	if (!player->powers[pw_ironfeet])
+		if (!(level.time & 0x1f))
+			P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+}
+
 void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod)
 {
 	if (!player->powers[pw_ironfeet] || (leak && P_Random(player->mo)<leak))
@@ -2260,7 +2278,11 @@ void P_UpdateSpecials (void)
 		}
 	}
 
-	// [ML] 5/11/06 - Remove sky scrolling ability
+	sky2columnoffset += sky2scrollxdelta & 0xffffff;
+
+	#ifdef CLIENT_APP
+	R_UpdateSkies();
+	#endif
 }
 
 
@@ -2860,7 +2882,7 @@ DPusher::DPusher (DPusher::EPusher type, line_t *l, int magnitude, int angle,
 
 DPusher *tmpusher; // pusher structure for blockmap searches
 
-BOOL PIT_PushThing (AActor *thing)
+bool PIT_PushThing (AActor *thing)
 {
 	if (thing->player &&
 		!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))

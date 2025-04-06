@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -318,6 +318,14 @@ int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2,
 
 	Item.SetColumn(SortCol);
 	Item.SetMask(wxLIST_MASK_TEXT);
+
+	long id1 = ListCtrl->FindItem(-1, item1);
+	long id2 = ListCtrl->FindItem(-1, item2);
+
+	if (id1 == -1 || id2 == -1)
+	{
+		return 0;
+	}
 
 	if(SortCol == ListCtrl->GetSpecialSortColumn())
 	{

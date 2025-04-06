@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@
 
 #include "i_system.h"
 
-static const char* SINGLE_CHAR_TOKENS = "$(),;=[]{}";
+static constexpr const char* SINGLE_CHAR_TOKENS = "$(),;=[]{}";
 
 bool OScanner::checkPair(char a, char b)
 {
@@ -275,13 +275,22 @@ bool OScanner::scan()
 }
 
 //
-// Ensure next token is a string.
+// Ensure next token is a string. Optional parameter that ensures the string is equal to
+// or under a maximum length. If set to 0, accepts any length.
 //
-void OScanner::mustScan()
+void OScanner::mustScan(size_t max_length)
 {
 	if (!scan())
 	{
 		error("Missing string (unexpected end of file).");
+	}
+
+	if (max_length)
+	{
+		if (m_token.length() > max_length)
+		{
+			error("String \"{}\" is too long. Maximum length is %zu characters.", m_token, max_length);
+		}
 	}
 }
 
@@ -298,9 +307,8 @@ void OScanner::mustScanInt()
 	std::string str = m_token;
 	if (IsNum(str.c_str()) == false && str != "MAXINT")
 	{
-		std::string err;
-		StrFormat(err, "Expected integer, got \"%s\".", m_token.c_str());
-		error(err.c_str());
+		std::string err = fmt::sprintf("Expected integer, got \"%s\".", m_token);
+		error(err);
 	}
 }
 
@@ -317,9 +325,8 @@ void OScanner::mustScanFloat()
 	std::string str = m_token;
 	if (IsRealNum(str.c_str()) == false)
 	{
-		std::string err;
-		StrFormat(err, "Expected float, got \"%s\".", m_token.c_str());
-		error(err.c_str());
+		std::string err = fmt::sprintf("Expected float, got \"%s\".", m_token);
+		error(err);
 	}
 }
 
@@ -335,9 +342,8 @@ void OScanner::mustScanBool()
 
 	if (!iequals(m_token, "true") && !iequals(m_token, "false"))
 	{
-		std::string err;
-		StrFormat(err, "Expected boolean, got \"%s\".", m_token.c_str());
-		error(err.c_str());
+		std::string err = fmt::sprintf("Expected boolean, got \"%s\".", m_token);
+		error(err);
 	}
 }
 
@@ -382,9 +388,8 @@ int OScanner::getTokenInt() const
 
 	if (*stopper != 0)
 	{
-		std::string err;
-		StrFormat(err, "Bad integer constant \"%s\".", m_token.c_str());
-		error(err.c_str());
+		std::string err = fmt::sprintf("Bad integer constant \"%s\".", m_token);
+		error(err);
 	}
 
 	return num;
@@ -402,9 +407,8 @@ float OScanner::getTokenFloat() const
 
 	if (*stopper != 0)
 	{
-		std::string err;
-		StrFormat(err, "Bad float constant \"%s\".", m_token.c_str());
-		error(err.c_str());
+		std::string err = fmt::sprintf("Bad float constant \"%s\".", m_token);
+		error(err);
 	}
 
 	return static_cast<float>(num);
@@ -436,16 +440,56 @@ bool OScanner::isQuotedString() const
 }
 
 //
+// Check if the last token read in qualifies as an identifier.
+// [A-Za-z_]+[A-Za-z0-9_]*
+//
+bool OScanner::isIdentifier() const
+{
+	if (m_token.empty())
+		return false;
+
+	for (std::string::const_iterator it = m_token.begin(); it != m_token.end(); ++it)
+	{
+		const char& ch = *it;
+		if (ch == '_')
+			continue;
+
+		if (ch >= 'A' && ch <= 'Z')
+			continue;
+
+		if (ch >= 'a' && ch <= 'z')
+			continue;
+
+		if (it != m_token.begin() && ch >= '0' && ch <= '9')
+			continue;
+
+		return false;
+	}
+
+	return true;
+}
+
+//
 // Assert token is equal to the passed string, or error.
 //
 void OScanner::assertTokenIs(const char* string) const
 {
 	if (m_token.compare(string) != 0)
 	{
-		std::string err;
-		StrFormat(err, "Unexpected Token (expected \"%s\" actual \"%s\").", string,
-		          m_token.c_str());
-		error(err.c_str());
+		error("Unexpected Token (expected \"{}\" actual \"{}\").", string,
+		      m_token);
+	}
+}
+
+//
+// Assert token is equal to the passed string without regard to case, or error.
+//
+void OScanner::assertTokenNoCaseIs(const char* string) const
+{
+	if (!iequals(m_token, string))
+	{
+		error("Unexpected Token (expected \"{}\" actual \"{}\").", string,
+		      m_token);
 	}
 }
 
@@ -463,38 +507,6 @@ bool OScanner::compareToken(const char* string) const
 bool OScanner::compareTokenNoCase(const char* string) const
 {
 	return iequals(m_token, string);
-}
-
-#define MAX_ERRORTEXT 1024
-
-//
-// Print given error message.
-//
-void STACK_ARGS OScanner::warning(const char* message, ...) const
-{
-	va_list argptr;
-	char errortext[MAX_ERRORTEXT];
-
-	va_start(argptr, message);
-	vsprintf(errortext, message, argptr);
-	Printf(PRINT_WARNING, "Script Warning: %s:%d: %s\n", m_config.lumpName, m_lineNumber,
-	       errortext, argptr);
-	va_end(argptr);
-}
-
-//
-// Print given error message.
-//
-void STACK_ARGS OScanner::error(const char* message, ...) const
-{
-	va_list argptr;
-	char errortext[MAX_ERRORTEXT];
-
-	va_start(argptr, message);
-	vsprintf(errortext, message, argptr);
-	I_Error("Script Error: %s:%d: %s", m_config.lumpName, m_lineNumber, errortext,
-	        argptr);
-	va_end(argptr);
 }
 
 VERSION_CONTROL(sc_oman_cpp, "$Id$")

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -71,19 +71,19 @@ public:
 	FLZOFile();
 	FLZOFile(const char* name, EOpenMode mode, bool dontcompress = false);
 	FLZOFile(FILE* file, EOpenMode mode, bool dontcompress = false);
-	virtual ~FLZOFile();
+	~FLZOFile();
 
-	virtual bool Open(const char* name, EOpenMode mode);
-	virtual void Close();
-	virtual void Flush();
-	virtual EOpenMode Mode() const;
-	virtual bool IsPersistent() const { return true; }
-	virtual bool IsOpen() const;
+	bool Open(const char* name, EOpenMode mode) override;
+	void Close() override;
+	void Flush() override;
+	EOpenMode Mode() const override;
+	bool IsPersistent() const override { return true; }
+	bool IsOpen() const override;
 
-	virtual FFile& Write(const void*, unsigned int);
-	virtual FFile& Read(void*, unsigned int);
-	virtual unsigned int Tell() const;
-	virtual FFile& Seek(int, ESeekPos);
+	FFile& Write(const void*, unsigned int) override;
+	FFile& Read(void*, unsigned int) override;
+	unsigned int Tell() const override;
+	FFile& Seek(int, ESeekPos) override;
 
 protected:
 	unsigned int m_Pos;
@@ -108,14 +108,14 @@ class FLZOMemFile : public FLZOFile
 public:
 	FLZOMemFile();
 
-	virtual ~FLZOMemFile();
+	~FLZOMemFile() override;
 
-	virtual bool Open(const char* name, EOpenMode mode);	// Works for reading only
+	bool Open(const char* name, EOpenMode mode) override;	// Works for reading only
 	virtual bool Open(void* memblock);	// Open for reading only
 	virtual bool Open();	// Open for writing only
 	virtual bool Reopen();	// Re-opens imploded file for reading only
-	virtual void Close();
-	virtual bool IsOpen() const;
+	void Close() override;
+	bool IsOpen() const override;
 
 	void Serialize(FArchive &arc);
 
@@ -123,7 +123,7 @@ public:
 	void WriteToBuffer(void* buf, size_t length) const;
 
 protected:
-	virtual bool FreeOnExplode() { return !m_SourceFromMem; }
+	bool FreeOnExplode() override { return !m_SourceFromMem; }
 
 private:
 	bool m_SourceFromMem;

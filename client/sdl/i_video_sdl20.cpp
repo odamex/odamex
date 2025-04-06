@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -78,7 +78,7 @@ static void I_AddSDL20VideoModes(IVideoModeList* modelist, int bpp)
 	int display_mode_count = SDL_GetNumDisplayModes(display_index);
 	if (display_mode_count < 1)
 	{
-		I_FatalError("SDL_GetNumDisplayModes failed: %s", SDL_GetError());
+		I_FatalError("SDL_GetNumDisplayModes failed: {}", SDL_GetError());
 		return;
 	}
 
@@ -86,7 +86,7 @@ static void I_AddSDL20VideoModes(IVideoModeList* modelist, int bpp)
 	{
 		if (SDL_GetDisplayMode(display_index, i, &mode) != 0)
 		{
-			I_FatalError("SDL_GetDisplayMode failed: %s", SDL_GetError());
+			I_FatalError("SDL_GetDisplayMode failed: {}", SDL_GetError());
 			return;
 		}
 
@@ -128,7 +128,7 @@ ISDL20VideoCapabilities::ISDL20VideoCapabilities() :
 	SDL_DisplayMode sdl_display_mode;
 	if (SDL_GetDesktopDisplayMode(display_index, &sdl_display_mode) != 0)
 	{
-		I_FatalError("SDL_GetDesktopDisplayMode failed: %s", SDL_GetError());
+		I_FatalError("SDL_GetDesktopDisplayMode failed: {}", SDL_GetError());
 		return;
 	}
 
@@ -240,7 +240,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 
 	mSDLRenderer = createRenderer(vsync);
 	if (mSDLRenderer == NULL)
-		I_FatalError("I_InitVideo: unable to create SDL2 renderer: %s\n", SDL_GetError());
+		I_FatalError("I_InitVideo: unable to create SDL2 renderer: {}\n", SDL_GetError());
 
 	const IVideoMode& native_mode = I_GetVideoCapabilities()->getNativeMode();
 	if (vid_widescreen.asInt() == 0 && vid_pillarbox && (3 * native_mode.width > 4 * native_mode.height))
@@ -282,7 +282,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 				mWidth, mHeight);
 
 	if (mSDLTexture == NULL)
-		I_FatalError("I_InitVideo: unable to create SDL2 texture: %s\n", SDL_GetError());
+		I_FatalError("I_InitVideo: unable to create SDL2 texture: {}\n", SDL_GetError());
 
 	mSurface = new IWindowSurface(width, height, &mFormat);
     if (mSurface->getBitsPerPixel() ==8)
@@ -416,7 +416,7 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, EWindow
 			window_flags);
 
 	if (mSDLWindow == NULL)
-		I_FatalError("I_InitVideo: unable to create window: %s\n", SDL_GetError());
+		I_FatalError("I_InitVideo: unable to create window: {}\n", SDL_GetError());
 
 	SDL_SetWindowMinimumSize(mSDLWindow, 320, 200);
 
@@ -552,49 +552,49 @@ void ISDL20Window::getEvents()
 			{
 				if (sdl_ev.window.event == SDL_WINDOWEVENT_SHOWN)
 				{
-					DPrintf("SDL_WINDOWEVENT_SHOWN\n");
+					DPrintFmt("SDL_WINDOWEVENT_SHOWN\n");
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_HIDDEN)
 				{
-					DPrintf("SDL_WINDOWEVENT_HIDDEN\n");
+					DPrintFmt("SDL_WINDOWEVENT_HIDDEN\n");
 					mMouseFocus = mKeyboardFocus = false;
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_EXPOSED)
 				{
-					DPrintf("SDL_WINDOWEVENT_EXPOSED\n");
+					DPrintFmt("SDL_WINDOWEVENT_EXPOSED\n");
 					mMouseFocus = mKeyboardFocus = true;
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_MINIMIZED)
 				{
-					DPrintf("SDL_WINDOWEVENT_MINIMIZED\n");
+					DPrintFmt("SDL_WINDOWEVENT_MINIMIZED\n");
 					mMouseFocus = mKeyboardFocus = false;
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_MAXIMIZED)
 				{
-					DPrintf("SDL_WINDOWEVENT_MAXIMIZED\n");
+					DPrintFmt("SDL_WINDOWEVENT_MAXIMIZED\n");
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_RESTORED)
 				{
-					DPrintf("SDL_WINDOWEVENT_RESTORED\n");
+					DPrintFmt("SDL_WINDOWEVENT_RESTORED\n");
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_ENTER)
 				{
-					DPrintf("SDL_WINDOWEVENT_ENTER\n");
+					DPrintFmt("SDL_WINDOWEVENT_ENTER\n");
 					mMouseFocus = true;
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_LEAVE)
 				{
-					DPrintf("SDL_WINDOWEVENT_LEAVE\n");
+					DPrintFmt("SDL_WINDOWEVENT_LEAVE\n");
 					mMouseFocus = false;
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
 				{
-					DPrintf("SDL_WINDOWEVENT_FOCUS_GAINED\n");
+					DPrintFmt("SDL_WINDOWEVENT_FOCUS_GAINED\n");
 					mKeyboardFocus = true;
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
 				{
-					DPrintf("SDL_WINDOWEVENT_FOCUS_LOST\n");
+					DPrintFmt("SDL_WINDOWEVENT_FOCUS_LOST\n");
 					mKeyboardFocus = false;
 				}
 				else if (sdl_ev.window.event == SDL_WINDOWEVENT_RESIZED)
@@ -602,14 +602,12 @@ void ISDL20Window::getEvents()
 					// Resizable window mode resolutions
 					uint16_t width = sdl_ev.window.data1;
 					uint16_t height = sdl_ev.window.data2;
-					DPrintf("SDL_WINDOWEVENT_RESIZED (%dx%d)\n", width, height);
+					DPrintFmt("SDL_WINDOWEVENT_RESIZED ({}x{})\n", width, height);
 
 					int current_time = I_MSTime();
 					if ((EWindowMode)vid_fullscreen.asInt() == WINDOW_Windowed && current_time > mAcceptResizeEventsTime)
 					{
-						char tmp[30];
-						sprintf(tmp, "vid_setmode %d %d", width, height);
-						AddCommandString(tmp);
+						AddCommandString(fmt::format("vid_setmode {} {}", width, height));
 					}
 				}
 			}
@@ -695,7 +693,7 @@ void ISDL20Window::setWindowIcon()
 											(void*)app_icon.pixel_data, app_icon.width, app_icon.height,
 											app_icon.bytes_per_pixel * 8, app_icon.width * app_icon.bytes_per_pixel,
 											0xff << 0, 0xff << 8, 0xff << 16, 0xff << 24);
-	
+
 	SDL_SetWindowIcon(mSDLWindow, icon_surface);
 	SDL_FreeSurface(icon_surface);
 	#endif	// !_WIN32 && !_XBOX
@@ -815,7 +813,7 @@ PixelFormat ISDL20Window::buildSurfacePixelFormat(uint8_t bpp)
     else if (bpp == 32 && native_bpp == 32)
         return *getPixelFormat();
     else
-        I_Error("Invalid video surface conversion from %i-bit to %i-bit", bpp, native_bpp);
+        I_Error("Invalid video surface conversion from {}-bit to {}-bit", bpp, native_bpp);
     return PixelFormat();   // shush warnings regarding no return value
 }
 
@@ -917,7 +915,7 @@ bool ISDL20Window::setMode(const IVideoMode& video_mode)
 uint16_t ISDL20Window::getCurrentWidth() const
 {
 	int width;
-	SDL_GetWindowSize(mSDLWindow, &width, NULL); 
+	SDL_GetWindowSize(mSDLWindow, &width, NULL);
 	return width;
 }
 
@@ -928,7 +926,7 @@ uint16_t ISDL20Window::getCurrentWidth() const
 uint16_t ISDL20Window::getCurrentHeight() const
 {
 	int height;
-	SDL_GetWindowSize(mSDLWindow, NULL, &height); 
+	SDL_GetWindowSize(mSDLWindow, NULL, &height);
 	return height;
 }
 
@@ -970,7 +968,7 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 
 	if (linked.major != compiled.major || linked.minor != compiled.minor)
 	{
-		I_FatalError("SDL version conflict (%d.%d.%d vs %d.%d.%d dll)\n",
+		I_FatalError("SDL version conflict ({}.{}.{} vs {}.{}.{} dll)\n",
 			compiled.major, compiled.minor, compiled.patch,
 			linked.major, linked.minor, linked.patch);
 		return;
@@ -978,7 +976,7 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 
 	if (linked.patch != compiled.patch)
 	{
-		Printf(PRINT_WARNING, "SDL version warning (%d.%d.%d vs %d.%d.%d dll)\n",
+		PrintFmt(PRINT_WARNING, "SDL version warning ({}.{}.{} vs {}.{}.{} dll)\n",
 			compiled.major, compiled.minor, compiled.patch,
 			linked.major, linked.minor, linked.patch);
 	}
@@ -991,7 +989,7 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 
 	mVideoCapabilities = new ISDL20VideoCapabilities();
 
-	mWindow = new ISDL20Window(640, 480, 8, WINDOW_Windowed, false);
+	mWindow = new ISDL20Window(320, 200, 8, WINDOW_Windowed, false);
 }
 
 

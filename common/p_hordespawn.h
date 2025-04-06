@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -72,6 +72,7 @@ typedef std::vector<hordeSpawn_t> hordeSpawns_t;
 
 void P_HordeAddSpawns();
 bool P_HordeHasSpawns();
+bool P_HordeHasRequiredMonsterSpawns();
 void P_HordeClearSpawns();
 hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe);
 AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe);

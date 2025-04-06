@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -65,7 +65,7 @@ CVARS (console variables)
 #define CVAR_LATCH BIT(4)
 
 /**
- * Can unset this var from console. 
+ * Can unset this var from console.
  */
 #define CVAR_UNSETTABLE BIT(5)
 
@@ -128,23 +128,24 @@ public:
 			DWORD flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
 	virtual ~cvar_t ();
 
-	const char *cstring() const {return m_String.c_str(); }
-	const std::string& str() const { return m_String; }
-	const char *name() const { return m_Name.c_str(); }
-	const char *helptext() const {return m_HelpText.c_str(); }
-	const char *latched() const { return m_LatchedString.c_str(); }
-	float value() const { return m_Value; }
-	operator float () const { return m_Value; }
-	operator const std::string& () const { return m_String; }
-	unsigned int flags() const { return m_Flags; }
-    cvartype_t type() const { return m_Type; }
-	const std::string& getDefault() const { return m_Default; }
-	float getMinValue() const { return m_MinValue; }
-	float getMaxValue() const { return m_MaxValue; }
+	[[nodiscard]] const char *cstring() const {return m_String.c_str(); }
+	[[nodiscard]] const std::string& str() const { return m_String; }
+	[[nodiscard]] const char *name() const { return m_Name.c_str(); }
+	[[nodiscard]] const char *helptext() const {return m_HelpText.c_str(); }
+	[[nodiscard]] const char *latched() const { return m_LatchedString.c_str(); }
+	[[nodiscard]] float value() const { return m_Value; }
+	[[nodiscard]] operator float () const { return m_Value; }
+	[[nodiscard]] operator const std::string& () const { return m_String; }
+	[[nodiscard]] unsigned int flags() const { return m_Flags; }
+    [[nodiscard]] cvartype_t type() const { return m_Type; }
+	[[nodiscard]] const std::string& getDefault() const { return m_Default; }
+	[[nodiscard]] float getMinValue() const { return m_MinValue; }
+	[[nodiscard]] float getMaxValue() const { return m_MaxValue; }
 
 	// return m_Value as an int, rounded to the nearest integer because
 	// casting truncates instead of rounding
-	int asInt() const { return static_cast<int>(m_Value >= 0.0f ? m_Value + 0.5f : m_Value - 0.5f); }
+	[[nodiscard]] int asInt() const { return static_cast<int>(std::round(m_Value)); }
+	[[nodiscard]] bool asBool() const { return m_Value != 0; }
 
 	inline void Callback (){ if (m_Callback) m_Callback (*this); }
 
@@ -164,7 +165,7 @@ public:
 
 	// Writes all cvars that could effect demo sync to *demo_p. These are
 	// cvars that have either CVAR_SERVERINFO or CVAR_DEMOSAVE set.
-	static void C_WriteCVars (byte **demo_p, DWORD filter, bool compact=false);
+	static void C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool compact=false);
 
 	// Read all cvars from *demo_p and set them appropriately.
 	static void C_ReadCVars (byte **demo_p);
