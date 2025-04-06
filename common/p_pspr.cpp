@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -417,7 +417,7 @@ bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
 // Returns true if there is enough ammo to shoot.
 // If not, selects the next weapon to use.
 //
-BOOL P_CheckAmmo (player_t *player)
+bool P_CheckAmmo (player_t *player)
 {
 	if (P_EnoughAmmo(player, player->readyweapon))
 		return true;
@@ -1094,7 +1094,7 @@ void A_WeaponMeleeAttack(AActor* mo)
 
 	if (hitsound >= static_cast<int>(ARRAY_LENGTH(SoundMap)))
 	{
-		DPrintf("Warning: Weapon Melee Hitsound ID is beyond the array of the Sound Map!\n");
+		DPrintFmt("Warning: Weapon Melee Hitsound ID is beyond the array of the Sound Map!\n");
 		hitsound = 0;
 	}
 
@@ -1150,7 +1150,7 @@ void A_WeaponSound(AActor *mo)
 
 	if (sndmap >= static_cast<int>(ARRAY_LENGTH(SoundMap)))
 	{
-		DPrintf("Warning: Weapon Sound ID is beyond the array of the Sound Map!\n");
+		DPrintFmt("Warning: Weapon Sound ID is beyond the array of the Sound Map!\n");
 		sndmap = 0;
 	}
 

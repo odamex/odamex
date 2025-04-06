@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2024 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -47,6 +47,10 @@ extern int ConBottomStep;
 extern fixed_t bobx;
 extern fixed_t boby;
 
+void R_InterpolateSkyDefs(fixed_t amount);
+void R_TicSkyDefInterpolation();
+void R_RestoreSkyDefs();
+
 //
 // OInterpolation::getInstance
 //
@@ -67,9 +71,7 @@ OInterpolation::~OInterpolation()
 
 OInterpolation::OInterpolation()
 {
-	// Skies
-	saved_sky1offset = 0;
-	prev_sky1offset = 0;
+	// Sky 2 -- sky 1 uses skydefs and must be handled differently
 	saved_sky2offset = 0;
 	prev_sky2offset = 0;
 
@@ -110,9 +112,7 @@ void OInterpolation::resetGameInterpolation()
 	saved_linescrollingtex.clear();
 	saved_sectorceilingscrollingflat.clear();
 	saved_sectorfloorscrollingflat.clear();
-	prev_sky1offset = 0;
 	prev_sky2offset = 0;
-	saved_sky1offset = 0;
 	saved_sky2offset = 0;
 	prev_bobx = 0;
 	prev_boby = 0;
@@ -156,7 +156,6 @@ void OInterpolation::ticGameInterpolation()
 	prev_linescrollingtex.clear();
 	prev_sectorceilingscrollingflat.clear();
 	prev_sectorfloorscrollingflat.clear();
-	prev_sky1offset = 0;
 	prev_sky2offset = 0;
 	prev_camerax = 0;
 	prev_cameray = 0;
@@ -164,14 +163,16 @@ void OInterpolation::ticGameInterpolation()
 	prev_bobx = 0;
 	prev_boby = 0;
 
+	R_TicSkyDefInterpolation();
+
 	if (gamestate == GS_LEVEL)
 	{
 		for (int i = 0; i < numsectors; i++)
 		{
 			if (sectors[i].ceilingdata)
-				prev_ceilingheight.push_back(std::make_pair(P_CeilingHeight(&sectors[i]), i));
+				prev_ceilingheight.emplace_back(P_CeilingHeight(&sectors[i]), i);
 			if (sectors[i].floordata)
-				prev_floorheight.push_back(std::make_pair(P_FloorHeight(&sectors[i]), i));
+				prev_floorheight.emplace_back(P_FloorHeight(&sectors[i]), i);
 		}
 
 		// Handle the scrolling interpolation
@@ -188,33 +189,32 @@ void OInterpolation::ticGameInterpolation()
 
 				if (wallnum >= 0) // huh?!?
 				{
-					prev_linescrollingtex.push_back(
-						std::make_pair(std::make_pair(
+					prev_linescrollingtex.emplace_back(
+						std::make_pair(
 							sides[wallnum].textureoffset,
 							sides[wallnum].rowoffset),
-								wallnum));
+								wallnum);
 				}
 			}
 			else if (P_CeilingScrollType(type))
 			{
-				prev_sectorceilingscrollingflat.push_back(
-						std::make_pair(std::make_pair(
+				prev_sectorceilingscrollingflat.emplace_back(
+						std::make_pair(
 							sectors[affectee].ceiling_xoffs,
 							sectors[affectee].ceiling_yoffs),
-								affectee));
+								affectee);
 			}
 			else if (P_FloorScrollType(type))
 			{
-				prev_sectorfloorscrollingflat.push_back(
-						std::make_pair(std::make_pair(
+				prev_sectorfloorscrollingflat.emplace_back(
+						std::make_pair(
 							sectors[affectee].floor_xoffs,
 							sectors[affectee].floor_yoffs),
-								affectee));
+								affectee);
 			}
 		}
 
 		// Update sky offsets
-		prev_sky1offset = sky1columnoffset;
 		prev_sky2offset = sky2columnoffset;
 
 		// Update bob - this happens once per gametic
@@ -232,40 +232,31 @@ void OInterpolation::ticGameInterpolation()
 // Functions that assist with the interpolation of certain game objects
 void OInterpolation::interpolateCeilings(fixed_t amount)
 {
-	for (std::vector<fixed_uint_pair>::const_iterator ceiling_it = prev_ceilingheight.begin();
-		 ceiling_it != prev_ceilingheight.end(); ++ceiling_it)
+	for (const auto [old_value, secnum] : prev_ceilingheight)
 	{
-		unsigned int secnum = ceiling_it->second;
 		sector_t* sector = &sectors[secnum];
 
-		fixed_t old_value = ceiling_it->first;
-		fixed_t cur_value = P_CeilingHeight(sector);
+		const fixed_t cur_value = P_CeilingHeight(sector);
 
-		saved_ceilingheight.push_back(std::make_pair(cur_value, secnum));
+		saved_ceilingheight.emplace_back(cur_value, secnum);
 
-		fixed_t new_value = old_value + FixedMul(cur_value - old_value, amount);
+		const fixed_t new_value = old_value + FixedMul(cur_value - old_value, amount);
 		P_SetCeilingHeight(sector, new_value);
 	}
 
-	for (std::vector<fixed_fixed_uint_pair>::const_iterator ceilingscroll_it = prev_sectorceilingscrollingflat.begin();
-		 ceilingscroll_it != prev_sectorceilingscrollingflat.end(); ++ceilingscroll_it)
+	for (const auto& [offs, secnum] : prev_sectorceilingscrollingflat)
 	{
-		unsigned int secnum = ceilingscroll_it->second;
 		const sector_t* sector = &sectors[secnum];
 
-		fixed_uint_pair offs = ceilingscroll_it->first;
+		const fixed_t cur_x = sector->ceiling_xoffs;
+		const fixed_t cur_y = sector->ceiling_yoffs;
 
-		fixed_t cur_x = sector->ceiling_xoffs;
-		fixed_t cur_y = sector->ceiling_yoffs;
+		auto [old_x, old_y] = offs;
 
-		fixed_t old_x = offs.first;
-		fixed_t old_y = offs.second;
+		saved_sectorceilingscrollingflat.emplace_back(std::make_pair(cur_x, cur_y), secnum);
 
-		saved_sectorceilingscrollingflat.push_back(
-		    std::make_pair(std::make_pair(cur_x, cur_y), secnum));
-
-		fixed_t new_x = old_x + FixedMul(cur_x - old_x, amount);
-		fixed_t new_y = old_y + FixedMul(cur_y - old_y, amount);
+		const fixed_t new_x = old_x + FixedMul(cur_x - old_x, amount);
+		const fixed_t new_y = old_y + FixedMul(cur_y - old_y, amount);
 
 		sectors[secnum].ceiling_xoffs = new_x;
 		sectors[secnum].ceiling_yoffs = new_y;
@@ -274,40 +265,31 @@ void OInterpolation::interpolateCeilings(fixed_t amount)
 
 void OInterpolation::interpolateFloors(fixed_t amount)
 {
-	for (std::vector<fixed_uint_pair>::const_iterator floor_it = prev_floorheight.begin();
-		 floor_it != prev_floorheight.end(); ++floor_it)
+	for (const auto [old_value, secnum] : prev_floorheight)
 	{
-		unsigned int secnum = floor_it->second;
 		sector_t* sector = &sectors[secnum];
 
-		fixed_t old_value = floor_it->first;
-		fixed_t cur_value = P_FloorHeight(sector);
+		const fixed_t cur_value = P_FloorHeight(sector);
 
-		saved_floorheight.push_back(std::make_pair(cur_value, secnum));
+		saved_floorheight.emplace_back(cur_value, secnum);
 
-		fixed_t new_value = old_value + FixedMul(cur_value - old_value, amount);
+		const fixed_t new_value = old_value + FixedMul(cur_value - old_value, amount);
 		P_SetFloorHeight(sector, new_value);
 	}
 
-	for (std::vector<fixed_fixed_uint_pair>::const_iterator floorscroll_it = prev_sectorfloorscrollingflat.begin();
-		 floorscroll_it != prev_sectorfloorscrollingflat.end(); ++floorscroll_it)
+	for (const auto& [offs, secnum] : prev_sectorfloorscrollingflat)
 	{
-		unsigned int secnum = floorscroll_it->second;
 		const sector_t* sector = &sectors[secnum];
 
-		fixed_uint_pair offs = floorscroll_it->first;
+		auto [old_x, old_y] = offs;
 
-		fixed_t old_x = offs.first;
-		fixed_t old_y = offs.second;
+		const fixed_t cur_x = sector->floor_xoffs;
+		const fixed_t cur_y = sector->floor_yoffs;
 
-		fixed_t cur_x = sector->floor_xoffs;
-		fixed_t cur_y = sector->floor_yoffs;
+		saved_sectorfloorscrollingflat.emplace_back(std::make_pair(cur_x, cur_y), secnum);
 
-		saved_sectorfloorscrollingflat.push_back(
-		    std::make_pair(std::make_pair(cur_x, cur_y), secnum));
-
-		fixed_t new_x = old_x + FixedMul(cur_x - old_x, amount);
-		fixed_t new_y = old_y + FixedMul(cur_y - old_y, amount);
+		const fixed_t new_x = old_x + FixedMul(cur_x - old_x, amount);
+		const fixed_t new_y = old_y + FixedMul(cur_y - old_y, amount);
 
 		sectors[secnum].floor_xoffs = new_x;
 		sectors[secnum].floor_yoffs = new_y;
@@ -316,25 +298,19 @@ void OInterpolation::interpolateFloors(fixed_t amount)
 
 void OInterpolation::interpolateWalls(fixed_t amount)
 {
-	for (std::vector<fixed_fixed_uint_pair>::const_iterator side_it = prev_linescrollingtex.begin();
-		 side_it != prev_linescrollingtex.end(); ++side_it)
+	for (const auto& [offs, sidenum] : prev_linescrollingtex)
 	{
-		unsigned int sidenum = side_it->second;
 		const side_t* side = &sides[sidenum];
 
-		fixed_uint_pair offs = side_it->first;
+		auto [old_x, old_y] = offs;
 
-		fixed_t old_x = offs.first;
-		fixed_t old_y = offs.second;
+		const fixed_t cur_x = side->textureoffset;
+		const fixed_t cur_y = side->rowoffset;
 
-		fixed_t cur_x = side->textureoffset;
-		fixed_t cur_y = side->rowoffset;
+		saved_linescrollingtex.emplace_back(std::make_pair(cur_x, cur_y), sidenum);
 
-		saved_linescrollingtex.push_back(
-		    std::make_pair(std::make_pair(cur_x, cur_y), sidenum));
-
-		fixed_t new_x = old_x + FixedMul(cur_x - old_x, amount);
-		fixed_t new_y = old_y + FixedMul(cur_y - old_y, amount);
+		const fixed_t new_x = old_x + FixedMul(cur_x - old_x, amount);
+		const fixed_t new_y = old_y + FixedMul(cur_y - old_y, amount);
 
 		sides[sidenum].textureoffset = new_x;
 		sides[sidenum].rowoffset = new_y;
@@ -344,23 +320,19 @@ void OInterpolation::interpolateWalls(fixed_t amount)
 void OInterpolation::interpolateSkies(fixed_t amount)
 {
 	// Perform interp for any scrolling skies
-	fixed_t newsky1offset = prev_sky1offset +
-	                     FixedMul(render_lerp_amount, sky1columnoffset - prev_sky1offset);
-	fixed_t newsky2offset = prev_sky2offset +
-	                     FixedMul(render_lerp_amount, sky2columnoffset - prev_sky2offset);
+	const fixed_t newsky2offset = prev_sky2offset +
+	                    FixedMul(amount, sky2columnoffset - prev_sky2offset);
 
-	saved_sky1offset = sky1columnoffset;
 	saved_sky2offset = sky2columnoffset;
 
-	sky1columnoffset = newsky1offset;
 	sky2columnoffset = newsky2offset;
 }
 
 void OInterpolation::interpolateBob(fixed_t amount)
 {
 	// Perform interp on weapons bob
-	fixed_t newbobx = prev_bobx + FixedMul(render_lerp_amount, bobx - prev_bobx);
-	fixed_t newboby = prev_boby + FixedMul(render_lerp_amount, boby - prev_boby);
+	fixed_t newbobx = prev_bobx + FixedMul(amount, bobx - prev_bobx);
+	fixed_t newboby = prev_boby + FixedMul(amount, boby - prev_boby);
 
 	saved_bobx = bobx;
 	saved_boby = boby;
@@ -384,10 +356,11 @@ void OInterpolation::beginGameInterpolation(fixed_t amount)
 	saved_sectorceilingscrollingflat.clear();
 	saved_sectorfloorscrollingflat.clear();
 	saved_linescrollingtex.clear();
-	saved_sky1offset = 0;
 	saved_sky2offset = 0;
 	saved_bobx = 0;
 	saved_boby = 0;
+
+	R_InterpolateSkyDefs(amount);
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -409,20 +382,16 @@ void OInterpolation::beginGameInterpolation(fixed_t amount)
 void OInterpolation::restoreCeilings(void)
 {
 	// Ceiling heights
-	for (std::vector<fixed_uint_pair>::const_iterator ceiling_it = saved_ceilingheight.begin();
-		 ceiling_it != saved_ceilingheight.end(); ++ceiling_it)
+	for (const auto [height, secnum] : saved_ceilingheight)
 	{
-		sector_t* sector = &sectors[ceiling_it->second];
-		P_SetCeilingHeight(sector, ceiling_it->first);
+		sector_t* sector = &sectors[secnum];
+		P_SetCeilingHeight(sector, height);
 	}
 
 	// Ceiling scrolling flats
-	for (std::vector<fixed_fixed_uint_pair>::const_iterator ceilingscroll_it = saved_sectorceilingscrollingflat.begin();
-		 ceilingscroll_it != saved_sectorceilingscrollingflat.end(); ++ceilingscroll_it)
+	for (const auto& [offs, secnum] : saved_sectorceilingscrollingflat)
 	{
-		sector_t* sector = &sectors[ceilingscroll_it->second];
-
-		fixed_uint_pair offs = ceilingscroll_it->first;
+		sector_t* sector = &sectors[secnum];
 
 		sector->ceiling_xoffs = offs.first;
 		sector->ceiling_yoffs = offs.second;
@@ -431,37 +400,29 @@ void OInterpolation::restoreCeilings(void)
 
 void OInterpolation::restoreFloors(void)
 {
-		// Floor heights
-		for (std::vector<fixed_uint_pair>::const_iterator floor_it = saved_floorheight.begin();
-			 floor_it != saved_floorheight.end(); ++floor_it)
-		{
-			sector_t* sector = &sectors[floor_it->second];
-			P_SetFloorHeight(sector, floor_it->first);
-		}
+	// Floor heights
+	for (const auto& [height, secnum] : saved_floorheight)
+	{
+		sector_t* sector = &sectors[secnum];
+		P_SetFloorHeight(sector, height);
+	}
 
-		// Floor scrolling flats
-		for (std::vector<fixed_fixed_uint_pair>::const_iterator floorscroll_it =	saved_sectorfloorscrollingflat.begin();
-			 floorscroll_it != saved_sectorfloorscrollingflat.end(); ++floorscroll_it)
-		{
-			sector_t* sector = &sectors[floorscroll_it->second];
+	// Floor scrolling flats
+	// Ceiling scrolling flats
+	for (const auto& [offs, secnum] : saved_sectorfloorscrollingflat)
+	{
+		sector_t* sector = &sectors[secnum];
 
-			fixed_uint_pair offs = floorscroll_it->first;
-
-			sector->floor_xoffs = offs.first;
-			sector->floor_yoffs = offs.second;
-		}
+		sector->floor_xoffs = offs.first;
+		sector->floor_yoffs = offs.second;
+	}
 }
 
 void OInterpolation::restoreWalls(void)
 {
 	// Scrolling textures
-	for (std::vector<fixed_fixed_uint_pair>::const_iterator side_it = saved_linescrollingtex.begin();
-		 side_it != saved_linescrollingtex.end(); ++side_it)
+	for (const auto& [offs, sidenum] : saved_linescrollingtex)
 	{
-		unsigned int sidenum = side_it->second;
-
-		fixed_uint_pair offs = side_it->first;
-
 		sides[sidenum].textureoffset = offs.first;
 		sides[sidenum].rowoffset = offs.second;
 	}
@@ -469,9 +430,9 @@ void OInterpolation::restoreWalls(void)
 
 void OInterpolation::restoreSkies(void)
 {
-		// Restore scrolling skies
-	sky1columnoffset = saved_sky1offset;
+	// Restore scrolling skies
 	sky2columnoffset = saved_sky2offset;
+	R_RestoreSkyDefs();
 }
 
 void OInterpolation::restoreBob(void)
@@ -593,7 +554,7 @@ void OInterpolation::interpolateView(player_t* player, fixed_t amount)
 	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
 	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
 
-	interpolateCamera(render_lerp_amount, use_localview, player->cheats & CF_CHASECAM);
+	interpolateCamera(amount, use_localview, player->cheats & CF_CHASECAM);
 }
 
 //
@@ -634,7 +595,7 @@ void OInterpolation::beginConsoleInterpolation(fixed_t amount)
 fixed_t OInterpolation::getInterpolatedConsoleBottom(fixed_t amount)
 {
 	// Perform interp on console rise/drop
-	return prev_conbottomstep + FixedMul(render_lerp_amount, saved_conbottomstep - prev_conbottomstep);
+	return prev_conbottomstep + FixedMul(amount, saved_conbottomstep - prev_conbottomstep);
 }
 
 VERSION_CONTROL (r_interp_cpp, "$Id$")

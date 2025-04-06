@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -93,10 +93,10 @@ void R_ReallocDrawSegs(void)
 	{
 		unsigned pos = ds_p - drawsegs;	// jff 8/9/98 fix from ZDOOM1.14a
 		unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128; // killough
-		drawsegs = (drawseg_t*)Realloc(drawsegs, newmax*sizeof(*drawsegs));
+		drawsegs = (drawseg_t*)M_Realloc(drawsegs, newmax*sizeof(*drawsegs));
 		ds_p = drawsegs + pos;				// jff 8/9/98 fix from ZDOOM1.14a
 		maxdrawsegs = newmax;
-		DPrintf("MaxDrawSegs increased to %d\n", maxdrawsegs);
+		DPrintFmt("MaxDrawSegs increased to {}\n", maxdrawsegs);
 	}
 }
 
@@ -128,7 +128,7 @@ static void R_ClipWallSegment(int first, int last, bool makesolid)
 			// if all columns remaining are solid, we're done
 			byte* p = (byte*)memchr(solidcol + first, 0, last - first + 1);
 			if (p == NULL)
-				return; 
+				return;
 
 			first = p - solidcol;
 		}
@@ -304,7 +304,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 			// will any columns of this window be visible or will they be blocked
 			// by 1s lines and closed doors?
 			if (memchr(solidcol + rw_start, 0, rw_stop - rw_start + 1) != NULL)
-			{	
+			{
 				doorunderwater = true;
 				r_fakingunderwater = true;
 			}
@@ -495,11 +495,11 @@ void R_AddLine (seg_t *line)
 
 		// if door is closed because back is shut:
 		((rw_backcz1 <= rw_backfz1 && rw_backcz2 <= rw_backfz2) &&
-		
+
 		// preserve a kind of transparent door/lift special effect:
 		((rw_backcz1 >= rw_frontcz1 && rw_backcz2 >= rw_frontcz2) ||
 		 line->sidedef->toptexture) &&
-		
+
 		((rw_backfz1 <= rw_frontfz1 && rw_backfz2 <= rw_frontfz2) ||
 		 line->sidedef->bottomtexture) &&
 
@@ -553,7 +553,7 @@ void R_AddLine (seg_t *line)
 }
 
 
-static const int checkcoord[12][4] = // killough -- static const
+static constexpr int checkcoord[12][4] = // killough -- static const
 {
 	{3,0,2,1},
 	{3,0,2,0},
@@ -618,7 +618,7 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 	{
 		v2fixed_t p1 = box_pts[i][0];
 		v2fixed_t p2 = box_pts[i][1];
-		
+
 		if (R_PointOnLine(0, 0, p1.x, p1.y, p2.x, p2.y))
 			return true;
 
@@ -630,7 +630,7 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 			int x2 = R_ProjectPointX(p2.x, p2.y) - 1;
 			if (R_CheckProjectionX(x1, x2))
 			{
-				if (memchr(solidcol + x1, 0, x2 - x1 + 1) != NULL)	
+				if (memchr(solidcol + x1, 0, x2 - x1 + 1) != NULL)
 					return true;
 			}
 		}
@@ -656,9 +656,9 @@ void R_Subsector (int num)
 
 #ifdef RANGECHECK
     if (num>=numsubsectors)
-		I_Error ("R_Subsector: ss %i with numss = %i",
-				 num,
-				 numsubsectors);
+		I_Error("R_Subsector: ss {} with numss = {}",
+				num,
+				numsubsectors);
 #endif
 
 	sub = &subsectors[num];
@@ -674,8 +674,8 @@ void R_Subsector (int num)
 
 	ceilingplane = P_CeilingHeight(viewx, viewy, frontsector) > viewz ||
 		frontsector->ceilingpic == skyflatnum ||
-		(frontsector->heightsec && 
-		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) && 
+		(frontsector->heightsec &&
+		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		frontsector->heightsec->floorpic == skyflatnum) ?
 		R_FindPlane(frontsector->ceilingplane,		// killough 3/8/98
 					frontsector->ceilingpic == skyflatnum &&  // killough 10/98
@@ -723,7 +723,7 @@ void R_Subsector (int num)
 	{
 		for (WORD i = ParticlesInSubsec[num]; i != NO_PARTICLE; i = Particles[i].nextinsubsector)
 			R_ProjectParticle(Particles + i, subsectors[num].sector, FakeSide);
-	}		
+	}
 
 	if (sub->poly)
 	{ // Render the polyobj in the subsector first
@@ -732,7 +732,7 @@ void R_Subsector (int num)
 		while (polyCount--)
 			R_AddLine (*polySeg++);
 	}
-	
+
 	while (count--)
 		R_AddLine (line++);
 }

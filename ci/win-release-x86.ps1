@@ -22,7 +22,7 @@ else
 
 if ($env:build_number.length -gt 0)
 {
-    Set-Variable -Name "OdamexTestSuffix" -Value "-build_${env:build_number}" # "-build_112"
+    Set-Variable -Name "OdamexTestSuffix" -Value "-prerelease.${env:build_number}" # "-prerelease_112"
 }
 else
 {
@@ -95,19 +95,15 @@ function CopyFilesX86 {
         -Destination "${CommonDir}\README.txt"
     Copy-Item -Force -Path "${CurrentDir}\BuildX86\wad\odamex.wad" `
         -Destination "${CommonDir}"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.0.4\COPYING.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.6.2\LICENSE.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2_mixer.txt"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.0.4\lib\x86\LICENSE.FLAC.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.6.2\lib\x86\optional\LICENSE.modplug.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.0.4\lib\x86\LICENSE.modplug.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.6.2\lib\x86\optional\LICENSE.ogg-vorbis.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.0.4\lib\x86\LICENSE.mpg123.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.6.2\lib\x86\optional\LICENSE.opus.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.0.4\lib\x86\LICENSE.ogg-vorbis.txt" `
-        -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.0.4\lib\x86\LICENSE.opus.txt" `
-        -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.0.4\lib\x86\LICENSE.opusfile.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.6.2\lib\x86\optional\LICENSE.opusfile.txt" `
         -Destination "${CommonDir}\licenses"
     Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2-2.0.20\COPYING.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2.txt"
@@ -120,13 +116,10 @@ function CopyFilesX86 {
     New-Item -Force -ItemType "directory" -Path "${X86Dir}\redist"
 
     Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libFLAC-8.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\libmodplug-1.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libmpg123-0.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\libogg-0.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\libopus-0.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libvorbis-0.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libvorbisfile-3.dll", `
+        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libopusfile-0.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\odamex.exe", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\SDL2_mixer.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\SDL2.dll", `

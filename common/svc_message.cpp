@@ -147,11 +147,14 @@ odaproto::svc::MovePlayer SVC_MovePlayer(player_t& player, const int tic)
 	mom->set_y(player.mo->momy);
 	mom->set_z(player.mo->momz);
 
-	// [Russell] - hack, tell the client about the partial
-	// invisibility power of another player.. (cheaters can disable
-	// this but its all we have for now)
-	pl->mutable_powers()->Resize(pw_invisibility + 1, 0);
+	// Send all available powers information to show the clients
+	pl->mutable_powers()->Resize(NUMPOWERS + 1, 0);
+	pl->set_powers(pw_invulnerability, player.powers[pw_invulnerability]);
+	pl->set_powers(pw_strength, player.powers[pw_strength] > 0 ? 1 : 0);
 	pl->set_powers(pw_invisibility, player.powers[pw_invisibility]);
+	pl->set_powers(pw_ironfeet, player.powers[pw_ironfeet]);
+	pl->set_powers(pw_allmap, player.powers[pw_allmap]);
+	pl->set_powers(pw_infrared, player.powers[pw_infrared]);
 
 	return msg;
 }
@@ -1067,16 +1070,16 @@ odaproto::svc::CTFRefresh SVC_CTFRefresh(const TeamsView& teams, const bool full
 
 	msg.set_full(full);
 
-	for (TeamsView::const_iterator it = teams.begin(); it != teams.end(); ++it)
+	for (const auto& team : teams)
 	{
 		odaproto::svc::CTFRefresh_TeamInfo* info = msg.add_team_info();
 
-		info->set_points((*it)->Points);
+		info->set_points(team->Points);
 
 		if (full)
 		{
-			info->set_flag_state((*it)->FlagData.state);
-			info->set_flag_flagger((*it)->FlagData.flagger);
+			info->set_flag_state(team->FlagData.state);
+			info->set_flag_flagger(team->FlagData.flagger);
 		}
 	}
 
@@ -1091,8 +1094,7 @@ odaproto::svc::CTFEvent SVC_CTFEvent(const flag_score_t event, const team_t targ
 	msg.set_event(event);
 	msg.set_target_team(target);
 
-	// [AM] FIXME: validplayer shouldn't need a const I don't think...
-	if (validplayer(const_cast<player_t&>(player)))
+	if (validplayer(player))
 	{
 		msg.set_player_team(player.userinfo.team);
 		msg.set_player_id(player.id);
@@ -1376,9 +1378,9 @@ odaproto::svc::ExecuteACSSpecial SVC_ExecuteACSSpecial(const byte special,
 		msg.set_print(print);
 	}
 
-	for (std::vector<int>::const_iterator it = args.begin(); it != args.end(); ++it)
+	for (const auto& arg : args)
 	{
-		msg.add_args(*it);
+		msg.add_args(arg);
 	}
 
 	return msg;
@@ -1502,34 +1504,35 @@ odaproto::svc::MaplistUpdate SVC_MaplistUpdate(const maplist_status_t status,
 		// are already known on the receiving end.
 		OStringIndexer indexer = OStringIndexer::maplistFactory();
 
-		for (maplist_qrows_t::const_iterator it = maplist->begin(); it != maplist->end();
-		     ++it)
+		for (const auto& [_, entry] : *maplist)
 		{
 			// Create a row and add an indexed map to it.
 			odaproto::svc::MaplistUpdate::Row* row = msg.add_maplist();
-			const std::string& map = it->second->map;
+			const std::string& map = entry->map;
 			const uint32_t mapidx = indexer.getIndex(map);
 			row->set_map(mapidx);
 
-			for (std::vector<std::string>::iterator itr = it->second->wads.begin();
-			     itr != it->second->wads.end(); ++itr)
+			const std::string& lastmap = entry->lastmap;
+			const uint32_t lastmapidx = indexer.getIndex(lastmap);
+			row->set_lastmap(lastmapidx);
+
+			for (const auto& wad : entry->wads)
 			{
 				// Push an indexed WAD into the message.
-				std::string filename = D_CleanseFileName(*itr);
+				std::string filename = D_CleanseFileName(wad);
 				const uint32_t wadidx = indexer.getIndex(filename);
 				row->add_wads(wadidx);
 			}
 		}
 
 		// Populate the dictionary.
-		for (OStringIndexer::Indexes::const_iterator it = indexer.indexes.begin();
-		     it != indexer.indexes.end(); ++it)
+		for (const auto& [string, idx] : indexer.indexes)
 		{
-			if (!indexer.shouldTransmit(it->second))
+			if (!indexer.shouldTransmit(idx))
 				continue;
 
 			typedef google::protobuf::MapPair<uint32_t, std::string> DictPair;
-			msg.mutable_dict()->insert(DictPair(it->second, it->first));
+			msg.mutable_dict()->insert(DictPair(idx, string));
 		}
 	}
 
@@ -1577,7 +1580,6 @@ odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde)
 	msg.set_wave_time(horde.waveTime);
 	msg.set_boss_time(horde.bossTime);
 	msg.set_define_id(horde.defineID);
-	msg.set_legacy_id(horde.legacyID);
 	msg.set_spawned_health(horde.spawnedHealth);
 	msg.set_killed_health(horde.killedHealth);
 	msg.set_boss_health(horde.bossHealth);

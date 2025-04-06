@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,12 +25,12 @@
 
 #include "i_net.h"
 #include "m_fixed.h"
- 
+
 // Forward declaration avoids circular reference
 class player_s;
 typedef player_s player_t;
 
-static const short CENTERVIEW = -32768;
+static constexpr short CENTERVIEW = -32768;
 //
 // NetCommand
 //
@@ -44,110 +44,110 @@ class NetCommand
 {
 public:
 	NetCommand();
-	
-	bool	hasButtons() const		{ return ((mFields & CMD_BUTTONS) != 0); }
-	bool	hasAngle() const		{ return ((mFields & CMD_ANGLE) != 0); }
-	bool	hasPitch() const		{ return ((mFields & CMD_PITCH) != 0); }
-	bool	hasForwardMove() const	{ return ((mFields & CMD_FORWARD) != 0); }
-	bool	hasSideMove() const		{ return ((mFields & CMD_SIDE) != 0); }
-	bool	hasUpMove() const		{ return ((mFields & CMD_UP) != 0); }
-	bool	hasImpulse() const		{ return ((mFields & CMD_IMPULSE) != 0); }
-	bool	hasDeltaYaw() const		{ return ((mFields & CMD_DELTAYAW) != 0); }
-	bool	hasDeltaPitch() const	{ return ((mFields & CMD_DELTAPITCH) != 0); }
-	
-	int		getTic() const			{ return mTic; }
-	int		getWorldIndex() const	{ return mWorldIndex; }
-	byte	getButtons() const		{ return mButtons; }
-	fixed_t	getAngle() const 		{ return mAngle; }
-	fixed_t	getPitch() const		{ return mPitch; }
-	short	getForwardMove() const	{ return mForwardMove; }
-	short	getSideMove() const		{ return mSideMove; }
-	short	getUpMove() const		{ return mUpMove; }
-	byte	getImpulse() const		{ return mImpulse; }
-	short	getDeltaYaw() const		{ return mDeltaYaw; }
-	short	getDeltaPitch() const	{ return mDeltaPitch; }
-	
+
+	[[nodiscard]] bool	hasButtons() const		{ return ((mFields & CMD_BUTTONS) != 0); }
+	[[nodiscard]] bool	hasAngle() const		{ return ((mFields & CMD_ANGLE) != 0); }
+	[[nodiscard]] bool	hasPitch() const		{ return ((mFields & CMD_PITCH) != 0); }
+	[[nodiscard]] bool	hasForwardMove() const	{ return ((mFields & CMD_FORWARD) != 0); }
+	[[nodiscard]] bool	hasSideMove() const		{ return ((mFields & CMD_SIDE) != 0); }
+	[[nodiscard]] bool	hasUpMove() const		{ return ((mFields & CMD_UP) != 0); }
+	[[nodiscard]] bool	hasImpulse() const		{ return ((mFields & CMD_IMPULSE) != 0); }
+	[[nodiscard]] bool	hasDeltaYaw() const		{ return ((mFields & CMD_DELTAYAW) != 0); }
+	[[nodiscard]] bool	hasDeltaPitch() const	{ return ((mFields & CMD_DELTAPITCH) != 0); }
+
+	[[nodiscard]] int		getTic() const			{ return mTic; }
+	[[nodiscard]] int		getWorldIndex() const	{ return mWorldIndex; }
+	[[nodiscard]] byte	getButtons() const		{ return mButtons; }
+	[[nodiscard]] fixed_t	getAngle() const 		{ return mAngle; }
+	[[nodiscard]] fixed_t	getPitch() const		{ return mPitch; }
+	[[nodiscard]] short	getForwardMove() const	{ return mForwardMove; }
+	[[nodiscard]] short	getSideMove() const		{ return mSideMove; }
+	[[nodiscard]] short	getUpMove() const		{ return mUpMove; }
+	[[nodiscard]] byte	getImpulse() const		{ return mImpulse; }
+	[[nodiscard]] short	getDeltaYaw() const		{ return mDeltaYaw; }
+	[[nodiscard]] short	getDeltaPitch() const	{ return mDeltaPitch; }
+
 	void setTic(int val)
 	{
 		mTic = val;
 	}
-	
+
 	void setWorldIndex(int val)
 	{
 		mWorldIndex = val;
 	}
-	
+
 	void setButtons(byte val)
 	{
 		updateFields(CMD_BUTTONS, val);
 		mButtons = val;
 	}
-	
+
 	void setAngle(fixed_t val)
 	{
 		updateFields(CMD_ANGLE, val);
 		mAngle = val;
 	}
-	
+
 	void setPitch(fixed_t val)
 	{
 		updateFields(CMD_PITCH, val);
 		mPitch = val;
 	}
-	
+
 	void setForwardMove(short val)
 	{
 		updateFields(CMD_FORWARD, val);
 		mForwardMove = val;
 	}
-	
+
 	void setSideMove(short val)
 	{
 		updateFields(CMD_SIDE, val);
 		mSideMove = val;
-	}	
-		
+	}
+
 	void setUpMove(short val)
 	{
 		updateFields(CMD_UP, val);
 		mUpMove = val;
 	}
-	
+
 	void setImpulse(byte val)
 	{
 		updateFields(CMD_IMPULSE, val);
 		mImpulse = val;
 	}
-	
+
 	void setDeltaYaw(short val)
 	{
 		updateFields(CMD_DELTAYAW, val);
 		mDeltaYaw = val;
 	}
-	
+
 	void setDeltaPitch(short val)
 	{
 		updateFields(CMD_DELTAPITCH, val);
 		mDeltaPitch = val;
 	}
-	
+
 	void clear();
 	void write(buf_t *buf);
 	void read(buf_t *buf);
-	
+
 	void toPlayer(player_t *player) const;
 	void fromPlayer(player_t *player);
 
 private:
-	static const int CMD_BUTTONS		= 0x0001;
-	static const int CMD_ANGLE			= 0x0002;
-	static const int CMD_PITCH			= 0x0004;
-	static const int CMD_FORWARD		= 0x0008;
-	static const int CMD_SIDE			= 0x0010;
-	static const int CMD_UP				= 0x0020;
-	static const int CMD_IMPULSE		= 0x0040;
-	static const int CMD_DELTAYAW		= 0x0080;
-	static const int CMD_DELTAPITCH		= 0x0100;
+	static constexpr int CMD_BUTTONS		= 0x0001;
+	static constexpr int CMD_ANGLE			= 0x0002;
+	static constexpr int CMD_PITCH			= 0x0004;
+	static constexpr int CMD_FORWARD		= 0x0008;
+	static constexpr int CMD_SIDE			= 0x0010;
+	static constexpr int CMD_UP				= 0x0020;
+	static constexpr int CMD_IMPULSE		= 0x0040;
+	static constexpr int CMD_DELTAYAW		= 0x0080;
+	static constexpr int CMD_DELTAPITCH		= 0x0100;
 
 	int			mTic;
 	int			mWorldIndex;

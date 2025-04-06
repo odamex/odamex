@@ -44,9 +44,15 @@ enum maplist_status_t
 };
 #define NUM_MAPLIST_STATUS (MAPLIST_THROTTLED + 1)
 
+inline auto format_as(maplist_status_t eStatus)
+{
+	return fmt::underlying(eStatus);
+}
+
 // Map list entry structure
 typedef struct {
 	std::string map;
+	std::string lastmap;
 	std::vector<std::string> wads;
 } maplist_entry_t;
 

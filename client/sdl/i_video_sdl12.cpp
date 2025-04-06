@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -451,11 +451,11 @@ void ISDL12Window::getEvents()
 			{
 				// Debugging messages
 				if (sdl_ev.active.state & SDL_APPMOUSEFOCUS)
-					DPrintf("SDL_ACTIVEEVENT SDL_APPMOUSEFOCUS %s\n", sdl_ev.active.gain ? "gained" : "lost");
+					DPrintFmt("SDL_ACTIVEEVENT SDL_APPMOUSEFOCUS {}\n", sdl_ev.active.gain ? "gained" : "lost");
 				if (sdl_ev.active.state & SDL_APPINPUTFOCUS)
-					DPrintf("SDL_ACTIVEEVENT SDL_APPINPUTFOCUS %s\n", sdl_ev.active.gain ? "gained" : "lost");
+					DPrintFmt("SDL_ACTIVEEVENT SDL_APPINPUTFOCUS {}\n", sdl_ev.active.gain ? "gained" : "lost");
 				if (sdl_ev.active.state & SDL_APPACTIVE)
-					DPrintf("SDL_ACTIVEEVENT SDL_APPACTIVE %s\n", sdl_ev.active.gain ? "gained" : "lost");
+					DPrintFmt("SDL_ACTIVEEVENT SDL_APPACTIVE {}\n", sdl_ev.active.gain ? "gained" : "lost");
 
 				// TODO: do we need to do anything here anymore?
 			}
@@ -713,7 +713,7 @@ bool ISDL12Window::setMode(const IVideoMode& video_mode)
 	SDL_Surface* sdl_surface = SDL_SetVideoMode(video_mode.width, video_mode.height, video_mode.bpp, flags);
 	if (sdl_surface == NULL)
 	{
-		I_FatalError("I_SetVideoMode: unable to set video mode %ux%ux%u (%s): %s\n",
+		I_FatalError("I_SetVideoMode: unable to set video mode {}x{}x{} ({}): {}\n",
 				video_mode.width, video_mode.height, video_mode.bpp, is_windowed ? "windowed" : "fullscreen",
 				SDL_GetError());
 		return false;
@@ -797,7 +797,7 @@ ISDL12VideoSubsystem::ISDL12VideoSubsystem() : IVideoSubsystem()
 
 	if (SDLVersion->major != SDL_MAJOR_VERSION || SDLVersion->minor != SDL_MINOR_VERSION)
 	{
-		I_FatalError("SDL version conflict (%d.%d.%d vs %d.%d.%d dll)\n",
+		I_FatalError("SDL version conflict ({}.{}.{} vs {}.{}.{} dll)\n",
 			SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
 			SDLVersion->major, SDLVersion->minor, SDLVersion->patch);
 		return;

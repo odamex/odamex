@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -45,25 +45,10 @@
 	#include <gctypes.h>
 #endif
 
-#ifdef _MSC_VER
-	#define FORMAT_PRINTF(index, first_arg)
-#else
-	#define FORMAT_PRINTF(index, first_arg) __attribute__ ((format(printf, index, first_arg)))
-#endif
-
-#ifdef _MSC_VER
-	#define NORETURN __declspec(noreturn)
-#else
-	#define NORETURN __attribute__ ((noreturn))
-#endif
-
-// [RH] Some windows includes already define this
-#if !defined(_WINDEF_) && !defined(__wtypes_h__) && !defined(GEKKO)
-typedef int BOOL;
-#endif
-
 typedef unsigned char byte;
 typedef unsigned int uint;
+
+using OByteSpan = nonstd::span<byte>;
 
 #if defined(_MSC_VER) || defined(__WATCOMC__)
 	#define STACK_ARGS __cdecl
@@ -88,22 +73,9 @@ typedef unsigned int uint;
 #if (defined _XBOX || defined _MSC_VER)
 	#define DBL_EPSILON 2.2204460492503131e-016
 	#define FLT_EPSILON 1.192092896e-07F
-
-	#define PRI_SIZE_PREFIX "I"
 #else
 	#include <float.h>
-
-	#define PRI_SIZE_PREFIX "z"
 #endif
-
-// Format constants for ssize_t/size_t.
-
-#define PRIdSIZE PRI_SIZE_PREFIX "d"
-#define PRIiSIZE PRI_SIZE_PREFIX "i"
-#define PRIuSIZE PRI_SIZE_PREFIX "u"
-#define PRIoSIZE PRI_SIZE_PREFIX "o"
-#define PRIxSIZE PRI_SIZE_PREFIX "x"
-#define PRIXSIZE PRI_SIZE_PREFIX "X"
 
 #ifdef UNIX
 	#define stricmp strcasecmp
@@ -196,48 +168,14 @@ typedef uint64_t			dtime_t;
 
 /**
  * @brief Returns a bitfield with a range of bits set from a to b, inclusive.
- * 
+ *
  * @param a Low bit in the mask.
- * @param b High bit in the mask. 
+ * @param b High bit in the mask.
  */
 static inline uint32_t BIT_MASK(uint32_t a, uint32_t b)
 {
     return (static_cast<uint32_t>(-1) >> (31 - b)) & ~(BIT(a) - 1);
 }
-
-// [RH] This gets used all over; define it here:
-FORMAT_PRINTF(1, 2) int STACK_ARGS Printf(const char* format, ...);
-FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...);
-// [Russell] Prints a bold green message to the console
-FORMAT_PRINTF(1, 2) int STACK_ARGS Printf_Bold(const char* format, ...);
-// [RH] Same here:
-FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...);
-
-/**
- * @brief Print to all clients in a server, or to the local player offline.
- *
- * @note This could really use a new name, like "ServerPrintf".
- *
- * @param format printf-style format string.
- * @param ... printf-style arguments.
- */
-void STACK_ARGS SV_BroadcastPrintf(const char* format, ...) FORMAT_PRINTF(1, 2);
-
-/**
- * @brief Print to all clients in a server, or to the local player offline.
- *
- * @note This could really use a new name, like "ServerPrintf".
- *
- * @param printlevel PRINT_* constant designating what kind of print this is.
- * @param format printf-style format string.
- * @param ... printf-style arguments.
- */
-void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
-    FORMAT_PRINTF(2, 3);
-
-#ifdef SERVER_APP
-void STACK_ARGS SV_BroadcastPrintfButPlayer(int printlevel, int player_id, const char* format, ...);
-#endif
 
 // game print flags
 typedef enum {
@@ -254,7 +192,7 @@ typedef enum {
 
 	PRINT_NORCON,		// Do NOT send the message to any rcon client.
 
-	PRINT_FILTERCHAT,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)		
+	PRINT_FILTERCHAT,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)
 
 	PRINT_MAXPRINT
 } printlevel_t;
@@ -268,7 +206,7 @@ typedef enum {
 	#undef MIN
 #endif
 template<class T>
-forceinline const T MIN (const T a, const T b)
+forceinline constexpr T MIN(const T a, const T b)
 {
 	return a < b ? a : b;
 }
@@ -282,7 +220,7 @@ forceinline const T MIN (const T a, const T b)
 	#undef MAX
 #endif
 template<class T>
-forceinline const T MAX (const T a, const T b)
+forceinline constexpr T MAX (const T a, const T b)
 {
 	return a > b ? a : b;
 }
@@ -299,7 +237,7 @@ forceinline const T MAX (const T a, const T b)
 	#undef clamp
 #endif
 template<class T>
-forceinline T clamp (const T in, const T min, const T max)
+forceinline constexpr T clamp(const T in, const T min, const T max)
 {
 	return in <= min ? min : in >= max ? max : in;
 }
@@ -308,21 +246,12 @@ forceinline T clamp (const T in, const T min, const T max)
 // ARRAY_LENGTH
 //
 // Safely counts the number of items in an C array.
-// 
-// https://www.drdobbs.com/cpp/counting-array-elements-at-compile-time/197800525?pgno=1
 //
-#define ARRAY_LENGTH(arr) ( \
-	0 * sizeof(reinterpret_cast<const ::Bad_arg_to_ARRAY_LENGTH*>(arr)) + \
-	0 * sizeof(::Bad_arg_to_ARRAY_LENGTH::check_type((arr), &(arr))) + \
-	sizeof(arr) / sizeof((arr)[0]) )
-
-struct Bad_arg_to_ARRAY_LENGTH {
-	class Is_pointer; // incomplete
-	class Is_array {};
-	template <typename T>
-	static Is_pointer check_type(const T*, const T* const*);
-	static Is_array check_type(const void*, const void*);
-};
+template <typename T, size_t N>
+constexpr size_t ARRAY_LENGTH(T (&arr)[N])
+{
+	return std::extent_v<T[N]>;
+}
 
 
 // ----------------------------------------------------------------------------
@@ -581,7 +510,7 @@ public:
 
 	argb_t tlate(const translationref_t &translation, const byte c) const;
 
-	bool operator==(const shaderef_t &other) const;
+	[[nodiscard]] bool operator==(const shaderef_t &other) const;
 };
 
 forceinline bool shaderef_t::isValid() const

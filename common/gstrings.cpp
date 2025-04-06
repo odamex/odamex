@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2011 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -56,7 +56,7 @@ BEGIN_COMMAND(stringinfo)
 
 	if (stricmp(argv[1], "size") == 0)
 	{
-		Printf("%" PRIuSIZE " strings found\n", GStrings.size());
+		Printf("%zu strings found\n", GStrings.size());
 		return;
 	}
 	else if (stricmp(argv[1], "dump") == 0)

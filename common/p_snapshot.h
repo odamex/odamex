@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -54,32 +54,32 @@ extern int gametic;
 class Snapshot
 {
 public:
-	Snapshot(int time = -1);	
+	Snapshot(int time = -1);
 	virtual ~Snapshot() {};
 
-	bool operator==(const Snapshot &other) const;
-	
+	[[nodiscard]] bool operator==(const Snapshot &other) const;
+
 	bool isValid() const { return mValid; }
 	bool isAuthoritative() const { return mAuthoritative; }
 	bool isContinuous() const { return mContinuous; }
 	bool isInterpolated() const { return mInterpolated; }
 	bool isExtrapolated() const { return mExtrapolated; }
-	
+
 	virtual void setAuthoritative(bool val) { mAuthoritative = val; }
 	virtual void setContinuous(bool val) { mContinuous = val; }
 	virtual void setInterpolated(bool val) { mInterpolated = val; }
 	virtual void setExtrapolated(bool val) { mExtrapolated = val; }
-	
+
 	int getTime() const { return mTime; }
 	void setTime(int time) { mTime = time; }
 
 private:
 	int			mTime;
-	bool		mValid;	
+	bool		mValid;
 
 	bool		mAuthoritative;
 	bool		mContinuous;
-	
+
 	bool		mInterpolated;
 	bool		mExtrapolated;
 };
@@ -94,24 +94,24 @@ private:
 class ActorSnapshot : public Snapshot
 {
 public:
-	ActorSnapshot(int time = -1);	
+	ActorSnapshot(int time = -1);
 	ActorSnapshot(int time, const AActor *mo);
-	virtual ~ActorSnapshot() {};
+	~ActorSnapshot() override {};
 
-	bool operator==(const ActorSnapshot &other) const;
-	
+	[[nodiscard]] bool operator==(const ActorSnapshot &other) const;
+
 	void merge(const ActorSnapshot& other);
 
 	void toActor(AActor *mo) const;
-	
+
 	fixed_t getX() const			{ return mX; }
 	fixed_t getY() const			{ return mY; }
 	fixed_t getZ() const			{ return mZ; }
 	fixed_t getMomX() const			{ return mMomX; }
 	fixed_t getMomY() const			{ return mMomY; }
 	fixed_t getMomZ() const			{ return mMomZ; }
-	angle_t getAngle() const		{ return mAngle; }	
-	angle_t getPitch() const		{ return mPitch; }	
+	angle_t getAngle() const		{ return mAngle; }
+	angle_t getPitch() const		{ return mPitch; }
 	bool	getOnGround() const		{ return mOnGround; }
 	fixed_t getCeilingZ() const		{ return mCeilingZ; }
 	fixed_t getFloorZ() const		{ return mFloorZ; }
@@ -139,7 +139,7 @@ public:
 		mZ = val;
 		mFields |= ACT_POSITIONZ;
 	}
-	
+
 	void setMomX(fixed_t val)
 	{
 		mMomX = val;
@@ -151,31 +151,31 @@ public:
 		mMomY = val;
 		mFields |= ACT_MOMENTUMY;
 	}
-	
+
 	void setMomZ(fixed_t val)
 	{
 		mMomZ = val;
 		mFields |= ACT_MOMENTUMZ;
 	}
-			
+
 	void setAngle(angle_t val)
 	{
 		mAngle = val;
 		mFields |= ACT_ANGLE;
 	}
-	
+
 	void setPitch(angle_t val)
 	{
 		mPitch = val;
 		mFields |= ACT_PITCH;
 	}
-	
+
 	void setOnGround(bool val)
 	{
 		mOnGround = val;
 		mFields |= ACT_ONGROUND;
 	}
-	
+
 	void setCeilingZ(fixed_t val)
 	{
 		mCeilingZ = val;
@@ -193,24 +193,24 @@ public:
 		mReactionTime = val;
 		mFields |= ACT_REACTIONTIME;
 	}
-	
+
 	void setWaterLevel(int val)
 	{
 		mWaterLevel = val;
 		mFields |= ACT_WATERLEVEL;
 	}
-	
+
 	void setFlags(int val)
 	{
 		mFlags = val;
 		mFields |= ACT_FLAGS;
 	}
-	
+
 	void setFlags2(int val)
 	{
 		mFlags2 = val;
 		mFields |= ACT_FLAGS2;
-	}	
+	}
 
 	void setFlags3(int val)
 	{
@@ -228,7 +228,7 @@ private:
 	enum ActorFields {
 		ACT_POSITIONX			= BIT(0),
 		ACT_POSITIONY			= BIT(1),
-		ACT_POSITIONZ			= BIT(2),	
+		ACT_POSITIONZ			= BIT(2),
 		ACT_MOMENTUMX			= BIT(3),
 		ACT_MOMENTUMY			= BIT(4),
 		ACT_MOMENTUMZ			= BIT(5),
@@ -244,9 +244,9 @@ private:
 		ACT_WATERLEVEL			= BIT(15),
 		ACT_FRAME				= BIT(16)
 	};
-	
+
 	unsigned int	mFields;
-	
+
 	fixed_t			mX;
 	fixed_t			mY;
 	fixed_t			mZ;
@@ -257,12 +257,12 @@ private:
 	angle_t			mPitch;
 
 	bool			mOnGround;
-	fixed_t			mCeilingZ;	
+	fixed_t			mCeilingZ;
 	fixed_t			mFloorZ;
-	
+
 	int				mReactionTime;
 	int				mWaterLevel;
-	
+
 	int				mFlags;
 	int				mFlags2;
 	int				mFlags3;
@@ -281,10 +281,10 @@ class PlayerSnapshot : public Snapshot
 public:
 	PlayerSnapshot(int time = -1);
 	PlayerSnapshot(int time, player_t *player);
-	virtual ~PlayerSnapshot() {};
+	~PlayerSnapshot() override {};
 
-	bool operator==(const PlayerSnapshot &other) const;
-	
+	[[nodiscard]] bool operator==(const PlayerSnapshot &other) const;
+
 	void merge(const PlayerSnapshot& other);
 
 	void toPlayer(player_t *player) const;
@@ -299,8 +299,8 @@ public:
 	fixed_t getMomX() const				{ return mActorSnap.getMomX(); }
 	fixed_t getMomY() const				{ return mActorSnap.getMomY(); }
 	fixed_t getMomZ() const				{ return mActorSnap.getMomZ(); }
-	angle_t getAngle() const			{ return mActorSnap.getAngle(); }	
-	angle_t getPitch() const			{ return mActorSnap.getPitch(); }	
+	angle_t getAngle() const			{ return mActorSnap.getAngle(); }
+	angle_t getPitch() const			{ return mActorSnap.getPitch(); }
 	bool	getOnGround() const			{ return mActorSnap.getOnGround(); }
 	fixed_t getCeilingZ() const			{ return mActorSnap.getCeilingZ(); }
 	fixed_t getFloorZ() const			{ return mActorSnap.getFloorZ(); }
@@ -311,48 +311,48 @@ public:
 	int		getFlags3() const			{ return mActorSnap.getFlags3(); }
 	int		getFrame() const			{ return mActorSnap.getFrame(); }
 
-	virtual void setAuthoritative(bool val)
+	void setAuthoritative(bool val) override
 	{
 		Snapshot::setAuthoritative(val);
 		mActorSnap.setAuthoritative(val);
 	}
-	
-	virtual void setContinuous(bool val)
+
+	void setContinuous(bool val) override
 	{
 		Snapshot::setContinuous(val);
 		mActorSnap.setContinuous(val);
 	}
-	
-	virtual void setInterpolated(bool val)
+
+	void setInterpolated(bool val) override
 	{
 		Snapshot::setInterpolated(val);
 		mActorSnap.setInterpolated(val);
 	}
-	
-	virtual void setExtrapolated(bool val)
+
+	void setExtrapolated(bool val) override
 	{
 		Snapshot::setExtrapolated(val);
 		mActorSnap.setExtrapolated(val);
 	}
-	
+
 	void setX(fixed_t val)
 	{
 		mActorSnap.setX(val);
 		mFields |= PLY_POSITIONX;
 	}
-	
+
 	void setY(fixed_t val)
 	{
 		mActorSnap.setY(val);
-		mFields |= PLY_POSITIONY;		
-	}	
-	
+		mFields |= PLY_POSITIONY;
+	}
+
 	void setZ(fixed_t val)
 	{
 		mActorSnap.setZ(val);
 		mFields |= PLY_POSITIONZ;
 	}
-	
+
 	void setMomX(fixed_t val)
 	{
 		mActorSnap.setMomX(val);
@@ -364,13 +364,13 @@ public:
 		mActorSnap.setMomY(val);
 		mFields |= PLY_MOMENTUMY;
 	}
-	
+
 	void setMomZ(fixed_t val)
 	{
 		mActorSnap.setMomZ(val);
 		mFields |= PLY_MOMENTUMZ;
 	}
-			
+
 	void setAngle(angle_t val)
 	{
 		mActorSnap.setAngle(val);
@@ -382,7 +382,7 @@ public:
 		mActorSnap.setPitch(val);
 		mFields |= PLY_PITCH;
 	}
-	
+
 	void setCeilingZ(fixed_t val)
 	{
 		mActorSnap.setCeilingZ(val);
@@ -400,7 +400,7 @@ public:
 		mActorSnap.setOnGround(val != 0);
 		mFields |= PLY_ONGROUND;
 	}
-	
+
 	void setReactionTime(int val)
 	{
 		mActorSnap.setReactionTime(val);
@@ -411,44 +411,44 @@ public:
 	{
 		mActorSnap.setFlags(val);
 		mFields |= PLY_FLAGS;
-	}	
+	}
 
 	void setFlags2(int val)
 	{
 		mActorSnap.setFlags2(val);
 		mFields |= PLY_FLAGS2;
-	}	
+	}
 
 	void setFlags3(int val)
 	{
 		mActorSnap.setFlags3(val);
 		mFields |= PLY_FLAGS3;
-	}	
+	}
 
 	void setFrame(int val)
 	{
 		mActorSnap.setFrame(val);
 		mFields |= PLY_FRAME;
 	}
-			
+
 	void setWaterLevel(int val)
 	{
 		mActorSnap.setWaterLevel(val);
 		mFields |= PLY_WATERLEVEL;
 	}
-	
+
 	void setViewHeight(fixed_t val)
 	{
 		mViewHeight = val;
 		mFields |= PLY_VIEWHEIGHT;
 	}
-	
+
 	void setDeltaViewHeight(fixed_t val)
 	{
 		mDeltaViewHeight = val;
 		mFields |= PLY_DELTAVIEWHEIGHT;
 	}
-	
+
 	void setJumpTime(int val)
 	{
 		mJumpTime = val;
@@ -456,13 +456,13 @@ public:
 	}
 
 	friend PlayerSnapshot P_LerpPlayerPosition(const PlayerSnapshot&, const PlayerSnapshot&, float);
-	friend PlayerSnapshot P_ExtrapolatePlayerPosition(const PlayerSnapshot&, float);	
-	
+	friend PlayerSnapshot P_ExtrapolatePlayerPosition(const PlayerSnapshot&, float);
+
 private:
 	enum PlayerFields {
 		PLY_POSITIONX			= 0x00000001,
 		PLY_POSITIONY			= 0x00000002,
-		PLY_POSITIONZ			= 0x00000004,	
+		PLY_POSITIONZ			= 0x00000004,
 		PLY_MOMENTUMX			= 0x00000008,
 		PLY_MOMENTUMY			= 0x00000010,
 		PLY_MOMENTUMZ			= 0x00000020,
@@ -481,7 +481,7 @@ private:
 		PLY_DELTAVIEWHEIGHT		= 0x00040000,
 		PLY_JUMPTIME			= 0x00080000
 	};
-	
+
 	unsigned int	mFields;		// bitfield of data present in snapshot
 	ActorSnapshot	mActorSnap;
 
@@ -500,12 +500,12 @@ private:
 class PlayerSnapshotManager
 {
 public:
-	PlayerSnapshotManager();	
-	
+	PlayerSnapshotManager();
+
 	void clearSnapshots();
-	
+
 	int getMostRecentTime() const { return mMostRecent; }
-	
+
 	void addSnapshot(const PlayerSnapshot &snap);
 	PlayerSnapshot getSnapshot(int time) const;
 
@@ -514,7 +514,7 @@ private:
 	int mFindValidSnapshot(int starttime, int endtime) const;
 	PlayerSnapshot mInterpolateSnapshots(int from, int to, int time) const;
 	PlayerSnapshot mExtrapolateSnapshot(int from, int time) const;
-	
+
 	PlayerSnapshot	mSnaps[NUM_SNAPSHOTS];
 	int				mMostRecent;
 };
@@ -531,7 +531,7 @@ class SectorSnapshot : public Snapshot
 public:
 	SectorSnapshot(int time = -1);
 	SectorSnapshot(int time, sector_t *sector);
-	virtual ~SectorSnapshot() {};
+	~SectorSnapshot() override {};
 
 	void clear();
 	void toSector(sector_t *sector) const;
@@ -540,14 +540,14 @@ public:
 	void setFloorMoverType(movertype_t val)	{ mFloorMoverType = val; }
 	void setSector(sector_t *val)			{ mSector = val; }
 	void setCeilingType(int val)			{ mCeilingType = val; }
-	void setFloorType(int val)				{ mFloorType = val; }	
+	void setFloorType(int val)				{ mFloorType = val; }
 	void setCeilingTag(int val)				{ mCeilingTag = val; }
-	void setFloorTag(int val)				{ mFloorTag = val; }	
+	void setFloorTag(int val)				{ mFloorTag = val; }
 	void setCeilingLine(line_t *val)		{ mCeilingLine = val; }
-	void setFloorLine(line_t *val)			{ mFloorLine = val; }	
+	void setFloorLine(line_t *val)			{ mFloorLine = val; }
 	void setCeilingHeight(fixed_t val)		{ mCeilingHeight = val; }
 	void setFloorHeight(fixed_t val)		{ mFloorHeight = val; }
-	void setCeilingSpeed(fixed_t val)		{ mCeilingSpeed = val; }	
+	void setCeilingSpeed(fixed_t val)		{ mCeilingSpeed = val; }
 	void setFloorSpeed(fixed_t val)			{ mFloorSpeed = val; }
 	void setCeilingDestination(fixed_t val)	{ mCeilingDestination = val; }
 	void setFloorDestination(fixed_t val)	{ mFloorDestination = val; }
@@ -564,15 +564,15 @@ public:
 	void setFloorLow(fixed_t val)			{ mFloorLow = val; }
 	void setFloorHigh(fixed_t val)			{ mFloorHigh = val; }
 	void setCeilingCrush(bool val)			{ mCeilingCrush = val; }
-	void setFloorCrush(bool val)			{ mFloorCrush = val; }	
+	void setFloorCrush(bool val)			{ mFloorCrush = val; }
 	void setSilent(bool val)				{ mSilent = val; }
 	void setCeilingWait(int val)			{ mCeilingWait = val; }
-	void setFloorWait(int val)				{ mFloorWait = val; }	
+	void setFloorWait(int val)				{ mFloorWait = val; }
 	void setCeilingCounter(int val)			{ mCeilingCounter = val; }
-	void setFloorCounter(int val)			{ mFloorCounter = val; }	
+	void setFloorCounter(int val)			{ mFloorCounter = val; }
 	void setResetCounter(int val)			{ mResetCounter = val; }
 	void setCeilingStatus(int val)			{ mCeilingStatus = val; }
-	void setFloorStatus(int val)			{ mFloorStatus = val; }	
+	void setFloorStatus(int val)			{ mFloorStatus = val; }
 	void setOldFloorStatus(int val)			{ mOldFloorStatus = val; }
 	void setCrusherSpeed1(fixed_t val)		{ mCrusherSpeed1 = val; }
 	void setCrusherSpeed2(fixed_t val)		{ mCrusherSpeed2 = val; }
@@ -585,20 +585,20 @@ public:
 	void setFloorOffset(fixed_t val)		{ mFloorOffset = val; }
 	void setCeilingChange(int val)			{ mCeilingChange = val; }
 	void setFloorChange(int val)			{ mFloorChange = val; }
-		
+
 	movertype_t	getCeilingMoverType() const	{ return mCeilingMoverType; }
-	movertype_t	getFloorMoverType() const	{ return mFloorMoverType; }	
+	movertype_t	getFloorMoverType() const	{ return mFloorMoverType; }
 	sector_t* getSector() const				{ return mSector; }
 	int		getCeilingType() const			{ return mCeilingType; }
-	int		getFloorType() const			{ return mFloorType; }	
+	int		getFloorType() const			{ return mFloorType; }
 	int		getCeilingTag() const			{ return mCeilingTag; }
-	int		getFloorTag() const				{ return mFloorTag; }	
+	int		getFloorTag() const				{ return mFloorTag; }
 	line_t*	getCeilingLine() const			{ return mCeilingLine; }
-	line_t*	getFloorLine() const			{ return mFloorLine; }			
+	line_t*	getFloorLine() const			{ return mFloorLine; }
 	fixed_t	getCeilingHeight() const		{ return mCeilingHeight; }
 	fixed_t	getFloorHeight() const			{ return mFloorHeight; }
 	fixed_t getCeilingSpeed() const			{ return mCeilingSpeed; }
-	fixed_t getFloorSpeed() const			{ return mFloorSpeed; }	
+	fixed_t getFloorSpeed() const			{ return mFloorSpeed; }
 	fixed_t getCeilingDestination() const	{ return mCeilingDestination; }
 	fixed_t getFloorDestination() const		{ return mFloorDestination; }
 	int		getCeilingDirection() const		{ return mCeilingDirection; }
@@ -610,19 +610,19 @@ public:
 	short	getCeilingSpecial() const		{ return mNewCeilingSpecial; }
 	short	getFloorSpecial() const			{ return mNewFloorSpecial; }
 	fixed_t	getCeilingLow() const			{ return mCeilingLow; }
-	fixed_t	getCeilingHigh() const			{ return mCeilingHigh; }	
+	fixed_t	getCeilingHigh() const			{ return mCeilingHigh; }
 	fixed_t	getFloorLow() const				{ return mFloorLow; }
 	fixed_t	getFloorHigh() const			{ return mFloorHigh; }
 	bool	getCeilingCrush() const			{ return mCeilingCrush; }
-	bool	getFloorCrush() const			{ return mFloorCrush; }	
+	bool	getFloorCrush() const			{ return mFloorCrush; }
 	bool	getSilent() const				{ return mSilent; }
 	int		getCeilingWait() const			{ return mCeilingWait; }
-	int		getFloorWait() const			{ return mFloorWait; }	
+	int		getFloorWait() const			{ return mFloorWait; }
 	int		getCeilingCounter() const		{ return mCeilingCounter; }
-	int		getFloorCounter() const			{ return mFloorCounter; }	
+	int		getFloorCounter() const			{ return mFloorCounter; }
 	int		getResetCounter() const			{ return mResetCounter; }
 	int		getCeilingStatus() const		{ return mCeilingStatus; }
-	int		getFloorStatus() const			{ return mFloorStatus; }	
+	int		getFloorStatus() const			{ return mFloorStatus; }
 	int		getOldFloorStatus() const		{ return mOldFloorStatus; }
 	fixed_t	getCrusherSpeed1() const		{ return mCrusherSpeed1; }
 	fixed_t	getCrusherSpeed2() const		{ return mCrusherSpeed1; }
@@ -641,65 +641,65 @@ private:
 	movertype_t		mFloorMoverType;
 
 	sector_t*		mSector;
-	
+
 	int				mCeilingType;
 	int				mFloorType;
 	int				mCeilingTag;
 	int				mFloorTag;
 	line_t*			mCeilingLine;
 	line_t*			mFloorLine;
-		
+
 	fixed_t			mCeilingHeight;
 	fixed_t			mFloorHeight;
-		
+
 	fixed_t			mCeilingSpeed;
 	fixed_t			mFloorSpeed;
-	
+
 	fixed_t			mCeilingDestination;
 	fixed_t			mFloorDestination;
-	
+
 	int				mCeilingDirection;
 	int				mFloorDirection;
-	
+
 	int				mCeilingOldDirection;
 	int				mFloorOldDirection;
-	
+
 	short			mCeilingTexture;
 	short			mFloorTexture;
-	
+
 	short			mNewCeilingSpecial;
 	short			mNewFloorSpecial;
 
 	fixed_t			mCeilingLow;
 	fixed_t			mCeilingHigh;
-	
+
 	fixed_t			mFloorLow;
 	fixed_t			mFloorHigh;
-	
+
 	bool			mCeilingCrush;
 	bool			mFloorCrush;
 	bool			mSilent;
 	int				mCeilingWait;
-	int				mFloorWait;	
+	int				mFloorWait;
 	int				mCeilingCounter;
 	int				mFloorCounter;
 	int				mResetCounter;
 	int				mCeilingStatus;
 	int				mFloorStatus;
 	int				mOldFloorStatus;
-	
+
 	fixed_t			mCrusherSpeed1;
 	fixed_t			mCrusherSpeed2;
-	
+
 	int				mStepTime;
 	int				mPerStepTime;
 	int				mPauseTime;
 	int				mOrgHeight;
 	int				mDelay;
-	
+
 	fixed_t			mFloorLip;
 	fixed_t			mFloorOffset;
-	
+
 	int				mCeilingChange;
 	int				mFloorChange;
 };
@@ -718,15 +718,15 @@ public:
 
 	bool empty();
 	void clearSnapshots();
-	
+
 	int getMostRecentTime() const { return mMostRecent; }
-	
+
 	void addSnapshot(const SectorSnapshot &snap);
 	SectorSnapshot getSnapshot(int time) const;
-	
+
 private:
 	bool mValidSnapshot(int time) const;
-	
+
 	SectorSnapshot	mSnaps[NUM_SNAPSHOTS];
 	int				mMostRecent;
 };

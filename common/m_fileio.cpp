@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -108,21 +108,21 @@ std::string M_FindUserFileName(const std::string& file, const char* ext)
 /**
  * @brief Convert all path separators into the platform-specific path
  *        separator.
- * 
+ *
  * @detail Technically, POSIX directories can have back-slashes, but this
  *         function assumes that the path is user input and backslashes
  *         are incredibly uncommon in directory names.
- * 
+ *
  * @param path Path to mutate.
  */
 void M_FixPathSep(std::string& path)
 {
 	// Use the platform appropriate path separator
-	for (size_t i = 0; i < path.length(); i++)
+	for (auto& c : path)
 	{
-		if (path[i] == '\\' || path[i] == '/')
+		if (c == '\\' || c == '/')
 		{
-			path[i] = PATHSEPCHAR;
+			c = PATHSEPCHAR;
 		}
 	}
 }
@@ -172,7 +172,7 @@ SDWORD M_FileLength (FILE *f)
 
 /**
  * @brief Checks to see whether a file exists or not
- * 
+ *
  * @param filename Filename to check.
  */
 bool M_FileExists(const std::string& filename)
@@ -190,7 +190,7 @@ bool M_FileExists(const std::string& filename)
 /**
  * @brief Checks to see whether a file exists.  If the exact name does not
  *        exist, try again with the extension.
- * 
+ *
  * @param filename Filename to check.
  * @param ext Extension to check as a second try, with the initial period.
  */
@@ -214,7 +214,7 @@ bool M_FileExistsExt(const std::string& filename, const char* ext)
 //
 // Writes a buffer to a new file, if it already exists, the file will be
 // erased and recreated with the new contents
-BOOL M_WriteFile(std::string filename, void *source, QWORD length)
+bool M_WriteFile(std::string filename, void *source, QWORD length)
 {
     FILE *handle;
     QWORD count;
@@ -223,7 +223,7 @@ BOOL M_WriteFile(std::string filename, void *source, QWORD length)
 
     if (handle == NULL)
 	{
-		Printf(PRINT_HIGH, "Could not open file %s for writing\n", filename.c_str());
+		Printf(PRINT_HIGH, "Could not open file %s for writing\n", filename);
 		return false;
 	}
 
@@ -232,7 +232,7 @@ BOOL M_WriteFile(std::string filename, void *source, QWORD length)
 
 	if (count != length)
 	{
-		Printf(PRINT_HIGH, "Failed while writing to file %s\n", filename.c_str());
+		Printf(PRINT_HIGH, "Failed while writing to file %s\n", filename);
 		return false;
 	}
 
@@ -255,7 +255,7 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 
 	if (handle == NULL)
 	{
-		Printf(PRINT_HIGH, "Could not open file %s for reading\n", filename.c_str());
+		Printf(PRINT_HIGH, "Could not open file %s for reading\n", filename);
 		return false;
 	}
 
@@ -267,7 +267,7 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 
     if (count != length)
 	{
-		Printf(PRINT_HIGH, "Failed while reading from file %s\n", filename.c_str());
+		Printf(PRINT_HIGH, "Failed while reading from file %s\n", filename);
 		return false;
 	}
 
@@ -282,7 +282,7 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 // if_needed detects if an extension is not present in path, if it isn't, it is
 // added.
 // The extension must contain a . at the beginning
-BOOL M_AppendExtension (std::string &filename, std::string extension, bool if_needed)
+bool M_AppendExtension (std::string &filename, std::string extension, bool if_needed)
 {
     M_FixPathSep(filename);
 

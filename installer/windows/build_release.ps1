@@ -9,9 +9,9 @@
 # These parameters can and should be changed for new versions.
 # 
 
-Set-Variable -Name "CurrentDir" -Value (Get-Item (Get-Location)).Parent.Parent # cd to the base odamex git path before executing (this assumes you're running this script in this dir)
+Set-Variable -Name "CurrentDir" -Value (Get-Location) # cd to the base odamex git path before executing (this assumes you're running this script in this dir)
 
-Set-Variable -Name "OdamexVersion" -Value "10.6.0"
+Set-Variable -Name "OdamexVersion" -Value "11.0.0"
 Set-Variable -Name "OdamexTestSuffix" -Value "" # "-RC3"
 
 #
@@ -101,19 +101,15 @@ function CopyFiles {
         -Destination "${CommonDir}\README.txt"
     Copy-Item -Force -Path "${CurrentDir}\BuildX64\wad\odamex.wad" `
         -Destination "${CommonDir}"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.0.4\COPYING.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\lib\x64\optional\COPYING.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2_mixer.txt"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.FLAC.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\lib\x64\optional\LICENSE.modplug.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.modplug.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\lib\x64\optional\LICENSE.ogg-vorbis.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.mpg123.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\lib\x64\optional\LICENSE.opus.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.ogg-vorbis.txt" `
-        -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.opus.txt" `
-        -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.0.4\lib\x64\LICENSE.opusfile.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\lib\x64\optional\LICENSE.opusfile.txt" `
         -Destination "${CommonDir}\licenses"
     Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2-2.0.20\COPYING.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2.txt"
@@ -126,13 +122,10 @@ function CopyFiles {
     New-Item -Force -ItemType "directory" -Path "${X64Dir}/redist"
 
     Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libFLAC-8.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libmodplug-1.dll", `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libmpg123-0.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libogg-0.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libopus-0.dll", `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libvorbis-0.dll", `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libvorbisfile-3.dll", `
+        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libopusfile-0.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\odamex.exe", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\SDL2_mixer.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\SDL2.dll", `
@@ -157,13 +150,10 @@ function CopyFiles {
     New-Item -Force -ItemType "directory" -Path "${X86Dir}/redist"
 
     Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libFLAC-8.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\libmodplug-1.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libmpg123-0.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\libogg-0.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\libopus-0.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libvorbis-0.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libvorbisfile-3.dll", `
+        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libopusfile-0.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\odamex.exe", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\SDL2_mixer.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\SDL2.dll", `

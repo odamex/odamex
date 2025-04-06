@@ -530,7 +530,7 @@ public:
 	DACSThinker ();
 	~DACSThinker ();
 
-	void RunThink ();
+	void RunThink () override;
 
 	DLevelScript *RunningScripts[1000];	// Array of all synchronous scripts
 	static DACSThinker *ActiveThinker;

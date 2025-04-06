@@ -33,9 +33,6 @@ jobs:
       - name: Determine Version
         id:   gitversion
         uses: gittools/actions/gitversion/execute@v0.9.7
-      - name: Get branch name
-        id:   branchname
-        uses: nelonoel/branch-name@v1.0.1
       - name: Display GitVersion outputs
         run: |
           echo "Major: ${{ steps.gitversion.outputs.major }}"

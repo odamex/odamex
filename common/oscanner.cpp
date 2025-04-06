@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@
 
 #include "i_system.h"
 
-static const char* SINGLE_CHAR_TOKENS = "$(),;=[]{}";
+static constexpr const char* SINGLE_CHAR_TOKENS = "$(),;=[]{}";
 
 bool OScanner::checkPair(char a, char b)
 {
@@ -289,8 +289,7 @@ void OScanner::mustScan(size_t max_length)
 	{
 		if (m_token.length() > max_length)
 		{
-			error("String \"%s\" is too long. Maximum length is %" PRIuSIZE
-			       " characters.", m_token.c_str(), max_length);
+			error("String \"{}\" is too long. Maximum length is %zu characters.", m_token, max_length);
 		}
 	}
 }
@@ -308,9 +307,8 @@ void OScanner::mustScanInt()
 	std::string str = m_token;
 	if (IsNum(str.c_str()) == false && str != "MAXINT")
 	{
-		std::string err;
-		StrFormat(err, "Expected integer, got \"%s\".", m_token.c_str());
-		error(err.c_str());
+		std::string err = fmt::sprintf("Expected integer, got \"%s\".", m_token);
+		error(err);
 	}
 }
 
@@ -327,9 +325,8 @@ void OScanner::mustScanFloat()
 	std::string str = m_token;
 	if (IsRealNum(str.c_str()) == false)
 	{
-		std::string err;
-		StrFormat(err, "Expected float, got \"%s\".", m_token.c_str());
-		error(err.c_str());
+		std::string err = fmt::sprintf("Expected float, got \"%s\".", m_token);
+		error(err);
 	}
 }
 
@@ -345,9 +342,8 @@ void OScanner::mustScanBool()
 
 	if (!iequals(m_token, "true") && !iequals(m_token, "false"))
 	{
-		std::string err;
-		StrFormat(err, "Expected boolean, got \"%s\".", m_token.c_str());
-		error(err.c_str());
+		std::string err = fmt::sprintf("Expected boolean, got \"%s\".", m_token);
+		error(err);
 	}
 }
 
@@ -392,9 +388,8 @@ int OScanner::getTokenInt() const
 
 	if (*stopper != 0)
 	{
-		std::string err;
-		StrFormat(err, "Bad integer constant \"%s\".", m_token.c_str());
-		error(err.c_str());
+		std::string err = fmt::sprintf("Bad integer constant \"%s\".", m_token);
+		error(err);
 	}
 
 	return num;
@@ -412,9 +407,8 @@ float OScanner::getTokenFloat() const
 
 	if (*stopper != 0)
 	{
-		std::string err;
-		StrFormat(err, "Bad float constant \"%s\".", m_token.c_str());
-		error(err.c_str());
+		std::string err = fmt::sprintf("Bad float constant \"%s\".", m_token);
+		error(err);
 	}
 
 	return static_cast<float>(num);
@@ -482,8 +476,8 @@ void OScanner::assertTokenIs(const char* string) const
 {
 	if (m_token.compare(string) != 0)
 	{
-		error("Unexpected Token (expected \"%s\" actual \"%s\").", string,
-		      m_token.c_str());
+		error("Unexpected Token (expected \"{}\" actual \"{}\").", string,
+		      m_token);
 	}
 }
 
@@ -494,8 +488,8 @@ void OScanner::assertTokenNoCaseIs(const char* string) const
 {
 	if (!iequals(m_token, string))
 	{
-		error("Unexpected Token (expected \"%s\" actual \"%s\").", string,
-		      m_token.c_str());
+		error("Unexpected Token (expected \"{}\" actual \"{}\").", string,
+		      m_token);
 	}
 }
 
@@ -513,38 +507,6 @@ bool OScanner::compareToken(const char* string) const
 bool OScanner::compareTokenNoCase(const char* string) const
 {
 	return iequals(m_token, string);
-}
-
-#define MAX_ERRORTEXT 1024
-
-//
-// Print given error message.
-//
-void STACK_ARGS OScanner::warning(const char* message, ...) const
-{
-	va_list argptr;
-	char errortext[MAX_ERRORTEXT];
-
-	va_start(argptr, message);
-	vsnprintf(errortext, 1024, message, argptr);
-	Printf(PRINT_WARNING, "Script Warning: %s:%d: %s\n", m_config.lumpName, m_lineNumber,
-	       errortext, argptr);
-	va_end(argptr);
-}
-
-//
-// Print given error message.
-//
-void STACK_ARGS OScanner::error(const char* message, ...) const
-{
-	va_list argptr;
-	char errortext[MAX_ERRORTEXT];
-
-	va_start(argptr, message);
-	vsnprintf(errortext, 1024, message, argptr);
-	I_Error("Script Error: %s:%d: %s", m_config.lumpName, m_lineNumber, errortext,
-	        argptr);
-	va_end(argptr);
 }
 
 VERSION_CONTROL(sc_oman_cpp, "$Id$")

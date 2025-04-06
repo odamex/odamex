@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -51,7 +51,7 @@
 #define NORM_PRIORITY	64
 #define NORM_SEP		128
 
-static const fixed_t S_STEREO_SWING = 96 * FRACUNIT;
+static constexpr fixed_t S_STEREO_SWING = 96 * FRACUNIT;
 
 struct channel_t
 {
@@ -180,8 +180,7 @@ void S_NoiseDebug()
 				oy = Channel[i].y;
 			}
 			const int color = Channel[i].loop ? CR_BROWN : CR_GREY;
-			strcpy (temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name);
-			temp[8] = 0;
+			M_StringCopy(temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name, 9);
 			screen->DrawText (color, 0, y, temp);
 			snprintf (temp, 16, "%d", ox / FRACUNIT);
 			screen->DrawText (color, 70, y, temp);
@@ -397,8 +396,8 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
                                    float* vol, int* sep)
 {
-	static const fixed_t MAX_SND_DIST = 2025 * FRACUNIT;
-	static const fixed_t MIN_SND_DIST = 1 * FRACUNIT;
+	static constexpr fixed_t MAX_SND_DIST = 2025 * FRACUNIT;
+	static constexpr fixed_t MIN_SND_DIST = 1 * FRACUNIT;
 	const int approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
 
 	if (approx_dist > MAX_SND_DIST)
@@ -449,8 +448,8 @@ static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
 static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
                                   float* vol, int* sep)
 {
-	static const fixed_t S_CLIPPING_DIST = 1200 * FRACUNIT;
-	static const fixed_t S_CLOSE_DIST = 200 * FRACUNIT;
+	static constexpr fixed_t S_CLIPPING_DIST = 1200 * FRACUNIT;
+	static constexpr fixed_t S_CLOSE_DIST = 200 * FRACUNIT;
 	fixed_t approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
 
 	if (S_UseMap8Volume())
@@ -593,9 +592,9 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 		return;
 
   	// check for bogus sound #
-	if (sfx_id < 1 || sfx_id > static_cast<int>(S_sfx.size()) - 1)
+	if (sfx_id < 0 || sfx_id > static_cast<int>(S_sfx.size()) - 1)
 	{
-		DPrintf("Bad sfx #: %d\n", sfx_id);
+		DPrintFmt("Bad sfx #: {}\n", sfx_id);
 		return;
 	}
 
@@ -620,7 +619,7 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
   	// check for bogus sound lump
 	if (sfxinfo->lumpnum < 0 || sfxinfo->lumpnum > static_cast<int>(numlumps))
 	{
-		DPrintf("Bad sfx lump #: %d\n", sfxinfo->lumpnum);
+		DPrintFmt("Bad sfx lump #: {}\n", sfxinfo->lumpnum);
 		return;
 	}
 
@@ -798,7 +797,7 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 
 	if (sfx_id == -1)
 	{
-		DPrintf("Unknown sound %s\n", soundname.c_str());
+		DPrintFmt("Unknown sound {}\n", soundname);
 		return;
 	}
 
@@ -864,7 +863,7 @@ static void S_StopChannel(unsigned int cnum)
 
 	if (cnum >= numChannels)
 	{
-		DPrintf("Trying to stop invalid channel %d\n", cnum);
+		DPrintFmt("Trying to stop invalid channel {}\n", cnum);
 		return;
 	}
 
@@ -1083,7 +1082,7 @@ void S_StartMusic(const char *m_id)
 
 // [RH] S_ChangeMusic() now accepts the name of the music lump.
 // It's up to the caller to figure out what that name is.
-void S_ChangeMusic(std::string musicname, int looping)
+void S_ChangeMusic(std::string musicname, bool looping)
 {
 	// [SL] Avoid caching music lumps if we're not playing music
 	if (snd_musicsystem == MS_NONE)
@@ -1108,13 +1107,13 @@ void S_ChangeMusic(std::string musicname, int looping)
 		int lumpnum;
 		if ((lumpnum = W_CheckNumForName (musicname.c_str())) == -1)
 		{
-			Printf (PRINT_HIGH, "Music lump \"%s\" not found\n", musicname.c_str());
+			Printf (PRINT_HIGH, "Music lump \"%s\" not found\n", musicname);
 			return;
 		}
 
 		data = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_CACHE));
 		length = W_LumpLength(lumpnum);
-		I_PlaySong(data, length, (looping != 0));
+		I_PlaySong({data, length}, looping);
     }
     else
 	{
@@ -1124,7 +1123,9 @@ void S_ChangeMusic(std::string musicname, int looping)
 		fclose(f);
 
 		if (result == 1)
-			I_PlaySong(data, length, (looping != 0));
+		{
+			I_PlaySong({data, length}, looping);
+		}
 		M_Free(data);
 	}
 
@@ -1146,9 +1147,6 @@ void S_StopMusic()
 //
 // =============================== [RH]
 
-std::vector<sfxinfo_t> S_sfx;	// [RH] This is no longer defined in sounds.c
-std::map<int, std::vector<int> > S_rnd;
-
 static struct AmbientSound {
 	unsigned	type;		// type of ambient sound
 	int			periodmin;	// # of tics between repeats
@@ -1167,8 +1165,8 @@ static struct AmbientSound {
 void S_HashSounds()
 {
 	// Mark all buckets as empty
-	for (unsigned i = 0; i < S_sfx.size(); i++)
-		S_sfx[i].index = ~0;
+	for (auto& sfx : S_sfx)
+		sfx.index = ~0;
 
 	// Now set up the chains
 	for (unsigned i = 0; i < S_sfx.size(); i++)
@@ -1205,11 +1203,10 @@ int S_FindSoundByLump(int lump)
 
 int S_AddSoundLump(const char *logicalname, int lump)
 {
-	S_sfx.push_back(sfxinfo_t());
-	sfxinfo_t& new_sfx = S_sfx[S_sfx.size() - 1];
+	sfxinfo_t& new_sfx = S_sfx.emplace_back();
 
-	// logicalname MUST be < MAX_SNDNAME chars long
-	strcpy(new_sfx.name, logicalname);
+	// logicalname MUST be <= MAX_SNDNAME chars long
+	M_StringCopy(new_sfx.name, logicalname, MAX_SNDNAME + 1);
 	new_sfx.data = NULL;
 	new_sfx.link = sfxinfo_t::NO_LINK;
 	new_sfx.lumpnum = lump;
@@ -1309,7 +1306,7 @@ void S_ParseSndInfo()
 					const int index = os.getTokenInt();
 					if (index < 0 || index > 255)
 					{
-						os.warning("Bad ambient index (%d)\n", index);
+						os.warning("Bad ambient index ({})\n", index);
 						ambient = &dummy;
 					}
 					else
@@ -1374,7 +1371,7 @@ void S_ParseSndInfo()
 					}
 					else
 					{
-						os.warning("Unknown ambient type (%s)\n", os.getToken().c_str());
+						os.warning("Unknown ambient type ({})\n", os.getToken());
 					}
 
 					os.mustScanFloat();
@@ -1416,8 +1413,8 @@ void S_ParseSndInfo()
 
 						if (owner == sfxto)
 						{
-							os.warning("Definition of random sound '%s' refers to itself "
-							       "recursively.\n", os.getToken().c_str());
+							os.warning("Definition of random sound '{}' refers to itself "
+							       "recursively.\n", os.getToken());
 							continue;
 						}
 
@@ -1435,7 +1432,7 @@ void S_ParseSndInfo()
 				}
 				else
 				{
-					os.warning("Unknown SNDINFO command %s\n", os.getToken().c_str());
+					os.warning("Unknown SNDINFO command {}\n", os.getToken());
 					while (os.scan())
 						if (os.crossed())
 						{
@@ -1537,7 +1534,7 @@ void S_ActivateAmbient(AActor *origin, int ambient)
 	if (!(amb->type & 3) && !amb->periodmin)
 	{
 		const int sndnum = S_FindSound(amb->sound);
-		if (sndnum == 0)
+		if (sndnum == 0 || sndnum == -1)
 			return;
 
 		sfxinfo_t *sfx = &S_sfx[sndnum];
@@ -1570,9 +1567,9 @@ END_COMMAND (snd_soundlist)
 
 BEGIN_COMMAND (snd_soundlinks)
 {
-	for (unsigned i = 0; i < S_sfx.size(); i++)
-		if (S_sfx[i].link != static_cast<int>(sfxinfo_t::NO_LINK))
-			Printf(PRINT_HIGH, "%s -> %s\n", S_sfx[i].name, S_sfx[S_sfx[i].link].name);
+	for (const auto& sfx : S_sfx)
+		if (sfx.link != static_cast<int>(sfxinfo_t::NO_LINK))
+			Printf(PRINT_HIGH, "%s -> %s\n", sfx.name, S_sfx[sfx.link].name);
 }
 END_COMMAND (snd_soundlinks)
 

@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -73,7 +73,7 @@ void V_TextInit()
 	sub = 0;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		StrFormat(buffer, bigfont, j++ - sub);
+		buffer = fmt::sprintf(bigfont, j++ - sub);
 
 		// Some letters of this font are missing.
 		int num = W_CheckNumForName(buffer.c_str());
@@ -88,7 +88,7 @@ void V_TextInit()
 	sub = 0;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		StrFormat(buffer, smallfont, j++ - sub);
+		buffer = fmt::sprintf(smallfont, j++ - sub);
 		::hu_smallfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
 	}
 
@@ -102,11 +102,11 @@ void V_TextInit()
 	{
 		if ((j >= '0' && j <= '9') || (j >= 'A' && j <= 'Z'))
 		{
-			StrFormat(buffer, digfont_literal, j++);
+			buffer = fmt::sprintf(digfont_literal, j++);
 		}
 		else
 		{
-			StrFormat(buffer, digfont, j++);
+			buffer = fmt::sprintf(digfont, j++);
 		}
 
 		// Some letters of this font might be missing.
@@ -148,7 +148,7 @@ void V_TextShutdown()
 
 /**
  * @brief Set the current font.
- * 
+ *
  * @param fontname Font name, can be one of "BIGFONT" or "SMALLFONT".
  */
 void V_SetFont(const char* fontname)
@@ -361,7 +361,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 	TextSWrapper(drawer, normalcolor, x, y, string, CleanXfac, CleanYfac);
 }
 
-void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
+void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 							const byte *string, int scalex, int scaley) const
 {
 	if (::hu_font[0].empty())
@@ -386,7 +386,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 		{
 			int new_color = V_GetTextColor(str);
 			V_ColorMap = translationref_t(Ranges + new_color * 256);
-			str += 2;	
+			str += 2;
 			continue;
 		}
 
@@ -429,7 +429,7 @@ int V_StringWidth(const byte* str)
 		return 8;
 
 	int width = 0;
-	
+
 	while (*str)
 	{
 		// skip over color markup escape codes
@@ -485,7 +485,7 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 	while (string > start && isspace(*(string - 1)))
 		string--;
 
-	int prefix_len = prefix ? strlen(prefix) : 0;
+	size_t prefix_len = prefix ? strlen(prefix) : 0;
 
 	line->string = new char[string - start + 1 + prefix_len];
 

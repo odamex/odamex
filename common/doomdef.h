@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -444,6 +444,11 @@ enum weapontype_t
 	wp_nochange
 };
 
+inline auto format_as(weapontype_t eWeaponType)
+{
+	return fmt::underlying(eWeaponType);
+}
+
 inline FArchive &operator<< (FArchive &arc, weapontype_t i)
 {
 	return arc << (BYTE)i;
@@ -465,6 +470,11 @@ enum ammotype_t
 	am_noammo	// Unlimited for chainsaw / fist.
 
 };
+
+inline auto format_as(ammotype_t eAmmoType)
+{
+	return fmt::underlying(eAmmoType);
+}
 
 inline FArchive &operator<< (FArchive &arc, ammotype_t i)
 {

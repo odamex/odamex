@@ -4,7 +4,7 @@
 // $Id:
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -53,7 +53,7 @@ struct SkillInfo
 	bool instant_reaction;
 	int ACS_return;				// not implemented
 	std::string menu_name;
-	std::string pic_name;
+	OLumpName pic_name;
 	//SkillMenuNames menu_names_for_player_class;	// not implemented
 	bool must_confirm;
 	std::string must_confirm_text;
@@ -107,8 +107,11 @@ struct SkillInfo
 	{}
 };
 
-extern SkillInfo SkillInfos[MAX_SKILLS];
-extern byte skillnum;
-extern byte defaultskillmenu;
+inline SkillInfo SkillInfos[MAX_SKILLS];
+inline byte skillnum;
+inline byte defaultskillmenu;
 
-const SkillInfo& G_GetCurrentSkill();
+inline const SkillInfo& G_GetCurrentSkill()
+{
+	return SkillInfos[sv_skill.asInt() - 1];
+}

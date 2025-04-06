@@ -10,7 +10,7 @@ jobs:
     name: Build Preparation
     runs-on: ubuntu-latest
     outputs:
-      build_number: ${{ steps.gitversion.outputs.buildMetaData }}
+      build_number: ${{ steps.revlist.outputs.totalCommits }}
       new_version: ${{ steps.gitversion.outputs.majorMinorPatch }}
       major: ${{ steps.gitversion.outputs.major }}
       minor: ${{ steps.gitversion.outputs.minor }}
@@ -27,9 +27,12 @@ jobs:
       - name: Determine Version
         id:   gitversion
         uses: gittools/actions/gitversion/execute@v0.9.7
-      - name: Get branch name
-        id:   branchname
-        uses: nelonoel/branch-name@v1.0.1
+      - name: Get Commits From Source
+        id:   revlist
+        shell: pwsh
+        run: |
+          $commits = git rev-list HEAD --count
+          Write-Output "::set-output name=totalCommits::$commits"
       - name: Display GitVersion outputs
         run: |
           echo "Major: ${{ steps.gitversion.outputs.major }}"
@@ -64,6 +67,7 @@ jobs:
           echo "CommitsSinceVersionSourcePadded: ${{ steps.gitversion.outputs.commitsSinceVersionSourcePadded }}"
           echo "UncommittedChanges: ${{ steps.gitversion.outputs.uncommittedChanges }}"
           echo "CommitDate: ${{ steps.gitversion.outputs.commitDate }}"
+          echo "TotalCommits: ${{ steps.revlist.outputs.totalCommits }}"
   build:
     name: Build (Visual Studio)
     needs: pre_job
@@ -73,6 +77,8 @@ jobs:
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
     - name: Run Upversion
       id:   upversion
       shell: pwsh
@@ -84,14 +90,8 @@ jobs:
         PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     - name: Checkout submodules
       run: git submodule update --init --recursive
-    - name: Remove .git folders
-      shell: bash
-      run: rm -rf .git
     - name: Turn on problem matcher
       uses: ammaraskar/msvc-problem-matcher@master
-    - name: Remove .git folders
-      shell: bash
-      run: rm -rf .git
     - name: Run build powershell
       shell: pwsh
       run: |
@@ -126,6 +126,8 @@ jobs:
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
     - name: Run Upversion
       id:   upversion
       shell: pwsh
@@ -137,14 +139,8 @@ jobs:
         PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     - name: Checkout submodules
       run: git submodule update --init --recursive
-    - name: Remove .git folders
-      shell: bash
-      run: rm -rf .git
     - name: Turn on problem matcher
       uses: ammaraskar/msvc-problem-matcher@master
-    - name: Remove .git folders
-      shell: bash
-      run: rm -rf .git
     - name: Run build-x32 powershell
       shell: pwsh
       run: |
@@ -190,25 +186,6 @@ jobs:
         PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     - name: Checkout submodules
       run: git submodule update --init --recursive
-    - name: Remove .git folders
-      shell: bash
-      run: rm -rf .git
-    - name: Create tar.gz
-      shell: bash
-      run: |
-        touch odamex-src-${{ env.new_version }}.tar.gz
-        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -czvf odamex-src-${{ env.new_version }}.tar.gz **
-    - name: Create tar.xz
-      shell: bash
-      run: |
-        touch odamex-src-${{ env.new_version }}.tar.xz
-        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -cJvf odamex-src-${{ env.new_version }}.tar.xz **
-    - name: Create zip
-      shell: pwsh
-      run: |
-        Copy-Item -Recurse -Force -Path "." -Destination "..\odamex-src-${{ env.new_version }}" -Exclude "*.zip","*.tar.gz","*.tar.xz"
-        Remove-Item -Path "..\odamex-src-${{ env.new_version }}\.git*" -Recurse -Force
-        Compress-Archive -Path "..\odamex-src-${{ env.new_version }}" -DestinationPath "odamex-src-${{ env.new_version }}.zip"
     - name: Download x86 artifacts
       uses: actions/download-artifact@v4
       with:
@@ -226,21 +203,6 @@ jobs:
       with:
         name: Odamex-Installer
         path: 'Output/*.exe'
-    - name: Upload tar.xz
-      uses: actions/upload-artifact@v4
-      with:
-        name: Odamex-tar-xz
-        path: './*.tar.xz'
-    - name: Upload tar.gz
-      uses: actions/upload-artifact@v4
-      with:
-        name: Odamex-tar-gz
-        path: './*.tar.gz'
-    - name: Upload zip
-      uses: actions/upload-artifact@v4
-      with:
-        name: Odamex-src-zip
-        path: './odamex-src-${{ env.new_version }}.zip'
   # build-mingw:
   #   name: Build (MinGW)
   #   runs-on: windows-latest

@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -134,7 +134,7 @@ class OTransfer
 	bool start();
 	void stop();
 	bool tick();
-	bool shouldCheckAgain() const;
-	std::string getFilename() const;
-	OTransferProgress getProgress() const;
+	[[nodiscard]] bool shouldCheckAgain() const;
+	[[nodiscard]] std::string getFilename() const;
+	[[nodiscard]] OTransferProgress getProgress() const;
 };

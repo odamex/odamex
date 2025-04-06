@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -20,4 +20,4 @@
 
 #pragma once
 
-void ParseUMapInfoLump(int lump, const char* lumpname);
+void ParseUMapInfoLump(int lump, const OLumpName& lumpname);

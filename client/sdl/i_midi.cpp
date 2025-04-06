@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -79,11 +79,11 @@ typedef struct
     unsigned int	buffer_size;
 }  midi_file_t;
 
-static const uint32_t	cHeaderChunkId = 0x4D546864;
-static const uint32_t	cTrackChunkId = 0x4D54726B;
-static const size_t		cHeaderSize = 6;
-static const size_t		cTrackHeaderSize = 8;
-//static const size_t		cMaxSysexSize = 8192; //unused
+static constexpr uint32_t	cHeaderChunkId = 0x4D546864;
+static constexpr uint32_t	cTrackChunkId = 0x4D54726B;
+static constexpr size_t		cHeaderSize = 6;
+static constexpr size_t		cTrackHeaderSize = 8;
+// static constexpr size_t		cMaxSysexSize = 8192;
 
 static const byte drums_table[128] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -127,7 +127,7 @@ static int I_ReadVariableSizeInt(MEMFILE *mf)
 {
 	if (!mf)
 		return -1;
-		
+
 	// In midi files the variable can use between 1 and 5 bytes
 	// if the high bit is set, the next byte is used
 	int var = 0;
@@ -137,15 +137,15 @@ static int I_ReadVariableSizeInt(MEMFILE *mf)
 		size_t res = mem_fread(&curbyte, sizeof(curbyte), 1, mf);
 		if (!res)
 			return -1;
-			
-		// Insert the bottom seven bits from this byte.			
+
+		// Insert the bottom seven bits from this byte.
         var = (var << 7) | (curbyte & 0x7f);
-        
+
 		// If the top bit is not set, this is the end.
         if ((curbyte & 0x80) == 0)
 			break;
 	}
-	
+
 	return var;
 }
 
@@ -160,11 +160,11 @@ static byte* I_ReadDataBlock(MEMFILE *mf, size_t length)
 {
 	if (!mf)
 		return NULL;
-		
+
 	size_t memfileoffset = mem_ftell(mf);
 	if (mem_fsize(mf) < memfileoffset + length)
 		return NULL;
-	
+
 	byte* data = (byte*)mem_fgetbuf(mf) + memfileoffset;
 	mem_fseek(mf, length, MEM_SEEK_CUR);
 
@@ -186,7 +186,7 @@ bool I_IsMidiChannelEvent(MidiEvent *event)
 {
 	if (!event)
 		return false;
-	
+
 	return I_IsMidiChannelEvent(event->getEventType());
 }
 
@@ -199,7 +199,7 @@ bool I_IsMidiControllerEvent(MidiEvent *event)
 {
 	if (!event)
 		return false;
-		
+
 	return I_IsMidiControllerEvent(event->getEventType());
 }
 
@@ -212,7 +212,7 @@ bool I_IsMidiSysexEvent(MidiEvent *event)
 {
 	if (!event)
 		return false;
-	
+
 	return I_IsMidiSysexEvent(event->getEventType());
 }
 
@@ -225,7 +225,7 @@ bool I_IsMidiMetaEvent(MidiEvent *event)
 {
 	if (!event)
 		return false;
-	
+
 	return I_IsMidiMetaEvent(event->getEventType());
 }
 
@@ -233,7 +233,7 @@ static bool I_CompareMidiEventTimes(MidiEvent *a, MidiEvent *b)
 {
 	if (!a || !b)
 		return true;
-		
+
 	return a->getMidiClockTime() < b->getMidiClockTime();
 }
 
@@ -248,21 +248,21 @@ static MidiEvent* I_ReadMidiEvent(MEMFILE *mf, unsigned int start_time)
 {
 	if (!mf)
 		return NULL;
-	
+
 	int delta_time = I_ReadVariableSizeInt(mf);
 	if (delta_time == -1)
 		return NULL;
-		
+
 	unsigned int event_time = start_time + delta_time;
-	
+
 	// Read event type
 	byte val;
 	if (!mem_fread(&val, sizeof(val), 1, mf))
 		return NULL;
-		
+
 	midi_event_type_t eventtype = static_cast<midi_event_type_t>(val);
 	static midi_event_type_t prev_eventtype = eventtype;
-	
+
 	// All event types have their top bit set.  Therefore, if
 	// the top bit is not set, it is because we are using the "same
 	// as previous event type" shortcut to save a byte.  Skip back
@@ -274,28 +274,28 @@ static MidiEvent* I_ReadMidiEvent(MEMFILE *mf, unsigned int start_time)
 	}
 	else
 		prev_eventtype = eventtype;
-	
+
 	if (I_IsMidiSysexEvent(eventtype))
 	{
 		int length = I_ReadVariableSizeInt(mf);
 		if (length == -1)
 			return NULL;
-		
+
 		byte* data = I_ReadDataBlock(mf, length);
 		if (!data)
 			return NULL;
 
 		return new MidiSysexEvent(event_time, data, length);
 	}
-	
+
 	if (I_IsMidiMetaEvent(eventtype))
 	{
 		byte val;
 		if (!mem_fread(&val, sizeof(val), 1, mf))
 			return NULL;
-		
+
 		midi_meta_event_type_t metatype = static_cast<midi_meta_event_type_t>(val);
-		
+
 		int length = I_ReadVariableSizeInt(mf);
 		if (length == -1)
 			return NULL;
@@ -303,7 +303,7 @@ static MidiEvent* I_ReadMidiEvent(MEMFILE *mf, unsigned int start_time)
 		byte* data = I_ReadDataBlock(mf, length);
 		if (!data)
 			return NULL;
-			
+
 		return new MidiMetaEvent(event_time, metatype, data, length);
 	}
 
@@ -311,40 +311,40 @@ static MidiEvent* I_ReadMidiEvent(MEMFILE *mf, unsigned int start_time)
 	// Lower four bits denote the channel
 	int channel = eventtype & 0x0F;
 	eventtype = static_cast<midi_event_type_t>(int(eventtype) & 0xF0);
-	
+
 	if (I_IsMidiControllerEvent(eventtype))
 	{
 		byte val, param1 = 0;
-		
+
 		if (!mem_fread(&val, sizeof(val), 1, mf))
 			return NULL;
 
 		midi_controller_t controllertype = static_cast<midi_controller_t>(val);
-		
+
 		if (!mem_fread(&param1, sizeof(param1), 1, mf))
 			return NULL;
-		
+
 		return new MidiControllerEvent(event_time, controllertype, channel, param1);
 	}
-	
+
 	if (I_IsMidiChannelEvent(eventtype))
 	{
 		byte param1 = 0, param2 = 0;
-		
+
 		if (!mem_fread(&param1, sizeof(param1), 1, mf))
 			return NULL;
-			
-		if (eventtype != MIDI_EVENT_PROGRAM_CHANGE && 
+
+		if (eventtype != MIDI_EVENT_PROGRAM_CHANGE &&
 			eventtype != MIDI_EVENT_CHAN_AFTERTOUCH)
 		{
 			// this is an event that uses two parameters
 			if (!mem_fread(&param2, sizeof(param2), 1, mf))
 				return NULL;
 		}
-		
+
 		return new MidiChannelEvent(event_time, eventtype, channel, param1, param2);
 	}
-		
+
 	// none of the above?
 	return NULL;
 }
@@ -353,7 +353,7 @@ static void I_ClearMidiEventList(std::list<MidiEvent*> *eventlist)
 {
 	if (!eventlist)
 		return;
-		
+
 	while (!eventlist->empty())
 	{
 		if (eventlist->front())
@@ -374,44 +374,44 @@ static std::list<MidiEvent*> *I_ReadMidiTrack(MEMFILE *mf)
 {
 	if (!mf)
 		return NULL;
-		
+
 	midi_chunk_header_t chunkheader;
 	unsigned int track_time = 0;
-	
-    size_t res = mem_fread(&chunkheader, cTrackHeaderSize, 1, mf); 
+
+    size_t res = mem_fread(&chunkheader, cTrackHeaderSize, 1, mf);
 	if (!res)
 		return NULL;
-		
+
 	chunkheader.chunk_id = ntohl(chunkheader.chunk_id);
 	chunkheader.chunk_size = ntohl(chunkheader.chunk_size);
-		
+
 	if (chunkheader.chunk_id != cTrackChunkId)
 	{
 		Printf(PRINT_WARNING, "I_ReadMidiTrack: Unexpected chunk header ID\n");
 		return NULL;
 	}
-	
+
 	std::list<MidiEvent*> *eventlist = new std::list<MidiEvent*>;
-	
+
 	size_t trackend = mem_ftell(mf) + chunkheader.chunk_size;
 	while (mem_ftell(mf) < int(trackend))
 	{
 		MidiEvent *newevent = I_ReadMidiEvent(mf, track_time);
-		
+
 		if (!newevent)
 		{
 			Printf(PRINT_WARNING, "I_ReadMidiTrack: Unable to read MIDI event\n");
-			
+
 			I_ClearMidiEventList(eventlist);
 			delete eventlist;
-			
+
 			return NULL;
 		}
-		
+
 		eventlist->push_back(newevent);
 		track_time = newevent->getMidiClockTime();
 	}
-	
+
 	return eventlist;
 }
 
@@ -424,14 +424,14 @@ double I_GetTempoChange(MidiMetaEvent *event)
 		if (length == 3)
 		{
 			const byte* data = event->getData();
-			static const double microsecondsperminute = 60.0 * 1000000.0;
-			double microsecondsperbeat =	int(data[0]) << 16 | 
-											int(data[1]) << 8 |
-											int(data[2]);
+			static constexpr double microsecondsperminute = 60.0 * 1000000.0;
+			const double microsecondsperbeat =	int(data[0]) << 16 |
+			                                    int(data[1]) << 8 |
+			                                    int(data[2]);
 			return microsecondsperminute / microsecondsperbeat;
 		}
 	}
-		
+
 	return 0.0;
 }
 
@@ -470,18 +470,18 @@ void MidiSong::_ParseSong(MEMFILE *mf)
 {
 	if (!mf)
 		return;
-		
+
 	I_ClearMidiEventList(&mEvents);
-	
+
 	mem_fseek(mf, 0, MEM_SEEK_SET);
-		
+
 	midi_chunk_header_t chunkheader;
     if (!mem_fread(&chunkheader, cTrackHeaderSize, 1, mf))
 		return;
-		
+
 	chunkheader.chunk_id = ntohl(chunkheader.chunk_id);
 	chunkheader.chunk_size = ntohl(chunkheader.chunk_size);
-		
+
 	if (chunkheader.chunk_id != cHeaderChunkId)
 	{
 		Printf(PRINT_WARNING, "MidiSong::_ParseSong: Unexpected file header ID\n");
@@ -491,7 +491,7 @@ void MidiSong::_ParseSong(MEMFILE *mf)
 	midi_header_t fileheader;
 	if (!mem_fread(&fileheader, cHeaderSize, 1, mf))
 		return;
-	
+
 	fileheader.format_type = ntohs(fileheader.format_type);
 	fileheader.num_tracks = ntohs(fileheader.num_tracks);
 	fileheader.time_division = ntohs(fileheader.time_division);
@@ -502,7 +502,7 @@ void MidiSong::_ParseSong(MEMFILE *mf)
 		Printf(PRINT_WARNING, "MidiSong::_ParseSong: Only type 0 or type 1 MIDI files are supported.\n");
 		return;
 	}
-	
+
 	// Read all the tracks and merge them into one stream of events
 	for (size_t i = 0; i < fileheader.num_tracks; i++)
 	{
@@ -512,18 +512,18 @@ void MidiSong::_ParseSong(MEMFILE *mf)
 			Printf(PRINT_WARNING, "MidiSong::_ParseSong: Error reading track %lu.\n", i + 1);
 			return;
 		}
-		
+
 		// add this track's list of events to the song's list
 		while (!eventlist->empty())
 		{
 			mEvents.push_back(eventlist->front());
 			eventlist->pop_front();
 		}
-		
+
 		delete eventlist;
 	}
 
-	// sort the stream of events by start time 
+	// sort the stream of events by start time
 	// (only needed if we're merging multiple tracks)
 	if (fileheader.num_tracks > 1)
 		mEvents.sort(I_CompareMidiEventTimes);

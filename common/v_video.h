@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This source is available for distribution and/or modification
 // only under the terms of the DOOM Source Code License as
@@ -124,6 +124,7 @@ public:
 	inline void DrawTextStretchedLuc (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const;
 
 	// Patch drawing functions
+	void DrawPatchIndirectFlipped (const patch_t *patch, int x, int y) const;
 	void DrawPatchFlipped (const patch_t *patch, int x, int y) const;
 
 	inline void DrawPatch (const patch_t *patch, int x, int y) const;

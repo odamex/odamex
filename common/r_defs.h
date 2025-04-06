@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -402,7 +402,7 @@ typedef struct msecnode_s
 	msecnode_s	*m_tnext;	// next msecnode_t for this thing
 	msecnode_s	*m_sprev;	// prev msecnode_t for this sector
 	msecnode_s	*m_snext;	// next msecnode_t for this sector
-	BOOL visited;	// killough 4/4/98, 4/7/98: used in search algorithms
+	bool visited;	// killough 4/4/98, 4/7/98: used in search algorithms
 } msecnode_t;
 
 //
@@ -441,7 +441,7 @@ typedef struct FPolyObj
 	int			tag;			// reference tag assigned in HereticEd
 	int			bbox[4];
 	int			validcount;
-	BOOL		crush; 			// should the polyobj attempt to crush mobjs?
+	bool		crush; 			// should the polyobj attempt to crush mobjs?
 	int			seqType;
 	fixed_t		size;			// polyobj size (area of POLY_AREAUNIT == size of FRACUNIT)
 	DThinker	*specialdata;	// pointer to a thinker, if the poly is moving
@@ -499,7 +499,7 @@ struct post_t
 	/**
 	 * @brief Return the post's absolute topdelta accounting for tall
 	 *        patches, which treat topdelta as relative.
-	 * 
+	 *
 	 * @param lastAbs Last absolute topdelta.
 	 */
 	int abs(const int lastAbs) const
@@ -517,7 +517,7 @@ struct post_t
 	{
 		return length + 3;
 	}
-	
+
 	/**
 	 * @brief Return a pointer to post data.
 	 */
@@ -691,6 +691,7 @@ struct vissprite_s
     shaderef_t		colormap;
 
 	int 			mobjflags;
+	int				statusflags;	// Status of player to show (powers, etc)
 	bool			spectator;		// [Blair] Mark if this visprite belongs to a spectator.
 
 	translationref_t translation;	// [RH] for translation;
@@ -717,7 +718,7 @@ typedef vissprite_s vissprite_t;
 // Some sprites will only have one picture used
 // for all views: NNNNF0
 //
-struct spriteframe_s
+struct spriteframe_t
 {
     // If false use 0 for any position.
     // Note: as eight entries are available,
@@ -725,10 +726,10 @@ struct spriteframe_s
 	bool	rotate;
 
     // Lump to use for view angles 0-15.
-    short	lump[16];
+    int		lump[16];
 
     // Flip bit (1 = flip) to use for view angles 0-15.
-    byte	flip[16];
+    bool	flip[16];
 
 	// [RH] Move some data out of spritewidth, spriteoffset,
 	//		and spritetopoffset arrays.
@@ -736,18 +737,16 @@ struct spriteframe_s
 	fixed_t		topoffset[16];
 	fixed_t		offset[16];
 };
-typedef spriteframe_s spriteframe_t;
 
 //
 // A sprite definition:
 //	a number of animation frames.
 //
-struct spritedef_s
+struct spritedef_t
 {
 	int 			numframes;
 	spriteframe_t	*spriteframes;
 };
-typedef spritedef_s spritedef_t;
 
 //
 // The infamous visplane

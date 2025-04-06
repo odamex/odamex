@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -72,38 +72,13 @@ fixed_t			fovtan;
 float			focratio;
 float			ifocratio;
 
-// increment every time a check is made
-int 			validcount = 1;
-
 // [RH] colormap currently drawing with
 shaderef_t		basecolormap;
 int				fixedlightlev;
 shaderef_t		fixedcolormap;
 
-int 			centerx;
-int				centery;
-
-fixed_t 		centerxfrac;
-fixed_t 		centeryfrac;
-fixed_t			yaspectmul;
-
 // just for profiling purposes
 int 			framecount;
-int 			linecount;
-int 			loopcount;
-
-fixed_t 		viewx;
-fixed_t 		viewy;
-fixed_t 		viewz;
-
-angle_t 		viewangle;
-sector_t*		viewsector;
-LocalView		localview;
-
-fixed_t 		viewcos;
-fixed_t 		viewsin;
-
-AActor			*camera;	// [RH] camera to draw from. doesn't have to be a player
 
 //
 // precalculated math tables
@@ -118,12 +93,6 @@ int				zlight[LIGHTLEVELS][MAXLIGHTZ];
 // [RH] used to keep hires modes dark enough
 int				lightscalexmul;
 int				lightscaleymul;
-
-// bumped light from gun blasts
-int 			extralight;
-
-// [RH] ignore extralight and fullbright
-BOOL			foggy;
 
 static bool		setsizeneeded = true;
 int				setblocks;
@@ -143,8 +112,6 @@ void (*spanslopefunc) (void);
 // [AM] Number of fineangles in a default 90 degree FOV at a 4:3 resolution.
 int FieldOfView = 2048;
 int CorrectFieldOfView = 2048;
-
-fixed_t			render_lerp_amount;
 
 static void R_InitViewWindow();
 
@@ -365,7 +332,7 @@ void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
 //
 bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipdist, int32_t& lclip, int32_t& rclip)
 {
-	static const int32_t CLIPUNIT = 1 << 30;
+	static constexpr int32_t CLIPUNIT = 1 << 30;
 	v2fixed_t p1 = *v1, p2 = *v2;
 
 	lclip = 0;
@@ -614,7 +581,7 @@ void R_SetViewSize(int blocks)
 
 CVAR_FUNC_IMPL(screenblocks)
 {
-	R_SetViewSize((int)var);
+	R_SetViewSize(var.asInt());
 }
 
 
@@ -641,8 +608,11 @@ void R_Init()
 void STACK_ARGS R_Shutdown()
 {
     R_FreeTranslationTables();
+
+	R_ClearSkyDefs();
     I_FreeSurface(screenblocks_surface);
     I_FreeSurface(scaled_screenblocks_surface);
+
 }
 
 
@@ -980,6 +950,21 @@ void R_SetTranslatedLucentDrawFuncs()
 	}
 }
 
+void R_SetSkyForegroundDrawFuncs()
+{
+	if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else if (r_drawflat)
+	{
+		R_SetFlatDrawFuncs();
+	}
+	else
+	{
+		colfunc = R_DrawSkyForegroundColumn;
+	}
+}
 
 //
 // R_RenderPlayerView
