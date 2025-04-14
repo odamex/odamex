@@ -828,7 +828,7 @@ void G_LivesCheckEndGame()
 			SV_MidPrint(TEXTCOLOR_RED "!! LAST PLAYER ALIVE !!\n" TEXTCOLOR_WHITE
 			            "You're the" TEXTCOLOR_YELLOW " last resort" TEXTCOLOR_WHITE
 			            ".\nGood luck!\n", pr.players.front(), 5);
-			S_PlayerSound(pr.players.front(), NULL, CHAN_GAMEINFO, "misc/horde/boss", ATTN_NONE);
+			S_PlayerSound(pr.players.front(), NULL, CHAN_GAMEINFO, "misc/lastplayer", ATTN_NONE);
     		)
 		}
 		// [Acts 19 quiz] If new players join or a new map starts, we want to
