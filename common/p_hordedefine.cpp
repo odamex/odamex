@@ -36,7 +36,7 @@
 #include "w_wad.h"
 
 #include <limits>
-#include <cmath>
+#include <math.h>
 
 EXTERN_CVAR(g_horde_mintotalhp)
 EXTERN_CVAR(g_horde_maxtotalhp)
@@ -266,7 +266,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 
 		// Scale the limit, but whatever number we come up with must end
 		// up as an integer anyway.
-		limit = std::ceilf(monster->config.limit * SkillScaler());
+		limit = ceilf(monster->config.limit * SkillScaler());
 		const int numAlive = P_HordeMobjCount(monsterCounts, monster->mobj);
 		if (numAlive < limit)
 		{
