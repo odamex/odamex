@@ -1,11 +1,11 @@
 name: Windows
 
-on: 
+on:
   push:
     branches-ignore:
     - 'release/[0-9]+.[0-9]+.[0-9]+'
   pull_request:
-    
+
 
 jobs:
   pre_job:
@@ -109,7 +109,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Odamex-Win-x32
-        path: 'build/artifact/*'
+        path: 'build-x32/artifact/*'
   # build-mingw:
   #   name: Build (MinGW)
   #   runs-on: windows-latest

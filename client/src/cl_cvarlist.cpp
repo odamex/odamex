@@ -670,6 +670,10 @@ static char *C_GetDefaultMusicSystem()
 	defaultmusicsystem = MS_PORTMIDI;
 	#endif
 
+	#ifdef __linux__
+	defaultmusicsystem = MS_LIBADLMIDI;
+	#endif
+
 	// don't overflow str
 	if (int(defaultmusicsystem) > 999 || int(defaultmusicsystem) < 0)
 		defaultmusicsystem = MS_NONE;

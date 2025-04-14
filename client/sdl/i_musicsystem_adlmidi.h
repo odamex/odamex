@@ -23,14 +23,16 @@
 #include "i_midi.h"
 #include "i_music.h"
 #include "i_musicsystem.h"
+#include <mutex>
 
 struct ADL_MIDIPlayer;
 
 struct AdlMidiHookData
 {
-	ADL_MIDIPlayer *player;
+	ADL_MIDIPlayer* player;
 	bool paused;
 	float volume;
+	std::mutex* mutex;
 };
 
 /**
@@ -61,8 +63,9 @@ class AdlMidiMusicSystem : public MusicSystem
   private:
 	bool m_isInitialized = false;
 	bool m_isPlaying = false;
-	ADL_MIDIPlayer *m_midiPlayer;
+	ADL_MIDIPlayer* m_midiPlayer = nullptr;
 	AdlMidiHookData m_midiHookData;
+	std::mutex m_mutex;
 
 	void _StopSong();
 	void _RegisterSong(byte* data, size_t length);

@@ -34,16 +34,12 @@
 
 #include "m_fileio.h"
 
+#include "w_wad.h"
 #include "z_zone.h"
+#include "i_system.h"
 
-// unfortunately, we still need you
-#include "cmdlib.h"
-
-#if defined(_WIN32)
-#include <direct.h> // getcwd
-#else
-#include <unistd.h> // getcwd
-#endif
+#include <filesystem>
+namespace fs = std::filesystem;
 
 // Simple logging
 std::ofstream LOG;
@@ -134,18 +130,9 @@ std::string M_GetCWD()
 {
 #ifdef __SWITCH__
 	return "./";
+#else
+	return fs::current_path().string();
 #endif
-
-	char tmp[4096] = {0};
-	std::string ret = "./";
-
-	const char* cwd = getcwd(tmp, sizeof(tmp));
-	if (cwd)
-		ret = cwd;
-
-	M_FixPathSep(ret);
-
-	return ret;
 }
 
 
@@ -177,14 +164,7 @@ SDWORD M_FileLength (FILE *f)
  */
 bool M_FileExists(const std::string& filename)
 {
-	FILE* f = fopen(filename.c_str(), "r");
-	if (f == NULL)
-	{
-		return false;
-	}
-
-	fclose(f);
-	return true;
+	return fs::exists(filename);
 }
 
 /**
@@ -286,23 +266,18 @@ bool M_AppendExtension (std::string &filename, std::string extension, bool if_ne
 {
     M_FixPathSep(filename);
 
-    size_t l = filename.find_last_of(PATHSEPCHAR);
-	if(l == filename.length())
+	fs::path path(filename);
+
+	if (!path.has_filename())
 		return false;
 
-    size_t dot = extension.find_first_of('.');
-    if (dot == std::string::npos)
-        return false;
+	if (if_needed)
+	{
+		if (!path.has_extension())
+			filename.append(extension);
 
-    if (if_needed)
-    {
-        size_t dot = filename.find_last_of('.');
-
-        if (dot == std::string::npos)
-            filename.append(extension);
-
-        return true;
-    }
+		return true;
+	}
 
     filename.append(extension);
 
@@ -317,12 +292,7 @@ void M_ExtractFilePath(const std::string& filename, std::string &dest)
 {
 	dest = filename;
 	M_FixPathSep(dest);
-
-	size_t l = dest.find_last_of(PATHSEPCHAR);
-	if (l == std::string::npos)
-		dest.clear();
-	else if (l < dest.length())
-		dest = dest.substr(0, l);
+	dest = fs::path(dest).parent_path().string();
 }
 
 //
@@ -331,17 +301,21 @@ void M_ExtractFilePath(const std::string& filename, std::string &dest)
 // Extract the extension of a file, returns false if it can't find
 // extension seperator, true if succeeded, the extension is returned in
 // dest
+// Extension includes the .
 bool M_ExtractFileExtension(const std::string& filename, std::string &dest)
 {
-	if (!filename.length())
+	if (filename.empty())
 		return false;
 
-	// find the last dot, iterating backwards
-	size_t last_dot = filename.find_last_of('.', filename.length());
-	if (last_dot == std::string::npos)
+	fs::path path(filename);
+
+	if (!path.has_extension())
+	{
 		dest.clear();
-	else
-		dest = filename.substr(last_dot + 1);
+		return false;
+	}
+
+	dest = fs::path(filename).extension().string();
 
 	return (!dest.empty());
 }
@@ -361,18 +335,7 @@ void M_ExtractFileBase (std::string filename, std::string &dest)
 {
     M_FixPathSep(filename);
 
-	size_t l = filename.find_last_of(PATHSEPCHAR);
-	if(l == std::string::npos)
-		l = 0;
-	else
-		l++;
-
-	size_t e = filename.find_last_of('.');
-	if(e == std::string::npos)
-		e = filename.length();
-
-	if(l < filename.length())
-		dest = filename.substr(l, e - l);
+	dest = fs::path(filename).stem().string();
 }
 
 //
@@ -383,14 +346,7 @@ void M_ExtractFileName (std::string filename, std::string &dest)
 {
     M_FixPathSep(filename);
 
-	size_t l = filename.find_last_of(PATHSEPCHAR);
-	if(l == std::string::npos)
-		l = 0;
-	else
-		l++;
-
-    if(l < filename.length())
-        dest = filename.substr(l);
+	dest = fs::path(filename).filename().string();
 }
 
 std::string M_ExtractFileName(const std::string &filename) {
@@ -424,68 +380,6 @@ bool M_IsPathSep(const char ch)
 	return false;
 }
 
-// VolumeNameLen returns length of the leading volume name on Windows.
-// It returns 0 elsewhere.
-static size_t VolumeNameLen(std::string path)
-{
-#ifdef _WIN32
-	if (path.size() < 2)
-		return 0;
-
-	// with drive letter
-	char c = path[0];
-	if (path[1] == ':' && ('a' <= c && c <= 'z' || 'A' <= c && c <= 'Z'))
-		return 2;
-
-	// is it UNC?
-	// https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
-	size_t l = path.length();
-	if (l >= 5 && M_IsPathSep(path[0]) && M_IsPathSep(path[1]) &&
-	    !M_IsPathSep(path[2]) && path[2] != '.')
-	{
-		// first, leading `\\` and next shouldn't be `\`. its server name.
-		for (size_t n = 3; n < l - 1; n++)
-		{
-			// second, next '\' shouldn't be repeated.
-			if (M_IsPathSep(path[n]))
-			{
-				n++;
-
-				// third, following something characters. its share name.
-				if (!M_IsPathSep(path[n]))
-				{
-					if (path[n] == '.')
-						break;
-
-					for (; n < l; n++)
-					{
-						if (M_IsPathSep(path[n]))
-							break;
-					}
-					return n;
-				}
-				break;
-			}
-		}
-	}
-	return 0;
-#else
-	return 0;
-#endif
-}
-
-// FromSlash returns the result of replacing each slash ('/') character
-// in path with a separator character. Multiple slashes are replaced
-// by multiple separators.
-static std::string FromSlash(std::string path)
-{
-	if (PATHSEPCHAR == '/')
-		return path;
-
-	std::replace(path.begin(), path.end(), '/', PATHSEPCHAR);
-	return path;
-}
-
 /**
  * @brief Clean returns the shortest path name equivalent to path by purely
  *        lexical processing.
@@ -495,91 +389,269 @@ static std::string FromSlash(std::string path)
  */
 std::string M_CleanPath(std::string path)
 {
-	std::string originalPath = path;
-	size_t volLen = VolumeNameLen(path);
-	std::string vol = path.substr(0, volLen);
-	path = path.substr(volLen, std::string::npos);
-	if (path == "")
-	{
-		if (volLen > 1 && originalPath[1] != ':')
-		{
-			// should be UNC
-			return FromSlash(originalPath);
-		}
-		return originalPath + ".";
-	}
-	bool rooted = M_IsPathSep(path[0]);
+	return fs::path(path).lexically_normal().string();
+}
 
-	// Invariants:
-	//	reading from path; r is index of next byte to process.
-	//	writing to buf; w is index of next byte to write.
-	//	dotdot is index in buf where .. must stop, either because
-	//		it is the leading slash or it is a leading ../../.. prefix.
-	size_t n = path.length();
-	std::string out = "";
-	size_t r = 0;
-	size_t dotdot = 0;
-	if (rooted)
+std::string M_GetUserFileName(const std::string& file)
+{
+#ifdef __SWITCH__
+	std::string path = file;
+	return M_CleanPath(path);
+#elif defined(_XBOX)
+	std::string path = "T:";
+
+	path += PATHSEP;
+	path += file;
+
+	return M_CleanPath(path);
+#else
+	fs::path path(file);
+	// Is absolute path?  If so, stop here.
+	if (path.is_absolute())
 	{
-		out.push_back(PATHSEPCHAR);
-		r = 1;
-		dotdot = 1;
+		return file;
 	}
 
-	while (r < n)
+	// Is this an explicitly relative path?  If so, stop here.
+	size_t fileLen = file.length();
+	if (fileLen >= 2 && file[0] == '.' && M_IsPathSep(file[1]))
 	{
-		if (M_IsPathSep(path[r]))
+		return file;
+	}
+	else if (fileLen >= 3 && file[0] == '.' && file[1] == '.' && M_IsPathSep(file[2]))
+	{
+		return file;
+	}
+
+	// Direct our path to our write directory.
+	path = M_GetWriteDir();
+
+	return (path / file).string();
+#endif
+}
+
+std::string M_GetWriteSubDir(std::string_view folder)
+{
+#if defined(_XBOX)
+	return "T:" PATHSEP;
+#else
+	// Does the folder exist?
+	fs::path path = M_GetWriteDir();
+	path /= folder;
+	try
+	{
+		fs::create_directory(path);
+		return M_CleanPath(path.string());
+	}
+	catch (const fs::filesystem_error& e)
+	{
+		I_FatalError("Failed to create directory {}: {}\n", path.string(), e.what());
+	}
+#endif
+}
+
+std::string M_GetDownloadDir()
+{
+	return M_GetWriteSubDir("downloads");
+}
+
+std::string M_GetScreenshotDir()
+{
+	return M_GetWriteSubDir("screenshots");
+}
+
+std::string M_GetNetDemoDir()
+{
+	return M_GetWriteSubDir("netdemos");
+}
+
+std::string M_GetScreenshotFileName(const std::string& file)
+{
+	#if defined(_XBOX)
+	fs::path path = "T:";
+	path /= file;
+#elif defined __SWITCH__
+	fs::path path = file;
+#else
+	// Direct our path to our screenshot directory.
+	fs::path path = M_GetScreenshotDir();
+	path /= file;
+#endif
+	return M_CleanPath(path.string());
+}
+
+std::string M_GetNetDemoFileName(const std::string& file)
+{
+#if defined(_XBOX)
+	fs::path path = "T:";
+	path /= file;
+#elif defined __SWITCH__
+	fs::path path = file;
+#else
+	// Direct our path to our netdemo directory.
+	fs::path path = M_GetNetDemoDir();
+	path /= file;
+#endif
+	return M_CleanPath(path.string());
+}
+
+std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
+                                const std::vector<std::string>& exts,
+                                const OMD5Hash& hash)
+{
+	fs::path path(M_CleanPath(dir));
+	std::vector<OString> cmp_files;
+	for (const auto& ext : exts)
+	{
+		if (!hash.empty())
 		{
-			// empty path element
-			r += 1;
+			// Filenames with supplied hashes always match first.
+			cmp_files.push_back(
+			    StdStringToUpper(name + "." + hash.getHexStr().substr(0, 6) + ext));
 		}
-		else if (path[r] == '.' && (r + 1 == n || M_IsPathSep(path[r + 1])))
+		cmp_files.push_back(StdStringToUpper(name + ext));
+	}
+
+	// denis - list files in the directory of interest, case-desensitize
+	// then see if wanted wad is listed
+
+	std::string found;
+	std::vector<OString>::iterator found_it = cmp_files.end();
+	try {
+		for (const auto& entry : fs::directory_iterator(path))
 		{
-			// . element
-			r += 1;
-		}
-		else if (path[r] == '.' && path[r + 1] == '.' &&
-		         (r + 2 == n || M_IsPathSep(path[r + 2])))
-		{
-			// .. element: remove to last separator
-			r += 2;
-			if (out.length() > dotdot)
+			if (entry.is_directory())
+				continue;
+
+			// Not only find a match, but check if it is a better match than we
+			// found previously.
+			fs::path filename = entry.path().filename();
+			OString check = StdStringToUpper(filename.string());
+			std::vector<OString>::iterator this_it =
+			    std::find(cmp_files.begin(), cmp_files.end(), check);
+			if (this_it < found_it)
 			{
-				// can backtrack
-				size_t w = out.length() - 1;
-				while (w > dotdot && !M_IsPathSep(out[w]))
-					w -= 1;
+				const std::string local_file = (path / filename).string();
+				const OMD5Hash local_hash = W_MD5(local_file);
 
-				out.resize(w);
+				if (hash.empty() || hash == local_hash)
+				{
+					// Found a match.
+					found = filename.string();
+					found_it = this_it;
+					if (found_it == cmp_files.begin())
+					{
+						// Found the best possible match, we're done.
+						break;
+					}
+				}
+				else if (!hash.empty())
+				{
+					PrintFmt(PRINT_WARNING, "WAD at {} does not match required copy\n", local_file);
+					PrintFmt(PRINT_WARNING, "Local MD5: {}\n", local_hash.getHexStr());
+					PrintFmt(PRINT_WARNING, "Required MD5: {}\n\n", hash.getHexStr());
+				}
 			}
-			else if (!rooted)
-			{
-				// cannot backtrack, but not rooted, so append .. element.
-				if (out.length() > 0)
-					out.push_back(PATHSEPCHAR);
-
-				out.append("..");
-				dotdot = out.length();
-			}
-		}
-		else
-		{
-			// real path element.
-			// add slash if needed
-			if ((rooted && out.length() != 1) || (!rooted && out.length() != 0))
-				out.push_back(PATHSEPCHAR);
-
-			// copy element
-			for (; r < n && !M_IsPathSep(path[r]); r++)
-				out.push_back(path[r]);
 		}
 	}
+	catch (const fs::filesystem_error& e)
+	{
+		// Probably called on a directory that doesn't exist (e.g. Steam Final Doom directory).
+		PrintFmt(PRINT_HIGH, "{}: {}\n", __FUNCTION__, e.what());
+	}
 
-	// Turn empty string into "."
-	if (out.length() == 0)
-		out.push_back('.');
+	return found;
+}
 
-	return FromSlash(vol + out);
+std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString> files)
+{
+	std::vector<std::string> rvo;
+
+	// Fix up parameters.
+	fs::path path(M_CleanPath(dir));
+	for (auto& file : files)
+	{
+		file = StdStringToUpper(file);
+	}
+
+	try
+	{
+		for (const auto& entry : fs::directory_iterator(path))
+		{
+			// Skip directories.
+			if (entry.is_directory())
+				continue;
+
+			// Find the file.
+			std::string filename = entry.path().filename().string();
+			std::vector<OString>::iterator it =
+		    	std::find(files.begin(), files.end(), StdStringToUpper(filename));
+
+			if (it == files.end())
+				continue;
+
+			rvo.push_back(filename);
+		}
+	}
+	catch (const fs::filesystem_error& e)
+	{
+		// Probably called on a directory that doesn't exist (e.g. Steam Final Doom directory).
+		PrintFmt(PRINT_HIGH, "{}: {}\n", __FUNCTION__, e.what());
+	}
+
+	return rvo;
+}
+
+// Scan for PWADs and DEH and BEX files
+std::vector<std::string> M_PWADFilesScanDir(std::string dir)
+{
+	std::vector<std::string> rvo;
+
+	// Fix up parameters.
+	fs::path path(M_CleanPath(dir));
+
+	try
+	{
+		for (const auto& entry : fs::directory_iterator(path))
+		{
+			// Skip directories.
+			if (entry.is_directory())
+				continue;
+
+			// Only return files with correct extensions
+			const std::string check = entry.path().extension().string();
+			if (iequals(check, ".WAD") || iequals(check, ".DEH") || iequals(check, ".BEX"))
+			{
+				rvo.push_back(entry.path().filename().string());
+			}
+		}
+	}
+	catch (const fs::filesystem_error& e)
+	{
+		// Probably called on a directory that doesn't exist (e.g. Steam Final Doom directory).
+		PrintFmt(PRINT_HIGH, "{}: {}\n", __FUNCTION__, e.what());
+	}
+
+	return rvo;
+}
+
+bool M_GetAbsPath(const std::string& path, std::string& out)
+{
+#ifdef __SWITCH__
+	out = path;
+	return true;
+#else
+	try
+	{
+		out = fs::absolute(path).string();
+		return true;
+	}
+	catch (const fs::filesystem_error& e)
+	{
+		PrintFmt(PRINT_HIGH, "{}: {}\n", __FUNCTION__, e.what());
+		return false;
+	}
+#endif
 }
 
 VERSION_CONTROL(m_fileio_cpp, "$Id$")

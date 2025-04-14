@@ -1,12 +1,12 @@
 # Runs when a release is published
 # Contains every package required for a release except:
 # - MacOS package
-# - Flatpak or any other linux packaging 
+# - Flatpak or any other linux packaging
 name: Windows-Release
 
 on:
   release:
-    tags: 
+    tags:
       - "[0-9]+.[0-9]+.[0-9]+"
     types: [published]
 
@@ -202,16 +202,6 @@ jobs:
     - name: Remove .git folders
       shell: bash
       run: rm -rf .git
-    - name: Create tar.gz
-      shell: bash
-      run: |
-        touch odamex-src-${{ env.new_version }}.tar.gz
-        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -czvf odamex-src-${{ env.new_version }}.tar.gz **
-    - name: Create tar.xz
-      shell: bash
-      run: |
-        touch odamex-src-${{ env.new_version }}.tar.xz
-        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -cJvf odamex-src-${{ env.new_version }}.tar.xz **
     - name: Create zip
       shell: pwsh
       run: |
@@ -237,16 +227,6 @@ jobs:
       with:
         name: Odamex-Installer
         path: 'Output/*.exe'
-    - name: Upload tar.xz
-      uses: actions/upload-artifact@v4
-      with:
-        name: Odamex-tar-xz
-        path: './*.tar.xz'
-    - name: Upload tar.gz
-      uses: actions/upload-artifact@v4
-      with:
-        name: Odamex-tar-gz
-        path: './*.tar.gz'
     - name: Upload zip
       uses: actions/upload-artifact@v4
       with:
@@ -261,6 +241,50 @@ jobs:
         asset_path: ./odamex-src-${{env.new_version}}.zip
         asset_name: odamex-src-${{env.new_version}}.zip
         asset_content_type: application/zip
+    - name: Upload installer
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./Output/odamex-win-${{env.new_version}}.exe
+        asset_name: odamex-win-${{env.new_version}}.exe
+        asset_content_type: application/octet-stream
+  package-and-upload-unix:
+    name: Package and Upload Artifacts
+    runs-on: ubuntu-latest
+    needs: [pre_job]
+    env:
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
+    - name: Create tar.gz
+      shell: bash
+      run: |
+        touch odamex-src-${{ env.new_version }}.tar.gz
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -czvf odamex-src-${{ env.new_version }}.tar.gz **
+    - name: Create tar.xz
+      shell: bash
+      run: |
+        touch odamex-src-${{ env.new_version }}.tar.xz
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -cJvf odamex-src-${{ env.new_version }}.tar.xz **
+    - name: Upload tar.xz
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-tar-xz
+        path: './*.tar.xz'
+    - name: Upload tar.gz
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-tar-gz
+        path: './*.tar.gz'
     - name: Upload tar.gz to Github Release Artifacts
       uses: actions/upload-release-asset@v1.0.2
       env:
@@ -279,15 +303,6 @@ jobs:
         asset_path: ./odamex-src-${{env.new_version}}.tar.xz
         asset_name: odamex-src-${{env.new_version}}.tar.xz
         asset_content_type: application/x-xz
-    - name: Upload installer
-      uses: actions/upload-release-asset@v1.0.2
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-      with:
-        upload_url: ${{ env.upload_url }}
-        asset_path: ./Output/odamex-win-${{env.new_version}}.exe
-        asset_name: odamex-win-${{env.new_version}}.exe
-        asset_content_type: application/octet-stream
   pr-to-stable:
     name: Create Pull Request to stable
     needs: pre_job

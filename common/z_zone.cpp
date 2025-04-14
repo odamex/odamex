@@ -32,6 +32,7 @@
 #include "c_dispatch.h"
 #include "hashtable.h"
 #include "cmdlib.h"
+#include "m_stacktrace.h"
 
 struct OFileLine
 {
@@ -159,8 +160,8 @@ class OZone
 		if (ptr == NULL)
 		{
 			// Don't format these bytes, the byte formatter allocates.
-			I_Error("{}: Could not allocate {} bytes at {}:{}.", __FUNCTION__, size,
-			        info.shortFile(), info.line);
+			I_Error("{}: Could not allocate {} bytes at {}:{}.\n{}", __FUNCTION__, size,
+			        info.shortFile(), info.line, M_GetStacktrace());
 		}
 
 		// Construct the memory block.
@@ -188,23 +189,23 @@ class OZone
 	{
 		if (tag == PU_FREE)
 		{
-			I_Error("{}: Tried to change a tag to PU_FREE at {}:{}.", __FUNCTION__,
-			        info.shortFile(), info.line);
+			I_Error("{}: Tried to change a tag to PU_FREE at {}:{}.\n{}", __FUNCTION__,
+			        info.shortFile(), info.line, M_GetStacktrace());
 		}
 
 		MemoryBlockTable::iterator it = m_heap.find(ptr);
 		if (it == m_heap.end())
 		{
-			I_Error("{}: Address 0x{:p} is not tracked by zone at {}:{}.", __FUNCTION__,
-			        it->first, info.shortFile(), info.line);
+			I_Error("{}: Address 0x{:p} is not tracked by zone at {}:{}.\n{}", __FUNCTION__,
+			        it->first, info.shortFile(), info.line, M_GetStacktrace());
 		}
 
 		if (tag >= PU_PURGELEVEL && it->second.user == NULL)
 		{
 			I_Error("{}: Found purgable block without an owner at {}:{}, "
-			        "allocated at {}:{}.",
+			        "allocated at {}:{}.\n{}",
 			        __FUNCTION__, info.shortFile(), info.line,
-			        it->second.fileLine.shortFile(), it->second.fileLine.line);
+			        it->second.fileLine.shortFile(), it->second.fileLine.line, M_GetStacktrace());
 		}
 
 		it->second.tag = tag;
@@ -224,8 +225,8 @@ class OZone
 		MemoryBlockTable::iterator it = m_heap.find(ptr);
 		if (it == m_heap.end())
 		{
-			I_Error("{}: Address 0x{:p} is not tracked by zone at {}:{}.", __FUNCTION__,
-			        it->first, info.shortFile(), info.line);
+			I_Error("{}: Address 0x{:p} is not tracked by zone at {}:{}.\n{}", __FUNCTION__,
+			        it->first, info.shortFile(), info.line, M_GetStacktrace());
 		}
 
 		dealloc(it);

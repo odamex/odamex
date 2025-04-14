@@ -64,7 +64,7 @@ static int oplCoreMap[] = {ADLMIDI_EMU_DOSBOX, ADLMIDI_EMU_NUKED_174, ADLMIDI_EM
 static int oplBankMap[] = {16, 14, 72};
 
 
-AdlMidiMusicSystem::AdlMidiMusicSystem()
+AdlMidiMusicSystem::AdlMidiMusicSystem() : m_mutex()
 {
 	// Midi mapper volume can interfere with PCM volume on some windows versions, ensure that it's set properly
 	I_ResetMidiVolume();
@@ -72,11 +72,11 @@ AdlMidiMusicSystem::AdlMidiMusicSystem()
 	m_midiPlayer = adl_init(snd_samplerate.asInt());
 	if (!m_midiPlayer)
 	{
-		Printf(PRINT_WARNING, "I_InitMusic: Failed to initialize libADLMIDI with sample rate %shz", snd_samplerate.cstring());
+		PrintFmt(PRINT_WARNING, "I_InitMusic: Failed to initialize libADLMIDI with sample rate {}hz", snd_samplerate.str());
 		return;
 	}
 	else
-		Printf("I_InitMusic: Music playback enabled using libADLMIDI.\n");
+		PrintFmt("I_InitMusic: Music playback enabled using libADLMIDI.\n");
 
 	m_isInitialized = true;
 
@@ -92,6 +92,7 @@ AdlMidiMusicSystem::~AdlMidiMusicSystem()
 	_StopSong();
 
 	adl_close(m_midiPlayer);
+	m_isInitialized = false;
 }
 
 
@@ -102,6 +103,8 @@ static void adlmidi_music_hook (void *data, byte *stream, int len)
 	AdlMidiHookData *hdata = static_cast<AdlMidiHookData *>(data);
 	if (hdata->paused)
 		return;
+
+	const std::lock_guard<std::mutex> lock(*hdata->mutex);
 
 	ADLMIDI_AudioFormat fmt;
 	fmt.type = ADLMIDI_SampleType_S16;
@@ -158,7 +161,7 @@ void AdlMidiMusicSystem::_StopSong()
 	if (!m_isPlaying)
 		return;
 
-	Mix_HookMusic(NULL, NULL);
+	Mix_HookMusic(nullptr, nullptr);
 }
 
 //
@@ -223,6 +226,7 @@ void AdlMidiMusicSystem::_UpdateMidiHook()
 	m_midiHookData.player = m_midiPlayer;
 	m_midiHookData.paused = isPaused();
 	m_midiHookData.volume = getVolume();
+	m_midiHookData.mutex = &m_mutex;
 	SDL_UnlockAudio();
 
 	Mix_HookMusic(adlmidi_music_hook, &m_midiHookData);
@@ -236,13 +240,14 @@ void AdlMidiMusicSystem::_UpdateMidiHook()
 //
 void AdlMidiMusicSystem::_RegisterSong(byte* data, size_t length)
 {
+	const std::lock_guard<std::mutex> lock(m_mutex);
 	m_isPlaying = false;
 	if (S_MusicIsMus(data, length) || S_MusicIsMidi(data, length))
 	{
 		adl_reset(m_midiPlayer);
 		if (adl_openData(m_midiPlayer, data, length) < 0)
 		{
-			Printf(PRINT_WARNING, "Mix_PlayMusic: %s\n", adl_errorInfo(m_midiPlayer));
+			PrintFmt(PRINT_WARNING, "adl_openData: {}\n", adl_errorInfo(m_midiPlayer));
 			return;
 		}
 
@@ -254,7 +259,7 @@ void AdlMidiMusicSystem::_RegisterSong(byte* data, size_t length)
 void AdlMidiMusicSystem::applyCVars()
 {
 	if (m_isPlaying)
-		Mix_HookMusic(NULL, NULL);
+		Mix_HookMusic(nullptr, nullptr);
 
 	adl_switchEmulator(m_midiPlayer, oplCoreMap[snd_oplcore.asInt()]);
 	adl_setSoftPanEnabled(m_midiPlayer, snd_oplpan);
