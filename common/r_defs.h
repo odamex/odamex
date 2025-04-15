@@ -375,6 +375,10 @@ struct line_s
 	bool switchactive;
 	bool PropertiesChanged;
 	bool SidedefChanged;
+
+	// ID24 line specials
+	int frontmusic; // Front upper texture -- activated from the front side
+	int backmusic; // Front lower texture -- activated from the back side
 };
 typedef line_s line_t;
 

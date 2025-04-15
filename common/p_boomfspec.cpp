@@ -29,6 +29,7 @@
 #include "c_cvars.h"
 #include "d_player.h"
 #include "p_boomfspec.h"
+#include "w_wad.h"
 
 EXTERN_CVAR(sv_allowexit)
 
@@ -797,6 +798,12 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(F_FAST), 0, 0, 0);
 		return true;
 
+	// ID24 Music Changers
+	case 2057: case 2063: case 2087: case 2093:
+	case 2058: case 2064: case 2088: case 2094:
+		EV_ChangeMusic(line, side);
+		break;
+
 		// Extended walk triggers
 
 		// jff 1/29/98 added new linedef types to fill all functions out so that
@@ -1396,6 +1403,44 @@ void P_PostProcessCompatibleSidedefSpecial(side_t* sd, mapsidedef_t* msd,
 {
 	switch (sd->special)
 	{
+	case 2057: case 2058: case 2059: case 2060: case 2061: case 2062:
+	case 2063: case 2064: case 2065: case 2066: case 2067: case 2068:
+	case 2087: case 2088: case 2089: case 2090: case 2091: case 2092:
+	case 2093: case 2094: case 2095: case 2096: case 2097: case 2098:
+		// All of the W1, WR, S1, SR, G1, GR activations can be triggered from
+		// the back sidedef (reading the front bottom texture) and triggered
+		// from the front sidedef (reading the front upper texture).
+		for (int j = 0; j < numlines; j++)
+		{
+			if (lines[j].sidenum[0] == i)
+			{
+				// Back triggered
+				lines[j].backmusic = W_CheckNumForName(msd->bottomtexture);
+				if (lines[j].backmusic < 0)
+				{
+					lines[j].backmusic = 0;
+					sd->bottomtexture = R_TextureNumForName(msd->bottomtexture);
+				}
+				else
+				{
+					sd->bottomtexture = 0;
+				}
+
+				// Front triggered
+				lines[j].frontmusic = W_CheckNumForName(msd->toptexture);
+				if (lines[j].frontmusic < 0)
+				{
+					lines[j].frontmusic = 0;
+					sd->toptexture = R_TextureNumForName(msd->toptexture);
+				}
+				else
+				{
+					sd->toptexture = 0;
+				}
+			}
+		}
+		break;
+
 	case 242: // variable colormap via 242 linedef
 	                       // [RH] The colormap num we get here isn't really a colormap,
 	                       //	  but a packed ARGB word for blending, so we also allow
@@ -2480,6 +2525,12 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		}
 		break;
 
+	// ID24 Music Changers
+	case 2059: case 2065: case 2089: case 2095:
+	case 2060: case 2066: case 2090: case 2096:
+		EV_ChangeMusic(line, side);
+		return true;
+
 		// killough 1/31/98: factored out compatibility check;
 		// added inner switch, relaxed check to demo_compatibility
 
@@ -3367,7 +3418,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 // impacted. Change is qualified by demo_compatibility.
 //
 
-bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
+bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line, int side)
 {
 	bool resetinv = false;
 
@@ -3507,6 +3558,12 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 
 		// jff 1/30/98 added new gun linedefs here
 		// killough 1/31/98: added demo_compatibility check, added inner switch
+
+	// ID24 Music Changers
+	case 2061: case 2067: case 2091: case 2097:
+	case 2062: case 2068: case 2092: case 2098:
+		EV_ChangeMusic(line, side);
+		break;
 
 	default:
 		switch (line->special)

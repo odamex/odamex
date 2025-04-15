@@ -1140,6 +1140,12 @@ void P_AdjustLine (line_t *ld)
 			sides[*ld->sidenum].special = ld->special;
 			sides[*ld->sidenum].tag = ld->args[0];
 		}
+		// [EA] ID24 Music changers -- needed for post-processing
+		else if ((ld->special >= 2057 && ld->special <= 2068) ||
+		         (ld->special >= 2087 && ld->special <= 2098))
+		{
+			sides[*ld->sidenum].special = ld->special;
+		}
 		else
 		{
 			sides[*ld->sidenum].special = 0;

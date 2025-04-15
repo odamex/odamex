@@ -38,7 +38,7 @@ void P_PlayerInCompatibleSector(player_t* player);
 bool P_ActorInCompatibleSector(AActor* actor);
 bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
                                         bool bossaction);
-bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
+bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line, int side);
 bool EV_DoGenDoor(line_t* line);
 bool EV_DoGenFloor(line_t* line);
 bool EV_DoGenCeiling(line_t* line);

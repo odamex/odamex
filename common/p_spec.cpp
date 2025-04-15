@@ -80,7 +80,7 @@ bool s_SpecialFromServer;
 int P_FindSectorFromLineTag(int tag, int start);
 bool EV_DoDoor(DDoor::EVlDoor type, line_t* line, AActor* thing, int tag, int speed,
                int delay, card_t lock);
-bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
+bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line, int side);
 bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
                                  unsigned int activationType);
 bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
@@ -469,6 +469,71 @@ void DPusher::Serialize (FArchive &arc)
 }
 
 //
+// EV_ChangeMusic() -- ID24 Music Changers
+//
+// Generic solution for changing the currently playing music during play time.
+// There are four type of music changing behavior, all of them available in all
+// six major activation triggers (W1, WR, S1, SR, G1, GR) totalling 24 lines.
+// All specials can be triggered from either side of the line being activated.
+// Of the four categories, there are two conditions:
+//
+//  1. If the given music lump will loop or not
+//  2. If it will reset to the map's default when no music lump is defined
+//
+// Giving the four resulting categories:
+// * Change music and make it loop only if a track is defined.
+// * Change music and make it play only once and stop all music after.
+// * Change music and make it loop, reset to looping default if no track
+//    defined.
+// * Change music and make it play only once, reset to looping default if no
+//    track defined.
+//
+
+void EV_ChangeMusic(line_t *line, int side)
+{
+  bool once = false;
+  bool loops = false;
+  bool resets = false;
+
+  int music = side ? line->backmusic : line->frontmusic;
+
+  switch (line->special)
+  {
+    case 2057: case 2059: case 2061: case 2063:
+    case 2065: case 2067: case 2087: case 2089:
+    case 2091: case 2093: case 2095: case 2097:
+      once = true;
+      break;
+  }
+
+  switch (line->special)
+  {
+    case 2057: case 2058: case 2059: case 2060:
+    case 2061: case 2062: case 2087: case 2088:
+    case 2089: case 2090: case 2091: case 2092:
+      loops = true;
+      break;
+  }
+
+  switch (line->special)
+  {
+    case 2087: case 2088: case 2089: case 2090:
+    case 2091: case 2092: case 2093: case 2094:
+    case 2095: case 2096: case 2097: case 2098:
+      resets = true;
+      break;
+  }
+
+  if (music)
+    S_ChangeMusic(lumpinfo[music].name, loops);
+  else if (resets)
+    S_ChangeMusic(level.music.c_str(), true); // Always loops when defaulting
+
+  if (once)
+    line->special = 0;
+}
+
+//
 // Animating textures and planes
 //
 // [RH] Expanded to work with a Hexen ANIMDEFS lump
@@ -773,6 +838,31 @@ bool P_CheckTag(line_t* line)
 	case 85:
 	case 2082:
 	case 2083:
+
+	case 2057: // Music changers
+	case 2058:
+	case 2059:
+	case 2060:
+	case 2061:
+	case 2062:
+	case 2063:
+	case 2064:
+	case 2065:
+	case 2066:
+	case 2067:
+	case 2068:
+	case 2087:
+	case 2088:
+	case 2089:
+	case 2090:
+	case 2091:
+	case 2092:
+	case 2093:
+	case 2094:
+	case 2095:
+	case 2096:
+	case 2097:
+	case 2098:
 		return true; // zero tag allowed
 
 	default:
@@ -2008,7 +2098,8 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 	}
 	else // Only certain specials from Doom/Boom can be impact activated
 	{
-		lineresult = P_ShootCompatibleSpecialLine(thing, line);
+		int side = P_PointOnLineSide(thing->x, thing->y, line);
+		lineresult = P_ShootCompatibleSpecialLine(thing, line, side);
 	}
 
 	if(serverside && lineresult)
