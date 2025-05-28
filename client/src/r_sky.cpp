@@ -656,7 +656,7 @@ void R_InitSkiesForLevel()
 	}
 }
 
-void R_SetDefaultSky(const OLumpName& sky)
+void R_SetDefaultSky(const OLumpName& sky, const OLumpName& sky2)
 {
 	sky_t* skydef = R_GetSky(sky, true);
 	// make sure that if mapinfo sets a scroll speed we use that
@@ -678,6 +678,14 @@ void R_SetDefaultSky(const OLumpName& sky)
 		if (level.sky1ScrollDelta != 0)
 		{
 			skydef->background.scrollx = level.sky1ScrollDelta;
+		}
+		if (!sky2.empty())
+		{
+			sky_t* skydef2 = R_GetSky(sky2, true);
+			if (level.sky2ScrollDelta != 0)
+			{
+				skydef2->background.scrollx = level.sky2ScrollDelta;
+			}
 		}
 	}
 	skyflatlookup[R_FlatNumForName(SKYFLATNAME)] = skydef;
@@ -739,6 +747,7 @@ void R_RenderSkyRange(visplane_t* pl)
 	const angle_t* xtoskyangle = r_linearsky.asBool() ? linearskyangle : xtoviewangle;
 
 	auto skyflat = skyflatlookup.find(pl->picnum);
+	sky_t* sky = nullptr;
 
 	fixed_t sky1scalex = INT2FIXED(1);
 	fixed_t sky2scalex = INT2FIXED(1);
@@ -749,44 +758,11 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	if (skyflat != skyflatlookup.end())
 	{
-		const sky_t* sky = skyflat->second;
-		// use sky1
-		if (skyflat->second->type == skytype_t::DOUBLESKY)
-		{
-			frontskytex = texturetranslation[sky->foreground.texnum];
-			backskytex = texturetranslation[sky->background.texnum];
-			front_offset = sky->foreground.currx;
-			back_offset = sky->background.currx;
-			frontrow_offset = sky->foreground.curry;
-			backrow_offset = sky->background.curry;
-			sky1scalex = sky->foreground.scalex;
-			sky2scalex = sky->background.scalex;
-			sky1scaley = sky->foreground.scaley;
-			sky2scaley = sky->background.scaley;
-			if (!sky->usedefaultmid)
-			{
-				sky1mid = sky->foreground.mid;
-				sky2mid = sky->background.mid;
-			}
-		}
-		else
-		{
-			frontskytex = texturetranslation[sky->background.texnum];
-			backskytex = -1;
-			front_offset = sky->background.currx;
-			frontrow_offset = sky->background.curry;
-			sky1scalex = sky->background.scalex;
-			sky1scaley = sky->background.scaley;
-			if (!sky->usedefaultmid)
-				sky1mid = sky->background.mid;
-		}
+		sky = skyflat->second;
 	}
-	else if (pl->picnum == int(PL_SKYFLAT))
+	else if (pl->picnum == PL_SKYFLAT)
 	{
-		// use sky2
-		frontskytex = texturetranslation[sky2texture];
-		backskytex = -1;
-		front_offset = sky2columnoffset;
+		sky = skylookup[level.skypic2];
 	}
 	else
 	{
@@ -808,7 +784,7 @@ void R_RenderSkyRange(visplane_t* pl)
 		front_offset = (-side->textureoffset) >> 6;
 
 		// Vertical offset allows careful sky positioning.
-		defaultskytexturemid = side->rowoffset - 28*FRACUNIT;
+		sky1mid = side->rowoffset - 28*FRACUNIT;
 
 		// We sometimes flip the picture horizontally.
 		//
@@ -816,6 +792,36 @@ void R_RenderSkyRange(visplane_t* pl)
 		// to make it easier to use the new feature, while to still
 		// allow old sky textures to be used.
 		skyflip = line->args[2] ? 0u : ~0u;
+	}
+
+	if (sky->type == skytype_t::DOUBLESKY)
+	{
+		frontskytex = texturetranslation[sky->foreground.texnum];
+		backskytex = texturetranslation[sky->background.texnum];
+		front_offset = sky->foreground.currx;
+		back_offset = sky->background.currx;
+		frontrow_offset = sky->foreground.curry;
+		backrow_offset = sky->background.curry;
+		sky1scalex = sky->foreground.scalex;
+		sky2scalex = sky->background.scalex;
+		sky1scaley = sky->foreground.scaley;
+		sky2scaley = sky->background.scaley;
+		if (!sky->usedefaultmid)
+		{
+			sky1mid = sky->foreground.mid;
+			sky2mid = sky->background.mid;
+		}
+	}
+	else
+	{
+		frontskytex = texturetranslation[sky->background.texnum];
+		backskytex = -1;
+		front_offset = sky->background.currx;
+		frontrow_offset = sky->background.curry;
+		sky1scalex = sky->background.scalex;
+		sky1scaley = sky->background.scaley;
+		if (!sky->usedefaultmid)
+			sky1mid = sky->background.mid;
 	}
 
 	R_ResetDrawFuncs();
