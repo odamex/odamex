@@ -140,6 +140,18 @@ void S_StopAllChannels()
 {
 }
 
+void S_StopAmbientSound()
+{
+}
+
+void S_PauseSound()
+{
+}
+
+void S_ResumeSound()
+{
+}
+
 // Moves all the sounds from one thing to another. If the destination is
 // NULL, then the sound becomes a positioned sound.
 void S_RelinkSound(AActor *from, AActor *to)
@@ -159,11 +171,11 @@ bool S_GetSoundPlayingInfo(AActor *ent, int sound_id)
 //
 // Stop and resume music, during game PAUSE.
 //
-void S_PauseSound()
+void S_PauseMusic()
 {
 }
 
-void S_ResumeSound()
+void S_ResumeMusic()
 {
 }
 
@@ -210,20 +222,30 @@ void S_StopMusic()
 //
 // =============================== [RH]
 
+typedef enum
+{
+	AMB_TYPE_NONE,
+    AMB_TYPE_POINT,
+    AMB_TYPE_WORLD,
+} amb_type_t;
+
+typedef enum
+{
+	AMB_MODE_NONE,
+    AMB_MODE_CONTINUOUS,
+    AMB_MODE_RANDOM,
+    AMB_MODE_PERIODIC,
+} amb_mode_t;
+
 static struct AmbientSound {
-	unsigned	type;		// type of ambient sound
+	amb_type_t	type;		// Ambient sound type
+	amb_mode_t	mode;		// Ambient sound mode
 	int			periodmin;	// # of tics between repeats
 	int			periodmax;	// max # of tics for random ambients
 	float		volume;		// relative volume of sound
-	float		attenuation;
+	float		attenuation; // Used for distance scaling
 	char		sound[MAX_SNDNAME+1]; // Logical name of sound to play
 } Ambients[256];
-
-#define RANDOM		1
-#define PERIODIC	2
-#define CONTINUOUS	3
-#define POSITIONAL	4
-#define SURROUND	16
 
 void S_HashSounds()
 {
@@ -378,7 +400,8 @@ void S_ParseSndInfo()
 						ambient = Ambients + index;
 					}
 
-					ambient->type = 0;
+					ambient->type = AMB_TYPE_NONE;
+					ambient->mode = AMB_MODE_NONE;
 					ambient->periodmin = 0;
 					ambient->periodmax = 0;
 					ambient->volume = 0.0f;
@@ -386,43 +409,42 @@ void S_ParseSndInfo()
 					os.mustScan();
 					strncpy(ambient->sound, os.getToken().c_str(), MAX_SNDNAME);
 					ambient->sound[MAX_SNDNAME] = 0;
-					ambient->attenuation = 0.0f;
+					ambient->attenuation = 0.0f; // No change by default
 
 					os.mustScan();
 					if (os.compareTokenNoCase("point"))
 					{
-						ambient->type = POSITIONAL;
+						ambient->type = AMB_TYPE_POINT;
 						os.mustScan();
 
 						if (IsRealNum(os.getToken().c_str()))
 						{
-							ambient->attenuation =
-							    (os.getTokenFloat() > 0) ? os.getTokenFloat() : 1;
+							if (os.getTokenFloat() > 0.0f)
+							{
+								ambient->attenuation = os.getTokenFloat();
+							}
+
 							os.mustScan();
 						}
-						else
+					}
+					else
+					{
+						ambient->type = AMB_TYPE_WORLD;
+
+						if (os.compareTokenNoCase("surround") ||
+						    os.compareTokenNoCase("world"))
 						{
-							ambient->attenuation = 1;
+							os.mustScan();
 						}
 					}
-					else if (os.compareTokenNoCase("surround"))
-					{
-						ambient->type = SURROUND;
-						os.mustScan();
-						ambient->attenuation = -1;
-					}
-					// else if (os.compareTokenNoCase("world"))
-					//{
-					// todo
-					//}
 
 					if (os.compareTokenNoCase("continuous"))
 					{
-						ambient->type |= CONTINUOUS;
+						ambient->mode = AMB_MODE_CONTINUOUS;
 					}
 					else if (os.compareTokenNoCase("random"))
 					{
-						ambient->type |= RANDOM;
+						ambient->mode = AMB_MODE_RANDOM;
 						os.mustScanFloat();
 						ambient->periodmin =
 						    static_cast<int>(os.getTokenFloat() * TICRATE);
@@ -432,7 +454,7 @@ void S_ParseSndInfo()
 					}
 					else if (os.compareTokenNoCase("periodic"))
 					{
-						ambient->type |= PERIODIC;
+						ambient->mode = AMB_MODE_PERIODIC;
 						os.mustScanFloat();
 						ambient->periodmin =
 						    static_cast<int>(os.getTokenFloat() * TICRATE);
@@ -442,8 +464,19 @@ void S_ParseSndInfo()
 						os.warning("Unknown ambient type ({})\n", os.getToken());
 					}
 
+					ambient->periodmin = MAX(0, ambient->periodmin);
+					ambient->periodmax = MAX(ambient->periodmin, ambient->periodmax);
+
 					os.mustScanFloat();
 					ambient->volume = clamp(os.getTokenFloat(), 0.0f, 1.0f);
+
+					if (ambient->mode == AMB_MODE_NONE || ambient->volume == 0.0f ||
+					    (ambient->mode != AMB_MODE_CONTINUOUS &&
+					     ambient->periodmin == 0 && ambient->periodmax == 0))
+					{
+						// Ignore bad ambient sounds
+						ambient->type == AMB_TYPE_NONE;
+					}
 				}
 				else if (os.compareTokenNoCase("map"))
 				{

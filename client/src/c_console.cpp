@@ -56,6 +56,10 @@
 #include "nx_io.h"
 #endif
 
+#include "cl_demo.h"
+
+extern NetDemo netdemo;
+
 static constexpr int MAX_LINE_LENGTH = 8192;
 
 static bool ShouldTabCycle = false;
@@ -1577,6 +1581,23 @@ void C_HideConsole()
 }
 
 
+static void PauseResumeSound(bool pause_sound)
+{
+	if (gamestate != GS_LEVEL || multiplayer || demoplayback || netdemo.isPlaying())
+	{
+		return;
+	}
+
+	if (pause_sound)
+	{
+		S_PauseSound();
+	}
+	else
+	{
+		S_ResumeSound();
+	}
+}
+
 //
 // C_ToggleConsole
 //
@@ -1613,6 +1634,7 @@ void C_ToggleConsole()
 	CmdLine.clear();
 	CmdCompletions.clear();
 	History.resetPosition();
+	PauseResumeSound(bring_console_down);
 }
 
 

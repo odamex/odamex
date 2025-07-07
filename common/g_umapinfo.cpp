@@ -397,6 +397,7 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 		info.mapname = mapname;
 
 		G_MapNameToLevelNum(info);
+		G_MapNameToID24LevelNum(info);
 
 		os.mustScan();
 		os.assertTokenNoCaseIs("{");

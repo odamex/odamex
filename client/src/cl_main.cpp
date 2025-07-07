@@ -382,7 +382,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	if (paused)
 	{
 		paused = false;
-		S_ResumeSound ();
+		S_ResumeMusic();
 	}
 
 	memset (&serveraddr, 0, sizeof(serveraddr));

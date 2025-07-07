@@ -51,6 +51,7 @@
 #include "p_setup.h"
 #include "p_hordespawn.h"
 #include "p_mapformat.h"
+#include "r_sky.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
@@ -416,7 +417,7 @@ void P_LoadSectors (int lump)
 		bool fog = level.outsidefog_color[0] != 0xFF || level.outsidefog_color[1] != 0 ||
 					level.outsidefog_color[2] != 0 || level.outsidefog_color[3] != 0;
 
-		if (fog && ss->ceilingpic == skyflatnum)
+		if (fog && R_IsSkyFlat(ss->ceilingpic))
 			ss->colormap = GetSpecialLights(255, 255, 255,
 									level.outsidefog_color[1], level.outsidefog_color[2], level.outsidefog_color[3]);
 		else

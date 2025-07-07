@@ -1742,6 +1742,14 @@ void G_MapNameToLevelNum(level_pwad_info_t& info)
 	}
 }
 
+void G_MapNameToID24LevelNum(level_pwad_info_t& info)
+{
+	int ep, map;
+	ValidateMapName(info.mapname, &ep, &map);
+	info.mapnum = map;
+	info.episodenum = ep;
+}
+
 namespace
 {
 
@@ -1841,6 +1849,7 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 			{
 				G_MapNameToLevelNum(info);
 			}
+			G_MapNameToID24LevelNum(info);
 		}
 		else if (os.compareTokenNoCase("cluster") ||
 		         os.compareTokenNoCase("clusterdef"))

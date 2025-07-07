@@ -90,28 +90,22 @@ struct bossaction_t;
 
 struct level_info_t
 {
-	OLumpName		mapname;
-	int				levelnum;
-	std::string		level_name;
-	byte			level_fingerprint[16];
-	OLumpName		pname;
-	OLumpName		nextmap;
-	OLumpName		secretmap;
-	int				partime;
-	OLumpName		skypic;
-	OLumpName		music;
-	levelFlags_t	flags;
-	int				cluster;
-	FLZOMemFile*	snapshot;
-	acsdefered_s*	defered;
-
-	level_info_t()
-	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
-	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
-	      defered(NULL)
-	{
-		ArrayInit(level_fingerprint, 0);
-	}
+	OLumpName     mapname    = "";
+	int           levelnum   = 0;
+	int           mapnum     = 0;
+	int           episodenum = 0;
+	std::string   level_name = "";
+	byte          level_fingerprint[16] = { 0 };
+	OLumpName     pname      = "";
+	OLumpName     nextmap    = "";
+	OLumpName     secretmap  = "";
+	int           partime    = 0;
+	OLumpName     skypic     = "";
+	OLumpName     music      = "";
+	levelFlags_t  flags      = 0;
+	int           cluster    = 0;
+	FLZOMemFile*  snapshot   = nullptr;
+	acsdefered_s* defered    = nullptr;
 
 	bool exists() const
 	{
@@ -140,8 +134,10 @@ struct level_pwad_info_t
 	// level_info_t
 	OLumpName		mapname;
 	int				levelnum;
+	int				mapnum;
+	int				episodenum;
 	std::string		level_name;
-	byte			level_fingerprint[16];
+	byte			level_fingerprint[16] = { 0 };
 	OLumpName		pname;
 	OLumpName		nextmap;
 	OLumpName		secretmap;
@@ -194,13 +190,13 @@ struct level_pwad_info_t
 	std::string		author;
 
 	level_pwad_info_t()
-	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
+	    : mapname(""), levelnum(0), mapnum(0), episodenum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
 	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
 	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
 	      aircontrol(0.0f), airsupply(10),
-		    exitpic(""), enterpic(""), exitscript(""), enterscript(""), exitanim(""), enteranim(""), endpic(""), intertext(""),
+	      exitpic(""), enterpic(""), exitscript(""), enterscript(""), exitanim(""), enteranim(""), endpic(""), intertext(""),
 	      intertextsecret(""), interbackdrop(""), intermusic(""), zintermusic(""),
-	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(),
+	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(""),
 	      clearlabel(false), author()
 	{
 		ArrayInit(fadeto_color, 0);
@@ -210,15 +206,15 @@ struct level_pwad_info_t
 	}
 
 	level_pwad_info_t(const level_info_t& other)
-	    : mapname(other.mapname), levelnum(other.levelnum), level_name(other.level_name),
-	      pname(other.pname), nextmap(other.nextmap),
+	    : mapname(other.mapname), levelnum(other.levelnum), mapnum(other.mapnum), episodenum(other.episodenum),
+	      level_name(other.level_name), pname(other.pname), nextmap(other.nextmap),
 	      secretmap(other.secretmap), partime(other.partime), skypic(other.skypic),
 	      music(other.music), flags(other.flags), cluster(other.cluster),
 	      snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
 	      skypic2(""), gravity(0.0f), aircontrol(0.0f), airsupply(10),
-		    exitpic(""), enterpic(""), exitscript(""), enterscript(""), exitanim(""), enteranim(""),
+	      exitpic(""), enterpic(""), exitscript(""), enterscript(""), exitanim(""), enteranim(""),
 	      endpic(""), intertext(""), intertextsecret(""), interbackdrop(""), intermusic(""), zintermusic(""),
-	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(),
+	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(""),
 	      clearlabel(false), author()
 	{
 		ArrayInit(fadeto_color, 0);

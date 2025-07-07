@@ -135,7 +135,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	if (paused)
 	{
 		paused = false;
-		S_ResumeSound ();
+		S_ResumeMusic();
 	}
 
 	C_HideConsole();
@@ -220,7 +220,7 @@ void G_InitNew (const char *mapname)
 	if (paused)
 	{
 		paused = false;
-		S_ResumeSound ();
+		S_ResumeMusic();
 	}
 
 	// If were in chasecam mode, clear out // [Toke - fix]

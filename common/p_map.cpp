@@ -43,6 +43,7 @@
 #include "p_mapformat.h"
 // State.
 #include "r_state.h"
+#include "r_sky.h"
 
 #include "z_zone.h"
 #include "p_unlag.h"
@@ -2113,8 +2114,8 @@ bool P_ShootLine(intercept_t* in)
 
 	// definitely hit the solid part of the line
 
-	bool skyceiling1 = sec1->ceilingpic == skyflatnum;
-	bool skyceiling2 = sec2 && sec2->ceilingpic == skyflatnum;
+	bool skyceiling1 = R_IsSkyFlat(sec1->ceilingpic);
+	bool skyceiling2 = sec2 && R_IsSkyFlat(sec2->ceilingpic);
 
 	// sky wall hack
 	if (skyceiling1 && skyceiling2)
@@ -2128,7 +2129,7 @@ bool P_ShootLine(intercept_t* in)
 		return false;
 
 	// check for shooting sky floors
-	if (precise && sec1->floorpic == skyflatnum && z < floorheight1)
+	if (precise && R_IsSkyFlat(sec1->floorpic) && z < floorheight1)
 		return false;
 
 	v3fixed_t lineorg, linedir, puffpos;
