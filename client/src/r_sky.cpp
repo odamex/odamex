@@ -367,6 +367,36 @@ sky_t* R_GetSky(const int32_t tex, bool create)
 	return sky;
 }
 
+sky_t* R_GetLineSky(const int32_t tex, bool create)
+{
+	if (tex < 0) return nullptr;
+
+	auto found = skylookup.find(tex);
+	if (found != skylookup.end())
+	{
+		return found->second;
+	}
+
+	if (!create)
+	{
+		return nullptr;
+	}
+
+	int32_t skytexnum;
+	sky_t* sky = (sky_t*)Z_Malloc(sizeof(sky_t), PU_STATIC, nullptr);
+	sky->background.scalex = INT2FIXED(1);
+	sky->background.scaley = INT2FIXED(1);
+	sky->background.scrolly = 0;
+	sky->background.scrollx = 0;
+	sky->background.texnum = tex;
+	sky->type = skytype_t::NORMAL;
+	skytexnum = tex;
+	sky->usedefaultmid = true;
+
+	skylookup[skytexnum] = sky;
+	return sky;
+}
+
 sky_t* R_GetSky(const OLumpName& name, bool create)
 {
 	int32_t tex = R_TextureNumForName(name);
@@ -754,9 +784,8 @@ void R_RenderSkyRange(visplane_t* pl)
 	fixed_t sky2scalex = INT2FIXED(1);
 	fixed_t sky1scaley = INT2FIXED(1);
 	fixed_t sky2scaley = INT2FIXED(1);
-	fixed_t sky1mid = 0;
-	fixed_t sky2mid = 0;
-	bool linedefsky = false;
+	fixed_t sky1mid = defaultskytexturemid;
+	fixed_t sky2mid = defaultskytexturemid;
 
 	if (skyflat != skyflatlookup.end())
 	{
@@ -768,7 +797,6 @@ void R_RenderSkyRange(visplane_t* pl)
 	}
 	else
 	{
-		linedefsky = true;
 		// MBF's linedef-controlled skies
 		const int picnum = (pl->picnum & ~PL_SKYFLAT) - 1;
 		const line_t* line = &lines[picnum < numlines ? picnum : 0];
@@ -776,7 +804,8 @@ void R_RenderSkyRange(visplane_t* pl)
 		// Sky transferred from first sidedef
 		const side_t* side = *line->sidenum + sides;
 
-		sky = R_GetSky(side->toptexture, true);
+		// TODO: create all these ahead of time
+		sky = R_GetLineSky(side->toptexture, true);
 
 		// Horizontal offset is turned into an angle offset,
 		// to allow sky rotation as well as careful positioning.
@@ -786,8 +815,8 @@ void R_RenderSkyRange(visplane_t* pl)
 		back_offset = (-side->textureoffset) >> 6;
 
 		// Vertical offset allows careful sky positioning.
-		sky1mid = side->rowoffset - 28*FRACUNIT;
-		sky2mid = side->rowoffset - 28*FRACUNIT;
+		if (sky->usedefaultmid)
+			sky1mid = side->rowoffset - 28*FRACUNIT;
 
 		// We sometimes flip the picture horizontally.
 		//
@@ -811,13 +840,8 @@ void R_RenderSkyRange(visplane_t* pl)
 		sky2scaley = sky->background.scaley;
 		if (!sky->usedefaultmid)
 		{
-			sky1mid += sky->foreground.mid;
-			sky2mid += sky->background.mid;
-		}
-		else if (!linedefsky)
-		{
-			sky1mid = defaultskytexturemid;
-			sky2mid = defaultskytexturemid;
+			sky1mid = sky->foreground.mid;
+			sky2mid = sky->background.mid;
 		}
 	}
 	else
@@ -829,9 +853,7 @@ void R_RenderSkyRange(visplane_t* pl)
 		sky1scalex = sky->background.scalex;
 		sky1scaley = sky->background.scaley;
 		if (!sky->usedefaultmid)
-			sky1mid += sky->background.mid;
-		else if (!linedefsky)
-			sky1mid = defaultskytexturemid;
+			sky1mid = sky->background.mid;
 	}
 
 	R_ResetDrawFuncs();
