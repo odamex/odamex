@@ -39,7 +39,7 @@ void R_InitSkyMap();
 void R_InitSkyDefs();
 void R_InitSkiesForLevel();
 void R_ClearSkyDefs();
-void R_SetDefaultSky(const OLumpName& sky);
+void R_SetDefaultSky(const OLumpName& sky, const OLumpName& sky2);
 void R_UpdateSkies();
 bool R_IsSkyFlat(int flatnum);
 void R_ActivateSkies(const byte* hitlist, std::vector<int>& skytextures);
