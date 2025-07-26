@@ -2396,6 +2396,8 @@ static void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
 			sector->base_ceiling_yoffs = msg->sector().base_ceiling_yoffs();
 			sector->base_floor_angle = msg->sector().base_floor_angle();
 			sector->base_floor_yoffs = msg->sector().base_floor_yoffs();
+		case SPC_Special:
+			sector->special = msg->sector().special();
 		default:
 			break;
 		}

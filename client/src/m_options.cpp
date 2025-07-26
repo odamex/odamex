@@ -128,6 +128,7 @@ EXTERN_CVAR (co_allowdropoff)
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_zdoomsound)
+EXTERN_CVAR (co_zdoomammo)
 EXTERN_CVAR (co_fixweaponimpacts)
 EXTERN_CVAR (cl_deathcam)
 EXTERN_CVAR (co_fineautoaim)
@@ -700,6 +701,7 @@ static menuitem_t CompatItems[] ={
 	{yellowtext, "Engine Compatibility",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{svdiscrete, "BOOM actor/sector/line checks",  {&co_boomphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "ZDOOM 1.23 physics",             {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "ZDOOM 1.23 ammo checks",         {&co_zdoomammo},         {2.0}, {0.0}, {0.0}, {OnOff}},
 	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{yellowtext, "Sound",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{svdiscrete, "Fix silent west spawns",         {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
@@ -922,8 +924,8 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "See killer on Death",			{&cl_deathcam},   {2.0}, {0.0}, {0.0}, {OnOff}},
-	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "Linear Skies",			    {&r_linearsky},	   		{3.0}, {0.0},	{0.0},  {OnOffAuto} },
+	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
+	{ discrete, "Linear Skies",			    {&r_linearsky},	   		{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Use softer invuln effect", {&r_softinvulneffect},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
@@ -2574,7 +2576,6 @@ static void PlayerSetup (void)
 BEGIN_COMMAND (menu_keys)
 {
 	M_StartControlPanel ();
-	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	OptionsActive = true;
 	CustomizeControls();
 }
@@ -2618,7 +2619,6 @@ void WeaponOptions (void)
 BEGIN_COMMAND (menu_display)
 {
 	M_StartControlPanel ();
-	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	OptionsActive = true;
 	M_SwitchMenu (&VideoMenu);
 }
@@ -2628,7 +2628,6 @@ END_COMMAND (menu_display)
 BEGIN_COMMAND (menu_video)
 {
 	M_StartControlPanel ();
-	S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	OptionsActive = true;
 	SetVidMode ();
 }

@@ -355,6 +355,9 @@ CVAR_RANGE(sv_countdown, "5",
 	CVAR(			co_zdoomsound, "0", "Enable sound attenuation curve + attenuation of switch sounds with distance",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
+	CVAR(			co_zdoomammo, "0", "Enable/disable ZDoom 1.23b33-based ammo checks",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
 	CVAR(			co_fineautoaim, "0", "Increase precision of vertical auto-aim",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 

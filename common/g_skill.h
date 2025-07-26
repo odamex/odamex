@@ -25,86 +25,52 @@
 
 #define MAX_SKILLS 7
 
+static constexpr uint32_t SKILL_NOINFIGHTING = BIT(0);
+static constexpr uint32_t SKILL_TOTALINFIGHTING = BIT(1);
+
 struct SkillInfo
 {
 	std::string name;
+	uint32_t flags                = 0;
 
-	float ammo_factor;
-	float double_ammo_factor;
-	float drop_ammo_factor;		// not implemented
-	float damage_factor;
-	float armor_factor;
-	float health_factor;
-	float kickback_factor;		// not implemented
+	float ammo_factor             = 1.0f;
+	float double_ammo_factor      = 2.0f;
+	float drop_ammo_factor        = -1.0f;	// not implemented
+	float damage_factor           = 1.0f;
+	float armor_factor            = 1.0f;
+	float health_factor           = 1.0f;
+	float kickback_factor         = 1.0f;	// not implemented
 
-	bool fast_monsters;
-	bool slow_monsters;			// not implemented
-	bool disable_cheats;
-	bool auto_use_health;		// not implemented
+	bool fast_monsters            = false;
+	bool slow_monsters            = false;	// not implemented
+	bool disable_cheats           = false;
+	bool auto_use_health          = false;	// not implemented
 
-	bool easy_boss_brain;
-	bool easy_key;				// not implemented
-	bool no_menu;				// not implemented
-	int respawn_counter;
-	int respawn_limit;			// not implemented
-	float aggressiveness;		// not implemented
-	int spawn_filter;
-	bool spawn_multi;
-	bool instant_reaction;
-	int ACS_return;				// not implemented
+	bool easy_boss_brain          = false;
+	bool easy_key                 = false;	// not implemented
+	bool no_menu                  = 0;		// not implemented
+	int respawn_counter           = 0;
+	int respawn_limit             = 0;		// not implemented
+	float aggressiveness          = 1.0f;	// not implemented
+	int spawn_filter              = 0;
+	bool spawn_multi              = false;
+	bool instant_reaction         = false;
+	int ACS_return                = 0;		// not implemented
 	std::string menu_name;
 	OLumpName pic_name;
 	//SkillMenuNames menu_names_for_player_class;	// not implemented
-	bool must_confirm;
-	std::string must_confirm_text;
-	char shortcut;
-	byte text_color[4];					// not implemented
+	bool must_confirm             = false;
+	std::string must_confirm_text = "$NIGHTMARE";
+	char shortcut                 = 0;
+	byte text_color[4]            = { 0 };	// not implemented
 	//SkillActorReplacement replace;	// not implemented
 	//SkillActorReplacement replaced;	// not implemented
-	float monster_health;	// not implemented
-	float friendly_health;	// not implemented
-	bool no_pain;			// not implemented
-	int infighting;			// not implemented
-	bool player_respawn;	// not implemented
+	float monster_health          = 1.0f;	// not implemented
+	float friendly_health         = 1.0f;	// not implemented
+	bool no_pain                  = false;	// not implemented
+	bool player_respawn           = false;	// not implemented
 
-	SkillInfo()
-		: ammo_factor(1.f)
-		, double_ammo_factor(2.f)
-		, drop_ammo_factor(-1.f)
-		, damage_factor(1.f)
-		, armor_factor(1.f)
-		, health_factor(1.f)
-		, kickback_factor(1.f)
-
-		, fast_monsters(false)
-		, slow_monsters(false)
-		, disable_cheats(false)
-		, auto_use_health(false)
-
-		, easy_boss_brain(false)
-		, easy_key(false)
-		, respawn_counter(0)
-		, respawn_limit(0)
-		, aggressiveness(1.f)
-		, spawn_filter(0)
-		, spawn_multi(false)
-		, instant_reaction(false)
-		, ACS_return(0)
-		, menu_name()
-		, pic_name()
-		//, menu_names_for_player_class(???)
-		, must_confirm(false)
-		, must_confirm_text("$NIGHTMARE")
-		, shortcut(0)
-		, text_color()
-		//, replace(???)
-		//, replaced(???)
-		, monster_health(1.)
-		, friendly_health(1.)
-		, no_pain(false)
-		, infighting(0)
-		, player_respawn(false)
-	{}
+	SkillInfo()	{}
 };
 
 inline SkillInfo SkillInfos[MAX_SKILLS];

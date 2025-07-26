@@ -1,5 +1,5 @@
 
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -1190,7 +1190,7 @@ state_t	boomstates[S_MUSHROOM + 1] = {
 
 	OLDBFG_8FRAMES(0)
 	OLDBFG_8FRAMES(8)
-	OLDBFG_8FRAMES(16) 
+	OLDBFG_8FRAMES(16)
 	OLDBFG_8FRAMES(24)
 	OLDBFG_8FRAMES(32)
 
@@ -1218,7 +1218,7 @@ state_t	boomstates[S_MUSHROOM + 1] = {
 	{SPR_BON3,0,6,NULL,S_BON3,0,0, {0, 0, 0, 0, 0, 0, 0, 0}, STATEF_NONE},           // S_BON3  // killough 7/11/98:
 	{SPR_BON4,0,6,NULL,S_BON4,0,0, {0, 0, 0, 0, 0, 0, 0, 0}, STATEF_NONE},           // S_BON4  // beta bonus items
 
-	// killough 10/98: beta lost souls attacked from a distance, 
+	// killough 10/98: beta lost souls attacked from a distance,
 	// animated with colors, and stayed in the air when killed.
 	// This is an approximation, but I'm sure it can be improved.
 
@@ -1360,7 +1360,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// damage
 	NULL,		// activesound
 	MF_SOLID|MF_SHOOTABLE|MF_DROPOFF|MF_PICKUP|MF_NOTDMATCH,		// flags
-	MF2_SLIDE|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2	
+	MF2_SLIDE|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
 	S_NULL,		// raisestate
 	0x10000,
 	"MT_PLAYER",
@@ -1399,7 +1399,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// damage
 	"grunt/active",		// activesound
 	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2	
+	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
 	S_POSS_RAISE1,		// raisestate
 	0x10000,
 	"MT_POSSESSED",
@@ -1439,7 +1439,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	"shotguy/active",		// activesound
 	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
 	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_SPOS_RAISE1,		// raisestate	
+	S_SPOS_RAISE1,		// raisestate
 	0x10000,
 	"MT_SHOTGUY",
 	NO_ALTSPEED,	// altspeed
@@ -1477,7 +1477,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// damage
 	"vile/active",		// activesound
 	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-     MF2_MCROSS | MF2_PASSMOBJ | MF2_PUSHWALL | MF2_NODMGTHRUST, // flags2	
+     MF2_MCROSS | MF2_PASSMOBJ | MF2_PUSHWALL | MF2_NODMGTHRUST, // flags2
 	S_NULL,		// raisestate
 	0x10000,
 	"MT_VILE",
@@ -1516,7 +1516,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// damage
 	NULL,		// activesound
 	MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2	
+	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
 	S_NULL,		// raisestate
 	FRACUNIT,
 	"MT_FIRE",
@@ -1555,7 +1555,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// damage
 	"skeleton/active",		// activesound
 	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2	
+	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
 	S_SKEL_RAISE1,		// raisestate
 	0x10000,
 	"MT_UNDEAD",
@@ -1594,7 +1594,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	10,		// damage
 	NULL,		// activesound
 	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
-	MF2_PCROSS|MF2_IMPACT|MF2_SEEKERMISSILE,		// flags2	
+	MF2_PCROSS|MF2_IMPACT|MF2_SEEKERMISSILE,		// flags2
 	S_NULL,		// raisestate
 	FRACUNIT,
 	"MT_TRACER",
@@ -1633,7 +1633,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// damage
 	NULL,		// activesound
 	MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
-	0,		// flags2	
+	0,		// flags2
 	S_NULL,		// raisestate
 	FRACUNIT,
 	"MT_SMOKE",
@@ -4207,7 +4207,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// damage
 	NULL,		// activesound
 	MF_SPECIAL,		// flags
-	0,		// flags2	
+	0,		// flags2
 	S_NULL,		// raisestate
 	0x10000,
 	"MT_CHAINGUN",
@@ -4904,7 +4904,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
-	82*FRACUNIT,	// cdheight
+	68*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4943,7 +4943,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
-	82*FRACUNIT,	// cdheight
+	68*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -4982,7 +4982,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
-	82*FRACUNIT,	// cdheight
+	68*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5021,7 +5021,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
-	64*FRACUNIT,	// cdheight
+	37*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5060,7 +5060,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
-	64*FRACUNIT,	// cdheight
+	37*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -5099,7 +5099,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// speed
 	16*FRACUNIT,		// radius
 	16*FRACUNIT,		// height
-	64*FRACUNIT,	// cdheight
+	37*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -7849,7 +7849,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	NULL, // ripsound
 	MT_NULL		// droppeditem
 	},
-	
+
 			// [Toke - CTF] Red Socket
 	{		// MT_RSOK
 	5131,		// doomednum
@@ -7889,7 +7889,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	NULL, // ripsound
 	MT_NULL		// droppeditem
 	},
-	
+
 	// Nes - Reserve 5132 for Neutral Socket
 
 
@@ -7913,8 +7913,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	NULL,		// deathsound
 	0,		// speed
 	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
+	48*FRACUNIT,		// height
+	48*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -7953,8 +7953,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	NULL,		// deathsound
 	0,		// speed
 	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
+	48*FRACUNIT,		// height
+	48*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -7993,8 +7993,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	NULL,		// deathsound
 	0,		// speed
 	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
+	48*FRACUNIT,		// height
+	48*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -8033,8 +8033,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	NULL,		// deathsound
 	0,		// speed
 	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
+	48*FRACUNIT,		// height
+	48*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -8073,8 +8073,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	NULL,		// deathsound
 	0,		// speed
 	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
+	48*FRACUNIT,		// height
+	48*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -8113,8 +8113,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	NULL,		// deathsound
 	0,		// speed
 	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
+	48*FRACUNIT,		// height
+	48*FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -8288,7 +8288,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	NULL, // ripsound
 	MT_NULL		// droppeditem
 	},
-	
+
 	{		// MT_BRIDGE16
 	5064,		// doomednum
 	S_TNT1,		// spawnstate
@@ -8854,8 +8854,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	NULL,		// deathsound
 	0,		// speed
 	20 * FRACUNIT,		// radius
-	16 * FRACUNIT,		// height
-	16 * FRACUNIT,	// cdheight
+	48 * FRACUNIT,		// height
+	48 * FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -8893,8 +8893,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	NULL,		// deathsound
 	0,		// speed
 	20 * FRACUNIT,		// radius
-	16 * FRACUNIT,		// height
-	16 * FRACUNIT,	// cdheight
+	48 * FRACUNIT,		// height
+	48 * FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -8932,8 +8932,8 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	NULL,		// deathsound
 	0,		// speed
 	20 * FRACUNIT,		// radius
-	16 * FRACUNIT,		// height
-	16 * FRACUNIT,	// cdheight
+	48 * FRACUNIT,		// height
+	48 * FRACUNIT,	// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound

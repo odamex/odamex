@@ -285,10 +285,10 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 		// Not a match, keep trying.
 	}
 
-	std::string dir, basename, strext;
+	std::string subdir, basename, strext;
 	std::vector<std::string> exts;
 	std::string path = M_CleanPath(wanted.getWantedPath());
-	M_ExtractFilePath(path, dir);
+	M_ExtractFilePath(path, subdir);
 	M_ExtractFileBase(path, basename);
 	if (M_ExtractFileExtension(path, strext))
 	{
@@ -305,12 +305,13 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	const std::vector<std::string> dirs = M_FileSearchDirs();
 	for (const auto& dir : dirs)
 	{
+		const std::string searchpath = M_JoinPath(dir, subdir);
 		const std::string result =
-		    M_BaseFileSearchDir(dir, basename, exts, wanted.getWantedMD5());
+		    M_BaseFileSearchDir(searchpath, basename, exts, wanted.getWantedMD5());
 		if (!result.empty())
 		{
 			// Found a file.
-			const std::string fullpath = dir + PATHSEP + result;
+			const std::string fullpath = M_JoinPath(searchpath, result);
 			return OResFile::make(out, fullpath);
 		}
 	}

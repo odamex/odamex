@@ -62,7 +62,10 @@ public:
 	int 		handle;			// handle of the sound being played
 	int			sound_id;
 	int			entchannel;		// entity's sound channel
-	float		attenuation;
+	int			attenuation;	// ATTN_* type (used by Odamex for channel priority)
+	float		dist_scale;		// Distance scaling
+	fixed_t		dist;			// Distance from listener
+	float		initial_volume;	// Initial volume when sound attempts to start
 	float		volume;
 	int			priority;
 	bool		loop;
@@ -76,7 +79,10 @@ public:
 		handle = -1;
 		sound_id = -1;
 		entchannel = CHAN_VOICE;
-		attenuation = 0.0f;
+		attenuation = ATTN_NONE;
+		dist_scale = 0.0f;
+		dist = 0;
+		initial_volume = 0.0f;
 		volume = 0.0f;
 		priority = MININT;
 		loop = false;
@@ -164,7 +170,7 @@ void S_NoiseDebug()
 			char temp[16];
 			fixed_t *origin = Channel[i].pt;
 
-			if (Channel[i].attenuation <= 0 && listenplayer().camera)
+			if (Channel[i].attenuation == ATTN_NONE && listenplayer().camera)
 			{
 				ox = listenplayer().camera->x;
 				oy = listenplayer().camera->y;
@@ -327,9 +333,16 @@ bool S_CompareChannels(const channel_t &a, const channel_t &b)
 	if (a.start_time != b.start_time)
 		return a.start_time > b.start_time;
 
+	if (a.dist != b.dist)
+		return a.dist < b.dist;
+
 	return false;
 }
 
+bool S_CompareDistances(const channel_t &a, const channel_t &b)
+{
+	return a.dist < b.dist;
+}
 
 //
 // S_GetChannel
@@ -340,7 +353,8 @@ bool S_CompareChannels(const channel_t &a, const channel_t &b)
 // Returns -1 if no channels are availible.
 // Returns the number of the availible channel otherwise.
 //
-int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_instances)
+int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_instances,
+                 fixed_t dist, int channel)
 {
 	// not a valid sound
 	if (::Channel == NULL || sfxinfo == NULL)
@@ -356,6 +370,7 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 	tempchan.priority = priority;
 	tempchan.volume = volume;
 	tempchan.start_time = gametic;
+	tempchan.dist = dist;
 
 	const int sound_id = S_FindSound(sfxinfo->name);
 
@@ -375,6 +390,25 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 		if (Channel[i].sfxinfo == NULL)
 			return i;
 
+	// No empty channels and this is an ambient sound?
+	if (channel == CHAN_AMBIENT)
+	{
+		if (volume > 0.0f)
+		{
+			// Try to kick out the furthest inaudible ambient sound.
+			std::sort(Channel, Channel + numChannels, S_CompareDistances);
+			for (int i = numChannels - 1; i-- > 0;)
+			{
+				if (Channel[i].entchannel == CHAN_AMBIENT && Channel[i].volume == 0.0f)
+				{
+					return i;
+				}
+			}
+		}
+
+		return -1;
+	}
+
 	// Find a channel with lower priority
 	for (size_t i = numChannels - 1; i-- > 0;)
 		if (S_CompareChannels(tempchan, Channel[i]))
@@ -383,6 +417,28 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 	return -1;
 }
 
+static void ApplyDistanceScaling(float dist_scale, fixed_t *approx_dist)
+{
+	if (dist_scale > 0.0f)
+	{
+		float scaled_dist = FIXED2FLOAT(*approx_dist) * dist_scale;
+		scaled_dist = clamp(scaled_dist, 0.0f, 32767.0f);
+		*approx_dist = FLOAT2FIXED(scaled_dist);
+	}
+}
+
+static void AdjustStereoSeparation(const AActor *listener, fixed_t x, fixed_t y, int *sep)
+{
+	// angle of source to listener
+	angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
+	if (angle > listener->angle)
+		angle = angle - listener->angle;
+	else
+		angle = angle + (0xffffffff - listener->angle);
+
+	// stereo separation
+	*sep -= (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
+}
 
 //
 // S_AdjustZdoomSoundParams
@@ -394,39 +450,25 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 //      might step back in range during the sound.
 //
 static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
-                                   float* vol, int* sep)
+                                   float* vol, int* sep, fixed_t* dist, float dist_scale)
 {
 	static constexpr fixed_t MAX_SND_DIST = 2025 * FRACUNIT;
 	static constexpr fixed_t MIN_SND_DIST = 1 * FRACUNIT;
-	const int approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
+	fixed_t approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
+	*dist = approx_dist;
+	ApplyDistanceScaling(dist_scale, &approx_dist);
 
 	if (approx_dist > MAX_SND_DIST)
 	{
 		*vol = 0;
-		*sep = NORM_SEP;
 	}
-	else if (approx_dist < MIN_SND_DIST)
-	{
-		*vol = snd_sfxvolume;
-		*sep = NORM_SEP;
-	}
-	else
+	else if (approx_dist >= MIN_SND_DIST)
 	{
 		const float attenuation = static_cast<float>(SoundCurve[approx_dist >> FRACBITS]) / 128.0f;
 
-		*vol = snd_sfxvolume * attenuation;
+		*vol *= attenuation;
 
-		// angle of source to listener
-		angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
-		if (angle > listener->angle)
-			angle = angle - listener->angle;
-		else
-			angle = angle + (0xffffffff - listener->angle);
-
-		// stereo separation
-		*sep =
-		    NORM_SEP -
-		    (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
+		AdjustStereoSeparation(listener, x, y, sep);
 	}
 }
 
@@ -446,11 +488,13 @@ static void AdjustSoundParamsZDoom(const AActor* listener, fixed_t x, fixed_t y,
 //      might step back in range during the sound.
 //
 static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
-                                  float* vol, int* sep)
+                                  float* vol, int* sep, fixed_t* dist, float dist_scale)
 {
 	static constexpr fixed_t S_CLIPPING_DIST = 1200 * FRACUNIT;
 	static constexpr fixed_t S_CLOSE_DIST = 200 * FRACUNIT;
 	fixed_t approx_dist = P_AproxDistance(listener->x - x, listener->y - y);
+	*dist = approx_dist;
+	ApplyDistanceScaling(dist_scale, &approx_dist);
 
 	if (S_UseMap8Volume())
 		approx_dist = MIN(approx_dist, S_CLIPPING_DIST);
@@ -458,14 +502,8 @@ static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
 	if (approx_dist > S_CLIPPING_DIST)
 	{
 		*vol = 0;
-		*sep = NORM_SEP;
 	}
-	else if (approx_dist < S_CLOSE_DIST)
-	{
-		*vol = snd_sfxvolume;
-		*sep = NORM_SEP;
-	}
-	else
+	else if (approx_dist >= S_CLOSE_DIST)
 	{
 		float attenuation = FIXED2FLOAT(
 		    FixedDiv(S_CLIPPING_DIST - approx_dist, S_CLIPPING_DIST - S_CLOSE_DIST));
@@ -476,19 +514,9 @@ static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
 		if (S_UseMap8Volume() && attenuation < 0.192)
 			attenuation = 0.192;
 
-		*vol = snd_sfxvolume * attenuation;
+		*vol *= attenuation;
 
-		// angle of source to listener
-		angle_t angle = R_PointToAngle2(listener->x, listener->y, x, y);
-		if (angle > listener->angle)
-			angle = angle - listener->angle;
-		else
-			angle = angle + (0xffffffff - listener->angle);
-
-		// stereo separation
-		*sep =
-		    NORM_SEP -
-		    (FixedMul(S_STEREO_SWING, finesine[angle >> ANGLETOFINESHIFT]) >> FRACBITS);
+		AdjustStereoSeparation(listener, x, y, sep);
 	}
 }
 
@@ -498,18 +526,15 @@ static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
 // S_AdjustSoundParams
 //
 static bool AdjustSoundParams(const AActor* listener, fixed_t x, fixed_t y, float* vol,
-                              int* sep)
+                              int* sep, fixed_t* dist, float dist_scale)
 {
-	*vol = 0.0f;
-	*sep = NORM_SEP;
-
 	if (!listener)
 		return false;
 
 	if (co_zdoomsound)
-		AdjustSoundParamsZDoom(listener, x, y, vol, sep);
+		AdjustSoundParamsZDoom(listener, x, y, vol, sep, dist, dist_scale);
 	else
-		AdjustSoundParamsDoom(listener, x, y, vol, sep);
+		AdjustSoundParamsDoom(listener, x, y, vol, sep, dist, dist_scale);
 
 	return true;
 }
@@ -540,6 +565,7 @@ int S_CalculateSoundPriority(const fixed_t* pt, int channel, int attenuation)
 			priority = 100;
 			break;
 		case CHAN_BODY:
+		case CHAN_AMBIENT:
 			priority = 75;
 			break;
 		case CHAN_ITEM:
@@ -583,7 +609,8 @@ static int ResolveSound(int soundid)
 // a bit of a whore of a funtion but she works ok
 //
 static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
-	                     int sfx_id, float volume, int attenuation, bool looping)
+	                     int sfx_id, float volume, int attenuation, bool looping,
+	                     float dist_scale = 0.0f)
 {
 	if (volume <= 0.0f)
 		return;
@@ -636,22 +663,28 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	if (sfxinfo->lumpnum == sfx_empty)
 		return;
 
-	int sep;
+	volume = MIN(volume, 1.0f);
+	const float initial_volume = volume;
+	int sep = NORM_SEP;
+	fixed_t dist = 0;
 
 	if (listenplayer().camera && attenuation != ATTN_NONE)
 	{
+		volume *= snd_sfxvolume;
+
   		// Check to see if it is audible, and if not, modify the params
-		if (!AdjustSoundParams(listenplayer().camera, x, y, &volume, &sep))
+		if (!AdjustSoundParams(listenplayer().camera, x, y, &volume, &sep, &dist,
+		                       dist_scale))
+		{
 			return;
+		}
 	}
 	else
 	{
-		sep = NORM_SEP;
-
 		if (channel == CHAN_ANNOUNCER)
-			volume = snd_announcervolume;
+			volume *= snd_announcervolume;
 		else
-			volume = snd_sfxvolume;
+			volume *= snd_sfxvolume;
 	}
 
 	const int priority = S_CalculateSoundPriority(pt, channel, attenuation);
@@ -677,7 +710,8 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	const unsigned int max_instances = (channel == CHAN_ANNOUNCER) ? 1 : 3;
 
 	// try to find a channel
-	const int cnum = S_GetChannel(sfxinfo, volume, priority, max_instances);
+	const int cnum =
+	    S_GetChannel(sfxinfo, volume, priority, max_instances, dist, channel);
 
 	// no channel found
 	if (cnum < 0)
@@ -699,6 +733,9 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	Channel[cnum].priority = priority;
 	Channel[cnum].entchannel = channel;
 	Channel[cnum].attenuation = attenuation;
+	Channel[cnum].dist_scale = dist_scale;
+	Channel[cnum].dist = dist;
+	Channel[cnum].initial_volume = initial_volume;
 	Channel[cnum].volume = volume;
 	Channel[cnum].x = x;
 	Channel[cnum].y = y;
@@ -749,7 +786,8 @@ void S_LoopedSoundID(fixed_t *pt, int channel, int sound_id, float volume, int a
 }
 
 static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, int channel,
-                              const char *name, float volume, int attenuation, bool looping)
+                              const char *name, float volume, int attenuation, bool looping,
+                              float dist_scale = 0.0f)
 {
 	if (!consoleplayer().mo && channel != CHAN_INTERFACE)
 		return;
@@ -802,11 +840,11 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 	}
 
 	if (ent && ent != (AActor *)(~0))
-		S_StartSound(&ent->x, x, y, channel, sfx_id, volume, attenuation, looping);
+		S_StartSound(&ent->x, x, y, channel, sfx_id, volume, attenuation, looping, dist_scale);
 	else if (pt)
-		S_StartSound(pt, x, y, channel, sfx_id, volume, attenuation, looping);
+		S_StartSound(pt, x, y, channel, sfx_id, volume, attenuation, looping, dist_scale);
 	else
-		S_StartSound((fixed_t *)ent, x, y, channel, sfx_id, volume, attenuation, looping);
+		S_StartSound((fixed_t *)ent, x, y, channel, sfx_id, volume, attenuation, looping, dist_scale);
 }
 
 // [Russell] - Hack to stop multiple plat stop sounds
@@ -908,6 +946,47 @@ void S_StopAllChannels()
 		S_StopChannel(i);
 }
 
+void S_StopAmbientSound()
+{
+	for (unsigned int i = 0; i < numChannels; i++)
+	{
+		if (Channel[i].entchannel == CHAN_AMBIENT)
+		{
+			S_StopChannel(i);
+		}
+	}
+}
+
+void S_PauseSound()
+{
+	for (unsigned int i = 0; i < numChannels; i++)
+	{
+		const channel_t *c = &Channel[i];
+
+		// Only applies to ambient sounds for now, but can be extended to all
+		// sounds in the future.
+		if (c->sfxinfo && c->entchannel == CHAN_AMBIENT)
+		{
+			I_PauseSound(c->handle);
+		}
+	}
+}
+
+void S_ResumeSound()
+{
+	for (unsigned int i = 0; i < numChannels; i++)
+	{
+		const channel_t *c = &Channel[i];
+
+		// Only applies to ambient sounds for now, but can be extended to all
+		// sounds in the future.
+		if (c->sfxinfo && c->entchannel == CHAN_AMBIENT)
+		{
+			I_ResumeSound(c->handle);
+		}
+	}
+}
+
 
 // Moves all the sounds from one thing to another. If the destination is
 // NULL, then the sound becomes a positioned sound.
@@ -951,7 +1030,7 @@ bool S_GetSoundPlayingInfo(AActor *ent, int sound_id)
 //
 // Stop and resume music, during game PAUSE.
 //
-void S_PauseSound()
+void S_PauseMusic()
 {
 	if (!mus_paused)
 	{
@@ -960,7 +1039,7 @@ void S_PauseSound()
 	}
 }
 
-void S_ResumeSound()
+void S_ResumeMusic()
 {
 	if (mus_paused)
 	{
@@ -981,36 +1060,32 @@ void S_UpdateSounds(void* listener_p)
 	AActor* listener = (AActor*)listener_p;
 	for (int cnum = 0; cnum < (int)numChannels; cnum++)
 	{
-		const channel_t* c = &Channel[cnum];
+		channel_t* c = &Channel[cnum];
 		const sfxinfo_t* sfx = c->sfxinfo;
 
 		if (c->sfxinfo)
 		{
-			if (I_SoundIsPlaying(c->handle))
+			if (I_SoundIsPaused(c->handle))
+			{
+				continue;
+			}
+			else if (I_SoundIsPlaying(c->handle))
 			{
 				// initialize parameters
 				int sep = NORM_SEP;
 
-				float maxvolume;
+				c->volume = c->initial_volume;
 				if (Channel[cnum].entchannel == CHAN_ANNOUNCER)
-					maxvolume = snd_announcervolume;
+					c->volume *= snd_announcervolume;
 				else
-					maxvolume = snd_sfxvolume;
-
-				float volume = maxvolume;
+					c->volume *= snd_sfxvolume;
 
 				if (sfx->link != static_cast<int>(sfxinfo_t::NO_LINK))
 				{
-					volume += Channel[cnum].volume;
-
-					if (volume <= 0)
+					if (c->volume <= 0.0f)
 					{
 						S_StopChannel(cnum);
 						continue;
-					}
-					else if (volume > maxvolume)
-					{
-						volume = maxvolume;
 					}
 				}
 
@@ -1030,10 +1105,15 @@ void S_UpdateSounds(void* listener_p)
 						y = c->y;
 					}
 
-					if (AdjustSoundParams(listener, x, y, &volume, &sep))
-						I_UpdateSoundParams(c->handle, volume, sep, NORM_PITCH);
+					if (AdjustSoundParams(listener, x, y, &c->volume, &sep, &c->dist,
+					                      c->dist_scale))
+					{
+						I_UpdateSoundParams(c->handle, c->volume, sep, NORM_PITCH);
+					}
 					else
+					{
 						S_StopChannel(cnum);
+					}
 				}
 			}
 			else
@@ -1147,20 +1227,30 @@ void S_StopMusic()
 //
 // =============================== [RH]
 
+typedef enum
+{
+	AMB_TYPE_NONE,
+    AMB_TYPE_POINT,
+    AMB_TYPE_WORLD,
+} amb_type_t;
+
+typedef enum
+{
+	AMB_MODE_NONE,
+    AMB_MODE_CONTINUOUS,
+    AMB_MODE_RANDOM,
+    AMB_MODE_PERIODIC,
+} amb_mode_t;
+
 static struct AmbientSound {
-	unsigned	type;		// type of ambient sound
+	amb_type_t	type;		// Ambient sound type
+	amb_mode_t	mode;		// Ambient sound mode
 	int			periodmin;	// # of tics between repeats
 	int			periodmax;	// max # of tics for random ambients
 	float		volume;		// relative volume of sound
-	float		attenuation;
+	float		attenuation; // Used for distance scaling
 	char		sound[MAX_SNDNAME+1]; // Logical name of sound to play
 } Ambients[256];
-
-#define RANDOM		1
-#define PERIODIC	2
-#define CONTINUOUS	3
-#define POSITIONAL	4
-#define SURROUND	16
 
 void S_HashSounds()
 {
@@ -1314,7 +1404,8 @@ void S_ParseSndInfo()
 						ambient = Ambients + index;
 					}
 
-					ambient->type = 0;
+					ambient->type = AMB_TYPE_NONE;
+					ambient->mode = AMB_MODE_NONE;
 					ambient->periodmin = 0;
 					ambient->periodmax = 0;
 					ambient->volume = 0.0f;
@@ -1322,42 +1413,42 @@ void S_ParseSndInfo()
 					os.mustScan();
 					strncpy(ambient->sound, os.getToken().c_str(), MAX_SNDNAME);
 					ambient->sound[MAX_SNDNAME] = 0;
-					ambient->attenuation = 0.0f;
+					ambient->attenuation = 0.0f; // No change by default
 
 					os.mustScan();
 					if (os.compareTokenNoCase("point"))
 					{
-						ambient->type = POSITIONAL;
+						ambient->type = AMB_TYPE_POINT;
 						os.mustScan();
 
 						if (IsRealNum(os.getToken().c_str()))
 						{
-							ambient->attenuation = (os.getTokenFloat() > 0) ? os.getTokenFloat() : 1;
+							if (os.getTokenFloat() > 0.0f)
+							{
+								ambient->attenuation = os.getTokenFloat();
+							}
+
 							os.mustScan();
 						}
-						else
+					}
+					else
+					{
+						ambient->type = AMB_TYPE_WORLD;
+
+						if (os.compareTokenNoCase("surround") ||
+						    os.compareTokenNoCase("world"))
 						{
-							ambient->attenuation = 1;
+							os.mustScan();
 						}
 					}
-					else if (os.compareTokenNoCase("surround"))
-					{
-						ambient->type = SURROUND;
-						os.mustScan();
-						ambient->attenuation = -1;
-					}
-					//else if (os.compareTokenNoCase("world"))
-					//{
-						// todo
-					//}
 
 					if (os.compareTokenNoCase("continuous"))
 					{
-						ambient->type |= CONTINUOUS;
+						ambient->mode = AMB_MODE_CONTINUOUS;
 					}
 					else if (os.compareTokenNoCase("random"))
 					{
-						ambient->type |= RANDOM;
+						ambient->mode = AMB_MODE_RANDOM;
 						os.mustScanFloat();
 						ambient->periodmin = static_cast<int>(os.getTokenFloat() * TICRATE);
 						os.mustScanFloat();
@@ -1365,7 +1456,7 @@ void S_ParseSndInfo()
 					}
 					else if (os.compareTokenNoCase("periodic"))
 					{
-						ambient->type |= PERIODIC;
+						ambient->mode = AMB_MODE_PERIODIC;
 						os.mustScanFloat();
 						ambient->periodmin = static_cast<int>(os.getTokenFloat() * TICRATE);
 					}
@@ -1374,8 +1465,19 @@ void S_ParseSndInfo()
 						os.warning("Unknown ambient type ({})\n", os.getToken());
 					}
 
+					ambient->periodmin = MAX(0, ambient->periodmin);
+					ambient->periodmax = MAX(ambient->periodmin, ambient->periodmax);
+
 					os.mustScanFloat();
 					ambient->volume = clamp(os.getTokenFloat(), 0.0f, 1.0f);
+
+					if (ambient->mode == AMB_MODE_NONE || ambient->volume == 0.0f ||
+					    (ambient->mode != AMB_MODE_CONTINUOUS &&
+					     ambient->periodmin == 0 && ambient->periodmax == 0))
+					{
+						// Ignore bad ambient sounds
+						ambient->type = AMB_TYPE_NONE;
+					}
 				}
 				else if (os.compareTokenNoCase("map"))
 				{
@@ -1449,6 +1551,12 @@ void S_ParseSndInfo()
 				strncpy(name, tok.c_str(), MAX_SNDNAME);
 				name[MAX_SNDNAME] = 0;
 				os.mustScan();
+
+				if (os.compareToken("="))
+				{
+					os.mustScan();
+				}
+
 				S_AddSound(name, os.getToken().c_str());
 			}
 		}
@@ -1463,11 +1571,11 @@ void S_ParseSndInfo()
 
 static void SetTicker(int *tics, AmbientSound *ambient)
 {
-	if ((ambient->type & CONTINUOUS) == CONTINUOUS)
+	if (ambient->mode == AMB_MODE_CONTINUOUS)
 	{
 		*tics = 1;
 	}
-	else if (ambient->type & RANDOM)
+	else if (ambient->mode == AMB_MODE_RANDOM)
 	{
 		*tics = (int)(((float)rand() / (float)RAND_MAX) *
 				(float)(ambient->periodmax - ambient->periodmin)) +
@@ -1491,15 +1599,17 @@ void A_Ambient(AActor *actor)
 
 	AmbientSound *ambient = &Ambients[actor->args[0]];
 
-	if ((ambient->type & CONTINUOUS) == CONTINUOUS)
+	if (ambient->mode == AMB_MODE_CONTINUOUS)
 	{
 		if (S_GetSoundPlayingInfo (actor, S_FindSound (ambient->sound)))
 			return;
 
 		if (ambient->sound[0])
 		{
-			S_StartNamedSound (actor, NULL, 0, 0, CHAN_BODY,
-				ambient->sound, ambient->volume, ambient->attenuation, true);
+			const int attn_type =
+			    (ambient->type == AMB_TYPE_POINT ? ATTN_IDLE : ATTN_NONE);
+			S_StartNamedSound(actor, NULL, 0, 0, CHAN_AMBIENT, ambient->sound,
+			                  ambient->volume, attn_type, true, ambient->attenuation);
 
 			SetTicker (&actor->tics, ambient);
 		}
@@ -1512,8 +1622,10 @@ void A_Ambient(AActor *actor)
 	{
 		if (ambient->sound[0])
 		{
-			S_StartNamedSound (actor, NULL, 0, 0, CHAN_BODY,
-				ambient->sound, ambient->volume, ambient->attenuation, false);
+			const int attn_type =
+			    (ambient->type == AMB_TYPE_POINT ? ATTN_IDLE : ATTN_NONE);
+			S_StartNamedSound(actor, NULL, 0, 0, CHAN_AMBIENT, ambient->sound,
+			                  ambient->volume, attn_type, false, ambient->attenuation);
 
 			SetTicker (&actor->tics, ambient);
 		}
@@ -1531,7 +1643,12 @@ void S_ActivateAmbient(AActor *origin, int ambient)
 
 	AmbientSound *amb = &Ambients[ambient];
 
-	if (!(amb->type & 3) && !amb->periodmin)
+	if (amb->type == AMB_TYPE_NONE)
+	{
+		return;
+	}
+
+	if (amb->mode != AMB_MODE_CONTINUOUS && amb->periodmin == 0)
 	{
 		const int sndnum = S_FindSound(amb->sound);
 		if (sndnum == 0 || sndnum == -1)
@@ -1545,10 +1662,7 @@ void S_ActivateAmbient(AActor *origin, int ambient)
 		amb->periodmin = (sfx->ms * TICRATE) / 1000;
 	}
 
-	if (amb->type & (RANDOM|PERIODIC))
-		SetTicker (&origin->tics, amb);
-	else
-		origin->tics = 1;
+	SetTicker(&origin->tics, amb);
 }
 
 BEGIN_COMMAND (snd_soundlist)

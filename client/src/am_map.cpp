@@ -120,6 +120,12 @@ BEGIN_COMMAND(resetcustomcolors)
 	am_fdwallcolor = "1a 1a 8a";
 	am_cdwallcolor = "00 00 5a";
 	am_thingcolor = "9f d3 ff";
+	am_thingcolor_item = "navy";
+	am_thingcolor_countitem = "sky blue";
+	am_thingcolor_monster = "74 fc 6c";
+	am_thingcolor_nocountmonster = "yellow";
+	am_thingcolor_friend = "dark green";
+	am_thingcolor_projectile = "orange";
 	am_gridcolor = "44 44 88";
 	am_xhaircolor = "80 80 80";
 	am_notseencolor = "00 22 6e";
@@ -133,6 +139,12 @@ BEGIN_COMMAND(resetcustomcolors)
 	am_ovfdwallcolor = "1a 1a 8a";
 	am_ovcdwallcolor = "00 00 5a";
 	am_ovthingcolor = "9f d3 ff";
+	am_ovthingcolor_item = "navy";
+	am_ovthingcolor_countitem = "sky blue";
+	am_ovthingcolor_monster = "74 fc 6c";
+	am_ovthingcolor_nocountmonster = "yellow";
+	am_ovthingcolor_friend = "dark green";
+	am_ovthingcolor_projectile = "orange";
 	am_ovgridcolor = "44 44 88";
 	am_ovxhaircolor = "80 80 80";
 	am_ovnotseencolor = "00 22 6e";

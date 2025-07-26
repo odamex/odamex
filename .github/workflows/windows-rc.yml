@@ -32,7 +32,7 @@ jobs:
         shell: pwsh
         run: |
           $commits = git rev-list HEAD --count
-          Write-Output "::set-output name=totalCommits::$commits"
+          Write-Output "totalCommits=$commits" >> $GITHUB_OUTPUT
       - name: Display GitVersion outputs
         run: |
           echo "Major: ${{ steps.gitversion.outputs.major }}"
@@ -97,7 +97,7 @@ jobs:
       run: |
         .\ci\win-release-x64.ps1
     - name: Install Python packages
-      uses: BSFishy/pip-action@v1
+      uses: insightsengineering/pip-action@v2
       with:
         packages: |
           b2sdk
@@ -146,7 +146,7 @@ jobs:
       run: |
         .\ci\win-release-x86.ps1
     - name: Install Python packages
-      uses: BSFishy/pip-action@v1
+      uses: insightsengineering/pip-action@v2
       with:
         packages: |
           b2sdk
@@ -203,19 +203,3 @@ jobs:
       with:
         name: Odamex-Installer
         path: 'Output/*.exe'
-  # build-mingw:
-  #   name: Build (MinGW)
-  #   runs-on: windows-latest
-  #   steps:
-  #   - name: Checkout source
-  #     uses: actions/checkout@v4
-  #   - name: Checkout submodules
-  #     run: git submodule update --init --recursive
-  #   - name: Install packages
-  #     uses: crazy-max/ghaction-chocolatey@v1
-  #     with:
-  #       args: install ninja
-  #   - name: Prepare build
-  #     run: .\ci\win-mingw-buildgen.ps1
-  #   - name: Run build
-  #     run: cmake --build .\build-gcc\

@@ -88,7 +88,7 @@ void I_Error(const fmt::string_view format, const ARGS&... args)
 }
 
 template <typename... ARGS>
-void I_FatalError(const fmt::string_view format, const ARGS&... args)
+[[noreturn]] void I_FatalError(const fmt::string_view format, const ARGS&... args)
 {
 	I_BaseFatalError(fmt::format(format, args...));
 }

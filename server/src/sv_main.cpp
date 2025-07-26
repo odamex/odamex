@@ -1241,7 +1241,7 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 	sector_t* sector = &sectors[sectornum];
 
 	// Only update moveable sectors to clients
-	if (sector != NULL && sector->moveable)
+	if (sector != nullptr && sector->moveable)
 	{
 		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateSector(*sector));
 	}
@@ -1251,6 +1251,23 @@ void SV_BroadcastSector(int sectornum)
 {
 	for (auto& player : players)
 		SV_UpdateSector(&(player.client), sectornum);
+}
+
+void SV_UpdateSectorProperties(client_t* cl, int sectornum)
+{
+	sector_t* sector = &sectors[sectornum];
+
+	// Only update sectors with changes
+	if (sector != nullptr && sector->SectorChanges)
+	{
+		MSG_WriteSVC(&cl->reliablebuf, SVC_SectorProperties(*sector));
+	}
+}
+
+void SV_BroadcastSectorProperties(int sectornum)
+{
+	for (auto& player : players)
+		SV_UpdateSectorProperties(&(player.client), sectornum);
 }
 
 //
@@ -4098,7 +4115,7 @@ void SV_RunTics()
 		if (!Maplist::instance().lobbyempty())
 		{
 			std::string wadstr = C_EscapeWadList(lobby_entry.wads);
-			G_LoadWadString(wadstr, "", lobby_entry.map);
+			G_LoadWadString(wadstr, lobby_entry.map);
 		}
 		else
 		{

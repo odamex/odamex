@@ -331,7 +331,7 @@ sky_t* R_GetSky(const OLumpName& name, bool create)
 		return found->second;
 	}
 
-	if(!create)
+	if (!create)
 	{
 		return nullptr;
 	}
@@ -384,10 +384,10 @@ void R_InitSkyDefs()
 		const Json::Value& skyarray = elem["skies"];
 		const Json::Value& flatmappings = elem["flatmapping"];
 
-		if(!(skyarray.isArray() || skyarray.isNull())) return jsonlumpresult_t::PARSEERROR;
-		if(!(flatmappings.isArray() || flatmappings.isNull())) return jsonlumpresult_t::PARSEERROR;
+		if (!(skyarray.isArray() || skyarray.isNull())) return jsonlumpresult_t::PARSEERROR;
+		if (!(flatmappings.isArray() || flatmappings.isNull())) return jsonlumpresult_t::PARSEERROR;
 
-		for(const Json::Value& skyelem : skyarray)
+		for (const Json::Value& skyelem : skyarray)
 		{
 			const Json::Value& type     = skyelem["type"];
 
@@ -402,13 +402,13 @@ void R_InitSkyDefs()
 			const Json::Value& foreelem = skyelem["foregroundtex"];
 
 			auto skytype = static_cast<skytype_t>(type.asInt());
-			if(skytype < skytype_t::NORMAL || skytype > skytype_t::DOUBLESKY) return jsonlumpresult_t::PARSEERROR;
+			if (skytype < skytype_t::NORMAL || skytype > skytype_t::DOUBLESKY) return jsonlumpresult_t::PARSEERROR;
 
 			OLumpName skytexname = skytex.asString();
 			int32_t tex = R_TextureNumForName(skytexname);
-			if(tex < 0) return jsonlumpresult_t::PARSEERROR;
+			if (tex < 0) return jsonlumpresult_t::PARSEERROR;
 
-			if(!mid.isNumeric()
+			if (!mid.isNumeric()
 			   || !scrollx.isNumeric()
 			   || !scrolly.isNumeric()
 			   || !scalex.isNumeric()
@@ -432,25 +432,25 @@ void R_InitSkyDefs()
 			sky->background.scalex  = FLOAT2FIXED(1.0f / scalex.asFloat());
 			sky->background.scaley  = FLOAT2FIXED(1.0f / scaley.asFloat());
 
-			if(sky->type == skytype_t::FIRE)
+			if (sky->type == skytype_t::FIRE)
 			{
-				if(!fireelem.isObject()) return jsonlumpresult_t::PARSEERROR;
+				if (!fireelem.isObject()) return jsonlumpresult_t::PARSEERROR;
 
 				const Json::Value& firepalette    = fireelem["palette"];
 				const Json::Value& fireupdatetime = fireelem["updatetime"];
 
-				if(!firepalette.isArray()) return jsonlumpresult_t::PARSEERROR;
+				if (!firepalette.isArray()) return jsonlumpresult_t::PARSEERROR;
 				sky->numfireentries = (int32_t)firepalette.size();
 				byte* output = sky->firepalette = (byte*)Z_Malloc(sizeof(byte) * sky->numfireentries, PU_STATIC, nullptr);
-				for(const Json::Value& palentry : firepalette)
+				for (const Json::Value& palentry : firepalette)
 				{
 					*output++ = palentry.asUInt();
 				}
 				sky->fireticrate = (int32_t)(fireupdatetime.asFloat() * TICRATE);
 			}
-			else if(sky->type == skytype_t::DOUBLESKY)
+			else if (sky->type == skytype_t::DOUBLESKY)
 			{
-				if(!foreelem.isObject()) return jsonlumpresult_t::PARSEERROR;
+				if (!foreelem.isObject()) return jsonlumpresult_t::PARSEERROR;
 
 				const Json::Value& foreskytex  = foreelem["name"];
 				const Json::Value& foremid     = foreelem["mid"];
@@ -461,9 +461,9 @@ void R_InitSkyDefs()
 
 				OLumpName foreskytexname = foreskytex.asString();
 				int32_t foretex = R_TextureNumForName(foreskytexname);
-				if(foretex < 0) return jsonlumpresult_t::PARSEERROR;
+				if (foretex < 0) return jsonlumpresult_t::PARSEERROR;
 
-				if(!foremid.isNumeric()
+				if (!foremid.isNumeric()
 				   || !forescrollx.isNumeric()
 				   || !forescrolly.isNumeric()
 				   || !forescalex.isNumeric()
@@ -482,20 +482,20 @@ void R_InitSkyDefs()
 			}
 			else
 			{
-				if(!fireelem.isNull() || !foreelem.isNull()) return jsonlumpresult_t::PARSEERROR;
+				if (!fireelem.isNull() || !foreelem.isNull()) return jsonlumpresult_t::PARSEERROR;
 			}
 
 			skylookup[skytexname] = sky;
 		}
 
-		for(const Json::Value& flatentry : flatmappings)
+		for (const Json::Value& flatentry : flatmappings)
 		{
 			const Json::Value& flatelem = flatentry["flat"];
 			const Json::Value& skyelem = flatentry["sky"];
 
 			OLumpName flatname = flatelem.asString();
 			int32_t flatnum = R_FlatNumForName(flatname);
-			if(flatnum < 0 || flatnum >= ::numflats) return jsonlumpresult_t::PARSEERROR;
+			if (flatnum < 0 || flatnum >= ::numflats) return jsonlumpresult_t::PARSEERROR;
 
 			OLumpName skyname = skyelem.asString();
 			sky_t* sky = R_GetSky(skyname, true);
@@ -521,7 +521,7 @@ void spreadFire(int src, byte* firepixels, int width)
 {
 	const byte pixel = firepixels[src];
 	const int copyloc0 = src - width;
-	if(pixel == 0) {
+	if (pixel == 0) {
 		if (copyloc0 >= 0)
 			firepixels[copyloc0] = 0;
 	} else {
@@ -537,13 +537,13 @@ static void R_UpdateFireSky(sky_t* sky, bool init = false)
 	if (gametic % sky->fireticrate != 0 && !init) return;
 	const int texnum = sky->background.texnum;
 	texture_t* tex = textures[texnum];
-    for (int x = 0 ; x < tex->width; x++)
+	for (int x = 0 ; x < tex->width; x++)
 	{
-        for (int y = 1; y < tex->height; y++)
+		for (int y = 1; y < tex->height; y++)
 		{
-            spreadFire(y * tex->width + x, sky->firetexturedata, tex->width);
-        }
-    }
+			spreadFire(y * tex->width + x, sky->firetexturedata, tex->width);
+		}
+	}
 	byte* coldata;
 	for (int x = 0; x < tex->width; x++)
 	{
@@ -581,7 +581,7 @@ static void R_UpdateSky(sky_t* sky)
 	sky->background.currx += sky->background.scrollx;
 	sky->background.curry += sky->background.scrolly;
 
-	if(sky->type == skytype_t::FIRE)
+	if (sky->type == skytype_t::FIRE)
 	{
 		R_UpdateFireSky(sky);
 	}
@@ -590,9 +590,9 @@ static void R_UpdateSky(sky_t* sky)
 
 void R_UpdateSkies()
 {
-	for(auto& [_, sky] : skylookup)
+	for (auto& [_, sky] : skylookup)
 	{
-		if(sky->active)
+		if (sky->active)
 		{
 			R_UpdateSky(sky);
 		}
@@ -618,7 +618,7 @@ void R_ActivateSky(sky_t* sky)
 
 void R_ActivateSkies(const byte* hitlist, std::vector<int>& skytextures)
 {
-	for(auto& [flat, sky] : skyflatlookup)
+	for (auto& [flat, sky] : skyflatlookup)
 	{
 		if (hitlist[flat])
 			R_ActivateSky(sky);
@@ -638,7 +638,7 @@ void R_ActivateSkies(const byte* hitlist, std::vector<int>& skytextures)
 
 void R_InitSkiesForLevel()
 {
-	for(auto& [_, sky] : skylookup)
+	for (auto& [_, sky] : skylookup)
 	{
 		sky->active = false;
 		sky->foreground.currx = 0;
@@ -712,7 +712,7 @@ inline bool R_PostDataIsTransparent(byte* data)
 
 bool R_IsSkyFlat(int flatnum)
 {
-	return skyflatlookup.count(flatnum);
+	return flatnum == skyflatnum || skyflatlookup.count(flatnum);
 }
 
 //
@@ -808,7 +808,7 @@ void R_RenderSkyRange(visplane_t* pl)
 		front_offset = (-side->textureoffset) >> 6;
 
 		// Vertical offset allows careful sky positioning.
-		defaultskytexturemid = side->rowoffset - 28*FRACUNIT;
+		sky1mid = side->rowoffset - 28*FRACUNIT;
 
 		// We sometimes flip the picture horizontally.
 		//
@@ -916,7 +916,7 @@ void R_RenderSkyRange(visplane_t* pl)
 					destpostlen += translen;
 				}
 
-				if (!skypost->next()->end() && destpostlen >= skypost->topdelta + skypost->length)
+				if (!skypost->end() && !skypost->next()->end() && destpostlen >= skypost->topdelta + skypost->length)
 				{
 					skypost = skypost->next();
 				}

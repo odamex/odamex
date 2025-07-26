@@ -159,7 +159,7 @@ void I_SetCrashDir(const char* crashdir)
 	if (len > CRASH_DIR_LEN)
 	{
 		I_FatalError(
-		    "Crash directory \"{}\" is too long.  Please pass a correct -crashout param.",
+		    "Crash directory \"{}\" is too long.  Please pass a correct -crashdir param.",
 		    crashdir);
 		abort();
 	}
@@ -169,7 +169,7 @@ void I_SetCrashDir(const char* crashdir)
 	int res = mkstemp(testfile);
 	if (res == -1)
 	{
-		I_FatalError("Crash directory \"{}\" is not writable.  Please point -crashout to "
+		I_FatalError("Crash directory \"{}\" is not writable.  Please point -crashdir to "
 		             "a directory with write permissions.",
 		             crashdir);
 		abort();

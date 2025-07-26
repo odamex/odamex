@@ -1,0 +1,13 @@
+[Desktop Entry]
+# this is the desktop entry spec version NOT the odamex version
+Version=1.5
+Type=Application
+
+Name=Odalaunch
+Comment=A server browser to find and play DOOM games online!
+Categories=Amusement;Game;ActionGame;AdventureGame;ArcadeGame;
+
+Icon=net.odamex.Odamex.Launcher
+Exec=odalaunch
+Terminal=false
+StartupWMClass=odalaunch

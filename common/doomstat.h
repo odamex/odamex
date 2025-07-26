@@ -195,21 +195,22 @@ EXTERN_CVAR (developer) // removeme
 // [RH] Miscellaneous info for DeHackEd support
 struct DehInfo
 {
-	int StartHealth;
-	int StartBullets;
-	int MaxHealth;
-	int MaxArmor;
-	int GreenAC;
-	int BlueAC;
-	int MaxSoulsphere;
-	int SoulsphereHealth;
-	int MegasphereHealth;
-	int GodHealth;
-	int FAArmor;
-	int FAAC;
-	int KFAArmor;
-	int KFAAC;
-	int BFGCells;
-	int Infight;
+	int StartHealth      = 100;
+	int StartBullets     = 50;
+	int MaxHealth        = 100;
+	int MaxArmor         = 200;
+	int GreenAC          = 1;
+	int BlueAC           = 2;
+	int MaxSoulsphere    = 200;
+	int SoulsphereHealth = 100;
+	int MegasphereHealth = 200;
+	int GodHealth        = 100;
+	int FAArmor          = 200;
+	int FAAC             = 2;
+	int KFAArmor         = 200;
+	int KFAAC            = 2;
+	int BFGCells         = 40;
+	int Infight          = 0;
+	bool ZDAmmo          = false;
 };
-extern struct DehInfo deh;
+inline DehInfo deh{};

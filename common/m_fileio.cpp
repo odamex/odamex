@@ -48,6 +48,14 @@ std::ofstream LOG;
 std::ifstream CON;
 
 /**
+ * @brief Joins two paths together
+*/
+std::string M_JoinPath(std::string_view path1, std::string_view path2)
+{
+	return (fs::path(path1) / path2).string();
+}
+
+/**
  * @brief Expand "~" into the user's home directory.
 */
 void M_ExpandHomeDir(std::string& path)
@@ -465,22 +473,7 @@ std::string M_GetNetDemoDir()
 	return M_GetWriteSubDir("netdemos");
 }
 
-std::string M_GetScreenshotFileName(const std::string& file)
-{
-	#if defined(_XBOX)
-	fs::path path = "T:";
-	path /= file;
-#elif defined __SWITCH__
-	fs::path path = file;
-#else
-	// Direct our path to our screenshot directory.
-	fs::path path = M_GetScreenshotDir();
-	path /= file;
-#endif
-	return M_CleanPath(path.string());
-}
-
-std::string M_GetNetDemoFileName(const std::string& file)
+std::string M_GetScreenshotFileName(const std::string& file, const std::string& altpath)
 {
 #if defined(_XBOX)
 	fs::path path = "T:";
@@ -488,8 +481,61 @@ std::string M_GetNetDemoFileName(const std::string& file)
 #elif defined __SWITCH__
 	fs::path path = file;
 #else
-	// Direct our path to our netdemo directory.
-	fs::path path = M_GetNetDemoDir();
+	fs::path path;
+	if (!altpath.empty())
+	{
+		std::string cleanedpath = M_CleanPath(altpath);
+		M_ExpandHomeDir(cleanedpath);
+		path = cleanedpath;
+		try
+		{
+			fs::create_directory(path);
+		}
+		catch (const fs::filesystem_error&)
+		{
+			PrintFmt(PRINT_WARNING, "M_GetScreenshotFilename: Could not create screenshot directory {}, falling back to default...", altpath);
+			path = M_GetScreenshotDir();
+		}
+	}
+	else
+	{
+		// Direct our path to our screenshot directory.
+		path = M_GetScreenshotDir();
+	}
+	path /= file;
+#endif
+	return M_CleanPath(path.string());
+}
+
+std::string M_GetNetDemoFileName(const std::string& file, const std::string& altpath)
+{
+#if defined(_XBOX)
+	fs::path path = "T:";
+	path /= file;
+#elif defined __SWITCH__
+	fs::path path = file;
+#else
+	fs::path path;
+	if (!altpath.empty())
+	{
+		std::string cleanedpath = M_CleanPath(altpath);
+		M_ExpandHomeDir(cleanedpath);
+		path = cleanedpath;
+		try
+		{
+			fs::create_directory(path);
+		}
+		catch (const fs::filesystem_error&)
+		{
+			PrintFmt(PRINT_WARNING, "M_GetNetDemoFilename: Could not create netdemo directory {}, falling back to default...", altpath);
+			path = M_GetNetDemoDir();
+		}
+	}
+	else
+	{
+		// Direct our path to our netdemo directory.
+		fs::path path = M_GetNetDemoDir();
+	}
 	path /= file;
 #endif
 	return M_CleanPath(path.string());

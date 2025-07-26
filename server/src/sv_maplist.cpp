@@ -113,7 +113,7 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 			// loaded WAD files.  Add one to the beginning of wadfiles, since
 			// position 0 stores odamex.wad.
 			maplist_entry.wads.clear();
-			for (const auto& file : ::wadfiles)
+			for (const auto& file : OUtil::drop(::wadfiles, 1))
 			{
 				maplist_entry.wads.push_back(file.getBasename());
 			}
@@ -640,13 +640,32 @@ void Maplist_Disconnect(player_t &player) {
 
 //////// CONSOLE COMMANDS ////////
 
+nonstd::expected<maplist_lastmaps_t, std::string> maplist_lastmaps_t::parse(const std::string& lastmaps) {
+	StringTokens entries = TokenizeString(lastmaps, ",");
+	maplist_lastmaps_t result;
+	for (const auto& entry : entries) {
+		if (entry.empty()) {
+			return nonstd::make_unexpected(fmt::format("Empty lastmap entry found in {}", lastmaps));
+		}
+		StringTokens maps = TokenizeString(StdStringToUpper(entry), "->");
+		if (maps.size() == 1 && maps[0].find("->") == std::string::npos)
+			result.entries.push_back({ maps[0], "" });
+		else if (maps.size() == 2)
+			result.entries.push_back({ maps[0], maps[1] });
+		else {
+			return nonstd::make_unexpected(fmt::format("Invalid lastmap entry: {} in {}", entry, lastmaps));
+		}
+	}
+	return result;
+}
+
 BEGIN_COMMAND (maplist) {
 	std::vector<std::string> arguments = VectorArgs(argc, argv);
 
 	// Query the maplist
 	std::vector<std::pair<size_t, maplist_entry_t*> > result;
 	if (!Maplist::instance().query(arguments, result)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error());
+		PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
 		return;
 	}
 
@@ -655,41 +674,44 @@ BEGIN_COMMAND (maplist) {
 	bool show_this_map = Maplist::instance().get_this_index(this_index);
 	Maplist::instance().get_next_index(next_index);
 	for (const auto& [index, entry] : result) {
-		const auto& [map, lastmap, wads] = *entry;
+		const auto& [map, _, lastmaps, wads] = *entry;
 		char flag = ' ';
 		if (show_this_map && index == this_index) {
 			flag = '*';
 		} else if (index == next_index) {
 			flag = '+';
 		}
-		Printf(PRINT_HIGH, "%c%lu. %s %s%s\n", flag, index + 1,
+		PrintFmt(PRINT_HIGH, "{}{}. {} {}{}\n", flag, index + 1,
 			   JoinStrings(wads, " "), map,
-			   lastmap.empty() ? "" : fmt::sprintf(" lastmap=%s", lastmap));
+			   lastmaps.empty() ? "" : fmt::format(" lastmap={}", lastmaps));
 	}
 } END_COMMAND (maplist)
 
 BEGIN_COMMAND (addmap) {
+	if (argc < 2) {
+		PrintFmt(PRINT_HIGH, "Usage: addmap <map lump> [wad name] [...]\n");
+		PrintFmt(PRINT_HIGH, "If you don't specify a wad name, it'll load the IWAD by default.\n");
+		return;
+	}
+
+	maplist_entry_t maplist_entry;
+
 	std::string lastmap = argv[argc-1];
 	if (lastmap.rfind("lastmap=", 0) == 0)
 	{
-		lastmap = lastmap.substr(8);
+		auto lastmap_result = maplist_lastmaps_t::parse(lastmap.substr(8));
+		if (!lastmap_result) {
+			PrintFmt(PRINT_HIGH, "Failed to parse lastmap: {}\n", lastmap_result.error());
+			return;
+		}
+		maplist_entry.lastmaps = lastmap_result.value();
 		argc--;
-	}
-	else
-		lastmap = "";
-
-	if (argc < 2) {
-		Printf(PRINT_HIGH, "Usage: addmap <map lump> [wad name] [...]\n");
-		Printf(PRINT_HIGH, "If you don't specify a wad name, it'll load the IWAD by default.\n");
-		return;
 	}
 
 	std::vector<std::string> arguments = VectorArgs(argc, argv);
 
 	// Grab the map lump.
-	maplist_entry_t maplist_entry;
 	maplist_entry.map = arguments[0];
-	maplist_entry.lastmap = lastmap;
 
 	// If we specified any WAD files, grab them too.
 	if (arguments.size() > 1) {
@@ -698,26 +720,32 @@ BEGIN_COMMAND (addmap) {
 	}
 
 	if (!Maplist::instance().add(maplist_entry)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error());
+		PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
 		return;
 	}
 
 	// Successfully warn the server a map has been added.
-	Printf(PRINT_HIGH, "Adding %s to maplist (WAD%s : %s)", arguments[0], (arguments.size() > 2)?"s":"", JoinStrings(maplist_entry.wads, " "));
+	PrintFmt(PRINT_HIGH, "Adding {} to maplist (WAD{} : {})", arguments[0], (arguments.size() > 2)?"s":"", JoinStrings(maplist_entry.wads, " "));
 } END_COMMAND(addmap)
 
 BEGIN_COMMAND(insertmap) {
+	if (argc < 3) {
+		Printf(PRINT_HIGH, "Usage: insertmap <maplist position> <map lump> [wad name] [...]\n");
+	}
+
+	maplist_entry_t maplist_entry;
+
 	std::string lastmap = argv[argc-1];
 	if (lastmap.rfind("lastmap=", 0) == 0)
 	{
+		auto lastmap_result = maplist_lastmaps_t::parse(lastmap.substr(8));
+		if (!lastmap_result) {
+			PrintFmt(PRINT_HIGH, "Failed to parse lastmap: {}\n", lastmap_result.error());
+			return;
+		}
 		lastmap = lastmap.substr(8);
+		maplist_entry.lastmaps = lastmap_result.value();
 		argc--;
-	}
-	else
-		lastmap = "";
-
-	if (argc < 3) {
-		Printf(PRINT_HIGH, "Usage: insertmap <maplist position> <map lump> [wad name] [...]\n");
 	}
 
 	std::vector<std::string> arguments = VectorArgs(argc, argv);
@@ -727,14 +755,12 @@ BEGIN_COMMAND(insertmap) {
 	std::istringstream buffer(arguments[0]);
 	buffer >> maplist_position;
 	if (maplist_position == 0 || arguments[0][0] == '-') {
-		Printf(PRINT_HIGH, "Position must be a positive number.\n");
+		PrintFmt(PRINT_HIGH, "Position must be a positive number.\n");
 		return;
 	}
 
 	// Grab the map lump.
-	maplist_entry_t maplist_entry;
 	maplist_entry.map = arguments[1];
-	maplist_entry.lastmap = lastmap;
 
 	// If we specified any WAD files, grab them too.
 	if (arguments.size() > 2) {
@@ -743,12 +769,12 @@ BEGIN_COMMAND(insertmap) {
 	}
 
 	if (!Maplist::instance().insert(maplist_position - 1, maplist_entry)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error());
+		PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
 		return;
 	}
 
 	// Successfully warn the server a map has been added.
-	Printf(PRINT_HIGH, "Successfully inserting %s to position #%s (WAD%s : %s)", arguments[1], arguments[0], (arguments.size() > 3) ? "s" : "", JoinStrings(maplist_entry.wads, " "));
+	PrintFmt(PRINT_HIGH, "Successfully inserting {} to position #{} (WAD{} : {})", arguments[1], arguments[0], (arguments.size() > 3) ? "s" : "", JoinStrings(maplist_entry.wads, " "));
 } END_COMMAND(insertmap)
 
 BEGIN_COMMAND(delmap) {

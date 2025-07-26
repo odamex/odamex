@@ -252,8 +252,8 @@ const char* NiceVersionDetails()
 	const char* debug = ", Debug Build";
 #endif
 
-	// We ignore this branch prefix.
-	const char RELEASE_PREFIX[] = "release";
+	static constexpr std::string_view RELEASE_PREFIX = "release";
+
 
 	if (NoGitVersion())
 	{
@@ -264,7 +264,7 @@ const char* NiceVersionDetails()
 			version = "Debug Build";
 		}
 	}
-	else if (!strncmp(GitBranch(), "release", ARRAY_LENGTH(RELEASE_PREFIX) - 1))
+	else if (!strncmp(GitBranch(), RELEASE_PREFIX.data(), RELEASE_PREFIX.length()))
 	{
 		// "Release" branch shows total revisions as a build number
 		version = fmt::sprintf("-prerelease.%s%s", GitRevCount(), debug);
@@ -287,7 +287,7 @@ const char* NiceVersion()
 {
 	static std::string version;
 	static bool tried = false;
-	const char RELEASE_PREFIX[] = "release";
+	static constexpr std::string_view RELEASE_PREFIX = "release";
 
 	if (tried)
 	{
@@ -305,7 +305,7 @@ const char* NiceVersion()
 	else
 	{
 		// Release candidates show everything together
-		if (!strncmp(GitBranch(), "release", ARRAY_LENGTH(RELEASE_PREFIX) - 1))
+		if (!strncmp(GitBranch(), RELEASE_PREFIX.data(), RELEASE_PREFIX.length()))
 		{
 			version = fmt::sprintf("%s%s", DOTVERSIONSTR, details);
 		}

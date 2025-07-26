@@ -311,7 +311,7 @@ public:
 	}
 	void ChangeValues (int magnitude, int angle)
 	{
-		angle_t ang = (angle<<24) >> ANGLETOFINESHIFT;
+		angle_t ang = (static_cast<angle_t>(angle)<<24) >> ANGLETOFINESHIFT;
 		m_Xmag = (magnitude * finecosine[ang]) >> FRACBITS;
 		m_Ymag = (magnitude * finesine[ang]) >> FRACBITS;
 		m_Magnitude = magnitude;

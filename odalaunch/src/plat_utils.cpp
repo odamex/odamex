@@ -91,8 +91,8 @@ wxString OdaGetInstallDir()
 {
 	wxString InstallDir;
 
-#if defined(INSTALL_PREFIX) && defined(INSTALL_BINDIR)
-	const char* bindir_cstr = INSTALL_PREFIX "/" INSTALL_BINDIR;
+#if defined(ODAMEX_INSTALL_BINDIR)
+	const char* bindir_cstr = ODAMEX_INSTALL_BINDIR;
 	InstallDir = wxString::FromAscii(bindir_cstr);
 #else
 	InstallDir = wxGetCwd();
@@ -105,8 +105,8 @@ wxString OdaGetDataDir()
 {
 	wxString DataDir;
 
-#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
-	const char* datadir_cstr = INSTALL_PREFIX "/" INSTALL_DATADIR;
+#if defined(ODAMEX_INSTALL_DATADIR)
+	const char* datadir_cstr = ODAMEX_INSTALL_DATADIR;
 	DataDir = wxString::FromAscii(datadir_cstr);
 #else
 	DataDir =  wxGetCwd();
