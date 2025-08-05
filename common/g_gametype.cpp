@@ -749,22 +749,22 @@ std::string G_GetScoreForModes()
 
 		if (::g_horde_waves.asInt() != 0)
 		{
-			StrFormat(score, " | Wave: %d / %d", info.wave, ::g_horde_waves.asInt());
+			score = fmt::format(" | Wave: {} / {}", info.wave, ::g_horde_waves.asInt());
 		}
 		else
 		{
-			StrFormat(score, " | Wave: %d", info.wave);
+			score = fmt::format(" | Wave: {}", info.wave);
 		}
 	}
 	else if (G_IsDuelGame() || G_IsFFAGame())
 	{
 		if (sv_fraglimit.asInt() > 0)
 		{
-			StrFormat(score, " | %d - %d", consoleplayer().fragcount, sv_fraglimit.asInt());
+			score = fmt::format(" | {} - {}", consoleplayer().fragcount, sv_fraglimit.asInt());
 		}
 		else
 		{
-			StrFormat(score, " | %d", consoleplayer().fragcount);
+			score = fmt::format(" | {}", consoleplayer().fragcount);
 		}
 	}
 	else if (G_IsTeamGame())
@@ -775,18 +775,17 @@ std::string G_GetScoreForModes()
 
 		if (sv_teamsinplay.asInt() == 3)
 		{
-		StrFormat(score, " | %d - %d - %d", red_team.Points, blu_team.Points, grn_team.Points);
+			score = fmt::format(" | {} - {} - {}", red_team.Points, blu_team.Points, grn_team.Points);
 		}
 		else
 		{
-		StrFormat(score, " | %d - %d", red_team.Points, blu_team.Points);
+			score = fmt::format(" | {} - {}", red_team.Points, blu_team.Points);
 		}
 	}
 
 	if (G_IsRoundsGame() && g_roundlimit.asInt() > 1 && !G_IsCoopGame())
 	{
-		std::string rounds = "";
-		StrFormat(rounds, " | Round: %d / %d", ::levelstate.getRound(), g_roundlimit.asInt());
+		const std::string rounds = fmt::format(" | Round: {} / {}", ::levelstate.getRound(), g_roundlimit.asInt());
 		score += rounds;
 	}
 
@@ -799,11 +798,11 @@ std::string G_GetPlayerStatLineForMode()
 
 	if (G_IsCoopGame())
 	{
-		int kills = consoleplayer().killcount;
-		int deaths = consoleplayer().deathcount;
-		int monsterdmg = consoleplayer().monsterdmgcount;
-		int secrets = ::level.found_secrets;
-		StrFormat(statline, "%d %s / %d %s / %d Damage / %d %s Found",
+		const int kills = consoleplayer().killcount;
+		const int deaths = consoleplayer().deathcount;
+		const int monsterdmg = consoleplayer().monsterdmgcount;
+		const int secrets = ::level.found_secrets;
+		statline = fmt::format("{} {} / {} {} / {} Damage / {} {} Found",
 			kills, kills == 1 ? "Kill" : "Kills",
 			deaths, deaths == 1 ? "Death" : "Deaths",
 			monsterdmg,
@@ -811,27 +810,27 @@ std::string G_GetPlayerStatLineForMode()
 	}
 	else if (G_IsDuelGame())
 	{
-		int deaths = consoleplayer().deathcount;
-		StrFormat(statline, "%d %s", deaths, deaths == 1 ? "Death" : "Deaths");
+		const int deaths = consoleplayer().deathcount;
+		statline = fmt::format("{} {}", deaths, deaths == 1 ? "Death" : "Deaths");
 	}
 	else if (G_IsTeamGame())
 	{
 		if (sv_gametype == GM_TEAMDM)
 		{
-			int frags = consoleplayer().fragcount;
-			int deaths = consoleplayer().deathcount;
-			int damage = consoleplayer().damagecount;
-			StrFormat(statline, "%d %s / %d %s / %d Damage",
+			const int frags = consoleplayer().fragcount;
+			const int deaths = consoleplayer().deathcount;
+			const int damage = consoleplayer().damagecount;
+			statline = fmt::format("{} {} / {} {} / {} Damage",
 				frags, frags == 1 ? "Frag" : "Frags",
 				deaths, deaths == 1 ? "Death" : "Deaths",
 				damage);
 		}
 		else // CTF
 		{
-			int points = consoleplayer().points;
-			int frags = consoleplayer().fragcount;
-			int deaths = consoleplayer().deathcount;
-			StrFormat(statline, "%d %s / %d %s / %d %s", 
+			const int points = consoleplayer().points;
+			const int frags = consoleplayer().fragcount;
+			const int deaths = consoleplayer().deathcount;
+			statline = fmt::format("{} {} / {} {} / {} {}",
 				points, points == 1 ? "Flag" : "Flags",
 				frags, frags == 1 ? "Frag" : "Frags",
 				deaths, deaths == 1 ? "Death" : "Deaths");
@@ -839,17 +838,16 @@ std::string G_GetPlayerStatLineForMode()
 	}
 	else if (G_IsFFAGame())
 	{
-		int deaths = consoleplayer().deathcount;
-		StrFormat(statline, "%d %s", deaths, deaths == 1 ? "Death" : "Deaths");
+		const int deaths = consoleplayer().deathcount;
+		statline = fmt::format("{} {}", deaths, deaths == 1 ? "Death" : "Deaths");
 	}
 
 	if (G_IsLivesGame())
 	{
 		if (consoleplayer().lives > 0)
 		{
-			std::string livesleft = "";
-			int lives = consoleplayer().lives;
-			StrFormat(livesleft, " / %d %s Left", lives, lives == 1 ? "Life" : "Lives");
+			const int lives = consoleplayer().lives;
+			const std::string livesleft = fmt::format(" / {} {} Left", lives, lives == 1 ? "Life" : "Lives");
 			statline += livesleft;
 		}
 	}

@@ -712,8 +712,7 @@ std::string G_GetWadMapSummary()
 
 	if (level.levelnum > 0)
 	{
-		std::string mapnum;
-		StrFormat(mapnum, "MAP%02d", level.levelnum);
+		std::string mapnum = fmt::format("MAP{:02d}");
 
 		wadlevelstr += " | " + mapnum + " - " + std::string(level.level_name);
 	}
